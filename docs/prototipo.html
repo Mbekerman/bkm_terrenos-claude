@@ -480,6 +480,19 @@ button.tr:hover { background: rgba(255, 255, 255, .6) }
 }
 .tr.v2 .c-etapa { display: flex; flex-direction: column; align-items: flex-end; gap: var(--e1) }
 @media (min-width: 900px) { .tr.v2 .c-etapa { align-items: center } }
+
+/* ---- menu lateral recolhível ---- */
+.layout { transition: grid-template-columns .2s ease }
+.menu-tg { display: inline-flex; align-items: center; gap: var(--e2); min-height: 40px; padding: 0 var(--e2); margin-left: calc(var(--e2) * -1); border: 0; border-radius: var(--raio-botao); background: none; color: var(--texto-suave); font-size: 13px }
+.menu-tg:hover { background: var(--superficie-elevada); color: var(--texto) }
+body.menu-min .layout { grid-template-columns: 80px minmax(0, 1fr); max-width: none }
+body.menu-min .side { padding-right: var(--e2); align-items: center }
+body.menu-min .rot { display: none }
+body.menu-min .compose { width: 48px; padding: 0; justify-content: center; align-self: center }
+body.menu-min .nav-item { width: 56px; justify-content: center; padding: 0 }
+body.menu-min .side-foot { align-items: center; padding-inline: 0 }
+body.menu-min .menu-tg { margin-left: 0; width: 48px; justify-content: center; padding: 0 }
+@media (prefers-reduced-motion: reduce) { .layout { transition: none } }
 </style>
 <header class="top">
   <div class="top-in">
@@ -537,6 +550,7 @@ const P={
   link:'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
   fwd:'M5 12h14M13 6l6 6-6 6',edit:'M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4',
   money:'M4 7h16v10H4zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM7 10v4M17 10v4',
+  recolher:'M13 6l-6 6 6 6M19 6l-6 6 6 6',expandir:'M11 6l6 6-6 6M5 6l6 6-6 6',
   task:'M9 4h6v3H9zM9 5.5H6a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6.5a1 1 0 0 0-1-1h-3M8.5 14l2.5 2.5 4.5-5'
 };
 const ic=(n,s=20)=>`<svg class="ic" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="${P[n]}"/></svg>`;
@@ -699,6 +713,7 @@ const KEY='bkm-terrenos-prototipo-v6';
 let S;try{const r=localStorage.getItem(KEY);S=r?JSON.parse(r):null}catch(e){S=null}
 if(!S||!S.terrenos)S=seed();
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+let menuMin=false;try{menuMin=localStorage.getItem('bkm-terrenos-menu')==='min'}catch(e){}
 const UI={route:'inicio',id:null,tab:'cadastro',from:'terrenos',q:'',fT:'ativos',role:'Gestor',edit:null,modal:null,upload:null,propForm:false};
 const me=()=>ROLE_USER[UI.role];
 const T=id=>S.terrenos.find(t=>t.id===id);
@@ -1098,7 +1113,8 @@ function pgInicio(){
 const NAV=[['inicio','Início','casa'],['terrenos','Terrenos','planta'],['negociacoes','Negociações','contrato']];
 function render(){
   const cur=UI.route==='terreno'?UI.from:UI.route;
-  $('#side').innerHTML=`<button class="compose" data-a="novo">${ic('add',24)}Novo terreno</button>`+NAV.map(([r,l,i])=>`<button class="nav-item" data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''}>${bi(i)}${l}</button>`).join('')+`<div class="side-foot"><span>Protótipo · dados de exemplo</span><button class="linkbtn" data-a="reset">Restaurar dados de exemplo</button></div>`;
+  document.body.classList.toggle('menu-min',menuMin);
+  $('#side').innerHTML=`<button class="compose" data-a="novo" ${menuMin?'title="Novo terreno" aria-label="Novo terreno"':''}>${ic('add',24)}<span class="rot">Novo terreno</span></button>`+NAV.map(([r,l,i])=>`<button class="nav-item" data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''} ${menuMin?`title="${l}" aria-label="${l}"`:''}>${bi(i)}<span class="rot">${l}</span></button>`).join('')+`<div class="side-foot"><span class="rot">Protótipo · dados de exemplo</span><button class="linkbtn rot" data-a="reset">Restaurar dados de exemplo</button><button class="menu-tg" data-a="menu" aria-expanded="${!menuMin}" aria-label="${menuMin?'Expandir menu':'Recolher menu'}" title="${menuMin?'Expandir menu':'Recolher menu'}">${ic(menuMin?'expandir':'recolher',20)}<span class="rot">Recolher menu</span></button></div>`;
   $('#bnav').innerHTML=NAV.map(([r,l,i])=>`<button data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''}><span class="pill">${bi(i,32)}</span>${l}</button>`).join('');
   document.body.classList.toggle('ro',UI.role==='Leitura');
   $('#role').innerHTML=['Gestor','Analista','Leitura'].map(r=>`<button data-a="role" data-v="${r}" aria-pressed="${UI.role===r}">${r}</button>`).join('');
@@ -1203,6 +1219,7 @@ document.addEventListener('click',e=>{
     case 'perder':UI.modal='perder';renderModal();break;
     case 'suspender':UI.modal='suspender';renderModal();break;
     case 'viab':UI.modal='viab';renderModal();break;
+    case 'menu':menuMin=!menuMin;try{localStorage.setItem('bkm-terrenos-menu',menuMin?'min':'')}catch(e){}render();break;
     case 'reu-form':UI.reuForm=!UI.reuForm;render();break;
     case 'reu-feita':{const m=t.reunioes.find(x=>x.id===a.dataset.k);if(m.data>HOJE){toast('A data ainda não chegou. Ajuste a data antes de marcar como realizada.',true);break}m.status='realizada';log(t,`Reunião de ${fd(m.data)} marcada como realizada`);save();render();break}
     case 'retomar':t.neg.status='ativo';log(t,'Negociação retomada');save();render();break;
