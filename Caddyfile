@@ -18,7 +18,7 @@
 
 	# Enquanto o banco não existe, a raiz leva ao protótipo. O app React fica em /app.
 	handle / {
-		redir /prototipo/ 302
+		redir * /prototipo/ 302
 	}
 
 	handle {
