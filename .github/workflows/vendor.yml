@@ -1,7 +1,9 @@
 name: Bibliotecas do protótipo
-# Baixa as bibliotecas que o protótipo carrega do cdnjs, para testes locais
-# (o ambiente de desenvolvimento não acessa CDNs).
+# Baixa as bibliotecas que o protótipo carrega do cdnjs e publica no branch
+# libs-prototipo, para testes locais (o ambiente de desenvolvimento não acessa CDNs).
 on: workflow_dispatch
+permissions:
+  contents: write
 jobs:
   baixar:
     runs-on: ubuntu-latest
@@ -11,8 +13,7 @@ jobs:
           curl -fsSLO https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js
           curl -fsSLO https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css
           curl -fsSLO https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js
-          ls -la
-      - uses: actions/upload-artifact@v4
-        with:
-          name: libs
-          path: libs
+          git init -q -b libs-prototipo
+          git config user.name github-actions && git config user.email actions@github.com
+          git add . && git commit -q -m "Bibliotecas do protótipo"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" libs-prototipo
