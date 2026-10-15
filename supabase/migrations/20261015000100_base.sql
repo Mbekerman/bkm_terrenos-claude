@@ -77,9 +77,16 @@ end $$;
 -- ---------------------------------------------------------------------
 -- Utilitários: atualizado_em e auditoria
 -- ---------------------------------------------------------------------
+-- Preenche atualizado_em e, quando a tabela tiver a coluna, atualizado_por.
 create or replace function app.tg_atualizado_em()
 returns trigger language plpgsql as $$
-begin new.atualizado_em := now(); return new; end $$;
+begin
+  new.atualizado_em := now();
+  if to_jsonb(new) ? 'atualizado_por' then
+    new := jsonb_populate_record(new, jsonb_build_object('atualizado_por', auth.uid()));
+  end if;
+  return new;
+end $$;
 
 create table app.auditoria (
   id          bigint generated always as identity primary key,

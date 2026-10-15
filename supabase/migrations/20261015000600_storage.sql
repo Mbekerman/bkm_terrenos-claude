@@ -1,6 +1,6 @@
 -- =====================================================================
--- BKM Terrenos · 0004 · armazenamento de documentos
--- Bucket privado. Caminho: {empresa_id}/{processo_id}/{tipo}/{uuid}_{arquivo}
+-- BKM Terrenos · 0006 · armazenamento de documentos
+-- Bucket privado. Caminho: {empresa_id}/{terreno_id}/{tipo}/{uuid}_{arquivo}
 -- A primeira pasta decide quem pode ler e enviar.
 -- =====================================================================
 

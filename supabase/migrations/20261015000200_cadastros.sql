@@ -1,0 +1,179 @@
+-- =====================================================================
+-- BKM Terrenos · 0002 · cadastros de apoio
+-- Municípios, zoneamentos, itens de infraestrutura, tipos de documento,
+-- etapas e checklist: configuração comum a todas as empresas.
+-- Eixos comerciais, pessoas e corretores: por empresa.
+-- =====================================================================
+
+create table app.municipios (
+  id          uuid primary key default gen_random_uuid(),
+  codigo_ibge char(7) not null unique,
+  nome        text not null,
+  uf          char(2) not null
+);
+
+create table app.zoneamentos (
+  id           uuid primary key default gen_random_uuid(),
+  municipio_id uuid not null references app.municipios(id),
+  sigla        text not null,
+  descricao    text,
+  ativo        boolean not null default true,
+  unique (municipio_id, sigla)
+);
+
+create table app.itens_infraestrutura (
+  codigo text primary key,
+  nome   text not null,
+  ordem  int  not null,
+  ativo  boolean not null default true
+);
+
+create table app.tipos_documento (
+  codigo             text primary key,
+  nome               text not null,
+  categoria          text not null,
+  validade_dias      int,                        -- null = não vence
+  unico_por_processo boolean not null default true -- false: fotos, plantas (vários por terreno)
+);
+
+create table app.etapas_modelo (
+  tipo_processo text not null,
+  codigo        text not null,
+  nome          text not null,
+  ordem         int  not null,
+  sla_dias      int,
+  exige_gestor  boolean not null default false,
+  primary key (tipo_processo, codigo),
+  unique (tipo_processo, ordem)
+);
+
+create table app.checklist_modelo (
+  tipo_processo  text not null,
+  etapa          text not null,  -- documentos exigidos para SAIR desta etapa
+  tipo_documento text not null references app.tipos_documento(codigo),
+  obrigatorio    boolean not null default true,
+  ordem          int not null default 0,
+  primary key (tipo_processo, etapa, tipo_documento),
+  foreign key (tipo_processo, etapa) references app.etapas_modelo(tipo_processo, codigo)
+);
+
+-- ---------------------------------------------------------------------
+-- Dados de configuração
+-- ---------------------------------------------------------------------
+insert into app.municipios (codigo_ibge, nome, uf) values ('3550308', 'São Paulo', 'SP');
+
+-- Siglas da Lei 16.402/2016 (LPUOS). Lista inicial: conferir com a revisão vigente.
+insert into app.zoneamentos (municipio_id, sigla)
+select m.id, s from app.municipios m,
+  unnest(array['ZEU','ZEUa','ZEUP','ZEUPa','ZEM','ZEMP','ZC','ZCa','ZC-ZEIS','ZCOR-1','ZCOR-2','ZCOR-3','ZCORa',
+               'ZM','ZMa','ZMIS','ZMISa','ZEIS-1','ZEIS-2','ZEIS-3','ZEIS-4','ZEIS-5','ZDE-1','ZDE-2','ZPI-1','ZPI-2',
+               'ZER-1','ZER-2','ZERa','ZPR','ZEP','ZEPAM','ZPDS','ZPDSr','ZOE','AVP-1','AVP-2','AC-1','AC-2']) s
+where m.codigo_ibge = '3550308';
+
+insert into app.itens_infraestrutura (codigo, nome, ordem) values
+  ('energia',     'Rede de energia na porta',  1),
+  ('agua',        'Rede de água na porta',     2),
+  ('esgoto',      'Rede de esgoto na porta',   3),
+  ('gas',         'Gás canalizado na porta',   4),
+  ('asfalto',     'Asfalto na porta',          5),
+  ('drenagem',    'Drenagem pluvial',          6),
+  ('iluminacao',  'Iluminação pública',        7),
+  ('calcada',     'Calçada',                   8),
+  ('fibra',       'Telefonia / fibra óptica',  9);
+
+insert into app.tipos_documento (codigo, nome, categoria, validade_dias, unico_por_processo) values
+  ('matricula',          'Matrícula atualizada',                 'Imóvel',    30,   true),
+  ('onus_reais',         'Certidão de ônus reais',               'Imóvel',    30,   true),
+  ('iptu',               'Certidão negativa de IPTU',            'Imóvel',    90,   true),
+  ('certidoes_vendedor', 'Certidões pessoais do vendedor',       'Vendedor',  30,   true),
+  ('planialtimetrico',   'Levantamento planialtimétrico',        'Técnico',   null, true),
+  ('sondagem_spt',       'Sondagem SPT',                         'Técnico',   null, true),
+  ('ambiental',          'Avaliação ambiental preliminar',       'Técnico',   null, true),
+  ('minuta_promessa',    'Minuta de promessa de compra e venda', 'Contratos', null, true),
+  ('proposta',           'Proposta assinada',                    'Contratos', null, false),
+  ('foto',               'Foto',                                 'Mídia',     null, false),
+  ('planta',             'Planta ou croqui',                     'Técnico',   null, false),
+  ('outro',              'Outro documento',                      'Outros',    null, false);
+
+insert into app.etapas_modelo (tipo_processo, codigo, nome, ordem, sla_dias, exige_gestor) values
+  ('negociacao','recebida',   'Recebida',          1,  5,  false),
+  ('negociacao','triagem',    'Triagem',           2,  7,  false),
+  ('negociacao','viabilidade','Viabilidade',       3, 15,  false),
+  ('negociacao','diligencia', 'Diligência',        4, 30,  false),
+  ('negociacao','proposta',   'Proposta',          5, 30,  false),
+  ('negociacao','aprovacao',  'Aprovação interna', 6,  7,  false),
+  ('negociacao','contrato',   'Contrato',          7, 30,  true),
+  ('negociacao','ganha',      'Ganha',             8, null, true);
+
+insert into app.checklist_modelo (tipo_processo, etapa, tipo_documento, obrigatorio, ordem) values
+  ('negociacao','diligencia','matricula',          true,  1),
+  ('negociacao','diligencia','onus_reais',         true,  2),
+  ('negociacao','diligencia','iptu',               true,  3),
+  ('negociacao','diligencia','certidoes_vendedor', true,  4),
+  ('negociacao','diligencia','planialtimetrico',   true,  5),
+  ('negociacao','diligencia','sondagem_spt',       false, 6),
+  ('negociacao','diligencia','ambiental',          false, 7),
+  ('negociacao','contrato',  'minuta_promessa',    true,  1);
+
+-- ---------------------------------------------------------------------
+-- Por empresa
+-- ---------------------------------------------------------------------
+create table app.eixos_comerciais (
+  id           uuid primary key default gen_random_uuid(),
+  empresa_id   uuid not null references app.empresas(id),
+  municipio_id uuid not null references app.municipios(id),
+  nome         text not null,
+  descricao    text,
+  ativo        boolean not null default true,
+  unique (empresa_id, nome)
+);
+
+create table app.pessoas (
+  id                uuid primary key default gen_random_uuid(),
+  empresa_id        uuid not null references app.empresas(id),
+  tipo_pessoa       text not null default 'PF' check (tipo_pessoa in ('PF','PJ')),
+  nome_razao_social text not null,
+  cpf_cnpj          text,
+  telefone          text,
+  email             text,
+  observacoes       text,
+  criado_por        uuid default auth.uid(),
+  criado_em         timestamptz not null default now(),
+  atualizado_em     timestamptz not null default now(),
+  atualizado_por    uuid
+);
+create unique index pessoas_doc_unico on app.pessoas (empresa_id, regexp_replace(cpf_cnpj, '\D', '', 'g')) where cpf_cnpj is not null;
+
+create table app.corretores (
+  id          uuid primary key default gen_random_uuid(),
+  empresa_id  uuid not null references app.empresas(id),
+  pessoa_id   uuid not null references app.pessoas(id),
+  creci       text,
+  imobiliaria text,
+  observacoes text,
+  ativo       boolean not null default true,
+  criado_em   timestamptz not null default now(),
+  unique (empresa_id, pessoa_id)
+);
+
+-- ---------------------------------------------------------------------
+-- RLS
+-- ---------------------------------------------------------------------
+do $$
+declare t text;
+begin
+  foreach t in array array['municipios','zoneamentos','itens_infraestrutura','tipos_documento','etapas_modelo','checklist_modelo'] loop
+    execute format('alter table app.%I enable row level security', t);
+    execute format('create policy ver on app.%I for select to authenticated using (true)', t);
+    execute format('grant select on app.%I to authenticated', t);
+  end loop;
+  foreach t in array array['eixos_comerciais','pessoas','corretores'] loop
+    execute format('alter table app.%I enable row level security', t);
+    execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
+    execute format('create policy inserir on app.%I for insert to authenticated with check (empresa_id in (select app.minhas_empresas()))', t);
+    execute format('create policy alterar on app.%I for update to authenticated using (empresa_id in (select app.minhas_empresas())) with check (empresa_id in (select app.minhas_empresas()))', t);
+    execute format('grant select, insert, update on app.%I to authenticated', t);
+  end loop;
+end $$;
+
+create trigger t_upd before update on app.pessoas for each row execute function app.tg_atualizado_em();

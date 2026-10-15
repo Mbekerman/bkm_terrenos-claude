@@ -1,0 +1,230 @@
+# Modelo de dados
+
+Gerado a partir de `supabase/migrations/`. Campos de auditoria (`criado_*`, `atualizado_*`) e `empresa_id` (presente em todas as tabelas da empresa) foram omitidos. Tudo no schema `app`.
+
+## 1. Terreno e cadastro do imóvel
+
+```mermaid
+erDiagram
+  municipios ||--o{ terrenos : localiza
+  municipios ||--o{ zoneamentos : define
+  municipios ||--o{ eixos_comerciais : contem
+  eixos_comerciais |o--o{ terrenos : classifica
+  terrenos ||--o{ matriculas : possui
+  terrenos ||--o{ inscricoes_municipais : possui
+  inscricoes_municipais ||--o{ inscricao_valores : "valor venal e IPTU por exercicio"
+  terrenos ||--o{ terreno_pessoas : vincula
+  pessoas ||--o{ terreno_pessoas : participa
+  terrenos ||--o{ terreno_infraestrutura : verifica
+  itens_infraestrutura ||--o{ terreno_infraestrutura : item
+  terrenos ||--o{ analises_urbanisticas : analisa
+  analises_urbanisticas ||--o{ analise_zoneamentos : "uma porcao por zona"
+  zoneamentos ||--o{ analise_zoneamentos : aplica
+  areas_interesse ||--o{ area_interesse_terrenos : agrupa
+  terrenos ||--o{ area_interesse_terrenos : integra
+
+  terrenos {
+    uuid id PK
+    text codigo "TER-000123"
+    text nome
+    text situacao_cadastral "ativo | arquivado"
+    text prioridade "baixa | media | alta | estrategica"
+    uuid responsavel_id FK
+    text origem_cadastro
+    text url_origem
+    date data_identificacao
+    text cep
+    text logradouro
+    text numero
+    text bairro
+    uuid municipio_id FK
+    text zona "8 opcoes"
+    uuid eixo_comercial_id FK
+    float latitude
+    float longitude
+    jsonb poligono_geojson
+    text precisao_localizacao
+    numeric area_documental_m2
+    numeric area_cadastral_m2
+    numeric area_levantamento_m2
+    numeric area_adotada_m2
+    text fonte_area_adotada
+    numeric testada_principal_m
+    text topografia
+    text posicao_quadra
+    text formato
+    text situacao_ocupacao
+    numeric area_construida_existente_m2
+    numeric area_construida_demolir_m2
+    text necessidade_demolicao
+  }
+  matriculas {
+    uuid id PK
+    uuid terreno_id FK
+    text numero
+    text cartorio
+    numeric area_registrada_m2
+    date data_certidao
+  }
+  inscricoes_municipais {
+    uuid id PK
+    uuid terreno_id FK
+    text inscricao "SQL"
+    numeric area_cadastral_m2
+  }
+  inscricao_valores {
+    uuid inscricao_id PK
+    int exercicio PK
+    numeric valor_venal
+    numeric iptu_valor_anual
+    int iptu_parcelas
+  }
+  terreno_pessoas {
+    uuid terreno_id FK
+    uuid pessoa_id FK
+    text papel "proprietario | representante | procurador | contato"
+    numeric percentual_participacao
+  }
+  terreno_infraestrutura {
+    uuid terreno_id PK
+    text item PK
+    text disponibilidade "nao_verificado | sim | nao"
+    date data_verificacao
+    text fonte
+  }
+  analises_urbanisticas {
+    uuid id PK
+    uuid terreno_id FK
+    date data_verificacao
+    text fonte
+    text status "vigente | substituida"
+  }
+  analise_zoneamentos {
+    uuid analise_id FK
+    uuid zoneamento_id FK
+    numeric area_abrangida_m2
+    bool gabarito_sem_limite
+    numeric gabarito_maximo_m
+    int gabarito_maximo_pavimentos
+    numeric ca_maximo
+  }
+```
+
+## 2. Ofertas, negociação, propostas e tarefas
+
+```mermaid
+erDiagram
+  terrenos ||--o{ ofertas : recebe
+  corretores |o--o{ ofertas : apresenta
+  pessoas ||--o| corretores : e
+  terrenos ||--o{ terreno_corretores : tem
+  corretores ||--o{ terreno_corretores : atende
+  terrenos ||--o{ processos : "negociacao (e fases futuras)"
+  processos ||--|| negociacoes : "dados da negociacao"
+  ofertas |o--o{ negociacoes : "oferta de referencia"
+  processos ||--o{ processo_transicoes : historico
+  processos ||--o{ propostas : recebe
+  propostas |o--o| propostas : "responde a"
+  terrenos ||--o{ tarefas : tem
+  processos |o--o{ tarefas : contextualiza
+  terrenos ||--o{ atividades : registra
+  processos |o--o{ viabilidades : usa
+
+  ofertas {
+    uuid id PK
+    uuid terreno_id FK
+    uuid corretor_id FK
+    date data_oferta
+    numeric valor_pedido
+    text forma_pagamento_pedida "5 opcoes"
+    text observacao_pagamento
+    text aceita_permuta
+    numeric comissao_pct
+    date validade
+    text status
+  }
+  processos {
+    uuid id PK
+    text codigo "NEG-00012"
+    text tipo "negociacao"
+    uuid terreno_id FK
+    text etapa_atual
+    text status "ativo | ganha | perdida | suspensa"
+    uuid responsavel_id FK
+    uuid viabilidade_id FK
+  }
+  negociacoes {
+    uuid processo_id PK
+    uuid oferta_referencia_id FK
+    smallint temperatura "1 a 5"
+  }
+  propostas {
+    uuid id PK
+    uuid processo_id FK
+    int versao
+    text origem "bkm | vendedor"
+    uuid proposta_anterior_id FK
+    date data_apresentacao
+    date validade
+    numeric valor_total
+    text forma_pagamento
+    text condicoes_pagamento
+    text status "8 opcoes"
+  }
+  tarefas {
+    uuid id PK
+    uuid terreno_id FK
+    uuid processo_id FK
+    text titulo
+    uuid responsavel_id FK
+    date prazo
+    text status "pendente | em_andamento | aguardando_terceiro | concluida | cancelada"
+    text prioridade
+    text resultado
+  }
+```
+
+## 3. Documentos
+
+```mermaid
+erDiagram
+  terrenos ||--o{ documentos : guarda
+  processos |o--o{ documentos : "checklist da etapa"
+  propostas |o--o{ documentos : anexa
+  tipos_documento ||--o{ documentos : classifica
+  documentos ||--o{ documento_versoes : "cada envio"
+  documentos {
+    uuid id PK
+    uuid terreno_id FK
+    uuid processo_id FK
+    uuid proposta_id FK
+    text tipo_documento FK
+    text nome
+    date emitido_em
+    text situacao "recebido | validado | rejeitado"
+  }
+  documento_versoes {
+    uuid id PK
+    uuid documento_id FK
+    int versao
+    text storage_path
+    text nome_arquivo
+  }
+```
+
+## Regras que o modelo garante
+
+| Regra | Onde |
+| --- | --- |
+| "Não informado" é null ou `nao_informado`, nunca zero ou "não" | defaults e checks de `terrenos`, `terreno_infraestrutura` |
+| Área adotada sempre com a fonte | check em `terrenos` |
+| Gabarito "sem limite" é explícito, nunca zero | check em `analise_zoneamentos` |
+| Uma análise urbanística vigente por terreno; anteriores preservadas | índice único parcial + trigger |
+| Valor venal e IPTU por inscrição e exercício | `inscricao_valores` |
+| Mesma matrícula no mesmo cartório = mesmo terreno | índice único em `matriculas` |
+| Um corretor principal por terreno; o primeiro da oferta vira principal | índice único parcial + trigger |
+| Uma negociação aberta por terreno | índice único parcial em `processos` |
+| Contraproposta do outro lado recusa a anterior; nova do mesmo lado a substitui | `registrar_proposta` |
+| "Atrasada" é calculada (prazo vencido e status aberto) | `v_terrenos` |
+| Documento de checklist reaproveitado; versões nunca sobrescritas | `registrar_documento` |
+| Terreno nunca é apagado: arquiva com motivo, só sem negociação aberta | `arquivar_terreno` |
