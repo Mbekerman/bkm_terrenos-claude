@@ -594,14 +594,14 @@ function seed(){
     ofertas:[{id:'o8',cid:'c3',data:H(105),valor:4100000,forma:'dinheiro',status:'expirada',obsPag:'',aceita:''}],corretores:[{cid:'c3',principal:true}],
     neg:neg('viabilidade',95,{status:'perdida',temp:1,ofRef:'o8',motivo:'Zoneamento ou legislação',detalhe:'Cerca de 40% do lote em área de proteção ambiental.'})}));
   // 7 — prospecção sem oferta
-  T.push(base({codigo:'TER-000132',nome:'Lote vizinho ao TER-000123',resp:'Ana Prado',origem:'prospeccao',dataIdent:H(2),logradouro:'Rua Benedito Mendes',numero:'40',bairro:'Cidade Ademar',zona:'sul',eixo:'e1',
+  T.push(base({codigo:'TER-000132',nome:'Lote vizinho ao TER-000123',resp:'Ana Prado',origem:'prospeccao',dataIdent:H(2),logradouro:'Rua Benedito Mendes',numero:'40',bairro:'Cidade Ademar',zona:'sul',eixo:'e1',insc:[{sql:'089.123.0052-1',area:610,valores:[]}],
     obs:'Abordar para compor a área com o terreno da esquina.',tarefas:[{id:uid(),titulo:'Localizar proprietário pelo SQL',desc:'',resp:'Ana Prado',prazo:H(-5),status:'pendente',prio:'media',resultado:''}]}));
   T.forEach(t=>{t.hist=[{em:t.dataIdent,user:t.resp,txt:'Terreno cadastrado'}];if(t.neg){t.hist.push({em:t.neg.desde,user:t.resp,txt:`Negociação em ${SN(t.neg.etapa)}`})}});
   return {eixos,corretores,terrenos:T,areasInteresse:[{id:'ai1',nome:'Área Cupecê A',terrenos:['TER-000123','TER-000132']}],seqT:132};
 }
 
 /* ===================== estado ===================== */
-const KEY='bkm-terrenos-prototipo-v3';
+const KEY='bkm-terrenos-prototipo-v4';
 let S;try{const r=localStorage.getItem(KEY);S=r?JSON.parse(r):null}catch(e){S=null}
 if(!S||!S.terrenos)S=seed();
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
@@ -989,6 +989,15 @@ function renderModal(){
   let h='';const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`;
   if(M==='novo')h=`<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Só o mínimo para entrar no radar. A ficha é completada aos poucos.</div></div>${fechar}</div>
   <form data-form="novo" id="f-novo"><div class="fields">
+  <div class="field full" style="background:var(--surface-2);border-radius:12px;padding:12px 14px;gap:10px">
+    <div style="font-weight:600;font-size:13px">1. Verifique se o imóvel já está no banco</div>
+    <div class="fields">
+      <div class="field"><label for="n-sql">SQL (inscrição do IPTU)</label><input id="n-sql" name="sql" inputmode="numeric" placeholder="000.000.0000-0" autocomplete="off"></div>
+      <div class="field"><label for="n-mat">Matrícula</label><span style="display:flex;gap:6px"><input id="n-mat" name="mat" inputmode="numeric" placeholder="Número" style="flex:1 1 55%"><select id="n-cri" name="cri" aria-label="Cartório" style="flex:1 1 45%">${Array.from({length:18},(_,i)=>`<option>${i+1}º CRI</option>`).join('')}</select></span></div>
+    </div>
+    <div id="dedupe" aria-live="polite"><div class="hint">Digite o SQL ou a matrícula. Teste com o SQL 089.123.0045-6 (já cadastrado) ou 089.123.0099-0 (mesma quadra de dois terrenos).</div></div>
+  </div>
+  <div class="field full" style="font-weight:600;font-size:13px;margin-top:4px">2. Dados mínimos</div>
   <div class="field full"><label for="n-nome">Nome de referência *</label><input id="n-nome" name="nome" required placeholder="Terreno Av. Cupecê — esquina"></div>
   <div class="field"><label for="n-log">Logradouro</label><input id="n-log" name="logradouro" placeholder="Av. Cupecê"></div>
   <div class="field"><label for="n-num">Número</label><input id="n-num" name="numero" placeholder="5.120 ou s/n"></div>
@@ -996,10 +1005,6 @@ function renderModal(){
   <div class="field"><label for="n-zona">Zona</label>${optSel('zona',OPT.zona,null).replace('id="f-zona"','id="n-zona"')}</div>
   <div class="field"><label for="n-resp">Responsável *</label><select id="n-resp" name="resp">${USERS.map(u=>`<option ${u===me()?'selected':''}>${u}</option>`).join('')}</select></div>
   <div class="field"><label for="n-ori">Origem *</label><select id="n-ori" name="origem" required>${Object.entries(OPT.origem).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
-  <div class="field"><label for="n-mat">Matrícula (se tiver)</label><input id="n-mat" name="mat" inputmode="numeric"></div>
-  <div class="field"><label for="n-cri">Cartório</label><select id="n-cri" name="cri">${Array.from({length:18},(_,i)=>`<option>${i+1}º CRI</option>`).join('')}</select></div>
-  <div class="field full"><label for="n-sql">Inscrição municipal / SQL (se tiver)</label><input id="n-sql" name="sql"></div>
-  <div class="field full" id="dedupe" aria-live="polite"><div class="hint">Endereço, matrícula e SQL são conferidos contra os terrenos já cadastrados. Teste com a matrícula 184552 no 11º CRI.</div></div>
   <details class="details field full"><summary>Já recebeu uma oferta? Registrar condições pedidas</summary><div class="fields" style="margin-top:8px">
     <div class="field"><label for="n-cor">Corretor</label><select id="n-cor" name="cid"><option value="">Sem corretor / direto</option>${S.corretores.map(c=>`<option value="${c.id}">${esc(c.nome)} · ${esc(c.imob)}</option>`).join('')}</select></div>
     <div class="field"><label for="n-val">Valor pedido (R$)</label><input id="n-val" name="valor" inputmode="decimal"></div>
@@ -1025,16 +1030,20 @@ function renderModal(){
 }
 function dedupe(){
   const f=$('#f-novo');if(!f)return;const mat=digits(f.mat.value),sql=digits(f.sql.value),log=f.logradouro.value.trim().toLowerCase(),nr=f.numero.value.trim().toLowerCase();
-  let hit=null,msg='',cert='';
+  let hit=null,msg='',cert='';const quadra=[];
   for(const t of S.terrenos){
+    const ins=sql.length>=6&&t.insc.find(i=>digits(i.sql)===sql);
+    if(ins){hit=t;cert='certa';msg=`Mesmo SQL ${ins.sql}`;break}
     const m=mat.length>=3&&t.mats.find(x=>digits(x.num)===mat);
     if(m){hit=t;cert=m.cri===f.cri.value?'certa':'provavel';msg=`Mesma matrícula ${m.num}${m.cri===f.cri.value?' no '+m.cri:' em outro cartório ('+m.cri+')'}`;break}
-    if(sql.length>=6&&t.insc.some(i=>digits(i.sql)===sql)){hit=t;cert='certa';msg='Mesma inscrição municipal';break}
     if(log.length>=4&&(t.logradouro||'').toLowerCase()===log&&(!nr||!t.numero||t.numero.toLowerCase()===nr)){hit=t;cert='possivel';msg='Mesmo endereço'}
+    if(sql.length===11&&t.situacao==='ativo'){const q=t.insc.find(i=>digits(i.sql).length===11&&digits(i.sql).slice(0,6)===sql.slice(0,6));if(q)quadra.push([t,q])}
   }
   const box=$('#dedupe'),btn=$('#btn-novo');f.dataset.dup=hit&&cert==='certa'?hit.id:'';
-  if(!hit){box.innerHTML='<div class="hint">Nenhum terreno parecido. Será criado um cadastro novo.</div>';btn.textContent='Cadastrar terreno';return}
-  box.innerHTML=`<div class="banner ${cert==='certa'?'blue':'warn'}">${ic(cert==='certa'?'link':'warn')}<div style="flex:1"><div class="bt">${cert==='certa'?'Este terreno já está cadastrado':'Possível duplicidade'}: ${hit.codigo} · ${esc(hit.nome)}</div><div>${esc(msg)}. ${cert==='certa'?'Se houver oferta, ela será registrada nesse terreno.':'Confira antes de salvar.'}</div><button type="button" class="btn sm" style="margin-top:8px" data-a="abrir" data-id="${hit.id}">Abrir ficha existente</button></div></div>`;
+  const viz=!hit&&quadra.length?`<div class="banner blue" style="margin-top:8px">${ic('layers')}<div style="flex:1"><div class="bt">${quadra.length} terreno${quadra.length>1?'s':''} na mesma quadra (setor ${sql.slice(0,3)}, quadra ${sql.slice(3,6)})</div>
+    <div>${quadra.map(([t,q])=>`<button type="button" class="linkbtn" data-a="abrir" data-id="${t.id}">${t.codigo} · ${esc(t.nome)}</button> <span class="faint">(SQL ${esc(q.sql)})</span>`).join('<br>')}</div><div class="hint" style="margin-top:4px">Não é duplicata. Pode valer estudar os lotes juntos numa área de interesse.</div></div></div>`:'';
+  if(!hit){box.innerHTML=(sql||mat||log?'<div class="hint">Nenhum cadastro com este SQL, matrícula ou endereço. Será criado um terreno novo.</div>':'<div class="hint">Digite o SQL ou a matrícula. Teste com o SQL 089.123.0045-6 (já cadastrado) ou 089.123.0099-0 (mesma quadra de dois terrenos).</div>')+viz;btn.textContent='Cadastrar terreno';return}
+  box.innerHTML=`<div class="banner ${cert==='certa'?'blue':'warn'}">${ic(cert==='certa'?'link':'warn')}<div style="flex:1"><div class="bt">${cert==='certa'?'Este imóvel já está cadastrado':'Possível duplicidade'}: ${hit.codigo} · ${esc(hit.nome)}</div><div>${esc(msg)}. ${cert==='certa'?'Se houver oferta, ela será registrada nesse terreno.':'Confira antes de salvar.'}</div><button type="button" class="btn sm" style="margin-top:8px" data-a="abrir" data-id="${hit.id}">Abrir ficha existente</button></div></div>`;
   btn.textContent=cert==='certa'?'Registrar no terreno existente':'Cadastrar mesmo assim';
 }
 
@@ -1085,6 +1094,7 @@ document.addEventListener('change',e=>{const el=e.target,t=UI.route==='terreno'?
 });
 document.addEventListener('input',e=>{const el=e.target;
   if(el.id==='q-top'){UI.q=el.value;if(UI.route!=='terrenos'){UI.fT='todos';go('terrenos');$('#q-top').focus()}else{const r=$('#rows');if(r)r.innerHTML=linhas()}}
+  if(el.id==='n-sql'){const d=digits(el.value).slice(0,11);const m=d.replace(/^(\d{3})(\d)/,'$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/,'$1.$2.$3').replace(/^(\d{3})\.(\d{3})\.(\d{4})(\d)/,'$1.$2.$3-$4');if(m!==el.value)el.value=m}
   if(el.form?.dataset.form==='novo')dedupe();
   if(el.id==='pp-v'){const t=T(UI.id),v=lerNum(el.value),w=$('#pp-warn');w.innerHTML=t.neg.viab&&v>t.neg.viab.pmax?`<div class="banner warn">${ic('warn')}<div>${brl(v)} fica ${mi(v-t.neg.viab.pmax)} acima do preço máximo (${mi(t.neg.viab.pmax)}).</div></div>`:''}
 });

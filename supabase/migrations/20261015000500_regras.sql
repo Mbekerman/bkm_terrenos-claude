@@ -152,6 +152,14 @@ begin
     from app.inscricoes_municipais i join app.terrenos t on t.id = i.terreno_id
     where length(v_ins) >= 6 and i.empresa_id = p_empresa and i.inscricao_norm = v_ins
   union all
+    -- SQL de São Paulo: setor (3) . quadra (3) . lote (4) - dígito. Mesma quadra = vizinho
+    -- ou outra parte da mesma área: não é duplicata, mas vale saber (composição de áreas).
+    select distinct t.id, t.codigo, t.nome, 'Na mesma quadra (SQL ' || i.inscricao || ')', 'mesma_quadra'
+    from app.inscricoes_municipais i join app.terrenos t on t.id = i.terreno_id
+    where length(v_ins) = 11 and i.empresa_id = p_empresa and length(i.inscricao_norm) = 11
+      and left(i.inscricao_norm, 6) = left(v_ins, 6) and i.inscricao_norm <> v_ins
+      and t.situacao_cadastral = 'ativo'
+  union all
     select t.id, t.codigo, t.nome, 'Mesmo endereço: ' || t.logradouro || coalesce(', ' || t.numero, ''), 'possivel'
     from app.terrenos t
     where length(trim(coalesce(p_logradouro,''))) >= 4 and t.empresa_id = p_empresa
