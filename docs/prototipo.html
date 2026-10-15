@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="gmaps-key" content="{% env "GOOGLE_MAPS_KEY" %}">
 <title>BKM Terrenos</title>
 </head>
 <body>
@@ -1396,6 +1397,28 @@ body.dash-fixo .dash { position: fixed; inset: 0; z-index: 30; overflow: auto; p
   .mp-legenda { top: auto; bottom: 28px }
 }
 .mp-barra .seg button { white-space: nowrap }
+
+/* ---- Google Maps ---- */
+.pin.g { position: relative; width: 30px; height: 40px }
+.poi.g { position: relative; width: 14px; height: 14px; transform: translateY(50%) }
+.poi.g .poi-b { position: absolute; inset: 0 }
+.ent.g { width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 2px solid #863d8f; color: #863d8f; font-size: 11px; font-weight: 700; display: grid; place-items: center; transform: translateY(50%); box-shadow: 0 1px 3px rgba(0,0,0,.3) }
+.mp-rota { position: absolute; left: 50%; bottom: 36px; transform: translateX(-50%); z-index: 6; background: var(--superficie); border-radius: var(--raio-md); padding: var(--e3) var(--e4); box-shadow: 0 2px 10px rgba(29,46,92,.22); display: flex; flex-wrap: wrap; align-items: center; gap: var(--e2) var(--e4); max-width: calc(100% - 24px); font-size: 13px }
+.mp-rota .seg button { font-size: 12px; padding: 4px 10px }
+.sec.entorno { margin-bottom: var(--e3) }
+.sec.entorno .sec-h { padding: var(--e4) var(--e4) 0 }
+.sec.entorno .sec-b { padding: var(--e2) var(--e4) var(--e4) }
+.relevo { display: flex; gap: var(--e4); flex-wrap: wrap; align-items: flex-start }
+.relevo svg { flex: none; max-width: 100%; height: auto; border-radius: var(--raio-sm) }
+.relevo-n { flex: 1 1 200px; display: flex; flex-direction: column; gap: var(--e2); font-size: 14px }
+.relevo-n .k { display: block; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--texto-suave); font-weight: 600 }
+.relevo-n b { font-size: 22px; font-weight: 600 }
+.relevo-vazio { display: flex; justify-content: space-between; align-items: center; gap: var(--e3); flex-wrap: wrap }
+.gauto gmp-place-autocomplete, .gauto > * { width: 100%; display: block }
+.gm-style .gm-style-iw-c { border-radius: var(--raio-md) }
+.gm-style .gm-style-iw-d { overflow: auto !important }
+.gm-style .pop { padding: 2px 4px 4px; min-width: 240px }
+.mapa .gm-style { font-family: var(--font-aptos) }
 </style>
 <header class="top">
   <div class="top-in">
@@ -2037,7 +2060,7 @@ function renderModal(){
   const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.novoLoc=null;UI.novoPoi=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;return}
   let h='';const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`;
   if(M==='novo')h=`<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Só o mínimo para entrar no radar. A ficha é completada aos poucos.</div></div>${fechar}</div>
-  <form data-form="novo" id="f-novo"><div class="fields">${UI.novoLoc?`<div class="field full"><div class="banner blue">${ic('check')}<div>Localização marcada no mapa: <span class="num">${num(UI.novoLoc.lat,5)}, ${num(UI.novoLoc.lng,5)}</span></div></div></div>`:''}
+  <form data-form="novo" id="f-novo"><div class="fields">${GG&&!UI.novoLoc?`<div class="field full"><label for="n-gauto-el">Buscar endereço no Google</label><div id="n-gauto" class="gauto"></div><span id="n-gauto-loc" class="hint">Escolha um resultado para preencher endereço e localização.</span></div>`:''}${UI.novoLoc?`<div class="field full"><div class="banner blue">${ic('check')}<div>Localização marcada no mapa: <span class="num">${num(UI.novoLoc.lat,5)}, ${num(UI.novoLoc.lng,5)}</span></div></div></div>`:''}
   <div class="field full verif">
     <div class="passo">Passo 1 · Verifique se o imóvel já está no banco</div>
     <div class="fields">
@@ -2100,6 +2123,7 @@ function renderModal(){
     ${k?`<div class="field full"><label for="tm-res">Resultado</label><textarea id="tm-res" name="resultado" placeholder="O que foi feito ou decidido">${esc(k.resultado||'')}</textarea></div>`:''}</div></fieldset></form>
     <div class="df">${t?`<button class="btn text" data-a="abrir" data-id="${t.id}" data-tab="tarefas" data-from="tarefas">Abrir terreno</button>`:''}<button class="btn text" data-a="close">${ro?'Fechar':'Cancelar'}</button>${ro?'':`<button class="btn primary" type="submit" form="f-tk">${k?'Salvar':'Criar tarefa'}</button>`}</div>`}
   el.innerHTML=`<div class="scrim" data-a="scrim"><div class="dialog" role="dialog" aria-modal="true">${h}</div></div>`;
+  if(M==='novo'&&GG)gAutocompletarNovo();
   const f=el.querySelector('input:not([type=hidden]),select');if(f)setTimeout(()=>f.focus(),30);
 }
 function dedupe(){
@@ -2151,18 +2175,28 @@ document.addEventListener('click',e=>{
     case 'perder':UI.modal='perder';renderModal();break;
     case 'suspender':UI.modal='suspender';renderModal();break;
     case 'viab':UI.modal='viab';renderModal();break;
+    case 'mp-sv':{const x=T(a.dataset.id);fecharPopup();gStreetView(x,MAPA);break}
+    case 'g-sv-mini':{const x=T(a.dataset.id);if(MINI)gStreetView(x,MINI);break}
+    case 'mp-entorno':{const x=T(a.dataset.id);fecharPopup();gEntornoDe(x);break}
+    case 'mp-entorno-fechar':UI.entorno=null;gSet(gEntorno,null);gEntorno=[];mpRefresh();break;
+    case 'mp-entorno-salvar':{const it=UI.entorno?.itens[+a.dataset.i];if(!it)break;S.pontos=S.pontos||[];S.pontos.push({id:uid(),gid:it.gid,nome:it.nome,cat:it.cat,lat:it.lat,lng:it.lng});save();mpRefresh();toast(`${it.nome} salvo nos pontos de interesse.`);break}
+    case 'mp-rota':{const x=T(a.dataset.id),pp=(S.pontos||[]).find(q=>q.id===a.dataset.p);fecharPopup();if(x&&pp)gRotaAte(x,pp,a.dataset.m||'DRIVE');break}
+    case 'mp-rota-limpar':gLimparRota();break;
+    case 'g-relevo':{const x=T(a.dataset.id);a.disabled=true;a.textContent='Consultando o Google...';gRelevo(x);break}
+    case 'g-relevo-usar':{const x=T(a.dataset.id);x.desnivel=+x.relevo.desnivel.toFixed(1);log(x,`Desnível estimado: ${num(x.desnivel,1)} m (Google)`);save();render();toast('Desnível estimado atualizado na ficha.');break}
+    case 'g-geo':{const x=T(a.dataset.id);a.disabled=true;gGeocodificar(x);break}
     case 'sort':ordenar(a.dataset.t,a.dataset.k);render();break;
     case 'mp-foco':{const x=T(a.dataset.id);if(x.lat!=null)focar(x);else if(UI.role!=='Leitura'){UI.mpModo='marcar';UI.mpAlvo=x.id;mpRefresh()}else toast('Terreno sem localização.');break}
     case 'mp-sit':{const v=a.dataset.v,o=UI.mp.ocultas;UI.mp.ocultas=o.includes(v)?o.filter(x=>x!==v):[...o,v];mpRefresh();break}
     case 'mp-limpar':UI.mp={q:'',cor:'',zona:'',ocultas:[]};render();break;
     case 'mp-base':setBase(a.dataset.v);break;
-    case 'mp-modo':UI.mpModo=UI.mpModo===a.dataset.v?null:a.dataset.v;MAPA?.closePopup();mpRefresh();break;
+    case 'mp-modo':UI.mpModo=UI.mpModo===a.dataset.v?null:a.dataset.v;fecharPopup();mpRefresh();break;
     case 'mp-sair':UI.mpModo=null;UI.desenho=null;mpRefresh();break;
     case 'mp-desfazer':(UI.desenho||[]).pop();mpRefresh();break;
     case 'mp-concluir':concluirDesenho();break;
-    case 'mp-poi':UI.mpPoi=UI.mpPoi===false;if(MAPA&&POIS){UI.mpPoi?POIS.addTo(MAPA):MAPA.removeLayer(POIS)}a.setAttribute('aria-pressed',UI.mpPoi);a.classList.toggle('on',UI.mpPoi);break;
+    case 'mp-poi':UI.mpPoi=UI.mpPoi===false;mostrarPois(UI.mpPoi);a.setAttribute('aria-pressed',UI.mpPoi);a.classList.toggle('on',UI.mpPoi);break;
     case 'mp-kmz':UI.kmzAlvo=a.dataset.id||null;$('#kmz-in').value='';$('#kmz-in').click();break;
-    case 'mp-desenhar':UI.mpModo='desenhar';UI.mpAlvo=a.dataset.id;UI.desenho=[];MAPA?.closePopup();mpRefresh();break;
+    case 'mp-desenhar':UI.mpModo='desenhar';UI.mpAlvo=a.dataset.id;UI.desenho=[];fecharPopup();mpRefresh();break;
     case 'mp-marcar':go('mapa',{mpModo:'marcar',mpAlvo:a.dataset.id,mpView:null});break;
     case 'mp-ir':go('mapa',{mpFoco:a.dataset.id,mpView:null});break;
     case 'dash-f':{const d=a.dataset.d,v=a.dataset.v,f=UI.dash.f;const cur=f[d]||[];f[d]=cur.includes(v)?cur.filter(x=>x!==v):[...cur,v];if(!f[d].length)delete f[d];render();break}
@@ -2362,7 +2396,18 @@ const attrAbrir=from=>t=>`data-a="abrir" data-id="${t.id}" data-from="${from}" t
 
 /* ===================== MAPA ===================== */
 let MAPA=null,MINI=null,PINS=null,POIS=null,DES=null,BASE=null;
-const CAMADAS={mapa:'Mapa',ruas:'Ruas',satelite:'Satélite',satrot:'Satélite + rótulos'};
+const CAMADAS_L={mapa:'Mapa',ruas:'Ruas',satelite:'Satélite',satrot:'Satélite + rótulos'},CAMADAS_G={mapa:'Mapa',ruas:'Relevo',satelite:'Satélite',satrot:'Satélite + rótulos'};
+// motor do mapa: Google quando a chave carrega; Leaflet (Esri/OSM) como reserva
+let GG=false;
+function setBase(k){return GG?G_setBase(k):L_setBase(k)}
+function desenhaPins(){return GG?G_desenhaPins():L_desenhaPins()}
+function desenhaPois(){return GG?G_desenhaPois():L_desenhaPois()}
+function desenhaRascunho(){return GG?G_desenhaRascunho():L_desenhaRascunho()}
+function initMapa(){return GG?G_initMapa():L_initMapa()}
+function focar(t){return GG?G_focar(t):L_focar(t)}
+function initMini(){return GG?G_initMini():L_initMini()}
+function fecharPopup(){if(GG)G_fecharPopup();else MAPA?.closePopup?.()}
+function mostrarPois(on){if(GG)return G_mostrarPois(on);if(MAPA&&POIS){on?POIS.addTo(MAPA):MAPA.removeLayer(POIS)}}
 function camada(k,el){
   const esri='https://server.arcgisonline.com/ArcGIS/rest/services/';
   const mk=(u,o)=>L.tileLayer(u,Object.assign({maxZoom:19,crossOrigin:true},o));
@@ -2380,7 +2425,7 @@ function mpVisiveis(){const m=UI.mp,q=m.q.trim().toLowerCase();
 function mpLista(){const v=mpVisiveis(),sem=v.filter(t=>t.lat==null);
   const cols=[{k:'nome',l:'Terreno',cls:'esq',v:t=>`<span class="cod">${t.codigo}</span><div class="t1">${esc(t.nome)}</div><div class="t2">${esc(t.bairro||'')}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div>`,s:t=>t.nome},
     {k:'sit',l:'Situação',v:t=>sitChip(sitMapa(t)),s:t=>Object.keys(SIT).indexOf(sitMapa(t))},{k:'valor',l:'Valor',cls:'num',v:t=>{const o=ofertaRef(t);return o?.valor?mi(o.valor):'<span class="faint">—</span>'},s:t=>ofertaRef(t)?.valor??null}];
-  return `<div class="mp-resumo"><span><b>${v.length}</b> terrenos</span><span><b>${num(v.reduce((s,t)=>s+(areaAdotada(t)||0),0))}</b> m²</span><span><b>${mi(v.reduce((s,t)=>s+(ofertaRef(t)?.valor||0),0))}</b> pedidos</span></div>
+  return `${entornoHtml()}<div class="mp-resumo"><span><b>${v.length}</b> terrenos</span><span><b>${num(v.reduce((s,t)=>s+(areaAdotada(t)||0),0))}</b> m²</span><span><b>${mi(v.reduce((s,t)=>s+(ofertaRef(t)?.valor||0),0))}</b> pedidos</span></div>
   ${tabela('mapa',v,cols,{cls:'compacta',attr:t=>`data-a="mp-foco" data-id="${t.id}" tabindex="0" class="${UI.mpSel===t.id?'sel':''}"`,vazio:'Nenhum terreno com esses filtros.'})}
   ${sem.length?`<div class="hint" style="margin-top:8px">${sem.length} sem localização. Abra a linha e use “Marcar no mapa”.</div>`:''}`;
 }
@@ -2402,7 +2447,7 @@ function pgMapa(){
   <section class="mapa-area" aria-label="Mapa dos terrenos">
     <div id="mapa" class="mapa"></div>
     <div class="mp-barra">
-      <div class="seg" role="group" aria-label="Fundo do mapa">${Object.entries(CAMADAS).map(([k,l])=>`<button type="button" data-a="mp-base" data-v="${k}" aria-pressed="${(UI.mpBase||'mapa')===k}">${l}</button>`).join('')}</div>
+      <div class="seg" role="group" aria-label="Fundo do mapa">${Object.entries(GG?CAMADAS_G:CAMADAS_L).map(([k,l])=>`<button type="button" data-a="mp-base" data-v="${k}" aria-pressed="${(UI.mpBase||'mapa')===k}">${l}</button>`).join('')}</div>
       <div class="mp-acoes"><button class="btn sm" data-a="mp-modo" data-v="pin">${ic('add',16)}Novo pin</button><button class="btn sm" data-a="mp-modo" data-v="poi">${ic('add',16)}Ponto de interesse</button><button class="btn sm" data-a="mp-kmz">${ic('upload',16)}Importar KMZ/KML</button>
       <button class="btn sm ${UI.mpPoi===false?'':'on'}" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}">Pontos de interesse</button></div>
     </div>
@@ -2419,27 +2464,28 @@ function modoBanner(){const m=UI.mpModo;if(!m)return '';
   if(m==='desenhar'){const n=(UI.desenho||[]).length,a=areaPoly(UI.desenho);return `<span>Poligonal de <b>${esc(t?.nome)}</b>: clique nos vértices. ${n} ponto${n===1?'':'s'}${a?` · ${m2(a)}`:''}</span><button class="btn sm text" data-a="mp-desfazer" ${n?'':'disabled'}>Desfazer ponto</button><button class="btn sm text" data-a="mp-sair">Cancelar</button><button class="btn sm primary" data-a="mp-concluir" ${n>=3?'':'disabled'}>Concluir</button>`}
   return '';
 }
-function setBase(k){if(!MAPA)return;UI.mpBase=k;if(BASE)MAPA.removeLayer(BASE);BASE=camada(k,MAPA.getContainer().closest('.mapa-area')||MAPA.getContainer()).addTo(MAPA);BASE.eachLayer(l=>l.bringToBack());
+function L_setBase(k){if(!MAPA)return;UI.mpBase=k;if(BASE)MAPA.removeLayer(BASE);BASE=camada(k,MAPA.getContainer().closest('.mapa-area')||MAPA.getContainer()).addTo(MAPA);BASE.eachLayer(l=>l.bringToBack());
   document.querySelectorAll('[data-a="mp-base"]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===k))}
 function popupHtml(t){const o=ofertaRef(t),ad=areaAdotada(t),k=sitMapa(t),px=proximos(t).slice(0,3);
   return `<div class="pop"><div class="pop-e"><span class="num">${t.codigo}</span>${sitChip(k)}</div><div class="pop-t">${esc(t.nome)}</div>
   <div class="pop-s">${esc([t.bairro,t.zona&&'Zona '+OPT.zona[t.zona]].filter(Boolean).join(' · '))}</div>
   <div class="pop-n"><span>${ad?m2(ad):'Área não informada'}</span><span>${o?.valor?mi(o.valor):'Sem valor'}</span>${t.poly?`<span>Poligonal ${m2(areaPoly(t.poly))}</span>`:''}</div>
-  ${px.length?`<div class="pop-poi">${px.map(p=>`<div><span>${esc(p.nome)}</span><b>${fKm(p.d)}</b><a href="${rotaUrl(t,p)}" target="_blank" rel="noopener">Rota</a></div>`).join('')}</div>`:''}
+  ${px.length?`<div class="pop-poi">${px.map(p=>`<div><span>${esc(p.nome)}</span><b>${fKm(p.d)}</b>${GG?`<button class="linkbtn" data-a="mp-rota" data-id="${t.id}" data-p="${p.id}">Rota</button>`:`<a href="${rotaUrl(t,p)}" target="_blank" rel="noopener">Rota</a>`}</div>`).join('')}</div>`:''}
+  ${GG?`<div class="pop-a"><button class="btn sm" data-a="mp-sv" data-id="${t.id}">Street View</button><button class="btn sm" data-a="mp-entorno" data-id="${t.id}">O que tem perto</button></div>`:''}
   <div class="pop-a"><button class="btn sm primary" data-a="abrir" data-id="${t.id}" data-tab="geral" data-from="mapa">Abrir ficha</button><button class="btn sm ed" data-a="mp-desenhar" data-id="${t.id}">${t.poly?'Redesenhar':'Desenhar'} poligonal</button><button class="btn sm text ed" data-a="mp-kmz" data-id="${t.id}">Poligonal de KMZ</button></div></div>`}
-function desenhaPins(){if(!MAPA||!PINS)return;PINS.clearLayers();
+function L_desenhaPins(){if(!MAPA||!PINS)return;PINS.clearLayers();
   mpVisiveis().filter(t=>t.lat!=null).forEach(t=>{const k=sitMapa(t);
     if(t.poly)L.polygon(t.poly,{color:SIT[k][1],weight:2,fillOpacity:.18,interactive:!UI.mpModo}).on('click',()=>mk.openPopup()).addTo(PINS);
     const mk=L.marker([t.lat,t.lng],{icon:pinIcon(k,UI.mpSel===t.id),title:t.nome,riseOnHover:true,keyboard:!UI.mpModo,interactive:!UI.mpModo}).bindPopup(()=>popupHtml(t),{maxWidth:320,minWidth:260,autoPanPaddingTopLeft:[20,150],autoPanPaddingBottomRight:[20,20]}).bindTooltip(esc(t.nome),{direction:'top'});
     mk.on('popupopen',()=>{UI.mpSel=t.id;const l=$('#mp-lista');if(l)l.innerHTML=mpLista()});
     mk.addTo(PINS);mk._terreno=t.id})}
-function desenhaPois(){if(!MAPA||!POIS)return;POIS.clearLayers();(S.pontos||[]).forEach(p=>L.marker([p.lat,p.lng],{icon:poiIcon(),title:p.nome,interactive:!UI.mpModo}).bindTooltip(`${esc(p.nome)} · ${CAT_POI[p.cat]||''}`,{direction:'top'}).addTo(POIS))}
-function desenhaRascunho(){if(!DES)return;DES.clearLayers();const p=UI.desenho||[];if(!p.length)return;
+function L_desenhaPois(){if(!MAPA||!POIS)return;POIS.clearLayers();(S.pontos||[]).forEach(p=>L.marker([p.lat,p.lng],{icon:poiIcon(),title:p.nome,interactive:!UI.mpModo}).bindTooltip(`${esc(p.nome)} · ${CAT_POI[p.cat]||''}`,{direction:'top'}).addTo(POIS))}
+function L_desenhaRascunho(){if(!DES)return;DES.clearLayers();const p=UI.desenho||[];if(!p.length)return;
   (p.length>=3?L.polygon(p,{color:'#0094fe',weight:2,dashArray:'6 4',fillOpacity:.12,interactive:false}):L.polyline(p,{color:'#0094fe',weight:2,dashArray:'6 4',interactive:false})).addTo(DES);
   p.forEach(q=>L.circleMarker(q,{radius:4,color:'#fff',weight:2,fillColor:'#0094fe',fillOpacity:1,interactive:false}).addTo(DES))}
 function mpRefresh(){desenhaPois();const l=$('#mp-lista');if(l)l.innerHTML=mpLista();const g=$('#mp-leg');if(g)g.innerHTML=mpLegenda();const m=$('#mp-modo');if(m)m.innerHTML=modoBanner();
-  if(MAPA){MAPA.getContainer().classList.toggle('modo',!!UI.mpModo);desenhaPins();desenhaRascunho()}}
-function initMapa(){const el=$('#mapa');if(!el)return;
+  if(MAPA){$('#mapa')?.classList.toggle('modo',!!UI.mpModo);desenhaPins();desenhaRascunho()}}
+function L_initMapa(){const el=$('#mapa');if(!el)return;
   if(!window.L){el.innerHTML='<div class="mapa-erro">Não foi possível carregar a biblioteca de mapas. Verifique a conexão e recarregue a página.</div>';return}
   MAPA=L.map(el,{zoomControl:true,doubleClickZoom:false});
   L.control.scale({imperial:false,position:'bottomright'}).addTo(MAPA);
@@ -2453,7 +2499,7 @@ function initMapa(){const el=$('#mapa');if(!el)return;
   MAPA.on('preclick',e=>mapaClique(e.latlng.lat,e.latlng.lng));
   if(UI.mpFoco){UI.mpFocoPend=UI.mpFoco;UI.mpFoco=null}
 }
-function focar(t){if(!MAPA)return;UI.mpSel=t.id;if(t.poly)MAPA.fitBounds(t.poly,{maxZoom:18,padding:[40,40]});else MAPA.setView([t.lat,t.lng],Math.max(MAPA.getZoom(),16));
+function L_focar(t){if(!MAPA)return;UI.mpSel=t.id;if(t.poly)MAPA.fitBounds(t.poly,{maxZoom:18,padding:[40,40]});else MAPA.setView([t.lat,t.lng],Math.max(MAPA.getZoom(),16));
   desenhaPins();PINS.eachLayer(l=>{if(l._terreno===t.id)l.openPopup()})}
 function mapaClique(lat,lng){const m=UI.mpModo;if(!m)return;
   if(m==='pin'){UI.mpModo=null;UI.novoLoc={lat,lng};UI.modal='novo';mpRefresh();renderModal();return}
@@ -2574,9 +2620,9 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     ${lin('Próxima reunião',pr?`${fd(pr.data)} · ${esc(pr.hora||'')}`:'')}
     ${lin('Próxima tarefa',pt?`${esc(pt.titulo)} · <span style="${pt.prazo<HOJE?'color:var(--terracota);font-weight:600':''}">${fd(pt.prazo)}</span>`:'')}</dl></div></section>`:'';
   const loc=`<section class="sec"><div class="sec-h"><h2>${bi('localizacao',32)}Localização</h2>${t.lat!=null?`<a class="btn text sm" href="${gmapsUrl(t)}" target="_blank" rel="noopener">Google Maps</a>`:''}</div><div class="sec-b">
-    ${t.lat!=null?`<div id="mini-mapa" class="mini-mapa"></div><div class="mini-pe"><span class="num faint">${num(t.lat,5)}, ${num(t.lng,5)} · ${esc(OPT.precisao[t.precisao]||'')}</span><button class="btn sm" data-a="mp-ir" data-id="${t.id}">Ver no mapa</button></div>
+    ${t.lat!=null?`<div id="mini-mapa" class="mini-mapa"></div><div class="mini-pe"><span class="num faint">${num(t.lat,5)}, ${num(t.lng,5)} · ${esc(OPT.precisao[t.precisao]||'')}</span><span style="display:flex;gap:8px">${GG?`<button class="btn sm" data-a="g-sv-mini" data-id="${t.id}">Street View</button>`:''}<button class="btn sm" data-a="mp-ir" data-id="${t.id}">Ver no mapa</button></span></div>
       <div class="mp-aviso mini">O fundo do mapa não carrega neste link de visualização.</div>`
-    :`<div class="empty" style="padding:var(--e6) 0">Sem localização.<br><button class="btn sm ed" style="margin-top:12px" data-a="mp-marcar" data-id="${t.id}">Marcar no mapa</button></div>`}</div></section>`;
+    :`<div class="empty" style="padding:var(--e6) 0">Sem localização.<br><span style="display:inline-flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center">${GG&&(t.logradouro||t.bairro)?`<button class="btn sm primary ed" data-a="g-geo" data-id="${t.id}">Localizar pelo endereço</button>`:''}<button class="btn sm ed" data-a="mp-marcar" data-id="${t.id}">Marcar no mapa</button></span></div>`}</div></section>`;
   const poi=t.lat!=null?`<section class="sec"><div class="sec-h"><h2>Pontos de interesse próximos</h2><span class="faint" style="font-size:12px">em linha reta</span></div><div class="sec-b">${px.length?`<ul class="poil">${px.slice(0,5).map(p=>`<li><span><span class="t1">${esc(p.nome)}</span><span class="t2">${CAT_POI[p.cat]||''}</span></span><b class="num">${fKm(p.d)}</b><a href="${rotaUrl(t,p)}" target="_blank" rel="noopener">Rota</a></li>`).join('')}</ul>`:'<div class="muted">Nenhum ponto cadastrado a até 15 km.</div>'}</div></section>`:'';
   const pct=(x,b)=>b?num(x/b*100,1)+'%':'—';
   const viab=`<section class="sec"><div class="sec-h"><h2>Resumo da viabilidade</h2>${v?`<span class="faint" style="font-size:12px">${esc(v.nome)}</span>`:''}</div><div class="sec-b">${v?`<div class="dt-wrap"><table class="dt compacta"><thead><tr><th class="esq">Item</th><th>Valor</th><th>% do VGV</th></tr></thead><tbody>
@@ -2587,8 +2633,9 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     <tr class="forte"><td class="esq">Margem do estudo</td><td class="num">${num(v.margem,1)}%</td><td></td></tr></tbody></table></div>
     ${o?.valor&&o.valor>v.pmax?`<div class="banner warn" style="margin-top:12px">${ic('warn')}<div>Valor pedido ${mi(o.valor-v.pmax)} acima do preço máximo.</div></div>`:''}`
     :`<div class="muted">Sem estudo vinculado.${negAtiva(t)?` <button class="linkbtn ed" data-a="viab">Vincular estudo</button>`:''}</div>`}</div></section>`;
-  return `<div class="geral"><div class="geral-c">${info}${condicoes(t)}${neg}</div><div class="geral-c">${loc}${poi}${viab}</div></div>`}
-function initMini(){const el=$('#mini-mapa'),t=T(UI.id);if(!el||!t||t.lat==null)return;if(!window.L){el.innerHTML='<div class="mapa-erro">Mapa indisponível.</div>';return}
+  const rel=relevoHtml(t)?`<section class="sec"><div class="sec-h"><h2>Relevo</h2>${t.relevo?`<span class="faint" style="font-size:12px">estimado em ${fd(t.relevo.em)}</span>`:''}</div><div class="sec-b">${relevoHtml(t)}</div></section>`:'';
+  return `<div class="geral"><div class="geral-c">${info}${condicoes(t)}${neg}</div><div class="geral-c">${loc}${rel}${poi}${viab}</div></div>`}
+function L_initMini(){const el=$('#mini-mapa'),t=T(UI.id);if(!el||!t||t.lat==null)return;if(!window.L){el.innerHTML='<div class="mapa-erro">Mapa indisponível.</div>';return}
   MINI=L.map(el,{zoomControl:true,attributionControl:true,scrollWheelZoom:false,dragging:!L.Browser.mobile});
   camada('satelite',el.closest('.sec')).addTo(MINI);const k=sitMapa(t);
   const enq=()=>t.poly?MINI.fitBounds(t.poly,{padding:[24,24],maxZoom:18}):MINI.setView([t.lat,t.lng],17);
@@ -2644,6 +2691,162 @@ document.addEventListener('dragover',e=>{const col=e.target.closest?.('.tk-col')
   document.querySelectorAll('.tk-col.sobre').forEach(x=>x!==col&&x.classList.remove('sobre'));col.classList.add('sobre');
   let m=document.querySelector('.tk-marca');if(!m){m=document.createElement('div');m.className='tk-marca'}const a=tkAntes(col,e.clientY),lista=col.querySelector('.tk-lista');if(a)lista.insertBefore(m,a);else lista.appendChild(m)});
 document.addEventListener('drop',e=>{const col=e.target.closest?.('.tk-col');if(!col||!tkArr)return;e.preventDefault();const a=tkAntes(col,e.clientY),x=tkArr;tkArr=null;document.querySelector('.tk-marca')?.remove();moverTk(x.tid,x.kid,col.dataset.tkcol,a?.dataset.tk)});
+
+
+/* =====================================================================
+   Google Maps Platform (chave única, restrita ao domínio no Cloud Console).
+   Mapa, satélite, Street View, rotas, entorno (Places), relevo (Elevation),
+   geocodificação e autocompletar de endereço. Sem chave ou se o Google
+   recusar, o protótipo continua no Leaflet.
+   ===================================================================== */
+const GKEY=(()=>{const v=document.querySelector('meta[name="gmaps-key"]')?.content||'';return /^AIza[\w-]{20,}$/.test(v)?v:''})();
+let gInfo=null,gPins=[],gPois=[],gDes=[],gRota=[],gEntorno=[],gMiniSv=null,gLib={};
+const gSet=(arr,map)=>arr.forEach(o=>{if(o.setMap)o.setMap(map);else o.map=map});
+const gLL=(lat,lng)=>({lat,lng});
+const TIPO_G={mapa:'roadmap',ruas:'terrain',satelite:'satellite',satrot:'hybrid'};
+
+function carregarGoogle(){
+  if(!GKEY)return;
+  window.gm_authFailure=()=>{if(!GG)return;GG=false;toast('O Google recusou a chave (domínio ou API não liberados). Voltando ao mapa alternativo.',true);render()};
+  /* carregador oficial do Maps JS (bootstrap dinâmico) */
+  (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({key:GKEY,v:'weekly',language:'pt-BR',region:'BR'});
+  Promise.all(['maps','marker','geometry','places','elevation','streetView','geocoding'].map(n=>google.maps.importLibrary(n).then(x=>gLib[n]=x)))
+    .then(()=>{GG=true;if(['mapa','terreno'].includes(UI.route)||UI.modal==='novo')render()})
+    .catch(e=>{console.warn('Google Maps indisponível',e)});
+}
+
+/* ---------- mapa principal ---------- */
+function gPinEl(k,sel){const d=document.createElement('div');d.className='pin g'+(sel?' sel':'');d.innerHTML=`<span class="pin-b" style="background:${SIT[k][1]}"><b style="color:${SIT[k][3]}">${SIT[k][2]}</b></span>`;return d}
+function gPoiEl(){const d=document.createElement('div');d.className='poi g';d.innerHTML='<span class="poi-b"></span>';return d}
+function G_setBase(k){UI.mpBase=k;if(MAPA&&MAPA.setMapTypeId)MAPA.setMapTypeId(TIPO_G[k]||'roadmap');document.querySelectorAll('[data-a="mp-base"]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===k))}
+function G_fecharPopup(){gInfo?.close()}
+function G_mostrarPois(on){gSet(gPois,on?MAPA:null)}
+function gAbrirInfo(t,ancora){if(!gInfo)return;const d=document.createElement('div');d.innerHTML=popupHtml(t);gInfo.setContent(d.firstElementChild);
+  gInfo.open({map:MAPA,anchor:ancora,shouldFocus:false});UI.mpSel=t.id;const l=$('#mp-lista');if(l)l.innerHTML=mpLista()}
+function G_desenhaPins(){if(!MAPA)return;gSet(gPins,null);gPins=[];const {AdvancedMarkerElement}=gLib.marker;
+  mpVisiveis().filter(t=>t.lat!=null).forEach(t=>{const k=sitMapa(t);
+    const mk=new AdvancedMarkerElement({map:MAPA,position:gLL(t.lat,t.lng),content:gPinEl(k,UI.mpSel===t.id),title:t.nome,gmpClickable:!UI.mpModo,zIndex:UI.mpSel===t.id?10:1});
+    mk.addListener('click',()=>gAbrirInfo(t,mk));mk._terreno=t.id;gPins.push(mk);
+    if(t.poly){const pg=new google.maps.Polygon({map:MAPA,paths:t.poly.map(p=>gLL(p[0],p[1])),strokeColor:SIT[k][1],strokeWeight:2,fillColor:SIT[k][1],fillOpacity:.18,clickable:!UI.mpModo});
+      pg.addListener('click',()=>gAbrirInfo(t,mk));gPins.push(pg)}})}
+function G_desenhaPois(){if(!MAPA)return;gSet(gPois,null);gPois=[];const {AdvancedMarkerElement}=gLib.marker;
+  (S.pontos||[]).forEach(p=>gPois.push(new AdvancedMarkerElement({map:UI.mpPoi===false?null:MAPA,position:gLL(p.lat,p.lng),content:gPoiEl(),title:`${p.nome} · ${CAT_POI[p.cat]||''}`,gmpClickable:false})))}
+function G_desenhaRascunho(){if(!MAPA)return;gSet(gDes,null);gDes=[];const p=(UI.desenho||[]).map(q=>gLL(q[0],q[1]));if(!p.length)return;
+  const traco={icons:[{icon:{path:'M 0,-1 0,1',strokeOpacity:1,strokeColor:'#0094fe',scale:2},offset:'0',repeat:'10px'}],strokeOpacity:0,clickable:false};
+  gDes.push(p.length>=3?new google.maps.Polygon({map:MAPA,paths:p,strokeColor:'#0094fe',strokeWeight:2,fillColor:'#0094fe',fillOpacity:.12,clickable:false}):new google.maps.Polyline({map:MAPA,path:p,...traco}));
+  p.forEach(q=>gDes.push(new google.maps.Marker({map:MAPA,position:q,clickable:false,icon:{path:google.maps.SymbolPath.CIRCLE,scale:5,fillColor:'#0094fe',fillOpacity:1,strokeColor:'#fff',strokeWeight:2}})))}
+function gEnquadrar(pts,maxZoom){if(!MAPA||!pts.length)return;if(pts.length===1){MAPA.setCenter(pts[0]);MAPA.setZoom(maxZoom||17);return}
+  const b=new google.maps.LatLngBounds();pts.forEach(p=>b.extend(p));MAPA.fitBounds(b,48);if(maxZoom)google.maps.event.addListenerOnce(MAPA,'idle',()=>{if(MAPA.getZoom()>maxZoom)MAPA.setZoom(maxZoom)})}
+function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[];gPois=[];gDes=[];gRota=[];gEntorno=[];
+  const v=UI.mpView;
+  MAPA=new google.maps.Map(el,{mapId:'DEMO_MAP_ID',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[UI.mpBase||'mapa'],
+    mapTypeControl:false,streetViewControl:true,fullscreenControl:false,clickableIcons:false,gestureHandling:'greedy',scaleControl:true,tilt:0});
+  gInfo=new google.maps.InfoWindow({maxWidth:320});
+  el.classList.toggle('modo',!!UI.mpModo);G_desenhaPins();G_desenhaPois();G_desenhaRascunho();
+  if(!v)gEnquadrar(ativosBanco().filter(t=>t.lat!=null).map(t=>gLL(t.lat,t.lng)),15);
+  MAPA.addListener('idle',()=>{const c=MAPA.getCenter();UI.mpView={c:{lat:c.lat(),lng:c.lng()},z:MAPA.getZoom()}});
+  MAPA.addListener('click',e=>{if(UI.mpModo&&e.latLng)mapaClique(e.latLng.lat(),e.latLng.lng());else gInfo.close()});
+  if(UI.mpFoco){const t=T(UI.mpFoco);UI.mpFoco=null;if(t&&t.lat!=null)google.maps.event.addListenerOnce(MAPA,'idle',()=>G_focar(t))}
+}
+function G_focar(t){if(!MAPA)return;UI.mpSel=t.id;if(t.poly)gEnquadrar(t.poly.map(p=>gLL(p[0],p[1])),19);else{MAPA.setCenter(gLL(t.lat,t.lng));if(MAPA.getZoom()<17)MAPA.setZoom(17)}
+  G_desenhaPins();const mk=gPins.find(m=>m._terreno===t.id);if(mk)gAbrirInfo(t,mk)}
+
+/* ---------- Street View ---------- */
+async function gStreetView(t,mapaAlvo){const sv=mapaAlvo.getStreetView();
+  try{const {data}=await new google.maps.StreetViewService().getPanorama({location:gLL(t.lat,t.lng),radius:120,preference:google.maps.StreetViewPreference.NEAREST,sources:[google.maps.StreetViewSource.OUTDOOR]});
+    const pano=data.location.latLng,head=google.maps.geometry.spherical.computeHeading(pano,new google.maps.LatLng(t.lat,t.lng));
+    sv.setPano(data.location.pano);sv.setPov({heading:head,pitch:0});sv.setVisible(true);
+    const d=google.maps.geometry.spherical.computeDistanceBetween(pano,new google.maps.LatLng(t.lat,t.lng));if(d>40)toast(`Imagem mais próxima a ${Math.round(d)} m do ponto do terreno.`)}
+  catch(e){toast('Sem imagem do Street View a até 120 m deste terreno.',true)}}
+
+/* ---------- rotas (Routes API; Directions como reserva) ---------- */
+function gLimparRota(){gSet(gRota,null);gRota=[];const b=$('#mp-rota');if(b)b.remove()}
+async function gRotaAte(t,p,modo='DRIVE'){gLimparRota();let km,min,path;
+  try{const r=await fetch('https://routes.googleapis.com/directions/v2:computeRoutes',{method:'POST',headers:{'Content-Type':'application/json','X-Goog-Api-Key':GKEY,'X-Goog-FieldMask':'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline'},
+      body:JSON.stringify({origin:{location:{latLng:{latitude:t.lat,longitude:t.lng}}},destination:{location:{latLng:{latitude:p.lat,longitude:p.lng}}},travelMode:modo,languageCode:'pt-BR',units:'METRIC',...(modo==='DRIVE'?{routingPreference:'TRAFFIC_UNAWARE'}:{})})});
+    const j=await r.json();if(!r.ok||!j.routes?.length)throw new Error(j.error?.message||'sem rota');
+    const ro=j.routes[0];km=ro.distanceMeters/1000;min=Math.round(parseInt(ro.duration)/60);path=google.maps.geometry.encoding.decodePath(ro.polyline.encodedPolyline)}
+  catch(e){try{const res=await new google.maps.DirectionsService().route({origin:gLL(t.lat,t.lng),destination:gLL(p.lat,p.lng),travelMode:modo==='WALK'?'WALKING':modo==='TRANSIT'?'TRANSIT':'DRIVING'});
+      const lg=res.routes[0].legs[0];km=lg.distance.value/1000;min=Math.round(lg.duration.value/60);path=res.routes[0].overview_path}
+    catch(e2){toast(`Não foi possível calcular a rota pelo Google (${e.message}). Confira se a Routes API está liberada para a chave.`,true);return}}
+  gRota.push(new google.maps.Polyline({map:MAPA,path,strokeColor:'#0094fe',strokeWeight:5,strokeOpacity:.9}));
+  gEnquadrar(path.filter((_,i)=>i%Math.max(1,Math.floor(path.length/50))===0).concat([path.at(-1)]));
+  const modos=[['DRIVE','Carro'],['WALK','A pé'],['TRANSIT','Transporte']];
+  const b=document.createElement('div');b.id='mp-rota';b.className='mp-rota';
+  b.innerHTML=`<div><b>${esc(t.nome)} → ${esc(p.nome)}</b><div>${num(km,1)} km · ${min} min ${modo==='DRIVE'?'de carro (sem trânsito)':modo==='WALK'?'a pé':'de transporte público'}</div></div>
+    <div class="seg">${modos.map(([k,l])=>`<button data-a="mp-rota" data-id="${t.id}" data-p="${p.id}" data-m="${k}" aria-pressed="${k===modo}">${l}</button>`).join('')}</div>
+    <a class="btn sm text" href="${rotaUrl(t,p)}" target="_blank" rel="noopener">Abrir no Google Maps</a><button class="btn sm text" data-a="mp-rota-limpar">Fechar</button>`;
+  $('.mapa-area')?.appendChild(b)}
+
+/* ---------- entorno (Places API New) ---------- */
+const ENTORNO_TIPOS={subway_station:'transporte',train_station:'transporte',bus_station:'transporte',transit_station:'transporte',school:'escola',university:'escola',hospital:'saude',supermarket:'comercio',shopping_mall:'comercio',park:'lazer'};
+async function gEntornoDe(t){gSet(gEntorno,null);gEntorno=[];
+  try{const {Place,SearchNearbyRankPreference}=gLib.places;
+    const {places}=await Place.searchNearby({fields:['id','displayName','location','primaryType','formattedAddress'],locationRestriction:{center:gLL(t.lat,t.lng),radius:2000},
+      includedPrimaryTypes:Object.keys(ENTORNO_TIPOS),maxResultCount:20,rankPreference:SearchNearbyRankPreference.DISTANCE,language:'pt-BR',region:'br'});
+    UI.entorno={tid:t.id,itens:(places||[]).map(p=>({gid:p.id,nome:p.displayName,cat:ENTORNO_TIPOS[p.primaryType]||'outro',tipo:p.primaryType,lat:p.location.lat(),lng:p.location.lng(),end:p.formattedAddress,d:distKm(t.lat,t.lng,p.location.lat(),p.location.lng())}))};
+    const {AdvancedMarkerElement}=gLib.marker;
+    UI.entorno.itens.forEach(p=>{const d=document.createElement('div');d.className='ent g';d.textContent=(CAT_POI[p.cat]||'?')[0];
+      gEntorno.push(new AdvancedMarkerElement({map:MAPA,position:gLL(p.lat,p.lng),content:d,title:`${p.nome} · ${fKm(p.d)}`}))});
+    gEnquadrar([gLL(t.lat,t.lng),...UI.entorno.itens.map(p=>gLL(p.lat,p.lng))],16);
+    const l=$('#mp-lista');if(l)l.innerHTML=mpLista();if(!UI.entorno.itens.length)toast('Nada encontrado num raio de 2 km.')}
+  catch(e){toast(`Busca de lugares indisponível (${e.message||e}). Confira se a Places API (New) está liberada para a chave.`,true)}}
+function entornoHtml(){const e=UI.entorno;if(!e||!GG)return '';const t=T(e.tid);if(!t)return '';
+  return `<section class="sec entorno"><div class="sec-h"><h2>Perto de ${esc(t.nome)}</h2><button class="btn sm text" data-a="mp-entorno-fechar">Fechar</button></div><div class="sec-b">
+  ${e.itens.length?`<ul class="poil">${e.itens.map((p,i)=>`<li><span><span class="t1">${esc(p.nome)}</span><span class="t2">${CAT_POI[p.cat]||'Outro'} · em linha reta</span></span><b class="num">${fKm(p.d)}</b>
+    ${(S.pontos||[]).some(x=>x.gid===p.gid)?'<span class="faint" style="font-size:12px">salvo</span>':`<button class="linkbtn ed" data-a="mp-entorno-salvar" data-i="${i}">Salvar</button>`}</li>`).join('')}</ul>`:'<div class="muted">Nada encontrado num raio de 2 km.</div>'}
+  <div class="hint" style="margin-top:8px">Fonte: Google Places. “Salvar” guarda o lugar nos pontos de interesse da empresa.</div></div></section>`}
+
+/* ---------- geocodificação (endereço → coordenada) ---------- */
+async function gGeocodificar(t){const end=[t.logradouro&&(t.logradouro+(t.numero?', '+t.numero:'')),t.bairro,'São Paulo - SP',t.cep].filter(Boolean).join(', ');
+  try{const {results}=await new google.maps.Geocoder().geocode({address:end,region:'br'});if(!results?.length)throw new Error('não encontrado');
+    const r=results[0],loc=r.geometry.location;Object.assign(t,{lat:loc.lat(),lng:loc.lng(),precisao:r.geometry.location_type==='ROOFTOP'?'conferida':'aproximada'});
+    log(t,`Localização pelo endereço (Google): ${r.formatted_address}`);save();render();toast(`Localizado: ${r.formatted_address}`)}
+  catch(e){toast(`O Google não encontrou o endereço "${end}".`,true)}}
+
+/* ---------- relevo (Elevation API) ---------- */
+async function gRelevo(t){let pts=[];
+  if(t.poly&&t.poly.length>=3){const pg=new google.maps.Polygon({paths:t.poly.map(p=>gLL(p[0],p[1]))});const la=t.poly.map(p=>p[0]),lo=t.poly.map(p=>p[1]);
+    const [a,b,c,d]=[Math.min(...la),Math.max(...la),Math.min(...lo),Math.max(...lo)],n=12;
+    for(let i=0;i<=n;i++)for(let j=0;j<=n;j++){const q=new google.maps.LatLng(a+(b-a)*i/n,c+(d-c)*j/n);if(google.maps.geometry.poly.containsLocation(q,pg))pts.push({i,j,q})}}
+  if(pts.length<4){const r=0.00025;pts=[];for(let i=0;i<=6;i++)for(let j=0;j<=6;j++)pts.push({i,j,q:new google.maps.LatLng(t.lat-r+2*r*i/6,t.lng-r+2*r*j/6)})}
+  try{const {results}=await new google.maps.ElevationService().getElevationForLocations({locations:pts.map(p=>p.q)});
+    const el=results.map((r,k)=>({...pts[k],z:r.elevation,res:r.resolution}));const zs=el.map(e=>e.z),min=Math.min(...zs),max=Math.max(...zs);
+    t.relevo={em:HOJE,min,max,desnivel:max-min,res:Math.max(...el.map(e=>e.res||0)),grade:el.map(e=>[e.i,e.j,+e.z.toFixed(1)]),n:el.length,poligonal:!!t.poly};
+    log(t,`Relevo estimado pelo Google: desnível ${num(max-min,1)} m`);save();render();toast(`Desnível estimado: ${num(max-min,1)} m.`)}
+  catch(e){toast(`Elevação indisponível (${e.message||e}). Confira se a Elevation API está liberada para a chave.`,true)}}
+function relevoHtml(t){const r=t.relevo;if(!GG&&!r)return '';
+  if(!r)return t.lat!=null?`<div class="relevo-vazio"><span class="muted">Relevo ainda não estimado.</span><button class="btn sm ed" data-a="g-relevo" data-id="${t.id}">Estimar relevo pelo Google</button></div>`:'';
+  const ni=Math.max(...r.grade.map(g=>g[0]))+1,nj=Math.max(...r.grade.map(g=>g[1]))+1,cel=Math.max(8,Math.floor(220/Math.max(ni,nj)));
+  // rampa sequencial de um matiz: mais claro = mais baixo
+  const cor=z=>{const f=r.max>r.min?(z-r.min)/(r.max-r.min):0;return `hsl(212 70% ${88-f*58}%)`};
+  return `<div class="relevo"><svg viewBox="0 0 ${nj*cel} ${ni*cel}" width="${nj*cel}" height="${ni*cel}" role="img" aria-label="Grade de elevação do terreno">${r.grade.map(([i,j,z])=>`<rect x="${j*cel}" y="${(ni-1-i)*cel}" width="${cel-1}" height="${cel-1}" fill="${cor(z)}" data-tip="${num(z,1)} m"/>`).join('')}</svg>
+    <div class="relevo-n"><div><span class="k">Desnível estimado</span><b>${num(r.desnivel,1)} m</b></div><div><span class="k">Cota mínima / máxima</span>${num(r.min,1)} m / ${num(r.max,1)} m</div>
+    <div class="hint">Google Elevation, ${r.n} pontos ${r.poligonal?'dentro da poligonal':'ao redor do ponto'}; resolução de até ${num(r.res,0)} m. Serve para triagem; não substitui o levantamento planialtimétrico.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${t.desnivel!==+r.desnivel.toFixed(1)?`<button class="btn sm ed" data-a="g-relevo-usar" data-id="${t.id}">Usar como desnível estimado</button>`:''}${GG?`<button class="btn sm text ed" data-a="g-relevo" data-id="${t.id}">Recalcular</button>`:''}</div></div></div>`}
+
+/* ---------- mini mapa da ficha ---------- */
+function G_initMini(){const el=$('#mini-mapa'),t=T(UI.id);if(!el||!t||t.lat==null)return;el.innerHTML='';
+  MINI=new google.maps.Map(el,{mapId:'DEMO_MAP_ID',center:gLL(t.lat,t.lng),zoom:18,mapTypeId:'hybrid',mapTypeControl:false,streetViewControl:true,fullscreenControl:true,clickableIcons:false,gestureHandling:'cooperative',tilt:0});
+  const k=sitMapa(t);new gLib.marker.AdvancedMarkerElement({map:MINI,position:gLL(t.lat,t.lng),content:gPinEl(k)});
+  if(t.poly){new google.maps.Polygon({map:MINI,paths:t.poly.map(p=>gLL(p[0],p[1])),strokeColor:'#0094fe',strokeWeight:2,fillColor:'#0094fe',fillOpacity:.2,clickable:false});
+    const b=new google.maps.LatLngBounds();t.poly.forEach(p=>b.extend(gLL(p[0],p[1])));MINI.fitBounds(b,24)}}
+
+/* ---------- autocompletar de endereço no cadastro (Places API New) ---------- */
+async function gAutocompletarNovo(){const slot=$('#n-gauto');if(!slot||slot.dataset.ok)return;slot.dataset.ok='1';
+  try{const {PlaceAutocompleteElement}=gLib.places;const pac=new PlaceAutocompleteElement({includedRegionCodes:['br'],locationBias:{center:gLL(-23.55,-46.63),radius:50000}});
+    pac.id='n-gauto-el';slot.appendChild(pac);
+    const aplicar=async place=>{await place.fetchFields({fields:['addressComponents','location','formattedAddress']});
+      const comp=tipo=>place.addressComponents?.find(c=>c.types.includes(tipo))?.longText||'';
+      const f=$('#f-novo');if(!f)return;const set=(n,v)=>{const i=f.querySelector(`[name="${n}"]`);if(i&&v)i.value=v};
+      set('logradouro',comp('route'));set('numero',comp('street_number'));set('bairro',comp('sublocality_level_1')||comp('sublocality')||comp('neighborhood'));
+      if(!f.querySelector('[name="nome"]').value)set('nome',[comp('route'),comp('street_number')].filter(Boolean).join(', '));
+      UI.novoLoc={lat:place.location.lat(),lng:place.location.lng()};const sp=$('#n-gauto-loc');if(sp)sp.textContent=`Localização: ${num(UI.novoLoc.lat,5)}, ${num(UI.novoLoc.lng,5)} · ${place.formattedAddress}`;
+      if(typeof dedupe==='function')dedupe()};
+    pac.addEventListener('gmp-select',e=>{const pp=e.placePrediction;if(pp)aplicar(pp.toPlace())});
+    pac.addEventListener('gmp-placeselect',e=>{if(e.place)aplicar(e.place)})}
+  catch(e){slot.innerHTML='<span class="hint">Autocompletar do Google indisponível.</span>'}}
+carregarGoogle();
 
 render();
 })();

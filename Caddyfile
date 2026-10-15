@@ -2,11 +2,16 @@
 :{$PORT:8080} {
 	encode zstd gzip
 
-	# Protótipo navegável. Nenhuma chave de API vai para o navegador.
+	# Protótipo navegável. A chave única do Google (restrita ao domínio no Cloud
+	# Console) vem da variável GOOGLE_MAPS_KEY e é injetada na página (templates).
 	handle /prototipo* {
 		root * /srv/prototipo
 		uri strip_prefix /prototipo
 		header Cache-Control "no-cache"
+		templates {
+			mime text/html
+			between {% %}
+		}
 		try_files {path} /index.html
 		file_server
 	}
