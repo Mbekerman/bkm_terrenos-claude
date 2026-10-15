@@ -2,16 +2,11 @@
 :{$PORT:8080} {
 	encode zstd gzip
 
-	# Protótipo navegável. A chave do Google Maps vem da variável
-	# GOOGLE_MAPS_KEY do Railway e é injetada na hora (templates), nunca no repositório.
+	# Protótipo navegável. Nenhuma chave de API vai para o navegador.
 	handle /prototipo* {
 		root * /srv/prototipo
 		uri strip_prefix /prototipo
 		header Cache-Control "no-cache"
-		templates {
-			mime text/html
-			between {% %}
-		}
 		try_files {path} /index.html
 		file_server
 	}
