@@ -1,0 +1,1036 @@
+<title>BKM Terrenos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Nothing+You+Could+Do&display=swap">
+<style>
+/* Layout: Google-style app shell. Top bar with search, left nav rail (bottom bar on phones), white work surfaces on a cool blue-grey ground. BKM navy + brand blue. */
+:root{
+  --bg:#f4f6fa; --surface:#ffffff; --surface-2:#edf1f7; --surface-3:#e1e7f0; --line:#dce2eb;
+  --ink:#15203a; --ink-2:#525d75; --ink-3:#848fa5;
+  --navy:#1d2e5c; --accent:#0094fe; --accent-ink:#0a6cc9; --accent-soft:#e1f0ff; --btn:#0a7de3; --on-accent:#ffffff;
+  --good:#1a8248; --good-soft:#e2f3e8; --warn:#9c5700; --warn-soft:#fcefd9; --crit:#c5302a; --crit-soft:#fbe7e5;
+  --av1:#deafa1; --av2:#ccd3a7; --av3:#cececc; --av4:#e8eed2; --av-ink:#1d2e5c;
+  --scrim:rgba(13,20,38,.45);
+  --shadow:0 1px 2px rgba(21,32,58,.06),0 2px 8px rgba(21,32,58,.07);
+  --shadow-2:0 2px 6px rgba(21,32,58,.10),0 10px 28px rgba(21,32,58,.12);
+  --font:"Aptos","Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --hand:"Nothing You Could Do","Segoe Script",cursive;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1423; --surface:#141c2f; --surface-2:#1a2440; --surface-3:#243051; --line:#27334f;
+  --ink:#e7ecf6; --ink-2:#a2adc3; --ink-3:#6d7994;
+  --navy:#cdd8f3; --accent:#2fa7ff; --accent-ink:#72bfff; --accent-soft:#12304f; --btn:#2fa7ff; --on-accent:#05203c;
+  --good:#53c58a; --good-soft:#12301f; --warn:#f0a54a; --warn-soft:#33240c; --crit:#ff8077; --crit-soft:#3a1818;
+  --scrim:rgba(0,0,0,.6); --shadow:0 1px 2px rgba(0,0,0,.35); --shadow-2:0 10px 28px rgba(0,0,0,.5);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1423; --surface:#141c2f; --surface-2:#1a2440; --surface-3:#243051; --line:#27334f;
+  --ink:#e7ecf6; --ink-2:#a2adc3; --ink-3:#6d7994;
+  --navy:#cdd8f3; --accent:#2fa7ff; --accent-ink:#72bfff; --accent-soft:#12304f; --btn:#2fa7ff; --on-accent:#05203c;
+  --good:#53c58a; --good-soft:#12301f; --warn:#f0a54a; --warn-soft:#33240c; --crit:#ff8077; --crit-soft:#3a1818;
+  --scrim:rgba(0,0,0,.6); --shadow:0 1px 2px rgba(0,0,0,.35); --shadow-2:0 10px 28px rgba(0,0,0,.5);
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ic{flex:none;display:block}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--ink-2)} .faint{color:var(--ink-3)}
+h1,h2,h3{margin:0;text-wrap:balance;font-weight:500}
+h1{font-size:24px;letter-spacing:-.01em}
+h2{font-size:16px;font-weight:600}
+.hand{font-family:var(--hand);font-weight:400;color:var(--accent-ink);font-size:1.15em}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top-in{height:64px;display:flex;align-items:center;gap:16px;max-width:1440px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;flex:none;background:none;border:0;padding:0;color:var(--ink)}
+.brand svg{width:30px;height:30px}
+.wordmark{font-weight:700;font-size:23px;letter-spacing:-.04em;line-height:1;color:var(--ink)}
+.wordmark .k{background:linear-gradient(180deg,#19c2ff,#0f5fd8);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand-sep{width:1px;height:22px;background:var(--line)}
+.brand-prod{font-size:18px;color:var(--ink-2)}
+.search{flex:1;max-width:620px;margin-left:28px;display:flex;align-items:center;gap:10px;height:46px;padding:0 16px;background:var(--surface-2);border-radius:24px;border:1px solid transparent;color:var(--ink-2)}
+.search:focus-within{background:var(--surface);border-color:var(--line);box-shadow:var(--shadow)}
+.search input{flex:1;border:0;background:transparent;outline:none;min-width:0;font-size:15px;color:var(--ink)}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.demo-pill{font-size:12px;color:var(--warn);background:var(--warn-soft);padding:4px 10px;border-radius:12px;white-space:nowrap;font-weight:500}
+.seg{display:flex;background:var(--surface-2);border-radius:20px;padding:3px}
+.seg button{border:0;background:transparent;padding:5px 12px;border-radius:16px;font-size:13px;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow);font-weight:600}
+.avatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:600;color:var(--av-ink);flex:none;border:0;padding:0}
+.avatar.sm{width:24px;height:24px;font-size:10px}
+
+/* shell */
+.layout{display:grid;grid-template-columns:248px minmax(0,1fr);max-width:1440px;margin:0 auto}
+.side{position:sticky;top:calc(64px + env(safe-area-inset-top,0px));align-self:start;height:calc(100vh - 64px);padding-block:16px;padding-right:12px;padding-left:max(12px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:4px}
+.compose{display:inline-flex;align-items:center;gap:12px;height:54px;padding:0 22px 0 18px;border-radius:16px;border:0;background:var(--accent-soft);color:var(--ink);font-weight:600;font-size:14px;margin-bottom:12px;align-self:flex-start;transition:box-shadow .15s}
+.compose:hover{box-shadow:var(--shadow)}
+.compose .ic{color:var(--accent-ink)}
+.nav-item{display:flex;align-items:center;gap:14px;height:44px;padding:0 16px;border-radius:22px;border:0;background:none;width:100%;color:var(--ink-2);font-size:14px;font-weight:500;text-align:left}
+.nav-item:hover{background:var(--surface-2)}
+.nav-item[aria-current="page"]{background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
+.nav-item .cnt{margin-left:auto;font-size:12px;font-variant-numeric:tabular-nums}
+.nav-item .cnt.alert{color:var(--crit);font-weight:700}
+.side-foot{margin-top:auto;padding:12px 16px;font-size:12px;color:var(--ink-3);display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.linkbtn{border:0;background:none;padding:0;color:var(--accent-ink);font-weight:500;font-size:inherit}
+.linkbtn:hover{text-decoration:underline}
+.main{padding-block:24px 56px;padding-left:24px;padding-right:max(24px,env(safe-area-inset-right,0px));min-width:0}
+.bnav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
+.bnav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 0 12px;border:0;background:none;color:var(--ink-2);font-size:12px;font-weight:500}
+.bnav .pill{width:56px;height:30px;border-radius:15px;display:grid;place-items:center;position:relative}
+.bnav button[aria-current="page"]{color:var(--ink);font-weight:600}
+.bnav button[aria-current="page"] .pill{background:var(--accent-soft);color:var(--accent-ink)}
+.bnav .badge{position:absolute;top:2px;right:12px;min-width:16px;height:16px;border-radius:8px;background:var(--crit);color:var(--surface);font-size:10px;font-weight:700;display:grid;place-items:center;padding:0 4px}
+.fab{display:none;position:fixed;z-index:21;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(84px + env(safe-area-inset-bottom,0px));height:56px;padding:0 20px 0 16px;border-radius:16px;border:0;background:var(--accent-soft);color:var(--ink);font-weight:600;box-shadow:var(--shadow-2);align-items:center;gap:10px}
+.fab .ic{color:var(--accent-ink)}
+
+/* page scaffolding */
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.page-h .sub{margin-top:4px;color:var(--ink-2)}
+.stack{display:flex;flex-direction:column;gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 16px 0}
+.card-b{padding:16px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.grid-6040{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:38px;padding:0 18px;border-radius:19px;border:1px solid var(--line);background:var(--surface);color:var(--accent-ink);font-weight:600;font-size:14px;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--btn);border-color:var(--btn);color:var(--on-accent)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.primary:disabled{background:var(--surface-3);border-color:var(--surface-3);color:var(--ink-3);cursor:not-allowed;filter:none}
+.btn.text{border-color:transparent;background:transparent}
+.btn.text:hover{background:var(--accent-soft)}
+.btn.danger{color:var(--crit)}
+.btn.sm{height:32px;padding:0 12px;font-size:13px}
+.iconbtn{width:40px;height:40px;border-radius:50%;border:0;background:transparent;display:grid;place-items:center;color:var(--ink-2)}
+.iconbtn:hover{background:var(--surface-2)}
+
+/* chips */
+.chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:12px;font-size:12px;font-weight:500;background:var(--surface-2);color:var(--ink-2);white-space:nowrap}
+.chip.blue{background:var(--accent-soft);color:var(--accent-ink)}
+.chip.good{background:var(--good-soft);color:var(--good)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.crit{background:var(--crit-soft);color:var(--crit)}
+.chip .d{width:6px;height:6px;border-radius:50%;background:currentColor}
+.fchips{display:flex;gap:8px;flex-wrap:wrap}
+.fchip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:13px;font-weight:500;color:var(--ink-2)}
+.fchip:hover{background:var(--surface-2)}
+.fchip[aria-pressed="true"]{background:var(--accent-soft);border-color:transparent;color:var(--accent-ink)}
+.fchip .n{font-variant-numeric:tabular-nums;opacity:.8}
+
+/* KPI tiles */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.kpi{padding:16px;text-align:left;border:1px solid var(--line);border-radius:12px;background:var(--surface);display:flex;flex-direction:column;gap:6px}
+.kpi:hover{box-shadow:var(--shadow)}
+.kpi .v{font-size:30px;font-weight:500;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi .l{font-size:13px;color:var(--ink-2)}
+.kpi.crit .v{color:var(--crit)} .kpi.warn .v{color:var(--warn)}
+
+/* funnel */
+.funnel{display:flex;flex-direction:column;gap:8px}
+.frow{display:grid;grid-template-columns:132px minmax(0,1fr) 28px;align-items:center;gap:12px;border:0;background:none;padding:2px 0;text-align:left}
+.frow .fl{font-size:13px;color:var(--ink-2)}
+.frow .ft{height:22px;background:var(--surface-2);border-radius:6px;overflow:hidden}
+.frow .fb{height:100%;background:var(--accent);border-radius:6px;opacity:.85;min-width:4px}
+.frow.won .fb{background:var(--good)}
+.frow .fn{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
+.funnel-foot{margin-top:12px;font-size:13px;color:var(--ink-2);display:flex;gap:16px;flex-wrap:wrap}
+
+/* lists */
+.alist{display:flex;flex-direction:column}
+.aitem{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border:0;border-top:1px solid var(--line);background:none;text-align:left;width:100%}
+.aitem:first-child{border-top:0}
+.aitem:hover{background:var(--surface-2)}
+.aitem .ai{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;flex:none}
+.ai.crit{background:var(--crit-soft);color:var(--crit)} .ai.warn{background:var(--warn-soft);color:var(--warn)} .ai.blue{background:var(--accent-soft);color:var(--accent-ink)} .ai.good{background:var(--good-soft);color:var(--good)}
+.aitem .at{font-weight:500} .aitem .as{font-size:13px;color:var(--ink-2)}
+.aitem .when{margin-left:auto;font-size:12px;color:var(--ink-3);white-space:nowrap;padding-left:8px}
+.empty{padding:28px 16px;text-align:center;color:var(--ink-2)}
+
+/* table-like rows */
+.tbl{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.tr{display:grid;grid-template-columns:76px minmax(0,2.2fr) 92px 78px 112px 150px 34px;align-items:center;gap:16px;padding:12px 16px;border:0;border-top:1px solid var(--line);background:none;width:100%;text-align:left}
+.tr:first-child{border-top:0}
+button.tr:hover{background:var(--surface-2)}
+.tr.th{font-size:12px;color:var(--ink-3);font-weight:500;padding-block:10px;background:var(--surface)}
+.tr .t1{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tr .t2{font-size:13px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tr .r{text-align:right}
+.tr .meta-sm{display:none}
+.tr.docs{grid-template-columns:minmax(0,2fr) minmax(0,1.4fr) 120px 110px 70px}
+
+/* kanban */
+.board{display:flex;gap:12px;overflow-x:auto;padding-bottom:12px;scroll-snap-type:x proximity;align-items:flex-start}
+.col{flex:0 0 268px;background:var(--surface-2);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:8px;scroll-snap-align:start}
+.col-h{display:flex;justify-content:space-between;align-items:center;padding:6px 8px 2px;font-weight:600;font-size:13px}
+.col-h .n{color:var(--ink-3);font-variant-numeric:tabular-nums;font-weight:500}
+.kcard{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;text-align:left;display:flex;flex-direction:column;gap:6px;width:100%}
+.kcard:hover{box-shadow:var(--shadow)}
+.kcard .kt{font-weight:600}
+.kcard .ks{font-size:12px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kcard .kr{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--ink-2)}
+.kcard .flags{display:flex;gap:4px;align-items:center}
+.flag{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600}
+.flag.crit{color:var(--crit)} .flag.warn{color:var(--warn)}
+.col-empty{font-size:12px;color:var(--ink-3);padding:8px;text-align:center}
+
+/* detail */
+.back{display:inline-flex;align-items:center;gap:6px;margin:-6px 0 12px -10px;height:36px;padding:0 12px 0 8px;border-radius:18px;border:0;background:none;color:var(--ink-2);font-weight:500}
+.back:hover{background:var(--surface-2)}
+.eyebrow{font-size:12px;color:var(--ink-3);letter-spacing:.04em;text-transform:uppercase;font-weight:500;margin-bottom:6px;display:flex;gap:8px;flex-wrap:wrap}
+.dhead{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-start;margin-bottom:16px}
+.dhead h1{font-size:26px}
+.dchips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.stepper{list-style:none;margin:0;padding:16px;display:flex;overflow-x:auto}
+.step{display:flex;align-items:center;gap:8px;flex:1 0 auto}
+.step:not(:last-child)::after{content:"";flex:1;height:2px;background:var(--line);min-width:14px;margin:0 8px}
+.step.done::after{background:var(--accent)}
+.dot{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:600;background:var(--surface-2);color:var(--ink-3);flex:none;font-variant-numeric:tabular-nums}
+.done .dot{background:var(--accent);color:var(--on-accent)}
+.cur .dot{background:var(--surface);color:var(--accent-ink);box-shadow:inset 0 0 0 2px var(--accent)}
+.sl{font-size:13px;color:var(--ink-3);white-space:nowrap}
+.cur .sl{color:var(--ink);font-weight:600}
+.done .sl{color:var(--ink-2)}
+.adv{border-top:1px solid var(--line);padding:14px 16px;display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.adv .req{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1 1 320px}
+.adv .req .rt{font-weight:600;font-size:13px}
+.adv ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px}
+.adv li{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--ink-2)}
+.adv li .ic{margin-top:1px}
+.adv .ok{color:var(--good)} .adv .no{color:var(--crit)}
+.adv .acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.banner{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:12px}
+.banner.crit{background:var(--crit-soft)} .banner.warn{background:var(--warn-soft)} .banner.good{background:var(--good-soft)} .banner.blue{background:var(--accent-soft)}
+.banner .bt{font-weight:600}
+.banner .ic{margin-top:1px}
+.banner.crit .ic{color:var(--crit)} .banner.warn .ic{color:var(--warn)} .banner.good .ic{color:var(--good)} .banner.blue .ic{color:var(--accent-ink)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto;margin:20px 0 16px}
+.tab{padding:12px 14px;border:0;background:none;color:var(--ink-2);font-weight:500;border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap;border-radius:4px 4px 0 0;display:inline-flex;gap:6px;align-items:center}
+.tab:hover{background:var(--surface-2)}
+.tab[aria-selected="true"]{color:var(--accent-ink);border-bottom-color:var(--accent)}
+.tab .n{font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+dl.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 20px;margin:0}
+dl.kv dt{color:var(--ink-2);font-size:13px}
+dl.kv dd{margin:0;font-weight:500;font-variant-numeric:tabular-nums;min-width:0}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.metric .ml{font-size:12px;color:var(--ink-2)}
+.metric .mv{font-size:20px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.vsbar{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.vsbar .track{position:relative;height:8px;border-radius:4px;background:var(--surface-2)}
+.vsbar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--accent)}
+.vsbar .fill.over{background:var(--warn)}
+.vsbar .mark{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink)}
+.vsbar .lg{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-2)}
+
+.task{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.task:first-child{border-top:0}
+.task input{width:18px;height:18px;accent-color:var(--btn);flex:none}
+.task .tt{flex:1;min-width:0}
+.task.done .tt .t1{text-decoration:line-through;color:var(--ink-3)}
+.task .tm{font-size:12px;color:var(--ink-2)}
+.task .tm.late{color:var(--crit);font-weight:600}
+
+.prop{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:14px;padding:16px;border-top:1px solid var(--line);align-items:start}
+.prop:first-child{border-top:0}
+.prop .pv{width:44px;height:44px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-weight:600;color:var(--ink-2);font-size:13px}
+.prop.nos .pv{background:var(--accent-soft);color:var(--accent-ink)}
+.prop .pval{font-size:20px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.prop .pmeta{font-size:13px;color:var(--ink-2);display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.prop .pcond{font-size:13px;margin-top:6px}
+.prop .pside{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+
+.chk-group{padding:4px 0}
+.chk-gh{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px 10px;flex-wrap:wrap}
+.chk-gh .gt{font-weight:600}
+.progress{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink-2)}
+.bar{width:140px;height:6px;background:var(--surface-3);border-radius:3px;overflow:hidden}
+.bar span{display:block;height:100%;background:var(--good);border-radius:3px}
+.doc{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 16px;border-top:1px solid var(--line)}
+.doc .di{width:36px;height:36px;border-radius:8px;background:var(--surface-2);display:grid;place-items:center;color:var(--ink-2)}
+.doc .dn{font-weight:500;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.doc .ds{font-size:12px;color:var(--ink-2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.doc .da{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.doc.future{opacity:.7}
+.opt{font-size:11px;color:var(--ink-3);font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+
+.tl{display:flex;flex-direction:column}
+.tli{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:12px;padding:12px 16px;border-top:1px solid var(--line);align-items:start}
+.tli:first-child{border-top:0}
+.tli .ai{width:32px;height:32px;border-radius:50%;display:grid;place-items:center}
+.tli .tx{font-size:14px}
+.tli .ts{font-size:12px;color:var(--ink-2);margin-top:2px}
+.tli .when{font-size:12px;color:var(--ink-3);white-space:nowrap}
+
+/* forms */
+form .fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field.full{grid-column:1/-1}
+.field label{font-size:12px;color:var(--ink-2);font-weight:500}
+.field input,.field select,.field textarea{height:42px;border:1px solid var(--line);border-radius:8px;padding:0 12px;background:var(--surface);width:100%;min-width:0}
+.field textarea{height:auto;min-height:72px;padding:10px 12px;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.hint{font-size:12px;color:var(--ink-3)}
+.inline-form{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;padding-top:12px;border-top:1px solid var(--line);margin-top:4px}
+.inline-form .field{flex:1 1 140px}
+.inline-form .field.grow{flex:3 1 220px}
+
+/* modal + toast */
+.scrim{position:fixed;inset:0;background:var(--scrim);z-index:40;display:grid;place-items:center;padding:16px}
+.dialog{background:var(--surface);border-radius:24px;width:min(600px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:24px;box-shadow:var(--shadow-2);display:flex;flex-direction:column;gap:16px}
+.dialog .dh{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.dialog .dh h2{font-size:20px;font-weight:500}
+.dialog .df{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;transform:translateX(-50%) translateY(20px);bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:50;background:var(--ink);color:var(--surface);padding:12px 18px;border-radius:8px;font-size:14px;max-width:min(560px,calc(100vw - 32px));opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;box-shadow:var(--shadow-2)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{background:var(--crit);color:var(--surface)}
+
+.sect-gap{margin-top:24px}
+.split{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+
+@media (max-width:1100px){
+  .grid-6040{grid-template-columns:minmax(0,1fr)}
+  .tr{grid-template-columns:70px minmax(0,2fr) 90px 112px 140px 28px}
+  .tr .c-zon{display:none}
+}
+@media (max-width:899px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .side{display:none}
+  .bnav{display:flex}
+  .fab{display:flex}
+  .search,.demo-pill,.brand-prod,.brand-sep{display:none}
+  .main{padding-block:16px calc(160px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .toast{bottom:calc(88px + env(safe-area-inset-bottom,0px))}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid2{grid-template-columns:minmax(0,1fr)}
+  .tr{grid-template-columns:minmax(0,1fr) auto;gap:4px 12px}
+  .tr.th{display:none}
+  .tr .c-id,.tr .c-area,.tr .c-zon,.tr .c-val,.tr .c-go{display:none}
+  .tr .meta-sm{display:block;font-size:12px;color:var(--ink-3);grid-column:1/-1}
+  .tr.docs{grid-template-columns:minmax(0,1fr) auto}
+  .tr.docs .c-ter,.tr.docs .c-val,.tr.docs .c-ver{display:none}
+  .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  form .fields{grid-template-columns:minmax(0,1fr)}
+  .scrim{place-items:end center;padding:0}
+  .dialog{border-radius:24px 24px 0 0;max-height:92vh;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+  .doc{grid-template-columns:36px minmax(0,1fr)}
+  .doc .da{grid-column:2;justify-content:flex-start}
+  .prop{grid-template-columns:40px minmax(0,1fr)}
+  .prop .pside{grid-column:2;align-items:flex-start;flex-direction:row;flex-wrap:wrap}
+  .dhead h1{font-size:22px}
+  .frow{grid-template-columns:104px minmax(0,1fr) 24px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header class="top">
+  <div class="top-in">
+    <button class="brand" data-a="nav" data-r="inicio" aria-label="Início">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#19c2ff"/><stop offset="1" stop-color="#0f5fd8"/></linearGradient></defs><path d="M16 2.5 28.4 13.7c1 .9 1.6 2.2 1.6 3.6V25a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4v-7.7c0-1.4.6-2.7 1.6-3.6Z" fill="url(#lg)"/><path d="M16 11.2 25.2 20H6.8Z" fill="#fff"/></svg>
+      <span class="wordmark">b<span class="k">k</span>m</span>
+      <span class="brand-sep"></span><span class="brand-prod">Terrenos</span>
+    </button>
+    <label class="search" for="q-top">
+      <svg class="ic" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      <input id="q-top" type="search" placeholder="Buscar terreno, bairro, matrícula ou corretor" autocomplete="off">
+    </label>
+    <div class="top-right">
+      <span class="demo-pill">Dados de exemplo</span>
+      <div class="seg" id="role" role="group" aria-label="Testar como"></div>
+      <button class="avatar" id="av" data-a="role-cycle" title="Trocar perfil de teste"></button>
+    </div>
+  </div>
+</header>
+<div class="layout">
+  <aside class="side" id="side" aria-label="Navegação"></aside>
+  <main class="main" id="main"></main>
+</div>
+<nav class="bnav" id="bnav" aria-label="Navegação"></nav>
+<button class="fab" data-a="nova-oferta"><svg class="ic" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Nova oferta</button>
+<div id="modal"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<input type="file" id="file-in" hidden>
+
+<script>
+(function(){
+"use strict";
+/* ---------- utilidades ---------- */
+const TODAY_ISO='2026-10-14';
+const pd=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const iso=x=>`${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;
+const addDays=(s,n)=>{const x=pd(s);x.setDate(x.getDate()+n);return iso(x)};
+const diff=(a,b)=>Math.round((pd(b)-pd(a))/864e5);
+const MES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const fd=s=>{if(!s)return '—';const x=pd(s);return `${x.getDate()} ${MES[x.getMonth()]}${x.getFullYear()!==2026?' '+x.getFullYear():''}`};
+const mi=v=>v==null?'—':'R$ '+(v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' mi';
+const brl=v=>v==null?'—':v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+const m2=v=>Number(v).toLocaleString('pt-BR')+' m²';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=s=>Number(String(s||'').replace(/\D/g,''))||0;
+const digits=s=>String(s||'').replace(/\D/g,'');
+const $=s=>document.querySelector(s);
+const P={
+  home:'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z',
+  layers:'M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z',
+  board:'M3 5h5v14H3zm6.5 0h5v9h-5zM16 5h5v12h-5z',
+  doc:'M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z',
+  add:'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',
+  back:'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z',
+  check:'M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
+  warn:'M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z',
+  clock:'M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z',
+  upload:'M5 20h14v-2H5v2zm0-10h4v6h6v-6h4l-7-7-7 7z',
+  close:'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
+  chev:'M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z',
+  pause:'M6 19h4V5H6v14zm8-14v14h4V5h-4z',
+  block:'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9A7.9 7.9 0 0 1 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1A7.9 7.9 0 0 1 20 12c0 4.42-3.58 8-8 8z',
+  link:'M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z',
+  fwd:'M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z',
+  chat:'M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z',
+  place:'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z',
+  money:'M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z',
+  restore:'M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18z'
+};
+const ic=(n,s=20)=>`<svg class="ic" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true"><path fill="currentColor" d="${P[n]}"/></svg>`;
+
+/* ---------- domínio ---------- */
+const STAGES=[
+  {k:'recebida',n:'Recebida'},{k:'triagem',n:'Triagem'},{k:'viabilidade',n:'Viabilidade'},{k:'diligencia',n:'Diligência'},
+  {k:'proposta',n:'Proposta'},{k:'aprovacao',n:'Aprovação interna'},{k:'contrato',n:'Contrato'},{k:'ganha',n:'Ganha'}];
+const SIDX=k=>STAGES.findIndex(s=>s.k===k);
+const SN=k=>(STAGES.find(s=>s.k===k)||{}).n||k;
+const TIPOS={
+  mat:{n:'Matrícula atualizada',val:30,f:'matricula'},
+  onus:{n:'Certidão de ônus reais',val:30,f:'onus_reais'},
+  iptu:{n:'Certidão negativa de IPTU',val:90,f:'iptu'},
+  vend:{n:'Certidões pessoais do vendedor',val:30,f:'certidoes_vendedor'},
+  topo:{n:'Levantamento planialtimétrico',val:null,f:'planialtimetrico'},
+  sond:{n:'Sondagem SPT',val:null,f:'sondagem_spt'},
+  amb:{n:'Avaliação ambiental preliminar',val:null,f:'ambiental'},
+  minuta:{n:'Minuta de promessa de compra e venda',val:null,f:'minuta_promessa'}
+};
+const CHECK=[
+  {etapa:'diligencia',titulo:'Exigidos para sair de Diligência',itens:[['mat',1],['onus',1],['iptu',1],['vend',1],['topo',1],['sond',0],['amb',0]]},
+  {etapa:'contrato',titulo:'Exigidos para concluir o Contrato',itens:[['minuta',1]]}];
+const MOTIVOS=['Preço acima do teto da viabilidade','Zoneamento ou legislação','Documentação ou pendência jurídica','Vendedor desistiu','Perdido para concorrente','Outro'];
+const USERS={Gestor:'Moisés',Analista:'Rafael Souza'};
+const AVC={'Moisés':'--av1','Ana Prado':'--av2','Rafael Souza':'--av3','Camila Torres':'--av4'};
+const ini=n=>n.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+const av=(n,cls='')=>`<span class="avatar ${cls}" style="background:var(${AVC[n]||'--av3'})" title="${esc(n)}">${esc(ini(n))}</span>`;
+
+/* ---------- dados de exemplo ---------- */
+function seed(){
+  const terrenos=[
+    ['T-0110','Pirituba','Rua Alto do Ipê, 1.240',4180,'ZEIS-2',58,[['152.880','8º CRI']],[['Construpar Participações Ltda.',100]]],
+    ['T-0119','Sapopemba','Av. Campo das Pitangas, 3.050',3640,'ZEIS-2',46,[['201.117','9º CRI']],[['Maria Aparecida Lins',50],['João Batista Lins',50]]],
+    ['T-0128','Vila Prudente','Rua Barão do Jequitibá, 512',2950,'ZM',38,[['98.442','6º CRI'],['98.443','6º CRI']],[['Têxtil Paulistana S.A.',100]]],
+    ['T-0137','Brasilândia','Rua Vale do Sabiá, 88',2200,'ZM',30,[['176.209','18º CRI']],[['Roberto Kenji Sato',100]]],
+    ['T-0142','Itaquera','Rua das Acácias Roxas, 410',3120,'ZEIS-2',42,[['184.552','9º CRI'],['184.553','9º CRI']],[['Espólio de José Ribamar Andrade',100]]],
+    ['T-0149','Cidade Tiradentes','Estrada do Iguape Velho, 2.700',6300,'ZEIS-1',72,[['233.901','9º CRI']],[['Espólio de Antônio Ferraz',100]]],
+    ['T-0155','Guaianases','Estrada do Lajeado Velho, 1.880',5400,'ZEIS-2',64,[['219.774','9º CRI']],[['Lajeado Empreendimentos Ltda.',100]]],
+    ['T-0158','Perus','Rua Serra da Cantareira Nova, 640',2050,'ZM',27,[['164.320','8º CRI']],[['Helena Duarte Campos',100]]],
+    ['T-0161','Jaraguá','Rua Pico Alto, 95',1950,'ZEU',33,[['171.058','8º CRI']],[['Família Moretti (4 herdeiros)',100]]],
+    ['T-0163','Campo Limpo','Av. Ponte Baixa Nova, 2.210',2680,'ZEU',40,[['142.996','11º CRI']],[['Auto Posto Ponte Baixa Ltda.',100]]],
+    ['T-0164','Penha','Rua Capitão Ourinhos, 330',2420,'ZM',35,[['88.615','12º CRI']],[['Galpões Penha Ltda.',100]]],
+    ['T-0166','Ermelino Matarazzo','Rua Monte Belo do Leste, 1.010',3300,'ZEIS-2',48,[['190.402','12º CRI']],[['Celso Ribeiro Prado',60],['Lúcia Ribeiro Prado',40]]]
+  ].map(([id,bairro,end,area,zon,frente,mats,props])=>({id,bairro,end,cidade:'São Paulo',area,zon,frente,
+    mats:mats.map(([num,cri])=>({num,cri})),props:props.map(([nome,pct])=>({nome,pct}))}));
+
+  const ofertas=[
+    ['O-101','T-0110','Corretor','Lemos Imóveis · Marcos Lemos','2026-03-10',9200000],
+    ['O-104','T-0119','Proprietário direto','','2026-05-02',7600000],
+    ['O-108','T-0128','Corretor','Prime Terrenos · Juliana Reis','2026-06-15',6900000],
+    ['O-110','T-0137','Corretor','Zona Leste Áreas · Paulo Nunes','2026-07-01',4100000],
+    ['O-112','T-0142','Corretor','Lemos Imóveis · Marcos Lemos','2026-08-18',6800000],
+    ['O-115','T-0142','Corretor','Prime Terrenos · Juliana Reis','2026-09-02',7100000],
+    ['O-113','T-0149','Prospecção própria','','2026-08-05',8800000],
+    ['O-118','T-0155','Proprietário direto','','2026-08-28',9800000],
+    ['O-121','T-0158','Corretor','Zona Leste Áreas · Paulo Nunes','2026-10-01',3600000],
+    ['O-122','T-0161','Corretor','Prime Terrenos · Juliana Reis','2026-09-24',3900000],
+    ['O-124','T-0163','Corretor','Lemos Imóveis · Marcos Lemos','2026-10-03',5100000],
+    ['O-126','T-0164','Corretor','Prime Terrenos · Juliana Reis','2026-10-09',5200000],
+    ['O-127','T-0164','Corretor','Lemos Imóveis · Marcos Lemos','2026-10-11',5600000],
+    ['O-128','T-0166','Corretor','Zona Leste Áreas · Paulo Nunes','2026-10-13',5900000]
+  ].map(([id,tid,origem,corretor,em,valor])=>({id,tid,origem,corretor,em,valor}));
+
+  const pr=(v,autor,em,valor,forma,pct,cond,status)=>({v,autor,em,valor,forma,pct,cond,status});
+  const procs=[
+    {id:'N-012',tid:'T-0110',etapa:'ganha',status:'ganha',resp:'Ana Prado',aber:'2026-03-12',ult:'2026-07-28',emp:'E-07 · Residencial Pirituba',
+      viab:{id:'V-061',em:'2026-04-02',vgv:62.4e6,margem:15.6,pmax:8.9e6},
+      props:[pr(1,'Nós','2026-05-04',7900000,'Dinheiro',0,'Aprovação do projeto em 180 dias','Recusada'),pr(2,'Proprietário','2026-05-20',9200000,'Dinheiro',0,'Sem condições','Contraproposta'),pr(3,'Nós','2026-06-03',8600000,'Misto',5,'Pagamento em 3 parcelas; condição suspensiva de aprovação','Aceita')]},
+    {id:'N-019',tid:'T-0119',etapa:'contrato',status:'ativo',resp:'Ana Prado',aber:'2026-05-04',ult:'2026-10-06',
+      viab:{id:'V-079',em:'2026-06-01',vgv:51.0e6,margem:15.0,pmax:7.3e6},
+      props:[pr(1,'Nós','2026-07-14',6800000,'Dinheiro',0,'Aprovação do projeto em 180 dias','Recusada'),pr(2,'Nós','2026-08-26',7100000,'Dinheiro',0,'Aprovação do projeto em 180 dias','Aceita')]},
+    {id:'N-024',tid:'T-0128',etapa:'aprovacao',status:'ativo',resp:'Moisés',aber:'2026-06-16',ult:'2026-10-09',
+      viab:{id:'V-093',em:'2026-07-10',vgv:44.2e6,margem:14.2,pmax:6.4e6},
+      props:[pr(1,'Nós','2026-08-20',5900000,'Misto',6,'Condição suspensiva de aprovação na Prefeitura','Recusada'),pr(2,'Proprietário','2026-09-08',6900000,'Dinheiro',0,'Pagamento à vista','Contraproposta'),pr(3,'Nós','2026-09-30',6500000,'Dinheiro',0,'40% na assinatura, 60% na aprovação','Aceita')]},
+    {id:'N-028',tid:'T-0137',etapa:'viabilidade',status:'perdida',resp:'Camila Torres',aber:'2026-07-02',ult:'2026-07-20',fim:'2026-08-04',
+      motivo:'Zoneamento ou legislação',motivoTxt:'Cerca de 40% do lote em área de proteção ambiental; a área útil não fecha a conta.'},
+    {id:'N-031',tid:'T-0142',etapa:'proposta',status:'ativo',resp:'Ana Prado',aber:'2026-08-19',ult:'2026-09-18',
+      viab:{id:'V-112',em:'2026-09-01',vgv:46.8e6,margem:14.8,pmax:6.2e6},
+      props:[pr(1,'Nós','2026-09-20',5400000,'Misto',6,'R$ 4,0 mi em dinheiro + 6% do VGV em permuta física','Recusada'),pr(2,'Proprietário','2026-09-29',6600000,'Dinheiro',0,'Pagamento à vista na escritura','Contraproposta'),pr(3,'Nós','2026-10-08',6150000,'Misto',4,'R$ 5,2 mi em dinheiro + 4% em permuta física; condição suspensiva de aprovação','Em análise')]},
+    {id:'N-033',tid:'T-0149',etapa:'diligencia',status:'suspensa',resp:'Rafael Souza',aber:'2026-08-06',ult:'2026-09-10',fim:'2026-09-26',retorno:'2026-11-20',
+      viab:{id:'V-104',em:'2026-08-25',vgv:88.0e6,margem:16.8,pmax:12.6e6},motivoTxt:'Inventário do espólio ainda não concluído; herdeiros pediram retomar em novembro.'},
+    {id:'N-036',tid:'T-0155',etapa:'diligencia',status:'ativo',resp:'Camila Torres',aber:'2026-08-29',ult:'2026-09-28',
+      viab:{id:'V-118',em:'2026-09-16',vgv:78.3e6,margem:16.2,pmax:10.9e6}},
+    {id:'N-038',tid:'T-0158',etapa:'triagem',status:'ativo',resp:'Rafael Souza',aber:'2026-10-02',ult:'2026-10-06'},
+    {id:'N-039',tid:'T-0161',etapa:'viabilidade',status:'ativo',resp:'Rafael Souza',aber:'2026-09-25',ult:'2026-10-07'},
+    {id:'N-040',tid:'T-0163',etapa:'triagem',status:'ativo',resp:'Camila Torres',aber:'2026-10-03',ult:'2026-10-08'},
+    {id:'N-041',tid:'T-0164',etapa:'recebida',status:'ativo',resp:'Rafael Souza',aber:'2026-10-09',ult:'2026-10-09'},
+    {id:'N-042',tid:'T-0166',etapa:'recebida',status:'ativo',resp:'Camila Torres',aber:'2026-10-13',ult:'2026-10-13'}
+  ];
+  procs.forEach(p=>{
+    p.props=(p.props||[]).map(x=>({...x}));
+    p.viab=p.viab||null;
+    const idx=SIDX(p.etapa);
+    p.hist=[];
+    for(let i=0;i<=idx;i++){
+      const em=idx===0?p.aber:addDays(p.aber,Math.round(diff(p.aber,p.ult)*i/idx));
+      p.hist.push({kind:'etapa',para:STAGES[i].k,em,user:p.resp,txt:i===0?'Negociação aberta a partir da oferta':`Avançou para ${STAGES[i].n}`});
+    }
+    p.props.forEach(x=>p.hist.push({kind:'prop',em:x.em,user:x.autor==='Nós'?p.resp:'Proprietário',txt:`Proposta v${x.v} registrada: ${mi(x.valor)} (${x.autor==='Nós'?'nossa':'do proprietário'})`}));
+    if(p.status==='perdida')p.hist.push({kind:'fim',em:p.fim,user:p.resp,txt:`Encerrada como perdida: ${p.motivo}`});
+    if(p.status==='suspensa')p.hist.push({kind:'fim',em:p.fim,user:p.resp,txt:`Suspensa até ${fd(p.retorno)}`});
+    p.ativ=[];p.tarefas=[];
+  });
+  const byId=id=>procs.find(p=>p.id===id);
+  const A=(id,tipo,em,user,txt)=>byId(id).ativ.push({tipo,em,user,txt});
+  A('N-031','Ligação','2026-10-10','Ana Prado','Inventariante achou a v3 baixa, mas topa discutir a permuta. Retorno prometido até sexta.');
+  A('N-031','Reunião','2026-09-29','Ana Prado','Reunião com o advogado do espólio. Recebida contraproposta de R$ 6,6 mi à vista.');
+  A('N-031','Visita','2026-08-27','Camila Torres','Visita técnica: terreno plano, frente para via asfaltada, sem ocupação.');
+  A('N-036','E-mail','2026-10-07','Camila Torres','Pedido ao vendedor de novas certidões pessoais (as anteriores venceram).');
+  A('N-036','Visita','2026-09-05','Camila Torres','Visita: declive suave no fundo do lote. Pedir planialtimétrico antes da proposta.');
+  A('N-024','Reunião','2026-10-09','Moisés','Vendedor aceitou R$ 6,5 mi. Vai para o comitê por ficar acima do preço máximo.');
+  A('N-019','E-mail','2026-10-10','Ana Prado','Minuta enviada pelo jurídico do vendedor. Em revisão.');
+  A('N-041','Nota','2026-10-11','Rafael Souza','Segunda oferta do mesmo terreno, agora pela Lemos Imóveis, R$ 400 mil acima da primeira.');
+  const TK=(id,t,resp,prazo,feito=false)=>byId(id).tarefas.push({id:'K'+Math.random().toString(36).slice(2,8),t,resp,prazo,feito});
+  TK('N-031','Responder a contraproposta do espólio','Ana Prado','2026-10-16');
+  TK('N-031','Atualizar a matrícula antes do vencimento','Rafael Souza','2026-10-20');
+  TK('N-036','Contratar levantamento planialtimétrico','Camila Torres','2026-10-10');
+  TK('N-036','Cobrar novas certidões do vendedor','Camila Torres','2026-10-12');
+  TK('N-024','Levar ao comitê: valor acima do preço máximo','Moisés','2026-10-17');
+  TK('N-019','Revisar minuta com o jurídico','Ana Prado','2026-10-15');
+  TK('N-039','Rodar estudo de viabilidade no BKM','Rafael Souza','2026-10-18');
+  TK('N-040','Visitar o terreno','Camila Torres','2026-10-21');
+  TK('N-038','Conferir zoneamento e restrições','Rafael Souza','2026-10-09',true);
+  TK('N-041','Triagem: localização e preço por m²','Rafael Souza','2026-10-15');
+  TK('N-042','Triagem: localização e preço por m²','Camila Torres','2026-10-17');
+
+  let dn=1;
+  const docs=[];
+  const D=(pid,tipo,status,emitido,versoes=1)=>{const p=byId(pid);docs.push({id:'D-'+(dn++),pid,tipo,status,emitido,versoes,arquivo:emitido?`${TIPOS[tipo].f}_${p.tid}.pdf`:null})};
+  // N-031 proposta: tudo validado; matrícula vence em breve
+  D('N-031','mat','validado','2026-09-22');D('N-031','onus','validado','2026-09-22');D('N-031','iptu','validado','2026-09-10');
+  D('N-031','vend','validado','2026-09-25');D('N-031','topo','validado','2026-09-01');D('N-031','sond','validado','2026-09-04');D('N-031','amb','pendente',null,0);
+  // N-036 diligência: bloqueada
+  D('N-036','mat','validado','2026-10-01');D('N-036','onus','validado','2026-10-01');D('N-036','iptu','recebido','2026-08-20');
+  D('N-036','vend','validado','2026-09-05');D('N-036','topo','pendente',null,0);D('N-036','sond','pendente',null,0);D('N-036','amb','recebido','2026-09-20');
+  // N-024, N-019
+  ['mat','onus','vend'].forEach(t=>D('N-024',t,'validado','2026-09-30'));D('N-024','iptu','validado','2026-09-15');D('N-024','topo','validado','2026-08-10');D('N-024','sond','validado','2026-08-12');D('N-024','amb','validado','2026-08-12');
+  ['mat','onus','vend'].forEach(t=>D('N-019',t,'validado','2026-10-02',2));D('N-019','iptu','validado','2026-09-20');D('N-019','topo','validado','2026-07-02');D('N-019','sond','validado','2026-07-05');D('N-019','amb','validado','2026-07-05');
+  D('N-019','minuta','recebido','2026-10-10');
+  ['mat','onus','iptu','vend','topo','sond','amb','minuta'].forEach(t=>D('N-012',t,'validado','2026-07-10'));
+  ['mat','onus'].forEach(t=>D('N-033',t,'validado','2026-09-12'));
+  return {terrenos,ofertas,procs,docs,seq:{T:166,N:42,O:128,D:dn}};
+}
+
+/* ---------- estado ---------- */
+const KEY='bkm-terrenos-prototipo-v1';
+let S;
+try{const raw=localStorage.getItem(KEY);S=raw?JSON.parse(raw):null}catch(e){S=null}
+if(!S||!S.procs)S=seed();
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const UI={route:'inicio',id:null,tab:'resumo',from:'terrenos',q:'',fT:'todos',fD:'todos',kView:'ativas',role:'Gestor',showPropForm:false,pendingUpload:null,modal:null};
+const me=()=>USERS[UI.role];
+
+const T=id=>S.terrenos.find(t=>t.id===id);
+const procOf=tid=>S.procs.filter(p=>p.tid===tid).sort((a,b)=>b.aber.localeCompare(a.aber))[0];
+const ofertasOf=tid=>S.ofertas.filter(o=>o.tid===tid).sort((a,b)=>a.em.localeCompare(b.em));
+const docsOf=pid=>S.docs.filter(d=>d.pid===pid);
+const lastProp=p=>p.props&&p.props.length?p.props[p.props.length-1]:null;
+const lastEtapa=p=>[...p.hist].reverse().find(h=>h.kind==='etapa');
+const daysIn=p=>diff(lastEtapa(p).em,TODAY_ISO);
+const validade=d=>d.emitido&&TIPOS[d.tipo].val?addDays(d.emitido,TIPOS[d.tipo].val):null;
+const docSt=d=>{if(!d||!d.emitido||d.status==='pendente')return 'pendente';if(d.status==='rejeitado')return 'rejeitado';const v=validade(d);if(v&&v<TODAY_ISO)return 'vencido';return d.status};
+const docDue=d=>{const v=validade(d);return v?diff(TODAY_ISO,v):null};
+const docFor=(pid,tipo)=>S.docs.find(d=>d.pid===pid&&d.tipo===tipo);
+const reqOn=(p,etapa)=>SIDX(p.etapa)>=SIDX(etapa);
+const activeProcs=()=>S.procs.filter(p=>p.status==='ativo');
+const activeDocs=()=>S.docs.filter(d=>{const p=S.procs.find(x=>x.id===d.pid);return p&&p.status==='ativo'});
+const valorRef=p=>{const lp=lastProp(p);if(lp)return lp.valor;const o=ofertasOf(p.tid);return o.length?o[o.length-1].valor:null};
+const acima=p=>{const lp=lastProp(p);return !!(p.viab&&lp&&lp.valor>p.viab.pmax)};
+const lateTasks=p=>p.tarefas.filter(t=>!t.feito&&t.prazo<TODAY_ISO);
+
+function flagsOf(p){
+  const venc=docsOf(p.id).filter(d=>docSt(d)==='vencido').length;
+  return {venc,acima:acima(p),atras:lateTasks(p).length};
+}
+function chipStatus(p){
+  if(p.status==='perdida')return `<span class="chip crit"><span class="d"></span>Perdida</span>`;
+  if(p.status==='suspensa')return `<span class="chip warn"><span class="d"></span>Suspensa</span>`;
+  if(p.status==='ganha')return `<span class="chip good"><span class="d"></span>Ganha</span>`;
+  return `<span class="chip blue"><span class="d"></span>${SN(p.etapa)}</span>`;
+}
+const docChip=st=>({pendente:'<span class="chip">Pendente</span>',recebido:'<span class="chip blue">Aguardando validação</span>',validado:'<span class="chip good">Validado</span>',vencido:'<span class="chip crit">Vencido</span>',rejeitado:'<span class="chip crit">Rejeitado</span>'}[st]);
+
+/* ---------- regras de avanço ---------- */
+function checkAdvance(p){
+  const idx=SIDX(p.etapa),next=STAGES[idx+1];
+  const r={next,ok:true,items:[],forcible:false};
+  if(p.status!=='ativo'||!next){r.ok=false;return r}
+  if(p.etapa==='viabilidade'){
+    const ok=!!p.viab;r.items.push({ok,txt:ok?`Estudo ${p.viab.id} do BKM vinculado`:'Vincular um estudo de viabilidade do BKM',fix:ok?null:{a:'link-viab',l:'Vincular estudo'}});
+  }
+  CHECK.filter(g=>g.etapa===p.etapa).forEach(g=>{
+    g.itens.filter(([,o])=>o).forEach(([t])=>{
+      const d=docFor(p.id,t),st=docSt(d),ok=st==='validado';
+      const why={pendente:'não enviado',recebido:'aguardando validação',vencido:'vencido',rejeitado:'rejeitado'}[st];
+      r.items.push({ok,txt:ok?`${TIPOS[t].n} validado`:`${TIPOS[t].n}: ${why}`,fix:ok?null:{a:'tab',t:'documentos',l:'Ver documentos'}});
+    });
+  });
+  if(p.etapa==='proposta'){
+    const lp=lastProp(p),ok=!!lp&&lp.status==='Aceita';
+    r.items.push({ok,txt:ok?'Proposta aceita pelo vendedor':'Ter uma proposta marcada como aceita',fix:ok?null:{a:'tab',t:'propostas',l:'Ver propostas'}});
+  }
+  if(next.k==='contrato'||next.k==='ganha'){
+    const ok=UI.role==='Gestor';r.items.push({ok,txt:ok?'Aprovação de gestor':'Somente gestores aprovam a compra e o fechamento',gate:true});
+  }
+  const blockers=r.items.filter(i=>!i.ok);
+  r.ok=blockers.length===0;
+  r.forcible=!r.ok&&UI.role==='Gestor'&&blockers.every(i=>!i.gate);
+  return r;
+}
+function ensureDocs(p){
+  CHECK.forEach(g=>{if(reqOn(p,g.etapa))g.itens.forEach(([t])=>{if(!docFor(p.id,t))S.docs.push({id:'D-'+(S.seq.D++),pid:p.id,tipo:t,status:'pendente',emitido:null,versoes:0,arquivo:null})})});
+}
+function advance(p,forced){
+  const r=checkAdvance(p);if(!r.next)return;
+  if(!r.ok&&!forced){toast('Ainda há pendências para avançar.',true);return}
+  p.etapa=r.next.k;
+  p.hist.push({kind:'etapa',para:p.etapa,em:TODAY_ISO,user:me(),txt:`Avançou para ${r.next.n}`+(forced?' sem checklist completo (avanço forçado)':''),forced:!!forced});
+  if(p.etapa==='ganha'){p.status='ganha';p.emp='E-'+String(8+S.procs.filter(x=>x.status==='ganha').length).padStart(2,'0')+' · '+T(p.tid).bairro;p.hist.push({kind:'fim',em:TODAY_ISO,user:me(),txt:`Empreendimento ${p.emp} criado`})}
+  ensureDocs(p);save();render();
+  toast(p.etapa==='ganha'?'Negociação ganha. Empreendimento criado.':`Movida para ${r.next.n}.`);
+}
+
+/* ---------- shell ---------- */
+const NAV=[['inicio','Início','home'],['terrenos','Terrenos','layers'],['negociacoes','Negociações','board'],['documentos','Documentos','doc']];
+function navCurrent(){return UI.route==='terreno'?UI.from:UI.route}
+function docAlerts(){return activeDocs().filter(d=>{const st=docSt(d);const dd=docDue(d);return st==='vencido'||(st!=='pendente'&&dd!=null&&dd>=0&&dd<=15)}).length}
+function renderNav(){
+  const cur=navCurrent(),da=docAlerts();
+  const cnt={terrenos:S.terrenos.length,negociacoes:activeProcs().length,documentos:da};
+  $('#side').innerHTML=`<button class="compose" data-a="nova-oferta">${ic('add',24)}Nova oferta</button>`+
+    NAV.map(([r,l,i])=>`<button class="nav-item" data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''}>${ic(i)}${l}${cnt[r]!=null?`<span class="cnt ${r==='documentos'&&da?'alert':''}">${cnt[r]}</span>`:''}</button>`).join('')+
+    `<div class="side-foot"><span>Protótipo navegável · dados de exemplo</span><button class="linkbtn" data-a="reset">Restaurar dados de exemplo</button></div>`;
+  $('#bnav').innerHTML=NAV.map(([r,l,i])=>`<button data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''}><span class="pill">${ic(i,22)}${r==='documentos'&&da?`<span class="badge">${da}</span>`:''}</span>${l}</button>`).join('');
+  $('#role').innerHTML=['Gestor','Analista'].map(r=>`<button data-a="role" data-v="${r}" aria-pressed="${UI.role===r}">${r}</button>`).join('');
+  const a=$('#av');a.textContent=ini(me());a.style.background=`var(${AVC[me()]})`;a.title=`${me()} · ${UI.role} (toque para trocar o perfil de teste)`;
+}
+function render(){renderNav();renderMain();renderModal()}
+function renderMain(){
+  const m=$('#main');
+  const f={inicio:pgInicio,terrenos:pgTerrenos,negociacoes:pgNeg,documentos:pgDocs,terreno:pgTerreno}[UI.route];
+  m.innerHTML=f();
+}
+
+/* ---------- Início ---------- */
+function pgInicio(){
+  const h=new Date().getHours();const sau=h<12?'Bom dia':h<18?'Boa tarde':'Boa noite';
+  const ativos=activeProcs();
+  const ofMes=S.ofertas.filter(o=>o.em.startsWith('2026-10')).length;
+  const late=ativos.flatMap(p=>lateTasks(p).map(t=>({t,p})));
+  const da=docAlerts();
+  const att=[];
+  activeDocs().forEach(d=>{const p=S.procs.find(x=>x.id===d.pid),t=T(p.tid),st=docSt(d),dd=docDue(d);
+    if(st==='vencido')att.push({sev:'crit',i:'warn',ti:`${TIPOS[d.tipo].n} vencida`,su:`${t.bairro} · venceu em ${fd(validade(d))}`,tid:t.id,tab:'documentos',o:0});
+    else if(st!=='pendente'&&dd!=null&&dd<=15)att.push({sev:'warn',i:'clock',ti:`${TIPOS[d.tipo].n} vence em ${dd} dias`,su:`${t.bairro} · ${SN(p.etapa)}`,tid:t.id,tab:'documentos',o:2});});
+  ativos.forEach(p=>{const t=T(p.tid);
+    if(acima(p))att.push({sev:'warn',i:'money',ti:`Proposta ${mi(lastProp(p).valor)} acima do preço máximo de ${mi(p.viab.pmax)}`,su:`${t.bairro} · ${SN(p.etapa)}`,tid:t.id,tab:'propostas',o:1});
+    if(daysIn(p)>=21)att.push({sev:'warn',i:'pause',ti:`Parada há ${daysIn(p)} dias em ${SN(p.etapa)}`,su:`${t.bairro} · ${p.resp}`,tid:t.id,tab:'resumo',o:3});});
+  late.forEach(({t,p})=>att.push({sev:'crit',i:'clock',ti:t.t,su:`${T(p.tid).bairro} · ${t.resp} · venceu ${fd(t.prazo)}`,tid:p.tid,tab:'resumo',o:0}));
+  att.sort((a,b)=>a.o-b.o);
+  const counts=STAGES.map(s=>({s,n:S.procs.filter(p=>p.etapa===s.k&&(p.status==='ativo'||(s.k==='ganha'&&p.status==='ganha'))).length}));
+  const mx=Math.max(...counts.map(c=>c.n),1);
+  const feed=S.procs.flatMap(p=>[...p.hist.map(h=>({em:h.em,user:h.user,txt:h.txt,p,kind:h.kind})),...p.ativ.map(a=>({em:a.em,user:a.user,txt:`${a.tipo}: ${a.txt}`,p,kind:'ativ'}))])
+    .sort((a,b)=>b.em.localeCompare(a.em)).slice(0,8);
+  const fi={etapa:['fwd','blue'],prop:['money','blue'],fim:['block','crit'],ativ:['chat','good'],doc:['doc','blue']};
+  return `
+  <div class="page-h"><div><h1>${sau}, <span class="hand">${esc(me().split(' ')[0])}</span></h1><div class="sub">Quarta, 14 de outubro de 2026 · ${ativos.length} negociações em andamento</div></div></div>
+  <div class="kpis">
+    <button class="kpi" data-a="nav" data-r="negociacoes"><span class="v">${ativos.length}</span><span class="l">Negociações ativas</span></button>
+    <button class="kpi" data-a="nav" data-r="terrenos"><span class="v">${ofMes}</span><span class="l">Ofertas recebidas em outubro</span></button>
+    <button class="kpi ${da?'warn':''}" data-a="nav" data-r="documentos" data-fd="alerta"><span class="v">${da}</span><span class="l">Documentos vencidos ou a vencer em 15 dias</span></button>
+    <button class="kpi ${late.length?'crit':''}" data-a="go-first-late"><span class="v">${late.length}</span><span class="l">Tarefas atrasadas</span></button>
+  </div>
+  <div class="grid-6040 sect-gap">
+    <section class="card"><div class="card-h"><h2>Precisa de atenção</h2><span class="chip ${att.some(a=>a.sev==='crit')?'crit':'warn'}">${att.length}</span></div>
+      <div class="alist" style="margin-top:8px">${att.length?att.map(a=>`<button class="aitem" data-a="open" data-id="${a.tid}" data-tab="${a.tab}"><span class="ai ${a.sev}">${ic(a.i,18)}</span><span><div class="at">${esc(a.ti)}</div><div class="as">${esc(a.su)}</div></span><span class="when">${ic('chev',18)}</span></button>`).join(''):'<div class="empty">Nada pendente. Tudo em dia.</div>'}</div>
+    </section>
+    <div class="stack">
+      <section class="card"><div class="card-h"><h2>Funil</h2><button class="btn text sm" data-a="nav" data-r="negociacoes">Abrir quadro</button></div>
+        <div class="card-b"><div class="funnel">${counts.map(c=>`<button class="frow ${c.s.k==='ganha'?'won':''}" data-a="nav" data-r="negociacoes"><span class="fl">${c.s.n}</span><span class="ft"><span class="fb" style="display:block;width:${c.n?Math.max(6,c.n/mx*100):0}%"></span></span><span class="fn">${c.n}</span></button>`).join('')}</div>
+        <div class="funnel-foot"><span>Perdidas: <b>${S.procs.filter(p=>p.status==='perdida').length}</b></span><span>Suspensas: <b>${S.procs.filter(p=>p.status==='suspensa').length}</b></span></div></div>
+      </section>
+      <section class="card"><div class="card-h"><h2>Atividade recente</h2></div>
+        <div class="tl" style="margin-top:8px">${feed.map(f=>`<div class="tli"><span class="ai ${fi[f.kind][1]}">${ic(fi[f.kind][0],16)}</span><div><div class="tx">${esc(f.txt)}</div><div class="ts">${esc(T(f.p.tid).bairro)} · ${esc(f.user)}</div></div><span class="when">${fd(f.em)}</span></div>`).join('')}</div>
+      </section>
+    </div>
+  </div>`;
+}
+
+/* ---------- Terrenos ---------- */
+function matchQ(t,q){
+  if(!q)return true;q=q.toLowerCase();
+  const p=procOf(t.id);
+  const hay=[t.id,t.bairro,t.end,t.zon,...t.mats.map(m=>m.num+' '+m.cri),...t.mats.map(m=>digits(m.num)),...ofertasOf(t.id).map(o=>o.corretor),...t.props.map(x=>x.nome),p?p.resp:''].join(' ').toLowerCase();
+  return q.split(/\s+/).every(w=>hay.includes(w));
+}
+function terrenosFiltrados(){
+  return S.terrenos.filter(t=>{const p=procOf(t.id);
+    const f=UI.fT==='todos'||(UI.fT==='ativos'&&p.status==='ativo')||(UI.fT==='ganhos'&&p.status==='ganha')||(UI.fT==='encerrados'&&(p.status==='perdida'||p.status==='suspensa'));
+    return f&&matchQ(t,UI.q)}).sort((a,b)=>b.id.localeCompare(a.id));
+}
+function terrenosRows(){
+  const list=terrenosFiltrados();
+  if(!list.length)return `<div class="empty">Nenhum terreno encontrado para “${esc(UI.q)}”. <br><button class="btn sm" style="margin-top:12px" data-a="nova-oferta">${ic('add',18)}Cadastrar nova oferta</button></div>`;
+  return `<div class="tr th"><span class="c-id">Código</span><span>Terreno</span><span class="c-area r">Área</span><span class="c-zon">Zona</span><span class="c-val r">Valor ref.</span><span>Etapa</span><span class="c-go"></span></div>`+
+    list.map(t=>{const p=procOf(t.id),fl=flagsOf(p),of=ofertasOf(t.id);
+      return `<button class="tr" data-a="open" data-id="${t.id}"><span class="c-id faint num">${t.id}</span>
+        <span style="min-width:0"><div class="t1">${esc(t.bairro)}</div><div class="t2">${esc(t.end)}${of.length>1?` · ${of.length} ofertas`:''}</div></span>
+        <span class="c-area r num">${m2(t.area)}</span><span class="c-zon muted">${t.zon}</span><span class="c-val r num">${mi(valorRef(p))}</span>
+        <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${chipStatus(p)}${fl.venc||fl.atras?`<span class="flag crit" title="Pendências">${ic('warn',14)}</span>`:''}</span>
+        <span class="c-go faint">${ic('chev',18)}</span>
+        <span class="meta-sm num">${t.id} · ${m2(t.area)} · ${t.zon} · ${mi(valorRef(p))}</span></button>`}).join('');
+}
+function pgTerrenos(){
+  const c=k=>S.terrenos.filter(t=>{const p=procOf(t.id);return k==='todos'||(k==='ativos'&&p.status==='ativo')||(k==='ganhos'&&p.status==='ganha')||(k==='encerrados'&&(p.status==='perdida'||p.status==='suspensa'))}).length;
+  return `<div class="page-h"><div><h1>Terrenos</h1><div class="sub">Cada terreno aparece uma vez, mesmo quando chega por vários corretores.</div></div>
+    <button class="btn primary" data-a="nova-oferta">${ic('add',18)}Nova oferta</button></div>
+  <div class="split"><div class="fchips">${[['todos','Todos'],['ativos','Em negociação'],['ganhos','Ganhos'],['encerrados','Perdidos e suspensos']].map(([k,l])=>`<button class="fchip" data-a="fT" data-v="${k}" aria-pressed="${UI.fT===k}">${UI.fT===k?ic('check',16):''}${l} <span class="n">${c(k)}</span></button>`).join('')}</div>
+    <label class="search" for="q-page" style="margin:0;max-width:340px;height:40px;flex:1 1 220px">${ic('layers',18)}<input id="q-page" type="search" value="${esc(UI.q)}" placeholder="Filtrar por bairro, matrícula, corretor" autocomplete="off"></label></div>
+  <div class="tbl" id="terr-rows">${terrenosRows()}</div>`;
+}
+
+/* ---------- Negociações ---------- */
+function kcard(p){
+  const t=T(p.tid),fl=flagsOf(p),lp=lastProp(p);
+  return `<button class="kcard" data-a="open" data-id="${t.id}" data-from="negociacoes">
+    <div class="kr"><span class="num faint">${p.id}</span><span class="num" title="Dias nesta etapa">${p.status==='ganha'?fd(lastEtapa(p).em):daysIn(p)+' d'}</span></div>
+    <div class="kt">${esc(t.bairro)}</div><div class="ks">${esc(t.end)}</div>
+    <div class="kr"><span class="num">${m2(t.area)}</span><span class="num" style="color:var(--ink);font-weight:500">${lp?'Prop. ':'Pedido '}${mi(valorRef(p))}</span></div>
+    <div class="kr">${av(p.resp,'sm')}<span class="flags">${fl.venc?`<span class="flag crit" title="Documentos vencidos">${ic('doc',14)}${fl.venc}</span>`:''}${fl.atras?`<span class="flag crit" title="Tarefas atrasadas">${ic('clock',14)}${fl.atras}</span>`:''}${fl.acima?`<span class="flag warn" title="Proposta acima do preço máximo">${ic('money',14)}</span>`:''}</span></div>
+  </button>`;
+}
+function pgNeg(){
+  const enc=S.procs.filter(p=>p.status==='perdida'||p.status==='suspensa');
+  let body;
+  if(UI.kView==='ativas'){
+    body=`<div class="board">${STAGES.map(s=>{const ps=S.procs.filter(p=>p.etapa===s.k&&(p.status==='ativo'||(s.k==='ganha'&&p.status==='ganha')));
+      return `<section class="col"><div class="col-h"><span>${s.n}</span><span class="n">${ps.length}</span></div>${ps.length?ps.map(kcard).join(''):'<div class="col-empty">Nenhuma</div>'}</section>`}).join('')}</div>`;
+  }else{
+    body=`<div class="tbl">${enc.map(p=>{const t=T(p.tid);return `<button class="aitem" data-a="open" data-id="${t.id}" data-from="negociacoes"><span class="ai ${p.status==='perdida'?'crit':'warn'}">${ic(p.status==='perdida'?'block':'pause',18)}</span><span style="min-width:0"><div class="at">${esc(t.bairro)} · ${esc(t.end)}</div><div class="as">${p.status==='perdida'?`Perdida em ${SN(p.etapa)}: ${esc(p.motivo)}`:`Suspensa em ${SN(p.etapa)} até ${fd(p.retorno)}`}</div></span><span class="when">${fd(p.fim)}</span></button>`}).join('')||'<div class="empty">Nenhuma negociação encerrada.</div>'}</div>`;
+  }
+  return `<div class="page-h"><div><h1>Negociações</h1><div class="sub">Abra um card para avançar a etapa. As regras de cada etapa são checadas antes de mover.</div></div>
+    <div class="seg"><button data-a="kView" data-v="ativas" aria-pressed="${UI.kView==='ativas'}">Em andamento</button><button data-a="kView" data-v="enc" aria-pressed="${UI.kView==='enc'}">Perdidas e suspensas (${enc.length})</button></div></div>${body}`;
+}
+
+/* ---------- Documentos ---------- */
+function pgDocs(){
+  const all=activeDocs();
+  const F={todos:()=>true,vencidos:d=>docSt(d)==='vencido',vencem:d=>{const dd=docDue(d),st=docSt(d);return st!=='vencido'&&st!=='pendente'&&dd!=null&&dd<=15},validar:d=>docSt(d)==='recebido',pendentes:d=>docSt(d)==='pendente'};
+  if(UI.fD==='alerta')UI.fD=all.some(F.vencidos)?'vencidos':'vencem';
+  const list=all.filter(F[UI.fD]).sort((a,b)=>(validade(a)||'9').localeCompare(validade(b)||'9'));
+  const L=[['todos','Todos'],['vencidos','Vencidos'],['vencem','Vencem em 15 dias'],['validar','Aguardando validação'],['pendentes','Não enviados']];
+  return `<div class="page-h"><div><h1>Documentos</h1><div class="sub">Documentos das negociações em andamento. Validade calculada pelo tipo de documento.</div></div></div>
+  <div class="split"><div class="fchips">${L.map(([k,l])=>`<button class="fchip" data-a="fD" data-v="${k}" aria-pressed="${UI.fD===k}">${UI.fD===k?ic('check',16):''}${l} <span class="n">${all.filter(F[k]).length}</span></button>`).join('')}</div></div>
+  <div class="tbl">${list.length?`<div class="tr th docs"><span>Documento</span><span class="c-ter">Terreno</span><span>Situação</span><span class="c-val">Validade</span><span class="c-ver r">Versões</span></div>`+list.map(d=>{const p=S.procs.find(x=>x.id===d.pid),t=T(p.tid),st=docSt(d),dd=docDue(d);
+    return `<button class="tr docs" data-a="open" data-id="${t.id}" data-tab="documentos" data-from="documentos"><span style="min-width:0"><div class="t1">${TIPOS[d.tipo].n}</div><div class="t2">${d.arquivo?esc(d.arquivo):'Nenhum arquivo enviado'}</div></span>
+      <span class="c-ter" style="min-width:0"><div class="t1">${esc(t.bairro)}</div><div class="t2">${SN(p.etapa)}</div></span><span>${docChip(st)}</span>
+      <span class="c-val num ${st==='vencido'?'':''}" style="${st==='vencido'?'color:var(--crit)':dd!=null&&dd<=15?'color:var(--warn)':''}">${validade(d)?fd(validade(d)):(d.emitido?'Sem validade':'—')}</span><span class="c-ver r num faint">${d.versoes}</span>
+      <span class="meta-sm">${esc(t.bairro)} · ${validade(d)?'vence '+fd(validade(d)):'sem validade'}</span></button>`}).join(''):'<div class="empty">Nenhum documento neste filtro.</div>'}</div>`;
+}
+
+/* ---------- Ficha do terreno ---------- */
+function stepper(p){
+  const idx=SIDX(p.etapa);
+  return `<ol class="stepper" aria-label="Etapas">${STAGES.map((s,i)=>{const st=(i<idx||p.status==='ganha')?'done':i===idx?'cur':'fut';
+    return `<li class="step ${st}"><span class="dot">${st==='done'?ic('check',14):i+1}</span><span class="sl">${s.n}</span></li>`}).join('')}</ol>`;
+}
+function advPanel(p){
+  if(p.status==='ganha')return `<div class="adv"><div class="banner good" style="flex:1"><span>${ic('check')}</span><div><div class="bt">Negociação ganha</div><div>Empreendimento ${esc(p.emp)} criado. Aprovação de projeto, incorporação e financiamento Caixa vão se ligar a ele nas próximas fases.</div></div></div></div>`;
+  if(p.status!=='ativo')return '';
+  const r=checkAdvance(p);
+  const req=r.items.length?`<div class="req"><div class="rt">Para avançar para ${r.next.n}</div><ul>${r.items.map(i=>`<li><span class="${i.ok?'ok':'no'}">${ic(i.ok?'check':'close',16)}</span><span>${esc(i.txt)}${i.fix?` · <button class="linkbtn" data-a="${i.fix.a}" ${i.fix.t?`data-t="${i.fix.t}"`:''}>${i.fix.l}</button>`:''}</span></li>`).join('')}</ul></div>`
+    :`<div class="req"><div class="rt">Próxima etapa: ${r.next.n}</div><div class="muted" style="font-size:13px">Sem requisitos para avançar.</div></div>`;
+  return `<div class="adv">${req}<div class="acts">
+    <button class="btn text" data-a="suspender">${ic('pause',18)}Suspender</button>
+    <button class="btn text danger" data-a="perder">${ic('block',18)}Perdida</button>
+    ${r.forcible?`<button class="btn" data-a="force">Avançar mesmo assim</button>`:''}
+    <button class="btn primary" data-a="advance" ${r.ok?'':'disabled'}>${ic('fwd',18)}Avançar para ${r.next.n}</button></div></div>`;
+}
+function pgTerreno(){
+  const t=T(UI.id),p=procOf(t.id),of=ofertasOf(t.id),dc=docsOf(p.id);
+  const reqDocs=CHECK.flatMap(g=>reqOn(p,g.etapa)?g.itens.filter(([,o])=>o).map(([x])=>x):[]);
+  const reqOk=reqDocs.filter(x=>docSt(docFor(p.id,x))==='validado').length;
+  const tabs=[['resumo','Resumo',''],['propostas','Propostas',p.props.length],['documentos','Documentos',reqDocs.length?`${reqOk}/${reqDocs.length}`:dc.length],['atividades','Atividades',p.ativ.length],['ofertas','Ofertas',of.length],['historico','Histórico','']];
+  const backL={terrenos:'Terrenos',negociacoes:'Negociações',documentos:'Documentos',inicio:'Início'}[UI.from]||'Terrenos';
+  let status='';
+  if(p.status==='perdida')status=`<div class="banner crit" style="margin-top:16px"><span>${ic('block')}</span><div><div class="bt">Perdida em ${SN(p.etapa)} · ${esc(p.motivo)}</div><div>${esc(p.motivoTxt||'')}</div></div></div>`;
+  if(p.status==='suspensa')status=`<div class="banner warn" style="margin-top:16px;justify-content:space-between;flex-wrap:wrap"><span style="display:flex;gap:12px">${ic('pause')}<span><span class="bt">Suspensa em ${SN(p.etapa)} até ${fd(p.retorno)}</span><br><span>${esc(p.motivoTxt||'')}</span></span></span><button class="btn sm" data-a="retomar">Retomar negociação</button></div>`;
+  return `<button class="back" data-a="nav" data-r="${UI.from}">${ic('back',20)}${backL}</button>
+  <div class="dhead"><div style="min-width:0"><div class="eyebrow"><span class="num">${t.id}</span><span>·</span><span class="num">Negociação ${p.id}</span><span>·</span><span>aberta em ${fd(p.aber)}</span></div>
+    <h1>${esc(t.bairro)} · ${esc(t.end)}</h1>
+    <div class="dchips">${chipStatus(p)}<span class="chip num">${m2(t.area)}</span><span class="chip">${t.zon}</span><span class="chip num">Frente ${t.frente} m</span><span class="chip num">${t.mats.length} matrícula${t.mats.length>1?'s':''}</span></div></div>
+    <div style="display:flex;align-items:center;gap:8px">${av(p.resp)}<div><div style="font-weight:500">${esc(p.resp)}</div><div class="faint" style="font-size:12px">Responsável</div></div></div></div>
+  ${p.status==='perdida'||p.status==='suspensa'?status:`<section class="card">${stepper(p)}${advPanel(p)}</section>`}
+  <div class="tabs" role="tablist">${tabs.map(([k,l,n])=>`<button class="tab" role="tab" data-a="tab" data-t="${k}" aria-selected="${UI.tab===k}">${l}${n!==''?` <span class="n">${n}</span>`:''}</button>`).join('')}</div>
+  <div role="tabpanel">${({resumo:tabResumo,propostas:tabProps,documentos:tabDocs,atividades:tabAtiv,ofertas:tabOfertas,historico:tabHist})[UI.tab](t,p)}</div>`;
+}
+function tabResumo(t,p){
+  const lp=lastProp(p),v=p.viab;
+  let viab;
+  if(v){
+    const ref=lp?lp.valor:valorRef(p),pct=Math.min(100,ref/(v.pmax*1.25)*100),mk=v.pmax/(v.pmax*1.25)*100,over=ref>v.pmax;
+    viab=`<div class="metrics"><div class="metric"><div class="ml">VGV</div><div class="mv">${mi(v.vgv)}</div></div><div class="metric"><div class="ml">Margem</div><div class="mv">${v.margem.toLocaleString('pt-BR')}%</div></div><div class="metric"><div class="ml">Preço máximo do terreno</div><div class="mv">${mi(v.pmax)}</div></div></div>
+      <div class="vsbar"><div class="track"><span class="fill ${over?'over':''}" style="width:${pct}%"></span><span class="mark" style="left:${mk}%"></span></div>
+      <div class="lg"><span>${lp?'Última proposta':'Valor pedido'}: <b class="num" style="color:var(--${over?'warn':'ink'})">${mi(ref)}</b></span><span>${over?`${mi(ref-v.pmax)} acima do máximo`:`${mi(v.pmax-ref)} de folga`}</span></div></div>
+      <div class="faint" style="font-size:12px;margin-top:12px">Estudo ${v.id} de ${fd(v.em)} · números lidos do BKM, não copiados</div>`;
+  }else viab=`<div class="banner blue"><span>${ic('link')}</span><div style="flex:1"><div class="bt">Sem estudo vinculado</div><div>Rode a viabilidade no BKM e vincule aqui para ver o preço máximo do terreno.</div><button class="btn sm" style="margin-top:10px" data-a="link-viab">${ic('link',16)}Vincular estudo</button></div></div>`;
+  const tasks=[...p.tarefas].sort((a,b)=>(a.feito-b.feito)||a.prazo.localeCompare(b.prazo));
+  return `<div class="grid-6040">
+    <div class="stack">
+      <section class="card"><div class="card-h"><h2>Viabilidade (BKM)</h2></div><div class="card-b">${viab}</div></section>
+      <section class="card"><div class="card-h"><h2>Tarefas</h2><span class="faint" style="font-size:13px">${p.tarefas.filter(x=>!x.feito).length} abertas</span></div><div class="card-b" style="padding-top:8px">
+        ${tasks.map(k=>{const late=!k.feito&&k.prazo<TODAY_ISO;return `<label class="task ${k.feito?'done':''}"><input type="checkbox" data-ch="task" data-k="${k.id}" ${k.feito?'checked':''}><span class="tt"><div class="t1">${esc(k.t)}</div><div class="tm ${late?'late':''}">${esc(k.resp)} · ${late?'atrasada desde ':'até '}${fd(k.prazo)}</div></span>${av(k.resp,'sm')}</label>`}).join('')||'<div class="muted">Nenhuma tarefa.</div>'}
+        <form class="inline-form" data-form="tarefa"><div class="field grow"><label for="tk-t">Nova tarefa</label><input id="tk-t" name="t" required placeholder="Ex.: pedir certidão atualizada"></div>
+          <div class="field"><label for="tk-p">Prazo</label><input id="tk-p" name="prazo" type="date" value="${addDays(TODAY_ISO,7)}" required></div>
+          <div class="field"><label for="tk-r">Responsável</label><select id="tk-r" name="resp">${['Moisés','Ana Prado','Rafael Souza','Camila Torres'].map(n=>`<option ${n===p.resp?'selected':''}>${n}</option>`).join('')}</select></div>
+          <button class="btn sm" type="submit">${ic('add',16)}Adicionar</button></form></div></section>
+    </div>
+    <section class="card"><div class="card-h"><h2>Terreno</h2></div><div class="card-b"><dl class="kv">
+      <dt>Endereço</dt><dd>${esc(t.end)}, ${esc(t.bairro)}, ${esc(t.cidade)}</dd>
+      <dt>Área</dt><dd>${m2(t.area)}</dd><dt>Frente</dt><dd>${t.frente} m</dd><dt>Zoneamento</dt><dd>${t.zon}</dd>
+      <dt>Matrículas</dt><dd>${t.mats.map(m=>`${m.num} · ${m.cri}`).join('<br>')}</dd>
+      <dt>Proprietários</dt><dd>${t.props.map(x=>`${esc(x.nome)}${t.props.length>1?` <span class="faint">(${x.pct}%)</span>`:''}`).join('<br>')}</dd>
+      <dt>Preço pedido por m²</dt><dd>${brl(Math.round(ofertasOf(t.id)[0].valor/t.area))}</dd>
+    </dl></div></section>
+  </div>`;
+}
+function tabProps(t,p){
+  const v=p.viab,lp=lastProp(p),can=p.status==='ativo';
+  const form=UI.showPropForm?`<section class="card" style="margin-bottom:16px"><div class="card-h"><h2>Nova proposta · v${p.props.length+1}</h2><button class="iconbtn" data-a="prop-form" aria-label="Fechar">${ic('close')}</button></div><div class="card-b">
+    <form data-form="proposta"><div class="fields">
+      <div class="field"><label for="pp-a">Quem propõe</label><select id="pp-a" name="autor"><option>Nós</option><option>Proprietário</option></select></div>
+      <div class="field"><label for="pp-v">Valor total (R$)</label><input id="pp-v" name="valor" inputmode="numeric" required placeholder="6.150.000"></div>
+      <div class="field"><label for="pp-f">Forma de pagamento</label><select id="pp-f" name="forma"><option>Dinheiro</option><option>Permuta física</option><option>Permuta financeira</option><option>Misto</option></select></div>
+      <div class="field"><label for="pp-p">Permuta (% do VGV)</label><input id="pp-p" name="pct" inputmode="decimal" placeholder="0"></div>
+      <div class="field full"><label for="pp-c">Condições</label><textarea id="pp-c" name="cond" placeholder="Parcelas, condição suspensiva de aprovação, prazos"></textarea></div>
+      <div class="field full" id="pp-warn"></div>
+    </div><div class="dialog df" style="padding:0;box-shadow:none;margin-top:8px"><button type="button" class="btn text" data-a="prop-form">Cancelar</button><button class="btn primary" type="submit">Registrar proposta</button></div></form></div></section>`:'';
+  const list=[...p.props].reverse();
+  return `<div class="split"><div class="muted">${v?`Preço máximo pela viabilidade: <b class="num" style="color:var(--ink)">${mi(v.pmax)}</b>`:'Sem estudo de viabilidade vinculado.'}</div>
+    ${can&&!UI.showPropForm?`<button class="btn primary" data-a="prop-form">${ic('add',18)}Nova proposta</button>`:''}</div>
+  ${form}
+  <section class="card">${list.length?list.map(x=>{const over=v&&x.valor>v.pmax,isLast=x===lp;
+    const stc={Aceita:'good',Recusada:'crit',Contraproposta:'warn','Em análise':'blue'}[x.status];
+    return `<div class="prop ${x.autor==='Nós'?'nos':''}"><span class="pv">v${x.v}</span><div style="min-width:0"><div class="pval">${brl(x.valor)}</div>
+      <div class="pmeta"><span>${x.autor==='Nós'?'Nossa proposta':'Proposta do proprietário'}</span><span>·</span><span>${fd(x.em)}</span><span>·</span><span>${esc(x.forma)}${x.pct?` (${String(x.pct).replace('.',',')}% permuta)`:''}</span></div>
+      ${x.cond?`<div class="pcond">${esc(x.cond)}</div>`:''}</div>
+      <div class="pside">${isLast&&can?`<select aria-label="Situação da proposta" data-ch="prop-status" class="chip ${stc}" style="border:0;height:28px;cursor:pointer">${['Em análise','Contraproposta','Aceita','Recusada'].map(s=>`<option ${s===x.status?'selected':''}>${s}</option>`).join('')}</select>`:`<span class="chip ${stc}">${x.status}</span>`}
+      ${over?`<span class="chip warn">${ic('warn',14)}${mi(x.valor-v.pmax)} acima do máximo</span>`:''}</div></div>`}).join(''):`<div class="empty">Nenhuma proposta ainda.${can?' Registre a primeira para iniciar o histórico de versões.':''}</div>`}</section>`;
+}
+function tabDocs(t,p){
+  const started=reqOn(p,'diligencia');
+  const groups=CHECK.map(g=>{
+    const active=reqOn(p,g.etapa);
+    const req=g.itens.filter(([,o])=>o),ok=req.filter(([x])=>docSt(docFor(p.id,x))==='validado').length;
+    return `<section class="card chk-group" style="margin-bottom:16px"><div class="chk-gh"><span class="gt">${g.titulo}</span>
+      ${active?`<span class="progress"><span class="bar"><span style="width:${ok/req.length*100}%"></span></span>${ok} de ${req.length} obrigatórios</span>`:`<span class="chip">Etapa futura</span>`}</div>
+      ${g.itens.map(([x,o])=>{const d=docFor(p.id,x),st=docSt(d),dd=d?docDue(d):null,va=d?validade(d):null;
+        const sub=d&&d.arquivo?`${esc(d.arquivo)} · v${d.versoes} · emitido ${fd(d.emitido)}${va?` · ${st==='vencido'?'venceu':'vence'} ${fd(va)}${st!=='vencido'&&dd!=null&&dd<=15?` (${dd} dias)`:''}`:''}`:`Validade: ${TIPOS[x].val?TIPOS[x].val+' dias da emissão':'não vence'}`;
+        return `<div class="doc ${active?'':'future'}"><span class="di">${ic('doc',18)}</span><div style="min-width:0"><div class="dn">${TIPOS[x].n} ${o?'':'<span class="opt">opcional</span>'}</div><div class="ds">${sub}</div></div>
+        <div class="da">${docChip(st)}${p.status==='ativo'||p.status==='suspensa'?`${st==='recebido'?`<button class="btn sm" data-a="doc-ok" data-d="${d.id}">${ic('check',16)}Validar</button><button class="btn sm text danger" data-a="doc-no" data-d="${d.id}">Rejeitar</button>`:''}
+        <button class="btn sm ${st==='pendente'||st==='vencido'||st==='rejeitado'?'':'text'}" data-a="upload" data-t="${x}">${ic('upload',16)}${d&&d.arquivo?'Nova versão':'Enviar'}</button>`:''}</div></div>`}).join('')}</section>`}).join('');
+  return `${started?'':`<div class="banner blue" style="margin-bottom:16px"><span>${ic('doc')}</span><div>O checklist passa a valer na etapa Diligência. Você já pode enviar documentos antes disso.</div></div>`}${groups}
+  <div class="faint" style="font-size:12px">Prazos de validade são exemplos configuráveis por tipo de documento. Arquivos ficam em armazenamento privado com histórico de versões.</div>`;
+}
+function tabAtiv(t,p){
+  const list=[...p.ativ].sort((a,b)=>b.em.localeCompare(a.em));
+  const icn={Ligação:'chat',Visita:'place',Reunião:'chat','E-mail':'chat',Nota:'doc'};
+  return `<section class="card" style="margin-bottom:16px"><div class="card-b"><form data-form="ativ" class="inline-form" style="border:0;margin:0;padding:0">
+    <div class="field" style="flex:0 1 150px"><label for="at-t">Tipo</label><select id="at-t" name="tipo">${['Ligação','Visita','Reunião','E-mail','Nota'].map(x=>`<option>${x}</option>`).join('')}</select></div>
+    <div class="field grow"><label for="at-x">O que aconteceu</label><input id="at-x" name="txt" required placeholder="Resumo da conversa ou visita"></div>
+    <button class="btn primary sm" type="submit">Registrar</button></form></div></section>
+  <section class="card"><div class="tl">${list.map(a=>`<div class="tli"><span class="ai blue">${ic(icn[a.tipo]||'chat',16)}</span><div><div class="tx"><b>${esc(a.tipo)}</b> · ${esc(a.txt)}</div><div class="ts">${esc(a.user)}</div></div><span class="when">${fd(a.em)}</span></div>`).join('')||'<div class="empty">Nenhuma atividade registrada.</div>'}</div></section>`;
+}
+function tabOfertas(t,p){
+  const of=ofertasOf(t.id);
+  return `${of.length>1?`<div class="banner blue" style="margin-bottom:16px"><span>${ic('layers')}</span><div><div class="bt">${of.length} ofertas para o mesmo terreno</div><div>A primeira oferta registrada fica marcada. Ajuda a resolver disputa de comissão entre corretores.</div></div></div>`:''}
+  <section class="card"><div class="tl">${of.map((o,i)=>`<div class="tli"><span class="ai ${i===0?'good':'blue'}">${ic('money',16)}</span><div><div class="tx"><b class="num">${brl(o.valor)}</b> · ${esc(o.origem)}${o.corretor?` · ${esc(o.corretor)}`:''}</div><div class="ts">${o.id} · ${brl(Math.round(o.valor/t.area))}/m²${i===0&&of.length>1?' · <b style="color:var(--good)">primeira oferta</b>':''}</div></div><span class="when">${fd(o.em)}</span></div>`).join('')}</div></section>`;
+}
+function tabHist(t,p){
+  const list=[...p.hist].sort((a,b)=>b.em.localeCompare(a.em));
+  const m={etapa:['fwd','blue'],prop:['money','blue'],fim:['block','crit'],doc:['doc','blue']};
+  return `<section class="card"><div class="tl">${list.map(h=>`<div class="tli"><span class="ai ${h.forced?'warn':m[h.kind][1]}">${ic(h.forced?'warn':m[h.kind][0],16)}</span><div><div class="tx">${esc(h.txt)}</div><div class="ts">${esc(h.user)}</div></div><span class="when">${fd(h.em)}</span></div>`).join('')}</div></section>
+  <div class="faint" style="font-size:12px;margin-top:8px">Registro automático e imutável. Avanços forçados aparecem destacados.</div>`;
+}
+
+/* ---------- modais ---------- */
+function renderModal(){
+  const M=UI.modal,el=$('#modal');
+  if(!M){el.innerHTML='';return}
+  let h='';
+  if(M.k==='oferta')h=`<div class="dh"><div><h2>Nova oferta</h2><div class="muted" style="margin-top:4px">Só o essencial. O resto completa depois.</div></div><button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button></div>
+    <form data-form="oferta" id="f-oferta"><div class="fields">
+      <div class="field"><label for="of-m">Matrícula (opcional)</label><input id="of-m" name="mat" inputmode="numeric" placeholder="Ex.: 184.552"></div>
+      <div class="field"><label for="of-c">Cartório</label><select id="of-c" name="cri">${['6º CRI','8º CRI','9º CRI','11º CRI','12º CRI','18º CRI'].map(c=>`<option>${c}</option>`).join('')}</select></div>
+      <div class="field full"><label for="of-e">Endereço</label><input id="of-e" name="end" required placeholder="Rua, número"></div>
+      <div class="field"><label for="of-b">Bairro</label><input id="of-b" name="bairro" required placeholder="Ex.: Itaquera"></div>
+      <div class="field"><label for="of-a">Área (m²)</label><input id="of-a" name="area" inputmode="numeric" required placeholder="3.120"></div>
+      <div class="field"><label for="of-v">Valor pedido (R$)</label><input id="of-v" name="valor" inputmode="numeric" required placeholder="6.800.000"></div>
+      <div class="field"><label for="of-o">Origem</label><select id="of-o" name="origem"><option>Corretor</option><option>Proprietário direto</option><option>Prospecção própria</option></select></div>
+      <div class="field full"><label for="of-k">Corretor ou contato</label><input id="of-k" name="corretor" placeholder="Imobiliária · nome"></div>
+      <div class="field full" id="dedupe" aria-live="polite"><div class="hint">Dica: digite 184552 na matrícula para ver a detecção de terreno já cadastrado.</div></div>
+    </div></form>
+    <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-oferta">Salvar oferta</button></div>`;
+  if(M.k==='perder')h=`<div class="dh"><h2>Encerrar como perdida</h2><button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button></div>
+    <form data-form="perder" id="f-perder"><div class="fields"><div class="field full"><label for="pd-m">Motivo</label><select id="pd-m" name="motivo" required><option value="">Escolha um motivo</option>${MOTIVOS.map(x=>`<option>${x}</option>`).join('')}</select></div>
+    <div class="field full"><label for="pd-t">Detalhe</label><textarea id="pd-t" name="txt" placeholder="O que levou à perda. Ajuda a calibrar as próximas compras."></textarea></div></div></form>
+    <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-perder">Encerrar negociação</button></div>`;
+  if(M.k==='suspender')h=`<div class="dh"><h2>Suspender negociação</h2><button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button></div>
+    <form data-form="suspender" id="f-susp"><div class="fields"><div class="field"><label for="sp-d">Retomar em</label><input id="sp-d" name="retorno" type="date" required value="${addDays(TODAY_ISO,30)}"></div>
+    <div class="field full"><label for="sp-t">Motivo</label><textarea id="sp-t" name="txt" required placeholder="Ex.: inventário em andamento"></textarea></div></div></form>
+    <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-susp">Suspender</button></div>`;
+  if(M.k==='viab'){const t=T(UI.id),vgv=Math.round(t.area*14200/1e5)*1e5,pmax=Math.round(vgv*.135/1e4)*1e4;
+    h=`<div class="dh"><h2>Vincular estudo do BKM</h2><button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button></div>
+    <div class="muted">Estudos do BKM para ${esc(t.bairro)} · ${t.id}</div>
+    <button class="kcard" data-a="do-link" data-vgv="${vgv}" data-pmax="${pmax}"><div class="kr"><span class="num faint">V-1${S.seq.N}</span><span>${fd(TODAY_ISO)}</span></div><div class="kt">Estudo base · 2 dormitórios</div>
+      <div class="kr"><span class="num">VGV ${mi(vgv)}</span><span class="num">Margem 15,1%</span><span class="num" style="color:var(--ink);font-weight:600">Máx. ${mi(pmax)}</span></div></button>
+    <div class="hint">No sistema real esta lista vem direto do BKM. Aqui o estudo é simulado a partir da área.</div>`;}
+  if(M.k==='force'){const p=procOf(UI.id),r=checkAdvance(p);
+    h=`<div class="dh"><h2>Avançar sem checklist completo?</h2><button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button></div>
+    <div>${r.items.filter(i=>!i.ok).length} requisito(s) pendente(s). O avanço fica registrado no histórico como forçado, com seu nome.</div>
+    <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" data-a="do-force">Avançar para ${r.next.n}</button></div>`;}
+  el.innerHTML=`<div class="scrim" data-a="scrim"><div class="dialog" role="dialog" aria-modal="true">${h}</div></div>`;
+  const first=el.querySelector('input,select');if(first)setTimeout(()=>first.focus(),30);
+}
+function dedupeCheck(){
+  const f=$('#f-oferta');if(!f)return;
+  const mat=digits(f.mat.value),cri=f.cri.value,end=f.end.value.trim().toLowerCase(),bairro=f.bairro.value.trim().toLowerCase();
+  const box=$('#dedupe');
+  let hit=null,kind='';
+  if(mat.length>=4){hit=S.terrenos.find(t=>t.mats.some(m=>digits(m.num)===mat&&m.cri===cri));if(hit)kind='mat';
+    if(!hit){const other=S.terrenos.find(t=>t.mats.some(m=>digits(m.num)===mat));if(other){hit=other;kind='matcri'}}}
+  if(!hit&&end.length>=6){const st=end.split(',')[0].split(' ').slice(0,3).join(' ');hit=S.terrenos.find(t=>t.end.toLowerCase().startsWith(st)&&(!bairro||t.bairro.toLowerCase()===bairro));if(hit)kind='end'}
+  if(!hit){box.innerHTML=mat||end?'<div class="hint">Nenhum terreno parecido encontrado. Será criado um novo cadastro.</div>':'<div class="hint">Dica: digite 184552 na matrícula para ver a detecção de terreno já cadastrado.</div>';f.dataset.match='';return}
+  const p=procOf(hit.id);
+  f.dataset.match=kind==='mat'?hit.id:'';
+  box.innerHTML=kind==='mat'
+    ?`<div class="banner blue"><span>${ic('link')}</span><div><div class="bt">Terreno já cadastrado: ${hit.id} · ${esc(hit.bairro)}</div><div>Matrícula ${esc(f.mat.value)} do ${esc(cri)}. A oferta será anexada a esse terreno (${SN(p.etapa)}), sem criar duplicata.</div></div></div>`
+    :`<div class="banner warn"><span>${ic('warn')}</span><div><div class="bt">Possível duplicidade com ${hit.id} · ${esc(hit.bairro)}</div><div>${kind==='matcri'?'Mesmo número de matrícula em outro cartório.':'Endereço parecido: '+esc(hit.end)+'.'} Confira antes de salvar; se for o mesmo, informe a matrícula e o cartório corretos.</div></div></div>`;
+}
+
+/* ---------- toast ---------- */
+let tmr;
+function toast(msg,err){const el=$('#toast');el.textContent=msg;el.className='toast show'+(err?' err':'');clearTimeout(tmr);tmr=setTimeout(()=>el.className='toast',2800)}
+
+/* ---------- eventos ---------- */
+function go(route,extra={}){Object.assign(UI,{route},extra);UI.modal=null;UI.showPropForm=false;render();window.scrollTo({top:0})}
+document.addEventListener('click',e=>{
+  const a=e.target.closest('[data-a]');if(!a)return;
+  const A=a.dataset.a;
+  if(A==='scrim'){if(e.target===a){UI.modal=null;renderModal()}return}
+  const p=UI.route==='terreno'?procOf(UI.id):null;
+  switch(A){
+    case 'nav':{const ex={};if(a.dataset.fd)ex.fD=a.dataset.fd;go(a.dataset.r,ex);break}
+    case 'open':go('terreno',{id:a.dataset.id,tab:a.dataset.tab||'resumo',from:a.dataset.from||(UI.route==='terreno'?UI.from:UI.route)});break;
+    case 'go-first-late':{const x=activeProcs().find(q=>lateTasks(q).length);if(x)go('terreno',{id:x.tid,tab:'resumo',from:'inicio'});break}
+    case 'tab':UI.tab=a.dataset.t;UI.showPropForm=false;renderMain();if(a.closest('.adv')){const tb=document.querySelector('.tabs');if(tb)tb.scrollIntoView({behavior:'smooth',block:'start'})}break;
+    case 'fT':UI.fT=a.dataset.v;renderMain();break;
+    case 'fD':UI.fD=a.dataset.v;renderMain();break;
+    case 'kView':UI.kView=a.dataset.v;renderMain();break;
+    case 'role':UI.role=a.dataset.v;render();toast(`Testando como ${UI.role} (${me()}).`);break;
+    case 'role-cycle':UI.role=UI.role==='Gestor'?'Analista':'Gestor';render();toast(`Testando como ${UI.role} (${me()}).`);break;
+    case 'reset':S=seed();save();go('inicio');toast('Dados de exemplo restaurados.');break;
+    case 'nova-oferta':UI.modal={k:'oferta'};renderModal();break;
+    case 'close':UI.modal=null;renderModal();break;
+    case 'advance':advance(p,false);break;
+    case 'force':UI.modal={k:'force'};renderModal();break;
+    case 'do-force':UI.modal=null;advance(p,true);break;
+    case 'perder':UI.modal={k:'perder'};renderModal();break;
+    case 'suspender':UI.modal={k:'suspender'};renderModal();break;
+    case 'retomar':p.status='ativo';p.hist.push({kind:'etapa',para:p.etapa,em:TODAY_ISO,user:me(),txt:`Negociação retomada em ${SN(p.etapa)}`});delete p.retorno;save();render();toast('Negociação retomada.');break;
+    case 'link-viab':UI.modal={k:'viab'};renderModal();break;
+    case 'do-link':{const vgv=Number(a.dataset.vgv),pmax=Number(a.dataset.pmax);p.viab={id:'V-1'+S.seq.N,em:TODAY_ISO,vgv,margem:15.1,pmax};p.hist.push({kind:'etapa',para:p.etapa,em:TODAY_ISO,user:me(),txt:`Estudo ${p.viab.id} do BKM vinculado`});UI.modal=null;save();render();toast('Estudo vinculado.');break}
+    case 'prop-form':UI.showPropForm=!UI.showPropForm;renderMain();if(UI.showPropForm)setTimeout(()=>{const x=$('#pp-v');if(x)x.focus()},30);break;
+    case 'upload':UI.pendingUpload={pid:p.id,tipo:a.dataset.t};$('#file-in').value='';$('#file-in').click();break;
+    case 'doc-ok':case 'doc-no':{const d=S.docs.find(x=>x.id===a.dataset.d);d.status=A==='doc-ok'?'validado':'rejeitado';p.hist.push({kind:'doc',em:TODAY_ISO,user:me(),txt:`${TIPOS[d.tipo].n} ${A==='doc-ok'?'validado':'rejeitado'}`});save();render();toast(A==='doc-ok'?'Documento validado.':'Documento rejeitado. Peça nova versão.');break}
+  }
+});
+$('#file-in').addEventListener('change',e=>{
+  const f=e.target.files&&e.target.files[0];const u=UI.pendingUpload;if(!f||!u)return;
+  const p=S.procs.find(x=>x.id===u.pid);let d=docFor(u.pid,u.tipo);
+  if(!d){d={id:'D-'+(S.seq.D++),pid:u.pid,tipo:u.tipo,status:'pendente',emitido:null,versoes:0,arquivo:null};S.docs.push(d)}
+  d.arquivo=f.name;d.versoes++;d.emitido=TODAY_ISO;d.status='recebido';
+  p.hist.push({kind:'doc',em:TODAY_ISO,user:me(),txt:`${TIPOS[u.tipo].n}: versão ${d.versoes} enviada (${f.name})`});
+  UI.pendingUpload=null;save();render();toast(`Versão ${d.versoes} enviada. Falta validar.`);
+});
+document.addEventListener('change',e=>{
+  const el=e.target;const p=UI.route==='terreno'?procOf(UI.id):null;
+  if(el.dataset.ch==='task'){const k=p.tarefas.find(x=>x.id===el.dataset.k);k.feito=el.checked;save();render()}
+  if(el.dataset.ch==='prop-status'){const lp=lastProp(p);lp.status=el.value;p.hist.push({kind:'prop',em:TODAY_ISO,user:me(),txt:`Proposta v${lp.v} marcada como ${el.value.toLowerCase()}`});save();render();toast(`Proposta v${lp.v}: ${el.value}.`)}
+});
+document.addEventListener('input',e=>{
+  const el=e.target;
+  if(el.id==='q-top'||el.id==='q-page'){
+    UI.q=el.value;
+    if(el.id==='q-top'&&UI.route!=='terrenos'){UI.route='terrenos';UI.fT='todos';renderNav();renderMain()}
+    else{const r=$('#terr-rows');if(r)r.innerHTML=terrenosRows()}
+    const other=el.id==='q-top'?$('#q-page'):$('#q-top');if(other&&other.value!==el.value)other.value=el.value;
+  }
+  if(el.form&&el.form.dataset.form==='oferta')dedupeCheck();
+  if(el.id==='pp-v'){const p=procOf(UI.id),v=money(el.value),w=$('#pp-warn');
+    w.innerHTML=p.viab&&v>p.viab.pmax?`<div class="banner warn"><span>${ic('warn')}</span><div>${brl(v)} fica ${mi(v-p.viab.pmax)} acima do preço máximo da viabilidade (${mi(p.viab.pmax)}). Avançar vai exigir decisão do gestor.</div></div>`:(v?`<div class="hint">${p.viab?`${mi(p.viab.pmax-v)} abaixo do preço máximo.`:''}</div>`:'')}
+});
+document.addEventListener('submit',e=>{
+  e.preventDefault();const f=e.target,F=Object.fromEntries(new FormData(f));
+  const p=UI.route==='terreno'?procOf(UI.id):null;
+  if(f.dataset.form==='oferta'){
+    const valor=money(F.valor),area=money(F.area);
+    if(!valor||!area){toast('Informe área e valor pedido.',true);return}
+    let tid=f.dataset.match;let novo=false;
+    const corr=F.origem==='Corretor'?(F.corretor||'Corretor não informado'):F.corretor;
+    if(!tid){novo=true;tid='T-0'+(++S.seq.T);
+      S.terrenos.push({id:tid,bairro:F.bairro.trim(),end:F.end.trim(),cidade:'São Paulo',area,zon:'A definir',frente:0,mats:F.mat?[{num:F.mat,cri:F.cri}]:[],props:[{nome:'A confirmar',pct:100}]});}
+    S.ofertas.push({id:'O-'+(++S.seq.O),tid,origem:F.origem,corretor:corr||'',em:TODAY_ISO,valor});
+    let pr=procOf(tid);
+    if(novo||!pr||pr.status==='perdida'){const id='N-0'+(++S.seq.N);
+      pr={id,tid,etapa:'recebida',status:'ativo',resp:me(),aber:TODAY_ISO,ult:TODAY_ISO,viab:null,props:[],ativ:[],tarefas:[{id:'K'+Date.now(),t:'Triagem: localização e preço por m²',resp:me(),prazo:addDays(TODAY_ISO,3),feito:false}],
+        hist:[{kind:'etapa',para:'recebida',em:TODAY_ISO,user:me(),txt:'Negociação aberta a partir da oferta'}]};S.procs.push(pr)}
+    else pr.ativ.push({tipo:'Nota',em:TODAY_ISO,user:me(),txt:`Nova oferta de ${brl(valor)} recebida (${F.origem}${corr?' · '+corr:''}).`});
+    save();go('terreno',{id:tid,tab:novo?'resumo':'ofertas',from:'terrenos'});
+    toast(novo?`Terreno ${tid} criado com a oferta.`:`Oferta anexada ao terreno ${tid}.`);
+  }
+  if(f.dataset.form==='perder'){if(!F.motivo){toast('Escolha um motivo.',true);return}
+    Object.assign(p,{status:'perdida',motivo:F.motivo,motivoTxt:F.txt,fim:TODAY_ISO});p.hist.push({kind:'fim',em:TODAY_ISO,user:me(),txt:`Encerrada como perdida: ${F.motivo}`});UI.modal=null;save();render();toast('Negociação encerrada como perdida.')}
+  if(f.dataset.form==='suspender'){Object.assign(p,{status:'suspensa',retorno:F.retorno,motivoTxt:F.txt,fim:TODAY_ISO});p.hist.push({kind:'fim',em:TODAY_ISO,user:me(),txt:`Suspensa até ${fd(F.retorno)}`});UI.modal=null;save();render();toast(`Suspensa até ${fd(F.retorno)}.`)}
+  if(f.dataset.form==='proposta'){const valor=money(F.valor);if(!valor){toast('Informe o valor.',true);return}
+    const lp=lastProp(p);if(lp&&lp.status==='Em análise')lp.status=F.autor==='Nós'?'Recusada':'Contraproposta';
+    const v=p.props.length+1;p.props.push({v,autor:F.autor,em:TODAY_ISO,valor,forma:F.forma,pct:Number(String(F.pct||'0').replace(',','.'))||0,cond:F.cond,status:F.autor==='Nós'?'Em análise':'Contraproposta'});
+    p.hist.push({kind:'prop',em:TODAY_ISO,user:me(),txt:`Proposta v${v} registrada: ${mi(valor)} (${F.autor==='Nós'?'nossa':'do proprietário'})`});
+    UI.showPropForm=false;save();render();toast(`Proposta v${v} registrada.`)}
+  if(f.dataset.form==='tarefa'){p.tarefas.push({id:'K'+Date.now(),t:F.t,resp:F.resp,prazo:F.prazo,feito:false});save();render();toast('Tarefa adicionada.')}
+  if(f.dataset.form==='ativ'){p.ativ.push({tipo:F.tipo,em:TODAY_ISO,user:me(),txt:F.txt});save();render();toast('Atividade registrada.')}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&UI.modal){UI.modal=null;renderModal()}});
+
+render();
+})();
+</script>
