@@ -12,7 +12,8 @@ erDiagram
   eixos_comerciais |o--o{ terrenos : classifica
   terrenos ||--o{ matriculas : possui
   terrenos ||--o{ inscricoes_municipais : possui
-  inscricoes_municipais ||--o{ inscricao_valores : "valor venal e IPTU por exercicio"
+  inscricoes_municipais ||--o{ inscricao_valores : "valor venal e IPTU por exercicio e revisao"
+  terrenos ||--o{ confrontacoes : mede
   terrenos ||--o{ terreno_pessoas : vincula
   pessoas ||--o{ terreno_pessoas : participa
   terrenos ||--o{ terreno_infraestrutura : verifica
@@ -57,6 +58,15 @@ erDiagram
     numeric area_construida_existente_m2
     numeric area_construida_demolir_m2
     text necessidade_demolicao
+    int versao "edicao simultanea"
+  }
+  confrontacoes {
+    uuid id PK
+    uuid terreno_id FK
+    int ordem
+    text tipo "frente | laterais | fundos | outro"
+    numeric comprimento_m
+    text confrontante
   }
   matriculas {
     uuid id PK
@@ -73,11 +83,20 @@ erDiagram
     numeric area_cadastral_m2
   }
   inscricao_valores {
-    uuid inscricao_id PK
-    int exercicio PK
-    numeric valor_venal
+    uuid id PK
+    uuid inscricao_id FK
+    int exercicio
+    int revisao
+    bool vigente
+    numeric valor_venal_terreno
+    numeric valor_venal_construcao
+    numeric valor_venal_imovel
+    text situacao_iptu "nao_informada | tributado | isento"
     numeric iptu_valor_anual
     int iptu_parcelas
+    numeric iptu_mensal_informado
+    date data_verificacao
+    text fonte
   }
   terreno_pessoas {
     uuid terreno_id FK
@@ -103,9 +122,11 @@ erDiagram
     uuid analise_id FK
     uuid zoneamento_id FK
     numeric area_abrangida_m2
-    bool gabarito_sem_limite
+    text gabarito_m_status "nao_informado | limitado | sem_limite_identificado"
     numeric gabarito_maximo_m
+    text gabarito_pav_status
     int gabarito_maximo_pavimentos
+    text ca_status
     numeric ca_maximo
   }
 ```
@@ -129,17 +150,21 @@ erDiagram
   processos |o--o{ tarefas : contextualiza
   terrenos ||--o{ atividades : registra
   processos |o--o{ viabilidades : usa
+  terrenos ||--o{ diligencias : investiga
+  pessoas |o--o{ ofertas : oferece
 
   ofertas {
     uuid id PK
     uuid terreno_id FK
     uuid corretor_id FK
+    uuid ofertante_id FK
     date data_oferta
     numeric valor_pedido
     text forma_pagamento_pedida "5 opcoes"
     text observacao_pagamento
     text aceita_permuta
     numeric comissao_pct
+    numeric comissao_valor
     date validade
     text status
   }
@@ -170,6 +195,16 @@ erDiagram
     text forma_pagamento
     text condicoes_pagamento
     text status "8 opcoes"
+  }
+  diligencias {
+    uuid id PK
+    uuid terreno_id FK
+    uuid processo_id FK
+    text categoria "documental | juridica | ambiental | ocupacional | tecnica | outra"
+    text titulo
+    text situacao "nao_avaliada | em_analise | pendente | resolvida | impeditiva"
+    uuid evidencia_documento_id FK
+    text providencia
   }
   tarefas {
     uuid id PK
@@ -218,9 +253,16 @@ erDiagram
 | --- | --- |
 | "Não informado" é null ou `nao_informado`, nunca zero ou "não" | defaults e checks de `terrenos`, `terreno_infraestrutura` |
 | Área adotada sempre com a fonte | check em `terrenos` |
-| Gabarito "sem limite" é explícito, nunca zero | check em `analise_zoneamentos` |
+| Gabarito (m e pavimentos) e CA têm estado próprio: não informado, limitado (com valor) ou sem limite identificado | checks em `analise_zoneamentos` |
 | Uma análise urbanística vigente por terreno; anteriores preservadas | índice único parcial + trigger |
-| Valor venal e IPTU por inscrição e exercício | `inscricao_valores` |
+| Valor venal e IPTU por inscrição e exercício; correção vira nova revisão, a anterior fica preservada | `inscricao_valores` + trigger |
+| Isento não tem IPTU; venal do imóvel = terreno + construção quando os dois existem | checks em `inscricao_valores` |
+| Edição simultânea: salvar com versão antiga é recusado | `terrenos.versao` + `salvar_terreno` |
+| Participações dos proprietários somam no máximo 100% | trigger em `terreno_pessoas` |
+| Registro não muda de terreno depois de criado | `tg_mesma_empresa` |
+| Diligência impeditiva em aberto bloqueia a saída da Diligência | `checar_avanco` |
+| Papel "leitura" consulta tudo e não altera nada | políticas com `empresas_edicao()` e `exigir_editor` |
+| CEP e CPF/CNPJ guardados só com dígitos; polígono GeoJSON validado | triggers e check |
 | Mesma matrícula no mesmo cartório = mesmo terreno | índice único em `matriculas` |
 | Um corretor principal por terreno; o primeiro da oferta vira principal | índice único parcial + trigger |
 | Uma negociação aberta por terreno | índice único parcial em `processos` |

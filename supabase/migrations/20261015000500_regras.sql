@@ -16,14 +16,17 @@ cross join app.itens_infraestrutura i
 left join app.terreno_infraestrutura ti on ti.terreno_id = t.id and ti.item = i.codigo
 where i.ativo;
 
--- Inscrição com os valores do exercício mais recente.
+-- Inscrição com a revisão vigente do exercício mais recente.
 create view app.v_inscricoes with (security_invoker = true) as
-select ins.*, v.exercicio, v.valor_venal, v.iptu_valor_anual, v.iptu_parcelas,
-       round(v.iptu_valor_anual / nullif(v.iptu_parcelas, 0), 2) as iptu_valor_parcela,
-       round(v.iptu_valor_anual / 12, 2)                       as iptu_equivalente_mensal
+select ins.*, v.id as valor_id, v.exercicio, v.revisao, v.valor_venal_terreno, v.valor_venal_construcao, v.valor_venal_imovel,
+       v.situacao_iptu, v.iptu_valor_anual, v.iptu_parcelas, v.iptu_mensal_informado, v.data_verificacao, v.fonte,
+       round(v.iptu_valor_anual / nullif(v.iptu_parcelas, 0), 2)                      as iptu_valor_parcela,
+       coalesce(v.iptu_mensal_informado, round(v.iptu_valor_anual / 12, 2))           as iptu_mensal,
+       case when v.iptu_mensal_informado is not null then 'informado'
+            when v.iptu_valor_anual is not null then 'anual_dividido_por_12' end      as iptu_mensal_origem
 from app.inscricoes_municipais ins
 left join lateral (
-  select * from app.inscricao_valores x where x.inscricao_id = ins.id order by exercicio desc limit 1
+  select * from app.inscricao_valores x where x.inscricao_id = ins.id and x.vigente order by exercicio desc limit 1
 ) v on true;
 
 -- Parâmetros urbanísticos da análise vigente, resumidos por terreno.
@@ -31,8 +34,9 @@ create view app.v_urbanismo_vigente with (security_invoker = true) as
 select a.terreno_id, a.empresa_id, a.id as analise_id, a.data_verificacao, a.fonte,
        string_agg(z.sigla, ' + ' order by az.area_abrangida_m2 desc nulls last, z.sigla) as zoneamentos,
        max(az.ca_maximo) as ca_maximo,
-       bool_or(az.gabarito_sem_limite) as algum_gabarito_sem_limite,
+       bool_or(az.ca_status = 'nao_informado') as ca_incompleto,
        min(az.gabarito_maximo_m) as menor_gabarito_m,
+       bool_or(az.gabarito_m_status = 'sem_limite_identificado') as algum_gabarito_sem_limite,
        count(*) as qtd_zonas
 from app.analises_urbanisticas a
 join app.analise_zoneamentos az on az.analise_id = a.id
@@ -74,7 +78,7 @@ left join app.v_documentos d on d.processo_id = p.id and d.tipo_documento = c.ti
 create view app.v_terrenos with (security_invoker = true) as
 select t.id, t.empresa_id, t.codigo, t.nome, t.situacao_cadastral, t.prioridade, t.responsavel_id,
        t.logradouro, t.numero, t.bairro, t.zona, mu.nome as municipio, ec.nome as eixo_comercial,
-       t.area_adotada_m2, t.fonte_area_adotada, t.origem_cadastro, t.data_identificacao,
+       t.area_adotada_m2, t.fonte_area_adotada, t.origem_cadastro, t.data_identificacao, t.versao,
        -- negociação atual (aberta, ou a última encerrada)
        p.id as processo_id, p.codigo as processo_codigo, p.status as negociacao_status,
        p.etapa_atual, e.nome as etapa_nome, e.ordem as etapa_ordem,
@@ -91,7 +95,9 @@ select t.id, t.empresa_id, t.codigo, t.nome, t.situacao_cadastral, t.prioridade,
        u.zoneamentos, u.ca_maximo,
        nt.titulo as proxima_tarefa, nt.prazo as proxima_tarefa_prazo,
        (select count(*) from app.tarefas k where k.terreno_id = t.id and k.status not in ('concluida','cancelada') and k.prazo < current_date) as tarefas_atrasadas,
-       (select count(*) from app.v_documentos d where d.terreno_id = t.id and d.processo_id = p.id and d.situacao_efetiva = 'vencido') as docs_vencidos
+       (select count(*) from app.v_documentos d where d.terreno_id = t.id and d.processo_id = p.id and d.situacao_efetiva = 'vencido') as docs_vencidos,
+       (select count(*) from app.diligencias g where g.terreno_id = t.id and g.situacao not in ('resolvida')) as diligencias_abertas,
+       (select count(*) from app.diligencias g where g.terreno_id = t.id and g.situacao = 'impeditiva') as diligencias_impeditivas
 from app.terrenos t
 join app.municipios mu on mu.id = t.municipio_id
 left join app.eixos_comerciais ec on ec.id = t.eixo_comercial_id
@@ -164,7 +170,7 @@ declare t app.terrenos; v_id uuid;
 begin
   select * into t from app.terrenos where id = p_terreno;
   if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
-  perform app.exigir_membro(t.empresa_id);
+  perform app.exigir_editor(t.empresa_id);
   if t.situacao_cadastral = 'arquivado' then raise exception 'Terreno arquivado: reative antes de negociar' using errcode = '22023'; end if;
   select id into v_id from app.processos where terreno_id = p_terreno and tipo = 'negociacao' and status in ('ativo','suspensa');
   if found then return v_id; end if;
@@ -180,7 +186,8 @@ end $$;
 create or replace function app.registrar_oferta(
   p_terreno uuid, p_valor numeric, p_forma text default null, p_corretor uuid default null,
   p_observacao_pagamento text default null, p_aceita_permuta text default null,
-  p_validade date default null, p_data date default current_date, p_comissao_pct numeric default null)
+  p_validade date default null, p_data date default current_date, p_comissao_pct numeric default null,
+  p_ofertante uuid default null, p_comissao_valor numeric default null)
 returns jsonb
 language plpgsql security definer set search_path = ''
 as $$
@@ -188,15 +195,18 @@ declare t app.terrenos; v_of uuid; v_proc uuid; v_nova boolean;
 begin
   select * into t from app.terrenos where id = p_terreno;
   if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
-  perform app.exigir_membro(t.empresa_id);
+  perform app.exigir_editor(t.empresa_id);
   if p_corretor is not null and not exists (select 1 from app.corretores where id = p_corretor and empresa_id = t.empresa_id) then
     raise exception 'Corretor não encontrado' using errcode = 'P0002';
   end if;
+  if p_ofertante is not null and not exists (select 1 from app.pessoas where id = p_ofertante and empresa_id = t.empresa_id) then
+    raise exception 'Ofertante não encontrado' using errcode = 'P0002';
+  end if;
 
-  insert into app.ofertas (empresa_id, terreno_id, corretor_id, data_oferta, valor_pedido, forma_pagamento_pedida,
-                           observacao_pagamento, aceita_permuta, validade, comissao_pct)
-  values (t.empresa_id, t.id, p_corretor, coalesce(p_data, current_date), p_valor, p_forma,
-          p_observacao_pagamento, p_aceita_permuta, p_validade, p_comissao_pct)
+  insert into app.ofertas (empresa_id, terreno_id, corretor_id, ofertante_id, data_oferta, valor_pedido, forma_pagamento_pedida,
+                           observacao_pagamento, aceita_permuta, validade, comissao_pct, comissao_valor)
+  values (t.empresa_id, t.id, p_corretor, p_ofertante, coalesce(p_data, current_date), p_valor, p_forma,
+          p_observacao_pagamento, p_aceita_permuta, p_validade, p_comissao_pct, p_comissao_valor)
   returning id into v_of;
 
   v_nova := not exists (select 1 from app.processos where terreno_id = t.id and tipo = 'negociacao' and status in ('ativo','suspensa'));
@@ -217,7 +227,7 @@ declare p app.processos; antes int;
 begin
   select * into p from app.processos where id = p_processo;
   if not found then raise exception 'Negociação não encontrada' using errcode = 'P0002'; end if;
-  perform app.exigir_membro(p.empresa_id);
+  perform app.exigir_editor(p.empresa_id);
   if p_temperatura is not null and p_temperatura not between 1 and 5 then raise exception 'Temperatura vai de 1 a 5' using errcode = '22023'; end if;
   select temperatura into antes from app.negociacoes where processo_id = p.id;
   if antes is not distinct from p_temperatura then return; end if;
@@ -234,7 +244,7 @@ declare p app.processos;
 begin
   select * into p from app.processos where id = p_processo;
   if not found then raise exception 'Negociação não encontrada' using errcode = 'P0002'; end if;
-  perform app.exigir_membro(p.empresa_id);
+  perform app.exigir_editor(p.empresa_id);
   if not exists (select 1 from app.ofertas where id = p_oferta and terreno_id = p.terreno_id) then
     raise exception 'A oferta não é deste terreno' using errcode = '22023';
   end if;
@@ -272,6 +282,11 @@ begin
       'texto', r.tipo_nome || case r.situacao when 'validado' then ' validado' when 'pendente' then ': não enviado'
                                               when 'recebido' then ': aguardando validação' when 'vencido' then ': vencido' else ': rejeitado' end);
   end loop;
+  if p.etapa_atual = 'diligencia' then
+    for r in select g.titulo from app.diligencias g where g.terreno_id = p.terreno_id and g.situacao = 'impeditiva' loop
+      itens := itens || jsonb_build_object('ok', false, 'tipo', 'diligencia', 'bloqueio_gestor', false, 'texto', 'Diligência impeditiva: ' || r.titulo);
+    end loop;
+  end if;
   if p.etapa_atual = 'proposta' then
     select * into lp from app.propostas where processo_id = p.id order by versao desc limit 1;
     itens := itens || jsonb_build_object('ok', coalesce(lp.status = 'aceita', false), 'tipo', 'proposta', 'bloqueio_gestor', false,
@@ -298,6 +313,8 @@ as $$
 declare chk jsonb; p app.processos; v_prox text;
 begin
   select * into p from app.processos where id = p_processo for update;
+  if not found then raise exception 'Processo não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(p.empresa_id);
   chk := app.checar_avanco(p_processo);
   v_prox := chk->>'proxima';
   if v_prox is null then raise exception 'Não há próxima etapa para esta negociação' using errcode = '22023'; end if;
@@ -326,7 +343,7 @@ declare p app.processos;
 begin
   select * into p from app.processos where id = p_processo for update;
   if not found then raise exception 'Processo não encontrado' using errcode = 'P0002'; end if;
-  perform app.exigir_membro(p.empresa_id);
+  perform app.exigir_editor(p.empresa_id);
   if p.status <> 'ativo' then raise exception 'A negociação não está ativa' using errcode = '22023'; end if;
   if p_status not in ('perdida','suspensa') then raise exception 'Status inválido' using errcode = '22023'; end if;
   if p_status = 'perdida' and coalesce(trim(p_motivo),'') = '' then raise exception 'Informe o motivo da perda' using errcode = '22023'; end if;
@@ -346,7 +363,7 @@ declare p app.processos;
 begin
   select * into p from app.processos where id = p_processo for update;
   if not found then raise exception 'Processo não encontrado' using errcode = 'P0002'; end if;
-  perform app.exigir_membro(p.empresa_id);
+  perform app.exigir_editor(p.empresa_id);
   if p.status <> 'suspensa' then raise exception 'Só negociações suspensas podem ser retomadas' using errcode = '22023'; end if;
   update app.processos set status = 'ativo', retomar_em = null, data_encerramento = null,
          motivo_encerramento = null, detalhe_encerramento = null where id = p.id;
@@ -368,7 +385,7 @@ declare p app.processos; lp app.propostas; v_id uuid;
 begin
   select * into p from app.processos where id = p_processo for update;
   if not found then raise exception 'Processo não encontrado' using errcode = 'P0002'; end if;
-  perform app.exigir_membro(p.empresa_id);
+  perform app.exigir_editor(p.empresa_id);
   if p.status <> 'ativo' then raise exception 'A negociação não está ativa' using errcode = '22023'; end if;
   if p_status not in ('rascunho','apresentada','em_analise') then raise exception 'Uma proposta nova começa como rascunho, apresentada ou em análise' using errcode = '22023'; end if;
 
@@ -393,7 +410,7 @@ declare x app.propostas;
 begin
   select * into x from app.propostas where id = p_proposta;
   if not found then raise exception 'Proposta não encontrada' using errcode = 'P0002'; end if;
-  perform app.exigir_membro(x.empresa_id);
+  perform app.exigir_editor(x.empresa_id);
   if exists (select 1 from app.propostas where processo_id = x.processo_id and versao > x.versao) then
     raise exception 'Só a última versão pode mudar de status' using errcode = '22023';
   end if;
@@ -413,7 +430,7 @@ declare p app.processos; v_id uuid;
 begin
   select * into p from app.processos where id = p_processo for update;
   if not found then raise exception 'Processo não encontrado' using errcode = 'P0002'; end if;
-  perform app.exigir_membro(p.empresa_id);
+  perform app.exigir_editor(p.empresa_id);
   insert into app.viabilidades (empresa_id, terreno_id, bkm_viabilidade_id, nome, vgv, margem_pct, preco_max_terreno)
   values (p.empresa_id, p.terreno_id, p_bkm_id, p_nome, p_vgv, p_margem_pct, p_preco_max) returning id into v_id;
   update app.processos set viabilidade_id = v_id where id = p.id;
@@ -436,7 +453,7 @@ declare t app.terrenos; td app.tipos_documento; d app.documentos; v_ver int;
 begin
   select * into t from app.terrenos where id = p_terreno;
   if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
-  perform app.exigir_membro(t.empresa_id);
+  perform app.exigir_editor(t.empresa_id);
   if split_part(p_storage_path, '/', 1) <> t.empresa_id::text then
     raise exception 'Caminho do arquivo fora da pasta da empresa' using errcode = '42501';
   end if;
@@ -480,9 +497,51 @@ declare d app.documentos;
 begin
   select * into d from app.documentos where id = p_documento for update;
   if not found then raise exception 'Documento não encontrado' using errcode = 'P0002'; end if;
-  perform app.exigir_membro(d.empresa_id);
+  perform app.exigir_editor(d.empresa_id);
   update app.documentos set situacao = case when p_aprovado then 'validado' else 'rejeitado' end,
          revisado_por = auth.uid(), revisado_em = now() where id = d.id;
+end $$;
+
+-- ---------------------------------------------------------------------
+-- Salvar ficha do terreno com controle de edição simultânea.
+-- p_versao é a versão que a tela carregou; se mudou, outra pessoa salvou antes.
+-- Só os campos enviados em p_dados mudam; os de controle são ignorados.
+-- ---------------------------------------------------------------------
+create or replace function app.salvar_terreno(p_terreno uuid, p_versao int, p_dados jsonb)
+returns int
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos; v_novo app.terrenos; fixos text[] := array['id','empresa_id','codigo','versao','criado_por','criado_em',
+  'atualizado_em','atualizado_por','situacao_cadastral','arquivado_em','motivo_arquivamento'];
+begin
+  select * into t from app.terrenos where id = p_terreno for update;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  if p_versao is distinct from t.versao then
+    raise exception 'Esta ficha foi alterada por outra pessoa. Recarregue antes de salvar.' using errcode = '40001';
+  end if;
+  if exists (select 1 from jsonb_object_keys(p_dados) k where k = any(fixos)) then
+    raise exception 'Campos de controle não podem ser alterados por aqui' using errcode = '22023';
+  end if;
+  v_novo := jsonb_populate_record(t, p_dados);
+  update app.terrenos set
+    nome = v_novo.nome, descricao = v_novo.descricao, prioridade = v_novo.prioridade, responsavel_id = v_novo.responsavel_id,
+    origem_cadastro = v_novo.origem_cadastro, url_origem = v_novo.url_origem, data_identificacao = v_novo.data_identificacao,
+    observacoes = v_novo.observacoes, cep = v_novo.cep, logradouro = v_novo.logradouro, numero = v_novo.numero,
+    complemento = v_novo.complemento, bairro = v_novo.bairro, municipio_id = v_novo.municipio_id, zona = v_novo.zona,
+    eixo_comercial_id = v_novo.eixo_comercial_id, referencia_localizacao = v_novo.referencia_localizacao,
+    latitude = v_novo.latitude, longitude = v_novo.longitude, poligono_geojson = v_novo.poligono_geojson,
+    precisao_localizacao = v_novo.precisao_localizacao, area_documental_m2 = v_novo.area_documental_m2,
+    area_cadastral_m2 = v_novo.area_cadastral_m2, area_levantamento_m2 = v_novo.area_levantamento_m2,
+    area_adotada_m2 = v_novo.area_adotada_m2, fonte_area_adotada = v_novo.fonte_area_adotada,
+    testada_principal_m = v_novo.testada_principal_m, topografia = v_novo.topografia, desnivel_estimado_m = v_novo.desnivel_estimado_m,
+    posicao_quadra = v_novo.posicao_quadra, formato = v_novo.formato, situacao_ocupacao = v_novo.situacao_ocupacao,
+    uso_atual = v_novo.uso_atual, area_construida_existente_m2 = v_novo.area_construida_existente_m2,
+    area_construida_demolir_m2 = v_novo.area_construida_demolir_m2, necessidade_demolicao = v_novo.necessidade_demolicao,
+    observacoes_fisicas = v_novo.observacoes_fisicas
+  where id = t.id
+  returning versao into t.versao;
+  return t.versao;
 end $$;
 
 -- ---------------------------------------------------------------------
@@ -496,7 +555,7 @@ declare t app.terrenos;
 begin
   select * into t from app.terrenos where id = p_terreno for update;
   if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
-  perform app.exigir_membro(t.empresa_id);
+  perform app.exigir_editor(t.empresa_id);
   if coalesce(trim(p_motivo),'') = '' then raise exception 'Informe o motivo do arquivamento' using errcode = '22023'; end if;
   if exists (select 1 from app.processos where terreno_id = t.id and status in ('ativo','suspensa')) then
     raise exception 'Encerre a negociação antes de arquivar o terreno' using errcode = '22023';
@@ -509,11 +568,12 @@ end $$;
 -- ---------------------------------------------------------------------
 revoke execute on all functions in schema app from public;
 grant execute on function
-  app.minhas_empresas(), app.papel(uuid), app.eh_membro(uuid), app.eh_gestor(uuid), app.exigir_membro(uuid),
+  app.geojson_poligono_valido(jsonb), app.minhas_empresas(), app.empresas_edicao(), app.papel(uuid), app.eh_membro(uuid), app.eh_gestor(uuid), app.exigir_membro(uuid), app.exigir_editor(uuid),
+  app.salvar_terreno(uuid, int, jsonb),
   app.criar_empresa(text, text),
   app.buscar_duplicados(uuid, text, text, text, text, text),
   app.abrir_negociacao(uuid, uuid),
-  app.registrar_oferta(uuid, numeric, text, uuid, text, text, date, date, numeric),
+  app.registrar_oferta(uuid, numeric, text, uuid, text, text, date, date, numeric, uuid, numeric),
   app.definir_temperatura(uuid, int), app.definir_oferta_referencia(uuid, uuid),
   app.checar_avanco(uuid), app.mover_etapa(uuid, boolean, text),
   app.encerrar_processo(uuid, text, text, text, date), app.retomar_processo(uuid),

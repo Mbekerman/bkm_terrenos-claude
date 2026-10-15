@@ -23,12 +23,14 @@ Modelo de dados com diagramas: [docs/modelo.md](docs/modelo.md). Mantenha-o em d
 6. **Auditoria automática** por trigger (`app.auditoria`) e histórico do funil em `processo_transicoes`.
 7. **"Não informado" nunca vira zero ou "não".** Números desconhecidos são null; seleções têm `nao_informado` / `nao_verificado` / `nao_avaliada`. "Sem limite" de gabarito é um booleano explícito.
 8. **O que muda com o tempo tem histórico, não sobrescrita:** valor venal e IPTU por exercício (`inscricao_valores`), análise urbanística vigente + substituídas, propostas versionadas, documentos versionados.
+10. **Papéis:** `gestor` (aprova compra, força avanço), `analista` (edita), `leitura` (só consulta). Escrita usa `app.empresas_edicao()` / `app.exigir_editor()`; leitura usa `app.minhas_empresas()`.
+11. **Ficha do terreno só muda por `app.salvar_terreno(id, versao, dados)`,** que recusa versão antiga (edição simultânea).
 9. **Condições pedidas pertencem à oferta** (valor, forma de pagamento, aceita permuta); a ficha mostra a oferta de referência da negociação. Temperatura pertence à negociação.
 
 ## Comandos
 
 ```bash
-bash supabase/tests/run.sh          # migrations + 71 testes de regra num Postgres 16 temporário
+bash supabase/tests/run.sh          # migrations + 103 testes de regra num Postgres 16 temporário
 cd apps/web && npm install
 npm run dev                          # precisa de apps/web/.env.local (ver .env.example)
 npm run typecheck && npm run build

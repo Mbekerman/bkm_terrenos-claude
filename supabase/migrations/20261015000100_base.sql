@@ -21,7 +21,7 @@ create table app.empresas (
 create table app.membros (
   empresa_id  uuid not null references app.empresas(id) on delete cascade,
   user_id     uuid not null references auth.users(id) on delete cascade,
-  papel       text not null check (papel in ('gestor','analista')),
+  papel       text not null check (papel in ('gestor','analista','leitura')),  -- leitura: consulta sem editar
   nome        text not null,
   criado_em   timestamptz not null default now(),
   primary key (empresa_id, user_id)
@@ -48,6 +48,22 @@ create or replace function app.eh_gestor(p_empresa uuid)
 returns boolean
 language sql stable security definer set search_path = ''
 as $$ select coalesce(app.papel(p_empresa) = 'gestor', false) $$;
+
+-- Empresas em que o usuário pode editar (gestor ou analista).
+create or replace function app.empresas_edicao()
+returns setof uuid
+language sql stable security definer set search_path = ''
+as $$ select empresa_id from app.membros where user_id = auth.uid() and papel in ('gestor','analista') $$;
+
+create or replace function app.exigir_editor(p_empresa uuid)
+returns void
+language plpgsql stable security definer set search_path = ''
+as $$
+begin
+  if auth.uid() is null or coalesce(app.papel(p_empresa), '') not in ('gestor','analista') then
+    raise exception 'Seu acesso é somente leitura' using errcode = '42501';
+  end if;
+end $$;
 
 create or replace function app.exigir_membro(p_empresa uuid)
 returns void
@@ -84,6 +100,10 @@ begin
   new.atualizado_em := now();
   if to_jsonb(new) ? 'atualizado_por' then
     new := jsonb_populate_record(new, jsonb_build_object('atualizado_por', auth.uid()));
+  end if;
+  -- versão para controle de edição simultânea
+  if to_jsonb(new) ? 'versao' then
+    new := jsonb_populate_record(new, jsonb_build_object('versao', (to_jsonb(old)->>'versao')::int + 1));
   end if;
   return new;
 end $$;

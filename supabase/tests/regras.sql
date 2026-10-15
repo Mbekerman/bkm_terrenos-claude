@@ -7,7 +7,8 @@ set client_min_messages = warning;
 insert into auth.users values
   ('00000000-0000-0000-0000-00000000000a', 'gestor@bkm.test'),
   ('00000000-0000-0000-0000-00000000000b', 'analista@bkm.test'),
-  ('00000000-0000-0000-0000-00000000000c', 'intruso@outra.test');
+  ('00000000-0000-0000-0000-00000000000c', 'intruso@outra.test'),
+  ('00000000-0000-0000-0000-00000000000d', 'diretoria@bkm.test');
 
 create function pg_temp.como(u text) returns void language sql as $$
   select set_config('request.jwt.claim.sub', u, false), set_config('role', 'authenticated', false) $$;
@@ -23,13 +24,14 @@ set client_min_messages = notice;
 \set gestor   '00000000-0000-0000-0000-00000000000a'
 \set analista '00000000-0000-0000-0000-00000000000b'
 \set intruso  '00000000-0000-0000-0000-00000000000c'
+\set leitor   '00000000-0000-0000-0000-00000000000d'
 
 -- ---------------------------------------------------------------------
 \echo '# empresa e equipe'
 select pg_temp.como(:'gestor');
 select app.criar_empresa('BKM Teste', 'Moisés') as emp \gset
-insert into app.membros values (:'emp', :'analista', 'analista', 'Rafael', now());
-select pg_temp.ok((select count(*) from app.membros) = 2, 'gestor vê os 2 membros');
+insert into app.membros values (:'emp', :'analista', 'analista', 'Rafael', now()), (:'emp', :'leitor', 'leitura', 'Diretoria', now());
+select pg_temp.ok((select count(*) from app.membros) = 3, 'gestor vê os 3 membros');
 select id as sp from app.municipios where codigo_ibge = '3550308' \gset
 select pg_temp.ok((select count(*) from app.zoneamentos where municipio_id = :'sp') > 30, 'zoneamentos de SP carregados');
 
@@ -42,23 +44,42 @@ values (:'emp', 'Terreno Av. Cupecê — esquina', :'gestor', 'corretor', :'sp',
 returning id as t1 \gset
 select pg_temp.ok((select codigo from app.terrenos where id = :'t1') ~ '^TER-\d{6}$', 'código TER-000001 gerado');
 select pg_temp.ok((select topografia from app.terrenos where id = :'t1') = 'nao_informado', 'campo não preenchido fica "não informado"');
-select pg_temp.falha(format($$update app.terrenos set zona = 'centro' where id = %L$$, :'t1'), 'zona aceita só as 8 opções');
-select pg_temp.falha(format($$update app.terrenos set area_adotada_m2 = 2000 where id = %L$$, :'t1'), 'área adotada exige a fonte');
-update app.terrenos set area_documental_m2 = 2000, area_levantamento_m2 = 1920, area_adotada_m2 = 1920, fonte_area_adotada = 'levantamento',
-       area_construida_existente_m2 = 300, area_construida_demolir_m2 = 180 where id = :'t1';
-select pg_temp.falha(format($$update app.terrenos set area_construida_demolir_m2 = 400 where id = %L$$, :'t1'), 'demolir não passa da área construída');
+select versao as v from app.terrenos where id = :'t1' \gset
+select pg_temp.falha(format($$update app.terrenos set zona = 'leste' where id = %L$$, :'t1'), 'terreno não é alterado direto na tabela');
+select pg_temp.falha(format($$select app.salvar_terreno(%L, %s, '{"zona":"centro"}')$$, :'t1', :v), 'zona aceita só as 8 opções');
+select pg_temp.falha(format($$select app.salvar_terreno(%L, %s, '{"area_adotada_m2":2000}')$$, :'t1', :v), 'área adotada exige a fonte');
+select app.salvar_terreno(:'t1', :v, '{"area_documental_m2":2000,"area_levantamento_m2":1920,"area_adotada_m2":1920,"fonte_area_adotada":"levantamento","area_construida_existente_m2":300,"area_construida_demolir_m2":180,"cep":"04366-000"}') as v2 \gset
+select pg_temp.ok(:v2 = :v + 1, 'salvar sobe a versão');
+select pg_temp.ok((select cep from app.terrenos where id = :'t1') = '04366000', 'CEP guardado só com dígitos');
+select pg_temp.falha(format($$select app.salvar_terreno(%L, %s, '{"descricao":"edição velha"}')$$, :'t1', :v), 'edição com versão antiga é recusada');
+select pg_temp.falha(format($$select app.salvar_terreno(%L, %s, '{"area_construida_demolir_m2":400}')$$, :'t1', :v2), 'demolir não passa da área construída');
+select pg_temp.falha(format($$select app.salvar_terreno(%L, %s, '{"codigo":"TER-999999"}')$$, :'t1', :v2), 'campos de controle não mudam');
+select pg_temp.falha(format($$select app.salvar_terreno(%L, %s, '{"poligono_geojson":{"type":"Polygon","coordinates":[[[-46.65,-23.66],[-46.64,-23.66],[-46.64,-23.67]]]}}')$$, :'t1', :v2),
+  'polígono aberto é recusado');
+select app.salvar_terreno(:'t1', :v2, '{"poligono_geojson":{"type":"Polygon","coordinates":[[[-46.65,-23.66],[-46.64,-23.66],[-46.64,-23.67],[-46.65,-23.66]]]}}') as v3 \gset
+select pg_temp.ok((select poligono_geojson is not null from app.terrenos where id = :'t1'), 'polígono válido aceito');
 select pg_temp.ok((select atualizado_por from app.terrenos where id = :'t1') = :'gestor', 'atualizado_por preenchido');
 
 -- ---------------------------------------------------------------------
 \echo '# matrícula, inscrição, valor venal e IPTU'
 insert into app.matriculas (empresa_id, terreno_id, numero, cartorio, area_registrada_m2) values (:'emp', :'t1', '184.552', '11º CRI', 2000);
 insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao, area_cadastral_m2) values (:'emp', :'t1', '089.123.0045-6', 1985) returning id as ins \gset
-insert into app.inscricao_valores (inscricao_id, empresa_id, exercicio, valor_venal, iptu_valor_anual, iptu_parcelas) values
-  (:'ins', :'emp', 2025, 3800000, 41000, 10), (:'ins', :'emp', 2026, 4100000, 45000, 10);
+insert into app.inscricao_valores (inscricao_id, empresa_id, exercicio, valor_venal_imovel, situacao_iptu, iptu_valor_anual, iptu_parcelas, fonte) values
+  (:'ins', :'emp', 2025, 3800000, 'tributado', 41000, 10, 'Carnê 2025');
+insert into app.inscricao_valores (inscricao_id, empresa_id, exercicio, valor_venal_terreno, valor_venal_construcao, situacao_iptu, iptu_valor_anual, iptu_parcelas, fonte) values
+  (:'ins', :'emp', 2026, 3500000, 600000, 'tributado', 45000, 10, 'Carnê 2026');
 select pg_temp.ok((select exercicio from app.v_inscricoes where id = :'ins') = 2026, 'inscrição mostra o exercício mais recente');
+select pg_temp.ok((select valor_venal_imovel from app.v_inscricoes where id = :'ins') = 4100000, 'venal do imóvel = terreno + construção');
 select pg_temp.ok((select iptu_valor_parcela from app.v_inscricoes where id = :'ins') = 4500, 'parcela do IPTU = anual / parcelas');
-select pg_temp.ok((select iptu_equivalente_mensal from app.v_inscricoes where id = :'ins') = 3750, 'equivalente mensal = anual / 12');
-select pg_temp.ok((select count(*) from app.inscricao_valores where inscricao_id = :'ins') = 2, 'histórico de exercícios preservado');
+select pg_temp.ok((select iptu_mensal from app.v_inscricoes where id = :'ins') = 3750 and (select iptu_mensal_origem from app.v_inscricoes where id = :'ins') = 'anual_dividido_por_12', 'mensal = anual / 12 quando não informado');
+insert into app.inscricao_valores (inscricao_id, empresa_id, exercicio, valor_venal_terreno, valor_venal_construcao, situacao_iptu, iptu_valor_anual, iptu_parcelas, iptu_mensal_informado, fonte) values
+  (:'ins', :'emp', 2026, 3500000, 600000, 'tributado', 45000, 10, 4500, 'Certidão corrigida');
+select pg_temp.ok((select revisao from app.v_inscricoes where id = :'ins') = 2, 'correção do exercício vira revisão 2');
+select pg_temp.ok((select count(*) from app.inscricao_valores where inscricao_id = :'ins' and exercicio = 2026 and not vigente) = 1, 'revisão 1 preservada, não vigente');
+select pg_temp.ok((select iptu_mensal_origem from app.v_inscricoes where id = :'ins') = 'informado', 'mensal informado prevalece');
+select pg_temp.falha(format($$update app.inscricao_valores set iptu_valor_anual = 1 where inscricao_id = %L$$, :'ins'), 'valor lançado não é editado');
+select pg_temp.falha(format($$insert into app.inscricao_valores (inscricao_id, empresa_id, exercicio, situacao_iptu, iptu_valor_anual) values (%L, %L, 2027, 'isento', 1000)$$, :'ins', :'emp'), 'isento não tem IPTU a pagar');
+select pg_temp.falha(format($$insert into app.inscricao_valores (inscricao_id, empresa_id, exercicio, valor_venal_terreno, valor_venal_construcao, valor_venal_imovel) values (%L, %L, 2027, 1, 1, 5)$$, :'ins', :'emp'), 'venal do imóvel bate com a soma');
 
 -- ---------------------------------------------------------------------
 \echo '# duplicidade'
@@ -68,6 +89,20 @@ select pg_temp.ok((select count(*) from app.buscar_duplicados(:'emp', p_inscrica
 select pg_temp.ok((select certeza from app.buscar_duplicados(:'emp', p_logradouro => 'av. cupecê', p_numero => '1500') limit 1) = 'possivel', 'acha pelo endereço');
 select pg_temp.falha(format($$insert into app.matriculas (empresa_id, terreno_id, numero, cartorio) values (%L, %L, '184552', '11º CRI')$$, :'emp', :'t1'),
   'mesma matrícula no mesmo cartório não entra duas vezes');
+
+-- ---------------------------------------------------------------------
+\echo '# confrontações e proprietários'
+insert into app.confrontacoes (empresa_id, terreno_id, ordem, tipo, comprimento_m, confrontante) values
+  (:'emp', :'t1', 1, 'frente', 42, 'Av. Cupecê'), (:'emp', :'t1', 2, 'lateral_direita', 48.5, 'Lote 12 · matr. 184.553');
+select pg_temp.ok((select count(*) from app.confrontacoes where terreno_id = :'t1') = 2, 'segmentos de confrontação registrados');
+insert into app.pessoas (empresa_id, tipo_pessoa, nome_razao_social, cpf_cnpj) values (:'emp', 'PF', 'Maria Lins', '123.456.789-09') returning id as pml \gset
+insert into app.pessoas (empresa_id, tipo_pessoa, nome_razao_social) values (:'emp', 'PF', 'João Lins') returning id as pjl \gset
+select pg_temp.ok((select cpf_cnpj from app.pessoas where id = :'pml') = '12345678909', 'CPF guardado só com dígitos');
+select pg_temp.falha(format($$insert into app.pessoas (empresa_id, tipo_pessoa, nome_razao_social, cpf_cnpj) values (%L, 'PJ', 'X', '123')$$, :'emp'), 'CNPJ precisa de 14 dígitos');
+insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel, percentual_participacao) values (:'emp', :'t1', :'pml', 'proprietario', 60);
+select pg_temp.falha(format($$insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel, percentual_participacao) values (%L, %L, %L, 'proprietario', 50)$$, :'emp', :'t1', :'pjl'), 'participações não passam de 100%');
+insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel, percentual_participacao) values (:'emp', :'t1', :'pjl', 'proprietario', 40);
+select pg_temp.ok((select sum(percentual_participacao) from app.terreno_pessoas where terreno_id = :'t1') = 100, 'participações somam 100%');
 
 -- ---------------------------------------------------------------------
 \echo '# infraestrutura'
@@ -80,13 +115,18 @@ select pg_temp.ok((select disponibilidade from app.v_terreno_infraestrutura wher
 -- ---------------------------------------------------------------------
 \echo '# análise urbanística com dois zoneamentos'
 insert into app.analises_urbanisticas (empresa_id, terreno_id, responsavel_id, fonte) values (:'emp', :'t1', :'gestor', 'GeoSampa') returning id as a1 \gset
-insert into app.analise_zoneamentos (empresa_id, analise_id, zoneamento_id, area_abrangida_m2, gabarito_sem_limite, ca_maximo)
-select :'emp', :'a1', id, 1400, true, 4 from app.zoneamentos where sigla = 'ZEU' and municipio_id = :'sp';
-insert into app.analise_zoneamentos (empresa_id, analise_id, zoneamento_id, area_abrangida_m2, gabarito_maximo_m, ca_maximo)
-select :'emp', :'a1', id, 520, 28, 2 from app.zoneamentos where sigla = 'ZM' and municipio_id = :'sp';
+insert into app.analise_zoneamentos (empresa_id, analise_id, zoneamento_id, area_abrangida_m2, gabarito_m_status, ca_status, ca_maximo)
+select :'emp', :'a1', id, 1400, 'sem_limite_identificado', 'limitado', 4 from app.zoneamentos where sigla = 'ZEU' and municipio_id = :'sp';
+insert into app.analise_zoneamentos (empresa_id, analise_id, zoneamento_id, area_abrangida_m2, gabarito_m_status, gabarito_maximo_m, ca_status, ca_maximo)
+select :'emp', :'a1', id, 520, 'limitado', 28, 'limitado', 2 from app.zoneamentos where sigla = 'ZM' and municipio_id = :'sp';
 select pg_temp.ok((select zoneamentos from app.v_urbanismo_vigente where terreno_id = :'t1') = 'ZEU + ZM', 'terreno com dois zoneamentos');
-select pg_temp.falha(format($$insert into app.analise_zoneamentos (empresa_id, analise_id, zoneamento_id, gabarito_sem_limite, gabarito_maximo_m) select %L, %L, id, true, 0 from app.zoneamentos where sigla = 'ZC' limit 1$$, :'emp', :'a1'),
-  'sem limite nunca é zero');
+select pg_temp.ok((select algum_gabarito_sem_limite and ca_maximo = 4 from app.v_urbanismo_vigente where terreno_id = :'t1'), 'sem limite e CA máximo resumidos');
+select pg_temp.falha(format($$insert into app.analise_zoneamentos (empresa_id, analise_id, zoneamento_id, gabarito_m_status, gabarito_maximo_m) select %L, %L, id, 'sem_limite_identificado', 30 from app.zoneamentos where sigla = 'ZC' limit 1$$, :'emp', :'a1'),
+  'sem limite não leva valor');
+select pg_temp.falha(format($$insert into app.analise_zoneamentos (empresa_id, analise_id, zoneamento_id, ca_status) select %L, %L, id, 'limitado' from app.zoneamentos where sigla = 'ZC' limit 1$$, :'emp', :'a1'),
+  'limitado exige o valor');
+select pg_temp.falha(format($$insert into app.analise_zoneamentos (empresa_id, analise_id, zoneamento_id, ca_status, ca_maximo) select %L, %L, id, 'limitado', 0 from app.zoneamentos where sigla = 'ZC' limit 1$$, :'emp', :'a1'),
+  'CA nunca é zero');
 insert into app.analises_urbanisticas (empresa_id, terreno_id, fonte) values (:'emp', :'t1', 'Certidão de uso do solo') returning id as a2 \gset
 select pg_temp.ok((select status from app.analises_urbanisticas where id = :'a1') = 'substituida', 'nova análise aposenta a anterior');
 select pg_temp.ok((select count(*) from app.analise_zoneamentos where analise_id = :'a1') = 2, 'análise anterior preservada');
@@ -101,7 +141,8 @@ select app.registrar_oferta(:'t1', 9000000, 'permuta_com_torna', :'c1', '60% em 
 select (:'r1'::jsonb->>'processo_id') as neg \gset
 select pg_temp.ok((:'r1'::jsonb->>'negociacao_nova')::boolean, 'primeira oferta abre a negociação');
 select pg_temp.ok((select principal from app.terreno_corretores where terreno_id = :'t1' and corretor_id = :'c1'), 'primeiro corretor vira principal');
-select app.registrar_oferta(:'t1', 8700000, 'dinheiro', :'c2') as r2 \gset
+select app.registrar_oferta(:'t1', 8700000, 'dinheiro', :'c2', p_ofertante => :'pml', p_comissao_valor => 261000) as r2 \gset
+select pg_temp.ok((select ofertante_id from app.ofertas where (:'r2'::jsonb->>'oferta_id')::uuid = id) = :'pml', 'oferta registra o ofertante');
 select pg_temp.ok(not (:'r2'::jsonb->>'negociacao_nova')::boolean and (:'r2'::jsonb->>'processo_id') = :'neg', 'segunda oferta entra na mesma negociação');
 select pg_temp.ok(not (select principal from app.terreno_corretores where terreno_id = :'t1' and corretor_id = :'c2'), 'segundo corretor não é principal');
 select pg_temp.ok((select valor_pedido from app.v_terrenos where id = :'t1') = 9000000, 'ficha mostra a oferta de referência');
@@ -109,6 +150,10 @@ select pg_temp.ok((select valor_pedido_m2 from app.v_terrenos where id = :'t1') 
 select pg_temp.falha(format($$insert into app.ofertas (empresa_id, terreno_id, forma_pagamento_pedida) values (%L, %L, 'cheque')$$, :'emp', :'t1'), 'forma de pagamento só nas 5 opções');
 
 -- ---------------------------------------------------------------------
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro) values (:'emp', 'Outro terreno', :'gestor', 'prospeccao', :'sp', 'Sacomã') returning id as tx \gset
+select pg_temp.falha(format($$update app.ofertas set terreno_id = %L where terreno_id = %L$$, :'tx', :'t1'), 'oferta não muda de terreno');
+select pg_temp.falha(format($$update app.confrontacoes set terreno_id = %L where terreno_id = %L$$, :'tx', :'t1'), 'confrontação não muda de terreno');
+
 \echo '# temperatura'
 select app.definir_temperatura(:'neg', 4);
 select pg_temp.ok((select temperatura from app.v_terrenos where id = :'t1') = 4, 'temperatura 4 registrada');
@@ -148,10 +193,16 @@ select pg_temp.falha(format('select app.mover_etapa(%L)', :'neg'), 'Viabilidade 
 select app.vincular_viabilidade(:'neg', 'Estudo base', 62000000, 15.2, 8400000) \gset
 select app.mover_etapa(:'neg') \gset
 select pg_temp.falha(format('select app.mover_etapa(%L)', :'neg'), 'Diligência exige documentos');
+insert into app.diligencias (empresa_id, terreno_id, processo_id, categoria, titulo, situacao) values
+  (:'emp', :'t1', :'neg', 'ambiental', 'Possível contaminação por posto vizinho', 'impeditiva') returning id as dg \gset
+select pg_temp.ok((app.checar_avanco(:'neg')->'itens') @> '[{"tipo":"diligencia"}]', 'diligência impeditiva aparece como pendência');
+select pg_temp.ok((select diligencias_impeditivas from app.v_terrenos where id = :'t1') = 1, 'listagem conta diligências impeditivas');
 select pg_temp.falha(format('select app.mover_etapa(%L, true, %L)', :'neg', 'x'), 'analista não força');
 select pg_temp.falha(format('update app.processos set etapa_atual = %L where id = %L', 'proposta', :'neg'), 'ninguém altera etapa direto');
 select pg_temp.como(:'gestor');
 select pg_temp.falha(format('select app.mover_etapa(%L, true)', :'neg'), 'avanço forçado exige justificativa');
+update app.diligencias set situacao = 'resolvida', providencia = 'Laudo de passivo ambiental negativo' where id = :'dg';
+select pg_temp.ok((select resolvida_em is not null from app.diligencias where id = :'dg'), 'resolver preenche a data');
 select app.mover_etapa(:'neg', true, 'Sondagem depois da proposta') \gset
 select pg_temp.ok((select forcado from app.processo_transicoes where processo_id = :'neg' and evento = 'avanco' order by em desc limit 1), 'avanço forçado registrado');
 select pg_temp.ok((select acima_preco_max from app.v_terrenos where id = :'t1'), 'proposta da BKM acima do preço máximo sinalizada');
@@ -189,6 +240,14 @@ insert into app.area_interesse_terrenos (area_interesse_id, terreno_id, empresa_
 select pg_temp.ok((select count(*) from app.area_interesse_terrenos where area_interesse_id = :'ai') = 2, 'área de interesse reúne dois terrenos');
 
 -- ---------------------------------------------------------------------
+\echo '# somente leitura'
+select pg_temp.como(:'leitor');
+select pg_temp.ok((select count(*) from app.v_terrenos) = 3, 'leitura vê os terrenos');
+select pg_temp.ok((select count(*) from app.v_inscricoes) = 1, 'leitura vê valor venal e IPTU');
+select pg_temp.falha(format($$insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (%L, %L, 'x', current_date)$$, :'emp', :'t2'), 'leitura não cria tarefa');
+select pg_temp.falha(format($$select app.salvar_terreno(%L, 1, '{"nome":"x"}')$$, :'t2'), 'leitura não edita terreno');
+select pg_temp.falha(format('select app.registrar_oferta(%L, 100)', :'t2'), 'leitura não registra oferta');
+
 \echo '# isolamento entre empresas'
 select pg_temp.como(:'intruso');
 select pg_temp.ok((select count(*) from app.terrenos) = 0, 'outra pessoa não vê terrenos');

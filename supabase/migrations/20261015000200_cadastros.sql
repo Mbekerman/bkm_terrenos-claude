@@ -140,9 +140,20 @@ create table app.pessoas (
   criado_por        uuid default auth.uid(),
   criado_em         timestamptz not null default now(),
   atualizado_em     timestamptz not null default now(),
-  atualizado_por    uuid
+  atualizado_por    uuid,
+  -- guardado só com dígitos (normalizado por trigger)
+  check (cpf_cnpj is null or (tipo_pessoa = 'PF' and cpf_cnpj ~ '^\d{11}$') or (tipo_pessoa = 'PJ' and cpf_cnpj ~ '^\d{14}$'))
 );
-create unique index pessoas_doc_unico on app.pessoas (empresa_id, regexp_replace(cpf_cnpj, '\D', '', 'g')) where cpf_cnpj is not null;
+create unique index pessoas_doc_unico on app.pessoas (empresa_id, cpf_cnpj) where cpf_cnpj is not null;
+
+create or replace function app.tg_normalizar_pessoa()
+returns trigger language plpgsql as $$
+begin
+  new.cpf_cnpj := nullif(regexp_replace(coalesce(new.cpf_cnpj, ''), '\D', '', 'g'), '');
+  new.nome_razao_social := trim(new.nome_razao_social);
+  return new;
+end $$;
+create trigger t_norm before insert or update on app.pessoas for each row execute function app.tg_normalizar_pessoa();
 
 create table app.corretores (
   id          uuid primary key default gen_random_uuid(),
@@ -170,8 +181,8 @@ begin
   foreach t in array array['eixos_comerciais','pessoas','corretores'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
-    execute format('create policy inserir on app.%I for insert to authenticated with check (empresa_id in (select app.minhas_empresas()))', t);
-    execute format('create policy alterar on app.%I for update to authenticated using (empresa_id in (select app.minhas_empresas())) with check (empresa_id in (select app.minhas_empresas()))', t);
+    execute format('create policy inserir on app.%I for insert to authenticated with check (empresa_id in (select app.empresas_edicao()))', t);
+    execute format('create policy alterar on app.%I for update to authenticated using (empresa_id in (select app.empresas_edicao())) with check (empresa_id in (select app.empresas_edicao()))', t);
     execute format('grant select, insert, update on app.%I to authenticated', t);
   end loop;
 end $$;

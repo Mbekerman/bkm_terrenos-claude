@@ -11,12 +11,14 @@ create table app.ofertas (
   empresa_id             uuid not null references app.empresas(id),
   terreno_id             uuid not null references app.terrenos(id),
   corretor_id            uuid references app.corretores(id),
+  ofertante_id           uuid references app.pessoas(id),  -- quem oferece quando não é (só) o corretor: proprietário, procurador
   data_oferta            date not null default current_date,
   valor_pedido           numeric(14,2) check (valor_pedido > 0),
   forma_pagamento_pedida text check (forma_pagamento_pedida in ('dinheiro','permuta_fisica','permuta_financeira','permuta_geral','permuta_com_torna')),
   observacao_pagamento   text,
   aceita_permuta         text,
   comissao_pct           numeric(5,2) check (comissao_pct >= 0 and comissao_pct <= 100),
+  comissao_valor         numeric(14,2) check (comissao_valor >= 0),
   validade               date,
   status                 text not null default 'ativa' check (status in ('ativa','expirada','retirada')),
   observacoes            text,
@@ -175,10 +177,45 @@ create table app.atividades (
   tipo        text not null check (tipo in ('ligacao','visita','reuniao','email','mensagem','nota')),
   ocorreu_em  timestamptz not null default now(),
   resumo      text not null,
+  resultado   text,
   user_id     uuid default auth.uid(),
   criado_em   timestamptz not null default now()
 );
 create index on app.atividades (terreno_id, ocorreu_em desc);
+
+-- ---------------------------------------------------------------------
+-- Diligências: questões a esclarecer antes de comprar. "Impeditiva" em
+-- aberto bloqueia a saída da etapa Diligência.
+-- ---------------------------------------------------------------------
+create table app.diligencias (
+  id                     uuid primary key default gen_random_uuid(),
+  empresa_id             uuid not null references app.empresas(id),
+  terreno_id             uuid not null references app.terrenos(id) on delete cascade,
+  processo_id            uuid references app.processos(id),
+  categoria              text not null check (categoria in ('documental','juridica','ambiental','ocupacional','tecnica','outra')),
+  titulo                 text not null check (length(trim(titulo)) > 0),
+  situacao               text not null default 'nao_avaliada' check (situacao in ('nao_avaliada','em_analise','pendente','resolvida','impeditiva')),
+  responsavel_id         uuid references auth.users(id),
+  prazo                  date,
+  evidencia_documento_id uuid,  -- FK adicionada depois de documentos
+  providencia            text,
+  observacoes            text,
+  resolvida_em           timestamptz,
+  criado_por             uuid default auth.uid(),
+  criado_em              timestamptz not null default now(),
+  atualizado_em          timestamptz not null default now(),
+  check ((situacao = 'resolvida') = (resolvida_em is not null))
+);
+create index on app.diligencias (terreno_id);
+
+create or replace function app.tg_diligencia()
+returns trigger language plpgsql as $$
+begin
+  if new.situacao = 'resolvida' and new.resolvida_em is null then new.resolvida_em := now(); end if;
+  if new.situacao <> 'resolvida' then new.resolvida_em := null; end if;
+  return new;
+end $$;
+create trigger t_resolucao before insert or update on app.diligencias for each row execute function app.tg_diligencia();
 
 -- ---------------------------------------------------------------------
 -- Documentos: o "documento" é estável; cada envio é uma versão.
@@ -214,9 +251,13 @@ create table app.documento_versoes (
   unique (documento_id, versao)
 );
 
+alter table app.diligencias add foreign key (evidencia_documento_id) references app.documentos(id);
+
 -- ---------------------------------------------------------------------
 -- Triggers e RLS
 -- ---------------------------------------------------------------------
+create trigger t_upd before update on app.diligencias for each row execute function app.tg_atualizado_em();
+create trigger t_aud after insert or update or delete on app.diligencias for each row execute function app.tg_auditoria();
 create trigger t_upd before update on app.processos  for each row execute function app.tg_atualizado_em();
 create trigger t_upd before update on app.documentos for each row execute function app.tg_atualizado_em();
 create trigger t_aud after insert or update or delete on app.ofertas     for each row execute function app.tg_auditoria();
@@ -228,19 +269,19 @@ create trigger t_aud after insert or update or delete on app.tarefas     for eac
 do $$
 declare t text;
 begin
-  foreach t in array array['ofertas','viabilidades','processos','negociacoes','processo_transicoes','propostas','tarefas','atividades','documentos','documento_versoes'] loop
+  foreach t in array array['ofertas','viabilidades','processos','negociacoes','processo_transicoes','propostas','tarefas','atividades','diligencias','documentos','documento_versoes'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
     execute format('grant select on app.%I to authenticated', t);
   end loop;
   -- escrita direta só onde não há regra de etapa
-  foreach t in array array['ofertas','tarefas','atividades'] loop
-    execute format('create policy inserir on app.%I for insert to authenticated with check (empresa_id in (select app.minhas_empresas()))', t);
-    execute format('create policy alterar on app.%I for update to authenticated using (empresa_id in (select app.minhas_empresas())) with check (empresa_id in (select app.minhas_empresas()))', t);
+  foreach t in array array['ofertas','tarefas','atividades','diligencias'] loop
+    execute format('create policy inserir on app.%I for insert to authenticated with check (empresa_id in (select app.empresas_edicao()))', t);
+    execute format('create policy alterar on app.%I for update to authenticated using (empresa_id in (select app.empresas_edicao())) with check (empresa_id in (select app.empresas_edicao()))', t);
     execute format('grant insert, update on app.%I to authenticated', t);
     execute format('create trigger t_emp before insert or update on app.%I for each row execute function app.tg_mesma_empresa()', t);
   end loop;
 end $$;
-create policy remover on app.tarefas for delete to authenticated using (empresa_id in (select app.minhas_empresas()));
+create policy remover on app.tarefas for delete to authenticated using (empresa_id in (select app.empresas_edicao()));
 grant delete on app.tarefas to authenticated;
 grant usage on sequence app.processo_seq to authenticated;

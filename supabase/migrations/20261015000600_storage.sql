@@ -14,6 +14,6 @@ create policy "documentos: membros leem"
 
 create policy "documentos: membros enviam"
   on storage.objects for insert to authenticated
-  with check (bucket_id = 'documentos' and (storage.foldername(name))[1]::uuid in (select app.minhas_empresas()));
+  with check (bucket_id = 'documentos' and (storage.foldername(name))[1]::uuid in (select app.empresas_edicao()));
 
 -- Sem update nem delete: versões nunca são sobrescritas.
