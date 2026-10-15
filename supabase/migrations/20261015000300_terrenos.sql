@@ -304,6 +304,8 @@ begin
     select empresa_id into v from app.processos where id = (j->>'processo_id')::uuid;
   elsif j ? 'inscricao_id' then
     select empresa_id into v from app.inscricoes_municipais where id = (j->>'inscricao_id')::uuid;
+  elsif j ? 'reuniao_id' and j->>'reuniao_id' is not null then
+    select empresa_id into v from app.reunioes where id = (j->>'reuniao_id')::uuid;
   elsif j ? 'analise_id' then
     select empresa_id into v from app.analises_urbanisticas where id = (j->>'analise_id')::uuid;
   else

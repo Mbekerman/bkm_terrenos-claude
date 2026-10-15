@@ -173,7 +173,7 @@ export function textoTransicao(t: Pick<Transicao, 'evento' | 'para_etapa' | 'com
     case 'avanco': return `Avançou para ${n(t.para_etapa)}${t.forcado ? ' sem checklist completo (forçado)' : ''}`;
     case 'ganho': return 'Negociação ganha';
     case 'perda': return `Encerrada como perdida${t.comentario ? ': ' + t.comentario : ''}`;
-    case 'suspensao': return `Suspensa${t.comentario ? ': ' + t.comentario : ''}`;
+    case 'stand_by': return `Stand by${t.comentario ? ': ' + t.comentario : ''}`;
     case 'retomada': return 'Negociação retomada';
   }
 }

@@ -33,7 +33,7 @@ export default function Negociacoes() {
   if (proc.isLoading) return <Carregando />;
   if (proc.error) return <Erro erro={proc.error} />;
   const todos = proc.data ?? [];
-  const enc = todos.filter((p) => p.status === 'perdida' || p.status === 'suspensa');
+  const enc = todos.filter((p) => p.status === 'perdida' || p.status === 'stand_by');
 
   return (
     <>
@@ -41,7 +41,7 @@ export default function Negociacoes() {
         <div><h1>Negociações</h1><div className="sub">Abra um card para avançar a etapa. As regras de cada etapa são checadas antes de mover.</div></div>
         <div className="seg">
           <button aria-pressed={vista === 'ativas'} onClick={() => setVista('ativas')}>Em andamento</button>
-          <button aria-pressed={vista === 'enc'} onClick={() => setVista('enc')}>Perdidas e suspensas ({enc.length})</button>
+          <button aria-pressed={vista === 'enc'} onClick={() => setVista('enc')}>Perdidas e stand by ({enc.length})</button>
         </div>
       </div>
       {vista === 'ativas' ? (

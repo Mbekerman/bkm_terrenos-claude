@@ -13,7 +13,7 @@ export default function AbaDocumentos({ p, itens }: { p: ProcessoResumo; itens: 
   const etapas = useEtapas().data ?? [];
   const input = useRef<HTMLInputElement>(null);
   const [alvo, setAlvo] = useState<string | null>(null);
-  const podeEditar = p.status === 'ativo' || p.status === 'suspensa';
+  const podeEditar = p.status === 'ativo' || p.status === 'stand_by';
 
   const enviar = useAcao(({ tipo, arquivo }: { tipo: string; arquivo: File }) =>
     enviarDocumento({ empresaId: empresa!.id, processoId: p.id, tipo, arquivo }));

@@ -124,7 +124,7 @@ export default function Inicio() {
               </div>
               <div className="funnel-foot">
                 <span>Perdidas: <b>{todos.filter((p) => p.status === 'perdida').length}</b></span>
-                <span>Suspensas: <b>{todos.filter((p) => p.status === 'suspensa').length}</b></span>
+                <span>Stand by: <b>{todos.filter((p) => p.status === 'stand_by').length}</b></span>
               </div>
             </div>
           </section>

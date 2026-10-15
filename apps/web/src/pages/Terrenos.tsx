@@ -9,7 +9,7 @@ const FILTROS: [string, string, (p: ProcessoResumo) => boolean][] = [
   ['todos', 'Todos', () => true],
   ['ativos', 'Em negociação', (p) => p.status === 'ativo'],
   ['ganhos', 'Ganhos', (p) => p.status === 'ganha'],
-  ['encerrados', 'Perdidos e suspensos', (p) => p.status === 'perdida' || p.status === 'suspensa'],
+  ['encerrados', 'Perdidos e em stand by', (p) => p.status === 'perdida' || p.status === 'stand_by'],
 ];
 
 function bate(p: ProcessoResumo, q: string) {

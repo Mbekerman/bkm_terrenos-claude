@@ -189,28 +189,62 @@ select pg_temp.falha(format('select app.atualizar_status_proposta(%L, %L)', :'p3
 \echo '# avanço de etapa'
 select pg_temp.como(:'analista');
 select app.mover_etapa(:'neg') \gset
-select app.mover_etapa(:'neg') \gset
-select pg_temp.ok((select etapa_atual from app.processos where id = :'neg') = 'viabilidade', 'avança até Viabilidade sem requisitos');
-select pg_temp.falha(format('select app.mover_etapa(%L)', :'neg'), 'Viabilidade exige estudo');
+select pg_temp.ok((select etapa_atual from app.processos where id = :'neg') = 'viabilidade_inicial', 'Recebido avança sem requisitos');
+select pg_temp.falha(format('select app.mover_etapa(%L)', :'neg'), 'Viabilidade inicial exige estudo');
 select app.vincular_viabilidade(:'neg', 'Estudo base', 62000000, 15.2, 8400000) \gset
 select app.mover_etapa(:'neg') \gset
-select pg_temp.falha(format('select app.mover_etapa(%L)', :'neg'), 'Diligência exige documentos');
-insert into app.diligencias (empresa_id, terreno_id, processo_id, categoria, titulo, situacao) values
-  (:'emp', :'t1', :'neg', 'ambiental', 'Possível contaminação por posto vizinho', 'impeditiva') returning id as dg \gset
-select pg_temp.ok((app.checar_avanco(:'neg')->'itens') @> '[{"tipo":"diligencia"}]', 'diligência impeditiva aparece como pendência');
-select pg_temp.ok((select diligencias_impeditivas from app.v_terrenos where id = :'t1') = 1, 'listagem conta diligências impeditivas');
+select app.mover_etapa(:'neg') \gset
+select pg_temp.ok((select etapa_atual from app.processos where id = :'neg') = 'proposta', 'Negociação avança para Proposta');
+select pg_temp.ok((app.checar_avanco(:'neg')->>'ok')::boolean, 'proposta registrada libera a saída de Proposta');
+select app.mover_etapa(:'neg') \gset
+select app.mover_etapa(:'neg') \gset
+select pg_temp.ok((select etapa_atual from app.processos where id = :'neg') = 'negociacoes_comerciais', 'Contraproposta avança para Negociações comerciais');
+select pg_temp.ok(not (app.checar_avanco(:'neg')->>'ok')::boolean, 'Negociações comerciais exige proposta aceita');
+select pg_temp.ok((app.checar_avanco(:'neg')->'itens') @> '[{"tipo":"gestor","ok":false}]', 'Minutagem pede aprovação de gestor');
+select pg_temp.ok((select acima_preco_max from app.v_terrenos where id = :'t1'), 'proposta da BKM acima do preço máximo sinalizada');
 select pg_temp.falha(format('select app.mover_etapa(%L, true, %L)', :'neg', 'x'), 'analista não força');
-select pg_temp.falha(format('update app.processos set etapa_atual = %L where id = %L', 'proposta', :'neg'), 'ninguém altera etapa direto');
+select pg_temp.falha(format('update app.processos set etapa_atual = %L where id = %L', 'minutagem', :'neg'), 'ninguém altera etapa direto');
 select pg_temp.como(:'gestor');
 select pg_temp.falha(format('select app.mover_etapa(%L, true)', :'neg'), 'avanço forçado exige justificativa');
+select app.mover_etapa(:'neg', true, 'Aceite verbal; formalizar na minuta') \gset
+select pg_temp.ok((select etapa_atual from app.processos where id = :'neg') = 'minutagem', 'gestor leva à Minutagem');
+select pg_temp.ok((select forcado from app.processo_transicoes where processo_id = :'neg' and evento = 'avanco' order by em desc limit 1), 'avanço forçado registrado');
+insert into app.diligencias (empresa_id, terreno_id, processo_id, categoria, titulo, situacao) values
+  (:'emp', :'t1', :'neg', 'ambiental', 'Possível contaminação por posto vizinho', 'impeditiva') returning id as dg \gset
+select pg_temp.ok((app.checar_avanco(:'neg')->'itens') @> '[{"tipo":"diligencia"}]', 'diligência impeditiva bloqueia a saída da Minutagem');
+select pg_temp.ok((app.checar_avanco(:'neg')->'itens') @> '[{"tipo":"documento","ok":false}]', 'Minutagem exige certidões e minuta');
+select pg_temp.ok((select diligencias_impeditivas from app.v_terrenos where id = :'t1') = 1, 'listagem conta diligências impeditivas');
 update app.diligencias set situacao = 'resolvida', providencia = 'Laudo de passivo ambiental negativo' where id = :'dg';
 select pg_temp.ok((select resolvida_em is not null from app.diligencias where id = :'dg'), 'resolver preenche a data');
-select app.mover_etapa(:'neg', true, 'Sondagem depois da proposta') \gset
-select pg_temp.ok((select forcado from app.processo_transicoes where processo_id = :'neg' and evento = 'avanco' order by em desc limit 1), 'avanço forçado registrado');
-select pg_temp.ok((select acima_preco_max from app.v_terrenos where id = :'t1'), 'proposta da BKM acima do preço máximo sinalizada');
-select pg_temp.ok(not (app.checar_avanco(:'neg')->>'ok')::boolean, 'Proposta exige proposta aceita');
 select app.atualizar_status_proposta(:'p4', 'aceita');
-select pg_temp.ok((app.checar_avanco(:'neg')->>'ok')::boolean, 'com aceite pode avançar');
+select pg_temp.ok(not ((app.checar_avanco(:'neg')->'itens') @> '[{"tipo":"diligencia"}]'), 'diligência resolvida sai das pendências');
+
+-- ---------------------------------------------------------------------
+\echo '# reuniões e atas'
+select pg_temp.como(:'analista');
+insert into app.reunioes (empresa_id, terreno_id, processo_id, inicio, modalidade, local, pauta, resumo) values
+  (:'emp', :'t1', :'neg', now() - interval '1 day', 'presencial', 'bkm', 'Preço e forma de pagamento', 'Vendedor aceita estudar permuta')
+  returning id as r1 \gset
+select pg_temp.falha(format($$insert into app.reunioes (empresa_id, terreno_id, inicio, modalidade) values (%L, %L, now() - interval '1 hour', 'presencial')$$, :'emp', :'t1'), 'presencial exige local (BKM ou externo)');
+select pg_temp.falha(format($$insert into app.reunioes (empresa_id, terreno_id, inicio, modalidade, local) values (%L, %L, now() - interval '1 hour', 'online', 'bkm')$$, :'emp', :'t1'), 'online não tem local');
+select pg_temp.falha(format($$insert into app.reunioes (empresa_id, terreno_id, inicio, modalidade) values (%L, %L, now() + interval '2 days', 'online')$$, :'emp', :'t1'), 'reunião realizada não tem data futura');
+insert into app.reunioes (empresa_id, terreno_id, processo_id, status, inicio, modalidade, local, endereco) values
+  (:'emp', :'t1', :'neg', 'agendada', now() + interval '3 days', 'presencial', 'externo', 'Escritório do advogado do vendedor') returning id as r2 \gset
+select pg_temp.ok((select proxima_reuniao_em is not null from app.v_terrenos where id = :'t1'), 'listagem mostra a próxima reunião agendada');
+select pg_temp.falha(format($$insert into app.reunioes (empresa_id, terreno_id, processo_id, inicio, modalidade) values (%L, %L, %L, now(), 'online')$$, :'emp', :'tx', :'neg'), 'reunião não aponta negociação de outro terreno');
+insert into app.reuniao_participantes (empresa_id, reuniao_id, lado, user_id) values (:'emp', :'r1', 'bkm', :'gestor');
+insert into app.reuniao_participantes (empresa_id, reuniao_id, lado, nome) values (:'emp', :'r1', 'vendedor', 'Sr. Carlos (sócio)');
+select pg_temp.falha(format($$insert into app.reuniao_participantes (empresa_id, reuniao_id, lado) values (%L, %L, 'outro')$$, :'emp', :'r1'), 'participante precisa de identificação');
+select app.registrar_documento(:'t1', 'ata_reuniao', :'emp' || '/' || :'t1' || '/ata_reuniao/a1.pdf', 'ata.pdf', p_reuniao => :'r1') as ata1 \gset
+select app.registrar_documento(:'t1', 'ata_reuniao', :'emp' || '/' || :'t1' || '/ata_reuniao/a2.pdf', 'ata-rev.pdf', p_reuniao => :'r1') as ata2 \gset
+select pg_temp.ok(:'ata1' = :'ata2', 'nova ata da mesma reunião vira versão');
+select pg_temp.ok((select processo_id from app.documentos where id = :'ata1') = :'neg', 'ata herda a negociação da reunião');
+select pg_temp.falha(format('select app.registrar_documento(%L, %L, %L, %L, p_reuniao => %L)', :'t1', 'ata_reuniao', :'emp' || '/x.pdf', 'x.pdf', :'r2'), 'reunião agendada não tem ata');
+select pg_temp.falha(format('select app.registrar_documento(%L, %L, %L, %L)', :'t1', 'ata_reuniao', :'emp' || '/x.pdf', 'x.pdf'), 'ata sem reunião é recusada');
+select pg_temp.ok((select ata_versao = 2 and jsonb_array_length(participantes) = 2 from app.v_reunioes where id = :'r1'), 'v_reunioes traz ata atual e participantes');
+select pg_temp.ok((select reunioes_realizadas from app.v_terrenos where id = :'t1') = 1, 'listagem conta reuniões realizadas');
+select pg_temp.falha(format($$insert into app.atividades (empresa_id, terreno_id, tipo, resumo) values (%L, %L, 'reuniao', 'x')$$, :'emp', :'t1'), 'reunião não é registrada como atividade');
+select pg_temp.como(:'gestor');
 
 -- ---------------------------------------------------------------------
 \echo '# documentos'
@@ -249,12 +283,14 @@ select pg_temp.ok((select count(*) from app.v_inscricoes) = 1, 'leitura vê valo
 select pg_temp.falha(format($$insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (%L, %L, 'x', current_date)$$, :'emp', :'t2'), 'leitura não cria tarefa');
 select pg_temp.falha(format($$select app.salvar_terreno(%L, 1, '{"nome":"x"}')$$, :'t2'), 'leitura não edita terreno');
 select pg_temp.falha(format('select app.registrar_oferta(%L, 100)', :'t2'), 'leitura não registra oferta');
+select pg_temp.falha(format($$insert into app.reunioes (empresa_id, terreno_id, inicio, modalidade) values (%L, %L, now(), 'online')$$, :'emp', :'t2'), 'leitura não registra reunião');
 
 \echo '# isolamento entre empresas'
 select pg_temp.como(:'intruso');
 select pg_temp.ok((select count(*) from app.terrenos) = 0, 'outra pessoa não vê terrenos');
 select pg_temp.ok((select count(*) from app.v_terrenos) = 0, 'outra pessoa não vê a listagem');
 select pg_temp.ok((select count(*) from app.v_inscricoes) = 0, 'outra pessoa não vê valor venal');
+select pg_temp.ok((select count(*) from app.v_reunioes) = 0, 'outra pessoa não vê reuniões');
 select pg_temp.falha(format('select app.checar_avanco(%L)', :'neg'), 'outra pessoa não acessa RPC');
 select pg_temp.falha(format($$insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (%L, %L, 'x', current_date)$$, :'emp', :'t2'), 'outra pessoa não grava tarefa');
 select pg_temp.ok((select count(*) from app.municipios) = 1, 'cadastros comuns continuam visíveis');

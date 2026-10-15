@@ -91,29 +91,34 @@ insert into app.tipos_documento (codigo, nome, categoria, validade_dias, unico_p
   ('ambiental',          'Avaliação ambiental preliminar',       'Técnico',   null, true),
   ('minuta_promessa',    'Minuta de promessa de compra e venda', 'Contratos', null, true),
   ('proposta',           'Proposta assinada',                    'Contratos', null, false),
+  ('ata_reuniao',        'Ata de reunião',                       'Reuniões',  null, false),
   ('foto',               'Foto',                                 'Mídia',     null, false),
   ('planta',             'Planta ou croqui',                     'Técnico',   null, false),
   ('outro',              'Outro documento',                      'Outros',    null, false);
 
+-- Etapas da negociação. Perdida e Stand By não são etapas: são status do
+-- processo (podem acontecer em qualquer etapa e guardam onde parou).
 insert into app.etapas_modelo (tipo_processo, codigo, nome, ordem, sla_dias, exige_gestor) values
-  ('negociacao','recebida',   'Recebida',          1,  5,  false),
-  ('negociacao','triagem',    'Triagem',           2,  7,  false),
-  ('negociacao','viabilidade','Viabilidade',       3, 15,  false),
-  ('negociacao','diligencia', 'Diligência',        4, 30,  false),
-  ('negociacao','proposta',   'Proposta',          5, 30,  false),
-  ('negociacao','aprovacao',  'Aprovação interna', 6,  7,  false),
-  ('negociacao','contrato',   'Contrato',          7, 30,  true),
-  ('negociacao','ganha',      'Ganha',             8, null, true);
+  ('negociacao','recebido',               'Recebido',               1,  5,  false),
+  ('negociacao','viabilidade_inicial',    'Viabilidade inicial',    2, 10,  false),
+  ('negociacao','negociacao',             'Negociação',             3, 30,  false),
+  ('negociacao','proposta',               'Proposta',               4, 15,  false),
+  ('negociacao','contraproposta',         'Contraproposta',         5, 15,  false),
+  ('negociacao','negociacoes_comerciais', 'Negociações comerciais', 6, 30,  false),
+  ('negociacao','minutagem',              'Minutagem',              7, 30,  true),
+  ('negociacao','ganha',                  'Ganha',                  8, null, true);
 
+-- Documentos exigidos para SAIR da etapa. A diligência do imóvel corre na
+-- Minutagem: só vira "Ganha" com certidões validadas e minuta.
 insert into app.checklist_modelo (tipo_processo, etapa, tipo_documento, obrigatorio, ordem) values
-  ('negociacao','diligencia','matricula',          true,  1),
-  ('negociacao','diligencia','onus_reais',         true,  2),
-  ('negociacao','diligencia','iptu',               true,  3),
-  ('negociacao','diligencia','certidoes_vendedor', true,  4),
-  ('negociacao','diligencia','planialtimetrico',   true,  5),
-  ('negociacao','diligencia','sondagem_spt',       false, 6),
-  ('negociacao','diligencia','ambiental',          false, 7),
-  ('negociacao','contrato',  'minuta_promessa',    true,  1);
+  ('negociacao','minutagem','matricula',          true,  1),
+  ('negociacao','minutagem','onus_reais',         true,  2),
+  ('negociacao','minutagem','iptu',               true,  3),
+  ('negociacao','minutagem','certidoes_vendedor', true,  4),
+  ('negociacao','minutagem','planialtimetrico',   true,  5),
+  ('negociacao','minutagem','sondagem_spt',       false, 6),
+  ('negociacao','minutagem','ambiental',          false, 7),
+  ('negociacao','minutagem','minuta_promessa',    true,  8);
 
 -- ---------------------------------------------------------------------
 -- Por empresa

@@ -104,7 +104,7 @@ function Status({ p, onModal, irAba }: { p: ProcessoResumo; onModal: (m: Modal) 
       </div></div>
     );
   }
-  if (p.status === 'suspensa') {
+  if (p.status === 'stand_by') {
     return (
       <div className="banner warn" style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
         <span style={{ display: 'flex', gap: 12 }}><Icon n="pause" /><span>
@@ -180,7 +180,7 @@ function PainelAvanco({ p, onModal, irAba }: { p: ProcessoResumo; onModal: (m: M
         ) : <div className="muted" style={{ fontSize: 13 }}>Sem requisitos para avançar.</div>}
       </div>
       <div className="acts">
-        <button className="btn text" onClick={() => onModal('suspender')}><Icon n="pause" s={18} />Suspender</button>
+        <button className="btn text" onClick={() => onModal('suspender')}><Icon n="pause" s={18} />Stand by</button>
         <button className="btn text danger" onClick={() => onModal('perder')}><Icon n="block" s={18} />Perdida</button>
         {a.pode_forcar && eGestor && <button className="btn" onClick={() => onModal('forcar')}>Avançar mesmo assim</button>}
         <button className="btn primary" disabled={!a.ok || mover.isPending} aria-busy={mover.isPending}

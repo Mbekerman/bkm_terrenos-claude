@@ -2,7 +2,7 @@
 // estiver ligado, trocar por `npm run gen:types` (ver README).
 
 export type Papel = 'gestor' | 'analista';
-export type StatusProcesso = 'ativo' | 'ganha' | 'perdida' | 'suspensa';
+export type StatusProcesso = 'ativo' | 'ganha' | 'perdida' | 'stand_by';
 export type SituacaoDoc = 'pendente' | 'recebido' | 'validado' | 'vencido' | 'rejeitado';
 export type SituacaoProposta = 'em_analise' | 'contraproposta' | 'aceita' | 'recusada';
 export type Origem = 'corretor' | 'proprietario' | 'prospeccao';
@@ -138,7 +138,7 @@ export interface Tarefa {
 
 export interface Transicao {
   id: string;
-  evento: 'abertura' | 'avanco' | 'perda' | 'suspensao' | 'retomada' | 'ganho';
+  evento: 'abertura' | 'avanco' | 'perda' | 'stand_by' | 'retomada' | 'ganho';
   de_etapa: string | null;
   para_etapa: string | null;
   forcado: boolean;

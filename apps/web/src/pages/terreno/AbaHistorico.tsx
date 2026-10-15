@@ -5,7 +5,7 @@ import { Icon, type NomeIcone } from '../../components/ui';
 
 const VISUAL: Record<string, [NomeIcone, string]> = {
   abertura: ['fwd', 'blue'], avanco: ['fwd', 'blue'], ganho: ['check', 'good'],
-  perda: ['block', 'crit'], suspensao: ['pause', 'warn'], retomada: ['fwd', 'blue'],
+  perda: ['block', 'crit'], stand_by: ['pause', 'warn'], retomada: ['fwd', 'blue'],
 };
 
 export default function AbaHistorico({ p }: { p: ProcessoResumo }) {

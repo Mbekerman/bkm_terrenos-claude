@@ -81,7 +81,7 @@ export function Avatar({ nome, sm }: { nome: string | null | undefined; sm?: boo
 
 export function ChipStatus({ status, etapa }: { status: StatusProcesso; etapa: string }) {
   if (status === 'perdida') return <span className="chip crit"><span className="d" />Perdida</span>;
-  if (status === 'suspensa') return <span className="chip warn"><span className="d" />Suspensa</span>;
+  if (status === 'stand_by') return <span className="chip warn"><span className="d" />Stand by</span>;
   if (status === 'ganha') return <span className="chip good"><span className="d" />Ganha</span>;
   return <span className="chip blue"><span className="d" />{etapa}</span>;
 }

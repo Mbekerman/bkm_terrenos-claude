@@ -72,7 +72,7 @@ create table app.processos (
   terreno_id           uuid not null references app.terrenos(id),
   etapa_atual          text not null,
   etapa_desde          timestamptz not null default now(),
-  status               text not null default 'ativo' check (status in ('ativo','ganha','perdida','suspensa')),
+  status               text not null default 'ativo' check (status in ('ativo','ganha','perdida','stand_by')),
   responsavel_id       uuid references auth.users(id),
   viabilidade_id       uuid references app.viabilidades(id),
   motivo_encerramento  text,
@@ -85,10 +85,10 @@ create table app.processos (
   unique (empresa_id, codigo),
   foreign key (tipo, etapa_atual) references app.etapas_modelo(tipo_processo, codigo),
   check (status <> 'perdida' or motivo_encerramento is not null),
-  check (status <> 'suspensa' or retomar_em is not null)
+  check (status <> 'stand_by' or retomar_em is not null)
 );
 create index on app.processos (empresa_id, status, etapa_atual);
-create unique index processos_um_aberto_por_terreno on app.processos (terreno_id, tipo) where status in ('ativo','suspensa');
+create unique index processos_um_aberto_por_terreno on app.processos (terreno_id, tipo) where status in ('ativo','stand_by');
 
 -- Dados próprios da negociação (1:1 com o processo).
 create table app.negociacoes (
@@ -103,7 +103,7 @@ create table app.processo_transicoes (
   id          uuid primary key default gen_random_uuid(),
   empresa_id  uuid not null references app.empresas(id),
   processo_id uuid not null references app.processos(id) on delete cascade,
-  evento      text not null check (evento in ('abertura','avanco','perda','suspensao','retomada','ganho','temperatura')),
+  evento      text not null check (evento in ('abertura','avanco','perda','stand_by','retomada','ganho','temperatura')),
   de_etapa    text,
   para_etapa  text,
   forcado     boolean not null default false,
@@ -174,7 +174,7 @@ create table app.atividades (
   empresa_id  uuid not null references app.empresas(id),
   terreno_id  uuid not null references app.terrenos(id) on delete cascade,
   processo_id uuid references app.processos(id),
-  tipo        text not null check (tipo in ('ligacao','visita','reuniao','email','mensagem','nota')),
+  tipo        text not null check (tipo in ('ligacao','visita','email','mensagem','nota')),  -- reunião tem tabela própria
   ocorreu_em  timestamptz not null default now(),
   resumo      text not null,
   resultado   text,
@@ -182,6 +182,57 @@ create table app.atividades (
   criado_em   timestamptz not null default now()
 );
 create index on app.atividades (terreno_id, ocorreu_em desc);
+
+-- ---------------------------------------------------------------------
+-- Reuniões da negociação. A ata é um documento (tipo ata_reuniao) ligado
+-- à reunião, versionado como qualquer outro; o texto extraído das versões
+-- (documento_versoes.texto_extraido) é o insumo para resumos por IA.
+-- ---------------------------------------------------------------------
+create table app.reunioes (
+  id              uuid primary key default gen_random_uuid(),
+  empresa_id      uuid not null references app.empresas(id),
+  terreno_id      uuid not null references app.terrenos(id) on delete cascade,
+  processo_id     uuid references app.processos(id),
+  status          text not null default 'realizada' check (status in ('agendada','realizada','cancelada')),
+  inicio          timestamptz not null,
+  duracao_min     int check (duracao_min > 0),
+  modalidade      text not null check (modalidade in ('presencial','online')),
+  local           text check (local in ('bkm','externo')),        -- só presencial
+  endereco        text,                                           -- local externo
+  pauta           text,
+  resumo          text,                                           -- o que foi tratado, escrito por quem participou
+  encaminhamentos text,
+  criado_por      uuid default auth.uid(),
+  criado_em       timestamptz not null default now(),
+  atualizado_em   timestamptz not null default now(),
+  atualizado_por  uuid,
+  constraint reuniao_local_so_presencial check ((modalidade = 'presencial') = (local is not null)),
+  constraint reuniao_endereco_so_externo check (local is distinct from 'bkm' or endereco is null)
+);
+create index on app.reunioes (terreno_id, inicio desc);
+create index on app.reunioes (processo_id, inicio desc);
+
+create or replace function app.tg_reuniao()
+returns trigger language plpgsql as $$
+begin
+  if new.status = 'realizada' and new.inicio > now() then
+    raise exception 'Reunião realizada não pode ter data futura' using errcode = '23514';
+  end if;
+  return new;
+end $$;
+create trigger t_reuniao before insert or update on app.reunioes for each row execute function app.tg_reuniao();
+
+create table app.reuniao_participantes (
+  id         uuid primary key default gen_random_uuid(),
+  empresa_id uuid not null references app.empresas(id),
+  reuniao_id uuid not null references app.reunioes(id) on delete cascade,
+  lado       text not null check (lado in ('bkm','vendedor','corretor','outro')),
+  user_id    uuid references auth.users(id),      -- membro da BKM
+  pessoa_id  uuid references app.pessoas(id),     -- vendedor, corretor, advogado...
+  nome       text,                                -- quem não está cadastrado
+  constraint participante_identificado check (num_nonnulls(user_id, pessoa_id, nullif(trim(nome), '')) = 1)
+);
+create index on app.reuniao_participantes (reuniao_id);
 
 -- ---------------------------------------------------------------------
 -- Diligências: questões a esclarecer antes de comprar. "Impeditiva" em
@@ -226,6 +277,7 @@ create table app.documentos (
   terreno_id     uuid not null references app.terrenos(id),
   processo_id    uuid references app.processos(id),
   proposta_id    uuid references app.propostas(id),
+  reuniao_id     uuid references app.reunioes(id),
   tipo_documento text not null references app.tipos_documento(codigo),
   nome           text not null,
   emitido_em     date,
@@ -236,6 +288,7 @@ create table app.documentos (
   atualizado_em  timestamptz not null default now()
 );
 create index on app.documentos (terreno_id);
+create unique index documentos_uma_ata_por_reuniao on app.documentos (reuniao_id) where tipo_documento = 'ata_reuniao';
 
 create table app.documento_versoes (
   id           uuid primary key default gen_random_uuid(),
@@ -248,6 +301,7 @@ create table app.documento_versoes (
   sha256       text,
   enviado_por  uuid default auth.uid(),
   enviado_em   timestamptz not null default now(),
+  texto_extraido text,   -- preenchido pela extração (OCR/IA); base para busca e resumo
   unique (documento_id, versao)
 );
 
@@ -265,17 +319,19 @@ create trigger t_aud after insert or update or delete on app.processos   for eac
 create trigger t_aud after insert or update or delete on app.propostas   for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.documentos  for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.tarefas     for each row execute function app.tg_auditoria();
+create trigger t_upd before update on app.reunioes for each row execute function app.tg_atualizado_em();
+create trigger t_aud after insert or update or delete on app.reunioes    for each row execute function app.tg_auditoria();
 
 do $$
 declare t text;
 begin
-  foreach t in array array['ofertas','viabilidades','processos','negociacoes','processo_transicoes','propostas','tarefas','atividades','diligencias','documentos','documento_versoes'] loop
+  foreach t in array array['ofertas','viabilidades','processos','negociacoes','processo_transicoes','propostas','tarefas','atividades','reunioes','reuniao_participantes','diligencias','documentos','documento_versoes'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
     execute format('grant select on app.%I to authenticated', t);
   end loop;
   -- escrita direta só onde não há regra de etapa
-  foreach t in array array['ofertas','tarefas','atividades','diligencias'] loop
+  foreach t in array array['ofertas','tarefas','atividades','reunioes','reuniao_participantes','diligencias'] loop
     execute format('create policy inserir on app.%I for insert to authenticated with check (empresa_id in (select app.empresas_edicao()))', t);
     execute format('create policy alterar on app.%I for update to authenticated using (empresa_id in (select app.empresas_edicao())) with check (empresa_id in (select app.empresas_edicao()))', t);
     execute format('grant insert, update on app.%I to authenticated', t);
@@ -283,5 +339,6 @@ begin
   end loop;
 end $$;
 create policy remover on app.tarefas for delete to authenticated using (empresa_id in (select app.empresas_edicao()));
-grant delete on app.tarefas to authenticated;
+create policy remover on app.reuniao_participantes for delete to authenticated using (empresa_id in (select app.empresas_edicao()));
+grant delete on app.tarefas, app.reuniao_participantes to authenticated;
 grant usage on sequence app.processo_seq to authenticated;

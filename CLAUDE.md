@@ -25,8 +25,8 @@ Modelo de dados com diagramas: [docs/modelo.md](docs/modelo.md). Mantenha-o em d
 
 ## Regras de arquitetura (não quebrar)
 
-1. **Terreno ≠ oferta ≠ negociação.** Um terreno tem N ofertas e N processos ao longo do tempo; no máximo um processo aberto (ativo ou suspenso) por tipo (índice único parcial).
-2. **Regra de negócio mora no banco.** Mudar etapa, encerrar, registrar proposta, enviar/validar documento: só por RPC (`supabase/migrations/*_regras.sql`). O front não tem permissão de `update` em `processos`, `propostas` ou `documentos`. Escrita direta só em tabelas sem regra (terreno e seus cadastros, ofertas, tarefas, atividades, pessoas, corretores).
+1. **Terreno ≠ oferta ≠ negociação.** Um terreno tem N ofertas e N processos ao longo do tempo; no máximo um processo aberto (ativo ou em stand by) por tipo (índice único parcial).
+2. **Regra de negócio mora no banco.** Mudar etapa, encerrar, registrar proposta, enviar/validar documento: só por RPC (`supabase/migrations/*_regras.sql`). O front não tem permissão de `update` em `processos`, `propostas` ou `documentos`. Escrita direta só em tabelas sem regra (terreno e seus cadastros, ofertas, tarefas, atividades, reuniões e participantes, pessoas, corretores).
 3. **Checklist e etapas são configuração** (`etapas_modelo`, `checklist_modelo`, `tipos_documento`). Mudou o processo da empresa? Migration de dados, não código.
 4. **Documento nunca é sobrescrito.** Cada envio é uma linha nova em `documento_versoes`; caminho no storage `{empresa_id}/{terreno_id}/{tipo}/{uuid}_{arquivo}`. A primeira pasta é o que a RLS do storage confere.
 5. **Isolamento por `empresa_id`** em toda tabela, via RLS com `app.minhas_empresas()`. Views usam `security_invoker = true`.
@@ -40,7 +40,7 @@ Modelo de dados com diagramas: [docs/modelo.md](docs/modelo.md). Mantenha-o em d
 ## Comandos
 
 ```bash
-bash supabase/tests/run.sh          # migrations + 105 testes de regra num Postgres 16 temporário
+bash supabase/tests/run.sh          # migrations + 125 testes de regra num Postgres 16 temporário
 cd apps/web && npm install
 npm run dev                          # precisa de apps/web/.env.local (ver .env.example)
 npm run typecheck && npm run build
@@ -56,4 +56,5 @@ Toda mudança de regra no banco vem com teste em `supabase/tests/regras.sql`.
 - PostGIS (polígono do terreno, busca por raio, deduplicação por proximidade) ainda não entrou; hoje a deduplicação é por matrícula + cartório e por endereço.
 - Alertas por e-mail e tarefas automáticas de vencimento (pg_cron) ainda não existem; o vencimento é calculado na hora pela view `v_documentos`.
 - Acesso externo (corretor, advogado) fora do escopo atual.
+- IA sobre atas: `documento_versoes.texto_extraido` já existe; faltam a extração (OCR/PDF) e o resumo/perguntas sobre a negociação (provável pgvector + função no servidor).
 - Os tipos TypeScript em `apps/web/src/lib/types.ts` são escritos à mão; trocar por `supabase gen types` quando o projeto estiver ligado.

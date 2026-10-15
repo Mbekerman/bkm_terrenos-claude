@@ -37,16 +37,16 @@ export function DialogoSuspensao({ p, onFechar }: Props) {
   const toast = useToast();
   const [retorno, setRetorno] = useState(somarDias(hojeISO(), 30));
   const [detalhe, setDetalhe] = useState('');
-  const acao = useAcao(() => rpc('encerrar_processo', { p_processo: p.id, p_status: 'suspensa', p_detalhe: detalhe, p_retomar_em: retorno }));
+  const acao = useAcao(() => rpc('encerrar_processo', { p_processo: p.id, p_status: 'stand_by', p_detalhe: detalhe, p_retomar_em: retorno }));
   async function enviar(e: FormEvent) {
     e.preventDefault();
-    try { await acao.mutateAsync(undefined); toast('Negociação suspensa.'); onFechar(); }
+    try { await acao.mutateAsync(undefined); toast('Negociação em stand by.'); onFechar(); }
     catch (err) { toast(mensagemErro(err), true); }
   }
   return (
-    <Dialogo titulo="Suspender negociação" onFechar={onFechar}
+    <Dialogo titulo="Colocar em stand by" onFechar={onFechar}
       rodape={<><button className="btn text" onClick={onFechar}>Cancelar</button>
-        <button className="btn primary" type="submit" form="f-susp" disabled={acao.isPending}>Suspender</button></>}>
+        <button className="btn primary" type="submit" form="f-susp" disabled={acao.isPending}>Colocar em stand by</button></>}>
       <form id="f-susp" onSubmit={enviar}><div className="fields">
         <div className="field"><label htmlFor="sp-d">Retomar em</label>
           <input id="sp-d" type="date" required min={somarDias(hojeISO(), 1)} value={retorno} onChange={(e) => setRetorno(e.target.value)} /></div>
