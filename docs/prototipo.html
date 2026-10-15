@@ -327,6 +327,88 @@ form .fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:
   .frow{grid-template-columns:104px minmax(0,1fr) 24px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ---- v2: ficha do terreno ---- */
+:root{--t1:#3b7dd8;--t2:#5aa6c9;--t3:#c9a227;--t4:#e07a2e;--t5:#d23b2b}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--t1:#6aa5ff;--t2:#7cc4e2;--t3:#e2c04f;--t4:#ff9a52;--t5:#ff6b5b}}
+:root[data-theme="dark"]{--t1:#6aa5ff;--t2:#7cc4e2;--t3:#e2c04f;--t4:#ff9a52;--t5:#ff6b5b}
+.temp{display:inline-flex;align-items:center;gap:8px}
+.temp .bars{display:flex;gap:3px;align-items:flex-end}
+.temp .bars button{width:16px;border:0;border-radius:3px;background:var(--surface-3);padding:0;cursor:pointer}
+.temp .bars button:nth-child(1){height:10px}.temp .bars button:nth-child(2){height:13px}.temp .bars button:nth-child(3){height:16px}.temp .bars button:nth-child(4){height:19px}.temp .bars button:nth-child(5){height:22px}
+.temp .bars button.on.t1{background:var(--t1)}.temp .bars button.on.t2{background:var(--t2)}.temp .bars button.on.t3{background:var(--t3)}.temp .bars button.on.t4{background:var(--t4)}.temp .bars button.on.t5{background:var(--t5)}
+.temp .tl{font-size:13px;font-weight:600;min-width:72px}
+.temp-mini{display:inline-flex;gap:2px;align-items:flex-end;vertical-align:middle}
+.temp-mini i{display:block;width:5px;border-radius:1px;background:var(--surface-3)}
+.temp-mini i:nth-child(1){height:6px}.temp-mini i:nth-child(2){height:8px}.temp-mini i:nth-child(3){height:10px}.temp-mini i:nth-child(4){height:12px}.temp-mini i:nth-child(5){height:14px}
+.temp-mini.t1 i.on{background:var(--t1)}.temp-mini.t2 i.on{background:var(--t2)}.temp-mini.t3 i.on{background:var(--t3)}.temp-mini.t4 i.on{background:var(--t4)}.temp-mini.t5 i.on{background:var(--t5)}
+.sec{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.sec-h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px 0}
+.sec-h h2{display:flex;align-items:center;gap:8px}
+.sec-b{padding:12px 16px 16px}
+.kvg{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px 20px}
+.kvg .k{font-size:12px;color:var(--ink-2)}
+.kvg .v{font-weight:500;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.kvg .v.ni{color:var(--ink-3);font-weight:400;font-style:italic}
+.kvg .full{grid-column:1/-1}
+.editgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.editgrid .full{grid-column:1/-1}
+.sec-f{display:flex;justify-content:flex-end;gap:8px;padding:0 16px 16px}
+.complete{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.complete .bar{width:160px}
+.complete .bar span{background:var(--accent)}
+.missing{display:flex;gap:6px;flex-wrap:wrap}
+.missing button{border:1px dashed var(--line);background:none;border-radius:12px;height:24px;padding:0 10px;font-size:12px;color:var(--ink-2)}
+.missing button:hover{border-color:var(--accent);color:var(--accent-ink)}
+.cond{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.cond .big{font-size:22px;font-weight:500;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.cond .lbl{font-size:12px;color:var(--ink-2)}
+.cond .txt{font-size:13px;margin-top:4px;color:var(--ink)}
+.seg3{display:inline-flex;background:var(--surface-2);border-radius:8px;padding:2px}
+.seg3 button{border:0;background:transparent;height:28px;padding:0 10px;border-radius:6px;font-size:12px;color:var(--ink-2);font-weight:500}
+.seg3 button[aria-pressed="true"].sim{background:var(--good-soft);color:var(--good)}
+.seg3 button[aria-pressed="true"].nao{background:var(--crit-soft);color:var(--crit)}
+.seg3 button[aria-pressed="true"].nv{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.infra{display:grid;grid-template-columns:minmax(0,1.4fr) auto minmax(0,1fr);gap:8px 16px;align-items:center;padding:10px 16px;border-top:1px solid var(--line)}
+.infra:first-child{border-top:0}
+.infra .meta{font-size:12px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mini-tbl{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.mini-tbl th{font-size:12px;color:var(--ink-3);font-weight:500;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.mini-tbl td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
+.mini-tbl tr:last-child td{border-bottom:0}
+.mini-tbl .r{text-align:right}
+.tblwrap{overflow-x:auto}
+.chain{display:flex;flex-direction:column;gap:0}
+.pnode{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;position:relative;padding-bottom:16px}
+.pnode:not(:last-child)::before{content:"";position:absolute;left:13px;top:30px;bottom:0;width:2px;background:var(--line)}
+.pnode .pd{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700}
+.pnode.bkm .pd{background:var(--accent-soft);color:var(--accent-ink)}
+.pnode.vendedor .pd{background:var(--surface-3);color:var(--ink-2)}
+.pnode .pc{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.pnode.bkm .pc{border-left:3px solid var(--accent)}
+.pnode .ph{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
+.pnode .pv{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
+.pnode .pm{font-size:12px;color:var(--ink-2);margin-top:2px}
+.pnode .pt{font-size:13px;margin-top:6px}
+.diverg{font-size:12px;color:var(--warn);display:flex;gap:6px;align-items:center;margin-top:8px}
+.areas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.area{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.area.sel{border-color:var(--accent);background:var(--accent-soft)}
+.area .al{font-size:12px;color:var(--ink-2)}
+.area .av{font-size:18px;font-weight:500;font-variant-numeric:tabular-nums}
+.area .as{font-size:11px;color:var(--accent-ink);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.details summary{cursor:pointer;font-weight:600;padding:8px 0;color:var(--accent-ink)}
+.star{border:0;background:none;color:var(--ink-3);font-size:16px;padding:0 4px;cursor:pointer}
+.star.on{color:var(--t3)}
+.tag-ref{font-size:11px;font-weight:700;color:var(--good);text-transform:uppercase;letter-spacing:.04em}
+.tr.v2{grid-template-columns:96px minmax(0,2fr) 92px 110px 118px 130px minmax(0,1.3fr)}
+@media (max-width:1100px){.tr.v2{grid-template-columns:minmax(0,2fr) 110px 118px 130px minmax(0,1.3fr)}.tr.v2 .c-id,.tr.v2 .c-area{display:none}}
+@media (max-width:899px){
+  .tr.v2{grid-template-columns:minmax(0,1fr) auto}.tr.v2 .c-val,.tr.v2 .c-tar,.tr.v2 .c-temp{display:none}
+  .cond{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .areas{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .infra{grid-template-columns:minmax(0,1fr) auto}.infra .meta{grid-column:1/-1}
+}
 </style>
 
 <header class="top">
@@ -338,12 +420,11 @@ form .fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:
     </button>
     <label class="search" for="q-top">
       <svg class="ic" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-      <input id="q-top" type="search" placeholder="Buscar terreno, bairro, matrícula ou corretor" autocomplete="off">
+      <input id="q-top" type="search" placeholder="Buscar por nome, endereço, matrícula, SQL ou corretor" autocomplete="off">
     </label>
     <div class="top-right">
       <span class="demo-pill">Dados de exemplo</span>
       <div class="seg" id="role" role="group" aria-label="Testar como"></div>
-      <button class="avatar" id="av" data-a="role-cycle" title="Trocar perfil de teste"></button>
     </div>
   </div>
 </header>
@@ -352,7 +433,7 @@ form .fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:
   <main class="main" id="main"></main>
 </div>
 <nav class="bnav" id="bnav" aria-label="Navegação"></nav>
-<button class="fab" data-a="nova-oferta"><svg class="ic" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Nova oferta</button>
+<button class="fab" data-a="novo"><svg class="ic" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Novo terreno</button>
 <div id="modal"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <input type="file" id="file-in" hidden>
@@ -360,677 +441,653 @@ form .fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:
 <script>
 (function(){
 "use strict";
-/* ---------- utilidades ---------- */
-const TODAY_ISO='2026-10-14';
-const pd=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+/* ===================== utilidades ===================== */
+const HOJE=(()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`})();
+const pd=s=>{const [y,m,d]=s.slice(0,10).split('-').map(Number);return new Date(y,m-1,d)};
 const iso=x=>`${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;
-const addDays=(s,n)=>{const x=pd(s);x.setDate(x.getDate()+n);return iso(x)};
+const addD=(s,n)=>{const x=pd(s);x.setDate(x.getDate()+n);return iso(x)};
 const diff=(a,b)=>Math.round((pd(b)-pd(a))/864e5);
 const MES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-const fd=s=>{if(!s)return '—';const x=pd(s);return `${x.getDate()} ${MES[x.getMonth()]}${x.getFullYear()!==2026?' '+x.getFullYear():''}`};
+const fd=s=>{if(!s)return '—';const x=pd(s);return `${x.getDate()} ${MES[x.getMonth()]}${x.getFullYear()!==new Date().getFullYear()?' '+x.getFullYear():''}`};
 const mi=v=>v==null?'—':'R$ '+(v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' mi';
-const brl=v=>v==null?'—':v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
-const m2=v=>Number(v).toLocaleString('pt-BR')+' m²';
+const brl=v=>v==null?'—':Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+const brl2=v=>v==null?'—':Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const num=(v,d=0)=>v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:d});
+const m2=v=>v==null?'—':num(v,2)+' m²';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const money=s=>Number(String(s||'').replace(/\D/g,''))||0;
+const lerNum=s=>{if(s==null)return null;s=String(s).trim();if(!s)return null;const n=Number(s.replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,''));return isNaN(n)?null:n};
 const digits=s=>String(s||'').replace(/\D/g,'');
 const $=s=>document.querySelector(s);
+const uid=()=>Math.random().toString(36).slice(2,9);
 const P={
-  home:'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z',
-  layers:'M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z',
-  board:'M3 5h5v14H3zm6.5 0h5v9h-5zM16 5h5v12h-5z',
-  doc:'M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z',
-  add:'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',
-  back:'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z',
-  check:'M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
-  warn:'M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z',
-  clock:'M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z',
-  upload:'M5 20h14v-2H5v2zm0-10h4v6h6v-6h4l-7-7-7 7z',
-  close:'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
-  chev:'M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z',
-  pause:'M6 19h4V5H6v14zm8-14v14h4V5h-4z',
+  home:'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z',layers:'M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z',
+  board:'M3 5h5v14H3zm6.5 0h5v9h-5zM16 5h5v12h-5z',doc:'M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z',
+  add:'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',back:'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z',check:'M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
+  warn:'M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z',clock:'M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z',
+  upload:'M5 20h14v-2H5v2zm0-10h4v6h6v-6h4l-7-7-7 7z',close:'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
+  chev:'M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z',pause:'M6 19h4V5H6v14zm8-14v14h4V5h-4z',
   block:'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9A7.9 7.9 0 0 1 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1A7.9 7.9 0 0 1 20 12c0 4.42-3.58 8-8 8z',
   link:'M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z',
-  fwd:'M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z',
-  chat:'M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z',
-  place:'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z',
+  fwd:'M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z',edit:'M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z',
   money:'M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z',
-  restore:'M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18z'
+  task:'M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm-2 14-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z'
 };
 const ic=(n,s=20)=>`<svg class="ic" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true"><path fill="currentColor" d="${P[n]}"/></svg>`;
 
-/* ---------- domínio ---------- */
-const STAGES=[
-  {k:'recebida',n:'Recebida'},{k:'triagem',n:'Triagem'},{k:'viabilidade',n:'Viabilidade'},{k:'diligencia',n:'Diligência'},
-  {k:'proposta',n:'Proposta'},{k:'aprovacao',n:'Aprovação interna'},{k:'contrato',n:'Contrato'},{k:'ganha',n:'Ganha'}];
-const SIDX=k=>STAGES.findIndex(s=>s.k===k);
-const SN=k=>(STAGES.find(s=>s.k===k)||{}).n||k;
-const TIPOS={
-  mat:{n:'Matrícula atualizada',val:30,f:'matricula'},
-  onus:{n:'Certidão de ônus reais',val:30,f:'onus_reais'},
-  iptu:{n:'Certidão negativa de IPTU',val:90,f:'iptu'},
-  vend:{n:'Certidões pessoais do vendedor',val:30,f:'certidoes_vendedor'},
-  topo:{n:'Levantamento planialtimétrico',val:null,f:'planialtimetrico'},
-  sond:{n:'Sondagem SPT',val:null,f:'sondagem_spt'},
-  amb:{n:'Avaliação ambiental preliminar',val:null,f:'ambiental'},
-  minuta:{n:'Minuta de promessa de compra e venda',val:null,f:'minuta_promessa'}
+/* ===================== domínio ===================== */
+const OPT={
+  zona:{leste:'Leste',oeste:'Oeste',norte:'Norte',sul:'Sul',sudeste:'Sudeste',sudoeste:'Sudoeste',nordeste:'Nordeste',noroeste:'Noroeste'},
+  prioridade:{baixa:'Baixa',media:'Média',alta:'Alta',estrategica:'Estratégica'},
+  origem:{prospeccao:'Prospecção própria',corretor:'Corretor',indicacao:'Indicação',portal:'Portal',proprietario:'Proprietário direto',outro:'Outro'},
+  precisao:{nao_informada:'Não informada',aproximada:'Aproximada',conferida:'Conferida'},
+  fonteArea:{documental:'Documental (matrícula)',cadastral:'Cadastral (IPTU)',levantamento:'Levantamento topográfico',estimativa:'Estimativa'},
+  topografia:{nao_informado:'Não informado',plano:'Plano',aclive:'Aclive',declive:'Declive',irregular:'Irregular'},
+  posicao:{nao_informado:'Não informado',meio_quadra:'Meio de quadra',esquina:'Esquina',duas_frentes:'Duas frentes',quadra_inteira:'Quadra inteira'},
+  formato:{nao_informado:'Não informado',regular:'Regular',irregular:'Irregular'},
+  ocupacao:{nao_informado:'Não informado',vazio:'Vazio',ocupado:'Ocupado',parcialmente_ocupado:'Parcialmente ocupado'},
+  demolicao:{nao_avaliada:'Não avaliada',provavel:'Provável',confirmada:'Confirmada',dispensada:'Dispensada'},
+  forma:{dinheiro:'Dinheiro',permuta_fisica:'Permuta Física',permuta_financeira:'Permuta Financeira',permuta_geral:'Permuta Geral',permuta_com_torna:'Permuta Com Torna'},
+  statusProp:{rascunho:'Rascunho',apresentada:'Apresentada',em_analise:'Em análise',aceita:'Aceita',recusada:'Recusada',expirada:'Expirada',retirada:'Retirada',substituida:'Substituída'},
+  statusTar:{pendente:'Pendente',em_andamento:'Em andamento',aguardando_terceiro:'Aguardando terceiro',concluida:'Concluída',cancelada:'Cancelada'},
+  prioTar:{baixa:'Baixa',media:'Média',alta:'Alta'},
+  papel:{proprietario:'Proprietário',representante:'Representante',procurador:'Procurador',contato:'Contato'},
+  tipoPessoa:{PF:'Pessoa física',PJ:'Pessoa jurídica'}
 };
-const CHECK=[
-  {etapa:'diligencia',titulo:'Exigidos para sair de Diligência',itens:[['mat',1],['onus',1],['iptu',1],['vend',1],['topo',1],['sond',0],['amb',0]]},
-  {etapa:'contrato',titulo:'Exigidos para concluir o Contrato',itens:[['minuta',1]]}];
-const MOTIVOS=['Preço acima do teto da viabilidade','Zoneamento ou legislação','Documentação ou pendência jurídica','Vendedor desistiu','Perdido para concorrente','Outro'];
-const USERS={Gestor:'Moisés',Analista:'Rafael Souza'};
+const TEMP=['','Muito fria','Fria','Morna','Quente','Muito quente'];
+const STAGES=[['recebida','Recebida'],['triagem','Triagem'],['viabilidade','Viabilidade'],['diligencia','Diligência'],['proposta','Proposta'],['aprovacao','Aprovação interna'],['contrato','Contrato'],['ganha','Ganha']];
+const SIDX=k=>STAGES.findIndex(s=>s[0]===k);const SN=k=>(STAGES.find(s=>s[0]===k)||[,k])[1];
+const INFRA=[['energia','Rede de energia na porta'],['agua','Rede de água na porta'],['esgoto','Rede de esgoto na porta'],['gas','Gás canalizado na porta'],['asfalto','Asfalto na porta'],['drenagem','Drenagem pluvial'],['iluminacao','Iluminação pública'],['calcada','Calçada'],['fibra','Telefonia / fibra óptica']];
+const ZONEAMENTOS=['ZEU','ZEUa','ZEUP','ZEUPa','ZEM','ZEMP','ZC','ZCa','ZC-ZEIS','ZCOR-1','ZCOR-2','ZCOR-3','ZM','ZMa','ZMIS','ZMISa','ZEIS-1','ZEIS-2','ZEIS-3','ZEIS-4','ZEIS-5','ZDE-1','ZDE-2','ZPI-1','ZPI-2','ZER-1','ZER-2','ZERa','ZPR','ZEP','ZEPAM','ZPDS','ZOE'];
+const TIPOS_DOC={matricula:['Matrícula atualizada','Imóvel',30],onus:['Certidão de ônus reais','Imóvel',30],iptu:['Certidão negativa de IPTU','Imóvel',90],vend:['Certidões pessoais do vendedor','Vendedor',30],topo:['Levantamento planialtimétrico','Técnico',null],sond:['Sondagem SPT','Técnico',null],amb:['Avaliação ambiental preliminar','Técnico',null],minuta:['Minuta de promessa de compra e venda','Contratos',null],foto:['Foto','Mídia',null],planta:['Planta ou croqui','Técnico',null]};
+const CHECK_DIL=[['matricula',1],['onus',1],['iptu',1],['vend',1],['topo',1],['sond',0],['amb',0]];
+const USERS=['Moisés','Ana Prado','Rafael Souza','Camila Torres'];
+const ROLE_USER={Gestor:'Moisés',Analista:'Rafael Souza'};
 const AVC={'Moisés':'--av1','Ana Prado':'--av2','Rafael Souza':'--av3','Camila Torres':'--av4'};
-const ini=n=>n.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
-const av=(n,cls='')=>`<span class="avatar ${cls}" style="background:var(${AVC[n]||'--av3'})" title="${esc(n)}">${esc(ini(n))}</span>`;
+const ini=n=>String(n||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+const av=(n,c='')=>`<span class="avatar ${c}" style="background:var(${AVC[n]||'--av3'})" title="${esc(n)}">${esc(ini(n))}</span>`;
 
-/* ---------- dados de exemplo ---------- */
+/* ===================== dados de exemplo ===================== */
 function seed(){
-  const terrenos=[
-    ['T-0110','Pirituba','Rua Alto do Ipê, 1.240',4180,'ZEIS-2',58,[['152.880','8º CRI']],[['Construpar Participações Ltda.',100]]],
-    ['T-0119','Sapopemba','Av. Campo das Pitangas, 3.050',3640,'ZEIS-2',46,[['201.117','9º CRI']],[['Maria Aparecida Lins',50],['João Batista Lins',50]]],
-    ['T-0128','Vila Prudente','Rua Barão do Jequitibá, 512',2950,'ZM',38,[['98.442','6º CRI'],['98.443','6º CRI']],[['Têxtil Paulistana S.A.',100]]],
-    ['T-0137','Brasilândia','Rua Vale do Sabiá, 88',2200,'ZM',30,[['176.209','18º CRI']],[['Roberto Kenji Sato',100]]],
-    ['T-0142','Itaquera','Rua das Acácias Roxas, 410',3120,'ZEIS-2',42,[['184.552','9º CRI'],['184.553','9º CRI']],[['Espólio de José Ribamar Andrade',100]]],
-    ['T-0149','Cidade Tiradentes','Estrada do Iguape Velho, 2.700',6300,'ZEIS-1',72,[['233.901','9º CRI']],[['Espólio de Antônio Ferraz',100]]],
-    ['T-0155','Guaianases','Estrada do Lajeado Velho, 1.880',5400,'ZEIS-2',64,[['219.774','9º CRI']],[['Lajeado Empreendimentos Ltda.',100]]],
-    ['T-0158','Perus','Rua Serra da Cantareira Nova, 640',2050,'ZM',27,[['164.320','8º CRI']],[['Helena Duarte Campos',100]]],
-    ['T-0161','Jaraguá','Rua Pico Alto, 95',1950,'ZEU',33,[['171.058','8º CRI']],[['Família Moretti (4 herdeiros)',100]]],
-    ['T-0163','Campo Limpo','Av. Ponte Baixa Nova, 2.210',2680,'ZEU',40,[['142.996','11º CRI']],[['Auto Posto Ponte Baixa Ltda.',100]]],
-    ['T-0164','Penha','Rua Capitão Ourinhos, 330',2420,'ZM',35,[['88.615','12º CRI']],[['Galpões Penha Ltda.',100]]],
-    ['T-0166','Ermelino Matarazzo','Rua Monte Belo do Leste, 1.010',3300,'ZEIS-2',48,[['190.402','12º CRI']],[['Celso Ribeiro Prado',60],['Lúcia Ribeiro Prado',40]]]
-  ].map(([id,bairro,end,area,zon,frente,mats,props])=>({id,bairro,end,cidade:'São Paulo',area,zon,frente,
-    mats:mats.map(([num,cri])=>({num,cri})),props:props.map(([nome,pct])=>({nome,pct}))}));
-
-  const ofertas=[
-    ['O-101','T-0110','Corretor','Lemos Imóveis · Marcos Lemos','2026-03-10',9200000],
-    ['O-104','T-0119','Proprietário direto','','2026-05-02',7600000],
-    ['O-108','T-0128','Corretor','Prime Terrenos · Juliana Reis','2026-06-15',6900000],
-    ['O-110','T-0137','Corretor','Zona Leste Áreas · Paulo Nunes','2026-07-01',4100000],
-    ['O-112','T-0142','Corretor','Lemos Imóveis · Marcos Lemos','2026-08-18',6800000],
-    ['O-115','T-0142','Corretor','Prime Terrenos · Juliana Reis','2026-09-02',7100000],
-    ['O-113','T-0149','Prospecção própria','','2026-08-05',8800000],
-    ['O-118','T-0155','Proprietário direto','','2026-08-28',9800000],
-    ['O-121','T-0158','Corretor','Zona Leste Áreas · Paulo Nunes','2026-10-01',3600000],
-    ['O-122','T-0161','Corretor','Prime Terrenos · Juliana Reis','2026-09-24',3900000],
-    ['O-124','T-0163','Corretor','Lemos Imóveis · Marcos Lemos','2026-10-03',5100000],
-    ['O-126','T-0164','Corretor','Prime Terrenos · Juliana Reis','2026-10-09',5200000],
-    ['O-127','T-0164','Corretor','Lemos Imóveis · Marcos Lemos','2026-10-11',5600000],
-    ['O-128','T-0166','Corretor','Zona Leste Áreas · Paulo Nunes','2026-10-13',5900000]
-  ].map(([id,tid,origem,corretor,em,valor])=>({id,tid,origem,corretor,em,valor}));
-
-  const pr=(v,autor,em,valor,forma,pct,cond,status)=>({v,autor,em,valor,forma,pct,cond,status});
-  const procs=[
-    {id:'N-012',tid:'T-0110',etapa:'ganha',status:'ganha',resp:'Ana Prado',aber:'2026-03-12',ult:'2026-07-28',emp:'E-07 · Residencial Pirituba',
-      viab:{id:'V-061',em:'2026-04-02',vgv:62.4e6,margem:15.6,pmax:8.9e6},
-      props:[pr(1,'Nós','2026-05-04',7900000,'Dinheiro',0,'Aprovação do projeto em 180 dias','Recusada'),pr(2,'Proprietário','2026-05-20',9200000,'Dinheiro',0,'Sem condições','Contraproposta'),pr(3,'Nós','2026-06-03',8600000,'Misto',5,'Pagamento em 3 parcelas; condição suspensiva de aprovação','Aceita')]},
-    {id:'N-019',tid:'T-0119',etapa:'contrato',status:'ativo',resp:'Ana Prado',aber:'2026-05-04',ult:'2026-10-06',
-      viab:{id:'V-079',em:'2026-06-01',vgv:51.0e6,margem:15.0,pmax:7.3e6},
-      props:[pr(1,'Nós','2026-07-14',6800000,'Dinheiro',0,'Aprovação do projeto em 180 dias','Recusada'),pr(2,'Nós','2026-08-26',7100000,'Dinheiro',0,'Aprovação do projeto em 180 dias','Aceita')]},
-    {id:'N-024',tid:'T-0128',etapa:'aprovacao',status:'ativo',resp:'Moisés',aber:'2026-06-16',ult:'2026-10-09',
-      viab:{id:'V-093',em:'2026-07-10',vgv:44.2e6,margem:14.2,pmax:6.4e6},
-      props:[pr(1,'Nós','2026-08-20',5900000,'Misto',6,'Condição suspensiva de aprovação na Prefeitura','Recusada'),pr(2,'Proprietário','2026-09-08',6900000,'Dinheiro',0,'Pagamento à vista','Contraproposta'),pr(3,'Nós','2026-09-30',6500000,'Dinheiro',0,'40% na assinatura, 60% na aprovação','Aceita')]},
-    {id:'N-028',tid:'T-0137',etapa:'viabilidade',status:'perdida',resp:'Camila Torres',aber:'2026-07-02',ult:'2026-07-20',fim:'2026-08-04',
-      motivo:'Zoneamento ou legislação',motivoTxt:'Cerca de 40% do lote em área de proteção ambiental; a área útil não fecha a conta.'},
-    {id:'N-031',tid:'T-0142',etapa:'proposta',status:'ativo',resp:'Ana Prado',aber:'2026-08-19',ult:'2026-09-18',
-      viab:{id:'V-112',em:'2026-09-01',vgv:46.8e6,margem:14.8,pmax:6.2e6},
-      props:[pr(1,'Nós','2026-09-20',5400000,'Misto',6,'R$ 4,0 mi em dinheiro + 6% do VGV em permuta física','Recusada'),pr(2,'Proprietário','2026-09-29',6600000,'Dinheiro',0,'Pagamento à vista na escritura','Contraproposta'),pr(3,'Nós','2026-10-08',6150000,'Misto',4,'R$ 5,2 mi em dinheiro + 4% em permuta física; condição suspensiva de aprovação','Em análise')]},
-    {id:'N-033',tid:'T-0149',etapa:'diligencia',status:'suspensa',resp:'Rafael Souza',aber:'2026-08-06',ult:'2026-09-10',fim:'2026-09-26',retorno:'2026-11-20',
-      viab:{id:'V-104',em:'2026-08-25',vgv:88.0e6,margem:16.8,pmax:12.6e6},motivoTxt:'Inventário do espólio ainda não concluído; herdeiros pediram retomar em novembro.'},
-    {id:'N-036',tid:'T-0155',etapa:'diligencia',status:'ativo',resp:'Camila Torres',aber:'2026-08-29',ult:'2026-09-28',
-      viab:{id:'V-118',em:'2026-09-16',vgv:78.3e6,margem:16.2,pmax:10.9e6}},
-    {id:'N-038',tid:'T-0158',etapa:'triagem',status:'ativo',resp:'Rafael Souza',aber:'2026-10-02',ult:'2026-10-06'},
-    {id:'N-039',tid:'T-0161',etapa:'viabilidade',status:'ativo',resp:'Rafael Souza',aber:'2026-09-25',ult:'2026-10-07'},
-    {id:'N-040',tid:'T-0163',etapa:'triagem',status:'ativo',resp:'Camila Torres',aber:'2026-10-03',ult:'2026-10-08'},
-    {id:'N-041',tid:'T-0164',etapa:'recebida',status:'ativo',resp:'Rafael Souza',aber:'2026-10-09',ult:'2026-10-09'},
-    {id:'N-042',tid:'T-0166',etapa:'recebida',status:'ativo',resp:'Camila Torres',aber:'2026-10-13',ult:'2026-10-13'}
-  ];
-  procs.forEach(p=>{
-    p.props=(p.props||[]).map(x=>({...x}));
-    p.viab=p.viab||null;
-    const idx=SIDX(p.etapa);
-    p.hist=[];
-    for(let i=0;i<=idx;i++){
-      const em=idx===0?p.aber:addDays(p.aber,Math.round(diff(p.aber,p.ult)*i/idx));
-      p.hist.push({kind:'etapa',para:STAGES[i].k,em,user:p.resp,txt:i===0?'Negociação aberta a partir da oferta':`Avançou para ${STAGES[i].n}`});
-    }
-    p.props.forEach(x=>p.hist.push({kind:'prop',em:x.em,user:x.autor==='Nós'?p.resp:'Proprietário',txt:`Proposta v${x.v} registrada: ${mi(x.valor)} (${x.autor==='Nós'?'nossa':'do proprietário'})`}));
-    if(p.status==='perdida')p.hist.push({kind:'fim',em:p.fim,user:p.resp,txt:`Encerrada como perdida: ${p.motivo}`});
-    if(p.status==='suspensa')p.hist.push({kind:'fim',em:p.fim,user:p.resp,txt:`Suspensa até ${fd(p.retorno)}`});
-    p.ativ=[];p.tarefas=[];
-  });
-  const byId=id=>procs.find(p=>p.id===id);
-  const A=(id,tipo,em,user,txt)=>byId(id).ativ.push({tipo,em,user,txt});
-  A('N-031','Ligação','2026-10-10','Ana Prado','Inventariante achou a v3 baixa, mas topa discutir a permuta. Retorno prometido até sexta.');
-  A('N-031','Reunião','2026-09-29','Ana Prado','Reunião com o advogado do espólio. Recebida contraproposta de R$ 6,6 mi à vista.');
-  A('N-031','Visita','2026-08-27','Camila Torres','Visita técnica: terreno plano, frente para via asfaltada, sem ocupação.');
-  A('N-036','E-mail','2026-10-07','Camila Torres','Pedido ao vendedor de novas certidões pessoais (as anteriores venceram).');
-  A('N-036','Visita','2026-09-05','Camila Torres','Visita: declive suave no fundo do lote. Pedir planialtimétrico antes da proposta.');
-  A('N-024','Reunião','2026-10-09','Moisés','Vendedor aceitou R$ 6,5 mi. Vai para o comitê por ficar acima do preço máximo.');
-  A('N-019','E-mail','2026-10-10','Ana Prado','Minuta enviada pelo jurídico do vendedor. Em revisão.');
-  A('N-041','Nota','2026-10-11','Rafael Souza','Segunda oferta do mesmo terreno, agora pela Lemos Imóveis, R$ 400 mil acima da primeira.');
-  const TK=(id,t,resp,prazo,feito=false)=>byId(id).tarefas.push({id:'K'+Math.random().toString(36).slice(2,8),t,resp,prazo,feito});
-  TK('N-031','Responder a contraproposta do espólio','Ana Prado','2026-10-16');
-  TK('N-031','Atualizar a matrícula antes do vencimento','Rafael Souza','2026-10-20');
-  TK('N-036','Contratar levantamento planialtimétrico','Camila Torres','2026-10-10');
-  TK('N-036','Cobrar novas certidões do vendedor','Camila Torres','2026-10-12');
-  TK('N-024','Levar ao comitê: valor acima do preço máximo','Moisés','2026-10-17');
-  TK('N-019','Revisar minuta com o jurídico','Ana Prado','2026-10-15');
-  TK('N-039','Rodar estudo de viabilidade no BKM','Rafael Souza','2026-10-18');
-  TK('N-040','Visitar o terreno','Camila Torres','2026-10-21');
-  TK('N-038','Conferir zoneamento e restrições','Rafael Souza','2026-10-09',true);
-  TK('N-041','Triagem: localização e preço por m²','Rafael Souza','2026-10-15');
-  TK('N-042','Triagem: localização e preço por m²','Camila Torres','2026-10-17');
-
-  let dn=1;
-  const docs=[];
-  const D=(pid,tipo,status,emitido,versoes=1)=>{const p=byId(pid);docs.push({id:'D-'+(dn++),pid,tipo,status,emitido,versoes,arquivo:emitido?`${TIPOS[tipo].f}_${p.tid}.pdf`:null})};
-  // N-031 proposta: tudo validado; matrícula vence em breve
-  D('N-031','mat','validado','2026-09-22');D('N-031','onus','validado','2026-09-22');D('N-031','iptu','validado','2026-09-10');
-  D('N-031','vend','validado','2026-09-25');D('N-031','topo','validado','2026-09-01');D('N-031','sond','validado','2026-09-04');D('N-031','amb','pendente',null,0);
-  // N-036 diligência: bloqueada
-  D('N-036','mat','validado','2026-10-01');D('N-036','onus','validado','2026-10-01');D('N-036','iptu','recebido','2026-08-20');
-  D('N-036','vend','validado','2026-09-05');D('N-036','topo','pendente',null,0);D('N-036','sond','pendente',null,0);D('N-036','amb','recebido','2026-09-20');
-  // N-024, N-019
-  ['mat','onus','vend'].forEach(t=>D('N-024',t,'validado','2026-09-30'));D('N-024','iptu','validado','2026-09-15');D('N-024','topo','validado','2026-08-10');D('N-024','sond','validado','2026-08-12');D('N-024','amb','validado','2026-08-12');
-  ['mat','onus','vend'].forEach(t=>D('N-019',t,'validado','2026-10-02',2));D('N-019','iptu','validado','2026-09-20');D('N-019','topo','validado','2026-07-02');D('N-019','sond','validado','2026-07-05');D('N-019','amb','validado','2026-07-05');
-  D('N-019','minuta','recebido','2026-10-10');
-  ['mat','onus','iptu','vend','topo','sond','amb','minuta'].forEach(t=>D('N-012',t,'validado','2026-07-10'));
-  ['mat','onus'].forEach(t=>D('N-033',t,'validado','2026-09-12'));
-  return {terrenos,ofertas,procs,docs,seq:{T:166,N:42,O:128,D:dn}};
+  const H=n=>addD(HOJE,-n);
+  const eixos=[{id:'e1',nome:'Eixo Cupecê'},{id:'e2',nome:'Eixo Interlagos'},{id:'e3',nome:'Eixo Radial Leste'},{id:'e4',nome:'Eixo Inajar de Souza'},{id:'e5',nome:'Eixo Raposo Tavares'}];
+  const corretores=[{id:'c1',nome:'Marcos Lemos',creci:'123.456-F',imob:'Lemos Imóveis'},{id:'c2',nome:'Juliana Reis',creci:'98.765-F',imob:'Prime Terrenos'},{id:'c3',nome:'Paulo Nunes',creci:'45.210-F',imob:'Zona Leste Áreas'}];
+  const base=(o)=>Object.assign({id:uid(),situacao:'ativo',prioridade:null,descricao:'',url:'',obs:'',cep:'',complemento:'',referencia:'',lat:null,lng:null,precisao:'nao_informada',
+    aDoc:null,aCad:null,aLev:null,aEst:null,fonteArea:null,testada:null,topografia:'nao_informado',desnivel:null,posicao:'nao_informado',formato:'nao_informado',ocupacao:'nao_informado',
+    uso:'',aConst:null,aDemolir:null,demolicao:'nao_avaliada',obsFis:'',eixo:null,mats:[],insc:[],pessoas:[],corretores:[],infra:{},analises:[],ofertas:[],neg:null,propostas:[],tarefas:[],docs:[],hist:[]},o);
+  const neg=(etapa,dias,extra)=>Object.assign({codigo:'NEG-'+String(Math.floor(Math.random()*900)+100).padStart(5,'0'),etapa,status:'ativo',desde:H(dias),temp:null,ofRef:null,viab:null},extra||{});
+  const infra=(o)=>{const r={};for(const [k,v] of Object.entries(o))r[k]={d:v,data:H(20),fonte:'Visita ao local',obs:''};return r};
+  const T=[];
+  // 1 — completo, em proposta
+  T.push(base({codigo:'TER-000123',nome:'Terreno Av. Cupecê — esquina',descricao:'Esquina com duas frentes, plano, ocupado por galpão a demolir.',prioridade:'alta',resp:'Ana Prado',origem:'corretor',dataIdent:H(62),
+    cep:'04366-000',logradouro:'Av. Cupecê',numero:'5.120',bairro:'Cidade Ademar',zona:'sul',eixo:'e1',referencia:'Em frente ao terminal Cidade Ademar',lat:-23.6681,lng:-46.6513,precisao:'conferida',
+    aDoc:2000,aCad:1985,aLev:1920,fonteArea:'levantamento',testada:42,topografia:'plano',desnivel:0.8,posicao:'esquina',formato:'regular',ocupacao:'ocupado',uso:'Galpão de depósito',aConst:860,aDemolir:860,demolicao:'confirmada',obsFis:'Galpão com cobertura de fibrocimento: prever destinação adequada na demolição.',
+    mats:[{num:'184.552',cri:'11º CRI',area:2000,data:H(40)}],
+    insc:[{sql:'089.123.0045-6',area:1985,valores:[{ex:2025,venal:3800000,iptu:41200,parc:10},{ex:2026,venal:4120000,iptu:45300,parc:10}]}],
+    pessoas:[{nome:'Construpar Participações Ltda.',tipo:'PJ',papel:'proprietario',pct:100,tel:''},{nome:'Dr. Álvaro Mendes',tipo:'PF',papel:'procurador',pct:null,tel:'(11) 98888-1234'}],
+    corretores:[{cid:'c1',principal:true},{cid:'c2',principal:false}],
+    infra:infra({energia:'sim',agua:'sim',esgoto:'sim',gas:'nao',asfalto:'sim',drenagem:'sim',iluminacao:'sim',calcada:'sim',fibra:'sim'}),
+    analises:[{id:uid(),data:H(50),fonte:'GeoSampa',status:'substituida',zonas:[{sigla:'ZM',area:2000,gabM:28,gabPav:null,semLim:false,ca:2,obs:''}]},
+              {id:uid(),data:H(18),fonte:'Certidão de uso do solo',status:'vigente',zonas:[{sigla:'ZEU',area:1400,gabM:null,gabPav:null,semLim:true,ca:4,obs:'Eixo de transformação urbana'},{sigla:'ZM',area:520,gabM:28,gabPav:null,semLim:false,ca:2,obs:'Fundos do lote'}]}],
+    ofertas:[{id:'o1',cid:'c1',data:H(62),valor:9000000,forma:'permuta_com_torna',obsPag:'60% em dinheiro na escritura; 40% em unidades no próprio empreendimento.',aceita:'Aceita permuta de até 40% em unidades, preferindo 2 dormitórios com vaga.',validade:H(-30),status:'ativa'},
+             {id:'o2',cid:'c2',data:H(41),valor:8700000,forma:'dinheiro',obsPag:'À vista, com desconto para pagamento em 60 dias.',aceita:'Não aceita permuta.',validade:null,status:'ativa'}],
+    neg:neg('proposta',22,{temp:4,ofRef:'o1',viab:{nome:'Estudo base · 2 dormitórios',vgv:62400000,margem:15.2,pmax:8400000,em:H(35)}}),
+    propostas:[{v:1,origem:'bkm',data:H(30),validade:H(15),valor:8000000,forma:'dinheiro',cond:'À vista na escritura, condição suspensiva de aprovação do projeto em 180 dias.',status:'recusada'},
+               {v:2,origem:'vendedor',data:H(24),validade:H(9),valor:9000000,forma:'permuta_com_torna',cond:'R$ 5,4 mi em dinheiro + 40% em unidades.',status:'recusada'},
+               {v:3,origem:'bkm',data:H(8),validade:H(-7),valor:8500000,forma:'permuta_com_torna',cond:'R$ 6 mi em dinheiro + 8% do VGV em permuta física.',status:'em_analise'}],
+    tarefas:[{id:uid(),titulo:'Cobrar resposta da proposta v3',desc:'Procurador prometeu retorno até sexta.',resp:'Ana Prado',prazo:H(2),status:'pendente',prio:'alta',resultado:''},
+             {id:uid(),titulo:'Orçar demolição do galpão',desc:'',resp:'Rafael Souza',prazo:H(-6),status:'em_andamento',prio:'media',resultado:''},
+             {id:uid(),titulo:'Pedir certidão de uso do solo',desc:'',resp:'Ana Prado',prazo:H(25),status:'concluida',prio:'media',resultado:'Recebida e anexada à análise urbanística.'}],
+    docs:[{tipo:'matricula',status:'validado',emitido:H(22),versoes:2},{tipo:'onus',status:'validado',emitido:H(22),versoes:1},{tipo:'iptu',status:'validado',emitido:H(34),versoes:1},{tipo:'vend',status:'validado',emitido:H(19),versoes:1},{tipo:'topo',status:'validado',emitido:H(43),versoes:1},{tipo:'foto',status:'recebido',emitido:H(60),versoes:1,nome:'Fachada Av. Cupecê'}]
+  }));
+  // 2 — diligência travada
+  T.push(base({codigo:'TER-000118',nome:'Gleba Estrada do Lajeado',prioridade:'estrategica',resp:'Camila Torres',origem:'proprietario',dataIdent:H(48),
+    logradouro:'Estrada do Lajeado Velho',numero:'1.880',bairro:'Guaianases',zona:'leste',eixo:'e3',aDoc:5400,fonteArea:'documental',testada:64,topografia:'declive',desnivel:6,posicao:'meio_quadra',formato:'irregular',ocupacao:'vazio',demolicao:'dispensada',
+    mats:[{num:'219.774',cri:'9º CRI',area:5400,data:H(13)}],insc:[{sql:'228.004.0012-1',area:5310,valores:[{ex:2026,venal:3950000,iptu:31800,parc:10}]}],
+    pessoas:[{nome:'Lajeado Empreendimentos Ltda.',tipo:'PJ',papel:'proprietario',pct:100,tel:'(11) 3333-1010'}],
+    infra:infra({energia:'sim',agua:'sim',esgoto:'nao',asfalto:'sim'}),
+    analises:[{id:uid(),data:H(30),fonte:'GeoSampa',status:'vigente',zonas:[{sigla:'ZEIS-2',area:5400,gabM:null,gabPav:null,semLim:true,ca:2,obs:''}]}],
+    ofertas:[{id:'o3',cid:null,data:H(48),valor:9800000,forma:'dinheiro',obsPag:'Pagamento em 3 parcelas.',aceita:'Aceita conversar sobre permuta financeira.',status:'ativa'}],
+    neg:neg('diligencia',26,{temp:3,ofRef:'o3',viab:{nome:'ZEIS-2 · 2 dormitórios',vgv:78300000,margem:16.2,pmax:10900000,em:H(30)}}),
+    tarefas:[{id:uid(),titulo:'Contratar levantamento planialtimétrico',desc:'',resp:'Camila Torres',prazo:H(4),status:'pendente',prio:'alta',resultado:''},{id:uid(),titulo:'Cobrar novas certidões do vendedor',desc:'',resp:'Camila Torres',prazo:H(2),status:'aguardando_terceiro',prio:'media',resultado:''}],
+    docs:[{tipo:'matricula',status:'validado',emitido:H(13),versoes:1},{tipo:'onus',status:'validado',emitido:H(13),versoes:1},{tipo:'iptu',status:'recebido',emitido:H(55),versoes:1},{tipo:'vend',status:'validado',emitido:H(39),versoes:1}]
+  }));
+  // 3 — recém-cadastrado, ficha incompleta
+  T.push(base({codigo:'TER-000131',nome:'Lote Rua Capitão Ourinhos',resp:'Rafael Souza',origem:'corretor',dataIdent:H(3),logradouro:'Rua Capitão Ourinhos',numero:'330',bairro:'Penha',zona:'leste',
+    ofertas:[{id:'o4',cid:'c2',data:H(3),valor:5200000,forma:'permuta_fisica',obsPag:'',aceita:'Quer 6 unidades no térreo.',status:'ativa'},{id:'o5',cid:'c1',data:H(1),valor:5600000,forma:'dinheiro',obsPag:'',aceita:'',status:'ativa'}],
+    corretores:[{cid:'c2',principal:true},{cid:'c1',principal:false}],
+    neg:neg('recebida',3,{ofRef:'o4'}),
+    tarefas:[{id:uid(),titulo:'Triagem: localização e preço por m²',desc:'',resp:'Rafael Souza',prazo:H(-2),status:'pendente',prio:'media',resultado:''}]}));
+  // 4 — viabilidade
+  T.push(base({codigo:'TER-000127',nome:'Terreno Rua Pico Alto',resp:'Rafael Souza',origem:'corretor',dataIdent:H(20),logradouro:'Rua Pico Alto',numero:'95',bairro:'Jaraguá',zona:'noroeste',eixo:'e4',aCad:1950,fonteArea:'cadastral',testada:33,topografia:'aclive',
+    insc:[{sql:'171.058.0033-9',area:1950,valores:[{ex:2026,venal:1650000,iptu:14100,parc:10}]}],
+    pessoas:[{nome:'Família Moretti (4 herdeiros)',tipo:'PF',papel:'proprietario',pct:null,tel:''}],
+    ofertas:[{id:'o6',cid:'c2',data:H(20),valor:3900000,forma:'permuta_geral',obsPag:'Aberto a combinar dinheiro e unidades.',aceita:'Sim, desde que parte em dinheiro.',status:'ativa'}],corretores:[{cid:'c2',principal:true}],
+    neg:neg('viabilidade',8,{temp:2,ofRef:'o6'}),
+    tarefas:[{id:uid(),titulo:'Rodar estudo de viabilidade no BKM',desc:'',resp:'Rafael Souza',prazo:H(-3),status:'em_andamento',prio:'alta',resultado:''}]}));
+  // 5 — aprovação interna, acima do teto
+  T.push(base({codigo:'TER-000112',nome:'Área Barão do Jequitibá',prioridade:'alta',resp:'Moisés',origem:'corretor',dataIdent:H(121),logradouro:'Rua Barão do Jequitibá',numero:'512',bairro:'Vila Prudente',zona:'sudeste',
+    aDoc:2950,aLev:2938,fonteArea:'levantamento',testada:38,topografia:'plano',posicao:'meio_quadra',formato:'regular',ocupacao:'parcialmente_ocupado',aConst:420,aDemolir:420,demolicao:'provavel',
+    mats:[{num:'98.442',cri:'6º CRI',area:1500,data:H(14)},{num:'98.443',cri:'6º CRI',area:1450,data:H(14)}],
+    pessoas:[{nome:'Têxtil Paulistana S.A.',tipo:'PJ',papel:'proprietario',pct:100,tel:''}],
+    infra:infra({energia:'sim',agua:'sim',esgoto:'sim',gas:'sim',asfalto:'sim',drenagem:'sim',iluminacao:'sim',calcada:'sim',fibra:'sim'}),
+    analises:[{id:uid(),data:H(80),fonte:'GeoSampa',status:'vigente',zonas:[{sigla:'ZM',area:2950,gabM:28,gabPav:null,semLim:false,ca:2,obs:''}]}],
+    ofertas:[{id:'o7',cid:'c2',data:H(121),valor:6900000,forma:'dinheiro',status:'ativa',obsPag:'',aceita:''}],corretores:[{cid:'c2',principal:true}],
+    neg:neg('aprovacao',6,{temp:5,ofRef:'o7',viab:{nome:'Estudo base',vgv:44200000,margem:14.2,pmax:6400000,em:H(90)}}),
+    propostas:[{v:1,origem:'bkm',data:H(50),valor:5900000,forma:'permuta_com_torna',cond:'R$ 4,5 mi + 6% em permuta.',status:'recusada'},{v:2,origem:'vendedor',data:H(30),valor:6900000,forma:'dinheiro',cond:'À vista.',status:'recusada'},{v:3,origem:'bkm',data:H(10),valor:6500000,forma:'dinheiro',cond:'40% na assinatura, 60% na aprovação.',status:'aceita'}],
+    tarefas:[{id:uid(),titulo:'Levar ao comitê: valor acima do preço máximo',desc:'',resp:'Moisés',prazo:H(-3),status:'pendente',prio:'alta',resultado:''}],
+    docs:['matricula','onus','iptu','vend','topo','sond','amb'].map(t=>({tipo:t,status:'validado',emitido:H(12),versoes:1}))}));
+  // 6 — perdida
+  T.push(base({codigo:'TER-000109',nome:'Terreno Vale do Sabiá',resp:'Camila Torres',origem:'corretor',dataIdent:H(105),logradouro:'Rua Vale do Sabiá',numero:'88',bairro:'Brasilândia',zona:'norte',aDoc:2200,fonteArea:'documental',
+    ofertas:[{id:'o8',cid:'c3',data:H(105),valor:4100000,forma:'dinheiro',status:'expirada',obsPag:'',aceita:''}],corretores:[{cid:'c3',principal:true}],
+    neg:neg('viabilidade',95,{status:'perdida',temp:1,ofRef:'o8',motivo:'Zoneamento ou legislação',detalhe:'Cerca de 40% do lote em área de proteção ambiental.'})}));
+  // 7 — prospecção sem oferta
+  T.push(base({codigo:'TER-000132',nome:'Lote vizinho ao TER-000123',resp:'Ana Prado',origem:'prospeccao',dataIdent:H(2),logradouro:'Rua Benedito Mendes',numero:'40',bairro:'Cidade Ademar',zona:'sul',eixo:'e1',
+    obs:'Abordar para compor a área com o terreno da esquina.',tarefas:[{id:uid(),titulo:'Localizar proprietário pelo SQL',desc:'',resp:'Ana Prado',prazo:H(-5),status:'pendente',prio:'media',resultado:''}]}));
+  T.forEach(t=>{t.hist=[{em:t.dataIdent,user:t.resp,txt:'Terreno cadastrado'}];if(t.neg){t.hist.push({em:t.neg.desde,user:t.resp,txt:`Negociação em ${SN(t.neg.etapa)}`})}});
+  return {eixos,corretores,terrenos:T,areasInteresse:[{id:'ai1',nome:'Área Cupecê A',terrenos:['TER-000123','TER-000132']}],seqT:132};
 }
 
-/* ---------- estado ---------- */
-const KEY='bkm-terrenos-prototipo-v1';
-let S;
-try{const raw=localStorage.getItem(KEY);S=raw?JSON.parse(raw):null}catch(e){S=null}
-if(!S||!S.procs)S=seed();
+/* ===================== estado ===================== */
+const KEY='bkm-terrenos-prototipo-v2';
+let S;try{const r=localStorage.getItem(KEY);S=r?JSON.parse(r):null}catch(e){S=null}
+if(!S||!S.terrenos)S=seed();
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
-const UI={route:'inicio',id:null,tab:'resumo',from:'terrenos',q:'',fT:'todos',fD:'todos',kView:'ativas',role:'Gestor',showPropForm:false,pendingUpload:null,modal:null};
-const me=()=>USERS[UI.role];
-
+const UI={route:'inicio',id:null,tab:'cadastro',from:'terrenos',q:'',fT:'ativos',role:'Gestor',edit:null,modal:null,upload:null,propForm:false};
+const me=()=>ROLE_USER[UI.role];
 const T=id=>S.terrenos.find(t=>t.id===id);
-const procOf=tid=>S.procs.filter(p=>p.tid===tid).sort((a,b)=>b.aber.localeCompare(a.aber))[0];
-const ofertasOf=tid=>S.ofertas.filter(o=>o.tid===tid).sort((a,b)=>a.em.localeCompare(b.em));
-const docsOf=pid=>S.docs.filter(d=>d.pid===pid);
-const lastProp=p=>p.props&&p.props.length?p.props[p.props.length-1]:null;
-const lastEtapa=p=>[...p.hist].reverse().find(h=>h.kind==='etapa');
-const daysIn=p=>diff(lastEtapa(p).em,TODAY_ISO);
-const validade=d=>d.emitido&&TIPOS[d.tipo].val?addDays(d.emitido,TIPOS[d.tipo].val):null;
-const docSt=d=>{if(!d||!d.emitido||d.status==='pendente')return 'pendente';if(d.status==='rejeitado')return 'rejeitado';const v=validade(d);if(v&&v<TODAY_ISO)return 'vencido';return d.status};
-const docDue=d=>{const v=validade(d);return v?diff(TODAY_ISO,v):null};
-const docFor=(pid,tipo)=>S.docs.find(d=>d.pid===pid&&d.tipo===tipo);
-const reqOn=(p,etapa)=>SIDX(p.etapa)>=SIDX(etapa);
-const activeProcs=()=>S.procs.filter(p=>p.status==='ativo');
-const activeDocs=()=>S.docs.filter(d=>{const p=S.procs.find(x=>x.id===d.pid);return p&&p.status==='ativo'});
-const valorRef=p=>{const lp=lastProp(p);if(lp)return lp.valor;const o=ofertasOf(p.tid);return o.length?o[o.length-1].valor:null};
-const acima=p=>{const lp=lastProp(p);return !!(p.viab&&lp&&lp.valor>p.viab.pmax)};
-const lateTasks=p=>p.tarefas.filter(t=>!t.feito&&t.prazo<TODAY_ISO);
+const corretor=id=>S.corretores.find(c=>c.id===id);
+const eixo=id=>(S.eixos.find(e=>e.id===id)||{}).nome;
+const log=(t,txt)=>t.hist.push({em:HOJE,user:me(),txt});
 
-function flagsOf(p){
-  const venc=docsOf(p.id).filter(d=>docSt(d)==='vencido').length;
-  return {venc,acima:acima(p),atras:lateTasks(p).length};
+/* ===================== regras derivadas ===================== */
+const areaAdotada=t=>({documental:t.aDoc,cadastral:t.aCad,levantamento:t.aLev,estimativa:t.aEst})[t.fonteArea]??null;
+const ofertaRef=t=>t.ofertas.find(o=>o.id===t.neg?.ofRef)||t.ofertas.filter(o=>o.status==='ativa').sort((a,b)=>b.data.localeCompare(a.data))[0]||t.ofertas[0]||null;
+const corrPrincipal=t=>{const c=t.corretores.find(x=>x.principal);return c?corretor(c.cid):null};
+const analiseVig=t=>t.analises.find(a=>a.status==='vigente');
+const zonasTxt=t=>{const a=analiseVig(t);return a?a.zonas.slice().sort((x,y)=>(y.area||0)-(x.area||0)).map(z=>z.sigla).join(' + '):null};
+const caMax=t=>{const a=analiseVig(t);return a?Math.max(...a.zonas.map(z=>z.ca||0)):null};
+const abertas=t=>t.tarefas.filter(k=>k.status!=='concluida'&&k.status!=='cancelada');
+const atrasadas=t=>abertas(t).filter(k=>k.prazo<HOJE);
+const proxTarefa=t=>abertas(t).sort((a,b)=>a.prazo.localeCompare(b.prazo))[0];
+const lastProp=t=>t.propostas[t.propostas.length-1];
+const docVal=d=>{const v=TIPOS_DOC[d.tipo][2];return v&&d.emitido?addD(d.emitido,v):null};
+const docSt=d=>{if(!d||!d.emitido)return 'pendente';if(d.status==='rejeitado')return 'rejeitado';const v=docVal(d);return v&&v<HOJE?'vencido':d.status};
+const negAtiva=t=>t.neg&&t.neg.status==='ativo';
+const acimaMax=t=>{const lp=lastProp(t);return !!(t.neg?.viab&&lp&&lp.origem==='bkm'&&lp.valor>t.neg.viab.pmax)};
+const infraNV=t=>INFRA.filter(([k])=>!t.infra[k]||t.infra[k].d==='nao_verificado').length;
+
+/* completude: campos que importam para decidir a compra */
+function completude(t){
+  const c=[
+    ['Endereço completo',!!(t.logradouro&&t.numero&&t.bairro),'cadastro','loc'],
+    ['Zona',!!t.zona,'cadastro','loc'],
+    ['Ponto no mapa',t.lat!=null,'cadastro','loc'],
+    ['Área adotada',areaAdotada(t)!=null,'cadastro','areas'],
+    ['Testada',t.testada!=null,'cadastro','areas'],
+    ['Topografia',t.topografia!=='nao_informado','cadastro','fis'],
+    ['Ocupação',t.ocupacao!=='nao_informado','cadastro','fis'],
+    ['Matrícula',t.mats.length>0,'cadastro','mats'],
+    ['Inscrição e IPTU',t.insc.length>0,'cadastro','insc'],
+    ['Proprietário',t.pessoas.some(p=>p.papel==='proprietario'),'cadastro','pessoas'],
+    ['Zoneamento',!!analiseVig(t),'urbanismo',null],
+    ['Infraestrutura',infraNV(t)===0,'urbanismo',null],
+    ['Valor pedido',!!ofertaRef(t)?.valor,'comercial',null],
+    ['Temperatura',!!t.neg?.temp,'comercial',null]];
+  const ok=c.filter(x=>x[1]).length;
+  return {pct:Math.round(ok/c.length*100),faltam:c.filter(x=>!x[1])};
 }
-function chipStatus(p){
-  if(p.status==='perdida')return `<span class="chip crit"><span class="d"></span>Perdida</span>`;
-  if(p.status==='suspensa')return `<span class="chip warn"><span class="d"></span>Suspensa</span>`;
-  if(p.status==='ganha')return `<span class="chip good"><span class="d"></span>Ganha</span>`;
-  return `<span class="chip blue"><span class="d"></span>${SN(p.etapa)}</span>`;
+
+/* ===================== componentes ===================== */
+function tempPicker(t){
+  const v=t.neg?.temp||0,on=!!t.neg&&t.neg.status==='ativo';
+  return `<div class="temp" title="Temperatura da negociação"><span class="bars" role="radiogroup" aria-label="Temperatura da negociação">${[1,2,3,4,5].map(n=>`<button type="button" role="radio" aria-checked="${v===n}" aria-label="${n} · ${TEMP[n]}" class="${n<=v?'on':''} t${v}" ${on?`data-a="temp" data-v="${n===v?0:n}"`:'disabled'}></button>`).join('')}</span><span class="tl" style="color:${v?`var(--t${v})`:'var(--ink-3)'}">${v?`${v} · ${TEMP[v]}`:'Não avaliada'}</span></div>`;
+}
+const tempMini=v=>v?`<span class="temp-mini t${v}" title="Temperatura ${v} · ${TEMP[v]}">${[1,2,3,4,5].map(n=>`<i class="${n<=v?'on':''}"></i>`).join('')}</span>`:'<span class="faint" style="font-size:12px">—</span>';
+function chipNeg(t){
+  if(!t.neg)return '<span class="chip">Sem negociação</span>';
+  const n=t.neg;if(n.status==='perdida')return '<span class="chip crit"><span class="d"></span>Perdida</span>';
+  if(n.status==='suspensa')return '<span class="chip warn"><span class="d"></span>Suspensa</span>';
+  if(n.status==='ganha')return '<span class="chip good"><span class="d"></span>Ganha</span>';
+  return `<span class="chip blue"><span class="d"></span>${SN(n.etapa)}</span>`;
 }
 const docChip=st=>({pendente:'<span class="chip">Pendente</span>',recebido:'<span class="chip blue">Aguardando validação</span>',validado:'<span class="chip good">Validado</span>',vencido:'<span class="chip crit">Vencido</span>',rejeitado:'<span class="chip crit">Rejeitado</span>'}[st]);
+const statusPropChip=s=>`<span class="chip ${({aceita:'good',recusada:'crit',expirada:'crit',retirada:'',substituida:'',rascunho:'',apresentada:'blue',em_analise:'blue'})[s]}">${OPT.statusProp[s]}</span>`;
+const ni='<span class="v ni">Não informado</span>';
+const optSel=(name,map,val,extra='')=>`<select id="f-${name}" name="${name}" ${extra}><option value="">Não informado</option>${Object.entries(map).map(([k,l])=>`<option value="${k}" ${k===val?'selected':''}>${esc(l)}</option>`).join('')}</select>`;
 
-/* ---------- regras de avanço ---------- */
-function checkAdvance(p){
-  const idx=SIDX(p.etapa),next=STAGES[idx+1];
-  const r={next,ok:true,items:[],forcible:false};
-  if(p.status!=='ativo'||!next){r.ok=false;return r}
-  if(p.etapa==='viabilidade'){
-    const ok=!!p.viab;r.items.push({ok,txt:ok?`Estudo ${p.viab.id} do BKM vinculado`:'Vincular um estudo de viabilidade do BKM',fix:ok?null:{a:'link-viab',l:'Vincular estudo'}});
-  }
-  CHECK.filter(g=>g.etapa===p.etapa).forEach(g=>{
-    g.itens.filter(([,o])=>o).forEach(([t])=>{
-      const d=docFor(p.id,t),st=docSt(d),ok=st==='validado';
-      const why={pendente:'não enviado',recebido:'aguardando validação',vencido:'vencido',rejeitado:'rejeitado'}[st];
-      r.items.push({ok,txt:ok?`${TIPOS[t].n} validado`:`${TIPOS[t].n}: ${why}`,fix:ok?null:{a:'tab',t:'documentos',l:'Ver documentos'}});
-    });
-  });
-  if(p.etapa==='proposta'){
-    const lp=lastProp(p),ok=!!lp&&lp.status==='Aceita';
-    r.items.push({ok,txt:ok?'Proposta aceita pelo vendedor':'Ter uma proposta marcada como aceita',fix:ok?null:{a:'tab',t:'propostas',l:'Ver propostas'}});
-  }
-  if(next.k==='contrato'||next.k==='ganha'){
-    const ok=UI.role==='Gestor';r.items.push({ok,txt:ok?'Aprovação de gestor':'Somente gestores aprovam a compra e o fechamento',gate:true});
-  }
-  const blockers=r.items.filter(i=>!i.ok);
-  r.ok=blockers.length===0;
-  r.forcible=!r.ok&&UI.role==='Gestor'&&blockers.every(i=>!i.gate);
-  return r;
+/* seções editáveis genéricas */
+const SECOES={
+  ident:{titulo:'Identificação',campos:[['nome','Nome de referência','txt',null,'full'],['descricao','Descrição','area',null,'full'],['prioridade','Prioridade','sel','prioridade'],['resp','Responsável','user'],['origem','Origem do cadastro','sel','origem'],['dataIdent','Identificado em','date'],['url','Link da origem','url',null,'full'],['obs','Observações gerais','area',null,'full']]},
+  loc:{titulo:'Endereço e localização',campos:[['cep','CEP','txt'],['logradouro','Logradouro','txt'],['numero','Número','txt'],['complemento','Complemento','txt'],['bairro','Bairro','txt'],['municipio','Município','fixo'],['zona','Zona','sel','zona'],['eixo','Eixo comercial','eixo'],['referencia','Referência','txt',null,'full'],['lat','Latitude','dec'],['lng','Longitude','dec'],['precisao','Precisão da localização','sel','precisao']]},
+  fis:{titulo:'Características físicas',campos:[['topografia','Topografia','sel','topografia'],['desnivel','Desnível estimado','m'],['posicao','Posição na quadra','sel','posicao'],['formato','Formato','sel','formato'],['ocupacao','Ocupação','sel','ocupacao'],['uso','Uso atual','txt'],['aConst','Área construída existente','m2'],['aDemolir','Área construída a demolir','m2'],['demolicao','Necessidade de demolição','sel','demolicao'],['obsFis','Observações físicas','area',null,'full']]}
+};
+const NI_OPT=new Set(['nao_informado','nao_informada','nao_avaliada']);
+function fmtCampo(t,[k,,tipo,opt]){
+  const v=k==='municipio'?'São Paulo · SP':t[k];
+  if(v==null||v===''||(tipo==='sel'&&NI_OPT.has(v)))return null;
+  switch(tipo){case 'sel':return esc(OPT[opt][v]||v);case 'date':return fd(v);case 'm2':return m2(v);case 'm':return num(v,2)+' m';case 'dec':return num(v,6);
+    case 'url':return `<a href="${esc(v)}" target="_blank" rel="noopener">${esc(v.replace(/^https?:\/\//,'').slice(0,48))}</a>`;case 'eixo':return esc(eixo(v)||'—');default:return esc(v)}
 }
-function ensureDocs(p){
-  CHECK.forEach(g=>{if(reqOn(p,g.etapa))g.itens.forEach(([t])=>{if(!docFor(p.id,t))S.docs.push({id:'D-'+(S.seq.D++),pid:p.id,tipo:t,status:'pendente',emitido:null,versoes:0,arquivo:null})})});
+function secaoGenerica(t,id){
+  const s=SECOES[id],ed=UI.edit===id;
+  if(!ed)return `<section class="sec" id="sec-${id}"><div class="sec-h"><h2>${s.titulo}</h2><button class="btn text sm" data-a="edit" data-s="${id}">${ic('edit',16)}Editar</button></div>
+    <div class="sec-b"><div class="kvg">${s.campos.map(c=>{const f=fmtCampo(t,c);return `<div class="${c[4]||''}"><div class="k">${c[1]}</div>${f==null?ni:`<div class="v">${f}</div>`}</div>`}).join('')}</div>
+    ${id==='fis'&&t.aConst!=null&&t.aDemolir!=null&&t.aDemolir<t.aConst?`<div class="hint" style="margin-top:10px">Demolição parcial: ${m2(t.aConst-t.aDemolir)} permanecem.</div>`:''}</div></section>`;
+  const inp=([k,l,tipo,opt,full])=>{
+    const v=t[k],idf=`f-${k}`;let h;
+    if(tipo==='sel')h=optSel(k,OPT[opt],v);
+    else if(tipo==='user')h=`<select id="${idf}" name="${k}">${USERS.map(u=>`<option ${u===v?'selected':''}>${u}</option>`).join('')}</select>`;
+    else if(tipo==='eixo')h=`<select id="${idf}" name="${k}"><option value="">Nenhum</option>${S.eixos.map(e=>`<option value="${e.id}" ${e.id===v?'selected':''}>${esc(e.nome)}</option>`).join('')}</select>`;
+    else if(tipo==='area')h=`<textarea id="${idf}" name="${k}">${esc(v)}</textarea>`;
+    else if(tipo==='date')h=`<input id="${idf}" name="${k}" type="date" value="${esc(v)}">`;
+    else if(tipo==='fixo')h=`<input id="${idf}" value="São Paulo · SP" disabled>`;
+    else if(['m2','m','dec'].includes(tipo))h=`<input id="${idf}" name="${k}" inputmode="decimal" value="${v==null?'':String(v).replace('.',',')}" placeholder="${tipo==='m2'?'m²':tipo==='m'?'metros':''}">`;
+    else h=`<input id="${idf}" name="${k}" ${tipo==='url'?'type="url"':''} value="${esc(v)}" ${k==='nome'?'required':''}>`;
+    return `<div class="field ${full||''}"><label for="${idf}">${l}</label>${h}</div>`;
+  };
+  return `<section class="sec" id="sec-${id}"><form data-form="sec" data-s="${id}"><div class="sec-h"><h2>${s.titulo}</h2></div>
+    <div class="sec-b"><div class="editgrid">${s.campos.map(inp).join('')}</div>${id==='loc'?'<div class="hint" style="margin-top:8px">Localização mínima para cadastrar: logradouro, bairro ou ponto no mapa. O polígono entra depois, na análise.</div>':''}</div>
+    <div class="sec-f"><button type="button" class="btn text" data-a="cancel-edit">Cancelar</button><button class="btn primary">Salvar</button></div></form></section>`;
 }
-function advance(p,forced){
-  const r=checkAdvance(p);if(!r.next)return;
-  if(!r.ok&&!forced){toast('Ainda há pendências para avançar.',true);return}
-  p.etapa=r.next.k;
-  p.hist.push({kind:'etapa',para:p.etapa,em:TODAY_ISO,user:me(),txt:`Avançou para ${r.next.n}`+(forced?' sem checklist completo (avanço forçado)':''),forced:!!forced});
-  if(p.etapa==='ganha'){p.status='ganha';p.emp='E-'+String(8+S.procs.filter(x=>x.status==='ganha').length).padStart(2,'0')+' · '+T(p.tid).bairro;p.hist.push({kind:'fim',em:TODAY_ISO,user:me(),txt:`Empreendimento ${p.emp} criado`})}
-  ensureDocs(p);save();render();
-  toast(p.etapa==='ganha'?'Negociação ganha. Empreendimento criado.':`Movida para ${r.next.n}.`);
+function secaoAreas(t){
+  const ed=UI.edit==='areas',ad=areaAdotada(t);
+  const vals=[['aDoc','Documental','documental','matrícula'],['aCad','Cadastral','cadastral','IPTU'],['aLev','Levantamento','levantamento','topografia'],['aEst','Estimativa','estimativa','sem documento']];
+  const preench=vals.map(v=>t[v[0]]).filter(v=>v!=null);
+  let div='';
+  if(preench.length>1){const mx=Math.max(...preench),mn=Math.min(...preench);if((mx-mn)/mx>0.01)div=`<div class="diverg">${ic('warn',16)}Diferença de ${m2(mx-mn)} (${num((mx-mn)/mx*100,1)}%) entre as fontes. Confira qual entra na viabilidade.</div>`}
+  if(!ed)return `<section class="sec" id="sec-areas"><div class="sec-h"><h2>Áreas e dimensões</h2><button class="btn text sm" data-a="edit" data-s="areas">${ic('edit',16)}Editar</button></div><div class="sec-b">
+    <div class="areas">${vals.map(([k,l,f,s])=>`<div class="area ${t.fonteArea===f?'sel':''}"><div class="al">${l} <span class="faint">· ${s}</span></div><div class="av">${t[k]==null?'<span class="faint" style="font-size:14px;font-style:italic">Não informada</span>':m2(t[k])}</div>${t.fonteArea===f?'<div class="as">Área adotada</div>':''}</div>`).join('')}</div>
+    ${div}<div class="kvg" style="margin-top:14px"><div><div class="k">Área adotada</div>${ad==null?'<span class="v ni">Escolha a fonte</span>':`<div class="v">${m2(ad)}</div>`}</div><div><div class="k">Testada principal</div>${t.testada==null?ni:`<div class="v">${num(t.testada,2)} m</div>`}</div>
+    <div><div class="k">Valor pedido por m²</div>${ad&&ofertaRef(t)?.valor?`<div class="v">${brl(ofertaRef(t).valor/ad)}</div>`:ni}</div></div></div></section>`;
+  return `<section class="sec" id="sec-areas"><form data-form="areas"><div class="sec-h"><h2>Áreas e dimensões</h2></div><div class="sec-b"><div class="editgrid">
+    ${vals.map(([k,l,,s])=>`<div class="field"><label for="f-${k}">${l} (${s})</label><input id="f-${k}" name="${k}" inputmode="decimal" placeholder="m²" value="${t[k]==null?'':String(t[k]).replace('.',',')}"></div>`).join('')}
+    <div class="field"><label for="f-fonteArea">Área adotada vem de</label>${optSel('fonteArea',OPT.fonteArea,t.fonteArea)}</div>
+    <div class="field"><label for="f-testada">Testada principal (m)</label><input id="f-testada" name="testada" inputmode="decimal" value="${t.testada==null?'':String(t.testada).replace('.',',')}"></div>
+    </div><div class="hint" style="margin-top:8px">A área adotada é sempre uma das quatro acima, com a fonte registrada. Medidas de terrenos irregulares (segmentos e confrontações) entram depois em tabela própria.</div></div>
+    <div class="sec-f"><button type="button" class="btn text" data-a="cancel-edit">Cancelar</button><button class="btn primary">Salvar</button></div></form></section>`;
+}
+function secaoMats(t){
+  return `<section class="sec" id="sec-mats"><div class="sec-h"><h2>Matrículas</h2><span class="faint" style="font-size:13px">${t.mats.length}</span></div><div class="sec-b">
+    ${t.mats.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Número</th><th>Cartório</th><th class="r">Área registrada</th><th>Certidão de</th><th></th></tr></thead><tbody>${t.mats.map((m,i)=>`<tr><td class="num">${esc(m.num)}</td><td>${esc(m.cri)}</td><td class="r">${m2(m.area)}</td><td>${fd(m.data)}</td><td class="r"><button class="btn sm text danger" data-a="del-mat" data-i="${i}">Remover</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Nenhuma matrícula. Um terreno pode somar várias.</div>'}
+    <form class="inline-form" data-form="mat"><div class="field"><label for="m-n">Número</label><input id="m-n" name="num" required placeholder="184.552"></div>
+    <div class="field"><label for="m-c">Cartório</label><select id="m-c" name="cri">${Array.from({length:18},(_,i)=>`<option>${i+1}º CRI</option>`).join('')}</select></div>
+    <div class="field"><label for="m-a">Área (m²)</label><input id="m-a" name="area" inputmode="decimal"></div>
+    <div class="field"><label for="m-d">Certidão de</label><input id="m-d" name="data" type="date"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form></div></section>`;
+}
+function secaoInsc(t){
+  return `<section class="sec" id="sec-insc"><div class="sec-h"><h2>Inscrições municipais, valor venal e IPTU</h2></div><div class="sec-b">
+    ${t.insc.length?t.insc.map((ins,i)=>{const vs=ins.valores.slice().sort((a,b)=>b.ex-a.ex);return `<div style="margin-bottom:16px"><div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px"><b class="num">SQL ${esc(ins.sql)}</b><span class="muted" style="font-size:13px">Área cadastral ${m2(ins.area)}</span></div>
+      <div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Exercício</th><th class="r">Valor venal</th><th class="r">IPTU anual</th><th class="r">Parcelas</th><th class="r">Valor da parcela</th><th class="r">Equivalente mensal</th></tr></thead><tbody>
+      ${vs.map((v,j)=>`<tr><td><b>${v.ex}</b>${j===0?' <span class="tag-ref">atual</span>':''}</td><td class="r">${brl(v.venal)}</td><td class="r">${brl2(v.iptu)}</td><td class="r">${v.parc??'—'}</td><td class="r">${v.iptu!=null&&v.parc?brl2(v.iptu/v.parc):'—'}</td><td class="r">${v.iptu!=null?brl2(v.iptu/12):'—'}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">Sem valores lançados.</td></tr>'}</tbody></table></div>
+      <form class="inline-form" data-form="iptu" data-i="${i}"><div class="field" style="flex:0 1 100px"><label for="v-e${i}">Exercício</label><input id="v-e${i}" name="ex" inputmode="numeric" value="${new Date().getFullYear()}" required></div>
+      <div class="field"><label for="v-v${i}">Valor venal (R$)</label><input id="v-v${i}" name="venal" inputmode="decimal"></div><div class="field"><label for="v-i${i}">IPTU anual (R$)</label><input id="v-i${i}" name="iptu" inputmode="decimal"></div>
+      <div class="field" style="flex:0 1 90px"><label for="v-p${i}">Parcelas</label><input id="v-p${i}" name="parc" inputmode="numeric" value="10"></div><button class="btn sm">${ic('add',16)}Lançar exercício</button></form></div>`}).join(''):'<div class="muted" style="margin-bottom:8px">Nenhuma inscrição. O valor venal e o IPTU são lançados por inscrição e por ano.</div>'}
+    <form class="inline-form" data-form="insc"><div class="field grow"><label for="i-s">Nova inscrição (SQL)</label><input id="i-s" name="sql" required placeholder="000.000.0000-0"></div><div class="field"><label for="i-a">Área cadastral (m²)</label><input id="i-a" name="area" inputmode="decimal"></div><button class="btn sm">${ic('add',16)}Adicionar inscrição</button></form>
+    <div class="hint" style="margin-top:8px">Em São Paulo o IPTU é anual, pago em até 10 parcelas. O sistema guarda o valor anual e mostra a parcela e o equivalente mensal (anual ÷ 12).</div></div></section>`;
+}
+function secaoPessoas(t){
+  return `<section class="sec" id="sec-pessoas"><div class="sec-h"><h2>Proprietários e contatos</h2></div><div class="sec-b">
+    ${t.pessoas.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Nome</th><th>Vínculo</th><th class="r">Participação</th><th>Telefone</th><th></th></tr></thead><tbody>${t.pessoas.map((p,i)=>`<tr><td>${esc(p.nome)} <span class="faint" style="font-size:12px">${p.tipo}</span></td><td>${OPT.papel[p.papel]}</td><td class="r">${p.pct!=null?num(p.pct,2)+'%':'—'}</td><td>${esc(p.tel||'—')}</td><td class="r"><button class="btn sm text danger" data-a="del-pes" data-i="${i}">Remover</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Ninguém vinculado.</div>'}
+    <form class="inline-form" data-form="pessoa"><div class="field grow"><label for="p-n">Nome ou razão social</label><input id="p-n" name="nome" required></div><div class="field" style="flex:0 1 120px"><label for="p-t">Tipo</label><select id="p-t" name="tipo"><option value="PF">PF</option><option value="PJ">PJ</option></select></div>
+    <div class="field"><label for="p-p">Vínculo</label><select id="p-p" name="papel">${Object.entries(OPT.papel).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div><div class="field" style="flex:0 1 110px"><label for="p-pc">% (prop.)</label><input id="p-pc" name="pct" inputmode="decimal"></div>
+    <div class="field"><label for="p-tel">Telefone</label><input id="p-tel" name="tel"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form></div></section>`;
 }
 
-/* ---------- shell ---------- */
-const NAV=[['inicio','Início','home'],['terrenos','Terrenos','layers'],['negociacoes','Negociações','board'],['documentos','Documentos','doc']];
-function navCurrent(){return UI.route==='terreno'?UI.from:UI.route}
-function docAlerts(){return activeDocs().filter(d=>{const st=docSt(d);const dd=docDue(d);return st==='vencido'||(st!=='pendente'&&dd!=null&&dd>=0&&dd<=15)}).length}
-function renderNav(){
-  const cur=navCurrent(),da=docAlerts();
-  const cnt={terrenos:S.terrenos.length,negociacoes:activeProcs().length,documentos:da};
-  $('#side').innerHTML=`<button class="compose" data-a="nova-oferta">${ic('add',24)}Nova oferta</button>`+
-    NAV.map(([r,l,i])=>`<button class="nav-item" data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''}>${ic(i)}${l}${cnt[r]!=null?`<span class="cnt ${r==='documentos'&&da?'alert':''}">${cnt[r]}</span>`:''}</button>`).join('')+
-    `<div class="side-foot"><span>Protótipo navegável · dados de exemplo</span><button class="linkbtn" data-a="reset">Restaurar dados de exemplo</button></div>`;
-  $('#bnav').innerHTML=NAV.map(([r,l,i])=>`<button data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''}><span class="pill">${ic(i,22)}${r==='documentos'&&da?`<span class="badge">${da}</span>`:''}</span>${l}</button>`).join('');
-  $('#role').innerHTML=['Gestor','Analista'].map(r=>`<button data-a="role" data-v="${r}" aria-pressed="${UI.role===r}">${r}</button>`).join('');
-  const a=$('#av');a.textContent=ini(me());a.style.background=`var(${AVC[me()]})`;a.title=`${me()} · ${UI.role} (toque para trocar o perfil de teste)`;
+/* ===================== abas da ficha ===================== */
+function abaCadastro(t){
+  return `<div class="stack">${secaoGenerica(t,'ident')}${secaoGenerica(t,'loc')}${secaoAreas(t)}${secaoGenerica(t,'fis')}${secaoMats(t)}${secaoInsc(t)}${secaoPessoas(t)}</div>`;
 }
-function render(){renderNav();renderMain();renderModal()}
-function renderMain(){
-  const m=$('#main');
-  const f={inicio:pgInicio,terrenos:pgTerrenos,negociacoes:pgNeg,documentos:pgDocs,terreno:pgTerreno}[UI.route];
-  m.innerHTML=f();
+function condicoes(t){
+  const o=ofertaRef(t),ad=areaAdotada(t),cp=corrPrincipal(t);
+  if(UI.edit==='cond'&&o)return `<section class="sec"><form data-form="cond"><div class="sec-h"><h2>Condições pedidas</h2><span class="faint" style="font-size:12px">editando a oferta de ${fd(o.data)}</span></div><div class="sec-b"><div class="editgrid">
+    <div class="field"><label for="c-v">Valor pedido (R$)</label><input id="c-v" name="valor" inputmode="decimal" value="${o.valor==null?'':num(o.valor)}"></div>
+    <div class="field"><label for="c-f">Forma de pagamento pedida</label>${optSel('forma',OPT.forma,o.forma).replace('id="f-forma"','id="c-f"')}</div>
+    <div class="field"><label for="c-c">Corretor</label><select id="c-c" name="cid"><option value="">Sem corretor</option>${S.corretores.map(c=>`<option value="${c.id}" ${c.id===o.cid?'selected':''}>${esc(c.nome)} · ${esc(c.imob)}</option>`).join('')}</select></div>
+    <div class="field"><label for="c-val">Validade da oferta</label><input id="c-val" name="validade" type="date" value="${esc(o.validade||'')}"></div>
+    <div class="field full"><label for="c-o">Observação sobre a forma de pagamento</label><textarea id="c-o" name="obsPag">${esc(o.obsPag)}</textarea></div>
+    <div class="field full"><label for="c-a">Aceita permuta</label><textarea id="c-a" name="aceita" placeholder="Como o vendedor encara a permuta e em que condições">${esc(o.aceita)}</textarea></div></div></div>
+    <div class="sec-f"><button type="button" class="btn text" data-a="cancel-edit">Cancelar</button><button class="btn primary">Salvar</button></div></form></section>`;
+  return `<section class="sec" id="sec-cond"><div class="sec-h"><h2>${ic('money',18)}Condições pedidas</h2><div style="display:flex;gap:8px;align-items:center">${t.ofertas.length>1?`<button class="btn text sm" data-a="tab" data-t="comercial">${t.ofertas.length} ofertas</button>`:''}${o?`<button class="btn text sm" data-a="edit" data-s="cond">${ic('edit',16)}Editar</button>`:`<button class="btn sm" data-a="nova-oferta">${ic('add',16)}Registrar oferta</button>`}</div></div>
+    <div class="sec-b">${o?`<div class="cond">
+      <div><div class="lbl">Valor pedido</div><div class="big">${o.valor?mi(o.valor):'<span class="faint" style="font-size:15px">Não informado</span>'}</div></div>
+      <div><div class="lbl">Por m² (área adotada)</div><div class="big">${o.valor&&ad?brl(o.valor/ad):'<span class="faint" style="font-size:15px">—</span>'}</div></div>
+      <div><div class="lbl">Forma de pagamento pedida</div><div class="big" style="font-size:17px">${o.forma?OPT.forma[o.forma]:'<span class="faint" style="font-size:15px">Não informada</span>'}</div></div>
+      <div><div class="lbl">Corretor principal</div><div class="big" style="font-size:17px">${cp?esc(cp.nome):'<span class="faint" style="font-size:15px">—</span>'}</div>${cp?`<div class="faint" style="font-size:12px">${esc(cp.imob)}</div>`:''}</div></div>
+      <div class="grid2" style="margin-top:14px"><div><div class="lbl muted" style="font-size:12px">Aceita permuta</div><div class="txt">${o.aceita?esc(o.aceita):'<span class="faint">Não informado</span>'}</div></div>
+      <div><div class="lbl muted" style="font-size:12px">Observação sobre o pagamento</div><div class="txt">${o.obsPag?esc(o.obsPag):'<span class="faint">Não informado</span>'}</div></div></div>`
+    :'<div class="muted">Nenhuma oferta registrada. Registre o que o vendedor pede para abrir a negociação.</div>'}</div></section>`;
+}
+function abaComercial(t){
+  const ref=ofertaRef(t);
+  return `<div class="stack">${condicoes(t)}
+  <section class="sec"><div class="sec-h"><h2>Ofertas recebidas</h2><button class="btn sm" data-a="nova-oferta">${ic('add',16)}Registrar oferta</button></div><div class="sec-b">
+  ${t.ofertas.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Data</th><th>Corretor</th><th class="r">Valor pedido</th><th>Forma</th><th>Status</th><th></th></tr></thead><tbody>
+  ${t.ofertas.slice().sort((a,b)=>a.data.localeCompare(b.data)).map((o,i)=>{const c=corretor(o.cid);return `<tr><td>${fd(o.data)}${i===0&&t.ofertas.length>1?'<div class="tag-ref" style="color:var(--ink-2)">primeira</div>':''}</td><td>${c?esc(c.nome)+`<div class="faint" style="font-size:12px">${esc(c.imob)}</div>`:'Direto'}</td><td class="r">${brl(o.valor)}</td><td>${o.forma?OPT.forma[o.forma]:'—'}</td><td>${o.status}</td>
+  <td class="r">${o===ref?'<span class="tag-ref">referência</span>':t.neg?`<button class="btn sm text" data-a="ofref" data-o="${o.id}">Usar como referência</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`:'<div class="muted">Nenhuma oferta.</div>'}
+  <div class="hint" style="margin-top:8px">Cada oferta guarda o que aquele corretor apresentou. A ficha mostra a oferta de referência da negociação.</div></div></section>
+  <section class="sec"><div class="sec-h"><h2>Corretores do terreno</h2></div><div class="sec-b">
+  ${t.corretores.length?t.corretores.map(x=>{const c=corretor(x.cid);return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0"><button class="star ${x.principal?'on':''}" data-a="principal" data-c="${x.cid}" aria-label="Marcar ${esc(c.nome)} como principal" title="${x.principal?'Principal':'Marcar como principal'}">★</button><span><b>${esc(c.nome)}</b> <span class="muted" style="font-size:13px">· ${esc(c.imob)} · CRECI ${esc(c.creci)}</span></span>${x.principal?'<span class="chip blue">Principal</span>':''}</div>`}).join(''):'<div class="muted">Entram automaticamente quando apresentam uma oferta.</div>'}</div></section></div>`;
+}
+function abaNegociacao(t){
+  const n=t.neg;
+  if(!n)return `<section class="sec"><div class="sec-b"><div class="empty">Sem negociação aberta. Ela abre quando a primeira oferta é registrada.<br><button class="btn primary sm" style="margin-top:12px" data-a="nova-oferta">${ic('add',16)}Registrar oferta</button></div></div></section>`;
+  const v=n.viab,ad=areaAdotada(t);
+  const chain=t.propostas.slice().reverse();
+  const form=UI.propForm?`<section class="sec"><form data-form="prop"><div class="sec-h"><h2>Nova proposta · v${t.propostas.length+1}</h2></div><div class="sec-b"><div class="editgrid">
+    <div class="field"><label for="pp-o">Origem</label><select id="pp-o" name="origem"><option value="bkm">BKM</option><option value="vendedor">Vendedor</option></select></div>
+    <div class="field"><label for="pp-v">Valor total (R$)</label><input id="pp-v" name="valor" inputmode="decimal" required></div>
+    <div class="field"><label for="pp-f">Forma de pagamento</label><select id="pp-f" name="forma">${Object.entries(OPT.forma).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
+    <div class="field"><label for="pp-s">Status</label><select id="pp-s" name="status"><option value="apresentada">Apresentada</option><option value="em_analise">Em análise</option><option value="rascunho">Rascunho</option></select></div>
+    <div class="field"><label for="pp-d">Apresentada em</label><input id="pp-d" name="data" type="date" value="${HOJE}"></div>
+    <div class="field"><label for="pp-val">Validade</label><input id="pp-val" name="validade" type="date" value="${addD(HOJE,15)}"></div>
+    <div class="field full"><label for="pp-c">Condições de pagamento</label><textarea id="pp-c" name="cond" placeholder="Entrada, parcelas, permuta, torna, condição suspensiva"></textarea></div>
+    <div class="field full" id="pp-warn"></div></div>
+    <div class="hint">${t.propostas.length?`Responde à v${t.propostas.length}. Se vier do outro lado, a v${t.propostas.length} vira Recusada; se vier do mesmo lado, vira Substituída.`:'Primeira proposta da negociação.'}</div></div>
+    <div class="sec-f"><button type="button" class="btn text" data-a="prop-form">Cancelar</button><button class="btn primary">Registrar</button></div></form></section>`:'';
+  return `<div class="stack">
+  <section class="sec"><div class="sec-h"><h2>Viabilidade</h2></div><div class="sec-b">${v?`<div class="metrics"><div class="metric"><div class="ml">VGV</div><div class="mv">${mi(v.vgv)}</div></div><div class="metric"><div class="ml">Margem</div><div class="mv">${num(v.margem,1)}%</div></div><div class="metric"><div class="ml">Preço máximo do terreno</div><div class="mv">${mi(v.pmax)}</div></div></div>
+    <div class="faint" style="font-size:12px;margin-top:10px">${esc(v.nome)} · ${fd(v.em)}${ad?` · ${brl(v.pmax/ad)}/m² sobre a área adotada`:''}</div>`
+    :`<div class="banner blue">${ic('link')}<div style="flex:1"><div class="bt">Sem estudo vinculado</div><div>Rode a viabilidade no BKM e vincule aqui para ter o preço máximo.</div>${negAtiva(t)?`<button class="btn sm" style="margin-top:10px" data-a="viab">${ic('link',16)}Vincular estudo</button>`:''}</div></div>`}</div></section>
+  <section class="sec"><div class="sec-h"><h2>Propostas e contrapropostas</h2>${negAtiva(t)&&!UI.propForm?`<button class="btn primary sm" data-a="prop-form">${ic('add',16)}Nova proposta</button>`:''}</div><div class="sec-b">
+  ${form}
+  ${chain.length?`<div class="chain" style="margin-top:${UI.propForm?16:0}px">${chain.map((p,i)=>{const over=v&&p.valor>v.pmax;return `<div class="pnode ${p.origem}"><span class="pd">v${p.v}</span><div class="pc">
+    <div class="ph"><span><span class="pv">${brl(p.valor)}</span> <span class="muted" style="font-size:13px">· ${p.origem==='bkm'?'BKM':'Vendedor'}${p.v>1?` responde à v${p.v-1}`:''}</span></span>
+    <span style="display:flex;gap:6px;flex-wrap:wrap">${i===0&&negAtiva(t)?`<select aria-label="Status da proposta" data-ch="prop-status" class="chip" style="border:0;height:26px;cursor:pointer">${Object.entries(OPT.statusProp).filter(([k])=>k!=='substituida').map(([k,l])=>`<option value="${k}" ${k===p.status?'selected':''}>${l}</option>`).join('')}</select>`:statusPropChip(p.status)}${over&&p.origem==='bkm'?`<span class="chip warn">${mi(p.valor-v.pmax)} acima do máximo</span>`:''}</span></div>
+    <div class="pm">${OPT.forma[p.forma]} · apresentada ${fd(p.data)}${p.validade?` · válida até ${fd(p.validade)}`:''}</div>${p.cond?`<div class="pt">${esc(p.cond)}</div>`:''}</div></div>`}).join('')}</div>`:'<div class="muted">Nenhuma proposta ainda.</div>'}</div></section></div>`;
+}
+function abaTarefas(t){
+  const lista=t.tarefas.slice().sort((a,b)=>{const fa=['concluida','cancelada'].includes(a.status),fb=['concluida','cancelada'].includes(b.status);return fa-fb||a.prazo.localeCompare(b.prazo)});
+  return `<div class="stack"><section class="sec"><div class="sec-h"><h2>Próximos passos</h2><span class="faint" style="font-size:13px">${abertas(t).length} abertas · ${atrasadas(t).length} atrasadas</span></div><div class="sec-b" style="padding-top:4px">
+  ${lista.map(k=>{const late=!['concluida','cancelada'].includes(k.status)&&k.prazo<HOJE;return `<div class="task" style="align-items:flex-start;padding:12px 0">
+    <span style="flex:none;margin-top:2px">${av(k.resp,'sm')}</span>
+    <span class="tt"><div class="t1" style="${k.status==='concluida'||k.status==='cancelada'?'text-decoration:line-through;color:var(--ink-3)':''}">${esc(k.titulo)} ${k.prio==='alta'?'<span class="chip warn" style="height:20px">Alta</span>':''}</div>
+    ${k.desc?`<div class="muted" style="font-size:13px">${esc(k.desc)}</div>`:''}<div class="tm ${late?'late':''}">${esc(k.resp)} · ${late?'atrasada desde ':'prazo '}${fd(k.prazo)}</div>
+    ${k.status==='concluida'?`<input aria-label="Resultado" data-ch="tar-res" data-k="${k.id}" value="${esc(k.resultado)}" placeholder="O que foi feito ou obtido" style="margin-top:6px;width:100%;height:34px;border:1px solid var(--line);border-radius:6px;padding:0 10px;background:var(--surface)">`:''}</span>
+    <select aria-label="Status" data-ch="tar-st" data-k="${k.id}" style="height:32px;border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:0 6px;flex:none">${Object.entries(OPT.statusTar).map(([s,l])=>`<option value="${s}" ${s===k.status?'selected':''}>${l}</option>`).join('')}</select></div>`}).join('')||'<div class="muted">Nenhuma tarefa.</div>'}
+  <form class="inline-form" data-form="tarefa"><div class="field grow"><label for="tk-t">Nova tarefa</label><input id="tk-t" name="titulo" required placeholder="Ex.: cobrar contraproposta do proprietário"></div>
+  <div class="field"><label for="tk-p">Prazo</label><input id="tk-p" name="prazo" type="date" value="${addD(HOJE,7)}" required></div>
+  <div class="field"><label for="tk-r">Responsável</label><select id="tk-r" name="resp">${USERS.map(u=>`<option ${u===t.resp?'selected':''}>${u}</option>`).join('')}</select></div>
+  <div class="field" style="flex:0 1 110px"><label for="tk-pr">Prioridade</label><select id="tk-pr" name="prio"><option value="media">Média</option><option value="alta">Alta</option><option value="baixa">Baixa</option></select></div>
+  <div class="field full" style="flex-basis:100%"><label for="tk-d">Descrição</label><input id="tk-d" name="desc"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form>
+  <div class="hint" style="margin-top:8px">"Atrasada" é calculada: prazo vencido e status em aberto. Ninguém precisa marcar.</div></div></section></div>`;
+}
+function abaUrbanismo(t){
+  const a=analiseVig(t),hist=t.analises.filter(x=>x.status==='substituida');
+  const gab=z=>z.semLim?'<span class="chip good">Sem limite identificado</span>':[z.gabM!=null?num(z.gabM,1)+' m':null,z.gabPav!=null?z.gabPav+' pav.':null].filter(Boolean).join(' · ')||'<span class="faint">Não informado</span>';
+  const novo=UI.edit==='analise'?`<form data-form="analise" style="margin-top:12px"><div class="editgrid"><div class="field"><label for="an-d">Data da verificação</label><input id="an-d" name="data" type="date" value="${HOJE}"></div><div class="field"><label for="an-f">Fonte</label><input id="an-f" name="fonte" placeholder="GeoSampa, certidão de uso do solo..." required></div></div>
+    ${[0,1,2].map(i=>`<div class="editgrid" style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)"><div class="field"><label for="z${i}">Zoneamento ${i+1}${i?' (opcional)':''}</label><select id="z${i}" name="sigla${i}" ${i?'':'required'}><option value="">—</option>${ZONEAMENTOS.map(z=>`<option>${z}</option>`).join('')}</select></div>
+    <div class="field"><label for="za${i}">Área abrangida (m²)</label><input id="za${i}" name="area${i}" inputmode="decimal"></div><div class="field"><label for="zc${i}">CA máximo</label><input id="zc${i}" name="ca${i}" inputmode="decimal"></div>
+    <div class="field"><label for="zg${i}">Gabarito (m)</label><input id="zg${i}" name="gabM${i}" inputmode="decimal"></div><div class="field"><label for="zp${i}">Gabarito (pavimentos)</label><input id="zp${i}" name="gabPav${i}" inputmode="numeric"></div>
+    <div class="field"><label><input type="checkbox" name="semLim${i}" style="width:auto;height:auto;margin-right:6px">Sem limite de gabarito identificado</label></div></div>`).join('')}
+    <div class="sec-f" style="padding:12px 0 0"><button type="button" class="btn text" data-a="cancel-edit">Cancelar</button><button class="btn primary">Registrar análise</button></div></form>`:'';
+  return `<div class="stack"><section class="sec"><div class="sec-h"><h2>Análise urbanística</h2>${UI.edit!=='analise'?`<button class="btn sm" data-a="edit" data-s="analise">${ic('add',16)}${a?'Nova análise':'Registrar análise'}</button>`:''}</div><div class="sec-b">
+  ${a?`<div class="muted" style="font-size:13px;margin-bottom:10px">Vigente · verificada em ${fd(a.data)} · fonte: ${esc(a.fonte)}</div>
+  <div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Zoneamento</th><th class="r">Área abrangida</th><th>Gabarito máximo</th><th class="r">CA máximo</th><th>Restrições</th></tr></thead><tbody>${a.zonas.map(z=>`<tr><td><b>${esc(z.sigla)}</b></td><td class="r">${m2(z.area)}</td><td>${gab(z)}</td><td class="r">${z.ca==null?'—':num(z.ca,2)}</td><td class="muted">${esc(z.obs||'—')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Nenhuma análise. Zoneamento, gabarito e CA ficam ligados à análise e à porção do terreno, com fonte e data.</div>'}
+  ${novo}
+  ${hist.length?`<details class="details" style="margin-top:12px"><summary>${hist.length} análise${hist.length>1?'s':''} anterior${hist.length>1?'es':''}</summary>${hist.map(h=>`<div class="muted" style="font-size:13px;padding:4px 0">${fd(h.data)} · ${esc(h.fonte)} · ${h.zonas.map(z=>`${z.sigla} CA ${num(z.ca,2)}`).join(', ')}</div>`).join('')}</details>`:''}
+  </div></section>
+  <section class="sec"><div class="sec-h"><h2>Infraestrutura na porta</h2><span class="faint" style="font-size:13px">${infraNV(t)} não verificados</span></div><div style="padding-bottom:6px">
+  ${INFRA.map(([k,l])=>{const r=t.infra[k]||{d:'nao_verificado'};return `<div class="infra"><span>${l}</span><span class="seg3" role="group" aria-label="${l}">${[['nao_verificado','Não verificado','nv'],['sim','Sim','sim'],['nao','Não','nao']].map(([v,lb,c])=>`<button type="button" class="${c}" aria-pressed="${r.d===v}" data-a="infra" data-k="${k}" data-v="${v}">${lb}</button>`).join('')}</span>
+  <span class="meta">${r.d!=='nao_verificado'?`${fd(r.data)} · <input aria-label="Fonte da verificação de ${l}" data-ch="infra-fonte" data-k="${k}" value="${esc(r.fonte)}" style="border:0;border-bottom:1px dashed var(--line);background:transparent;font-size:12px;color:var(--ink-2);width:60%">`:''}</span></div>`}).join('')}</div>
+  <div class="hint" style="padding:0 16px 14px">Rede existente não confirma capacidade para o empreendimento; isso entra na análise técnica.</div></section></div>`;
+}
+function abaDocs(t){
+  const ativo=t.neg&&SIDX(t.neg.etapa)>=SIDX('diligencia');
+  const doc=tp=>t.docs.find(d=>d.tipo===tp);
+  const outros=t.docs.filter(d=>!CHECK_DIL.some(([k])=>k===d.tipo));
+  return `<div class="stack"><section class="sec chk-group"><div class="chk-gh"><span class="gt">Checklist de diligência</span>${ativo?`<span class="progress"><span class="bar"><span style="width:${CHECK_DIL.filter(([k,o])=>o&&docSt(doc(k))==='validado').length/CHECK_DIL.filter(c=>c[1]).length*100}%"></span></span>${CHECK_DIL.filter(([k,o])=>o&&docSt(doc(k))==='validado').length} de ${CHECK_DIL.filter(c=>c[1]).length} obrigatórios</span>`:'<span class="chip">Vale a partir da Diligência</span>'}</div>
+  ${CHECK_DIL.map(([k,o])=>{const d=doc(k),st=docSt(d),va=d?docVal(d):null;return `<div class="doc"><span class="di">${ic('doc',18)}</span><div style="min-width:0"><div class="dn">${TIPOS_DOC[k][0]} ${o?'':'<span class="opt">opcional</span>'}</div><div class="ds">${d?`v${d.versoes} · emitido ${fd(d.emitido)}${va?` · ${st==='vencido'?'venceu':'vence'} ${fd(va)}`:''}`:`Validade: ${TIPOS_DOC[k][2]?TIPOS_DOC[k][2]+' dias':'não vence'}`}</div></div>
+  <div class="da">${docChip(st)}${st==='recebido'?`<button class="btn sm" data-a="doc-ok" data-k="${k}">${ic('check',16)}Validar</button>`:''}<button class="btn sm ${d?'text':''}" data-a="upload" data-k="${k}">${ic('upload',16)}${d?'Nova versão':'Enviar'}</button></div></div>`}).join('')}</section>
+  <section class="sec chk-group"><div class="chk-gh"><span class="gt">Fotos, plantas e outros</span><button class="btn sm" data-a="upload" data-k="foto">${ic('upload',16)}Enviar foto</button></div>
+  ${outros.map(d=>`<div class="doc"><span class="di">${ic('doc',18)}</span><div><div class="dn">${esc(d.nome||TIPOS_DOC[d.tipo][0])}</div><div class="ds">${TIPOS_DOC[d.tipo][1]} · ${fd(d.emitido)}</div></div><div class="da">${docChip(docSt(d))}</div></div>`).join('')||'<div class="empty">Nada enviado.</div>'}</section></div>`;
+}
+function abaHist(t){
+  return `<section class="sec"><div class="tl">${t.hist.slice().sort((a,b)=>b.em.localeCompare(a.em)).map(h=>`<div class="tli"><span class="ai blue">${ic('fwd',16)}</span><div><div class="tx">${esc(h.txt)}</div><div class="ts">${esc(h.user)}</div></div><span class="when">${fd(h.em)}</span></div>`).join('')}</div></section>`;
 }
 
-/* ---------- Início ---------- */
-function pgInicio(){
-  const h=new Date().getHours();const sau=h<12?'Bom dia':h<18?'Boa tarde':'Boa noite';
-  const ativos=activeProcs();
-  const ofMes=S.ofertas.filter(o=>o.em.startsWith('2026-10')).length;
-  const late=ativos.flatMap(p=>lateTasks(p).map(t=>({t,p})));
-  const da=docAlerts();
-  const att=[];
-  activeDocs().forEach(d=>{const p=S.procs.find(x=>x.id===d.pid),t=T(p.tid),st=docSt(d),dd=docDue(d);
-    if(st==='vencido')att.push({sev:'crit',i:'warn',ti:`${TIPOS[d.tipo].n} vencida`,su:`${t.bairro} · venceu em ${fd(validade(d))}`,tid:t.id,tab:'documentos',o:0});
-    else if(st!=='pendente'&&dd!=null&&dd<=15)att.push({sev:'warn',i:'clock',ti:`${TIPOS[d.tipo].n} vence em ${dd} dias`,su:`${t.bairro} · ${SN(p.etapa)}`,tid:t.id,tab:'documentos',o:2});});
-  ativos.forEach(p=>{const t=T(p.tid);
-    if(acima(p))att.push({sev:'warn',i:'money',ti:`Proposta ${mi(lastProp(p).valor)} acima do preço máximo de ${mi(p.viab.pmax)}`,su:`${t.bairro} · ${SN(p.etapa)}`,tid:t.id,tab:'propostas',o:1});
-    if(daysIn(p)>=21)att.push({sev:'warn',i:'pause',ti:`Parada há ${daysIn(p)} dias em ${SN(p.etapa)}`,su:`${t.bairro} · ${p.resp}`,tid:t.id,tab:'resumo',o:3});});
-  late.forEach(({t,p})=>att.push({sev:'crit',i:'clock',ti:t.t,su:`${T(p.tid).bairro} · ${t.resp} · venceu ${fd(t.prazo)}`,tid:p.tid,tab:'resumo',o:0}));
-  att.sort((a,b)=>a.o-b.o);
-  const counts=STAGES.map(s=>({s,n:S.procs.filter(p=>p.etapa===s.k&&(p.status==='ativo'||(s.k==='ganha'&&p.status==='ganha'))).length}));
-  const mx=Math.max(...counts.map(c=>c.n),1);
-  const feed=S.procs.flatMap(p=>[...p.hist.map(h=>({em:h.em,user:h.user,txt:h.txt,p,kind:h.kind})),...p.ativ.map(a=>({em:a.em,user:a.user,txt:`${a.tipo}: ${a.txt}`,p,kind:'ativ'}))])
-    .sort((a,b)=>b.em.localeCompare(a.em)).slice(0,8);
-  const fi={etapa:['fwd','blue'],prop:['money','blue'],fim:['block','crit'],ativ:['chat','good'],doc:['doc','blue']};
-  return `
-  <div class="page-h"><div><h1>${sau}, <span class="hand">${esc(me().split(' ')[0])}</span></h1><div class="sub">Quarta, 14 de outubro de 2026 · ${ativos.length} negociações em andamento</div></div></div>
-  <div class="kpis">
-    <button class="kpi" data-a="nav" data-r="negociacoes"><span class="v">${ativos.length}</span><span class="l">Negociações ativas</span></button>
-    <button class="kpi" data-a="nav" data-r="terrenos"><span class="v">${ofMes}</span><span class="l">Ofertas recebidas em outubro</span></button>
-    <button class="kpi ${da?'warn':''}" data-a="nav" data-r="documentos" data-fd="alerta"><span class="v">${da}</span><span class="l">Documentos vencidos ou a vencer em 15 dias</span></button>
-    <button class="kpi ${late.length?'crit':''}" data-a="go-first-late"><span class="v">${late.length}</span><span class="l">Tarefas atrasadas</span></button>
+/* ===================== avanço ===================== */
+function checkAdv(t){
+  const n=t.neg,i=SIDX(n.etapa),next=STAGES[i+1];const r={next,items:[],ok:true,forcar:false};
+  if(!next||n.status!=='ativo')return null;
+  if(n.etapa==='viabilidade')r.items.push({ok:!!n.viab,txt:n.viab?'Estudo vinculado':'Vincular um estudo de viabilidade',fix:n.viab?null:['viab','Vincular']});
+  if(n.etapa==='diligencia')CHECK_DIL.filter(c=>c[1]).forEach(([k])=>{const st=docSt(t.docs.find(d=>d.tipo===k));r.items.push({ok:st==='validado',txt:TIPOS_DOC[k][0]+(st==='validado'?' validado':st==='pendente'?': não enviado':st==='recebido'?': aguardando validação':': '+st),fix:st==='validado'?null:['tab:documentos','Ver documentos']})});
+  if(n.etapa==='proposta'){const lp=lastProp(t);r.items.push({ok:lp?.status==='aceita',txt:lp?.status==='aceita'?'Proposta aceita':'Ter a última proposta aceita',fix:lp?.status==='aceita'?null:['tab:negociacao','Ver propostas']})}
+  if(next[0]==='contrato'||next[0]==='ganha')r.items.push({ok:UI.role==='Gestor',txt:UI.role==='Gestor'?'Aprovação de gestor':'Somente gestores aprovam a compra',gate:true});
+  const b=r.items.filter(x=>!x.ok);r.ok=!b.length;r.forcar=!r.ok&&UI.role==='Gestor'&&b.every(x=>!x.gate);return r;
+}
+function painelNeg(t){
+  const n=t.neg;if(!n)return '';
+  if(n.status==='perdida')return `<div class="banner crit">${ic('block')}<div><div class="bt">Negociação perdida em ${SN(n.etapa)} · ${esc(n.motivo)}</div><div>${esc(n.detalhe||'')}</div></div></div>`;
+  if(n.status==='suspensa')return `<div class="banner warn" style="justify-content:space-between;flex-wrap:wrap"><span style="display:flex;gap:12px">${ic('pause')}<span><b>Suspensa em ${SN(n.etapa)} até ${fd(n.retomar)}</b></span></span><button class="btn sm" data-a="retomar">Retomar</button></div>`;
+  const idx=SIDX(n.etapa),r=checkAdv(t);
+  return `<section class="sec"><ol class="stepper" aria-label="Etapas">${STAGES.map((s,i)=>{const st=i<idx||n.status==='ganha'?'done':i===idx?'cur':'fut';return `<li class="step ${st}"><span class="dot">${st==='done'?ic('check',14):i+1}</span><span class="sl">${s[1]}</span></li>`}).join('')}</ol>
+  ${r?`<div class="adv"><div class="req"><div class="rt">${r.items.length?'Para avançar para '+r.next[1]:'Próxima etapa: '+r.next[1]}</div>${r.items.length?`<ul>${r.items.map(x=>`<li><span class="${x.ok?'ok':'no'}">${ic(x.ok?'check':'close',16)}</span><span>${esc(x.txt)}${x.fix?` · <button class="linkbtn" data-a="${x.fix[0].startsWith('tab:')?'tab':x.fix[0]}" ${x.fix[0].startsWith('tab:')?`data-t="${x.fix[0].slice(4)}"`:''}>${x.fix[1]}</button>`:''}</span></li>`).join('')}</ul>`:'<div class="muted" style="font-size:13px">Sem requisitos.</div>'}</div>
+  <div class="acts"><button class="btn text" data-a="suspender">${ic('pause',18)}Suspender</button><button class="btn text danger" data-a="perder">${ic('block',18)}Perdida</button>${r.forcar?'<button class="btn" data-a="forcar">Avançar mesmo assim</button>':''}<button class="btn primary" data-a="avancar" ${r.ok?'':'disabled'}>${ic('fwd',18)}Avançar para ${r.next[1]}</button></div></div>`
+  :n.status==='ganha'?`<div class="adv"><div class="banner good" style="flex:1">${ic('check')}<div><b>Negociação ganha.</b> Aprovação, incorporação e financiamento Caixa vão se ligar a este terreno.</div></div></div>`:''}</section>`;
+}
+
+/* ===================== páginas ===================== */
+function pgFicha(){
+  const t=T(UI.id),c=completude(t),n=t.neg;
+  const endereco=[t.logradouro&&(t.logradouro+(t.numero?', '+t.numero:'')),t.bairro,t.zona&&'Zona '+OPT.zona[t.zona],eixo(t.eixo)].filter(Boolean).join(' · ');
+  const zt=zonasTxt(t),ad=areaAdotada(t);
+  const tabs=[['cadastro','Cadastro do imóvel',''],['comercial','Comercial',t.ofertas.length],['negociacao','Negociação',t.propostas.length],['tarefas','Tarefas',abertas(t).length],['urbanismo','Urbanismo e infraestrutura',''],['documentos','Documentos',t.docs.length],['historico','Histórico','']];
+  const corpo={cadastro:abaCadastro,comercial:abaComercial,negociacao:abaNegociacao,tarefas:abaTarefas,urbanismo:abaUrbanismo,documentos:abaDocs,historico:abaHist}[UI.tab](t);
+  return `<button class="back" data-a="nav" data-r="${UI.from}">${ic('back',20)}${UI.from==='negociacoes'?'Negociações':UI.from==='inicio'?'Início':'Terrenos'}</button>
+  <div class="dhead"><div style="min-width:0"><div class="eyebrow"><span class="num">${t.codigo}</span>${n?`<span>·</span><span class="num">${n.codigo}</span>`:''}<span>·</span><span>identificado em ${fd(t.dataIdent)}</span>${t.situacao==='arquivado'?'<span class="chip">Arquivado</span>':''}</div>
+    <h1>${esc(t.nome)}</h1><div class="muted" style="margin-top:4px">${esc(endereco)||'<span class="faint">Endereço não informado</span>'}</div>
+    <div class="dchips">${chipNeg(t)}${ad!=null?`<span class="chip num">${m2(ad)}</span>`:''}${zt?`<span class="chip">${esc(zt)}${caMax(t)!=null?' · CA '+num(caMax(t),2):''}</span>`:''}${t.prioridade?`<span class="chip ${t.prioridade==='estrategica'||t.prioridade==='alta'?'warn':''}">Prioridade ${OPT.prioridade[t.prioridade].toLowerCase()}</span>`:''}${atrasadas(t).length?`<span class="chip crit">${atrasadas(t).length} tarefa${atrasadas(t).length>1?'s':''} atrasada${atrasadas(t).length>1?'s':''}</span>`:''}</div></div>
+    <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-end"><div style="display:flex;align-items:center;gap:8px">${av(t.resp)}<div><div style="font-weight:500">${esc(t.resp)}</div><div class="faint" style="font-size:12px">Responsável</div></div></div>${n?tempPicker(t):''}</div></div>
+  <div class="stack">
+  <div class="complete"><span class="progress"><span class="bar"><span style="width:${c.pct}%"></span></span><b>Ficha ${c.pct}% completa</b></span>${c.faltam.length?`<span class="muted" style="font-size:13px">Falta:</span><span class="missing">${c.faltam.slice(0,6).map(f=>`<button data-a="ir" data-t="${f[2]}" data-s="${f[3]||''}">${f[0]}</button>`).join('')}${c.faltam.length>6?`<span class="faint" style="font-size:12px;align-self:center">+${c.faltam.length-6}</span>`:''}</span>`:''}</div>
+  ${condicoes(t)}
+  ${painelNeg(t)}
   </div>
-  <div class="grid-6040 sect-gap">
-    <section class="card"><div class="card-h"><h2>Precisa de atenção</h2><span class="chip ${att.some(a=>a.sev==='crit')?'crit':'warn'}">${att.length}</span></div>
-      <div class="alist" style="margin-top:8px">${att.length?att.map(a=>`<button class="aitem" data-a="open" data-id="${a.tid}" data-tab="${a.tab}"><span class="ai ${a.sev}">${ic(a.i,18)}</span><span><div class="at">${esc(a.ti)}</div><div class="as">${esc(a.su)}</div></span><span class="when">${ic('chev',18)}</span></button>`).join(''):'<div class="empty">Nada pendente. Tudo em dia.</div>'}</div>
-    </section>
-    <div class="stack">
-      <section class="card"><div class="card-h"><h2>Funil</h2><button class="btn text sm" data-a="nav" data-r="negociacoes">Abrir quadro</button></div>
-        <div class="card-b"><div class="funnel">${counts.map(c=>`<button class="frow ${c.s.k==='ganha'?'won':''}" data-a="nav" data-r="negociacoes"><span class="fl">${c.s.n}</span><span class="ft"><span class="fb" style="display:block;width:${c.n?Math.max(6,c.n/mx*100):0}%"></span></span><span class="fn">${c.n}</span></button>`).join('')}</div>
-        <div class="funnel-foot"><span>Perdidas: <b>${S.procs.filter(p=>p.status==='perdida').length}</b></span><span>Suspensas: <b>${S.procs.filter(p=>p.status==='suspensa').length}</b></span></div></div>
-      </section>
-      <section class="card"><div class="card-h"><h2>Atividade recente</h2></div>
-        <div class="tl" style="margin-top:8px">${feed.map(f=>`<div class="tli"><span class="ai ${fi[f.kind][1]}">${ic(fi[f.kind][0],16)}</span><div><div class="tx">${esc(f.txt)}</div><div class="ts">${esc(T(f.p.tid).bairro)} · ${esc(f.user)}</div></div><span class="when">${fd(f.em)}</span></div>`).join('')}</div>
-      </section>
-    </div>
-  </div>`;
+  <div class="tabs" role="tablist">${tabs.map(([k,l,q])=>`<button class="tab" role="tab" data-a="tab" data-t="${k}" aria-selected="${UI.tab===k}">${l}${q!==''&&q!==0?` <span class="n">${q}</span>`:''}</button>`).join('')}</div>
+  <div role="tabpanel">${corpo}</div>`;
 }
-
-/* ---------- Terrenos ---------- */
-function matchQ(t,q){
-  if(!q)return true;q=q.toLowerCase();
-  const p=procOf(t.id);
-  const hay=[t.id,t.bairro,t.end,t.zon,...t.mats.map(m=>m.num+' '+m.cri),...t.mats.map(m=>digits(m.num)),...ofertasOf(t.id).map(o=>o.corretor),...t.props.map(x=>x.nome),p?p.resp:''].join(' ').toLowerCase();
-  return q.split(/\s+/).every(w=>hay.includes(w));
-}
-function terrenosFiltrados(){
-  return S.terrenos.filter(t=>{const p=procOf(t.id);
-    const f=UI.fT==='todos'||(UI.fT==='ativos'&&p.status==='ativo')||(UI.fT==='ganhos'&&p.status==='ganha')||(UI.fT==='encerrados'&&(p.status==='perdida'||p.status==='suspensa'));
-    return f&&matchQ(t,UI.q)}).sort((a,b)=>b.id.localeCompare(a.id));
-}
-function terrenosRows(){
-  const list=terrenosFiltrados();
-  if(!list.length)return `<div class="empty">Nenhum terreno encontrado para “${esc(UI.q)}”. <br><button class="btn sm" style="margin-top:12px" data-a="nova-oferta">${ic('add',18)}Cadastrar nova oferta</button></div>`;
-  return `<div class="tr th"><span class="c-id">Código</span><span>Terreno</span><span class="c-area r">Área</span><span class="c-zon">Zona</span><span class="c-val r">Valor ref.</span><span>Etapa</span><span class="c-go"></span></div>`+
-    list.map(t=>{const p=procOf(t.id),fl=flagsOf(p),of=ofertasOf(t.id);
-      return `<button class="tr" data-a="open" data-id="${t.id}"><span class="c-id faint num">${t.id}</span>
-        <span style="min-width:0"><div class="t1">${esc(t.bairro)}</div><div class="t2">${esc(t.end)}${of.length>1?` · ${of.length} ofertas`:''}</div></span>
-        <span class="c-area r num">${m2(t.area)}</span><span class="c-zon muted">${t.zon}</span><span class="c-val r num">${mi(valorRef(p))}</span>
-        <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${chipStatus(p)}${fl.venc||fl.atras?`<span class="flag crit" title="Pendências">${ic('warn',14)}</span>`:''}</span>
-        <span class="c-go faint">${ic('chev',18)}</span>
-        <span class="meta-sm num">${t.id} · ${m2(t.area)} · ${t.zon} · ${mi(valorRef(p))}</span></button>`}).join('');
+function bateBusca(t,q){if(!q)return true;q=q.toLowerCase();const hay=[t.codigo,t.nome,t.logradouro,t.numero,t.bairro,OPT.zona[t.zona],eixo(t.eixo),t.resp,...t.mats.map(m=>m.num+' '+digits(m.num)),...t.insc.map(i=>i.sql+' '+digits(i.sql)),...t.ofertas.map(o=>corretor(o.cid)?.nome),...t.pessoas.map(p=>p.nome)].join(' ').toLowerCase();return q.split(/\s+/).every(w=>hay.includes(w))}
+const FILT={ativos:['Em negociação',t=>t.neg?.status==='ativo'],sem:['Sem negociação',t=>!t.neg&&t.situacao==='ativo'],encerrados:['Perdidos e suspensos',t=>['perdida','suspensa'].includes(t.neg?.status)],todos:['Todos',()=>true]};
+function linhas(){
+  const l=S.terrenos.filter(FILT[UI.fT][1]).filter(t=>bateBusca(t,UI.q)).sort((a,b)=>(b.neg?.temp||0)-(a.neg?.temp||0)||b.codigo.localeCompare(a.codigo));
+  if(!l.length)return `<div class="empty">Nenhum terreno${UI.q?` para “${esc(UI.q)}”`:''}.<br><button class="btn sm" style="margin-top:12px" data-a="novo">${ic('add',16)}Novo terreno</button></div>`;
+  return `<div class="tr th v2"><span class="c-id">Código</span><span>Terreno</span><span class="c-area r">Área</span><span class="c-val r">Valor pedido</span><span class="c-temp">Temperatura</span><span>Etapa</span><span class="c-tar">Próxima tarefa</span></div>`+
+  l.map(t=>{const o=ofertaRef(t),ad=areaAdotada(t),pt=proxTarefa(t),at=atrasadas(t).length;return `<button class="tr v2" data-a="abrir" data-id="${t.id}">
+    <span class="c-id faint num">${t.codigo}</span><span style="min-width:0"><div class="t1">${esc(t.nome)}</div><div class="t2">${esc([t.bairro,t.zona&&OPT.zona[t.zona]].filter(Boolean).join(' · '))}</div></span>
+    <span class="c-area r num">${ad!=null?num(ad)+' m²':'<span class="faint">—</span>'}</span>
+    <span class="c-val r num">${o?.valor?mi(o.valor):'—'}${o?.valor&&ad?`<div class="t2">${brl(o.valor/ad)}/m²</div>`:''}</span>
+    <span class="c-temp">${tempMini(t.neg?.temp)}</span><span>${chipNeg(t)}</span>
+    <span class="c-tar" style="min-width:0">${pt?`<div class="t2" style="color:var(--ink)">${esc(pt.titulo)}</div><div class="t2" style="${pt.prazo<HOJE?'color:var(--crit);font-weight:600':''}">${fd(pt.prazo)}${at>1?` · ${at} atrasadas`:''}</div>`:'<span class="faint">—</span>'}</span>
+    <span class="meta-sm">${t.codigo} · ${o?.valor?mi(o.valor):'sem valor'} · ${pt?'próx.: '+esc(pt.titulo):'sem tarefas'}</span></button>`}).join('');
 }
 function pgTerrenos(){
-  const c=k=>S.terrenos.filter(t=>{const p=procOf(t.id);return k==='todos'||(k==='ativos'&&p.status==='ativo')||(k==='ganhos'&&p.status==='ganha')||(k==='encerrados'&&(p.status==='perdida'||p.status==='suspensa'))}).length;
-  return `<div class="page-h"><div><h1>Terrenos</h1><div class="sub">Cada terreno aparece uma vez, mesmo quando chega por vários corretores.</div></div>
-    <button class="btn primary" data-a="nova-oferta">${ic('add',18)}Nova oferta</button></div>
-  <div class="split"><div class="fchips">${[['todos','Todos'],['ativos','Em negociação'],['ganhos','Ganhos'],['encerrados','Perdidos e suspensos']].map(([k,l])=>`<button class="fchip" data-a="fT" data-v="${k}" aria-pressed="${UI.fT===k}">${UI.fT===k?ic('check',16):''}${l} <span class="n">${c(k)}</span></button>`).join('')}</div>
-    <label class="search" for="q-page" style="margin:0;max-width:340px;height:40px;flex:1 1 220px">${ic('layers',18)}<input id="q-page" type="search" value="${esc(UI.q)}" placeholder="Filtrar por bairro, matrícula, corretor" autocomplete="off"></label></div>
-  <div class="tbl" id="terr-rows">${terrenosRows()}</div>`;
-}
-
-/* ---------- Negociações ---------- */
-function kcard(p){
-  const t=T(p.tid),fl=flagsOf(p),lp=lastProp(p);
-  return `<button class="kcard" data-a="open" data-id="${t.id}" data-from="negociacoes">
-    <div class="kr"><span class="num faint">${p.id}</span><span class="num" title="Dias nesta etapa">${p.status==='ganha'?fd(lastEtapa(p).em):daysIn(p)+' d'}</span></div>
-    <div class="kt">${esc(t.bairro)}</div><div class="ks">${esc(t.end)}</div>
-    <div class="kr"><span class="num">${m2(t.area)}</span><span class="num" style="color:var(--ink);font-weight:500">${lp?'Prop. ':'Pedido '}${mi(valorRef(p))}</span></div>
-    <div class="kr">${av(p.resp,'sm')}<span class="flags">${fl.venc?`<span class="flag crit" title="Documentos vencidos">${ic('doc',14)}${fl.venc}</span>`:''}${fl.atras?`<span class="flag crit" title="Tarefas atrasadas">${ic('clock',14)}${fl.atras}</span>`:''}${fl.acima?`<span class="flag warn" title="Proposta acima do preço máximo">${ic('money',14)}</span>`:''}</span></div>
-  </button>`;
+  return `<div class="page-h"><div><h1>Terrenos</h1><div class="sub">Ordenados por temperatura da negociação.</div></div><button class="btn primary" data-a="novo">${ic('add',18)}Novo terreno</button></div>
+  <div class="split"><div class="fchips">${Object.entries(FILT).map(([k,[l,f]])=>`<button class="fchip" data-a="fT" data-v="${k}" aria-pressed="${UI.fT===k}">${UI.fT===k?ic('check',16):''}${l} <span class="n">${S.terrenos.filter(f).length}</span></button>`).join('')}</div></div>
+  <div class="tbl" id="rows">${linhas()}</div>`;
 }
 function pgNeg(){
-  const enc=S.procs.filter(p=>p.status==='perdida'||p.status==='suspensa');
-  let body;
-  if(UI.kView==='ativas'){
-    body=`<div class="board">${STAGES.map(s=>{const ps=S.procs.filter(p=>p.etapa===s.k&&(p.status==='ativo'||(s.k==='ganha'&&p.status==='ganha')));
-      return `<section class="col"><div class="col-h"><span>${s.n}</span><span class="n">${ps.length}</span></div>${ps.length?ps.map(kcard).join(''):'<div class="col-empty">Nenhuma</div>'}</section>`}).join('')}</div>`;
-  }else{
-    body=`<div class="tbl">${enc.map(p=>{const t=T(p.tid);return `<button class="aitem" data-a="open" data-id="${t.id}" data-from="negociacoes"><span class="ai ${p.status==='perdida'?'crit':'warn'}">${ic(p.status==='perdida'?'block':'pause',18)}</span><span style="min-width:0"><div class="at">${esc(t.bairro)} · ${esc(t.end)}</div><div class="as">${p.status==='perdida'?`Perdida em ${SN(p.etapa)}: ${esc(p.motivo)}`:`Suspensa em ${SN(p.etapa)} até ${fd(p.retorno)}`}</div></span><span class="when">${fd(p.fim)}</span></button>`}).join('')||'<div class="empty">Nenhuma negociação encerrada.</div>'}</div>`;
-  }
-  return `<div class="page-h"><div><h1>Negociações</h1><div class="sub">Abra um card para avançar a etapa. As regras de cada etapa são checadas antes de mover.</div></div>
-    <div class="seg"><button data-a="kView" data-v="ativas" aria-pressed="${UI.kView==='ativas'}">Em andamento</button><button data-a="kView" data-v="enc" aria-pressed="${UI.kView==='enc'}">Perdidas e suspensas (${enc.length})</button></div></div>${body}`;
+  return `<div class="page-h"><div><h1>Negociações</h1><div class="sub">Quadro por etapa. Abra um card para avançar.</div></div></div><div class="board">${STAGES.map(([k,l])=>{const ts=S.terrenos.filter(t=>t.neg&&t.neg.etapa===k&&(t.neg.status==='ativo'||(k==='ganha'&&t.neg.status==='ganha')));
+  return `<section class="col"><div class="col-h"><span>${l}</span><span class="n">${ts.length}</span></div>${ts.map(t=>{const o=ofertaRef(t),lp=lastProp(t);return `<button class="kcard" data-a="abrir" data-id="${t.id}" data-from="negociacoes"><div class="kr"><span class="num faint">${t.codigo}</span>${tempMini(t.neg.temp)}</div><div class="kt">${esc(t.nome)}</div><div class="ks">${esc(t.bairro||'')}</div>
+  <div class="kr"><span>${lp?'Prop. '+mi(lp.valor):'Pedido '+(o?.valor?mi(o.valor):'—')}</span>${atrasadas(t).length?`<span class="flag crit">${ic('clock',14)}${atrasadas(t).length}</span>`:''}${acimaMax(t)?`<span class="flag warn">${ic('money',14)}</span>`:''}</div><div class="kr">${av(t.resp,'sm')}<span class="faint">${diff(t.neg.desde,HOJE)} d na etapa</span></div></button>`}).join('')||'<div class="col-empty">Nenhuma</div>'}</section>`}).join('')}</div>`;
+}
+function pgInicio(){
+  const h=new Date().getHours(),s=h<12?'Bom dia':h<18?'Boa tarde':'Boa noite';
+  const ativos=S.terrenos.filter(t=>t.neg?.status==='ativo');
+  const tarefas=S.terrenos.flatMap(t=>atrasadas(t).map(k=>({t,k})));
+  const quentes=ativos.filter(t=>(t.neg.temp||0)>=4);
+  const incompletos=S.terrenos.filter(t=>t.situacao==='ativo'&&completude(t).pct<50);
+  const att=[...tarefas.map(({t,k})=>({sev:'crit',i:'clock',ti:k.titulo,su:`${t.nome} · ${k.resp} · venceu ${fd(k.prazo)}`,id:t.id,tab:'tarefas'})),
+    ...ativos.filter(acimaMax).map(t=>({sev:'warn',i:'money',ti:`Proposta acima do preço máximo`,su:`${t.nome} · ${mi(lastProp(t).valor)} vs ${mi(t.neg.viab.pmax)}`,id:t.id,tab:'negociacao'})),
+    ...ativos.filter(t=>!t.neg.temp).map(t=>({sev:'warn',i:'warn',ti:'Temperatura não avaliada',su:t.nome,id:t.id,tab:'cadastro'}))];
+  return `<div class="page-h"><div><h1>${s}, <span class="hand">${esc(me().split(' ')[0])}</span></h1><div class="sub">${ativos.length} negociações em andamento</div></div></div>
+  <div class="kpis"><button class="kpi" data-a="nav" data-r="negociacoes"><span class="v">${ativos.length}</span><span class="l">Negociações ativas</span></button>
+  <button class="kpi" data-a="nav" data-r="terrenos"><span class="v">${quentes.length}</span><span class="l">Quentes (temperatura 4 ou 5)</span></button>
+  <button class="kpi ${tarefas.length?'crit':''}" data-a="nav" data-r="terrenos"><span class="v">${tarefas.length}</span><span class="l">Tarefas atrasadas</span></button>
+  <button class="kpi ${incompletos.length?'warn':''}" data-a="nav" data-r="terrenos"><span class="v">${incompletos.length}</span><span class="l">Fichas com menos de 50% preenchidas</span></button></div>
+  <div class="grid-6040 sect-gap"><section class="card"><div class="card-h"><h2>Precisa de atenção</h2><span class="chip crit">${att.length}</span></div><div class="alist" style="margin-top:8px">${att.map(a=>`<button class="aitem" data-a="abrir" data-id="${a.id}" data-tab="${a.tab}" data-from="inicio"><span class="ai ${a.sev}">${ic(a.i,18)}</span><span><div class="at">${esc(a.ti)}</div><div class="as">${esc(a.su)}</div></span><span class="when">${ic('chev',18)}</span></button>`).join('')||'<div class="empty">Tudo em dia.</div>'}</div></section>
+  <section class="card"><div class="card-h"><h2>Mais quentes</h2></div><div class="alist" style="margin-top:8px">${ativos.slice().sort((a,b)=>(b.neg.temp||0)-(a.neg.temp||0)).slice(0,5).map(t=>`<button class="aitem" data-a="abrir" data-id="${t.id}" data-from="inicio"><span style="margin-top:6px">${tempMini(t.neg.temp)}</span><span><div class="at">${esc(t.nome)}</div><div class="as">${SN(t.neg.etapa)} · ${ofertaRef(t)?.valor?mi(ofertaRef(t).valor):'sem valor'}</div></span></button>`).join('')}</div></section></div>`;
 }
 
-/* ---------- Documentos ---------- */
-function pgDocs(){
-  const all=activeDocs();
-  const F={todos:()=>true,vencidos:d=>docSt(d)==='vencido',vencem:d=>{const dd=docDue(d),st=docSt(d);return st!=='vencido'&&st!=='pendente'&&dd!=null&&dd<=15},validar:d=>docSt(d)==='recebido',pendentes:d=>docSt(d)==='pendente'};
-  if(UI.fD==='alerta')UI.fD=all.some(F.vencidos)?'vencidos':'vencem';
-  const list=all.filter(F[UI.fD]).sort((a,b)=>(validade(a)||'9').localeCompare(validade(b)||'9'));
-  const L=[['todos','Todos'],['vencidos','Vencidos'],['vencem','Vencem em 15 dias'],['validar','Aguardando validação'],['pendentes','Não enviados']];
-  return `<div class="page-h"><div><h1>Documentos</h1><div class="sub">Documentos das negociações em andamento. Validade calculada pelo tipo de documento.</div></div></div>
-  <div class="split"><div class="fchips">${L.map(([k,l])=>`<button class="fchip" data-a="fD" data-v="${k}" aria-pressed="${UI.fD===k}">${UI.fD===k?ic('check',16):''}${l} <span class="n">${all.filter(F[k]).length}</span></button>`).join('')}</div></div>
-  <div class="tbl">${list.length?`<div class="tr th docs"><span>Documento</span><span class="c-ter">Terreno</span><span>Situação</span><span class="c-val">Validade</span><span class="c-ver r">Versões</span></div>`+list.map(d=>{const p=S.procs.find(x=>x.id===d.pid),t=T(p.tid),st=docSt(d),dd=docDue(d);
-    return `<button class="tr docs" data-a="open" data-id="${t.id}" data-tab="documentos" data-from="documentos"><span style="min-width:0"><div class="t1">${TIPOS[d.tipo].n}</div><div class="t2">${d.arquivo?esc(d.arquivo):'Nenhum arquivo enviado'}</div></span>
-      <span class="c-ter" style="min-width:0"><div class="t1">${esc(t.bairro)}</div><div class="t2">${SN(p.etapa)}</div></span><span>${docChip(st)}</span>
-      <span class="c-val num ${st==='vencido'?'':''}" style="${st==='vencido'?'color:var(--crit)':dd!=null&&dd<=15?'color:var(--warn)':''}">${validade(d)?fd(validade(d)):(d.emitido?'Sem validade':'—')}</span><span class="c-ver r num faint">${d.versoes}</span>
-      <span class="meta-sm">${esc(t.bairro)} · ${validade(d)?'vence '+fd(validade(d)):'sem validade'}</span></button>`}).join(''):'<div class="empty">Nenhum documento neste filtro.</div>'}</div>`;
+/* ===================== shell ===================== */
+const NAV=[['inicio','Início','home'],['terrenos','Terrenos','layers'],['negociacoes','Negociações','board']];
+function render(){
+  const cur=UI.route==='terreno'?UI.from:UI.route;
+  $('#side').innerHTML=`<button class="compose" data-a="novo">${ic('add',24)}Novo terreno</button>`+NAV.map(([r,l,i])=>`<button class="nav-item" data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''}>${ic(i)}${l}</button>`).join('')+`<div class="side-foot"><span>Protótipo · dados de exemplo</span><button class="linkbtn" data-a="reset">Restaurar dados de exemplo</button></div>`;
+  $('#bnav').innerHTML=NAV.map(([r,l,i])=>`<button data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''}><span class="pill">${ic(i,22)}</span>${l}</button>`).join('');
+  $('#role').innerHTML=['Gestor','Analista'].map(r=>`<button data-a="role" data-v="${r}" aria-pressed="${UI.role===r}">${r}</button>`).join('');
+  $('#main').innerHTML=({inicio:pgInicio,terrenos:pgTerrenos,negociacoes:pgNeg,terreno:pgFicha})[UI.route]();
+  renderModal();
 }
+let tmr;function toast(m,e){const el=$('#toast');el.textContent=m;el.className='toast show'+(e?' err':'');clearTimeout(tmr);tmr=setTimeout(()=>el.className='toast',2800)}
+function go(route,x={}){Object.assign(UI,{route,edit:null,propForm:false,modal:null},x);render();window.scrollTo({top:0})}
 
-/* ---------- Ficha do terreno ---------- */
-function stepper(p){
-  const idx=SIDX(p.etapa);
-  return `<ol class="stepper" aria-label="Etapas">${STAGES.map((s,i)=>{const st=(i<idx||p.status==='ganha')?'done':i===idx?'cur':'fut';
-    return `<li class="step ${st}"><span class="dot">${st==='done'?ic('check',14):i+1}</span><span class="sl">${s.n}</span></li>`}).join('')}</ol>`;
-}
-function advPanel(p){
-  if(p.status==='ganha')return `<div class="adv"><div class="banner good" style="flex:1"><span>${ic('check')}</span><div><div class="bt">Negociação ganha</div><div>Empreendimento ${esc(p.emp)} criado. Aprovação de projeto, incorporação e financiamento Caixa vão se ligar a ele nas próximas fases.</div></div></div></div>`;
-  if(p.status!=='ativo')return '';
-  const r=checkAdvance(p);
-  const req=r.items.length?`<div class="req"><div class="rt">Para avançar para ${r.next.n}</div><ul>${r.items.map(i=>`<li><span class="${i.ok?'ok':'no'}">${ic(i.ok?'check':'close',16)}</span><span>${esc(i.txt)}${i.fix?` · <button class="linkbtn" data-a="${i.fix.a}" ${i.fix.t?`data-t="${i.fix.t}"`:''}>${i.fix.l}</button>`:''}</span></li>`).join('')}</ul></div>`
-    :`<div class="req"><div class="rt">Próxima etapa: ${r.next.n}</div><div class="muted" style="font-size:13px">Sem requisitos para avançar.</div></div>`;
-  return `<div class="adv">${req}<div class="acts">
-    <button class="btn text" data-a="suspender">${ic('pause',18)}Suspender</button>
-    <button class="btn text danger" data-a="perder">${ic('block',18)}Perdida</button>
-    ${r.forcible?`<button class="btn" data-a="force">Avançar mesmo assim</button>`:''}
-    <button class="btn primary" data-a="advance" ${r.ok?'':'disabled'}>${ic('fwd',18)}Avançar para ${r.next.n}</button></div></div>`;
-}
-function pgTerreno(){
-  const t=T(UI.id),p=procOf(t.id),of=ofertasOf(t.id),dc=docsOf(p.id);
-  const reqDocs=CHECK.flatMap(g=>reqOn(p,g.etapa)?g.itens.filter(([,o])=>o).map(([x])=>x):[]);
-  const reqOk=reqDocs.filter(x=>docSt(docFor(p.id,x))==='validado').length;
-  const tabs=[['resumo','Resumo',''],['propostas','Propostas',p.props.length],['documentos','Documentos',reqDocs.length?`${reqOk}/${reqDocs.length}`:dc.length],['atividades','Atividades',p.ativ.length],['ofertas','Ofertas',of.length],['historico','Histórico','']];
-  const backL={terrenos:'Terrenos',negociacoes:'Negociações',documentos:'Documentos',inicio:'Início'}[UI.from]||'Terrenos';
-  let status='';
-  if(p.status==='perdida')status=`<div class="banner crit" style="margin-top:16px"><span>${ic('block')}</span><div><div class="bt">Perdida em ${SN(p.etapa)} · ${esc(p.motivo)}</div><div>${esc(p.motivoTxt||'')}</div></div></div>`;
-  if(p.status==='suspensa')status=`<div class="banner warn" style="margin-top:16px;justify-content:space-between;flex-wrap:wrap"><span style="display:flex;gap:12px">${ic('pause')}<span><span class="bt">Suspensa em ${SN(p.etapa)} até ${fd(p.retorno)}</span><br><span>${esc(p.motivoTxt||'')}</span></span></span><button class="btn sm" data-a="retomar">Retomar negociação</button></div>`;
-  return `<button class="back" data-a="nav" data-r="${UI.from}">${ic('back',20)}${backL}</button>
-  <div class="dhead"><div style="min-width:0"><div class="eyebrow"><span class="num">${t.id}</span><span>·</span><span class="num">Negociação ${p.id}</span><span>·</span><span>aberta em ${fd(p.aber)}</span></div>
-    <h1>${esc(t.bairro)} · ${esc(t.end)}</h1>
-    <div class="dchips">${chipStatus(p)}<span class="chip num">${m2(t.area)}</span><span class="chip">${t.zon}</span><span class="chip num">Frente ${t.frente} m</span><span class="chip num">${t.mats.length} matrícula${t.mats.length>1?'s':''}</span></div></div>
-    <div style="display:flex;align-items:center;gap:8px">${av(p.resp)}<div><div style="font-weight:500">${esc(p.resp)}</div><div class="faint" style="font-size:12px">Responsável</div></div></div></div>
-  ${p.status==='perdida'||p.status==='suspensa'?status:`<section class="card">${stepper(p)}${advPanel(p)}</section>`}
-  <div class="tabs" role="tablist">${tabs.map(([k,l,n])=>`<button class="tab" role="tab" data-a="tab" data-t="${k}" aria-selected="${UI.tab===k}">${l}${n!==''?` <span class="n">${n}</span>`:''}</button>`).join('')}</div>
-  <div role="tabpanel">${({resumo:tabResumo,propostas:tabProps,documentos:tabDocs,atividades:tabAtiv,ofertas:tabOfertas,historico:tabHist})[UI.tab](t,p)}</div>`;
-}
-function tabResumo(t,p){
-  const lp=lastProp(p),v=p.viab;
-  let viab;
-  if(v){
-    const ref=lp?lp.valor:valorRef(p),pct=Math.min(100,ref/(v.pmax*1.25)*100),mk=v.pmax/(v.pmax*1.25)*100,over=ref>v.pmax;
-    viab=`<div class="metrics"><div class="metric"><div class="ml">VGV</div><div class="mv">${mi(v.vgv)}</div></div><div class="metric"><div class="ml">Margem</div><div class="mv">${v.margem.toLocaleString('pt-BR')}%</div></div><div class="metric"><div class="ml">Preço máximo do terreno</div><div class="mv">${mi(v.pmax)}</div></div></div>
-      <div class="vsbar"><div class="track"><span class="fill ${over?'over':''}" style="width:${pct}%"></span><span class="mark" style="left:${mk}%"></span></div>
-      <div class="lg"><span>${lp?'Última proposta':'Valor pedido'}: <b class="num" style="color:var(--${over?'warn':'ink'})">${mi(ref)}</b></span><span>${over?`${mi(ref-v.pmax)} acima do máximo`:`${mi(v.pmax-ref)} de folga`}</span></div></div>
-      <div class="faint" style="font-size:12px;margin-top:12px">Estudo ${v.id} de ${fd(v.em)} · números lidos do BKM, não copiados</div>`;
-  }else viab=`<div class="banner blue"><span>${ic('link')}</span><div style="flex:1"><div class="bt">Sem estudo vinculado</div><div>Rode a viabilidade no BKM e vincule aqui para ver o preço máximo do terreno.</div><button class="btn sm" style="margin-top:10px" data-a="link-viab">${ic('link',16)}Vincular estudo</button></div></div>`;
-  const tasks=[...p.tarefas].sort((a,b)=>(a.feito-b.feito)||a.prazo.localeCompare(b.prazo));
-  return `<div class="grid-6040">
-    <div class="stack">
-      <section class="card"><div class="card-h"><h2>Viabilidade (BKM)</h2></div><div class="card-b">${viab}</div></section>
-      <section class="card"><div class="card-h"><h2>Tarefas</h2><span class="faint" style="font-size:13px">${p.tarefas.filter(x=>!x.feito).length} abertas</span></div><div class="card-b" style="padding-top:8px">
-        ${tasks.map(k=>{const late=!k.feito&&k.prazo<TODAY_ISO;return `<label class="task ${k.feito?'done':''}"><input type="checkbox" data-ch="task" data-k="${k.id}" ${k.feito?'checked':''}><span class="tt"><div class="t1">${esc(k.t)}</div><div class="tm ${late?'late':''}">${esc(k.resp)} · ${late?'atrasada desde ':'até '}${fd(k.prazo)}</div></span>${av(k.resp,'sm')}</label>`}).join('')||'<div class="muted">Nenhuma tarefa.</div>'}
-        <form class="inline-form" data-form="tarefa"><div class="field grow"><label for="tk-t">Nova tarefa</label><input id="tk-t" name="t" required placeholder="Ex.: pedir certidão atualizada"></div>
-          <div class="field"><label for="tk-p">Prazo</label><input id="tk-p" name="prazo" type="date" value="${addDays(TODAY_ISO,7)}" required></div>
-          <div class="field"><label for="tk-r">Responsável</label><select id="tk-r" name="resp">${['Moisés','Ana Prado','Rafael Souza','Camila Torres'].map(n=>`<option ${n===p.resp?'selected':''}>${n}</option>`).join('')}</select></div>
-          <button class="btn sm" type="submit">${ic('add',16)}Adicionar</button></form></div></section>
-    </div>
-    <section class="card"><div class="card-h"><h2>Terreno</h2></div><div class="card-b"><dl class="kv">
-      <dt>Endereço</dt><dd>${esc(t.end)}, ${esc(t.bairro)}, ${esc(t.cidade)}</dd>
-      <dt>Área</dt><dd>${m2(t.area)}</dd><dt>Frente</dt><dd>${t.frente} m</dd><dt>Zoneamento</dt><dd>${t.zon}</dd>
-      <dt>Matrículas</dt><dd>${t.mats.map(m=>`${m.num} · ${m.cri}`).join('<br>')}</dd>
-      <dt>Proprietários</dt><dd>${t.props.map(x=>`${esc(x.nome)}${t.props.length>1?` <span class="faint">(${x.pct}%)</span>`:''}`).join('<br>')}</dd>
-      <dt>Preço pedido por m²</dt><dd>${brl(Math.round(ofertasOf(t.id)[0].valor/t.area))}</dd>
-    </dl></div></section>
-  </div>`;
-}
-function tabProps(t,p){
-  const v=p.viab,lp=lastProp(p),can=p.status==='ativo';
-  const form=UI.showPropForm?`<section class="card" style="margin-bottom:16px"><div class="card-h"><h2>Nova proposta · v${p.props.length+1}</h2><button class="iconbtn" data-a="prop-form" aria-label="Fechar">${ic('close')}</button></div><div class="card-b">
-    <form data-form="proposta"><div class="fields">
-      <div class="field"><label for="pp-a">Quem propõe</label><select id="pp-a" name="autor"><option>Nós</option><option>Proprietário</option></select></div>
-      <div class="field"><label for="pp-v">Valor total (R$)</label><input id="pp-v" name="valor" inputmode="numeric" required placeholder="6.150.000"></div>
-      <div class="field"><label for="pp-f">Forma de pagamento</label><select id="pp-f" name="forma"><option>Dinheiro</option><option>Permuta física</option><option>Permuta financeira</option><option>Misto</option></select></div>
-      <div class="field"><label for="pp-p">Permuta (% do VGV)</label><input id="pp-p" name="pct" inputmode="decimal" placeholder="0"></div>
-      <div class="field full"><label for="pp-c">Condições</label><textarea id="pp-c" name="cond" placeholder="Parcelas, condição suspensiva de aprovação, prazos"></textarea></div>
-      <div class="field full" id="pp-warn"></div>
-    </div><div class="dialog df" style="padding:0;box-shadow:none;margin-top:8px"><button type="button" class="btn text" data-a="prop-form">Cancelar</button><button class="btn primary" type="submit">Registrar proposta</button></div></form></div></section>`:'';
-  const list=[...p.props].reverse();
-  return `<div class="split"><div class="muted">${v?`Preço máximo pela viabilidade: <b class="num" style="color:var(--ink)">${mi(v.pmax)}</b>`:'Sem estudo de viabilidade vinculado.'}</div>
-    ${can&&!UI.showPropForm?`<button class="btn primary" data-a="prop-form">${ic('add',18)}Nova proposta</button>`:''}</div>
-  ${form}
-  <section class="card">${list.length?list.map(x=>{const over=v&&x.valor>v.pmax,isLast=x===lp;
-    const stc={Aceita:'good',Recusada:'crit',Contraproposta:'warn','Em análise':'blue'}[x.status];
-    return `<div class="prop ${x.autor==='Nós'?'nos':''}"><span class="pv">v${x.v}</span><div style="min-width:0"><div class="pval">${brl(x.valor)}</div>
-      <div class="pmeta"><span>${x.autor==='Nós'?'Nossa proposta':'Proposta do proprietário'}</span><span>·</span><span>${fd(x.em)}</span><span>·</span><span>${esc(x.forma)}${x.pct?` (${String(x.pct).replace('.',',')}% permuta)`:''}</span></div>
-      ${x.cond?`<div class="pcond">${esc(x.cond)}</div>`:''}</div>
-      <div class="pside">${isLast&&can?`<select aria-label="Situação da proposta" data-ch="prop-status" class="chip ${stc}" style="border:0;height:28px;cursor:pointer">${['Em análise','Contraproposta','Aceita','Recusada'].map(s=>`<option ${s===x.status?'selected':''}>${s}</option>`).join('')}</select>`:`<span class="chip ${stc}">${x.status}</span>`}
-      ${over?`<span class="chip warn">${ic('warn',14)}${mi(x.valor-v.pmax)} acima do máximo</span>`:''}</div></div>`}).join(''):`<div class="empty">Nenhuma proposta ainda.${can?' Registre a primeira para iniciar o histórico de versões.':''}</div>`}</section>`;
-}
-function tabDocs(t,p){
-  const started=reqOn(p,'diligencia');
-  const groups=CHECK.map(g=>{
-    const active=reqOn(p,g.etapa);
-    const req=g.itens.filter(([,o])=>o),ok=req.filter(([x])=>docSt(docFor(p.id,x))==='validado').length;
-    return `<section class="card chk-group" style="margin-bottom:16px"><div class="chk-gh"><span class="gt">${g.titulo}</span>
-      ${active?`<span class="progress"><span class="bar"><span style="width:${ok/req.length*100}%"></span></span>${ok} de ${req.length} obrigatórios</span>`:`<span class="chip">Etapa futura</span>`}</div>
-      ${g.itens.map(([x,o])=>{const d=docFor(p.id,x),st=docSt(d),dd=d?docDue(d):null,va=d?validade(d):null;
-        const sub=d&&d.arquivo?`${esc(d.arquivo)} · v${d.versoes} · emitido ${fd(d.emitido)}${va?` · ${st==='vencido'?'venceu':'vence'} ${fd(va)}${st!=='vencido'&&dd!=null&&dd<=15?` (${dd} dias)`:''}`:''}`:`Validade: ${TIPOS[x].val?TIPOS[x].val+' dias da emissão':'não vence'}`;
-        return `<div class="doc ${active?'':'future'}"><span class="di">${ic('doc',18)}</span><div style="min-width:0"><div class="dn">${TIPOS[x].n} ${o?'':'<span class="opt">opcional</span>'}</div><div class="ds">${sub}</div></div>
-        <div class="da">${docChip(st)}${p.status==='ativo'||p.status==='suspensa'?`${st==='recebido'?`<button class="btn sm" data-a="doc-ok" data-d="${d.id}">${ic('check',16)}Validar</button><button class="btn sm text danger" data-a="doc-no" data-d="${d.id}">Rejeitar</button>`:''}
-        <button class="btn sm ${st==='pendente'||st==='vencido'||st==='rejeitado'?'':'text'}" data-a="upload" data-t="${x}">${ic('upload',16)}${d&&d.arquivo?'Nova versão':'Enviar'}</button>`:''}</div></div>`}).join('')}</section>`}).join('');
-  return `${started?'':`<div class="banner blue" style="margin-bottom:16px"><span>${ic('doc')}</span><div>O checklist passa a valer na etapa Diligência. Você já pode enviar documentos antes disso.</div></div>`}${groups}
-  <div class="faint" style="font-size:12px">Prazos de validade são exemplos configuráveis por tipo de documento. Arquivos ficam em armazenamento privado com histórico de versões.</div>`;
-}
-function tabAtiv(t,p){
-  const list=[...p.ativ].sort((a,b)=>b.em.localeCompare(a.em));
-  const icn={Ligação:'chat',Visita:'place',Reunião:'chat','E-mail':'chat',Nota:'doc'};
-  return `<section class="card" style="margin-bottom:16px"><div class="card-b"><form data-form="ativ" class="inline-form" style="border:0;margin:0;padding:0">
-    <div class="field" style="flex:0 1 150px"><label for="at-t">Tipo</label><select id="at-t" name="tipo">${['Ligação','Visita','Reunião','E-mail','Nota'].map(x=>`<option>${x}</option>`).join('')}</select></div>
-    <div class="field grow"><label for="at-x">O que aconteceu</label><input id="at-x" name="txt" required placeholder="Resumo da conversa ou visita"></div>
-    <button class="btn primary sm" type="submit">Registrar</button></form></div></section>
-  <section class="card"><div class="tl">${list.map(a=>`<div class="tli"><span class="ai blue">${ic(icn[a.tipo]||'chat',16)}</span><div><div class="tx"><b>${esc(a.tipo)}</b> · ${esc(a.txt)}</div><div class="ts">${esc(a.user)}</div></div><span class="when">${fd(a.em)}</span></div>`).join('')||'<div class="empty">Nenhuma atividade registrada.</div>'}</div></section>`;
-}
-function tabOfertas(t,p){
-  const of=ofertasOf(t.id);
-  return `${of.length>1?`<div class="banner blue" style="margin-bottom:16px"><span>${ic('layers')}</span><div><div class="bt">${of.length} ofertas para o mesmo terreno</div><div>A primeira oferta registrada fica marcada. Ajuda a resolver disputa de comissão entre corretores.</div></div></div>`:''}
-  <section class="card"><div class="tl">${of.map((o,i)=>`<div class="tli"><span class="ai ${i===0?'good':'blue'}">${ic('money',16)}</span><div><div class="tx"><b class="num">${brl(o.valor)}</b> · ${esc(o.origem)}${o.corretor?` · ${esc(o.corretor)}`:''}</div><div class="ts">${o.id} · ${brl(Math.round(o.valor/t.area))}/m²${i===0&&of.length>1?' · <b style="color:var(--good)">primeira oferta</b>':''}</div></div><span class="when">${fd(o.em)}</span></div>`).join('')}</div></section>`;
-}
-function tabHist(t,p){
-  const list=[...p.hist].sort((a,b)=>b.em.localeCompare(a.em));
-  const m={etapa:['fwd','blue'],prop:['money','blue'],fim:['block','crit'],doc:['doc','blue']};
-  return `<section class="card"><div class="tl">${list.map(h=>`<div class="tli"><span class="ai ${h.forced?'warn':m[h.kind][1]}">${ic(h.forced?'warn':m[h.kind][0],16)}</span><div><div class="tx">${esc(h.txt)}</div><div class="ts">${esc(h.user)}</div></div><span class="when">${fd(h.em)}</span></div>`).join('')}</div></section>
-  <div class="faint" style="font-size:12px;margin-top:8px">Registro automático e imutável. Avanços forçados aparecem destacados.</div>`;
-}
-
-/* ---------- modais ---------- */
+/* ===================== modais ===================== */
 function renderModal(){
-  const M=UI.modal,el=$('#modal');
-  if(!M){el.innerHTML='';return}
-  let h='';
-  if(M.k==='oferta')h=`<div class="dh"><div><h2>Nova oferta</h2><div class="muted" style="margin-top:4px">Só o essencial. O resto completa depois.</div></div><button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button></div>
-    <form data-form="oferta" id="f-oferta"><div class="fields">
-      <div class="field"><label for="of-m">Matrícula (opcional)</label><input id="of-m" name="mat" inputmode="numeric" placeholder="Ex.: 184.552"></div>
-      <div class="field"><label for="of-c">Cartório</label><select id="of-c" name="cri">${['6º CRI','8º CRI','9º CRI','11º CRI','12º CRI','18º CRI'].map(c=>`<option>${c}</option>`).join('')}</select></div>
-      <div class="field full"><label for="of-e">Endereço</label><input id="of-e" name="end" required placeholder="Rua, número"></div>
-      <div class="field"><label for="of-b">Bairro</label><input id="of-b" name="bairro" required placeholder="Ex.: Itaquera"></div>
-      <div class="field"><label for="of-a">Área (m²)</label><input id="of-a" name="area" inputmode="numeric" required placeholder="3.120"></div>
-      <div class="field"><label for="of-v">Valor pedido (R$)</label><input id="of-v" name="valor" inputmode="numeric" required placeholder="6.800.000"></div>
-      <div class="field"><label for="of-o">Origem</label><select id="of-o" name="origem"><option>Corretor</option><option>Proprietário direto</option><option>Prospecção própria</option></select></div>
-      <div class="field full"><label for="of-k">Corretor ou contato</label><input id="of-k" name="corretor" placeholder="Imobiliária · nome"></div>
-      <div class="field full" id="dedupe" aria-live="polite"><div class="hint">Dica: digite 184552 na matrícula para ver a detecção de terreno já cadastrado.</div></div>
-    </div></form>
-    <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-oferta">Salvar oferta</button></div>`;
-  if(M.k==='perder')h=`<div class="dh"><h2>Encerrar como perdida</h2><button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button></div>
-    <form data-form="perder" id="f-perder"><div class="fields"><div class="field full"><label for="pd-m">Motivo</label><select id="pd-m" name="motivo" required><option value="">Escolha um motivo</option>${MOTIVOS.map(x=>`<option>${x}</option>`).join('')}</select></div>
-    <div class="field full"><label for="pd-t">Detalhe</label><textarea id="pd-t" name="txt" placeholder="O que levou à perda. Ajuda a calibrar as próximas compras."></textarea></div></div></form>
-    <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-perder">Encerrar negociação</button></div>`;
-  if(M.k==='suspender')h=`<div class="dh"><h2>Suspender negociação</h2><button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button></div>
-    <form data-form="suspender" id="f-susp"><div class="fields"><div class="field"><label for="sp-d">Retomar em</label><input id="sp-d" name="retorno" type="date" required value="${addDays(TODAY_ISO,30)}"></div>
-    <div class="field full"><label for="sp-t">Motivo</label><textarea id="sp-t" name="txt" required placeholder="Ex.: inventário em andamento"></textarea></div></div></form>
-    <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-susp">Suspender</button></div>`;
-  if(M.k==='viab'){const t=T(UI.id),vgv=Math.round(t.area*14200/1e5)*1e5,pmax=Math.round(vgv*.135/1e4)*1e4;
-    h=`<div class="dh"><h2>Vincular estudo do BKM</h2><button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button></div>
-    <div class="muted">Estudos do BKM para ${esc(t.bairro)} · ${t.id}</div>
-    <button class="kcard" data-a="do-link" data-vgv="${vgv}" data-pmax="${pmax}"><div class="kr"><span class="num faint">V-1${S.seq.N}</span><span>${fd(TODAY_ISO)}</span></div><div class="kt">Estudo base · 2 dormitórios</div>
-      <div class="kr"><span class="num">VGV ${mi(vgv)}</span><span class="num">Margem 15,1%</span><span class="num" style="color:var(--ink);font-weight:600">Máx. ${mi(pmax)}</span></div></button>
-    <div class="hint">No sistema real esta lista vem direto do BKM. Aqui o estudo é simulado a partir da área.</div>`;}
-  if(M.k==='force'){const p=procOf(UI.id),r=checkAdvance(p);
-    h=`<div class="dh"><h2>Avançar sem checklist completo?</h2><button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button></div>
-    <div>${r.items.filter(i=>!i.ok).length} requisito(s) pendente(s). O avanço fica registrado no histórico como forçado, com seu nome.</div>
-    <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" data-a="do-force">Avançar para ${r.next.n}</button></div>`;}
+  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';return}
+  let h='';const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`;
+  if(M==='novo')h=`<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Só o mínimo para entrar no radar. A ficha é completada aos poucos.</div></div>${fechar}</div>
+  <form data-form="novo" id="f-novo"><div class="fields">
+  <div class="field full"><label for="n-nome">Nome de referência *</label><input id="n-nome" name="nome" required placeholder="Terreno Av. Cupecê — esquina"></div>
+  <div class="field"><label for="n-log">Logradouro</label><input id="n-log" name="logradouro" placeholder="Av. Cupecê"></div>
+  <div class="field"><label for="n-num">Número</label><input id="n-num" name="numero" placeholder="5.120 ou s/n"></div>
+  <div class="field"><label for="n-bai">Bairro</label><input id="n-bai" name="bairro"></div>
+  <div class="field"><label for="n-zona">Zona</label>${optSel('zona',OPT.zona,null).replace('id="f-zona"','id="n-zona"')}</div>
+  <div class="field"><label for="n-resp">Responsável *</label><select id="n-resp" name="resp">${USERS.map(u=>`<option ${u===me()?'selected':''}>${u}</option>`).join('')}</select></div>
+  <div class="field"><label for="n-ori">Origem *</label><select id="n-ori" name="origem" required>${Object.entries(OPT.origem).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
+  <div class="field"><label for="n-mat">Matrícula (se tiver)</label><input id="n-mat" name="mat" inputmode="numeric"></div>
+  <div class="field"><label for="n-cri">Cartório</label><select id="n-cri" name="cri">${Array.from({length:18},(_,i)=>`<option>${i+1}º CRI</option>`).join('')}</select></div>
+  <div class="field full"><label for="n-sql">Inscrição municipal / SQL (se tiver)</label><input id="n-sql" name="sql"></div>
+  <div class="field full" id="dedupe" aria-live="polite"><div class="hint">Endereço, matrícula e SQL são conferidos contra os terrenos já cadastrados. Teste com a matrícula 184552 no 11º CRI.</div></div>
+  <details class="details field full"><summary>Já recebeu uma oferta? Registrar condições pedidas</summary><div class="fields" style="margin-top:8px">
+    <div class="field"><label for="n-cor">Corretor</label><select id="n-cor" name="cid"><option value="">Sem corretor / direto</option>${S.corretores.map(c=>`<option value="${c.id}">${esc(c.nome)} · ${esc(c.imob)}</option>`).join('')}</select></div>
+    <div class="field"><label for="n-val">Valor pedido (R$)</label><input id="n-val" name="valor" inputmode="decimal"></div>
+    <div class="field"><label for="n-for">Forma de pagamento pedida</label>${optSel('forma',OPT.forma,null).replace('id="f-forma"','id="n-for"')}</div>
+    <div class="field"><label for="n-tmp">Temperatura</label><select id="n-tmp" name="temp"><option value="">Não avaliada</option>${[1,2,3,4,5].map(n=>`<option value="${n}">${n} · ${TEMP[n]}</option>`).join('')}</select></div>
+    <div class="field full"><label for="n-obs">Observação sobre a forma de pagamento</label><input id="n-obs" name="obsPag"></div>
+    <div class="field full"><label for="n-ace">Aceita permuta</label><input id="n-ace" name="aceita"></div></div></details>
+  </div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-novo" id="btn-novo">Cadastrar terreno</button></div>`;
+  if(M==='oferta')h=`<div class="dh"><h2>Registrar oferta</h2>${fechar}</div><form data-form="oferta" id="f-of"><div class="fields">
+    <div class="field"><label for="o-c">Corretor</label><select id="o-c" name="cid"><option value="">Sem corretor / direto</option>${S.corretores.map(c=>`<option value="${c.id}">${esc(c.nome)} · ${esc(c.imob)}</option>`).join('')}</select></div>
+    <div class="field"><label for="o-v">Valor pedido (R$)</label><input id="o-v" name="valor" inputmode="decimal" required></div>
+    <div class="field"><label for="o-f">Forma de pagamento pedida</label>${optSel('forma',OPT.forma,null).replace('id="f-forma"','id="o-f"')}</div>
+    <div class="field"><label for="o-val">Validade</label><input id="o-val" name="validade" type="date"></div>
+    <div class="field full"><label for="o-o">Observação sobre a forma de pagamento</label><input id="o-o" name="obsPag"></div>
+    <div class="field full"><label for="o-a">Aceita permuta</label><input id="o-a" name="aceita"></div></div></form>
+    <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-of">Registrar</button></div>`;
+  if(M==='perder')h=`<div class="dh"><h2>Encerrar como perdida</h2>${fechar}</div><form data-form="perder" id="f-p"><div class="fields"><div class="field full"><label for="pd-m">Motivo</label><select id="pd-m" name="motivo" required><option value="">Escolha</option>${['Preço acima do teto da viabilidade','Zoneamento ou legislação','Documentação ou pendência jurídica','Vendedor desistiu','Perdido para concorrente','Outro'].map(x=>`<option>${x}</option>`).join('')}</select></div><div class="field full"><label for="pd-d">Detalhe</label><textarea id="pd-d" name="detalhe"></textarea></div></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-p">Encerrar</button></div>`;
+  if(M==='suspender')h=`<div class="dh"><h2>Suspender negociação</h2>${fechar}</div><form data-form="suspender" id="f-s"><div class="fields"><div class="field"><label for="sp-d">Retomar em</label><input id="sp-d" name="retomar" type="date" min="${addD(HOJE,1)}" value="${addD(HOJE,30)}" required></div><div class="field full"><label for="sp-t">Motivo</label><textarea id="sp-t" name="detalhe" required></textarea></div></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-s">Suspender</button></div>`;
+  if(M==='forcar')h=`<div class="dh"><h2>Avançar sem os requisitos?</h2>${fechar}</div><form data-form="forcar" id="f-fc"><div class="field"><label for="fc-j">Justificativa (vai para o histórico)</label><textarea id="fc-j" name="j" required></textarea></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-fc">Avançar</button></div>`;
+  if(M==='viab')h=`<div class="dh"><h2>Vincular estudo de viabilidade</h2>${fechar}</div><form data-form="viab" id="f-vb"><div class="fields"><div class="field full"><label for="vb-n">Nome</label><input id="vb-n" name="nome" value="Estudo base" required></div><div class="field"><label for="vb-v">VGV (R$)</label><input id="vb-v" name="vgv" inputmode="decimal"></div><div class="field"><label for="vb-m">Margem (%)</label><input id="vb-m" name="margem" inputmode="decimal"></div><div class="field full"><label for="vb-p">Preço máximo do terreno (R$)</label><input id="vb-p" name="pmax" inputmode="decimal" required></div></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-vb">Vincular</button></div>`;
   el.innerHTML=`<div class="scrim" data-a="scrim"><div class="dialog" role="dialog" aria-modal="true">${h}</div></div>`;
-  const first=el.querySelector('input,select');if(first)setTimeout(()=>first.focus(),30);
+  const f=el.querySelector('input:not([type=hidden]),select');if(f)setTimeout(()=>f.focus(),30);
 }
-function dedupeCheck(){
-  const f=$('#f-oferta');if(!f)return;
-  const mat=digits(f.mat.value),cri=f.cri.value,end=f.end.value.trim().toLowerCase(),bairro=f.bairro.value.trim().toLowerCase();
-  const box=$('#dedupe');
-  let hit=null,kind='';
-  if(mat.length>=4){hit=S.terrenos.find(t=>t.mats.some(m=>digits(m.num)===mat&&m.cri===cri));if(hit)kind='mat';
-    if(!hit){const other=S.terrenos.find(t=>t.mats.some(m=>digits(m.num)===mat));if(other){hit=other;kind='matcri'}}}
-  if(!hit&&end.length>=6){const st=end.split(',')[0].split(' ').slice(0,3).join(' ');hit=S.terrenos.find(t=>t.end.toLowerCase().startsWith(st)&&(!bairro||t.bairro.toLowerCase()===bairro));if(hit)kind='end'}
-  if(!hit){box.innerHTML=mat||end?'<div class="hint">Nenhum terreno parecido encontrado. Será criado um novo cadastro.</div>':'<div class="hint">Dica: digite 184552 na matrícula para ver a detecção de terreno já cadastrado.</div>';f.dataset.match='';return}
-  const p=procOf(hit.id);
-  f.dataset.match=kind==='mat'?hit.id:'';
-  box.innerHTML=kind==='mat'
-    ?`<div class="banner blue"><span>${ic('link')}</span><div><div class="bt">Terreno já cadastrado: ${hit.id} · ${esc(hit.bairro)}</div><div>Matrícula ${esc(f.mat.value)} do ${esc(cri)}. A oferta será anexada a esse terreno (${SN(p.etapa)}), sem criar duplicata.</div></div></div>`
-    :`<div class="banner warn"><span>${ic('warn')}</span><div><div class="bt">Possível duplicidade com ${hit.id} · ${esc(hit.bairro)}</div><div>${kind==='matcri'?'Mesmo número de matrícula em outro cartório.':'Endereço parecido: '+esc(hit.end)+'.'} Confira antes de salvar; se for o mesmo, informe a matrícula e o cartório corretos.</div></div></div>`;
+function dedupe(){
+  const f=$('#f-novo');if(!f)return;const mat=digits(f.mat.value),sql=digits(f.sql.value),log=f.logradouro.value.trim().toLowerCase(),nr=f.numero.value.trim().toLowerCase();
+  let hit=null,msg='',cert='';
+  for(const t of S.terrenos){
+    const m=mat.length>=3&&t.mats.find(x=>digits(x.num)===mat);
+    if(m){hit=t;cert=m.cri===f.cri.value?'certa':'provavel';msg=`Mesma matrícula ${m.num}${m.cri===f.cri.value?' no '+m.cri:' em outro cartório ('+m.cri+')'}`;break}
+    if(sql.length>=6&&t.insc.some(i=>digits(i.sql)===sql)){hit=t;cert='certa';msg='Mesma inscrição municipal';break}
+    if(log.length>=4&&(t.logradouro||'').toLowerCase()===log&&(!nr||!t.numero||t.numero.toLowerCase()===nr)){hit=t;cert='possivel';msg='Mesmo endereço'}
+  }
+  const box=$('#dedupe'),btn=$('#btn-novo');f.dataset.dup=hit&&cert==='certa'?hit.id:'';
+  if(!hit){box.innerHTML='<div class="hint">Nenhum terreno parecido. Será criado um cadastro novo.</div>';btn.textContent='Cadastrar terreno';return}
+  box.innerHTML=`<div class="banner ${cert==='certa'?'blue':'warn'}">${ic(cert==='certa'?'link':'warn')}<div style="flex:1"><div class="bt">${cert==='certa'?'Este terreno já está cadastrado':'Possível duplicidade'}: ${hit.codigo} · ${esc(hit.nome)}</div><div>${esc(msg)}. ${cert==='certa'?'Se houver oferta, ela será registrada nesse terreno.':'Confira antes de salvar.'}</div><button type="button" class="btn sm" style="margin-top:8px" data-a="abrir" data-id="${hit.id}">Abrir ficha existente</button></div></div>`;
+  btn.textContent=cert==='certa'?'Registrar no terreno existente':'Cadastrar mesmo assim';
 }
 
-/* ---------- toast ---------- */
-let tmr;
-function toast(msg,err){const el=$('#toast');el.textContent=msg;el.className='toast show'+(err?' err':'');clearTimeout(tmr);tmr=setTimeout(()=>el.className='toast',2800)}
-
-/* ---------- eventos ---------- */
-function go(route,extra={}){Object.assign(UI,{route},extra);UI.modal=null;UI.showPropForm=false;render();window.scrollTo({top:0})}
+/* ===================== eventos ===================== */
 document.addEventListener('click',e=>{
-  const a=e.target.closest('[data-a]');if(!a)return;
-  const A=a.dataset.a;
+  const a=e.target.closest('[data-a]');if(!a)return;const A=a.dataset.a;const t=UI.route==='terreno'?T(UI.id):null;
   if(A==='scrim'){if(e.target===a){UI.modal=null;renderModal()}return}
-  const p=UI.route==='terreno'?procOf(UI.id):null;
   switch(A){
-    case 'nav':{const ex={};if(a.dataset.fd)ex.fD=a.dataset.fd;go(a.dataset.r,ex);break}
-    case 'open':go('terreno',{id:a.dataset.id,tab:a.dataset.tab||'resumo',from:a.dataset.from||(UI.route==='terreno'?UI.from:UI.route)});break;
-    case 'go-first-late':{const x=activeProcs().find(q=>lateTasks(q).length);if(x)go('terreno',{id:x.tid,tab:'resumo',from:'inicio'});break}
-    case 'tab':UI.tab=a.dataset.t;UI.showPropForm=false;renderMain();if(a.closest('.adv')){const tb=document.querySelector('.tabs');if(tb)tb.scrollIntoView({behavior:'smooth',block:'start'})}break;
-    case 'fT':UI.fT=a.dataset.v;renderMain();break;
-    case 'fD':UI.fD=a.dataset.v;renderMain();break;
-    case 'kView':UI.kView=a.dataset.v;renderMain();break;
-    case 'role':UI.role=a.dataset.v;render();toast(`Testando como ${UI.role} (${me()}).`);break;
-    case 'role-cycle':UI.role=UI.role==='Gestor'?'Analista':'Gestor';render();toast(`Testando como ${UI.role} (${me()}).`);break;
+    case 'nav':go(a.dataset.r);break;
+    case 'abrir':go('terreno',{id:a.dataset.id,tab:a.dataset.tab||'cadastro',from:a.dataset.from||(UI.route==='terreno'?UI.from:UI.route==='inicio'?'inicio':'terrenos')});break;
+    case 'tab':UI.tab=a.dataset.t;UI.edit=null;UI.propForm=false;render();document.querySelector('.tabs')?.scrollIntoView({behavior:'smooth',block:'start'});break;
+    case 'ir':UI.tab=a.dataset.t;UI.edit=a.dataset.s&&SECOES[a.dataset.s]||a.dataset.s==='areas'?a.dataset.s:null;render();setTimeout(()=>{const s=a.dataset.s&&document.getElementById('sec-'+a.dataset.s);(s||document.querySelector('.tabs'))?.scrollIntoView({behavior:'smooth',block:'start'})},20);break;
+    case 'fT':UI.fT=a.dataset.v;render();break;
+    case 'role':UI.role=a.dataset.v;render();toast(`Testando como ${UI.role}.`);break;
     case 'reset':S=seed();save();go('inicio');toast('Dados de exemplo restaurados.');break;
-    case 'nova-oferta':UI.modal={k:'oferta'};renderModal();break;
+    case 'novo':UI.modal='novo';renderModal();break;
+    case 'nova-oferta':UI.modal='oferta';renderModal();break;
     case 'close':UI.modal=null;renderModal();break;
-    case 'advance':advance(p,false);break;
-    case 'force':UI.modal={k:'force'};renderModal();break;
-    case 'do-force':UI.modal=null;advance(p,true);break;
-    case 'perder':UI.modal={k:'perder'};renderModal();break;
-    case 'suspender':UI.modal={k:'suspender'};renderModal();break;
-    case 'retomar':p.status='ativo';p.hist.push({kind:'etapa',para:p.etapa,em:TODAY_ISO,user:me(),txt:`Negociação retomada em ${SN(p.etapa)}`});delete p.retorno;save();render();toast('Negociação retomada.');break;
-    case 'link-viab':UI.modal={k:'viab'};renderModal();break;
-    case 'do-link':{const vgv=Number(a.dataset.vgv),pmax=Number(a.dataset.pmax);p.viab={id:'V-1'+S.seq.N,em:TODAY_ISO,vgv,margem:15.1,pmax};p.hist.push({kind:'etapa',para:p.etapa,em:TODAY_ISO,user:me(),txt:`Estudo ${p.viab.id} do BKM vinculado`});UI.modal=null;save();render();toast('Estudo vinculado.');break}
-    case 'prop-form':UI.showPropForm=!UI.showPropForm;renderMain();if(UI.showPropForm)setTimeout(()=>{const x=$('#pp-v');if(x)x.focus()},30);break;
-    case 'upload':UI.pendingUpload={pid:p.id,tipo:a.dataset.t};$('#file-in').value='';$('#file-in').click();break;
-    case 'doc-ok':case 'doc-no':{const d=S.docs.find(x=>x.id===a.dataset.d);d.status=A==='doc-ok'?'validado':'rejeitado';p.hist.push({kind:'doc',em:TODAY_ISO,user:me(),txt:`${TIPOS[d.tipo].n} ${A==='doc-ok'?'validado':'rejeitado'}`});save();render();toast(A==='doc-ok'?'Documento validado.':'Documento rejeitado. Peça nova versão.');break}
+    case 'edit':UI.edit=a.dataset.s;render();setTimeout(()=>document.getElementById('sec-'+a.dataset.s)?.querySelector('input,select,textarea')?.focus(),20);break;
+    case 'cancel-edit':UI.edit=null;render();break;
+    case 'temp':{const v=Number(a.dataset.v)||null,antes=t.neg.temp;t.neg.temp=v;log(t,`Temperatura ${antes||'—'} → ${v||'—'}`);save();render();toast(v?`Temperatura ${v} · ${TEMP[v]}.`:'Temperatura removida.');break}
+    case 'ofref':t.neg.ofRef=a.dataset.o;log(t,'Oferta de referência alterada');save();render();toast('Oferta de referência atualizada.');break;
+    case 'principal':t.corretores.forEach(x=>x.principal=x.cid===a.dataset.c);save();render();break;
+    case 'del-mat':t.mats.splice(Number(a.dataset.i),1);save();render();break;
+    case 'del-pes':t.pessoas.splice(Number(a.dataset.i),1);save();render();break;
+    case 'infra':{const k=a.dataset.k,v=a.dataset.v;t.infra[k]=v==='nao_verificado'?{d:v}:{d:v,data:HOJE,fonte:t.infra[k]?.fonte||'Visita ao local'};save();render();break}
+    case 'prop-form':UI.propForm=!UI.propForm;render();break;
+    case 'avancar':case 'do-forcar':{const r=checkAdv(t);t.neg.etapa=r.next[0];t.neg.desde=HOJE;if(r.next[0]==='ganha')t.neg.status='ganha';log(t,`Avançou para ${r.next[1]}`);save();render();toast(`Movida para ${r.next[1]}.`);break}
+    case 'forcar':UI.modal='forcar';renderModal();break;
+    case 'perder':UI.modal='perder';renderModal();break;
+    case 'suspender':UI.modal='suspender';renderModal();break;
+    case 'viab':UI.modal='viab';renderModal();break;
+    case 'retomar':t.neg.status='ativo';log(t,'Negociação retomada');save();render();break;
+    case 'doc-ok':{const d=t.docs.find(x=>x.tipo===a.dataset.k);d.status='validado';log(t,`${TIPOS_DOC[d.tipo][0]} validado`);save();render();break}
+    case 'upload':UI.upload=a.dataset.k;$('#file-in').value='';$('#file-in').click();break;
   }
 });
-$('#file-in').addEventListener('change',e=>{
-  const f=e.target.files&&e.target.files[0];const u=UI.pendingUpload;if(!f||!u)return;
-  const p=S.procs.find(x=>x.id===u.pid);let d=docFor(u.pid,u.tipo);
-  if(!d){d={id:'D-'+(S.seq.D++),pid:u.pid,tipo:u.tipo,status:'pendente',emitido:null,versoes:0,arquivo:null};S.docs.push(d)}
-  d.arquivo=f.name;d.versoes++;d.emitido=TODAY_ISO;d.status='recebido';
-  p.hist.push({kind:'doc',em:TODAY_ISO,user:me(),txt:`${TIPOS[u.tipo].n}: versão ${d.versoes} enviada (${f.name})`});
-  UI.pendingUpload=null;save();render();toast(`Versão ${d.versoes} enviada. Falta validar.`);
+$('#file-in').addEventListener('change',e=>{const f=e.target.files?.[0],t=T(UI.id),k=UI.upload;if(!f||!t)return;
+  const unico=k!=='foto'&&k!=='planta';let d=unico?t.docs.find(x=>x.tipo===k):null;
+  if(!d){d={tipo:k,status:'recebido',emitido:HOJE,versoes:0,nome:unico?null:f.name};t.docs.push(d)}d.versoes++;d.emitido=HOJE;d.status='recebido';log(t,`${TIPOS_DOC[k][0]}: versão ${d.versoes} enviada`);save();render();toast('Arquivo enviado. Falta validar.')});
+document.addEventListener('change',e=>{const el=e.target,t=UI.route==='terreno'?T(UI.id):null;if(!t)return;
+  if(el.dataset.ch==='tar-st'){const k=t.tarefas.find(x=>x.id===el.dataset.k);k.status=el.value;log(t,`Tarefa "${k.titulo}": ${OPT.statusTar[el.value]}`);save();render()}
+  if(el.dataset.ch==='tar-res'){t.tarefas.find(x=>x.id===el.dataset.k).resultado=el.value;save()}
+  if(el.dataset.ch==='infra-fonte'){t.infra[el.dataset.k].fonte=el.value;save()}
+  if(el.dataset.ch==='prop-status'){const lp=lastProp(t);lp.status=el.value;log(t,`Proposta v${lp.v}: ${OPT.statusProp[el.value]}`);save();render()}
 });
-document.addEventListener('change',e=>{
-  const el=e.target;const p=UI.route==='terreno'?procOf(UI.id):null;
-  if(el.dataset.ch==='task'){const k=p.tarefas.find(x=>x.id===el.dataset.k);k.feito=el.checked;save();render()}
-  if(el.dataset.ch==='prop-status'){const lp=lastProp(p);lp.status=el.value;p.hist.push({kind:'prop',em:TODAY_ISO,user:me(),txt:`Proposta v${lp.v} marcada como ${el.value.toLowerCase()}`});save();render();toast(`Proposta v${lp.v}: ${el.value}.`)}
+document.addEventListener('input',e=>{const el=e.target;
+  if(el.id==='q-top'){UI.q=el.value;if(UI.route!=='terrenos'){UI.fT='todos';go('terrenos');$('#q-top').focus()}else{const r=$('#rows');if(r)r.innerHTML=linhas()}}
+  if(el.form?.dataset.form==='novo')dedupe();
+  if(el.id==='pp-v'){const t=T(UI.id),v=lerNum(el.value),w=$('#pp-warn');w.innerHTML=t.neg.viab&&v>t.neg.viab.pmax?`<div class="banner warn">${ic('warn')}<div>${brl(v)} fica ${mi(v-t.neg.viab.pmax)} acima do preço máximo (${mi(t.neg.viab.pmax)}).</div></div>`:''}
 });
-document.addEventListener('input',e=>{
-  const el=e.target;
-  if(el.id==='q-top'||el.id==='q-page'){
-    UI.q=el.value;
-    if(el.id==='q-top'&&UI.route!=='terrenos'){UI.route='terrenos';UI.fT='todos';renderNav();renderMain()}
-    else{const r=$('#terr-rows');if(r)r.innerHTML=terrenosRows()}
-    const other=el.id==='q-top'?$('#q-page'):$('#q-top');if(other&&other.value!==el.value)other.value=el.value;
+document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Object.fromEntries(new FormData(f)),t=UI.route==='terreno'?T(UI.id):null;
+  switch(f.dataset.form){
+    case 'sec':{const s=SECOES[f.dataset.s];s.campos.forEach(([k,,tipo])=>{if(tipo==='fixo'||!(k in F))return;let v=F[k].trim();if(['m2','m','dec'].includes(tipo))v=lerNum(v);else if(tipo==='sel'&&v==='')v=k==='precisao'?'nao_informada':['topografia','posicao','formato','ocupacao'].includes(k)?'nao_informado':k==='demolicao'?'nao_avaliada':null;else if(v==='')v=k==='nome'?t.nome:null;t[k]=v});
+      if(t.aDemolir!=null&&t.aConst!=null&&t.aDemolir>t.aConst){toast('A área a demolir não pode passar da área construída.',true);return}
+      if(!t.logradouro&&!t.bairro&&t.lat==null){toast('Informe ao menos logradouro, bairro ou ponto no mapa.',true);return}
+      UI.edit=null;log(t,`${s.titulo} atualizado`);save();render();toast('Salvo.');break}
+    case 'areas':{['aDoc','aCad','aLev','aEst','testada'].forEach(k=>t[k]=lerNum(F[k]));t.fonteArea=F.fonteArea||null;
+      if(t.fonteArea&&areaAdotada(t)==null){toast(`Preencha a área ${OPT.fonteArea[t.fonteArea].toLowerCase()} para adotá-la.`,true);return}
+      UI.edit=null;log(t,'Áreas atualizadas');save();render();toast('Salvo.');break}
+    case 'cond':{const o=ofertaRef(t);Object.assign(o,{valor:lerNum(F.valor),forma:F.forma||null,cid:F.cid||null,validade:F.validade||null,obsPag:F.obsPag,aceita:F.aceita});
+      if(o.cid&&!t.corretores.some(x=>x.cid===o.cid))t.corretores.push({cid:o.cid,principal:!t.corretores.some(x=>x.principal)});UI.edit=null;log(t,'Condições pedidas atualizadas');save();render();toast('Salvo.');break}
+    case 'mat':t.mats.push({num:F.num,cri:F.cri,area:lerNum(F.area),data:F.data||null});save();render();toast('Matrícula adicionada.');break;
+    case 'insc':t.insc.push({sql:F.sql,area:lerNum(F.area),valores:[]});save();render();break;
+    case 'iptu':{const ins=t.insc[Number(f.dataset.i)],ex=Number(F.ex);ins.valores=ins.valores.filter(v=>v.ex!==ex);ins.valores.push({ex,venal:lerNum(F.venal),iptu:lerNum(F.iptu),parc:Number(F.parc)||null});save();render();toast(`Exercício ${ex} lançado.`);break}
+    case 'pessoa':t.pessoas.push({nome:F.nome,tipo:F.tipo,papel:F.papel,pct:F.papel==='proprietario'?lerNum(F.pct):null,tel:F.tel});save();render();break;
+    case 'tarefa':t.tarefas.push({id:uid(),titulo:F.titulo,desc:F.desc,resp:F.resp,prazo:F.prazo,status:'pendente',prio:F.prio,resultado:''});log(t,`Tarefa criada: ${F.titulo}`);save();render();toast('Tarefa adicionada.');break;
+    case 'prop':{const v=lerNum(F.valor);if(!v){toast('Informe o valor.',true);return}const lp=lastProp(t);
+      if(lp&&['rascunho','apresentada','em_analise'].includes(lp.status))lp.status=lp.origem===F.origem?'substituida':'recusada';
+      t.propostas.push({v:(lp?.v||0)+1,origem:F.origem,data:F.data,validade:F.validade||null,valor:v,forma:F.forma,cond:F.cond,status:F.status});
+      log(t,`Proposta v${(lp?.v||0)+1} (${F.origem==='bkm'?'BKM':'Vendedor'}): ${mi(v)}`);UI.propForm=false;save();render();toast('Proposta registrada.');break}
+    case 'analise':{const zonas=[0,1,2].map(i=>F['sigla'+i]?{sigla:F['sigla'+i],area:lerNum(F['area'+i]),ca:lerNum(F['ca'+i]),semLim:!!F['semLim'+i],gabM:F['semLim'+i]?null:lerNum(F['gabM'+i]),gabPav:F['semLim'+i]?null:(Number(F['gabPav'+i])||null),obs:''}:null).filter(Boolean);
+      t.analises.forEach(a=>{if(a.status==='vigente')a.status='substituida'});t.analises.push({id:uid(),data:F.data,fonte:F.fonte,status:'vigente',zonas});UI.edit=null;log(t,'Nova análise urbanística: '+zonas.map(z=>z.sigla).join(' + '));save();render();toast('Análise registrada. A anterior foi preservada.');break}
+    case 'novo':{const dup=f.dataset.dup;let alvo;
+      if(!F.logradouro.trim()&&!F.bairro.trim()&&!dup){toast('Informe ao menos logradouro ou bairro.',true);return}
+      if(dup){alvo=T(dup)}else{S.seqT++;alvo={...seedVazio(),codigo:'TER-'+String(S.seqT).padStart(6,'0'),nome:F.nome,logradouro:F.logradouro.trim(),numero:F.numero.trim(),bairro:F.bairro.trim(),zona:F.zona||null,resp:F.resp,origem:F.origem,dataIdent:HOJE,
+        mats:F.mat?[{num:F.mat,cri:F.cri,area:null,data:null}]:[],insc:F.sql?[{sql:F.sql,area:null,valores:[]}]:[]};alvo.hist=[{em:HOJE,user:me(),txt:'Terreno cadastrado'}];S.terrenos.push(alvo)}
+      const val=lerNum(F.valor);
+      if(val||F.cid){const o={id:uid(),cid:F.cid||null,data:HOJE,valor:val,forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,status:'ativa'};alvo.ofertas.push(o);
+        if(o.cid&&!alvo.corretores.some(x=>x.cid===o.cid))alvo.corretores.push({cid:o.cid,principal:!alvo.corretores.some(x=>x.principal)});
+        if(!alvo.neg||!['ativo','suspensa'].includes(alvo.neg.status)){alvo.neg={codigo:'NEG-'+String(Math.floor(Math.random()*900)+100).padStart(5,'0'),etapa:'recebida',status:'ativo',desde:HOJE,temp:Number(F.temp)||null,ofRef:o.id,viab:null};log(alvo,'Negociação aberta')}
+        else log(alvo,'Nova oferta registrada')}
+      UI.modal=null;save();go('terreno',{id:alvo.id,tab:dup?'comercial':'cadastro',from:'terrenos'});toast(dup?'Oferta registrada no terreno existente.':`${alvo.codigo} cadastrado. Complete a ficha quando puder.`);break}
+    case 'oferta':{const o={id:uid(),cid:F.cid||null,data:HOJE,valor:lerNum(F.valor),forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,validade:F.validade||null,status:'ativa'};t.ofertas.push(o);
+      if(o.cid&&!t.corretores.some(x=>x.cid===o.cid))t.corretores.push({cid:o.cid,principal:!t.corretores.some(x=>x.principal)});
+      if(!t.neg||!['ativo','suspensa'].includes(t.neg.status)){t.neg={codigo:'NEG-'+String(Math.floor(Math.random()*900)+100).padStart(5,'0'),etapa:'recebida',status:'ativo',desde:HOJE,temp:null,ofRef:o.id,viab:null};log(t,'Negociação aberta')}else log(t,`Nova oferta: ${mi(o.valor)}`);
+      UI.modal=null;save();render();toast('Oferta registrada.');break}
+    case 'perder':Object.assign(t.neg,{status:'perdida',motivo:F.motivo,detalhe:F.detalhe});log(t,'Perdida: '+F.motivo);UI.modal=null;save();render();break;
+    case 'suspender':Object.assign(t.neg,{status:'suspensa',retomar:F.retomar});log(t,'Suspensa até '+fd(F.retomar));UI.modal=null;save();render();break;
+    case 'forcar':{const r=checkAdv(t);t.neg.etapa=r.next[0];t.neg.desde=HOJE;log(t,`Avançou para ${r.next[1]} sem requisitos: ${F.j}`);UI.modal=null;save();render();break}
+    case 'viab':t.neg.viab={nome:F.nome,vgv:lerNum(F.vgv),margem:lerNum(F.margem),pmax:lerNum(F.pmax),em:HOJE};log(t,'Estudo vinculado');UI.modal=null;save();render();break;
   }
-  if(el.form&&el.form.dataset.form==='oferta')dedupeCheck();
-  if(el.id==='pp-v'){const p=procOf(UI.id),v=money(el.value),w=$('#pp-warn');
-    w.innerHTML=p.viab&&v>p.viab.pmax?`<div class="banner warn"><span>${ic('warn')}</span><div>${brl(v)} fica ${mi(v-p.viab.pmax)} acima do preço máximo da viabilidade (${mi(p.viab.pmax)}). Avançar vai exigir decisão do gestor.</div></div>`:(v?`<div class="hint">${p.viab?`${mi(p.viab.pmax-v)} abaixo do preço máximo.`:''}</div>`:'')}
 });
-document.addEventListener('submit',e=>{
-  e.preventDefault();const f=e.target,F=Object.fromEntries(new FormData(f));
-  const p=UI.route==='terreno'?procOf(UI.id):null;
-  if(f.dataset.form==='oferta'){
-    const valor=money(F.valor),area=money(F.area);
-    if(!valor||!area){toast('Informe área e valor pedido.',true);return}
-    let tid=f.dataset.match;let novo=false;
-    const corr=F.origem==='Corretor'?(F.corretor||'Corretor não informado'):F.corretor;
-    if(!tid){novo=true;tid='T-0'+(++S.seq.T);
-      S.terrenos.push({id:tid,bairro:F.bairro.trim(),end:F.end.trim(),cidade:'São Paulo',area,zon:'A definir',frente:0,mats:F.mat?[{num:F.mat,cri:F.cri}]:[],props:[{nome:'A confirmar',pct:100}]});}
-    S.ofertas.push({id:'O-'+(++S.seq.O),tid,origem:F.origem,corretor:corr||'',em:TODAY_ISO,valor});
-    let pr=procOf(tid);
-    if(novo||!pr||pr.status==='perdida'){const id='N-0'+(++S.seq.N);
-      pr={id,tid,etapa:'recebida',status:'ativo',resp:me(),aber:TODAY_ISO,ult:TODAY_ISO,viab:null,props:[],ativ:[],tarefas:[{id:'K'+Date.now(),t:'Triagem: localização e preço por m²',resp:me(),prazo:addDays(TODAY_ISO,3),feito:false}],
-        hist:[{kind:'etapa',para:'recebida',em:TODAY_ISO,user:me(),txt:'Negociação aberta a partir da oferta'}]};S.procs.push(pr)}
-    else pr.ativ.push({tipo:'Nota',em:TODAY_ISO,user:me(),txt:`Nova oferta de ${brl(valor)} recebida (${F.origem}${corr?' · '+corr:''}).`});
-    save();go('terreno',{id:tid,tab:novo?'resumo':'ofertas',from:'terrenos'});
-    toast(novo?`Terreno ${tid} criado com a oferta.`:`Oferta anexada ao terreno ${tid}.`);
-  }
-  if(f.dataset.form==='perder'){if(!F.motivo){toast('Escolha um motivo.',true);return}
-    Object.assign(p,{status:'perdida',motivo:F.motivo,motivoTxt:F.txt,fim:TODAY_ISO});p.hist.push({kind:'fim',em:TODAY_ISO,user:me(),txt:`Encerrada como perdida: ${F.motivo}`});UI.modal=null;save();render();toast('Negociação encerrada como perdida.')}
-  if(f.dataset.form==='suspender'){Object.assign(p,{status:'suspensa',retorno:F.retorno,motivoTxt:F.txt,fim:TODAY_ISO});p.hist.push({kind:'fim',em:TODAY_ISO,user:me(),txt:`Suspensa até ${fd(F.retorno)}`});UI.modal=null;save();render();toast(`Suspensa até ${fd(F.retorno)}.`)}
-  if(f.dataset.form==='proposta'){const valor=money(F.valor);if(!valor){toast('Informe o valor.',true);return}
-    const lp=lastProp(p);if(lp&&lp.status==='Em análise')lp.status=F.autor==='Nós'?'Recusada':'Contraproposta';
-    const v=p.props.length+1;p.props.push({v,autor:F.autor,em:TODAY_ISO,valor,forma:F.forma,pct:Number(String(F.pct||'0').replace(',','.'))||0,cond:F.cond,status:F.autor==='Nós'?'Em análise':'Contraproposta'});
-    p.hist.push({kind:'prop',em:TODAY_ISO,user:me(),txt:`Proposta v${v} registrada: ${mi(valor)} (${F.autor==='Nós'?'nossa':'do proprietário'})`});
-    UI.showPropForm=false;save();render();toast(`Proposta v${v} registrada.`)}
-  if(f.dataset.form==='tarefa'){p.tarefas.push({id:'K'+Date.now(),t:F.t,resp:F.resp,prazo:F.prazo,feito:false});save();render();toast('Tarefa adicionada.')}
-  if(f.dataset.form==='ativ'){p.ativ.push({tipo:F.tipo,em:TODAY_ISO,user:me(),txt:F.txt});save();render();toast('Atividade registrada.')}
-});
+function seedVazio(){return {id:uid(),situacao:'ativo',prioridade:null,descricao:'',url:'',obs:'',cep:'',complemento:'',referencia:'',lat:null,lng:null,precisao:'nao_informada',aDoc:null,aCad:null,aLev:null,aEst:null,fonteArea:null,testada:null,topografia:'nao_informado',desnivel:null,posicao:'nao_informado',formato:'nao_informado',ocupacao:'nao_informado',uso:'',aConst:null,aDemolir:null,demolicao:'nao_avaliada',obsFis:'',eixo:null,mats:[],insc:[],pessoas:[],corretores:[],infra:{},analises:[],ofertas:[],neg:null,propostas:[],tarefas:[],docs:[],hist:[]}}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&UI.modal){UI.modal=null;renderModal()}});
-
 render();
 })();
 </script>
