@@ -6,10 +6,20 @@ Idioma do produto, do código de domínio e dos commits: português.
 
 ## Stack
 
-- Front: React 18 + TypeScript + Vite (`apps/web`), TanStack Query, react-router, supabase-js. Sem biblioteca de UI; estilos em `apps/web/src/styles.css`, portados do protótipo (`docs/prototipo.html`).
+- Front: React 18 + TypeScript + Vite (`apps/web`), TanStack Query, react-router, supabase-js. Sem biblioteca de UI; estilos em `apps/web/src/styles.css` (Design System BKM, ver "Visual").
 - Banco: Supabase (Postgres + Auth + Storage). Tudo no schema `app`, que precisa estar em **Settings → API → Exposed schemas**.
 - Deploy do front: Railway, via `Dockerfile` (build Vite + Caddy com fallback de SPA).
 - CI: GitHub Actions (`.github/workflows/ci.yml`): typecheck, build e testes de SQL.
+
+## Visual
+
+Segue o Design System BKM (artifact "Design System BKM", tema Claro). Tokens e componentes em `apps/web/src/styles.css`, idênticos aos do protótipo. Regras que valem em toda tela:
+
+- Fundo branco, texto marinho `#1d2e5c`, azul `#0094fe` só em detalhes (traço, marcador, ícone). Botão primário marinho, raio 12, altura mínima 48. Cards em azul-gelo `#e4ebf8`, raio 20, sem borda nem sombra.
+- Tipografia Aptos (fallback Segoe UI/system-ui), pesos 300/400/600/700. Manuscrita não entra em tela de trabalho.
+- Logo oficial (`public/marca/bkm-logo.svg`) com no mínimo 120 px. Ícones de linha BKM (`public/marca/icone-*.svg`) com no mínimo 32 px, para navegação e cabeçalhos; glifos de controle pequenos são desenhados no mesmo traço (linha, sem preenchimento).
+- O DS não define cores de status: ok = verde-sálvia/oliva, atenção = pêssego, crítico = terracota `#c67355`, info = azul-gelo. Vermelho e verde puros não entram.
+- Uma forma suave (casa em verde-claro) por tela, no máximo.
 
 Modelo de dados com diagramas: [docs/modelo.md](docs/modelo.md). Mantenha-o em dia ao mudar migrations.
 
