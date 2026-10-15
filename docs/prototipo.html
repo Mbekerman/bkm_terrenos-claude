@@ -461,6 +461,25 @@ button.tr:hover { background: rgba(255, 255, 255, .6) }
 .pend { list-style: none; margin: var(--e3) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--e1); font-size: 13px; color: var(--texto-suave) }
 .pend li { display: flex; gap: var(--e2); align-items: flex-start }
 .pend .ic { color: var(--terracota); margin-top: 2px }
+
+/* lista de terrenos: cada coluna centralizada (desktop) */
+@media (min-width: 900px) {
+  .tr.v2 { text-align: center }
+  .tr.v2 > span { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--e1); text-align: center }
+  .tr.v2 > span.r { text-align: center }
+  .tr.v2 .meta-sm { display: none }
+  .tr.v2 .temp-mini { margin: 0 auto }
+  .tr.v2 { grid-template-columns: 104px minmax(0, 2fr) 96px 120px 112px 184px minmax(0, 1.4fr) }
+  .tr.v2 > span { min-width: 0 }
+  .tr.v2 > span > div { max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere }
+  .tr.v2 .chip { max-width: 100% }
+  .tr.v2 .t1, .tr.v2 .t2 { white-space: normal; text-overflow: clip }
+}
+@media (min-width: 900px) and (max-width: 1100px) {
+  .tr.v2 { grid-template-columns: minmax(0, 2fr) 120px 112px 184px minmax(0, 1.3fr) }
+}
+.tr.v2 .c-etapa { display: flex; flex-direction: column; align-items: flex-end; gap: var(--e1) }
+@media (min-width: 900px) { .tr.v2 .c-etapa { align-items: center } }
 </style>
 <header class="top">
   <div class="top-in">
@@ -1041,7 +1060,7 @@ function linhas(){
     <span class="c-id faint num">${t.codigo}</span><span style="min-width:0"><div class="t1">${esc(t.nome)}</div><div class="t2">${esc([t.bairro,t.zona&&OPT.zona[t.zona]].filter(Boolean).join(' · '))}</div></span>
     <span class="c-area r num">${ad!=null?num(ad)+' m²':'<span class="faint">—</span>'}</span>
     <span class="c-val r num">${o?.valor?mi(o.valor):'—'}${o?.valor&&ad?`<div class="t2">${brl(o.valor/ad)}/m²</div>`:''}</span>
-    <span class="c-temp">${tempMini(t.neg?.temp)}</span><span>${chipNeg(t)}</span>
+    <span class="c-temp">${tempMini(t.neg?.temp)}</span><span class="c-etapa">${chipNeg(t)}</span>
     <span class="c-tar" style="min-width:0">${pt?`<div class="t2" style="color:var(--texto)">${esc(pt.titulo)}</div><div class="t2" style="${pt.prazo<HOJE?'color:var(--terracota);font-weight:600':''}">${fd(pt.prazo)}${at>1?` · ${at} atrasadas`:''}</div>`:'<span class="faint">—</span>'}</span>
     <span class="meta-sm">${t.codigo} · ${o?.valor?mi(o.valor):'sem valor'} · ${pt?'próx.: '+esc(pt.titulo):'sem tarefas'}</span></button>`}).join('');
 }

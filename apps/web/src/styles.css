@@ -460,5 +460,24 @@ button.tr:hover { background: rgba(255, 255, 255, .6) }
 .pend li { display: flex; gap: var(--e2); align-items: flex-start }
 .pend .ic { color: var(--terracota); margin-top: 2px }
 
+/* lista de terrenos: cada coluna centralizada (desktop) */
+@media (min-width: 900px) {
+  .tr.v2 { text-align: center }
+  .tr.v2 > span { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--e1); text-align: center }
+  .tr.v2 > span.r { text-align: center }
+  .tr.v2 .meta-sm { display: none }
+  .tr.v2 .temp-mini { margin: 0 auto }
+  .tr.v2 { grid-template-columns: 104px minmax(0, 2fr) 96px 120px 112px 184px minmax(0, 1.4fr) }
+  .tr.v2 > span { min-width: 0 }
+  .tr.v2 > span > div { max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere }
+  .tr.v2 .chip { max-width: 100% }
+  .tr.v2 .t1, .tr.v2 .t2 { white-space: normal; text-overflow: clip }
+}
+@media (min-width: 900px) and (max-width: 1100px) {
+  .tr.v2 { grid-template-columns: minmax(0, 2fr) 120px 112px 184px minmax(0, 1.3fr) }
+}
+.tr.v2 .c-etapa { display: flex; flex-direction: column; align-items: flex-end; gap: var(--e1) }
+@media (min-width: 900px) { .tr.v2 .c-etapa { align-items: center } }
+
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
