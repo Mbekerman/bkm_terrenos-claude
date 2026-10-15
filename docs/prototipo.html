@@ -2445,10 +2445,13 @@ function initMapa(){const el=$('#mapa');if(!el)return;
   L.control.scale({imperial:false,position:'bottomright'}).addTo(MAPA);
   setBase(UI.mpBase||'mapa');PINS=L.layerGroup().addTo(MAPA);POIS=L.layerGroup();DES=L.layerGroup().addTo(MAPA);if(UI.mpPoi!==false)POIS.addTo(MAPA);
   desenhaPins();desenhaPois();desenhaRascunho();el.classList.toggle('modo',!!UI.mpModo);
-  if(UI.mpView)MAPA.setView(UI.mpView.c,UI.mpView.z);else{const pts=ativosBanco().filter(t=>t.lat!=null).map(t=>[t.lat,t.lng]);pts.length?MAPA.fitBounds(pts,{padding:[60,60],maxZoom:15}):MAPA.setView([-23.55,-46.63],11)}
+  const vista=UI.mpView,enquadrar=()=>{if(vista)return MAPA.setView(vista.c,vista.z);const pts=ativosBanco().filter(t=>t.lat!=null).map(t=>[t.lat,t.lng]);pts.length?MAPA.fitBounds(pts,{padding:[48,48],maxZoom:15}):MAPA.setView([-23.55,-46.63],11)};
+  enquadrar();
+  // o contêiner só tem o tamanho final depois do layout: recalcula e reenquadra
+  const mapaAtual=MAPA;requestAnimationFrame(()=>setTimeout(()=>{if(MAPA!==mapaAtual)return;MAPA.invalidateSize();enquadrar();if(UI.mpFocoPend){const t=T(UI.mpFocoPend);UI.mpFocoPend=null;if(t&&t.lat!=null)focar(t)}},60));
   MAPA.on('moveend',()=>{UI.mpView={c:MAPA.getCenter(),z:MAPA.getZoom()}});
   MAPA.on('preclick',e=>mapaClique(e.latlng.lat,e.latlng.lng));
-  if(UI.mpFoco){const t=T(UI.mpFoco);UI.mpFoco=null;if(t&&t.lat!=null)focar(t)}
+  if(UI.mpFoco){UI.mpFocoPend=UI.mpFoco;UI.mpFoco=null}
 }
 function focar(t){if(!MAPA)return;UI.mpSel=t.id;if(t.poly)MAPA.fitBounds(t.poly,{maxZoom:18,padding:[40,40]});else MAPA.setView([t.lat,t.lng],Math.max(MAPA.getZoom(),16));
   desenhaPins();PINS.eachLayer(l=>{if(l._terreno===t.id)l.openPopup()})}
@@ -2588,7 +2591,9 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
 function initMini(){const el=$('#mini-mapa'),t=T(UI.id);if(!el||!t||t.lat==null)return;if(!window.L){el.innerHTML='<div class="mapa-erro">Mapa indisponível.</div>';return}
   MINI=L.map(el,{zoomControl:true,attributionControl:true,scrollWheelZoom:false,dragging:!L.Browser.mobile});
   camada('satelite',el.closest('.sec')).addTo(MINI);const k=sitMapa(t);
-  if(t.poly){L.polygon(t.poly,{color:'#0094fe',weight:2,fillOpacity:.2}).addTo(MINI);MINI.fitBounds(t.poly,{padding:[24,24],maxZoom:18})}else MINI.setView([t.lat,t.lng],17);
+  const enq=()=>t.poly?MINI.fitBounds(t.poly,{padding:[24,24],maxZoom:18}):MINI.setView([t.lat,t.lng],17);
+  if(t.poly)L.polygon(t.poly,{color:'#0094fe',weight:2,fillOpacity:.2}).addTo(MINI);enq();
+  const mini=MINI;requestAnimationFrame(()=>setTimeout(()=>{if(MINI!==mini)return;MINI.invalidateSize();enq()},60));
   L.marker([t.lat,t.lng],{icon:pinIcon(k)}).addTo(MINI)}
 
 /* ===================== TAREFAS (quadro) ===================== */
