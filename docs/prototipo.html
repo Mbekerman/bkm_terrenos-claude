@@ -1,5 +1,12 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="gmaps-key" content="{% env "GOOGLE_MAPS_KEY" %}">
 <title>BKM Terrenos</title>
-<meta name="claude:viewport-fit-sides" content="cover">
+</head>
+<body>
 <style>/* required styles */
 
 .leaflet-pane,
@@ -2637,3 +2644,5 @@ document.addEventListener('drop',e=>{const col=e.target.closest?.('.tk-col');if(
 render();
 })();
 </script>
+</body>
+</html>

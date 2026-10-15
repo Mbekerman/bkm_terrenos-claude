@@ -14,3 +14,4 @@ RUN npm run build
 FROM caddy:2-alpine
 COPY Caddyfile /etc/caddy/Caddyfile
 COPY --from=build /app/dist /srv
+COPY docs/prototipo.html /srv/prototipo/index.html

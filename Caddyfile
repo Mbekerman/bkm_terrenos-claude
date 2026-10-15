@@ -1,8 +1,30 @@
-# Railway define $PORT. Toda rota desconhecida devolve index.html (SPA).
+# Railway define $PORT.
 :{$PORT:8080} {
-	root * /srv
 	encode zstd gzip
-	header /assets/* Cache-Control "public, max-age=31536000, immutable"
-	try_files {path} /index.html
-	file_server
+
+	# Protótipo navegável. A chave do Google Maps vem da variável
+	# GOOGLE_MAPS_KEY do Railway e é injetada na hora (templates), nunca no repositório.
+	handle /prototipo* {
+		root * /srv/prototipo
+		uri strip_prefix /prototipo
+		header Cache-Control "no-cache"
+		templates {
+			mime text/html
+			between {% %}
+		}
+		try_files {path} /index.html
+		file_server
+	}
+
+	# Enquanto o banco não existe, a raiz leva ao protótipo. O app React fica em /app.
+	handle / {
+		redir /prototipo/ 302
+	}
+
+	handle {
+		root * /srv
+		header /assets/* Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} /index.html
+		file_server
+	}
 }
