@@ -31,6 +31,8 @@ npm run typecheck && npm run build
 
 Toda mudança de regra no banco vem com teste em `supabase/tests/regras.sql`.
 
+**Fase atual: estrutura em desenho, sem banco criado.** Enquanto nenhum projeto Supabase tiver recebido as migrations, altere os arquivos de `supabase/migrations/` no lugar (sem criar migrations novas de correção). O CI valida tudo do zero a cada push. Quando o primeiro banco for criado, esta regra acaba: a partir daí, toda mudança é uma migration nova.
+
 ## Decisões em aberto
 
 - **Mesmo projeto Supabase do BKM ou separado?** Hoje o schema `app` é independente, com `empresas`/`membros` próprios. Se unificar, `app.viabilidades` deixa de ser tabela e vira view sobre as viabilidades do BKM.
