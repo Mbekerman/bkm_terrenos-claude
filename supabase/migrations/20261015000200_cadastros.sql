@@ -120,6 +120,20 @@ insert into app.checklist_modelo (tipo_processo, etapa, tipo_documento, obrigato
 -- ---------------------------------------------------------------------
 -- Por empresa
 -- ---------------------------------------------------------------------
+-- Pontos de interesse da empresa (estações, terminais, escolas, a sede...),
+-- usados para medir a distância de cada terreno e traçar rotas.
+create table app.pontos_interesse (
+  id         uuid primary key default gen_random_uuid(),
+  empresa_id uuid not null references app.empresas(id),
+  nome       text not null check (length(trim(nome)) > 0),
+  categoria  text not null default 'outro' check (categoria in ('transporte','escola','saude','comercio','lazer','empresa','outro')),
+  latitude   double precision not null check (latitude between -90 and 90),
+  longitude  double precision not null check (longitude between -180 and 180),
+  ativo      boolean not null default true,
+  criado_em  timestamptz not null default now()
+);
+create index on app.pontos_interesse (empresa_id) where ativo;
+
 create table app.eixos_comerciais (
   id           uuid primary key default gen_random_uuid(),
   empresa_id   uuid not null references app.empresas(id),
@@ -180,7 +194,7 @@ begin
     execute format('create policy ver on app.%I for select to authenticated using (true)', t);
     execute format('grant select on app.%I to authenticated', t);
   end loop;
-  foreach t in array array['eixos_comerciais','pessoas','corretores'] loop
+  foreach t in array array['eixos_comerciais','pessoas','corretores','pontos_interesse'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
     execute format('create policy inserir on app.%I for insert to authenticated with check (empresa_id in (select app.empresas_edicao()))', t);

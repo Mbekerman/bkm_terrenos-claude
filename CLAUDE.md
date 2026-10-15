@@ -40,7 +40,7 @@ Modelo de dados com diagramas: [docs/modelo.md](docs/modelo.md). Mantenha-o em d
 ## Comandos
 
 ```bash
-bash supabase/tests/run.sh          # migrations + 140 testes de regra num Postgres 16 temporário
+bash supabase/tests/run.sh          # migrations + 151 testes de regra num Postgres 16 temporário
 cd apps/web && npm install
 npm run dev                          # precisa de apps/web/.env.local (ver .env.example)
 npm run typecheck && npm run build
@@ -48,12 +48,13 @@ npm run typecheck && npm run build
 
 Toda mudança de regra no banco vem com teste em `supabase/tests/regras.sql`.
 
-**Fase atual: estrutura em desenho, sem banco criado.** O front em `apps/web` foi escrito para a primeira versão do esquema e está desatualizado; será portado quando a estrutura assentar. Os fluxos são validados no protótipo (`docs/prototipo.html`). Enquanto nenhum projeto Supabase tiver recebido as migrations, altere os arquivos de `supabase/migrations/` no lugar (sem criar migrations novas de correção). O CI valida tudo do zero a cada push. Quando o primeiro banco for criado, esta regra acaba: a partir daí, toda mudança é uma migration nova.
+**Fase atual: estrutura em desenho, sem banco criado.** O front em `apps/web` foi escrito para a primeira versão do esquema e está desatualizado; será portado quando a estrutura assentar. Os fluxos são validados no protótipo (`docs/prototipo.html`). Para testá-lo localmente sem acesso a CDN, o workflow "Bibliotecas do protótipo" publica Leaflet e JSZip no branch `libs-prototipo`. Enquanto nenhum projeto Supabase tiver recebido as migrations, altere os arquivos de `supabase/migrations/` no lugar (sem criar migrations novas de correção). O CI valida tudo do zero a cada push. Quando o primeiro banco for criado, esta regra acaba: a partir daí, toda mudança é uma migration nova.
 
 ## Decisões em aberto
 
 - **Mesmo projeto Supabase do BKM ou separado?** Hoje o schema `app` é independente, com `empresas`/`membros` próprios. Se unificar, `app.viabilidades` deixa de ser tabela e vira view sobre as viabilidades do BKM.
-- PostGIS (polígono do terreno, busca por raio, deduplicação por proximidade) ainda não entrou; hoje a deduplicação é por matrícula + cartório e por endereço.
+- PostGIS (polígono do terreno, busca por raio, deduplicação por proximidade) ainda não entrou; hoje a deduplicação é por matrícula + cartório e por endereço, e a distância a pontos de interesse é haversine (`app.distancia_km`).
+- Mapa: Leaflet com fundos CARTO/OSM (mapa e ruas) e Esri (satélite). Google Maps entra só como link de rota; rota e distância calculadas pela API do Google exigem chave paga (Directions / Distance Matrix) e não estão ligadas. O link publicado do protótipo bloqueia imagens externas, então lá o fundo não aparece.
 - Alertas por e-mail e tarefas automáticas de vencimento (pg_cron) ainda não existem; o vencimento é calculado na hora pela view `v_documentos`.
 - Acesso externo (corretor, advogado) fora do escopo atual.
 - IA sobre atas: `documento_versoes.texto_extraido` já existe; faltam a extração (OCR/PDF) e o resumo/perguntas sobre a negociação (provável pgvector + função no servidor).

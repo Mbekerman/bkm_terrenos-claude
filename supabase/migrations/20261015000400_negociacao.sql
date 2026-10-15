@@ -155,11 +155,13 @@ create table app.tarefas (
   prioridade     text not null default 'media' check (prioridade in ('baixa','media','alta')),
   concluida_em   timestamptz,
   resultado      text,
+  posicao        double precision not null default extract(epoch from clock_timestamp()),  -- ordem no quadro (coluna = status)
   criado_por     uuid default auth.uid(),
   criado_em      timestamptz not null default now(),
   check ((status = 'concluida') = (concluida_em is not null))
 );
 create index on app.tarefas (terreno_id);
+create index on app.tarefas (empresa_id, status, posicao);
 create index on app.tarefas (empresa_id, prazo) where status not in ('concluida','cancelada');
 
 create or replace function app.tg_tarefa_conclusao()

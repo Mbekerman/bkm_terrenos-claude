@@ -230,6 +230,13 @@ erDiagram
     uuid evidencia_documento_id FK
     text providencia
   }
+  pontos_interesse {
+    uuid id PK
+    text nome
+    text categoria "transporte | escola | saude | comercio | lazer | empresa | outro"
+    float latitude
+    float longitude
+  }
   reunioes {
     uuid id PK
     uuid terreno_id FK
@@ -260,8 +267,20 @@ erDiagram
     text status "pendente | em_andamento | aguardando_terceiro | concluida | cancelada"
     text prioridade
     text resultado
+    float posicao "ordem no quadro de tarefas"
   }
 ```
+
+## Mapa, dashboard e quadro de tarefas
+
+| View / função | Para quê |
+| --- | --- |
+| `v_mapa` | um pin por terreno ativo, com `situacao_mapa` (sem negociação, etapa da negociação ativa, stand by, ganha ou perdida) e a poligonal |
+| `v_pontos_proximos` | pontos de interesse a até 15 km de cada terreno, com a distância em linha reta |
+| `distancia_km(lat1, lng1, lat2, lng2)` | haversine; rota de verdade vem do serviço de mapas |
+| `v_tarefas` | tarefa com código e nome do terreno e o atraso calculado; o quadro ordena por `status` e `posicao` |
+
+O dashboard agrega `v_terrenos` no front (filtro cruzado por clique). A poligonal continua em `terrenos.poligono_geojson`; importar KMZ/KML é feito no front e gravado por `salvar_terreno`.
 
 ## 3. Documentos
 

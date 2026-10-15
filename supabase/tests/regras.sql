@@ -286,9 +286,28 @@ insert into app.area_interesse_terrenos (area_interesse_id, terreno_id, empresa_
 select pg_temp.ok((select count(*) from app.area_interesse_terrenos where area_interesse_id = :'ai') = 2, 'área de interesse reúne dois terrenos');
 
 -- ---------------------------------------------------------------------
+\echo '# mapa, pontos de interesse e quadro de tarefas'
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude)
+  values (:'emp', 'Pin no mapa', :'gestor', 'prospeccao', :'sp', -23.6681, -46.6513) returning id as tm \gset
+insert into app.pontos_interesse (empresa_id, nome, categoria, latitude, longitude) values
+  (:'emp', 'Terminal Cidade Ademar', 'transporte', -23.6672, -46.6522),
+  (:'emp', 'Escritório Campinas', 'empresa', -22.9056, -47.0608);
+select pg_temp.ok((select app.distancia_km(-23.5505, -46.6333, -22.9056, -47.0608)) between 80 and 90, 'distância São Paulo–Campinas em linha reta');
+select pg_temp.ok((select count(*) from app.v_pontos_proximos where terreno_id = :'tm') = 1, 'só pontos a até 15 km entram como próximos');
+select pg_temp.ok((select distancia_km from app.v_pontos_proximos where terreno_id = :'tm') < 0.2, 'terminal a menos de 200 m');
+select pg_temp.ok((select situacao_mapa from app.v_mapa where id = :'tm') = 'sem_negociacao', 'pin sem negociação');
+select pg_temp.ok(not exists (select 1 from app.v_mapa where id = :'t1'), 'terreno arquivado sai do mapa');
+insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (:'emp', :'tm', 'Visitar o lote', current_date - 1) returning id as k1 \gset
+insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (:'emp', :'tm', 'Pedir matrícula', current_date + 5) returning id as k2 \gset
+select pg_temp.ok((select posicao from app.tarefas where id = :'k2') > (select posicao from app.tarefas where id = :'k1'), 'tarefa nova entra no fim da coluna');
+select pg_temp.ok((select atrasada and terreno_nome = 'Pin no mapa' from app.v_tarefas where id = :'k1'), 'quadro de tarefas mostra atraso e terreno');
+update app.tarefas set status = 'em_andamento', posicao = (select posicao from app.tarefas where id = :'k1') - 1 where id = :'k2';
+select pg_temp.ok((select status from app.tarefas where id = :'k2') = 'em_andamento', 'arrastar a tarefa muda o status');
+
+-- ---------------------------------------------------------------------
 \echo '# somente leitura'
 select pg_temp.como(:'leitor');
-select pg_temp.ok((select count(*) from app.v_terrenos) = 3, 'leitura vê os terrenos');
+select pg_temp.ok((select count(*) from app.v_terrenos) = 4, 'leitura vê os terrenos');
 select pg_temp.ok((select count(*) from app.v_inscricoes) = 1, 'leitura vê valor venal e IPTU');
 select pg_temp.falha(format($$insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (%L, %L, 'x', current_date)$$, :'emp', :'t2'), 'leitura não cria tarefa');
 select pg_temp.falha(format($$select app.salvar_terreno(%L, 1, '{"nome":"x"}')$$, :'t2'), 'leitura não edita terreno');
@@ -301,6 +320,7 @@ select pg_temp.ok((select count(*) from app.terrenos) = 0, 'outra pessoa não v�
 select pg_temp.ok((select count(*) from app.v_terrenos) = 0, 'outra pessoa não vê a listagem');
 select pg_temp.ok((select count(*) from app.v_inscricoes) = 0, 'outra pessoa não vê valor venal');
 select pg_temp.ok((select count(*) from app.v_reunioes) = 0, 'outra pessoa não vê reuniões');
+select pg_temp.ok((select count(*) from app.pontos_interesse) = 0 and (select count(*) from app.v_mapa) = 0, 'outra pessoa não vê mapa nem pontos de interesse');
 select pg_temp.falha(format('select app.checar_avanco(%L)', :'neg'), 'outra pessoa não acessa RPC');
 select pg_temp.falha(format($$insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (%L, %L, 'x', current_date)$$, :'emp', :'t2'), 'outra pessoa não grava tarefa');
 select pg_temp.ok((select count(*) from app.municipios) = 1, 'cadastros comuns continuam visíveis');
@@ -314,6 +334,7 @@ select id as ng from app.processos where terreno_id = :'t2' and status = 'ativo'
 select pg_temp.como(:'analista');
 select pg_temp.falha(format('select app.mover_para_etapa(%L, %L)', :'ng', 'negociacao'), 'arrastar duas etapas para frente checa cada uma');
 select pg_temp.ok((select etapa_atual from app.processos where id = :'ng') = 'recebido', 'falha no meio do caminho não muda nada');
+select pg_temp.ok((select situacao_mapa from app.v_mapa where id = :'t2') = 'recebido', 'pin da negociação ativa usa a etapa');
 select pg_temp.como(:'gestor');
 select app.mover_etapa(:'ng') \gset
 select app.mover_etapa(:'ng', true, 'Estudo em andamento') \gset
@@ -322,4 +343,5 @@ select app.mover_etapa(:'ng', true, 'Certidões na escritura') \gset
 select pg_temp.ok((select status = 'ganha' and etapa_atual = 'minutagem' from app.processos where id = :'ng'), 'fechamento vira status ganha e guarda a última etapa');
 select pg_temp.ok((select evento from app.processo_transicoes where processo_id = :'ng' order by em desc limit 1) = 'ganho', 'ganho vai para o histórico');
 select pg_temp.falha(format('select app.mover_etapa(%L)', :'ng'), 'negociação ganha não avança mais');
+select pg_temp.ok((select situacao_mapa from app.v_mapa where id = :'t2') = 'ganha', 'pin da negociação ganha');
 \echo 'TODOS OS TESTES PASSARAM'

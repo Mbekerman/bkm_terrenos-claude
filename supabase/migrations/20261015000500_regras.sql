@@ -147,8 +147,45 @@ left join lateral (
   order by prazo, prazo_hora nulls last limit 1
 ) nt on true;
 
+-- Distância em linha reta (haversine). Rota de verdade é com o serviço de mapas.
+create or replace function app.distancia_km(lat1 double precision, lng1 double precision, lat2 double precision, lng2 double precision)
+returns numeric language sql immutable parallel safe set search_path = '' as $$
+  select round((2 * 6371 * asin(sqrt(
+           power(sin(radians(lat2 - lat1) / 2), 2) +
+           cos(radians(lat1)) * cos(radians(lat2)) * power(sin(radians(lng2 - lng1) / 2), 2))))::numeric, 2)
+$$;
+
+-- Pins do mapa: situação que dá a cor (etapa da negociação ativa, ou o status).
+create view app.v_mapa with (security_invoker = true) as
+select v.id, v.empresa_id, v.codigo, v.nome, v.bairro, v.zona, v.municipio, v.corretor_principal,
+       t.latitude, t.longitude, t.precisao_localizacao, t.poligono_geojson,
+       v.area_adotada_m2, v.valor_pedido, v.temperatura, v.fase_negociacao,
+       case when v.processo_id is null then 'sem_negociacao'
+            when v.negociacao_status = 'ativo' then v.etapa_atual
+            else v.negociacao_status end as situacao_mapa
+from app.v_terrenos v
+join app.terrenos t on t.id = v.id
+where v.situacao_cadastral = 'ativo';
+
+-- Pontos de interesse a até 15 km de cada terreno localizado.
+create view app.v_pontos_proximos with (security_invoker = true) as
+select t.id as terreno_id, t.empresa_id, p.id as ponto_id, p.nome, p.categoria, p.latitude, p.longitude,
+       app.distancia_km(t.latitude, t.longitude, p.latitude, p.longitude) as distancia_km
+from app.terrenos t
+join app.pontos_interesse p on p.empresa_id = t.empresa_id and p.ativo
+where t.latitude is not null
+  and app.distancia_km(t.latitude, t.longitude, p.latitude, p.longitude) <= 15;
+
+-- Quadro de tarefas: tarefa com o terreno e o atraso calculado.
+create view app.v_tarefas with (security_invoker = true) as
+select k.*, t.codigo as terreno_codigo, t.nome as terreno_nome,
+       (k.status not in ('concluida','cancelada') and k.prazo < current_date) as atrasada
+from app.tarefas k
+join app.terrenos t on t.id = k.terreno_id;
+
 grant select on app.v_terreno_infraestrutura, app.v_inscricoes, app.v_urbanismo_vigente,
-                app.v_documentos, app.v_checklist, app.v_reunioes, app.v_terrenos to authenticated;
+                app.v_documentos, app.v_checklist, app.v_reunioes, app.v_terrenos,
+                app.v_mapa, app.v_pontos_proximos, app.v_tarefas to authenticated;
 
 -- ---------------------------------------------------------------------
 -- Duplicidade
@@ -662,7 +699,7 @@ end $$;
 -- ---------------------------------------------------------------------
 revoke execute on all functions in schema app from public;
 grant execute on function
-  app.geojson_poligono_valido(jsonb), app.minhas_empresas(), app.empresas_edicao(), app.papel(uuid), app.eh_membro(uuid), app.eh_gestor(uuid), app.exigir_membro(uuid), app.exigir_editor(uuid),
+  app.geojson_poligono_valido(jsonb), app.distancia_km(double precision, double precision, double precision, double precision), app.minhas_empresas(), app.empresas_edicao(), app.papel(uuid), app.eh_membro(uuid), app.eh_gestor(uuid), app.exigir_membro(uuid), app.exigir_editor(uuid),
   app.salvar_terreno(uuid, int, jsonb),
   app.criar_empresa(text, text),
   app.buscar_duplicados(uuid, text, text, text, text, text),
