@@ -1419,6 +1419,7 @@ body.dash-fixo .dash { position: fixed; inset: 0; z-index: 30; overflow: auto; p
 .gm-style .gm-style-iw-d { overflow: auto !important }
 .gm-style .pop { padding: 2px 4px 4px; min-width: 240px }
 .mapa .gm-style { font-family: var(--font-aptos) }
+.mapa-area.sv-on .mp-barra, .mapa-area.sv-on .mp-legenda, .mapa-area.sv-on .mp-modo, .mapa-area.sv-on .mp-rota { display: none }
 </style>
 <header class="top">
   <div class="top-in">
@@ -2057,7 +2058,7 @@ function go(route,x={}){Object.assign(UI,{route,edit:null,propForm:false,reuForm
 
 /* ===================== modais ===================== */
 function renderModal(){
-  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.novoLoc=null;UI.novoPoi=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;return}
+  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.novoLoc=null;UI.novoPoi=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;return}
   let h='';const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`;
   if(M==='novo')h=`<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Só o mínimo para entrar no radar. A ficha é completada aos poucos.</div></div>${fechar}</div>
   <form data-form="novo" id="f-novo"><div class="fields">${GG&&!UI.novoLoc?`<div class="field full"><label for="n-gauto-el">Buscar endereço no Google</label><div id="n-gauto" class="gauto"></div><span id="n-gauto-loc" class="hint">Escolha um resultado para preencher endereço e localização.</span></div>`:''}${UI.novoLoc?`<div class="field full"><div class="banner blue">${ic('check')}<div>Localização marcada no mapa: <span class="num">${num(UI.novoLoc.lat,5)}, ${num(UI.novoLoc.lng,5)}</span></div></div></div>`:''}
@@ -2098,6 +2099,7 @@ function renderModal(){
   if(M==='retornar'){const t=T(UI.alvo);h=`<div class="dh"><div><h2>Voltar para ${SN(UI.alvoEtapa)}?</h2><div class="muted" style="margin-top:4px">${esc(t.nome)} está em ${SN(t.neg.etapa)}.</div></div>${fechar}</div><form data-form="retornar" id="f-rt"><div class="field"><label for="rt-m">Motivo (vai para o histórico)</label><textarea id="rt-m" name="motivo" required placeholder="Ex.: vendedor reabriu o preço"></textarea></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-rt">Voltar etapa</button></div>`}
   if(M==='forcar')h=`<div class="dh"><div><h2>${UI.alvoEtapa?'Levar para '+SN(UI.alvoEtapa)+' sem os requisitos?':'Avançar sem os requisitos?'}</h2>${UI.alvoPend?`<ul class="pend">${UI.alvoPend.map(x=>`<li>${ic('close',16)}${esc(x)}</li>`).join('')}</ul>`:''}</div>${fechar}</div><form data-form="forcar" id="f-fc"><div class="field"><label for="fc-j">Justificativa (vai para o histórico)</label><textarea id="fc-j" name="j" required></textarea></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-fc">Avançar</button></div>`;
   if(M==='viab')h=`<div class="dh"><h2>Vincular estudo de viabilidade</h2>${fechar}</div><form data-form="viab" id="f-vb"><div class="fields"><div class="field full"><label for="vb-n">Nome</label><input id="vb-n" name="nome" value="Estudo base" required></div><div class="field"><label for="vb-v">VGV (R$)</label><input id="vb-v" name="vgv" inputmode="decimal"></div><div class="field"><label for="vb-m">Margem (%)</label><input id="vb-m" name="margem" inputmode="decimal"></div><div class="field full"><label for="vb-p">Preço máximo do terreno (R$)</label><input id="vb-p" name="pmax" inputmode="decimal" required></div></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-vb">Vincular</button></div>`;
+  if(M==='geo')h=geoModalHtml(fechar);
   if(M==='poi')h=`<div class="dh"><div><h2>Novo ponto de interesse</h2><div class="muted" style="margin-top:4px">Serve para medir a distância dos terrenos e traçar rotas.</div></div>${fechar}</div>
   <form data-form="poi" id="f-poi"><div class="fields"><div class="field full"><label for="po-n">Nome</label><input id="po-n" name="nome" required placeholder="Estação, escola, terminal..."></div>
   <div class="field"><label for="po-c">Categoria</label><select id="po-c" name="cat">${Object.entries(CAT_POI).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
@@ -2184,6 +2186,7 @@ document.addEventListener('click',e=>{
     case 'mp-rota-limpar':gLimparRota();break;
     case 'g-relevo':{const x=T(a.dataset.id);a.disabled=true;a.textContent='Consultando o Google...';gRelevo(x);break}
     case 'g-relevo-usar':{const x=T(a.dataset.id);x.desnivel=+x.relevo.desnivel.toFixed(1);log(x,`Desnível estimado: ${num(x.desnivel,1)} m (Google)`);save();render();toast('Desnível estimado atualizado na ficha.');break}
+    case 'g-geo-ok':{const g=UI.geo,x=T(g.tid);Object.assign(x,{lat:g.lat,lng:g.lng,precisao:g.exato&&!g.bairroDif?'conferida':'aproximada'});log(x,`Localização pelo endereço (Google): ${g.end}`);UI.modal=null;save();render();toast('Localização gravada.');break}
     case 'g-geo':{const x=T(a.dataset.id);a.disabled=true;gGeocodificar(x);break}
     case 'sort':ordenar(a.dataset.t,a.dataset.k);render();break;
     case 'mp-foco':{const x=T(a.dataset.id);if(x.lat!=null)focar(x);else if(UI.role!=='Leitura'){UI.mpModo='marcar';UI.mpAlvo=x.id;mpRefresh()}else toast('Terreno sem localização.');break}
@@ -2726,7 +2729,7 @@ function gAbrirInfo(t,ancora){if(!gInfo)return;const d=document.createElement('d
 function G_desenhaPins(){if(!MAPA)return;gSet(gPins,null);gPins=[];const {AdvancedMarkerElement}=gLib.marker;
   mpVisiveis().filter(t=>t.lat!=null).forEach(t=>{const k=sitMapa(t);
     const mk=new AdvancedMarkerElement({map:MAPA,position:gLL(t.lat,t.lng),content:gPinEl(k,UI.mpSel===t.id),title:t.nome,gmpClickable:!UI.mpModo,zIndex:UI.mpSel===t.id?10:1});
-    mk.addListener('click',()=>gAbrirInfo(t,mk));mk._terreno=t.id;gPins.push(mk);
+    mk.addEventListener('gmp-click',()=>gAbrirInfo(t,mk));mk._terreno=t.id;gPins.push(mk);
     if(t.poly){const pg=new google.maps.Polygon({map:MAPA,paths:t.poly.map(p=>gLL(p[0],p[1])),strokeColor:SIT[k][1],strokeWeight:2,fillColor:SIT[k][1],fillOpacity:.18,clickable:!UI.mpModo});
       pg.addListener('click',()=>gAbrirInfo(t,mk));gPins.push(pg)}})}
 function G_desenhaPois(){if(!MAPA)return;gSet(gPois,null);gPois=[];const {AdvancedMarkerElement}=gLib.marker;
@@ -2745,6 +2748,7 @@ function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[]
   el.classList.toggle('modo',!!UI.mpModo);G_desenhaPins();G_desenhaPois();G_desenhaRascunho();
   if(!v)gEnquadrar(ativosBanco().filter(t=>t.lat!=null).map(t=>gLL(t.lat,t.lng)),15);
   MAPA.addListener('idle',()=>{const c=MAPA.getCenter();UI.mpView={c:{lat:c.lat(),lng:c.lng()},z:MAPA.getZoom()}});
+  MAPA.getStreetView().addListener('visible_changed',()=>$('.mapa-area')?.classList.toggle('sv-on',MAPA.getStreetView().getVisible()));
   MAPA.addListener('click',e=>{if(UI.mpModo&&e.latLng)mapaClique(e.latLng.lat(),e.latLng.lng());else gInfo.close()});
   if(UI.mpFoco){const t=T(UI.mpFoco);UI.mpFoco=null;if(t&&t.lat!=null)google.maps.event.addListenerOnce(MAPA,'idle',()=>G_focar(t))}
 }
@@ -2779,12 +2783,12 @@ async function gRotaAte(t,p,modo='DRIVE'){gLimparRota();let km,min,path;
   $('.mapa-area')?.appendChild(b)}
 
 /* ---------- entorno (Places API New) ---------- */
-const ENTORNO_TIPOS={subway_station:'transporte',train_station:'transporte',bus_station:'transporte',transit_station:'transporte',school:'escola',university:'escola',hospital:'saude',supermarket:'comercio',shopping_mall:'comercio',park:'lazer'};
+const ENTORNO_TIPOS={subway_station:'transporte',train_station:'transporte',bus_station:'transporte',transit_station:'transporte',light_rail_station:'transporte',bus_stop:'transporte',school:'escola',university:'escola',hospital:'saude',supermarket:'comercio',shopping_mall:'comercio',park:'lazer'};
 async function gEntornoDe(t){gSet(gEntorno,null);gEntorno=[];
   try{const {Place,SearchNearbyRankPreference}=gLib.places;
-    const {places}=await Place.searchNearby({fields:['id','displayName','location','primaryType','formattedAddress'],locationRestriction:{center:gLL(t.lat,t.lng),radius:2000},
+    const {places}=await Place.searchNearby({fields:['id','displayName','location','primaryType','types','formattedAddress'],locationRestriction:{center:gLL(t.lat,t.lng),radius:2000},
       includedPrimaryTypes:Object.keys(ENTORNO_TIPOS),maxResultCount:20,rankPreference:SearchNearbyRankPreference.DISTANCE,language:'pt-BR',region:'br'});
-    UI.entorno={tid:t.id,itens:(places||[]).map(p=>({gid:p.id,nome:p.displayName,cat:ENTORNO_TIPOS[p.primaryType]||'outro',tipo:p.primaryType,lat:p.location.lat(),lng:p.location.lng(),end:p.formattedAddress,d:distKm(t.lat,t.lng,p.location.lat(),p.location.lng())}))};
+    UI.entorno={tid:t.id,itens:(places||[]).map(p=>({gid:p.id,nome:p.displayName,cat:ENTORNO_TIPOS[p.primaryType]||(p.types||[]).map(x=>ENTORNO_TIPOS[x]).find(Boolean)||'outro',tipo:p.primaryType,lat:p.location.lat(),lng:p.location.lng(),end:p.formattedAddress,d:distKm(t.lat,t.lng,p.location.lat(),p.location.lng())}))};
     const {AdvancedMarkerElement}=gLib.marker;
     UI.entorno.itens.forEach(p=>{const d=document.createElement('div');d.className='ent g';d.textContent=(CAT_POI[p.cat]||'?')[0];
       gEntorno.push(new AdvancedMarkerElement({map:MAPA,position:gLL(p.lat,p.lng),content:d,title:`${p.nome} · ${fKm(p.d)}`}))});
@@ -2800,10 +2804,15 @@ function entornoHtml(){const e=UI.entorno;if(!e||!GG)return '';const t=T(e.tid);
 /* ---------- geocodificação (endereço → coordenada) ---------- */
 async function gGeocodificar(t){const end=[t.logradouro&&(t.logradouro+(t.numero?', '+t.numero:'')),t.bairro,'São Paulo - SP',t.cep].filter(Boolean).join(', ');
   try{const {results}=await new google.maps.Geocoder().geocode({address:end,region:'br'});if(!results?.length)throw new Error('não encontrado');
-    const r=results[0],loc=r.geometry.location;Object.assign(t,{lat:loc.lat(),lng:loc.lng(),precisao:r.geometry.location_type==='ROOFTOP'?'conferida':'aproximada'});
-    log(t,`Localização pelo endereço (Google): ${r.formatted_address}`);save();render();toast(`Localizado: ${r.formatted_address}`)}
-  catch(e){toast(`O Google não encontrou o endereço "${end}".`,true)}}
-
+    const r=results[0],loc=r.geometry.location,bairroG=r.address_components.find(c=>c.types.some(x=>x.startsWith('sublocality')))?.long_name||'';
+    UI.geo={tid:t.id,lat:loc.lat(),lng:loc.lng(),end:r.formatted_address,busca:end,exato:r.geometry.location_type==='ROOFTOP'&&!r.partial_match,
+      bairroDif:!!(t.bairro&&bairroG&&bairroG.toLowerCase()!==t.bairro.toLowerCase())};UI.modal='geo';renderModal()}
+  catch(e){toast(`O Google não encontrou o endereço "${end}".`,true);render()}}
+function geoModalHtml(fechar){const g=UI.geo,t=T(g.tid);
+  return `<div class="dh"><div><h2>Confirmar a localização?</h2><div class="muted" style="margin-top:4px">${esc(t.nome)}</div></div>${fechar}</div>
+  <dl class="kvl"><div class="kv"><dt>Buscado</dt><dd>${esc(g.busca)}</dd></div><div class="kv"><dt>O Google encontrou</dt><dd>${esc(g.end)}</dd></div></dl>
+  ${g.bairroDif||!g.exato?`<div class="banner warn">${ic('warn')}<div>${g.bairroDif?'O bairro encontrado é diferente do cadastrado. ':''}${!g.exato?'O Google não achou o número exato; o ponto é aproximado. ':''}Confira antes de usar ou marque no mapa.</div></div>`:''}
+  <div class="df"><button class="btn text" data-a="mp-marcar" data-id="${t.id}">Marcar no mapa</button><button class="btn primary" data-a="g-geo-ok">Usar esta localização</button></div>`}
 /* ---------- relevo (Elevation API) ---------- */
 async function gRelevo(t){let pts=[];
   if(t.poly&&t.poly.length>=3){const pg=new google.maps.Polygon({paths:t.poly.map(p=>gLL(p[0],p[1]))});const la=t.poly.map(p=>p[0]),lo=t.poly.map(p=>p[1]);
