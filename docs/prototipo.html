@@ -450,6 +450,17 @@ button.tr:hover { background: rgba(255, 255, 255, .6) }
 .final-tg:has(input:checked) { color: var(--texto); font-weight: 600 }
 .ro .final-tg { pointer-events: none }
 .board .col { flex: 1 0 208px }
+
+/* ---- kanban ---- */
+.board { align-items: stretch }
+.col[data-col] { min-height: 360px }
+.kcard[draggable="true"] { cursor: grab }
+.kcard.arrastando { opacity: .4; cursor: grabbing }
+.col.sobre { box-shadow: inset 0 0 0 2px var(--azul-bkm) }
+.col.enc.sobre { box-shadow: inset 0 0 0 2px var(--azul-bkm) }
+.pend { list-style: none; margin: var(--e3) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--e1); font-size: 13px; color: var(--texto-suave) }
+.pend li { display: flex; gap: var(--e2); align-items: flex-start }
+.pend .ic { color: var(--terracota); margin-top: 2px }
 </style>
 <header class="top">
   <div class="top-in">
@@ -1040,9 +1051,10 @@ function pgTerrenos(){
   <div class="tbl" id="rows">${linhas()}</div>`;
 }
 function pgNeg(){
-  const cols=[...STAGES.map(([k,l])=>[l,t=>t.neg&&t.neg.etapa===k&&t.neg.status==='ativo','']),['Stand by',t=>t.neg?.status==='stand_by','enc']];
-  return `<div class="page-h"><div><h1><span class="marca"></span>Negociações</h1><div class="sub">Quadro por etapa. Ganhas e perdidas saem do quadro.</div></div></div><div class="legenda" aria-label="Fases da negociação">${['proposta_enviada','contraproposta','negociacoes_finais'].map(k=>`<span class="lg ${k}"><span class="d"></span>${FASES[k]}</span>`).join('')}</div><div class="board">${cols.map(([l,f,cls])=>{const ts=S.terrenos.filter(f);
-  return `<section class="col ${cls}"><div class="col-h"><span>${l}</span><span class="n">${ts.length}</span></div>${ts.map(t=>{const o=ofertaRef(t),lp=lastProp(t),pr=proxReuniao(t);const f=fase(t);return `<button class="kcard ${f||''}" data-a="abrir" data-id="${t.id}" data-from="negociacoes">${f&&f!=='sem_proposta'?`<span class="kfase">${FASES[f]}</span>`:''}<div class="kr"><span class="num faint">${t.codigo}</span>${tempMini(t.neg.temp)}</div><div class="kt">${esc(t.nome)}</div><div class="ks">${esc(t.bairro||'')}${cls?' · parou em '+SN(t.neg.etapa):''}</div>
+  const cols=[...STAGES.map(([k,l])=>[l,t=>t.neg&&t.neg.etapa===k&&t.neg.status==='ativo','',k]),['Stand by',t=>t.neg?.status==='stand_by','enc','stand_by']];
+  const arrasta=UI.role!=='Leitura';
+  return `<div class="page-h"><div><h1><span class="marca"></span>Negociações</h1><div class="sub">Arraste os cards entre as colunas para mudar a etapa. Ganhas e perdidas saem do quadro.</div></div></div><div class="legenda" aria-label="Fases da negociação">${['proposta_enviada','contraproposta','negociacoes_finais'].map(k=>`<span class="lg ${k}"><span class="d"></span>${FASES[k]}</span>`).join('')}</div><div class="board" id="board">${cols.map(([l,f,cls,k])=>{const ts=S.terrenos.filter(f);
+  return `<section class="col ${cls}" data-col="${k}" aria-label="${l}"><div class="col-h"><span>${l}</span><span class="n">${ts.length}</span></div>${ts.map(t=>{const o=ofertaRef(t),lp=lastProp(t),pr=proxReuniao(t);const f=fase(t);return `<button class="kcard ${f||''}" data-a="abrir" data-id="${t.id}" data-from="negociacoes" ${arrasta?'draggable="true"':''}>${f&&f!=='sem_proposta'?`<span class="kfase">${FASES[f]}</span>`:''}<div class="kr"><span class="num faint">${t.codigo}</span>${tempMini(t.neg.temp)}</div><div class="kt">${esc(t.nome)}</div><div class="ks">${esc(t.bairro||'')}${cls?' · parou em '+SN(t.neg.etapa):''}</div>
   <div class="kr"><span>${lp?'Prop. '+mi(lp.valor):'Pedido '+(o?.valor?mi(o.valor):'—')}</span>${atrasadas(t).length?`<span class="flag crit">${ic('clock',14)}${atrasadas(t).length}</span>`:''}${acimaMax(t)?`<span class="flag warn">${ic('money',14)}</span>`:''}</div>${pr?`<div class="kr"><span class="faint">Reunião ${fd(pr.data)} · ${pr.hora}</span></div>`:''}<div class="kr">${av(t.resp,'sm')}<span class="faint">${cls?(t.neg.status==='stand_by'?'revisitar '+fd(t.neg.retomar):''):diff(t.neg.desde,HOJE)+' d na etapa'}</span></div></button>`}).join('')||'<div class="col-empty">Nenhuma</div>'}</section>`}).join('')}</div>`;
 }
 function pgInicio(){
@@ -1079,7 +1091,7 @@ function go(route,x={}){Object.assign(UI,{route,edit:null,propForm:false,reuForm
 
 /* ===================== modais ===================== */
 function renderModal(){
-  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';return}
+  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;return}
   let h='';const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`;
   if(M==='novo')h=`<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Só o mínimo para entrar no radar. A ficha é completada aos poucos.</div></div>${fechar}</div>
   <form data-form="novo" id="f-novo"><div class="fields">
@@ -1117,7 +1129,8 @@ function renderModal(){
     <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-of">Registrar</button></div>`;
   if(M==='perder')h=`<div class="dh"><h2>Encerrar como perdida</h2>${fechar}</div><form data-form="perder" id="f-p"><div class="fields"><div class="field full"><label for="pd-m">Motivo</label><select id="pd-m" name="motivo" required><option value="">Escolha</option>${['Preço acima do teto da viabilidade','Zoneamento ou legislação','Documentação ou pendência jurídica','Vendedor desistiu','Perdido para concorrente','Outro'].map(x=>`<option>${x}</option>`).join('')}</select></div><div class="field full"><label for="pd-d">Detalhe</label><textarea id="pd-d" name="detalhe"></textarea></div></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-p">Encerrar</button></div>`;
   if(M==='suspender')h=`<div class="dh"><h2>Colocar em stand by</h2>${fechar}</div><form data-form="suspender" id="f-s"><div class="fields"><div class="field"><label for="sp-d">Revisitar em</label><input id="sp-d" name="retomar" type="date" min="${addD(HOJE,1)}" value="${addD(HOJE,30)}" required></div><div class="field full"><label for="sp-t">Motivo</label><textarea id="sp-t" name="detalhe" required></textarea></div></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-s">Colocar em stand by</button></div>`;
-  if(M==='forcar')h=`<div class="dh"><h2>Avançar sem os requisitos?</h2>${fechar}</div><form data-form="forcar" id="f-fc"><div class="field"><label for="fc-j">Justificativa (vai para o histórico)</label><textarea id="fc-j" name="j" required></textarea></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-fc">Avançar</button></div>`;
+  if(M==='retornar'){const t=T(UI.alvo);h=`<div class="dh"><div><h2>Voltar para ${SN(UI.alvoEtapa)}?</h2><div class="muted" style="margin-top:4px">${esc(t.nome)} está em ${SN(t.neg.etapa)}.</div></div>${fechar}</div><form data-form="retornar" id="f-rt"><div class="field"><label for="rt-m">Motivo (vai para o histórico)</label><textarea id="rt-m" name="motivo" required placeholder="Ex.: vendedor reabriu o preço"></textarea></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-rt">Voltar etapa</button></div>`}
+  if(M==='forcar')h=`<div class="dh"><div><h2>${UI.alvoEtapa?'Levar para '+SN(UI.alvoEtapa)+' sem os requisitos?':'Avançar sem os requisitos?'}</h2>${UI.alvoPend?`<ul class="pend">${UI.alvoPend.map(x=>`<li>${ic('close',16)}${esc(x)}</li>`).join('')}</ul>`:''}</div>${fechar}</div><form data-form="forcar" id="f-fc"><div class="field"><label for="fc-j">Justificativa (vai para o histórico)</label><textarea id="fc-j" name="j" required></textarea></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-fc">Avançar</button></div>`;
   if(M==='viab')h=`<div class="dh"><h2>Vincular estudo de viabilidade</h2>${fechar}</div><form data-form="viab" id="f-vb"><div class="fields"><div class="field full"><label for="vb-n">Nome</label><input id="vb-n" name="nome" value="Estudo base" required></div><div class="field"><label for="vb-v">VGV (R$)</label><input id="vb-v" name="vgv" inputmode="decimal"></div><div class="field"><label for="vb-m">Margem (%)</label><input id="vb-m" name="margem" inputmode="decimal"></div><div class="field full"><label for="vb-p">Preço máximo do terreno (R$)</label><input id="vb-p" name="pmax" inputmode="decimal" required></div></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-vb">Vincular</button></div>`;
   el.innerHTML=`<div class="scrim" data-a="scrim"><div class="dialog" role="dialog" aria-modal="true">${h}</div></div>`;
   const f=el.querySelector('input:not([type=hidden]),select');if(f)setTimeout(()=>f.focus(),30);
@@ -1196,7 +1209,7 @@ document.addEventListener('input',e=>{const el=e.target;
   if(el.form?.dataset.form==='novo')dedupe();
   if(el.id==='pp-v'){const t=T(UI.id),v=lerNum(el.value),w=$('#pp-warn');w.innerHTML=t.neg.viab&&v>t.neg.viab.pmax?`<div class="banner warn">${ic('warn')}<div>${brl(v)} fica ${mi(v-t.neg.viab.pmax)} acima do preço máximo (${mi(t.neg.viab.pmax)}).</div></div>`:''}
 });
-document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Object.fromEntries(new FormData(f)),t=UI.route==='terreno'?T(UI.id):null;
+document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Object.fromEntries(new FormData(f)),t=UI.alvo?T(UI.alvo):UI.route==='terreno'?T(UI.id):null;
   switch(f.dataset.form){
     case 'sec':{const s=SECOES[f.dataset.s];s.campos.forEach(([k,,tipo])=>{if(tipo==='fixo'||!(k in F))return;let v=F[k].trim();if(['m2','m','dec'].includes(tipo))v=lerNum(v);else if(tipo==='sel'&&v==='')v=k==='precisao'?'nao_informada':['topografia','posicao','formato','ocupacao'].includes(k)?'nao_informado':k==='demolicao'?'nao_avaliada':null;else if(v==='')v=k==='nome'?t.nome:null;t[k]=v});
       if(t.aDemolir!=null&&t.aConst!=null&&t.aDemolir>t.aConst){toast('A área a demolir não pode passar da área construída.',true);return}
@@ -1248,12 +1261,39 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       UI.modal=null;save();render();toast('Oferta registrada.');break}
     case 'perder':Object.assign(t.neg,{status:'perdida',motivo:F.motivo,detalhe:F.detalhe});log(t,'Perdida: '+F.motivo);UI.modal=null;save();render();break;
     case 'suspender':Object.assign(t.neg,{status:'stand_by',retomar:F.retomar});log(t,'Stand by até '+fd(F.retomar)+(F.detalhe?' · '+F.detalhe:''));UI.modal=null;save();render();break;
-    case 'forcar':{const r=checkAdv(t);if(r.next[0]==='ganha')t.neg.status='ganha';else{t.neg.etapa=r.next[0];t.neg.desde=HOJE}log(t,`${r.next[0]==='ganha'?'Negociação ganha':'Avançou para '+r.next[1]} sem requisitos: ${F.j}`);UI.modal=null;save();render();break}
+    case 'retornar':{const de=t.neg.etapa;t.neg.etapa=UI.alvoEtapa;t.neg.desde=HOJE;log(t,`Voltou de ${SN(de)} para ${SN(UI.alvoEtapa)}: ${F.motivo}`);UI.modal=null;save();render();toast(`Voltou para ${SN(t.neg.etapa)}.`);break}
+    case 'forcar':if(UI.alvoEtapa){const res=levarAte(t,UI.alvoEtapa,F.j);UI.modal=null;save();render();toast(res.ok?`Movida para ${SN(t.neg.etapa)}.`:res.msg,!res.ok);break}{const r=checkAdv(t);if(r.next[0]==='ganha')t.neg.status='ganha';else{t.neg.etapa=r.next[0];t.neg.desde=HOJE}log(t,`${r.next[0]==='ganha'?'Negociação ganha':'Avançou para '+r.next[1]} sem requisitos: ${F.j}`);UI.modal=null;save();render();break}
     case 'viab':t.neg.viab={nome:F.nome,vgv:lerNum(F.vgv),margem:lerNum(F.margem),pmax:lerNum(F.pmax),em:HOJE};log(t,'Estudo vinculado');UI.modal=null;save();render();break;
   }
 });
 function seedVazio(){return {id:uid(),situacao:'ativo',prioridade:null,descricao:'',url:'',obs:'',cep:'',complemento:'',referencia:'',lat:null,lng:null,precisao:'nao_informada',aDoc:null,aCad:null,aLev:null,aEst:null,fonteArea:null,testada:null,topografia:'nao_informado',desnivel:null,posicao:'nao_informado',formato:'nao_informado',ocupacao:'nao_informado',uso:'',aConst:null,aDemolir:null,demolicao:'nao_avaliada',obsFis:'',eixo:null,mats:[],insc:[],confr:[],dilig:[],pessoas:[],corretores:[],infra:{},analises:[],ofertas:[],neg:null,propostas:[],reunioes:[],tarefas:[],docs:[],hist:[]}}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&UI.modal){UI.modal=null;renderModal()}});
+/* ===================== kanban: arrastar e soltar ===================== */
+// Mesmo comportamento de app.mover_para_etapa: para frente passa por cada etapa com as regras de avanço
+// (falhou uma, nada muda); para trás pede motivo.
+function levarAte(t,alvo,forcarJust){
+  const orig={etapa:t.neg.etapa,desde:t.neg.desde},passos=[];
+  while(SIDX(t.neg.etapa)<SIDX(alvo)){const r=checkAdv(t);
+    if(!r.ok){const pend=r.items.filter(x=>!x.ok).map(x=>x.txt);
+      if(forcarJust&&r.forcar){passos.push([t.neg.etapa,r.next[0],true]);t.neg.etapa=r.next[0];continue}
+      Object.assign(t.neg,orig);return {ok:false,etapa:r.next[0],pend,podeForcar:r.forcar,msg:`Para ir para ${r.next[1]}: ${pend[0]}${pend.length>1?` (+${pend.length-1})`:''}`}}
+    passos.push([t.neg.etapa,r.next[0],false]);t.neg.etapa=r.next[0]}
+  t.neg.desde=HOJE;passos.forEach(([de,para,f])=>log(t,`Avançou para ${SN(para)}${f?' sem requisitos: '+forcarJust:''}`));return {ok:true}}
+function soltar(id,col){const t=T(id);if(!t||!t.neg||UI.role==='Leitura')return;const n=t.neg;
+  if(col==='stand_by'){if(n.status==='ativo'){UI.alvo=id;UI.modal='suspender';renderModal()}return}
+  if(n.status==='stand_by'){n.status='ativo';n.retomar=null;log(t,'Negociação retomada');if(n.etapa===col){save();render();toast('Negociação retomada.');return}}
+  if(n.status!=='ativo'||n.etapa===col){save();render();return}
+  if(SIDX(col)<SIDX(n.etapa)){save();render();UI.alvo=id;UI.alvoEtapa=col;UI.modal='retornar';renderModal();return}
+  const res=levarAte(t,col);
+  if(res.ok){save();render();toast(`${t.nome}: ${SN(col)}.`);return}
+  save();render();
+  if(res.podeForcar){UI.alvo=id;UI.alvoEtapa=col;UI.alvoPend=res.pend;UI.modal='forcar';renderModal()}else toast(res.msg,true)}
+let arrastando=null;
+document.addEventListener('dragstart',e=>{const c=e.target.closest?.('.kcard[draggable="true"]');if(!c)return;arrastando=c.dataset.id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',arrastando);c.classList.add('arrastando');document.body.classList.add('dnd')});
+document.addEventListener('dragend',e=>{arrastando=null;document.body.classList.remove('dnd');document.querySelectorAll('.arrastando,.col.sobre').forEach(x=>x.classList.remove('arrastando','sobre'))});
+document.addEventListener('dragover',e=>{const col=e.target.closest?.('.col[data-col]');if(!col||!arrastando)return;e.preventDefault();e.dataTransfer.dropEffect='move';
+  document.querySelectorAll('.col.sobre').forEach(x=>x!==col&&x.classList.remove('sobre'));col.classList.add('sobre')});
+document.addEventListener('drop',e=>{const col=e.target.closest?.('.col[data-col]');if(!col||!arrastando)return;e.preventDefault();const id=arrastando;arrastando=null;document.body.classList.remove('dnd');col.classList.remove('sobre');soltar(id,col.dataset.col)});
 render();
 })();
 </script>

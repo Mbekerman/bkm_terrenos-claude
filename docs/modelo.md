@@ -20,6 +20,8 @@ Dentro de **Negociação**, a fase colore o card (`v_terrenos.fase_negociacao`),
 | Negociação | última proposta aceita; entrar em Minutagem é aprovação de compra (gestor) |
 | Minutagem (concluir como ganha) | certidões e minuta validadas, nenhuma diligência impeditiva, gestor |
 
+O quadro é um kanban: arrastar um card chama `app.mover_para_etapa`. Para frente, passa por cada etapa com as regras acima (se uma falhar, nada muda; o gestor pode forçar com justificativa). Para trás, exige motivo e registra `retorno` no histórico. Soltar no Stand By pede data e motivo; tirar do Stand By retoma a negociação.
+
 ## 1. Terreno e cadastro do imóvel
 
 ```mermaid

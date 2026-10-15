@@ -221,6 +221,13 @@ select pg_temp.ok((select diligencias_impeditivas from app.v_terrenos where id =
 update app.diligencias set situacao = 'resolvida', providencia = 'Laudo de passivo ambiental negativo' where id = :'dg';
 select pg_temp.ok((select resolvida_em is not null from app.diligencias where id = :'dg'), 'resolver preenche a data');
 select pg_temp.ok(not ((app.checar_avanco(:'neg')->'itens') @> '[{"tipo":"diligencia"}]'), 'diligência resolvida sai das pendências');
+select pg_temp.falha(format('select app.mover_para_etapa(%L, %L)', :'neg', 'negociacao'), 'voltar de etapa exige motivo');
+select app.mover_para_etapa(:'neg', 'negociacao', false, 'Vendedor reabriu o preço') \gset
+select pg_temp.ok((select etapa_atual from app.processos where id = :'neg') = 'negociacao', 'arrastar para trás volta a etapa');
+select pg_temp.ok((select evento from app.processo_transicoes where processo_id = :'neg' order by em desc limit 1) = 'retorno', 'retorno vai para o histórico');
+select pg_temp.falha(format('select app.mover_para_etapa(%L, %L)', :'neg', 'ganha'), 'ganha não é destino de arrastar');
+select app.mover_para_etapa(:'neg', 'minutagem', true, 'Aceite verbal mantido') \gset
+select pg_temp.ok((select etapa_atual from app.processos where id = :'neg') = 'minutagem', 'gestor arrasta de volta à Minutagem forçando');
 
 -- ---------------------------------------------------------------------
 \echo '# reuniões e atas'
@@ -304,6 +311,10 @@ select pg_temp.ok((select count(*) from app.auditoria where tabela = 'terrenos')
 \echo '# fechamento como ganha'
 select app.registrar_oferta(:'t2', 3000000) \gset
 select id as ng from app.processos where terreno_id = :'t2' and status = 'ativo' \gset
+select pg_temp.como(:'analista');
+select pg_temp.falha(format('select app.mover_para_etapa(%L, %L)', :'ng', 'negociacao'), 'arrastar duas etapas para frente checa cada uma');
+select pg_temp.ok((select etapa_atual from app.processos where id = :'ng') = 'recebido', 'falha no meio do caminho não muda nada');
+select pg_temp.como(:'gestor');
 select app.mover_etapa(:'ng') \gset
 select app.mover_etapa(:'ng', true, 'Estudo em andamento') \gset
 select app.mover_etapa(:'ng', true, 'Aceite por e-mail') \gset

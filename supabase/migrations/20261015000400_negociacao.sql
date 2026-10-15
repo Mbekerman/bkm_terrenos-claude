@@ -105,7 +105,7 @@ create table app.processo_transicoes (
   id          uuid primary key default gen_random_uuid(),
   empresa_id  uuid not null references app.empresas(id),
   processo_id uuid not null references app.processos(id) on delete cascade,
-  evento      text not null check (evento in ('abertura','avanco','perda','stand_by','retomada','ganho','temperatura','fase_final')),
+  evento      text not null check (evento in ('abertura','avanco','perda','stand_by','retomada','ganho','temperatura','fase_final','retorno')),
   de_etapa    text,
   para_etapa  text,
   forcado     boolean not null default false,

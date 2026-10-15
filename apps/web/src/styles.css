@@ -449,5 +449,16 @@ button.tr:hover { background: rgba(255, 255, 255, .6) }
 .ro .final-tg { pointer-events: none }
 .board .col { flex: 1 0 208px }
 
+/* ---- kanban ---- */
+.board { align-items: stretch }
+.col[data-col] { min-height: 360px }
+.kcard[draggable="true"] { cursor: grab }
+.kcard.arrastando { opacity: .4; cursor: grabbing }
+.col.sobre { box-shadow: inset 0 0 0 2px var(--azul-bkm) }
+.col.enc.sobre { box-shadow: inset 0 0 0 2px var(--azul-bkm) }
+.pend { list-style: none; margin: var(--e3) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--e1); font-size: 13px; color: var(--texto-suave) }
+.pend li { display: flex; gap: var(--e2); align-items: flex-start }
+.pend .ic { color: var(--terracota); margin-top: 2px }
+
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

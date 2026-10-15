@@ -388,6 +388,36 @@ begin
   return app.checar_avanco(p_processo);
 end $$;
 
+-- Arrastar no quadro: leva a negociação até a etapa escolhida.
+-- Para frente, passa por cada etapa intermediária com as mesmas regras de
+-- mover_etapa (se uma falhar, nada muda). Para trás, exige motivo e vai para
+-- o histórico como "retorno". Ganha não é destino: é o fechamento da Minutagem.
+create or replace function app.mover_para_etapa(p_processo uuid, p_etapa text, p_forcar boolean default false, p_comentario text default null)
+returns jsonb
+language plpgsql security definer set search_path = ''
+as $$
+declare p app.processos; atual int; alvo int;
+begin
+  select * into p from app.processos where id = p_processo for update;
+  if not found then raise exception 'Processo não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(p.empresa_id);
+  if p.status <> 'ativo' then raise exception 'A negociação não está ativa' using errcode = '22023'; end if;
+  select ordem into atual from app.etapas_modelo where tipo_processo = p.tipo and codigo = p.etapa_atual;
+  select ordem into alvo  from app.etapas_modelo where tipo_processo = p.tipo and codigo = p_etapa;
+  if alvo is null then raise exception 'Etapa inválida' using errcode = '22023'; end if;
+  if alvo > atual then
+    for i in atual + 1 .. alvo loop
+      perform app.mover_etapa(p.id, p_forcar, p_comentario);
+    end loop;
+  elsif alvo < atual then
+    if coalesce(trim(p_comentario), '') = '' then raise exception 'Informe o motivo para voltar de etapa' using errcode = '22023'; end if;
+    update app.processos set etapa_atual = p_etapa, etapa_desde = now() where id = p.id;
+    insert into app.processo_transicoes (empresa_id, processo_id, evento, de_etapa, para_etapa, comentario)
+    values (p.empresa_id, p.id, 'retorno', p.etapa_atual, p_etapa, p_comentario);
+  end if;
+  return app.checar_avanco(p.id);
+end $$;
+
 create or replace function app.encerrar_processo(
   p_processo uuid, p_status text, p_motivo text default null, p_detalhe text default null, p_retomar_em date default null)
 returns void
@@ -639,7 +669,7 @@ grant execute on function
   app.abrir_negociacao(uuid, uuid),
   app.registrar_oferta(uuid, numeric, text, uuid, text, text, date, date, numeric, uuid, numeric),
   app.definir_temperatura(uuid, int), app.marcar_fase_final(uuid, boolean), app.definir_oferta_referencia(uuid, uuid),
-  app.checar_avanco(uuid), app.mover_etapa(uuid, boolean, text),
+  app.checar_avanco(uuid), app.mover_etapa(uuid, boolean, text), app.mover_para_etapa(uuid, text, boolean, text),
   app.encerrar_processo(uuid, text, text, text, date), app.retomar_processo(uuid),
   app.registrar_proposta(uuid, text, numeric, text, text, date, date, text), app.atualizar_status_proposta(uuid, text),
   app.vincular_viabilidade(uuid, text, numeric, numeric, numeric, uuid),
