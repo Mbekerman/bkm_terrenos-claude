@@ -193,15 +193,17 @@ select pg_temp.ok((select etapa_atual from app.processos where id = :'neg') = 'v
 select pg_temp.falha(format('select app.mover_etapa(%L)', :'neg'), 'Viabilidade inicial exige estudo');
 select app.vincular_viabilidade(:'neg', 'Estudo base', 62000000, 15.2, 8400000) \gset
 select app.mover_etapa(:'neg') \gset
-select app.mover_etapa(:'neg') \gset
-select pg_temp.ok((select etapa_atual from app.processos where id = :'neg') = 'proposta', 'Negociação avança para Proposta');
-select pg_temp.ok((app.checar_avanco(:'neg')->>'ok')::boolean, 'proposta registrada libera a saída de Proposta');
-select app.mover_etapa(:'neg') \gset
-select app.mover_etapa(:'neg') \gset
-select pg_temp.ok((select etapa_atual from app.processos where id = :'neg') = 'negociacoes_comerciais', 'Contraproposta avança para Negociações comerciais');
-select pg_temp.ok(not (app.checar_avanco(:'neg')->>'ok')::boolean, 'Negociações comerciais exige proposta aceita');
-select pg_temp.ok((app.checar_avanco(:'neg')->'itens') @> '[{"tipo":"gestor","ok":false}]', 'Minutagem pede aprovação de gestor');
+select pg_temp.ok((select etapa_atual from app.processos where id = :'neg') = 'negociacao', 'com estudo vai para Negociação');
+select pg_temp.ok((select fase_negociacao from app.v_terrenos where id = :'t1') = 'proposta_enviada', 'última proposta da BKM: proposta enviada');
 select pg_temp.ok((select acima_preco_max from app.v_terrenos where id = :'t1'), 'proposta da BKM acima do preço máximo sinalizada');
+select app.registrar_proposta(:'neg', 'vendedor', 8900000, 'permuta_com_torna', 'Pede 9% em permuta') as p5 \gset
+select pg_temp.ok((select fase_negociacao from app.v_terrenos where id = :'t1') = 'contraproposta', 'última proposta do vendedor: contraproposta');
+select app.marcar_fase_final(:'neg', true);
+select pg_temp.ok((select fase_negociacao from app.v_terrenos where id = :'t1') = 'negociacoes_finais', 'marcação manual: negociações finais');
+select pg_temp.ok((select count(*) from app.processo_transicoes where processo_id = :'neg' and evento = 'fase_final') = 1, 'fase final vai para o histórico');
+select pg_temp.ok(not (app.checar_avanco(:'neg')->>'ok')::boolean, 'Negociação exige proposta aceita');
+select pg_temp.ok((app.checar_avanco(:'neg')->'itens') @> '[{"tipo":"gestor","ok":false}]', 'Minutagem pede aprovação de gestor');
+select pg_temp.ok((select acima_preco_max from app.v_terrenos where id = :'t1') is not true, 'contraproposta do vendedor não acende o alerta de preço máximo');
 select pg_temp.falha(format('select app.mover_etapa(%L, true, %L)', :'neg', 'x'), 'analista não força');
 select pg_temp.falha(format('update app.processos set etapa_atual = %L where id = %L', 'minutagem', :'neg'), 'ninguém altera etapa direto');
 select pg_temp.como(:'gestor');
@@ -209,14 +211,15 @@ select pg_temp.falha(format('select app.mover_etapa(%L, true)', :'neg'), 'avanç
 select app.mover_etapa(:'neg', true, 'Aceite verbal; formalizar na minuta') \gset
 select pg_temp.ok((select etapa_atual from app.processos where id = :'neg') = 'minutagem', 'gestor leva à Minutagem');
 select pg_temp.ok((select forcado from app.processo_transicoes where processo_id = :'neg' and evento = 'avanco' order by em desc limit 1), 'avanço forçado registrado');
+select pg_temp.ok((select fase_negociacao from app.v_terrenos where id = :'t1') is null, 'fase só existe dentro da etapa Negociação');
+select pg_temp.ok((app.checar_avanco(:'neg')->>'proxima') = 'ganha', 'depois da Minutagem vem o fechamento como ganha');
 insert into app.diligencias (empresa_id, terreno_id, processo_id, categoria, titulo, situacao) values
   (:'emp', :'t1', :'neg', 'ambiental', 'Possível contaminação por posto vizinho', 'impeditiva') returning id as dg \gset
-select pg_temp.ok((app.checar_avanco(:'neg')->'itens') @> '[{"tipo":"diligencia"}]', 'diligência impeditiva bloqueia a saída da Minutagem');
-select pg_temp.ok((app.checar_avanco(:'neg')->'itens') @> '[{"tipo":"documento","ok":false}]', 'Minutagem exige certidões e minuta');
+select pg_temp.ok((app.checar_avanco(:'neg')->'itens') @> '[{"tipo":"diligencia"}]', 'diligência impeditiva bloqueia o fechamento');
+select pg_temp.ok((app.checar_avanco(:'neg')->'itens') @> '[{"tipo":"documento","ok":false}]', 'fechamento exige certidões e minuta');
 select pg_temp.ok((select diligencias_impeditivas from app.v_terrenos where id = :'t1') = 1, 'listagem conta diligências impeditivas');
 update app.diligencias set situacao = 'resolvida', providencia = 'Laudo de passivo ambiental negativo' where id = :'dg';
 select pg_temp.ok((select resolvida_em is not null from app.diligencias where id = :'dg'), 'resolver preenche a data');
-select app.atualizar_status_proposta(:'p4', 'aceita');
 select pg_temp.ok(not ((app.checar_avanco(:'neg')->'itens') @> '[{"tipo":"diligencia"}]'), 'diligência resolvida sai das pendências');
 
 -- ---------------------------------------------------------------------
@@ -297,4 +300,15 @@ select pg_temp.ok((select count(*) from app.municipios) = 1, 'cadastros comuns c
 
 select pg_temp.como(:'gestor');
 select pg_temp.ok((select count(*) from app.auditoria where tabela = 'terrenos') >= 3, 'auditoria registra alterações do terreno');
+
+\echo '# fechamento como ganha'
+select app.registrar_oferta(:'t2', 3000000) \gset
+select id as ng from app.processos where terreno_id = :'t2' and status = 'ativo' \gset
+select app.mover_etapa(:'ng') \gset
+select app.mover_etapa(:'ng', true, 'Estudo em andamento') \gset
+select app.mover_etapa(:'ng', true, 'Aceite por e-mail') \gset
+select app.mover_etapa(:'ng', true, 'Certidões na escritura') \gset
+select pg_temp.ok((select status = 'ganha' and etapa_atual = 'minutagem' from app.processos where id = :'ng'), 'fechamento vira status ganha e guarda a última etapa');
+select pg_temp.ok((select evento from app.processo_transicoes where processo_id = :'ng' order by em desc limit 1) = 'ganho', 'ganho vai para o histórico');
+select pg_temp.falha(format('select app.mover_etapa(%L)', :'ng'), 'negociação ganha não avança mais');
 \echo 'TODOS OS TESTES PASSARAM'

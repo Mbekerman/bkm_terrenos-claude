@@ -96,14 +96,16 @@ create table app.negociacoes (
   empresa_id           uuid not null references app.empresas(id),
   oferta_referencia_id uuid references app.ofertas(id),
   temperatura          smallint check (temperatura between 1 and 5),  -- null = não avaliada
-  temperatura_em       timestamptz
+  temperatura_em       timestamptz,
+  fase_final           boolean not null default false,   -- marcada à mão: acertando os últimos detalhes
+  fase_final_em        timestamptz
 );
 
 create table app.processo_transicoes (
   id          uuid primary key default gen_random_uuid(),
   empresa_id  uuid not null references app.empresas(id),
   processo_id uuid not null references app.processos(id) on delete cascade,
-  evento      text not null check (evento in ('abertura','avanco','perda','stand_by','retomada','ganho','temperatura')),
+  evento      text not null check (evento in ('abertura','avanco','perda','stand_by','retomada','ganho','temperatura','fase_final')),
   de_etapa    text,
   para_etapa  text,
   forcado     boolean not null default false,

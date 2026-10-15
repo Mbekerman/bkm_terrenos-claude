@@ -4,14 +4,21 @@ Gerado a partir de `supabase/migrations/`. Campos de auditoria (`criado_*`, `atu
 
 ## Etapas da negociação
 
-`Recebido → Viabilidade inicial → Negociação → Proposta → Contraproposta → Negociações comerciais → Minutagem → Ganha`. Perdida e Stand By são **status**, não etapas: acontecem em qualquer ponto e guardam a etapa em que parou.
+`Recebido → Viabilidade inicial → Negociação → Minutagem`. Ganha, Perdida e Stand By são **status**, não etapas: guardam a etapa em que a negociação estava. O quadro mostra só as quatro etapas e o Stand By; ganhas e perdidas saem dele.
+
+Dentro de **Negociação**, a fase colore o card (`v_terrenos.fase_negociacao`), calculada das propostas:
+
+| Fase | Quando |
+| --- | --- |
+| Proposta enviada | última proposta é da BKM |
+| Contraproposta | última proposta é do vendedor |
+| Negociações finais | última proposta aceita, ou marcada à mão (`marcar_fase_final`) |
 
 | Para sair de | Exige |
 | --- | --- |
 | Viabilidade inicial | estudo de viabilidade vinculado |
-| Proposta | proposta registrada |
-| Negociações comerciais | última proposta aceita; entrar em Minutagem é aprovação de compra (gestor) |
-| Minutagem | certidões e minuta validadas, nenhuma diligência impeditiva; virar Ganha exige gestor |
+| Negociação | última proposta aceita; entrar em Minutagem é aprovação de compra (gestor) |
+| Minutagem (concluir como ganha) | certidões e minuta validadas, nenhuma diligência impeditiva, gestor |
 
 ## 1. Terreno e cadastro do imóvel
 
@@ -196,6 +203,7 @@ erDiagram
     uuid processo_id PK
     uuid oferta_referencia_id FK
     smallint temperatura "1 a 5"
+    bool fase_final "negociacoes finais, marcada a mao"
   }
   propostas {
     uuid id PK
@@ -297,7 +305,7 @@ erDiagram
 | Edição simultânea: salvar com versão antiga é recusado | `terrenos.versao` + `salvar_terreno` |
 | Participações dos proprietários somam no máximo 100% | trigger em `terreno_pessoas` |
 | Registro não muda de terreno depois de criado | `tg_mesma_empresa` |
-| Diligência impeditiva em aberto bloqueia a saída da Minutagem | `checar_avanco` |
+| Diligência impeditiva em aberto impede concluir como ganha | `checar_avanco` |
 | Papel "leitura" consulta tudo e não altera nada | políticas com `empresas_edicao()` e `exigir_editor` |
 | CEP e CPF/CNPJ guardados só com dígitos; polígono GeoJSON validado | triggers e check |
 | Mesma matrícula no mesmo cartório = mesmo terreno | índice único em `matriculas` |

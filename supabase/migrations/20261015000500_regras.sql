@@ -98,6 +98,12 @@ select t.id, t.empresa_id, t.codigo, t.nome, t.situacao_cadastral, t.prioridade,
        p.etapa_atual, e.nome as etapa_nome, e.ordem as etapa_ordem,
        (current_date - p.etapa_desde::date) as dias_na_etapa,
        n.temperatura,
+       -- fase dentro da etapa Negociação, para colorir o card
+       case when p.etapa_atual <> 'negociacao' or p.status <> 'ativo' then null
+            when n.fase_final or lp.status = 'aceita' then 'negociacoes_finais'
+            when lp.origem = 'vendedor' then 'contraproposta'
+            when lp.origem = 'bkm' then 'proposta_enviada'
+            else 'sem_proposta' end as fase_negociacao,
        -- condições pedidas: oferta de referência, ou a mais recente ativa
        o.id as oferta_id, o.valor_pedido, o.forma_pagamento_pedida, o.aceita_permuta, o.observacao_pagamento,
        round(o.valor_pedido / nullif(t.area_adotada_m2, 0), 2) as valor_pedido_m2,
@@ -261,6 +267,25 @@ begin
   values (p.empresa_id, p.id, 'temperatura', coalesce(antes::text, '—') || ' → ' || coalesce(p_temperatura::text, '—'));
 end $$;
 
+-- "Negociações finais": marcação manual dentro da etapa Negociação.
+create or replace function app.marcar_fase_final(p_processo uuid, p_final boolean)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare p app.processos;
+begin
+  select * into p from app.processos where id = p_processo;
+  if not found then raise exception 'Negociação não encontrada' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(p.empresa_id);
+  if p.status <> 'ativo' then raise exception 'A negociação não está ativa' using errcode = '22023'; end if;
+  update app.negociacoes set fase_final = coalesce(p_final, false), fase_final_em = case when p_final then now() end
+   where processo_id = p.id and fase_final is distinct from coalesce(p_final, false);
+  if found then
+    insert into app.processo_transicoes (empresa_id, processo_id, evento, comentario)
+    values (p.empresa_id, p.id, 'fase_final', case when p_final then 'Em negociações finais' else 'Saiu de negociações finais' end);
+  end if;
+end $$;
+
 create or replace function app.definir_oferta_referencia(p_processo uuid, p_oferta uuid)
 returns void
 language plpgsql security definer set search_path = ''
@@ -293,19 +318,19 @@ begin
   gestor := app.eh_gestor(p.empresa_id);
   select * into atual from app.etapas_modelo where tipo_processo = p.tipo and codigo = p.etapa_atual;
   select * into prox  from app.etapas_modelo where tipo_processo = p.tipo and ordem = atual.ordem + 1;
-  if p.status <> 'ativo' or prox.codigo is null then
+  if p.status <> 'ativo' then
     return jsonb_build_object('proxima', null, 'ok', false, 'pode_forcar', false, 'itens', '[]'::jsonb);
+  end if;
+  -- depois da última etapa vem o fechamento: status "ganha", sempre com gestor
+  if prox.codigo is null then
+    prox.codigo := 'ganha'; prox.nome := 'Ganha'; prox.exige_gestor := true;
   end if;
 
   if p.etapa_atual = 'viabilidade_inicial' then
     itens := itens || jsonb_build_object('ok', p.viabilidade_id is not null, 'tipo', 'viabilidade', 'bloqueio_gestor', false,
       'texto', case when p.viabilidade_id is not null then 'Estudo de viabilidade vinculado' else 'Vincular um estudo de viabilidade' end);
   end if;
-  if p.etapa_atual = 'proposta' then
-    itens := itens || jsonb_build_object('ok', exists (select 1 from app.propostas where processo_id = p.id), 'tipo', 'proposta', 'bloqueio_gestor', false,
-      'texto', 'Registrar a proposta apresentada');
-  end if;
-  if p.etapa_atual = 'negociacoes_comerciais' then
+  if p.etapa_atual = 'negociacao' then
     select * into lp from app.propostas where processo_id = p.id order by versao desc limit 1;
     itens := itens || jsonb_build_object('ok', coalesce(lp.status = 'aceita', false), 'tipo', 'proposta', 'bloqueio_gestor', false,
       'texto', case when lp.status = 'aceita' then 'Condições comerciais aceitas' else 'Ter a última proposta marcada como aceita' end);
@@ -352,11 +377,11 @@ begin
     if not (chk->>'pode_forcar')::boolean then raise exception 'Você não pode forçar este avanço' using errcode = '42501'; end if;
     if coalesce(trim(p_comentario), '') = '' then raise exception 'Justifique o avanço forçado' using errcode = '22023'; end if;
   end if;
-  update app.processos
-     set etapa_atual = v_prox, etapa_desde = now(),
-         status = case when v_prox = 'ganha' then 'ganha' else status end,
-         data_encerramento = case when v_prox = 'ganha' then now() else data_encerramento end
-   where id = p.id;
+  if v_prox = 'ganha' then
+    update app.processos set status = 'ganha', data_encerramento = now() where id = p.id;  -- etapa fica a última
+  else
+    update app.processos set etapa_atual = v_prox, etapa_desde = now() where id = p.id;
+  end if;
   insert into app.processo_transicoes (empresa_id, processo_id, evento, de_etapa, para_etapa, forcado, comentario)
   values (p.empresa_id, p.id, case when v_prox = 'ganha' then 'ganho' else 'avanco' end, p.etapa_atual, v_prox,
           not (chk->>'ok')::boolean, p_comentario);
@@ -613,7 +638,7 @@ grant execute on function
   app.buscar_duplicados(uuid, text, text, text, text, text),
   app.abrir_negociacao(uuid, uuid),
   app.registrar_oferta(uuid, numeric, text, uuid, text, text, date, date, numeric, uuid, numeric),
-  app.definir_temperatura(uuid, int), app.definir_oferta_referencia(uuid, uuid),
+  app.definir_temperatura(uuid, int), app.marcar_fase_final(uuid, boolean), app.definir_oferta_referencia(uuid, uuid),
   app.checar_avanco(uuid), app.mover_etapa(uuid, boolean, text),
   app.encerrar_processo(uuid, text, text, text, date), app.retomar_processo(uuid),
   app.registrar_proposta(uuid, text, numeric, text, text, date, date, text), app.atualizar_status_proposta(uuid, text),

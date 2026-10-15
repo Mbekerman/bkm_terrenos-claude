@@ -96,20 +96,17 @@ insert into app.tipos_documento (codigo, nome, categoria, validade_dias, unico_p
   ('planta',             'Planta ou croqui',                     'Técnico',   null, false),
   ('outro',              'Outro documento',                      'Outros',    null, false);
 
--- Etapas da negociação. Perdida e Stand By não são etapas: são status do
--- processo (podem acontecer em qualquer etapa e guardam onde parou).
+-- Etapas da negociação. Ganha, Perdida e Stand By não são etapas: são status
+-- do processo (guardam a etapa em que estava). Dentro de "Negociação", a fase
+-- (proposta enviada, contraproposta, negociações finais) vem das propostas.
 insert into app.etapas_modelo (tipo_processo, codigo, nome, ordem, sla_dias, exige_gestor) values
-  ('negociacao','recebido',               'Recebido',               1,  5,  false),
-  ('negociacao','viabilidade_inicial',    'Viabilidade inicial',    2, 10,  false),
-  ('negociacao','negociacao',             'Negociação',             3, 30,  false),
-  ('negociacao','proposta',               'Proposta',               4, 15,  false),
-  ('negociacao','contraproposta',         'Contraproposta',         5, 15,  false),
-  ('negociacao','negociacoes_comerciais', 'Negociações comerciais', 6, 30,  false),
-  ('negociacao','minutagem',              'Minutagem',              7, 30,  true),
-  ('negociacao','ganha',                  'Ganha',                  8, null, true);
+  ('negociacao','recebido',            'Recebido',            1,  5, false),
+  ('negociacao','viabilidade_inicial', 'Viabilidade inicial', 2, 10, false),
+  ('negociacao','negociacao',          'Negociação',          3, 60, false),
+  ('negociacao','minutagem',           'Minutagem',           4, 30, true);
 
 -- Documentos exigidos para SAIR da etapa. A diligência do imóvel corre na
--- Minutagem: só vira "Ganha" com certidões validadas e minuta.
+-- Minutagem: só é ganha com certidões validadas e minuta.
 insert into app.checklist_modelo (tipo_processo, etapa, tipo_documento, obrigatorio, ordem) values
   ('negociacao','minutagem','matricula',          true,  1),
   ('negociacao','minutagem','onus_reais',         true,  2),

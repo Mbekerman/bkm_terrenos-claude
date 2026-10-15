@@ -396,5 +396,58 @@ button.tr:hover { background: rgba(255, 255, 255, .6) }
 .ro [data-a="prop-form"], .ro [data-a="viab"], .ro [data-a="ofref"], .ro [data-a^="del-"], .ro [data-a="doc-ok"], .ro [data-a="retomar"], .ro .details summary { display: none !important }
 .ro select[data-ch], .ro input[data-ch], .ro .seg3, .ro .temp .bars button, .ro .star { pointer-events: none }
 
+/* ---- reuniões da negociação ---- */
+.reus { display: flex; flex-direction: column; gap: var(--e3) }
+.reu { background: var(--superficie); border-radius: var(--raio-md); padding: var(--e4); display: flex; flex-direction: column; gap: var(--e2); border-left: 3px solid var(--azul-bkm) }
+.reu.agendada { border-left-style: dashed }
+.reu.cancelada { border-left-color: var(--linha); opacity: .75 }
+.reu-h { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--e3); flex-wrap: wrap }
+.reu-t { font-weight: 600; font-variant-numeric: tabular-nums }
+.reu-m { font-size: 13px; color: var(--texto-suave) }
+.reu-acts { display: flex; align-items: center; gap: var(--e2); flex-wrap: wrap }
+.reu-p { display: flex; gap: var(--e2) var(--e6); flex-wrap: wrap; font-size: 13px }
+.reu-p b, .reu-x .k { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--texto-suave); font-weight: 600; margin-right: var(--e2) }
+.reu-x { font-size: 14px; line-height: 20px }
+.reu-x .k { display: block; margin-bottom: 2px }
+.reu-ata { display: flex; align-items: center; gap: var(--e2); padding-top: var(--e2); border-top: 1px solid var(--linha); font-size: 13px; flex-wrap: wrap }
+.reu-ata > span { flex: 1; min-width: 0 }
+.reu-ata .ic { color: var(--azul-bkm) }
+.reu-form { background: var(--superficie); border-radius: var(--raio-md); padding: var(--e4); margin-bottom: var(--e4) }
+.reu-form .lbl { font-size: 13px; color: var(--texto); margin-bottom: var(--e1); display: block }
+.opt-radio { display: inline-flex; align-items: center; min-height: 36px; padding: 0 var(--e4); border-radius: var(--raio-pilula); font-size: 13px; color: var(--texto-suave); cursor: pointer }
+.opt-radio input { position: absolute; opacity: 0; pointer-events: none }
+.opt-radio:has(input:checked) { background: var(--acao); color: var(--sobre-acao); font-weight: 600 }
+.opt-radio:has(input:focus-visible) { outline: 2px solid var(--foco); outline-offset: 2px }
+.reu-form:has(input[name="modalidade"][value="online"]:checked) [data-so="presencial"],
+.reu-form:has(input[name="modalidade"][value="online"]:checked) [data-so="externo"],
+.reu-form:has(input[name="local"][value="bkm"]:checked) [data-so="externo"],
+.reu-form:has(option[value="agendada"]:checked) [data-so="realizada"] { display: none }
+.col.enc { background: var(--superficie); box-shadow: inset 0 0 0 1px var(--linha) }
+.ro [data-a="reu-form"], .ro [data-a="reu-feita"] { display: none !important }
+.reu-form .seg3 { align-self: flex-start }
+.reu-form .field .lbl { color: var(--texto); font-weight: 400 }
+
+/* ---- fase dentro da etapa Negociação ---- */
+:root { --fase-enviada: var(--azul-bkm); --fase-contra: var(--roxo); --fase-finais: var(--ok-marca) }
+.kcard.proposta_enviada { box-shadow: inset 4px 0 0 var(--fase-enviada) }
+.kcard.contraproposta { box-shadow: inset 4px 0 0 var(--fase-contra) }
+.kcard.negociacoes_finais { box-shadow: inset 4px 0 0 var(--fase-finais) }
+.kfase { align-self: flex-start; font-size: 11px; line-height: 16px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; padding: 2px var(--e2); border-radius: var(--raio-pilula); color: var(--branco) }
+.kcard.proposta_enviada .kfase { background: var(--fase-enviada) }
+.kcard.contraproposta .kfase { background: var(--fase-contra) }
+.kcard.negociacoes_finais .kfase { background: var(--fase-finais) }
+.legenda { display: flex; flex-wrap: wrap; gap: var(--e2) var(--e6); margin: calc(var(--e8) * -1 + var(--e3)) 0 var(--e6); font-size: 13px; color: var(--texto-suave) }
+.legenda .lg { display: inline-flex; align-items: center; gap: var(--e2) }
+.legenda .d, .chip.fneg .d { width: 10px; height: 10px; border-radius: 2px; display: inline-block }
+.lg.proposta_enviada .d, .chip.fneg.proposta_enviada .d { background: var(--fase-enviada) }
+.lg.contraproposta .d, .chip.fneg.contraproposta .d { background: var(--fase-contra) }
+.lg.negociacoes_finais .d, .chip.fneg.negociacoes_finais .d { background: var(--fase-finais) }
+.chip.fneg.sem_proposta .d { background: var(--linha) }
+.final-tg { display: inline-flex; align-items: center; gap: var(--e2); font-size: 13px; min-height: 36px; padding: 0 var(--e3); border-radius: var(--raio-pilula); background: var(--superficie); cursor: pointer }
+.final-tg input { width: 18px; height: 18px; accent-color: var(--fase-finais); margin: 0 }
+.final-tg:has(input:checked) { color: var(--texto); font-weight: 600 }
+.ro .final-tg { pointer-events: none }
+.board .col { flex: 1 0 208px }
+
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
