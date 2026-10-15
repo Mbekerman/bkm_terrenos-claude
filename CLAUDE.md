@@ -54,7 +54,7 @@ Toda mudança de regra no banco vem com teste em `supabase/tests/regras.sql`.
 
 - **Mesmo projeto Supabase do BKM ou separado?** Hoje o schema `app` é independente, com `empresas`/`membros` próprios. Se unificar, `app.viabilidades` deixa de ser tabela e vira view sobre as viabilidades do BKM.
 - PostGIS (polígono do terreno, busca por raio, deduplicação por proximidade) ainda não entrou; hoje a deduplicação é por matrícula + cartório e por endereço, e a distância a pontos de interesse é haversine (`app.distancia_km`).
-- Mapa: Leaflet com fundos CARTO/OSM (mapa e ruas) e Esri (satélite). Google Maps entra só como link de rota; rota e distância calculadas pela API do Google exigem chave paga (Directions / Distance Matrix) e não estão ligadas. O link publicado do protótipo bloqueia imagens externas, então lá o fundo não aparece.
+- Mapa: Leaflet com fundos Esri (mapa cinza-claro e satélite) e OSM (ruas); CARTO passou a exigir chave fora de localhost. Google Maps entra só como link de rota; rota e distância calculadas pela API do Google exigem chave paga (Directions / Distance Matrix) e não estão ligadas. O link publicado do protótipo bloqueia imagens externas, então lá o fundo não aparece.
 - Alertas por e-mail e tarefas automáticas de vencimento (pg_cron) ainda não existem; o vencimento é calculado na hora pela view `v_documentos`.
 - Acesso externo (corretor, advogado) fora do escopo atual.
 - IA sobre atas: `documento_versoes.texto_extraido` já existe; faltam a extração (OCR/PDF) e o resumo/perguntas sobre a negociação (provável pgvector + função no servidor).

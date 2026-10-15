@@ -2366,7 +2366,7 @@ const CAMADAS={mapa:'Mapa',ruas:'Ruas',satelite:'Satélite',satrot:'Satélite + 
 function camada(k,el){
   const esri='https://server.arcgisonline.com/ArcGIS/rest/services/';
   const mk=(u,o)=>L.tileLayer(u,Object.assign({maxZoom:19,crossOrigin:true},o));
-  const ls=k==='mapa'?[mk('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{subdomains:'abcd',attribution:'© OpenStreetMap © CARTO'})]
+  const ls=k==='mapa'?[mk(esri+'Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:16,attribution:'Mapa © Esri, HERE, Garmin, © OpenStreetMap'}),mk(esri+'Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:16})]
     :k==='ruas'?[mk('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'})]
     :k==='satelite'?[mk(esri+'World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Imagens © Esri'})]
     :[mk(esri+'World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Imagens © Esri'}),mk(esri+'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}')];
