@@ -1,0 +1,18 @@
+name: Bibliotecas do protótipo
+# Baixa as bibliotecas que o protótipo carrega do cdnjs, para testes locais
+# (o ambiente de desenvolvimento não acessa CDNs).
+on: workflow_dispatch
+jobs:
+  baixar:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          mkdir libs && cd libs
+          curl -fsSLO https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js
+          curl -fsSLO https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css
+          curl -fsSLO https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js
+          ls -la
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libs
+          path: libs
