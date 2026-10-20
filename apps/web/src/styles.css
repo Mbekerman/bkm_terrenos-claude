@@ -1244,6 +1244,10 @@ input[readonly] { background: transparent; color: var(--texto-suave) }
 @keyframes gpreenchido { 0%, 60% { background: var(--m-sc, #c2e7ff) } 100% { background: var(--m-card, #fff) } }
 .gpreenchido { animation: gpreenchido 1.6s ease-out }
 :root[data-tema="escuro"] .gpreenchido { animation: none; box-shadow: 0 0 0 2px #7c8cff }
+/* campo de busca do Google com a mesma aparência dos demais campos, nos dois temas (o componente aceita fundo, borda, raio, cor e fonte no próprio elemento) */
+gmp-place-autocomplete { background-color: var(--superficie); border: 1px solid var(--borda-controle); border-radius: var(--raio-sm, 4px); color: var(--m-on-surface, var(--texto)); font-family: inherit; font-size: 16px; color-scheme: light }
+:root[data-tema="escuro"] gmp-place-autocomplete { background-color: var(--m-sc-high); border-color: var(--m-outline-var); color: var(--m-on-surface); color-scheme: dark }
+gmp-place-autocomplete::part(prediction-list) { font-family: inherit }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
