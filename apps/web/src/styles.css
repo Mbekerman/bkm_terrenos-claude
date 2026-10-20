@@ -1275,6 +1275,26 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .field input.auto-v:focus, .field input.auto-v:focus-visible, :root[data-tema="escuro"] .field input.auto-v:focus { outline: none; box-shadow: none }
 .field input.auto-v.auto-ed:focus { border-bottom-color: var(--m-primary, #0b57d0) }
 :root[data-tema="escuro"] .field input.auto-v.auto-ed:focus { border-bottom-color: #7c8cff }
+/* ===== sem rolagem lateral em nenhum quadro: a tabela que não cabe vira lista empilhada (rótulo: valor) ===== */
+.tblwrap, .dt-wrap { overflow-x: visible }
+.dt.compacta td.esq { min-width: 0 }
+.dt.compacta th { white-space: normal }
+.empilha table, .empilha thead, .empilha tbody, .empilha tr, .empilha th, .empilha td { display: block; width: 100%; min-width: 0 }
+.empilha thead { display: none }
+.empilha tr { padding: 10px 12px; border-bottom: 1px solid var(--m-outline-var, var(--linha)) }
+.empilha tr:last-child { border-bottom: 0 }
+.empilha td, .dt .empilha td, .empilha .mini-tbl td { display: block; padding: 3px 0 !important; border: 0 !important; text-align: right !important; white-space: normal !important; min-width: 0 !important; background: none; overflow: hidden }
+.empilha td::before { content: attr(data-l); float: left; margin-right: 12px; max-width: 45%; text-align: left; font-size: 12px; line-height: 18px; color: var(--texto-suave); letter-spacing: normal; text-transform: none }
+.empilha td[data-l=""]::before { content: none }
+.empilha td:first-child { font-weight: 500 }
+.empilha td { overflow-wrap: anywhere }
+:root[data-tema="escuro"] .empilha tr { border-bottom-color: rgba(124,140,255,.12) }
+/* tabela pequena de resumo (viabilidade): rótulo à esquerda ocupa o que sobra; números à direita, sem quebrar */
+.dt.compacta th, .dt.compacta td { padding: 8px 6px }
+.dt.compacta th:first-child, .dt.compacta td:first-child { padding-left: 12px }
+.dt.compacta th:last-child, .dt.compacta td:last-child { padding-right: 12px }
+.dt.compacta td.num, .dt.compacta th:not(.esq) { text-align: right; white-space: nowrap }
+.dt.compacta th { letter-spacing: .04em }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

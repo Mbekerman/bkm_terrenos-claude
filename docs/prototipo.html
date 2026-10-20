@@ -1949,6 +1949,26 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .field input.auto-v:focus, .field input.auto-v:focus-visible, :root[data-tema="escuro"] .field input.auto-v:focus { outline: none; box-shadow: none }
 .field input.auto-v.auto-ed:focus { border-bottom-color: var(--m-primary, #0b57d0) }
 :root[data-tema="escuro"] .field input.auto-v.auto-ed:focus { border-bottom-color: #7c8cff }
+/* ===== sem rolagem lateral em nenhum quadro: a tabela que não cabe vira lista empilhada (rótulo: valor) ===== */
+.tblwrap, .dt-wrap { overflow-x: visible }
+.dt.compacta td.esq { min-width: 0 }
+.dt.compacta th { white-space: normal }
+.empilha table, .empilha thead, .empilha tbody, .empilha tr, .empilha th, .empilha td { display: block; width: 100%; min-width: 0 }
+.empilha thead { display: none }
+.empilha tr { padding: 10px 12px; border-bottom: 1px solid var(--m-outline-var, var(--linha)) }
+.empilha tr:last-child { border-bottom: 0 }
+.empilha td, .dt .empilha td, .empilha .mini-tbl td { display: block; padding: 3px 0 !important; border: 0 !important; text-align: right !important; white-space: normal !important; min-width: 0 !important; background: none; overflow: hidden }
+.empilha td::before { content: attr(data-l); float: left; margin-right: 12px; max-width: 45%; text-align: left; font-size: 12px; line-height: 18px; color: var(--texto-suave); letter-spacing: normal; text-transform: none }
+.empilha td[data-l=""]::before { content: none }
+.empilha td:first-child { font-weight: 500 }
+.empilha td { overflow-wrap: anywhere }
+:root[data-tema="escuro"] .empilha tr { border-bottom-color: rgba(124,140,255,.12) }
+/* tabela pequena de resumo (viabilidade): rótulo à esquerda ocupa o que sobra; números à direita, sem quebrar */
+.dt.compacta th, .dt.compacta td { padding: 8px 6px }
+.dt.compacta th:first-child, .dt.compacta td:first-child { padding-left: 12px }
+.dt.compacta th:last-child, .dt.compacta td:last-child { padding-right: 12px }
+.dt.compacta td.num, .dt.compacta th:not(.esq) { text-align: right; white-space: nowrap }
+.dt.compacta th { letter-spacing: .04em }
 </style>
 <header class="top">
   <div class="top-in">
@@ -3690,7 +3710,13 @@ function painelFicha(t){
     <button class="iconbtn" data-a="pn-fechar" title="Recolher painel" aria-label="Recolher painel">${PN_IC.fechar}</button></div>
     <div class="pn-b">${PN.aba==='logs'?pnLogs(t):pnAcoes(t)}</div></aside>`;
 }
-const _posRender=posRender;posRender=function(){_posRender.apply(this,arguments);if(typeof gBuscasEndereco==='function')gBuscasEndereco();
+/* tabelas: se não cabem no quadro, viram lista empilhada em vez de rolar para o lado */
+function ajustaTabelas(){document.querySelectorAll('.tblwrap,.dt-wrap').forEach(w=>{const t=w.querySelector('table');if(!t)return;
+  const cab=[...t.querySelectorAll('thead th')].map(th=>th.textContent.trim());
+  t.querySelectorAll('tbody tr').forEach(tr=>{let i=0;[...tr.children].forEach(td=>{if(!td.hasAttribute('data-l'))td.setAttribute('data-l',cab[i]||'');i+=td.colSpan||1})});
+  w.classList.remove('empilha');if(t.scrollWidth>w.clientWidth+1)w.classList.add('empilha')})}
+let tbRz;window.addEventListener('resize',()=>{cancelAnimationFrame(tbRz);tbRz=requestAnimationFrame(ajustaTabelas)});
+const _posRender=posRender;posRender=function(){_posRender.apply(this,arguments);ajustaTabelas();if(typeof gBuscasEndereco==='function')gBuscasEndereco();
   if(pnFoco){const el=document.querySelector(pnFoco);el&&el.focus({preventScroll:true});pnFoco=null}};
 /* menus suspensos do Logs: abrem e fecham sem redesenhar a página */
 function pnMenuSet(k){pnMenu=k;if(k!=='per')pnCal=null;
