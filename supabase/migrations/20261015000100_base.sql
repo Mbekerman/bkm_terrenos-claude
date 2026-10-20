@@ -117,9 +117,11 @@ create table app.auditoria (
   antes       jsonb,
   depois      jsonb,
   user_id     uuid default auth.uid(),
-  em          timestamptz not null default now()
+  -- clock_timestamp, não now(): várias alterações na mesma transação (uma RPC) ficam em instantes distintos e ordenáveis
+  em          timestamptz not null default clock_timestamp()
 );
 create index on app.auditoria (empresa_id, tabela, registro_id);
+create index on app.auditoria (empresa_id, em desc, id desc);
 
 create or replace function app.tg_auditoria()
 returns trigger

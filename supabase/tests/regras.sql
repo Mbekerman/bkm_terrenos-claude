@@ -327,6 +327,12 @@ select pg_temp.ok((select count(*) from app.municipios) = 1, 'cadastros comuns c
 
 select pg_temp.como(:'gestor');
 select pg_temp.ok((select count(*) from app.auditoria where tabela = 'terrenos') >= 3, 'auditoria registra alterações do terreno');
+begin;
+insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (:'emp', :'t2', 'Log A', current_date);
+insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (:'emp', :'t2', 'Log B', current_date);
+commit;
+select pg_temp.ok((select bool_and(em > ant) from (select em, lag(em) over (order by id) ant from (select id, em from app.auditoria where tabela = 'tarefas' order by id desc limit 2) u) x where ant is not null),
+  'alterações na mesma transação ficam em instantes distintos, na ordem em que aconteceram');
 
 \echo '# fechamento como ganha'
 select app.registrar_oferta(:'t2', 3000000) \gset

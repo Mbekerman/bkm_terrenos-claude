@@ -2058,7 +2058,12 @@ const me=()=>ROLE_USER[UI.role];
 const T=id=>S.terrenos.find(t=>t.id===id);
 const corretor=id=>S.corretores.find(c=>c.id===id);
 const eixo=id=>(S.eixos.find(e=>e.id===id)||{}).nome;
-const agora=()=>{const d=new Date();return HOJE+'T'+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
+/* instante do registro com milissegundos; nunca repete nem volta (dois registros no mesmo milissegundo ficam 1 ms à frente) */
+let ultEm=0;
+const agora=()=>{let t=Date.now();if(t<=ultEm)t=ultEm+1;ultEm=t;const d=new Date(t),p=(n,k=2)=>String(n).padStart(k,'0');
+  return HOJE+'T'+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds())+'.'+p(d.getMilliseconds(),3)};
+/* ordem dos logs: do mais recente ao mais antigo; no empate, o gravado depois vem antes */
+const histOrd=hist=>(hist||[]).map((h,i)=>[h,i]).sort((a,b)=>b[0].em.localeCompare(a[0].em)||b[1]-a[1]).map(x=>x[0]);
 const log=(t,txt)=>t.hist.push({em:agora(),user:me(),txt});
 
 /* ===================== regras derivadas ===================== */
@@ -2360,7 +2365,7 @@ function abaDocs(t){
   ${outros.map(d=>`<div class="doc"><span class="di">${ic('doc',18)}</span><div><div class="dn">${esc(d.nome||TIPOS_DOC[d.tipo][0])}</div><div class="ds">${TIPOS_DOC[d.tipo][1]} · ${fd(d.emitido)}</div></div><div class="da">${docChip(docSt(d))}</div></div>`).join('')||'<div class="empty">Nada enviado.</div>'}</section></div>`;
 }
 function abaHist(t){
-  return `<section class="sec"><div class="tl">${t.hist.slice().sort((a,b)=>b.em.localeCompare(a.em)).map(h=>`<div class="tli"><span class="ai blue">${ic('fwd',16)}</span><div><div class="tx">${esc(h.txt)}</div><div class="ts">${esc(h.user)}</div></div><span class="when">${fd(h.em)}</span></div>`).join('')}</div></section>`;
+  return `<section class="sec"><div class="tl">${histOrd(t.hist).map(h=>`<div class="tli"><span class="ai blue">${ic('fwd',16)}</span><div><div class="tx">${esc(h.txt)}</div><div class="ts">${esc(h.user)}</div></div><span class="when">${fd(h.em)}</span></div>`).join('')}</div></section>`;
 }
 
 /* ===================== avanço ===================== */
@@ -3266,6 +3271,7 @@ carregarGoogle();
 // No protótipo, audit() compara cada terreno com o retrato anterior a cada save() e registra o que mudou.
 
 const hhmm=s=>s&&s.length>10?s.slice(11,16):'';
+const emCompleto=s=>s?(fd(s.slice(0,10))+(s.length>10?' · '+s.slice(11).replace('.',','):'')):'';
 const LAB_CAMPO={situacao:'Situação',aDoc:'Área documental',aCad:'Área cadastral',aLev:'Área de levantamento',aEst:'Área estimada',fonteArea:'Fonte da área adotada',testada:'Testada'};
 Object.values(SECOES).forEach(s=>s.campos.forEach(([k,l])=>{LAB_CAMPO[k]=l}));
 const SEC_DE={};Object.entries(SECOES).forEach(([id,s])=>s.campos.forEach(([k])=>{SEC_DE[k]=id}));
@@ -3328,7 +3334,7 @@ function audit(){
 
 /* histórico de exemplo: reconstrói, a partir dos dados semeados, os registros que o sistema teria feito */
 function semearHistorico(){
-  const hora=(s,i)=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;h=(h+i*7919)>>>0;return `${String(8+h%10).padStart(2,'0')}:${String((h>>>4)%60).padStart(2,'0')}`};
+  const hora=(s,i)=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;h=(h+i*7919)>>>0;return `${String(8+h%10).padStart(2,'0')}:${String((h>>>4)%60).padStart(2,'0')}:${String((h>>>10)%60).padStart(2,'0')}.${String((h>>>16)%1000).padStart(3,'0')}`};
   S.terrenos.forEach(t=>{
     const H=[];const add=(dia,user,txt,det)=>{if(!dia)return;H.push({em:dia.length>10?dia:dia+'T'+hora(t.id+txt,H.length),user:user||t.resp,txt,det})};
     add(t.dataIdent,t.resp,'Terreno cadastrado',[t.nome,t.logradouro&&`Endereço: ${t.logradouro}${t.numero?', '+t.numero:''}`].filter(Boolean));
@@ -3349,7 +3355,11 @@ function semearHistorico(){
     t.hist=H.filter(h=>h.em.slice(0,10)<=HOJE).sort((a,b)=>a.em.localeCompare(b.em));
   });
 }
-if(S.histV2!==4){semearHistorico();S.histV2=4;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+if(!(S.histV2>=4)){semearHistorico();S.histV2=4;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+/* registros antigos só tinham hora e minuto: completa segundos e milissegundos preservando a ordem em que foram gravados */
+{let mud=false;S.terrenos.forEach(t=>{const g={};(t.hist||[]).forEach(h=>{if(h.em&&h.em.length===16)(g[h.em]=g[h.em]||[]).push(h)});
+  Object.values(g).forEach(L=>L.forEach((h,k)=>{const ms=Math.round(59999*(k+1)/(L.length+1));h.em+=':'+String(Math.floor(ms/1000)).padStart(2,'0')+'.'+String(ms%1000).padStart(3,'0');mud=true}))});
+  if(mud)try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 audSnap();
 
 /* ---------- estado do painel ---------- */
@@ -3386,7 +3396,7 @@ const PN_IC={logs:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" s
   abrir:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 6l-6 6 6 6M19 6l-6 6 6 6"/></svg>'};
 function diaRot(d){const x=diff(d,HOJE);return x===0?'Hoje':x===1?'Ontem':fd(d)}
 function pnLogs(t){
-  const todos=(t.hist||[]).slice().sort((a,b)=>b.em.localeCompare(a.em));
+  const todos=histOrd(t.hist);
   if(!todos.length)return '<div class="empty">Nenhum registro.</div>';
   const cont=new Map();todos.forEach(h=>cont.set(h.user,(cont.get(h.user)||0)+1));
   const users=[...cont.keys()].sort((a,b)=>cont.get(b)-cont.get(a)||a.localeCompare(b));
@@ -3400,7 +3410,7 @@ function pnLogs(t){
     <div class="pn-menu" role="menu" aria-label="Usuários"><button role="menuitemcheckbox" aria-checked="${!sel.length}" data-a="pn-todos">${ck}<span class="pn-mn">Todos os usuários</span><span class="n">${todos.length}</span></button><div class="pn-msep"></div>${users.map(x=>`<button role="menuitemcheckbox" aria-checked="${sel.includes(x)}" data-a="pn-u" data-v="${esc(x)}">${ck}${av(x,'xs')}<span class="pn-mn">${esc(x)}</span><span class="n">${cont.get(x)}</span></button>`).join('')}</div></div></div>`;
   let dia='',out=filtro;
   H.forEach(h=>{const d=h.em.slice(0,10);if(d!==dia){dia=d;out+=`<div class="pn-dia">${diaRot(d)}</div>`}
-    out+=`<div class="pn-log">${av(h.user,'sm')}<div class="pn-lc"><div class="pn-lt">${esc(h.txt)}</div>${h.det&&h.det.length?`<ul class="pn-det">${h.det.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}<div class="pn-lm">${esc(h.user)}${hhmm(h.em)?` · ${hhmm(h.em)}`:''}</div></div></div>`});
+    out+=`<div class="pn-log">${av(h.user,'sm')}<div class="pn-lc"><div class="pn-lt">${esc(h.txt)}</div>${h.det&&h.det.length?`<ul class="pn-det">${h.det.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}<div class="pn-lm" title="${esc(emCompleto(h.em))}">${esc(h.user)}${hhmm(h.em)?` · ${hhmm(h.em)}`:''}</div></div></div>`});
   return out;
 }
 function pnAcoes(t){

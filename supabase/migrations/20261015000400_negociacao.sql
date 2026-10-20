@@ -111,7 +111,7 @@ create table app.processo_transicoes (
   forcado     boolean not null default false,
   comentario  text,
   user_id     uuid default auth.uid(),
-  em          timestamptz not null default now()
+  em          timestamptz not null default clock_timestamp()  -- uma RPC pode gravar várias transições; cada uma no seu instante
 );
 create index on app.processo_transicoes (processo_id, em);
 
