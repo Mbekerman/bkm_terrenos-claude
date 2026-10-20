@@ -2297,16 +2297,17 @@ function buscaEndereco(){return GG?`<div class="gbusca"><div class="gauto" data-
    depois, o que a busca preenche, em linhas simples (não parecem campos a preencher). "Corrigir à mão" libera a edição. */
 const END_CAMPOS=['cep','logradouro','numero','complemento','bairro','municipio','zona','lat','lng'];
 function camposEndereco(t,comCoord){
-  const auto=[['cep','CEP'],['logradouro','Logradouro'],['numero','Número'],['bairro','Bairro'],['municipio','Município']].concat(comCoord?[['lat','Latitude'],['lng','Longitude']]:[]);
+  const auto=[['cep','CEP'],['logradouro','Logradouro'],['numero','Número'],['bairro','Bairro'],['municipio','Município']];
   const val=k=>k==='municipio'?(t.municipio||'São Paulo · SP'):['lat','lng'].includes(k)?(t[k]==null?'':String(t[k]).replace('.',',')):(t[k]??'');
   const trava=GG;
   return `${buscaEndereco()}<div class="end-manual"><div class="field"><label for="f-complemento">Complemento</label><input id="f-complemento" name="complemento" value="${esc(t.complemento||'')}"></div><div class="field"><label for="f-zona">Zona</label>${optSel('zona',OPT.zona,t.zona)}</div></div>
     <div class="end-auto">${auto.map(([k,l])=>`<div class="field auto-l ${['logradouro','municipio'].includes(k)?'largo':''}"><label for="f-${k}">${l}</label><input id="f-${k}" name="${k}" value="${esc(val(k))}" ${trava?'readonly class="auto-v" placeholder="—"':''}></div>`).join('')}</div>
+    ${comCoord?['lat','lng'].map(k=>`<input type="hidden" name="${k}" value="${esc(val(k))}">`).join(''):''}
     ${trava?'<button type="button" class="linkbtn end-corrigir" data-a="end-manual">Corrigir à mão</button>':''}`}
 function secaoGenerica(t,id){
   const s=SECOES[id],ed=UI.edit===id;
   if(!ed)return `<section class="sec" id="sec-${id}"><div class="sec-h"><h2>${s.titulo}</h2><button class="btn text sm" data-a="edit" data-s="${id}">${ic('edit',16)}Editar</button></div>
-    <div class="sec-b"><div class="kvg">${s.campos.map(c=>{const f=fmtCampo(t,c);return `<div class="${c[4]||''}"><div class="k">${c[1]}</div>${f==null?ni:`<div class="v">${f}</div>`}</div>`}).join('')}</div>
+    <div class="sec-b"><div class="kvg">${s.campos.filter(c=>!['lat','lng'].includes(c[0])).map(c=>{const f=fmtCampo(t,c);return `<div class="${c[4]||''}"><div class="k">${c[1]}</div>${f==null?ni:`<div class="v">${f}</div>`}</div>`}).join('')}</div>
     ${id==='fis'&&t.aConst!=null&&t.aDemolir!=null&&t.aDemolir<t.aConst?`<div class="hint" style="margin-top:10px">Demolição parcial: ${m2(t.aConst-t.aDemolir)} permanecem.</div>`:''}</div></section>`;
   const inp=c=>campoInp(t,c);
   return `<section class="sec" id="sec-${id}"><form data-form="sec" data-s="${id}"><div class="sec-h"><h2>${s.titulo}</h2></div>
