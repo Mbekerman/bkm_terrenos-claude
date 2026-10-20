@@ -21,7 +21,7 @@ Linguagem visual **Google Material 3** sobre a marca BKM (decisão do Moisés, o
 - Cards contornados (raio 12) para listas e fichas; blocos tonais (raio 16) para indicadores. Chips retangulares raio 8.
 - Status no padrão Material: ok verde `#146c2e`/`#c4eed0`, atenção `#7a5900`/`#ffdf99`, crítico `#b3261e`/`#ffdad6`. Fases da negociação: azul, roxo, verde.
 - Marca BKM continua: logo oficial (`public/marca/bkm-logo.svg`, mínimo 120 px) e ícones de linha BKM (`public/marca/icone-*.svg`). A forma de casa decorativa saiu.
-- Modo escuro: estudado (tokens Material 3 dark), ainda não ligado.
+- Temas: Claro (padrão), Escuro (grafite: botões chumbo `#43464b`, seção ativa em cinza-claro `#cececc`, logo branco), Marinho (fundo no marinho do DS `#1d2e5c` e tons de azul, botões no azul BKM `#0094fe`, seção ativa em azul-gelo) e Automático (segue o sistema: Claro ou Escuro). Ativados por `html[data-tema]`; escolha no menu de tema da barra superior, guardada no navegador (`bkm-terrenos-tema`). O seletor existe no protótipo; o front React ainda não tem o botão (entra no porte).
 
 Modelo de dados com diagramas: [docs/modelo.md](docs/modelo.md). Mantenha-o em dia ao mudar migrations.
 
