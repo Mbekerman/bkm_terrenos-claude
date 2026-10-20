@@ -1270,6 +1270,11 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .end-auto { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) }
 .end-auto .auto-l.largo { grid-column: span 2 }
 .end-corrigir { display: inline-block; margin: 8px 0 16px }
+/* linha editável (número sem resposta do Google, ou "Corrigir à mão"): mesma linha, mesma base, sem contorno de foco */
+.field input.auto-v.auto-ed, :root[data-tema="escuro"] .field input.auto-v.auto-ed { cursor: text; border-bottom-color: var(--m-outline, var(--borda-controle)) }
+.field input.auto-v:focus, .field input.auto-v:focus-visible, :root[data-tema="escuro"] .field input.auto-v:focus { outline: none; box-shadow: none }
+.field input.auto-v.auto-ed:focus { border-bottom-color: var(--m-primary, #0b57d0) }
+:root[data-tema="escuro"] .field input.auto-v.auto-ed:focus { border-bottom-color: #7c8cff }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

@@ -1944,6 +1944,11 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .end-auto { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) }
 .end-auto .auto-l.largo { grid-column: span 2 }
 .end-corrigir { display: inline-block; margin: 8px 0 16px }
+/* linha editável (número sem resposta do Google, ou "Corrigir à mão"): mesma linha, mesma base, sem contorno de foco */
+.field input.auto-v.auto-ed, :root[data-tema="escuro"] .field input.auto-v.auto-ed { cursor: text; border-bottom-color: var(--m-outline, var(--borda-controle)) }
+.field input.auto-v:focus, .field input.auto-v:focus-visible, :root[data-tema="escuro"] .field input.auto-v:focus { outline: none; box-shadow: none }
+.field input.auto-v.auto-ed:focus { border-bottom-color: var(--m-primary, #0b57d0) }
+:root[data-tema="escuro"] .field input.auto-v.auto-ed:focus { border-bottom-color: #7c8cff }
 </style>
 <header class="top">
   <div class="top-in">
@@ -3451,9 +3456,9 @@ function gDadosEndereco(place){const comp=(tipo,curto)=>{const c=place.addressCo
 function gPreencherCampos(f,d){if(!f||!d)return;const set=(n,v)=>{const i=f.querySelector(`[name="${n}"]`);if(i&&v!=null&&v!==''){i.value=v;i.dispatchEvent(new Event('input',{bubbles:true}));i.classList.remove('gpreenchido');void i.offsetWidth;i.classList.add('gpreenchido')}};
   set('cep',d.cep);set('logradouro',d.logradouro);set('numero',d.numero);if(d.complemento)set('complemento',d.complemento);set('bairro',d.bairro);
   if(d.cidade)set('municipio',d.cidade+(d.uf?' · '+d.uf:''));
-  if(d.lat!=null){set('lat',String(d.lat.toFixed(6)).replace('.',','));set('lng',String(d.lng.toFixed(6)).replace('.',','));set('precisao','aproximada')}
+  if(d.lat!=null){set('lat',String(d.lat.toFixed(6)).replace('.',','));set('lng',String(d.lng.toFixed(6)).replace('.',','));set('precisao','aproximada');f.querySelector('[name="precisao"]')?.classList.remove('gpreenchido')}
   const av=f.querySelector('.gbusca .hint');if(av)av.textContent=`Preenchido a partir de: ${d.texto}`;
-  if(!d.numero){const n=f.querySelector('[name="numero"]');if(n){n.readOnly=false;n.classList.remove('auto-v');n.placeholder='';n.focus();toast('O Google não trouxe o número. Preencha.')}}}
+  if(!d.numero){const n=f.querySelector('[name="numero"]');if(n){n.value='';n.readOnly=false;n.classList.add('auto-ed');n.placeholder='Preencha';n.focus();toast('O Google não trouxe o número. Preencha.')}}}
 window.BKM_TESTE=Object.assign(window.BKM_TESTE||{},{preencherEndereco:(sel,d)=>gPreencherCampos(document.querySelector(sel),d)});
 /* dentro do campo, só a lupa (do tamanho do texto) e "Pesquisar": sem o ícone e o botão de limpar do Google */
 function gCampoBusca(pac){pac.placeholder='Pesquisar';pac.setAttribute('aria-label','Pesquisar endereço no Google');pac.requestedLanguage='pt-BR';pac.noInputIcon=true;pac.noClearButton=true;
@@ -3749,7 +3754,7 @@ pgFicha=function(){const t=T(UI.id);return `<div class="ficha-wrap ${PN.aberto?'
 
 document.addEventListener('click',e=>{
   const a=e.target.closest('[data-a]');if(!a)return;const A=a.dataset.a;
-  if(A==='end-manual'){const f=a.closest('form');f.querySelectorAll('input.auto-v').forEach(i=>{i.readOnly=false;i.classList.remove('auto-v');i.placeholder=''});a.remove();f.querySelector('[name="logradouro"]')?.focus();return}
+  if(A==='end-manual'){const f=a.closest('form');f.querySelectorAll('input.auto-v').forEach(i=>{i.readOnly=false;i.classList.add('auto-ed');i.placeholder=''});a.remove();f.querySelector('[name="logradouro"]')?.focus();return}
   if(A==='pn-log'){const t=T(UI.id),h=t&&t.hist[+a.dataset.i];if(h)mostrarLog(h)}
   else if(A==='pn-abrir'){PN.aberto=true;pnSalva();render()}
   else if(A==='pn-fechar'){PN.aberto=false;pnSalva();render()}
