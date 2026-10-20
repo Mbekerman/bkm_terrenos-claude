@@ -43,7 +43,7 @@ Modelo de dados com diagramas: [docs/modelo.md](docs/modelo.md). Mantenha-o em d
 ## Comandos
 
 ```bash
-bash supabase/tests/run.sh          # migrations + 152 testes de regra num Postgres 16 temporário
+bash supabase/tests/run.sh          # migrations + 158 testes de regra num Postgres 16 temporário
 cd apps/web && npm install
 npm run dev                          # precisa de apps/web/.env.local (ver .env.example)
 npm run typecheck && npm run build
@@ -56,6 +56,7 @@ Toda mudança de regra no banco vem com teste em `supabase/tests/regras.sql`.
 ## Decisões em aberto
 
 - **Mesmo projeto Supabase do BKM ou separado?** Hoje o schema `app` é independente, com `empresas`/`membros` próprios. Se unificar, `app.viabilidades` deixa de ser tabela e vira view sobre as viabilidades do BKM.
+- Municípios: `app.municipios` tem os 5.571 do IBGE e o front resolve o `municipio_id` pela cidade/UF da busca do Google (`app.municipio_por_nome`). O catálogo de `zoneamentos` só tem São Paulo; para outras cidades falta definir (zona digitada ou catálogo por cidade).
 - PostGIS (polígono do terreno, busca por raio, deduplicação por proximidade) ainda não entrou; hoje a deduplicação é por matrícula + cartório e por endereço, e a distância a pontos de interesse é haversine (`app.distancia_km`).
 - Mapa: Google Maps JS (mapa, relevo, satélite, Street View, AdvancedMarker com `DEMO_MAP_ID`; criar um Map ID próprio), Routes API (rota no mapa, Directions como reserva), Places API New (autocompletar no cadastro e "o que tem perto"), Geocoding (localizar pelo endereço) e Elevation (relevo da poligonal). Sem chave ou com a chave recusada, cai no Leaflet (Esri/OSM). Address Validation ainda não usada. Separar em chave de navegador + chave de servidor fica para depois.
 - Alertas por e-mail e tarefas automáticas de vencimento (pg_cron) ainda não existem; o vencimento é calculado na hora pela view `v_documentos`.

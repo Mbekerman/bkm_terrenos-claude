@@ -151,6 +151,8 @@ erDiagram
   }
 ```
 
+`municipios` traz os 5.571 municípios do IBGE (código, nome e UF), então o terreno pode estar em qualquer cidade. A busca de endereço do Google devolve cidade e UF, e o front obtém o `municipio_id` por `app.municipio_por_nome(nome, uf)`, que compara sem acento, maiúsculas, hífen ou apóstrofo. O catálogo de `zoneamentos` por enquanto só tem São Paulo (LPUOS).
+
 ## 2. Ofertas, negociação, propostas e tarefas
 
 ```mermaid

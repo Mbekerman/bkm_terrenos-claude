@@ -10,7 +10,7 @@ PORT="${PORT:-54329}"
 if [ "$(id -u)" = "0" ]; then RUN="runuser -u postgres --"; chown postgres "$DIR"; else RUN=""; fi
 cleanup() { $RUN pg_ctl -D "$DIR" -m immediate stop >/dev/null 2>&1 || true; rm -rf "$DIR"; }
 trap cleanup EXIT
-$RUN initdb -D "$DIR" -U postgres -A trust >/dev/null
+$RUN initdb -D "$DIR" -U postgres -A trust -E UTF8 --locale=C >/dev/null   # UTF8 como no Supabase
 $RUN pg_ctl -D "$DIR" -o "-p $PORT -k /tmp" -l "$DIR/log" start -w >/dev/null
 PSQL="psql -h /tmp -p $PORT -U postgres -d postgres -v ON_ERROR_STOP=1 -q"
 

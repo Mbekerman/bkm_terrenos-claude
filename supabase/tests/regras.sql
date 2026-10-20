@@ -35,6 +35,14 @@ select pg_temp.ok((select count(*) from app.membros) = 3, 'gestor vê os 3 membr
 select id as sp from app.municipios where codigo_ibge = '3550308' \gset
 select pg_temp.ok((select count(*) from app.zoneamentos where municipio_id = :'sp') > 30, 'zoneamentos de SP carregados');
 
+\echo '# municípios'
+select pg_temp.ok((select count(*) from app.municipios) = 5571, 'municípios do IBGE carregados');
+select pg_temp.ok((select count(*) from app.zoneamentos z join app.municipios m on m.id = z.municipio_id where m.codigo_ibge <> '3550308') = 0, 'catálogo de zoneamento continua só de São Paulo');
+select pg_temp.ok(app.municipio_por_nome('São Paulo', 'SP') = :'sp', 'acha o município pelo nome e UF do Google');
+select pg_temp.ok(app.municipio_por_nome('sao jose dos campos', 'sp') = (select id from app.municipios where codigo_ibge = '3549904'), 'acha sem acento e em minúsculas');
+select pg_temp.ok(app.municipio_por_nome('Santa Bárbara D''Oeste', 'SP') = (select id from app.municipios where codigo_ibge = '3545803'), 'acha com apóstrofo e maiúsculas diferentes');
+select pg_temp.ok(app.municipio_por_nome('São Paulo', 'RJ') is null, 'UF errada não acha município de outro estado');
+
 -- ---------------------------------------------------------------------
 \echo '# cadastro rápido do terreno'
 select pg_temp.falha(format($$insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id) values (%L, 'Sem local', %L, 'corretor', %L)$$, :'emp', :'gestor', :'sp'),
@@ -323,7 +331,7 @@ select pg_temp.ok((select count(*) from app.v_reunioes) = 0, 'outra pessoa não 
 select pg_temp.ok((select count(*) from app.pontos_interesse) = 0 and (select count(*) from app.v_mapa) = 0, 'outra pessoa não vê mapa nem pontos de interesse');
 select pg_temp.falha(format('select app.checar_avanco(%L)', :'neg'), 'outra pessoa não acessa RPC');
 select pg_temp.falha(format($$insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (%L, %L, 'x', current_date)$$, :'emp', :'t2'), 'outra pessoa não grava tarefa');
-select pg_temp.ok((select count(*) from app.municipios) = 1, 'cadastros comuns continuam visíveis');
+select pg_temp.ok((select count(*) from app.municipios) = 5571, 'cadastros comuns continuam visíveis');
 
 select pg_temp.como(:'gestor');
 select pg_temp.ok((select count(*) from app.auditoria where tabela = 'terrenos') >= 3, 'auditoria registra alterações do terreno');
