@@ -1695,6 +1695,114 @@ h2{font-size:16px;line-height:24px;font-weight:500;letter-spacing:.01em}
 /* demais seletores (perfil e filtros) no mesmo padrão */
 :root[data-tema="escuro"] .seg button[aria-pressed="true"]{background:rgba(99,112,255,.10)!important;color:#c9d6ff!important;box-shadow:inset 0 0 0 1px rgba(124,140,255,.5)!important}
 :root[data-tema="escuro"] button.fchip.fchip[aria-pressed="true"]{background:rgba(99,112,255,.10)!important;color:#c9d6ff!important;border-color:rgba(124,140,255,.5)!important}
+
+/* ==== Painel lateral da ficha: Logs / Ações (desktop e tablet) ==== */
+.ficha-wrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: start }
+.pn { display: none }
+.pn-q { font-size: 12px; opacity: .75; font-variant-numeric: tabular-nums }
+.pn-h { display: flex; align-items: center; gap: 8px; padding: 12px 12px 12px 16px; border-bottom: 1px solid var(--m-outline-var, var(--linha)) }
+.pn-h .seg { flex: 1; display: flex }
+.pn-h .seg button { flex: 1; padding: 0 10px }
+.pn-b { overflow-y: auto; padding: 4px 16px 24px; flex: 1; min-height: 0 }
+.pn-dia { position: sticky; top: 0; z-index: 1; background: inherit; font-size: 12px; font-weight: 500; color: var(--texto-suave); padding: 14px 0 6px; background: var(--pn-bg) }
+.pn-log { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--m-outline-var, var(--linha)) }
+.pn-log:last-child { border-bottom: 0 }
+.pn-log .avatar { flex: none; margin-top: 2px }
+.pn-lc { min-width: 0; flex: 1 }
+.pn-lt { font-size: 14px; line-height: 20px }
+.pn-det { margin: 4px 0 0; padding-left: 16px; font-size: 12px; line-height: 18px; color: var(--texto-suave) }
+.pn-lm { font-size: 12px; line-height: 16px; color: var(--texto-suave); margin-top: 2px }
+.pn-grupo { padding: 8px 0 4px }
+.pn-gt { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; padding: 10px 0 6px }
+.pn-gt .n { font-size: 12px; font-weight: 500; color: var(--texto-suave) }
+.pn-acao { display: flex; gap: 10px; padding: 8px 0; font-size: 14px; line-height: 20px }
+.pn-ai { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--m-sc-low, var(--superficie-elevada)); color: var(--texto-suave) }
+.pn-acao.warn .pn-ai { background: var(--atencao-fundo); color: var(--atencao-marca) }
+.pn-acao.crit .pn-ai { background: var(--critico-fundo); color: var(--critico-marca) }
+.pn-acao.good .pn-ai { background: var(--ok-fundo); color: var(--ok-marca) }
+.pn-ac { min-width: 0; padding-top: 4px }
+.pn-ac .linkbtn { font-size: 13px; margin-top: 2px }
+.pn-tar { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--m-outline-var, var(--linha)) }
+.pn-tar:last-child { border-bottom: 0 }
+.pn-chk { flex: none; width: 20px; height: 20px; margin-top: 2px; border-radius: 50%; border: 1.5px solid var(--m-outline, var(--borda-controle)); background: transparent; padding: 0 }
+.pn-chk:hover { border-color: var(--ok-marca); background: var(--ok-fundo) }
+.pn-tc { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; text-align: left; border: 0; background: none; padding: 0; color: inherit }
+.pn-tt { font-size: 14px; line-height: 20px }
+.pn-tm { font-size: 12px; line-height: 16px; color: var(--texto-suave) }
+.pn-tm.late { color: var(--critico-marca); font-weight: 500 }
+.pn-min { gap: 6px; align-items: center; padding: 8px 0 }
+.pn-rb { position: relative; width: 40px; height: 40px; border-radius: 12px; border: 0; background: transparent; color: var(--texto-suave); display: grid; place-items: center }
+.pn-rb:hover { background: rgba(127,127,127,.12) }
+.pn-badge { position: absolute; top: 2px; right: 0; min-width: 18px; height: 16px; padding: 0 4px; border-radius: 8px; font-size: 10px; line-height: 16px; font-weight: 600; background: var(--m-sc, var(--superficie-elevada)); color: var(--m-on-sc, var(--texto)) }
+
+@media (min-width: 768px) {
+  .pn { --pn-bg: var(--m-card, #fff); display: flex; flex-direction: column; background: var(--pn-bg); border: 1px solid var(--m-outline-var, var(--linha)); border-radius: 12px; overflow: hidden }
+  .tab-hist { display: none }
+}
+/* desktop: coluna à direita, fixa ao rolar */
+@media (min-width: 1200px) {
+  .ficha-wrap.pn-on { grid-template-columns: minmax(0, 1fr) 340px }
+  .ficha-wrap.pn-off { grid-template-columns: minmax(0, 1fr) 56px }
+  .pn { position: sticky; top: 96px; height: calc(100vh - 120px) }
+  .pn-min { height: auto }
+}
+/* tablet: gaveta sobre o conteúdo; recolhido vira um trilho na borda */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .ficha-wrap.pn-off { grid-template-columns: minmax(0, 1fr) 48px }
+  .ficha-wrap.pn-off .pn { position: sticky; top: 88px; border-radius: 12px }
+  .ficha-wrap.pn-on .pn { position: fixed; z-index: 30; right: 12px; top: 84px; bottom: 12px; width: min(380px, calc(100vw - 24px)); box-shadow: 0 8px 28px rgba(0,0,0,.18), 0 2px 6px rgba(0,0,0,.12) }
+}
+@media (min-width: 768px) and (max-width: 899px) {
+  .ficha-wrap.pn-on .pn { bottom: calc(84px + env(safe-area-inset-bottom, 0px)) }
+}
+
+/* tema escuro: quadro afundado, como os demais */
+:root[data-tema="escuro"] .pn { --pn-bg: #060c20; border-color: rgba(124,140,255,.16) }
+:root[data-tema="escuro"] .pn-h, :root[data-tema="escuro"] .pn-log, :root[data-tema="escuro"] .pn-tar { border-color: rgba(124,140,255,.12) }
+:root[data-tema="escuro"] .pn-ai { background: rgba(124,140,255,.10) }
+:root[data-tema="escuro"] .pn-badge { background: rgba(99,112,255,.18); color: #c9d6ff }
+:root[data-tema="escuro"] .ficha-wrap.pn-on .pn { box-shadow: 0 8px 28px rgba(0,0,0,.5) }
+/* cabeçalho da ficha mais estreito (painel aberto, tablet): responsável e temperatura em linha, alinhados à esquerda */
+@media (max-width: 1599px) {
+  .ficha-main .dhead > div:last-child { flex-direction: row !important; align-items: center !important; flex-wrap: wrap; gap: 16px 24px !important }
+}
+/* barra do topo em tablet: sem o selo "Dados de exemplo" e com busca mais curta */
+@media (min-width: 900px) and (max-width: 1199px) { .demo-pill { display: none } .search { min-width: 0 } }
+.pn-filtro { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 0 4px }
+.pn-filtro::-webkit-scrollbar { display: none }
+.pn-filtro .fchip { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px 0 6px; font-size: 13px; white-space: nowrap }
+.pn-filtro .fchip:first-child { padding-left: 10px }
+.pn-filtro .n { font-size: 12px; opacity: .7; font-variant-numeric: tabular-nums }
+.avatar.xs { width: 20px; height: 20px; font-size: 9px; line-height: 20px }
+.pn-sel { display: none; position: relative; width: 100% }
+.pn-filtro.compacto .fchip { display: none }
+.pn-filtro.compacto .pn-sel { display: block }
+.pn-sel-b { display: flex; align-items: center; gap: 8px; width: 100%; height: 40px; padding: 0 12px 0 16px; border: 1px solid var(--m-outline, var(--borda-controle)); border-radius: 8px; background: transparent; color: var(--m-on-surface, var(--texto)); font-size: 14px; text-align: left }
+.pn-sel-b:hover { background: rgba(127,127,127,.08) }
+.pn-sel-b.ativo { background: var(--m-sc, #c2e7ff); border-color: transparent; color: var(--m-on-sc, #001d35); font-weight: 500 }
+.pn-sel-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.pn-sel.aberto .pn-sel-b svg { transform: rotate(180deg) }
+.pn-menu { display: none; position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 40; max-height: min(480px, calc(100vh - 240px)); overflow-y: auto; background: var(--m-sc-low, #f0f4f9); border-radius: 12px; padding: 6px 0; box-shadow: 0 2px 6px rgba(0,0,0,.18), 0 6px 18px rgba(0,0,0,.14) }
+.pn-sel.aberto .pn-menu { display: block }
+.pn-menu button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 40px; padding: 0 16px; border: 0; background: transparent; color: var(--m-on-surface, var(--texto)); font-size: 14px; text-align: left }
+.pn-menu button:hover, .pn-menu button:focus-visible { background: rgba(127,127,127,.12); outline: 0 }
+.pn-menu .pn-mn { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.pn-menu .n { font-size: 12px; color: var(--texto-suave); font-variant-numeric: tabular-nums }
+.pn-msep { height: 1px; margin: 4px 0; background: var(--m-outline-var, var(--linha)) }
+.pn-ck { flex: none; width: 18px; height: 18px; border-radius: 3px; border: 2px solid var(--m-on-var, #444746); position: relative }
+.pn-menu [aria-checked="true"] .pn-ck { background: var(--m-primary, #0b57d0); border-color: var(--m-primary, #0b57d0) }
+.pn-menu [aria-checked="true"] .pn-ck::after { content: ""; position: absolute; left: 4px; top: 0; width: 5px; height: 10px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg) }
+:root[data-tema="escuro"] .pn-sel-b { border-color: rgba(124,140,255,.25) }
+:root[data-tema="escuro"] .pn-sel-b.ativo { background: rgba(99,112,255,.10); border-color: rgba(124,140,255,.5); color: #c9d6ff }
+:root[data-tema="escuro"] .pn-menu { background: #0d1530; box-shadow: 0 0 0 1px rgba(124,140,255,.2), 0 10px 28px rgba(0,0,0,.55) }
+:root[data-tema="escuro"] .pn-ck { border-color: rgba(201,214,255,.6) }
+:root[data-tema="escuro"] .pn-menu [aria-checked="true"] .pn-ck { background: rgba(99,112,255,.35); border-color: #7c8cff }
+:root[data-tema="escuro"] .pn-menu [aria-checked="true"] .pn-ck::after { border-color: #e6ecff }
+:root[data-tema="escuro"] .pn-msep { background: rgba(124,140,255,.15) }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap }
+/* menu lateral: botão de recolher/expandir no topo, só o ícone */
+.side > .menu-tg { align-self: flex-start; width: 48px; height: 48px; min-height: 48px; padding: 0; margin: calc(var(--e6) * -1 + 8px) 0 8px 3px; justify-content: center; border-radius: 50% }
+body.menu-min .side > .menu-tg { align-self: center; margin-left: 0 }
 </style>
 <header class="top">
   <div class="top-in">
@@ -1928,7 +2036,7 @@ function seed(){
 const KEY='bkm-terrenos-prototipo-v7';
 let S;try{const r=localStorage.getItem(KEY);S=r?JSON.parse(r):null}catch(e){S=null}
 if(!S||!S.terrenos)S=seed();
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const save=()=>{try{if(typeof audit==='function')audit()}catch(e){console.error(e)}try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 let menuMin=false;try{menuMin=localStorage.getItem('bkm-terrenos-menu')==='min'}catch(e){}
 // Tema: claro, escuro ou auto (segue o sistema). Preferência por navegador.
 const TEMAS=[['claro','Claro','#f8fafd'],['escuro','Escuro','linear-gradient(135deg,#3b82f6,#7c5cff)'],['auto','Automático (segue o sistema)','linear-gradient(135deg,#f8fafd 50%,#0d1436 50%)']];
@@ -1950,7 +2058,8 @@ const me=()=>ROLE_USER[UI.role];
 const T=id=>S.terrenos.find(t=>t.id===id);
 const corretor=id=>S.corretores.find(c=>c.id===id);
 const eixo=id=>(S.eixos.find(e=>e.id===id)||{}).nome;
-const log=(t,txt)=>t.hist.push({em:HOJE,user:me(),txt});
+const agora=()=>{const d=new Date();return HOJE+'T'+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
+const log=(t,txt)=>t.hist.push({em:agora(),user:me(),txt});
 
 /* ===================== regras derivadas ===================== */
 const areaAdotada=t=>({documental:t.aDoc,cadastral:t.aCad,levantamento:t.aLev,estimativa:t.aEst})[t.fonteArea]??null;
@@ -2293,7 +2402,7 @@ function pgFicha(){
   ${UI.tab==='geral'?'':condicoes(t)}
   ${painelNeg(t)}
   </div>
-  <div class="tabs" role="tablist">${tabs.map(([k,l,q])=>`<button class="tab" role="tab" data-a="tab" data-t="${k}" aria-selected="${UI.tab===k}">${l}${q!==''&&q!==0?` <span class="n">${q}</span>`:''}</button>`).join('')}</div>
+  <div class="tabs" role="tablist">${tabs.map(([k,l,q])=>`<button class="tab${k==='historico'?' tab-hist':''}" role="tab" data-a="tab" data-t="${k}" aria-selected="${UI.tab===k}">${l}${q!==''&&q!==0?` <span class="n">${q}</span>`:''}</button>`).join('')}</div>
   <div role="tabpanel">${corpo}</div>`;
 }
 function bateBusca(t,q){if(!q)return true;q=q.toLowerCase();const hay=[t.codigo,t.nome,t.logradouro,t.numero,t.bairro,OPT.zona[t.zona],eixo(t.eixo),t.resp,...t.mats.map(m=>m.num+' '+digits(m.num)),...t.insc.map(i=>i.sql+' '+digits(i.sql)),...t.ofertas.map(o=>corretor(o.cid)?.nome),...t.pessoas.map(p=>p.nome)].join(' ').toLowerCase();return q.split(/\s+/).every(w=>hay.includes(w))}
@@ -2337,7 +2446,7 @@ const NAV=[['inicio','Início','casa'],['terrenos','Terrenos','planta'],['mapa',
 function render(){
   const cur=UI.route==='terreno'?UI.from:UI.route;
   document.body.classList.toggle('menu-min',menuMin);
-  $('#side').innerHTML=`<button class="compose" data-a="novo" ${menuMin?'title="Novo terreno" aria-label="Novo terreno"':''}>${ic('add',24)}<span class="rot">Novo terreno</span></button>`+NAV.map(([r,l,i])=>`<button class="nav-item" data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''} ${menuMin?`title="${l}" aria-label="${l}"`:''}>${bi(i)}<span class="rot">${l}</span></button>`).join('')+`<div class="side-foot"><span class="rot">Protótipo · dados de exemplo</span><button class="linkbtn rot" data-a="reset">Restaurar dados de exemplo</button><button class="menu-tg" data-a="menu" aria-expanded="${!menuMin}" aria-label="${menuMin?'Expandir menu':'Recolher menu'}" title="${menuMin?'Expandir menu':'Recolher menu'}">${ic(menuMin?'expandir':'recolher',20)}<span class="rot">Recolher menu</span></button></div>`;
+  $('#side').innerHTML=`<button class="menu-tg" data-a="menu" aria-expanded="${!menuMin}" aria-label="${menuMin?'Expandir menu':'Recolher menu'}" title="${menuMin?'Expandir menu':'Recolher menu'}">${ic(menuMin?'expandir':'recolher',20)}</button><button class="compose" data-a="novo" ${menuMin?'title="Novo terreno" aria-label="Novo terreno"':''}>${ic('add',24)}<span class="rot">Novo terreno</span></button>`+NAV.map(([r,l,i])=>`<button class="nav-item" data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''} ${menuMin?`title="${l}" aria-label="${l}"`:''}>${bi(i)}<span class="rot">${l}</span></button>`).join('')+`<div class="side-foot"><span class="rot">Protótipo · dados de exemplo</span><button class="linkbtn rot" data-a="reset">Restaurar dados de exemplo</button></div>`;
   $('#bnav').innerHTML=NAV.map(([r,l,i])=>`<button data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''}><span class="pill">${bi(i,32)}</span>${l}</button>`).join('');
   document.body.classList.toggle('ro',UI.role==='Leitura');
   renderTema();
@@ -2565,7 +2674,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
     case 'poi':{S.pontos=S.pontos||[];S.pontos.push({id:uid(),nome:F.nome.trim(),cat:F.cat,lat:UI.novoPoi.lat,lng:UI.novoPoi.lng});UI.modal=null;save();render();toast('Ponto de interesse salvo.');break}
     case 'kmz':{let novos=0,lig=0;(UI.kmzItens||[]).forEach((it,i)=>{const d=F['i'+i];if(d==null||d==='')return;
         if(d==='novo'){S.seqT++;const c=it.tipo==='poligono'?centro(it.pts):it.pts[0];const nt={...seedVazio(),codigo:'TER-'+String(S.seqT).padStart(6,'0'),nome:it.nome,resp:me(),origem:'prospeccao',dataIdent:HOJE,lat:c[0],lng:c[1],precisao:'aproximada'};
-          if(it.tipo==='poligono')nt.poly=it.pts;nt.hist=[{em:HOJE,user:me(),txt:'Terreno cadastrado por importação de KMZ'}];S.terrenos.push(nt);novos++}
+          if(it.tipo==='poligono')nt.poly=it.pts;nt.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado por importação de KMZ'}];S.terrenos.push(nt);novos++}
         else{const t=T(d);aplicarKmz(t,it);log(t,it.tipo==='poligono'?`Poligonal importada (${m2(areaPoly(it.pts))})`:'Localização importada de KMZ');lig++}});
       UI.modal=null;UI.mpView=null;save();render();toast(`${novos?novos+' terreno'+(novos>1?'s':'')+' criado'+(novos>1?'s':''):''}${novos&&lig?' e ':''}${lig?lig+' atualizado'+(lig>1?'s':''):''}${!novos&&!lig?'Nada importado':''}.`);break}
     case 'tarefa-m':{const sel=UI.tkSel;if(sel.tid){const t=T(sel.tid),k=t.tarefas.find(x=>x.id===sel.kid);const de=k.status;Object.assign(k,{titulo:F.titulo.trim(),resp:F.resp,prazo:F.prazo,prio:F.prio,status:F.status,desc:F.desc,resultado:F.resultado||''});
@@ -2589,7 +2698,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
     case 'novo':{const dup=f.dataset.dup;let alvo;
       if(!F.logradouro.trim()&&!F.bairro.trim()&&!dup&&!UI.novoLoc){toast('Informe ao menos logradouro ou bairro.',true);return}
       if(dup){alvo=T(dup)}else{S.seqT++;alvo={...seedVazio(),codigo:'TER-'+String(S.seqT).padStart(6,'0'),nome:F.nome,logradouro:F.logradouro.trim(),numero:F.numero.trim(),bairro:F.bairro.trim(),zona:F.zona||null,resp:F.resp,origem:F.origem,dataIdent:HOJE,
-        mats:F.mat?[{num:F.mat,cri:F.cri,area:null,data:null}]:[],insc:F.sql?[{sql:F.sql,area:null,valores:[]}]:[]};alvo.hist=[{em:HOJE,user:me(),txt:'Terreno cadastrado'}];if(UI.novoLoc){alvo.lat=UI.novoLoc.lat;alvo.lng=UI.novoLoc.lng;alvo.precisao='aproximada';alvo.hist[0].txt='Terreno cadastrado pelo mapa'}S.terrenos.push(alvo)}
+        mats:F.mat?[{num:F.mat,cri:F.cri,area:null,data:null}]:[],insc:F.sql?[{sql:F.sql,area:null,valores:[]}]:[]};alvo.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado'}];if(UI.novoLoc){alvo.lat=UI.novoLoc.lat;alvo.lng=UI.novoLoc.lng;alvo.precisao='aproximada';alvo.hist[0].txt='Terreno cadastrado pelo mapa'}S.terrenos.push(alvo)}
       const val=lerNum(F.valor);
       if(val||F.cid){const o={id:uid(),cid:F.cid||null,data:HOJE,valor:val,forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,status:'ativa'};alvo.ofertas.push(o);
         if(o.cid&&!alvo.corretores.some(x=>x.cid===o.cid))alvo.corretores.push({cid:o.cid,principal:!alvo.corretores.some(x=>x.principal)});
@@ -3151,6 +3260,194 @@ async function gAutocompletarNovo(){const slot=$('#n-gauto');if(!slot||slot.data
     pac.addEventListener('gmp-placeselect',e=>{if(e.place)aplicar(e.place)})}
   catch(e){slot.innerHTML='<span class="hint">Autocompletar do Google indisponível.</span>'}}
 carregarGoogle();
+
+/* ===================== painel lateral da ficha: Logs / Ações ===================== */
+// No banco, quem grava o log é o trigger app.auditoria (toda tabela do terreno) e processo_transicoes.
+// No protótipo, audit() compara cada terreno com o retrato anterior a cada save() e registra o que mudou.
+
+const hhmm=s=>s&&s.length>10?s.slice(11,16):'';
+const LAB_CAMPO={situacao:'Situação',aDoc:'Área documental',aCad:'Área cadastral',aLev:'Área de levantamento',aEst:'Área estimada',fonteArea:'Fonte da área adotada',testada:'Testada'};
+Object.values(SECOES).forEach(s=>s.campos.forEach(([k,l])=>{LAB_CAMPO[k]=l}));
+const SEC_DE={};Object.entries(SECOES).forEach(([id,s])=>s.campos.forEach(([k])=>{SEC_DE[k]=id}));
+const TIPO_CAMPO={};Object.values(SECOES).forEach(s=>s.campos.forEach(([k,,tipo,opt])=>{TIPO_CAMPO[k]=[tipo,opt]}));
+['aDoc','aCad','aLev','aEst','aConst','aDemolir'].forEach(k=>TIPO_CAMPO[k]=['m2']);
+function valTxt(k,v){
+  if(v==null||v==='')return 'não informado';
+  const [tipo,opt]=TIPO_CAMPO[k]||[];
+  if(tipo==='sel'&&OPT[opt])return NI_OPT.has(v)?'não informado':(OPT[opt][v]||v);
+  if(tipo==='m2')return m2(v);if(tipo==='m')return num(v,2)+' m';if(tipo==='date')return fd(v);if(tipo==='dec')return num(v,6);if(tipo==='eixo')return eixo(v)||'—';
+  if(typeof v==='boolean')return v?'sim':'não';
+  const s=String(v);return s.length>60?s.slice(0,57)+'…':s;
+}
+const ARR_LAB={mats:['Matrícula',x=>x.num],insc:['Inscrição imobiliária',x=>x.sql],confr:['Confrontação',x=>x.tipo],dilig:['Diligência',x=>x.titulo],pessoas:['Pessoa',x=>x.nome],
+  corretores:['Corretor',x=>(typeof corretor==='function'&&corretor(x.cid)?.nome)||''],ofertas:['Oferta',x=>x.valor!=null?mi(x.valor):''],propostas:['Proposta',x=>'v'+x.v+(x.valor!=null?' · '+mi(x.valor):'')],
+  reunioes:['Reunião',x=>fd(x.data)+(x.hora?' '+x.hora:'')],tarefas:['Tarefa',x=>x.titulo],docs:['Documento',x=>(TIPOS_DOC[x.tipo]||[x.nome||x.tipo])[0]],analises:['Análise urbanística',x=>x.fonte||fd(x.data)]};
+const ITEM_LAB={titulo:'título',prazo:'prazo',resp:'responsável',status:'status',prio:'prioridade',desc:'descrição',valor:'valor',data:'data',hora:'hora',sit:'situação',area:'área',
+  cond:'condições',forma:'forma de pagamento',validade:'validade',emitido:'emissão',versoes:'versão',resultado:'resultado',pauta:'pauta',resumo:'resumo',nome:'nome',papel:'papel',principal:'principal'};
+const NEG_LAB={etapa:'Etapa',status:'Situação da negociação',temp:'Temperatura',retomar:'Revisitar em',motivo:'Motivo',ofRef:'Oferta de referência',final:'Fase final',fase_final:'Fase final'};
+let AUD={};
+const retrato=t=>{const {hist,relevo,...r}=t;return JSON.stringify(r)};
+function audSnap(){AUD={};S.terrenos.forEach(t=>{AUD[t.id]={j:retrato(t),h:(t.hist||[]).length}})}
+function diffTerreno(a,b){
+  const campos=[],itens=[];
+  Object.keys({...a,...b}).forEach(k=>{
+    if(['hist','relevo','id','codigo'].includes(k))return;
+    const va=a[k],vb=b[k];if(JSON.stringify(va)===JSON.stringify(vb))return;
+    if(k==='poly'){campos.push({k,txt:vb?'Poligonal alterada':'Poligonal removida'});return}
+    if(k==='neg'){const na=va||{},nb=vb||{};if(!va&&vb){itens.push('Negociação aberta');return}
+      Object.keys({...na,...nb}).forEach(x=>{if(JSON.stringify(na[x])===JSON.stringify(nb[x])||typeof (nb[x]??na[x])==='object'&&x!=='viab')return;
+        if(x==='viab'){campos.push({k:'neg.viab',txt:nb.viab?`Estudo de viabilidade vinculado: ${nb.viab.nome||''}`:'Estudo de viabilidade desvinculado'});return}
+        const f=v=>v==null||v===''?'não informado':x==='etapa'?SN(v):x==='retomar'?fd(v):x==='temp'?v+'/5':String(v);
+        campos.push({k:'neg.'+x,txt:`${NEG_LAB[x]||x}: ${f(na[x])} → ${f(nb[x])}`})});return}
+    if(k==='infra'){Object.keys({...va,...vb}).forEach(x=>{const da=va?.[x]?.d,db=vb?.[x]?.d;if(da!==db)campos.push({k:'infra.'+x,txt:`Infraestrutura · ${x}: ${da||'não verificado'} → ${db||'não verificado'}`})});return}
+    if(Array.isArray(va)||Array.isArray(vb)){const [lab,desc]=ARR_LAB[k]||[k,()=>''];const A=va||[],B=vb||[];
+      const chave=(x,i)=>x&&x.id!=null?'id:'+x.id:x&&x.v!=null?'v:'+x.v:'i:'+i;
+      const mA=new Map(A.map((x,i)=>[chave(x,i),x])),mB=new Map(B.map((x,i)=>[chave(x,i),x]));
+      mB.forEach((x,c)=>{const d=desc(x)||'';if(!mA.has(c))itens.push(`${lab} adicionada${d?': '+d:''}`);else if(JSON.stringify(mA.get(c))!==JSON.stringify(x)){const o=mA.get(c);const ks=Object.keys({...o,...x}).filter(q=>JSON.stringify(o[q])!==JSON.stringify(x[q])).map(q=>ITEM_LAB[q]||q);itens.push(`${lab} alterada${d?' ('+d+')':''}: ${ks.join(', ')}`)}});
+      mA.forEach((x,c)=>{if(!mB.has(c)){const d=desc(x)||'';itens.push(`${lab} removida${d?': '+d:''}`)}});return}
+    if(typeof (vb??va)==='object')return;
+    if(valTxt(k,va)!==valTxt(k,vb))campos.push({k,txt:`${LAB_CAMPO[k]||k}: ${valTxt(k,va)} → ${valTxt(k,vb)}`});
+  });
+  return {campos,itens};
+}
+function audit(){
+  S.terrenos.forEach(t=>{
+    const s=AUD[t.id];t.hist=t.hist||[];
+    if(!s)return;
+    const {campos,itens}=diffTerreno(JSON.parse(s.j),JSON.parse(retrato(t)));
+    if(!campos.length&&!itens.length)return;
+    const novos=t.hist.slice(s.h);
+    if(novos.length){const e=novos[novos.length-1];const det=campos.map(c=>c.txt);if(det.length)e.det=(e.det||[]).concat(det)}
+    else{const secs=new Set(campos.map(c=>SEC_DE[c.k]).filter(Boolean));
+      const txt=itens.length&&!campos.length?itens[0]:secs.size===1&&!itens.length?`${SECOES[[...secs][0]].titulo} editado`:'Ficha editada';
+      const det=campos.map(c=>c.txt).concat(itens.length&&!(itens.length===1&&!campos.length)?itens:[]);
+      t.hist.push({em:agora(),user:me(),txt,det:det.length?det:undefined})}
+  });
+  audSnap();
+}
+
+/* histórico de exemplo: reconstrói, a partir dos dados semeados, os registros que o sistema teria feito */
+function semearHistorico(){
+  const hora=(s,i)=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;h=(h+i*7919)>>>0;return `${String(8+h%10).padStart(2,'0')}:${String((h>>>4)%60).padStart(2,'0')}`};
+  S.terrenos.forEach(t=>{
+    const H=[];const add=(dia,user,txt,det)=>{if(!dia)return;H.push({em:dia.length>10?dia:dia+'T'+hora(t.id+txt,H.length),user:user||t.resp,txt,det})};
+    add(t.dataIdent,t.resp,'Terreno cadastrado',[t.nome,t.logradouro&&`Endereço: ${t.logradouro}${t.numero?', '+t.numero:''}`].filter(Boolean));
+    (t.ofertas||[]).forEach(o=>add(o.data,t.resp,`Oferta registrada: ${mi(o.valor)}`,[typeof corretor==='function'&&corretor(o.cid)?`Corretor: ${corretor(o.cid).nome}`:null,o.forma&&OPT.forma?.[o.forma]?`Forma: ${OPT.forma[o.forma]}`:null].filter(Boolean)));
+    (t.mats||[]).forEach(m=>add(m.data||addD(t.dataIdent,1),'Rafael Souza',`Matrícula adicionada: ${m.num}`,[m.cri,m.area!=null?`Área: ${m2(m.area)}`:null].filter(Boolean)));
+    (t.insc||[]).forEach(i=>add(i.valores?.[0]?.data||addD(t.dataIdent,2),'Rafael Souza',`Inscrição imobiliária adicionada: ${i.sql}`));
+    (t.analises||[]).forEach(a=>add(a.data,'Rafael Souza',`Análise urbanística registrada (${a.fonte})`,(a.zonas||[]).map(z=>`${z.sigla} · CA ${num(z.ca,2)}`)));
+    if(t.neg)add(t.neg.desde,t.resp,`Etapa: ${SN(t.neg.etapa)}`);
+    if(t.neg?.viab)add(t.neg.viab.em,t.resp,`Estudo de viabilidade vinculado: ${t.neg.viab.nome}`,[`Preço máximo ${mi(t.neg.viab.pmax)}`,`Margem ${num(t.neg.viab.margem,1)}%`]);
+    (t.propostas||[]).forEach(p=>add(p.data,p.origem==='bkm'?t.resp:t.resp,`Proposta v${p.v} registrada (${p.origem==='bkm'?'BKM':'vendedor'}): ${mi(p.valor)}`,[p.cond].filter(Boolean)));
+    (t.propostas||[]).filter(p=>['recusada','aceita'].includes(p.status)).forEach(p=>add(addD(p.data,3),t.resp,`Proposta v${p.v}: ${OPT.statusProp[p.status]}`));
+    (t.reunioes||[]).forEach(r=>add(r.status==='realizada'?r.data:addD(r.data,-7),t.resp,r.status==='realizada'?`Reunião registrada (${fd(r.data)})`:`Reunião agendada para ${fd(r.data)} ${r.hora||''}`.trim(),[r.pauta].filter(Boolean)));
+    (t.docs||[]).forEach(d=>add(d.emitido?addD(d.emitido,1):null,'Camila Torres',`Documento enviado: ${(TIPOS_DOC[d.tipo]||[d.nome||d.tipo])[0]}`));
+    (t.docs||[]).filter(d=>d.status==='validado').forEach(d=>add(d.emitido?addD(d.emitido,2):null,'Moisés',`Documento validado: ${(TIPOS_DOC[d.tipo]||[d.nome||d.tipo])[0]}`));
+    (t.dilig||[]).forEach(d=>add(addD(t.dataIdent,3),d.resp||t.resp,`Diligência aberta: ${d.titulo}`));
+    (t.tarefas||[]).forEach(k=>add(addD(k.prazo,-7),k.resp===t.resp?'Moisés':t.resp,`Tarefa criada: ${k.titulo}`,[`Responsável: ${k.resp}`,`Prazo: ${fd(k.prazo)}`]));
+    if(t.neg?.status==='perdida')add(addD(t.neg.desde,5),t.resp,`Negociação perdida: ${t.neg.motivo}`,[t.neg.detalhe].filter(Boolean));
+    t.hist=H.filter(h=>h.em.slice(0,10)<=HOJE).sort((a,b)=>a.em.localeCompare(b.em));
+  });
+}
+if(S.histV2!==4){semearHistorico();S.histV2=4;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+audSnap();
+
+/* ---------- estado do painel ---------- */
+let PN={aberto:true,aba:'logs',users:[]};try{const x=JSON.parse(localStorage.getItem('bkm-terrenos-painel')||'null');if(x)PN={...PN,...x}}catch(e){}
+if(!Array.isArray(PN.users))PN.users=[];if(typeof PN.user==='string'){if(PN.user)PN.users=[PN.user];delete PN.user}
+let pnMenu=false,pnFoco=null;
+const pnSalva=()=>{try{localStorage.setItem('bkm-terrenos-painel',JSON.stringify(PN))}catch(e){}};
+
+/* ---------- próximas ações ---------- */
+function proximasAcoes(t){
+  const L=[],n=t.neg;const fixBtn=(a,l,extra='')=>({a,l,extra});
+  if(n?.status==='stand_by')L.push({sev:'warn',i:'pause',txt:`Negociação em stand by. Revisitar em ${fd(n.retomar)}`,fix:UI.role!=='Leitura'?fixBtn('retomar','Retomar'):null});
+  if(n?.status==='ativo'){
+    const r=checkAdv(t);
+    if(r)r.items.filter(x=>!x.ok).forEach(x=>L.push({sev:x.gate?'':'warn',i:x.gate?'warn':'fwd',txt:x.txt,fix:x.fix?fixBtn(x.fix[0].startsWith('tab:')?'tab':x.fix[0],x.fix[1],x.fix[0].startsWith('tab:')?`data-t="${x.fix[0].slice(4)}"`:''):null}));
+    if(r&&r.ok)L.push({sev:'good',i:'fwd',txt:`Pronto para avançar para ${r.next[1]}`,fix:null});
+    const lp=lastProp(t);
+    if(lp&&['apresentada','em_analise'].includes(lp.status))L.push({sev:'warn',i:'money',txt:lp.origem==='bkm'?`Cobrar resposta da proposta v${lp.v} (enviada em ${fd(lp.data)})`:`Responder à proposta v${lp.v} do vendedor (${mi(lp.valor)})`,fix:fixBtn('tab','Ver propostas','data-t="negociacao"')});
+    if(acimaMax(t))L.push({sev:'crit',i:'money',txt:`Levar ao comitê: proposta ${mi(lastProp(t).valor)} acima do preço máximo (${mi(n.viab.pmax)})`,fix:null});
+    if(!n.temp)L.push({sev:'warn',i:'warn',txt:'Avaliar a temperatura da negociação',fix:null});
+    const pr=proxReuniao(t);if(pr)L.push({sev:'',i:'clock',txt:`Reunião ${fd(pr.data)}${pr.hora?' às '+pr.hora:''}${pr.pauta?' · '+pr.pauta:''}`,fix:fixBtn('tab','Ver','data-t="negociacao"')});
+  }
+  (t.dilig||[]).filter(d=>d.sit!=='resolvida').forEach(d=>L.push({sev:d.sit==='impeditiva'?'crit':'warn',i:'warn',txt:`Resolver diligência: ${d.titulo}`,fix:fixBtn('tab','Ver','data-t="documentos"')}));
+  (t.docs||[]).filter(d=>docSt(d)==='vencido').forEach(d=>L.push({sev:'crit',i:'doc',txt:`Renovar documento vencido: ${(TIPOS_DOC[d.tipo]||[d.tipo])[0]}`,fix:fixBtn('tab','Ver','data-t="documentos"')}));
+  const c=completude(t);if(c.faltam.length)L.push({sev:'',i:'edit',txt:`Completar a ficha (${c.pct}%): ${c.faltam.slice(0,3).map(f=>f[0]).join(', ')}${c.faltam.length>3?'…':''}`,fix:fixBtn('ir','Completar',`data-t="${c.faltam[0][2]}" data-s="${c.faltam[0][3]||''}"`)});
+  if(!n&&t.situacao==='ativo')L.push({sev:'',i:'fwd',txt:'Terreno sem negociação. Registre uma oferta para abrir a negociação.',fix:UI.role!=='Leitura'?fixBtn('nova-oferta','Registrar oferta'):null});
+  return L;
+}
+
+/* ---------- desenho ---------- */
+const PN_IC={logs:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+  acoes:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M3.5 6l1.2 1.2L6.8 5M3.5 12l1.2 1.2 2.1-2.2M3.5 18l1.2 1.2 2.1-2.2"/></svg>',
+  fechar:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 6l6 6-6 6M5 6l6 6-6 6"/></svg>',
+  abrir:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 6l-6 6 6 6M19 6l-6 6 6 6"/></svg>'};
+function diaRot(d){const x=diff(d,HOJE);return x===0?'Hoje':x===1?'Ontem':fd(d)}
+function pnLogs(t){
+  const todos=(t.hist||[]).slice().sort((a,b)=>b.em.localeCompare(a.em));
+  if(!todos.length)return '<div class="empty">Nenhum registro.</div>';
+  const cont=new Map();todos.forEach(h=>cont.set(h.user,(cont.get(h.user)||0)+1));
+  const users=[...cont.keys()].sort((a,b)=>cont.get(b)-cont.get(a)||a.localeCompare(b));
+  const sel=PN.users.filter(x=>users.includes(x));
+  const H=sel.length?todos.filter(h=>sel.includes(h.user)):todos;
+  const nSel=sel.reduce((a,x)=>a+cont.get(x),0);
+  const rot=!sel.length?`Todos os usuários (${todos.length})`:sel.length===1?`${sel[0]} (${nSel})`:sel.length===2?`${sel.map(x=>x.split(' ')[0]).join(', ')} (${nSel})`:`${sel.length} usuários (${nSel})`;
+  const ck='<span class="pn-ck" aria-hidden="true"></span>';
+  const filtro=`<div class="pn-filtro" role="group" aria-label="Filtrar por usuário"><button class="fchip" data-a="pn-todos" aria-pressed="${!sel.length}">Todos <span class="n">${todos.length}</span></button>${users.map(x=>`<button class="fchip" data-a="pn-u" data-v="${esc(x)}" aria-pressed="${sel.includes(x)}">${av(x,'xs')}${esc(x.split(' ')[0])} <span class="n">${cont.get(x)}</span></button>`).join('')}
+    <div class="pn-sel ${pnMenu?'aberto':''}"><button class="pn-sel-b ${sel.length?'ativo':''}" data-a="pn-menu" aria-haspopup="menu" aria-expanded="${pnMenu}" aria-label="Filtrar por usuário: ${esc(rot)}"><span class="pn-sel-t">${esc(rot)}</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+    <div class="pn-menu" role="menu" aria-label="Usuários"><button role="menuitemcheckbox" aria-checked="${!sel.length}" data-a="pn-todos">${ck}<span class="pn-mn">Todos os usuários</span><span class="n">${todos.length}</span></button><div class="pn-msep"></div>${users.map(x=>`<button role="menuitemcheckbox" aria-checked="${sel.includes(x)}" data-a="pn-u" data-v="${esc(x)}">${ck}${av(x,'xs')}<span class="pn-mn">${esc(x)}</span><span class="n">${cont.get(x)}</span></button>`).join('')}</div></div></div>`;
+  let dia='',out=filtro;
+  H.forEach(h=>{const d=h.em.slice(0,10);if(d!==dia){dia=d;out+=`<div class="pn-dia">${diaRot(d)}</div>`}
+    out+=`<div class="pn-log">${av(h.user,'sm')}<div class="pn-lc"><div class="pn-lt">${esc(h.txt)}</div>${h.det&&h.det.length?`<ul class="pn-det">${h.det.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}<div class="pn-lm">${esc(h.user)}${hhmm(h.em)?` · ${hhmm(h.em)}`:''}</div></div></div>`});
+  return out;
+}
+function pnAcoes(t){
+  const A=proximasAcoes(t),K=abertas(t).sort((a,b)=>a.prazo.localeCompare(b.prazo)),ed=UI.role!=='Leitura';
+  return `<div class="pn-grupo"><div class="pn-gt">Próximas ações <span class="n">${A.length}</span></div>
+    ${A.length?A.map(x=>`<div class="pn-acao ${x.sev}"><span class="pn-ai">${ic(x.i,16)}</span><div class="pn-ac"><div>${esc(x.txt)}</div>${x.fix?`<button class="linkbtn" data-a="${x.fix.a}" ${x.fix.extra}>${esc(x.fix.l)}</button>`:''}</div></div>`).join(''):'<div class="empty">Nada pendente.</div>'}</div>
+  <div class="pn-grupo"><div class="pn-gt">Tarefas em aberto <span class="n">${K.length}</span>${ed?`<button class="btn text sm" data-a="tab" data-t="tarefas" style="margin-left:auto">${ic('add',16)}Nova</button>`:''}</div>
+    ${K.length?K.map(k=>{const late=k.prazo<HOJE;return `<div class="pn-tar">${ed?`<button class="pn-chk" data-a="pn-concluir" data-k="${k.id}" aria-label="Concluir ${esc(k.titulo)}" title="Concluir"></button>`:''}
+      <button class="pn-tc" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}"><span class="pn-tt">${esc(k.titulo)}${k.prio==='alta'?' <span class="chip warn" style="height:20px">Alta</span>':''}</span>
+      <span class="pn-tm ${late?'late':''}">${esc(k.resp)} · ${late?'atrasada desde ':'prazo '}${fd(k.prazo)} · ${OPT.statusTar[k.status]}</span></button></div>`}).join(''):'<div class="empty">Nenhuma tarefa aberta.</div>'}</div>`;
+}
+function painelFicha(t){
+  const nL=(t.hist||[]).length,nA=proximasAcoes(t).length+abertas(t).length;
+  if(!PN.aberto)return `<aside class="pn pn-min" aria-label="Logs e ações"><button class="pn-rb" data-a="pn-abrir" title="Expandir painel" aria-label="Expandir painel">${PN_IC.abrir}</button>
+    <button class="pn-rb" data-a="pn-aba" data-v="logs" title="Logs" aria-label="Logs, ${nL} registros">${PN_IC.logs}<span class="pn-badge">${nL}</span></button>
+    <button class="pn-rb" data-a="pn-aba" data-v="acoes" title="Ações" aria-label="Ações, ${nA} pendências">${PN_IC.acoes}<span class="pn-badge">${nA}</span></button></aside>`;
+  return `<aside class="pn" aria-label="Logs e ações"><div class="pn-h"><div class="seg" role="tablist" aria-label="Painel">${[['logs','Logs',nL],['acoes','Ações',nA]].map(([k,l,q])=>`<button role="tab" data-a="pn-aba" data-v="${k}" aria-pressed="${PN.aba===k}" aria-selected="${PN.aba===k}">${l} <span class="pn-q">${q}</span></button>`).join('')}</div>
+    <button class="iconbtn" data-a="pn-fechar" title="Recolher painel" aria-label="Recolher painel">${PN_IC.fechar}</button></div>
+    <div class="pn-b">${PN.aba==='logs'?pnLogs(t):pnAcoes(t)}</div></aside>`;
+}
+/* filtro de usuário: chips enquanto couberem em 2 linhas; acima disso, seletor suspenso */
+function pnAjusta(){const f=document.querySelector('.pn-filtro');if(!f)return;f.classList.remove('compacto');
+  const tops=new Set([...f.querySelectorAll('.fchip')].map(b=>b.offsetTop));if(tops.size>2)f.classList.add('compacto')}
+const _posRender=posRender;posRender=function(){_posRender.apply(this,arguments);pnAjusta();
+  if(pnFoco){const el=document.querySelector(`.pn-filtro ${pnFoco}`);el&&el.focus({preventScroll:true});pnFoco=null}};
+let pnRz;window.addEventListener('resize',()=>{cancelAnimationFrame(pnRz);pnRz=requestAnimationFrame(pnAjusta)});
+/* menu de usuários: abre e fecha sem redesenhar a página; marcar um usuário redesenha e mantém o menu aberto */
+function pnMenuSet(v){pnMenu=v;const w=document.querySelector('.pn-sel');if(!w)return;w.classList.toggle('aberto',v);w.querySelector('.pn-sel-b').setAttribute('aria-expanded',v);
+  if(v){const m=w.querySelector('[role=menuitemcheckbox][aria-checked=true]')||w.querySelector('[role=menuitemcheckbox]');m&&m.focus()}}
+document.addEventListener('click',e=>{if(pnMenu&&!e.target.closest('.pn-sel'))pnMenuSet(false)},true);
+document.addEventListener('keydown',e=>{if(!pnMenu)return;
+  if(e.key==='Escape'){pnMenuSet(false);document.querySelector('.pn-sel-b')?.focus();return}
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){const it=[...document.querySelectorAll('.pn-menu [role=menuitemcheckbox]')];const k=it.indexOf(document.activeElement);e.preventDefault();it[(k+(e.key==='ArrowDown'?1:-1)+it.length)%it.length]?.focus()}});
+const _pgFicha=pgFicha;
+pgFicha=function(){const t=T(UI.id);return `<div class="ficha-wrap ${PN.aberto?'pn-on':'pn-off'}"><div class="ficha-main">${_pgFicha()}</div>${painelFicha(t)}</div>`};
+
+document.addEventListener('click',e=>{
+  const a=e.target.closest('[data-a]');if(!a)return;const A=a.dataset.a;
+  if(A==='pn-abrir'){PN.aberto=true;pnSalva();render()}
+  else if(A==='pn-fechar'){PN.aberto=false;pnSalva();render()}
+  else if(A==='pn-u'){const v=a.dataset.v;PN.users=PN.users.includes(v)?PN.users.filter(x=>x!==v):[...PN.users,v];pnSalva();
+    pnFoco=(a.closest('.pn-menu')?'.pn-menu ':'')+`[data-a="pn-u"][data-v="${CSS.escape(v)}"]`;render()}
+  else if(A==='pn-todos'){PN.users=[];pnSalva();pnFoco=a.closest('.pn-menu')?'.pn-menu [data-a="pn-todos"]':'.fchip[data-a="pn-todos"]';render()}
+  else if(A==='pn-menu'){pnMenuSet(!pnMenu)}
+  else if(A==='pn-aba'){PN.aba=a.dataset.v;PN.aberto=true;pnSalva();render()}
+  else if(A==='pn-concluir'){const t=T(UI.id),k=t?.tarefas.find(x=>x.id===a.dataset.k);if(!k)return;const de=k.status;k.status='concluida';log(t,`Tarefa "${k.titulo}": ${OPT.statusTar[de]} → Concluída`);save();render();toast('Tarefa concluída.')}
+});
 
 render();
 })();
