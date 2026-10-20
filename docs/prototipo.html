@@ -2277,7 +2277,7 @@ function campoInp(t,[k,l,tipo,opt,full]){
     return `<div class="field ${full||''}"><label for="${idf}">${l}</label>${h}</div>`;
   }
 /* busca de endereço do Google: escolher um resultado preenche CEP, logradouro, número, bairro, município e o ponto no mapa */
-function buscaEndereco(){return GG?`<div class="gbusca"><div class="gauto" data-gauto></div><div class="hint">Escolha um resultado para preencher CEP, logradouro, número, bairro, município e a localização. Complemento e zona continuam à mão.</div></div>`
+function buscaEndereco(){return GG?`<div class="gbusca"><div class="gauto" data-gauto></div><div class="hint">Escolha um resultado para preencher CEP, logradouro, número, bairro, município e a localização.</div></div>`
   :`<div class="gbusca off"><div class="hint">Busca de endereço do Google indisponível neste acesso. Preencha os campos à mão.</div></div>`}
 function secaoGenerica(t,id){
   const s=SECOES[id],ed=UI.edit===id;
