@@ -47,7 +47,7 @@ create table app.terrenos (
   complemento           text,
   bairro                text,
   municipio_id          uuid not null references app.municipios(id),
-  zona                  text check (zona in ('leste','oeste','norte','sul','sudeste','sudoeste','nordeste','noroeste')),
+  zona                  text check (zona in ('leste','oeste','norte','sul','centro','sudeste','sudoeste','nordeste','noroeste')),  -- mesma lista para qualquer cidade
   eixo_comercial_id     uuid references app.eixos_comerciais(id),
   referencia_localizacao text,
   latitude              double precision check (latitude between -90 and 90),

@@ -1256,6 +1256,21 @@ gmp-place-autocomplete::part(prediction-list) { font-family: inherit }
 .gauto:empty::before, .gauto:has(> .hint)::before { display: none }
 gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 :root[data-tema="escuro"] .gauto::before { color: var(--m-on-var) }
+/* endereço: complemento e zona logo abaixo da busca; o que o Google preenche, em linhas simples */
+.end-manual { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 0 0 16px }
+.end-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px 20px; margin-bottom: 4px }
+.end-auto .auto-l label { font-size: 12px; color: var(--texto-suave) }
+.field input.auto-v, :root[data-tema="escuro"] .field input.auto-v { border: 0; border-bottom: 1px solid var(--m-outline-var, var(--linha)); border-radius: 0; background: transparent; padding: 2px 0 6px; min-height: 0; height: auto; font-size: 15px; color: var(--m-on-surface, var(--texto)); box-shadow: none; outline: none; cursor: default }
+.field input.auto-v::placeholder { color: var(--texto-suave); opacity: .7 }
+:root[data-tema="escuro"] .field input.auto-v { border-bottom-color: rgba(124,140,255,.18) }
+.field input.auto-v.gpreenchido { animation: gpreenchido-linha 1.6s ease-out }
+@keyframes gpreenchido-linha { 0%, 60% { background: var(--m-sc, #c2e7ff) } 100% { background: transparent } }
+:root[data-tema="escuro"] .field input.auto-v.gpreenchido { animation: none; box-shadow: none; border-bottom-color: #7c8cff }
+.end-corrigir { font-size: 13px; margin: 6px 0 4px }
+.kv-form .end-manual, .kv-form .end-auto { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) }
+.end-auto { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) }
+.end-auto .auto-l.largo { grid-column: span 2 }
+.end-corrigir { display: inline-block; margin: 8px 0 16px }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

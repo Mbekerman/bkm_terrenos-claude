@@ -43,7 +43,7 @@ Modelo de dados com diagramas: [docs/modelo.md](docs/modelo.md). Mantenha-o em d
 ## Comandos
 
 ```bash
-bash supabase/tests/run.sh          # migrations + 158 testes de regra num Postgres 16 temporário
+bash supabase/tests/run.sh          # migrations + 159 testes de regra num Postgres 16 temporário
 cd apps/web && npm install
 npm run dev                          # precisa de apps/web/.env.local (ver .env.example)
 npm run typecheck && npm run build

@@ -1930,6 +1930,21 @@ gmp-place-autocomplete::part(prediction-list) { font-family: inherit }
 .gauto:empty::before, .gauto:has(> .hint)::before { display: none }
 gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 :root[data-tema="escuro"] .gauto::before { color: var(--m-on-var) }
+/* endereço: complemento e zona logo abaixo da busca; o que o Google preenche, em linhas simples */
+.end-manual { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 0 0 16px }
+.end-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px 20px; margin-bottom: 4px }
+.end-auto .auto-l label { font-size: 12px; color: var(--texto-suave) }
+.field input.auto-v, :root[data-tema="escuro"] .field input.auto-v { border: 0; border-bottom: 1px solid var(--m-outline-var, var(--linha)); border-radius: 0; background: transparent; padding: 2px 0 6px; min-height: 0; height: auto; font-size: 15px; color: var(--m-on-surface, var(--texto)); box-shadow: none; outline: none; cursor: default }
+.field input.auto-v::placeholder { color: var(--texto-suave); opacity: .7 }
+:root[data-tema="escuro"] .field input.auto-v { border-bottom-color: rgba(124,140,255,.18) }
+.field input.auto-v.gpreenchido { animation: gpreenchido-linha 1.6s ease-out }
+@keyframes gpreenchido-linha { 0%, 60% { background: var(--m-sc, #c2e7ff) } 100% { background: transparent } }
+:root[data-tema="escuro"] .field input.auto-v.gpreenchido { animation: none; box-shadow: none; border-bottom-color: #7c8cff }
+.end-corrigir { font-size: 13px; margin: 6px 0 4px }
+.kv-form .end-manual, .kv-form .end-auto { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) }
+.end-auto { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) }
+.end-auto .auto-l.largo { grid-column: span 2 }
+.end-corrigir { display: inline-block; margin: 8px 0 16px }
 </style>
 <header class="top">
   <div class="top-in">
@@ -2012,7 +2027,7 @@ const bi=(n,s=32)=>`<svg class="bkm-ico" viewBox="0 0 96 96" width="${s}" height
 
 /* ===================== domínio ===================== */
 const OPT={
-  zona:{leste:'Leste',oeste:'Oeste',norte:'Norte',sul:'Sul',sudeste:'Sudeste',sudoeste:'Sudoeste',nordeste:'Nordeste',noroeste:'Noroeste'},
+  zona:{leste:'Leste',oeste:'Oeste',norte:'Norte',sul:'Sul',centro:'Centro',sudeste:'Sudeste',sudoeste:'Sudoeste',nordeste:'Nordeste',noroeste:'Noroeste'},
   prioridade:{baixa:'Baixa',media:'Média',alta:'Alta',estrategica:'Estratégica'},
   origem:{prospeccao:'Prospecção própria',corretor:'Corretor',indicacao:'Indicação',portal:'Portal',proprietario:'Proprietário direto',outro:'Outro'},
   precisao:{nao_informada:'Não informada',aproximada:'Aproximada',conferida:'Conferida'},
@@ -2279,6 +2294,16 @@ function campoInp(t,[k,l,tipo,opt,full]){
 /* busca de endereço do Google: escolher um resultado preenche CEP, logradouro, número, bairro, município e o ponto no mapa */
 function buscaEndereco(){return GG?`<div class="gbusca"><div class="gauto" data-gauto></div><div class="hint">Escolha um resultado para preencher CEP, logradouro, número, bairro, município e a localização.</div></div>`
   :`<div class="gbusca off"><div class="hint">Busca de endereço do Google indisponível neste acesso. Preencha os campos à mão.</div></div>`}
+/* formulário de endereço: busca do Google; logo abaixo, os campos que o Google não traz (complemento e zona);
+   depois, o que a busca preenche, em linhas simples (não parecem campos a preencher). "Corrigir à mão" libera a edição. */
+const END_CAMPOS=['cep','logradouro','numero','complemento','bairro','municipio','zona','lat','lng'];
+function camposEndereco(t,comCoord){
+  const auto=[['cep','CEP'],['logradouro','Logradouro'],['numero','Número'],['bairro','Bairro'],['municipio','Município']].concat(comCoord?[['lat','Latitude'],['lng','Longitude']]:[]);
+  const val=k=>k==='municipio'?(t.municipio||'São Paulo · SP'):['lat','lng'].includes(k)?(t[k]==null?'':String(t[k]).replace('.',',')):(t[k]??'');
+  const trava=GG;
+  return `${buscaEndereco()}<div class="end-manual"><div class="field"><label for="f-complemento">Complemento</label><input id="f-complemento" name="complemento" value="${esc(t.complemento||'')}"></div><div class="field"><label for="f-zona">Zona</label>${optSel('zona',OPT.zona,t.zona)}</div></div>
+    <div class="end-auto">${auto.map(([k,l])=>`<div class="field auto-l ${['logradouro','municipio'].includes(k)?'largo':''}"><label for="f-${k}">${l}</label><input id="f-${k}" name="${k}" value="${esc(val(k))}" ${trava?'readonly class="auto-v" placeholder="—"':''}></div>`).join('')}</div>
+    ${trava?'<button type="button" class="linkbtn end-corrigir" data-a="end-manual">Corrigir à mão</button>':''}`}
 function secaoGenerica(t,id){
   const s=SECOES[id],ed=UI.edit===id;
   if(!ed)return `<section class="sec" id="sec-${id}"><div class="sec-h"><h2>${s.titulo}</h2><button class="btn text sm" data-a="edit" data-s="${id}">${ic('edit',16)}Editar</button></div>
@@ -2286,7 +2311,7 @@ function secaoGenerica(t,id){
     ${id==='fis'&&t.aConst!=null&&t.aDemolir!=null&&t.aDemolir<t.aConst?`<div class="hint" style="margin-top:10px">Demolição parcial: ${m2(t.aConst-t.aDemolir)} permanecem.</div>`:''}</div></section>`;
   const inp=c=>campoInp(t,c);
   return `<section class="sec" id="sec-${id}"><form data-form="sec" data-s="${id}"><div class="sec-h"><h2>${s.titulo}</h2></div>
-    <div class="sec-b">${id==='loc'?buscaEndereco():''}<div class="editgrid">${s.campos.map(inp).join('')}</div>${id==='loc'?'<div class="hint" style="margin-top:8px">Localização mínima para cadastrar: logradouro, bairro ou ponto no mapa. O polígono entra depois, na análise.</div>':''}</div>
+    <div class="sec-b">${id==='loc'?camposEndereco(t,true):''}<div class="editgrid">${(id==='loc'?s.campos.filter(c=>!END_CAMPOS.includes(c[0])):s.campos).map(inp).join('')}</div>${id==='loc'?'<div class="hint" style="margin-top:8px">Localização mínima para cadastrar: logradouro, bairro ou ponto no mapa. O polígono entra depois, na análise.</div>':''}</div>
     <div class="sec-f"><button type="button" class="btn text" data-a="cancel-edit">Cancelar</button><button class="btn primary">Salvar</button></div></form></section>`;
 }
 function secaoAreas(t){
@@ -2851,7 +2876,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       if(!F.logradouro.trim()&&!F.bairro.trim()&&!dup&&!UI.novoLoc){toast('Informe ao menos logradouro ou bairro.',true);return}
       if(dup){alvo=T(dup)}else{S.seqT++;alvo={...seedVazio(),codigo:'TER-'+String(S.seqT).padStart(6,'0'),nome:F.nome,logradouro:F.logradouro.trim(),numero:F.numero.trim(),bairro:F.bairro.trim(),zona:F.zona||null,resp:F.resp,origem:F.origem,dataIdent:HOJE,
         mats:F.mat?[{num:F.mat,cri:F.cri,area:null,data:null}]:[],insc:F.sql?[{sql:F.sql,area:null,valores:[]}]:[]};alvo.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado'}];if(UI.novoLoc){alvo.lat=UI.novoLoc.lat;alvo.lng=UI.novoLoc.lng;alvo.precisao='aproximada';alvo.hist[0].txt='Terreno cadastrado pelo mapa';
-          if(UI.novoLoc.cep)alvo.cep=UI.novoLoc.cep;if(UI.novoLoc.municipio){alvo.municipio=UI.novoLoc.municipio;alvo.hist[0].txt='Terreno cadastrado pela busca de endereço';if(alvo.municipio!=='São Paulo · SP')alvo.zona=null}}S.terrenos.push(alvo)}
+          if(UI.novoLoc.cep)alvo.cep=UI.novoLoc.cep;if(UI.novoLoc.municipio){alvo.municipio=UI.novoLoc.municipio;alvo.hist[0].txt='Terreno cadastrado pela busca de endereço'}}S.terrenos.push(alvo)}
       const val=lerNum(F.valor);
       if(val||F.cid){const o={id:uid(),cid:F.cid||null,data:HOJE,valor:val,forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,status:'ativa'};alvo.ofertas.push(o);
         if(o.cid&&!alvo.corretores.some(x=>x.cid===o.cid))alvo.corretores.push({cid:o.cid,principal:!alvo.corretores.some(x=>x.principal)});
@@ -3166,8 +3191,9 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
   const pe=`<div class="kv-f"><button type="button" class="btn text sm" data-a="cancel-edit">Cancelar</button><button class="btn primary sm">Salvar</button></div>`;
   const linE=(rot,val,chave,campos)=>{const id='g-'+chave;
     if(UI.edit===id){const sid=CAMPO[campos[0]][0];
-      const extra=chave==='end'?buscaEndereco()+['lat','lng'].map(k=>`<input type="hidden" name="${k}" value="${t[k]==null?'':String(t[k]).replace('.',',')}">`).join('')+`<input type="hidden" name="precisao" value="${esc(t.precisao||'nao_informada')}"><input type="hidden" name="zona" value="${esc(t.zona||'')}">`:'';
-      return `<div class="kv editando" id="sec-${id}"><dt>${rot}</dt><dd><form data-form="sec" data-s="${sid}" class="kv-form">${extra}<div class="kv-campos">${campos.map(k=>campoInp(t,CAMPO[k][1])).join('')}</div>${pe}</form></dd></div>`}
+      const corpo=chave==='end'?camposEndereco(t,false)+['lat','lng'].map(k=>`<input type="hidden" name="${k}" value="${t[k]==null?'':String(t[k]).replace('.',',')}">`).join('')+`<input type="hidden" name="precisao" value="${esc(t.precisao||'nao_informada')}">`
+        :`<div class="kv-campos">${campos.map(k=>campoInp(t,CAMPO[k][1])).join('')}</div>`;
+      return `<div class="kv editando" id="sec-${id}"><dt>${rot}</dt><dd><form data-form="sec" data-s="${sid}" class="kv-form">${corpo}${pe}</form></dd></div>`}
     return `<div class="kv"><dt>${rot}</dt><dd>${val==null||val===''?'<span class="ni">Não informado</span>':val}</dd><button class="kv-ed" data-a="edit" data-s="${id}" aria-label="Editar ${rot.toLowerCase()}" title="Editar">${lapis}</button></div>`};
   const areaHid=ks=>ks.map(k=>`<input type="hidden" name="${k}" value="${t[k]==null?'':String(t[k]).replace('.',',')}">`).join('');
   const numInp=(k,l)=>`<div class="field"><label for="g-${k}">${l}</label><input id="g-${k}" name="${k}" inputmode="decimal" value="${t[k]==null?'':String(t[k]).replace('.',',')}" placeholder="${k==='testada'?'metros':'m²'}"></div>`;
@@ -3425,11 +3451,9 @@ function gDadosEndereco(place){const comp=(tipo,curto)=>{const c=place.addressCo
 function gPreencherCampos(f,d){if(!f||!d)return;const set=(n,v)=>{const i=f.querySelector(`[name="${n}"]`);if(i&&v!=null&&v!==''){i.value=v;i.dispatchEvent(new Event('input',{bubbles:true}));i.classList.remove('gpreenchido');void i.offsetWidth;i.classList.add('gpreenchido')}};
   set('cep',d.cep);set('logradouro',d.logradouro);set('numero',d.numero);if(d.complemento)set('complemento',d.complemento);set('bairro',d.bairro);
   if(d.cidade)set('municipio',d.cidade+(d.uf?' · '+d.uf:''));
-  /* zona (Centro, Norte, Sul…) é divisão da capital paulista: fora dela, fica em branco */
-  if(d.cidade&&!(/^s[ãa]o paulo$/i.test(d.cidade)&&d.uf==='SP')){const z=f.querySelector('[name="zona"]');if(z){z.value='';z.classList.add('gpreenchido')}}
   if(d.lat!=null){set('lat',String(d.lat.toFixed(6)).replace('.',','));set('lng',String(d.lng.toFixed(6)).replace('.',','));set('precisao','aproximada')}
   const av=f.querySelector('.gbusca .hint');if(av)av.textContent=`Preenchido a partir de: ${d.texto}`;
-  if(!d.numero){const n=f.querySelector('[name="numero"]');if(n){n.focus();toast('O Google não trouxe o número. Confira e preencha.')}}}
+  if(!d.numero){const n=f.querySelector('[name="numero"]');if(n){n.readOnly=false;n.classList.remove('auto-v');n.placeholder='';n.focus();toast('O Google não trouxe o número. Preencha.')}}}
 window.BKM_TESTE=Object.assign(window.BKM_TESTE||{},{preencherEndereco:(sel,d)=>gPreencherCampos(document.querySelector(sel),d)});
 /* dentro do campo, só a lupa (do tamanho do texto) e "Pesquisar": sem o ícone e o botão de limpar do Google */
 function gCampoBusca(pac){pac.placeholder='Pesquisar';pac.setAttribute('aria-label','Pesquisar endereço no Google');pac.requestedLanguage='pt-BR';pac.noInputIcon=true;pac.noClearButton=true;
@@ -3725,6 +3749,7 @@ pgFicha=function(){const t=T(UI.id);return `<div class="ficha-wrap ${PN.aberto?'
 
 document.addEventListener('click',e=>{
   const a=e.target.closest('[data-a]');if(!a)return;const A=a.dataset.a;
+  if(A==='end-manual'){const f=a.closest('form');f.querySelectorAll('input.auto-v').forEach(i=>{i.readOnly=false;i.classList.remove('auto-v');i.placeholder=''});a.remove();f.querySelector('[name="logradouro"]')?.focus();return}
   if(A==='pn-log'){const t=T(UI.id),h=t&&t.hist[+a.dataset.i];if(h)mostrarLog(h)}
   else if(A==='pn-abrir'){PN.aberto=true;pnSalva();render()}
   else if(A==='pn-fechar'){PN.aberto=false;pnSalva();render()}
