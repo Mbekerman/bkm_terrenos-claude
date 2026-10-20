@@ -1664,6 +1664,37 @@ h2{font-size:16px;line-height:24px;font-weight:500;letter-spacing:.01em}
 :root[data-tema="escuro"] .col{background:rgba(6,9,30,.45)!important}
 :root[data-tema="escuro"] .search{background:rgba(6,9,30,.6)!important}
 :root[data-tema="escuro"] .search input{background:transparent!important;border:0!important}
+
+/* Versão aprovada (out/2026): botões e seletores tonais (fundo escuro, contorno fino, texto claro) na paleta azul/índigo */
+:root[data-tema="escuro"] :is(.btn.primary,.compose,.fab){background:#18205a!important;color:#c9d6ff!important;border:1px solid rgba(124,140,255,.65)!important;box-shadow:none!important}
+:root[data-tema="escuro"] :is(.btn.primary,.compose,.fab):hover{background:#212b70!important}
+:root[data-tema="escuro"] :is(.btn.primary,.compose,.fab) :is(svg,.ic){color:#c9d6ff}
+/* fundo igual à proposta tonal: azul-noite liso, sem brilho; barras com fio fino */
+:root[data-tema="escuro"]{--m-surface:#081028}
+:root[data-tema="escuro"] body{background:#081028!important}
+:root[data-tema="escuro"] .side{background:#081028!important;border-right:1px solid #1a2240!important}
+:root[data-tema="escuro"] .top{background:#081028!important;border-bottom:1px solid #1a2240!important}
+:root[data-tema="escuro"] .bnav{background:#081028!important;border-top:1px solid #1a2240!important}
+/* quadros ligeiramente mais escuros que o fundo */
+:root[data-tema="escuro"] :is(.card,.sec,.tbl,.alist,.dt,.kcard){background:#060c20!important}
+:root[data-tema="escuro"] .kpi{background:#060c20!important}
+:root[data-tema="escuro"] .col{background:rgba(5,10,28,.6)!important}
+:root[data-tema="escuro"] .search{background:#060c20!important}
+/* botões mais transparentes */
+:root[data-tema="escuro"] :is(.btn.primary,.compose){background:rgba(99,112,255,.10)!important;border-color:rgba(124,140,255,.5)!important}
+:root[data-tema="escuro"] :is(.btn.primary,.compose):hover{background:rgba(99,112,255,.18)!important}
+/* o flutuante do celular passa por cima do conteúdo: transparente, mas com desfoque para o texto de trás não aparecer */
+:root[data-tema="escuro"] .fab{background:rgba(24,32,90,.55)!important;border-color:rgba(124,140,255,.5)!important;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+/* seletor de seção no mesmo padrão dos botões: véu leve + contorno fino, sem degradê nem brilho */
+:root[data-tema="escuro"] .nav-item[aria-current="page"]{background:rgba(99,112,255,.10)!important;color:#c9d6ff!important;box-shadow:inset 0 0 0 1px rgba(124,140,255,.5)!important}
+:root[data-tema="escuro"] .nav-item[aria-current="page"] .cnt{color:#c9d6ff!important}
+:root[data-tema="escuro"] .nav-item[aria-current="page"] .bkm-ico{filter:brightness(0) invert(86%) sepia(18%) saturate(600%) hue-rotate(190deg)!important}
+:root[data-tema="escuro"] .bnav button[aria-current="page"]{color:#c9d6ff!important}
+:root[data-tema="escuro"] .bnav button[aria-current="page"] .pill{background:rgba(99,112,255,.10)!important;box-shadow:inset 0 0 0 1px rgba(124,140,255,.5)!important}
+:root[data-tema="escuro"] .bnav button[aria-current="page"] .bkm-ico{filter:brightness(0) invert(86%) sepia(18%) saturate(600%) hue-rotate(190deg)!important}
+/* demais seletores (perfil e filtros) no mesmo padrão */
+:root[data-tema="escuro"] .seg button[aria-pressed="true"]{background:rgba(99,112,255,.10)!important;color:#c9d6ff!important;box-shadow:inset 0 0 0 1px rgba(124,140,255,.5)!important}
+:root[data-tema="escuro"] button.fchip.fchip[aria-pressed="true"]{background:rgba(99,112,255,.10)!important;color:#c9d6ff!important;border-color:rgba(124,140,255,.5)!important}
 </style>
 <header class="top">
   <div class="top-in">
