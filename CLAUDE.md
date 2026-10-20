@@ -13,13 +13,15 @@ Idioma do produto, do código de domínio e dos commits: português.
 
 ## Visual
 
-Segue o Design System BKM (artifact "Design System BKM", tema Claro). Tokens e componentes em `apps/web/src/styles.css`, idênticos aos do protótipo. Regras que valem em toda tela:
+Linguagem visual **Google Material 3** sobre a marca BKM (decisão do Moisés, out/2026, substituindo o visual do Design System BKM nas telas de trabalho). Tokens e componentes em `apps/web/src/styles.css`, idênticos aos do protótipo: o tema Material 3 é o bloco "Tema Google" no fim do arquivo e sobrepõe o tema anterior (no porte do front, reescrever os tokens com esses valores e tirar os `!important`). Regras que valem em toda tela:
 
-- Fundo branco, texto marinho `#1d2e5c`, azul `#0094fe` só em detalhes (traço, marcador, ícone). Botão primário marinho, raio 12, altura mínima 48. Cards em azul-gelo `#e4ebf8`, raio 20, sem borda nem sombra.
-- Tipografia Aptos (fallback Segoe UI/system-ui), pesos 300/400/600/700. Manuscrita não entra em tela de trabalho.
-- Logo oficial (`public/marca/bkm-logo.svg`) com no mínimo 120 px. Ícones de linha BKM (`public/marca/icone-*.svg`) com no mínimo 32 px, para navegação e cabeçalhos; glifos de controle pequenos são desenhados no mesmo traço (linha, sem preenchimento).
-- O DS não define cores de status: ok = verde-sálvia/oliva, atenção = pêssego, crítico = terracota `#c67355`, info = azul-gelo. Vermelho e verde puros não entram.
-- Uma forma suave (casa em verde-claro) por tela, no máximo.
+- Fundo `#f8fafd`, texto `#1f1f1f`, secundário `#444746`, contornos `#c4c7c5`. Primária `#0b57d0` (botão cheio, links); contêiner secundário `#c2e7ff` marca item ativo do menu, do segmentado e dos filtros.
+- Tipografia Google Sans Flex (Google Fonts), títulos em peso 400, rótulos 500. Sem caixa-alta espaçada.
+- Botões em cápsula (raio 20, altura 40): primário cheio, secundário contornado. Botão de criar = FAB tonal (raio 16). Menu lateral em gaveta com item ativo em pílula; no celular, barra inferior com indicador em pílula.
+- Cards contornados (raio 12) para listas e fichas; blocos tonais (raio 16) para indicadores. Chips retangulares raio 8.
+- Status no padrão Material: ok verde `#146c2e`/`#c4eed0`, atenção `#7a5900`/`#ffdf99`, crítico `#b3261e`/`#ffdad6`. Fases da negociação: azul, roxo, verde.
+- Marca BKM continua: logo oficial (`public/marca/bkm-logo.svg`, mínimo 120 px) e ícones de linha BKM (`public/marca/icone-*.svg`). A forma de casa decorativa saiu.
+- Modo escuro: estudado (tokens Material 3 dark), ainda não ligado.
 
 Modelo de dados com diagramas: [docs/modelo.md](docs/modelo.md). Mantenha-o em dia ao mudar migrations.
 

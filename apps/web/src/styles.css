@@ -727,5 +727,123 @@ body.dash-fixo .dash { position: fixed; inset: 0; z-index: 30; overflow: auto; p
 }
 .mp-barra .seg button { white-space: nowrap }
 
+/* ---- Google Maps ---- */
+.pin.g { position: relative; width: 30px; height: 40px }
+.poi.g { position: relative; width: 14px; height: 14px; transform: translateY(50%) }
+.poi.g .poi-b { position: absolute; inset: 0 }
+.ent.g { width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 2px solid #863d8f; color: #863d8f; font-size: 11px; font-weight: 700; display: grid; place-items: center; transform: translateY(50%); box-shadow: 0 1px 3px rgba(0,0,0,.3) }
+.mp-rota { position: absolute; left: 50%; bottom: 36px; transform: translateX(-50%); z-index: 6; background: var(--superficie); border-radius: var(--raio-md); padding: var(--e3) var(--e4); box-shadow: 0 2px 10px rgba(29,46,92,.22); display: flex; flex-wrap: wrap; align-items: center; gap: var(--e2) var(--e4); max-width: calc(100% - 24px); font-size: 13px }
+.mp-rota .seg button { font-size: 12px; padding: 4px 10px }
+.sec.entorno { margin-bottom: var(--e3) }
+.sec.entorno .sec-h { padding: var(--e4) var(--e4) 0 }
+.sec.entorno .sec-b { padding: var(--e2) var(--e4) var(--e4) }
+.relevo { display: flex; gap: var(--e4); flex-wrap: wrap; align-items: flex-start }
+.relevo svg { flex: none; max-width: 100%; height: auto; border-radius: var(--raio-sm) }
+.relevo-n { flex: 1 1 200px; display: flex; flex-direction: column; gap: var(--e2); font-size: 14px }
+.relevo-n .k { display: block; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--texto-suave); font-weight: 600 }
+.relevo-n b { font-size: 22px; font-weight: 600 }
+.relevo-vazio { display: flex; justify-content: space-between; align-items: center; gap: var(--e3); flex-wrap: wrap }
+.gauto gmp-place-autocomplete, .gauto > * { width: 100%; display: block }
+.gm-style .gm-style-iw-c { border-radius: var(--raio-md) }
+.gm-style .gm-style-iw-d { overflow: auto !important }
+.gm-style .pop { padding: 2px 4px 4px; min-width: 240px }
+.mapa .gm-style { font-family: var(--font-aptos) }
+.mapa-area.sv-on .mp-barra, .mapa-area.sv-on .mp-legenda, .mapa-area.sv-on .mp-modo, .mapa-area.sv-on .mp-rota { display: none }
+
+/* ==== Tema Google (Material 3) ====
+   Linguagem visual do Google Material 3 sobre a marca BKM (logo e ícones de linha mantidos).
+   Vem por último e sobrepõe o tema anterior; quando o front for portado, os tokens acima
+   devem ser reescritos com estes valores e os !important removidos. */
+:root{
+  --font-aptos:"Google Sans Flex","Google Sans",Roboto,system-ui,sans-serif;
+  --m-primary:#0b57d0; --m-on-primary:#fff; --m-pc:#d3e3fd; --m-on-pc:#041e49;
+  --m-sc:#c2e7ff; --m-on-sc:#001d35;
+  --m-surface:#f8fafd; --m-sc-low:#f0f4f9; --m-sc-high:#e9eef6; --m-card:#ffffff;
+  --m-on-surface:#1f1f1f; --m-on-var:#444746; --m-outline:#747775; --m-outline-var:#c4c7c5;
+  --texto:var(--m-on-surface); --texto-suave:var(--m-on-var); --linha:var(--m-outline-var); --superficie:var(--m-surface);
+  --superficie-elevada:var(--m-sc-low); --destaque:var(--m-primary); --acao:var(--m-primary); --texto-destaque:var(--m-primary);
+  --ok-fundo:#c4eed0; --ok-marca:#146c2e; --atencao-fundo:#ffdf99; --atencao-marca:#7a5900;
+  --critico-fundo:#ffdad6; --critico-marca:#b3261e; --info-fundo:var(--m-pc); --info-marca:var(--m-primary);
+  --fase-enviada:#0b57d0; --fase-contra:#8e4ec6; --fase-finais:#146c2e;
+}
+body{background:var(--m-surface);color:var(--m-on-surface);font-size:14px;letter-spacing:.01em}
+h1{font-size:28px;line-height:36px;font-weight:400;letter-spacing:0}
+h2{font-size:16px;line-height:24px;font-weight:500;letter-spacing:.01em}
+.rotulo,.eyebrow{text-transform:none;letter-spacing:.01em;font-size:12px;font-weight:500;color:var(--m-on-var)}
+.forma::before{display:none!important}
+
+/* top app bar */
+.top{background:var(--m-surface)!important;border-bottom:0!important;box-shadow:none!important}
+.search{background:var(--m-sc-high)!important;border:0!important;border-radius:28px!important;min-height:48px!important}
+.search:focus-within{background:#fff!important;box-shadow:0 1px 3px rgba(0,0,0,.2)!important}
+.demo-pill{border:1px solid var(--m-outline-var)!important;border-radius:8px!important;text-transform:none!important;letter-spacing:.01em!important;font-weight:500;color:var(--m-on-var)!important;background:transparent!important}
+.avatar{background:#8e4ec6!important;color:#fff!important}
+
+/* segmented button M3 */
+.seg{border:1px solid var(--m-outline)!important;border-radius:20px!important;padding:0!important;gap:0!important;background:transparent!important;overflow:hidden}
+.seg button{border:0!important;border-radius:0!important;background:transparent!important;font-weight:500;min-height:40px!important;color:var(--m-on-surface)!important}
+.seg button+button{border-left:1px solid var(--m-outline)!important}
+.seg button[aria-pressed="true"]{background:var(--m-sc)!important;color:var(--m-on-sc)!important;box-shadow:none!important}
+
+/* navigation drawer */
+.side{background:var(--m-surface)!important;border-right:0!important}
+.compose{background:var(--m-pc)!important;color:var(--m-on-pc)!important;border:0!important;border-radius:16px!important;min-height:56px!important;font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,.15),0 1px 2px rgba(0,0,0,.1)!important}
+.nav-item{border-radius:28px!important;min-height:48px!important;padding:0 16px!important;font-weight:500;font-size:14px!important;color:var(--m-on-var)!important;background:transparent!important}
+.nav-item:hover{background:rgba(31,31,31,.08)!important}
+.nav-item[aria-current="page"]{background:var(--m-sc)!important;color:var(--m-on-sc)!important;box-shadow:none!important;font-weight:700}
+.nav-item .bkm-ico{width:24px!important;height:24px!important}
+.nav-item .cnt{color:var(--m-on-var)!important}
+
+/* cards: filled / outlined M3 */
+.card,.sec,.tbl,.alist{background:var(--m-card)!important;border:1px solid var(--m-outline-var)!important;border-radius:12px!important;box-shadow:none!important}
+.kpi{background:var(--m-sc-low)!important;border:0!important;border-radius:16px!important;box-shadow:none!important}
+.kpi::before{display:none!important}
+.kpi .v{font-weight:400}
+.card-h,.sec-h{border-bottom:1px solid var(--m-outline-var)!important}
+
+/* buttons */
+.btn{border-radius:20px!important;border:1px solid var(--m-outline)!important;background:transparent!important;color:var(--m-primary)!important;font-weight:500;min-height:40px!important;box-shadow:none!important;padding:0 24px!important}
+.btn.primary{background:var(--m-primary)!important;color:#fff!important;border-color:var(--m-primary)!important}
+.btn.text{border:0!important;padding:0 12px!important}
+.fab{background:var(--m-pc)!important;color:var(--m-on-pc)!important;border-radius:16px!important;box-shadow:0 3px 6px rgba(0,0,0,.2),0 1px 3px rgba(0,0,0,.15)!important}
+
+/* chips M3 (assist / filter) */
+.chip{border:1px solid var(--m-outline-var)!important;border-radius:8px!important;background:transparent!important;text-transform:none!important;letter-spacing:.01em!important;font-weight:500}
+.chip.good{background:var(--ok-fundo)!important;border-color:transparent!important}
+.chip.warn{background:var(--atencao-fundo)!important;border-color:transparent!important}
+.chip.crit{background:var(--critico-fundo)!important;border-color:transparent!important}
+.dchips *{text-transform:none!important;letter-spacing:.01em!important}
+.fchip{border:1px solid var(--m-outline-var)!important;border-radius:8px!important;background:transparent!important;color:var(--m-on-var)!important;font-weight:500}
+.fchip[aria-pressed="true"]{background:var(--m-sc)!important;border-color:transparent!important;color:var(--m-on-sc)!important}
+.missing button{border:1px dashed var(--m-outline)!important;border-radius:8px!important}
+
+/* tables */
+.dt{background:#fff;border:1px solid var(--m-outline-var);border-radius:12px;overflow:hidden}
+.tr,.dt tr,.dt td,.dt th{border-color:var(--m-outline-var)!important}
+.tr.th,.dt th{background:var(--m-sc-low)!important;color:var(--m-on-var)!important;font-weight:500;text-transform:none!important;letter-spacing:.01em!important}
+.dt tbody tr:nth-child(even){background:transparent!important}
+.dt tbody tr:hover,button.tr:hover{background:rgba(11,87,208,.06)!important}
+
+/* kanban */
+.col{background:var(--m-sc-low)!important;border:0!important;border-radius:16px!important;box-shadow:none!important}
+.col-h,.col-h *{text-transform:none!important;letter-spacing:.01em!important}
+.col-h{font-size:14px!important;font-weight:500!important}
+.kcard{background:#fff!important;border:0!important;border-radius:12px!important;box-shadow:0 1px 2px rgba(0,0,0,.3),0 1px 3px 1px rgba(0,0,0,.15)!important}
+.kcard.proposta_enviada,.kcard.contraproposta,.kcard.negociacoes_finais{box-shadow:0 1px 2px rgba(0,0,0,.3),0 1px 3px 1px rgba(0,0,0,.15)!important}
+.kfase{text-transform:none!important;letter-spacing:.01em!important;font-weight:500!important;border-radius:8px!important}
+
+/* tabs, progress */
+.bar{background:var(--m-pc)!important;border-radius:4px!important;height:4px!important}
+.bar span{background:var(--m-primary)!important;border-radius:4px!important}
+
+/* navigation bar (mobile) */
+.bnav{background:var(--m-sc-low)!important;border-top:0!important;box-shadow:none!important}
+.bnav .pill{border-radius:16px!important}
+.bnav button[aria-current="page"] .pill{background:var(--m-sc)!important}
+.bnav .bkm-ico{width:24px!important;height:24px!important}
+
+.mapa-area,.mini-mapa{border-radius:16px!important;overflow:hidden}
+.mp-barra{background:#fff!important;border-radius:28px!important;box-shadow:0 1px 3px rgba(0,0,0,.2)!important}
+
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
