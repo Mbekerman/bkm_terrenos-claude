@@ -1937,9 +1937,8 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .field input.auto-v, :root[data-tema="escuro"] .field input.auto-v { border: 0; border-bottom: 1px solid var(--m-outline-var, var(--linha)); border-radius: 0; background: transparent; padding: 2px 0 6px; min-height: 0; height: auto; font-size: 15px; color: var(--m-on-surface, var(--texto)); box-shadow: none; outline: none; cursor: default }
 .field input.auto-v::placeholder { color: var(--texto-suave); opacity: .7 }
 :root[data-tema="escuro"] .field input.auto-v { border-bottom-color: rgba(124,140,255,.18) }
-.field input.auto-v.gpreenchido { animation: gpreenchido-linha 1.6s ease-out }
-@keyframes gpreenchido-linha { 0%, 60% { background: var(--m-sc, #c2e7ff) } 100% { background: transparent } }
-:root[data-tema="escuro"] .field input.auto-v.gpreenchido { animation: none; box-shadow: none; border-bottom-color: #7c8cff }
+.field input.auto-v.gpreenchido, :root[data-tema="escuro"] .field input.auto-v.gpreenchido { animation: none; background: transparent }
+
 .end-corrigir { font-size: 13px; margin: 6px 0 4px }
 .kv-form .end-manual, .kv-form .end-auto { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) }
 .end-auto { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) }
