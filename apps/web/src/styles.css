@@ -1248,6 +1248,14 @@ input[readonly] { background: transparent; color: var(--texto-suave) }
 gmp-place-autocomplete { background-color: var(--superficie); border: 1px solid var(--borda-controle); border-radius: var(--raio-sm, 4px); color: var(--m-on-surface, var(--texto)); font-family: inherit; font-size: 16px; color-scheme: light }
 :root[data-tema="escuro"] gmp-place-autocomplete { background-color: var(--m-sc-high); border-color: var(--m-outline-var); color: var(--m-on-surface); color-scheme: dark }
 gmp-place-autocomplete::part(prediction-list) { font-family: inherit }
+/* lupa própria, do tamanho do texto, dentro do campo de busca */
+.gauto { position: relative }
+.gauto::before { content: ""; position: absolute; left: 13px; top: 50%; width: 16px; height: 16px; margin-top: -8px; z-index: 1; pointer-events: none; background: currentColor; color: var(--texto-suave);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='M15.5 15.5L21 21'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='M15.5 15.5L21 21'/%3E%3C/svg%3E") center / contain no-repeat }
+.gauto:empty::before, .gauto:has(> .hint)::before { display: none }
+gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
+:root[data-tema="escuro"] .gauto::before { color: var(--m-on-var) }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

@@ -1922,6 +1922,14 @@ input[readonly] { background: transparent; color: var(--texto-suave) }
 gmp-place-autocomplete { background-color: var(--superficie); border: 1px solid var(--borda-controle); border-radius: var(--raio-sm, 4px); color: var(--m-on-surface, var(--texto)); font-family: inherit; font-size: 16px; color-scheme: light }
 :root[data-tema="escuro"] gmp-place-autocomplete { background-color: var(--m-sc-high); border-color: var(--m-outline-var); color: var(--m-on-surface); color-scheme: dark }
 gmp-place-autocomplete::part(prediction-list) { font-family: inherit }
+/* lupa própria, do tamanho do texto, dentro do campo de busca */
+.gauto { position: relative }
+.gauto::before { content: ""; position: absolute; left: 13px; top: 50%; width: 16px; height: 16px; margin-top: -8px; z-index: 1; pointer-events: none; background: currentColor; color: var(--texto-suave);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='M15.5 15.5L21 21'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='M15.5 15.5L21 21'/%3E%3C/svg%3E") center / contain no-repeat }
+.gauto:empty::before, .gauto:has(> .hint)::before { display: none }
+gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
+:root[data-tema="escuro"] .gauto::before { color: var(--m-on-var) }
 </style>
 <header class="top">
   <div class="top-in">
@@ -3423,15 +3431,18 @@ function gPreencherCampos(f,d){if(!f||!d)return;const set=(n,v)=>{const i=f.quer
   const av=f.querySelector('.gbusca .hint');if(av)av.textContent=`Preenchido a partir de: ${d.texto}`;
   if(!d.numero){const n=f.querySelector('[name="numero"]');if(n){n.focus();toast('O Google não trouxe o número. Confira e preencha.')}}}
 window.BKM_TESTE=Object.assign(window.BKM_TESTE||{},{preencherEndereco:(sel,d)=>gPreencherCampos(document.querySelector(sel),d)});
+/* dentro do campo, só a lupa (do tamanho do texto) e "Pesquisar": sem o ícone e o botão de limpar do Google */
+function gCampoBusca(pac){pac.placeholder='Pesquisar';pac.setAttribute('aria-label','Pesquisar endereço no Google');pac.requestedLanguage='pt-BR';pac.noInputIcon=true;pac.noClearButton=true;
+  pac.setAttribute('no-input-icon','');pac.setAttribute('no-clear-button','')}
 function gBuscasEndereco(){if(!GG)return;document.querySelectorAll('.gauto[data-gauto]:not([data-ok])').forEach(slot=>{slot.dataset.ok='1';
-  try{const {PlaceAutocompleteElement}=gLib.places;const pac=new PlaceAutocompleteElement({includedRegionCodes:['br'],locationBias:{center:gLL(-23.55,-46.63),radius:50000}});pac.placeholder='Buscar endereço no Google';pac.setAttribute('aria-label','Buscar endereço no Google');pac.requestedLanguage='pt-BR';slot.appendChild(pac);
+  try{const {PlaceAutocompleteElement}=gLib.places;const pac=new PlaceAutocompleteElement({includedRegionCodes:['br'],locationBias:{center:gLL(-23.55,-46.63),radius:50000}});gCampoBusca(pac);slot.appendChild(pac);
     const aplicar=async place=>{await place.fetchFields({fields:['addressComponents','location','formattedAddress']});gPreencherCampos(slot.closest('form'),gDadosEndereco(place))};
     pac.addEventListener('gmp-select',e=>{const pp=e.placePrediction;if(pp)aplicar(pp.toPlace())});
     pac.addEventListener('gmp-placeselect',e=>{if(e.place)aplicar(e.place)})}
   catch(e){slot.innerHTML='<span class="hint">Busca do Google indisponível.</span>'}})}
 async function gAutocompletarNovo(){const slot=$('#n-gauto');if(!slot||slot.dataset.ok)return;slot.dataset.ok='1';
   try{const {PlaceAutocompleteElement}=gLib.places;const pac=new PlaceAutocompleteElement({includedRegionCodes:['br'],locationBias:{center:gLL(-23.55,-46.63),radius:50000}});
-    pac.id='n-gauto-el';pac.placeholder='Buscar endereço no Google';pac.setAttribute('aria-label','Buscar endereço no Google');pac.requestedLanguage='pt-BR';slot.appendChild(pac);
+    pac.id='n-gauto-el';gCampoBusca(pac);slot.appendChild(pac);
     const aplicar=async place=>{await place.fetchFields({fields:['addressComponents','location','formattedAddress']});
       const comp=tipo=>place.addressComponents?.find(c=>c.types.includes(tipo))?.longText||'';
       const f=$('#f-novo');if(!f)return;const set=(n,v)=>{const i=f.querySelector(`[name="${n}"]`);if(i&&v)i.value=v};
