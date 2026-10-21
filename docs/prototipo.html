@@ -2140,6 +2140,26 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 :root[data-tema="escuro"] .mapa-area .mp-barra { background: transparent !important }
 @media (max-width: 899px) { .mp-barra .seg { min-width: 0; overflow-x: auto; scrollbar-width: none } }
 @media (max-width: 599px) { .mp-barra .mp-kmz { width: 40px; padding: 0 !important } .mp-barra .mp-kmz .t { display: none } }
+
+/* ficha do terreno em painel sobre o mapa (lupa da lista lateral) */
+.ficha-sheet { position: fixed; z-index: 30; top: 88px; right: 16px; bottom: 16px; width: min(560px, calc(100vw - 32px)); display: flex; flex-direction: column; background: var(--m-surface, #fff); border-radius: 16px; box-shadow: 0 2px 6px rgba(0,0,0,.15), 0 12px 32px rgba(0,0,0,.18); overflow: hidden }
+.fs-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 12px 12px 24px; border-bottom: 1px solid var(--m-outline-variant, #c4c7c5) }
+.fs-e { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #444746; margin-bottom: 4px }
+.fs-h h2 { font-size: 22px; line-height: 28px; font-weight: 400 }
+.fs-s { font-size: 13px; color: #444746; margin-top: 2px }
+.fs-b { flex: 1; overflow: auto; padding: 16px; overscroll-behavior: contain }
+.fs-f { display: flex; justify-content: flex-end; padding: 12px 16px; border-top: 1px solid var(--m-outline-variant, #c4c7c5) }
+.fs-ro .kv-ed, .fs-ro .ed, .fs-ro [data-a="edit"] { display: none !important }
+.fs-ro .kv:has(.kv-ed) { grid-template-columns: minmax(120px, 38%) minmax(0, 1fr) }
+:root[data-tema="escuro"] .ficha-sheet { background: #081028; box-shadow: 0 0 0 1px rgba(124,140,255,.35), 0 16px 40px rgba(0,0,0,.6) }
+:root[data-tema="escuro"] .fs-h, :root[data-tema="escuro"] .fs-f { border-color: #1a2240 }
+:root[data-tema="escuro"] .fs-e, :root[data-tema="escuro"] .fs-s { color: #aab4d6 }
+@media (max-width: 899px) {
+  .ficha-sheet { inset: 0; top: 0; width: auto; border-radius: 0; z-index: 35; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px) }
+  .fs-h { padding-left: 16px }
+  .fs-b { padding: 12px }
+  body[data-rota="mapa"] .fab { display: none !important }
+}
 </style>
 <header class="top">
   <div class="top-in">
@@ -2996,6 +3016,8 @@ document.addEventListener('click',e=>{
     case 'g-geo-ok':{const g=UI.geo,x=T(g.tid);Object.assign(x,{lat:g.lat,lng:g.lng,precisao:g.exato&&!g.bairroDif?'conferida':'aproximada'});log(x,`Localização pelo endereço (Google): ${g.end}`);UI.modal=null;save();render();toast('Localização gravada.');break}
     case 'g-geo':{const x=T(a.dataset.id);a.disabled=true;gGeocodificar(x);break}
     case 'sort':ordenar(a.dataset.t,a.dataset.k);render();break;
+    case 'fs-abrir':{const x=T(a.dataset.id);UI.fichaSheet=a.dataset.id;if(x?.lat!=null)mpSelecionar(x.id);fichaSheet();break}
+    case 'fs-fechar':UI.fichaSheet=null;fichaSheet();break;
     case 'mp-foco':{const x=T(a.dataset.id);if(x.lat!=null)focar(x);else if(UI.role!=='Leitura'){UI.mpModo='marcar';UI.mpAlvo=x.id;mpRefresh()}else toast('Terreno sem localização.');break}
     case 'mp-sit':{const v=a.dataset.v,o=UI.mp.ocultas;UI.mp.ocultas=o.includes(v)?o.filter(x=>x!==v):[...o,v];mpRefresh();break}
     case 'mp-limpar':UI.mp={q:'',cor:'',zona:'',ocultas:[]};render();break;
@@ -3149,7 +3171,7 @@ function soltar(id,col){const t=T(id);if(!t||!t.neg||UI.role==='Leitura')return;
   save();render();
   if(res.podeForcar){UI.alvo=id;UI.alvoEtapa=col;UI.alvoPend=res.pend;UI.modal='forcar';renderModal()}else toast(res.msg,true)}
 function posRender(){try{if(MAPA){MAPA.remove()}}catch(e){}MAPA=null;PINS=POIS=DES=BASE=null;try{if(MINI)MINI.remove()}catch(e){}MINI=null;
-  if(UI.route==='mapa')initMapa();if(UI.route==='terreno'&&!blocoFechado('geral'))initMini()}
+  if(UI.route==='mapa')initMapa();if(UI.route==='terreno'&&!blocoFechado('geral'))initMini();fichaSheet()}
 document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const el=e.target;if(!(el instanceof HTMLElement)||el.matches('button,a,input,select,textarea'))return;if(el.matches('[data-a][tabindex]')){e.preventDefault();el.click()}});
 let arrastando=null;
 document.addEventListener('dragstart',e=>{const c=e.target.closest?.('.kcard[draggable="true"]');if(!c)return;arrastando=c.dataset.id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',arrastando);c.classList.add('arrastando');document.body.classList.add('dnd')});
@@ -3307,7 +3329,7 @@ function mpItem(t,cartao){const k=sitMapa(t),[nm,c,g,fg]=SIT[k],sel=UI.mpSel===t
   return `<div class="mp-it${sel?' sel':''}${cartao?' cartao':''}" data-a="mp-foco" data-id="${t.id}" tabindex="0" role="listitem" aria-current="${sel}">
     <span class="pin-mini" style="background:${c};color:${fg}" title="${esc(nm)}">${g}</span>
     <div class="mp-it-t"><div class="t1">${esc(t.nome)}</div><div class="t2">${ad?m2(ad):'Área não informada'} · ${esc(nm)}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div></div>
-    <button class="iconbtn mp-lupa" data-a="abrir" data-id="${t.id}" data-tab="geral" data-from="mapa" title="Abrir ficha" aria-label="Abrir ficha de ${esc(t.nome)}">${bi('busca',22)}</button>${acoes}</div>`}
+    <button class="iconbtn mp-lupa" data-a="fs-abrir" data-id="${t.id}" title="Ver ficha" aria-label="Ver ficha de ${esc(t.nome)}">${bi('busca',22)}</button>${acoes}</div>`}
 function mpLista(){const v=mpVisiveis(),sem=v.filter(t=>t.lat==null),ord=Object.keys(SIT);
   const rows=v.slice().sort((a,b)=>ord.indexOf(sitMapa(a))-ord.indexOf(sitMapa(b))||a.nome.localeCompare(b.nome,'pt'));
   return `${entornoHtml()}<div class="mp-resumo"><span><b>${v.length}</b> terrenos</span><span><b>${num(v.reduce((s,t)=>s+(areaAdotada(t)||0),0))}</b> m²</span></div>
@@ -3317,7 +3339,18 @@ function mpLista(){const v=mpVisiveis(),sem=v.filter(t=>t.lat==null),ord=Object.
 /* seleciona o terreno a partir do mapa: acende o pino, destaca a linha (rolando só a lista) e, no celular, mostra o cartão sobre o mapa */
 function mpMarcarPinos(){const on=(id,el)=>el?.classList.toggle('sel',UI.mpSel===id);  /* sem redesenhar: o segundo clique de um duplo clique precisa cair no mesmo pino */
   if(GG)gPinsSel();else PINS?.eachLayer(l=>{if(l._terreno){on(l._terreno,l.getElement());l.setZIndexOffset(UI.mpSel===l._terreno?1000:0)}})}
-function mpSelecionar(id){UI.mpSel=id;mpMarcarPinos();const l=$('#mp-lista');if(l)l.innerHTML=mpLista();mpCartao();
+/* ficha do terreno num painel sobre o mapa (a lupa da lista): a Visão geral, só para ler, sem o mapa; "Abrir ficha completa" sai do mapa */
+function fichaSheet(){let el=$('#ficha-sheet');const t=UI.fichaSheet&&UI.route==='mapa'?T(UI.fichaSheet):null;
+  if(!t){UI.fichaSheet=null;el?.remove();return}
+  if(!el){el=document.createElement('aside');el.id='ficha-sheet';el.className='ficha-sheet';el.setAttribute('role','dialog');el.setAttribute('aria-label','Ficha do terreno');document.body.appendChild(el)}
+  const end=[t.logradouro&&t.logradouro+(t.numero?', '+t.numero:''),t.bairro,t.zona&&'Zona '+OPT.zona[t.zona]].filter(Boolean).join(' · ');
+  el.innerHTML=`<div class="fs-h"><div class="fs-ht"><div class="fs-e"><span class="num">${t.codigo}</span>${sitChip(sitMapa(t))}</div><h2>${esc(t.nome)}</h2>${end?`<div class="fs-s">${esc(end)}</div>`:''}</div>
+    <button class="iconbtn" data-a="fs-fechar" aria-label="Fechar" title="Fechar (Esc)">${ic('close',22)}</button></div>
+    <div class="fs-b bl-c fs-ro">${abaGeral(t)}</div>
+    <div class="fs-f"><button class="btn primary" data-a="abrir" data-id="${t.id}" data-tab="geral" data-from="mapa">Abrir ficha completa</button></div>`;
+  el.querySelector('.g-loc')?.remove();el.querySelector('.fs-b').scrollTop=0}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&UI.fichaSheet&&!UI.modal&&!$('.mp-ctx')&&!$('.v-menu')){UI.fichaSheet=null;fichaSheet();e.preventDefault()}});
+function mpSelecionar(id){UI.mpSel=id;mpMarcarPinos();if(UI.fichaSheet&&id&&id!==UI.fichaSheet){UI.fichaSheet=id;fichaSheet()}const l=$('#mp-lista');if(l)l.innerHTML=mpLista();mpCartao();
   const lado=$('.mapa-lado'),it=lado?.querySelector(`.mp-it[data-id="${id}"]`);
   if(it&&getComputedStyle(lado).overflowY==='auto'){const a=lado.getBoundingClientRect(),r=it.getBoundingClientRect();
     if(r.top<a.top||r.bottom>a.bottom)lado.scrollBy({top:r.top-a.top-a.height/2+r.height/2,behavior:'smooth'})}}

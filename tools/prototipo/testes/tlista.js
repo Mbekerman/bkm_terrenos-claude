@@ -28,8 +28,16 @@ ok(await p.evaluate(t=>[...document.querySelectorAll('#mapa .leaflet-marker-icon
 if(modo==='desktop'){ok(await p.evaluate(()=>{const l=document.querySelector('.mapa-lado').getBoundingClientRect(),r=document.querySelector('#mp-lista .mp-it.sel').getBoundingClientRect();return r.top>=l.top&&r.bottom<=l.bottom}),tag+' linha visível na lista');
   await p.screenshot({path:OUT+tag+'_sel.png'})}
 else{const c=await p.$eval('#mp-cartao',x=>x.innerText.replace(/\s+/g,' ').trim()).catch(()=>'');ok(c.includes(alvo.t),tag+' cartão sobre o mapa: '+c);await p.screenshot({path:OUT+tag+'_sel.png'})}
-// lupa abre a ficha
+if(modo==='celular')ok(await p.$eval('.fab',x=>getComputedStyle(x).display==='none'),tag+' sem o botão + Novo terreno no Mapa');
+// lupa abre a ficha num painel sobre o mapa, sem o mapa dentro
 await p.click((modo==='desktop'?'#mp-lista':'#mp-cartao')+' .mp-it.sel .mp-lupa');await p.waitForTimeout(800);
-ok(await p.evaluate(t=>document.querySelector('h1')?.textContent.includes(t),alvo.t),tag+' lupa abriu a ficha');
+const fs=await p.evaluate(()=>{const e=document.querySelector('#ficha-sheet');if(!e)return null;return {h:e.querySelector('h2').textContent,mapaDentro:!!e.querySelector('#mini-mapa,.g-loc'),lapis:[...e.querySelectorAll('.kv-ed')].filter(x=>x.offsetParent).length,mapa:!!document.querySelector('#mapa .leaflet-pane'),secoes:[...e.querySelectorAll('.sec-h h2')].map(x=>x.textContent.trim()).join(' | ')}});
+console.log('   painel:',JSON.stringify(fs));ok(fs&&fs.h===alvo.t&&!fs.mapaDentro&&fs.lapis===0&&fs.mapa,tag+' lupa abre a ficha em painel, sem mapa, mapa continua atrás');
+await p.screenshot({path:OUT+tag+'_ficha.png'});
+await p.click('#ficha-sheet [data-a=fs-fechar]');await p.waitForTimeout(300);ok(!(await p.$('#ficha-sheet')),tag+' fechar tira o painel');
+await p.click((modo==='desktop'?'#mp-lista':'#mp-cartao')+' .mp-it.sel .mp-lupa');await p.waitForTimeout(500);
+if(modo==='desktop'){await p.keyboard.press('Escape');await p.waitForTimeout(300);ok(!(await p.$('#ficha-sheet')),tag+' Esc fecha o painel');await p.click('#mp-lista .mp-it.sel .mp-lupa');await p.waitForTimeout(500)}
+await p.click('#ficha-sheet [data-a=abrir]');await p.waitForTimeout(800);
+ok(await p.evaluate(t=>document.querySelector('h1')?.textContent.includes(t),alvo.t)&&!(await p.$('#ficha-sheet')),tag+' Abrir ficha completa vai para a ficha e fecha o painel');
 await ctx.close()}
 console.log('ERROS',JSON.stringify(errs));await b.close()})();

@@ -148,7 +148,7 @@ function mpItem(t,cartao){const k=sitMapa(t),[nm,c,g,fg]=SIT[k],sel=UI.mpSel===t
   return `<div class="mp-it${sel?' sel':''}${cartao?' cartao':''}" data-a="mp-foco" data-id="${t.id}" tabindex="0" role="listitem" aria-current="${sel}">
     <span class="pin-mini" style="background:${c};color:${fg}" title="${esc(nm)}">${g}</span>
     <div class="mp-it-t"><div class="t1">${esc(t.nome)}</div><div class="t2">${ad?m2(ad):'Área não informada'} · ${esc(nm)}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div></div>
-    <button class="iconbtn mp-lupa" data-a="abrir" data-id="${t.id}" data-tab="geral" data-from="mapa" title="Abrir ficha" aria-label="Abrir ficha de ${esc(t.nome)}">${bi('busca',22)}</button>${acoes}</div>`}
+    <button class="iconbtn mp-lupa" data-a="fs-abrir" data-id="${t.id}" title="Ver ficha" aria-label="Ver ficha de ${esc(t.nome)}">${bi('busca',22)}</button>${acoes}</div>`}
 function mpLista(){const v=mpVisiveis(),sem=v.filter(t=>t.lat==null),ord=Object.keys(SIT);
   const rows=v.slice().sort((a,b)=>ord.indexOf(sitMapa(a))-ord.indexOf(sitMapa(b))||a.nome.localeCompare(b.nome,'pt'));
   return `${entornoHtml()}<div class="mp-resumo"><span><b>${v.length}</b> terrenos</span><span><b>${num(v.reduce((s,t)=>s+(areaAdotada(t)||0),0))}</b> m²</span></div>
@@ -158,7 +158,18 @@ function mpLista(){const v=mpVisiveis(),sem=v.filter(t=>t.lat==null),ord=Object.
 /* seleciona o terreno a partir do mapa: acende o pino, destaca a linha (rolando só a lista) e, no celular, mostra o cartão sobre o mapa */
 function mpMarcarPinos(){const on=(id,el)=>el?.classList.toggle('sel',UI.mpSel===id);  /* sem redesenhar: o segundo clique de um duplo clique precisa cair no mesmo pino */
   if(GG)gPinsSel();else PINS?.eachLayer(l=>{if(l._terreno){on(l._terreno,l.getElement());l.setZIndexOffset(UI.mpSel===l._terreno?1000:0)}})}
-function mpSelecionar(id){UI.mpSel=id;mpMarcarPinos();const l=$('#mp-lista');if(l)l.innerHTML=mpLista();mpCartao();
+/* ficha do terreno num painel sobre o mapa (a lupa da lista): a Visão geral, só para ler, sem o mapa; "Abrir ficha completa" sai do mapa */
+function fichaSheet(){let el=$('#ficha-sheet');const t=UI.fichaSheet&&UI.route==='mapa'?T(UI.fichaSheet):null;
+  if(!t){UI.fichaSheet=null;el?.remove();return}
+  if(!el){el=document.createElement('aside');el.id='ficha-sheet';el.className='ficha-sheet';el.setAttribute('role','dialog');el.setAttribute('aria-label','Ficha do terreno');document.body.appendChild(el)}
+  const end=[t.logradouro&&t.logradouro+(t.numero?', '+t.numero:''),t.bairro,t.zona&&'Zona '+OPT.zona[t.zona]].filter(Boolean).join(' · ');
+  el.innerHTML=`<div class="fs-h"><div class="fs-ht"><div class="fs-e"><span class="num">${t.codigo}</span>${sitChip(sitMapa(t))}</div><h2>${esc(t.nome)}</h2>${end?`<div class="fs-s">${esc(end)}</div>`:''}</div>
+    <button class="iconbtn" data-a="fs-fechar" aria-label="Fechar" title="Fechar (Esc)">${ic('close',22)}</button></div>
+    <div class="fs-b bl-c fs-ro">${abaGeral(t)}</div>
+    <div class="fs-f"><button class="btn primary" data-a="abrir" data-id="${t.id}" data-tab="geral" data-from="mapa">Abrir ficha completa</button></div>`;
+  el.querySelector('.g-loc')?.remove();el.querySelector('.fs-b').scrollTop=0}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&UI.fichaSheet&&!UI.modal&&!$('.mp-ctx')&&!$('.v-menu')){UI.fichaSheet=null;fichaSheet();e.preventDefault()}});
+function mpSelecionar(id){UI.mpSel=id;mpMarcarPinos();if(UI.fichaSheet&&id&&id!==UI.fichaSheet){UI.fichaSheet=id;fichaSheet()}const l=$('#mp-lista');if(l)l.innerHTML=mpLista();mpCartao();
   const lado=$('.mapa-lado'),it=lado?.querySelector(`.mp-it[data-id="${id}"]`);
   if(it&&getComputedStyle(lado).overflowY==='auto'){const a=lado.getBoundingClientRect(),r=it.getBoundingClientRect();
     if(r.top<a.top||r.bottom>a.bottom)lado.scrollBy({top:r.top-a.top-a.height/2+r.height/2,behavior:'smooth'})}}
