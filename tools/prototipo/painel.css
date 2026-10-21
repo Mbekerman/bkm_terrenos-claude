@@ -512,3 +512,12 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 @media (max-width: 899px) { .cond + .grid2 { column-gap: var(--e4) } }
 .chk-gh + .doc { border-top: 0 }
 .kv dd .chip { white-space: nowrap }
+/* Condições pedidas: rótulo, valor e complemento em linhas comuns aos itens (rótulo de duas linhas não desce o valor do vizinho) */
+.cond { row-gap: 0 !important }
+.cond > div { display: grid; grid-row: span 3; grid-template-rows: subgrid; align-content: start; padding-bottom: var(--e6) }
+@media (max-width: 899px) { .cond > div { padding-bottom: var(--e4) } }
+.cond + .grid2 { margin-top: 0 !important }
+.cond > div > .big { align-self: start }
+/* quadro de avanço no painel: bloco tonal, não um quadro contornado dentro de outro */
+.pn-adv .sec-adv.sec-adv { border: 0 !important; background: var(--m-sc-low) !important; border-radius: 16px !important }
+:root[data-tema="escuro"] .pn-adv .sec-adv.sec-adv { background: rgba(124,140,255,.07) !important; border: 0 !important }
