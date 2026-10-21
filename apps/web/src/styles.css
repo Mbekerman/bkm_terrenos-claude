@@ -1304,6 +1304,9 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 @keyframes v-pulso { 0%, 100% { box-shadow: 0 0 0 4px #0b57d0, 0 0 0 4px rgba(11,87,208,.35) } 50% { box-shadow: 0 0 0 4px #0b57d0, 0 0 0 12px rgba(11,87,208,0) } }
 .leaflet-marker-icon.v-alvo { margin: 0 }
 .leaflet-dragging .v-alvo, .v-alvo:active { cursor: grabbing }
+/* a cruz do modo de edição (.mapa.modo .leaflet-interactive) não vale nos pontos: neles, mãozinha; arrastando, mão fechada */
+.mapa.modo .v-alvo, .mapa.modo .v-alvo .v-dot { cursor: pointer !important }
+.mapa.modo .leaflet-dragging .v-alvo, .mapa.modo .v-alvo:active, .mapa.modo.leaflet-dragging .v-alvo { cursor: grabbing !important }
 .v-menu { position: absolute; z-index: 1200; display: flex; flex-direction: column; width: 220px; padding: 6px 0; border-radius: 12px; background: var(--m-sc-low, #f0f4f9); box-shadow: 0 2px 6px rgba(0,0,0,.2), 0 8px 20px rgba(0,0,0,.18); font-size: 14px }
 .v-menu .v-t { padding: 6px 16px 4px; font-size: 12px; font-weight: 500; color: var(--texto-suave) }
 .v-menu button { border: 0; background: transparent; min-height: 44px; padding: 0 16px; text-align: left; font-size: 14px; font-weight: 500; color: var(--m-on-surface, #1f1f1f) }
@@ -1409,6 +1412,41 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .ent-emp { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--m-outline-v, rgba(127,127,127,.25)) }
 .ent-emp-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; font-size: 14px; font-weight: 500; color: var(--m-on-surface, var(--texto)) }
 .ent-emp-h .linkbtn { display: inline-flex; align-items: center; gap: 4px; font-size: 14px }
+
+/* ---------- lista lateral do mapa: número do pino, nome, área e lupa ---------- */
+.mp-lst { display: flex; flex-direction: column; gap: 2px }
+.mp-it { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 12px; padding: 8px 4px 8px 12px; border-radius: 12px; cursor: pointer; color: var(--m-on-surface, #1f1f1f) }
+.mp-it:hover { background: rgba(31,31,31,.06) }
+.mp-it:focus-visible { outline: 2px solid #0b57d0; outline-offset: -2px }
+.mp-it.sel { background: #c2e7ff }
+.mp-it .pin-mini { width: 26px; height: 26px; font-size: 12px }
+.mp-it .t1 { font-size: 14px; font-weight: 500; line-height: 20px; white-space: normal; overflow: visible }
+.mp-it .t2 { font-size: 13px; line-height: 18px; color: #444746; white-space: normal; overflow: visible }
+.mp-lupa { width: 40px; height: 40px; border-radius: 20px; color: #444746 }
+.mp-lupa:hover { background: rgba(31,31,31,.08); color: #0b57d0 }
+.mp-lupa .bkm-ico { width: 22px; height: 22px }
+.mp-it-a { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 4px 0 2px; font-size: 13px }
+.mp-it-a .linkbtn { color: #0b57d0; font-weight: 500 }
+:root[data-tema="escuro"] .mp-it { color: #e6ecff }
+:root[data-tema="escuro"] .mp-it:hover { background: rgba(124,140,255,.08) }
+:root[data-tema="escuro"] .mp-it.sel { background: rgba(99,112,255,.10); box-shadow: inset 0 0 0 1px rgba(124,140,255,.5) }
+:root[data-tema="escuro"] .mp-it .t2, :root[data-tema="escuro"] .mp-lupa { color: #aab4d6 }
+:root[data-tema="escuro"] .mp-it-a .linkbtn { color: #c9d6ff }
+/* cartão do terreno selecionado sobre o mapa: só no celular, onde a lista fica abaixo do mapa */
+.mp-cartao { display: none }
+@media (max-width: 899px) {
+  .mp-cartao:not(:empty) { display: block; position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 1050 }
+  .mp-cartao .mp-it { background: var(--m-surface, #fff); box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 4px 12px rgba(0,0,0,.15) }
+  :root[data-tema="escuro"] .mp-cartao .mp-it { background: #0d1530; box-shadow: 0 0 0 1px rgba(124,140,255,.35), 0 10px 28px rgba(0,0,0,.55) }
+  .mapa-area:has(.mp-cartao:not(:empty)) .mp-legenda { display: none }
+}
+
+/* legenda do mapa: "Pontos de interesse" liga e desliga os pontos, depois das etapas */
+.mp-leg-l .lg-sep { width: 100%; margin: 4px 0; border: 0; border-top: 1px solid var(--m-outline-variant, #c4c7c5) }
+.lg-poi { width: 18px; height: 18px; display: grid; place-items: center; flex: none }
+.lg-poi .poi-b { width: 12px; height: 12px; border-width: 2.5px; box-shadow: none }
+.lg-i[aria-pressed="false"] .lg-poi { filter: grayscale(1) }
+:root[data-tema="escuro"] .mp-leg-l .lg-sep { border-top-color: #1a2240 }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

@@ -13,7 +13,7 @@ UI.tk=UI.tk||{vista:'quadro',q:'',resp:'',ter:'',prio:'',atras:false,canc:false}
 // stand by, ganha e perdida com cores próprias e glifo, para não depender só da cor.
 const SIT={sem_negociacao:['Sem negociação','#8a8d91','·','#fff'],recebido:['Recebido','#8fc8f7','1','#1d2e5c'],
   viabilidade_inicial:['Viabilidade inicial','#4aa3f0','2','#fff'],negociacao:['Negociação','#0b74d6','3','#fff'],
-  minutagem:['Minutagem','#1d2e5c','4','#fff'],stand_by:['Stand by','#c98a2e','‖','#fff'],ganha:['Ganha','#6f9a3a','✓','#fff'],perdida:['Perdida','#9a3b30','×','#fff']};
+  minutagem:['Minutagem','#1d2e5c','4','#fff'],stand_by:['Stand by','#c98a2e','‖','#fff'],ganha:['Ganho','#6f9a3a','✓','#fff'],perdida:['Perdido','#9a3b30','×','#fff']};
 const sitMapa=t=>!t.neg?'sem_negociacao':t.neg.status==='ativo'?t.neg.etapa:t.neg.status;
 const sitChip=k=>`<span class="sitchip"><span class="sw" style="background:${SIT[k][1]}"></span>${SIT[k][0]}</span>`;
 const ativosBanco=()=>S.terrenos.filter(t=>t.situacao!=='arquivado');
@@ -117,16 +117,32 @@ function pinIcon(k,sel){const [,c,g,fg]=SIT[k];return L.divIcon({className:'pin'
 const poiIcon=()=>L.divIcon({className:'poi',html:'<span class="poi-b"></span>',iconSize:[14,14],iconAnchor:[7,7],tooltipAnchor:[0,-8]});
 function mpVisiveis(){const m=UI.mp,q=m.q.trim().toLowerCase();
   return ativosBanco().filter(t=>!m.ocultas.includes(sitMapa(t))&&(!m.zona||t.zona===m.zona)&&(!m.cor||t.corretores.some(x=>x.principal&&x.cid===m.cor))&&(!q||bateBusca(t,q)))}
-function mpLista(){const v=mpVisiveis(),sem=v.filter(t=>t.lat==null);
-  const cols=[{k:'nome',l:'Terreno',cls:'esq',v:t=>`<span class="cod">${t.codigo}</span><div class="t1">${esc(t.nome)}</div><div class="t2">${esc(t.bairro||'')}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div>`,s:t=>t.nome},
-    {k:'sit',l:'Situação',v:t=>sitChip(sitMapa(t)),s:t=>Object.keys(SIT).indexOf(sitMapa(t))},{k:'valor',l:'Valor',cls:'num',v:t=>{const o=ofertaRef(t);return o?.valor?mi(o.valor):'<span class="faint">—</span>'},s:t=>ofertaRef(t)?.valor??null}];
-  return `${entornoHtml()}<div class="mp-resumo"><span><b>${v.length}</b> terrenos</span><span><b>${num(v.reduce((s,t)=>s+(areaAdotada(t)||0),0))}</b> m²</span><span><b>${mi(v.reduce((s,t)=>s+(ofertaRef(t)?.valor||0),0))}</b> pedidos</span></div>
-  ${tabela('mapa',v,cols,{cls:'compacta',attr:t=>`data-a="mp-foco" data-id="${t.id}" tabindex="0" class="${UI.mpSel===t.id?'sel':''}"`,vazio:'Nenhum terreno com esses filtros.'})}
-  ${sem.length?`<div class="hint" style="margin-top:8px">${sem.length} sem localização. Abra a linha e use “Marcar no mapa”.</div>`:''}`;
+/* lista lateral do mapa: só o número do pino (etapa), o nome e a área; a lupa abre a ficha.
+   Clicar no pino ou na poligonal seleciona o terreno aqui (não há balão no mapa). */
+function mpItem(t,cartao){const k=sitMapa(t),[nm,c,g,fg]=SIT[k],sel=UI.mpSel===t.id,ad=areaAdotada(t)||(t.poly?areaPoly(t.poly):null);
+  const acoes=sel&&t.lat!=null?`<div class="mp-it-a">${UI.role!=='Leitura'?`<button class="linkbtn" data-a="mp-desenhar" data-id="${t.id}">${t.poly?'Editar':'Desenhar'} poligonal</button>`:''}${GG?`<button class="linkbtn" data-a="mp-sv" data-id="${t.id}">Street View</button><button class="linkbtn" data-a="mp-entorno" data-id="${t.id}">O que tem perto</button>`:''}</div>`:'';
+  return `<div class="mp-it${sel?' sel':''}${cartao?' cartao':''}" data-a="mp-foco" data-id="${t.id}" tabindex="0" role="listitem" aria-current="${sel}">
+    <span class="pin-mini" style="background:${c};color:${fg}" title="${esc(nm)}">${g}</span>
+    <div class="mp-it-t"><div class="t1">${esc(t.nome)}</div><div class="t2">${ad?m2(ad):'Área não informada'} · ${esc(nm)}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div></div>
+    <button class="iconbtn mp-lupa" data-a="abrir" data-id="${t.id}" data-tab="geral" data-from="mapa" title="Abrir ficha" aria-label="Abrir ficha de ${esc(t.nome)}">${bi('busca',22)}</button>${acoes}</div>`}
+function mpLista(){const v=mpVisiveis(),sem=v.filter(t=>t.lat==null),ord=Object.keys(SIT);
+  const rows=v.slice().sort((a,b)=>ord.indexOf(sitMapa(a))-ord.indexOf(sitMapa(b))||a.nome.localeCompare(b.nome,'pt'));
+  return `${entornoHtml()}<div class="mp-resumo"><span><b>${v.length}</b> terrenos</span><span><b>${num(v.reduce((s,t)=>s+(areaAdotada(t)||0),0))}</b> m²</span></div>
+  ${rows.length?`<div class="mp-lst" role="list">${rows.map(t=>mpItem(t)).join('')}</div>`:'<div class="empty">Nenhum terreno com esses filtros.</div>'}
+  ${sem.length?`<div class="hint" style="margin-top:8px">${sem.length} sem localização. Clique na linha para marcar no mapa.</div>`:''}`;
 }
+/* seleciona o terreno a partir do mapa: acende o pino, destaca a linha (rolando só a lista) e, no celular, mostra o cartão sobre o mapa */
+function mpMarcarPinos(){const on=(id,el)=>el?.classList.toggle('sel',UI.mpSel===id);  /* sem redesenhar: o segundo clique de um duplo clique precisa cair no mesmo pino */
+  if(GG)gPinsSel();else PINS?.eachLayer(l=>{if(l._terreno){on(l._terreno,l.getElement());l.setZIndexOffset(UI.mpSel===l._terreno?1000:0)}})}
+function mpSelecionar(id){UI.mpSel=id;mpMarcarPinos();const l=$('#mp-lista');if(l)l.innerHTML=mpLista();mpCartao();
+  const lado=$('.mapa-lado'),it=lado?.querySelector(`.mp-it[data-id="${id}"]`);
+  if(it&&getComputedStyle(lado).overflowY==='auto'){const a=lado.getBoundingClientRect(),r=it.getBoundingClientRect();
+    if(r.top<a.top||r.bottom>a.bottom)lado.scrollBy({top:r.top-a.top-a.height/2+r.height/2,behavior:'smooth'})}}
+function mpCartao(){const c=$('#mp-cartao');if(!c)return;const t=UI.mpSel&&T(UI.mpSel);c.innerHTML=t&&!UI.mpModo&&mpVisiveis().includes(t)?mpItem(t,true):''}
 function mpLegenda(){const base=ativosBanco();
   return Object.keys(SIT).map(k=>{const n=base.filter(t=>sitMapa(t)===k).length;const on=!UI.mp.ocultas.includes(k);
-    return `<button type="button" class="lg-i" data-a="mp-sit" data-v="${k}" aria-pressed="${on}"><span class="pin-mini" style="background:${SIT[k][1]};color:${SIT[k][3]}">${SIT[k][2]}</span>${SIT[k][0]}<span class="n">${n}</span></button>`}).join('');
+    return `<button type="button" class="lg-i" data-a="mp-sit" data-v="${k}" aria-pressed="${on}"><span class="pin-mini" style="background:${SIT[k][1]};color:${SIT[k][3]}">${SIT[k][2]}</span>${SIT[k][0]}<span class="n">${n}</span></button>`}).join('')
+    +`<hr class="lg-sep"><button type="button" class="lg-i" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}"><span class="lg-poi"><span class="poi-b"></span></span>Pontos de interesse<span class="n">${(S.pontos||[]).length}</span></button>`;
 }
 function pgMapa(){
   const opt=(o,v)=>Object.entries(o).map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${esc(l)}</option>`).join('');
@@ -143,10 +159,10 @@ function pgMapa(){
     <div id="mapa" class="mapa"></div>
     <div class="mp-barra">
       <div class="seg" role="group" aria-label="Fundo do mapa">${Object.entries(GG?CAMADAS_G:CAMADAS_L).map(([k,l])=>`<button type="button" data-a="mp-base" data-v="${k}" aria-pressed="${(UI.mpBase||'mapa')===k}">${l}</button>`).join('')}</div>
-      <div class="mp-acoes"><button class="btn sm" data-a="mp-modo" data-v="pin">${ic('add',16)}Novo pin</button><button class="btn sm" data-a="mp-modo" data-v="poi">${ic('add',16)}Ponto de interesse</button><button class="btn sm" data-a="mp-kmz">${ic('upload',16)}Importar KMZ/KML</button>
-      <button class="btn sm ${UI.mpPoi===false?'':'on'}" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}">Pontos de interesse</button></div>
+      <div class="mp-acoes"><button class="btn sm" data-a="mp-modo" data-v="pin">${ic('add',16)}Novo pin</button><button class="btn sm" data-a="mp-modo" data-v="poi">${ic('add',16)}Ponto de interesse</button><button class="btn sm" data-a="mp-kmz">${ic('upload',16)}Importar KMZ/KML</button></div>
     </div>
     <div id="mp-modo" class="mp-modo" aria-live="polite">${modoBanner()}</div>
+    <div id="mp-cartao" class="mp-cartao" aria-live="polite"></div>
     <details class="mp-legenda" ${UI.mpLeg??innerWidth>899?'open':''}><summary>Legenda</summary><div id="mp-leg" class="mp-leg-l">${mpLegenda()}</div></details>
     <div class="mp-aviso">O fundo do mapa (ruas e satélite) não carrega neste link de visualização, que bloqueia imagens externas. Os pins, poligonais e distâncias funcionam. No app publicado, ou abrindo o arquivo do protótipo no navegador, o fundo aparece.</div>
   </section></div>`;
@@ -166,21 +182,14 @@ function modoBanner(){const m=UI.mpModo;if(!m)return '';
 }
 function L_setBase(k){if(!MAPA)return;UI.mpBase=k;if(BASE)MAPA.removeLayer(BASE);BASE=camada(k,MAPA.getContainer().closest('.mapa-area')||MAPA.getContainer()).addTo(MAPA);BASE.eachLayer(l=>l.bringToBack());
   document.querySelectorAll('[data-a="mp-base"]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===k))}
-function popupHtml(t){const o=ofertaRef(t),ad=areaAdotada(t),k=sitMapa(t),px=proximos(t).slice(0,3);
-  return `<div class="pop"><div class="pop-e"><span class="num">${t.codigo}</span>${sitChip(k)}</div><div class="pop-t">${esc(t.nome)}</div>
-  <div class="pop-s">${esc([t.bairro,t.zona&&'Zona '+OPT.zona[t.zona]].filter(Boolean).join(' · '))}</div>
-  <div class="pop-n"><span>${ad?m2(ad):'Área não informada'}</span><span>${o?.valor?mi(o.valor):'Sem valor'}</span>${t.poly?`<span>Poligonal ${m2(areaPoly(t.poly))}</span>`:''}</div>
-  ${px.length?`<div class="pop-poi">${px.map(p=>`<div><span>${esc(p.nome)}</span><b>${fKm(p.d)}</b>${GG?`<button class="linkbtn" data-a="mp-rota" data-id="${t.id}" data-p="${p.id}">Rota</button>`:`<a href="${rotaUrl(t,p)}" target="_blank" rel="noopener">Rota</a>`}</div>`).join('')}</div>`:''}
-  ${GG?`<div class="pop-a"><button class="btn sm" data-a="mp-sv" data-id="${t.id}">Street View</button><button class="btn sm" data-a="mp-entorno" data-id="${t.id}">O que tem perto</button></div>`:''}
-  <div class="pop-a"><button class="btn sm primary" data-a="abrir" data-id="${t.id}" data-tab="geral" data-from="mapa">Abrir ficha</button><button class="btn sm ed" data-a="mp-desenhar" data-id="${t.id}">${t.poly?'Editar':'Desenhar'} poligonal</button><button class="btn sm text ed" data-a="mp-kmz" data-id="${t.id}">Poligonal de KMZ</button></div></div>`}
 function L_desenhaPins(){if(!MAPA||!PINS)return;PINS.clearLayers();
   mpVisiveis().filter(t=>t.lat!=null).forEach(t=>{const k=sitMapa(t);
     if(t.poly&&!(UI.mpModo&&UI.mpAlvo===t.id)){const pg=L.polygon(t.poly,{color:SIT[k][1],weight:2,fillOpacity:.18,interactive:!UI.mpModo})
-      .on('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<700)return;clearTimeout(pg._tc);pg._tc=setTimeout(()=>{if(!UI.mpModo)mk.openPopup()},260)})
+      .on('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<700)return;clearTimeout(pg._tc);pg._tc=setTimeout(()=>{if(!UI.mpModo)mpSelecionar(t.id)},260)})
       .on('dblclick',e=>{L.DomEvent.stop(e);clearTimeout(pg._tc);editarPoligonal(t.id)});
       pg.on('add',()=>polyGestos(pg.getElement(),t.id));pg.addTo(PINS)}
-    const mk=L.marker([t.lat,t.lng],{icon:pinIcon(k,UI.mpSel===t.id),title:t.nome,riseOnHover:true,keyboard:!UI.mpModo,interactive:!UI.mpModo}).bindPopup(()=>popupHtml(t),{maxWidth:320,minWidth:260,autoPanPaddingTopLeft:[20,150],autoPanPaddingBottomRight:[20,20]}).bindTooltip(esc(t.nome),{direction:'top'});
-    mk.on('popupopen',()=>{if(Date.now()-(UI.polyLongoEm||0)<900){mk.closePopup();return}UI.mpSel=t.id;const l=$('#mp-lista');if(l)l.innerHTML=mpLista()});
+    const mk=L.marker([t.lat,t.lng],{icon:pinIcon(k,UI.mpSel===t.id),title:t.nome,riseOnHover:true,keyboard:!UI.mpModo,interactive:!UI.mpModo}).bindTooltip(esc(t.nome),{direction:'top'});
+    mk.on('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<900)return;mpSelecionar(t.id)});
     /* o pino fica sobre a poligonal: segurar nele (ou dois cliques) também entra em edição */
     if(t.poly&&t.poly.length>=3){mk.on('add',()=>polyGestos(mk.getElement(),t.id));mk.on('dblclick',e=>{L.DomEvent.stop(e);editarPoligonal(t.id)})}
     mk.addTo(PINS);mk._terreno=t.id})}
@@ -196,7 +205,7 @@ function L_desenhaRascunho(){if(!DES)return;DES.clearLayers();const p=UI.desenho
     mk.on('dragend',e=>{const ll=e.target.getLatLng();vArrastado(i,ll.lat,ll.lng)});
     mk.addTo(DES)})}
 function mpRefresh(){desenhaPois();const l=$('#mp-lista');if(l)l.innerHTML=mpLista();const g=$('#mp-leg');if(g)g.innerHTML=mpLegenda();const m=$('#mp-modo');if(m)m.innerHTML=modoBanner();
-  if(MAPA){$('#mapa')?.classList.toggle('modo',!!UI.mpModo);desenhaPins();desenhaRascunho();vMenuDesenha()}}
+  if(MAPA){$('#mapa')?.classList.toggle('modo',!!UI.mpModo);desenhaPins();desenhaRascunho();vMenuDesenha()}mpCartao()}
 function L_initMapa(){const el=$('#mapa');if(!el)return;
   if(!window.L){el.innerHTML='<div class="mapa-erro">Não foi possível carregar a biblioteca de mapas. Verifique a conexão e recarregue a página.</div>';return}
   MAPA=L.map(el,{zoomControl:true,doubleClickZoom:false});
@@ -209,10 +218,11 @@ function L_initMapa(){const el=$('#mapa');if(!el)return;
   const mapaAtual=MAPA;requestAnimationFrame(()=>setTimeout(()=>{if(MAPA!==mapaAtual)return;MAPA.invalidateSize();enquadrar();if(UI.mpFocoPend){const t=T(UI.mpFocoPend);UI.mpFocoPend=null;if(t&&t.lat!=null)focar(t)}},60));
   MAPA.on('moveend',()=>{UI.mpView={c:MAPA.getCenter(),z:MAPA.getZoom()};vMenuDesenha()});MAPA.on('movestart zoomstart',()=>$('.mapa-area .v-menu')?.remove());
   MAPA.on('preclick',e=>mapaClique(e.latlng.lat,e.latlng.lng));
+  MAPA.on('click',e=>{if(!UI.mpModo&&UI.mpSel&&!e.originalEvent?.target?.closest?.('.leaflet-interactive'))mpSelecionar(null)}); /* clique no vazio tira a seleção */
   if(UI.mpFoco){UI.mpFocoPend=UI.mpFoco;UI.mpFoco=null}
 }
 function L_focar(t){if(!MAPA)return;UI.mpSel=t.id;if(t.poly)MAPA.fitBounds(t.poly,{maxZoom:18,padding:[40,40]});else MAPA.setView([t.lat,t.lng],Math.max(MAPA.getZoom(),16));
-  desenhaPins();PINS.eachLayer(l=>{if(l._terreno===t.id)l.openPopup()})}
+  mpSelecionar(t.id)}
 function mapaClique(lat,lng){const m=UI.mpModo;if(!m)return;
   if(m==='pin'){UI.mpModo=null;UI.novoLoc={lat,lng};UI.modal='novo';mpRefresh();renderModal();return}
   if(m==='poi'){UI.mpModo=null;UI.novoPoi={lat,lng};UI.modal='poi';mpRefresh();renderModal();return}
