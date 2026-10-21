@@ -208,7 +208,8 @@ function relevoHtml(t){const r=t.relevo;if(!GG&&!r)return '';
 
 /* ---------- mini mapa da ficha ---------- */
 function G_initMini(){const el=$('#mini-mapa'),t=T(UI.id);if(!el||!t||t.lat==null)return;el.innerHTML='';
-  MINI=new google.maps.Map(el,{mapId:'DEMO_MAP_ID',center:gLL(t.lat,t.lng),zoom:18,mapTypeId:'hybrid',mapTypeControl:false,streetViewControl:true,fullscreenControl:true,clickableIcons:false,gestureHandling:'cooperative',tilt:0});
+  MINI=new google.maps.Map(el,{mapId:'DEMO_MAP_ID',center:gLL(t.lat,t.lng),zoom:18,mapTypeId:'hybrid',mapTypeControl:false,streetViewControl:true,fullscreenControl:true,clickableIcons:false,gestureHandling:'cooperative',disableDoubleClickZoom:true,tilt:0});
+  const mini0=MINI;miniGestos(el,d=>mini0.setZoom(mini0.getZoom()+d));MINI.addListener('dblclick',e=>{if(e.latLng)miniAbrirMapa(t,e.latLng.lat(),e.latLng.lng(),mini0.getZoom())});
   const k=sitMapa(t);new gLib.marker.AdvancedMarkerElement({map:MINI,position:gLL(t.lat,t.lng),content:gPinEl(k)});
   if(t.poly){new google.maps.Polygon({map:MINI,paths:t.poly.map(p=>gLL(p[0],p[1])),strokeColor:'#0094fe',strokeWeight:2,fillColor:'#0094fe',fillOpacity:.2,clickable:false});
     const b=new google.maps.LatLngBounds();t.poly.forEach(p=>b.extend(gLL(p[0],p[1])));MINI.fitBounds(b,24)}}

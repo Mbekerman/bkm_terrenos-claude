@@ -26,7 +26,6 @@ const areaPoly=pts=>{if(!pts||pts.length<3)return null;const lat0=pts.reduce((s,
 const centro=pts=>[pts.reduce((s,p)=>s+p[0],0)/pts.length,pts.reduce((s,p)=>s+p[1],0)/pts.length];
 const proximos=t=>t.lat==null?[]:(S.pontos||[]).map(p=>({...p,d:distKm(t.lat,t.lng,p.lat,p.lng)})).filter(p=>p.d<=15).sort((a,b)=>a.d-b.d);
 const rotaUrl=(t,p)=>`https://www.google.com/maps/dir/?api=1&origin=${t.lat},${t.lng}&destination=${p.lat},${p.lng}&travelmode=driving`;
-const gmapsUrl=t=>`https://www.google.com/maps/search/?api=1&query=${t.lat},${t.lng}`;
 const CAT_POI={transporte:'Transporte',escola:'Escola',saude:'Saúde',comercio:'Comércio',lazer:'Lazer',empresa:'Empresa',outro:'Outro'};
 /* entorno do terreno: lugares do Google a até RAIO_PE metros a pé, por categoria (no banco: app.entorno_categorias) */
 const RAIO_PE=1500;
@@ -432,8 +431,8 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     ${lin('Última proposta',lp?`${mi(lp.valor)} · ${lp.origem==='bkm'?'BKM':'Vendedor'} · ${OPT.statusProp[lp.status]}`:'')}
     ${lin('Próxima reunião',pr?`${fd(pr.data)} · ${esc(pr.hora||'')}`:'')}
     ${pt?linLink('Próxima tarefa',`${esc(pt.titulo)} · <span style="${pt.prazo<HOJE?'color:var(--terracota);font-weight:600':''}">${fd(pt.prazo)}</span>`,`<button class="kv-ed" data-a="tk-abrir" data-id="${t.id}" data-tk="${pt.id}" aria-label="Editar a tarefa ${esc(pt.titulo)}" title="Editar tarefa">${lapis}</button>`):lin('Próxima tarefa','')}</dl></div></section>`:'';
-  const loc=`<section class="sec g-loc"><div class="sec-h"><h2>${bi('localizacao',32)}Localização</h2>${t.lat!=null?`<a class="btn text sm" href="${gmapsUrl(t)}" target="_blank" rel="noopener">Google Maps</a>`:''}</div><div class="sec-b">
-    ${t.lat!=null?`<div id="mini-mapa" class="mini-mapa"></div><div class="mini-pe"><span class="num faint">${num(t.lat,5)}, ${num(t.lng,5)} · ${esc(OPT.precisao[t.precisao]||'')}</span><span style="display:flex;gap:8px">${GG?`<button class="btn sm" data-a="g-sv-mini" data-id="${t.id}">Street View</button>`:''}<button class="btn sm" data-a="mp-ir" data-id="${t.id}">Ver no mapa</button></span></div>
+  const loc=`<section class="sec g-loc"><div class="sec-h"><h2>${bi('localizacao',32)}Localização</h2></div><div class="sec-b">
+    ${t.lat!=null?`<div id="mini-mapa" class="mini-mapa"></div><div class="mini-pe"><span></span><span>${GG?`<button class="btn sm" data-a="g-sv-mini" data-id="${t.id}">Street View</button>`:''}<button class="btn sm mini-ir" data-a="mp-ir" data-id="${t.id}">Ver no mapa</button></span></div>
       <div class="mp-aviso mini">O fundo do mapa não carrega neste link de visualização.</div>`
     :`<div class="empty" style="padding:var(--e6) 0">Sem localização.<br><span style="display:inline-flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center">${GG&&(t.logradouro||t.bairro)?`<button class="btn sm primary ed" data-a="g-geo" data-id="${t.id}">Localizar pelo endereço</button>`:''}<button class="btn sm ed" data-a="mp-marcar" data-id="${t.id}">Marcar no mapa</button></span></div>`}</div></section>`;
   const poi=entornoCard(t);
@@ -449,12 +448,24 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
   const rel=relevoHtml(t)?`<section class="sec"><div class="sec-h"><h2>Relevo</h2>${t.relevo?`<span class="faint" style="font-size:12px">estimado em ${fd(t.relevo.em)}</span>`:''}</div><div class="sec-b">${relevoHtml(t)}</div></section>`:'';
   return `<div class="geral"><div class="geral-c">${info}${condicoes(t)}${neg}</div><div class="geral-c">${loc}${rel}${poi}${viab}</div></div>`}
 function L_initMini(){const el=$('#mini-mapa'),t=T(UI.id);if(!el||!t||t.lat==null)return;if(!window.L){el.innerHTML='<div class="mapa-erro">Mapa indisponível.</div>';return}
-  MINI=L.map(el,{zoomControl:true,attributionControl:true,scrollWheelZoom:false,dragging:!L.Browser.mobile});
+  MINI=L.map(el,{zoomControl:true,attributionControl:true,scrollWheelZoom:false,doubleClickZoom:false,dragging:!L.Browser.mobile});
+  const mini0=MINI;miniGestos(el,d=>mini0.setZoom(mini0.getZoom()+d));
+  MINI.on('dblclick',e=>miniAbrirMapa(t,e.latlng.lat,e.latlng.lng,mini0.getZoom()));
   camada('satelite',el.closest('.sec')).addTo(MINI);const k=sitMapa(t);
   const enq=()=>t.poly?MINI.fitBounds(t.poly,{padding:[24,24],maxZoom:18}):MINI.setView([t.lat,t.lng],17);
   if(t.poly)L.polygon(t.poly,{color:'#0094fe',weight:2,fillOpacity:.2}).addTo(MINI);enq();
   const mini=MINI;requestAnimationFrame(()=>setTimeout(()=>{if(MINI!==mini)return;MINI.invalidateSize();enq()},60));
   L.marker([t.lat,t.lng],{icon:pinIcon(k)}).addTo(MINI)}
+
+/* mini-mapa da Visão geral: a roda sozinha rola a página; Shift + roda dá zoom.
+   Com Shift o navegador costuma mandar a rolagem como horizontal (deltaX), por isso vale qualquer eixo.
+   A escuta é na captura do contêiner, antes do mapa: sem Shift o evento não chega ao mapa e a página rola. */
+function miniGestos(el,zoom){let acc=0,ult=0;
+  el.addEventListener('wheel',e=>{if(!e.shiftKey){e.stopPropagation();return}e.preventDefault();e.stopPropagation();
+    const d=(Math.abs(e.deltaY)>=Math.abs(e.deltaX)?e.deltaY:e.deltaX)*(e.deltaMode===1?40:1);if(Date.now()-ult>400)acc=0;acc+=d;
+    if(Math.abs(acc)>=60&&Date.now()-ult>180){zoom(acc<0?1:-1);acc=0;ult=Date.now()}},{capture:true,passive:false})}
+/* dois cliques no mini-mapa: abre a página Mapa centrada no ponto clicado, no mesmo zoom, com o terreno selecionado */
+function miniAbrirMapa(t,lat,lng,z){go('mapa',{mpView:{c:{lat,lng},z:Math.max(z||17,15)},mpSel:t.id,mpFoco:null})}
 
 /* ===================== TAREFAS (quadro) ===================== */
 const COLS_TK=['pendente','em_andamento','aguardando_terceiro','concluida','cancelada'];

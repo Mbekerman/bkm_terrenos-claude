@@ -332,6 +332,11 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .sec-h > :last-child:not(h2) { margin-left: auto }
 .mini-pe > span { display: flex; flex-wrap: wrap; gap: 8px }
 .mini-pe { row-gap: 8px }
+/* desktop: o mini-mapa abre o Mapa com dois cliques; "Ver no mapa" fica só no toque (celular, tablet) */
+@media (hover: hover) and (pointer: fine) {
+  .mini-ir { display: none !important }
+  .mini-pe:not(:has([data-a="g-sv-mini"])) { display: none }
+}
 .chip { white-space: normal; max-width: 100% }
 .task, .tk-row { min-width: 0 }
 .task .t1 { white-space: normal; overflow-wrap: anywhere }
