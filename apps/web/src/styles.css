@@ -702,7 +702,7 @@ body.dash-fixo .dash { position: fixed; inset: 0; z-index: 30; overflow: auto; p
 .mapa-area, .mini-mapa { position: relative; z-index: 0; isolation: isolate }
 .tk-board .tk-col { flex: 1 1 232px; min-width: 232px }
 .tk, .tk-lista { min-width: 0 }
-.tabs { overflow-x: auto; scrollbar-width: thin }
+.tabs { overflow-x: auto }
 .tabs .tab { flex: none; white-space: nowrap }
 .dt td.num, .dt td.faint, .dt th { white-space: nowrap }
 .dt td.esq { min-width: 180px }
@@ -1544,6 +1544,16 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 /* quadro de avanço no painel: bloco tonal, não um quadro contornado dentro de outro */
 .pn-adv .sec-adv.sec-adv { border: 0 !important; background: var(--m-sc-low) !important; border-radius: 16px !important }
 :root[data-tema="escuro"] .pn-adv .sec-adv.sec-adv { background: rgba(124,140,255,.07) !important; border: 0 !important }
+/* barras de rolagem finas e discretas (quadro de negociações, tabelas, painéis, página): trilho invisível,
+   alça em cápsula na cor do texto secundário com transparência, mais forte ao passar o mouse */
+:root { --rolagem: rgba(68,71,70,.28); --rolagem-h: rgba(68,71,70,.5) }
+:root[data-tema="escuro"] { --rolagem: rgba(201,214,255,.18); --rolagem-h: rgba(201,214,255,.36) }
+::-webkit-scrollbar { width: 10px; height: 10px }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent }
+::-webkit-scrollbar-button { display: none; width: 0; height: 0 }
+::-webkit-scrollbar-thumb { background: var(--rolagem); background-clip: padding-box; border: 3px solid transparent; border-radius: 999px; min-width: 40px; min-height: 40px }
+::-webkit-scrollbar-thumb:hover, ::-webkit-scrollbar-thumb:active { background-color: var(--rolagem-h) }
+@supports not selector(::-webkit-scrollbar) { * { scrollbar-width: thin; scrollbar-color: var(--rolagem) transparent } }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
