@@ -199,7 +199,11 @@ function seed(){
     {id:'p3',nome:'Estação Tatuapé (Linha 3)',cat:'transporte',lat:-23.54040,lng:-46.57700},{id:'p4',nome:'Estação Penha (Linha 3)',cat:'transporte',lat:-23.53340,lng:-46.54280},
     {id:'p5',nome:'Estação Guaianases (Linha 11)',cat:'transporte',lat:-23.54200,lng:-46.41440},{id:'p6',nome:'Estação Jaraguá (Linha 7)',cat:'transporte',lat:-23.45610,lng:-46.73980},
     {id:'p7',nome:'Shopping Aricanduva',cat:'comercio',lat:-23.56690,lng:-46.50610},{id:'p8',nome:'Hospital Municipal Cidade Ademar',cat:'saude',lat:-23.67330,lng:-46.64470}];
-  return {eixos,corretores,terrenos:T,pontos,areasInteresse:[{id:'ai1',nome:'Área Cupecê A',terrenos:['TER-000123','TER-000132']}],seqT:132};
+  /* concorrência de exemplo (empreendimentos de outras empresas; nomes fictícios) */
+  const concorrentes=[{id:'c1',nome:'Residencial Jardim Prudente',empresa:'Construtora Exemplo A',obs:'Lançado em 2026, 2 dormitórios',lat:-23.58620,lng:-46.57950},
+    {id:'c2',nome:'Condomínio Parque Tatuapé',empresa:'Incorporadora Exemplo B',obs:'Em obras',lat:-23.54250,lng:-46.57300},
+    {id:'c3',nome:'Vila Cupecê Residencial',empresa:'Construtora Exemplo C',obs:'',lat:-23.66450,lng:-46.64900}];
+  return {eixos,corretores,terrenos:T,pontos,concorrentes,areasInteresse:[{id:'ai1',nome:'Área Cupecê A',terrenos:['TER-000123','TER-000132']}],seqT:132};
 }
 
 /* ===================== estado ===================== */
@@ -666,7 +670,7 @@ function go(route,x={}){Object.assign(UI,{route,edit:null,propForm:false,reuForm
 
 /* ===================== modais ===================== */
 function renderModal(){
-  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.novoLoc=null;UI.novoPoi=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;return}
+  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.novoLoc=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;return}
   let h='';const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`;
   if(M==='novo')h=`<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Só o mínimo para entrar no radar. A ficha é completada aos poucos.</div></div>${fechar}</div>
   <form data-form="novo" id="f-novo"><div class="fields">${GG&&!UI.novoLoc?`<div class="field full"><div id="n-gauto" class="gauto"></div><span id="n-gauto-loc" class="hint">Escolha um resultado para preencher endereço e localização.</span></div>`:''}${UI.novoLoc?`<div class="field full"><div class="banner blue">${ic('check')}<div>Localização marcada no mapa: <span class="num">${num(UI.novoLoc.lat,5)}, ${num(UI.novoLoc.lng,5)}</span></div></div></div>`:''}
@@ -714,6 +718,12 @@ function renderModal(){
   <div class="field"><label for="po-c">Categoria</label><select id="po-c" name="cat">${Object.entries(CAT_POI).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
   <div class="field"><span class="lbl-f">Local</span><span class="num muted" style="line-height:44px">${num(UI.novoPoi.lat,5)}, ${num(UI.novoPoi.lng,5)}</span></div></div></form>
   <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-poi">Salvar ponto</button></div>`;
+  if(M==='conc')h=`<div class="dh"><div><h2>Nova concorrência</h2><div class="muted" style="margin-top:4px">Empreendimento de outra empresa perto dos terrenos.</div></div>${fechar}</div>
+  <form data-form="conc" id="f-conc"><div class="fields"><div class="field full"><label for="cc-n">Empreendimento</label><input id="cc-n" name="nome" required placeholder="Nome do empreendimento"></div>
+  <div class="field"><label for="cc-e">Empresa</label><input id="cc-e" name="empresa" placeholder="Incorporadora ou construtora"></div>
+  <div class="field"><span class="lbl-f">Local</span><span class="num muted" style="line-height:44px">${num(UI.novoConc.lat,5)}, ${num(UI.novoConc.lng,5)}</span></div>
+  <div class="field full"><label for="cc-o">Observação</label><input id="cc-o" name="obs" placeholder="Produto, preço, fase da obra..."></div></div></form>
+  <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-conc">Salvar</button></div>`;
   if(M==='kmz'){const its=UI.kmzItens||[],ter=ativosBanco();h=`<div class="dh"><div><h2>Importar ${its.length} ${its.length===1?'item':'itens'} do arquivo</h2><div class="muted" style="margin-top:4px">Escolha o que fazer com cada ponto ou polígono.</div></div>${fechar}</div>
   <form data-form="kmz" id="f-kmz"><div class="kmz-l">${its.map((it,i)=>{const lig=ter.find(t=>t.nome.toLowerCase()===it.nome.toLowerCase()||it.nome.includes(t.codigo));
     return `<div class="kmz-i"><div><div class="t1">${esc(it.nome)}</div><div class="t2">${it.tipo==='poligono'?`Polígono · ${it.pts.length} vértices · ${m2(areaPoly(it.pts))}`:'Ponto'}</div></div>
@@ -823,6 +833,8 @@ document.addEventListener('click',e=>{
     case 'mp-desfazer':{const h=UI.desHist||[];if(h.length){UI.desenho=h.pop();UI.vSel=null;UI.vMenu=false;UI.vMover=false}mpRefresh();break}
     case 'mp-concluir':concluirDesenho();break;
     case 'mp-poi':UI.mpPoi=UI.mpPoi===false;mostrarPois(UI.mpPoi);a.setAttribute('aria-pressed',UI.mpPoi);a.classList.toggle('on',UI.mpPoi);break;
+    case 'mp-conc':UI.mpConc=UI.mpConc===false;mostrarConc(UI.mpConc);a.setAttribute('aria-pressed',UI.mpConc);break;
+    case 'ctx-terreno':case 'ctx-poi':case 'ctx-conc':ctxAcao(a.dataset.a);break;
     case 'mp-kmz':UI.kmzAlvo=a.dataset.id||null;$('#kmz-in').value='';$('#kmz-in').click();break;
     case 'mp-desenhar':{const x=T(a.dataset.id);if(x&&x.poly&&x.poly.length>=3){editarPoligonal(x.id);break}
       UI.mpModo='desenhar';UI.mpAlvo=a.dataset.id;UI.desEditando=false;UI.desenho=[];UI.desHist=[];UI.vSel=null;UI.vMenu=false;fecharPopup();mpRefresh();break}
@@ -896,6 +908,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       t.pessoas.push({nome:F.nome,tipo:F.tipo,papel:F.papel,pct:F.papel==='proprietario'?lerNum(F.pct):null,tel:F.tel});save();render();break;
     case 'tarefa':t.tarefas.push({id:uid(),titulo:F.titulo,desc:F.desc,resp:F.resp,prazo:F.prazo,status:'pendente',prio:F.prio,resultado:''});log(t,`Tarefa criada: ${F.titulo}`);save();render();toast('Tarefa adicionada.');break;
     case 'poi':{S.pontos=S.pontos||[];S.pontos.push({id:uid(),nome:F.nome.trim(),cat:F.cat,lat:UI.novoPoi.lat,lng:UI.novoPoi.lng});UI.modal=null;save();const volta=UI.poiVolta;UI.poiVolta=null;if(volta&&T(volta))go('terreno',{id:volta,tab:'geral'});else render();toast('Ponto de interesse salvo.');break}
+    case 'conc':{S.concorrentes=S.concorrentes||[];S.concorrentes.push({id:uid(),nome:F.nome.trim(),empresa:(F.empresa||'').trim(),obs:(F.obs||'').trim(),lat:UI.novoConc.lat,lng:UI.novoConc.lng});UI.modal=null;save();render();toast('Concorrência salva.');break}
     case 'kmz':{let novos=0,lig=0;(UI.kmzItens||[]).forEach((it,i)=>{const d=F['i'+i];if(d==null||d==='')return;
         if(d==='novo'){S.seqT++;const c=it.tipo==='poligono'?centro(it.pts):it.pts[0];const nt={...seedVazio(),codigo:'TER-'+String(S.seqT).padStart(6,'0'),nome:it.nome,resp:me(),origem:'prospeccao',dataIdent:HOJE,lat:c[0],lng:c[1],precisao:'aproximada'};
           if(it.tipo==='poligono')nt.poly=it.pts;nt.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado por importação de KMZ'}];S.terrenos.push(nt);novos++}

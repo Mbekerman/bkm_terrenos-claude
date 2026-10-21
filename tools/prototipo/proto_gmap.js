@@ -42,6 +42,11 @@ function G_desenhaPins(){if(!MAPA)return;gSet(gPins,null);gPins=[];const {Advanc
       pg.addListener('mousedown',e=>{if(UI.mpModo||!TOQUE())return;limpa();tm=setTimeout(()=>{tm=null;UI.polyLongoEm=Date.now();aoSoltar(()=>editarPoligonal(t.id))},550)});
       ['mouseup','mouseout'].forEach(ev=>pg.addListener(ev,limpa));google.maps.event.addListener(MAPA,'dragstart',limpa);
       gPins.push(pg)}})}
+let gConc=[];
+function gConcEl(){const d=document.createElement('div');d.className='conc g';d.innerHTML='<span class="conc-b"></span>';return d}
+function G_mostrarConc(on){gSet(gConc,on?MAPA:null)}
+function G_desenhaConc(){if(!MAPA)return;gSet(gConc,null);gConc=[];const {AdvancedMarkerElement}=gLib.marker;
+  (S.concorrentes||[]).forEach(c=>gConc.push(new AdvancedMarkerElement({map:UI.mpConc===false?null:MAPA,position:gLL(c.lat,c.lng),content:gConcEl(),title:`${c.nome}${c.empresa?' · '+c.empresa:''}`,gmpClickable:false})))}
 function G_desenhaPois(){if(!MAPA)return;gSet(gPois,null);gPois=[];const {AdvancedMarkerElement}=gLib.marker;
   (S.pontos||[]).forEach(p=>gPois.push(new AdvancedMarkerElement({map:UI.mpPoi===false?null:MAPA,position:gLL(p.lat,p.lng),content:gPoiEl(),title:`${p.nome} · ${CAT_POI[p.cat]||''}`,gmpClickable:false})))}
 function G_desenhaRascunho(){if(!MAPA)return;gSet(gDes,null);gDes=[];const p=(UI.desenho||[]).map(q=>gLL(q[0],q[1]));if(!p.length)return;
@@ -62,12 +67,16 @@ function gPontoNaTela(lat,lng){if(!MAPA)return null;if(!gProj||gProj.getMap()!==
   const pr=gProj.getProjection();if(!pr)return null;const p=pr.fromLatLngToContainerPixel(new google.maps.LatLng(lat,lng));return p?{x:p.x,y:p.y}:null}
 function gEnquadrar(pts,maxZoom){if(!MAPA||!pts.length)return;if(pts.length===1){MAPA.setCenter(pts[0]);MAPA.setZoom(maxZoom||17);return}
   const b=new google.maps.LatLngBounds();pts.forEach(p=>b.extend(p));MAPA.fitBounds(b,48);if(maxZoom)google.maps.event.addListenerOnce(MAPA,'idle',()=>{if(MAPA.getZoom()>maxZoom)MAPA.setZoom(maxZoom)})}
-function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[];gPois=[];gDes=[];gRota=[];gEntorno=[];
+function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[];gPois=[];gConc=[];gDes=[];gRota=[];gEntorno=[];
   const v=UI.mpView;
   MAPA=new google.maps.Map(el,{mapId:'DEMO_MAP_ID',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[UI.mpBase||'mapa'],
     mapTypeControl:false,streetViewControl:true,fullscreenControl:false,clickableIcons:false,gestureHandling:'greedy',scaleControl:true,tilt:0,disableDoubleClickZoom:true});
   gInfo=new google.maps.InfoWindow({maxWidth:320});
-  el.classList.toggle('modo',!!UI.mpModo);G_desenhaPins();G_desenhaPois();G_desenhaRascunho();
+  el.classList.toggle('modo',!!UI.mpModo);G_desenhaPins();G_desenhaPois();G_desenhaConc();
+  ctxGestos(el,(x,y)=>{if(!gProj||gProj.getMap()!==MAPA)gPontoNaTela(0,0);const pr=gProj?.getProjection();const ll=pr?.fromContainerPixelToLatLng(new google.maps.Point(x,y));return ll?{lat:ll.lat(),lng:ll.lng()}:null});
+  /* reserva: o Google também avisa o clique direito (se o evento do navegador não chegar ao contêiner) */
+  MAPA.addListener('contextmenu',e=>{const de=e.domEvent;if(!de||!e.latLng||(UI.ctxTipo||'mouse')!=='mouse'||$('.mp-ctx'))return;const r=el.getBoundingClientRect();ctxAbrir(de.clientX-r.left,de.clientY-r.top,e.latLng.lat(),e.latLng.lng())});
+  MAPA.addListener('dragstart',ctxFechar);MAPA.addListener('zoom_changed',ctxFechar);G_desenhaRascunho();
   if(!v)gEnquadrar(ativosBanco().filter(t=>t.lat!=null).map(t=>gLL(t.lat,t.lng)),15);
   MAPA.addListener('idle',()=>{const c=MAPA.getCenter();UI.mpView={c:{lat:c.lat(),lng:c.lng()},z:MAPA.getZoom()};vMenuDesenha()});
   MAPA.addListener('dragstart',()=>$('.mapa-area .v-menu')?.remove());MAPA.addListener('zoom_changed',()=>$('.mapa-area .v-menu')?.remove());

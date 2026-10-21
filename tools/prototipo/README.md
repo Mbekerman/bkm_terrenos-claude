@@ -37,6 +37,7 @@ Rodar só o que a mudança toca; a varredura completa (`tvaza` e `tscroll`) ao f
 | `tend2.js`, `tgmock.js` | endereço pela busca do Google (simulado) |
 | `tadv.js` | quadro de avanço compacto e modais |
 | `ted2.js` | edição da poligonal (desktop e celular) |
+| `tctx.js` | menu do clique direito no mapa (toque longo no celular), concorrência, barra do mapa |
 | `tlista.js` | página Mapa sem balão: clicar no pino destaca a linha, cartão no celular, lupa abre a ficha |
 | `tmini.js` | mini-mapa da Visão geral: Shift + roda, dois cliques abrem o Mapa, Ver no mapa só no celular |
 | `tedmenu.js` | menu do clique direito no ponto, sem barra no desktop, Desfazer/Cancelar, Ctrl+Z e Esc (claro e escuro) |

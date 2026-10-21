@@ -34,7 +34,7 @@ P=await pts();await p.mouse.click(P[0].x,P[0].y,{button:'right'});await p.waitFo
 await p.keyboard.press('Control+z');await p.waitForTimeout(300);ok(await n()===n0,'Ctrl+Z desfaz');
 P=await pts();await p.mouse.click(P[0].x,P[0].y,{button:'right'});await p.waitForTimeout(200);await p.keyboard.press('Escape');await p.waitForTimeout(200);
 ok(!(await p.$('.v-menu'))&&await editando(),'Esc com menu aberto só fecha o menu');
-P=await pts();await p.mouse.click(P[1].x,P[1].y,{button:'right'});await p.waitForTimeout(500);{const m=await p.$eval('.mapa',x=>{const r=x.getBoundingClientRect();return {x:r.x+80,y:r.y+r.height*0.6}});await p.mouse.click(m.x,m.y)}await p.waitForTimeout(200);ok(!(await p.$('.v-menu')),'clique fora fecha o menu');
+P=await pts();await p.mouse.click(P[1].x,P[1].y,{button:'right'});await p.waitForTimeout(500);{const m=await p.$eval('.mapa',x=>{const r=x.getBoundingClientRect();return {x:r.right-80,y:r.y+r.height*0.6}});await p.mouse.click(m.x,m.y)}await p.waitForTimeout(200);ok(!(await p.$('.v-menu')),'clique fora fecha o menu');
 await p.mouse.dblclick(P[1].x,P[1].y);await p.waitForTimeout(300);ok(!!(await p.$('.v-menu')),'dois cliques continuam abrindo o menu');await p.keyboard.press('Escape');
 P=await pts();await p.mouse.move(P[0].x,P[0].y);await p.mouse.down();await p.mouse.move(P[0].x+30,P[0].y+20,{steps:6});await p.mouse.up();await p.waitForTimeout(300);ok(Math.abs((await pts())[0].x-P[0].x-30)<3,'arrastou o ponto 1');
 P=await pts();await p.mouse.click(P[0].x,P[0].y,{button:'right'});await p.waitForTimeout(200);await p.click('.v-menu [data-a=v-cancelar]');await p.waitForTimeout(400);
