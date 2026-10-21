@@ -38,5 +38,6 @@ Rodar só o que a mudança toca; a varredura completa (`tvaza` e `tscroll`) ao f
 | `tadv.js` | quadro de avanço compacto e modais |
 | `ted2.js` | edição da poligonal (desktop e celular) |
 | `tent.js`, `tent2.js`, `tent3.js`, `tentshot.js` | pontos de interesse: busca e rota a pé simuladas, pontos da empresa, adicionar ponto |
+| `ticones.js` | prints dos ícones do menu (aberto, recolhido, celular, tema escuro) |
 
 `fake_gmaps.js` / `fake_gmaps2.js` simulam o Google (o 2 também responde `Place.searchNearby`); `tile.png` é o fundo de mapa falso. Prints e saídas vão para `saida/` (fora do git).
