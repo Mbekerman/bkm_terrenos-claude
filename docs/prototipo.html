@@ -2009,6 +2009,28 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
   .mapa-area:has(.mp-modo:not(:empty)) .leaflet-control-scale { display: none }
 }
 .mp-modo .mp-q { opacity: .75; white-space: nowrap }
+/* ===== mais área de tela e nada saindo dos quadros ===== */
+/* menu lateral mais estreito (248 → 216 px) */
+@media (min-width: 900px) { .layout { grid-template-columns: 216px minmax(0, 1fr) } body.menu-min .layout { grid-template-columns: 80px minmax(0, 1fr) } }
+.side { padding-right: 12px }
+.side .compose { padding: 0 20px 0 16px }
+.nav-item { padding-right: 12px }
+/* Visão geral: duas colunas só quando cada uma tem pelo menos ~370 px; abaixo disso, uma coluna (o mapa desce) */
+.bl-c { container: bloco / inline-size }
+@container bloco (max-width: 760px) { .geral { grid-template-columns: minmax(0, 1fr) } }
+/* cabeçalhos e rodapés de quadro quebram linha em vez de vazar */
+.sec-h, .card-h { flex-wrap: wrap; row-gap: 6px }
+.sec-h > :last-child:not(h2) { margin-left: auto }
+.mini-pe > span { display: flex; flex-wrap: wrap; gap: 8px }
+.mini-pe { row-gap: 8px }
+.chip { white-space: normal; max-width: 100% }
+.task, .tk-row { min-width: 0 }
+.task .t1 { white-space: normal; overflow-wrap: anywhere }
+.task { flex-wrap: wrap }
+.task .tt { flex: 1 1 160px }
+/* telas largas: o conteúdo aproveita até 1680 px (antes 1440) */
+.layout, .top-in { max-width: 1680px }
+@container bloco (min-width: 761px) { .geral { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) } }
 </style>
 <header class="top">
   <div class="top-in">
