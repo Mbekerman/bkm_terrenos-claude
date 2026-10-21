@@ -1395,6 +1395,9 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .ent-l li.ent-vazio .t2 { color: var(--texto-suave); font-style: italic }
 .ent-pe { margin-top: 10px; display: block; line-height: 20px }
 .ent-pe .linkbtn { font-size: inherit }
+.ent-emp { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--m-outline-v, rgba(127,127,127,.25)) }
+.ent-emp-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; font-size: 14px; font-weight: 500; color: var(--m-on-surface, var(--texto)) }
+.ent-emp-h .linkbtn { display: inline-flex; align-items: center; gap: 4px; font-size: 14px }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

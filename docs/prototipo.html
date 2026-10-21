@@ -2069,6 +2069,9 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .ent-l li.ent-vazio .t2 { color: var(--texto-suave); font-style: italic }
 .ent-pe { margin-top: 10px; display: block; line-height: 20px }
 .ent-pe .linkbtn { font-size: inherit }
+.ent-emp { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--m-outline-v, rgba(127,127,127,.25)) }
+.ent-emp-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; font-size: 14px; font-weight: 500; color: var(--m-on-surface, var(--texto)) }
+.ent-emp-h .linkbtn { display: inline-flex; align-items: center; gap: 4px; font-size: 14px }
 </style>
 <header class="top">
   <div class="top-in">
@@ -2765,7 +2768,7 @@ function go(route,x={}){Object.assign(UI,{route,edit:null,propForm:false,reuForm
 
 /* ===================== modais ===================== */
 function renderModal(){
-  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.novoLoc=null;UI.novoPoi=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;return}
+  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.novoLoc=null;UI.novoPoi=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;return}
   let h='';const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`;
   if(M==='novo')h=`<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Só o mínimo para entrar no radar. A ficha é completada aos poucos.</div></div>${fechar}</div>
   <form data-form="novo" id="f-novo"><div class="fields">${GG&&!UI.novoLoc?`<div class="field full"><div id="n-gauto" class="gauto"></div><span id="n-gauto-loc" class="hint">Escolha um resultado para preencher endereço e localização.</span></div>`:''}${UI.novoLoc?`<div class="field full"><div class="banner blue">${ic('check')}<div>Localização marcada no mapa: <span class="num">${num(UI.novoLoc.lat,5)}, ${num(UI.novoLoc.lng,5)}</span></div></div></div>`:''}
@@ -2889,6 +2892,8 @@ document.addEventListener('click',e=>{
     case 'forcar':UI.modal='forcar';renderModal();break;
     case 'ent-buscar':{const x=T(a.dataset.id);if(x)gEntornoTerreno(x);break}
     case 'ent-todos':ENT_TODOS=!ENT_TODOS;render();break;
+    case 'emp-todos':EMP_TODOS=!EMP_TODOS;render();break;
+    case 'ent-add-ponto':{const id=a.dataset.id;go('mapa',{mpFoco:id,mpView:null});UI.poiVolta=id;UI.mpModo='poi';mpRefresh();setTimeout(()=>{if(UI.mpModo==='poi')fecharPopup()},400);break}
     case 'adv-req':ADV_REQ=!ADV_REQ;render();break;
     case 'adv-mais':{const w=a.closest('.adv-mais'),ab=!w.classList.contains('aberto');document.querySelectorAll('.adv-mais.aberto').forEach(x=>{x.classList.remove('aberto');x.querySelector('.adv-mb').setAttribute('aria-expanded','false')});if(ab){w.classList.add('aberto');a.setAttribute('aria-expanded','true')}break}
     case 'adv-ir':{const r=checkAdv(t);if(!r)break;const pend=r.items.filter(x=>!x.ok);
@@ -2916,7 +2921,7 @@ document.addEventListener('click',e=>{
     case 'mp-limpar':UI.mp={q:'',cor:'',zona:'',ocultas:[]};render();break;
     case 'mp-base':setBase(a.dataset.v);break;
     case 'mp-modo':UI.mpModo=UI.mpModo===a.dataset.v?null:a.dataset.v;fecharPopup();mpRefresh();break;
-    case 'mp-sair':UI.mpModo=null;UI.desenho=null;UI.desHist=null;UI.vSel=null;UI.vMenu=false;UI.vMover=false;mpRefresh();break;
+    case 'mp-sair':UI.mpModo=null;UI.poiVolta=null;UI.desenho=null;UI.desHist=null;UI.vSel=null;UI.vMenu=false;UI.vMover=false;mpRefresh();break;
     case 'mp-desfazer':{const h=UI.desHist||[];if(h.length){UI.desenho=h.pop();UI.vSel=null;UI.vMenu=false;UI.vMover=false}mpRefresh();break}
     case 'mp-concluir':concluirDesenho();break;
     case 'mp-poi':UI.mpPoi=UI.mpPoi===false;mostrarPois(UI.mpPoi);a.setAttribute('aria-pressed',UI.mpPoi);a.classList.toggle('on',UI.mpPoi);break;
@@ -2992,7 +2997,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
     case 'pessoa':if(F.papel==='proprietario'&&lerNum(F.pct)!=null){const tot=t.pessoas.filter(p=>p.papel==='proprietario').reduce((a,p)=>a+(p.pct||0),0);if(tot+lerNum(F.pct)>100){toast(`A soma passaria de 100% (já há ${num(tot,2)}% informado).`,true);return}}
       t.pessoas.push({nome:F.nome,tipo:F.tipo,papel:F.papel,pct:F.papel==='proprietario'?lerNum(F.pct):null,tel:F.tel});save();render();break;
     case 'tarefa':t.tarefas.push({id:uid(),titulo:F.titulo,desc:F.desc,resp:F.resp,prazo:F.prazo,status:'pendente',prio:F.prio,resultado:''});log(t,`Tarefa criada: ${F.titulo}`);save();render();toast('Tarefa adicionada.');break;
-    case 'poi':{S.pontos=S.pontos||[];S.pontos.push({id:uid(),nome:F.nome.trim(),cat:F.cat,lat:UI.novoPoi.lat,lng:UI.novoPoi.lng});UI.modal=null;save();render();toast('Ponto de interesse salvo.');break}
+    case 'poi':{S.pontos=S.pontos||[];S.pontos.push({id:uid(),nome:F.nome.trim(),cat:F.cat,lat:UI.novoPoi.lat,lng:UI.novoPoi.lng});UI.modal=null;save();const volta=UI.poiVolta;UI.poiVolta=null;if(volta&&T(volta))go('terreno',{id:volta,tab:'geral'});else render();toast('Ponto de interesse salvo.');break}
     case 'kmz':{let novos=0,lig=0;(UI.kmzItens||[]).forEach((it,i)=>{const d=F['i'+i];if(d==null||d==='')return;
         if(d==='novo'){S.seqT++;const c=it.tipo==='poligono'?centro(it.pts):it.pts[0];const nt={...seedVazio(),codigo:'TER-'+String(S.seqT).padStart(6,'0'),nome:it.nome,resp:me(),origem:'prospeccao',dataIdent:HOJE,lat:c[0],lng:c[1],precisao:'aproximada'};
           if(it.tipo==='poligono')nt.poly=it.pts;nt.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado por importação de KMZ'}];S.terrenos.push(nt);novos++}
@@ -3118,7 +3123,23 @@ function entornoCard(t){if(t.lat==null)return '';
       return its.slice(0,lim).map(p=>`<li><span><span class="t1">${esc(p.nome)}</span><span class="t2">${l}${p.min!=null?` · ${p.min} min a pé`:''}</span></span><b class="num">${p.pe<1000?Math.round(p.pe/10)*10+' m':num(p.pe/1000,2)+' km'}</b><a href="${rotaPeUrl(t,p)}" target="_blank" rel="noopener">Rota</a></li>`).join('')}).join('')}</ul>
     ${sobra||ENT_TODOS?`<button class="linkbtn" data-a="ent-todos" style="margin-top:6px">${ENT_TODOS?'Mostrar menos':`Mostrar mais ${sobra}`}</button>`:''}
     <div class="hint ent-pe">${busc?'Atualizando no Google… · ':''}${e.fonte==='exemplo'?'Dados de exemplo':'Google'} · ${e.semPe?'distância em linha reta (a rota a pé não respondeu)':'distância pela rota a pé'} · buscado em ${fd(e.em)}${mudou?' · <b>a localização mudou depois da busca</b>':''}${GG&&!busc?` · <button class="linkbtn ed" data-a="ent-buscar" data-id="${t.id}">Buscar de novo</button>`:''}</div>`}
+  corpo+=pontosEmpresa(t);
   return `<section class="sec" id="ent-card"><div class="sec-h"><h2>Pontos de interesse</h2><span class="faint" style="font-size:12px">a pé · até ${raio}</span></div><div class="sec-b">${corpo}</div></section>`}
+/* pontos cadastrados pela empresa: todos aparecem; a pé se está a até RAIO_PE a pé, senão de carro; sem rota medida, linha reta */
+let EMP_TODOS=false;
+const kmTxt=m=>m<1000?Math.round(m/10)*10+' m':num(m/1000,m<10000?2:1)+' km';
+function pontosEmpresa(t){const pts=S.pontos||[];const d=t.dist&&t.dist.lat===t.lat&&t.dist.lng===t.lng?t.dist.m:{};
+  const its=pts.map(p=>{const x=d[p.id]||{},reta=distKm(t.lat,t.lng,p.lat,p.lng)*1000;
+    if(x.pe!=null&&x.pe<=RAIO_PE)return {p,ord:x.pe,dist:kmTxt(x.pe),modo:`${x.pm} min a pé`,url:rotaPeUrl(t,p)};
+    if(x.cm!=null)return {p,ord:x.cm,dist:kmTxt(x.cm),modo:`${x.cmin} min de carro`,url:rotaUrl(t,p)};
+    return {p,ord:reta,dist:kmTxt(reta),modo:'em linha reta',url:reta<=RAIO_PE?rotaPeUrl(t,p):rotaUrl(t,p)}}).sort((a,b)=>a.ord-b.ord);
+  const lim=EMP_TODOS?999:5;
+  return `<div class="ent-emp"><div class="ent-emp-h"><span>Cadastrados pela empresa</span>${UI.role!=='Leitura'?`<button class="linkbtn ed" data-a="ent-add-ponto" data-id="${t.id}">${ic('add',16)}Adicionar ponto</button>`:''}</div>
+    ${its.length?`<ul class="poil ent-l">${its.slice(0,lim).map(x=>`<li><span><span class="t1">${esc(x.p.nome)}</span><span class="t2">${CAT_POI[x.p.cat]||'Outro'} · ${x.modo}</span></span><b class="num">${x.dist}</b><a href="${x.url}" target="_blank" rel="noopener">Rota</a></li>`).join('')}</ul>
+    ${its.length>5?`<button class="linkbtn" data-a="emp-todos" style="margin-top:6px">${EMP_TODOS?'Mostrar menos':`Mostrar mais ${its.length-5}`}</button>`:''}`
+    :'<div class="muted" style="font-size:14px">Nenhum ponto cadastrado pela empresa.</div>'}
+    ${DIST_BUSCA_ON(t)?'<div class="hint">Medindo as rotas no Google…</div>':''}</div>`}
+const DIST_BUSCA_ON=t=>typeof DIST_BUSCA!=='undefined'&&DIST_BUSCA[t.id];
 function entRefresh(t){if(UI.route!=='terreno'||UI.id!==t.id)return;const a=document.activeElement;
   if(a&&a.closest&&a.closest('.main')&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)){const el=document.getElementById('ent-card');if(el)el.outerHTML=entornoCard(t)}else render()}
 
@@ -3677,17 +3698,19 @@ function entornoHtml(){const e=UI.entorno;if(!e||!GG)return '';const t=T(e.tid);
 
 /* ---------- pontos de interesse do terreno: Places (busca por raio) + Routes (distância a pé) ---------- */
 const normNome=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
-async function gPeMatriz(lat,lng,itens){const ll=(a,b)=>({waypoint:{location:{latLng:{latitude:a,longitude:b}}}});
-  const r=await fetch('https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix',{method:'POST',headers:{'Content-Type':'application/json','X-Goog-Api-Key':GKEY,'X-Goog-FieldMask':'originIndex,destinationIndex,distanceMeters,duration,condition'},
-    body:JSON.stringify({origins:[ll(lat,lng)],destinations:itens.map(p=>ll(p.lat,p.lng)),travelMode:'WALK',languageCode:'pt-BR',regionCode:'BR'})});
-  if(!r.ok)throw new Error('Routes '+r.status);const els=await r.json();if(!Array.isArray(els))throw new Error('resposta inesperada');
-  els.forEach(e=>{const p=itens[e.destinationIndex||0];if(p&&e.condition==='ROUTE_EXISTS'&&e.distanceMeters!=null){p.pe=e.distanceMeters;p.min=Math.max(1,Math.round(parseInt(e.duration||'0')/60))}});
-  if(!itens.some(p=>p.pe!=null))throw new Error('sem rotas a pé')}
-async function gPeDM(lat,lng,itens){const svc=new google.maps.DistanceMatrixService();
-  for(let i=0;i<itens.length;i+=25){const ch=itens.slice(i,i+25);
-    const res=await svc.getDistanceMatrix({origins:[gLL(lat,lng)],destinations:ch.map(p=>gLL(p.lat,p.lng)),travelMode:'WALKING'});
-    (res.rows[0]?.elements||[]).forEach((e,j)=>{if(e.status==='OK'){ch[j].pe=e.distance.value;ch[j].min=Math.max(1,Math.round(e.duration.value/60))}})}
-  if(!itens.some(p=>p.pe!=null))throw new Error('sem rotas a pé')}
+/* matriz de rotas do terreno até vários destinos: Routes computeRouteMatrix; reserva Distance Matrix. Devolve [{m,min}|null] */
+async function gMatriz(lat,lng,dest,modo){const out=dest.map(()=>null);const ll=(a,b)=>({waypoint:{location:{latLng:{latitude:a,longitude:b}}}});
+  try{const r=await fetch('https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix',{method:'POST',headers:{'Content-Type':'application/json','X-Goog-Api-Key':GKEY,'X-Goog-FieldMask':'originIndex,destinationIndex,distanceMeters,duration,condition'},
+      body:JSON.stringify({origins:[ll(lat,lng)],destinations:dest.map(p=>ll(p.lat,p.lng)),travelMode:modo,languageCode:'pt-BR',regionCode:'BR'})});
+    if(!r.ok)throw new Error('Routes '+r.status);const els=await r.json();if(!Array.isArray(els))throw new Error('resposta inesperada');
+    els.forEach(e=>{const k=e.destinationIndex||0;if(k<out.length&&e.condition==='ROUTE_EXISTS'&&e.distanceMeters!=null)out[k]={m:e.distanceMeters,min:Math.max(1,Math.round(parseInt(e.duration||'0')/60))}});
+    if(!out.some(Boolean))throw new Error('sem rotas')}
+  catch(e1){const svc=new google.maps.DistanceMatrixService();
+    for(let i=0;i<dest.length;i+=25){const ch=dest.slice(i,i+25);
+      const res=await svc.getDistanceMatrix({origins:[gLL(lat,lng)],destinations:ch.map(p=>gLL(p.lat,p.lng)),travelMode:modo==='WALK'?'WALKING':'DRIVING'});
+      (res?.rows?.[0]?.elements||[]).forEach((e,j)=>{if(e&&e.status==='OK')out[i+j]={m:e.distance.value,min:Math.max(1,Math.round(e.duration.value/60))}})}
+    if(!out.some(Boolean))throw new Error('sem rotas')}
+  return out}
 async function gEntornoTerreno(t){if(!GG||!gLib.places||t.lat==null||ENT_BUSCA[t.id])return;
   ENT_BUSCA[t.id]=true;const lat=t.lat,lng=t.lng;entRefresh(t);
   try{const {Place,SearchNearbyRankPreference}=gLib.places;
@@ -3698,17 +3721,29 @@ async function gEntornoTerreno(t){if(!GG||!gLib.places||t.lat==null||ENT_BUSCA[t
     const ids=new Set(),nomes=new Set();let itens=[];
     res.flat().forEach(p=>{const n=p.cat+'|'+normNome(p.nome);if(ids.has(p.gid)||nomes.has(n))return;ids.add(p.gid);nomes.add(n);p.reta=Math.round(distKm(lat,lng,p.lat,p.lng)*1000);itens.push(p)});
     let semPe=false;
-    if(itens.length){try{await gPeMatriz(lat,lng,itens)}catch(e1){try{await gPeDM(lat,lng,itens)}catch(e2){semPe=true;itens.forEach(p=>{p.pe=p.reta;p.min=null})}}}
+    if(itens.length){try{(await gMatriz(lat,lng,itens,'WALK')).forEach((x,i)=>{if(x){itens[i].pe=x.m;itens[i].min=x.min}})}catch(e1){semPe=true;itens.forEach(p=>{p.pe=p.reta;p.min=null})}}
     itens=itens.filter(p=>p.pe!=null&&p.pe<=RAIO_PE);
     t.entorno={lat,lng,em:HOJE,fonte:'google',semPe,itens};
     log(t,`Pontos de interesse buscados no Google: ${itens.length} a até ${fKm(RAIO_PE/1000)} a pé`);save();
     if(semPe)toast('A rota a pé não respondeu; os pontos foram filtrados pela distância em linha reta. Confira se a Routes API está liberada para a chave.',true)}
   catch(e){toast(`Não foi possível buscar os pontos de interesse (${e.message||e}). Confira se a Places API (New) está liberada para a chave.`,true)}
   finally{delete ENT_BUSCA[t.id];entRefresh(t)}}
+/* distâncias pela rota até os pontos cadastrados pela empresa: a pé (perto) e de carro (todos) */
+const idsPontos=()=>(S.pontos||[]).map(p=>p.id).sort().join(',');
+const DIST_BUSCA={};
+async function gDistEmpresa(t){if(!GG||t.lat==null||DIST_BUSCA[t.id])return;const pts=(S.pontos||[]).slice(),lat=t.lat,lng=t.lng;
+  DIST_BUSCA[t.id]=true;const m={};let semRota=false;
+  try{if(pts.length){const perto=pts.filter(p=>distKm(lat,lng,p.lat,p.lng)*1000<=RAIO_PE);
+      const [pe,car]=await Promise.all([perto.length?gMatriz(lat,lng,perto,'WALK').catch(()=>null):Promise.resolve([]),gMatriz(lat,lng,pts,'DRIVE').catch(()=>null)]);
+      if(!pe&&!car)semRota=true;
+      pts.forEach(p=>m[p.id]={});(pe||[]).forEach((x,i)=>{if(x){m[perto[i].id].pe=x.m;m[perto[i].id].pm=x.min}});(car||[]).forEach((x,i)=>{if(x){m[pts[i].id].cm=x.m;m[pts[i].id].cmin=x.min}})}
+    t.dist={lat,lng,ids:pts.map(p=>p.id).sort().join(','),semRota,m};save()}
+  catch(e){}finally{delete DIST_BUSCA[t.id];entRefresh(t)}}
 /* busca automática: terreno localizado sem busca para a coordenada atual (cadastro novo, endereço ou ponto mudou) */
 function gEntornoAuto(){if(!GG||!gLib.places||UI.route!=='terreno'||UI.role==='Leitura')return;const t=T(UI.id);if(!t||t.lat==null)return;
-  const e=t.entorno;if(e&&e.fonte!=='exemplo'&&e.lat===t.lat&&e.lng===t.lng)return;
-  const k=t.id+'|'+t.lat+'|'+t.lng;if(ENT_TENT.has(k))return;ENT_TENT.add(k);gEntornoTerreno(t)}
+  const e=t.entorno;
+  if(!(e&&e.fonte!=='exemplo'&&e.lat===t.lat&&e.lng===t.lng)){const k=t.id+'|'+t.lat+'|'+t.lng;if(!ENT_TENT.has(k)){ENT_TENT.add(k);gEntornoTerreno(t)}}
+  const d=t.dist;if(!(d&&d.lat===t.lat&&d.lng===t.lng&&d.ids===idsPontos())){const k='d|'+t.id+'|'+t.lat+'|'+t.lng+'|'+idsPontos();if(!ENT_TENT.has(k)){ENT_TENT.add(k);gDistEmpresa(t)}}}
 
 /* ---------- geocodificação (endereço → coordenada) ---------- */
 async function gGeocodificar(t){const end=[t.logradouro&&(t.logradouro+(t.numero?', '+t.numero:'')),t.bairro,'São Paulo - SP',t.cep].filter(Boolean).join(', ');

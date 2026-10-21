@@ -167,14 +167,21 @@ from app.v_terrenos v
 join app.terrenos t on t.id = v.id
 where v.situacao_cadastral = 'ativo';
 
--- Pontos de interesse a até 15 km de cada terreno localizado.
-create view app.v_pontos_proximos with (security_invoker = true) as
+-- Todos os pontos de interesse da empresa para cada terreno localizado: linha reta
+-- sempre; a pé e de carro quando medidos para a coordenada atual do terreno.
+create view app.v_terreno_pontos with (security_invoker = true) as
 select t.id as terreno_id, t.empresa_id, p.id as ponto_id, p.nome, p.categoria, p.latitude, p.longitude,
-       app.distancia_km(t.latitude, t.longitude, p.latitude, p.longitude) as distancia_km
+       app.distancia_km(t.latitude, t.longitude, p.latitude, p.longitude) as distancia_km,
+       case when em_dia then d.distancia_pe_m end as distancia_pe_m,
+       case when em_dia then d.duracao_pe_s end as duracao_pe_s,
+       case when em_dia then d.distancia_carro_m end as distancia_carro_m,
+       case when em_dia then d.duracao_carro_s end as duracao_carro_s,
+       not coalesce(em_dia, false) as precisa_medir
 from app.terrenos t
 join app.pontos_interesse p on p.empresa_id = t.empresa_id and p.ativo
-where t.latitude is not null
-  and app.distancia_km(t.latitude, t.longitude, p.latitude, p.longitude) <= 15;
+left join app.terreno_ponto_distancias d on d.terreno_id = t.id and d.ponto_id = p.id
+cross join lateral (select d.terreno_id is not null and d.latitude = t.latitude and d.longitude = t.longitude as em_dia) x
+where t.latitude is not null;
 
 -- Entorno do terreno (Google), com o aviso de busca feita para outra coordenada.
 create view app.v_terreno_entorno with (security_invoker = true) as
@@ -205,7 +212,7 @@ join app.terrenos t on t.id = k.terreno_id;
 
 grant select on app.v_terreno_infraestrutura, app.v_inscricoes, app.v_urbanismo_vigente,
                 app.v_documentos, app.v_checklist, app.v_reunioes, app.v_terrenos,
-                app.v_mapa, app.v_pontos_proximos, app.v_tarefas, app.v_terreno_entorno, app.v_entorno_buscas to authenticated;
+                app.v_mapa, app.v_terreno_pontos, app.v_tarefas, app.v_terreno_entorno, app.v_entorno_buscas to authenticated;
 
 -- ---------------------------------------------------------------------
 -- Duplicidade
@@ -697,6 +704,35 @@ begin
   return n;
 end $$;
 
+-- Grava as distâncias (a pé e de carro, pela rota) do terreno aos pontos da empresa.
+-- Recusa coordenada diferente da atual; ignora ponto de outra empresa ou inativo.
+-- p_itens: [{ponto_id, distancia_pe_m, duracao_pe_s, distancia_carro_m, duracao_carro_s}]
+create or replace function app.salvar_distancias_pontos(p_terreno uuid, p_latitude double precision, p_longitude double precision, p_itens jsonb)
+returns int
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos; n int;
+begin
+  select * into t from app.terrenos where id = p_terreno;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  if t.latitude is null or abs(t.latitude - p_latitude) > 1e-7 or abs(t.longitude - p_longitude) > 1e-7 then
+    raise exception 'A localização do terreno mudou durante a medição; meça de novo' using errcode = '40001';
+  end if;
+  insert into app.terreno_ponto_distancias (terreno_id, ponto_id, empresa_id, latitude, longitude,
+                                            distancia_pe_m, duracao_pe_s, distancia_carro_m, duracao_carro_s, calculado_em)
+  select distinct on (i.ponto_id) p_terreno, i.ponto_id, t.empresa_id, t.latitude, t.longitude,
+         i.distancia_pe_m, i.duracao_pe_s, i.distancia_carro_m, i.duracao_carro_s, now()
+  from jsonb_to_recordset(coalesce(p_itens, '[]')) as i(ponto_id uuid, distancia_pe_m int, duracao_pe_s int, distancia_carro_m int, duracao_carro_s int)
+  join app.pontos_interesse p on p.id = i.ponto_id and p.empresa_id = t.empresa_id and p.ativo
+  order by i.ponto_id
+  on conflict (terreno_id, ponto_id) do update set latitude = excluded.latitude, longitude = excluded.longitude,
+    distancia_pe_m = excluded.distancia_pe_m, duracao_pe_s = excluded.duracao_pe_s,
+    distancia_carro_m = excluded.distancia_carro_m, duracao_carro_s = excluded.duracao_carro_s, calculado_em = excluded.calculado_em;
+  get diagnostics n = row_count;
+  return n;
+end $$;
+
 create or replace function app.salvar_terreno(p_terreno uuid, p_versao int, p_dados jsonb)
 returns int
 language plpgsql security definer set search_path = ''
@@ -761,6 +797,7 @@ grant execute on function
   app.geojson_poligono_valido(jsonb), app.distancia_km(double precision, double precision, double precision, double precision), app.minhas_empresas(), app.empresas_edicao(), app.papel(uuid), app.eh_membro(uuid), app.eh_gestor(uuid), app.exigir_membro(uuid), app.exigir_editor(uuid),
   app.salvar_terreno(uuid, int, jsonb),
   app.salvar_entorno(uuid, double precision, double precision, jsonb, boolean),
+  app.salvar_distancias_pontos(uuid, double precision, double precision, jsonb),
   app.criar_empresa(text, text),
   app.buscar_duplicados(uuid, text, text, text, text, text),
   app.abrir_negociacao(uuid, uuid),

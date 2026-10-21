@@ -45,6 +45,8 @@ erDiagram
   terrenos ||--o{ area_interesse_terrenos : integra
   terrenos ||--o| terreno_entorno_buscas : "busca do entorno (coordenada usada)"
   terrenos ||--o{ terreno_entorno : "lugares a pe"
+  terrenos ||--o{ terreno_ponto_distancias : "rota ate os pontos da empresa"
+  pontos_interesse ||--o{ terreno_ponto_distancias : mede
   entorno_categorias ||--o{ terreno_entorno : classifica
 
   terrenos {
@@ -249,6 +251,14 @@ erDiagram
     bool rota_a_pe "false: valeu a linha reta"
     timestamptz buscado_em
   }
+  terreno_ponto_distancias {
+    uuid terreno_id PK
+    uuid ponto_id PK
+    float latitude "coordenada do terreno usada"
+    float longitude
+    int distancia_pe_m
+    int distancia_carro_m
+  }
   terreno_entorno {
     uuid id PK
     uuid terreno_id FK
@@ -305,14 +315,15 @@ erDiagram
 | View / função | Para quê |
 | --- | --- |
 | `v_mapa` | um pin por terreno ativo, com `situacao_mapa` (sem negociação, etapa da negociação ativa, stand by, ganha ou perdida) e a poligonal |
-| `v_pontos_proximos` | pontos de interesse a até 15 km de cada terreno, com a distância em linha reta |
+| `v_terreno_pontos` | todos os pontos de interesse da empresa para cada terreno localizado: linha reta sempre; a pé e de carro pela rota quando medidos para a coordenada atual (`precisa_medir` quando não) |
+| `salvar_distancias_pontos(terreno, lat, lng, itens)` | grava as distâncias pela rota (a pé e de carro) do terreno aos pontos da empresa; recusa coordenada diferente da atual |
 | `distancia_km(lat1, lng1, lat2, lng2)` | haversine; rota de verdade vem do serviço de mapas |
 | `salvar_entorno(terreno, lat, lng, itens, rota_a_pe)` | grava a busca do entorno feita no navegador (Places `searchNearby` por categoria + Routes `computeRouteMatrix` a pé), trocando a anterior; recusa coordenada diferente da atual, descarta categoria inativa e lugar além do raio a pé, e grava cada lugar uma vez |
 | `v_terreno_entorno` | lugares do entorno com categoria, distância e tempo a pé e `desatualizado` (o terreno mudou de lugar depois da busca) |
 | `v_entorno_buscas` | por terreno localizado: quando foi buscado, se a rota a pé respondeu e `precisa_buscar` (nunca buscado ou desatualizado) |
 | `v_tarefas` | tarefa com código e nome do terreno e o atraso calculado; o quadro ordena por `status` e `posicao` |
 
-Entorno do terreno: as categorias são configuração (`entorno_categorias`: tipos do Google e raio a pé; ligar outra categoria é migration de dados). O front busca sozinho quando o terreno é localizado ou muda de lugar (`precisa_buscar`) e grava por `salvar_entorno`. `pontos_interesse` continua sendo a lista da própria empresa (sede, pontos marcados à mão), medida em linha reta no mapa.
+Entorno do terreno: as categorias são configuração (`entorno_categorias`: tipos do Google e raio a pé; ligar outra categoria é migration de dados). O front busca sozinho quando o terreno é localizado ou muda de lugar (`precisa_buscar`) e grava por `salvar_entorno`. `pontos_interesse` é a lista cadastrada pela própria empresa (sede, polos, pontos marcados à mão): todos aparecem na ficha de cada terreno, com a distância a pé quando está a até 1,5 km a pé e de carro quando está mais longe (`terreno_ponto_distancias`).
 
 O dashboard agrega `v_terrenos` no front (filtro cruzado por clique). A poligonal continua em `terrenos.poligono_geojson`; importar KMZ/KML é feito no front e gravado por `salvar_terreno`.
 

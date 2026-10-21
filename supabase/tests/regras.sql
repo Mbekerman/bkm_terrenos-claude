@@ -302,8 +302,17 @@ insert into app.pontos_interesse (empresa_id, nome, categoria, latitude, longitu
   (:'emp', 'Terminal Cidade Ademar', 'transporte', -23.6672, -46.6522),
   (:'emp', 'Escritório Campinas', 'empresa', -22.9056, -47.0608);
 select pg_temp.ok((select app.distancia_km(-23.5505, -46.6333, -22.9056, -47.0608)) between 80 and 90, 'distância São Paulo–Campinas em linha reta');
-select pg_temp.ok((select count(*) from app.v_pontos_proximos where terreno_id = :'tm') = 1, 'só pontos a até 15 km entram como próximos');
-select pg_temp.ok((select distancia_km from app.v_pontos_proximos where terreno_id = :'tm') < 0.2, 'terminal a menos de 200 m');
+select pg_temp.ok((select count(*) from app.v_terreno_pontos where terreno_id = :'tm') = 2, 'todos os pontos da empresa aparecem para o terreno, perto ou longe');
+select pg_temp.ok((select distancia_km from app.v_terreno_pontos where terreno_id = :'tm' and nome = 'Terminal Cidade Ademar') < 0.2, 'terminal a menos de 200 m em linha reta');
+select pg_temp.ok((select bool_and(precisa_medir and distancia_pe_m is null) from app.v_terreno_pontos where terreno_id = :'tm'), 'antes de medir a rota, só a linha reta');
+select id as pterm from app.pontos_interesse where nome = 'Terminal Cidade Ademar' \gset
+select id as pcamp from app.pontos_interesse where nome = 'Escritório Campinas' \gset
+select app.salvar_distancias_pontos(:'tm', -23.6681, -46.6513, format('[{"ponto_id":"%s","distancia_pe_m":260,"duracao_pe_s":200,"distancia_carro_m":900,"duracao_carro_s":240},{"ponto_id":"%s","distancia_carro_m":98000,"duracao_carro_s":5400},{"ponto_id":"%s","distancia_pe_m":1}]', :'pterm', :'pcamp', :'tx')::jsonb) as nd \gset
+select pg_temp.ok(:nd = 2, 'distâncias gravadas só para pontos da empresa');
+select pg_temp.ok((select distancia_pe_m = 260 and not precisa_medir from app.v_terreno_pontos where terreno_id = :'tm' and ponto_id = :'pterm'), 'terminal com distância a pé pela rota');
+select pg_temp.ok((select distancia_pe_m is null and distancia_carro_m = 98000 from app.v_terreno_pontos where terreno_id = :'tm' and ponto_id = :'pcamp'), 'ponto longe com distância de carro');
+select pg_temp.falha(format('select app.salvar_distancias_pontos(%L, -23.60, -46.60, %L)', :'tm', '[]'), 'medição para outra coordenada é recusada');
+select pg_temp.falha(format($$insert into app.terreno_ponto_distancias (terreno_id, ponto_id, empresa_id, latitude, longitude) values (%L, %L, %L, 0, 0)$$, :'tm', :'pterm', :'emp'), 'distância não é gravada direto');
 select pg_temp.ok((select situacao_mapa from app.v_mapa where id = :'tm') = 'sem_negociacao', 'pin sem negociação');
 
 \echo '# entorno do terreno (Google, distância a pé)'
@@ -329,6 +338,7 @@ select pg_temp.ok((select count(*) from app.auditoria where tabela = 'terreno_en
 select versao as vtm from app.terrenos where id = :'tm' \gset
 select app.salvar_terreno(:'tm', :vtm, '{"latitude":-23.6700,"longitude":-46.6500}') \gset
 select pg_temp.ok((select desatualizado and precisa_buscar from app.v_entorno_buscas where terreno_id = :'tm'), 'mudou a localização: entorno fica desatualizado');
+select pg_temp.ok((select bool_and(precisa_medir and distancia_pe_m is null and distancia_carro_m is null) from app.v_terreno_pontos where terreno_id = :'tm'), 'mudou a localização: distâncias pela rota ficam para medir de novo');
 select pg_temp.como(:'leitor');
 select pg_temp.falha(format('select app.salvar_entorno(%L, -23.67, -46.65, %L)', :'tm', '[]'), 'leitura não grava entorno');
 select pg_temp.ok((select count(*) from app.v_entorno_buscas where terreno_id = :'tm') = 1, 'leitura vê a situação do entorno');

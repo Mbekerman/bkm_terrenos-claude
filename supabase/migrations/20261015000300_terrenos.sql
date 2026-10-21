@@ -303,6 +303,23 @@ create table app.terreno_entorno (
 );
 create index on app.terreno_entorno (terreno_id, categoria, distancia_pe_m);
 
+-- Distância de cada terreno aos pontos de interesse da empresa (todos aparecem na
+-- ficha): a pé e de carro pela rota, medida no navegador para a coordenada guardada.
+-- Gravada só por app.salvar_distancias_pontos.
+create table app.terreno_ponto_distancias (
+  terreno_id        uuid not null references app.terrenos(id) on delete cascade,
+  ponto_id          uuid not null references app.pontos_interesse(id) on delete cascade,
+  empresa_id        uuid not null references app.empresas(id),
+  latitude          double precision not null,
+  longitude         double precision not null,
+  distancia_pe_m    int check (distancia_pe_m >= 0),
+  duracao_pe_s      int check (duracao_pe_s >= 0),
+  distancia_carro_m int check (distancia_carro_m >= 0),
+  duracao_carro_s   int check (duracao_carro_s >= 0),
+  calculado_em      timestamptz not null default now(),
+  primary key (terreno_id, ponto_id)
+);
+
 -- Composição de áreas: terrenos vizinhos estudados em conjunto.
 create table app.areas_interesse (
   id          uuid primary key default gen_random_uuid(),
@@ -359,7 +376,7 @@ declare t text;
 begin
   foreach t in array array['terrenos','matriculas','inscricoes_municipais','inscricao_valores','confrontacoes','terreno_pessoas','terreno_corretores',
                            'terreno_infraestrutura','analises_urbanisticas','analise_zoneamentos','areas_interesse','area_interesse_terrenos',
-                           'terreno_entorno','terreno_entorno_buscas'] loop
+                           'terreno_entorno','terreno_entorno_buscas','terreno_ponto_distancias'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
     execute format('create policy inserir on app.%I for insert to authenticated with check (empresa_id in (select app.empresas_edicao()))', t);
@@ -377,10 +394,11 @@ begin
 end $$;
 grant usage on sequence app.terreno_seq to authenticated;
 
--- Entorno é gravado só por app.salvar_entorno (troca a busca inteira).
+-- Entorno e distâncias aos pontos são gravados só pelas RPCs (salvar_entorno, salvar_distancias_pontos).
 drop policy inserir on app.terreno_entorno;        drop policy alterar on app.terreno_entorno;
 drop policy inserir on app.terreno_entorno_buscas; drop policy alterar on app.terreno_entorno_buscas;
-revoke insert, update on app.terreno_entorno, app.terreno_entorno_buscas from authenticated;
+drop policy inserir on app.terreno_ponto_distancias; drop policy alterar on app.terreno_ponto_distancias;
+revoke insert, update on app.terreno_entorno, app.terreno_entorno_buscas, app.terreno_ponto_distancias from authenticated;
 
 -- Terreno é alterado só por app.salvar_terreno (confere a versão); inserir continua direto.
 drop policy alterar on app.terrenos;
