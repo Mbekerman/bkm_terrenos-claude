@@ -2062,6 +2062,8 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 :root[data-tema="escuro"] .adv-st.adv-st-pend { background: rgba(255,223,153,.12); color: #ffdf99; box-shadow: inset 0 0 0 1px rgba(255,223,153,.35) }
 :root[data-tema="escuro"] .adv-st.adv-st-ok { background: rgba(196,238,208,.10); color: #a6e3b8; box-shadow: inset 0 0 0 1px rgba(166,227,184,.35) }
 :root[data-tema="escuro"] .adv-lista li .ok { color: #a6e3b8 } :root[data-tema="escuro"] .adv-lista li .no { color: #ffb4ab }
+/* Visão geral em uma coluna: o mapa de Localização vem primeiro */
+@container bloco (max-width: 760px) { .geral { display: flex; flex-direction: column; align-items: stretch } .geral-c { display: contents } .geral .g-loc { order: -1 } }
 </style>
 <header class="top">
   <div class="top-in">
@@ -3442,7 +3444,7 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     ${lin('Última proposta',lp?`${mi(lp.valor)} · ${lp.origem==='bkm'?'BKM':'Vendedor'} · ${OPT.statusProp[lp.status]}`:'')}
     ${lin('Próxima reunião',pr?`${fd(pr.data)} · ${esc(pr.hora||'')}`:'')}
     ${pt?linLink('Próxima tarefa',`${esc(pt.titulo)} · <span style="${pt.prazo<HOJE?'color:var(--terracota);font-weight:600':''}">${fd(pt.prazo)}</span>`,`<button class="kv-ed" data-a="tk-abrir" data-id="${t.id}" data-tk="${pt.id}" aria-label="Editar a tarefa ${esc(pt.titulo)}" title="Editar tarefa">${lapis}</button>`):lin('Próxima tarefa','')}</dl></div></section>`:'';
-  const loc=`<section class="sec"><div class="sec-h"><h2>${bi('localizacao',32)}Localização</h2>${t.lat!=null?`<a class="btn text sm" href="${gmapsUrl(t)}" target="_blank" rel="noopener">Google Maps</a>`:''}</div><div class="sec-b">
+  const loc=`<section class="sec g-loc"><div class="sec-h"><h2>${bi('localizacao',32)}Localização</h2>${t.lat!=null?`<a class="btn text sm" href="${gmapsUrl(t)}" target="_blank" rel="noopener">Google Maps</a>`:''}</div><div class="sec-b">
     ${t.lat!=null?`<div id="mini-mapa" class="mini-mapa"></div><div class="mini-pe"><span class="num faint">${num(t.lat,5)}, ${num(t.lng,5)} · ${esc(OPT.precisao[t.precisao]||'')}</span><span style="display:flex;gap:8px">${GG?`<button class="btn sm" data-a="g-sv-mini" data-id="${t.id}">Street View</button>`:''}<button class="btn sm" data-a="mp-ir" data-id="${t.id}">Ver no mapa</button></span></div>
       <div class="mp-aviso mini">O fundo do mapa não carrega neste link de visualização.</div>`
     :`<div class="empty" style="padding:var(--e6) 0">Sem localização.<br><span style="display:inline-flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center">${GG&&(t.logradouro||t.bairro)?`<button class="btn sm primary ed" data-a="g-geo" data-id="${t.id}">Localizar pelo endereço</button>`:''}<button class="btn sm ed" data-a="mp-marcar" data-id="${t.id}">Marcar no mapa</button></span></div>`}</div></section>`;
