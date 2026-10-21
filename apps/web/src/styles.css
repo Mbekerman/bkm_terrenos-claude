@@ -1357,6 +1357,37 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 /* telas largas: o conteúdo aproveita até 1680 px (antes 1440) */
 .layout, .top-in { max-width: 1680px }
 @container bloco (min-width: 761px) { .geral { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) } }
+/* ===== quadro de avanço compacto: um botão Avançar; pendências recolhidas; stand by e perdida no menu ⋮ ===== */
+.adv.adv-c { flex-direction: column; align-items: stretch; gap: 10px; flex-wrap: nowrap }
+.adv-l1 { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; min-width: 0 }
+.adv-t { font-size: 14px; font-weight: 500; color: var(--m-on-surface, var(--texto)); min-width: 0 }
+.adv-st { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 6px 0 10px; border: 0; border-radius: 8px; font-size: 13px; font-weight: 500; white-space: nowrap }
+.adv-st.adv-st-pend { background: #ffdf99; color: #7a5900 }
+.adv-st.adv-st-ok { background: #c4eed0; color: #146c2e }
+.adv-st .adv-ch { transition: transform .15s }
+.adv-st[aria-expanded="true"] .adv-ch { transform: rotate(180deg) }
+.adv-lista { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px }
+.adv-lista li { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; line-height: 20px; color: var(--texto) }
+.adv-lista li > span:first-child { flex: none; margin-top: 2px }
+.adv-lista li .ok { color: #146c2e } .adv-lista li .no { color: #b3261e }
+.adv-lista.adv-modal { padding: 4px 24px 8px }
+.adv-l2 { display: flex; gap: 8px; align-items: center }
+.adv-l2 > .btn.primary { flex: 1 1 auto; justify-content: center; min-width: 0 }
+.adv-mais { position: relative; flex: none }
+.adv-mb { width: 40px; min-width: 40px; padding: 0; justify-content: center }
+.adv-menu { display: none; position: absolute; right: 0; top: calc(100% + 4px); z-index: 40; min-width: 220px; background: var(--m-sc-low, #f0f4f9); border-radius: 12px; padding: 6px 0; box-shadow: 0 2px 6px rgba(0,0,0,.18), 0 6px 18px rgba(0,0,0,.14) }
+.adv-mais.aberto .adv-menu { display: block }
+.adv-menu button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 0 16px; border: 0; background: transparent; color: var(--m-on-surface, var(--texto)); font-size: 14px; text-align: left; white-space: nowrap }
+.adv-menu button:hover, .adv-menu button:focus-visible { background: rgba(127,127,127,.12); outline: 0 }
+.adv-menu button.danger { color: #b3261e }
+.pn-adv .adv.adv-c { padding: 14px 16px }
+.pn-adv { overflow: visible; max-height: none }
+.ro .adv-l2 { display: none }
+:root[data-tema="escuro"] .adv-menu { background: #0d1530; box-shadow: 0 0 0 1px rgba(124,140,255,.2), 0 10px 28px rgba(0,0,0,.55) }
+:root[data-tema="escuro"] .adv-menu button.danger { color: #ffb4ab }
+:root[data-tema="escuro"] .adv-st.adv-st-pend { background: rgba(255,223,153,.12); color: #ffdf99; box-shadow: inset 0 0 0 1px rgba(255,223,153,.35) }
+:root[data-tema="escuro"] .adv-st.adv-st-ok { background: rgba(196,238,208,.10); color: #a6e3b8; box-shadow: inset 0 0 0 1px rgba(166,227,184,.35) }
+:root[data-tema="escuro"] .adv-lista li .ok { color: #a6e3b8 } :root[data-tema="escuro"] .adv-lista li .no { color: #ffb4ab }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

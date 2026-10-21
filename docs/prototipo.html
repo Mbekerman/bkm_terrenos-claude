@@ -2031,6 +2031,37 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 /* telas largas: o conteúdo aproveita até 1680 px (antes 1440) */
 .layout, .top-in { max-width: 1680px }
 @container bloco (min-width: 761px) { .geral { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) } }
+/* ===== quadro de avanço compacto: um botão Avançar; pendências recolhidas; stand by e perdida no menu ⋮ ===== */
+.adv.adv-c { flex-direction: column; align-items: stretch; gap: 10px; flex-wrap: nowrap }
+.adv-l1 { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; min-width: 0 }
+.adv-t { font-size: 14px; font-weight: 500; color: var(--m-on-surface, var(--texto)); min-width: 0 }
+.adv-st { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 6px 0 10px; border: 0; border-radius: 8px; font-size: 13px; font-weight: 500; white-space: nowrap }
+.adv-st.adv-st-pend { background: #ffdf99; color: #7a5900 }
+.adv-st.adv-st-ok { background: #c4eed0; color: #146c2e }
+.adv-st .adv-ch { transition: transform .15s }
+.adv-st[aria-expanded="true"] .adv-ch { transform: rotate(180deg) }
+.adv-lista { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px }
+.adv-lista li { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; line-height: 20px; color: var(--texto) }
+.adv-lista li > span:first-child { flex: none; margin-top: 2px }
+.adv-lista li .ok { color: #146c2e } .adv-lista li .no { color: #b3261e }
+.adv-lista.adv-modal { padding: 4px 24px 8px }
+.adv-l2 { display: flex; gap: 8px; align-items: center }
+.adv-l2 > .btn.primary { flex: 1 1 auto; justify-content: center; min-width: 0 }
+.adv-mais { position: relative; flex: none }
+.adv-mb { width: 40px; min-width: 40px; padding: 0; justify-content: center }
+.adv-menu { display: none; position: absolute; right: 0; top: calc(100% + 4px); z-index: 40; min-width: 220px; background: var(--m-sc-low, #f0f4f9); border-radius: 12px; padding: 6px 0; box-shadow: 0 2px 6px rgba(0,0,0,.18), 0 6px 18px rgba(0,0,0,.14) }
+.adv-mais.aberto .adv-menu { display: block }
+.adv-menu button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 0 16px; border: 0; background: transparent; color: var(--m-on-surface, var(--texto)); font-size: 14px; text-align: left; white-space: nowrap }
+.adv-menu button:hover, .adv-menu button:focus-visible { background: rgba(127,127,127,.12); outline: 0 }
+.adv-menu button.danger { color: #b3261e }
+.pn-adv .adv.adv-c { padding: 14px 16px }
+.pn-adv { overflow: visible; max-height: none }
+.ro .adv-l2 { display: none }
+:root[data-tema="escuro"] .adv-menu { background: #0d1530; box-shadow: 0 0 0 1px rgba(124,140,255,.2), 0 10px 28px rgba(0,0,0,.55) }
+:root[data-tema="escuro"] .adv-menu button.danger { color: #ffb4ab }
+:root[data-tema="escuro"] .adv-st.adv-st-pend { background: rgba(255,223,153,.12); color: #ffdf99; box-shadow: inset 0 0 0 1px rgba(255,223,153,.35) }
+:root[data-tema="escuro"] .adv-st.adv-st-ok { background: rgba(196,238,208,.10); color: #a6e3b8; box-shadow: inset 0 0 0 1px rgba(166,227,184,.35) }
+:root[data-tema="escuro"] .adv-lista li .ok { color: #a6e3b8 } :root[data-tema="escuro"] .adv-lista li .no { color: #ffb4ab }
 </style>
 <header class="top">
   <div class="top-in">
@@ -2627,14 +2658,18 @@ function checkAdv(t){
 /* linha do tempo das etapas: topo da ficha (desktop e tablet) */
 function linhaEtapas(t){const n=t.neg;if(!n)return '';const idx=SIDX(n.etapa);
   return `<nav class="tl-topo" aria-label="Etapas da negociação"><ol class="stepper">${STAGES.map((s,i)=>{const st=i<idx||n.status==='ganha'?'done':i===idx?'cur':'fut';return `<li class="step ${st}" ${i===idx&&n.status!=='ganha'?'aria-current="step"':''}><span class="dot">${st==='done'?ic('check',14):i+1}</span><span class="sl" title="${s[1]}">${s[1]}</span></li>`}).join('')}</ol></nav>`}
+let ADV_REQ=false;
+const advItens=items=>items.map(x=>`<li><span class="${x.ok?'ok':'no'}">${ic(x.ok?'check':'close',16)}</span><span>${esc(x.txt)}${x.fix?` · <button class="linkbtn" data-a="${x.fix[0].startsWith('tab:')?'tab':x.fix[0]}" ${x.fix[0].startsWith('tab:')?`data-t="${x.fix[0].slice(4)}"`:''}>${x.fix[1]}</button>`:''}</span></li>`).join('');
 /* quadro de avanço (requisitos, stand by, perdida, avançar): no painel lateral; no celular, na página */
 function painelNeg(t){
   const n=t.neg;if(!n)return '';
   if(n.status==='perdida')return `<div class="banner crit">${ic('block')}<div><div class="bt">Negociação perdida em ${SN(n.etapa)} · ${esc(n.motivo)}</div><div>${esc(n.detalhe||'')}</div></div></div>`;
   if(n.status==='stand_by')return `<div class="banner warn" style="justify-content:space-between;flex-wrap:wrap"><span style="display:flex;gap:12px">${ic('pause')}<span><b>Em stand by desde ${SN(n.etapa)} · revisitar em ${fd(n.retomar)}</b></span></span><button class="btn sm" data-a="retomar">Retomar</button></div>`;
   const idx=SIDX(n.etapa),r=checkAdv(t);
-  const inner=`${r?`<div class="adv"><div class="req"><div class="rt">${r.next[0]==='ganha'?'Para concluir como ganha':r.items.length?'Para avançar para '+r.next[1]:'Próxima etapa: '+r.next[1]}</div>${r.items.length?`<ul>${r.items.map(x=>`<li><span class="${x.ok?'ok':'no'}">${ic(x.ok?'check':'close',16)}</span><span>${esc(x.txt)}${x.fix?` · <button class="linkbtn" data-a="${x.fix[0].startsWith('tab:')?'tab':x.fix[0]}" ${x.fix[0].startsWith('tab:')?`data-t="${x.fix[0].slice(4)}"`:''}>${x.fix[1]}</button>`:''}</span></li>`).join('')}</ul>`:'<div class="muted" style="font-size:13px">Sem requisitos.</div>'}</div>
-  <div class="acts"><button class="btn text" data-a="suspender">${ic('pause',18)}Stand by</button><button class="btn text danger" data-a="perder">${ic('block',18)}Perdida</button>${r.forcar?`<button class="btn" data-a="forcar">${r.next[0]==='ganha'?'Concluir':'Avançar'} mesmo assim</button>`:''}<button class="btn primary" data-a="avancar" ${r.ok?'':'disabled'}>${ic('fwd',18)}${r.next[0]==='ganha'?'Concluir como ganha':'Avançar para '+r.next[1]}</button></div></div>`
+  const pend=r?r.items.filter(x=>!x.ok):[],ganha=r&&r.next[0]==='ganha';
+  const inner=`${r?`<div class="adv adv-c"><div class="adv-l1"><span class="adv-t">${ganha?'Próxima: fechar como ganha':'Próxima: '+esc(r.next[1])}</span>${r.items.length?`<button class="adv-st ${pend.length?'adv-st-pend':'adv-st-ok'}" data-a="adv-req" aria-expanded="${ADV_REQ}" title="${ADV_REQ?'Ocultar':'Ver'} requisitos">${pend.length?ic('warn',16)+pend.length+(pend.length>1?' pendências':' pendência'):ic('check',16)+'Requisitos ok'}<svg class="adv-ch" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>`:''}</div>
+  ${ADV_REQ&&r.items.length?`<ul class="adv-lista">${advItens(r.items)}</ul>`:''}
+  <div class="adv-l2"><button class="btn primary" data-a="adv-ir">${ic('fwd',18)}<span>${ganha?'Concluir como ganha':'Avançar'}</span></button><div class="adv-mais"><button class="btn adv-mb" data-a="adv-mais" aria-haspopup="menu" aria-expanded="false" aria-label="Mais ações" title="Stand by ou perdida"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" d="M12 5.5h.01M12 12h.01M12 18.5h.01"/></svg></button><div class="adv-menu" role="menu"><button role="menuitem" data-a="suspender">${ic('pause',18)}Colocar em stand by</button><button role="menuitem" class="danger" data-a="perder">${ic('block',18)}Marcar como perdida</button></div></div></div></div>`
   :n.status==='ganha'?`<div class="adv"><div class="banner good" style="flex:1">${ic('check')}<div><b>Negociação ganha.</b> Aprovação, incorporação e financiamento Caixa vão se ligar a este terreno.</div></div></div>`:''}`;
   return inner.trim()?`<section class="sec sec-adv">${inner}</section>`:'';
 }
@@ -2759,7 +2794,8 @@ function renderModal(){
   if(M==='perder')h=`<div class="dh"><h2>Encerrar como perdida</h2>${fechar}</div><form data-form="perder" id="f-p"><div class="fields"><div class="field full"><label for="pd-m">Motivo</label><select id="pd-m" name="motivo" required><option value="">Escolha</option>${['Preço acima do teto da viabilidade','Zoneamento ou legislação','Documentação ou pendência jurídica','Vendedor desistiu','Perdido para concorrente','Outro'].map(x=>`<option>${x}</option>`).join('')}</select></div><div class="field full"><label for="pd-d">Detalhe</label><textarea id="pd-d" name="detalhe"></textarea></div></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-p">Encerrar</button></div>`;
   if(M==='suspender')h=`<div class="dh"><h2>Colocar em stand by</h2>${fechar}</div><form data-form="suspender" id="f-s"><div class="fields"><div class="field"><label for="sp-d">Revisitar em</label><input id="sp-d" name="retomar" type="date" min="${addD(HOJE,1)}" value="${addD(HOJE,30)}" required></div><div class="field full"><label for="sp-t">Motivo</label><textarea id="sp-t" name="detalhe" required></textarea></div></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-s">Colocar em stand by</button></div>`;
   if(M==='retornar'){const t=T(UI.alvo);h=`<div class="dh"><div><h2>Voltar para ${SN(UI.alvoEtapa)}?</h2><div class="muted" style="margin-top:4px">${esc(t.nome)} está em ${SN(t.neg.etapa)}.</div></div>${fechar}</div><form data-form="retornar" id="f-rt"><div class="field"><label for="rt-m">Motivo (vai para o histórico)</label><textarea id="rt-m" name="motivo" required placeholder="Ex.: vendedor reabriu o preço"></textarea></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-rt">Voltar etapa</button></div>`}
-  if(M==='forcar')h=`<div class="dh"><div><h2>${UI.alvoEtapa?'Levar para '+SN(UI.alvoEtapa)+' sem os requisitos?':'Avançar sem os requisitos?'}</h2>${UI.alvoPend?`<ul class="pend">${UI.alvoPend.map(x=>`<li>${ic('close',16)}${esc(x)}</li>`).join('')}</ul>`:''}</div>${fechar}</div><form data-form="forcar" id="f-fc"><div class="field"><label for="fc-j">Justificativa (vai para o histórico)</label><textarea id="fc-j" name="j" required></textarea></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-fc">Avançar</button></div>`;
+  if(M==='adv-bloq'){const r=checkAdv(T(UI.id));const pend=r?r.items.filter(x=>!x.ok):[];h=`<div class="dh"><div><h2>Ainda não dá para ${r&&r.next[0]==='ganha'?'concluir':'avançar para '+esc(r?r.next[1]:'')}</h2><p class="muted" style="margin:6px 0 0">${pend.every(x=>x.gate)?'Peça a um gestor para avançar.':pend.some(x=>x.gate)?'Resolva o que falta e peça a um gestor para avançar.':'Resolva o que falta. Só um gestor pode avançar sem os requisitos, com justificativa.'}</p></div>${fechar}</div><ul class="adv-lista adv-modal">${advItens(pend)}</ul><div class="df"><button class="btn primary" data-a="close">Entendi</button></div>`}
+  if(M==='forcar')h=`<div class="dh"><div><h2>${UI.alvoEtapa?'Levar para '+SN(UI.alvoEtapa)+' sem os requisitos?':(()=>{const r=checkAdv(T(UI.id));return r&&r.next[0]==='ganha'?'Concluir como ganha sem os requisitos?':'Avançar para '+(r?r.next[1]:'')+' sem os requisitos?'})()}</h2>${UI.alvoPend?`<ul class="pend">${UI.alvoPend.map(x=>`<li>${ic('close',16)}${esc(x)}</li>`).join('')}</ul>`:''}</div>${fechar}</div><form data-form="forcar" id="f-fc"><div class="field"><label for="fc-j">Justificativa (vai para o histórico)</label><textarea id="fc-j" name="j" required></textarea></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-fc">${!UI.alvoEtapa&&checkAdv(T(UI.id))?.next[0]==='ganha'?'Concluir':'Avançar'}</button></div>`;
   if(M==='viab')h=`<div class="dh"><h2>Vincular estudo de viabilidade</h2>${fechar}</div><form data-form="viab" id="f-vb"><div class="fields"><div class="field full"><label for="vb-n">Nome</label><input id="vb-n" name="nome" value="Estudo base" required></div><div class="field"><label for="vb-v">VGV (R$)</label><input id="vb-v" name="vgv" inputmode="decimal"></div><div class="field"><label for="vb-m">Margem (%)</label><input id="vb-m" name="margem" inputmode="decimal"></div><div class="field full"><label for="vb-p">Preço máximo do terreno (R$)</label><input id="vb-p" name="pmax" inputmode="decimal" required></div></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-vb">Vincular</button></div>`;
   if(M==='geo')h=geoModalHtml(fechar);
   if(M==='poi')h=`<div class="dh"><div><h2>Novo ponto de interesse</h2><div class="muted" style="margin-top:4px">Serve para medir a distância dos terrenos e traçar rotas.</div></div>${fechar}</div>
@@ -2812,12 +2848,13 @@ function dedupe(){
 /* ===================== eventos ===================== */
 document.addEventListener('click',e=>{
   if(temaMenu&&!e.target.closest('.tema-wrap')){temaMenu=false;renderTema()}
+  if(!e.target.closest('.adv-mais'))document.querySelectorAll('.adv-mais.aberto').forEach(x=>{x.classList.remove('aberto');x.querySelector('.adv-mb')?.setAttribute('aria-expanded','false')});
   const a=e.target.closest('[data-a]');if(!a)return;const A=a.dataset.a;const t=UI.route==='terreno'?T(UI.id):null;
   if(A==='scrim'){if(e.target===a){UI.modal=null;renderModal()}return}
   switch(A){
     case 'nav':go(a.dataset.r);break;
     case 'abrir':BLA={geral:true};blId=a.dataset.id;go('terreno',{id:a.dataset.id,tab:a.dataset.tab||'geral',from:a.dataset.from||(UI.route==='terreno'?UI.from:UI.route==='inicio'?'inicio':'terrenos')});if(a.dataset.tab&&a.dataset.tab!=='geral'){blocoAbre(a.dataset.tab);render();rolarBloco(a.dataset.tab)}break;
-    case 'tab':UI.tab=a.dataset.t;blocoAbre(a.dataset.t);render();rolarBloco(a.dataset.t);break;
+    case 'tab':if(UI.modal){UI.modal=null;renderModal()}UI.tab=a.dataset.t;blocoAbre(a.dataset.t);render();rolarBloco(a.dataset.t);break;
     case 'bloco':{const k=a.dataset.t,fim=!!a.dataset.fim;if(BLA[k])delete BLA[k];else BLA[k]=true;render();
       /* recolhida pelo fim: traz o título de volta à tela, para não perder o lugar */
       if(!BLA[k]){const h=document.getElementById('bl-'+k);if(h&&(fim||h.getBoundingClientRect().top<72))h.scrollIntoView({block:'start'});document.querySelector(`#bl-${k} .bl-h`)?.focus({preventScroll:true})}break}
@@ -2840,6 +2877,13 @@ document.addEventListener('click',e=>{
     case 'prop-form':UI.propForm=!UI.propForm;render();break;
     case 'avancar':case 'do-forcar':{const r=checkAdv(t);if(r.next[0]==='ganha'){t.neg.status='ganha';log(t,'Negociação ganha');save();render();toast('Negociação ganha.');break}t.neg.etapa=r.next[0];t.neg.desde=HOJE;log(t,`Avançou para ${r.next[1]}`);save();render();toast(`Movida para ${r.next[1]}.`);break}
     case 'forcar':UI.modal='forcar';renderModal();break;
+    case 'adv-req':ADV_REQ=!ADV_REQ;render();break;
+    case 'adv-mais':{const w=a.closest('.adv-mais'),ab=!w.classList.contains('aberto');document.querySelectorAll('.adv-mais.aberto').forEach(x=>{x.classList.remove('aberto');x.querySelector('.adv-mb').setAttribute('aria-expanded','false')});if(ab){w.classList.add('aberto');a.setAttribute('aria-expanded','true')}break}
+    case 'adv-ir':{const r=checkAdv(t);if(!r)break;const pend=r.items.filter(x=>!x.ok);
+      if(r.ok){UI.alvoEtapa=null;UI.alvoPend=null;
+        if(r.next[0]==='ganha'){t.neg.status='ganha';log(t,'Negociação ganha');save();render();toast('Negociação ganha.');break}
+        t.neg.etapa=r.next[0];t.neg.desde=HOJE;log(t,`Avançou para ${r.next[1]}`);save();render();toast(`Movida para ${r.next[1]}.`);break}
+      UI.alvoEtapa=null;UI.alvoPend=pend.map(x=>x.txt);UI.modal=r.forcar?'forcar':'adv-bloq';renderModal();break}
     case 'perder':UI.modal='perder';renderModal();break;
     case 'suspender':UI.modal='suspender';renderModal();break;
     case 'viab':UI.modal='viab';renderModal();break;
