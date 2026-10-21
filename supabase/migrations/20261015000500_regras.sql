@@ -176,6 +176,26 @@ join app.pontos_interesse p on p.empresa_id = t.empresa_id and p.ativo
 where t.latitude is not null
   and app.distancia_km(t.latitude, t.longitude, p.latitude, p.longitude) <= 15;
 
+-- Entorno do terreno (Google), com o aviso de busca feita para outra coordenada.
+create view app.v_terreno_entorno with (security_invoker = true) as
+select e.id, e.empresa_id, e.terreno_id, e.categoria, c.nome as categoria_nome, c.ordem as categoria_ordem,
+       e.google_place_id, e.nome, e.latitude, e.longitude, e.distancia_pe_m, e.duracao_pe_s, e.distancia_reta_m,
+       b.rota_a_pe, b.buscado_em,
+       (b.latitude is distinct from t.latitude or b.longitude is distinct from t.longitude) as desatualizado
+from app.terreno_entorno e
+join app.entorno_categorias c on c.codigo = e.categoria
+join app.terreno_entorno_buscas b on b.terreno_id = e.terreno_id
+join app.terrenos t on t.id = e.terreno_id;
+
+-- Situação da busca por terreno localizado: nunca buscado (null), em dia ou desatualizado.
+create view app.v_entorno_buscas with (security_invoker = true) as
+select t.id as terreno_id, t.empresa_id, b.buscado_em, b.rota_a_pe,
+       (b.terreno_id is not null and (b.latitude is distinct from t.latitude or b.longitude is distinct from t.longitude)) as desatualizado,
+       (b.terreno_id is null or b.latitude is distinct from t.latitude or b.longitude is distinct from t.longitude) as precisa_buscar
+from app.terrenos t
+left join app.terreno_entorno_buscas b on b.terreno_id = t.id
+where t.latitude is not null;
+
 -- Quadro de tarefas: tarefa com o terreno e o atraso calculado.
 create view app.v_tarefas with (security_invoker = true) as
 select k.*, t.codigo as terreno_codigo, t.nome as terreno_nome,
@@ -185,7 +205,7 @@ join app.terrenos t on t.id = k.terreno_id;
 
 grant select on app.v_terreno_infraestrutura, app.v_inscricoes, app.v_urbanismo_vigente,
                 app.v_documentos, app.v_checklist, app.v_reunioes, app.v_terrenos,
-                app.v_mapa, app.v_pontos_proximos, app.v_tarefas to authenticated;
+                app.v_mapa, app.v_pontos_proximos, app.v_tarefas, app.v_terreno_entorno, app.v_entorno_buscas to authenticated;
 
 -- ---------------------------------------------------------------------
 -- Duplicidade
@@ -638,6 +658,45 @@ end $$;
 -- p_versao é a versão que a tela carregou; se mudou, outra pessoa salvou antes.
 -- Só os campos enviados em p_dados mudam; os de controle são ignorados.
 -- ---------------------------------------------------------------------
+-- Grava a busca do entorno feita no navegador (Places + rota a pé), trocando a anterior.
+-- Recusa coordenada diferente da atual do terreno; descarta categoria inativa ou
+-- desconhecida e lugar além do raio a pé da categoria; o mesmo lugar entra uma vez.
+-- p_itens: [{categoria, google_place_id, nome, latitude, longitude, distancia_pe_m, duracao_pe_s, distancia_reta_m}]
+create or replace function app.salvar_entorno(p_terreno uuid, p_latitude double precision, p_longitude double precision,
+                                              p_itens jsonb, p_rota_a_pe boolean default true)
+returns int
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos; n int;
+begin
+  select * into t from app.terrenos where id = p_terreno;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  if t.latitude is null then raise exception 'O terreno não está localizado' using errcode = '23514'; end if;
+  if abs(t.latitude - p_latitude) > 1e-7 or abs(t.longitude - p_longitude) > 1e-7 then
+    raise exception 'A localização do terreno mudou durante a busca; busque de novo' using errcode = '40001';
+  end if;
+  if jsonb_typeof(coalesce(p_itens, '[]')) <> 'array' then raise exception 'Itens devem ser uma lista' using errcode = '22023'; end if;
+
+  delete from app.terreno_entorno where terreno_id = p_terreno;
+  insert into app.terreno_entorno (empresa_id, terreno_id, categoria, google_place_id, nome, latitude, longitude,
+                                   distancia_pe_m, duracao_pe_s, distancia_reta_m)
+  select distinct on (i.google_place_id) t.empresa_id, p_terreno, i.categoria, i.google_place_id, trim(i.nome), i.latitude, i.longitude,
+         i.distancia_pe_m, i.duracao_pe_s, i.distancia_reta_m
+  from jsonb_to_recordset(coalesce(p_itens, '[]')) as i(categoria text, google_place_id text, nome text, latitude double precision,
+       longitude double precision, distancia_pe_m int, duracao_pe_s int, distancia_reta_m int)
+  join app.entorno_categorias c on c.codigo = i.categoria and c.ativo
+  where i.google_place_id is not null and i.distancia_pe_m is not null and i.distancia_pe_m <= c.raio_pe_m
+  order by i.google_place_id, c.ordem, i.distancia_pe_m;
+  get diagnostics n = row_count;
+
+  insert into app.terreno_entorno_buscas (terreno_id, empresa_id, latitude, longitude, rota_a_pe, buscado_em, buscado_por)
+  values (p_terreno, t.empresa_id, p_latitude, p_longitude, coalesce(p_rota_a_pe, true), now(), auth.uid())
+  on conflict (terreno_id) do update set latitude = excluded.latitude, longitude = excluded.longitude, rota_a_pe = excluded.rota_a_pe,
+                                         buscado_em = excluded.buscado_em, buscado_por = excluded.buscado_por;
+  return n;
+end $$;
+
 create or replace function app.salvar_terreno(p_terreno uuid, p_versao int, p_dados jsonb)
 returns int
 language plpgsql security definer set search_path = ''
@@ -701,6 +760,7 @@ revoke execute on all functions in schema app from public;
 grant execute on function
   app.geojson_poligono_valido(jsonb), app.distancia_km(double precision, double precision, double precision, double precision), app.minhas_empresas(), app.empresas_edicao(), app.papel(uuid), app.eh_membro(uuid), app.eh_gestor(uuid), app.exigir_membro(uuid), app.exigir_editor(uuid),
   app.salvar_terreno(uuid, int, jsonb),
+  app.salvar_entorno(uuid, double precision, double precision, jsonb, boolean),
   app.criar_empresa(text, text),
   app.buscar_duplicados(uuid, text, text, text, text, text),
   app.abrir_negociacao(uuid, uuid),

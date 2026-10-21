@@ -275,6 +275,34 @@ begin
 end $$;
 create trigger t_vigente before insert on app.analises_urbanisticas for each row execute function app.tg_analise_vigente();
 
+-- Entorno do terreno: lugares do Google a até o raio a pé da categoria, com a
+-- distância e o tempo pela rota a pé. Gravado só por app.salvar_entorno, que troca
+-- a busca inteira; a busca vale para a coordenada guardada em terreno_entorno_buscas.
+create table app.terreno_entorno_buscas (
+  terreno_id   uuid primary key references app.terrenos(id) on delete cascade,
+  empresa_id   uuid not null references app.empresas(id),
+  latitude     double precision not null,
+  longitude    double precision not null,
+  rota_a_pe    boolean not null default true,   -- false: a rota a pé não respondeu e valeu a linha reta
+  buscado_em   timestamptz not null default now(),
+  buscado_por  uuid references auth.users(id) default auth.uid()
+);
+create table app.terreno_entorno (
+  id               uuid primary key default gen_random_uuid(),
+  empresa_id       uuid not null references app.empresas(id),
+  terreno_id       uuid not null references app.terrenos(id) on delete cascade,
+  categoria        text not null references app.entorno_categorias(codigo),
+  google_place_id  text not null,
+  nome             text not null check (length(trim(nome)) > 0),
+  latitude         double precision not null check (latitude between -90 and 90),
+  longitude        double precision not null check (longitude between -180 and 180),
+  distancia_pe_m   int not null check (distancia_pe_m >= 0),
+  duracao_pe_s     int check (duracao_pe_s >= 0),
+  distancia_reta_m int check (distancia_reta_m >= 0),
+  unique (terreno_id, google_place_id)
+);
+create index on app.terreno_entorno (terreno_id, categoria, distancia_pe_m);
+
 -- Composição de áreas: terrenos vizinhos estudados em conjunto.
 create table app.areas_interesse (
   id          uuid primary key default gen_random_uuid(),
@@ -330,7 +358,8 @@ do $$
 declare t text;
 begin
   foreach t in array array['terrenos','matriculas','inscricoes_municipais','inscricao_valores','confrontacoes','terreno_pessoas','terreno_corretores',
-                           'terreno_infraestrutura','analises_urbanisticas','analise_zoneamentos','areas_interesse','area_interesse_terrenos'] loop
+                           'terreno_infraestrutura','analises_urbanisticas','analise_zoneamentos','areas_interesse','area_interesse_terrenos',
+                           'terreno_entorno','terreno_entorno_buscas'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
     execute format('create policy inserir on app.%I for insert to authenticated with check (empresa_id in (select app.empresas_edicao()))', t);
@@ -347,6 +376,11 @@ begin
   end loop;
 end $$;
 grant usage on sequence app.terreno_seq to authenticated;
+
+-- Entorno é gravado só por app.salvar_entorno (troca a busca inteira).
+drop policy inserir on app.terreno_entorno;        drop policy alterar on app.terreno_entorno;
+drop policy inserir on app.terreno_entorno_buscas; drop policy alterar on app.terreno_entorno_buscas;
+revoke insert, update on app.terreno_entorno, app.terreno_entorno_buscas from authenticated;
 
 -- Terreno é alterado só por app.salvar_terreno (confere a versão); inserir continua direto.
 drop policy alterar on app.terrenos;
@@ -372,3 +406,4 @@ create trigger t_aud after insert or update or delete on app.analise_zoneamentos
 create trigger t_aud after insert or update or delete on app.inscricao_valores    for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.terreno_pessoas      for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.confrontacoes        for each row execute function app.tg_auditoria();
+create trigger t_aud after insert or update or delete on app.terreno_entorno_buscas for each row execute function app.tg_auditoria();

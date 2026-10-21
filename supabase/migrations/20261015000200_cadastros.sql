@@ -57,6 +57,17 @@ create table app.checklist_modelo (
   foreign key (tipo_processo, etapa) references app.etapas_modelo(tipo_processo, codigo)
 );
 
+-- Categorias do entorno buscadas no Google (Places) quando o terreno é localizado.
+-- Configuração: ligar ou desligar uma categoria, ou mudar o raio a pé, é migration de dados.
+create table app.entorno_categorias (
+  codigo       text primary key,
+  nome         text not null,
+  tipos_google text[] not null check (cardinality(tipos_google) > 0),
+  raio_pe_m    int  not null default 1500 check (raio_pe_m between 100 and 5000),
+  ordem        int  not null unique,
+  ativo        boolean not null default true
+);
+
 -- ---------------------------------------------------------------------
 -- Dados de configuração
 -- ---------------------------------------------------------------------
@@ -69,6 +80,11 @@ select m.id, s from app.municipios m,
                'ZM','ZMa','ZMIS','ZMISa','ZEIS-1','ZEIS-2','ZEIS-3','ZEIS-4','ZEIS-5','ZDE-1','ZDE-2','ZPI-1','ZPI-2',
                'ZER-1','ZER-2','ZERa','ZPR','ZEP','ZEPAM','ZPDS','ZPDSr','ZOE','AVP-1','AVP-2','AC-1','AC-2']) s
 where m.codigo_ibge = '3550308';
+
+insert into app.entorno_categorias (codigo, nome, tipos_google, raio_pe_m, ordem) values
+  ('metro_trem', 'Estação de metrô ou trem', array['subway_station','train_station','light_rail_station'], 1500, 1),
+  ('shopping',   'Shopping center',          array['shopping_mall'],                                       1500, 2),
+  ('hospital',   'Hospital',                 array['hospital'],                                            1500, 3);
 
 insert into app.itens_infraestrutura (codigo, nome, ordem) values
   ('energia',     'Rede de energia na porta',  1),
@@ -189,7 +205,7 @@ create table app.corretores (
 do $$
 declare t text;
 begin
-  foreach t in array array['municipios','zoneamentos','itens_infraestrutura','tipos_documento','etapas_modelo','checklist_modelo'] loop
+  foreach t in array array['municipios','zoneamentos','itens_infraestrutura','tipos_documento','etapas_modelo','checklist_modelo','entorno_categorias'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (true)', t);
     execute format('grant select on app.%I to authenticated', t);

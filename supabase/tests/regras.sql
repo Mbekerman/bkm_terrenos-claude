@@ -305,6 +305,34 @@ select pg_temp.ok((select app.distancia_km(-23.5505, -46.6333, -22.9056, -47.060
 select pg_temp.ok((select count(*) from app.v_pontos_proximos where terreno_id = :'tm') = 1, 'só pontos a até 15 km entram como próximos');
 select pg_temp.ok((select distancia_km from app.v_pontos_proximos where terreno_id = :'tm') < 0.2, 'terminal a menos de 200 m');
 select pg_temp.ok((select situacao_mapa from app.v_mapa where id = :'tm') = 'sem_negociacao', 'pin sem negociação');
+
+\echo '# entorno do terreno (Google, distância a pé)'
+select pg_temp.ok((select count(*) from app.entorno_categorias where ativo) = 3, 'três categorias de entorno ligadas: metrô/trem, shopping e hospital');
+select pg_temp.ok((select precisa_buscar and buscado_em is null from app.v_entorno_buscas where terreno_id = :'tm'), 'terreno localizado e nunca buscado precisa de busca');
+select pg_temp.como(:'analista');
+select app.salvar_entorno(:'tm', -23.6681, -46.6513, $j$[
+  {"categoria":"metro_trem","google_place_id":"g1","nome":"Estação Exemplo","latitude":-23.667,"longitude":-46.652,"distancia_pe_m":620,"duracao_pe_s":480,"distancia_reta_m":410},
+  {"categoria":"metro_trem","google_place_id":"g1","nome":"Estação Exemplo (entrada 2)","latitude":-23.667,"longitude":-46.652,"distancia_pe_m":700,"duracao_pe_s":540},
+  {"categoria":"shopping","google_place_id":"g2","nome":"Shopping Longe","latitude":-23.66,"longitude":-46.64,"distancia_pe_m":1600,"duracao_pe_s":1200},
+  {"categoria":"hospital","google_place_id":"g3","nome":"Hospital Perto","latitude":-23.673,"longitude":-46.645,"distancia_pe_m":1500,"duracao_pe_s":1140},
+  {"categoria":"padaria","google_place_id":"g4","nome":"Padaria","latitude":-23.668,"longitude":-46.651,"distancia_pe_m":100}
+]$j$) as ne \gset
+select pg_temp.ok(:ne = 2, 'entorno grava só o que está no raio a pé, de categoria ativa, sem repetir o lugar');
+select pg_temp.ok((select distancia_pe_m from app.v_terreno_entorno where terreno_id = :'tm' and google_place_id = 'g1') = 620, 'lugar repetido fica com a menor distância a pé');
+select pg_temp.ok((select not desatualizado and rota_a_pe from app.v_terreno_entorno where terreno_id = :'tm' limit 1), 'busca em dia, pela rota a pé');
+select pg_temp.falha(format($$insert into app.terreno_entorno (empresa_id, terreno_id, categoria, google_place_id, nome, latitude, longitude, distancia_pe_m) values (%L, %L, 'hospital', 'x', 'x', 0, 0, 1)$$, :'emp', :'tm'), 'entorno não é gravado direto, só pela RPC');
+select pg_temp.falha(format('select app.salvar_entorno(%L, -23.60, -46.60, %L)', :'tm', '[]'), 'busca feita para outra coordenada é recusada');
+select app.salvar_entorno(:'tm', -23.6681, -46.6513, '[]', false) as ne2 \gset
+select pg_temp.ok((select count(*) from app.terreno_entorno where terreno_id = :'tm') = 0 and (select not rota_a_pe from app.terreno_entorno_buscas where terreno_id = :'tm'), 'nova busca troca a anterior inteira');
+select pg_temp.como(:'gestor');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'terreno_entorno_buscas' and depois->>'terreno_id' = :'tm') = 2, 'busca do entorno vai para os logs');
+select versao as vtm from app.terrenos where id = :'tm' \gset
+select app.salvar_terreno(:'tm', :vtm, '{"latitude":-23.6700,"longitude":-46.6500}') \gset
+select pg_temp.ok((select desatualizado and precisa_buscar from app.v_entorno_buscas where terreno_id = :'tm'), 'mudou a localização: entorno fica desatualizado');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format('select app.salvar_entorno(%L, -23.67, -46.65, %L)', :'tm', '[]'), 'leitura não grava entorno');
+select pg_temp.ok((select count(*) from app.v_entorno_buscas where terreno_id = :'tm') = 1, 'leitura vê a situação do entorno');
+select pg_temp.como(:'gestor');
 select pg_temp.ok(not exists (select 1 from app.v_mapa where id = :'t1'), 'terreno arquivado sai do mapa');
 insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (:'emp', :'tm', 'Visitar o lote', current_date - 1) returning id as k1 \gset
 insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (:'emp', :'tm', 'Pedir matrícula', current_date + 5) returning id as k2 \gset

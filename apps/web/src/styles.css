@@ -1390,6 +1390,11 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 :root[data-tema="escuro"] .adv-lista li .ok { color: #a6e3b8 } :root[data-tema="escuro"] .adv-lista li .no { color: #ffb4ab }
 /* Visão geral em uma coluna: o mapa de Localização vem primeiro */
 @container bloco (max-width: 760px) { .geral { display: flex; flex-direction: column; align-items: stretch } .geral-c { display: contents } .geral .g-loc { order: -1 } }
+/* pontos de interesse a pé */
+.ent-l li.ent-vazio { grid-template-columns: minmax(0, 1fr) }
+.ent-l li.ent-vazio .t2 { color: var(--texto-suave); font-style: italic }
+.ent-pe { margin-top: 10px; display: block; line-height: 20px }
+.ent-pe .linkbtn { font-size: inherit }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
