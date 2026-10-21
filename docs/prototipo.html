@@ -2618,13 +2618,13 @@ function painelNeg(t){
 }
 
 /* ===================== páginas ===================== */
-/* ficha em página única: cada seção é um bloco com seta; ao abrir um terreno, todas nascem fechadas (nada é guardado) */
+/* ficha em página única: cada seção é um bloco com seta; ao abrir um terreno, só a Visão geral nasce aberta (nada é guardado) */
 let BLA={},blId=null;
 const blocoFechado=k=>!BLA[k];
 const blocoAbre=k=>{BLA[k]=true};
 function rolarBloco(k,s){setTimeout(()=>{const el=(s&&document.getElementById('sec-'+s))||document.getElementById('bl-'+k);el&&el.scrollIntoView({behavior:'smooth',block:'start'})},30)}
 function pgFicha(){
-  if(UI.id!==blId){BLA={};blId=UI.id}
+  if(UI.id!==blId){BLA={geral:true};blId=UI.id}
   const t=T(UI.id),c=completude(t),n=t.neg;
   const endereco=[t.logradouro&&(t.logradouro+(t.numero?', '+t.numero:'')),t.bairro,t.zona&&'Zona '+OPT.zona[t.zona],eixo(t.eixo)].filter(Boolean).join(' · ');
   const zt=zonasTxt(t),ad=areaAdotada(t);
@@ -2794,7 +2794,7 @@ document.addEventListener('click',e=>{
   if(A==='scrim'){if(e.target===a){UI.modal=null;renderModal()}return}
   switch(A){
     case 'nav':go(a.dataset.r);break;
-    case 'abrir':BLA={};blId=a.dataset.id;go('terreno',{id:a.dataset.id,tab:a.dataset.tab||'geral',from:a.dataset.from||(UI.route==='terreno'?UI.from:UI.route==='inicio'?'inicio':'terrenos')});if(a.dataset.tab&&a.dataset.tab!=='geral'){blocoAbre(a.dataset.tab);render();rolarBloco(a.dataset.tab)}break;
+    case 'abrir':BLA={geral:true};blId=a.dataset.id;go('terreno',{id:a.dataset.id,tab:a.dataset.tab||'geral',from:a.dataset.from||(UI.route==='terreno'?UI.from:UI.route==='inicio'?'inicio':'terrenos')});if(a.dataset.tab&&a.dataset.tab!=='geral'){blocoAbre(a.dataset.tab);render();rolarBloco(a.dataset.tab)}break;
     case 'tab':UI.tab=a.dataset.t;blocoAbre(a.dataset.t);render();rolarBloco(a.dataset.t);break;
     case 'bloco':{const k=a.dataset.t,fim=!!a.dataset.fim;if(BLA[k])delete BLA[k];else BLA[k]=true;render();
       /* recolhida pelo fim: traz o título de volta à tela, para não perder o lugar */
