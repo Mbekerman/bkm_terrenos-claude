@@ -1,0 +1,35 @@
+const TMP=require('path').join(__dirname,'..','saida')+'/';require('fs').mkdirSync(TMP+'t_inline',{recursive:true});
+const {chromium}=require('playwright');
+const L=require('path').join(__dirname,'..','libs','l')+'/';const F=require('path').join(__dirname,'..','saida','bkm-terrenos.html');const OUT=TMP+'t_inline/';
+(async()=>{const b=await chromium.launch();const errs=[];
+for(const tema of ['claro','escuro']){
+const ctx=await b.newContext({viewport:{width:1440,height:900},deviceScaleFactor:2});
+await ctx.route('**/*',r=>{const u=r.request().url();if(u.startsWith('file://')&&u.endsWith('.html'))return r.fulfill({path:F,contentType:'text/html; charset=utf-8'});
+  if(/leaflet.js|jszip/.test(u))return r.fulfill({path:L+(u.includes('leaflet')?'leaflet.js':'jszip.min.js'),contentType:'application/javascript'});
+  if(/cartocdn|openstreetmap|arcgisonline/.test(u))return r.fulfill({path:require('path').join(__dirname,'tile.png'),contentType:'image/png'});return r.abort()});
+const p=await ctx.newPage();p.on('pageerror',e=>errs.push(e.message));
+await p.goto('file://'+F);await p.evaluate(t=>{localStorage.clear();localStorage.setItem('bkm-terrenos-tema',t)},tema);await p.reload();await p.waitForTimeout(400);
+await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=terrenos]').click());await p.waitForTimeout(150);
+await p.evaluate(()=>{[...document.querySelectorAll('[data-a=abrir]')].find(x=>x.textContent.includes('Barão')).click()});await p.waitForTimeout(400);
+await p.click('#bl-cadastro .bl-h');await p.waitForTimeout(200);
+const kv=async r=>p.evaluate(r=>{const k=[...document.querySelectorAll('#bl-geral .kv')].find(x=>x.querySelector('dt').textContent===r);return k&&k.querySelector('dd').innerText},r);
+const cad=async lab=>p.evaluate(l=>{const k=[...document.querySelectorAll('#bl-cadastro .k')].find(x=>x.textContent.trim()===l);return k&&k.parentElement.innerText.replace(l,'').trim()},lab);
+console.log(tema,'antes',await kv('Endereço'),'| cadastro Número:',await cad('Número'));
+await p.evaluate(()=>document.getElementById('bl-geral').scrollIntoView());
+await p.click('[data-a=edit][data-s=g-end]');await p.waitForTimeout(150);
+await p.screenshot({path:OUT+tema+'_editando.png'});
+await p.fill('#sec-g-end #f-numero','520');await p.click('#sec-g-end .btn.primary');await p.waitForTimeout(200);
+console.log(tema,'depois',await kv('Endereço'),'| cadastro Número:',await cad('Número'),'| log:',await p.$eval('.pn-log',x=>x.innerText.replace(/\s+/g,' ')));
+const ar0=await p.evaluate(()=>{const t=JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-v7')).terrenos.find(t=>t.nome.includes('Barão'));return {aDoc:t.aDoc,aCad:t.aCad,aLev:t.aLev,aEst:t.aEst,fonte:t.fonteArea,testada:t.testada}});
+await p.click('[data-a=edit][data-s=g-testada]');await p.fill('#g-testada','41,5');await p.click('#sec-g-testada .btn.primary');await p.waitForTimeout(200);
+const ar1=await p.evaluate(()=>{const t=JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-v7')).terrenos.find(t=>t.nome.includes('Barão'));return {aDoc:t.aDoc,aCad:t.aCad,aLev:t.aLev,aEst:t.aEst,fonte:t.fonteArea,testada:t.testada}});
+console.log(tema,'áreas antes',JSON.stringify(ar0),'depois',JSON.stringify(ar1),'| resumo:',await kv('Testada principal'));
+await p.click('[data-a=edit][data-s=g-topo]');await p.selectOption('#sec-g-topo #f-topografia',{index:2});await p.click('#sec-g-topo .btn.primary');await p.waitForTimeout(150);
+console.log(tema,'topografia resumo',await kv('Topografia e posição'),'| cadastro',await cad('Topografia'));
+await p.click('[data-a=edit][data-s=g-resp]');await p.click('[data-a=cancel-edit]');console.log(tema,'cancelar fecha',await p.$$eval('.kv.editando',e=>e.length)===0);
+const t0=await p.$eval('.temp .tl',x=>x.textContent);await p.click('#bl-geral .temp .bars button:nth-child(2)');await p.waitForTimeout(150);
+console.log(tema,'temperatura',t0,'→',await p.$eval('.dhead .temp .tl',x=>x.textContent));
+await p.evaluate(()=>document.getElementById('bl-geral').scrollIntoView());await p.screenshot({path:OUT+tema+'_resumo.png'});
+await p.click('[data-a=role][data-v=Leitura]');await p.waitForTimeout(150);console.log(tema,'Leitura: lápis visíveis',await p.$$eval('#bl-geral .kv-ed[data-a=edit]',e=>e.filter(x=>getComputedStyle(x).display!=='none').length));
+await ctx.close()}
+console.log('ERROS',errs);await b.close()})();

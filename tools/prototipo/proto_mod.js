@@ -1,0 +1,495 @@
+
+/* =====================================================================
+   Módulos novos: tabela ordenável, mapa, dashboard, visão geral da ficha
+   e quadro de tarefas. Injetado dentro do mesmo escopo do protótipo.
+   ===================================================================== */
+UI.sorts=UI.sorts||{};
+UI.mp=UI.mp||{q:'',cor:'',zona:'',ocultas:[]};
+UI.dash=UI.dash||{f:{},sel:['situacao','zona','valor','mes']};
+UI.tk=UI.tk||{vista:'quadro',q:'',resp:'',ter:'',prio:'',atras:false,canc:false};
+
+/* ---------- situação do terreno (cor do pin, gráficos) ---------- */
+// rótulo, cor, glifo no pin, cor do glifo. Etapas ativas em rampa de azul (ordem = avanço);
+// stand by, ganha e perdida com cores próprias e glifo, para não depender só da cor.
+const SIT={sem_negociacao:['Sem negociação','#8a8d91','·','#fff'],recebido:['Recebido','#8fc8f7','1','#1d2e5c'],
+  viabilidade_inicial:['Viabilidade inicial','#4aa3f0','2','#fff'],negociacao:['Negociação','#0b74d6','3','#fff'],
+  minutagem:['Minutagem','#1d2e5c','4','#fff'],stand_by:['Stand by','#c98a2e','‖','#fff'],ganha:['Ganha','#6f9a3a','✓','#fff'],perdida:['Perdida','#9a3b30','×','#fff']};
+const sitMapa=t=>!t.neg?'sem_negociacao':t.neg.status==='ativo'?t.neg.etapa:t.neg.status;
+const sitChip=k=>`<span class="sitchip"><span class="sw" style="background:${SIT[k][1]}"></span>${SIT[k][0]}</span>`;
+const ativosBanco=()=>S.terrenos.filter(t=>t.situacao!=='arquivado');
+
+/* ---------- geografia ---------- */
+const distKm=(a,b,c,d)=>{const r=x=>x*Math.PI/180,R=6371,dl=r(c-a),dg=r(d-b);const h=Math.sin(dl/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dg/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
+const fKm=k=>k<1?`${Math.round(k*1000/10)*10} m`:`${num(k,1)} km`;
+const areaPoly=pts=>{if(!pts||pts.length<3)return null;const lat0=pts.reduce((s,p)=>s+p[0],0)/pts.length*Math.PI/180,R=6371008;
+  const xy=pts.map(([la,lo])=>[R*lo*Math.PI/180*Math.cos(lat0),R*la*Math.PI/180]);let a=0;for(let i=0;i<xy.length;i++){const [x1,y1]=xy[i],[x2,y2]=xy[(i+1)%xy.length];a+=x1*y2-x2*y1}return Math.abs(a)/2};
+const centro=pts=>[pts.reduce((s,p)=>s+p[0],0)/pts.length,pts.reduce((s,p)=>s+p[1],0)/pts.length];
+const proximos=t=>t.lat==null?[]:(S.pontos||[]).map(p=>({...p,d:distKm(t.lat,t.lng,p.lat,p.lng)})).filter(p=>p.d<=15).sort((a,b)=>a.d-b.d);
+const rotaUrl=(t,p)=>`https://www.google.com/maps/dir/?api=1&origin=${t.lat},${t.lng}&destination=${p.lat},${p.lng}&travelmode=driving`;
+const gmapsUrl=t=>`https://www.google.com/maps/search/?api=1&query=${t.lat},${t.lng}`;
+const CAT_POI={transporte:'Transporte',escola:'Escola',saude:'Saúde',comercio:'Comércio',lazer:'Lazer',empresa:'Empresa',outro:'Outro'};
+/* entorno do terreno: lugares do Google a até RAIO_PE metros a pé, por categoria (no banco: app.entorno_categorias) */
+const RAIO_PE=1500;
+const ENT_CAT=[['metro_trem','Estação de metrô ou trem','estações de metrô ou trem',['subway_station','train_station','light_rail_station']],
+  ['shopping','Shopping center','shopping centers',['shopping_mall']],
+  ['hospital','Hospital','hospitais',['hospital']]];
+const ENT_BUSCA={},ENT_TENT=new Set();let ENT_TODOS=false;
+const rotaPeUrl=(t,p)=>`https://www.google.com/maps/dir/?api=1&origin=${t.lat},${t.lng}&destination=${p.lat},${p.lng}${p.gid&&!String(p.gid).startsWith('ex')?'&destination_place_id='+encodeURIComponent(p.gid):''}&travelmode=walking`;
+function entornoCard(t){if(t.lat==null)return '';
+  const e=t.entorno,busc=ENT_BUSCA[t.id],mudou=e&&!(e.lat===t.lat&&e.lng===t.lng),raio=fKm(RAIO_PE/1000);
+  let corpo;
+  if(!e)corpo=busc?`<div class="muted">Buscando no Google lugares a até ${raio} a pé…</div>`
+    :`<div class="muted">${GG?'Os pontos de interesse ainda não foram buscados.':'Os pontos são buscados no Google quando o terreno é localizado pela busca de endereço ou no mapa. O Google não carrega neste link de visualização.'}</div>${GG?`<button class="btn sm ed" style="margin-top:12px" data-a="ent-buscar" data-id="${t.id}">Buscar agora</button>`:''}`;
+  else{const lim=ENT_TODOS?99:3;let sobra=0;
+    corpo=`<ul class="poil ent-l">${ENT_CAT.map(([k,l,pl])=>{const its=e.itens.filter(x=>x.cat===k).sort((a,b)=>a.pe-b.pe);
+      if(!its.length)return `<li class="ent-vazio"><span><span class="t2">Sem ${pl} a até ${raio} a pé</span></span></li>`;
+      sobra+=Math.max(0,its.length-lim);
+      return its.slice(0,lim).map(p=>`<li><span><span class="t1">${esc(p.nome)}</span><span class="t2">${l}${p.min!=null?` · ${p.min} min a pé`:''}</span></span><b class="num">${p.pe<1000?Math.round(p.pe/10)*10+' m':num(p.pe/1000,2)+' km'}</b><a href="${rotaPeUrl(t,p)}" target="_blank" rel="noopener">Rota</a></li>`).join('')}).join('')}</ul>
+    ${sobra||ENT_TODOS?`<button class="linkbtn" data-a="ent-todos" style="margin-top:6px">${ENT_TODOS?'Mostrar menos':`Mostrar mais ${sobra}`}</button>`:''}
+    <div class="hint ent-pe">${busc?'Atualizando no Google… · ':''}${e.fonte==='exemplo'?'Dados de exemplo':'Google'} · ${e.semPe?'distância em linha reta (a rota a pé não respondeu)':'distância pela rota a pé'} · buscado em ${fd(e.em)}${mudou?' · <b>a localização mudou depois da busca</b>':''}${GG&&!busc?` · <button class="linkbtn ed" data-a="ent-buscar" data-id="${t.id}">Buscar de novo</button>`:''}</div>`}
+  corpo+=pontosEmpresa(t);
+  return `<section class="sec" id="ent-card"><div class="sec-h"><h2>Pontos de interesse</h2><span class="faint" style="font-size:12px">a pé · até ${raio}</span></div><div class="sec-b">${corpo}</div></section>`}
+/* pontos cadastrados pela empresa: todos aparecem; a pé se está a até RAIO_PE a pé, senão de carro; sem rota medida, linha reta */
+let EMP_TODOS=false;
+const kmTxt=m=>m<1000?Math.round(m/10)*10+' m':num(m/1000,m<10000?2:1)+' km';
+function pontosEmpresa(t){const pts=S.pontos||[];const d=t.dist&&t.dist.lat===t.lat&&t.dist.lng===t.lng?t.dist.m:{};
+  const its=pts.map(p=>{const x=d[p.id]||{},reta=distKm(t.lat,t.lng,p.lat,p.lng)*1000;
+    if(x.pe!=null&&x.pe<=RAIO_PE)return {p,ord:x.pe,dist:kmTxt(x.pe),modo:`${x.pm} min a pé`,url:rotaPeUrl(t,p)};
+    if(x.cm!=null)return {p,ord:x.cm,dist:kmTxt(x.cm),modo:`${x.cmin} min de carro`,url:rotaUrl(t,p)};
+    return {p,ord:reta,dist:kmTxt(reta),modo:'em linha reta',url:reta<=RAIO_PE?rotaPeUrl(t,p):rotaUrl(t,p)}}).sort((a,b)=>a.ord-b.ord);
+  const lim=EMP_TODOS?999:5;
+  return `<div class="ent-emp"><div class="ent-emp-h"><span>Cadastrados pela empresa</span>${UI.role!=='Leitura'?`<button class="linkbtn ed" data-a="ent-add-ponto" data-id="${t.id}">${ic('add',16)}Adicionar ponto</button>`:''}</div>
+    ${its.length?`<ul class="poil ent-l">${its.slice(0,lim).map(x=>`<li><span><span class="t1">${esc(x.p.nome)}</span><span class="t2">${CAT_POI[x.p.cat]||'Outro'} · ${x.modo}</span></span><b class="num">${x.dist}</b><a href="${x.url}" target="_blank" rel="noopener">Rota</a></li>`).join('')}</ul>
+    ${its.length>5?`<button class="linkbtn" data-a="emp-todos" style="margin-top:6px">${EMP_TODOS?'Mostrar menos':`Mostrar mais ${its.length-5}`}</button>`:''}`
+    :'<div class="muted" style="font-size:14px">Nenhum ponto cadastrado pela empresa.</div>'}
+    ${DIST_BUSCA_ON(t)?'<div class="hint">Medindo as rotas no Google…</div>':''}</div>`}
+const DIST_BUSCA_ON=t=>typeof DIST_BUSCA!=='undefined'&&DIST_BUSCA[t.id];
+function entRefresh(t){if(UI.route!=='terreno'||UI.id!==t.id)return;const a=document.activeElement;
+  if(a&&a.closest&&a.closest('.main')&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)){const el=document.getElementById('ent-card');if(el)el.outerHTML=entornoCard(t)}else render()}
+
+/* ---------- tabela ordenável (listas) ---------- */
+// cols: {k, l, v(row)=>html, s(row)=>valor para ordenar, cls}
+function tabela(id,rows,cols,o={}){
+  const st=UI.sorts[id]||o.padrao||{};let r=rows.slice();const c=cols.find(x=>x.k===st.k);
+  if(c&&c.s)r.sort((a,b)=>{const x=c.s(a),y=c.s(b);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;
+    const d=typeof x==='number'&&typeof y==='number'?x-y:String(x).localeCompare(String(y),'pt-BR',{numeric:true});return st.dir==='desc'?-d:d});
+  if(!r.length)return `<div class="empty">${o.vazio||'Nada para mostrar.'}</div>`;
+  return `<div class="dt-wrap"><table class="dt ${o.cls||''}"><thead><tr>${cols.map(x=>`<th class="${x.cls||''}" scope="col"${x.s?` aria-sort="${st.k===x.k?(st.dir==='desc'?'descending':'ascending'):'none'}"`:''}>${x.s?`<button type="button" class="dt-sort" data-a="sort" data-t="${id}" data-k="${x.k}">${x.l}<span class="dt-ar" aria-hidden="true">${st.k===x.k?(st.dir==='desc'?'↓':'↑'):'↕'}</span></button>`:x.l}</th>`).join('')}</tr></thead>
+  <tbody>${r.map(row=>`<tr ${o.attr?o.attr(row):''}>${cols.map(x=>`<td class="${x.cls||''}">${x.v(row)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+function ordenar(id,k){const st=UI.sorts[id];UI.sorts[id]=st&&st.k===k?(st.dir==='asc'?{k,dir:'desc'}:{}):{k,dir:'asc'}}
+
+/* ---------- lista de terrenos em tabela ---------- */
+const COLS_TERRENOS=[
+  {k:'codigo',l:'Código',cls:'hm num faint',v:t=>t.codigo,s:t=>t.codigo},
+  {k:'nome',l:'Terreno',cls:'esq',v:t=>`<div class="t1">${esc(t.nome)}</div><div class="t2">${esc([t.bairro,t.zona&&OPT.zona[t.zona]].filter(Boolean).join(' · '))}</div>`,s:t=>t.nome},
+  {k:'area',l:'Área',cls:'hm num',v:t=>{const a=areaAdotada(t);return a!=null?m2(a):'<span class="faint">—</span>'},s:t=>areaAdotada(t)},
+  {k:'valor',l:'Valor pedido',cls:'num',v:t=>{const o=ofertaRef(t),a=areaAdotada(t);return o?.valor?`${mi(o.valor)}${a?`<div class="t2">${brl(o.valor/a)}/m²</div>`:''}`:'<span class="faint">—</span>'},s:t=>ofertaRef(t)?.valor??null},
+  {k:'temp',l:'Temperatura',cls:'hm',v:t=>tempMini(t.neg?.temp),s:t=>t.neg?.temp??null},
+  {k:'etapa',l:'Etapa',v:t=>`<span class="c-etapa">${chipNeg(t)}</span>`,s:t=>Object.keys(SIT).indexOf(sitMapa(t))},
+  {k:'tarefa',l:'Próxima tarefa',cls:'hm',v:t=>{const pt=proxTarefa(t),at=atrasadas(t).length;return pt?`<div class="t2" style="color:var(--texto)">${esc(pt.titulo)}</div><div class="t2" style="${pt.prazo<HOJE?'color:var(--terracota);font-weight:600':''}">${fd(pt.prazo)}${at>1?` · ${at} atrasadas`:''}</div>`:'<span class="faint">—</span>'},s:t=>proxTarefa(t)?.prazo??null}];
+const attrAbrir=from=>t=>`data-a="abrir" data-id="${t.id}" data-from="${from}" tabindex="0"`;
+
+/* ===================== MAPA ===================== */
+let MAPA=null,MINI=null,PINS=null,POIS=null,DES=null,BASE=null;
+const CAMADAS_L={mapa:'Mapa',ruas:'Ruas',satelite:'Satélite',satrot:'Satélite + rótulos'},CAMADAS_G={mapa:'Mapa',ruas:'Relevo',satelite:'Satélite',satrot:'Satélite + rótulos'};
+// motor do mapa: Google quando a chave carrega; Leaflet (Esri/OSM) como reserva
+let GG=false;
+function setBase(k){return GG?G_setBase(k):L_setBase(k)}
+function desenhaPins(){return GG?G_desenhaPins():L_desenhaPins()}
+function desenhaPois(){return GG?G_desenhaPois():L_desenhaPois()}
+function desenhaRascunho(){return GG?G_desenhaRascunho():L_desenhaRascunho()}
+function initMapa(){return GG?G_initMapa():L_initMapa()}
+function focar(t){return GG?G_focar(t):L_focar(t)}
+function initMini(){return GG?G_initMini():L_initMini()}
+function fecharPopup(){if(GG)G_fecharPopup();else MAPA?.closePopup?.()}
+function mostrarPois(on){if(GG)return G_mostrarPois(on);if(MAPA&&POIS){on?POIS.addTo(MAPA):MAPA.removeLayer(POIS)}}
+function camada(k,el){
+  const esri='https://server.arcgisonline.com/ArcGIS/rest/services/';
+  const mk=(u,o)=>L.tileLayer(u,Object.assign({maxZoom:19,crossOrigin:true},o));
+  const ls=k==='mapa'?[mk(esri+'Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:16,attribution:'Mapa © Esri, HERE, Garmin, © OpenStreetMap'}),mk(esri+'Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:16})]
+    :k==='ruas'?[mk('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'})]
+    :k==='satelite'?[mk(esri+'World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Imagens © Esri'})]
+    :[mk(esri+'World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Imagens © Esri'}),mk(esri+'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}')];
+  let ok=false;ls.forEach(l=>{l.on('tileload',()=>{ok=true;el.classList.remove('sem-fundo')});l.on('tileerror',()=>{if(!ok)el.classList.add('sem-fundo')})});
+  return L.layerGroup(ls);
+}
+function pinIcon(k,sel){const [,c,g,fg]=SIT[k];return L.divIcon({className:'pin'+(sel?' sel':''),html:`<span class="pin-b" style="background:${c}"><b style="color:${fg}">${g}</b></span>`,iconSize:[30,40],iconAnchor:[15,38],popupAnchor:[0,-34],tooltipAnchor:[0,-34]})}
+const poiIcon=()=>L.divIcon({className:'poi',html:'<span class="poi-b"></span>',iconSize:[14,14],iconAnchor:[7,7],tooltipAnchor:[0,-8]});
+function mpVisiveis(){const m=UI.mp,q=m.q.trim().toLowerCase();
+  return ativosBanco().filter(t=>!m.ocultas.includes(sitMapa(t))&&(!m.zona||t.zona===m.zona)&&(!m.cor||t.corretores.some(x=>x.principal&&x.cid===m.cor))&&(!q||bateBusca(t,q)))}
+function mpLista(){const v=mpVisiveis(),sem=v.filter(t=>t.lat==null);
+  const cols=[{k:'nome',l:'Terreno',cls:'esq',v:t=>`<span class="cod">${t.codigo}</span><div class="t1">${esc(t.nome)}</div><div class="t2">${esc(t.bairro||'')}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div>`,s:t=>t.nome},
+    {k:'sit',l:'Situação',v:t=>sitChip(sitMapa(t)),s:t=>Object.keys(SIT).indexOf(sitMapa(t))},{k:'valor',l:'Valor',cls:'num',v:t=>{const o=ofertaRef(t);return o?.valor?mi(o.valor):'<span class="faint">—</span>'},s:t=>ofertaRef(t)?.valor??null}];
+  return `${entornoHtml()}<div class="mp-resumo"><span><b>${v.length}</b> terrenos</span><span><b>${num(v.reduce((s,t)=>s+(areaAdotada(t)||0),0))}</b> m²</span><span><b>${mi(v.reduce((s,t)=>s+(ofertaRef(t)?.valor||0),0))}</b> pedidos</span></div>
+  ${tabela('mapa',v,cols,{cls:'compacta',attr:t=>`data-a="mp-foco" data-id="${t.id}" tabindex="0" class="${UI.mpSel===t.id?'sel':''}"`,vazio:'Nenhum terreno com esses filtros.'})}
+  ${sem.length?`<div class="hint" style="margin-top:8px">${sem.length} sem localização. Abra a linha e use “Marcar no mapa”.</div>`:''}`;
+}
+function mpLegenda(){const base=ativosBanco();
+  return Object.keys(SIT).map(k=>{const n=base.filter(t=>sitMapa(t)===k).length;const on=!UI.mp.ocultas.includes(k);
+    return `<button type="button" class="lg-i" data-a="mp-sit" data-v="${k}" aria-pressed="${on}"><span class="pin-mini" style="background:${SIT[k][1]};color:${SIT[k][3]}">${SIT[k][2]}</span>${SIT[k][0]}<span class="n">${n}</span></button>`}).join('');
+}
+function pgMapa(){
+  const opt=(o,v)=>Object.entries(o).map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${esc(l)}</option>`).join('');
+  return `<div class="mapa-pg">
+  <aside class="mapa-lado" aria-label="Terrenos no mapa">
+    <div class="page-h compacto"><div><h1><span class="marca"></span>Mapa</h1></div></div>
+    <label class="search sm" for="mp-q">${bi('busca',24)}<input id="mp-q" type="search" placeholder="Buscar por nome, bairro, SQL..." value="${esc(UI.mp.q)}" autocomplete="off"></label>
+    <div class="mp-filtros"><div class="field"><label for="mp-cor">Corretor</label><select id="mp-cor" data-ch="mp-cor"><option value="">Todos</option>${opt(Object.fromEntries(S.corretores.map(c=>[c.id,c.nome])),UI.mp.cor)}</select></div>
+      <div class="field"><label for="mp-zona">Região</label><select id="mp-zona" data-ch="mp-zona"><option value="">Todas</option>${opt(OPT.zona,UI.mp.zona)}</select></div></div>
+    ${UI.mp.cor||UI.mp.zona||UI.mp.q||UI.mp.ocultas.length?'<button class="linkbtn" data-a="mp-limpar" style="align-self:flex-start">Limpar filtros</button>':''}
+    <div id="mp-lista">${mpLista()}</div>
+  </aside>
+  <section class="mapa-area" aria-label="Mapa dos terrenos">
+    <div id="mapa" class="mapa"></div>
+    <div class="mp-barra">
+      <div class="seg" role="group" aria-label="Fundo do mapa">${Object.entries(GG?CAMADAS_G:CAMADAS_L).map(([k,l])=>`<button type="button" data-a="mp-base" data-v="${k}" aria-pressed="${(UI.mpBase||'mapa')===k}">${l}</button>`).join('')}</div>
+      <div class="mp-acoes"><button class="btn sm" data-a="mp-modo" data-v="pin">${ic('add',16)}Novo pin</button><button class="btn sm" data-a="mp-modo" data-v="poi">${ic('add',16)}Ponto de interesse</button><button class="btn sm" data-a="mp-kmz">${ic('upload',16)}Importar KMZ/KML</button>
+      <button class="btn sm ${UI.mpPoi===false?'':'on'}" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}">Pontos de interesse</button></div>
+    </div>
+    <div id="mp-modo" class="mp-modo" aria-live="polite">${modoBanner()}</div>
+    <details class="mp-legenda" ${UI.mpLeg??innerWidth>899?'open':''}><summary>Legenda</summary><div id="mp-leg" class="mp-leg-l">${mpLegenda()}</div></details>
+    <div class="mp-aviso">O fundo do mapa (ruas e satélite) não carrega neste link de visualização, que bloqueia imagens externas. Os pins, poligonais e distâncias funcionam. No app publicado, ou abrindo o arquivo do protótipo no navegador, o fundo aparece.</div>
+  </section></div>`;
+}
+function modoBanner(){const m=UI.mpModo;if(!m)return '';
+  const t=UI.mpAlvo?T(UI.mpAlvo):null;
+  if(m==='pin')return `<span>Clique no mapa onde fica o terreno novo.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
+  if(m==='poi')return `<span>Clique no mapa para marcar o ponto de interesse.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
+  if(m==='marcar')return `<span>Clique no mapa para localizar <b>${esc(t?.nome)}</b>.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
+  if(m==='desenhar'||m==='editar'){const n=(UI.desenho||[]).length,a=areaPoly(UI.desenho),tq=TOQUE(),seg=tq?'toque e segure':'dê dois cliques';
+    if(m==='editar'&&tq)return `<span>Arraste os pontos; segure um ponto para excluir ou adicionar outro. Toque fora para concluir. <span class="mp-q">${n} pontos${a?` · ${m2(a)}`:''}</span></span><button class="btn sm text" data-a="mp-desfazer" ${(UI.desHist||[]).length?'':'disabled'}>Desfazer</button><button class="btn sm text" data-a="mp-sair">Cancelar</button><button class="btn sm primary" data-a="mp-concluir">Concluir</button>`;
+    const dica=m==='editar'?`arraste os pontos; ${seg} num ponto para excluí-lo ou adicionar outro depois dele. ${tq?'Toque':'Clique'} fora da poligonal para concluir.`
+      :`${tq?'toque':'clique'} no mapa para marcar os vértices.${n?` Arraste um ponto para ajustá-lo; ${seg} nele para mais opções.`:''}`;
+    return `<span>${m==='editar'?'Editando':'Desenhando'} a poligonal de <b>${esc(t?.nome)}</b>: ${dica} <span class="mp-q">${n} ponto${n===1?'':'s'}${a?` · ${m2(a)}`:''}</span></span><button class="btn sm text" data-a="mp-desfazer" ${(UI.desHist||[]).length?'':'disabled'}>Desfazer</button><button class="btn sm text" data-a="mp-sair">Cancelar</button><button class="btn sm primary" data-a="mp-concluir" ${n>=3?'':'disabled'}>Concluir</button>`}
+  return '';
+}
+function L_setBase(k){if(!MAPA)return;UI.mpBase=k;if(BASE)MAPA.removeLayer(BASE);BASE=camada(k,MAPA.getContainer().closest('.mapa-area')||MAPA.getContainer()).addTo(MAPA);BASE.eachLayer(l=>l.bringToBack());
+  document.querySelectorAll('[data-a="mp-base"]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===k))}
+function popupHtml(t){const o=ofertaRef(t),ad=areaAdotada(t),k=sitMapa(t),px=proximos(t).slice(0,3);
+  return `<div class="pop"><div class="pop-e"><span class="num">${t.codigo}</span>${sitChip(k)}</div><div class="pop-t">${esc(t.nome)}</div>
+  <div class="pop-s">${esc([t.bairro,t.zona&&'Zona '+OPT.zona[t.zona]].filter(Boolean).join(' · '))}</div>
+  <div class="pop-n"><span>${ad?m2(ad):'Área não informada'}</span><span>${o?.valor?mi(o.valor):'Sem valor'}</span>${t.poly?`<span>Poligonal ${m2(areaPoly(t.poly))}</span>`:''}</div>
+  ${px.length?`<div class="pop-poi">${px.map(p=>`<div><span>${esc(p.nome)}</span><b>${fKm(p.d)}</b>${GG?`<button class="linkbtn" data-a="mp-rota" data-id="${t.id}" data-p="${p.id}">Rota</button>`:`<a href="${rotaUrl(t,p)}" target="_blank" rel="noopener">Rota</a>`}</div>`).join('')}</div>`:''}
+  ${GG?`<div class="pop-a"><button class="btn sm" data-a="mp-sv" data-id="${t.id}">Street View</button><button class="btn sm" data-a="mp-entorno" data-id="${t.id}">O que tem perto</button></div>`:''}
+  <div class="pop-a"><button class="btn sm primary" data-a="abrir" data-id="${t.id}" data-tab="geral" data-from="mapa">Abrir ficha</button><button class="btn sm ed" data-a="mp-desenhar" data-id="${t.id}">${t.poly?'Editar':'Desenhar'} poligonal</button><button class="btn sm text ed" data-a="mp-kmz" data-id="${t.id}">Poligonal de KMZ</button></div></div>`}
+function L_desenhaPins(){if(!MAPA||!PINS)return;PINS.clearLayers();
+  mpVisiveis().filter(t=>t.lat!=null).forEach(t=>{const k=sitMapa(t);
+    if(t.poly&&!(UI.mpModo&&UI.mpAlvo===t.id)){const pg=L.polygon(t.poly,{color:SIT[k][1],weight:2,fillOpacity:.18,interactive:!UI.mpModo})
+      .on('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<700)return;clearTimeout(pg._tc);pg._tc=setTimeout(()=>{if(!UI.mpModo)mk.openPopup()},260)})
+      .on('dblclick',e=>{L.DomEvent.stop(e);clearTimeout(pg._tc);editarPoligonal(t.id)});
+      pg.on('add',()=>polyGestos(pg.getElement(),t.id));pg.addTo(PINS)}
+    const mk=L.marker([t.lat,t.lng],{icon:pinIcon(k,UI.mpSel===t.id),title:t.nome,riseOnHover:true,keyboard:!UI.mpModo,interactive:!UI.mpModo}).bindPopup(()=>popupHtml(t),{maxWidth:320,minWidth:260,autoPanPaddingTopLeft:[20,150],autoPanPaddingBottomRight:[20,20]}).bindTooltip(esc(t.nome),{direction:'top'});
+    mk.on('popupopen',()=>{if(Date.now()-(UI.polyLongoEm||0)<900){mk.closePopup();return}UI.mpSel=t.id;const l=$('#mp-lista');if(l)l.innerHTML=mpLista()});
+    /* o pino fica sobre a poligonal: segurar nele (ou dois cliques) também entra em edição */
+    if(t.poly&&t.poly.length>=3){mk.on('add',()=>polyGestos(mk.getElement(),t.id));mk.on('dblclick',e=>{L.DomEvent.stop(e);editarPoligonal(t.id)})}
+    mk.addTo(PINS);mk._terreno=t.id})}
+function L_desenhaPois(){if(!MAPA||!POIS)return;POIS.clearLayers();(S.pontos||[]).forEach(p=>L.marker([p.lat,p.lng],{icon:poiIcon(),title:p.nome,interactive:!UI.mpModo}).bindTooltip(`${esc(p.nome)} · ${CAT_POI[p.cat]||''}`,{direction:'top'}).addTo(POIS))}
+function L_desenhaRascunho(){if(!DES)return;DES.clearLayers();const p=UI.desenho||[];if(!p.length)return;
+  (p.length>=3?L.polygon(p,{color:'#0094fe',weight:2,dashArray:UI.mpModo==='editar'?null:'6 4',fillOpacity:UI.mpModo==='editar'?.2:.12,interactive:false}):L.polyline(p,{color:'#0094fe',weight:2,dashArray:'6 4',interactive:false})).addTo(DES);
+  const poli=DES.getLayers()[0];
+  p.forEach((q,i)=>{const sel=UI.vSel===i;
+    const mk=L.marker(q,{draggable:true,keyboard:false,zIndexOffset:sel?1000:0,icon:L.divIcon({className:'v-alvo',iconSize:[44,44],iconAnchor:[22,22],html:`<span class="v-dot${sel?' sel':''}"></span>`})});
+    mk.on('add',()=>vGestos(mk.getElement(),i));
+    mk.on('drag',e=>{const ll=e.target.getLatLng(),pp=p.map(x=>x.slice());pp[i]=[ll.lat,ll.lng];poli&&poli.setLatLngs(pp)});
+    mk.on('dragstart',()=>{UI.vMenu=false;$('.mapa-area .v-menu')?.remove()});
+    mk.on('dragend',e=>{const ll=e.target.getLatLng();vArrastado(i,ll.lat,ll.lng)});
+    mk.addTo(DES)})}
+function mpRefresh(){desenhaPois();const l=$('#mp-lista');if(l)l.innerHTML=mpLista();const g=$('#mp-leg');if(g)g.innerHTML=mpLegenda();const m=$('#mp-modo');if(m)m.innerHTML=modoBanner();
+  if(MAPA){$('#mapa')?.classList.toggle('modo',!!UI.mpModo);desenhaPins();desenhaRascunho();vMenuDesenha()}}
+function L_initMapa(){const el=$('#mapa');if(!el)return;
+  if(!window.L){el.innerHTML='<div class="mapa-erro">Não foi possível carregar a biblioteca de mapas. Verifique a conexão e recarregue a página.</div>';return}
+  MAPA=L.map(el,{zoomControl:true,doubleClickZoom:false});
+  L.control.scale({imperial:false,position:'bottomright'}).addTo(MAPA);
+  setBase(UI.mpBase||'mapa');PINS=L.layerGroup().addTo(MAPA);POIS=L.layerGroup();DES=L.layerGroup().addTo(MAPA);if(UI.mpPoi!==false)POIS.addTo(MAPA);
+  desenhaPins();desenhaPois();desenhaRascunho();el.classList.toggle('modo',!!UI.mpModo);
+  const vista=UI.mpView,enquadrar=()=>{if(vista)return MAPA.setView(vista.c,vista.z);const pts=ativosBanco().filter(t=>t.lat!=null).map(t=>[t.lat,t.lng]);pts.length?MAPA.fitBounds(pts,{padding:[48,48],maxZoom:15}):MAPA.setView([-23.55,-46.63],11)};
+  enquadrar();
+  // o contêiner só tem o tamanho final depois do layout: recalcula e reenquadra
+  const mapaAtual=MAPA;requestAnimationFrame(()=>setTimeout(()=>{if(MAPA!==mapaAtual)return;MAPA.invalidateSize();enquadrar();if(UI.mpFocoPend){const t=T(UI.mpFocoPend);UI.mpFocoPend=null;if(t&&t.lat!=null)focar(t)}},60));
+  MAPA.on('moveend',()=>{UI.mpView={c:MAPA.getCenter(),z:MAPA.getZoom()};vMenuDesenha()});MAPA.on('movestart zoomstart',()=>$('.mapa-area .v-menu')?.remove());
+  MAPA.on('preclick',e=>mapaClique(e.latlng.lat,e.latlng.lng));
+  if(UI.mpFoco){UI.mpFocoPend=UI.mpFoco;UI.mpFoco=null}
+}
+function L_focar(t){if(!MAPA)return;UI.mpSel=t.id;if(t.poly)MAPA.fitBounds(t.poly,{maxZoom:18,padding:[40,40]});else MAPA.setView([t.lat,t.lng],Math.max(MAPA.getZoom(),16));
+  desenhaPins();PINS.eachLayer(l=>{if(l._terreno===t.id)l.openPopup()})}
+function mapaClique(lat,lng){const m=UI.mpModo;if(!m)return;
+  if(m==='pin'){UI.mpModo=null;UI.novoLoc={lat,lng};UI.modal='novo';mpRefresh();renderModal();return}
+  if(m==='poi'){UI.mpModo=null;UI.novoPoi={lat,lng};UI.modal='poi';mpRefresh();renderModal();return}
+  if(m==='marcar'){const t=T(UI.mpAlvo);UI.mpModo=null;Object.assign(t,{lat,lng,precisao:'aproximada'});log(t,'Localização marcada no mapa');save();mpRefresh();toast(`${t.nome}: localização marcada.`);return}
+  if(m==='editar'){if(Date.now()-(UI.vToqueEm||0)<300||Date.now()-(UI.polyLongoEm||0)<700)return;
+    if(UI.vMenu){vFecharMenu();return}
+    if(!dentroPoly(lat,lng,UI.desenho||[]))concluirDesenho();return}
+  if(m==='desenhar'){if(Date.now()-(UI.vToqueEm||0)<300)return; /* o toque foi num ponto, não no mapa */
+    const p=UI.desenho=UI.desenho||[];
+    if(UI.vMenu){vFecharMenu();return}
+    desGuardar();
+    if(p.length<3)p.push([lat,lng]);
+    else{ /* inclui o ponto no lado da poligonal que menos aumenta o contorno (no desenho em sequência, equivale a seguir em frente) */
+      const d=(a,b)=>Math.hypot(a[0]-b[0],(a[1]-b[1])*Math.cos(a[0]*Math.PI/180)),q=[lat,lng];let melhor=p.length,custo=Infinity;
+      p.forEach((a,i)=>{const b=p[(i+1)%p.length],c=d(a,q)+d(q,b)-d(a,b);if(c<custo){custo=c;melhor=i+1}});p.splice(melhor,0,q)}
+    desAtualizar()}
+}
+/* ---------- edição da poligonal ----------
+   Entrar: celular, tocar e segurar sobre a poligonal; desktop, dois cliques sobre ela (ou "Editar poligonal" no balão).
+   Editando: todos os pontos aparecem e podem ser arrastados. Tocar e segurar (celular) ou dois cliques (desktop) num ponto
+   abre Excluir ponto / Adicionar ponto depois. Toque ou clique fora da poligonal conclui. */
+const TOQUE=()=>matchMedia('(pointer: coarse)').matches;
+function desGuardar(){(UI.desHist=UI.desHist||[]).push((UI.desenho||[]).map(x=>x.slice()));if(UI.desHist.length>60)UI.desHist.shift()}
+function desAtualizar(){desenhaRascunho();const b=$('#mp-modo');if(b)b.innerHTML=modoBanner();vMenuDesenha()}
+function dentroPoly(lat,lng,p){let d=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const [yi,xi]=p[i],[yj,xj]=p[j];if((yi>lat)!==(yj>lat)&&lng<(xj-xi)*(lat-yi)/(yj-yi)+xi)d=!d}return d}
+function editarPoligonal(id){const t=T(id);if(!t||!t.poly||t.poly.length<3||UI.role==='Leitura')return;
+  Object.assign(UI,{mpModo:'editar',mpAlvo:id,desEditando:true,desenho:t.poly.map(q=>q.slice()),desHist:[],vSel:null,vMenu:false,vMover:false,desOrig:JSON.stringify(t.poly),polyLongoEm:Date.now()});
+  fecharPopup();mpRefresh();enquadrarEdicao(t.poly)}
+/* enquadra a poligonal deixando livre a faixa do aviso (embaixo, no celular) */
+function enquadrarEdicao(poly){if(!MAPA||!poly)return;const cel=matchMedia('(max-width: 899px)').matches,pad={top:cel?70:150,bottom:cel?150:40,left:40,right:40};
+  if(GG){const b=new google.maps.LatLngBounds();poly.forEach(q=>b.extend(gLL(q[0],q[1])));MAPA.fitBounds(b,pad);google.maps.event.addListenerOnce(MAPA,'idle',()=>{if(MAPA.getZoom()>19)MAPA.setZoom(19)})}
+  else MAPA.fitBounds(poly,{maxZoom:19,paddingTopLeft:[pad.left,pad.top],paddingBottomRight:[pad.right,pad.bottom]})}
+function vSelecionar(i){UI.vSel=i;UI.vMenu=true;UI.vToqueEm=Date.now();desAtualizar()}
+function vFecharMenu(){UI.vMenu=false;UI.vSel=null;desAtualizar()}
+function vMenuDesenha(){const area=$('.mapa-area');if(!area)return;area.querySelector('.v-menu')?.remove();
+  if(!UI.vMenu||UI.vSel==null||!['desenhar','editar'].includes(UI.mpModo))return;const q=(UI.desenho||[])[UI.vSel];if(!q)return;
+  const px=pontoNaTela(q[0],q[1]);if(!px)return;const m=document.createElement('div');m.className='v-menu';m.setAttribute('role','menu');
+  m.innerHTML=`<div class="v-t">Ponto ${UI.vSel+1}</div><button role="menuitem" data-a="v-depois">Adicionar ponto depois</button><button role="menuitem" data-a="v-excluir" class="crit">Excluir ponto</button>`;
+  area.appendChild(m);const W=area.clientWidth,H=area.clientHeight,w=m.offsetWidth,h=m.offsetHeight,ar=area.getBoundingClientRect();
+  /* parte visível da área do mapa (a barra superior da página pode cobrir o topo) */
+  const topo=Math.max(8,(document.querySelector('.top')?.getBoundingClientRect().bottom||0)-ar.top+8),base=Math.min(H,innerHeight-ar.top)-8;
+  let x=px.x-w/2,y=px.y-h-24;if(y<topo)y=px.y+24;m.style.left=Math.max(8,Math.min(W-w-8,x))+'px';m.style.top=Math.max(topo,Math.min(base-h,y))+'px';
+  m.querySelector('button')?.focus({preventScroll:true})}
+function pontoNaTela(lat,lng){if(!MAPA)return null;if(GG)return typeof gPontoNaTela==='function'?gPontoNaTela(lat,lng):null;const p=MAPA.latLngToContainerPoint([lat,lng]);return {x:p.x,y:p.y}}
+function vAcao(a){const i=UI.vSel,p=UI.desenho||[];if(i==null)return;
+  if(a==='v-excluir'){if(UI.mpModo==='editar'&&p.length<=3){toast('A poligonal precisa de pelo menos 3 pontos.',true);vFecharMenu();return}
+    desGuardar();p.splice(i,1);UI.vSel=null;UI.vMenu=false;desAtualizar();toast(`Ponto ${i+1} excluído.`);return}
+  if(a==='v-depois'){if(p.length<2){vFecharMenu();return}desGuardar();const b=p[(i+1)%p.length];
+    if(i===p.length-1&&p.length<3){vFecharMenu();return}
+    p.splice(i+1,0,[(p[i][0]+b[0])/2,(p[i][1]+b[1])/2]);UI.vMenu=false;UI.vSel=i+1;desAtualizar();toast(`Ponto ${i+2} adicionado. Arraste-o para o lugar.`);
+    setTimeout(()=>{if(UI.vSel===i+1&&!UI.vMenu){UI.vSel=null;desenhaRascunho()}},2500)}}
+/* o toque longo é reconhecido com o dedo ainda na tela (vibra), mas a tela só muda quando o dedo sai:
+   redesenhar o mapa com o dedo apoiado deixaria o arraste do mapa preso */
+function aoSoltar(fn){if(navigator.vibrate)try{navigator.vibrate(15)}catch(e){}let feito=false;const ok=()=>{if(feito)return;feito=true;['pointerup','pointercancel','touchend','touchcancel'].forEach(t=>document.removeEventListener(t,ok,true));setTimeout(()=>{UI.polyLongoEm=Date.now();UI.vToqueEm=Date.now();fn()},0)};
+  ['pointerup','pointercancel','touchend','touchcancel'].forEach(t=>document.addEventListener(t,ok,true))}
+/* gestos num ponto: arrastar move; segurar (toque) ou dois cliques (mouse) abre o menu */
+function vGestos(el,i){if(!el||el.dataset.vg)return;el.dataset.vg='1';el.classList.add('v-ponto');
+  let tm=null,x0=0,y0=0;const limpa=()=>{clearTimeout(tm);tm=null};
+  el.addEventListener('contextmenu',e=>e.preventDefault());
+  el.addEventListener('pointerdown',e=>{UI.vToqueEm=Date.now();x0=e.clientX;y0=e.clientY;
+    if(e.pointerType==='touch'||e.pointerType==='pen'||TOQUE()){limpa();tm=setTimeout(()=>{tm=null;aoSoltar(()=>vSelecionar(i))},500)}});
+  el.addEventListener('pointermove',e=>{if(tm&&Math.hypot(e.clientX-x0,e.clientY-y0)>8)limpa()});
+  el.addEventListener('pointerup',()=>{UI.vToqueEm=Date.now();limpa()});['pointercancel','pointerleave'].forEach(t=>el.addEventListener(t,limpa));
+  el.addEventListener('click',e=>{e.stopPropagation();UI.vToqueEm=Date.now()});
+  el.addEventListener('dblclick',e=>{e.stopPropagation();e.preventDefault();UI.vToqueEm=Date.now();vSelecionar(i)})}
+/* segurar sobre a poligonal (toque) entra em edição */
+function polyGestos(el,id){if(!el||el.dataset.pg)return;el.dataset.pg='1';let tm=null,x0=0,y0=0;const limpa=()=>{clearTimeout(tm);tm=null};
+  el.addEventListener('contextmenu',e=>e.preventDefault());
+  el.addEventListener('pointerdown',e=>{if(UI.mpModo)return;x0=e.clientX;y0=e.clientY;if(e.pointerType==='mouse')return;limpa();tm=setTimeout(()=>{tm=null;UI.polyLongoEm=Date.now();aoSoltar(()=>editarPoligonal(id))},550)});
+  el.addEventListener('pointermove',e=>{if(tm&&Math.hypot(e.clientX-x0,e.clientY-y0)>8)limpa()});
+  ['pointerup','pointercancel','pointerleave'].forEach(t=>el.addEventListener(t,limpa))}
+function vArrastado(i,lat,lng){desGuardar();UI.desenho[i]=[lat,lng];UI.vSel=null;UI.vMenu=false;UI.vToqueEm=Date.now();desAtualizar()}
+document.addEventListener('click',e=>{const a=e.target.closest('.v-menu [data-a]');if(a){e.stopPropagation();UI.vToqueEm=Date.now();vAcao(a.dataset.a)}},true);
+document.addEventListener('keydown',e=>{if(!['desenhar','editar'].includes(UI.mpModo)||e.target.matches('input,textarea,select'))return;
+  if(e.key==='Escape'){if(UI.vMenu)vFecharMenu();else if(UI.mpModo==='editar')concluirDesenho();e.preventDefault()}
+  else if((e.key==='Delete'||e.key==='Backspace')&&UI.vSel!=null){vAcao('v-excluir');e.preventDefault()}});
+function concluirDesenho(){const t=T(UI.mpAlvo),p=UI.desenho||[];if(p.length<3)return;
+  if(UI.mpModo==='editar'&&JSON.stringify(p.map(x=>[+x[0].toFixed(7),+x[1].toFixed(7)]))===JSON.stringify((JSON.parse(UI.desOrig||'[]')).map(x=>[+(+x[0]).toFixed(7),+(+x[1]).toFixed(7)]))){
+    Object.assign(UI,{mpModo:null,desenho:null,desHist:null,vSel:null,vMenu:false});mpRefresh();toast('Edição encerrada, sem mudanças.');return}
+  t.poly=p.map(x=>[+x[0].toFixed(7),+x[1].toFixed(7)]);if(t.lat==null){const c=centro(p);t.lat=c[0];t.lng=c[1];t.precisao='aproximada'}
+  const a=areaPoly(t.poly);log(t,`${UI.desEditando?'Poligonal editada':'Poligonal desenhada'} no mapa: ${m2(a)}`);UI.mpModo=null;UI.desenho=null;UI.desHist=null;UI.vSel=null;UI.vMenu=false;UI.vMover=false;save();mpRefresh();toast(`Poligonal salva: ${m2(a)}.`)}
+
+/* KMZ / KML */
+async function lerKmz(file){let txt;
+  if(/\.kmz$/i.test(file.name)){if(!window.JSZip)throw new Error('Não foi possível abrir KMZ: biblioteca de compactação indisponível.');
+    const z=await JSZip.loadAsync(file);const f=Object.values(z.files).find(f=>/\.kml$/i.test(f.name));if(!f)throw new Error('O KMZ não tem um arquivo KML dentro.');txt=await f.async('text')}
+  else txt=await file.text();
+  const x=new DOMParser().parseFromString(txt,'application/xml');if(x.getElementsByTagName('parsererror').length)throw new Error('O arquivo não é um KML válido.');
+  const crd=s=>String(s||'').trim().split(/\s+/).map(p=>{const [lng,lat]=p.split(',').map(Number);return [lat,lng]}).filter(p=>Number.isFinite(p[0])&&Number.isFinite(p[1]));
+  const out=[...x.getElementsByTagName('Placemark')].map((p,i)=>{const nome=(p.getElementsByTagName('name')[0]?.textContent||'').trim()||`Item ${i+1}`;
+    const pol=p.getElementsByTagName('Polygon')[0];
+    if(pol){const ob=pol.getElementsByTagName('outerBoundaryIs')[0]||pol;let pts=crd(ob.getElementsByTagName('coordinates')[0]?.textContent);
+      if(pts.length>3&&pts[0][0]===pts.at(-1)[0]&&pts[0][1]===pts.at(-1)[1])pts=pts.slice(0,-1);if(pts.length>=3)return {nome,tipo:'poligono',pts}}
+    const pt=p.getElementsByTagName('Point')[0];if(pt){const c=crd(pt.getElementsByTagName('coordinates')[0]?.textContent);if(c.length)return {nome,tipo:'ponto',pts:c}}
+    return null}).filter(Boolean);
+  if(!out.length)throw new Error('Nenhum ponto ou polígono encontrado no arquivo.');return out}
+function aplicarKmz(t,it){if(it.tipo==='poligono'){t.poly=it.pts;const c=centro(it.pts);if(t.lat==null){t.lat=c[0];t.lng=c[1]}}else{t.lat=it.pts[0][0];t.lng=it.pts[0][1]}t.precisao='aproximada'}
+
+/* ===================== DASHBOARD ===================== */
+const DIMS={
+  situacao:{l:'Terrenos por situação',v:t=>sitMapa(t),ord:Object.keys(SIT),lab:k=>SIT[k][0],cor:k=>SIT[k][1]},
+  zona:{l:'Terrenos por região',v:t=>t.zona||'nao_informado',ord:[...Object.keys(OPT.zona),'nao_informado'],lab:k=>k==='nao_informado'?'Não informada':OPT.zona[k]},
+  corretor:{l:'Terrenos por corretor principal',v:t=>t.corretores.find(x=>x.principal)?.cid||'sem',lab:k=>k==='sem'?'Sem corretor':(corretor(k)?.nome||k)},
+  origem:{l:'Terrenos por origem',v:t=>t.origem||'nao',lab:k=>OPT.origem[k]||'Não informada'},
+  temperatura:{l:'Negociações ativas por temperatura',v:t=>t.neg?.status==='ativo'?String(t.neg.temp||0):null,ord:['5','4','3','2','1','0'],lab:k=>k==='0'?'Não avaliada':`${k} · ${TEMP[k]}`},
+  valor:{l:'Valor pedido por etapa (negociações ativas)',dim:'situacao',v:t=>t.neg?.status==='ativo'?t.neg.etapa:null,ord:STAGES.map(s=>s[0]),lab:k=>SN(k),cor:k=>SIT[k][1],med:t=>ofertaRef(t)?.valor||0,fmt:v=>mi(v)},
+  mes:{l:'Terrenos cadastrados por mês',linha:true,v:t=>(t.dataIdent||'').slice(0,7)}};
+const DIM_DE=k=>DIMS[k].dim||k;
+function dashBase(excl){const f=UI.dash.f;return ativosBanco().filter(t=>Object.entries(f).every(([d,vs])=>d===excl||!vs.length||vs.includes(DIMS[d].v(t))))}
+function dashSerie(k){const d=DIMS[k],dd=DIM_DE(k),rows=dashBase(dd),m=new Map();
+  rows.forEach(t=>{const v=d.v(t);if(v==null)return;m.set(v,(m.get(v)||0)+(d.med?d.med(t):1))});
+  let ks=[...m.keys()];ks=d.ord?d.ord.filter(x=>m.has(x)):ks.sort((a,b)=>m.get(b)-m.get(a));return ks.map(x=>[x,m.get(x)])}
+function grafBarras(k,grande){const d=DIMS[k],dd=DIM_DE(k),s=dashSerie(k),max=Math.max(1,...s.map(x=>x[1])),sel=UI.dash.f[dd]||[];
+  if(!s.length)return '<div class="empty">Sem dados com estes filtros.</div>';
+  const fmt=d.fmt||(v=>num(v));
+  return `<div class="hb ${grande?'g':''}">${s.map(([x,v])=>{const on=sel.includes(x);return `<button type="button" class="hb-r ${on?'on':''} ${sel.length&&!on?'dim':''}" data-a="dash-f" data-d="${dd}" data-v="${esc(x)}" data-tip="${esc(d.lab(x))}: ${esc(fmt(v))}${d.med?'':v===1?' terreno':' terrenos'}" aria-pressed="${on}">
+    <span class="hb-l">${esc(d.lab(x))}</span><span class="hb-t"><span class="hb-b" style="width:${Math.max(2,v/max*100)}%;background:${d.cor?d.cor(x):'var(--azul-bkm)'}"></span></span><span class="hb-v num">${fmt(v)}</span></button>`}).join('')}</div>`}
+function grafLinha(k,grande){const d=DIMS[k],rows=dashBase('mes'),sel=UI.dash.f.mes||[];
+  const meses=[];const b=pd(HOJE);for(let i=11;i>=0;i--){const x=new Date(b.getFullYear(),b.getMonth()-i,1);meses.push(`${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}`)}
+  const v=meses.map(m=>rows.filter(t=>d.v(t)===m).length),max=Math.max(2,...v),W=640,H=grande?320:220,pl=36,pr=16,pt=20,pb=36,iw=W-pl-pr,ih=H-pt-pb;
+  const X=i=>pl+i*iw/(meses.length-1),Y=y=>pt+ih-y/max*ih;const passo=Math.max(1,Math.ceil(max/4));const ticks=[];for(let y=0;y<=max;y+=passo)ticks.push(y);
+  const lab=m=>{const [a,mm]=m.split('-');return `${MES[+mm-1]}/${a.slice(2)}`};const imax=v.indexOf(Math.max(...v));
+  const linha=v.map((y,i)=>`${i?'L':'M'}${X(i).toFixed(1)},${Y(y).toFixed(1)}`).join('');
+  return `<svg class="gl" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(d.l)}">
+  ${ticks.map(y=>`<line x1="${pl}" x2="${W-pr}" y1="${Y(y)}" y2="${Y(y)}" class="gl-grid"/><text x="${pl-8}" y="${Y(y)+4}" class="gl-ax" text-anchor="end">${y}</text>`).join('')}
+  <path d="${linha}L${X(v.length-1)},${Y(0)}L${X(0)},${Y(0)}Z" class="gl-area"/><path d="${linha}" class="gl-line"/>
+  ${meses.map((m,i)=>`${i%2===(meses.length-1)%2?`<text x="${X(i)}" y="${H-12}" class="gl-ax" text-anchor="middle">${lab(m)}</text>`:''}
+    <circle cx="${X(i)}" cy="${Y(v[i])}" r="${sel.includes(m)?6:4}" class="gl-pt ${sel.includes(m)?'on':''}"/>${(i===imax||i===v.length-1)&&v[i]?`<text x="${X(i)}" y="${Y(v[i])-10}" class="gl-val" text-anchor="middle">${v[i]}</text>`:''}
+    <rect x="${X(i)-iw/(meses.length-1)/2}" y="${pt}" width="${iw/(meses.length-1)}" height="${ih}" class="gl-hit" data-a="dash-f" data-d="mes" data-v="${m}" data-tip="${lab(m)}: ${v[i]} ${v[i]===1?'terreno cadastrado':'terrenos cadastrados'}"/>`).join('')}</svg>`}
+const grafico=(k,g)=>DIMS[k].linha?grafLinha(k,g):grafBarras(k,g);
+function tabelaGrafico(k){const d=DIMS[k];let s;
+  if(d.linha){const rows=dashBase('mes'),m=new Map();rows.forEach(t=>{const v=d.v(t);m.set(v,(m.get(v)||0)+1)});s=[...m.entries()].sort((a,b)=>b[0].localeCompare(a[0]))}else s=dashSerie(k);
+  return `<div class="dt-wrap"><table class="dt compacta"><thead><tr><th class="esq">${d.linha?'Mês':'Categoria'}</th><th>${d.med?'Valor pedido':'Terrenos'}</th></tr></thead><tbody>${s.map(([x,v])=>`<tr><td class="esq">${esc(d.linha?x:d.lab(x))}</td><td class="num">${d.fmt?d.fmt(v):v}</td></tr>`).join('')}</tbody></table></div>`}
+function pgDash(){const f=UI.dash.f,rows=dashBase(null),ativos=rows.filter(t=>t.neg?.status==='ativo');
+  const chips=Object.entries(f).flatMap(([d,vs])=>vs.map(v=>`<button class="fchip on" data-a="dash-f" data-d="${d}" data-v="${esc(v)}" aria-label="Remover filtro ${esc(DIMS[d].lab?DIMS[d].lab(v):v)}">${esc(d==='mes'?v.split('-').reverse().join('/'):DIMS[d].lab(v))}${ic('close',14)}</button>`));
+  return `<div id="dash" class="dash">
+  <div class="page-h"><div><h1><span class="marca"></span>Dashboard</h1><div class="sub">Clique numa barra ou num mês para filtrar todos os gráficos e a lista.</div></div>
+    <button class="btn" data-a="dash-full">${ic(document.fullscreenElement||document.body.classList.contains('dash-fixo')?'telaSair':'tela',18)}${document.fullscreenElement||document.body.classList.contains('dash-fixo')?'Sair da tela cheia':'Tela cheia'}</button></div>
+  <div class="dash-g">
+  <aside class="dash-lado">
+    <div class="kpis kpis-v">
+      <div class="kpi"><span class="v">${rows.length}</span><span class="l">Terrenos no filtro</span></div>
+      <div class="kpi"><span class="v">${ativos.length}</span><span class="l">Negociações ativas</span></div>
+      <div class="kpi"><span class="v sm">${mi(ativos.reduce((s,t)=>s+(ofertaRef(t)?.valor||0),0))}</span><span class="l">Valor pedido em negociação</span></div>
+      <div class="kpi"><span class="v sm">${num(rows.reduce((s,t)=>s+(areaAdotada(t)||0),0))} m²</span><span class="l">Área adotada somada</span></div></div>
+    ${chips.length?`<section class="sec dash-filtro"><div class="sec-b"><div class="lbl-up">Filtrando por</div><div class="fchips">${chips.join('')}</div><button class="linkbtn" data-a="dash-limpar">Limpar filtros</button></div></section>`:''}
+    <section class="sec"><div class="sec-h"><h2>Gráficos</h2><span class="faint" style="font-size:13px">${UI.dash.sel.length} de ${Object.keys(DIMS).length}</span></div><div class="sec-b dash-sel">
+      ${Object.entries(DIMS).map(([k,d])=>`<label class="chk"><input type="checkbox" data-ch="dash-sel" value="${k}" ${UI.dash.sel.includes(k)?'checked':''}>${d.l}</label>`).join('')}</div></section>
+  </aside>
+  <div class="dash-main">
+    ${UI.dash.sel.length?`<div class="dash-graf">${UI.dash.sel.map(k=>`<section class="card graf ${DIMS[k].linha?'larga':''}"><div class="card-h"><h2>${DIMS[k].l}</h2><button class="iconbtn" data-a="dash-exp" data-k="${k}" aria-label="Ampliar ${DIMS[k].l}" title="Ampliar">${ic('tela',18)}</button></div><div class="card-b">${grafico(k)}</div></section>`).join('')}</div>`
+      :'<div class="card"><div class="empty">Escolha ao menos um gráfico na lista ao lado.</div></div>'}
+    <section class="sec" style="margin-top:var(--e4)"><div class="sec-h"><h2>Terrenos no filtro</h2><span class="faint" style="font-size:13px">${rows.length}</span></div><div class="sec-b">${tabela('dash',rows,COLS_TERRENOS,{attr:attrAbrir('dashboard'),padrao:{k:'temp',dir:'desc'}})}</div></section>
+  </div></div></div>`}
+function telaCheia(){const el=$('#dash');if(!el)return;
+  if(document.fullscreenElement){document.exitFullscreen?.();return}
+  if(document.body.classList.contains('dash-fixo')){document.body.classList.remove('dash-fixo');render();return}
+  const fallback=()=>{document.body.classList.add('dash-fixo');render()};
+  try{const p=el.requestFullscreen?.();if(p&&p.catch)p.catch(fallback);else if(!p)fallback()}catch(e){fallback()}}
+document.addEventListener('fullscreenchange',()=>{const b=document.querySelector('[data-a="dash-full"]');if(!b)return;const on=!!document.fullscreenElement;b.innerHTML=`${ic(on?'telaSair':'tela',18)}${on?'Sair da tela cheia':'Tela cheia'}`});
+
+/* tooltip dos gráficos */
+const TIP=document.createElement('div');TIP.className='tip';TIP.setAttribute('role','tooltip');document.body.appendChild(TIP);
+document.addEventListener('mouseover',e=>{const el=e.target.closest?.('[data-tip]');if(!el){TIP.classList.remove('on');return}TIP.textContent=el.dataset.tip;TIP.classList.add('on')});
+document.addEventListener('mousemove',e=>{if(!TIP.classList.contains('on'))return;const w=TIP.offsetWidth;TIP.style.left=Math.min(innerWidth-w-8,e.clientX+14)+'px';TIP.style.top=(e.clientY+16)+'px'});
+document.addEventListener('focusin',e=>{const el=e.target.closest?.('[data-tip]');if(!el)return;const r=el.getBoundingClientRect();TIP.textContent=el.dataset.tip;TIP.classList.add('on');TIP.style.left=Math.min(innerWidth-TIP.offsetWidth-8,r.left)+'px';TIP.style.top=(r.bottom+6)+'px'});
+document.addEventListener('focusout',()=>TIP.classList.remove('on'));
+
+/* ===================== FICHA: VISÃO GERAL ===================== */
+function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp=lastProp(t),pr=typeof proxReuniao==='function'?proxReuniao(t):null,pt=proxTarefa(t),f=typeof fase==='function'?fase(t):null,px=proximos(t);
+  const lin=(k,val)=>`<div class="kv"><dt>${k}</dt><dd>${val==null||val===''?'<span class="ni">Não informado</span>':val}</dd></div>`;
+  /* Edição direta no resumo: grava nos mesmos campos das seções abaixo, pelo mesmo caminho (no banco, app.salvar_terreno só com as chaves enviadas) */
+  const CAMPO={};Object.entries(SECOES).forEach(([sid,s])=>s.campos.forEach(c=>{CAMPO[c[0]]=[sid,c]}));
+  const lapis=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg>`;
+  const pe=`<div class="kv-f"><button type="button" class="btn text sm" data-a="cancel-edit">Cancelar</button><button class="btn primary sm">Salvar</button></div>`;
+  const linE=(rot,val,chave,campos)=>{const id='g-'+chave;
+    if(UI.edit===id){const sid=CAMPO[campos[0]][0];
+      const corpo=chave==='end'?camposEndereco(t,false)+['lat','lng'].map(k=>`<input type="hidden" name="${k}" value="${t[k]==null?'':String(t[k]).replace('.',',')}">`).join('')+`<input type="hidden" name="precisao" value="${esc(t.precisao||'nao_informada')}">`
+        :`<div class="kv-campos">${campos.map(k=>campoInp(t,CAMPO[k][1])).join('')}</div>`;
+      return `<div class="kv editando" id="sec-${id}"><dt>${rot}</dt><dd><form data-form="sec" data-s="${sid}" class="kv-form">${corpo}${pe}</form></dd></div>`}
+    return `<div class="kv"><dt>${rot}</dt><dd>${val==null||val===''?'<span class="ni">Não informado</span>':val}</dd><button class="kv-ed" data-a="edit" data-s="${id}" aria-label="Editar ${rot.toLowerCase()}" title="Editar">${lapis}</button></div>`};
+  const areaHid=ks=>ks.map(k=>`<input type="hidden" name="${k}" value="${t[k]==null?'':String(t[k]).replace('.',',')}">`).join('');
+  const numInp=(k,l)=>`<div class="field"><label for="g-${k}">${l}</label><input id="g-${k}" name="${k}" inputmode="decimal" value="${t[k]==null?'':String(t[k]).replace('.',',')}" placeholder="${k==='testada'?'metros':'m²'}"></div>`;
+  const linArea=(rot,val,chave)=>{const id='g-'+chave;
+    if(UI.edit===id){const corpo=chave==='testada'?numInp('testada','Testada principal (m)')+areaHid(['aDoc','aCad','aLev','aEst'])+`<input type="hidden" name="fonteArea" value="${esc(t.fonteArea||'')}">`
+      :`<div class="field"><label for="g-fonteArea">Área adotada</label><select id="g-fonteArea" name="fonteArea"><option value="">Nenhuma</option>${Object.entries(OPT.fonteArea).map(([k,l])=>`<option value="${k}" ${t.fonteArea===k?'selected':''}>${l}</option>`).join('')}</select></div>${numInp('aDoc','Documental (m²)')}${numInp('aCad','Cadastral (m²)')}${numInp('aLev','Levantamento (m²)')}${numInp('aEst','Estimativa (m²)')}${areaHid(['testada'])}`;
+      return `<div class="kv editando" id="sec-${id}"><dt>${rot}</dt><dd><form data-form="areas" class="kv-form"><div class="kv-campos">${corpo}</div>${pe}</form></dd></div>`}
+    return `<div class="kv"><dt>${rot}</dt><dd>${val==null||val===''?'<span class="ni">Não informado</span>':val}</dd><button class="kv-ed" data-a="edit" data-s="${id}" aria-label="Editar ${rot.toLowerCase()}" title="Editar">${lapis}</button></div>`};
+  const linLink=(rot,val,acao)=>`<div class="kv"><dt>${rot}</dt><dd>${val==null||val===''?'<span class="ni">Não informado</span>':val}</dd>${acao}</div>`;
+  const a=analiseVig(t);
+  const info=`<section class="sec"><div class="sec-h"><h2>Informações do terreno</h2></div><div class="sec-b"><dl class="kvl">
+    ${linE('Endereço',esc([t.logradouro&&(t.logradouro+(t.numero?', '+t.numero:'')),t.bairro].filter(Boolean).join(' · ')),'end',['cep','logradouro','numero','complemento','bairro','municipio'])}
+    ${linE('Município e região',esc([t.municipio||'São Paulo · SP',t.zona&&'Zona '+OPT.zona[t.zona]].filter(Boolean).join(' · ')),'reg',['zona'])}
+    ${linE('Eixo comercial',esc(eixo(t.eixo)||''),'eixo',['eixo'])}
+    ${linLink('Zoneamento',a?esc(zonasTxt(t))+(caMax(t)!=null?` · CA máx. ${num(caMax(t),2)}`:''):'',`<button class="kv-ed kv-ir" data-a="tab" data-t="urbanismo" title="Registrar nova análise em Urbanismo" aria-label="Registrar nova análise em Urbanismo">${ic('fwd',16)}</button>`)}
+    ${linArea('Área adotada',ad!=null?`${m2(ad)} <span class="faint">(${esc(OPT.fonteArea[t.fonteArea]||'')})</span>`:'','area')}
+    ${t.poly?lin('Área da poligonal',m2(areaPoly(t.poly))):''}
+    ${linArea('Testada principal',t.testada!=null?num(t.testada,2)+' m':'','testada')}
+    ${linE('Topografia e posição',[t.topografia!=='nao_informado'&&OPT.topografia[t.topografia],t.posicao!=='nao_informado'&&OPT.posicao[t.posicao]].filter(Boolean).join(' · '),'topo',['topografia','posicao'])}
+    ${linE('Ocupação',t.ocupacao!=='nao_informado'?OPT.ocupacao[t.ocupacao]:'','ocup',['ocupacao'])}
+    ${linE('Responsável',esc(t.resp),'resp',['resp'])}
+    ${linE('Origem',esc(OPT.origem[t.origem]||''),'orig',['origem'])}</dl></div></section>`;
+  const neg=n?`<section class="sec"><div class="sec-h"><h2>Negociação</h2><button class="btn text sm" data-a="tab" data-t="negociacao">Ver propostas e reuniões</button></div><div class="sec-b"><dl class="kvl">
+    ${lin('Situação',sitChip(sitMapa(t))+(f&&f!=='sem_proposta'?` <span class="chip fneg ${f}"><span class="d"></span>${FASES[f]}</span>`:''))}
+    ${n.status==='ativo'?`<div class="kv"><dt>Temperatura</dt><dd>${tempPicker(t)}</dd></div>`:lin('Temperatura',n.temp?`${tempMini(n.temp)} ${TEMP[n.temp]}`:'')}
+    ${lin('Última proposta',lp?`${mi(lp.valor)} · ${lp.origem==='bkm'?'BKM':'Vendedor'} · ${OPT.statusProp[lp.status]}`:'')}
+    ${lin('Próxima reunião',pr?`${fd(pr.data)} · ${esc(pr.hora||'')}`:'')}
+    ${pt?linLink('Próxima tarefa',`${esc(pt.titulo)} · <span style="${pt.prazo<HOJE?'color:var(--terracota);font-weight:600':''}">${fd(pt.prazo)}</span>`,`<button class="kv-ed" data-a="tk-abrir" data-id="${t.id}" data-tk="${pt.id}" aria-label="Editar a tarefa ${esc(pt.titulo)}" title="Editar tarefa">${lapis}</button>`):lin('Próxima tarefa','')}</dl></div></section>`:'';
+  const loc=`<section class="sec g-loc"><div class="sec-h"><h2>${bi('localizacao',32)}Localização</h2>${t.lat!=null?`<a class="btn text sm" href="${gmapsUrl(t)}" target="_blank" rel="noopener">Google Maps</a>`:''}</div><div class="sec-b">
+    ${t.lat!=null?`<div id="mini-mapa" class="mini-mapa"></div><div class="mini-pe"><span class="num faint">${num(t.lat,5)}, ${num(t.lng,5)} · ${esc(OPT.precisao[t.precisao]||'')}</span><span style="display:flex;gap:8px">${GG?`<button class="btn sm" data-a="g-sv-mini" data-id="${t.id}">Street View</button>`:''}<button class="btn sm" data-a="mp-ir" data-id="${t.id}">Ver no mapa</button></span></div>
+      <div class="mp-aviso mini">O fundo do mapa não carrega neste link de visualização.</div>`
+    :`<div class="empty" style="padding:var(--e6) 0">Sem localização.<br><span style="display:inline-flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center">${GG&&(t.logradouro||t.bairro)?`<button class="btn sm primary ed" data-a="g-geo" data-id="${t.id}">Localizar pelo endereço</button>`:''}<button class="btn sm ed" data-a="mp-marcar" data-id="${t.id}">Marcar no mapa</button></span></div>`}</div></section>`;
+  const poi=entornoCard(t);
+  const pct=(x,b)=>b?num(x/b*100,1)+'%':'—';
+  const viab=`<section class="sec"><div class="sec-h"><h2>Resumo da viabilidade</h2>${v?`<span class="faint" style="font-size:12px">${esc(v.nome)}</span>`:''}</div><div class="sec-b">${v?`<div class="dt-wrap"><table class="dt compacta"><thead><tr><th class="esq">Item</th><th>Valor</th><th>% do VGV</th></tr></thead><tbody>
+    <tr><td class="esq">VGV</td><td class="num">${mi(v.vgv)}</td><td class="num">100%</td></tr>
+    <tr><td class="esq">Preço máximo do terreno</td><td class="num">${mi(v.pmax)}</td><td class="num">${pct(v.pmax,v.vgv)}</td></tr>
+    <tr><td class="esq">Valor pedido</td><td class="num">${o?.valor?mi(o.valor):'—'}</td><td class="num">${o?.valor?pct(o.valor,v.vgv):'—'}</td></tr>
+    ${lp?`<tr><td class="esq">Última proposta (${lp.origem==='bkm'?'BKM':'vendedor'})</td><td class="num">${mi(lp.valor)}</td><td class="num">${pct(lp.valor,v.vgv)}</td></tr>`:''}
+    <tr class="forte"><td class="esq">Margem do estudo</td><td class="num">${num(v.margem,1)}%</td><td></td></tr></tbody></table></div>
+    ${o?.valor&&o.valor>v.pmax?`<div class="banner warn" style="margin-top:12px">${ic('warn')}<div>Valor pedido ${mi(o.valor-v.pmax)} acima do preço máximo.</div></div>`:''}`
+    :`<div class="muted">Sem estudo vinculado.${negAtiva(t)?` <button class="linkbtn ed" data-a="viab">Vincular estudo</button>`:''}</div>`}</div></section>`;
+  const rel=relevoHtml(t)?`<section class="sec"><div class="sec-h"><h2>Relevo</h2>${t.relevo?`<span class="faint" style="font-size:12px">estimado em ${fd(t.relevo.em)}</span>`:''}</div><div class="sec-b">${relevoHtml(t)}</div></section>`:'';
+  return `<div class="geral"><div class="geral-c">${info}${condicoes(t)}${neg}</div><div class="geral-c">${loc}${rel}${poi}${viab}</div></div>`}
+function L_initMini(){const el=$('#mini-mapa'),t=T(UI.id);if(!el||!t||t.lat==null)return;if(!window.L){el.innerHTML='<div class="mapa-erro">Mapa indisponível.</div>';return}
+  MINI=L.map(el,{zoomControl:true,attributionControl:true,scrollWheelZoom:false,dragging:!L.Browser.mobile});
+  camada('satelite',el.closest('.sec')).addTo(MINI);const k=sitMapa(t);
+  const enq=()=>t.poly?MINI.fitBounds(t.poly,{padding:[24,24],maxZoom:18}):MINI.setView([t.lat,t.lng],17);
+  if(t.poly)L.polygon(t.poly,{color:'#0094fe',weight:2,fillOpacity:.2}).addTo(MINI);enq();
+  const mini=MINI;requestAnimationFrame(()=>setTimeout(()=>{if(MINI!==mini)return;MINI.invalidateSize();enq()},60));
+  L.marker([t.lat,t.lng],{icon:pinIcon(k)}).addTo(MINI)}
+
+/* ===================== TAREFAS (quadro) ===================== */
+const COLS_TK=['pendente','em_andamento','aguardando_terceiro','concluida','cancelada'];
+function todasTarefas(){return ativosBanco().flatMap(t=>t.tarefas.map(k=>({k,t})))}
+function tkFiltradas(){const f=UI.tk,q=f.q.trim().toLowerCase();
+  return todasTarefas().filter(({k,t})=>(!f.resp||k.resp===f.resp)&&(!f.ter||t.id===f.ter)&&(!f.prio||k.prio===f.prio)&&(!f.atras||(k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)))&&(!q||(k.titulo+' '+(k.desc||'')+' '+t.nome+' '+t.codigo).toLowerCase().includes(q)))}
+const ordemTk=(a,b)=>(a.k.pos??9e15)-(b.k.pos??9e15)||a.k.prazo.localeCompare(b.k.prazo);
+function cardTk({k,t}){const at=k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status);
+  return `<article class="tk ${k.status}" draggable="${UI.role!=='Leitura'}" data-tk="${k.id}" data-a="tk-abrir" data-id="${t.id}" tabindex="0" aria-label="${esc(k.titulo)}">
+  <div class="tk-t">${esc(k.titulo)}</div>${k.desc?`<div class="tk-d">${esc(k.desc)}</div>`:''}
+  <div class="tk-ter"><span class="num">${t.codigo}</span> · ${esc(t.nome)}</div>
+  <div class="tk-p"><span class="tk-prazo ${at?'atras':''}">${ic('clock',14)}${fd(k.prazo)}</span>${k.prio==='alta'?'<span class="chip warn">Alta</span>':k.prio==='baixa'?'<span class="chip">Baixa</span>':''}<span style="margin-left:auto">${av(k.resp,'sm')}</span></div></article>`}
+function pgTarefas(){const f=UI.tk,l=tkFiltradas();const cols=COLS_TK.filter(c=>c!=='cancelada'||f.canc);
+  const opt=(o,v)=>Object.entries(o).map(([k,x])=>`<option value="${k}" ${v===k?'selected':''}>${esc(x)}</option>`).join('');
+  const filtros=`<div class="tk-filtros"><label class="search sm" for="tk-q">${bi('busca',24)}<input id="tk-q" type="search" placeholder="Buscar tarefa ou terreno" value="${esc(f.q)}" autocomplete="off"></label>
+    <div class="field"><label for="tk-resp">Responsável</label><select id="tk-resp" data-ch="tk-f" data-k="resp"><option value="">Todos</option>${opt(Object.fromEntries(USERS.map(u=>[u,u])),f.resp)}</select></div>
+    <div class="field"><label for="tk-ter">Terreno</label><select id="tk-ter" data-ch="tk-f" data-k="ter"><option value="">Todos</option>${opt(Object.fromEntries(ativosBanco().map(t=>[t.id,t.codigo+' · '+t.nome])),f.ter)}</select></div>
+    <div class="field"><label for="tk-prio">Prioridade</label><select id="tk-prio" data-ch="tk-f" data-k="prio"><option value="">Todas</option>${opt(OPT.prioTar,f.prio)}</select></div>
+    <label class="chk"><input type="checkbox" data-ch="tk-f" data-k="atras" ${f.atras?'checked':''}>Só atrasadas</label>
+    <label class="chk"><input type="checkbox" data-ch="tk-f" data-k="canc" ${f.canc?'checked':''}>Mostrar canceladas</label></div>`;
+  const quadro=`<div class="board tk-board">${cols.map(c=>{const ks=l.filter(x=>x.k.status===c).sort(ordemTk);
+    return `<section class="col tk-col" data-tkcol="${c}" aria-label="${OPT.statusTar[c]}"><div class="col-h"><span>${OPT.statusTar[c]}</span><span class="n">${ks.length}</span></div>
+    <div class="tk-lista">${ks.map(cardTk).join('')||'<div class="col-empty">Nenhuma</div>'}</div>
+    ${UI.role!=='Leitura'&&c!=='cancelada'?`<button class="tk-add" data-a="tk-nova" data-v="${c}">${ic('add',16)}Adicionar tarefa</button>`:''}</section>`}).join('')}</div>`;
+  const colsT=[{k:'titulo',l:'Tarefa',cls:'esq',v:({k})=>`<div class="t1">${esc(k.titulo)}</div>${k.desc?`<div class="t2">${esc(k.desc)}</div>`:''}`,s:({k})=>k.titulo},
+    {k:'ter',l:'Terreno',cls:'esq hm',v:({t})=>`<div class="t2" style="color:var(--texto)">${t.codigo}</div><div class="t2">${esc(t.nome)}</div>`,s:({t})=>t.codigo},
+    {k:'resp',l:'Responsável',cls:'hm',v:({k})=>esc(k.resp),s:({k})=>k.resp},
+    {k:'prazo',l:'Prazo',cls:'num',v:({k})=>`<span style="${k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)?'color:var(--terracota);font-weight:600':''}">${fd(k.prazo)}</span>`,s:({k})=>k.prazo},
+    {k:'prio',l:'Prioridade',cls:'hm',v:({k})=>OPT.prioTar[k.prio]||'—',s:({k})=>['alta','media','baixa'].indexOf(k.prio)},
+    {k:'status',l:'Status',v:({k})=>`<span class="chip tkst ${k.status}">${OPT.statusTar[k.status]}</span>`,s:({k})=>COLS_TK.indexOf(k.status)}];
+  const atras=todasTarefas().filter(({k})=>k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)).length;
+  return `<div class="page-h"><div><h1><span class="marca"></span>Tarefas</h1><div class="sub">${l.filter(x=>!['concluida','cancelada'].includes(x.k.status)).length} abertas · ${atras} atrasadas. Arraste os cartões para mudar o status.</div></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="seg" role="group" aria-label="Visualização">${[['quadro','Quadro'],['tabela','Tabela']].map(([k,x])=>`<button data-a="tk-vista" data-v="${k}" aria-pressed="${f.vista===k}">${x}</button>`).join('')}</div>
+    <button class="btn primary ed" data-a="tk-nova" data-v="pendente">${ic('add',18)}Nova tarefa</button></div></div>
+  ${filtros}${f.vista==='tabela'?`<section class="sec"><div class="sec-b">${tabela('tarefas',l,colsT,{attr:({k,t})=>`data-a="tk-abrir" data-tk="${k.id}" data-id="${t.id}" tabindex="0"`,padrao:{k:'prazo',dir:'asc'},vazio:'Nenhuma tarefa com esses filtros.'})}</div></section>`:quadro}`}
+function moverTk(tid,kid,col,antesDe){const t=T(tid),k=t.tarefas.find(x=>x.id===kid);if(!k)return;
+  const irmas=todasTarefas().filter(x=>x.k.status===col&&x.k.id!==kid).sort(ordemTk);
+  const i=antesDe?irmas.findIndex(x=>x.k.id===antesDe):-1;const pos=x=>x?.k.pos??(Date.parse(x?.k.prazo||HOJE)/1000);
+  if(i<0)k.pos=(irmas.length?pos(irmas.at(-1)):0)+1000;else k.pos=i===0?pos(irmas[0])-1000:(pos(irmas[i-1])+pos(irmas[i]))/2;
+  if(k.status!==col){const de=k.status;k.status=col;if(col==='concluida')k.feita=HOJE;log(t,`Tarefa "${k.titulo}": ${OPT.statusTar[de]} → ${OPT.statusTar[col]}`);toast(`${k.titulo}: ${OPT.statusTar[col]}.`)}
+  save();render()}
+let tkArr=null;
+document.addEventListener('dragstart',e=>{const c=e.target.closest?.('.tk[draggable="true"]');if(!c)return;tkArr={kid:c.dataset.tk,tid:c.dataset.id};e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',c.dataset.tk);c.classList.add('arrastando')});
+document.addEventListener('dragend',()=>{tkArr=null;document.querySelectorAll('.tk.arrastando,.tk-col.sobre,.tk-marca').forEach(x=>x.classList.contains('tk-marca')?x.remove():x.classList.remove('arrastando','sobre'))});
+const tkAntes=(col,y)=>[...col.querySelectorAll('.tk:not(.arrastando)')].find(c=>{const r=c.getBoundingClientRect();return y<r.top+r.height/2});
+document.addEventListener('dragover',e=>{const col=e.target.closest?.('.tk-col');if(!col||!tkArr)return;e.preventDefault();e.dataTransfer.dropEffect='move';
+  document.querySelectorAll('.tk-col.sobre').forEach(x=>x!==col&&x.classList.remove('sobre'));col.classList.add('sobre');
+  let m=document.querySelector('.tk-marca');if(!m){m=document.createElement('div');m.className='tk-marca'}const a=tkAntes(col,e.clientY),lista=col.querySelector('.tk-lista');if(a)lista.insertBefore(m,a);else lista.appendChild(m)});
+document.addEventListener('drop',e=>{const col=e.target.closest?.('.tk-col');if(!col||!tkArr)return;e.preventDefault();const a=tkAntes(col,e.clientY),x=tkArr;tkArr=null;document.querySelector('.tk-marca')?.remove();moverTk(x.tid,x.kid,col.dataset.tkcol,a?.dataset.tk)});
