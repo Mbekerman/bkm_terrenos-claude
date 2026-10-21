@@ -1978,13 +1978,13 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 @keyframes v-pulso { 0%, 100% { box-shadow: 0 0 0 4px #0b57d0, 0 0 0 4px rgba(11,87,208,.35) } 50% { box-shadow: 0 0 0 4px #0b57d0, 0 0 0 12px rgba(11,87,208,0) } }
 .leaflet-marker-icon.v-alvo { margin: 0 }
 .leaflet-dragging .v-alvo, .v-alvo:active { cursor: grabbing }
-.v-menu { position: absolute; z-index: 1200; display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: 12px; background: var(--m-sc-low, #f0f4f9); box-shadow: 0 2px 6px rgba(0,0,0,.2), 0 8px 20px rgba(0,0,0,.18); font-size: 14px }
-.v-menu .v-t { padding: 0 8px 0 10px; font-size: 12px; font-weight: 500; color: var(--texto-suave); white-space: nowrap }
-.v-menu button { border: 0; background: transparent; height: 40px; padding: 0 14px; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--m-primary, #0b57d0) }
+.v-menu { position: absolute; z-index: 1200; display: flex; flex-direction: column; width: 220px; padding: 6px 0; border-radius: 12px; background: var(--m-sc-low, #f0f4f9); box-shadow: 0 2px 6px rgba(0,0,0,.2), 0 8px 20px rgba(0,0,0,.18); font-size: 14px }
+.v-menu .v-t { padding: 6px 16px 4px; font-size: 12px; font-weight: 500; color: var(--texto-suave) }
+.v-menu button { border: 0; background: transparent; min-height: 44px; padding: 0 16px; text-align: left; font-size: 14px; font-weight: 500; color: var(--m-on-surface, #1f1f1f) }
 .v-menu button:hover, .v-menu button:focus-visible { background: rgba(127,127,127,.12); outline: 0 }
 .v-menu button.crit { color: var(--critico-marca, #b3261e) }
 :root[data-tema="escuro"] .v-menu { background: #0d1530; box-shadow: 0 0 0 1px rgba(124,140,255,.25), 0 10px 28px rgba(0,0,0,.55) }
-:root[data-tema="escuro"] .v-menu button { color: #c9d6ff }
+:root[data-tema="escuro"] .v-menu button { color: #e6ecff }
 :root[data-tema="escuro"] .v-menu button.crit { color: #ffb4ab }
 /* aviso do modo de edição no mapa: barra no padrão "snackbar" do Material, legível e sem cobrir a poligonal */
 .mp-modo { background: #313033 !important; color: #f4eff4 !important; border-radius: 8px !important; padding: 8px 8px 8px 16px !important; gap: 4px 8px !important; font-size: 14px; line-height: 20px; max-width: min(720px, calc(100% - 24px)); box-shadow: 0 3px 10px rgba(0,0,0,.3) }
@@ -2008,6 +2008,7 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
   .mp-modo { bottom: 26px !important }
   .mapa-area:has(.mp-modo:not(:empty)) .leaflet-control-scale { display: none }
 }
+.mp-modo .mp-q { opacity: .75; white-space: nowrap }
 </style>
 <header class="top">
   <div class="top-in">
@@ -2842,7 +2843,8 @@ document.addEventListener('click',e=>{
     case 'mp-concluir':concluirDesenho();break;
     case 'mp-poi':UI.mpPoi=UI.mpPoi===false;mostrarPois(UI.mpPoi);a.setAttribute('aria-pressed',UI.mpPoi);a.classList.toggle('on',UI.mpPoi);break;
     case 'mp-kmz':UI.kmzAlvo=a.dataset.id||null;$('#kmz-in').value='';$('#kmz-in').click();break;
-    case 'mp-desenhar':{const x=T(a.dataset.id);UI.mpModo='desenhar';UI.mpAlvo=a.dataset.id;UI.desEditando=!!(x&&x.poly&&x.poly.length>=3);UI.desenho=UI.desEditando?x.poly.map(q=>q.slice()):[];UI.desHist=[];UI.vSel=null;UI.vMenu=false;UI.vMover=false;fecharPopup();mpRefresh();if(UI.desEditando&&MAPA){if(GG)gEnquadrar(x.poly.map(q=>gLL(q[0],q[1])),19);else MAPA.fitBounds(x.poly,{maxZoom:19,padding:[60,60]})}break}
+    case 'mp-desenhar':{const x=T(a.dataset.id);if(x&&x.poly&&x.poly.length>=3){editarPoligonal(x.id);break}
+      UI.mpModo='desenhar';UI.mpAlvo=a.dataset.id;UI.desEditando=false;UI.desenho=[];UI.desHist=[];UI.vSel=null;UI.vMenu=false;fecharPopup();mpRefresh();break}
     case 'mp-marcar':go('mapa',{mpModo:'marcar',mpAlvo:a.dataset.id,mpView:null});break;
     case 'mp-ir':go('mapa',{mpFoco:a.dataset.id,mpView:null});break;
     case 'dash-f':{const d=a.dataset.d,v=a.dataset.v,f=UI.dash.f;const cur=f[d]||[];f[d]=cur.includes(v)?cur.filter(x=>x!==v):[...cur,v];if(!f[d].length)delete f[d];render();break}
@@ -3110,9 +3112,11 @@ function modoBanner(){const m=UI.mpModo;if(!m)return '';
   if(m==='pin')return `<span>Clique no mapa onde fica o terreno novo.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
   if(m==='poi')return `<span>Clique no mapa para marcar o ponto de interesse.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
   if(m==='marcar')return `<span>Clique no mapa para localizar <b>${esc(t?.nome)}</b>.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
-  if(m==='desenhar'){const n=(UI.desenho||[]).length,a=areaPoly(UI.desenho),tq=TOQUE();
-    const dica=UI.vMover&&UI.vSel!=null?`${tq?'Toque':'Clique'} no novo lugar do ponto ${UI.vSel+1} ou arraste-o.`:n>=3?`${tq?'Toque':'Clique'} no mapa para incluir um ponto; ${tq?'toque e segure':'clique'} num ponto para movê-lo ou excluí-lo.`:`${tq?'Toque':'Clique'} nos vértices.`;
-    return `<span>Poligonal de <b>${esc(t?.nome)}</b>: ${dica} ${n} ponto${n===1?'':'s'}${a?` · ${m2(a)}`:''}</span><button class="btn sm text" data-a="mp-desfazer" ${(UI.desHist||[]).length?'':'disabled'}>Desfazer</button><button class="btn sm text" data-a="mp-sair">Cancelar</button><button class="btn sm primary" data-a="mp-concluir" ${n>=3?'':'disabled'}>Concluir</button>`}
+  if(m==='desenhar'||m==='editar'){const n=(UI.desenho||[]).length,a=areaPoly(UI.desenho),tq=TOQUE(),seg=tq?'toque e segure':'dê dois cliques';
+    if(m==='editar'&&tq)return `<span>Arraste os pontos; segure um ponto para excluir ou adicionar outro. Toque fora para concluir. <span class="mp-q">${n} pontos${a?` · ${m2(a)}`:''}</span></span><button class="btn sm text" data-a="mp-desfazer" ${(UI.desHist||[]).length?'':'disabled'}>Desfazer</button><button class="btn sm text" data-a="mp-sair">Cancelar</button><button class="btn sm primary" data-a="mp-concluir">Concluir</button>`;
+    const dica=m==='editar'?`arraste os pontos; ${seg} num ponto para excluí-lo ou adicionar outro depois dele. ${tq?'Toque':'Clique'} fora da poligonal para concluir.`
+      :`${tq?'toque':'clique'} no mapa para marcar os vértices.${n?` Arraste um ponto para ajustá-lo; ${seg} nele para mais opções.`:''}`;
+    return `<span>${m==='editar'?'Editando':'Desenhando'} a poligonal de <b>${esc(t?.nome)}</b>: ${dica} <span class="mp-q">${n} ponto${n===1?'':'s'}${a?` · ${m2(a)}`:''}</span></span><button class="btn sm text" data-a="mp-desfazer" ${(UI.desHist||[]).length?'':'disabled'}>Desfazer</button><button class="btn sm text" data-a="mp-sair">Cancelar</button><button class="btn sm primary" data-a="mp-concluir" ${n>=3?'':'disabled'}>Concluir</button>`}
   return '';
 }
 function L_setBase(k){if(!MAPA)return;UI.mpBase=k;if(BASE)MAPA.removeLayer(BASE);BASE=camada(k,MAPA.getContainer().closest('.mapa-area')||MAPA.getContainer()).addTo(MAPA);BASE.eachLayer(l=>l.bringToBack());
@@ -3126,16 +3130,21 @@ function popupHtml(t){const o=ofertaRef(t),ad=areaAdotada(t),k=sitMapa(t),px=pro
   <div class="pop-a"><button class="btn sm primary" data-a="abrir" data-id="${t.id}" data-tab="geral" data-from="mapa">Abrir ficha</button><button class="btn sm ed" data-a="mp-desenhar" data-id="${t.id}">${t.poly?'Editar':'Desenhar'} poligonal</button><button class="btn sm text ed" data-a="mp-kmz" data-id="${t.id}">Poligonal de KMZ</button></div></div>`}
 function L_desenhaPins(){if(!MAPA||!PINS)return;PINS.clearLayers();
   mpVisiveis().filter(t=>t.lat!=null).forEach(t=>{const k=sitMapa(t);
-    if(t.poly)L.polygon(t.poly,{color:SIT[k][1],weight:2,fillOpacity:.18,interactive:!UI.mpModo}).on('click',()=>mk.openPopup()).addTo(PINS);
+    if(t.poly&&!(UI.mpModo&&UI.mpAlvo===t.id)){const pg=L.polygon(t.poly,{color:SIT[k][1],weight:2,fillOpacity:.18,interactive:!UI.mpModo})
+      .on('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<700)return;clearTimeout(pg._tc);pg._tc=setTimeout(()=>{if(!UI.mpModo)mk.openPopup()},260)})
+      .on('dblclick',e=>{L.DomEvent.stop(e);clearTimeout(pg._tc);editarPoligonal(t.id)});
+      pg.on('add',()=>polyGestos(pg.getElement(),t.id));pg.addTo(PINS)}
     const mk=L.marker([t.lat,t.lng],{icon:pinIcon(k,UI.mpSel===t.id),title:t.nome,riseOnHover:true,keyboard:!UI.mpModo,interactive:!UI.mpModo}).bindPopup(()=>popupHtml(t),{maxWidth:320,minWidth:260,autoPanPaddingTopLeft:[20,150],autoPanPaddingBottomRight:[20,20]}).bindTooltip(esc(t.nome),{direction:'top'});
-    mk.on('popupopen',()=>{UI.mpSel=t.id;const l=$('#mp-lista');if(l)l.innerHTML=mpLista()});
+    mk.on('popupopen',()=>{if(Date.now()-(UI.polyLongoEm||0)<900){mk.closePopup();return}UI.mpSel=t.id;const l=$('#mp-lista');if(l)l.innerHTML=mpLista()});
+    /* o pino fica sobre a poligonal: segurar nele (ou dois cliques) também entra em edição */
+    if(t.poly&&t.poly.length>=3){mk.on('add',()=>polyGestos(mk.getElement(),t.id));mk.on('dblclick',e=>{L.DomEvent.stop(e);editarPoligonal(t.id)})}
     mk.addTo(PINS);mk._terreno=t.id})}
 function L_desenhaPois(){if(!MAPA||!POIS)return;POIS.clearLayers();(S.pontos||[]).forEach(p=>L.marker([p.lat,p.lng],{icon:poiIcon(),title:p.nome,interactive:!UI.mpModo}).bindTooltip(`${esc(p.nome)} · ${CAT_POI[p.cat]||''}`,{direction:'top'}).addTo(POIS))}
 function L_desenhaRascunho(){if(!DES)return;DES.clearLayers();const p=UI.desenho||[];if(!p.length)return;
-  (p.length>=3?L.polygon(p,{color:'#0094fe',weight:2,dashArray:'6 4',fillOpacity:.12,interactive:false}):L.polyline(p,{color:'#0094fe',weight:2,dashArray:'6 4',interactive:false})).addTo(DES);
+  (p.length>=3?L.polygon(p,{color:'#0094fe',weight:2,dashArray:UI.mpModo==='editar'?null:'6 4',fillOpacity:UI.mpModo==='editar'?.2:.12,interactive:false}):L.polyline(p,{color:'#0094fe',weight:2,dashArray:'6 4',interactive:false})).addTo(DES);
   const poli=DES.getLayers()[0];
-  p.forEach((q,i)=>{const sel=UI.vSel===i,arrasta=!TOQUE()||(UI.vMover&&sel);
-    const mk=L.marker(q,{draggable:arrasta,keyboard:false,zIndexOffset:sel?1000:0,icon:L.divIcon({className:'v-alvo',iconSize:[44,44],iconAnchor:[22,22],html:`<span class="v-dot${sel?' sel':''}${sel&&UI.vMover?' mover':''}"></span>`})});
+  p.forEach((q,i)=>{const sel=UI.vSel===i;
+    const mk=L.marker(q,{draggable:true,keyboard:false,zIndexOffset:sel?1000:0,icon:L.divIcon({className:'v-alvo',iconSize:[44,44],iconAnchor:[22,22],html:`<span class="v-dot${sel?' sel':''}"></span>`})});
     mk.on('add',()=>vGestos(mk.getElement(),i));
     mk.on('drag',e=>{const ll=e.target.getLatLng(),pp=p.map(x=>x.slice());pp[i]=[ll.lat,ll.lng];poli&&poli.setLatLngs(pp)});
     mk.on('dragstart',()=>{UI.vMenu=false;$('.mapa-area .v-menu')?.remove()});
@@ -3163,11 +3172,12 @@ function mapaClique(lat,lng){const m=UI.mpModo;if(!m)return;
   if(m==='pin'){UI.mpModo=null;UI.novoLoc={lat,lng};UI.modal='novo';mpRefresh();renderModal();return}
   if(m==='poi'){UI.mpModo=null;UI.novoPoi={lat,lng};UI.modal='poi';mpRefresh();renderModal();return}
   if(m==='marcar'){const t=T(UI.mpAlvo);UI.mpModo=null;Object.assign(t,{lat,lng,precisao:'aproximada'});log(t,'Localização marcada no mapa');save();mpRefresh();toast(`${t.nome}: localização marcada.`);return}
+  if(m==='editar'){if(Date.now()-(UI.vToqueEm||0)<300||Date.now()-(UI.polyLongoEm||0)<700)return;
+    if(UI.vMenu){vFecharMenu();return}
+    if(!dentroPoly(lat,lng,UI.desenho||[]))concluirDesenho();return}
   if(m==='desenhar'){if(Date.now()-(UI.vToqueEm||0)<300)return; /* o toque foi num ponto, não no mapa */
     const p=UI.desenho=UI.desenho||[];
     if(UI.vMenu){vFecharMenu();return}
-    if(UI.vMover&&UI.vSel!=null){desGuardar();p[UI.vSel]=[lat,lng];UI.vMover=false;UI.vSel=null;desAtualizar();return}
-    if(UI.vSel!=null){UI.vSel=null;desAtualizar();return}
     desGuardar();
     if(p.length<3)p.push([lat,lng]);
     else{ /* inclui o ponto no lado da poligonal que menos aumenta o contorno (no desenho em sequência, equivale a seguir em frente) */
@@ -3175,41 +3185,68 @@ function mapaClique(lat,lng){const m=UI.mpModo;if(!m)return;
       p.forEach((a,i)=>{const b=p[(i+1)%p.length],c=d(a,q)+d(q,b)-d(a,b);if(c<custo){custo=c;melhor=i+1}});p.splice(melhor,0,q)}
     desAtualizar()}
 }
-/* ---------- edição dos pontos da poligonal ----------
-   desktop: clicar num ponto abre Mover / Excluir (e o ponto também pode ser arrastado direto);
-   celular: tocar e segurar perto do ponto abre Mover / Excluir; um toque rápido no ponto não faz nada (evita mexer sem querer). */
+/* ---------- edição da poligonal ----------
+   Entrar: celular, tocar e segurar sobre a poligonal; desktop, dois cliques sobre ela (ou "Editar poligonal" no balão).
+   Editando: todos os pontos aparecem e podem ser arrastados. Tocar e segurar (celular) ou dois cliques (desktop) num ponto
+   abre Excluir ponto / Adicionar ponto depois. Toque ou clique fora da poligonal conclui. */
 const TOQUE=()=>matchMedia('(pointer: coarse)').matches;
 function desGuardar(){(UI.desHist=UI.desHist||[]).push((UI.desenho||[]).map(x=>x.slice()));if(UI.desHist.length>60)UI.desHist.shift()}
 function desAtualizar(){desenhaRascunho();const b=$('#mp-modo');if(b)b.innerHTML=modoBanner();vMenuDesenha()}
-function vSelecionar(i){UI.vSel=i;UI.vMover=false;UI.vMenu=true;UI.vToqueEm=Date.now();if(TOQUE()&&navigator.vibrate)try{navigator.vibrate(12)}catch(e){}desAtualizar()}
-function vFecharMenu(){UI.vMenu=false;if(!UI.vMover)UI.vSel=null;desAtualizar()}
+function dentroPoly(lat,lng,p){let d=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const [yi,xi]=p[i],[yj,xj]=p[j];if((yi>lat)!==(yj>lat)&&lng<(xj-xi)*(lat-yi)/(yj-yi)+xi)d=!d}return d}
+function editarPoligonal(id){const t=T(id);if(!t||!t.poly||t.poly.length<3||UI.role==='Leitura')return;
+  Object.assign(UI,{mpModo:'editar',mpAlvo:id,desEditando:true,desenho:t.poly.map(q=>q.slice()),desHist:[],vSel:null,vMenu:false,vMover:false,desOrig:JSON.stringify(t.poly),polyLongoEm:Date.now()});
+  fecharPopup();mpRefresh();enquadrarEdicao(t.poly)}
+/* enquadra a poligonal deixando livre a faixa do aviso (embaixo, no celular) */
+function enquadrarEdicao(poly){if(!MAPA||!poly)return;const cel=matchMedia('(max-width: 899px)').matches,pad={top:cel?70:150,bottom:cel?150:40,left:40,right:40};
+  if(GG){const b=new google.maps.LatLngBounds();poly.forEach(q=>b.extend(gLL(q[0],q[1])));MAPA.fitBounds(b,pad);google.maps.event.addListenerOnce(MAPA,'idle',()=>{if(MAPA.getZoom()>19)MAPA.setZoom(19)})}
+  else MAPA.fitBounds(poly,{maxZoom:19,paddingTopLeft:[pad.left,pad.top],paddingBottomRight:[pad.right,pad.bottom]})}
+function vSelecionar(i){UI.vSel=i;UI.vMenu=true;UI.vToqueEm=Date.now();desAtualizar()}
+function vFecharMenu(){UI.vMenu=false;UI.vSel=null;desAtualizar()}
 function vMenuDesenha(){const area=$('.mapa-area');if(!area)return;area.querySelector('.v-menu')?.remove();
-  if(!UI.vMenu||UI.vSel==null||UI.mpModo!=='desenhar')return;const q=(UI.desenho||[])[UI.vSel];if(!q)return;
+  if(!UI.vMenu||UI.vSel==null||!['desenhar','editar'].includes(UI.mpModo))return;const q=(UI.desenho||[])[UI.vSel];if(!q)return;
   const px=pontoNaTela(q[0],q[1]);if(!px)return;const m=document.createElement('div');m.className='v-menu';m.setAttribute('role','menu');
-  m.innerHTML=`<div class="v-t">Ponto ${UI.vSel+1}</div><button role="menuitem" data-a="v-mover">Mover</button><button role="menuitem" data-a="v-excluir" class="crit">Excluir</button>`;
-  area.appendChild(m);const W=area.clientWidth,H=area.clientHeight,w=m.offsetWidth,h=m.offsetHeight;
-  let x=px.x-w/2,y=px.y-h-18;if(y<8)y=px.y+18;m.style.left=Math.max(8,Math.min(W-w-8,x))+'px';m.style.top=Math.max(8,Math.min(H-h-8,y))+'px';
+  m.innerHTML=`<div class="v-t">Ponto ${UI.vSel+1}</div><button role="menuitem" data-a="v-depois">Adicionar ponto depois</button><button role="menuitem" data-a="v-excluir" class="crit">Excluir ponto</button>`;
+  area.appendChild(m);const W=area.clientWidth,H=area.clientHeight,w=m.offsetWidth,h=m.offsetHeight,ar=area.getBoundingClientRect();
+  /* parte visível da área do mapa (a barra superior da página pode cobrir o topo) */
+  const topo=Math.max(8,(document.querySelector('.top')?.getBoundingClientRect().bottom||0)-ar.top+8),base=Math.min(H,innerHeight-ar.top)-8;
+  let x=px.x-w/2,y=px.y-h-24;if(y<topo)y=px.y+24;m.style.left=Math.max(8,Math.min(W-w-8,x))+'px';m.style.top=Math.max(topo,Math.min(base-h,y))+'px';
   m.querySelector('button')?.focus({preventScroll:true})}
 function pontoNaTela(lat,lng){if(!MAPA)return null;if(GG)return typeof gPontoNaTela==='function'?gPontoNaTela(lat,lng):null;const p=MAPA.latLngToContainerPoint([lat,lng]);return {x:p.x,y:p.y}}
-function vAcao(a){const i=UI.vSel;if(i==null)return;
-  if(a==='v-mover'){UI.vMover=true;UI.vMenu=false;desAtualizar();return}
-  if(a==='v-excluir'){desGuardar();UI.desenho.splice(i,1);UI.vSel=null;UI.vMenu=false;UI.vMover=false;desAtualizar();toast(`Ponto ${i+1} excluído.`)}}
-/* liga os gestos a um elemento de ponto (marcador do Leaflet ou do Google) */
+function vAcao(a){const i=UI.vSel,p=UI.desenho||[];if(i==null)return;
+  if(a==='v-excluir'){if(UI.mpModo==='editar'&&p.length<=3){toast('A poligonal precisa de pelo menos 3 pontos.',true);vFecharMenu();return}
+    desGuardar();p.splice(i,1);UI.vSel=null;UI.vMenu=false;desAtualizar();toast(`Ponto ${i+1} excluído.`);return}
+  if(a==='v-depois'){if(p.length<2){vFecharMenu();return}desGuardar();const b=p[(i+1)%p.length];
+    if(i===p.length-1&&p.length<3){vFecharMenu();return}
+    p.splice(i+1,0,[(p[i][0]+b[0])/2,(p[i][1]+b[1])/2]);UI.vMenu=false;UI.vSel=i+1;desAtualizar();toast(`Ponto ${i+2} adicionado. Arraste-o para o lugar.`);
+    setTimeout(()=>{if(UI.vSel===i+1&&!UI.vMenu){UI.vSel=null;desenhaRascunho()}},2500)}}
+/* o toque longo é reconhecido com o dedo ainda na tela (vibra), mas a tela só muda quando o dedo sai:
+   redesenhar o mapa com o dedo apoiado deixaria o arraste do mapa preso */
+function aoSoltar(fn){if(navigator.vibrate)try{navigator.vibrate(15)}catch(e){}let feito=false;const ok=()=>{if(feito)return;feito=true;['pointerup','pointercancel','touchend','touchcancel'].forEach(t=>document.removeEventListener(t,ok,true));setTimeout(()=>{UI.polyLongoEm=Date.now();UI.vToqueEm=Date.now();fn()},0)};
+  ['pointerup','pointercancel','touchend','touchcancel'].forEach(t=>document.addEventListener(t,ok,true))}
+/* gestos num ponto: arrastar move; segurar (toque) ou dois cliques (mouse) abre o menu */
 function vGestos(el,i){if(!el||el.dataset.vg)return;el.dataset.vg='1';el.classList.add('v-ponto');
-  let tm=null,x0=0,y0=0,longo=false;const limpa=()=>{clearTimeout(tm);tm=null};
+  let tm=null,x0=0,y0=0;const limpa=()=>{clearTimeout(tm);tm=null};
   el.addEventListener('contextmenu',e=>e.preventDefault());
-  el.addEventListener('pointerdown',e=>{UI.vToqueEm=Date.now();x0=e.clientX;y0=e.clientY;longo=false;
-    if(e.pointerType==='touch'||TOQUE()){limpa();tm=setTimeout(()=>{longo=true;tm=null;vSelecionar(i)},450)}});
-  el.addEventListener('pointermove',e=>{if(tm&&Math.hypot(e.clientX-x0,e.clientY-y0)>10)limpa()});
+  el.addEventListener('pointerdown',e=>{UI.vToqueEm=Date.now();x0=e.clientX;y0=e.clientY;
+    if(e.pointerType==='touch'||e.pointerType==='pen'||TOQUE()){limpa();tm=setTimeout(()=>{tm=null;aoSoltar(()=>vSelecionar(i))},500)}});
+  el.addEventListener('pointermove',e=>{if(tm&&Math.hypot(e.clientX-x0,e.clientY-y0)>8)limpa()});
   el.addEventListener('pointerup',()=>{UI.vToqueEm=Date.now();limpa()});['pointercancel','pointerleave'].forEach(t=>el.addEventListener(t,limpa));
-  el.addEventListener('click',e=>{e.stopPropagation();UI.vToqueEm=Date.now();if(longo||TOQUE())return;vSelecionar(i)})}
-/* arrastou um ponto até o fim */
-function vArrastado(i,lat,lng){desGuardar();UI.desenho[i]=[lat,lng];UI.vMover=false;UI.vSel=null;UI.vMenu=false;UI.vToqueEm=Date.now();desAtualizar()}
-document.addEventListener('click',e=>{const a=e.target.closest('.v-menu [data-a]');if(a){e.stopPropagation();vAcao(a.dataset.a)}},true);
-document.addEventListener('keydown',e=>{if(UI.mpModo!=='desenhar'||UI.vSel==null||e.target.matches('input,textarea,select'))return;
-  if(e.key==='Escape'){UI.vMover=false;vFecharMenu();e.preventDefault()}
-  else if(e.key==='Delete'||e.key==='Backspace'){vAcao('v-excluir');e.preventDefault()}});
+  el.addEventListener('click',e=>{e.stopPropagation();UI.vToqueEm=Date.now()});
+  el.addEventListener('dblclick',e=>{e.stopPropagation();e.preventDefault();UI.vToqueEm=Date.now();vSelecionar(i)})}
+/* segurar sobre a poligonal (toque) entra em edição */
+function polyGestos(el,id){if(!el||el.dataset.pg)return;el.dataset.pg='1';let tm=null,x0=0,y0=0;const limpa=()=>{clearTimeout(tm);tm=null};
+  el.addEventListener('contextmenu',e=>e.preventDefault());
+  el.addEventListener('pointerdown',e=>{if(UI.mpModo)return;x0=e.clientX;y0=e.clientY;if(e.pointerType==='mouse')return;limpa();tm=setTimeout(()=>{tm=null;UI.polyLongoEm=Date.now();aoSoltar(()=>editarPoligonal(id))},550)});
+  el.addEventListener('pointermove',e=>{if(tm&&Math.hypot(e.clientX-x0,e.clientY-y0)>8)limpa()});
+  ['pointerup','pointercancel','pointerleave'].forEach(t=>el.addEventListener(t,limpa))}
+function vArrastado(i,lat,lng){desGuardar();UI.desenho[i]=[lat,lng];UI.vSel=null;UI.vMenu=false;UI.vToqueEm=Date.now();desAtualizar()}
+document.addEventListener('click',e=>{const a=e.target.closest('.v-menu [data-a]');if(a){e.stopPropagation();UI.vToqueEm=Date.now();vAcao(a.dataset.a)}},true);
+document.addEventListener('keydown',e=>{if(!['desenhar','editar'].includes(UI.mpModo)||e.target.matches('input,textarea,select'))return;
+  if(e.key==='Escape'){if(UI.vMenu)vFecharMenu();else if(UI.mpModo==='editar')concluirDesenho();e.preventDefault()}
+  else if((e.key==='Delete'||e.key==='Backspace')&&UI.vSel!=null){vAcao('v-excluir');e.preventDefault()}});
 function concluirDesenho(){const t=T(UI.mpAlvo),p=UI.desenho||[];if(p.length<3)return;
+  if(UI.mpModo==='editar'&&JSON.stringify(p.map(x=>[+x[0].toFixed(7),+x[1].toFixed(7)]))===JSON.stringify((JSON.parse(UI.desOrig||'[]')).map(x=>[+(+x[0]).toFixed(7),+(+x[1]).toFixed(7)]))){
+    Object.assign(UI,{mpModo:null,desenho:null,desHist:null,vSel:null,vMenu:false});mpRefresh();toast('Edição encerrada, sem mudanças.');return}
   t.poly=p.map(x=>[+x[0].toFixed(7),+x[1].toFixed(7)]);if(t.lat==null){const c=centro(p);t.lat=c[0];t.lng=c[1];t.precisao='aproximada'}
   const a=areaPoly(t.poly);log(t,`${UI.desEditando?'Poligonal editada':'Poligonal desenhada'} no mapa: ${m2(a)}`);UI.mpModo=null;UI.desenho=null;UI.desHist=null;UI.vSel=null;UI.vMenu=false;UI.vMover=false;save();mpRefresh();toast(`Poligonal salva: ${m2(a)}.`)}
 
@@ -3446,18 +3483,25 @@ function gAbrirInfo(t,ancora){if(!gInfo)return;const d=document.createElement('d
 function G_desenhaPins(){if(!MAPA)return;gSet(gPins,null);gPins=[];const {AdvancedMarkerElement}=gLib.marker;
   mpVisiveis().filter(t=>t.lat!=null).forEach(t=>{const k=sitMapa(t);
     const mk=new AdvancedMarkerElement({map:MAPA,position:gLL(t.lat,t.lng),content:gPinEl(k,UI.mpSel===t.id),title:t.nome,gmpClickable:!UI.mpModo,zIndex:UI.mpSel===t.id?10:1});
-    mk.addEventListener('gmp-click',()=>gAbrirInfo(t,mk));mk._terreno=t.id;gPins.push(mk);
-    if(t.poly){const pg=new google.maps.Polygon({map:MAPA,paths:t.poly.map(p=>gLL(p[0],p[1])),strokeColor:SIT[k][1],strokeWeight:2,fillColor:SIT[k][1],fillOpacity:.18,clickable:!UI.mpModo});
-      pg.addListener('click',()=>gAbrirInfo(t,mk));gPins.push(pg)}})}
+    mk.addEventListener('gmp-click',()=>{if(Date.now()-(UI.polyLongoEm||0)<900)return;gAbrirInfo(t,mk)});mk._terreno=t.id;gPins.push(mk);
+    if(t.poly&&t.poly.length>=3&&mk.content){polyGestos(mk.content,t.id);mk.content.addEventListener('dblclick',e=>{e.stopPropagation();editarPoligonal(t.id)})}
+    if(t.poly&&!(UI.mpModo&&UI.mpAlvo===t.id)){const pg=new google.maps.Polygon({map:MAPA,paths:t.poly.map(p=>gLL(p[0],p[1])),strokeColor:SIT[k][1],strokeWeight:2,fillColor:SIT[k][1],fillOpacity:.18,clickable:!UI.mpModo});
+      let tc=null;pg.addListener('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<700)return;clearTimeout(tc);tc=setTimeout(()=>{if(!UI.mpModo)gAbrirInfo(t,mk)},260)});
+      pg.addListener('dblclick',e=>{e?.stop?.();clearTimeout(tc);editarPoligonal(t.id)});
+      /* segurar o dedo sobre a poligonal entra em edição */
+      let tm=null;const limpa=()=>{clearTimeout(tm);tm=null};
+      pg.addListener('mousedown',e=>{if(UI.mpModo||!TOQUE())return;limpa();tm=setTimeout(()=>{tm=null;UI.polyLongoEm=Date.now();aoSoltar(()=>editarPoligonal(t.id))},550)});
+      ['mouseup','mouseout'].forEach(ev=>pg.addListener(ev,limpa));google.maps.event.addListener(MAPA,'dragstart',limpa);
+      gPins.push(pg)}})}
 function G_desenhaPois(){if(!MAPA)return;gSet(gPois,null);gPois=[];const {AdvancedMarkerElement}=gLib.marker;
   (S.pontos||[]).forEach(p=>gPois.push(new AdvancedMarkerElement({map:UI.mpPoi===false?null:MAPA,position:gLL(p.lat,p.lng),content:gPoiEl(),title:`${p.nome} · ${CAT_POI[p.cat]||''}`,gmpClickable:false})))}
 function G_desenhaRascunho(){if(!MAPA)return;gSet(gDes,null);gDes=[];const p=(UI.desenho||[]).map(q=>gLL(q[0],q[1]));if(!p.length)return;
   const traco={icons:[{icon:{path:'M 0,-1 0,1',strokeOpacity:1,strokeColor:'#0094fe',scale:2},offset:'0',repeat:'10px'}],strokeOpacity:0,clickable:false};
-  gDes.push(p.length>=3?new google.maps.Polygon({map:MAPA,paths:p,strokeColor:'#0094fe',strokeWeight:2,fillColor:'#0094fe',fillOpacity:.12,clickable:false}):new google.maps.Polyline({map:MAPA,path:p,...traco}));
+  gDes.push(p.length>=3?new google.maps.Polygon({map:MAPA,paths:p,strokeColor:'#0094fe',strokeWeight:UI.mpModo==='editar'?2.5:2,fillColor:'#0094fe',fillOpacity:UI.mpModo==='editar'?.2:.12,clickable:false}):new google.maps.Polyline({map:MAPA,path:p,...traco}));
   const poli=gDes[0],{AdvancedMarkerElement}=gLib.marker;
-  p.forEach((q,i)=>{const sel=UI.vSel===i,arrasta=!TOQUE()||(UI.vMover&&sel);
-    const el=document.createElement('div');el.className='v-alvo';el.innerHTML=`<span class="v-dot${sel?' sel':''}${sel&&UI.vMover?' mover':''}"></span>`;
-    const mk=new AdvancedMarkerElement({map:MAPA,position:q,content:el,gmpDraggable:arrasta,zIndex:sel?1000:10});
+  p.forEach((q,i)=>{const sel=UI.vSel===i;
+    const el=document.createElement('div');el.className='v-alvo';el.innerHTML=`<span class="v-dot${sel?' sel':''}"></span>`;
+    const mk=new AdvancedMarkerElement({map:MAPA,position:q,content:el,gmpDraggable:true,zIndex:sel?1000:10});
     vGestos(el,i);
     mk.addListener('drag',()=>{const pos=mk.position,pp=p.slice();pp[i]=gLL(typeof pos.lat==='function'?pos.lat():pos.lat,typeof pos.lng==='function'?pos.lng():pos.lng);poli.setPath?poli.setPath(pp):poli.setPaths(pp)});
     mk.addListener('dragstart',()=>{UI.vMenu=false;$('.mapa-area .v-menu')?.remove()});
@@ -3472,7 +3516,7 @@ function gEnquadrar(pts,maxZoom){if(!MAPA||!pts.length)return;if(pts.length===1)
 function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[];gPois=[];gDes=[];gRota=[];gEntorno=[];
   const v=UI.mpView;
   MAPA=new google.maps.Map(el,{mapId:'DEMO_MAP_ID',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[UI.mpBase||'mapa'],
-    mapTypeControl:false,streetViewControl:true,fullscreenControl:false,clickableIcons:false,gestureHandling:'greedy',scaleControl:true,tilt:0});
+    mapTypeControl:false,streetViewControl:true,fullscreenControl:false,clickableIcons:false,gestureHandling:'greedy',scaleControl:true,tilt:0,disableDoubleClickZoom:true});
   gInfo=new google.maps.InfoWindow({maxWidth:320});
   el.classList.toggle('modo',!!UI.mpModo);G_desenhaPins();G_desenhaPois();G_desenhaRascunho();
   if(!v)gEnquadrar(ativosBanco().filter(t=>t.lat!=null).map(t=>gLL(t.lat,t.lng)),15);
