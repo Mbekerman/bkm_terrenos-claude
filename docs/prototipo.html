@@ -1969,6 +1969,45 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .dt.compacta th:last-child, .dt.compacta td:last-child { padding-right: 12px }
 .dt.compacta td.num, .dt.compacta th:not(.esq) { text-align: right; white-space: nowrap }
 .dt.compacta th { letter-spacing: .04em }
+/* pontos da poligonal em edição: área de toque de 44 px, ponto visível de 12 px */
+.v-alvo { width: 44px; height: 44px; display: grid; place-items: center; background: transparent !important; border: 0 !important; cursor: pointer; touch-action: none; -webkit-touch-callout: none; user-select: none }
+.v-dot { width: 12px; height: 12px; border-radius: 50%; background: #0094fe; box-shadow: 0 0 0 2px #fff, 0 1px 4px rgba(0,0,0,.4); transition: transform .12s }
+.v-alvo:hover .v-dot { transform: scale(1.3) }
+.v-dot.sel { width: 16px; height: 16px; background: #fff; box-shadow: 0 0 0 4px #0b57d0, 0 2px 8px rgba(0,0,0,.45) }
+.v-dot.mover { animation: v-pulso 1s ease-in-out infinite }
+@keyframes v-pulso { 0%, 100% { box-shadow: 0 0 0 4px #0b57d0, 0 0 0 4px rgba(11,87,208,.35) } 50% { box-shadow: 0 0 0 4px #0b57d0, 0 0 0 12px rgba(11,87,208,0) } }
+.leaflet-marker-icon.v-alvo { margin: 0 }
+.leaflet-dragging .v-alvo, .v-alvo:active { cursor: grabbing }
+.v-menu { position: absolute; z-index: 1200; display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: 12px; background: var(--m-sc-low, #f0f4f9); box-shadow: 0 2px 6px rgba(0,0,0,.2), 0 8px 20px rgba(0,0,0,.18); font-size: 14px }
+.v-menu .v-t { padding: 0 8px 0 10px; font-size: 12px; font-weight: 500; color: var(--texto-suave); white-space: nowrap }
+.v-menu button { border: 0; background: transparent; height: 40px; padding: 0 14px; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--m-primary, #0b57d0) }
+.v-menu button:hover, .v-menu button:focus-visible { background: rgba(127,127,127,.12); outline: 0 }
+.v-menu button.crit { color: var(--critico-marca, #b3261e) }
+:root[data-tema="escuro"] .v-menu { background: #0d1530; box-shadow: 0 0 0 1px rgba(124,140,255,.25), 0 10px 28px rgba(0,0,0,.55) }
+:root[data-tema="escuro"] .v-menu button { color: #c9d6ff }
+:root[data-tema="escuro"] .v-menu button.crit { color: #ffb4ab }
+/* aviso do modo de edição no mapa: barra no padrão "snackbar" do Material, legível e sem cobrir a poligonal */
+.mp-modo { background: #313033 !important; color: #f4eff4 !important; border-radius: 8px !important; padding: 8px 8px 8px 16px !important; gap: 4px 8px !important; font-size: 14px; line-height: 20px; max-width: min(720px, calc(100% - 24px)); box-shadow: 0 3px 10px rgba(0,0,0,.3) }
+.mp-modo > span { flex: 1 1 260px; text-align: left }
+.mp-modo .btn { min-height: 36px !important; height: 36px; padding: 0 12px !important; font-size: 14px }
+.mp-modo .btn.text { color: #a8c7fa !important; background: transparent !important; border-color: transparent !important }
+.mp-modo .btn.text:disabled { color: rgba(244,239,244,.38) !important }
+.mp-modo .btn.primary { background: #a8c7fa !important; color: #062e6f !important; border-color: transparent !important; box-shadow: none !important }
+.mp-modo .btn.primary:disabled { background: rgba(244,239,244,.12) !important; color: rgba(244,239,244,.38) !important }
+:root[data-tema="escuro"] .mp-modo { background: #e3e2e6 !important; color: #1f1f1f !important }
+:root[data-tema="escuro"] .mp-modo .btn.text { color: #0b57d0 !important }
+:root[data-tema="escuro"] .mp-modo .btn.text:disabled { color: rgba(31,31,31,.38) !important }
+:root[data-tema="escuro"] .mp-modo .btn.primary { background: #0b57d0 !important; color: #fff !important }
+@media (max-width: 899px) {
+  .mp-modo { top: auto !important; bottom: 8px !important; left: 8px !important; right: 8px !important; transform: none !important; max-width: none; font-size: 13px; line-height: 18px; justify-content: flex-end }
+  .mp-modo > span { flex: 1 1 100% }
+  .mapa-area:has(.mp-modo:not(:empty)) .mp-legenda { display: none }
+}
+.mp-modo { z-index: 1100 !important }
+@media (max-width: 899px) {
+  .mp-modo { bottom: 26px !important }
+  .mapa-area:has(.mp-modo:not(:empty)) .leaflet-control-scale { display: none }
+}
 </style>
 <header class="top">
   <div class="top-in">
@@ -2798,12 +2837,12 @@ document.addEventListener('click',e=>{
     case 'mp-limpar':UI.mp={q:'',cor:'',zona:'',ocultas:[]};render();break;
     case 'mp-base':setBase(a.dataset.v);break;
     case 'mp-modo':UI.mpModo=UI.mpModo===a.dataset.v?null:a.dataset.v;fecharPopup();mpRefresh();break;
-    case 'mp-sair':UI.mpModo=null;UI.desenho=null;mpRefresh();break;
-    case 'mp-desfazer':(UI.desenho||[]).pop();mpRefresh();break;
+    case 'mp-sair':UI.mpModo=null;UI.desenho=null;UI.desHist=null;UI.vSel=null;UI.vMenu=false;UI.vMover=false;mpRefresh();break;
+    case 'mp-desfazer':{const h=UI.desHist||[];if(h.length){UI.desenho=h.pop();UI.vSel=null;UI.vMenu=false;UI.vMover=false}mpRefresh();break}
     case 'mp-concluir':concluirDesenho();break;
     case 'mp-poi':UI.mpPoi=UI.mpPoi===false;mostrarPois(UI.mpPoi);a.setAttribute('aria-pressed',UI.mpPoi);a.classList.toggle('on',UI.mpPoi);break;
     case 'mp-kmz':UI.kmzAlvo=a.dataset.id||null;$('#kmz-in').value='';$('#kmz-in').click();break;
-    case 'mp-desenhar':UI.mpModo='desenhar';UI.mpAlvo=a.dataset.id;UI.desenho=[];fecharPopup();mpRefresh();break;
+    case 'mp-desenhar':{const x=T(a.dataset.id);UI.mpModo='desenhar';UI.mpAlvo=a.dataset.id;UI.desEditando=!!(x&&x.poly&&x.poly.length>=3);UI.desenho=UI.desEditando?x.poly.map(q=>q.slice()):[];UI.desHist=[];UI.vSel=null;UI.vMenu=false;UI.vMover=false;fecharPopup();mpRefresh();if(UI.desEditando&&MAPA){if(GG)gEnquadrar(x.poly.map(q=>gLL(q[0],q[1])),19);else MAPA.fitBounds(x.poly,{maxZoom:19,padding:[60,60]})}break}
     case 'mp-marcar':go('mapa',{mpModo:'marcar',mpAlvo:a.dataset.id,mpView:null});break;
     case 'mp-ir':go('mapa',{mpFoco:a.dataset.id,mpView:null});break;
     case 'dash-f':{const d=a.dataset.d,v=a.dataset.v,f=UI.dash.f;const cur=f[d]||[];f[d]=cur.includes(v)?cur.filter(x=>x!==v):[...cur,v];if(!f[d].length)delete f[d];render();break}
@@ -3071,7 +3110,9 @@ function modoBanner(){const m=UI.mpModo;if(!m)return '';
   if(m==='pin')return `<span>Clique no mapa onde fica o terreno novo.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
   if(m==='poi')return `<span>Clique no mapa para marcar o ponto de interesse.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
   if(m==='marcar')return `<span>Clique no mapa para localizar <b>${esc(t?.nome)}</b>.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
-  if(m==='desenhar'){const n=(UI.desenho||[]).length,a=areaPoly(UI.desenho);return `<span>Poligonal de <b>${esc(t?.nome)}</b>: clique nos vértices. ${n} ponto${n===1?'':'s'}${a?` · ${m2(a)}`:''}</span><button class="btn sm text" data-a="mp-desfazer" ${n?'':'disabled'}>Desfazer ponto</button><button class="btn sm text" data-a="mp-sair">Cancelar</button><button class="btn sm primary" data-a="mp-concluir" ${n>=3?'':'disabled'}>Concluir</button>`}
+  if(m==='desenhar'){const n=(UI.desenho||[]).length,a=areaPoly(UI.desenho),tq=TOQUE();
+    const dica=UI.vMover&&UI.vSel!=null?`${tq?'Toque':'Clique'} no novo lugar do ponto ${UI.vSel+1} ou arraste-o.`:n>=3?`${tq?'Toque':'Clique'} no mapa para incluir um ponto; ${tq?'toque e segure':'clique'} num ponto para movê-lo ou excluí-lo.`:`${tq?'Toque':'Clique'} nos vértices.`;
+    return `<span>Poligonal de <b>${esc(t?.nome)}</b>: ${dica} ${n} ponto${n===1?'':'s'}${a?` · ${m2(a)}`:''}</span><button class="btn sm text" data-a="mp-desfazer" ${(UI.desHist||[]).length?'':'disabled'}>Desfazer</button><button class="btn sm text" data-a="mp-sair">Cancelar</button><button class="btn sm primary" data-a="mp-concluir" ${n>=3?'':'disabled'}>Concluir</button>`}
   return '';
 }
 function L_setBase(k){if(!MAPA)return;UI.mpBase=k;if(BASE)MAPA.removeLayer(BASE);BASE=camada(k,MAPA.getContainer().closest('.mapa-area')||MAPA.getContainer()).addTo(MAPA);BASE.eachLayer(l=>l.bringToBack());
@@ -3082,7 +3123,7 @@ function popupHtml(t){const o=ofertaRef(t),ad=areaAdotada(t),k=sitMapa(t),px=pro
   <div class="pop-n"><span>${ad?m2(ad):'Área não informada'}</span><span>${o?.valor?mi(o.valor):'Sem valor'}</span>${t.poly?`<span>Poligonal ${m2(areaPoly(t.poly))}</span>`:''}</div>
   ${px.length?`<div class="pop-poi">${px.map(p=>`<div><span>${esc(p.nome)}</span><b>${fKm(p.d)}</b>${GG?`<button class="linkbtn" data-a="mp-rota" data-id="${t.id}" data-p="${p.id}">Rota</button>`:`<a href="${rotaUrl(t,p)}" target="_blank" rel="noopener">Rota</a>`}</div>`).join('')}</div>`:''}
   ${GG?`<div class="pop-a"><button class="btn sm" data-a="mp-sv" data-id="${t.id}">Street View</button><button class="btn sm" data-a="mp-entorno" data-id="${t.id}">O que tem perto</button></div>`:''}
-  <div class="pop-a"><button class="btn sm primary" data-a="abrir" data-id="${t.id}" data-tab="geral" data-from="mapa">Abrir ficha</button><button class="btn sm ed" data-a="mp-desenhar" data-id="${t.id}">${t.poly?'Redesenhar':'Desenhar'} poligonal</button><button class="btn sm text ed" data-a="mp-kmz" data-id="${t.id}">Poligonal de KMZ</button></div></div>`}
+  <div class="pop-a"><button class="btn sm primary" data-a="abrir" data-id="${t.id}" data-tab="geral" data-from="mapa">Abrir ficha</button><button class="btn sm ed" data-a="mp-desenhar" data-id="${t.id}">${t.poly?'Editar':'Desenhar'} poligonal</button><button class="btn sm text ed" data-a="mp-kmz" data-id="${t.id}">Poligonal de KMZ</button></div></div>`}
 function L_desenhaPins(){if(!MAPA||!PINS)return;PINS.clearLayers();
   mpVisiveis().filter(t=>t.lat!=null).forEach(t=>{const k=sitMapa(t);
     if(t.poly)L.polygon(t.poly,{color:SIT[k][1],weight:2,fillOpacity:.18,interactive:!UI.mpModo}).on('click',()=>mk.openPopup()).addTo(PINS);
@@ -3092,9 +3133,16 @@ function L_desenhaPins(){if(!MAPA||!PINS)return;PINS.clearLayers();
 function L_desenhaPois(){if(!MAPA||!POIS)return;POIS.clearLayers();(S.pontos||[]).forEach(p=>L.marker([p.lat,p.lng],{icon:poiIcon(),title:p.nome,interactive:!UI.mpModo}).bindTooltip(`${esc(p.nome)} · ${CAT_POI[p.cat]||''}`,{direction:'top'}).addTo(POIS))}
 function L_desenhaRascunho(){if(!DES)return;DES.clearLayers();const p=UI.desenho||[];if(!p.length)return;
   (p.length>=3?L.polygon(p,{color:'#0094fe',weight:2,dashArray:'6 4',fillOpacity:.12,interactive:false}):L.polyline(p,{color:'#0094fe',weight:2,dashArray:'6 4',interactive:false})).addTo(DES);
-  p.forEach(q=>L.circleMarker(q,{radius:4,color:'#fff',weight:2,fillColor:'#0094fe',fillOpacity:1,interactive:false}).addTo(DES))}
+  const poli=DES.getLayers()[0];
+  p.forEach((q,i)=>{const sel=UI.vSel===i,arrasta=!TOQUE()||(UI.vMover&&sel);
+    const mk=L.marker(q,{draggable:arrasta,keyboard:false,zIndexOffset:sel?1000:0,icon:L.divIcon({className:'v-alvo',iconSize:[44,44],iconAnchor:[22,22],html:`<span class="v-dot${sel?' sel':''}${sel&&UI.vMover?' mover':''}"></span>`})});
+    mk.on('add',()=>vGestos(mk.getElement(),i));
+    mk.on('drag',e=>{const ll=e.target.getLatLng(),pp=p.map(x=>x.slice());pp[i]=[ll.lat,ll.lng];poli&&poli.setLatLngs(pp)});
+    mk.on('dragstart',()=>{UI.vMenu=false;$('.mapa-area .v-menu')?.remove()});
+    mk.on('dragend',e=>{const ll=e.target.getLatLng();vArrastado(i,ll.lat,ll.lng)});
+    mk.addTo(DES)})}
 function mpRefresh(){desenhaPois();const l=$('#mp-lista');if(l)l.innerHTML=mpLista();const g=$('#mp-leg');if(g)g.innerHTML=mpLegenda();const m=$('#mp-modo');if(m)m.innerHTML=modoBanner();
-  if(MAPA){$('#mapa')?.classList.toggle('modo',!!UI.mpModo);desenhaPins();desenhaRascunho()}}
+  if(MAPA){$('#mapa')?.classList.toggle('modo',!!UI.mpModo);desenhaPins();desenhaRascunho();vMenuDesenha()}}
 function L_initMapa(){const el=$('#mapa');if(!el)return;
   if(!window.L){el.innerHTML='<div class="mapa-erro">Não foi possível carregar a biblioteca de mapas. Verifique a conexão e recarregue a página.</div>';return}
   MAPA=L.map(el,{zoomControl:true,doubleClickZoom:false});
@@ -3105,7 +3153,7 @@ function L_initMapa(){const el=$('#mapa');if(!el)return;
   enquadrar();
   // o contêiner só tem o tamanho final depois do layout: recalcula e reenquadra
   const mapaAtual=MAPA;requestAnimationFrame(()=>setTimeout(()=>{if(MAPA!==mapaAtual)return;MAPA.invalidateSize();enquadrar();if(UI.mpFocoPend){const t=T(UI.mpFocoPend);UI.mpFocoPend=null;if(t&&t.lat!=null)focar(t)}},60));
-  MAPA.on('moveend',()=>{UI.mpView={c:MAPA.getCenter(),z:MAPA.getZoom()}});
+  MAPA.on('moveend',()=>{UI.mpView={c:MAPA.getCenter(),z:MAPA.getZoom()};vMenuDesenha()});MAPA.on('movestart zoomstart',()=>$('.mapa-area .v-menu')?.remove());
   MAPA.on('preclick',e=>mapaClique(e.latlng.lat,e.latlng.lng));
   if(UI.mpFoco){UI.mpFocoPend=UI.mpFoco;UI.mpFoco=null}
 }
@@ -3115,11 +3163,55 @@ function mapaClique(lat,lng){const m=UI.mpModo;if(!m)return;
   if(m==='pin'){UI.mpModo=null;UI.novoLoc={lat,lng};UI.modal='novo';mpRefresh();renderModal();return}
   if(m==='poi'){UI.mpModo=null;UI.novoPoi={lat,lng};UI.modal='poi';mpRefresh();renderModal();return}
   if(m==='marcar'){const t=T(UI.mpAlvo);UI.mpModo=null;Object.assign(t,{lat,lng,precisao:'aproximada'});log(t,'Localização marcada no mapa');save();mpRefresh();toast(`${t.nome}: localização marcada.`);return}
-  if(m==='desenhar'){(UI.desenho=UI.desenho||[]).push([lat,lng]);desenhaRascunho();$('#mp-modo').innerHTML=modoBanner()}
+  if(m==='desenhar'){if(Date.now()-(UI.vToqueEm||0)<300)return; /* o toque foi num ponto, não no mapa */
+    const p=UI.desenho=UI.desenho||[];
+    if(UI.vMenu){vFecharMenu();return}
+    if(UI.vMover&&UI.vSel!=null){desGuardar();p[UI.vSel]=[lat,lng];UI.vMover=false;UI.vSel=null;desAtualizar();return}
+    if(UI.vSel!=null){UI.vSel=null;desAtualizar();return}
+    desGuardar();
+    if(p.length<3)p.push([lat,lng]);
+    else{ /* inclui o ponto no lado da poligonal que menos aumenta o contorno (no desenho em sequência, equivale a seguir em frente) */
+      const d=(a,b)=>Math.hypot(a[0]-b[0],(a[1]-b[1])*Math.cos(a[0]*Math.PI/180)),q=[lat,lng];let melhor=p.length,custo=Infinity;
+      p.forEach((a,i)=>{const b=p[(i+1)%p.length],c=d(a,q)+d(q,b)-d(a,b);if(c<custo){custo=c;melhor=i+1}});p.splice(melhor,0,q)}
+    desAtualizar()}
 }
+/* ---------- edição dos pontos da poligonal ----------
+   desktop: clicar num ponto abre Mover / Excluir (e o ponto também pode ser arrastado direto);
+   celular: tocar e segurar perto do ponto abre Mover / Excluir; um toque rápido no ponto não faz nada (evita mexer sem querer). */
+const TOQUE=()=>matchMedia('(pointer: coarse)').matches;
+function desGuardar(){(UI.desHist=UI.desHist||[]).push((UI.desenho||[]).map(x=>x.slice()));if(UI.desHist.length>60)UI.desHist.shift()}
+function desAtualizar(){desenhaRascunho();const b=$('#mp-modo');if(b)b.innerHTML=modoBanner();vMenuDesenha()}
+function vSelecionar(i){UI.vSel=i;UI.vMover=false;UI.vMenu=true;UI.vToqueEm=Date.now();if(TOQUE()&&navigator.vibrate)try{navigator.vibrate(12)}catch(e){}desAtualizar()}
+function vFecharMenu(){UI.vMenu=false;if(!UI.vMover)UI.vSel=null;desAtualizar()}
+function vMenuDesenha(){const area=$('.mapa-area');if(!area)return;area.querySelector('.v-menu')?.remove();
+  if(!UI.vMenu||UI.vSel==null||UI.mpModo!=='desenhar')return;const q=(UI.desenho||[])[UI.vSel];if(!q)return;
+  const px=pontoNaTela(q[0],q[1]);if(!px)return;const m=document.createElement('div');m.className='v-menu';m.setAttribute('role','menu');
+  m.innerHTML=`<div class="v-t">Ponto ${UI.vSel+1}</div><button role="menuitem" data-a="v-mover">Mover</button><button role="menuitem" data-a="v-excluir" class="crit">Excluir</button>`;
+  area.appendChild(m);const W=area.clientWidth,H=area.clientHeight,w=m.offsetWidth,h=m.offsetHeight;
+  let x=px.x-w/2,y=px.y-h-18;if(y<8)y=px.y+18;m.style.left=Math.max(8,Math.min(W-w-8,x))+'px';m.style.top=Math.max(8,Math.min(H-h-8,y))+'px';
+  m.querySelector('button')?.focus({preventScroll:true})}
+function pontoNaTela(lat,lng){if(!MAPA)return null;if(GG)return typeof gPontoNaTela==='function'?gPontoNaTela(lat,lng):null;const p=MAPA.latLngToContainerPoint([lat,lng]);return {x:p.x,y:p.y}}
+function vAcao(a){const i=UI.vSel;if(i==null)return;
+  if(a==='v-mover'){UI.vMover=true;UI.vMenu=false;desAtualizar();return}
+  if(a==='v-excluir'){desGuardar();UI.desenho.splice(i,1);UI.vSel=null;UI.vMenu=false;UI.vMover=false;desAtualizar();toast(`Ponto ${i+1} excluído.`)}}
+/* liga os gestos a um elemento de ponto (marcador do Leaflet ou do Google) */
+function vGestos(el,i){if(!el||el.dataset.vg)return;el.dataset.vg='1';el.classList.add('v-ponto');
+  let tm=null,x0=0,y0=0,longo=false;const limpa=()=>{clearTimeout(tm);tm=null};
+  el.addEventListener('contextmenu',e=>e.preventDefault());
+  el.addEventListener('pointerdown',e=>{UI.vToqueEm=Date.now();x0=e.clientX;y0=e.clientY;longo=false;
+    if(e.pointerType==='touch'||TOQUE()){limpa();tm=setTimeout(()=>{longo=true;tm=null;vSelecionar(i)},450)}});
+  el.addEventListener('pointermove',e=>{if(tm&&Math.hypot(e.clientX-x0,e.clientY-y0)>10)limpa()});
+  el.addEventListener('pointerup',()=>{UI.vToqueEm=Date.now();limpa()});['pointercancel','pointerleave'].forEach(t=>el.addEventListener(t,limpa));
+  el.addEventListener('click',e=>{e.stopPropagation();UI.vToqueEm=Date.now();if(longo||TOQUE())return;vSelecionar(i)})}
+/* arrastou um ponto até o fim */
+function vArrastado(i,lat,lng){desGuardar();UI.desenho[i]=[lat,lng];UI.vMover=false;UI.vSel=null;UI.vMenu=false;UI.vToqueEm=Date.now();desAtualizar()}
+document.addEventListener('click',e=>{const a=e.target.closest('.v-menu [data-a]');if(a){e.stopPropagation();vAcao(a.dataset.a)}},true);
+document.addEventListener('keydown',e=>{if(UI.mpModo!=='desenhar'||UI.vSel==null||e.target.matches('input,textarea,select'))return;
+  if(e.key==='Escape'){UI.vMover=false;vFecharMenu();e.preventDefault()}
+  else if(e.key==='Delete'||e.key==='Backspace'){vAcao('v-excluir');e.preventDefault()}});
 function concluirDesenho(){const t=T(UI.mpAlvo),p=UI.desenho||[];if(p.length<3)return;
   t.poly=p.map(x=>[+x[0].toFixed(7),+x[1].toFixed(7)]);if(t.lat==null){const c=centro(p);t.lat=c[0];t.lng=c[1];t.precisao='aproximada'}
-  const a=areaPoly(t.poly);log(t,`Poligonal desenhada no mapa: ${m2(a)}`);UI.mpModo=null;UI.desenho=null;save();mpRefresh();toast(`Poligonal salva: ${m2(a)}.`)}
+  const a=areaPoly(t.poly);log(t,`${UI.desEditando?'Poligonal editada':'Poligonal desenhada'} no mapa: ${m2(a)}`);UI.mpModo=null;UI.desenho=null;UI.desHist=null;UI.vSel=null;UI.vMenu=false;UI.vMover=false;save();mpRefresh();toast(`Poligonal salva: ${m2(a)}.`)}
 
 /* KMZ / KML */
 async function lerKmz(file){let txt;
@@ -3362,7 +3454,19 @@ function G_desenhaPois(){if(!MAPA)return;gSet(gPois,null);gPois=[];const {Advanc
 function G_desenhaRascunho(){if(!MAPA)return;gSet(gDes,null);gDes=[];const p=(UI.desenho||[]).map(q=>gLL(q[0],q[1]));if(!p.length)return;
   const traco={icons:[{icon:{path:'M 0,-1 0,1',strokeOpacity:1,strokeColor:'#0094fe',scale:2},offset:'0',repeat:'10px'}],strokeOpacity:0,clickable:false};
   gDes.push(p.length>=3?new google.maps.Polygon({map:MAPA,paths:p,strokeColor:'#0094fe',strokeWeight:2,fillColor:'#0094fe',fillOpacity:.12,clickable:false}):new google.maps.Polyline({map:MAPA,path:p,...traco}));
-  p.forEach(q=>gDes.push(new google.maps.Marker({map:MAPA,position:q,clickable:false,icon:{path:google.maps.SymbolPath.CIRCLE,scale:5,fillColor:'#0094fe',fillOpacity:1,strokeColor:'#fff',strokeWeight:2}})))}
+  const poli=gDes[0],{AdvancedMarkerElement}=gLib.marker;
+  p.forEach((q,i)=>{const sel=UI.vSel===i,arrasta=!TOQUE()||(UI.vMover&&sel);
+    const el=document.createElement('div');el.className='v-alvo';el.innerHTML=`<span class="v-dot${sel?' sel':''}${sel&&UI.vMover?' mover':''}"></span>`;
+    const mk=new AdvancedMarkerElement({map:MAPA,position:q,content:el,gmpDraggable:arrasta,zIndex:sel?1000:10});
+    vGestos(el,i);
+    mk.addListener('drag',()=>{const pos=mk.position,pp=p.slice();pp[i]=gLL(typeof pos.lat==='function'?pos.lat():pos.lat,typeof pos.lng==='function'?pos.lng():pos.lng);poli.setPath?poli.setPath(pp):poli.setPaths(pp)});
+    mk.addListener('dragstart',()=>{UI.vMenu=false;$('.mapa-area .v-menu')?.remove()});
+    mk.addListener('dragend',()=>{const pos=mk.position;vArrastado(i,typeof pos.lat==='function'?pos.lat():pos.lat,typeof pos.lng==='function'?pos.lng():pos.lng)});
+    gDes.push(mk)})}
+/* posição de um ponto na tela do mapa (para abrir o menu do ponto ao lado dele) */
+let gProj=null;
+function gPontoNaTela(lat,lng){if(!MAPA)return null;if(!gProj||gProj.getMap()!==MAPA){gProj=new google.maps.OverlayView();gProj.onAdd=()=>{};gProj.draw=()=>{};gProj.onRemove=()=>{};gProj.setMap(MAPA)}
+  const pr=gProj.getProjection();if(!pr)return null;const p=pr.fromLatLngToContainerPixel(new google.maps.LatLng(lat,lng));return p?{x:p.x,y:p.y}:null}
 function gEnquadrar(pts,maxZoom){if(!MAPA||!pts.length)return;if(pts.length===1){MAPA.setCenter(pts[0]);MAPA.setZoom(maxZoom||17);return}
   const b=new google.maps.LatLngBounds();pts.forEach(p=>b.extend(p));MAPA.fitBounds(b,48);if(maxZoom)google.maps.event.addListenerOnce(MAPA,'idle',()=>{if(MAPA.getZoom()>maxZoom)MAPA.setZoom(maxZoom)})}
 function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[];gPois=[];gDes=[];gRota=[];gEntorno=[];
@@ -3372,7 +3476,8 @@ function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[]
   gInfo=new google.maps.InfoWindow({maxWidth:320});
   el.classList.toggle('modo',!!UI.mpModo);G_desenhaPins();G_desenhaPois();G_desenhaRascunho();
   if(!v)gEnquadrar(ativosBanco().filter(t=>t.lat!=null).map(t=>gLL(t.lat,t.lng)),15);
-  MAPA.addListener('idle',()=>{const c=MAPA.getCenter();UI.mpView={c:{lat:c.lat(),lng:c.lng()},z:MAPA.getZoom()}});
+  MAPA.addListener('idle',()=>{const c=MAPA.getCenter();UI.mpView={c:{lat:c.lat(),lng:c.lng()},z:MAPA.getZoom()};vMenuDesenha()});
+  MAPA.addListener('dragstart',()=>$('.mapa-area .v-menu')?.remove());MAPA.addListener('zoom_changed',()=>$('.mapa-area .v-menu')?.remove());
   MAPA.getStreetView().addListener('visible_changed',()=>$('.mapa-area')?.classList.toggle('sv-on',MAPA.getStreetView().getVisible()));
   MAPA.addListener('click',e=>{if(UI.mpModo&&e.latLng)mapaClique(e.latLng.lat(),e.latLng.lng());else gInfo.close()});
   if(UI.mpFoco){const t=T(UI.mpFoco);UI.mpFoco=null;if(t&&t.lat!=null)google.maps.event.addListenerOnce(MAPA,'idle',()=>G_focar(t))}
