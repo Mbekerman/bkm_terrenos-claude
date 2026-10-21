@@ -157,7 +157,8 @@ function modoBanner(){const m=UI.mpModo;if(!m)return '';
   if(m==='pin')return `<span>Clique no mapa onde fica o terreno novo.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
   if(m==='poi')return `<span>Clique no mapa para marcar o ponto de interesse.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
   if(m==='marcar')return `<span>Clique no mapa para localizar <b>${esc(t?.nome)}</b>.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
-  if(m==='desenhar'||m==='editar'){const n=(UI.desenho||[]).length,a=areaPoly(UI.desenho),tq=TOQUE(),seg=tq?'toque e segure':'dê dois cliques';
+  if(m==='desenhar'||m==='editar'){const n=(UI.desenho||[]).length,a=areaPoly(UI.desenho),tq=TOQUE(),seg=tq?'toque e segure':'clique com o botão direito';
+    if(m==='editar'&&!tq)return ''; /* desktop: sem janelinha; Desfazer e Cancelar ficam no menu do ponto (clique direito), Ctrl+Z e Esc */
     if(m==='editar'&&tq)return `<span>Arraste os pontos; segure um ponto para excluir ou adicionar outro. Toque fora para concluir. <span class="mp-q">${n} pontos${a?` · ${m2(a)}`:''}</span></span><button class="btn sm text" data-a="mp-desfazer" ${(UI.desHist||[]).length?'':'disabled'}>Desfazer</button><button class="btn sm text" data-a="mp-sair">Cancelar</button><button class="btn sm primary" data-a="mp-concluir">Concluir</button>`;
     const dica=m==='editar'?`arraste os pontos; ${seg} num ponto para excluí-lo ou adicionar outro depois dele. ${tq?'Toque':'Clique'} fora da poligonal para concluir.`
       :`${tq?'toque':'clique'} no mapa para marcar os vértices.${n?` Arraste um ponto para ajustá-lo; ${seg} nele para mais opções.`:''}`;
@@ -232,17 +233,18 @@ function mapaClique(lat,lng){const m=UI.mpModo;if(!m)return;
 }
 /* ---------- edição da poligonal ----------
    Entrar: celular, tocar e segurar sobre a poligonal; desktop, dois cliques sobre ela (ou "Editar poligonal" no balão).
-   Editando: todos os pontos aparecem e podem ser arrastados. Tocar e segurar (celular) ou dois cliques (desktop) num ponto
-   abre Excluir ponto / Adicionar ponto depois. Toque ou clique fora da poligonal conclui. */
+   Editando: todos os pontos aparecem e podem ser arrastados. Tocar e segurar (celular), clique direito ou dois cliques (desktop) num ponto
+   abre Excluir ponto / Adicionar ponto depois. Toque ou clique fora da poligonal conclui.
+   No desktop a edição não tem a barra de aviso: o menu do ponto traz também Desfazer e Cancelar edição (Ctrl+Z e Esc). */
 const TOQUE=()=>matchMedia('(pointer: coarse)').matches;
 function desGuardar(){(UI.desHist=UI.desHist||[]).push((UI.desenho||[]).map(x=>x.slice()));if(UI.desHist.length>60)UI.desHist.shift()}
 function desAtualizar(){desenhaRascunho();const b=$('#mp-modo');if(b)b.innerHTML=modoBanner();vMenuDesenha()}
 function dentroPoly(lat,lng,p){let d=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const [yi,xi]=p[i],[yj,xj]=p[j];if((yi>lat)!==(yj>lat)&&lng<(xj-xi)*(lat-yi)/(yj-yi)+xi)d=!d}return d}
 function editarPoligonal(id){const t=T(id);if(!t||!t.poly||t.poly.length<3||UI.role==='Leitura')return;
   Object.assign(UI,{mpModo:'editar',mpAlvo:id,desEditando:true,desenho:t.poly.map(q=>q.slice()),desHist:[],vSel:null,vMenu:false,vMover:false,desOrig:JSON.stringify(t.poly),polyLongoEm:Date.now()});
-  fecharPopup();mpRefresh();enquadrarEdicao(t.poly)}
+  fecharPopup();mpRefresh();enquadrarEdicao(t.poly);if(!TOQUE())toast('Editando a poligonal. Clique direito num ponto para mais opções; clique fora para salvar.')}
 /* enquadra a poligonal deixando livre a faixa do aviso (embaixo, no celular) */
-function enquadrarEdicao(poly){if(!MAPA||!poly)return;const cel=matchMedia('(max-width: 899px)').matches,pad={top:cel?70:150,bottom:cel?150:40,left:40,right:40};
+function enquadrarEdicao(poly){if(!MAPA||!poly)return;const cel=matchMedia('(max-width: 899px)').matches,pad={top:cel?70:60,bottom:cel?150:40,left:40,right:40};
   if(GG){const b=new google.maps.LatLngBounds();poly.forEach(q=>b.extend(gLL(q[0],q[1])));MAPA.fitBounds(b,pad);google.maps.event.addListenerOnce(MAPA,'idle',()=>{if(MAPA.getZoom()>19)MAPA.setZoom(19)})}
   else MAPA.fitBounds(poly,{maxZoom:19,paddingTopLeft:[pad.left,pad.top],paddingBottomRight:[pad.right,pad.bottom]})}
 function vSelecionar(i){UI.vSel=i;UI.vMenu=true;UI.vToqueEm=Date.now();desAtualizar()}
@@ -250,14 +252,21 @@ function vFecharMenu(){UI.vMenu=false;UI.vSel=null;desAtualizar()}
 function vMenuDesenha(){const area=$('.mapa-area');if(!area)return;area.querySelector('.v-menu')?.remove();
   if(!UI.vMenu||UI.vSel==null||!['desenhar','editar'].includes(UI.mpModo))return;const q=(UI.desenho||[])[UI.vSel];if(!q)return;
   const px=pontoNaTela(q[0],q[1]);if(!px)return;const m=document.createElement('div');m.className='v-menu';m.setAttribute('role','menu');
-  m.innerHTML=`<div class="v-t">Ponto ${UI.vSel+1}</div><button role="menuitem" data-a="v-depois">Adicionar ponto depois</button><button role="menuitem" data-a="v-excluir" class="crit">Excluir ponto</button>`;
+  const p=UI.desenho,a=areaPoly(p),ed=UI.mpModo==='editar'&&!TOQUE();
+  m.innerHTML=`<div class="v-t">Ponto ${UI.vSel+1} de ${p.length}${a?` · ${m2(a)}`:''}</div><button role="menuitem" data-a="v-depois">Adicionar ponto depois</button><button role="menuitem" data-a="v-excluir" class="crit">Excluir ponto</button>`
+    +(ed?`<hr><button role="menuitem" data-a="v-desfazer" ${(UI.desHist||[]).length?'':'disabled'}>Desfazer<kbd>${/Mac/.test(navigator.platform)?"⌘Z":"Ctrl+Z"}</kbd></button><button role="menuitem" data-a="v-cancelar">Cancelar edição<kbd>Esc</kbd></button>`:'');
   area.appendChild(m);const W=area.clientWidth,H=area.clientHeight,w=m.offsetWidth,h=m.offsetHeight,ar=area.getBoundingClientRect();
   /* parte visível da área do mapa (a barra superior da página pode cobrir o topo) */
   const topo=Math.max(8,(document.querySelector('.top')?.getBoundingClientRect().bottom||0)-ar.top+8),base=Math.min(H,innerHeight-ar.top)-8;
   let x=px.x-w/2,y=px.y-h-24;if(y<topo)y=px.y+24;m.style.left=Math.max(8,Math.min(W-w-8,x))+'px';m.style.top=Math.max(topo,Math.min(base-h,y))+'px';
   m.querySelector('button')?.focus({preventScroll:true})}
 function pontoNaTela(lat,lng){if(!MAPA)return null;if(GG)return typeof gPontoNaTela==='function'?gPontoNaTela(lat,lng):null;const p=MAPA.latLngToContainerPoint([lat,lng]);return {x:p.x,y:p.y}}
-function vAcao(a){const i=UI.vSel,p=UI.desenho||[];if(i==null)return;
+function desDesfazer(){const h=UI.desHist||[];if(!h.length)return false;UI.desenho=h.pop();UI.vSel=null;UI.vMenu=false;UI.vMover=false;mpRefresh();return true}
+function desCancelar(){Object.assign(UI,{mpModo:null,desenho:null,desHist:null,vSel:null,vMenu:false,vMover:false});mpRefresh();toast('Edição cancelada, poligonal sem mudanças.')}
+function vAcao(a){const i=UI.vSel,p=UI.desenho||[];
+  if(a==='v-desfazer'){if(!desDesfazer())vFecharMenu();return}
+  if(a==='v-cancelar'){desCancelar();return}
+  if(i==null)return;
   if(a==='v-excluir'){if(UI.mpModo==='editar'&&p.length<=3){toast('A poligonal precisa de pelo menos 3 pontos.',true);vFecharMenu();return}
     desGuardar();p.splice(i,1);UI.vSel=null;UI.vMenu=false;desAtualizar();toast(`Ponto ${i+1} excluído.`);return}
   if(a==='v-depois'){if(p.length<2){vFecharMenu();return}desGuardar();const b=p[(i+1)%p.length];
@@ -268,11 +277,12 @@ function vAcao(a){const i=UI.vSel,p=UI.desenho||[];if(i==null)return;
    redesenhar o mapa com o dedo apoiado deixaria o arraste do mapa preso */
 function aoSoltar(fn){if(navigator.vibrate)try{navigator.vibrate(15)}catch(e){}let feito=false;const ok=()=>{if(feito)return;feito=true;['pointerup','pointercancel','touchend','touchcancel'].forEach(t=>document.removeEventListener(t,ok,true));setTimeout(()=>{UI.polyLongoEm=Date.now();UI.vToqueEm=Date.now();fn()},0)};
   ['pointerup','pointercancel','touchend','touchcancel'].forEach(t=>document.addEventListener(t,ok,true))}
-/* gestos num ponto: arrastar move; segurar (toque) ou dois cliques (mouse) abre o menu */
+/* gestos num ponto: arrastar move; segurar (toque), clique direito ou dois cliques (mouse) abre o menu.
+   O clique direito só vale com mouse: no Android o toque longo também dispara contextmenu, com o dedo ainda na tela. */
 function vGestos(el,i){if(!el||el.dataset.vg)return;el.dataset.vg='1';el.classList.add('v-ponto');
-  let tm=null,x0=0,y0=0;const limpa=()=>{clearTimeout(tm);tm=null};
-  el.addEventListener('contextmenu',e=>e.preventDefault());
-  el.addEventListener('pointerdown',e=>{UI.vToqueEm=Date.now();x0=e.clientX;y0=e.clientY;
+  let tm=null,x0=0,y0=0,tipo='';const limpa=()=>{clearTimeout(tm);tm=null};
+  el.addEventListener('contextmenu',e=>{e.preventDefault();e.stopPropagation();if((e.pointerType||tipo)==='mouse'){UI.vToqueEm=Date.now();vSelecionar(i)}});
+  el.addEventListener('pointerdown',e=>{UI.vToqueEm=Date.now();x0=e.clientX;y0=e.clientY;tipo=e.pointerType;if(e.button===2)return;
     if(e.pointerType==='touch'||e.pointerType==='pen'||TOQUE()){limpa();tm=setTimeout(()=>{tm=null;aoSoltar(()=>vSelecionar(i))},500)}});
   el.addEventListener('pointermove',e=>{if(tm&&Math.hypot(e.clientX-x0,e.clientY-y0)>8)limpa()});
   el.addEventListener('pointerup',()=>{UI.vToqueEm=Date.now();limpa()});['pointercancel','pointerleave'].forEach(t=>el.addEventListener(t,limpa));
@@ -287,7 +297,8 @@ function polyGestos(el,id){if(!el||el.dataset.pg)return;el.dataset.pg='1';let tm
 function vArrastado(i,lat,lng){desGuardar();UI.desenho[i]=[lat,lng];UI.vSel=null;UI.vMenu=false;UI.vToqueEm=Date.now();desAtualizar()}
 document.addEventListener('click',e=>{const a=e.target.closest('.v-menu [data-a]');if(a){e.stopPropagation();UI.vToqueEm=Date.now();vAcao(a.dataset.a)}},true);
 document.addEventListener('keydown',e=>{if(!['desenhar','editar'].includes(UI.mpModo)||e.target.matches('input,textarea,select'))return;
-  if(e.key==='Escape'){if(UI.vMenu)vFecharMenu();else if(UI.mpModo==='editar')concluirDesenho();e.preventDefault()}
+  if(e.key==='Escape'){if(UI.vMenu)vFecharMenu();else if(UI.mpModo==='editar')desCancelar();e.preventDefault()}
+  else if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key.toLowerCase()==='z'){desDesfazer();e.preventDefault()}
   else if((e.key==='Delete'||e.key==='Backspace')&&UI.vSel!=null){vAcao('v-excluir');e.preventDefault()}});
 function concluirDesenho(){const t=T(UI.mpAlvo),p=UI.desenho||[];if(p.length<3)return;
   if(UI.mpModo==='editar'&&JSON.stringify(p.map(x=>[+x[0].toFixed(7),+x[1].toFixed(7)]))===JSON.stringify((JSON.parse(UI.desOrig||'[]')).map(x=>[+(+x[0]).toFixed(7),+(+x[1]).toFixed(7)]))){

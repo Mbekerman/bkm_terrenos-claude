@@ -32,14 +32,14 @@ await p.screenshot({path:OUT+modo+'_1edicao.png'});
 if(modo==='desktop'){await p.mouse.move(P[0].x,P[0].y);await p.mouse.down();await p.mouse.move(P[0].x-40,P[0].y-30,{steps:8});await p.mouse.up();}else await arrastarToque(P[0].x,P[0].y,-40,-30);
 await p.waitForTimeout(300);let P2=await pts();console.log(modo,'arrastou ponto 1:',Math.round(P2[0].x-P[0].x),Math.round(P2[0].y-P[0].y),'| menu?',!!(await p.$('.v-menu')));
 // 3) menu no ponto 2
-if(modo==='desktop')await p.mouse.dblclick(P2[1].x,P2[1].y);else await segurar(P2[1].x,P2[1].y);
+if(modo==='desktop')await p.mouse.click(P2[1].x,P2[1].y,{button:'right'});else await segurar(P2[1].x,P2[1].y);
 await p.waitForTimeout(250);console.log(modo,'menu:',await p.$eval('.v-menu',x=>x.innerText.replace(/\s+/g,' ')).catch(()=>'SEM MENU'),'| pontos',(await pts()).length);
 await p.screenshot({path:OUT+modo+'_2menu.png'});
 const btn=async a=>{const r=await p.$eval(`.v-menu [data-a=${a}]`,x=>{const r=x.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}});if(modo==='desktop')await p.mouse.click(r.x,r.y);else{await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:r.x,y:r.y}]});await p.waitForTimeout(60);await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]})}await p.waitForTimeout(300)};
 console.log(modo,'scroll antes',await p.evaluate(()=>scrollY));await btn('v-depois');let P3=await pts();await p.screenshot({path:OUT+modo+'_dbg_depois.png'});console.log('banner',JSON.stringify(await p.$eval('.mp-modo',x=>x.getBoundingClientRect())));console.log(modo,'adicionar depois → pontos',P3.length,'|',await ban());
 await p.screenshot({path:OUT+modo+'_3novo.png'});
 // 4) excluir o ponto novo (3)
-if(modo==='desktop')await p.mouse.dblclick(P3[2].x,P3[2].y);else await segurar(P3[2].x,P3[2].y);console.log(modo,'scrollY',await p.evaluate(()=>scrollY),'P3',JSON.stringify(P3.map(q=>[Math.round(q.x),Math.round(q.y)])),'alvo',await p.evaluate(([x,y])=>{const e=document.elementFromPoint(x,y);return e.tagName+' '+e.getAttribute('class')+' vg='+e.closest('.v-alvo')?.dataset.vg+' n='+document.querySelectorAll('.v-alvo').length+' semvg='+[...document.querySelectorAll('.v-alvo')].filter(x=>!x.dataset.vg).length},[P3[2].x,P3[2].y]),'menu',!!(await p.$('.v-menu')));
+if(modo==='desktop')await p.mouse.click(P3[2].x,P3[2].y,{button:'right'});else await segurar(P3[2].x,P3[2].y);console.log(modo,'scrollY',await p.evaluate(()=>scrollY),'P3',JSON.stringify(P3.map(q=>[Math.round(q.x),Math.round(q.y)])),'alvo',await p.evaluate(([x,y])=>{const e=document.elementFromPoint(x,y);return e.tagName+' '+e.getAttribute('class')+' vg='+e.closest('.v-alvo')?.dataset.vg+' n='+document.querySelectorAll('.v-alvo').length+' semvg='+[...document.querySelectorAll('.v-alvo')].filter(x=>!x.dataset.vg).length},[P3[2].x,P3[2].y]),'menu',!!(await p.$('.v-menu')));
 await btn('v-excluir');console.log(modo,'excluir → pontos',(await pts()).length);
 // excluir até o mínimo
 for(let k=0;k<2;k++){const Q=await pts();if(modo==='desktop')await p.mouse.dblclick(Q[0].x,Q[0].y);else await segurar(Q[0].x,Q[0].y);if(await p.$('.v-menu'))await btn('v-excluir')}
@@ -51,6 +51,6 @@ const fora={x:(minx-mr.x>mr.x+mr.w-maxx)?mr.x+20+(minx-mr.x-40)/2:maxx+(mr.x+mr.
 console.log(modo,'clique fora → editando?',(await ban()).startsWith('Editando'),'| toast:',await p.$eval('#toast',x=>x.textContent),'| salvo:',await p.evaluate(()=>{const t=JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-v7')).terrenos.find(t=>t.nome.includes('Barão'));return t.poly.length+' vértices · '+t.hist[t.hist.length-1].txt}));
 // 6) entrar e sair sem mudar
 {const c=await p.evaluate(([dx,dy])=>{const e=[...document.querySelectorAll('.leaflet-overlay-pane path')].filter(x=>x.getAttribute('fill-opacity')==='0.18'&&x.getBoundingClientRect().width>10).sort((a,b)=>{const d=x=>{const r=x.getBoundingClientRect();return Math.hypot(r.x+r.width/2-dx,r.y+r.height/2-dy)};return d(a)-d(b)})[0];const r=e.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height*0.66}},[dentro.x,dentro.y]);if(modo==='desktop')await p.mouse.dblclick(c.x,c.y);else await segurar(c.x,c.y);await p.waitForTimeout(300);console.log(modo,'reentrou:',(await ban()).slice(0,9))}
-if(modo==='desktop')await p.mouse.click(fora.x,fora.y);else await p.touchscreen.tap(fora.x,fora.y);await p.waitForTimeout(400);console.log(modo,'sem mudança:',await p.$eval('#toast',x=>x.textContent));
+await p.waitForTimeout(800);if(modo==='desktop')await p.mouse.click(fora.x,fora.y);else await p.touchscreen.tap(fora.x,fora.y);await p.waitForTimeout(400);console.log(modo,'sem mudança:',await p.$eval('#toast',x=>x.textContent));
 await ctx.close()}
 console.log('ERROS',errs);await b.close()})();

@@ -37,6 +37,7 @@ Rodar só o que a mudança toca; a varredura completa (`tvaza` e `tscroll`) ao f
 | `tend2.js`, `tgmock.js` | endereço pela busca do Google (simulado) |
 | `tadv.js` | quadro de avanço compacto e modais |
 | `ted2.js` | edição da poligonal (desktop e celular) |
+| `tedmenu.js` | menu do clique direito no ponto, sem barra no desktop, Desfazer/Cancelar, Ctrl+Z e Esc (claro e escuro) |
 | `tent.js`, `tent2.js`, `tent3.js`, `tentshot.js` | pontos de interesse: busca e rota a pé simuladas, pontos da empresa, adicionar ponto |
 | `ticones.js` | prints dos ícones do menu (aberto, recolhido, celular, tema escuro) |
 
