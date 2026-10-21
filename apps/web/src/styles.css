@@ -795,7 +795,7 @@ h2{font-size:16px;line-height:24px;font-weight:500;letter-spacing:.01em}
 .nav-item .cnt{color:var(--m-on-var)!important}
 
 /* cards: filled / outlined M3 */
-.card,.sec,.tbl,.alist{background:var(--m-card)!important;border:1px solid var(--m-outline-var)!important;border-radius:12px!important;box-shadow:none!important}
+.card,.sec,.tbl{background:var(--m-card)!important;border:1px solid var(--m-outline-var)!important;border-radius:12px!important;box-shadow:none!important}
 .kpi{background:var(--m-sc-low)!important;border:0!important;border-radius:16px!important;box-shadow:none!important}
 .kpi::before{display:none!important}
 .kpi .v{font-weight:400}
@@ -921,7 +921,7 @@ h2{font-size:16px;line-height:24px;font-weight:500;letter-spacing:.01em}
 :root[data-tema="escuro"] :is(.top,.side,.bnav){background:transparent!important}
 :root[data-tema="escuro"] .bnav{background:rgba(11,17,49,.86)!important;backdrop-filter:blur(14px);border-top:1px solid rgba(124,140,255,.16)!important}
 :root[data-tema="escuro"] .search{background:rgba(26,35,87,.7)!important;border:1px solid rgba(124,140,255,.18)!important}
-:root[data-tema="escuro"] :is(.card,.sec,.tbl,.alist,.dt,.kcard,.col){background:linear-gradient(180deg,rgba(26,35,87,.92),rgba(17,24,66,.92))!important;border:1px solid rgba(124,140,255,.16)!important}
+:root[data-tema="escuro"] :is(.card,.sec,.tbl,.dt,.kcard,.col){background:linear-gradient(180deg,rgba(26,35,87,.92),rgba(17,24,66,.92))!important;border:1px solid rgba(124,140,255,.16)!important}
 :root[data-tema="escuro"] .col{background:rgba(18,26,69,.55)!important}
 :root[data-tema="escuro"] :is(.kcard,.kcard.proposta_enviada,.kcard.contraproposta,.kcard.negociacoes_finais){box-shadow:0 6px 18px rgba(3,6,25,.45)!important}
 :root[data-tema="escuro"] .kcard.proposta_enviada{border-color:rgba(96,165,250,.55)!important;box-shadow:0 0 14px rgba(96,165,250,.22),0 6px 18px rgba(3,6,25,.45)!important}
@@ -953,7 +953,7 @@ h2{font-size:16px;line-height:24px;font-weight:500;letter-spacing:.01em}
 :root[data-tema="escuro"] :is(.top,.side){background:transparent!important}
 :root[data-tema="escuro"] .bnav{background:rgba(13,20,54,.9)!important;backdrop-filter:blur(14px);border-top:1px solid rgba(124,140,255,.16)!important}
 :root[data-tema="escuro"] .search{background:rgba(27,36,88,.7)!important;border:1px solid rgba(124,140,255,.18)!important}
-:root[data-tema="escuro"] :is(.card,.sec,.tbl,.alist,.dt,.kcard){background:linear-gradient(180deg,rgba(27,36,88,.92),rgba(18,26,70,.92))!important;border:1px solid rgba(124,140,255,.16)!important;border-radius:8px!important}
+:root[data-tema="escuro"] :is(.card,.sec,.tbl,.dt,.kcard){background:linear-gradient(180deg,rgba(27,36,88,.92),rgba(18,26,70,.92))!important;border:1px solid rgba(124,140,255,.16)!important;border-radius:8px!important}
 :root[data-tema="escuro"] .col{background:rgba(20,28,72,.55)!important;border:1px solid rgba(124,140,255,.10)!important;border-radius:10px!important}
 :root[data-tema="escuro"] :is(.kcard,.kcard.proposta_enviada,.kcard.contraproposta,.kcard.negociacoes_finais){box-shadow:0 6px 18px rgba(3,6,25,.45)!important}
 :root[data-tema="escuro"] .kcard.proposta_enviada{border-color:rgba(96,165,250,.6)!important;box-shadow:0 0 14px rgba(96,165,250,.25),0 6px 18px rgba(3,6,25,.45)!important}
@@ -985,7 +985,7 @@ h2{font-size:16px;line-height:24px;font-weight:500;letter-spacing:.01em}
 :root[data-tema="escuro"] [style*="background: #1d2e5c"]{background:#a78bfa!important}
 /* quadros mais escuros que o fundo */
 :root[data-tema="escuro"]{--m-card:#080c24;--m-sc-low:#0a0f2b}
-:root[data-tema="escuro"] :is(.card,.sec,.tbl,.alist,.dt,.kcard){background:linear-gradient(180deg,rgba(9,13,40,.94),rgba(6,9,30,.94))!important;border-color:rgba(124,140,255,.18)!important}
+:root[data-tema="escuro"] :is(.card,.sec,.tbl,.dt,.kcard){background:linear-gradient(180deg,rgba(9,13,40,.94),rgba(6,9,30,.94))!important;border-color:rgba(124,140,255,.18)!important}
 :root[data-tema="escuro"] .kpi{background:rgba(6,9,30,.9)!important}
 :root[data-tema="escuro"] .col{background:rgba(6,9,30,.45)!important}
 :root[data-tema="escuro"] .search{background:rgba(6,9,30,.6)!important}
@@ -1002,7 +1002,7 @@ h2{font-size:16px;line-height:24px;font-weight:500;letter-spacing:.01em}
 :root[data-tema="escuro"] .top{background:#081028!important;border-bottom:1px solid #1a2240!important}
 :root[data-tema="escuro"] .bnav{background:#081028!important;border-top:1px solid #1a2240!important}
 /* quadros ligeiramente mais escuros que o fundo */
-:root[data-tema="escuro"] :is(.card,.sec,.tbl,.alist,.dt,.kcard){background:#060c20!important}
+:root[data-tema="escuro"] :is(.card,.sec,.tbl,.dt,.kcard){background:#060c20!important}
 :root[data-tema="escuro"] .kpi{background:#060c20!important}
 :root[data-tema="escuro"] .col{background:rgba(5,10,28,.6)!important}
 :root[data-tema="escuro"] .search{background:#060c20!important}
@@ -1486,6 +1486,55 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
   .fs-b { padding: 12px }
   body[data-rota="mapa"] .fab { display: none !important }
 }
+
+/* ===== Alinhamento (out/2026): um só padrão de cabeçalho, rótulo, linha e controle em todos os quadros =====
+   Recuo lateral do quadro (--q-px) e altura do cabeçalho (--q-cab) valem para card, sec e checklist.
+   O cabeçalho tem altura mínima fixa e centra título, contadores e botões entre a borda e o fio de baixo;
+   antes o padding de baixo era 0 e o título encostava no fio. */
+:root { --q-px: 24px; --q-cab: 56px }
+@media (max-width: 899px) { :root { --q-px: 16px } }
+.card-h, .sec-h, .chk-gh { min-height: var(--q-cab); padding: 8px var(--q-px) !important; align-items: center; border-bottom: 1px solid var(--m-outline-var, var(--linha)) }
+:root[data-tema="escuro"] .chk-gh { border-bottom-color: var(--m-outline-var) }
+.card-h > h2, .sec-h > h2, .graf .card-h > h2 { flex: 1 1 0; font-size: 16px; line-height: 24px; font-weight: 500 }
+.chk-gh .gt { flex: 1 1 0; font-size: 16px; line-height: 24px; font-weight: 500 }
+.sec-h h2 .bkm-ico { width: 24px; height: 24px }
+/* botão de texto no fim do cabeçalho ou da linha: o texto alinha com a margem do quadro, não 12 px antes */
+:is(.card-h, .sec-h, .chk-gh) > .btn.text:last-child, :is(.card-h, .sec-h) > :last-child > .btn.text:last-child, .da > .btn.text:last-child { margin-right: -12px }
+/* gráficos do Dashboard: mesmo cabeçalho dos outros quadros; barras alinhadas com o título */
+.graf .card-b { padding-inline: calc(var(--q-px) - 8px) }
+/* rótulos sem caixa-alta espaçada (regra do visual Material 3) */
+:is(.kvg .k, .cond .lbl, .metric .ml, .area .as, .mini-tbl th, .tag-ref, .opt, .passo, .reu-p b, .reu-x .k, .lbl-up, .mp-legenda summary, .relevo-n .k, .chip.fase) { text-transform: none; letter-spacing: .01em }
+:is(.kvg .k, .cond .lbl, .metric .ml, .mini-tbl th, .passo, .reu-p b, .reu-x .k, .lbl-up, .relevo-n .k) { font-size: 12px; font-weight: 500; color: var(--m-on-var, var(--texto-suave)) }
+:is(.area .as, .tag-ref, .opt) { font-size: 12px }
+/* lista de atenção do Início: sem quadro dentro do quadro; ícone e seta centrados na linha */
+.alist { background: none; border: 0; border-radius: 0 }
+.aitem { align-items: center }
+.aitem:hover { background: rgba(31,31,31,.06) }
+/* listas de chave e valor: quando alguma linha tem lápis, todas reservam a coluna e os valores alinham */
+.kvl:has(> .kv > .kv-ed) > .kv:not(.editando) { grid-template-columns: minmax(120px, 38%) minmax(0, 1fr) 32px !important; align-items: center }
+/* tabelas pequenas: célula centrada na altura da linha (o botão Remover não desce) */
+.mini-tbl td { vertical-align: middle }
+/* formulário em linha: botão de 40 px centrado nos campos de 44 px */
+.inline-form > .btn { margin-bottom: 2px }
+/* linhas de infraestrutura e de documento com o fio no recuo do quadro, como as demais listas */
+.infra, .doc { margin-inline: var(--q-px); padding-inline: 0 }
+.lista-vazia { padding: 12px 0 }
+/* filtros de Tarefas: busca na mesma altura dos seletores */
+.tk-filtros .search { min-height: 40px !important; height: 40px }
+.tk-filtros .chk { min-height: 40px }
+/* indicadores estreitos (Dashboard): o valor não quebra entre número e unidade */
+.kpis-v .kpi { container-type: inline-size; min-width: 0 }
+.kpis-v .kpi .v.sm { white-space: nowrap; font-size: clamp(14px, 17cqi, 18px) }
+/* logs do painel: o fio fica no recuo do texto, não 8 px para fora */
+.pn-log { border-bottom: 0; position: relative }
+.pn-log:not(:last-child)::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: 0; height: 1px; background: var(--m-outline-var, var(--linha)) }
+:root[data-tema="escuro"] .pn-log:not(:last-child)::after { background: rgba(124,140,255,.12) }
+/* Condições pedidas: a segunda linha (permuta, observação) usa as mesmas colunas da primeira */
+.cond + .grid2 { column-gap: var(--e6) }
+.cond + .grid2 .lbl { font-size: 12px; line-height: 16px; font-weight: 500; color: var(--m-on-var, var(--texto-suave)) }
+@media (max-width: 899px) { .cond + .grid2 { column-gap: var(--e4) } }
+.chk-gh + .doc { border-top: 0 }
+.kv dd .chip { white-space: nowrap }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

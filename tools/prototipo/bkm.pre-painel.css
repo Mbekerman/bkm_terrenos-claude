@@ -795,7 +795,7 @@ h2{font-size:16px;line-height:24px;font-weight:500;letter-spacing:.01em}
 .nav-item .cnt{color:var(--m-on-var)!important}
 
 /* cards: filled / outlined M3 */
-.card,.sec,.tbl,.alist{background:var(--m-card)!important;border:1px solid var(--m-outline-var)!important;border-radius:12px!important;box-shadow:none!important}
+.card,.sec,.tbl{background:var(--m-card)!important;border:1px solid var(--m-outline-var)!important;border-radius:12px!important;box-shadow:none!important}
 .kpi{background:var(--m-sc-low)!important;border:0!important;border-radius:16px!important;box-shadow:none!important}
 .kpi::before{display:none!important}
 .kpi .v{font-weight:400}
@@ -921,7 +921,7 @@ h2{font-size:16px;line-height:24px;font-weight:500;letter-spacing:.01em}
 :root[data-tema="escuro"] :is(.top,.side,.bnav){background:transparent!important}
 :root[data-tema="escuro"] .bnav{background:rgba(11,17,49,.86)!important;backdrop-filter:blur(14px);border-top:1px solid rgba(124,140,255,.16)!important}
 :root[data-tema="escuro"] .search{background:rgba(26,35,87,.7)!important;border:1px solid rgba(124,140,255,.18)!important}
-:root[data-tema="escuro"] :is(.card,.sec,.tbl,.alist,.dt,.kcard,.col){background:linear-gradient(180deg,rgba(26,35,87,.92),rgba(17,24,66,.92))!important;border:1px solid rgba(124,140,255,.16)!important}
+:root[data-tema="escuro"] :is(.card,.sec,.tbl,.dt,.kcard,.col){background:linear-gradient(180deg,rgba(26,35,87,.92),rgba(17,24,66,.92))!important;border:1px solid rgba(124,140,255,.16)!important}
 :root[data-tema="escuro"] .col{background:rgba(18,26,69,.55)!important}
 :root[data-tema="escuro"] :is(.kcard,.kcard.proposta_enviada,.kcard.contraproposta,.kcard.negociacoes_finais){box-shadow:0 6px 18px rgba(3,6,25,.45)!important}
 :root[data-tema="escuro"] .kcard.proposta_enviada{border-color:rgba(96,165,250,.55)!important;box-shadow:0 0 14px rgba(96,165,250,.22),0 6px 18px rgba(3,6,25,.45)!important}
@@ -953,7 +953,7 @@ h2{font-size:16px;line-height:24px;font-weight:500;letter-spacing:.01em}
 :root[data-tema="escuro"] :is(.top,.side){background:transparent!important}
 :root[data-tema="escuro"] .bnav{background:rgba(13,20,54,.9)!important;backdrop-filter:blur(14px);border-top:1px solid rgba(124,140,255,.16)!important}
 :root[data-tema="escuro"] .search{background:rgba(27,36,88,.7)!important;border:1px solid rgba(124,140,255,.18)!important}
-:root[data-tema="escuro"] :is(.card,.sec,.tbl,.alist,.dt,.kcard){background:linear-gradient(180deg,rgba(27,36,88,.92),rgba(18,26,70,.92))!important;border:1px solid rgba(124,140,255,.16)!important;border-radius:8px!important}
+:root[data-tema="escuro"] :is(.card,.sec,.tbl,.dt,.kcard){background:linear-gradient(180deg,rgba(27,36,88,.92),rgba(18,26,70,.92))!important;border:1px solid rgba(124,140,255,.16)!important;border-radius:8px!important}
 :root[data-tema="escuro"] .col{background:rgba(20,28,72,.55)!important;border:1px solid rgba(124,140,255,.10)!important;border-radius:10px!important}
 :root[data-tema="escuro"] :is(.kcard,.kcard.proposta_enviada,.kcard.contraproposta,.kcard.negociacoes_finais){box-shadow:0 6px 18px rgba(3,6,25,.45)!important}
 :root[data-tema="escuro"] .kcard.proposta_enviada{border-color:rgba(96,165,250,.6)!important;box-shadow:0 0 14px rgba(96,165,250,.25),0 6px 18px rgba(3,6,25,.45)!important}
@@ -985,7 +985,7 @@ h2{font-size:16px;line-height:24px;font-weight:500;letter-spacing:.01em}
 :root[data-tema="escuro"] [style*="background: #1d2e5c"]{background:#a78bfa!important}
 /* quadros mais escuros que o fundo */
 :root[data-tema="escuro"]{--m-card:#080c24;--m-sc-low:#0a0f2b}
-:root[data-tema="escuro"] :is(.card,.sec,.tbl,.alist,.dt,.kcard){background:linear-gradient(180deg,rgba(9,13,40,.94),rgba(6,9,30,.94))!important;border-color:rgba(124,140,255,.18)!important}
+:root[data-tema="escuro"] :is(.card,.sec,.tbl,.dt,.kcard){background:linear-gradient(180deg,rgba(9,13,40,.94),rgba(6,9,30,.94))!important;border-color:rgba(124,140,255,.18)!important}
 :root[data-tema="escuro"] .kpi{background:rgba(6,9,30,.9)!important}
 :root[data-tema="escuro"] .col{background:rgba(6,9,30,.45)!important}
 :root[data-tema="escuro"] .search{background:rgba(6,9,30,.6)!important}
@@ -1002,7 +1002,7 @@ h2{font-size:16px;line-height:24px;font-weight:500;letter-spacing:.01em}
 :root[data-tema="escuro"] .top{background:#081028!important;border-bottom:1px solid #1a2240!important}
 :root[data-tema="escuro"] .bnav{background:#081028!important;border-top:1px solid #1a2240!important}
 /* quadros ligeiramente mais escuros que o fundo */
-:root[data-tema="escuro"] :is(.card,.sec,.tbl,.alist,.dt,.kcard){background:#060c20!important}
+:root[data-tema="escuro"] :is(.card,.sec,.tbl,.dt,.kcard){background:#060c20!important}
 :root[data-tema="escuro"] .kpi{background:#060c20!important}
 :root[data-tema="escuro"] .col{background:rgba(5,10,28,.6)!important}
 :root[data-tema="escuro"] .search{background:#060c20!important}
