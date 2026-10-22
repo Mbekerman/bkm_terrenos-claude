@@ -2,25 +2,160 @@
 
 Gerado a partir de `supabase/migrations/`. Campos de auditoria (`criado_*`, `atualizado_*`) e `empresa_id` (presente em todas as tabelas da empresa) foram omitidos. Tudo no schema `app`.
 
-## Etapas da negociação
+## Funil da negociação
 
-`Recebido → Viabilidade inicial → Negociação → Minutagem`. Ganha, Perdida e Stand By são **status**, não etapas: guardam a etapa em que a negociação estava. O quadro mostra só as quatro etapas e o Stand By; ganhas e perdidas saem dele.
+Quatro etapas, cada uma com subetapas. O card está sempre numa subetapa; dentro da etapa, ela muda em qualquer ordem (a ordem é só a coluna do kanban).
 
-Dentro de **Negociação**, a fase colore o card (`v_terrenos.fase_negociacao`), calculada das propostas:
-
-| Fase | Quando |
+| Etapa | Subetapas (colunas do kanban) |
 | --- | --- |
-| Proposta enviada | última proposta é da BKM |
-| Contraproposta | última proposta é do vendedor |
-| Negociações finais | última proposta aceita, ou marcada à mão (`marcar_fase_final`) |
+| Em Triagem | Aguardando Informações, Aguardando Documentos, Verificação Interna |
+| Estudos Preliminares | Estudo de Massa, Estudo de Viabilidade, Análise Técnica Preliminar |
+| Negociação | Aguardando Primeira Reunião, Preparando Proposta, Proposta Enviada, Contra Proposta |
+| Contrato | Em Elaboração, Contrato Enviado, Em Ajuste |
 
-| Para sair de | Exige |
-| --- | --- |
-| Viabilidade inicial | estudo de viabilidade vinculado |
-| Negociação | última proposta aceita; entrar em Minutagem é aprovação de compra (gestor) |
-| Minutagem (concluir como ganha) | certidões e minuta validadas, nenhuma diligência impeditiva, gestor |
+Entrar numa etapa leva à subetapa inicial (a primeira ativa). O fim da tratativa é **status**, não etapa: `ativo`, `comprado`, `perdido`, `descartado` ou `stand_by`. Fora de ativo, o processo guarda a etapa e a subetapa onde estava (mostra onde o funil perde terrenos).
 
-O quadro é um kanban: arrastar um card chama `app.mover_para_etapa`. Para frente, passa por cada etapa com as regras acima (se uma falhar, nada muda; o gestor pode forçar com justificativa). Para trás, exige motivo e registra `retorno` no histórico. Soltar no Stand By pede data e motivo; tirar do Stand By retoma a negociação.
+| Status | Exige | Quem |
+| --- | --- | --- |
+| Comprado | estar na última etapa; relato e pontos de sucesso (rich text); checklist da etapa e nenhuma diligência impeditiva | conforme `status_modelo` (padrão: gestor e depois diretor) |
+| Perdido | motivo da lista (`motivos_encerramento`) e relato | analista ou acima |
+| Descartado | motivo da lista; texto obrigatório quando o motivo pede (Outros) | analista ou acima |
+| Stand By | justificativa e data futura para retomar; retomar volta à mesma etapa e subetapa | analista ou acima |
+
+Comprado, Perdido e Descartado não voltam: se o terreno voltar ao radar, abre-se outra tratativa.
+
+**Toda passagem** (etapa, subetapa ou status) passa por `app._passagem`:
+
+1. **Pendências** travam: checklist de documentos para sair da etapa (`checklist_modelo`), pré-requisitos (`prerequisitos_modelo`: "para entrar em X é preciso ter passado pela subetapa Y", lido do histórico) e, na compra, diligência impeditiva. Gestor ou diretor força com justificativa (`forcado` no histórico).
+2. **Aprovações** configuradas por etapa, subetapa e status (`aprova_gestor`, `aprova_diretor`, `aprovacao_modo` sequência ou paralelo) viram um pedido em `aprovacoes`, menos o nível que quem move já tem: gestor dispensa gestor, diretor dispensa os dois. O card fica parado aguardando; enquanto o pedido está aberto, não se move.
+3. Sem pedido, a passagem acontece na hora e vira uma linha em `processo_transicoes`.
+
+Quem aprova: o aprovador previsto vem da hierarquia de quem pediu (`membros.superior_id`: analista → gestor → diretor). Qualquer superior dele também aprova, sempre; quem aprovou de fato fica em `decidido_por`. Em sequência, o diretor só recebe depois do gestor; em paralelo, os dois recebem juntos e a passagem acontece quando ambos aprovarem. Uma recusa (com comentário) encerra o pedido. Aprovado, a passagem é gravada no nome de quem pediu, com `aprovacao_id`.
+
+Arrastar no quadro de etapas chama `mover_para_etapa` (para frente, etapa por etapa, e só a última pode ficar aguardando aprovação; para trás, exige motivo e grava `retorno`). No kanban da etapa, `mover_subetapa`. `checar_passagem(processo, destino_tipo, destino)` diz o que falta (padrão: a próxima etapa, ou a compra na última), quais aprovações serão pedidas e o pedido aberto, com `posso_decidir` para quem vê.
+
+**SLA:** só do histórico. `v_periodos_processo` corta o histórico em períodos (cada transição até a seguinte), com stand by em período próprio. `v_tempo_subetapas` soma por etapa e subetapa: primeira entrada, última saída, passagens, tempo ativo, tempo em stand by e se é a atual. Retomar o stand by empurra `etapa_desde` e `subetapa_desde` pelo tempo parado. Prazo estourado = agora − `subetapa_desde` > `subetapas_modelo.prazo_dias` (`v_terrenos.subetapa_atrasada`).
+
+## Papéis, hierarquia e configuração
+
+Papéis: `diretor`, `gestor`, `analista` (editam) e `leitura` (consulta). `membros.superior_id` liga cada analista a um gestor e cada gestor a um diretor, sempre um nível acima (trigger). `administrador` é permissão à parte, em qualquer papel: gerencia a equipe e a configuração do funil. Quem cria a empresa vira diretor e administrador.
+
+A configuração do funil é **por empresa** (`empresa_id`); as linhas com `empresa_id` nulo são o modelo padrão, copiado para cada empresa nova. O administrador edita pelo app, só por RPC, e toda alteração vai para a auditoria:
+
+| O quê | RPC | Não pode |
+| --- | --- | --- |
+| Etapas: nome, prazo, aprovações | `configurar_etapa` | criar ou apagar etapa (migration) |
+| Subetapas: criar, renomear, reordenar, prazo, aprovações, desativar | `salvar_subetapa` (desativar com terrenos dentro pede `mover_para`) | mudar de etapa; apagar com histórico (`apagar_subetapa` só sem histórico); desativar de que um pré-requisito depende |
+| Pré-requisitos | `adicionar_prerequisito`, `remover_prerequisito` | ciclo; exigir subetapa de etapa posterior; exigir na subetapa inicial outra da própria etapa |
+| Motivos de encerramento | `salvar_motivo`, `apagar_motivo` (só nunca usado) | |
+| Checklist de documentos por etapa | `salvar_checklist`, `remover_checklist` | |
+| Aprovação dos status (Comprado) | `configurar_status` | |
+| Tipos de notificação e lembretes padrão | `configurar_notificacao` | |
+
+```mermaid
+erDiagram
+  empresas ||--o{ membros : equipe
+  membros |o--o{ membros : "superior"
+  etapas_modelo ||--o{ subetapas_modelo : tem
+  etapas_modelo ||--o{ checklist_modelo : "para sair"
+  subetapas_modelo ||--o{ prerequisitos_modelo : "requisito"
+  processos ||--o{ aprovacoes : pede
+  processos ||--o{ processo_transicoes : historico
+  aprovacoes |o--o{ processo_transicoes : libera
+
+  membros {
+    uuid user_id PK
+    text papel "diretor | gestor | analista | leitura"
+    uuid superior_id FK "um nivel acima"
+    bool administrador
+  }
+  etapas_modelo {
+    uuid empresa_id "null = modelo padrao"
+    text codigo
+    text nome
+    int ordem
+    int sla_dias
+    bool aprova_gestor
+    bool aprova_diretor
+    text aprovacao_modo "sequencia | paralelo"
+  }
+  subetapas_modelo {
+    text codigo "unico no tipo de processo"
+    text etapa FK
+    text nome
+    int ordem "coluna do kanban"
+    int prazo_dias
+    bool aprova_gestor
+    bool aprova_diretor
+    text aprovacao_modo
+    bool ativo
+  }
+  status_modelo {
+    text status "comprado | perdido | descartado | stand_by"
+    bool aprova_gestor
+    bool aprova_diretor
+    text aprovacao_modo
+  }
+  prerequisitos_modelo {
+    uuid id PK
+    text alvo_tipo "etapa | subetapa"
+    text alvo
+    text requisito "subetapa"
+  }
+  motivos_encerramento {
+    text status "descartado | perdido"
+    text codigo
+    text nome
+    bool exige_texto
+    bool ativo
+  }
+  aprovacoes {
+    uuid id PK
+    uuid pedido_id "uma linha por nivel"
+    uuid processo_id FK
+    text destino_tipo "etapa | subetapa | status"
+    text destino
+    text nivel "gestor | diretor"
+    smallint ordem "2 = diretor em sequencia"
+    uuid aprovador_previsto
+    uuid pedido_por
+    text status "pendente | aprovado | recusado | cancelado"
+    uuid decidido_por
+    text comentario
+    jsonb dados "forcado, justificativa, dados do encerramento"
+  }
+  processo_transicoes {
+    uuid id PK
+    text evento "abertura | avanco | retorno | subetapa | compra | perda | descarte | stand_by | retomada | temperatura"
+    text de_etapa
+    text para_etapa
+    text de_subetapa
+    text para_subetapa
+    bool forcado
+    uuid aprovacao_id FK
+    uuid user_id
+    timestamptz em
+  }
+```
+
+## Notificações e lembretes
+
+`notificacoes` é genérica: destinatário, tipo, texto, autor, terreno e origem (tabela e id). Cada usuário vê só as suas; só o banco cria (`_notificar`), e `marcar_notificacao_lida(id)` marca uma ou todas. A chave única (tipo, origem, destinatário, `referencia`) impede aviso repetido. O sino ouve a tabela pelo Realtime do Supabase.
+
+| Tipo | Gatilho | Quem recebe |
+| --- | --- | --- |
+| `tarefa_atribuida` | na hora (trigger em `tarefas`) | responsável |
+| `tarefa_marcado` | na hora (`tarefa_marcados`) | pessoa marcada |
+| `tarefa_prazo` | lembrete (padrão: no dia) | responsável |
+| `tarefa_atrasada` | rotina diária, uma vez por prazo | responsável |
+| `stand_by_retomar` | lembrete (padrão: 7 dias antes e no dia) | responsável da tratativa |
+| `subetapa_prazo` | rotina diária, uma vez por entrada na subetapa | responsável da tratativa |
+| `documento_vencendo` | lembrete (padrão: 30 e 7 dias antes) | responsável da tratativa ou do terreno |
+| `reuniao_agendada` | lembrete (padrão: 1 dia antes) | responsável da tratativa ou do terreno |
+| `aprovacao_pendente` | na hora, quando é a vez | aprovador previsto (ou todos do nível) |
+| `aprovacao_decidida` | na hora | quem pediu |
+
+`lembretes`: um por item e antecedência (`dias_antes`, destinatário nulo = responsável do item). Nascem com o item pelos padrões de `tipos_notificacao.dias_antes_padrao`, e quem cadastra pode incluir ou tirar. `enviado_para` guarda a data já avisada: se a data do item mudar, o lembrete volta a valer. `app.rotina_diaria()` roda às 6h pelo pg_cron (agendada na migration quando a extensão existe).
 
 ## 1. Terreno e cadastro do imóvel
 
@@ -204,7 +339,13 @@ erDiagram
     text tipo "negociacao"
     uuid terreno_id FK
     text etapa_atual
-    text status "ativo | ganha | perdida | stand_by"
+    text subetapa_atual
+    timestamptz subetapa_desde
+    text status "ativo | comprado | perdido | descartado | stand_by"
+    text motivo_encerramento "codigo do motivo"
+    text detalhe_encerramento "relato ou justificativa"
+    text pontos_sucesso "comprado"
+    date retomar_em
     uuid responsavel_id FK
     uuid viabilidade_id FK
   }
@@ -212,7 +353,6 @@ erDiagram
     uuid processo_id PK
     uuid oferta_referencia_id FK
     smallint temperatura "1 a 5"
-    bool fase_final "negociacoes finais, marcada a mao"
   }
   propostas {
     uuid id PK
@@ -314,7 +454,7 @@ erDiagram
 
 | View / função | Para quê |
 | --- | --- |
-| `v_mapa` | um pin por terreno ativo, com `situacao_mapa` (sem negociação, etapa da negociação ativa, stand by, ganha ou perdida) e a poligonal |
+| `v_mapa` | um pin por terreno ativo, com `situacao_mapa` (sem negociação, etapa da negociação ativa, ou o status: comprado, perdido, descartado, stand by), a subetapa e a poligonal |
 | `v_terreno_pontos` | todos os pontos de interesse da empresa para cada terreno localizado: linha reta sempre; a pé e de carro pela rota quando medidos para a coordenada atual (`precisa_medir` quando não) |
 | `salvar_distancias_pontos(terreno, lat, lng, itens)` | grava as distâncias pela rota (a pé e de carro) do terreno aos pontos da empresa; recusa coordenada diferente da atual |
 | `distancia_km(lat1, lng1, lat2, lng2)` | haversine; rota de verdade vem do serviço de mapas |
@@ -371,7 +511,12 @@ erDiagram
 | Edição simultânea: salvar com versão antiga é recusado | `terrenos.versao` + `salvar_terreno` |
 | Participações dos proprietários somam no máximo 100% | trigger em `terreno_pessoas` |
 | Registro não muda de terreno depois de criado | `tg_mesma_empresa` |
-| Diligência impeditiva em aberto impede concluir como ganha | `checar_avanco` |
+| Diligência impeditiva em aberto impede a compra; checklist da etapa para sair dela; pré-requisitos para entrar | `_pendencias` |
+| Etapa, subetapa e status só mudam por RPC, com transição no histórico; aprovações configuradas viram pedido | `_passagem`, `decidir_aprovacao` |
+| Um pedido de aprovação aberto por processo e nível; com pedido aberto o card não se move | índice único parcial em `aprovacoes` |
+| Superior sempre um nível acima; ao menos um administrador por empresa | trigger em `membros` |
+| Configuração do funil só pelo administrador, por empresa, com auditoria | RLS só de leitura + RPCs com `exigir_administrador` |
+| Motivo de Perdido e Descartado vem da lista ativa; Comprado exige relato e pontos de sucesso | `encerrar_processo` + checks em `processos` |
 | Papel "leitura" consulta tudo e não altera nada | políticas com `empresas_edicao()` e `exigir_editor` |
 | CEP e CPF/CNPJ guardados só com dígitos; polígono GeoJSON validado | triggers e check |
 | Mesma matrícula no mesmo cartório = mesmo terreno | índice único em `matriculas` |

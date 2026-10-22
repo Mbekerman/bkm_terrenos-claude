@@ -19,14 +19,63 @@ create table app.empresas (
 );
 
 create table app.membros (
-  empresa_id  uuid not null references app.empresas(id) on delete cascade,
-  user_id     uuid not null references auth.users(id) on delete cascade,
-  papel       text not null check (papel in ('gestor','analista','leitura')),  -- leitura: consulta sem editar
-  nome        text not null,
-  criado_em   timestamptz not null default now(),
-  primary key (empresa_id, user_id)
+  empresa_id    uuid not null references app.empresas(id) on delete cascade,
+  user_id       uuid not null references auth.users(id) on delete cascade,
+  -- diretor > gestor > analista; leitura só consulta
+  papel         text not null check (papel in ('diretor','gestor','analista','leitura')),
+  nome          text not null,
+  criado_em     timestamptz not null default now(),
+  -- a quem responde: analista -> gestor, gestor -> diretor (sempre um nível acima)
+  superior_id   uuid,
+  -- permissão à parte, em qualquer papel: edita a configuração do funil e a equipe
+  administrador boolean not null default false,
+  primary key (empresa_id, user_id),
+  foreign key (empresa_id, superior_id) references app.membros(empresa_id, user_id),
+  check (superior_id is distinct from user_id)
 );
 create index on app.membros (user_id);
+create index on app.membros (empresa_id, superior_id);
+
+-- Nível do papel: o superior está sempre num nível acima. Quem tem o nível exigido
+-- por uma aprovação fica dispensado dela.
+create or replace function app.nivel_papel(p_papel text)
+returns int language sql immutable set search_path = ''
+as $$ select case p_papel when 'diretor' then 3 when 'gestor' then 2 when 'analista' then 1 else 0 end $$;
+
+create or replace function app.tg_membro_hierarquia()
+returns trigger language plpgsql security definer set search_path = ''
+as $$
+declare sup app.membros;
+begin
+  if tg_op = 'DELETE' then
+    if exists (select 1 from app.membros where empresa_id = old.empresa_id and superior_id = old.user_id) then
+      raise exception 'Antes de remover, troque o superior de quem responde a %', old.nome using errcode = '23503';
+    end if;
+    if old.administrador and not exists (select 1 from app.membros where empresa_id = old.empresa_id and administrador and user_id <> old.user_id) then
+      raise exception 'A empresa precisa de ao menos um administrador' using errcode = '23514';
+    end if;
+    return old;
+  end if;
+  if new.superior_id is not null then
+    select * into sup from app.membros where empresa_id = new.empresa_id and user_id = new.superior_id;
+    if app.nivel_papel(sup.papel) <> app.nivel_papel(new.papel) + 1 or new.papel = 'leitura' then
+      raise exception 'O superior de um % é um %', new.papel,
+        case new.papel when 'analista' then 'gestor' when 'gestor' then 'diretor' else 'nível acima (diretor não tem superior)' end
+        using errcode = '23514';
+    end if;
+  end if;
+  if tg_op = 'UPDATE' then
+    if new.papel <> old.papel and exists (select 1 from app.membros where empresa_id = new.empresa_id and superior_id = new.user_id) then
+      raise exception 'Troque o superior de quem responde a % antes de mudar o papel', new.nome using errcode = '23514';
+    end if;
+    if old.administrador and not new.administrador
+       and not exists (select 1 from app.membros where empresa_id = new.empresa_id and administrador and user_id <> new.user_id) then
+      raise exception 'A empresa precisa de ao menos um administrador' using errcode = '23514';
+    end if;
+  end if;
+  return new;
+end $$;
+create trigger t_hierarquia before insert or update or delete on app.membros for each row execute function app.tg_membro_hierarquia();
 
 -- Funções de acesso. SECURITY DEFINER para não recursar na RLS de membros.
 create or replace function app.minhas_empresas()
@@ -44,23 +93,53 @@ returns boolean
 language sql stable security definer set search_path = ''
 as $$ select exists (select 1 from app.membros where user_id = auth.uid() and empresa_id = p_empresa) $$;
 
+-- Gestor ou acima (diretor): força avanço, vê a auditoria.
 create or replace function app.eh_gestor(p_empresa uuid)
 returns boolean
 language sql stable security definer set search_path = ''
-as $$ select coalesce(app.papel(p_empresa) = 'gestor', false) $$;
+as $$ select coalesce(app.papel(p_empresa) in ('gestor','diretor'), false) $$;
 
--- Empresas em que o usuário pode editar (gestor ou analista).
+create or replace function app.eh_administrador(p_empresa uuid)
+returns boolean
+language sql stable security definer set search_path = ''
+as $$ select exists (select 1 from app.membros where user_id = auth.uid() and empresa_id = p_empresa and administrador) $$;
+
+create or replace function app.exigir_administrador(p_empresa uuid)
+returns void
+language plpgsql stable security definer set search_path = ''
+as $$
+begin
+  if auth.uid() is null or not app.eh_administrador(p_empresa) then
+    raise exception 'Só o administrador muda a configuração' using errcode = '42501';
+  end if;
+end $$;
+
+-- Verdadeiro se p_chefe está acima de p_membro na hierarquia (superior, superior do superior...).
+create or replace function app.eh_superior(p_empresa uuid, p_chefe uuid, p_membro uuid)
+returns boolean
+language sql stable security definer set search_path = ''
+as $$
+  with recursive acima as (
+    select superior_id, 1 as n from app.membros where empresa_id = p_empresa and user_id = p_membro
+    union all
+    select m.superior_id, a.n + 1 from acima a join app.membros m on m.empresa_id = p_empresa and m.user_id = a.superior_id
+    where a.n < 10
+  )
+  select exists (select 1 from acima where superior_id = p_chefe)
+$$;
+
+-- Empresas em que o usuário pode editar (diretor, gestor ou analista).
 create or replace function app.empresas_edicao()
 returns setof uuid
 language sql stable security definer set search_path = ''
-as $$ select empresa_id from app.membros where user_id = auth.uid() and papel in ('gestor','analista') $$;
+as $$ select empresa_id from app.membros where user_id = auth.uid() and papel in ('diretor','gestor','analista') $$;
 
 create or replace function app.exigir_editor(p_empresa uuid)
 returns void
 language plpgsql stable security definer set search_path = ''
 as $$
 begin
-  if auth.uid() is null or coalesce(app.papel(p_empresa), '') not in ('gestor','analista') then
+  if auth.uid() is null or coalesce(app.papel(p_empresa), '') not in ('diretor','gestor','analista') then
     raise exception 'Seu acesso é somente leitura' using errcode = '42501';
   end if;
 end $$;
@@ -75,7 +154,8 @@ begin
   end if;
 end $$;
 
--- Cria a empresa e torna quem chamou gestor. Usado no primeiro acesso.
+-- Cria a empresa e torna quem chamou diretor e administrador. Usado no primeiro acesso.
+-- A configuração do funil é copiada do modelo padrão por trigger (ver cadastros).
 create or replace function app.criar_empresa(p_nome text, p_meu_nome text)
 returns uuid
 language plpgsql security definer set search_path = ''
@@ -86,7 +166,7 @@ begin
     raise exception 'Faça login primeiro' using errcode = '42501';
   end if;
   insert into app.empresas (nome) values (p_nome) returning id into v_id;
-  insert into app.membros (empresa_id, user_id, papel, nome) values (v_id, auth.uid(), 'gestor', p_meu_nome);
+  insert into app.membros (empresa_id, user_id, papel, nome, administrador) values (v_id, auth.uid(), 'diretor', p_meu_nome, true);
   return v_id;
 end $$;
 
@@ -134,7 +214,7 @@ declare
 begin
   if tg_op = 'UPDATE' and v_old = v_new then return new; end if;
   insert into app.auditoria (empresa_id, tabela, registro_id, acao, antes, depois)
-  values ((v_row->>'empresa_id')::uuid, tg_table_name, (v_row->>'id')::uuid, lower(tg_op), v_old, v_new);
+  values ((v_row->>'empresa_id')::uuid, tg_table_name, coalesce(v_row->>'id', v_row->>'user_id')::uuid, lower(tg_op), v_old, v_new);
   return coalesce(new, old);
 end $$;
 
@@ -149,11 +229,12 @@ create policy empresas_ver on app.empresas for select to authenticated
   using (id in (select app.minhas_empresas()));
 create policy membros_ver on app.membros for select to authenticated
   using (empresa_id in (select app.minhas_empresas()));
-create policy membros_gestor_gerencia on app.membros for all to authenticated
-  using (app.eh_gestor(empresa_id)) with check (app.eh_gestor(empresa_id));
+create policy membros_admin_gerencia on app.membros for all to authenticated
+  using (app.eh_administrador(empresa_id)) with check (app.eh_administrador(empresa_id));
 create policy auditoria_gestor_ve on app.auditoria for select to authenticated
   using (app.eh_gestor(empresa_id));
 
 grant select on app.empresas, app.auditoria to authenticated;
 grant select, insert, update, delete on app.membros to authenticated;
 grant execute on function app.criar_empresa(text, text) to authenticated;
+create trigger t_aud after insert or update or delete on app.membros for each row execute function app.tg_auditoria();

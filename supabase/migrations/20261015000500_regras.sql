@@ -68,10 +68,10 @@ select p.id as processo_id, p.empresa_id, c.etapa, c.tipo_documento, c.obrigator
        d.id as documento_id, d.emitido_em, d.valido_ate, d.versao_atual, d.nome_arquivo, d.storage_path,
        coalesce(d.situacao_efetiva, 'pendente') as situacao
 from app.processos p
-join app.checklist_modelo c on c.tipo_processo = p.tipo
+join app.checklist_modelo c on c.empresa_id = p.empresa_id and c.tipo_processo = p.tipo
 join app.tipos_documento td on td.codigo = c.tipo_documento
-join app.etapas_modelo em on em.tipo_processo = p.tipo and em.codigo = c.etapa
-join app.etapas_modelo ea on ea.tipo_processo = p.tipo and ea.codigo = p.etapa_atual
+join app.etapas_modelo em on em.empresa_id = p.empresa_id and em.tipo_processo = p.tipo and em.codigo = c.etapa
+join app.etapas_modelo ea on ea.empresa_id = p.empresa_id and ea.tipo_processo = p.tipo and ea.codigo = p.etapa_atual
 left join app.v_documentos d on d.processo_id = p.id and d.tipo_documento = c.tipo_documento;
 
 -- Reunião com a ata atual e os participantes, para a linha do tempo da negociação.
@@ -97,13 +97,13 @@ select t.id, t.empresa_id, t.codigo, t.nome, t.situacao_cadastral, t.prioridade,
        p.id as processo_id, p.codigo as processo_codigo, p.status as negociacao_status,
        p.etapa_atual, e.nome as etapa_nome, e.ordem as etapa_ordem,
        (current_date - p.etapa_desde::date) as dias_na_etapa,
+       p.subetapa_atual, se.nome as subetapa_nome, se.ordem as subetapa_ordem,
+       (current_date - p.subetapa_desde::date) as dias_na_subetapa,
+       coalesce(p.status = 'ativo' and now() - p.subetapa_desde > make_interval(days => se.prazo_dias), false) as subetapa_atrasada,
+       p.motivo_encerramento, mo.nome as motivo_encerramento_nome, p.retomar_em, p.data_encerramento,
+       -- pedido de aprovação aberto: para onde e de qual nível se espera agora
+       ap.destino_tipo as aprovacao_destino_tipo, ap.destino as aprovacao_destino, ap.nivel as aprovacao_aguardando,
        n.temperatura,
-       -- fase dentro da etapa Negociação, para colorir o card
-       case when p.etapa_atual <> 'negociacao' or p.status <> 'ativo' then null
-            when n.fase_final or lp.status = 'aceita' then 'negociacoes_finais'
-            when lp.origem = 'vendedor' then 'contraproposta'
-            when lp.origem = 'bkm' then 'proposta_enviada'
-            else 'sem_proposta' end as fase_negociacao,
        -- condições pedidas: oferta de referência, ou a mais recente ativa
        o.id as oferta_id, o.valor_pedido, o.forma_pagamento_pedida, o.aceita_permuta, o.observacao_pagamento,
        round(o.valor_pedido / nullif(t.area_adotada_m2, 0), 2) as valor_pedido_m2,
@@ -128,7 +128,13 @@ left join lateral (
   select * from app.processos x where x.terreno_id = t.id and x.tipo = 'negociacao'
   order by (x.status in ('ativo','stand_by')) desc, x.data_inicio desc limit 1
 ) p on true
-left join app.etapas_modelo e on e.tipo_processo = p.tipo and e.codigo = p.etapa_atual
+left join app.etapas_modelo e on e.empresa_id = p.empresa_id and e.tipo_processo = p.tipo and e.codigo = p.etapa_atual
+left join app.subetapas_modelo se on se.empresa_id = p.empresa_id and se.tipo_processo = p.tipo and se.codigo = p.subetapa_atual
+left join app.motivos_encerramento mo on mo.empresa_id = p.empresa_id and mo.status = p.status and mo.codigo = p.motivo_encerramento
+left join lateral (
+  select a.destino_tipo, a.destino, a.nivel from app.aprovacoes a
+  where a.processo_id = p.id and a.status = 'pendente' order by a.ordem, a.nivel limit 1
+) ap on true
 left join app.negociacoes n on n.processo_id = p.id
 left join lateral (
   select * from app.ofertas x where x.terreno_id = t.id
@@ -155,11 +161,12 @@ returns numeric language sql immutable parallel safe set search_path = '' as $$
            cos(radians(lat1)) * cos(radians(lat2)) * power(sin(radians(lng2 - lng1) / 2), 2))))::numeric, 2)
 $$;
 
--- Pins do mapa: situação que dá a cor (etapa da negociação ativa, ou o status).
+-- Pins do mapa: situação que dá a cor (etapa da negociação ativa, ou o status:
+-- comprado, perdido, descartado, stand_by).
 create view app.v_mapa with (security_invoker = true) as
 select v.id, v.empresa_id, v.codigo, v.nome, v.bairro, v.zona, v.municipio, v.corretor_principal,
        t.latitude, t.longitude, t.precisao_localizacao, t.poligono_geojson,
-       v.area_adotada_m2, v.valor_pedido, v.temperatura, v.fase_negociacao,
+       v.area_adotada_m2, v.valor_pedido, v.temperatura, v.etapa_nome, v.subetapa_atual, v.subetapa_nome,
        case when v.processo_id is null then 'sem_negociacao'
             when v.negociacao_status = 'ativo' then v.etapa_atual
             else v.negociacao_status end as situacao_mapa
@@ -210,9 +217,63 @@ select k.*, t.codigo as terreno_codigo, t.nome as terreno_nome,
 from app.tarefas k
 join app.terrenos t on t.id = k.terreno_id;
 
+-- Períodos do processo, lidos só do histórico: cada transição que muda a
+-- posição ou o status abre um período que dura até a seguinte. Stand by
+-- fica em período próprio, para não inflar o tempo da etapa onde parou.
+create view app.v_periodos_processo with (security_invoker = true) as
+select x.empresa_id, x.processo_id, x.para_etapa as etapa, x.para_subetapa as subetapa, x.situacao,
+       x.em as inicio, x.fim,
+       case when x.situacao in ('ativo','stand_by') then coalesce(x.fim, now()) - x.em end as duracao,
+       x.fim is null as atual
+from (
+  select t.empresa_id, t.processo_id, t.para_etapa, t.para_subetapa, t.em,
+         case t.evento when 'stand_by' then 'stand_by' when 'compra' then 'comprado' when 'perda' then 'perdido'
+                       when 'descarte' then 'descartado' else 'ativo' end as situacao,
+         lead(t.em) over (partition by t.processo_id order by t.em, t.id) as fim
+  from app.processo_transicoes t
+  where t.evento <> 'temperatura'
+) x;
+
+-- Tempo em cada etapa e subetapa, pronto para os KPIs de SLA e para a ficha
+-- (Estudos Preliminares como "quase checklist": entrada, saída, atual).
+create view app.v_tempo_subetapas with (security_invoker = true) as
+select pr.empresa_id, pr.processo_id, pr.etapa, e.nome as etapa_nome, e.ordem as etapa_ordem,
+       pr.subetapa, s.nome as subetapa_nome, s.ordem as subetapa_ordem, s.prazo_dias,
+       min(pr.inicio) as primeira_entrada,
+       case when bool_or(pr.atual and pr.situacao in ('ativo','stand_by')) then null else max(pr.fim) end as ultima_saida,
+       count(*) filter (where pr.situacao = 'ativo') as passagens,
+       coalesce(sum(pr.duracao) filter (where pr.situacao = 'ativo'), interval '0') as tempo_ativo,
+       coalesce(sum(pr.duracao) filter (where pr.situacao = 'stand_by'), interval '0') as tempo_stand_by,
+       bool_or(pr.atual and pr.situacao in ('ativo','stand_by')) as atual
+from app.v_periodos_processo pr
+join app.processos p on p.id = pr.processo_id
+left join app.etapas_modelo e on e.empresa_id = p.empresa_id and e.tipo_processo = p.tipo and e.codigo = pr.etapa
+left join app.subetapas_modelo s on s.empresa_id = p.empresa_id and s.tipo_processo = p.tipo and s.codigo = pr.subetapa
+where pr.subetapa is not null
+group by pr.empresa_id, pr.processo_id, pr.etapa, e.nome, e.ordem, pr.subetapa, s.nome, s.ordem, s.prazo_dias;
+
+-- Pedidos de aprovação com nomes, para a caixa do aprovador e o histórico.
+create view app.v_aprovacoes with (security_invoker = true) as
+select a.*, p.codigo as processo_codigo, p.terreno_id, t.nome as terreno_nome,
+       coalesce(e.nome, s.nome, st.nome) as destino_nome,
+       mp.nome as pedido_por_nome, mv.nome as aprovador_previsto_nome, md.nome as decidido_por_nome,
+       -- vez desta linha: em sequência, o diretor espera o gestor
+       (a.status = 'pendente' and not exists (
+          select 1 from app.aprovacoes o where o.pedido_id = a.pedido_id and o.status = 'pendente' and o.ordem < a.ordem)) as na_vez
+from app.aprovacoes a
+join app.processos p on p.id = a.processo_id
+join app.terrenos t on t.id = p.terreno_id
+left join app.etapas_modelo e    on a.destino_tipo = 'etapa'    and e.empresa_id = a.empresa_id and e.tipo_processo = p.tipo and e.codigo = a.destino
+left join app.subetapas_modelo s on a.destino_tipo = 'subetapa' and s.empresa_id = a.empresa_id and s.tipo_processo = p.tipo and s.codigo = a.destino
+left join app.status_modelo st   on a.destino_tipo = 'status'   and st.empresa_id = a.empresa_id and st.tipo_processo = p.tipo and st.status = a.destino
+left join app.membros mp on mp.empresa_id = a.empresa_id and mp.user_id = a.pedido_por
+left join app.membros mv on mv.empresa_id = a.empresa_id and mv.user_id = a.aprovador_previsto
+left join app.membros md on md.empresa_id = a.empresa_id and md.user_id = a.decidido_por;
+
 grant select on app.v_terreno_infraestrutura, app.v_inscricoes, app.v_urbanismo_vigente,
                 app.v_documentos, app.v_checklist, app.v_reunioes, app.v_terrenos,
-                app.v_mapa, app.v_terreno_pontos, app.v_tarefas, app.v_terreno_entorno, app.v_entorno_buscas to authenticated;
+                app.v_mapa, app.v_terreno_pontos, app.v_tarefas, app.v_terreno_entorno, app.v_entorno_buscas,
+                app.v_periodos_processo, app.v_tempo_subetapas, app.v_aprovacoes to authenticated;
 
 -- ---------------------------------------------------------------------
 -- Duplicidade
@@ -261,7 +322,7 @@ create or replace function app.abrir_negociacao(p_terreno uuid, p_oferta uuid de
 returns uuid
 language plpgsql security definer set search_path = ''
 as $$
-declare t app.terrenos; v_id uuid;
+declare t app.terrenos; v_id uuid; v_etapa text; v_sub text;
 begin
   select * into t from app.terrenos where id = p_terreno;
   if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
@@ -270,11 +331,13 @@ begin
   select id into v_id from app.processos where terreno_id = p_terreno and tipo = 'negociacao' and status in ('ativo','stand_by');
   if found then return v_id; end if;
 
-  insert into app.processos (empresa_id, terreno_id, tipo, etapa_atual, responsavel_id)
-  values (t.empresa_id, t.id, 'negociacao', 'recebido', t.responsavel_id) returning id into v_id;
+  select codigo into v_etapa from app.etapas_modelo where empresa_id = t.empresa_id and tipo_processo = 'negociacao' order by ordem limit 1;
+  v_sub := app._subetapa_inicial(t.empresa_id, 'negociacao', v_etapa);
+  insert into app.processos (empresa_id, terreno_id, tipo, etapa_atual, subetapa_atual, responsavel_id)
+  values (t.empresa_id, t.id, 'negociacao', v_etapa, v_sub, t.responsavel_id) returning id into v_id;
   insert into app.negociacoes (processo_id, empresa_id, oferta_referencia_id) values (v_id, t.empresa_id, p_oferta);
-  insert into app.processo_transicoes (empresa_id, processo_id, evento, para_etapa, comentario)
-  values (t.empresa_id, v_id, 'abertura', 'recebido', 'Negociação aberta');
+  insert into app.processo_transicoes (empresa_id, processo_id, evento, para_etapa, para_subetapa, comentario)
+  values (t.empresa_id, v_id, 'abertura', v_etapa, v_sub, 'Negociação aberta');
   return v_id;
 end $$;
 
@@ -331,25 +394,6 @@ begin
   values (p.empresa_id, p.id, 'temperatura', coalesce(antes::text, '—') || ' → ' || coalesce(p_temperatura::text, '—'));
 end $$;
 
--- "Negociações finais": marcação manual dentro da etapa Negociação.
-create or replace function app.marcar_fase_final(p_processo uuid, p_final boolean)
-returns void
-language plpgsql security definer set search_path = ''
-as $$
-declare p app.processos;
-begin
-  select * into p from app.processos where id = p_processo;
-  if not found then raise exception 'Negociação não encontrada' using errcode = 'P0002'; end if;
-  perform app.exigir_editor(p.empresa_id);
-  if p.status <> 'ativo' then raise exception 'A negociação não está ativa' using errcode = '22023'; end if;
-  update app.negociacoes set fase_final = coalesce(p_final, false), fase_final_em = case when p_final then now() end
-   where processo_id = p.id and fase_final is distinct from coalesce(p_final, false);
-  if found then
-    insert into app.processo_transicoes (empresa_id, processo_id, evento, comentario)
-    values (p.empresa_id, p.id, 'fase_final', case when p_final then 'Em negociações finais' else 'Saiu de negociações finais' end);
-  end if;
-end $$;
-
 create or replace function app.definir_oferta_referencia(p_processo uuid, p_oferta uuid)
 returns void
 language plpgsql security definer set search_path = ''
@@ -366,156 +410,511 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
--- Avanço de etapa
+-- Funil: etapas, subetapas, status e aprovações
+--
+-- Toda passagem (entrar numa etapa, numa subetapa ou num status de
+-- encerramento) segue o mesmo caminho, app._passagem:
+--   1. pendências travam (checklist para sair da etapa, pré-requisitos,
+--      diligência impeditiva na compra); o gestor força com justificativa;
+--   2. aprovações configuradas viram um pedido, salvo o nível que quem move
+--      já tem (gestor dispensa gestor; diretor dispensa os dois);
+--   3. sem pedido, executa na hora (app._executar_passagem).
 -- ---------------------------------------------------------------------
-create or replace function app.checar_avanco(p_processo uuid)
+create or replace function app._subetapa_inicial(p_empresa uuid, p_tipo text, p_etapa text)
+returns text
+language sql stable security definer set search_path = ''
+as $$
+  select codigo from app.subetapas_modelo
+  where empresa_id = p_empresa and tipo_processo = p_tipo and etapa = p_etapa and ativo
+  order by ordem, codigo limit 1
+$$;
+
+create or replace function app._passou_por(p_processo uuid, p_subetapa text)
+returns boolean
+language sql stable security definer set search_path = ''
+as $$ select exists (select 1 from app.processo_transicoes where processo_id = p_processo and para_subetapa = p_subetapa) $$;
+
+-- Pendências que travam a passagem. Cada item: ok, tipo, texto, bloqueio_gestor
+-- (true = nem o gestor força).
+create or replace function app._pendencias(p app.processos, p_destino_tipo text, p_destino text)
 returns jsonb
 language plpgsql stable security definer set search_path = ''
 as $$
 declare
-  p app.processos; atual app.etapas_modelo; prox app.etapas_modelo;
-  itens jsonb := '[]'::jsonb; gestor boolean; r record; lp app.propostas;
+  itens jsonb := '[]'::jsonb; r record; ordem_atual int; ordem_destino int; v_sub_inicial text;
+begin
+  select ordem into ordem_atual from app.etapas_modelo where empresa_id = p.empresa_id and tipo_processo = p.tipo and codigo = p.etapa_atual;
+  if p_destino_tipo = 'etapa' then
+    select ordem into ordem_destino from app.etapas_modelo where empresa_id = p.empresa_id and tipo_processo = p.tipo and codigo = p_destino;
+  end if;
+
+  -- sair da etapa (avanço ou compra): checklist de documentos da etapa atual
+  if (p_destino_tipo = 'etapa' and ordem_destino > ordem_atual) or (p_destino_tipo = 'status' and p_destino = 'comprado') then
+    for r in select c.tipo_nome, c.situacao from app.v_checklist c
+             where c.processo_id = p.id and c.etapa = p.etapa_atual and c.obrigatorio order by c.ordem loop
+      itens := itens || jsonb_build_object('ok', r.situacao = 'validado', 'tipo', 'documento', 'bloqueio_gestor', false,
+        'texto', r.tipo_nome || case r.situacao when 'validado' then ' validado' when 'pendente' then ': não enviado'
+                                                when 'recebido' then ': aguardando validação' when 'vencido' then ': vencido' else ': rejeitado' end);
+    end loop;
+  end if;
+
+  if p_destino_tipo = 'status' and p_destino = 'comprado' then
+    for r in select g.titulo from app.diligencias g where g.terreno_id = p.terreno_id and g.situacao = 'impeditiva' loop
+      itens := itens || jsonb_build_object('ok', false, 'tipo', 'diligencia', 'bloqueio_gestor', false, 'texto', 'Diligência impeditiva: ' || r.titulo);
+    end loop;
+  end if;
+
+  -- pré-requisitos (só para frente: voltar de etapa não exige nada)
+  if p_destino_tipo = 'etapa' and ordem_destino > ordem_atual then
+    v_sub_inicial := app._subetapa_inicial(p.empresa_id, p.tipo, p_destino);
+    for r in select distinct pr.requisito, s.nome from app.prerequisitos_modelo pr
+             join app.subetapas_modelo s on s.empresa_id = pr.empresa_id and s.tipo_processo = pr.tipo_processo and s.codigo = pr.requisito
+             where pr.empresa_id = p.empresa_id and pr.tipo_processo = p.tipo
+               and ((pr.alvo_tipo = 'etapa' and pr.alvo = p_destino) or (pr.alvo_tipo = 'subetapa' and pr.alvo = v_sub_inicial)) loop
+      itens := itens || jsonb_build_object('ok', app._passou_por(p.id, r.requisito), 'tipo', 'prerequisito', 'bloqueio_gestor', false,
+        'requisito', r.requisito, 'texto', 'Passar por ' || r.nome);
+    end loop;
+  elsif p_destino_tipo = 'subetapa' then
+    for r in select pr.requisito, s.nome from app.prerequisitos_modelo pr
+             join app.subetapas_modelo s on s.empresa_id = pr.empresa_id and s.tipo_processo = pr.tipo_processo and s.codigo = pr.requisito
+             where pr.empresa_id = p.empresa_id and pr.tipo_processo = p.tipo and pr.alvo_tipo = 'subetapa' and pr.alvo = p_destino loop
+      itens := itens || jsonb_build_object('ok', app._passou_por(p.id, r.requisito), 'tipo', 'prerequisito', 'bloqueio_gestor', false,
+        'requisito', r.requisito, 'texto', 'Passar por ' || r.nome);
+    end loop;
+  end if;
+  return itens;
+end $$;
+
+-- Níveis de aprovação que a passagem pede a quem move (p_ator), já sem os
+-- dispensados. Entrar numa etapa também entra na subetapa inicial dela.
+create or replace function app._aprovacoes_exigidas(p app.processos, p_destino_tipo text, p_destino text, p_ator uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = ''
+as $$
+declare
+  g boolean := false; d boolean := false; modo text := 'sequencia'; r record; nivel_ator int; niveis jsonb := '[]'::jsonb;
+begin
+  if p_destino_tipo = 'etapa' then
+    select aprova_gestor, aprova_diretor, aprovacao_modo into r from app.etapas_modelo
+     where empresa_id = p.empresa_id and tipo_processo = p.tipo and codigo = p_destino;
+    g := r.aprova_gestor; d := r.aprova_diretor; modo := r.aprovacao_modo;
+    select aprova_gestor, aprova_diretor, aprovacao_modo into r from app.subetapas_modelo
+     where empresa_id = p.empresa_id and tipo_processo = p.tipo and codigo = app._subetapa_inicial(p.empresa_id, p.tipo, p_destino);
+    if not (g or d) then modo := coalesce(r.aprovacao_modo, modo); end if;
+    g := g or coalesce(r.aprova_gestor, false); d := d or coalesce(r.aprova_diretor, false);
+  elsif p_destino_tipo = 'subetapa' then
+    select aprova_gestor, aprova_diretor, aprovacao_modo into r from app.subetapas_modelo
+     where empresa_id = p.empresa_id and tipo_processo = p.tipo and codigo = p_destino;
+    g := r.aprova_gestor; d := r.aprova_diretor; modo := r.aprovacao_modo;
+  else
+    select aprova_gestor, aprova_diretor, aprovacao_modo into r from app.status_modelo
+     where empresa_id = p.empresa_id and tipo_processo = p.tipo and status = p_destino;
+    g := coalesce(r.aprova_gestor, false); d := coalesce(r.aprova_diretor, false); modo := coalesce(r.aprovacao_modo, 'sequencia');
+  end if;
+
+  select app.nivel_papel(papel) into nivel_ator from app.membros where empresa_id = p.empresa_id and user_id = p_ator;
+  if g and coalesce(nivel_ator, 0) < 2 then niveis := niveis || '"gestor"'::jsonb; end if;
+  if d and coalesce(nivel_ator, 0) < 3 then niveis := niveis || '"diretor"'::jsonb; end if;
+  return jsonb_build_object('niveis', niveis, 'modo', modo);
+end $$;
+
+-- Quem decide uma linha de aprovação: tem o nível, não é quem pediu, e é o
+-- aprovador previsto ou está acima dele na hierarquia (qualquer superior
+-- aprova por quem está abaixo). Sem previsto, qualquer um do nível.
+create or replace function app._pode_decidir(a app.aprovacoes, p_user uuid)
+returns boolean
+language sql stable security definer set search_path = ''
+as $$
+  select coalesce(app.nivel_papel(m.papel) >= case a.nivel when 'diretor' then 3 else 2 end, false)
+     and p_user <> a.pedido_por
+     and (a.aprovador_previsto is null or a.aprovador_previsto = p_user or app.eh_superior(a.empresa_id, p_user, a.aprovador_previsto))
+  from app.membros m where m.empresa_id = a.empresa_id and m.user_id = p_user
+$$;
+
+-- Avisa quem está na vez de decidir o pedido.
+create or replace function app._avisar_aprovadores(p_pedido uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare a app.aprovacoes; v_terreno uuid; v_nome text; u uuid;
+begin
+  for a in select * from app.aprovacoes x where x.pedido_id = p_pedido and x.status = 'pendente'
+            and not exists (select 1 from app.aprovacoes o where o.pedido_id = x.pedido_id and o.status = 'pendente' and o.ordem < x.ordem) loop
+    select terreno_id into v_terreno from app.processos where id = a.processo_id;
+    select destino_nome into v_nome from app.v_aprovacoes where id = a.id;
+    for u in select m.user_id from app.membros m
+             where m.empresa_id = a.empresa_id and m.user_id <> a.pedido_por
+               and (m.user_id = a.aprovador_previsto
+                    or (a.aprovador_previsto is null and app.nivel_papel(m.papel) >= case a.nivel when 'diretor' then 3 else 2 end)) loop
+      perform app._notificar(a.empresa_id, u, 'aprovacao_pendente', 'Aprovar passagem para ' || coalesce(v_nome, a.destino),
+                             v_terreno, 'aprovacoes', a.id, current_date, a.pedido_por);
+    end loop;
+  end loop;
+end $$;
+
+-- Executa a passagem já liberada. Grava a transição com quem pediu.
+create or replace function app._executar_passagem(
+  p_processo uuid, p_destino_tipo text, p_destino text, p_forcado boolean, p_comentario text,
+  p_dados jsonb default '{}'::jsonb, p_aprovacao uuid default null, p_por uuid default null)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare p app.processos; v_sub text; ordem_atual int; ordem_destino int; v_evento text;
+begin
+  select * into p from app.processos where id = p_processo for update;
+  if p_destino_tipo = 'etapa' then
+    select ordem into ordem_atual from app.etapas_modelo where empresa_id = p.empresa_id and tipo_processo = p.tipo and codigo = p.etapa_atual;
+    select ordem into ordem_destino from app.etapas_modelo where empresa_id = p.empresa_id and tipo_processo = p.tipo and codigo = p_destino;
+    v_sub := app._subetapa_inicial(p.empresa_id, p.tipo, p_destino);
+    update app.processos set etapa_atual = p_destino, etapa_desde = now(), subetapa_atual = v_sub, subetapa_desde = now() where id = p.id;
+    insert into app.processo_transicoes (empresa_id, processo_id, evento, de_etapa, para_etapa, de_subetapa, para_subetapa, forcado, comentario, aprovacao_id, user_id)
+    values (p.empresa_id, p.id, case when ordem_destino > ordem_atual then 'avanco' else 'retorno' end,
+            p.etapa_atual, p_destino, p.subetapa_atual, v_sub, coalesce(p_forcado, false), p_comentario, p_aprovacao, coalesce(p_por, auth.uid()));
+  elsif p_destino_tipo = 'subetapa' then
+    update app.processos set subetapa_atual = p_destino, subetapa_desde = now() where id = p.id;
+    insert into app.processo_transicoes (empresa_id, processo_id, evento, de_etapa, para_etapa, de_subetapa, para_subetapa, forcado, comentario, aprovacao_id, user_id)
+    values (p.empresa_id, p.id, 'subetapa', p.etapa_atual, p.etapa_atual, p.subetapa_atual, p_destino,
+            coalesce(p_forcado, false), p_comentario, p_aprovacao, coalesce(p_por, auth.uid()));
+  else
+    update app.processos set status = p_destino,
+           motivo_encerramento  = p_dados->>'motivo',
+           detalhe_encerramento = p_dados->>'detalhe',
+           pontos_sucesso       = p_dados->>'pontos_sucesso',
+           retomar_em           = (p_dados->>'retomar_em')::date,
+           data_encerramento    = now()
+     where id = p.id;
+    v_evento := case p_destino when 'comprado' then 'compra' when 'perdido' then 'perda' when 'descartado' then 'descarte' else 'stand_by' end;
+    insert into app.processo_transicoes (empresa_id, processo_id, evento, de_etapa, para_etapa, de_subetapa, para_subetapa, forcado, comentario, aprovacao_id, user_id)
+    values (p.empresa_id, p.id, v_evento, p.etapa_atual, p.etapa_atual, p.subetapa_atual, p.subetapa_atual, coalesce(p_forcado, false),
+            nullif(concat_ws(' · ',
+              (select nome from app.motivos_encerramento where empresa_id = p.empresa_id and status = p_destino and codigo = p_dados->>'motivo'),
+              case when p_destino = 'stand_by' then 'retomar em ' || to_char((p_dados->>'retomar_em')::date, 'DD/MM/YYYY') end,
+              p_comentario), ''),
+            p_aprovacao, coalesce(p_por, auth.uid()));
+    if p_destino = 'stand_by' then perform app._lembretes_padrao(p.empresa_id, 'processos', p.id, 'stand_by_retomar'); end if;
+  end if;
+end $$;
+
+create or replace function app._passagem(
+  p_processo uuid, p_destino_tipo text, p_destino text, p_forcar boolean, p_comentario text, p_dados jsonb default '{}'::jsonb)
+returns jsonb
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  p app.processos; pend jsonb; aprov jsonb; v_forcado boolean := false; v_pedido uuid; v_niveis text[]; n text;
+  m app.membros; v_previsto uuid;
+begin
+  select * into p from app.processos where id = p_processo for update;
+  if not found then raise exception 'Processo não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(p.empresa_id);
+  if p.status <> 'ativo' then raise exception 'A negociação não está ativa' using errcode = '22023'; end if;
+  if exists (select 1 from app.aprovacoes where processo_id = p.id and status = 'pendente') then
+    raise exception 'Há um pedido de aprovação em aberto: aguarde a decisão ou cancele o pedido' using errcode = '22023';
+  end if;
+
+  pend := app._pendencias(p, p_destino_tipo, p_destino);
+  if exists (select 1 from jsonb_array_elements(pend) i where not (i->>'ok')::boolean) then
+    if not coalesce(p_forcar, false) then
+      raise exception 'Ainda há pendências para avançar' using errcode = '22023', detail = pend::text;
+    end if;
+    if not app.eh_gestor(p.empresa_id)
+       or exists (select 1 from jsonb_array_elements(pend) i where not (i->>'ok')::boolean and (i->>'bloqueio_gestor')::boolean) then
+      raise exception 'Você não pode forçar este avanço' using errcode = '42501';
+    end if;
+    if coalesce(trim(p_comentario), '') = '' then raise exception 'Justifique o avanço forçado' using errcode = '22023'; end if;
+    v_forcado := true;
+  end if;
+
+  aprov := app._aprovacoes_exigidas(p, p_destino_tipo, p_destino, auth.uid());
+  select array_agg(x) into v_niveis from jsonb_array_elements_text(aprov->'niveis') x;
+  if v_niveis is null then
+    perform app._executar_passagem(p.id, p_destino_tipo, p_destino, v_forcado, p_comentario, p_dados);
+    return jsonb_build_object('resultado', 'feito');
+  end if;
+
+  -- pedido: uma linha por nível; aprovador previsto pela hierarquia de quem pede
+  v_pedido := gen_random_uuid();
+  select * into m from app.membros where empresa_id = p.empresa_id and user_id = auth.uid();
+  foreach n in array v_niveis loop
+    v_previsto := case
+      when n = 'gestor' and m.papel = 'analista' then m.superior_id
+      when n = 'diretor' and m.papel = 'gestor' then m.superior_id
+      when n = 'diretor' and m.papel = 'analista' then (select superior_id from app.membros where empresa_id = p.empresa_id and user_id = m.superior_id)
+    end;
+    insert into app.aprovacoes (pedido_id, empresa_id, processo_id, destino_tipo, destino, nivel, ordem, aprovador_previsto, pedido_por, dados)
+    values (v_pedido, p.empresa_id, p.id, p_destino_tipo, p_destino, n,
+            case when n = 'diretor' and aprov->>'modo' = 'sequencia' and 'gestor' = any(v_niveis) then 2 else 1 end,
+            v_previsto, auth.uid(),
+            p_dados || jsonb_build_object('forcado', v_forcado, 'comentario', p_comentario));
+  end loop;
+  perform app._avisar_aprovadores(v_pedido);
+  return jsonb_build_object('resultado', 'aguardando_aprovacao', 'pedido_id', v_pedido, 'niveis', aprov->'niveis', 'modo', aprov->>'modo');
+end $$;
+
+-- O que falta para uma passagem (padrão: a próxima etapa, ou a compra na última).
+create or replace function app.checar_passagem(p_processo uuid, p_destino_tipo text default null, p_destino text default null)
+returns jsonb
+language plpgsql stable security definer set search_path = ''
+as $$
+declare
+  p app.processos; v_tipo text := p_destino_tipo; v_destino text := p_destino; v_nome text;
+  itens jsonb; aprov jsonb; ped jsonb; gestor boolean;
 begin
   select * into p from app.processos where id = p_processo;
   if not found then raise exception 'Processo não encontrado' using errcode = 'P0002'; end if;
   perform app.exigir_membro(p.empresa_id);
   gestor := app.eh_gestor(p.empresa_id);
-  select * into atual from app.etapas_modelo where tipo_processo = p.tipo and codigo = p.etapa_atual;
-  select * into prox  from app.etapas_modelo where tipo_processo = p.tipo and ordem = atual.ordem + 1;
+  select jsonb_build_object('pedido_id', a.pedido_id, 'destino_tipo', a.destino_tipo, 'destino', a.destino, 'destino_nome', a.destino_nome,
+                            'aguardando', a.nivel, 'pedido_por', a.pedido_por_nome, 'pedido_em', a.pedido_em,
+                            'aprovador_previsto', a.aprovador_previsto_nome, 'posso_decidir', app._pode_decidir(x, auth.uid()))
+    into ped
+    from app.v_aprovacoes a join app.aprovacoes x on x.id = a.id
+   where a.processo_id = p.id and a.status = 'pendente' and a.na_vez order by a.ordem, a.nivel limit 1;
   if p.status <> 'ativo' then
-    return jsonb_build_object('proxima', null, 'ok', false, 'pode_forcar', false, 'itens', '[]'::jsonb);
-  end if;
-  -- depois da última etapa vem o fechamento: status "ganha", sempre com gestor
-  if prox.codigo is null then
-    prox.codigo := 'ganha'; prox.nome := 'Ganha'; prox.exige_gestor := true;
+    return jsonb_build_object('proxima', null, 'ok', false, 'pode_forcar', false, 'itens', '[]'::jsonb, 'aprovacoes', '[]'::jsonb, 'pedido', ped);
   end if;
 
-  if p.etapa_atual = 'viabilidade_inicial' then
-    itens := itens || jsonb_build_object('ok', p.viabilidade_id is not null, 'tipo', 'viabilidade', 'bloqueio_gestor', false,
-      'texto', case when p.viabilidade_id is not null then 'Estudo de viabilidade vinculado' else 'Vincular um estudo de viabilidade' end);
+  if v_tipo is null then
+    select 'etapa', e2.codigo into v_tipo, v_destino
+      from app.etapas_modelo e1 join app.etapas_modelo e2 on e2.empresa_id = e1.empresa_id and e2.tipo_processo = e1.tipo_processo and e2.ordem > e1.ordem
+     where e1.empresa_id = p.empresa_id and e1.tipo_processo = p.tipo and e1.codigo = p.etapa_atual
+     order by e2.ordem limit 1;
+    if v_destino is null then v_tipo := 'status'; v_destino := 'comprado'; end if;
   end if;
-  if p.etapa_atual = 'negociacao' then
-    select * into lp from app.propostas where processo_id = p.id order by versao desc limit 1;
-    itens := itens || jsonb_build_object('ok', coalesce(lp.status = 'aceita', false), 'tipo', 'proposta', 'bloqueio_gestor', false,
-      'texto', case when lp.status = 'aceita' then 'Condições comerciais aceitas' else 'Ter a última proposta marcada como aceita' end);
+  v_nome := case v_tipo
+    when 'etapa' then (select nome from app.etapas_modelo where empresa_id = p.empresa_id and tipo_processo = p.tipo and codigo = v_destino)
+    when 'subetapa' then (select nome from app.subetapas_modelo where empresa_id = p.empresa_id and tipo_processo = p.tipo and codigo = v_destino)
+    else (select nome from app.status_modelo where empresa_id = p.empresa_id and tipo_processo = p.tipo and status = v_destino) end;
+
+  itens := app._pendencias(p, v_tipo, v_destino);
+  if ped is not null then
+    itens := itens || jsonb_build_object('ok', false, 'tipo', 'aprovacao_pendente', 'bloqueio_gestor', true,
+      'texto', 'Aguardando aprovação do ' || (ped->>'aguardando') || ' para ' || coalesce(ped->>'destino_nome', ped->>'destino'));
   end if;
-  for r in select c.tipo_nome, c.situacao from app.v_checklist c
-           where c.processo_id = p.id and c.etapa = p.etapa_atual and c.obrigatorio order by c.ordem loop
-    itens := itens || jsonb_build_object('ok', r.situacao = 'validado', 'tipo', 'documento', 'bloqueio_gestor', false,
-      'texto', r.tipo_nome || case r.situacao when 'validado' then ' validado' when 'pendente' then ': não enviado'
-                                              when 'recebido' then ': aguardando validação' when 'vencido' then ': vencido' else ': rejeitado' end);
-  end loop;
-  if p.etapa_atual = 'minutagem' then
-    for r in select g.titulo from app.diligencias g where g.terreno_id = p.terreno_id and g.situacao = 'impeditiva' loop
-      itens := itens || jsonb_build_object('ok', false, 'tipo', 'diligencia', 'bloqueio_gestor', false, 'texto', 'Diligência impeditiva: ' || r.titulo);
-    end loop;
-  end if;
-  if prox.exige_gestor then
-    itens := itens || jsonb_build_object('ok', gestor, 'tipo', 'gestor', 'bloqueio_gestor', true,
-      'texto', case when gestor then 'Aprovação de gestor' else 'Somente gestores aprovam a compra e o fechamento' end);
-  end if;
+  aprov := app._aprovacoes_exigidas(p, v_tipo, v_destino, auth.uid());
 
   return jsonb_build_object(
-    'proxima', prox.codigo, 'proxima_nome', prox.nome,
+    'proxima', v_destino, 'proxima_tipo', v_tipo, 'proxima_nome', v_nome,
     'ok', not exists (select 1 from jsonb_array_elements(itens) i where not (i->>'ok')::boolean),
     'pode_forcar', gestor
       and exists (select 1 from jsonb_array_elements(itens) i where not (i->>'ok')::boolean)
       and not exists (select 1 from jsonb_array_elements(itens) i where not (i->>'ok')::boolean and (i->>'bloqueio_gestor')::boolean),
-    'itens', itens);
+    'itens', itens,
+    'aprovacoes', aprov->'niveis', 'aprovacao_modo', aprov->>'modo',
+    'pedido', ped);
 end $$;
 
+create or replace function app.checar_avanco(p_processo uuid)
+returns jsonb
+language sql stable security definer set search_path = ''
+as $$ select app.checar_passagem(p_processo) $$;
+
+-- Avança para a próxima etapa. Sair da última não é avanço: é a compra (encerrar_processo).
 create or replace function app.mover_etapa(p_processo uuid, p_forcar boolean default false, p_comentario text default null)
 returns jsonb
 language plpgsql security definer set search_path = ''
 as $$
-declare chk jsonb; p app.processos; v_prox text;
+declare p app.processos; v_prox text; r jsonb;
 begin
-  select * into p from app.processos where id = p_processo for update;
+  select * into p from app.processos where id = p_processo;
   if not found then raise exception 'Processo não encontrado' using errcode = 'P0002'; end if;
-  perform app.exigir_editor(p.empresa_id);
-  chk := app.checar_avanco(p_processo);
-  v_prox := chk->>'proxima';
-  if v_prox is null then raise exception 'Não há próxima etapa para esta negociação' using errcode = '22023'; end if;
-  if not (chk->>'ok')::boolean then
-    if not p_forcar then raise exception 'Ainda há pendências para avançar' using errcode = '22023', detail = chk::text; end if;
-    if not (chk->>'pode_forcar')::boolean then raise exception 'Você não pode forçar este avanço' using errcode = '42501'; end if;
-    if coalesce(trim(p_comentario), '') = '' then raise exception 'Justifique o avanço forçado' using errcode = '22023'; end if;
-  end if;
-  if v_prox = 'ganha' then
-    update app.processos set status = 'ganha', data_encerramento = now() where id = p.id;  -- etapa fica a última
-  else
-    update app.processos set etapa_atual = v_prox, etapa_desde = now() where id = p.id;
-  end if;
-  insert into app.processo_transicoes (empresa_id, processo_id, evento, de_etapa, para_etapa, forcado, comentario)
-  values (p.empresa_id, p.id, case when v_prox = 'ganha' then 'ganho' else 'avanco' end, p.etapa_atual, v_prox,
-          not (chk->>'ok')::boolean, p_comentario);
-  return app.checar_avanco(p_processo);
+  select e2.codigo into v_prox
+    from app.etapas_modelo e1 join app.etapas_modelo e2 on e2.empresa_id = e1.empresa_id and e2.tipo_processo = e1.tipo_processo and e2.ordem > e1.ordem
+   where e1.empresa_id = p.empresa_id and e1.tipo_processo = p.tipo and e1.codigo = p.etapa_atual
+   order by e2.ordem limit 1;
+  if v_prox is null then raise exception 'Não há próxima etapa: na última, o fechamento é Comprado' using errcode = '22023'; end if;
+  r := app._passagem(p.id, 'etapa', v_prox, p_forcar, p_comentario);
+  return app.checar_passagem(p.id) || r;
 end $$;
 
--- Arrastar no quadro: leva a negociação até a etapa escolhida.
--- Para frente, passa por cada etapa intermediária com as mesmas regras de
--- mover_etapa (se uma falhar, nada muda). Para trás, exige motivo e vai para
--- o histórico como "retorno". Ganha não é destino: é o fechamento da Minutagem.
+-- Arrastar no quadro de etapas. Para frente, passa por cada etapa com as
+-- regras de mover_etapa (se uma falhar, nada muda; aprovação só na última).
+-- Para trás, exige motivo e vai para o histórico como "retorno".
 create or replace function app.mover_para_etapa(p_processo uuid, p_etapa text, p_forcar boolean default false, p_comentario text default null)
 returns jsonb
 language plpgsql security definer set search_path = ''
 as $$
-declare p app.processos; atual int; alvo int;
+declare p app.processos; atual int; alvo int; r jsonb := jsonb_build_object('resultado', 'feito'); e record;
 begin
   select * into p from app.processos where id = p_processo for update;
   if not found then raise exception 'Processo não encontrado' using errcode = 'P0002'; end if;
   perform app.exigir_editor(p.empresa_id);
   if p.status <> 'ativo' then raise exception 'A negociação não está ativa' using errcode = '22023'; end if;
-  select ordem into atual from app.etapas_modelo where tipo_processo = p.tipo and codigo = p.etapa_atual;
-  select ordem into alvo  from app.etapas_modelo where tipo_processo = p.tipo and codigo = p_etapa;
+  select ordem into atual from app.etapas_modelo where empresa_id = p.empresa_id and tipo_processo = p.tipo and codigo = p.etapa_atual;
+  select ordem into alvo  from app.etapas_modelo where empresa_id = p.empresa_id and tipo_processo = p.tipo and codigo = p_etapa;
   if alvo is null then raise exception 'Etapa inválida' using errcode = '22023'; end if;
   if alvo > atual then
-    for i in atual + 1 .. alvo loop
-      perform app.mover_etapa(p.id, p_forcar, p_comentario);
+    for e in select codigo, ordem from app.etapas_modelo
+             where empresa_id = p.empresa_id and tipo_processo = p.tipo and ordem > atual and ordem <= alvo order by ordem loop
+      r := app._passagem(p.id, 'etapa', e.codigo, p_forcar, p_comentario);
+      if r->>'resultado' = 'aguardando_aprovacao' and e.ordem < alvo then
+        raise exception 'A passagem para % precisa de aprovação: avance uma etapa por vez', e.codigo using errcode = '22023';
+      end if;
     end loop;
   elsif alvo < atual then
     if coalesce(trim(p_comentario), '') = '' then raise exception 'Informe o motivo para voltar de etapa' using errcode = '22023'; end if;
-    update app.processos set etapa_atual = p_etapa, etapa_desde = now() where id = p.id;
-    insert into app.processo_transicoes (empresa_id, processo_id, evento, de_etapa, para_etapa, comentario)
-    values (p.empresa_id, p.id, 'retorno', p.etapa_atual, p_etapa, p_comentario);
+    if exists (select 1 from app.aprovacoes where processo_id = p.id and status = 'pendente') then
+      raise exception 'Há um pedido de aprovação em aberto: aguarde a decisão ou cancele o pedido' using errcode = '22023';
+    end if;
+    perform app._executar_passagem(p.id, 'etapa', p_etapa, false, p_comentario);
   end if;
-  return app.checar_avanco(p.id);
+  return app.checar_passagem(p.id) || r;
 end $$;
 
-create or replace function app.encerrar_processo(
-  p_processo uuid, p_status text, p_motivo text default null, p_detalhe text default null, p_retomar_em date default null)
-returns void
+-- Troca a subetapa dentro da etapa atual (arrastar no kanban da etapa).
+create or replace function app.mover_subetapa(p_processo uuid, p_subetapa text, p_forcar boolean default false, p_comentario text default null)
+returns jsonb
 language plpgsql security definer set search_path = ''
 as $$
-declare p app.processos;
+declare p app.processos; s app.subetapas_modelo; r jsonb;
 begin
-  select * into p from app.processos where id = p_processo for update;
+  select * into p from app.processos where id = p_processo;
   if not found then raise exception 'Processo não encontrado' using errcode = 'P0002'; end if;
-  perform app.exigir_editor(p.empresa_id);
-  if p.status <> 'ativo' then raise exception 'A negociação não está ativa' using errcode = '22023'; end if;
-  if p_status not in ('perdida','stand_by') then raise exception 'Status inválido' using errcode = '22023'; end if;
-  if p_status = 'perdida' and coalesce(trim(p_motivo),'') = '' then raise exception 'Informe o motivo da perda' using errcode = '22023'; end if;
-  if p_status = 'stand_by' and (p_retomar_em is null or p_retomar_em <= current_date) then raise exception 'Informe uma data futura para retomar' using errcode = '22023'; end if;
-  update app.processos set status = p_status, motivo_encerramento = p_motivo, detalhe_encerramento = p_detalhe,
-         retomar_em = p_retomar_em, data_encerramento = now() where id = p.id;
-  insert into app.processo_transicoes (empresa_id, processo_id, evento, de_etapa, comentario)
-  values (p.empresa_id, p.id, case p_status when 'perdida' then 'perda' else 'stand_by' end, p.etapa_atual,
-          concat_ws(' · ', p_motivo, p_detalhe, case when p_retomar_em is not null then 'retomar em ' || to_char(p_retomar_em,'DD/MM/YYYY') end));
+  select * into s from app.subetapas_modelo where empresa_id = p.empresa_id and tipo_processo = p.tipo and codigo = p_subetapa;
+  if not found or not s.ativo then raise exception 'Subetapa inválida' using errcode = '22023'; end if;
+  if s.etapa <> p.etapa_atual then raise exception 'A subetapa é de outra etapa: mude a etapa primeiro' using errcode = '22023'; end if;
+  if p_subetapa = p.subetapa_atual then return app.checar_passagem(p.id) || jsonb_build_object('resultado', 'sem_mudanca'); end if;
+  r := app._passagem(p.id, 'subetapa', p_subetapa, p_forcar, p_comentario);
+  return app.checar_passagem(p.id) || r;
 end $$;
 
+-- Encerramento: comprado, perdido, descartado ou stand by. O processo guarda
+-- a etapa e a subetapa em que estava. Comprado só na última etapa e conforme
+-- a aprovação configurada em status_modelo.
+create or replace function app.encerrar_processo(
+  p_processo uuid, p_status text, p_motivo text default null, p_detalhe text default null, p_retomar_em date default null,
+  p_pontos_sucesso text default null, p_forcar boolean default false, p_comentario text default null)
+returns jsonb
+language plpgsql security definer set search_path = ''
+as $$
+declare p app.processos; mo app.motivos_encerramento; ultima text;
+begin
+  select * into p from app.processos where id = p_processo;
+  if not found then raise exception 'Processo não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(p.empresa_id);
+  if p_status not in ('comprado','perdido','descartado','stand_by') then raise exception 'Status inválido' using errcode = '22023'; end if;
+  if p_status in ('perdido','descartado') then
+    select * into mo from app.motivos_encerramento where empresa_id = p.empresa_id and status = p_status and codigo = p_motivo and ativo;
+    if not found then raise exception 'Escolha o motivo na lista' using errcode = '22023'; end if;
+    if p_status = 'perdido' and coalesce(trim(p_detalhe), '') = '' then raise exception 'Conte o que aconteceu (relato)' using errcode = '22023'; end if;
+    if mo.exige_texto and coalesce(trim(p_detalhe), '') = '' then raise exception 'Descreva o motivo' using errcode = '22023'; end if;
+  elsif p_motivo is not null then
+    raise exception 'Motivo só para Perdido e Descartado' using errcode = '22023';
+  end if;
+  if p_status = 'comprado' then
+    select codigo into ultima from app.etapas_modelo where empresa_id = p.empresa_id and tipo_processo = p.tipo order by ordem desc limit 1;
+    if p.etapa_atual <> ultima then raise exception 'A compra acontece na última etapa do funil' using errcode = '22023'; end if;
+    if coalesce(trim(p_detalhe), '') = '' or coalesce(trim(p_pontos_sucesso), '') = '' then
+      raise exception 'Escreva o relato e os pontos de sucesso da compra' using errcode = '22023';
+    end if;
+  end if;
+  if p_status = 'stand_by' then
+    if p_retomar_em is null or p_retomar_em <= current_date then raise exception 'Informe uma data futura para retomar' using errcode = '22023'; end if;
+    if coalesce(trim(p_detalhe), '') = '' then raise exception 'Justifique o stand by' using errcode = '22023'; end if;
+  elsif p_retomar_em is not null then
+    raise exception 'Data de retomada só para Stand By' using errcode = '22023';
+  end if;
+  return app._passagem(p.id, 'status', p_status, p_forcar, p_comentario,
+    jsonb_strip_nulls(jsonb_build_object('motivo', p_motivo, 'detalhe', nullif(trim(p_detalhe), ''),
+                                         'pontos_sucesso', nullif(trim(p_pontos_sucesso), ''), 'retomar_em', p_retomar_em)));
+end $$;
+
+-- Volta para Ativo na mesma etapa e subetapa. O tempo parado não conta na
+-- etapa nem na subetapa: as datas de entrada andam o tempo do stand by.
 create or replace function app.retomar_processo(p_processo uuid)
 returns void
 language plpgsql security definer set search_path = ''
 as $$
-declare p app.processos;
+declare p app.processos; parado interval;
 begin
   select * into p from app.processos where id = p_processo for update;
   if not found then raise exception 'Processo não encontrado' using errcode = 'P0002'; end if;
   perform app.exigir_editor(p.empresa_id);
   if p.status <> 'stand_by' then raise exception 'Só negociações em stand by podem ser retomadas' using errcode = '22023'; end if;
+  parado := now() - p.data_encerramento;
   update app.processos set status = 'ativo', retomar_em = null, data_encerramento = null,
-         motivo_encerramento = null, detalhe_encerramento = null where id = p.id;
-  insert into app.processo_transicoes (empresa_id, processo_id, evento, para_etapa) values (p.empresa_id, p.id, 'retomada', p.etapa_atual);
+         motivo_encerramento = null, detalhe_encerramento = null,
+         etapa_desde = etapa_desde + parado, subetapa_desde = subetapa_desde + parado where id = p.id;
+  insert into app.processo_transicoes (empresa_id, processo_id, evento, de_etapa, para_etapa, de_subetapa, para_subetapa)
+  values (p.empresa_id, p.id, 'retomada', p.etapa_atual, p.etapa_atual, p.subetapa_atual, p.subetapa_atual);
+end $$;
+
+-- Decide um pedido. Aprova de uma vez todas as linhas na vez que a pessoa
+-- pode decidir (um diretor que aprova pelo gestor também cobre o nível de
+-- diretor). Recusa encerra o pedido inteiro. Tudo aprovado: a passagem acontece.
+create or replace function app.decidir_aprovacao(p_pedido uuid, p_aprovar boolean, p_comentario text default null)
+returns jsonb
+language plpgsql security definer set search_path = ''
+as $$
+declare a app.aprovacoes; decidiu boolean := false; v_primeira uuid; pend jsonb; p app.processos; v_texto text;
+begin
+  select * into a from app.aprovacoes where pedido_id = p_pedido order by ordem limit 1;
+  if not found then raise exception 'Pedido não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_membro(a.empresa_id);
+  perform 1 from app.aprovacoes where pedido_id = p_pedido for update;
+  select * into p from app.processos where id = a.processo_id for update;
+  if not exists (select 1 from app.aprovacoes where pedido_id = p_pedido and status = 'pendente') then
+    raise exception 'Este pedido já foi decidido' using errcode = '22023';
+  end if;
+
+  if not coalesce(p_aprovar, false) then
+    if coalesce(trim(p_comentario), '') = '' then raise exception 'Diga o motivo da recusa' using errcode = '22023'; end if;
+    select * into a from app.aprovacoes x where x.pedido_id = p_pedido and x.status = 'pendente' and app._pode_decidir(x, auth.uid())
+     order by x.ordem limit 1;
+    if not found then raise exception 'Você não pode decidir este pedido' using errcode = '42501'; end if;
+    update app.aprovacoes set status = 'recusado', decidido_por = auth.uid(), decidido_em = clock_timestamp(), comentario = p_comentario where id = a.id;
+    update app.aprovacoes set status = 'cancelado', decidido_em = clock_timestamp() where pedido_id = p_pedido and status = 'pendente';
+    perform app._notificar(a.empresa_id, a.pedido_por, 'aprovacao_decidida', 'Pedido recusado: ' || p_comentario, p.terreno_id, 'aprovacoes', a.id, current_date, auth.uid());
+    return jsonb_build_object('resultado', 'recusado');
+  end if;
+
+  loop
+    select * into a from app.aprovacoes x
+     where x.pedido_id = p_pedido and x.status = 'pendente' and app._pode_decidir(x, auth.uid())
+       and not exists (select 1 from app.aprovacoes o where o.pedido_id = x.pedido_id and o.status = 'pendente' and o.ordem < x.ordem)
+     order by x.ordem, x.nivel limit 1;
+    exit when not found;
+    update app.aprovacoes set status = 'aprovado', decidido_por = auth.uid(), decidido_em = clock_timestamp(), comentario = p_comentario where id = a.id;
+    decidiu := true;
+  end loop;
+  if not decidiu then raise exception 'Você não pode decidir este pedido agora' using errcode = '42501'; end if;
+
+  if exists (select 1 from app.aprovacoes where pedido_id = p_pedido and status = 'pendente') then
+    perform app._avisar_aprovadores(p_pedido);
+    return jsonb_build_object('resultado', 'aprovado_parcial');
+  end if;
+
+  -- tudo aprovado: confere de novo as pendências (podem ter mudado) e executa
+  select * into a from app.aprovacoes where pedido_id = p_pedido order by ordem, nivel limit 1;
+  if p.status <> 'ativo' then raise exception 'A negociação não está mais ativa' using errcode = '22023'; end if;
+  if not coalesce((a.dados->>'forcado')::boolean, false) then
+    pend := app._pendencias(p, a.destino_tipo, a.destino);
+    if exists (select 1 from jsonb_array_elements(pend) i where not (i->>'ok')::boolean) then
+      raise exception 'Surgiram pendências desde o pedido: recuse e peça de novo' using errcode = '22023', detail = pend::text;
+    end if;
+  end if;
+  perform app._executar_passagem(p.id, a.destino_tipo, a.destino, coalesce((a.dados->>'forcado')::boolean, false),
+                                 a.dados->>'comentario', a.dados, a.id, a.pedido_por);
+  select destino_nome into v_texto from app.v_aprovacoes where id = a.id;
+  perform app._notificar(a.empresa_id, a.pedido_por, 'aprovacao_decidida', 'Aprovado: ' || coalesce(v_texto, a.destino), p.terreno_id, 'aprovacoes', a.id, current_date, auth.uid());
+  return jsonb_build_object('resultado', 'aprovado');
+end $$;
+
+-- Quem pediu (ou quem pode decidir) desiste do pedido.
+create or replace function app.cancelar_aprovacao(p_pedido uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare a app.aprovacoes;
+begin
+  select * into a from app.aprovacoes where pedido_id = p_pedido and status = 'pendente' order by ordem limit 1;
+  if not found then raise exception 'Não há pedido em aberto' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(a.empresa_id);
+  if a.pedido_por <> auth.uid()
+     and not exists (select 1 from app.aprovacoes x where x.pedido_id = p_pedido and x.status = 'pendente' and app._pode_decidir(x, auth.uid())) then
+    raise exception 'Só quem pediu ou quem aprova cancela o pedido' using errcode = '42501';
+  end if;
+  update app.aprovacoes set status = 'cancelado', decidido_por = auth.uid(), decidido_em = clock_timestamp() where pedido_id = p_pedido and status = 'pendente';
 end $$;
 
 -- ---------------------------------------------------------------------
@@ -790,11 +1189,256 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
+-- Configuração do funil pelo app (Configurações › Funil): só o
+-- administrador, só por estas funções. Toda alteração vai para a auditoria.
+-- ---------------------------------------------------------------------
+create or replace function app._chaves_permitidas(p_dados jsonb, p_chaves text[])
+returns void
+language plpgsql immutable set search_path = ''
+as $$
+declare k text;
+begin
+  for k in select jsonb_object_keys(coalesce(p_dados, '{}'::jsonb)) loop
+    if not k = any(p_chaves) then raise exception 'Campo não editável: %', k using errcode = '22023'; end if;
+  end loop;
+end $$;
+
+-- Etapa: renomear, prazo e aprovações. Criar ou apagar etapa é migration.
+create or replace function app.configurar_etapa(p_empresa uuid, p_tipo text, p_codigo text, p_dados jsonb)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  perform app.exigir_administrador(p_empresa);
+  perform app._chaves_permitidas(p_dados, array['nome','sla_dias','aprova_gestor','aprova_diretor','aprovacao_modo']);
+  update app.etapas_modelo set
+    nome           = coalesce(nullif(trim(p_dados->>'nome'), ''), nome),
+    sla_dias       = case when p_dados ? 'sla_dias' then (p_dados->>'sla_dias')::int else sla_dias end,
+    aprova_gestor  = coalesce((p_dados->>'aprova_gestor')::boolean, aprova_gestor),
+    aprova_diretor = coalesce((p_dados->>'aprova_diretor')::boolean, aprova_diretor),
+    aprovacao_modo = coalesce(p_dados->>'aprovacao_modo', aprovacao_modo)
+  where empresa_id = p_empresa and tipo_processo = p_tipo and codigo = p_codigo;
+  if not found then raise exception 'Etapa não encontrada' using errcode = 'P0002'; end if;
+end $$;
+
+-- Aprovações de um status de encerramento (Comprado, em geral).
+create or replace function app.configurar_status(p_empresa uuid, p_tipo text, p_status text, p_dados jsonb)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  perform app.exigir_administrador(p_empresa);
+  perform app._chaves_permitidas(p_dados, array['nome','aprova_gestor','aprova_diretor','aprovacao_modo']);
+  update app.status_modelo set
+    nome           = coalesce(nullif(trim(p_dados->>'nome'), ''), nome),
+    aprova_gestor  = coalesce((p_dados->>'aprova_gestor')::boolean, aprova_gestor),
+    aprova_diretor = coalesce((p_dados->>'aprova_diretor')::boolean, aprova_diretor),
+    aprovacao_modo = coalesce(p_dados->>'aprovacao_modo', aprovacao_modo)
+  where empresa_id = p_empresa and tipo_processo = p_tipo and status = p_status;
+  if not found then raise exception 'Status não encontrado' using errcode = 'P0002'; end if;
+end $$;
+
+-- Subetapa: cria (com etapa e nome) ou altera. Desativar com terrenos dentro
+-- exige "mover_para" (outra subetapa ativa da mesma etapa).
+create or replace function app.salvar_subetapa(p_empresa uuid, p_tipo text, p_codigo text, p_dados jsonb)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare s app.subetapas_modelo; v_mover text; p record;
+begin
+  perform app.exigir_administrador(p_empresa);
+  perform app._chaves_permitidas(p_dados, array['etapa','nome','ordem','prazo_dias','aprova_gestor','aprova_diretor','aprovacao_modo','ativo','mover_para']);
+  select * into s from app.subetapas_modelo where empresa_id = p_empresa and tipo_processo = p_tipo and codigo = p_codigo for update;
+  if not found then
+    if p_codigo !~ '^[a-z][a-z0-9_]{1,40}$' then raise exception 'Código da subetapa: letras minúsculas, números e _' using errcode = '22023'; end if;
+    if not exists (select 1 from app.etapas_modelo where empresa_id = p_empresa and tipo_processo = p_tipo and codigo = p_dados->>'etapa') then
+      raise exception 'Informe uma etapa válida' using errcode = '22023';
+    end if;
+    insert into app.subetapas_modelo (empresa_id, tipo_processo, codigo, etapa, nome, ordem, prazo_dias, aprova_gestor, aprova_diretor, aprovacao_modo)
+    values (p_empresa, p_tipo, p_codigo, p_dados->>'etapa', p_dados->>'nome',
+            coalesce((p_dados->>'ordem')::int, (select coalesce(max(ordem), 0) + 1 from app.subetapas_modelo
+                                               where empresa_id = p_empresa and tipo_processo = p_tipo and etapa = p_dados->>'etapa')),
+            (p_dados->>'prazo_dias')::int, coalesce((p_dados->>'aprova_gestor')::boolean, false),
+            coalesce((p_dados->>'aprova_diretor')::boolean, false), coalesce(p_dados->>'aprovacao_modo', 'sequencia'));
+    return;
+  end if;
+
+  if p_dados ? 'etapa' and p_dados->>'etapa' <> s.etapa then
+    raise exception 'Subetapa não muda de etapa (o histórico depende disso): crie outra' using errcode = '22023';
+  end if;
+  if (p_dados->>'ativo')::boolean is false and s.ativo then
+    if not exists (select 1 from app.subetapas_modelo where empresa_id = p_empresa and tipo_processo = p_tipo and etapa = s.etapa and ativo and codigo <> s.codigo) then
+      raise exception 'A etapa precisa de ao menos uma subetapa ativa' using errcode = '22023';
+    end if;
+    if exists (select 1 from app.prerequisitos_modelo where empresa_id = p_empresa and tipo_processo = p_tipo and requisito = s.codigo) then
+      raise exception 'Outras passagens dependem desta subetapa: remova esses pré-requisitos antes' using errcode = '22023';
+    end if;
+    if exists (select 1 from app.processos where empresa_id = p_empresa and tipo = p_tipo and subetapa_atual = s.codigo and status in ('ativo','stand_by')) then
+      v_mover := p_dados->>'mover_para';
+      if not exists (select 1 from app.subetapas_modelo where empresa_id = p_empresa and tipo_processo = p_tipo and etapa = s.etapa
+                     and codigo = v_mover and ativo and codigo <> s.codigo) then
+        raise exception 'Há terrenos nesta subetapa: diga para qual subetapa da mesma etapa movê-los' using errcode = '22023';
+      end if;
+      for p in select * from app.processos where empresa_id = p_empresa and tipo = p_tipo and subetapa_atual = s.codigo and status in ('ativo','stand_by') for update loop
+        update app.processos set subetapa_atual = v_mover, subetapa_desde = now() where id = p.id;
+        insert into app.processo_transicoes (empresa_id, processo_id, evento, de_etapa, para_etapa, de_subetapa, para_subetapa, comentario)
+        values (p.empresa_id, p.id, 'subetapa', p.etapa_atual, p.etapa_atual, s.codigo, v_mover, 'Subetapa ' || s.nome || ' desativada');
+      end loop;
+    end if;
+  end if;
+
+  update app.subetapas_modelo set
+    nome           = coalesce(nullif(trim(p_dados->>'nome'), ''), nome),
+    ordem          = coalesce((p_dados->>'ordem')::int, ordem),
+    prazo_dias     = case when p_dados ? 'prazo_dias' then (p_dados->>'prazo_dias')::int else prazo_dias end,
+    aprova_gestor  = coalesce((p_dados->>'aprova_gestor')::boolean, aprova_gestor),
+    aprova_diretor = coalesce((p_dados->>'aprova_diretor')::boolean, aprova_diretor),
+    aprovacao_modo = coalesce(p_dados->>'aprovacao_modo', aprovacao_modo),
+    ativo          = coalesce((p_dados->>'ativo')::boolean, ativo)
+  where empresa_id = p_empresa and tipo_processo = p_tipo and codigo = p_codigo;
+end $$;
+
+-- Apagar só subetapa sem histórico; com histórico, desativar.
+create or replace function app.apagar_subetapa(p_empresa uuid, p_tipo text, p_codigo text)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  perform app.exigir_administrador(p_empresa);
+  if exists (select 1 from app.processo_transicoes t join app.processos p on p.id = t.processo_id
+             where p.empresa_id = p_empresa and p.tipo = p_tipo and (t.para_subetapa = p_codigo or t.de_subetapa = p_codigo))
+     or exists (select 1 from app.processos where empresa_id = p_empresa and tipo = p_tipo and subetapa_atual = p_codigo) then
+    raise exception 'A subetapa já tem histórico: desative em vez de apagar' using errcode = '22023';
+  end if;
+  delete from app.prerequisitos_modelo where empresa_id = p_empresa and tipo_processo = p_tipo and alvo_tipo = 'subetapa' and alvo = p_codigo;
+  delete from app.subetapas_modelo where empresa_id = p_empresa and tipo_processo = p_tipo and codigo = p_codigo;
+  if not found then raise exception 'Subetapa não encontrada' using errcode = 'P0002'; end if;
+end $$;
+
+-- Pré-requisito: para entrar em p_alvo (etapa ou subetapa) precisa ter passado
+-- por p_requisito (subetapa). Recusa o que travaria o processo para sempre:
+-- ciclo, exigência de etapa posterior, ou exigir na subetapa inicial algo da própria etapa.
+create or replace function app.adicionar_prerequisito(p_empresa uuid, p_tipo text, p_alvo_tipo text, p_alvo text, p_requisito text)
+returns uuid
+language plpgsql security definer set search_path = ''
+as $$
+declare req app.subetapas_modelo; ordem_req int; ordem_alvo int; etapa_alvo text; v_id uuid;
+begin
+  perform app.exigir_administrador(p_empresa);
+  select * into req from app.subetapas_modelo where empresa_id = p_empresa and tipo_processo = p_tipo and codigo = p_requisito and ativo;
+  if not found then raise exception 'Pré-requisito tem que ser uma subetapa ativa' using errcode = '22023'; end if;
+  select ordem into ordem_req from app.etapas_modelo where empresa_id = p_empresa and tipo_processo = p_tipo and codigo = req.etapa;
+  if p_alvo_tipo = 'etapa' then
+    etapa_alvo := p_alvo;
+  elsif p_alvo_tipo = 'subetapa' then
+    select etapa into etapa_alvo from app.subetapas_modelo where empresa_id = p_empresa and tipo_processo = p_tipo and codigo = p_alvo;
+    if p_alvo = p_requisito then raise exception 'Uma subetapa não pode exigir ela mesma' using errcode = '22023'; end if;
+  else
+    raise exception 'Alvo é etapa ou subetapa' using errcode = '22023';
+  end if;
+  select ordem into ordem_alvo from app.etapas_modelo where empresa_id = p_empresa and tipo_processo = p_tipo and codigo = etapa_alvo;
+  if ordem_alvo is null then raise exception 'Alvo não encontrado' using errcode = 'P0002'; end if;
+  if ordem_req > ordem_alvo or (p_alvo_tipo = 'etapa' and ordem_req = ordem_alvo) then
+    raise exception 'O pré-requisito tem que vir antes: % é de etapa posterior', req.nome using errcode = '22023';
+  end if;
+  if p_alvo_tipo = 'subetapa' and req.etapa = etapa_alvo and p_alvo = app._subetapa_inicial(p_empresa, p_tipo, etapa_alvo) then
+    raise exception 'A subetapa inicial da etapa não pode exigir outra da mesma etapa' using errcode = '22023';
+  end if;
+  -- ciclo: o requisito (direta ou indiretamente) já exige o alvo
+  if p_alvo_tipo = 'subetapa' and exists (
+      with recursive cadeia(codigo, n) as (
+        select p_requisito, 0
+        union
+        select pr.requisito, c.n + 1 from cadeia c
+        join app.prerequisitos_modelo pr on pr.empresa_id = p_empresa and pr.tipo_processo = p_tipo and pr.alvo_tipo = 'subetapa' and pr.alvo = c.codigo
+        where c.n < 50)
+      select 1 from cadeia where codigo = p_alvo) then
+    raise exception 'Isso cria um ciclo: % já depende de %', req.nome, p_alvo using errcode = '22023';
+  end if;
+  insert into app.prerequisitos_modelo (empresa_id, tipo_processo, alvo_tipo, alvo, requisito)
+  values (p_empresa, p_tipo, p_alvo_tipo, p_alvo, p_requisito)
+  on conflict do nothing returning id into v_id;
+  return v_id;
+end $$;
+
+create or replace function app.remover_prerequisito(p_id uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare v_emp uuid;
+begin
+  select empresa_id into v_emp from app.prerequisitos_modelo where id = p_id;
+  if not found then raise exception 'Pré-requisito não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_administrador(v_emp);
+  delete from app.prerequisitos_modelo where id = p_id;
+end $$;
+
+-- Motivo de Descartado ou Perdido: cria ou altera; desativar no lugar de apagar.
+create or replace function app.salvar_motivo(p_empresa uuid, p_status text, p_codigo text, p_dados jsonb)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  perform app.exigir_administrador(p_empresa);
+  perform app._chaves_permitidas(p_dados, array['nome','ordem','exige_texto','ativo']);
+  update app.motivos_encerramento set
+    nome        = coalesce(nullif(trim(p_dados->>'nome'), ''), nome),
+    ordem       = coalesce((p_dados->>'ordem')::int, ordem),
+    exige_texto = coalesce((p_dados->>'exige_texto')::boolean, exige_texto),
+    ativo       = coalesce((p_dados->>'ativo')::boolean, ativo)
+  where empresa_id = p_empresa and status = p_status and codigo = p_codigo;
+  if not found then
+    if p_codigo !~ '^[a-z][a-z0-9_]{1,40}$' then raise exception 'Código do motivo: letras minúsculas, números e _' using errcode = '22023'; end if;
+    insert into app.motivos_encerramento (empresa_id, status, codigo, nome, ordem, exige_texto)
+    values (p_empresa, p_status, p_codigo, p_dados->>'nome',
+            coalesce((p_dados->>'ordem')::int, (select coalesce(max(ordem), 0) + 1 from app.motivos_encerramento where empresa_id = p_empresa and status = p_status)),
+            coalesce((p_dados->>'exige_texto')::boolean, false));
+  end if;
+end $$;
+
+create or replace function app.apagar_motivo(p_empresa uuid, p_status text, p_codigo text)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  perform app.exigir_administrador(p_empresa);
+  if exists (select 1 from app.processos where empresa_id = p_empresa and status = p_status and motivo_encerramento = p_codigo) then
+    raise exception 'Motivo já usado: desative em vez de apagar' using errcode = '22023';
+  end if;
+  delete from app.motivos_encerramento where empresa_id = p_empresa and status = p_status and codigo = p_codigo;
+  if not found then raise exception 'Motivo não encontrado' using errcode = 'P0002'; end if;
+end $$;
+
+-- Checklist de documentos para sair da etapa: incluir, marcar obrigatório, tirar.
+create or replace function app.salvar_checklist(p_empresa uuid, p_tipo text, p_etapa text, p_tipo_documento text, p_obrigatorio boolean default true, p_ordem int default null)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  perform app.exigir_administrador(p_empresa);
+  insert into app.checklist_modelo (empresa_id, tipo_processo, etapa, tipo_documento, obrigatorio, ordem)
+  values (p_empresa, p_tipo, p_etapa, p_tipo_documento, coalesce(p_obrigatorio, true),
+          coalesce(p_ordem, (select coalesce(max(ordem), 0) + 1 from app.checklist_modelo where empresa_id = p_empresa and tipo_processo = p_tipo and etapa = p_etapa)))
+  on conflict (empresa_id, tipo_processo, etapa, tipo_documento)
+  do update set obrigatorio = excluded.obrigatorio, ordem = coalesce(p_ordem, app.checklist_modelo.ordem);
+end $$;
+
+create or replace function app.remover_checklist(p_empresa uuid, p_tipo text, p_etapa text, p_tipo_documento text)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  perform app.exigir_administrador(p_empresa);
+  delete from app.checklist_modelo where empresa_id = p_empresa and tipo_processo = p_tipo and etapa = p_etapa and tipo_documento = p_tipo_documento;
+end $$;
+
+-- ---------------------------------------------------------------------
 -- Permissões
 -- ---------------------------------------------------------------------
 revoke execute on all functions in schema app from public;
 grant execute on function
   app.geojson_poligono_valido(jsonb), app.distancia_km(double precision, double precision, double precision, double precision), app.minhas_empresas(), app.empresas_edicao(), app.papel(uuid), app.eh_membro(uuid), app.eh_gestor(uuid), app.exigir_membro(uuid), app.exigir_editor(uuid),
+  app.nivel_papel(text), app.eh_administrador(uuid), app.exigir_administrador(uuid), app.eh_superior(uuid, uuid, uuid),
   app.salvar_terreno(uuid, int, jsonb),
   app.salvar_entorno(uuid, double precision, double precision, jsonb, boolean),
   app.salvar_distancias_pontos(uuid, double precision, double precision, jsonb),
@@ -802,9 +1446,16 @@ grant execute on function
   app.buscar_duplicados(uuid, text, text, text, text, text),
   app.abrir_negociacao(uuid, uuid),
   app.registrar_oferta(uuid, numeric, text, uuid, text, text, date, date, numeric, uuid, numeric),
-  app.definir_temperatura(uuid, int), app.marcar_fase_final(uuid, boolean), app.definir_oferta_referencia(uuid, uuid),
-  app.checar_avanco(uuid), app.mover_etapa(uuid, boolean, text), app.mover_para_etapa(uuid, text, boolean, text),
-  app.encerrar_processo(uuid, text, text, text, date), app.retomar_processo(uuid),
+  app.definir_temperatura(uuid, int), app.definir_oferta_referencia(uuid, uuid),
+  app.checar_avanco(uuid), app.checar_passagem(uuid, text, text),
+  app.mover_etapa(uuid, boolean, text), app.mover_para_etapa(uuid, text, boolean, text), app.mover_subetapa(uuid, text, boolean, text),
+  app.encerrar_processo(uuid, text, text, text, date, text, boolean, text), app.retomar_processo(uuid),
+  app.decidir_aprovacao(uuid, boolean, text), app.cancelar_aprovacao(uuid),
+  app.configurar_etapa(uuid, text, text, jsonb), app.configurar_status(uuid, text, text, jsonb),
+  app.salvar_subetapa(uuid, text, text, jsonb), app.apagar_subetapa(uuid, text, text),
+  app.adicionar_prerequisito(uuid, text, text, text, text), app.remover_prerequisito(uuid),
+  app.salvar_motivo(uuid, text, text, jsonb), app.apagar_motivo(uuid, text, text),
+  app.salvar_checklist(uuid, text, text, text, boolean, int), app.remover_checklist(uuid, text, text, text),
   app.registrar_proposta(uuid, text, numeric, text, text, date, date, text), app.atualizar_status_proposta(uuid, text),
   app.vincular_viabilidade(uuid, text, numeric, numeric, numeric, uuid),
   app.registrar_documento(uuid, text, text, text, uuid, uuid, uuid, text, bigint, date, uuid), app.revisar_documento(uuid, boolean),

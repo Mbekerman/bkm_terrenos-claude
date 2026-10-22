@@ -13,7 +13,7 @@ await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=mapa]').click()
 const linhas=await p.$$eval('.mp-it',e=>e.map(x=>x.innerText.replace(/\s+/g,' ').trim()));console.log('   linhas:',JSON.stringify(linhas.slice(0,3)));
 ok(linhas.length>0&&!linhas.some(l=>/R\$/.test(l))&&linhas.some(l=>/m² · Negociação/.test(l)),tag+' linhas com número, nome, área e etapa');
 ok(!(await p.$('.mp-acoes [data-a=mp-poi]')),tag+' sem botão Pontos de interesse na barra');
-const leg=await p.$eval('#mp-leg',x=>x.textContent.replace(/\s+/g,' '));ok(/Ganho\s*\d+.*Perdido\s*\d+.*Pontos de interesse\s*\d+/.test(leg),tag+' legenda: '+leg.slice(-60));
+const leg=await p.$eval('#mp-leg',x=>x.textContent.replace(/\s+/g,' '));ok(/Comprado\s*\d+.*Perdido\s*\d+.*Pontos de interesse\s*\d+/.test(leg),tag+' legenda: '+leg.slice(-60));
 if(modo==='desktop'){const n0=await p.$$eval('#mapa .poi',e=>e.length);await p.click('#mp-leg [data-a=mp-poi]');await p.waitForTimeout(300);const n1=await p.$$eval('#mapa .poi',e=>e.length);
   await p.screenshot({path:OUT+tag+'_legenda_poi_off.png',clip:{x:640,y:520,width:300,height:380}});await p.click('#mp-leg [data-a=mp-poi]');await p.waitForTimeout(300);const n2=await p.$$eval('#mapa .poi',e=>e.length);
   ok(n0>0&&n1===0&&n2===n0,tag+' legenda liga/desliga os pontos ('+n0+'→'+n1+'→'+n2+')')}

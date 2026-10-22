@@ -545,3 +545,111 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
   .dash-g { grid-template-rows: none }
   .dash-lado, .dash-main, .dash-tab, .dash-g.tab-larga .dash-tab { grid-column: auto; grid-row: auto }
 }
+
+/* ===================== novo funil ===================== */
+/* sino de notificações (barra superior) */
+.sino-wrap { position: relative }
+.sino-btn { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 0; background: transparent; color: var(--m-on-var); display: grid; place-items: center }
+.sino-btn:hover { background: rgba(127,127,127,.14) }
+.sino-n { position: absolute; top: 4px; right: 2px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #b3261e; color: #fff; font-size: 11px; font-weight: 600; line-height: 18px; text-align: center }
+.sino-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; width: min(380px, calc(100vw - 32px)); background: var(--m-sc-low); border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,.18), 0 6px 18px rgba(0,0,0,.14); overflow: hidden }
+.sino-h { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px 8px; font-weight: 500 }
+.sino-l { max-height: min(420px, 60vh); overflow-y: auto }
+.sino-i { display: flex; gap: 10px; width: 100%; padding: 10px 16px; border: 0; background: transparent; text-align: left; color: var(--m-on-surface); align-items: flex-start }
+.sino-i:hover { background: rgba(127,127,127,.12) }
+.sino-d { width: 8px; height: 8px; border-radius: 50%; margin-top: 7px; flex: none; background: transparent }
+.sino-i.nova .sino-d { background: var(--m-primary) }
+.sino-i.nova .sino-t { font-weight: 500 }
+.sino-c { display: flex; flex-direction: column; gap: 2px; min-width: 0 }
+.sino-t { font-size: 14px; line-height: 20px }
+.sino-s { font-size: 12px; color: var(--m-on-var) }
+.sino-f { padding: 8px 16px 12px; border-top: 1px solid var(--m-outline-var) }
+@media (max-width: 599px) { .sino-btn { width: 36px; height: 36px } .sino-menu { position: fixed; right: 16px; left: 16px; width: auto; top: 64px } }
+
+/* linha do tempo do topo: data e subetapa debaixo do nome */
+.sl-w { display: flex; flex-direction: column; min-width: 0 }
+.sd { font-size: 12px; color: var(--m-on-var); white-space: nowrap }
+
+/* chip de subetapa */
+.chip.sub { background: var(--m-pc); color: var(--m-on-pc); border-color: transparent }
+.chip.sub.warn { background: #ffdf99; color: #7a5900 }
+
+/* quadro de avanço: subetapa e pedido de aprovação */
+.adv-sub { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--m-on-var); margin-bottom: 10px }
+.adv-sub select { height: 32px; border-radius: 8px; border: 1px solid var(--m-outline); background: transparent; color: var(--m-on-surface); padding: 0 8px; font: inherit; font-size: 14px; max-width: 100% }
+.adv-ap { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--m-on-var); border: 1px solid var(--m-outline-var); border-radius: 8px; padding: 2px 8px }
+.adv-ped { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 12px; background: var(--m-pc); color: var(--m-on-pc); margin-bottom: 8px }
+.adv-ped-t { display: flex; gap: 8px; align-items: center }
+.adv-niv { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px }
+.adv-niv li { display: flex; gap: 8px; align-items: center }
+.adv-niv .nv-d { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid currentColor; display: grid; place-items: center; flex: none }
+.adv-niv li.aprovado .nv-d { background: #146c2e; border-color: #146c2e; color: #fff }
+.adv-niv .faint { margin-left: auto }
+.adv-ped-a { display: flex; gap: 8px; flex-wrap: wrap }
+:root[data-tema="escuro"] .adv-ped { background: rgba(99,112,255,.10); color: #c9d6ff; box-shadow: inset 0 0 0 1px rgba(124,140,255,.35) }
+:root[data-tema="escuro"] .chip.sub { background: rgba(99,112,255,.14); color: #c9d6ff }
+
+/* linha do tempo com datas (seção Negociação) */
+.trilha { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px }
+.tr-eh { display: flex; gap: 10px; align-items: center; flex-wrap: wrap }
+.tr-e ul { list-style: none; margin: 6px 0 0; padding: 0 0 0 14px; border-left: 2px solid var(--m-outline-var); display: flex; flex-direction: column; gap: 4px }
+.tr-e ul li { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 14px }
+.tr-e ul li .faint { font-size: 12px }
+
+/* kanban: subetapa no card, pedido de aprovação, etapa clicável */
+.ksub { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--m-on-pc); background: var(--m-pc); border-radius: 8px; padding: 2px 8px; align-self: flex-start; max-width: 100% }
+.ksub > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0 }
+.ksub > span { white-space: nowrap }
+.kped { display: flex; gap: 6px; align-items: center; font-size: 12px; color: #7a5900 }
+.kcard.aprov { outline: 2px solid #ffdf99; outline-offset: -2px }
+.katr { color: #b3261e !important; font-weight: 500 }
+.col-ab { display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent; color: inherit; font: inherit; padding: 4px 6px; margin: -4px -6px; border-radius: 8px }
+.col-ab:hover { background: rgba(127,127,127,.12) }
+.col-s { font-size: 12px; padding: 0 var(--e2) var(--e1) }
+.neg-et { margin-bottom: 12px }
+:root[data-tema="escuro"] .ksub { background: rgba(99,112,255,.14); color: #c9d6ff }
+:root[data-tema="escuro"] .kped { color: #ffdf99 }
+
+/* relato com formatação */
+.rt { border: 1px solid var(--m-outline); border-radius: 8px; overflow: hidden }
+.rt-bar { display: flex; gap: 2px; padding: 4px; border-bottom: 1px solid var(--m-outline-var) }
+.rt-bar .iconbtn { width: 32px; height: 32px }
+.rt-ed { min-height: 120px; padding: 10px 12px; outline: none; line-height: 1.5 }
+.rt-ed:empty::before { content: attr(data-ph); color: var(--m-on-var) }
+.rt-ed ul, .relato ul { margin: 4px 0; padding-left: 20px }
+.relato p { margin: 4px 0 }
+
+/* tarefa: colegas marcados */
+.marc { display: flex; flex-wrap: wrap; gap: 4px 16px }
+
+/* Configurações › Funil */
+.cfg-abas { margin-bottom: 12px }
+.cfg-t { display: flex; flex-direction: column; gap: 6px }
+.cfg-r { display: grid; grid-template-columns: minmax(160px, 1.4fr) 110px minmax(240px, 2fr); gap: 10px; align-items: center }
+.cfg-r.cfg-sub { grid-template-columns: 72px minmax(160px, 1.4fr) 110px minmax(240px, 2fr) 70px 70px }
+.cfg-r.cfg-st { grid-template-columns: minmax(140px, 1fr) minmax(240px, 3fr) }
+.cfg-r.cfg-mot { grid-template-columns: minmax(200px, 1fr) 100px 70px }
+.cfg-r.cfg-nt { grid-template-columns: minmax(200px, 1.6fr) 70px minmax(140px, 1fr) }
+.cfg-r.cfg-eq { grid-template-columns: minmax(160px, 1.4fr) 140px 160px 110px }
+.cfg-hd { font-size: 12px; color: var(--m-on-var); font-weight: 500 }
+.cfg-r input:not([type=checkbox]), .cfg-r select { height: 36px; border-radius: 8px; border: 1px solid var(--m-outline); background: transparent; color: var(--m-on-surface); padding: 0 10px; font: inherit; font-size: 14px; min-width: 0; width: 100% }
+.cfg-r.inativa input:not([type=checkbox]) { color: var(--m-on-var); text-decoration: line-through }
+.cfg-ap { display: flex; gap: 12px; align-items: center; flex-wrap: wrap }
+.cfg-ap select { width: auto !important }
+.cfg-ord { display: flex; gap: 2px }
+.cfg-ord .iconbtn { width: 32px; height: 32px; font-size: 16px }
+.cfg-pre { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 8px }
+.cfg-pre li { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 8px 12px; border-radius: 8px; background: var(--m-sc-low) }
+.cfg-docs { display: flex; flex-wrap: wrap; gap: 8px }
+.linkbtn.danger { color: #b3261e }
+@media (max-width: 899px) {
+  .cfg-hd { display: none }
+  .cfg-r, .cfg-r.cfg-sub, .cfg-r.cfg-st, .cfg-r.cfg-mot, .cfg-r.cfg-nt, .cfg-r.cfg-eq { grid-template-columns: 1fr 1fr; padding: 10px 0; border-bottom: 1px solid var(--m-outline-var) }
+  .cfg-r > :first-child, .cfg-ap { grid-column: 1 / -1 }
+  .cfg-r.cfg-sub > input:first-of-type { grid-column: 1 / -1 }
+}
+/* celular: quatro papéis não cabem por extenso na barra; fica a inicial (nome completo no title) */
+@media (max-width: 480px) {
+  #role button { font-size: 0 !important; min-width: 34px; padding: 0 !important }
+  #role button::after { content: attr(data-c); font-size: 13px }
+}

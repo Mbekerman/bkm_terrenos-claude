@@ -5,10 +5,11 @@
 set client_min_messages = warning;
 
 insert into auth.users values
-  ('00000000-0000-0000-0000-00000000000a', 'gestor@bkm.test'),
+  ('00000000-0000-0000-0000-00000000000a', 'diretor@bkm.test'),
   ('00000000-0000-0000-0000-00000000000b', 'analista@bkm.test'),
   ('00000000-0000-0000-0000-00000000000c', 'intruso@outra.test'),
-  ('00000000-0000-0000-0000-00000000000d', 'diretoria@bkm.test');
+  ('00000000-0000-0000-0000-00000000000d', 'leitura@bkm.test'),
+  ('00000000-0000-0000-0000-00000000000e', 'gestor@bkm.test');
 
 create function pg_temp.como(u text) returns void language sql as $$
   select set_config('request.jwt.claim.sub', u, false), set_config('role', 'authenticated', false) $$;
@@ -21,17 +22,33 @@ begin
 end $$;
 set client_min_messages = notice;
 
-\set gestor   '00000000-0000-0000-0000-00000000000a'
+\set diretor  '00000000-0000-0000-0000-00000000000a'
+\set gestor   '00000000-0000-0000-0000-00000000000e'
 \set analista '00000000-0000-0000-0000-00000000000b'
 \set intruso  '00000000-0000-0000-0000-00000000000c'
 \set leitor   '00000000-0000-0000-0000-00000000000d'
 
 -- ---------------------------------------------------------------------
 \echo '# empresa e equipe'
-select pg_temp.como(:'gestor');
+select pg_temp.como(:'diretor');
 select app.criar_empresa('BKM Teste', 'Moisés') as emp \gset
-insert into app.membros values (:'emp', :'analista', 'analista', 'Rafael', now()), (:'emp', :'leitor', 'leitura', 'Diretoria', now());
-select pg_temp.ok((select count(*) from app.membros) = 3, 'gestor vê os 3 membros');
+select pg_temp.ok((select papel = 'diretor' and administrador from app.membros where user_id = :'diretor'), 'quem cria a empresa vira diretor e administrador');
+insert into app.membros (empresa_id, user_id, papel, nome, superior_id) values (:'emp', :'gestor', 'gestor', 'Paula', :'diretor');
+insert into app.membros (empresa_id, user_id, papel, nome, superior_id) values (:'emp', :'analista', 'analista', 'Rafael', :'gestor');
+insert into app.membros (empresa_id, user_id, papel, nome) values (:'emp', :'leitor', 'leitura', 'Consulta');
+select pg_temp.ok((select count(*) from app.membros) = 4, 'administrador vê os 4 membros');
+select pg_temp.ok(app.eh_superior(:'emp', :'diretor', :'analista') and app.eh_superior(:'emp', :'gestor', :'analista') and not app.eh_superior(:'emp', :'analista', :'gestor'),
+  'hierarquia: analista responde ao gestor, que responde ao diretor');
+select pg_temp.falha(format($$update app.membros set superior_id = %L where user_id = %L$$, :'diretor', :'analista'), 'o superior do analista é um gestor, não o diretor');
+select pg_temp.falha(format($$update app.membros set papel = 'analista' where user_id = %L$$, :'gestor'), 'gestor com equipe não muda de papel sem trocar o superior da equipe');
+select pg_temp.falha(format($$update app.membros set administrador = false where user_id = %L$$, :'diretor'), 'a empresa não fica sem administrador');
+select pg_temp.ok((select count(*) from app.etapas_modelo) = 4 and (select count(*) from app.subetapas_modelo) = 13,
+  'empresa nova recebe a cópia do funil padrão: 4 etapas e 13 subetapas');
+select pg_temp.ok((select count(*) from app.motivos_encerramento where status = 'descartado') = 8 and (select count(*) from app.motivos_encerramento where status = 'perdido') = 7,
+  'motivos de Descartado e de Perdido copiados');
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format($$insert into app.membros (empresa_id, user_id, papel, nome) values (%L, %L, 'analista', 'X')$$, :'emp', :'intruso'), 'só o administrador gerencia a equipe');
+select pg_temp.como(:'diretor');
 select id as sp from app.municipios where codigo_ibge = '3550308' \gset
 select pg_temp.ok((select count(*) from app.zoneamentos where municipio_id = :'sp') > 30, 'zoneamentos de SP carregados');
 
@@ -45,10 +62,10 @@ select pg_temp.ok(app.municipio_por_nome('São Paulo', 'RJ') is null, 'UF errada
 
 -- ---------------------------------------------------------------------
 \echo '# cadastro rápido do terreno'
-select pg_temp.falha(format($$insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id) values (%L, 'Sem local', %L, 'corretor', %L)$$, :'emp', :'gestor', :'sp'),
+select pg_temp.falha(format($$insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id) values (%L, 'Sem local', %L, 'corretor', %L)$$, :'emp', :'diretor', :'sp'),
   'cadastro exige localização mínima');
 insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, logradouro, numero, bairro, zona)
-values (:'emp', 'Terreno Av. Cupecê — esquina', :'gestor', 'corretor', :'sp', 'Av. Cupecê', '1500', 'Cidade Ademar', 'sul')
+values (:'emp', 'Terreno Av. Cupecê — esquina', :'diretor', 'corretor', :'sp', 'Av. Cupecê', '1500', 'Cidade Ademar', 'sul')
 returning id as t1 \gset
 select pg_temp.ok((select codigo from app.terrenos where id = :'t1') ~ '^TER-\d{6}$', 'código TER-000001 gerado');
 select pg_temp.ok((select topografia from app.terrenos where id = :'t1') = 'nao_informado', 'campo não preenchido fica "não informado"');
@@ -67,7 +84,7 @@ select pg_temp.falha(format($$select app.salvar_terreno(%L, %s, '{"poligono_geoj
   'polígono aberto é recusado');
 select app.salvar_terreno(:'t1', :v2, '{"poligono_geojson":{"type":"Polygon","coordinates":[[[-46.65,-23.66],[-46.64,-23.66],[-46.64,-23.67],[-46.65,-23.66]]]}}') as v3 \gset
 select pg_temp.ok((select poligono_geojson is not null from app.terrenos where id = :'t1'), 'polígono válido aceito');
-select pg_temp.ok((select atualizado_por from app.terrenos where id = :'t1') = :'gestor', 'atualizado_por preenchido');
+select pg_temp.ok((select atualizado_por from app.terrenos where id = :'t1') = :'diretor', 'atualizado_por preenchido');
 
 -- ---------------------------------------------------------------------
 \echo '# matrícula, inscrição, valor venal e IPTU'
@@ -125,7 +142,7 @@ select pg_temp.ok((select disponibilidade from app.v_terreno_infraestrutura wher
 
 -- ---------------------------------------------------------------------
 \echo '# análise urbanística com dois zoneamentos'
-insert into app.analises_urbanisticas (empresa_id, terreno_id, responsavel_id, fonte) values (:'emp', :'t1', :'gestor', 'GeoSampa') returning id as a1 \gset
+insert into app.analises_urbanisticas (empresa_id, terreno_id, responsavel_id, fonte) values (:'emp', :'t1', :'diretor', 'GeoSampa') returning id as a1 \gset
 insert into app.analise_zoneamentos (empresa_id, analise_id, zoneamento_id, area_abrangida_m2, gabarito_m_status, ca_status, ca_maximo)
 select :'emp', :'a1', id, 1400, 'sem_limite_identificado', 'limitado', 4 from app.zoneamentos where sigla = 'ZEU' and municipio_id = :'sp';
 insert into app.analise_zoneamentos (empresa_id, analise_id, zoneamento_id, area_abrangida_m2, gabarito_m_status, gabarito_maximo_m, ca_status, ca_maximo)
@@ -161,7 +178,7 @@ select pg_temp.ok((select valor_pedido_m2 from app.v_terrenos where id = :'t1') 
 select pg_temp.falha(format($$insert into app.ofertas (empresa_id, terreno_id, forma_pagamento_pedida) values (%L, %L, 'cheque')$$, :'emp', :'t1'), 'forma de pagamento só nas 5 opções');
 
 -- ---------------------------------------------------------------------
-insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro) values (:'emp', 'Outro terreno', :'gestor', 'prospeccao', :'sp', 'Sacomã') returning id as tx \gset
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro) values (:'emp', 'Outro terreno', :'diretor', 'prospeccao', :'sp', 'Sacomã') returning id as tx \gset
 select pg_temp.falha(format($$update app.ofertas set terreno_id = %L where terreno_id = %L$$, :'tx', :'t1'), 'oferta não muda de terreno');
 select pg_temp.falha(format($$update app.confrontacoes set terreno_id = %L where terreno_id = %L$$, :'tx', :'t1'), 'confrontação não muda de terreno');
 
@@ -175,7 +192,7 @@ select pg_temp.ok((select count(*) from app.processo_transicoes where processo_i
 \echo '# tarefas'
 insert into app.tarefas (empresa_id, terreno_id, processo_id, titulo, responsavel_id, prazo) values
   (:'emp', :'t1', :'neg', 'Cobrar contraproposta', :'analista', current_date - 2),
-  (:'emp', :'t1', null,  'Agendar visita técnica', :'gestor', current_date + 3);
+  (:'emp', :'t1', null,  'Agendar visita técnica', :'diretor', current_date + 3);
 select pg_temp.ok((select tarefas_atrasadas from app.v_terrenos where id = :'t1') = 1, 'tarefa vencida e aberta conta como atrasada');
 select pg_temp.ok((select proxima_tarefa from app.v_terrenos where id = :'t1') = 'Cobrar contraproposta', 'próxima tarefa = prazo mais cedo');
 update app.tarefas set status = 'concluida', resultado = 'Recebida por e-mail' where titulo = 'Cobrar contraproposta';
@@ -195,48 +212,113 @@ select pg_temp.ok((select versao from app.propostas where id = :'p4') = 4, 'quar
 select pg_temp.falha(format('select app.atualizar_status_proposta(%L, %L)', :'p3', 'aceita'), 'só a última muda de status');
 
 -- ---------------------------------------------------------------------
-\echo '# avanço de etapa'
+\echo '# funil: etapas e subetapas'
 select pg_temp.como(:'analista');
+select pg_temp.ok((select etapa_atual = 'triagem' and subetapa_atual = 'aguardando_informacoes' from app.processos where id = :'neg'),
+  'negociação abre em Em Triagem › Aguardando Informações');
+select app.mover_subetapa(:'neg', 'verificacao_interna') \gset
+select pg_temp.ok((select subetapa_atual from app.processos where id = :'neg') = 'verificacao_interna', 'subetapa muda em qualquer ordem dentro da etapa');
+select pg_temp.ok((select de_subetapa = 'aguardando_informacoes' and para_subetapa = 'verificacao_interna' and user_id = :'analista'
+                   from app.processo_transicoes where processo_id = :'neg' and evento = 'subetapa'), 'troca de subetapa vai para o histórico com quem moveu');
+select pg_temp.falha(format('select app.mover_subetapa(%L, %L)', :'neg', 'estudo_massa'), 'subetapa de outra etapa é recusada');
+select pg_temp.falha(format('update app.processos set subetapa_atual = %L where id = %L', 'aguardando_documentos', :'neg'), 'ninguém altera etapa ou subetapa direto');
 select app.mover_etapa(:'neg') \gset
-select pg_temp.ok((select etapa_atual from app.processos where id = :'neg') = 'viabilidade_inicial', 'Recebido avança sem requisitos');
-select pg_temp.falha(format('select app.mover_etapa(%L)', :'neg'), 'Viabilidade inicial exige estudo');
+select pg_temp.ok((select etapa_atual = 'estudos' and subetapa_atual = 'estudo_massa' from app.processos where id = :'neg'), 'avançar entra na subetapa inicial da etapa');
+select pg_temp.ok((select subetapa_nome from app.v_terrenos where id = :'t1') = 'Estudo de Massa', 'listagem mostra a subetapa');
+
+\echo '# pré-requisitos'
+select pg_temp.falha(format($$select app.adicionar_prerequisito(%L, 'negociacao', 'etapa', 'negociacao', 'estudo_viabilidade')$$, :'emp'), 'analista não configura o funil');
+select pg_temp.como(:'diretor');
+select app.adicionar_prerequisito(:'emp', 'negociacao', 'etapa', 'negociacao', 'estudo_viabilidade') as pr1 \gset
+select app.adicionar_prerequisito(:'emp', 'negociacao', 'subetapa', 'proposta_enviada', 'preparando_proposta') as pr2 \gset
+select pg_temp.falha(format($$select app.adicionar_prerequisito(%L, 'negociacao', 'etapa', 'estudos', 'proposta_enviada')$$, :'emp'), 'pré-requisito de etapa posterior é recusado');
+select pg_temp.falha(format($$select app.adicionar_prerequisito(%L, 'negociacao', 'subetapa', 'preparando_proposta', 'proposta_enviada')$$, :'emp'), 'ciclo entre subetapas é recusado');
+select pg_temp.falha(format($$select app.adicionar_prerequisito(%L, 'negociacao', 'subetapa', 'aguardando_reuniao', 'preparando_proposta')$$, :'emp'), 'subetapa inicial não exige outra da própria etapa');
+select pg_temp.como(:'analista');
+select pg_temp.ok((app.checar_avanco(:'neg')->'itens') @> '[{"tipo":"prerequisito","ok":false,"requisito":"estudo_viabilidade"}]', 'quadro de avanço mostra o pré-requisito que falta');
+select pg_temp.falha(format('select app.mover_etapa(%L)', :'neg'), 'sem passar pelo Estudo de Viabilidade não entra em Negociação');
+select pg_temp.falha(format('select app.mover_etapa(%L, true, %L)', :'neg', 'x'), 'analista não força');
+select app.mover_subetapa(:'neg', 'estudo_viabilidade') \gset
+select app.mover_subetapa(:'neg', 'analise_tecnica') \gset
 select app.vincular_viabilidade(:'neg', 'Estudo base', 62000000, 15.2, 8400000) \gset
 select app.mover_etapa(:'neg') \gset
-select pg_temp.ok((select etapa_atual from app.processos where id = :'neg') = 'negociacao', 'com estudo vai para Negociação');
-select pg_temp.ok((select fase_negociacao from app.v_terrenos where id = :'t1') = 'proposta_enviada', 'última proposta da BKM: proposta enviada');
+select pg_temp.ok((select etapa_atual = 'negociacao' and subetapa_atual = 'aguardando_reuniao' from app.processos where id = :'neg'),
+  'passou pelo Estudo de Viabilidade (mesmo tendo saído dele) e entra em Negociação');
 select pg_temp.ok((select acima_preco_max from app.v_terrenos where id = :'t1'), 'proposta da BKM acima do preço máximo sinalizada');
 select app.registrar_proposta(:'neg', 'vendedor', 8900000, 'permuta_com_torna', 'Pede 9% em permuta') as p5 \gset
-select pg_temp.ok((select fase_negociacao from app.v_terrenos where id = :'t1') = 'contraproposta', 'última proposta do vendedor: contraproposta');
-select app.marcar_fase_final(:'neg', true);
-select pg_temp.ok((select fase_negociacao from app.v_terrenos where id = :'t1') = 'negociacoes_finais', 'marcação manual: negociações finais');
-select pg_temp.ok((select count(*) from app.processo_transicoes where processo_id = :'neg' and evento = 'fase_final') = 1, 'fase final vai para o histórico');
-select pg_temp.ok(not (app.checar_avanco(:'neg')->>'ok')::boolean, 'Negociação exige proposta aceita');
-select pg_temp.ok((app.checar_avanco(:'neg')->'itens') @> '[{"tipo":"gestor","ok":false}]', 'Minutagem pede aprovação de gestor');
 select pg_temp.ok((select acima_preco_max from app.v_terrenos where id = :'t1') is not true, 'contraproposta do vendedor não acende o alerta de preço máximo');
-select pg_temp.falha(format('select app.mover_etapa(%L, true, %L)', :'neg', 'x'), 'analista não força');
-select pg_temp.falha(format('update app.processos set etapa_atual = %L where id = %L', 'minutagem', :'neg'), 'ninguém altera etapa direto');
+select pg_temp.falha(format('select app.mover_subetapa(%L, %L)', :'neg', 'proposta_enviada'), 'Proposta Enviada exige ter passado por Preparando Proposta');
 select pg_temp.como(:'gestor');
-select pg_temp.falha(format('select app.mover_etapa(%L, true)', :'neg'), 'avanço forçado exige justificativa');
-select app.mover_etapa(:'neg', true, 'Aceite verbal; formalizar na minuta') \gset
-select pg_temp.ok((select etapa_atual from app.processos where id = :'neg') = 'minutagem', 'gestor leva à Minutagem');
-select pg_temp.ok((select forcado from app.processo_transicoes where processo_id = :'neg' and evento = 'avanco' order by em desc limit 1), 'avanço forçado registrado');
-select pg_temp.ok((select fase_negociacao from app.v_terrenos where id = :'t1') is null, 'fase só existe dentro da etapa Negociação');
-select pg_temp.ok((app.checar_avanco(:'neg')->>'proxima') = 'ganha', 'depois da Minutagem vem o fechamento como ganha');
-insert into app.diligencias (empresa_id, terreno_id, processo_id, categoria, titulo, situacao) values
-  (:'emp', :'t1', :'neg', 'ambiental', 'Possível contaminação por posto vizinho', 'impeditiva') returning id as dg \gset
-select pg_temp.ok((app.checar_avanco(:'neg')->'itens') @> '[{"tipo":"diligencia"}]', 'diligência impeditiva bloqueia o fechamento');
-select pg_temp.ok((app.checar_avanco(:'neg')->'itens') @> '[{"tipo":"documento","ok":false}]', 'fechamento exige certidões e minuta');
-select pg_temp.ok((select diligencias_impeditivas from app.v_terrenos where id = :'t1') = 1, 'listagem conta diligências impeditivas');
-update app.diligencias set situacao = 'resolvida', providencia = 'Laudo de passivo ambiental negativo' where id = :'dg';
-select pg_temp.ok((select resolvida_em is not null from app.diligencias where id = :'dg'), 'resolver preenche a data');
-select pg_temp.ok(not ((app.checar_avanco(:'neg')->'itens') @> '[{"tipo":"diligencia"}]'), 'diligência resolvida sai das pendências');
-select pg_temp.falha(format('select app.mover_para_etapa(%L, %L)', :'neg', 'negociacao'), 'voltar de etapa exige motivo');
+select pg_temp.falha(format('select app.mover_subetapa(%L, %L, true)', :'neg', 'proposta_enviada'), 'avanço forçado exige justificativa');
+select app.mover_subetapa(:'neg', 'proposta_enviada', true, 'Proposta foi direto por e-mail') \gset
+select pg_temp.ok((select forcado from app.processo_transicoes where processo_id = :'neg' and para_subetapa = 'proposta_enviada'), 'gestor força o pré-requisito e fica registrado');
+
+\echo '# aprovações'
+select pg_temp.como(:'analista');
+select pg_temp.ok((app.checar_avanco(:'neg')->'aprovacoes') = '["gestor"]' and (app.checar_avanco(:'neg')->>'proxima') = 'contrato', 'entrar em Contrato pede aprovação do gestor');
+select app.mover_etapa(:'neg') as r \gset
+select pg_temp.ok((:'r'::jsonb->>'resultado') = 'aguardando_aprovacao', 'analista pede a passagem para Contrato');
+select pg_temp.ok((select etapa_atual from app.processos where id = :'neg') = 'negociacao', 'o card fica onde está, aguardando aprovação');
+select pedido_id as ped1 from app.aprovacoes where processo_id = :'neg' and status = 'pendente' \gset
+select pg_temp.ok((select aprovador_previsto from app.aprovacoes where pedido_id = :'ped1') = :'gestor', 'aprovador previsto é o gestor de quem pediu');
+select pg_temp.ok((select aprovacao_aguardando from app.v_terrenos where id = :'t1') = 'gestor', 'listagem mostra que aguarda o gestor');
+select pg_temp.falha(format('select app.mover_subetapa(%L, %L)', :'neg', 'contra_proposta'), 'com pedido aberto o card não se move');
+select pg_temp.falha(format('select app.decidir_aprovacao(%L, true)', :'ped1'), 'quem pediu não aprova');
+select pg_temp.como(:'gestor');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'aprovacao_pendente') = 1, 'gestor recebe a notificação do pedido');
+select pg_temp.ok((app.checar_avanco(:'neg')->'pedido'->>'posso_decidir')::boolean, 'quadro de avanço diz ao gestor que ele decide');
+select pg_temp.falha(format('select app.decidir_aprovacao(%L, false)', :'ped1'), 'recusa exige comentário');
+select app.decidir_aprovacao(:'ped1', false, 'Falta a reunião com o advogado') \gset
+select pg_temp.ok((select etapa_atual from app.processos where id = :'neg') = 'negociacao' and (select status from app.aprovacoes where pedido_id = :'ped1') = 'recusado',
+  'recusado, o processo fica onde estava e o pedido vai para o histórico');
+select pg_temp.como(:'analista');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'aprovacao_decidida') = 1, 'quem pediu é avisado da decisão');
+select app.mover_etapa(:'neg') \gset
+select pedido_id as ped2 from app.aprovacoes where processo_id = :'neg' and status = 'pendente' \gset
+select pg_temp.como(:'diretor');
+select app.decidir_aprovacao(:'ped2', true, 'Ok, seguir') \gset
+select pg_temp.ok((select etapa_atual = 'contrato' and subetapa_atual = 'em_elaboracao' from app.processos where id = :'neg'), 'diretor aprova pelo gestor e o processo avança');
+select pg_temp.ok((select user_id = :'analista' and aprovacao_id is not null from app.processo_transicoes where processo_id = :'neg' and evento = 'avanco' and para_etapa = 'contrato'),
+  'a passagem fica no nome de quem pediu, ligada ao pedido aprovado');
+select pg_temp.ok((select decidido_por from app.aprovacoes where pedido_id = :'ped2') = :'diretor', 'quem aprovou de fato fica registrado');
+select pg_temp.como(:'gestor');
 select app.mover_para_etapa(:'neg', 'negociacao', false, 'Vendedor reabriu o preço') \gset
-select pg_temp.ok((select etapa_atual from app.processos where id = :'neg') = 'negociacao', 'arrastar para trás volta a etapa');
-select pg_temp.ok((select evento from app.processo_transicoes where processo_id = :'neg' order by em desc limit 1) = 'retorno', 'retorno vai para o histórico');
-select pg_temp.falha(format('select app.mover_para_etapa(%L, %L)', :'neg', 'ganha'), 'ganha não é destino de arrastar');
-select app.mover_para_etapa(:'neg', 'minutagem', true, 'Aceite verbal mantido') \gset
-select pg_temp.ok((select etapa_atual from app.processos where id = :'neg') = 'minutagem', 'gestor arrasta de volta à Minutagem forçando');
+select pg_temp.ok((select evento = 'retorno' and para_subetapa = 'aguardando_reuniao' from app.processo_transicoes where processo_id = :'neg' order by em desc limit 1),
+  'voltar de etapa é "retorno" e entra na subetapa inicial');
+select app.mover_etapa(:'neg') as r \gset
+select pg_temp.ok((:'r'::jsonb->>'resultado') = 'feito' and (select etapa_atual from app.processos where id = :'neg') = 'contrato', 'gestor que move dispensa a aprovação de gestor');
+
+select pg_temp.como(:'diretor');
+select app.salvar_subetapa(:'emp', 'negociacao', 'contrato_enviado', '{"aprova_gestor":true,"aprova_diretor":true}');
+select app.salvar_subetapa(:'emp', 'negociacao', 'em_ajuste', '{"aprova_gestor":true,"aprova_diretor":true,"aprovacao_modo":"paralelo"}');
+select pg_temp.como(:'analista');
+select app.mover_subetapa(:'neg', 'contrato_enviado') \gset
+select pedido_id as ped3 from app.aprovacoes where processo_id = :'neg' and status = 'pendente' limit 1 \gset
+select pg_temp.ok((select string_agg(nivel || ordem, ',' order by ordem) from app.aprovacoes where pedido_id = :'ped3') = 'gestor1,diretor2', 'em sequência: gestor primeiro, diretor depois');
+select pg_temp.ok((select aprovador_previsto from app.aprovacoes where pedido_id = :'ped3' and nivel = 'diretor') = :'diretor', 'diretor previsto é o superior do gestor de quem pediu');
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'aprovacao_pendente') = 0, 'em sequência, o diretor só é avisado depois do gestor');
+select pg_temp.como(:'gestor');
+select pg_temp.ok((app.decidir_aprovacao(:'ped3', true)->>'resultado') = 'aprovado_parcial', 'gestor aprova a parte dele');
+select pg_temp.ok((select subetapa_atual from app.processos where id = :'neg') = 'em_elaboracao', 'falta o diretor: nada muda ainda');
+select pg_temp.falha(format('select app.decidir_aprovacao(%L, true)', :'ped3'), 'gestor não aprova pelo diretor');
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'aprovacao_pendente') = 1, 'aprovado o gestor, o diretor é avisado');
+select app.decidir_aprovacao(:'ped3', true) \gset
+select pg_temp.ok((select subetapa_atual from app.processos where id = :'neg') = 'contrato_enviado', 'os dois aprovaram: a passagem acontece');
+select pg_temp.como(:'analista');
+select app.mover_subetapa(:'neg', 'em_ajuste') \gset
+select pedido_id as ped4 from app.aprovacoes where processo_id = :'neg' and status = 'pendente' limit 1 \gset
+select pg_temp.ok((select bool_and(ordem = 1) and count(*) = 2 from app.aprovacoes where pedido_id = :'ped4'), 'em paralelo, gestor e diretor recebem juntos');
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'aprovacao_pendente') = 2, 'em paralelo, o diretor é avisado na hora');
+select pg_temp.como(:'analista');
+select app.cancelar_aprovacao(:'ped4');
+select pg_temp.ok((select bool_and(status = 'cancelado') from app.aprovacoes where pedido_id = :'ped4'), 'quem pediu pode cancelar o pedido');
+select pg_temp.como(:'diretor');
+select app.mover_subetapa(:'neg', 'em_ajuste') as r \gset
+select pg_temp.ok((:'r'::jsonb->>'resultado') = 'feito', 'diretor que move dispensa gestor e diretor');
+select pg_temp.como(:'diretor');
 
 -- ---------------------------------------------------------------------
 \echo '# reuniões e atas'
@@ -251,7 +333,7 @@ insert into app.reunioes (empresa_id, terreno_id, processo_id, status, inicio, m
   (:'emp', :'t1', :'neg', 'agendada', now() + interval '3 days', 'presencial', 'externo', 'Escritório do advogado do vendedor') returning id as r2 \gset
 select pg_temp.ok((select proxima_reuniao_em is not null from app.v_terrenos where id = :'t1'), 'listagem mostra a próxima reunião agendada');
 select pg_temp.falha(format($$insert into app.reunioes (empresa_id, terreno_id, processo_id, inicio, modalidade) values (%L, %L, %L, now(), 'online')$$, :'emp', :'tx', :'neg'), 'reunião não aponta negociação de outro terreno');
-insert into app.reuniao_participantes (empresa_id, reuniao_id, lado, user_id) values (:'emp', :'r1', 'bkm', :'gestor');
+insert into app.reuniao_participantes (empresa_id, reuniao_id, lado, user_id) values (:'emp', :'r1', 'bkm', :'diretor');
 insert into app.reuniao_participantes (empresa_id, reuniao_id, lado, nome) values (:'emp', :'r1', 'vendedor', 'Sr. Carlos (sócio)');
 select pg_temp.falha(format($$insert into app.reuniao_participantes (empresa_id, reuniao_id, lado) values (%L, %L, 'outro')$$, :'emp', :'r1'), 'participante precisa de identificação');
 select app.registrar_documento(:'t1', 'ata_reuniao', :'emp' || '/' || :'t1' || '/ata_reuniao/a1.pdf', 'ata.pdf', p_reuniao => :'r1') as ata1 \gset
@@ -263,7 +345,7 @@ select pg_temp.falha(format('select app.registrar_documento(%L, %L, %L, %L)', :'
 select pg_temp.ok((select ata_versao = 2 and jsonb_array_length(participantes) = 2 from app.v_reunioes where id = :'r1'), 'v_reunioes traz ata atual e participantes');
 select pg_temp.ok((select reunioes_realizadas from app.v_terrenos where id = :'t1') = 1, 'listagem conta reuniões realizadas');
 select pg_temp.falha(format($$insert into app.atividades (empresa_id, terreno_id, tipo, resumo) values (%L, %L, 'reuniao', 'x')$$, :'emp', :'t1'), 'reunião não é registrada como atividade');
-select pg_temp.como(:'gestor');
+select pg_temp.como(:'diretor');
 
 -- ---------------------------------------------------------------------
 \echo '# documentos'
@@ -279,17 +361,43 @@ select pg_temp.ok((select proposta_id from app.documentos where id = :'dp') = :'
 select pg_temp.falha(format('select app.registrar_documento(%L, %L, %L, %L)', :'t1', 'foto', 'outra/x.jpg', 'x.jpg'), 'caminho fora da empresa é recusado');
 
 -- ---------------------------------------------------------------------
-\echo '# encerramento e arquivamento'
+\echo '# status: stand by, perdido, descartado'
 select pg_temp.falha(format('select app.arquivar_terreno(%L, %L)', :'t1', 'teste'), 'não arquiva com negociação aberta');
-select pg_temp.falha(format('select app.encerrar_processo(%L, %L)', :'neg', 'perdida'), 'perda exige motivo');
-select app.encerrar_processo(:'neg', 'perdida', 'Preço acima do teto da viabilidade');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format('select app.encerrar_processo(%L, %L)', :'neg', 'descartado'), 'descartar exige motivo da lista');
+select pg_temp.falha(format('select app.encerrar_processo(%L, %L, %L)', :'neg', 'descartado', 'preco_alto'), 'motivo fora da lista é recusado');
+select pg_temp.falha(format('select app.encerrar_processo(%L, %L, %L)', :'neg', 'descartado', 'outros'), 'Descartado por Outros exige texto');
+select pg_temp.falha(format('select app.encerrar_processo(%L, %L, %L)', :'neg', 'perdido', 'vendido_terceiro'), 'Perdido exige relato');
+select pg_temp.falha(format('select app.encerrar_processo(%L, %L, p_detalhe => %L)', :'neg', 'comprado', '<p>Fechado</p>'), 'Comprado exige relato e pontos de sucesso');
+select pg_temp.falha(format('select app.encerrar_processo(%L, %L, p_detalhe => %L)', :'neg', 'stand_by', 'Inventário'), 'Stand By exige data futura');
+select pg_temp.falha(format('select app.encerrar_processo(%L, %L, p_retomar_em => current_date + 30)', :'neg', 'stand_by'), 'Stand By exige justificativa');
+select app.encerrar_processo(:'neg', 'stand_by', p_detalhe => 'Inventário em andamento', p_retomar_em => current_date + 30) \gset
+select pg_temp.ok((select status = 'stand_by' and etapa_atual = 'contrato' and subetapa_atual = 'em_ajuste' from app.processos where id = :'neg'), 'stand by guarda etapa e subetapa');
+select pg_temp.ok((select array_agg(dias_antes order by dias_antes) from app.lembretes where origem_tabela = 'processos' and origem_id = :'neg') = '{0,7}', 'stand by cria os lembretes padrão (7 dias antes e no dia)');
+reset role;  -- a rotina roda pelo pg_cron, fora de qualquer usuário
+select app.rotina_diaria(current_date + 23) \gset
+select app.rotina_diaria(current_date + 23) \gset
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'stand_by_retomar') = 1, 'responsável é lembrado 7 dias antes de retomar, sem repetir');
+select pg_temp.como(:'analista');
+select app.retomar_processo(:'neg');
+select pg_temp.ok((select status = 'ativo' and subetapa_atual = 'em_ajuste' from app.processos where id = :'neg'), 'retomar volta para Ativo na mesma etapa e subetapa');
+select pg_temp.ok((select tempo_stand_by > interval '0' from app.v_tempo_subetapas where processo_id = :'neg' and subetapa = 'em_ajuste'), 'tempo em stand by fica separado do tempo ativo');
+select pg_temp.ok((select ultima_saida is not null and passagens = 1 from app.v_tempo_subetapas where processo_id = :'neg' and subetapa = 'estudo_viabilidade'),
+  'tempo por subetapa: entrada e saída de Estudo de Viabilidade lidas do histórico');
+select pg_temp.ok((select count(*) from app.v_tempo_subetapas where processo_id = :'neg' and atual) = 1, 'só a subetapa atual está em aberto');
+select app.encerrar_processo(:'neg', 'perdido', 'vendido_terceiro', 'Fechou com a construtora vizinha por valor maior') \gset
+select pg_temp.ok((select status = 'perdido' and etapa_atual = 'contrato' and motivo_encerramento = 'vendido_terceiro' from app.processos where id = :'neg'), 'perdido guarda motivo, relato e a etapa onde parou');
+select pg_temp.ok((select motivo_encerramento_nome from app.v_terrenos where id = :'t1') = 'Vendido para terceiro', 'listagem mostra o nome do motivo');
+select pg_temp.falha(format('select app.retomar_processo(%L)', :'neg'), 'perdido não volta para Ativo');
+select pg_temp.como(:'diretor');
 select app.arquivar_terreno(:'t1', 'Vendedor fechou com concorrente');
 select pg_temp.ok((select situacao_cadastral from app.terrenos where id = :'t1') = 'arquivado', 'terreno arquivado sem apagar histórico');
 select pg_temp.falha(format('select app.abrir_negociacao(%L)', :'t1'), 'terreno arquivado não abre negociação');
 
 -- ---------------------------------------------------------------------
 \echo '# área de interesse'
-insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro) values (:'emp', 'Lote vizinho', :'gestor', 'prospeccao', :'sp', 'Cidade Ademar') returning id as t2 \gset
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro) values (:'emp', 'Lote vizinho', :'diretor', 'prospeccao', :'sp', 'Cidade Ademar') returning id as t2 \gset
 insert into app.areas_interesse (empresa_id, nome) values (:'emp', 'Área Cupecê A') returning id as ai \gset
 insert into app.area_interesse_terrenos (area_interesse_id, terreno_id, empresa_id) values (:'ai', :'t1', :'emp'), (:'ai', :'t2', :'emp');
 select pg_temp.ok((select count(*) from app.area_interesse_terrenos where area_interesse_id = :'ai') = 2, 'área de interesse reúne dois terrenos');
@@ -297,7 +405,7 @@ select pg_temp.ok((select count(*) from app.area_interesse_terrenos where area_i
 -- ---------------------------------------------------------------------
 \echo '# mapa, pontos de interesse e quadro de tarefas'
 insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude)
-  values (:'emp', 'Pin no mapa', :'gestor', 'prospeccao', :'sp', -23.6681, -46.6513) returning id as tm \gset
+  values (:'emp', 'Pin no mapa', :'diretor', 'prospeccao', :'sp', -23.6681, -46.6513) returning id as tm \gset
 insert into app.pontos_interesse (empresa_id, nome, categoria, latitude, longitude) values
   (:'emp', 'Terminal Cidade Ademar', 'transporte', -23.6672, -46.6522),
   (:'emp', 'Escritório Campinas', 'empresa', -22.9056, -47.0608);
@@ -333,7 +441,7 @@ select pg_temp.falha(format($$insert into app.terreno_entorno (empresa_id, terre
 select pg_temp.falha(format('select app.salvar_entorno(%L, -23.60, -46.60, %L)', :'tm', '[]'), 'busca feita para outra coordenada é recusada');
 select app.salvar_entorno(:'tm', -23.6681, -46.6513, '[]', false) as ne2 \gset
 select pg_temp.ok((select count(*) from app.terreno_entorno where terreno_id = :'tm') = 0 and (select not rota_a_pe from app.terreno_entorno_buscas where terreno_id = :'tm'), 'nova busca troca a anterior inteira');
-select pg_temp.como(:'gestor');
+select pg_temp.como(:'diretor');
 select pg_temp.ok((select count(*) from app.auditoria where tabela = 'terreno_entorno_buscas' and depois->>'terreno_id' = :'tm') = 2, 'busca do entorno vai para os logs');
 select versao as vtm from app.terrenos where id = :'tm' \gset
 select app.salvar_terreno(:'tm', :vtm, '{"latitude":-23.6700,"longitude":-46.6500}') \gset
@@ -342,7 +450,7 @@ select pg_temp.ok((select bool_and(precisa_medir and distancia_pe_m is null and 
 select pg_temp.como(:'leitor');
 select pg_temp.falha(format('select app.salvar_entorno(%L, -23.67, -46.65, %L)', :'tm', '[]'), 'leitura não grava entorno');
 select pg_temp.ok((select count(*) from app.v_entorno_buscas where terreno_id = :'tm') = 1, 'leitura vê a situação do entorno');
-select pg_temp.como(:'gestor');
+select pg_temp.como(:'diretor');
 select pg_temp.ok(not exists (select 1 from app.v_mapa where id = :'t1'), 'terreno arquivado sai do mapa');
 insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (:'emp', :'tm', 'Visitar o lote', current_date - 1) returning id as k1 \gset
 insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (:'emp', :'tm', 'Pedir matrícula', current_date + 5) returning id as k2 \gset
@@ -372,7 +480,7 @@ select pg_temp.falha(format('select app.checar_avanco(%L)', :'neg'), 'outra pess
 select pg_temp.falha(format($$insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (%L, %L, 'x', current_date)$$, :'emp', :'t2'), 'outra pessoa não grava tarefa');
 select pg_temp.ok((select count(*) from app.municipios) = 5571, 'cadastros comuns continuam visíveis');
 
-select pg_temp.como(:'gestor');
+select pg_temp.como(:'diretor');
 select pg_temp.ok((select count(*) from app.auditoria where tabela = 'terrenos') >= 3, 'auditoria registra alterações do terreno');
 begin;
 insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (:'emp', :'t2', 'Log A', current_date);
@@ -381,20 +489,125 @@ commit;
 select pg_temp.ok((select bool_and(em > ant) from (select em, lag(em) over (order by id) ant from (select id, em from app.auditoria where tabela = 'tarefas' order by id desc limit 2) u) x where ant is not null),
   'alterações na mesma transação ficam em instantes distintos, na ordem em que aconteceram');
 
-\echo '# fechamento como ganha'
+\echo '# fechamento como comprado'
 select app.registrar_oferta(:'t2', 3000000) \gset
 select id as ng from app.processos where terreno_id = :'t2' and status = 'ativo' \gset
 select pg_temp.como(:'analista');
 select pg_temp.falha(format('select app.mover_para_etapa(%L, %L)', :'ng', 'negociacao'), 'arrastar duas etapas para frente checa cada uma');
-select pg_temp.ok((select etapa_atual from app.processos where id = :'ng') = 'recebido', 'falha no meio do caminho não muda nada');
-select pg_temp.ok((select situacao_mapa from app.v_mapa where id = :'t2') = 'recebido', 'pin da negociação ativa usa a etapa');
+select pg_temp.ok((select etapa_atual from app.processos where id = :'ng') = 'triagem', 'falha no meio do caminho não muda nada');
+select pg_temp.ok((select situacao_mapa from app.v_mapa where id = :'t2') = 'triagem', 'pin da negociação ativa usa a etapa');
+select pg_temp.falha(format('select app.encerrar_processo(%L, %L, p_detalhe => %L, p_pontos_sucesso => %L)', :'ng', 'comprado', 'x', 'y'), 'compra só na última etapa');
 select pg_temp.como(:'gestor');
 select app.mover_etapa(:'ng') \gset
 select app.mover_etapa(:'ng', true, 'Estudo em andamento') \gset
-select app.mover_etapa(:'ng', true, 'Aceite por e-mail') \gset
-select app.mover_etapa(:'ng', true, 'Certidões na escritura') \gset
-select pg_temp.ok((select status = 'ganha' and etapa_atual = 'minutagem' from app.processos where id = :'ng'), 'fechamento vira status ganha e guarda a última etapa');
-select pg_temp.ok((select evento from app.processo_transicoes where processo_id = :'ng' order by em desc limit 1) = 'ganho', 'ganho vai para o histórico');
-select pg_temp.falha(format('select app.mover_etapa(%L)', :'ng'), 'negociação ganha não avança mais');
-select pg_temp.ok((select situacao_mapa from app.v_mapa where id = :'t2') = 'ganha', 'pin da negociação ganha');
+select app.mover_etapa(:'ng') \gset
+select pg_temp.ok((select etapa_atual from app.processos where id = :'ng') = 'contrato', 'gestor leva ao Contrato sem pedir aprovação');
+select pg_temp.ok((app.checar_avanco(:'ng')->>'proxima') = 'comprado' and (app.checar_avanco(:'ng')->>'proxima_tipo') = 'status', 'depois do Contrato vem o fechamento como Comprado');
+select pg_temp.ok((app.checar_avanco(:'ng')->'aprovacoes') = '["diretor"]', 'compra pede o diretor (o gestor já tem o nível dele)');
+insert into app.diligencias (empresa_id, terreno_id, processo_id, categoria, titulo, situacao) values
+  (:'emp', :'t2', :'ng', 'ambiental', 'Possível contaminação por posto vizinho', 'impeditiva') returning id as dg \gset
+select pg_temp.ok((app.checar_avanco(:'ng')->'itens') @> '[{"tipo":"diligencia"}]', 'diligência impeditiva trava a compra');
+select pg_temp.ok((app.checar_avanco(:'ng')->'itens') @> '[{"tipo":"documento","ok":false}]', 'compra exige certidões e minuta');
+select pg_temp.ok((select diligencias_impeditivas from app.v_terrenos where id = :'t2') = 1, 'listagem conta diligências impeditivas');
+update app.diligencias set situacao = 'resolvida', providencia = 'Laudo de passivo ambiental negativo' where id = :'dg';
+select pg_temp.ok((select resolvida_em is not null from app.diligencias where id = :'dg'), 'resolver preenche a data');
+select pg_temp.ok(not ((app.checar_avanco(:'ng')->'itens') @> '[{"tipo":"diligencia"}]'), 'diligência resolvida sai das pendências');
+select pg_temp.falha(format('select app.encerrar_processo(%L, %L, p_detalhe => %L, p_pontos_sucesso => %L)', :'ng', 'comprado', 'x', 'y'), 'compra com documento pendente é recusada');
+select app.encerrar_processo(:'ng', 'comprado', p_detalhe => '<p>Compra fechada com permuta</p>', p_pontos_sucesso => '<ul><li>Permuta aceita</li></ul>',
+                             p_forcar => true, p_comentario => 'Certidões na escritura') as r \gset
+select pg_temp.ok((:'r'::jsonb->>'resultado') = 'aguardando_aprovacao' and (select status from app.processos where id = :'ng') = 'ativo', 'gestor força e a compra aguarda o diretor');
+select pedido_id as ped5 from app.aprovacoes where processo_id = :'ng' and status = 'pendente' \gset
+select pg_temp.como(:'diretor');
+select app.decidir_aprovacao(:'ped5', true) \gset
+select pg_temp.ok((select status = 'comprado' and etapa_atual = 'contrato' and pontos_sucesso is not null and detalhe_encerramento is not null from app.processos where id = :'ng'),
+  'diretor aprova: Comprado, com relato e pontos de sucesso, guardando a última etapa');
+select pg_temp.ok((select evento = 'compra' and forcado from app.processo_transicoes where processo_id = :'ng' order by em desc limit 1), 'compra vai para o histórico, forçada');
+select pg_temp.falha(format('select app.mover_etapa(%L)', :'ng'), 'negociação comprada não avança mais');
+select pg_temp.ok((select situacao_mapa from app.v_mapa where id = :'t2') = 'comprado', 'pin da negociação comprada');
+
+\echo '# configuração do funil (administrador)'
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format($$select app.configurar_etapa(%L, 'negociacao', 'estudos', '{"nome":"Estudos"}')$$, :'emp'), 'só o administrador muda a configuração');
+select pg_temp.falha(format($$update app.etapas_modelo set nome = 'X' where empresa_id = %L$$, :'emp'), 'configuração não muda direto na tabela');
+select pg_temp.como(:'diretor');
+select app.configurar_etapa(:'emp', 'negociacao', 'estudos', '{"nome":"Estudos","sla_dias":15}');
+select pg_temp.ok((select nome = 'Estudos' and sla_dias = 15 from app.etapas_modelo where codigo = 'estudos'), 'administrador renomeia a etapa e muda o prazo');
+select pg_temp.falha(format($$select app.configurar_etapa(%L, 'negociacao', 'estudos', '{"ordem":9}')$$, :'emp'), 'ordem da etapa não muda pelo app');
+select app.salvar_subetapa(:'emp', 'negociacao', 'due_diligence', '{"etapa":"contrato","nome":"Due diligence","prazo_dias":20}');
+select pg_temp.ok((select ordem = 4 and ativo from app.subetapas_modelo where codigo = 'due_diligence'), 'subetapa nova entra no fim do kanban da etapa');
+select app.apagar_subetapa(:'emp', 'negociacao', 'due_diligence');
+select pg_temp.falha(format($$select app.apagar_subetapa(%L, 'negociacao', 'aguardando_informacoes')$$, :'emp'), 'subetapa com histórico não é apagada, só desativada');
+select pg_temp.falha(format($$select app.salvar_subetapa(%L, 'negociacao', 'estudo_viabilidade', '{"ativo":false}')$$, :'emp'), 'não desativa subetapa de que outra passagem depende');
+select pg_temp.falha(format($$select app.salvar_subetapa(%L, 'negociacao', 'estudo_massa', '{"etapa":"triagem"}')$$, :'emp'), 'subetapa não muda de etapa');
+select app.registrar_oferta(:'tx', 1500000) \gset
+select id as nx from app.processos where terreno_id = :'tx' and status = 'ativo' \gset
+select pg_temp.falha(format($$select app.salvar_subetapa(%L, 'negociacao', 'aguardando_informacoes', '{"ativo":false}')$$, :'emp'), 'desativar com terrenos dentro pede para onde movê-los');
+select app.salvar_subetapa(:'emp', 'negociacao', 'aguardando_informacoes', '{"ativo":false,"mover_para":"aguardando_documentos"}');
+select pg_temp.ok((select subetapa_atual from app.processos where id = :'nx') = 'aguardando_documentos', 'terrenos da subetapa desativada vão para a escolhida');
+reset role;
+select pg_temp.ok(app._subetapa_inicial(:'emp', 'negociacao', 'triagem') = 'aguardando_documentos', 'subetapa inicial passa a ser a primeira ativa');
+select pg_temp.como(:'diretor');
+select app.salvar_subetapa(:'emp', 'negociacao', 'aguardando_informacoes', '{"ativo":true}');
+select app.remover_prerequisito(:'pr2');
+select pg_temp.ok(not exists (select 1 from app.prerequisitos_modelo where id = :'pr2'), 'pré-requisito removido');
+select app.salvar_motivo(:'emp', 'perdido', 'permuta_recusada', '{"nome":"Recusou permuta física"}');
+select pg_temp.ok((select ordem from app.motivos_encerramento where codigo = 'permuta_recusada') = 8, 'motivo novo entra no fim da lista');
+select pg_temp.falha(format($$select app.apagar_motivo(%L, 'perdido', 'vendido_terceiro')$$, :'emp'), 'motivo já usado não é apagado');
+select app.salvar_motivo(:'emp', 'perdido', 'vendido_terceiro', '{"ativo":false}');
+select app.salvar_checklist(:'emp', 'negociacao', 'estudos', 'planialtimetrico', false);
+select pg_temp.ok((select not obrigatorio from app.checklist_modelo where etapa = 'estudos' and tipo_documento = 'planialtimetrico'), 'checklist da etapa editado pelo administrador');
+select app.remover_checklist(:'emp', 'negociacao', 'estudos', 'planialtimetrico');
+select app.configurar_status(:'emp', 'negociacao', 'comprado', '{"aprovacao_modo":"paralelo"}');
+select pg_temp.ok((select count(*) from app.auditoria where tabela in ('etapas_modelo','subetapas_modelo','motivos_encerramento','checklist_modelo','status_modelo','prerequisitos_modelo')) >= 10,
+  'toda alteração de configuração vai para a auditoria');
+select pg_temp.como(:'intruso');
+select app.criar_empresa('Outra', 'Fulano') as emp2 \gset
+select pg_temp.ok((select nome from app.etapas_modelo where codigo = 'estudos') = 'Estudos Preliminares', 'cada empresa tem a sua configuração');
+select pg_temp.como(:'diretor');
+
+\echo '# notificações e lembretes'
+select pg_temp.como(:'analista');
+insert into app.tarefas (empresa_id, terreno_id, titulo, responsavel_id, prazo) values (:'emp', :'tm', 'Pedir certidões', :'gestor', current_date + 2) returning id as kn \gset
+insert into app.tarefa_marcados (tarefa_id, user_id, empresa_id) values (:'kn', :'diretor', :'emp');
+select pg_temp.falha(format($$insert into app.tarefa_marcados (tarefa_id, user_id, empresa_id) values (%L, %L, %L)$$, :'kn', :'intruso', :'emp'), 'só membros da empresa são marcados');
+select pg_temp.ok((select array_agg(dias_antes) from app.lembretes where origem_id = :'kn') = '{0}', 'tarefa nasce com lembrete no dia do prazo');
+insert into app.lembretes (empresa_id, origem_tabela, origem_id, dias_antes) values (:'emp', 'tarefas', :'kn', 1);
+select pg_temp.falha(format($$insert into app.lembretes (empresa_id, origem_tabela, origem_id, dias_antes) values (%L, 'tarefas', %L, 400)$$, :'emp', :'kn'), 'antecedência até 365 dias');
+select pg_temp.falha(format($$insert into app.lembretes (empresa_id, origem_tabela, origem_id, dias_antes) values (%L, 'tarefas', %L, 3)$$, :'emp2', :'kn'), 'lembrete não aponta item de outra empresa');
+select pg_temp.falha(format($$insert into app.notificacoes (empresa_id, destinatario_id, tipo, texto, origem_tabela, origem_id, referencia) values (%L, %L, 'x', 'x', 'x', %L, current_date)$$, :'emp', :'gestor', :'kn'),
+  'notificação só é criada pelo banco');
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'tarefa_marcado') = 1, 'quem é marcado na tarefa é avisado');
+reset role;
+select app.rotina_diaria(current_date + 1) \gset
+select app.rotina_diaria(current_date + 2) \gset
+select pg_temp.como(:'gestor');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'tarefa_atribuida') = 1, 'responsável é avisado da tarefa atribuída');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'tarefa_prazo') = 2, 'lembretes de 1 dia antes e do dia do prazo');
+select pg_temp.ok((select texto from app.notificacoes where tipo = 'tarefa_prazo' order by referencia desc limit 1) like '%: hoje', 'no dia: "vence hoje"');
+select pg_temp.como(:'analista');
+update app.tarefas set prazo = current_date + 6 where id = :'kn';
+reset role;
+select app.rotina_diaria(current_date + 6) \gset
+select app.rotina_diaria(current_date + 8) \gset
+select app.rotina_diaria(current_date + 9) \gset
+select pg_temp.como(:'gestor');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'tarefa_prazo') = 4, 'prazo mudou: os lembretes voltam a valer para a data nova');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'tarefa_atrasada' and origem_id = :'kn') = 1, 'tarefa atrasada avisa uma vez só');
+select app.marcar_notificacao_lida() as lidas \gset
+select pg_temp.ok(:lidas >= 5 and not exists (select 1 from app.notificacoes where lida_em is null), 'marcar todas como lidas');
+select pg_temp.como(:'analista');
+select pg_temp.ok(not exists (select 1 from app.notificacoes where destinatario_id = :'gestor'), 'cada um vê só as suas notificações');
+select pg_temp.como(:'diretor');
+select app.salvar_subetapa(:'emp', 'negociacao', 'aguardando_documentos', '{"prazo_dias":3}');
+reset role;
+select app.rotina_diaria(current_date + 5) \gset
+select app.rotina_diaria(current_date + 6) \gset
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'subetapa_prazo' and origem_id = :'nx') = 1, 'subetapa com prazo estourado avisa o responsável uma vez');
+select pg_temp.ok((select subetapa_atrasada from app.v_terrenos where id = :'tx') is false, 'hoje ainda dentro do prazo da subetapa');
+select app.registrar_documento(:'tx', 'matricula', :'emp' || '/' || :'tx' || '/matricula/m.pdf', 'm.pdf', :'nx', p_emitido_em => current_date) as dv \gset
+select pg_temp.ok((select array_agg(dias_antes order by dias_antes) from app.lembretes where origem_id = :'dv') = '{7,30}', 'documento que vence nasce com lembretes de 30 e 7 dias');
+select app.configurar_notificacao(:'emp', 'tarefa_atrasada', false);
+select pg_temp.ok((select not ativo from app.tipos_notificacao where codigo = 'tarefa_atrasada'), 'administrador desliga um tipo de notificação');
 \echo 'TODOS OS TESTES PASSARAM'
