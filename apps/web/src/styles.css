@@ -1569,5 +1569,10 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
   .dash-lado, .dash-main, .dash-tab, .dash-g.tab-larga .dash-tab { grid-column: auto; grid-row: auto }
 }
 
+/* Tema escuro: indicadores tonais, sem neon. Mesma luminosidade nos quatro, só o tom muda
+   (oklch relativo); navegador sem suporte fica com o véu de color-mix */
+:root[data-tema="escuro"] .kpi { background: color-mix(in srgb, var(--k, var(--neon-1)) 16%, transparent) !important; background: oklch(from var(--k, var(--neon-1)) 0.29 0.07 h) !important; border: 1px solid color-mix(in srgb, var(--k, var(--neon-1)) 60%, transparent) !important; border: 1px solid oklch(from var(--k, var(--neon-1)) 0.58 0.14 h) !important; box-shadow: none !important }
+:root[data-tema="escuro"] .kpi .v { background: none !important; color: color-mix(in srgb, var(--k, var(--neon-1)) 40%, #fff) !important; color: oklch(from var(--k, var(--neon-1)) 0.86 0.09 h) !important; -webkit-text-fill-color: currentColor; text-shadow: none !important }
+
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
