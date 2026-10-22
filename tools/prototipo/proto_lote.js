@@ -1,6 +1,5 @@
 // ---------------------------------------------------------------------
-// Inscrição municipal por cidade. Só no passo 1 do cadastro (sem poligonal ainda)
-// escolhe-se o município; na ficha e no passo 2 ele vem do terreno:
+// Inscrição municipal por cidade. A cidade é sempre a do terreno (pela poligonal):
 // São Paulo (SQL, base GeoSampa), São José dos Campos (inscrição imobiliária,
 // base GeoSanja) ou outro (digitada, sem base). O campo abre com a máscara da
 // cidade e, com base, o lote é buscado na prefeitura dela.
@@ -18,11 +17,11 @@ function mascarar(v,m){if(!m)return v;const d=digits(v).slice(0,digitosMasc(m));
   for(const c of m){if(j>=d.length)break;r+=c==='0'?d[j++]:c}return r}
 const cidDoNome=n=>/s[aã]o jos[eé] dos campos/i.test(n||'')?'sjc':!n||/^s[aã]o paulo\b/i.test(n)?'sp':'outro';
 const cidDoTerreno=t=>cidDoNome(t.municipio);
-// Escolha da cidade + campo da inscrição. pre: prefixo dos ids; rot: rótulo antes do nome da inscrição.
-// cids: as cidades oferecidas (todas, por padrão). fixo: a cidade vem do município
-// do terreno (pela poligonal) e não há escolha; o rádio marcado fica escondido.
-function campoInsc(pre,cid,rot,obrig,cids,fixo){const c=CIDADES_INSC[cid];
-  return `${fixo?`<input type="radio" name="mun" value="${cid}" data-insc="${pre}" checked hidden>`:`<div class="field full"><span class="lbl" id="${pre}-mun-l">Município da inscrição</span><span class="seg3 insc-cid" role="radiogroup" aria-labelledby="${pre}-mun-l">${Object.entries(CIDADES_INSC).filter(([k])=>!cids||cids.includes(k)).map(([k,v])=>`<label class="opt-radio"><input type="radio" name="mun" value="${k}" data-insc="${pre}" ${k===cid?'checked':''}>${v.cidade}</label>`).join('')}</span></div>`}
+// Campo da inscrição na cidade do terreno (vem da poligonal; não há escolha). O
+// rádio marcado escondido leva a cidade no formulário. pre: prefixo dos ids;
+// rot: rótulo antes do nome da inscrição.
+function campoInsc(pre,cid,rot,obrig){const c=CIDADES_INSC[cid];
+  return `<input type="radio" name="mun" value="${cid}" data-insc="${pre}" checked hidden>
   <div class="field grow"><label for="${pre}-sql" id="${pre}-sql-l">${rotInsc(c,rot)}</label><input id="${pre}-sql" name="sql" ${obrig?'required':''} data-masc="${c.mascara||''}" inputmode="${c.mascara?'numeric':'text'}" placeholder="${c.mascara||'Como está no carnê do IPTU'}" autocomplete="off"></div>`}
 const rotInsc=(c,rot)=>rot?`${rot} (${c.rotulo})`:c.rotulo;
 document.addEventListener('change',e=>{const r=e.target.closest('[data-insc]');if(!r)return;const pre=r.dataset.insc,c=CIDADES_INSC[r.value],el=document.getElementById(pre+'-sql'),lb=document.getElementById(pre+'-sql-l');if(!el)return;

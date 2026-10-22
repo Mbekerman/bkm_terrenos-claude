@@ -683,20 +683,14 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 
 /* Inscrição por cidade: a escolha do município ocupa a linha toda e quebra no celular */
 .inline-form .field.full { flex: 1 1 100% }
-.insc-cid { flex-wrap: wrap; max-width: 100%; align-self: flex-start }
-.insc-cid .opt-radio { white-space: nowrap; position: relative }
 
 /* ---------- Novo terreno pela poligonal (proto_novo.js) ---------- */
 .nv-ops { display: flex; flex-direction: column; gap: 12px }
 .nv-op { display: flex; gap: 16px; align-items: flex-start; text-align: left; width: 100%; padding: 16px; border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px; background: transparent; color: inherit; font: inherit; cursor: pointer }
 button.nv-op:hover { background: rgba(11,87,208,.06) }
-.nv-op > span:not(.nv-ic) b, .nv-ins-c > b { display: block; font-weight: 500; font-size: 16px; line-height: 24px }
+.nv-op > span:not(.nv-ic) b { display: block; font-weight: 500; font-size: 16px; line-height: 24px }
 .nv-op .muted { display: block; font-size: 14px }
 .nv-ic { flex: none; width: 24px; height: 24px; color: var(--m-primary, #0b57d0) }
-.nv-ins { cursor: default }
-.nv-ins-c { flex: 1; min-width: 0 }
-.nv-ins .inline-form { margin-top: 8px; align-items: flex-end }
-.nv-ins-b { flex: none !important; align-self: flex-end }
 .nv-kmz { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 0 16px }
 .nv-kmz .lbl-f { flex: 1 1 100% }
 .nv-sob { display: flex; flex-direction: column }
@@ -724,3 +718,18 @@ button.nv-op:hover { background: rgba(11,87,208,.06) }
 .mp-res .hint { padding: 8px 14px }
 :root[data-tema="escuro"] .mp-busca, :root[data-tema="escuro"] .mp-res { background: #060c20; box-shadow: 0 0 0 1px rgba(124,140,255,.35) }
 @media (max-width: 599px) { .mapa-area .mp-barra { flex-wrap: wrap !important } .mp-busca { flex: 1 1 100%; max-width: none; order: -1; margin-right: 0 } .mp-barra .seg { flex: 1 1 0 } }
+
+/* Usar a poligonal dos lotes: desenhada (tracejada) x lotes da prefeitura */
+.lotes-cmp { display: flex; gap: var(--e4); align-items: center; flex-wrap: wrap }
+.lotes-svg { width: 180px; height: 180px; flex: none; background: var(--sup-2, #f0f4f9); border-radius: 12px }
+.lotes-novo { fill: rgba(11, 87, 208, .18); stroke: #0b57d0; stroke-width: 2 }
+.lotes-ant { fill: none; stroke: #b3261e; stroke-width: 2; stroke-dasharray: 5 4 }
+.lotes-kv { flex: 1 1 220px; display: grid; gap: 8px; min-width: 0 }
+.lotes-kv > div:not(.hint) { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--linha, #c4c7c5); padding-bottom: 6px }
+.lotes-kv span { color: var(--texto-suave, #444746) }
+.lotes-kv b { font-weight: 500; text-align: right }
+.lotes-leg { display: inline-block; width: 18px; height: 0; vertical-align: middle; margin: 0 4px 0 8px; border-top: 2px solid #0b57d0 }
+.lotes-leg-ant { border-top: 2px dashed #b3261e; margin-left: 0 }
+html[data-tema="escuro"] .lotes-svg { background: #0d1530 }
+html[data-tema="escuro"] .lotes-novo { fill: rgba(96, 165, 250, .2); stroke: #60a5fa }
+html[data-tema="escuro"] .lotes-leg-novo { border-top-color: #60a5fa }
