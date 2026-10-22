@@ -24,7 +24,7 @@ html = '<title>BKM Terrenos</title>\n<meta name="claude:viewport-fit-sides" cont
 os.makedirs(os.path.join(AQUI, 'saida'), exist_ok=True)
 open(os.path.join(AQUI, 'saida', 'bkm-terrenos.html'), 'w', encoding='utf-8').write(html)
 doc = ('<!doctype html>\n<html lang="pt-BR">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
-       '<meta name="gmaps-key" content="{% env "GOOGLE_MAPS_KEY" %}">\n'
+       '<meta name="gmaps-key" content="{% env "GOOGLE_MAPS_KEY" %}">\n<meta name="bkm-ambiente" content="{% env "AMBIENTE" %}">\n'
        + html.replace('<style>', '</head>\n<body>\n<style>', 1).replace('<title>BKM Terrenos</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n', '<title>BKM Terrenos</title>\n', 1)
        + '\n</body>\n</html>\n')
 open(os.path.join(RAIZ, 'docs', 'prototipo.html'), 'w', encoding='utf-8').write(doc)

@@ -658,3 +658,10 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
    (oklch relativo); navegador sem suporte fica com o véu de color-mix */
 :root[data-tema="escuro"] .kpi { background: color-mix(in srgb, var(--k, var(--neon-1)) 16%, transparent) !important; background: oklch(from var(--k, var(--neon-1)) 0.29 0.07 h) !important; border: 1px solid color-mix(in srgb, var(--k, var(--neon-1)) 60%, transparent) !important; border: 1px solid oklch(from var(--k, var(--neon-1)) 0.58 0.14 h) !important; box-shadow: none !important }
 :root[data-tema="escuro"] .kpi .v { background: none !important; color: color-mix(in srgb, var(--k, var(--neon-1)) 40%, #fff) !important; color: oklch(from var(--k, var(--neon-1)) 0.86 0.09 h) !important; -webkit-text-fill-color: currentColor; text-shadow: none !important }
+
+/* Selo do ambiente (fora da produção) */
+.amb-selo { flex: none; align-self: center; padding: 2px 8px; border-radius: 8px; background: #ffdf99; color: #7a5900; font-size: 12px; line-height: 18px; font-weight: 500; white-space: nowrap }
+.amb-selo .amb-c { display: none }
+/* no celular não cabe na linha: vira etiqueta pequena sobre o canto do logo */
+@media (max-width: 599px) { .top-in { position: relative } .amb-selo { position: absolute; left: 108px; top: 6px; padding: 0 5px; font-size: 10px; line-height: 15px; border-radius: 6px; pointer-events: none } .amb-selo .amb-l { display: none } .amb-selo .amb-c { display: inline } }
+:root[data-tema="escuro"] .amb-selo { background: rgba(255,223,153,.14); color: #ffdf99; border: 1px solid rgba(255,223,153,.45) }
