@@ -22,6 +22,25 @@ returns boolean language sql immutable as $$
                         or (pt->>0)::float8 not between -180 and 180 or (pt->>1)::float8 not between -90 and 90))
 $$;
 
+-- Sobreposição entre duas poligonais (geometria 4326). Conta como o mesmo chão
+-- quando a área em comum passa de 1 m² e não é só a faixa de imprecisão do
+-- desenho na divisa: conta se a parte em comum tem mais de p_folga_m de largura
+-- (diâmetro do maior círculo que cabe nela, em metros, na projeção UTM do lugar)
+-- ou se cobre metade de qualquer um dos dois, para que o mesmo lote estreito
+-- desenhado duas vezes nunca passe sem aviso.
+create or replace function app.sobreposicao(a extensions.geometry, b extensions.geometry, p_folga_m float8 default 5)
+returns table (area_m2 float8, largura_m float8, pct_a float8, pct_b float8, conta boolean)
+language sql immutable set search_path = '' as $$
+  with i as (select extensions.st_collectionextract(extensions.st_intersection(a, b), 3) as g),
+  m as (select extensions.st_area(i.g::extensions.geography) as ar,
+               case when extensions.st_isempty(i.g) then 0
+                    else 2 * (extensions.st_maximuminscribedcircle(extensions.st_transform(i.g, extensions._st_bestsrid(i.g::extensions.geography)))).radius end as lg,
+               extensions.st_area(a::extensions.geography) as aa, extensions.st_area(b::extensions.geography) as ab from i)
+  select ar, lg, 100 * ar / nullif(aa, 0), 100 * ar / nullif(ab, 0), ar >= 1 and (lg > p_folga_m or ar >= aa / 2 or ar >= ab / 2)
+  from m
+$$;
+grant execute on function app.sobreposicao(extensions.geometry, extensions.geometry, float8) to authenticated;
+
 create table app.terrenos (
   id                    uuid primary key default gen_random_uuid(),
   empresa_id            uuid not null references app.empresas(id),
@@ -53,6 +72,11 @@ create table app.terrenos (
   latitude              double precision check (latitude between -90 and 90),
   longitude             double precision check (longitude between -180 and 180),
   poligono_geojson      jsonb check (poligono_geojson is null or app.geojson_poligono_valido(poligono_geojson)),
+  -- a mesma poligonal como geometria (corrigida se o desenho se cruza), para achar sobreposição
+  poligono              extensions.geometry(Geometry, 4326) generated always as
+                          (extensions.st_makevalid(extensions.st_setsrid(extensions.st_geomfromgeojson(poligono_geojson::text), 4326))) stored,
+  -- terrenos com que o usuário confirmou, ao cadastrar ou mudar a poligonal, que esta se sobrepõe ("é outro terreno")
+  sobreposicoes_aceitas uuid[] not null default '{}',
   precisao_localizacao  text not null default 'nao_informada' check (precisao_localizacao in ('nao_informada','aproximada','conferida')),
 
   -- 3. Áreas e características físicas
@@ -84,10 +108,11 @@ create table app.terrenos (
   check (situacao_cadastral = 'ativo' or (arquivado_em is not null and motivo_arquivamento is not null)),
   check (area_construida_demolir_m2 is null or area_construida_existente_m2 is null
          or area_construida_demolir_m2 <= area_construida_existente_m2),
-  -- localização mínima para cadastrar: bairro ou ponto no mapa ou logradouro
-  check (coalesce(bairro, logradouro) is not null or latitude is not null)
+  -- o cadastro começa pela poligonal: sem ela não há terreno
+  check (poligono_geojson is not null)
 );
 create index on app.terrenos (empresa_id, situacao_cadastral);
+create index on app.terrenos using gist (poligono);
 
 create table app.matriculas (
   id                 uuid primary key default gen_random_uuid(),
@@ -447,6 +472,28 @@ begin
   return new;
 end $$;
 create trigger t_norm before insert or update on app.terrenos for each row execute function app.tg_normalizar_terreno();
+
+-- Poligonal que ocupa parte de outro terreno da empresa só entra se o usuário
+-- confirmou que é outro terreno (sobreposicoes_aceitas). A tela pergunta antes,
+-- com app.terrenos_sobrepostos; aqui é a garantia para qualquer caminho (importação, API).
+create or replace function app.tg_terreno_sobreposicao()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare g extensions.geometry; v record;
+begin
+  if tg_op = 'UPDATE' and new.poligono_geojson is not distinct from old.poligono_geojson
+     and new.sobreposicoes_aceitas is not distinct from old.sobreposicoes_aceitas then return new; end if;
+  g := extensions.st_makevalid(extensions.st_setsrid(extensions.st_geomfromgeojson(new.poligono_geojson::text), 4326));
+  select t.codigo, t.nome, round(s.area_m2::numeric) as area into v
+  from app.terrenos t cross join lateral app.sobreposicao(g, t.poligono) s
+  where t.empresa_id = new.empresa_id and t.id <> new.id and t.poligono operator(extensions.&&) g
+    and not (t.id = any(new.sobreposicoes_aceitas)) and s.conta
+  order by s.area_m2 desc limit 1;
+  if found then
+    raise exception 'A poligonal ocupa % m² de % (%). Confirme que é outro terreno ou registre a oferta nele.', v.area, v.codigo, v.nome using errcode = '23P01';
+  end if;
+  return new;
+end $$;
+create trigger t_sobre before insert or update on app.terrenos for each row execute function app.tg_terreno_sobreposicao();
 
 create trigger t_upd before update on app.terrenos for each row execute function app.tg_atualizado_em();
 create trigger t_aud after insert or update or delete on app.terrenos    for each row execute function app.tg_auditoria();

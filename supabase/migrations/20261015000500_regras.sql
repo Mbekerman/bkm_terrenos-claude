@@ -317,6 +317,37 @@ begin
       and (p_numero is null or t.numero is null or lower(trim(t.numero)) = lower(trim(p_numero)));
 end $$;
 
+-- Primeiro passo do cadastro: a poligonal. Antes de criar o terreno, procura os
+-- que já ocupam parte dela (critério em app.sobreposicao: a faixa de até 5 m na
+-- divisa, imprecisão do desenho, não conta). Quem decide é o usuário: registrar
+-- a oferta no existente (ampliando a poligonal dele, se a área nova for maior)
+-- ou confirmar que é outro terreno. p_ignorar tira um terreno da busca (o que está sendo editado).
+create or replace function app.terrenos_sobrepostos(p_empresa uuid, p_poligono jsonb, p_ignorar uuid default null)
+returns table (terreno_id uuid, codigo text, nome text, situacao text, motivo text,
+               area_sobreposta_m2 numeric, largura_m numeric, pct_da_nova numeric, pct_do_existente numeric)
+language plpgsql stable security invoker set search_path = ''
+as $$
+declare g extensions.geometry;
+begin
+  perform app.exigir_membro(p_empresa);
+  if p_poligono is null or not app.geojson_poligono_valido(p_poligono) then
+    raise exception 'Poligonal inválida: precisa ser um polígono GeoJSON fechado' using errcode = '22023';
+  end if;
+  g := extensions.st_makevalid(extensions.st_setsrid(extensions.st_geomfromgeojson(p_poligono::text), 4326));
+  if extensions.st_area(g::extensions.geography) < 1 then raise exception 'Poligonal sem área' using errcode = '22023'; end if;
+  return query
+    select t.id, t.codigo, t.nome,
+           case when t.situacao_cadastral = 'arquivado' then 'arquivado'
+                else coalesce((select p.status from app.processos p where p.terreno_id = t.id and p.tipo = 'negociacao'
+                               order by p.data_inicio desc limit 1), 'sem_negociacao') end,
+           -- parcial: a área nova e a existente não coincidem (ex.: 5 lotes contra 3, com 3 em comum)
+           case when s.pct_a >= 90 and s.pct_b >= 90 then 'mesma_area' else 'parcial' end,
+           round(s.area_m2::numeric, 2), round(s.largura_m::numeric, 1), round(s.pct_a::numeric, 1), round(s.pct_b::numeric, 1)
+    from app.terrenos t cross join lateral app.sobreposicao(g, t.poligono) s
+    where t.empresa_id = p_empresa and t.id is distinct from p_ignorar and t.poligono operator(extensions.&&) g and s.conta
+    order by s.area_m2 desc, t.codigo;
+end $$;
+
 -- ---------------------------------------------------------------------
 -- Ofertas e abertura da negociação
 -- ---------------------------------------------------------------------
@@ -347,7 +378,7 @@ create or replace function app.registrar_oferta(
   p_terreno uuid, p_valor numeric, p_forma text default null, p_corretor uuid default null,
   p_observacao_pagamento text default null, p_aceita_permuta text default null,
   p_validade date default null, p_data date default current_date, p_comissao_pct numeric default null,
-  p_ofertante uuid default null, p_comissao_valor numeric default null)
+  p_ofertante uuid default null, p_comissao_valor numeric default null, p_poligono jsonb default null)
 returns jsonb
 language plpgsql security definer set search_path = ''
 as $$
@@ -363,10 +394,18 @@ begin
     raise exception 'Ofertante não encontrado' using errcode = 'P0002';
   end if;
 
+  -- o pedaço oferecido tem que estar no terreno; se passa dele, amplie a poligonal do terreno antes
+  if p_poligono is not null then
+    if not app.geojson_poligono_valido(p_poligono) then raise exception 'Poligonal da oferta inválida' using errcode = '22023'; end if;
+    if extensions.st_area(extensions.st_difference(extensions.st_makevalid(extensions.st_setsrid(extensions.st_geomfromgeojson(p_poligono::text), 4326)),
+                                                   extensions.st_buffer(t.poligono::extensions.geography, 5)::extensions.geometry)::extensions.geography) >= 1 then
+      raise exception 'A área da oferta passa da poligonal do terreno: amplie o terreno antes' using errcode = '22023';
+    end if;
+  end if;
   insert into app.ofertas (empresa_id, terreno_id, corretor_id, ofertante_id, data_oferta, valor_pedido, forma_pagamento_pedida,
-                           observacao_pagamento, aceita_permuta, validade, comissao_pct, comissao_valor)
+                           observacao_pagamento, aceita_permuta, validade, comissao_pct, comissao_valor, poligono_geojson)
   values (t.empresa_id, t.id, p_corretor, p_ofertante, coalesce(p_data, current_date), p_valor, p_forma,
-          p_observacao_pagamento, p_aceita_permuta, p_validade, p_comissao_pct, p_comissao_valor)
+          p_observacao_pagamento, p_aceita_permuta, p_validade, p_comissao_pct, p_comissao_valor, p_poligono)
   returning id into v_of;
 
   v_nova := not exists (select 1 from app.processos where terreno_id = t.id and tipo = 'negociacao' and status in ('ativo','stand_by'));
@@ -1165,7 +1204,7 @@ begin
     posicao_quadra = v_novo.posicao_quadra, formato = v_novo.formato, situacao_ocupacao = v_novo.situacao_ocupacao,
     uso_atual = v_novo.uso_atual, area_construida_existente_m2 = v_novo.area_construida_existente_m2,
     area_construida_demolir_m2 = v_novo.area_construida_demolir_m2, necessidade_demolicao = v_novo.necessidade_demolicao,
-    observacoes_fisicas = v_novo.observacoes_fisicas
+    observacoes_fisicas = v_novo.observacoes_fisicas, sobreposicoes_aceitas = v_novo.sobreposicoes_aceitas
   where id = t.id
   returning versao into t.versao;
   return t.versao;
@@ -1517,8 +1556,9 @@ grant execute on function
   app.registrar_consulta_lote(uuid, jsonb, jsonb, numeric, jsonb, jsonb, text[], boolean),
   app.criar_empresa(text, text),
   app.buscar_duplicados(uuid, text, text, text, text, text),
+  app.terrenos_sobrepostos(uuid, jsonb, uuid),
   app.abrir_negociacao(uuid, uuid),
-  app.registrar_oferta(uuid, numeric, text, uuid, text, text, date, date, numeric, uuid, numeric),
+  app.registrar_oferta(uuid, numeric, text, uuid, text, text, date, date, numeric, uuid, numeric, jsonb),
   app.definir_temperatura(uuid, int), app.definir_oferta_referencia(uuid, uuid),
   app.checar_avanco(uuid), app.checar_passagem(uuid, text, text),
   app.mover_etapa(uuid, boolean, text), app.mover_para_etapa(uuid, text, boolean, text), app.mover_subetapa(uuid, text, boolean, text),
