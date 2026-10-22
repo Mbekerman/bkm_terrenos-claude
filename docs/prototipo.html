@@ -2378,6 +2378,11 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .geo-l .v { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; overflow-wrap: anywhere }
 .geo-l .v .chip { height: auto; min-height: 24px; white-space: normal; text-align: left }
 .geo-arq { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px }
+
+/* Inscrição por cidade: a escolha do município ocupa a linha toda e quebra no celular */
+.inline-form .field.full { flex: 1 1 100% }
+.insc-cid { flex-wrap: wrap; max-width: 100%; align-self: flex-start }
+.insc-cid .opt-radio { white-space: nowrap; position: relative }
 </style>
 <header class="top">
   <div class="top-in">
@@ -2518,7 +2523,7 @@ const motivoN=(st,k)=>((cfg().motivos[st]||[]).find(m=>m.k===k)||{}).nome||k||''
 const SIDX=k=>STAGES.findIndex(s=>s[0]===k);const SN=k=>(STAGES.find(s=>s[0]===k)||[,k])[1];
 const INFRA=[['energia','Rede de energia na porta'],['agua','Rede de água na porta'],['esgoto','Rede de esgoto na porta'],['gas','Gás canalizado na porta'],['asfalto','Asfalto na porta'],['drenagem','Drenagem pluvial'],['iluminacao','Iluminação pública'],['calcada','Calçada'],['fibra','Telefonia / fibra óptica']];
 const ZONEAMENTOS=['ZEU','ZEUa','ZEUP','ZEUPa','ZEM','ZEMP','ZC','ZCa','ZC-ZEIS','ZCOR-1','ZCOR-2','ZCOR-3','ZM','ZMa','ZMIS','ZMISa','ZEIS-1','ZEIS-2','ZEIS-3','ZEIS-4','ZEIS-5','ZDE-1','ZDE-2','ZPI-1','ZPI-2','ZER-1','ZER-2','ZERa','ZPR','ZEP','ZEPAM','ZPDS','ZOE'];
-const TIPOS_DOC={ata:['Ata de reunião','Reuniões',null],matricula:['Matrícula atualizada','Imóvel',30],onus:['Certidão de ônus reais','Imóvel',30],iptu:['Certidão negativa de IPTU','Imóvel',90],vend:['Certidões pessoais do vendedor','Vendedor',30],topo:['Levantamento planialtimétrico','Técnico',null],sond:['Sondagem SPT','Técnico',null],amb:['Avaliação ambiental preliminar','Técnico',null],minuta:['Minuta de promessa de compra e venda','Contratos',null],foto:['Foto','Mídia',null],planta:['Planta ou croqui','Técnico',null],geosampa_pdf:['Planta do lote no GeoSampa (PDF)','Técnico',null],geosampa_dxf:['Desenho do lote no GeoSampa (DXF)','Técnico',null]};
+const TIPOS_DOC={ata:['Ata de reunião','Reuniões',null],matricula:['Matrícula atualizada','Imóvel',30],onus:['Certidão de ônus reais','Imóvel',30],iptu:['Certidão negativa de IPTU','Imóvel',90],vend:['Certidões pessoais do vendedor','Vendedor',30],topo:['Levantamento planialtimétrico','Técnico',null],sond:['Sondagem SPT','Técnico',null],amb:['Avaliação ambiental preliminar','Técnico',null],minuta:['Minuta de promessa de compra e venda','Contratos',null],foto:['Foto','Mídia',null],planta:['Planta ou croqui','Técnico',null],lote_pdf:['Planta do lote da prefeitura (PDF)','Técnico',null],lote_dxf:['Desenho do lote da prefeitura (DXF)','Técnico',null]};
 const CHECK_DIL=[['matricula',1],['onus',1],['iptu',1],['vend',1],['topo',1],['sond',0],['amb',0],['minuta',1]];
 const USERS=['Moisés','Ana Prado','Camila Torres','Rafael Souza'];
 /* hierarquia: N analistas → 1 gestor; N gestores → 1 diretor. Administrador é permissão à parte */
@@ -2669,6 +2674,7 @@ function seed(){
 const KEY='bkm-terrenos-prototipo-v8';
 let S;try{const r=localStorage.getItem(KEY);S=r?JSON.parse(r):null}catch(e){S=null}
 if(!S||!S.terrenos)S=seed();
+S.terrenos.forEach(t=>(t.docs||[]).forEach(d=>{if(/^geosampa_/.test(d.tipo))d.tipo=d.tipo.replace('geosampa_','lote_')}));
 const save=()=>{try{if(typeof audit==='function')audit()}catch(e){console.error(e)}try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 let menuMin=false;try{menuMin=localStorage.getItem('bkm-terrenos-menu')==='min'}catch(e){}
 // Tema: claro, escuro ou auto (segue o sistema). Preferência por navegador.
@@ -2828,8 +2834,8 @@ function secaoInsc(t){
   const vig=ins=>{const r={};ins.valores.filter(v=>v.vig).forEach(v=>{r[v.ex]=v});return Object.values(r).sort((a,b)=>b.ex-a.ex)};
   const venal=v=>v.vt!=null&&v.vc!=null?v.vt+v.vc:(v.venal??v.vt??null);
   return `<section class="sec" id="sec-insc"><div class="sec-h"><h2>Inscrições municipais, valor venal e IPTU</h2></div><div class="sec-b">
-    ${t.insc.length?t.insc.map((ins,i)=>{const vs=vig(ins),revs=ins.valores.filter(v=>!v.vig).length;return `<div style="margin-bottom:18px"><div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px"><b class="num">SQL ${esc(ins.sql)}</b><span class="muted" style="font-size:13px">Área cadastral ${m2(ins.area)}</span>${revs?`<span class="faint" style="font-size:12px">${revs} revis${revs>1?'ões anteriores preservadas':'ão anterior preservada'}</span>`:''}</div>
-      ${geoQuadro(t,ins,i)}
+    ${t.insc.length?t.insc.map((ins,i)=>{const vs=vig(ins),revs=ins.valores.filter(v=>!v.vig).length;return `<div style="margin-bottom:18px"><div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px"><b class="num">${CIDADES_INSC[insCid(ins)].rotulo} ${esc(ins.sql)}</b><span class="muted" style="font-size:13px">${esc(CIDADES_INSC[insCid(ins)].cidade)}</span><span class="muted" style="font-size:13px">Área cadastral ${m2(ins.area)}</span>${revs?`<span class="faint" style="font-size:12px">${revs} revis${revs>1?'ões anteriores preservadas':'ão anterior preservada'}</span>`:''}</div>
+      ${loteQuadro(t,ins,i)}
       <div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Exercício</th><th class="r">Venal terreno</th><th class="r">Venal construção</th><th class="r">Venal do imóvel</th><th>IPTU</th><th class="r">Anual</th><th class="r">Parcela</th><th class="r">Mensal</th><th>Fonte</th></tr></thead><tbody>
       ${vs.map((v,j)=>`<tr><td><b>${v.ex}</b>${v.rev>1?` <span class="faint" style="font-size:11px">rev. ${v.rev}</span>`:''}${j===0?' <span class="tag-ref">atual</span>':''}</td><td class="r">${brl(v.vt)}</td><td class="r">${brl(v.vc)}</td><td class="r"><b>${brl(venal(v))}</b></td>
       <td>${v.sit==='isento'?'<span class="chip good">Isento</span>':OPT.sitIptu[v.sit]}</td><td class="r">${v.sit==='isento'?'—':brl2(v.iptu)}</td><td class="r">${v.iptu!=null&&v.parc&&v.sit!=='isento'?`${brl2(v.iptu/v.parc)} <span class="faint">× ${v.parc}</span>`:'—'}</td>
@@ -2842,7 +2848,7 @@ function secaoInsc(t){
       <div class="field"><label for="v-m${i}">IPTU mensal informado (R$)</label><input id="v-m${i}" name="mensal" inputmode="decimal" placeholder="se a fonte trouxer"></div>
       <div class="field grow"><label for="v-f${i}">Fonte</label><input id="v-f${i}" name="fonte" placeholder="Carnê, certidão de dados cadastrais..." required></div>
       <button class="btn sm">${ic('add',16)}Lançar</button></form><div class="hint">Lançar um exercício que já existe cria uma revisão nova; a anterior fica guardada.</div></details></div>`}).join(''):'<div class="muted" style="margin-bottom:8px">Nenhuma inscrição. O valor venal e o IPTU são lançados por inscrição e por ano.</div>'}
-    <form class="inline-form" data-form="insc"><div class="field grow"><label for="i-s">Nova inscrição (SQL)</label><input id="i-s" name="sql" required placeholder="000.000.0000-0"></div><div class="field"><label for="i-a">Área cadastral (m²)</label><input id="i-a" name="area" inputmode="decimal"></div><button class="btn sm">${ic('add',16)}Adicionar inscrição</button></form>
+    <form class="inline-form" data-form="insc">${campoInsc('i',cidDoTerreno(t),'Nova inscrição',true)}<div class="field"><label for="i-a">Área cadastral (m²)</label><input id="i-a" name="area" inputmode="decimal"></div><button class="btn sm">${ic('add',16)}Adicionar inscrição</button></form>
     <div class="hint" style="margin-top:8px">Em São Paulo o IPTU é anual, em até 10 parcelas. Se a fonte trouxer o valor mensal, ele é usado; senão, o mensal mostrado é o anual ÷ 12.</div></div></section>`;
 }
 function secaoConfr(t){
@@ -3100,7 +3106,7 @@ function renderModal(){
   <div class="field full verif">
     <div class="passo">Passo 1 · Verifique se o imóvel já está no banco</div>
     <div class="fields">
-      <div class="field"><label for="n-sql">SQL (inscrição do IPTU)</label><input id="n-sql" name="sql" inputmode="numeric" placeholder="000.000.0000-0" autocomplete="off"></div>
+      ${campoInsc('n',UI.novoLoc?.municipio?cidDoNome(UI.novoLoc.municipio):'sp','',false)}
       <div class="field"><label for="n-mat">Matrícula</label><span style="display:flex;gap:6px"><input id="n-mat" name="mat" inputmode="numeric" placeholder="Número" style="flex:1 1 55%"><select id="n-cri" name="cri" aria-label="Cartório" style="flex:1 1 45%">${Array.from({length:18},(_,i)=>`<option>${i+1}º CRI</option>`).join('')}</select></span></div>
     </div>
     <div id="dedupe" aria-live="polite"><div class="hint">Digite o SQL ou a matrícula. Teste com o SQL 089.123.0045-6 (já cadastrado) ou 089.123.0099-0 (mesma quadra de dois terrenos).</div></div>
@@ -3167,20 +3173,21 @@ function renderModal(){
   const f=el.querySelector('input:not([type=hidden]),select');if(f)setTimeout(()=>f.focus(),30);
 }
 function dedupe(){
-  const f=$('#f-novo');if(!f)return;const mat=digits(f.mat.value),sql=digits(f.sql.value),log=f.logradouro.value.trim().toLowerCase(),nr=f.numero.value.trim().toLowerCase();
+  const f=$('#f-novo');if(!f)return;const mun=f.querySelector('[name=mun]:checked')?.value||'sp',cid=CIDADES_INSC[mun],nd=cid.mascara?digitosMasc(cid.mascara):0,mat=digits(f.mat.value),sql=digits(f.sql.value),log=f.logradouro.value.trim().toLowerCase(),nr=f.numero.value.trim().toLowerCase();
   let hit=null,msg='',cert='';const quadra=[];
   for(const t of S.terrenos){
-    const ins=sql.length>=6&&t.insc.find(i=>digits(i.sql)===sql);
-    if(ins){hit=t;cert='certa';msg=`Mesmo SQL ${ins.sql}`;break}
+    const ins=sql.length>=6&&t.insc.find(i=>insCid(i)===mun&&digits(i.sql)===sql);
+    if(ins){hit=t;cert='certa';msg=`Mesma inscrição ${ins.sql} (${cid.cidade})`;break}
     const m=mat.length>=3&&t.mats.find(x=>digits(x.num)===mat);
     if(m){hit=t;cert=m.cri===f.cri.value?'certa':'provavel';msg=`Mesma matrícula ${m.num}${m.cri===f.cri.value?' no '+m.cri:' em outro cartório ('+m.cri+')'}`;break}
     if(log.length>=4&&(t.logradouro||'').toLowerCase()===log&&(!nr||!t.numero||t.numero.toLowerCase()===nr)){hit=t;cert='possivel';msg='Mesmo endereço'}
-    if(sql.length===11&&t.situacao==='ativo'){const q=t.insc.find(i=>digits(i.sql).length===11&&digits(i.sql).slice(0,6)===sql.slice(0,6));if(q)quadra.push([t,q])}
+    // nos dois cadastros os 6 primeiros dígitos são setor e quadra
+    if(nd&&sql.length===nd&&t.situacao==='ativo'){const q=t.insc.find(i=>insCid(i)===mun&&digits(i.sql).length===nd&&digits(i.sql).slice(0,6)===sql.slice(0,6)&&digits(i.sql)!==sql);if(q)quadra.push([t,q])}
   }
   const box=$('#dedupe'),btn=$('#btn-novo');f.dataset.dup=hit&&cert==='certa'?hit.id:'';
-  const viz=!hit&&quadra.length?`<div class="banner blue" style="margin-top:8px">${ic('layers')}<div style="flex:1"><div class="bt">${quadra.length} terreno${quadra.length>1?'s':''} na mesma quadra (setor ${sql.slice(0,3)}, quadra ${sql.slice(3,6)})</div>
-    <div>${quadra.map(([t,q])=>`<button type="button" class="linkbtn" data-a="abrir" data-id="${t.id}">${t.codigo} · ${esc(t.nome)}</button> <span class="faint">(SQL ${esc(q.sql)})</span>`).join('<br>')}</div><div class="hint" style="margin-top:4px">Não é duplicata. Pode valer estudar os lotes juntos numa área de interesse.</div></div></div>`:'';
-  if(!hit){box.innerHTML=(sql||mat||log?'<div class="hint">Nenhum cadastro com este SQL, matrícula ou endereço. Será criado um terreno novo.</div>':'<div class="hint">Digite o SQL ou a matrícula. Teste com o SQL 089.123.0045-6 (já cadastrado) ou 089.123.0099-0 (mesma quadra de dois terrenos).</div>')+viz;btn.textContent='Cadastrar terreno';return}
+  const viz=!hit&&quadra.length?`<div class="banner blue" style="margin-top:8px">${ic('layers')}<div style="flex:1"><div class="bt">${quadra.length} terreno${quadra.length>1?'s':''} na mesma quadra (setor ${mun==='sjc'?sql.slice(0,2):sql.slice(0,3)}, quadra ${mun==='sjc'?sql.slice(2,6):sql.slice(3,6)})</div>
+    <div>${quadra.map(([t,q])=>`<button type="button" class="linkbtn" data-a="abrir" data-id="${t.id}">${t.codigo} · ${esc(t.nome)}</button> <span class="faint">(${cid.rotulo} ${esc(q.sql)})</span>`).join('<br>')}</div><div class="hint" style="margin-top:4px">Não é duplicata. Pode valer estudar os lotes juntos numa área de interesse.</div></div></div>`:'';
+  if(!hit){box.innerHTML=(sql||mat||log?'<div class="hint">Nenhum cadastro com esta inscrição, matrícula ou endereço. Será criado um terreno novo.</div>':'<div class="hint">Digite a inscrição ou a matrícula. Teste com o SQL 089.123.0045-6 (já cadastrado) ou 089.123.0099-0 (mesma quadra de dois terrenos).</div>')+viz;btn.textContent='Cadastrar terreno';return}
   box.innerHTML=`<div class="banner ${cert==='certa'?'blue':'warn'}">${ic(cert==='certa'?'link':'warn')}<div style="flex:1"><div class="bt">${cert==='certa'?'Este imóvel já está cadastrado':'Possível duplicidade'}: ${hit.codigo} · ${esc(hit.nome)}</div><div>${esc(msg)}. ${cert==='certa'?'Se houver oferta, ela será registrada nesse terreno.':'Confira antes de salvar.'}</div><button type="button" class="btn sm" style="margin-top:8px" data-a="abrir" data-id="${hit.id}">Abrir ficha existente</button></div></div>`;
   btn.textContent=cert==='certa'?'Registrar no terreno existente':'Cadastrar mesmo assim';
 }
@@ -3294,7 +3301,7 @@ document.addEventListener('input',e=>{const el=e.target;
   if(el.id==='mp-q'){UI.mp.q=el.value;mpRefresh();return}
   if(el.id==='tk-q'){UI.tk.q=el.value;const p=el.selectionStart;render();const n=$('#tk-q');if(n){n.focus();n.setSelectionRange(p,p)}return}
   if(el.id==='q-top'){UI.q=el.value;if(UI.route!=='terrenos'){UI.fT='todos';go('terrenos');$('#q-top').focus()}else{const r=$('#rows');if(r)r.innerHTML=linhas()}}
-  if(el.id==='n-sql'){const d=digits(el.value).slice(0,11);const m=d.replace(/^(\d{3})(\d)/,'$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/,'$1.$2.$3').replace(/^(\d{3})\.(\d{3})\.(\d{4})(\d)/,'$1.$2.$3-$4');if(m!==el.value)el.value=m}
+  if(el.dataset.masc){const m=mascarar(el.value,el.dataset.masc);if(m!==el.value)el.value=m}
   if(el.form?.dataset.form==='novo')dedupe();
   if(el.id==='pp-v'){const t=T(UI.id),v=lerNum(el.value),w=$('#pp-warn');w.innerHTML=t.neg.viab&&v>t.neg.viab.pmax?`<div class="banner warn">${ic('warn')}<div>${brl(v)} fica ${mi(v-t.neg.viab.pmax)} acima do preço máximo (${mi(t.neg.viab.pmax)}).</div></div>`:''}
 });
@@ -3311,7 +3318,9 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
     case 'cond':{const o=ofertaRef(t);Object.assign(o,{valor:lerNum(F.valor),forma:F.forma||null,cid:F.cid||null,validade:F.validade||null,obsPag:F.obsPag,aceita:F.aceita});
       if(o.cid&&!t.corretores.some(x=>x.cid===o.cid))t.corretores.push({cid:o.cid,principal:!t.corretores.some(x=>x.principal)});UI.edit=null;log(t,'Condições pedidas atualizadas');save();render();toast('Salvo.');break}
     case 'mat':t.mats.push({num:F.num,cri:F.cri,area:lerNum(F.area),data:F.data||null});save();render();toast('Matrícula adicionada.');break;
-    case 'insc':t.insc.push({sql:F.sql,area:lerNum(F.area),valores:[]});save();render();if(GEO_BASE&&digits(F.sql).length===11)geoBuscar(t,t.insc.length-1);break;
+    case 'insc':{const c=CIDADES_INSC[F.mun]||CIDADES_INSC.sp;if(F.mun!=='outro'&&t.municipio&&cidDoTerreno(t)!==F.mun){toast(`O terreno está em ${t.municipio.split(' · ')[0]}. Escolha a cidade certa ou corrija o município no endereço.`,true);return}if(c.mascara&&digits(F.sql).length!==digitosMasc(c.mascara)){toast(`${c.rotulo} incompleto: são ${digitosMasc(c.mascara)} dígitos.`,true);return}
+      if(t.insc.some(x=>insCid(x)===F.mun&&digits(x.sql)===digits(F.sql)&&(c.mascara||x.sql===F.sql))){toast('Esta inscrição já está no terreno.',true);return}
+      t.insc.push({mun:F.mun,sql:F.sql,area:lerNum(F.area),valores:[]});log(t,`Inscrição ${F.sql} (${c.cidade}) adicionada`);save();render();if(loteBuscavel(t.insc[t.insc.length-1]))loteBuscar(t,t.insc.length-1);break}
     case 'iptu':{const ins=t.insc[Number(f.dataset.i)],ex=Number(F.ex),iptu=lerNum(F.iptu),mensal=lerNum(F.mensal);
       if(F.sit==='isento'&&((iptu||0)>0||(mensal||0)>0)){toast('Imóvel isento não tem IPTU a pagar.',true);return}
       const ant=ins.valores.filter(v=>v.ex===ex);ant.forEach(v=>v.vig=false);
@@ -3350,14 +3359,14 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
     case 'novo':{const dup=f.dataset.dup;let alvo;
       if(!F.logradouro.trim()&&!F.bairro.trim()&&!dup&&!UI.novoLoc){toast('Informe ao menos logradouro ou bairro.',true);return}
       if(dup){alvo=T(dup)}else{S.seqT++;alvo={...seedVazio(),codigo:'TER-'+String(S.seqT).padStart(6,'0'),nome:F.nome,logradouro:F.logradouro.trim(),numero:F.numero.trim(),bairro:F.bairro.trim(),zona:F.zona||null,resp:F.resp,origem:F.origem,dataIdent:HOJE,
-        mats:F.mat?[{num:F.mat,cri:F.cri,area:null,data:null}]:[],insc:F.sql?[{sql:F.sql,area:null,valores:[]}]:[]};alvo.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado'}];if(UI.novoLoc){alvo.lat=UI.novoLoc.lat;alvo.lng=UI.novoLoc.lng;alvo.precisao='aproximada';alvo.hist[0].txt='Terreno cadastrado pelo mapa';
+        mats:F.mat?[{num:F.mat,cri:F.cri,area:null,data:null}]:[],insc:F.sql?[{mun:F.mun,sql:F.sql,area:null,valores:[]}]:[]};if(!UI.novoLoc?.municipio&&F.mun!=='outro')alvo.municipio=CIDADES_INSC[F.mun].cidade+' · SP';alvo.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado'}];if(UI.novoLoc){alvo.lat=UI.novoLoc.lat;alvo.lng=UI.novoLoc.lng;alvo.precisao='aproximada';alvo.hist[0].txt='Terreno cadastrado pelo mapa';
           if(UI.novoLoc.cep)alvo.cep=UI.novoLoc.cep;if(UI.novoLoc.municipio){alvo.municipio=UI.novoLoc.municipio;alvo.hist[0].txt='Terreno cadastrado pela busca de endereço'}}S.terrenos.push(alvo)}
       const val=lerNum(F.valor);
       if(val||F.cid){const o={id:uid(),cid:F.cid||null,data:HOJE,valor:val,forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,status:'ativa'};alvo.ofertas.push(o);
         if(o.cid&&!alvo.corretores.some(x=>x.cid===o.cid))alvo.corretores.push({cid:o.cid,principal:!alvo.corretores.some(x=>x.principal)});
         if(!alvo.neg||!['ativo','stand_by'].includes(alvo.neg.status)){alvo.neg=novaNeg(o.id,Number(F.temp)||null);log(alvo,'Negociação aberta')}
         else log(alvo,'Nova oferta registrada')}
-      UI.modal=null;save();go('terreno',{id:alvo.id,tab:dup?'comercial':'cadastro',from:'terrenos'});toast(dup?'Oferta registrada no terreno existente.':`${alvo.codigo} cadastrado. Complete a ficha quando puder.`);if(!dup&&GEO_BASE&&digits(F.sql).length===11)geoBuscar(alvo,0);break}
+      UI.modal=null;save();go('terreno',{id:alvo.id,tab:dup?'comercial':'cadastro',from:'terrenos'});toast(dup?'Oferta registrada no terreno existente.':`${alvo.codigo} cadastrado. Complete a ficha quando puder.`);if(!dup&&alvo.insc[0]&&loteBuscavel(alvo.insc[0]))loteBuscar(alvo,0);break}
     case 'oferta':{const o={id:uid(),cid:F.cid||null,data:HOJE,valor:lerNum(F.valor),forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,validade:F.validade||null,status:'ativa'};t.ofertas.push(o);
       if(o.cid&&!t.corretores.some(x=>x.cid===o.cid))t.corretores.push({cid:o.cid,principal:!t.corretores.some(x=>x.principal)});
       if(!t.neg||!['ativo','stand_by'].includes(t.neg.status)){t.neg=novaNeg(o.id,null);log(t,'Negociação aberta')}else log(t,`Nova oferta: ${mi(o.valor)}`);
@@ -4875,6 +4884,82 @@ prepararDados();
 (()=>{const a=(document.querySelector('meta[name="bkm-ambiente"]')?.content||'').trim().toLowerCase();if(!a||a==='producao'||a.includes('{%'))return;const n=a==='dev'?'Desenvolvimento':a;document.title='['+(a==='dev'?'DEV':a.toUpperCase())+'] '+document.title;const b=document.querySelector('.top .brand');if(b){const s=document.createElement('span');s.className='amb-selo';s.title=n;s.innerHTML='<span class="amb-l">'+n+'</span><span class="amb-c">'+(a==='dev'?'DEV':a.slice(0,3).toUpperCase())+'</span>';b.after(s)}})();
 
 // ---------------------------------------------------------------------
+// Inscrição municipal por cidade. Antes de digitar, escolhe-se o município:
+// São Paulo (SQL, base GeoSampa), São José dos Campos (inscrição imobiliária,
+// base GeoSanja) ou outro (digitada, sem base). O campo abre com a máscara da
+// cidade e, com base, o lote é buscado na prefeitura dela.
+// No banco: app.bases_cadastrais (máscara e rótulo por município),
+// inscricoes_municipais.municipio_id e app.registrar_consulta_lote.
+// ---------------------------------------------------------------------
+const CIDADES_INSC={
+  sp:{cidade:'São Paulo',base:'GeoSampa',rotulo:'SQL',mascara:'000.000.0000-0'},
+  sjc:{cidade:'São José dos Campos',base:'GeoSanja',rotulo:'Inscrição imobiliária',mascara:'00.0000.0000.0000'},
+  outro:{cidade:'Outro município',base:null,rotulo:'Inscrição municipal',mascara:null},
+};
+const insCid=ins=>ins.mun||'sp';
+const digitosMasc=m=>(m.match(/0/g)||[]).length;
+function mascarar(v,m){if(!m)return v;const d=digits(v).slice(0,digitosMasc(m));let r='',j=0;
+  for(const c of m){if(j>=d.length)break;r+=c==='0'?d[j++]:c}return r}
+const cidDoNome=n=>/s[aã]o jos[eé] dos campos/i.test(n||'')?'sjc':!n||/^s[aã]o paulo\b/i.test(n)?'sp':'outro';
+const cidDoTerreno=t=>cidDoNome(t.municipio);
+// Escolha da cidade + campo da inscrição. pre: prefixo dos ids; rot: rótulo antes do nome da inscrição.
+function campoInsc(pre,cid,rot,obrig){const c=CIDADES_INSC[cid];
+  return `<div class="field full"><span class="lbl" id="${pre}-mun-l">Município da inscrição</span><span class="seg3 insc-cid" role="radiogroup" aria-labelledby="${pre}-mun-l">${Object.entries(CIDADES_INSC).map(([k,v])=>`<label class="opt-radio"><input type="radio" name="mun" value="${k}" data-insc="${pre}" ${k===cid?'checked':''}>${v.cidade}</label>`).join('')}</span></div>
+  <div class="field grow"><label for="${pre}-sql" id="${pre}-sql-l">${rotInsc(c,rot)}</label><input id="${pre}-sql" name="sql" ${obrig?'required':''} data-masc="${c.mascara||''}" inputmode="${c.mascara?'numeric':'text'}" placeholder="${c.mascara||'Como está no carnê do IPTU'}" autocomplete="off"></div>`}
+const rotInsc=(c,rot)=>rot?`${rot} (${c.rotulo})`:c.rotulo;
+document.addEventListener('change',e=>{const r=e.target.closest('[data-insc]');if(!r)return;const pre=r.dataset.insc,c=CIDADES_INSC[r.value],el=document.getElementById(pre+'-sql'),lb=document.getElementById(pre+'-sql-l');if(!el)return;
+  el.dataset.masc=c.mascara||'';el.inputMode=c.mascara?'numeric':'text';el.placeholder=c.mascara||'Como está no carnê do IPTU';el.value=c.mascara?mascarar(el.value,c.mascara):el.value;
+  if(lb)lb.textContent=rotInsc(c,pre==='i'?'Nova inscrição':'');if(el.form?.dataset.form==='novo')dedupe();el.focus()});
+
+// Busca na base da cidade da inscrição (só com a inscrição completa).
+const loteBuscavel=ins=>{const c=CIDADES_INSC[insCid(ins)];return !!(c.base&&LOTE_ADAPT[insCid(ins)]?.url()&&digits(ins.sql).length===digitosMasc(c.mascara))};
+let LOTE_BUSCANDO=null;
+async function loteBuscar(t,i){const ins=t.insc[i];if(!ins||LOTE_BUSCANDO)return;const cid=insCid(ins),c=CIDADES_INSC[cid],ad=LOTE_ADAPT[cid];if(!ad)return;
+  if(!ad.url()){toast(`A busca no ${c.base} funciona na versão publicada no Railway.`,true);return}
+  if(digits(ins.sql).length!==digitosMasc(c.mascara)){toast(`${c.rotulo} incompleto: são ${digitosMasc(c.mascara)} dígitos.`,true);return}
+  if(cidDoTerreno(t)!==cid){toast(`O terreno está em ${(t.municipio||'').split(' · ')[0]}; o ${c.base} só cobre ${c.cidade}.`,true);return}
+  LOTE_BUSCANDO=t.id+':'+i;render();
+  try{await ad.buscar(t,ins)}catch(e){console.error(e);toast(`Não foi possível consultar o ${c.base} agora. Tente de novo em instantes.`,true)}
+  finally{LOTE_BUSCANDO=null;render()}}
+function loteQuadro(t,ins,i){const ad=LOTE_ADAPT[insCid(ins)];return ad?ad.quadro(t,ins,i):''}
+// Botão de buscar e quadro vazio, iguais nas bases.
+function loteBotao(t,ins,i){const c=CIDADES_INSC[insCid(ins)],busc=LOTE_BUSCANDO===t.id+':'+i,g=(ins.geo||[])[0];
+  return UI.role!=='Leitura'?`<button class="btn sm ${g?'text':''}" data-a="geo-buscar" data-i="${i}" ${busc?'disabled':''}>${ic('search',16)}${busc?'Consultando...':g?'Buscar de novo':'Buscar no '+c.base}</button>`:''}
+function loteVazio(t,ins,i,txt){const c=CIDADES_INSC[insCid(ins)],ad=LOTE_ADAPT[insCid(ins)];
+  return `<div class="geo-vazio">${loteBotao(t,ins,i)}<span class="hint">${ad.url()?txt:`A busca no ${c.base} funciona na versão publicada no Railway.`}</span></div>`}
+function loteCab(t,ins,i){const c=CIDADES_INSC[insCid(ins)],g=ins.geo[0],n=ins.geo.length-1;
+  return `<div class="geo-h"><span>${bi('mapa',20)}<b>${c.base}</b> <span class="muted">consultado em ${fdh(g.em)} por ${esc(g.user)}${n?` · ${n} consulta${n>1?'s':''} anterior${n>1?'es':''} guardada${n>1?'s':''}`:''}</span></span>${loteBotao(t,ins,i)}</div>`}
+// Grava a consulta e completa só o que está vazio; cria análise quando as zonas mudam.
+function loteRegistrar(t,ins,{lote,poly,areaPol,zonas,erros,camadas,area,aConst}){const c=CIDADES_INSC[insCid(ins)];
+  ins.geo=ins.geo||[];ins.geo.unshift({em:agora(),user:me(),lote,poly,areaPol,zonas,erros,camadas});
+  const feito=[];
+  if(ins.area==null&&area){ins.area=Number(area);feito.push('área cadastral')}
+  if(t.aCad==null&&t.insc.every(x=>x.area!=null)){t.aCad=t.insc.reduce((s,x)=>s+x.area,0);feito.push('área cadastral do terreno')}
+  if(t.aConst==null&&aConst!=null&&t.insc.length===1){t.aConst=Number(aConst);feito.push('área construída')}
+  if(!t.poly&&t.insc.length===1&&poly){t.poly=poly;feito.push('poligonal');if(t.lat==null){const m=centro(poly);t.lat=+m[0].toFixed(7);t.lng=+m[1].toFixed(7);t.precisao='aproximada'}}
+  const cat=zonasDoCatalogo(insCid(ins)),doCat=zonas.filter(z=>cat.includes(z.sigla)),vig=analiseVig(t),chaveZ=zs=>zs.map(z=>z.sigla+':'+Math.round(z.area)).sort().join();
+  const igual=vig&&(vig.fonte||'').startsWith(c.base)&&chaveZ(vig.zonas)===chaveZ(doCat.map(z=>({sigla:z.sigla,area:z.area_m2})));
+  if(doCat.length&&!igual){t.analises.forEach(a=>{if(a.status==='vigente')a.status='substituida'});
+    t.analises.push({id:uid(),data:HOJE,fonte:`${c.base} (${c.rotulo} ${ins.sql})`,status:'vigente',zonas:doCat.map(z=>({sigla:z.sigla,area:z.area_m2,gmS:'nao_informado',gabM:null,gpS:'nao_informado',gabPav:null,caS:'nao_informado',ca:null,obs:''}))});feito.push('análise urbanística')}
+  log(t,`${c.base} consultado pela inscrição ${ins.sql}${feito.length?': '+feito.join(', '):''}`);save();render();
+  toast(erros.length?`${c.base} consultado; ${erros.length} camada${erros.length>1?'s':''} não respondeu.`:`${c.base} consultado. Gerando a planta e o desenho...`)}
+// Catálogo de zonas por cidade (no banco, app.zoneamentos).
+const ZONAS_SJC=['ZM1','ZM2','ZM3','ZM4','ZM5','ZR','ZUD','ZUPI','ZUPI1','ZUPI2','ZPA1','ZPA2','ZPE1','ZPE2','ZA','ZESFX','CL','CM','CM-C.EXPANDIDO','CMETRO-CT','CMETRO-ED','FAIXA NAED'];
+const zonasDoCatalogo=cid=>cid==='sjc'?ZONAS_SJC:cid==='sp'?ZONEAMENTOS:[];
+function loteDoc(t,ins,k,nome){const c=CIDADES_INSC[insCid(ins)];let d=t.docs.find(x=>x.tipo===k);if(!d){d={tipo:k,status:'recebido',emitido:HOJE,versoes:0,nome};t.docs.push(d)}
+  d.versoes++;d.emitido=HOJE;d.nome=nome;log(t,`${TIPOS_DOC[k][0]}: versão ${d.versoes} gerada pelo ${c.base}`)}
+function loteArqBotoes(t){const docP=t.docs.find(x=>x.tipo==='lote_pdf'),docD=t.docs.find(x=>x.tipo==='lote_dxf');
+  return `<div class="geo-arq">${[['pdf','Planta (PDF)',docP],['dxf','Desenho (DXF)',docD]].map(([k,l,d])=>d?`<button class="btn sm" data-a="geo-baixar" data-k="${k}">${ic('download',16)}${l}${d.versoes>1?` <span class="faint">v${d.versoes}</span>`:''}</button>`:'').join('')}<span class="hint">${docP||docD?'Guardados em Documentos, com versão. O DXF abre no AutoCAD (salve como DWG); coordenadas UTM 23S SIRGAS 2000.':''}</span></div>`}
+// Lista "O que toca o lote": [{tema, grav, erro, vals}]
+function loteToca(linhas){const toca=linhas.filter(l=>l.vals.length),nada=linhas.filter(l=>!l.vals.length&&!l.erro),falhou=linhas.filter(l=>l.erro);
+  return `<div class="geo-toca"><div class="geo-st">O que toca o lote</div>${toca.map(l=>`<div class="geo-l"><span class="k">${esc(l.tema)}</span><span class="v">${l.vals.map(v=>`<span class="chip ${l.grav}">${esc(v)}</span>`).join(' ')}</span></div>`).join('')||'<div class="muted">Nenhuma restrição nem perímetro especial.</div>'}
+    ${nada.length?`<div class="hint" style="margin-top:6px">Não toca: ${nada.map(l=>esc(l.tema)).join(', ')}.</div>`:''}${falhou.length?`<div class="hint" style="color:var(--crit-tx,#b3261e)">Não responderam nesta consulta: ${falhou.map(l=>esc(l.tema)).join(', ')}.</div>`:''}</div>`}
+const LOTE_ADAPT={};  // preenchido por proto_geosampa.js e proto_geosanja.js: {url(), buscar(t,ins), quadro(t,ins,i)}
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="geo-"]');if(!a)return;const t=T(UI.id);if(!t)return;
+  if(a.dataset.a==='geo-buscar')loteBuscar(t,Number(a.dataset.i));
+  if(a.dataset.a==='geo-baixar')geoBaixar(t,a.dataset.k)});
+
+// ---------------------------------------------------------------------
 // GeoSampa (Novo GeoSampa, Prefeitura de São Paulo) pelo SQL.
 // Busca o lote fiscal e tudo o que toca a poligonal, grava a consulta na
 // inscrição (sem apagar as anteriores), completa só campos vazios, registra a
@@ -4882,7 +4967,7 @@ prepararDados();
 // servidor) e o desenho (DXF, montado aqui), que entram como documentos com
 // versão. O servidor só aceita chamada de navegador vinda do próprio
 // GeoSampa: no Railway passa pelo Caddy em /geosampa.
-// No banco: app.registrar_consulta_geosampa + app.registrar_documento.
+// No banco: app.registrar_consulta_lote + app.registrar_documento.
 // ---------------------------------------------------------------------
 const GEO_BASE=(()=>{const m=document.querySelector('meta[name="geosampa-url"]');if(m&&m.content)return m.content;
   return /^https?:$/.test(location.protocol)&&!/claude\.ai|claudeusercontent|localhost:5173/.test(location.host)?location.origin+'/geosampa/geoserver/geoportal/':null})();
@@ -4925,7 +5010,6 @@ const GEO_CAMADAS=[
 const GEO_DESENHO=[['quadra_viaria_editada','QUADRA_VIARIA',8],['calcada','CALCADA',9],['lote_cidadao','LOTES',1],['edificacao_v3','EDIFICACOES',5],
   ['curva_mestra_v2','CURVA_MESTRA',30,'cd_numero_isovalor'],['curva_intermediaria_v2','CURVA_INTERMEDIARIA',40,'cd_numero_isovalor'],['ponto_cotado_v2','PONTO_COTADO',6,'cd_altitude'],['drenagem','CORREGOS',4]];
 const GEO_ARQ={};   // arquivos gerados nesta sessão, por terreno: {pdf:Blob, dxf:Blob}
-let GEO_BUSCANDO=null;
 
 // --- coordenadas: UTM 23S (SIRGAS 2000, EPSG:31983) -> latitude/longitude
 function utmLatLng(E,N){const a=6378137,f=1/298.257222101,k0=.9996,e2=f*(2-f),ep2=e2/(1-e2),x=E-5e5,y=N-1e7,M=y/k0,
@@ -4951,91 +5035,208 @@ async function geoWfs(params){const u=new URL(GEO_BASE+'ows');Object.entries({se
   const r=await fetch(u);if(!r.ok)throw new Error('GeoSampa respondeu '+r.status);const j=await r.json();if(!j||!Array.isArray(j.features))throw new Error('Resposta inesperada do GeoSampa');return j.features}
 const geoWkt=g=>'POLYGON('+geoAneis(g).map(r=>'('+r.map(p=>p[0]+' '+p[1]).join(',')+')').join(',')+')';
 
-async function geoBuscar(t,i){const ins=t.insc[i];if(!ins||GEO_BUSCANDO)return;
-  if(!GEO_BASE){toast('A busca no GeoSampa funciona na versão publicada no Railway.',true);return}
-  const d=digits(ins.sql);if(d.length!==11){toast('SQL incompleto: são 11 dígitos (setor, quadra, lote e dígito).',true);return}
-  GEO_BUSCANDO=t.id+':'+i;render();
-  try{
-    const lotes=await geoWfs({typeNames:'geoportal:lote_cidadao',CQL_FILTER:`cd_setor_fiscal='${d.slice(0,3)}' AND cd_quadra_fiscal='${d.slice(3,6)}' AND cd_lote='${d.slice(6,10)}'`});
-    const lote=lotes.find(f=>String(f.properties.cd_digito_sql)===d[10]&&f.properties.tx_situ_lote!=='INATIVO')||null;
-    if(!lote){toast(lotes.length?`O dígito do SQL não confere (no GeoSampa é ${lotes[0].properties.cd_digito_sql}).`:'SQL não encontrado no GeoSampa.',true);return}
-    const wkt=geoWkt(lote.geometry),camadas={},erros=[];
-    await Promise.all(GEO_CAMADAS.map(async([k,,geom,,,dist])=>{try{camadas[k]=await geoWfs({typeNames:'geoportal:'+k,count:'50',CQL_FILTER:dist?`DWITHIN(${geom},${wkt},${dist},meters)`:`INTERSECTS(${geom},${wkt})`})}catch(e){erros.push(k)}}));
-    const zf=camadas.perimetro_zona_lei_18081_24||[],zonas=zf.length?geoAreaZonas(lote.geometry,zf,p=>p.cd_zoneamento_perimetro):[];
-    const anel=geoAneis(lote.geometry)[0],areaPol=Math.round(geoAreaAnel(anel)*100)/100,poly=anel.slice(0,-1).map(p=>utmLatLng(p[0],p[1]).map(v=>+v.toFixed(7)));
-    const props=c=>(camadas[c]||[]).map(f=>f.properties);
-    ins.geo=ins.geo||[];ins.geo.unshift({em:agora(),user:me(),lote:lote.properties,poly,areaPol,zonas,erros,camadas:Object.fromEntries(Object.keys(camadas).map(k=>[k,props(k)]))});
-    // completa só o que está vazio
-    const p=lote.properties,feito=[];
-    if(ins.area==null&&p.qt_area_terreno){ins.area=Number(p.qt_area_terreno);feito.push('área cadastral')}
-    if(p.cd_cib)ins.cib=p.cd_cib;const zfis=props('zona_fiscal')[0];if(zfis)ins.zf=zfis.sg_zona_fiscal;
-    if(t.aCad==null&&t.insc.every(x=>x.area!=null)){t.aCad=t.insc.reduce((s,x)=>s+x.area,0);feito.push('área cadastral do terreno')}
-    if(t.aConst==null&&p.qt_area_construida!=null&&t.insc.length===1){t.aConst=Number(p.qt_area_construida);feito.push('área construída')}
-    if(!t.poly&&t.insc.length===1){t.poly=poly;feito.push('poligonal');if(t.lat==null){const c=centro(poly);t.lat=+c[0].toFixed(7);t.lng=+c[1].toFixed(7);t.precisao='aproximada'}}
-    const doCat=zonas.filter(z=>ZONEAMENTOS.includes(z.sigla)),vig=analiseVig(t),chaveZ=zs=>zs.map(z=>z.sigla+':'+Math.round(z.area)).sort().join();
-    const igual=vig&&/^GeoSampa/.test(vig.fonte||'')&&chaveZ(vig.zonas)===chaveZ(doCat.map(z=>({sigla:z.sigla,area:z.area_m2})));
-    if(doCat.length&&!igual){t.analises.forEach(a=>{if(a.status==='vigente')a.status='substituida'});
-      t.analises.push({id:uid(),data:HOJE,fonte:`GeoSampa (SQL ${ins.sql})`,status:'vigente',zonas:doCat.map(z=>({sigla:z.sigla,area:z.area_m2,gmS:'nao_informado',gabM:null,gpS:'nao_informado',gabPav:null,caS:'nao_informado',ca:null,obs:''}))});feito.push('análise urbanística')}
-    log(t,`GeoSampa consultado pelo SQL ${ins.sql}${feito.length?': '+feito.join(', '):''}`);save();render();
-    toast(erros.length?`GeoSampa consultado; ${erros.length} camada${erros.length>1?'s':''} não respondeu.`:'GeoSampa consultado. Gerando a planta e o desenho...');
-    geoArquivos(t,ins,lote.geometry);
-  }catch(e){console.error(e);toast('Não foi possível consultar o GeoSampa agora. Tente de novo em instantes.',true)}
-  finally{GEO_BUSCANDO=null;render()}}
+async function geoBuscar(t,ins){const d=digits(ins.sql);
+  const lotes=await geoWfs({typeNames:'geoportal:lote_cidadao',CQL_FILTER:`cd_setor_fiscal='${d.slice(0,3)}' AND cd_quadra_fiscal='${d.slice(3,6)}' AND cd_lote='${d.slice(6,10)}'`});
+  const lote=lotes.find(f=>String(f.properties.cd_digito_sql)===d[10]&&f.properties.tx_situ_lote!=='INATIVO')||null;
+  if(!lote){toast(lotes.length?`O dígito do SQL não confere (no GeoSampa é ${lotes[0].properties.cd_digito_sql}).`:'SQL não encontrado no GeoSampa.',true);return}
+  const wkt=geoWkt(lote.geometry),camadas={},erros=[];
+  await Promise.all(GEO_CAMADAS.map(async([k,,geom,,,dist])=>{try{camadas[k]=await geoWfs({typeNames:'geoportal:'+k,count:'50',CQL_FILTER:dist?`DWITHIN(${geom},${wkt},${dist},meters)`:`INTERSECTS(${geom},${wkt})`})}catch(e){erros.push(k)}}));
+  const zf=camadas.perimetro_zona_lei_18081_24||[],zonas=zf.length?geoAreaZonas(lote.geometry,zf,p=>p.cd_zoneamento_perimetro):[];
+  const anel=geoAneis(lote.geometry)[0],areaPol=Math.round(geoAreaAnel(anel)*100)/100,poly=anel.slice(0,-1).map(p=>utmLatLng(p[0],p[1]).map(v=>+v.toFixed(7)));
+  const props=c=>(camadas[c]||[]).map(f=>f.properties),p=lote.properties;
+  if(p.cd_cib)ins.cib=p.cd_cib;const zfis=props('zona_fiscal')[0];if(zfis)ins.zf=zfis.sg_zona_fiscal;
+  loteRegistrar(t,ins,{lote:p,poly,areaPol,zonas,erros,camadas:Object.fromEntries(Object.keys(camadas).map(k=>[k,props(k)])),area:p.qt_area_terreno,aConst:p.qt_area_construida});
+  geoArquivos(t,ins,lote.geometry)}
 
 // Planta (PDF do servidor) e desenho (DXF montado aqui), com 40 m de folga em volta do lote.
 async function geoArquivos(t,ins,geom){const r=geoAneis(geom)[0],m=40,xs=r.map(p=>p[0]),ys=r.map(p=>p[1]);
   const bb=[Math.min(...xs)-m,Math.min(...ys)-m,Math.max(...xs)+m,Math.max(...ys)+m],arq=GEO_ARQ[t.id]=GEO_ARQ[t.id]||{};const nomeBase='lote_'+digits(ins.sql);
   try{const w=1600,h=Math.round(w*(bb[3]-bb[1])/(bb[2]-bb[0])),u=new URL(GEO_BASE+'wms');
     Object.entries({service:'WMS',version:'1.1.1',request:'GetMap',layers:GEO_DESENHO.map(c=>'geoportal:'+c[0]).join(','),styles:'',srs:'EPSG:31983',bbox:bb.join(','),width:w,height:h,format:'application/pdf'}).forEach(([k,v])=>u.searchParams.set(k,v));
-    const rp=await fetch(u);if(!rp.ok)throw 0;arq.pdf=await rp.blob();geoDoc(t,'geosampa_pdf',nomeBase+'.pdf')}catch(e){toast('A planta em PDF não saiu agora; o desenho segue.',true)}
+    const rp=await fetch(u);if(!rp.ok)throw 0;arq.pdf=await rp.blob();loteDoc(t,ins,'lote_pdf',nomeBase+'.pdf')}catch(e){toast('A planta em PDF não saiu agora; o desenho segue.',true)}
   try{const feic=await Promise.all(GEO_DESENHO.map(([k])=>geoWfs({typeNames:'geoportal:'+k,bbox:bb.join(',')+',EPSG:31983'}).catch(()=>[])));
-    arq.dxf=new Blob([geoDxf(feic,bb,ins.sql)],{type:'application/dxf'});geoDoc(t,'geosampa_dxf',nomeBase+'.dxf')}catch(e){console.error(e);toast('O desenho em DXF não saiu agora.',true)}
+    arq.dxf=new Blob([geoDxf(GEO_DESENHO,feic,bb,`GeoSampa - SQL ${ins.sql}`,(k,p)=>k==='lote_cidadao'?p.nr_contribuinte:null)],{type:'application/dxf'});loteDoc(t,ins,'lote_dxf',nomeBase+'.dxf')}catch(e){console.error(e);toast('O desenho em DXF não saiu agora.',true)}
   save();render();toast('Planta e desenho do lote guardados nos documentos.')}
-function geoDoc(t,k,nome){let d=t.docs.find(x=>x.tipo===k);if(!d){d={tipo:k,status:'recebido',emitido:HOJE,versoes:0,nome};t.docs.push(d)}d.versoes++;d.emitido=HOJE;d.nome=nome;log(t,`${TIPOS_DOC[k][0]}: versão ${d.versoes} gerada pelo GeoSampa`)}
 
 // DXF R12 (AutoCAD abre e salva como DWG). Coordenadas UTM 23S SIRGAS 2000 em metros; curvas com a cota como elevação.
-function geoDxf(feic,bb,sql){const L=[],out=(...a)=>{for(let i=0;i<a.length;i+=2)L.push(a[i],a[i+1])};const asc=s=>String(s??'').normalize('NFD').replace(/[^\x20-\x7e]/g,'');
+// desenho: [chave, layer, cor ACI, campo da cota]; feic: feições de cada chave; rotulo(chave, atributos): texto no centro da feição.
+function geoDxf(desenho,feic,bb,titulo,rotulo){const L=[],out=(...a)=>{for(let i=0;i<a.length;i+=2)L.push(a[i],a[i+1])};const asc=s=>String(s??'').normalize('NFD').replace(/[^\x20-\x7e]/g,'');
   out(0,'SECTION',2,'HEADER',9,'$ACADVER',1,'AC1009',9,'$EXTMIN',10,bb[0],20,bb[1],9,'$EXTMAX',10,bb[2],20,bb[3],0,'ENDSEC');
-  out(0,'SECTION',2,'TABLES',0,'TABLE',2,'LTYPE',70,1,0,'LTYPE',2,'CONTINUOUS',70,0,3,'Solid line',72,65,73,0,40,0,0,'ENDTAB',0,'TABLE',2,'LAYER',70,GEO_DESENHO.length+1);
-  [...GEO_DESENHO.map(c=>[c[1],c[2]]),['TEXTOS',7]].forEach(([n,c])=>out(0,'LAYER',2,n,70,0,62,c,6,'CONTINUOUS'));out(0,'ENDTAB',0,'ENDSEC',0,'SECTION',2,'ENTITIES');
+  out(0,'SECTION',2,'TABLES',0,'TABLE',2,'LTYPE',70,1,0,'LTYPE',2,'CONTINUOUS',70,0,3,'Solid line',72,65,73,0,40,0,0,'ENDTAB',0,'TABLE',2,'LAYER',70,desenho.length+1);
+  [...desenho.map(c=>[c[1],c[2]]),['TEXTOS',7]].forEach(([n,c])=>out(0,'LAYER',2,n,70,0,62,c,6,'CONTINUOUS'));out(0,'ENDTAB',0,'ENDSEC',0,'SECTION',2,'ENTITIES');
   const f2=v=>Number(v).toFixed(3);
-  GEO_DESENHO.forEach(([k,lay,,zc],i)=>(feic[i]||[]).forEach(f=>{const g=f.geometry;if(!g)return;const z=zc&&f.properties[zc]!=null?Number(f.properties[zc]):0;
+  desenho.forEach(([k,lay,,zc],i)=>(feic[i]||[]).forEach(f=>{const g=f.geometry;if(!g)return;const z=zc&&f.properties[zc]!=null?Number(f.properties[zc]):0;
     if(g.type==='Point'){const [x,y]=g.coordinates;out(0,'POINT',8,lay,10,f2(x),20,f2(y),30,f2(z));if(zc)out(0,'TEXT',8,lay,10,f2(x+.4),20,f2(y+.4),30,f2(z),40,'0.8',1,num(z,2));return}
     geoAneis(g).forEach(r=>{const fechado=g.type.includes('Polygon');const pts=fechado&&r.length>1?r.slice(0,-1):r;
       out(0,'POLYLINE',8,lay,66,1,10,'0',20,'0',30,f2(z),70,fechado?1:0);pts.forEach(p=>out(0,'VERTEX',8,lay,10,f2(p[0]),20,f2(p[1]),30,f2(z)));out(0,'SEQEND',8,lay)});
-    if(k==='lote_cidadao'){const r=geoAneis(g)[0],cx=r.reduce((s,p)=>s+p[0],0)/r.length,cy=r.reduce((s,p)=>s+p[1],0)/r.length;out(0,'TEXT',8,'TEXTOS',10,f2(cx),20,f2(cy),30,'0',40,'1.2',1,asc(f.properties.nr_contribuinte))}}));
-  out(0,'TEXT',8,'TEXTOS',10,f2(bb[0]+2),20,f2(bb[1]+2),30,'0',40,'1.5',1,asc(`GeoSampa - SQL ${sql} - ${new Date().toLocaleDateString('pt-BR')} - UTM 23S SIRGAS 2000`));
+    const txt=rotulo&&rotulo(k,f.properties);if(txt&&/Polygon/.test(g.type)){const r=geoAneis(g)[0],cx=r.reduce((s,p)=>s+p[0],0)/r.length,cy=r.reduce((s,p)=>s+p[1],0)/r.length;out(0,'TEXT',8,'TEXTOS',10,f2(cx),20,f2(cy),30,'0',40,'1.2',1,asc(txt))}}));
+  out(0,'TEXT',8,'TEXTOS',10,f2(bb[0]+2),20,f2(bb[1]+2),30,'0',40,'1.5',1,asc(`${titulo} - ${new Date().toLocaleDateString('pt-BR')} - UTM 23S SIRGAS 2000`));
   out(0,'ENDSEC',0,'EOF');return L.join('\r\n')+'\r\n'}
 function geoBaixar(t,k){const a=GEO_ARQ[t.id]?.[k];if(!a){toast('Arquivo gerado em outra sessão: busque de novo para baixar.',true);return}
-  const d=t.docs.find(x=>x.tipo==='geosampa_'+k),url=URL.createObjectURL(a),el=document.createElement('a');el.href=url;el.download=d?.nome||'lote.'+k;document.body.appendChild(el);el.click();el.remove();setTimeout(()=>URL.revokeObjectURL(url),4000)}
+  const d=t.docs.find(x=>x.tipo==='lote_'+k),url=URL.createObjectURL(a),el=document.createElement('a');el.href=url;el.download=d?.nome||'lote.'+k;document.body.appendChild(el);el.click();el.remove();setTimeout(()=>URL.revokeObjectURL(url),4000)}
 
 // Quadro na inscrição: última consulta e o que toca o lote.
-function geoQuadro(t,ins,i){const g=(ins.geo||[])[0],busc=GEO_BUSCANDO===t.id+':'+i,pode=UI.role!=='Leitura';
-  const btn=pode?`<button class="btn sm ${g?'text':''}" data-a="geo-buscar" data-i="${i}" ${busc?'disabled':''}>${ic('search',16)}${busc?'Consultando...':g?'Buscar de novo':'Buscar no GeoSampa'}</button>`:'';
-  if(!g)return `<div class="geo-vazio">${btn}<span class="hint">${GEO_BASE?'Traz do GeoSampa o lote, a poligonal, o zoneamento e as restrições, e guarda a planta (PDF) e o desenho (DXF).':'A busca no GeoSampa funciona na versão publicada no Railway.'}</span></div>`;
+function geoQuadro(t,ins,i){const g=(ins.geo||[])[0];
+  if(!g)return loteVazio(t,ins,i,'Traz do GeoSampa o lote, a poligonal, o zoneamento e as restrições, e guarda a planta (PDF) e o desenho (DXF).');
   const p=g.lote,end=[p.nm_logradouro_completo,p.cd_numero_porta].filter(Boolean).join(', ');
   const lin=(k,v)=>`<div class="kv"><dt>${k}</dt><dd>${v}</dd></div>`;
   const linhas=GEO_CAMADAS.filter(c=>!/^zona_fiscal$|^perimetro_zona/.test(c[0])).map(([k,tema,,fmt,grav])=>{const fs=g.camadas[k],erro=g.erros.includes(k);
     const vals=fs?[...new Set(fs.map(x=>{try{return fmt(x)}catch(e){return null}}).filter(Boolean))]:[];
     return {tema,grav,erro,vals}});
-  const toca=linhas.filter(l=>l.vals.length),nada=linhas.filter(l=>!l.vals.length&&!l.erro),falhou=linhas.filter(l=>l.erro);
   const zonasTxt=g.zonas.map(z=>`${esc(z.sigla)} <span class="faint">${m2(z.area_m2)}</span>`).join(' + ');
   const siglas=k=>[...new Set((g.camadas[k]||[]).map(x=>x.cd_zoneamento_perimetro))].sort().join(' + ');
   const dif=siglas('perimetro_zona_lei_18081_24')&&siglas('perimetro_zona_lei_18177_24')&&siglas('perimetro_zona_lei_18081_24')!==siglas('perimetro_zona_lei_18177_24');
-  const docP=t.docs.find(x=>x.tipo==='geosampa_pdf'),docD=t.docs.find(x=>x.tipo==='geosampa_dxf');
-  return `<div class="geo" id="geo-${i}"><div class="geo-h"><span>${bi('mapa',20)}<b>GeoSampa</b> <span class="muted">consultado em ${fdh(g.em)} por ${esc(g.user)}${(ins.geo||[]).length>1?` · ${(ins.geo.length-1)} consulta${ins.geo.length>2?'s':''} anterior${ins.geo.length>2?'es':''} guardada${ins.geo.length>2?'s':''}`:''}</span></span>${btn}</div>
+  return `<div class="geo" id="geo-${i}">${loteCab(t,ins,i)}
     <div class="geo-kv">${lin('Área do terreno (cadastro)',m2(p.qt_area_terreno))}${lin('Área da poligonal',m2(g.areaPol)+(p.qt_area_terreno&&Math.abs(g.areaPol/p.qt_area_terreno-1)>.05?` <span class="chip warn">${g.areaPol>p.qt_area_terreno?'+':''}${num((g.areaPol/p.qt_area_terreno-1)*100,0)}% sobre o cadastro</span>`:''))}${lin('Área construída',m2(p.qt_area_construida))}${lin('Uso',esc(p.dc_tipo_uso_imovel||'—'))}
     ${lin('Endereço fiscal',esc(end||'—')+(end&&t.logradouro&&!end.toLowerCase().includes(t.logradouro.toLowerCase().split(' ').pop())?' <span class="chip warn">difere do cadastro</span>':''))}
     ${lin('Condomínio',p.cd_condominio&&p.cd_condominio!=='00'?`<span class="chip warn">Sim (${esc(p.cd_condominio)})</span>`:'Não')}${lin('CIB',esc(p.cd_cib||'—'))}${lin('Zona fiscal',esc(ins.zf||'—'))}
     ${lin('Zona no lote',zonasTxt||'—')}</div>
     ${dif?`<div class="banner warn" style="margin:8px 0">${ic('warn')}<div>As camadas de zoneamento das Leis 18.081 e 18.177 dão zonas diferentes para o lote. Confira antes de usar.</div></div>`:''}
-    <div class="geo-toca"><div class="geo-st">O que toca o lote</div>${toca.map(l=>`<div class="geo-l"><span class="k">${esc(l.tema)}</span><span class="v">${l.vals.map(v=>`<span class="chip ${l.grav}">${esc(v)}</span>`).join(' ')}</span></div>`).join('')||'<div class="muted">Nenhuma restrição nem perímetro especial.</div>'}
-    ${nada.length?`<div class="hint" style="margin-top:6px">Não toca: ${nada.map(l=>esc(l.tema)).join(', ')}.</div>`:''}${falhou.length?`<div class="hint" style="color:var(--crit-tx,#b3261e)">Não responderam nesta consulta: ${falhou.map(l=>esc(l.tema)).join(', ')}.</div>`:''}</div>
-    <div class="geo-arq">${[['pdf','Planta (PDF)',docP],['dxf','Desenho (DXF)',docD]].map(([k,l,d])=>d?`<button class="btn sm" data-a="geo-baixar" data-k="${k}">${ic('download',16)}${l}${d.versoes>1?` <span class="faint">v${d.versoes}</span>`:''}</button>`:'').join('')}<span class="hint">${docP||docD?'Guardados em Documentos, com versão. O DXF abre no AutoCAD (salve como DWG); coordenadas UTM 23S SIRGAS 2000.':''}</span></div></div>`}
+    ${loteToca(linhas)}
+    ${loteArqBotoes(t)}</div>`}
 const fdh=s=>{if(!s)return '—';const d=new Date(s.replace(' ','T'));return isNaN(d)?fd(s):`${fd(s.slice(0,10))} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`};
-document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="geo-"]');if(!a)return;const t=T(UI.id);if(!t)return;
-  if(a.dataset.a==='geo-buscar')geoBuscar(t,Number(a.dataset.i));
-  if(a.dataset.a==='geo-baixar')geoBaixar(t,a.dataset.k)});
+LOTE_ADAPT.sp={url:()=>GEO_BASE,buscar:geoBuscar,quadro:geoQuadro};
+
+// ---------------------------------------------------------------------
+// GeoSanja (Prefeitura de São José dos Campos) pela inscrição imobiliária.
+// Não há serviço público de camadas: usa a API do próprio site
+// (geo.sjc.sp.gov.br/v1) com o token de visitante. A busca pela inscrição
+// devolve só a poligonal do lote; zona, macrozona, centralidade, riscos e
+// restrições vêm das camadas liberadas ao visitante (GetFeatureInfo com raio
+// cobrindo o lote, conferido aqui contra a poligonal). Planta (PDF montado
+// aqui com ortofoto, curvas e zoneamento) e desenho (DXF) entram como
+// documentos com versão. Sem CORS: no Railway passa pelo Caddy em /geosanja.
+// No banco: app.registrar_consulta_lote + app.registrar_documento.
+// ---------------------------------------------------------------------
+const GSJ_BASE=(()=>{const m=document.querySelector('meta[name="geosanja-url"]');if(m&&m.content)return m.content;
+  return /^https?:$/.test(location.protocol)&&!/claude\.ai|claudeusercontent|localhost:5173/.test(location.host)?location.origin+'/geosanja/v1/':null})();
+// [camada WMS, feição (prefixo do id), tema, como mostrar, gravidade, distância em metros (linhas)]
+const GSJ_CAMADAS=[
+  ['uso_ocupacao','ZONAS_USO','Zona (LC 623)',p=>p.proposta!=='Bens Preservados'&&p.proposta,''],
+  ['uso_ocupacao','ZONAS_USO','Imóvel preservado',p=>p.proposta==='Bens Preservados'&&(p.rotulo||'Bem preservado'),'crit'],
+  ['uso_ocupacao','macrozoneamentoUrbano','Macrozona',p=>p.subclasses,''],
+  ['uso_ocupacao','macrozoneamentoRural','Macrozona rural',p=>p.rotulo,'warn'],
+  ['uso_ocupacao','macroestruturaEconomica','Área de desenvolvimento estratégico',p=>p.polo,''],
+  ['uso_ocupacao','CORREDORES','Corredor a até 30 m',p=>p.rotulo||p.corredores,'',30],
+  ['uso_ocupacao','recarga_aquifero','Recarga de aquífero',p=>p.nome,'warn'],
+  ['anexo_07','centralidade','Centralidade',p=>[p.nome,p.ca_max!=null?`CA máx. ${num(p.ca_max,1)}`:''].filter(Boolean).join(' · '),''],
+  ['anexo_04','regioesGeograficas','Região',p=>p.regiao,''],
+  ['anexo_05','setorSocioEconomico','Setor socioeconômico',p=>`${p.setor} · ${p.nome}`,''],
+  ['subsetor_urbano','subsetor_urbano','Subsetor',p=>`${p.sub_num} · ${p.sub_nom}`,''],
+  ['anexo_11','brt','Corredor de transporte público a até 300 m',()=>'Principal corredor','',300],
+  ['anexo_13','parquesUrbanos','Parque urbano',p=>p.nome,'warn'],
+  ['anexo_14','apaMunicipal','APA municipal',p=>p.nome,'crit'],
+  ['anexo_14','parqueNaturalMunicipal','Parque natural municipal',p=>p.nome,'crit'],
+  ['pnmBanhado','pnmBanhado','Parque do Banhado',p=>p.nome,'crit'],
+  ['zona_de_amortecimento_augusto','zona_de_amortecimento_augusto','Amortecimento do Parque Augusto Ruschi',()=>'Zona de amortecimento','warn'],
+  ['anexo_15','nucleosUrbanosInformais','Núcleo informal',p=>p.refname,'warn'],
+  ['anexo_16','zdca','Domínio de curso d’água (mapa substituído)',()=>'ZDCA','warn'],
+  ['anexo_17','escorregamentoPMRP','Risco de escorregamento',p=>[(p.legenda||'').trim(),p.name].filter(Boolean).join(' · '),'crit'],
+  ['pmrr_sjc_2024_setores_final_1','pmrr_sjc_2024_setores_final_1','Plano de redução de riscos (2024)',p=>[p.grau_risco,p.processo].filter(Boolean).join(' · '),'crit'],
+  ['linhas_trasmissao','linhas_trasmissao','Faixa de linha de transmissão',()=>'Alta tensão','crit'],
+  ['FERROVIA','FERROVIA','Ferrovia a até 30 m',()=>'Linha férrea','warn',30],
+];
+// Mostradas na lista de dados do lote (as demais vão para "O que toca o lote")
+const GSJ_FICHA=['macrozoneamentoUrbano','centralidade','setorSocioEconomico','subsetor_urbano'];
+// Desenho (DXF): [chave, layer, cor ACI, campo da cota]
+const GSJ_DESENHO=[['lote','LOTE',1],['arruamentos','ARRUAMENTOS',8],['curva_igc_1_1000','CURVAS_IGC_10000',30,'avg_z'],['zonas','ZONAS_LC623',3]];
+let GSJ_TOKEN=null;
+
+async function gsjToken(novo){if(GSJ_TOKEN&&!novo)return GSJ_TOKEN;const r=await fetch(GSJ_BASE+'autenticar?token=VISITANTE');if(!r.ok)throw new Error('GeoSanja respondeu '+r.status);
+  GSJ_TOKEN=(await r.json()).token;return GSJ_TOKEN}
+async function gsjLote(ic){const ped=async tk=>fetch(GSJ_BASE+'localizar',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tk},
+    body:JSON.stringify({toolId:'SearchICTool',parametros:[{name:'ic',value:ic}]})});
+  let r=await ped(await gsjToken());if(r.status===401)r=await ped(await gsjToken(true));if(!r.ok)throw new Error('GeoSanja respondeu '+r.status);
+  const j=await r.json();return Array.isArray(j)&&j[0]?.data?.geom?JSON.parse(j[0].data.geom):null}
+// Feições da camada dentro do retângulo (graus): um pixel no centro com raio que alcança os cantos.
+async function gsjInfo(camada,bb){const u=new URL(GSJ_BASE+'proxy');
+  Object.entries({SERVICE:'WMS',VERSION:'1.1.1',REQUEST:'GetFeatureInfo',LAYERS:'geoSJC:'+camada,QUERY_LAYERS:'geoSJC:'+camada,SRS:'EPSG:4326',BBOX:bb.join(','),
+    WIDTH:101,HEIGHT:101,X:50,Y:50,BUFFER:75,INFO_FORMAT:'application/json',FEATURE_COUNT:200,authToken:await gsjToken()}).forEach(([k,v])=>u.searchParams.set(k,v));
+  const r=await fetch(u);if(!r.ok)throw new Error('GeoSanja respondeu '+r.status);const j=await r.json();if(!j||!Array.isArray(j.features))throw new Error('Resposta inesperada do GeoSanja');return j.features}
+async function gsjMapa(camada,bb,w,h,fmt){const u=new URL(GSJ_BASE+'proxy');
+  Object.entries({SERVICE:'WMS',VERSION:'1.1.1',REQUEST:'GetMap',LAYERS:'geoSJC:'+camada,STYLES:'',SRS:'EPSG:4326',BBOX:bb.join(','),WIDTH:w,HEIGHT:h,FORMAT:fmt,TRANSPARENT:fmt==='image/png',authToken:await gsjToken()}).forEach(([k,v])=>u.searchParams.set(k,v));
+  const r=await fetch(u);if(!r.ok)throw new Error('GeoSanja respondeu '+r.status);return createImageBitmap(await r.blob())}
+
+// --- coordenadas: graus -> metros locais (área e distâncias) e -> UTM 23S SIRGAS 2000 (DXF)
+const mapCoord=(c,f)=>!c.length?c:typeof c[0]==='number'?f(c):c.map(x=>mapCoord(x,f));
+const geoMapa=(g,f)=>g&&{...g,coordinates:mapCoord(g.coordinates,f)},featMapa=(ft,f)=>({...ft,geometry:geoMapa(ft.geometry,f)});
+function latLngUtm(lat,lng){const a=6378137,f=1/298.257222101,k0=.9996,e2=f*(2-f),ep2=e2/(1-e2),p=lat*Math.PI/180,l=(lng+45)*Math.PI/180,s=Math.sin(p),c=Math.cos(p),
+  N=a/Math.sqrt(1-e2*s*s),T=Math.tan(p)**2,C=ep2*c*c,A=c*l,
+  M=a*((1-e2/4-3*e2*e2/64-5*e2**3/256)*p-(3*e2/8+3*e2*e2/32+45*e2**3/1024)*Math.sin(2*p)+(15*e2*e2/256+45*e2**3/1024)*Math.sin(4*p)-(35*e2**3/3072)*Math.sin(6*p));
+  return [5e5+k0*N*(A+(1-T+C)*A**3/6+(5-18*T+T*T+72*C-58*ep2)*A**5/120),
+    1e7+k0*(M+N*Math.tan(p)*(A*A/2+(5-T+9*C+4*C*C)*A**4/24+(61-58*T+T*T+600*C-330*ep2)*A**6/720))]}
+// pontos do lote para conferir o que toca: vértices, bordas a cada metro e grade interna
+function gsjAmostra(lote){const r=geoAneis(lote)[0],pts=[];
+  r.forEach((p,i)=>{const q=r[(i+1)%r.length],n=Math.max(1,Math.ceil(Math.hypot(q[0]-p[0],q[1]-p[1])));for(let k=0;k<n;k++)pts.push([p[0]+(q[0]-p[0])*k/n,p[1]+(q[1]-p[1])*k/n])});
+  const xs=r.map(p=>p[0]),ys=r.map(p=>p[1]),passo=Math.max(.5,Math.sqrt((Math.max(...xs)-Math.min(...xs))*(Math.max(...ys)-Math.min(...ys))/400));
+  for(let x=Math.min(...xs)+passo/2;x<Math.max(...xs);x+=passo)for(let y=Math.min(...ys)+passo/2;y<Math.max(...ys);y+=passo)if(geoDentro([x,y],lote))pts.push([x,y]);
+  return pts}
+const distSeg=(p,a,b)=>{const dx=b[0]-a[0],dy=b[1]-a[1],L=dx*dx+dy*dy,t=L?Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/L)):0;return Math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy)};
+function gsjToca(f,lote,amostra,dist){const g=f.geometry;if(!g)return false;
+  if(/Polygon/.test(g.type))return amostra.some(p=>geoDentro(p,g))||geoAneis(g).some(r=>r.some(p=>geoDentro(p,lote)));
+  if(/LineString/.test(g.type)){const lim=dist||0;return geoAneis(g).some(r=>r.some(p=>geoDentro(p,lote))||amostra.some(p=>r.some((a,i)=>i&&distSeg(p,r[i-1],a)<=lim)))}
+  return false}
+
+async function gsjBuscar(t,ins){const llLote=await gsjLote(ins.sql);
+  if(!llLote){toast('Inscrição não encontrada no GeoSanja.',true);return}
+  const r0=geoAneis(llLote)[0],lon0=r0.reduce((s,p)=>s+p[0],0)/r0.length,lat0=r0.reduce((s,p)=>s+p[1],0)/r0.length,kx=Math.cos(lat0*Math.PI/180)*111319.49,ky=110574.3;
+  const loc=([x,y])=>[(x-lon0)*kx,(y-lat0)*ky],lote=geoMapa(llLote,loc),amostra=gsjAmostra(lote);
+  const folga=Math.max(...GSJ_CAMADAS.map(c=>c[5]||0))+5,xs=r0.map(p=>p[0]),ys=r0.map(p=>p[1]);
+  const bb=[Math.min(...xs)-folga/kx,Math.min(...ys)-folga/ky,Math.max(...xs)+folga/kx,Math.max(...ys)+folga/ky];
+  const wms=[...new Set(GSJ_CAMADAS.map(c=>c[0]))],res={},erros=[];
+  await Promise.all(wms.map(async k=>{try{res[k]=await gsjInfo(k,bb)}catch(e){erros.push(k)}}));
+  const camadas={},zonasF=[];
+  GSJ_CAMADAS.forEach(([k,pref,,fmt,,dist],n)=>{if(!res[k])return;const fs=res[k].filter(f=>f.id.split('.')[0]===pref&&gsjToca(featMapa(f,loc),lote,amostra,dist));
+    const vals=fs.filter(f=>{try{return fmt(f.properties)}catch(e){return false}});camadas[k+':'+n]=vals.map(f=>f.properties);if(n===0)zonasF.push(...vals.map(f=>featMapa(f,loc)))});
+  const zonas=zonasF.length?geoAreaZonas(lote,zonasF,p=>p.proposta):[];
+  const areaPol=Math.round(geoAreaAnel(geoAneis(lote)[0])*100)/100,poly=r0.slice(0,-1).map(p=>[+p[1].toFixed(7),+p[0].toFixed(7)]);
+  loteRegistrar(t,ins,{lote:{inscricao:ins.sql},poly,areaPol,zonas,erros:GSJ_CAMADAS.map((c,n)=>erros.includes(c[0])?c[0]+':'+n:null).filter(Boolean),camadas,area:null,aConst:null});
+  gsjArquivos(t,ins,llLote,res.uso_ocupacao||[])}
+
+// Planta (PDF montado aqui: ortofoto 8 cm, curvas, zoneamento e o lote) com 40 m de folga e desenho (DXF) com 150 m:
+// as curvas do IGC são de 5 em 5 m e num lote plano podem não aparecer perto dele.
+async function gsjArquivos(t,ins,llLote,usoOcup){const r=geoAneis(llLote)[0],xs=r.map(p=>p[0]),ys=r.map(p=>p[1]),lat0=(Math.min(...ys)+Math.max(...ys))/2;
+  const caixa=m=>{const fx=m/(Math.cos(lat0*Math.PI/180)*111319.49),fy=m/110574.3;return [Math.min(...xs)-fx,Math.min(...ys)-fy,Math.max(...xs)+fx,Math.max(...ys)+fy]},bb=caixa(40),bbD=caixa(150);
+  const arq=GEO_ARQ[t.id]=GEO_ARQ[t.id]||{},nomeBase='lote_'+digits(ins.sql);
+  try{const w=1400,h=Math.round(w*(bb[3]-bb[1])*110574.3/((bb[2]-bb[0])*Math.cos(lat0*Math.PI/180)*111319.49));
+    const [foto,curvas,zonas]=await Promise.all([gsjMapa('pm_sjc_ortomosaico_8cm_nov25',bb,w,h,'image/jpeg'),gsjMapa('curva_igc_1_1000',bb,w,h,'image/png').catch(()=>null),gsjMapa('uso_ocupacao',bb,w,h,'image/png').catch(()=>null)]);
+    const cv=document.createElement('canvas');cv.width=w;cv.height=h+56;const g=cv.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,w,h+56);g.drawImage(foto,0,0,w,h);
+    if(zonas){g.globalAlpha=.35;g.drawImage(zonas,0,0,w,h);g.globalAlpha=1}if(curvas)g.drawImage(curvas,0,0,w,h);
+    g.strokeStyle='#e00';g.lineWidth=3;g.beginPath();r.forEach((p,i)=>{const x=(p[0]-bb[0])/(bb[2]-bb[0])*w,y=(bb[3]-p[1])/(bb[3]-bb[1])*h;i?g.lineTo(x,y):g.moveTo(x,y)});g.closePath();g.stroke();
+    g.fillStyle='#1f1f1f';g.font='20px sans-serif';g.fillText(`GeoSanja · Inscrição ${ins.sql} · ${new Date().toLocaleDateString('pt-BR')}`,16,h+24);
+    g.font='15px sans-serif';g.fillStyle='#444746';g.fillText('Ortofoto 8 cm (nov/2025), curvas de nível IGC 1:10.000 e zoneamento LC 623 da Prefeitura de São José dos Campos; lote em vermelho.',16,h+46);
+    const jpg=new Uint8Array(await(await new Promise(ok=>cv.toBlob(ok,'image/jpeg',.85))).arrayBuffer());
+    arq.pdf=new Blob([pdfImagem(jpg,cv.width,cv.height)],{type:'application/pdf'});loteDoc(t,ins,'lote_pdf',nomeBase+'.pdf')}catch(e){console.error(e);toast('A planta em PDF não saiu agora; o desenho segue.',true)}
+  try{const utm=g=>geoMapa(g,([x,y])=>latLngUtm(y,x)),[ruas,curv]=await Promise.all([gsjInfo('arruamentos',bbD).catch(()=>[]),gsjInfo('curva_igc_1_1000',bbD).catch(()=>[])]);
+    const feic=[[{geometry:llLote,properties:{rotulo:ins.sql}}],ruas,curv,usoOcup.filter(f=>f.id.startsWith('ZONAS_USO.'))].map(fs=>fs.map(f=>({...f,geometry:utm(f.geometry)})));
+    const u0=latLngUtm(bbD[1],bbD[0]),u1=latLngUtm(bbD[3],bbD[2]);
+    arq.dxf=new Blob([geoDxf(GSJ_DESENHO,feic,[u0[0],u0[1],u1[0],u1[1]],`GeoSanja - Inscricao ${ins.sql}`,(k,p)=>k==='lote'?p.rotulo:k==='zonas'?p.proposta:null)],{type:'application/dxf'});loteDoc(t,ins,'lote_dxf',nomeBase+'.dxf')}
+  catch(e){console.error(e);toast('O desenho em DXF não saiu agora.',true)}
+  save();render();toast('Planta e desenho do lote guardados nos documentos.')}
+// PDF de uma página com a imagem (JPEG), em pontos: 1 px = 0,75 pt.
+function pdfImagem(jpg,w,h){const W=(w*.75).toFixed(2),H=(h*.75).toFixed(2),cont=`q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`,enc=new TextEncoder(),partes=[],offs=[];let n=0;
+  const add=x=>{const b=typeof x==='string'?enc.encode(x):x;partes.push(b);n+=b.length};
+  add('%PDF-1.4\n');[`<< /Type /Catalog /Pages 2 0 R >>`,`<< /Type /Pages /Kids [3 0 R] /Count 1 >>`,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`].forEach((o,i)=>{offs.push(n);add(`${i+1} 0 obj\n${o}\nendobj\n`)});
+  offs.push(n);add(`4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${w} /Height ${h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpg.length} >>\nstream\n`);add(jpg);add('\nendstream\nendobj\n');
+  offs.push(n);add(`5 0 obj\n<< /Length ${cont.length} >>\nstream\n${cont}\nendstream\nendobj\n`);
+  const x=n;add(`xref\n0 6\n0000000000 65535 f \n${offs.map(o=>String(o).padStart(10,'0')+' 00000 n \n').join('')}trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${x}\n%%EOF\n`);return new Blob(partes)}
+
+// Quadro na inscrição: última consulta e o que toca o lote.
+function gsjQuadro(t,ins,i){const g=(ins.geo||[])[0];
+  if(!g)return loteVazio(t,ins,i,'Traz do GeoSanja a poligonal do lote, o zoneamento e as restrições, e guarda a planta (PDF) e o desenho (DXF).');
+  const lin=(k,v)=>`<div class="kv"><dt>${k}</dt><dd>${v}</dd></div>`,n=pref=>GSJ_CAMADAS.findIndex(c=>c[1]===pref),cam=n=>g.camadas[GSJ_CAMADAS[n][0]+':'+n]||[];
+  const valsDe=n=>[...new Set(cam(n).map(x=>{try{return GSJ_CAMADAS[n][3](x)}catch(e){return null}}).filter(Boolean))];
+  const linhas=GSJ_CAMADAS.map(([k,,tema,,grav],j)=>({tema,grav,erro:g.erros.includes(k+':'+j),vals:g.camadas[k+':'+j]?valsDe(j):[],j})).filter(l=>l.j>0&&!GSJ_FICHA.includes(GSJ_CAMADAS[l.j][1]));
+  const vals=pref=>valsDe(n(pref)).map(esc).join(', ')||'—';
+  const fichas=cam(0).filter(z=>z.link&&z.proposta).reduce((a,z)=>(a[z.proposta]=z.link.trim(),a),{});
+  const zonasTxt=g.zonas.map(z=>`${esc(z.sigla)} <span class="faint">${m2(z.area_m2)}</span>${fichas[z.sigla]?` <a class="linkbtn" href="${esc(fichas[z.sigla])}" target="_blank" rel="noopener">ficha da zona</a>`:''}`).join(' + ');
+  return `<div class="geo" id="geo-${i}">${loteCab(t,ins,i)}
+    <div class="geo-kv">${lin('Área da poligonal',m2(g.areaPol)+(ins.area&&Math.abs(g.areaPol/ins.area-1)>.05?` <span class="chip warn">${g.areaPol>ins.area?'+':''}${num((g.areaPol/ins.area-1)*100,0)}% sobre o cadastro</span>`:''))}
+    ${lin('Zona no lote',zonasTxt||'—')}${GSJ_FICHA.map(p=>lin(GSJ_CAMADAS[n(p)][2],vals(p))).join('')}</div>
+    ${loteToca(linhas)}
+    <div class="hint" style="margin:4px 0 8px">O GeoSanja não informa área cadastral, área construída, uso nem endereço do lote: seguem digitados. Curvas de nível do IGC, em escala 1:10.000.</div>
+    ${loteArqBotoes(t)}</div>`}
+LOTE_ADAPT.sjc={url:()=>GSJ_BASE,buscar:gsjBuscar,quadro:gsjQuadro};
 
 render();
 })();

@@ -680,3 +680,8 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .geo-l .v { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; overflow-wrap: anywhere }
 .geo-l .v .chip { height: auto; min-height: 24px; white-space: normal; text-align: left }
 .geo-arq { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px }
+
+/* Inscrição por cidade: a escolha do município ocupa a linha toda e quebra no celular */
+.inline-form .field.full { flex: 1 1 100% }
+.insc-cid { flex-wrap: wrap; max-width: 100%; align-self: flex-start }
+.insc-cid .opt-radio { white-space: nowrap; position: relative }

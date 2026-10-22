@@ -51,7 +51,7 @@ for(const k of ['dxf','pdf']){const [d]=await Promise.all([p.waitForEvent('downl
 await mudar('t.insc[0].area=600');
 console.log('depois de recarregar, baixar sem arquivo:');await p.click('[data-a=geo-baixar][data-k=dxf]');await p.waitForTimeout(200);console.log('  ',await toast());
 await p.click('#geo-0 [data-a=geo-buscar]');
-await p.waitForFunction(k=>/Planta e desenho/.test(document.querySelector('#toast').textContent)&&JSON.parse(localStorage.getItem(k)).terrenos.find(x=>x.nome==='Paulista 1500').docs.some(d=>d.versoes===2&&d.tipo==='geosampa_dxf'),KEY,{timeout:15000});
+await p.waitForFunction(k=>/Planta e desenho/.test(document.querySelector('#toast').textContent)&&JSON.parse(localStorage.getItem(k)).terrenos.find(x=>x.nome==='Paulista 1500').docs.some(d=>d.versoes===2&&d.tipo==='lote_dxf'),KEY,{timeout:15000});
 console.log('de novo:',JSON.stringify(await ter().then(t=>({area:t.insc[0].area,consultas:t.insc[0].geo.length,docs:t.docs.map(d=>d.tipo+':v'+d.versoes),analises:t.analises.length}))));
 // 4. escuro e celular
 await p.evaluate(()=>{document.documentElement.dataset.tema='escuro'});await p.waitForTimeout(150);

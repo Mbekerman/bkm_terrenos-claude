@@ -1,0 +1,76 @@
+// Inscrição por cidade e GeoSanja (São José dos Campos): escolher a cidade troca rótulo e máscara,
+// a duplicidade compara cidade + inscrição, cadastrar com a inscrição busca sozinho, completa a
+// poligonal, registra a análise e guarda planta (PDF) e desenho (DXF). Respostas gravadas do servidor
+// real (lote 41.0024.0011.0000, Vila Adyanna) em testes/geosanja/; GRAVAR=1 regrava pelo Caddy local
+// (PORT=8099, ver Caddyfile). Saídas em saida/t_geosjc/.
+const path=require('path'),fs=require('fs'),{chromium}=require('playwright');
+const TMP=path.join(__dirname,'..','saida')+'/',OUT=TMP+'t_geosjc/',FIX=path.join(__dirname,'geosanja')+'/',L=path.join(__dirname,'..','libs','l')+'/';
+fs.mkdirSync(OUT,{recursive:true});fs.mkdirSync(FIX,{recursive:true});
+const GRAVAR=!!process.env.GRAVAR,BASE='https://sjc.test/v1/';
+const html=fs.readFileSync(TMP+'bkm-terrenos.html','utf8').replace('<title>',`<meta name="geosanja-url" content="${BASE}"><title>`);
+const chave=r=>{const u=new URL(r.url()),q=u.searchParams,p=u.pathname.split('/').pop();
+  if(p==='localizar')return 'localizar_'+JSON.parse(r.postData()).parametros[0].value.replace(/\D/g,'')+'.json';
+  if(p==='autenticar')return 'autenticar.json';
+  const fmt=q.get('REQUEST')==='GetMap'?(q.get('FORMAT')==='image/jpeg'?'.jpg':'.png'):'.json';
+  return q.get('LAYERS').replace('geoSJC:','')+'_'+q.get('REQUEST')+fmt};
+(async()=>{const b=await chromium.launch(),errs=[],pedidos=[];
+const ctx=await b.newContext({viewport:{width:1440,height:900},deviceScaleFactor:1.25,acceptDownloads:true});
+await ctx.route('**/*',async r=>{const u=r.request().url();
+  if(u.startsWith('file://'))return r.fulfill({body:html,contentType:'text/html; charset=utf-8'});
+  if(/leaflet.js|jszip/.test(u))return r.fulfill({path:L+(u.includes('leaflet')?'leaflet.js':'jszip.min.js'),contentType:'application/javascript'});
+  if(u.startsWith(BASE)){const k=chave(r.request());pedidos.push(k);
+    if(GRAVAR){const rr=await fetch(u.replace(BASE,'http://localhost:8099/geosanja/v1/'),{method:r.request().method(),headers:r.request().headers(),body:r.request().postData()});
+      const buf=Buffer.from(await rr.arrayBuffer());
+      // o token de verdade vai só para o navegador; no repositório fica um de mentira
+      if(rr.ok)fs.writeFileSync(FIX+k,k==='autenticar.json'?JSON.stringify({token:'token-de-teste',autenticado:false}):buf);
+      if(k==='autenticar.json')return r.fulfill({body:buf,contentType:'application/json'})}
+    if(!fs.existsSync(FIX+k))return r.fulfill({contentType:'application/json',body:k.startsWith('localizar')?'[]':'{"type":"FeatureCollection","features":[]}'});
+    return r.fulfill({path:FIX+k,contentType:k.endsWith('.jpg')?'image/jpeg':k.endsWith('.png')?'image/png':'application/json'})}
+  return r.abort()});
+const p=await ctx.newPage();p.on('pageerror',e=>errs.push(e.message));p.on('console',m=>{if(m.type()==='error'&&!/Failed to load resource/.test(m.text()))errs.push(m.text())});
+await p.goto('file:///x/a.html');await p.evaluate(()=>localStorage.clear());await p.reload();await p.waitForTimeout(600);
+const toast=()=>p.$eval('#toast',x=>x.textContent);
+const KEY='bkm-terrenos-prototipo-v8',ter=n=>p.evaluate(([k,n])=>JSON.parse(localStorage.getItem(k)).terrenos.find(x=>x.nome===n),[KEY,n]);
+// 1. novo terreno: a cidade troca rótulo e máscara; duplicidade por cidade + inscrição
+await p.evaluate(()=>document.querySelector('[data-a=novo]').click());await p.waitForTimeout(200);
+const campo=()=>p.evaluate(()=>({rot:document.querySelector('#n-sql-l').textContent,ph:document.querySelector('#n-sql').placeholder,v:document.querySelector('#n-sql').value}));
+await p.fill('#n-sql','0890000000000');console.log('SP:',JSON.stringify(await campo()));
+await p.click('#f-novo label:has([name=mun][value=sjc])');await p.fill('#n-sql','41002400110000');console.log('SJC:',JSON.stringify(await campo()));
+await p.screenshot({path:OUT+'1_novo_sjc.png'});
+await p.click('#f-novo label:has([name=mun][value=outro])');await p.fill('#n-sql','abc-123/9');console.log('Outro:',JSON.stringify(await campo()));
+await p.click('#f-novo label:has([name=mun][value=sjc])');await p.fill('#n-sql','41002400110000');
+await p.fill('#f-novo [name=nome]','Lote SJC');await p.fill('#f-novo [name=bairro]','Vila Adyanna');
+await p.evaluate(()=>document.querySelector('#f-novo').requestSubmit());
+await p.waitForFunction(()=>/Planta e desenho/.test(document.querySelector('#toast').textContent),null,{timeout:20000}).catch(async e=>{console.log('toast:',await toast(),'erros:',errs,'pedidos:',pedidos);throw e});
+const st=await ter('Lote SJC').then(t=>{const i=t.insc[0],g=i.geo[0];return {mun:i.mun,sql:i.sql,municipio:t.municipio,poly:t.poly&&t.poly.length,lat:t.lat,area:i.area,areaPol:g.areaPol,zonas:g.zonas,erros:g.erros,
+  analise:(t.analises.find(a=>a.status==='vigente')||{}).fonte,docs:t.docs.map(d=>d.tipo+':v'+d.versoes+':'+d.nome),hist:t.hist.map(h=>h.txt)}});
+console.log('estado:',JSON.stringify(st));
+await p.evaluate(()=>{if(!document.getElementById('geo-0'))document.querySelector('[data-a=bloco][data-t=cadastro]').click()});await p.waitForTimeout(300);
+console.log('quadro:',await p.$eval('#geo-0',x=>x.innerText.replace(/\s+/g,' ')));
+await p.evaluate(()=>document.getElementById('geo-0').scrollIntoView({block:'start'}));await p.evaluate(()=>scrollBy(0,-120));await p.waitForTimeout(200);
+await p.screenshot({path:OUT+'2_quadro.png'});
+for(const k of ['pdf','dxf']){const [d]=await Promise.all([p.waitForEvent('download'),p.click(`[data-a=geo-baixar][data-k=${k}]`)]);await d.saveAs(OUT+'lote.'+k);
+  console.log('baixou',k,d.suggestedFilename(),fs.statSync(OUT+'lote.'+k).size,'bytes',fs.readFileSync(OUT+'lote.'+k).slice(0,8).toString())}
+// 2. nova inscrição: abre na cidade do terreno; SQL de São Paulo num terreno de SJC não busca; outro município não tem busca
+console.log('form da ficha abre em:',await p.$eval('[data-form=insc] [name=mun]:checked',x=>x.value),'|',await p.$eval('#i-sql-l',x=>x.textContent));
+await p.click('[data-form=insc] label:has([name=mun][value=sp])');await p.fill('#i-sql','11122233334');
+await p.evaluate(()=>document.querySelector('[data-form=insc]').requestSubmit());await p.waitForTimeout(400);console.log('SQL de SP em SJC:',await toast(),'| inscrições:',(await ter('Lote SJC')).insc.length);
+await p.click('[data-form=insc] label:has([name=mun][value=outro])');await p.fill('#i-sql','12345/6');
+await p.evaluate(()=>document.querySelector('[data-form=insc]').requestSubmit());await p.waitForTimeout(400);
+console.log('inscrições:',JSON.stringify((await ter('Lote SJC')).insc.map(i=>i.mun+':'+i.sql)),'botões:',JSON.stringify(await p.$$eval('[data-a=geo-buscar]',x=>x.map(b=>b.dataset.i+':'+b.textContent))));
+console.log('cabeçalhos:',JSON.stringify(await p.$$eval('#sec-insc b.num',x=>x.map(b=>b.parentElement.innerText.split('\n')[0].replace(/\s+/g,' ')))));
+// 3. duplicidade no novo terreno
+await p.evaluate(()=>document.querySelector('[data-a=novo]').click());await p.waitForTimeout(200);
+await p.click('#f-novo label:has([name=mun][value=sjc])');await p.fill('#n-sql','41002400110000');await p.waitForTimeout(150);console.log('mesma inscrição:',await p.$eval('#dedupe',x=>x.innerText.replace(/\s*\n\s*/g,' / ').slice(0,160)));
+await p.fill('#n-sql','41002400990000');await p.waitForTimeout(150);console.log('mesma quadra:',await p.$eval('#dedupe',x=>x.innerText.replace(/\s*\n\s*/g,' / ').slice(0,160)));
+await p.click('#f-novo label:has([name=mun][value=sp])');await p.waitForTimeout(150);console.log('trocou para SP:',await p.$eval('#n-sql',x=>x.value),'|',await p.$eval('#dedupe',x=>x.innerText.replace(/\s*\n\s*/g,' / ').slice(0,160)));
+// 4. celular e escuro
+await p.setViewportSize({width:390,height:844});await p.waitForTimeout(400);
+console.log('celular (novo): rolagem horizontal?',await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth));await p.screenshot({path:OUT+'3_novo_celular.png'});
+await p.keyboard.press('Escape');await p.waitForTimeout(200);
+await p.evaluate(()=>document.getElementById('geo-0').scrollIntoView({block:'start'}));await p.evaluate(()=>scrollBy(0,-70));await p.waitForTimeout(200);
+console.log('celular (quadro): rolagem horizontal?',await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),'quadro vaza?',await p.$eval('#geo-0',x=>x.scrollWidth>x.clientWidth+1));
+await p.screenshot({path:OUT+'4_quadro_celular.png'});
+await p.setViewportSize({width:1440,height:900});await p.evaluate(()=>{document.documentElement.dataset.tema='escuro'});await p.waitForTimeout(150);
+await p.evaluate(()=>document.getElementById('geo-0').scrollIntoView({block:'start'}));await p.evaluate(()=>scrollBy(0,-120));await p.screenshot({path:OUT+'5_quadro_escuro.png'});
+console.log('pedidos:',[...new Set(pedidos)].join(' '));console.log('ERROS',errs);await b.close()})();

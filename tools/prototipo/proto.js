@@ -107,7 +107,7 @@ const motivoN=(st,k)=>((cfg().motivos[st]||[]).find(m=>m.k===k)||{}).nome||k||''
 const SIDX=k=>STAGES.findIndex(s=>s[0]===k);const SN=k=>(STAGES.find(s=>s[0]===k)||[,k])[1];
 const INFRA=[['energia','Rede de energia na porta'],['agua','Rede de água na porta'],['esgoto','Rede de esgoto na porta'],['gas','Gás canalizado na porta'],['asfalto','Asfalto na porta'],['drenagem','Drenagem pluvial'],['iluminacao','Iluminação pública'],['calcada','Calçada'],['fibra','Telefonia / fibra óptica']];
 const ZONEAMENTOS=['ZEU','ZEUa','ZEUP','ZEUPa','ZEM','ZEMP','ZC','ZCa','ZC-ZEIS','ZCOR-1','ZCOR-2','ZCOR-3','ZM','ZMa','ZMIS','ZMISa','ZEIS-1','ZEIS-2','ZEIS-3','ZEIS-4','ZEIS-5','ZDE-1','ZDE-2','ZPI-1','ZPI-2','ZER-1','ZER-2','ZERa','ZPR','ZEP','ZEPAM','ZPDS','ZOE'];
-const TIPOS_DOC={ata:['Ata de reunião','Reuniões',null],matricula:['Matrícula atualizada','Imóvel',30],onus:['Certidão de ônus reais','Imóvel',30],iptu:['Certidão negativa de IPTU','Imóvel',90],vend:['Certidões pessoais do vendedor','Vendedor',30],topo:['Levantamento planialtimétrico','Técnico',null],sond:['Sondagem SPT','Técnico',null],amb:['Avaliação ambiental preliminar','Técnico',null],minuta:['Minuta de promessa de compra e venda','Contratos',null],foto:['Foto','Mídia',null],planta:['Planta ou croqui','Técnico',null],geosampa_pdf:['Planta do lote no GeoSampa (PDF)','Técnico',null],geosampa_dxf:['Desenho do lote no GeoSampa (DXF)','Técnico',null]};
+const TIPOS_DOC={ata:['Ata de reunião','Reuniões',null],matricula:['Matrícula atualizada','Imóvel',30],onus:['Certidão de ônus reais','Imóvel',30],iptu:['Certidão negativa de IPTU','Imóvel',90],vend:['Certidões pessoais do vendedor','Vendedor',30],topo:['Levantamento planialtimétrico','Técnico',null],sond:['Sondagem SPT','Técnico',null],amb:['Avaliação ambiental preliminar','Técnico',null],minuta:['Minuta de promessa de compra e venda','Contratos',null],foto:['Foto','Mídia',null],planta:['Planta ou croqui','Técnico',null],lote_pdf:['Planta do lote da prefeitura (PDF)','Técnico',null],lote_dxf:['Desenho do lote da prefeitura (DXF)','Técnico',null]};
 const CHECK_DIL=[['matricula',1],['onus',1],['iptu',1],['vend',1],['topo',1],['sond',0],['amb',0],['minuta',1]];
 const USERS=['Moisés','Ana Prado','Camila Torres','Rafael Souza'];
 /* hierarquia: N analistas → 1 gestor; N gestores → 1 diretor. Administrador é permissão à parte */
@@ -258,6 +258,7 @@ function seed(){
 const KEY='bkm-terrenos-prototipo-v8';
 let S;try{const r=localStorage.getItem(KEY);S=r?JSON.parse(r):null}catch(e){S=null}
 if(!S||!S.terrenos)S=seed();
+S.terrenos.forEach(t=>(t.docs||[]).forEach(d=>{if(/^geosampa_/.test(d.tipo))d.tipo=d.tipo.replace('geosampa_','lote_')}));
 const save=()=>{try{if(typeof audit==='function')audit()}catch(e){console.error(e)}try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 let menuMin=false;try{menuMin=localStorage.getItem('bkm-terrenos-menu')==='min'}catch(e){}
 // Tema: claro, escuro ou auto (segue o sistema). Preferência por navegador.
@@ -417,8 +418,8 @@ function secaoInsc(t){
   const vig=ins=>{const r={};ins.valores.filter(v=>v.vig).forEach(v=>{r[v.ex]=v});return Object.values(r).sort((a,b)=>b.ex-a.ex)};
   const venal=v=>v.vt!=null&&v.vc!=null?v.vt+v.vc:(v.venal??v.vt??null);
   return `<section class="sec" id="sec-insc"><div class="sec-h"><h2>Inscrições municipais, valor venal e IPTU</h2></div><div class="sec-b">
-    ${t.insc.length?t.insc.map((ins,i)=>{const vs=vig(ins),revs=ins.valores.filter(v=>!v.vig).length;return `<div style="margin-bottom:18px"><div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px"><b class="num">SQL ${esc(ins.sql)}</b><span class="muted" style="font-size:13px">Área cadastral ${m2(ins.area)}</span>${revs?`<span class="faint" style="font-size:12px">${revs} revis${revs>1?'ões anteriores preservadas':'ão anterior preservada'}</span>`:''}</div>
-      ${geoQuadro(t,ins,i)}
+    ${t.insc.length?t.insc.map((ins,i)=>{const vs=vig(ins),revs=ins.valores.filter(v=>!v.vig).length;return `<div style="margin-bottom:18px"><div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px"><b class="num">${CIDADES_INSC[insCid(ins)].rotulo} ${esc(ins.sql)}</b><span class="muted" style="font-size:13px">${esc(CIDADES_INSC[insCid(ins)].cidade)}</span><span class="muted" style="font-size:13px">Área cadastral ${m2(ins.area)}</span>${revs?`<span class="faint" style="font-size:12px">${revs} revis${revs>1?'ões anteriores preservadas':'ão anterior preservada'}</span>`:''}</div>
+      ${loteQuadro(t,ins,i)}
       <div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Exercício</th><th class="r">Venal terreno</th><th class="r">Venal construção</th><th class="r">Venal do imóvel</th><th>IPTU</th><th class="r">Anual</th><th class="r">Parcela</th><th class="r">Mensal</th><th>Fonte</th></tr></thead><tbody>
       ${vs.map((v,j)=>`<tr><td><b>${v.ex}</b>${v.rev>1?` <span class="faint" style="font-size:11px">rev. ${v.rev}</span>`:''}${j===0?' <span class="tag-ref">atual</span>':''}</td><td class="r">${brl(v.vt)}</td><td class="r">${brl(v.vc)}</td><td class="r"><b>${brl(venal(v))}</b></td>
       <td>${v.sit==='isento'?'<span class="chip good">Isento</span>':OPT.sitIptu[v.sit]}</td><td class="r">${v.sit==='isento'?'—':brl2(v.iptu)}</td><td class="r">${v.iptu!=null&&v.parc&&v.sit!=='isento'?`${brl2(v.iptu/v.parc)} <span class="faint">× ${v.parc}</span>`:'—'}</td>
@@ -431,7 +432,7 @@ function secaoInsc(t){
       <div class="field"><label for="v-m${i}">IPTU mensal informado (R$)</label><input id="v-m${i}" name="mensal" inputmode="decimal" placeholder="se a fonte trouxer"></div>
       <div class="field grow"><label for="v-f${i}">Fonte</label><input id="v-f${i}" name="fonte" placeholder="Carnê, certidão de dados cadastrais..." required></div>
       <button class="btn sm">${ic('add',16)}Lançar</button></form><div class="hint">Lançar um exercício que já existe cria uma revisão nova; a anterior fica guardada.</div></details></div>`}).join(''):'<div class="muted" style="margin-bottom:8px">Nenhuma inscrição. O valor venal e o IPTU são lançados por inscrição e por ano.</div>'}
-    <form class="inline-form" data-form="insc"><div class="field grow"><label for="i-s">Nova inscrição (SQL)</label><input id="i-s" name="sql" required placeholder="000.000.0000-0"></div><div class="field"><label for="i-a">Área cadastral (m²)</label><input id="i-a" name="area" inputmode="decimal"></div><button class="btn sm">${ic('add',16)}Adicionar inscrição</button></form>
+    <form class="inline-form" data-form="insc">${campoInsc('i',cidDoTerreno(t),'Nova inscrição',true)}<div class="field"><label for="i-a">Área cadastral (m²)</label><input id="i-a" name="area" inputmode="decimal"></div><button class="btn sm">${ic('add',16)}Adicionar inscrição</button></form>
     <div class="hint" style="margin-top:8px">Em São Paulo o IPTU é anual, em até 10 parcelas. Se a fonte trouxer o valor mensal, ele é usado; senão, o mensal mostrado é o anual ÷ 12.</div></div></section>`;
 }
 function secaoConfr(t){
@@ -689,7 +690,7 @@ function renderModal(){
   <div class="field full verif">
     <div class="passo">Passo 1 · Verifique se o imóvel já está no banco</div>
     <div class="fields">
-      <div class="field"><label for="n-sql">SQL (inscrição do IPTU)</label><input id="n-sql" name="sql" inputmode="numeric" placeholder="000.000.0000-0" autocomplete="off"></div>
+      ${campoInsc('n',UI.novoLoc?.municipio?cidDoNome(UI.novoLoc.municipio):'sp','',false)}
       <div class="field"><label for="n-mat">Matrícula</label><span style="display:flex;gap:6px"><input id="n-mat" name="mat" inputmode="numeric" placeholder="Número" style="flex:1 1 55%"><select id="n-cri" name="cri" aria-label="Cartório" style="flex:1 1 45%">${Array.from({length:18},(_,i)=>`<option>${i+1}º CRI</option>`).join('')}</select></span></div>
     </div>
     <div id="dedupe" aria-live="polite"><div class="hint">Digite o SQL ou a matrícula. Teste com o SQL 089.123.0045-6 (já cadastrado) ou 089.123.0099-0 (mesma quadra de dois terrenos).</div></div>
@@ -756,20 +757,21 @@ function renderModal(){
   const f=el.querySelector('input:not([type=hidden]),select');if(f)setTimeout(()=>f.focus(),30);
 }
 function dedupe(){
-  const f=$('#f-novo');if(!f)return;const mat=digits(f.mat.value),sql=digits(f.sql.value),log=f.logradouro.value.trim().toLowerCase(),nr=f.numero.value.trim().toLowerCase();
+  const f=$('#f-novo');if(!f)return;const mun=f.querySelector('[name=mun]:checked')?.value||'sp',cid=CIDADES_INSC[mun],nd=cid.mascara?digitosMasc(cid.mascara):0,mat=digits(f.mat.value),sql=digits(f.sql.value),log=f.logradouro.value.trim().toLowerCase(),nr=f.numero.value.trim().toLowerCase();
   let hit=null,msg='',cert='';const quadra=[];
   for(const t of S.terrenos){
-    const ins=sql.length>=6&&t.insc.find(i=>digits(i.sql)===sql);
-    if(ins){hit=t;cert='certa';msg=`Mesmo SQL ${ins.sql}`;break}
+    const ins=sql.length>=6&&t.insc.find(i=>insCid(i)===mun&&digits(i.sql)===sql);
+    if(ins){hit=t;cert='certa';msg=`Mesma inscrição ${ins.sql} (${cid.cidade})`;break}
     const m=mat.length>=3&&t.mats.find(x=>digits(x.num)===mat);
     if(m){hit=t;cert=m.cri===f.cri.value?'certa':'provavel';msg=`Mesma matrícula ${m.num}${m.cri===f.cri.value?' no '+m.cri:' em outro cartório ('+m.cri+')'}`;break}
     if(log.length>=4&&(t.logradouro||'').toLowerCase()===log&&(!nr||!t.numero||t.numero.toLowerCase()===nr)){hit=t;cert='possivel';msg='Mesmo endereço'}
-    if(sql.length===11&&t.situacao==='ativo'){const q=t.insc.find(i=>digits(i.sql).length===11&&digits(i.sql).slice(0,6)===sql.slice(0,6));if(q)quadra.push([t,q])}
+    // nos dois cadastros os 6 primeiros dígitos são setor e quadra
+    if(nd&&sql.length===nd&&t.situacao==='ativo'){const q=t.insc.find(i=>insCid(i)===mun&&digits(i.sql).length===nd&&digits(i.sql).slice(0,6)===sql.slice(0,6)&&digits(i.sql)!==sql);if(q)quadra.push([t,q])}
   }
   const box=$('#dedupe'),btn=$('#btn-novo');f.dataset.dup=hit&&cert==='certa'?hit.id:'';
-  const viz=!hit&&quadra.length?`<div class="banner blue" style="margin-top:8px">${ic('layers')}<div style="flex:1"><div class="bt">${quadra.length} terreno${quadra.length>1?'s':''} na mesma quadra (setor ${sql.slice(0,3)}, quadra ${sql.slice(3,6)})</div>
-    <div>${quadra.map(([t,q])=>`<button type="button" class="linkbtn" data-a="abrir" data-id="${t.id}">${t.codigo} · ${esc(t.nome)}</button> <span class="faint">(SQL ${esc(q.sql)})</span>`).join('<br>')}</div><div class="hint" style="margin-top:4px">Não é duplicata. Pode valer estudar os lotes juntos numa área de interesse.</div></div></div>`:'';
-  if(!hit){box.innerHTML=(sql||mat||log?'<div class="hint">Nenhum cadastro com este SQL, matrícula ou endereço. Será criado um terreno novo.</div>':'<div class="hint">Digite o SQL ou a matrícula. Teste com o SQL 089.123.0045-6 (já cadastrado) ou 089.123.0099-0 (mesma quadra de dois terrenos).</div>')+viz;btn.textContent='Cadastrar terreno';return}
+  const viz=!hit&&quadra.length?`<div class="banner blue" style="margin-top:8px">${ic('layers')}<div style="flex:1"><div class="bt">${quadra.length} terreno${quadra.length>1?'s':''} na mesma quadra (setor ${mun==='sjc'?sql.slice(0,2):sql.slice(0,3)}, quadra ${mun==='sjc'?sql.slice(2,6):sql.slice(3,6)})</div>
+    <div>${quadra.map(([t,q])=>`<button type="button" class="linkbtn" data-a="abrir" data-id="${t.id}">${t.codigo} · ${esc(t.nome)}</button> <span class="faint">(${cid.rotulo} ${esc(q.sql)})</span>`).join('<br>')}</div><div class="hint" style="margin-top:4px">Não é duplicata. Pode valer estudar os lotes juntos numa área de interesse.</div></div></div>`:'';
+  if(!hit){box.innerHTML=(sql||mat||log?'<div class="hint">Nenhum cadastro com esta inscrição, matrícula ou endereço. Será criado um terreno novo.</div>':'<div class="hint">Digite a inscrição ou a matrícula. Teste com o SQL 089.123.0045-6 (já cadastrado) ou 089.123.0099-0 (mesma quadra de dois terrenos).</div>')+viz;btn.textContent='Cadastrar terreno';return}
   box.innerHTML=`<div class="banner ${cert==='certa'?'blue':'warn'}">${ic(cert==='certa'?'link':'warn')}<div style="flex:1"><div class="bt">${cert==='certa'?'Este imóvel já está cadastrado':'Possível duplicidade'}: ${hit.codigo} · ${esc(hit.nome)}</div><div>${esc(msg)}. ${cert==='certa'?'Se houver oferta, ela será registrada nesse terreno.':'Confira antes de salvar.'}</div><button type="button" class="btn sm" style="margin-top:8px" data-a="abrir" data-id="${hit.id}">Abrir ficha existente</button></div></div>`;
   btn.textContent=cert==='certa'?'Registrar no terreno existente':'Cadastrar mesmo assim';
 }
@@ -883,7 +885,7 @@ document.addEventListener('input',e=>{const el=e.target;
   if(el.id==='mp-q'){UI.mp.q=el.value;mpRefresh();return}
   if(el.id==='tk-q'){UI.tk.q=el.value;const p=el.selectionStart;render();const n=$('#tk-q');if(n){n.focus();n.setSelectionRange(p,p)}return}
   if(el.id==='q-top'){UI.q=el.value;if(UI.route!=='terrenos'){UI.fT='todos';go('terrenos');$('#q-top').focus()}else{const r=$('#rows');if(r)r.innerHTML=linhas()}}
-  if(el.id==='n-sql'){const d=digits(el.value).slice(0,11);const m=d.replace(/^(\d{3})(\d)/,'$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/,'$1.$2.$3').replace(/^(\d{3})\.(\d{3})\.(\d{4})(\d)/,'$1.$2.$3-$4');if(m!==el.value)el.value=m}
+  if(el.dataset.masc){const m=mascarar(el.value,el.dataset.masc);if(m!==el.value)el.value=m}
   if(el.form?.dataset.form==='novo')dedupe();
   if(el.id==='pp-v'){const t=T(UI.id),v=lerNum(el.value),w=$('#pp-warn');w.innerHTML=t.neg.viab&&v>t.neg.viab.pmax?`<div class="banner warn">${ic('warn')}<div>${brl(v)} fica ${mi(v-t.neg.viab.pmax)} acima do preço máximo (${mi(t.neg.viab.pmax)}).</div></div>`:''}
 });
@@ -900,7 +902,9 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
     case 'cond':{const o=ofertaRef(t);Object.assign(o,{valor:lerNum(F.valor),forma:F.forma||null,cid:F.cid||null,validade:F.validade||null,obsPag:F.obsPag,aceita:F.aceita});
       if(o.cid&&!t.corretores.some(x=>x.cid===o.cid))t.corretores.push({cid:o.cid,principal:!t.corretores.some(x=>x.principal)});UI.edit=null;log(t,'Condições pedidas atualizadas');save();render();toast('Salvo.');break}
     case 'mat':t.mats.push({num:F.num,cri:F.cri,area:lerNum(F.area),data:F.data||null});save();render();toast('Matrícula adicionada.');break;
-    case 'insc':t.insc.push({sql:F.sql,area:lerNum(F.area),valores:[]});save();render();if(GEO_BASE&&digits(F.sql).length===11)geoBuscar(t,t.insc.length-1);break;
+    case 'insc':{const c=CIDADES_INSC[F.mun]||CIDADES_INSC.sp;if(F.mun!=='outro'&&t.municipio&&cidDoTerreno(t)!==F.mun){toast(`O terreno está em ${t.municipio.split(' · ')[0]}. Escolha a cidade certa ou corrija o município no endereço.`,true);return}if(c.mascara&&digits(F.sql).length!==digitosMasc(c.mascara)){toast(`${c.rotulo} incompleto: são ${digitosMasc(c.mascara)} dígitos.`,true);return}
+      if(t.insc.some(x=>insCid(x)===F.mun&&digits(x.sql)===digits(F.sql)&&(c.mascara||x.sql===F.sql))){toast('Esta inscrição já está no terreno.',true);return}
+      t.insc.push({mun:F.mun,sql:F.sql,area:lerNum(F.area),valores:[]});log(t,`Inscrição ${F.sql} (${c.cidade}) adicionada`);save();render();if(loteBuscavel(t.insc[t.insc.length-1]))loteBuscar(t,t.insc.length-1);break}
     case 'iptu':{const ins=t.insc[Number(f.dataset.i)],ex=Number(F.ex),iptu=lerNum(F.iptu),mensal=lerNum(F.mensal);
       if(F.sit==='isento'&&((iptu||0)>0||(mensal||0)>0)){toast('Imóvel isento não tem IPTU a pagar.',true);return}
       const ant=ins.valores.filter(v=>v.ex===ex);ant.forEach(v=>v.vig=false);
@@ -939,14 +943,14 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
     case 'novo':{const dup=f.dataset.dup;let alvo;
       if(!F.logradouro.trim()&&!F.bairro.trim()&&!dup&&!UI.novoLoc){toast('Informe ao menos logradouro ou bairro.',true);return}
       if(dup){alvo=T(dup)}else{S.seqT++;alvo={...seedVazio(),codigo:'TER-'+String(S.seqT).padStart(6,'0'),nome:F.nome,logradouro:F.logradouro.trim(),numero:F.numero.trim(),bairro:F.bairro.trim(),zona:F.zona||null,resp:F.resp,origem:F.origem,dataIdent:HOJE,
-        mats:F.mat?[{num:F.mat,cri:F.cri,area:null,data:null}]:[],insc:F.sql?[{sql:F.sql,area:null,valores:[]}]:[]};alvo.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado'}];if(UI.novoLoc){alvo.lat=UI.novoLoc.lat;alvo.lng=UI.novoLoc.lng;alvo.precisao='aproximada';alvo.hist[0].txt='Terreno cadastrado pelo mapa';
+        mats:F.mat?[{num:F.mat,cri:F.cri,area:null,data:null}]:[],insc:F.sql?[{mun:F.mun,sql:F.sql,area:null,valores:[]}]:[]};if(!UI.novoLoc?.municipio&&F.mun!=='outro')alvo.municipio=CIDADES_INSC[F.mun].cidade+' · SP';alvo.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado'}];if(UI.novoLoc){alvo.lat=UI.novoLoc.lat;alvo.lng=UI.novoLoc.lng;alvo.precisao='aproximada';alvo.hist[0].txt='Terreno cadastrado pelo mapa';
           if(UI.novoLoc.cep)alvo.cep=UI.novoLoc.cep;if(UI.novoLoc.municipio){alvo.municipio=UI.novoLoc.municipio;alvo.hist[0].txt='Terreno cadastrado pela busca de endereço'}}S.terrenos.push(alvo)}
       const val=lerNum(F.valor);
       if(val||F.cid){const o={id:uid(),cid:F.cid||null,data:HOJE,valor:val,forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,status:'ativa'};alvo.ofertas.push(o);
         if(o.cid&&!alvo.corretores.some(x=>x.cid===o.cid))alvo.corretores.push({cid:o.cid,principal:!alvo.corretores.some(x=>x.principal)});
         if(!alvo.neg||!['ativo','stand_by'].includes(alvo.neg.status)){alvo.neg=novaNeg(o.id,Number(F.temp)||null);log(alvo,'Negociação aberta')}
         else log(alvo,'Nova oferta registrada')}
-      UI.modal=null;save();go('terreno',{id:alvo.id,tab:dup?'comercial':'cadastro',from:'terrenos'});toast(dup?'Oferta registrada no terreno existente.':`${alvo.codigo} cadastrado. Complete a ficha quando puder.`);if(!dup&&GEO_BASE&&digits(F.sql).length===11)geoBuscar(alvo,0);break}
+      UI.modal=null;save();go('terreno',{id:alvo.id,tab:dup?'comercial':'cadastro',from:'terrenos'});toast(dup?'Oferta registrada no terreno existente.':`${alvo.codigo} cadastrado. Complete a ficha quando puder.`);if(!dup&&alvo.insc[0]&&loteBuscavel(alvo.insc[0]))loteBuscar(alvo,0);break}
     case 'oferta':{const o={id:uid(),cid:F.cid||null,data:HOJE,valor:lerNum(F.valor),forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,validade:F.validade||null,status:'ativa'};t.ofertas.push(o);
       if(o.cid&&!t.corretores.some(x=>x.cid===o.cid))t.corretores.push({cid:o.cid,principal:!t.corretores.some(x=>x.principal)});
       if(!t.neg||!['ativo','stand_by'].includes(t.neg.status)){t.neg=novaNeg(o.id,null);log(t,'Negociação aberta')}else log(t,`Nova oferta: ${mi(o.valor)}`);

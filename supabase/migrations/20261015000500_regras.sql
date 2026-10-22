@@ -300,11 +300,13 @@ begin
     from app.inscricoes_municipais i join app.terrenos t on t.id = i.terreno_id
     where length(v_ins) >= 6 and i.empresa_id = p_empresa and i.inscricao_norm = v_ins
   union all
-    -- SQL de São Paulo: setor (3) . quadra (3) . lote (4) - dígito. Mesma quadra = vizinho
-    -- ou outra parte da mesma área: não é duplicata, mas vale saber (composição de áreas).
-    select distinct t.id, t.codigo, t.nome, 'Na mesma quadra (SQL ' || i.inscricao || ')', 'mesma_quadra'
+    -- SQL de São Paulo: setor (3) . quadra (3) . lote (4) - dígito; inscrição de São José
+    -- dos Campos: setor (2) . quadra (4) . lote (4) . sublote (4). Nos dois, os 6 primeiros
+    -- dígitos são a quadra. Mesma quadra = vizinho ou outra parte da mesma área: não é
+    -- duplicata, mas vale saber (composição de áreas).
+    select distinct t.id, t.codigo, t.nome, 'Na mesma quadra (inscrição ' || i.inscricao || ')', 'mesma_quadra'
     from app.inscricoes_municipais i join app.terrenos t on t.id = i.terreno_id
-    where length(v_ins) = 11 and i.empresa_id = p_empresa and length(i.inscricao_norm) = 11
+    where length(v_ins) in (11, 14) and i.empresa_id = p_empresa and length(i.inscricao_norm) = length(v_ins)
       and left(i.inscricao_norm, 6) = left(v_ins, 6) and i.inscricao_norm <> v_ins
       and t.situacao_cadastral = 'ativo'
   union all
@@ -1433,42 +1435,49 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
--- GeoSampa (São Paulo): grava a consulta feita no navegador pelo SQL.
--- Confere que o lote devolvido é o da inscrição (setor, quadra, lote e dígito)
--- e que o terreno é de São Paulo. Completa na inscrição só o que está vazio
--- (área cadastral) e o que é do cadastro fiscal (CIB, zona fiscal). Com
--- p_criar_analise, registra uma análise urbanística nova (fonte GeoSampa) com
+-- Lote na base da prefeitura (GeoSampa, GeoSanja): grava a consulta feita no
+-- navegador pela inscrição. A base vem da cidade da inscrição; o terreno tem
+-- que ser dessa cidade e o lote devolvido tem que ser o da inscrição (no
+-- GeoSampa, setor, quadra, lote e dígito; no GeoSanja, a inscrição que a busca
+-- devolve). Completa na inscrição só o que está vazio (área cadastral) e o que
+-- é do cadastro fiscal (CIB, zona fiscal, só em São Paulo). Com
+-- p_criar_analise, registra uma análise urbanística nova (fonte = base) com
 -- as zonas do catálogo e a área de cada uma no lote; a anterior fica como
 -- substituída. Siglas fora do catálogo vão para as observações da análise.
--- p_lote: atributos do lote_cidadao; p_camadas: {camada: [atributos]};
+-- p_lote: atributos do lote; p_camadas: {camada: [atributos]};
 -- p_zonas: [{sigla, area_m2}].
 -- ---------------------------------------------------------------------
-create or replace function app.registrar_consulta_geosampa(
+create or replace function app.registrar_consulta_lote(
   p_inscricao uuid, p_lote jsonb, p_poligono jsonb, p_area_poligono numeric,
   p_camadas jsonb, p_zonas jsonb, p_camadas_com_erro text[] default '{}', p_criar_analise boolean default true)
 returns uuid
 language plpgsql security definer set search_path = ''
 as $$
-declare i app.inscricoes_municipais; t app.terrenos; v_sql text; v_id uuid; v_an uuid; v_fora text[];
+declare i app.inscricoes_municipais; t app.terrenos; b app.bases_cadastrais; v_mun text; v_ins text; v_id uuid; v_an uuid; v_fora text[];
 begin
   select * into i from app.inscricoes_municipais where id = p_inscricao;
   if not found then raise exception 'Inscrição não encontrada' using errcode = 'P0002'; end if;
   select * into t from app.terrenos where id = i.terreno_id;
   perform app.exigir_editor(t.empresa_id);
-  if not exists (select 1 from app.municipios where id = t.municipio_id and codigo_ibge = '3550308') then
-    raise exception 'O GeoSampa só cobre o município de São Paulo' using errcode = '22023';
+  select * into b from app.bases_cadastrais where municipio_id = i.municipio_id;
+  if not found then raise exception 'A cidade desta inscrição não tem base da prefeitura para consultar' using errcode = '22023'; end if;
+  if t.municipio_id <> b.municipio_id then
+    select nome into v_mun from app.municipios where id = b.municipio_id;
+    raise exception 'O % só cobre %, e o terreno é de outra cidade', b.nome, v_mun using errcode = '22023';
   end if;
   if jsonb_typeof(p_lote) is distinct from 'object' then raise exception 'Lote inválido' using errcode = '22023'; end if;
-  v_sql := coalesce(p_lote->>'cd_setor_fiscal','') || coalesce(p_lote->>'cd_quadra_fiscal','')
-        || coalesce(p_lote->>'cd_lote','') || coalesce(p_lote->>'cd_digito_sql','');
-  if v_sql !~ '^\d{11}$' or v_sql <> i.inscricao_norm then
-    raise exception 'O lote do GeoSampa (%) não é o da inscrição %', v_sql, i.inscricao using errcode = '22023';
+  v_ins := case b.codigo
+             when 'geosampa' then coalesce(p_lote->>'cd_setor_fiscal','') || coalesce(p_lote->>'cd_quadra_fiscal','')
+                                || coalesce(p_lote->>'cd_lote','') || coalesce(p_lote->>'cd_digito_sql','')
+             else regexp_replace(coalesce(p_lote->>'inscricao',''), '\D', '', 'g') end;
+  if length(v_ins) <> length(regexp_replace(b.mascara, '[^0]', '', 'g')) or v_ins <> i.inscricao_norm then
+    raise exception 'O lote do % (%) não é o da inscrição %', b.nome, v_ins, i.inscricao using errcode = '22023';
   end if;
   if jsonb_typeof(coalesce(p_zonas, '[]')) <> 'array' then raise exception 'Zonas devem ser uma lista' using errcode = '22023'; end if;
 
-  insert into app.geosampa_consultas (empresa_id, terreno_id, inscricao_id, sql_norm, lote, poligono_geojson, area_poligono_m2,
-                                      camadas, zonas, camadas_com_erro)
-  values (t.empresa_id, t.id, i.id, v_sql, p_lote, p_poligono, nullif(p_area_poligono, 0),
+  insert into app.consultas_lote (empresa_id, terreno_id, inscricao_id, base, inscricao_norm, lote, poligono_geojson, area_poligono_m2,
+                                  camadas, zonas, camadas_com_erro)
+  values (t.empresa_id, t.id, i.id, b.codigo, v_ins, p_lote, p_poligono, nullif(p_area_poligono, 0),
           coalesce(p_camadas, '{}'), coalesce(p_zonas, '[]'), coalesce(p_camadas_com_erro, '{}'))
   returning id into v_id;
 
@@ -1483,7 +1492,7 @@ begin
       from jsonb_to_recordset(p_zonas) as z(sigla text, area_m2 numeric)
      where not exists (select 1 from app.zoneamentos c where c.municipio_id = t.municipio_id and c.sigla = z.sigla and c.ativo);
     insert into app.analises_urbanisticas (empresa_id, terreno_id, responsavel_id, fonte, observacoes)
-    values (t.empresa_id, t.id, auth.uid(), 'GeoSampa (SQL ' || i.inscricao || ')',
+    values (t.empresa_id, t.id, auth.uid(), b.nome || ' (' || b.rotulo || ' ' || i.inscricao || ')',
             case when v_fora is not null then 'Zonas fora do catálogo: ' || array_to_string(v_fora, ', ') end)
     returning id into v_an;
     insert into app.analise_zoneamentos (empresa_id, analise_id, zoneamento_id, area_abrangida_m2)
@@ -1505,7 +1514,7 @@ grant execute on function
   app.salvar_terreno(uuid, int, jsonb),
   app.salvar_entorno(uuid, double precision, double precision, jsonb, boolean),
   app.salvar_distancias_pontos(uuid, double precision, double precision, jsonb),
-  app.registrar_consulta_geosampa(uuid, jsonb, jsonb, numeric, jsonb, jsonb, text[], boolean),
+  app.registrar_consulta_lote(uuid, jsonb, jsonb, numeric, jsonb, jsonb, text[], boolean),
   app.criar_empresa(text, text),
   app.buscar_duplicados(uuid, text, text, text, text, text),
   app.abrir_negociacao(uuid, uuid),
