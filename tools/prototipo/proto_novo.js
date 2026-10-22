@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------
 // Novo terreno começa pela poligonal, sempre. Passo 1: a área do terreno,
-// desenhada no mapa, importada de KMZ/KML ou trazida pela inscrição (GeoSampa
-// em São Paulo, GeoSanja em São José dos Campos). Com ela o sistema procura os
+// desenhada no mapa ou importada de KMZ/KML (é a única entrada: a inscrição
+// e a busca na prefeitura vêm depois, no passo 2 ou na ficha). Com ela o sistema procura os
 // terrenos que ocupam parte da área (critério de app.sobreposicao: a faixa de
 // até 5 m na divisa, imprecisão do desenho, não conta, a não ser que cubra
 // metade de um dos dois). Se achar, mostra se é a mesma área ou só parte dela
@@ -13,7 +13,7 @@
 // No banco: app.terrenos_sobrepostos, t_sobre (sobreposicoes_aceitas),
 // ofertas.poligono_geojson e confrontacoes.
 // ---------------------------------------------------------------------
-const NV_FONTE={mapa:'Poligonal desenhada no mapa',kmz:'Poligonal importada de KMZ/KML',insc:'Poligonal do lote da prefeitura'};
+const NV_FONTE={mapa:'Poligonal desenhada no mapa',kmz:'Poligonal importada de KMZ/KML'};
 const NV_FOLGA=5;  // metros de imprecisão aceitos na divisa
 const caixaPoly=p=>[Math.min(...p.map(x=>x[0])),Math.min(...p.map(x=>x[1])),Math.max(...p.map(x=>x[0])),Math.max(...p.map(x=>x[1]))];
 // graus -> metros locais (x para leste, y para norte) e de volta
@@ -56,14 +56,6 @@ function nvDesenhar(p0){go('mapa',{mpModo:'desenhar',mpAlvo:null,nvDesenho:true,
 function nvPoligonal(poly,fonte,extra={}){const p=poly.map(x=>[+(+x[0]).toFixed(7),+(+x[1]).toFixed(7)]);
   UI.nv={poly:p,ponto:centro(p),area:areaPoly(p),fonte,...extra,local:null,frentes:null,buscandoLocal:true};UI.nv.sobre=sobreposicoes(p);
   UI.modal=UI.nv.sobre.length?'novo-sobre':'novo';renderModal();nvLocalizar()}
-async function nvInscBuscar(){const f=$('#f-nv-insc');if(!f)return;const mun=f.querySelector('[name=mun]:checked')?.value||'sp',c=CIDADES_INSC[mun],ad=LOTE_ADAPT[mun],sql=f.sql.value.trim();
-  if(!ad?.url()){toast(`A busca no ${c.base} funciona na versão publicada no Railway.`,true);return}
-  if(digits(sql).length!==digitosMasc(c.mascara)){toast(`${c.rotulo} incompleto: são ${digitosMasc(c.mascara)} dígitos.`,true);return}
-  const b=f.querySelector('button[type=submit]');b.disabled=true;b.textContent='Buscando...';
-  try{const poly=await ad.poligono(sql);if(!poly){toast(`${c.rotulo} ${sql} não encontrado no ${c.base}.`,true);return}nvPoligonal(poly,'insc',{insc:{mun,sql}})}
-  catch(e){console.error(e);toast(typeof e==='string'?e:`Não foi possível consultar o ${c.base} agora. Tente de novo em instantes.`,true)}
-  finally{if(b.isConnected){b.disabled=false;b.textContent='Buscar'}}}
-
 /* ---------- município e frentes pela localização ---------- */
 async function localDoPonto(lat,lng){
   if(GG){const {results}=await new google.maps.Geocoder().geocode({location:{lat,lng}});if(!results?.length)throw new Error('sem resultado');
@@ -99,18 +91,15 @@ function nvFrentesHtml(nv){const fr=nv.frentes;if(nv.buscandoLocal)return '<span
   if(fr.length===1)return `<span class="hint">Frente para ${esc(fr[0].logradouro)}${fr[0].m?` (${num(Math.round(fr[0].m))} m)`:''}, pela localização. Confira o número.</span>`;
   return `<span class="lbl-f" id="nv-fr-l">A poligonal tem ${fr.length} frentes. Qual é o endereço principal?</span><span class="nv-fr" role="radiogroup" aria-labelledby="nv-fr-l">${fr.map((x,i)=>`<label class="opt-radio"><input type="radio" name="frente" value="${i}" ${i?'':'checked'}>${esc(x.logradouro)}${x.numero?', '+esc(x.numero):''}${x.m?` <span class="faint">· ${num(Math.round(x.m))} m</span>`:''}</label>`).join('')}</span>
     <span class="hint">As outras entram em Confrontações como frente.</span>`}
-// a cidade da inscrição acompanha o município, enquanto a inscrição não foi digitada
-function nvCidadeInsc(){const f=$('#f-novo');if(!f||f.sql.value.trim()||f.sql.readOnly)return;const cid=cidDoNome(f.municipio.value),r=f.querySelector(`[name=mun][value="${cid}"]`);
-  if(r&&!r.checked){r.checked=true;r.dispatchEvent(new Event('change',{bubbles:true}))}}
+// a cidade da inscrição acompanha o município
+function nvCidadeInsc(){const f=$('#f-novo');if(!f)return;const cid=cidDoNome(f.municipio.value),r=f.querySelector('[name=mun]');
+  if(r&&r.value!==cid){r.value=cid;r.dispatchEvent(new Event('change',{bubbles:true}))}}
 
 /* ---------- telas ---------- */
-function nvPasso1Html(fechar){const algum=['sp','sjc'].some(k=>LOTE_ADAPT[k]?.url()),kmz=UI.nvKmz;
+function nvPasso1Html(fechar){const kmz=UI.nvKmz;
   return `<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Passo 1 de 2 · A poligonal do terreno. Com ela o sistema confere se ele já está cadastrado e descobre o município e as ruas.</div></div>${fechar}</div>
   <div class="nv-ops">
     <button type="button" class="nv-op" data-a="nv-desenhar"><span class="nv-ic">${bi('mapa',24)}</span><span><b>Desenhar no mapa</b><span class="muted">Ache o endereço na barra do mapa e marque os cantos do terreno.</span></span></button>
-    <div class="nv-op nv-ins"><span class="nv-ic">${ic('search',24)}</span><span class="nv-ins-c"><b>Buscar pela inscrição</b><span class="muted">A poligonal vem do lote da prefeitura (São Paulo e São José dos Campos).</span>
-      <form id="f-nv-insc" data-form="nv-insc" class="inline-form">${campoInsc('v','sp','',true,['sp','sjc'])}<div class="field nv-ins-b"><button class="btn" type="submit" ${algum?'':'disabled'}>Buscar</button></div></form>
-      ${algum?'':'<span class="hint">A busca na prefeitura funciona na versão publicada no Railway.</span>'}</span></div>
     <button type="button" class="nv-op" data-a="nv-kmz"><span class="nv-ic">${ic('upload',24)}</span><span><b>Importar KMZ ou KML</b><span class="muted">Arquivo do Google Earth com o polígono do terreno.</span></span></button>
     ${kmz?`<div class="nv-kmz"><span class="lbl-f">O arquivo tem ${kmz.length} polígonos. Qual é o terreno?</span>${kmz.map((it,i)=>`<button type="button" class="btn sm" data-a="nv-kmz-i" data-i="${i}">${esc(it.nome)} · ${m2(Math.round(areaPoly(it.pts)))}</button>`).join('')}</div>`:''}
   </div>
@@ -132,7 +121,7 @@ function nvSobreHtml(fechar){const nv=UI.nv,s=nv.sobre,ro=UI.role==='Leitura',ig
     <div class="nv-s-a"><button class="btn sm text" data-a="abrir" data-id="${x.t.id}">Abrir ficha</button>${ro?'':nvAcoes(x).map(([a,l,c])=>`<button class="btn sm ${c}" data-a="${a}" data-id="${x.t.id}">${l}</button>`).join('')}</div></div>`).join('')}</div>
   <div class="hint" style="margin-top:var(--e3)">${igual?'<b>Nova oferta</b> registra a oferta no terreno, sem mudar o cadastro. ':''}<b>Recadastrar</b> troca a poligonal do terreno pela área nova (ou pela soma das duas) e registra a oferta nele, guardando o pedaço oferecido. A poligonal anterior fica no histórico.</div>
   <div class="df"><button class="btn text" data-a="nv-voltar">Voltar</button>${ro?'':`<button class="btn" data-a="nv-mesmo">É outro terreno, cadastrar mesmo assim</button>`}</div>`}
-function nvDadosHtml(fechar){const nv=UI.nv,l=nv.local,mun=l?.cidade?l.cidade+(l.uf?' · '+l.uf:''):'',cid=nv.insc?.mun||(mun?cidDoNome(mun):'sp'),f0=nv.frentes?.[0];
+function nvDadosHtml(fechar){const nv=UI.nv,l=nv.local,mun=l?.cidade?l.cidade+(l.uf?' · '+l.uf:''):'',cid=cidDoNome(mun),f0=nv.frentes?.[0];
   const v=x=>x?`value="${esc(x)}"`:'',nome=nv.nome||(f0?[f0.logradouro,f0.numero].filter(Boolean).join(', '):'');
   return `<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Passo 2 de 2 · Só o mínimo para entrar no radar. A ficha é completada aos poucos.</div></div>${fechar}</div>
   <form data-form="novo" id="f-novo"><div class="fields">
@@ -147,7 +136,7 @@ function nvDadosHtml(fechar){const nv=UI.nv,l=nv.local,mun=l?.cidade?l.cidade+(l
   <div class="field"><label for="n-zona">Zona</label>${optSel('zona',OPT.zona,null).replace('id="f-zona"','id="n-zona"')}</div>
   <div class="field"><label for="n-resp">Responsável *</label><select id="n-resp" name="resp">${USERS.map(u=>`<option ${u===me()?'selected':''}>${u}</option>`).join('')}</select></div>
   <div class="field"><label for="n-ori">Origem *</label><select id="n-ori" name="origem" required>${Object.entries(OPT.origem).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
-  <details class="details field full" ${nv.insc?'open':''}><summary>Inscrição municipal e matrícula</summary><div class="fields" style="margin-top:8px">
+  <details class="details field full"><summary>Inscrição municipal e matrícula</summary><div class="fields" style="margin-top:8px">
     ${campoInsc('n',cid,'',false)}
     <div class="field"><label for="n-mat">Matrícula</label><span style="display:flex;gap:6px"><input id="n-mat" name="mat" inputmode="numeric" placeholder="Número" style="flex:1 1 55%"><select id="n-cri" name="cri" aria-label="Cartório" style="flex:1 1 45%">${Array.from({length:18},(_,i)=>`<option>${i+1}º CRI</option>`).join('')}</select></span></div>
     <div id="dedupe" class="field full" aria-live="polite"></div></div></details>
@@ -159,9 +148,8 @@ function nvDadosHtml(fechar){const nv=UI.nv,l=nv.local,mun=l?.cidade?l.cidade+(l
     <div class="field full"><label for="n-obs">Observação sobre a forma de pagamento</label><input id="n-obs" name="obsPag"></div>
     <div class="field full"><label for="n-ace">Aceita permuta</label><input id="n-ace" name="aceita"></div></div></details>
   </div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-novo" id="btn-novo">Cadastrar terreno</button></div>`}
-// depois de desenhar a tela do passo 2: inscrição trazida da busca e checagem de duplicidade
-function nvPosRender(){const f=$('#f-novo'),nv=UI.nv;if(!f||!nv)return;if(nv.insc){f.sql.value=mascarar(nv.insc.sql,CIDADES_INSC[nv.insc.mun].mascara);f.sql.readOnly=true;
-  f.querySelectorAll('[name=mun]').forEach(r=>r.disabled=r.value!==nv.insc.mun)}dedupe()}
+// depois de desenhar a tela do passo 2: checagem de duplicidade
+function nvPosRender(){const f=$('#f-novo');if(!f||!UI.nv)return;dedupe()}
 // passo 2 gravado: o terreno novo com a poligonal, o município e as frentes
 function nvGravar(alvo,F){const nv=UI.nv;alvo.poly=nv.poly;alvo.lat=+nv.ponto[0].toFixed(7);alvo.lng=+nv.ponto[1].toFixed(7);alvo.precisao='aproximada';alvo.municipio=F.municipio.trim();
   if(nv.local?.cep)alvo.cep=nv.local.cep;if(nv.ignorados)alvo.sobreAceitas=nv.ignorados.map(x=>x.t.id);
@@ -172,15 +160,13 @@ function nvGravar(alvo,F){const nv=UI.nv;alvo.poly=nv.poly;alvo.lat=+nv.ponto[0]
 /* ---------- decisões ---------- */
 function nvTrocarPoly(t,poly,como){const ant=t.poly?areaPoly(t.poly):null;(t.polyAnt=t.polyAnt||[]).push({em:agora(),user:me(),poly:t.poly});t.poly=poly;const c=centro(poly);t.lat=+c[0].toFixed(7);t.lng=+c[1].toFixed(7);t.precisao='aproximada';
   log(t,`Recadastro ${como}: poligonal de ${m2(Math.round(ant))} para ${m2(Math.round(areaPoly(poly)))}`)}
-function nvInscNoTerreno(t){const nv=UI.nv;if(nv?.insc&&cidDoTerreno(t)===nv.insc.mun&&!t.insc.some(i=>insCid(i)===nv.insc.mun&&digits(i.sql)===digits(nv.insc.sql))){
-  t.insc.push({mun:nv.insc.mun,sql:mascarar(nv.insc.sql,CIDADES_INSC[nv.insc.mun].mascara),area:null,valores:[]});log(t,'Inscrição '+nv.insc.sql+' incluída no recadastro')}}
 // abre o terreno com o formulário de oferta; pedaco = poligonal do que está sendo oferecido (nulo = o terreno todo)
 function nvAbrirOferta(t,pedaco,msg){UI.nv=null;BLA={geral:true,comercial:true};blId=t.id;go('terreno',{id:t.id,tab:'comercial',from:'terrenos'});rolarBloco('comercial');UI.ofPoly=pedaco;UI.modal='oferta';renderModal();if(msg)toast(msg)}
 function nvDecidir(A,id){const t=T(id),nv=UI.nv;if(!t||!nv)return;
   if(A==='nv-oferta')return nvAbrirOferta(t,null);
   if(A==='nv-oferta-p')return nvAbrirOferta(t,nv.poly);
   const u=A==='nv-juntar'?uniaoPoly(t.poly,nv.poly):nv.poly;if(!u){toast('Não deu para juntar as duas áreas. Recadastre só com a área nova e ajuste no mapa.',true);return}
-  nvTrocarPoly(t,u,A==='nv-juntar'?'juntando a área nova':'com a área nova');nvInscNoTerreno(t);save();
+  nvTrocarPoly(t,u,A==='nv-juntar'?'juntando a área nova':'com a área nova');save();
   nvAbrirOferta(t,A==='nv-juntar'?nv.poly:null,'Terreno recadastrado. Registre a oferta e revise o cadastro.')}
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="nv-"]');if(!a)return;const A=a.dataset.a;
   if(A==='nv-desenhar'){UI.modal=null;renderModal();nvDesenhar()}
@@ -189,7 +175,6 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="nv-"]'
   if(A==='nv-voltar'){UI.nv=null;UI.modal='novo';renderModal()}
   if(A==='nv-mesmo'){UI.nv.ignorados=UI.nv.sobre;UI.modal='novo';renderModal()}
   if(['nv-oferta','nv-oferta-p','nv-recad','nv-juntar'].includes(A))nvDecidir(A,a.dataset.id)});
-document.addEventListener('submit',e=>{if(e.target.dataset.form!=='nv-insc')return;e.preventDefault();e.stopImmediatePropagation();nvInscBuscar()},true);
 document.addEventListener('input',e=>{if(e.target.id==='n-mun')nvCidadeInsc()});
 document.addEventListener('change',e=>{if(e.target.name!=='frente')return;const fr=UI.nv?.frentes?.[Number(e.target.value)],f=$('#f-novo');if(!fr||!f)return;
   // o nome sugerido acompanha a frente escolhida, enquanto o usuário não escreveu outro
@@ -221,3 +206,60 @@ document.addEventListener('submit',e=>{if(e.target.dataset.form!=='mp-busca')ret
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a="mp-res"]');if(a){mpIrPara(UI.mpRes[Number(a.dataset.i)]);return}
   if(!e.target.closest('.mp-busca')){const b=$('#mp-res');if(b)b.hidden=true}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&e.target.id==='mp-end'){const b=$('#mp-res');if(b&&!b.hidden){b.hidden=true;e.stopPropagation()}}},true);
+
+/* ---------- poligonal pelos lotes das inscrições ----------
+   O cadastro começa sempre pelo desenho. Depois, em Inscrições, "Usar a poligonal
+   dos lotes" troca a desenhada pela soma dos lotes de todas as inscrições com base
+   na prefeitura (GeoSampa, GeoSanja), mostrando antes a diferença de área e os
+   terrenos que a área nova passaria a ocupar. A desenhada fica guardada. */
+const lotesInsc=t=>t.insc.map((ins,i)=>({ins,i,cid:insCid(ins)})).filter(x=>LOTE_ADAPT[x.cid]?.poligono);
+let LOTES_BUSCANDO=false;
+async function lotesPolyCalcular(t){if(LOTES_BUSCANDO)return;const L=lotesInsc(t);if(!L.length)return;
+  if(L.some(x=>!(x.ins.geo||[])[0]?.poly&&!LOTE_ADAPT[x.cid].url())){toast('A busca na prefeitura funciona na versão publicada no Railway.',true);return}
+  LOTES_BUSCANDO=true;render();const polys=[],falhas=[];
+  try{for(const x of L){const c=CIDADES_INSC[x.cid];let p=(x.ins.geo||[])[0]?.poly||null;
+      if(!p)try{p=await LOTE_ADAPT[x.cid].poligono(x.ins.sql)}catch(e){console.warn(e);falhas.push(`${c.rotulo} ${x.ins.sql}: ${typeof e==='string'?e:'a prefeitura não respondeu'}`);continue}
+      if(p)polys.push(p);else falhas.push(`${c.rotulo} ${x.ins.sql}: não encontrado no ${c.base}`)}}
+  finally{LOTES_BUSCANDO=false}
+  const u=lotesUniao(polys);
+  UI.lotes={tid:t.id,poly:u,n:polys.length,total:L.length,falhas,separados:polys.length>1&&!u,sobre:u?sobreposicoes(u,t.id):[]};UI.modal='lotes-poly';render();renderModal()}
+// Lotes vizinhos dividem a divisa, caso em que a união pura não acha cruzamento.
+// Cada lote cresce 1 cm para fora antes de juntar (erro de área ~ perímetro × 1 cm).
+function engorda(poly,m){const pj=nvProj(centro(poly)[0]),P=poly.map(pj.xy),n=P.length,
+    s=Math.sign(P.reduce((a,p,i)=>{const q=P[(i+1)%n];return a+p[0]*q[1]-q[0]*p[1]},0))||1,
+    nor=(p,q)=>{const dx=q[0]-p[0],dy=q[1]-p[1],L=Math.hypot(dx,dy)||1;return [s*dy/L,-s*dx/L]};
+  return P.map((p,i)=>{const a=nor(P[(i-1+n)%n],p),b=nor(p,P[(i+1)%n]),bx=a[0]+b[0],by=a[1]+b[1],k=(bx*bx+by*by)/2||1;
+    return pj.ll([p[0]+m*bx/k,p[1]+m*by/k])})}
+function lotesUniao(polys){if(!polys.length)return null;if(polys.length===1)return polys[0];
+  let u=engorda(polys[0],.01);for(const p of polys.slice(1)){u=u&&uniaoPoly(u,engorda(p,.01))}return u&&limpaPoly(u)}
+// tira os pontos que sobram da junção: colados (< 5 cm) ou em linha reta com os vizinhos
+function limpaPoly(poly){const pj=nvProj(centro(poly)[0]);let P=poly.map(pj.xy),mudou=true;
+  while(mudou&&P.length>3){mudou=false;for(let i=0;i<P.length&&P.length>3;i++){const a=P[(i-1+P.length)%P.length],b=P[i],c=P[(i+1)%P.length];
+    if(Math.hypot(b[0]-a[0],b[1]-a[1])<.05||Math.abs((b[0]-a[0])*(c[1]-a[1])-(c[0]-a[0])*(b[1]-a[1]))/2<.02){P.splice(i,1);mudou=true;i--}}}
+  return P.map(q=>pj.ll(q).map(v=>+v.toFixed(7)))}
+// contorno das duas poligonais lado a lado, na mesma escala
+function lotesSvg(a,b){const pts=[...a,...b],lat0=centro(pts)[0],k=Math.cos(lat0*Math.PI/180),xs=pts.map(p=>p[1]*k),ys=pts.map(p=>-p[0]),
+    x0=Math.min(...xs),y0=Math.min(...ys),s=Math.max(Math.max(...xs)-x0,Math.max(...ys)-y0)||1,W=220,pad=8,f=(W-2*pad)/s,
+    d=P=>P.map((p,i)=>(i?'L':'M')+(pad+(p[1]*k-x0)*f).toFixed(1)+' '+(pad+(-p[0]-y0)*f).toFixed(1)).join('')+'Z';
+  return `<svg class="lotes-svg" viewBox="0 0 ${W} ${W}" role="img" aria-label="Poligonal desenhada e lotes da prefeitura"><path d="${d(b)}" class="lotes-novo"/><path d="${d(a)}" class="lotes-ant"/></svg>`}
+function lotesPolyHtml(fechar){const L=UI.lotes,t=T(L.tid);if(!t)return '';const ant=t.poly?areaPoly(t.poly):null;
+  const cab=`<div class="dh"><div><h2>Usar a poligonal dos lotes</h2><div class="muted" style="margin-top:4px">Substitui a poligonal desenhada pela soma dos lotes das inscrições, como estão na prefeitura.</div></div>${fechar}</div>`;
+  const falhas=L.falhas.length?`<div class="banner warn">${ic('warn')}<div><div class="bt">${L.falhas.length===L.total?'Nenhum lote encontrado':`${L.falhas.length} de ${L.total} inscrições ficaram de fora`}</div>${L.falhas.map(esc).join('<br>')}</div></div>`:'';
+  if(!L.poly)return cab+`<div class="fields"><div class="field full">${falhas}${L.separados?`<div class="banner warn">${ic('warn')}<div><div class="bt">Os lotes não se encostam</div>A poligonal do terreno precisa ser uma área só. Confira as inscrições ou continue com a desenhada.</div></div>`:''}</div></div><div class="df"><button class="btn text" data-a="close">Fechar</button></div>`;
+  const nova=areaPoly(L.poly),dif=ant?nova-ant:null,com=ant?sobre2(t.poly,L.poly):null,ro=UI.role==='Leitura';
+  return cab+`<div class="fields"><div class="field full lotes-cmp">${t.poly?lotesSvg(t.poly,L.poly):''}<div class="lotes-kv">
+      <div><span>Desenhada</span><b>${ant?m2(Math.round(ant)):'—'}</b></div>
+      <div><span>Lotes da prefeitura (${L.n} ${L.n>1?'inscrições':'inscrição'})</span><b>${m2(Math.round(nova))}</b></div>
+      ${dif!=null?`<div><span>Diferença</span><b>${dif>=0?'+':'−'}${m2(Math.abs(Math.round(dif)))} (${dif>=0?'+':'−'}${num(Math.abs(dif/ant*100),1)}%)</b></div>
+      <div><span>Em comum com a desenhada</span><b>${num(com.pctA,0)}% dela · ${num(com.pctB,0)}% dos lotes</b></div>`:''}
+      <div class="hint"><span class="lotes-leg lotes-leg-ant"></span>desenhada <span class="lotes-leg lotes-leg-novo"></span>lotes</div></div></div>
+    ${falhas?`<div class="field full">${falhas}</div>`:''}
+    ${L.sobre.length?`<div class="field full"><div class="banner warn">${ic('warn')}<div><div class="bt">A área dos lotes ocupa parte de outro terreno</div>${L.sobre.map(x=>`${esc(x.t.codigo)} · ${esc(x.t.nome)}: ${m2(Math.round(x.area))} em comum`).join('<br>')}<div style="margin-top:4px">Substituir assim registra que são terrenos diferentes.</div></div></div></div>`:''}
+    <div class="field full hint">A poligonal desenhada fica guardada no histórico do terreno.</div></div>
+  <div class="df"><button class="btn text" data-a="close">Cancelar</button>${ro?'':`<button class="btn primary" data-a="lotes-usar">${L.sobre.length?'Substituir mesmo assim':'Substituir a poligonal'}</button>`}</div>`}
+function lotesPolyUsar(){const L=UI.lotes,t=L&&T(L.tid);if(!t||!L.poly)return;
+  nvTrocarPoly(t,L.poly,`pelos lotes da prefeitura (${L.n} ${L.n>1?'inscrições':'inscrição'})`);
+  if(L.sobre.length)t.sobreAceitas=[...new Set([...(t.sobreAceitas||[]),...L.sobre.map(x=>x.t.id)])];
+  UI.modal=null;UI.lotes=null;save();renderModal();render();toast('Poligonal substituída pelos lotes da prefeitura. A desenhada ficou guardada.')}
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a="lotes-poly"],[data-a="lotes-usar"]');if(!a)return;
+  if(a.dataset.a==='lotes-poly'){const t=T(UI.id);if(t)lotesPolyCalcular(t)}else lotesPolyUsar()});

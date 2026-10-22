@@ -134,7 +134,7 @@ function geoQuadro(t,ins,i){const g=(ins.geo||[])[0];
     ${loteToca(linhas)}
     ${loteArqBotoes(t)}</div>`}
 const fdh=s=>{if(!s)return '—';const d=new Date(s.replace(' ','T'));return isNaN(d)?fd(s):`${fd(s.slice(0,10))} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`};
-// só a poligonal do lote, para o passo 1 do cadastro (lança o aviso quando o dígito não confere)
+// só a poligonal do lote, para "Usar a poligonal dos lotes" (lança o aviso quando o dígito não confere)
 async function geoPoligono(sql){const d=digits(sql);
   const lotes=await geoWfs({typeNames:'geoportal:lote_cidadao',CQL_FILTER:`cd_setor_fiscal='${d.slice(0,3)}' AND cd_quadra_fiscal='${d.slice(3,6)}' AND cd_lote='${d.slice(6,10)}'`});
   const lote=lotes.find(f=>String(f.properties.cd_digito_sql)===d[10]&&f.properties.tx_situ_lote!=='INATIVO');
