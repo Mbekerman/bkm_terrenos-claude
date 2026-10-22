@@ -28,11 +28,19 @@ npm run dev
 ```
 Crie a conta, crie a empresa (você vira gestor) e use **Carregar dados de exemplo** na tela inicial para ter 12 terrenos de teste.
 
-### 3. Railway
-1. New Project → Deploy from GitHub repo → este repositório.
-2. Em **Variables**: `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`.
-3. O Railway usa o `Dockerfile` (ver `railway.json`). Em **Settings → Networking**, gere o domínio.
-4. No Supabase, em **Authentication → URL Configuration**, adicione o domínio do Railway em Site URL / Redirect URLs.
+### 3. Railway (dois ambientes)
+Mesmo código, dois ambientes no projeto "BKM Terrenos":
+
+| Ambiente | Branch | Variáveis próprias |
+| --- | --- | --- |
+| produção | `main` | `GOOGLE_MAPS_KEY`, `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` do banco de produção |
+| desenvolvimento | `develop` | `AMBIENTE=dev` (selo "Desenvolvimento" na barra superior e `[DEV]` no título), `GOOGLE_MAPS_KEY`, `VITE_SUPABASE_*` do banco de desenvolvimento |
+
+1. Serviço a partir deste repositório; o Railway usa o `Dockerfile` (ver `railway.json`). Em **Settings → Networking**, gere o domínio.
+2. Em **Settings → Source**, ligue **Wait for CI** nos dois ambientes.
+3. As `VITE_*` entram no bundle no build: mudar uma delas exige novo deploy.
+4. A chave do Google é restrita por domínio no Cloud Console: inclua o domínio de cada ambiente.
+5. No Supabase, em **Authentication → URL Configuration**, adicione o domínio do ambiente que usa aquele banco.
 
 ## Adicionar pessoas da equipe
 Por enquanto, sem tela de convite: a pessoa cria a conta e um gestor insere a linha em `app.membros` (empresa, user_id, papel `gestor` ou `analista`, nome) pelo Table Editor.

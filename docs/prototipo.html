@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="gmaps-key" content="{% env "GOOGLE_MAPS_KEY" %}">
+<meta name="bkm-ambiente" content="{% env "AMBIENTE" %}">
 <title>BKM Terrenos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2355,6 +2356,13 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
    (oklch relativo); navegador sem suporte fica com o véu de color-mix */
 :root[data-tema="escuro"] .kpi { background: color-mix(in srgb, var(--k, var(--neon-1)) 16%, transparent) !important; background: oklch(from var(--k, var(--neon-1)) 0.29 0.07 h) !important; border: 1px solid color-mix(in srgb, var(--k, var(--neon-1)) 60%, transparent) !important; border: 1px solid oklch(from var(--k, var(--neon-1)) 0.58 0.14 h) !important; box-shadow: none !important }
 :root[data-tema="escuro"] .kpi .v { background: none !important; color: color-mix(in srgb, var(--k, var(--neon-1)) 40%, #fff) !important; color: oklch(from var(--k, var(--neon-1)) 0.86 0.09 h) !important; -webkit-text-fill-color: currentColor; text-shadow: none !important }
+
+/* Selo do ambiente (fora da produção) */
+.amb-selo { flex: none; align-self: center; padding: 2px 8px; border-radius: 8px; background: #ffdf99; color: #7a5900; font-size: 12px; line-height: 18px; font-weight: 500; white-space: nowrap }
+.amb-selo .amb-c { display: none }
+/* no celular não cabe na linha: vira etiqueta pequena sobre o canto do logo */
+@media (max-width: 599px) { .top-in { position: relative } .amb-selo { position: absolute; left: 108px; top: 6px; padding: 0 5px; font-size: 10px; line-height: 15px; border-radius: 6px; pointer-events: none } .amb-selo .amb-l { display: none } .amb-selo .amb-c { display: inline } }
+:root[data-tema="escuro"] .amb-selo { background: rgba(255,223,153,.14); color: #ffdf99; border: 1px solid rgba(255,223,153,.45) }
 </style>
 <header class="top">
   <div class="top-in">
@@ -4846,6 +4854,8 @@ function funilModal(M,fechar){const t=UI.alvo?T(UI.alvo):T(UI.id);
   if(M==='retornar')return `<div class="dh"><div><h2>Voltar para ${SN(UI.alvoEtapa)}?</h2><div class="muted" style="margin-top:4px">${esc(t.nome)} está em ${SN(t.neg.etapa)}. Volta na subetapa inicial.</div></div>${fechar}</div><form data-form="retornar" id="f-rt"><div class="field"><label for="rt-m">Motivo (vai para o histórico)</label><textarea id="rt-m" name="motivo" required placeholder="Ex.: vendedor reabriu o preço"></textarea></div></form>${df('f-rt','Voltar etapa')}`;
   return ''}
 prepararDados();
+// Ambiente: o Caddy injeta AMBIENTE na meta bkm-ambiente; fora da produção, selo ao lado do logo e prefixo no título
+(()=>{const a=(document.querySelector('meta[name="bkm-ambiente"]')?.content||'').trim().toLowerCase();if(!a||a==='producao'||a.includes('{%'))return;const n=a==='dev'?'Desenvolvimento':a;document.title='['+(a==='dev'?'DEV':a.toUpperCase())+'] '+document.title;const b=document.querySelector('.top .brand');if(b){const s=document.createElement('span');s.className='amb-selo';s.title=n;s.innerHTML='<span class="amb-l">'+n+'</span><span class="amb-c">'+(a==='dev'?'DEV':a.slice(0,3).toUpperCase())+'</span>';b.after(s)}})();
 
 render();
 })();
