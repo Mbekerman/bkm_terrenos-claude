@@ -100,8 +100,8 @@ function nvFrentesHtml(nv){const fr=nv.frentes;if(nv.buscandoLocal)return '<span
   return `<span class="lbl-f" id="nv-fr-l">A poligonal tem ${fr.length} frentes. Qual é o endereço principal?</span><span class="nv-fr" role="radiogroup" aria-labelledby="nv-fr-l">${fr.map((x,i)=>`<label class="opt-radio"><input type="radio" name="frente" value="${i}" ${i?'':'checked'}>${esc(x.logradouro)}${x.numero?', '+esc(x.numero):''}${x.m?` <span class="faint">· ${num(Math.round(x.m))} m</span>`:''}</label>`).join('')}</span>
     <span class="hint">As outras entram em Confrontações como frente.</span>`}
 // a cidade da inscrição acompanha o município, enquanto a inscrição não foi digitada
-function nvCidadeInsc(){const f=$('#f-novo');if(!f||f.sql.value.trim()||f.sql.readOnly)return;const cid=cidDoNome(f.municipio.value),r=f.querySelector(`[name=mun][value="${cid}"]`);
-  if(r&&!r.checked){r.checked=true;r.dispatchEvent(new Event('change',{bubbles:true}))}}
+function nvCidadeInsc(){const f=$('#f-novo');if(!f||f.sql.readOnly)return;const cid=cidDoNome(f.municipio.value),r=f.querySelector('[name=mun]');
+  if(r&&r.value!==cid){r.value=cid;r.dispatchEvent(new Event('change',{bubbles:true}))}}
 
 /* ---------- telas ---------- */
 function nvPasso1Html(fechar){const algum=['sp','sjc'].some(k=>LOTE_ADAPT[k]?.url()),kmz=UI.nvKmz;
@@ -148,7 +148,7 @@ function nvDadosHtml(fechar){const nv=UI.nv,l=nv.local,mun=l?.cidade?l.cidade+(l
   <div class="field"><label for="n-resp">Responsável *</label><select id="n-resp" name="resp">${USERS.map(u=>`<option ${u===me()?'selected':''}>${u}</option>`).join('')}</select></div>
   <div class="field"><label for="n-ori">Origem *</label><select id="n-ori" name="origem" required>${Object.entries(OPT.origem).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
   <details class="details field full" ${nv.insc?'open':''}><summary>Inscrição municipal e matrícula</summary><div class="fields" style="margin-top:8px">
-    ${campoInsc('n',cid,'',false)}
+    ${campoInsc('n',cid,'',false,null,true)}
     <div class="field"><label for="n-mat">Matrícula</label><span style="display:flex;gap:6px"><input id="n-mat" name="mat" inputmode="numeric" placeholder="Número" style="flex:1 1 55%"><select id="n-cri" name="cri" aria-label="Cartório" style="flex:1 1 45%">${Array.from({length:18},(_,i)=>`<option>${i+1}º CRI</option>`).join('')}</select></span></div>
     <div id="dedupe" class="field full" aria-live="polite"></div></div></details>
   <details class="details field full"><summary>Já recebeu uma oferta? Registrar condições pedidas</summary><div class="fields" style="margin-top:8px">
