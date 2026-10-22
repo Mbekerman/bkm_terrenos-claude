@@ -4887,7 +4887,7 @@ function funilModal(M,fechar){const t=UI.alvo?T(UI.alvo):T(UI.id);
   return ''}
 prepararDados();
 // Ambiente: o Caddy injeta AMBIENTE na meta bkm-ambiente; fora da produção, selo ao lado do logo e prefixo no título
-(()=>{const a=(document.querySelector('meta[name="bkm-ambiente"]')?.content||'').trim().toLowerCase();if(!a||a==='producao'||a.includes('{%'))return;const n=a==='dev'?'Desenvolvimento':a;document.title='['+(a==='dev'?'DEV':a.toUpperCase())+'] '+document.title;const b=document.querySelector('.top .brand');if(b){const s=document.createElement('span');s.className='amb-selo';s.title=n;s.innerHTML='<span class="amb-l">'+n+'</span><span class="amb-c">'+(a==='dev'?'DEV':a.slice(0,3).toUpperCase())+'</span>';b.after(s)}})();
+(()=>{const a=(document.querySelector('meta[name="bkm-ambiente"]')?.content||'').trim().toLowerCase();if(!a||a==='producao'||a.includes('{'+'%'))return;const n=a==='dev'?'Desenvolvimento':a;document.title='['+(a==='dev'?'DEV':a.toUpperCase())+'] '+document.title;const b=document.querySelector('.top .brand');if(b){const s=document.createElement('span');s.className='amb-selo';s.title=n;s.innerHTML='<span class="amb-l">'+n+'</span><span class="amb-c">'+(a==='dev'?'DEV':a.slice(0,3).toUpperCase())+'</span>';b.after(s)}})();
 
 // ---------------------------------------------------------------------
 // Inscrição municipal por cidade. Antes de digitar, escolhe-se o município:
