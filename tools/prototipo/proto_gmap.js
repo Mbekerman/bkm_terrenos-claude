@@ -17,7 +17,7 @@ function carregarGoogle(){
   /* carregador oficial do Maps JS (bootstrap dinâmico) */
   (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({key:GKEY,v:'weekly',language:'pt-BR',region:'BR'});
   Promise.all(['maps','marker','geometry','places','elevation','streetView','geocoding'].map(n=>google.maps.importLibrary(n).then(x=>gLib[n]=x)))
-    .then(()=>{GG=true;if(['mapa','terreno'].includes(UI.route)||UI.modal==='novo')render()})
+    .then(()=>{GG=true;if(['mapa','terreno'].includes(UI.route))render()})
     .catch(e=>{console.warn('Google Maps indisponível',e)});
 }
 
@@ -246,18 +246,4 @@ function gBuscasEndereco(){if(!GG)return;document.querySelectorAll('.gauto[data-
     pac.addEventListener('gmp-select',e=>{const pp=e.placePrediction;if(pp)aplicar(pp.toPlace())});
     pac.addEventListener('gmp-placeselect',e=>{if(e.place)aplicar(e.place)})}
   catch(e){slot.innerHTML='<span class="hint">Busca do Google indisponível.</span>'}})}
-async function gAutocompletarNovo(){const slot=$('#n-gauto');if(!slot||slot.dataset.ok)return;slot.dataset.ok='1';
-  try{const {PlaceAutocompleteElement}=gLib.places;const pac=new PlaceAutocompleteElement({includedRegionCodes:['br'],locationBias:{center:gLL(-23.55,-46.63),radius:50000}});
-    pac.id='n-gauto-el';gCampoBusca(pac);slot.appendChild(pac);
-    const aplicar=async place=>{await place.fetchFields({fields:['addressComponents','location','formattedAddress']});
-      const comp=tipo=>place.addressComponents?.find(c=>c.types.includes(tipo))?.longText||'';
-      const f=$('#f-novo');if(!f)return;const set=(n,v)=>{const i=f.querySelector(`[name="${n}"]`);if(i&&v)i.value=v};
-      set('cep',comp('postal_code'));set('logradouro',comp('route'));set('numero',comp('street_number'));set('bairro',comp('sublocality_level_1')||comp('sublocality')||comp('neighborhood'));
-      if(!f.querySelector('[name="nome"]').value)set('nome',[comp('route'),comp('street_number')].filter(Boolean).join(', '));
-      const cid=comp('administrative_area_level_2')||comp('locality'),uf=place.addressComponents?.find(c=>c.types.includes('administrative_area_level_1'))?.shortText||'';
-      UI.novoLoc={lat:place.location.lat(),lng:place.location.lng(),cep:comp('postal_code')||null,municipio:cid?cid+(uf?' · '+uf:''):null};const sp=$('#n-gauto-loc');if(sp)sp.textContent=`Localização: ${num(UI.novoLoc.lat,5)}, ${num(UI.novoLoc.lng,5)} · ${place.formattedAddress}`;
-      if(typeof dedupe==='function')dedupe()};
-    pac.addEventListener('gmp-select',e=>{const pp=e.placePrediction;if(pp)aplicar(pp.toPlace())});
-    pac.addEventListener('gmp-placeselect',e=>{if(e.place)aplicar(e.place)})}
-  catch(e){slot.innerHTML='<span class="hint">Autocompletar do Google indisponível.</span>'}}
 carregarGoogle();

@@ -22,6 +22,8 @@ create table app.ofertas (
   validade               date,
   status                 text not null default 'ativa' check (status in ('ativa','expirada','retirada')),
   observacoes            text,
+  -- o pedaço oferecido, quando não é o terreno inteiro (ex.: 3 dos 5 lotes estudados); nulo = o terreno todo
+  poligono_geojson       jsonb check (poligono_geojson is null or app.geojson_poligono_valido(poligono_geojson)),
   criado_por             uuid default auth.uid(),
   criado_em              timestamptz not null default now()
 );
