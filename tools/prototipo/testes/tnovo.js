@@ -35,7 +35,7 @@ const titulo=p=>p.$eval('#modal h2',x=>x.textContent).catch(()=>'');
 // 1. terreno novo num lugar vazio: passo 1, busca no mapa, desenho, passo 2 com município e frentes
 {const {p,ctx,pedidos}=await pagina(false);
   await p.evaluate(()=>document.querySelector('[data-a=novo]').click());await p.waitForTimeout(200);
-  ok(await titulo(p)==='Novo terreno'&&(await p.$$('.nv-op')).length===3,'passo 1 com três formas de dar a poligonal');
+  ok(await titulo(p)==='Novo terreno'&&(await p.$$('.nv-op')).length===2&&!(await p.$('#modal [name=sql]')),'passo 1 só com desenho ou KMZ/KML (sem inscrição)');
   ok(!(await p.$('[data-a=nv-ponto]')),'sem cadastro só pelo ponto');
   await p.screenshot({path:OUT+'1_passo1.png'});await p.keyboard.press('Escape');
   await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=mapa]').click());await p.waitForTimeout(700);
