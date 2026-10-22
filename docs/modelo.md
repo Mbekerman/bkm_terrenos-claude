@@ -167,6 +167,7 @@ erDiagram
   eixos_comerciais |o--o{ terrenos : classifica
   terrenos ||--o{ matriculas : possui
   terrenos ||--o{ inscricoes_municipais : possui
+  inscricoes_municipais ||--o{ geosampa_consultas : "consultas ao GeoSampa pelo SQL"
   inscricoes_municipais ||--o{ inscricao_valores : "valor venal e IPTU por exercicio e revisao"
   terrenos ||--o{ confrontacoes : mede
   terrenos ||--o{ terreno_pessoas : vincula
@@ -241,6 +242,20 @@ erDiagram
     uuid terreno_id FK
     text inscricao "SQL"
     numeric area_cadastral_m2
+    text cib
+    text zona_fiscal
+  }
+  geosampa_consultas {
+    uuid id PK
+    uuid terreno_id FK
+    uuid inscricao_id FK
+    text sql_norm
+    timestamptz consultado_em
+    jsonb lote
+    jsonb poligono_geojson
+    jsonb camadas "atributos de tudo que toca o lote"
+    jsonb zonas "porcao de cada zona"
+    text_arr camadas_com_erro
   }
   inscricao_valores {
     uuid id PK
@@ -292,6 +307,8 @@ erDiagram
 ```
 
 `municipios` traz os 5.571 municípios do IBGE (código, nome e UF), então o terreno pode estar em qualquer cidade. A busca de endereço do Google devolve cidade e UF, e o front obtém o `municipio_id` por `app.municipio_por_nome(nome, uf)`, que compara sem acento, maiúsculas, hífen ou apóstrofo. O catálogo de `zoneamentos` por enquanto só tem São Paulo (LPUOS).
+
+**GeoSampa pelo SQL (só São Paulo).** Na inscrição, "Buscar no GeoSampa" (automático ao cadastrar o SQL) consulta o servidor de camadas do Novo GeoSampa (`geoserver.geosampa.prefeitura.sp.gov.br`, WFS/WMS) pelo repasse do Caddy em `/geosampa`, porque o servidor só aceita chamadas de navegador vindas do próprio GeoSampa. Traz o lote fiscal (`lote_cidadao`: poligonal em UTM 23S SIRGAS 2000, áreas, uso, CIB, condomínio) e os atributos de cada camada que toca a poligonal (zoneamento das Leis 18.081 e 18.177, ZEIS, eixos, macroárea e fator de planejamento, operação urbana, mananciais, tombamento e áreas envoltórias, áreas contaminadas, melhoramento viário, faixa não edificável, córrego a até 50 m, risco, inundação, influência de Metrô e CPTM, vegetação significativa, zona fiscal). `app.registrar_consulta_geosampa` confere que o lote é o da inscrição, grava a consulta inteira (nunca alterada), completa só o que está vazio na inscrição (área cadastral) e o cadastro fiscal (CIB, zona fiscal) e, se pedido, registra uma análise urbanística nova com a área de cada zona no lote. Poligonal e áreas do terreno continuam passando por `app.salvar_terreno`. A planta (PDF, gerada pelo próprio servidor) e o desenho (DXF R12 com lotes, calçada, quadra, edificações, curvas de nível com cota e pontos cotados, montado no navegador) entram como documentos `geosampa_pdf` e `geosampa_dxf`, com versão. Testada, valor do m² e valor venal não estão no GeoSampa novo; continuam digitados por exercício em `inscricao_valores`.
 
 ## 2. Ofertas, negociação, propostas e tarefas
 
@@ -507,6 +524,7 @@ erDiagram
 | Gabarito (m e pavimentos) e CA têm estado próprio: não informado, limitado (com valor) ou sem limite identificado | checks em `analise_zoneamentos` |
 | Uma análise urbanística vigente por terreno; anteriores preservadas | índice único parcial + trigger |
 | Valor venal e IPTU por inscrição e exercício; correção vira nova revisão, a anterior fica preservada | `inscricao_valores` + trigger |
+| Consulta ao GeoSampa só pela RPC, conferindo que o lote é o da inscrição e que o terreno é de São Paulo; nunca alterada; completa só campos vazios | `app.registrar_consulta_geosampa` |
 | Isento não tem IPTU; venal do imóvel = terreno + construção quando os dois existem | checks em `inscricao_valores` |
 | Edição simultânea: salvar com versão antiga é recusado | `terrenos.versao` + `salvar_terreno` |
 | Participações dos proprietários somam no máximo 100% | trigger em `terreno_pessoas` |

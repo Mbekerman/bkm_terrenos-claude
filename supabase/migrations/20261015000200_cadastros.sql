@@ -182,6 +182,8 @@ insert into app.tipos_documento (codigo, nome, categoria, validade_dias, unico_p
   ('ata_reuniao',        'Ata de reunião',                       'Reuniões',  null, false),
   ('foto',               'Foto',                                 'Mídia',     null, false),
   ('planta',             'Planta ou croqui',                     'Técnico',   null, false),
+  ('geosampa_pdf',       'Planta do lote no GeoSampa (PDF)',     'Técnico',   null, false),
+  ('geosampa_dxf',       'Desenho do lote no GeoSampa (DXF)',    'Técnico',   null, false),
   ('outro',              'Outro documento',                      'Outros',    null, false);
 
 -- Modelo padrão do funil (empresa_id nulo). Comprado, Perdido, Descartado e

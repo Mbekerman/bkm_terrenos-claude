@@ -451,6 +451,50 @@ select pg_temp.como(:'leitor');
 select pg_temp.falha(format('select app.salvar_entorno(%L, -23.67, -46.65, %L)', :'tm', '[]'), 'leitura não grava entorno');
 select pg_temp.ok((select count(*) from app.v_entorno_buscas where terreno_id = :'tm') = 1, 'leitura vê a situação do entorno');
 select pg_temp.como(:'diretor');
+
+\echo '# GeoSampa pelo SQL'
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao) values (:'emp', :'tm', '009.027.0009-1') returning id as gi \gset
+\set glote '{"cd_setor_fiscal":"009","cd_quadra_fiscal":"027","cd_lote":"0009","cd_digito_sql":"1","qt_area_terreno":593,"qt_area_construida":4994,"cd_cib":"0DRHNJA-V","cd_condominio":"00"}'
+\set gpoli '{"type":"Polygon","coordinates":[[[-46.6551,-23.5619],[-46.6555,-23.5620],[-46.6553,-23.5621],[-46.6551,-23.5619]]]}'
+\set gcam '{"zona_fiscal":[{"sg_zona_fiscal":"ZF-1"}],"pde_macroarea_lei_18209":[{"sg_macroarea":"MUC"}]}'
+select pg_temp.como(:'analista');
+select app.registrar_consulta_geosampa(:'gi', :'glote', :'gpoli', 593.4, :'gcam',
+  '[{"sigla":"ZEU","area_m2":500},{"sigla":"ZEU","area_m2":93.4},{"sigla":"ZXX","area_m2":1}]', '{drenagem}') as gc \gset
+select pg_temp.ok((select area_cadastral_m2 = 593 and cib = '0DRHNJA-V' and zona_fiscal = 'ZF-1' from app.inscricoes_municipais where id = :'gi'),
+  'consulta completa a área cadastral vazia, o CIB e a zona fiscal da inscrição');
+select pg_temp.ok((select sql_norm = '00902700091' and camadas_com_erro = '{drenagem}' and lote->>'qt_area_construida' = '4994' from app.geosampa_consultas where id = :'gc'),
+  'consulta guarda o lote inteiro e as camadas que falharam');
+select pg_temp.ok((select a.fonte like 'GeoSampa%' and a.observacoes like '%ZXX%' and z.area_abrangida_m2 = 593.4
+                     from app.analises_urbanisticas a join app.analise_zoneamentos z on z.analise_id = a.id
+                    where a.terreno_id = :'tm' and a.status = 'vigente'),
+  'consulta registra análise vigente com a área da zona somada; sigla fora do catálogo vai para as observações');
+update app.inscricoes_municipais set area_cadastral_m2 = 600 where id = :'gi';
+select app.registrar_consulta_geosampa(:'gi', :'glote', null, null, '{}', '[]', '{}', false) as gc2 \gset
+select pg_temp.ok((select area_cadastral_m2 from app.inscricoes_municipais where id = :'gi') = 600, 'área cadastral já preenchida não é trocada');
+select pg_temp.ok((select count(*) from app.geosampa_consultas where terreno_id = :'tm') = 2
+              and (select count(*) from app.analises_urbanisticas where terreno_id = :'tm') = 1, 'cada consulta é linha nova; sem zonas, nenhuma análise nova');
+select pg_temp.falha(format('select app.registrar_consulta_geosampa(%L, %L, null, null, %L, %L)', :'gi',
+  '{"cd_setor_fiscal":"009","cd_quadra_fiscal":"027","cd_lote":"0010","cd_digito_sql":"1"}', '{}', '[]'), 'lote de outro SQL é recusado');
+select pg_temp.falha(format($$update app.geosampa_consultas set zonas = '[]' where id = %L$$, :'gc'), 'consulta não é alterada');
+select pg_temp.ok((select count(*) from app.geosampa_consultas where id = :'gc' and zonas <> '[]') = 1, 'consulta continua como foi gravada');
+select app.registrar_documento(:'tm', 'geosampa_dxf', :'emp' || '/' || :'tm' || '/geosampa_dxf/a.dxf', 'lote.dxf') as gd \gset
+select app.registrar_documento(:'tm', 'geosampa_dxf', :'emp' || '/' || :'tm' || '/geosampa_dxf/b.dxf', 'lote.dxf', p_documento => :'gd') as gd2 \gset
+select pg_temp.ok(:'gd' = :'gd2' and (select count(*) from app.documento_versoes where documento_id = :'gd') = 2, 'DXF do lote vira documento com versões');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format('select app.registrar_consulta_geosampa(%L, %L, null, null, %L, %L)', :'gi', :'glote', '{}', '[]'), 'leitura não consulta o GeoSampa');
+select pg_temp.ok((select count(*) from app.geosampa_consultas where terreno_id = :'tm') = 2, 'leitura vê as consultas');
+select pg_temp.como(:'diretor');
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro)
+  values (:'emp', 'Fora de SP', :'diretor', 'prospeccao', (select id from app.municipios where codigo_ibge = '3549904'), 'Centro') returning id as tfora \gset
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao) values (:'emp', :'tfora', '111.222.3333-4') returning id as gif \gset
+select pg_temp.falha(format('select app.registrar_consulta_geosampa(%L, %L, null, null, %L, %L)', :'gif',
+  '{"cd_setor_fiscal":"111","cd_quadra_fiscal":"222","cd_lote":"3333","cd_digito_sql":"4"}', '{}', '[]'), 'terreno fora de São Paulo não consulta o GeoSampa');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'geosampa_consultas') = 2, 'consultas ao GeoSampa vão para os logs');
+-- limpa o que os testes seguintes contam (como superusuário)
+reset role;
+delete from app.terrenos where id = :'tfora';
+delete from app.inscricoes_municipais where id = :'gi';
+select pg_temp.como(:'diretor');
 select pg_temp.ok(not exists (select 1 from app.v_mapa where id = :'t1'), 'terreno arquivado sai do mapa');
 insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (:'emp', :'tm', 'Visitar o lote', current_date - 1) returning id as k1 \gset
 insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (:'emp', :'tm', 'Pedir matrícula', current_date + 5) returning id as k2 \gset

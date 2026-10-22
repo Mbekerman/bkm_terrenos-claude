@@ -16,6 +16,27 @@
 		file_server
 	}
 
+	# GeoSampa (Prefeitura de São Paulo): o servidor de camadas só aceita chamada de
+	# navegador vinda do próprio Novo GeoSampa, então a ficha consulta por aqui.
+	# Só GET nos serviços públicos de camadas (WFS/WMS); nada de cookie nem origem.
+	handle_path /geosampa/* {
+		@camadas {
+			method GET
+			path /geoserver/geoportal/ows /geoserver/geoportal/wms
+		}
+		handle @camadas {
+			reverse_proxy https://geoserver.geosampa.prefeitura.sp.gov.br {
+				header_up Host {upstream_hostport}
+				header_up -Origin
+				header_up -Referer
+				header_up -Cookie
+				header_down -Set-Cookie
+				header_down -Access-Control-Allow-Origin
+			}
+		}
+		respond 404
+	}
+
 	# Enquanto o banco não existe, a raiz leva ao protótipo. O app React fica em /app.
 	handle / {
 		redir * /prototipo/ 302
