@@ -463,3 +463,85 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
   .fs-b { padding: 12px }
   body[data-rota="mapa"] .fab { display: none !important }
 }
+
+/* ===== Alinhamento (out/2026): um só padrão de cabeçalho, rótulo, linha e controle em todos os quadros =====
+   Recuo lateral do quadro (--q-px) e altura do cabeçalho (--q-cab) valem para card, sec e checklist.
+   O cabeçalho tem altura mínima fixa e centra título, contadores e botões entre a borda e o fio de baixo;
+   antes o padding de baixo era 0 e o título encostava no fio. */
+:root { --q-px: 24px; --q-cab: 56px }
+@media (max-width: 899px) { :root { --q-px: 16px } }
+.card-h, .sec-h, .chk-gh { min-height: var(--q-cab); padding: 8px var(--q-px) !important; align-items: center; border-bottom: 1px solid var(--m-outline-var, var(--linha)) }
+:root[data-tema="escuro"] .chk-gh { border-bottom-color: var(--m-outline-var) }
+.card-h > h2, .sec-h > h2, .graf .card-h > h2 { flex: 1 1 0; font-size: 16px; line-height: 24px; font-weight: 500 }
+.chk-gh .gt { flex: 1 1 0; font-size: 16px; line-height: 24px; font-weight: 500 }
+.sec-h h2 .bkm-ico { width: 24px; height: 24px }
+/* botão de texto no fim do cabeçalho ou da linha: o texto alinha com a margem do quadro, não 12 px antes */
+:is(.card-h, .sec-h, .chk-gh) > .btn.text:last-child, :is(.card-h, .sec-h) > :last-child > .btn.text:last-child, .da > .btn.text:last-child { margin-right: -12px }
+/* gráficos do Dashboard: mesmo cabeçalho dos outros quadros; barras alinhadas com o título */
+.graf .card-b { padding-inline: calc(var(--q-px) - 8px) }
+/* rótulos sem caixa-alta espaçada (regra do visual Material 3) */
+:is(.kvg .k, .cond .lbl, .metric .ml, .area .as, .mini-tbl th, .tag-ref, .opt, .passo, .reu-p b, .reu-x .k, .lbl-up, .mp-legenda summary, .relevo-n .k, .chip.fase) { text-transform: none; letter-spacing: .01em }
+:is(.kvg .k, .cond .lbl, .metric .ml, .mini-tbl th, .passo, .reu-p b, .reu-x .k, .lbl-up, .relevo-n .k) { font-size: 12px; font-weight: 500; color: var(--m-on-var, var(--texto-suave)) }
+:is(.area .as, .tag-ref, .opt) { font-size: 12px }
+/* lista de atenção do Início: sem quadro dentro do quadro; ícone e seta centrados na linha */
+.alist { background: none; border: 0; border-radius: 0 }
+.aitem { align-items: center }
+.aitem:hover { background: rgba(31,31,31,.06) }
+/* listas de chave e valor: quando alguma linha tem lápis, todas reservam a coluna e os valores alinham */
+.kvl:has(> .kv > .kv-ed) > .kv:not(.editando) { grid-template-columns: minmax(120px, 38%) minmax(0, 1fr) 32px !important; align-items: center }
+/* tabelas pequenas: célula centrada na altura da linha (o botão Remover não desce) */
+.mini-tbl td { vertical-align: middle }
+/* formulário em linha: botão de 40 px centrado nos campos de 44 px */
+.inline-form > .btn { margin-bottom: 2px }
+/* linhas de infraestrutura e de documento com o fio no recuo do quadro, como as demais listas */
+.infra, .doc { margin-inline: var(--q-px); padding-inline: 0 }
+.lista-vazia { padding: 12px 0 }
+/* filtros de Tarefas: busca na mesma altura dos seletores */
+.tk-filtros .search { min-height: 40px !important; height: 40px }
+.tk-filtros .chk { min-height: 40px }
+/* indicadores estreitos (Dashboard): o valor não quebra entre número e unidade */
+.kpis-v .kpi { container-type: inline-size; min-width: 0 }
+.kpis-v .kpi .v.sm { white-space: nowrap; font-size: clamp(14px, 17cqi, 18px) }
+/* logs do painel: o fio fica no recuo do texto, não 8 px para fora */
+.pn-log { border-bottom: 0; position: relative }
+.pn-log:not(:last-child)::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: 0; height: 1px; background: var(--m-outline-var, var(--linha)) }
+:root[data-tema="escuro"] .pn-log:not(:last-child)::after { background: rgba(124,140,255,.12) }
+/* Condições pedidas: a segunda linha (permuta, observação) usa as mesmas colunas da primeira */
+.cond + .grid2 { column-gap: var(--e6) }
+.cond + .grid2 .lbl { font-size: 12px; line-height: 16px; font-weight: 500; color: var(--m-on-var, var(--texto-suave)) }
+@media (max-width: 899px) { .cond + .grid2 { column-gap: var(--e4) } }
+.chk-gh + .doc { border-top: 0 }
+.kv dd .chip { white-space: nowrap }
+/* Condições pedidas: rótulo, valor e complemento em linhas comuns aos itens (rótulo de duas linhas não desce o valor do vizinho) */
+.cond { row-gap: 0 !important }
+.cond > div { display: grid; grid-row: span 3; grid-template-rows: subgrid; align-content: start; padding-bottom: var(--e6) }
+@media (max-width: 899px) { .cond > div { padding-bottom: var(--e4) } }
+.cond + .grid2 { margin-top: 0 !important }
+.cond > div > .big { align-self: start }
+/* quadro de avanço no painel: bloco tonal, não um quadro contornado dentro de outro */
+.pn-adv .sec-adv.sec-adv { border: 0 !important; background: var(--m-sc-low) !important; border-radius: 16px !important }
+:root[data-tema="escuro"] .pn-adv .sec-adv.sec-adv { background: rgba(124,140,255,.07) !important; border: 0 !important }
+/* barras de rolagem finas e discretas (quadro de negociações, tabelas, painéis, página): trilho invisível,
+   alça em cápsula na cor do texto secundário com transparência, mais forte ao passar o mouse */
+:root { --rolagem: rgba(68,71,70,.28); --rolagem-h: rgba(68,71,70,.5) }
+:root[data-tema="escuro"] { --rolagem: rgba(201,214,255,.18); --rolagem-h: rgba(201,214,255,.36) }
+::-webkit-scrollbar { width: 10px; height: 10px }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent }
+::-webkit-scrollbar-button { display: none; width: 0; height: 0 }
+::-webkit-scrollbar-thumb { background: var(--rolagem); background-clip: padding-box; border: 3px solid transparent; border-radius: 999px; min-width: 40px; min-height: 40px }
+::-webkit-scrollbar-thumb:hover, ::-webkit-scrollbar-thumb:active { background-color: var(--rolagem-h) }
+@supports not selector(::-webkit-scrollbar) { * { scrollbar-width: thin; scrollbar-color: var(--rolagem) transparent } }
+
+/* Dashboard: lista de terrenos abaixo dos gráficos; se não couber, some Código e Temperatura
+   e, se ainda faltar espaço, desce para a largura inteira (ajustaDash) */
+.dash-g { grid-template-rows: auto 1fr }
+.dash-lado { grid-column: 1; grid-row: 1 / span 2 }
+.dash-main { grid-column: 2; grid-row: 1 }
+.dash-tab { grid-column: 2; grid-row: 2 }
+.dash-g.tab-larga .dash-lado { grid-row: 1 }
+.dash-g.tab-larga .dash-tab { grid-column: 1 / -1 }
+.dash-tab.enxuta :is(.col-codigo, .col-temp) { display: none }
+@media (max-width: 1100px) {
+  .dash-g { grid-template-rows: none }
+  .dash-lado, .dash-main, .dash-tab, .dash-g.tab-larga .dash-tab { grid-column: auto; grid-row: auto }
+}

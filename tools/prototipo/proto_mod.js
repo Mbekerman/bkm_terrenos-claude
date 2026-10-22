@@ -73,8 +73,8 @@ function tabela(id,rows,cols,o={}){
   if(c&&c.s)r.sort((a,b)=>{const x=c.s(a),y=c.s(b);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;
     const d=typeof x==='number'&&typeof y==='number'?x-y:String(x).localeCompare(String(y),'pt-BR',{numeric:true});return st.dir==='desc'?-d:d});
   if(!r.length)return `<div class="empty">${o.vazio||'Nada para mostrar.'}</div>`;
-  return `<div class="dt-wrap"><table class="dt ${o.cls||''}"><thead><tr>${cols.map(x=>`<th class="${x.cls||''}" scope="col"${x.s?` aria-sort="${st.k===x.k?(st.dir==='desc'?'descending':'ascending'):'none'}"`:''}>${x.s?`<button type="button" class="dt-sort" data-a="sort" data-t="${id}" data-k="${x.k}">${x.l}<span class="dt-ar" aria-hidden="true">${st.k===x.k?(st.dir==='desc'?'↓':'↑'):'↕'}</span></button>`:x.l}</th>`).join('')}</tr></thead>
-  <tbody>${r.map(row=>`<tr ${o.attr?o.attr(row):''}>${cols.map(x=>`<td class="${x.cls||''}">${x.v(row)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  return `<div class="dt-wrap"><table class="dt ${o.cls||''}"><thead><tr>${cols.map(x=>`<th class="col-${x.k} ${x.cls||''}" scope="col"${x.s?` aria-sort="${st.k===x.k?(st.dir==='desc'?'descending':'ascending'):'none'}"`:''}>${x.s?`<button type="button" class="dt-sort" data-a="sort" data-t="${id}" data-k="${x.k}">${x.l}<span class="dt-ar" aria-hidden="true">${st.k===x.k?(st.dir==='desc'?'↓':'↑'):'↕'}</span></button>`:x.l}</th>`).join('')}</tr></thead>
+  <tbody>${r.map(row=>`<tr ${o.attr?o.attr(row):''}>${cols.map(x=>`<td class="col-${x.k} ${x.cls||''}">${x.v(row)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 function ordenar(id,k){const st=UI.sorts[id];UI.sorts[id]=st&&st.k===k?(st.dir==='asc'?{k,dir:'desc'}:{}):{k,dir:'asc'}}
 
@@ -424,8 +424,9 @@ function pgDash(){const f=UI.dash.f,rows=dashBase(null),ativos=rows.filter(t=>t.
   <div class="dash-main">
     ${UI.dash.sel.length?`<div class="dash-graf">${UI.dash.sel.map(k=>`<section class="card graf ${DIMS[k].linha?'larga':''}"><div class="card-h"><h2>${DIMS[k].l}</h2><button class="iconbtn" data-a="dash-exp" data-k="${k}" aria-label="Ampliar ${DIMS[k].l}" title="Ampliar">${ic('tela',18)}</button></div><div class="card-b">${grafico(k)}</div></section>`).join('')}</div>`
       :'<div class="card"><div class="empty">Escolha ao menos um gráfico na lista ao lado.</div></div>'}
-    <section class="sec" style="margin-top:var(--e4)"><div class="sec-h"><h2>Terrenos no filtro</h2><span class="faint" style="font-size:13px">${rows.length}</span></div><div class="sec-b">${tabela('dash',rows,COLS_TERRENOS,{attr:attrAbrir('dashboard'),padrao:{k:'temp',dir:'desc'}})}</div></section>
-  </div></div></div>`}
+  </div>
+  <section class="sec dash-tab"><div class="sec-h"><h2>Terrenos no filtro</h2><span class="faint" style="font-size:13px">${rows.length}</span></div><div class="sec-b">${tabela('dash',rows,COLS_TERRENOS,{attr:attrAbrir('dashboard'),padrao:{k:'temp',dir:'desc'}})}</div></section>
+  </div></div>`}
 function telaCheia(){const el=$('#dash');if(!el)return;
   if(document.fullscreenElement){document.exitFullscreen?.();return}
   if(document.body.classList.contains('dash-fixo')){document.body.classList.remove('dash-fixo');render();return}
