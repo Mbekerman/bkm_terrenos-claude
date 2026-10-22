@@ -9,6 +9,7 @@ O `docs/prototipo.html` (servido pelo Railway em `/prototipo`) e o artifact do c
 | `proto_mod.js` | mapa (Leaflet), Visão geral, pontos de interesse, poligonal |
 | `proto_gmap.js` | tudo que usa o Google (Maps JS, Places, Routes, Geocoding, Elevation) |
 | `proto_painel.js` | painel lateral (logs, filtros, ações), tabelas que empilham, ganchos do `posRender` |
+| `proto_funil.js` | funil: passagem com pendências e aprovações (espelha `app._passagem`), quadro de avanço, kanban, notificações e Configurações › Funil |
 | `bkm.pre-painel.css` + `painel.css` | estilos; o `painel.css` tem os blocos mais novos e sobrepõe o anterior |
 | `build.py` | junta tudo: grava `docs/prototipo.html`, `saida/bkm-terrenos.html` (artifact e testes) e atualiza `apps/web/src/styles.css` |
 | `mkdemo.py` | gera `saida/demo/...` com 6 usuários a mais (usado por `tpisca.js`, `tend2.js`, `tgmock.js`) |
@@ -35,7 +36,7 @@ Rodar só o que a mudança toca; a varredura completa (`tvaza` e `tscroll`) ao f
 | `tinline.js` | edição no lugar na Visão geral |
 | `tpisca.js` | clicar no log abre a seção e acende o campo |
 | `tend2.js`, `tgmock.js` | endereço pela busca do Google (simulado) |
-| `tadv.js` | quadro de avanço compacto e modais |
+| `tfunil.js` | novo funil: quadro por etapa e subetapa, quadro de avanço, aprovações por hierarquia, Comprado/Perdido/Descartado/Stand By, sino e Configurações › Funil |
 | `ted2.js` | edição da poligonal (desktop e celular) |
 | `tctx.js` | menu do clique direito no mapa (toque longo no celular), concorrência, barra do mapa |
 | `tlista.js` | página Mapa sem balão: clicar no pino destaca a linha, cartão no celular, lupa abre a ficha |

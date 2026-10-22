@@ -10,12 +10,15 @@ UI.tk=UI.tk||{vista:'quadro',q:'',resp:'',ter:'',prio:'',atras:false,canc:false}
 
 /* ---------- situação do terreno (cor do pin, gráficos) ---------- */
 // rótulo, cor, glifo no pin, cor do glifo. Etapas ativas em rampa de azul (ordem = avanço);
-// stand by, ganha e perdida com cores próprias e glifo, para não depender só da cor.
-const SIT={sem_negociacao:['Sem negociação','#8a8d91','·','#fff'],recebido:['Recebido','#8fc8f7','1','#1d2e5c'],
-  viabilidade_inicial:['Viabilidade inicial','#4aa3f0','2','#fff'],negociacao:['Negociação','#0b74d6','3','#fff'],
-  minutagem:['Minutagem','#1d2e5c','4','#fff'],stand_by:['Stand by','#c98a2e','‖','#fff'],ganha:['Ganho','#6f9a3a','✓','#fff'],perdida:['Perdido','#9a3b30','×','#fff']};
+// Stand By, Comprado, Perdido e Descartado com cores próprias e glifo, para não depender só da cor.
+const SIT={sem_negociacao:['Sem negociação','#8a8d91','·','#fff'],triagem:['Em Triagem','#8fc8f7','1','#1d2e5c'],
+  estudos:['Estudos Preliminares','#4aa3f0','2','#fff'],negociacao:['Negociação','#0b74d6','3','#fff'],
+  contrato:['Contrato','#1d2e5c','4','#fff'],stand_by:['Stand By','#c98a2e','‖','#fff'],comprado:['Comprado','#6f9a3a','✓','#fff'],
+  perdido:['Perdido','#9a3b30','×','#fff'],descartado:['Descartado','#6b6560','–','#fff']};
+/* nomes das etapas seguem a configuração da empresa */
+const sitNome=k=>STAGES.find(s=>s[0]===k)?.[1]||SIT[k][0];
 const sitMapa=t=>!t.neg?'sem_negociacao':t.neg.status==='ativo'?t.neg.etapa:t.neg.status;
-const sitChip=k=>`<span class="sitchip"><span class="sw" style="background:${SIT[k][1]}"></span>${SIT[k][0]}</span>`;
+const sitChip=k=>`<span class="sitchip"><span class="sw" style="background:${SIT[k][1]}"></span>${esc(sitNome(k))}</span>`;
 const ativosBanco=()=>S.terrenos.filter(t=>t.situacao!=='arquivado');
 
 /* ---------- geografia ---------- */
@@ -176,7 +179,7 @@ function mpSelecionar(id){UI.mpSel=id;mpMarcarPinos();if(UI.fichaSheet&&id&&id!=
 function mpCartao(){const c=$('#mp-cartao');if(!c)return;const t=UI.mpSel&&T(UI.mpSel);c.innerHTML=t&&!UI.mpModo&&mpVisiveis().includes(t)?mpItem(t,true):''}
 function mpLegenda(){const base=ativosBanco();
   return Object.keys(SIT).map(k=>{const n=base.filter(t=>sitMapa(t)===k).length;const on=!UI.mp.ocultas.includes(k);
-    return `<button type="button" class="lg-i" data-a="mp-sit" data-v="${k}" aria-pressed="${on}"><span class="pin-mini" style="background:${SIT[k][1]};color:${SIT[k][3]}">${SIT[k][2]}</span>${SIT[k][0]}<span class="n">${n}</span></button>`}).join('')
+    return `<button type="button" class="lg-i" data-a="mp-sit" data-v="${k}" aria-pressed="${on}"><span class="pin-mini" style="background:${SIT[k][1]};color:${SIT[k][3]}">${SIT[k][2]}</span>${sitNome(k)}<span class="n">${n}</span></button>`}).join('')
     +`<hr class="lg-sep"><button type="button" class="lg-i" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}"><span class="lg-poi"><span class="poi-b"></span></span>Pontos de interesse<span class="n">${(S.pontos||[]).length}</span></button>`
     +`<button type="button" class="lg-i" data-a="mp-conc" aria-pressed="${UI.mpConc!==false}"><span class="lg-poi"><span class="conc-b"></span></span>Concorrência<span class="n">${(S.concorrentes||[]).length}</span></button>`;
 }
@@ -372,7 +375,7 @@ function aplicarKmz(t,it){if(it.tipo==='poligono'){t.poly=it.pts;const c=centro(
 
 /* ===================== DASHBOARD ===================== */
 const DIMS={
-  situacao:{l:'Terrenos por situação',v:t=>sitMapa(t),ord:Object.keys(SIT),lab:k=>SIT[k][0],cor:k=>SIT[k][1]},
+  situacao:{l:'Terrenos por situação',v:t=>sitMapa(t),ord:Object.keys(SIT),lab:k=>sitNome(k),cor:k=>SIT[k][1]},
   zona:{l:'Terrenos por região',v:t=>t.zona||'nao_informado',ord:[...Object.keys(OPT.zona),'nao_informado'],lab:k=>k==='nao_informado'?'Não informada':OPT.zona[k]},
   corretor:{l:'Terrenos por corretor principal',v:t=>t.corretores.find(x=>x.principal)?.cid||'sem',lab:k=>k==='sem'?'Sem corretor':(corretor(k)?.nome||k)},
   origem:{l:'Terrenos por origem',v:t=>t.origem||'nao',lab:k=>OPT.origem[k]||'Não informada'},
@@ -442,7 +445,7 @@ document.addEventListener('focusin',e=>{const el=e.target.closest?.('[data-tip]'
 document.addEventListener('focusout',()=>TIP.classList.remove('on'));
 
 /* ===================== FICHA: VISÃO GERAL ===================== */
-function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp=lastProp(t),pr=typeof proxReuniao==='function'?proxReuniao(t):null,pt=proxTarefa(t),f=typeof fase==='function'?fase(t):null,px=proximos(t);
+function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp=lastProp(t),pr=typeof proxReuniao==='function'?proxReuniao(t):null,pt=proxTarefa(t),px=proximos(t);
   const lin=(k,val)=>`<div class="kv"><dt>${k}</dt><dd>${val==null||val===''?'<span class="ni">Não informado</span>':val}</dd></div>`;
   /* Edição direta no resumo: grava nos mesmos campos das seções abaixo, pelo mesmo caminho (no banco, app.salvar_terreno só com as chaves enviadas) */
   const CAMPO={};Object.entries(SECOES).forEach(([sid,s])=>s.campos.forEach(c=>{CAMPO[c[0]]=[sid,c]}));
@@ -476,7 +479,8 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     ${linE('Responsável',esc(t.resp),'resp',['resp'])}
     ${linE('Origem',esc(OPT.origem[t.origem]||''),'orig',['origem'])}</dl></div></section>`;
   const neg=n?`<section class="sec"><div class="sec-h"><h2>Negociação</h2><button class="btn text sm" data-a="tab" data-t="negociacao">Ver propostas e reuniões</button></div><div class="sec-b"><dl class="kvl">
-    ${lin('Situação',sitChip(sitMapa(t))+(f&&f!=='sem_proposta'?` <span class="chip fneg ${f}"><span class="d"></span>${FASES[f]}</span>`:''))}
+    ${lin('Situação',sitChip(sitMapa(t))+(n.status==='ativo'&&n.sub?` <span class="chip sub">${esc(subN(n.sub))} · ${diasSub(n)} d</span>`:'')+(n.pedido?' <span class="chip blue">Aguardando aprovação</span>':''))}
+    ${['perdido','descartado'].includes(n.status)?lin('Motivo',esc(motivoN(n.status,n.motivo))+(n.detalhe?` · ${esc(n.detalhe)}`:'')):''}
     ${n.status==='ativo'?`<div class="kv"><dt>Temperatura</dt><dd>${tempPicker(t)}</dd></div>`:lin('Temperatura',n.temp?`${tempMini(n.temp)} ${TEMP[n.temp]}`:'')}
     ${lin('Última proposta',lp?`${mi(lp.valor)} · ${lp.origem==='bkm'?'BKM':'Vendedor'} · ${OPT.statusProp[lp.status]}`:'')}
     ${lin('Próxima reunião',pr?`${fd(pr.data)} · ${esc(pr.hora||'')}`:'')}

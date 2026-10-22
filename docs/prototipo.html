@@ -2243,6 +2243,114 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
   .dash-lado, .dash-main, .dash-tab, .dash-g.tab-larga .dash-tab { grid-column: auto; grid-row: auto }
 }
 
+/* ===================== novo funil ===================== */
+/* sino de notificações (barra superior) */
+.sino-wrap { position: relative }
+.sino-btn { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 0; background: transparent; color: var(--m-on-var); display: grid; place-items: center }
+.sino-btn:hover { background: rgba(127,127,127,.14) }
+.sino-n { position: absolute; top: 4px; right: 2px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #b3261e; color: #fff; font-size: 11px; font-weight: 600; line-height: 18px; text-align: center }
+.sino-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; width: min(380px, calc(100vw - 32px)); background: var(--m-sc-low); border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,.18), 0 6px 18px rgba(0,0,0,.14); overflow: hidden }
+.sino-h { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px 8px; font-weight: 500 }
+.sino-l { max-height: min(420px, 60vh); overflow-y: auto }
+.sino-i { display: flex; gap: 10px; width: 100%; padding: 10px 16px; border: 0; background: transparent; text-align: left; color: var(--m-on-surface); align-items: flex-start }
+.sino-i:hover { background: rgba(127,127,127,.12) }
+.sino-d { width: 8px; height: 8px; border-radius: 50%; margin-top: 7px; flex: none; background: transparent }
+.sino-i.nova .sino-d { background: var(--m-primary) }
+.sino-i.nova .sino-t { font-weight: 500 }
+.sino-c { display: flex; flex-direction: column; gap: 2px; min-width: 0 }
+.sino-t { font-size: 14px; line-height: 20px }
+.sino-s { font-size: 12px; color: var(--m-on-var) }
+.sino-f { padding: 8px 16px 12px; border-top: 1px solid var(--m-outline-var) }
+@media (max-width: 599px) { .sino-btn { width: 36px; height: 36px } .sino-menu { position: fixed; right: 16px; left: 16px; width: auto; top: 64px } }
+
+/* linha do tempo do topo: data e subetapa debaixo do nome */
+.sl-w { display: flex; flex-direction: column; min-width: 0 }
+.sd { font-size: 12px; color: var(--m-on-var); white-space: nowrap }
+
+/* chip de subetapa */
+.chip.sub { background: var(--m-pc); color: var(--m-on-pc); border-color: transparent }
+.chip.sub.warn { background: #ffdf99; color: #7a5900 }
+
+/* quadro de avanço: subetapa e pedido de aprovação */
+.adv-sub { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--m-on-var); margin-bottom: 10px }
+.adv-sub select { height: 32px; border-radius: 8px; border: 1px solid var(--m-outline); background: transparent; color: var(--m-on-surface); padding: 0 8px; font: inherit; font-size: 14px; max-width: 100% }
+.adv-ap { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--m-on-var); border: 1px solid var(--m-outline-var); border-radius: 8px; padding: 2px 8px }
+.adv-ped { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 12px; background: var(--m-pc); color: var(--m-on-pc); margin-bottom: 8px }
+.adv-ped-t { display: flex; gap: 8px; align-items: center }
+.adv-niv { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px }
+.adv-niv li { display: flex; gap: 8px; align-items: center }
+.adv-niv .nv-d { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid currentColor; display: grid; place-items: center; flex: none }
+.adv-niv li.aprovado .nv-d { background: #146c2e; border-color: #146c2e; color: #fff }
+.adv-niv .faint { margin-left: auto }
+.adv-ped-a { display: flex; gap: 8px; flex-wrap: wrap }
+:root[data-tema="escuro"] .adv-ped { background: rgba(99,112,255,.10); color: #c9d6ff; box-shadow: inset 0 0 0 1px rgba(124,140,255,.35) }
+:root[data-tema="escuro"] .chip.sub { background: rgba(99,112,255,.14); color: #c9d6ff }
+
+/* linha do tempo com datas (seção Negociação) */
+.trilha { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px }
+.tr-eh { display: flex; gap: 10px; align-items: center; flex-wrap: wrap }
+.tr-e ul { list-style: none; margin: 6px 0 0; padding: 0 0 0 14px; border-left: 2px solid var(--m-outline-var); display: flex; flex-direction: column; gap: 4px }
+.tr-e ul li { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 14px }
+.tr-e ul li .faint { font-size: 12px }
+
+/* kanban: subetapa no card, pedido de aprovação, etapa clicável */
+.ksub { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--m-on-pc); background: var(--m-pc); border-radius: 8px; padding: 2px 8px; align-self: flex-start; max-width: 100% }
+.ksub > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0 }
+.ksub > span { white-space: nowrap }
+.kped { display: flex; gap: 6px; align-items: center; font-size: 12px; color: #7a5900 }
+.kcard.aprov { outline: 2px solid #ffdf99; outline-offset: -2px }
+.katr { color: #b3261e !important; font-weight: 500 }
+.col-ab { display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent; color: inherit; font: inherit; padding: 4px 6px; margin: -4px -6px; border-radius: 8px }
+.col-ab:hover { background: rgba(127,127,127,.12) }
+.col-s { font-size: 12px; padding: 0 var(--e2) var(--e1) }
+.neg-et { margin-bottom: 12px }
+:root[data-tema="escuro"] .ksub { background: rgba(99,112,255,.14); color: #c9d6ff }
+:root[data-tema="escuro"] .kped { color: #ffdf99 }
+
+/* relato com formatação */
+.rt { border: 1px solid var(--m-outline); border-radius: 8px; overflow: hidden }
+.rt-bar { display: flex; gap: 2px; padding: 4px; border-bottom: 1px solid var(--m-outline-var) }
+.rt-bar .iconbtn { width: 32px; height: 32px }
+.rt-ed { min-height: 120px; padding: 10px 12px; outline: none; line-height: 1.5 }
+.rt-ed:empty::before { content: attr(data-ph); color: var(--m-on-var) }
+.rt-ed ul, .relato ul { margin: 4px 0; padding-left: 20px }
+.relato p { margin: 4px 0 }
+
+/* tarefa: colegas marcados */
+.marc { display: flex; flex-wrap: wrap; gap: 4px 16px }
+
+/* Configurações › Funil */
+.cfg-abas { margin-bottom: 12px }
+.cfg-t { display: flex; flex-direction: column; gap: 6px }
+.cfg-r { display: grid; grid-template-columns: minmax(160px, 1.4fr) 110px minmax(240px, 2fr); gap: 10px; align-items: center }
+.cfg-r.cfg-sub { grid-template-columns: 72px minmax(160px, 1.4fr) 110px minmax(240px, 2fr) 70px 70px }
+.cfg-r.cfg-st { grid-template-columns: minmax(140px, 1fr) minmax(240px, 3fr) }
+.cfg-r.cfg-mot { grid-template-columns: minmax(200px, 1fr) 100px 70px }
+.cfg-r.cfg-nt { grid-template-columns: minmax(200px, 1.6fr) 70px minmax(140px, 1fr) }
+.cfg-r.cfg-eq { grid-template-columns: minmax(160px, 1.4fr) 140px 160px 110px }
+.cfg-hd { font-size: 12px; color: var(--m-on-var); font-weight: 500 }
+.cfg-r input:not([type=checkbox]), .cfg-r select { height: 36px; border-radius: 8px; border: 1px solid var(--m-outline); background: transparent; color: var(--m-on-surface); padding: 0 10px; font: inherit; font-size: 14px; min-width: 0; width: 100% }
+.cfg-r.inativa input:not([type=checkbox]) { color: var(--m-on-var); text-decoration: line-through }
+.cfg-ap { display: flex; gap: 12px; align-items: center; flex-wrap: wrap }
+.cfg-ap select { width: auto !important }
+.cfg-ord { display: flex; gap: 2px }
+.cfg-ord .iconbtn { width: 32px; height: 32px; font-size: 16px }
+.cfg-pre { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 8px }
+.cfg-pre li { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 8px 12px; border-radius: 8px; background: var(--m-sc-low) }
+.cfg-docs { display: flex; flex-wrap: wrap; gap: 8px }
+.linkbtn.danger { color: #b3261e }
+@media (max-width: 899px) {
+  .cfg-hd { display: none }
+  .cfg-r, .cfg-r.cfg-sub, .cfg-r.cfg-st, .cfg-r.cfg-mot, .cfg-r.cfg-nt, .cfg-r.cfg-eq { grid-template-columns: 1fr 1fr; padding: 10px 0; border-bottom: 1px solid var(--m-outline-var) }
+  .cfg-r > :first-child, .cfg-ap { grid-column: 1 / -1 }
+  .cfg-r.cfg-sub > input:first-of-type { grid-column: 1 / -1 }
+}
+/* celular: quatro papéis não cabem por extenso na barra; fica a inicial (nome completo no title) */
+@media (max-width: 480px) {
+  #role button { font-size: 0 !important; min-width: 34px; padding: 0 !important }
+  #role button::after { content: attr(data-c); font-size: 13px }
+}
+
 /* Tema escuro: indicadores tonais, sem neon. Mesma luminosidade nos quatro, só o tom muda
    (oklch relativo); navegador sem suporte fica com o véu de color-mix */
 :root[data-tema="escuro"] .kpi { background: color-mix(in srgb, var(--k, var(--neon-1)) 16%, transparent) !important; background: oklch(from var(--k, var(--neon-1)) 0.29 0.07 h) !important; border: 1px solid color-mix(in srgb, var(--k, var(--neon-1)) 60%, transparent) !important; border: 1px solid oklch(from var(--k, var(--neon-1)) 0.58 0.14 h) !important; box-shadow: none !important }
@@ -2260,6 +2368,7 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
     </label>
     <div class="top-right">
       <span class="demo-pill">Dados de exemplo</span>
+      <div class="sino-wrap" id="sino"></div>
       <div class="seg" id="role" role="group" aria-label="Testar como"></div>
       <div class="tema-wrap" id="tema"></div>
     </div>
@@ -2325,6 +2434,7 @@ const BI={
   financeiro:'<path d="M14 61 C14 53 45 53 45 61 C45 69 14 69 14 61 L14 75 C14 83 45 83 45 75 L45 61 M14 69 C14 77 45 77 45 69 M51 45 C51 37 82 37 82 45 C82 53 51 53 51 45 L51 74 C51 82 82 82 82 74 L82 45 M51 59 C51 67 82 67 82 59" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M24 37 L38 23 L52 23 M45 16 L52 23 L45 30" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>',
   construcao:'<path d="M30 83 L30 25 L43 25 L43 83 M21 83 L53 83 M15 25 L83 25 L66 12 L30 12 L15 25 M43 13 L43 25 M30 38 L43 51 L30 64 L43 77" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M73 26 L73 52 C73 61 62 61 62 54" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>',
   localizacao:'<path d="M48 83 C42 75 21 53 21 36 C21 21 33 11 48 11 C63 11 75 21 75 36 C75 53 54 75 48 83 Z" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M58 36 C58 41.523 53.523 46 48 46 C42.477 46 38 41.523 38 36 C38 30.477 42.477 26 48 26 C53.523 26 58 30.477 58 36 Z" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>',
+  config:'<path d="M14 26 L82 26 M14 48 L82 48 M14 70 L82 70" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M36 19 A7 7 0 1 0 36 33 A7 7 0 1 0 36 19 Z M62 41 A7 7 0 1 0 62 55 A7 7 0 1 0 62 41 Z M30 63 A7 7 0 1 0 30 77 A7 7 0 1 0 30 63 Z" style="fill:var(--superficie,#fff);stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>',
   tempo:'<path d="M82 48 C82 66.778 66.778 82 48 82 C29.222 82 14 66.778 14 48 C14 29.222 29.222 14 48 14 C66.778 14 82 29.222 82 48 Z" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M48 26 L48 49 L65 60" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M48 14 L48 18 M82 48 L78 48 M48 82 L48 78 M14 48 L18 48" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>'
 };
 const bi=(n,s=32)=>`<svg class="bkm-ico" viewBox="0 0 96 96" width="${s}" height="${s}" style="width:${s}px;height:${s}px" aria-hidden="true">${BI[n]}</svg>`;
@@ -2354,20 +2464,44 @@ const OPT={
   sitDil:{nao_avaliada:'Não avaliada',em_analise:'Em análise',pendente:'Pendente',resolvida:'Resolvida',impeditiva:'Impeditiva'}
 };
 const TEMP=['','Muito fria','Fria','Morna','Quente','Muito quente'];
-const STAGES=[['recebido','Recebido'],['viabilidade_inicial','Viabilidade inicial'],['negociacao','Negociação'],['minutagem','Minutagem']];
-const FECHAMENTO=['ganha','Ganha'];
-// fase dentro da etapa Negociação (vem das propostas; "finais" também pode ser marcada à mão)
-const FASES={sem_proposta:'Sem proposta',proposta_enviada:'Proposta enviada',contraproposta:'Contraproposta',negociacoes_finais:'Negociações finais'};
-const fase=t=>{const n=t.neg;if(!n||n.etapa!=='negociacao'||n.status!=='ativo')return null;const lp=t.propostas[t.propostas.length-1];
-  return n.final||lp?.status==='aceita'?'negociacoes_finais':lp?.origem==='vendedor'?'contraproposta':lp?.origem==='bkm'?'proposta_enviada':'sem_proposta'};
+/* funil (no banco: etapas_modelo, subetapas_modelo, status_modelo, prerequisitos_modelo, checklist_modelo,
+   motivos_encerramento e tipos_notificacao; cada empresa tem a sua cópia, editada em Configurações › Funil) */
+const CFG_PADRAO=()=>({
+  etapas:[{k:'triagem',nome:'Em Triagem',sla:10,g:false,d:false,modo:'sequencia'},{k:'estudos',nome:'Estudos Preliminares',sla:20,g:false,d:false,modo:'sequencia'},
+    {k:'negociacao',nome:'Negociação',sla:60,g:false,d:false,modo:'sequencia'},{k:'contrato',nome:'Contrato',sla:30,g:true,d:false,modo:'sequencia'}],
+  subs:[['triagem','aguardando_informacoes','Aguardando Informações'],['triagem','aguardando_documentos','Aguardando Documentos'],['triagem','verificacao_interna','Verificação Interna'],
+    ['estudos','estudo_massa','Estudo de Massa'],['estudos','estudo_viabilidade','Estudo de Viabilidade'],['estudos','analise_tecnica','Análise Técnica Preliminar'],
+    ['negociacao','aguardando_reuniao','Aguardando Primeira Reunião'],['negociacao','preparando_proposta','Preparando Proposta'],['negociacao','proposta_enviada','Proposta Enviada',15],['negociacao','contra_proposta','Contra Proposta',10],
+    ['contrato','em_elaboracao','Em Elaboração'],['contrato','contrato_enviado','Contrato Enviado'],['contrato','em_ajuste','Em Ajuste']]
+    .map(([etapa,k,nome,prazo],i)=>({k,etapa,nome,ordem:i+1,prazo:prazo||null,g:false,d:false,modo:'sequencia',ativo:true})),
+  status:{comprado:{g:true,d:true,modo:'sequencia'},perdido:{g:false,d:false,modo:'sequencia'},descartado:{g:false,d:false,modo:'sequencia'},stand_by:{g:false,d:false,modo:'sequencia'}},
+  prereq:[{id:'pr1',alvoTipo:'etapa',alvo:'negociacao',req:'estudo_viabilidade'}],
+  checklist:{contrato:[['matricula',1],['onus',1],['iptu',1],['vend',1],['topo',1],['sond',0],['amb',0],['minuta',1]].map(([doc,o])=>({doc,obrig:!!o}))},
+  motivos:{descartado:[['tecnica','Inviabilidade Técnica'],['financeira','Inviabilidade Financeira'],['contratual','Inviabilidade Contratual'],['formato_negocio','Inviabilidade Formato de Negócio'],['garantias','Inviabilidade Garantias'],['urbanistica','Inviabilidade Urbanística'],['documental','Inviabilidade Documental'],['outros','Outros',1]].map(([k,nome,tx])=>({k,nome,texto:!!tx,ativo:true})),
+    perdido:[['vendido_terceiro','Vendido para terceiro'],['desistiu_vender','Proprietário desistiu de vender'],['preco_pagamento','Vendedor não aceitou preço ou pagamento'],['formato','Vendedor não aceitou o formato (permuta etc.)'],['garantias','Vendedor não aceitou as garantias'],['sem_retorno','Sem retorno do proprietário'],['outros','Outros',1]].map(([k,nome,tx])=>({k,nome,texto:!!tx,ativo:true}))},
+  notif:{tarefa_atribuida:{ativo:true,dias:null},tarefa_marcado:{ativo:true,dias:null},tarefa_prazo:{ativo:true,dias:[0]},tarefa_atrasada:{ativo:true,dias:null},subetapa_prazo:{ativo:true,dias:null},
+    stand_by_retomar:{ativo:true,dias:[7,0]},documento_vencendo:{ativo:true,dias:[30,7]},reuniao_agendada:{ativo:true,dias:[1]},aprovacao_pendente:{ativo:true,dias:null},aprovacao_decidida:{ativo:true,dias:null}}
+});
+const CFG0=CFG_PADRAO();
+const cfg=()=>(typeof S!=='undefined'&&S&&S.cfg)||CFG0;
+const STAGES=CFG0.etapas.map(e=>[e.k,e.nome]); // sempre igual a cfg().etapas (syncCfg)
+const etapaCfg=k=>cfg().etapas.find(e=>e.k===k);
+const subsDe=e=>cfg().subs.filter(s=>s.etapa===e&&s.ativo).sort((a,b)=>a.ordem-b.ordem);
+const subInicial=e=>subsDe(e)[0]?.k||null;
+const subN=k=>(cfg().subs.find(s=>s.k===k)||{}).nome||k||'';
+const STATUS_N={ativo:'Ativo',comprado:'Comprado',perdido:'Perdido',descartado:'Descartado',stand_by:'Stand By'};
+const motivoN=(st,k)=>((cfg().motivos[st]||[]).find(m=>m.k===k)||{}).nome||k||'';
 const SIDX=k=>STAGES.findIndex(s=>s[0]===k);const SN=k=>(STAGES.find(s=>s[0]===k)||[,k])[1];
 const INFRA=[['energia','Rede de energia na porta'],['agua','Rede de água na porta'],['esgoto','Rede de esgoto na porta'],['gas','Gás canalizado na porta'],['asfalto','Asfalto na porta'],['drenagem','Drenagem pluvial'],['iluminacao','Iluminação pública'],['calcada','Calçada'],['fibra','Telefonia / fibra óptica']];
 const ZONEAMENTOS=['ZEU','ZEUa','ZEUP','ZEUPa','ZEM','ZEMP','ZC','ZCa','ZC-ZEIS','ZCOR-1','ZCOR-2','ZCOR-3','ZM','ZMa','ZMIS','ZMISa','ZEIS-1','ZEIS-2','ZEIS-3','ZEIS-4','ZEIS-5','ZDE-1','ZDE-2','ZPI-1','ZPI-2','ZER-1','ZER-2','ZERa','ZPR','ZEP','ZEPAM','ZPDS','ZOE'];
 const TIPOS_DOC={ata:['Ata de reunião','Reuniões',null],matricula:['Matrícula atualizada','Imóvel',30],onus:['Certidão de ônus reais','Imóvel',30],iptu:['Certidão negativa de IPTU','Imóvel',90],vend:['Certidões pessoais do vendedor','Vendedor',30],topo:['Levantamento planialtimétrico','Técnico',null],sond:['Sondagem SPT','Técnico',null],amb:['Avaliação ambiental preliminar','Técnico',null],minuta:['Minuta de promessa de compra e venda','Contratos',null],foto:['Foto','Mídia',null],planta:['Planta ou croqui','Técnico',null]};
 const CHECK_DIL=[['matricula',1],['onus',1],['iptu',1],['vend',1],['topo',1],['sond',0],['amb',0],['minuta',1]];
-const USERS=['Moisés','Ana Prado','Rafael Souza','Camila Torres'];
-const ROLE_USER={Gestor:'Moisés',Analista:'Rafael Souza',Leitura:'Diretoria'};
-const AVC={'Diretoria':'--av2','Moisés':'--av1','Ana Prado':'--av2','Rafael Souza':'--av3','Camila Torres':'--av4'};
+const USERS=['Moisés','Ana Prado','Camila Torres','Rafael Souza'];
+/* hierarquia: N analistas → 1 gestor; N gestores → 1 diretor. Administrador é permissão à parte */
+const MEMBROS_PADRAO=()=>[{nome:'Moisés',papel:'diretor',sup:null,admin:true},{nome:'Ana Prado',papel:'gestor',sup:'Moisés',admin:false},{nome:'Camila Torres',papel:'gestor',sup:'Moisés',admin:false},
+  {nome:'Rafael Souza',papel:'analista',sup:'Ana Prado',admin:false},{nome:'Lúcia Mendes',papel:'leitura',sup:null,admin:false}];
+const ROLE_USER={Diretor:'Moisés',Gestor:'Ana Prado',Analista:'Rafael Souza',Leitura:'Lúcia Mendes'};
+const AVC={'Lúcia Mendes':'--av2','Moisés':'--av1','Ana Prado':'--av2','Rafael Souza':'--av3','Camila Torres':'--av4'};
 const ini=n=>String(n||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
 const av=(n,c='')=>`<span class="avatar ${c}" style="background:var(${AVC[n]||'--av3'})" title="${esc(n)}">${esc(ini(n))}</span>`;
 
@@ -2379,7 +2513,13 @@ function seed(){
   const base=(o)=>Object.assign({id:uid(),situacao:'ativo',prioridade:null,descricao:'',url:'',obs:'',cep:'',complemento:'',referencia:'',lat:null,lng:null,precisao:'nao_informada',
     municipio:'São Paulo · SP',aDoc:null,aCad:null,aLev:null,aEst:null,fonteArea:null,testada:null,topografia:'nao_informado',desnivel:null,posicao:'nao_informado',formato:'nao_informado',ocupacao:'nao_informado',
     uso:'',aConst:null,aDemolir:null,demolicao:'nao_avaliada',obsFis:'',eixo:null,mats:[],insc:[],confr:[],dilig:[],pessoas:[],corretores:[],infra:{},analises:[],ofertas:[],neg:null,propostas:[],reunioes:[],tarefas:[],docs:[],hist:[]},o);
-  const neg=(etapa,dias,extra)=>Object.assign({codigo:'NEG-'+String(Math.floor(Math.random()*900)+100).padStart(5,'0'),etapa,status:'ativo',desde:H(dias),temp:null,ofRef:null,viab:null},extra||{});
+  /* negociação de exemplo: trilha passando pelas subetapas até a atual (dSub = dias na subetapa atual) */
+  const neg=(etapa,sub,dias,extra,dSub)=>{const ix=STAGES.findIndex(s=>s[0]===etapa),tr=[];let pe=null,ps=null;
+    for(let i=0;i<=ix;i++){const e=STAGES[i][0],subs=subsDe(e).map(x=>x.k),cur=i===ix,ate=cur?subs.slice(0,subs.indexOf(sub)+1):subs,ini=cur?dias:dias+12*(ix-i),fim=cur?(dSub??Math.min(dias,4)):dias+12*(ix-i-1);
+      ate.forEach((s,j)=>{const d=j===0?ini:Math.round(ini-(ini-fim)*j/(cur?Math.max(1,ate.length-1):ate.length));tr.push({em:H(d)+'T09:00:00.000',user:null,ev:j?'subetapa':i?'avanco':'abertura',deEtapa:pe,deSub:ps,paraEtapa:e,paraSub:s,status:'ativo'});pe=e;ps=s})}
+    const n=Object.assign({codigo:'NEG-'+String(Math.floor(Math.random()*900)+100).padStart(5,'0'),etapa,sub,status:'ativo',desde:H(dias),subDesde:tr[tr.length-1].em.slice(0,10),temp:null,ofRef:null,viab:null,trilha:tr,pedido:null},extra||{});
+    if(n.status!=='ativo')tr.push({em:n.encerradoEm+'T10:00:00.000',user:null,ev:{comprado:'compra',perdido:'perda',descartado:'descarte',stand_by:'stand_by'}[n.status],deEtapa:etapa,deSub:sub,paraEtapa:etapa,paraSub:sub,status:n.status});
+    return n};
   const infra=(o)=>{const r={};for(const [k,v] of Object.entries(o))r[k]={d:v,data:H(20),fonte:'Visita ao local',obs:''};return r};
   const T=[];
   // 1 — completo, em proposta
@@ -2397,7 +2537,7 @@ function seed(){
               {id:uid(),data:H(18),fonte:'Certidão de uso do solo',status:'vigente',zonas:[{sigla:'ZEU',area:1400,gmS:'sem_limite',gabM:null,gpS:'sem_limite',gabPav:null,caS:'limitado',ca:4,obs:'Eixo de transformação urbana'},{sigla:'ZM',area:520,gmS:'limitado',gabM:28,gpS:'nao_informado',gabPav:null,caS:'limitado',ca:2,obs:'Fundos do lote'}]}],
     ofertas:[{id:'o1',cid:'c1',data:H(62),valor:9000000,forma:'permuta_com_torna',obsPag:'60% em dinheiro na escritura; 40% em unidades no próprio empreendimento.',aceita:'Aceita permuta de até 40% em unidades, preferindo 2 dormitórios com vaga.',validade:H(-30),status:'ativa'},
              {id:'o2',cid:'c2',data:H(41),valor:8700000,forma:'dinheiro',obsPag:'À vista, com desconto para pagamento em 60 dias.',aceita:'Não aceita permuta.',validade:null,status:'ativa'}],
-    neg:neg('negociacao',9,{temp:4,ofRef:'o1',viab:{nome:'Estudo base · 2 dormitórios',vgv:62400000,margem:15.2,pmax:8400000,em:H(35)}}),
+    neg:neg('negociacao','proposta_enviada',9,{temp:4,ofRef:'o1',viab:{nome:'Estudo base · 2 dormitórios',vgv:62400000,margem:15.2,pmax:8400000,em:H(35)}},7),
     propostas:[{v:1,origem:'bkm',data:H(30),validade:H(15),valor:8000000,forma:'dinheiro',cond:'À vista na escritura, condição suspensiva de aprovação do projeto em 180 dias.',status:'recusada'},
                {v:2,origem:'vendedor',data:H(24),validade:H(9),valor:9000000,forma:'permuta_com_torna',cond:'R$ 5,4 mi em dinheiro + 40% em unidades.',status:'recusada'},
                {v:3,origem:'bkm',data:H(8),validade:H(-7),valor:8500000,forma:'permuta_com_torna',cond:'R$ 6 mi em dinheiro + 8% do VGV em permuta física.',status:'em_analise'}],
@@ -2418,7 +2558,7 @@ function seed(){
     infra:infra({energia:'sim',agua:'sim',esgoto:'nao',asfalto:'sim'}),
     analises:[{id:uid(),data:H(30),fonte:'GeoSampa',status:'vigente',zonas:[{sigla:'ZEIS-2',area:5400,gmS:'sem_limite',gabM:null,gpS:'nao_informado',gabPav:null,caS:'limitado',ca:2,obs:''}]}],
     ofertas:[{id:'o3',cid:null,data:H(48),valor:9800000,forma:'dinheiro',obsPag:'Pagamento em 3 parcelas.',aceita:'Aceita conversar sobre permuta financeira.',status:'ativa'}],
-    neg:neg('minutagem',26,{temp:3,ofRef:'o3',viab:{nome:'ZEIS-2 · 2 dormitórios',vgv:78300000,margem:16.2,pmax:10900000,em:H(30)}}),
+    neg:neg('contrato','contrato_enviado',26,{temp:3,ofRef:'o3',viab:{nome:'ZEIS-2 · 2 dormitórios',vgv:78300000,margem:16.2,pmax:10900000,em:H(30)}},6),
     propostas:[{v:1,origem:'bkm',data:H(40),valor:9200000,forma:'dinheiro',cond:'Três parcelas: 30% na promessa, 70% em duas parcelas condicionadas à aprovação.',status:'aceita'}],
     tarefas:[{id:uid(),titulo:'Contratar levantamento planialtimétrico',desc:'',resp:'Camila Torres',prazo:H(4),status:'pendente',prio:'alta',resultado:''},{id:uid(),titulo:'Cobrar novas certidões do vendedor',desc:'',resp:'Camila Torres',prazo:H(2),status:'aguardando_terceiro',prio:'media',resultado:''}],
     docs:[{tipo:'matricula',status:'validado',emitido:H(13),versoes:1},{tipo:'onus',status:'validado',emitido:H(13),versoes:1},{tipo:'iptu',status:'recebido',emitido:H(55),versoes:1},{tipo:'vend',status:'validado',emitido:H(39),versoes:1}]
@@ -2427,14 +2567,14 @@ function seed(){
   T.push(base({codigo:'TER-000131',nome:'Lote Rua Capitão Ourinhos',resp:'Rafael Souza',origem:'corretor',dataIdent:H(3),logradouro:'Rua Capitão Ourinhos',numero:'330',bairro:'Penha',zona:'leste',
     ofertas:[{id:'o4',cid:'c2',data:H(3),valor:5200000,forma:'permuta_fisica',obsPag:'',aceita:'Quer 6 unidades no térreo.',status:'ativa'},{id:'o5',cid:'c1',data:H(1),valor:5600000,forma:'dinheiro',obsPag:'',aceita:'',status:'ativa'}],
     corretores:[{cid:'c2',principal:true},{cid:'c1',principal:false}],
-    neg:neg('recebido',3,{ofRef:'o4'}),
+    neg:neg('triagem','aguardando_informacoes',3,{ofRef:'o4'}),
     tarefas:[{id:uid(),titulo:'Triagem: localização e preço por m²',desc:'',resp:'Rafael Souza',prazo:H(-2),status:'pendente',prio:'media',resultado:''}]}));
   // 4 — viabilidade
   T.push(base({codigo:'TER-000127',nome:'Terreno Rua Pico Alto',resp:'Rafael Souza',origem:'corretor',dataIdent:H(20),logradouro:'Rua Pico Alto',numero:'95',bairro:'Jaraguá',zona:'noroeste',eixo:'e4',aCad:1950,fonteArea:'cadastral',testada:33,topografia:'aclive',
     insc:[{sql:'171.058.0033-9',area:1950,valores:[{ex:2026,rev:1,vig:true,vt:1650000,vc:0,sit:'tributado',iptu:14100,parc:10,mensal:null,fonte:'Carnê 2026',data:H(18)}]}],
     pessoas:[{nome:'Família Moretti (4 herdeiros)',tipo:'PF',papel:'proprietario',pct:null,tel:''}],
     ofertas:[{id:'o6',cid:'c2',data:H(20),valor:3900000,forma:'permuta_geral',obsPag:'Aberto a combinar dinheiro e unidades.',aceita:'Sim, desde que parte em dinheiro.',status:'ativa'}],corretores:[{cid:'c2',principal:true}],
-    neg:neg('viabilidade_inicial',8,{temp:2,ofRef:'o6'}),
+    neg:neg('estudos','estudo_viabilidade',8,{temp:2,ofRef:'o6'},3),
     tarefas:[{id:uid(),titulo:'Rodar estudo de viabilidade no BKM',desc:'',resp:'Rafael Souza',prazo:H(-3),status:'em_andamento',prio:'alta',resultado:''}]}));
   // 5 — aprovação interna, acima do teto
   T.push(base({codigo:'TER-000112',nome:'Área Barão do Jequitibá',prioridade:'alta',resp:'Moisés',origem:'corretor',dataIdent:H(121),logradouro:'Rua Barão do Jequitibá',numero:'512',bairro:'Vila Prudente',zona:'sudeste',
@@ -2444,7 +2584,8 @@ function seed(){
     infra:infra({energia:'sim',agua:'sim',esgoto:'sim',gas:'sim',asfalto:'sim',drenagem:'sim',iluminacao:'sim',calcada:'sim',fibra:'sim'}),
     analises:[{id:uid(),data:H(80),fonte:'GeoSampa',status:'vigente',zonas:[{sigla:'ZM',area:2950,gmS:'limitado',gabM:28,gpS:'nao_informado',gabPav:null,caS:'limitado',ca:2,obs:''}]}],
     ofertas:[{id:'o7',cid:'c2',data:H(121),valor:6900000,forma:'dinheiro',status:'ativa',obsPag:'',aceita:''}],corretores:[{cid:'c2',principal:true}],
-    neg:neg('negociacao',6,{temp:5,ofRef:'o7',viab:{nome:'Estudo base',vgv:44200000,margem:14.2,pmax:6400000,em:H(90)}}),
+    neg:neg('negociacao','contra_proposta',30,{temp:5,ofRef:'o7',viab:{nome:'Estudo base',vgv:44200000,margem:14.2,pmax:6400000,em:H(90)},
+      pedido:{id:'ped1',tipo:'etapa',dest:'contrato',modo:'sequencia',por:'Rafael Souza',em:H(1)+'T16:20:00.000',dados:{},niveis:[{nivel:2,ordem:1,previsto:'Ana Prado',status:'pendente'}]}},12),
     propostas:[{v:1,origem:'bkm',data:H(50),valor:5900000,forma:'permuta_com_torna',cond:'R$ 4,5 mi + 6% em permuta.',status:'recusada'},{v:2,origem:'vendedor',data:H(30),valor:6900000,forma:'dinheiro',cond:'À vista.',status:'recusada'},{v:3,origem:'bkm',data:H(10),valor:6500000,forma:'dinheiro',cond:'40% na assinatura, 60% na aprovação.',status:'aceita'}],
     reunioes:[{id:uid(),status:'realizada',data:H(31),hora:'09:30',modalidade:'presencial',local:'externo',endereco:'Sede da Têxtil Paulistana',part:{bkm:'Moisés',ext:'Diretoria financeira da Têxtil'},pauta:'Primeira conversa sobre preço.',resumo:'Querem à vista. Não aceitam permuta.',enc:'',ata:{nome:'ata-textil.pdf',versoes:2}}],
     tarefas:[{id:uid(),titulo:'Levar ao comitê: valor acima do preço máximo',desc:'',resp:'Moisés',prazo:H(-3),status:'pendente',prio:'alta',resultado:''}],
@@ -2454,19 +2595,34 @@ function seed(){
     aDoc:1650,fonteArea:'documental',testada:30,topografia:'plano',posicao:'meio_quadra',formato:'regular',ocupacao:'vazio',demolicao:'dispensada',
     pessoas:[{nome:'Espólio de João Ferraz',tipo:'PF',papel:'proprietario',pct:100,tel:''}],
     ofertas:[{id:'o9',cid:'c1',data:H(70),valor:7400000,forma:'dinheiro',obsPag:'',aceita:'Não aceita permuta.',status:'ativa'}],corretores:[{cid:'c1',principal:true}],
-    neg:neg('negociacao',15,{temp:3,ofRef:'o9',viab:{nome:'Estudo base',vgv:52800000,margem:15.8,pmax:7600000,em:H(40)}}),
+    neg:neg('negociacao','contra_proposta',15,{temp:3,ofRef:'o9',viab:{nome:'Estudo base',vgv:52800000,margem:15.8,pmax:7600000,em:H(40)}},5),
     propostas:[{v:1,origem:'bkm',data:H(30),valor:6800000,forma:'dinheiro',cond:'À vista na escritura.',status:'recusada'},{v:2,origem:'vendedor',data:H(5),validade:H(-10),valor:7300000,forma:'dinheiro',cond:'50% no compromisso, 50% em 90 dias.',status:'apresentada'}],
     tarefas:[{id:uid(),titulo:'Responder contraproposta de R$ 7,3 mi',desc:'',resp:'Ana Prado',prazo:H(-4),status:'pendente',prio:'alta',resultado:''}]}));
   // 6 — perdida
   T.push(base({codigo:'TER-000109',nome:'Terreno Vale do Sabiá',resp:'Camila Torres',origem:'corretor',dataIdent:H(105),logradouro:'Rua Vale do Sabiá',numero:'88',bairro:'Brasilândia',zona:'norte',aDoc:2200,fonteArea:'documental',
     ofertas:[{id:'o8',cid:'c3',data:H(105),valor:4100000,forma:'dinheiro',status:'expirada',obsPag:'',aceita:''}],corretores:[{cid:'c3',principal:true}],
-    neg:neg('viabilidade_inicial',95,{status:'perdida',temp:1,ofRef:'o8',motivo:'Zoneamento ou legislação',detalhe:'Cerca de 40% do lote em área de proteção ambiental.'})}));
+    neg:neg('estudos','analise_tecnica',95,{status:'descartado',temp:1,ofRef:'o8',motivo:'urbanistica',detalhe:'Cerca de 40% do lote em área de proteção ambiental.',encerradoEm:H(90)},92)}));
+  // 6b — perdido para outra empresa
+  T.push(base({codigo:'TER-000104',nome:'Terreno Av. Sapopemba',resp:'Ana Prado',origem:'corretor',dataIdent:H(80),logradouro:'Av. Sapopemba',numero:'9.400',bairro:'São Mateus',zona:'leste',aDoc:2400,fonteArea:'documental',
+    ofertas:[{id:'o10',cid:'c3',data:H(80),valor:6400000,forma:'dinheiro',status:'expirada',obsPag:'',aceita:''}],corretores:[{cid:'c3',principal:true}],
+    propostas:[{v:1,origem:'bkm',data:H(35),valor:5600000,forma:'dinheiro',cond:'À vista na escritura.',status:'recusada'}],
+    neg:neg('negociacao','proposta_enviada',40,{status:'perdido',temp:3,ofRef:'o10',motivo:'vendido_terceiro',detalhe:'Proprietário fechou com outra incorporadora por R$ 6,1 mi à vista.',encerradoEm:H(18)},30)}));
+  // 6c — comprado
+  T.push(base({codigo:'TER-000098',nome:'Área Estrada do M\'Boi Mirim',prioridade:'alta',resp:'Moisés',origem:'corretor',dataIdent:H(160),logradouro:"Estrada do M'Boi Mirim",numero:'3.200',bairro:'Jardim Ângela',zona:'sul',aDoc:4100,fonteArea:'documental',topografia:'plano',ocupacao:'vazio',
+    ofertas:[{id:'o11',cid:'c1',data:H(160),valor:7800000,forma:'permuta_com_torna',status:'ativa',obsPag:'',aceita:'Aceita 30% em unidades.'}],corretores:[{cid:'c1',principal:true}],
+    propostas:[{v:1,origem:'bkm',data:H(70),valor:7200000,forma:'permuta_com_torna',cond:'R$ 5 mi + 7% do VGV em permuta física.',status:'aceita'}],
+    docs:['matricula','onus','iptu','vend','topo','minuta'].map(t=>({tipo:t,status:'validado',emitido:H(30),versoes:1})),
+    neg:neg('contrato','em_ajuste',45,{status:'comprado',temp:5,ofRef:'o11',encerradoEm:H(20),relato:'<p>Compromisso assinado com a família Albuquerque em <b>permuta com torna</b>: R$ 5 mi em dinheiro e 7% do VGV em unidades.</p><ul><li>Escritura condicionada à aprovação do projeto em 240 dias</li><li>Corretor Marcos Lemos com 4% sobre a parte em dinheiro</li></ul>',pontos:'Visita conjunta logo na primeira semana; proposta com permuta já no primeiro contato; certidões pedidas antes da minuta.'},10)}));
+  // 6d — stand by
+  T.push(base({codigo:'TER-000121',nome:'Lote Rua Ipiranguinha',resp:'Rafael Souza',origem:'indicacao',dataIdent:H(50),logradouro:'Rua Ipiranguinha',numero:'210',bairro:'Ipiranga',zona:'sul',aCad:900,fonteArea:'cadastral',
+    neg:neg('estudos','estudo_massa',28,{status:'stand_by',temp:2,retomar:H(-5),detalhe:'Proprietários em inventário; retomar depois da partilha.',encerradoEm:H(25)},28)}));
   // 7 — prospecção sem oferta
   T.push(base({codigo:'TER-000132',nome:'Lote vizinho ao TER-000123',resp:'Ana Prado',origem:'prospeccao',dataIdent:H(2),logradouro:'Rua Benedito Mendes',numero:'40',bairro:'Cidade Ademar',zona:'sul',eixo:'e1',insc:[{sql:'089.123.0052-1',area:610,valores:[]}],
     obs:'Abordar para compor a área com o terreno da esquina.',tarefas:[{id:uid(),titulo:'Localizar proprietário pelo SQL',desc:'',resp:'Ana Prado',prazo:H(-5),status:'pendente',prio:'media',resultado:''}]}));
-  T.forEach(t=>{t.hist=[{em:t.dataIdent,user:t.resp,txt:'Terreno cadastrado'}];if(t.neg){t.hist.push({em:t.neg.desde,user:t.resp,txt:`Negociação em ${SN(t.neg.etapa)}`})}});
+  T.forEach(t=>{if(t.neg)t.neg.trilha.forEach(x=>{x.user=x.user||t.resp});t.hist=[{em:t.dataIdent,user:t.resp,txt:'Terreno cadastrado'}];if(t.neg){t.hist.push({em:t.neg.desde,user:t.resp,txt:`Negociação em ${SN(t.neg.etapa)}`})}});
   const COORD={'TER-000123':[-23.66812,-46.65131],'TER-000118':[-23.54480,-46.40660],'TER-000131':[-23.52630,-46.54400],'TER-000127':[-23.45700,-46.74000],
-    'TER-000112':[-23.58500,-46.58100],'TER-000125':[-23.53800,-46.57000],'TER-000109':[-23.46300,-46.68700]};
+    'TER-000112':[-23.58500,-46.58100],'TER-000125':[-23.53800,-46.57000],'TER-000109':[-23.46300,-46.68700],
+    'TER-000104':[-23.61050,-46.47900],'TER-000098':[-23.71000,-46.77000],'TER-000121':[-23.59500,-46.60200]};
   const POLY={'TER-000123':[[-23.66794,-46.65152],[-23.66792,-46.65111],[-23.66830,-46.65108],[-23.66833,-46.65150]],
     'TER-000112':[[-23.58478,-46.58126],[-23.58476,-46.58072],[-23.58522,-46.58070],[-23.58525,-46.58124]],
     'TER-000118':[[-23.54420,-46.40720],[-23.54410,-46.40590],[-23.54535,-46.40580],[-23.54560,-46.40700],[-23.54500,-46.40740]]};
@@ -2482,11 +2638,11 @@ function seed(){
   const concorrentes=[{id:'c1',nome:'Residencial Jardim Prudente',empresa:'Construtora Exemplo A',obs:'Lançado em 2026, 2 dormitórios',lat:-23.58620,lng:-46.57950},
     {id:'c2',nome:'Condomínio Parque Tatuapé',empresa:'Incorporadora Exemplo B',obs:'Em obras',lat:-23.54250,lng:-46.57300},
     {id:'c3',nome:'Vila Cupecê Residencial',empresa:'Construtora Exemplo C',obs:'',lat:-23.66450,lng:-46.64900}];
-  return {eixos,corretores,terrenos:T,pontos,concorrentes,areasInteresse:[{id:'ai1',nome:'Área Cupecê A',terrenos:['TER-000123','TER-000132']}],seqT:132};
+  return {eixos,corretores,terrenos:T,pontos,concorrentes,areasInteresse:[{id:'ai1',nome:'Área Cupecê A',terrenos:['TER-000123','TER-000132']}],seqT:132,cfg:CFG_PADRAO(),membros:MEMBROS_PADRAO(),notifs:[]};
 }
 
 /* ===================== estado ===================== */
-const KEY='bkm-terrenos-prototipo-v7';
+const KEY='bkm-terrenos-prototipo-v8';
 let S;try{const r=localStorage.getItem(KEY);S=r?JSON.parse(r):null}catch(e){S=null}
 if(!S||!S.terrenos)S=seed();
 const save=()=>{try{if(typeof audit==='function')audit()}catch(e){console.error(e)}try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
@@ -2506,7 +2662,7 @@ function renderTema(){const el=document.getElementById('tema');if(!el)return;
   el.innerHTML=`<button class="tema-btn" data-a="tema-menu" aria-haspopup="menu" aria-expanded="${temaMenu}" aria-label="Tema da tela" title="Tema">${ic}</button>`+
    (temaMenu?`<div class="tema-menu" role="menu"><div class="tl">Tema</div>${TEMAS.map(([k,l,c])=>`<button role="menuitemradio" aria-checked="${TEMA===k}" data-a="tema" data-v="${k}"><span class="sw" style="background:${c}"></span>${l}</button>`).join('')}</div>`:'')}
 
-const UI={route:'inicio',id:null,tab:'cadastro',from:'terrenos',q:'',fT:'ativos',role:'Gestor',edit:null,modal:null,upload:null,propForm:false};
+const UI={route:'inicio',id:null,tab:'cadastro',from:'terrenos',q:'',fT:'ativos',role:'Diretor',edit:null,modal:null,upload:null,propForm:false};
 const me=()=>ROLE_USER[UI.role];
 const T=id=>S.terrenos.find(t=>t.id===id);
 const corretor=id=>S.corretores.find(c=>c.id===id);
@@ -2563,13 +2719,6 @@ function tempPicker(t){
   return `<div class="temp" title="Temperatura da negociação"><span class="bars" role="radiogroup" aria-label="Temperatura da negociação">${[1,2,3,4,5].map(n=>`<button type="button" role="radio" aria-checked="${v===n}" aria-label="${n} · ${TEMP[n]}" class="${n<=v?'on':''} t${v}" ${on?`data-a="temp" data-v="${n===v?0:n}"`:'disabled'}></button>`).join('')}</span><span class="tl" style="color:${v?`var(--t${v})`:'var(--texto-suave)'}">${v?`${v} · ${TEMP[v]}`:'Não avaliada'}</span></div>`;
 }
 const tempMini=v=>v?`<span class="temp-mini t${v}" title="Temperatura ${v} · ${TEMP[v]}">${[1,2,3,4,5].map(n=>`<i class="${n<=v?'on':''}"></i>`).join('')}</span>`:'<span class="faint" style="font-size:12px">—</span>';
-function chipNeg(t){
-  if(!t.neg)return '<span class="chip">Sem negociação</span>';
-  const n=t.neg;if(n.status==='perdida')return '<span class="chip crit"><span class="d"></span>Perdida</span>';
-  if(n.status==='stand_by')return '<span class="chip warn"><span class="d"></span>Stand by</span>';
-  if(n.status==='ganha')return '<span class="chip good"><span class="d"></span>Ganha</span>';
-  const f=fase(t);return `<span class="chip fase">${SN(n.etapa)}</span>${f?`<span class="chip fneg ${f}"><span class="d"></span>${FASES[f]}</span>`:''}`;
-}
 const docChip=st=>({pendente:'<span class="chip">Pendente</span>',recebido:'<span class="chip blue">Aguardando validação</span>',validado:'<span class="chip good">Validado</span>',vencido:'<span class="chip crit">Vencido</span>',rejeitado:'<span class="chip crit">Rejeitado</span>'}[st]);
 const statusPropChip=s=>`<span class="chip ${({aceita:'good',recusada:'crit',expirada:'crit',retirada:'',substituida:'',rascunho:'',apresentada:'blue',em_analise:'blue'})[s]}">${OPT.statusProp[s]}</span>`;
 const ni='<span class="v ni">Não informado</span>';
@@ -2737,12 +2886,12 @@ function abaNegociacao(t){
     <div class="field full" id="pp-warn"></div></div>
     <div class="hint">${t.propostas.length?`Responde à v${t.propostas.length}. Se vier do outro lado, a v${t.propostas.length} vira Recusada; se vier do mesmo lado, vira Substituída.`:'Primeira proposta da negociação.'}</div></div>
     <div class="sec-f"><button type="button" class="btn text" data-a="prop-form">Cancelar</button><button class="btn primary">Registrar</button></div></form></section>`:'';
-  return `<div class="stack">
+  return `<div class="stack">${trilhaHtml(t)}
   ${secReunioes(t)}
   <section class="sec"><div class="sec-h"><h2>Viabilidade</h2></div><div class="sec-b">${v?`<div class="metrics"><div class="metric"><div class="ml">VGV</div><div class="mv">${mi(v.vgv)}</div></div><div class="metric"><div class="ml">Margem</div><div class="mv">${num(v.margem,1)}%</div></div><div class="metric"><div class="ml">Preço máximo do terreno</div><div class="mv">${mi(v.pmax)}</div></div></div>
     <div class="faint" style="font-size:12px;margin-top:10px">${esc(v.nome)} · ${fd(v.em)}${ad?` · ${brl(v.pmax/ad)}/m² sobre a área adotada`:''}</div>`
     :`<div class="banner blue">${ic('link')}<div style="flex:1"><div class="bt">Sem estudo vinculado</div><div>Rode a viabilidade no BKM e vincule aqui para ter o preço máximo.</div>${negAtiva(t)?`<button class="btn sm" style="margin-top:10px" data-a="viab">${ic('link',16)}Vincular estudo</button>`:''}</div></div>`}</div></section>
-  <section class="sec"><div class="sec-h"><h2>Propostas e contrapropostas</h2><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${negAtiva(t)&&t.neg.etapa==='negociacao'?`<label class="final-tg"><input type="checkbox" data-ch="final" ${t.neg.final?'checked':''}>Negociações finais</label>`:''}${negAtiva(t)&&!UI.propForm?`<button class="btn primary sm" data-a="prop-form">${ic('add',16)}Nova proposta</button>`:''}</span></div><div class="sec-b">
+  <section class="sec"><div class="sec-h"><h2>Propostas e contrapropostas</h2><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${negAtiva(t)&&!UI.propForm?`<button class="btn primary sm" data-a="prop-form">${ic('add',16)}Nova proposta</button>`:''}</span></div><div class="sec-b">
   ${form}
   ${chain.length?`<div class="chain" style="margin-top:${UI.propForm?16:0}px">${chain.map((p,i)=>{const over=v&&p.valor>v.pmax;return `<div class="pnode ${p.origem}"><span class="pd">v${p.v}</span><div class="pc">
     <div class="ph"><span><span class="pv">${brl(p.valor)}</span> <span class="muted" style="font-size:13px">· ${p.origem==='bkm'?'BKM':'Vendedor'}${p.v>1?` responde à v${p.v-1}`:''}</span></span>
@@ -2814,7 +2963,7 @@ function secReunioes(t){
   <div class="hint" style="margin-top:12px">Cada ata fica guardada com versões e texto pesquisável. O resumo do andamento por IA, a partir das atas, entra numa fase seguinte.</div></div></section>`;
 }
 function abaDocs(t){
-  const ativo=t.neg&&SIDX(t.neg.etapa)>=SIDX('minutagem');
+  const ativo=t.neg&&SIDX(t.neg.etapa)>=SIDX('contrato');
   const doc=tp=>t.docs.find(d=>d.tipo===tp);
   const outros=t.docs.filter(d=>!CHECK_DIL.some(([k])=>k===d.tipo));
   const dl=t.dilig.slice().sort((a,b)=>(a.sit==='resolvida')-(b.sit==='resolvida'));
@@ -2839,35 +2988,8 @@ function abaHist(t){
 }
 
 /* ===================== avanço ===================== */
-function checkAdv(t){
-  const n=t.neg,i=SIDX(n.etapa),next=STAGES[i+1]||FECHAMENTO;const r={next,items:[],ok:true,forcar:false};
-  if(n.status!=='ativo')return null;
-  if(n.etapa==='viabilidade_inicial')r.items.push({ok:!!n.viab,txt:n.viab?'Estudo vinculado':'Vincular um estudo de viabilidade',fix:n.viab?null:['viab','Vincular']});
-  if(n.etapa==='negociacao'){const lp=lastProp(t);r.items.push({ok:lp?.status==='aceita',txt:lp?.status==='aceita'?'Condições comerciais aceitas':'Ter a última proposta marcada como aceita',fix:lp?.status==='aceita'?null:['tab:negociacao','Ver propostas']})}
-  if(n.etapa==='minutagem'){t.dilig.filter(d=>d.sit==='impeditiva').forEach(d=>r.items.push({ok:false,txt:'Diligência impeditiva: '+d.titulo,fix:['tab:documentos','Ver diligências']}));
-    CHECK_DIL.filter(c=>c[1]).forEach(([k])=>{const st=docSt(t.docs.find(d=>d.tipo===k));r.items.push({ok:st==='validado',txt:TIPOS_DOC[k][0]+(st==='validado'?' validado':st==='pendente'?': não enviado':st==='recebido'?': aguardando validação':': '+st),fix:st==='validado'?null:['tab:documentos','Ver documentos']})})}
-  if(next[0]==='minutagem'||next[0]==='ganha')r.items.push({ok:UI.role==='Gestor',txt:UI.role==='Gestor'?(next[0]==='minutagem'?'Aprovação de compra (gestor)':'Aprovação de fechamento (gestor)'):'Somente gestores aprovam a compra e o fechamento',gate:true});
-  const b=r.items.filter(x=>!x.ok);r.ok=!b.length;r.forcar=!r.ok&&UI.role==='Gestor'&&b.every(x=>!x.gate);return r;
-}
-/* linha do tempo das etapas: topo da ficha (desktop e tablet) */
-function linhaEtapas(t){const n=t.neg;if(!n)return '';const idx=SIDX(n.etapa);
-  return `<nav class="tl-topo" aria-label="Etapas da negociação"><ol class="stepper">${STAGES.map((s,i)=>{const st=i<idx||n.status==='ganha'?'done':i===idx?'cur':'fut';return `<li class="step ${st}" ${i===idx&&n.status!=='ganha'?'aria-current="step"':''}><span class="dot">${st==='done'?ic('check',14):i+1}</span><span class="sl" title="${s[1]}">${s[1]}</span></li>`}).join('')}</ol></nav>`}
 let ADV_REQ=false;
 const advItens=items=>items.map(x=>`<li><span class="${x.ok?'ok':'no'}">${ic(x.ok?'check':'close',16)}</span><span>${esc(x.txt)}${x.fix?` · <button class="linkbtn" data-a="${x.fix[0].startsWith('tab:')?'tab':x.fix[0]}" ${x.fix[0].startsWith('tab:')?`data-t="${x.fix[0].slice(4)}"`:''}>${x.fix[1]}</button>`:''}</span></li>`).join('');
-/* quadro de avanço (requisitos, stand by, perdida, avançar): no painel lateral; no celular, na página */
-function painelNeg(t){
-  const n=t.neg;if(!n)return '';
-  if(n.status==='perdida')return `<div class="banner crit">${ic('block')}<div><div class="bt">Negociação perdida em ${SN(n.etapa)} · ${esc(n.motivo)}</div><div>${esc(n.detalhe||'')}</div></div></div>`;
-  if(n.status==='stand_by')return `<div class="banner warn" style="justify-content:space-between;flex-wrap:wrap"><span style="display:flex;gap:12px">${ic('pause')}<span><b>Em stand by desde ${SN(n.etapa)} · revisitar em ${fd(n.retomar)}</b></span></span><button class="btn sm" data-a="retomar">Retomar</button></div>`;
-  const idx=SIDX(n.etapa),r=checkAdv(t);
-  const pend=r?r.items.filter(x=>!x.ok):[],ganha=r&&r.next[0]==='ganha';
-  const inner=`${r?`<div class="adv adv-c"><div class="adv-l1"><span class="adv-t">${ganha?'Próxima: fechar como ganha':'Próxima: '+esc(r.next[1])}</span>${r.items.length?`<button class="adv-st ${pend.length?'adv-st-pend':'adv-st-ok'}" data-a="adv-req" aria-expanded="${ADV_REQ}" title="${ADV_REQ?'Ocultar':'Ver'} requisitos">${pend.length?ic('warn',16)+pend.length+(pend.length>1?' pendências':' pendência'):ic('check',16)+'Requisitos ok'}<svg class="adv-ch" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>`:''}</div>
-  ${ADV_REQ&&r.items.length?`<ul class="adv-lista">${advItens(r.items)}</ul>`:''}
-  <div class="adv-l2"><button class="btn primary" data-a="adv-ir">${ic('fwd',18)}<span>${ganha?'Concluir como ganha':'Avançar'}</span></button><div class="adv-mais"><button class="btn adv-mb" data-a="adv-mais" aria-haspopup="menu" aria-expanded="false" aria-label="Mais ações" title="Stand by ou perdida"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" d="M12 5.5h.01M12 12h.01M12 18.5h.01"/></svg></button><div class="adv-menu" role="menu"><button role="menuitem" data-a="suspender">${ic('pause',18)}Colocar em stand by</button><button role="menuitem" class="danger" data-a="perder">${ic('block',18)}Marcar como perdida</button></div></div></div></div>`
-  :n.status==='ganha'?`<div class="adv"><div class="banner good" style="flex:1">${ic('check')}<div><b>Negociação ganha.</b> Aprovação, incorporação e financiamento Caixa vão se ligar a este terreno.</div></div></div>`:''}`;
-  return inner.trim()?`<section class="sec sec-adv">${inner}</section>`:'';
-}
-
 /* ===================== páginas ===================== */
 /* ficha em página única: cada seção é um bloco com seta; ao abrir um terreno, só a Visão geral nasce aberta (nada é guardado) */
 let BLA={},blId=null;
@@ -2896,7 +3018,7 @@ function pgFicha(){
   <div class="blocos">${blocos}</div>`;
 }
 function bateBusca(t,q){if(!q)return true;q=q.toLowerCase();const hay=[t.codigo,t.nome,t.logradouro,t.numero,t.bairro,OPT.zona[t.zona],eixo(t.eixo),t.resp,...t.mats.map(m=>m.num+' '+digits(m.num)),...t.insc.map(i=>i.sql+' '+digits(i.sql)),...t.ofertas.map(o=>corretor(o.cid)?.nome),...t.pessoas.map(p=>p.nome)].join(' ').toLowerCase();return q.split(/\s+/).every(w=>hay.includes(w))}
-const FILT={ativos:['Em negociação',t=>t.neg?.status==='ativo'],sem:['Sem negociação',t=>!t.neg&&t.situacao==='ativo'],encerrados:['Perdidos e stand by',t=>['perdida','stand_by'].includes(t.neg?.status)],todos:['Todos',()=>true]};
+const FILT={ativos:['Em negociação',t=>t.neg?.status==='ativo'],sem:['Sem negociação',t=>!t.neg&&t.situacao==='ativo'],standby:['Stand By',t=>t.neg?.status==='stand_by'],encerrados:['Comprados, perdidos e descartados',t=>['comprado','perdido','descartado'].includes(t.neg?.status)],todos:['Todos',()=>true]};
 function linhas(){
   const l=S.terrenos.filter(FILT[UI.fT][1]).filter(t=>bateBusca(t,UI.q)).sort((a,b)=>(b.neg?.temp||0)-(a.neg?.temp||0)||b.codigo.localeCompare(a.codigo));
   return tabela('terrenos',l,COLS_TERRENOS,{attr:attrAbrir('terrenos'),vazio:`Nenhum terreno${UI.q?` para “${esc(UI.q)}”`:''}.<br><button class="btn sm" style="margin-top:12px" data-a="novo">${ic('add',16)}Novo terreno</button>`});
@@ -2906,20 +3028,14 @@ function pgTerrenos(){
   <div class="split"><div class="fchips">${Object.entries(FILT).map(([k,[l,f]])=>`<button class="fchip" data-a="fT" data-v="${k}" aria-pressed="${UI.fT===k}">${UI.fT===k?ic('check',16):''}${l} <span class="n">${S.terrenos.filter(f).length}</span></button>`).join('')}</div></div>
   <section class="sec lista"><div id="rows">${linhas()}</div></section>`;
 }
-function pgNeg(){
-  const cols=[...STAGES.map(([k,l])=>[l,t=>t.neg&&t.neg.etapa===k&&t.neg.status==='ativo','',k]),['Stand by',t=>t.neg?.status==='stand_by','enc','stand_by']];
-  const arrasta=UI.role!=='Leitura';
-  return `<div class="page-h"><div><h1><span class="marca"></span>Negociações</h1><div class="sub">Arraste os cards entre as colunas para mudar a etapa. Ganhas e perdidas saem do quadro.</div></div></div><div class="legenda" aria-label="Fases da negociação">${['proposta_enviada','contraproposta','negociacoes_finais'].map(k=>`<span class="lg ${k}"><span class="d"></span>${FASES[k]}</span>`).join('')}</div><div class="board" id="board">${cols.map(([l,f,cls,k])=>{const ts=S.terrenos.filter(f);
-  return `<section class="col ${cls}" data-col="${k}" aria-label="${l}"><div class="col-h"><span>${l}</span><span class="n">${ts.length}</span></div>${ts.map(t=>{const o=ofertaRef(t),lp=lastProp(t),pr=proxReuniao(t);const f=fase(t);return `<button class="kcard ${f||''}" data-a="abrir" data-id="${t.id}" data-from="negociacoes" ${arrasta?'draggable="true"':''}>${f&&f!=='sem_proposta'?`<span class="kfase">${FASES[f]}</span>`:''}<div class="kr"><span class="num faint">${t.codigo}</span>${tempMini(t.neg.temp)}</div><div class="kt">${esc(t.nome)}</div><div class="ks">${esc(t.bairro||'')}${cls?' · parou em '+SN(t.neg.etapa):''}</div>
-  <div class="kr"><span>${lp?'Prop. '+mi(lp.valor):'Pedido '+(o?.valor?mi(o.valor):'—')}</span>${atrasadas(t).length?`<span class="flag crit">${ic('clock',14)}${atrasadas(t).length}</span>`:''}${acimaMax(t)?`<span class="flag warn">${ic('money',14)}</span>`:''}</div>${pr?`<div class="kr"><span class="faint">Reunião ${fd(pr.data)} · ${pr.hora}</span></div>`:''}<div class="kr">${av(t.resp,'sm')}<span class="faint">${cls?(t.neg.status==='stand_by'?'revisitar '+fd(t.neg.retomar):''):diff(t.neg.desde,HOJE)+' d na etapa'}</span></div></button>`}).join('')||'<div class="col-empty">Nenhuma</div>'}</section>`}).join('')}</div>`;
-}
 function pgInicio(){
   const h=new Date().getHours(),s=h<12?'Bom dia':h<18?'Boa tarde':'Boa noite';
   const ativos=S.terrenos.filter(t=>t.neg?.status==='ativo');
   const tarefas=S.terrenos.flatMap(t=>atrasadas(t).map(k=>({t,k})));
   const quentes=ativos.filter(t=>(t.neg.temp||0)>=4);
   const incompletos=S.terrenos.filter(t=>t.situacao==='ativo'&&completude(t).pct<50);
-  const att=[...tarefas.map(({t,k})=>({sev:'crit',i:'clock',ti:k.titulo,su:`${t.nome} · ${k.resp} · venceu ${fd(k.prazo)}`,id:t.id,tab:'tarefas'})),
+  const aprov=S.terrenos.filter(t=>t.neg?.status==='ativo'&&t.neg.pedido&&naVez(t.neg.pedido).some(r=>podeDecidir(r,me())));
+  const att=[...aprov.map(t=>({sev:'warn',i:'check',ti:`Aprovar: ${destinoNome(t.neg.pedido.tipo,t.neg.pedido.dest)}`,su:`${t.nome} · pedido por ${t.neg.pedido.por}`,id:t.id,tab:'geral'})),...tarefas.map(({t,k})=>({sev:'crit',i:'clock',ti:k.titulo,su:`${t.nome} · ${k.resp} · venceu ${fd(k.prazo)}`,id:t.id,tab:'tarefas'})),
     ...ativos.filter(acimaMax).map(t=>({sev:'warn',i:'money',ti:`Proposta acima do preço máximo`,su:`${t.nome} · ${mi(lastProp(t).valor)} vs ${mi(t.neg.viab.pmax)}`,id:t.id,tab:'negociacao'})),
     ...ativos.filter(t=>!t.neg.temp).map(t=>({sev:'warn',i:'warn',ti:'Temperatura não avaliada',su:t.nome,id:t.id,tab:'cadastro'}))];
   return `<div class="forma"><div class="page-h"><div><h1><span class="marca"></span>${s}, ${esc(me().split(' ')[0])}</h1><div class="sub">${ativos.length} negociações em andamento</div></div></div>
@@ -2928,20 +3044,22 @@ function pgInicio(){
   <button class="kpi ${tarefas.length?'crit':''}" data-a="nav" data-r="terrenos"><span class="v">${tarefas.length}</span><span class="l">Tarefas atrasadas</span></button>
   <button class="kpi ${incompletos.length?'warn':''}" data-a="nav" data-r="terrenos"><span class="v">${incompletos.length}</span><span class="l">Fichas com menos de 50% preenchidas</span></button></div>
   <div class="grid-6040 sect-gap"><section class="card"><div class="card-h"><h2>Precisa de atenção</h2><span class="chip crit">${att.length}</span></div><div class="alist" style="margin-top:8px">${att.map(a=>`<button class="aitem" data-a="abrir" data-id="${a.id}" data-tab="${a.tab}" data-from="inicio"><span class="ai ${a.sev}">${ic(a.i,18)}</span><span><div class="at">${esc(a.ti)}</div><div class="as">${esc(a.su)}</div></span><span class="when">${ic('chev',18)}</span></button>`).join('')||'<div class="empty">Tudo em dia.</div>'}</div></section>
-  <section class="card"><div class="card-h"><h2>Mais quentes</h2></div><div class="alist" style="margin-top:8px">${ativos.slice().sort((a,b)=>(b.neg.temp||0)-(a.neg.temp||0)).slice(0,5).map(t=>`<button class="aitem" data-a="abrir" data-id="${t.id}" data-from="inicio"><span style="margin-top:6px">${tempMini(t.neg.temp)}</span><span><div class="at">${esc(t.nome)}</div><div class="as">${SN(t.neg.etapa)} · ${ofertaRef(t)?.valor?mi(ofertaRef(t).valor):'sem valor'}</div></span></button>`).join('')}</div></section></div></div>`;
+  <section class="card"><div class="card-h"><h2>Mais quentes</h2></div><div class="alist" style="margin-top:8px">${ativos.slice().sort((a,b)=>(b.neg.temp||0)-(a.neg.temp||0)).slice(0,5).map(t=>`<button class="aitem" data-a="abrir" data-id="${t.id}" data-from="inicio"><span style="margin-top:6px">${tempMini(t.neg.temp)}</span><span><div class="at">${esc(t.nome)}</div><div class="as">${SN(t.neg.etapa)}${t.neg.sub?' · '+esc(subN(t.neg.sub)):''} · ${ofertaRef(t)?.valor?mi(ofertaRef(t).valor):'sem valor'}</div></span></button>`).join('')}</div></section></div></div>`;
 }
 
 /* ===================== shell ===================== */
 const NAV=[['inicio','Início','casa'],['terrenos','Terrenos','terrenos'],['mapa','Mapa','mapa'],['negociacoes','Negociações','contrato'],['tarefas','Tarefas','checklist'],['dashboard','Dashboard','indicadores']];
+/* Configurações › Funil: só para administrador (no menu lateral; no celular, pelo sino) */
+const navSide=()=>ehAdmin(me())?[...NAV,['config','Configurações','config']]:NAV;
 function render(){
   const cur=UI.route==='terreno'?UI.from:UI.route;
   document.body.classList.toggle('menu-min',menuMin);
-  $('#side').innerHTML=`<button class="menu-tg" data-a="menu" aria-expanded="${!menuMin}" aria-label="${menuMin?'Expandir menu':'Recolher menu'}" title="${menuMin?'Expandir menu':'Recolher menu'}">${ic(menuMin?'expandir':'recolher',20)}</button><button class="compose" data-a="novo" ${menuMin?'title="Novo terreno" aria-label="Novo terreno"':''}>${ic('add',24)}<span class="rot">Novo terreno</span></button>`+NAV.map(([r,l,i])=>`<button class="nav-item" data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''} ${menuMin?`title="${l}" aria-label="${l}"`:''}>${bi(i)}<span class="rot">${l}</span></button>`).join('')+`<div class="side-foot"><span class="rot">Protótipo · dados de exemplo</span><button class="linkbtn rot" data-a="reset">Restaurar dados de exemplo</button></div>`;
+  $('#side').innerHTML=`<button class="menu-tg" data-a="menu" aria-expanded="${!menuMin}" aria-label="${menuMin?'Expandir menu':'Recolher menu'}" title="${menuMin?'Expandir menu':'Recolher menu'}">${ic(menuMin?'expandir':'recolher',20)}</button><button class="compose" data-a="novo" ${menuMin?'title="Novo terreno" aria-label="Novo terreno"':''}>${ic('add',24)}<span class="rot">Novo terreno</span></button>`+navSide().map(([r,l,i])=>`<button class="nav-item" data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''} ${menuMin?`title="${l}" aria-label="${l}"`:''}>${bi(i)}<span class="rot">${l}</span></button>`).join('')+`<div class="side-foot"><span class="rot">Protótipo · dados de exemplo</span><button class="linkbtn rot" data-a="reset">Restaurar dados de exemplo</button></div>`;
   $('#bnav').innerHTML=NAV.map(([r,l,i])=>`<button data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''}><span class="pill">${bi(i,32)}</span>${l}</button>`).join('');
   document.body.classList.toggle('ro',UI.role==='Leitura');
-  renderTema();
-  $('#role').innerHTML=['Gestor','Analista','Leitura'].map(r=>`<button data-a="role" data-v="${r}" aria-pressed="${UI.role===r}">${r}</button>`).join('');
-  document.body.dataset.rota=UI.route;$('#main').innerHTML=({inicio:pgInicio,terrenos:pgTerrenos,negociacoes:pgNeg,terreno:pgFicha,mapa:pgMapa,dashboard:pgDash,tarefas:pgTarefas})[UI.route]();posRender();
+  renderTema();{const n0=S.notifs.length;rotinaNotif();if(S.notifs.length!==n0)save()}renderSino();
+  $('#role').innerHTML=['Diretor','Gestor','Analista','Leitura'].map(r=>`<button data-a="role" data-v="${r}" data-c="${r[0]}" title="Testar como ${r}" aria-pressed="${UI.role===r}">${r}</button>`).join('');
+  document.body.dataset.rota=UI.route;$('#main').innerHTML=({inicio:pgInicio,terrenos:pgTerrenos,negociacoes:pgNeg,terreno:pgFicha,mapa:pgMapa,dashboard:pgDash,tarefas:pgTarefas,config:pgConfig})[UI.route]();posRender();
   renderModal();
 }
 let tmr;function toast(m,e){const el=$('#toast');el.textContent=m;el.className='toast show'+(e?' err':'');clearTimeout(tmr);tmr=setTimeout(()=>el.className='toast',2800)}
@@ -2949,8 +3067,9 @@ function go(route,x={}){Object.assign(UI,{route,edit:null,propForm:false,reuForm
 
 /* ===================== modais ===================== */
 function renderModal(){
-  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.novoLoc=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;return}
+  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.novoLoc=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;return}
   let h='';const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`;
+  h=funilModal(M,fechar);
   if(M==='novo')h=`<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Só o mínimo para entrar no radar. A ficha é completada aos poucos.</div></div>${fechar}</div>
   <form data-form="novo" id="f-novo"><div class="fields">${GG&&!UI.novoLoc?`<div class="field full"><div id="n-gauto" class="gauto"></div><span id="n-gauto-loc" class="hint">Escolha um resultado para preencher endereço e localização.</span></div>`:''}${UI.novoLoc?`<div class="field full"><div class="banner blue">${ic('check')}<div>Localização marcada no mapa: <span class="num">${num(UI.novoLoc.lat,5)}, ${num(UI.novoLoc.lng,5)}</span></div></div></div>`:''}
   <div class="field full verif">
@@ -2985,11 +3104,6 @@ function renderModal(){
     <div class="field full"><label for="o-o">Observação sobre a forma de pagamento</label><input id="o-o" name="obsPag"></div>
     <div class="field full"><label for="o-a">Aceita permuta</label><input id="o-a" name="aceita"></div></div></form>
     <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-of">Registrar</button></div>`;
-  if(M==='perder')h=`<div class="dh"><h2>Encerrar como perdida</h2>${fechar}</div><form data-form="perder" id="f-p"><div class="fields"><div class="field full"><label for="pd-m">Motivo</label><select id="pd-m" name="motivo" required><option value="">Escolha</option>${['Preço acima do teto da viabilidade','Zoneamento ou legislação','Documentação ou pendência jurídica','Vendedor desistiu','Perdido para concorrente','Outro'].map(x=>`<option>${x}</option>`).join('')}</select></div><div class="field full"><label for="pd-d">Detalhe</label><textarea id="pd-d" name="detalhe"></textarea></div></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-p">Encerrar</button></div>`;
-  if(M==='suspender')h=`<div class="dh"><h2>Colocar em stand by</h2>${fechar}</div><form data-form="suspender" id="f-s"><div class="fields"><div class="field"><label for="sp-d">Revisitar em</label><input id="sp-d" name="retomar" type="date" min="${addD(HOJE,1)}" value="${addD(HOJE,30)}" required></div><div class="field full"><label for="sp-t">Motivo</label><textarea id="sp-t" name="detalhe" required></textarea></div></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-s">Colocar em stand by</button></div>`;
-  if(M==='retornar'){const t=T(UI.alvo);h=`<div class="dh"><div><h2>Voltar para ${SN(UI.alvoEtapa)}?</h2><div class="muted" style="margin-top:4px">${esc(t.nome)} está em ${SN(t.neg.etapa)}.</div></div>${fechar}</div><form data-form="retornar" id="f-rt"><div class="field"><label for="rt-m">Motivo (vai para o histórico)</label><textarea id="rt-m" name="motivo" required placeholder="Ex.: vendedor reabriu o preço"></textarea></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-rt">Voltar etapa</button></div>`}
-  if(M==='adv-bloq'){const r=checkAdv(T(UI.id));const pend=r?r.items.filter(x=>!x.ok):[];h=`<div class="dh"><div><h2>Ainda não dá para ${r&&r.next[0]==='ganha'?'concluir':'avançar para '+esc(r?r.next[1]:'')}</h2><p class="muted" style="margin:6px 0 0">${pend.every(x=>x.gate)?'Peça a um gestor para avançar.':pend.some(x=>x.gate)?'Resolva o que falta e peça a um gestor para avançar.':'Resolva o que falta. Só um gestor pode avançar sem os requisitos, com justificativa.'}</p></div>${fechar}</div><ul class="adv-lista adv-modal">${advItens(pend)}</ul><div class="df"><button class="btn primary" data-a="close">Entendi</button></div>`}
-  if(M==='forcar')h=`<div class="dh"><div><h2>${UI.alvoEtapa?'Levar para '+SN(UI.alvoEtapa)+' sem os requisitos?':(()=>{const r=checkAdv(T(UI.id));return r&&r.next[0]==='ganha'?'Concluir como ganha sem os requisitos?':'Avançar para '+(r?r.next[1]:'')+' sem os requisitos?'})()}</h2>${UI.alvoPend?`<ul class="pend">${UI.alvoPend.map(x=>`<li>${ic('close',16)}${esc(x)}</li>`).join('')}</ul>`:''}</div>${fechar}</div><form data-form="forcar" id="f-fc"><div class="field"><label for="fc-j">Justificativa (vai para o histórico)</label><textarea id="fc-j" name="j" required></textarea></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-fc">${!UI.alvoEtapa&&checkAdv(T(UI.id))?.next[0]==='ganha'?'Concluir':'Avançar'}</button></div>`;
   if(M==='viab')h=`<div class="dh"><h2>Vincular estudo de viabilidade</h2>${fechar}</div><form data-form="viab" id="f-vb"><div class="fields"><div class="field full"><label for="vb-n">Nome</label><input id="vb-n" name="nome" value="Estudo base" required></div><div class="field"><label for="vb-v">VGV (R$)</label><input id="vb-v" name="vgv" inputmode="decimal"></div><div class="field"><label for="vb-m">Margem (%)</label><input id="vb-m" name="margem" inputmode="decimal"></div><div class="field full"><label for="vb-p">Preço máximo do terreno (R$)</label><input id="vb-p" name="pmax" inputmode="decimal" required></div></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-vb">Vincular</button></div>`;
   if(M==='geo')h=geoModalHtml(fechar);
   if(M==='poi')h=`<div class="dh"><div><h2>Novo ponto de interesse</h2><div class="muted" style="margin-top:4px">Serve para medir a distância dos terrenos e traçar rotas.</div></div>${fechar}</div>
@@ -3019,6 +3133,7 @@ function renderModal(){
     <div class="field"><label for="tm-p">Prazo</label><input id="tm-p" name="prazo" type="date" required value="${k?.prazo||addD(HOJE,3)}"></div>
     <div class="field"><label for="tm-pr">Prioridade</label><select id="tm-pr" name="prio">${o(OPT.prioTar,k?.prio||'media')}</select></div>
     <div class="field"><label for="tm-s">Status</label><select id="tm-s" name="status">${o(OPT.statusTar,k?.status||sel.status||'pendente')}</select></div>
+    <div class="field full"><span class="lbl-f">Marcar colegas (recebem notificação)</span><div class="marc">${USERS.map(u=>`<label class="chk"><input type="checkbox" name="marc" value="${esc(u)}" ${(k?.marcados||[]).includes(u)?'checked':''}>${esc(u)}</label>`).join('')}</div></div>
     <div class="field full"><label for="tm-d">Descrição</label><textarea id="tm-d" name="desc">${esc(k?.desc||'')}</textarea></div>
     ${k?`<div class="field full"><label for="tm-res">Resultado</label><textarea id="tm-res" name="resultado" placeholder="O que foi feito ou decidido">${esc(k.resultado||'')}</textarea></div>`:''}</div></fieldset></form>
     <div class="df">${t?`<button class="btn text" data-a="abrir" data-id="${t.id}" data-tab="tarefas" data-from="tarefas">Abrir terreno</button>`:''}<button class="btn text" data-a="close">${ro?'Fechar':'Cancelar'}</button>${ro?'':`<button class="btn primary" type="submit" form="f-tk">${k?'Salvar':'Criar tarefa'}</button>`}</div>`}
@@ -3048,9 +3163,11 @@ function dedupe(){
 /* ===================== eventos ===================== */
 document.addEventListener('click',e=>{
   if(temaMenu&&!e.target.closest('.tema-wrap')){temaMenu=false;renderTema()}
+  if(sinoAberto&&!e.target.closest('#sino')){sinoAberto=false;renderSino()}
   if(!e.target.closest('.adv-mais'))document.querySelectorAll('.adv-mais.aberto').forEach(x=>{x.classList.remove('aberto');x.querySelector('.adv-mb')?.setAttribute('aria-expanded','false')});
   const a=e.target.closest('[data-a]');if(!a)return;const A=a.dataset.a;const t=UI.route==='terreno'?T(UI.id):null;
   if(A==='scrim'){if(e.target===a){UI.modal=null;renderModal()}return}
+  if(funilClick(A,a,t))return;
   switch(A){
     case 'nav':go(a.dataset.r);break;
     case 'abrir':BLA={geral:true};blId=a.dataset.id;go('terreno',{id:a.dataset.id,tab:a.dataset.tab||'geral',from:a.dataset.from||(UI.route==='terreno'?UI.from:UI.route==='inicio'?'inicio':'terrenos')});if(a.dataset.tab&&a.dataset.tab!=='geral'){blocoAbre(a.dataset.tab);render();rolarBloco(a.dataset.tab)}break;
@@ -3061,7 +3178,7 @@ document.addEventListener('click',e=>{
     case 'ir':UI.tab=a.dataset.t;blocoAbre(a.dataset.t);UI.edit=a.dataset.s&&SECOES[a.dataset.s]||a.dataset.s==='areas'?a.dataset.s:null;render();rolarBloco(a.dataset.t,a.dataset.s);break;
     case 'fT':UI.fT=a.dataset.v;render();break;
     case 'role':UI.role=a.dataset.v;render();toast(UI.role==='Leitura'?'Testando como Leitura: consulta tudo, não altera nada.':`Testando como ${UI.role}.`);break;
-    case 'reset':S=seed();save();go('inicio');toast('Dados de exemplo restaurados.');break;
+    case 'reset':S=seed();prepararDados();save();go('inicio');toast('Dados de exemplo restaurados.');break;
     case 'novo':UI.modal='novo';renderModal();break;
     case 'nova-oferta':UI.modal='oferta';renderModal();break;
     case 'close':UI.modal=null;renderModal();break;
@@ -3075,7 +3192,6 @@ document.addEventListener('click',e=>{
     case 'del-confr':t.confr.splice(Number(a.dataset.i),1);save();render();break;
     case 'infra':{const k=a.dataset.k,v=a.dataset.v;t.infra[k]=v==='nao_verificado'?{d:v}:{d:v,data:HOJE,fonte:t.infra[k]?.fonte||'Visita ao local'};save();render();break}
     case 'prop-form':UI.propForm=!UI.propForm;render();break;
-    case 'avancar':case 'do-forcar':{const r=checkAdv(t);if(r.next[0]==='ganha'){t.neg.status='ganha';log(t,'Negociação ganha');save();render();toast('Negociação ganha.');break}t.neg.etapa=r.next[0];t.neg.desde=HOJE;log(t,`Avançou para ${r.next[1]}`);save();render();toast(`Movida para ${r.next[1]}.`);break}
     case 'forcar':UI.modal='forcar';renderModal();break;
     case 'ent-buscar':{const x=T(a.dataset.id);if(x)gEntornoTerreno(x);break}
     case 'ent-todos':ENT_TODOS=!ENT_TODOS;render();break;
@@ -3083,13 +3199,6 @@ document.addEventListener('click',e=>{
     case 'ent-add-ponto':{const id=a.dataset.id;go('mapa',{mpFoco:id,mpView:null});UI.poiVolta=id;UI.mpModo='poi';mpRefresh();setTimeout(()=>{if(UI.mpModo==='poi')fecharPopup()},400);break}
     case 'adv-req':ADV_REQ=!ADV_REQ;render();break;
     case 'adv-mais':{const w=a.closest('.adv-mais'),ab=!w.classList.contains('aberto');document.querySelectorAll('.adv-mais.aberto').forEach(x=>{x.classList.remove('aberto');x.querySelector('.adv-mb').setAttribute('aria-expanded','false')});if(ab){w.classList.add('aberto');a.setAttribute('aria-expanded','true')}break}
-    case 'adv-ir':{const r=checkAdv(t);if(!r)break;const pend=r.items.filter(x=>!x.ok);
-      if(r.ok){UI.alvoEtapa=null;UI.alvoPend=null;
-        if(r.next[0]==='ganha'){t.neg.status='ganha';log(t,'Negociação ganha');save();render();toast('Negociação ganha.');break}
-        t.neg.etapa=r.next[0];t.neg.desde=HOJE;log(t,`Avançou para ${r.next[1]}`);save();render();toast(`Movida para ${r.next[1]}.`);break}
-      UI.alvoEtapa=null;UI.alvoPend=pend.map(x=>x.txt);UI.modal=r.forcar?'forcar':'adv-bloq';renderModal();break}
-    case 'perder':UI.modal='perder';renderModal();break;
-    case 'suspender':UI.modal='suspender';renderModal();break;
     case 'viab':UI.modal='viab';renderModal();break;
     case 'mp-sv':{const x=T(a.dataset.id);fecharPopup();gStreetView(x,MAPA);break}
     case 'g-sv-mini':{const x=T(a.dataset.id);if(MINI)gStreetView(x,MINI);break}
@@ -3133,7 +3242,6 @@ document.addEventListener('click',e=>{
     case 'menu':menuMin=!menuMin;try{localStorage.setItem('bkm-terrenos-menu',menuMin?'min':'')}catch(e){}render();break;
     case 'reu-form':UI.reuForm=!UI.reuForm;render();break;
     case 'reu-feita':{const m=t.reunioes.find(x=>x.id===a.dataset.k);if(m.data>HOJE){toast('A data ainda não chegou. Ajuste a data antes de marcar como realizada.',true);break}m.status='realizada';log(t,`Reunião de ${fd(m.data)} marcada como realizada`);save();render();break}
-    case 'retomar':t.neg.status='ativo';log(t,'Negociação retomada');save();render();break;
     case 'doc-ok':{const d=t.docs.find(x=>x.tipo===a.dataset.k);d.status='validado';log(t,`${TIPOS_DOC[d.tipo][0]} validado`);save();render();break}
     case 'upload':UI.upload=a.dataset.k;$('#file-in').value='';$('#file-in').click();break;
   }
@@ -3143,6 +3251,7 @@ $('#file-in').addEventListener('change',e=>{const f=e.target.files?.[0],t=T(UI.i
   const unico=k!=='foto'&&k!=='planta';let d=unico?t.docs.find(x=>x.tipo===k):null;
   if(!d){d={tipo:k,status:'recebido',emitido:HOJE,versoes:0,nome:unico?null:f.name};t.docs.push(d)}d.versoes++;d.emitido=HOJE;d.status='recebido';log(t,`${TIPOS_DOC[k][0]}: versão ${d.versoes} enviada`);save();render();toast('Arquivo enviado. Falta validar.')});
 document.addEventListener('change',e=>{const el=e.target;
+  if(funilChange(el))return;
   if(el.dataset.ch==='mp-cor'){UI.mp.cor=el.value;mpRefresh();return}
   if(el.dataset.ch==='mp-zona'){UI.mp.zona=el.value;mpRefresh();return}
   if(el.dataset.ch==='dash-sel'){const s=UI.dash.sel;UI.dash.sel=el.checked?Object.keys(DIMS).filter(k=>s.includes(k)||k===el.value):s.filter(k=>k!==el.value);render();return}
@@ -3152,7 +3261,6 @@ document.addEventListener('change',e=>{const el=e.target;
   const t=UI.route==='terreno'?T(UI.id):null;if(!t)return;
   if(el.dataset.ch==='tar-st'){const k=t.tarefas.find(x=>x.id===el.dataset.k);k.status=el.value;log(t,`Tarefa "${k.titulo}": ${OPT.statusTar[el.value]}`);save();render()}
   if(el.dataset.ch==='dil-sit'){const d=t.dilig.find(x=>x.id===el.dataset.k);d.sit=el.value;log(t,`Diligência "${d.titulo}": ${OPT.sitDil[el.value]}`);save();render()}
-  if(el.dataset.ch==='final'){t.neg.final=el.checked;log(t,el.checked?'Em negociações finais':'Saiu de negociações finais');save();render()}
   if(el.dataset.ch==='tar-res'){t.tarefas.find(x=>x.id===el.dataset.k).resultado=el.value;save()}
   if(el.dataset.ch==='infra-fonte'){t.infra[el.dataset.k].fonte=el.value;save()}
   if(el.dataset.ch==='prop-status'){const lp=lastProp(t);lp.status=el.value;log(t,`Proposta v${lp.v}: ${OPT.statusProp[el.value]}`);save();render()}
@@ -3166,6 +3274,7 @@ document.addEventListener('input',e=>{const el=e.target;
   if(el.id==='pp-v'){const t=T(UI.id),v=lerNum(el.value),w=$('#pp-warn');w.innerHTML=t.neg.viab&&v>t.neg.viab.pmax?`<div class="banner warn">${ic('warn')}<div>${brl(v)} fica ${mi(v-t.neg.viab.pmax)} acima do preço máximo (${mi(t.neg.viab.pmax)}).</div></div>`:''}
 });
 document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Object.fromEntries(new FormData(f)),t=UI.alvo?T(UI.alvo):UI.route==='terreno'?T(UI.id):null;
+  if(funilSubmit(f.dataset.form,F,t,f))return;
   switch(f.dataset.form){
     case 'sec':{const s=SECOES[f.dataset.s];s.campos.forEach(([k,,tipo])=>{if(tipo==='fixo'||!(k in F))return;let v=F[k].trim();if(['m2','m','dec'].includes(tipo))v=lerNum(v);else if(tipo==='sel'&&v==='')v=k==='precisao'?'nao_informada':['topografia','posicao','formato','ocupacao'].includes(k)?'nao_informado':k==='demolicao'?'nao_avaliada':null;else if(v==='')v=k==='nome'?t.nome:null;t[k]=v});
       if(t.aDemolir!=null&&t.aConst!=null&&t.aDemolir>t.aConst){toast('A área a demolir não pode passar da área construída.',true);return}
@@ -3187,7 +3296,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
     case 'dilig':t.dilig.push({id:uid(),cat:F.cat,titulo:F.titulo,sit:F.sit,resp:F.resp,prov:F.prov});log(t,`Diligência: ${F.titulo}`);save();render();toast('Diligência registrada.');break;
     case 'pessoa':if(F.papel==='proprietario'&&lerNum(F.pct)!=null){const tot=t.pessoas.filter(p=>p.papel==='proprietario').reduce((a,p)=>a+(p.pct||0),0);if(tot+lerNum(F.pct)>100){toast(`A soma passaria de 100% (já há ${num(tot,2)}% informado).`,true);return}}
       t.pessoas.push({nome:F.nome,tipo:F.tipo,papel:F.papel,pct:F.papel==='proprietario'?lerNum(F.pct):null,tel:F.tel});save();render();break;
-    case 'tarefa':t.tarefas.push({id:uid(),titulo:F.titulo,desc:F.desc,resp:F.resp,prazo:F.prazo,status:'pendente',prio:F.prio,resultado:''});log(t,`Tarefa criada: ${F.titulo}`);save();render();toast('Tarefa adicionada.');break;
+    case 'tarefa':t.tarefas.push({id:uid(),titulo:F.titulo,desc:F.desc,resp:F.resp,prazo:F.prazo,status:'pendente',prio:F.prio,resultado:'',marcados:[]});notifTarefa(t,t.tarefas[t.tarefas.length-1],null);log(t,`Tarefa criada: ${F.titulo}`);save();render();toast('Tarefa adicionada.');break;
     case 'poi':{S.pontos=S.pontos||[];S.pontos.push({id:uid(),nome:F.nome.trim(),cat:F.cat,lat:UI.novoPoi.lat,lng:UI.novoPoi.lng});UI.modal=null;save();const volta=UI.poiVolta;UI.poiVolta=null;if(volta&&T(volta))go('terreno',{id:volta,tab:'geral'});else render();toast('Ponto de interesse salvo.');break}
     case 'conc':{S.concorrentes=S.concorrentes||[];S.concorrentes.push({id:uid(),nome:F.nome.trim(),empresa:(F.empresa||'').trim(),obs:(F.obs||'').trim(),lat:UI.novoConc.lat,lng:UI.novoConc.lng});UI.modal=null;save();render();toast('Concorrência salva.');break}
     case 'kmz':{let novos=0,lig=0;(UI.kmzItens||[]).forEach((it,i)=>{const d=F['i'+i];if(d==null||d==='')return;
@@ -3195,10 +3304,10 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
           if(it.tipo==='poligono')nt.poly=it.pts;nt.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado por importação de KMZ'}];S.terrenos.push(nt);novos++}
         else{const t=T(d);aplicarKmz(t,it);log(t,it.tipo==='poligono'?`Poligonal importada (${m2(areaPoly(it.pts))})`:'Localização importada de KMZ');lig++}});
       UI.modal=null;UI.mpView=null;save();render();toast(`${novos?novos+' terreno'+(novos>1?'s':'')+' criado'+(novos>1?'s':''):''}${novos&&lig?' e ':''}${lig?lig+' atualizado'+(lig>1?'s':''):''}${!novos&&!lig?'Nada importado':''}.`);break}
-    case 'tarefa-m':{const sel=UI.tkSel;if(sel.tid){const t=T(sel.tid),k=t.tarefas.find(x=>x.id===sel.kid);const de=k.status;Object.assign(k,{titulo:F.titulo.trim(),resp:F.resp,prazo:F.prazo,prio:F.prio,status:F.status,desc:F.desc,resultado:F.resultado||''});
+    case 'tarefa-m':{const sel=UI.tkSel;if(sel.tid){const t=T(sel.tid),k=t.tarefas.find(x=>x.id===sel.kid);const de=k.status,antes={resp:k.resp,marcados:(k.marcados||[]).slice()};Object.assign(k,{titulo:F.titulo.trim(),resp:F.resp,prazo:F.prazo,prio:F.prio,status:F.status,desc:F.desc,resultado:F.resultado||'',marcados:new FormData(f).getAll('marc')});notifTarefa(t,k,antes);
         if(de!==k.status)log(t,`Tarefa "${k.titulo}": ${OPT.statusTar[de]} → ${OPT.statusTar[k.status]}`);toast('Tarefa salva.')}
       else{const t=T(F.ter);if(!t){toast('Escolha o terreno da tarefa.',true);return}const irm=todasTarefas().filter(x=>x.k.status===F.status);
-        t.tarefas.push({id:uid(),titulo:F.titulo.trim(),desc:F.desc,resp:F.resp,prazo:F.prazo,status:F.status,prio:F.prio,resultado:'',pos:Math.max(0,...irm.map(x=>x.k.pos||0))+1000});log(t,`Tarefa criada: ${F.titulo.trim()}`);toast('Tarefa criada.')}
+        t.tarefas.push({id:uid(),titulo:F.titulo.trim(),desc:F.desc,resp:F.resp,prazo:F.prazo,status:F.status,prio:F.prio,resultado:'',marcados:new FormData(f).getAll('marc'),pos:Math.max(0,...irm.map(x=>x.k.pos||0))+1000});notifTarefa(t,t.tarefas[t.tarefas.length-1],null);log(t,`Tarefa criada: ${F.titulo.trim()}`);toast('Tarefa criada.')}
       UI.modal=null;save();render();break}
     case 'reuniao':{if(F.status==='realizada'&&F.data>HOJE){toast('Reunião realizada não pode ter data futura.',true);return}
       if(F.status==='agendada'&&F.data<HOJE){toast('Para registrar uma reunião passada, escolha Realizada.',true);return}
@@ -3221,42 +3330,20 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       const val=lerNum(F.valor);
       if(val||F.cid){const o={id:uid(),cid:F.cid||null,data:HOJE,valor:val,forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,status:'ativa'};alvo.ofertas.push(o);
         if(o.cid&&!alvo.corretores.some(x=>x.cid===o.cid))alvo.corretores.push({cid:o.cid,principal:!alvo.corretores.some(x=>x.principal)});
-        if(!alvo.neg||!['ativo','stand_by'].includes(alvo.neg.status)){alvo.neg={codigo:'NEG-'+String(Math.floor(Math.random()*900)+100).padStart(5,'0'),etapa:'recebido',status:'ativo',desde:HOJE,temp:Number(F.temp)||null,ofRef:o.id,viab:null};log(alvo,'Negociação aberta')}
+        if(!alvo.neg||!['ativo','stand_by'].includes(alvo.neg.status)){alvo.neg=novaNeg(o.id,Number(F.temp)||null);log(alvo,'Negociação aberta')}
         else log(alvo,'Nova oferta registrada')}
       UI.modal=null;save();go('terreno',{id:alvo.id,tab:dup?'comercial':'cadastro',from:'terrenos'});toast(dup?'Oferta registrada no terreno existente.':`${alvo.codigo} cadastrado. Complete a ficha quando puder.`);break}
     case 'oferta':{const o={id:uid(),cid:F.cid||null,data:HOJE,valor:lerNum(F.valor),forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,validade:F.validade||null,status:'ativa'};t.ofertas.push(o);
       if(o.cid&&!t.corretores.some(x=>x.cid===o.cid))t.corretores.push({cid:o.cid,principal:!t.corretores.some(x=>x.principal)});
-      if(!t.neg||!['ativo','stand_by'].includes(t.neg.status)){t.neg={codigo:'NEG-'+String(Math.floor(Math.random()*900)+100).padStart(5,'0'),etapa:'recebido',status:'ativo',desde:HOJE,temp:null,ofRef:o.id,viab:null};log(t,'Negociação aberta')}else log(t,`Nova oferta: ${mi(o.valor)}`);
+      if(!t.neg||!['ativo','stand_by'].includes(t.neg.status)){t.neg=novaNeg(o.id,null);log(t,'Negociação aberta')}else log(t,`Nova oferta: ${mi(o.valor)}`);
       UI.modal=null;save();render();toast('Oferta registrada.');break}
-    case 'perder':Object.assign(t.neg,{status:'perdida',motivo:F.motivo,detalhe:F.detalhe});log(t,'Perdida: '+F.motivo);UI.modal=null;save();render();break;
-    case 'suspender':Object.assign(t.neg,{status:'stand_by',retomar:F.retomar});log(t,'Stand by até '+fd(F.retomar)+(F.detalhe?' · '+F.detalhe:''));UI.modal=null;save();render();break;
-    case 'retornar':{const de=t.neg.etapa;t.neg.etapa=UI.alvoEtapa;t.neg.desde=HOJE;log(t,`Voltou de ${SN(de)} para ${SN(UI.alvoEtapa)}: ${F.motivo}`);UI.modal=null;save();render();toast(`Voltou para ${SN(t.neg.etapa)}.`);break}
-    case 'forcar':if(UI.alvoEtapa){const res=levarAte(t,UI.alvoEtapa,F.j);UI.modal=null;save();render();toast(res.ok?`Movida para ${SN(t.neg.etapa)}.`:res.msg,!res.ok);break}{const r=checkAdv(t);if(r.next[0]==='ganha')t.neg.status='ganha';else{t.neg.etapa=r.next[0];t.neg.desde=HOJE}log(t,`${r.next[0]==='ganha'?'Negociação ganha':'Avançou para '+r.next[1]} sem requisitos: ${F.j}`);UI.modal=null;save();render();break}
     case 'viab':t.neg.viab={nome:F.nome,vgv:lerNum(F.vgv),margem:lerNum(F.margem),pmax:lerNum(F.pmax),em:HOJE};log(t,'Estudo vinculado');UI.modal=null;save();render();break;
   }
 });
+function novaNeg(ofRef,temp){const e=STAGES[0][0],s=subInicial(e);return {codigo:'NEG-'+String(Math.floor(Math.random()*900)+100).padStart(5,'0'),etapa:e,sub:s,status:'ativo',desde:HOJE,subDesde:HOJE,temp,ofRef,viab:null,pedido:null,trilha:[{em:agora(),user:me(),ev:'abertura',deEtapa:null,deSub:null,paraEtapa:e,paraSub:s,status:'ativo'}]}}
 function seedVazio(){return {id:uid(),situacao:'ativo',prioridade:null,descricao:'',url:'',obs:'',cep:'',complemento:'',referencia:'',lat:null,lng:null,precisao:'nao_informada',aDoc:null,aCad:null,aLev:null,aEst:null,fonteArea:null,testada:null,topografia:'nao_informado',desnivel:null,posicao:'nao_informado',formato:'nao_informado',ocupacao:'nao_informado',uso:'',aConst:null,aDemolir:null,demolicao:'nao_avaliada',obsFis:'',eixo:null,mats:[],insc:[],confr:[],dilig:[],pessoas:[],corretores:[],infra:{},analises:[],ofertas:[],neg:null,propostas:[],reunioes:[],tarefas:[],docs:[],hist:[]}}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&temaMenu){temaMenu=false;renderTema();return}if(e.key==='Escape'&&UI.modal){UI.modal=null;renderModal()}});
-/* ===================== kanban: arrastar e soltar ===================== */
-// Mesmo comportamento de app.mover_para_etapa: para frente passa por cada etapa com as regras de avanço
-// (falhou uma, nada muda); para trás pede motivo.
-function levarAte(t,alvo,forcarJust){
-  const orig={etapa:t.neg.etapa,desde:t.neg.desde},passos=[];
-  while(SIDX(t.neg.etapa)<SIDX(alvo)){const r=checkAdv(t);
-    if(!r.ok){const pend=r.items.filter(x=>!x.ok).map(x=>x.txt);
-      if(forcarJust&&r.forcar){passos.push([t.neg.etapa,r.next[0],true]);t.neg.etapa=r.next[0];continue}
-      Object.assign(t.neg,orig);return {ok:false,etapa:r.next[0],pend,podeForcar:r.forcar,msg:`Para ir para ${r.next[1]}: ${pend[0]}${pend.length>1?` (+${pend.length-1})`:''}`}}
-    passos.push([t.neg.etapa,r.next[0],false]);t.neg.etapa=r.next[0]}
-  t.neg.desde=HOJE;passos.forEach(([de,para,f])=>log(t,`Avançou para ${SN(para)}${f?' sem requisitos: '+forcarJust:''}`));return {ok:true}}
-function soltar(id,col){const t=T(id);if(!t||!t.neg||UI.role==='Leitura')return;const n=t.neg;
-  if(col==='stand_by'){if(n.status==='ativo'){UI.alvo=id;UI.modal='suspender';renderModal()}return}
-  if(n.status==='stand_by'){n.status='ativo';n.retomar=null;log(t,'Negociação retomada');if(n.etapa===col){save();render();toast('Negociação retomada.');return}}
-  if(n.status!=='ativo'||n.etapa===col){save();render();return}
-  if(SIDX(col)<SIDX(n.etapa)){save();render();UI.alvo=id;UI.alvoEtapa=col;UI.modal='retornar';renderModal();return}
-  const res=levarAte(t,col);
-  if(res.ok){save();render();toast(`${t.nome}: ${SN(col)}.`);return}
-  save();render();
-  if(res.podeForcar){UI.alvo=id;UI.alvoEtapa=col;UI.alvoPend=res.pend;UI.modal='forcar';renderModal()}else toast(res.msg,true)}
+/* ===================== kanban: arrastar e soltar (regras em proto_funil.js: levarAte, soltar) ===================== */
 function posRender(){try{if(MAPA){MAPA.remove()}}catch(e){}MAPA=null;PINS=POIS=DES=BASE=null;try{if(MINI)MINI.remove()}catch(e){}MINI=null;
   if(UI.route==='mapa')initMapa();if(UI.route==='terreno'&&!blocoFechado('geral'))initMini();fichaSheet()}
 document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const el=e.target;if(!(el instanceof HTMLElement)||el.matches('button,a,input,select,textarea'))return;if(el.matches('[data-a][tabindex]')){e.preventDefault();el.click()}});
@@ -3278,12 +3365,15 @@ UI.tk=UI.tk||{vista:'quadro',q:'',resp:'',ter:'',prio:'',atras:false,canc:false}
 
 /* ---------- situação do terreno (cor do pin, gráficos) ---------- */
 // rótulo, cor, glifo no pin, cor do glifo. Etapas ativas em rampa de azul (ordem = avanço);
-// stand by, ganha e perdida com cores próprias e glifo, para não depender só da cor.
-const SIT={sem_negociacao:['Sem negociação','#8a8d91','·','#fff'],recebido:['Recebido','#8fc8f7','1','#1d2e5c'],
-  viabilidade_inicial:['Viabilidade inicial','#4aa3f0','2','#fff'],negociacao:['Negociação','#0b74d6','3','#fff'],
-  minutagem:['Minutagem','#1d2e5c','4','#fff'],stand_by:['Stand by','#c98a2e','‖','#fff'],ganha:['Ganho','#6f9a3a','✓','#fff'],perdida:['Perdido','#9a3b30','×','#fff']};
+// Stand By, Comprado, Perdido e Descartado com cores próprias e glifo, para não depender só da cor.
+const SIT={sem_negociacao:['Sem negociação','#8a8d91','·','#fff'],triagem:['Em Triagem','#8fc8f7','1','#1d2e5c'],
+  estudos:['Estudos Preliminares','#4aa3f0','2','#fff'],negociacao:['Negociação','#0b74d6','3','#fff'],
+  contrato:['Contrato','#1d2e5c','4','#fff'],stand_by:['Stand By','#c98a2e','‖','#fff'],comprado:['Comprado','#6f9a3a','✓','#fff'],
+  perdido:['Perdido','#9a3b30','×','#fff'],descartado:['Descartado','#6b6560','–','#fff']};
+/* nomes das etapas seguem a configuração da empresa */
+const sitNome=k=>STAGES.find(s=>s[0]===k)?.[1]||SIT[k][0];
 const sitMapa=t=>!t.neg?'sem_negociacao':t.neg.status==='ativo'?t.neg.etapa:t.neg.status;
-const sitChip=k=>`<span class="sitchip"><span class="sw" style="background:${SIT[k][1]}"></span>${SIT[k][0]}</span>`;
+const sitChip=k=>`<span class="sitchip"><span class="sw" style="background:${SIT[k][1]}"></span>${esc(sitNome(k))}</span>`;
 const ativosBanco=()=>S.terrenos.filter(t=>t.situacao!=='arquivado');
 
 /* ---------- geografia ---------- */
@@ -3444,7 +3534,7 @@ function mpSelecionar(id){UI.mpSel=id;mpMarcarPinos();if(UI.fichaSheet&&id&&id!=
 function mpCartao(){const c=$('#mp-cartao');if(!c)return;const t=UI.mpSel&&T(UI.mpSel);c.innerHTML=t&&!UI.mpModo&&mpVisiveis().includes(t)?mpItem(t,true):''}
 function mpLegenda(){const base=ativosBanco();
   return Object.keys(SIT).map(k=>{const n=base.filter(t=>sitMapa(t)===k).length;const on=!UI.mp.ocultas.includes(k);
-    return `<button type="button" class="lg-i" data-a="mp-sit" data-v="${k}" aria-pressed="${on}"><span class="pin-mini" style="background:${SIT[k][1]};color:${SIT[k][3]}">${SIT[k][2]}</span>${SIT[k][0]}<span class="n">${n}</span></button>`}).join('')
+    return `<button type="button" class="lg-i" data-a="mp-sit" data-v="${k}" aria-pressed="${on}"><span class="pin-mini" style="background:${SIT[k][1]};color:${SIT[k][3]}">${SIT[k][2]}</span>${sitNome(k)}<span class="n">${n}</span></button>`}).join('')
     +`<hr class="lg-sep"><button type="button" class="lg-i" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}"><span class="lg-poi"><span class="poi-b"></span></span>Pontos de interesse<span class="n">${(S.pontos||[]).length}</span></button>`
     +`<button type="button" class="lg-i" data-a="mp-conc" aria-pressed="${UI.mpConc!==false}"><span class="lg-poi"><span class="conc-b"></span></span>Concorrência<span class="n">${(S.concorrentes||[]).length}</span></button>`;
 }
@@ -3640,7 +3730,7 @@ function aplicarKmz(t,it){if(it.tipo==='poligono'){t.poly=it.pts;const c=centro(
 
 /* ===================== DASHBOARD ===================== */
 const DIMS={
-  situacao:{l:'Terrenos por situação',v:t=>sitMapa(t),ord:Object.keys(SIT),lab:k=>SIT[k][0],cor:k=>SIT[k][1]},
+  situacao:{l:'Terrenos por situação',v:t=>sitMapa(t),ord:Object.keys(SIT),lab:k=>sitNome(k),cor:k=>SIT[k][1]},
   zona:{l:'Terrenos por região',v:t=>t.zona||'nao_informado',ord:[...Object.keys(OPT.zona),'nao_informado'],lab:k=>k==='nao_informado'?'Não informada':OPT.zona[k]},
   corretor:{l:'Terrenos por corretor principal',v:t=>t.corretores.find(x=>x.principal)?.cid||'sem',lab:k=>k==='sem'?'Sem corretor':(corretor(k)?.nome||k)},
   origem:{l:'Terrenos por origem',v:t=>t.origem||'nao',lab:k=>OPT.origem[k]||'Não informada'},
@@ -3710,7 +3800,7 @@ document.addEventListener('focusin',e=>{const el=e.target.closest?.('[data-tip]'
 document.addEventListener('focusout',()=>TIP.classList.remove('on'));
 
 /* ===================== FICHA: VISÃO GERAL ===================== */
-function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp=lastProp(t),pr=typeof proxReuniao==='function'?proxReuniao(t):null,pt=proxTarefa(t),f=typeof fase==='function'?fase(t):null,px=proximos(t);
+function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp=lastProp(t),pr=typeof proxReuniao==='function'?proxReuniao(t):null,pt=proxTarefa(t),px=proximos(t);
   const lin=(k,val)=>`<div class="kv"><dt>${k}</dt><dd>${val==null||val===''?'<span class="ni">Não informado</span>':val}</dd></div>`;
   /* Edição direta no resumo: grava nos mesmos campos das seções abaixo, pelo mesmo caminho (no banco, app.salvar_terreno só com as chaves enviadas) */
   const CAMPO={};Object.entries(SECOES).forEach(([sid,s])=>s.campos.forEach(c=>{CAMPO[c[0]]=[sid,c]}));
@@ -3744,7 +3834,8 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     ${linE('Responsável',esc(t.resp),'resp',['resp'])}
     ${linE('Origem',esc(OPT.origem[t.origem]||''),'orig',['origem'])}</dl></div></section>`;
   const neg=n?`<section class="sec"><div class="sec-h"><h2>Negociação</h2><button class="btn text sm" data-a="tab" data-t="negociacao">Ver propostas e reuniões</button></div><div class="sec-b"><dl class="kvl">
-    ${lin('Situação',sitChip(sitMapa(t))+(f&&f!=='sem_proposta'?` <span class="chip fneg ${f}"><span class="d"></span>${FASES[f]}</span>`:''))}
+    ${lin('Situação',sitChip(sitMapa(t))+(n.status==='ativo'&&n.sub?` <span class="chip sub">${esc(subN(n.sub))} · ${diasSub(n)} d</span>`:'')+(n.pedido?' <span class="chip blue">Aguardando aprovação</span>':''))}
+    ${['perdido','descartado'].includes(n.status)?lin('Motivo',esc(motivoN(n.status,n.motivo))+(n.detalhe?` · ${esc(n.detalhe)}`:'')):''}
     ${n.status==='ativo'?`<div class="kv"><dt>Temperatura</dt><dd>${tempPicker(t)}</dd></div>`:lin('Temperatura',n.temp?`${tempMini(n.temp)} ${TEMP[n.temp]}`:'')}
     ${lin('Última proposta',lp?`${mi(lp.valor)} · ${lp.origem==='bkm'?'BKM':'Vendedor'} · ${OPT.statusProp[lp.status]}`:'')}
     ${lin('Próxima reunião',pr?`${fd(pr.data)} · ${esc(pr.hora||'')}`:'')}
@@ -4122,7 +4213,8 @@ const ARR_LAB={mats:['Matrícula',x=>x.num],insc:['Inscrição imobiliária',x=>
   reunioes:['Reunião',x=>fd(x.data)+(x.hora?' '+x.hora:'')],tarefas:['Tarefa',x=>x.titulo],docs:['Documento',x=>(TIPOS_DOC[x.tipo]||[x.nome||x.tipo])[0]],analises:['Análise urbanística',x=>x.fonte||fd(x.data)]};
 const ITEM_LAB={titulo:'título',prazo:'prazo',resp:'responsável',status:'status',prio:'prioridade',desc:'descrição',valor:'valor',data:'data',hora:'hora',sit:'situação',area:'área',
   cond:'condições',forma:'forma de pagamento',validade:'validade',emitido:'emissão',versoes:'versão',resultado:'resultado',pauta:'pauta',resumo:'resumo',nome:'nome',papel:'papel',principal:'principal'};
-const NEG_LAB={etapa:'Etapa',status:'Situação da negociação',temp:'Temperatura',retomar:'Revisitar em',motivo:'Motivo',ofRef:'Oferta de referência',final:'Fase final',fase_final:'Fase final'};
+const NEG_LAB={etapa:'Etapa',sub:'Subetapa',status:'Status',temp:'Temperatura',retomar:'Retomar em',motivo:'Motivo',detalhe:'Relato',pontos:'Pontos de sucesso',ofRef:'Oferta de referência'};
+const NEG_SEM_LOG=['desde','subDesde','encerradoEm','relato'];
 let AUD={};
 const retrato=t=>{const {hist,relevo,...r}=t;return JSON.stringify(r)};
 function audSnap(){AUD={};S.terrenos.forEach(t=>{AUD[t.id]={j:retrato(t),h:(t.hist||[]).length}})}
@@ -4133,9 +4225,9 @@ function diffTerreno(a,b){
     const va=a[k],vb=b[k];if(JSON.stringify(va)===JSON.stringify(vb))return;
     if(k==='poly'){campos.push({k,txt:vb?'Poligonal alterada':'Poligonal removida'});return}
     if(k==='neg'){const na=va||{},nb=vb||{};if(!va&&vb){itens.push('Negociação aberta');return}
-      Object.keys({...na,...nb}).forEach(x=>{if(JSON.stringify(na[x])===JSON.stringify(nb[x])||typeof (nb[x]??na[x])==='object'&&x!=='viab')return;
+      Object.keys({...na,...nb}).forEach(x=>{if(NEG_SEM_LOG.includes(x)||JSON.stringify(na[x])===JSON.stringify(nb[x])||typeof (nb[x]??na[x])==='object'&&x!=='viab')return;
         if(x==='viab'){campos.push({k:'neg.viab',txt:nb.viab?`Estudo de viabilidade vinculado: ${nb.viab.nome||''}`:'Estudo de viabilidade desvinculado'});return}
-        const f=v=>v==null||v===''?'não informado':x==='etapa'?SN(v):x==='retomar'?fd(v):x==='temp'?v+'/5':String(v);
+        const f=v=>v==null||v===''?'não informado':x==='etapa'?SN(v):x==='sub'?subN(v):x==='status'?STATUS_N[v]||v:x==='motivo'?motivoN(nb.status,v):x==='retomar'?fd(v):x==='temp'?v+'/5':String(v);
         campos.push({k:'neg.'+x,txt:`${NEG_LAB[x]||x}: ${f(na[x])} → ${f(nb[x])}`})});return}
     if(k==='infra'){Object.keys({...va,...vb}).forEach(x=>{const da=va?.[x]?.d,db=vb?.[x]?.d;if(da!==db)campos.push({k:'infra.'+x,txt:`Infraestrutura · ${x}: ${da||'não verificado'} → ${db||'não verificado'}`})});return}
     if(Array.isArray(va)||Array.isArray(vb)){const [lab,desc]=ARR_LAB[k]||[k,()=>''];const A=va||[],B=vb||[];
@@ -4175,7 +4267,8 @@ function semearHistorico(){
     (t.mats||[]).forEach(m=>add(m.data||addD(t.dataIdent,1),'Rafael Souza',`Matrícula adicionada: ${m.num}`,[m.cri,m.area!=null?`Área: ${m2(m.area)}`:null].filter(Boolean)));
     (t.insc||[]).forEach(i=>add(i.valores?.[0]?.data||addD(t.dataIdent,2),'Rafael Souza',`Inscrição imobiliária adicionada: ${i.sql}`));
     (t.analises||[]).forEach(a=>add(a.data,'Rafael Souza',`Análise urbanística registrada (${a.fonte})`,(a.zonas||[]).map(z=>`${z.sigla} · CA ${num(z.ca,2)}`)));
-    if(t.neg)add(t.neg.desde,t.resp,`Etapa: ${SN(t.neg.etapa)}`);
+    (t.neg?.trilha||[]).forEach(x=>add(x.em.slice(0,10),x.user,x.status!=='ativo'?`Status: ${STATUS_N[x.status]}${t.neg.motivo?' · '+motivoN(x.status,t.neg.motivo):''}`:x.ev==='subetapa'?`Subetapa: ${subN(x.paraSub)}`:`Etapa: ${SN(x.paraEtapa)} · ${subN(x.paraSub)}`,x.status==='ativo'?undefined:[t.neg.detalhe||null,x.status==='stand_by'&&t.neg.retomar?`Retomar em ${fd(t.neg.retomar)}`:null].filter(Boolean)));
+    if(t.neg?.pedido)add(t.neg.pedido.em,t.neg.pedido.por,`Pedido de aprovação: ${SN(t.neg.pedido.dest)} (gestor)`);
     if(t.neg?.viab)add(t.neg.viab.em,t.resp,`Estudo de viabilidade vinculado: ${t.neg.viab.nome}`,[`Preço máximo ${mi(t.neg.viab.pmax)}`,`Margem ${num(t.neg.viab.margem,1)}%`]);
     (t.propostas||[]).forEach(p=>add(p.data,p.origem==='bkm'?t.resp:t.resp,`Proposta v${p.v} registrada (${p.origem==='bkm'?'BKM':'vendedor'}): ${mi(p.valor)}`,[p.cond].filter(Boolean)));
     (t.propostas||[]).filter(p=>['recusada','aceita'].includes(p.status)).forEach(p=>add(addD(p.data,3),t.resp,`Proposta v${p.v}: ${OPT.statusProp[p.status]}`));
@@ -4184,11 +4277,10 @@ function semearHistorico(){
     (t.docs||[]).filter(d=>d.status==='validado').forEach(d=>add(d.emitido?addD(d.emitido,2):null,'Moisés',`Documento validado: ${(TIPOS_DOC[d.tipo]||[d.nome||d.tipo])[0]}`));
     (t.dilig||[]).forEach(d=>add(addD(t.dataIdent,3),d.resp||t.resp,`Diligência aberta: ${d.titulo}`));
     (t.tarefas||[]).forEach(k=>add(addD(k.prazo,-7),k.resp===t.resp?'Moisés':t.resp,`Tarefa criada: ${k.titulo}`,[`Responsável: ${k.resp}`,`Prazo: ${fd(k.prazo)}`]));
-    if(t.neg?.status==='perdida')add(addD(t.neg.desde,5),t.resp,`Negociação perdida: ${t.neg.motivo}`,[t.neg.detalhe].filter(Boolean));
     t.hist=H.filter(h=>h.em.slice(0,10)<=HOJE).sort((a,b)=>a.em.localeCompare(b.em));
   });
 }
-if(!(S.histV2>=4)){semearHistorico();S.histV2=4;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+if(!(S.histV2>=5)){semearHistorico();S.histV2=5;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 /* registros antigos só tinham hora e minuto: completa segundos e milissegundos preservando a ordem em que foram gravados */
 {let mud=false;S.terrenos.forEach(t=>{const g={};(t.hist||[]).forEach(h=>{if(h.em&&h.em.length===16)(g[h.em]=g[h.em]||[]).push(h)});
   Object.values(g).forEach(L=>L.forEach((h,k)=>{const ms=Math.round(59999*(k+1)/(L.length+1));h.em+=':'+String(Math.floor(ms/1000)).padStart(2,'0')+'.'+String(ms%1000).padStart(3,'0');mud=true}))});
@@ -4206,11 +4298,13 @@ const pnSalva=()=>{try{localStorage.setItem('bkm-terrenos-painel',JSON.stringify
 /* ---------- próximas ações ---------- */
 function proximasAcoes(t){
   const L=[],n=t.neg;const fixBtn=(a,l,extra='')=>({a,l,extra});
-  if(n?.status==='stand_by')L.push({sev:'warn',i:'pause',txt:`Negociação em stand by. Revisitar em ${fd(n.retomar)}`,fix:UI.role!=='Leitura'?fixBtn('retomar','Retomar'):null});
+  if(n?.status==='stand_by')L.push({sev:'warn',i:'pause',txt:`Negociação em Stand By. Retomar em ${fd(n.retomar)}`,fix:UI.role!=='Leitura'?fixBtn('retomar','Retomar'):null});
   if(n?.status==='ativo'){
     const r=checkAdv(t);
+    if(n.pedido)L.push({sev:'warn',i:'check',txt:possoDecidir(t)?`Aprovar: ${destinoNome(n.pedido.tipo,n.pedido.dest)} (pedido por ${n.pedido.por})`:`Aguardando ${quemFalta(n.pedido)} aprovar ${destinoNome(n.pedido.tipo,n.pedido.dest)}`,fix:null});
+    if(subAtrasada(n))L.push({sev:'warn',i:'clock',txt:`${subN(n.sub)} há ${diasSub(n)} dias (prazo de ${subCfg(n.sub).prazo})`,fix:null});
     if(r)r.items.filter(x=>!x.ok).forEach(x=>L.push({sev:x.gate?'':'warn',i:x.gate?'warn':'fwd',txt:x.txt,fix:x.fix?fixBtn(x.fix[0].startsWith('tab:')?'tab':x.fix[0],x.fix[1],x.fix[0].startsWith('tab:')?`data-t="${x.fix[0].slice(4)}"`:''):null}));
-    if(r&&r.ok)L.push({sev:'good',i:'fwd',txt:`Pronto para avançar para ${r.next[1]}`,fix:null});
+    if(r&&r.ok&&!n.pedido)L.push({sev:'good',i:'fwd',txt:`Pronto para ${r.compra?'concluir como Comprado':'avançar para '+r.next[1]}${r.aprov.niveis.length?' (pede aprovação)':''}`,fix:null});
     const lp=lastProp(t);
     if(lp&&['apresentada','em_analise'].includes(lp.status))L.push({sev:'warn',i:'money',txt:lp.origem==='bkm'?`Cobrar resposta da proposta v${lp.v} (enviada em ${fd(lp.data)})`:`Responder à proposta v${lp.v} do vendedor (${mi(lp.valor)})`,fix:fixBtn('tab','Ver propostas','data-t="negociacao"')});
     if(acimaMax(t))L.push({sev:'crit',i:'money',txt:`Levar ao comitê: proposta ${mi(lastProp(t).valor)} acima do preço máximo (${mi(n.viab.pmax)})`,fix:null});
@@ -4339,7 +4433,7 @@ function alvoLog(h){
     [/^Confronta/,{b:'cadastro',s:'confr'}],[/^Pessoa|^Propriet/,{b:'cadastro',s:'pessoas'}],[/^Poligonal|^[ÁA]rea/,{b:'cadastro',s:'areas'}],
     [/^(Oferta|Corretor)/,{b:'comercial'}],[/^Estudo de viabilidade/,{b:'geral'}],[/^(Proposta|Reuni[ãa]o|Oferta de refer)/,{b:'negociacao'}],
     [/^(Documento|Dilig)/,{b:'documentos'}],[/^Tarefa/,{b:'tarefas'}],[/^(An[áa]lise urban|Infraestrutura|Zoneamento)/,{b:'urbanismo'}],
-    [/^Temperatura/,{topo:'.temp'}],[/^(Etapa|Avan[çc]ou|Retomad|Stand by|Em stand by|Situa[çc][ãa]o da negocia|Negocia[çc][ãa]o|Revisitar|Fase final|Motivo)/,{topo:'.tl-topo'}]];
+    [/^Temperatura/,{topo:'.temp'}],[/^(Etapa|Subetapa|Status|Avan[çc]ou|Voltou|Retomad|Stand [bB]y|Em stand by|Pedido|Aprovad|Aprova[çc][ãa]o|Negocia[çc][ãa]o|Retomar|Revisitar|Motivo|Relato|Pontos)/,{topo:'.tl-topo'}]];
   const r=R.find(([re])=>re.test(x));return r?r[1]:{b:'geral'};
 }
 let pnPiscaT=null;
@@ -4397,6 +4491,361 @@ document.addEventListener('click',e=>{
   else if(A==='pn-aba'){PN.aba=a.dataset.v;PN.aberto=true;pnSalva();render()}
   else if(A==='pn-concluir'){const t=T(UI.id),k=t?.tarefas.find(x=>x.id===a.dataset.k);if(!k)return;const de=k.status;k.status='concluida';log(t,`Tarefa "${k.titulo}": ${OPT.statusTar[de]} → Concluída`);save();render();toast('Tarefa concluída.')}
 });
+
+/* =====================================================================
+   Funil da negociação: etapas, subetapas, status, pré-requisitos,
+   aprovações por hierarquia, notificações e Configurações › Funil.
+   Espelha as RPCs do banco (app._passagem, app.decidir_aprovacao,
+   app.encerrar_processo, app.retomar_processo, app.rotina_diaria).
+   Injetado no mesmo escopo do protótipo.
+   ===================================================================== */
+
+/* ---------- equipe e hierarquia (no banco: membros.papel, superior_id, administrador) ---------- */
+const NIVEL={diretor:3,gestor:2,analista:1,leitura:0};
+const PAPEL_N={diretor:'Diretor',gestor:'Gestor',analista:'Analista',leitura:'Leitura'};
+const NIV_N={2:'gestor',3:'diretor'};
+const membro=n=>(S.membros||[]).find(m=>m.nome===n)||{nome:n,papel:'leitura',sup:null,admin:false};
+const nivelDe=n=>NIVEL[membro(n).papel]||0;
+const ehAdmin=n=>!!membro(n).admin;
+const ehSuperior=(chefe,m)=>{let x=membro(m).sup,i=0;while(x&&i++<10){if(x===chefe)return true;x=membro(x).sup}return false};
+/* aprovador previsto: quem, subindo a hierarquia de quem pediu, tem o papel do nível */
+const aprovadorPrevisto=(quem,nv)=>{let x=membro(quem).sup,i=0;while(x&&i++<10){if(nivelDe(x)===nv)return x;x=membro(x).sup}return null};
+
+/* ---------- configuração ---------- */
+const subCfg=k=>cfg().subs.find(s=>s.k===k);
+const destinoCfg=(tipo,k)=>tipo==='etapa'?etapaCfg(k):tipo==='subetapa'?subCfg(k):cfg().status[k];
+const destinoNome=(tipo,k)=>tipo==='etapa'?SN(k):tipo==='subetapa'?subN(k):STATUS_N[k]||k;
+function syncCfg(){STAGES.splice(0,STAGES.length,...cfg().etapas.map(e=>[e.k,e.nome]))}
+/* dados carregados ou restaurados: garante configuração, equipe e avisos dos pedidos de exemplo */
+function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];syncCfg();
+  if(!S.pedidosAvisados){S.terrenos.forEach(t=>{if(t.neg?.pedido)avisarAprovadores(t)});S.pedidosAvisados=true}}
+
+/* ---------- regras da passagem ---------- */
+const passouPor=(n,sub)=>n.sub===sub||(n.trilha||[]).some(x=>x.paraSub===sub||x.deSub===sub);
+const diasSub=n=>n.subDesde?diff(n.subDesde,HOJE):null;
+const subAtrasada=n=>{const c=subCfg(n.sub);return !!(n.status==='ativo'&&c&&c.prazo&&diasSub(n)>c.prazo)};
+const etapaAtrasada=n=>{const c=etapaCfg(n.etapa);return !!(n.status==='ativo'&&c&&c.sla&&diff(n.desde,HOJE)>c.sla)};
+/* pendências para chegar ao destino: pré-requisitos configurados; ao sair de uma etapa, o checklist dela; na compra, diligência impeditiva */
+function pendencias(t,tipo,dest){const n=t.neg,L=[];
+  cfg().prereq.filter(p=>p.alvoTipo===tipo&&p.alvo===dest).forEach(p=>{const ok=passouPor(n,p.req);
+    L.push({ok,txt:ok?`Passou por ${subN(p.req)}`:`Passar antes por ${subN(p.req)} (${SN(subCfg(p.req)?.etapa)})`,fix:null})});
+  const saindo=(tipo==='etapa'&&SIDX(dest)>SIDX(n.etapa))||(tipo==='status'&&dest==='comprado');
+  if(saindo){(cfg().checklist[n.etapa]||[]).filter(c=>c.obrig).forEach(({doc})=>{const st=docSt(t.docs.find(d=>d.tipo===doc));
+      L.push({ok:st==='validado',txt:TIPOS_DOC[doc][0]+(st==='validado'?' validado':st==='pendente'?': não enviado':st==='recebido'?': aguardando validação':': '+st),fix:st==='validado'?null:['tab:documentos','Ver documentos']})})}
+  if(tipo==='status'&&dest==='comprado')t.dilig.filter(d=>d.sit==='impeditiva').forEach(d=>L.push({ok:false,txt:'Diligência impeditiva: '+d.titulo,fix:['tab:documentos','Ver diligências']}));
+  return L}
+/* aprovações exigidas, menos os níveis que quem move já tem */
+function aprovExig(tipo,dest,ator){const c=destinoCfg(tipo,dest)||{},nv=[];if(c.g)nv.push(2);if(c.d)nv.push(3);
+  const q=nivelDe(ator);return {niveis:nv.filter(x=>x>q),modo:c.modo||'sequencia'}}
+const proxDestino=n=>{const i=SIDX(n.etapa);return STAGES[i+1]?['etapa',STAGES[i+1][0]]:['status','comprado']};
+/* quadro de avanço: próximo destino, pendências e aprovações (mesmo formato usado nas Ações do painel) */
+function checkAdv(t){const n=t.neg;if(!n||n.status!=='ativo')return null;
+  const [tipo,dest]=proxDestino(n),items=pendencias(t,tipo,dest),b=items.filter(x=>!x.ok);
+  return {next:[dest,destinoNome(tipo,dest)],tipo,dest,items,ok:!b.length,forcar:!!b.length&&nivelDe(me())>=2,aprov:aprovExig(tipo,dest,me()),compra:tipo==='status'}}
+const naVez=p=>{const pend=p.niveis.filter(r=>r.status==='pendente');if(!pend.length)return [];const o=Math.min(...pend.map(r=>r.ordem));return pend.filter(r=>r.ordem===o)};
+const podeDecidir=(r,u)=>nivelDe(u)>=r.nivel&&(!r.previsto||r.previsto===u||ehSuperior(u,r.previsto));
+const possoDecidir=t=>{const p=t.neg?.pedido;return !!p&&naVez(p).some(r=>podeDecidir(r,me()))};
+const quemFalta=p=>naVez(p).map(r=>r.previsto?`${r.previsto} (${NIV_N[r.nivel]})`:`um ${NIV_N[r.nivel]}`).join(' e ');
+
+/* mesmo caminho de app._passagem: pendências travam (gestor ou diretor força com justificativa); aprovações viram pedido; sem pedido, executa */
+function moverPara(t,tipo,dest,o={}){const n=t.neg,eu=me();
+  if(n.pedido)return {erro:`Há um pedido de aprovação aberto para ${destinoNome(n.pedido.tipo,n.pedido.dest)}. Decida ou cancele antes.`};
+  const pend=pendencias(t,tipo,dest).filter(x=>!x.ok);
+  if(pend.length&&!o.forcar)return {bloq:true,pend,podeForcar:nivelDe(eu)>=2};
+  const dados={...(o.dados||{}),forcado:pend.length?o.just:null};
+  const ap=aprovExig(tipo,dest,eu);
+  if(ap.niveis.length){
+    n.pedido={id:uid(),tipo,dest,modo:ap.modo,por:eu,em:agora(),dados,niveis:ap.niveis.map((nv,i)=>({nivel:nv,ordem:ap.modo==='sequencia'?i+1:1,previsto:aprovadorPrevisto(eu,nv),status:'pendente'}))};
+    log(t,`Pedido de aprovação: ${destinoNome(tipo,dest)} (${ap.niveis.map(x=>NIV_N[x]).join(ap.modo==='sequencia'?', depois ':' e ')})${dados.forcado?' · sem requisitos: '+dados.forcado:''}`);
+    avisarAprovadores(t);return {pedido:true,msg:`Pedido enviado. Aguardando ${quemFalta(n.pedido)}.`}}
+  executar(t,tipo,dest,dados);return {ok:true}}
+function executar(t,tipo,dest,d){const n=t.neg,ev={em:agora(),user:me(),deEtapa:n.etapa,deSub:n.sub};n.trilha=n.trilha||[];
+  if(tipo==='etapa'){const volta=SIDX(dest)<SIDX(n.etapa);n.etapa=dest;n.sub=subInicial(dest);n.desde=HOJE;n.subDesde=HOJE;ev.ev=volta?'retorno':'avanco';
+    log(t,`${volta?'Voltou':'Avançou'} para ${SN(dest)}${n.sub?' · '+subN(n.sub):''}${d.forcado?' sem requisitos: '+d.forcado:''}${volta&&d.motivo?': '+d.motivo:''}`)}
+  else if(tipo==='subetapa'){n.sub=dest;n.subDesde=HOJE;ev.ev='subetapa';log(t,`Subetapa: ${subN(dest)}${d.forcado?' sem requisitos: '+d.forcado:''}`)}
+  else{n.status=dest;n.encerradoEm=HOJE;ev.ev={comprado:'compra',perdido:'perda',descartado:'descarte',stand_by:'stand_by'}[dest];
+    if(dest==='comprado')Object.assign(n,{relato:d.relato,pontos:d.pontos});
+    if(dest==='perdido'||dest==='descartado')Object.assign(n,{motivo:d.motivo,detalhe:d.detalhe});
+    if(dest==='stand_by')Object.assign(n,{retomar:d.retomar,detalhe:d.detalhe});
+    log(t,`Status: ${STATUS_N[dest]}${d.motivo?' · '+motivoN(dest,d.motivo):''}${dest==='stand_by'?' até '+fd(d.retomar):''}${d.forcado?' · sem requisitos: '+d.forcado:''}`)}
+  Object.assign(ev,{paraEtapa:n.etapa,paraSub:n.sub,status:n.status});n.trilha.push(ev)}
+function decidir(t,aprovar,coment){const n=t.neg,p=n.pedido,eu=me();if(!p)return null;
+  if(!naVez(p).some(r=>podeDecidir(r,eu)))return {erro:`Este pedido aguarda ${quemFalta(p)}.`};
+  if(!aprovar){p.niveis.forEach(r=>{if(r.status==='pendente')r.status='cancelado'});n.pedido=null;
+    log(t,`Pedido recusado: ${destinoNome(p.tipo,p.dest)} · ${coment}`);notificar(p.por,'aprovacao_decidida',`${eu} recusou ${destinoNome(p.tipo,p.dest)}: ${coment}`,t);return {ok:true,msg:'Pedido recusado.'}}
+  /* quem está acima aprova também os níveis seguintes que alcança (diretor que aprova pelo gestor cobre os dois) */
+  let mud=true;while(mud){mud=false;naVez(p).forEach(r=>{if(podeDecidir(r,eu)){Object.assign(r,{status:'aprovado',por:eu,em:agora(),coment});mud=true}})}
+  if(p.niveis.every(r=>r.status==='aprovado')){n.pedido=null;log(t,`Aprovado: ${destinoNome(p.tipo,p.dest)}${coment?' · '+coment:''}`);
+    executar(t,p.tipo,p.dest,p.dados);notificar(p.por,'aprovacao_decidida',`${eu} aprovou ${destinoNome(p.tipo,p.dest)}`,t);return {ok:true,msg:`Aprovado: ${destinoNome(p.tipo,p.dest)}.`}}
+  log(t,`Aprovação de ${eu} registrada; falta ${quemFalta(p)}`);avisarAprovadores(t);return {ok:true,msg:`Aprovação registrada. Falta ${quemFalta(p)}.`}}
+function cancelarPedido(t){const p=t.neg.pedido;if(!p)return;p.niveis.forEach(r=>{if(r.status==='pendente')r.status='cancelado'});t.neg.pedido=null;log(t,`Pedido de aprovação cancelado: ${destinoNome(p.tipo,p.dest)}`)}
+/* retomar: o tempo parado não conta no prazo da etapa nem da subetapa */
+function retomar(t){const n=t.neg,parado=n.encerradoEm?diff(n.encerradoEm,HOJE):0;
+  n.status='ativo';n.desde=addD(n.desde,parado);n.subDesde=n.subDesde?addD(n.subDesde,parado):HOJE;n.retomar=null;n.encerradoEm=null;
+  (n.trilha=n.trilha||[]).push({em:agora(),user:me(),ev:'retomada',deEtapa:n.etapa,deSub:n.sub,paraEtapa:n.etapa,paraSub:n.sub,status:'ativo'});log(t,'Negociação retomada')}
+/* kanban: para frente passa por cada etapa (só a última pode esperar aprovação); falhou uma, nada muda */
+function levarAte(t,alvo,o={}){const snap=JSON.stringify(t.neg),h=t.hist.length,nt=S.notifs.length;
+  const desfaz=()=>{t.neg=JSON.parse(snap);t.hist.length=h;S.notifs.splice(0,S.notifs.length-nt)};
+  while(SIDX(t.neg.etapa)<SIDX(alvo)){const prox=STAGES[SIDX(t.neg.etapa)+1][0],ult=prox===alvo;
+    if(!ult&&aprovExig('etapa',prox,me()).niveis.length){desfaz();return {erro:`${SN(prox)} pede aprovação. Leve uma etapa por vez.`}}
+    const r=moverPara(t,'etapa',prox,o);
+    if(r.bloq||r.erro){desfaz();return {...r,etapa:prox}}
+    if(r.pedido)return r}
+  return {ok:true}}
+
+/* ---------- notificações (no banco: notificacoes, lembretes, rotina_diaria) ---------- */
+function notificar(para,tipo,txt,t,chave){const c=cfg().notif[tipo];if(!para||!c||!c.ativo)return;
+  if(!chave&&para===me())return;
+  const k=chave?`${tipo}|${chave}|${para}`:null;if(k&&S.notifs.some(x=>x.chave===k))return;
+  S.notifs.unshift({id:uid(),para,tipo,txt,tid:t?t.id:null,em:agora(),lida:false,chave:k,autor:chave?null:me()})}
+function avisarAprovadores(t){const p=t.neg.pedido;if(!p)return;
+  naVez(p).forEach(r=>{const dest=r.previsto?[r.previsto]:S.membros.filter(m=>NIVEL[m.papel]===r.nivel).map(m=>m.nome);
+    dest.forEach(u=>notificar(u,'aprovacao_pendente',`${p.por} pede aprovação para ${destinoNome(p.tipo,p.dest)}`,t,p.id+':'+r.nivel))})}
+const quando=d=>{const x=diff(HOJE,d);return x===0?'hoje':x===1?'amanhã':x>1?`em ${x} dias`:`há ${-x} dia${x<-1?'s':''}`};
+/* rotina diária: prazos de tarefa, tarefa atrasada, subetapa estourada, retomada de stand by, documento vencendo, reunião */
+function rotinaNotif(){const N=cfg().notif,dentro=(data,tipo)=>(N[tipo].dias||[]).filter(d=>data>=HOJE&&diff(HOJE,data)<=d);
+  S.terrenos.forEach(t=>{
+    abertas(t).forEach(k=>{if(k.prazo<HOJE)notificar(k.resp,'tarefa_atrasada',`Tarefa atrasada: ${k.titulo} (venceu ${fd(k.prazo)})`,t,k.id+':'+k.prazo);
+      else dentro(k.prazo,'tarefa_prazo').forEach(d=>notificar(k.resp,'tarefa_prazo',`Tarefa vence ${quando(k.prazo)}: ${k.titulo}`,t,k.id+':'+k.prazo+':'+d))});
+    const n=t.neg;if(!n)return;
+    if(subAtrasada(n))notificar(t.resp,'subetapa_prazo',`${subN(n.sub)} passou do prazo de ${subCfg(n.sub).prazo} dias`,t,n.codigo+':'+n.sub+':'+n.subDesde);
+    if(n.status==='stand_by'&&n.retomar)dentro(n.retomar,'stand_by_retomar').forEach(d=>notificar(t.resp,'stand_by_retomar',`Revisitar o stand by ${quando(n.retomar)}`,t,n.codigo+':'+n.retomar+':'+d));
+    if(n.status!=='ativo')return;
+    t.docs.forEach(d=>{const v=docVal(d);if(v)dentro(v,'documento_vencendo').forEach(x=>notificar(t.resp,'documento_vencendo',`${TIPOS_DOC[d.tipo][0]} vence ${quando(v)}`,t,d.tipo+':'+v+':'+x))});
+    (t.reunioes||[]).filter(r=>r.status==='agendada').forEach(r=>dentro(r.data,'reuniao_agendada').forEach(x=>notificar(t.resp,'reuniao_agendada',`Reunião ${quando(r.data)}${r.hora?' às '+r.hora:''}`,t,r.id+':'+r.data+':'+x)))})}
+/* tarefa criada ou editada: avisa o responsável e quem foi marcado */
+function notifTarefa(t,k,antes){if(k.resp!==antes?.resp)notificar(k.resp,'tarefa_atribuida',`${me()} atribuiu a você: ${k.titulo}`,t);
+  (k.marcados||[]).filter(u=>!(antes?.marcados||[]).includes(u)&&u!==k.resp).forEach(u=>notificar(u,'tarefa_marcado',`${me()} marcou você na tarefa: ${k.titulo}`,t))}
+const minhasNotifs=()=>S.notifs.filter(x=>x.para===me());
+let sinoAberto=false;
+const IC_SINO='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"/></svg>';
+function renderSino(){const el=document.getElementById('sino');if(!el)return;const L=minhasNotifs(),nl=L.filter(x=>!x.lida).length;
+  el.innerHTML=`<button class="sino-btn" data-a="sino" aria-haspopup="true" aria-expanded="${sinoAberto}" aria-label="Notificações${nl?`, ${nl} não lidas`:''}" title="Notificações">${IC_SINO}${nl?`<span class="sino-n">${nl>9?'9+':nl}</span>`:''}</button>`+
+  (sinoAberto?`<div class="sino-menu" role="dialog" aria-label="Notificações"><div class="sino-h"><span>Notificações</span>${nl?'<button class="linkbtn" data-a="notif-lidas">Marcar todas como lidas</button>':''}</div>
+  <div class="sino-l">${L.slice(0,30).map(x=>{const t=x.tid?T(x.tid):null;return `<button class="sino-i ${x.lida?'':'nova'}" data-a="notif" data-v="${x.id}"><span class="sino-d"></span><span class="sino-c"><span class="sino-t">${esc(x.txt)}</span><span class="sino-s">${t?esc(t.codigo+' · '+t.nome)+' · ':''}${fd(x.em.slice(0,10))}${x.autor?' · '+esc(x.autor):''}</span></span></button>`}).join('')||'<div class="empty" style="padding:24px 16px">Nada por aqui.</div>'}</div>
+  ${ehAdmin(me())?'<div class="sino-f"><button class="linkbtn" data-a="nav" data-r="config" data-cfg="notif">Configurar notificações</button></div>':''}</div>`:'')}
+
+/* ---------- desenho: chip, linha do tempo, quadro de avanço ---------- */
+function chipNeg(t){
+  if(!t.neg)return '<span class="chip">Sem negociação</span>';
+  const n=t.neg;
+  if(n.status==='perdido')return `<span class="chip crit"><span class="d"></span>Perdido</span>`;
+  if(n.status==='descartado')return `<span class="chip"><span class="d"></span>Descartado</span>`;
+  if(n.status==='stand_by')return '<span class="chip warn"><span class="d"></span>Stand By</span>';
+  if(n.status==='comprado')return '<span class="chip good"><span class="d"></span>Comprado</span>';
+  return `<span class="chip fase">${SN(n.etapa)}</span>${n.sub?`<span class="chip sub ${subAtrasada(n)?'warn':''}">${esc(subN(n.sub))}</span>`:''}${n.pedido?'<span class="chip blue">Aguardando aprovação</span>':''}`}
+/* entrada de cada etapa: última passagem para ela na trilha */
+const entrouEm=(n,e)=>{const x=(n.trilha||[]).filter(v=>v.paraEtapa===e&&v.deEtapa!==e).pop();return x?x.em.slice(0,10):n.etapa===e?n.desde:null};
+function linhaEtapas(t){const n=t.neg;if(!n)return '';const idx=SIDX(n.etapa),fim=n.status==='comprado';
+  return `<nav class="tl-topo" aria-label="Etapas da negociação"><ol class="stepper">${STAGES.map((s,i)=>{const st=i<idx||fim?'done':i===idx?'cur':'fut',em=i<=idx?entrouEm(n,s[0]):null;
+    return `<li class="step ${st}" ${i===idx&&!fim?'aria-current="step"':''}><span class="dot">${st==='done'?ic('check',14):i+1}</span><span class="sl-w"><span class="sl" title="${esc(s[1])}">${esc(s[1])}</span>${em?`<span class="sd">${st==='cur'&&n.sub?esc(subN(n.sub))+' · ':''}${fd(em)}</span>`:''}</span></li>`}).join('')}${fim?`<li class="step done"><span class="dot">${ic('check',14)}</span><span class="sl-w"><span class="sl">Comprado</span><span class="sd">${fd(n.encerradoEm)}</span></span></li>`:''}</ol></nav>`}
+/* trilha com datas: tempo em cada etapa e subetapa (no banco: v_periodos_processo, v_tempo_subetapas) */
+function trilhaHtml(t){const n=t.neg;if(!n)return '';const ev=(n.trilha||[]).slice().sort((a,b)=>a.em.localeCompare(b.em));
+  const per=[];ev.forEach((x,i)=>{const fim=ev[i+1]?ev[i+1].em.slice(0,10):n.status==='ativo'?HOJE:null;if(x.status!=='ativo')return;per.push({e:x.paraEtapa,s:x.paraSub,ini:x.em.slice(0,10),fim,user:x.user,ev:x.ev})});
+  const porEtapa=STAGES.map(([k,l])=>{const ps=per.filter(p=>p.e===k);if(!ps.length)return '';const dias=ps.reduce((a,p)=>a+(p.fim?diff(p.ini,p.fim):0),0),c=etapaCfg(k);
+    return `<li class="tr-e"><div class="tr-eh"><b>${esc(l)}</b><span class="faint">${fd(ps[0].ini)} · ${dias} d${c?.sla?` de ${c.sla}`:''}</span>${c?.sla&&dias>c.sla?'<span class="chip warn">acima do SLA</span>':''}</div><ul>${ps.map(p=>`<li><span>${esc(subN(p.s)||'—')}</span><span class="faint">${fd(p.ini)}${p.fim?' → '+fd(p.fim):''} · ${p.fim?diff(p.ini,p.fim)+' d':''} · ${esc(p.user||'')}</span></li>`).join('')}</ul></li>`}).join('');
+  const enc=n.status!=='ativo'?`<li class="tr-e"><div class="tr-eh"><b>${STATUS_N[n.status]}</b><span class="faint">${fd(n.encerradoEm)}</span></div></li>`:'';
+  return `<section class="sec"><div class="sec-h"><h2>Linha do tempo</h2><span class="faint" style="font-size:13px">Tempo em cada etapa e subetapa</span></div><div class="sec-b"><ol class="trilha">${porEtapa}${enc}</ol></div></section>`}
+const advMais=n=>`<div class="adv-mais"><button class="btn adv-mb" data-a="adv-mais" aria-haspopup="menu" aria-expanded="false" aria-label="Mais ações" title="Stand By, Perdido ou Descartado"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" d="M12 5.5h.01M12 12h.01M12 18.5h.01"/></svg></button><div class="adv-menu" role="menu"><button role="menuitem" data-a="suspender">${ic('pause',18)}Colocar em Stand By</button><button role="menuitem" class="danger" data-a="perder">${ic('block',18)}Marcar como Perdido</button><button role="menuitem" class="danger" data-a="descartar">${ic('close',18)}Descartar</button></div></div>`;
+function painelNeg(t){
+  const n=t.neg;if(!n)return '';const ro=UI.role==='Leitura';
+  if(n.status==='perdido'||n.status==='descartado')return `<section class="sec sec-adv"><div class="banner ${n.status==='perdido'?'crit':''}">${ic('block')}<div><div class="bt">${STATUS_N[n.status]} em ${SN(n.etapa)} · ${esc(motivoN(n.status,n.motivo))}</div><div>${esc(n.detalhe||'')}</div><div class="faint" style="font-size:12px;margin-top:4px">${fd(n.encerradoEm)}</div></div></div></section>`;
+  if(n.status==='comprado')return `<section class="sec sec-adv"><div class="banner good">${ic('check')}<div style="min-width:0"><div class="bt">Comprado em ${fd(n.encerradoEm)}</div><div class="relato">${limpaHtml(n.relato||'')}</div>${n.pontos?`<div style="margin-top:6px"><b>Pontos de sucesso:</b> ${esc(n.pontos)}</div>`:''}</div></div></section>`;
+  if(n.status==='stand_by')return `<section class="sec sec-adv"><div class="banner warn" style="justify-content:space-between;flex-wrap:wrap"><span style="display:flex;gap:12px">${ic('pause')}<span><b>Stand By em ${SN(n.etapa)} · revisitar em ${fd(n.retomar)}</b>${n.detalhe?`<br><span>${esc(n.detalhe)}</span>`:''}</span></span>${ro?'':'<button class="btn sm" data-a="retomar">Retomar</button>'}</div></section>`;
+  const r=checkAdv(t),pend=r.items.filter(x=>!x.ok),subs=subsDe(n.etapa),p=n.pedido;
+  const subSel=`<label class="adv-sub"><span>Subetapa</span><select data-ch="sub" ${ro||p?'disabled':''} aria-label="Subetapa">${n.sub&&!subs.some(s=>s.k===n.sub)?`<option value="${n.sub}" selected>${esc(subN(n.sub))} (inativa)</option>`:''}${subs.map(s=>`<option value="${s.k}" ${s.k===n.sub?'selected':''}>${esc(s.nome)}</option>`).join('')}</select><span class="faint">${diasSub(n)??'—'} d${subCfg(n.sub)?.prazo?' de '+subCfg(n.sub).prazo:''}</span>${subAtrasada(n)?'<span class="chip warn">prazo estourado</span>':''}</label>`;
+  const ped=p?`<div class="adv-ped"><div class="adv-ped-t">${ic('clock',18)}<span><b>Aguardando aprovação</b> para ${esc(destinoNome(p.tipo,p.dest))}</span></div>
+    <ol class="adv-niv">${p.niveis.map(x=>`<li class="${x.status}"><span class="nv-d">${x.status==='aprovado'?ic('check',14):''}</span><span>${PAPEL_N[NIV_N[x.nivel]]}${x.previsto?' · '+esc(x.previsto):''}</span><span class="faint">${x.status==='aprovado'?'aprovou'+(x.por&&x.por!==x.previsto?' ('+esc(x.por)+')':''):naVez(p).includes(x)?'na vez':'depois'}</span></li>`).join('')}</ol>
+    <div class="faint" style="font-size:12px">Pedido por ${esc(p.por)} em ${fd(p.em.slice(0,10))}${p.modo==='paralelo'&&p.niveis.length>1?' · em paralelo':''}${p.dados?.forcado?' · sem requisitos: '+esc(p.dados.forcado):''}</div>
+    ${ro?'':`<div class="adv-ped-a">${possoDecidir(t)?`<button class="btn primary sm" data-a="aprovar">${ic('check',16)}Aprovar</button><button class="btn sm" data-a="recusar">Recusar</button>`:''}${p.por===me()||nivelDe(me())>nivelDe(p.por)?`<button class="btn text sm" data-a="cancelar-pedido">Cancelar pedido</button>`:''}</div>`}</div>`:'';
+  const apTxt=r.aprov.niveis.length?`<span class="adv-ap" title="Aprovação exigida">${ic('check',14)}${r.aprov.niveis.map(x=>NIV_N[x]).join(r.aprov.modo==='sequencia'?' → ':' + ')}</span>`:'';
+  return `<section class="sec sec-adv"><div class="adv adv-c">${subSel}
+  ${ped||`<div class="adv-l1"><span class="adv-t">${r.compra?'Próxima: concluir como Comprado':'Próxima: '+esc(r.next[1])}</span>${apTxt}${r.items.length?`<button class="adv-st ${pend.length?'adv-st-pend':'adv-st-ok'}" data-a="adv-req" aria-expanded="${ADV_REQ}" title="${ADV_REQ?'Ocultar':'Ver'} requisitos">${pend.length?ic('warn',16)+pend.length+(pend.length>1?' pendências':' pendência'):ic('check',16)+'Requisitos ok'}<svg class="adv-ch" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>`:''}</div>
+  ${ADV_REQ&&r.items.length?`<ul class="adv-lista">${advItens(r.items)}</ul>`:''}`}
+  ${ro?'':`<div class="adv-l2">${p?'':`<button class="btn primary" data-a="adv-ir">${ic(r.compra?'check':'fwd',18)}<span>${r.compra?'Concluir como Comprado':r.aprov.niveis.length?'Pedir aprovação':'Avançar'}</span></button>`}${advMais(n)}</div>`}</div></section>`}
+
+/* ---------- relato com formatação (Comprado) ---------- */
+function limpaHtml(h){const tpl=document.createElement('template');tpl.innerHTML=String(h||'');const OK=['B','STRONG','I','EM','U','UL','OL','LI','BR','P','DIV'];
+  const limpa=no=>{[...no.childNodes].forEach(c=>{if(c.nodeType===1){if(!OK.includes(c.tagName)){limpa(c);c.replaceWith(...c.childNodes);return}[...c.attributes].forEach(a=>c.removeAttribute(a.name));limpa(c)}else if(c.nodeType!==3)c.remove()})};
+  limpa(tpl.content);return tpl.innerHTML}
+const textoDe=h=>{const d=document.createElement('div');d.innerHTML=limpaHtml(h);return d.textContent.trim()};
+
+/* ---------- negociações: quadro por etapa e, ao abrir uma etapa, por subetapa ---------- */
+function kcardNeg(t,modo){const n=t.neg,o=ofertaRef(t),lp=lastProp(t),pr=proxReuniao(t),sb=n.status==='stand_by';
+  return `<button class="kcard ${n.pedido?'aprov':''}" data-a="abrir" data-id="${t.id}" data-from="negociacoes" ${UI.role!=='Leitura'?'draggable="true"':''}><div class="kr"><span class="num faint">${t.codigo}</span>${tempMini(n.temp)}</div><div class="kt">${esc(t.nome)}</div>
+  ${modo!=='sub'&&n.sub?`<div class="ksub"><span>${esc(subN(n.sub))}</span><span class="faint">${diasSub(n)} d</span>${subAtrasada(n)?`<span class="flag warn" title="Passou do prazo da subetapa">${ic('clock',14)}</span>`:''}</div>`:''}
+  <div class="ks">${esc(t.bairro||'')}${sb?' · parou em '+SN(n.etapa):''}</div>
+  <div class="kr"><span>${lp?'Prop. '+mi(lp.valor):'Pedido '+(o?.valor?mi(o.valor):'—')}</span>${atrasadas(t).length?`<span class="flag crit" title="Tarefas atrasadas">${ic('clock',14)}${atrasadas(t).length}</span>`:''}${acimaMax(t)?`<span class="flag warn">${ic('money',14)}</span>`:''}</div>${pr?`<div class="kr"><span class="faint">Reunião ${fd(pr.data)} · ${pr.hora}</span></div>`:''}
+  ${n.pedido?`<div class="kped">${ic('clock',14)}Aguardando ${esc(quemFalta(n.pedido))}</div>`:''}
+  <div class="kr">${av(t.resp,'sm')}<span class="faint ${!sb&&etapaAtrasada(n)?'katr':''}">${sb?'revisitar '+fd(n.retomar):modo==='sub'?diasSub(n)+' d na subetapa':diff(n.desde,HOJE)+' d na etapa'}</span></div></button>`}
+function pgNeg(){const e=UI.negEtapa&&etapaCfg(UI.negEtapa)?UI.negEtapa:null,ativos=S.terrenos.filter(t=>t.neg?.status==='ativo');
+  const seg=`<div class="fchips neg-et" role="group" aria-label="Etapa"><button class="fchip" data-a="neg-etapa" data-v="" aria-pressed="${!e}">${!e?ic('check',16):''}Todas as etapas</button>${STAGES.map(([k,l])=>`<button class="fchip" data-a="neg-etapa" data-v="${k}" aria-pressed="${e===k}">${e===k?ic('check',16):''}${esc(l)} <span class="n">${ativos.filter(t=>t.neg.etapa===k).length}</span></button>`).join('')}</div>`;
+  let cols;
+  if(!e)cols=[...STAGES.map(([k,l])=>({k,l,f:t=>t.neg?.status==='ativo'&&t.neg.etapa===k,abre:k,sla:etapaCfg(k)?.sla})),{k:'stand_by',l:'Stand By',f:t=>t.neg?.status==='stand_by',cls:'enc'}];
+  else{const subs=subsDe(e);cols=subs.map(s=>({k:'sub:'+s.k,l:s.nome,f:t=>t.neg?.status==='ativo'&&t.neg.etapa===e&&t.neg.sub===s.k,prazo:s.prazo}));
+    const orf=ativos.filter(t=>t.neg.etapa===e&&!subs.some(s=>s.k===t.neg.sub));if(orf.length)cols.unshift({k:'sub:',l:'Sem subetapa ativa',f:t=>orf.includes(t),cls:'enc'})}
+  return `<div class="page-h"><div><h1><span class="marca"></span>Negociações</h1><div class="sub">${e?`Subetapas de ${esc(SN(e))}. Arraste o card para mudar a subetapa.`:'Arraste os cards entre as colunas para mudar a etapa. Abra uma etapa para ver as subetapas. Comprados, perdidos e descartados saem do quadro.'}</div></div></div>
+  ${seg}<div class="board ${e?'board-sub':''}" id="board">${cols.map(c=>{const ts=S.terrenos.filter(c.f);
+  return `<section class="col ${c.cls||''}" data-col="${c.k}" aria-label="${esc(c.l)}"><div class="col-h">${c.abre?`<button class="col-ab" data-a="neg-etapa" data-v="${c.abre}" title="Ver subetapas de ${esc(c.l)}"><span>${esc(c.l)}</span>${ic('chev',16)}</button>`:`<span>${esc(c.l)}</span>`}<span class="n">${ts.length}</span></div>${c.sla||c.prazo?`<div class="col-s faint">${c.sla?'SLA '+c.sla+' d':'Prazo '+c.prazo+' d'}</div>`:''}${ts.map(t=>kcardNeg(t,e?'sub':'')).join('')||'<div class="col-empty">Nenhuma</div>'}</section>`}).join('')}</div>`}
+function soltar(id,col){const t=T(id);if(!t||!t.neg||UI.role==='Leitura')return;const n=t.neg;
+  if(col==='stand_by'){if(n.status==='ativo'){UI.alvo=id;UI.modal='suspender';renderModal()}return}
+  if(col.startsWith('sub:')){const k=col.slice(4);if(!k||n.status!=='ativo'||n.sub===k)return;tentar(t,'subetapa',k);return}
+  if(n.status==='stand_by'){retomar(t);if(n.etapa===col){save();render();toast('Negociação retomada.');return}}
+  if(n.status!=='ativo'||n.etapa===col){save();render();return}
+  if(SIDX(col)<SIDX(n.etapa)){save();render();UI.alvo=id;UI.alvoEtapa=col;UI.modal='retornar';renderModal();return}
+  const res=levarAte(t,col);save();render();
+  if(res.ok){toast(`${t.nome}: ${SN(col)}.`);return}
+  if(res.pedido){toast(res.msg);return}
+  if(res.bloq){UI.acao={tid:id,tipo:'etapa',dest:col,pend:res.pend.map(x=>x.txt),items:res.pend};UI.alvo=id;UI.modal=res.podeForcar?'forcar':'adv-bloq';renderModal();return}
+  toast(res.erro,true)}
+/* tenta a passagem; bloqueada abre a justificativa (gestor/diretor) ou a lista do que falta */
+function tentar(t,tipo,dest,dados){const r=moverPara(t,tipo,dest,{dados});save();render();
+  if(r.ok){toast(`${t.nome}: ${destinoNome(tipo,dest)}.`);return r}
+  if(r.pedido){toast(r.msg);return r}
+  if(r.bloq){UI.acao={tid:t.id,tipo,dest,dados,pend:r.pend.map(x=>x.txt),items:r.pend};UI.alvo=t.id;UI.modal=r.podeForcar?'forcar':'adv-bloq';renderModal();return r}
+  toast(r.erro,true);return r}
+
+/* ---------- Configurações › Funil (só administrador) ---------- */
+const TIPOS_NOTIF_N={tarefa_atribuida:'Tarefa atribuída a você',tarefa_marcado:'Marcado em uma tarefa',tarefa_prazo:'Prazo de tarefa chegando',tarefa_atrasada:'Tarefa atrasada',subetapa_prazo:'Subetapa passou do prazo',stand_by_retomar:'Data de retomar um Stand By',documento_vencendo:'Documento vencendo',reuniao_agendada:'Reunião agendada',aprovacao_pendente:'Pedido de aprovação para você',aprovacao_decidida:'Seu pedido foi aprovado ou recusado'};
+const apCells=(p,c)=>`<label class="chk"><input type="checkbox" data-ch="cfg" data-p="${p}.g" ${c.g?'checked':''}>Gestor</label><label class="chk"><input type="checkbox" data-ch="cfg" data-p="${p}.d" ${c.d?'checked':''}>Diretor</label>${c.g&&c.d?`<select data-ch="cfg" data-p="${p}.modo" aria-label="Ordem das aprovações"><option value="sequencia" ${c.modo!=='paralelo'?'selected':''}>Em sequência</option><option value="paralelo" ${c.modo==='paralelo'?'selected':''}>Em paralelo</option></select>`:''}`;
+const usada=k=>S.terrenos.some(t=>t.neg&&(t.neg.sub===k||(t.neg.trilha||[]).some(x=>x.paraSub===k||x.deSub===k)));
+function pgConfig(){
+  if(!ehAdmin(me()))return `<div class="page-h"><div><h1><span class="marca"></span>Configurações</h1></div></div><section class="sec"><div class="sec-b"><div class="empty">Só administradores alteram a configuração do funil. Teste como Diretor (Moisés é administrador).</div></div></section>`;
+  const C=cfg(),aba=UI.cfgAba||'funil';
+  const abas=[['funil','Etapas e subetapas'],['prereq','Pré-requisitos'],['status','Status e motivos'],['checklist','Checklist'],['notif','Notificações'],['equipe','Equipe']];
+  let corpo='';
+  if(aba==='funil')corpo=`<section class="sec"><div class="sec-h"><h2>Etapas</h2><span class="faint" style="font-size:13px">Criar ou apagar etapa continua por migration</span></div><div class="sec-b"><div class="cfg-t">
+    <div class="cfg-r cfg-hd"><span>Etapa</span><span>SLA (dias)</span><span>Aprovação para entrar</span></div>
+    ${C.etapas.map((e,i)=>`<div class="cfg-r"><input data-ch="cfg" data-p="etapas.${i}.nome" value="${esc(e.nome)}" aria-label="Nome da etapa"><input type="number" min="0" data-ch="cfg" data-p="etapas.${i}.sla" value="${e.sla??''}" aria-label="SLA de ${esc(e.nome)}"><span class="cfg-ap">${apCells('etapas.'+i,e)}</span></div>`).join('')}</div></div></section>
+    ${C.etapas.map(e=>{const ss=C.subs.map((s,i)=>[s,i]).filter(([s])=>s.etapa===e.k).sort((a,b)=>a[0].ordem-b[0].ordem);
+      return `<section class="sec"><div class="sec-h"><h2>Subetapas · ${esc(e.nome)}</h2></div><div class="sec-b"><div class="cfg-t">
+      <div class="cfg-r cfg-hd cfg-sub"><span></span><span>Subetapa</span><span>Prazo (dias)</span><span>Aprovação para entrar</span><span>Ativa</span><span></span></div>
+      ${ss.map(([s,i],j)=>`<div class="cfg-r cfg-sub ${s.ativo?'':'inativa'}"><span class="cfg-ord"><button class="iconbtn sm" data-a="cfg-ord" data-i="${i}" data-v="-1" ${j?'':'disabled'} aria-label="Subir">↑</button><button class="iconbtn sm" data-a="cfg-ord" data-i="${i}" data-v="1" ${j<ss.length-1?'':'disabled'} aria-label="Descer">↓</button></span>
+        <input data-ch="cfg" data-p="subs.${i}.nome" value="${esc(s.nome)}" aria-label="Nome da subetapa"><input type="number" min="0" data-ch="cfg" data-p="subs.${i}.prazo" value="${s.prazo??''}" placeholder="Sem prazo" aria-label="Prazo de ${esc(s.nome)}">
+        <span class="cfg-ap">${apCells('subs.'+i,s)}</span><label class="chk"><input type="checkbox" data-ch="cfg" data-p="subs.${i}.ativo" ${s.ativo?'checked':''} aria-label="Ativa">${j===0&&s.ativo?'<span class="faint" style="font-size:12px">inicial</span>':''}</label>
+        <span>${usada(s.k)?'':`<button class="linkbtn danger" data-a="cfg-sub-del" data-i="${i}">Apagar</button>`}</span></div>`).join('')}</div>
+      <form class="inline-form" data-form="cfg-sub" data-e="${e.k}"><div class="field grow"><label for="cs-${e.k}">Nova subetapa</label><input id="cs-${e.k}" name="nome" required placeholder="Nome"></div><div class="field" style="flex:0 1 120px"><label for="cp-${e.k}">Prazo (dias)</label><input id="cp-${e.k}" name="prazo" type="number" min="0"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form>
+      <div class="hint">A primeira subetapa ativa é a inicial: é onde o card entra na etapa. Subetapa já usada não se apaga; desative.</div></div></section>`}).join('')}`;
+  if(aba==='prereq'){const opAlvo=`<optgroup label="Etapas">${C.etapas.map(e=>`<option value="etapa:${e.k}">${esc(e.nome)}</option>`).join('')}</optgroup>${C.etapas.map(e=>`<optgroup label="Subetapas de ${esc(e.nome)}">${subsDe(e.k).map(s=>`<option value="subetapa:${s.k}">${esc(s.nome)}</option>`).join('')}</optgroup>`).join('')}`;
+    const opReq=C.etapas.map(e=>`<optgroup label="${esc(e.nome)}">${subsDe(e.k).map(s=>`<option value="${s.k}">${esc(s.nome)}</option>`).join('')}</optgroup>`).join('');
+    corpo=`<section class="sec"><div class="sec-h"><h2>Pré-requisitos</h2></div><div class="sec-b"><p class="muted" style="margin-top:0">Para entrar numa etapa ou subetapa, o card precisa ter passado antes pelas subetapas listadas. Sem regra, a passagem é livre. Gestor e diretor podem passar sem os requisitos, com justificativa.</p>
+    <ul class="cfg-pre">${C.prereq.map(p=>`<li><span>Para entrar em <b>${esc(destinoNome(p.alvoTipo,p.alvo))}</b>${p.alvoTipo==='etapa'?' (etapa)':''}, precisa ter passado por <b>${esc(subN(p.req))}</b></span><button class="linkbtn danger" data-a="cfg-pre-del" data-v="${p.id}">Remover</button></li>`).join('')||'<li class="faint">Nenhuma regra. Todas as passagens são livres.</li>'}</ul>
+    <form class="inline-form" data-form="cfg-pre"><div class="field grow"><label for="pr-a">Para entrar em</label><select id="pr-a" name="alvo" required>${opAlvo}</select></div><div class="field grow"><label for="pr-r">Precisa ter passado por</label><select id="pr-r" name="req" required>${opReq}</select></div><button class="btn sm">${ic('add',16)}Adicionar regra</button></form></div></section>`}
+  if(aba==='status')corpo=`<section class="sec"><div class="sec-h"><h2>Status</h2></div><div class="sec-b"><div class="cfg-t"><div class="cfg-r cfg-hd cfg-st"><span>Status</span><span>Aprovação</span></div>
+    ${Object.entries(C.status).map(([k,s])=>`<div class="cfg-r cfg-st"><span>${STATUS_N[k]}</span><span class="cfg-ap">${apCells('status.'+k,s)}</span></div>`).join('')}</div>
+    <div class="hint">Comprado só sai da última etapa. Quem já tem o nível exigido fica dispensado da aprovação dele.</div></div></section>
+    ${['descartado','perdido'].map(st=>`<section class="sec"><div class="sec-h"><h2>Motivos de ${STATUS_N[st]}</h2></div><div class="sec-b"><div class="cfg-t"><div class="cfg-r cfg-hd cfg-mot"><span>Motivo</span><span>Exige texto</span><span>Ativo</span></div>
+    ${C.motivos[st].map((m,i)=>`<div class="cfg-r cfg-mot ${m.ativo?'':'inativa'}"><input data-ch="cfg" data-p="motivos.${st}.${i}.nome" value="${esc(m.nome)}" aria-label="Motivo"><label class="chk"><input type="checkbox" data-ch="cfg" data-p="motivos.${st}.${i}.texto" ${m.texto?'checked':''} aria-label="Exige texto"></label><label class="chk"><input type="checkbox" data-ch="cfg" data-p="motivos.${st}.${i}.ativo" ${m.ativo?'checked':''} aria-label="Ativo"></label></div>`).join('')}</div>
+    <form class="inline-form" data-form="cfg-mot" data-s="${st}"><div class="field grow"><label for="mt-${st}">Novo motivo</label><input id="mt-${st}" name="nome" required></div><button class="btn sm">${ic('add',16)}Adicionar</button></form></div></section>`).join('')}`;
+  if(aba==='checklist')corpo=C.etapas.map(e=>{const L=C.checklist[e.k]||[];return `<section class="sec"><div class="sec-h"><h2>Para sair de ${esc(e.nome)}</h2></div><div class="sec-b"><div class="cfg-docs">${Object.entries(TIPOS_DOC).filter(([k])=>!['foto','planta','ata'].includes(k)).map(([k,[l]])=>{const c=L.find(x=>x.doc===k);
+      return `<button class="fchip" data-a="cfg-doc" data-e="${e.k}" data-v="${k}" aria-pressed="${!!c}" title="${c?(c.obrig?'Obrigatório: clique para tornar opcional':'Opcional: clique para tirar'):'Fora do checklist: clique para exigir'}">${c?ic(c.obrig?'check':'clock',16):''}${esc(l)}${c&&!c.obrig?' <span class="faint">(opcional)</span>':''}</button>`}).join('')}</div></div></section>`}).join('')+'<div class="hint" style="margin:0 4px">Clique para alternar: obrigatório, opcional, fora do checklist. O obrigatório trava a saída da etapa (gestor e diretor passam com justificativa).</div>';
+  if(aba==='notif')corpo=`<section class="sec"><div class="sec-h"><h2>Notificações</h2></div><div class="sec-b"><div class="cfg-t"><div class="cfg-r cfg-hd cfg-nt"><span>Tipo</span><span>Ativa</span><span>Lembretes (dias antes)</span></div>
+    ${Object.entries(C.notif).map(([k,c])=>`<div class="cfg-r cfg-nt"><span>${TIPOS_NOTIF_N[k]||k}</span><label class="chk"><input type="checkbox" data-ch="cfg" data-p="notif.${k}.ativo" ${c.ativo?'checked':''} aria-label="Ativa"></label>${c.dias?`<input data-ch="cfg-dias" data-k="${k}" value="${c.dias.join(', ')}" placeholder="Ex.: 7, 1, 0" aria-label="Lembretes de ${TIPOS_NOTIF_N[k]}">`:'<span class="faint">Na hora</span>'}</div>`).join('')}</div>
+    <div class="hint">Por enquanto só no app (sino da barra superior). E-mail fica para depois. Cada pessoa pode mudar os lembretes de um item com data.</div></div></section>`;
+  if(aba==='equipe')corpo=`<section class="sec"><div class="sec-h"><h2>Equipe e hierarquia</h2></div><div class="sec-b"><div class="cfg-t"><div class="cfg-r cfg-hd cfg-eq"><span>Pessoa</span><span>Papel</span><span>Superior</span><span>Administrador</span></div>
+    ${S.membros.map((m,i)=>{const sups=S.membros.filter(x=>NIVEL[x.papel]===NIVEL[m.papel]+1);return `<div class="cfg-r cfg-eq"><span>${av(m.nome,'sm')} ${esc(m.nome)}</span><select data-ch="cfg-eq" data-i="${i}" data-k="papel" aria-label="Papel de ${esc(m.nome)}">${Object.entries(PAPEL_N).map(([k,l])=>`<option value="${k}" ${m.papel===k?'selected':''}>${l}</option>`).join('')}</select>
+      <select data-ch="cfg-eq" data-i="${i}" data-k="sup" aria-label="Superior de ${esc(m.nome)}" ${m.papel==='diretor'||m.papel==='leitura'?'disabled':''}><option value="">—</option>${sups.map(x=>`<option ${m.sup===x.nome?'selected':''}>${esc(x.nome)}</option>`).join('')}</select>
+      <label class="chk"><input type="checkbox" data-ch="cfg-eq" data-i="${i}" data-k="admin" ${m.admin?'checked':''} aria-label="Administrador"></label></div>`}).join('')}</div>
+    <div class="hint">Analista responde a um gestor; gestor responde a um diretor. Qualquer superior pode aprovar por quem está abaixo dele. Administrador é uma permissão à parte, em qualquer papel.</div></div></section>`;
+  return `<div class="page-h"><div><h1><span class="marca"></span>Configurações › Funil</h1><div class="sub">Vale para toda a empresa. Cada mudança fica na auditoria.</div></div><button class="btn" data-a="cfg-padrao">Restaurar padrão</button></div>
+  <div class="fchips cfg-abas" role="tablist">${abas.map(([k,l])=>`<button class="fchip" role="tab" data-a="cfg-aba" data-v="${k}" aria-pressed="${aba===k}" aria-selected="${aba===k}">${aba===k?ic('check',16):''}${l}</button>`).join('')}</div><div class="stack">${corpo}</div>`}
+function setPath(o,p,v){const k=p.split('.');let x=o;k.slice(0,-1).forEach(c=>{x=x[c]});x[k[k.length-1]]=v}
+/* pré-requisito: sem ciclo, sem exigir subetapa de etapa posterior, subetapa inicial não exige irmã */
+function validaPre(alvoTipo,alvo,req){const C=cfg(),rs=subCfg(req);if(!rs)return 'Subetapa inválida.';
+  const eAlvo=alvoTipo==='etapa'?alvo:subCfg(alvo)?.etapa;
+  if(alvoTipo==='subetapa'&&alvo===req)return 'Uma subetapa não pode exigir ela mesma.';
+  if(SIDX(rs.etapa)>SIDX(eAlvo)||(alvoTipo==='etapa'&&rs.etapa===alvo))return `${rs.nome} fica depois (ou dentro) de ${destinoNome(alvoTipo,alvo)}.`;
+  if(alvoTipo==='subetapa'&&rs.etapa===eAlvo&&subInicial(eAlvo)===alvo)return `${subN(alvo)} é a subetapa inicial: o card entra nela direto.`;
+  if(C.prereq.some(p=>p.alvoTipo===alvoTipo&&p.alvo===alvo&&p.req===req))return 'Essa regra já existe.';
+  const exige=(s,vis=new Set())=>{if(vis.has(s))return false;vis.add(s);return C.prereq.filter(p=>p.alvoTipo==='subetapa'&&p.alvo===s).some(p=>p.req===alvo||exige(p.req,vis))};
+  if(alvoTipo==='subetapa'&&exige(req))return 'Criaria um ciclo de pré-requisitos.';
+  return null}
+function validaEquipe(){const M=S.membros;if(!M.some(m=>m.admin))return 'A empresa precisa de pelo menos um administrador.';
+  for(const m of M){if(m.sup){const s=M.find(x=>x.nome===m.sup);if(!s||NIVEL[s.papel]!==NIVEL[m.papel]+1)return `${m.nome}: o superior precisa estar um nível acima.`}}return null}
+
+/* ---------- eventos do funil (chamados antes dos genéricos) ---------- */
+function funilClick(A,a,t){
+  switch(A){
+    case 'sino':sinoAberto=!sinoAberto;renderSino();return true;
+    case 'notif':{const x=S.notifs.find(n=>n.id===a.dataset.v);if(!x)return true;x.lida=true;sinoAberto=false;save();renderSino();if(x.tid&&T(x.tid)){BLA={geral:true};blId=x.tid;go('terreno',{id:x.tid,tab:'geral',from:UI.route==='terreno'?UI.from:'inicio'})}return true}
+    case 'notif-lidas':minhasNotifs().forEach(x=>x.lida=true);save();renderSino();return true;
+    case 'neg-etapa':UI.negEtapa=a.dataset.v||null;render();return true;
+    case 'adv-ir':{const r=checkAdv(t);if(!r)return true;const pend=r.items.filter(x=>!x.ok);
+      if(r.compra){if(pend.length&&!r.forcar){UI.acao={tid:t.id,tipo:'status',dest:'comprado',pend:pend.map(x=>x.txt),items:pend};UI.modal='adv-bloq'}else{UI.acao={pend:pend.map(x=>x.txt)};UI.modal='comprar'}renderModal();return true}
+      tentar(t,'etapa',r.dest);return true}
+    case 'perder':UI.modal='perder';renderModal();return true;
+    case 'descartar':UI.modal='descartar';renderModal();return true;
+    case 'suspender':UI.modal='suspender';renderModal();return true;
+    case 'retomar':retomar(t);save();render();toast('Negociação retomada. O tempo parado não conta no prazo.');return true;
+    case 'aprovar':{const r=decidir(t,true,'');save();render();toast(r.erro||r.msg,!!r.erro);return true}
+    case 'recusar':UI.modal='recusar';renderModal();return true;
+    case 'cancelar-pedido':cancelarPedido(t);save();render();toast('Pedido cancelado.');return true;
+    case 'rt-bold':case 'rt-ital':case 'rt-list':document.execCommand(A==='rt-bold'?'bold':A==='rt-ital'?'italic':'insertUnorderedList');$('#cp-rel')?.focus();return true;
+    case 'cfg-aba':UI.cfgAba=a.dataset.v;render();return true;
+    case 'cfg-padrao':if(!confirm('Restaurar a configuração padrão do funil? As subetapas criadas aqui somem.'))return true;S.cfg=CFG_PADRAO();syncCfg();save();render();toast('Configuração padrão restaurada.');return true;
+    case 'cfg-ord':{const C=cfg(),s=C.subs[+a.dataset.i],ss=C.subs.filter(x=>x.etapa===s.etapa).sort((x,y)=>x.ordem-y.ordem),j=ss.indexOf(s),o=ss[j+Number(a.dataset.v)];if(!o)return true;[s.ordem,o.ordem]=[o.ordem,s.ordem];save();render();return true}
+    case 'cfg-sub-del':{const C=cfg(),s=C.subs[+a.dataset.i];if(usada(s.k)){toast('Subetapa já usada: desative em vez de apagar.',true);return true}C.subs.splice(+a.dataset.i,1);C.prereq=C.prereq.filter(p=>p.req!==s.k&&!(p.alvoTipo==='subetapa'&&p.alvo===s.k));save();render();toast(`${s.nome} apagada.`);return true}
+    case 'cfg-pre-del':cfg().prereq=cfg().prereq.filter(p=>p.id!==a.dataset.v);save();render();toast('Regra removida.');return true;
+    case 'cfg-doc':{const L=cfg().checklist[a.dataset.e]=cfg().checklist[a.dataset.e]||[],i=L.findIndex(x=>x.doc===a.dataset.v);
+      if(i<0)L.push({doc:a.dataset.v,obrig:true});else if(L[i].obrig)L[i].obrig=false;else L.splice(i,1);save();render();return true}
+  }
+  if(A==='nav'&&a.dataset.cfg){sinoAberto=false;UI.cfgAba=a.dataset.cfg}
+  return false}
+function funilChange(el){
+  if(el.dataset.ch==='sub'){const t=T(UI.id);if(t)tentar(t,'subetapa',el.value);return true}
+  if(el.dataset.ch==='cfg'){let v=el.type==='checkbox'?el.checked:el.type==='number'?(el.value===''?null:Number(el.value)):el.value.trim();
+    if(el.type!=='checkbox'&&el.type!=='number'&&!v){toast('O nome não pode ficar vazio.',true);render();return true}
+    const p=el.dataset.p;
+    if(/^subs\.\d+\.ativo$/.test(p)&&!v){const s=cfg().subs[+p.split('.')[1]];if(subsDe(s.etapa).length<=1){toast('A etapa precisa de ao menos uma subetapa ativa.',true);render();return true}
+      const n=S.terrenos.filter(t=>t.neg?.status!=='perdido'&&t.neg?.sub===s.k).length;if(n)toast(`${n} card${n>1?'s continuam':' continua'} em ${s.nome} até alguém mudar a subetapa.`)}
+    setPath(cfg(),p,v);syncCfg();save();render();return true}
+  if(el.dataset.ch==='cfg-dias'){const d=[...new Set(el.value.split(/[,;\s]+/).filter(Boolean).map(Number).filter(x=>Number.isInteger(x)&&x>=0))].sort((a,b)=>b-a);cfg().notif[el.dataset.k].dias=d;save();render();toast('Lembretes salvos.');return true}
+  if(el.dataset.ch==='cfg-eq'){const m=S.membros[+el.dataset.i],antes={...m},k=el.dataset.k;
+    if(k==='papel'&&S.membros.some(x=>x.sup===m.nome)){toast(`${m.nome} tem subordinados: mude o superior deles antes.`,true);render();return true}
+    if(k==='admin')m.admin=el.checked;else if(k==='sup')m.sup=el.value||null;else{m.papel=el.value;m.sup=null}
+    const e=validaEquipe();if(e){Object.assign(m,antes);toast(e,true)}else toast('Equipe atualizada.');save();render();return true}
+  return false}
+function funilSubmit(form,F,t,f){
+  switch(form){
+    case 'perder':case 'descartar':{const st=form==='perder'?'perdido':'descartado',m=(cfg().motivos[st]||[]).find(x=>x.k===F.motivo);
+      if(m?.texto&&!F.detalhe.trim()){toast('Esse motivo pede uma explicação no texto.',true);return true}
+      UI.modal=null;tentar(t,'status',st,{motivo:F.motivo,detalhe:F.detalhe.trim()});return true}
+    case 'suspender':UI.modal=null;tentar(t,'status','stand_by',{retomar:F.retomar,detalhe:F.detalhe.trim()});return true;
+    case 'comprar':{const rel=limpaHtml($('#cp-rel')?.innerHTML||'');if(!textoDe(rel)){toast('Escreva o relato da compra.',true);return true}
+      const pend=UI.acao?.pend||[];if(pend.length&&!F.j?.trim()){toast('Justifique a compra sem os requisitos.',true);return true}
+      const r=moverPara(t,'status','comprado',{forcar:!!pend.length,just:F.j?.trim(),dados:{relato:rel,pontos:F.pontos.trim()}});UI.modal=null;UI.acao=null;save();render();
+      toast(r.ok?'Comprado.':r.pedido?r.msg:r.erro||'Não foi possível concluir.',!!r.erro||!!r.bloq);return true}
+    case 'recusar':{const r=decidir(t,false,F.coment.trim());UI.modal=null;save();render();toast(r.erro||r.msg,!!r.erro);return true}
+    case 'retornar':UI.modal=null;executar(t,'etapa',UI.alvoEtapa,{motivo:F.motivo});save();render();toast(`Voltou para ${SN(t.neg.etapa)}.`);return true;
+    case 'forcar':{const a=UI.acao,x=T(a.tid);let r;
+      if(a.tipo==='etapa'&&SIDX(a.dest)>SIDX(x.neg.etapa)+1)r=levarAte(x,a.dest,{forcar:true,just:F.j});else r=moverPara(x,a.tipo,a.dest,{forcar:true,just:F.j,dados:a.dados});
+      UI.modal=null;UI.acao=null;save();render();toast(r.ok?`${x.nome}: ${destinoNome(a.tipo,a.dest)}.`:r.msg||r.erro||'Não foi possível.',!!r.erro);return true}
+    case 'cfg-sub':{const C=cfg(),e=f.dataset.e,nome=F.nome.trim();if(C.subs.some(s=>s.etapa===e&&s.nome.toLowerCase()===nome.toLowerCase())){toast('Já existe uma subetapa com esse nome nesta etapa.',true);return true}
+      let k=nome.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');while(C.subs.some(s=>s.k===k))k+='_';
+      C.subs.push({k,etapa:e,nome,ordem:Math.max(0,...C.subs.filter(s=>s.etapa===e).map(s=>s.ordem))+1,prazo:lerNum(F.prazo),g:false,d:false,modo:'sequencia',ativo:true});save();render();toast(`${nome} adicionada em ${SN(e)}.`);return true}
+    case 'cfg-pre':{const [at,al]=F.alvo.split(':'),e=validaPre(at,al,F.req);if(e){toast(e,true);return true}cfg().prereq.push({id:uid(),alvoTipo:at,alvo:al,req:F.req});save();render();toast('Regra adicionada.');return true}
+    case 'cfg-mot':{const C=cfg(),st=f.dataset.s,nome=F.nome.trim();let k=nome.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');while(C.motivos[st].some(m=>m.k===k))k+='_';
+      C.motivos[st].push({k,nome,texto:false,ativo:true});save();render();toast('Motivo adicionado.');return true}
+  }
+  return false}
+/* modais do funil */
+function funilModal(M,fechar){const t=UI.alvo?T(UI.alvo):T(UI.id);
+  const motivos=st=>`<select id="mo-m" name="motivo" required><option value="">Escolha</option>${cfg().motivos[st].filter(m=>m.ativo).map(m=>`<option value="${m.k}">${esc(m.nome)}</option>`).join('')}</select>`;
+  const df=(id,l)=>`<div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="${id}">${l}</button></div>`;
+  const apInfo=st=>{const ap=aprovExig('status',st,me());return ap.niveis.length?`<div class="banner blue" style="margin-top:12px">${ic('check')}<div>Vai como pedido de aprovação: ${ap.niveis.map(x=>NIV_N[x]).join(ap.modo==='sequencia'?', depois ':' e ')}.</div></div>`:''};
+  if(M==='perder')return `<div class="dh"><div><h2>Marcar como Perdido</h2><div class="muted" style="margin-top:4px">O vendedor não quis seguir com a BKM.</div></div>${fechar}</div><form data-form="perder" id="f-p"><div class="fields"><div class="field full"><label for="mo-m">Motivo</label>${motivos('perdido')}</div><div class="field full"><label for="pd-d">Relato</label><textarea id="pd-d" name="detalhe" required placeholder="O que aconteceu, com quem e quando"></textarea></div></div>${apInfo('perdido')}</form>${df('f-p','Marcar como Perdido')}`;
+  if(M==='descartar')return `<div class="dh"><div><h2>Descartar</h2><div class="muted" style="margin-top:4px">A BKM decidiu não seguir.</div></div>${fechar}</div><form data-form="descartar" id="f-ds"><div class="fields"><div class="field full"><label for="mo-m">Motivo</label>${motivos('descartado')}</div><div class="field full"><label for="ds-d">Detalhe</label><textarea id="ds-d" name="detalhe" placeholder="Obrigatório quando o motivo é Outros"></textarea></div></div>${apInfo('descartado')}</form>${df('f-ds','Descartar')}`;
+  if(M==='suspender')return `<div class="dh"><h2>Colocar em Stand By</h2>${fechar}</div><form data-form="suspender" id="f-s"><div class="fields"><div class="field"><label for="sp-d">Retomar em</label><input id="sp-d" name="retomar" type="date" min="${addD(HOJE,1)}" value="${addD(HOJE,30)}" required></div><div class="field full"><label for="sp-t">Justificativa</label><textarea id="sp-t" name="detalhe" required></textarea></div></div><div class="hint" style="margin-top:8px">O sino avisa o responsável antes da data. O tempo parado não conta no prazo da etapa.</div>${apInfo('stand_by')}</form>${df('f-s','Colocar em Stand By')}`;
+  if(M==='comprar'){const pend=UI.acao?.pend||[];return `<div class="dh"><div><h2>Concluir como Comprado</h2><div class="muted" style="margin-top:4px">${esc(t.nome)}</div></div>${fechar}</div><form data-form="comprar" id="f-cp"><div class="fields">
+    <div class="field full"><span class="lbl-f" id="cp-l">Relato da compra</span><div class="rt"><div class="rt-bar" role="toolbar" aria-label="Formatação"><button type="button" class="iconbtn sm" data-a="rt-bold" aria-label="Negrito"><b>N</b></button><button type="button" class="iconbtn sm" data-a="rt-ital" aria-label="Itálico"><i>I</i></button><button type="button" class="iconbtn sm" data-a="rt-list" aria-label="Lista">•</button></div><div id="cp-rel" class="rt-ed" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="cp-l" data-ph="Como foi a negociação, condições finais, quem participou"></div></div></div>
+    <div class="field full"><label for="cp-p">Pontos de sucesso</label><textarea id="cp-p" name="pontos" required placeholder="O que fez a compra dar certo e vale repetir"></textarea></div>
+    ${pend.length?`<div class="field full"><div class="banner warn">${ic('warn')}<div><div class="bt">Comprar sem os requisitos</div><ul class="pend">${pend.map(x=>`<li>${ic('close',16)}${esc(x)}</li>`).join('')}</ul></div></div></div><div class="field full"><label for="cp-j">Justificativa (vai para o histórico)</label><textarea id="cp-j" name="j" required></textarea></div>`:''}</div>${apInfo('comprado')}</form>${df('f-cp','Concluir')}`}
+  if(M==='recusar'){const p=t.neg.pedido;return `<div class="dh"><div><h2>Recusar ${esc(destinoNome(p.tipo,p.dest))}?</h2><div class="muted" style="margin-top:4px">${esc(p.por)} recebe o motivo no sino.</div></div>${fechar}</div><form data-form="recusar" id="f-rc"><div class="field"><label for="rc-c">Motivo da recusa</label><textarea id="rc-c" name="coment" required></textarea></div></form>${df('f-rc','Recusar')}`}
+  if(M==='adv-bloq'){const a=UI.acao||{},pend=a.items||[];return `<div class="dh"><div><h2>Ainda não dá para ${a.dest==='comprado'?'concluir como Comprado':'ir para '+esc(destinoNome(a.tipo,a.dest))}</h2><p class="muted" style="margin:6px 0 0">Resolva o que falta. Gestor e diretor podem passar sem os requisitos, com justificativa.</p></div>${fechar}</div><ul class="adv-lista adv-modal">${advItens(pend)}</ul><div class="df"><button class="btn primary" data-a="close">Entendi</button></div>`}
+  if(M==='forcar'){const a=UI.acao||{};return `<div class="dh"><div><h2>Ir para ${esc(destinoNome(a.tipo,a.dest))} sem os requisitos?</h2>${a.pend?.length?`<ul class="pend">${a.pend.map(x=>`<li>${ic('close',16)}${esc(x)}</li>`).join('')}</ul>`:''}</div>${fechar}</div><form data-form="forcar" id="f-fc"><div class="field"><label for="fc-j">Justificativa (vai para o histórico)</label><textarea id="fc-j" name="j" required></textarea></div></form>${df('f-fc','Avançar')}`}
+  if(M==='retornar')return `<div class="dh"><div><h2>Voltar para ${SN(UI.alvoEtapa)}?</h2><div class="muted" style="margin-top:4px">${esc(t.nome)} está em ${SN(t.neg.etapa)}. Volta na subetapa inicial.</div></div>${fechar}</div><form data-form="retornar" id="f-rt"><div class="field"><label for="rt-m">Motivo (vai para o histórico)</label><textarea id="rt-m" name="motivo" required placeholder="Ex.: vendedor reabriu o preço"></textarea></div></form>${df('f-rt','Voltar etapa')}`;
+  return ''}
+prepararDados();
 
 render();
 })();

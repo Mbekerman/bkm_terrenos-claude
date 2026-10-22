@@ -22,7 +22,8 @@ const ARR_LAB={mats:['Matrícula',x=>x.num],insc:['Inscrição imobiliária',x=>
   reunioes:['Reunião',x=>fd(x.data)+(x.hora?' '+x.hora:'')],tarefas:['Tarefa',x=>x.titulo],docs:['Documento',x=>(TIPOS_DOC[x.tipo]||[x.nome||x.tipo])[0]],analises:['Análise urbanística',x=>x.fonte||fd(x.data)]};
 const ITEM_LAB={titulo:'título',prazo:'prazo',resp:'responsável',status:'status',prio:'prioridade',desc:'descrição',valor:'valor',data:'data',hora:'hora',sit:'situação',area:'área',
   cond:'condições',forma:'forma de pagamento',validade:'validade',emitido:'emissão',versoes:'versão',resultado:'resultado',pauta:'pauta',resumo:'resumo',nome:'nome',papel:'papel',principal:'principal'};
-const NEG_LAB={etapa:'Etapa',status:'Situação da negociação',temp:'Temperatura',retomar:'Revisitar em',motivo:'Motivo',ofRef:'Oferta de referência',final:'Fase final',fase_final:'Fase final'};
+const NEG_LAB={etapa:'Etapa',sub:'Subetapa',status:'Status',temp:'Temperatura',retomar:'Retomar em',motivo:'Motivo',detalhe:'Relato',pontos:'Pontos de sucesso',ofRef:'Oferta de referência'};
+const NEG_SEM_LOG=['desde','subDesde','encerradoEm','relato'];
 let AUD={};
 const retrato=t=>{const {hist,relevo,...r}=t;return JSON.stringify(r)};
 function audSnap(){AUD={};S.terrenos.forEach(t=>{AUD[t.id]={j:retrato(t),h:(t.hist||[]).length}})}
@@ -33,9 +34,9 @@ function diffTerreno(a,b){
     const va=a[k],vb=b[k];if(JSON.stringify(va)===JSON.stringify(vb))return;
     if(k==='poly'){campos.push({k,txt:vb?'Poligonal alterada':'Poligonal removida'});return}
     if(k==='neg'){const na=va||{},nb=vb||{};if(!va&&vb){itens.push('Negociação aberta');return}
-      Object.keys({...na,...nb}).forEach(x=>{if(JSON.stringify(na[x])===JSON.stringify(nb[x])||typeof (nb[x]??na[x])==='object'&&x!=='viab')return;
+      Object.keys({...na,...nb}).forEach(x=>{if(NEG_SEM_LOG.includes(x)||JSON.stringify(na[x])===JSON.stringify(nb[x])||typeof (nb[x]??na[x])==='object'&&x!=='viab')return;
         if(x==='viab'){campos.push({k:'neg.viab',txt:nb.viab?`Estudo de viabilidade vinculado: ${nb.viab.nome||''}`:'Estudo de viabilidade desvinculado'});return}
-        const f=v=>v==null||v===''?'não informado':x==='etapa'?SN(v):x==='retomar'?fd(v):x==='temp'?v+'/5':String(v);
+        const f=v=>v==null||v===''?'não informado':x==='etapa'?SN(v):x==='sub'?subN(v):x==='status'?STATUS_N[v]||v:x==='motivo'?motivoN(nb.status,v):x==='retomar'?fd(v):x==='temp'?v+'/5':String(v);
         campos.push({k:'neg.'+x,txt:`${NEG_LAB[x]||x}: ${f(na[x])} → ${f(nb[x])}`})});return}
     if(k==='infra'){Object.keys({...va,...vb}).forEach(x=>{const da=va?.[x]?.d,db=vb?.[x]?.d;if(da!==db)campos.push({k:'infra.'+x,txt:`Infraestrutura · ${x}: ${da||'não verificado'} → ${db||'não verificado'}`})});return}
     if(Array.isArray(va)||Array.isArray(vb)){const [lab,desc]=ARR_LAB[k]||[k,()=>''];const A=va||[],B=vb||[];
@@ -75,7 +76,8 @@ function semearHistorico(){
     (t.mats||[]).forEach(m=>add(m.data||addD(t.dataIdent,1),'Rafael Souza',`Matrícula adicionada: ${m.num}`,[m.cri,m.area!=null?`Área: ${m2(m.area)}`:null].filter(Boolean)));
     (t.insc||[]).forEach(i=>add(i.valores?.[0]?.data||addD(t.dataIdent,2),'Rafael Souza',`Inscrição imobiliária adicionada: ${i.sql}`));
     (t.analises||[]).forEach(a=>add(a.data,'Rafael Souza',`Análise urbanística registrada (${a.fonte})`,(a.zonas||[]).map(z=>`${z.sigla} · CA ${num(z.ca,2)}`)));
-    if(t.neg)add(t.neg.desde,t.resp,`Etapa: ${SN(t.neg.etapa)}`);
+    (t.neg?.trilha||[]).forEach(x=>add(x.em.slice(0,10),x.user,x.status!=='ativo'?`Status: ${STATUS_N[x.status]}${t.neg.motivo?' · '+motivoN(x.status,t.neg.motivo):''}`:x.ev==='subetapa'?`Subetapa: ${subN(x.paraSub)}`:`Etapa: ${SN(x.paraEtapa)} · ${subN(x.paraSub)}`,x.status==='ativo'?undefined:[t.neg.detalhe||null,x.status==='stand_by'&&t.neg.retomar?`Retomar em ${fd(t.neg.retomar)}`:null].filter(Boolean)));
+    if(t.neg?.pedido)add(t.neg.pedido.em,t.neg.pedido.por,`Pedido de aprovação: ${SN(t.neg.pedido.dest)} (gestor)`);
     if(t.neg?.viab)add(t.neg.viab.em,t.resp,`Estudo de viabilidade vinculado: ${t.neg.viab.nome}`,[`Preço máximo ${mi(t.neg.viab.pmax)}`,`Margem ${num(t.neg.viab.margem,1)}%`]);
     (t.propostas||[]).forEach(p=>add(p.data,p.origem==='bkm'?t.resp:t.resp,`Proposta v${p.v} registrada (${p.origem==='bkm'?'BKM':'vendedor'}): ${mi(p.valor)}`,[p.cond].filter(Boolean)));
     (t.propostas||[]).filter(p=>['recusada','aceita'].includes(p.status)).forEach(p=>add(addD(p.data,3),t.resp,`Proposta v${p.v}: ${OPT.statusProp[p.status]}`));
@@ -84,11 +86,10 @@ function semearHistorico(){
     (t.docs||[]).filter(d=>d.status==='validado').forEach(d=>add(d.emitido?addD(d.emitido,2):null,'Moisés',`Documento validado: ${(TIPOS_DOC[d.tipo]||[d.nome||d.tipo])[0]}`));
     (t.dilig||[]).forEach(d=>add(addD(t.dataIdent,3),d.resp||t.resp,`Diligência aberta: ${d.titulo}`));
     (t.tarefas||[]).forEach(k=>add(addD(k.prazo,-7),k.resp===t.resp?'Moisés':t.resp,`Tarefa criada: ${k.titulo}`,[`Responsável: ${k.resp}`,`Prazo: ${fd(k.prazo)}`]));
-    if(t.neg?.status==='perdida')add(addD(t.neg.desde,5),t.resp,`Negociação perdida: ${t.neg.motivo}`,[t.neg.detalhe].filter(Boolean));
     t.hist=H.filter(h=>h.em.slice(0,10)<=HOJE).sort((a,b)=>a.em.localeCompare(b.em));
   });
 }
-if(!(S.histV2>=4)){semearHistorico();S.histV2=4;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+if(!(S.histV2>=5)){semearHistorico();S.histV2=5;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 /* registros antigos só tinham hora e minuto: completa segundos e milissegundos preservando a ordem em que foram gravados */
 {let mud=false;S.terrenos.forEach(t=>{const g={};(t.hist||[]).forEach(h=>{if(h.em&&h.em.length===16)(g[h.em]=g[h.em]||[]).push(h)});
   Object.values(g).forEach(L=>L.forEach((h,k)=>{const ms=Math.round(59999*(k+1)/(L.length+1));h.em+=':'+String(Math.floor(ms/1000)).padStart(2,'0')+'.'+String(ms%1000).padStart(3,'0');mud=true}))});
@@ -106,11 +107,13 @@ const pnSalva=()=>{try{localStorage.setItem('bkm-terrenos-painel',JSON.stringify
 /* ---------- próximas ações ---------- */
 function proximasAcoes(t){
   const L=[],n=t.neg;const fixBtn=(a,l,extra='')=>({a,l,extra});
-  if(n?.status==='stand_by')L.push({sev:'warn',i:'pause',txt:`Negociação em stand by. Revisitar em ${fd(n.retomar)}`,fix:UI.role!=='Leitura'?fixBtn('retomar','Retomar'):null});
+  if(n?.status==='stand_by')L.push({sev:'warn',i:'pause',txt:`Negociação em Stand By. Retomar em ${fd(n.retomar)}`,fix:UI.role!=='Leitura'?fixBtn('retomar','Retomar'):null});
   if(n?.status==='ativo'){
     const r=checkAdv(t);
+    if(n.pedido)L.push({sev:'warn',i:'check',txt:possoDecidir(t)?`Aprovar: ${destinoNome(n.pedido.tipo,n.pedido.dest)} (pedido por ${n.pedido.por})`:`Aguardando ${quemFalta(n.pedido)} aprovar ${destinoNome(n.pedido.tipo,n.pedido.dest)}`,fix:null});
+    if(subAtrasada(n))L.push({sev:'warn',i:'clock',txt:`${subN(n.sub)} há ${diasSub(n)} dias (prazo de ${subCfg(n.sub).prazo})`,fix:null});
     if(r)r.items.filter(x=>!x.ok).forEach(x=>L.push({sev:x.gate?'':'warn',i:x.gate?'warn':'fwd',txt:x.txt,fix:x.fix?fixBtn(x.fix[0].startsWith('tab:')?'tab':x.fix[0],x.fix[1],x.fix[0].startsWith('tab:')?`data-t="${x.fix[0].slice(4)}"`:''):null}));
-    if(r&&r.ok)L.push({sev:'good',i:'fwd',txt:`Pronto para avançar para ${r.next[1]}`,fix:null});
+    if(r&&r.ok&&!n.pedido)L.push({sev:'good',i:'fwd',txt:`Pronto para ${r.compra?'concluir como Comprado':'avançar para '+r.next[1]}${r.aprov.niveis.length?' (pede aprovação)':''}`,fix:null});
     const lp=lastProp(t);
     if(lp&&['apresentada','em_analise'].includes(lp.status))L.push({sev:'warn',i:'money',txt:lp.origem==='bkm'?`Cobrar resposta da proposta v${lp.v} (enviada em ${fd(lp.data)})`:`Responder à proposta v${lp.v} do vendedor (${mi(lp.valor)})`,fix:fixBtn('tab','Ver propostas','data-t="negociacao"')});
     if(acimaMax(t))L.push({sev:'crit',i:'money',txt:`Levar ao comitê: proposta ${mi(lastProp(t).valor)} acima do preço máximo (${mi(n.viab.pmax)})`,fix:null});
@@ -239,7 +242,7 @@ function alvoLog(h){
     [/^Confronta/,{b:'cadastro',s:'confr'}],[/^Pessoa|^Propriet/,{b:'cadastro',s:'pessoas'}],[/^Poligonal|^[ÁA]rea/,{b:'cadastro',s:'areas'}],
     [/^(Oferta|Corretor)/,{b:'comercial'}],[/^Estudo de viabilidade/,{b:'geral'}],[/^(Proposta|Reuni[ãa]o|Oferta de refer)/,{b:'negociacao'}],
     [/^(Documento|Dilig)/,{b:'documentos'}],[/^Tarefa/,{b:'tarefas'}],[/^(An[áa]lise urban|Infraestrutura|Zoneamento)/,{b:'urbanismo'}],
-    [/^Temperatura/,{topo:'.temp'}],[/^(Etapa|Avan[çc]ou|Retomad|Stand by|Em stand by|Situa[çc][ãa]o da negocia|Negocia[çc][ãa]o|Revisitar|Fase final|Motivo)/,{topo:'.tl-topo'}]];
+    [/^Temperatura/,{topo:'.temp'}],[/^(Etapa|Subetapa|Status|Avan[çc]ou|Voltou|Retomad|Stand [bB]y|Em stand by|Pedido|Aprovad|Aprova[çc][ãa]o|Negocia[çc][ãa]o|Retomar|Revisitar|Motivo|Relato|Pontos)/,{topo:'.tl-topo'}]];
   const r=R.find(([re])=>re.test(x));return r?r[1]:{b:'geral'};
 }
 let pnPiscaT=null;
