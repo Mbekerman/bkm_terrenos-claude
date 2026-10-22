@@ -204,7 +204,12 @@ function painelFicha(t){
     <div class="pn-b">${PN.aba==='logs'?pnLogs(t):pnAcoes(t)}</div></aside>`;
 }
 /* tabelas: se não cabem no quadro, viram lista empilhada em vez de rolar para o lado */
-function ajustaTabelas(){document.querySelectorAll('.tblwrap,.dt-wrap').forEach(w=>{const t=w.querySelector('table');if(!t)return;
+/* Dashboard: se a lista não cabe, primeiro somem Código e Temperatura; se ainda não couber, ela desce para a largura inteira */
+function ajustaDash(){const g=document.querySelector('.dash-g'),s=g&&g.querySelector('.dash-tab'),w=s&&s.querySelector('.dt-wrap'),t=w&&w.querySelector('table');if(!t)return;
+  const cabe=()=>t.scrollWidth<=w.clientWidth+1;g.classList.remove('tab-larga');s.classList.remove('enxuta');w.classList.remove('empilha');
+  if(cabe())return;s.classList.add('enxuta');if(cabe())return;s.classList.remove('enxuta');g.classList.add('tab-larga');if(cabe())return;s.classList.add('enxuta');if(cabe())return;
+  s.classList.remove('enxuta');g.classList.remove('tab-larga')}  // nem assim: ajustaTabelas empilha como nas outras listas
+function ajustaTabelas(){ajustaDash();document.querySelectorAll('.tblwrap,.dt-wrap').forEach(w=>{const t=w.querySelector('table');if(!t)return;
   const cab=[...t.querySelectorAll('thead th')].map(th=>th.textContent.trim());
   t.querySelectorAll('tbody tr').forEach(tr=>{let i=0;[...tr.children].forEach(td=>{if(!td.hasAttribute('data-l'))td.setAttribute('data-l',cab[i]||'');i+=td.colSpan||1})});
   w.classList.remove('empilha');if(t.scrollWidth>w.clientWidth+1)w.classList.add('empilha')})}
