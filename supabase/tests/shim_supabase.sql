@@ -4,6 +4,7 @@ create role anon nologin;
 create role authenticated nologin;
 create role service_role nologin bypassrls;
 create schema extensions;
+grant usage on schema extensions to authenticated, anon;  -- como no Supabase
 create schema auth;
 create table auth.users (id uuid primary key, email text);
 create function auth.uid() returns uuid language sql stable as

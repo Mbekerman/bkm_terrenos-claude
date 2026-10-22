@@ -20,6 +20,12 @@ begin
   begin execute sqlcmd; exception when others then raise notice 'ok  % (%)', msg, sqlerrm; return; end;
   raise exception 'FALHOU: esperava erro em %', msg;
 end $$;
+-- quadrado de lado_m metros centrado no ponto, como GeoJSON (toda terreno precisa de poligonal)
+create function pg_temp.quadra(lon float8, lat float8, lado_m float8 default 30) returns jsonb language sql as $$
+  select jsonb_build_object('type','Polygon','coordinates',jsonb_build_array(jsonb_build_array(
+    jsonb_build_array(lon - dx, lat - dy), jsonb_build_array(lon + dx, lat - dy), jsonb_build_array(lon + dx, lat + dy),
+    jsonb_build_array(lon - dx, lat + dy), jsonb_build_array(lon - dx, lat - dy))))
+  from (select lado_m / 2 / (111320 * cos(radians(lat))) as dx, lado_m / 2 / 110574.0 as dy) d $$;
 set client_min_messages = notice;
 
 \set diretor  '00000000-0000-0000-0000-00000000000a'
@@ -54,7 +60,7 @@ select pg_temp.ok((select count(*) from app.zoneamentos where municipio_id = :'s
 
 \echo '# municípios'
 select pg_temp.ok((select count(*) from app.municipios) = 5571, 'municípios do IBGE carregados');
-select pg_temp.ok((select count(*) from app.zoneamentos z join app.municipios m on m.id = z.municipio_id where m.codigo_ibge <> '3550308') = 0, 'catálogo de zoneamento continua só de São Paulo');
+select pg_temp.ok((select string_agg(distinct m.nome, ', ') from app.zoneamentos z join app.municipios m on m.id = z.municipio_id) = 'São José dos Campos, São Paulo', 'catálogo de zoneamento só de São Paulo e São José dos Campos');
 select pg_temp.ok(app.municipio_por_nome('São Paulo', 'SP') = :'sp', 'acha o município pelo nome e UF do Google');
 select pg_temp.ok(app.municipio_por_nome('sao jose dos campos', 'sp') = (select id from app.municipios where codigo_ibge = '3549904'), 'acha sem acento e em minúsculas');
 select pg_temp.ok(app.municipio_por_nome('Santa Bárbara D''Oeste', 'SP') = (select id from app.municipios where codigo_ibge = '3545803'), 'acha com apóstrofo e maiúsculas diferentes');
@@ -62,10 +68,10 @@ select pg_temp.ok(app.municipio_por_nome('São Paulo', 'RJ') is null, 'UF errada
 
 -- ---------------------------------------------------------------------
 \echo '# cadastro rápido do terreno'
-select pg_temp.falha(format($$insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id) values (%L, 'Sem local', %L, 'corretor', %L)$$, :'emp', :'diretor', :'sp'),
-  'cadastro exige localização mínima');
-insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, logradouro, numero, bairro, zona)
-values (:'emp', 'Terreno Av. Cupecê — esquina', :'diretor', 'corretor', :'sp', 'Av. Cupecê', '1500', 'Cidade Ademar', 'sul')
+select pg_temp.falha(format($$insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro) values (%L, 'Sem poligonal', %L, 'corretor', %L, 'Sacomã')$$, :'emp', :'diretor', :'sp'),
+  'cadastro exige a poligonal');
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, logradouro, numero, bairro, zona, poligono_geojson)
+values (:'emp', 'Terreno Av. Cupecê — esquina', :'diretor', 'corretor', :'sp', 'Av. Cupecê', '1500', 'Cidade Ademar', 'sul', pg_temp.quadra(-46.6450, -23.6650))
 returning id as t1 \gset
 select pg_temp.ok((select codigo from app.terrenos where id = :'t1') ~ '^TER-\d{6}$', 'código TER-000001 gerado');
 select pg_temp.ok((select topografia from app.terrenos where id = :'t1') = 'nao_informado', 'campo não preenchido fica "não informado"');
@@ -178,7 +184,7 @@ select pg_temp.ok((select valor_pedido_m2 from app.v_terrenos where id = :'t1') 
 select pg_temp.falha(format($$insert into app.ofertas (empresa_id, terreno_id, forma_pagamento_pedida) values (%L, %L, 'cheque')$$, :'emp', :'t1'), 'forma de pagamento só nas 5 opções');
 
 -- ---------------------------------------------------------------------
-insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro) values (:'emp', 'Outro terreno', :'diretor', 'prospeccao', :'sp', 'Sacomã') returning id as tx \gset
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro, poligono_geojson) values (:'emp', 'Outro terreno', :'diretor', 'prospeccao', :'sp', 'Sacomã', pg_temp.quadra(-46.6000, -23.6000)) returning id as tx \gset
 select pg_temp.falha(format($$update app.ofertas set terreno_id = %L where terreno_id = %L$$, :'tx', :'t1'), 'oferta não muda de terreno');
 select pg_temp.falha(format($$update app.confrontacoes set terreno_id = %L where terreno_id = %L$$, :'tx', :'t1'), 'confrontação não muda de terreno');
 
@@ -397,15 +403,15 @@ select pg_temp.falha(format('select app.abrir_negociacao(%L)', :'t1'), 'terreno 
 
 -- ---------------------------------------------------------------------
 \echo '# área de interesse'
-insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro) values (:'emp', 'Lote vizinho', :'diretor', 'prospeccao', :'sp', 'Cidade Ademar') returning id as t2 \gset
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro, poligono_geojson) values (:'emp', 'Lote vizinho', :'diretor', 'prospeccao', :'sp', 'Cidade Ademar', pg_temp.quadra(-46.6300, -23.6800)) returning id as t2 \gset
 insert into app.areas_interesse (empresa_id, nome) values (:'emp', 'Área Cupecê A') returning id as ai \gset
 insert into app.area_interesse_terrenos (area_interesse_id, terreno_id, empresa_id) values (:'ai', :'t1', :'emp'), (:'ai', :'t2', :'emp');
 select pg_temp.ok((select count(*) from app.area_interesse_terrenos where area_interesse_id = :'ai') = 2, 'área de interesse reúne dois terrenos');
 
 -- ---------------------------------------------------------------------
 \echo '# mapa, pontos de interesse e quadro de tarefas'
-insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude)
-  values (:'emp', 'Pin no mapa', :'diretor', 'prospeccao', :'sp', -23.6681, -46.6513) returning id as tm \gset
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude, poligono_geojson)
+  values (:'emp', 'Pin no mapa', :'diretor', 'prospeccao', :'sp', -23.6681, -46.6513, pg_temp.quadra(-46.6513, -23.6681)) returning id as tm \gset
 insert into app.pontos_interesse (empresa_id, nome, categoria, latitude, longitude) values
   (:'emp', 'Terminal Cidade Ademar', 'transporte', -23.6672, -46.6522),
   (:'emp', 'Escritório Campinas', 'empresa', -22.9056, -47.0608);
@@ -450,6 +456,73 @@ select pg_temp.ok((select bool_and(precisa_medir and distancia_pe_m is null and 
 select pg_temp.como(:'leitor');
 select pg_temp.falha(format('select app.salvar_entorno(%L, -23.67, -46.65, %L)', :'tm', '[]'), 'leitura não grava entorno');
 select pg_temp.ok((select count(*) from app.v_entorno_buscas where terreno_id = :'tm') = 1, 'leitura vê a situação do entorno');
+select pg_temp.como(:'diretor');
+
+\echo '# Lote na base da prefeitura pela inscrição (GeoSampa e GeoSanja)'
+\set msp '(select id from app.municipios where codigo_ibge = ''3550308'')'
+\set msj '(select id from app.municipios where codigo_ibge = ''3549904'')'
+select pg_temp.ok((select string_agg(codigo || '=' || mascara, ' ' order by ordem) from app.bases_cadastrais)
+  = 'geosampa=000.000.0000-0 geosanja=00.0000.0000.0000', 'São Paulo e São José dos Campos têm base, cada uma com a sua máscara');
+insert into app.inscricoes_municipais (empresa_id, terreno_id, municipio_id, inscricao) values (:'emp', :'tm', :msp, '009.027.0009-1') returning id as gi \gset
+\set glote '{"cd_setor_fiscal":"009","cd_quadra_fiscal":"027","cd_lote":"0009","cd_digito_sql":"1","qt_area_terreno":593,"qt_area_construida":4994,"cd_cib":"0DRHNJA-V","cd_condominio":"00"}'
+\set gpoli '{"type":"Polygon","coordinates":[[[-46.6551,-23.5619],[-46.6555,-23.5620],[-46.6553,-23.5621],[-46.6551,-23.5619]]]}'
+\set gcam '{"zona_fiscal":[{"sg_zona_fiscal":"ZF-1"}],"pde_macroarea_lei_18209":[{"sg_macroarea":"MUC"}]}'
+select pg_temp.como(:'analista');
+select app.registrar_consulta_lote(:'gi', :'glote', :'gpoli', 593.4, :'gcam',
+  '[{"sigla":"ZEU","area_m2":500},{"sigla":"ZEU","area_m2":93.4},{"sigla":"ZXX","area_m2":1}]', '{drenagem}') as gc \gset
+select pg_temp.ok((select area_cadastral_m2 = 593 and cib = '0DRHNJA-V' and zona_fiscal = 'ZF-1' from app.inscricoes_municipais where id = :'gi'),
+  'consulta completa a área cadastral vazia, o CIB e a zona fiscal da inscrição');
+select pg_temp.ok((select base = 'geosampa' and inscricao_norm = '00902700091' and camadas_com_erro = '{drenagem}' and lote->>'qt_area_construida' = '4994'
+                     from app.consultas_lote where id = :'gc'),
+  'consulta guarda a base, o lote inteiro e as camadas que falharam');
+select pg_temp.ok((select a.fonte = 'GeoSampa (SQL 009.027.0009-1)' and a.observacoes like '%ZXX%' and z.area_abrangida_m2 = 593.4
+                     from app.analises_urbanisticas a join app.analise_zoneamentos z on z.analise_id = a.id
+                    where a.terreno_id = :'tm' and a.status = 'vigente'),
+  'consulta registra análise vigente com a área da zona somada; sigla fora do catálogo vai para as observações');
+update app.inscricoes_municipais set area_cadastral_m2 = 600 where id = :'gi';
+select app.registrar_consulta_lote(:'gi', :'glote', null, null, '{}', '[]', '{}', false) as gc2 \gset
+select pg_temp.ok((select area_cadastral_m2 from app.inscricoes_municipais where id = :'gi') = 600, 'área cadastral já preenchida não é trocada');
+select pg_temp.ok((select count(*) from app.consultas_lote where terreno_id = :'tm') = 2
+              and (select count(*) from app.analises_urbanisticas where terreno_id = :'tm') = 1, 'cada consulta é linha nova; sem zonas, nenhuma análise nova');
+select pg_temp.falha(format('select app.registrar_consulta_lote(%L, %L, null, null, %L, %L)', :'gi',
+  '{"cd_setor_fiscal":"009","cd_quadra_fiscal":"027","cd_lote":"0010","cd_digito_sql":"1"}', '{}', '[]'), 'lote de outro SQL é recusado');
+select pg_temp.falha(format($$update app.consultas_lote set zonas = '[]' where id = %L$$, :'gc'), 'consulta não é alterada');
+select pg_temp.ok((select count(*) from app.consultas_lote where id = :'gc' and zonas <> '[]') = 1, 'consulta continua como foi gravada');
+select app.registrar_documento(:'tm', 'lote_dxf', :'emp' || '/' || :'tm' || '/lote_dxf/a.dxf', 'lote.dxf') as gd \gset
+select app.registrar_documento(:'tm', 'lote_dxf', :'emp' || '/' || :'tm' || '/lote_dxf/b.dxf', 'lote.dxf', p_documento => :'gd') as gd2 \gset
+select pg_temp.ok(:'gd' = :'gd2' and (select count(*) from app.documento_versoes where documento_id = :'gd') = 2, 'DXF do lote vira documento com versões');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format('select app.registrar_consulta_lote(%L, %L, null, null, %L, %L)', :'gi', :'glote', '{}', '[]'), 'leitura não consulta a base da prefeitura');
+select pg_temp.ok((select count(*) from app.consultas_lote where terreno_id = :'tm') = 2, 'leitura vê as consultas');
+select pg_temp.como(:'diretor');
+-- São José dos Campos: o GeoSanja devolve só a inscrição e a poligonal
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro, poligono_geojson)
+  values (:'emp', 'Em SJC', :'diretor', 'prospeccao', :msj, 'Vila Adyanna', pg_temp.quadra(-45.8860, -23.1890)) returning id as tsj \gset
+insert into app.inscricoes_municipais (empresa_id, terreno_id, municipio_id, inscricao) values (:'emp', :'tsj', :msj, '41.0024.0011.0000') returning id as gs \gset
+select app.registrar_consulta_lote(:'gs', '{"inscricao":"41.0024.0011.0000"}', :'gpoli', 412.5,
+  '{"anexo_07":[{"nome":"Centro expandido","ca_max":4}]}', '[{"sigla":"ZM2","area_m2":412.5}]') as gcs \gset
+select pg_temp.ok((select base = 'geosanja' and inscricao_norm = '41002400110000' from app.consultas_lote where id = :'gcs')
+              and (select a.fonte = 'GeoSanja (Inscrição imobiliária 41.0024.0011.0000)' and a.observacoes is null and zz.sigla = 'ZM2'
+                     from app.analises_urbanisticas a join app.analise_zoneamentos z on z.analise_id = a.id join app.zoneamentos zz on zz.id = z.zoneamento_id
+                    where a.terreno_id = :'tsj' and a.status = 'vigente')
+              and (select area_cadastral_m2 is null and cib is null from app.inscricoes_municipais where id = :'gs'),
+  'GeoSanja: consulta e análise com a zona do catálogo de SJC; área cadastral fica vazia (não vem)');
+select pg_temp.falha(format('select app.registrar_consulta_lote(%L, %L, null, null, %L, %L)', :'gs', '{"inscricao":"41.0024.0012.0000"}', '{}', '[]'),
+  'GeoSanja: lote de outra inscrição é recusado');
+select pg_temp.falha(format($$insert into app.inscricoes_municipais (empresa_id, terreno_id, municipio_id, inscricao) values (%L, %L, %s, '111.222.3333-4')$$,
+  :'emp', :'tsj', :'msp'), 'SQL de São Paulo num terreno de SJC é recusado');
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao) values (:'emp', :'tsj', '123456') returning id as gout \gset
+select pg_temp.falha(format('select app.registrar_consulta_lote(%L, %L, null, null, %L, %L)', :'gout', '{"inscricao":"123456"}', '{}', '[]'),
+  'inscrição de outro município (sem base) não consulta');
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao) values (:'emp', :'tm', '009.027.0009-1') returning id as gdup \gset
+select pg_temp.ok(:'gdup' is not null, 'mesmo número em outra cidade não é duplicata');
+select pg_temp.ok((select count(*) from app.buscar_duplicados(:'emp', p_inscricao => '41.0024.0099.0000') where certeza = 'mesma_quadra') = 1,
+  'inscrição de SJC da mesma quadra avisa vizinho');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'consultas_lote') = 3, 'consultas do lote vão para os logs');
+-- limpa o que os testes seguintes contam (como superusuário)
+reset role;
+delete from app.terrenos where id = :'tsj';
+delete from app.inscricoes_municipais where id in (:'gi', :'gdup');
 select pg_temp.como(:'diretor');
 select pg_temp.ok(not exists (select 1 from app.v_mapa where id = :'t1'), 'terreno arquivado sai do mapa');
 insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (:'emp', :'tm', 'Visitar o lote', current_date - 1) returning id as k1 \gset
@@ -610,4 +683,60 @@ select app.registrar_documento(:'tx', 'matricula', :'emp' || '/' || :'tx' || '/m
 select pg_temp.ok((select array_agg(dias_antes order by dias_antes) from app.lembretes where origem_id = :'dv') = '{7,30}', 'documento que vence nasce com lembretes de 30 e 7 dias');
 select app.configurar_notificacao(:'emp', 'tarefa_atrasada', false);
 select pg_temp.ok((select not ativo from app.tipos_notificacao where codigo = 'tarefa_atrasada'), 'administrador desliga um tipo de notificação');
+-- ---------------------------------------------------------------------
+\echo '# poligonal primeiro: terrenos que se sobrepõem à área nova'
+select pg_temp.como(:'diretor');
+-- A e B: quadras de ~100 × 110 m lado a lado (encostam na divisa)
+\set qa '{"type":"Polygon","coordinates":[[[-46.7000,-23.6000],[-46.6990,-23.6000],[-46.6990,-23.6010],[-46.7000,-23.6010],[-46.7000,-23.6000]]]}'
+\set qb '{"type":"Polygon","coordinates":[[[-46.6990,-23.6000],[-46.6980,-23.6000],[-46.6980,-23.6010],[-46.6990,-23.6010],[-46.6990,-23.6000]]]}'
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro, poligono_geojson)
+values (:'emp', 'Quadra A', :'diretor', 'corretor', :'sp', 'Campo Limpo', :'qa') returning id as sa \gset
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro, poligono_geojson)
+values (:'emp', 'Vizinho B', :'diretor', 'corretor', :'sp', 'Campo Limpo', :'qb') returning id as sb \gset
+select pg_temp.ok((select poligono is not null from app.terrenos where id = :'sa'), 'poligonal vira geometria; o vizinho que só encosta na divisa entra');
+-- B desenhado 3 m para dentro de A: faixa de imprecisão, não conta
+select pg_temp.ok((select count(*) from app.terrenos_sobrepostos(:'emp',
+  '{"type":"Polygon","coordinates":[[[-46.69903,-23.6000],[-46.6980,-23.6000],[-46.6980,-23.6010],[-46.69903,-23.6010],[-46.69903,-23.6000]]]}', :'sb')) = 0,
+  'faixa de 3 m na divisa não conta');
+select pg_temp.ok((select largura_m between 7 and 9 from app.terrenos_sobrepostos(:'emp',
+  '{"type":"Polygon","coordinates":[[[-46.69908,-23.6000],[-46.6980,-23.6000],[-46.6980,-23.6010],[-46.69908,-23.6010],[-46.69908,-23.6000]]]}', :'sb') where terreno_id = :'sa'),
+  'faixa de 8 m conta, com a largura informada');
+-- C entra 8 m pelo norte de A
+\set qc '{"type":"Polygon","coordinates":[[[-46.7000,-23.5992],[-46.6990,-23.5992],[-46.6990,-23.60007],[-46.7000,-23.60007],[-46.7000,-23.5992]]]}'
+select pg_temp.falha(format($$insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro, poligono_geojson) values (%L, 'C', %L, 'corretor', %L, 'Campo Limpo', %L)$$, :'emp', :'diretor', :'sp', :'qc'),
+  'banco recusa poligonal que ocupa parte de outro terreno');
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro, poligono_geojson, sobreposicoes_aceitas)
+values (:'emp', 'C', :'diretor', 'corretor', :'sp', 'Campo Limpo', :'qc', array[:'sa']::uuid[]) returning id as sc \gset
+select pg_temp.ok(:'sc' is not null, 'entra quando o usuário confirma que é outro terreno');
+select versao as vb from app.terrenos where id = :'sb' \gset
+select pg_temp.falha(format($$select app.salvar_terreno(%L, %s, jsonb_build_object('poligono_geojson', %L::jsonb))$$, :'sb', :vb, :'qa'), 'mudar a poligonal para cima de outro terreno também é recusado');
+-- área nova no meio de A e B
+\set meio '{"type":"Polygon","coordinates":[[[-46.6995,-23.6000],[-46.6985,-23.6000],[-46.6985,-23.6010],[-46.6995,-23.6010],[-46.6995,-23.6000]]]}'
+select pg_temp.ok((select count(*) from app.terrenos_sobrepostos(:'emp', :'meio') where terreno_id in (:'sa', :'sb')) = 2, 'área no meio de A e B acha os dois');
+select pg_temp.ok((select motivo = 'parcial' and pct_da_nova between 48 and 52 and pct_do_existente between 48 and 52 and area_sobreposta_m2 between 5000 and 6000
+  from app.terrenos_sobrepostos(:'emp', :'meio') where terreno_id = :'sa'), 'mostra a área em comum e o percentual de cada lado');
+select pg_temp.ok((select situacao from app.terrenos_sobrepostos(:'emp', :'meio') where terreno_id = :'sa') = 'sem_negociacao', 'informa a situação do existente');
+select pg_temp.ok((select count(*) from app.terrenos_sobrepostos(:'emp', :'meio', :'sa') where terreno_id = :'sa') = 0, 'o terreno em edição fica fora da busca');
+select pg_temp.ok((select motivo from app.terrenos_sobrepostos(:'emp', :'qa') where terreno_id = :'sa') = 'mesma_area', 'a mesma área desenhada de novo');
+-- A é parte da área nova (3 lotes de 5)
+select pg_temp.ok((select motivo = 'parcial' and pct_do_existente > 99 and pct_da_nova between 45 and 55 from app.terrenos_sobrepostos(:'emp',
+  '{"type":"Polygon","coordinates":[[[-46.7000,-23.6000],[-46.6990,-23.6000],[-46.6990,-23.6020],[-46.7000,-23.6020],[-46.7000,-23.6000]]]}') where terreno_id = :'sa'),
+  'área nova que contém o terreno inteiro: parcial, com 100% do existente');
+-- lote estreito (5 × 27 m) desenhado duas vezes: a faixa tem menos de 5 m, mas cobre o lote inteiro
+\set qn '{"type":"Polygon","coordinates":[[[-46.7100,-23.6000],[-46.70995,-23.6000],[-46.70995,-23.60025],[-46.7100,-23.60025],[-46.7100,-23.6000]]]}'
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro, poligono_geojson)
+values (:'emp', 'Lote estreito', :'diretor', 'corretor', :'sp', 'Campo Limpo', :'qn') returning id as sn \gset
+select pg_temp.ok((select motivo from app.terrenos_sobrepostos(:'emp', :'qn') where terreno_id = :'sn') = 'mesma_area', 'lote estreito repetido sempre avisa');
+select pg_temp.ok((select count(*) from app.terrenos_sobrepostos(:'emp',
+  '{"type":"Polygon","coordinates":[[[-46.6999,-23.6001],[-46.6991,-23.6009],[-46.6991,-23.6001],[-46.6999,-23.6009],[-46.6999,-23.6001]]]}') where terreno_id = :'sa') = 1,
+  'desenho que se cruza (gravata) é corrigido e ainda acha o terreno');
+select pg_temp.falha(format($$select * from app.terrenos_sobrepostos(%L, '{"type":"Polygon","coordinates":[[[-46.7,-23.6],[-46.69,-23.6]]]}')$$, :'emp'), 'poligonal inválida é recusada');
+select pg_temp.falha(format($$select * from app.terrenos_sobrepostos(%L, '{"type":"Point","coordinates":[-46.7,-23.6]}')$$, :'emp'), 'ponto não serve como poligonal');
+-- oferta de parte do terreno
+select app.registrar_oferta(:'sa', 900000, p_poligono => '{"type":"Polygon","coordinates":[[[-46.7000,-23.6000],[-46.6995,-23.6000],[-46.6995,-23.6010],[-46.7000,-23.6010],[-46.7000,-23.6000]]]}') as ofp \gset
+select pg_temp.ok((select poligono_geojson is not null from app.ofertas where terreno_id = :'sa'), 'oferta guarda o pedaço oferecido');
+select pg_temp.falha(format($$select app.registrar_oferta(%L, 900000, p_poligono => %L)$$, :'sa', :'qb'), 'oferta que passa da poligonal do terreno é recusada');
+select pg_temp.como(:'intruso');
+select pg_temp.falha(format($$select * from app.terrenos_sobrepostos(%L, %L)$$, :'emp', :'meio'), 'outra empresa não consulta');
+select pg_temp.como(:'diretor');
 \echo 'TODOS OS TESTES PASSARAM'

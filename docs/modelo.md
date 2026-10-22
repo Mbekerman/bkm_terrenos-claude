@@ -167,6 +167,9 @@ erDiagram
   eixos_comerciais |o--o{ terrenos : classifica
   terrenos ||--o{ matriculas : possui
   terrenos ||--o{ inscricoes_municipais : possui
+  inscricoes_municipais ||--o{ consultas_lote : "lote na base da prefeitura"
+  municipios ||--o| bases_cadastrais : "GeoSampa, GeoSanja"
+  municipios ||--o{ inscricoes_municipais : "cidade da inscricao"
   inscricoes_municipais ||--o{ inscricao_valores : "valor venal e IPTU por exercicio e revisao"
   terrenos ||--o{ confrontacoes : mede
   terrenos ||--o{ terreno_pessoas : vincula
@@ -203,7 +206,9 @@ erDiagram
     uuid eixo_comercial_id FK
     float latitude
     float longitude
-    jsonb poligono_geojson
+    jsonb poligono_geojson "obrigatoria"
+    geometry poligono "gerada, PostGIS"
+    uuid_array sobreposicoes_aceitas
     text precisao_localizacao
     numeric area_documental_m2
     numeric area_cadastral_m2
@@ -239,8 +244,31 @@ erDiagram
   inscricoes_municipais {
     uuid id PK
     uuid terreno_id FK
-    text inscricao "SQL"
+    uuid municipio_id FK "nulo = outro municipio"
+    text inscricao "SQL ou inscricao imobiliaria"
     numeric area_cadastral_m2
+    text cib
+    text zona_fiscal
+  }
+  bases_cadastrais {
+    text codigo PK
+    uuid municipio_id FK
+    text nome
+    text rotulo
+    text mascara
+  }
+  consultas_lote {
+    uuid id PK
+    uuid terreno_id FK
+    uuid inscricao_id FK
+    text base FK
+    text inscricao_norm
+    timestamptz consultado_em
+    jsonb lote
+    jsonb poligono_geojson
+    jsonb camadas "atributos de tudo que toca o lote"
+    jsonb zonas "porcao de cada zona"
+    text_arr camadas_com_erro
   }
   inscricao_valores {
     uuid id PK
@@ -291,7 +319,15 @@ erDiagram
   }
 ```
 
-`municipios` traz os 5.571 municípios do IBGE (código, nome e UF), então o terreno pode estar em qualquer cidade. A busca de endereço do Google devolve cidade e UF, e o front obtém o `municipio_id` por `app.municipio_por_nome(nome, uf)`, que compara sem acento, maiúsculas, hífen ou apóstrofo. O catálogo de `zoneamentos` por enquanto só tem São Paulo (LPUOS).
+`municipios` traz os 5.571 municípios do IBGE (código, nome e UF), então o terreno pode estar em qualquer cidade. A busca de endereço do Google devolve cidade e UF, e o front obtém o `municipio_id` por `app.municipio_por_nome(nome, uf)`, que compara sem acento, maiúsculas, hífen ou apóstrofo. O catálogo de `zoneamentos` tem São Paulo (LPUOS) e São José dos Campos (LC 623/2019, siglas da legenda do mapa do GeoSanja).
+
+**Poligonal primeiro.** O cadastro começa pela poligonal, obrigatória (`check` em `terrenos`; PostGIS no schema `extensions`, coluna gerada `poligono` com índice GiST). Antes de criar, o front chama `app.terrenos_sobrepostos(empresa, poligonal)`, que usa `app.sobreposicao(a, b, folga = 5 m)`: a parte em comum conta quando passa de 1 m² e tem mais de 5 m de largura (diâmetro do maior círculo que cabe nela, `ST_MaximumInscribedCircle` na UTM do lugar) ou cobre metade de um dos dois. Assim a imprecisão do desenho na divisa não conta, mas o mesmo lote estreito desenhado de novo sempre avisa. Cada achado vem como `mesma_area` (90% ou mais dos dois lados) ou `parcial`, com área, largura e percentuais. O usuário escolhe: nova oferta no existente (com `ofertas.poligono_geojson` quando oferece só parte, conferido em `registrar_oferta` para caber no terreno com 5 m de folga), recadastrar o existente com a área nova ou a soma das duas (`salvar_terreno`), ou confirmar que é outro terreno. Nesse caso os ids vão em `sobreposicoes_aceitas`, e o trigger `t_sobre` recusa qualquer poligonal (cadastro, edição, importação) que ocupe outro terreno sem essa confirmação. Município e endereço vêm da localização da poligonal (geocodificação reversa no front, com `municipio_por_nome`); as ruas de cada lado viram as frentes, o usuário escolhe a principal (`logradouro`, `numero`) e as outras entram em `confrontacoes` com tipo `frente`.
+
+**Inscrição por cidade.** Cada inscrição guarda a cidade (`municipio_id`), escolhida antes de digitar: São Paulo, São José dos Campos ou outro município (nulo, inscrição digitada). A cidade com base da prefeitura está em `bases_cadastrais`, com o nome da base, como a prefeitura chama a inscrição e a máscara (`000.000.0000-0` em SP, `00.0000.0000.0000` em SJC); o front abre o campo com essa máscara e busca o lote na base. A inscrição de uma cidade tem que ser da cidade do terreno (trigger `tg_inscricao_municipio`), e a unicidade é por empresa, cidade e número. Nos dois cadastros os 6 primeiros dígitos são setor e quadra, o que dá o aviso de "mesma quadra" em `buscar_duplicados`. A consulta do lote, nas duas bases, é gravada por `app.registrar_consulta_lote` em `consultas_lote` (campo `base`), e planta e desenho são os documentos `lote_pdf` e `lote_dxf`.
+
+**GeoSampa pelo SQL (São Paulo).** Na inscrição, "Buscar no GeoSampa" (automático ao cadastrar o SQL) consulta o servidor de camadas do Novo GeoSampa (`geoserver.geosampa.prefeitura.sp.gov.br`, WFS/WMS) pelo repasse do Caddy em `/geosampa`, porque o servidor só aceita chamadas de navegador vindas do próprio GeoSampa. Traz o lote fiscal (`lote_cidadao`: poligonal em UTM 23S SIRGAS 2000, áreas, uso, CIB, condomínio) e os atributos de cada camada que toca a poligonal (zoneamento das Leis 18.081 e 18.177, ZEIS, eixos, macroárea e fator de planejamento, operação urbana, mananciais, tombamento e áreas envoltórias, áreas contaminadas, melhoramento viário, faixa não edificável, córrego a até 50 m, risco, inundação, influência de Metrô e CPTM, vegetação significativa, zona fiscal). `app.registrar_consulta_lote` confere que o lote é o da inscrição, grava a consulta inteira (nunca alterada), completa só o que está vazio na inscrição (área cadastral) e o cadastro fiscal (CIB, zona fiscal) e, se pedido, registra uma análise urbanística nova com a área de cada zona no lote. Poligonal e áreas do terreno continuam passando por `app.salvar_terreno`. A planta (PDF, gerada pelo próprio servidor) e o desenho (DXF R12 com lotes, calçada, quadra, edificações, curvas de nível com cota e pontos cotados, montado no navegador) entram como documentos `lote_pdf` e `lote_dxf`, com versão. Testada, valor do m² e valor venal não estão no GeoSampa novo; continuam digitados por exercício em `inscricao_valores`.
+
+**GeoSanja pela inscrição imobiliária (São José dos Campos).** Não há serviço público de camadas: a ficha usa a API do próprio site (`geo.sjc.sp.gov.br/v1`) com o token de visitante (`autenticar?token=VISITANTE`, vale um ano), pelo repasse do Caddy em `/geosanja` (o site não libera CORS). A busca pela inscrição (`localizar`, ferramenta `SearchICTool`) devolve só a poligonal do lote, sem área cadastral, uso nem endereço. As camadas liberadas ao visitante são lidas por `GetFeatureInfo` com raio cobrindo o lote e conferidas no navegador contra a poligonal: zona da LC 623 com a área no lote e o link da ficha da zona, macrozona, área de desenvolvimento estratégico, centralidade com o CA máximo, região, setor e subsetor, corredores, recarga de aquífero, parques e unidades de conservação, núcleos informais, risco de escorregamento e PMRR, linha de transmissão e ferrovia. A planta é montada no navegador (ortofoto de 8 cm, curvas e zoneamento, com o lote em vermelho, num PDF de uma página) e o DXF leva lote, arruamentos, curvas do IGC (1:10.000, cota como elevação) e zonas, em UTM 23S SIRGAS 2000. Fechadas ao visitante: atributos do lote, inundação, APAs estaduais e federais, bens tombados, loteamentos e circunscrição imobiliária. É uma API interna da prefeitura, que pode mudar sem aviso.
 
 ## 2. Ofertas, negociação, propostas e tarefas
 
@@ -332,6 +368,7 @@ erDiagram
     numeric comissao_valor
     date validade
     text status
+    jsonb poligono_geojson "pedaco oferecido"
   }
   processos {
     uuid id PK
@@ -507,6 +544,8 @@ erDiagram
 | Gabarito (m e pavimentos) e CA têm estado próprio: não informado, limitado (com valor) ou sem limite identificado | checks em `analise_zoneamentos` |
 | Uma análise urbanística vigente por terreno; anteriores preservadas | índice único parcial + trigger |
 | Valor venal e IPTU por inscrição e exercício; correção vira nova revisão, a anterior fica preservada | `inscricao_valores` + trigger |
+| Consulta do lote na base da prefeitura (GeoSampa, GeoSanja) só pela RPC, conferindo que o lote é o da inscrição e que o terreno é da cidade da base; nunca alterada; completa só campos vazios | `app.registrar_consulta_lote` |
+| Inscrição escolhida numa cidade só entra em terreno dessa cidade | trigger `tg_inscricao_municipio` |
 | Isento não tem IPTU; venal do imóvel = terreno + construção quando os dois existem | checks em `inscricao_valores` |
 | Edição simultânea: salvar com versão antiga é recusado | `terrenos.versao` + `salvar_terreno` |
 | Participações dos proprietários somam no máximo 100% | trigger em `terreno_pessoas` |
@@ -519,6 +558,8 @@ erDiagram
 | Motivo de Perdido e Descartado vem da lista ativa; Comprado exige relato e pontos de sucesso | `encerrar_processo` + checks em `processos` |
 | Papel "leitura" consulta tudo e não altera nada | políticas com `empresas_edicao()` e `exigir_editor` |
 | CEP e CPF/CNPJ guardados só com dígitos; polígono GeoJSON validado | triggers e check |
+| Terreno só existe com poligonal; poligonal que ocupa parte de outro terreno (além da folga de 5 m na divisa) só entra confirmada | check em `terrenos`, `app.sobreposicao`, trigger `t_sobre` |
+| Pedaço oferecido fica dentro do terreno | `registrar_oferta` |
 | Mesma matrícula no mesmo cartório = mesmo terreno | índice único em `matriculas` |
 | Um corretor principal por terreno; o primeiro da oferta vira principal | índice único parcial + trigger |
 | Uma negociação aberta (ativa ou em stand by) por terreno | índice único parcial em `processos` |

@@ -1,3 +1,14 @@
+(geosanja) {
+	reverse_proxy https://geo.sjc.sp.gov.br {
+		header_up Host {upstream_hostport}
+		header_up -Origin
+		header_up -Referer
+		header_up -Cookie
+		header_down -Set-Cookie
+		header_down -Access-Control-Allow-Origin
+	}
+}
+
 # Railway define $PORT.
 :{$PORT:8080} {
 	encode zstd gzip
@@ -14,6 +25,48 @@
 		}
 		try_files {path} /index.html
 		file_server
+	}
+
+	# GeoSampa (Prefeitura de São Paulo): o servidor de camadas só aceita chamada de
+	# navegador vinda do próprio Novo GeoSampa, então a ficha consulta por aqui.
+	# Só GET nos serviços públicos de camadas (WFS/WMS); nada de cookie nem origem.
+	handle_path /geosampa/* {
+		@camadas {
+			method GET
+			path /geoserver/geoportal/ows /geoserver/geoportal/wms
+		}
+		handle @camadas {
+			reverse_proxy https://geoserver.geosampa.prefeitura.sp.gov.br {
+				header_up Host {upstream_hostport}
+				header_up -Origin
+				header_up -Referer
+				header_up -Cookie
+				header_down -Set-Cookie
+				header_down -Access-Control-Allow-Origin
+			}
+		}
+		respond 404
+	}
+
+	# GeoSanja (Prefeitura de São José dos Campos): a API do próprio site, sem
+	# CORS. Só o que a ficha usa: token de visitante, busca pela inscrição e o
+	# repasse de camadas (WMS); nada de cookie nem origem.
+	handle_path /geosanja/* {
+		@visitante {
+			method GET
+			path /v1/autenticar /v1/proxy
+		}
+		@busca {
+			method POST
+			path /v1/localizar
+		}
+		handle @visitante {
+			import geosanja
+		}
+		handle @busca {
+			import geosanja
+		}
+		respond 404
 	}
 
 	# Enquanto o banco não existe, a raiz leva ao protótipo. O app React fica em /app.

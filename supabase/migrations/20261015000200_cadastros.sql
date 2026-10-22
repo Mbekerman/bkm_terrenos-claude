@@ -23,6 +23,18 @@ create table app.zoneamentos (
   unique (municipio_id, sigla)
 );
 
+-- Base da prefeitura consultada pela inscrição municipal (lote, poligonal,
+-- zona e restrições). Uma por município; o front tem um adaptador por código
+-- e abre o campo com a máscara daqui. Cidade sem base: inscrição digitada.
+create table app.bases_cadastrais (
+  codigo       text primary key,  -- geosampa, geosanja
+  municipio_id uuid not null unique references app.municipios(id),
+  nome         text not null,     -- nome do portal (GeoSampa, GeoSanja)
+  rotulo       text not null,     -- como a prefeitura chama a inscrição (SQL, Inscrição imobiliária)
+  mascara      text not null check (mascara ~ '^[0.\-]+$'),  -- 0 = dígito
+  ordem        int  not null
+);
+
 create table app.itens_infraestrutura (
   codigo text primary key,
   nome   text not null,
@@ -182,6 +194,8 @@ insert into app.tipos_documento (codigo, nome, categoria, validade_dias, unico_p
   ('ata_reuniao',        'Ata de reunião',                       'Reuniões',  null, false),
   ('foto',               'Foto',                                 'Mídia',     null, false),
   ('planta',             'Planta ou croqui',                     'Técnico',   null, false),
+  ('lote_pdf',           'Planta do lote da prefeitura (PDF)',   'Técnico',   null, false),
+  ('lote_dxf',           'Desenho do lote da prefeitura (DXF)',  'Técnico',   null, false),
   ('outro',              'Outro documento',                      'Outros',    null, false);
 
 -- Modelo padrão do funil (empresa_id nulo). Comprado, Perdido, Descartado e
@@ -342,7 +356,7 @@ create table app.corretores (
 do $$
 declare t text;
 begin
-  foreach t in array array['municipios','zoneamentos','itens_infraestrutura','tipos_documento','entorno_categorias'] loop
+  foreach t in array array['municipios','zoneamentos','bases_cadastrais','itens_infraestrutura','tipos_documento','entorno_categorias'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (true)', t);
     execute format('grant select on app.%I to authenticated', t);

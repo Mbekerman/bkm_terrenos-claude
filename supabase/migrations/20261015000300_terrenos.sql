@@ -22,6 +22,25 @@ returns boolean language sql immutable as $$
                         or (pt->>0)::float8 not between -180 and 180 or (pt->>1)::float8 not between -90 and 90))
 $$;
 
+-- Sobreposição entre duas poligonais (geometria 4326). Conta como o mesmo chão
+-- quando a área em comum passa de 1 m² e não é só a faixa de imprecisão do
+-- desenho na divisa: conta se a parte em comum tem mais de p_folga_m de largura
+-- (diâmetro do maior círculo que cabe nela, em metros, na projeção UTM do lugar)
+-- ou se cobre metade de qualquer um dos dois, para que o mesmo lote estreito
+-- desenhado duas vezes nunca passe sem aviso.
+create or replace function app.sobreposicao(a extensions.geometry, b extensions.geometry, p_folga_m float8 default 5)
+returns table (area_m2 float8, largura_m float8, pct_a float8, pct_b float8, conta boolean)
+language sql immutable set search_path = '' as $$
+  with i as (select extensions.st_collectionextract(extensions.st_intersection(a, b), 3) as g),
+  m as (select extensions.st_area(i.g::extensions.geography) as ar,
+               case when extensions.st_isempty(i.g) then 0
+                    else 2 * (extensions.st_maximuminscribedcircle(extensions.st_transform(i.g, extensions._st_bestsrid(i.g::extensions.geography)))).radius end as lg,
+               extensions.st_area(a::extensions.geography) as aa, extensions.st_area(b::extensions.geography) as ab from i)
+  select ar, lg, 100 * ar / nullif(aa, 0), 100 * ar / nullif(ab, 0), ar >= 1 and (lg > p_folga_m or ar >= aa / 2 or ar >= ab / 2)
+  from m
+$$;
+grant execute on function app.sobreposicao(extensions.geometry, extensions.geometry, float8) to authenticated;
+
 create table app.terrenos (
   id                    uuid primary key default gen_random_uuid(),
   empresa_id            uuid not null references app.empresas(id),
@@ -53,6 +72,11 @@ create table app.terrenos (
   latitude              double precision check (latitude between -90 and 90),
   longitude             double precision check (longitude between -180 and 180),
   poligono_geojson      jsonb check (poligono_geojson is null or app.geojson_poligono_valido(poligono_geojson)),
+  -- a mesma poligonal como geometria (corrigida se o desenho se cruza), para achar sobreposição
+  poligono              extensions.geometry(Geometry, 4326) generated always as
+                          (extensions.st_makevalid(extensions.st_setsrid(extensions.st_geomfromgeojson(poligono_geojson::text), 4326))) stored,
+  -- terrenos com que o usuário confirmou, ao cadastrar ou mudar a poligonal, que esta se sobrepõe ("é outro terreno")
+  sobreposicoes_aceitas uuid[] not null default '{}',
   precisao_localizacao  text not null default 'nao_informada' check (precisao_localizacao in ('nao_informada','aproximada','conferida')),
 
   -- 3. Áreas e características físicas
@@ -84,10 +108,11 @@ create table app.terrenos (
   check (situacao_cadastral = 'ativo' or (arquivado_em is not null and motivo_arquivamento is not null)),
   check (area_construida_demolir_m2 is null or area_construida_existente_m2 is null
          or area_construida_demolir_m2 <= area_construida_existente_m2),
-  -- localização mínima para cadastrar: bairro ou ponto no mapa ou logradouro
-  check (coalesce(bairro, logradouro) is not null or latitude is not null)
+  -- o cadastro começa pela poligonal: sem ela não há terreno
+  check (poligono_geojson is not null)
 );
 create index on app.terrenos (empresa_id, situacao_cadastral);
+create index on app.terrenos using gist (poligono);
 
 create table app.matriculas (
   id                 uuid primary key default gen_random_uuid(),
@@ -106,12 +131,41 @@ create table app.inscricoes_municipais (
   id                uuid primary key default gen_random_uuid(),
   empresa_id        uuid not null references app.empresas(id),
   terreno_id        uuid not null references app.terrenos(id) on delete cascade,
-  inscricao         text not null,  -- SQL em São Paulo
+  -- Cidade da inscrição, escolhida antes de digitar: a que tem base da prefeitura
+  -- (app.bases_cadastrais) abre com a máscara dela e busca o lote. Nulo = outro
+  -- município, sem base: inscrição digitada.
+  municipio_id      uuid references app.municipios(id),
+  inscricao         text not null,  -- SQL em São Paulo; inscrição imobiliária em São José dos Campos
   inscricao_norm    text generated always as (regexp_replace(inscricao, '\D', '', 'g')) stored,
   area_cadastral_m2 numeric(12,2),
-  unique (empresa_id, inscricao_norm)
+  cib               text,  -- Cadastro Imobiliário Brasileiro (vem do GeoSampa)
+  zona_fiscal       text,  -- ZF-1 a ZF-4 em São Paulo (vem do GeoSampa)
+  unique nulls not distinct (empresa_id, municipio_id, inscricao_norm)
 );
 create index on app.inscricoes_municipais (terreno_id);
+
+-- Consultas do lote na base da prefeitura pela inscrição (GeoSampa em São
+-- Paulo, GeoSanja em São José dos Campos): o retrato do lote e de todas as
+-- camadas que tocam a poligonal, com data. Cada consulta é uma linha nova e
+-- nunca é alterada; gravada só por app.registrar_consulta_lote. A planta (PDF)
+-- e o desenho (DXF) do lote vão para documentos (tipos lote_pdf e lote_dxf), com versão.
+create table app.consultas_lote (
+  id               uuid primary key default gen_random_uuid(),
+  empresa_id       uuid not null references app.empresas(id),
+  terreno_id       uuid not null references app.terrenos(id) on delete cascade,
+  inscricao_id     uuid references app.inscricoes_municipais(id) on delete set null,
+  base             text not null references app.bases_cadastrais(codigo),
+  inscricao_norm   text not null check (inscricao_norm ~ '^\d+$'),
+  consultado_em    timestamptz not null default clock_timestamp(),
+  consultado_por   uuid references auth.users(id) default auth.uid(),
+  lote             jsonb not null check (jsonb_typeof(lote) = 'object'),   -- atributos do lote (o GeoSanja só manda a inscrição)
+  poligono_geojson jsonb check (poligono_geojson is null or app.geojson_poligono_valido(poligono_geojson)),
+  area_poligono_m2 numeric(12,2) check (area_poligono_m2 > 0),
+  camadas          jsonb not null default '{}' check (jsonb_typeof(camadas) = 'object'), -- {camada: [atributos de cada feição que toca]}
+  zonas            jsonb not null default '[]' check (jsonb_typeof(zonas) = 'array'),    -- [{sigla, area_m2}] porção de cada zona no lote
+  camadas_com_erro text[] not null default '{}'  -- camadas que não responderam nesta consulta
+);
+create index on app.consultas_lote (terreno_id, consultado_em desc);
 
 -- Valor venal e IPTU: por inscrição e exercício. Corrigir um valor cria
 -- uma nova revisão; a anterior fica preservada e deixa de ser a vigente.
@@ -236,7 +290,7 @@ create table app.analises_urbanisticas (
   terreno_id       uuid not null references app.terrenos(id) on delete cascade,
   responsavel_id   uuid references auth.users(id),
   data_verificacao date not null default current_date,
-  fonte            text,  -- GeoSampa, certidão de uso do solo, consulta prévia...
+  fonte            text,  -- GeoSampa, GeoSanja, certidão de uso do solo, consulta prévia...
   status           text not null default 'vigente' check (status in ('vigente','substituida')),
   observacoes      text,
   criado_em        timestamptz not null default now()
@@ -376,7 +430,7 @@ declare t text;
 begin
   foreach t in array array['terrenos','matriculas','inscricoes_municipais','inscricao_valores','confrontacoes','terreno_pessoas','terreno_corretores',
                            'terreno_infraestrutura','analises_urbanisticas','analise_zoneamentos','areas_interesse','area_interesse_terrenos',
-                           'terreno_entorno','terreno_entorno_buscas','terreno_ponto_distancias'] loop
+                           'terreno_entorno','terreno_entorno_buscas','terreno_ponto_distancias','consultas_lote'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
     execute format('create policy inserir on app.%I for insert to authenticated with check (empresa_id in (select app.empresas_edicao()))', t);
@@ -399,6 +453,9 @@ drop policy inserir on app.terreno_entorno;        drop policy alterar on app.te
 drop policy inserir on app.terreno_entorno_buscas; drop policy alterar on app.terreno_entorno_buscas;
 drop policy inserir on app.terreno_ponto_distancias; drop policy alterar on app.terreno_ponto_distancias;
 revoke insert, update on app.terreno_entorno, app.terreno_entorno_buscas, app.terreno_ponto_distancias from authenticated;
+-- Consulta do lote na prefeitura: só pela RPC, e nunca alterada.
+drop policy inserir on app.consultas_lote; drop policy alterar on app.consultas_lote;
+revoke insert, update on app.consultas_lote from authenticated;
 
 -- Terreno é alterado só por app.salvar_terreno (confere a versão); inserir continua direto.
 drop policy alterar on app.terrenos;
@@ -416,12 +473,47 @@ begin
 end $$;
 create trigger t_norm before insert or update on app.terrenos for each row execute function app.tg_normalizar_terreno();
 
+-- Poligonal que ocupa parte de outro terreno da empresa só entra se o usuário
+-- confirmou que é outro terreno (sobreposicoes_aceitas). A tela pergunta antes,
+-- com app.terrenos_sobrepostos; aqui é a garantia para qualquer caminho (importação, API).
+create or replace function app.tg_terreno_sobreposicao()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare g extensions.geometry; v record;
+begin
+  if tg_op = 'UPDATE' and new.poligono_geojson is not distinct from old.poligono_geojson
+     and new.sobreposicoes_aceitas is not distinct from old.sobreposicoes_aceitas then return new; end if;
+  g := extensions.st_makevalid(extensions.st_setsrid(extensions.st_geomfromgeojson(new.poligono_geojson::text), 4326));
+  select t.codigo, t.nome, round(s.area_m2::numeric) as area into v
+  from app.terrenos t cross join lateral app.sobreposicao(g, t.poligono) s
+  where t.empresa_id = new.empresa_id and t.id <> new.id and t.poligono operator(extensions.&&) g
+    and not (t.id = any(new.sobreposicoes_aceitas)) and s.conta
+  order by s.area_m2 desc limit 1;
+  if found then
+    raise exception 'A poligonal ocupa % m² de % (%). Confirme que é outro terreno ou registre a oferta nele.', v.area, v.codigo, v.nome using errcode = '23P01';
+  end if;
+  return new;
+end $$;
+create trigger t_sobre before insert or update on app.terrenos for each row execute function app.tg_terreno_sobreposicao();
+
 create trigger t_upd before update on app.terrenos for each row execute function app.tg_atualizado_em();
 create trigger t_aud after insert or update or delete on app.terrenos    for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.matriculas  for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.inscricoes_municipais for each row execute function app.tg_auditoria();
+
+-- A inscrição escolhida numa cidade tem que ser da cidade do terreno (nulo = outro município).
+create or replace function app.tg_inscricao_municipio()
+returns trigger language plpgsql set search_path = '' as $$
+begin
+  if new.municipio_id is not null and new.municipio_id is distinct from (select municipio_id from app.terrenos where id = new.terreno_id) then
+    raise exception 'A inscrição é de % e o terreno fica em outra cidade',
+      (select nome from app.municipios where id = new.municipio_id) using errcode = '22023';
+  end if;
+  return new;
+end $$;
+create trigger t_mun before insert or update on app.inscricoes_municipais for each row execute function app.tg_inscricao_municipio();
 create trigger t_aud after insert or update or delete on app.analise_zoneamentos  for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.inscricao_valores    for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.terreno_pessoas      for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.confrontacoes        for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.terreno_entorno_buscas for each row execute function app.tg_auditoria();
+create trigger t_aud after insert or update or delete on app.consultas_lote for each row execute function app.tg_auditoria();

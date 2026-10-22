@@ -5575,6 +5575,28 @@ insert into app.municipios (codigo_ibge, nome, uf) values
 ('5300108','Brasília','DF')
 on conflict (codigo_ibge) do nothing;
 
+-- Bases da prefeitura com consulta pela inscrição (ver app.bases_cadastrais).
+insert into app.bases_cadastrais (codigo, municipio_id, nome, rotulo, mascara, ordem)
+select b.codigo, m.id, b.nome, b.rotulo, b.mascara, b.ordem
+from (values ('geosampa', '3550308', 'GeoSampa', 'SQL', '000.000.0000-0', 1),
+             ('geosanja', '3549904', 'GeoSanja', 'Inscrição imobiliária', '00.0000.0000.0000', 2))
+     as b(codigo, ibge, nome, rotulo, mascara, ordem)
+join app.municipios m on m.codigo_ibge = b.ibge;
+
+-- Zonas de São José dos Campos (LC 623/2019, com as alterações até a LC 701/2025),
+-- como estão na legenda do mapa de zoneamento do GeoSanja.
+insert into app.zoneamentos (municipio_id, sigla, descricao)
+select m.id, z.sigla, z.descricao from app.municipios m,
+  (values ('ZM1', 'Zona Mista Um'), ('ZM2', 'Zona Mista Dois'), ('ZM3', 'Zona Mista Três'), ('ZM4', 'Zona Mista Quatro'),
+          ('ZM5', 'Zona Mista Cinco'), ('ZR', 'Zona Residencial'), ('ZUD', 'Zona de Uso Diversificado'), ('ZUPI', null),
+          ('ZUPI1', 'Zona de Uso Predominantemente Industrial Um'), ('ZUPI2', 'Zona de Uso Predominantemente Industrial Dois'),
+          ('ZPA1', 'Zona de Proteção Ambiental Um'), ('ZPA2', 'Zona de Proteção Ambiental Dois'),
+          ('ZPE1', 'Zona de Planejamento Específico Um'), ('ZPE2', 'Zona de Planejamento Específico Dois'),
+          ('ZA', 'Zona Aeroportuária'), ('ZESFX', null), ('CL', 'Centralidade Local'), ('CM', 'Centralidade Municipal'),
+          ('CM-C.EXPANDIDO', 'Centralidade Municipal - Centro Expandido'), ('CMETRO-CT', 'Centralidade Metropolitana - Centro Tradicional'), ('CMETRO-ED', 'Centralidade Metropolitana - Eixo Dutra'),
+          ('FAIXA NAED', 'Faixa Non Aedificandi - Talude do Banhado')) as z(sigla, descricao)
+where m.codigo_ibge = '3549904';
+
 -- A busca de endereço do Google devolve o nome da cidade e a UF; o front resolve o municipio_id por aqui.
 -- Compara sem acento, sem diferenciar maiúsculas e ignorando espaço, hífen e apóstrofo.
 create or replace function app.normaliza_nome(p text) returns text

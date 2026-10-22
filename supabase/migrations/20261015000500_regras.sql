@@ -300,11 +300,13 @@ begin
     from app.inscricoes_municipais i join app.terrenos t on t.id = i.terreno_id
     where length(v_ins) >= 6 and i.empresa_id = p_empresa and i.inscricao_norm = v_ins
   union all
-    -- SQL de São Paulo: setor (3) . quadra (3) . lote (4) - dígito. Mesma quadra = vizinho
-    -- ou outra parte da mesma área: não é duplicata, mas vale saber (composição de áreas).
-    select distinct t.id, t.codigo, t.nome, 'Na mesma quadra (SQL ' || i.inscricao || ')', 'mesma_quadra'
+    -- SQL de São Paulo: setor (3) . quadra (3) . lote (4) - dígito; inscrição de São José
+    -- dos Campos: setor (2) . quadra (4) . lote (4) . sublote (4). Nos dois, os 6 primeiros
+    -- dígitos são a quadra. Mesma quadra = vizinho ou outra parte da mesma área: não é
+    -- duplicata, mas vale saber (composição de áreas).
+    select distinct t.id, t.codigo, t.nome, 'Na mesma quadra (inscrição ' || i.inscricao || ')', 'mesma_quadra'
     from app.inscricoes_municipais i join app.terrenos t on t.id = i.terreno_id
-    where length(v_ins) = 11 and i.empresa_id = p_empresa and length(i.inscricao_norm) = 11
+    where length(v_ins) in (11, 14) and i.empresa_id = p_empresa and length(i.inscricao_norm) = length(v_ins)
       and left(i.inscricao_norm, 6) = left(v_ins, 6) and i.inscricao_norm <> v_ins
       and t.situacao_cadastral = 'ativo'
   union all
@@ -313,6 +315,37 @@ begin
     where length(trim(coalesce(p_logradouro,''))) >= 4 and t.empresa_id = p_empresa
       and lower(trim(t.logradouro)) = lower(trim(p_logradouro))
       and (p_numero is null or t.numero is null or lower(trim(t.numero)) = lower(trim(p_numero)));
+end $$;
+
+-- Primeiro passo do cadastro: a poligonal. Antes de criar o terreno, procura os
+-- que já ocupam parte dela (critério em app.sobreposicao: a faixa de até 5 m na
+-- divisa, imprecisão do desenho, não conta). Quem decide é o usuário: registrar
+-- a oferta no existente (ampliando a poligonal dele, se a área nova for maior)
+-- ou confirmar que é outro terreno. p_ignorar tira um terreno da busca (o que está sendo editado).
+create or replace function app.terrenos_sobrepostos(p_empresa uuid, p_poligono jsonb, p_ignorar uuid default null)
+returns table (terreno_id uuid, codigo text, nome text, situacao text, motivo text,
+               area_sobreposta_m2 numeric, largura_m numeric, pct_da_nova numeric, pct_do_existente numeric)
+language plpgsql stable security invoker set search_path = ''
+as $$
+declare g extensions.geometry;
+begin
+  perform app.exigir_membro(p_empresa);
+  if p_poligono is null or not app.geojson_poligono_valido(p_poligono) then
+    raise exception 'Poligonal inválida: precisa ser um polígono GeoJSON fechado' using errcode = '22023';
+  end if;
+  g := extensions.st_makevalid(extensions.st_setsrid(extensions.st_geomfromgeojson(p_poligono::text), 4326));
+  if extensions.st_area(g::extensions.geography) < 1 then raise exception 'Poligonal sem área' using errcode = '22023'; end if;
+  return query
+    select t.id, t.codigo, t.nome,
+           case when t.situacao_cadastral = 'arquivado' then 'arquivado'
+                else coalesce((select p.status from app.processos p where p.terreno_id = t.id and p.tipo = 'negociacao'
+                               order by p.data_inicio desc limit 1), 'sem_negociacao') end,
+           -- parcial: a área nova e a existente não coincidem (ex.: 5 lotes contra 3, com 3 em comum)
+           case when s.pct_a >= 90 and s.pct_b >= 90 then 'mesma_area' else 'parcial' end,
+           round(s.area_m2::numeric, 2), round(s.largura_m::numeric, 1), round(s.pct_a::numeric, 1), round(s.pct_b::numeric, 1)
+    from app.terrenos t cross join lateral app.sobreposicao(g, t.poligono) s
+    where t.empresa_id = p_empresa and t.id is distinct from p_ignorar and t.poligono operator(extensions.&&) g and s.conta
+    order by s.area_m2 desc, t.codigo;
 end $$;
 
 -- ---------------------------------------------------------------------
@@ -345,7 +378,7 @@ create or replace function app.registrar_oferta(
   p_terreno uuid, p_valor numeric, p_forma text default null, p_corretor uuid default null,
   p_observacao_pagamento text default null, p_aceita_permuta text default null,
   p_validade date default null, p_data date default current_date, p_comissao_pct numeric default null,
-  p_ofertante uuid default null, p_comissao_valor numeric default null)
+  p_ofertante uuid default null, p_comissao_valor numeric default null, p_poligono jsonb default null)
 returns jsonb
 language plpgsql security definer set search_path = ''
 as $$
@@ -361,10 +394,18 @@ begin
     raise exception 'Ofertante não encontrado' using errcode = 'P0002';
   end if;
 
+  -- o pedaço oferecido tem que estar no terreno; se passa dele, amplie a poligonal do terreno antes
+  if p_poligono is not null then
+    if not app.geojson_poligono_valido(p_poligono) then raise exception 'Poligonal da oferta inválida' using errcode = '22023'; end if;
+    if extensions.st_area(extensions.st_difference(extensions.st_makevalid(extensions.st_setsrid(extensions.st_geomfromgeojson(p_poligono::text), 4326)),
+                                                   extensions.st_buffer(t.poligono::extensions.geography, 5)::extensions.geometry)::extensions.geography) >= 1 then
+      raise exception 'A área da oferta passa da poligonal do terreno: amplie o terreno antes' using errcode = '22023';
+    end if;
+  end if;
   insert into app.ofertas (empresa_id, terreno_id, corretor_id, ofertante_id, data_oferta, valor_pedido, forma_pagamento_pedida,
-                           observacao_pagamento, aceita_permuta, validade, comissao_pct, comissao_valor)
+                           observacao_pagamento, aceita_permuta, validade, comissao_pct, comissao_valor, poligono_geojson)
   values (t.empresa_id, t.id, p_corretor, p_ofertante, coalesce(p_data, current_date), p_valor, p_forma,
-          p_observacao_pagamento, p_aceita_permuta, p_validade, p_comissao_pct, p_comissao_valor)
+          p_observacao_pagamento, p_aceita_permuta, p_validade, p_comissao_pct, p_comissao_valor, p_poligono)
   returning id into v_of;
 
   v_nova := not exists (select 1 from app.processos where terreno_id = t.id and tipo = 'negociacao' and status in ('ativo','stand_by'));
@@ -1163,7 +1204,7 @@ begin
     posicao_quadra = v_novo.posicao_quadra, formato = v_novo.formato, situacao_ocupacao = v_novo.situacao_ocupacao,
     uso_atual = v_novo.uso_atual, area_construida_existente_m2 = v_novo.area_construida_existente_m2,
     area_construida_demolir_m2 = v_novo.area_construida_demolir_m2, necessidade_demolicao = v_novo.necessidade_demolicao,
-    observacoes_fisicas = v_novo.observacoes_fisicas
+    observacoes_fisicas = v_novo.observacoes_fisicas, sobreposicoes_aceitas = v_novo.sobreposicoes_aceitas
   where id = t.id
   returning versao into t.versao;
   return t.versao;
@@ -1433,6 +1474,76 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
+-- Lote na base da prefeitura (GeoSampa, GeoSanja): grava a consulta feita no
+-- navegador pela inscrição. A base vem da cidade da inscrição; o terreno tem
+-- que ser dessa cidade e o lote devolvido tem que ser o da inscrição (no
+-- GeoSampa, setor, quadra, lote e dígito; no GeoSanja, a inscrição que a busca
+-- devolve). Completa na inscrição só o que está vazio (área cadastral) e o que
+-- é do cadastro fiscal (CIB, zona fiscal, só em São Paulo). Com
+-- p_criar_analise, registra uma análise urbanística nova (fonte = base) com
+-- as zonas do catálogo e a área de cada uma no lote; a anterior fica como
+-- substituída. Siglas fora do catálogo vão para as observações da análise.
+-- p_lote: atributos do lote; p_camadas: {camada: [atributos]};
+-- p_zonas: [{sigla, area_m2}].
+-- ---------------------------------------------------------------------
+create or replace function app.registrar_consulta_lote(
+  p_inscricao uuid, p_lote jsonb, p_poligono jsonb, p_area_poligono numeric,
+  p_camadas jsonb, p_zonas jsonb, p_camadas_com_erro text[] default '{}', p_criar_analise boolean default true)
+returns uuid
+language plpgsql security definer set search_path = ''
+as $$
+declare i app.inscricoes_municipais; t app.terrenos; b app.bases_cadastrais; v_mun text; v_ins text; v_id uuid; v_an uuid; v_fora text[];
+begin
+  select * into i from app.inscricoes_municipais where id = p_inscricao;
+  if not found then raise exception 'Inscrição não encontrada' using errcode = 'P0002'; end if;
+  select * into t from app.terrenos where id = i.terreno_id;
+  perform app.exigir_editor(t.empresa_id);
+  select * into b from app.bases_cadastrais where municipio_id = i.municipio_id;
+  if not found then raise exception 'A cidade desta inscrição não tem base da prefeitura para consultar' using errcode = '22023'; end if;
+  if t.municipio_id <> b.municipio_id then
+    select nome into v_mun from app.municipios where id = b.municipio_id;
+    raise exception 'O % só cobre %, e o terreno é de outra cidade', b.nome, v_mun using errcode = '22023';
+  end if;
+  if jsonb_typeof(p_lote) is distinct from 'object' then raise exception 'Lote inválido' using errcode = '22023'; end if;
+  v_ins := case b.codigo
+             when 'geosampa' then coalesce(p_lote->>'cd_setor_fiscal','') || coalesce(p_lote->>'cd_quadra_fiscal','')
+                                || coalesce(p_lote->>'cd_lote','') || coalesce(p_lote->>'cd_digito_sql','')
+             else regexp_replace(coalesce(p_lote->>'inscricao',''), '\D', '', 'g') end;
+  if length(v_ins) <> length(regexp_replace(b.mascara, '[^0]', '', 'g')) or v_ins <> i.inscricao_norm then
+    raise exception 'O lote do % (%) não é o da inscrição %', b.nome, v_ins, i.inscricao using errcode = '22023';
+  end if;
+  if jsonb_typeof(coalesce(p_zonas, '[]')) <> 'array' then raise exception 'Zonas devem ser uma lista' using errcode = '22023'; end if;
+
+  insert into app.consultas_lote (empresa_id, terreno_id, inscricao_id, base, inscricao_norm, lote, poligono_geojson, area_poligono_m2,
+                                  camadas, zonas, camadas_com_erro)
+  values (t.empresa_id, t.id, i.id, b.codigo, v_ins, p_lote, p_poligono, nullif(p_area_poligono, 0),
+          coalesce(p_camadas, '{}'), coalesce(p_zonas, '[]'), coalesce(p_camadas_com_erro, '{}'))
+  returning id into v_id;
+
+  update app.inscricoes_municipais
+     set area_cadastral_m2 = coalesce(area_cadastral_m2, nullif((p_lote->>'qt_area_terreno')::numeric, 0)),
+         cib = coalesce(nullif(trim(p_lote->>'cd_cib'), ''), cib),
+         zona_fiscal = coalesce(nullif(trim(p_camadas#>>'{zona_fiscal,0,sg_zona_fiscal}'), ''), zona_fiscal)
+   where id = i.id;
+
+  if p_criar_analise and jsonb_array_length(coalesce(p_zonas, '[]')) > 0 then
+    select array_agg(distinct z.sigla) into v_fora
+      from jsonb_to_recordset(p_zonas) as z(sigla text, area_m2 numeric)
+     where not exists (select 1 from app.zoneamentos c where c.municipio_id = t.municipio_id and c.sigla = z.sigla and c.ativo);
+    insert into app.analises_urbanisticas (empresa_id, terreno_id, responsavel_id, fonte, observacoes)
+    values (t.empresa_id, t.id, auth.uid(), b.nome || ' (' || b.rotulo || ' ' || i.inscricao || ')',
+            case when v_fora is not null then 'Zonas fora do catálogo: ' || array_to_string(v_fora, ', ') end)
+    returning id into v_an;
+    insert into app.analise_zoneamentos (empresa_id, analise_id, zoneamento_id, area_abrangida_m2)
+    select t.empresa_id, v_an, c.id, round(sum(z.area_m2), 2)
+      from jsonb_to_recordset(p_zonas) as z(sigla text, area_m2 numeric)
+      join app.zoneamentos c on c.municipio_id = t.municipio_id and c.sigla = z.sigla and c.ativo
+     group by c.id;
+  end if;
+  return v_id;
+end $$;
+
+-- ---------------------------------------------------------------------
 -- Permissões
 -- ---------------------------------------------------------------------
 revoke execute on all functions in schema app from public;
@@ -1442,10 +1553,12 @@ grant execute on function
   app.salvar_terreno(uuid, int, jsonb),
   app.salvar_entorno(uuid, double precision, double precision, jsonb, boolean),
   app.salvar_distancias_pontos(uuid, double precision, double precision, jsonb),
+  app.registrar_consulta_lote(uuid, jsonb, jsonb, numeric, jsonb, jsonb, text[], boolean),
   app.criar_empresa(text, text),
   app.buscar_duplicados(uuid, text, text, text, text, text),
+  app.terrenos_sobrepostos(uuid, jsonb, uuid),
   app.abrir_negociacao(uuid, uuid),
-  app.registrar_oferta(uuid, numeric, text, uuid, text, text, date, date, numeric, uuid, numeric),
+  app.registrar_oferta(uuid, numeric, text, uuid, text, text, date, date, numeric, uuid, numeric, jsonb),
   app.definir_temperatura(uuid, int), app.definir_oferta_referencia(uuid, uuid),
   app.checar_avanco(uuid), app.checar_passagem(uuid, text, text),
   app.mover_etapa(uuid, boolean, text), app.mover_para_etapa(uuid, text, boolean, text), app.mover_subetapa(uuid, text, boolean, text),

@@ -8,6 +8,8 @@ create schema if not exists app;
 grant usage on schema app to authenticated, service_role;
 
 create extension if not exists pgcrypto with schema extensions;
+-- Poligonal do terreno e sobreposição entre terrenos (no Supabase: Database → Extensions → postgis).
+create extension if not exists postgis with schema extensions;
 
 -- ---------------------------------------------------------------------
 -- Empresas e membros

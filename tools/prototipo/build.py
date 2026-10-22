@@ -14,7 +14,7 @@ lcss = open(lpath, encoding='utf-8').read() if os.path.exists(lpath) else ''
 if not lcss: print('aviso: libs/l/leaflet.css ausente (baixe do branch libs-prototipo); o CSS do Leaflet fica de fora')
 lcss = re.sub(r'url\([^)]*\)', 'none', lcss)  # ícones padrão do Leaflet não são usados (pins próprios)
 body = ler('proto_body.html'); js = ler('proto.js')
-mod = ler('proto_mod.js') + '\n' + ler('proto_gmap.js') + '\n' + ler('proto_painel.js') + '\n' + ler('proto_funil.js')
+mod = ler('proto_mod.js') + '\n' + ler('proto_gmap.js') + '\n' + ler('proto_painel.js') + '\n' + ler('proto_funil.js') + '\n' + ler('proto_lote.js') + '\n' + ler('proto_geosampa.js') + '\n' + ler('proto_geosanja.js') + '\n' + ler('proto_novo.js')
 assert js.rstrip().endswith('render();\n})();'), 'fim inesperado'
 i = js.rstrip().rindex('render();\n})();')
 js = js[:i] + mod + '\n' + js[i:]
@@ -24,7 +24,7 @@ html = '<title>BKM Terrenos</title>\n<meta name="claude:viewport-fit-sides" cont
 os.makedirs(os.path.join(AQUI, 'saida'), exist_ok=True)
 open(os.path.join(AQUI, 'saida', 'bkm-terrenos.html'), 'w', encoding='utf-8').write(html)
 doc = ('<!doctype html>\n<html lang="pt-BR">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
-       '<meta name="gmaps-key" content="{% env "GOOGLE_MAPS_KEY" %}">\n'
+       '<meta name="gmaps-key" content="{% env "GOOGLE_MAPS_KEY" %}">\n<meta name="bkm-ambiente" content="{% env "AMBIENTE" %}">\n'
        + html.replace('<style>', '</head>\n<body>\n<style>', 1).replace('<title>BKM Terrenos</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n', '<title>BKM Terrenos</title>\n', 1)
        + '\n</body>\n</html>\n')
 open(os.path.join(RAIZ, 'docs', 'prototipo.html'), 'w', encoding='utf-8').write(doc)
