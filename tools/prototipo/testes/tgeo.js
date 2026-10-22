@@ -33,9 +33,12 @@ const abrir=async()=>{await p.evaluate(()=>document.querySelector('[data-a=nav][
   await p.evaluate(()=>{if(!document.getElementById('geo-0'))document.querySelector('[data-a=bloco][data-t=cadastro]').click()});await p.waitForTimeout(300)};
 const mudar=async fn=>{await p.evaluate(([k,f])=>{const s=JSON.parse(localStorage.getItem(k));const t=s.terrenos.find(x=>x.nome==='Paulista 1500');(new Function('t',f))(t);localStorage.setItem(k,JSON.stringify(s))},[KEY,fn]);await p.reload();await p.waitForTimeout(500);await abrir()};
 // 1. novo terreno com SQL: busca sozinho
+// passo 1 pela inscrição: a poligonal vem do lote; passo 2 com o SQL já preenchido
 await p.evaluate(()=>document.querySelector('[data-a=novo]').click());await p.waitForTimeout(200);
-await p.fill('#f-novo [name=nome]','Paulista 1500');await p.fill('#f-novo [name=logradouro]','Av. Paulista');await p.fill('#f-novo [name=numero]','1500');
-await p.fill('#n-sql','00902700091');await p.waitForTimeout(200);
+await p.fill('#v-sql','00902700091');await p.evaluate(()=>document.querySelector('#f-nv-insc').requestSubmit());
+await p.waitForSelector('#f-novo',{timeout:10000});await p.waitForTimeout(300);
+console.log('passo 2:',await p.$eval('#modal .banner',x=>x.innerText.replace(/\s+/g,' ')),'| SQL:',await p.$eval('#n-sql',x=>x.value+(x.readOnly?' (fixo)':'')));
+await p.fill('#f-novo [name=nome]','Paulista 1500');await p.fill('#n-mun','São Paulo · SP');await p.fill('#f-novo [name=logradouro]','Av. Paulista');await p.fill('#f-novo [name=numero]','1500');
 await p.evaluate(()=>document.querySelector('#f-novo').requestSubmit());
 await p.waitForFunction(()=>/Planta e desenho/.test(document.querySelector('#toast').textContent),null,{timeout:15000});
 const st=await ter().then(t=>{const i=t.insc[0];return {sqlFmt:i.sql,area:i.area,cib:i.cib,zf:i.zf,aCad:t.aCad,aConst:t.aConst,poly:t.poly&&t.poly.length,lat:t.lat,

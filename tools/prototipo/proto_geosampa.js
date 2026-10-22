@@ -134,4 +134,10 @@ function geoQuadro(t,ins,i){const g=(ins.geo||[])[0];
     ${loteToca(linhas)}
     ${loteArqBotoes(t)}</div>`}
 const fdh=s=>{if(!s)return '—';const d=new Date(s.replace(' ','T'));return isNaN(d)?fd(s):`${fd(s.slice(0,10))} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`};
-LOTE_ADAPT.sp={url:()=>GEO_BASE,buscar:geoBuscar,quadro:geoQuadro};
+// só a poligonal do lote, para o passo 1 do cadastro (lança o aviso quando o dígito não confere)
+async function geoPoligono(sql){const d=digits(sql);
+  const lotes=await geoWfs({typeNames:'geoportal:lote_cidadao',CQL_FILTER:`cd_setor_fiscal='${d.slice(0,3)}' AND cd_quadra_fiscal='${d.slice(3,6)}' AND cd_lote='${d.slice(6,10)}'`});
+  const lote=lotes.find(f=>String(f.properties.cd_digito_sql)===d[10]&&f.properties.tx_situ_lote!=='INATIVO');
+  if(!lote){if(lotes.length)throw `O dígito do SQL não confere (no GeoSampa é ${lotes[0].properties.cd_digito_sql}).`;return null}
+  return geoAneis(lote.geometry)[0].slice(0,-1).map(p=>utmLatLng(p[0],p[1]))}
+LOTE_ADAPT.sp={url:()=>GEO_BASE,buscar:geoBuscar,quadro:geoQuadro,poligono:geoPoligono};

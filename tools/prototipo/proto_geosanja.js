@@ -137,4 +137,5 @@ function gsjQuadro(t,ins,i){const g=(ins.geo||[])[0];
     ${loteToca(linhas)}
     <div class="hint" style="margin:4px 0 8px">O GeoSanja não informa área cadastral, área construída, uso nem endereço do lote: seguem digitados. Curvas de nível do IGC, em escala 1:10.000.</div>
     ${loteArqBotoes(t)}</div>`}
-LOTE_ADAPT.sjc={url:()=>GSJ_BASE,buscar:gsjBuscar,quadro:gsjQuadro};
+async function gsjPoligono(ic){const g=await gsjLote(ic);return g?geoAneis(g)[0].slice(0,-1).map(p=>[p[1],p[0]]):null}
+LOTE_ADAPT.sjc={url:()=>GSJ_BASE,buscar:gsjBuscar,quadro:gsjQuadro,poligono:gsjPoligono};

@@ -238,11 +238,15 @@ function seed(){
     'TER-000104':[-23.61050,-46.47900],'TER-000098':[-23.71000,-46.77000],'TER-000121':[-23.59500,-46.60200]};
   const POLY={'TER-000123':[[-23.66794,-46.65152],[-23.66792,-46.65111],[-23.66830,-46.65108],[-23.66833,-46.65150]],
     'TER-000112':[[-23.58478,-46.58126],[-23.58476,-46.58072],[-23.58522,-46.58070],[-23.58525,-46.58124]],
-    'TER-000118':[[-23.54420,-46.40720],[-23.54410,-46.40590],[-23.54535,-46.40580],[-23.54560,-46.40700],[-23.54500,-46.40740]]};
+    'TER-000118':[[-23.54420,-46.40720],[-23.54410,-46.40590],[-23.54535,-46.40580],[-23.54560,-46.40700],[-23.54500,-46.40740]],
+    /* o vizinho encosta na divisa leste do TER-000123: divisa comum não é sobreposição */
+    'TER-000132':[[-23.66792,-46.65111],[-23.66790,-46.65072],[-23.66829,-46.65069],[-23.66830,-46.65108]]};
+  /* a poligonal é obrigatória: os exemplos sem desenho próprio ganham um quadrado de ~40 m no ponto */
+  const quadrado=([la,lo],m=40)=>{const dy=m/2/110574,dx=m/2/(111320*Math.cos(la*Math.PI/180));return [[la+dy,lo-dx],[la+dy,lo+dx],[la-dy,lo+dx],[la-dy,lo-dx]].map(p=>p.map(v=>+v.toFixed(6)))};
   /* pontos de interesse de exemplo (no Google, a busca roda de novo sozinha) */
   const ENTX={'TER-000112':[['metro_trem','Estação Vila Prudente (Linhas 2 e 15)',-23.58380,-46.58130,350,5]],
     'TER-000123':[['hospital','Hospital Municipal Cidade Ademar',-23.67330,-46.64470,1240,17]]};
-  T.forEach(t=>{const c=COORD[t.codigo];if(c&&t.lat==null){t.lat=c[0];t.lng=c[1];t.precisao='aproximada'}if(POLY[t.codigo])t.poly=POLY[t.codigo];if(ENTX[t.codigo]&&t.lat!=null)t.entorno={lat:t.lat,lng:t.lng,em:H(2),fonte:'exemplo',semPe:false,itens:ENTX[t.codigo].map(([cat,nome,la,lo,pe,min],i)=>({gid:'ex'+i,cat,nome,lat:la,lng:lo,pe,min}))};t.tarefas.forEach((k,i)=>k.pos=i*1000)});
+  T.forEach(t=>{const c=COORD[t.codigo];if(c&&t.lat==null){t.lat=c[0];t.lng=c[1];t.precisao='aproximada'}if(POLY[t.codigo])t.poly=POLY[t.codigo];else if(t.lat!=null)t.poly=quadrado([t.lat,t.lng]);if(t.poly&&t.lat==null){t.lat=+(t.poly.reduce((s,p)=>s+p[0],0)/t.poly.length).toFixed(5);t.lng=+(t.poly.reduce((s,p)=>s+p[1],0)/t.poly.length).toFixed(5);t.precisao="aproximada"}if(ENTX[t.codigo]&&t.lat!=null)t.entorno={lat:t.lat,lng:t.lng,em:H(2),fonte:'exemplo',semPe:false,itens:ENTX[t.codigo].map(([cat,nome,la,lo,pe,min],i)=>({gid:'ex'+i,cat,nome,lat:la,lng:lo,pe,min}))};t.tarefas.forEach((k,i)=>k.pos=i*1000)});
   const pontos=[{id:'p1',nome:'Terminal Cidade Ademar',cat:'transporte',lat:-23.66720,lng:-46.65220},{id:'p2',nome:'Estação Vila Prudente (Linhas 2 e 15)',cat:'transporte',lat:-23.58380,lng:-46.58130},
     {id:'p3',nome:'Estação Tatuapé (Linha 3)',cat:'transporte',lat:-23.54040,lng:-46.57700},{id:'p4',nome:'Estação Penha (Linha 3)',cat:'transporte',lat:-23.53340,lng:-46.54280},
     {id:'p5',nome:'Estação Guaianases (Linha 11)',cat:'transporte',lat:-23.54200,lng:-46.41440},{id:'p6',nome:'Estação Jaraguá (Linha 7)',cat:'transporte',lat:-23.45610,lng:-46.73980},
@@ -682,43 +686,20 @@ function go(route,x={}){Object.assign(UI,{route,edit:null,propForm:false,reuForm
 
 /* ===================== modais ===================== */
 function renderModal(){
-  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.novoLoc=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;return}
+  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.nv=null;UI.nvKmz=null;UI.ofPoly=null;UI.kmzNovo=false;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;return}
   let h='';const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`;
   h=funilModal(M,fechar);
-  if(M==='novo')h=`<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Só o mínimo para entrar no radar. A ficha é completada aos poucos.</div></div>${fechar}</div>
-  <form data-form="novo" id="f-novo"><div class="fields">${GG&&!UI.novoLoc?`<div class="field full"><div id="n-gauto" class="gauto"></div><span id="n-gauto-loc" class="hint">Escolha um resultado para preencher endereço e localização.</span></div>`:''}${UI.novoLoc?`<div class="field full"><div class="banner blue">${ic('check')}<div>Localização marcada no mapa: <span class="num">${num(UI.novoLoc.lat,5)}, ${num(UI.novoLoc.lng,5)}</span></div></div></div>`:''}
-  <div class="field full verif">
-    <div class="passo">Passo 1 · Verifique se o imóvel já está no banco</div>
-    <div class="fields">
-      ${campoInsc('n',UI.novoLoc?.municipio?cidDoNome(UI.novoLoc.municipio):'sp','',false)}
-      <div class="field"><label for="n-mat">Matrícula</label><span style="display:flex;gap:6px"><input id="n-mat" name="mat" inputmode="numeric" placeholder="Número" style="flex:1 1 55%"><select id="n-cri" name="cri" aria-label="Cartório" style="flex:1 1 45%">${Array.from({length:18},(_,i)=>`<option>${i+1}º CRI</option>`).join('')}</select></span></div>
-    </div>
-    <div id="dedupe" aria-live="polite"><div class="hint">Digite o SQL ou a matrícula. Teste com o SQL 089.123.0045-6 (já cadastrado) ou 089.123.0099-0 (mesma quadra de dois terrenos).</div></div>
-  </div>
-  <div class="field full passo" style="margin-top:var(--e2)">Passo 2 · Dados mínimos</div>
-  <div class="field full"><label for="n-nome">Nome de referência *</label><input id="n-nome" name="nome" required placeholder="Terreno Av. Cupecê — esquina"></div>
-  <div class="field"><label for="n-log">Logradouro</label><input id="n-log" name="logradouro" placeholder="Av. Cupecê"></div>
-  <div class="field"><label for="n-num">Número</label><input id="n-num" name="numero" placeholder="5.120 ou s/n"></div>
-  <div class="field"><label for="n-bai">Bairro</label><input id="n-bai" name="bairro"></div>
-  <div class="field"><label for="n-zona">Zona</label>${optSel('zona',OPT.zona,null).replace('id="f-zona"','id="n-zona"')}</div>
-  <div class="field"><label for="n-resp">Responsável *</label><select id="n-resp" name="resp">${USERS.map(u=>`<option ${u===me()?'selected':''}>${u}</option>`).join('')}</select></div>
-  <div class="field"><label for="n-ori">Origem *</label><select id="n-ori" name="origem" required>${Object.entries(OPT.origem).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
-  <details class="details field full"><summary>Já recebeu uma oferta? Registrar condições pedidas</summary><div class="fields" style="margin-top:8px">
-    <div class="field"><label for="n-cor">Corretor</label><select id="n-cor" name="cid"><option value="">Sem corretor / direto</option>${S.corretores.map(c=>`<option value="${c.id}">${esc(c.nome)} · ${esc(c.imob)}</option>`).join('')}</select></div>
-    <div class="field"><label for="n-val">Valor pedido (R$)</label><input id="n-val" name="valor" inputmode="decimal"></div>
-    <div class="field"><label for="n-for">Forma de pagamento pedida</label>${optSel('forma',OPT.forma,null).replace('id="f-forma"','id="n-for"')}</div>
-    <div class="field"><label for="n-tmp">Temperatura</label><select id="n-tmp" name="temp"><option value="">Não avaliada</option>${[1,2,3,4,5].map(n=>`<option value="${n}">${n} · ${TEMP[n]}</option>`).join('')}</select></div>
-    <div class="field full"><label for="n-obs">Observação sobre a forma de pagamento</label><input id="n-obs" name="obsPag"></div>
-    <div class="field full"><label for="n-ace">Aceita permuta</label><input id="n-ace" name="aceita"></div></div></details>
-  </div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-novo" id="btn-novo">Cadastrar terreno</button></div>`;
-  if(M==='oferta')h=`<div class="dh"><h2>Registrar oferta</h2>${fechar}</div><form data-form="oferta" id="f-of"><div class="fields">
+  if(M==='novo')h=UI.nv?nvDadosHtml(fechar):nvPasso1Html(fechar);
+  if(M==='novo-sobre')h=nvSobreHtml(fechar);
+  if(M==='oferta'){const tt=T(UI.id),pd=UI.ofPoly;h=`<div class="dh"><h2>Registrar oferta</h2>${fechar}</div><form data-form="oferta" id="f-of"><div class="fields">
+    ${pd?`<div class="field full"><div class="banner blue">${ic('layers')}<div>Oferta de parte do terreno: ${m2(Math.round(areaPoly(pd)))}${tt?.poly?` de ${m2(Math.round(areaPoly(tt.poly)))} (${num(100*areaPoly(pd)/areaPoly(tt.poly),0)}%)`:''}. O pedaço oferecido fica guardado na oferta.</div></div></div>`:''}
     <div class="field"><label for="o-c">Corretor</label><select id="o-c" name="cid"><option value="">Sem corretor / direto</option>${S.corretores.map(c=>`<option value="${c.id}">${esc(c.nome)} · ${esc(c.imob)}</option>`).join('')}</select></div>
     <div class="field"><label for="o-v">Valor pedido (R$)</label><input id="o-v" name="valor" inputmode="decimal" required></div>
     <div class="field"><label for="o-f">Forma de pagamento pedida</label>${optSel('forma',OPT.forma,null).replace('id="f-forma"','id="o-f"')}</div>
     <div class="field"><label for="o-val">Validade</label><input id="o-val" name="validade" type="date"></div>
     <div class="field full"><label for="o-o">Observação sobre a forma de pagamento</label><input id="o-o" name="obsPag"></div>
     <div class="field full"><label for="o-a">Aceita permuta</label><input id="o-a" name="aceita"></div></div></form>
-    <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-of">Registrar</button></div>`;
+    <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-of">Registrar</button></div>`}
   if(M==='viab')h=`<div class="dh"><h2>Vincular estudo de viabilidade</h2>${fechar}</div><form data-form="viab" id="f-vb"><div class="fields"><div class="field full"><label for="vb-n">Nome</label><input id="vb-n" name="nome" value="Estudo base" required></div><div class="field"><label for="vb-v">VGV (R$)</label><input id="vb-v" name="vgv" inputmode="decimal"></div><div class="field"><label for="vb-m">Margem (%)</label><input id="vb-m" name="margem" inputmode="decimal"></div><div class="field full"><label for="vb-p">Preço máximo do terreno (R$)</label><input id="vb-p" name="pmax" inputmode="decimal" required></div></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-vb">Vincular</button></div>`;
   if(M==='geo')h=geoModalHtml(fechar);
   if(M==='poi')h=`<div class="dh"><div><h2>Novo ponto de interesse</h2><div class="muted" style="margin-top:4px">Serve para medir a distância dos terrenos e traçar rotas.</div></div>${fechar}</div>
@@ -732,10 +713,10 @@ function renderModal(){
   <div class="field"><span class="lbl-f">Local</span><span class="num muted" style="line-height:44px">${num(UI.novoConc.lat,5)}, ${num(UI.novoConc.lng,5)}</span></div>
   <div class="field full"><label for="cc-o">Observação</label><input id="cc-o" name="obs" placeholder="Produto, preço, fase da obra..."></div></div></form>
   <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-conc">Salvar</button></div>`;
-  if(M==='kmz'){const its=UI.kmzItens||[],ter=ativosBanco();h=`<div class="dh"><div><h2>Importar ${its.length} ${its.length===1?'item':'itens'} do arquivo</h2><div class="muted" style="margin-top:4px">Escolha o que fazer com cada ponto ou polígono.</div></div>${fechar}</div>
-  <form data-form="kmz" id="f-kmz"><div class="kmz-l">${its.map((it,i)=>{const lig=ter.find(t=>t.nome.toLowerCase()===it.nome.toLowerCase()||it.nome.includes(t.codigo));
-    return `<div class="kmz-i"><div><div class="t1">${esc(it.nome)}</div><div class="t2">${it.tipo==='poligono'?`Polígono · ${it.pts.length} vértices · ${m2(areaPoly(it.pts))}`:'Ponto'}</div></div>
-    <select name="i${i}" aria-label="Destino de ${esc(it.nome)}"><option value="novo" ${lig?'':'selected'}>Criar terreno novo</option>${ter.map(t=>`<option value="${t.id}" ${lig===t?'selected':''}>${it.tipo==='poligono'?'Poligonal de':'Localização de'} ${esc(t.codigo)} · ${esc(t.nome)}</option>`).join('')}<option value="">Ignorar</option></select></div>`}).join('')}</div></form>
+  if(M==='kmz'){const its=UI.kmzItens||[],ter=ativosBanco();h=`<div class="dh"><div><h2>Importar ${its.length} ${its.length===1?'item':'itens'} do arquivo</h2><div class="muted" style="margin-top:4px">Escolha o que fazer com cada ponto ou polígono. Terreno novo só sai de polígono.</div></div>${fechar}</div>
+  <form data-form="kmz" id="f-kmz"><div class="kmz-l">${its.map((it,i)=>{const pol=it.tipo==='poligono',sob=pol?sobreposicoes(it.pts):[],lig=ter.find(t=>t.nome.toLowerCase()===it.nome.toLowerCase()||it.nome.includes(t.codigo))||sob[0]?.t;
+    return `<div class="kmz-i"><div><div class="t1">${esc(it.nome)}</div><div class="t2">${pol?`Polígono · ${it.pts.length} vértices · ${m2(Math.round(areaPoly(it.pts)))}`:'Ponto'}</div>${sob.length?`<div class="t2" style="color:var(--m-warn-tx,#7a5900)">Ocupa parte de ${sob.map(x=>x.t.codigo).join(', ')}</div>`:''}</div>
+    <select name="i${i}" aria-label="Destino de ${esc(it.nome)}">${pol?`<option value="novo" ${lig?'':'selected'}>${sob.length?'Criar terreno novo mesmo assim':'Criar terreno novo'}</option>`:''}${ter.map(t=>`<option value="${t.id}" ${lig===t?'selected':''}>${it.tipo==='poligono'?'Poligonal de':'Localização de'} ${esc(t.codigo)} · ${esc(t.nome)}</option>`).join('')}<option value="">Ignorar</option></select></div>`}).join('')}</div></form>
   <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-kmz">Importar</button></div>`}
   if(M==='grafico'){const k=UI.grafico;h=`<div class="dh g-exp"><h2>${DIMS[k].l}</h2>${fechar}</div>${grafico(k,true)}<h3 class="lbl-up" style="margin-top:var(--e6)">Dados do gráfico</h3>${tabelaGrafico(k)}`}
   if(M==='tarefa'){const sel=UI.tkSel,t=sel.tid?T(sel.tid):null,k=t?t.tarefas.find(x=>x.id===sel.kid):null,ro=UI.role==='Leitura';
@@ -753,7 +734,7 @@ function renderModal(){
     ${k?`<div class="field full"><label for="tm-res">Resultado</label><textarea id="tm-res" name="resultado" placeholder="O que foi feito ou decidido">${esc(k.resultado||'')}</textarea></div>`:''}</div></fieldset></form>
     <div class="df">${t?`<button class="btn text" data-a="abrir" data-id="${t.id}" data-tab="tarefas" data-from="tarefas">Abrir terreno</button>`:''}<button class="btn text" data-a="close">${ro?'Fechar':'Cancelar'}</button>${ro?'':`<button class="btn primary" type="submit" form="f-tk">${k?'Salvar':'Criar tarefa'}</button>`}</div>`}
   el.innerHTML=`<div class="scrim" data-a="scrim"><div class="dialog" role="dialog" aria-modal="true">${h}</div></div>`;
-  if(M==='novo'&&GG)gAutocompletarNovo();
+  if(M==='novo')nvPosRender();
   const f=el.querySelector('input:not([type=hidden]),select');if(f)setTimeout(()=>f.focus(),30);
 }
 function dedupe(){
@@ -835,7 +816,7 @@ document.addEventListener('click',e=>{
     case 'mp-limpar':UI.mp={q:'',cor:'',zona:'',ocultas:[]};render();break;
     case 'mp-base':setBase(a.dataset.v);break;
     case 'mp-modo':UI.mpModo=UI.mpModo===a.dataset.v?null:a.dataset.v;fecharPopup();mpRefresh();break;
-    case 'mp-sair':UI.mpModo=null;UI.poiVolta=null;UI.desenho=null;UI.desHist=null;UI.vSel=null;UI.vMenu=false;UI.vMover=false;mpRefresh();break;
+    case 'mp-sair':UI.mpModo=null;UI.nvDesenho=false;UI.poiVolta=null;UI.desenho=null;UI.desHist=null;UI.vSel=null;UI.vMenu=false;UI.vMover=false;mpRefresh();break;
     case 'mp-desfazer':{const h=UI.desHist||[];if(h.length){UI.desenho=h.pop();UI.vSel=null;UI.vMenu=false;UI.vMover=false}mpRefresh();break}
     case 'mp-concluir':concluirDesenho();break;
     case 'mp-poi':UI.mpPoi=UI.mpPoi===false;mostrarPois(UI.mpPoi);a.setAttribute('aria-pressed',UI.mpPoi);a.classList.toggle('on',UI.mpPoi);break;
@@ -872,7 +853,7 @@ document.addEventListener('change',e=>{const el=e.target;
   if(el.dataset.ch==='mp-zona'){UI.mp.zona=el.value;mpRefresh();return}
   if(el.dataset.ch==='dash-sel'){const s=UI.dash.sel;UI.dash.sel=el.checked?Object.keys(DIMS).filter(k=>s.includes(k)||k===el.value):s.filter(k=>k!==el.value);render();return}
   if(el.dataset.ch==='tk-f'){UI.tk[el.dataset.k]=el.type==='checkbox'?el.checked:el.value;render();return}
-  if(el.id==='kmz-in'){const f=el.files?.[0];if(!f)return;lerKmz(f).then(its=>{if(UI.kmzAlvo){const t=T(UI.kmzAlvo),it=its.find(x=>x.tipo==='poligono')||its[0];aplicarKmz(t,it);log(t,it.tipo==='poligono'?`Poligonal importada (${m2(areaPoly(it.pts))})`:'Localização importada de KMZ');UI.kmzAlvo=null;save();mpRefresh();if(t.lat!=null)focar(t);toast(it.tipo==='poligono'?`Poligonal importada: ${m2(areaPoly(it.pts))}.`:'Localização importada.')}
+  if(el.id==='kmz-in'){const f=el.files?.[0];if(!f)return;lerKmz(f).then(its=>{if(UI.kmzNovo){UI.kmzNovo=false;nvKmzLido(its)}else if(UI.kmzAlvo){const t=T(UI.kmzAlvo),it=its.find(x=>x.tipo==='poligono')||its[0];aplicarKmz(t,it);log(t,it.tipo==='poligono'?`Poligonal importada (${m2(areaPoly(it.pts))})`:'Localização importada de KMZ');UI.kmzAlvo=null;save();mpRefresh();if(t.lat!=null)focar(t);toast(it.tipo==='poligono'?`Poligonal importada: ${m2(areaPoly(it.pts))}.`:'Localização importada.')}
     else{UI.kmzItens=its;UI.modal='kmz';renderModal()}}).catch(err=>toast(err.message,true));return}
   const t=UI.route==='terreno'?T(UI.id):null;if(!t)return;
   if(el.dataset.ch==='tar-st'){const k=t.tarefas.find(x=>x.id===el.dataset.k);k.status=el.value;log(t,`Tarefa "${k.titulo}": ${OPT.statusTar[el.value]}`);save();render()}
@@ -919,7 +900,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
     case 'conc':{S.concorrentes=S.concorrentes||[];S.concorrentes.push({id:uid(),nome:F.nome.trim(),empresa:(F.empresa||'').trim(),obs:(F.obs||'').trim(),lat:UI.novoConc.lat,lng:UI.novoConc.lng});UI.modal=null;save();render();toast('Concorrência salva.');break}
     case 'kmz':{let novos=0,lig=0;(UI.kmzItens||[]).forEach((it,i)=>{const d=F['i'+i];if(d==null||d==='')return;
         if(d==='novo'){S.seqT++;const c=it.tipo==='poligono'?centro(it.pts):it.pts[0];const nt={...seedVazio(),codigo:'TER-'+String(S.seqT).padStart(6,'0'),nome:it.nome,resp:me(),origem:'prospeccao',dataIdent:HOJE,lat:c[0],lng:c[1],precisao:'aproximada'};
-          if(it.tipo==='poligono')nt.poly=it.pts;nt.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado por importação de KMZ'}];S.terrenos.push(nt);novos++}
+          if(it.tipo!=='poligono')return;nt.poly=it.pts;const sob=sobreposicoes(it.pts);if(sob.length)nt.sobreAceitas=sob.map(x=>x.t.id);nt.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado por importação de KMZ'}];S.terrenos.push(nt);novos++}
         else{const t=T(d);aplicarKmz(t,it);log(t,it.tipo==='poligono'?`Poligonal importada (${m2(areaPoly(it.pts))})`:'Localização importada de KMZ');lig++}});
       UI.modal=null;UI.mpView=null;save();render();toast(`${novos?novos+' terreno'+(novos>1?'s':'')+' criado'+(novos>1?'s':''):''}${novos&&lig?' e ':''}${lig?lig+' atualizado'+(lig>1?'s':''):''}${!novos&&!lig?'Nada importado':''}.`);break}
     case 'tarefa-m':{const sel=UI.tkSel;if(sel.tid){const t=T(sel.tid),k=t.tarefas.find(x=>x.id===sel.kid);const de=k.status,antes={resp:k.resp,marcados:(k.marcados||[]).slice()};Object.assign(k,{titulo:F.titulo.trim(),resp:F.resp,prazo:F.prazo,prio:F.prio,status:F.status,desc:F.desc,resultado:F.resultado||'',marcados:new FormData(f).getAll('marc')});notifTarefa(t,k,antes);
@@ -940,20 +921,19 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
         const [gmS,gabM]=par('gm'),[gpS,gabPav]=par('gp'),[caS,ca]=par('ca');return {sigla:F['sigla'+i],area:lerNum(F['area'+i]),gmS,gabM,gpS,gabPav,caS,ca,obs:''}}).filter(Boolean);
       if(erro){toast(erro,true);return}
       t.analises.forEach(a=>{if(a.status==='vigente')a.status='substituida'});t.analises.push({id:uid(),data:F.data,fonte:F.fonte,status:'vigente',zonas});UI.edit=null;log(t,'Nova análise urbanística: '+zonas.map(z=>z.sigla).join(' + '));save();render();toast('Análise registrada. A anterior foi preservada.');break}
-    case 'novo':{const dup=f.dataset.dup;let alvo;
-      if(!F.logradouro.trim()&&!F.bairro.trim()&&!dup&&!UI.novoLoc){toast('Informe ao menos logradouro ou bairro.',true);return}
+    case 'novo':{const dup=f.dataset.dup;let alvo;if(!UI.nv){toast('Comece pela poligonal do terreno.',true);return}
+      if(F.sql&&F.mun!=='outro'&&cidDoNome(F.municipio)!==F.mun){toast(`A inscrição é de ${CIDADES_INSC[F.mun].cidade} e o terreno fica em ${F.municipio.split(' · ')[0]}.`,true);return}
       if(dup){alvo=T(dup)}else{S.seqT++;alvo={...seedVazio(),codigo:'TER-'+String(S.seqT).padStart(6,'0'),nome:F.nome,logradouro:F.logradouro.trim(),numero:F.numero.trim(),bairro:F.bairro.trim(),zona:F.zona||null,resp:F.resp,origem:F.origem,dataIdent:HOJE,
-        mats:F.mat?[{num:F.mat,cri:F.cri,area:null,data:null}]:[],insc:F.sql?[{mun:F.mun,sql:F.sql,area:null,valores:[]}]:[]};if(!UI.novoLoc?.municipio&&F.mun!=='outro')alvo.municipio=CIDADES_INSC[F.mun].cidade+' · SP';alvo.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado'}];if(UI.novoLoc){alvo.lat=UI.novoLoc.lat;alvo.lng=UI.novoLoc.lng;alvo.precisao='aproximada';alvo.hist[0].txt='Terreno cadastrado pelo mapa';
-          if(UI.novoLoc.cep)alvo.cep=UI.novoLoc.cep;if(UI.novoLoc.municipio){alvo.municipio=UI.novoLoc.municipio;alvo.hist[0].txt='Terreno cadastrado pela busca de endereço'}}S.terrenos.push(alvo)}
+        mats:F.mat?[{num:F.mat,cri:F.cri,area:null,data:null}]:[],insc:F.sql?[{mun:F.mun,sql:F.sql,area:null,valores:[]}]:[]};alvo.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado'}];nvGravar(alvo,F);S.terrenos.push(alvo)}
       const val=lerNum(F.valor);
       if(val||F.cid){const o={id:uid(),cid:F.cid||null,data:HOJE,valor:val,forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,status:'ativa'};alvo.ofertas.push(o);
         if(o.cid&&!alvo.corretores.some(x=>x.cid===o.cid))alvo.corretores.push({cid:o.cid,principal:!alvo.corretores.some(x=>x.principal)});
         if(!alvo.neg||!['ativo','stand_by'].includes(alvo.neg.status)){alvo.neg=novaNeg(o.id,Number(F.temp)||null);log(alvo,'Negociação aberta')}
         else log(alvo,'Nova oferta registrada')}
-      UI.modal=null;save();go('terreno',{id:alvo.id,tab:dup?'comercial':'cadastro',from:'terrenos'});toast(dup?'Oferta registrada no terreno existente.':`${alvo.codigo} cadastrado. Complete a ficha quando puder.`);if(!dup&&alvo.insc[0]&&loteBuscavel(alvo.insc[0]))loteBuscar(alvo,0);break}
-    case 'oferta':{const o={id:uid(),cid:F.cid||null,data:HOJE,valor:lerNum(F.valor),forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,validade:F.validade||null,status:'ativa'};t.ofertas.push(o);
+      UI.modal=null;UI.nv=null;save();go('terreno',{id:alvo.id,tab:dup?'comercial':'cadastro',from:'terrenos'});toast(dup?'Oferta registrada no terreno existente.':`${alvo.codigo} cadastrado. Complete a ficha quando puder.`);if(!dup&&alvo.insc[0]&&loteBuscavel(alvo.insc[0]))loteBuscar(alvo,0);break}
+    case 'oferta':{const o={id:uid(),cid:F.cid||null,data:HOJE,valor:lerNum(F.valor),forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,validade:F.validade||null,status:'ativa'};if(UI.ofPoly)o.poly=UI.ofPoly;t.ofertas.push(o);
       if(o.cid&&!t.corretores.some(x=>x.cid===o.cid))t.corretores.push({cid:o.cid,principal:!t.corretores.some(x=>x.principal)});
-      if(!t.neg||!['ativo','stand_by'].includes(t.neg.status)){t.neg=novaNeg(o.id,null);log(t,'Negociação aberta')}else log(t,`Nova oferta: ${mi(o.valor)}`);
+      if(!t.neg||!['ativo','stand_by'].includes(t.neg.status)){t.neg=novaNeg(o.id,null);log(t,'Negociação aberta')}else log(t,`Nova oferta: ${mi(o.valor)}${o.poly?` (parte do terreno, ${m2(Math.round(areaPoly(o.poly)))})`:''}`);
       UI.modal=null;save();render();toast('Oferta registrada.');break}
     case 'viab':t.neg.viab={nome:F.nome,vgv:lerNum(F.vgv),margem:lerNum(F.margem),pmax:lerNum(F.pmax),em:HOJE};log(t,'Estudo vinculado');UI.modal=null;save();render();break;
   }

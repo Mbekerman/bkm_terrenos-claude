@@ -31,15 +31,15 @@ const p=await ctx.newPage();p.on('pageerror',e=>errs.push(e.message));p.on('cons
 await p.goto('file:///x/a.html');await p.evaluate(()=>localStorage.clear());await p.reload();await p.waitForTimeout(600);
 const toast=()=>p.$eval('#toast',x=>x.textContent);
 const KEY='bkm-terrenos-prototipo-v8',ter=n=>p.evaluate(([k,n])=>JSON.parse(localStorage.getItem(k)).terrenos.find(x=>x.nome===n),[KEY,n]);
-// 1. novo terreno: a cidade troca rótulo e máscara; duplicidade por cidade + inscrição
+// 1. passo 1 pela inscrição: a cidade troca rótulo e máscara; SJC busca o lote no GeoSanja e vai ao passo 2
 await p.evaluate(()=>document.querySelector('[data-a=novo]').click());await p.waitForTimeout(200);
-const campo=()=>p.evaluate(()=>({rot:document.querySelector('#n-sql-l').textContent,ph:document.querySelector('#n-sql').placeholder,v:document.querySelector('#n-sql').value}));
-await p.fill('#n-sql','0890000000000');console.log('SP:',JSON.stringify(await campo()));
-await p.click('#f-novo label:has([name=mun][value=sjc])');await p.fill('#n-sql','41002400110000');console.log('SJC:',JSON.stringify(await campo()));
+const campo=(pre='v')=>p.evaluate(pre=>({rot:document.querySelector('#'+pre+'-sql-l').textContent,ph:document.querySelector('#'+pre+'-sql').placeholder,v:document.querySelector('#'+pre+'-sql').value}),pre);
+await p.fill('#v-sql','0890000000000');console.log('SP:',JSON.stringify(await campo()));
+await p.click('#f-nv-insc label:has([name=mun][value=sjc])');await p.fill('#v-sql','41002400110000');console.log('SJC:',JSON.stringify(await campo()));
 await p.screenshot({path:OUT+'1_novo_sjc.png'});
-await p.click('#f-novo label:has([name=mun][value=outro])');await p.fill('#n-sql','abc-123/9');console.log('Outro:',JSON.stringify(await campo()));
-await p.click('#f-novo label:has([name=mun][value=sjc])');await p.fill('#n-sql','41002400110000');
-await p.fill('#f-novo [name=nome]','Lote SJC');await p.fill('#f-novo [name=bairro]','Vila Adyanna');
+await p.evaluate(()=>document.querySelector('#f-nv-insc').requestSubmit());await p.waitForSelector('#f-novo',{timeout:10000});await p.waitForTimeout(300);
+console.log('passo 2:',await p.$eval('#modal .banner',x=>x.innerText.replace(/\s+/g,' ')),'| inscrição:',await p.$eval('#n-sql',x=>x.value),await p.$eval('#f-novo [name=mun]:checked',x=>x.value));
+await p.fill('#n-mun','São José dos Campos · SP');await p.fill('#f-novo [name=nome]','Lote SJC');await p.fill('#f-novo [name=bairro]','Vila Adyanna');
 await p.evaluate(()=>document.querySelector('#f-novo').requestSubmit());
 await p.waitForFunction(()=>/Planta e desenho/.test(document.querySelector('#toast').textContent),null,{timeout:20000}).catch(async e=>{console.log('toast:',await toast(),'erros:',errs,'pedidos:',pedidos);throw e});
 const st=await ter('Lote SJC').then(t=>{const i=t.insc[0],g=i.geo[0];return {mun:i.mun,sql:i.sql,municipio:t.municipio,poly:t.poly&&t.poly.length,lat:t.lat,area:i.area,areaPol:g.areaPol,zonas:g.zonas,erros:g.erros,
@@ -59,8 +59,12 @@ await p.click('[data-form=insc] label:has([name=mun][value=outro])');await p.fil
 await p.evaluate(()=>document.querySelector('[data-form=insc]').requestSubmit());await p.waitForTimeout(400);
 console.log('inscrições:',JSON.stringify((await ter('Lote SJC')).insc.map(i=>i.mun+':'+i.sql)),'botões:',JSON.stringify(await p.$$eval('[data-a=geo-buscar]',x=>x.map(b=>b.dataset.i+':'+b.textContent))));
 console.log('cabeçalhos:',JSON.stringify(await p.$$eval('#sec-insc b.num',x=>x.map(b=>b.parentElement.innerText.split('\n')[0].replace(/\s+/g,' ')))));
-// 3. duplicidade no novo terreno
+// 3. duplicidade no passo 2 (área de outro lugar de SJC importada de KML)
+const kml=`<?xml version="1.0"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><Placemark><name>Outro lote</name><Polygon><outerBoundaryIs><LinearRing><coordinates>-45.90,-23.20 -45.8997,-23.20 -45.8997,-23.2003 -45.90,-23.2003 -45.90,-23.20</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark></Document></kml>`;
 await p.evaluate(()=>document.querySelector('[data-a=novo]').click());await p.waitForTimeout(200);
+const [fc]=await Promise.all([p.waitForEvent('filechooser'),p.click('[data-a=nv-kmz]')]);await fc.setFiles({name:'l.kml',mimeType:'application/vnd.google-earth.kml+xml',buffer:Buffer.from(kml)});await p.waitForSelector('#f-novo');await p.waitForTimeout(200);
+await p.evaluate(()=>document.querySelector('#f-novo details').open=true);
+await p.click('#f-novo label:has([name=mun][value=outro])');await p.fill('#n-sql','abc-123/9');console.log('Outro:',JSON.stringify(await campo('n')));
 await p.click('#f-novo label:has([name=mun][value=sjc])');await p.fill('#n-sql','41002400110000');await p.waitForTimeout(150);console.log('mesma inscrição:',await p.$eval('#dedupe',x=>x.innerText.replace(/\s*\n\s*/g,' / ').slice(0,160)));
 await p.fill('#n-sql','41002400990000');await p.waitForTimeout(150);console.log('mesma quadra:',await p.$eval('#dedupe',x=>x.innerText.replace(/\s*\n\s*/g,' / ').slice(0,160)));
 await p.click('#f-novo label:has([name=mun][value=sp])');await p.waitForTimeout(150);console.log('trocou para SP:',await p.$eval('#n-sql',x=>x.value),'|',await p.$eval('#dedupe',x=>x.innerText.replace(/\s*\n\s*/g,' / ').slice(0,160)));

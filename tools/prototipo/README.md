@@ -12,6 +12,7 @@ O `docs/prototipo.html` (servido pelo Railway em `/prototipo`) e o artifact do c
 | `proto_lote.js` | Inscrição por cidade (São Paulo, São José dos Campos, outro): rótulo, máscara, busca na base da cidade e peças comuns do quadro do lote |
 | `proto_geosampa.js` | GeoSampa pelo SQL: lote, camadas que tocam a poligonal, análise, planta (PDF) e desenho (DXF) |
 | `proto_geosanja.js` | GeoSanja pela inscrição imobiliária de SJC: poligonal, camadas que tocam o lote, análise, planta (PDF montado no navegador) e desenho (DXF) |
+| `proto_novo.js` | Novo terreno pela poligonal: passo 1 (desenhar, KMZ/KML, inscrição), sobreposição com outros terrenos e o que fazer, município e frentes pela localização, busca de endereço no mapa |
 | `proto_funil.js` | funil: passagem com pendências e aprovações (espelha `app._passagem`), quadro de avanço, kanban, notificações e Configurações › Funil |
 | `bkm.pre-painel.css` + `painel.css` | estilos; o `painel.css` tem os blocos mais novos e sobrepõe o anterior |
 | `build.py` | junta tudo: grava `docs/prototipo.html`, `saida/bkm-terrenos.html` (artifact e testes) e atualiza `apps/web/src/styles.css` |
@@ -47,6 +48,7 @@ Rodar só o que a mudança toca; a varredura completa (`tvaza` e `tscroll`) ao f
 | `tedmenu.js` | menu do clique direito no ponto, sem barra no desktop, Desfazer/Cancelar, Ctrl+Z e Esc (claro e escuro) |
 | `tent.js`, `tent2.js`, `tent3.js`, `tentshot.js` | pontos de interesse: busca e rota a pé simuladas, pontos da empresa, adicionar ponto |
 | `tgeo.js` | GeoSampa pelo SQL com respostas gravadas do servidor real em `testes/geosampa/` (`GRAVAR=1` regrava pelo Caddy local na porta 8099): campos completados, o que toca o lote, análise, PDF e DXF |
+| `tnovo.js` | Novo terreno pela poligonal, com OpenStreetMap simulado: passo 1 (desenhar, KMZ), busca de endereço no mapa, sobreposição (mesma área, área nova maior, cruzada com união, faixa de 3 m na divisa que não conta), município e frentes pela localização com escolha do endereço principal, oferta com o pedaço oferecido, celular e escuro |
 | `tgeosjc.js` | Inscrição por cidade e GeoSanja com respostas gravadas do servidor real em `testes/geosanja/` (`GRAVAR=1` regrava pelo Caddy local na porta 8099; o token de visitante não é gravado): rótulo e máscara por cidade, duplicidade por cidade, busca sozinha ao cadastrar, quadro, PDF e DXF, inscrição de outra cidade recusada, celular e escuro |
 | `ticones.js` | prints dos ícones do menu (aberto, recolhido, celular, tema escuro) |
 
