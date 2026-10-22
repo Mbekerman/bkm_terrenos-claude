@@ -37,6 +37,11 @@ Rodar só o que a mudança toca; a varredura completa (`tvaza` e `tscroll`) ao f
 | `tend2.js`, `tgmock.js` | endereço pela busca do Google (simulado) |
 | `tadv.js` | quadro de avanço compacto e modais |
 | `ted2.js` | edição da poligonal (desktop e celular) |
+| `tctx.js` | menu do clique direito no mapa (toque longo no celular), concorrência, barra do mapa |
+| `tlista.js` | página Mapa sem balão: clicar no pino destaca a linha, cartão no celular, lupa abre a ficha |
+| `tmini.js` | mini-mapa da Visão geral: Shift + roda, dois cliques abrem o Mapa, Ver no mapa só no celular |
+| `tedmenu.js` | menu do clique direito no ponto, sem barra no desktop, Desfazer/Cancelar, Ctrl+Z e Esc (claro e escuro) |
 | `tent.js`, `tent2.js`, `tent3.js`, `tentshot.js` | pontos de interesse: busca e rota a pé simuladas, pontos da empresa, adicionar ponto |
+| `ticones.js` | prints dos ícones do menu (aberto, recolhido, celular, tema escuro) |
 
 `fake_gmaps.js` / `fake_gmaps2.js` simulam o Google (o 2 também responde `Place.searchNearby`); `tile.png` é o fundo de mapa falso. Prints e saídas vão para `saida/` (fora do git).

@@ -281,14 +281,23 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 @keyframes v-pulso { 0%, 100% { box-shadow: 0 0 0 4px #0b57d0, 0 0 0 4px rgba(11,87,208,.35) } 50% { box-shadow: 0 0 0 4px #0b57d0, 0 0 0 12px rgba(11,87,208,0) } }
 .leaflet-marker-icon.v-alvo { margin: 0 }
 .leaflet-dragging .v-alvo, .v-alvo:active { cursor: grabbing }
-.v-menu { position: absolute; z-index: 1200; display: flex; flex-direction: column; width: 220px; padding: 6px 0; border-radius: 12px; background: var(--m-sc-low, #f0f4f9); box-shadow: 0 2px 6px rgba(0,0,0,.2), 0 8px 20px rgba(0,0,0,.18); font-size: 14px }
-.v-menu .v-t { padding: 6px 16px 4px; font-size: 12px; font-weight: 500; color: var(--texto-suave) }
-.v-menu button { border: 0; background: transparent; min-height: 44px; padding: 0 16px; text-align: left; font-size: 14px; font-weight: 500; color: var(--m-on-surface, #1f1f1f) }
-.v-menu button:hover, .v-menu button:focus-visible { background: rgba(127,127,127,.12); outline: 0 }
-.v-menu button.crit { color: var(--critico-marca, #b3261e) }
-:root[data-tema="escuro"] .v-menu { background: #0d1530; box-shadow: 0 0 0 1px rgba(124,140,255,.25), 0 10px 28px rgba(0,0,0,.55) }
-:root[data-tema="escuro"] .v-menu button { color: #e6ecff }
-:root[data-tema="escuro"] .v-menu button.crit { color: #ffb4ab }
+/* a cruz do modo de edição (.mapa.modo .leaflet-interactive) não vale nos pontos: neles, mãozinha; arrastando, mão fechada */
+.mapa.modo .v-alvo, .mapa.modo .v-alvo .v-dot { cursor: pointer !important }
+.mapa.modo .leaflet-dragging .v-alvo, .mapa.modo .v-alvo:active, .mapa.modo.leaflet-dragging .v-alvo { cursor: grabbing !important }
+:is(.v-menu, .mp-ctx) { position: absolute; z-index: 1200; display: flex; flex-direction: column; width: 220px; padding: 6px 0; border-radius: 12px; background: var(--m-sc-low, #f0f4f9); box-shadow: 0 2px 6px rgba(0,0,0,.2), 0 8px 20px rgba(0,0,0,.18); font-size: 14px }
+:is(.v-menu, .mp-ctx) .v-t { padding: 6px 16px 4px; font-size: 12px; font-weight: 500; color: var(--texto-suave) }
+:is(.v-menu, .mp-ctx) button { border: 0; background: transparent; min-height: 44px; padding: 0 16px; text-align: left; font-size: 14px; font-weight: 500; color: var(--m-on-surface, #1f1f1f) }
+:is(.v-menu, .mp-ctx) button:hover, .v-menu button:focus-visible { background: rgba(127,127,127,.12); outline: 0 }
+:is(.v-menu, .mp-ctx) button.crit { color: var(--critico-marca, #b3261e) }
+:is(.v-menu, .mp-ctx) hr { margin: 6px 0; border: 0; border-top: 1px solid var(--m-outline-variant, #c4c7c5) }
+:is(.v-menu, .mp-ctx) button { display: flex; align-items: center; justify-content: space-between; gap: 12px }
+:is(.v-menu, .mp-ctx) button:disabled { color: rgba(31,31,31,.38) }
+:is(.v-menu, .mp-ctx) kbd { font: inherit; font-size: 12px; font-weight: 400; color: var(--texto-suave) }
+:root[data-tema="escuro"] :is(.v-menu, .mp-ctx) hr { border-top-color: #1a2240 }
+:root[data-tema="escuro"] :is(.v-menu, .mp-ctx) button:disabled { color: rgba(230,236,255,.38) }
+:root[data-tema="escuro"] :is(.v-menu, .mp-ctx) { background: #0d1530; box-shadow: 0 0 0 1px rgba(124,140,255,.25), 0 10px 28px rgba(0,0,0,.55) }
+:root[data-tema="escuro"] :is(.v-menu, .mp-ctx) button { color: #e6ecff }
+:root[data-tema="escuro"] :is(.v-menu, .mp-ctx) button.crit { color: #ffb4ab }
 /* aviso do modo de edição no mapa: barra no padrão "snackbar" do Material, legível e sem cobrir a poligonal */
 .mp-modo { background: #313033 !important; color: #f4eff4 !important; border-radius: 8px !important; padding: 8px 8px 8px 16px !important; gap: 4px 8px !important; font-size: 14px; line-height: 20px; max-width: min(720px, calc(100% - 24px)); box-shadow: 0 3px 10px rgba(0,0,0,.3) }
 .mp-modo > span { flex: 1 1 260px; text-align: left }
@@ -326,6 +335,11 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .sec-h > :last-child:not(h2) { margin-left: auto }
 .mini-pe > span { display: flex; flex-wrap: wrap; gap: 8px }
 .mini-pe { row-gap: 8px }
+/* desktop: o mini-mapa abre o Mapa com dois cliques; "Ver no mapa" fica só no toque (celular, tablet) */
+@media (hover: hover) and (pointer: fine) {
+  .mini-ir { display: none !important }
+  .mini-pe:not(:has([data-a="g-sv-mini"])) { display: none }
+}
 .chip { white-space: normal; max-width: 100% }
 .task, .tk-row { min-width: 0 }
 .task .t1 { white-space: normal; overflow-wrap: anywhere }
@@ -375,3 +389,77 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .ent-emp { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--m-outline-v, rgba(127,127,127,.25)) }
 .ent-emp-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; font-size: 14px; font-weight: 500; color: var(--m-on-surface, var(--texto)) }
 .ent-emp-h .linkbtn { display: inline-flex; align-items: center; gap: 4px; font-size: 14px }
+
+/* ---------- lista lateral do mapa: número do pino, nome, área e lupa ---------- */
+.mp-lst { display: flex; flex-direction: column; gap: 2px }
+.mp-it { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 12px; padding: 8px 4px 8px 12px; border-radius: 12px; cursor: pointer; color: var(--m-on-surface, #1f1f1f) }
+.mp-it:hover { background: rgba(31,31,31,.06) }
+.mp-it:focus-visible { outline: 2px solid #0b57d0; outline-offset: -2px }
+.mp-it.sel { background: #c2e7ff }
+.mp-it .pin-mini { width: 26px; height: 26px; font-size: 12px }
+.mp-it .t1 { font-size: 14px; font-weight: 500; line-height: 20px; white-space: normal; overflow: visible }
+.mp-it .t2 { font-size: 13px; line-height: 18px; color: #444746; white-space: normal; overflow: visible }
+.mp-lupa { width: 40px; height: 40px; border-radius: 20px; color: #444746 }
+.mp-lupa:hover { background: rgba(31,31,31,.08); color: #0b57d0 }
+.mp-lupa .bkm-ico { width: 22px; height: 22px }
+.mp-it-a { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 4px 0 2px; font-size: 13px }
+.mp-it-a .linkbtn { color: #0b57d0; font-weight: 500 }
+:root[data-tema="escuro"] .mp-it { color: #e6ecff }
+:root[data-tema="escuro"] .mp-it:hover { background: rgba(124,140,255,.08) }
+:root[data-tema="escuro"] .mp-it.sel { background: rgba(99,112,255,.10); box-shadow: inset 0 0 0 1px rgba(124,140,255,.5) }
+:root[data-tema="escuro"] .mp-it .t2, :root[data-tema="escuro"] .mp-lupa { color: #aab4d6 }
+:root[data-tema="escuro"] .mp-it-a .linkbtn { color: #c9d6ff }
+/* cartão do terreno selecionado sobre o mapa: só no celular, onde a lista fica abaixo do mapa */
+.mp-cartao { display: none }
+@media (max-width: 899px) {
+  .mp-cartao:not(:empty) { display: block; position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 1050 }
+  .mp-cartao .mp-it { background: var(--m-surface, #fff); box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 4px 12px rgba(0,0,0,.15) }
+  :root[data-tema="escuro"] .mp-cartao .mp-it { background: #0d1530; box-shadow: 0 0 0 1px rgba(124,140,255,.35), 0 10px 28px rgba(0,0,0,.55) }
+  .mapa-area:has(.mp-cartao:not(:empty)) .mp-legenda { display: none }
+}
+
+/* legenda do mapa: "Pontos de interesse" liga e desliga os pontos, depois das etapas */
+.mp-leg-l .lg-sep { width: 100%; margin: 4px 0; border: 0; border-top: 1px solid var(--m-outline-variant, #c4c7c5) }
+.lg-poi { width: 18px; height: 18px; display: grid; place-items: center; flex: none }
+.lg-poi .poi-b { width: 12px; height: 12px; border-width: 2.5px; box-shadow: none }
+.lg-i[aria-pressed="false"] .lg-poi { filter: grayscale(1) }
+:root[data-tema="escuro"] .mp-leg-l .lg-sep { border-top-color: #1a2240 }
+
+/* menu do clique direito no mapa (mesmo visual do menu do ponto) */
+.mp-ctx { position: absolute; z-index: 1200; display: flex; flex-direction: column; min-width: 240px; width: auto }
+.mp-ctx button { justify-content: flex-start !important; gap: 12px !important; white-space: nowrap }
+.mp-ctx button .ic { color: #444746 }
+:root[data-tema="escuro"] .mp-ctx button .ic { color: #aab4d6 }
+/* concorrência no mapa e na legenda: losango roxo */
+.conc { background: none; border: 0 }
+.conc-b { display: block; width: 12px; height: 12px; background: #863d8f; border: 2px solid #fff; transform: rotate(45deg); box-shadow: 0 1px 3px rgba(0,0,0,.35) }
+.conc.g { width: 16px; height: 16px; display: grid; place-items: center }
+.lg-poi .conc-b { width: 10px; height: 10px; border-width: 1.5px; box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
+/* barra do mapa sem o fundo branco: só o seletor do tipo de mapa e o Importar KMZ/KML, cada um com a sua sombra */
+.mapa-area .mp-barra { background: transparent !important; box-shadow: none !important; border-radius: 0 !important; align-items: center; flex-wrap: nowrap !important; flex-direction: row !important }
+.mp-barra .mp-kmz { flex: none; background: var(--m-surface, #fff) !important; border-color: transparent !important; box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 1px 2px rgba(0,0,0,.1) !important }
+:root[data-tema="escuro"] .mp-barra .mp-kmz { background: #060c20 !important; box-shadow: 0 0 0 1px rgba(124,140,255,.35) !important }
+.ro .mp-barra .mp-kmz { display: none !important }
+:root[data-tema="escuro"] .mapa-area .mp-barra { background: transparent !important }
+@media (max-width: 899px) { .mp-barra .seg { min-width: 0; overflow-x: auto; scrollbar-width: none } }
+@media (max-width: 599px) { .mp-barra .mp-kmz { width: 40px; padding: 0 !important } .mp-barra .mp-kmz .t { display: none } }
+
+/* ficha do terreno em painel sobre o mapa (lupa da lista lateral) */
+.ficha-sheet { position: fixed; z-index: 30; top: 88px; right: 16px; bottom: 16px; width: min(560px, calc(100vw - 32px)); display: flex; flex-direction: column; background: var(--m-surface, #fff); border-radius: 16px; box-shadow: 0 2px 6px rgba(0,0,0,.15), 0 12px 32px rgba(0,0,0,.18); overflow: hidden }
+.fs-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 12px 12px 24px; border-bottom: 1px solid var(--m-outline-variant, #c4c7c5) }
+.fs-e { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #444746; margin-bottom: 4px }
+.fs-h h2 { font-size: 22px; line-height: 28px; font-weight: 400 }
+.fs-s { font-size: 13px; color: #444746; margin-top: 2px }
+.fs-b { flex: 1; overflow: auto; padding: 16px; overscroll-behavior: contain }
+.fs-f { display: flex; justify-content: flex-end; padding: 12px 16px; border-top: 1px solid var(--m-outline-variant, #c4c7c5) }
+.fs-ro .kv-ed, .fs-ro .ed, .fs-ro [data-a="edit"] { display: none !important }
+.fs-ro .kv:has(.kv-ed) { grid-template-columns: minmax(120px, 38%) minmax(0, 1fr) }
+:root[data-tema="escuro"] .ficha-sheet { background: #081028; box-shadow: 0 0 0 1px rgba(124,140,255,.35), 0 16px 40px rgba(0,0,0,.6) }
+:root[data-tema="escuro"] .fs-h, :root[data-tema="escuro"] .fs-f { border-color: #1a2240 }
+:root[data-tema="escuro"] .fs-e, :root[data-tema="escuro"] .fs-s { color: #aab4d6 }
+@media (max-width: 899px) {
+  .ficha-sheet { inset: 0; top: 0; width: auto; border-radius: 0; z-index: 35; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px) }
+  .fs-h { padding-left: 16px }
+  .fs-b { padding: 12px }
+  body[data-rota="mapa"] .fab { display: none !important }
+}

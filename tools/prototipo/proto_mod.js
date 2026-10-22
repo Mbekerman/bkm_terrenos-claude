@@ -13,7 +13,7 @@ UI.tk=UI.tk||{vista:'quadro',q:'',resp:'',ter:'',prio:'',atras:false,canc:false}
 // stand by, ganha e perdida com cores próprias e glifo, para não depender só da cor.
 const SIT={sem_negociacao:['Sem negociação','#8a8d91','·','#fff'],recebido:['Recebido','#8fc8f7','1','#1d2e5c'],
   viabilidade_inicial:['Viabilidade inicial','#4aa3f0','2','#fff'],negociacao:['Negociação','#0b74d6','3','#fff'],
-  minutagem:['Minutagem','#1d2e5c','4','#fff'],stand_by:['Stand by','#c98a2e','‖','#fff'],ganha:['Ganha','#6f9a3a','✓','#fff'],perdida:['Perdida','#9a3b30','×','#fff']};
+  minutagem:['Minutagem','#1d2e5c','4','#fff'],stand_by:['Stand by','#c98a2e','‖','#fff'],ganha:['Ganho','#6f9a3a','✓','#fff'],perdida:['Perdido','#9a3b30','×','#fff']};
 const sitMapa=t=>!t.neg?'sem_negociacao':t.neg.status==='ativo'?t.neg.etapa:t.neg.status;
 const sitChip=k=>`<span class="sitchip"><span class="sw" style="background:${SIT[k][1]}"></span>${SIT[k][0]}</span>`;
 const ativosBanco=()=>S.terrenos.filter(t=>t.situacao!=='arquivado');
@@ -26,7 +26,6 @@ const areaPoly=pts=>{if(!pts||pts.length<3)return null;const lat0=pts.reduce((s,
 const centro=pts=>[pts.reduce((s,p)=>s+p[0],0)/pts.length,pts.reduce((s,p)=>s+p[1],0)/pts.length];
 const proximos=t=>t.lat==null?[]:(S.pontos||[]).map(p=>({...p,d:distKm(t.lat,t.lng,p.lat,p.lng)})).filter(p=>p.d<=15).sort((a,b)=>a.d-b.d);
 const rotaUrl=(t,p)=>`https://www.google.com/maps/dir/?api=1&origin=${t.lat},${t.lng}&destination=${p.lat},${p.lng}&travelmode=driving`;
-const gmapsUrl=t=>`https://www.google.com/maps/search/?api=1&query=${t.lat},${t.lng}`;
 const CAT_POI={transporte:'Transporte',escola:'Escola',saude:'Saúde',comercio:'Comércio',lazer:'Lazer',empresa:'Empresa',outro:'Outro'};
 /* entorno do terreno: lugares do Google a até RAIO_PE metros a pé, por categoria (no banco: app.entorno_categorias) */
 const RAIO_PE=1500;
@@ -91,13 +90,37 @@ const COLS_TERRENOS=[
 const attrAbrir=from=>t=>`data-a="abrir" data-id="${t.id}" data-from="${from}" tabindex="0"`;
 
 /* ===================== MAPA ===================== */
-let MAPA=null,MINI=null,PINS=null,POIS=null,DES=null,BASE=null;
+let MAPA=null,MINI=null,PINS=null,POIS=null,CONC=null,DES=null,BASE=null;
 const CAMADAS_L={mapa:'Mapa',ruas:'Ruas',satelite:'Satélite',satrot:'Satélite + rótulos'},CAMADAS_G={mapa:'Mapa',ruas:'Relevo',satelite:'Satélite',satrot:'Satélite + rótulos'};
 // motor do mapa: Google quando a chave carrega; Leaflet (Esri/OSM) como reserva
 let GG=false;
 function setBase(k){return GG?G_setBase(k):L_setBase(k)}
 function desenhaPins(){return GG?G_desenhaPins():L_desenhaPins()}
-function desenhaPois(){return GG?G_desenhaPois():L_desenhaPois()}
+function desenhaPois(){desenhaConc();return GG?G_desenhaPois():L_desenhaPois()}
+function desenhaConc(){return GG?G_desenhaConc():L_desenhaConc()}
+function mostrarConc(on){if(GG)return G_mostrarConc(on);if(MAPA&&CONC){on?CONC.addTo(MAPA):MAPA.removeLayer(CONC)}}
+const concTip=c=>`${esc(c.nome)}${c.empresa?' · '+esc(c.empresa):''}`;
+/* ---------- menu do clique direito no mapa (no toque, segurar no vazio): novo terreno, ponto de interesse ou concorrência ali ---------- */
+function ctxAbrir(x,y,lat,lng){ctxFechar();if(UI.mpModo||UI.role==='Leitura')return;const area=$('.mapa-area');if(!area)return;UI.ctxLL={lat,lng};
+  const m=document.createElement('div');m.className='mp-ctx';m.setAttribute('role','menu');
+  m.innerHTML=`<button role="menuitem" data-a="ctx-terreno">${ic('add',18)}Novo terreno aqui</button><button role="menuitem" data-a="ctx-poi">${ic('add',18)}Novo ponto de interesse</button><button role="menuitem" data-a="ctx-conc">${ic('add',18)}Nova concorrência</button>`;
+  area.appendChild(m);const W=area.clientWidth,H=area.clientHeight,w=m.offsetWidth,h=m.offsetHeight;
+  m.style.left=Math.max(8,Math.min(W-w-8,x))+'px';m.style.top=Math.max(8,Math.min(H-h-8,y))+'px';m.querySelector('button')?.focus({preventScroll:true})}
+function ctxFechar(){$('.mapa-area .mp-ctx')?.remove()}
+function ctxAcao(a){const ll=UI.ctxLL;ctxFechar();if(!ll)return;
+  if(a==='ctx-terreno')UI.novoLoc=ll,UI.modal='novo';else if(a==='ctx-poi')UI.novoPoi=ll,UI.modal='poi';else UI.novoConc=ll,UI.modal='conc';renderModal()}
+/* liga o menu no contêiner do mapa: clique direito (mouse) e toque longo no vazio (celular) */
+function ctxGestos(el,ponto){if(!el||el.dataset.ctx)return;el.dataset.ctx='1';const xy=e=>{const r=el.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top]};
+  let tm=null,x0=0,y0=0;const limpa=()=>{clearTimeout(tm);tm=null};
+  /* no Android o toque longo também dispara contextmenu, com o dedo na tela: ali vale só o temporizador abaixo */
+  el.addEventListener('contextmenu',e=>{e.preventDefault();if((UI.ctxTipo||'mouse')!=='mouse'||e.target.closest('.v-alvo'))return;const [x,y]=xy(e),ll=ponto(x,y);if(ll)ctxAbrir(x,y,ll.lat,ll.lng)});
+  el.addEventListener('pointerdown',e=>{UI.ctxTipo=e.pointerType;if(e.pointerType==='mouse'||!e.isPrimary||UI.mpModo)return;limpa();x0=e.clientX;y0=e.clientY;const ev=e;
+    tm=setTimeout(()=>{tm=null;if(Date.now()-(UI.polyLongoEm||0)<1200)return; /* segurou sobre a poligonal: é edição */
+      UI.ctxToqueEm=Date.now();const [x,y]=xy(ev),ll=ponto(x,y);if(ll)aoSoltar(()=>ctxAbrir(x,y,ll.lat,ll.lng))},650)},true);
+  el.addEventListener('pointermove',e=>{if(tm&&Math.hypot(e.clientX-x0,e.clientY-y0)>8)limpa()},true);
+  ['pointerup','pointercancel'].forEach(t=>el.addEventListener(t,limpa,true))}
+document.addEventListener('pointerdown',e=>{if($('.mp-ctx')&&!e.target.closest('.mp-ctx'))ctxFechar()},true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('.mp-ctx')){ctxFechar();e.preventDefault()}});
 function desenhaRascunho(){return GG?G_desenhaRascunho():L_desenhaRascunho()}
 function initMapa(){return GG?G_initMapa():L_initMapa()}
 function focar(t){return GG?G_focar(t):L_focar(t)}
@@ -118,16 +141,44 @@ function pinIcon(k,sel){const [,c,g,fg]=SIT[k];return L.divIcon({className:'pin'
 const poiIcon=()=>L.divIcon({className:'poi',html:'<span class="poi-b"></span>',iconSize:[14,14],iconAnchor:[7,7],tooltipAnchor:[0,-8]});
 function mpVisiveis(){const m=UI.mp,q=m.q.trim().toLowerCase();
   return ativosBanco().filter(t=>!m.ocultas.includes(sitMapa(t))&&(!m.zona||t.zona===m.zona)&&(!m.cor||t.corretores.some(x=>x.principal&&x.cid===m.cor))&&(!q||bateBusca(t,q)))}
-function mpLista(){const v=mpVisiveis(),sem=v.filter(t=>t.lat==null);
-  const cols=[{k:'nome',l:'Terreno',cls:'esq',v:t=>`<span class="cod">${t.codigo}</span><div class="t1">${esc(t.nome)}</div><div class="t2">${esc(t.bairro||'')}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div>`,s:t=>t.nome},
-    {k:'sit',l:'Situação',v:t=>sitChip(sitMapa(t)),s:t=>Object.keys(SIT).indexOf(sitMapa(t))},{k:'valor',l:'Valor',cls:'num',v:t=>{const o=ofertaRef(t);return o?.valor?mi(o.valor):'<span class="faint">—</span>'},s:t=>ofertaRef(t)?.valor??null}];
-  return `${entornoHtml()}<div class="mp-resumo"><span><b>${v.length}</b> terrenos</span><span><b>${num(v.reduce((s,t)=>s+(areaAdotada(t)||0),0))}</b> m²</span><span><b>${mi(v.reduce((s,t)=>s+(ofertaRef(t)?.valor||0),0))}</b> pedidos</span></div>
-  ${tabela('mapa',v,cols,{cls:'compacta',attr:t=>`data-a="mp-foco" data-id="${t.id}" tabindex="0" class="${UI.mpSel===t.id?'sel':''}"`,vazio:'Nenhum terreno com esses filtros.'})}
-  ${sem.length?`<div class="hint" style="margin-top:8px">${sem.length} sem localização. Abra a linha e use “Marcar no mapa”.</div>`:''}`;
+/* lista lateral do mapa: só o número do pino (etapa), o nome e a área; a lupa abre a ficha.
+   Clicar no pino ou na poligonal seleciona o terreno aqui (não há balão no mapa). */
+function mpItem(t,cartao){const k=sitMapa(t),[nm,c,g,fg]=SIT[k],sel=UI.mpSel===t.id,ad=areaAdotada(t)||(t.poly?areaPoly(t.poly):null);
+  const acoes=sel&&t.lat!=null?`<div class="mp-it-a">${UI.role!=='Leitura'?`<button class="linkbtn" data-a="mp-desenhar" data-id="${t.id}">${t.poly?'Editar':'Desenhar'} poligonal</button>`:''}${GG?`<button class="linkbtn" data-a="mp-sv" data-id="${t.id}">Street View</button><button class="linkbtn" data-a="mp-entorno" data-id="${t.id}">O que tem perto</button>`:''}</div>`:'';
+  return `<div class="mp-it${sel?' sel':''}${cartao?' cartao':''}" data-a="mp-foco" data-id="${t.id}" tabindex="0" role="listitem" aria-current="${sel}">
+    <span class="pin-mini" style="background:${c};color:${fg}" title="${esc(nm)}">${g}</span>
+    <div class="mp-it-t"><div class="t1">${esc(t.nome)}</div><div class="t2">${ad?m2(ad):'Área não informada'} · ${esc(nm)}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div></div>
+    <button class="iconbtn mp-lupa" data-a="fs-abrir" data-id="${t.id}" title="Ver ficha" aria-label="Ver ficha de ${esc(t.nome)}">${bi('busca',22)}</button>${acoes}</div>`}
+function mpLista(){const v=mpVisiveis(),sem=v.filter(t=>t.lat==null),ord=Object.keys(SIT);
+  const rows=v.slice().sort((a,b)=>ord.indexOf(sitMapa(a))-ord.indexOf(sitMapa(b))||a.nome.localeCompare(b.nome,'pt'));
+  return `${entornoHtml()}<div class="mp-resumo"><span><b>${v.length}</b> terrenos</span><span><b>${num(v.reduce((s,t)=>s+(areaAdotada(t)||0),0))}</b> m²</span></div>
+  ${rows.length?`<div class="mp-lst" role="list">${rows.map(t=>mpItem(t)).join('')}</div>`:'<div class="empty">Nenhum terreno com esses filtros.</div>'}
+  ${sem.length?`<div class="hint" style="margin-top:8px">${sem.length} sem localização. Clique na linha para marcar no mapa.</div>`:''}`;
 }
+/* seleciona o terreno a partir do mapa: acende o pino, destaca a linha (rolando só a lista) e, no celular, mostra o cartão sobre o mapa */
+function mpMarcarPinos(){const on=(id,el)=>el?.classList.toggle('sel',UI.mpSel===id);  /* sem redesenhar: o segundo clique de um duplo clique precisa cair no mesmo pino */
+  if(GG)gPinsSel();else PINS?.eachLayer(l=>{if(l._terreno){on(l._terreno,l.getElement());l.setZIndexOffset(UI.mpSel===l._terreno?1000:0)}})}
+/* ficha do terreno num painel sobre o mapa (a lupa da lista): a Visão geral, só para ler, sem o mapa; "Abrir ficha completa" sai do mapa */
+function fichaSheet(){let el=$('#ficha-sheet');const t=UI.fichaSheet&&UI.route==='mapa'?T(UI.fichaSheet):null;
+  if(!t){UI.fichaSheet=null;el?.remove();return}
+  if(!el){el=document.createElement('aside');el.id='ficha-sheet';el.className='ficha-sheet';el.setAttribute('role','dialog');el.setAttribute('aria-label','Ficha do terreno');document.body.appendChild(el)}
+  const end=[t.logradouro&&t.logradouro+(t.numero?', '+t.numero:''),t.bairro,t.zona&&'Zona '+OPT.zona[t.zona]].filter(Boolean).join(' · ');
+  el.innerHTML=`<div class="fs-h"><div class="fs-ht"><div class="fs-e"><span class="num">${t.codigo}</span>${sitChip(sitMapa(t))}</div><h2>${esc(t.nome)}</h2>${end?`<div class="fs-s">${esc(end)}</div>`:''}</div>
+    <button class="iconbtn" data-a="fs-fechar" aria-label="Fechar" title="Fechar (Esc)">${ic('close',22)}</button></div>
+    <div class="fs-b bl-c fs-ro">${abaGeral(t)}</div>
+    <div class="fs-f"><button class="btn primary" data-a="abrir" data-id="${t.id}" data-tab="geral" data-from="mapa">Abrir ficha completa</button></div>`;
+  el.querySelector('.g-loc')?.remove();el.querySelector('.fs-b').scrollTop=0}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&UI.fichaSheet&&!UI.modal&&!$('.mp-ctx')&&!$('.v-menu')){UI.fichaSheet=null;fichaSheet();e.preventDefault()}});
+function mpSelecionar(id){UI.mpSel=id;mpMarcarPinos();if(UI.fichaSheet&&id&&id!==UI.fichaSheet){UI.fichaSheet=id;fichaSheet()}const l=$('#mp-lista');if(l)l.innerHTML=mpLista();mpCartao();
+  const lado=$('.mapa-lado'),it=lado?.querySelector(`.mp-it[data-id="${id}"]`);
+  if(it&&getComputedStyle(lado).overflowY==='auto'){const a=lado.getBoundingClientRect(),r=it.getBoundingClientRect();
+    if(r.top<a.top||r.bottom>a.bottom)lado.scrollBy({top:r.top-a.top-a.height/2+r.height/2,behavior:'smooth'})}}
+function mpCartao(){const c=$('#mp-cartao');if(!c)return;const t=UI.mpSel&&T(UI.mpSel);c.innerHTML=t&&!UI.mpModo&&mpVisiveis().includes(t)?mpItem(t,true):''}
 function mpLegenda(){const base=ativosBanco();
   return Object.keys(SIT).map(k=>{const n=base.filter(t=>sitMapa(t)===k).length;const on=!UI.mp.ocultas.includes(k);
-    return `<button type="button" class="lg-i" data-a="mp-sit" data-v="${k}" aria-pressed="${on}"><span class="pin-mini" style="background:${SIT[k][1]};color:${SIT[k][3]}">${SIT[k][2]}</span>${SIT[k][0]}<span class="n">${n}</span></button>`}).join('');
+    return `<button type="button" class="lg-i" data-a="mp-sit" data-v="${k}" aria-pressed="${on}"><span class="pin-mini" style="background:${SIT[k][1]};color:${SIT[k][3]}">${SIT[k][2]}</span>${SIT[k][0]}<span class="n">${n}</span></button>`}).join('')
+    +`<hr class="lg-sep"><button type="button" class="lg-i" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}"><span class="lg-poi"><span class="poi-b"></span></span>Pontos de interesse<span class="n">${(S.pontos||[]).length}</span></button>`
+    +`<button type="button" class="lg-i" data-a="mp-conc" aria-pressed="${UI.mpConc!==false}"><span class="lg-poi"><span class="conc-b"></span></span>Concorrência<span class="n">${(S.concorrentes||[]).length}</span></button>`;
 }
 function pgMapa(){
   const opt=(o,v)=>Object.entries(o).map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${esc(l)}</option>`).join('');
@@ -144,10 +195,10 @@ function pgMapa(){
     <div id="mapa" class="mapa"></div>
     <div class="mp-barra">
       <div class="seg" role="group" aria-label="Fundo do mapa">${Object.entries(GG?CAMADAS_G:CAMADAS_L).map(([k,l])=>`<button type="button" data-a="mp-base" data-v="${k}" aria-pressed="${(UI.mpBase||'mapa')===k}">${l}</button>`).join('')}</div>
-      <div class="mp-acoes"><button class="btn sm" data-a="mp-modo" data-v="pin">${ic('add',16)}Novo pin</button><button class="btn sm" data-a="mp-modo" data-v="poi">${ic('add',16)}Ponto de interesse</button><button class="btn sm" data-a="mp-kmz">${ic('upload',16)}Importar KMZ/KML</button>
-      <button class="btn sm ${UI.mpPoi===false?'':'on'}" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}">Pontos de interesse</button></div>
+      <button class="btn sm mp-kmz" data-a="mp-kmz" title="Importar KMZ/KML" aria-label="Importar KMZ/KML">${ic('upload',16)}<span class="t">Importar KMZ/KML</span></button>
     </div>
     <div id="mp-modo" class="mp-modo" aria-live="polite">${modoBanner()}</div>
+    <div id="mp-cartao" class="mp-cartao" aria-live="polite"></div>
     <details class="mp-legenda" ${UI.mpLeg??innerWidth>899?'open':''}><summary>Legenda</summary><div id="mp-leg" class="mp-leg-l">${mpLegenda()}</div></details>
     <div class="mp-aviso">O fundo do mapa (ruas e satélite) não carrega neste link de visualização, que bloqueia imagens externas. Os pins, poligonais e distâncias funcionam. No app publicado, ou abrindo o arquivo do protótipo no navegador, o fundo aparece.</div>
   </section></div>`;
@@ -157,7 +208,8 @@ function modoBanner(){const m=UI.mpModo;if(!m)return '';
   if(m==='pin')return `<span>Clique no mapa onde fica o terreno novo.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
   if(m==='poi')return `<span>Clique no mapa para marcar o ponto de interesse.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
   if(m==='marcar')return `<span>Clique no mapa para localizar <b>${esc(t?.nome)}</b>.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
-  if(m==='desenhar'||m==='editar'){const n=(UI.desenho||[]).length,a=areaPoly(UI.desenho),tq=TOQUE(),seg=tq?'toque e segure':'dê dois cliques';
+  if(m==='desenhar'||m==='editar'){const n=(UI.desenho||[]).length,a=areaPoly(UI.desenho),tq=TOQUE(),seg=tq?'toque e segure':'clique com o botão direito';
+    if(m==='editar'&&!tq)return ''; /* desktop: sem janelinha; Desfazer e Cancelar ficam no menu do ponto (clique direito), Ctrl+Z e Esc */
     if(m==='editar'&&tq)return `<span>Arraste os pontos; segure um ponto para excluir ou adicionar outro. Toque fora para concluir. <span class="mp-q">${n} pontos${a?` · ${m2(a)}`:''}</span></span><button class="btn sm text" data-a="mp-desfazer" ${(UI.desHist||[]).length?'':'disabled'}>Desfazer</button><button class="btn sm text" data-a="mp-sair">Cancelar</button><button class="btn sm primary" data-a="mp-concluir">Concluir</button>`;
     const dica=m==='editar'?`arraste os pontos; ${seg} num ponto para excluí-lo ou adicionar outro depois dele. ${tq?'Toque':'Clique'} fora da poligonal para concluir.`
       :`${tq?'toque':'clique'} no mapa para marcar os vértices.${n?` Arraste um ponto para ajustá-lo; ${seg} nele para mais opções.`:''}`;
@@ -166,24 +218,19 @@ function modoBanner(){const m=UI.mpModo;if(!m)return '';
 }
 function L_setBase(k){if(!MAPA)return;UI.mpBase=k;if(BASE)MAPA.removeLayer(BASE);BASE=camada(k,MAPA.getContainer().closest('.mapa-area')||MAPA.getContainer()).addTo(MAPA);BASE.eachLayer(l=>l.bringToBack());
   document.querySelectorAll('[data-a="mp-base"]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===k))}
-function popupHtml(t){const o=ofertaRef(t),ad=areaAdotada(t),k=sitMapa(t),px=proximos(t).slice(0,3);
-  return `<div class="pop"><div class="pop-e"><span class="num">${t.codigo}</span>${sitChip(k)}</div><div class="pop-t">${esc(t.nome)}</div>
-  <div class="pop-s">${esc([t.bairro,t.zona&&'Zona '+OPT.zona[t.zona]].filter(Boolean).join(' · '))}</div>
-  <div class="pop-n"><span>${ad?m2(ad):'Área não informada'}</span><span>${o?.valor?mi(o.valor):'Sem valor'}</span>${t.poly?`<span>Poligonal ${m2(areaPoly(t.poly))}</span>`:''}</div>
-  ${px.length?`<div class="pop-poi">${px.map(p=>`<div><span>${esc(p.nome)}</span><b>${fKm(p.d)}</b>${GG?`<button class="linkbtn" data-a="mp-rota" data-id="${t.id}" data-p="${p.id}">Rota</button>`:`<a href="${rotaUrl(t,p)}" target="_blank" rel="noopener">Rota</a>`}</div>`).join('')}</div>`:''}
-  ${GG?`<div class="pop-a"><button class="btn sm" data-a="mp-sv" data-id="${t.id}">Street View</button><button class="btn sm" data-a="mp-entorno" data-id="${t.id}">O que tem perto</button></div>`:''}
-  <div class="pop-a"><button class="btn sm primary" data-a="abrir" data-id="${t.id}" data-tab="geral" data-from="mapa">Abrir ficha</button><button class="btn sm ed" data-a="mp-desenhar" data-id="${t.id}">${t.poly?'Editar':'Desenhar'} poligonal</button><button class="btn sm text ed" data-a="mp-kmz" data-id="${t.id}">Poligonal de KMZ</button></div></div>`}
 function L_desenhaPins(){if(!MAPA||!PINS)return;PINS.clearLayers();
   mpVisiveis().filter(t=>t.lat!=null).forEach(t=>{const k=sitMapa(t);
     if(t.poly&&!(UI.mpModo&&UI.mpAlvo===t.id)){const pg=L.polygon(t.poly,{color:SIT[k][1],weight:2,fillOpacity:.18,interactive:!UI.mpModo})
-      .on('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<700)return;clearTimeout(pg._tc);pg._tc=setTimeout(()=>{if(!UI.mpModo)mk.openPopup()},260)})
+      .on('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<700)return;clearTimeout(pg._tc);pg._tc=setTimeout(()=>{if(!UI.mpModo)mpSelecionar(t.id)},260)})
       .on('dblclick',e=>{L.DomEvent.stop(e);clearTimeout(pg._tc);editarPoligonal(t.id)});
       pg.on('add',()=>polyGestos(pg.getElement(),t.id));pg.addTo(PINS)}
-    const mk=L.marker([t.lat,t.lng],{icon:pinIcon(k,UI.mpSel===t.id),title:t.nome,riseOnHover:true,keyboard:!UI.mpModo,interactive:!UI.mpModo}).bindPopup(()=>popupHtml(t),{maxWidth:320,minWidth:260,autoPanPaddingTopLeft:[20,150],autoPanPaddingBottomRight:[20,20]}).bindTooltip(esc(t.nome),{direction:'top'});
-    mk.on('popupopen',()=>{if(Date.now()-(UI.polyLongoEm||0)<900){mk.closePopup();return}UI.mpSel=t.id;const l=$('#mp-lista');if(l)l.innerHTML=mpLista()});
+    const mk=L.marker([t.lat,t.lng],{icon:pinIcon(k,UI.mpSel===t.id),title:t.nome,riseOnHover:true,keyboard:!UI.mpModo,interactive:!UI.mpModo}).bindTooltip(esc(t.nome),{direction:'top'});
+    mk.on('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<900)return;mpSelecionar(t.id)});
     /* o pino fica sobre a poligonal: segurar nele (ou dois cliques) também entra em edição */
     if(t.poly&&t.poly.length>=3){mk.on('add',()=>polyGestos(mk.getElement(),t.id));mk.on('dblclick',e=>{L.DomEvent.stop(e);editarPoligonal(t.id)})}
     mk.addTo(PINS);mk._terreno=t.id})}
+const concIcon=()=>L.divIcon({className:'conc',html:'<span class="conc-b"></span>',iconSize:[16,16],iconAnchor:[8,8],tooltipAnchor:[0,-10]});
+function L_desenhaConc(){if(!MAPA||!CONC)return;CONC.clearLayers();(S.concorrentes||[]).forEach(c=>L.marker([c.lat,c.lng],{icon:concIcon(),title:c.nome,interactive:!UI.mpModo}).bindTooltip(concTip(c),{direction:'top'}).addTo(CONC))}
 function L_desenhaPois(){if(!MAPA||!POIS)return;POIS.clearLayers();(S.pontos||[]).forEach(p=>L.marker([p.lat,p.lng],{icon:poiIcon(),title:p.nome,interactive:!UI.mpModo}).bindTooltip(`${esc(p.nome)} · ${CAT_POI[p.cat]||''}`,{direction:'top'}).addTo(POIS))}
 function L_desenhaRascunho(){if(!DES)return;DES.clearLayers();const p=UI.desenho||[];if(!p.length)return;
   (p.length>=3?L.polygon(p,{color:'#0094fe',weight:2,dashArray:UI.mpModo==='editar'?null:'6 4',fillOpacity:UI.mpModo==='editar'?.2:.12,interactive:false}):L.polyline(p,{color:'#0094fe',weight:2,dashArray:'6 4',interactive:false})).addTo(DES);
@@ -196,12 +243,13 @@ function L_desenhaRascunho(){if(!DES)return;DES.clearLayers();const p=UI.desenho
     mk.on('dragend',e=>{const ll=e.target.getLatLng();vArrastado(i,ll.lat,ll.lng)});
     mk.addTo(DES)})}
 function mpRefresh(){desenhaPois();const l=$('#mp-lista');if(l)l.innerHTML=mpLista();const g=$('#mp-leg');if(g)g.innerHTML=mpLegenda();const m=$('#mp-modo');if(m)m.innerHTML=modoBanner();
-  if(MAPA){$('#mapa')?.classList.toggle('modo',!!UI.mpModo);desenhaPins();desenhaRascunho();vMenuDesenha()}}
+  if(MAPA){$('#mapa')?.classList.toggle('modo',!!UI.mpModo);desenhaPins();desenhaRascunho();vMenuDesenha()}mpCartao()}
 function L_initMapa(){const el=$('#mapa');if(!el)return;
   if(!window.L){el.innerHTML='<div class="mapa-erro">Não foi possível carregar a biblioteca de mapas. Verifique a conexão e recarregue a página.</div>';return}
   MAPA=L.map(el,{zoomControl:true,doubleClickZoom:false});
   L.control.scale({imperial:false,position:'bottomright'}).addTo(MAPA);
-  setBase(UI.mpBase||'mapa');PINS=L.layerGroup().addTo(MAPA);POIS=L.layerGroup();DES=L.layerGroup().addTo(MAPA);if(UI.mpPoi!==false)POIS.addTo(MAPA);
+  setBase(UI.mpBase||'mapa');PINS=L.layerGroup().addTo(MAPA);POIS=L.layerGroup();CONC=L.layerGroup();DES=L.layerGroup().addTo(MAPA);if(UI.mpPoi!==false)POIS.addTo(MAPA);if(UI.mpConc!==false)CONC.addTo(MAPA);
+  ctxGestos(el,(x,y)=>{const ll=MAPA.containerPointToLatLng([x,y]);return {lat:ll.lat,lng:ll.lng}});MAPA.on('movestart zoomstart',ctxFechar);
   desenhaPins();desenhaPois();desenhaRascunho();el.classList.toggle('modo',!!UI.mpModo);
   const vista=UI.mpView,enquadrar=()=>{if(vista)return MAPA.setView(vista.c,vista.z);const pts=ativosBanco().filter(t=>t.lat!=null).map(t=>[t.lat,t.lng]);pts.length?MAPA.fitBounds(pts,{padding:[48,48],maxZoom:15}):MAPA.setView([-23.55,-46.63],11)};
   enquadrar();
@@ -209,10 +257,11 @@ function L_initMapa(){const el=$('#mapa');if(!el)return;
   const mapaAtual=MAPA;requestAnimationFrame(()=>setTimeout(()=>{if(MAPA!==mapaAtual)return;MAPA.invalidateSize();enquadrar();if(UI.mpFocoPend){const t=T(UI.mpFocoPend);UI.mpFocoPend=null;if(t&&t.lat!=null)focar(t)}},60));
   MAPA.on('moveend',()=>{UI.mpView={c:MAPA.getCenter(),z:MAPA.getZoom()};vMenuDesenha()});MAPA.on('movestart zoomstart',()=>$('.mapa-area .v-menu')?.remove());
   MAPA.on('preclick',e=>mapaClique(e.latlng.lat,e.latlng.lng));
+  MAPA.on('click',e=>{if(!UI.mpModo&&UI.mpSel&&!e.originalEvent?.target?.closest?.('.leaflet-interactive'))mpSelecionar(null)}); /* clique no vazio tira a seleção */
   if(UI.mpFoco){UI.mpFocoPend=UI.mpFoco;UI.mpFoco=null}
 }
 function L_focar(t){if(!MAPA)return;UI.mpSel=t.id;if(t.poly)MAPA.fitBounds(t.poly,{maxZoom:18,padding:[40,40]});else MAPA.setView([t.lat,t.lng],Math.max(MAPA.getZoom(),16));
-  desenhaPins();PINS.eachLayer(l=>{if(l._terreno===t.id)l.openPopup()})}
+  mpSelecionar(t.id)}
 function mapaClique(lat,lng){const m=UI.mpModo;if(!m)return;
   if(m==='pin'){UI.mpModo=null;UI.novoLoc={lat,lng};UI.modal='novo';mpRefresh();renderModal();return}
   if(m==='poi'){UI.mpModo=null;UI.novoPoi={lat,lng};UI.modal='poi';mpRefresh();renderModal();return}
@@ -232,17 +281,18 @@ function mapaClique(lat,lng){const m=UI.mpModo;if(!m)return;
 }
 /* ---------- edição da poligonal ----------
    Entrar: celular, tocar e segurar sobre a poligonal; desktop, dois cliques sobre ela (ou "Editar poligonal" no balão).
-   Editando: todos os pontos aparecem e podem ser arrastados. Tocar e segurar (celular) ou dois cliques (desktop) num ponto
-   abre Excluir ponto / Adicionar ponto depois. Toque ou clique fora da poligonal conclui. */
+   Editando: todos os pontos aparecem e podem ser arrastados. Tocar e segurar (celular), clique direito ou dois cliques (desktop) num ponto
+   abre Excluir ponto / Adicionar ponto depois. Toque ou clique fora da poligonal conclui.
+   No desktop a edição não tem a barra de aviso: o menu do ponto traz também Desfazer e Cancelar edição (Ctrl+Z e Esc). */
 const TOQUE=()=>matchMedia('(pointer: coarse)').matches;
 function desGuardar(){(UI.desHist=UI.desHist||[]).push((UI.desenho||[]).map(x=>x.slice()));if(UI.desHist.length>60)UI.desHist.shift()}
 function desAtualizar(){desenhaRascunho();const b=$('#mp-modo');if(b)b.innerHTML=modoBanner();vMenuDesenha()}
 function dentroPoly(lat,lng,p){let d=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const [yi,xi]=p[i],[yj,xj]=p[j];if((yi>lat)!==(yj>lat)&&lng<(xj-xi)*(lat-yi)/(yj-yi)+xi)d=!d}return d}
 function editarPoligonal(id){const t=T(id);if(!t||!t.poly||t.poly.length<3||UI.role==='Leitura')return;
   Object.assign(UI,{mpModo:'editar',mpAlvo:id,desEditando:true,desenho:t.poly.map(q=>q.slice()),desHist:[],vSel:null,vMenu:false,vMover:false,desOrig:JSON.stringify(t.poly),polyLongoEm:Date.now()});
-  fecharPopup();mpRefresh();enquadrarEdicao(t.poly)}
+  fecharPopup();mpRefresh();enquadrarEdicao(t.poly);if(!TOQUE())toast('Editando a poligonal. Clique direito num ponto para mais opções; clique fora para salvar.')}
 /* enquadra a poligonal deixando livre a faixa do aviso (embaixo, no celular) */
-function enquadrarEdicao(poly){if(!MAPA||!poly)return;const cel=matchMedia('(max-width: 899px)').matches,pad={top:cel?70:150,bottom:cel?150:40,left:40,right:40};
+function enquadrarEdicao(poly){if(!MAPA||!poly)return;const cel=matchMedia('(max-width: 899px)').matches,pad={top:cel?70:60,bottom:cel?150:40,left:40,right:40};
   if(GG){const b=new google.maps.LatLngBounds();poly.forEach(q=>b.extend(gLL(q[0],q[1])));MAPA.fitBounds(b,pad);google.maps.event.addListenerOnce(MAPA,'idle',()=>{if(MAPA.getZoom()>19)MAPA.setZoom(19)})}
   else MAPA.fitBounds(poly,{maxZoom:19,paddingTopLeft:[pad.left,pad.top],paddingBottomRight:[pad.right,pad.bottom]})}
 function vSelecionar(i){UI.vSel=i;UI.vMenu=true;UI.vToqueEm=Date.now();desAtualizar()}
@@ -250,14 +300,21 @@ function vFecharMenu(){UI.vMenu=false;UI.vSel=null;desAtualizar()}
 function vMenuDesenha(){const area=$('.mapa-area');if(!area)return;area.querySelector('.v-menu')?.remove();
   if(!UI.vMenu||UI.vSel==null||!['desenhar','editar'].includes(UI.mpModo))return;const q=(UI.desenho||[])[UI.vSel];if(!q)return;
   const px=pontoNaTela(q[0],q[1]);if(!px)return;const m=document.createElement('div');m.className='v-menu';m.setAttribute('role','menu');
-  m.innerHTML=`<div class="v-t">Ponto ${UI.vSel+1}</div><button role="menuitem" data-a="v-depois">Adicionar ponto depois</button><button role="menuitem" data-a="v-excluir" class="crit">Excluir ponto</button>`;
+  const p=UI.desenho,a=areaPoly(p),ed=UI.mpModo==='editar'&&!TOQUE();
+  m.innerHTML=`<div class="v-t">Ponto ${UI.vSel+1} de ${p.length}${a?` · ${m2(a)}`:''}</div><button role="menuitem" data-a="v-depois">Adicionar ponto depois</button><button role="menuitem" data-a="v-excluir" class="crit">Excluir ponto</button>`
+    +(ed?`<hr><button role="menuitem" data-a="v-desfazer" ${(UI.desHist||[]).length?'':'disabled'}>Desfazer<kbd>${/Mac/.test(navigator.platform)?"⌘Z":"Ctrl+Z"}</kbd></button><button role="menuitem" data-a="v-cancelar">Cancelar edição<kbd>Esc</kbd></button>`:'');
   area.appendChild(m);const W=area.clientWidth,H=area.clientHeight,w=m.offsetWidth,h=m.offsetHeight,ar=area.getBoundingClientRect();
   /* parte visível da área do mapa (a barra superior da página pode cobrir o topo) */
   const topo=Math.max(8,(document.querySelector('.top')?.getBoundingClientRect().bottom||0)-ar.top+8),base=Math.min(H,innerHeight-ar.top)-8;
   let x=px.x-w/2,y=px.y-h-24;if(y<topo)y=px.y+24;m.style.left=Math.max(8,Math.min(W-w-8,x))+'px';m.style.top=Math.max(topo,Math.min(base-h,y))+'px';
   m.querySelector('button')?.focus({preventScroll:true})}
 function pontoNaTela(lat,lng){if(!MAPA)return null;if(GG)return typeof gPontoNaTela==='function'?gPontoNaTela(lat,lng):null;const p=MAPA.latLngToContainerPoint([lat,lng]);return {x:p.x,y:p.y}}
-function vAcao(a){const i=UI.vSel,p=UI.desenho||[];if(i==null)return;
+function desDesfazer(){const h=UI.desHist||[];if(!h.length)return false;UI.desenho=h.pop();UI.vSel=null;UI.vMenu=false;UI.vMover=false;mpRefresh();return true}
+function desCancelar(){Object.assign(UI,{mpModo:null,desenho:null,desHist:null,vSel:null,vMenu:false,vMover:false});mpRefresh();toast('Edição cancelada, poligonal sem mudanças.')}
+function vAcao(a){const i=UI.vSel,p=UI.desenho||[];
+  if(a==='v-desfazer'){if(!desDesfazer())vFecharMenu();return}
+  if(a==='v-cancelar'){desCancelar();return}
+  if(i==null)return;
   if(a==='v-excluir'){if(UI.mpModo==='editar'&&p.length<=3){toast('A poligonal precisa de pelo menos 3 pontos.',true);vFecharMenu();return}
     desGuardar();p.splice(i,1);UI.vSel=null;UI.vMenu=false;desAtualizar();toast(`Ponto ${i+1} excluído.`);return}
   if(a==='v-depois'){if(p.length<2){vFecharMenu();return}desGuardar();const b=p[(i+1)%p.length];
@@ -268,11 +325,12 @@ function vAcao(a){const i=UI.vSel,p=UI.desenho||[];if(i==null)return;
    redesenhar o mapa com o dedo apoiado deixaria o arraste do mapa preso */
 function aoSoltar(fn){if(navigator.vibrate)try{navigator.vibrate(15)}catch(e){}let feito=false;const ok=()=>{if(feito)return;feito=true;['pointerup','pointercancel','touchend','touchcancel'].forEach(t=>document.removeEventListener(t,ok,true));setTimeout(()=>{UI.polyLongoEm=Date.now();UI.vToqueEm=Date.now();fn()},0)};
   ['pointerup','pointercancel','touchend','touchcancel'].forEach(t=>document.addEventListener(t,ok,true))}
-/* gestos num ponto: arrastar move; segurar (toque) ou dois cliques (mouse) abre o menu */
+/* gestos num ponto: arrastar move; segurar (toque), clique direito ou dois cliques (mouse) abre o menu.
+   O clique direito só vale com mouse: no Android o toque longo também dispara contextmenu, com o dedo ainda na tela. */
 function vGestos(el,i){if(!el||el.dataset.vg)return;el.dataset.vg='1';el.classList.add('v-ponto');
-  let tm=null,x0=0,y0=0;const limpa=()=>{clearTimeout(tm);tm=null};
-  el.addEventListener('contextmenu',e=>e.preventDefault());
-  el.addEventListener('pointerdown',e=>{UI.vToqueEm=Date.now();x0=e.clientX;y0=e.clientY;
+  let tm=null,x0=0,y0=0,tipo='';const limpa=()=>{clearTimeout(tm);tm=null};
+  el.addEventListener('contextmenu',e=>{e.preventDefault();e.stopPropagation();if((e.pointerType||tipo)==='mouse'){UI.vToqueEm=Date.now();vSelecionar(i)}});
+  el.addEventListener('pointerdown',e=>{UI.vToqueEm=Date.now();x0=e.clientX;y0=e.clientY;tipo=e.pointerType;if(e.button===2)return;
     if(e.pointerType==='touch'||e.pointerType==='pen'||TOQUE()){limpa();tm=setTimeout(()=>{tm=null;aoSoltar(()=>vSelecionar(i))},500)}});
   el.addEventListener('pointermove',e=>{if(tm&&Math.hypot(e.clientX-x0,e.clientY-y0)>8)limpa()});
   el.addEventListener('pointerup',()=>{UI.vToqueEm=Date.now();limpa()});['pointercancel','pointerleave'].forEach(t=>el.addEventListener(t,limpa));
@@ -287,7 +345,8 @@ function polyGestos(el,id){if(!el||el.dataset.pg)return;el.dataset.pg='1';let tm
 function vArrastado(i,lat,lng){desGuardar();UI.desenho[i]=[lat,lng];UI.vSel=null;UI.vMenu=false;UI.vToqueEm=Date.now();desAtualizar()}
 document.addEventListener('click',e=>{const a=e.target.closest('.v-menu [data-a]');if(a){e.stopPropagation();UI.vToqueEm=Date.now();vAcao(a.dataset.a)}},true);
 document.addEventListener('keydown',e=>{if(!['desenhar','editar'].includes(UI.mpModo)||e.target.matches('input,textarea,select'))return;
-  if(e.key==='Escape'){if(UI.vMenu)vFecharMenu();else if(UI.mpModo==='editar')concluirDesenho();e.preventDefault()}
+  if(e.key==='Escape'){if(UI.vMenu)vFecharMenu();else if(UI.mpModo==='editar')desCancelar();e.preventDefault()}
+  else if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key.toLowerCase()==='z'){desDesfazer();e.preventDefault()}
   else if((e.key==='Delete'||e.key==='Backspace')&&UI.vSel!=null){vAcao('v-excluir');e.preventDefault()}});
 function concluirDesenho(){const t=T(UI.mpAlvo),p=UI.desenho||[];if(p.length<3)return;
   if(UI.mpModo==='editar'&&JSON.stringify(p.map(x=>[+x[0].toFixed(7),+x[1].toFixed(7)]))===JSON.stringify((JSON.parse(UI.desOrig||'[]')).map(x=>[+(+x[0]).toFixed(7),+(+x[1]).toFixed(7)]))){
@@ -421,8 +480,8 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     ${lin('Última proposta',lp?`${mi(lp.valor)} · ${lp.origem==='bkm'?'BKM':'Vendedor'} · ${OPT.statusProp[lp.status]}`:'')}
     ${lin('Próxima reunião',pr?`${fd(pr.data)} · ${esc(pr.hora||'')}`:'')}
     ${pt?linLink('Próxima tarefa',`${esc(pt.titulo)} · <span style="${pt.prazo<HOJE?'color:var(--terracota);font-weight:600':''}">${fd(pt.prazo)}</span>`,`<button class="kv-ed" data-a="tk-abrir" data-id="${t.id}" data-tk="${pt.id}" aria-label="Editar a tarefa ${esc(pt.titulo)}" title="Editar tarefa">${lapis}</button>`):lin('Próxima tarefa','')}</dl></div></section>`:'';
-  const loc=`<section class="sec g-loc"><div class="sec-h"><h2>${bi('localizacao',32)}Localização</h2>${t.lat!=null?`<a class="btn text sm" href="${gmapsUrl(t)}" target="_blank" rel="noopener">Google Maps</a>`:''}</div><div class="sec-b">
-    ${t.lat!=null?`<div id="mini-mapa" class="mini-mapa"></div><div class="mini-pe"><span class="num faint">${num(t.lat,5)}, ${num(t.lng,5)} · ${esc(OPT.precisao[t.precisao]||'')}</span><span style="display:flex;gap:8px">${GG?`<button class="btn sm" data-a="g-sv-mini" data-id="${t.id}">Street View</button>`:''}<button class="btn sm" data-a="mp-ir" data-id="${t.id}">Ver no mapa</button></span></div>
+  const loc=`<section class="sec g-loc"><div class="sec-h"><h2>${bi('localizacao',32)}Localização</h2></div><div class="sec-b">
+    ${t.lat!=null?`<div id="mini-mapa" class="mini-mapa"></div><div class="mini-pe"><span></span><span>${GG?`<button class="btn sm" data-a="g-sv-mini" data-id="${t.id}">Street View</button>`:''}<button class="btn sm mini-ir" data-a="mp-ir" data-id="${t.id}">Ver no mapa</button></span></div>
       <div class="mp-aviso mini">O fundo do mapa não carrega neste link de visualização.</div>`
     :`<div class="empty" style="padding:var(--e6) 0">Sem localização.<br><span style="display:inline-flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center">${GG&&(t.logradouro||t.bairro)?`<button class="btn sm primary ed" data-a="g-geo" data-id="${t.id}">Localizar pelo endereço</button>`:''}<button class="btn sm ed" data-a="mp-marcar" data-id="${t.id}">Marcar no mapa</button></span></div>`}</div></section>`;
   const poi=entornoCard(t);
@@ -438,12 +497,24 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
   const rel=relevoHtml(t)?`<section class="sec"><div class="sec-h"><h2>Relevo</h2>${t.relevo?`<span class="faint" style="font-size:12px">estimado em ${fd(t.relevo.em)}</span>`:''}</div><div class="sec-b">${relevoHtml(t)}</div></section>`:'';
   return `<div class="geral"><div class="geral-c">${info}${condicoes(t)}${neg}</div><div class="geral-c">${loc}${rel}${poi}${viab}</div></div>`}
 function L_initMini(){const el=$('#mini-mapa'),t=T(UI.id);if(!el||!t||t.lat==null)return;if(!window.L){el.innerHTML='<div class="mapa-erro">Mapa indisponível.</div>';return}
-  MINI=L.map(el,{zoomControl:true,attributionControl:true,scrollWheelZoom:false,dragging:!L.Browser.mobile});
+  MINI=L.map(el,{zoomControl:true,attributionControl:true,scrollWheelZoom:false,doubleClickZoom:false,dragging:!L.Browser.mobile});
+  const mini0=MINI;miniGestos(el,d=>mini0.setZoom(mini0.getZoom()+d));
+  MINI.on('dblclick',e=>miniAbrirMapa(t,e.latlng.lat,e.latlng.lng,mini0.getZoom()));
   camada('satelite',el.closest('.sec')).addTo(MINI);const k=sitMapa(t);
   const enq=()=>t.poly?MINI.fitBounds(t.poly,{padding:[24,24],maxZoom:18}):MINI.setView([t.lat,t.lng],17);
   if(t.poly)L.polygon(t.poly,{color:'#0094fe',weight:2,fillOpacity:.2}).addTo(MINI);enq();
   const mini=MINI;requestAnimationFrame(()=>setTimeout(()=>{if(MINI!==mini)return;MINI.invalidateSize();enq()},60));
   L.marker([t.lat,t.lng],{icon:pinIcon(k)}).addTo(MINI)}
+
+/* mini-mapa da Visão geral: a roda sozinha rola a página; Shift + roda dá zoom.
+   Com Shift o navegador costuma mandar a rolagem como horizontal (deltaX), por isso vale qualquer eixo.
+   A escuta é na captura do contêiner, antes do mapa: sem Shift o evento não chega ao mapa e a página rola. */
+function miniGestos(el,zoom){let acc=0,ult=0;
+  el.addEventListener('wheel',e=>{if(!e.shiftKey){e.stopPropagation();return}e.preventDefault();e.stopPropagation();
+    const d=(Math.abs(e.deltaY)>=Math.abs(e.deltaX)?e.deltaY:e.deltaX)*(e.deltaMode===1?40:1);if(Date.now()-ult>400)acc=0;acc+=d;
+    if(Math.abs(acc)>=60&&Date.now()-ult>180){zoom(acc<0?1:-1);acc=0;ult=Date.now()}},{capture:true,passive:false})}
+/* dois cliques no mini-mapa: abre a página Mapa centrada no ponto clicado, no mesmo zoom, com o terreno selecionado */
+function miniAbrirMapa(t,lat,lng,z){go('mapa',{mpView:{c:{lat,lng},z:Math.max(z||17,15)},mpSel:t.id,mpFoco:null})}
 
 /* ===================== TAREFAS (quadro) ===================== */
 const COLS_TK=['pendente','em_andamento','aguardando_terceiro','concluida','cancelada'];

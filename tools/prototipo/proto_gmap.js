@@ -27,21 +27,26 @@ function gPoiEl(){const d=document.createElement('div');d.className='poi g';d.in
 function G_setBase(k){UI.mpBase=k;if(MAPA&&MAPA.setMapTypeId)MAPA.setMapTypeId(TIPO_G[k]||'roadmap');document.querySelectorAll('[data-a="mp-base"]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===k))}
 function G_fecharPopup(){gInfo?.close()}
 function G_mostrarPois(on){gSet(gPois,on?MAPA:null)}
-function gAbrirInfo(t,ancora){if(!gInfo)return;const d=document.createElement('div');d.innerHTML=popupHtml(t);gInfo.setContent(d.firstElementChild);
-  gInfo.open({map:MAPA,anchor:ancora,shouldFocus:false});UI.mpSel=t.id;const l=$('#mp-lista');if(l)l.innerHTML=mpLista()}
+/* destaca o pino selecionado sem recriar os marcadores */
+function gPinsSel(){gPins.forEach(m=>{if(m._terreno&&m.content){m.content.classList.toggle('sel',UI.mpSel===m._terreno);m.zIndex=UI.mpSel===m._terreno?10:1}})}
 function G_desenhaPins(){if(!MAPA)return;gSet(gPins,null);gPins=[];const {AdvancedMarkerElement}=gLib.marker;
   mpVisiveis().filter(t=>t.lat!=null).forEach(t=>{const k=sitMapa(t);
     const mk=new AdvancedMarkerElement({map:MAPA,position:gLL(t.lat,t.lng),content:gPinEl(k,UI.mpSel===t.id),title:t.nome,gmpClickable:!UI.mpModo,zIndex:UI.mpSel===t.id?10:1});
-    mk.addEventListener('gmp-click',()=>{if(Date.now()-(UI.polyLongoEm||0)<900)return;gAbrirInfo(t,mk)});mk._terreno=t.id;gPins.push(mk);
+    mk.addEventListener('gmp-click',()=>{if(Date.now()-(UI.polyLongoEm||0)<900)return;mpSelecionar(t.id)});mk._terreno=t.id;gPins.push(mk);
     if(t.poly&&t.poly.length>=3&&mk.content){polyGestos(mk.content,t.id);mk.content.addEventListener('dblclick',e=>{e.stopPropagation();editarPoligonal(t.id)})}
     if(t.poly&&!(UI.mpModo&&UI.mpAlvo===t.id)){const pg=new google.maps.Polygon({map:MAPA,paths:t.poly.map(p=>gLL(p[0],p[1])),strokeColor:SIT[k][1],strokeWeight:2,fillColor:SIT[k][1],fillOpacity:.18,clickable:!UI.mpModo});
-      let tc=null;pg.addListener('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<700)return;clearTimeout(tc);tc=setTimeout(()=>{if(!UI.mpModo)gAbrirInfo(t,mk)},260)});
+      let tc=null;pg.addListener('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<700)return;clearTimeout(tc);tc=setTimeout(()=>{if(!UI.mpModo)mpSelecionar(t.id)},260)});
       pg.addListener('dblclick',e=>{e?.stop?.();clearTimeout(tc);editarPoligonal(t.id)});
       /* segurar o dedo sobre a poligonal entra em edição */
       let tm=null;const limpa=()=>{clearTimeout(tm);tm=null};
       pg.addListener('mousedown',e=>{if(UI.mpModo||!TOQUE())return;limpa();tm=setTimeout(()=>{tm=null;UI.polyLongoEm=Date.now();aoSoltar(()=>editarPoligonal(t.id))},550)});
       ['mouseup','mouseout'].forEach(ev=>pg.addListener(ev,limpa));google.maps.event.addListener(MAPA,'dragstart',limpa);
       gPins.push(pg)}})}
+let gConc=[];
+function gConcEl(){const d=document.createElement('div');d.className='conc g';d.innerHTML='<span class="conc-b"></span>';return d}
+function G_mostrarConc(on){gSet(gConc,on?MAPA:null)}
+function G_desenhaConc(){if(!MAPA)return;gSet(gConc,null);gConc=[];const {AdvancedMarkerElement}=gLib.marker;
+  (S.concorrentes||[]).forEach(c=>gConc.push(new AdvancedMarkerElement({map:UI.mpConc===false?null:MAPA,position:gLL(c.lat,c.lng),content:gConcEl(),title:`${c.nome}${c.empresa?' · '+c.empresa:''}`,gmpClickable:false})))}
 function G_desenhaPois(){if(!MAPA)return;gSet(gPois,null);gPois=[];const {AdvancedMarkerElement}=gLib.marker;
   (S.pontos||[]).forEach(p=>gPois.push(new AdvancedMarkerElement({map:UI.mpPoi===false?null:MAPA,position:gLL(p.lat,p.lng),content:gPoiEl(),title:`${p.nome} · ${CAT_POI[p.cat]||''}`,gmpClickable:false})))}
 function G_desenhaRascunho(){if(!MAPA)return;gSet(gDes,null);gDes=[];const p=(UI.desenho||[]).map(q=>gLL(q[0],q[1]));if(!p.length)return;
@@ -62,21 +67,25 @@ function gPontoNaTela(lat,lng){if(!MAPA)return null;if(!gProj||gProj.getMap()!==
   const pr=gProj.getProjection();if(!pr)return null;const p=pr.fromLatLngToContainerPixel(new google.maps.LatLng(lat,lng));return p?{x:p.x,y:p.y}:null}
 function gEnquadrar(pts,maxZoom){if(!MAPA||!pts.length)return;if(pts.length===1){MAPA.setCenter(pts[0]);MAPA.setZoom(maxZoom||17);return}
   const b=new google.maps.LatLngBounds();pts.forEach(p=>b.extend(p));MAPA.fitBounds(b,48);if(maxZoom)google.maps.event.addListenerOnce(MAPA,'idle',()=>{if(MAPA.getZoom()>maxZoom)MAPA.setZoom(maxZoom)})}
-function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[];gPois=[];gDes=[];gRota=[];gEntorno=[];
+function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[];gPois=[];gConc=[];gDes=[];gRota=[];gEntorno=[];
   const v=UI.mpView;
   MAPA=new google.maps.Map(el,{mapId:'DEMO_MAP_ID',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[UI.mpBase||'mapa'],
     mapTypeControl:false,streetViewControl:true,fullscreenControl:false,clickableIcons:false,gestureHandling:'greedy',scaleControl:true,tilt:0,disableDoubleClickZoom:true});
   gInfo=new google.maps.InfoWindow({maxWidth:320});
-  el.classList.toggle('modo',!!UI.mpModo);G_desenhaPins();G_desenhaPois();G_desenhaRascunho();
+  el.classList.toggle('modo',!!UI.mpModo);G_desenhaPins();G_desenhaPois();G_desenhaConc();
+  ctxGestos(el,(x,y)=>{if(!gProj||gProj.getMap()!==MAPA)gPontoNaTela(0,0);const pr=gProj?.getProjection();const ll=pr?.fromContainerPixelToLatLng(new google.maps.Point(x,y));return ll?{lat:ll.lat(),lng:ll.lng()}:null});
+  /* reserva: o Google também avisa o clique direito (se o evento do navegador não chegar ao contêiner) */
+  MAPA.addListener('contextmenu',e=>{const de=e.domEvent;if(!de||!e.latLng||(UI.ctxTipo||'mouse')!=='mouse'||$('.mp-ctx'))return;const r=el.getBoundingClientRect();ctxAbrir(de.clientX-r.left,de.clientY-r.top,e.latLng.lat(),e.latLng.lng())});
+  MAPA.addListener('dragstart',ctxFechar);MAPA.addListener('zoom_changed',ctxFechar);G_desenhaRascunho();
   if(!v)gEnquadrar(ativosBanco().filter(t=>t.lat!=null).map(t=>gLL(t.lat,t.lng)),15);
   MAPA.addListener('idle',()=>{const c=MAPA.getCenter();UI.mpView={c:{lat:c.lat(),lng:c.lng()},z:MAPA.getZoom()};vMenuDesenha()});
   MAPA.addListener('dragstart',()=>$('.mapa-area .v-menu')?.remove());MAPA.addListener('zoom_changed',()=>$('.mapa-area .v-menu')?.remove());
   MAPA.getStreetView().addListener('visible_changed',()=>$('.mapa-area')?.classList.toggle('sv-on',MAPA.getStreetView().getVisible()));
-  MAPA.addListener('click',e=>{if(UI.mpModo&&e.latLng)mapaClique(e.latLng.lat(),e.latLng.lng());else gInfo.close()});
+  MAPA.addListener('click',e=>{if(UI.mpModo&&e.latLng)mapaClique(e.latLng.lat(),e.latLng.lng());else if(UI.mpSel)mpSelecionar(null)});
   if(UI.mpFoco){const t=T(UI.mpFoco);UI.mpFoco=null;if(t&&t.lat!=null)google.maps.event.addListenerOnce(MAPA,'idle',()=>G_focar(t))}
 }
 function G_focar(t){if(!MAPA)return;UI.mpSel=t.id;if(t.poly)gEnquadrar(t.poly.map(p=>gLL(p[0],p[1])),19);else{MAPA.setCenter(gLL(t.lat,t.lng));if(MAPA.getZoom()<17)MAPA.setZoom(17)}
-  G_desenhaPins();const mk=gPins.find(m=>m._terreno===t.id);if(mk)gAbrirInfo(t,mk)}
+  mpSelecionar(t.id)}
 
 /* ---------- Street View ---------- */
 async function gStreetView(t,mapaAlvo){const sv=mapaAlvo.getStreetView();
@@ -208,7 +217,8 @@ function relevoHtml(t){const r=t.relevo;if(!GG&&!r)return '';
 
 /* ---------- mini mapa da ficha ---------- */
 function G_initMini(){const el=$('#mini-mapa'),t=T(UI.id);if(!el||!t||t.lat==null)return;el.innerHTML='';
-  MINI=new google.maps.Map(el,{mapId:'DEMO_MAP_ID',center:gLL(t.lat,t.lng),zoom:18,mapTypeId:'hybrid',mapTypeControl:false,streetViewControl:true,fullscreenControl:true,clickableIcons:false,gestureHandling:'cooperative',tilt:0});
+  MINI=new google.maps.Map(el,{mapId:'DEMO_MAP_ID',center:gLL(t.lat,t.lng),zoom:18,mapTypeId:'hybrid',mapTypeControl:false,streetViewControl:true,fullscreenControl:true,clickableIcons:false,gestureHandling:'cooperative',disableDoubleClickZoom:true,tilt:0});
+  const mini0=MINI;miniGestos(el,d=>mini0.setZoom(mini0.getZoom()+d));MINI.addListener('dblclick',e=>{if(e.latLng)miniAbrirMapa(t,e.latLng.lat(),e.latLng.lng(),mini0.getZoom())});
   const k=sitMapa(t);new gLib.marker.AdvancedMarkerElement({map:MINI,position:gLL(t.lat,t.lng),content:gPinEl(k)});
   if(t.poly){new google.maps.Polygon({map:MINI,paths:t.poly.map(p=>gLL(p[0],p[1])),strokeColor:'#0094fe',strokeWeight:2,fillColor:'#0094fe',fillOpacity:.2,clickable:false});
     const b=new google.maps.LatLngBounds();t.poly.forEach(p=>b.extend(gLL(p[0],p[1])));MINI.fitBounds(b,24)}}
