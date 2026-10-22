@@ -21,6 +21,10 @@ js = js[:i] + mod + '\n' + js[i:]
 libs = '<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>\n<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>\n'
 FONT = '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap">\n'
 html = '<title>BKM Terrenos</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n' + FONT + '<style>' + lcss + '\n' + css + '</style>' + body + libs + '<script>' + js + '</script>'
+# O Caddy lê a página como template com delimitadores {% %}: qualquer outro no
+# código derruba o /prototipo em produção (erro 500).
+if '{%' in html or '%}' in html:
+    raise SystemExit('O protótipo contém "{%" ou "%}", que o Caddy lê como template; quebre a sequência (ex.: \'{\'+\'%\').')
 os.makedirs(os.path.join(AQUI, 'saida'), exist_ok=True)
 open(os.path.join(AQUI, 'saida', 'bkm-terrenos.html'), 'w', encoding='utf-8').write(html)
 doc = ('<!doctype html>\n<html lang="pt-BR">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
