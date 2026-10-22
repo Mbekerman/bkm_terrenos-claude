@@ -1689,5 +1689,20 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 @media (max-width: 599px) { .top-in { position: relative } .amb-selo { position: absolute; left: 108px; top: 6px; padding: 0 5px; font-size: 10px; line-height: 15px; border-radius: 6px; pointer-events: none } .amb-selo .amb-l { display: none } .amb-selo .amb-c { display: inline } }
 :root[data-tema="escuro"] .amb-selo { background: rgba(255,223,153,.14); color: #ffdf99; border: 1px solid rgba(255,223,153,.45) }
 
+/* GeoSampa na inscrição: última consulta, o que toca o lote e os arquivos */
+.geo-vazio { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 4px 0 10px }
+.geo { border: 1px solid var(--linha); border-radius: 12px; padding: 4px 16px 12px; margin: 6px 0 12px }
+.geo-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; min-height: 48px }
+.geo-h > span { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px }
+.geo-h .muted { font-size: 13px }
+.geo-kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); column-gap: 24px }
+.geo-toca { margin-top: 10px }
+.geo-st { font-size: 14px; font-weight: 500; margin: 6px 0 4px }
+.geo-l { display: grid; grid-template-columns: minmax(140px, 38%) minmax(0, 1fr); gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--linha); font-size: 14px }
+.geo-l .k { color: var(--texto-suave); font-size: 13px }
+.geo-l .v { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; overflow-wrap: anywhere }
+.geo-l .v .chip { height: auto; min-height: 24px; white-space: normal; text-align: left }
+.geo-arq { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px }
+
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

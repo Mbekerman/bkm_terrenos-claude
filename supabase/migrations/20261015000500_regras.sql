@@ -1433,6 +1433,69 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
+-- GeoSampa (São Paulo): grava a consulta feita no navegador pelo SQL.
+-- Confere que o lote devolvido é o da inscrição (setor, quadra, lote e dígito)
+-- e que o terreno é de São Paulo. Completa na inscrição só o que está vazio
+-- (área cadastral) e o que é do cadastro fiscal (CIB, zona fiscal). Com
+-- p_criar_analise, registra uma análise urbanística nova (fonte GeoSampa) com
+-- as zonas do catálogo e a área de cada uma no lote; a anterior fica como
+-- substituída. Siglas fora do catálogo vão para as observações da análise.
+-- p_lote: atributos do lote_cidadao; p_camadas: {camada: [atributos]};
+-- p_zonas: [{sigla, area_m2}].
+-- ---------------------------------------------------------------------
+create or replace function app.registrar_consulta_geosampa(
+  p_inscricao uuid, p_lote jsonb, p_poligono jsonb, p_area_poligono numeric,
+  p_camadas jsonb, p_zonas jsonb, p_camadas_com_erro text[] default '{}', p_criar_analise boolean default true)
+returns uuid
+language plpgsql security definer set search_path = ''
+as $$
+declare i app.inscricoes_municipais; t app.terrenos; v_sql text; v_id uuid; v_an uuid; v_fora text[];
+begin
+  select * into i from app.inscricoes_municipais where id = p_inscricao;
+  if not found then raise exception 'Inscrição não encontrada' using errcode = 'P0002'; end if;
+  select * into t from app.terrenos where id = i.terreno_id;
+  perform app.exigir_editor(t.empresa_id);
+  if not exists (select 1 from app.municipios where id = t.municipio_id and codigo_ibge = '3550308') then
+    raise exception 'O GeoSampa só cobre o município de São Paulo' using errcode = '22023';
+  end if;
+  if jsonb_typeof(p_lote) is distinct from 'object' then raise exception 'Lote inválido' using errcode = '22023'; end if;
+  v_sql := coalesce(p_lote->>'cd_setor_fiscal','') || coalesce(p_lote->>'cd_quadra_fiscal','')
+        || coalesce(p_lote->>'cd_lote','') || coalesce(p_lote->>'cd_digito_sql','');
+  if v_sql !~ '^\d{11}$' or v_sql <> i.inscricao_norm then
+    raise exception 'O lote do GeoSampa (%) não é o da inscrição %', v_sql, i.inscricao using errcode = '22023';
+  end if;
+  if jsonb_typeof(coalesce(p_zonas, '[]')) <> 'array' then raise exception 'Zonas devem ser uma lista' using errcode = '22023'; end if;
+
+  insert into app.geosampa_consultas (empresa_id, terreno_id, inscricao_id, sql_norm, lote, poligono_geojson, area_poligono_m2,
+                                      camadas, zonas, camadas_com_erro)
+  values (t.empresa_id, t.id, i.id, v_sql, p_lote, p_poligono, nullif(p_area_poligono, 0),
+          coalesce(p_camadas, '{}'), coalesce(p_zonas, '[]'), coalesce(p_camadas_com_erro, '{}'))
+  returning id into v_id;
+
+  update app.inscricoes_municipais
+     set area_cadastral_m2 = coalesce(area_cadastral_m2, nullif((p_lote->>'qt_area_terreno')::numeric, 0)),
+         cib = coalesce(nullif(trim(p_lote->>'cd_cib'), ''), cib),
+         zona_fiscal = coalesce(nullif(trim(p_camadas#>>'{zona_fiscal,0,sg_zona_fiscal}'), ''), zona_fiscal)
+   where id = i.id;
+
+  if p_criar_analise and jsonb_array_length(coalesce(p_zonas, '[]')) > 0 then
+    select array_agg(distinct z.sigla) into v_fora
+      from jsonb_to_recordset(p_zonas) as z(sigla text, area_m2 numeric)
+     where not exists (select 1 from app.zoneamentos c where c.municipio_id = t.municipio_id and c.sigla = z.sigla and c.ativo);
+    insert into app.analises_urbanisticas (empresa_id, terreno_id, responsavel_id, fonte, observacoes)
+    values (t.empresa_id, t.id, auth.uid(), 'GeoSampa (SQL ' || i.inscricao || ')',
+            case when v_fora is not null then 'Zonas fora do catálogo: ' || array_to_string(v_fora, ', ') end)
+    returning id into v_an;
+    insert into app.analise_zoneamentos (empresa_id, analise_id, zoneamento_id, area_abrangida_m2)
+    select t.empresa_id, v_an, c.id, round(sum(z.area_m2), 2)
+      from jsonb_to_recordset(p_zonas) as z(sigla text, area_m2 numeric)
+      join app.zoneamentos c on c.municipio_id = t.municipio_id and c.sigla = z.sigla and c.ativo
+     group by c.id;
+  end if;
+  return v_id;
+end $$;
+
+-- ---------------------------------------------------------------------
 -- Permissões
 -- ---------------------------------------------------------------------
 revoke execute on all functions in schema app from public;
@@ -1442,6 +1505,7 @@ grant execute on function
   app.salvar_terreno(uuid, int, jsonb),
   app.salvar_entorno(uuid, double precision, double precision, jsonb, boolean),
   app.salvar_distancias_pontos(uuid, double precision, double precision, jsonb),
+  app.registrar_consulta_geosampa(uuid, jsonb, jsonb, numeric, jsonb, jsonb, text[], boolean),
   app.criar_empresa(text, text),
   app.buscar_duplicados(uuid, text, text, text, text, text),
   app.abrir_negociacao(uuid, uuid),

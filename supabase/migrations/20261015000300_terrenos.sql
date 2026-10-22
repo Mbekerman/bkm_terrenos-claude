@@ -109,9 +109,33 @@ create table app.inscricoes_municipais (
   inscricao         text not null,  -- SQL em São Paulo
   inscricao_norm    text generated always as (regexp_replace(inscricao, '\D', '', 'g')) stored,
   area_cadastral_m2 numeric(12,2),
+  cib               text,  -- Cadastro Imobiliário Brasileiro (vem do GeoSampa)
+  zona_fiscal       text,  -- ZF-1 a ZF-4 em São Paulo (vem do GeoSampa)
   unique (empresa_id, inscricao_norm)
 );
 create index on app.inscricoes_municipais (terreno_id);
+
+-- Consultas ao GeoSampa (Novo GeoSampa, só São Paulo) pelo SQL: o retrato
+-- completo do lote fiscal e de todas as camadas que tocam a poligonal, com data.
+-- Cada consulta é uma linha nova e nunca é alterada; gravada só por
+-- app.registrar_consulta_geosampa. A planta (PDF) e o desenho (DXF) do lote
+-- vão para documentos (tipos geosampa_pdf e geosampa_dxf), com versão.
+create table app.geosampa_consultas (
+  id               uuid primary key default gen_random_uuid(),
+  empresa_id       uuid not null references app.empresas(id),
+  terreno_id       uuid not null references app.terrenos(id) on delete cascade,
+  inscricao_id     uuid references app.inscricoes_municipais(id) on delete set null,
+  sql_norm         text not null check (sql_norm ~ '^\d{11}$'),
+  consultado_em    timestamptz not null default clock_timestamp(),
+  consultado_por   uuid references auth.users(id) default auth.uid(),
+  lote             jsonb not null check (jsonb_typeof(lote) = 'object'),   -- atributos do lote fiscal
+  poligono_geojson jsonb check (poligono_geojson is null or app.geojson_poligono_valido(poligono_geojson)),
+  area_poligono_m2 numeric(12,2) check (area_poligono_m2 > 0),
+  camadas          jsonb not null default '{}' check (jsonb_typeof(camadas) = 'object'), -- {camada: [atributos de cada feição que toca]}
+  zonas            jsonb not null default '[]' check (jsonb_typeof(zonas) = 'array'),    -- [{sigla, area_m2}] porção de cada zona no lote
+  camadas_com_erro text[] not null default '{}'  -- camadas que não responderam nesta consulta
+);
+create index on app.geosampa_consultas (terreno_id, consultado_em desc);
 
 -- Valor venal e IPTU: por inscrição e exercício. Corrigir um valor cria
 -- uma nova revisão; a anterior fica preservada e deixa de ser a vigente.
@@ -376,7 +400,7 @@ declare t text;
 begin
   foreach t in array array['terrenos','matriculas','inscricoes_municipais','inscricao_valores','confrontacoes','terreno_pessoas','terreno_corretores',
                            'terreno_infraestrutura','analises_urbanisticas','analise_zoneamentos','areas_interesse','area_interesse_terrenos',
-                           'terreno_entorno','terreno_entorno_buscas','terreno_ponto_distancias'] loop
+                           'terreno_entorno','terreno_entorno_buscas','terreno_ponto_distancias','geosampa_consultas'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
     execute format('create policy inserir on app.%I for insert to authenticated with check (empresa_id in (select app.empresas_edicao()))', t);
@@ -399,6 +423,9 @@ drop policy inserir on app.terreno_entorno;        drop policy alterar on app.te
 drop policy inserir on app.terreno_entorno_buscas; drop policy alterar on app.terreno_entorno_buscas;
 drop policy inserir on app.terreno_ponto_distancias; drop policy alterar on app.terreno_ponto_distancias;
 revoke insert, update on app.terreno_entorno, app.terreno_entorno_buscas, app.terreno_ponto_distancias from authenticated;
+-- Consulta ao GeoSampa: só pela RPC, e nunca alterada.
+drop policy inserir on app.geosampa_consultas; drop policy alterar on app.geosampa_consultas;
+revoke insert, update on app.geosampa_consultas from authenticated;
 
 -- Terreno é alterado só por app.salvar_terreno (confere a versão); inserir continua direto.
 drop policy alterar on app.terrenos;
@@ -425,3 +452,4 @@ create trigger t_aud after insert or update or delete on app.inscricao_valores  
 create trigger t_aud after insert or update or delete on app.terreno_pessoas      for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.confrontacoes        for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.terreno_entorno_buscas for each row execute function app.tg_auditoria();
+create trigger t_aud after insert or update or delete on app.geosampa_consultas for each row execute function app.tg_auditoria();
