@@ -191,6 +191,7 @@ cross join lateral (select d.terreno_id is not null and d.latitude = t.latitude 
 where t.latitude is not null;
 
 -- Entorno do terreno (Google), com o aviso de busca feita para outra coordenada.
+-- Lugares excluídos pela empresa (entorno_excluidos) não aparecem.
 create view app.v_terreno_entorno with (security_invoker = true) as
 select e.id, e.empresa_id, e.terreno_id, e.categoria, c.nome as categoria_nome, c.ordem as categoria_ordem,
        e.google_place_id, e.nome, e.latitude, e.longitude, e.distancia_pe_m, e.duracao_pe_s, e.distancia_reta_m,
@@ -199,7 +200,8 @@ select e.id, e.empresa_id, e.terreno_id, e.categoria, c.nome as categoria_nome, 
 from app.terreno_entorno e
 join app.entorno_categorias c on c.codigo = e.categoria
 join app.terreno_entorno_buscas b on b.terreno_id = e.terreno_id
-join app.terrenos t on t.id = e.terreno_id;
+join app.terrenos t on t.id = e.terreno_id
+where not exists (select 1 from app.entorno_excluidos x where x.empresa_id = e.empresa_id and x.google_place_id = e.google_place_id);
 
 -- Situação da busca por terreno localizado: nunca buscado (null), em dia ou desatualizado.
 create view app.v_entorno_buscas with (security_invoker = true) as
@@ -1103,6 +1105,33 @@ begin
   return n;
 end $$;
 
+-- Exclui um lugar do Google do entorno: some deste e de todos os terrenos da empresa,
+-- também nas buscas seguintes. O lugar precisa estar no entorno do terreno informado.
+create or replace function app.excluir_lugar_entorno(p_terreno uuid, p_google_place_id text)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos; v_nome text;
+begin
+  select * into t from app.terrenos where id = p_terreno;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  select nome into v_nome from app.terreno_entorno where terreno_id = p_terreno and google_place_id = p_google_place_id;
+  if not found then raise exception 'Lugar não está no entorno do terreno' using errcode = 'P0002'; end if;
+  insert into app.entorno_excluidos (empresa_id, google_place_id, nome) values (t.empresa_id, p_google_place_id, v_nome)
+  on conflict (empresa_id, google_place_id) do nothing;
+end $$;
+
+-- Desfaz a exclusão: o lugar volta ao entorno dos terrenos onde já tinha sido encontrado.
+create or replace function app.restaurar_lugar_entorno(p_empresa uuid, p_google_place_id text)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  perform app.exigir_editor(p_empresa);
+  delete from app.entorno_excluidos where empresa_id = p_empresa and google_place_id = p_google_place_id;
+end $$;
+
 -- Grava as distâncias (a pé e de carro, pela rota) do terreno aos pontos da empresa.
 -- Recusa coordenada diferente da atual; ignora ponto de outra empresa ou inativo.
 -- p_itens: [{ponto_id, distancia_pe_m, duracao_pe_s, distancia_carro_m, duracao_carro_s}]
@@ -1441,6 +1470,7 @@ grant execute on function
   app.nivel_papel(text), app.eh_administrador(uuid), app.exigir_administrador(uuid), app.eh_superior(uuid, uuid, uuid),
   app.salvar_terreno(uuid, int, jsonb),
   app.salvar_entorno(uuid, double precision, double precision, jsonb, boolean),
+  app.excluir_lugar_entorno(uuid, text), app.restaurar_lugar_entorno(uuid, text),
   app.salvar_distancias_pontos(uuid, double precision, double precision, jsonb),
   app.criar_empresa(text, text),
   app.buscar_duplicados(uuid, text, text, text, text, text),

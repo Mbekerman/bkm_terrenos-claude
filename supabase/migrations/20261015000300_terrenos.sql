@@ -303,6 +303,18 @@ create table app.terreno_entorno (
 );
 create index on app.terreno_entorno (terreno_id, categoria, distancia_pe_m);
 
+-- Lugares do Google excluídos pela empresa: somem do entorno de todos os terrenos,
+-- inclusive nas buscas seguintes (o Google devolve o mesmo place_id). Gravado só por
+-- app.excluir_lugar_entorno e apagado só por app.restaurar_lugar_entorno.
+create table app.entorno_excluidos (
+  empresa_id      uuid not null references app.empresas(id),
+  google_place_id text not null,
+  nome            text not null check (length(trim(nome)) > 0),
+  excluido_em     timestamptz not null default now(),
+  excluido_por    uuid references auth.users(id) default auth.uid(),
+  primary key (empresa_id, google_place_id)
+);
+
 -- Distância de cada terreno aos pontos de interesse da empresa (todos aparecem na
 -- ficha): a pé e de carro pela rota, medida no navegador para a coordenada guardada.
 -- Gravada só por app.salvar_distancias_pontos.
@@ -399,6 +411,9 @@ drop policy inserir on app.terreno_entorno;        drop policy alterar on app.te
 drop policy inserir on app.terreno_entorno_buscas; drop policy alterar on app.terreno_entorno_buscas;
 drop policy inserir on app.terreno_ponto_distancias; drop policy alterar on app.terreno_ponto_distancias;
 revoke insert, update on app.terreno_entorno, app.terreno_entorno_buscas, app.terreno_ponto_distancias from authenticated;
+alter table app.entorno_excluidos enable row level security;
+create policy ver on app.entorno_excluidos for select to authenticated using (empresa_id in (select app.minhas_empresas()));
+grant select on app.entorno_excluidos to authenticated;
 
 -- Terreno é alterado só por app.salvar_terreno (confere a versão); inserir continua direto.
 drop policy alterar on app.terrenos;
@@ -425,3 +440,4 @@ create trigger t_aud after insert or update or delete on app.inscricao_valores  
 create trigger t_aud after insert or update or delete on app.terreno_pessoas      for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.confrontacoes        for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.terreno_entorno_buscas for each row execute function app.tg_auditoria();
+create trigger t_aud after insert or update or delete on app.entorno_excluidos for each row execute function app.tg_auditoria();

@@ -275,6 +275,8 @@ create trigger t_configuracao after insert on app.empresas for each row execute 
 -- ---------------------------------------------------------------------
 -- Pontos de interesse da empresa (estações, terminais, escolas, a sede...),
 -- usados para medir a distância de cada terreno e traçar rotas.
+-- Excluir um ponto é desligar (ativo = false): some de todos os terrenos e do mapa,
+-- a exclusão fica nos logs e o ponto pode ser restaurado.
 create table app.pontos_interesse (
   id         uuid primary key default gen_random_uuid(),
   empresa_id uuid not null references app.empresas(id),
@@ -363,4 +365,5 @@ begin
   end loop;
 end $$;
 
+create trigger t_aud after insert or update or delete on app.pontos_interesse for each row execute function app.tg_auditoria();
 create trigger t_upd before update on app.pessoas for each row execute function app.tg_atualizado_em();

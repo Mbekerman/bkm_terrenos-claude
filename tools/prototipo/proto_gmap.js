@@ -120,7 +120,7 @@ async function gEntornoDe(t){gSet(gEntorno,null);gEntorno=[];
   try{const {Place,SearchNearbyRankPreference}=gLib.places;
     const {places}=await Place.searchNearby({fields:['id','displayName','location','primaryType','types','formattedAddress'],locationRestriction:{center:gLL(t.lat,t.lng),radius:2000},
       includedPrimaryTypes:Object.keys(ENTORNO_TIPOS),maxResultCount:20,rankPreference:SearchNearbyRankPreference.DISTANCE,language:'pt-BR',region:'br'});
-    UI.entorno={tid:t.id,itens:(places||[]).map(p=>({gid:p.id,nome:p.displayName,cat:ENTORNO_TIPOS[p.primaryType]||(p.types||[]).map(x=>ENTORNO_TIPOS[x]).find(Boolean)||'outro',tipo:p.primaryType,lat:p.location.lat(),lng:p.location.lng(),end:p.formattedAddress,d:distKm(t.lat,t.lng,p.location.lat(),p.location.lng())}))};
+    UI.entorno={tid:t.id,itens:(places||[]).filter(p=>!entExcl(p.id)).map(p=>({gid:p.id,nome:p.displayName,cat:ENTORNO_TIPOS[p.primaryType]||(p.types||[]).map(x=>ENTORNO_TIPOS[x]).find(Boolean)||'outro',tipo:p.primaryType,lat:p.location.lat(),lng:p.location.lng(),end:p.formattedAddress,d:distKm(t.lat,t.lng,p.location.lat(),p.location.lng())}))};
     const {AdvancedMarkerElement}=gLib.marker;
     UI.entorno.itens.forEach(p=>{const d=document.createElement('div');d.className='ent g';d.textContent=(CAT_POI[p.cat]||'?')[0];
       gEntorno.push(new AdvancedMarkerElement({map:MAPA,position:gLL(p.lat,p.lng),content:d,title:`${p.nome} · ${fKm(p.d)}`}))});

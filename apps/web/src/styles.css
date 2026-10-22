@@ -1412,6 +1412,16 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .ent-emp { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--m-outline-v, rgba(127,127,127,.25)) }
 .ent-emp-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; font-size: 14px; font-weight: 500; color: var(--m-on-surface, var(--texto)) }
 .ent-emp-h .linkbtn { display: inline-flex; align-items: center; gap: 4px; font-size: 14px }
+.ent-l.com-x li:not(.ent-vazio) { grid-template-columns: minmax(0, 1fr) auto auto 32px; gap: 12px }
+.poi-x.iconbtn { width: 32px; height: 32px; position: relative; left: 7px; color: var(--m-on-surface-v, #444746) }
+:root[data-tema="escuro"] .poi-x.iconbtn { color: #c4c7c5 }
+.poi-x.iconbtn:hover { color: #b3261e }
+:root[data-tema="escuro"] .poi-x.iconbtn:hover { color: #ffb4ab }
+.ent-exc { margin-top: 12px }
+.ent-exc .poil { margin-top: 4px }
+.ent-exc .poil li { grid-template-columns: minmax(0, 1fr) auto }
+.ent-exc .t1 { color: var(--texto-suave) }
+.ent-exc .t2 { white-space: normal }
 
 /* ---------- lista lateral do mapa: número do pino, nome, área e lupa ---------- */
 .mp-lst { display: flex; flex-direction: column; gap: 2px }

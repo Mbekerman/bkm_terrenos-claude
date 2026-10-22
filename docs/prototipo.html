@@ -2087,6 +2087,16 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .ent-emp { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--m-outline-v, rgba(127,127,127,.25)) }
 .ent-emp-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; font-size: 14px; font-weight: 500; color: var(--m-on-surface, var(--texto)) }
 .ent-emp-h .linkbtn { display: inline-flex; align-items: center; gap: 4px; font-size: 14px }
+.ent-l.com-x li:not(.ent-vazio) { grid-template-columns: minmax(0, 1fr) auto auto 32px; gap: 12px }
+.poi-x.iconbtn { width: 32px; height: 32px; position: relative; left: 7px; color: var(--m-on-surface-v, #444746) }
+:root[data-tema="escuro"] .poi-x.iconbtn { color: #c4c7c5 }
+.poi-x.iconbtn:hover { color: #b3261e }
+:root[data-tema="escuro"] .poi-x.iconbtn:hover { color: #ffb4ab }
+.ent-exc { margin-top: 12px }
+.ent-exc .poil { margin-top: 4px }
+.ent-exc .poil li { grid-template-columns: minmax(0, 1fr) auto }
+.ent-exc .t1 { color: var(--texto-suave) }
+.ent-exc .t2 { white-space: normal }
 
 /* ---------- lista lateral do mapa: número do pino, nome, área e lupa ---------- */
 .mp-lst { display: flex; flex-direction: column; gap: 2px }
@@ -2426,6 +2436,7 @@ const P={
   fwd:'M5 12h14M13 6l6 6-6 6',edit:'M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4',
   money:'M4 7h16v10H4zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM7 10v4M17 10v4',
   recolher:'M13 6l-6 6 6 6M19 6l-6 6 6 6',tela:'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',telaSair:'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5',expandir:'M11 6l6 6-6 6M5 6l6 6-6 6',
+  lixo:'M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5',
   task:'M9 4h6v3H9zM9 5.5H6a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6.5a1 1 0 0 0-1-1h-3M8.5 14l2.5 2.5 4.5-5'
 };
 const ic=(n,s=20)=>`<svg class="ic" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="${P[n]}"/></svg>`;
@@ -2637,7 +2648,7 @@ function seed(){
   /* pontos de interesse de exemplo (no Google, a busca roda de novo sozinha) */
   const ENTX={'TER-000112':[['metro_trem','Estação Vila Prudente (Linhas 2 e 15)',-23.58380,-46.58130,350,5]],
     'TER-000123':[['hospital','Hospital Municipal Cidade Ademar',-23.67330,-46.64470,1240,17]]};
-  T.forEach(t=>{const c=COORD[t.codigo];if(c&&t.lat==null){t.lat=c[0];t.lng=c[1];t.precisao='aproximada'}if(POLY[t.codigo])t.poly=POLY[t.codigo];if(ENTX[t.codigo]&&t.lat!=null)t.entorno={lat:t.lat,lng:t.lng,em:H(2),fonte:'exemplo',semPe:false,itens:ENTX[t.codigo].map(([cat,nome,la,lo,pe,min],i)=>({gid:'ex'+i,cat,nome,lat:la,lng:lo,pe,min}))};t.tarefas.forEach((k,i)=>k.pos=i*1000)});
+  T.forEach(t=>{const c=COORD[t.codigo];if(c&&t.lat==null){t.lat=c[0];t.lng=c[1];t.precisao='aproximada'}if(POLY[t.codigo])t.poly=POLY[t.codigo];if(ENTX[t.codigo]&&t.lat!=null)t.entorno={lat:t.lat,lng:t.lng,em:H(2),fonte:'exemplo',semPe:false,itens:ENTX[t.codigo].map(([cat,nome,la,lo,pe,min],i)=>({gid:'ex'+t.codigo+'-'+i,cat,nome,lat:la,lng:lo,pe,min}))};t.tarefas.forEach((k,i)=>k.pos=i*1000)});
   const pontos=[{id:'p1',nome:'Terminal Cidade Ademar',cat:'transporte',lat:-23.66720,lng:-46.65220},{id:'p2',nome:'Estação Vila Prudente (Linhas 2 e 15)',cat:'transporte',lat:-23.58380,lng:-46.58130},
     {id:'p3',nome:'Estação Tatuapé (Linha 3)',cat:'transporte',lat:-23.54040,lng:-46.57700},{id:'p4',nome:'Estação Penha (Linha 3)',cat:'transporte',lat:-23.53340,lng:-46.54280},
     {id:'p5',nome:'Estação Guaianases (Linha 11)',cat:'transporte',lat:-23.54200,lng:-46.41440},{id:'p6',nome:'Estação Jaraguá (Linha 7)',cat:'transporte',lat:-23.45610,lng:-46.73980},
@@ -3075,7 +3086,7 @@ function go(route,x={}){Object.assign(UI,{route,edit:null,propForm:false,reuForm
 
 /* ===================== modais ===================== */
 function renderModal(){
-  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.novoLoc=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;return}
+  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.novoLoc=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;UI.poiExcl=null;return}
   let h='';const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`;
   h=funilModal(M,fechar);
   if(M==='novo')h=`<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Só o mínimo para entrar no radar. A ficha é completada aos poucos.</div></div>${fechar}</div>
@@ -3114,6 +3125,9 @@ function renderModal(){
     <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-of">Registrar</button></div>`;
   if(M==='viab')h=`<div class="dh"><h2>Vincular estudo de viabilidade</h2>${fechar}</div><form data-form="viab" id="f-vb"><div class="fields"><div class="field full"><label for="vb-n">Nome</label><input id="vb-n" name="nome" value="Estudo base" required></div><div class="field"><label for="vb-v">VGV (R$)</label><input id="vb-v" name="vgv" inputmode="decimal"></div><div class="field"><label for="vb-m">Margem (%)</label><input id="vb-m" name="margem" inputmode="decimal"></div><div class="field full"><label for="vb-p">Preço máximo do terreno (R$)</label><input id="vb-p" name="pmax" inputmode="decimal" required></div></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-vb">Vincular</button></div>`;
   if(M==='geo')h=geoModalHtml(fechar);
+  if(M==='poi-excl'){const x=UI.poiExcl;h=`<div class="dh"><div><h2>Excluir ${esc(x.nome)}?</h2></div>${fechar}</div>
+  <p class="muted" style="margin:0">${x.tp==='g'?'O lugar sai dos pontos de interesse deste e de todos os terrenos da empresa, e continua fora quando o Google for consultado de novo.':'O ponto é da empresa: sai deste e de todos os terrenos e do mapa.'} Dá para restaurar em “Excluídos”, no fim do quadro.</p>
+  <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" data-a="poi-excl-ok">Excluir</button></div>`}
   if(M==='poi')h=`<div class="dh"><div><h2>Novo ponto de interesse</h2><div class="muted" style="margin-top:4px">Serve para medir a distância dos terrenos e traçar rotas.</div></div>${fechar}</div>
   <form data-form="poi" id="f-poi"><div class="fields"><div class="field full"><label for="po-n">Nome</label><input id="po-n" name="nome" required placeholder="Estação, escola, terminal..."></div>
   <div class="field"><label for="po-c">Categoria</label><select id="po-c" name="cat">${Object.entries(CAT_POI).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
@@ -3203,6 +3217,18 @@ document.addEventListener('click',e=>{
     case 'forcar':UI.modal='forcar';renderModal();break;
     case 'ent-buscar':{const x=T(a.dataset.id);if(x)gEntornoTerreno(x);break}
     case 'ent-todos':ENT_TODOS=!ENT_TODOS;render();break;
+    case 'poi-excl':{const x=T(a.dataset.id),tp=a.dataset.tp,id=a.dataset.p;if(!x)break;
+      const nome=tp==='g'?x.entorno?.itens.find(i=>i.gid===id)?.nome:(S.pontos||[]).find(p=>p.id===id)?.nome;if(!nome)break;
+      UI.poiExcl={tid:x.id,tp,id,nome};UI.modal='poi-excl';renderModal();break}
+    case 'poi-excl-ok':{const q=UI.poiExcl,x=q&&T(q.tid);if(!x)break;
+      if(q.tp==='g'){const it=x.entorno?.itens.find(i=>i.gid===q.id);S.entExcl=S.entExcl||{};S.entExcl[q.id]={nome:q.nome,cat:it?.cat,em:agora(),por:me()}}
+      else{const i=(S.pontos||[]).findIndex(p=>p.id===q.id);if(i<0)break;S.pontosExcl=S.pontosExcl||[];S.pontosExcl.push({...S.pontos[i],em:agora(),por:me()});S.pontos.splice(i,1)}
+      log(x,`Ponto de interesse excluído: ${q.nome}${q.tp==='g'?' (Google)':''}`);UI.modal=null;renderModal();save();render();toast(`${q.nome} excluído dos pontos de interesse.`);break}
+    case 'poi-excl-ver':EXCL_VER=!EXCL_VER;render();break;
+    case 'poi-rest':{const x=T(a.dataset.id),id=a.dataset.p;let nome;
+      if(a.dataset.tp==='g'){nome=S.entExcl?.[id]?.nome;delete S.entExcl[id]}
+      else{const i=(S.pontosExcl||[]).findIndex(p=>p.id===id);if(i<0)break;const {em,por,...p}=S.pontosExcl.splice(i,1)[0];nome=p.nome;(S.pontos=S.pontos||[]).push(p)}
+      if(x)log(x,`Ponto de interesse restaurado: ${nome}`);save();render();toast(`${nome} voltou aos pontos de interesse.`);break}
     case 'emp-todos':EMP_TODOS=!EMP_TODOS;render();break;
     case 'ent-add-ponto':{const id=a.dataset.id;go('mapa',{mpFoco:id,mpView:null});UI.poiVolta=id;UI.mpModo='poi';mpRefresh();setTimeout(()=>{if(UI.mpModo==='poi')fecharPopup()},400);break}
     case 'adv-req':ADV_REQ=!ADV_REQ;render();break;
@@ -3406,13 +3432,13 @@ function entornoCard(t){if(t.lat==null)return '';
   if(!e)corpo=busc?`<div class="muted">Buscando no Google lugares a até ${raio} a pé…</div>`
     :`<div class="muted">${GG?'Os pontos de interesse ainda não foram buscados.':'Os pontos são buscados no Google quando o terreno é localizado pela busca de endereço ou no mapa. O Google não carrega neste link de visualização.'}</div>${GG?`<button class="btn sm ed" style="margin-top:12px" data-a="ent-buscar" data-id="${t.id}">Buscar agora</button>`:''}`;
   else{const lim=ENT_TODOS?99:3;let sobra=0;
-    corpo=`<ul class="poil ent-l">${ENT_CAT.map(([k,l,pl])=>{const its=e.itens.filter(x=>x.cat===k).sort((a,b)=>a.pe-b.pe);
+    corpo=`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${ENT_CAT.map(([k,l,pl])=>{const its=e.itens.filter(x=>x.cat===k&&!entExcl(x.gid)).sort((a,b)=>a.pe-b.pe);
       if(!its.length)return `<li class="ent-vazio"><span><span class="t2">Sem ${pl} a até ${raio} a pé</span></span></li>`;
       sobra+=Math.max(0,its.length-lim);
-      return its.slice(0,lim).map(p=>`<li><span><span class="t1">${esc(p.nome)}</span><span class="t2">${l}${p.min!=null?` · ${p.min} min a pé`:''}</span></span><b class="num">${p.pe<1000?Math.round(p.pe/10)*10+' m':num(p.pe/1000,2)+' km'}</b><a href="${rotaPeUrl(t,p)}" target="_blank" rel="noopener">Rota</a></li>`).join('')}).join('')}</ul>
+      return its.slice(0,lim).map(p=>`<li><span><span class="t1">${esc(p.nome)}</span><span class="t2">${l}${p.min!=null?` · ${p.min} min a pé`:''}</span></span><b class="num">${p.pe<1000?Math.round(p.pe/10)*10+' m':num(p.pe/1000,2)+' km'}</b><a href="${rotaPeUrl(t,p)}" target="_blank" rel="noopener">Rota</a>${poiX('g',p.gid,p.nome,t)}</li>`).join('')}).join('')}</ul>
     ${sobra||ENT_TODOS?`<button class="linkbtn" data-a="ent-todos" style="margin-top:6px">${ENT_TODOS?'Mostrar menos':`Mostrar mais ${sobra}`}</button>`:''}
     <div class="hint ent-pe">${busc?'Atualizando no Google… · ':''}${e.fonte==='exemplo'?'Dados de exemplo':'Google'} · ${e.semPe?'distância em linha reta (a rota a pé não respondeu)':'distância pela rota a pé'} · buscado em ${fd(e.em)}${mudou?' · <b>a localização mudou depois da busca</b>':''}${GG&&!busc?` · <button class="linkbtn ed" data-a="ent-buscar" data-id="${t.id}">Buscar de novo</button>`:''}</div>`}
-  corpo+=pontosEmpresa(t);
+  corpo+=pontosEmpresa(t)+poiExcluidos(t);
   return `<section class="sec" id="ent-card"><div class="sec-h"><h2>Pontos de interesse</h2><span class="faint" style="font-size:12px">a pé · até ${raio}</span></div><div class="sec-b">${corpo}</div></section>`}
 /* pontos cadastrados pela empresa: todos aparecem; a pé se está a até RAIO_PE a pé, senão de carro; sem rota medida, linha reta */
 let EMP_TODOS=false;
@@ -3424,10 +3450,20 @@ function pontosEmpresa(t){const pts=S.pontos||[];const d=t.dist&&t.dist.lat===t.
     return {p,ord:reta,dist:kmTxt(reta),modo:'em linha reta',url:reta<=RAIO_PE?rotaPeUrl(t,p):rotaUrl(t,p)}}).sort((a,b)=>a.ord-b.ord);
   const lim=EMP_TODOS?999:5;
   return `<div class="ent-emp"><div class="ent-emp-h"><span>Cadastrados pela empresa</span>${UI.role!=='Leitura'?`<button class="linkbtn ed" data-a="ent-add-ponto" data-id="${t.id}">${ic('add',16)}Adicionar ponto</button>`:''}</div>
-    ${its.length?`<ul class="poil ent-l">${its.slice(0,lim).map(x=>`<li><span><span class="t1">${esc(x.p.nome)}</span><span class="t2">${CAT_POI[x.p.cat]||'Outro'} · ${x.modo}</span></span><b class="num">${x.dist}</b><a href="${x.url}" target="_blank" rel="noopener">Rota</a></li>`).join('')}</ul>
+    ${its.length?`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${its.slice(0,lim).map(x=>`<li><span><span class="t1">${esc(x.p.nome)}</span><span class="t2">${CAT_POI[x.p.cat]||'Outro'} · ${x.modo}</span></span><b class="num">${x.dist}</b><a href="${x.url}" target="_blank" rel="noopener">Rota</a>${poiX('e',x.p.id,x.p.nome,t)}</li>`).join('')}</ul>
     ${its.length>5?`<button class="linkbtn" data-a="emp-todos" style="margin-top:6px">${EMP_TODOS?'Mostrar menos':`Mostrar mais ${its.length-5}`}</button>`:''}`
     :'<div class="muted" style="font-size:14px">Nenhum ponto cadastrado pela empresa.</div>'}
     ${DIST_BUSCA_ON(t)?'<div class="hint">Medindo as rotas no Google…</div>':''}</div>`}
+/* excluir ponto de interesse. Do Google: entra na lista de excluídos da empresa (no banco: entorno_excluidos)
+   e some de todos os terrenos, também nas buscas seguintes. Da empresa: desligado (ativo = false), some de
+   todos os terrenos e do mapa. Os dois voltam por "Restaurar" na lista de excluídos. */
+const entExcl=gid=>!!(S.entExcl&&S.entExcl[gid]);
+const poiX=(tp,id,nome,t)=>UI.role==='Leitura'?'':`<button class="iconbtn poi-x" data-a="poi-excl" data-tp="${tp}" data-p="${esc(String(id))}" data-id="${t.id}" aria-label="Excluir ${esc(nome)}" title="Excluir">${ic('lixo',18)}</button>`;
+let EXCL_VER=false;
+function poiExcluidos(t){const g=Object.entries(S.entExcl||{}).map(([gid,x])=>({tp:'g',id:gid,...x})),e=(S.pontosExcl||[]).map(p=>({tp:'e',...p}));
+  const l=[...g,...e].sort((a,b)=>String(b.em).localeCompare(String(a.em)));if(!l.length)return '';
+  return `<div class="ent-exc"><button class="linkbtn" data-a="poi-excl-ver" aria-expanded="${EXCL_VER}">${EXCL_VER?'Ocultar excluídos':`Excluídos (${l.length})`}</button>
+    ${EXCL_VER?`<ul class="poil ent-l">${l.map(x=>`<li><span><span class="t1">${esc(x.nome)}</span><span class="t2">${x.tp==='g'?'Google':'Cadastrado pela empresa'} · excluído por ${esc(x.por)} em ${fd(x.em)}</span></span>${UI.role!=='Leitura'?`<button class="linkbtn ed" data-a="poi-rest" data-tp="${x.tp}" data-p="${esc(String(x.id))}" data-id="${t.id}">Restaurar</button>`:''}</li>`).join('')}</ul>`:''}</div>`}
 const DIST_BUSCA_ON=t=>typeof DIST_BUSCA!=='undefined'&&DIST_BUSCA[t.id];
 function entRefresh(t){if(UI.route!=='terreno'||UI.id!==t.id)return;const a=document.activeElement;
   if(a&&a.closest&&a.closest('.main')&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)){const el=document.getElementById('ent-card');if(el)el.outerHTML=entornoCard(t)}else render()}
@@ -4055,7 +4091,7 @@ async function gEntornoDe(t){gSet(gEntorno,null);gEntorno=[];
   try{const {Place,SearchNearbyRankPreference}=gLib.places;
     const {places}=await Place.searchNearby({fields:['id','displayName','location','primaryType','types','formattedAddress'],locationRestriction:{center:gLL(t.lat,t.lng),radius:2000},
       includedPrimaryTypes:Object.keys(ENTORNO_TIPOS),maxResultCount:20,rankPreference:SearchNearbyRankPreference.DISTANCE,language:'pt-BR',region:'br'});
-    UI.entorno={tid:t.id,itens:(places||[]).map(p=>({gid:p.id,nome:p.displayName,cat:ENTORNO_TIPOS[p.primaryType]||(p.types||[]).map(x=>ENTORNO_TIPOS[x]).find(Boolean)||'outro',tipo:p.primaryType,lat:p.location.lat(),lng:p.location.lng(),end:p.formattedAddress,d:distKm(t.lat,t.lng,p.location.lat(),p.location.lng())}))};
+    UI.entorno={tid:t.id,itens:(places||[]).filter(p=>!entExcl(p.id)).map(p=>({gid:p.id,nome:p.displayName,cat:ENTORNO_TIPOS[p.primaryType]||(p.types||[]).map(x=>ENTORNO_TIPOS[x]).find(Boolean)||'outro',tipo:p.primaryType,lat:p.location.lat(),lng:p.location.lng(),end:p.formattedAddress,d:distKm(t.lat,t.lng,p.location.lat(),p.location.lng())}))};
     const {AdvancedMarkerElement}=gLib.marker;
     UI.entorno.itens.forEach(p=>{const d=document.createElement('div');d.className='ent g';d.textContent=(CAT_POI[p.cat]||'?')[0];
       gEntorno.push(new AdvancedMarkerElement({map:MAPA,position:gLL(p.lat,p.lng),content:d,title:`${p.nome} · ${fKm(p.d)}`}))});

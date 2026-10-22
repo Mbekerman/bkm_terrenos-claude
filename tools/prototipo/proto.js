@@ -30,6 +30,7 @@ const P={
   fwd:'M5 12h14M13 6l6 6-6 6',edit:'M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4',
   money:'M4 7h16v10H4zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM7 10v4M17 10v4',
   recolher:'M13 6l-6 6 6 6M19 6l-6 6 6 6',tela:'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',telaSair:'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5',expandir:'M11 6l6 6-6 6M5 6l6 6-6 6',
+  lixo:'M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5',
   task:'M9 4h6v3H9zM9 5.5H6a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6.5a1 1 0 0 0-1-1h-3M8.5 14l2.5 2.5 4.5-5'
 };
 const ic=(n,s=20)=>`<svg class="ic" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="${P[n]}"/></svg>`;
@@ -241,7 +242,7 @@ function seed(){
   /* pontos de interesse de exemplo (no Google, a busca roda de novo sozinha) */
   const ENTX={'TER-000112':[['metro_trem','Estação Vila Prudente (Linhas 2 e 15)',-23.58380,-46.58130,350,5]],
     'TER-000123':[['hospital','Hospital Municipal Cidade Ademar',-23.67330,-46.64470,1240,17]]};
-  T.forEach(t=>{const c=COORD[t.codigo];if(c&&t.lat==null){t.lat=c[0];t.lng=c[1];t.precisao='aproximada'}if(POLY[t.codigo])t.poly=POLY[t.codigo];if(ENTX[t.codigo]&&t.lat!=null)t.entorno={lat:t.lat,lng:t.lng,em:H(2),fonte:'exemplo',semPe:false,itens:ENTX[t.codigo].map(([cat,nome,la,lo,pe,min],i)=>({gid:'ex'+i,cat,nome,lat:la,lng:lo,pe,min}))};t.tarefas.forEach((k,i)=>k.pos=i*1000)});
+  T.forEach(t=>{const c=COORD[t.codigo];if(c&&t.lat==null){t.lat=c[0];t.lng=c[1];t.precisao='aproximada'}if(POLY[t.codigo])t.poly=POLY[t.codigo];if(ENTX[t.codigo]&&t.lat!=null)t.entorno={lat:t.lat,lng:t.lng,em:H(2),fonte:'exemplo',semPe:false,itens:ENTX[t.codigo].map(([cat,nome,la,lo,pe,min],i)=>({gid:'ex'+t.codigo+'-'+i,cat,nome,lat:la,lng:lo,pe,min}))};t.tarefas.forEach((k,i)=>k.pos=i*1000)});
   const pontos=[{id:'p1',nome:'Terminal Cidade Ademar',cat:'transporte',lat:-23.66720,lng:-46.65220},{id:'p2',nome:'Estação Vila Prudente (Linhas 2 e 15)',cat:'transporte',lat:-23.58380,lng:-46.58130},
     {id:'p3',nome:'Estação Tatuapé (Linha 3)',cat:'transporte',lat:-23.54040,lng:-46.57700},{id:'p4',nome:'Estação Penha (Linha 3)',cat:'transporte',lat:-23.53340,lng:-46.54280},
     {id:'p5',nome:'Estação Guaianases (Linha 11)',cat:'transporte',lat:-23.54200,lng:-46.41440},{id:'p6',nome:'Estação Jaraguá (Linha 7)',cat:'transporte',lat:-23.45610,lng:-46.73980},
@@ -679,7 +680,7 @@ function go(route,x={}){Object.assign(UI,{route,edit:null,propForm:false,reuForm
 
 /* ===================== modais ===================== */
 function renderModal(){
-  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.novoLoc=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;return}
+  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.novoLoc=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;UI.poiExcl=null;return}
   let h='';const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`;
   h=funilModal(M,fechar);
   if(M==='novo')h=`<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Só o mínimo para entrar no radar. A ficha é completada aos poucos.</div></div>${fechar}</div>
@@ -718,6 +719,9 @@ function renderModal(){
     <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-of">Registrar</button></div>`;
   if(M==='viab')h=`<div class="dh"><h2>Vincular estudo de viabilidade</h2>${fechar}</div><form data-form="viab" id="f-vb"><div class="fields"><div class="field full"><label for="vb-n">Nome</label><input id="vb-n" name="nome" value="Estudo base" required></div><div class="field"><label for="vb-v">VGV (R$)</label><input id="vb-v" name="vgv" inputmode="decimal"></div><div class="field"><label for="vb-m">Margem (%)</label><input id="vb-m" name="margem" inputmode="decimal"></div><div class="field full"><label for="vb-p">Preço máximo do terreno (R$)</label><input id="vb-p" name="pmax" inputmode="decimal" required></div></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-vb">Vincular</button></div>`;
   if(M==='geo')h=geoModalHtml(fechar);
+  if(M==='poi-excl'){const x=UI.poiExcl;h=`<div class="dh"><div><h2>Excluir ${esc(x.nome)}?</h2></div>${fechar}</div>
+  <p class="muted" style="margin:0">${x.tp==='g'?'O lugar sai dos pontos de interesse deste e de todos os terrenos da empresa, e continua fora quando o Google for consultado de novo.':'O ponto é da empresa: sai deste e de todos os terrenos e do mapa.'} Dá para restaurar em “Excluídos”, no fim do quadro.</p>
+  <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" data-a="poi-excl-ok">Excluir</button></div>`}
   if(M==='poi')h=`<div class="dh"><div><h2>Novo ponto de interesse</h2><div class="muted" style="margin-top:4px">Serve para medir a distância dos terrenos e traçar rotas.</div></div>${fechar}</div>
   <form data-form="poi" id="f-poi"><div class="fields"><div class="field full"><label for="po-n">Nome</label><input id="po-n" name="nome" required placeholder="Estação, escola, terminal..."></div>
   <div class="field"><label for="po-c">Categoria</label><select id="po-c" name="cat">${Object.entries(CAT_POI).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
@@ -807,6 +811,18 @@ document.addEventListener('click',e=>{
     case 'forcar':UI.modal='forcar';renderModal();break;
     case 'ent-buscar':{const x=T(a.dataset.id);if(x)gEntornoTerreno(x);break}
     case 'ent-todos':ENT_TODOS=!ENT_TODOS;render();break;
+    case 'poi-excl':{const x=T(a.dataset.id),tp=a.dataset.tp,id=a.dataset.p;if(!x)break;
+      const nome=tp==='g'?x.entorno?.itens.find(i=>i.gid===id)?.nome:(S.pontos||[]).find(p=>p.id===id)?.nome;if(!nome)break;
+      UI.poiExcl={tid:x.id,tp,id,nome};UI.modal='poi-excl';renderModal();break}
+    case 'poi-excl-ok':{const q=UI.poiExcl,x=q&&T(q.tid);if(!x)break;
+      if(q.tp==='g'){const it=x.entorno?.itens.find(i=>i.gid===q.id);S.entExcl=S.entExcl||{};S.entExcl[q.id]={nome:q.nome,cat:it?.cat,em:agora(),por:me()}}
+      else{const i=(S.pontos||[]).findIndex(p=>p.id===q.id);if(i<0)break;S.pontosExcl=S.pontosExcl||[];S.pontosExcl.push({...S.pontos[i],em:agora(),por:me()});S.pontos.splice(i,1)}
+      log(x,`Ponto de interesse excluído: ${q.nome}${q.tp==='g'?' (Google)':''}`);UI.modal=null;renderModal();save();render();toast(`${q.nome} excluído dos pontos de interesse.`);break}
+    case 'poi-excl-ver':EXCL_VER=!EXCL_VER;render();break;
+    case 'poi-rest':{const x=T(a.dataset.id),id=a.dataset.p;let nome;
+      if(a.dataset.tp==='g'){nome=S.entExcl?.[id]?.nome;delete S.entExcl[id]}
+      else{const i=(S.pontosExcl||[]).findIndex(p=>p.id===id);if(i<0)break;const {em,por,...p}=S.pontosExcl.splice(i,1)[0];nome=p.nome;(S.pontos=S.pontos||[]).push(p)}
+      if(x)log(x,`Ponto de interesse restaurado: ${nome}`);save();render();toast(`${nome} voltou aos pontos de interesse.`);break}
     case 'emp-todos':EMP_TODOS=!EMP_TODOS;render();break;
     case 'ent-add-ponto':{const id=a.dataset.id;go('mapa',{mpFoco:id,mpView:null});UI.poiVolta=id;UI.mpModo='poi';mpRefresh();setTimeout(()=>{if(UI.mpModo==='poi')fecharPopup()},400);break}
     case 'adv-req':ADV_REQ=!ADV_REQ;render();break;
