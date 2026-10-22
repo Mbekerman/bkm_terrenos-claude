@@ -720,7 +720,7 @@ function renderModal(){
   if(M==='viab')h=`<div class="dh"><h2>Vincular estudo de viabilidade</h2>${fechar}</div><form data-form="viab" id="f-vb"><div class="fields"><div class="field full"><label for="vb-n">Nome</label><input id="vb-n" name="nome" value="Estudo base" required></div><div class="field"><label for="vb-v">VGV (R$)</label><input id="vb-v" name="vgv" inputmode="decimal"></div><div class="field"><label for="vb-m">Margem (%)</label><input id="vb-m" name="margem" inputmode="decimal"></div><div class="field full"><label for="vb-p">Preço máximo do terreno (R$)</label><input id="vb-p" name="pmax" inputmode="decimal" required></div></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-vb">Vincular</button></div>`;
   if(M==='geo')h=geoModalHtml(fechar);
   if(M==='poi-excl'){const x=UI.poiExcl;h=`<div class="dh"><div><h2>Excluir ${esc(x.nome)}?</h2></div>${fechar}</div>
-  <p class="muted" style="margin:0">${x.tp==='g'?'O lugar sai dos pontos de interesse deste e de todos os terrenos da empresa, e continua fora quando o Google for consultado de novo.':'O ponto é da empresa: sai deste e de todos os terrenos e do mapa.'} Dá para restaurar em “Excluídos”, no fim do quadro.</p>
+  <p class="muted" style="margin:0">${x.tp==='g'?'O lugar sai dos pontos de interesse deste terreno e continua fora mesmo se a busca for refeita.':'O ponto é da empresa: sai deste e de todos os terrenos e do mapa.'} Dá para restaurar em “Excluídos”, no fim do quadro.</p>
   <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" data-a="poi-excl-ok">Excluir</button></div>`}
   if(M==='poi')h=`<div class="dh"><div><h2>Novo ponto de interesse</h2><div class="muted" style="margin-top:4px">Serve para medir a distância dos terrenos e traçar rotas.</div></div>${fechar}</div>
   <form data-form="poi" id="f-poi"><div class="fields"><div class="field full"><label for="po-n">Nome</label><input id="po-n" name="nome" required placeholder="Estação, escola, terminal..."></div>
@@ -815,12 +815,12 @@ document.addEventListener('click',e=>{
       const nome=tp==='g'?x.entorno?.itens.find(i=>i.gid===id)?.nome:(S.pontos||[]).find(p=>p.id===id)?.nome;if(!nome)break;
       UI.poiExcl={tid:x.id,tp,id,nome};UI.modal='poi-excl';renderModal();break}
     case 'poi-excl-ok':{const q=UI.poiExcl,x=q&&T(q.tid);if(!x)break;
-      if(q.tp==='g'){const it=x.entorno?.itens.find(i=>i.gid===q.id);S.entExcl=S.entExcl||{};S.entExcl[q.id]={nome:q.nome,cat:it?.cat,em:agora(),por:me()}}
+      if(q.tp==='g'){const it=x.entorno?.itens.find(i=>i.gid===q.id);if(!it)break;it.excl={em:agora(),por:me()}}
       else{const i=(S.pontos||[]).findIndex(p=>p.id===q.id);if(i<0)break;S.pontosExcl=S.pontosExcl||[];S.pontosExcl.push({...S.pontos[i],em:agora(),por:me()});S.pontos.splice(i,1)}
       log(x,`Ponto de interesse excluído: ${q.nome}${q.tp==='g'?' (Google)':''}`);UI.modal=null;renderModal();save();render();toast(`${q.nome} excluído dos pontos de interesse.`);break}
     case 'poi-excl-ver':EXCL_VER=!EXCL_VER;render();break;
     case 'poi-rest':{const x=T(a.dataset.id),id=a.dataset.p;let nome;
-      if(a.dataset.tp==='g'){nome=S.entExcl?.[id]?.nome;delete S.entExcl[id]}
+      if(a.dataset.tp==='g'){const it=x?.entorno?.itens.find(i=>i.gid===id);if(!it)break;nome=it.nome;delete it.excl}
       else{const i=(S.pontosExcl||[]).findIndex(p=>p.id===id);if(i<0)break;const {em,por,...p}=S.pontosExcl.splice(i,1)[0];nome=p.nome;(S.pontos=S.pontos||[]).push(p)}
       if(x)log(x,`Ponto de interesse restaurado: ${nome}`);save();render();toast(`${nome} voltou aos pontos de interesse.`);break}
     case 'emp-todos':EMP_TODOS=!EMP_TODOS;render();break;

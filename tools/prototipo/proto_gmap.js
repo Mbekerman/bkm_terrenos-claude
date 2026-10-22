@@ -120,7 +120,7 @@ async function gEntornoDe(t){gSet(gEntorno,null);gEntorno=[];
   try{const {Place,SearchNearbyRankPreference}=gLib.places;
     const {places}=await Place.searchNearby({fields:['id','displayName','location','primaryType','types','formattedAddress'],locationRestriction:{center:gLL(t.lat,t.lng),radius:2000},
       includedPrimaryTypes:Object.keys(ENTORNO_TIPOS),maxResultCount:20,rankPreference:SearchNearbyRankPreference.DISTANCE,language:'pt-BR',region:'br'});
-    UI.entorno={tid:t.id,itens:(places||[]).filter(p=>!entExcl(p.id)).map(p=>({gid:p.id,nome:p.displayName,cat:ENTORNO_TIPOS[p.primaryType]||(p.types||[]).map(x=>ENTORNO_TIPOS[x]).find(Boolean)||'outro',tipo:p.primaryType,lat:p.location.lat(),lng:p.location.lng(),end:p.formattedAddress,d:distKm(t.lat,t.lng,p.location.lat(),p.location.lng())}))};
+    UI.entorno={tid:t.id,itens:(places||[]).filter(p=>!(t.entorno?.itens||[]).some(i=>i.gid===p.id&&i.excl)).map(p=>({gid:p.id,nome:p.displayName,cat:ENTORNO_TIPOS[p.primaryType]||(p.types||[]).map(x=>ENTORNO_TIPOS[x]).find(Boolean)||'outro',tipo:p.primaryType,lat:p.location.lat(),lng:p.location.lng(),end:p.formattedAddress,d:distKm(t.lat,t.lng,p.location.lat(),p.location.lng())}))};
     const {AdvancedMarkerElement}=gLib.marker;
     UI.entorno.itens.forEach(p=>{const d=document.createElement('div');d.className='ent g';d.textContent=(CAT_POI[p.cat]||'?')[0];
       gEntorno.push(new AdvancedMarkerElement({map:MAPA,position:gLL(p.lat,p.lng),content:d,title:`${p.nome} · ${fKm(p.d)}`}))});
@@ -160,6 +160,8 @@ async function gEntornoTerreno(t){if(!GG||!gLib.places||t.lat==null||ENT_BUSCA[t
     let semPe=false;
     if(itens.length){try{(await gMatriz(lat,lng,itens,'WALK')).forEach((x,i)=>{if(x){itens[i].pe=x.m;itens[i].min=x.min}})}catch(e1){semPe=true;itens.forEach(p=>{p.pe=p.reta;p.min=null})}}
     itens=itens.filter(p=>p.pe!=null&&p.pe<=RAIO_PE);
+    /* o que foi excluído neste terreno continua excluído na busca nova */
+    const exc={};(t.entorno?.itens||[]).forEach(i=>{if(i.excl)exc[i.gid]=i.excl});itens.forEach(p=>{if(exc[p.gid])p.excl=exc[p.gid]});
     t.entorno={lat,lng,em:HOJE,fonte:'google',semPe,itens};
     log(t,`Pontos de interesse buscados no Google: ${itens.length} a até ${fKm(RAIO_PE/1000)} a pé`);save();
     if(semPe)toast('A rota a pé não respondeu; os pontos foram filtrados pela distância em linha reta. Confira se a Routes API está liberada para a chave.',true)}

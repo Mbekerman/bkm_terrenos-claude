@@ -21,7 +21,7 @@ await (await p.$('#ent-card')).screenshot({path:TMP+`t_excl/${tag}_1_quadro.png`
 // Google
 const g=await p.$('#ent-card .poi-x[data-tp=g]');const gn=await g.evaluate(x=>x.closest('li').querySelector('.t1').textContent);
 await g.click();await p.waitForTimeout(200);
-ok(/todos os terrenos/.test(await p.$eval('#modal',x=>x.innerText)),'confirmação explica o alcance');
+ok(/deste terreno/.test(await p.$eval('#modal',x=>x.innerText)),'confirmação explica o alcance');
 await p.screenshot({path:TMP+`t_excl/${tag}_2_confirmar.png`});
 await p.click('#modal [data-a=poi-excl-ok]');await p.waitForTimeout(300);
 ok(!(await nomes()).includes('g:'+gn),`Google "${gn}" saiu da lista`);
@@ -30,7 +30,7 @@ const e=await p.$('#ent-card .ent-emp .poi-x[data-tp=e]');const en=await e.evalu
 await e.click();await p.waitForTimeout(200);await p.click('#modal [data-a=poi-excl-ok]');await p.waitForTimeout(300);
 ok(!(await p.$eval('#ent-card .ent-emp',x=>x.innerText)).includes(en),`da empresa "${en}" saiu da lista`);
 const st=await p.evaluate(()=>{for(let i=0;i<localStorage.length;i++){const v=localStorage.getItem(localStorage.key(i));if(v&&v.includes('"pontos"'))return JSON.parse(v)}});
-ok(!st.pontos.some(x=>x.nome===en)&&st.pontosExcl.length===1&&Object.keys(st.entExcl).length===1,'gravado: ponto fora de S.pontos (sai do mapa) e Google na lista de excluídos');
+ok(!st.pontos.some(x=>x.nome===en)&&st.pontosExcl.length===1&&JSON.stringify(st).split('"excl":').length===2,'gravado: ponto fora de S.pontos (sai do mapa) e Google marcado só neste terreno');
 ok(JSON.stringify(st).includes('Ponto de interesse excluído: '+gn+' (Google)'),'exclusão vai para os logs');
 await p.click('[data-a=poi-excl-ver]');await p.waitForTimeout(200);
 const exc=await p.$eval('.ent-exc',x=>x.innerText);ok(exc.includes(gn)&&exc.includes(en),'lista de excluídos mostra os dois');

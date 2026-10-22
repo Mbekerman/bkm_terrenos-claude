@@ -3126,7 +3126,7 @@ function renderModal(){
   if(M==='viab')h=`<div class="dh"><h2>Vincular estudo de viabilidade</h2>${fechar}</div><form data-form="viab" id="f-vb"><div class="fields"><div class="field full"><label for="vb-n">Nome</label><input id="vb-n" name="nome" value="Estudo base" required></div><div class="field"><label for="vb-v">VGV (R$)</label><input id="vb-v" name="vgv" inputmode="decimal"></div><div class="field"><label for="vb-m">Margem (%)</label><input id="vb-m" name="margem" inputmode="decimal"></div><div class="field full"><label for="vb-p">Preço máximo do terreno (R$)</label><input id="vb-p" name="pmax" inputmode="decimal" required></div></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-vb">Vincular</button></div>`;
   if(M==='geo')h=geoModalHtml(fechar);
   if(M==='poi-excl'){const x=UI.poiExcl;h=`<div class="dh"><div><h2>Excluir ${esc(x.nome)}?</h2></div>${fechar}</div>
-  <p class="muted" style="margin:0">${x.tp==='g'?'O lugar sai dos pontos de interesse deste e de todos os terrenos da empresa, e continua fora quando o Google for consultado de novo.':'O ponto é da empresa: sai deste e de todos os terrenos e do mapa.'} Dá para restaurar em “Excluídos”, no fim do quadro.</p>
+  <p class="muted" style="margin:0">${x.tp==='g'?'O lugar sai dos pontos de interesse deste terreno e continua fora mesmo se a busca for refeita.':'O ponto é da empresa: sai deste e de todos os terrenos e do mapa.'} Dá para restaurar em “Excluídos”, no fim do quadro.</p>
   <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" data-a="poi-excl-ok">Excluir</button></div>`}
   if(M==='poi')h=`<div class="dh"><div><h2>Novo ponto de interesse</h2><div class="muted" style="margin-top:4px">Serve para medir a distância dos terrenos e traçar rotas.</div></div>${fechar}</div>
   <form data-form="poi" id="f-poi"><div class="fields"><div class="field full"><label for="po-n">Nome</label><input id="po-n" name="nome" required placeholder="Estação, escola, terminal..."></div>
@@ -3221,12 +3221,12 @@ document.addEventListener('click',e=>{
       const nome=tp==='g'?x.entorno?.itens.find(i=>i.gid===id)?.nome:(S.pontos||[]).find(p=>p.id===id)?.nome;if(!nome)break;
       UI.poiExcl={tid:x.id,tp,id,nome};UI.modal='poi-excl';renderModal();break}
     case 'poi-excl-ok':{const q=UI.poiExcl,x=q&&T(q.tid);if(!x)break;
-      if(q.tp==='g'){const it=x.entorno?.itens.find(i=>i.gid===q.id);S.entExcl=S.entExcl||{};S.entExcl[q.id]={nome:q.nome,cat:it?.cat,em:agora(),por:me()}}
+      if(q.tp==='g'){const it=x.entorno?.itens.find(i=>i.gid===q.id);if(!it)break;it.excl={em:agora(),por:me()}}
       else{const i=(S.pontos||[]).findIndex(p=>p.id===q.id);if(i<0)break;S.pontosExcl=S.pontosExcl||[];S.pontosExcl.push({...S.pontos[i],em:agora(),por:me()});S.pontos.splice(i,1)}
       log(x,`Ponto de interesse excluído: ${q.nome}${q.tp==='g'?' (Google)':''}`);UI.modal=null;renderModal();save();render();toast(`${q.nome} excluído dos pontos de interesse.`);break}
     case 'poi-excl-ver':EXCL_VER=!EXCL_VER;render();break;
     case 'poi-rest':{const x=T(a.dataset.id),id=a.dataset.p;let nome;
-      if(a.dataset.tp==='g'){nome=S.entExcl?.[id]?.nome;delete S.entExcl[id]}
+      if(a.dataset.tp==='g'){const it=x?.entorno?.itens.find(i=>i.gid===id);if(!it)break;nome=it.nome;delete it.excl}
       else{const i=(S.pontosExcl||[]).findIndex(p=>p.id===id);if(i<0)break;const {em,por,...p}=S.pontosExcl.splice(i,1)[0];nome=p.nome;(S.pontos=S.pontos||[]).push(p)}
       if(x)log(x,`Ponto de interesse restaurado: ${nome}`);save();render();toast(`${nome} voltou aos pontos de interesse.`);break}
     case 'emp-todos':EMP_TODOS=!EMP_TODOS;render();break;
@@ -3432,12 +3432,12 @@ function entornoCard(t){if(t.lat==null)return '';
   if(!e)corpo=busc?`<div class="muted">Buscando no Google lugares a até ${raio} a pé…</div>`
     :`<div class="muted">${GG?'Os pontos de interesse ainda não foram buscados.':'Os pontos são buscados no Google quando o terreno é localizado pela busca de endereço ou no mapa. O Google não carrega neste link de visualização.'}</div>${GG?`<button class="btn sm ed" style="margin-top:12px" data-a="ent-buscar" data-id="${t.id}">Buscar agora</button>`:''}`;
   else{const lim=ENT_TODOS?99:3;let sobra=0;
-    corpo=`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${ENT_CAT.map(([k,l,pl])=>{const its=e.itens.filter(x=>x.cat===k&&!entExcl(x.gid)).sort((a,b)=>a.pe-b.pe);
+    corpo=`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${ENT_CAT.map(([k,l,pl])=>{const its=e.itens.filter(x=>x.cat===k&&!x.excl).sort((a,b)=>a.pe-b.pe);
       if(!its.length)return `<li class="ent-vazio"><span><span class="t2">Sem ${pl} a até ${raio} a pé</span></span></li>`;
       sobra+=Math.max(0,its.length-lim);
       return its.slice(0,lim).map(p=>`<li><span><span class="t1">${esc(p.nome)}</span><span class="t2">${l}${p.min!=null?` · ${p.min} min a pé`:''}</span></span><b class="num">${p.pe<1000?Math.round(p.pe/10)*10+' m':num(p.pe/1000,2)+' km'}</b><a href="${rotaPeUrl(t,p)}" target="_blank" rel="noopener">Rota</a>${poiX('g',p.gid,p.nome,t)}</li>`).join('')}).join('')}</ul>
     ${sobra||ENT_TODOS?`<button class="linkbtn" data-a="ent-todos" style="margin-top:6px">${ENT_TODOS?'Mostrar menos':`Mostrar mais ${sobra}`}</button>`:''}
-    <div class="hint ent-pe">${busc?'Atualizando no Google… · ':''}${e.fonte==='exemplo'?'Dados de exemplo':'Google'} · ${e.semPe?'distância em linha reta (a rota a pé não respondeu)':'distância pela rota a pé'} · buscado em ${fd(e.em)}${mudou?' · <b>a localização mudou depois da busca</b>':''}${GG&&!busc?` · <button class="linkbtn ed" data-a="ent-buscar" data-id="${t.id}">Buscar de novo</button>`:''}</div>`}
+    <div class="hint ent-pe">${busc?'Atualizando no Google… · ':''}${e.fonte==='exemplo'?'Dados de exemplo':'Google'} · ${e.semPe?'distância em linha reta (a rota a pé não respondeu)':'distância pela rota a pé'} · buscado em ${fd(e.em)}${mudou?' · <b>a localização mudou depois da busca</b>':''}</div>`}
   corpo+=pontosEmpresa(t)+poiExcluidos(t);
   return `<section class="sec" id="ent-card"><div class="sec-h"><h2>Pontos de interesse</h2><span class="faint" style="font-size:12px">a pé · até ${raio}</span></div><div class="sec-b">${corpo}</div></section>`}
 /* pontos cadastrados pela empresa: todos aparecem; a pé se está a até RAIO_PE a pé, senão de carro; sem rota medida, linha reta */
@@ -3454,13 +3454,12 @@ function pontosEmpresa(t){const pts=S.pontos||[];const d=t.dist&&t.dist.lat===t.
     ${its.length>5?`<button class="linkbtn" data-a="emp-todos" style="margin-top:6px">${EMP_TODOS?'Mostrar menos':`Mostrar mais ${its.length-5}`}</button>`:''}`
     :'<div class="muted" style="font-size:14px">Nenhum ponto cadastrado pela empresa.</div>'}
     ${DIST_BUSCA_ON(t)?'<div class="hint">Medindo as rotas no Google…</div>':''}</div>`}
-/* excluir ponto de interesse. Do Google: entra na lista de excluídos da empresa (no banco: entorno_excluidos)
-   e some de todos os terrenos, também nas buscas seguintes. Da empresa: desligado (ativo = false), some de
-   todos os terrenos e do mapa. Os dois voltam por "Restaurar" na lista de excluídos. */
-const entExcl=gid=>!!(S.entExcl&&S.entExcl[gid]);
+/* excluir ponto de interesse. Do Google: marcado no próprio terreno (no banco: terreno_entorno.excluido_em);
+   some só deste terreno e continua fora se a busca for refeita (o terreno mudou de lugar). Da empresa:
+   desligado (ativo = false), some de todos os terrenos e do mapa. Os dois voltam por "Restaurar". */
 const poiX=(tp,id,nome,t)=>UI.role==='Leitura'?'':`<button class="iconbtn poi-x" data-a="poi-excl" data-tp="${tp}" data-p="${esc(String(id))}" data-id="${t.id}" aria-label="Excluir ${esc(nome)}" title="Excluir">${ic('lixo',18)}</button>`;
 let EXCL_VER=false;
-function poiExcluidos(t){const g=Object.entries(S.entExcl||{}).map(([gid,x])=>({tp:'g',id:gid,...x})),e=(S.pontosExcl||[]).map(p=>({tp:'e',...p}));
+function poiExcluidos(t){const g=(t.entorno?.itens||[]).filter(x=>x.excl).map(x=>({tp:'g',id:x.gid,nome:x.nome,...x.excl})),e=(S.pontosExcl||[]).map(p=>({tp:'e',...p}));
   const l=[...g,...e].sort((a,b)=>String(b.em).localeCompare(String(a.em)));if(!l.length)return '';
   return `<div class="ent-exc"><button class="linkbtn" data-a="poi-excl-ver" aria-expanded="${EXCL_VER}">${EXCL_VER?'Ocultar excluídos':`Excluídos (${l.length})`}</button>
     ${EXCL_VER?`<ul class="poil ent-l">${l.map(x=>`<li><span><span class="t1">${esc(x.nome)}</span><span class="t2">${x.tp==='g'?'Google':'Cadastrado pela empresa'} · excluído por ${esc(x.por)} em ${fd(x.em)}</span></span>${UI.role!=='Leitura'?`<button class="linkbtn ed" data-a="poi-rest" data-tp="${x.tp}" data-p="${esc(String(x.id))}" data-id="${t.id}">Restaurar</button>`:''}</li>`).join('')}</ul>`:''}</div>`}
@@ -4091,7 +4090,7 @@ async function gEntornoDe(t){gSet(gEntorno,null);gEntorno=[];
   try{const {Place,SearchNearbyRankPreference}=gLib.places;
     const {places}=await Place.searchNearby({fields:['id','displayName','location','primaryType','types','formattedAddress'],locationRestriction:{center:gLL(t.lat,t.lng),radius:2000},
       includedPrimaryTypes:Object.keys(ENTORNO_TIPOS),maxResultCount:20,rankPreference:SearchNearbyRankPreference.DISTANCE,language:'pt-BR',region:'br'});
-    UI.entorno={tid:t.id,itens:(places||[]).filter(p=>!entExcl(p.id)).map(p=>({gid:p.id,nome:p.displayName,cat:ENTORNO_TIPOS[p.primaryType]||(p.types||[]).map(x=>ENTORNO_TIPOS[x]).find(Boolean)||'outro',tipo:p.primaryType,lat:p.location.lat(),lng:p.location.lng(),end:p.formattedAddress,d:distKm(t.lat,t.lng,p.location.lat(),p.location.lng())}))};
+    UI.entorno={tid:t.id,itens:(places||[]).filter(p=>!(t.entorno?.itens||[]).some(i=>i.gid===p.id&&i.excl)).map(p=>({gid:p.id,nome:p.displayName,cat:ENTORNO_TIPOS[p.primaryType]||(p.types||[]).map(x=>ENTORNO_TIPOS[x]).find(Boolean)||'outro',tipo:p.primaryType,lat:p.location.lat(),lng:p.location.lng(),end:p.formattedAddress,d:distKm(t.lat,t.lng,p.location.lat(),p.location.lng())}))};
     const {AdvancedMarkerElement}=gLib.marker;
     UI.entorno.itens.forEach(p=>{const d=document.createElement('div');d.className='ent g';d.textContent=(CAT_POI[p.cat]||'?')[0];
       gEntorno.push(new AdvancedMarkerElement({map:MAPA,position:gLL(p.lat,p.lng),content:d,title:`${p.nome} · ${fKm(p.d)}`}))});
@@ -4131,6 +4130,8 @@ async function gEntornoTerreno(t){if(!GG||!gLib.places||t.lat==null||ENT_BUSCA[t
     let semPe=false;
     if(itens.length){try{(await gMatriz(lat,lng,itens,'WALK')).forEach((x,i)=>{if(x){itens[i].pe=x.m;itens[i].min=x.min}})}catch(e1){semPe=true;itens.forEach(p=>{p.pe=p.reta;p.min=null})}}
     itens=itens.filter(p=>p.pe!=null&&p.pe<=RAIO_PE);
+    /* o que foi excluído neste terreno continua excluído na busca nova */
+    const exc={};(t.entorno?.itens||[]).forEach(i=>{if(i.excl)exc[i.gid]=i.excl});itens.forEach(p=>{if(exc[p.gid])p.excl=exc[p.gid]});
     t.entorno={lat,lng,em:HOJE,fonte:'google',semPe,itens};
     log(t,`Pontos de interesse buscados no Google: ${itens.length} a até ${fKm(RAIO_PE/1000)} a pé`);save();
     if(semPe)toast('A rota a pé não respondeu; os pontos foram filtrados pela distância em linha reta. Confira se a Routes API está liberada para a chave.',true)}
