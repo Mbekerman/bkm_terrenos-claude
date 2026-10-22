@@ -72,22 +72,29 @@ create table app.processos (
   terreno_id           uuid not null references app.terrenos(id),
   etapa_atual          text not null,
   etapa_desde          timestamptz not null default now(),
-  status               text not null default 'ativo' check (status in ('ativo','ganha','perdida','stand_by')),
+  subetapa_atual       text not null,
+  subetapa_desde       timestamptz not null default now(),
+  -- fora de "ativo", guarda a etapa e a subetapa em que estava
+  status               text not null default 'ativo' check (status in ('ativo','comprado','perdido','descartado','stand_by')),
   responsavel_id       uuid references auth.users(id),
   viabilidade_id       uuid references app.viabilidades(id),
-  motivo_encerramento  text,
-  detalhe_encerramento text,
+  motivo_encerramento  text,   -- código de motivos_encerramento (descartado, perdido)
+  detalhe_encerramento text,   -- relato (comprado, perdido), texto livre (descartado) ou justificativa (stand by); rich text
+  pontos_sucesso       text,   -- comprado: rich text
   retomar_em           date,
   data_inicio          timestamptz not null default now(),
   data_encerramento    timestamptz,
   criado_por           uuid default auth.uid(),
   atualizado_em        timestamptz not null default now(),
   unique (empresa_id, codigo),
-  foreign key (tipo, etapa_atual) references app.etapas_modelo(tipo_processo, codigo),
-  check (status <> 'perdida' or motivo_encerramento is not null),
-  check (status <> 'stand_by' or retomar_em is not null)
+  foreign key (empresa_id, tipo, etapa_atual) references app.etapas_modelo(empresa_id, tipo_processo, codigo),
+  foreign key (empresa_id, tipo, etapa_atual, subetapa_atual) references app.subetapas_modelo(empresa_id, tipo_processo, etapa, codigo),
+  check (status not in ('perdido','descartado') or motivo_encerramento is not null),
+  check (status not in ('comprado','perdido') or detalhe_encerramento is not null),
+  check (status <> 'comprado' or pontos_sucesso is not null),
+  check (status <> 'stand_by' or (retomar_em is not null and detalhe_encerramento is not null))
 );
-create index on app.processos (empresa_id, status, etapa_atual);
+create index on app.processos (empresa_id, status, etapa_atual, subetapa_atual);
 create unique index processos_um_aberto_por_terreno on app.processos (terreno_id, tipo) where status in ('ativo','stand_by');
 
 -- Dados próprios da negociação (1:1 com o processo).
@@ -96,24 +103,58 @@ create table app.negociacoes (
   empresa_id           uuid not null references app.empresas(id),
   oferta_referencia_id uuid references app.ofertas(id),
   temperatura          smallint check (temperatura between 1 and 5),  -- null = não avaliada
-  temperatura_em       timestamptz,
-  fase_final           boolean not null default false,   -- marcada à mão: acertando os últimos detalhes
-  fase_final_em        timestamptz
+  temperatura_em       timestamptz
 );
 
+-- Toda passagem com data, hora e usuário: base dos KPIs de SLA.
+-- para_etapa/para_subetapa = onde o processo fica depois do evento (também
+-- em stand by e encerramentos, que mantêm a posição).
 create table app.processo_transicoes (
-  id          uuid primary key default gen_random_uuid(),
-  empresa_id  uuid not null references app.empresas(id),
-  processo_id uuid not null references app.processos(id) on delete cascade,
-  evento      text not null check (evento in ('abertura','avanco','perda','stand_by','retomada','ganho','temperatura','fase_final','retorno')),
-  de_etapa    text,
-  para_etapa  text,
-  forcado     boolean not null default false,
-  comentario  text,
-  user_id     uuid default auth.uid(),
-  em          timestamptz not null default clock_timestamp()  -- uma RPC pode gravar várias transições; cada uma no seu instante
+  id            uuid primary key default gen_random_uuid(),
+  empresa_id    uuid not null references app.empresas(id),
+  processo_id   uuid not null references app.processos(id) on delete cascade,
+  evento        text not null check (evento in ('abertura','avanco','retorno','subetapa','compra','descarte','perda','stand_by','retomada','temperatura')),
+  de_etapa      text,
+  para_etapa    text,
+  de_subetapa   text,
+  para_subetapa text,
+  forcado       boolean not null default false,
+  comentario    text,
+  aprovacao_id  uuid,          -- pedido de aprovação que liberou a passagem (FK abaixo)
+  user_id       uuid default auth.uid(),
+  em            timestamptz not null default clock_timestamp()  -- uma RPC pode gravar várias transições; cada uma no seu instante
 );
 create index on app.processo_transicoes (processo_id, em);
+create index on app.processo_transicoes (processo_id, para_subetapa);
+
+-- Pedidos de aprovação. Um pedido (pedido_id) tem uma linha por nível
+-- exigido e ainda não dispensado. Em sequência, o diretor (ordem 2) só
+-- recebe depois do gestor; em paralelo, os dois têm ordem 1.
+create table app.aprovacoes (
+  id               uuid primary key default gen_random_uuid(),
+  pedido_id        uuid not null,
+  empresa_id       uuid not null references app.empresas(id),
+  processo_id      uuid not null references app.processos(id) on delete cascade,
+  destino_tipo     text not null check (destino_tipo in ('etapa','subetapa','status')),
+  destino          text not null,
+  nivel            text not null check (nivel in ('gestor','diretor')),
+  ordem            smallint not null check (ordem in (1,2)),
+  aprovador_previsto uuid references auth.users(id),   -- null: qualquer um do nível
+  pedido_por       uuid not null references auth.users(id),
+  pedido_em        timestamptz not null default clock_timestamp(),
+  status           text not null default 'pendente' check (status in ('pendente','aprovado','recusado','cancelado')),
+  decidido_por     uuid references auth.users(id),
+  decidido_em      timestamptz,
+  comentario       text,
+  -- o que aplicar quando aprovado: forçado, justificativa, dados do encerramento
+  dados            jsonb not null default '{}'::jsonb,
+  check ((status = 'pendente') = (decidido_em is null)),
+  check (status <> 'recusado' or length(trim(coalesce(comentario,''))) > 0)
+);
+create unique index aprovacoes_um_pedido_aberto on app.aprovacoes (processo_id, nivel) where status = 'pendente';
+create index on app.aprovacoes (pedido_id);
+create index on app.aprovacoes (empresa_id, status, nivel);
+alter table app.processo_transicoes add foreign key (aprovacao_id) references app.aprovacoes(id);
 
 -- ---------------------------------------------------------------------
 -- Propostas e contrapropostas: uma tabela, encadeada.
@@ -320,6 +361,7 @@ create trigger t_upd before update on app.processos  for each row execute functi
 create trigger t_upd before update on app.documentos for each row execute function app.tg_atualizado_em();
 create trigger t_aud after insert or update or delete on app.ofertas     for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.processos   for each row execute function app.tg_auditoria();
+create trigger t_aud after insert or update or delete on app.aprovacoes  for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.propostas   for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.documentos  for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.tarefas     for each row execute function app.tg_auditoria();
@@ -329,7 +371,7 @@ create trigger t_aud after insert or update or delete on app.reunioes    for eac
 do $$
 declare t text;
 begin
-  foreach t in array array['ofertas','viabilidades','processos','negociacoes','processo_transicoes','propostas','tarefas','atividades','reunioes','reuniao_participantes','diligencias','documentos','documento_versoes'] loop
+  foreach t in array array['ofertas','viabilidades','processos','negociacoes','processo_transicoes','aprovacoes','propostas','tarefas','atividades','reunioes','reuniao_participantes','diligencias','documentos','documento_versoes'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
     execute format('grant select on app.%I to authenticated', t);

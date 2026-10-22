@@ -34,21 +34,21 @@ Modelo de dados com diagramas: [docs/modelo.md](docs/modelo.md). Mantenha-o em d
 ## Regras de arquitetura (não quebrar)
 
 1. **Terreno ≠ oferta ≠ negociação.** Um terreno tem N ofertas e N processos ao longo do tempo; no máximo um processo aberto (ativo ou em stand by) por tipo (índice único parcial).
-2. **Regra de negócio mora no banco.** Mudar etapa, encerrar, registrar proposta, enviar/validar documento: só por RPC (`supabase/migrations/*_regras.sql`). O front não tem permissão de `update` em `processos`, `propostas` ou `documentos`. Escrita direta só em tabelas sem regra (terreno e seus cadastros, ofertas, tarefas, atividades, reuniões e participantes, pessoas, corretores).
-3. **Checklist e etapas são configuração** (`etapas_modelo`, `checklist_modelo`, `tipos_documento`). Mudou o processo da empresa? Migration de dados, não código.
+2. **Regra de negócio mora no banco.** Mudar etapa ou subetapa, encerrar, aprovar, registrar proposta, enviar/validar documento: só por RPC (`supabase/migrations/*_regras.sql`). O front não tem permissão de `update` em `processos`, `propostas` ou `documentos`. Escrita direta só em tabelas sem regra (terreno e seus cadastros, ofertas, tarefas, atividades, reuniões e participantes, pessoas, corretores).
+3. **Configuração é dado, editado pelo administrador.** Etapas, subetapas, status, pré-requisitos, checklist, motivos e tipos de notificação são tabelas por empresa (`empresa_id`; nulo = modelo padrão copiado para cada empresa nova), alteradas só pelas RPCs de configuração, com auditoria. Criar ou apagar etapa continua sendo migration. Nada de regra de funil escrita no código pelo código da etapa.
 4. **Documento nunca é sobrescrito.** Cada envio é uma linha nova em `documento_versoes`; caminho no storage `{empresa_id}/{terreno_id}/{tipo}/{uuid}_{arquivo}`. A primeira pasta é o que a RLS do storage confere.
 5. **Isolamento por `empresa_id`** em toda tabela, via RLS com `app.minhas_empresas()`. Views usam `security_invoker = true`.
 6. **Auditoria automática** por trigger (`app.auditoria`) e histórico do funil em `processo_transicoes`.
 7. **"Não informado" nunca vira zero ou "não".** Números desconhecidos são null; seleções têm `nao_informado` / `nao_verificado` / `nao_avaliada`. "Sem limite" de gabarito é um booleano explícito.
 8. **O que muda com o tempo tem histórico, não sobrescrita:** valor venal e IPTU por exercício (`inscricao_valores`), análise urbanística vigente + substituídas, propostas versionadas, documentos versionados.
 9. **Condições pedidas pertencem à oferta** (valor, forma de pagamento, aceita permuta); a ficha mostra a oferta de referência da negociação. Temperatura pertence à negociação.
-10. **Papéis:** `gestor` (aprova compra, força avanço), `analista` (edita), `leitura` (só consulta). Escrita usa `app.empresas_edicao()` / `app.exigir_editor()`; leitura usa `app.minhas_empresas()`.
+10. **Papéis:** `diretor`, `gestor` (forçam avanço), `analista` (edita), `leitura` (só consulta), com hierarquia por `membros.superior_id` (analista → gestor → diretor). Aprovações de gestor e diretor são configuradas por etapa, subetapa e status; quem já tem o nível fica dispensado e qualquer superior aprova por quem está abaixo. `administrador` é permissão à parte (equipe e configuração). Escrita usa `app.empresas_edicao()` / `app.exigir_editor()`; leitura usa `app.minhas_empresas()`; configuração usa `app.exigir_administrador()`.
 11. **Ficha do terreno só muda por `app.salvar_terreno(id, versao, dados)`,** que recusa versão antiga (edição simultânea).
 
 ## Comandos
 
 ```bash
-bash supabase/tests/run.sh          # migrations + 178 testes de regra num Postgres 16 temporário
+bash supabase/tests/run.sh          # migrations + 268 testes de regra num Postgres 16 temporário
 cd apps/web && npm install
 npm run dev                          # precisa de apps/web/.env.local (ver .env.example)
 npm run typecheck && npm run build
@@ -64,7 +64,7 @@ Toda mudança de regra no banco vem com teste em `supabase/tests/regras.sql`.
 - Municípios: `app.municipios` tem os 5.571 do IBGE e o front resolve o `municipio_id` pela cidade/UF da busca do Google (`app.municipio_por_nome`). O catálogo de `zoneamentos` só tem São Paulo; para outras cidades falta definir (zona digitada ou catálogo por cidade).
 - PostGIS (polígono do terreno, busca por raio, deduplicação por proximidade) ainda não entrou; hoje a deduplicação é por matrícula + cartório e por endereço, e a distância a pontos de interesse é haversine (`app.distancia_km`).
 - Mapa: Google Maps JS (mapa, relevo, satélite, Street View, AdvancedMarker com `DEMO_MAP_ID`; criar um Map ID próprio), Routes API (rota no mapa, Directions como reserva), Places API New (autocompletar no cadastro, "o que tem perto" e entorno do terreno), Routes API também na matriz de distâncias a pé, Geocoding (localizar pelo endereço) e Elevation (relevo da poligonal). Sem chave ou com a chave recusada, cai no Leaflet (Esri/OSM). Address Validation ainda não usada. Separar em chave de navegador + chave de servidor fica para depois.
-- Alertas por e-mail e tarefas automáticas de vencimento (pg_cron) ainda não existem; o vencimento é calculado na hora pela view `v_documentos`.
+- Notificações no app e lembretes existem no banco (`notificacoes`, `lembretes`, `app.rotina_diaria()` pelo pg_cron, agendada na migration quando a extensão existe; no Supabase, ligar pg_cron antes). E-mail e preferências por usuário ainda não.
 - Acesso externo (corretor, advogado) fora do escopo atual.
 - IA sobre atas: `documento_versoes.texto_extraido` já existe; faltam a extração (OCR/PDF) e o resumo/perguntas sobre a negociação (provável pgvector + função no servidor).
 - Os tipos TypeScript em `apps/web/src/lib/types.ts` são escritos à mão; trocar por `supabase gen types` quando o projeto estiver ligado.
