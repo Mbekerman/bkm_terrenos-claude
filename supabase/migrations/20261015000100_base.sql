@@ -213,7 +213,7 @@ create index on app.auditoria (empresa_id, em desc, id desc);
 -- histórico é que junta. Processos ficam de fora: o histórico do funil
 -- (processo_transicoes) é a base do SLA e cada passagem conta.
 create or replace function app.janela_log()
-returns interval language sql immutable as $$ select interval '10 seconds' $$;
+returns interval language sql immutable as $$ select interval '7 seconds' $$;
 
 -- Colunas que mudaram entre dois retratos, sem as de controle.
 create or replace function app.colunas_mudadas(a jsonb, b jsonb)

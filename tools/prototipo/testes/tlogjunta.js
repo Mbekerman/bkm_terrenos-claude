@@ -1,4 +1,4 @@
-// Cliques seguidos na temperatura viram um log só; voltar ao valor de antes não deixa log; passados 10 s, é outro log.
+// Cliques seguidos na temperatura viram um log só; voltar ao valor de antes não deixa log; passados 7 s, é outro log.
 const TMP=require('path').join(__dirname,'..','saida')+'/';require('fs').mkdirSync(TMP+'t_logjunta',{recursive:true});
 const {chromium}=require('playwright');
 const L=require('path').join(__dirname,'..','libs','l')+'/';const F=require('path').join(__dirname,'..','saida','bkm-terrenos.html');const OUT=TMP+'t_logjunta/';
@@ -26,8 +26,8 @@ await p.screenshot({path:OUT+'juntado.png'});
 await temp(t0);
 L1=await logs();ok(L1.length===n0,'voltou ao valor de antes: o log some');
 await temp(outros[0]);
-await p.evaluate(()=>{const d=Date.now;Date.now=()=>d()+11000});
+await p.evaluate(()=>{const d=Date.now;Date.now=()=>d()+8000});
 await temp(outros[1]);
-L1=await logs();ok(L1.length===n0+2,`passados 10 s, outro log: ${L1.slice(n0).join(' | ')}`);
+L1=await logs();ok(L1.length===n0+2,`passados 7 s, outro log: ${L1.slice(n0).join(' | ')}`);
 await p.screenshot({path:OUT+'painel.png',clip:{x:1080,y:60,width:360,height:600}});
 console.log('ERROS',errs);await b.close();process.exit(falhas||errs.length?1:0)})();

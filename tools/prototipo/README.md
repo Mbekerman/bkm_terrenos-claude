@@ -41,7 +41,7 @@ Rodar só o que a mudança toca; a varredura completa (`tvaza` e `tscroll`) ao f
 | `tloc.js`, `tordem.js` | colunas da Visão geral e mapa primeiro em uma coluna |
 | `tinline.js` | edição no lugar na Visão geral |
 | `tpisca.js` | clicar no log abre a seção e acende o campo |
-| `tlogjunta.js` | cliques seguidos na temperatura viram um log só; voltar ao valor de antes não deixa log; passados 10 s, outro log |
+| `tlogjunta.js` | cliques seguidos na temperatura viram um log só; voltar ao valor de antes não deixa log; passados 7 s, outro log |
 | `tend2.js`, `tgmock.js` | endereço pela busca do Google (simulado) |
 | `tfunil.js` | novo funil: quadro por etapa e subetapa, quadro de avanço, aprovações por hierarquia, Comprado/Perdido/Descartado/Stand By, sino e Configurações › Funil |
 | `ted2.js` | edição da poligonal (desktop e celular) |

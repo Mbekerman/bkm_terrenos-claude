@@ -53,7 +53,7 @@ function diffTerreno(a,b){
    se o log anterior é do mesmo usuário, nos mesmos campos, há menos de JANELA_LOG, ele dá lugar a um com o valor
    de antes da sequência e o final; se o final é o de antes, os dois somem. Mudança de etapa, subetapa e status fica
    de fora (cada passagem conta para o SLA). O registro é gravado na hora; só o histórico junta. */
-const JANELA_LOG=10000,LOG_NAO_JUNTA=['neg.etapa','neg.sub','neg.status'];
+const JANELA_LOG=7000,LOG_NAO_JUNTA=['neg.etapa','neg.sub','neg.status'];
 const valCampo=(o,k)=>{const [a,b]=k.split('.');const v=b?o[a]?.[b]:o[a];return v===undefined?null:v};
 function juntarLog(t,s,campos,itens,nNovos){
   const e=t.hist[t.hist.length-1];if(!e||!campos.length)return;

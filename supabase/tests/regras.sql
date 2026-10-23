@@ -203,11 +203,11 @@ select pg_temp.ok((select count(*) from app.processo_transicoes where processo_i
   'se a sequência volta ao valor de antes, não fica registro');
 select app.definir_temperatura(:'neg', 4);
 reset role;
-update app.processo_transicoes set em = em - interval '11 seconds' where processo_id = :'neg' and evento = 'temperatura';
+update app.processo_transicoes set em = em - interval '8 seconds' where processo_id = :'neg' and evento = 'temperatura';
 select pg_temp.como(:'diretor');
 select app.definir_temperatura(:'neg', 5);
 select pg_temp.ok((select string_agg(comentario, ' | ' order by em) from app.processo_transicoes where processo_id = :'neg' and evento = 'temperatura') = '— → 4 | 4 → 5',
-  'passados 10 segundos, a mudança seguinte é outro registro');
+  'passados 7 segundos, a mudança seguinte é outro registro');
 select pg_temp.como(:'analista');
 select app.definir_temperatura(:'neg', 4);
 select pg_temp.ok((select count(*) from app.processo_transicoes where processo_id = :'neg' and evento = 'temperatura') = 3, 'outro usuário não junta com a mudança de quem veio antes');
@@ -591,10 +591,10 @@ update app.tarefas set prioridade = 'alta' where id = :'tlog';
 update app.tarefas set titulo = 'Log A1' where id = :'tlog';
 select pg_temp.ok((select count(*) from app.auditoria where registro_id = :'tlog' and acao = 'update') = 2, 'campo diferente é outro log');
 reset role;
-update app.auditoria set em = em - interval '11 seconds' where registro_id = :'tlog';
+update app.auditoria set em = em - interval '8 seconds' where registro_id = :'tlog';
 select pg_temp.como(:'diretor');
 update app.tarefas set titulo = 'Log A2' where id = :'tlog';
-select pg_temp.ok((select count(*) from app.auditoria where registro_id = :'tlog' and acao = 'update') = 3, 'passados 10 segundos, a mesma mudança é outro log');
+select pg_temp.ok((select count(*) from app.auditoria where registro_id = :'tlog' and acao = 'update') = 3, 'passados 7 segundos, a mesma mudança é outro log');
 
 \echo '# fechamento como comprado'
 select app.registrar_oferta(:'t2', 3000000) \gset
