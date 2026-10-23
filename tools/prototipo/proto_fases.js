@@ -129,7 +129,7 @@ function negTopo(titulo,sub){const f=UI.negFase,e=UI.negEtapa,it=[{l:'Fases',v:'
   if(f)it.push({l:faseN(f),v:f});if(f&&e)it.push({l:etapaF(f,e)?.nome||e,v:f+'|'+e});const volta=it[it.length-2];
   return `<div class="page-h"><div class="drill-h">${volta?`<button class="iconbtn drill-v" data-a="neg-nivel" data-v="${esc(volta.v)}" title="Voltar para ${esc(volta.l)}" aria-label="Voltar para ${esc(volta.l)}">${ic('back',22)}</button>`:''}<div>
     ${volta?`<ol class="drill-t" aria-label="Nível do quadro">${it.slice(0,-1).map(x=>`<li><button class="linkbtn" data-a="neg-nivel" data-v="${esc(x.v)}">${esc(x.l)}</button></li>`).join('')}</ol>`:''}
-    <h1>${volta?'':'<span class="marca"></span>'}${esc(titulo)}</h1><div class="sub">${sub}</div></div></div></div>`}
+    <h1>${volta?'':'<span class="marca"></span>'}${esc(titulo)}</h1><div class="sub">${sub}</div></div></div></div>${fxBarra('kanban')}`}
 /* título de coluna que desce um nível */
 const colDesce=(a,v,l,dica)=>`<button class="col-ab" data-a="${a}" data-v="${esc(v)}" title="${esc(dica)}"><span>${esc(l)}</span>${ic('chev',16)}</button>`;
 function kcardFase(t,f,p){const e=etapaF(f,p.etapa),s=p.sub&&subF(f,p.sub),sb=p.status==='stand_by',outras=fasesAbertas(t).filter(x=>x!==f);
@@ -139,13 +139,13 @@ function kcardFase(t,f,p){const e=etapaF(f,p.etapa),s=p.sub&&subF(f,p.sub),sb=p.
   <div class="kr">${av(t.resp,'sm')}<span class="faint">${sb?'revisitar '+fd(p.retomar):diff(p.desde,HOJE)+' d na etapa'}</span></div></button>`}
 function pgFasesBoard(){const F=fasesL().filter(f=>f.ativo);
   return `${negTopo('Fases','Cada coluna é uma fase. Clique no nome da fase para ver as etapas dela; ali, no nome da etapa, as subetapas.')}
-  <div class="board board-fases" id="board">${F.map(f=>{const L=S.terrenos.map(t=>[t,procDaFase(t,f.k)]).filter(([,p])=>p);
+  <div class="board board-fases" id="board">${F.map(f=>{const L=fxLista('kanban').map(t=>[t,procDaFase(t,f.k)]).filter(([,p])=>p);
   return `<section class="col" data-fase="${f.k}" aria-label="${esc(f.nome)}"><div class="col-h">${colDesce('neg-fase',f.k,f.nome,'Ver etapas de '+f.nome)}<span class="n">${L.length}</span></div>${L.map(([t,p])=>kcardFase(t,f.k,p)).join('')||'<div class="col-empty">Nenhum</div>'}</section>`}).join('')}</div>`}
 function kcardProc(t,p){return `<button class="kcard" data-a="abrir" data-id="${t.id}" data-from="negociacoes" ${UI.role!=='Leitura'?'draggable="true"':''}><div class="kr"><span class="num faint">${esc(p.codigo)}</span><span class="num faint">${t.codigo}</span></div><div class="kt">${esc(t.nome)}</div>
   ${p.sub?`<div class="ksub"><span>${esc(subF(p.fase,p.sub)?.nome||'')}</span><span class="faint">${diff(p.subDesde||p.desde,HOJE)} d</span></div>`:''}
   <div class="ks">${esc(t.bairro||'')}${p.status==='stand_by'?' · parou em '+esc(etapaF(p.fase,p.etapa)?.nome||''):''}${fasesAbertas(t).length>1?' · também em '+esc(fasesAbertas(t).filter(f=>f!==p.fase).map(faseN).join(', ')):''}</div>
   <div class="kr">${av(t.resp,'sm')}<span class="faint ${procAtrasada(p)?'katr':''}">${p.status==='stand_by'?'revisitar '+fd(p.retomar):diff(p.desde,HOJE)+' d na etapa'}</span></div></button>`}
-function pgFaseBoard(f){const fc=faseCfg(f),es=etapasF(f),L=S.terrenos.map(t=>[t,procAberto(t,f)]).filter(([,p])=>p),e=UI.negEtapa&&etapaF(f,UI.negEtapa);
+function pgFaseBoard(f){const fc=faseCfg(f),es=etapasF(f),L=fxLista('kanban').map(t=>[t,procAberto(t,f)]).filter(([,p])=>p),e=UI.negEtapa&&etapaF(f,UI.negEtapa);
   const cols=e?e.subs.map(s=>({k:'fe:sub:'+s.k,l:s.nome,f:([,p])=>p.status==='ativo'&&p.etapa===e.k&&p.sub===s.k}))
     :[...es.map(x=>({k:'fe:'+x.k,l:x.nome,sla:x.sla,abre:x.k,f:([,p])=>p.status==='ativo'&&p.etapa===x.k})),{k:'fe:stand_by',l:'Stand By',cls:'enc',f:([,p])=>p.status==='stand_by'}];
   return `${negTopo(e?e.nome:fc.nome,e?`Subetapas de ${esc(e.nome)}, em ${esc(fc.nome)}. Arraste o card para mudar a subetapa.`:`Arraste os cards entre as colunas para mudar a etapa. Clique no nome da etapa para ver as subetapas. ${esc(fc.conc)} sai do quadro e abre a fase seguinte, se as dependências dela se cumprirem.`)}

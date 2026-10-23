@@ -49,7 +49,7 @@ function abrirPartes(t){const n=t.neg;if(!n||n.status!=='ativo'||t._parte)return
   const e=etapaPartes(),s=subInicial(e);
   partesAtivas(t).filter(pa=>!pa.neg).forEach(pa=>{const seq=(t.partes||[]).filter(x=>x.neg).length+1;
     const of=t.ofertas.filter(o=>o.partes&&pa.id in o.partes).slice(-1)[0];
-    pa.neg={codigo:n.codigo+'-'+seq,etapa:e,sub:s,status:'ativo',desde:HOJE,subDesde:HOJE,temp:n.temp,ofRef:of?.id||n.ofRef,viab:null,pedido:null,
+    pa.neg={codigo:n.codigo+'-'+seq,etapa:e,sub:s,status:'ativo',desde:HOJE,subDesde:HOJE,ofRef:of?.id||n.ofRef,viab:null,pedido:null,
       trilha:[{em:agora(),user:me(),ev:'abertura',deEtapa:null,deSub:null,paraEtapa:e,paraSub:s,status:'ativo'}]};
     pa.propostas=pa.propostas||[];log(t,`Negociação da parte ${pa.nome} aberta (${pa.neg.codigo})`)});
   sincPrincipal(t)}
@@ -93,7 +93,6 @@ function parteCard(t,pa){const ro=UI.role==='Leitura',n=pa.neg,vt=n?vtParte(t,pa
     corpo=`<div class="pt-g">
       ${n.status==='ativo'?`<label class="pt-f"><span class="lbl">Subetapa</span><select data-ch="pt-sub" data-p="${pa.id}" ${ro||p?'disabled':''} aria-label="Subetapa de ${esc(pa.nome)}">${subs.map(s=>`<option value="${s.k}" ${s.k===n.sub?'selected':''}>${esc(s.nome)}</option>`).join('')}</select><span class="faint">${diasSub(n)??0} d${subAtrasada(n)?' · <b class="t-warn">prazo estourado</b>':''}</span></label>`
         :`<div class="pt-f"><span class="lbl">${STATUS_N[n.status]}</span><span>${n.status==='stand_by'?'revisitar '+fd(n.retomar):fd(n.encerradoEm)}${n.motivo?' · '+esc(motivoN(n.status,n.motivo)):''}</span>${n.detalhe||n.relato?`<span class="faint">${esc(n.detalhe||textoDe(n.relato))}</span>`:''}</div>`}
-      <div class="pt-f"><span class="lbl">Temperatura</span>${n.status==='ativo'&&!ro?tempPicker(vt).replaceAll('data-a="temp"',`data-a="pt-temp" data-p="${pa.id}"`):tempMini(n.temp)}</div>
       <div class="pt-f"><span class="lbl">Pedido</span><span class="num">${preco?mi(preco):'<span class="faint">—</span>'}</span></div>
       <div class="pt-f"><span class="lbl">Última proposta</span><span class="num">${lp?mi(lp.valor)+' <span class="faint">'+(lp.origem==='bkm'?'BKM':'vendedor')+' · '+OPT.statusProp[lp.status].toLowerCase()+'</span>':'<span class="faint">—</span>'}</span></div></div>
       ${p?`<div class="pt-ped">${ic('clock',16)}<span>Aguardando ${esc(quemFalta(p))} para ${esc(destinoNome(p.tipo,p.dest))}</span>${ro?'':`${naVez(p).some(x=>podeDecidir(x,me()))?`<button class="btn primary sm" data-a="pt-aprovar" data-p="${pa.id}">Aprovar</button><button class="btn sm" data-a="pt-recusar" data-p="${pa.id}">Recusar</button>`:''}${p.por===me()||nivelDe(me())>nivelDe(p.por)?`<button class="btn text sm" data-a="pt-cancelar" data-p="${pa.id}">Cancelar pedido</button>`:''}`}</div>`:''}
@@ -110,7 +109,7 @@ function parteMenu(t,pa){const n=pa.neg,it=[];if(!pa.ativa)return '';
   return `<div class="adv-mais"><button class="btn sm adv-mb" data-a="adv-mais" aria-haspopup="menu" aria-expanded="false" aria-label="Mais ações da parte ${esc(pa.nome)}"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" d="M12 5.5h.01M12 12h.01M12 18.5h.01"/></svg></button><div class="adv-menu" role="menu">${it.join('')}</div></div>`}
 function secPartes(t){const P=t.partes||[],at=partesAtivas(t),ro=UI.role==='Leitura',div=dividida(t);
   const add=ro?'':`<button class="btn text sm" data-a="pt-nova">${ic('add',16)}Adicionar parte</button>`;
-  if(!P.length)return `<section class="sec" id="sec-partes"><div class="sec-h"><h2>Partes</h2>${add}</div><div class="sec-b"><div class="muted">Um dono, mesmo com várias matrículas, é uma negociação só. Se os lotes têm donos que negociam separado, cadastre uma parte para cada dono ou grupo de donos: cada uma terá preço, temperatura, propostas e status próprios a partir de ${esc(SN(etapaPartes()))}.</div></div></section>`;
+  if(!P.length)return `<section class="sec" id="sec-partes"><div class="sec-h"><h2>Partes</h2>${add}</div><div class="sec-b"><div class="muted">Um dono, mesmo com várias matrículas, é uma negociação só. Se os lotes têm donos que negociam separado, cadastre uma parte para cada dono ou grupo de donos: cada uma terá preço, propostas e status próprios (a temperatura é uma só, a da negociação do terreno) a partir de ${esc(SN(etapaPartes()))}.</div></div></section>`;
   const co=at.filter(pa=>pa.neg?.status==='comprado'),aT=at.reduce((s,p)=>s+(p.area||0),0),aC=co.reduce((s,p)=>s+(p.area||0),0);
   const pedidos=at.map(pa=>precoParte(t,pa)),soma=pedidos.every(v=>v!=null)?pedidos.reduce((a,b)=>a+b,0):null;
   const prob=at.filter(pa=>['perdido','descartado'].includes(pa.neg?.status));
@@ -136,7 +135,6 @@ function partesClick(A,a,t){if(!A.startsWith('pt-')||!t)return false;const pa=pa
     case 'pt-nova':UI.alvoParte=null;UI.modal='pt-parte';renderModal();return true;
     case 'pt-editar':abre('pt-parte');return true;
     case 'pt-remover':if(pa.essencial&&nivelDe(me())<2){toast('Só gestor ou diretor tira uma parte essencial.',true);return true}abre('pt-remover');return true;
-    case 'pt-temp':{const v=Number(a.dataset.v)||null,antes=pa.neg.temp;pa.neg.temp=v;log(vtParte(t,pa),`Temperatura ${antes||'—'} → ${v||'—'}`);save();render();return true}
     case 'pt-ir':{const r=checkAdv(vtParte(t,pa));if(!r)return true;if(r.compra){const pend=r.items.filter(x=>!x.ok);
         if(pend.length&&!r.forcar){UI.acao={tid:t.id,parte:pa.id,tipo:'status',dest:'comprado',pend:pend.map(x=>x.txt),items:pend};abre('adv-bloq')}else{UI.acao={pend:pend.map(x=>x.txt)};abre('pt-comprar')}return true}
       tentarParte(t,pa,'etapa',r.dest);return true}
@@ -225,7 +223,7 @@ function partesPreparar(){if(S.partesExemplo)return;S.partesExemplo=true;if(S.te
   const tr=(e,s,d,ev,de)=>({em:H(d)+'T09:00:00.000',user:'Ana Prado',ev,deEtapa:de?.[0]||null,deSub:de?.[1]||null,paraEtapa:e,paraSub:s,status:'ativo'});
   t.neg={codigo:'NEG-00133',etapa:'negociacao',sub:'aguardando_reuniao',status:'ativo',desde:H(20),subDesde:H(20),temp:3,ofRef:'o133',viab:{nome:'Estudo dos 3 lotes',vgv:71500000,margem:15.4,pmax:9600000,em:H(30)},pedido:null,
     trilha:[tr('triagem','aguardando_informacoes',55,'abertura'),tr('estudos','estudo_massa',40,'avanco',['triagem','verificacao_interna']),tr('estudos','estudo_viabilidade',32,'subetapa',['estudos','estudo_massa']),tr('negociacao','aguardando_reuniao',20,'avanco',['estudos','estudo_viabilidade'])]};
-  const np=(seq,e,s,dias,temp,extra)=>Object.assign({codigo:'NEG-00133-'+seq,etapa:e,sub:s,status:'ativo',desde:H(dias),subDesde:H(Math.min(dias,6)),temp,ofRef:'o133',viab:null,pedido:null,
+  const np=(seq,e,s,dias,temp,extra)=>Object.assign({codigo:'NEG-00133-'+seq,etapa:e,sub:s,status:'ativo',desde:H(dias),subDesde:H(Math.min(dias,6)),ofRef:'o133',viab:null,pedido:null,
     trilha:[tr('negociacao','aguardando_reuniao',20,'abertura')].concat(e==='contrato'?[tr('contrato',s,6,'avanco',['negociacao','contra_proposta'])]:s!=='aguardando_reuniao'?[tr('negociacao',s,6,'subetapa',['negociacao','aguardando_reuniao'])]:[])},extra||{});
   pa.neg=np(1,'contrato','em_elaboracao',6,5);pa.propostas=[{v:1,origem:'bkm',data:H(15),valor:4600000,forma:'permuta_com_torna',cond:'R$ 3 mi + 4% em unidades.',status:'aceita'}];
   pb.neg=np(2,'negociacao','contra_proposta',20,3);pb.propostas=[{v:1,origem:'bkm',data:H(14),valor:2600000,forma:'dinheiro',cond:'À vista.',status:'recusada'},{v:2,origem:'vendedor',data:H(5),valor:2900000,forma:'dinheiro',cond:'50% no compromisso.',status:'apresentada'}];
