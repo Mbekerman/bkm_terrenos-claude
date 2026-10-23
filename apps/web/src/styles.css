@@ -1803,6 +1803,11 @@ body.mp-cheia .mapa-area { position: fixed !important; inset: 0 !important; z-in
 body.mp-cheia .mapa-area .mp-barra { top: calc(12px + env(safe-area-inset-top, 0px)) }
 body.mp-cheia .mp-ctrl { right: max(10px, env(safe-area-inset-right, 0px)) }
 body.mp-cheia .fab { display: none !important }
+/* Street View aberto na página Mapa: X próprio no canto de cima, à direita; cartão do terreno escondido */
+.sv-x { display: none; position: absolute; top: 12px; right: 12px; z-index: 1100 }
+.mapa-area.sv-on .sv-x { display: grid }
+.mapa-area.sv-on .mp-cartao { display: none !important }
+body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

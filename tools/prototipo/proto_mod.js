@@ -133,10 +133,10 @@ function temaMapa(){if(!MAPA||!$('#mapa'))return;if(GG){if(MAPA.__escuro!==temaE
 /* botões do canto do mapa: minha localização e tela cheia (o controle de câmera do Google saiu; decisão do Moisés, 23/out/2026).
    Sobem acima do cartão do terreno e do aviso de desenho quando eles ocupam o pé do mapa. */
 function mpCtrlHtml(){const on=document.body.classList.contains('mp-cheia');
-  return `<div id="mp-ctrl" class="mp-ctrl"><button type="button" class="mp-cb" data-a="mp-eu" title="Minha localização" aria-label="Centralizar na minha localização">${ic('eu',22)}</button>
+  return `${GG?`<button type="button" class="mp-cb sv-x" data-a="sv-fechar" title="Fechar o Street View (Esc)" aria-label="Fechar o Street View">${ic('close',22)}</button>`:''}<div id="mp-ctrl" class="mp-ctrl"><button type="button" class="mp-cb" data-a="mp-eu" title="Minha localização" aria-label="Centralizar na minha localização">${ic('eu',22)}</button>
     <button type="button" class="mp-cb" data-a="mp-cheia" aria-pressed="${on}" title="${on?'Sair da tela cheia':'Tela cheia'}" aria-label="${on?'Sair da tela cheia':'Tela cheia'}">${ic(on?'telaSair':'tela',22)}</button></div>`}
 function mpCtrlPos(){const a=$('.mapa-area'),c=$('#mp-ctrl');if(!a||!c)return;const ar=a.getBoundingClientRect();let topo=ar.bottom;
-  ['#mp-cartao','#mp-modo'].forEach(s=>{const e=$(s);if(!e||!e.offsetHeight)return;const r=e.getBoundingClientRect();if(r.bottom>ar.bottom-80&&r.right>ar.right-80)topo=Math.min(topo,r.top)});
+  ['#mp-cartao','#mp-modo','.mapa-area .gm-svpc'].forEach(s=>{const e=$(s);if(!e||!e.offsetHeight)return;const r=e.getBoundingClientRect();if(r.bottom>ar.bottom-80&&r.right>ar.right-80)topo=Math.min(topo,r.top)});
   c.style.bottom=topo<ar.bottom?Math.round(ar.bottom-topo+12)+'px':''}
 function mpCtrlObs(){const a=$('.mapa-area');if(!a||a.__ro||!window.ResizeObserver)return mpCtrlPos();a.__ro=new ResizeObserver(mpCtrlPos);[a,$('#mp-cartao'),$('#mp-modo')].forEach(e=>e&&a.__ro.observe(e));mpCtrlPos()}
 /* tela cheia: o mapa cobre a página (classe no body, que também serve ao iPhone, sem tela cheia de elemento) e, onde der, o navegador esconde as próprias barras */
@@ -148,7 +148,7 @@ function mpTelaCheia(on){const b=document.body;if(on===undefined)on=!b.classList
   const k=$('[data-a="mp-cheia"]');if(k){k.setAttribute('aria-pressed',on);k.title=k.ariaLabel=on?'Sair da tela cheia':'Tela cheia';k.innerHTML=ic(on?'telaSair':'tela',22)}
   if(!GG)setTimeout(()=>MAPA?.invalidateSize?.(),60);setTimeout(mpCtrlPos,80)}
 document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&mpCheiaApi){mpCheiaApi=false;if(document.body.classList.contains('mp-cheia'))mpTelaCheia(false)}});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('mp-cheia')&&!document.fullscreenElement&&!UI.modal&&!UI.fichaSheet&&!UI.mpModo&&!$('.mp-ctx')&&!$('.v-menu')){mpTelaCheia(false);e.preventDefault()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('mp-cheia')&&!e.defaultPrevented&&!$('.mapa-area.sv-on')&&!document.fullscreenElement&&!UI.modal&&!UI.fichaSheet&&!UI.mpModo&&!$('.mp-ctx')&&!$('.v-menu')){mpTelaCheia(false);e.preventDefault()}});
 /* minha localização: ponto azul com o círculo da precisão; centra o mapa */
 function mpEu(){if(!navigator.geolocation){toast('Este navegador não informa a localização.',true);return}
   const b=$('[data-a="mp-eu"]');b?.classList.add('busca');

@@ -15,7 +15,21 @@ await ctx.route('**/*',r=>{const u=r.request().url();if(u.startsWith('file://'))
 const p=await ctx.newPage();p.on('pageerror',e=>erros.push(e.message));await p.goto('file:///x/a.html');await p.evaluate(t=>{localStorage.clear();localStorage.setItem('bkm-terrenos-tema',t)},tema);await p.reload();await p.waitForTimeout(500);
 await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=mapa]').click());await p.waitForTimeout(800);
 const nome=`${cfg}_${tema}_${w}`;
-if(cfg==='google'){const o=await p.evaluate(()=>window.__mapas.at(-1).opts);ok(o.cameraControl===false&&o.fullscreenControl===false,`${nome}: sem o controle de câmera do Google (cameraControl ${o.cameraControl})`)}
+if(cfg==='google'){const o=await p.evaluate(()=>window.__mapas.at(-1).opts);ok(o.cameraControl===false&&o.fullscreenControl===false,`${nome}: sem o controle de câmera do Google (cameraControl ${o.cameraControl})`);
+  ok(o.streetViewControl===true,`${nome}: bonequinho do Street View no mapa`);
+  ok(await p.evaluate(()=>window.__mapas.at(-1).sv.opts?.enableCloseButton===false),`${nome}: fechar do Google escondido no Street View`);
+  // o bonequinho (simulado) no canto: os botões ficam acima dele
+  await p.evaluate(()=>{const d=document.createElement('div');d.className='gm-svpc';d.style.cssText='position:absolute;right:10px;bottom:24px;width:40px;height:40px;background:#fc0';document.querySelector('#mapa').appendChild(d)});
+  const svOn=v=>p.evaluate(v=>window.__mapas.at(-1).sv.setVisible(v),v);
+  await svOn(true);await p.waitForTimeout(150);
+  const x=await p.evaluate(()=>{const b=document.querySelector('.sv-x');return {vis:!!b&&getComputedStyle(b).display!=='none',on:document.querySelector('.mapa-area').classList.contains('sv-on')}});
+  ok(x.vis&&x.on,`${nome}: Street View aberto mostra o X`);
+  await p.screenshot({path:O+nome+'_sv.png'});
+  await p.click('.sv-x');await p.waitForTimeout(150);
+  const fx=await p.evaluate(()=>({v:window.__mapas.at(-1).sv.getVisible(),x:getComputedStyle(document.querySelector('.sv-x')).display,cima:document.querySelector('#mp-ctrl').getBoundingClientRect().bottom<=document.querySelector('.gm-svpc').getBoundingClientRect().top}));
+  ok(!fx.v&&fx.x==='none',`${nome}: X fecha o Street View`);ok(fx.cima,`${nome}: botões do canto acima do bonequinho`);
+  await svOn(true);await p.keyboard.press('Escape');await p.waitForTimeout(150);
+  ok(await p.evaluate(()=>!window.__mapas.at(-1).sv.getVisible()),`${nome}: Esc fecha o Street View`)}
 ok(await p.evaluate(()=>!!document.querySelector('.mapa-area [data-a=mp-eu]')&&!!document.querySelector('.mapa-area [data-a=mp-cheia]')),`${nome}: botões de localização e tela cheia no mapa`);
 // minha localização
 await p.click('[data-a=mp-eu]');await p.waitForTimeout(500);
@@ -38,6 +52,8 @@ await p.click('[data-a=mp-cheia]');await p.waitForTimeout(300);
 const tc=await p.evaluate(()=>{const r=document.querySelector('.mapa-area').getBoundingClientRect();return {on:document.body.classList.contains('mp-cheia'),w:Math.round(r.width),h:Math.round(r.height),x:Math.round(r.x),y:Math.round(r.y),lbl:document.querySelector('[data-a=mp-cheia]').getAttribute('aria-label')}});
 ok(tc.on&&tc.w===w&&tc.h===h&&tc.x===0&&tc.y===0&&tc.lbl==='Sair da tela cheia',`${nome}: tela cheia cobre a página (${JSON.stringify(tc)})`);
 await p.screenshot({path:O+nome+'_cheia.png'});
+if(cfg==='google'){await p.evaluate(()=>window.__mapas.at(-1).sv.setVisible(true));await p.keyboard.press('Escape');await p.waitForTimeout(150);
+  ok(await p.evaluate(()=>!window.__mapas.at(-1).sv.getVisible()&&document.body.classList.contains('mp-cheia')),`${nome}: na tela cheia, Esc fecha só o Street View`)}
 await p.click('[data-a=mp-cheia]');await p.waitForTimeout(300);
 ok(await p.evaluate(()=>!document.body.classList.contains('mp-cheia')&&document.querySelector('.mapa-area').getBoundingClientRect().width<innerWidth),`${nome}: sair da tela cheia volta ao normal`);
 if(w>600){await p.click('[data-a=mp-cheia]');await p.waitForTimeout(200);const api=await p.evaluate(()=>!!document.fullscreenElement);if(api)await p.evaluate(()=>document.exitFullscreen());else await p.keyboard.press('Escape');console.log('  (tela cheia do navegador: '+api+')');await p.waitForTimeout(300);
