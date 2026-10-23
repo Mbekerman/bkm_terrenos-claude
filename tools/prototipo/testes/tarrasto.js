@@ -11,7 +11,7 @@ const p=await ctx.newPage();p.on('pageerror',e=>erros.push(e.message));await p.g
 const ev=(sel,tipo,dt,i=0)=>p.evaluate(([s,t,i])=>{const el=document.querySelectorAll(s)[i],r=el.getBoundingClientRect();el.dispatchEvent(new DragEvent(t,{bubbles:true,cancelable:true,dataTransfer:window.__dt,clientX:r.x+r.width/2,clientY:r.y+r.height-20}))},[sel,tipo,i]);
 const classes=()=>p.evaluate(()=>({dnd:document.body.classList.contains('dnd')||document.body.classList.contains('dnd-tk'),sobre:[...document.querySelectorAll('.sobre')].map(x=>x.dataset.col||x.dataset.tkcol),origem:[...document.querySelectorAll('.col.origem')].map(x=>x.dataset.col)}));
 // negociações
-await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=negociacoes]').click());await p.waitForTimeout(300);
+await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=negociacoes]').click());await p.waitForTimeout(300);await p.evaluate(()=>document.querySelector('[data-a=neg-fase][data-v=novos_negocios]').click());await p.waitForTimeout(200);
 await p.evaluate(()=>{window.__dt=new DataTransfer()});
 const orig=await p.evaluate(()=>document.querySelector('.kcard[draggable=true]').closest('.col').dataset.col);
 const alvo=await p.evaluate(o=>[...document.querySelectorAll('.col[data-col]')].findIndex(c=>c.dataset.col!==o),orig);

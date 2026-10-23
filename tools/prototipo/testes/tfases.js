@@ -18,20 +18,30 @@ const ter=(p,nome)=>p.evaluate(n=>{const S=JSON.parse(localStorage.getItem('bkm-
 const bloco=async(p,k)=>{await p.evaluate(k=>{const b=document.querySelector(`[data-a=bloco][data-t=${k}]`);if(b.getAttribute('aria-expanded')!=='true')b.click()},k);await p.waitForTimeout(250)};
 let {p,ctx}=await abre(1440,900);
 
-// kanban: chips de fase; Novos Negócios é o quadro de sempre
-await nav(p,'negociacoes');
-ok((await txt(p,'.neg-fase .fchip')).includes('Aprovação de Projetos'),'chips das fases no kanban');
-ok((await txt(p,'h1')).includes('Novos Negócios'),'abre em Novos Negócios');
-await clica(p,'[data-a=neg-fase][data-v=aprovacao]');await p.screenshot({path:O+'1_kanban_aprovacao.png'});
-ok((await txt(p,'.col-h')).includes('Análise na Prefeitura'),'colunas com as etapas da Aprovação');
+// kanban em três níveis: fases › etapas › subetapas, com seta para voltar
+await nav(p,'negociacoes');await p.screenshot({path:O+'0_kanban_fases.png'});
+ok((await txt(p,'.board-fases .col-h')).includes('Aprovação de Projetos'),'kanban abre no nível das fases');
+ok((await txt(p,'.col[data-fase=entregue] .kcard')).includes('Itaquera'),'empreendimento entregue na coluna Entregue');
+ok(!(await p.evaluate(()=>!!document.querySelector('.drill-v'))),'no nível das fases não há seta de voltar');
+await clica(p,'.col[data-fase=aprovacao] .col-ab');await p.screenshot({path:O+'1_kanban_aprovacao.png'});
+ok((await txt(p,'.col-h')).includes('Análise na Prefeitura'),'desce para as etapas da Aprovação');
 ok((await txt(p,'.kcard')).includes("M'Boi Mirim"),'terreno comprado aparece na Aprovação');
-await clica(p,'[data-a=neg-fase][data-v=obras]');await p.screenshot({path:O+'2_kanban_obras.png'});
+ok((await txt(p,'.drill-t')).includes('Fases'),'trilha mostra de onde veio');
+await clica(p,'.col-ab[data-v=prefeitura]');await p.screenshot({path:O+'1b_kanban_sub.png'});
+ok((await txt(p,'.col-h')).includes('Comunique-se')&&(await txt(p,'h1')).includes('Análise na Prefeitura'),'desce para as subetapas da etapa');
+await p.dragAndDrop('.col[data-col="fe:sub:protocolado"] .kcard >> nth=0','.col[data-col="fe:sub:comunique_se"]').catch(()=>{});await p.waitForTimeout(250);
+ok((await ter(p,"M'Boi")).procs[0].sub==='comunique_se','arrastar muda a subetapa da fase');
+await clica(p,'.drill-v');ok((await txt(p,'h1')).includes('Aprovação de Projetos'),'seta volta para as etapas');
+await clica(p,'.drill-v');ok(await p.evaluate(()=>!!document.querySelector('.board-fases')),'seta volta para as fases');
+await clica(p,'.col[data-fase=obras] .col-ab');await p.screenshot({path:O+'2_kanban_obras.png'});
 ok((await txt(p,'.col[data-col="fe:execucao"] .kcard')).includes('Raimundo'),'terreno em obras na coluna Execução');
 // arrastar para a próxima etapa da fase
 await p.dragAndDrop('.col[data-col="fe:execucao"] .kcard >> nth=0','.col[data-col="fe:entrega"]').catch(()=>{});await p.waitForTimeout(250);
 ok((await ter(p,'Raimundo')).procs.find(x=>x.fase==='obras').etapa==='entrega','arrastar muda a etapa da fase');
-await clica(p,'[data-a=neg-fase][data-v=entregue]');
-ok((await txt(p,'.kcard')).includes('Itaquera'),'empreendimento entregue na fase Entregue');
+await clica(p,'.drill-t [data-a=neg-nivel]');await clica(p,'.col[data-fase=novos_negocios] .col-ab');
+ok((await txt(p,'.col-h')).includes('Em Triagem'),'Novos Negócios desce para as etapas da negociação');
+await clica(p,'.col-ab[data-v=negociacao]');ok((await txt(p,'.drill-t')).includes('Novos Negócios'),'subetapas de Negociação com a trilha');
+await clica(p,'.drill-t [data-a=neg-nivel][data-v=""]');ok(await p.evaluate(()=>!!document.querySelector('.board-fases')),'trilha volta direto às fases');
 
 // tabela: filtro por fase
 await nav(p,'terrenos');await p.selectOption('select[data-ch=fFase]','obras');await p.waitForTimeout(200);await p.screenshot({path:O+'3_tabela_obras.png'});
@@ -39,11 +49,18 @@ ok((await txt(p,'#rows tbody tr')).includes('Raimundo')&&!(await txt(p,'#rows tb
 ok((await txt(p,'#rows .c-etapa')).includes('Obras'),'coluna mostra a fase e a etapa');
 await p.selectOption('select[data-ch=fFase]','');await p.waitForTimeout(150);
 
-// mapa: filtro por fase
-await nav(p,'mapa');await p.waitForTimeout(400);await p.selectOption('#mp-fase','aprovacao');await p.waitForTimeout(300);await p.screenshot({path:O+'4_mapa_aprovacao.png'});
-const lm=await txt(p,'#mp-lista .mp-it');ok(lm.includes("M'Boi")&&!lm.includes('Cupecê'),'mapa filtrado pela fase Aprovação');
-ok(lm.includes('Aprovação de Projetos'),'linha do mapa mostra a fase');
-await p.selectOption('#mp-fase','');
+// mapa em três níveis pela legenda
+await nav(p,'mapa');await p.waitForTimeout(400);
+ok((await txt(p,'#mp-leg .lg-i')).includes('Obras'),'legenda do mapa começa pelas fases');
+ok((await txt(p,'#mp-lista .mp-it')).includes('Entregue'),'linha do mapa mostra a fase');
+await clica(p,'[data-a=mp-desce][data-v=aprovacao]');await p.waitForTimeout(300);await p.screenshot({path:O+'4_mapa_aprovacao.png'});
+const lm=await txt(p,'#mp-lista .mp-it');ok(lm.includes("M'Boi")&&!lm.includes('Cupecê'),'mapa desce para a Aprovação e mostra só os terrenos dela');
+ok((await txt(p,'#mp-leg .lg-i')).includes('Análise na Prefeitura'),'legenda com as etapas da Aprovação');
+await clica(p,'[data-a=mp-desce][data-v=prefeitura]');await p.waitForTimeout(300);
+ok((await txt(p,'#mp-leg .lg-i')).includes('Comunique-se')&&(await txt(p,'#mp-lista .mp-it')).includes("M'Boi"),'legenda com as subetapas da etapa');
+await p.screenshot({path:O+'4b_mapa_sub.png'});
+await clica(p,'.lg-v');ok((await txt(p,'#mp-leg .lg-i')).includes('Alvarás'),'seta da legenda volta para as etapas');
+await clica(p,'.lg-v');ok((await txt(p,'#mp-leg .lg-i')).includes('Lançamento')&&!(await p.evaluate(()=>!!document.querySelector('.lg-v'))),'e depois para as fases');
 
 // ficha: linha do tempo das fases, quadro da fase, seção Fases
 await ficha(p,"M'Boi Mirim");await bloco(p,'fases');await p.screenshot({path:O+'5_ficha_aprovacao.png',fullPage:true});
@@ -86,9 +103,9 @@ ok((await txt(p,'.cfg-fe input')).length>=0&&(await p.evaluate(()=>[...document.
 await p.screenshot({path:O+'8_config_nova.png',fullPage:true});
 
 // escuro e celular
-({p,ctx}=await abre(1440,900,'escuro'));await nav(p,'negociacoes');await clica(p,'[data-a=neg-fase][data-v=obras]');await p.screenshot({path:O+'9_kanban_escuro.png'});
+({p,ctx}=await abre(1440,900,'escuro'));await nav(p,'negociacoes');await p.screenshot({path:O+'9a_fases_escuro.png'});await clica(p,'.col[data-fase=obras] .col-ab');await p.screenshot({path:O+'9_kanban_escuro.png'});
 await ficha(p,'Raimundo');await bloco(p,'fases');await p.screenshot({path:O+'10_ficha_escuro.png'});
-({p,ctx}=await abre(390,844));await nav(p,'negociacoes');await clica(p,'[data-a=neg-fase][data-v=aprovacao]');await p.screenshot({path:O+'11_celular_kanban.png'});
+({p,ctx}=await abre(390,844));await nav(p,'negociacoes');await p.screenshot({path:O+'11a_celular_fases.png'});await clica(p,'.col[data-fase=aprovacao] .col-ab');await p.screenshot({path:O+'11_celular_kanban.png'});
 await ficha(p,'Raimundo');await bloco(p,'fases');await p.screenshot({path:O+'12_celular_ficha.png',fullPage:true});
 await papel(p,'Diretor');await nav(p,'config');await p.screenshot({path:O+'13_celular_config.png',fullPage:true});
 ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'configuração no celular sem rolagem horizontal');
