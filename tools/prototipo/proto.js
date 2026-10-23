@@ -844,7 +844,6 @@ document.addEventListener('click',e=>{
     case 'mp-desce':if(UI.mp.f)UI.mp.e=a.dataset.v;else UI.mp.f=a.dataset.v;UI.mp.ocultas=[];mpRefresh();mpEnquadrar();break;
     case 'mp-nivel':UI.mp.f=a.dataset.v||'';UI.mp.e='';UI.mp.ocultas=[];mpRefresh();mpEnquadrar();break;
     case 'mp-base':setBase(a.dataset.v);break;
-    case 'mp-lugares':G_lugares(UI.mpLugares===false);break;
     case 'lug-fechar':lugarFechar();break;
     case 'mp-modo':UI.mpModo=UI.mpModo===a.dataset.v?null:a.dataset.v;fecharPopup();mpRefresh();break;
     case 'mp-sair':UI.mpModo=null;UI.nvDesenho=false;UI.poiVolta=null;UI.desenho=null;UI.desHist=null;UI.vSel=null;UI.vMenu=false;UI.vMover=false;mpRefresh();break;
