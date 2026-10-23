@@ -10,6 +10,6 @@
   class Place{constructor({id}){this.id=id}async fetchFields({fields}){window.__fetch.push({id:this.id,fields});Object.assign(this,window.__lugar||{});return {place:this}}}
   const m=google.maps;m.Map=Map;m.InfoWindow=InfoWindow;
   m.importLibrary=async n=>n==='places'?{Place,PlaceAutocompleteElement:P}:n==='maps'?{Map,InfoWindow}:P;
-  ['LatLng','LatLngBounds','Polygon','Marker','event','ControlPosition','MapTypeId','Size','Point','Data','MVCArray','OverlayView'].forEach(k=>{if(!(k in m))m[k]=P});
+  ['LatLng','LatLngBounds','Polygon','Circle','Marker','event','ControlPosition','MapTypeId','Size','Point','Data','MVCArray','OverlayView'].forEach(k=>{if(!(k in m))m[k]=P});
   setTimeout(()=>m.__ib__&&m.__ib__(),0);
 })();
