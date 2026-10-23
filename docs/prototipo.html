@@ -2479,6 +2479,13 @@ body.mp-cheia .mapa-area { position: fixed !important; inset: 0 !important; z-in
 body.mp-cheia .mapa-area .mp-barra { top: calc(12px + env(safe-area-inset-top, 0px)) }
 body.mp-cheia .mp-ctrl { right: max(10px, env(safe-area-inset-right, 0px)) }
 body.mp-cheia .fab { display: none !important }
+/* Street View aberto na página Mapa: X próprio no canto de cima, à direita; cartão do terreno escondido */
+.sv-x { display: none; position: absolute; top: 12px; right: 12px; z-index: 1100 }
+.mapa-area.sv-on .sv-x { display: grid }
+.mapa-area.sv-on .mp-cartao { display: none !important }
+body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
+/* indicadores do Dashboard no tema escuro: todos no azul do primeiro (decisão do Moisés, 23/out/2026, no lugar de um tom por indicador) */
+:root[data-tema="escuro"] .kpis-v .kpi { --k: var(--neon-1) !important }
 </style>
 <header class="top">
   <div class="top-in">
@@ -3307,6 +3314,7 @@ document.addEventListener('click',e=>{
     case 'adv-req':ADV_REQ=!ADV_REQ;render();break;
     case 'adv-mais':{const w=a.closest('.adv-mais'),ab=!w.classList.contains('aberto');document.querySelectorAll('.adv-mais.aberto').forEach(x=>{x.classList.remove('aberto');x.querySelector('.adv-mb').setAttribute('aria-expanded','false')});if(ab){w.classList.add('aberto');a.setAttribute('aria-expanded','true')}break}
     case 'viab':UI.modal='viab';renderModal();break;
+    case 'sv-fechar':svFechar();break;
     case 'mp-desel':mpSelecionar(null);break;
     case 'mp-eu':mpEu();break;
     case 'mp-cheia':mpTelaCheia();break;
@@ -3448,7 +3456,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
 });
 function novaNeg(ofRef,temp){const e=STAGES[0][0],s=subInicial(e);return {codigo:'NEG-'+String(Math.floor(Math.random()*900)+100).padStart(5,'0'),etapa:e,sub:s,status:'ativo',desde:HOJE,subDesde:HOJE,temp,ofRef,viab:null,pedido:null,trilha:[{em:agora(),user:me(),ev:'abertura',deEtapa:null,deSub:null,paraEtapa:e,paraSub:s,status:'ativo'}]}}
 function seedVazio(){return {id:uid(),situacao:'ativo',prioridade:null,descricao:'',url:'',obs:'',cep:'',complemento:'',referencia:'',lat:null,lng:null,precisao:'nao_informada',aDoc:null,aCad:null,aLev:null,aEst:null,fonteArea:null,testada:null,topografia:'nao_informado',desnivel:null,posicao:'nao_informado',formato:'nao_informado',ocupacao:'nao_informado',uso:'',aConst:null,aDemolir:null,demolicao:'nao_avaliada',obsFis:'',eixo:null,mats:[],insc:[],confr:[],dilig:[],pessoas:[],corretores:[],infra:{},analises:[],ofertas:[],neg:null,propostas:[],reunioes:[],tarefas:[],docs:[],hist:[]}}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&GG&&lugarFechar())return;if(e.key==='Escape'&&temaMenu){temaMenu=false;renderTema();return}if(e.key==='Escape'&&UI.modal){UI.modal=null;renderModal()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&GG&&(svFechar()||lugarFechar())){e.preventDefault();return}if(e.key==='Escape'&&temaMenu){temaMenu=false;renderTema();return}if(e.key==='Escape'&&UI.modal){UI.modal=null;renderModal()}});
 /* ===================== kanban: arrastar e soltar (regras em proto_funil.js: levarAte, soltar) ===================== */
 function posRender(){try{if(MAPA){MAPA.remove()}}catch(e){}MAPA=null;PINS=POIS=DES=BASE=null;try{if(MINI)MINI.remove()}catch(e){}MINI=null;
   if(UI.route==='mapa')initMapa();if(UI.route==='terreno'&&!blocoFechado('geral'))initMini();fichaSheet()}
@@ -3595,10 +3603,10 @@ function temaMapa(){if(!MAPA||!$('#mapa'))return;if(GG){if(MAPA.__escuro!==temaE
 /* botões do canto do mapa: minha localização e tela cheia (o controle de câmera do Google saiu; decisão do Moisés, 23/out/2026).
    Sobem acima do cartão do terreno e do aviso de desenho quando eles ocupam o pé do mapa. */
 function mpCtrlHtml(){const on=document.body.classList.contains('mp-cheia');
-  return `<div id="mp-ctrl" class="mp-ctrl"><button type="button" class="mp-cb" data-a="mp-eu" title="Minha localização" aria-label="Centralizar na minha localização">${ic('eu',22)}</button>
+  return `${GG?`<button type="button" class="mp-cb sv-x" data-a="sv-fechar" title="Fechar o Street View (Esc)" aria-label="Fechar o Street View">${ic('close',22)}</button>`:''}<div id="mp-ctrl" class="mp-ctrl"><button type="button" class="mp-cb" data-a="mp-eu" title="Minha localização" aria-label="Centralizar na minha localização">${ic('eu',22)}</button>
     <button type="button" class="mp-cb" data-a="mp-cheia" aria-pressed="${on}" title="${on?'Sair da tela cheia':'Tela cheia'}" aria-label="${on?'Sair da tela cheia':'Tela cheia'}">${ic(on?'telaSair':'tela',22)}</button></div>`}
 function mpCtrlPos(){const a=$('.mapa-area'),c=$('#mp-ctrl');if(!a||!c)return;const ar=a.getBoundingClientRect();let topo=ar.bottom;
-  ['#mp-cartao','#mp-modo'].forEach(s=>{const e=$(s);if(!e||!e.offsetHeight)return;const r=e.getBoundingClientRect();if(r.bottom>ar.bottom-80&&r.right>ar.right-80)topo=Math.min(topo,r.top)});
+  ['#mp-cartao','#mp-modo','.mapa-area .gm-svpc'].forEach(s=>{const e=$(s);if(!e||!e.offsetHeight)return;const r=e.getBoundingClientRect();if(r.bottom>ar.bottom-80&&r.right>ar.right-80)topo=Math.min(topo,r.top)});
   c.style.bottom=topo<ar.bottom?Math.round(ar.bottom-topo+12)+'px':''}
 function mpCtrlObs(){const a=$('.mapa-area');if(!a||a.__ro||!window.ResizeObserver)return mpCtrlPos();a.__ro=new ResizeObserver(mpCtrlPos);[a,$('#mp-cartao'),$('#mp-modo')].forEach(e=>e&&a.__ro.observe(e));mpCtrlPos()}
 /* tela cheia: o mapa cobre a página (classe no body, que também serve ao iPhone, sem tela cheia de elemento) e, onde der, o navegador esconde as próprias barras */
@@ -3610,7 +3618,7 @@ function mpTelaCheia(on){const b=document.body;if(on===undefined)on=!b.classList
   const k=$('[data-a="mp-cheia"]');if(k){k.setAttribute('aria-pressed',on);k.title=k.ariaLabel=on?'Sair da tela cheia':'Tela cheia';k.innerHTML=ic(on?'telaSair':'tela',22)}
   if(!GG)setTimeout(()=>MAPA?.invalidateSize?.(),60);setTimeout(mpCtrlPos,80)}
 document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&mpCheiaApi){mpCheiaApi=false;if(document.body.classList.contains('mp-cheia'))mpTelaCheia(false)}});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('mp-cheia')&&!document.fullscreenElement&&!UI.modal&&!UI.fichaSheet&&!UI.mpModo&&!$('.mp-ctx')&&!$('.v-menu')){mpTelaCheia(false);e.preventDefault()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('mp-cheia')&&!e.defaultPrevented&&!$('.mapa-area.sv-on')&&!document.fullscreenElement&&!UI.modal&&!UI.fichaSheet&&!UI.mpModo&&!$('.mp-ctx')&&!$('.v-menu')){mpTelaCheia(false);e.preventDefault()}});
 /* minha localização: ponto azul com o círculo da precisão; centra o mapa */
 function mpEu(){if(!navigator.geolocation){toast('Este navegador não informa a localização.',true);return}
   const b=$('[data-a="mp-eu"]');b?.classList.add('busca');
@@ -4139,7 +4147,7 @@ function gEnquadrar(pts,maxZoom){if(!MAPA||!pts.length)return;if(pts.length===1)
 function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[];gPois=[];gConc=[];gDes=[];gRota=[];gEntorno=[];gSet(gEu,null);gEu=[];
   const v=UI.mpView;
   MAPA=new google.maps.Map(el,{mapId:UI.mpLugares===false&&GMAP_SEM_LUGARES?GMAP_SEM_LUGARES:'DEMO_MAP_ID',colorScheme:temaEscuro()?'DARK':'LIGHT',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[UI.mpBase||'satelite'],
-    mapTypeControl:false,streetViewControl:false,cameraControl:false,fullscreenControl:false,clickableIcons:UI.mpLugares!==false,gestureHandling:'greedy',scaleControl:true,tilt:0,disableDoubleClickZoom:true});
+    mapTypeControl:false,streetViewControl:true,streetViewControlOptions:{position:google.maps.ControlPosition.RIGHT_BOTTOM},cameraControl:false,fullscreenControl:false,clickableIcons:UI.mpLugares!==false,gestureHandling:'greedy',scaleControl:true,tilt:0,disableDoubleClickZoom:true});
   MAPA.__escuro=temaEscuro();gInfo=new google.maps.InfoWindow({maxWidth:320,headerDisabled:true});
   el.classList.toggle('modo',!!UI.mpModo);G_desenhaPins();G_desenhaPois();G_desenhaConc();desenhaEu(false);
   ctxGestos(el,(x,y)=>{if(!gProj||gProj.getMap()!==MAPA)gPontoNaTela(0,0);const pr=gProj?.getProjection();const ll=pr?.fromContainerPixelToLatLng(new google.maps.Point(x,y));return ll?{lat:ll.lat(),lng:ll.lng()}:null});
@@ -4149,7 +4157,11 @@ function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[]
   if(!v)gEnquadrar(ativosBanco().filter(t=>t.lat!=null).map(t=>gLL(t.lat,t.lng)),15);
   MAPA.addListener('idle',()=>{const c=MAPA.getCenter();UI.mpView={c:{lat:c.lat(),lng:c.lng()},z:MAPA.getZoom()};vMenuDesenha()});
   MAPA.addListener('dragstart',()=>$('.mapa-area .v-menu')?.remove());MAPA.addListener('zoom_changed',()=>$('.mapa-area .v-menu')?.remove());
-  MAPA.getStreetView().addListener('visible_changed',()=>$('.mapa-area')?.classList.toggle('sv-on',MAPA.getStreetView().getVisible()));
+  /* Street View: fecha no nosso X (canto de cima, à direita) ou no Esc; o fechar do Google fica escondido para não haver dois */
+  const sv=MAPA.getStreetView();sv.setOptions({enableCloseButton:false,fullscreenControl:false});
+  sv.addListener('visible_changed',()=>{$('.mapa-area')?.classList.toggle('sv-on',sv.getVisible());mpCtrlPos()});
+  /* o bonequinho chega depois do mapa: os botões do canto se ajeitam acima dele */
+  google.maps.event.addListenerOnce(MAPA,'tilesloaded',()=>setTimeout(mpCtrlPos,300));
   MAPA.addListener('click',e=>{if(e.placeId){e.stop();if(!UI.mpModo){lugarAbrir(e.placeId,e.latLng);return}}
     if(lugarFechar()&&!UI.mpModo)return;
     if(UI.mpModo&&e.latLng)mapaClique(e.latLng.lat(),e.latLng.lng());else if(UI.mpSel)mpSelecionar(null)});
@@ -4160,6 +4172,7 @@ function G_eu(u,centrar){gSet(gEu,null);const d=document.createElement('div');d.
   gEu=[new google.maps.Circle({map:MAPA,center:gLL(u.lat,u.lng),radius:u.acc||0,strokeColor:'#1a73e8',strokeWeight:1,strokeOpacity:.5,fillColor:'#1a73e8',fillOpacity:.12,clickable:false}),
     new gLib.marker.AdvancedMarkerElement({map:MAPA,position:gLL(u.lat,u.lng),content:d,title:'Você está aqui',gmpClickable:false,zIndex:5})];
   if(centrar){MAPA.panTo(gLL(u.lat,u.lng));if((MAPA.getZoom()||0)<17)MAPA.setZoom(17)}}
+function svFechar(){const sv=MAPA?.getStreetView?.();if(sv&&sv.getVisible()){sv.setVisible(false);return true}return false}
 function G_focar(t){if(!MAPA)return;UI.mpSel=t.id;if(t.poly)gEnquadrar(t.poly.map(p=>gLL(p[0],p[1])),19);else{MAPA.setCenter(gLL(t.lat,t.lng));if(MAPA.getZoom()<17)MAPA.setZoom(17)}
   mpSelecionar(t.id)}
 
