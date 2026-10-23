@@ -1448,6 +1448,12 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .lg-poi { width: 18px; height: 18px; display: grid; place-items: center; flex: none }
 .lg-poi .poi-b { width: 12px; height: 12px; border-width: 2.5px; box-shadow: none }
 .lg-i[aria-pressed="false"] .lg-poi { filter: grayscale(1) }
+.lg-r { display: flex; align-items: center; gap: 2px }
+.lg-r .lg-i { flex: 1; min-width: 0 }
+.lg-d { width: 28px; height: 28px; flex: none }
+.lg-h { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500; padding: 0 4px 4px 0; margin-bottom: 2px; border-bottom: 1px solid var(--m-outline-variant, #c4c7c5) }
+.lg-h .lg-v { width: 32px; height: 32px; flex: none }
+:root[data-tema="escuro"] .lg-h { border-bottom-color: #1a2240 }
 :root[data-tema="escuro"] .mp-leg-l .lg-sep { border-top-color: #1a2240 }
 
 /* menu do clique direito no mapa (mesmo visual do menu do ponto) */
@@ -1650,9 +1656,9 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .kcard.aprov { outline: 2px solid #ffdf99; outline-offset: -2px }
 .katr { color: #b3261e !important; font-weight: 500 }
 .col-ab { display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent; color: inherit; font: inherit; padding: 4px 6px; margin: -4px -6px; border-radius: 8px }
+.col-ab span { text-align: left }
 .col-ab:hover { background: rgba(127,127,127,.12) }
 .col-s { font-size: 12px; padding: 0 var(--e2) var(--e1) }
-.neg-et { margin-bottom: 12px }
 :root[data-tema="escuro"] .ksub { background: rgba(99,112,255,.14); color: #c9d6ff }
 :root[data-tema="escuro"] .kped { color: #ffdf99 }
 
@@ -1713,7 +1719,13 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .fs-deps li.ok { color: #146c2e }
 .fs-deps li.no { color: var(--m-on-var) }
 :root[data-tema="escuro"] .fs-deps li.ok { color: #6dd58c }
-.neg-fase { margin-bottom: 8px }
+.drill-h { display: flex; align-items: flex-start; gap: 8px }
+.drill-v { margin: 2px 0 0 -8px; flex: none }
+.drill-h:has(.drill-v) .sub { margin-left: 0 }
+.drill-t { list-style: none; margin: 0 0 2px; padding: 0; display: flex; flex-wrap: wrap; font-size: 14px; color: var(--m-on-var) }
+.drill-t li + li::before { content: "›"; margin: 0 6px; color: var(--m-on-var) }
+.drill-t .linkbtn { font-size: 14px; padding: 0 }
+.board-fases .ksub > span:first-child { white-space: normal }
 .tl-topo .sd { overflow: hidden; text-overflow: ellipsis }
 .fsel { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--m-on-var) }
 .fsel select { height: 32px; border-radius: 8px; border: 1px solid var(--m-outline); background: transparent; color: var(--m-on-surface); padding: 0 8px; font: inherit; font-size: 14px }

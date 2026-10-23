@@ -2124,6 +2124,12 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .lg-poi { width: 18px; height: 18px; display: grid; place-items: center; flex: none }
 .lg-poi .poi-b { width: 12px; height: 12px; border-width: 2.5px; box-shadow: none }
 .lg-i[aria-pressed="false"] .lg-poi { filter: grayscale(1) }
+.lg-r { display: flex; align-items: center; gap: 2px }
+.lg-r .lg-i { flex: 1; min-width: 0 }
+.lg-d { width: 28px; height: 28px; flex: none }
+.lg-h { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500; padding: 0 4px 4px 0; margin-bottom: 2px; border-bottom: 1px solid var(--m-outline-variant, #c4c7c5) }
+.lg-h .lg-v { width: 32px; height: 32px; flex: none }
+:root[data-tema="escuro"] .lg-h { border-bottom-color: #1a2240 }
 :root[data-tema="escuro"] .mp-leg-l .lg-sep { border-top-color: #1a2240 }
 
 /* menu do clique direito no mapa (mesmo visual do menu do ponto) */
@@ -2326,9 +2332,9 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .kcard.aprov { outline: 2px solid #ffdf99; outline-offset: -2px }
 .katr { color: #b3261e !important; font-weight: 500 }
 .col-ab { display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent; color: inherit; font: inherit; padding: 4px 6px; margin: -4px -6px; border-radius: 8px }
+.col-ab span { text-align: left }
 .col-ab:hover { background: rgba(127,127,127,.12) }
 .col-s { font-size: 12px; padding: 0 var(--e2) var(--e1) }
-.neg-et { margin-bottom: 12px }
 :root[data-tema="escuro"] .ksub { background: rgba(99,112,255,.14); color: #c9d6ff }
 :root[data-tema="escuro"] .kped { color: #ffdf99 }
 
@@ -2389,7 +2395,13 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .fs-deps li.ok { color: #146c2e }
 .fs-deps li.no { color: var(--m-on-var) }
 :root[data-tema="escuro"] .fs-deps li.ok { color: #6dd58c }
-.neg-fase { margin-bottom: 8px }
+.drill-h { display: flex; align-items: flex-start; gap: 8px }
+.drill-v { margin: 2px 0 0 -8px; flex: none }
+.drill-h:has(.drill-v) .sub { margin-left: 0 }
+.drill-t { list-style: none; margin: 0 0 2px; padding: 0; display: flex; flex-wrap: wrap; font-size: 14px; color: var(--m-on-var) }
+.drill-t li + li::before { content: "›"; margin: 0 6px; color: var(--m-on-var) }
+.drill-t .linkbtn { font-size: 14px; padding: 0 }
+.board-fases .ksub > span:first-child { white-space: normal }
 .tl-topo .sd { overflow: hidden; text-overflow: ellipsis }
 .fsel { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--m-on-var) }
 .fsel select { height: 32px; border-radius: 8px; border: 1px solid var(--m-outline); background: transparent; color: var(--m-on-surface); padding: 0 8px; font: inherit; font-size: 14px }
@@ -3434,7 +3446,9 @@ document.addEventListener('click',e=>{
     case 'fs-fechar':UI.fichaSheet=null;fichaSheet();break;
     case 'mp-foco':{const x=T(a.dataset.id);if(x.lat!=null)focar(x);else if(UI.role!=='Leitura'){UI.mpModo='marcar';UI.mpAlvo=x.id;mpRefresh()}else toast('Terreno sem localização.');break}
     case 'mp-sit':{const v=a.dataset.v,o=UI.mp.ocultas;UI.mp.ocultas=o.includes(v)?o.filter(x=>x!==v):[...o,v];mpRefresh();break}
-    case 'mp-limpar':UI.mp={q:'',cor:'',zona:'',fase:'',ocultas:[]};render();break;
+    case 'mp-limpar':UI.mp={q:'',cor:'',zona:'',f:UI.mp.f,e:UI.mp.e,ocultas:[]};render();break;
+    case 'mp-desce':if(UI.mp.f)UI.mp.e=a.dataset.v;else UI.mp.f=a.dataset.v;UI.mp.ocultas=[];mpRefresh();mpEnquadrar();break;
+    case 'mp-nivel':UI.mp.f=a.dataset.v||'';UI.mp.e='';UI.mp.ocultas=[];mpRefresh();mpEnquadrar();break;
     case 'mp-base':setBase(a.dataset.v);break;
     case 'mp-lugares':G_lugares(UI.mpLugares===false);break;
     case 'lug-fechar':lugarFechar();break;
@@ -3474,7 +3488,6 @@ document.addEventListener('change',e=>{const el=e.target;
   if(partesChange(el)||fasesChange(el)||funilChange(el))return;
   if(el.dataset.ch==='mp-cor'){UI.mp.cor=el.value;mpRefresh();return}
   if(el.dataset.ch==='mp-zona'){UI.mp.zona=el.value;mpRefresh();return}
-  if(el.dataset.ch==='mp-fase'){UI.mp.fase=el.value;mpRefresh();return}
   if(el.dataset.ch==='fFase'){UI.fFase=el.value;if(el.value)UI.fT='todos';render();return}
   if(el.dataset.ch==='dash-sel'){const s=UI.dash.sel;UI.dash.sel=el.checked?Object.keys(DIMS).filter(k=>s.includes(k)||k===el.value):s.filter(k=>k!==el.value);render();return}
   if(el.dataset.ch==='tk-f'){UI.tk[el.dataset.k]=el.type==='checkbox'?el.checked:el.value;render();return}
@@ -3577,7 +3590,7 @@ document.addEventListener('drop',e=>{const col=e.target.closest?.('.col[data-col
    e quadro de tarefas. Injetado dentro do mesmo escopo do protótipo.
    ===================================================================== */
 UI.sorts=UI.sorts||{};
-UI.mp=UI.mp||{q:'',cor:'',zona:'',fase:'',ocultas:[]};
+UI.mp=UI.mp||{q:'',cor:'',zona:'',f:'',e:'',ocultas:[]};
 UI.dash=UI.dash||{f:{},sel:['situacao','zona','valor','mes']};
 UI.tk=UI.tk||{vista:'quadro',q:'',resp:'',ter:'',prio:'',atras:false,canc:false};
 
@@ -3593,6 +3606,19 @@ const sitNome=k=>STAGES.find(s=>s[0]===k)?.[1]||SIT[k][0];
 const sitMapa=t=>!t.neg?'sem_negociacao':t.neg.status==='ativo'?t.neg.etapa:t.neg.status;
 const sitChip=k=>`<span class="sitchip"><span class="sw" style="background:${SIT[k][1]}"></span>${esc(sitNome(k))}</span>`;
 const ativosBanco=()=>S.terrenos.filter(t=>t.situacao!=='arquivado');
+/* mapa em três níveis, como o kanban: fases › etapas de uma fase (UI.mp.f) › subetapas de uma etapa (UI.mp.e).
+   Cada nível tem a sua legenda (rótulo, cor, glifo, cor do glifo) e classifica o terreno; fora do nível = não aparece. */
+const COR_FASE=['#0b74d6','#863d8f','#c67355','#00838f','#c2477a','#7d8a3e','#1d2e5c','#5f6368'];
+const RAMPA=['#8fc8f7','#4aa3f0','#0b74d6','#0a4fa0','#1d2e5c'];
+const rampa=(i,n)=>{const j=n<=1?2:Math.round(i*(RAMPA.length-1)/(n-1));return [RAMPA[j],j===0?'#1d2e5c':'#fff']};
+function mpItens(){const m=UI.mp,sit=k=>({k,nome:SIT[k][0],cor:SIT[k][1],g:SIT[k][2],fg:SIT[k][3]});
+  if(!m.f)return [sit('sem_negociacao'),...fasesL().filter(f=>f.ativo).map((f,i)=>({k:f.k,nome:f.nome,cor:COR_FASE[i%COR_FASE.length],g:String(i+1),fg:'#fff',desce:etapasF(f.k).length>0})),sit('perdido'),sit('descartado')];
+  const L=m.e?(etapaF(m.f,m.e)?.subs||[]):etapasF(m.f);
+  return [...L.map((x,i)=>{const [cor,fg]=rampa(i,L.length);return {k:x.k,nome:x.nome,cor,g:String(i+1),fg,desce:!m.e&&x.subs?.length>0}}),sit('stand_by')]}
+function mpClasse(t){const m=UI.mp;
+  if(!m.f){const a=faseAtual(t);if(!a)return 'sem_negociacao';if(!a.aberta&&['perdido','descartado'].includes(a.p?.status))return a.p.status;return a.k}
+  const p=procDaFase(t,m.f);if(!p||(m.e&&p.etapa!==m.e))return null;return p.status==='stand_by'?'stand_by':m.e?p.sub:p.etapa}
+const mpInfo=k=>{const x=mpItens().find(i=>i.k===k);return x?[x.nome,x.cor,x.g,x.fg]:['Sem subetapa','#8a8d91','·','#fff']};
 
 /* ---------- geografia ---------- */
 const distKm=(a,b,c,d)=>{const r=x=>x*Math.PI/180,R=6371,dl=r(c-a),dg=r(d-b);const h=Math.sin(dl/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dg/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
@@ -3747,20 +3773,23 @@ function camada(k,el){
   let ok=false;ls.forEach(l=>{l.on('tileload',()=>{ok=true;el.classList.remove('sem-fundo')});l.on('tileerror',()=>{if(!ok)el.classList.add('sem-fundo')})});
   return L.layerGroup(ls);
 }
-function pinIcon(k,sel){const [,c,g,fg]=SIT[k];return L.divIcon({className:'pin'+(sel?' sel':''),html:`<span class="pin-b" style="background:${c}"><b style="color:${fg}">${g}</b></span>`,iconSize:[30,40],iconAnchor:[15,38],popupAnchor:[0,-34],tooltipAnchor:[0,-34]})}
+function pinIcon(k,sel){const [,c,g,fg]=Array.isArray(k)?k:SIT[k];return L.divIcon({className:'pin'+(sel?' sel':''),html:`<span class="pin-b" style="background:${c}"><b style="color:${fg}">${g}</b></span>`,iconSize:[30,40],iconAnchor:[15,38],popupAnchor:[0,-34],tooltipAnchor:[0,-34]})}
 const poiIcon=()=>L.divIcon({className:'poi',html:'<span class="poi-b"></span>',iconSize:[14,14],iconAnchor:[7,7],tooltipAnchor:[0,-8]});
 function mpVisiveis(){const m=UI.mp,q=m.q.trim().toLowerCase();
-  return ativosBanco().filter(t=>!m.ocultas.includes(sitMapa(t))&&(!m.fase||faseAtual(t)?.k===m.fase)&&(!m.zona||t.zona===m.zona)&&(!m.cor||t.corretores.some(x=>x.principal&&x.cid===m.cor))&&(!q||bateBusca(t,q)))}
+  return ativosBanco().filter(t=>{const k=mpClasse(t);return k!=null&&!m.ocultas.includes(k)}).filter(t=>(!m.zona||t.zona===m.zona)&&(!m.cor||t.corretores.some(x=>x.principal&&x.cid===m.cor))&&(!q||bateBusca(t,q)))}
 /* lista lateral do mapa: só o número do pino (etapa), o nome e a área; a lupa abre a ficha.
    Clicar no pino ou na poligonal seleciona o terreno aqui (não há balão no mapa). */
-function mpItem(t,cartao){const k=sitMapa(t),[nm,c,g,fg]=SIT[k],sel=UI.mpSel===t.id,ad=areaAdotada(t)||(t.poly?areaPoly(t.poly):null);
+function mpItem(t,cartao){const [nm,c,g,fg]=mpInfo(mpClasse(t)),sel=UI.mpSel===t.id,ad=areaAdotada(t)||(t.poly?areaPoly(t.poly):null);
   const acoes=sel&&t.lat!=null?`<div class="mp-it-a">${UI.role!=='Leitura'?`<button class="linkbtn" data-a="mp-desenhar" data-id="${t.id}">${t.poly?'Editar':'Desenhar'} poligonal</button>`:''}${GG?`<button class="linkbtn" data-a="mp-sv" data-id="${t.id}">Street View</button>`:''}</div>`:'';
   return `<div class="mp-it${sel?' sel':''}${cartao?' cartao':''}" data-a="mp-foco" data-id="${t.id}" tabindex="0" role="listitem" aria-current="${sel}">
     <span class="pin-mini" style="background:${c};color:${fg}" title="${esc(nm)}">${g}</span>
-    <div class="mp-it-t"><div class="t1">${esc(t.nome)}</div><div class="t2">${ad?m2(ad):'Área não informada'} · ${esc(naEntrada(t)?nm:faseN(faseAtual(t).k))}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div></div>
+    <div class="mp-it-t"><div class="t1">${esc(t.nome)}</div><div class="t2">${ad?m2(ad):'Área não informada'} · ${esc(nm)}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div></div>
     <button class="iconbtn mp-lupa" data-a="fs-abrir" data-id="${t.id}" title="Ver ficha" aria-label="Ver ficha de ${esc(t.nome)}">${bi('busca',22)}</button>${cartao?`<button class="iconbtn mp-lupa mp-fx" data-a="mp-desel" title="Fechar" aria-label="Fechar">${ic('close',22)}</button>`:''}${acoes}</div>`}
-function mpLista(){const v=mpVisiveis(),sem=v.filter(t=>t.lat==null),ord=Object.keys(SIT);
-  const rows=v.slice().sort((a,b)=>ord.indexOf(sitMapa(a))-ord.indexOf(sitMapa(b))||a.nome.localeCompare(b.nome,'pt'));
+/* ao descer ou subir de nível, o mapa enquadra os terrenos que ficaram */
+function mpEnquadrar(){if(!MAPA)return;const pts=mpVisiveis().filter(t=>t.lat!=null).map(t=>[t.lat,t.lng]);if(!pts.length)return;
+  if(GG)gEnquadrar(pts.map(([a,b])=>gLL(a,b)),15);else MAPA.fitBounds(pts,{padding:[48,48],maxZoom:15,animate:false})}
+function mpLista(){const v=mpVisiveis(),sem=v.filter(t=>t.lat==null),ord=mpItens().map(i=>i.k);
+  const rows=v.slice().sort((a,b)=>ord.indexOf(mpClasse(a))-ord.indexOf(mpClasse(b))||a.nome.localeCompare(b.nome,'pt'));
   return `${entornoHtml()}<div class="mp-resumo"><span><b>${v.length}</b> terrenos</span><span><b>${num(v.reduce((s,t)=>s+(areaAdotada(t)||0),0))}</b> m²</span></div>
   ${rows.length?`<div class="mp-lst" role="list">${rows.map(t=>mpItem(t)).join('')}</div>`:'<div class="empty">Nenhum terreno com esses filtros.</div>'}
   ${sem.length?`<div class="hint" style="margin-top:8px">${sem.length} sem localização. Clique na linha para marcar no mapa.</div>`:''}`;
@@ -3784,9 +3813,10 @@ function mpSelecionar(id){UI.mpSel=id;mpMarcarPinos();if(UI.fichaSheet&&id&&id!=
   if(it&&getComputedStyle(lado).overflowY==='auto'){const a=lado.getBoundingClientRect(),r=it.getBoundingClientRect();
     if(r.top<a.top||r.bottom>a.bottom)lado.scrollBy({top:r.top-a.top-a.height/2+r.height/2,behavior:'smooth'})}}
 function mpCartao(){const c=$('#mp-cartao');if(!c)return;const t=UI.mpSel&&T(UI.mpSel);c.innerHTML=t&&!UI.mpModo&&mpVisiveis().includes(t)?mpItem(t,true):''}
-function mpLegenda(){const base=ativosBanco();
-  return Object.keys(SIT).map(k=>{const n=base.filter(t=>sitMapa(t)===k).length;const on=!UI.mp.ocultas.includes(k);
-    return `<button type="button" class="lg-i" data-a="mp-sit" data-v="${k}" aria-pressed="${on}"><span class="pin-mini" style="background:${SIT[k][1]};color:${SIT[k][3]}">${SIT[k][2]}</span>${sitNome(k)}<span class="n">${n}</span></button>`}).join('')
+function mpLegenda(){const base=ativosBanco(),m=UI.mp,cl=new Map(base.map(t=>[t.id,mpClasse(t)])),volta=m.e?faseN(m.f):'Fases';
+  const topo=m.f?`<div class="lg-h"><button type="button" class="iconbtn lg-v" data-a="mp-nivel" data-v="${m.e?esc(m.f):''}" title="Voltar para ${esc(volta)}" aria-label="Voltar para ${esc(volta)}">${ic('back',18)}</button><span><span class="faint">${m.e?esc(faseN(m.f))+' › ':'Fases › '}</span>${esc(m.e?etapaF(m.f,m.e)?.nome||m.e:faseN(m.f))}</span></div>`:'';
+  return topo+mpItens().map(x=>{const n=base.filter(t=>cl.get(t.id)===x.k).length,on=!m.ocultas.includes(x.k);
+    return `<div class="lg-r"><button type="button" class="lg-i" data-a="mp-sit" data-v="${x.k}" aria-pressed="${on}"><span class="pin-mini" style="background:${x.cor};color:${x.fg}">${x.g}</span>${esc(x.nome)}<span class="n">${n}</span></button>${x.desce?`<button type="button" class="iconbtn lg-d" data-a="mp-desce" data-v="${x.k}" title="Ver ${m.f?'subetapas':'etapas'} de ${esc(x.nome)}" aria-label="Ver ${m.f?'subetapas':'etapas'} de ${esc(x.nome)}">${ic('chev',16)}</button>`:''}</div>`}).join('')
     +`<hr class="lg-sep"><button type="button" class="lg-i" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}"><span class="lg-poi"><span class="poi-b"></span></span>Pontos de interesse<span class="n">${(S.pontos||[]).length}</span></button>`
     +`<button type="button" class="lg-i" data-a="mp-conc" aria-pressed="${UI.mpConc!==false}"><span class="lg-poi"><span class="conc-b"></span></span>Concorrência<span class="n">${(S.concorrentes||[]).length}</span></button>`;
 }
@@ -3797,9 +3827,8 @@ function pgMapa(){
     <div class="page-h compacto"><div><h1><span class="marca"></span>Mapa</h1></div></div>
     <label class="search sm" for="mp-q">${bi('busca',24)}<input id="mp-q" type="search" placeholder="Buscar por nome, bairro, SQL..." value="${esc(UI.mp.q)}" autocomplete="off"></label>
     <div class="mp-filtros"><div class="field"><label for="mp-cor">Corretor</label><select id="mp-cor" data-ch="mp-cor"><option value="">Todos</option>${opt(Object.fromEntries(S.corretores.map(c=>[c.id,c.nome])),UI.mp.cor)}</select></div>
-      <div class="field"><label for="mp-zona">Região</label><select id="mp-zona" data-ch="mp-zona"><option value="">Todas</option>${opt(OPT.zona,UI.mp.zona)}</select></div>
-      <div class="field"><label for="mp-fase">Fase</label><select id="mp-fase" data-ch="mp-fase"><option value="">Todas</option>${opt(Object.fromEntries(fasesL().filter(f=>f.ativo).map(f=>[f.k,f.nome])),UI.mp.fase)}</select></div></div>
-    ${UI.mp.cor||UI.mp.zona||UI.mp.fase||UI.mp.q||UI.mp.ocultas.length?'<button class="linkbtn" data-a="mp-limpar" style="align-self:flex-start">Limpar filtros</button>':''}
+      <div class="field"><label for="mp-zona">Região</label><select id="mp-zona" data-ch="mp-zona"><option value="">Todas</option>${opt(OPT.zona,UI.mp.zona)}</select></div></div>
+    ${UI.mp.cor||UI.mp.zona||UI.mp.q||UI.mp.ocultas.length?'<button class="linkbtn" data-a="mp-limpar" style="align-self:flex-start">Limpar filtros</button>':''}
     <div id="mp-lista">${mpLista()}</div>
   </aside>
   <section class="mapa-area" aria-label="Mapa dos terrenos">
@@ -3831,8 +3860,8 @@ function modoBanner(){const m=UI.mpModo;if(!m)return '';
 function L_setBase(k){if(!MAPA)return;UI.mpBase=k;if(BASE)MAPA.removeLayer(BASE);BASE=camada(k,MAPA.getContainer().closest('.mapa-area')||MAPA.getContainer()).addTo(MAPA);BASE.eachLayer(l=>l.bringToBack());
   document.querySelectorAll('[data-a="mp-base"]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===k))}
 function L_desenhaPins(){if(!MAPA||!PINS)return;PINS.clearLayers();
-  mpVisiveis().filter(t=>t.lat!=null).forEach(t=>{const k=sitMapa(t);
-    if(t.poly&&!(UI.mpModo&&UI.mpAlvo===t.id)){const pg=L.polygon(t.poly,{color:SIT[k][1],weight:2,fillOpacity:.18,interactive:!UI.mpModo})
+  mpVisiveis().filter(t=>t.lat!=null).forEach(t=>{const k=mpInfo(mpClasse(t));
+    if(t.poly&&!(UI.mpModo&&UI.mpAlvo===t.id)){const pg=L.polygon(t.poly,{color:k[1],weight:2,fillOpacity:.18,interactive:!UI.mpModo})
       .on('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<700)return;clearTimeout(pg._tc);pg._tc=setTimeout(()=>{if(!UI.mpModo)mpSelecionar(t.id)},260)})
       .on('dblclick',e=>{L.DomEvent.stop(e);clearTimeout(pg._tc);editarPoligonal(t.id)});
       pg.on('add',()=>polyGestos(pg.getElement(),t.id));pg.addTo(PINS)}
@@ -4203,7 +4232,7 @@ function carregarGoogle(){
 }
 
 /* ---------- mapa principal ---------- */
-function gPinEl(k,sel){const d=document.createElement('div');d.className='pin g'+(sel?' sel':'');d.innerHTML=`<span class="pin-b" style="background:${SIT[k][1]}"><b style="color:${SIT[k][3]}">${SIT[k][2]}</b></span>`;return d}
+function gPinEl(k,sel){const v=Array.isArray(k)?k:SIT[k],d=document.createElement('div');d.className='pin g'+(sel?' sel':'');d.innerHTML=`<span class="pin-b" style="background:${v[1]}"><b style="color:${v[3]}">${v[2]}</b></span>`;return d}
 function gPoiEl(){const d=document.createElement('div');d.className='poi g';d.innerHTML='<span class="poi-b"></span>';return d}
 function G_setBase(k){UI.mpBase=k;if(MAPA&&MAPA.setMapTypeId)MAPA.setMapTypeId(TIPO_G[k]||'roadmap');document.querySelectorAll('[data-a="mp-base"]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===k))}
 function G_fecharPopup(){gInfo?.close()}
@@ -4211,11 +4240,11 @@ function G_mostrarPois(on){gSet(gPois,on?MAPA:null)}
 /* destaca o pino selecionado sem recriar os marcadores */
 function gPinsSel(){gPins.forEach(m=>{if(m._terreno&&m.content){m.content.classList.toggle('sel',UI.mpSel===m._terreno);m.zIndex=UI.mpSel===m._terreno?10:1}})}
 function G_desenhaPins(){if(!MAPA)return;gSet(gPins,null);gPins=[];const {AdvancedMarkerElement}=gLib.marker;
-  mpVisiveis().filter(t=>t.lat!=null).forEach(t=>{const k=sitMapa(t);
+  mpVisiveis().filter(t=>t.lat!=null).forEach(t=>{const k=mpInfo(mpClasse(t));
     const mk=new AdvancedMarkerElement({map:MAPA,position:gLL(t.lat,t.lng),content:gPinEl(k,UI.mpSel===t.id),title:t.nome,gmpClickable:!UI.mpModo,zIndex:UI.mpSel===t.id?10:1});
     mk.addEventListener('gmp-click',()=>{if(Date.now()-(UI.polyLongoEm||0)<900)return;mpSelecionar(t.id)});mk._terreno=t.id;gPins.push(mk);
     if(t.poly&&t.poly.length>=3&&mk.content){polyGestos(mk.content,t.id);mk.content.addEventListener('dblclick',e=>{e.stopPropagation();editarPoligonal(t.id)})}
-    if(t.poly&&!(UI.mpModo&&UI.mpAlvo===t.id)){const pg=new google.maps.Polygon({map:MAPA,paths:t.poly.map(p=>gLL(p[0],p[1])),strokeColor:SIT[k][1],strokeWeight:2,fillColor:SIT[k][1],fillOpacity:.18,clickable:!UI.mpModo});
+    if(t.poly&&!(UI.mpModo&&UI.mpAlvo===t.id)){const pg=new google.maps.Polygon({map:MAPA,paths:t.poly.map(p=>gLL(p[0],p[1])),strokeColor:k[1],strokeWeight:2,fillColor:k[1],fillOpacity:.18,clickable:!UI.mpModo});
       let tc=null;pg.addListener('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<700)return;clearTimeout(tc);tc=setTimeout(()=>{if(!UI.mpModo)mpSelecionar(t.id)},260)});
       pg.addListener('dblclick',e=>{e?.stop?.();clearTimeout(tc);editarPoligonal(t.id)});
       /* segurar o dedo sobre a poligonal entra em edição */
@@ -4892,21 +4921,39 @@ function abaFases(t){const ent=faseEnt(),ro=UI.role==='Leitura';
       ${!p&&!f.entrada&&!deps.length?'<div class="faint fs-d">Sem dependência: abre à mão.</div>':''}
       ${pode?`<button class="btn sm ${p?'text':''}" data-a="f-abrir" data-v="${f.k}">${ic('add',16)}${p?'Reabrir':'Abrir'} ${esc(f.nome)}${falta.length?' antes da hora':''}</button>`:''}</li>`}).join('')}</ul></div></section>`}
 
-/* ---------- kanban por fase ---------- */
-function chipsFase(){const cur=UI.negFase&&faseCfg(UI.negFase)?UI.negFase:faseEnt();
-  const n=f=>S.terrenos.filter(t=>f===faseEnt()?t.neg?.status==='ativo'||t.neg?.status==='stand_by':procAberto(t,f)).length;
-  return `<div class="fchips neg-fase" role="group" aria-label="Fase">${fasesL().filter(f=>f.ativo).map(f=>`<button class="fchip" data-a="neg-fase" data-v="${f.k}" aria-pressed="${cur===f.k}">${cur===f.k?ic('check',16):''}${esc(f.nome)} <span class="n">${n(f.k)}</span></button>`).join('')}</div>`}
+/* ---------- kanban em três níveis: fase › etapa › subetapa ----------
+   UI.negFase vazio = quadro das fases; com fase = etapas dela; com UI.negEtapa = subetapas.
+   O título de cada coluna desce um nível; a seta e a trilha no topo voltam. */
+const procDaFase=(t,f)=>f===faseEnt()?(aberto(t.neg)?t.neg:null):procAberto(t,f);
+function negTopo(titulo,sub){const f=UI.negFase,e=UI.negEtapa,it=[{l:'Fases',v:''}];
+  if(f)it.push({l:faseN(f),v:f});if(f&&e)it.push({l:etapaF(f,e)?.nome||e,v:f+'|'+e});const volta=it[it.length-2];
+  return `<div class="page-h"><div class="drill-h">${volta?`<button class="iconbtn drill-v" data-a="neg-nivel" data-v="${esc(volta.v)}" title="Voltar para ${esc(volta.l)}" aria-label="Voltar para ${esc(volta.l)}">${ic('back',22)}</button>`:''}<div>
+    ${volta?`<ol class="drill-t" aria-label="Nível do quadro">${it.slice(0,-1).map(x=>`<li><button class="linkbtn" data-a="neg-nivel" data-v="${esc(x.v)}">${esc(x.l)}</button></li>`).join('')}</ol>`:''}
+    <h1>${volta?'':'<span class="marca"></span>'}${esc(titulo)}</h1><div class="sub">${sub}</div></div></div></div>`}
+/* título de coluna que desce um nível */
+const colDesce=(a,v,l,dica)=>`<button class="col-ab" data-a="${a}" data-v="${esc(v)}" title="${esc(dica)}"><span>${esc(l)}</span>${ic('chev',16)}</button>`;
+function kcardFase(t,f,p){const e=etapaF(f,p.etapa),s=p.sub&&subF(f,p.sub),sb=p.status==='stand_by',outras=fasesAbertas(t).filter(x=>x!==f);
+  return `<button class="kcard" data-a="abrir" data-id="${t.id}" data-from="negociacoes"><div class="kr"><span class="num faint">${t.codigo}</span>${f===faseEnt()?tempMini(p.temp):`<span class="num faint">${esc(p.codigo||'')}</span>`}</div><div class="kt">${esc(t.nome)}</div>
+  <div class="ksub"><span>${esc(e?.nome||'')}${s?' · '+esc(s.nome):''}</span>${sb?'<span class="faint">Stand By</span>':''}</div>
+  <div class="ks">${esc(t.bairro||'')}${outras.length?' · também em '+esc(outras.map(faseN).join(', ')):''}</div>${f===faseEnt()&&typeof dividida==='function'&&dividida(t)?`<div class="kpt">${ic('layers',14)}${esc(resumoPartes(t))}</div>`:''}
+  <div class="kr">${av(t.resp,'sm')}<span class="faint">${sb?'revisitar '+fd(p.retomar):diff(p.desde,HOJE)+' d na etapa'}</span></div></button>`}
+function pgFasesBoard(){const F=fasesL().filter(f=>f.ativo);
+  return `${negTopo('Fases','Cada coluna é uma fase. Clique no nome da fase para ver as etapas dela; ali, no nome da etapa, as subetapas.')}
+  <div class="board board-fases" id="board">${F.map(f=>{const L=S.terrenos.map(t=>[t,procDaFase(t,f.k)]).filter(([,p])=>p);
+  return `<section class="col" data-fase="${f.k}" aria-label="${esc(f.nome)}"><div class="col-h">${colDesce('neg-fase',f.k,f.nome,'Ver etapas de '+f.nome)}<span class="n">${L.length}</span></div>${L.map(([t,p])=>kcardFase(t,f.k,p)).join('')||'<div class="col-empty">Nenhum</div>'}</section>`}).join('')}</div>`}
 function kcardProc(t,p){return `<button class="kcard" data-a="abrir" data-id="${t.id}" data-from="negociacoes" ${UI.role!=='Leitura'?'draggable="true"':''}><div class="kr"><span class="num faint">${esc(p.codigo)}</span><span class="num faint">${t.codigo}</span></div><div class="kt">${esc(t.nome)}</div>
   ${p.sub?`<div class="ksub"><span>${esc(subF(p.fase,p.sub)?.nome||'')}</span><span class="faint">${diff(p.subDesde||p.desde,HOJE)} d</span></div>`:''}
   <div class="ks">${esc(t.bairro||'')}${p.status==='stand_by'?' · parou em '+esc(etapaF(p.fase,p.etapa)?.nome||''):''}${fasesAbertas(t).length>1?' · também em '+esc(fasesAbertas(t).filter(f=>f!==p.fase).map(faseN).join(', ')):''}</div>
   <div class="kr">${av(t.resp,'sm')}<span class="faint ${procAtrasada(p)?'katr':''}">${p.status==='stand_by'?'revisitar '+fd(p.retomar):diff(p.desde,HOJE)+' d na etapa'}</span></div></button>`}
-function pgFaseBoard(f){const fc=faseCfg(f),es=etapasF(f),L=S.terrenos.map(t=>[t,procAberto(t,f)]).filter(([,p])=>p);
-  const cols=[...es.map(e=>({k:'fe:'+e.k,l:e.nome,sla:e.sla,f:([,p])=>p.status==='ativo'&&p.etapa===e.k})),{k:'fe:stand_by',l:'Stand By',cls:'enc',f:([,p])=>p.status==='stand_by'}];
-  return `<div class="page-h"><div><h1><span class="marca"></span>${esc(fc.nome)}</h1><div class="sub">Arraste os cards entre as colunas para mudar a etapa. ${esc(fc.conc)} sai do quadro e abre a fase seguinte, se as dependências dela se cumprirem.</div></div></div>
-  ${chipsFase()}<div class="board" id="board">${cols.map(c=>{const ts=L.filter(c.f);
-  return `<section class="col ${c.cls||''}" data-col="${c.k}" aria-label="${esc(c.l)}"><div class="col-h"><span>${esc(c.l)}</span><span class="n">${ts.length}</span></div>${c.sla?`<div class="col-s faint">SLA ${c.sla} d</div>`:''}${ts.map(([t,p])=>kcardProc(t,p)).join('')||'<div class="col-empty">Nenhuma</div>'}</section>`}).join('')}</div>`}
+function pgFaseBoard(f){const fc=faseCfg(f),es=etapasF(f),L=S.terrenos.map(t=>[t,procAberto(t,f)]).filter(([,p])=>p),e=UI.negEtapa&&etapaF(f,UI.negEtapa);
+  const cols=e?e.subs.map(s=>({k:'fe:sub:'+s.k,l:s.nome,f:([,p])=>p.status==='ativo'&&p.etapa===e.k&&p.sub===s.k}))
+    :[...es.map(x=>({k:'fe:'+x.k,l:x.nome,sla:x.sla,abre:x.k,f:([,p])=>p.status==='ativo'&&p.etapa===x.k})),{k:'fe:stand_by',l:'Stand By',cls:'enc',f:([,p])=>p.status==='stand_by'}];
+  return `${negTopo(e?e.nome:fc.nome,e?`Subetapas de ${esc(e.nome)}, em ${esc(fc.nome)}. Arraste o card para mudar a subetapa.`:`Arraste os cards entre as colunas para mudar a etapa. Clique no nome da etapa para ver as subetapas. ${esc(fc.conc)} sai do quadro e abre a fase seguinte, se as dependências dela se cumprirem.`)}
+  <div class="board ${e?'board-sub':''}" id="board">${cols.map(c=>{const ts=L.filter(c.f);
+  return `<section class="col ${c.cls||''}" data-col="${c.k}" aria-label="${esc(c.l)}"><div class="col-h">${c.abre?colDesce('neg-etapa',c.abre,c.l,'Ver subetapas de '+c.l):`<span>${esc(c.l)}</span>`}<span class="n">${ts.length}</span></div>${c.sla?`<div class="col-s faint">SLA ${c.sla} d</div>`:''}${ts.map(([t,p])=>kcardProc(t,p)).join('')||'<div class="col-empty">Nenhuma</div>'}</section>`}).join('')}</div>`}
 function soltarProc(id,col){const t=T(id),f=UI.negFase,p=t&&procAberto(t,f);if(!p||UI.role==='Leitura')return;
   if(col==='stand_by'){if(p.status==='ativo'){UI.alvo=id;UI.alvoProc=p.id;UI.modal='p-suspender';renderModal()}return}
+  if(col.startsWith('sub:')){const k=col.slice(4);if(p.status!=='ativo'||p.etapa!==UI.negEtapa||p.sub===k)return;procIr(t,p,'subetapa',k);save();render();toast(`${t.nome}: ${subF(f,k)?.nome}.`);return}
   if(p.status==='stand_by'){procRetomar(t,p);if(p.etapa===col){save();render();toast('Retomada.');return}}
   if(p.etapa===col){save();render();return}
   const es=etapasF(f),ix=k=>es.findIndex(e=>e.k===k);
@@ -4950,6 +4997,7 @@ function cfgFasesHtml(){const C=cfg(),F=fasesL(),ent=faseEnt();
 function fasesClick(A,a,t){const P=()=>t&&procsDe(t).find(p=>p.id===a.dataset.p);
   switch(A){
     case 'neg-fase':UI.negFase=a.dataset.v;UI.negEtapa=null;render();return true;
+    case 'neg-nivel':{const [f,e]=(a.dataset.v||'').split('|');UI.negFase=f||null;UI.negEtapa=e||null;render();return true}
     case 'f-abrir':{const f=a.dataset.v,falta=depsDe(t,f).filter(x=>!x.ok);
       if(!falta.length){abrirFase(t,f);abrirLiberadas(t);save();render();toast(`${faseN(f)} aberta.`);return true}
       UI.acao={fase:f,pend:falta.map(x=>x.txt)};UI.modal=nivelDe(me())>=2?'f-forcar':'f-bloq';renderModal();return true}
@@ -5211,15 +5259,14 @@ function kcardNeg(t,modo){const n=t.neg,o=ofertaRef(t),lp=lastProp(t),pr=proxReu
   <div class="kr"><span>${lp?'Prop. '+mi(lp.valor):'Pedido '+(o?.valor?mi(o.valor):'—')}</span>${atrasadas(t).length?`<span class="flag crit" title="Tarefas atrasadas">${ic('clock',14)}${atrasadas(t).length}</span>`:''}${acimaMax(t)?`<span class="flag warn">${ic('money',14)}</span>`:''}</div>${pr?`<div class="kr"><span class="faint">Reunião ${fd(pr.data)} · ${pr.hora}</span></div>`:''}
   ${n.pedido?`<div class="kped">${ic('clock',14)}Aguardando ${esc(quemFalta(n.pedido))}</div>`:''}
   <div class="kr">${av(t.resp,'sm')}<span class="faint ${!sb&&etapaAtrasada(n)?'katr':''}">${sb?'revisitar '+fd(n.retomar):modo==='sub'?diasSub(n)+' d na subetapa':diff(n.desde,HOJE)+' d na etapa'}</span></div></button>`}
-function pgNeg(){if(UI.negFase&&UI.negFase!==faseEnt()&&faseCfg(UI.negFase))return pgFaseBoard(UI.negFase);const e=UI.negEtapa&&etapaCfg(UI.negEtapa)?UI.negEtapa:null,ativos=S.terrenos.filter(t=>t.neg?.status==='ativo');
-  const seg=`<div class="fchips neg-et" role="group" aria-label="Etapa"><button class="fchip" data-a="neg-etapa" data-v="" aria-pressed="${!e}">${!e?ic('check',16):''}Todas as etapas</button>${STAGES.map(([k,l])=>`<button class="fchip" data-a="neg-etapa" data-v="${k}" aria-pressed="${e===k}">${e===k?ic('check',16):''}${esc(l)} <span class="n">${ativos.filter(t=>t.neg.etapa===k).length}</span></button>`).join('')}</div>`;
+function pgNeg(){if(!UI.negFase||!faseCfg(UI.negFase))return pgFasesBoard();if(UI.negFase!==faseEnt())return pgFaseBoard(UI.negFase);const e=UI.negEtapa&&etapaCfg(UI.negEtapa)?UI.negEtapa:null,ativos=S.terrenos.filter(t=>t.neg?.status==='ativo');
   let cols;
   if(!e)cols=[...STAGES.map(([k,l])=>({k,l,f:t=>t.neg?.status==='ativo'&&t.neg.etapa===k,abre:k,sla:etapaCfg(k)?.sla})),{k:'stand_by',l:'Stand By',f:t=>t.neg?.status==='stand_by',cls:'enc'}];
   else{const subs=subsDe(e);cols=subs.map(s=>({k:'sub:'+s.k,l:s.nome,f:t=>t.neg?.status==='ativo'&&t.neg.etapa===e&&t.neg.sub===s.k,prazo:s.prazo}));
     const orf=ativos.filter(t=>t.neg.etapa===e&&!subs.some(s=>s.k===t.neg.sub));if(orf.length)cols.unshift({k:'sub:',l:'Sem subetapa ativa',f:t=>orf.includes(t),cls:'enc'})}
-  return `<div class="page-h"><div><h1><span class="marca"></span>${esc(faseN(faseEnt()))}</h1><div class="sub">${e?`Subetapas de ${esc(SN(e))}. Arraste o card para mudar a subetapa.`:'Arraste os cards entre as colunas para mudar a etapa. Abra uma etapa para ver as subetapas. Comprados, perdidos e descartados saem do quadro.'}</div></div></div>
-  ${chipsFase()}${seg}<div class="board ${e?'board-sub':''}" id="board">${cols.map(c=>{const ts=S.terrenos.filter(c.f);
-  return `<section class="col ${c.cls||''}" data-col="${c.k}" aria-label="${esc(c.l)}"><div class="col-h">${c.abre?`<button class="col-ab" data-a="neg-etapa" data-v="${c.abre}" title="Ver subetapas de ${esc(c.l)}"><span>${esc(c.l)}</span>${ic('chev',16)}</button>`:`<span>${esc(c.l)}</span>`}<span class="n">${ts.length}</span></div>${c.sla||c.prazo?`<div class="col-s faint">${c.sla?'SLA '+c.sla+' d':'Prazo '+c.prazo+' d'}</div>`:''}${ts.map(t=>kcardNeg(t,e?'sub':'')).join('')||'<div class="col-empty">Nenhuma</div>'}</section>`}).join('')}</div>`}
+  return `${negTopo(e?SN(e):faseN(faseEnt()),e?`Subetapas de ${esc(SN(e))}, em ${esc(faseN(faseEnt()))}. Arraste o card para mudar a subetapa.`:'Arraste os cards entre as colunas para mudar a etapa. Clique no nome da etapa para ver as subetapas. Comprados, perdidos e descartados saem do quadro.')}
+  <div class="board ${e?'board-sub':''}" id="board">${cols.map(c=>{const ts=S.terrenos.filter(c.f);
+  return `<section class="col ${c.cls||''}" data-col="${c.k}" aria-label="${esc(c.l)}"><div class="col-h">${c.abre?colDesce('neg-etapa',c.abre,c.l,'Ver subetapas de '+c.l):`<span>${esc(c.l)}</span>`}<span class="n">${ts.length}</span></div>${c.sla||c.prazo?`<div class="col-s faint">${c.sla?'SLA '+c.sla+' d':'Prazo '+c.prazo+' d'}</div>`:''}${ts.map(t=>kcardNeg(t,e?'sub':'')).join('')||'<div class="col-empty">Nenhuma</div>'}</section>`}).join('')}</div>`}
 function soltar(id,col){if(col.startsWith('fe:')){soltarProc(id,col.slice(3));return}const t=T(id);if(!t||!t.neg||UI.role==='Leitura')return;const n=t.neg;
   if(col==='stand_by'){if(n.status==='ativo'){UI.alvo=id;UI.modal='suspender';renderModal()}return}
   if(col.startsWith('sub:')){const k=col.slice(4);if(!k||n.status!=='ativo'||n.sub===k)return;tentar(t,'subetapa',k);return}

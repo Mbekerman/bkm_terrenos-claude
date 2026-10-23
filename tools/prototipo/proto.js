@@ -840,7 +840,9 @@ document.addEventListener('click',e=>{
     case 'fs-fechar':UI.fichaSheet=null;fichaSheet();break;
     case 'mp-foco':{const x=T(a.dataset.id);if(x.lat!=null)focar(x);else if(UI.role!=='Leitura'){UI.mpModo='marcar';UI.mpAlvo=x.id;mpRefresh()}else toast('Terreno sem localização.');break}
     case 'mp-sit':{const v=a.dataset.v,o=UI.mp.ocultas;UI.mp.ocultas=o.includes(v)?o.filter(x=>x!==v):[...o,v];mpRefresh();break}
-    case 'mp-limpar':UI.mp={q:'',cor:'',zona:'',fase:'',ocultas:[]};render();break;
+    case 'mp-limpar':UI.mp={q:'',cor:'',zona:'',f:UI.mp.f,e:UI.mp.e,ocultas:[]};render();break;
+    case 'mp-desce':if(UI.mp.f)UI.mp.e=a.dataset.v;else UI.mp.f=a.dataset.v;UI.mp.ocultas=[];mpRefresh();mpEnquadrar();break;
+    case 'mp-nivel':UI.mp.f=a.dataset.v||'';UI.mp.e='';UI.mp.ocultas=[];mpRefresh();mpEnquadrar();break;
     case 'mp-base':setBase(a.dataset.v);break;
     case 'mp-lugares':G_lugares(UI.mpLugares===false);break;
     case 'lug-fechar':lugarFechar();break;
@@ -880,7 +882,6 @@ document.addEventListener('change',e=>{const el=e.target;
   if(partesChange(el)||fasesChange(el)||funilChange(el))return;
   if(el.dataset.ch==='mp-cor'){UI.mp.cor=el.value;mpRefresh();return}
   if(el.dataset.ch==='mp-zona'){UI.mp.zona=el.value;mpRefresh();return}
-  if(el.dataset.ch==='mp-fase'){UI.mp.fase=el.value;mpRefresh();return}
   if(el.dataset.ch==='fFase'){UI.fFase=el.value;if(el.value)UI.fT='todos';render();return}
   if(el.dataset.ch==='dash-sel'){const s=UI.dash.sel;UI.dash.sel=el.checked?Object.keys(DIMS).filter(k=>s.includes(k)||k===el.value):s.filter(k=>k!==el.value);render();return}
   if(el.dataset.ch==='tk-f'){UI.tk[el.dataset.k]=el.type==='checkbox'?el.checked:el.value;render();return}
