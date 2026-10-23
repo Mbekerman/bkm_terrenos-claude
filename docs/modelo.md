@@ -644,6 +644,7 @@ erDiagram
 | Um pedido de aprovação aberto por processo e nível; com pedido aberto o card não se move | índice único parcial em `aprovacoes` |
 | Superior sempre um nível acima; ao menos um administrador por empresa | trigger em `membros` |
 | Configuração do funil só pelo administrador, por empresa, com auditoria | RLS só de leitura + RPCs com `exigir_administrador` |
+| Mudanças seguidas do mesmo usuário nas mesmas colunas, a menos de 7 s uma da outra, viram um log só (valor de antes → final); se voltam ao valor de antes, o log some. Grava na hora; processos ficam de fora (cada passagem conta no SLA), mas a temperatura junta igual no histórico | `juntar_auditoria`, `janela_log`, `definir_temperatura` |
 | Motivo de Perdido e Descartado vem da lista ativa; Comprado exige relato e pontos de sucesso | `encerrar_processo` + checks em `processos` |
 | Papel "leitura" consulta tudo e não altera nada | políticas com `empresas_edicao()` e `exigir_editor` |
 | CEP e CPF/CNPJ guardados só com dígitos; polígono GeoJSON validado | triggers e check |

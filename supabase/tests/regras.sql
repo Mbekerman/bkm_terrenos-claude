@@ -194,6 +194,24 @@ select app.definir_temperatura(:'neg', 4);
 select pg_temp.ok((select temperatura from app.v_terrenos where id = :'t1') = 4, 'temperatura 4 registrada');
 select pg_temp.falha(format('select app.definir_temperatura(%L, 6)', :'neg'), 'temperatura só de 1 a 5');
 select pg_temp.ok((select count(*) from app.processo_transicoes where processo_id = :'neg' and evento = 'temperatura') = 1, 'mudança de temperatura vai para o histórico');
+select app.definir_temperatura(:'neg', 2);
+select app.definir_temperatura(:'neg', 3);
+select pg_temp.ok((select count(*) = 1 and min(comentario) = '— → 3' from app.processo_transicoes where processo_id = :'neg' and evento = 'temperatura'),
+  'cliques seguidos na temperatura viram um registro só, do valor de antes ao final');
+select app.definir_temperatura(:'neg', null);
+select pg_temp.ok((select count(*) from app.processo_transicoes where processo_id = :'neg' and evento = 'temperatura') = 0,
+  'se a sequência volta ao valor de antes, não fica registro');
+select app.definir_temperatura(:'neg', 4);
+reset role;
+update app.processo_transicoes set em = em - interval '8 seconds' where processo_id = :'neg' and evento = 'temperatura';
+select pg_temp.como(:'diretor');
+select app.definir_temperatura(:'neg', 5);
+select pg_temp.ok((select string_agg(comentario, ' | ' order by em) from app.processo_transicoes where processo_id = :'neg' and evento = 'temperatura') = '— → 4 | 4 → 5',
+  'passados 7 segundos, a mudança seguinte é outro registro');
+select pg_temp.como(:'analista');
+select app.definir_temperatura(:'neg', 4);
+select pg_temp.ok((select count(*) from app.processo_transicoes where processo_id = :'neg' and evento = 'temperatura') = 3, 'outro usuário não junta com a mudança de quem veio antes');
+select pg_temp.como(:'diretor');
 
 -- ---------------------------------------------------------------------
 \echo '# tarefas'
@@ -562,6 +580,21 @@ insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (:'emp', 
 commit;
 select pg_temp.ok((select bool_and(em > ant) from (select em, lag(em) over (order by id) ant from (select id, em from app.auditoria where tabela = 'tarefas' order by id desc limit 2) u) x where ant is not null),
   'alterações na mesma transação ficam em instantes distintos, na ordem em que aconteceram');
+select id as tlog from app.tarefas where titulo = 'Log A' \gset
+update app.tarefas set prioridade = 'alta' where id = :'tlog';
+update app.tarefas set prioridade = 'baixa' where id = :'tlog';
+select pg_temp.ok((select count(*) = 1 and min(antes->>'prioridade') = 'media' and min(depois->>'prioridade') = 'baixa' from app.auditoria where registro_id = :'tlog' and acao = 'update'),
+  'mudanças seguidas no mesmo campo viram um log só, do valor de antes ao final');
+update app.tarefas set prioridade = 'media' where id = :'tlog';
+select pg_temp.ok((select count(*) from app.auditoria where registro_id = :'tlog' and acao = 'update') = 0, 'se voltou ao valor de antes, o log some');
+update app.tarefas set prioridade = 'alta' where id = :'tlog';
+update app.tarefas set titulo = 'Log A1' where id = :'tlog';
+select pg_temp.ok((select count(*) from app.auditoria where registro_id = :'tlog' and acao = 'update') = 2, 'campo diferente é outro log');
+reset role;
+update app.auditoria set em = em - interval '8 seconds' where registro_id = :'tlog';
+select pg_temp.como(:'diretor');
+update app.tarefas set titulo = 'Log A2' where id = :'tlog';
+select pg_temp.ok((select count(*) from app.auditoria where registro_id = :'tlog' and acao = 'update') = 3, 'passados 7 segundos, a mesma mudança é outro log');
 
 \echo '# fechamento como comprado'
 select app.registrar_oferta(:'t2', 3000000) \gset
