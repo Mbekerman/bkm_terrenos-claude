@@ -813,6 +813,7 @@ document.addEventListener('click',e=>{
     case 'mp-limpar':UI.mp={q:'',cor:'',zona:'',ocultas:[]};render();break;
     case 'mp-base':setBase(a.dataset.v);break;
     case 'mp-lugares':G_lugares(UI.mpLugares===false);break;
+    case 'lug-fechar':lugarFechar();break;
     case 'mp-modo':UI.mpModo=UI.mpModo===a.dataset.v?null:a.dataset.v;fecharPopup();mpRefresh();break;
     case 'mp-sair':UI.mpModo=null;UI.nvDesenho=false;UI.poiVolta=null;UI.desenho=null;UI.desHist=null;UI.vSel=null;UI.vMenu=false;UI.vMover=false;mpRefresh();break;
     case 'mp-desfazer':{const h=UI.desHist||[];if(h.length){UI.desenho=h.pop();UI.vSel=null;UI.vMenu=false;UI.vMover=false}mpRefresh();break}
@@ -931,7 +932,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
 });
 function novaNeg(ofRef,temp){const e=STAGES[0][0],s=subInicial(e);return {codigo:'NEG-'+String(Math.floor(Math.random()*900)+100).padStart(5,'0'),etapa:e,sub:s,status:'ativo',desde:HOJE,subDesde:HOJE,temp,ofRef,viab:null,pedido:null,trilha:[{em:agora(),user:me(),ev:'abertura',deEtapa:null,deSub:null,paraEtapa:e,paraSub:s,status:'ativo'}]}}
 function seedVazio(){return {id:uid(),situacao:'ativo',prioridade:null,descricao:'',url:'',obs:'',cep:'',complemento:'',referencia:'',lat:null,lng:null,precisao:'nao_informada',aDoc:null,aCad:null,aLev:null,aEst:null,fonteArea:null,testada:null,topografia:'nao_informado',desnivel:null,posicao:'nao_informado',formato:'nao_informado',ocupacao:'nao_informado',uso:'',aConst:null,aDemolir:null,demolicao:'nao_avaliada',obsFis:'',eixo:null,mats:[],insc:[],confr:[],dilig:[],pessoas:[],corretores:[],infra:{},analises:[],ofertas:[],neg:null,propostas:[],reunioes:[],tarefas:[],docs:[],hist:[]}}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&temaMenu){temaMenu=false;renderTema();return}if(e.key==='Escape'&&UI.modal){UI.modal=null;renderModal()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&GG&&lugarFechar())return;if(e.key==='Escape'&&temaMenu){temaMenu=false;renderTema();return}if(e.key==='Escape'&&UI.modal){UI.modal=null;renderModal()}});
 /* ===================== kanban: arrastar e soltar (regras em proto_funil.js: levarAte, soltar) ===================== */
 function posRender(){try{if(MAPA){MAPA.remove()}}catch(e){}MAPA=null;PINS=POIS=DES=BASE=null;try{if(MINI)MINI.remove()}catch(e){}MINI=null;
   if(UI.route==='mapa')initMapa();if(UI.route==='terreno'&&!blocoFechado('geral'))initMini();fichaSheet()}

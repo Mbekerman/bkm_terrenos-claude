@@ -199,7 +199,7 @@ function pgMapa(){
     <div class="mp-barra">
       ${mpBuscaHtml()}
       <div class="seg" role="group" aria-label="Fundo do mapa">${Object.entries(GG?CAMADAS_G:CAMADAS_L).map(([k,l])=>`<button type="button" data-a="mp-base" data-v="${k}" aria-pressed="${(UI.mpBase||'satelite')===k}">${l}</button>`).join('')}</div>
-      ${GG?`<button type="button" class="mp-lug" data-a="mp-lugares" aria-pressed="${UI.mpLugares!==false}" title="Lugares do Google: comércio, escolas, hospitais. Toque num lugar para ver as avaliações">${ic('lugar',16)}<span>Lugares</span></button>`:''}
+      ${GG&&GMAP_SEM_LUGARES?`<button type="button" class="mp-lug" data-a="mp-lugares" aria-pressed="${UI.mpLugares!==false}" title="Lugares do Google: comércio, escolas, hospitais. Toque num lugar para ver as avaliações">${ic('lugar',16)}<span>Lugares</span></button>`:''}
     </div>
     <div id="mp-modo" class="mp-modo" aria-live="polite">${modoBanner()}</div>
     <div id="mp-cartao" class="mp-cartao" aria-live="polite"></div>
