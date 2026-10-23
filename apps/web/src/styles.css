@@ -1786,5 +1786,23 @@ body.dnd .col[data-col]:not(.origem), body.dnd-tk .tk-col { outline: 2px dashed 
 html[data-tema="escuro"] body.dnd .col[data-col]:not(.origem), html[data-tema="escuro"] body.dnd-tk .tk-col { outline-color: rgba(124, 140, 255, .35) }
 html[data-tema="escuro"] .col.sobre, html[data-tema="escuro"] .tk-col.sobre { background: rgba(99, 112, 255, .18) !important; outline-color: rgba(124, 140, 255, .9) !important }
 
+/* Mapa: botões do canto (minha localização, tela cheia), X do cartão do terreno e tela cheia (23/out/2026) */
+.mp-ctrl { position: absolute; right: 10px; bottom: 40px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; transition: bottom .15s }
+.mp-cb { width: 40px; height: 40px; border-radius: 20px; border: 0; display: grid; place-items: center; cursor: pointer; background: #fff; color: #444746; box-shadow: 0 1px 3px rgba(0,0,0,.25), 0 2px 8px rgba(0,0,0,.15) }
+.mp-cb:hover { color: #0b57d0; background: #f0f4f9 }
+.mp-cb:focus-visible { outline: 2px solid #0b57d0; outline-offset: 2px }
+.mp-cb.busca svg { animation: mp-pulso 1s ease-in-out infinite }
+@keyframes mp-pulso { 50% { opacity: .35 } }
+:root[data-tema="escuro"] .mp-cb { background: #0d1530; color: #c9d6ff; box-shadow: 0 0 0 1px rgba(124,140,255,.35), 0 6px 16px rgba(0,0,0,.5) }
+:root[data-tema="escuro"] .mp-cb:hover { background: #142046 }
+.mapa-area.sv-on .mp-cb[data-a="mp-eu"] { display: none }
+.eu-dot { width: 16px; height: 16px; border-radius: 50%; background: #1a73e8; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.2), 0 1px 4px rgba(0,0,0,.35); transform: translateY(50%) }
+.mp-it.cartao { grid-template-columns: auto minmax(0, 1fr) auto auto; column-gap: 4px; padding-right: 4px }
+.mp-it.cartao .mp-it-t { margin-left: 8px }
+body.mp-cheia .mapa-area { position: fixed !important; inset: 0 !important; z-index: 25; height: auto !important; min-height: 0 !important; border-radius: 0 !important; margin: 0 !important }
+body.mp-cheia .mapa-area .mp-barra { top: calc(12px + env(safe-area-inset-top, 0px)) }
+body.mp-cheia .mp-ctrl { right: max(10px, env(safe-area-inset-right, 0px)) }
+body.mp-cheia .fab { display: none !important }
+
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
