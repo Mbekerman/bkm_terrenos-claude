@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="gmaps-key" content="{% env "GOOGLE_MAPS_KEY" %}">
+<meta name="gmaps-mapid-sem-lugares" content="{% env "GOOGLE_MAP_ID_SEM_LUGARES" %}">
 <meta name="bkm-ambiente" content="{% env "AMBIENTE" %}">
 <title>BKM Terrenos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2143,6 +2144,22 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .mp-barra .seg { background: rgba(255,255,255,.78) !important; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border-color: transparent !important; box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 1px 2px rgba(0,0,0,.1) }
 :root[data-tema="escuro"] .mp-barra .seg { background: rgba(6,12,32,.72) !important; box-shadow: 0 0 0 1px rgba(124,140,255,.35) }
 .mp-barra .seg button { flex: 1 1 auto }
+/* Lugares do Google: liga e desliga, mesmo fundo translúcido do seletor */
+.mp-barra .mp-lug { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 16px 0 12px; border-radius: 20px; border: 0; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; color: var(--m-on-surface, #1f1f1f); background: rgba(255,255,255,.78); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 1px 2px rgba(0,0,0,.1) }
+.mp-barra .mp-lug[aria-pressed="true"] { background: #c2e7ff; color: #001d35 }
+:root[data-tema="escuro"] .mp-barra .mp-lug { background: rgba(6,12,32,.72); color: #c9d6ff; box-shadow: 0 0 0 1px rgba(124,140,255,.35) }
+:root[data-tema="escuro"] .mp-barra .mp-lug[aria-pressed="true"] { background: rgba(99,112,255,.28); box-shadow: 0 0 0 1px rgba(124,140,255,.7) }
+/* quadro do lugar (InfoWindow do Google): nome, nota e até 3 avaliações */
+.lug { font: 13px/1.4 "Google Sans Flex", system-ui, sans-serif; color: #1f1f1f; max-width: 290px }
+.lug-n { font-size: 15px; font-weight: 500; margin-bottom: 2px }
+.lug-e { font-size: 12px; margin-bottom: 6px }
+.lug-nota { display: flex; align-items: baseline; gap: 6px; margin-bottom: 6px }
+.lug-est { color: #e8a200; letter-spacing: 1px }
+.lug-revs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; max-height: 220px; overflow: auto; border-top: 1px solid #e3e3e3; padding-top: 8px }
+.lug-ra { font-size: 12px } .lug-ra a { color: #0b57d0; font-weight: 500; text-decoration: none }
+.lug-rt { margin-top: 2px; color: #444746; overflow-wrap: anywhere }
+.lug-l { display: inline-block; margin-top: 8px; color: #0b57d0; font-weight: 500; text-decoration: none }
+.lug-g { font-size: 11px; margin-top: 4px }
 .mapa-area { container-type: inline-size }
 @container (max-width: 600px) { .mapa-area .mp-barra { flex-wrap: wrap !important } .mapa-area .mp-busca { flex: 1 1 100%; max-width: none; order: -1; margin-right: 0 } .mapa-area .mp-barra .seg { flex: 1 1 0; min-width: 0; overflow-x: auto; scrollbar-width: none } }
 
@@ -2505,6 +2522,7 @@ const P={
   fwd:'M5 12h14M13 6l6 6-6 6',edit:'M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4',
   money:'M4 7h16v10H4zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM7 10v4M17 10v4',
   recolher:'M13 6l-6 6 6 6M19 6l-6 6 6 6',tela:'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',telaSair:'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5',expandir:'M11 6l6 6-6 6M5 6l6 6-6 6',
+  lugar:'M12 21s-6-5.6-6-10.5a6 6 0 0 1 12 0C18 15.4 12 21 12 21zM12 8.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4z',
   task:'M9 4h6v3H9zM9 5.5H6a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6.5a1 1 0 0 0-1-1h-3M8.5 14l2.5 2.5 4.5-5'
 };
 const ic=(n,s=20)=>`<svg class="ic" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="${P[n]}"/></svg>`;
@@ -3285,6 +3303,7 @@ document.addEventListener('click',e=>{
     case 'mp-sit':{const v=a.dataset.v,o=UI.mp.ocultas;UI.mp.ocultas=o.includes(v)?o.filter(x=>x!==v):[...o,v];mpRefresh();break}
     case 'mp-limpar':UI.mp={q:'',cor:'',zona:'',ocultas:[]};render();break;
     case 'mp-base':setBase(a.dataset.v);break;
+    case 'mp-lugares':G_lugares(UI.mpLugares===false);break;
     case 'mp-modo':UI.mpModo=UI.mpModo===a.dataset.v?null:a.dataset.v;fecharPopup();mpRefresh();break;
     case 'mp-sair':UI.mpModo=null;UI.nvDesenho=false;UI.poiVolta=null;UI.desenho=null;UI.desHist=null;UI.vSel=null;UI.vMenu=false;UI.vMover=false;mpRefresh();break;
     case 'mp-desfazer':{const h=UI.desHist||[];if(h.length){UI.desenho=h.pop();UI.vSel=null;UI.vMenu=false;UI.vMover=false}mpRefresh();break}
@@ -3511,8 +3530,8 @@ const attrAbrir=from=>t=>`data-a="abrir" data-id="${t.id}" data-from="${from}" t
 
 /* ===================== MAPA ===================== */
 let MAPA=null,MINI=null,PINS=null,POIS=null,CONC=null,DES=null,BASE=null;
-// Satélite já vem com rótulos (ruas e lugares); não há opção sem eles (decisão do Moisés, 23/out/2026)
-const CAMADAS_L={mapa:'Mapa',ruas:'Ruas',satelite:'Satélite'},CAMADAS_G={mapa:'Mapa',ruas:'Relevo',satelite:'Satélite'};
+// Satélite já vem com rótulos (ruas e lugares); sem Relevo nem opção sem rótulos (decisões do Moisés, 23/out/2026)
+const CAMADAS_L={mapa:'Mapa',satelite:'Satélite'},CAMADAS_G={mapa:'Mapa',satelite:'Satélite'};
 // motor do mapa: Google quando a chave carrega; Leaflet (Esri/OSM) como reserva
 let GG=false;
 function setBase(k){return GG?G_setBase(k):L_setBase(k)}
@@ -3616,6 +3635,7 @@ function pgMapa(){
     <div class="mp-barra">
       ${mpBuscaHtml()}
       <div class="seg" role="group" aria-label="Fundo do mapa">${Object.entries(GG?CAMADAS_G:CAMADAS_L).map(([k,l])=>`<button type="button" data-a="mp-base" data-v="${k}" aria-pressed="${(UI.mpBase||'satelite')===k}">${l}</button>`).join('')}</div>
+      ${GG?`<button type="button" class="mp-lug" data-a="mp-lugares" aria-pressed="${UI.mpLugares!==false}" title="Lugares do Google: comércio, escolas, hospitais. Toque num lugar para ver as avaliações">${ic('lugar',16)}<span>Lugares</span></button>`:''}
     </div>
     <div id="mp-modo" class="mp-modo" aria-live="polite">${modoBanner()}</div>
     <div id="mp-cartao" class="mp-cartao" aria-live="polite"></div>
@@ -3997,7 +4017,7 @@ const GKEY=(()=>{const v=document.querySelector('meta[name="gmaps-key"]')?.conte
 let gInfo=null,gPins=[],gPois=[],gDes=[],gRota=[],gEntorno=[],gMiniSv=null,gLib={};
 const gSet=(arr,map)=>arr.forEach(o=>{if(o.setMap)o.setMap(map);else o.map=map});
 const gLL=(lat,lng)=>({lat,lng});
-const TIPO_G={mapa:'roadmap',ruas:'terrain',satelite:'hybrid'};
+const TIPO_G={mapa:'roadmap',satelite:'hybrid'};
 
 function carregarGoogle(){
   if(!GKEY)return;
@@ -4057,8 +4077,8 @@ function gEnquadrar(pts,maxZoom){if(!MAPA||!pts.length)return;if(pts.length===1)
   const b=new google.maps.LatLngBounds();pts.forEach(p=>b.extend(p));MAPA.fitBounds(b,48);if(maxZoom)google.maps.event.addListenerOnce(MAPA,'idle',()=>{if(MAPA.getZoom()>maxZoom)MAPA.setZoom(maxZoom)})}
 function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[];gPois=[];gConc=[];gDes=[];gRota=[];gEntorno=[];
   const v=UI.mpView;
-  MAPA=new google.maps.Map(el,{mapId:'DEMO_MAP_ID',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[UI.mpBase||'satelite'],
-    mapTypeControl:false,streetViewControl:true,fullscreenControl:false,clickableIcons:false,gestureHandling:'greedy',scaleControl:true,tilt:0,disableDoubleClickZoom:true});
+  MAPA=new google.maps.Map(el,{mapId:UI.mpLugares===false&&GMAP_SEM_LUGARES?GMAP_SEM_LUGARES:'DEMO_MAP_ID',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[UI.mpBase||'satelite'],
+    mapTypeControl:false,streetViewControl:true,fullscreenControl:false,clickableIcons:UI.mpLugares!==false,gestureHandling:'greedy',scaleControl:true,tilt:0,disableDoubleClickZoom:true});
   gInfo=new google.maps.InfoWindow({maxWidth:320});
   el.classList.toggle('modo',!!UI.mpModo);G_desenhaPins();G_desenhaPois();G_desenhaConc();
   ctxGestos(el,(x,y)=>{if(!gProj||gProj.getMap()!==MAPA)gPontoNaTela(0,0);const pr=gProj?.getProjection();const ll=pr?.fromContainerPixelToLatLng(new google.maps.Point(x,y));return ll?{lat:ll.lat(),lng:ll.lng()}:null});
@@ -4069,11 +4089,34 @@ function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[]
   MAPA.addListener('idle',()=>{const c=MAPA.getCenter();UI.mpView={c:{lat:c.lat(),lng:c.lng()},z:MAPA.getZoom()};vMenuDesenha()});
   MAPA.addListener('dragstart',()=>$('.mapa-area .v-menu')?.remove());MAPA.addListener('zoom_changed',()=>$('.mapa-area .v-menu')?.remove());
   MAPA.getStreetView().addListener('visible_changed',()=>$('.mapa-area')?.classList.toggle('sv-on',MAPA.getStreetView().getVisible()));
-  MAPA.addListener('click',e=>{if(UI.mpModo&&e.latLng)mapaClique(e.latLng.lat(),e.latLng.lng());else if(UI.mpSel)mpSelecionar(null)});
+  MAPA.addListener('click',e=>{if(e.placeId){e.stop();if(!UI.mpModo){lugarAbrir(e.placeId,e.latLng);return}}
+    if(UI.mpModo&&e.latLng)mapaClique(e.latLng.lat(),e.latLng.lng());else if(UI.mpSel)mpSelecionar(null)});
   if(UI.mpFoco){const t=T(UI.mpFoco);UI.mpFoco=null;if(t&&t.lat!=null)google.maps.event.addListenerOnce(MAPA,'idle',()=>G_focar(t))}
 }
 function G_focar(t){if(!MAPA)return;UI.mpSel=t.id;if(t.poly)gEnquadrar(t.poly.map(p=>gLL(p[0],p[1])),19);else{MAPA.setCenter(gLL(t.lat,t.lng));if(MAPA.getZoom()<17)MAPA.setZoom(17)}
   mpSelecionar(t.id)}
+
+/* ---------- Lugares do Google (comércio, escolas, hospitais...) ----------
+   Ligado: os ícones do Google ficam no mapa e o toque abre nome, nota e avaliações.
+   Desligado: o mapa usa outro Map ID, com estilo sem lugares criado no Cloud Console
+   (o Google não aceita esconder lugares por código quando há Map ID); o ID vem da
+   variável GOOGLE_MAP_ID_SEM_LUGARES. Cada toque é uma consulta Place Details com
+   avaliações (SKU Enterprise + Atmosphere); o resultado fica guardado na sessão. */
+const GMAP_SEM_LUGARES=(()=>{const v=document.querySelector('meta[name="gmaps-mapid-sem-lugares"]')?.content||'';return /^[\w-]{6,}$/.test(v)?v:''})();
+const LUGARES={};
+function G_lugares(on){if(!on&&!GMAP_SEM_LUGARES){toast('Para esconder os lugares falta o estilo de mapa sem lugares no Google Cloud (Map ID).',true);return}
+  UI.mpLugares=on;gInfo?.close();G_initMapa();document.querySelectorAll('[data-a="mp-lugares"]').forEach(b=>b.setAttribute('aria-pressed',on))}
+const estrelas=n=>{const r=Math.round(n*2)/2;return '★'.repeat(Math.floor(r))+(r%1?'⯪':'')+'☆'.repeat(5-Math.ceil(r))};
+function lugarHtml(p){const revs=(p.reviews||[]).slice(0,3),nota=p.rating!=null?`<div class="lug-nota"><b>${String(p.rating.toFixed?p.rating.toFixed(1):p.rating).replace('.',',')}</b> <span class="lug-est" aria-hidden="true">${estrelas(p.rating)}</span> <span class="muted">${p.userRatingCount!=null?Number(p.userRatingCount).toLocaleString('pt-BR')+' avaliações':''}</span></div>`:'<div class="muted">Sem avaliações no Google</div>';
+  return `<div class="lug"><div class="lug-n">${esc(p.displayName||'Lugar')}</div>${p.formattedAddress?`<div class="lug-e muted">${esc(p.formattedAddress)}</div>`:''}${nota}
+  ${revs.length?`<ul class="lug-revs">${revs.map(r=>{const a=r.authorAttribution||{},txt=String(r.text||'');return `<li><div class="lug-ra">${a.uri?`<a href="${esc(a.uri)}" target="_blank" rel="noopener">${esc(a.displayName||'Usuário do Google')}</a>`:esc(a.displayName||'Usuário do Google')} <span class="lug-est" aria-label="nota ${r.rating}">${estrelas(r.rating||0)}</span> <span class="muted">${esc(r.relativePublishTimeDescription||'')}</span></div>${txt?`<div class="lug-rt">${esc(txt.length>220?txt.slice(0,220).trim()+'…':txt)}</div>`:''}</li>`}).join('')}</ul>`:''}
+  ${p.googleMapsURI?`<a class="lug-l" href="${esc(p.googleMapsURI)}" target="_blank" rel="noopener">Ver todas no Google Maps</a>`:''}<div class="lug-g muted">Avaliações do Google</div></div>`}
+async function lugarAbrir(id,ll){if(!gInfo||!MAPA)return;gInfo.setContent('<div class="lug muted">Carregando avaliações…</div>');gInfo.setPosition(ll);gInfo.open({map:MAPA});
+  try{let p=LUGARES[id];if(!p){const pl=new gLib.places.Place({id});await pl.fetchFields({fields:['displayName','formattedAddress','rating','userRatingCount','reviews','googleMapsURI']});
+      p=LUGARES[id]={displayName:pl.displayName,formattedAddress:pl.formattedAddress,rating:pl.rating,userRatingCount:pl.userRatingCount,googleMapsURI:pl.googleMapsURI,
+        reviews:(pl.reviews||[]).map(r=>({rating:r.rating,text:r.text,relativePublishTimeDescription:r.relativePublishTimeDescription,authorAttribution:r.authorAttribution&&{displayName:r.authorAttribution.displayName,uri:r.authorAttribution.uri}}))}}
+    gInfo.setContent(lugarHtml(p))}
+  catch(e){console.warn('Place Details',e);gInfo.setContent('<div class="lug muted">Não foi possível carregar as avaliações deste lugar.</div>')}}
 
 /* ---------- Street View ---------- */
 async function gStreetView(t,mapaAlvo){const sv=mapaAlvo.getStreetView();

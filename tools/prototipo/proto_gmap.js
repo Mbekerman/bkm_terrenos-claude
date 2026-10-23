@@ -9,7 +9,7 @@ const GKEY=(()=>{const v=document.querySelector('meta[name="gmaps-key"]')?.conte
 let gInfo=null,gPins=[],gPois=[],gDes=[],gRota=[],gEntorno=[],gMiniSv=null,gLib={};
 const gSet=(arr,map)=>arr.forEach(o=>{if(o.setMap)o.setMap(map);else o.map=map});
 const gLL=(lat,lng)=>({lat,lng});
-const TIPO_G={mapa:'roadmap',ruas:'terrain',satelite:'hybrid'};
+const TIPO_G={mapa:'roadmap',satelite:'hybrid'};
 
 function carregarGoogle(){
   if(!GKEY)return;
@@ -69,8 +69,8 @@ function gEnquadrar(pts,maxZoom){if(!MAPA||!pts.length)return;if(pts.length===1)
   const b=new google.maps.LatLngBounds();pts.forEach(p=>b.extend(p));MAPA.fitBounds(b,48);if(maxZoom)google.maps.event.addListenerOnce(MAPA,'idle',()=>{if(MAPA.getZoom()>maxZoom)MAPA.setZoom(maxZoom)})}
 function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[];gPois=[];gConc=[];gDes=[];gRota=[];gEntorno=[];
   const v=UI.mpView;
-  MAPA=new google.maps.Map(el,{mapId:'DEMO_MAP_ID',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[UI.mpBase||'satelite'],
-    mapTypeControl:false,streetViewControl:true,fullscreenControl:false,clickableIcons:false,gestureHandling:'greedy',scaleControl:true,tilt:0,disableDoubleClickZoom:true});
+  MAPA=new google.maps.Map(el,{mapId:UI.mpLugares===false&&GMAP_SEM_LUGARES?GMAP_SEM_LUGARES:'DEMO_MAP_ID',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[UI.mpBase||'satelite'],
+    mapTypeControl:false,streetViewControl:true,fullscreenControl:false,clickableIcons:UI.mpLugares!==false,gestureHandling:'greedy',scaleControl:true,tilt:0,disableDoubleClickZoom:true});
   gInfo=new google.maps.InfoWindow({maxWidth:320});
   el.classList.toggle('modo',!!UI.mpModo);G_desenhaPins();G_desenhaPois();G_desenhaConc();
   ctxGestos(el,(x,y)=>{if(!gProj||gProj.getMap()!==MAPA)gPontoNaTela(0,0);const pr=gProj?.getProjection();const ll=pr?.fromContainerPixelToLatLng(new google.maps.Point(x,y));return ll?{lat:ll.lat(),lng:ll.lng()}:null});
@@ -81,11 +81,34 @@ function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[]
   MAPA.addListener('idle',()=>{const c=MAPA.getCenter();UI.mpView={c:{lat:c.lat(),lng:c.lng()},z:MAPA.getZoom()};vMenuDesenha()});
   MAPA.addListener('dragstart',()=>$('.mapa-area .v-menu')?.remove());MAPA.addListener('zoom_changed',()=>$('.mapa-area .v-menu')?.remove());
   MAPA.getStreetView().addListener('visible_changed',()=>$('.mapa-area')?.classList.toggle('sv-on',MAPA.getStreetView().getVisible()));
-  MAPA.addListener('click',e=>{if(UI.mpModo&&e.latLng)mapaClique(e.latLng.lat(),e.latLng.lng());else if(UI.mpSel)mpSelecionar(null)});
+  MAPA.addListener('click',e=>{if(e.placeId){e.stop();if(!UI.mpModo){lugarAbrir(e.placeId,e.latLng);return}}
+    if(UI.mpModo&&e.latLng)mapaClique(e.latLng.lat(),e.latLng.lng());else if(UI.mpSel)mpSelecionar(null)});
   if(UI.mpFoco){const t=T(UI.mpFoco);UI.mpFoco=null;if(t&&t.lat!=null)google.maps.event.addListenerOnce(MAPA,'idle',()=>G_focar(t))}
 }
 function G_focar(t){if(!MAPA)return;UI.mpSel=t.id;if(t.poly)gEnquadrar(t.poly.map(p=>gLL(p[0],p[1])),19);else{MAPA.setCenter(gLL(t.lat,t.lng));if(MAPA.getZoom()<17)MAPA.setZoom(17)}
   mpSelecionar(t.id)}
+
+/* ---------- Lugares do Google (comércio, escolas, hospitais...) ----------
+   Ligado: os ícones do Google ficam no mapa e o toque abre nome, nota e avaliações.
+   Desligado: o mapa usa outro Map ID, com estilo sem lugares criado no Cloud Console
+   (o Google não aceita esconder lugares por código quando há Map ID); o ID vem da
+   variável GOOGLE_MAP_ID_SEM_LUGARES. Cada toque é uma consulta Place Details com
+   avaliações (SKU Enterprise + Atmosphere); o resultado fica guardado na sessão. */
+const GMAP_SEM_LUGARES=(()=>{const v=document.querySelector('meta[name="gmaps-mapid-sem-lugares"]')?.content||'';return /^[\w-]{6,}$/.test(v)?v:''})();
+const LUGARES={};
+function G_lugares(on){if(!on&&!GMAP_SEM_LUGARES){toast('Para esconder os lugares falta o estilo de mapa sem lugares no Google Cloud (Map ID).',true);return}
+  UI.mpLugares=on;gInfo?.close();G_initMapa();document.querySelectorAll('[data-a="mp-lugares"]').forEach(b=>b.setAttribute('aria-pressed',on))}
+const estrelas=n=>{const r=Math.round(n*2)/2;return '★'.repeat(Math.floor(r))+(r%1?'⯪':'')+'☆'.repeat(5-Math.ceil(r))};
+function lugarHtml(p){const revs=(p.reviews||[]).slice(0,3),nota=p.rating!=null?`<div class="lug-nota"><b>${String(p.rating.toFixed?p.rating.toFixed(1):p.rating).replace('.',',')}</b> <span class="lug-est" aria-hidden="true">${estrelas(p.rating)}</span> <span class="muted">${p.userRatingCount!=null?Number(p.userRatingCount).toLocaleString('pt-BR')+' avaliações':''}</span></div>`:'<div class="muted">Sem avaliações no Google</div>';
+  return `<div class="lug"><div class="lug-n">${esc(p.displayName||'Lugar')}</div>${p.formattedAddress?`<div class="lug-e muted">${esc(p.formattedAddress)}</div>`:''}${nota}
+  ${revs.length?`<ul class="lug-revs">${revs.map(r=>{const a=r.authorAttribution||{},txt=String(r.text||'');return `<li><div class="lug-ra">${a.uri?`<a href="${esc(a.uri)}" target="_blank" rel="noopener">${esc(a.displayName||'Usuário do Google')}</a>`:esc(a.displayName||'Usuário do Google')} <span class="lug-est" aria-label="nota ${r.rating}">${estrelas(r.rating||0)}</span> <span class="muted">${esc(r.relativePublishTimeDescription||'')}</span></div>${txt?`<div class="lug-rt">${esc(txt.length>220?txt.slice(0,220).trim()+'…':txt)}</div>`:''}</li>`}).join('')}</ul>`:''}
+  ${p.googleMapsURI?`<a class="lug-l" href="${esc(p.googleMapsURI)}" target="_blank" rel="noopener">Ver todas no Google Maps</a>`:''}<div class="lug-g muted">Avaliações do Google</div></div>`}
+async function lugarAbrir(id,ll){if(!gInfo||!MAPA)return;gInfo.setContent('<div class="lug muted">Carregando avaliações…</div>');gInfo.setPosition(ll);gInfo.open({map:MAPA});
+  try{let p=LUGARES[id];if(!p){const pl=new gLib.places.Place({id});await pl.fetchFields({fields:['displayName','formattedAddress','rating','userRatingCount','reviews','googleMapsURI']});
+      p=LUGARES[id]={displayName:pl.displayName,formattedAddress:pl.formattedAddress,rating:pl.rating,userRatingCount:pl.userRatingCount,googleMapsURI:pl.googleMapsURI,
+        reviews:(pl.reviews||[]).map(r=>({rating:r.rating,text:r.text,relativePublishTimeDescription:r.relativePublishTimeDescription,authorAttribution:r.authorAttribution&&{displayName:r.authorAttribution.displayName,uri:r.authorAttribution.uri}}))}}
+    gInfo.setContent(lugarHtml(p))}
+  catch(e){console.warn('Place Details',e);gInfo.setContent('<div class="lug muted">Não foi possível carregar as avaliações deste lugar.</div>')}}
 
 /* ---------- Street View ---------- */
 async function gStreetView(t,mapaAlvo){const sv=mapaAlvo.getStreetView();
