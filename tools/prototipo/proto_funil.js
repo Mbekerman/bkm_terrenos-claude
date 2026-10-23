@@ -23,7 +23,7 @@ const destinoCfg=(tipo,k)=>tipo==='etapa'?etapaCfg(k):tipo==='subetapa'?subCfg(k
 const destinoNome=(tipo,k)=>tipo==='etapa'?SN(k):tipo==='subetapa'?subN(k):STATUS_N[k]||k;
 function syncCfg(){STAGES.splice(0,STAGES.length,...cfg().etapas.map(e=>[e.k,e.nome]))}
 /* dados carregados ou restaurados: garante configuração, equipe e avisos dos pedidos de exemplo */
-function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.cfg.fases)S.cfg.fases=FASES_PADRAO();if(!S.cfg.deps)S.cfg.deps=DEPS_PADRAO();if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];syncCfg();
+function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.cfg.fases)S.cfg.fases=FASES_PADRAO();if(!S.cfg.deps)S.cfg.deps=DEPS_PADRAO();if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];syncCfg();partesPreparar();
   if(!S.pedidosAvisados){S.terrenos.forEach(t=>{if(t.neg?.pedido)avisarAprovadores(t)});S.pedidosAvisados=true}}
 
 /* ---------- regras da passagem ---------- */
@@ -35,11 +35,11 @@ const etapaAtrasada=n=>{const c=etapaCfg(n.etapa);return !!(n.status==='ativo'&&
 function pendencias(t,tipo,dest){const n=t.neg,L=[];
   cfg().prereq.filter(p=>p.alvoTipo===tipo&&p.alvo===dest).forEach(p=>{const ok=passouPor(n,p.req);
     L.push({ok,txt:ok?`Passou por ${subN(p.req)}`:`Passar antes por ${subN(p.req)} (${SN(subCfg(p.req)?.etapa)})`,fix:null})});
-  const saindo=(tipo==='etapa'&&SIDX(dest)>SIDX(n.etapa))||(tipo==='status'&&dest==='comprado');
+  const saindo=((tipo==='etapa'&&SIDX(dest)>SIDX(n.etapa))||(tipo==='status'&&dest==='comprado'))&&!(!t._parte&&dividida(t));
   if(saindo){(cfg().checklist[n.etapa]||[]).filter(c=>c.obrig).forEach(({doc})=>{const st=docSt(t.docs.find(d=>d.tipo===doc));
       L.push({ok:st==='validado',txt:TIPOS_DOC[doc][0]+(st==='validado'?' validado':st==='pendente'?': não enviado':st==='recebido'?': aguardando validação':': '+st),fix:st==='validado'?null:['tab:documentos','Ver documentos']})})}
-  if(tipo==='status'&&dest==='comprado')t.dilig.filter(d=>d.sit==='impeditiva').forEach(d=>L.push({ok:false,txt:'Diligência impeditiva: '+d.titulo,fix:['tab:documentos','Ver diligências']}));
-  return L}
+  if(tipo==='status'&&dest==='comprado'&&!t._parte)t.dilig.filter(d=>d.sit==='impeditiva').forEach(d=>L.push({ok:false,txt:'Diligência impeditiva: '+d.titulo,fix:['tab:documentos','Ver diligências']}));
+  return L.concat(pendPartes(t,tipo,dest))}
 /* aprovações exigidas, menos os níveis que quem move já tem */
 function aprovExig(tipo,dest,ator){const c=destinoCfg(tipo,dest)||{},nv=[];if(c.g)nv.push(2);if(c.d)nv.push(3);
   const q=nivelDe(ator);return {niveis:nv.filter(x=>x>q),modo:c.modo||'sequencia'}}
@@ -47,16 +47,18 @@ const proxDestino=n=>{const i=SIDX(n.etapa);return STAGES[i+1]?['etapa',STAGES[i
 /* quadro de avanço: próximo destino, pendências e aprovações (mesmo formato usado nas Ações do painel) */
 function checkAdv(t){const n=t.neg;if(!n||n.status!=='ativo')return null;
   const [tipo,dest]=proxDestino(n),items=pendencias(t,tipo,dest),b=items.filter(x=>!x.ok);
-  return {next:[dest,destinoNome(tipo,dest)],tipo,dest,items,ok:!b.length,forcar:!!b.length&&nivelDe(me())>=2,aprov:aprovExig(tipo,dest,me()),compra:tipo==='status'}}
+  return {next:[dest,destinoNome(tipo,dest)],tipo,dest,items,ok:!b.length,forcar:!!b.length&&!b.some(x=>x.trava)&&nivelDe(me())>=2,aprov:aprovExig(tipo,dest,me()),compra:tipo==='status'}}
 const naVez=p=>{const pend=p.niveis.filter(r=>r.status==='pendente');if(!pend.length)return [];const o=Math.min(...pend.map(r=>r.ordem));return pend.filter(r=>r.ordem===o)};
 const podeDecidir=(r,u)=>nivelDe(u)>=r.nivel&&(!r.previsto||r.previsto===u||ehSuperior(u,r.previsto));
 const possoDecidir=t=>{const p=t.neg?.pedido;return !!p&&naVez(p).some(r=>podeDecidir(r,me()))};
 const quemFalta=p=>naVez(p).map(r=>r.previsto?`${r.previsto} (${NIV_N[r.nivel]})`:`um ${NIV_N[r.nivel]}`).join(' e ');
 
 /* mesmo caminho de app._passagem: pendências travam (gestor ou diretor força com justificativa); aprovações viram pedido; sem pedido, executa */
-function moverPara(t,tipo,dest,o={}){const n=t.neg,eu=me();
+function moverPara(t,tipo,dest,o={}){const n=t.neg,eu=me(),mp=movePartes(t,tipo,dest);
+  if(mp)return {erro:mp};
   if(n.pedido)return {erro:`Há um pedido de aprovação aberto para ${destinoNome(n.pedido.tipo,n.pedido.dest)}. Decida ou cancele antes.`};
   const pend=pendencias(t,tipo,dest).filter(x=>!x.ok);
+  if(pend.some(x=>x.trava))return {bloq:true,pend,podeForcar:false};
   if(pend.length&&!o.forcar)return {bloq:true,pend,podeForcar:nivelDe(eu)>=2};
   const dados={...(o.dados||{}),forcado:pend.length?o.just:null};
   const ap=aprovExig(tipo,dest,eu);
@@ -74,7 +76,11 @@ function executar(t,tipo,dest,d){const n=t.neg,ev={em:agora(),user:me(),deEtapa:
     if(dest==='perdido'||dest==='descartado')Object.assign(n,{motivo:d.motivo,detalhe:d.detalhe});
     if(dest==='stand_by')Object.assign(n,{retomar:d.retomar,detalhe:d.detalhe});
     log(t,`Status: ${STATUS_N[dest]}${d.motivo?' · '+motivoN(dest,d.motivo):''}${dest==='stand_by'?' até '+fd(d.retomar):''}${d.forcado?' · sem requisitos: '+d.forcado:''}`)}
-  Object.assign(ev,{paraEtapa:n.etapa,paraSub:n.sub,status:n.status});n.trilha.push(ev);if(tipo==='status')abrirLiberadas(t)}
+  Object.assign(ev,{paraEtapa:n.etapa,paraSub:n.sub,status:n.status});n.trilha.push(ev);
+  if(t._parte){sincPrincipal(terrenoDe(t));return}
+  if(tipo==='etapa')abrirPartes(t);
+  if(tipo==='status'&&['perdido','descartado','stand_by'].includes(dest))encerrarPartes(t,dest,d);
+  if(tipo==='status')abrirLiberadas(t)}
 function decidir(t,aprovar,coment){const n=t.neg,p=n.pedido,eu=me();if(!p)return null;
   if(!naVez(p).some(r=>podeDecidir(r,eu)))return {erro:`Este pedido aguarda ${quemFalta(p)}.`};
   if(!aprovar){p.niveis.forEach(r=>{if(r.status==='pendente')r.status='cancelado'});n.pedido=null;
@@ -88,7 +94,8 @@ function cancelarPedido(t){const p=t.neg.pedido;if(!p)return;p.niveis.forEach(r=
 /* retomar: o tempo parado não conta no prazo da etapa nem da subetapa */
 function retomar(t){const n=t.neg,parado=n.encerradoEm?diff(n.encerradoEm,HOJE):0;
   n.status='ativo';n.desde=addD(n.desde,parado);n.subDesde=n.subDesde?addD(n.subDesde,parado):HOJE;n.retomar=null;n.encerradoEm=null;
-  (n.trilha=n.trilha||[]).push({em:agora(),user:me(),ev:'retomada',deEtapa:n.etapa,deSub:n.sub,paraEtapa:n.etapa,paraSub:n.sub,status:'ativo'});log(t,'Negociação retomada')}
+  (n.trilha=n.trilha||[]).push({em:agora(),user:me(),ev:'retomada',deEtapa:n.etapa,deSub:n.sub,paraEtapa:n.etapa,paraSub:n.sub,status:'ativo'});log(t,'Negociação retomada');
+  if(!t._parte)retomarPartes(t)}
 /* kanban: para frente passa por cada etapa (só a última pode esperar aprovação); falhou uma, nada muda */
 function levarAte(t,alvo,o={}){const snap=JSON.stringify(t.neg),h=t.hist.length,nt=S.notifs.length;
   const desfaz=()=>{t.neg=JSON.parse(snap);t.hist.length=h;S.notifs.splice(0,S.notifs.length-nt)};
@@ -159,6 +166,9 @@ function painelNeg(t){
   if(n.status==='comprado')return `<section class="sec sec-adv"><div class="banner good">${ic('check')}<div style="min-width:0"><div class="bt">Comprado em ${fd(n.encerradoEm)}</div><div class="relato">${limpaHtml(n.relato||'')}</div>${n.pontos?`<div style="margin-top:6px"><b>Pontos de sucesso:</b> ${esc(n.pontos)}</div>`:''}</div></div></section>`;
   if(n.status==='stand_by')return `<section class="sec sec-adv"><div class="banner warn" style="justify-content:space-between;flex-wrap:wrap"><span style="display:flex;gap:12px">${ic('pause')}<span><b>Stand By em ${SN(n.etapa)} · revisitar em ${fd(n.retomar)}</b>${n.detalhe?`<br><span>${esc(n.detalhe)}</span>`:''}</span></span>${ro?'':'<button class="btn sm" data-a="retomar">Retomar</button>'}</div></section>`;
   const r=checkAdv(t),pend=r.items.filter(x=>!x.ok),subs=subsDe(n.etapa),p=n.pedido;
+  if(dividida(t)&&!r.compra)return `<section class="sec sec-adv"><div class="adv adv-c"><div class="adv-sub"><span>Subetapa</span><b>${esc(subN(n.sub))}</b><span class="faint">${diasSub(n)??'—'} d</span></div>
+    <div class="adv-l1"><span class="adv-t">Anda pelas partes · ${esc(resumoPartes(t))}</span></div><div class="faint" style="font-size:12px">O terreno fica na etapa da parte mais atrasada.</div>
+    ${ro?'':`<div class="adv-l2"><button class="btn" data-a="tab" data-t="negociacao">Ver partes</button>${advMais(n)}</div>`}</div></section>`;
   const subSel=`<label class="adv-sub"><span>Subetapa</span><select data-ch="sub" ${ro||p?'disabled':''} aria-label="Subetapa">${n.sub&&!subs.some(s=>s.k===n.sub)?`<option value="${n.sub}" selected>${esc(subN(n.sub))} (inativa)</option>`:''}${subs.map(s=>`<option value="${s.k}" ${s.k===n.sub?'selected':''}>${esc(s.nome)}</option>`).join('')}</select><span class="faint">${diasSub(n)??'—'} d${subCfg(n.sub)?.prazo?' de '+subCfg(n.sub).prazo:''}</span>${subAtrasada(n)?'<span class="chip warn">prazo estourado</span>':''}</label>`;
   const ped=p?`<div class="adv-ped"><div class="adv-ped-t">${ic('clock',18)}<span><b>Aguardando aprovação</b> para ${esc(destinoNome(p.tipo,p.dest))}</span></div>
     <ol class="adv-niv">${p.niveis.map(x=>`<li class="${x.status}"><span class="nv-d">${x.status==='aprovado'?ic('check',14):''}</span><span>${PAPEL_N[NIV_N[x.nivel]]}${x.previsto?' · '+esc(x.previsto):''}</span><span class="faint">${x.status==='aprovado'?'aprovou'+(x.por&&x.por!==x.previsto?' ('+esc(x.por)+')':''):naVez(p).includes(x)?'na vez':'depois'}</span></li>`).join('')}</ol>
@@ -180,7 +190,7 @@ const textoDe=h=>{const d=document.createElement('div');d.innerHTML=limpaHtml(h)
 function kcardNeg(t,modo){const n=t.neg,o=ofertaRef(t),lp=lastProp(t),pr=proxReuniao(t),sb=n.status==='stand_by';
   return `<button class="kcard ${n.pedido?'aprov':''}" data-a="abrir" data-id="${t.id}" data-from="negociacoes" ${UI.role!=='Leitura'?'draggable="true"':''}><div class="kr"><span class="num faint">${t.codigo}</span>${tempMini(n.temp)}</div><div class="kt">${esc(t.nome)}</div>
   ${modo!=='sub'&&n.sub?`<div class="ksub"><span>${esc(subN(n.sub))}</span><span class="faint">${diasSub(n)} d</span>${subAtrasada(n)?`<span class="flag warn" title="Passou do prazo da subetapa">${ic('clock',14)}</span>`:''}</div>`:''}
-  <div class="ks">${esc(t.bairro||'')}${sb?' · parou em '+SN(n.etapa):''}</div>
+  <div class="ks">${esc(t.bairro||'')}${sb?' · parou em '+SN(n.etapa):''}</div>${dividida(t)?`<div class="kpt">${ic('layers',14)}${esc(resumoPartes(t))}</div>`:''}
   <div class="kr"><span>${lp?'Prop. '+mi(lp.valor):'Pedido '+(o?.valor?mi(o.valor):'—')}</span>${atrasadas(t).length?`<span class="flag crit" title="Tarefas atrasadas">${ic('clock',14)}${atrasadas(t).length}</span>`:''}${acimaMax(t)?`<span class="flag warn">${ic('money',14)}</span>`:''}</div>${pr?`<div class="kr"><span class="faint">Reunião ${fd(pr.data)} · ${pr.hora}</span></div>`:''}
   ${n.pedido?`<div class="kped">${ic('clock',14)}Aguardando ${esc(quemFalta(n.pedido))}</div>`:''}
   <div class="kr">${av(t.resp,'sm')}<span class="faint ${!sb&&etapaAtrasada(n)?'katr':''}">${sb?'revisitar '+fd(n.retomar):modo==='sub'?diasSub(n)+' d na subetapa':diff(n.desde,HOJE)+' d na etapa'}</span></div></button>`}

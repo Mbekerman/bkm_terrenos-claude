@@ -1,0 +1,207 @@
+/* ===================== partes: terreno com vários donos =====================
+   No banco: terreno_partes, oferta_partes e processos com parte_id/principal_id
+   (app.salvar_parte, app.remover_parte, _abrir_negociacoes_partes, _sincronizar_principal).
+   Cada parte é um dono, ou um grupo de donos que negocia junto. Com duas ou mais
+   partes ativas, quando o terreno chega à etapa da divisão (Negociação), cada parte
+   ganha a sua negociação (pa.neg, pa.propostas), no mesmo formato da do terreno, e
+   passa pelas mesmas regras (moverPara) através de vtParte. A negociação do terreno
+   fica na etapa e na subetapa da parte mais atrasada e só fica Comprado com todas as
+   partes ativas compradas. */
+const etapaPartes=()=>cfg().etapaPartes||'negociacao';
+const partesDe=t=>t.partes||(t.partes=[]);
+const partesAtivas=t=>(t.partes||[]).filter(p=>p.ativa);
+const parteDe=(t,id)=>(t.partes||[]).find(p=>p.id===id);
+const dividida=t=>(t.partes||[]).some(p=>p.neg);
+/* a parte vista como um terreno: as regras do funil leem t.neg e t.propostas; o resto vem do terreno */
+const vtParte=(t,pa)=>Object.assign(Object.create(t),{neg:pa.neg,propostas:pa.propostas||(pa.propostas=[]),_parte:pa});
+const terrenoDe=t=>t._parte?Object.getPrototypeOf(t):t;
+const donosParte=(t,pa)=>t.pessoas.filter(p=>p.parte===pa.id&&p.papel==='proprietario').map(p=>p.nome);
+const matsParte=(t,pa)=>t.mats.filter(m=>m.parte===pa.id);
+const ordSub=(e,s)=>subsDe(e).findIndex(x=>x.k===s);
+const precoParte=(t,pa)=>{const o=t.ofertas.find(x=>x.id===pa.neg?.ofRef)||t.ofertas.filter(x=>x.partes&&pa.id in x.partes).slice(-1)[0];
+  if(!o||!o.partes||!(pa.id in o.partes))return null;return o.partes[pa.id]??(Object.keys(o.partes).length===1?o.valor:null)};
+
+function abrirPartes(t){const n=t.neg;if(!n||n.status!=='ativo'||t._parte)return;
+  if(SIDX(n.etapa)<SIDX(etapaPartes())||partesAtivas(t).length<2)return;
+  const e=etapaPartes(),s=subInicial(e);
+  partesAtivas(t).filter(pa=>!pa.neg).forEach(pa=>{const seq=(t.partes||[]).filter(x=>x.neg).length+1;
+    const of=t.ofertas.filter(o=>o.partes&&pa.id in o.partes).slice(-1)[0];
+    pa.neg={codigo:n.codigo+'-'+seq,etapa:e,sub:s,status:'ativo',desde:HOJE,subDesde:HOJE,temp:n.temp,ofRef:of?.id||n.ofRef,viab:null,pedido:null,
+      trilha:[{em:agora(),user:me(),ev:'abertura',deEtapa:null,deSub:null,paraEtapa:e,paraSub:s,status:'ativo'}]};
+    pa.propostas=pa.propostas||[];log(t,`Negociação da parte ${pa.nome} aberta (${pa.neg.codigo})`)});
+  sincPrincipal(t)}
+/* o terreno acompanha a parte mais atrasada em aberto (sem nenhuma em aberto, a mais adiantada das compradas) */
+function sincPrincipal(t){const n=t.neg;if(!n||n.status!=='ativo')return;
+  const ab=partesAtivas(t).filter(pa=>pa.neg&&['ativo','stand_by'].includes(pa.neg.status)),co=partesAtivas(t).filter(pa=>pa.neg?.status==='comprado');
+  const k=pa=>SIDX(pa.neg.etapa)*100+ordSub(pa.neg.etapa,pa.neg.sub);
+  const alvo=ab.length?ab.sort((a,b)=>k(a)-k(b))[0]:co.sort((a,b)=>k(b)-k(a))[0];if(!alvo)return;
+  const {etapa,sub}=alvo.neg;if(etapa===n.etapa&&sub===n.sub)return;
+  const ev={em:agora(),user:me(),deEtapa:n.etapa,deSub:n.sub,ev:etapa===n.etapa?'subetapa':SIDX(etapa)>SIDX(n.etapa)?'avanco':'retorno'};
+  if(etapa!==n.etapa){n.etapa=etapa;n.desde=HOJE}n.sub=sub;n.subDesde=HOJE;
+  (n.trilha=n.trilha||[]).push(Object.assign(ev,{paraEtapa:etapa,paraSub:sub,status:'ativo'}));
+  log(t,`Pelas negociações das partes: ${SN(etapa)} · ${subN(sub)}`)}
+/* encerrar o terreno leva as partes em aberto; retomar o terreno retoma as partes */
+function encerrarPartes(t,dest,d){partesDe(t).filter(pa=>pa.neg&&(pa.neg.status==='ativo'||(pa.neg.status==='stand_by'&&dest!=='stand_by'))).forEach(pa=>{const p=pa.neg;
+  p.pedido=null;Object.assign(p,{status:dest,encerradoEm:HOJE,motivo:d.motivo||null,detalhe:'Com a negociação do terreno'+(d.detalhe?': '+d.detalhe:''),retomar:d.retomar||null});
+  (p.trilha=p.trilha||[]).push({em:agora(),user:me(),ev:{perdido:'perda',descartado:'descarte',stand_by:'stand_by'}[dest],deEtapa:p.etapa,deSub:p.sub,paraEtapa:p.etapa,paraSub:p.sub,status:dest})})}
+function retomarPartes(t){partesDe(t).filter(pa=>pa.neg?.status==='stand_by').forEach(pa=>retomar(vtParte(t,pa)))}
+
+/* pendências extras: compra do terreno dividido exige cada parte ativa comprada (nem o gestor força) */
+function pendPartes(t,tipo,dest){if(t._parte||!dividida(t)||tipo!=='status'||dest!=='comprado')return [];
+  return partesAtivas(t).map(pa=>{const st=pa.neg?.status;return {ok:st==='comprado',trava:true,fix:st==='comprado'?null:['tab:negociacao','Ver partes'],
+    txt:`Parte ${pa.nome}: `+({comprado:'comprada',perdido:'perdida (tire a parte do terreno ou encerre a negociação)',descartado:'descartada (tire a parte do terreno ou encerre a negociação)',stand_by:'em stand by',ativo:'em negociação'}[st]||'sem negociação')}})}
+/* quem pode se mover: o terreno dividido não anda à mão; a parte só da etapa da divisão em diante e com o terreno ativo */
+function movePartes(t,tipo,dest){
+  if(!t._parte)return dividida(t)&&tipo!=='status'?'Com várias partes, a negociação do terreno anda pelas negociações das partes.':null;
+  if(terrenoDe(t).neg?.status!=='ativo')return 'A negociação do terreno não está ativa.';
+  if(tipo==='etapa'&&SIDX(dest)<SIDX(etapaPartes()))return `A negociação da parte começa em ${SN(etapaPartes())}: as etapas anteriores são do terreno todo.`;
+  return null}
+
+/* ---------- ficha: seção Partes (dentro de Negociação) ---------- */
+const PT_ST={ativo:'',comprado:'good',perdido:'crit',descartado:'',stand_by:'warn'};
+function parteCard(t,pa){const ro=UI.role==='Leitura',n=pa.neg,vt=n?vtParte(t,pa):null,donos=donosParte(t,pa),ms=matsParte(t,pa);
+  const st=!pa.ativa?'<span class="chip">Fora do terreno</span>':n?`<span class="chip ${PT_ST[n.status]}">${n.status==='ativo'?esc(SN(n.etapa)):STATUS_N[n.status]}</span>`:'';
+  const preco=precoParte(t,pa),lp=(pa.propostas||[]).slice(-1)[0];
+  let corpo='';
+  if(!pa.ativa)corpo=`<div class="pt-x faint">Saiu do terreno: ${esc(pa.motivoRem||'')}</div>`;
+  else if(!n)corpo=`<div class="pt-x faint">Ganha a sua negociação quando o terreno chegar a ${esc(SN(etapaPartes()))}.</div>`;
+  else{const subs=subsDe(n.etapa),r=n.status==='ativo'?checkAdv(vt):null,p=n.pedido;
+    const ultima=SIDX(n.etapa)===STAGES.length-1;
+    corpo=`<div class="pt-g">
+      ${n.status==='ativo'?`<label class="pt-f"><span class="lbl">Subetapa</span><select data-ch="pt-sub" data-p="${pa.id}" ${ro||p?'disabled':''} aria-label="Subetapa de ${esc(pa.nome)}">${subs.map(s=>`<option value="${s.k}" ${s.k===n.sub?'selected':''}>${esc(s.nome)}</option>`).join('')}</select><span class="faint">${diasSub(n)??0} d${subAtrasada(n)?' · <b class="t-warn">prazo estourado</b>':''}</span></label>`
+        :`<div class="pt-f"><span class="lbl">${STATUS_N[n.status]}</span><span>${n.status==='stand_by'?'revisitar '+fd(n.retomar):fd(n.encerradoEm)}${n.motivo?' · '+esc(motivoN(n.status,n.motivo)):''}</span>${n.detalhe||n.relato?`<span class="faint">${esc(n.detalhe||textoDe(n.relato))}</span>`:''}</div>`}
+      <div class="pt-f"><span class="lbl">Temperatura</span>${n.status==='ativo'&&!ro?tempPicker(vt).replaceAll('data-a="temp"',`data-a="pt-temp" data-p="${pa.id}"`):tempMini(n.temp)}</div>
+      <div class="pt-f"><span class="lbl">Pedido</span><span class="num">${preco?mi(preco):'<span class="faint">—</span>'}</span></div>
+      <div class="pt-f"><span class="lbl">Última proposta</span><span class="num">${lp?mi(lp.valor)+' <span class="faint">'+(lp.origem==='bkm'?'BKM':'vendedor')+' · '+OPT.statusProp[lp.status].toLowerCase()+'</span>':'<span class="faint">—</span>'}</span></div></div>
+      ${p?`<div class="pt-ped">${ic('clock',16)}<span>Aguardando ${esc(quemFalta(p))} para ${esc(destinoNome(p.tipo,p.dest))}</span>${ro?'':`${naVez(p).some(x=>podeDecidir(x,me()))?`<button class="btn primary sm" data-a="pt-aprovar" data-p="${pa.id}">Aprovar</button><button class="btn sm" data-a="pt-recusar" data-p="${pa.id}">Recusar</button>`:''}${p.por===me()||nivelDe(me())>nivelDe(p.por)?`<button class="btn text sm" data-a="pt-cancelar" data-p="${pa.id}">Cancelar pedido</button>`:''}`}</div>`:''}
+      ${ro?'':`<div class="pt-a">${n.status==='ativo'&&!p?`<button class="btn primary sm" data-a="pt-ir" data-p="${pa.id}">${ic(ultima?'check':'fwd',16)}${ultima?'Concluir como Comprado':r.aprov.niveis.length?'Pedir aprovação':'Avançar para '+esc(r.next[1])}</button><button class="btn sm" data-a="pt-prop" data-p="${pa.id}">${ic('add',16)}Proposta</button>`:''}
+        ${n.status==='stand_by'&&terrenoDe(t).neg?.status==='ativo'?`<button class="btn sm" data-a="pt-retomar" data-p="${pa.id}">Retomar</button>`:''}
+        ${parteMenu(t,pa)}</div>`}`}
+  return `<article class="pt-card ${!pa.ativa?'fora':n?.status||''}" id="pt-${pa.id}"><div class="pt-h"><span class="pt-n"><b>${esc(pa.nome)}</b>${n?`<span class="num faint">${esc(n.codigo)}</span>`:''}</span>
+    <span class="chip ${pa.essencial?'blue':''}" title="${pa.essencial?'Sem ela o terreno não serve':'Dá para seguir sem ela, com área menor'}">${pa.essencial?'Essencial':'Dispensável'}</span>${st}</div>
+    <div class="pt-m muted">${donos.length?esc(donos.join(', ')):'<span class="faint">Sem dono vinculado</span>'} · ${ms.length} matrícula${ms.length===1?'':'s'}${pa.area?' · '+m2(pa.area):''}</div>${corpo}</article>`}
+function parteMenu(t,pa){const n=pa.neg,it=[];if(!pa.ativa)return '';
+  if(n?.status==='ativo')it.push(`<button role="menuitem" data-a="pt-suspender" data-p="${pa.id}">${ic('pause',18)}Colocar em Stand By</button>`,`<button role="menuitem" class="danger" data-a="pt-perder" data-p="${pa.id}">${ic('block',18)}Marcar como Perdida</button>`,`<button role="menuitem" class="danger" data-a="pt-descartar" data-p="${pa.id}">${ic('close',18)}Descartar</button>`);
+  it.push(`<button role="menuitem" data-a="pt-editar" data-p="${pa.id}">${ic('edit',18)}Editar parte</button>`);
+  if(!n||!['ativo','stand_by','comprado'].includes(n.status))it.push(`<button role="menuitem" class="danger" data-a="pt-remover" data-p="${pa.id}">${ic('close',18)}Tirar do terreno</button>`);
+  return `<div class="adv-mais"><button class="btn sm adv-mb" data-a="adv-mais" aria-haspopup="menu" aria-expanded="false" aria-label="Mais ações da parte ${esc(pa.nome)}"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" d="M12 5.5h.01M12 12h.01M12 18.5h.01"/></svg></button><div class="adv-menu" role="menu">${it.join('')}</div></div>`}
+function secPartes(t){const P=t.partes||[],at=partesAtivas(t),ro=UI.role==='Leitura',div=dividida(t);
+  const add=ro?'':`<button class="btn text sm" data-a="pt-nova">${ic('add',16)}Adicionar parte</button>`;
+  if(!P.length)return `<section class="sec" id="sec-partes"><div class="sec-h"><h2>Partes</h2>${add}</div><div class="sec-b"><div class="muted">Um dono, mesmo com várias matrículas, é uma negociação só. Se os lotes têm donos que negociam separado, cadastre uma parte para cada dono ou grupo de donos: cada uma terá preço, temperatura, propostas e status próprios a partir de ${esc(SN(etapaPartes()))}.</div></div></section>`;
+  const co=at.filter(pa=>pa.neg?.status==='comprado'),aT=at.reduce((s,p)=>s+(p.area||0),0),aC=co.reduce((s,p)=>s+(p.area||0),0);
+  const pedidos=at.map(pa=>precoParte(t,pa)),soma=pedidos.every(v=>v!=null)?pedidos.reduce((a,b)=>a+b,0):null;
+  const prob=at.filter(pa=>['perdido','descartado'].includes(pa.neg?.status));
+  return `<section class="sec" id="sec-partes"><div class="sec-h"><h2>Partes</h2>${add}</div><div class="sec-b">
+    <div class="pt-res"><div><span class="lbl">Partes</span><b>${at.length}</b>${P.length>at.length?`<span class="faint"> + ${P.length-at.length} fora</span>`:''}</div>
+      <div><span class="lbl">Compradas</span><b>${co.length} de ${at.length}</b>${aT?`<span class="faint"> · ${num(100*aC/aT,0)}% da área</span>`:''}</div>
+      <div><span class="lbl">Pedido somado</span><b>${soma!=null?mi(soma):'<span class="faint">—</span>'}</b></div>
+      <div><span class="lbl">Negociação</span><b>${div?'Uma por parte':at.length>1?'Divide em '+esc(SN(etapaPartes())):'Uma só'}</b></div></div>
+    ${prob.length?`<div class="banner warn">${ic('warn')}<div>${prob.map(pa=>`<b>${esc(pa.nome)}</b> ${pa.neg.status==='perdido'?'perdida':'descartada'}`).join(', ')}: o terreno só fica Comprado se a parte sair (área menor, estudo refeito) ou com a negociação encerrada.</div></div>`:''}
+    <div class="pt-lista">${P.slice().sort((a,b)=>b.ativa-a.ativa).map(pa=>parteCard(t,pa)).join('')}</div></div></section>`}
+const selParte=(t,ch,i,v)=>UI.role==='Leitura'?esc(parteDe(t,v)?.nome||'—'):`<select data-ch="${ch}" data-i="${i}" aria-label="Parte"><option value="">—</option>${partesAtivas(t).map(pa=>`<option value="${pa.id}" ${pa.id===v?'selected':''}>${esc(pa.nome)}</option>`).join('')}</select>`;
+const resumoPartes=t=>{const at=partesAtivas(t);if(!dividida(t))return '';const co=at.filter(pa=>pa.neg?.status==='comprado').length;return `${at.length} partes · ${co} comprada${co===1?'':'s'}`};
+
+/* ---------- ações ---------- */
+function tentarParte(t,pa,tipo,dest,o={}){const vt=vtParte(t,pa),r=moverPara(vt,tipo,dest,o);save();render();
+  if(r.ok){toast(`${pa.nome}: ${destinoNome(tipo,dest)}.`);return r}
+  if(r.pedido){toast(r.msg);return r}
+  if(r.bloq){UI.acao={tid:t.id,parte:pa.id,tipo,dest,dados:o.dados,pend:r.pend.map(x=>x.txt),items:r.pend};UI.alvoParte=pa.id;UI.modal=r.podeForcar?'forcar':'adv-bloq';renderModal();return r}
+  toast(r.erro,true);return r}
+function partesClick(A,a,t){if(!A.startsWith('pt-')||!t)return false;const pa=parteDe(t,a.dataset.p);
+  const abre=m=>{UI.alvoParte=pa?.id||null;UI.modal=m;renderModal()};
+  switch(A){
+    case 'pt-nova':UI.alvoParte=null;UI.modal='pt-parte';renderModal();return true;
+    case 'pt-editar':abre('pt-parte');return true;
+    case 'pt-remover':if(pa.essencial&&nivelDe(me())<2){toast('Só gestor ou diretor tira uma parte essencial.',true);return true}abre('pt-remover');return true;
+    case 'pt-temp':{const v=Number(a.dataset.v)||null,antes=pa.neg.temp;pa.neg.temp=v;log(vtParte(t,pa),`Temperatura ${antes||'—'} → ${v||'—'}`);save();render();return true}
+    case 'pt-ir':{const r=checkAdv(vtParte(t,pa));if(!r)return true;if(r.compra){const pend=r.items.filter(x=>!x.ok);
+        if(pend.length&&!r.forcar){UI.acao={tid:t.id,parte:pa.id,tipo:'status',dest:'comprado',pend:pend.map(x=>x.txt),items:pend};abre('adv-bloq')}else{UI.acao={pend:pend.map(x=>x.txt)};abre('pt-comprar')}return true}
+      tentarParte(t,pa,'etapa',r.dest);return true}
+    case 'pt-prop':abre('pt-prop');return true;
+    case 'pt-suspender':abre('suspender');return true;
+    case 'pt-perder':abre('perder');return true;
+    case 'pt-descartar':abre('descartar');return true;
+    case 'pt-retomar':{const r=movePartes(vtParte(t,pa),'status','ativo');if(r){toast(r,true);return true}retomar(vtParte(t,pa));sincPrincipal(t);save();render();toast(`${pa.nome}: retomada.`);return true}
+    case 'pt-aprovar':{const r=decidir(vtParte(t,pa),true,'');save();render();toast(r.erro||r.msg,!!r.erro);return true}
+    case 'pt-recusar':abre('recusar');return true;
+    case 'pt-cancelar':cancelarPedido(vtParte(t,pa));save();render();toast('Pedido cancelado.');return true;
+  }
+  return false}
+function partesChange(el){const t=UI.route==='terreno'?T(UI.id):null;if(!t)return false;
+  if(el.dataset.ch==='pt-sub'){const pa=parteDe(t,el.dataset.p);if(pa)tentarParte(t,pa,'subetapa',el.value);return true}
+  if(el.dataset.ch==='mat-parte'||el.dataset.ch==='pes-parte'){const L=el.dataset.ch==='mat-parte'?t.mats:t.pessoas,x=L[+el.dataset.i],pa=parteDe(t,el.value);x.parte=el.value||null;
+    log(t,`${el.dataset.ch==='mat-parte'?'Matrícula '+x.num:x.nome}: ${pa?'parte '+pa.nome:'sem parte'}`);save();render();return true}
+  return false}
+function partesSubmit(form,F,t,f){if(!t)return false;const pa=UI.alvoParte?parteDe(t,UI.alvoParte):null;
+  if(form==='pt-parte'){const nome=F.nome.trim();if(!nome){toast('Dê um nome à parte.',true);return true}
+    if(partesAtivas(t).some(x=>x!==pa&&x.nome.toLowerCase()===nome.toLowerCase())){toast('Já existe uma parte com esse nome.',true);return true}
+    const ess=!!F.essencial;if(!ess&&(!pa||pa.essencial)&&nivelDe(me())<2){toast('Só gestor ou diretor marca uma parte como dispensável.',true);return true}
+    const alvo=pa||{id:uid(),ativa:true,neg:null,propostas:[]};Object.assign(alvo,{nome,essencial:ess,area:lerNum(F.area)});
+    const mats=f.querySelectorAll('input[name=mat]'),pes=f.querySelectorAll('input[name=pes]');
+    mats.forEach(c=>{const m=t.mats[+c.value];if(c.checked)m.parte=alvo.id;else if(m.parte===alvo.id)m.parte=null});
+    pes.forEach(c=>{const p=t.pessoas[+c.value];if(c.checked)p.parte=alvo.id;else if(p.parte===alvo.id)p.parte=null});
+    if(!pa){partesDe(t).push(alvo);log(t,`Parte ${nome} cadastrada${ess?'':' (dispensável)'}`);abrirPartes(t)}else log(t,`Parte ${nome} atualizada`);
+    UI.modal=null;save();render();toast(pa?'Parte atualizada.':dividida(t)&&alvo.neg?`${nome} ganhou a sua negociação.`:'Parte cadastrada.');return true}
+  if(!pa)return false;
+  const vt=pa.neg?vtParte(t,pa):null;
+  switch(form){
+    case 'pt-remover':{if(!F.motivo.trim()){toast('Diga por que a parte sai.',true);return true}
+      Object.assign(pa,{ativa:false,motivoRem:F.motivo.trim()});log(t,`Parte ${pa.nome} saiu do terreno: ${pa.motivoRem}`);sincPrincipal(t);UI.modal=null;save();render();toast(`${pa.nome} saiu do terreno. Ajuste a poligonal se a área mudou.`);return true}
+    case 'pt-prop':{const v=lerNum(F.valor);if(!v){toast('Informe o valor.',true);return true}const L=pa.propostas,ant=L[L.length-1];
+      if(ant&&['apresentada','em_analise'].includes(ant.status))ant.status=ant.origem===F.origem?'substituida':'recusada';
+      L.push({v:L.length+1,origem:F.origem,data:HOJE,valor:v,forma:F.forma,cond:F.cond,status:'apresentada'});log(vt,`Proposta v${L.length}: ${mi(v)} (${F.origem==='bkm'?'BKM':'vendedor'})`);UI.modal=null;save();render();toast('Proposta registrada.');return true}
+    case 'perder':case 'descartar':{const st=form==='perder'?'perdido':'descartado',m=(cfg().motivos[st]||[]).find(x=>x.k===F.motivo);
+      if(m?.texto&&!F.detalhe.trim()){toast('Esse motivo pede uma explicação no texto.',true);return true}
+      UI.modal=null;tentarParte(t,pa,'status',st,{dados:{motivo:F.motivo,detalhe:F.detalhe.trim()}});return true}
+    case 'suspender':UI.modal=null;tentarParte(t,pa,'status','stand_by',{dados:{retomar:F.retomar,detalhe:F.detalhe.trim()}});return true;
+    case 'pt-comprar':{if(!F.relato.trim()){toast('Escreva o relato.',true);return true}const pend=UI.acao?.pend||[];if(pend.length&&!F.j?.trim()){toast('Justifique a compra sem os requisitos.',true);return true}
+      UI.modal=null;const r=moverPara(vt,'status','comprado',{forcar:!!pend.length,just:F.j?.trim(),dados:{relato:'<p>'+esc(F.relato.trim())+'</p>'}});UI.acao=null;save();render();
+      toast(r.ok?`${pa.nome}: comprada.`:r.pedido?r.msg:r.erro||'Não foi possível concluir.',!!r.erro||!!r.bloq);return true}
+    case 'forcar':{const a=UI.acao;const r=moverPara(vt,a.tipo,a.dest,{forcar:true,just:F.j,dados:a.dados});UI.modal=null;UI.acao=null;save();render();toast(r.ok?`${pa.nome}: ${destinoNome(a.tipo,a.dest)}.`:r.msg||r.erro||'Não foi possível.',!!r.erro);return true}
+    case 'recusar':{const r=decidir(vt,false,F.coment.trim());UI.modal=null;save();render();toast(r.erro||r.msg,!!r.erro);return true}
+  }
+  return false}
+function partesModal(M,fechar){const t=T(UI.id);if(!t)return '';const pa=UI.alvoParte?parteDe(t,UI.alvoParte):null;
+  const df=(id,l)=>`<div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="${id}">${l}</button></div>`;
+  if(M==='pt-parte'){const ms=t.mats.map((m,i)=>`<label class="chk"><input type="checkbox" name="mat" value="${i}" ${pa&&m.parte===pa.id?'checked':''} ${m.parte&&(!pa||m.parte!==pa.id)?'disabled':''}>${esc(m.num)} <span class="faint">${esc(m.cri)}${m.parte&&(!pa||m.parte!==pa.id)?' · '+esc(parteDe(t,m.parte)?.nome||''):''}</span></label>`).join('');
+    const ps=t.pessoas.map((p,i)=>`<label class="chk"><input type="checkbox" name="pes" value="${i}" ${pa&&p.parte===pa.id?'checked':''}>${esc(p.nome)} <span class="faint">${OPT.papel[p.papel]}${p.parte&&(!pa||p.parte!==pa.id)?' · '+esc(parteDe(t,p.parte)?.nome||''):''}</span></label>`).join('');
+    return `<div class="dh"><div><h2>${pa?'Editar parte':'Nova parte'}</h2><div class="muted" style="margin-top:4px">Um dono, ou um grupo de donos que negocia junto (herdeiros, sócios).</div></div>${fechar}</div>
+    <form data-form="pt-parte" id="f-pt"><div class="fields"><div class="field full"><label for="pt-n">Nome</label><input id="pt-n" name="nome" required value="${esc(pa?.nome||'')}" placeholder="Família Souza, Carlos Pires..."></div>
+    <div class="field"><label for="pt-a">Área (m²)</label><input id="pt-a" name="area" inputmode="decimal" value="${pa?.area??''}"></div>
+    <div class="field"><span class="lbl-f">Importância</span><label class="chk" style="height:44px"><input type="checkbox" name="essencial" ${!pa||pa.essencial?'checked':''}>Essencial (sem ela o terreno não serve)</label></div>
+    <div class="field full"><span class="lbl-f">Matrículas da parte</span><div class="marc">${ms||'<span class="faint">Nenhuma matrícula no terreno.</span>'}</div></div>
+    <div class="field full"><span class="lbl-f">Donos e contatos da parte</span><div class="marc">${ps||'<span class="faint">Ninguém vinculado ao terreno.</span>'}</div></div></div>
+    ${!pa&&t.neg&&SIDX(t.neg.etapa)>=SIDX(etapaPartes())&&partesAtivas(t).length>=1?`<div class="banner blue" style="margin-top:12px">${ic('layers')}<div>O terreno já está em ${esc(SN(t.neg.etapa))}: ${dividida(t)?'a parte nova ganha a sua negociação.':'com esta parte, cada uma ganha a sua negociação.'}</div></div>`:''}</form>${df('f-pt',pa?'Salvar':'Cadastrar parte')}`}
+  if(!pa)return '';
+  if(M==='pt-remover')return `<div class="dh"><div><h2>Tirar ${esc(pa.nome)} do terreno?</h2><div class="muted" style="margin-top:4px">${pa.essencial?'É uma parte essencial: sem ela, o estudo do terreno precisa ser refeito.':'O terreno segue com área menor.'} Matrículas e donos continuam no histórico.</div></div>${fechar}</div><form data-form="pt-remover" id="f-ptr"><div class="field"><label for="ptr-m">Motivo (vai para o histórico)</label><textarea id="ptr-m" name="motivo" required placeholder="Ex.: dono vendeu para outra incorporadora"></textarea></div></form>${df('f-ptr','Tirar do terreno')}`;
+  if(M==='pt-prop')return `<div class="dh"><div><h2>Proposta · ${esc(pa.nome)}</h2><div class="muted" style="margin-top:4px">v${(pa.propostas||[]).length+1}${(pa.propostas||[]).length?` responde à v${pa.propostas.length}`:''}</div></div>${fechar}</div><form data-form="pt-prop" id="f-ptp"><div class="fields">
+    <div class="field"><label for="ptp-o">Origem</label><select id="ptp-o" name="origem"><option value="bkm">BKM</option><option value="vendedor">Vendedor</option></select></div>
+    <div class="field"><label for="ptp-v">Valor (R$)</label><input id="ptp-v" name="valor" inputmode="decimal" required></div>
+    <div class="field"><label for="ptp-f">Forma de pagamento</label><select id="ptp-f" name="forma">${Object.entries(OPT.forma).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
+    <div class="field full"><label for="ptp-c">Condições</label><textarea id="ptp-c" name="cond"></textarea></div></div></form>${df('f-ptp','Registrar')}`;
+  if(M==='recusar'&&pa.neg?.pedido){const p=pa.neg.pedido;return `<div class="dh"><div><h2>Recusar ${esc(destinoNome(p.tipo,p.dest))} de ${esc(pa.nome)}?</h2><div class="muted" style="margin-top:4px">${esc(p.por)} recebe o motivo no sino.</div></div>${fechar}</div><form data-form="recusar" id="f-rc"><div class="field"><label for="rc-c">Motivo da recusa</label><textarea id="rc-c" name="coment" required></textarea></div></form>${df('f-rc','Recusar')}`}
+  if(M==='pt-comprar'){const pend=UI.acao?.pend||[];return `<div class="dh"><div><h2>Parte comprada: ${esc(pa.nome)}</h2><div class="muted" style="margin-top:4px">O terreno fica Comprado quando todas as partes estiverem compradas.</div></div>${fechar}</div><form data-form="pt-comprar" id="f-ptc"><div class="fields">
+    <div class="field full"><label for="ptc-r">Relato</label><textarea id="ptc-r" name="relato" required placeholder="Condições finais, escritura, quem assinou"></textarea></div>
+    ${pend.length?`<div class="field full"><div class="banner warn">${ic('warn')}<div><div class="bt">Comprar sem os requisitos</div><ul class="pend">${pend.map(x=>`<li>${ic('close',16)}${esc(x)}</li>`).join('')}</ul></div></div></div><div class="field full"><label for="ptc-j">Justificativa (vai para o histórico)</label><textarea id="ptc-j" name="j" required></textarea></div>`:''}</div></form>${df('f-ptc','Concluir')}`}
+  return ''}
+
+/* ---------- exemplo: três lotes de donos diferentes, já na Negociação ---------- */
+function partesPreparar(){if(S.partesExemplo)return;S.partesExemplo=true;if(S.terrenos.some(t=>t.codigo==='TER-000133'))return;
+  const H=n=>addD(HOJE,-n),la=-23.5868,lo=-46.5772,dy=45/110574,dx=60/(111320*Math.cos(la*Math.PI/180));
+  const t=Object.assign(seedVazio(),{codigo:'TER-000133',nome:'Três lotes Rua Ibitirama',prioridade:'alta',resp:'Ana Prado',origem:'corretor',dataIdent:H(55),logradouro:'Rua Ibitirama',numero:'1.200',bairro:'Vila Prudente',zona:'sudeste',municipio:'São Paulo · SP',
+    lat:la,lng:lo,precisao:'conferida',poly:[[la+dy,lo-dx],[la+dy,lo+dx],[la-dy,lo+dx],[la-dy,lo-dx]].map(p=>p.map(v=>+v.toFixed(6))),aDoc:5400,fonteArea:'documental',testada:120,topografia:'plano',posicao:'meio_quadra',formato:'regular',ocupacao:'parcialmente_ocupado'});
+  const pa={id:'pa1',nome:'Família Souza',essencial:true,area:2700,ativa:true},pb={id:'pa2',nome:'Carlos Pires',essencial:true,area:1500,ativa:true},pc={id:'pa3',nome:'Oficina do Zé',essencial:false,area:1200,ativa:true};
+  t.partes=[pa,pb,pc];
+  t.mats=[{num:'201.001',cri:'6º CRI',area:1350,data:H(20),parte:'pa1'},{num:'201.002',cri:'6º CRI',area:1350,data:H(20),parte:'pa1'},{num:'201.003',cri:'6º CRI',area:1500,data:H(20),parte:'pa2'},{num:'201.004',cri:'6º CRI',area:1200,data:H(20),parte:'pa3'}];
+  t.pessoas=[{nome:'Ana Souza',tipo:'PF',papel:'proprietario',pct:50,tel:'',parte:'pa1'},{nome:'Beto Souza',tipo:'PF',papel:'proprietario',pct:50,tel:'',parte:'pa1'},{nome:'Carlos Pires',tipo:'PF',papel:'proprietario',pct:100,tel:'',parte:'pa2'},{nome:'José Almeida',tipo:'PF',papel:'proprietario',pct:100,tel:'',parte:'pa3'}];
+  t.ofertas=[{id:'o133',cid:'c1',data:H(55),valor:9800000,forma:'dinheiro',obsPag:'',aceita:'Família Souza aceita permuta parcial.',status:'ativa',partes:{pa1:5000000,pa2:3000000,pa3:1800000}}];t.corretores=[{cid:'c1',principal:true}];
+  const tr=(e,s,d,ev,de)=>({em:H(d)+'T09:00:00.000',user:'Ana Prado',ev,deEtapa:de?.[0]||null,deSub:de?.[1]||null,paraEtapa:e,paraSub:s,status:'ativo'});
+  t.neg={codigo:'NEG-00133',etapa:'negociacao',sub:'aguardando_reuniao',status:'ativo',desde:H(20),subDesde:H(20),temp:3,ofRef:'o133',viab:{nome:'Estudo dos 3 lotes',vgv:71500000,margem:15.4,pmax:9600000,em:H(30)},pedido:null,
+    trilha:[tr('triagem','aguardando_informacoes',55,'abertura'),tr('estudos','estudo_massa',40,'avanco',['triagem','verificacao_interna']),tr('estudos','estudo_viabilidade',32,'subetapa',['estudos','estudo_massa']),tr('negociacao','aguardando_reuniao',20,'avanco',['estudos','estudo_viabilidade'])]};
+  const np=(seq,e,s,dias,temp,extra)=>Object.assign({codigo:'NEG-00133-'+seq,etapa:e,sub:s,status:'ativo',desde:H(dias),subDesde:H(Math.min(dias,6)),temp,ofRef:'o133',viab:null,pedido:null,
+    trilha:[tr('negociacao','aguardando_reuniao',20,'abertura')].concat(e==='contrato'?[tr('contrato',s,6,'avanco',['negociacao','contra_proposta'])]:s!=='aguardando_reuniao'?[tr('negociacao',s,6,'subetapa',['negociacao','aguardando_reuniao'])]:[])},extra||{});
+  pa.neg=np(1,'contrato','em_elaboracao',6,5);pa.propostas=[{v:1,origem:'bkm',data:H(15),valor:4600000,forma:'permuta_com_torna',cond:'R$ 3 mi + 4% em unidades.',status:'aceita'}];
+  pb.neg=np(2,'negociacao','contra_proposta',20,3);pb.propostas=[{v:1,origem:'bkm',data:H(14),valor:2600000,forma:'dinheiro',cond:'À vista.',status:'recusada'},{v:2,origem:'vendedor',data:H(5),valor:2900000,forma:'dinheiro',cond:'50% no compromisso.',status:'apresentada'}];
+  pc.neg=np(3,'negociacao','aguardando_reuniao',20,1);pc.propostas=[];
+  t.hist.push({em:H(20)+'T09:00:01.000',user:'Ana Prado',txt:'Negociação dividida por parte: Família Souza, Carlos Pires e Oficina do Zé'});
+  S.terrenos.push(t)}
