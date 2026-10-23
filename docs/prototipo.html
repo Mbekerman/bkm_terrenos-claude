@@ -2484,8 +2484,9 @@ body.mp-cheia .fab { display: none !important }
 .mapa-area.sv-on .sv-x { display: grid }
 .mapa-area.sv-on .mp-cartao { display: none !important }
 body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
-/* indicadores do Dashboard no tema escuro: todos no azul do primeiro (decisão do Moisés, 23/out/2026, no lugar de um tom por indicador) */
-:root[data-tema="escuro"] .kpis-v .kpi { --k: var(--neon-1) !important }
+/* indicadores do Dashboard no tema escuro: as 4 no estilo do botão "+ Novo terreno" (decisão do Moisés, 23/out/2026, no lugar de um tom por indicador) */
+:root[data-tema="escuro"] .kpis-v .kpi { background: #18205a !important; border: 1px solid rgba(124,140,255,.65) !important; box-shadow: none !important }
+:root[data-tema="escuro"] .kpis-v .kpi .v, :root[data-tema="escuro"] .kpis-v .kpi .l { color: #c9d6ff !important; -webkit-text-fill-color: currentColor }
 </style>
 <header class="top">
   <div class="top-in">
