@@ -9,7 +9,7 @@ const GKEY=(()=>{const v=document.querySelector('meta[name="gmaps-key"]')?.conte
 let gInfo=null,gPins=[],gPois=[],gDes=[],gRota=[],gEntorno=[],gMiniSv=null,gLib={};
 const gSet=(arr,map)=>arr.forEach(o=>{if(o.setMap)o.setMap(map);else o.map=map});
 const gLL=(lat,lng)=>({lat,lng});
-const TIPO_G={mapa:'roadmap',ruas:'terrain',satelite:'satellite',satrot:'hybrid'};
+const TIPO_G={mapa:'roadmap',ruas:'terrain',satelite:'hybrid'};
 
 function carregarGoogle(){
   if(!GKEY)return;

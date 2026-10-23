@@ -94,7 +94,8 @@ const attrAbrir=from=>t=>`data-a="abrir" data-id="${t.id}" data-from="${from}" t
 
 /* ===================== MAPA ===================== */
 let MAPA=null,MINI=null,PINS=null,POIS=null,CONC=null,DES=null,BASE=null;
-const CAMADAS_L={mapa:'Mapa',ruas:'Ruas',satelite:'Satélite',satrot:'Satélite + rótulos'},CAMADAS_G={mapa:'Mapa',ruas:'Relevo',satelite:'Satélite',satrot:'Satélite + rótulos'};
+// Satélite já vem com rótulos (ruas e lugares); não há opção sem eles (decisão do Moisés, 23/out/2026)
+const CAMADAS_L={mapa:'Mapa',ruas:'Ruas',satelite:'Satélite'},CAMADAS_G={mapa:'Mapa',ruas:'Relevo',satelite:'Satélite'};
 // motor do mapa: Google quando a chave carrega; Leaflet (Esri/OSM) como reserva
 let GG=false;
 function setBase(k){return GG?G_setBase(k):L_setBase(k)}
@@ -135,8 +136,7 @@ function camada(k,el){
   const mk=(u,o)=>L.tileLayer(u,Object.assign({maxZoom:19,crossOrigin:true},o));
   const ls=k==='mapa'?[mk(esri+'Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:16,attribution:'Mapa © Esri, HERE, Garmin, © OpenStreetMap'}),mk(esri+'Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:16})]
     :k==='ruas'?[mk('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'})]
-    :k==='satelite'?[mk(esri+'World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Imagens © Esri'})]
-    :[mk(esri+'World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Imagens © Esri'}),mk(esri+'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}')];
+    :[mk(esri+'World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Imagens © Esri'}),mk(esri+'Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}'),mk(esri+'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}')];
   let ok=false;ls.forEach(l=>{l.on('tileload',()=>{ok=true;el.classList.remove('sem-fundo')});l.on('tileerror',()=>{if(!ok)el.classList.add('sem-fundo')})});
   return L.layerGroup(ls);
 }
