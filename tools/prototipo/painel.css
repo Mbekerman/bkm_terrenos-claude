@@ -280,6 +280,8 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .v-dot.mover { animation: v-pulso 1s ease-in-out infinite }
 @keyframes v-pulso { 0%, 100% { box-shadow: 0 0 0 4px #0b57d0, 0 0 0 4px rgba(11,87,208,.35) } 50% { box-shadow: 0 0 0 4px #0b57d0, 0 0 0 12px rgba(11,87,208,0) } }
 .leaflet-marker-icon.v-alvo { margin: 0 }
+/* No Google o marcador fica com a base no ponto; o centro do alvo é que tem de cair no vértice */
+.v-alvo:not(.leaflet-marker-icon) { transform: translateY(50%) }
 .leaflet-dragging .v-alvo, .v-alvo:active { cursor: grabbing }
 /* a cruz do modo de edição (.mapa.modo .leaflet-interactive) não vale nos pontos: neles, mãozinha; arrastando, mão fechada */
 .mapa.modo .v-alvo, .mapa.modo .v-alvo .v-dot { cursor: pointer !important }
@@ -433,7 +435,7 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 /* concorrência no mapa e na legenda: losango roxo */
 .conc { background: none; border: 0 }
 .conc-b { display: block; width: 12px; height: 12px; background: #863d8f; border: 2px solid #fff; transform: rotate(45deg); box-shadow: 0 1px 3px rgba(0,0,0,.35) }
-.conc.g { width: 16px; height: 16px; display: grid; place-items: center }
+.conc.g { width: 16px; height: 16px; display: grid; place-items: center; transform: translateY(50%) }
 .lg-poi .conc-b { width: 10px; height: 10px; border-width: 1.5px; box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
 /* barra do mapa sem o fundo branco: só o seletor do tipo de mapa e o Importar KMZ/KML, cada um com a sua sombra */
 .mapa-area .mp-barra { background: transparent !important; box-shadow: none !important; border-radius: 0 !important; align-items: center; flex-wrap: nowrap !important; flex-direction: row !important }
