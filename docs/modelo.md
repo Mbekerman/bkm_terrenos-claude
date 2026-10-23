@@ -56,6 +56,19 @@ Arrastar no quadro de etapas chama `mover_para_etapa` (para frente, etapa por et
 
 **SLA:** só do histórico. `v_periodos_processo` corta o histórico em períodos (cada transição até a seguinte), com stand by em período próprio. `v_tempo_subetapas` soma por etapa e subetapa: primeira entrada, última saída, passagens, tempo ativo, tempo em stand by e se é a atual. Retomar o stand by empurra `etapa_desde` e `subetapa_desde` pelo tempo parado. Prazo estourado = agora − `subetapa_desde` > `subetapas_modelo.prazo_dias` (`v_terrenos.subetapa_atrasada`).
 
+## Terreno com vários donos (partes)
+
+Um dono com várias matrículas é **uma** negociação. Vários donos que negociam separado são **partes** do terreno (`terreno_partes`): cada parte é um dono, ou um grupo de donos que negocia junto (herdeiros, sócios), com as matrículas, as inscrições e as pessoas dela (`parte_id` em `matriculas`, `inscricoes_municipais` e `terreno_pessoas`; participações somam 100% em cada parte), o pedaço da poligonal e a marca de **essencial** (sem ela o terreno não serve) ou dispensável.
+
+- **Antes da etapa da divisão** (`fases_modelo.etapa_partes`, só na fase de entrada; padrão Negociação) há uma negociação só, a do terreno: Triagem e Estudos são da área toda.
+- **Ao chegar nela**, com duas ou mais partes ativas, cada parte ganha a sua negociação: um processo da mesma fase com `parte_id` e `principal_id` (código `NEG-00012-1`), com oferta de referência, propostas, temperatura, documentos, reuniões, tarefas, subetapa, status, aprovações e histórico próprios. Parte cadastrada depois disso já nasce com a sua.
+- **A negociação do terreno passa a andar pelas partes** (`_sincronizar_principal`): fica na etapa e na subetapa da parte mais atrasada em aberto, com cada mudança no histórico ("Pelas negociações das partes"), e não se move à mão. A de uma parte só anda da etapa da divisão em diante e enquanto a do terreno estiver ativa.
+- **Comprado do terreno** só com todas as partes ativas compradas (pendência que nem o gestor força); o checklist de documentos fica com cada parte; relato e pontos de sucesso só na compra do terreno. A compra de uma parte não abre a fase seguinte.
+- **Parte perdida ou descartada** trava a compra: ou sai do terreno (`remover_parte`, com motivo; parte essencial só com gestor ou diretor, e tornar uma parte dispensável também), ou o terreno se encerra. Parte comprada não sai.
+- **Encerrar o terreno** leva as partes em aberto: Perdido e Descartado com o mesmo motivo, Stand By com a mesma data; retomar o terreno retoma as partes.
+- **Oferta** pode cobrir uma ou mais partes (`oferta_partes`, com o preço de cada uma quando informado); a negociação da parte usa como referência a oferta mais recente que a cobre.
+- `v_partes`: cada parte com donos, matrículas, negociação (etapa, subetapa, prazo, status), temperatura, preço pedido e última proposta.
+
 ## Papéis, hierarquia e configuração
 
 Papéis: `diretor`, `gestor`, `analista` (editam) e `leitura` (consulta). `membros.superior_id` liga cada analista a um gestor e cada gestor a um diretor, sempre um nível acima (trigger). `administrador` é permissão à parte, em qualquer papel: gerencia a equipe e a configuração do funil. Quem cria a empresa vira diretor e administrador.
@@ -64,7 +77,7 @@ A configuração do funil é **por empresa** (`empresa_id`); as linhas com `empr
 
 | O quê | RPC | Não pode |
 | --- | --- | --- |
-| Fases: criar, renomear, reordenar, prefixo, desativar | `salvar_fase`, `apagar_fase` (só sem processo) | mudar ou desativar a fase de entrada; desativar com terreno dentro |
+| Fases: criar, renomear, reordenar, prefixo, desativar; etapa em que a negociação se divide por parte (`etapa_partes`) | `salvar_fase`, `apagar_fase` (só sem processo) | mudar ou desativar a fase de entrada; desativar com terreno dentro; dividir fora da fase de entrada; mudar a divisão com partes negociando |
 | Dependências entre fases | `adicionar_dependencia`, `remover_dependencia` | ciclo; dependência na fase de entrada |
 | Etapas: criar (nasce com uma subetapa), renomear, reordenar, prazo, aprovações | `salvar_etapa`, `apagar_etapa` (só sem histórico) | apagar etapa de que outra fase depende |
 | Subetapas: criar, renomear, reordenar, prazo, aprovações, desativar | `salvar_subetapa` (desativar com terrenos dentro pede `mover_para`) | mudar de etapa; apagar com histórico (`apagar_subetapa` só sem histórico); desativar de que um pré-requisito depende |
@@ -218,6 +231,10 @@ erDiagram
   inscricoes_municipais ||--o{ inscricao_valores : "valor venal e IPTU por exercicio e revisao"
   terrenos ||--o{ confrontacoes : mede
   terrenos ||--o{ terreno_pessoas : vincula
+  terrenos ||--o{ terreno_partes : "donos que negociam separado"
+  terreno_partes |o--o{ matriculas : "do dono"
+  terreno_partes |o--o{ inscricoes_municipais : "do dono"
+  terreno_partes |o--o{ terreno_pessoas : "donos da parte"
   pessoas ||--o{ terreno_pessoas : participa
   terrenos ||--o{ terreno_infraestrutura : verifica
   itens_infraestrutura ||--o{ terreno_infraestrutura : item
@@ -285,10 +302,12 @@ erDiagram
     text cartorio
     numeric area_registrada_m2
     date data_certidao
+    uuid parte_id FK "de qual dono"
   }
   inscricoes_municipais {
     uuid id PK
     uuid terreno_id FK
+    uuid parte_id FK "de qual dono"
     uuid municipio_id FK "nulo = outro municipio"
     text inscricao "SQL ou inscricao imobiliaria"
     numeric area_cadastral_m2
@@ -331,8 +350,18 @@ erDiagram
     date data_verificacao
     text fonte
   }
+  terreno_partes {
+    uuid id PK
+    uuid terreno_id FK
+    text nome "dono ou grupo de donos"
+    bool essencial
+    jsonb poligono_geojson "pedaco da parte"
+    numeric area_m2
+    bool ativa "sai com motivo"
+  }
   terreno_pessoas {
     uuid terreno_id FK
+    uuid parte_id FK
     uuid pessoa_id FK
     text papel "proprietario | representante | procurador | contato"
     numeric percentual_participacao
@@ -385,6 +414,10 @@ erDiagram
   corretores ||--o{ terreno_corretores : atende
   terrenos ||--o{ processos : "negociacao (e fases futuras)"
   processos ||--|| negociacoes : "dados da negociacao"
+  processos |o--o{ processos : "negociacao de cada parte"
+  terreno_partes |o--o{ processos : "negocia"
+  ofertas ||--o{ oferta_partes : cobre
+  terreno_partes ||--o{ oferta_partes : "preco da parte"
   ofertas |o--o{ negociacoes : "oferta de referencia"
   processos ||--o{ processo_transicoes : historico
   processos ||--o{ propostas : recebe
@@ -430,6 +463,13 @@ erDiagram
     date retomar_em
     uuid responsavel_id FK
     uuid viabilidade_id FK
+    uuid parte_id FK "negociacao de uma parte"
+    uuid principal_id FK "negociacao do terreno"
+  }
+  oferta_partes {
+    uuid oferta_id PK
+    uuid parte_id PK
+    numeric valor_pedido "da parte, se informado"
   }
   negociacoes {
     uuid processo_id PK
@@ -593,7 +633,10 @@ erDiagram
 | Inscrição escolhida numa cidade só entra em terreno dessa cidade | trigger `tg_inscricao_municipio` |
 | Isento não tem IPTU; venal do imóvel = terreno + construção quando os dois existem | checks em `inscricao_valores` |
 | Edição simultânea: salvar com versão antiga é recusado | `terrenos.versao` + `salvar_terreno` |
-| Participações dos proprietários somam no máximo 100% | trigger em `terreno_pessoas` |
+| Participações dos proprietários somam no máximo 100% (em cada parte) | trigger em `terreno_pessoas` |
+| Matrícula, inscrição, pessoa e oferta só se ligam a parte ativa do mesmo terreno | triggers `tg_parte_do_terreno`, `tg_oferta_parte` |
+| Terreno de vários donos só fica Comprado com todas as partes ativas compradas; negociação dividida não se move à mão | `_pendencias`, `_conferir_movimento`, `_sincronizar_principal` |
+| Parte sai com motivo, só com a negociação dela encerrada e nunca depois de comprada; essencial só com gestor ou diretor | `remover_parte`, `salvar_parte` |
 | Registro não muda de terreno depois de criado | `tg_mesma_empresa` |
 | Diligência impeditiva em aberto impede a compra; checklist da etapa para sair dela; pré-requisitos para entrar | `_pendencias` |
 | Etapa, subetapa e status só mudam por RPC, com transição no histórico; aprovações configuradas viram pedido | `_passagem`, `decidir_aprovacao` |
@@ -607,7 +650,7 @@ erDiagram
 | Pedaço oferecido fica dentro do terreno | `registrar_oferta` |
 | Mesma matrícula no mesmo cartório = mesmo terreno | índice único em `matriculas` |
 | Um corretor principal por terreno; o primeiro da oferta vira principal | índice único parcial + trigger |
-| Uma negociação aberta (ativa ou em stand by) por terreno | índice único parcial em `processos` |
+| Uma negociação aberta (ativa ou em stand by) por terreno e fase; uma por parte | índices únicos parciais em `processos` |
 | Reunião presencial tem local (BKM ou externo); online não; realizada não tem data futura | checks e trigger em `reunioes` |
 | Ata só de reunião realizada do mesmo terreno; uma ata por reunião, nova ata vira versão | `registrar_documento` + índice único |
 | Contraproposta do outro lado recusa a anterior; nova do mesmo lado a substitui | `registrar_proposta` |

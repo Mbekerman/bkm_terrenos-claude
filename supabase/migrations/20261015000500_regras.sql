@@ -98,7 +98,7 @@ select t.id, t.empresa_id, t.codigo, t.nome, t.situacao_cadastral, t.prioridade,
        p.id as processo_id, p.codigo as processo_codigo, p.status as processo_status, stm.nome as processo_status_nome,
        p.fase, fa.nome as fase_nome, fa.ordem as fase_ordem,
        (select array_agg(x.fase order by f2.ordem) from app.processos x join app.fases_modelo f2 on f2.empresa_id = x.empresa_id and f2.codigo = x.fase
-         where x.terreno_id = t.id and x.status in ('ativo','stand_by')) as fases_abertas,
+         where x.terreno_id = t.id and x.parte_id is null and x.status in ('ativo','stand_by')) as fases_abertas,
        p.etapa_atual, e.nome as etapa_nome, e.ordem as etapa_ordem,
        (current_date - p.etapa_desde::date) as dias_na_etapa,
        p.subetapa_atual, se.nome as subetapa_nome, se.ordem as subetapa_ordem,
@@ -131,14 +131,14 @@ join app.municipios mu on mu.id = t.municipio_id
 left join app.eixos_comerciais ec on ec.id = t.eixo_comercial_id
 left join lateral (
   select x.* from app.processos x join app.fases_modelo f on f.empresa_id = x.empresa_id and f.codigo = x.fase
-  where x.terreno_id = t.id
+  where x.terreno_id = t.id and x.parte_id is null
   order by (x.status in ('ativo','stand_by')) desc, f.ordem desc, x.data_inicio desc limit 1
 ) p on true
 left join app.fases_modelo fa on fa.empresa_id = p.empresa_id and fa.codigo = p.fase
 left join app.status_modelo stm on stm.empresa_id = p.empresa_id and stm.fase = p.fase and stm.status = p.status
 left join lateral (
   select x.* from app.processos x join app.fases_modelo f on f.empresa_id = x.empresa_id and f.codigo = x.fase and f.entrada
-  where x.terreno_id = t.id
+  where x.terreno_id = t.id and x.parte_id is null
   order by (x.status in ('ativo','stand_by')) desc, x.data_inicio desc limit 1
 ) pn on true
 left join app.etapas_modelo e on e.empresa_id = p.empresa_id and e.fase = p.fase and e.codigo = p.etapa_atual
@@ -353,7 +353,7 @@ begin
     select t.id, t.codigo, t.nome,
            case when t.situacao_cadastral = 'arquivado' then 'arquivado'
                 else coalesce((select p.status from app.processos p join app.fases_modelo f on f.empresa_id = p.empresa_id and f.codigo = p.fase
-                               where p.terreno_id = t.id
+                               where p.terreno_id = t.id and p.parte_id is null
                                order by (p.status in ('ativo','stand_by')) desc, f.ordem desc, p.data_inicio desc limit 1), 'sem_negociacao') end,
            -- parcial: a área nova e a existente não coincidem (ex.: 5 lotes contra 3, com 3 em comum)
            case when s.pct_a >= 90 and s.pct_b >= 90 then 'mesma_area' else 'parcial' end,
@@ -405,10 +405,10 @@ as $$
   select coalesce(jsonb_agg(jsonb_build_object(
            'id', d.id, 'tipo', 'dependencia', 'bloqueio_gestor', false,
            'ok', case d.requisito_tipo
-                   when 'conclusao' then exists (select 1 from app.processos p where p.terreno_id = t.id and p.fase = d.requisito_fase and p.status = 'concluido')
-                   else exists (select 1 from app.processos p where p.terreno_id = t.id and p.fase = d.requisito_fase and p.status = 'concluido')
+                   when 'conclusao' then exists (select 1 from app.processos p where p.terreno_id = t.id and p.parte_id is null and p.fase = d.requisito_fase and p.status = 'concluido')
+                   else exists (select 1 from app.processos p where p.terreno_id = t.id and p.parte_id is null and p.fase = d.requisito_fase and p.status = 'concluido')
                      or exists (select 1 from app.processo_transicoes x join app.processos p on p.id = x.processo_id
-                                where p.terreno_id = t.id and p.fase = d.requisito_fase
+                                where p.terreno_id = t.id and p.parte_id is null and p.fase = d.requisito_fase
                                   and case d.requisito_tipo when 'etapa' then x.para_etapa else x.para_subetapa end = d.requisito)
                  end,
            'texto', case d.requisito_tipo
@@ -442,7 +442,7 @@ begin
     for f in select fm.codigo, fm.nome from app.fases_modelo fm
              where fm.empresa_id = t.empresa_id and fm.ativo and not fm.entrada
                and exists (select 1 from app.fase_dependencias d where d.empresa_id = fm.empresa_id and d.fase = fm.codigo)
-               and not exists (select 1 from app.processos p where p.terreno_id = t.id and p.fase = fm.codigo)
+               and not exists (select 1 from app.processos p where p.terreno_id = t.id and p.fase = fm.codigo and p.parte_id is null)
              order by fm.ordem loop
       if not exists (select 1 from jsonb_array_elements(app._dependencias_fase(t.id, f.codigo)) i where not (i->>'ok')::boolean) then
         perform app._abrir_processo(t, f.codigo, 'Fase aberta: dependências cumpridas');
@@ -464,7 +464,7 @@ begin
   if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
   perform app.exigir_editor(t.empresa_id);
   if t.situacao_cadastral = 'arquivado' then raise exception 'Terreno arquivado: reative antes' using errcode = '22023'; end if;
-  if exists (select 1 from app.processos where terreno_id = t.id and fase = p_fase and status in ('ativo','stand_by')) then
+  if exists (select 1 from app.processos where terreno_id = t.id and fase = p_fase and parte_id is null and status in ('ativo','stand_by')) then
     raise exception 'O terreno já está nesta fase' using errcode = '22023';
   end if;
   if p_fase = app._fase_entrada(t.empresa_id) then return app.abrir_negociacao(t.id); end if;
@@ -498,7 +498,7 @@ begin
     select f.codigo, f.nome, f.ordem, f.entrada, p.id, p.codigo, p.status, st.nome, d.deps,
            p.id is null or p.status not in ('ativo','stand_by')
     from app.fases_modelo f
-    left join lateral (select * from app.processos x where x.terreno_id = t.id and x.fase = f.codigo
+    left join lateral (select * from app.processos x where x.terreno_id = t.id and x.fase = f.codigo and x.parte_id is null
                        order by (x.status in ('ativo','stand_by')) desc, x.data_inicio desc limit 1) p on true
     left join app.status_modelo st on st.empresa_id = f.empresa_id and st.fase = f.codigo and st.status = p.status
     cross join lateral (select app._dependencias_fase(t.id, f.codigo) as deps) d
@@ -520,7 +520,7 @@ begin
   perform app.exigir_editor(t.empresa_id);
   if t.situacao_cadastral = 'arquivado' then raise exception 'Terreno arquivado: reative antes de negociar' using errcode = '22023'; end if;
   v_fase := app._fase_entrada(t.empresa_id);
-  select id into v_id from app.processos where terreno_id = p_terreno and fase = v_fase and status in ('ativo','stand_by');
+  select id into v_id from app.processos where terreno_id = p_terreno and fase = v_fase and parte_id is null and status in ('ativo','stand_by');
   if found then return v_id; end if;
   return app._abrir_processo(t, v_fase, 'Negociação aberta', p_oferta);
 end $$;
@@ -529,11 +529,12 @@ create or replace function app.registrar_oferta(
   p_terreno uuid, p_valor numeric, p_forma text default null, p_corretor uuid default null,
   p_observacao_pagamento text default null, p_aceita_permuta text default null,
   p_validade date default null, p_data date default current_date, p_comissao_pct numeric default null,
-  p_ofertante uuid default null, p_comissao_valor numeric default null, p_poligono jsonb default null)
+  p_ofertante uuid default null, p_comissao_valor numeric default null, p_poligono jsonb default null,
+  p_partes jsonb default null)  -- terreno com vários donos: [{"parte_id": ..., "valor": ...}], valor opcional
 returns jsonb
 language plpgsql security definer set search_path = ''
 as $$
-declare t app.terrenos; v_of uuid; v_proc uuid; v_nova boolean;
+declare t app.terrenos; v_of uuid; v_proc uuid; v_nova boolean; i jsonb;
 begin
   select * into t from app.terrenos where id = p_terreno;
   if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
@@ -558,8 +559,16 @@ begin
   values (t.empresa_id, t.id, p_corretor, p_ofertante, coalesce(p_data, current_date), p_valor, p_forma,
           p_observacao_pagamento, p_aceita_permuta, p_validade, p_comissao_pct, p_comissao_valor, p_poligono)
   returning id into v_of;
+  for i in select * from jsonb_array_elements(coalesce(p_partes, '[]'::jsonb)) loop
+    insert into app.oferta_partes (oferta_id, parte_id, empresa_id, valor_pedido)
+    values (v_of, (i->>'parte_id')::uuid, t.empresa_id, (i->>'valor')::numeric);
+    -- a negociação da parte sem oferta de referência passa a usar esta
+    update app.negociacoes n set oferta_referencia_id = v_of
+      from app.processos c where c.id = n.processo_id and c.parte_id = (i->>'parte_id')::uuid
+       and c.status in ('ativo','stand_by') and n.oferta_referencia_id is null;
+  end loop;
 
-  v_nova := not exists (select 1 from app.processos where terreno_id = t.id and fase = app._fase_entrada(t.empresa_id) and status in ('ativo','stand_by'));
+  v_nova := not exists (select 1 from app.processos where terreno_id = t.id and fase = app._fase_entrada(t.empresa_id) and parte_id is null and status in ('ativo','stand_by'));
   v_proc := app.abrir_negociacao(t.id, v_of);
   if not v_nova then
     insert into app.atividades (empresa_id, terreno_id, processo_id, tipo, resumo)
@@ -642,7 +651,9 @@ begin
   end if;
 
   -- sair da etapa (avanço ou conclusão da fase): checklist de documentos da etapa atual
-  if (p_destino_tipo = 'etapa' and ordem_destino > ordem_atual) or (p_destino_tipo = 'status' and p_destino = 'concluido') then
+  -- (negociação do terreno dividida em partes: o checklist é de cada parte)
+  if ((p_destino_tipo = 'etapa' and ordem_destino > ordem_atual) or (p_destino_tipo = 'status' and p_destino = 'concluido'))
+     and not app._tem_partes(p.id) then
     for r in select c.tipo_nome, c.situacao from app.v_checklist c
              where c.processo_id = p.id and c.etapa = p.etapa_atual and c.obrigatorio order by c.ordem loop
       itens := itens || jsonb_build_object('ok', r.situacao = 'validado', 'tipo', 'documento', 'bloqueio_gestor', false,
@@ -652,10 +663,24 @@ begin
   end if;
 
   -- compra (conclusão da fase de entrada): nenhuma diligência impeditiva
-  if p_destino_tipo = 'status' and p_destino = 'concluido' and p.fase = app._fase_entrada(p.empresa_id) then
+  if p_destino_tipo = 'status' and p_destino = 'concluido' and p.fase = app._fase_entrada(p.empresa_id) and p.parte_id is null then
     for r in select g.titulo from app.diligencias g where g.terreno_id = p.terreno_id and g.situacao = 'impeditiva' loop
       itens := itens || jsonb_build_object('ok', false, 'tipo', 'diligencia', 'bloqueio_gestor', false, 'texto', 'Diligência impeditiva: ' || r.titulo);
     end loop;
+    -- terreno de vários donos: cada parte ativa comprada (nem o gestor força)
+    if app._tem_partes(p.id) then
+      for r in select tp.nome, c.status from app.terreno_partes tp
+               left join app.processos c on c.parte_id = tp.id and c.principal_id = p.id
+               where tp.terreno_id = p.terreno_id and tp.ativa order by tp.criado_em, tp.nome loop
+        itens := itens || jsonb_build_object('ok', r.status = 'concluido', 'tipo', 'parte', 'bloqueio_gestor', true,
+          'texto', 'Parte ' || r.nome || case r.status when 'concluido' then ': comprada'
+                                                       when 'perdido' then ': perdida (tire a parte do terreno ou encerre a negociação)'
+                                                       when 'descartado' then ': descartada (tire a parte do terreno ou encerre a negociação)'
+                                                       when 'stand_by' then ': em stand by'
+                                                       when 'ativo' then ': em negociação'
+                                                       else ': sem negociação' end);
+      end loop;
+    end if;
   end if;
 
   -- pré-requisitos (só para frente: voltar de etapa não exige nada)
@@ -786,9 +811,45 @@ begin
               p_comentario), ''),
             p_aprovacao, coalesce(p_por, auth.uid()));
     if p_destino = 'stand_by' then perform app._lembretes_padrao(p.empresa_id, 'processos', p.id, 'stand_by_retomar'); end if;
+    if p.parte_id is null and p_destino in ('perdido','descartado','stand_by') then perform app._encerrar_partes(p, p_destino, p_dados); end if;
+  end if;
+  if p.parte_id is not null then
+    -- a negociação do terreno acompanha a parte mais atrasada
+    perform app._sincronizar_principal(p.principal_id);
+  elsif p_destino_tipo = 'etapa' then
+    -- chegou à etapa da divisão: cada parte ganha a sua negociação
+    perform app._abrir_negociacoes_partes(p.id);
   end if;
   -- a passagem pode cumprir a dependência de outra fase
   perform app._abrir_fases_liberadas(p.terreno_id);
+end $$;
+
+-- Quem pode ir para onde quando o terreno tem partes: a negociação do terreno
+-- dividida não se move à mão (etapa e subetapa vêm das partes); a de uma parte
+-- só anda a partir da etapa da divisão e enquanto a do terreno está ativa.
+create or replace function app._conferir_movimento(p app.processos, p_destino_tipo text, p_destino text)
+returns void
+language plpgsql stable security definer set search_path = ''
+as $$
+declare f app.fases_modelo;
+begin
+  if p_destino_tipo not in ('etapa','subetapa') and p.parte_id is null then return; end if;
+  if p.parte_id is null then
+    if app._tem_partes(p.id) then
+      raise exception 'Com várias partes, a negociação do terreno anda pelas negociações das partes' using errcode = '22023';
+    end if;
+    return;
+  end if;
+  if (select status from app.processos where id = p.principal_id) <> 'ativo' then
+    raise exception 'A negociação do terreno não está ativa' using errcode = '22023';
+  end if;
+  if p_destino_tipo = 'etapa' then
+    select * into f from app.fases_modelo where empresa_id = p.empresa_id and codigo = p.fase;
+    if app._ordem_etapa(p.empresa_id, p.fase, p_destino) < app._ordem_etapa(p.empresa_id, p.fase, f.etapa_partes) then
+      raise exception 'A negociação da parte começa em %: as etapas anteriores são do terreno todo',
+        (select nome from app.etapas_modelo where empresa_id = p.empresa_id and fase = p.fase and codigo = f.etapa_partes) using errcode = '22023';
+    end if;
+  end if;
 end $$;
 
 create or replace function app._passagem(
@@ -807,6 +868,7 @@ begin
   if exists (select 1 from app.aprovacoes where processo_id = p.id and status = 'pendente') then
     raise exception 'Há um pedido de aprovação em aberto: aguarde a decisão ou cancele o pedido' using errcode = '22023';
   end if;
+  perform app._conferir_movimento(p, p_destino_tipo, p_destino);
 
   pend := app._pendencias(p, p_destino_tipo, p_destino);
   if exists (select 1 from jsonb_array_elements(pend) i where not (i->>'ok')::boolean) then
@@ -952,6 +1014,7 @@ begin
     if exists (select 1 from app.aprovacoes where processo_id = p.id and status = 'pendente') then
       raise exception 'Há um pedido de aprovação em aberto: aguarde a decisão ou cancele o pedido' using errcode = '22023';
     end if;
+    perform app._conferir_movimento(p, 'etapa', p_etapa);
     perform app._executar_passagem(p.id, 'etapa', p_etapa, false, p_comentario);
   end if;
   return app.checar_passagem(p.id) || r;
@@ -1004,7 +1067,7 @@ begin
   if p_status = 'concluido' then
     select codigo into ultima from app.etapas_modelo where empresa_id = p.empresa_id and fase = p.fase order by ordem desc limit 1;
     if p.etapa_atual <> ultima then raise exception 'A fase se conclui na última etapa' using errcode = '22023'; end if;
-    if v_entrada and (coalesce(trim(p_detalhe), '') = '' or coalesce(trim(p_pontos_sucesso), '') = '') then
+    if v_entrada and p.parte_id is null and (coalesce(trim(p_detalhe), '') = '' or coalesce(trim(p_pontos_sucesso), '') = '') then
       raise exception 'Escreva o relato e os pontos de sucesso da compra' using errcode = '22023';
     end if;
     if coalesce(trim(p_detalhe), '') = '' then raise exception 'Escreva o relato da conclusão' using errcode = '22023'; end if;
@@ -1034,12 +1097,21 @@ begin
   if not found then raise exception 'Processo não encontrado' using errcode = 'P0002'; end if;
   perform app.exigir_editor(p.empresa_id);
   if p.status <> 'stand_by' then raise exception 'Só negociações em stand by podem ser retomadas' using errcode = '22023'; end if;
+  if p.principal_id is not null and (select status from app.processos where id = p.principal_id) <> 'ativo' then
+    raise exception 'A negociação do terreno não está ativa: retome-a antes' using errcode = '22023';
+  end if;
   parado := now() - p.data_encerramento;
   update app.processos set status = 'ativo', retomar_em = null, data_encerramento = null,
          motivo_encerramento = null, detalhe_encerramento = null,
          etapa_desde = etapa_desde + parado, subetapa_desde = subetapa_desde + parado where id = p.id;
   insert into app.processo_transicoes (empresa_id, processo_id, evento, de_etapa, para_etapa, de_subetapa, para_subetapa)
   values (p.empresa_id, p.id, 'retomada', p.etapa_atual, p.etapa_atual, p.subetapa_atual, p.subetapa_atual);
+  -- retomar o terreno retoma as partes paradas; retomar uma parte acerta o terreno
+  if p.parte_id is null then
+    perform app.retomar_processo(c.id) from app.processos c where c.principal_id = p.id and c.status = 'stand_by';
+  else
+    perform app._sincronizar_principal(p.principal_id);
+  end if;
 end $$;
 
 -- Decide um pedido. Aprova de uma vez todas as linhas na vez que a pessoa
@@ -1119,6 +1191,250 @@ begin
   end if;
   update app.aprovacoes set status = 'cancelado', decidido_por = auth.uid(), decidido_em = clock_timestamp() where pedido_id = p_pedido and status = 'pendente';
 end $$;
+
+-- ---------------------------------------------------------------------
+-- Partes do terreno (vários donos negociando separado)
+--
+-- Com duas ou mais partes ativas, quando a negociação do terreno (fase de
+-- entrada) chega à etapa da divisão (fases_modelo.etapa_partes), cada parte
+-- ganha a sua negociação: um processo da mesma fase com parte_id e
+-- principal_id, com oferta, propostas, temperatura, documentos, subetapa,
+-- status e histórico próprios. A partir daí a negociação do terreno não se
+-- move à mão: fica na etapa e na subetapa da parte mais atrasada
+-- (_sincronizar_principal) e só fica Comprado com todas as partes ativas
+-- compradas. Parte perdida sai do terreno (remover_parte) ou o terreno se
+-- encerra; encerrar o terreno encerra as partes em aberto.
+-- ---------------------------------------------------------------------
+create or replace function app._ordem_etapa(p_empresa uuid, p_fase text, p_etapa text)
+returns int
+language sql stable security definer set search_path = ''
+as $$ select ordem from app.etapas_modelo where empresa_id = p_empresa and fase = p_fase and codigo = p_etapa $$;
+
+-- A negociação do terreno anda pelas partes?
+create or replace function app._tem_partes(p_processo uuid)
+returns boolean
+language sql stable security definer set search_path = ''
+as $$ select exists (select 1 from app.processos where principal_id = p_processo) $$;
+
+-- Etapa e subetapa da negociação do terreno = as da parte mais atrasada em
+-- aberto (sem nenhuma em aberto, a mais adiantada das compradas). Cada
+-- mudança vira uma transição, como qualquer passagem.
+create or replace function app._sincronizar_principal(p_principal uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare p app.processos; v_etapa text; v_sub text; ordem_atual int; ordem_nova int;
+begin
+  select * into p from app.processos where id = p_principal for update;
+  if not found or p.status <> 'ativo' then return; end if;
+  select c.etapa_atual, c.subetapa_atual into v_etapa, v_sub
+    from app.processos c
+    join app.terreno_partes tp on tp.id = c.parte_id and tp.ativa
+    join app.etapas_modelo e on e.empresa_id = c.empresa_id and e.fase = c.fase and e.codigo = c.etapa_atual
+    join app.subetapas_modelo s on s.empresa_id = c.empresa_id and s.fase = c.fase and s.codigo = c.subetapa_atual
+   where c.principal_id = p.id and c.status in ('ativo','stand_by')
+   order by e.ordem, s.ordem limit 1;
+  if v_etapa is null then
+    select c.etapa_atual, c.subetapa_atual into v_etapa, v_sub
+      from app.processos c
+      join app.terreno_partes tp on tp.id = c.parte_id and tp.ativa
+      join app.etapas_modelo e on e.empresa_id = c.empresa_id and e.fase = c.fase and e.codigo = c.etapa_atual
+      join app.subetapas_modelo s on s.empresa_id = c.empresa_id and s.fase = c.fase and s.codigo = c.subetapa_atual
+     where c.principal_id = p.id and c.status = 'concluido'
+     order by e.ordem desc, s.ordem desc limit 1;
+  end if;
+  if v_etapa is null or (v_etapa = p.etapa_atual and v_sub = p.subetapa_atual) then return; end if;
+  ordem_atual := app._ordem_etapa(p.empresa_id, p.fase, p.etapa_atual);
+  ordem_nova  := app._ordem_etapa(p.empresa_id, p.fase, v_etapa);
+  if v_etapa <> p.etapa_atual then
+    update app.processos set etapa_atual = v_etapa, etapa_desde = now(), subetapa_atual = v_sub, subetapa_desde = now() where id = p.id;
+  else
+    update app.processos set subetapa_atual = v_sub, subetapa_desde = now() where id = p.id;
+  end if;
+  insert into app.processo_transicoes (empresa_id, processo_id, evento, de_etapa, para_etapa, de_subetapa, para_subetapa, comentario)
+  values (p.empresa_id, p.id,
+          case when ordem_nova > ordem_atual then 'avanco' when ordem_nova < ordem_atual then 'retorno' else 'subetapa' end,
+          p.etapa_atual, v_etapa, p.subetapa_atual, v_sub, 'Pelas negociações das partes');
+  perform app._abrir_fases_liberadas(p.terreno_id);
+end $$;
+
+-- Abre a negociação de cada parte ativa que ainda não tem uma, quando a do
+-- terreno está ativa, na etapa da divisão ou depois, e há duas ou mais partes.
+create or replace function app._abrir_negociacoes_partes(p_principal uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare p app.processos; f app.fases_modelo; n app.negociacoes; tp record; v_id uuid; v_sub text; v_seq int; v_oferta uuid;
+begin
+  select * into p from app.processos where id = p_principal;
+  if not found or p.status <> 'ativo' or p.parte_id is not null then return; end if;
+  select * into f from app.fases_modelo where empresa_id = p.empresa_id and codigo = p.fase;
+  if f.etapa_partes is null or app._ordem_etapa(p.empresa_id, p.fase, p.etapa_atual) < app._ordem_etapa(p.empresa_id, p.fase, f.etapa_partes) then return; end if;
+  if (select count(*) from app.terreno_partes where terreno_id = p.terreno_id and ativa) < 2 then return; end if;
+  select * into n from app.negociacoes where processo_id = p.id;
+  v_sub := app._subetapa_inicial(p.empresa_id, p.fase, f.etapa_partes);
+  for tp in select x.* from app.terreno_partes x
+            where x.terreno_id = p.terreno_id and x.ativa
+              and not exists (select 1 from app.processos c where c.principal_id = p.id and c.parte_id = x.id)
+            order by x.criado_em, x.nome loop
+    select count(*) + 1 into v_seq from app.processos where principal_id = p.id;
+    -- oferta de referência: a mais recente que cobre a parte; senão, a do terreno
+    select o.id into v_oferta from app.oferta_partes op join app.ofertas o on o.id = op.oferta_id
+     where op.parte_id = tp.id order by (o.status = 'ativa') desc, o.data_oferta desc, o.criado_em desc limit 1;
+    insert into app.processos (empresa_id, codigo, terreno_id, fase, etapa_atual, subetapa_atual, responsavel_id, parte_id, principal_id)
+    values (p.empresa_id, p.codigo || '-' || v_seq, p.terreno_id, p.fase, f.etapa_partes, v_sub, p.responsavel_id, tp.id, p.id)
+    returning id into v_id;
+    insert into app.negociacoes (processo_id, empresa_id, oferta_referencia_id, temperatura, temperatura_em)
+    values (v_id, p.empresa_id, coalesce(v_oferta, n.oferta_referencia_id), n.temperatura, n.temperatura_em);
+    insert into app.processo_transicoes (empresa_id, processo_id, evento, para_etapa, para_subetapa, comentario)
+    values (p.empresa_id, v_id, 'abertura', f.etapa_partes, v_sub, 'Negociação da parte ' || tp.nome);
+  end loop;
+  perform app._sincronizar_principal(p.id);
+end $$;
+
+-- Cadastra ou altera uma parte. p_dados: nome, essencial, poligono, area_m2,
+-- observacoes. Tornar uma parte dispensável é com gestor ou diretor (é o
+-- passo antes de tirá-la). O pedaço fica dentro do terreno (5 m de folga).
+create or replace function app.salvar_parte(p_terreno uuid, p_parte uuid, p_dados jsonb)
+returns uuid
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos; tp app.terreno_partes; v_id uuid; v_poli jsonb; v_principal uuid;
+begin
+  select * into t from app.terrenos where id = p_terreno for update;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  perform app._chaves_permitidas(p_dados, array['nome','essencial','poligono','area_m2','observacoes']);
+  v_poli := case when jsonb_typeof(p_dados->'poligono') = 'object' then p_dados->'poligono' end;
+  if v_poli is not null then
+    if not app.geojson_poligono_valido(v_poli) then raise exception 'Poligonal da parte inválida' using errcode = '22023'; end if;
+    if extensions.st_area(extensions.st_difference(extensions.st_makevalid(extensions.st_setsrid(extensions.st_geomfromgeojson(v_poli::text), 4326)),
+                                                   extensions.st_buffer(t.poligono::extensions.geography, 5)::extensions.geometry)::extensions.geography) >= 1 then
+      raise exception 'A área da parte passa da poligonal do terreno' using errcode = '22023';
+    end if;
+  end if;
+  if p_parte is null then
+    if coalesce(trim(p_dados->>'nome'), '') = '' then raise exception 'Dê um nome à parte (o dono ou os donos)' using errcode = '22023'; end if;
+    if (p_dados->>'essencial')::boolean is false and not app.eh_gestor(t.empresa_id) then
+      raise exception 'Só gestor ou diretor marca uma parte como dispensável' using errcode = '42501';
+    end if;
+    insert into app.terreno_partes (empresa_id, terreno_id, nome, essencial, poligono_geojson, area_m2, observacoes)
+    values (t.empresa_id, t.id, trim(p_dados->>'nome'), coalesce((p_dados->>'essencial')::boolean, true), v_poli,
+            (p_dados->>'area_m2')::numeric, nullif(trim(p_dados->>'observacoes'), ''))
+    returning id into v_id;
+    -- negociação do terreno já na etapa da divisão: a parte nova ganha a sua
+    select id into v_principal from app.processos
+     where terreno_id = t.id and parte_id is null and fase = app._fase_entrada(t.empresa_id) and status = 'ativo';
+    if v_principal is not null then perform app._abrir_negociacoes_partes(v_principal); end if;
+    return v_id;
+  end if;
+  select * into tp from app.terreno_partes where id = p_parte and terreno_id = t.id for update;
+  if not found then raise exception 'Parte não encontrada' using errcode = 'P0002'; end if;
+  if not tp.ativa then raise exception 'A parte já saiu do terreno' using errcode = '22023'; end if;
+  if tp.essencial and (p_dados->>'essencial')::boolean is false and not app.eh_gestor(t.empresa_id) then
+    raise exception 'Só gestor ou diretor marca uma parte como dispensável' using errcode = '42501';
+  end if;
+  update app.terreno_partes set
+    nome             = coalesce(nullif(trim(p_dados->>'nome'), ''), nome),
+    essencial        = coalesce((p_dados->>'essencial')::boolean, essencial),
+    poligono_geojson = case when p_dados ? 'poligono' then v_poli else poligono_geojson end,
+    area_m2          = case when p_dados ? 'area_m2' then (p_dados->>'area_m2')::numeric else area_m2 end,
+    observacoes      = case when p_dados ? 'observacoes' then nullif(trim(p_dados->>'observacoes'), '') else observacoes end
+  where id = tp.id;
+  return tp.id;
+end $$;
+
+-- Tira a parte do terreno (o dono não vende, ou a área mudou). A negociação
+-- dela tem que estar encerrada; parte essencial só sai com gestor ou diretor.
+-- Matrículas e inscrições continuam ligadas a ela (histórico): ajuste a
+-- poligonal do terreno com salvar_terreno.
+create or replace function app.remover_parte(p_parte uuid, p_motivo text)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare tp app.terreno_partes; v_principal uuid;
+begin
+  select * into tp from app.terreno_partes where id = p_parte for update;
+  if not found then raise exception 'Parte não encontrada' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(tp.empresa_id);
+  if not tp.ativa then raise exception 'A parte já saiu do terreno' using errcode = '22023'; end if;
+  if coalesce(trim(p_motivo), '') = '' then raise exception 'Diga por que a parte sai do terreno' using errcode = '22023'; end if;
+  if tp.essencial and not app.eh_gestor(tp.empresa_id) then
+    raise exception 'Só gestor ou diretor tira uma parte essencial' using errcode = '42501';
+  end if;
+  if exists (select 1 from app.processos where parte_id = tp.id and status in ('ativo','stand_by')) then
+    raise exception 'A negociação desta parte está em aberto: encerre-a antes' using errcode = '22023';
+  end if;
+  if exists (select 1 from app.processos where parte_id = tp.id and status = 'concluido') then
+    raise exception 'Esta parte já foi comprada' using errcode = '22023';
+  end if;
+  update app.terreno_partes set ativa = false, removida_em = now(), motivo_remocao = trim(p_motivo) where id = tp.id;
+  for v_principal in select distinct principal_id from app.processos where parte_id = tp.id and principal_id is not null loop
+    perform app._sincronizar_principal(v_principal);
+  end loop;
+end $$;
+
+-- Encerrar a negociação do terreno leva junto as partes em aberto: perdido
+-- e descartado com o mesmo motivo, stand by com a mesma data de retomada.
+create or replace function app._encerrar_partes(p app.processos, p_status text, p_dados jsonb)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare c app.processos;
+begin
+  for c in select * from app.processos where principal_id = p.id
+             and (status = 'ativo' or (status = 'stand_by' and p_status <> 'stand_by'))
+           for update loop
+    update app.aprovacoes set status = 'cancelado', decidido_em = clock_timestamp(), comentario = 'Negociação do terreno encerrada'
+     where processo_id = c.id and status = 'pendente';
+    update app.processos set status = p_status,
+           motivo_encerramento  = p_dados->>'motivo',
+           detalhe_encerramento = 'Com a negociação do terreno: ' || (p_dados->>'detalhe'),
+           retomar_em           = (p_dados->>'retomar_em')::date,
+           data_encerramento    = now()
+     where id = c.id;
+    insert into app.processo_transicoes (empresa_id, processo_id, evento, de_etapa, para_etapa, de_subetapa, para_subetapa, comentario)
+    values (c.empresa_id, c.id, case p_status when 'perdido' then 'perda' when 'descartado' then 'descarte' else 'stand_by' end,
+            c.etapa_atual, c.etapa_atual, c.subetapa_atual, c.subetapa_atual, 'Com a negociação do terreno (' || p.codigo || ')');
+  end loop;
+end $$;
+
+-- Cada parte com a sua negociação, para a ficha e o quadro.
+create view app.v_partes with (security_invoker = true) as
+select tp.id, tp.empresa_id, tp.terreno_id, tp.nome, tp.essencial, tp.area_m2, tp.poligono_geojson, tp.observacoes,
+       tp.ativa, tp.removida_em, tp.motivo_remocao,
+       (select count(*) from app.matriculas m where m.parte_id = tp.id) as qtd_matriculas,
+       (select count(*) from app.inscricoes_municipais i where i.parte_id = tp.id) as qtd_inscricoes,
+       (select string_agg(pe.nome_razao_social, ', ' order by pe.nome_razao_social) from app.terreno_pessoas x
+         join app.pessoas pe on pe.id = x.pessoa_id where x.parte_id = tp.id and x.papel = 'proprietario') as proprietarios,
+       c.id as processo_id, c.codigo as processo_codigo, c.principal_id, c.status, stm.nome as status_nome,
+       c.etapa_atual, e.nome as etapa_nome, e.ordem as etapa_ordem, c.subetapa_atual, s.nome as subetapa_nome, s.ordem as subetapa_ordem,
+       (current_date - c.subetapa_desde::date) as dias_na_subetapa,
+       coalesce(c.status = 'ativo' and now() - c.subetapa_desde > make_interval(days => s.prazo_dias), false) as subetapa_atrasada,
+       c.motivo_encerramento, mo.nome as motivo_encerramento_nome, c.retomar_em, c.responsavel_id,
+       n.temperatura,
+       -- preço pedido da parte: o informado na oferta, ou o da oferta inteira quando ela cobre só esta parte
+       case when op.parte_id is not null then
+         coalesce(op.valor_pedido, case when (select count(*) from app.oferta_partes y where y.oferta_id = o.id) = 1 then o.valor_pedido end) end as valor_pedido,
+       lp.valor_total as ultima_proposta_valor, lp.origem as ultima_proposta_origem, lp.status as ultima_proposta_status,
+       ap.nivel as aprovacao_aguardando
+from app.terreno_partes tp
+left join lateral (
+  select x.* from app.processos x where x.parte_id = tp.id
+  order by (x.status in ('ativo','stand_by')) desc, x.data_inicio desc limit 1
+) c on true
+left join app.status_modelo stm on stm.empresa_id = c.empresa_id and stm.fase = c.fase and stm.status = c.status
+left join app.etapas_modelo e on e.empresa_id = c.empresa_id and e.fase = c.fase and e.codigo = c.etapa_atual
+left join app.subetapas_modelo s on s.empresa_id = c.empresa_id and s.fase = c.fase and s.codigo = c.subetapa_atual
+left join app.motivos_encerramento mo on mo.empresa_id = c.empresa_id and mo.status = c.status and mo.codigo = c.motivo_encerramento
+left join app.negociacoes n on n.processo_id = c.id
+left join app.ofertas o on o.id = n.oferta_referencia_id
+left join app.oferta_partes op on op.oferta_id = o.id and op.parte_id = tp.id
+left join lateral (select * from app.propostas x where x.processo_id = c.id order by versao desc limit 1) lp on true
+left join lateral (
+  select a.nivel from app.aprovacoes a where a.processo_id = c.id and a.status = 'pendente' order by a.ordem, a.nivel limit 1
+) ap on true;
+grant select on app.v_partes to authenticated;
 
 -- ---------------------------------------------------------------------
 -- Propostas: cada nova responde à anterior.
@@ -1417,7 +1733,7 @@ as $$
 declare f app.fases_modelo;
 begin
   perform app.exigir_administrador(p_empresa);
-  perform app._chaves_permitidas(p_dados, array['nome','ordem','prefixo','ativo']);
+  perform app._chaves_permitidas(p_dados, array['nome','ordem','prefixo','ativo','etapa_partes']);
   if p_dados ? 'prefixo' then
     if upper(p_dados->>'prefixo') !~ '^[A-Z]{2,5}$' then raise exception 'Prefixo: de 2 a 5 letras' using errcode = '22023'; end if;
     if exists (select 1 from app.fases_modelo where empresa_id = p_empresa and prefixo = upper(p_dados->>'prefixo') and codigo <> p_codigo) then
@@ -1441,6 +1757,17 @@ begin
     if exists (select 1 from app.processos where empresa_id = p_empresa and fase = f.codigo and status in ('ativo','stand_by')) then
       raise exception 'Há terrenos nesta fase: encerre os processos antes de desativar' using errcode = '22023';
     end if;
+  end if;
+  if p_dados ? 'etapa_partes' then
+    if not f.entrada then raise exception 'Negociação por parte só na fase de entrada' using errcode = '22023'; end if;
+    if nullif(p_dados->>'etapa_partes', '') is not null and not exists (
+         select 1 from app.etapas_modelo where empresa_id = p_empresa and fase = f.codigo and codigo = p_dados->>'etapa_partes') then
+      raise exception 'Etapa inválida' using errcode = '22023';
+    end if;
+    if exists (select 1 from app.processos where empresa_id = p_empresa and parte_id is not null and status in ('ativo','stand_by')) then
+      raise exception 'Há negociações por parte em andamento: encerre-as antes de mudar a etapa da divisão' using errcode = '22023';
+    end if;
+    update app.fases_modelo set etapa_partes = nullif(p_dados->>'etapa_partes', '') where empresa_id = p_empresa and codigo = p_codigo;
   end if;
   update app.fases_modelo set
     nome    = coalesce(nullif(trim(p_dados->>'nome'), ''), nome),
@@ -1595,6 +1922,9 @@ begin
              and ((d.requisito_tipo = 'etapa' and d.requisito = p_codigo)
                or (d.requisito_tipo = 'subetapa' and d.requisito in (select codigo from app.subetapas_modelo where empresa_id = p_empresa and fase = p_fase and etapa = p_codigo)))) then
     raise exception 'Outra fase depende desta etapa: remova a dependência antes' using errcode = '22023';
+  end if;
+  if exists (select 1 from app.fases_modelo where empresa_id = p_empresa and codigo = p_fase and etapa_partes = p_codigo) then
+    raise exception 'A negociação por parte começa nesta etapa: escolha outra antes' using errcode = '22023';
   end if;
   delete from app.prerequisitos_modelo where empresa_id = p_empresa and fase = p_fase
      and ((alvo_tipo = 'etapa' and alvo = p_codigo)
@@ -1917,7 +2247,8 @@ grant execute on function
   app.buscar_duplicados(uuid, text, text, text, text, text),
   app.terrenos_sobrepostos(uuid, jsonb, uuid),
   app.abrir_negociacao(uuid, uuid),
-  app.registrar_oferta(uuid, numeric, text, uuid, text, text, date, date, numeric, uuid, numeric, jsonb),
+  app.registrar_oferta(uuid, numeric, text, uuid, text, text, date, date, numeric, uuid, numeric, jsonb, jsonb),
+  app.salvar_parte(uuid, uuid, jsonb), app.remover_parte(uuid, text),
   app.definir_temperatura(uuid, int), app.definir_oferta_referencia(uuid, uuid),
   app.checar_avanco(uuid), app.checar_passagem(uuid, text, text),
   app.mover_etapa(uuid, boolean, text), app.mover_para_etapa(uuid, text, boolean, text), app.mover_subetapa(uuid, text, boolean, text),

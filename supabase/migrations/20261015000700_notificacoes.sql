@@ -239,7 +239,9 @@ begin
            from app.processos p
            join app.subetapas_modelo s on s.empresa_id = p.empresa_id and s.fase = p.fase and s.codigo = p.subetapa_atual
            join app.terrenos t on t.id = p.terreno_id
-           where p.status = 'ativo' and s.prazo_dias is not null and p.subetapa_desde::date + s.prazo_dias < p_hoje loop
+           where p.status = 'ativo' and s.prazo_dias is not null and p.subetapa_desde::date + s.prazo_dias < p_hoje
+             -- negociação do terreno dividida em partes: o aviso vem de cada parte
+             and not exists (select 1 from app.processos c where c.principal_id = p.id and c.status in ('ativo','stand_by')) loop
     perform app._notificar(r.empresa_id, r.responsavel_id, 'subetapa_prazo',
       r.terreno_nome || ': ' || r.sub_nome || ' passou do prazo de ' || r.prazo_dias || ' dias',
       r.terreno_id, 'processos', r.id, r.subetapa_desde::date + r.prazo_dias, null);

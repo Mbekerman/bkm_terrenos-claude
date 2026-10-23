@@ -48,7 +48,7 @@ Modelo de dados com diagramas: [docs/modelo.md](docs/modelo.md). Mantenha-o em d
 
 ## Regras de arquitetura (não quebrar)
 
-1. **Terreno ≠ oferta ≠ negociação; fase = processo.** Um terreno tem N ofertas e N processos ao longo do tempo, um por fase de cada vez: no máximo um processo aberto (ativo ou em stand by) por fase (índice único parcial); fases diferentes podem correr juntas. A fase de entrada (`fases_modelo.entrada`, Novos Negócios) é a que a oferta abre e a única com negociação (temperatura, propostas); o fim de cada fase é o status `concluido`, com o nome da fase (Comprado, Aprovado, Obra entregue).
+1. **Terreno ≠ oferta ≠ negociação; fase = processo.** Um terreno tem N ofertas e N processos ao longo do tempo, um por fase de cada vez: no máximo um processo aberto (ativo ou em stand by) por fase (índice único parcial); fases diferentes podem correr juntas. A fase de entrada (`fases_modelo.entrada`, Novos Negócios) é a que a oferta abre e a única com negociação (temperatura, propostas); o fim de cada fase é o status `concluido`, com o nome da fase (Comprado, Aprovado, Obra entregue). Terreno com vários donos que negociam separado tem **partes** (`terreno_partes`, decisão do Moisés, 23/out/2026): a partir da etapa da divisão (`fases_modelo.etapa_partes`, padrão Negociação) cada parte tem a sua negociação (processo com `parte_id` e `principal_id`, com preço, temperatura, propostas e documentos próprios); a do terreno anda pela parte mais atrasada e só fica Comprado com todas as partes ativas compradas. Um dono com várias matrículas é uma negociação só.
 2. **Regra de negócio mora no banco.** Mudar etapa ou subetapa, encerrar, aprovar, registrar proposta, enviar/validar documento: só por RPC (`supabase/migrations/*_regras.sql`). O front não tem permissão de `update` em `processos`, `propostas` ou `documentos`. Escrita direta só em tabelas sem regra (terreno e seus cadastros, ofertas, tarefas, atividades, reuniões e participantes, pessoas, corretores).
 3. **Configuração é dado, editado pelo administrador.** Fases e suas dependências, etapas, subetapas, status, pré-requisitos, checklist, motivos e tipos de notificação são tabelas por empresa (`empresa_id`; nulo = modelo padrão copiado para cada empresa nova), alteradas só pelas RPCs de configuração, com auditoria. O administrador cria fase e etapa pela tela; apagar só o que não tem histórico (com histórico, desativar). Nada de regra de funil escrita no código pelo código da fase ou da etapa: o que é da negociação se acha pela fase de entrada.
 4. **Documento nunca é sobrescrito.** Cada envio é uma linha nova em `documento_versoes`; caminho no storage `{empresa_id}/{terreno_id}/{tipo}/{uuid}_{arquivo}`. A primeira pasta é o que a RLS do storage confere.
@@ -63,7 +63,7 @@ Modelo de dados com diagramas: [docs/modelo.md](docs/modelo.md). Mantenha-o em d
 ## Comandos
 
 ```bash
-bash supabase/tests/run.sh          # migrations + 340 testes de regra num Postgres 16 temporário
+bash supabase/tests/run.sh          # migrations + 378 testes de regra num Postgres 16 temporário
 cd apps/web && npm install
 npm run dev                          # precisa de apps/web/.env.local (ver .env.example)
 npm run typecheck && npm run build

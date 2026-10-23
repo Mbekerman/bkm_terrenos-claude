@@ -114,6 +114,33 @@ create table app.terrenos (
 create index on app.terrenos (empresa_id, situacao_cadastral);
 create index on app.terrenos using gist (poligono);
 
+-- Partes do terreno: cada dono, ou grupo de donos que negocia junto, com os
+-- seus lotes, matrículas e inscrições. Sem parte cadastrada (ou com uma só),
+-- o terreno é negociado de uma vez; com duas ou mais, a partir da etapa
+-- indicada na fase de entrada (fases_modelo.etapa_partes) cada parte tem a
+-- sua negociação, ligada à do terreno. Escrita só pelas RPCs salvar_parte e
+-- remover_parte; parte nunca é apagada, sai com motivo (ativa = false).
+create table app.terreno_partes (
+  id               uuid primary key default gen_random_uuid(),
+  empresa_id       uuid not null references app.empresas(id),
+  terreno_id       uuid not null references app.terrenos(id) on delete cascade,
+  nome             text not null check (length(trim(nome)) > 0),
+  -- essencial: sem ela o terreno não serve; dispensável: dá para seguir sem ela (área menor)
+  essencial        boolean not null default true,
+  poligono_geojson jsonb check (poligono_geojson is null or app.geojson_poligono_valido(poligono_geojson)),
+  area_m2          numeric(12,2) check (area_m2 > 0),
+  observacoes      text,
+  ativa            boolean not null default true,
+  removida_em      timestamptz,
+  motivo_remocao   text,
+  criado_por       uuid default auth.uid(),
+  criado_em        timestamptz not null default now(),
+  check (ativa = (removida_em is null)),
+  check (ativa or length(trim(coalesce(motivo_remocao, ''))) > 0)
+);
+create unique index terreno_partes_nome on app.terreno_partes (terreno_id, lower(trim(nome))) where ativa;
+create index on app.terreno_partes (terreno_id);
+
 create table app.matriculas (
   id                 uuid primary key default gen_random_uuid(),
   empresa_id         uuid not null references app.empresas(id),
@@ -123,6 +150,7 @@ create table app.matriculas (
   cartorio           text not null,
   area_registrada_m2 numeric(12,2),
   data_certidao      date,
+  parte_id           uuid references app.terreno_partes(id),  -- de qual dono; nulo = terreno de um dono só
   unique (empresa_id, cartorio, numero_norm)  -- mesma matrícula no mesmo cartório = mesmo terreno
 );
 create index on app.matriculas (terreno_id);
@@ -140,6 +168,7 @@ create table app.inscricoes_municipais (
   area_cadastral_m2 numeric(12,2),
   cib               text,  -- Cadastro Imobiliário Brasileiro (vem do GeoSampa)
   zona_fiscal       text,  -- ZF-1 a ZF-4 em São Paulo (vem do GeoSampa)
+  parte_id          uuid references app.terreno_partes(id),  -- de qual dono; nulo = terreno de um dono só
   unique nulls not distinct (empresa_id, municipio_id, inscricao_norm)
 );
 create index on app.inscricoes_municipais (terreno_id);
@@ -238,13 +267,14 @@ create table app.terreno_pessoas (
   terreno_id              uuid not null references app.terrenos(id) on delete cascade,
   pessoa_id               uuid not null references app.pessoas(id),
   papel                   text not null default 'proprietario' check (papel in ('proprietario','representante','procurador','contato')),
-  percentual_participacao numeric(5,2) check (percentual_participacao > 0 and percentual_participacao <= 100),
+  percentual_participacao numeric(5,2) check (percentual_participacao > 0 and percentual_participacao <= 100),  -- na parte, quando há partes
+  parte_id                uuid references app.terreno_partes(id),  -- dono (ou representante) de qual parte
   observacoes             text,
   unique (terreno_id, pessoa_id, papel),
   check (papel = 'proprietario' or percentual_participacao is null)
 );
 
--- Participações conhecidas dos proprietários somam no máximo 100%.
+-- Participações conhecidas dos proprietários somam no máximo 100% (em cada parte, quando há partes).
 create or replace function app.tg_soma_participacao()
 returns trigger language plpgsql security definer set search_path = '' as $$
 declare total numeric;
@@ -252,7 +282,8 @@ begin
   if new.papel = 'proprietario' and new.percentual_participacao is not null then
     perform 1 from app.terrenos where id = new.terreno_id for update;
     select coalesce(sum(percentual_participacao), 0) into total from app.terreno_pessoas
-     where terreno_id = new.terreno_id and papel = 'proprietario' and id <> new.id;
+     where terreno_id = new.terreno_id and papel = 'proprietario' and id <> new.id
+       and parte_id is not distinct from new.parte_id;
     if total + new.percentual_participacao > 100 then
       raise exception '%', format('A soma das participações passaria de 100%% (já há %s%% informado)', total) using errcode = '23514';
     end if;
@@ -260,6 +291,20 @@ begin
   return new;
 end $$;
 create trigger t_soma after insert or update on app.terreno_pessoas for each row execute function app.tg_soma_participacao();
+
+-- Matrícula, inscrição e pessoa só entram numa parte ativa do mesmo terreno.
+create or replace function app.tg_parte_do_terreno()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if new.parte_id is not null and not exists (
+       select 1 from app.terreno_partes where id = new.parte_id and terreno_id = new.terreno_id and ativa) then
+    raise exception 'A parte não é deste terreno ou já saiu dele' using errcode = '23514';
+  end if;
+  return new;
+end $$;
+create trigger t_parte before insert or update of parte_id, terreno_id on app.matriculas for each row execute function app.tg_parte_do_terreno();
+create trigger t_parte before insert or update of parte_id, terreno_id on app.inscricoes_municipais for each row execute function app.tg_parte_do_terreno();
+create trigger t_parte before insert or update of parte_id, terreno_id on app.terreno_pessoas for each row execute function app.tg_parte_do_terreno();
 
 create table app.terreno_corretores (
   terreno_id  uuid not null references app.terrenos(id) on delete cascade,
@@ -517,3 +562,10 @@ create trigger t_aud after insert or update or delete on app.terreno_pessoas    
 create trigger t_aud after insert or update or delete on app.confrontacoes        for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.terreno_entorno_buscas for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.consultas_lote for each row execute function app.tg_auditoria();
+
+-- Partes: leitura para a empresa; escrita só pelas RPCs (salvar_parte, remover_parte).
+alter table app.terreno_partes enable row level security;
+create policy ver on app.terreno_partes for select to authenticated using (empresa_id in (select app.minhas_empresas()));
+grant select on app.terreno_partes to authenticated;
+create trigger t_emp before insert or update on app.terreno_partes for each row execute function app.tg_mesma_empresa();
+create trigger t_aud after insert or update or delete on app.terreno_partes for each row execute function app.tg_auditoria();
