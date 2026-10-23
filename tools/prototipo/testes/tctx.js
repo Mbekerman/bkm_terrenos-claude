@@ -12,8 +12,8 @@ await p.goto('file:///x/a.html');await p.evaluate(t=>{localStorage.clear();local
 await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=mapa]').click());await p.waitForTimeout(900);
 await p.evaluate(()=>document.querySelector('.mapa').scrollIntoView({block:'start'}));await p.waitForTimeout(300);
 ok(!(await p.$('[data-a=mp-modo][data-v=pin]'))&&!(await p.$('[data-a=mp-modo][data-v=poi]')),tag+' sem Novo pin e Ponto de interesse');
-const barra=await p.evaluate(()=>{const b=document.querySelector('.mp-barra'),s=b.querySelector('.seg').getBoundingClientRect(),k=b.querySelector('.mp-kmz').getBoundingClientRect();return {bg:getComputedStyle(b).backgroundColor,mesmaLinha:Math.abs((s.top+s.bottom)/2-(k.top+k.bottom)/2)<4,kmzDireita:k.left>=s.right-1}});
-ok(barra.bg==='rgba(0, 0, 0, 0)'&&barra.mesmaLinha,tag+' barra sem fundo, KMZ ao lado do seletor '+JSON.stringify(barra));
+const barra=await p.evaluate(()=>{const b=document.querySelector('.mp-barra');return {bg:getComputedStyle(b).backgroundColor,kmz:!!b.querySelector('.mp-kmz,[data-a=mp-kmz]')}});
+ok(barra.bg==='rgba(0, 0, 0, 0)'&&!barra.kmz,tag+' barra sem fundo e sem importar KMZ (só no Novo terreno) '+JSON.stringify(barra));
 const n0=await p.$$eval('#mapa .conc',e=>e.length);const leg=await p.$eval('#mp-leg',x=>x.textContent.replace(/\s+/g,' '));ok(/Pontos de interesse\s*\d+\s*Concorrência\s*3/.test(leg)&&n0===3,tag+' concorrência na legenda e no mapa ('+n0+')');
 // um ponto vazio do mapa (longe de pinos e poligonais: segurar sobre uma poligonal entra em edição)
 const m=await p.$eval('#mapa',x=>{const r=x.getBoundingClientRect();for(const fy of [.42,.5,.58,.35,.65])for(const fx of [.55,.45,.65,.35,.75]){const q={x:r.x+r.width*fx,y:r.y+r.height*fy},e=document.elementFromPoint(q.x,q.y);

@@ -199,7 +199,6 @@ function pgMapa(){
     <div class="mp-barra">
       ${mpBuscaHtml()}
       <div class="seg" role="group" aria-label="Fundo do mapa">${Object.entries(GG?CAMADAS_G:CAMADAS_L).map(([k,l])=>`<button type="button" data-a="mp-base" data-v="${k}" aria-pressed="${(UI.mpBase||'satelite')===k}">${l}</button>`).join('')}</div>
-      <button class="btn sm mp-kmz" data-a="mp-kmz" title="Importar KMZ/KML" aria-label="Importar KMZ/KML">${ic('upload',16)}<span class="t">Importar KMZ/KML</span></button>
     </div>
     <div id="mp-modo" class="mp-modo" aria-live="polite">${modoBanner()}</div>
     <div id="mp-cartao" class="mp-cartao" aria-live="polite"></div>
@@ -372,7 +371,6 @@ async function lerKmz(file){let txt;
     const pt=p.getElementsByTagName('Point')[0];if(pt){const c=crd(pt.getElementsByTagName('coordinates')[0]?.textContent);if(c.length)return {nome,tipo:'ponto',pts:c}}
     return null}).filter(Boolean);
   if(!out.length)throw new Error('Nenhum ponto ou polígono encontrado no arquivo.');return out}
-function aplicarKmz(t,it){if(it.tipo==='poligono'){t.poly=it.pts;const c=centro(it.pts);if(t.lat==null){t.lat=c[0];t.lng=c[1]}}else{t.lat=it.pts[0][0];t.lng=it.pts[0][1]}t.precisao='aproximada'}
 
 /* ===================== DASHBOARD ===================== */
 const DIMS={
