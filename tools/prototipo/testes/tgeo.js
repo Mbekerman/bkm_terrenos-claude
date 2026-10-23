@@ -69,9 +69,9 @@ await p.evaluate(()=>document.getElementById('geo-0').scrollIntoView({block:'sta
 console.log('celular: rolagem horizontal?',await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),'quadro vaza?',await p.$eval('#geo-0',x=>x.scrollWidth>x.clientWidth+1));
 await p.screenshot({path:OUT+'3_celular.png'});await p.setViewportSize({width:1440,height:900});
 // 5. Leitura não tem o botão; SQL inexistente avisa
-await p.evaluate(()=>[...document.querySelectorAll('#role button')].find(x=>x.textContent.trim()==='Leitura').click());await p.waitForTimeout(200);
+await p.evaluate(()=>{document.querySelector('[data-a=perfil-menu]').click();document.querySelector(`[data-a=role][data-v=${'Leitura'}]`).click()});await p.waitForTimeout(200);
 console.log('leitura tem botão?',await p.$$eval('[data-a=geo-buscar]',x=>x.length));
-await p.evaluate(()=>[...document.querySelectorAll('#role button')].find(x=>x.textContent.trim()==='Diretor').click());await p.waitForTimeout(200);
+await p.evaluate(()=>{document.querySelector('[data-a=perfil-menu]').click();document.querySelector(`[data-a=role][data-v=${'Diretor'}]`).click()});await p.waitForTimeout(200);
 await mudar("t.insc.push({sql:'111.222.3333-4',area:null,valores:[]})");
 console.log('botões:',await p.$$eval('[data-a=geo-buscar]',x=>x.map(b=>b.dataset.i+':'+b.textContent)));
 await p.click('[data-a=geo-buscar][data-i="1"]');await p.waitForFunction(()=>document.querySelector('#toast').textContent,null,{timeout:5000}).catch(()=>{});console.log('SQL inexistente:',await toast());
@@ -83,6 +83,6 @@ await p.screenshot({path:OUT+'4_lotes.png'});
 await p.click('[data-a=lotes-usar]');await p.waitForTimeout(300);
 const depois=await ter();const ar=pp=>{const lat0=pp.reduce((s,q)=>s+q[0],0)/pp.length*Math.PI/180,R=6371008;let a=0;pp.forEach((q,i)=>{const r=pp[(i+1)%pp.length];a+=(r[1]-q[1])*Math.PI/180*Math.cos(lat0)*R*((r[0]+q[0])/2)*Math.PI/180*R});return Math.abs(a)};
 console.log('lotes: poligonal',Math.round(ar(antes.poly)),'→',Math.round(ar(depois.poly)),'m² | guardadas',(depois.polyAnt||[]).length,'|',depois.hist.find(h=>/lotes/.test(h.txt))?.txt,'| centro',depois.poly.reduce((s,q)=>[s[0]+q[0]/depois.poly.length,s[1]+q[1]/depois.poly.length],[0,0]).map(v=>v.toFixed(6)).join(','),'|',await toast());
-await p.evaluate(()=>[...document.querySelectorAll('#role button')].find(x=>x.textContent.trim()==='Leitura').click());await p.waitForTimeout(200);
+await p.evaluate(()=>{document.querySelector('[data-a=perfil-menu]').click();document.querySelector(`[data-a=role][data-v=${'Leitura'}]`).click()});await p.waitForTimeout(200);
 console.log('lotes: leitura tem botão?',await p.$$eval('[data-a=lotes-poly]',x=>x.length));
 console.log('pedidos:',[...new Set(pedidos)].length,'arquivos distintos');console.log('ERROS',errs);await b.close()})();

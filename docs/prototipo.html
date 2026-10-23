@@ -2372,8 +2372,6 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 }
 /* celular: quatro papéis não cabem por extenso na barra; fica a inicial (nome completo no title) */
 @media (max-width: 480px) {
-  #role button { font-size: 0 !important; min-width: 34px; padding: 0 !important }
-  #role button::after { content: attr(data-c); font-size: 13px }
 }
 
 /* Tema escuro: indicadores tonais, sem neon. Mesma luminosidade nos quatro, só o tom muda
@@ -2484,16 +2482,30 @@ body.mp-cheia .fab { display: none !important }
 .mapa-area.sv-on .sv-x { display: grid }
 .mapa-area.sv-on .mp-cartao { display: none !important }
 body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
-/* indicadores do Dashboard no tema escuro: sóbrios, fundo escuro com faixa azul na lateral, número grande e leve em branco, rótulo cinza-azulado (versão A, decisão do Moisés, 23/out/2026) */
-:root[data-tema="escuro"] .kpis-v .kpi { background: #0c1433 !important; border: 1px solid rgba(124,140,255,.28) !important; box-shadow: inset 3px 0 0 #7c8cff !important; container-type: inline-size }
-:root[data-tema="escuro"] .kpis-v .kpi .v { color: #f2f5ff !important; -webkit-text-fill-color: currentColor; font-weight: 300 !important; font-size: min(34px, 26cqi) !important; white-space: nowrap; letter-spacing: -.01em; font-variant-numeric: tabular-nums }
-:root[data-tema="escuro"] .kpis-v .kpi .v.sm { font-size: min(26px, 15.5cqi) !important }
-:root[data-tema="escuro"] .kpis-v .kpi .l { color: #8e9ac4 !important; font-weight: 500 !important; font-size: 13px !important }
-/* indicadores do Dashboard no tema claro: a mesma versão A, em branco com contorno claro e faixa azul da marca na lateral (decisão do Moisés, 23/out/2026) */
-:root:not([data-tema="escuro"]) .kpis-v .kpi { background: #fff !important; border: 1px solid #dde3ea !important; box-shadow: inset 3px 0 0 #0b57d0 !important; container-type: inline-size }
-:root:not([data-tema="escuro"]) .kpis-v .kpi .v { color: #1f1f1f !important; -webkit-text-fill-color: currentColor; font-weight: 300 !important; font-size: min(34px, 26cqi) !important; white-space: nowrap; letter-spacing: -.01em; font-variant-numeric: tabular-nums }
-:root:not([data-tema="escuro"]) .kpis-v .kpi .v.sm { font-size: min(26px, 15.5cqi) !important }
-:root:not([data-tema="escuro"]) .kpis-v .kpi .l { color: #5f6368 !important; font-weight: 500 !important; font-size: 13px !important }
+/* indicadores (Início e Dashboard) no tema escuro: sóbrios, fundo escuro com faixa azul na lateral, número grande e leve em branco, rótulo cinza-azulado (versão A, decisão do Moisés, 23/out/2026) */
+:root[data-tema="escuro"] .kpis .kpi { background: #0c1433 !important; border: 1px solid rgba(124,140,255,.28) !important; box-shadow: inset 3px 0 0 #7c8cff !important; container-type: inline-size }
+:root[data-tema="escuro"] .kpis .kpi .v { color: #f2f5ff !important; -webkit-text-fill-color: currentColor; font-weight: 300 !important; font-size: min(34px, 26cqi) !important; white-space: nowrap; letter-spacing: -.01em; font-variant-numeric: tabular-nums }
+:root[data-tema="escuro"] .kpis .kpi .v.sm { font-size: min(26px, 15.5cqi) !important }
+:root[data-tema="escuro"] .kpis .kpi .l { color: #8e9ac4 !important; font-weight: 500 !important; font-size: 13px !important }
+/* indicadores (Início e Dashboard) no tema claro: a mesma versão A, em branco com contorno claro e faixa azul da marca na lateral (decisão do Moisés, 23/out/2026) */
+:root:not([data-tema="escuro"]) .kpis .kpi { background: #fff !important; border: 1px solid #dde3ea !important; box-shadow: inset 3px 0 0 #0b57d0 !important; container-type: inline-size }
+:root:not([data-tema="escuro"]) .kpis .kpi .v { color: #1f1f1f !important; -webkit-text-fill-color: currentColor; font-weight: 300 !important; font-size: min(34px, 26cqi) !important; white-space: nowrap; letter-spacing: -.01em; font-variant-numeric: tabular-nums }
+:root:not([data-tema="escuro"]) .kpis .kpi .v.sm { font-size: min(26px, 15.5cqi) !important }
+:root:not([data-tema="escuro"]) .kpis .kpi .l { color: #5f6368 !important; font-weight: 500 !important; font-size: 13px !important }
+/* no Início os indicadores são botões: a faixa fica vermelha (tarefas atrasadas) ou âmbar (fichas incompletas) quando há o que olhar; ao passar o mouse o contorno escurece (23/out/2026) */
+:root[data-tema="escuro"] .kpis .kpi.crit { box-shadow: inset 3px 0 0 #f2b8b5 !important }
+:root[data-tema="escuro"] .kpis .kpi.warn { box-shadow: inset 3px 0 0 #f5c451 !important }
+:root:not([data-tema="escuro"]) .kpis .kpi.crit { box-shadow: inset 3px 0 0 #b3261e !important }
+:root:not([data-tema="escuro"]) .kpis .kpi.warn { box-shadow: inset 3px 0 0 #b28600 !important }
+:root[data-tema="escuro"] button.kpi:hover { border-color: rgba(124,140,255,.6) !important }
+:root:not([data-tema="escuro"]) button.kpi:hover { border-color: #a8b3bf !important }
+/* avatar do usuário na barra superior: o papel vem do perfil; o menu traz quem está entrando e, só no protótipo, a troca de usuário (decisão do Moisés, 23/out/2026) */
+.perfil-btn { width: 34px; height: 34px; border-radius: 50%; border: 0; background: #8e4ec6; color: #fff; font-size: 14px; font-weight: 500; display: grid; place-items: center; cursor: pointer; margin-left: 4px }
+.perfil-btn:hover, .perfil-btn[aria-expanded="true"] { box-shadow: 0 0 0 3px rgba(127,127,127,.25) }
+.perfil-eu { display: flex; flex-direction: column; gap: 2px; padding: 10px 16px 10px; border-bottom: 1px solid var(--m-outline-var, #c4c7c5); margin-bottom: 4px }
+.perfil-eu b { font-weight: 500; font-size: 14px } .perfil-eu span { font-size: 12px; color: var(--m-on-var, #444746) }
+.perfil-av { width: 24px; height: 24px; border-radius: 50%; background: #8e4ec6; color: #fff; font-size: 12px; font-weight: 500; display: grid; place-items: center; flex: none }
+#perfil .tema-menu { min-width: 240px }
 </style>
 <header class="top">
   <div class="top-in">
@@ -2508,8 +2520,8 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
     <div class="top-right">
       <span class="demo-pill">Dados de exemplo</span>
       <div class="sino-wrap" id="sino"></div>
-      <div class="seg" id="role" role="group" aria-label="Testar como"></div>
       <div class="tema-wrap" id="tema"></div>
+      <div class="tema-wrap" id="perfil"></div>
     </div>
   </div>
 </header>
@@ -2807,6 +2819,12 @@ function renderTema(){const el=document.getElementById('tema');if(!el)return;
     :'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></svg>';
   el.innerHTML=`<button class="tema-btn" data-a="tema-menu" aria-haspopup="menu" aria-expanded="${temaMenu}" aria-label="Tema da tela" title="Tema">${ic}</button>`+
    (temaMenu?`<div class="tema-menu" role="menu"><div class="tl">Tema</div>${TEMAS.map(([k,l,c])=>`<button role="menuitemradio" aria-checked="${TEMA===k}" data-a="tema" data-v="${k}"><span class="sw" style="background:${c}"></span>${l}</button>`).join('')}</div>`:'')}
+
+/* papel vem do perfil do usuário (decisão do Moisés, 23/out/2026): a barra mostra só o avatar; trocar de usuário é recurso do protótipo, dentro do menu */
+let perfilMenu=false;
+function renderPerfil(){const el=document.getElementById('perfil');if(!el)return;const u=ROLE_USER[UI.role];
+  el.innerHTML=`<button class="perfil-btn" data-a="perfil-menu" aria-haspopup="menu" aria-expanded="${perfilMenu}" aria-label="${u}, ${UI.role}" title="${u} · ${UI.role}">${u[0]}</button>`+
+   (perfilMenu?`<div class="tema-menu" role="menu"><div class="perfil-eu"><b>${u}</b><span>${UI.role}</span></div><div class="tl">Entrar como (protótipo)</div>${['Diretor','Gestor','Analista','Leitura'].map(r=>`<button role="menuitemradio" aria-checked="${UI.role===r}" data-a="role" data-v="${r}"><span class="perfil-av">${ROLE_USER[r][0]}</span>${ROLE_USER[r]} · ${r}</button>`).join('')}</div>`:'')}
 
 const UI={route:'inicio',id:null,tab:'cadastro',from:'terrenos',q:'',fT:'ativos',role:'Diretor',edit:null,modal:null,upload:null,propForm:false};
 const me=()=>ROLE_USER[UI.role];
@@ -3206,7 +3224,7 @@ function render(){
   $('#bnav').innerHTML=NAV.map(([r,l,i])=>`<button data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''}><span class="pill">${bi(i,32)}</span>${l}</button>`).join('');
   document.body.classList.toggle('ro',UI.role==='Leitura');
   renderTema();{const n0=S.notifs.length;rotinaNotif();if(S.notifs.length!==n0)save()}renderSino();
-  $('#role').innerHTML=['Diretor','Gestor','Analista','Leitura'].map(r=>`<button data-a="role" data-v="${r}" data-c="${r[0]}" title="Testar como ${r}" aria-pressed="${UI.role===r}">${r}</button>`).join('');
+  renderPerfil();
   document.body.dataset.rota=UI.route;$('#main').innerHTML=({inicio:pgInicio,terrenos:pgTerrenos,negociacoes:pgNeg,terreno:pgFicha,mapa:pgMapa,dashboard:pgDash,tarefas:pgTarefas,config:pgConfig})[UI.route]();posRender();
   renderModal();
 }
@@ -3284,7 +3302,8 @@ function dedupe(){
 
 /* ===================== eventos ===================== */
 document.addEventListener('click',e=>{
-  if(temaMenu&&!e.target.closest('.tema-wrap')){temaMenu=false;renderTema()}
+  if(temaMenu&&!e.target.closest('#tema')){temaMenu=false;renderTema()}
+  if(perfilMenu&&!e.target.closest('#perfil')){perfilMenu=false;renderPerfil()}
   if(sinoAberto&&!e.target.closest('#sino')){sinoAberto=false;renderSino()}
   if(!e.target.closest('.adv-mais'))document.querySelectorAll('.adv-mais.aberto').forEach(x=>{x.classList.remove('aberto');x.querySelector('.adv-mb')?.setAttribute('aria-expanded','false')});
   const a=e.target.closest('[data-a]');if(!a)return;const A=a.dataset.a;const t=UI.route==='terreno'?T(UI.id):null;
@@ -3299,7 +3318,7 @@ document.addEventListener('click',e=>{
       if(!BLA[k]){const h=document.getElementById('bl-'+k);if(h&&(fim||h.getBoundingClientRect().top<72))h.scrollIntoView({block:'start'});document.querySelector(`#bl-${k} .bl-h`)?.focus({preventScroll:true})}break}
     case 'ir':UI.tab=a.dataset.t;blocoAbre(a.dataset.t);UI.edit=a.dataset.s&&SECOES[a.dataset.s]||a.dataset.s==='areas'?a.dataset.s:null;render();rolarBloco(a.dataset.t,a.dataset.s);break;
     case 'fT':UI.fT=a.dataset.v;render();break;
-    case 'role':UI.role=a.dataset.v;render();toast(UI.role==='Leitura'?'Testando como Leitura: consulta tudo, não altera nada.':`Testando como ${UI.role}.`);break;
+    case 'role':UI.role=a.dataset.v;perfilMenu=false;render();toast(UI.role==='Leitura'?'Entrou como Lúcia Mendes (Leitura): consulta tudo, não altera nada.':`Entrou como ${ROLE_USER[UI.role]} (${UI.role}).`);break;
     case 'reset':S=seed();prepararDados();save();go('inicio');toast('Dados de exemplo restaurados.');break;
     case 'novo':UI.modal='novo';renderModal();break;
     case 'nova-oferta':UI.modal='oferta';renderModal();break;
@@ -3365,6 +3384,7 @@ document.addEventListener('click',e=>{
     case 'tk-nova':UI.tkSel={status:a.dataset.v};UI.modal='tarefa';renderModal();break;
     case 'tk-vista':UI.tk.vista=a.dataset.v;render();break;
     case 'tema-menu':temaMenu=!temaMenu;renderTema();break;
+    case 'perfil-menu':perfilMenu=!perfilMenu;renderPerfil();break;
     case 'tema':TEMA=a.dataset.v;try{localStorage.setItem('bkm-terrenos-tema',TEMA)}catch(e){}temaMenu=false;aplicaTema();renderTema();toast('Tema: '+TEMAS.find(x=>x[0]===TEMA)[1]+'.');break;
     case 'menu':menuMin=!menuMin;try{localStorage.setItem('bkm-terrenos-menu',menuMin?'min':'')}catch(e){}render();break;
     case 'reu-form':UI.reuForm=!UI.reuForm;render();break;
@@ -3464,7 +3484,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
 });
 function novaNeg(ofRef,temp){const e=STAGES[0][0],s=subInicial(e);return {codigo:'NEG-'+String(Math.floor(Math.random()*900)+100).padStart(5,'0'),etapa:e,sub:s,status:'ativo',desde:HOJE,subDesde:HOJE,temp,ofRef,viab:null,pedido:null,trilha:[{em:agora(),user:me(),ev:'abertura',deEtapa:null,deSub:null,paraEtapa:e,paraSub:s,status:'ativo'}]}}
 function seedVazio(){return {id:uid(),situacao:'ativo',prioridade:null,descricao:'',url:'',obs:'',cep:'',complemento:'',referencia:'',lat:null,lng:null,precisao:'nao_informada',aDoc:null,aCad:null,aLev:null,aEst:null,fonteArea:null,testada:null,topografia:'nao_informado',desnivel:null,posicao:'nao_informado',formato:'nao_informado',ocupacao:'nao_informado',uso:'',aConst:null,aDemolir:null,demolicao:'nao_avaliada',obsFis:'',eixo:null,mats:[],insc:[],confr:[],dilig:[],pessoas:[],corretores:[],infra:{},analises:[],ofertas:[],neg:null,propostas:[],reunioes:[],tarefas:[],docs:[],hist:[]}}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&GG&&(svFechar()||lugarFechar())){e.preventDefault();return}if(e.key==='Escape'&&temaMenu){temaMenu=false;renderTema();return}if(e.key==='Escape'&&UI.modal){UI.modal=null;renderModal()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&GG&&(svFechar()||lugarFechar())){e.preventDefault();return}if(e.key==='Escape'&&temaMenu){temaMenu=false;renderTema();return}if(e.key==='Escape'&&perfilMenu){perfilMenu=false;renderPerfil();return}if(e.key==='Escape'&&UI.modal){UI.modal=null;renderModal()}});
 /* ===================== kanban: arrastar e soltar (regras em proto_funil.js: levarAte, soltar) ===================== */
 function posRender(){try{if(MAPA){MAPA.remove()}}catch(e){}MAPA=null;PINS=POIS=DES=BASE=null;try{if(MINI)MINI.remove()}catch(e){}MINI=null;
   if(UI.route==='mapa')initMapa();if(UI.route==='terreno'&&!blocoFechado('geral'))initMini();fichaSheet()}
