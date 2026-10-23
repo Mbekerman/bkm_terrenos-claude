@@ -49,6 +49,26 @@ function diffTerreno(a,b){
   });
   return {campos,itens};
 }
+/* Cliques seguidos no mesmo campo (temperatura 2 → 3 → 4) viram um log só, como app.juntar_auditoria no banco:
+   se o log anterior é do mesmo usuário, nos mesmos campos, há menos de JANELA_LOG, ele dá lugar a um com o valor
+   de antes da sequência e o final; se o final é o de antes, os dois somem. Mudança de etapa, subetapa e status fica
+   de fora (cada passagem conta para o SLA). O registro é gravado na hora; só o histórico junta. */
+const JANELA_LOG=10000,LOG_NAO_JUNTA=['neg.etapa','neg.sub','neg.status'];
+const valCampo=(o,k)=>{const [a,b]=k.split('.');const v=b?o[a]?.[b]:o[a];return v===undefined?null:v};
+function juntarLog(t,s,campos,itens,nNovos){
+  const e=t.hist[t.hist.length-1];if(!e||!campos.length)return;
+  const ks=campos.map(c=>c.k).sort();
+  if(itens.length||nNovos>1||ks.some(k=>LOG_NAO_JUNTA.includes(k))||e.det&&e.det.length>ks.length)return;
+  const a=JSON.parse(s.j);e.ks=ks;e.ant=Object.fromEntries(ks.map(k=>[k,valCampo(a,k)]));
+  const p=t.hist[t.hist.length-2];
+  if(!p||!p.ks||p.user!==e.user||p.ks.join()!==ks.join()||Date.parse(e.em)-Date.parse(p.em)>=JANELA_LOG)return;
+  const atual=JSON.parse(retrato(t));
+  if(ks.every(k=>JSON.stringify(valCampo(atual,k))===JSON.stringify(p.ant[k]))){t.hist.splice(-2,2);return}
+  const base=JSON.parse(retrato(t));ks.forEach(k=>{const [x,y]=k.split('.');if(y)base[x]={...base[x],[y]:p.ant[k]};else base[x]=p.ant[k]});
+  const c=diffTerreno(base,atual).campos;
+  e.ant=p.ant;if(c.length===1){e.txt=c[0].txt;delete e.det}else e.det=c.map(x=>x.txt);
+  t.hist.splice(-2,1);
+}
 function audit(){
   S.terrenos.forEach(t=>{
     const s=AUD[t.id];t.hist=t.hist||[];
@@ -57,11 +77,12 @@ function audit(){
     const novos=t.hist.slice(s.h);
     /* edição salva sem mudar nenhum valor: não deixa registro vazio */
     if(!campos.length&&!itens.length){const vaz=novos.filter(e=>/atualizad[oa]s?$/.test(e.txt)&&!(e.det&&e.det.length));if(vaz.length)t.hist=t.hist.filter(e=>!vaz.includes(e));return}
-    if(novos.length){const e=novos[novos.length-1];const det=campos.map(c=>c.txt);if(det.length)e.det=(e.det||[]).concat(det)}
+    if(novos.length){const e=novos[novos.length-1];const det=campos.map(c=>c.txt).filter(x=>x!==e.txt);if(det.length)e.det=(e.det||[]).concat(det)}
     else{const secs=new Set(campos.map(c=>SEC_DE[c.k]).filter(Boolean));
       const txt=itens.length&&!campos.length?itens[0]:secs.size===1&&!itens.length?`${SECOES[[...secs][0]].titulo} editado`:'Ficha editada';
       const det=campos.map(c=>c.txt).concat(itens.length&&!(itens.length===1&&!campos.length)?itens:[]);
       t.hist.push({em:agora(),user:me(),txt,det:det.length?det:undefined})}
+    juntarLog(t,s,campos,itens,novos.length);
   });
   audSnap();
 }
