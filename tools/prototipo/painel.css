@@ -885,3 +885,60 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 :root[data-tema="escuro"] .t-warn { color: #f5c451 }
 :root[data-tema="escuro"] .pt-card.comprado { box-shadow: inset 3px 0 0 #6dd58c } :root[data-tema="escuro"] .pt-card.perdido, :root[data-tema="escuro"] .pt-card.descartado { box-shadow: inset 3px 0 0 #f2b8b5 } :root[data-tema="escuro"] .pt-card.stand_by { box-shadow: inset 3px 0 0 #f5c451 }
 :root[data-tema="escuro"] .msel-b { border-color: rgba(124,140,255,.35) } :root[data-tema="escuro"] .msel-m { background: #060c20; border-color: rgba(124,140,255,.22) }
+
+/* ==== Filtros (Terrenos, Mapa e Fases): barra com chips e gaveta à direita ==== */
+.fx-barra { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; min-width: 0 }
+.fx-btn { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px 0 12px; border-radius: 20px; border: 1px solid #747775; background: transparent; color: #1f1f1f; font-family: inherit; font-size: 14px; font-weight: 500; line-height: 20px; cursor: pointer }
+.fx-btn[aria-pressed="true"] { background: #c2e7ff; border-color: #c2e7ff; color: #001d35 }
+.fx-n { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: #0b57d0; color: #fff; font-size: 12px; font-weight: 500 }
+.fx-chip { display: inline-flex; align-items: center; gap: 2px; min-height: 32px; max-width: 100%; padding: 0 2px 0 12px; border-radius: 8px; border: 1px solid #c4c7c5; font-size: 14px; font-weight: 500; color: #1f1f1f; min-width: 0 }
+.fx-chip { overflow-wrap: anywhere }
+.fx-cx { width: 28px; height: 28px; flex: none; display: grid; place-items: center; border: 0; border-radius: 14px; background: none; color: #444746; cursor: pointer }
+.fx-cx:hover { background: rgba(31,31,31,.08) }
+.fx-limpar { font-size: 14px }
+.fx-visw { margin-left: auto; display: flex; align-items: center; gap: 4px; min-width: 0 }
+.fx-vis { display: flex; min-width: 0; align-items: center; gap: 8px; font-size: 14px; color: #444746 }
+.fx-vis select { height: 40px; border-radius: 20px; border: 1px solid #747775; padding: 0 12px; background: transparent; color: #1f1f1f; font-family: inherit; font-size: 14px; max-width: 220px }
+.fx-vx { width: 40px; height: 40px }
+.mapa-lado .fx-barra { margin: 8px 0 4px } .mapa-lado .fx-visw { margin-left: 0; flex: 1 1 100% } .mapa-lado .fx-vis { flex: 1 } .mapa-lado .fx-vis select { flex: 1; max-width: none; min-width: 0 }
+.fx-scrim { position: fixed; inset: 0; z-index: 36; background: rgba(0,0,0,.16) }
+.fx-dr { position: fixed; z-index: 37; top: 0; right: 0; bottom: 0; width: min(400px, 100vw); display: flex; flex-direction: column; background: #fff; color: #1f1f1f; border-radius: 16px 0 0 16px; box-shadow: 0 8px 28px rgba(0,0,0,.18) }
+.fx-h { display: flex; align-items: center; gap: 8px; min-height: 64px; padding: 0 12px 0 24px; border-bottom: 1px solid #e3e3e3 }
+.fx-h h2 { flex: 1; font-size: 22px; line-height: 28px; font-weight: 400 }
+.fx-b { flex: 1; overflow-y: auto; overscroll-behavior: contain }
+.fx-s { border-bottom: 1px solid #e3e3e3 }
+.fx-sh { width: 100%; display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 20px 0 24px; border: 0; background: none; color: inherit; font-family: inherit; font-size: 16px; font-weight: 500; line-height: 24px; cursor: pointer; text-align: left }
+.fx-sh .ic { margin-left: auto; transform: rotate(90deg); transition: transform .15s; color: #444746 } .fx-sh[aria-expanded="true"] .ic { transform: rotate(-90deg) }
+.fx-sn { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 7px; border-radius: 10px; background: #c2e7ff; color: #001d35; font-size: 12px }
+.fx-sb { display: flex; flex-direction: column; gap: 16px; padding: 0 24px 20px }
+.fx-c { display: flex; flex-direction: column; gap: 6px; min-width: 0 }
+.fx-l { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 500; color: #444746 } .fx-l small { font-weight: 400; text-align: right }
+.fx-sub { font-size: 12px; color: #5f6368; margin-top: 2px }
+.fx-ops { display: flex; flex-wrap: wrap; gap: 6px }
+.fx-op { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #c4c7c5; background: transparent; color: #1f1f1f; font-family: inherit; font-size: 13px; font-weight: 500; line-height: 18px; cursor: pointer; text-align: left }
+.fx-op[aria-pressed="true"] { background: #c2e7ff; border-color: #c2e7ff; color: #001d35 }
+.fx-op .q { font-weight: 400; color: #5f6368 } .fx-op[aria-pressed="true"] .q { color: #0b3a66 }
+.fx-op[data-zero] { color: #8e918f } .fx-op[data-zero] .q { color: #a8aaa9 }
+.fx-sem { align-self: flex-start }
+.fx-in { height: 40px; width: 100%; min-width: 0; border: 1px solid #747775; border-radius: 8px; padding: 0 12px; background: transparent; color: inherit; font-family: inherit; font-size: 14px }
+.fx-r { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); align-items: center; gap: 8px } .fx-r > span, .fx-r1 > span { font-size: 13px; color: #444746 }
+.fx-r1 { display: flex; align-items: center; gap: 8px } .fx-r1 .fx-in { width: 96px; flex: none }
+.fx-hint { font-size: 12px; color: #5f6368 }
+.fx-f { display: flex; align-items: center; gap: 8px; padding: 12px 16px 12px 24px; border-top: 1px solid #e3e3e3; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) }
+.fx-tot { flex: 1; font-size: 14px; color: #444746 }
+@media (max-width: 699px) {
+  .fx-dr { width: 100vw; border-radius: 0; padding-top: env(safe-area-inset-top, 0px) }
+  .fx-visw { margin-left: 0; flex: 1 1 100% } .fx-vis { flex: 1 } .fx-vis select { flex: 1; max-width: none; min-width: 0 }
+  .fx-h { padding-left: 16px } .fx-sh { padding-left: 16px; padding-right: 12px } .fx-sb { padding: 0 16px 20px } .fx-f { padding-left: 16px }
+}
+:root[data-tema="escuro"] .fx-dr { background: #060c20; color: #e6ecff; box-shadow: 0 0 0 1px rgba(124,140,255,.2), 0 10px 28px rgba(0,0,0,.55) }
+:root[data-tema="escuro"] .fx-scrim { background: rgba(0,0,0,.4) }
+:root[data-tema="escuro"] :is(.fx-h, .fx-s, .fx-f) { border-color: #1a2240 }
+:root[data-tema="escuro"] :is(.fx-btn, .fx-chip, .fx-op, .fx-in, .fx-vis select) { border-color: rgba(124,140,255,.25); color: #e6ecff }
+:root[data-tema="escuro"] :is(.fx-btn, .fx-op)[aria-pressed="true"], :root[data-tema="escuro"] .fx-sn { background: rgba(99,112,255,.10); border-color: rgba(124,140,255,.5); color: #c9d6ff }
+:root[data-tema="escuro"] .fx-n { background: #7c8cff; color: #081028 }
+:root[data-tema="escuro"] :is(.fx-l, .fx-hint, .fx-tot, .fx-sub, .fx-vis, .fx-op .q, .fx-r > span, .fx-r1 > span, .fx-cx, .fx-sh .ic) { color: #8e9ac4 }
+:root[data-tema="escuro"] .fx-op[aria-pressed="true"] .q { color: #c9d6ff }
+:root[data-tema="escuro"] .fx-op[data-zero] { color: #5d688f }
+:root[data-tema="escuro"] .fx-vis select { background: #081028 }
+:root[data-tema="escuro"] .fx-in { background: transparent }

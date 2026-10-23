@@ -312,6 +312,34 @@ revoke execute on function app._notificar(uuid, uuid, text, text, uuid, text, uu
   app.tg_reuniao_lembretes(), app.tg_documento_lembretes(), app.tg_lembrete_valido() from public;
 grant execute on function app.marcar_notificacao_lida(uuid), app.configurar_notificacao(uuid, text, boolean, int[]) to authenticated;
 
+-- ---------------------------------------------------------------------
+-- Visões salvas dos filtros (Terrenos, Mapa e Fases): nome + filtros.
+-- Pessoal (user_id = quem criou; só ele vê e altera) ou da empresa
+-- (user_id nulo; todos veem, só o administrador cria, altera ou apaga).
+-- Os filtros são do front (jsonb); o banco só guarda.
+-- ---------------------------------------------------------------------
+create table app.filtros_salvos (
+  id            uuid primary key default gen_random_uuid(),
+  empresa_id    uuid not null references app.empresas(id),
+  user_id       uuid references auth.users(id) on delete cascade default auth.uid(),
+  nome          text not null check (btrim(nome) <> ''),
+  filtros       jsonb not null default '{}' check (jsonb_typeof(filtros) = 'object'),
+  ordem         int not null default 0,
+  criado_em     timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  unique nulls not distinct (empresa_id, user_id, nome)
+);
+create trigger t_upd before update on app.filtros_salvos for each row execute function app.tg_atualizado_em();
+alter table app.filtros_salvos enable row level security;
+create policy ver on app.filtros_salvos for select to authenticated
+  using (empresa_id in (select app.minhas_empresas()) and (user_id is null or user_id = auth.uid()));
+create policy gravar on app.filtros_salvos for all to authenticated
+  using (empresa_id in (select app.minhas_empresas())
+         and (user_id = auth.uid() or (user_id is null and app.eh_administrador(empresa_id))))
+  with check (empresa_id in (select app.minhas_empresas())
+              and (user_id = auth.uid() or (user_id is null and app.eh_administrador(empresa_id))));
+grant select, insert, update, delete on app.filtros_salvos to authenticated;
+
 -- Sino ao vivo (Realtime do Supabase) e rotina diária às 6h (9h UTC).
 -- Fora do Supabase (testes), a publicação e o pg_cron não existem: pula.
 do $$

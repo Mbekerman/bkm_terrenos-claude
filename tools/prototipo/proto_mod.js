@@ -190,7 +190,7 @@ function camada(k,el){
 function pinIcon(k,sel){const [,c,g,fg]=Array.isArray(k)?k:SIT[k];return L.divIcon({className:'pin'+(sel?' sel':''),html:`<span class="pin-b" style="background:${c}"><b style="color:${fg}">${g}</b></span>`,iconSize:[30,40],iconAnchor:[15,38],popupAnchor:[0,-34],tooltipAnchor:[0,-34]})}
 const poiIcon=()=>L.divIcon({className:'poi',html:'<span class="poi-b"></span>',iconSize:[14,14],iconAnchor:[7,7],tooltipAnchor:[0,-8]});
 function mpVisiveis(){const m=UI.mp,q=m.q.trim().toLowerCase();
-  return ativosBanco().filter(t=>{const k=mpClasse(t);return k!=null&&!m.ocultas.includes(k)}).filter(t=>(!m.zona||t.zona===m.zona)&&(!m.cor||t.corretores.some(x=>x.principal&&x.cid===m.cor))&&(!q||bateBusca(t,q)))}
+  return fxLista('mapa').filter(t=>{const k=mpClasse(t);return k!=null&&!m.ocultas.includes(k)}).filter(t=>!q||bateBusca(t,q))}
 /* lista lateral do mapa: só o número do pino (etapa), o nome e a área; a lupa abre a ficha.
    Clicar no pino ou na poligonal seleciona o terreno aqui (não há balão no mapa). */
 function mpItem(t,cartao){const [nm,c,g,fg]=mpInfo(mpClasse(t)),sel=UI.mpSel===t.id,ad=areaAdotada(t)||(t.poly?areaPoly(t.poly):null);
@@ -227,7 +227,7 @@ function mpSelecionar(id){UI.mpSel=id;mpMarcarPinos();if(UI.fichaSheet&&id&&id!=
   if(it&&getComputedStyle(lado).overflowY==='auto'){const a=lado.getBoundingClientRect(),r=it.getBoundingClientRect();
     if(r.top<a.top||r.bottom>a.bottom)lado.scrollBy({top:r.top-a.top-a.height/2+r.height/2,behavior:'smooth'})}}
 function mpCartao(){const c=$('#mp-cartao');if(!c)return;const t=UI.mpSel&&T(UI.mpSel);c.innerHTML=t&&!UI.mpModo&&mpVisiveis().includes(t)?mpItem(t,true):''}
-function mpLegenda(){const base=ativosBanco(),m=UI.mp,cl=new Map(base.map(t=>[t.id,mpClasse(t)])),volta=m.e?faseN(m.f):'Fases';
+function mpLegenda(){const base=fxLista('mapa'),m=UI.mp,cl=new Map(base.map(t=>[t.id,mpClasse(t)])),volta=m.e?faseN(m.f):'Fases';
   const topo=m.f?`<div class="lg-h"><button type="button" class="iconbtn lg-v" data-a="mp-nivel" data-v="${m.e?esc(m.f):''}" title="Voltar para ${esc(volta)}" aria-label="Voltar para ${esc(volta)}">${ic('back',18)}</button><span><span class="faint">${m.e?esc(faseN(m.f))+' › ':'Fases › '}</span>${esc(m.e?etapaF(m.f,m.e)?.nome||m.e:faseN(m.f))}</span></div>`:'';
   return topo+mpItens().map(x=>{const n=base.filter(t=>cl.get(t.id)===x.k).length,on=!m.ocultas.includes(x.k);
     return `<div class="lg-r"><button type="button" class="lg-i" data-a="mp-sit" data-v="${x.k}" aria-pressed="${on}"><span class="pin-mini" style="background:${x.cor};color:${x.fg}">${x.g}</span>${esc(x.nome)}<span class="n">${n}</span></button>${x.desce?`<button type="button" class="iconbtn lg-d" data-a="mp-desce" data-v="${x.k}" title="Ver ${m.f?'subetapas':'etapas'} de ${esc(x.nome)}" aria-label="Ver ${m.f?'subetapas':'etapas'} de ${esc(x.nome)}">${ic('chev',16)}</button>`:''}</div>`}).join('')
@@ -240,9 +240,8 @@ function pgMapa(){
   <aside class="mapa-lado" aria-label="Terrenos no mapa">
     <div class="page-h compacto"><div><h1><span class="marca"></span>Mapa</h1></div></div>
     <label class="search sm" for="mp-q">${bi('busca',24)}<input id="mp-q" type="search" placeholder="Buscar por nome, bairro, SQL..." value="${esc(UI.mp.q)}" autocomplete="off"></label>
-    <div class="mp-filtros"><div class="field"><label for="mp-cor">Corretor</label><select id="mp-cor" data-ch="mp-cor"><option value="">Todos</option>${opt(Object.fromEntries(S.corretores.map(c=>[c.id,c.nome])),UI.mp.cor)}</select></div>
-      <div class="field"><label for="mp-zona">Região</label><select id="mp-zona" data-ch="mp-zona"><option value="">Todas</option>${opt(OPT.zona,UI.mp.zona)}</select></div></div>
-    ${UI.mp.cor||UI.mp.zona||UI.mp.q||UI.mp.ocultas.length?'<button class="linkbtn" data-a="mp-limpar" style="align-self:flex-start">Limpar filtros</button>':''}
+    ${fxBarra('mapa')}
+    ${UI.mp.q||UI.mp.ocultas.length?'<button class="linkbtn" data-a="mp-limpar" style="align-self:flex-start">Limpar busca e legenda</button>':''}
     <div id="mp-lista">${mpLista()}</div>
   </aside>
   <section class="mapa-area" aria-label="Mapa dos terrenos">

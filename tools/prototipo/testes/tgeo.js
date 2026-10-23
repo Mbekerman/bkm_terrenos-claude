@@ -28,7 +28,7 @@ await p.goto('file:///x/a.html');await p.evaluate(()=>localStorage.clear());awai
 const toast=()=>p.$eval('#toast',x=>x.textContent);
 const KEY='bkm-terrenos-prototipo-v9',ter=()=>p.evaluate(k=>JSON.parse(localStorage.getItem(k)).terrenos.find(x=>x.nome==='Paulista 1500'),KEY);
 const abrir=async()=>{await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=terrenos]').click());await p.waitForTimeout(150);
-  await p.evaluate(()=>document.querySelector('[data-a=fT][data-v=todos]').click());await p.waitForTimeout(150);
+  await p.waitForTimeout(150);
   await p.evaluate(()=>[...document.querySelectorAll('[data-a=abrir]')].find(x=>x.textContent.includes('Paulista 1500')).click());await p.waitForTimeout(300);
   await p.evaluate(()=>{if(!document.getElementById('geo-0'))document.querySelector('[data-a=bloco][data-t=cadastro]').click()});await p.waitForTimeout(300)};
 const mudar=async fn=>{await p.evaluate(([k,f])=>{const s=JSON.parse(localStorage.getItem(k));const t=s.terrenos.find(x=>x.nome==='Paulista 1500');(new Function('t',f))(t);localStorage.setItem(k,JSON.stringify(s))},[KEY,fn]);await p.reload();await p.waitForTimeout(500);await abrir()};

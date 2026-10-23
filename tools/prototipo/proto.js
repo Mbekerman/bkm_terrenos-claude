@@ -303,7 +303,7 @@ function renderPerfil(){const el=document.getElementById('perfil');if(!el)return
   el.innerHTML=`<button class="perfil-btn" data-a="perfil-menu" aria-haspopup="menu" aria-expanded="${perfilMenu}" aria-label="${u}, ${UI.role}" title="${u} · ${UI.role}">${u[0]}</button>`+
    (perfilMenu?`<div class="tema-menu" role="menu"><div class="perfil-eu"><b>${u}</b><span>${UI.role}</span></div><div class="tl">Entrar como (protótipo)</div>${['Diretor','Gestor','Analista','Leitura'].map(r=>`<button role="menuitemradio" aria-checked="${UI.role===r}" data-a="role" data-v="${r}"><span class="perfil-av">${ROLE_USER[r][0]}</span>${ROLE_USER[r]} · ${r}</button>`).join('')}</div>`:'')}
 
-const UI={route:'inicio',id:null,tab:'cadastro',from:'terrenos',q:'',fT:'ativos',role:'Diretor',edit:null,modal:null,upload:null,propForm:false};
+const UI={route:'inicio',id:null,tab:'cadastro',from:'terrenos',q:'',role:'Diretor',edit:null,modal:null,upload:null,propForm:false};
 const me=()=>ROLE_USER[UI.role];
 const T=id=>S.terrenos.find(t=>t.id===id);
 const corretor=id=>S.corretores.find(c=>c.id===id);
@@ -661,15 +661,14 @@ function pgFicha(){
   <div class="blocos">${blocos}</div>`;
 }
 function bateBusca(t,q){if(!q)return true;q=q.toLowerCase();const hay=[t.codigo,t.nome,t.logradouro,t.numero,t.bairro,OPT.zona[t.zona],eixo(t.eixo),t.resp,...t.mats.map(m=>m.num+' '+digits(m.num)),...t.insc.map(i=>i.sql+' '+digits(i.sql)),...t.ofertas.map(o=>corretor(o.cid)?.nome),...t.pessoas.map(p=>p.nome)].join(' ').toLowerCase();return q.split(/\s+/).every(w=>hay.includes(w))}
-const FILT={ativos:['Em negociação',t=>t.neg?.status==='ativo'],sem:['Sem negociação',t=>!t.neg&&t.situacao==='ativo'],standby:['Stand By',t=>t.neg?.status==='stand_by'],encerrados:['Comprados, perdidos e descartados',t=>['comprado','perdido','descartado'].includes(t.neg?.status)],todos:['Todos',()=>true]};
+/* filtros: gaveta e chips em proto_filtros.js (fxLista, fxBarra) */
 function linhas(){
-  const l=S.terrenos.filter(FILT[UI.fT][1]).filter(t=>!UI.fFase||faseAtual(t)?.k===UI.fFase).filter(t=>bateBusca(t,UI.q)).sort((a,b)=>(b.neg?.temp||0)-(a.neg?.temp||0)||b.codigo.localeCompare(a.codigo));
+  const l=fxLista('terrenos').filter(t=>bateBusca(t,UI.q)).sort((a,b)=>(b.neg?.temp||0)-(a.neg?.temp||0)||b.codigo.localeCompare(a.codigo));
   return tabela('terrenos',l,COLS_TERRENOS,{attr:attrAbrir('terrenos'),vazio:`Nenhum terreno${UI.q?` para “${esc(UI.q)}”`:''}.<br><button class="btn sm" style="margin-top:12px" data-a="novo">${ic('add',16)}Novo terreno</button>`});
 }
 function pgTerrenos(){
-  return `<div class="page-h"><div><h1><span class="marca"></span>Terrenos</h1><div class="sub">Ordenados por temperatura da negociação.</div></div><button class="btn primary" data-a="novo">${ic('add',18)}Novo terreno</button></div>
-  <div class="split"><div class="fchips">${Object.entries(FILT).map(([k,[l,f]])=>`<button class="fchip" data-a="fT" data-v="${k}" aria-pressed="${UI.fT===k}">${UI.fT===k?ic('check',16):''}${l} <span class="n">${S.terrenos.filter(f).length}</span></button>`).join('')}</div>
-  <label class="fsel"><span>Fase</span><select data-ch="fFase" aria-label="Filtrar por fase"><option value="">Todas</option>${fasesL().filter(f=>f.ativo).map(f=>`<option value="${f.k}" ${UI.fFase===f.k?'selected':''}>${esc(f.nome)} (${S.terrenos.filter(t=>faseAtual(t)?.k===f.k).length})</option>`).join('')}</select></label></div>
+  return `<div class="page-h"><div><h1><span class="marca"></span>Terrenos</h1><div class="sub">Ordenados por temperatura da negociação. ${fxLista('terrenos').length} de ${S.terrenos.length}.</div></div><button class="btn primary" data-a="novo">${ic('add',18)}Novo terreno</button></div>
+  ${fxBarra('terrenos')}
   <section class="sec lista"><div id="rows">${linhas()}</div></section>`;
 }
 function pgInicio(){
@@ -796,7 +795,6 @@ document.addEventListener('click',e=>{
       /* recolhida pelo fim: traz o título de volta à tela, para não perder o lugar */
       if(!BLA[k]){const h=document.getElementById('bl-'+k);if(h&&(fim||h.getBoundingClientRect().top<72))h.scrollIntoView({block:'start'});document.querySelector(`#bl-${k} .bl-h`)?.focus({preventScroll:true})}break}
     case 'ir':UI.tab=a.dataset.t;blocoAbre(a.dataset.t);UI.edit=a.dataset.s&&SECOES[a.dataset.s]||a.dataset.s==='areas'?a.dataset.s:null;render();rolarBloco(a.dataset.t,a.dataset.s);break;
-    case 'fT':UI.fT=a.dataset.v;render();break;
     case 'role':UI.role=a.dataset.v;perfilMenu=false;render();toast(UI.role==='Leitura'?'Entrou como Lúcia Mendes (Leitura): consulta tudo, não altera nada.':`Entrou como ${ROLE_USER[UI.role]} (${UI.role}).`);break;
     case 'reset':S=seed();prepararDados();save();go('inicio');toast('Dados de exemplo restaurados.');break;
     case 'novo':UI.modal='novo';renderModal();break;
@@ -881,7 +879,6 @@ document.addEventListener('change',e=>{const el=e.target;
   if(partesChange(el)||fasesChange(el)||funilChange(el))return;
   if(el.dataset.ch==='mp-cor'){UI.mp.cor=el.value;mpRefresh();return}
   if(el.dataset.ch==='mp-zona'){UI.mp.zona=el.value;mpRefresh();return}
-  if(el.dataset.ch==='fFase'){UI.fFase=el.value;if(el.value)UI.fT='todos';render();return}
   if(el.dataset.ch==='dash-sel'){const s=UI.dash.sel;UI.dash.sel=el.checked?Object.keys(DIMS).filter(k=>s.includes(k)||k===el.value):s.filter(k=>k!==el.value);render();return}
   if(el.dataset.ch==='tk-f'){UI.tk[el.dataset.k]=el.type==='checkbox'?el.checked:el.value;render();return}
   if(el.id==='kmz-in'){const f=el.files?.[0];if(!f||!UI.kmzNovo)return;UI.kmzNovo=false;lerKmz(f).then(nvKmzLido).catch(err=>toast(err.message,true));return}
@@ -895,7 +892,7 @@ document.addEventListener('change',e=>{const el=e.target;
 document.addEventListener('input',e=>{const el=e.target;
   if(el.id==='mp-q'){UI.mp.q=el.value;mpRefresh();return}
   if(el.id==='tk-q'){UI.tk.q=el.value;const p=el.selectionStart;render();const n=$('#tk-q');if(n){n.focus();n.setSelectionRange(p,p)}return}
-  if(el.id==='q-top'){UI.q=el.value;if(UI.route!=='terrenos'){UI.fT='todos';go('terrenos');$('#q-top').focus()}else{const r=$('#rows');if(r)r.innerHTML=linhas()}}
+  if(el.id==='q-top'){UI.q=el.value;if(UI.route!=='terrenos'){go('terrenos');$('#q-top').focus()}else{const r=$('#rows');if(r)r.innerHTML=linhas()}}
   if(el.dataset.masc){const m=mascarar(el.value,el.dataset.masc);if(m!==el.value)el.value=m}
   if(el.form?.dataset.form==='novo')dedupe();
   if(el.id==='pp-v'){const t=T(UI.id),v=lerNum(el.value),w=$('#pp-warn');w.innerHTML=t.neg.viab&&v>t.neg.viab.pmax?`<div class="banner warn">${ic('warn')}<div>${brl(v)} fica ${mi(v-t.neg.viab.pmax)} acima do preço máximo (${mi(t.neg.viab.pmax)}).</div></div>`:''}

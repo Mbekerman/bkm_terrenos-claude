@@ -896,11 +896,16 @@ select pg_temp.ok((select valor_pedido = 3500000 from app.v_partes where id = :'
 select pg_temp.ok(not exists (select 1 from app.fases_do_terreno(:'tv') where processo_id in (:'na', :'nb', :'nc')), 'as partes não aparecem como fases');
 select pg_temp.falha(format('select app.mover_subetapa(%L, %L)', :'nv', 'preparando_proposta'), 'negociação do terreno dividida não se move à mão');
 select pg_temp.falha(format('select app.mover_para_etapa(%L, %L, false, %L)', :'na', 'estudos', 'voltar'), 'parte não volta para antes da Negociação');
-select app.definir_temperatura(:'na', 5);
-select app.definir_temperatura(:'nb', 2);
-select pg_temp.ok((select temperatura from app.v_partes where id = :'pa') = 5 and (select temperatura from app.v_partes where id = :'pb') = 2, 'temperatura por parte');
+select pg_temp.falha(format('select app.definir_temperatura(%L, 5)', :'na'), 'a temperatura é uma só: a parte não tem a sua');
+select app.definir_temperatura(:'nv', 4);
+select pg_temp.ok((select temperatura from app.v_terrenos where id = :'tv') = 4, 'temperatura da negociação do terreno dividido');
 select app.registrar_proposta(:'na', 'bkm', 3200000, 'dinheiro') \gset
 select pg_temp.ok((select ultima_proposta_valor from app.v_partes where id = :'pa') = 3200000 and (select ultima_proposta_valor is null from app.v_partes where id = :'pb'), 'propostas por parte');
+select app.registrar_proposta(:'nb', 'bkm', 2000000, 'dinheiro', p_status => 'rascunho') \gset
+select pg_temp.ok((select proposta_ativa_valor from app.v_terrenos where id = :'tv') = 3200000,
+  'filtro por proposta: terreno dividido soma a última proposta ativa de cada parte (rascunho não conta)');
+select pg_temp.ok((select uf = 'SP' and tem_partes and corretor_ids @> array[:'c1', :'c2']::uuid[] from app.v_terrenos where id = :'tv'),
+  'lista de terrenos traz a UF, se tem partes e todos os corretores (inclusive os das partes)');
 select app.mover_subetapa(:'na', 'proposta_enviada') \gset
 select pg_temp.ok((select subetapa_atual from app.processos where id = :'nv') = 'aguardando_reuniao', 'o terreno fica na subetapa da parte mais atrasada');
 select app.mover_etapa(:'na') \gset
@@ -962,5 +967,28 @@ select pg_temp.ok((select count(*) from app.processos where principal_id = :'nw'
 select app.encerrar_processo(:'nw', 'descartado', 'financeira') \gset
 select pg_temp.ok((select count(*) from app.processos where principal_id = :'nw' and status = 'descartado' and motivo_encerramento = 'financeira') = 2,
   'descartar o terreno descarta as partes, com o mesmo motivo');
+
+-- ---------------------------------------------------------------------
+\echo '# visões salvas dos filtros'
+select pg_temp.como(:'analista');
+insert into app.filtros_salvos (empresa_id, nome, filtros) values (:'emp', 'Quentes em SP', '{"temperatura":[4,5],"cidade":["São Paulo"]}') returning id as fs1 \gset
+select pg_temp.falha(format($$insert into app.filtros_salvos (empresa_id, nome) values (%L, 'Quentes em SP')$$, :'emp'), 'nome repetido na mesma pessoa');
+select pg_temp.falha(format($$insert into app.filtros_salvos (empresa_id, user_id, nome) values (%L, null, 'Da empresa')$$, :'emp'), 'só o administrador cria visão da empresa');
+select pg_temp.falha(format($$insert into app.filtros_salvos (empresa_id, user_id, nome) values (%L, %L, 'De outro')$$, :'emp', :'gestor'), 'ninguém cria visão no nome de outro');
+select pg_temp.como(:'leitor');
+insert into app.filtros_salvos (empresa_id, nome) values (:'emp', 'Minha consulta');
+select pg_temp.ok((select count(*) from app.filtros_salvos) = 1, 'Leitura salva as suas visões e não vê as dos outros');
+select pg_temp.como(:'diretor');
+insert into app.filtros_salvos (empresa_id, user_id, nome, filtros) values (:'emp', null, 'Prazo estourado', '{"atrasada":true}') returning id as fs2 \gset
+select pg_temp.como(:'analista');
+select pg_temp.ok((select count(*) from app.filtros_salvos) = 2, 'cada um vê as suas e as da empresa');
+update app.filtros_salvos set nome = 'Mudada' where id = :'fs2';
+select pg_temp.ok((select nome from app.filtros_salvos where id = :'fs2') = 'Prazo estourado', 'visão da empresa não muda por quem não é administrador');
+delete from app.filtros_salvos where id = :'fs2';
+select pg_temp.ok(exists (select 1 from app.filtros_salvos where id = :'fs2'), 'nem é apagada');
+update app.filtros_salvos set filtros = '{"temperatura":[5]}' where id = :'fs1';
+select pg_temp.ok((select filtros->'temperatura' = '[5]' from app.filtros_salvos where id = :'fs1'), 'a própria visão muda');
+select pg_temp.como(:'intruso');
+select pg_temp.ok((select count(*) from app.filtros_salvos) = 0, 'outra empresa não vê as visões');
 
 \echo 'TODOS OS TESTES PASSARAM'

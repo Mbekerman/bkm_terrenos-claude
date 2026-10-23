@@ -33,15 +33,14 @@ ok((await txt(p,'#pt-pa1')).includes('R$ 5,00 mi')&&(await txt(p,'#pt-pa2')).inc
 ok((await txt(p,'.sec-adv')).includes('Anda pelas partes'),'quadro de avanço do terreno: anda pelas partes');
 ok((await ter(p,NOME)).neg.etapa==='negociacao','terreno na etapa da parte mais atrasada (Negociação)');
 
-// Analista: subetapa e temperatura da parte; terreno não se move à mão
+// Analista: subetapa da parte (temperatura só no terreno); terreno não se move à mão
 await papel(p,'Analista');
 await p.selectOption('#pt-pa3 select[data-ch=pt-sub]','preparando_proposta');await p.waitForTimeout(200);
 let t=await ter(p,NOME);
 ok(parte(t,'Oficina do Zé').neg.sub==='preparando_proposta','muda a subetapa da parte');
 ok(t.neg.sub==='preparando_proposta','terreno acompanha a parte mais atrasada (subetapa)');
 ok(t.hist.some(h=>h.txt.startsWith('Parte Oficina do Zé · Subetapa')),'log com o nome da parte');
-await clica(p,'#pt-pa3 [data-a=pt-temp][data-v="2"]');
-ok(parte(await ter(p,NOME),'Oficina do Zé').neg.temp===2,'temperatura por parte');
+ok(!(await p.evaluate(()=>!!document.querySelector('#pt-pa3 [data-a=pt-temp]'))),'temperatura é uma só, a da negociação do terreno: a parte não tem a sua');
 await clica(p,'#pt-pa3 [data-a=pt-prop]');await p.fill('#ptp-v','1.500.000');await enviar(p,'pt-prop');
 ok(parte(await ter(p,NOME),'Oficina do Zé').propostas.length===1,'proposta registrada na parte');
 

@@ -200,7 +200,7 @@ function pgNeg(){if(!UI.negFase||!faseCfg(UI.negFase))return pgFasesBoard();if(U
   else{const subs=subsDe(e);cols=subs.map(s=>({k:'sub:'+s.k,l:s.nome,f:t=>t.neg?.status==='ativo'&&t.neg.etapa===e&&t.neg.sub===s.k,prazo:s.prazo}));
     const orf=ativos.filter(t=>t.neg.etapa===e&&!subs.some(s=>s.k===t.neg.sub));if(orf.length)cols.unshift({k:'sub:',l:'Sem subetapa ativa',f:t=>orf.includes(t),cls:'enc'})}
   return `${negTopo(e?SN(e):faseN(faseEnt()),e?`Subetapas de ${esc(SN(e))}, em ${esc(faseN(faseEnt()))}. Arraste o card para mudar a subetapa.`:'Arraste os cards entre as colunas para mudar a etapa. Clique no nome da etapa para ver as subetapas. Comprados, perdidos e descartados saem do quadro.')}
-  <div class="board ${e?'board-sub':''}" id="board">${cols.map(c=>{const ts=S.terrenos.filter(c.f);
+  <div class="board ${e?'board-sub':''}" id="board">${cols.map(c=>{const ts=fxLista('kanban').filter(c.f);
   return `<section class="col ${c.cls||''}" data-col="${c.k}" aria-label="${esc(c.l)}"><div class="col-h">${c.abre?colDesce('neg-etapa',c.abre,c.l,'Ver subetapas de '+c.l):`<span>${esc(c.l)}</span>`}<span class="n">${ts.length}</span></div>${c.sla||c.prazo?`<div class="col-s faint">${c.sla?'SLA '+c.sla+' d':'Prazo '+c.prazo+' d'}</div>`:''}${ts.map(t=>kcardNeg(t,e?'sub':'')).join('')||'<div class="col-empty">Nenhuma</div>'}</section>`}).join('')}</div>`}
 function soltar(id,col){if(col.startsWith('fe:')){soltarProc(id,col.slice(3));return}const t=T(id);if(!t||!t.neg||UI.role==='Leitura')return;const n=t.neg;
   if(col==='stand_by'){if(n.status==='ativo'){UI.alvo=id;UI.modal='suspender';renderModal()}return}

@@ -43,11 +43,11 @@ ok((await txt(p,'.col-h')).includes('Em Triagem'),'Novos Negócios desce para as
 await clica(p,'.col-ab[data-v=negociacao]');ok((await txt(p,'.drill-t')).includes('Novos Negócios'),'subetapas de Negociação com a trilha');
 await clica(p,'.drill-t [data-a=neg-nivel][data-v=""]');ok(await p.evaluate(()=>!!document.querySelector('.board-fases')),'trilha volta direto às fases');
 
-// tabela: filtro por fase
-await nav(p,'terrenos');await p.selectOption('select[data-ch=fFase]','obras');await p.waitForTimeout(200);await p.screenshot({path:O+'3_tabela_obras.png'});
+// tabela: filtro por fase (na gaveta de filtros)
+await nav(p,'terrenos');await clica(p,'[data-a=fx-abrir]');await clica(p,'#fx-dr [data-a=fx-op][data-k=fase][data-v=obras]');await clica(p,'#fx-dr .fx-f .btn.primary');await p.waitForTimeout(200);await p.screenshot({path:O+'3_tabela_obras.png'});
 ok((await txt(p,'#rows tbody tr')).includes('Raimundo')&&!(await txt(p,'#rows tbody tr')).includes('Cupecê'),'tabela filtrada pela fase Obras');
 ok((await txt(p,'#rows .c-etapa')).includes('Obras'),'coluna mostra a fase e a etapa');
-await p.selectOption('select[data-ch=fFase]','');await p.waitForTimeout(150);
+await clica(p,'#fx-barra [data-a=fx-limpar]');
 
 // mapa em três níveis pela legenda
 await nav(p,'mapa');await p.waitForTimeout(400);

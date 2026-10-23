@@ -37,7 +37,8 @@ select a.terreno_id, a.empresa_id, a.id as analise_id, a.data_verificacao, a.fon
        bool_or(az.ca_status = 'nao_informado') as ca_incompleto,
        min(az.gabarito_maximo_m) as menor_gabarito_m,
        bool_or(az.gabarito_m_status = 'sem_limite_identificado') as algum_gabarito_sem_limite,
-       count(*) as qtd_zonas
+       count(*) as qtd_zonas,
+       array_agg(distinct z.sigla order by z.sigla) as zonas_siglas  -- filtro por zoneamento
 from app.analises_urbanisticas a
 join app.analise_zoneamentos az on az.analise_id = a.id
 join app.zoneamentos z on z.id = az.zoneamento_id
@@ -125,7 +126,24 @@ select t.id, t.empresa_id, t.codigo, t.nome, t.situacao_cadastral, t.prioridade,
        (select count(*) from app.diligencias g where g.terreno_id = t.id and g.situacao = 'impeditiva') as diligencias_impeditivas,
        (select count(*) from app.reunioes m where m.terreno_id = t.id and m.status = 'realizada') as reunioes_realizadas,
        (select max(m.inicio) from app.reunioes m where m.terreno_id = t.id and m.status = 'realizada') as ultima_reuniao_em,
-       (select min(m.inicio) from app.reunioes m where m.terreno_id = t.id and m.status = 'agendada' and m.inicio >= now()) as proxima_reuniao_em
+       (select min(m.inicio) from app.reunioes m where m.terreno_id = t.id and m.status = 'agendada' and m.inicio >= now()) as proxima_reuniao_em,
+       -- para os filtros (Terrenos, Mapa e Fases)
+       mu.uf, t.municipio_id, vb.vgv, vb.margem_pct,
+       -- todos os corretores do terreno; ligar um corretor a uma parte também o põe aqui
+       (select array_agg(tc.corretor_id order by tc.principal desc, tc.corretor_id) from app.terreno_corretores tc where tc.terreno_id = t.id) as corretor_ids,
+       -- última proposta ativa (apresentada, em análise ou aceita); dividido em partes, a soma das partes em aberto
+       coalesce(pa.valor_total,
+         (select sum(y.valor_total) from app.processos c
+            cross join lateral (select x.valor_total from app.propostas x where x.processo_id = c.id
+                                and x.status in ('apresentada','em_analise','aceita') order by x.versao desc limit 1) y
+           where c.principal_id = pn.id and c.status in ('ativo','stand_by','concluido'))) as proposta_ativa_valor,
+       exists (select 1 from app.terreno_partes x where x.terreno_id = t.id and x.ativa) as tem_partes,
+       u.zonas_siglas,
+       -- parado há quanto tempo: última atividade, reunião realizada ou passagem do funil
+       greatest((select max(a.ocorreu_em) from app.atividades a where a.terreno_id = t.id),
+                (select max(m.inicio) from app.reunioes m where m.terreno_id = t.id and m.status = 'realizada'),
+                (select max(x.em) from app.processo_transicoes x join app.processos c on c.id = x.processo_id where c.terreno_id = t.id),
+                t.criado_em) as ultima_movimentacao_em
 from app.terrenos t
 join app.municipios mu on mu.id = t.municipio_id
 left join app.eixos_comerciais ec on ec.id = t.eixo_comercial_id
@@ -159,6 +177,8 @@ left join lateral (
   where tc.terreno_id = t.id and tc.principal limit 1
 ) cp on true
 left join lateral (select * from app.propostas x where x.processo_id = pn.id order by versao desc limit 1) lp on true
+left join lateral (select x.valor_total from app.propostas x where x.processo_id = pn.id
+                   and x.status in ('apresentada','em_analise','aceita') order by versao desc limit 1) pa on true
 left join app.viabilidades vb on vb.id = pn.viabilidade_id
 left join app.v_urbanismo_vigente u on u.terreno_id = t.id
 left join lateral (
@@ -588,6 +608,9 @@ begin
   if not found then raise exception 'Negociação não encontrada' using errcode = 'P0002'; end if;
   perform app.exigir_editor(p.empresa_id);
   if p_temperatura is not null and p_temperatura not between 1 and 5 then raise exception 'Temperatura vai de 1 a 5' using errcode = '22023'; end if;
+  if p.parte_id is not null then
+    raise exception 'A temperatura é uma só, da negociação do terreno' using errcode = '22023';
+  end if;
   select temperatura into antes from app.negociacoes where processo_id = p.id;
   if not found then raise exception 'Temperatura só na negociação (fase de entrada)' using errcode = '22023'; end if;
   if antes is not distinct from p_temperatura then return; end if;
@@ -1213,8 +1236,8 @@ end $$;
 -- Com duas ou mais partes ativas, quando a negociação do terreno (fase de
 -- entrada) chega à etapa da divisão (fases_modelo.etapa_partes), cada parte
 -- ganha a sua negociação: um processo da mesma fase com parte_id e
--- principal_id, com oferta, propostas, temperatura, documentos, subetapa,
--- status e histórico próprios. A partir daí a negociação do terreno não se
+-- principal_id, com oferta, propostas, documentos, subetapa, status e
+-- histórico próprios (a temperatura é uma só, a da negociação do terreno). A partir daí a negociação do terreno não se
 -- move à mão: fica na etapa e na subetapa da parte mais atrasada
 -- (_sincronizar_principal) e só fica Comprado com todas as partes ativas
 -- compradas. Parte perdida sai do terreno (remover_parte) ou o terreno se
@@ -1299,8 +1322,9 @@ begin
     insert into app.processos (empresa_id, codigo, terreno_id, fase, etapa_atual, subetapa_atual, responsavel_id, parte_id, principal_id)
     values (p.empresa_id, p.codigo || '-' || v_seq, p.terreno_id, p.fase, f.etapa_partes, v_sub, p.responsavel_id, tp.id, p.id)
     returning id into v_id;
-    insert into app.negociacoes (processo_id, empresa_id, oferta_referencia_id, temperatura, temperatura_em)
-    values (v_id, p.empresa_id, coalesce(v_oferta, n.oferta_referencia_id), n.temperatura, n.temperatura_em);
+    -- sem temperatura: ela é uma só, a da negociação do terreno
+    insert into app.negociacoes (processo_id, empresa_id, oferta_referencia_id)
+    values (v_id, p.empresa_id, coalesce(v_oferta, n.oferta_referencia_id));
     insert into app.processo_transicoes (empresa_id, processo_id, evento, para_etapa, para_subetapa, comentario)
     values (p.empresa_id, v_id, 'abertura', f.etapa_partes, v_sub, 'Negociação da parte ' || tp.nome);
   end loop;
@@ -1429,7 +1453,6 @@ select tp.id, tp.empresa_id, tp.terreno_id, tp.nome, tp.essencial, tp.area_m2, t
        (current_date - c.subetapa_desde::date) as dias_na_subetapa,
        coalesce(c.status = 'ativo' and now() - c.subetapa_desde > make_interval(days => s.prazo_dias), false) as subetapa_atrasada,
        c.motivo_encerramento, mo.nome as motivo_encerramento_nome, c.retomar_em, c.responsavel_id,
-       n.temperatura,
        -- preço pedido da parte: o informado na oferta, ou o da oferta inteira quando ela cobre só esta parte
        case when op.parte_id is not null then
          coalesce(op.valor_pedido, case when (select count(*) from app.oferta_partes y where y.oferta_id = o.id) = 1 then o.valor_pedido end) end as valor_pedido,
