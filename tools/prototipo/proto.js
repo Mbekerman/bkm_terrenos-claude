@@ -714,11 +714,6 @@ function renderModal(){
   <div class="field"><span class="lbl-f">Local</span><span class="num muted" style="line-height:44px">${num(UI.novoConc.lat,5)}, ${num(UI.novoConc.lng,5)}</span></div>
   <div class="field full"><label for="cc-o">Observação</label><input id="cc-o" name="obs" placeholder="Produto, preço, fase da obra..."></div></div></form>
   <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-conc">Salvar</button></div>`;
-  if(M==='kmz'){const its=UI.kmzItens||[],ter=ativosBanco();h=`<div class="dh"><div><h2>Importar ${its.length} ${its.length===1?'item':'itens'} do arquivo</h2><div class="muted" style="margin-top:4px">Escolha o que fazer com cada ponto ou polígono. Terreno novo só sai de polígono.</div></div>${fechar}</div>
-  <form data-form="kmz" id="f-kmz"><div class="kmz-l">${its.map((it,i)=>{const pol=it.tipo==='poligono',sob=pol?sobreposicoes(it.pts):[],lig=ter.find(t=>t.nome.toLowerCase()===it.nome.toLowerCase()||it.nome.includes(t.codigo))||sob[0]?.t;
-    return `<div class="kmz-i"><div><div class="t1">${esc(it.nome)}</div><div class="t2">${pol?`Polígono · ${it.pts.length} vértices · ${m2(Math.round(areaPoly(it.pts)))}`:'Ponto'}</div>${sob.length?`<div class="t2" style="color:var(--m-warn-tx,#7a5900)">Ocupa parte de ${sob.map(x=>x.t.codigo).join(', ')}</div>`:''}</div>
-    <select name="i${i}" aria-label="Destino de ${esc(it.nome)}">${pol?`<option value="novo" ${lig?'':'selected'}>${sob.length?'Criar terreno novo mesmo assim':'Criar terreno novo'}</option>`:''}${ter.map(t=>`<option value="${t.id}" ${lig===t?'selected':''}>${it.tipo==='poligono'?'Poligonal de':'Localização de'} ${esc(t.codigo)} · ${esc(t.nome)}</option>`).join('')}<option value="">Ignorar</option></select></div>`}).join('')}</div></form>
-  <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-kmz">Importar</button></div>`}
   if(M==='grafico'){const k=UI.grafico;h=`<div class="dh g-exp"><h2>${DIMS[k].l}</h2>${fechar}</div>${grafico(k,true)}<h3 class="lbl-up" style="margin-top:var(--e6)">Dados do gráfico</h3>${tabelaGrafico(k)}`}
   if(M==='tarefa'){const sel=UI.tkSel,t=sel.tid?T(sel.tid):null,k=t?t.tarefas.find(x=>x.id===sel.kid):null,ro=UI.role==='Leitura';
     const o=(obj,v)=>Object.entries(obj).map(([x,l])=>`<option value="${x}" ${v===x?'selected':''}>${esc(l)}</option>`).join('');
@@ -823,7 +818,6 @@ document.addEventListener('click',e=>{
     case 'mp-poi':UI.mpPoi=UI.mpPoi===false;mostrarPois(UI.mpPoi);a.setAttribute('aria-pressed',UI.mpPoi);a.classList.toggle('on',UI.mpPoi);break;
     case 'mp-conc':UI.mpConc=UI.mpConc===false;mostrarConc(UI.mpConc);a.setAttribute('aria-pressed',UI.mpConc);break;
     case 'ctx-terreno':case 'ctx-poi':case 'ctx-conc':ctxAcao(a.dataset.a);break;
-    case 'mp-kmz':UI.kmzAlvo=a.dataset.id||null;$('#kmz-in').value='';$('#kmz-in').click();break;
     case 'mp-desenhar':{const x=T(a.dataset.id);if(x&&x.poly&&x.poly.length>=3){editarPoligonal(x.id);break}
       UI.mpModo='desenhar';UI.mpAlvo=a.dataset.id;UI.desEditando=false;UI.desenho=[];UI.desHist=[];UI.vSel=null;UI.vMenu=false;fecharPopup();mpRefresh();break}
     case 'mp-marcar':go('mapa',{mpModo:'marcar',mpAlvo:a.dataset.id,mpView:null});break;
@@ -854,8 +848,7 @@ document.addEventListener('change',e=>{const el=e.target;
   if(el.dataset.ch==='mp-zona'){UI.mp.zona=el.value;mpRefresh();return}
   if(el.dataset.ch==='dash-sel'){const s=UI.dash.sel;UI.dash.sel=el.checked?Object.keys(DIMS).filter(k=>s.includes(k)||k===el.value):s.filter(k=>k!==el.value);render();return}
   if(el.dataset.ch==='tk-f'){UI.tk[el.dataset.k]=el.type==='checkbox'?el.checked:el.value;render();return}
-  if(el.id==='kmz-in'){const f=el.files?.[0];if(!f)return;lerKmz(f).then(its=>{if(UI.kmzNovo){UI.kmzNovo=false;nvKmzLido(its)}else if(UI.kmzAlvo){const t=T(UI.kmzAlvo),it=its.find(x=>x.tipo==='poligono')||its[0];aplicarKmz(t,it);log(t,it.tipo==='poligono'?`Poligonal importada (${m2(areaPoly(it.pts))})`:'Localização importada de KMZ');UI.kmzAlvo=null;save();mpRefresh();if(t.lat!=null)focar(t);toast(it.tipo==='poligono'?`Poligonal importada: ${m2(areaPoly(it.pts))}.`:'Localização importada.')}
-    else{UI.kmzItens=its;UI.modal='kmz';renderModal()}}).catch(err=>toast(err.message,true));return}
+  if(el.id==='kmz-in'){const f=el.files?.[0];if(!f||!UI.kmzNovo)return;UI.kmzNovo=false;lerKmz(f).then(nvKmzLido).catch(err=>toast(err.message,true));return}
   const t=UI.route==='terreno'?T(UI.id):null;if(!t)return;
   if(el.dataset.ch==='tar-st'){const k=t.tarefas.find(x=>x.id===el.dataset.k);k.status=el.value;log(t,`Tarefa "${k.titulo}": ${OPT.statusTar[el.value]}`);save();render()}
   if(el.dataset.ch==='dil-sit'){const d=t.dilig.find(x=>x.id===el.dataset.k);d.sit=el.value;log(t,`Diligência "${d.titulo}": ${OPT.sitDil[el.value]}`);save();render()}
@@ -899,11 +892,6 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
     case 'tarefa':t.tarefas.push({id:uid(),titulo:F.titulo,desc:F.desc,resp:F.resp,prazo:F.prazo,status:'pendente',prio:F.prio,resultado:'',marcados:[]});notifTarefa(t,t.tarefas[t.tarefas.length-1],null);log(t,`Tarefa criada: ${F.titulo}`);save();render();toast('Tarefa adicionada.');break;
     case 'poi':{S.pontos=S.pontos||[];S.pontos.push({id:uid(),nome:F.nome.trim(),cat:F.cat,lat:UI.novoPoi.lat,lng:UI.novoPoi.lng});UI.modal=null;save();const volta=UI.poiVolta;UI.poiVolta=null;if(volta&&T(volta))go('terreno',{id:volta,tab:'geral'});else render();toast('Ponto de interesse salvo.');break}
     case 'conc':{S.concorrentes=S.concorrentes||[];S.concorrentes.push({id:uid(),nome:F.nome.trim(),empresa:(F.empresa||'').trim(),obs:(F.obs||'').trim(),lat:UI.novoConc.lat,lng:UI.novoConc.lng});UI.modal=null;save();render();toast('Concorrência salva.');break}
-    case 'kmz':{let novos=0,lig=0;(UI.kmzItens||[]).forEach((it,i)=>{const d=F['i'+i];if(d==null||d==='')return;
-        if(d==='novo'){S.seqT++;const c=it.tipo==='poligono'?centro(it.pts):it.pts[0];const nt={...seedVazio(),codigo:'TER-'+String(S.seqT).padStart(6,'0'),nome:it.nome,resp:me(),origem:'prospeccao',dataIdent:HOJE,lat:c[0],lng:c[1],precisao:'aproximada'};
-          if(it.tipo!=='poligono')return;nt.poly=it.pts;const sob=sobreposicoes(it.pts);if(sob.length)nt.sobreAceitas=sob.map(x=>x.t.id);nt.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado por importação de KMZ'}];S.terrenos.push(nt);novos++}
-        else{const t=T(d);aplicarKmz(t,it);log(t,it.tipo==='poligono'?`Poligonal importada (${m2(areaPoly(it.pts))})`:'Localização importada de KMZ');lig++}});
-      UI.modal=null;UI.mpView=null;save();render();toast(`${novos?novos+' terreno'+(novos>1?'s':'')+' criado'+(novos>1?'s':''):''}${novos&&lig?' e ':''}${lig?lig+' atualizado'+(lig>1?'s':''):''}${!novos&&!lig?'Nada importado':''}.`);break}
     case 'tarefa-m':{const sel=UI.tkSel;if(sel.tid){const t=T(sel.tid),k=t.tarefas.find(x=>x.id===sel.kid);const de=k.status,antes={resp:k.resp,marcados:(k.marcados||[]).slice()};Object.assign(k,{titulo:F.titulo.trim(),resp:F.resp,prazo:F.prazo,prio:F.prio,status:F.status,desc:F.desc,resultado:F.resultado||'',marcados:new FormData(f).getAll('marc')});notifTarefa(t,k,antes);
         if(de!==k.status)log(t,`Tarefa "${k.titulo}": ${OPT.statusTar[de]} → ${OPT.statusTar[k.status]}`);toast('Tarefa salva.')}
       else{const t=T(F.ter);if(!t){toast('Escolha o terreno da tarefa.',true);return}const irm=todasTarefas().filter(x=>x.k.status===F.status);
