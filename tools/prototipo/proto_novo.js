@@ -159,10 +159,10 @@ function nvParteLinha(i){const id=k=>`nvp-${k}-${i}`;
     <div class="field"><label for="${id('m')}">Matrículas</label><input id="${id('m')}" data-k="mats" placeholder="Números separados por vírgula"></div>
     <div class="field"><label for="${id('i')}">Inscrições (SQL)</label><input id="${id('i')}" data-k="insc" placeholder="Separadas por vírgula"></div>
     <div class="field"><label for="${id('v')}">Vendedores</label><input id="${id('v')}" data-k="vend" placeholder="Nomes separados por vírgula"></div>
-    <div class="field"><label for="${id('c')}">Corretor</label><select id="${id('c')}" data-k="cid"><option value="">Sem corretor / direto</option>${S.corretores.map(c=>`<option value="${c.id}">${esc(c.nome)} · ${esc(c.imob)}</option>`).join('')}</select></div>
+    <div class="field full"><span class="lbl-f">Corretores</span><div class="marc">${S.corretores.map(c=>`<label class="chk"><input type="checkbox" data-cor value="${c.id}">${esc(c.nome)} <span class="faint">${esc(c.imob)}</span></label>`).join('')||'<span class="faint">Nenhum corretor cadastrado.</span>'}</div></div>
   </div><button type="button" class="btn sm text danger" data-a="nv-pt-del">Tirar esta parte</button></fieldset>`}
-function nvPartesLer(f){return [...f.querySelectorAll('.nv-pt')].map(fs=>{const d={};fs.querySelectorAll('[data-k]').forEach(el=>d[el.dataset.k]=el.value.trim());d.area=lerNum(d.area);return d})
-  .filter(d=>d.nome||d.area||d.mats||d.insc||d.vend||d.cid)}
+function nvPartesLer(f){return [...f.querySelectorAll('.nv-pt')].map(fs=>{const d={};fs.querySelectorAll('[data-k]').forEach(el=>d[el.dataset.k]=el.value.trim());d.area=lerNum(d.area);d.cids=[...fs.querySelectorAll('[data-cor]:checked')].map(x=>x.value);return d})
+  .filter(d=>d.nome||d.area||d.mats||d.insc||d.vend||d.cids.length)}
 // depois de desenhar a tela do passo 2: checagem de duplicidade
 function nvPosRender(){const f=$('#f-novo');if(!f||!UI.nv)return;dedupe()}
 // passo 2 gravado: o terreno novo com a poligonal, o município e as frentes

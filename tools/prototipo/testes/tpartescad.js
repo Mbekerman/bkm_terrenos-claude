@@ -19,7 +19,7 @@ const KML=Buffer.from('<?xml version="1.0"?><kml xmlns="http://www.opengis.net/k
 const passo2=async p=>{await p.evaluate(()=>document.querySelector('[data-a=novo]').click());await p.waitForTimeout(200);
   const [fc]=await Promise.all([p.waitForEvent('filechooser'),p.click('[data-a=nv-kmz]')]);await fc.setFiles({name:'quadra.kml',mimeType:'application/vnd.google-earth.kml+xml',buffer:KML});
   await p.waitForSelector('#f-novo');await p.waitForTimeout(400);await p.fill('#n-mun','São Paulo · SP')};
-const linha=async(p,i,d)=>{for(const [k,v] of Object.entries(d)){const s=`#nv-pt-lista .nv-pt:nth-child(${i}) [data-k=${k}]`;if(k==='cid')await p.selectOption(s,{index:v});else await p.fill(s,v)}};
+const linha=async(p,i,d)=>{for(const [k,v] of Object.entries(d)){const s=`#nv-pt-lista .nv-pt:nth-child(${i}) [data-k=${k}]`;if(k==='cid'){for(const n of v)await p.locator(`#nv-pt-lista .nv-pt:nth-child(${i}) [data-cor]`).nth(n).check()}else await p.fill(s,v)}};
 const bloco=async(p,k)=>{await p.evaluate(k=>{const b=document.querySelector(`[data-a=bloco][data-t=${k}]`);if(b.getAttribute('aria-expanded')!=='true')b.click()},k);await p.waitForTimeout(250)};
 const enviar=async(p,id)=>{await p.evaluate(id=>document.getElementById(id).requestSubmit(),id);await p.waitForTimeout(300)};
 
@@ -29,8 +29,8 @@ ok(await p.$('#nv-partes')!==null&&!(await p.$eval('#nv-partes',x=>x.open)),'pas
 await p.fill('#n-nome','Quadra dos Andrade');
 await p.click('#nv-partes summary');await p.click('[data-a=nv-pt-add]');await p.click('[data-a=nv-pt-add]');await p.click('[data-a=nv-pt-add]');
 ok((await p.$$('#nv-pt-lista .nv-pt')).length===3,'adicionar parte acrescenta linhas');
-await linha(p,1,{nome:'Família Andrade',area:'1.200',mats:'301.001, 301.002',insc:'123.456.0001-1',vend:'Rui Andrade, Lia Andrade',cid:1});
-await linha(p,2,{nome:'Lote do Paulo'});
+await linha(p,1,{nome:'Família Andrade',area:'1.200',mats:'301.001, 301.002',insc:'123.456.0001-1',vend:'Rui Andrade, Lia Andrade',cid:[0,1]});
+await linha(p,2,{nome:'Lote do Paulo',cid:[0]});
 await p.click('#nv-pt-lista .nv-pt:nth-child(3) [data-a=nv-pt-del]');
 ok((await p.$$('#nv-pt-lista .nv-pt')).length===2&&(await txt(p,'#nv-pt-lista legend'))==='Parte 1 | Parte 2','tirar uma linha renumera as outras');
 await p.screenshot({path:O+'1_passo2.png',fullPage:false});
@@ -47,13 +47,14 @@ const pa=t.partes.find(x=>x.nome==='Família Andrade'),pb=t.partes.find(x=>x.nom
 ok(pa.area===1200&&pb.area==null,'tamanho do lote digitado e opcional');
 ok(t.mats.filter(m=>m.parte===pa.id).length===2&&t.insc.some(i=>i.parte===pa.id&&i.sql==='123.456.0001-1'),'matrículas e inscrição entram no cadastro ligadas à parte');
 ok(t.pessoas.filter(x=>x.parte===pa.id&&x.papel==='proprietario').length===2,'vendedores entram como proprietários da parte');
-ok(t.corretores.some(x=>x.parte===pa.id),'corretor ligado à parte');
+ok(t.corretores.filter(x=>(x.partes||[]).includes(pa.id)).length===2,'parte com dois corretores');
+ok(t.corretores.some(x=>(x.partes||[]).includes(pa.id)&&x.partes.includes(pb.id))&&t.corretores.filter(x=>x.principal).length===1,'o mesmo corretor traz duas partes; um só principal no terreno');
 ok(!t.neg,'sem oferta, nenhuma negociação aberta');
 // ficha: quadro Partes no Cadastro
 await bloco(p,'cadastro');
 ok(await p.$('#sec-partes-cad')!==null,'Cadastro da ficha tem o quadro Partes');
 const q=await txt(p,'#sec-partes-cad');
-ok(q.includes('Família Andrade')&&q.includes('301.001')&&q.includes('Rui Andrade')&&q.includes('Lote do Paulo')&&q.includes('Nada vinculado'),'quadro mostra o que cada parte tem');
+ok(q.includes('Família Andrade')&&q.includes('301.001')&&q.includes('Rui Andrade')&&q.includes('Lote do Paulo')&&q.includes('Corretores'),'quadro mostra o que cada parte tem');
 await p.evaluate(()=>document.getElementById('sec-partes-cad').scrollIntoView());await p.waitForTimeout(150);await p.screenshot({path:O+'3_cadastro.png'});
 // parte nova pela ficha, antes de haver negociação, vinculando a inscrição livre, um corretor e um vendedor novo
 await p.evaluate(()=>{const e=document.querySelector('#sec-mats form[data-form=mat]');e.num.value='301.900';e.requestSubmit()});await p.waitForTimeout(200);
@@ -65,7 +66,7 @@ await p.evaluate(()=>{const m=[...document.querySelectorAll('#modal input[name=m
 await p.screenshot({path:O+'4_modal.png'});
 await enviar(p,'f-pt');
 t=await ter(p,'Quadra dos Andrade');const pc=t.partes.find(x=>x.nome==='Herdeiros Lima');
-ok(pc&&t.mats.find(m=>m.num==='301.900').parte===pc.id&&t.pessoas.some(x=>x.nome==='Ana Lima'&&x.parte===pc.id)&&t.corretores.some(x=>x.parte===pc.id),'parte nova com matrícula, vendedor novo e corretor');
+ok(pc&&t.mats.find(m=>m.num==='301.900').parte===pc.id&&t.pessoas.some(x=>x.nome==='Ana Lima'&&x.parte===pc.id)&&t.corretores.some(x=>(x.partes||[]).includes(pc.id)),'parte nova com matrícula, vendedor novo e corretor');
 // editar só o nome e o tamanho, nada mais obrigatório
 await p.click(`#sec-partes-cad [data-a=pt-editar][data-p="${pb.id}"]`);await p.waitForTimeout(200);await p.fill('#pt-a','800');await enviar(p,'f-pt');
 t=await ter(p,'Quadra dos Andrade');ok(t.partes.find(x=>x.id===pb.id).area===800,'editar a parte pelo Cadastro');

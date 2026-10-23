@@ -18,7 +18,9 @@ const terrenoDe=t=>t._parte?Object.getPrototypeOf(t):t;
 const donosParte=(t,pa)=>t.pessoas.filter(p=>p.parte===pa.id&&p.papel==='proprietario').map(p=>p.nome);
 const matsParte=(t,pa)=>t.mats.filter(m=>m.parte===pa.id);
 const inscParte=(t,pa)=>t.insc.filter(i=>i.parte===pa.id);
-const corParte=(t,pa)=>t.corretores.filter(x=>x.parte===pa.id).map(x=>corretor(x.cid)?.nome).filter(Boolean);
+const corParte=(t,pa)=>t.corretores.filter(x=>(x.partes||[]).includes(pa.id)).map(x=>corretor(x.cid)?.nome).filter(Boolean);
+/* corretor ligado a uma parte (pode trazer várias; a parte pode ter vários): entra também nos corretores do terreno */
+const ligarCorretor=(t,cid,pid)=>{let x=t.corretores.find(y=>y.cid===cid);if(!x)t.corretores.push(x={cid,principal:!t.corretores.some(y=>y.principal)});x.partes=x.partes||[];if(!x.partes.includes(pid))x.partes.push(pid)};
 const listaTxt=v=>String(v||'').split(/[,;\n]/).map(x=>x.trim()).filter(Boolean);
 /* partes digitadas no Novo terreno ou na ficha: só o nome é obrigatório; matrículas, inscrições e
    vendedores digitados entram no cadastro do terreno já ligados à parte */
@@ -26,7 +28,7 @@ function gravarParteNova(t,d){const pa={id:uid(),ativa:true,neg:null,propostas:[
   listaTxt(d.mats).forEach(n=>{const m=t.mats.find(x=>digits(x.num)===digits(n));if(m)m.parte=pa.id;else t.mats.push({num:n,cri:d.cri||'',area:null,data:null,parte:pa.id})});
   listaTxt(d.insc).forEach(n=>{const i=t.insc.find(x=>digits(x.sql)===digits(n));if(i)i.parte=pa.id;else t.insc.push({mun:d.mun||'outro',sql:n,area:null,valores:[],parte:pa.id})});
   listaTxt(d.vend).forEach(n=>t.pessoas.push({nome:n,tipo:'PF',papel:'proprietario',pct:null,tel:'',parte:pa.id}));
-  if(d.cid){const x=t.corretores.find(y=>y.cid===d.cid);if(x){if(!x.parte)x.parte=pa.id}else t.corretores.push({cid:d.cid,principal:!t.corretores.some(y=>y.principal),parte:pa.id})}
+  (d.cids||[]).forEach(cid=>ligarCorretor(t,cid,pa.id));
   return pa}
 /* quadro Partes do Cadastro: o que cada parte tem; a negociação de cada uma fica na seção Negociação */
 function secPartesCad(t){const P=partesAtivas(t),ro=UI.role==='Leitura';
@@ -35,7 +37,7 @@ function secPartesCad(t){const P=partesAtivas(t),ro=UI.role==='Leitura';
   return `<section class="sec" id="sec-partes-cad"><div class="sec-h"><h2>Partes</h2>${add}</div><div class="sec-b">
     ${P.length?`<div class="ptc-lista">${P.map(pa=>{const ms=matsParte(t,pa),is=inscParte(t,pa),vs=donosParte(t,pa),cs=corParte(t,pa);
       return `<div class="ptc"><div class="ptc-h"><b>${esc(pa.nome)}</b>${pa.essencial?'':'<span class="chip">Dispensável</span>'}<span class="faint">${pa.area?m2(pa.area):'tamanho não informado'}</span>${ro?'':`<button class="btn text sm" data-a="pt-editar" data-p="${pa.id}" aria-label="Editar ${esc(pa.nome)}">${ic('edit',16)}Editar</button>`}</div>
-        ${linha('Matrículas',ms.map(m=>esc(m.num)).join(', '))}${linha('Inscrições',is.map(i=>esc(i.sql)).join(', '))}${linha('Vendedores',vs.map(esc).join(', '))}${linha('Corretor',cs.map(esc).join(', '))}
+        ${linha('Matrículas',ms.map(m=>esc(m.num)).join(', '))}${linha('Inscrições',is.map(i=>esc(i.sql)).join(', '))}${linha('Vendedores',vs.map(esc).join(', '))}${linha(cs.length>1?'Corretores':'Corretor',cs.map(esc).join(', '))}
         ${!ms.length&&!is.length&&!vs.length&&!cs.length?'<div class="faint ptc-l">Nada vinculado ainda.</div>':''}</div>`}).join('')}</div>`
     :`<div class="muted">Se os lotes têm donos que negociam separado, cadastre uma parte para cada dono ou grupo de donos. Só o nome é obrigatório.</div>`}</div></section>`}
 const ordSub=(e,s)=>subsDe(e).findIndex(x=>x.k===s);
@@ -162,8 +164,7 @@ function partesSubmit(form,F,t,f){if(!t)return false;const pa=UI.alvoParte?parte
     mats.forEach(c=>{const m=t.mats[+c.value];if(c.checked)m.parte=alvo.id;else if(m.parte===alvo.id)m.parte=null});
     pes.forEach(c=>{const p=t.pessoas[+c.value];if(c.checked)p.parte=alvo.id;else if(p.parte===alvo.id)p.parte=null});
     f.querySelectorAll('input[name=ins]').forEach(c=>{const x=t.insc[+c.value];if(c.checked)x.parte=alvo.id;else if(x.parte===alvo.id)x.parte=null});
-    f.querySelectorAll('input[name=cor]').forEach(c=>{let x=t.corretores.find(y=>y.cid===c.value);
-      if(c.checked){if(!x)t.corretores.push(x={cid:c.value,principal:!t.corretores.some(y=>y.principal)});x.parte=alvo.id}else if(x?.parte===alvo.id)x.parte=null});
+    f.querySelectorAll('input[name=cor]').forEach(c=>{if(c.checked)ligarCorretor(t,c.value,alvo.id);else{const x=t.corretores.find(y=>y.cid===c.value);if(x?.partes)x.partes=x.partes.filter(id=>id!==alvo.id)}});
     listaTxt(F.vend).forEach(n=>t.pessoas.push({nome:n,tipo:'PF',papel:'proprietario',pct:null,tel:'',parte:alvo.id}));
     if(!pa){partesDe(t).push(alvo);log(t,`Parte ${nome} cadastrada${ess?'':' (dispensável)'}`);abrirPartes(t)}else log(t,`Parte ${nome} atualizada`);
     UI.modal=null;save();render();toast(pa?'Parte atualizada.':dividida(t)&&alvo.neg?`${nome} ganhou a sua negociação.`:'Parte cadastrada.');return true}
@@ -191,7 +192,7 @@ function partesModal(M,fechar){const t=T(UI.id);if(!t)return '';const pa=UI.alvo
   if(M==='pt-parte'){const ms=t.mats.map((m,i)=>`<label class="chk"><input type="checkbox" name="mat" value="${i}" ${pa&&m.parte===pa.id?'checked':''} ${m.parte&&(!pa||m.parte!==pa.id)?'disabled':''}>${esc(m.num)} <span class="faint">${esc(m.cri)}${m.parte&&(!pa||m.parte!==pa.id)?' · '+esc(parteDe(t,m.parte)?.nome||''):''}</span></label>`).join('');
     const ps=t.pessoas.map((p,i)=>`<label class="chk"><input type="checkbox" name="pes" value="${i}" ${pa&&p.parte===pa.id?'checked':''}>${esc(p.nome)} <span class="faint">${OPT.papel[p.papel]}${p.parte&&(!pa||p.parte!==pa.id)?' · '+esc(parteDe(t,p.parte)?.nome||''):''}</span></label>`).join('');
     const is=t.insc.map((x,i)=>`<label class="chk"><input type="checkbox" name="ins" value="${i}" ${pa&&x.parte===pa.id?'checked':''} ${x.parte&&(!pa||x.parte!==pa.id)?'disabled':''}>${esc(x.sql)}${x.parte&&(!pa||x.parte!==pa.id)?` <span class="faint">${esc(parteDe(t,x.parte)?.nome||'')}</span>`:''}</label>`).join('');
-    const cs=S.corretores.map(c=>{const x=t.corretores.find(y=>y.cid===c.id),out=x?.parte&&(!pa||x.parte!==pa.id);return `<label class="chk"><input type="checkbox" name="cor" value="${c.id}" ${pa&&x?.parte===pa.id?'checked':''} ${out?'disabled':''}>${esc(c.nome)} <span class="faint">${esc(c.imob)}${out?' · '+esc(parteDe(t,x.parte)?.nome||''):''}</span></label>`}).join('');
+    const cs=S.corretores.map(c=>{const x=t.corretores.find(y=>y.cid===c.id),outras=(x?.partes||[]).filter(id=>!pa||id!==pa.id).map(id=>parteDe(t,id)?.nome).filter(Boolean);return `<label class="chk"><input type="checkbox" name="cor" value="${c.id}" ${pa&&(x?.partes||[]).includes(pa.id)?'checked':''}>${esc(c.nome)} <span class="faint">${esc(c.imob)}${outras.length?' · também '+esc(outras.join(', ')):''}</span></label>`}).join('');
     return `<div class="dh"><div><h2>${pa?'Editar parte':'Nova parte'}</h2><div class="muted" style="margin-top:4px">Um dono, ou um grupo de donos que negocia junto (herdeiros, sócios).</div></div>${fechar}</div>
     <form data-form="pt-parte" id="f-pt"><div class="fields"><div class="field full"><label for="pt-n">Nome ou identificador *</label><input id="pt-n" name="nome" required value="${esc(pa?.nome||'')}" placeholder="Família Souza, Carlos Pires..."></div>
     <div class="field"><label for="pt-a">Tamanho do lote (m²)</label><input id="pt-a" name="area" inputmode="decimal" value="${pa?.area??''}"></div>
@@ -200,7 +201,7 @@ function partesModal(M,fechar){const t=T(UI.id);if(!t)return '';const pa=UI.alvo
     <div class="field full"><span class="lbl-f">Inscrições da parte</span><div class="marc">${is||'<span class="faint">Nenhuma inscrição no terreno.</span>'}</div></div>
     <div class="field full"><span class="lbl-f">Vendedores e contatos da parte</span><div class="marc">${ps||'<span class="faint">Ninguém vinculado ao terreno.</span>'}</div></div>
     <div class="field full"><label for="pt-v">Acrescentar vendedores</label><input id="pt-v" name="vend" placeholder="Nomes separados por vírgula"><span class="hint">Entram em Proprietários e contatos, ligados a esta parte.</span></div>
-    <div class="field full"><span class="lbl-f">Corretor que traz esta parte</span><div class="marc">${cs||'<span class="faint">Nenhum corretor cadastrado.</span>'}</div></div>
+    <div class="field full"><span class="lbl-f">Corretores que trazem esta parte</span><div class="marc">${cs||'<span class="faint">Nenhum corretor cadastrado.</span>'}</div></div>
     <div class="field full faint">Tudo é opcional, menos o nome. Dá para vincular depois.</div></div>
     ${!pa&&t.neg&&SIDX(t.neg.etapa)>=SIDX(etapaPartes())&&partesAtivas(t).length>=1?`<div class="banner blue" style="margin-top:12px">${ic('layers')}<div>O terreno já está em ${esc(SN(t.neg.etapa))}: ${dividida(t)?'a parte nova ganha a sua negociação.':'com esta parte, cada uma ganha a sua negociação.'}</div></div>`:''}</form>${df('f-pt',pa?'Salvar':'Cadastrar parte')}`}
   if(!pa)return '';

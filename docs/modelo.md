@@ -58,7 +58,7 @@ Arrastar no quadro de etapas chama `mover_para_etapa` (para frente, etapa por et
 
 ## Terreno com vários donos (partes)
 
-Um dono com várias matrículas é **uma** negociação. Vários donos que negociam separado são **partes** do terreno (`terreno_partes`): cada parte é um dono, ou um grupo de donos que negocia junto (herdeiros, sócios), com as matrículas, as inscrições e as pessoas dela (`parte_id` em `matriculas`, `inscricoes_municipais`, `terreno_pessoas` e `terreno_corretores`, este para o corretor que traz só uma parte; participações somam 100% em cada parte), o pedaço da poligonal e a marca de **essencial** (sem ela o terreno não serve) ou dispensável.
+Um dono com várias matrículas é **uma** negociação. Vários donos que negociam separado são **partes** do terreno (`terreno_partes`): cada parte é um dono, ou um grupo de donos que negocia junto (herdeiros, sócios), com as matrículas, as inscrições e as pessoas dela (`parte_id` em `matriculas`, `inscricoes_municipais` e `terreno_pessoas`; participações somam 100% em cada parte) e os corretores dela (`parte_corretores`: uma parte pode ter vários corretores e o mesmo corretor pode trazer várias partes; ligar o corretor à parte o põe entre os corretores do terreno), o pedaço da poligonal e a marca de **essencial** (sem ela o terreno não serve) ou dispensável.
 
 - **Cadastro:** a parte pode nascer junto com o terreno (fim do Novo terreno) ou a qualquer momento na ficha, só com o nome; tamanho do lote, matrículas, inscrições, vendedores e corretor são opcionais (`salvar_parte` e os `parte_id`).
 - **Antes da etapa da divisão** (`fases_modelo.etapa_partes`, só na fase de entrada; padrão Negociação) há uma negociação só, a do terreno: Triagem e Estudos são da área toda.
@@ -413,6 +413,8 @@ erDiagram
   pessoas ||--o| corretores : e
   terrenos ||--o{ terreno_corretores : tem
   corretores ||--o{ terreno_corretores : atende
+  terreno_partes ||--o{ parte_corretores : tem
+  corretores ||--o{ parte_corretores : traz
   terrenos ||--o{ processos : "negociacao (e fases futuras)"
   processos ||--|| negociacoes : "dados da negociacao"
   processos |o--o{ processos : "negociacao de cada parte"
