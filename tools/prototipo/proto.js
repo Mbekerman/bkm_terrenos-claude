@@ -712,7 +712,7 @@ function go(route,x={}){Object.assign(UI,{route,edit:null,propForm:false,reuForm
 
 /* ===================== modais ===================== */
 function renderModal(){
-  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.nv=null;UI.nvKmz=null;UI.ofPoly=null;UI.kmzNovo=false;UI.lotes=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;UI.alvoParte=null;return}
+  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.nv=null;UI.nvPool=null;UI.nvKmz=null;UI.ofPoly=null;UI.kmzNovo=false;UI.lotes=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;UI.alvoParte=null;return}
   let h='';const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`;
   h=partesModal(M,fechar)||fasesModal(M,fechar)||funilModal(M,fechar);
   if(M==='novo')h=UI.nv?nvDadosHtml(fechar):nvPasso1Html(fechar);
@@ -954,6 +954,9 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       if(new Set(nvPt.map(d=>d.nome.toLowerCase())).size<nvPt.length){toast('Duas partes com o mesmo nome.',true);return}
       if(dup){alvo=T(dup)}else{do S.seqT++;while(S.terrenos.some(x=>x.codigo==='TER-'+String(S.seqT).padStart(6,'0')));alvo={...seedVazio(),codigo:'TER-'+String(S.seqT).padStart(6,'0'),nome:F.nome,logradouro:F.logradouro.trim(),numero:F.numero.trim(),bairro:F.bairro.trim(),zona:F.zona||null,resp:F.resp,origem:F.origem,dataIdent:HOJE,
         mats:F.mat?[{num:F.mat,cri:F.cri,area:null,data:null}]:[],insc:F.sql?[{mun:F.mun,sql:F.sql,area:null,valores:[]}]:[]};alvo.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado'}];nvGravar(alvo,F);S.terrenos.push(alvo);
+        {const P=UI.nvPool||{};(P.mat||[]).forEach(m=>{if(!alvo.mats.some(x=>digits(x.num)===digits(m.num)))alvo.mats.push({num:m.num,cri:m.cri,area:null,data:null})});
+         (P.ins||[]).forEach(s=>{if(!alvo.insc.some(x=>digits(x.sql)===digits(s)))alvo.insc.push({mun:F.mun||cidDoNome(F.municipio)||'outro',sql:s,area:null,valores:[]})});
+         (P.pes||[]).forEach(p=>alvo.pessoas.push({nome:p.nome,tipo:'PF',papel:'proprietario',pct:null,tel:p.tel}))}
         nvPt.forEach(d=>gravarParteNova(alvo,{...d,mun:F.mun||cidDoNome(F.municipio)||'outro'}));if(nvPt.length)log(alvo,`${nvPt.length} parte${nvPt.length>1?'s':''} cadastrada${nvPt.length>1?'s':''}: ${nvPt.map(d=>d.nome).join(', ')}`)}
       const val=lerNum(F.valor);
       if(val||F.cid){const o={id:uid(),cid:F.cid||null,data:HOJE,valor:val,forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,status:'ativa'};alvo.ofertas.push(o);

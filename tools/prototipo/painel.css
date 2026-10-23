@@ -874,6 +874,13 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .ptc { border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px; padding: 8px 8px 10px 16px; display: flex; flex-direction: column; gap: 4px; min-width: 0 }
 .ptc-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 36px } .ptc-h b { font-weight: 500; font-size: 15px } .ptc-h > .faint { font-size: 13px; margin-right: auto }
 .ptc-l { display: flex; gap: 12px; font-size: 14px; min-width: 0; padding-right: 8px } .ptc-l > .faint:first-child { flex: 0 0 96px; font-size: 13px } .ptc-l > span:last-child { min-width: 0; overflow-wrap: anywhere }
+.msel { min-width: 0 }
+.msel-b { width: 100%; min-height: 44px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--m-outline, #747775); border-radius: 4px; padding: 6px 8px 6px 14px; background: transparent; text-align: left; cursor: pointer; font-size: 15px }
+.msel-b .ic { margin-left: auto; flex: none; transform: rotate(90deg); transition: transform .15s } .msel.aberto .msel-b .ic { transform: rotate(-90deg) }
+.msel-r { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.msel-m { margin-top: 4px; border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 8px; padding: 6px 12px; display: flex; flex-direction: column; gap: 2px; max-height: 240px; overflow: auto; background: var(--m-surface, #fff) }
+.msel-m[hidden] { display: none } .msel-m .chk { min-height: 36px } .msel-m .btn { align-self: flex-start; margin: 4px 0 2px -12px } .msel-v { padding: 6px 0; font-size: 13px }
+.ms-scrim { z-index: 60 } .dialog.mini { width: min(400px, 100%); padding: 24px } .dialog.mini h2 { font-size: 22px; line-height: 28px; font-weight: 400 } .dialog.mini .fields { grid-template-columns: 1fr }
 .nv-pt { border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px; padding: 4px 16px 12px; margin: 0 0 12px; min-width: 0 }
 .nv-pt legend { padding: 0 6px; font-size: 13px; font-weight: 500; color: var(--m-on-var, #444746) }
 .nv-pt .btn { margin-top: 8px }
@@ -882,3 +889,4 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 :root[data-tema="escuro"] .pt-ped { background: rgba(124,140,255,.07) }
 :root[data-tema="escuro"] .t-warn { color: #f5c451 }
 :root[data-tema="escuro"] .pt-card.comprado { box-shadow: inset 3px 0 0 #6dd58c } :root[data-tema="escuro"] .pt-card.perdido, :root[data-tema="escuro"] .pt-card.descartado { box-shadow: inset 3px 0 0 #f2b8b5 } :root[data-tema="escuro"] .pt-card.stand_by { box-shadow: inset 3px 0 0 #f5c451 }
+:root[data-tema="escuro"] .msel-b { border-color: rgba(124,140,255,.35) } :root[data-tema="escuro"] .msel-m { background: #060c20; border-color: rgba(124,140,255,.22) }

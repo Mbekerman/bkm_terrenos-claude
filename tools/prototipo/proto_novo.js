@@ -156,13 +156,13 @@ function nvParteLinha(i){const id=k=>`nvp-${k}-${i}`;
   return `<fieldset class="nv-pt" data-i="${i}"><legend>Parte ${i+1}</legend><div class="fields">
     <div class="field"><label for="${id('n')}">Nome ou identificador *</label><input id="${id('n')}" data-k="nome" placeholder="Família Souza, Lote 3..."></div>
     <div class="field"><label for="${id('a')}">Tamanho do lote (m²)</label><input id="${id('a')}" data-k="area" inputmode="decimal"></div>
-    <div class="field"><label for="${id('m')}">Matrículas</label><input id="${id('m')}" data-k="mats" placeholder="Números separados por vírgula"></div>
-    <div class="field"><label for="${id('i')}">Inscrições (SQL)</label><input id="${id('i')}" data-k="insc" placeholder="Separadas por vírgula"></div>
-    <div class="field"><label for="${id('v')}">Vendedores</label><input id="${id('v')}" data-k="vend" placeholder="Nomes separados por vírgula"></div>
-    <div class="field full"><span class="lbl-f">Corretores</span><div class="marc">${S.corretores.map(c=>`<label class="chk"><input type="checkbox" data-cor value="${c.id}">${esc(c.nome)} <span class="faint">${esc(c.imob)}</span></label>`).join('')||'<span class="faint">Nenhum corretor cadastrado.</span>'}</div></div>
+    <div class="field"><span class="lbl-f">Matrículas</span>${mselHtml('mat','nvp-mat-'+i,msOptsNovo('mat'),[])}</div>
+    <div class="field"><span class="lbl-f">Inscrições</span>${mselHtml('ins','nvp-ins-'+i,msOptsNovo('ins'),[])}</div>
+    <div class="field"><span class="lbl-f">Vendedores</span>${mselHtml('pes','nvp-pes-'+i,msOptsNovo('pes'),[])}</div>
+    <div class="field"><span class="lbl-f">Corretores</span>${mselHtml('cor','nvp-cor-'+i,msOptsNovo('cor'),[])}</div>
   </div><button type="button" class="btn sm text danger" data-a="nv-pt-del">Tirar esta parte</button></fieldset>`}
-function nvPartesLer(f){return [...f.querySelectorAll('.nv-pt')].map(fs=>{const d={};fs.querySelectorAll('[data-k]').forEach(el=>d[el.dataset.k]=el.value.trim());d.area=lerNum(d.area);d.cids=[...fs.querySelectorAll('[data-cor]:checked')].map(x=>x.value);return d})
-  .filter(d=>d.nome||d.area||d.mats||d.insc||d.vend||d.cids.length)}
+function nvPartesLer(f){return [...f.querySelectorAll('.nv-pt')].map(fs=>{const d={};fs.querySelectorAll('[data-k]').forEach(el=>d[el.dataset.k]=el.value.trim());d.area=lerNum(d.area);const ms=k=>[...fs.querySelectorAll(`.msel[data-tipo=${k}] input:checked`)].map(x=>x.value);d.mats=ms('mat');d.insc=ms('ins');d.vend=ms('pes');d.cids=ms('cor');return d})
+  .filter(d=>d.nome||d.area||d.mats.length||d.insc.length||d.vend.length||d.cids.length)}
 // depois de desenhar a tela do passo 2: checagem de duplicidade
 function nvPosRender(){const f=$('#f-novo');if(!f||!UI.nv)return;dedupe()}
 // passo 2 gravado: o terreno novo com a poligonal, o município e as frentes
@@ -190,7 +190,7 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="nv-"]'
   if(A==='nv-pt-add'){const L=$('#nv-pt-lista');if(!L)return;const i=L.children.length?Math.max(...[...L.children].map(x=>+x.dataset.i))+1:0;L.insertAdjacentHTML('beforeend',nvParteLinha(i));
     [...L.children].forEach((x,k)=>x.querySelector('legend').textContent='Parte '+(k+1));L.lastElementChild.querySelector('input').focus()}
   if(A==='nv-pt-del'){const L=a.closest('#nv-pt-lista');a.closest('.nv-pt').remove();[...(L?.children||[])].forEach((x,k)=>x.querySelector('legend').textContent='Parte '+(k+1))}
-  if(A==='nv-voltar'){UI.nv=null;UI.modal='novo';renderModal()}
+  if(A==='nv-voltar'){UI.nv=null;UI.nvPool=null;UI.modal='novo';renderModal()}
   if(A==='nv-mesmo'){UI.nv.ignorados=UI.nv.sobre;UI.modal='novo';renderModal()}
   if(['nv-oferta','nv-oferta-p','nv-recad','nv-juntar'].includes(A))nvDecidir(A,a.dataset.id)});
 document.addEventListener('input',e=>{if(e.target.id==='n-mun')nvCidadeInsc()});
