@@ -2433,6 +2433,12 @@ button.nv-op:hover { background: rgba(11,87,208,.06) }
 html[data-tema="escuro"] .lotes-svg { background: #0d1530 }
 html[data-tema="escuro"] .lotes-novo { fill: rgba(96, 165, 250, .2); stroke: #60a5fa }
 html[data-tema="escuro"] .lotes-leg-novo { border-top-color: #60a5fa }
+
+/* Kanban: arrastando um card, as colunas que aceitam ficam marcadas e a que está sob o card acende */
+body.dnd .col[data-col]:not(.origem), body.dnd-tk .tk-col { outline: 2px dashed rgba(11, 87, 208, .35); outline-offset: -2px; transition: background-color .12s, outline-color .12s }
+.col.sobre, .tk-col.sobre, .col.enc.sobre { background: #d3e3fd !important; outline: 2px solid #0b57d0 !important; outline-offset: -2px; box-shadow: none !important }
+html[data-tema="escuro"] body.dnd .col[data-col]:not(.origem), html[data-tema="escuro"] body.dnd-tk .tk-col { outline-color: rgba(124, 140, 255, .35) }
+html[data-tema="escuro"] .col.sobre, html[data-tema="escuro"] .tk-col.sobre { background: rgba(99, 112, 255, .18) !important; outline-color: rgba(124, 140, 255, .9) !important }
 </style>
 <header class="top">
   <div class="top-in">
@@ -3413,11 +3419,12 @@ function posRender(){try{if(MAPA){MAPA.remove()}}catch(e){}MAPA=null;PINS=POIS=D
   if(UI.route==='mapa')initMapa();if(UI.route==='terreno'&&!blocoFechado('geral'))initMini();fichaSheet()}
 document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const el=e.target;if(!(el instanceof HTMLElement)||el.matches('button,a,input,select,textarea'))return;if(el.matches('[data-a][tabindex]')){e.preventDefault();el.click()}});
 let arrastando=null;
-document.addEventListener('dragstart',e=>{const c=e.target.closest?.('.kcard[draggable="true"]');if(!c)return;arrastando=c.dataset.id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',arrastando);c.classList.add('arrastando');document.body.classList.add('dnd')});
-document.addEventListener('dragend',e=>{arrastando=null;document.body.classList.remove('dnd');document.querySelectorAll('.arrastando,.col.sobre').forEach(x=>x.classList.remove('arrastando','sobre'))});
-document.addEventListener('dragover',e=>{const col=e.target.closest?.('.col[data-col]');if(!col||!arrastando)return;e.preventDefault();e.dataTransfer.dropEffect='move';
+document.addEventListener('dragstart',e=>{const c=e.target.closest?.('.kcard[draggable="true"]');if(!c)return;arrastando=c.dataset.id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',arrastando);c.classList.add('arrastando');c.closest('.col')?.classList.add('origem');document.body.classList.add('dnd')});
+document.addEventListener('dragend',e=>{arrastando=null;document.body.classList.remove('dnd');document.querySelectorAll('.arrastando,.col.sobre,.col.origem').forEach(x=>x.classList.remove('arrastando','sobre','origem'))});
+// a coluna sob o card acende (a de origem não: soltar ali não muda nada); fora das colunas, nenhuma
+document.addEventListener('dragover',e=>{if(!arrastando)return;const col=e.target.closest?.('.col[data-col]:not(.origem)');if(!col){document.querySelectorAll('.col.sobre').forEach(x=>x.classList.remove('sobre'));return}e.preventDefault();e.dataTransfer.dropEffect='move';
   document.querySelectorAll('.col.sobre').forEach(x=>x!==col&&x.classList.remove('sobre'));col.classList.add('sobre')});
-document.addEventListener('drop',e=>{const col=e.target.closest?.('.col[data-col]');if(!col||!arrastando)return;e.preventDefault();const id=arrastando;arrastando=null;document.body.classList.remove('dnd');col.classList.remove('sobre');soltar(id,col.dataset.col)});
+document.addEventListener('drop',e=>{const col=e.target.closest?.('.col[data-col]:not(.origem)');if(!col||!arrastando)return;e.preventDefault();const id=arrastando;arrastando=null;document.body.classList.remove('dnd');document.querySelectorAll('.col.sobre,.col.origem').forEach(x=>x.classList.remove('sobre','origem'));soltar(id,col.dataset.col)});
 
 /* =====================================================================
    Módulos novos: tabela ordenável, mapa, dashboard, visão geral da ficha
@@ -3983,13 +3990,13 @@ function moverTk(tid,kid,col,antesDe){const t=T(tid),k=t.tarefas.find(x=>x.id===
   if(k.status!==col){const de=k.status;k.status=col;if(col==='concluida')k.feita=HOJE;log(t,`Tarefa "${k.titulo}": ${OPT.statusTar[de]} → ${OPT.statusTar[col]}`);toast(`${k.titulo}: ${OPT.statusTar[col]}.`)}
   save();render()}
 let tkArr=null;
-document.addEventListener('dragstart',e=>{const c=e.target.closest?.('.tk[draggable="true"]');if(!c)return;tkArr={kid:c.dataset.tk,tid:c.dataset.id};e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',c.dataset.tk);c.classList.add('arrastando')});
-document.addEventListener('dragend',()=>{tkArr=null;document.querySelectorAll('.tk.arrastando,.tk-col.sobre,.tk-marca').forEach(x=>x.classList.contains('tk-marca')?x.remove():x.classList.remove('arrastando','sobre'))});
+document.addEventListener('dragstart',e=>{const c=e.target.closest?.('.tk[draggable="true"]');if(!c)return;tkArr={kid:c.dataset.tk,tid:c.dataset.id};e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',c.dataset.tk);c.classList.add('arrastando');document.body.classList.add('dnd-tk')});
+document.addEventListener('dragend',()=>{tkArr=null;document.body.classList.remove('dnd-tk');document.querySelectorAll('.tk.arrastando,.tk-col.sobre,.tk-marca').forEach(x=>x.classList.contains('tk-marca')?x.remove():x.classList.remove('arrastando','sobre'))});
 const tkAntes=(col,y)=>[...col.querySelectorAll('.tk:not(.arrastando)')].find(c=>{const r=c.getBoundingClientRect();return y<r.top+r.height/2});
-document.addEventListener('dragover',e=>{const col=e.target.closest?.('.tk-col');if(!col||!tkArr)return;e.preventDefault();e.dataTransfer.dropEffect='move';
+document.addEventListener('dragover',e=>{if(!tkArr)return;const col=e.target.closest?.('.tk-col');if(!col){document.querySelectorAll('.tk-col.sobre').forEach(x=>x.classList.remove('sobre'));document.querySelector('.tk-marca')?.remove();return}e.preventDefault();e.dataTransfer.dropEffect='move';
   document.querySelectorAll('.tk-col.sobre').forEach(x=>x!==col&&x.classList.remove('sobre'));col.classList.add('sobre');
   let m=document.querySelector('.tk-marca');if(!m){m=document.createElement('div');m.className='tk-marca'}const a=tkAntes(col,e.clientY),lista=col.querySelector('.tk-lista');if(a)lista.insertBefore(m,a);else lista.appendChild(m)});
-document.addEventListener('drop',e=>{const col=e.target.closest?.('.tk-col');if(!col||!tkArr)return;e.preventDefault();const a=tkAntes(col,e.clientY),x=tkArr;tkArr=null;document.querySelector('.tk-marca')?.remove();moverTk(x.tid,x.kid,col.dataset.tkcol,a?.dataset.tk)});
+document.addEventListener('drop',e=>{const col=e.target.closest?.('.tk-col');if(!col||!tkArr)return;e.preventDefault();const a=tkAntes(col,e.clientY),x=tkArr;tkArr=null;document.body.classList.remove('dnd-tk');document.querySelectorAll('.tk-col.sobre').forEach(x=>x.classList.remove('sobre'));document.querySelector('.tk-marca')?.remove();moverTk(x.tid,x.kid,col.dataset.tkcol,a?.dataset.tk)});
 
 
 /* =====================================================================

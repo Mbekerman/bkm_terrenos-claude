@@ -735,3 +735,9 @@ button.nv-op:hover { background: rgba(11,87,208,.06) }
 html[data-tema="escuro"] .lotes-svg { background: #0d1530 }
 html[data-tema="escuro"] .lotes-novo { fill: rgba(96, 165, 250, .2); stroke: #60a5fa }
 html[data-tema="escuro"] .lotes-leg-novo { border-top-color: #60a5fa }
+
+/* Kanban: arrastando um card, as colunas que aceitam ficam marcadas e a que está sob o card acende */
+body.dnd .col[data-col]:not(.origem), body.dnd-tk .tk-col { outline: 2px dashed rgba(11, 87, 208, .35); outline-offset: -2px; transition: background-color .12s, outline-color .12s }
+.col.sobre, .tk-col.sobre, .col.enc.sobre { background: #d3e3fd !important; outline: 2px solid #0b57d0 !important; outline-offset: -2px; box-shadow: none !important }
+html[data-tema="escuro"] body.dnd .col[data-col]:not(.origem), html[data-tema="escuro"] body.dnd-tk .tk-col { outline-color: rgba(124, 140, 255, .35) }
+html[data-tema="escuro"] .col.sobre, html[data-tema="escuro"] .tk-col.sobre { background: rgba(99, 112, 255, .18) !important; outline-color: rgba(124, 140, 255, .9) !important }
