@@ -707,7 +707,7 @@ function render(){
   renderModal();
 }
 let tmr;function toast(m,e){const el=$('#toast');el.textContent=m;el.className='toast show'+(e?' err':'');clearTimeout(tmr);tmr=setTimeout(()=>el.className='toast',2800)}
-function go(route,x={}){Object.assign(UI,{route,edit:null,propForm:false,reuForm:false,modal:null},x);render();window.scrollTo({top:0})}
+function go(route,x={}){if(UI.edMini)Object.assign(UI,{edMini:false,mpModo:null,desenho:null,desHist:null,vSel:null,vMenu:false,vMover:false});Object.assign(UI,{route,edit:null,propForm:false,reuForm:false,modal:null},x);render();window.scrollTo({top:0})}
 
 /* ===================== modais ===================== */
 function renderModal(){
