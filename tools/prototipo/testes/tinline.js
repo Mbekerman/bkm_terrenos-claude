@@ -30,6 +30,6 @@ await p.click('[data-a=edit][data-s=g-resp]');await p.click('[data-a=cancel-edit
 const t0=await p.$eval('.temp .tl',x=>x.textContent);await p.click('#bl-geral .temp .bars button:nth-child(2)');await p.waitForTimeout(150);
 console.log(tema,'temperatura',t0,'→',await p.$eval('.dhead .temp .tl',x=>x.textContent));
 await p.evaluate(()=>document.getElementById('bl-geral').scrollIntoView());await p.screenshot({path:OUT+tema+'_resumo.png'});
-await p.click('[data-a=role][data-v=Leitura]');await p.waitForTimeout(150);console.log(tema,'Leitura: lápis visíveis',await p.$$eval('#bl-geral .kv-ed[data-a=edit]',e=>e.filter(x=>getComputedStyle(x).display!=='none').length));
+await p.click('[data-a=perfil-menu]');await p.click('[data-a=role][data-v=Leitura]');await p.waitForTimeout(150);console.log(tema,'Leitura: lápis visíveis',await p.$$eval('#bl-geral .kv-ed[data-a=edit]',e=>e.filter(x=>getComputedStyle(x).display!=='none').length));
 await ctx.close()}
 console.log('ERROS',errs);await b.close()})();

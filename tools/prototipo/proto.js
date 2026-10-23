@@ -281,6 +281,12 @@ function renderTema(){const el=document.getElementById('tema');if(!el)return;
   el.innerHTML=`<button class="tema-btn" data-a="tema-menu" aria-haspopup="menu" aria-expanded="${temaMenu}" aria-label="Tema da tela" title="Tema">${ic}</button>`+
    (temaMenu?`<div class="tema-menu" role="menu"><div class="tl">Tema</div>${TEMAS.map(([k,l,c])=>`<button role="menuitemradio" aria-checked="${TEMA===k}" data-a="tema" data-v="${k}"><span class="sw" style="background:${c}"></span>${l}</button>`).join('')}</div>`:'')}
 
+/* papel vem do perfil do usuário (decisão do Moisés, 23/out/2026): a barra mostra só o avatar; trocar de usuário é recurso do protótipo, dentro do menu */
+let perfilMenu=false;
+function renderPerfil(){const el=document.getElementById('perfil');if(!el)return;const u=ROLE_USER[UI.role];
+  el.innerHTML=`<button class="perfil-btn" data-a="perfil-menu" aria-haspopup="menu" aria-expanded="${perfilMenu}" aria-label="${u}, ${UI.role}" title="${u} · ${UI.role}">${u[0]}</button>`+
+   (perfilMenu?`<div class="tema-menu" role="menu"><div class="perfil-eu"><b>${u}</b><span>${UI.role}</span></div><div class="tl">Entrar como (protótipo)</div>${['Diretor','Gestor','Analista','Leitura'].map(r=>`<button role="menuitemradio" aria-checked="${UI.role===r}" data-a="role" data-v="${r}"><span class="perfil-av">${ROLE_USER[r][0]}</span>${ROLE_USER[r]} · ${r}</button>`).join('')}</div>`:'')}
+
 const UI={route:'inicio',id:null,tab:'cadastro',from:'terrenos',q:'',fT:'ativos',role:'Diretor',edit:null,modal:null,upload:null,propForm:false};
 const me=()=>ROLE_USER[UI.role];
 const T=id=>S.terrenos.find(t=>t.id===id);
@@ -679,7 +685,7 @@ function render(){
   $('#bnav').innerHTML=NAV.map(([r,l,i])=>`<button data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''}><span class="pill">${bi(i,32)}</span>${l}</button>`).join('');
   document.body.classList.toggle('ro',UI.role==='Leitura');
   renderTema();{const n0=S.notifs.length;rotinaNotif();if(S.notifs.length!==n0)save()}renderSino();
-  $('#role').innerHTML=['Diretor','Gestor','Analista','Leitura'].map(r=>`<button data-a="role" data-v="${r}" data-c="${r[0]}" title="Testar como ${r}" aria-pressed="${UI.role===r}">${r}</button>`).join('');
+  renderPerfil();
   document.body.dataset.rota=UI.route;$('#main').innerHTML=({inicio:pgInicio,terrenos:pgTerrenos,negociacoes:pgNeg,terreno:pgFicha,mapa:pgMapa,dashboard:pgDash,tarefas:pgTarefas,config:pgConfig})[UI.route]();posRender();
   renderModal();
 }
@@ -757,7 +763,8 @@ function dedupe(){
 
 /* ===================== eventos ===================== */
 document.addEventListener('click',e=>{
-  if(temaMenu&&!e.target.closest('.tema-wrap')){temaMenu=false;renderTema()}
+  if(temaMenu&&!e.target.closest('#tema')){temaMenu=false;renderTema()}
+  if(perfilMenu&&!e.target.closest('#perfil')){perfilMenu=false;renderPerfil()}
   if(sinoAberto&&!e.target.closest('#sino')){sinoAberto=false;renderSino()}
   if(!e.target.closest('.adv-mais'))document.querySelectorAll('.adv-mais.aberto').forEach(x=>{x.classList.remove('aberto');x.querySelector('.adv-mb')?.setAttribute('aria-expanded','false')});
   const a=e.target.closest('[data-a]');if(!a)return;const A=a.dataset.a;const t=UI.route==='terreno'?T(UI.id):null;
@@ -772,7 +779,7 @@ document.addEventListener('click',e=>{
       if(!BLA[k]){const h=document.getElementById('bl-'+k);if(h&&(fim||h.getBoundingClientRect().top<72))h.scrollIntoView({block:'start'});document.querySelector(`#bl-${k} .bl-h`)?.focus({preventScroll:true})}break}
     case 'ir':UI.tab=a.dataset.t;blocoAbre(a.dataset.t);UI.edit=a.dataset.s&&SECOES[a.dataset.s]||a.dataset.s==='areas'?a.dataset.s:null;render();rolarBloco(a.dataset.t,a.dataset.s);break;
     case 'fT':UI.fT=a.dataset.v;render();break;
-    case 'role':UI.role=a.dataset.v;render();toast(UI.role==='Leitura'?'Testando como Leitura: consulta tudo, não altera nada.':`Testando como ${UI.role}.`);break;
+    case 'role':UI.role=a.dataset.v;perfilMenu=false;render();toast(UI.role==='Leitura'?'Entrou como Lúcia Mendes (Leitura): consulta tudo, não altera nada.':`Entrou como ${ROLE_USER[UI.role]} (${UI.role}).`);break;
     case 'reset':S=seed();prepararDados();save();go('inicio');toast('Dados de exemplo restaurados.');break;
     case 'novo':UI.modal='novo';renderModal();break;
     case 'nova-oferta':UI.modal='oferta';renderModal();break;
@@ -838,6 +845,7 @@ document.addEventListener('click',e=>{
     case 'tk-nova':UI.tkSel={status:a.dataset.v};UI.modal='tarefa';renderModal();break;
     case 'tk-vista':UI.tk.vista=a.dataset.v;render();break;
     case 'tema-menu':temaMenu=!temaMenu;renderTema();break;
+    case 'perfil-menu':perfilMenu=!perfilMenu;renderPerfil();break;
     case 'tema':TEMA=a.dataset.v;try{localStorage.setItem('bkm-terrenos-tema',TEMA)}catch(e){}temaMenu=false;aplicaTema();renderTema();toast('Tema: '+TEMAS.find(x=>x[0]===TEMA)[1]+'.');break;
     case 'menu':menuMin=!menuMin;try{localStorage.setItem('bkm-terrenos-menu',menuMin?'min':'')}catch(e){}render();break;
     case 'reu-form':UI.reuForm=!UI.reuForm;render();break;
@@ -937,7 +945,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
 });
 function novaNeg(ofRef,temp){const e=STAGES[0][0],s=subInicial(e);return {codigo:'NEG-'+String(Math.floor(Math.random()*900)+100).padStart(5,'0'),etapa:e,sub:s,status:'ativo',desde:HOJE,subDesde:HOJE,temp,ofRef,viab:null,pedido:null,trilha:[{em:agora(),user:me(),ev:'abertura',deEtapa:null,deSub:null,paraEtapa:e,paraSub:s,status:'ativo'}]}}
 function seedVazio(){return {id:uid(),situacao:'ativo',prioridade:null,descricao:'',url:'',obs:'',cep:'',complemento:'',referencia:'',lat:null,lng:null,precisao:'nao_informada',aDoc:null,aCad:null,aLev:null,aEst:null,fonteArea:null,testada:null,topografia:'nao_informado',desnivel:null,posicao:'nao_informado',formato:'nao_informado',ocupacao:'nao_informado',uso:'',aConst:null,aDemolir:null,demolicao:'nao_avaliada',obsFis:'',eixo:null,mats:[],insc:[],confr:[],dilig:[],pessoas:[],corretores:[],infra:{},analises:[],ofertas:[],neg:null,propostas:[],reunioes:[],tarefas:[],docs:[],hist:[]}}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&GG&&(svFechar()||lugarFechar())){e.preventDefault();return}if(e.key==='Escape'&&temaMenu){temaMenu=false;renderTema();return}if(e.key==='Escape'&&UI.modal){UI.modal=null;renderModal()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&GG&&(svFechar()||lugarFechar())){e.preventDefault();return}if(e.key==='Escape'&&temaMenu){temaMenu=false;renderTema();return}if(e.key==='Escape'&&perfilMenu){perfilMenu=false;renderPerfil();return}if(e.key==='Escape'&&UI.modal){UI.modal=null;renderModal()}});
 /* ===================== kanban: arrastar e soltar (regras em proto_funil.js: levarAte, soltar) ===================== */
 function posRender(){try{if(MAPA){MAPA.remove()}}catch(e){}MAPA=null;PINS=POIS=DES=BASE=null;try{if(MINI)MINI.remove()}catch(e){}MINI=null;
   if(UI.route==='mapa')initMapa();if(UI.route==='terreno'&&!blocoFechado('geral'))initMini();fichaSheet()}
