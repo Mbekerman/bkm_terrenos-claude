@@ -69,8 +69,8 @@ function gEnquadrar(pts,maxZoom){if(!MAPA||!pts.length)return;if(pts.length===1)
   const b=new google.maps.LatLngBounds();pts.forEach(p=>b.extend(p));MAPA.fitBounds(b,48);if(maxZoom)google.maps.event.addListenerOnce(MAPA,'idle',()=>{if(MAPA.getZoom()>maxZoom)MAPA.setZoom(maxZoom)})}
 function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[];gPois=[];gConc=[];gDes=[];gRota=[];gEntorno=[];gSet(gEu,null);gEu=[];
   const v=UI.mpView;
-  MAPA=new google.maps.Map(el,{mapId:UI.mpLugares===false&&GMAP_SEM_LUGARES?GMAP_SEM_LUGARES:'DEMO_MAP_ID',colorScheme:temaEscuro()?'DARK':'LIGHT',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[UI.mpBase||'satelite'],
-    mapTypeControl:false,streetViewControl:true,streetViewControlOptions:{position:google.maps.ControlPosition.RIGHT_BOTTOM},cameraControl:false,fullscreenControl:false,clickableIcons:UI.mpLugares!==false,gestureHandling:'greedy',scaleControl:true,tilt:0,disableDoubleClickZoom:true});
+  MAPA=new google.maps.Map(el,{mapId:'DEMO_MAP_ID',colorScheme:temaEscuro()?'DARK':'LIGHT',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[UI.mpBase||'satelite'],
+    mapTypeControl:false,streetViewControl:true,streetViewControlOptions:{position:google.maps.ControlPosition.RIGHT_BOTTOM},cameraControl:false,fullscreenControl:false,clickableIcons:true,gestureHandling:'greedy',scaleControl:true,tilt:0,disableDoubleClickZoom:true});
   MAPA.__escuro=temaEscuro();gInfo=new google.maps.InfoWindow({maxWidth:320,headerDisabled:true});
   el.classList.toggle('modo',!!UI.mpModo);G_desenhaPins();G_desenhaPois();G_desenhaConc();desenhaEu(false);
   ctxGestos(el,(x,y)=>{if(!gProj||gProj.getMap()!==MAPA)gPontoNaTela(0,0);const pr=gProj?.getProjection();const ll=pr?.fromContainerPixelToLatLng(new google.maps.Point(x,y));return ll?{lat:ll.lat(),lng:ll.lng()}:null});
@@ -100,15 +100,10 @@ function G_focar(t){if(!MAPA)return;UI.mpSel=t.id;if(t.poly)gEnquadrar(t.poly.ma
   mpSelecionar(t.id)}
 
 /* ---------- Lugares do Google (comércio, escolas, hospitais...) ----------
-   Ligado: os ícones do Google ficam no mapa e o toque abre nome, nota e avaliações.
-   Desligado: o mapa usa outro Map ID, com estilo sem lugares criado no Cloud Console
-   (o Google não aceita esconder lugares por código quando há Map ID); o ID vem da
-   variável GOOGLE_MAP_ID_SEM_LUGARES. Cada toque é uma consulta Place Details com
+   Sempre ligados (decisão do Moisés, 23/out/2026): os ícones do Google ficam no mapa e o
+   toque abre nome, nota e avaliações. Cada toque é uma consulta Place Details com
    avaliações (SKU Enterprise + Atmosphere); o resultado fica guardado na sessão. */
-const GMAP_SEM_LUGARES=(()=>{const v=document.querySelector('meta[name="gmaps-mapid-sem-lugares"]')?.content||'';return /^[\w-]{6,}$/.test(v)?v:''})();
 const LUGARES={};
-function G_lugares(on){if(!on&&!GMAP_SEM_LUGARES){toast('Para esconder os lugares falta o estilo de mapa sem lugares no Google Cloud (Map ID).',true);return}
-  UI.mpLugares=on;gInfo?.close();G_initMapa();document.querySelectorAll('[data-a="mp-lugares"]').forEach(b=>b.setAttribute('aria-pressed',on))}
 const estrelas=n=>{const r=Math.max(0,Math.min(5,Math.round(n)));return '★'.repeat(r)+'☆'.repeat(5-r)};
 function lugarHtml(p){const revs=(p.reviews||[]).slice(0,3),nota=p.rating!=null?`<div class="lug-nota"><b>${String(p.rating.toFixed?p.rating.toFixed(1):p.rating).replace('.',',')}</b> <span class="lug-est" aria-hidden="true">${estrelas(p.rating)}</span> <span class="muted">${p.userRatingCount!=null?Number(p.userRatingCount).toLocaleString('pt-BR')+' avaliações':''}</span></div>`:'<div class="muted">Sem avaliações no Google</div>';
   return `<div class="lug"><button type="button" class="lug-x" data-a="lug-fechar" aria-label="Fechar" title="Fechar">${ic('close',18)}</button><div class="lug-n">${esc(p.displayName||'Lugar')}</div>${p.formattedAddress?`<div class="lug-e muted">${esc(p.formattedAddress)}</div>`:''}${nota}

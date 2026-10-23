@@ -1,11 +1,11 @@
-// Página Mapa com Google: versão escura do mapa no tema escuro; só Mapa e Satélite (Relevo saiu), botão Lugares liga e desliga os lugares do Google
-// (só com o Map ID sem lugares vindo da variável; sem ele o botão não aparece) e o toque num lugar abre nota e avaliações
+// Página Mapa com Google: versão escura do mapa no tema escuro; só Mapa e Satélite (Relevo saiu); lugares do Google sempre ligados, sem botão
+// para desligar (decisão do Moisés, 23/out/2026; uma meta antiga de Map ID sem lugares não muda nada) e o toque num lugar abre nota e avaliações
 const path=require('path'),fs=require('fs'),{chromium}=require('playwright');
 const F=path.join(__dirname,'..','saida','bkm-terrenos.html'),L=path.join(__dirname,'..','libs','l')+'/',O=path.join(__dirname,'..','saida','t_lugares')+'/';fs.mkdirSync(O,{recursive:true});
 const falhas=[];const ok=(c,m)=>{console.log((c?'ok   ':'FALHA ')+m);if(!c)falhas.push(m)};
 const base=fs.readFileSync(F,'utf8');
 (async()=>{const b=await chromium.launch(),erros=[];
-for(const [cfg,mapid] of [['sem Map ID',''],['com Map ID','abc123semlugares']]){
+for(const [cfg,mapid] of [['sem Map ID',''],['com meta antiga de Map ID','abc123semlugares']]){
 const html=base.replace('<title>',`<meta name="gmaps-key" content="AIzaTESTETESTETESTETESTETESTE0000"><meta name="gmaps-mapid-sem-lugares" content="${mapid}"><title>`);
 const ctx=await b.newContext({viewport:{width:1400,height:900}});
 await ctx.route('**/*',r=>{const u=r.request().url();if(u.startsWith('file://'))return r.fulfill({body:html,contentType:'text/html; charset=utf-8'});
@@ -16,7 +16,7 @@ await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=mapa]').click()
 const st=()=>p.evaluate(()=>{const m=window.__mapas.at(-1);return {n:window.__mapas.length,mapId:m&&m.opts.mapId,click:m&&m.opts.clickableIcons,ops:[...document.querySelectorAll('[data-a=mp-base]')].map(x=>x.textContent).join('|'),lug:document.querySelector('[data-a=mp-lugares]')?.getAttribute('aria-pressed'),toast:document.querySelector('.toast')?.textContent||''}});
 let s=await st();
 ok(s.ops==='Mapa|Satélite',`${cfg}: camadas ${s.ops}`);
-ok((mapid?s.lug==='true':s.lug===undefined)&&s.mapId==='DEMO_MAP_ID'&&s.click===true,`${cfg}: lugares visíveis e clicáveis; botão ${mapid?'presente e ligado':'escondido'} (${JSON.stringify(s)})`);
+ok(s.lug===undefined&&s.mapId==='DEMO_MAP_ID'&&s.click===true,`${cfg}: lugares visíveis e clicáveis, sem botão Lugares (${JSON.stringify(s)})`);
 // toque num lugar
 await p.evaluate(()=>{window.__lugar={displayName:'Padaria <Boa>',formattedAddress:'Rua X, 10',rating:4.4,userRatingCount:1234,googleMapsURI:'https://maps.google.com/?cid=1',reviews:[{rating:5,text:'Ótimo pão',relativePublishTimeDescription:'há 2 semanas',authorAttribution:{displayName:'Ana',uri:'https://maps.google.com/u/ana'}},{rating:3,text:'x'.repeat(300),relativePublishTimeDescription:'há 1 mês',authorAttribution:{displayName:'Beto'}}]};
   const m=window.__mapas.at(-1);let parou=false;m.ls.click.forEach(f=>f({placeId:'lugar1',latLng:{lat:()=>-23.58,lng:()=>-46.58},stop:()=>{parou=true}}));window.__parou=parou});
@@ -27,7 +27,7 @@ ok(/★★★★☆/.test(inf.html)&&!/⯪/.test(inf.html),`${cfg}: estrelas int
 ok(/reviews/.test(inf.campos)&&/rating/.test(inf.campos),`${cfg}: pede ${inf.campos}`);
 await p.evaluate(()=>{const m=window.__mapas.at(-1);m.ls.click.forEach(f=>f({placeId:'lugar1',latLng:{lat:()=>-23.58,lng:()=>-46.58},stop:()=>{}}))});await p.waitForTimeout(150);
 ok(await p.evaluate(()=>window.__fetch.length)===1,`${cfg}: segundo toque no mesmo lugar não consulta de novo`);
-if(cfg==='com Map ID'){fs.writeFileSync(O+'quadro.html','<meta charset=utf-8><link rel=stylesheet href="x.css"><style>'+(await p.evaluate(()=>[...document.styleSheets].map(s=>{try{return [...s.cssRules].map(r=>r.cssText).filter(t=>/\.lug/.test(t)).join('\n')}catch(e){return ''}}).join('\n')))+'</style><div style="width:300px;padding:12px;border:1px solid #ccc;border-radius:8px;margin:20px">'+inf.html+'</div>')}
+if(mapid){fs.writeFileSync(O+'quadro.html','<meta charset=utf-8><link rel=stylesheet href="x.css"><style>'+(await p.evaluate(()=>[...document.styleSheets].map(s=>{try{return [...s.cssRules].map(r=>r.cssText).filter(t=>/\.lug/.test(t)).join('\n')}catch(e){return ''}}).join('\n')))+'</style><div style="width:300px;padding:12px;border:1px solid #ccc;border-radius:8px;margin:20px">'+inf.html+'</div>')}
 if(!mapid){const n0=await p.evaluate(()=>window.__mapas.length),c0=await p.evaluate(()=>window.__mapas.at(-1).opts.colorScheme);
   await p.click('[data-a=tema-menu]');await p.click('[data-a=tema][data-v=escuro]');await p.waitForTimeout(300);
   const t=await p.evaluate(()=>({n:window.__mapas.length,c:window.__mapas.at(-1).opts.colorScheme}));
@@ -43,11 +43,8 @@ ok(await fechou(()=>window.__info.node.querySelector('.lug-x').click()),`${cfg}:
 ok(await fechou(()=>{const m=window.__mapas.at(-1);m.ls.click.forEach(f=>f({latLng:{lat:()=>-23.5,lng:()=>-46.5},stop:()=>{}}))}),`${cfg}: clique no mapa fecha o quadro`);
 ok(await fechou(()=>document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}))),`${cfg}: Esc fecha o quadro`);
 // desligar
-if(mapid){await p.click('[data-a=mp-lugares]');await p.waitForTimeout(300)}s=await st();
-if(mapid)ok(s.lug==='false'&&s.mapId===mapid&&s.click===false&&s.n===2,`${cfg}: desligar recria o mapa com o Map ID sem lugares e sem clique (${JSON.stringify(s)})`);
-else ok(s.lug===undefined,`${cfg}: sem o Map ID não há botão para desligar`);
-if(mapid){await p.click('[data-a=mp-lugares]');await p.waitForTimeout(300);s=await st();ok(s.lug==='true'&&s.mapId==='DEMO_MAP_ID'&&s.click===true,`${cfg}: religar volta os lugares`);
-  await p.screenshot({path:O+'barra.png',clip:{x:640,y:80,width:740,height:80}})}
+s=await st();ok(s.lug===undefined&&s.mapId==='DEMO_MAP_ID'&&s.click===true,`${cfg}: lugares continuam ligados, sem botão para desligar`);
+if(mapid)await p.screenshot({path:O+'barra.png',clip:{x:640,y:80,width:740,height:80}});
 await ctx.close()}
 ok(!erros.length,'sem erros de página '+erros.join('; '));
 await b.close();console.log(falhas.length?falhas.length+' falha(s)':'tudo ok');process.exit(falhas.length?1:0)})();
