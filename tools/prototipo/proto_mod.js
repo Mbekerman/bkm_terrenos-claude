@@ -126,10 +126,40 @@ function ctxGestos(el,ponto){if(!el||el.dataset.ctx)return;el.dataset.ctx='1';co
 document.addEventListener('pointerdown',e=>{if($('.mp-ctx')&&!e.target.closest('.mp-ctx'))ctxFechar()},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('.mp-ctx')){ctxFechar();e.preventDefault()}});
 function desenhaRascunho(){return GG?G_desenhaRascunho():L_desenhaRascunho()}
-function initMapa(){return GG?G_initMapa():L_initMapa()}
+function initMapa(){const r=GG?G_initMapa():L_initMapa();mpCtrlObs();return r}
 /* tema escuro: a visão Mapa fica escura (Google pelo colorScheme, que só vale ao criar o mapa; Leaflet pelo cinza-escuro da Esri). O satélite não muda */
 const temaEscuro=()=>document.documentElement.dataset.tema==='escuro';
 function temaMapa(){if(!MAPA||!$('#mapa'))return;if(GG){if(MAPA.__escuro!==temaEscuro())G_initMapa()}else if((UI.mpBase||'satelite')==='mapa')L_setBase('mapa')}
+/* botões do canto do mapa: minha localização e tela cheia (o controle de câmera do Google saiu; decisão do Moisés, 23/out/2026).
+   Sobem acima do cartão do terreno e do aviso de desenho quando eles ocupam o pé do mapa. */
+function mpCtrlHtml(){const on=document.body.classList.contains('mp-cheia');
+  return `<div id="mp-ctrl" class="mp-ctrl"><button type="button" class="mp-cb" data-a="mp-eu" title="Minha localização" aria-label="Centralizar na minha localização">${ic('eu',22)}</button>
+    <button type="button" class="mp-cb" data-a="mp-cheia" aria-pressed="${on}" title="${on?'Sair da tela cheia':'Tela cheia'}" aria-label="${on?'Sair da tela cheia':'Tela cheia'}">${ic(on?'telaSair':'tela',22)}</button></div>`}
+function mpCtrlPos(){const a=$('.mapa-area'),c=$('#mp-ctrl');if(!a||!c)return;const ar=a.getBoundingClientRect();let topo=ar.bottom;
+  ['#mp-cartao','#mp-modo'].forEach(s=>{const e=$(s);if(!e||!e.offsetHeight)return;const r=e.getBoundingClientRect();if(r.bottom>ar.bottom-80&&r.right>ar.right-80)topo=Math.min(topo,r.top)});
+  c.style.bottom=topo<ar.bottom?Math.round(ar.bottom-topo+12)+'px':''}
+function mpCtrlObs(){const a=$('.mapa-area');if(!a||a.__ro||!window.ResizeObserver)return mpCtrlPos();a.__ro=new ResizeObserver(mpCtrlPos);[a,$('#mp-cartao'),$('#mp-modo')].forEach(e=>e&&a.__ro.observe(e));mpCtrlPos()}
+/* tela cheia: o mapa cobre a página (classe no body, que também serve ao iPhone, sem tela cheia de elemento) e, onde der, o navegador esconde as próprias barras */
+let mpCheiaApi=false;
+function mpTelaCheia(on){const b=document.body;if(on===undefined)on=!b.classList.contains('mp-cheia');
+  b.classList.toggle('mp-cheia',on);
+  if(on){const r=document.documentElement;try{const p=r.requestFullscreen?.({navigationUI:'hide'});mpCheiaApi=!!p;p?.catch?.(()=>{mpCheiaApi=false})}catch(e){mpCheiaApi=false}}
+  else if(document.fullscreenElement&&mpCheiaApi){mpCheiaApi=false;document.exitFullscreen?.().catch?.(()=>{})}
+  const k=$('[data-a="mp-cheia"]');if(k){k.setAttribute('aria-pressed',on);k.title=k.ariaLabel=on?'Sair da tela cheia':'Tela cheia';k.innerHTML=ic(on?'telaSair':'tela',22)}
+  if(!GG)setTimeout(()=>MAPA?.invalidateSize?.(),60);setTimeout(mpCtrlPos,80)}
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&mpCheiaApi){mpCheiaApi=false;if(document.body.classList.contains('mp-cheia'))mpTelaCheia(false)}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('mp-cheia')&&!document.fullscreenElement&&!UI.modal&&!UI.fichaSheet&&!UI.mpModo&&!$('.mp-ctx')&&!$('.v-menu')){mpTelaCheia(false);e.preventDefault()}});
+/* minha localização: ponto azul com o círculo da precisão; centra o mapa */
+function mpEu(){if(!navigator.geolocation){toast('Este navegador não informa a localização.',true);return}
+  const b=$('[data-a="mp-eu"]');b?.classList.add('busca');
+  navigator.geolocation.getCurrentPosition(p=>{$('[data-a="mp-eu"]')?.classList.remove('busca');UI.mpEu={lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy};desenhaEu(true)},
+    e=>{$('[data-a="mp-eu"]')?.classList.remove('busca');toast(e.code===1?'A localização está bloqueada. Libere o acesso à localização para este site no navegador.':'Não foi possível obter sua localização agora.',true)},
+    {enableHighAccuracy:true,timeout:15000,maximumAge:30000})}
+function desenhaEu(centrar){const u=UI.mpEu;if(!MAPA||!u)return;return GG?G_eu(u,centrar):L_eu(u,centrar)}
+let EU=null;
+function L_eu(u,centrar){EU?.remove();EU=L.layerGroup([L.circle([u.lat,u.lng],{radius:u.acc||0,color:'#1a73e8',weight:1,fillOpacity:.12,interactive:false}),
+  L.circleMarker([u.lat,u.lng],{radius:7,color:'#fff',weight:2,fillColor:'#1a73e8',fillOpacity:1,interactive:false})]).addTo(MAPA);
+  if(centrar)MAPA.setView([u.lat,u.lng],Math.max(MAPA.getZoom()||0,17))}
 function focar(t){return GG?G_focar(t):L_focar(t)}
 function initMini(){return GG?G_initMini():L_initMini()}
 function fecharPopup(){if(GG)G_fecharPopup();else MAPA?.closePopup?.()}
@@ -151,11 +181,11 @@ function mpVisiveis(){const m=UI.mp,q=m.q.trim().toLowerCase();
 /* lista lateral do mapa: só o número do pino (etapa), o nome e a área; a lupa abre a ficha.
    Clicar no pino ou na poligonal seleciona o terreno aqui (não há balão no mapa). */
 function mpItem(t,cartao){const k=sitMapa(t),[nm,c,g,fg]=SIT[k],sel=UI.mpSel===t.id,ad=areaAdotada(t)||(t.poly?areaPoly(t.poly):null);
-  const acoes=sel&&t.lat!=null?`<div class="mp-it-a">${UI.role!=='Leitura'?`<button class="linkbtn" data-a="mp-desenhar" data-id="${t.id}">${t.poly?'Editar':'Desenhar'} poligonal</button>`:''}${GG?`<button class="linkbtn" data-a="mp-sv" data-id="${t.id}">Street View</button><button class="linkbtn" data-a="mp-entorno" data-id="${t.id}">O que tem perto</button>`:''}</div>`:'';
+  const acoes=sel&&t.lat!=null?`<div class="mp-it-a">${UI.role!=='Leitura'?`<button class="linkbtn" data-a="mp-desenhar" data-id="${t.id}">${t.poly?'Editar':'Desenhar'} poligonal</button>`:''}${GG?`<button class="linkbtn" data-a="mp-sv" data-id="${t.id}">Street View</button>`:''}</div>`:'';
   return `<div class="mp-it${sel?' sel':''}${cartao?' cartao':''}" data-a="mp-foco" data-id="${t.id}" tabindex="0" role="listitem" aria-current="${sel}">
     <span class="pin-mini" style="background:${c};color:${fg}" title="${esc(nm)}">${g}</span>
     <div class="mp-it-t"><div class="t1">${esc(t.nome)}</div><div class="t2">${ad?m2(ad):'Área não informada'} · ${esc(nm)}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div></div>
-    <button class="iconbtn mp-lupa" data-a="fs-abrir" data-id="${t.id}" title="Ver ficha" aria-label="Ver ficha de ${esc(t.nome)}">${bi('busca',22)}</button>${acoes}</div>`}
+    <button class="iconbtn mp-lupa" data-a="fs-abrir" data-id="${t.id}" title="Ver ficha" aria-label="Ver ficha de ${esc(t.nome)}">${bi('busca',22)}</button>${cartao?`<button class="iconbtn mp-lupa mp-fx" data-a="mp-desel" title="Fechar" aria-label="Fechar">${ic('close',22)}</button>`:''}${acoes}</div>`}
 function mpLista(){const v=mpVisiveis(),sem=v.filter(t=>t.lat==null),ord=Object.keys(SIT);
   const rows=v.slice().sort((a,b)=>ord.indexOf(sitMapa(a))-ord.indexOf(sitMapa(b))||a.nome.localeCompare(b.nome,'pt'));
   return `${entornoHtml()}<div class="mp-resumo"><span><b>${v.length}</b> terrenos</span><span><b>${num(v.reduce((s,t)=>s+(areaAdotada(t)||0),0))}</b> m²</span></div>
@@ -207,6 +237,7 @@ function pgMapa(){
     </div>
     <div id="mp-modo" class="mp-modo" aria-live="polite">${modoBanner()}</div>
     <div id="mp-cartao" class="mp-cartao" aria-live="polite"></div>
+    ${mpCtrlHtml()}
     <details class="mp-legenda" ${UI.mpLeg??innerWidth>899?'open':''}><summary>Legenda</summary><div id="mp-leg" class="mp-leg-l">${mpLegenda()}</div></details>
     <div class="mp-aviso">O fundo do mapa (ruas e satélite) não carrega neste link de visualização, que bloqueia imagens externas. Os pins, poligonais e distâncias funcionam. No app publicado, ou abrindo o arquivo do protótipo no navegador, o fundo aparece.</div>
   </section></div>`;
@@ -257,7 +288,7 @@ function L_initMapa(){const el=$('#mapa');if(!el)return;
   L.control.scale({imperial:false,position:'bottomright'}).addTo(MAPA);
   setBase(UI.mpBase||'satelite');PINS=L.layerGroup().addTo(MAPA);POIS=L.layerGroup();CONC=L.layerGroup();DES=L.layerGroup().addTo(MAPA);if(UI.mpPoi!==false)POIS.addTo(MAPA);if(UI.mpConc!==false)CONC.addTo(MAPA);
   ctxGestos(el,(x,y)=>{const ll=MAPA.containerPointToLatLng([x,y]);return {lat:ll.lat,lng:ll.lng}});MAPA.on('movestart zoomstart',ctxFechar);
-  desenhaPins();desenhaPois();desenhaRascunho();el.classList.toggle('modo',!!UI.mpModo);
+  desenhaPins();desenhaPois();desenhaRascunho();el.classList.toggle('modo',!!UI.mpModo);desenhaEu(false);
   const vista=UI.mpView,enquadrar=()=>{if(vista)return MAPA.setView(vista.c,vista.z);const pts=ativosBanco().filter(t=>t.lat!=null).map(t=>[t.lat,t.lng]);pts.length?MAPA.fitBounds(pts,{padding:[48,48],maxZoom:15}):MAPA.setView([-23.55,-46.63],11)};
   enquadrar();
   // o contêiner só tem o tamanho final depois do layout: recalcula e reenquadra

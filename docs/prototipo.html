@@ -2461,6 +2461,24 @@ body.dnd .col[data-col]:not(.origem), body.dnd-tk .tk-col { outline: 2px dashed 
 .col.sobre, .tk-col.sobre, .col.enc.sobre { background: #d3e3fd !important; outline: 2px solid #0b57d0 !important; outline-offset: -2px; box-shadow: none !important }
 html[data-tema="escuro"] body.dnd .col[data-col]:not(.origem), html[data-tema="escuro"] body.dnd-tk .tk-col { outline-color: rgba(124, 140, 255, .35) }
 html[data-tema="escuro"] .col.sobre, html[data-tema="escuro"] .tk-col.sobre { background: rgba(99, 112, 255, .18) !important; outline-color: rgba(124, 140, 255, .9) !important }
+
+/* Mapa: botões do canto (minha localização, tela cheia), X do cartão do terreno e tela cheia (23/out/2026) */
+.mp-ctrl { position: absolute; right: 10px; bottom: 40px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; transition: bottom .15s }
+.mp-cb { width: 40px; height: 40px; border-radius: 20px; border: 0; display: grid; place-items: center; cursor: pointer; background: #fff; color: #444746; box-shadow: 0 1px 3px rgba(0,0,0,.25), 0 2px 8px rgba(0,0,0,.15) }
+.mp-cb:hover { color: #0b57d0; background: #f0f4f9 }
+.mp-cb:focus-visible { outline: 2px solid #0b57d0; outline-offset: 2px }
+.mp-cb.busca svg { animation: mp-pulso 1s ease-in-out infinite }
+@keyframes mp-pulso { 50% { opacity: .35 } }
+:root[data-tema="escuro"] .mp-cb { background: #0d1530; color: #c9d6ff; box-shadow: 0 0 0 1px rgba(124,140,255,.35), 0 6px 16px rgba(0,0,0,.5) }
+:root[data-tema="escuro"] .mp-cb:hover { background: #142046 }
+.mapa-area.sv-on .mp-cb[data-a="mp-eu"] { display: none }
+.eu-dot { width: 16px; height: 16px; border-radius: 50%; background: #1a73e8; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.2), 0 1px 4px rgba(0,0,0,.35); transform: translateY(50%) }
+.mp-it.cartao { grid-template-columns: auto minmax(0, 1fr) auto auto; column-gap: 4px; padding-right: 4px }
+.mp-it.cartao .mp-it-t { margin-left: 8px }
+body.mp-cheia .mapa-area { position: fixed !important; inset: 0 !important; z-index: 25; height: auto !important; min-height: 0 !important; border-radius: 0 !important; margin: 0 !important }
+body.mp-cheia .mapa-area .mp-barra { top: calc(12px + env(safe-area-inset-top, 0px)) }
+body.mp-cheia .mp-ctrl { right: max(10px, env(safe-area-inset-right, 0px)) }
+body.mp-cheia .fab { display: none !important }
 </style>
 <header class="top">
   <div class="top-in">
@@ -2524,7 +2542,7 @@ const P={
   link:'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
   fwd:'M5 12h14M13 6l6 6-6 6',edit:'M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4',
   money:'M4 7h16v10H4zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM7 10v4M17 10v4',
-  recolher:'M13 6l-6 6 6 6M19 6l-6 6 6 6',tela:'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',telaSair:'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5',expandir:'M11 6l6 6-6 6M5 6l6 6-6 6',
+  recolher:'M13 6l-6 6 6 6M19 6l-6 6 6 6',tela:'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',eu:'M12 5a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM12 2v3M12 19v3M2 12h3M19 12h3',telaSair:'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5',expandir:'M11 6l6 6-6 6M5 6l6 6-6 6',
   lugar:'M12 21s-6-5.6-6-10.5a6 6 0 0 1 12 0C18 15.4 12 21 12 21zM12 8.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4z',
   task:'M9 4h6v3H9zM9 5.5H6a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6.5a1 1 0 0 0-1-1h-3M8.5 14l2.5 2.5 4.5-5'
 };
@@ -3166,6 +3184,7 @@ const NAV=[['inicio','Início','casa'],['terrenos','Terrenos','terrenos'],['mapa
 /* Configurações › Funil: só para administrador (no menu lateral; no celular, pelo sino) */
 const navSide=()=>ehAdmin(me())?[...NAV,['config','Configurações','config']]:NAV;
 function render(){
+  if(UI.route!=='mapa'&&document.body.classList.contains('mp-cheia'))mpTelaCheia(false);
   const cur=UI.route==='terreno'?UI.from:UI.route;
   document.body.classList.toggle('menu-min',menuMin);
   $('#side').innerHTML=`<button class="menu-tg" data-a="menu" aria-expanded="${!menuMin}" aria-label="${menuMin?'Expandir menu':'Recolher menu'}" title="${menuMin?'Expandir menu':'Recolher menu'}">${ic(menuMin?'expandir':'recolher',20)}</button><button class="compose" data-a="novo" ${menuMin?'title="Novo terreno" aria-label="Novo terreno"':''}>${ic('add',24)}<span class="rot">Novo terreno</span></button>`+navSide().map(([r,l,i])=>`<button class="nav-item" data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''} ${menuMin?`title="${l}" aria-label="${l}"`:''}>${bi(i)}<span class="rot">${l}</span></button>`).join('')+`<div class="side-foot"><span class="rot">Protótipo · dados de exemplo</span><button class="linkbtn rot" data-a="reset">Restaurar dados de exemplo</button></div>`;
@@ -3288,6 +3307,9 @@ document.addEventListener('click',e=>{
     case 'adv-req':ADV_REQ=!ADV_REQ;render();break;
     case 'adv-mais':{const w=a.closest('.adv-mais'),ab=!w.classList.contains('aberto');document.querySelectorAll('.adv-mais.aberto').forEach(x=>{x.classList.remove('aberto');x.querySelector('.adv-mb').setAttribute('aria-expanded','false')});if(ab){w.classList.add('aberto');a.setAttribute('aria-expanded','true')}break}
     case 'viab':UI.modal='viab';renderModal();break;
+    case 'mp-desel':mpSelecionar(null);break;
+    case 'mp-eu':mpEu();break;
+    case 'mp-cheia':mpTelaCheia();break;
     case 'mp-sv':{const x=T(a.dataset.id);fecharPopup();gStreetView(x,MAPA);break}
     case 'g-sv-mini':{const x=T(a.dataset.id);if(MINI)gStreetView(x,MINI);break}
     case 'mp-entorno':{const x=T(a.dataset.id);fecharPopup();gEntornoDe(x);break}
@@ -3566,10 +3588,40 @@ function ctxGestos(el,ponto){if(!el||el.dataset.ctx)return;el.dataset.ctx='1';co
 document.addEventListener('pointerdown',e=>{if($('.mp-ctx')&&!e.target.closest('.mp-ctx'))ctxFechar()},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('.mp-ctx')){ctxFechar();e.preventDefault()}});
 function desenhaRascunho(){return GG?G_desenhaRascunho():L_desenhaRascunho()}
-function initMapa(){return GG?G_initMapa():L_initMapa()}
+function initMapa(){const r=GG?G_initMapa():L_initMapa();mpCtrlObs();return r}
 /* tema escuro: a visão Mapa fica escura (Google pelo colorScheme, que só vale ao criar o mapa; Leaflet pelo cinza-escuro da Esri). O satélite não muda */
 const temaEscuro=()=>document.documentElement.dataset.tema==='escuro';
 function temaMapa(){if(!MAPA||!$('#mapa'))return;if(GG){if(MAPA.__escuro!==temaEscuro())G_initMapa()}else if((UI.mpBase||'satelite')==='mapa')L_setBase('mapa')}
+/* botões do canto do mapa: minha localização e tela cheia (o controle de câmera do Google saiu; decisão do Moisés, 23/out/2026).
+   Sobem acima do cartão do terreno e do aviso de desenho quando eles ocupam o pé do mapa. */
+function mpCtrlHtml(){const on=document.body.classList.contains('mp-cheia');
+  return `<div id="mp-ctrl" class="mp-ctrl"><button type="button" class="mp-cb" data-a="mp-eu" title="Minha localização" aria-label="Centralizar na minha localização">${ic('eu',22)}</button>
+    <button type="button" class="mp-cb" data-a="mp-cheia" aria-pressed="${on}" title="${on?'Sair da tela cheia':'Tela cheia'}" aria-label="${on?'Sair da tela cheia':'Tela cheia'}">${ic(on?'telaSair':'tela',22)}</button></div>`}
+function mpCtrlPos(){const a=$('.mapa-area'),c=$('#mp-ctrl');if(!a||!c)return;const ar=a.getBoundingClientRect();let topo=ar.bottom;
+  ['#mp-cartao','#mp-modo'].forEach(s=>{const e=$(s);if(!e||!e.offsetHeight)return;const r=e.getBoundingClientRect();if(r.bottom>ar.bottom-80&&r.right>ar.right-80)topo=Math.min(topo,r.top)});
+  c.style.bottom=topo<ar.bottom?Math.round(ar.bottom-topo+12)+'px':''}
+function mpCtrlObs(){const a=$('.mapa-area');if(!a||a.__ro||!window.ResizeObserver)return mpCtrlPos();a.__ro=new ResizeObserver(mpCtrlPos);[a,$('#mp-cartao'),$('#mp-modo')].forEach(e=>e&&a.__ro.observe(e));mpCtrlPos()}
+/* tela cheia: o mapa cobre a página (classe no body, que também serve ao iPhone, sem tela cheia de elemento) e, onde der, o navegador esconde as próprias barras */
+let mpCheiaApi=false;
+function mpTelaCheia(on){const b=document.body;if(on===undefined)on=!b.classList.contains('mp-cheia');
+  b.classList.toggle('mp-cheia',on);
+  if(on){const r=document.documentElement;try{const p=r.requestFullscreen?.({navigationUI:'hide'});mpCheiaApi=!!p;p?.catch?.(()=>{mpCheiaApi=false})}catch(e){mpCheiaApi=false}}
+  else if(document.fullscreenElement&&mpCheiaApi){mpCheiaApi=false;document.exitFullscreen?.().catch?.(()=>{})}
+  const k=$('[data-a="mp-cheia"]');if(k){k.setAttribute('aria-pressed',on);k.title=k.ariaLabel=on?'Sair da tela cheia':'Tela cheia';k.innerHTML=ic(on?'telaSair':'tela',22)}
+  if(!GG)setTimeout(()=>MAPA?.invalidateSize?.(),60);setTimeout(mpCtrlPos,80)}
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&mpCheiaApi){mpCheiaApi=false;if(document.body.classList.contains('mp-cheia'))mpTelaCheia(false)}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('mp-cheia')&&!document.fullscreenElement&&!UI.modal&&!UI.fichaSheet&&!UI.mpModo&&!$('.mp-ctx')&&!$('.v-menu')){mpTelaCheia(false);e.preventDefault()}});
+/* minha localização: ponto azul com o círculo da precisão; centra o mapa */
+function mpEu(){if(!navigator.geolocation){toast('Este navegador não informa a localização.',true);return}
+  const b=$('[data-a="mp-eu"]');b?.classList.add('busca');
+  navigator.geolocation.getCurrentPosition(p=>{$('[data-a="mp-eu"]')?.classList.remove('busca');UI.mpEu={lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy};desenhaEu(true)},
+    e=>{$('[data-a="mp-eu"]')?.classList.remove('busca');toast(e.code===1?'A localização está bloqueada. Libere o acesso à localização para este site no navegador.':'Não foi possível obter sua localização agora.',true)},
+    {enableHighAccuracy:true,timeout:15000,maximumAge:30000})}
+function desenhaEu(centrar){const u=UI.mpEu;if(!MAPA||!u)return;return GG?G_eu(u,centrar):L_eu(u,centrar)}
+let EU=null;
+function L_eu(u,centrar){EU?.remove();EU=L.layerGroup([L.circle([u.lat,u.lng],{radius:u.acc||0,color:'#1a73e8',weight:1,fillOpacity:.12,interactive:false}),
+  L.circleMarker([u.lat,u.lng],{radius:7,color:'#fff',weight:2,fillColor:'#1a73e8',fillOpacity:1,interactive:false})]).addTo(MAPA);
+  if(centrar)MAPA.setView([u.lat,u.lng],Math.max(MAPA.getZoom()||0,17))}
 function focar(t){return GG?G_focar(t):L_focar(t)}
 function initMini(){return GG?G_initMini():L_initMini()}
 function fecharPopup(){if(GG)G_fecharPopup();else MAPA?.closePopup?.()}
@@ -3591,11 +3643,11 @@ function mpVisiveis(){const m=UI.mp,q=m.q.trim().toLowerCase();
 /* lista lateral do mapa: só o número do pino (etapa), o nome e a área; a lupa abre a ficha.
    Clicar no pino ou na poligonal seleciona o terreno aqui (não há balão no mapa). */
 function mpItem(t,cartao){const k=sitMapa(t),[nm,c,g,fg]=SIT[k],sel=UI.mpSel===t.id,ad=areaAdotada(t)||(t.poly?areaPoly(t.poly):null);
-  const acoes=sel&&t.lat!=null?`<div class="mp-it-a">${UI.role!=='Leitura'?`<button class="linkbtn" data-a="mp-desenhar" data-id="${t.id}">${t.poly?'Editar':'Desenhar'} poligonal</button>`:''}${GG?`<button class="linkbtn" data-a="mp-sv" data-id="${t.id}">Street View</button><button class="linkbtn" data-a="mp-entorno" data-id="${t.id}">O que tem perto</button>`:''}</div>`:'';
+  const acoes=sel&&t.lat!=null?`<div class="mp-it-a">${UI.role!=='Leitura'?`<button class="linkbtn" data-a="mp-desenhar" data-id="${t.id}">${t.poly?'Editar':'Desenhar'} poligonal</button>`:''}${GG?`<button class="linkbtn" data-a="mp-sv" data-id="${t.id}">Street View</button>`:''}</div>`:'';
   return `<div class="mp-it${sel?' sel':''}${cartao?' cartao':''}" data-a="mp-foco" data-id="${t.id}" tabindex="0" role="listitem" aria-current="${sel}">
     <span class="pin-mini" style="background:${c};color:${fg}" title="${esc(nm)}">${g}</span>
     <div class="mp-it-t"><div class="t1">${esc(t.nome)}</div><div class="t2">${ad?m2(ad):'Área não informada'} · ${esc(nm)}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div></div>
-    <button class="iconbtn mp-lupa" data-a="fs-abrir" data-id="${t.id}" title="Ver ficha" aria-label="Ver ficha de ${esc(t.nome)}">${bi('busca',22)}</button>${acoes}</div>`}
+    <button class="iconbtn mp-lupa" data-a="fs-abrir" data-id="${t.id}" title="Ver ficha" aria-label="Ver ficha de ${esc(t.nome)}">${bi('busca',22)}</button>${cartao?`<button class="iconbtn mp-lupa mp-fx" data-a="mp-desel" title="Fechar" aria-label="Fechar">${ic('close',22)}</button>`:''}${acoes}</div>`}
 function mpLista(){const v=mpVisiveis(),sem=v.filter(t=>t.lat==null),ord=Object.keys(SIT);
   const rows=v.slice().sort((a,b)=>ord.indexOf(sitMapa(a))-ord.indexOf(sitMapa(b))||a.nome.localeCompare(b.nome,'pt'));
   return `${entornoHtml()}<div class="mp-resumo"><span><b>${v.length}</b> terrenos</span><span><b>${num(v.reduce((s,t)=>s+(areaAdotada(t)||0),0))}</b> m²</span></div>
@@ -3647,6 +3699,7 @@ function pgMapa(){
     </div>
     <div id="mp-modo" class="mp-modo" aria-live="polite">${modoBanner()}</div>
     <div id="mp-cartao" class="mp-cartao" aria-live="polite"></div>
+    ${mpCtrlHtml()}
     <details class="mp-legenda" ${UI.mpLeg??innerWidth>899?'open':''}><summary>Legenda</summary><div id="mp-leg" class="mp-leg-l">${mpLegenda()}</div></details>
     <div class="mp-aviso">O fundo do mapa (ruas e satélite) não carrega neste link de visualização, que bloqueia imagens externas. Os pins, poligonais e distâncias funcionam. No app publicado, ou abrindo o arquivo do protótipo no navegador, o fundo aparece.</div>
   </section></div>`;
@@ -3697,7 +3750,7 @@ function L_initMapa(){const el=$('#mapa');if(!el)return;
   L.control.scale({imperial:false,position:'bottomright'}).addTo(MAPA);
   setBase(UI.mpBase||'satelite');PINS=L.layerGroup().addTo(MAPA);POIS=L.layerGroup();CONC=L.layerGroup();DES=L.layerGroup().addTo(MAPA);if(UI.mpPoi!==false)POIS.addTo(MAPA);if(UI.mpConc!==false)CONC.addTo(MAPA);
   ctxGestos(el,(x,y)=>{const ll=MAPA.containerPointToLatLng([x,y]);return {lat:ll.lat,lng:ll.lng}});MAPA.on('movestart zoomstart',ctxFechar);
-  desenhaPins();desenhaPois();desenhaRascunho();el.classList.toggle('modo',!!UI.mpModo);
+  desenhaPins();desenhaPois();desenhaRascunho();el.classList.toggle('modo',!!UI.mpModo);desenhaEu(false);
   const vista=UI.mpView,enquadrar=()=>{if(vista)return MAPA.setView(vista.c,vista.z);const pts=ativosBanco().filter(t=>t.lat!=null).map(t=>[t.lat,t.lng]);pts.length?MAPA.fitBounds(pts,{padding:[48,48],maxZoom:15}):MAPA.setView([-23.55,-46.63],11)};
   enquadrar();
   // o contêiner só tem o tamanho final depois do layout: recalcula e reenquadra
@@ -4083,12 +4136,12 @@ function gPontoNaTela(lat,lng){if(!MAPA)return null;if(!gProj||gProj.getMap()!==
   const pr=gProj.getProjection();if(!pr)return null;const p=pr.fromLatLngToContainerPixel(new google.maps.LatLng(lat,lng));return p?{x:p.x,y:p.y}:null}
 function gEnquadrar(pts,maxZoom){if(!MAPA||!pts.length)return;if(pts.length===1){MAPA.setCenter(pts[0]);MAPA.setZoom(maxZoom||17);return}
   const b=new google.maps.LatLngBounds();pts.forEach(p=>b.extend(p));MAPA.fitBounds(b,48);if(maxZoom)google.maps.event.addListenerOnce(MAPA,'idle',()=>{if(MAPA.getZoom()>maxZoom)MAPA.setZoom(maxZoom)})}
-function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[];gPois=[];gConc=[];gDes=[];gRota=[];gEntorno=[];
+function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[];gPois=[];gConc=[];gDes=[];gRota=[];gEntorno=[];gSet(gEu,null);gEu=[];
   const v=UI.mpView;
   MAPA=new google.maps.Map(el,{mapId:UI.mpLugares===false&&GMAP_SEM_LUGARES?GMAP_SEM_LUGARES:'DEMO_MAP_ID',colorScheme:temaEscuro()?'DARK':'LIGHT',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[UI.mpBase||'satelite'],
-    mapTypeControl:false,streetViewControl:true,fullscreenControl:false,clickableIcons:UI.mpLugares!==false,gestureHandling:'greedy',scaleControl:true,tilt:0,disableDoubleClickZoom:true});
+    mapTypeControl:false,streetViewControl:false,cameraControl:false,fullscreenControl:false,clickableIcons:UI.mpLugares!==false,gestureHandling:'greedy',scaleControl:true,tilt:0,disableDoubleClickZoom:true});
   MAPA.__escuro=temaEscuro();gInfo=new google.maps.InfoWindow({maxWidth:320,headerDisabled:true});
-  el.classList.toggle('modo',!!UI.mpModo);G_desenhaPins();G_desenhaPois();G_desenhaConc();
+  el.classList.toggle('modo',!!UI.mpModo);G_desenhaPins();G_desenhaPois();G_desenhaConc();desenhaEu(false);
   ctxGestos(el,(x,y)=>{if(!gProj||gProj.getMap()!==MAPA)gPontoNaTela(0,0);const pr=gProj?.getProjection();const ll=pr?.fromContainerPixelToLatLng(new google.maps.Point(x,y));return ll?{lat:ll.lat(),lng:ll.lng()}:null});
   /* reserva: o Google também avisa o clique direito (se o evento do navegador não chegar ao contêiner) */
   MAPA.addListener('contextmenu',e=>{const de=e.domEvent;if(!de||!e.latLng||(UI.ctxTipo||'mouse')!=='mouse'||$('.mp-ctx'))return;const r=el.getBoundingClientRect();ctxAbrir(de.clientX-r.left,de.clientY-r.top,e.latLng.lat(),e.latLng.lng())});
@@ -4102,6 +4155,11 @@ function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[]
     if(UI.mpModo&&e.latLng)mapaClique(e.latLng.lat(),e.latLng.lng());else if(UI.mpSel)mpSelecionar(null)});
   if(UI.mpFoco){const t=T(UI.mpFoco);UI.mpFoco=null;if(t&&t.lat!=null)google.maps.event.addListenerOnce(MAPA,'idle',()=>G_focar(t))}
 }
+let gEu=[];
+function G_eu(u,centrar){gSet(gEu,null);const d=document.createElement('div');d.className='eu-dot';d.title='Você está aqui';
+  gEu=[new google.maps.Circle({map:MAPA,center:gLL(u.lat,u.lng),radius:u.acc||0,strokeColor:'#1a73e8',strokeWeight:1,strokeOpacity:.5,fillColor:'#1a73e8',fillOpacity:.12,clickable:false}),
+    new gLib.marker.AdvancedMarkerElement({map:MAPA,position:gLL(u.lat,u.lng),content:d,title:'Você está aqui',gmpClickable:false,zIndex:5})];
+  if(centrar){MAPA.panTo(gLL(u.lat,u.lng));if((MAPA.getZoom()||0)<17)MAPA.setZoom(17)}}
 function G_focar(t){if(!MAPA)return;UI.mpSel=t.id;if(t.poly)gEnquadrar(t.poly.map(p=>gLL(p[0],p[1])),19);else{MAPA.setCenter(gLL(t.lat,t.lng));if(MAPA.getZoom()<17)MAPA.setZoom(17)}
   mpSelecionar(t.id)}
 
