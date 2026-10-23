@@ -1696,8 +1696,6 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 }
 /* celular: quatro papéis não cabem por extenso na barra; fica a inicial (nome completo no title) */
 @media (max-width: 480px) {
-  #role button { font-size: 0 !important; min-width: 34px; padding: 0 !important }
-  #role button::after { content: attr(data-c); font-size: 13px }
 }
 
 /* Tema escuro: indicadores tonais, sem neon. Mesma luminosidade nos quatro, só o tom muda
@@ -1825,6 +1823,13 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 :root:not([data-tema="escuro"]) .kpis .kpi.warn { box-shadow: inset 3px 0 0 #b28600 !important }
 :root[data-tema="escuro"] button.kpi:hover { border-color: rgba(124,140,255,.6) !important }
 :root:not([data-tema="escuro"]) button.kpi:hover { border-color: #a8b3bf !important }
+/* avatar do usuário na barra superior: o papel vem do perfil; o menu traz quem está entrando e, só no protótipo, a troca de usuário (decisão do Moisés, 23/out/2026) */
+.perfil-btn { width: 34px; height: 34px; border-radius: 50%; border: 0; background: #8e4ec6; color: #fff; font-size: 14px; font-weight: 500; display: grid; place-items: center; cursor: pointer; margin-left: 4px }
+.perfil-btn:hover, .perfil-btn[aria-expanded="true"] { box-shadow: 0 0 0 3px rgba(127,127,127,.25) }
+.perfil-eu { display: flex; flex-direction: column; gap: 2px; padding: 10px 16px 10px; border-bottom: 1px solid var(--m-outline-var, #c4c7c5); margin-bottom: 4px }
+.perfil-eu b { font-weight: 500; font-size: 14px } .perfil-eu span { font-size: 12px; color: var(--m-on-var, #444746) }
+.perfil-av { width: 24px; height: 24px; border-radius: 50%; background: #8e4ec6; color: #fff; font-size: 12px; font-weight: 500; display: grid; place-items: center; flex: none }
+#perfil .tema-menu { min-width: 240px }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
