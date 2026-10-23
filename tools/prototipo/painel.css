@@ -796,8 +796,11 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 /* no Início os indicadores são botões: a faixa fica vermelha (tarefas atrasadas) ou âmbar (fichas incompletas) quando há o que olhar; ao passar o mouse o contorno escurece (23/out/2026) */
 :root[data-tema="escuro"] .kpis .kpi.crit { box-shadow: inset 3px 0 0 #f2b8b5 !important }
 :root[data-tema="escuro"] .kpis .kpi.warn { box-shadow: inset 3px 0 0 #f5c451 !important }
-:root:not([data-tema="escuro"]) .kpis .kpi.crit { box-shadow: inset 3px 0 0 #b3261e !important }
-:root:not([data-tema="escuro"]) .kpis .kpi.warn { box-shadow: inset 3px 0 0 #b28600 !important }
+/* tema claro: cada indicador com uma cor da paleta BKM na faixa (azul BKM, roxo, terracota, verde da marca; decisão do Moisés, 23/out/2026) */
+:root:not([data-tema="escuro"]) .kpis .kpi:nth-child(4n+1) { box-shadow: inset 3px 0 0 #0094fe !important }
+:root:not([data-tema="escuro"]) .kpis .kpi:nth-child(4n+2) { box-shadow: inset 3px 0 0 #863d8f !important }
+:root:not([data-tema="escuro"]) .kpis .kpi:nth-child(4n+3) { box-shadow: inset 3px 0 0 #c67355 !important }
+:root:not([data-tema="escuro"]) .kpis .kpi:nth-child(4n+4) { box-shadow: inset 3px 0 0 #7d8a3e !important }
 :root[data-tema="escuro"] button.kpi:hover { border-color: rgba(124,140,255,.6) !important }
 :root:not([data-tema="escuro"]) button.kpi:hover { border-color: #a8b3bf !important }
 /* avatar do usuário na barra superior: o papel vem do perfil; o menu traz quem está entrando e, só no protótipo, a troca de usuário (decisão do Moisés, 23/out/2026) */
