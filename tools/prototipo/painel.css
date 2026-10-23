@@ -849,3 +849,28 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .perfil-eu b { font-weight: 500; font-size: 14px } .perfil-eu span { font-size: 12px; color: var(--m-on-var, #444746) }
 .perfil-av { width: 24px; height: 24px; border-radius: 50%; background: #8e4ec6; color: #fff; font-size: 12px; font-weight: 500; display: grid; place-items: center; flex: none }
 #perfil .tema-menu { min-width: 240px }
+/* partes do terreno (vários donos): resumo e um cartão por parte, cada um com a sua negociação (23/out/2026) */
+.pt-res { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px 16px; margin-bottom: 16px }
+.pt-res > div { display: flex; flex-direction: column; gap: 2px } .pt-res b { font-weight: 500; font-size: 16px }
+.pt-res .lbl, .pt-f .lbl { font-size: 12px; color: var(--m-on-var, #444746) }
+#sec-partes .banner { margin-bottom: 12px }
+.pt-lista { display: flex; flex-direction: column; gap: 12px }
+.pt-card { border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0 }
+.pt-card.comprado { box-shadow: inset 3px 0 0 #146c2e } .pt-card.perdido, .pt-card.descartado { box-shadow: inset 3px 0 0 #b3261e } .pt-card.stand_by { box-shadow: inset 3px 0 0 #7a5900 }
+.pt-card.fora { opacity: .7; border-style: dashed }
+.pt-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap } .pt-n { display: flex; align-items: baseline; gap: 8px; margin-right: auto; min-width: 0 }
+.pt-n b { font-weight: 500; font-size: 15px } .pt-n .num { font-size: 12px }
+.pt-m { font-size: 13px } .pt-x { font-size: 13px }
+.pt-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px 16px; align-items: start }
+.pt-f { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 14px } .pt-f select { height: 36px; max-width: 100% } .pt-f .faint { font-size: 12px }
+.pt-f .temp { margin: 0 }
+.pt-ped { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; padding: 8px 12px; border-radius: 8px; background: var(--m-sc-low, #f0f4f9) }
+.pt-ped > span { margin-right: auto }
+.pt-a { display: flex; align-items: center; gap: 8px; flex-wrap: wrap }
+.pt-a .adv-mais { margin-left: auto } .pt-a .adv-mais .adv-mb { width: 36px; padding: 0; justify-content: center }
+.t-warn { color: #7a5900; font-weight: 500 }
+.kcard .kpt { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--m-on-var, #444746) }
+:root[data-tema="escuro"] .pt-card { border-color: rgba(124,140,255,.22); background: #060c20 }
+:root[data-tema="escuro"] .pt-ped { background: rgba(124,140,255,.07) }
+:root[data-tema="escuro"] .t-warn { color: #f5c451 }
+:root[data-tema="escuro"] .pt-card.comprado { box-shadow: inset 3px 0 0 #6dd58c } :root[data-tema="escuro"] .pt-card.perdido, :root[data-tema="escuro"] .pt-card.descartado { box-shadow: inset 3px 0 0 #f2b8b5 } :root[data-tema="escuro"] .pt-card.stand_by { box-shadow: inset 3px 0 0 #f5c451 }

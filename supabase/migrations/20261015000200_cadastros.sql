@@ -69,6 +69,10 @@ create table app.fases_modelo (
   prefixo     text not null check (prefixo ~ '^[A-Z]{2,5}$'), -- código do processo: NEG-00012
   entrada     boolean not null default false,
   ativo       boolean not null default true,
+  -- só na fase de entrada: a partir desta etapa, terreno com duas ou mais
+  -- partes (donos que negociam separado) tem uma negociação por parte; nulo = nunca divide
+  etapa_partes text,
+  check (etapa_partes is null or entrada),
   unique nulls not distinct (empresa_id, codigo),
   unique nulls not distinct (empresa_id, prefixo)
 );
@@ -323,6 +327,9 @@ insert into app.subetapas_modelo (fase, etapa, codigo, nome, ordem) values
   ('entregue',      'pos_entrega', 'assistencia_tecnica',    'Assistência Técnica',         1),
   ('entregue',      'pos_entrega', 'garantia',               'Em Garantia',                 2);
 
+-- Terreno com vários donos: cada parte negocia separado a partir da Negociação.
+update app.fases_modelo set etapa_partes = 'negociacao' where empresa_id is null and codigo = 'novos_negocios';
+
 -- Concluir: em Novos Negócios é a compra (gestor e depois diretor); nas
 -- demais, sem aprovação. Perdido (o vendedor disse não) só em Novos Negócios.
 insert into app.status_modelo (fase, status, nome, aprova_gestor, aprova_diretor, aprovacao_modo) values
@@ -375,8 +382,8 @@ create or replace function app.tg_copiar_configuracao()
 returns trigger language plpgsql security definer set search_path = ''
 as $$
 begin
-  insert into app.fases_modelo (empresa_id, codigo, nome, ordem, prefixo, entrada, ativo)
-  select new.id, codigo, nome, ordem, prefixo, entrada, ativo from app.fases_modelo where empresa_id is null;
+  insert into app.fases_modelo (empresa_id, codigo, nome, ordem, prefixo, entrada, ativo, etapa_partes)
+  select new.id, codigo, nome, ordem, prefixo, entrada, ativo, etapa_partes from app.fases_modelo where empresa_id is null;
   insert into app.fase_dependencias (empresa_id, fase, requisito_fase, requisito_tipo, requisito)
   select new.id, fase, requisito_fase, requisito_tipo, requisito from app.fase_dependencias where empresa_id is null;
   insert into app.etapas_modelo (empresa_id, fase, codigo, nome, ordem, sla_dias, aprova_gestor, aprova_diretor, aprovacao_modo)

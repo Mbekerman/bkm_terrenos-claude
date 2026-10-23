@@ -135,7 +135,7 @@ const colDesce=(a,v,l,dica)=>`<button class="col-ab" data-a="${a}" data-v="${esc
 function kcardFase(t,f,p){const e=etapaF(f,p.etapa),s=p.sub&&subF(f,p.sub),sb=p.status==='stand_by',outras=fasesAbertas(t).filter(x=>x!==f);
   return `<button class="kcard" data-a="abrir" data-id="${t.id}" data-from="negociacoes"><div class="kr"><span class="num faint">${t.codigo}</span>${f===faseEnt()?tempMini(p.temp):`<span class="num faint">${esc(p.codigo||'')}</span>`}</div><div class="kt">${esc(t.nome)}</div>
   <div class="ksub"><span>${esc(e?.nome||'')}${s?' · '+esc(s.nome):''}</span>${sb?'<span class="faint">Stand By</span>':''}</div>
-  <div class="ks">${esc(t.bairro||'')}${outras.length?' · também em '+esc(outras.map(faseN).join(', ')):''}</div>
+  <div class="ks">${esc(t.bairro||'')}${outras.length?' · também em '+esc(outras.map(faseN).join(', ')):''}</div>${f===faseEnt()&&typeof dividida==='function'&&dividida(t)?`<div class="kpt">${ic('layers',14)}${esc(resumoPartes(t))}</div>`:''}
   <div class="kr">${av(t.resp,'sm')}<span class="faint">${sb?'revisitar '+fd(p.retomar):diff(p.desde,HOJE)+' d na etapa'}</span></div></button>`}
 function pgFasesBoard(){const F=fasesL().filter(f=>f.ativo);
   return `${negTopo('Fases','Cada coluna é uma fase. Clique no nome da fase para ver as etapas dela; ali, no nome da etapa, as subetapas.')}

@@ -818,4 +818,110 @@ select pg_temp.falha(format($$select app.registrar_oferta(%L, 900000, p_poligono
 select pg_temp.como(:'intruso');
 select pg_temp.falha(format($$select * from app.terrenos_sobrepostos(%L, %L)$$, :'emp', :'meio'), 'outra empresa não consulta');
 select pg_temp.como(:'diretor');
+\echo '# terreno com vários donos: uma negociação por parte'
+select pg_temp.como(:'analista');
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro, poligono_geojson)
+values (:'emp', 'Três lotes na R. Itapura', :'analista', 'corretor', :'sp', 'Tatuapé', pg_temp.quadra(-46.8000, -23.7000, 90)) returning id as tv \gset
+select app.salvar_parte(:'tv', null, '{"nome":"Família Souza","area_m2":2700}') as pa \gset
+select app.salvar_parte(:'tv', null, '{"nome":"Carlos Pires","area_m2":2700}') as pb \gset
+select pg_temp.falha(format($$select app.salvar_parte(%L, null, '{"nome":"Oficina","essencial":false}')$$, :'tv'), 'só gestor ou diretor marca parte como dispensável');
+select app.salvar_parte(:'tv', null, '{"nome":"Oficina do Zé","area_m2":2700}') as pc \gset
+select pg_temp.falha(format($$select app.salvar_parte(%L, null, '{"nome":"Fora","poligono":%s}')$$, :'tv', pg_temp.quadra(-46.7000, -23.7000, 30)), 'pedaço da parte fica dentro do terreno');
+select pg_temp.falha(format($$insert into app.terreno_partes (empresa_id, terreno_id, nome) values (%L, %L, 'Direto')$$, :'emp', :'tv'), 'parte só entra pela RPC');
+insert into app.matriculas (empresa_id, terreno_id, numero, cartorio, parte_id) values (:'emp', :'tv', '201.001', '9º RI', :'pa'), (:'emp', :'tv', '201.002', '9º RI', :'pa');
+insert into app.matriculas (empresa_id, terreno_id, numero, cartorio, parte_id) values (:'emp', :'tv', '201.003', '9º RI', :'pb');
+select pg_temp.falha(format($$insert into app.matriculas (empresa_id, terreno_id, numero, cartorio, parte_id) values (%L, %L, '1', '1º RI', %L)$$, :'emp', :'t1', :'pa'), 'matrícula só entra em parte do próprio terreno');
+insert into app.pessoas (empresa_id, tipo_pessoa, nome_razao_social) values (:'emp', 'PF', 'Ana Souza') returning id as pas \gset
+insert into app.pessoas (empresa_id, tipo_pessoa, nome_razao_social) values (:'emp', 'PF', 'Beto Souza') returning id as pbs \gset
+insert into app.pessoas (empresa_id, tipo_pessoa, nome_razao_social) values (:'emp', 'PF', 'Carlos Pires') returning id as pcp \gset
+insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel, percentual_participacao, parte_id) values
+  (:'emp', :'tv', :'pas', 'proprietario', 50, :'pa'), (:'emp', :'tv', :'pbs', 'proprietario', 50, :'pa'), (:'emp', :'tv', :'pcp', 'proprietario', 100, :'pb');
+select pg_temp.ok((select sum(percentual_participacao) from app.terreno_pessoas where terreno_id = :'tv') = 200, 'participações somam 100% em cada parte (herdeiros juntos numa parte)');
+select pg_temp.ok((select qtd_matriculas = 2 and proprietarios = 'Ana Souza, Beto Souza' from app.v_partes where id = :'pa'), 'parte mostra matrículas e donos');
+
+select app.registrar_oferta(:'tv', 9000000, p_partes => format('[{"parte_id":"%s","valor":3500000},{"parte_id":"%s"}]', :'pa', :'pb')::jsonb) as rv \gset
+select (:'rv'::jsonb->>'processo_id') as nv \gset
+select pg_temp.ok((select count(*) from app.oferta_partes where oferta_id = (:'rv'::jsonb->>'oferta_id')::uuid) = 2, 'oferta do corretor cobre duas partes, com preço de uma');
+select pg_temp.ok(not exists (select 1 from app.processos where principal_id = :'nv'), 'antes da Negociação, uma negociação só (Triagem e Estudos são da área toda)');
+select pg_temp.como(:'gestor');
+select app.mover_etapa(:'nv') \gset
+select app.mover_etapa(:'nv', true, 'Estudo pronto') \gset
+select pg_temp.ok((select count(*) from app.processos where principal_id = :'nv' and status = 'ativo' and etapa_atual = 'negociacao' and subetapa_atual = 'aguardando_reuniao') = 3,
+  'na Negociação, cada parte ganha a sua negociação, na subetapa inicial');
+select id as na from app.processos where parte_id = :'pa' \gset
+select id as nb from app.processos where parte_id = :'pb' \gset
+select id as nc from app.processos where parte_id = :'pc' \gset
+select pg_temp.ok((select codigo from app.processos where id = :'na') = (select codigo from app.processos where id = :'nv') || '-1', 'código da parte: o do terreno com um número');
+select pg_temp.ok((select valor_pedido = 3500000 from app.v_partes where id = :'pa') and (select valor_pedido is null from app.v_partes where id = :'pb'),
+  'preço pedido por parte vem da oferta');
+select pg_temp.ok(not exists (select 1 from app.fases_do_terreno(:'tv') where processo_id in (:'na', :'nb', :'nc')), 'as partes não aparecem como fases');
+select pg_temp.falha(format('select app.mover_subetapa(%L, %L)', :'nv', 'preparando_proposta'), 'negociação do terreno dividida não se move à mão');
+select pg_temp.falha(format('select app.mover_para_etapa(%L, %L, false, %L)', :'na', 'estudos', 'voltar'), 'parte não volta para antes da Negociação');
+select app.definir_temperatura(:'na', 5);
+select app.definir_temperatura(:'nb', 2);
+select pg_temp.ok((select temperatura from app.v_partes where id = :'pa') = 5 and (select temperatura from app.v_partes where id = :'pb') = 2, 'temperatura por parte');
+select app.registrar_proposta(:'na', 'bkm', 3200000, 'dinheiro') \gset
+select pg_temp.ok((select ultima_proposta_valor from app.v_partes where id = :'pa') = 3200000 and (select ultima_proposta_valor is null from app.v_partes where id = :'pb'), 'propostas por parte');
+select app.mover_subetapa(:'na', 'proposta_enviada') \gset
+select pg_temp.ok((select subetapa_atual from app.processos where id = :'nv') = 'aguardando_reuniao', 'o terreno fica na subetapa da parte mais atrasada');
+select app.mover_etapa(:'na') \gset
+select app.mover_etapa(:'nb') \gset
+select pg_temp.ok((select etapa_atual from app.processos where id = :'nv') = 'negociacao', 'com uma parte na Negociação, o terreno continua nela');
+select app.mover_etapa(:'nc') \gset
+select pg_temp.ok((select etapa_atual = 'contrato' and subetapa_atual = 'em_elaboracao' from app.processos where id = :'nv'), 'todas no Contrato: o terreno vai junto');
+select pg_temp.ok((select comentario = 'Pelas negociações das partes' and evento = 'avanco' from app.processo_transicoes where processo_id = :'nv' order by em desc limit 1),
+  'o avanço do terreno vai para o histórico');
+
+-- parte comprada, parte perdida
+select pg_temp.como(:'diretor');
+select app.encerrar_processo(:'na', 'concluido', p_detalhe => 'Escritura da Família Souza', p_forcar => true, p_comentario => 'Certidões na escritura') \gset
+select pg_temp.ok((select status from app.processos where id = :'na') = 'concluido', 'parte comprada sem pontos de sucesso (só a compra do terreno pede)');
+select pg_temp.ok((select status from app.processos where id = :'nv') = 'ativo', 'uma parte comprada não compra o terreno');
+select pg_temp.como(:'analista');
+select app.encerrar_processo(:'nc', 'perdido', 'desistiu_vender', 'O Zé vendeu a oficina para outra incorporadora') \gset
+select app.encerrar_processo(:'nb', 'stand_by', p_detalhe => 'Carlos viajando', p_retomar_em => current_date + 10) \gset
+select pg_temp.ok((select etapa_atual from app.processos where id = :'nv') = 'contrato', 'parte em stand by continua contando para a posição do terreno');
+select app.retomar_processo(:'nb');
+select pg_temp.como(:'diretor');
+select app.encerrar_processo(:'nb', 'concluido', p_detalhe => 'Escritura do Carlos', p_forcar => true, p_comentario => 'Certidões na escritura') \gset
+select pg_temp.ok((app.checar_avanco(:'nv')->'itens') @> '[{"tipo":"parte","ok":false,"bloqueio_gestor":true}]', 'parte perdida trava a compra do terreno, nem o gestor força');
+select pg_temp.falha(format('select app.encerrar_processo(%L, %L, p_detalhe => %L, p_pontos_sucesso => %L, p_forcar => true, p_comentario => %L)', :'nv', 'concluido', 'x', 'y', 'z'),
+  'terreno não fica Comprado com parte perdida');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format('select app.remover_parte(%L, %L)', :'pc', 'Vendida a terceiro'), 'analista não tira parte essencial');
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format('select app.remover_parte(%L, %L)', :'pa', 'x'), 'parte comprada não sai');
+select app.remover_parte(:'pc', 'Vendida a terceiro: seguimos com dois lotes');
+select pg_temp.ok((select not ativa and motivo_remocao is not null from app.terreno_partes where id = :'pc'), 'gestor tira a parte perdida, com motivo');
+select pg_temp.ok(not ((app.checar_avanco(:'nv')->'itens') @> '[{"tipo":"parte","ok":false}]'), 'sem a parte perdida, as outras estão compradas');
+select pg_temp.ok((app.checar_avanco(:'nv')->'itens') @> '[{"tipo":"parte","ok":true}]' and not ((app.checar_avanco(:'nv')->'itens') @> '[{"tipo":"documento"}]'),
+  'checklist de documentos fica com cada parte');
+select app.encerrar_processo(:'nv', 'concluido', p_detalhe => 'Área comprada em duas escrituras', p_pontos_sucesso => 'Negociação separada por família') \gset
+select pedido_id as pedv from app.aprovacoes where processo_id = :'nv' and status = 'pendente' \gset
+select pg_temp.como(:'diretor');
+select app.decidir_aprovacao(:'pedv', true) \gset
+select pg_temp.ok((select status from app.processos where id = :'nv') = 'concluido', 'todas as partes ativas compradas: o terreno fica Comprado');
+select pg_temp.ok((select count(*) from app.processos where terreno_id = :'tv' and fase = 'aprovacao' and status = 'ativo') = 1,
+  'a compra do terreno (não a de uma parte) abre a fase seguinte');
+
+-- encerrar o terreno leva as partes
+select pg_temp.como(:'analista');
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro, poligono_geojson)
+values (:'emp', 'Dois lotes na R. Tuiuti', :'analista', 'corretor', :'sp', 'Tatuapé', pg_temp.quadra(-46.8100, -23.7000, 60)) returning id as tw \gset
+select app.salvar_parte(:'tw', null, '{"nome":"Dono 1"}') as qa \gset
+select (app.registrar_oferta(:'tw', 5000000)->>'processo_id') as nw \gset
+select pg_temp.como(:'gestor');
+select app.mover_para_etapa(:'nw', 'negociacao', true, 'Estudo dispensado') \gset
+select pg_temp.ok(not exists (select 1 from app.processos where principal_id = :'nw'), 'com uma parte só, a negociação não se divide');
+select app.salvar_parte(:'tw', null, '{"nome":"Dono 2"}') as qb2 \gset
+select pg_temp.ok((select count(*) from app.processos where principal_id = :'nw') = 2, 'a segunda parte cadastrada já na Negociação divide a negociação');
+select app.encerrar_processo(:'nw', 'stand_by', p_detalhe => 'Inventário do Dono 2', p_retomar_em => current_date + 30) \gset
+select pg_temp.ok((select count(*) from app.processos where principal_id = :'nw' and status = 'stand_by') = 2, 'stand by do terreno para as partes');
+select pg_temp.falha(format('select app.retomar_processo(%L)', (select id from app.processos where parte_id = :'qa')), 'parte não retoma com o terreno parado');
+select app.retomar_processo(:'nw');
+select pg_temp.ok((select count(*) from app.processos where principal_id = :'nw' and status = 'ativo') = 2, 'retomar o terreno retoma as partes');
+select app.encerrar_processo(:'nw', 'descartado', 'financeira') \gset
+select pg_temp.ok((select count(*) from app.processos where principal_id = :'nw' and status = 'descartado' and motivo_encerramento = 'financeira') = 2,
+  'descartar o terreno descarta as partes, com o mesmo motivo');
+
 \echo 'TODOS OS TESTES PASSARAM'
