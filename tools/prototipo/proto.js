@@ -271,7 +271,7 @@ const TEMAS=[['claro','Claro','#f8fafd'],['escuro','Escuro','linear-gradient(135
 let TEMA='claro';try{TEMA=localStorage.getItem('bkm-terrenos-tema')||'claro'}catch(e){}
 if(!['claro','escuro','auto'].includes(TEMA))TEMA='escuro'; // 'marinho' (versão anterior) virou o escuro
 const mqEscuro=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
-function aplicaTema(){document.documentElement.dataset.tema=TEMA==='auto'?(mqEscuro&&mqEscuro.matches?'escuro':'claro'):TEMA}
+function aplicaTema(){document.documentElement.dataset.tema=TEMA==='auto'?(mqEscuro&&mqEscuro.matches?'escuro':'claro'):TEMA;try{temaMapa()}catch(e){}}
 aplicaTema();mqEscuro&&mqEscuro.addEventListener&&mqEscuro.addEventListener('change',()=>{if(TEMA==='auto')aplicaTema()});
 let temaMenu=false;
 function renderTema(){const el=document.getElementById('tema');if(!el)return;

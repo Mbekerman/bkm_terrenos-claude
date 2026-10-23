@@ -69,9 +69,9 @@ function gEnquadrar(pts,maxZoom){if(!MAPA||!pts.length)return;if(pts.length===1)
   const b=new google.maps.LatLngBounds();pts.forEach(p=>b.extend(p));MAPA.fitBounds(b,48);if(maxZoom)google.maps.event.addListenerOnce(MAPA,'idle',()=>{if(MAPA.getZoom()>maxZoom)MAPA.setZoom(maxZoom)})}
 function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[];gPois=[];gConc=[];gDes=[];gRota=[];gEntorno=[];
   const v=UI.mpView;
-  MAPA=new google.maps.Map(el,{mapId:UI.mpLugares===false&&GMAP_SEM_LUGARES?GMAP_SEM_LUGARES:'DEMO_MAP_ID',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[UI.mpBase||'satelite'],
+  MAPA=new google.maps.Map(el,{mapId:UI.mpLugares===false&&GMAP_SEM_LUGARES?GMAP_SEM_LUGARES:'DEMO_MAP_ID',colorScheme:temaEscuro()?'DARK':'LIGHT',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[UI.mpBase||'satelite'],
     mapTypeControl:false,streetViewControl:true,fullscreenControl:false,clickableIcons:UI.mpLugares!==false,gestureHandling:'greedy',scaleControl:true,tilt:0,disableDoubleClickZoom:true});
-  gInfo=new google.maps.InfoWindow({maxWidth:320,headerDisabled:true});
+  MAPA.__escuro=temaEscuro();gInfo=new google.maps.InfoWindow({maxWidth:320,headerDisabled:true});
   el.classList.toggle('modo',!!UI.mpModo);G_desenhaPins();G_desenhaPois();G_desenhaConc();
   ctxGestos(el,(x,y)=>{if(!gProj||gProj.getMap()!==MAPA)gPontoNaTela(0,0);const pr=gProj?.getProjection();const ll=pr?.fromContainerPixelToLatLng(new google.maps.Point(x,y));return ll?{lat:ll.lat(),lng:ll.lng()}:null});
   /* reserva: o Google também avisa o clique direito (se o evento do navegador não chegar ao contêiner) */
