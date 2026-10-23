@@ -804,7 +804,7 @@ document.addEventListener('click',e=>{
     case 'close':UI.modal=null;renderModal();break;
     case 'edit':UI.edit=a.dataset.s;render();setTimeout(()=>document.getElementById('sec-'+a.dataset.s)?.querySelector('input,select,textarea')?.focus(),20);break;
     case 'cancel-edit':UI.edit=null;render();break;
-    case 'temp':{const v=Number(a.dataset.v)||null,antes=t.neg.temp;t.neg.temp=v;log(t,`Temperatura ${antes||'—'} → ${v||'—'}`);save();render();toast(v?`Temperatura ${v} · ${TEMP[v]}.`:'Temperatura removida.');break}
+    case 'temp':{const v=Number(a.dataset.v)||null,antes=t.neg.temp;t.neg.temp=v;log(t,`Temperatura: ${antes?antes+'/5':'não informado'} → ${v?v+'/5':'não informado'}`);save();render();toast(v?`Temperatura ${v} · ${TEMP[v]}.`:'Temperatura removida.');break}
     case 'ofref':t.neg.ofRef=a.dataset.o;log(t,'Oferta de referência alterada');save();render();toast('Oferta de referência atualizada.');break;
     case 'principal':t.corretores.forEach(x=>x.principal=x.cid===a.dataset.c);save();render();break;
     case 'del-mat':t.mats.splice(Number(a.dataset.i),1);save();render();break;

@@ -582,7 +582,7 @@ create or replace function app.definir_temperatura(p_processo uuid, p_temperatur
 returns void
 language plpgsql security definer set search_path = ''
 as $$
-declare p app.processos; antes int;
+declare p app.processos; antes int; ult app.processo_transicoes; inicial int;
 begin
   select * into p from app.processos where id = p_processo;
   if not found then raise exception 'Negociação não encontrada' using errcode = 'P0002'; end if;
@@ -592,6 +592,21 @@ begin
   if not found then raise exception 'Temperatura só na negociação (fase de entrada)' using errcode = '22023'; end if;
   if antes is not distinct from p_temperatura then return; end if;
   update app.negociacoes set temperatura = p_temperatura, temperatura_em = now() where processo_id = p.id;
+  -- cliques seguidos do mesmo usuário (app.janela_log) viram um registro só,
+  -- do valor de antes da sequência ao final; se voltou ao de antes, some
+  select * into ult from app.processo_transicoes where processo_id = p.id order by em desc, id desc limit 1;
+  if found and ult.evento = 'temperatura' and ult.user_id is not distinct from auth.uid()
+     and ult.em >= clock_timestamp() - app.janela_log() then
+    inicial := nullif(split_part(ult.comentario, ' → ', 1), '—')::int;
+    if inicial is not distinct from p_temperatura then
+      delete from app.processo_transicoes where id = ult.id;
+    else
+      update app.processo_transicoes set em = clock_timestamp(),
+        comentario = coalesce(inicial::text, '—') || ' → ' || coalesce(p_temperatura::text, '—')
+      where id = ult.id;
+    end if;
+    return;
+  end if;
   insert into app.processo_transicoes (empresa_id, processo_id, evento, comentario)
   values (p.empresa_id, p.id, 'temperatura', coalesce(antes::text, '—') || ' → ' || coalesce(p_temperatura::text, '—'));
 end $$;
