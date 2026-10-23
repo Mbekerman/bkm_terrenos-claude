@@ -1808,6 +1808,8 @@ body.mp-cheia .fab { display: none !important }
 .mapa-area.sv-on .sv-x { display: grid }
 .mapa-area.sv-on .mp-cartao { display: none !important }
 body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
+/* indicadores do Dashboard no tema escuro: todos no azul do primeiro (decisão do Moisés, 23/out/2026, no lugar de um tom por indicador) */
+:root[data-tema="escuro"] .kpis-v .kpi { --k: var(--neon-1) !important }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
