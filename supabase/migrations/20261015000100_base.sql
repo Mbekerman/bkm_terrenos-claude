@@ -205,6 +205,50 @@ create table app.auditoria (
 create index on app.auditoria (empresa_id, tabela, registro_id);
 create index on app.auditoria (empresa_id, em desc, id desc);
 
+-- Cliques seguidos no mesmo campo (ex.: temperatura 2 → 3 → 4) não viram
+-- vários logs: se o último registro daquele registro é uma alteração do mesmo
+-- usuário, nas mesmas colunas, há menos de app.janela_log(), ele passa a
+-- mostrar o valor final; se o valor final é o de antes da sequência, o
+-- registro some. Grava na hora (nada se perde se a aba fechar); só o
+-- histórico é que junta. Processos ficam de fora: o histórico do funil
+-- (processo_transicoes) é a base do SLA e cada passagem conta.
+create or replace function app.janela_log()
+returns interval language sql immutable as $$ select interval '7 seconds' $$;
+
+-- Colunas que mudaram entre dois retratos, sem as de controle.
+create or replace function app.colunas_mudadas(a jsonb, b jsonb)
+returns text[] language sql immutable set search_path = '' as $$
+  select coalesce(array_agg(k order by k), '{}')
+  from (select jsonb_object_keys(coalesce(a, '{}') || coalesce(b, '{}')) k) x
+  where k not in ('atualizado_em', 'atualizado_por', 'versao')
+    and (a -> k) is distinct from (b -> k) $$;
+
+create or replace function app.juntar_auditoria(p_tabela text, p_old jsonb, p_new jsonb)
+returns boolean
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  v_row jsonb := p_new;
+  v_cols text[] := app.colunas_mudadas(p_old, p_new);
+  u app.auditoria;
+begin
+  if cardinality(v_cols) = 0 then return false; end if;
+  select * into u from app.auditoria
+  where tabela = p_tabela and registro_id = coalesce(v_row->>'id', v_row->>'user_id')::uuid
+  order by em desc, id desc limit 1;
+  if not found or u.acao <> 'update' or u.user_id is distinct from auth.uid()
+     or u.em < clock_timestamp() - app.janela_log()
+     or app.colunas_mudadas(u.antes, u.depois) <> v_cols then
+    return false;
+  end if;
+  if app.colunas_mudadas(u.antes, p_new) && v_cols then
+    update app.auditoria set depois = p_new, em = clock_timestamp() where id = u.id;
+  else
+    delete from app.auditoria where id = u.id;  -- voltou ao valor de antes: nada mudou
+  end if;
+  return true;
+end $$;
+
 create or replace function app.tg_auditoria()
 returns trigger
 language plpgsql security definer set search_path = ''
@@ -215,6 +259,7 @@ declare
   v_row jsonb := coalesce(v_new, v_old);
 begin
   if tg_op = 'UPDATE' and v_old = v_new then return new; end if;
+  if tg_op = 'UPDATE' and tg_table_name <> 'processos' and app.juntar_auditoria(tg_table_name, v_old, v_new) then return new; end if;
   insert into app.auditoria (empresa_id, tabela, registro_id, acao, antes, depois)
   values ((v_row->>'empresa_id')::uuid, tg_table_name, coalesce(v_row->>'id', v_row->>'user_id')::uuid, lower(tg_op), v_old, v_new);
   return coalesce(new, old);

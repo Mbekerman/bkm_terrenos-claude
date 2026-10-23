@@ -58,8 +58,9 @@ Arrastar no quadro de etapas chama `mover_para_etapa` (para frente, etapa por et
 
 ## Terreno com vários donos (partes)
 
-Um dono com várias matrículas é **uma** negociação. Vários donos que negociam separado são **partes** do terreno (`terreno_partes`): cada parte é um dono, ou um grupo de donos que negocia junto (herdeiros, sócios), com as matrículas, as inscrições e as pessoas dela (`parte_id` em `matriculas`, `inscricoes_municipais` e `terreno_pessoas`; participações somam 100% em cada parte), o pedaço da poligonal e a marca de **essencial** (sem ela o terreno não serve) ou dispensável.
+Um dono com várias matrículas é **uma** negociação. Vários donos que negociam separado são **partes** do terreno (`terreno_partes`): cada parte é um dono, ou um grupo de donos que negocia junto (herdeiros, sócios), com as matrículas, as inscrições e as pessoas dela (`parte_id` em `matriculas`, `inscricoes_municipais` e `terreno_pessoas`; participações somam 100% em cada parte) e os corretores dela (`parte_corretores`: uma parte pode ter vários corretores e o mesmo corretor pode trazer várias partes; ligar o corretor à parte o põe entre os corretores do terreno), o pedaço da poligonal e a marca de **essencial** (sem ela o terreno não serve) ou dispensável.
 
+- **Cadastro:** a parte pode nascer junto com o terreno (fim do Novo terreno) ou a qualquer momento na ficha, só com o nome; tamanho do lote, matrículas, inscrições, vendedores e corretor são opcionais (`salvar_parte` e os `parte_id`).
 - **Antes da etapa da divisão** (`fases_modelo.etapa_partes`, só na fase de entrada; padrão Negociação) há uma negociação só, a do terreno: Triagem e Estudos são da área toda.
 - **Ao chegar nela**, com duas ou mais partes ativas, cada parte ganha a sua negociação: um processo da mesma fase com `parte_id` e `principal_id` (código `NEG-00012-1`), com oferta de referência, propostas, temperatura, documentos, reuniões, tarefas, subetapa, status, aprovações e histórico próprios. Parte cadastrada depois disso já nasce com a sua.
 - **A negociação do terreno passa a andar pelas partes** (`_sincronizar_principal`): fica na etapa e na subetapa da parte mais atrasada em aberto, com cada mudança no histórico ("Pelas negociações das partes"), e não se move à mão. A de uma parte só anda da etapa da divisão em diante e enquanto a do terreno estiver ativa.
@@ -67,7 +68,7 @@ Um dono com várias matrículas é **uma** negociação. Vários donos que negoc
 - **Parte perdida ou descartada** trava a compra: ou sai do terreno (`remover_parte`, com motivo; parte essencial só com gestor ou diretor, e tornar uma parte dispensável também), ou o terreno se encerra. Parte comprada não sai.
 - **Encerrar o terreno** leva as partes em aberto: Perdido e Descartado com o mesmo motivo, Stand By com a mesma data; retomar o terreno retoma as partes.
 - **Oferta** pode cobrir uma ou mais partes (`oferta_partes`, com o preço de cada uma quando informado); a negociação da parte usa como referência a oferta mais recente que a cobre.
-- `v_partes`: cada parte com donos, matrículas, negociação (etapa, subetapa, prazo, status), temperatura, preço pedido e última proposta.
+- `v_partes`: cada parte com donos, corretores, matrículas, negociação (etapa, subetapa, prazo, status), temperatura, preço pedido e última proposta.
 
 ## Papéis, hierarquia e configuração
 
@@ -412,6 +413,8 @@ erDiagram
   pessoas ||--o| corretores : e
   terrenos ||--o{ terreno_corretores : tem
   corretores ||--o{ terreno_corretores : atende
+  terreno_partes ||--o{ parte_corretores : tem
+  corretores ||--o{ parte_corretores : traz
   terrenos ||--o{ processos : "negociacao (e fases futuras)"
   processos ||--|| negociacoes : "dados da negociacao"
   processos |o--o{ processos : "negociacao de cada parte"
@@ -643,6 +646,7 @@ erDiagram
 | Um pedido de aprovação aberto por processo e nível; com pedido aberto o card não se move | índice único parcial em `aprovacoes` |
 | Superior sempre um nível acima; ao menos um administrador por empresa | trigger em `membros` |
 | Configuração do funil só pelo administrador, por empresa, com auditoria | RLS só de leitura + RPCs com `exigir_administrador` |
+| Mudanças seguidas do mesmo usuário nas mesmas colunas, a menos de 7 s uma da outra, viram um log só (valor de antes → final); se voltam ao valor de antes, o log some. Grava na hora; processos ficam de fora (cada passagem conta no SLA), mas a temperatura junta igual no histórico | `juntar_auditoria`, `janela_log`, `definir_temperatura` |
 | Motivo de Perdido e Descartado vem da lista ativa; Comprado exige relato e pontos de sucesso | `encerrar_processo` + checks em `processos` |
 | Papel "leitura" consulta tudo e não altera nada | políticas com `empresas_edicao()` e `exigir_editor` |
 | CEP e CPF/CNPJ guardados só com dígitos; polígono GeoJSON validado | triggers e check |

@@ -582,7 +582,7 @@ create or replace function app.definir_temperatura(p_processo uuid, p_temperatur
 returns void
 language plpgsql security definer set search_path = ''
 as $$
-declare p app.processos; antes int;
+declare p app.processos; antes int; ult app.processo_transicoes; inicial int;
 begin
   select * into p from app.processos where id = p_processo;
   if not found then raise exception 'Negociação não encontrada' using errcode = 'P0002'; end if;
@@ -592,6 +592,21 @@ begin
   if not found then raise exception 'Temperatura só na negociação (fase de entrada)' using errcode = '22023'; end if;
   if antes is not distinct from p_temperatura then return; end if;
   update app.negociacoes set temperatura = p_temperatura, temperatura_em = now() where processo_id = p.id;
+  -- cliques seguidos do mesmo usuário (app.janela_log) viram um registro só,
+  -- do valor de antes da sequência ao final; se voltou ao de antes, some
+  select * into ult from app.processo_transicoes where processo_id = p.id order by em desc, id desc limit 1;
+  if found and ult.evento = 'temperatura' and ult.user_id is not distinct from auth.uid()
+     and ult.em >= clock_timestamp() - app.janela_log() then
+    inicial := nullif(split_part(ult.comentario, ' → ', 1), '—')::int;
+    if inicial is not distinct from p_temperatura then
+      delete from app.processo_transicoes where id = ult.id;
+    else
+      update app.processo_transicoes set em = clock_timestamp(),
+        comentario = coalesce(inicial::text, '—') || ' → ' || coalesce(p_temperatura::text, '—')
+      where id = ult.id;
+    end if;
+    return;
+  end if;
   insert into app.processo_transicoes (empresa_id, processo_id, evento, comentario)
   values (p.empresa_id, p.id, 'temperatura', coalesce(antes::text, '—') || ' → ' || coalesce(p_temperatura::text, '—'));
 end $$;
@@ -1407,6 +1422,8 @@ select tp.id, tp.empresa_id, tp.terreno_id, tp.nome, tp.essencial, tp.area_m2, t
        (select count(*) from app.inscricoes_municipais i where i.parte_id = tp.id) as qtd_inscricoes,
        (select string_agg(pe.nome_razao_social, ', ' order by pe.nome_razao_social) from app.terreno_pessoas x
          join app.pessoas pe on pe.id = x.pessoa_id where x.parte_id = tp.id and x.papel = 'proprietario') as proprietarios,
+       (select string_agg(pe.nome_razao_social, ', ' order by pe.nome_razao_social) from app.parte_corretores x
+         join app.corretores co on co.id = x.corretor_id join app.pessoas pe on pe.id = co.pessoa_id where x.parte_id = tp.id) as corretores,
        c.id as processo_id, c.codigo as processo_codigo, c.principal_id, c.status, stm.nome as status_nome,
        c.etapa_atual, e.nome as etapa_nome, e.ordem as etapa_ordem, c.subetapa_atual, s.nome as subetapa_nome, s.ordem as subetapa_ordem,
        (current_date - c.subetapa_desde::date) as dias_na_subetapa,

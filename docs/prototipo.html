@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="gmaps-key" content="{% env "GOOGLE_MAPS_KEY" %}">
-<meta name="gmaps-mapid-sem-lugares" content="{% env "GOOGLE_MAP_ID_SEM_LUGARES" %}">
 <meta name="bkm-ambiente" content="{% env "AMBIENTE" %}">
 <title>BKM Terrenos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2150,11 +2149,6 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .mp-barra .seg { background: rgba(255,255,255,.78) !important; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border-color: transparent !important; box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 1px 2px rgba(0,0,0,.1) }
 :root[data-tema="escuro"] .mp-barra .seg { background: rgba(6,12,32,.72) !important; box-shadow: 0 0 0 1px rgba(124,140,255,.35) }
 .mp-barra .seg button { flex: 1 1 auto }
-/* Lugares do Google: liga e desliga, mesmo fundo translúcido do seletor */
-.mp-barra .mp-lug { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 16px 0 12px; border-radius: 20px; border: 0; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; color: var(--m-on-surface, #1f1f1f); background: rgba(255,255,255,.78); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 1px 2px rgba(0,0,0,.1) }
-.mp-barra .mp-lug[aria-pressed="true"] { background: #c2e7ff; color: #001d35 }
-:root[data-tema="escuro"] .mp-barra .mp-lug { background: rgba(6,12,32,.72); color: #c9d6ff; box-shadow: 0 0 0 1px rgba(124,140,255,.35) }
-:root[data-tema="escuro"] .mp-barra .mp-lug[aria-pressed="true"] { background: rgba(99,112,255,.28); box-shadow: 0 0 0 1px rgba(124,140,255,.7) }
 /* quadro do lugar (InfoWindow do Google): nome, nota e até 3 avaliações */
 .lug { position: relative; font: 13px/1.4 "Google Sans Flex", system-ui, sans-serif; color: #1f1f1f; max-width: 290px; padding-right: 28px }
 .lug .muted, .lug.muted { color: #5f6368 !important }
@@ -2569,10 +2563,26 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .pt-a .adv-mais { margin-left: auto } .pt-a .adv-mais .adv-mb { width: 36px; padding: 0; justify-content: center }
 .t-warn { color: #7a5900; font-weight: 500 }
 .kcard .kpt { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--m-on-var, #444746) }
+.ptc-lista { display: flex; flex-direction: column; gap: 10px }
+.ptc { border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px; padding: 8px 8px 10px 16px; display: flex; flex-direction: column; gap: 4px; min-width: 0 }
+.ptc-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 36px } .ptc-h b { font-weight: 500; font-size: 15px } .ptc-h > .faint { font-size: 13px; margin-right: auto }
+.ptc-l { display: flex; gap: 12px; font-size: 14px; min-width: 0; padding-right: 8px } .ptc-l > .faint:first-child { flex: 0 0 96px; font-size: 13px } .ptc-l > span:last-child { min-width: 0; overflow-wrap: anywhere }
+.msel { min-width: 0 }
+.msel-b { width: 100%; min-height: 44px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--m-outline, #747775); border-radius: 4px; padding: 6px 8px 6px 14px; background: transparent; text-align: left; cursor: pointer; font-size: 15px }
+.msel-b .ic { margin-left: auto; flex: none; transform: rotate(90deg); transition: transform .15s } .msel.aberto .msel-b .ic { transform: rotate(-90deg) }
+.msel-r { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.msel-m { margin-top: 4px; border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 8px; padding: 6px 12px; display: flex; flex-direction: column; gap: 2px; max-height: 240px; overflow: auto; background: var(--m-surface, #fff) }
+.msel-m[hidden] { display: none } .msel-m .chk { min-height: 36px } .msel-m .btn { align-self: flex-start; margin: 4px 0 2px -12px } .msel-v { padding: 6px 0; font-size: 13px }
+.ms-scrim { z-index: 60 } .dialog.mini { width: min(400px, 100%); padding: 24px } .dialog.mini h2 { font-size: 22px; line-height: 28px; font-weight: 400 } .dialog.mini .fields { grid-template-columns: 1fr }
+.nv-pt { border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px; padding: 4px 16px 12px; margin: 0 0 12px; min-width: 0 }
+.nv-pt legend { padding: 0 6px; font-size: 13px; font-weight: 500; color: var(--m-on-var, #444746) }
+.nv-pt .btn { margin-top: 8px }
 :root[data-tema="escuro"] .pt-card { border-color: rgba(124,140,255,.22); background: #060c20 }
+:root[data-tema="escuro"] .ptc, :root[data-tema="escuro"] .nv-pt { border-color: rgba(124,140,255,.22) }
 :root[data-tema="escuro"] .pt-ped { background: rgba(124,140,255,.07) }
 :root[data-tema="escuro"] .t-warn { color: #f5c451 }
 :root[data-tema="escuro"] .pt-card.comprado { box-shadow: inset 3px 0 0 #6dd58c } :root[data-tema="escuro"] .pt-card.perdido, :root[data-tema="escuro"] .pt-card.descartado { box-shadow: inset 3px 0 0 #f2b8b5 } :root[data-tema="escuro"] .pt-card.stand_by { box-shadow: inset 3px 0 0 #f5c451 }
+:root[data-tema="escuro"] .msel-b { border-color: rgba(124,140,255,.35) } :root[data-tema="escuro"] .msel-m { background: #060c20; border-color: rgba(124,140,255,.22) }
 </style>
 <header class="top">
   <div class="top-in">
@@ -3085,7 +3095,7 @@ function secaoPessoas(t){
 
 /* ===================== abas da ficha ===================== */
 function abaCadastro(t){
-  return `<div class="stack">${secaoGenerica(t,'ident')}${secaoGenerica(t,'loc')}${secaoAreas(t)}${secaoConfr(t)}${secaoGenerica(t,'fis')}${secaoMats(t)}${secaoInsc(t)}${secaoPessoas(t)}</div>`;
+  return `<div class="stack">${secaoGenerica(t,'ident')}${secaoGenerica(t,'loc')}${secaoAreas(t)}${secaoConfr(t)}${secaoGenerica(t,'fis')}${secPartesCad(t)}${secaoMats(t)}${secaoInsc(t)}${secaoPessoas(t)}</div>`;
 }
 function condicoes(t){
   const o=ofertaRef(t),ad=areaAdotada(t),cp=corrPrincipal(t);
@@ -3318,7 +3328,7 @@ function go(route,x={}){Object.assign(UI,{route,edit:null,propForm:false,reuForm
 
 /* ===================== modais ===================== */
 function renderModal(){
-  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.nv=null;UI.nvKmz=null;UI.ofPoly=null;UI.kmzNovo=false;UI.lotes=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;UI.alvoParte=null;return}
+  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.nv=null;UI.nvPool=null;UI.nvKmz=null;UI.ofPoly=null;UI.kmzNovo=false;UI.lotes=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;UI.alvoParte=null;return}
   let h='';const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`;
   h=partesModal(M,fechar)||fasesModal(M,fechar)||funilModal(M,fechar);
   if(M==='novo')h=UI.nv?nvDadosHtml(fechar):nvPasso1Html(fechar);
@@ -3410,7 +3420,7 @@ document.addEventListener('click',e=>{
     case 'close':UI.modal=null;renderModal();break;
     case 'edit':UI.edit=a.dataset.s;render();setTimeout(()=>document.getElementById('sec-'+a.dataset.s)?.querySelector('input,select,textarea')?.focus(),20);break;
     case 'cancel-edit':UI.edit=null;render();break;
-    case 'temp':{const v=Number(a.dataset.v)||null,antes=t.neg.temp;t.neg.temp=v;log(t,`Temperatura ${antes||'—'} → ${v||'—'}`);save();render();toast(v?`Temperatura ${v} · ${TEMP[v]}.`:'Temperatura removida.');break}
+    case 'temp':{const v=Number(a.dataset.v)||null,antes=t.neg.temp;t.neg.temp=v;log(t,`Temperatura: ${antes?antes+'/5':'não informado'} → ${v?v+'/5':'não informado'}`);save();render();toast(v?`Temperatura ${v} · ${TEMP[v]}.`:'Temperatura removida.');break}
     case 'ofref':t.neg.ofRef=a.dataset.o;log(t,'Oferta de referência alterada');save();render();toast('Oferta de referência atualizada.');break;
     case 'principal':t.corretores.forEach(x=>x.principal=x.cid===a.dataset.c);save();render();break;
     case 'del-mat':t.mats.splice(Number(a.dataset.i),1);save();render();break;
@@ -3450,7 +3460,6 @@ document.addEventListener('click',e=>{
     case 'mp-desce':if(UI.mp.f)UI.mp.e=a.dataset.v;else UI.mp.f=a.dataset.v;UI.mp.ocultas=[];mpRefresh();mpEnquadrar();break;
     case 'mp-nivel':UI.mp.f=a.dataset.v||'';UI.mp.e='';UI.mp.ocultas=[];mpRefresh();mpEnquadrar();break;
     case 'mp-base':setBase(a.dataset.v);break;
-    case 'mp-lugares':G_lugares(UI.mpLugares===false);break;
     case 'lug-fechar':lugarFechar();break;
     case 'mp-modo':UI.mpModo=UI.mpModo===a.dataset.v?null:a.dataset.v;fecharPopup();mpRefresh();break;
     case 'mp-sair':UI.mpModo=null;UI.nvDesenho=false;UI.poiVolta=null;UI.desenho=null;UI.desHist=null;UI.vSel=null;UI.vMenu=false;UI.vMover=false;mpRefresh();break;
@@ -3555,8 +3564,15 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       t.analises.forEach(a=>{if(a.status==='vigente')a.status='substituida'});t.analises.push({id:uid(),data:F.data,fonte:F.fonte,status:'vigente',zonas});UI.edit=null;log(t,'Nova análise urbanística: '+zonas.map(z=>z.sigla).join(' + '));save();render();toast('Análise registrada. A anterior foi preservada.');break}
     case 'novo':{const dup=f.dataset.dup;let alvo;if(!UI.nv){toast('Comece pela poligonal do terreno.',true);return}
       if(F.sql&&F.mun!=='outro'&&cidDoNome(F.municipio)!==F.mun){toast(`A inscrição é de ${CIDADES_INSC[F.mun].cidade} e o terreno fica em ${F.municipio.split(' · ')[0]}.`,true);return}
-      if(dup){alvo=T(dup)}else{S.seqT++;alvo={...seedVazio(),codigo:'TER-'+String(S.seqT).padStart(6,'0'),nome:F.nome,logradouro:F.logradouro.trim(),numero:F.numero.trim(),bairro:F.bairro.trim(),zona:F.zona||null,resp:F.resp,origem:F.origem,dataIdent:HOJE,
-        mats:F.mat?[{num:F.mat,cri:F.cri,area:null,data:null}]:[],insc:F.sql?[{mun:F.mun,sql:F.sql,area:null,valores:[]}]:[]};alvo.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado'}];nvGravar(alvo,F);S.terrenos.push(alvo)}
+      const nvPt=dup?[]:nvPartesLer(f);
+      if(nvPt.some(d=>!d.nome)){toast('Dê um nome a cada parte (ou tire a parte vazia).',true);return}
+      if(new Set(nvPt.map(d=>d.nome.toLowerCase())).size<nvPt.length){toast('Duas partes com o mesmo nome.',true);return}
+      if(dup){alvo=T(dup)}else{do S.seqT++;while(S.terrenos.some(x=>x.codigo==='TER-'+String(S.seqT).padStart(6,'0')));alvo={...seedVazio(),codigo:'TER-'+String(S.seqT).padStart(6,'0'),nome:F.nome,logradouro:F.logradouro.trim(),numero:F.numero.trim(),bairro:F.bairro.trim(),zona:F.zona||null,resp:F.resp,origem:F.origem,dataIdent:HOJE,
+        mats:F.mat?[{num:F.mat,cri:F.cri,area:null,data:null}]:[],insc:F.sql?[{mun:F.mun,sql:F.sql,area:null,valores:[]}]:[]};alvo.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado'}];nvGravar(alvo,F);S.terrenos.push(alvo);
+        {const P=UI.nvPool||{};(P.mat||[]).forEach(m=>{if(!alvo.mats.some(x=>digits(x.num)===digits(m.num)))alvo.mats.push({num:m.num,cri:m.cri,area:null,data:null})});
+         (P.ins||[]).forEach(s=>{if(!alvo.insc.some(x=>digits(x.sql)===digits(s)))alvo.insc.push({mun:F.mun||cidDoNome(F.municipio)||'outro',sql:s,area:null,valores:[]})});
+         (P.pes||[]).forEach(p=>alvo.pessoas.push({nome:p.nome,tipo:'PF',papel:'proprietario',pct:null,tel:p.tel}))}
+        nvPt.forEach(d=>gravarParteNova(alvo,{...d,mun:F.mun||cidDoNome(F.municipio)||'outro'}));if(nvPt.length)log(alvo,`${nvPt.length} parte${nvPt.length>1?'s':''} cadastrada${nvPt.length>1?'s':''}: ${nvPt.map(d=>d.nome).join(', ')}`)}
       const val=lerNum(F.valor);
       if(val||F.cid){const o={id:uid(),cid:F.cid||null,data:HOJE,valor:val,forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,status:'ativa'};alvo.ofertas.push(o);
         if(o.cid&&!alvo.corretores.some(x=>x.cid===o.cid))alvo.corretores.push({cid:o.cid,principal:!alvo.corretores.some(x=>x.principal)});
@@ -3836,7 +3852,6 @@ function pgMapa(){
     <div class="mp-barra">
       ${mpBuscaHtml()}
       <div class="seg" role="group" aria-label="Fundo do mapa">${Object.entries(GG?CAMADAS_G:CAMADAS_L).map(([k,l])=>`<button type="button" data-a="mp-base" data-v="${k}" aria-pressed="${(UI.mpBase||'satelite')===k}">${l}</button>`).join('')}</div>
-      ${GG&&GMAP_SEM_LUGARES?`<button type="button" class="mp-lug" data-a="mp-lugares" aria-pressed="${UI.mpLugares!==false}" title="Lugares do Google: comércio, escolas, hospitais. Toque num lugar para ver as avaliações">${ic('lugar',16)}<span>Lugares</span></button>`:''}
     </div>
     <div id="mp-modo" class="mp-modo" aria-live="polite">${modoBanner()}</div>
     <div id="mp-cartao" class="mp-cartao" aria-live="polite"></div>
@@ -4279,8 +4294,8 @@ function gEnquadrar(pts,maxZoom){if(!MAPA||!pts.length)return;if(pts.length===1)
   const b=new google.maps.LatLngBounds();pts.forEach(p=>b.extend(p));MAPA.fitBounds(b,48);if(maxZoom)google.maps.event.addListenerOnce(MAPA,'idle',()=>{if(MAPA.getZoom()>maxZoom)MAPA.setZoom(maxZoom)})}
 function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[];gPois=[];gConc=[];gDes=[];gRota=[];gEntorno=[];gSet(gEu,null);gEu=[];
   const v=UI.mpView;
-  MAPA=new google.maps.Map(el,{mapId:UI.mpLugares===false&&GMAP_SEM_LUGARES?GMAP_SEM_LUGARES:'DEMO_MAP_ID',colorScheme:temaEscuro()?'DARK':'LIGHT',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[UI.mpBase||'satelite'],
-    mapTypeControl:false,streetViewControl:true,streetViewControlOptions:{position:google.maps.ControlPosition.RIGHT_BOTTOM},cameraControl:false,fullscreenControl:false,clickableIcons:UI.mpLugares!==false,gestureHandling:'greedy',scaleControl:true,tilt:0,disableDoubleClickZoom:true});
+  MAPA=new google.maps.Map(el,{mapId:'DEMO_MAP_ID',colorScheme:temaEscuro()?'DARK':'LIGHT',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[UI.mpBase||'satelite'],
+    mapTypeControl:false,streetViewControl:true,streetViewControlOptions:{position:google.maps.ControlPosition.RIGHT_BOTTOM},cameraControl:false,fullscreenControl:false,clickableIcons:true,gestureHandling:'greedy',scaleControl:true,tilt:0,disableDoubleClickZoom:true});
   MAPA.__escuro=temaEscuro();gInfo=new google.maps.InfoWindow({maxWidth:320,headerDisabled:true});
   el.classList.toggle('modo',!!UI.mpModo);G_desenhaPins();G_desenhaPois();G_desenhaConc();desenhaEu(false);
   ctxGestos(el,(x,y)=>{if(!gProj||gProj.getMap()!==MAPA)gPontoNaTela(0,0);const pr=gProj?.getProjection();const ll=pr?.fromContainerPixelToLatLng(new google.maps.Point(x,y));return ll?{lat:ll.lat(),lng:ll.lng()}:null});
@@ -4310,15 +4325,10 @@ function G_focar(t){if(!MAPA)return;UI.mpSel=t.id;if(t.poly)gEnquadrar(t.poly.ma
   mpSelecionar(t.id)}
 
 /* ---------- Lugares do Google (comércio, escolas, hospitais...) ----------
-   Ligado: os ícones do Google ficam no mapa e o toque abre nome, nota e avaliações.
-   Desligado: o mapa usa outro Map ID, com estilo sem lugares criado no Cloud Console
-   (o Google não aceita esconder lugares por código quando há Map ID); o ID vem da
-   variável GOOGLE_MAP_ID_SEM_LUGARES. Cada toque é uma consulta Place Details com
+   Sempre ligados (decisão do Moisés, 23/out/2026): os ícones do Google ficam no mapa e o
+   toque abre nome, nota e avaliações. Cada toque é uma consulta Place Details com
    avaliações (SKU Enterprise + Atmosphere); o resultado fica guardado na sessão. */
-const GMAP_SEM_LUGARES=(()=>{const v=document.querySelector('meta[name="gmaps-mapid-sem-lugares"]')?.content||'';return /^[\w-]{6,}$/.test(v)?v:''})();
 const LUGARES={};
-function G_lugares(on){if(!on&&!GMAP_SEM_LUGARES){toast('Para esconder os lugares falta o estilo de mapa sem lugares no Google Cloud (Map ID).',true);return}
-  UI.mpLugares=on;gInfo?.close();G_initMapa();document.querySelectorAll('[data-a="mp-lugares"]').forEach(b=>b.setAttribute('aria-pressed',on))}
 const estrelas=n=>{const r=Math.max(0,Math.min(5,Math.round(n)));return '★'.repeat(r)+'☆'.repeat(5-r)};
 function lugarHtml(p){const revs=(p.reviews||[]).slice(0,3),nota=p.rating!=null?`<div class="lug-nota"><b>${String(p.rating.toFixed?p.rating.toFixed(1):p.rating).replace('.',',')}</b> <span class="lug-est" aria-hidden="true">${estrelas(p.rating)}</span> <span class="muted">${p.userRatingCount!=null?Number(p.userRatingCount).toLocaleString('pt-BR')+' avaliações':''}</span></div>`:'<div class="muted">Sem avaliações no Google</div>';
   return `<div class="lug"><button type="button" class="lug-x" data-a="lug-fechar" aria-label="Fechar" title="Fechar">${ic('close',18)}</button><div class="lug-n">${esc(p.displayName||'Lugar')}</div>${p.formattedAddress?`<div class="lug-e muted">${esc(p.formattedAddress)}</div>`:''}${nota}
@@ -4546,6 +4556,26 @@ function diffTerreno(a,b){
   });
   return {campos,itens};
 }
+/* Cliques seguidos no mesmo campo (temperatura 2 → 3 → 4) viram um log só, como app.juntar_auditoria no banco:
+   se o log anterior é do mesmo usuário, nos mesmos campos, há menos de JANELA_LOG, ele dá lugar a um com o valor
+   de antes da sequência e o final; se o final é o de antes, os dois somem. Mudança de etapa, subetapa e status fica
+   de fora (cada passagem conta para o SLA). O registro é gravado na hora; só o histórico junta. */
+const JANELA_LOG=7000,LOG_NAO_JUNTA=['neg.etapa','neg.sub','neg.status'];
+const valCampo=(o,k)=>{const [a,b]=k.split('.');const v=b?o[a]?.[b]:o[a];return v===undefined?null:v};
+function juntarLog(t,s,campos,itens,nNovos){
+  const e=t.hist[t.hist.length-1];if(!e||!campos.length)return;
+  const ks=campos.map(c=>c.k).sort();
+  if(itens.length||nNovos>1||ks.some(k=>LOG_NAO_JUNTA.includes(k))||e.det&&e.det.length>ks.length)return;
+  const a=JSON.parse(s.j);e.ks=ks;e.ant=Object.fromEntries(ks.map(k=>[k,valCampo(a,k)]));
+  const p=t.hist[t.hist.length-2];
+  if(!p||!p.ks||p.user!==e.user||p.ks.join()!==ks.join()||Date.parse(e.em)-Date.parse(p.em)>=JANELA_LOG)return;
+  const atual=JSON.parse(retrato(t));
+  if(ks.every(k=>JSON.stringify(valCampo(atual,k))===JSON.stringify(p.ant[k]))){t.hist.splice(-2,2);return}
+  const base=JSON.parse(retrato(t));ks.forEach(k=>{const [x,y]=k.split('.');if(y)base[x]={...base[x],[y]:p.ant[k]};else base[x]=p.ant[k]});
+  const c=diffTerreno(base,atual).campos;
+  e.ant=p.ant;if(c.length===1){e.txt=c[0].txt;delete e.det}else e.det=c.map(x=>x.txt);
+  t.hist.splice(-2,1);
+}
 function audit(){
   S.terrenos.forEach(t=>{
     const s=AUD[t.id];t.hist=t.hist||[];
@@ -4554,11 +4584,12 @@ function audit(){
     const novos=t.hist.slice(s.h);
     /* edição salva sem mudar nenhum valor: não deixa registro vazio */
     if(!campos.length&&!itens.length){const vaz=novos.filter(e=>/atualizad[oa]s?$/.test(e.txt)&&!(e.det&&e.det.length));if(vaz.length)t.hist=t.hist.filter(e=>!vaz.includes(e));return}
-    if(novos.length){const e=novos[novos.length-1];const det=campos.map(c=>c.txt);if(det.length)e.det=(e.det||[]).concat(det)}
+    if(novos.length){const e=novos[novos.length-1];const det=campos.map(c=>c.txt).filter(x=>x!==e.txt);if(det.length)e.det=(e.det||[]).concat(det)}
     else{const secs=new Set(campos.map(c=>SEC_DE[c.k]).filter(Boolean));
       const txt=itens.length&&!campos.length?itens[0]:secs.size===1&&!itens.length?`${SECOES[[...secs][0]].titulo} editado`:'Ficha editada';
       const det=campos.map(c=>c.txt).concat(itens.length&&!(itens.length===1&&!campos.length)?itens:[]);
       t.hist.push({em:agora(),user:me(),txt,det:det.length?det:undefined})}
+    juntarLog(t,s,campos,itens,novos.length);
   });
   audSnap();
 }
@@ -5449,6 +5480,29 @@ const vtParte=(t,pa)=>Object.assign(Object.create(t),{neg:pa.neg,propostas:pa.pr
 const terrenoDe=t=>t._parte?Object.getPrototypeOf(t):t;
 const donosParte=(t,pa)=>t.pessoas.filter(p=>p.parte===pa.id&&p.papel==='proprietario').map(p=>p.nome);
 const matsParte=(t,pa)=>t.mats.filter(m=>m.parte===pa.id);
+const inscParte=(t,pa)=>t.insc.filter(i=>i.parte===pa.id);
+const corParte=(t,pa)=>t.corretores.filter(x=>(x.partes||[]).includes(pa.id)).map(x=>corretor(x.cid)?.nome).filter(Boolean);
+/* corretor ligado a uma parte (pode trazer várias; a parte pode ter vários): entra também nos corretores do terreno */
+const ligarCorretor=(t,cid,pid)=>{let x=t.corretores.find(y=>y.cid===cid);if(!x)t.corretores.push(x={cid,principal:!t.corretores.some(y=>y.principal)});x.partes=x.partes||[];if(!x.partes.includes(pid))x.partes.push(pid)};
+const listaTxt=v=>Array.isArray(v)?v:String(v||'').split(/[,;\n]/).map(x=>x.trim()).filter(Boolean);
+/* partes digitadas no Novo terreno ou na ficha: só o nome é obrigatório; matrículas, inscrições e
+   vendedores digitados entram no cadastro do terreno já ligados à parte */
+function gravarParteNova(t,d){const pa={id:uid(),ativa:true,neg:null,propostas:[],nome:d.nome,essencial:true,area:d.area??null};partesDe(t).push(pa);
+  listaTxt(d.mats).forEach(n=>{const m=t.mats.find(x=>digits(x.num)===digits(n));if(m){if(!m.parte)m.parte=pa.id}else t.mats.push({num:n,cri:d.cri||'',area:null,data:null,parte:pa.id})});
+  listaTxt(d.insc).forEach(n=>{const i=t.insc.find(x=>digits(x.sql)===digits(n));if(i){if(!i.parte)i.parte=pa.id}else t.insc.push({mun:d.mun||'outro',sql:n,area:null,valores:[],parte:pa.id})});
+  listaTxt(d.vend).forEach(n=>{const x=t.pessoas.find(y=>y.nome===n);if(x){if(!x.parte)x.parte=pa.id}else t.pessoas.push({nome:n,tipo:'PF',papel:'proprietario',pct:null,tel:'',parte:pa.id})});
+  (d.cids||[]).forEach(cid=>ligarCorretor(t,cid,pa.id));
+  return pa}
+/* quadro Partes do Cadastro: o que cada parte tem; a negociação de cada uma fica na seção Negociação */
+function secPartesCad(t){const P=partesAtivas(t),ro=UI.role==='Leitura';
+  const add=ro?'':`<button class="btn text sm" data-a="pt-nova">${ic('add',16)}Adicionar parte</button>`;
+  const linha=(l,v)=>v?`<div class="ptc-l"><span class="faint">${l}</span><span>${v}</span></div>`:'';
+  return `<section class="sec" id="sec-partes-cad"><div class="sec-h"><h2>Partes</h2>${add}</div><div class="sec-b">
+    ${P.length?`<div class="ptc-lista">${P.map(pa=>{const ms=matsParte(t,pa),is=inscParte(t,pa),vs=donosParte(t,pa),cs=corParte(t,pa);
+      return `<div class="ptc"><div class="ptc-h"><b>${esc(pa.nome)}</b>${pa.essencial?'':'<span class="chip">Dispensável</span>'}<span class="faint">${pa.area?m2(pa.area):'tamanho não informado'}</span>${ro?'':`<button class="btn text sm" data-a="pt-editar" data-p="${pa.id}" aria-label="Editar ${esc(pa.nome)}">${ic('edit',16)}Editar</button>`}</div>
+        ${linha('Matrículas',ms.map(m=>esc(m.num)).join(', '))}${linha('Inscrições',is.map(i=>esc(i.sql)).join(', '))}${linha('Vendedores',vs.map(esc).join(', '))}${linha(cs.length>1?'Corretores':'Corretor',cs.map(esc).join(', '))}
+        ${!ms.length&&!is.length&&!vs.length&&!cs.length?'<div class="faint ptc-l">Nada vinculado ainda.</div>':''}</div>`}).join('')}</div>`
+    :`<div class="muted">Se os lotes têm donos que negociam separado, cadastre uma parte para cada dono ou grupo de donos. Só o nome é obrigatório.</div>`}</div></section>`}
 const ordSub=(e,s)=>subsDe(e).findIndex(x=>x.k===s);
 const precoParte=(t,pa)=>{const o=t.ofertas.find(x=>x.id===pa.neg?.ofRef)||t.ofertas.filter(x=>x.partes&&pa.id in x.partes).slice(-1)[0];
   if(!o||!o.partes||!(pa.id in o.partes))return null;return o.partes[pa.id]??(Object.keys(o.partes).length===1?o.valor:null)};
@@ -5572,6 +5626,8 @@ function partesSubmit(form,F,t,f){if(!t)return false;const pa=UI.alvoParte?parte
     const mats=f.querySelectorAll('input[name=mat]'),pes=f.querySelectorAll('input[name=pes]');
     mats.forEach(c=>{const m=t.mats[+c.value];if(c.checked)m.parte=alvo.id;else if(m.parte===alvo.id)m.parte=null});
     pes.forEach(c=>{const p=t.pessoas[+c.value];if(c.checked)p.parte=alvo.id;else if(p.parte===alvo.id)p.parte=null});
+    f.querySelectorAll('input[name=ins]').forEach(c=>{const x=t.insc[+c.value];if(c.checked)x.parte=alvo.id;else if(x.parte===alvo.id)x.parte=null});
+    f.querySelectorAll('input[name=cor]').forEach(c=>{if(c.checked)ligarCorretor(t,c.value,alvo.id);else{const x=t.corretores.find(y=>y.cid===c.value);if(x?.partes)x.partes=x.partes.filter(id=>id!==alvo.id)}});
     if(!pa){partesDe(t).push(alvo);log(t,`Parte ${nome} cadastrada${ess?'':' (dispensável)'}`);abrirPartes(t)}else log(t,`Parte ${nome} atualizada`);
     UI.modal=null;save();render();toast(pa?'Parte atualizada.':dividida(t)&&alvo.neg?`${nome} ganhou a sua negociação.`:'Parte cadastrada.');return true}
   if(!pa)return false;
@@ -5595,14 +5651,16 @@ function partesSubmit(form,F,t,f){if(!t)return false;const pa=UI.alvoParte?parte
   return false}
 function partesModal(M,fechar){const t=T(UI.id);if(!t)return '';const pa=UI.alvoParte?parteDe(t,UI.alvoParte):null;
   const df=(id,l)=>`<div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="${id}">${l}</button></div>`;
-  if(M==='pt-parte'){const ms=t.mats.map((m,i)=>`<label class="chk"><input type="checkbox" name="mat" value="${i}" ${pa&&m.parte===pa.id?'checked':''} ${m.parte&&(!pa||m.parte!==pa.id)?'disabled':''}>${esc(m.num)} <span class="faint">${esc(m.cri)}${m.parte&&(!pa||m.parte!==pa.id)?' · '+esc(parteDe(t,m.parte)?.nome||''):''}</span></label>`).join('');
-    const ps=t.pessoas.map((p,i)=>`<label class="chk"><input type="checkbox" name="pes" value="${i}" ${pa&&p.parte===pa.id?'checked':''}>${esc(p.nome)} <span class="faint">${OPT.papel[p.papel]}${p.parte&&(!pa||p.parte!==pa.id)?' · '+esc(parteDe(t,p.parte)?.nome||''):''}</span></label>`).join('');
+  if(M==='pt-parte'){const sel=k=>mselHtml(k,k==='ins'?'ins':k==='pes'?'pes':k==='cor'?'cor':'mat',msOptsFicha(t,pa,k),msSelFicha(t,pa,k));
     return `<div class="dh"><div><h2>${pa?'Editar parte':'Nova parte'}</h2><div class="muted" style="margin-top:4px">Um dono, ou um grupo de donos que negocia junto (herdeiros, sócios).</div></div>${fechar}</div>
-    <form data-form="pt-parte" id="f-pt"><div class="fields"><div class="field full"><label for="pt-n">Nome</label><input id="pt-n" name="nome" required value="${esc(pa?.nome||'')}" placeholder="Família Souza, Carlos Pires..."></div>
-    <div class="field"><label for="pt-a">Área (m²)</label><input id="pt-a" name="area" inputmode="decimal" value="${pa?.area??''}"></div>
+    <form data-form="pt-parte" id="f-pt"><div class="fields"><div class="field full"><label for="pt-n">Nome ou identificador *</label><input id="pt-n" name="nome" required value="${esc(pa?.nome||'')}" placeholder="Família Souza, Carlos Pires..."></div>
+    <div class="field"><label for="pt-a">Tamanho do lote (m²)</label><input id="pt-a" name="area" inputmode="decimal" value="${pa?.area??''}"></div>
     <div class="field"><span class="lbl-f">Importância</span><label class="chk" style="height:44px"><input type="checkbox" name="essencial" ${!pa||pa.essencial?'checked':''}>Essencial (sem ela o terreno não serve)</label></div>
-    <div class="field full"><span class="lbl-f">Matrículas da parte</span><div class="marc">${ms||'<span class="faint">Nenhuma matrícula no terreno.</span>'}</div></div>
-    <div class="field full"><span class="lbl-f">Donos e contatos da parte</span><div class="marc">${ps||'<span class="faint">Ninguém vinculado ao terreno.</span>'}</div></div></div>
+    <div class="field full"><span class="lbl-f">Matrículas da parte</span>${sel('mat')}</div>
+    <div class="field full"><span class="lbl-f">Inscrições da parte</span>${sel('ins')}</div>
+    <div class="field full"><span class="lbl-f">Vendedores e contatos da parte</span>${sel('pes')}</div>
+    <div class="field full"><span class="lbl-f">Corretores que trazem esta parte</span>${sel('cor')}</div>
+    <div class="field full faint">Tudo é opcional, menos o nome. Dá para vincular depois.</div></div>
     ${!pa&&t.neg&&SIDX(t.neg.etapa)>=SIDX(etapaPartes())&&partesAtivas(t).length>=1?`<div class="banner blue" style="margin-top:12px">${ic('layers')}<div>O terreno já está em ${esc(SN(t.neg.etapa))}: ${dividida(t)?'a parte nova ganha a sua negociação.':'com esta parte, cada uma ganha a sua negociação.'}</div></div>`:''}</form>${df('f-pt',pa?'Salvar':'Cadastrar parte')}`}
   if(!pa)return '';
   if(M==='pt-remover')return `<div class="dh"><div><h2>Tirar ${esc(pa.nome)} do terreno?</h2><div class="muted" style="margin-top:4px">${pa.essencial?'É uma parte essencial: sem ela, o estudo do terreno precisa ser refeito.':'O terreno segue com área menor.'} Matrículas e donos continuam no histórico.</div></div>${fechar}</div><form data-form="pt-remover" id="f-ptr"><div class="field"><label for="ptr-m">Motivo (vai para o histórico)</label><textarea id="ptr-m" name="motivo" required placeholder="Ex.: dono vendeu para outra incorporadora"></textarea></div></form>${df('f-ptr','Tirar do terreno')}`;
@@ -5618,7 +5676,7 @@ function partesModal(M,fechar){const t=T(UI.id);if(!t)return '';const pa=UI.alvo
   return ''}
 
 /* ---------- exemplo: três lotes de donos diferentes, já na Negociação ---------- */
-function partesPreparar(){if(S.partesExemplo)return;S.partesExemplo=true;if(S.terrenos.some(t=>t.codigo==='TER-000133'))return;
+function partesPreparar(){if(S.partesExemplo)return;S.partesExemplo=true;if(S.terrenos.some(t=>t.codigo==='TER-000133'))return;S.seqT=Math.max(S.seqT||0,133);
   const H=n=>addD(HOJE,-n),la=-23.5868,lo=-46.5772,dy=45/110574,dx=60/(111320*Math.cos(la*Math.PI/180));
   const t=Object.assign(seedVazio(),{codigo:'TER-000133',nome:'Três lotes Rua Ibitirama',prioridade:'alta',resp:'Ana Prado',origem:'corretor',dataIdent:H(55),logradouro:'Rua Ibitirama',numero:'1.200',bairro:'Vila Prudente',zona:'sudeste',municipio:'São Paulo · SP',
     lat:la,lng:lo,precisao:'conferida',poly:[[la+dy,lo-dx],[la+dy,lo+dx],[la-dy,lo+dx],[la-dy,lo-dx]].map(p=>p.map(v=>+v.toFixed(6))),aDoc:5400,fonteArea:'documental',testada:120,topografia:'plano',posicao:'meio_quadra',formato:'regular',ocupacao:'parcialmente_ocupado'});
@@ -5637,6 +5695,72 @@ function partesPreparar(){if(S.partesExemplo)return;S.partesExemplo=true;if(S.te
   pc.neg=np(3,'negociacao','aguardando_reuniao',20,1);pc.propostas=[];
   t.hist.push({em:H(20)+'T09:00:01.000',user:'Ana Prado',txt:'Negociação dividida por parte: Família Souza, Carlos Pires e Oficina do Zé'});
   S.terrenos.push(t)}
+
+/* ---------- escolha dentro da parte: lista dos já cadastrados no terreno + "Incluir" num pop-up pequeno ----------
+   Na ficha os valores são os do terreno (índice em mats/insc/pessoas, id do corretor). No Novo terreno, antes de
+   o terreno existir, são os do passo 2 (matrícula e inscrição digitadas lá) e os incluídos pelo pop-up (UI.nvPool),
+   que entram no cadastro do terreno ao gravar. */
+const MS_T={mat:{l:'matrícula',ls:'Matrículas',vazio:'Nenhuma matrícula cadastrada no terreno.'},ins:{l:'inscrição',ls:'Inscrições',vazio:'Nenhuma inscrição cadastrada no terreno.'},
+  pes:{l:'vendedor',ls:'Vendedores',vazio:'Nenhum vendedor cadastrado no terreno.'},cor:{l:'corretor',ls:'Corretores',vazio:'Nenhum corretor cadastrado.'}};
+function mselHtml(tipo,name,opts,sel,aberto){const T=MS_T[tipo],ch=opts.filter(o=>sel.includes(String(o.v)));
+  return `<div class="msel${aberto?' aberto':''}" data-tipo="${tipo}" data-name="${name}"><button type="button" class="msel-b" data-a="ms-abre" aria-expanded="${!!aberto}" aria-label="${T.ls}"><span class="msel-r${ch.length?'':' faint'}">${ch.length?esc(ch.map(o=>o.l).join(', ')):'Escolher'}</span>${ic('chev',18)}</button>
+  <div class="msel-m"${aberto?'':' hidden'}>${opts.map(o=>`<label class="chk"><input type="checkbox" name="${name}" value="${esc(String(o.v))}" data-l="${esc(o.l)}" ${sel.includes(String(o.v))?'checked':''} ${o.dis?'disabled':''}>${esc(o.l)}${o.sub?` <span class="faint">${esc(o.sub)}</span>`:''}</label>`).join('')||`<div class="faint msel-v">${T.vazio}</div>`}
+  <button type="button" class="btn text sm" data-a="ms-novo">${ic('add',16)}Incluir ${T.l}</button></div></div>`}
+// opções na ficha (formulário da parte)
+function msOptsFicha(t,pa,tipo){const fora=id=>id&&(!pa||id!==pa.id)?parteDe(t,id)?.nome||'':'';
+  if(tipo==='mat')return t.mats.map((m,i)=>({v:i,l:m.num,sub:[m.cri,fora(m.parte)].filter(Boolean).join(' · '),dis:!!fora(m.parte)}));
+  if(tipo==='ins')return t.insc.map((x,i)=>({v:i,l:x.sql,sub:fora(x.parte),dis:!!fora(x.parte)}));
+  if(tipo==='pes')return t.pessoas.map((p,i)=>({v:i,l:p.nome,sub:[OPT.papel[p.papel],fora(p.parte)].filter(Boolean).join(' · ')}));
+  return S.corretores.map(c=>{const x=t.corretores.find(y=>y.cid===c.id),o=(x?.partes||[]).filter(id=>!pa||id!==pa.id).map(id=>parteDe(t,id)?.nome).filter(Boolean);return {v:c.id,l:c.nome,sub:c.imob+(o.length?' · também '+o.join(', '):'')}})}
+const msSelFicha=(t,pa,tipo)=>!pa?[]:tipo==='mat'?t.mats.flatMap((m,i)=>m.parte===pa.id?[String(i)]:[]):tipo==='ins'?t.insc.flatMap((x,i)=>x.parte===pa.id?[String(i)]:[]):tipo==='pes'?t.pessoas.flatMap((p,i)=>p.parte===pa.id?[String(i)]:[]):t.corretores.filter(x=>(x.partes||[]).includes(pa.id)).map(x=>x.cid);
+// opções no Novo terreno: o digitado no passo 2 e o incluído pelo pop-up
+function msOptsNovo(tipo){const f=$('#f-novo'),P=UI.nvPool||{},u=(a,k)=>a.filter((x,i)=>a.findIndex(y=>digits(y[k]||y)===digits(x[k]||x))===i);
+  if(tipo==='mat')return u([...(f?.mat?.value.trim()?[{num:f.mat.value.trim(),cri:f.cri.value}]:[]),...(P.mat||[])],'num').map(m=>({v:m.num,l:m.num,sub:m.cri}));
+  if(tipo==='ins')return u([...(f?.sql?.value.trim()?[f.sql.value.trim()]:[]),...(P.ins||[])],'').map(s=>({v:s,l:s}));
+  if(tipo==='pes')return (P.pes||[]).map(p=>({v:p.nome,l:p.nome,sub:p.tel}));
+  return S.corretores.map(c=>({v:c.id,l:c.nome,sub:c.imob}))}
+const msNoNovo=el=>!!el.closest('#nv-pt-lista');
+function msRefaz(box,novoV){const tipo=box.dataset.tipo,sel=[...box.querySelectorAll('input:checked')].map(x=>x.value);if(novoV!=null)sel.push(String(novoV));
+  const t=UI.route==='terreno'?T(UI.id):null,pa=UI.alvoParte&&t?parteDe(t,UI.alvoParte):null;
+  const opts=msNoNovo(box)?msOptsNovo(tipo):msOptsFicha(t,pa,tipo);box.outerHTML=mselHtml(tipo,box.dataset.name,opts,sel,box.classList.contains('aberto'))}
+function msResumo(box){const ch=[...box.querySelectorAll('input:checked')].map(x=>x.dataset.l),r=box.querySelector('.msel-r');r.textContent=ch.length?ch.join(', '):'Escolher';r.classList.toggle('faint',!ch.length)}
+// pop-up pequeno de inclusão
+let MS_ALVO=null;
+function msPopup(box){MS_ALVO=box;const tipo=box.dataset.tipo,t=UI.route==='terreno'?T(UI.id):null,cid=t?insCid(t.insc[0]||{mun:cidDoNome(t.municipio||'')||'outro'}):cidDoNome($('#f-novo')?.municipio?.value||'')||'outro';
+  const campos={mat:`<div class="field"><label for="ms-a">Número da matrícula *</label><input id="ms-a" name="a" required inputmode="numeric" placeholder="184.552"></div><div class="field"><label for="ms-b">Cartório</label><select id="ms-b" name="b">${Array.from({length:18},(_,i)=>`<option>${i+1}º CRI</option>`).join('')}</select></div>`,
+    ins:`<div class="field"><label for="ms-a">${esc((CIDADES_INSC[cid]||CIDADES_INSC.outro).rotulo)} *</label><input id="ms-a" name="a" required placeholder="${esc((CIDADES_INSC[cid]||CIDADES_INSC.outro).mascara||'Como está no carnê do IPTU')}"></div>`,
+    pes:`<div class="field"><label for="ms-a">Nome ou razão social *</label><input id="ms-a" name="a" required></div><div class="field"><label for="ms-b">Telefone</label><input id="ms-b" name="b" inputmode="tel"></div>`,
+    cor:`<div class="field"><label for="ms-a">Nome do corretor *</label><input id="ms-a" name="a" required></div><div class="field"><label for="ms-b">Imobiliária</label><input id="ms-b" name="b"></div><div class="field"><label for="ms-c">CRECI</label><input id="ms-c" name="c"></div>`}[tipo];
+  const d=document.createElement('div');d.id='ms-dlg';d.className='scrim ms-scrim';
+  d.innerHTML=`<div class="dialog mini" role="dialog" aria-modal="true" aria-labelledby="ms-h"><div class="dh"><h2 id="ms-h">Incluir ${MS_T[tipo].l}</h2><button type="button" class="iconbtn" data-a="ms-fecha" aria-label="Fechar">${ic('close')}</button></div>
+    <form id="ms-f" class="fields">${campos}</form><div class="df"><button type="button" class="btn text" data-a="ms-fecha">Cancelar</button><button class="btn primary" type="submit" form="ms-f">Incluir</button></div></div>`;
+  document.body.appendChild(d);d.querySelector('input').focus()}
+const msFecha=()=>{$('#ms-dlg')?.remove();MS_ALVO=null};
+function msGravar(f){const box=MS_ALVO;if(!box||!document.body.contains(box)){msFecha();return}const tipo=box.dataset.tipo,a=f.a.value.trim(),b=f.b?.value.trim()||'',c=f.c?.value.trim()||'';
+  if(!a){toast('Preencha o campo obrigatório.',true);return}
+  let v;if(tipo==='cor'){const n={id:uid(),nome:a,imob:b||'Autônomo',creci:c||'—',tel:''};S.corretores.push(n);v=n.id}
+  if(msNoNovo(box)){const P=UI.nvPool=UI.nvPool||{mat:[],ins:[],pes:[]};
+    if(tipo==='mat'){if(msOptsNovo('mat').some(o=>digits(o.v)===digits(a))){toast('Essa matrícula já está na lista.',true);return}P.mat.push({num:a,cri:b});v=a}
+    if(tipo==='ins'){if(msOptsNovo('ins').some(o=>digits(o.v)===digits(a))){toast('Essa inscrição já está na lista.',true);return}P.ins.push(a);v=a}
+    if(tipo==='pes'){P.pes.push({nome:a,tel:b});v=a}}
+  else{const t=T(UI.id);
+    if(tipo==='mat'){if(t.mats.some(m=>digits(m.num)===digits(a))){toast('Essa matrícula já está no terreno.',true);return}t.mats.push({num:a,cri:b,area:null,data:null});v=t.mats.length-1;log(t,`Matrícula ${a} adicionada`)}
+    if(tipo==='ins'){if(t.insc.some(x=>digits(x.sql)===digits(a))){toast('Essa inscrição já está no terreno.',true);return}t.insc.push({mun:insCid(t.insc[0]||{mun:cidDoNome(t.municipio||'')||'outro'}),sql:a,area:null,valores:[]});v=t.insc.length-1;log(t,`Inscrição ${a} adicionada`)}
+    if(tipo==='pes'){t.pessoas.push({nome:a,tipo:'PF',papel:'proprietario',pct:null,tel:b});v=t.pessoas.length-1;log(t,`${a} adicionado como proprietário`)}
+    save()}
+  msFecha();msRefaz(box,v);toast(`${MS_T[tipo].l[0].toUpperCase()+MS_T[tipo].l.slice(1)} incluíd${tipo==='mat'||tipo==='ins'?'a':'o'}.`)}
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="ms-"]');
+  if(!a){if(!e.target.closest('.msel,#ms-dlg'))document.querySelectorAll('.msel.aberto').forEach(b=>{b.classList.remove('aberto');b.querySelector('.msel-m').hidden=true;b.querySelector('.msel-b').setAttribute('aria-expanded','false')});return}
+  e.stopImmediatePropagation();e.preventDefault();const A=a.dataset.a,box=a.closest('.msel');
+  if(A==='ms-abre'){const ab=!box.classList.contains('aberto');document.querySelectorAll('.msel.aberto').forEach(b=>{if(b!==box){b.classList.remove('aberto');b.querySelector('.msel-m').hidden=true}});
+    if(ab&&msNoNovo(box)){box.classList.add('aberto');msRefaz(box);return}
+    box.classList.toggle('aberto',ab);box.querySelector('.msel-m').hidden=!ab;a.setAttribute('aria-expanded',String(ab));return}
+  if(A==='ms-novo')return msPopup(box);
+  if(A==='ms-fecha')return msFecha()},true);
+document.addEventListener('change',e=>{const box=e.target.closest('.msel');if(box)msResumo(box)});
+document.addEventListener('submit',e=>{if(e.target.id!=='ms-f')return;e.preventDefault();e.stopImmediatePropagation();msGravar(e.target)},true);
+window.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#ms-dlg')){e.preventDefault();e.stopImmediatePropagation();msFecha()}},true);
+document.addEventListener('mousedown',e=>{const d=$('#ms-dlg');if(d&&e.target===d)msFecha()});
 
 // ---------------------------------------------------------------------
 // Inscrição municipal por cidade. A cidade é sempre a do terreno (pela poligonal):
@@ -6144,6 +6268,9 @@ function nvDadosHtml(fechar){const nv=UI.nv,l=nv.local,mun=l?.cidade?l.cidade+(l
     ${campoInsc('n',cid,'',false)}
     <div class="field"><label for="n-mat">Matrícula</label><span style="display:flex;gap:6px"><input id="n-mat" name="mat" inputmode="numeric" placeholder="Número" style="flex:1 1 55%"><select id="n-cri" name="cri" aria-label="Cartório" style="flex:1 1 45%">${Array.from({length:18},(_,i)=>`<option>${i+1}º CRI</option>`).join('')}</select></span></div>
     <div id="dedupe" class="field full" aria-live="polite"></div></div></details>
+  <details class="details field full" id="nv-partes"><summary>Vários donos negociando separado? Cadastrar as partes</summary><div style="margin-top:8px">
+    <div class="muted" style="margin-bottom:8px">Uma parte para cada dono ou grupo de donos que negocia junto. Só o nome é obrigatório; o resto pode ficar para a ficha.</div>
+    <div id="nv-pt-lista"></div><button type="button" class="btn text sm" data-a="nv-pt-add">${ic('add',16)}Adicionar parte</button></div></details>
   <details class="details field full"><summary>Já recebeu uma oferta? Registrar condições pedidas</summary><div class="fields" style="margin-top:8px">
     <div class="field"><label for="n-cor">Corretor</label><select id="n-cor" name="cid"><option value="">Sem corretor / direto</option>${S.corretores.map(c=>`<option value="${c.id}">${esc(c.nome)} · ${esc(c.imob)}</option>`).join('')}</select></div>
     <div class="field"><label for="n-val">Valor pedido (R$)</label><input id="n-val" name="valor" inputmode="decimal"></div>
@@ -6152,6 +6279,18 @@ function nvDadosHtml(fechar){const nv=UI.nv,l=nv.local,mun=l?.cidade?l.cidade+(l
     <div class="field full"><label for="n-obs">Observação sobre a forma de pagamento</label><input id="n-obs" name="obsPag"></div>
     <div class="field full"><label for="n-ace">Aceita permuta</label><input id="n-ace" name="aceita"></div></div></details>
   </div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-novo" id="btn-novo">Cadastrar terreno</button></div>`}
+// uma linha de parte no passo 2 (acrescentada no lugar, para não perder o que já foi digitado)
+function nvParteLinha(i){const id=k=>`nvp-${k}-${i}`;
+  return `<fieldset class="nv-pt" data-i="${i}"><legend>Parte ${i+1}</legend><div class="fields">
+    <div class="field"><label for="${id('n')}">Nome ou identificador *</label><input id="${id('n')}" data-k="nome" placeholder="Família Souza, Lote 3..."></div>
+    <div class="field"><label for="${id('a')}">Tamanho do lote (m²)</label><input id="${id('a')}" data-k="area" inputmode="decimal"></div>
+    <div class="field"><span class="lbl-f">Matrículas</span>${mselHtml('mat','nvp-mat-'+i,msOptsNovo('mat'),[])}</div>
+    <div class="field"><span class="lbl-f">Inscrições</span>${mselHtml('ins','nvp-ins-'+i,msOptsNovo('ins'),[])}</div>
+    <div class="field"><span class="lbl-f">Vendedores</span>${mselHtml('pes','nvp-pes-'+i,msOptsNovo('pes'),[])}</div>
+    <div class="field"><span class="lbl-f">Corretores</span>${mselHtml('cor','nvp-cor-'+i,msOptsNovo('cor'),[])}</div>
+  </div><button type="button" class="btn sm text danger" data-a="nv-pt-del">Tirar esta parte</button></fieldset>`}
+function nvPartesLer(f){return [...f.querySelectorAll('.nv-pt')].map(fs=>{const d={};fs.querySelectorAll('[data-k]').forEach(el=>d[el.dataset.k]=el.value.trim());d.area=lerNum(d.area);const ms=k=>[...fs.querySelectorAll(`.msel[data-tipo=${k}] input:checked`)].map(x=>x.value);d.mats=ms('mat');d.insc=ms('ins');d.vend=ms('pes');d.cids=ms('cor');return d})
+  .filter(d=>d.nome||d.area||d.mats.length||d.insc.length||d.vend.length||d.cids.length)}
 // depois de desenhar a tela do passo 2: checagem de duplicidade
 function nvPosRender(){const f=$('#f-novo');if(!f||!UI.nv)return;dedupe()}
 // passo 2 gravado: o terreno novo com a poligonal, o município e as frentes
@@ -6176,7 +6315,10 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="nv-"]'
   if(A==='nv-desenhar'){UI.modal=null;renderModal();nvDesenhar()}
   if(A==='nv-kmz'){UI.kmzNovo=true;$('#kmz-in').value='';$('#kmz-in').click()}
   if(A==='nv-kmz-i'){const it=UI.nvKmz[Number(a.dataset.i)];UI.nvKmz=null;nvPoligonal(it.pts,'kmz',{nome:it.nome})}
-  if(A==='nv-voltar'){UI.nv=null;UI.modal='novo';renderModal()}
+  if(A==='nv-pt-add'){const L=$('#nv-pt-lista');if(!L)return;const i=L.children.length?Math.max(...[...L.children].map(x=>+x.dataset.i))+1:0;L.insertAdjacentHTML('beforeend',nvParteLinha(i));
+    [...L.children].forEach((x,k)=>x.querySelector('legend').textContent='Parte '+(k+1));L.lastElementChild.querySelector('input').focus()}
+  if(A==='nv-pt-del'){const L=a.closest('#nv-pt-lista');a.closest('.nv-pt').remove();[...(L?.children||[])].forEach((x,k)=>x.querySelector('legend').textContent='Parte '+(k+1))}
+  if(A==='nv-voltar'){UI.nv=null;UI.nvPool=null;UI.modal='novo';renderModal()}
   if(A==='nv-mesmo'){UI.nv.ignorados=UI.nv.sobre;UI.modal='novo';renderModal()}
   if(['nv-oferta','nv-oferta-p','nv-recad','nv-juntar'].includes(A))nvDecidir(A,a.dataset.id)});
 document.addEventListener('input',e=>{if(e.target.id==='n-mun')nvCidadeInsc()});

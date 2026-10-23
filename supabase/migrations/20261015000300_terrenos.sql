@@ -316,6 +316,32 @@ create table app.terreno_corretores (
 );
 create unique index terreno_corretor_principal_unico on app.terreno_corretores (terreno_id) where principal;
 
+-- Corretores de cada parte (vários donos): uma parte pode ter vários corretores e o mesmo corretor
+-- pode trazer várias partes. Ligar o corretor à parte também o põe entre os corretores do terreno.
+create table app.parte_corretores (
+  parte_id    uuid not null references app.terreno_partes(id) on delete cascade,
+  corretor_id uuid not null references app.corretores(id),
+  empresa_id  uuid not null references app.empresas(id),
+  primary key (parte_id, corretor_id)
+);
+create or replace function app.tg_parte_corretor()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare tp app.terreno_partes;
+begin
+  select * into tp from app.terreno_partes where id = new.parte_id;
+  if tp.empresa_id is distinct from new.empresa_id
+     or not exists (select 1 from app.corretores where id = new.corretor_id and empresa_id = new.empresa_id) then
+    raise exception 'Registro não pertence à mesma empresa do pai' using errcode = '42501';
+  end if;
+  if not tp.ativa then raise exception 'A parte já saiu do terreno' using errcode = '23514'; end if;
+  insert into app.terreno_corretores (terreno_id, corretor_id, empresa_id, principal)
+  values (tp.terreno_id, new.corretor_id, tp.empresa_id,
+          not exists (select 1 from app.terreno_corretores where terreno_id = tp.terreno_id and principal))
+  on conflict do nothing;
+  return new;
+end $$;
+create trigger t_parte before insert or update on app.parte_corretores for each row execute function app.tg_parte_corretor();
+
 create table app.terreno_infraestrutura (
   terreno_id      uuid not null references app.terrenos(id) on delete cascade,
   item            text not null references app.itens_infraestrutura(codigo),
@@ -473,7 +499,7 @@ end $$;
 do $$
 declare t text;
 begin
-  foreach t in array array['terrenos','matriculas','inscricoes_municipais','inscricao_valores','confrontacoes','terreno_pessoas','terreno_corretores',
+  foreach t in array array['terrenos','matriculas','inscricoes_municipais','inscricao_valores','confrontacoes','terreno_pessoas','terreno_corretores','parte_corretores',
                            'terreno_infraestrutura','analises_urbanisticas','analise_zoneamentos','areas_interesse','area_interesse_terrenos',
                            'terreno_entorno','terreno_entorno_buscas','terreno_ponto_distancias','consultas_lote'] loop
     execute format('alter table app.%I enable row level security', t);
@@ -486,7 +512,7 @@ begin
     end if;
   end loop;
   -- remover vínculos é permitido; terreno e análise nunca são apagados (arquivar / substituir)
-  foreach t in array array['matriculas','inscricoes_municipais','confrontacoes','terreno_pessoas','terreno_corretores','area_interesse_terrenos','analise_zoneamentos'] loop
+  foreach t in array array['matriculas','inscricoes_municipais','confrontacoes','terreno_pessoas','terreno_corretores','parte_corretores','area_interesse_terrenos','analise_zoneamentos'] loop
     execute format('create policy remover on app.%I for delete to authenticated using (empresa_id in (select app.empresas_edicao()))', t);
     execute format('grant delete on app.%I to authenticated', t);
   end loop;

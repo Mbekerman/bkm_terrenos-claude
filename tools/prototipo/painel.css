@@ -451,11 +451,6 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .mp-barra .seg { background: rgba(255,255,255,.78) !important; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border-color: transparent !important; box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 1px 2px rgba(0,0,0,.1) }
 :root[data-tema="escuro"] .mp-barra .seg { background: rgba(6,12,32,.72) !important; box-shadow: 0 0 0 1px rgba(124,140,255,.35) }
 .mp-barra .seg button { flex: 1 1 auto }
-/* Lugares do Google: liga e desliga, mesmo fundo translúcido do seletor */
-.mp-barra .mp-lug { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 16px 0 12px; border-radius: 20px; border: 0; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; color: var(--m-on-surface, #1f1f1f); background: rgba(255,255,255,.78); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 1px 2px rgba(0,0,0,.1) }
-.mp-barra .mp-lug[aria-pressed="true"] { background: #c2e7ff; color: #001d35 }
-:root[data-tema="escuro"] .mp-barra .mp-lug { background: rgba(6,12,32,.72); color: #c9d6ff; box-shadow: 0 0 0 1px rgba(124,140,255,.35) }
-:root[data-tema="escuro"] .mp-barra .mp-lug[aria-pressed="true"] { background: rgba(99,112,255,.28); box-shadow: 0 0 0 1px rgba(124,140,255,.7) }
 /* quadro do lugar (InfoWindow do Google): nome, nota e até 3 avaliações */
 .lug { position: relative; font: 13px/1.4 "Google Sans Flex", system-ui, sans-serif; color: #1f1f1f; max-width: 290px; padding-right: 28px }
 .lug .muted, .lug.muted { color: #5f6368 !important }
@@ -870,7 +865,23 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .pt-a .adv-mais { margin-left: auto } .pt-a .adv-mais .adv-mb { width: 36px; padding: 0; justify-content: center }
 .t-warn { color: #7a5900; font-weight: 500 }
 .kcard .kpt { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--m-on-var, #444746) }
+.ptc-lista { display: flex; flex-direction: column; gap: 10px }
+.ptc { border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px; padding: 8px 8px 10px 16px; display: flex; flex-direction: column; gap: 4px; min-width: 0 }
+.ptc-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 36px } .ptc-h b { font-weight: 500; font-size: 15px } .ptc-h > .faint { font-size: 13px; margin-right: auto }
+.ptc-l { display: flex; gap: 12px; font-size: 14px; min-width: 0; padding-right: 8px } .ptc-l > .faint:first-child { flex: 0 0 96px; font-size: 13px } .ptc-l > span:last-child { min-width: 0; overflow-wrap: anywhere }
+.msel { min-width: 0 }
+.msel-b { width: 100%; min-height: 44px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--m-outline, #747775); border-radius: 4px; padding: 6px 8px 6px 14px; background: transparent; text-align: left; cursor: pointer; font-size: 15px }
+.msel-b .ic { margin-left: auto; flex: none; transform: rotate(90deg); transition: transform .15s } .msel.aberto .msel-b .ic { transform: rotate(-90deg) }
+.msel-r { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.msel-m { margin-top: 4px; border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 8px; padding: 6px 12px; display: flex; flex-direction: column; gap: 2px; max-height: 240px; overflow: auto; background: var(--m-surface, #fff) }
+.msel-m[hidden] { display: none } .msel-m .chk { min-height: 36px } .msel-m .btn { align-self: flex-start; margin: 4px 0 2px -12px } .msel-v { padding: 6px 0; font-size: 13px }
+.ms-scrim { z-index: 60 } .dialog.mini { width: min(400px, 100%); padding: 24px } .dialog.mini h2 { font-size: 22px; line-height: 28px; font-weight: 400 } .dialog.mini .fields { grid-template-columns: 1fr }
+.nv-pt { border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px; padding: 4px 16px 12px; margin: 0 0 12px; min-width: 0 }
+.nv-pt legend { padding: 0 6px; font-size: 13px; font-weight: 500; color: var(--m-on-var, #444746) }
+.nv-pt .btn { margin-top: 8px }
 :root[data-tema="escuro"] .pt-card { border-color: rgba(124,140,255,.22); background: #060c20 }
+:root[data-tema="escuro"] .ptc, :root[data-tema="escuro"] .nv-pt { border-color: rgba(124,140,255,.22) }
 :root[data-tema="escuro"] .pt-ped { background: rgba(124,140,255,.07) }
 :root[data-tema="escuro"] .t-warn { color: #f5c451 }
 :root[data-tema="escuro"] .pt-card.comprado { box-shadow: inset 3px 0 0 #6dd58c } :root[data-tema="escuro"] .pt-card.perdido, :root[data-tema="escuro"] .pt-card.descartado { box-shadow: inset 3px 0 0 #f2b8b5 } :root[data-tema="escuro"] .pt-card.stand_by { box-shadow: inset 3px 0 0 #f5c451 }
+:root[data-tema="escuro"] .msel-b { border-color: rgba(124,140,255,.35) } :root[data-tema="escuro"] .msel-m { background: #060c20; border-color: rgba(124,140,255,.22) }
