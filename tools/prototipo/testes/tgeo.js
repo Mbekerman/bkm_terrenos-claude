@@ -26,7 +26,7 @@ await ctx.route('**/*',async r=>{const u=r.request().url();
 const p=await ctx.newPage();p.on('pageerror',e=>errs.push(e.message));
 await p.goto('file:///x/a.html');await p.evaluate(()=>localStorage.clear());await p.reload();await p.waitForTimeout(600);
 const toast=()=>p.$eval('#toast',x=>x.textContent);
-const KEY='bkm-terrenos-prototipo-v8',ter=()=>p.evaluate(k=>JSON.parse(localStorage.getItem(k)).terrenos.find(x=>x.nome==='Paulista 1500'),KEY);
+const KEY='bkm-terrenos-prototipo-v9',ter=()=>p.evaluate(k=>JSON.parse(localStorage.getItem(k)).terrenos.find(x=>x.nome==='Paulista 1500'),KEY);
 const abrir=async()=>{await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=terrenos]').click());await p.waitForTimeout(150);
   await p.evaluate(()=>document.querySelector('[data-a=fT][data-v=todos]').click());await p.waitForTimeout(150);
   await p.evaluate(()=>[...document.querySelectorAll('[data-a=abrir]')].find(x=>x.textContent.includes('Paulista 1500')).click());await p.waitForTimeout(300);

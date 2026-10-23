@@ -671,6 +671,33 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
   .cfg-r > :first-child, .cfg-ap { grid-column: 1 / -1 }
   .cfg-r.cfg-sub > input:first-of-type { grid-column: 1 / -1 }
 }
+/* Fases: configuração, seção da ficha, chip da fase */
+.cfg-r.cfg-fase { grid-template-columns: 72px minmax(160px, 1.4fr) 80px minmax(140px, 1fr) 80px 70px 70px }
+.cfg-r.cfg-fe { grid-template-columns: 72px minmax(160px, 1fr) 100px minmax(260px, 2.4fr) 70px }
+.cfg-subs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center }
+.cfg-subs .chip { gap: 4px }
+.chip-x { border: 0; background: none; color: inherit; font-size: 16px; line-height: 1; padding: 0 2px; cursor: pointer }
+.cfg-fs-add input { height: 30px !important; width: 140px !important; border-radius: 8px; border: 1px dashed var(--m-outline); background: transparent; color: var(--m-on-surface); padding: 0 10px; font: inherit; font-size: 13px }
+.chip.fase-n { background: var(--m-sc-low); border-color: var(--m-outline-var); font-weight: 500 }
+.fs-lst { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column }
+.fs-i { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--m-outline-var) }
+.fs-i:last-child { border-bottom: 0 }
+.fs-it { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center }
+.fs-st { display: inline-flex; flex-wrap: wrap; gap: 6px }
+.fs-d { font-size: 13px }
+.fs-deps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; font-size: 13px }
+.fs-deps li { display: flex; gap: 6px; align-items: center }
+.fs-deps li.ok { color: #146c2e }
+.fs-deps li.no { color: var(--m-on-var) }
+:root[data-tema="escuro"] .fs-deps li.ok { color: #6dd58c }
+.neg-fase { margin-bottom: 8px }
+.tl-topo .sd { overflow: hidden; text-overflow: ellipsis }
+.fsel { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--m-on-var) }
+.fsel select { height: 32px; border-radius: 8px; border: 1px solid var(--m-outline); background: transparent; color: var(--m-on-surface); padding: 0 8px; font: inherit; font-size: 14px }
+@media (max-width: 899px) {
+  .cfg-r.cfg-fase, .cfg-r.cfg-fe { grid-template-columns: 1fr 1fr; padding: 10px 0; border-bottom: 1px solid var(--m-outline-var) }
+  .cfg-r.cfg-fase > input:first-of-type, .cfg-r.cfg-fe > input:first-of-type, .cfg-subs { grid-column: 1 / -1 }
+}
 /* celular: quatro papéis não cabem por extenso na barra; fica a inicial (nome completo no title) */
 @media (max-width: 480px) {
 }

@@ -4,7 +4,7 @@
    e quadro de tarefas. Injetado dentro do mesmo escopo do protótipo.
    ===================================================================== */
 UI.sorts=UI.sorts||{};
-UI.mp=UI.mp||{q:'',cor:'',zona:'',ocultas:[]};
+UI.mp=UI.mp||{q:'',cor:'',zona:'',fase:'',ocultas:[]};
 UI.dash=UI.dash||{f:{},sel:['situacao','zona','valor','mes']};
 UI.tk=UI.tk||{vista:'quadro',q:'',resp:'',ter:'',prio:'',atras:false,canc:false};
 
@@ -88,7 +88,7 @@ const COLS_TERRENOS=[
   {k:'area',l:'Área',cls:'hm num',v:t=>{const a=areaAdotada(t);return a!=null?m2(a):'<span class="faint">—</span>'},s:t=>areaAdotada(t)},
   {k:'valor',l:'Valor pedido',cls:'num',v:t=>{const o=ofertaRef(t),a=areaAdotada(t);return o?.valor?`${mi(o.valor)}${a?`<div class="t2">${brl(o.valor/a)}/m²</div>`:''}`:'<span class="faint">—</span>'},s:t=>ofertaRef(t)?.valor??null},
   {k:'temp',l:'Temperatura',cls:'hm',v:t=>tempMini(t.neg?.temp),s:t=>t.neg?.temp??null},
-  {k:'etapa',l:'Etapa',v:t=>`<span class="c-etapa">${chipNeg(t)}</span>`,s:t=>Object.keys(SIT).indexOf(sitMapa(t))},
+  {k:'etapa',l:'Fase e etapa',v:t=>`<span class="c-etapa">${chipFase(t)}</span>`,s:t=>(fIdx(faseAtual(t)?.k)+1)*100+Object.keys(SIT).indexOf(sitMapa(t))},
   {k:'tarefa',l:'Próxima tarefa',cls:'hm',v:t=>{const pt=proxTarefa(t),at=atrasadas(t).length;return pt?`<div class="t2" style="color:var(--texto)">${esc(pt.titulo)}</div><div class="t2" style="${pt.prazo<HOJE?'color:var(--terracota);font-weight:600':''}">${fd(pt.prazo)}${at>1?` · ${at} atrasadas`:''}</div>`:'<span class="faint">—</span>'},s:t=>proxTarefa(t)?.prazo??null}];
 const attrAbrir=from=>t=>`data-a="abrir" data-id="${t.id}" data-from="${from}" tabindex="0"`;
 
@@ -177,14 +177,14 @@ function camada(k,el){
 function pinIcon(k,sel){const [,c,g,fg]=SIT[k];return L.divIcon({className:'pin'+(sel?' sel':''),html:`<span class="pin-b" style="background:${c}"><b style="color:${fg}">${g}</b></span>`,iconSize:[30,40],iconAnchor:[15,38],popupAnchor:[0,-34],tooltipAnchor:[0,-34]})}
 const poiIcon=()=>L.divIcon({className:'poi',html:'<span class="poi-b"></span>',iconSize:[14,14],iconAnchor:[7,7],tooltipAnchor:[0,-8]});
 function mpVisiveis(){const m=UI.mp,q=m.q.trim().toLowerCase();
-  return ativosBanco().filter(t=>!m.ocultas.includes(sitMapa(t))&&(!m.zona||t.zona===m.zona)&&(!m.cor||t.corretores.some(x=>x.principal&&x.cid===m.cor))&&(!q||bateBusca(t,q)))}
+  return ativosBanco().filter(t=>!m.ocultas.includes(sitMapa(t))&&(!m.fase||faseAtual(t)?.k===m.fase)&&(!m.zona||t.zona===m.zona)&&(!m.cor||t.corretores.some(x=>x.principal&&x.cid===m.cor))&&(!q||bateBusca(t,q)))}
 /* lista lateral do mapa: só o número do pino (etapa), o nome e a área; a lupa abre a ficha.
    Clicar no pino ou na poligonal seleciona o terreno aqui (não há balão no mapa). */
 function mpItem(t,cartao){const k=sitMapa(t),[nm,c,g,fg]=SIT[k],sel=UI.mpSel===t.id,ad=areaAdotada(t)||(t.poly?areaPoly(t.poly):null);
   const acoes=sel&&t.lat!=null?`<div class="mp-it-a">${UI.role!=='Leitura'?`<button class="linkbtn" data-a="mp-desenhar" data-id="${t.id}">${t.poly?'Editar':'Desenhar'} poligonal</button>`:''}${GG?`<button class="linkbtn" data-a="mp-sv" data-id="${t.id}">Street View</button>`:''}</div>`:'';
   return `<div class="mp-it${sel?' sel':''}${cartao?' cartao':''}" data-a="mp-foco" data-id="${t.id}" tabindex="0" role="listitem" aria-current="${sel}">
     <span class="pin-mini" style="background:${c};color:${fg}" title="${esc(nm)}">${g}</span>
-    <div class="mp-it-t"><div class="t1">${esc(t.nome)}</div><div class="t2">${ad?m2(ad):'Área não informada'} · ${esc(nm)}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div></div>
+    <div class="mp-it-t"><div class="t1">${esc(t.nome)}</div><div class="t2">${ad?m2(ad):'Área não informada'} · ${esc(naEntrada(t)?nm:faseN(faseAtual(t).k))}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div></div>
     <button class="iconbtn mp-lupa" data-a="fs-abrir" data-id="${t.id}" title="Ver ficha" aria-label="Ver ficha de ${esc(t.nome)}">${bi('busca',22)}</button>${cartao?`<button class="iconbtn mp-lupa mp-fx" data-a="mp-desel" title="Fechar" aria-label="Fechar">${ic('close',22)}</button>`:''}${acoes}</div>`}
 function mpLista(){const v=mpVisiveis(),sem=v.filter(t=>t.lat==null),ord=Object.keys(SIT);
   const rows=v.slice().sort((a,b)=>ord.indexOf(sitMapa(a))-ord.indexOf(sitMapa(b))||a.nome.localeCompare(b.nome,'pt'));
@@ -224,8 +224,9 @@ function pgMapa(){
     <div class="page-h compacto"><div><h1><span class="marca"></span>Mapa</h1></div></div>
     <label class="search sm" for="mp-q">${bi('busca',24)}<input id="mp-q" type="search" placeholder="Buscar por nome, bairro, SQL..." value="${esc(UI.mp.q)}" autocomplete="off"></label>
     <div class="mp-filtros"><div class="field"><label for="mp-cor">Corretor</label><select id="mp-cor" data-ch="mp-cor"><option value="">Todos</option>${opt(Object.fromEntries(S.corretores.map(c=>[c.id,c.nome])),UI.mp.cor)}</select></div>
-      <div class="field"><label for="mp-zona">Região</label><select id="mp-zona" data-ch="mp-zona"><option value="">Todas</option>${opt(OPT.zona,UI.mp.zona)}</select></div></div>
-    ${UI.mp.cor||UI.mp.zona||UI.mp.q||UI.mp.ocultas.length?'<button class="linkbtn" data-a="mp-limpar" style="align-self:flex-start">Limpar filtros</button>':''}
+      <div class="field"><label for="mp-zona">Região</label><select id="mp-zona" data-ch="mp-zona"><option value="">Todas</option>${opt(OPT.zona,UI.mp.zona)}</select></div>
+      <div class="field"><label for="mp-fase">Fase</label><select id="mp-fase" data-ch="mp-fase"><option value="">Todas</option>${opt(Object.fromEntries(fasesL().filter(f=>f.ativo).map(f=>[f.k,f.nome])),UI.mp.fase)}</select></div></div>
+    ${UI.mp.cor||UI.mp.zona||UI.mp.fase||UI.mp.q||UI.mp.ocultas.length?'<button class="linkbtn" data-a="mp-limpar" style="align-self:flex-start">Limpar filtros</button>':''}
     <div id="mp-lista">${mpLista()}</div>
   </aside>
   <section class="mapa-area" aria-label="Mapa dos terrenos">
