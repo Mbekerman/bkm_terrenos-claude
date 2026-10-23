@@ -1808,9 +1808,11 @@ body.mp-cheia .fab { display: none !important }
 .mapa-area.sv-on .sv-x { display: grid }
 .mapa-area.sv-on .mp-cartao { display: none !important }
 body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
-/* indicadores do Dashboard no tema escuro: as 4 no estilo do botão "+ Novo terreno" (decisão do Moisés, 23/out/2026, no lugar de um tom por indicador) */
-:root[data-tema="escuro"] .kpis-v .kpi { background: #18205a !important; border: 1px solid rgba(124,140,255,.65) !important; box-shadow: none !important }
-:root[data-tema="escuro"] .kpis-v .kpi .v, :root[data-tema="escuro"] .kpis-v .kpi .l { color: #c9d6ff !important; -webkit-text-fill-color: currentColor }
+/* indicadores do Dashboard no tema escuro: sóbrios, fundo escuro com faixa azul na lateral, número grande e leve em branco, rótulo cinza-azulado (versão A, decisão do Moisés, 23/out/2026) */
+:root[data-tema="escuro"] .kpis-v .kpi { background: #0c1433 !important; border: 1px solid rgba(124,140,255,.28) !important; box-shadow: inset 3px 0 0 #7c8cff !important; container-type: inline-size }
+:root[data-tema="escuro"] .kpis-v .kpi .v { color: #f2f5ff !important; -webkit-text-fill-color: currentColor; font-weight: 300 !important; font-size: min(34px, 26cqi) !important; white-space: nowrap; letter-spacing: -.01em; font-variant-numeric: tabular-nums }
+:root[data-tema="escuro"] .kpis-v .kpi .v.sm { font-size: min(26px, 15.5cqi) !important }
+:root[data-tema="escuro"] .kpis-v .kpi .l { color: #8e9ac4 !important; font-weight: 500 !important; font-size: 13px !important }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
