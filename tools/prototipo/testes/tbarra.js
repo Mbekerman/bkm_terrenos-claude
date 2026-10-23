@@ -1,4 +1,4 @@
-// Barra do mapa: abre no satélite (já com rótulos, sem a opção à parte), seletor com fundo translúcido, busca legível no mapa estreito; importar KMZ só no Novo terreno
+// Barra do mapa: abre no satélite (já com rótulos; sem Relevo nem opção sem rótulos), seletor com fundo translúcido, busca legível no mapa estreito; importar KMZ só no Novo terreno
 const path=require('path'),fs=require('fs'),{chromium}=require('playwright');
 const F=path.join(__dirname,'..','saida','bkm-terrenos.html'),L=path.join(__dirname,'..','libs','l')+'/',O=path.join(__dirname,'..','saida','t_barra')+'/';fs.mkdirSync(O,{recursive:true});
 const falhas=[];const ok=(c,m)=>{console.log((c?'ok   ':'FALHA ')+m);if(!c)falhas.push(m)};
@@ -11,7 +11,7 @@ await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=mapa]').click()
 const r=await p.evaluate(()=>{const q=s=>document.querySelector(s),bx=s=>{const e=q(s);if(!e)return null;const r=e.getBoundingClientRect();return {w:Math.round(r.width),h:Math.round(r.height),x:Math.round(r.x),y:Math.round(r.y)}};
  return {area:bx('.mapa-area'),busca:bx('.mp-busca'),seg:bx('.mp-barra .seg'),kmz:bx('.mp-kmz'),botoes:[...document.querySelectorAll('.mp-barra button')].map(x=>x.textContent.trim()||x.getAttribute('aria-label')).join('|'),fundo:getComputedStyle(q('.mp-barra .seg')).backgroundColor,sat:q('[data-a=mp-base][aria-pressed=true]').dataset.v,ops:[...document.querySelectorAll('[data-a=mp-base]')].map(x=>x.textContent).join('|')}});
 const nome=`${tema}_${w}`;console.log(nome,JSON.stringify(r));
-ok(r.sat==='satelite',`${nome}: abre no satélite`);ok(!/rótulos/.test(r.ops)&&r.ops.split('|').length===3,`${nome}: só três camadas (${r.ops})`);
+ok(r.sat==='satelite',`${nome}: abre no satélite`);ok(!/rótulos/.test(r.ops)&&r.ops==='Mapa|Satélite',`${nome}: só Mapa e Satélite (${r.ops})`);
 ok(r.fundo!=='rgba(0, 0, 0, 0)',`${nome}: segmentado com fundo ${r.fundo}`);
 ok(!r.kmz,`${nome}: sem botão de importar KMZ na barra (${r.botoes})`);ok(r.area.w>300,`${nome}: área do mapa com largura (${r.area.w})`);
 ok(r.busca.w>=160,`${nome}: busca com ${r.busca.w}px`);

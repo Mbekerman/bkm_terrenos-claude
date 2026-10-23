@@ -94,8 +94,8 @@ const attrAbrir=from=>t=>`data-a="abrir" data-id="${t.id}" data-from="${from}" t
 
 /* ===================== MAPA ===================== */
 let MAPA=null,MINI=null,PINS=null,POIS=null,CONC=null,DES=null,BASE=null;
-// Satélite já vem com rótulos (ruas e lugares); não há opção sem eles (decisão do Moisés, 23/out/2026)
-const CAMADAS_L={mapa:'Mapa',ruas:'Ruas',satelite:'Satélite'},CAMADAS_G={mapa:'Mapa',ruas:'Relevo',satelite:'Satélite'};
+// Satélite já vem com rótulos (ruas e lugares); sem Relevo nem opção sem rótulos (decisões do Moisés, 23/out/2026)
+const CAMADAS_L={mapa:'Mapa',satelite:'Satélite'},CAMADAS_G={mapa:'Mapa',satelite:'Satélite'};
 // motor do mapa: Google quando a chave carrega; Leaflet (Esri/OSM) como reserva
 let GG=false;
 function setBase(k){return GG?G_setBase(k):L_setBase(k)}
@@ -199,6 +199,7 @@ function pgMapa(){
     <div class="mp-barra">
       ${mpBuscaHtml()}
       <div class="seg" role="group" aria-label="Fundo do mapa">${Object.entries(GG?CAMADAS_G:CAMADAS_L).map(([k,l])=>`<button type="button" data-a="mp-base" data-v="${k}" aria-pressed="${(UI.mpBase||'satelite')===k}">${l}</button>`).join('')}</div>
+      ${GG?`<button type="button" class="mp-lug" data-a="mp-lugares" aria-pressed="${UI.mpLugares!==false}" title="Lugares do Google: comércio, escolas, hospitais. Toque num lugar para ver as avaliações">${ic('lugar',16)}<span>Lugares</span></button>`:''}
     </div>
     <div id="mp-modo" class="mp-modo" aria-live="polite">${modoBanner()}</div>
     <div id="mp-cartao" class="mp-cartao" aria-live="polite"></div>
