@@ -1,4 +1,4 @@
-// Página Mapa com Google: só Mapa e Satélite (Relevo saiu), botão Lugares liga e desliga os lugares do Google
+// Página Mapa com Google: versão escura do mapa no tema escuro; só Mapa e Satélite (Relevo saiu), botão Lugares liga e desliga os lugares do Google
 // (só com o Map ID sem lugares vindo da variável; sem ele o botão não aparece) e o toque num lugar abre nota e avaliações
 const path=require('path'),fs=require('fs'),{chromium}=require('playwright');
 const F=path.join(__dirname,'..','saida','bkm-terrenos.html'),L=path.join(__dirname,'..','libs','l')+'/',O=path.join(__dirname,'..','saida','t_lugares')+'/';fs.mkdirSync(O,{recursive:true});
@@ -28,6 +28,14 @@ ok(/reviews/.test(inf.campos)&&/rating/.test(inf.campos),`${cfg}: pede ${inf.cam
 await p.evaluate(()=>{const m=window.__mapas.at(-1);m.ls.click.forEach(f=>f({placeId:'lugar1',latLng:{lat:()=>-23.58,lng:()=>-46.58},stop:()=>{}}))});await p.waitForTimeout(150);
 ok(await p.evaluate(()=>window.__fetch.length)===1,`${cfg}: segundo toque no mesmo lugar não consulta de novo`);
 if(cfg==='com Map ID'){fs.writeFileSync(O+'quadro.html','<meta charset=utf-8><link rel=stylesheet href="x.css"><style>'+(await p.evaluate(()=>[...document.styleSheets].map(s=>{try{return [...s.cssRules].map(r=>r.cssText).filter(t=>/\.lug/.test(t)).join('\n')}catch(e){return ''}}).join('\n')))+'</style><div style="width:300px;padding:12px;border:1px solid #ccc;border-radius:8px;margin:20px">'+inf.html+'</div>')}
+if(!mapid){const n0=await p.evaluate(()=>window.__mapas.length),c0=await p.evaluate(()=>window.__mapas.at(-1).opts.colorScheme);
+  await p.click('[data-a=tema-menu]');await p.click('[data-a=tema][data-v=escuro]');await p.waitForTimeout(300);
+  const t=await p.evaluate(()=>({n:window.__mapas.length,c:window.__mapas.at(-1).opts.colorScheme}));
+  ok(c0==='LIGHT'&&t.n===n0+1&&t.c==='DARK',`${cfg}: tema escuro recria o mapa com a versão escura do Google (${c0} → ${t.c})`);
+  await p.click('[data-a=tema-menu]');await p.click('[data-a=tema][data-v=escuro]');await p.waitForTimeout(300);
+  ok(await p.evaluate(()=>window.__mapas.length)===n0+1,`${cfg}: escolher o mesmo tema não recria o mapa`);
+  await p.click('[data-a=tema-menu]');await p.click('[data-a=tema][data-v=claro]');await p.waitForTimeout(300);
+  ok(await p.evaluate(()=>window.__mapas.at(-1).opts.colorScheme)==='LIGHT',`${cfg}: voltar ao claro volta o mapa claro`)}
 // fechar: X, clique no mapa e Esc
 const fechou=async(acao)=>{await p.evaluate(()=>{const m=window.__mapas.at(-1);m.ls.click.forEach(f=>f({placeId:'lugar1',latLng:{lat:()=>-23.58,lng:()=>-46.58},stop:()=>{}}))});await p.waitForTimeout(100);
   const antes=await p.evaluate(()=>window.__info.aberto);await p.evaluate(acao);await p.waitForTimeout(100);return antes&&!(await p.evaluate(()=>window.__info.aberto))};
@@ -37,7 +45,7 @@ ok(await fechou(()=>document.dispatchEvent(new KeyboardEvent('keydown',{key:'Esc
 // desligar
 if(mapid){await p.click('[data-a=mp-lugares]');await p.waitForTimeout(300)}s=await st();
 if(mapid)ok(s.lug==='false'&&s.mapId===mapid&&s.click===false&&s.n===2,`${cfg}: desligar recria o mapa com o Map ID sem lugares e sem clique (${JSON.stringify(s)})`);
-else ok(s.n===1,`${cfg}: sem o Map ID não há botão para desligar`);
+else ok(s.lug===undefined,`${cfg}: sem o Map ID não há botão para desligar`);
 if(mapid){await p.click('[data-a=mp-lugares]');await p.waitForTimeout(300);s=await st();ok(s.lug==='true'&&s.mapId==='DEMO_MAP_ID'&&s.click===true,`${cfg}: religar volta os lugares`);
   await p.screenshot({path:O+'barra.png',clip:{x:640,y:80,width:740,height:80}})}
 await ctx.close()}
