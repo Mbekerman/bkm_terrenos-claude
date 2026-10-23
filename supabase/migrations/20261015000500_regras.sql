@@ -1422,6 +1422,8 @@ select tp.id, tp.empresa_id, tp.terreno_id, tp.nome, tp.essencial, tp.area_m2, t
        (select count(*) from app.inscricoes_municipais i where i.parte_id = tp.id) as qtd_inscricoes,
        (select string_agg(pe.nome_razao_social, ', ' order by pe.nome_razao_social) from app.terreno_pessoas x
          join app.pessoas pe on pe.id = x.pessoa_id where x.parte_id = tp.id and x.papel = 'proprietario') as proprietarios,
+       (select string_agg(pe.nome_razao_social, ', ' order by pe.nome_razao_social) from app.parte_corretores x
+         join app.corretores co on co.id = x.corretor_id join app.pessoas pe on pe.id = co.pessoa_id where x.parte_id = tp.id) as corretores,
        c.id as processo_id, c.codigo as processo_codigo, c.principal_id, c.status, stm.nome as status_nome,
        c.etapa_atual, e.nome as etapa_nome, e.ordem as etapa_ordem, c.subetapa_atual, s.nome as subetapa_nome, s.ordem as subetapa_ordem,
        (current_date - c.subetapa_desde::date) as dias_na_subetapa,
