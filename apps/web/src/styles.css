@@ -1468,6 +1468,22 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .mp-barra .seg { background: rgba(255,255,255,.78) !important; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border-color: transparent !important; box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 1px 2px rgba(0,0,0,.1) }
 :root[data-tema="escuro"] .mp-barra .seg { background: rgba(6,12,32,.72) !important; box-shadow: 0 0 0 1px rgba(124,140,255,.35) }
 .mp-barra .seg button { flex: 1 1 auto }
+/* Lugares do Google: liga e desliga, mesmo fundo translúcido do seletor */
+.mp-barra .mp-lug { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 16px 0 12px; border-radius: 20px; border: 0; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; color: var(--m-on-surface, #1f1f1f); background: rgba(255,255,255,.78); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 1px 2px rgba(0,0,0,.1) }
+.mp-barra .mp-lug[aria-pressed="true"] { background: #c2e7ff; color: #001d35 }
+:root[data-tema="escuro"] .mp-barra .mp-lug { background: rgba(6,12,32,.72); color: #c9d6ff; box-shadow: 0 0 0 1px rgba(124,140,255,.35) }
+:root[data-tema="escuro"] .mp-barra .mp-lug[aria-pressed="true"] { background: rgba(99,112,255,.28); box-shadow: 0 0 0 1px rgba(124,140,255,.7) }
+/* quadro do lugar (InfoWindow do Google): nome, nota e até 3 avaliações */
+.lug { font: 13px/1.4 "Google Sans Flex", system-ui, sans-serif; color: #1f1f1f; max-width: 290px }
+.lug-n { font-size: 15px; font-weight: 500; margin-bottom: 2px }
+.lug-e { font-size: 12px; margin-bottom: 6px }
+.lug-nota { display: flex; align-items: baseline; gap: 6px; margin-bottom: 6px }
+.lug-est { color: #e8a200; letter-spacing: 1px }
+.lug-revs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; max-height: 220px; overflow: auto; border-top: 1px solid #e3e3e3; padding-top: 8px }
+.lug-ra { font-size: 12px } .lug-ra a { color: #0b57d0; font-weight: 500; text-decoration: none }
+.lug-rt { margin-top: 2px; color: #444746; overflow-wrap: anywhere }
+.lug-l { display: inline-block; margin-top: 8px; color: #0b57d0; font-weight: 500; text-decoration: none }
+.lug-g { font-size: 11px; margin-top: 4px }
 .mapa-area { container-type: inline-size }
 @container (max-width: 600px) { .mapa-area .mp-barra { flex-wrap: wrap !important } .mapa-area .mp-busca { flex: 1 1 100%; max-width: none; order: -1; margin-right: 0 } .mapa-area .mp-barra .seg { flex: 1 1 0; min-width: 0; overflow-x: auto; scrollbar-width: none } }
 
