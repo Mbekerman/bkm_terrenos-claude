@@ -127,6 +127,9 @@ document.addEventListener('pointerdown',e=>{if($('.mp-ctx')&&!e.target.closest('
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('.mp-ctx')){ctxFechar();e.preventDefault()}});
 function desenhaRascunho(){return GG?G_desenhaRascunho():L_desenhaRascunho()}
 function initMapa(){return GG?G_initMapa():L_initMapa()}
+/* tema escuro: a visão Mapa fica escura (Google pelo colorScheme, que só vale ao criar o mapa; Leaflet pelo cinza-escuro da Esri). O satélite não muda */
+const temaEscuro=()=>document.documentElement.dataset.tema==='escuro';
+function temaMapa(){if(!MAPA||!$('#mapa'))return;if(GG){if(MAPA.__escuro!==temaEscuro())G_initMapa()}else if((UI.mpBase||'satelite')==='mapa')L_setBase('mapa')}
 function focar(t){return GG?G_focar(t):L_focar(t)}
 function initMini(){return GG?G_initMini():L_initMini()}
 function fecharPopup(){if(GG)G_fecharPopup();else MAPA?.closePopup?.()}
@@ -134,7 +137,8 @@ function mostrarPois(on){if(GG)return G_mostrarPois(on);if(MAPA&&POIS){on?POIS.a
 function camada(k,el){
   const esri='https://server.arcgisonline.com/ArcGIS/rest/services/';
   const mk=(u,o)=>L.tileLayer(u,Object.assign({maxZoom:19,crossOrigin:true},o));
-  const ls=k==='mapa'?[mk(esri+'Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:16,attribution:'Mapa © Esri, HERE, Garmin, © OpenStreetMap'}),mk(esri+'Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:16})]
+  const cinza=temaEscuro()?'Dark_Gray':'Light_Gray';
+  const ls=k==='mapa'?[mk(esri+`Canvas/World_${cinza}_Base/MapServer/tile/{z}/{y}/{x}`,{maxNativeZoom:16,attribution:'Mapa © Esri, HERE, Garmin, © OpenStreetMap'}),mk(esri+`Canvas/World_${cinza}_Reference/MapServer/tile/{z}/{y}/{x}`,{maxNativeZoom:16})]
     :k==='ruas'?[mk('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'})]
     :[mk(esri+'World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Imagens © Esri'}),mk(esri+'Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}'),mk(esri+'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}')];
   let ok=false;ls.forEach(l=>{l.on('tileload',()=>{ok=true;el.classList.remove('sem-fundo')});l.on('tileerror',()=>{if(!ok)el.classList.add('sem-fundo')})});
