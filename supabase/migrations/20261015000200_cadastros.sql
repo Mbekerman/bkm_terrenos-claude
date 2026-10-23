@@ -53,14 +53,54 @@ create table app.tipos_documento (
 -- ---------------------------------------------------------------------
 -- Configuração do funil, por empresa. Linhas com empresa_id nulo são o
 -- modelo padrão: cada empresa nova recebe uma cópia (trigger em empresas)
--- e o administrador edita a sua pelo app, só por RPC (ver regras).
--- Criar ou apagar ETAPA continua sendo migration: mexe no funil inteiro.
+-- e o administrador edita a sua pelo app, só por RPC (ver regras): fases,
+-- etapas, subetapas, status, dependências, pré-requisitos e checklist.
 -- ---------------------------------------------------------------------
+-- Fase: o grande momento do terreno (Novos Negócios, Aprovação de Projetos,
+-- Registro de Incorporação, Contratação Caixa, Lançamento, Obras). Cada fase
+-- é um processo próprio do terreno, com etapas, status e histórico; a fase de
+-- entrada (uma por empresa) é a que a oferta abre e a que tem negociação
+-- (temperatura, propostas). As demais abrem quando as dependências se cumprem.
+create table app.fases_modelo (
+  empresa_id  uuid references app.empresas(id) on delete cascade,
+  codigo      text not null,
+  nome        text not null check (length(trim(nome)) > 0),
+  ordem       int  not null,                                  -- ordem de exibição
+  prefixo     text not null check (prefixo ~ '^[A-Z]{2,5}$'), -- código do processo: NEG-00012
+  entrada     boolean not null default false,
+  ativo       boolean not null default true,
+  -- só na fase de entrada: a partir desta etapa, terreno com duas ou mais
+  -- partes (donos que negociam separado) tem uma negociação por parte; nulo = nunca divide
+  etapa_partes text,
+  check (etapa_partes is null or entrada),
+  unique nulls not distinct (empresa_id, codigo),
+  unique nulls not distinct (empresa_id, prefixo)
+);
+create unique index fases_uma_entrada on app.fases_modelo (empresa_id) nulls not distinct where entrada;
+
+-- Dependências entre fases: a fase abre quando, no mesmo terreno, a fase
+-- requisito foi concluída (conclusao) ou passou pela etapa ou subetapa
+-- indicada. Todas precisam valer. Fase sem dependência (fora a de entrada)
+-- só abre à mão.
+create table app.fase_dependencias (
+  id              uuid primary key default gen_random_uuid(),
+  empresa_id      uuid references app.empresas(id) on delete cascade,
+  fase            text not null,
+  requisito_fase  text not null,
+  requisito_tipo  text not null check (requisito_tipo in ('conclusao','etapa','subetapa')),
+  requisito       text,     -- etapa ou subetapa da fase requisito; nulo na conclusão
+  check ((requisito_tipo = 'conclusao') = (requisito is null)),
+  check (fase <> requisito_fase),
+  unique nulls not distinct (empresa_id, fase, requisito_fase, requisito_tipo, requisito),
+  foreign key (empresa_id, fase) references app.fases_modelo(empresa_id, codigo) on delete cascade,
+  foreign key (empresa_id, requisito_fase) references app.fases_modelo(empresa_id, codigo) on delete cascade
+);
+
 -- Aprovação: "gestor" e "diretor" marcáveis; com os dois, em sequência
 -- (primeiro o gestor) ou em paralelo (os dois ao mesmo tempo).
 create table app.etapas_modelo (
   empresa_id      uuid references app.empresas(id) on delete cascade,
-  tipo_processo   text not null,
+  fase            text not null,
   codigo          text not null,
   nome            text not null check (length(trim(nome)) > 0),
   ordem           int  not null,
@@ -68,16 +108,17 @@ create table app.etapas_modelo (
   aprova_gestor   boolean not null default false,
   aprova_diretor  boolean not null default false,
   aprovacao_modo  text not null default 'sequencia' check (aprovacao_modo in ('sequencia','paralelo')),
-  unique nulls not distinct (empresa_id, tipo_processo, codigo),
-  unique nulls not distinct (empresa_id, tipo_processo, ordem)
+  unique nulls not distinct (empresa_id, fase, codigo),
+  unique nulls not distinct (empresa_id, fase, ordem) deferrable initially deferred,
+  foreign key (empresa_id, fase) references app.fases_modelo(empresa_id, codigo) on delete cascade
 );
 
 -- Subetapas: o card está sempre numa; dentro da etapa, livres e sem ordem
--- obrigatória (ordem = coluna do kanban). Código único no tipo de processo,
+-- obrigatória (ordem = coluna do kanban). Código único na fase,
 -- para servir de pré-requisito sem dizer a etapa.
 create table app.subetapas_modelo (
   empresa_id      uuid references app.empresas(id) on delete cascade,
-  tipo_processo   text not null,
+  fase            text not null,
   codigo          text not null,
   etapa           text not null,
   nome            text not null check (length(trim(nome)) > 0),
@@ -87,21 +128,24 @@ create table app.subetapas_modelo (
   aprova_diretor  boolean not null default false,
   aprovacao_modo  text not null default 'sequencia' check (aprovacao_modo in ('sequencia','paralelo')),
   ativo           boolean not null default true,  -- desativar no lugar de apagar (histórico lê o nome)
-  unique nulls not distinct (empresa_id, tipo_processo, codigo),
-  unique nulls not distinct (empresa_id, tipo_processo, etapa, codigo),
-  foreign key (empresa_id, tipo_processo, etapa) references app.etapas_modelo(empresa_id, tipo_processo, codigo) on delete cascade
+  unique nulls not distinct (empresa_id, fase, codigo),
+  unique nulls not distinct (empresa_id, fase, etapa, codigo),
+  foreign key (empresa_id, fase, etapa) references app.etapas_modelo(empresa_id, fase, codigo) on delete cascade
 );
 
--- Status de encerramento e quem precisa aprovar cada um (Comprado, em geral).
+-- Status de encerramento da fase e quem precisa aprovar cada um. Concluído
+-- tem o nome da fase (Comprado, Aprovado, Obra entregue...). Status sem
+-- linha não existe na fase (Perdido só em Novos Negócios).
 create table app.status_modelo (
   empresa_id      uuid references app.empresas(id) on delete cascade,
-  tipo_processo   text not null,
-  status          text not null check (status in ('comprado','perdido','descartado','stand_by')),
+  fase            text not null,
+  status          text not null check (status in ('concluido','perdido','descartado','stand_by')),
   nome            text not null,
   aprova_gestor   boolean not null default false,
   aprova_diretor  boolean not null default false,
   aprovacao_modo  text not null default 'sequencia' check (aprovacao_modo in ('sequencia','paralelo')),
-  unique nulls not distinct (empresa_id, tipo_processo, status)
+  unique nulls not distinct (empresa_id, fase, status),
+  foreign key (empresa_id, fase) references app.fases_modelo(empresa_id, codigo) on delete cascade
 );
 
 -- Pré-requisitos: para entrar em X (etapa ou subetapa) é preciso ter passado
@@ -110,23 +154,23 @@ create table app.status_modelo (
 create table app.prerequisitos_modelo (
   id              uuid primary key default gen_random_uuid(),
   empresa_id      uuid references app.empresas(id) on delete cascade,
-  tipo_processo   text not null,
+  fase            text not null,
   alvo_tipo       text not null check (alvo_tipo in ('etapa','subetapa')),
   alvo            text not null,
   requisito       text not null,   -- sempre uma subetapa
-  unique nulls not distinct (empresa_id, tipo_processo, alvo_tipo, alvo, requisito),
-  foreign key (empresa_id, tipo_processo, requisito) references app.subetapas_modelo(empresa_id, tipo_processo, codigo) on delete cascade
+  unique nulls not distinct (empresa_id, fase, alvo_tipo, alvo, requisito),
+  foreign key (empresa_id, fase, requisito) references app.subetapas_modelo(empresa_id, fase, codigo) on delete cascade
 );
 
 create table app.checklist_modelo (
   empresa_id     uuid references app.empresas(id) on delete cascade,
-  tipo_processo  text not null,
+  fase            text not null,
   etapa          text not null,  -- documentos exigidos para SAIR desta etapa
   tipo_documento text not null references app.tipos_documento(codigo),
   obrigatorio    boolean not null default true,
   ordem          int not null default 0,
-  unique nulls not distinct (empresa_id, tipo_processo, etapa, tipo_documento),
-  foreign key (empresa_id, tipo_processo, etapa) references app.etapas_modelo(empresa_id, tipo_processo, codigo) on delete cascade
+  unique nulls not distinct (empresa_id, fase, etapa, tipo_documento),
+  foreign key (empresa_id, fase, etapa) references app.etapas_modelo(empresa_id, fase, codigo) on delete cascade
 );
 
 -- Motivos de Descartado (a BKM desistiu) e de Perdido (o vendedor ou o mercado disse não).
@@ -198,48 +242,123 @@ insert into app.tipos_documento (codigo, nome, categoria, validade_dias, unico_p
   ('lote_dxf',           'Desenho do lote da prefeitura (DXF)',  'Técnico',   null, false),
   ('outro',              'Outro documento',                      'Outros',    null, false);
 
--- Modelo padrão do funil (empresa_id nulo). Comprado, Perdido, Descartado e
--- Stand By não são etapas: são status do processo, que guarda a etapa e a
--- subetapa em que estava (mostra onde no funil os terrenos se perdem).
-insert into app.etapas_modelo (tipo_processo, codigo, nome, ordem, sla_dias, aprova_gestor) values
-  ('negociacao','triagem',    'Em Triagem',           1, 10, false),
-  ('negociacao','estudos',    'Estudos Preliminares', 2, 20, false),
-  ('negociacao','negociacao', 'Negociação',           3, 60, false),
-  ('negociacao','contrato',   'Contrato',             4, 30, true);
+-- Modelo padrão do funil (empresa_id nulo). Concluído, Perdido, Descartado e
+-- Stand By não são etapas: são status do processo da fase, que guarda a etapa
+-- e a subetapa em que estava (mostra onde no funil os terrenos se perdem).
+-- As etapas das fases depois de Novos Negócios são um ponto de partida: o
+-- administrador ajusta em Configurações › Funil.
+insert into app.fases_modelo (codigo, nome, ordem, prefixo, entrada) values
+  ('novos_negocios', 'Novos Negócios',           1, 'NEG', true),
+  ('aprovacao',      'Aprovação de Projetos',    2, 'APR', false),
+  ('incorporacao',   'Registro de Incorporação', 3, 'INC', false),
+  ('caixa',          'Contratação Caixa',        4, 'CEF', false),
+  ('lancamento',     'Lançamento',               5, 'LAN', false),
+  ('obras',          'Obras',                    6, 'OBR', false),
+  ('entregue',       'Entregue',                 7, 'ENT', false);
 
-insert into app.subetapas_modelo (tipo_processo, etapa, codigo, nome, ordem) values
-  ('negociacao','triagem',    'aguardando_informacoes', 'Aguardando Informações',      1),
-  ('negociacao','triagem',    'aguardando_documentos',  'Aguardando Documentos',       2),
-  ('negociacao','triagem',    'verificacao_interna',    'Verificação Interna',         3),
-  ('negociacao','estudos',    'estudo_massa',           'Estudo de Massa',             1),
-  ('negociacao','estudos',    'estudo_viabilidade',     'Estudo de Viabilidade',       2),
-  ('negociacao','estudos',    'analise_tecnica',        'Análise Técnica Preliminar',  3),
-  ('negociacao','negociacao', 'aguardando_reuniao',     'Aguardando Primeira Reunião', 1),
-  ('negociacao','negociacao', 'preparando_proposta',    'Preparando Proposta',         2),
-  ('negociacao','negociacao', 'proposta_enviada',       'Proposta Enviada',            3),
-  ('negociacao','negociacao', 'contra_proposta',        'Contra Proposta',             4),
-  ('negociacao','contrato',   'em_elaboracao',          'Em Elaboração',               1),
-  ('negociacao','contrato',   'contrato_enviado',       'Contrato Enviado',            2),
-  ('negociacao','contrato',   'em_ajuste',              'Em Ajuste',                   3);
+-- Cada fase abre quando a anterior é concluída.
+insert into app.fase_dependencias (fase, requisito_fase, requisito_tipo) values
+  ('aprovacao',    'novos_negocios', 'conclusao'),
+  ('incorporacao', 'aprovacao',      'conclusao'),
+  ('caixa',        'incorporacao',   'conclusao'),
+  ('lancamento',   'caixa',          'conclusao'),
+  ('obras',        'lancamento',     'conclusao'),
+  ('entregue',     'obras',          'conclusao');
 
--- Compra: gestor e depois diretor. Os demais status: analista ou acima, sem aprovação.
-insert into app.status_modelo (tipo_processo, status, nome, aprova_gestor, aprova_diretor, aprovacao_modo) values
-  ('negociacao','comprado',   'Comprado',   true,  true,  'sequencia'),
-  ('negociacao','perdido',    'Perdido',    false, false, 'sequencia'),
-  ('negociacao','descartado', 'Descartado', false, false, 'sequencia'),
-  ('negociacao','stand_by',   'Stand By',   false, false, 'sequencia');
+insert into app.etapas_modelo (fase, codigo, nome, ordem, sla_dias, aprova_gestor) values
+  ('novos_negocios','triagem',     'Em Triagem',            1, 10,  false),
+  ('novos_negocios','estudos',     'Estudos Preliminares',  2, 20,  false),
+  ('novos_negocios','negociacao',  'Negociação',            3, 60,  false),
+  ('novos_negocios','contrato',    'Contrato',              4, 30,  true),
+  ('aprovacao',     'projeto',     'Projeto',               1, 60,  false),
+  ('aprovacao',     'prefeitura',  'Análise na Prefeitura', 2, 120, false),
+  ('aprovacao',     'alvaras',     'Alvarás',               3, 30,  false),
+  ('incorporacao',  'memorial',    'Memorial e Certidões',  1, 30,  false),
+  ('incorporacao',  'cartorio',    'Cartório',              2, 45,  false),
+  ('caixa',         'analise',     'Análise Caixa',         1, 60,  false),
+  ('caixa',         'contratacao', 'Contratação',           2, 30,  true),
+  ('lancamento',    'preparacao',  'Preparação',            1, 60,  false),
+  ('lancamento',    'vendas',      'Vendas Iniciais',       2, 60,  false),
+  ('obras',         'inicio',      'Início',                1, 60,  false),
+  ('obras',         'execucao',    'Execução',              2, 540, false),
+  ('obras',         'entrega',     'Entrega',               3, 60,  false),
+  ('entregue',      'pos_entrega', 'Pós-entrega',           1, null, false);
+
+insert into app.subetapas_modelo (fase, etapa, codigo, nome, ordem) values
+  ('novos_negocios','triagem',     'aguardando_informacoes', 'Aguardando Informações',      1),
+  ('novos_negocios','triagem',     'aguardando_documentos',  'Aguardando Documentos',       2),
+  ('novos_negocios','triagem',     'verificacao_interna',    'Verificação Interna',         3),
+  ('novos_negocios','estudos',     'estudo_massa',           'Estudo de Massa',             1),
+  ('novos_negocios','estudos',     'estudo_viabilidade',     'Estudo de Viabilidade',       2),
+  ('novos_negocios','estudos',     'analise_tecnica',        'Análise Técnica Preliminar',  3),
+  ('novos_negocios','negociacao',  'aguardando_reuniao',     'Aguardando Primeira Reunião', 1),
+  ('novos_negocios','negociacao',  'preparando_proposta',    'Preparando Proposta',         2),
+  ('novos_negocios','negociacao',  'proposta_enviada',       'Proposta Enviada',            3),
+  ('novos_negocios','negociacao',  'contra_proposta',        'Contra Proposta',             4),
+  ('novos_negocios','contrato',    'em_elaboracao',          'Em Elaboração',               1),
+  ('novos_negocios','contrato',    'contrato_enviado',       'Contrato Enviado',            2),
+  ('novos_negocios','contrato',    'em_ajuste',              'Em Ajuste',                   3),
+  ('aprovacao',     'projeto',     'estudo_implantacao',     'Estudo de Implantação',       1),
+  ('aprovacao',     'projeto',     'projeto_legal',          'Projeto Legal',               2),
+  ('aprovacao',     'prefeitura',  'protocolado',            'Protocolado',                 1),
+  ('aprovacao',     'prefeitura',  'comunique_se',           'Comunique-se',                2),
+  ('aprovacao',     'alvaras',     'alvara_aprovacao',       'Alvará de Aprovação',         1),
+  ('aprovacao',     'alvaras',     'alvara_execucao',        'Alvará de Execução',          2),
+  ('incorporacao',  'memorial',    'memorial_incorporacao',  'Memorial de Incorporação',    1),
+  ('incorporacao',  'memorial',    'certidoes',              'Certidões',                   2),
+  ('incorporacao',  'cartorio',    'prenotado',              'Prenotado',                   1),
+  ('incorporacao',  'cartorio',    'exigencias',             'Exigências do Cartório',      2),
+  ('caixa',         'analise',     'engenharia',             'Engenharia',                  1),
+  ('caixa',         'analise',     'juridico',               'Jurídico',                    2),
+  ('caixa',         'analise',     'risco',                  'Risco',                       3),
+  ('caixa',         'contratacao', 'demanda_minima',         'Demanda Mínima',              1),
+  ('caixa',         'contratacao', 'assinatura',             'Assinatura',                  2),
+  ('lancamento',    'preparacao',  'produto',                'Produto e Tabela',            1),
+  ('lancamento',    'preparacao',  'stand',                  'Stand e Decorado',            2),
+  ('lancamento',    'vendas',      'evento',                 'Evento de Lançamento',        1),
+  ('lancamento',    'vendas',      'vendas_iniciais',        'Vendas Iniciais',             2),
+  ('obras',         'inicio',      'mobilizacao',            'Mobilização',                 1),
+  ('obras',         'inicio',      'fundacao',               'Fundação',                    2),
+  ('obras',         'execucao',    'estrutura',              'Estrutura',                   1),
+  ('obras',         'execucao',    'vedacoes',               'Vedações e Instalações',      2),
+  ('obras',         'execucao',    'acabamento',             'Acabamento',                  3),
+  ('obras',         'entrega',     'habite_se',              'Vistoria e Habite-se',        1),
+  ('obras',         'entrega',     'entrega_chaves',         'Entrega das Chaves',          2),
+  ('entregue',      'pos_entrega', 'assistencia_tecnica',    'Assistência Técnica',         1),
+  ('entregue',      'pos_entrega', 'garantia',               'Em Garantia',                 2);
+
+-- Terreno com vários donos: cada parte negocia separado a partir da Negociação.
+update app.fases_modelo set etapa_partes = 'negociacao' where empresa_id is null and codigo = 'novos_negocios';
+
+-- Concluir: em Novos Negócios é a compra (gestor e depois diretor); nas
+-- demais, sem aprovação. Perdido (o vendedor disse não) só em Novos Negócios.
+insert into app.status_modelo (fase, status, nome, aprova_gestor, aprova_diretor, aprovacao_modo) values
+  ('novos_negocios','concluido',  'Comprado',             true,  true,  'sequencia'),
+  ('novos_negocios','perdido',    'Perdido',              false, false, 'sequencia'),
+  ('novos_negocios','descartado', 'Descartado',           false, false, 'sequencia'),
+  ('novos_negocios','stand_by',   'Stand By',             false, false, 'sequencia'),
+  ('aprovacao',     'concluido',  'Aprovado',             false, false, 'sequencia'),
+  ('incorporacao',  'concluido',  'Incorporação registrada', false, false, 'sequencia'),
+  ('caixa',         'concluido',  'Contratado',           false, false, 'sequencia'),
+  ('lancamento',    'concluido',  'Lançado',              false, false, 'sequencia'),
+  ('obras',         'concluido',  'Obra entregue',        false, false, 'sequencia'),
+  ('entregue',      'concluido',  'Garantia encerrada',   false, false, 'sequencia');
+insert into app.status_modelo (fase, status, nome)
+select f, s, n from unnest(array['aprovacao','incorporacao','caixa','lancamento','obras','entregue']) f,
+  (values ('descartado','Descartado'), ('stand_by','Stand By')) v(s, n)
+where f <> 'entregue' or s = 'stand_by';
 
 -- Documentos exigidos para SAIR da etapa. A diligência do imóvel corre no
 -- Contrato: só é comprado com certidões validadas e minuta.
-insert into app.checklist_modelo (tipo_processo, etapa, tipo_documento, obrigatorio, ordem) values
-  ('negociacao','contrato','matricula',          true,  1),
-  ('negociacao','contrato','onus_reais',         true,  2),
-  ('negociacao','contrato','iptu',               true,  3),
-  ('negociacao','contrato','certidoes_vendedor', true,  4),
-  ('negociacao','contrato','planialtimetrico',   true,  5),
-  ('negociacao','contrato','sondagem_spt',       false, 6),
-  ('negociacao','contrato','ambiental',          false, 7),
-  ('negociacao','contrato','minuta_promessa',    true,  8);
+insert into app.checklist_modelo (fase, etapa, tipo_documento, obrigatorio, ordem) values
+  ('novos_negocios','contrato','matricula',          true,  1),
+  ('novos_negocios','contrato','onus_reais',         true,  2),
+  ('novos_negocios','contrato','iptu',               true,  3),
+  ('novos_negocios','contrato','certidoes_vendedor', true,  4),
+  ('novos_negocios','contrato','planialtimetrico',   true,  5),
+  ('novos_negocios','contrato','sondagem_spt',       false, 6),
+  ('novos_negocios','contrato','ambiental',          false, 7),
+  ('novos_negocios','contrato','minuta_promessa',    true,  8);
 
 insert into app.motivos_encerramento (status, codigo, nome, ordem, exige_texto) values
   ('descartado','tecnica',         'Inviabilidade Técnica',            1, false),
@@ -263,16 +382,20 @@ create or replace function app.tg_copiar_configuracao()
 returns trigger language plpgsql security definer set search_path = ''
 as $$
 begin
-  insert into app.etapas_modelo (empresa_id, tipo_processo, codigo, nome, ordem, sla_dias, aprova_gestor, aprova_diretor, aprovacao_modo)
-  select new.id, tipo_processo, codigo, nome, ordem, sla_dias, aprova_gestor, aprova_diretor, aprovacao_modo from app.etapas_modelo where empresa_id is null;
-  insert into app.subetapas_modelo (empresa_id, tipo_processo, codigo, etapa, nome, ordem, prazo_dias, aprova_gestor, aprova_diretor, aprovacao_modo, ativo)
-  select new.id, tipo_processo, codigo, etapa, nome, ordem, prazo_dias, aprova_gestor, aprova_diretor, aprovacao_modo, ativo from app.subetapas_modelo where empresa_id is null;
-  insert into app.status_modelo (empresa_id, tipo_processo, status, nome, aprova_gestor, aprova_diretor, aprovacao_modo)
-  select new.id, tipo_processo, status, nome, aprova_gestor, aprova_diretor, aprovacao_modo from app.status_modelo where empresa_id is null;
-  insert into app.prerequisitos_modelo (empresa_id, tipo_processo, alvo_tipo, alvo, requisito)
-  select new.id, tipo_processo, alvo_tipo, alvo, requisito from app.prerequisitos_modelo where empresa_id is null;
-  insert into app.checklist_modelo (empresa_id, tipo_processo, etapa, tipo_documento, obrigatorio, ordem)
-  select new.id, tipo_processo, etapa, tipo_documento, obrigatorio, ordem from app.checklist_modelo where empresa_id is null;
+  insert into app.fases_modelo (empresa_id, codigo, nome, ordem, prefixo, entrada, ativo, etapa_partes)
+  select new.id, codigo, nome, ordem, prefixo, entrada, ativo, etapa_partes from app.fases_modelo where empresa_id is null;
+  insert into app.fase_dependencias (empresa_id, fase, requisito_fase, requisito_tipo, requisito)
+  select new.id, fase, requisito_fase, requisito_tipo, requisito from app.fase_dependencias where empresa_id is null;
+  insert into app.etapas_modelo (empresa_id, fase, codigo, nome, ordem, sla_dias, aprova_gestor, aprova_diretor, aprovacao_modo)
+  select new.id, fase, codigo, nome, ordem, sla_dias, aprova_gestor, aprova_diretor, aprovacao_modo from app.etapas_modelo where empresa_id is null;
+  insert into app.subetapas_modelo (empresa_id, fase, codigo, etapa, nome, ordem, prazo_dias, aprova_gestor, aprova_diretor, aprovacao_modo, ativo)
+  select new.id, fase, codigo, etapa, nome, ordem, prazo_dias, aprova_gestor, aprova_diretor, aprovacao_modo, ativo from app.subetapas_modelo where empresa_id is null;
+  insert into app.status_modelo (empresa_id, fase, status, nome, aprova_gestor, aprova_diretor, aprovacao_modo)
+  select new.id, fase, status, nome, aprova_gestor, aprova_diretor, aprovacao_modo from app.status_modelo where empresa_id is null;
+  insert into app.prerequisitos_modelo (empresa_id, fase, alvo_tipo, alvo, requisito)
+  select new.id, fase, alvo_tipo, alvo, requisito from app.prerequisitos_modelo where empresa_id is null;
+  insert into app.checklist_modelo (empresa_id, fase, etapa, tipo_documento, obrigatorio, ordem)
+  select new.id, fase, etapa, tipo_documento, obrigatorio, ordem from app.checklist_modelo where empresa_id is null;
   insert into app.motivos_encerramento (empresa_id, status, codigo, nome, ordem, exige_texto, ativo)
   select new.id, status, codigo, nome, ordem, exige_texto, ativo from app.motivos_encerramento where empresa_id is null;
   -- tipos de notificação: ver notificacoes
@@ -362,7 +485,7 @@ begin
     execute format('grant select on app.%I to authenticated', t);
   end loop;
   -- configuração do funil: cada empresa vê a sua; escrita só pelas RPCs do administrador
-  foreach t in array array['etapas_modelo','subetapas_modelo','status_modelo','prerequisitos_modelo','checklist_modelo','motivos_encerramento'] loop
+  foreach t in array array['fases_modelo','fase_dependencias','etapas_modelo','subetapas_modelo','status_modelo','prerequisitos_modelo','checklist_modelo','motivos_encerramento'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
     execute format('grant select on app.%I to authenticated', t);

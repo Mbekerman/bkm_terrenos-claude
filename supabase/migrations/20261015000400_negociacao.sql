@@ -43,6 +43,28 @@ begin
 end $$;
 create trigger t_corretor after insert on app.ofertas for each row execute function app.tg_oferta_corretor();
 
+-- Partes que a oferta cobre (terreno com vários donos), com o preço de cada
+-- uma quando o ofertante informa. Sem linha: a oferta é do terreno todo.
+create table app.oferta_partes (
+  oferta_id    uuid not null references app.ofertas(id) on delete cascade,
+  parte_id     uuid not null references app.terreno_partes(id),
+  empresa_id   uuid not null references app.empresas(id),
+  valor_pedido numeric(14,2) check (valor_pedido > 0),
+  primary key (oferta_id, parte_id)
+);
+create index on app.oferta_partes (parte_id);
+
+create or replace function app.tg_oferta_parte()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if not exists (select 1 from app.ofertas o join app.terreno_partes tp on tp.terreno_id = o.terreno_id and tp.empresa_id = o.empresa_id
+                 where o.id = new.oferta_id and tp.id = new.parte_id and tp.ativa and o.empresa_id = new.empresa_id) then
+    raise exception 'A parte não é do terreno da oferta' using errcode = '23514';
+  end if;
+  return new;
+end $$;
+create trigger t_parte before insert or update on app.oferta_partes for each row execute function app.tg_oferta_parte();
+
 -- ---------------------------------------------------------------------
 -- Viabilidades vinculadas (TEMPORÁRIO: vira view sobre o BKM)
 -- ---------------------------------------------------------------------
@@ -62,42 +84,50 @@ create table app.viabilidades (
 );
 
 -- ---------------------------------------------------------------------
--- Processo: núcleo genérico (negociação hoje; aprovação, incorporação,
--- financiamento depois). Etapas, transições, checklist e tarefas penduram aqui.
+-- Processo: o terreno numa fase (Novos Negócios, Aprovação de Projetos...).
+-- Etapas, transições, checklist e tarefas penduram aqui. Código com o prefixo
+-- da fase (NEG-00012), dado na abertura (app._abrir_processo).
 -- ---------------------------------------------------------------------
 create sequence app.processo_seq;
 create table app.processos (
   id                   uuid primary key default gen_random_uuid(),
   empresa_id           uuid not null references app.empresas(id),
-  codigo               text not null default ('NEG-' || lpad(nextval('app.processo_seq')::text, 5, '0')),
-  tipo                 text not null default 'negociacao',
+  codigo               text not null,
+  fase                 text not null,
   terreno_id           uuid not null references app.terrenos(id),
   etapa_atual          text not null,
   etapa_desde          timestamptz not null default now(),
   subetapa_atual       text not null,
   subetapa_desde       timestamptz not null default now(),
   -- fora de "ativo", guarda a etapa e a subetapa em que estava
-  status               text not null default 'ativo' check (status in ('ativo','comprado','perdido','descartado','stand_by')),
+  status               text not null default 'ativo' check (status in ('ativo','concluido','perdido','descartado','stand_by')),
   responsavel_id       uuid references auth.users(id),
   viabilidade_id       uuid references app.viabilidades(id),
+  -- negociação de uma parte (terreno com vários donos): pendurada na negociação do terreno
+  parte_id             uuid references app.terreno_partes(id),
+  principal_id         uuid references app.processos(id),
   motivo_encerramento  text,   -- código de motivos_encerramento (descartado, perdido)
-  detalhe_encerramento text,   -- relato (comprado, perdido), texto livre (descartado) ou justificativa (stand by); rich text
-  pontos_sucesso       text,   -- comprado: rich text
+  detalhe_encerramento text,   -- relato (concluído, perdido), texto livre (descartado) ou justificativa (stand by); rich text
+  pontos_sucesso       text,   -- concluído na fase de entrada (compra): rich text
   retomar_em           date,
   data_inicio          timestamptz not null default now(),
   data_encerramento    timestamptz,
   criado_por           uuid default auth.uid(),
   atualizado_em        timestamptz not null default now(),
   unique (empresa_id, codigo),
-  foreign key (empresa_id, tipo, etapa_atual) references app.etapas_modelo(empresa_id, tipo_processo, codigo),
-  foreign key (empresa_id, tipo, etapa_atual, subetapa_atual) references app.subetapas_modelo(empresa_id, tipo_processo, etapa, codigo),
+  foreign key (empresa_id, fase) references app.fases_modelo(empresa_id, codigo),
+  foreign key (empresa_id, fase, etapa_atual) references app.etapas_modelo(empresa_id, fase, codigo),
+  foreign key (empresa_id, fase, etapa_atual, subetapa_atual) references app.subetapas_modelo(empresa_id, fase, etapa, codigo),
   check (status not in ('perdido','descartado') or motivo_encerramento is not null),
-  check (status not in ('comprado','perdido') or detalhe_encerramento is not null),
-  check (status <> 'comprado' or pontos_sucesso is not null),
-  check (status <> 'stand_by' or (retomar_em is not null and detalhe_encerramento is not null))
+  check (status not in ('concluido','perdido') or detalhe_encerramento is not null),
+  check (status <> 'stand_by' or (retomar_em is not null and detalhe_encerramento is not null)),
+  check ((parte_id is null) = (principal_id is null))
 );
-create index on app.processos (empresa_id, status, etapa_atual, subetapa_atual);
-create unique index processos_um_aberto_por_terreno on app.processos (terreno_id, tipo) where status in ('ativo','stand_by');
+create index on app.processos (empresa_id, fase, status, etapa_atual, subetapa_atual);
+create index on app.processos (principal_id);
+create unique index processos_um_aberto_por_terreno on app.processos (terreno_id, fase) where status in ('ativo','stand_by') and parte_id is null;
+-- uma negociação por parte em cada negociação do terreno
+create unique index processos_um_por_parte on app.processos (principal_id, parte_id) where parte_id is not null;
 
 -- Dados próprios da negociação (1:1 com o processo).
 create table app.negociacoes (
@@ -115,7 +145,7 @@ create table app.processo_transicoes (
   id            uuid primary key default gen_random_uuid(),
   empresa_id    uuid not null references app.empresas(id),
   processo_id   uuid not null references app.processos(id) on delete cascade,
-  evento        text not null check (evento in ('abertura','avanco','retorno','subetapa','compra','descarte','perda','stand_by','retomada','temperatura')),
+  evento        text not null check (evento in ('abertura','avanco','retorno','subetapa','conclusao','descarte','perda','stand_by','retomada','temperatura')),
   de_etapa      text,
   para_etapa    text,
   de_subetapa   text,
@@ -362,6 +392,7 @@ create trigger t_aud after insert or update or delete on app.diligencias for eac
 create trigger t_upd before update on app.processos  for each row execute function app.tg_atualizado_em();
 create trigger t_upd before update on app.documentos for each row execute function app.tg_atualizado_em();
 create trigger t_aud after insert or update or delete on app.ofertas     for each row execute function app.tg_auditoria();
+create trigger t_aud after insert or update or delete on app.oferta_partes for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.processos   for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.aprovacoes  for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.propostas   for each row execute function app.tg_auditoria();
@@ -373,13 +404,13 @@ create trigger t_aud after insert or update or delete on app.reunioes    for eac
 do $$
 declare t text;
 begin
-  foreach t in array array['ofertas','viabilidades','processos','negociacoes','processo_transicoes','aprovacoes','propostas','tarefas','atividades','reunioes','reuniao_participantes','diligencias','documentos','documento_versoes'] loop
+  foreach t in array array['ofertas','oferta_partes','viabilidades','processos','negociacoes','processo_transicoes','aprovacoes','propostas','tarefas','atividades','reunioes','reuniao_participantes','diligencias','documentos','documento_versoes'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
     execute format('grant select on app.%I to authenticated', t);
   end loop;
   -- escrita direta só onde não há regra de etapa
-  foreach t in array array['ofertas','tarefas','atividades','reunioes','reuniao_participantes','diligencias'] loop
+  foreach t in array array['ofertas','oferta_partes','tarefas','atividades','reunioes','reuniao_participantes','diligencias'] loop
     execute format('create policy inserir on app.%I for insert to authenticated with check (empresa_id in (select app.empresas_edicao()))', t);
     execute format('create policy alterar on app.%I for update to authenticated using (empresa_id in (select app.empresas_edicao())) with check (empresa_id in (select app.empresas_edicao()))', t);
     execute format('grant insert, update on app.%I to authenticated', t);
@@ -388,5 +419,6 @@ begin
 end $$;
 create policy remover on app.tarefas for delete to authenticated using (empresa_id in (select app.empresas_edicao()));
 create policy remover on app.reuniao_participantes for delete to authenticated using (empresa_id in (select app.empresas_edicao()));
-grant delete on app.tarefas, app.reuniao_participantes to authenticated;
+create policy remover on app.oferta_partes for delete to authenticated using (empresa_id in (select app.empresas_edicao()));
+grant delete on app.tarefas, app.reuniao_participantes, app.oferta_partes to authenticated;
 grant usage on sequence app.processo_seq to authenticated;

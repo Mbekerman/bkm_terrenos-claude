@@ -2,9 +2,29 @@
 
 Gerado a partir de `supabase/migrations/`. Campos de auditoria (`criado_*`, `atualizado_*`) e `empresa_id` (presente em todas as tabelas da empresa) foram omitidos. Tudo no schema `app`.
 
-## Funil da negociação
+## Fases
 
-Quatro etapas, cada uma com subetapas. O card está sempre numa subetapa; dentro da etapa, ela muda em qualquer ordem (a ordem é só a coluna do kanban).
+Acima das etapas fica a **fase**: o grande momento do terreno. Cada fase é um processo próprio do terreno (`processos.fase`), com etapas, subetapas, status, responsável e histórico próprios; um terreno tem no máximo um processo aberto por fase, e fases podem correr juntas.
+
+| Fase | Prefixo | Concluído | Etapas (ponto de partida) |
+| --- | --- | --- | --- |
+| Novos Negócios (entrada) | NEG | Comprado | Em Triagem, Estudos Preliminares, Negociação, Contrato |
+| Aprovação de Projetos | APR | Aprovado | Projeto, Análise na Prefeitura, Alvarás |
+| Registro de Incorporação | INC | Incorporação registrada | Memorial e Certidões, Cartório |
+| Contratação Caixa | CEF | Contratado | Análise Caixa, Contratação |
+| Lançamento | LAN | Lançado | Preparação, Vendas Iniciais |
+| Obras | OBR | Obra entregue | Início, Execução, Entrega |
+| Entregue | ENT | Garantia encerrada | Pós-entrega (Assistência Técnica, Em Garantia) |
+
+- **Fase de entrada** (`fases_modelo.entrada`, uma por empresa): a que a oferta abre (`abrir_negociacao`) e a única com negociação (temperatura, propostas, viabilidade). Concluir nela é a compra: pede relato e pontos de sucesso e nenhuma diligência impeditiva.
+- **Dependências** (`fase_dependencias`): a fase abre quando, no mesmo terreno, a fase requisito foi concluída ou passou pela etapa ou subetapa indicada; todas precisam valer. O padrão encadeia cada fase na conclusão da anterior. Depois de cada passagem, `_abrir_fases_liberadas` abre sozinha a fase que o terreno nunca teve e cujas dependências se cumpriram (fase encerrada não reabre sozinha). Fase sem dependência, reabertura ou abertura antes da hora: `abrir_fase(terreno, fase)`, com dependência pendente só gestor ou diretor, com justificativa (`forcado`).
+- **Status por fase** (`status_modelo`): Concluído e Stand By em toda fase, com o nome da fase para o Concluído; Perdido (o vendedor disse não) só em Novos Negócios; Descartado em todas menos Entregue. Status sem linha não existe na fase.
+- **Fase atual do terreno** (`v_terrenos.fase`): a aberta mais adiante pela ordem; sem nenhuma aberta, a última encerrada. `fases_abertas` lista as que correm juntas; `fases_do_terreno(terreno)` dá cada fase com o processo, o status e o que falta para abrir.
+- Código do processo com o prefixo da fase (`NEG-00012`, `APR-00013`), numeração única.
+
+## Funil de cada fase
+
+Cada fase tem etapas, cada uma com subetapas. Abaixo, as de Novos Negócios; as das outras fases são um ponto de partida que o administrador ajusta. O card está sempre numa subetapa; dentro da etapa, ela muda em qualquer ordem (a ordem é só a coluna do kanban).
 
 | Etapa | Subetapas (colunas do kanban) |
 | --- | --- |
@@ -13,16 +33,16 @@ Quatro etapas, cada uma com subetapas. O card está sempre numa subetapa; dentro
 | Negociação | Aguardando Primeira Reunião, Preparando Proposta, Proposta Enviada, Contra Proposta |
 | Contrato | Em Elaboração, Contrato Enviado, Em Ajuste |
 
-Entrar numa etapa leva à subetapa inicial (a primeira ativa). O fim da tratativa é **status**, não etapa: `ativo`, `comprado`, `perdido`, `descartado` ou `stand_by`. Fora de ativo, o processo guarda a etapa e a subetapa onde estava (mostra onde o funil perde terrenos).
+Entrar numa etapa leva à subetapa inicial (a primeira ativa). O fim do processo da fase é **status**, não etapa: `ativo`, `concluido` (em Novos Negócios, Comprado), `perdido`, `descartado` ou `stand_by`. Fora de ativo, o processo guarda a etapa e a subetapa onde estava (mostra onde o funil perde terrenos).
 
 | Status | Exige | Quem |
 | --- | --- | --- |
-| Comprado | estar na última etapa; relato e pontos de sucesso (rich text); checklist da etapa e nenhuma diligência impeditiva | conforme `status_modelo` (padrão: gestor e depois diretor) |
+| Concluído (Comprado) | estar na última etapa; relato e pontos de sucesso (rich text); checklist da etapa e nenhuma diligência impeditiva | conforme `status_modelo` (padrão: gestor e depois diretor) |
 | Perdido | motivo da lista (`motivos_encerramento`) e relato | analista ou acima |
 | Descartado | motivo da lista; texto obrigatório quando o motivo pede (Outros) | analista ou acima |
 | Stand By | justificativa e data futura para retomar; retomar volta à mesma etapa e subetapa | analista ou acima |
 
-Comprado, Perdido e Descartado não voltam: se o terreno voltar ao radar, abre-se outra tratativa.
+Comprado, Perdido e Descartado não voltam: se o terreno voltar ao radar, abre-se outra tratativa. Nas outras fases, Concluído pede só o relato.
 
 **Toda passagem** (etapa, subetapa ou status) passa por `app._passagem`:
 
@@ -32,9 +52,22 @@ Comprado, Perdido e Descartado não voltam: se o terreno voltar ao radar, abre-s
 
 Quem aprova: o aprovador previsto vem da hierarquia de quem pediu (`membros.superior_id`: analista → gestor → diretor). Qualquer superior dele também aprova, sempre; quem aprovou de fato fica em `decidido_por`. Em sequência, o diretor só recebe depois do gestor; em paralelo, os dois recebem juntos e a passagem acontece quando ambos aprovarem. Uma recusa (com comentário) encerra o pedido. Aprovado, a passagem é gravada no nome de quem pediu, com `aprovacao_id`.
 
-Arrastar no quadro de etapas chama `mover_para_etapa` (para frente, etapa por etapa, e só a última pode ficar aguardando aprovação; para trás, exige motivo e grava `retorno`). No kanban da etapa, `mover_subetapa`. `checar_passagem(processo, destino_tipo, destino)` diz o que falta (padrão: a próxima etapa, ou a compra na última), quais aprovações serão pedidas e o pedido aberto, com `posso_decidir` para quem vê.
+Arrastar no quadro de etapas chama `mover_para_etapa` (para frente, etapa por etapa, e só a última pode ficar aguardando aprovação; para trás, exige motivo e grava `retorno`). No kanban da etapa, `mover_subetapa`. `checar_passagem(processo, destino_tipo, destino)` diz o que falta (padrão: a próxima etapa, ou concluir a fase na última), quais aprovações serão pedidas e o pedido aberto, com `posso_decidir` para quem vê.
 
 **SLA:** só do histórico. `v_periodos_processo` corta o histórico em períodos (cada transição até a seguinte), com stand by em período próprio. `v_tempo_subetapas` soma por etapa e subetapa: primeira entrada, última saída, passagens, tempo ativo, tempo em stand by e se é a atual. Retomar o stand by empurra `etapa_desde` e `subetapa_desde` pelo tempo parado. Prazo estourado = agora − `subetapa_desde` > `subetapas_modelo.prazo_dias` (`v_terrenos.subetapa_atrasada`).
+
+## Terreno com vários donos (partes)
+
+Um dono com várias matrículas é **uma** negociação. Vários donos que negociam separado são **partes** do terreno (`terreno_partes`): cada parte é um dono, ou um grupo de donos que negocia junto (herdeiros, sócios), com as matrículas, as inscrições e as pessoas dela (`parte_id` em `matriculas`, `inscricoes_municipais` e `terreno_pessoas`; participações somam 100% em cada parte), o pedaço da poligonal e a marca de **essencial** (sem ela o terreno não serve) ou dispensável.
+
+- **Antes da etapa da divisão** (`fases_modelo.etapa_partes`, só na fase de entrada; padrão Negociação) há uma negociação só, a do terreno: Triagem e Estudos são da área toda.
+- **Ao chegar nela**, com duas ou mais partes ativas, cada parte ganha a sua negociação: um processo da mesma fase com `parte_id` e `principal_id` (código `NEG-00012-1`), com oferta de referência, propostas, temperatura, documentos, reuniões, tarefas, subetapa, status, aprovações e histórico próprios. Parte cadastrada depois disso já nasce com a sua.
+- **A negociação do terreno passa a andar pelas partes** (`_sincronizar_principal`): fica na etapa e na subetapa da parte mais atrasada em aberto, com cada mudança no histórico ("Pelas negociações das partes"), e não se move à mão. A de uma parte só anda da etapa da divisão em diante e enquanto a do terreno estiver ativa.
+- **Comprado do terreno** só com todas as partes ativas compradas (pendência que nem o gestor força); o checklist de documentos fica com cada parte; relato e pontos de sucesso só na compra do terreno. A compra de uma parte não abre a fase seguinte.
+- **Parte perdida ou descartada** trava a compra: ou sai do terreno (`remover_parte`, com motivo; parte essencial só com gestor ou diretor, e tornar uma parte dispensável também), ou o terreno se encerra. Parte comprada não sai.
+- **Encerrar o terreno** leva as partes em aberto: Perdido e Descartado com o mesmo motivo, Stand By com a mesma data; retomar o terreno retoma as partes.
+- **Oferta** pode cobrir uma ou mais partes (`oferta_partes`, com o preço de cada uma quando informado); a negociação da parte usa como referência a oferta mais recente que a cobre.
+- `v_partes`: cada parte com donos, matrículas, negociação (etapa, subetapa, prazo, status), temperatura, preço pedido e última proposta.
 
 ## Papéis, hierarquia e configuração
 
@@ -44,18 +77,24 @@ A configuração do funil é **por empresa** (`empresa_id`); as linhas com `empr
 
 | O quê | RPC | Não pode |
 | --- | --- | --- |
-| Etapas: nome, prazo, aprovações | `configurar_etapa` | criar ou apagar etapa (migration) |
+| Fases: criar, renomear, reordenar, prefixo, desativar; etapa em que a negociação se divide por parte (`etapa_partes`) | `salvar_fase`, `apagar_fase` (só sem processo) | mudar ou desativar a fase de entrada; desativar com terreno dentro; dividir fora da fase de entrada; mudar a divisão com partes negociando |
+| Dependências entre fases | `adicionar_dependencia`, `remover_dependencia` | ciclo; dependência na fase de entrada |
+| Etapas: criar (nasce com uma subetapa), renomear, reordenar, prazo, aprovações | `salvar_etapa`, `apagar_etapa` (só sem histórico) | apagar etapa de que outra fase depende |
 | Subetapas: criar, renomear, reordenar, prazo, aprovações, desativar | `salvar_subetapa` (desativar com terrenos dentro pede `mover_para`) | mudar de etapa; apagar com histórico (`apagar_subetapa` só sem histórico); desativar de que um pré-requisito depende |
 | Pré-requisitos | `adicionar_prerequisito`, `remover_prerequisito` | ciclo; exigir subetapa de etapa posterior; exigir na subetapa inicial outra da própria etapa |
 | Motivos de encerramento | `salvar_motivo`, `apagar_motivo` (só nunca usado) | |
 | Checklist de documentos por etapa | `salvar_checklist`, `remover_checklist` | |
-| Aprovação dos status (Comprado) | `configurar_status` | |
+| Status da fase: nome, aprovações, incluir ou tirar (Perdido, Descartado) | `configurar_status` | tirar Concluído ou Stand By; tirar status em uso |
 | Tipos de notificação e lembretes padrão | `configurar_notificacao` | |
 
 ```mermaid
 erDiagram
   empresas ||--o{ membros : equipe
   membros |o--o{ membros : "superior"
+  fases_modelo ||--o{ etapas_modelo : tem
+  fases_modelo ||--o{ status_modelo : encerra
+  fases_modelo ||--o{ fase_dependencias : "abre quando"
+  fases_modelo ||--o{ processos : "terreno na fase"
   etapas_modelo ||--o{ subetapas_modelo : tem
   etapas_modelo ||--o{ checklist_modelo : "para sair"
   subetapas_modelo ||--o{ prerequisitos_modelo : "requisito"
@@ -69,8 +108,25 @@ erDiagram
     uuid superior_id FK "um nivel acima"
     bool administrador
   }
+  fases_modelo {
+    uuid empresa_id "null = modelo padrao"
+    text codigo
+    text nome
+    int ordem
+    text prefixo "NEG, APR..."
+    bool entrada "a que a oferta abre"
+    bool ativo
+  }
+  fase_dependencias {
+    uuid id PK
+    text fase
+    text requisito_fase
+    text requisito_tipo "conclusao | etapa | subetapa"
+    text requisito
+  }
   etapas_modelo {
     uuid empresa_id "null = modelo padrao"
+    text fase FK
     text codigo
     text nome
     int ordem
@@ -80,7 +136,7 @@ erDiagram
     text aprovacao_modo "sequencia | paralelo"
   }
   subetapas_modelo {
-    text codigo "unico no tipo de processo"
+    text codigo "unico na fase"
     text etapa FK
     text nome
     int ordem "coluna do kanban"
@@ -91,7 +147,9 @@ erDiagram
     bool ativo
   }
   status_modelo {
-    text status "comprado | perdido | descartado | stand_by"
+    text fase FK
+    text status "concluido | perdido | descartado | stand_by"
+    text nome "Comprado, Aprovado..."
     bool aprova_gestor
     bool aprova_diretor
     text aprovacao_modo
@@ -126,7 +184,7 @@ erDiagram
   }
   processo_transicoes {
     uuid id PK
-    text evento "abertura | avanco | retorno | subetapa | compra | perda | descarte | stand_by | retomada | temperatura"
+    text evento "abertura | avanco | retorno | subetapa | conclusao | perda | descarte | stand_by | retomada | temperatura"
     text de_etapa
     text para_etapa
     text de_subetapa
@@ -173,6 +231,10 @@ erDiagram
   inscricoes_municipais ||--o{ inscricao_valores : "valor venal e IPTU por exercicio e revisao"
   terrenos ||--o{ confrontacoes : mede
   terrenos ||--o{ terreno_pessoas : vincula
+  terrenos ||--o{ terreno_partes : "donos que negociam separado"
+  terreno_partes |o--o{ matriculas : "do dono"
+  terreno_partes |o--o{ inscricoes_municipais : "do dono"
+  terreno_partes |o--o{ terreno_pessoas : "donos da parte"
   pessoas ||--o{ terreno_pessoas : participa
   terrenos ||--o{ terreno_infraestrutura : verifica
   itens_infraestrutura ||--o{ terreno_infraestrutura : item
@@ -240,10 +302,12 @@ erDiagram
     text cartorio
     numeric area_registrada_m2
     date data_certidao
+    uuid parte_id FK "de qual dono"
   }
   inscricoes_municipais {
     uuid id PK
     uuid terreno_id FK
+    uuid parte_id FK "de qual dono"
     uuid municipio_id FK "nulo = outro municipio"
     text inscricao "SQL ou inscricao imobiliaria"
     numeric area_cadastral_m2
@@ -286,8 +350,18 @@ erDiagram
     date data_verificacao
     text fonte
   }
+  terreno_partes {
+    uuid id PK
+    uuid terreno_id FK
+    text nome "dono ou grupo de donos"
+    bool essencial
+    jsonb poligono_geojson "pedaco da parte"
+    numeric area_m2
+    bool ativa "sai com motivo"
+  }
   terreno_pessoas {
     uuid terreno_id FK
+    uuid parte_id FK
     uuid pessoa_id FK
     text papel "proprietario | representante | procurador | contato"
     numeric percentual_participacao
@@ -340,6 +414,10 @@ erDiagram
   corretores ||--o{ terreno_corretores : atende
   terrenos ||--o{ processos : "negociacao (e fases futuras)"
   processos ||--|| negociacoes : "dados da negociacao"
+  processos |o--o{ processos : "negociacao de cada parte"
+  terreno_partes |o--o{ processos : "negocia"
+  ofertas ||--o{ oferta_partes : cobre
+  terreno_partes ||--o{ oferta_partes : "preco da parte"
   ofertas |o--o{ negociacoes : "oferta de referencia"
   processos ||--o{ processo_transicoes : historico
   processos ||--o{ propostas : recebe
@@ -372,19 +450,26 @@ erDiagram
   }
   processos {
     uuid id PK
-    text codigo "NEG-00012"
-    text tipo "negociacao"
+    text codigo "NEG-00012 (prefixo da fase)"
+    text fase FK
     uuid terreno_id FK
     text etapa_atual
     text subetapa_atual
     timestamptz subetapa_desde
-    text status "ativo | comprado | perdido | descartado | stand_by"
+    text status "ativo | concluido | perdido | descartado | stand_by"
     text motivo_encerramento "codigo do motivo"
     text detalhe_encerramento "relato ou justificativa"
-    text pontos_sucesso "comprado"
+    text pontos_sucesso "compra"
     date retomar_em
     uuid responsavel_id FK
     uuid viabilidade_id FK
+    uuid parte_id FK "negociacao de uma parte"
+    uuid principal_id FK "negociacao do terreno"
+  }
+  oferta_partes {
+    uuid oferta_id PK
+    uuid parte_id PK
+    numeric valor_pedido "da parte, se informado"
   }
   negociacoes {
     uuid processo_id PK
@@ -491,7 +576,7 @@ erDiagram
 
 | View / função | Para quê |
 | --- | --- |
-| `v_mapa` | um pin por terreno ativo, com `situacao_mapa` (sem negociação, etapa da negociação ativa, ou o status: comprado, perdido, descartado, stand by), a subetapa e a poligonal |
+| `v_mapa` | um pin por terreno ativo, com `situacao_mapa` (sem negociação, etapa do processo atual, ou o status dele: concluido, perdido, descartado, stand by), a fase atual e as abertas (filtro por fase), a subetapa e a poligonal |
 | `v_terreno_pontos` | todos os pontos de interesse da empresa para cada terreno localizado: linha reta sempre; a pé e de carro pela rota quando medidos para a coordenada atual (`precisa_medir` quando não) |
 | `salvar_distancias_pontos(terreno, lat, lng, itens)` | grava as distâncias pela rota (a pé e de carro) do terreno aos pontos da empresa; recusa coordenada diferente da atual |
 | `distancia_km(lat1, lng1, lat2, lng2)` | haversine; rota de verdade vem do serviço de mapas |
@@ -548,7 +633,10 @@ erDiagram
 | Inscrição escolhida numa cidade só entra em terreno dessa cidade | trigger `tg_inscricao_municipio` |
 | Isento não tem IPTU; venal do imóvel = terreno + construção quando os dois existem | checks em `inscricao_valores` |
 | Edição simultânea: salvar com versão antiga é recusado | `terrenos.versao` + `salvar_terreno` |
-| Participações dos proprietários somam no máximo 100% | trigger em `terreno_pessoas` |
+| Participações dos proprietários somam no máximo 100% (em cada parte) | trigger em `terreno_pessoas` |
+| Matrícula, inscrição, pessoa e oferta só se ligam a parte ativa do mesmo terreno | triggers `tg_parte_do_terreno`, `tg_oferta_parte` |
+| Terreno de vários donos só fica Comprado com todas as partes ativas compradas; negociação dividida não se move à mão | `_pendencias`, `_conferir_movimento`, `_sincronizar_principal` |
+| Parte sai com motivo, só com a negociação dela encerrada e nunca depois de comprada; essencial só com gestor ou diretor | `remover_parte`, `salvar_parte` |
 | Registro não muda de terreno depois de criado | `tg_mesma_empresa` |
 | Diligência impeditiva em aberto impede a compra; checklist da etapa para sair dela; pré-requisitos para entrar | `_pendencias` |
 | Etapa, subetapa e status só mudam por RPC, com transição no histórico; aprovações configuradas viram pedido | `_passagem`, `decidir_aprovacao` |
@@ -562,7 +650,7 @@ erDiagram
 | Pedaço oferecido fica dentro do terreno | `registrar_oferta` |
 | Mesma matrícula no mesmo cartório = mesmo terreno | índice único em `matriculas` |
 | Um corretor principal por terreno; o primeiro da oferta vira principal | índice único parcial + trigger |
-| Uma negociação aberta (ativa ou em stand by) por terreno | índice único parcial em `processos` |
+| Uma negociação aberta (ativa ou em stand by) por terreno e fase; uma por parte | índices únicos parciais em `processos` |
 | Reunião presencial tem local (BKM ou externo); online não; realizada não tem data futura | checks e trigger em `reunioes` |
 | Ata só de reunião realizada do mesmo terreno; uma ata por reunião, nova ata vira versão | `registrar_documento` + índice único |
 | Contraproposta do outro lado recusa a anterior; nova do mesmo lado a substitui | `registrar_proposta` |

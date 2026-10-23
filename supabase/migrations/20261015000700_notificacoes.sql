@@ -83,7 +83,7 @@ create table app.tarefa_marcados (
 -- ---------------------------------------------------------------------
 -- Cria a notificação (ou nada: tipo desligado, sem destinatário, avisar a si mesmo, repetida).
 create or replace function app._notificar(
-  p_empresa uuid, p_destinatario uuid, p_tipo text, p_texto text, p_terreno uuid,
+  p_empresa uuid, p_destinatario uuid, p_fase text, p_texto text, p_terreno uuid,
   p_origem_tabela text, p_origem_id uuid, p_referencia date default current_date, p_autor uuid default auth.uid())
 returns void
 language plpgsql security definer set search_path = ''
@@ -91,14 +91,14 @@ as $$
 begin
   if p_destinatario is null or p_destinatario is not distinct from p_autor then return; end if;
   if not exists (select 1 from app.membros where empresa_id = p_empresa and user_id = p_destinatario) then return; end if;
-  if not coalesce((select ativo from app.tipos_notificacao where empresa_id = p_empresa and codigo = p_tipo), false) then return; end if;
+  if not coalesce((select ativo from app.tipos_notificacao where empresa_id = p_empresa and codigo = p_fase), false) then return; end if;
   insert into app.notificacoes (empresa_id, destinatario_id, tipo, texto, autor_id, terreno_id, origem_tabela, origem_id, referencia)
-  values (p_empresa, p_destinatario, p_tipo, p_texto, p_autor, p_terreno, p_origem_tabela, p_origem_id, coalesce(p_referencia, current_date))
+  values (p_empresa, p_destinatario, p_fase, p_texto, p_autor, p_terreno, p_origem_tabela, p_origem_id, coalesce(p_referencia, current_date))
   on conflict do nothing;
 end $$;
 
 -- Lembretes padrão do tipo para um item, se ele ainda não tiver nenhum.
-create or replace function app._lembretes_padrao(p_empresa uuid, p_origem_tabela text, p_origem_id uuid, p_tipo text)
+create or replace function app._lembretes_padrao(p_empresa uuid, p_origem_tabela text, p_origem_id uuid, p_fase text)
 returns void
 language plpgsql security definer set search_path = ''
 as $$
@@ -107,7 +107,7 @@ begin
   insert into app.lembretes (empresa_id, origem_tabela, origem_id, dias_antes)
   select p_empresa, p_origem_tabela, p_origem_id, d
   from app.tipos_notificacao t, unnest(t.dias_antes_padrao) d
-  where t.empresa_id = p_empresa and t.codigo = p_tipo and t.ativo
+  where t.empresa_id = p_empresa and t.codigo = p_fase and t.ativo
   on conflict do nothing;
 end $$;
 
@@ -237,9 +237,11 @@ begin
   -- subetapa com prazo estourado: uma vez por entrada na subetapa
   for r in select p.*, s.nome as sub_nome, s.prazo_dias, t.nome as terreno_nome
            from app.processos p
-           join app.subetapas_modelo s on s.empresa_id = p.empresa_id and s.tipo_processo = p.tipo and s.codigo = p.subetapa_atual
+           join app.subetapas_modelo s on s.empresa_id = p.empresa_id and s.fase = p.fase and s.codigo = p.subetapa_atual
            join app.terrenos t on t.id = p.terreno_id
-           where p.status = 'ativo' and s.prazo_dias is not null and p.subetapa_desde::date + s.prazo_dias < p_hoje loop
+           where p.status = 'ativo' and s.prazo_dias is not null and p.subetapa_desde::date + s.prazo_dias < p_hoje
+             -- negociação do terreno dividida em partes: o aviso vem de cada parte
+             and not exists (select 1 from app.processos c where c.principal_id = p.id and c.status in ('ativo','stand_by')) loop
     perform app._notificar(r.empresa_id, r.responsavel_id, 'subetapa_prazo',
       r.terreno_nome || ': ' || r.sub_nome || ' passou do prazo de ' || r.prazo_dias || ' dias',
       r.terreno_id, 'processos', r.id, r.subetapa_desde::date + r.prazo_dias, null);

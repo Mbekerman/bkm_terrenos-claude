@@ -227,16 +227,32 @@ function seed(){
     propostas:[{v:1,origem:'bkm',data:H(70),valor:7200000,forma:'permuta_com_torna',cond:'R$ 5 mi + 7% do VGV em permuta física.',status:'aceita'}],
     docs:['matricula','onus','iptu','vend','topo','minuta'].map(t=>({tipo:t,status:'validado',emitido:H(30),versoes:1})),
     neg:neg('contrato','em_ajuste',45,{status:'comprado',temp:5,ofRef:'o11',encerradoEm:H(20),relato:'<p>Compromisso assinado com a família Albuquerque em <b>permuta com torna</b>: R$ 5 mi em dinheiro e 7% do VGV em unidades.</p><ul><li>Escritura condicionada à aprovação do projeto em 240 dias</li><li>Corretor Marcos Lemos com 4% sobre a parte em dinheiro</li></ul>',pontos:'Visita conjunta logo na primeira semana; proposta com permuta já no primeiro contato; certidões pedidas antes da minuta.'},10)}));
+  /* processo numa fase depois de Novos Negócios (no banco: processos.fase); concluídas antes, a atual por último */
+  const proc=(fase,pref,etapa,sub,dias,status,extra)=>({id:uid(),fase,codigo:pref+'-'+String(Math.floor(Math.random()*900)+100).padStart(5,'0'),etapa,sub,status:status||'ativo',desde:H(dias),subDesde:H(Math.min(dias,6)),
+    encerradoEm:status==='concluido'?H(Math.max(dias-60,1)):null,trilha:[{em:H(dias)+'T09:00:00.000',user:null,ev:'abertura',paraEtapa:etapa,paraSub:sub,status:'ativo'}],...(extra||{})});
+  const fim=(fase,pref,etapa,sub,dias)=>proc(fase,pref,etapa,sub,dias,'concluido',{relato:'Concluída conforme o cronograma.'});
+  const comprado=(dias,of)=>neg('contrato','em_ajuste',dias+40,{status:'comprado',temp:5,ofRef:of,encerradoEm:H(dias),relato:'<p>Compra fechada em permuta com torna.</p>',pontos:'Proposta com permuta logo no primeiro contato.'},10);
+  T[T.length-1].procs=[proc('aprovacao','APR','prefeitura','protocolado',20,'ativo',{desde:H(8),subDesde:H(8)})];
+  // 6e — em obras: passou por todas as fases até Obras
+  T.push(base({codigo:'TER-000090',nome:'Gleba Av. Raimundo Pereira de Magalhães',prioridade:'alta',resp:'Moisés',origem:'corretor',dataIdent:H(820),logradouro:'Av. Raimundo Pereira de Magalhães',numero:'8.100',bairro:'Pirituba',zona:'norte',aDoc:9800,fonteArea:'documental',topografia:'plano',ocupacao:'vazio',
+    ofertas:[{id:'o12',cid:'c2',data:H(820),valor:12500000,forma:'permuta_com_torna',status:'ativa',obsPag:'',aceita:''}],corretores:[{cid:'c2',principal:true}],
+    neg:comprado(700,'o12'),procs:[fim('aprovacao','APR','alvaras','alvara_execucao',700),fim('incorporacao','INC','cartorio','exigencias',480),fim('caixa','CEF','contratacao','assinatura',400),
+      fim('lancamento','LAN','vendas','vendas_iniciais',330),proc('obras','OBR','execucao','estrutura',260,'ativo',{desde:H(150),subDesde:H(40)})]}));
+  // 6f — entregue: obra entregue, em assistência técnica
+  T.push(base({codigo:'TER-000085',nome:'Residencial Itaquera',resp:'Ana Prado',origem:'corretor',dataIdent:H(1500),logradouro:'Rua Gregório Ramalho',numero:'500',bairro:'Itaquera',zona:'leste',aDoc:7200,fonteArea:'documental',topografia:'plano',ocupacao:'vazio',
+    ofertas:[{id:'o13',cid:'c3',data:H(1500),valor:9100000,forma:'dinheiro',status:'ativa',obsPag:'',aceita:''}],corretores:[{cid:'c3',principal:true}],
+    neg:comprado(1400,'o13'),procs:[fim('aprovacao','APR','alvaras','alvara_execucao',1400),fim('incorporacao','INC','cartorio','exigencias',1150),fim('caixa','CEF','contratacao','assinatura',1060),
+      fim('lancamento','LAN','vendas','vendas_iniciais',980),fim('obras','OBR','entrega','entrega_chaves',900),proc('entregue','ENT','pos_entrega','assistencia_tecnica',90)]}));
   // 6d — stand by
   T.push(base({codigo:'TER-000121',nome:'Lote Rua Ipiranguinha',resp:'Rafael Souza',origem:'indicacao',dataIdent:H(50),logradouro:'Rua Ipiranguinha',numero:'210',bairro:'Ipiranga',zona:'sul',aCad:900,fonteArea:'cadastral',
     neg:neg('estudos','estudo_massa',28,{status:'stand_by',temp:2,retomar:H(-5),detalhe:'Proprietários em inventário; retomar depois da partilha.',encerradoEm:H(25)},28)}));
   // 7 — prospecção sem oferta
   T.push(base({codigo:'TER-000132',nome:'Lote vizinho ao TER-000123',resp:'Ana Prado',origem:'prospeccao',dataIdent:H(2),logradouro:'Rua Benedito Mendes',numero:'40',bairro:'Cidade Ademar',zona:'sul',eixo:'e1',insc:[{sql:'089.123.0052-1',area:610,valores:[]}],
     obs:'Abordar para compor a área com o terreno da esquina.',tarefas:[{id:uid(),titulo:'Localizar proprietário pelo SQL',desc:'',resp:'Ana Prado',prazo:H(-5),status:'pendente',prio:'media',resultado:''}]}));
-  T.forEach(t=>{if(t.neg)t.neg.trilha.forEach(x=>{x.user=x.user||t.resp});t.hist=[{em:t.dataIdent,user:t.resp,txt:'Terreno cadastrado'}];if(t.neg){t.hist.push({em:t.neg.desde,user:t.resp,txt:`Negociação em ${SN(t.neg.etapa)}`})}});
+  T.forEach(t=>{if(t.neg)t.neg.trilha.forEach(x=>{x.user=x.user||t.resp});(t.procs||[]).forEach(p=>p.trilha.forEach(x=>{x.user=x.user||t.resp}));t.hist=[{em:t.dataIdent,user:t.resp,txt:'Terreno cadastrado'}];if(t.neg){t.hist.push({em:t.neg.desde,user:t.resp,txt:`Negociação em ${SN(t.neg.etapa)}`})}});
   const COORD={'TER-000123':[-23.66812,-46.65131],'TER-000118':[-23.54480,-46.40660],'TER-000131':[-23.52630,-46.54400],'TER-000127':[-23.45700,-46.74000],
     'TER-000112':[-23.58500,-46.58100],'TER-000125':[-23.53800,-46.57000],'TER-000109':[-23.46300,-46.68700],
-    'TER-000104':[-23.61050,-46.47900],'TER-000098':[-23.71000,-46.77000],'TER-000121':[-23.59500,-46.60200]};
+    'TER-000104':[-23.61050,-46.47900],'TER-000098':[-23.71000,-46.77000],'TER-000090':[-23.48700,-46.71500],'TER-000085':[-23.54000,-46.45600],'TER-000121':[-23.59500,-46.60200]};
   const POLY={'TER-000123':[[-23.66794,-46.65152],[-23.66792,-46.65111],[-23.66830,-46.65108],[-23.66833,-46.65150]],
     'TER-000112':[[-23.58478,-46.58126],[-23.58476,-46.58072],[-23.58522,-46.58070],[-23.58525,-46.58124]],
     'TER-000118':[[-23.54420,-46.40720],[-23.54410,-46.40590],[-23.54535,-46.40580],[-23.54560,-46.40700],[-23.54500,-46.40740]],
@@ -260,7 +276,7 @@ function seed(){
 }
 
 /* ===================== estado ===================== */
-const KEY='bkm-terrenos-prototipo-v8';
+const KEY='bkm-terrenos-prototipo-v9';
 let S;try{const r=localStorage.getItem(KEY);S=r?JSON.parse(r):null}catch(e){S=null}
 if(!S||!S.terrenos)S=seed();
 S.terrenos.forEach(t=>(t.docs||[]).forEach(d=>{if(/^geosampa_/.test(d.tipo))d.tipo=d.tipo.replace('geosampa_','lote_')}));
@@ -298,7 +314,7 @@ const agora=()=>{let t=Date.now();if(t<=ultEm)t=ultEm+1;ultEm=t;const d=new Date
   return HOJE+'T'+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds())+'.'+p(d.getMilliseconds(),3)};
 /* ordem dos logs: do mais recente ao mais antigo; no empate, o gravado depois vem antes */
 const histOrd=hist=>(hist||[]).map((h,i)=>[h,i]).sort((a,b)=>b[0].em.localeCompare(a[0].em)||b[1]-a[1]).map(x=>x[0]);
-const log=(t,txt)=>t.hist.push({em:agora(),user:me(),txt});
+const log=(t,txt)=>t.hist.push({em:agora(),user:me(),txt:(t._parte?`Parte ${t._parte.nome} · `:'')+txt});
 
 /* ===================== regras derivadas ===================== */
 const areaAdotada=t=>({documental:t.aDoc,cadastral:t.aCad,levantamento:t.aLev,estimativa:t.aEst})[t.fonteArea]??null;
@@ -419,7 +435,7 @@ function secaoAreas(t){
 }
 function secaoMats(t){
   return `<section class="sec" id="sec-mats"><div class="sec-h"><h2>Matrículas</h2><span class="faint" style="font-size:13px">${t.mats.length}</span></div><div class="sec-b">
-    ${t.mats.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Número</th><th>Cartório</th><th class="r">Área registrada</th><th>Certidão de</th><th></th></tr></thead><tbody>${t.mats.map((m,i)=>`<tr><td class="num">${esc(m.num)}</td><td>${esc(m.cri)}</td><td class="r">${m2(m.area)}</td><td>${fd(m.data)}</td><td class="r"><button class="btn sm text danger" data-a="del-mat" data-i="${i}">Remover</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Nenhuma matrícula. Um terreno pode somar várias.</div>'}
+    ${t.mats.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Número</th><th>Cartório</th><th class="r">Área registrada</th><th>Certidão de</th>${partesAtivas(t).length?'<th>Parte</th>':''}<th></th></tr></thead><tbody>${t.mats.map((m,i)=>`<tr><td class="num">${esc(m.num)}</td><td>${esc(m.cri)}</td><td class="r">${m2(m.area)}</td><td>${fd(m.data)}</td>${partesAtivas(t).length?`<td>${selParte(t,'mat-parte',i,m.parte)}</td>`:''}<td class="r"><button class="btn sm text danger" data-a="del-mat" data-i="${i}">Remover</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Nenhuma matrícula. Um terreno pode somar várias.</div>'}
     <form class="inline-form" data-form="mat"><div class="field"><label for="m-n">Número</label><input id="m-n" name="num" required placeholder="184.552"></div>
     <div class="field"><label for="m-c">Cartório</label><select id="m-c" name="cri">${Array.from({length:18},(_,i)=>`<option>${i+1}º CRI</option>`).join('')}</select></div>
     <div class="field"><label for="m-a">Área (m²)</label><input id="m-a" name="area" inputmode="decimal"></div>
@@ -455,7 +471,7 @@ function secaoConfr(t){
 }
 function secaoPessoas(t){
   return `<section class="sec" id="sec-pessoas"><div class="sec-h"><h2>Proprietários e contatos</h2></div><div class="sec-b">
-    ${t.pessoas.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Nome</th><th>Vínculo</th><th class="r">Participação</th><th>Telefone</th><th></th></tr></thead><tbody>${t.pessoas.map((p,i)=>`<tr><td>${esc(p.nome)} <span class="faint" style="font-size:12px">${p.tipo}</span></td><td>${OPT.papel[p.papel]}</td><td class="r">${p.pct!=null?num(p.pct,2)+'%':'—'}</td><td>${esc(p.tel||'—')}</td><td class="r"><button class="btn sm text danger" data-a="del-pes" data-i="${i}">Remover</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Ninguém vinculado.</div>'}
+    ${t.pessoas.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Nome</th><th>Vínculo</th><th class="r">Participação</th><th>Telefone</th>${partesAtivas(t).length?'<th>Parte</th>':''}<th></th></tr></thead><tbody>${t.pessoas.map((p,i)=>`<tr><td>${esc(p.nome)} <span class="faint" style="font-size:12px">${p.tipo}</span></td><td>${OPT.papel[p.papel]}</td><td class="r">${p.pct!=null?num(p.pct,2)+'%':'—'}</td><td>${esc(p.tel||'—')}</td>${partesAtivas(t).length?`<td>${selParte(t,'pes-parte',i,p.parte)}</td>`:''}<td class="r"><button class="btn sm text danger" data-a="del-pes" data-i="${i}">Remover</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Ninguém vinculado.</div>'}
     <form class="inline-form" data-form="pessoa"><div class="field grow"><label for="p-n">Nome ou razão social</label><input id="p-n" name="nome" required></div><div class="field" style="flex:0 1 120px"><label for="p-t">Tipo</label><select id="p-t" name="tipo"><option value="PF">PF</option><option value="PJ">PJ</option></select></div>
     <div class="field"><label for="p-p">Vínculo</label><select id="p-p" name="papel">${Object.entries(OPT.papel).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div><div class="field" style="flex:0 1 110px"><label for="p-pc">% (prop.)</label><input id="p-pc" name="pct" inputmode="decimal"></div>
     <div class="field"><label for="p-tel">Telefone</label><input id="p-tel" name="tel"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form></div></section>`;
@@ -513,6 +529,7 @@ function abaNegociacao(t){
     <div class="hint">${t.propostas.length?`Responde à v${t.propostas.length}. Se vier do outro lado, a v${t.propostas.length} vira Recusada; se vier do mesmo lado, vira Substituída.`:'Primeira proposta da negociação.'}</div></div>
     <div class="sec-f"><button type="button" class="btn text" data-a="prop-form">Cancelar</button><button class="btn primary">Registrar</button></div></form></section>`:'';
   return `<div class="stack">${trilhaHtml(t)}
+  ${secPartes(t)}
   ${secReunioes(t)}
   <section class="sec"><div class="sec-h"><h2>Viabilidade</h2></div><div class="sec-b">${v?`<div class="metrics"><div class="metric"><div class="ml">VGV</div><div class="mv">${mi(v.vgv)}</div></div><div class="metric"><div class="ml">Margem</div><div class="mv">${num(v.margem,1)}%</div></div><div class="metric"><div class="ml">Preço máximo do terreno</div><div class="mv">${mi(v.pmax)}</div></div></div>
     <div class="faint" style="font-size:12px;margin-top:10px">${esc(v.nome)} · ${fd(v.em)}${ad?` · ${brl(v.pmax/ad)}/m² sobre a área adotada`:''}</div>`
@@ -627,31 +644,32 @@ function pgFicha(){
   const t=T(UI.id),c=completude(t),n=t.neg;
   const endereco=[t.logradouro&&(t.logradouro+(t.numero?', '+t.numero:'')),t.bairro,t.zona&&'Zona '+OPT.zona[t.zona],eixo(t.eixo)].filter(Boolean).join(' · ');
   const zt=zonasTxt(t),ad=areaAdotada(t);
-  const tabs=[['geral','Visão geral',''],['cadastro','Cadastro do imóvel',''],['comercial','Comercial',t.ofertas.length],['negociacao','Negociação',t.propostas.length+t.reunioes.length],['tarefas','Tarefas',abertas(t).length],['urbanismo','Urbanismo e infraestrutura',''],['documentos','Documentos e diligências',t.docs.length+t.dilig.filter(d=>d.sit!=='resolvida').length],['historico','Histórico','']];
-  const FN={geral:abaGeral,cadastro:abaCadastro,comercial:abaComercial,negociacao:abaNegociacao,tarefas:abaTarefas,urbanismo:abaUrbanismo,documentos:abaDocs,historico:abaHist};
+  const tabs=[['geral','Visão geral',''],['cadastro','Cadastro do imóvel',''],['comercial','Comercial',t.ofertas.length],['negociacao','Negociação',t.propostas.length+t.reunioes.length],['fases','Fases',fasesAbertas(t).length],['tarefas','Tarefas',abertas(t).length],['urbanismo','Urbanismo e infraestrutura',''],['documentos','Documentos e diligências',t.docs.length+t.dilig.filter(d=>d.sit!=='resolvida').length],['historico','Histórico','']];
+  const FN={geral:abaGeral,cadastro:abaCadastro,comercial:abaComercial,negociacao:abaNegociacao,fases:abaFases,tarefas:abaTarefas,urbanismo:abaUrbanismo,documentos:abaDocs,historico:abaHist};
   const blocos=tabs.map(([k,l,q])=>{const fe=blocoFechado(k);
     return `<section class="bl${k==='historico'?' bl-hist':''}" id="bl-${k}"><h2 class="bl-t"><button class="bl-h" data-a="bloco" data-t="${k}" aria-expanded="${!fe}" aria-controls="blc-${k}"><svg class="bl-seta" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span>${l}</span>${q!==''&&q!==0?`<span class="n">${q}</span>`:''}</button></h2>
       <div class="bl-c" id="blc-${k}" ${fe?'hidden':''}>${fe?'':FN[k](t)+`<div class="bl-fim"><button class="bl-rec" data-a="bloco" data-t="${k}" data-fim="1" aria-label="Recolher ${l}" title="Recolher ${l}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg><span>Recolher</span></button></div>`}</div></section>`}).join('');
-  return `${linhaEtapas(t)}<button class="back" data-a="nav" data-r="${UI.from}">${ic('back',20)}${UI.from==='negociacoes'?'Negociações':UI.from==='inicio'?'Início':'Terrenos'}</button>
-  <div class="dhead"><div style="min-width:0"><div class="eyebrow"><span class="num">${t.codigo}</span>${n?`<span>·</span><span class="num">${n.codigo}</span>`:''}<span>·</span><span>identificado em ${fd(t.dataIdent)}</span>${t.situacao==='arquivado'?'<span class="chip">Arquivado</span>':''}</div>
+  return `${linhaTopo(t)}<button class="back" data-a="nav" data-r="${UI.from}">${ic('back',20)}${UI.from==='negociacoes'?'Fases':UI.from==='inicio'?'Início':'Terrenos'}</button>
+  <div class="dhead"><div style="min-width:0"><div class="eyebrow"><span class="num">${t.codigo}</span>${n?`<span>·</span><span class="num">${n.codigo}</span>`:''}${fasesAbertas(t).filter(f=>f!==faseEnt()).map(f=>`<span>·</span><span class="num">${procAberto(t,f).codigo}</span>`).join('')}<span>·</span><span>identificado em ${fd(t.dataIdent)}</span>${t.situacao==='arquivado'?'<span class="chip">Arquivado</span>':''}</div>
     <h1>${esc(t.nome)}</h1><div class="muted" style="margin-top:4px">${esc(endereco)||'<span class="faint">Endereço não informado</span>'}</div>
-    <div class="dchips">${chipNeg(t)}${ad!=null?`<span class="chip num">${m2(ad)}</span>`:''}${zt?`<span class="chip">${esc(zt)}${caMax(t)!=null?' · CA '+num(caMax(t),2):''}</span>`:''}${t.prioridade?`<span class="chip ${t.prioridade==='estrategica'||t.prioridade==='alta'?'warn':''}">Prioridade ${OPT.prioridade[t.prioridade].toLowerCase()}</span>`:''}${atrasadas(t).length?`<span class="chip crit">${atrasadas(t).length} tarefa${atrasadas(t).length>1?'s':''} atrasada${atrasadas(t).length>1?'s':''}</span>`:''}</div></div>
+    <div class="dchips">${chipFase(t)}${ad!=null?`<span class="chip num">${m2(ad)}</span>`:''}${zt?`<span class="chip">${esc(zt)}${caMax(t)!=null?' · CA '+num(caMax(t),2):''}</span>`:''}${t.prioridade?`<span class="chip ${t.prioridade==='estrategica'||t.prioridade==='alta'?'warn':''}">Prioridade ${OPT.prioridade[t.prioridade].toLowerCase()}</span>`:''}${atrasadas(t).length?`<span class="chip crit">${atrasadas(t).length} tarefa${atrasadas(t).length>1?'s':''} atrasada${atrasadas(t).length>1?'s':''}</span>`:''}</div></div>
     <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-end"><div style="display:flex;align-items:center;gap:8px">${av(t.resp)}<div><div style="font-weight:500">${esc(t.resp)}</div><div class="faint" style="font-size:12px">Responsável</div></div></div>${n?tempPicker(t):''}</div></div>
   <div class="stack">
   <div class="complete"><span class="progress"><span class="bar"><span style="width:${c.pct}%"></span></span><b>Ficha ${c.pct}% completa</b></span>${c.faltam.length?`<span class="muted" style="font-size:13px">Falta:</span><span class="missing">${c.faltam.slice(0,6).map(f=>`<button data-a="ir" data-t="${f[2]}" data-s="${f[3]||''}">${f[0]}</button>`).join('')}${c.faltam.length>6?`<span class="faint" style="font-size:12px;align-self:center">+${c.faltam.length-6}</span>`:''}</span>`:''}</div>
-  <div class="adv-main">${painelNeg(t)}</div>
+  <div class="adv-main">${painelAvanco(t)}</div>
   </div>
   <div class="blocos">${blocos}</div>`;
 }
 function bateBusca(t,q){if(!q)return true;q=q.toLowerCase();const hay=[t.codigo,t.nome,t.logradouro,t.numero,t.bairro,OPT.zona[t.zona],eixo(t.eixo),t.resp,...t.mats.map(m=>m.num+' '+digits(m.num)),...t.insc.map(i=>i.sql+' '+digits(i.sql)),...t.ofertas.map(o=>corretor(o.cid)?.nome),...t.pessoas.map(p=>p.nome)].join(' ').toLowerCase();return q.split(/\s+/).every(w=>hay.includes(w))}
 const FILT={ativos:['Em negociação',t=>t.neg?.status==='ativo'],sem:['Sem negociação',t=>!t.neg&&t.situacao==='ativo'],standby:['Stand By',t=>t.neg?.status==='stand_by'],encerrados:['Comprados, perdidos e descartados',t=>['comprado','perdido','descartado'].includes(t.neg?.status)],todos:['Todos',()=>true]};
 function linhas(){
-  const l=S.terrenos.filter(FILT[UI.fT][1]).filter(t=>bateBusca(t,UI.q)).sort((a,b)=>(b.neg?.temp||0)-(a.neg?.temp||0)||b.codigo.localeCompare(a.codigo));
+  const l=S.terrenos.filter(FILT[UI.fT][1]).filter(t=>!UI.fFase||faseAtual(t)?.k===UI.fFase).filter(t=>bateBusca(t,UI.q)).sort((a,b)=>(b.neg?.temp||0)-(a.neg?.temp||0)||b.codigo.localeCompare(a.codigo));
   return tabela('terrenos',l,COLS_TERRENOS,{attr:attrAbrir('terrenos'),vazio:`Nenhum terreno${UI.q?` para “${esc(UI.q)}”`:''}.<br><button class="btn sm" style="margin-top:12px" data-a="novo">${ic('add',16)}Novo terreno</button>`});
 }
 function pgTerrenos(){
   return `<div class="page-h"><div><h1><span class="marca"></span>Terrenos</h1><div class="sub">Ordenados por temperatura da negociação.</div></div><button class="btn primary" data-a="novo">${ic('add',18)}Novo terreno</button></div>
-  <div class="split"><div class="fchips">${Object.entries(FILT).map(([k,[l,f]])=>`<button class="fchip" data-a="fT" data-v="${k}" aria-pressed="${UI.fT===k}">${UI.fT===k?ic('check',16):''}${l} <span class="n">${S.terrenos.filter(f).length}</span></button>`).join('')}</div></div>
+  <div class="split"><div class="fchips">${Object.entries(FILT).map(([k,[l,f]])=>`<button class="fchip" data-a="fT" data-v="${k}" aria-pressed="${UI.fT===k}">${UI.fT===k?ic('check',16):''}${l} <span class="n">${S.terrenos.filter(f).length}</span></button>`).join('')}</div>
+  <label class="fsel"><span>Fase</span><select data-ch="fFase" aria-label="Filtrar por fase"><option value="">Todas</option>${fasesL().filter(f=>f.ativo).map(f=>`<option value="${f.k}" ${UI.fFase===f.k?'selected':''}>${esc(f.nome)} (${S.terrenos.filter(t=>faseAtual(t)?.k===f.k).length})</option>`).join('')}</select></label></div>
   <section class="sec lista"><div id="rows">${linhas()}</div></section>`;
 }
 function pgInicio(){
@@ -674,7 +692,7 @@ function pgInicio(){
 }
 
 /* ===================== shell ===================== */
-const NAV=[['inicio','Início','casa'],['terrenos','Terrenos','terrenos'],['mapa','Mapa','mapa'],['negociacoes','Negociações','contrato'],['tarefas','Tarefas','checklist'],['dashboard','Dashboard','indicadores']];
+const NAV=[['inicio','Início','casa'],['terrenos','Terrenos','terrenos'],['mapa','Mapa','mapa'],['negociacoes','Fases','contrato'],['tarefas','Tarefas','checklist'],['dashboard','Dashboard','indicadores']];
 /* Configurações › Funil: só para administrador (no menu lateral; no celular, pelo sino) */
 const navSide=()=>ehAdmin(me())?[...NAV,['config','Configurações','config']]:NAV;
 function render(){
@@ -694,9 +712,9 @@ function go(route,x={}){Object.assign(UI,{route,edit:null,propForm:false,reuForm
 
 /* ===================== modais ===================== */
 function renderModal(){
-  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.nv=null;UI.nvKmz=null;UI.ofPoly=null;UI.kmzNovo=false;UI.lotes=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;return}
+  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.nv=null;UI.nvKmz=null;UI.ofPoly=null;UI.kmzNovo=false;UI.lotes=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;UI.alvoParte=null;return}
   let h='';const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`;
-  h=funilModal(M,fechar);
+  h=partesModal(M,fechar)||fasesModal(M,fechar)||funilModal(M,fechar);
   if(M==='novo')h=UI.nv?nvDadosHtml(fechar):nvPasso1Html(fechar);
   if(M==='novo-sobre')h=nvSobreHtml(fechar);
   if(M==='lotes-poly')h=lotesPolyHtml(fechar);
@@ -769,7 +787,7 @@ document.addEventListener('click',e=>{
   if(!e.target.closest('.adv-mais'))document.querySelectorAll('.adv-mais.aberto').forEach(x=>{x.classList.remove('aberto');x.querySelector('.adv-mb')?.setAttribute('aria-expanded','false')});
   const a=e.target.closest('[data-a]');if(!a)return;const A=a.dataset.a;const t=UI.route==='terreno'?T(UI.id):null;
   if(A==='scrim'){if(e.target===a){UI.modal=null;renderModal()}return}
-  if(funilClick(A,a,t))return;
+  if(partesClick(A,a,t)||fasesClick(A,a,t)||funilClick(A,a,t))return;
   switch(A){
     case 'nav':go(a.dataset.r);break;
     case 'abrir':BLA={geral:true};blId=a.dataset.id;go('terreno',{id:a.dataset.id,tab:a.dataset.tab||'geral',from:a.dataset.from||(UI.route==='terreno'?UI.from:UI.route==='inicio'?'inicio':'terrenos')});if(a.dataset.tab&&a.dataset.tab!=='geral'){blocoAbre(a.dataset.tab);render();rolarBloco(a.dataset.tab)}break;
@@ -822,7 +840,9 @@ document.addEventListener('click',e=>{
     case 'fs-fechar':UI.fichaSheet=null;fichaSheet();break;
     case 'mp-foco':{const x=T(a.dataset.id);if(x.lat!=null)focar(x);else if(UI.role!=='Leitura'){UI.mpModo='marcar';UI.mpAlvo=x.id;mpRefresh()}else toast('Terreno sem localização.');break}
     case 'mp-sit':{const v=a.dataset.v,o=UI.mp.ocultas;UI.mp.ocultas=o.includes(v)?o.filter(x=>x!==v):[...o,v];mpRefresh();break}
-    case 'mp-limpar':UI.mp={q:'',cor:'',zona:'',ocultas:[]};render();break;
+    case 'mp-limpar':UI.mp={q:'',cor:'',zona:'',f:UI.mp.f,e:UI.mp.e,ocultas:[]};render();break;
+    case 'mp-desce':if(UI.mp.f)UI.mp.e=a.dataset.v;else UI.mp.f=a.dataset.v;UI.mp.ocultas=[];mpRefresh();mpEnquadrar();break;
+    case 'mp-nivel':UI.mp.f=a.dataset.v||'';UI.mp.e='';UI.mp.ocultas=[];mpRefresh();mpEnquadrar();break;
     case 'mp-base':setBase(a.dataset.v);break;
     case 'mp-lugares':G_lugares(UI.mpLugares===false);break;
     case 'lug-fechar':lugarFechar();break;
@@ -859,9 +879,10 @@ $('#file-in').addEventListener('change',e=>{const f=e.target.files?.[0],t=T(UI.i
   const unico=k!=='foto'&&k!=='planta';let d=unico?t.docs.find(x=>x.tipo===k):null;
   if(!d){d={tipo:k,status:'recebido',emitido:HOJE,versoes:0,nome:unico?null:f.name};t.docs.push(d)}d.versoes++;d.emitido=HOJE;d.status='recebido';log(t,`${TIPOS_DOC[k][0]}: versão ${d.versoes} enviada`);save();render();toast('Arquivo enviado. Falta validar.')});
 document.addEventListener('change',e=>{const el=e.target;
-  if(funilChange(el))return;
+  if(partesChange(el)||fasesChange(el)||funilChange(el))return;
   if(el.dataset.ch==='mp-cor'){UI.mp.cor=el.value;mpRefresh();return}
   if(el.dataset.ch==='mp-zona'){UI.mp.zona=el.value;mpRefresh();return}
+  if(el.dataset.ch==='fFase'){UI.fFase=el.value;if(el.value)UI.fT='todos';render();return}
   if(el.dataset.ch==='dash-sel'){const s=UI.dash.sel;UI.dash.sel=el.checked?Object.keys(DIMS).filter(k=>s.includes(k)||k===el.value):s.filter(k=>k!==el.value);render();return}
   if(el.dataset.ch==='tk-f'){UI.tk[el.dataset.k]=el.type==='checkbox'?el.checked:el.value;render();return}
   if(el.id==='kmz-in'){const f=el.files?.[0];if(!f||!UI.kmzNovo)return;UI.kmzNovo=false;lerKmz(f).then(nvKmzLido).catch(err=>toast(err.message,true));return}
@@ -881,7 +902,7 @@ document.addEventListener('input',e=>{const el=e.target;
   if(el.id==='pp-v'){const t=T(UI.id),v=lerNum(el.value),w=$('#pp-warn');w.innerHTML=t.neg.viab&&v>t.neg.viab.pmax?`<div class="banner warn">${ic('warn')}<div>${brl(v)} fica ${mi(v-t.neg.viab.pmax)} acima do preço máximo (${mi(t.neg.viab.pmax)}).</div></div>`:''}
 });
 document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Object.fromEntries(new FormData(f)),t=UI.alvo?T(UI.alvo):UI.route==='terreno'?T(UI.id):null;
-  if(funilSubmit(f.dataset.form,F,t,f))return;
+  if(partesSubmit(f.dataset.form,F,t,f)||fasesSubmit(f.dataset.form,F,t,f)||funilSubmit(f.dataset.form,F,t,f))return;
   switch(f.dataset.form){
     case 'sec':{const s=SECOES[f.dataset.s];s.campos.forEach(([k,,tipo])=>{if(tipo==='fixo'||!(k in F))return;let v=F[k].trim();if(['m2','m','dec'].includes(tipo))v=lerNum(v);else if(tipo==='sel'&&v==='')v=k==='precisao'?'nao_informada':['topografia','posicao','formato','ocupacao'].includes(k)?'nao_informado':k==='demolicao'?'nao_avaliada':null;else if(v==='')v=k==='nome'?t.nome:null;t[k]=v});
       if(t.aDemolir!=null&&t.aConst!=null&&t.aDemolir>t.aConst){toast('A área a demolir não pode passar da área construída.',true);return}
@@ -903,7 +924,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       log(t,`IPTU ${ex}${ant.length?` revisão ${ant.length+1}`:''} lançado`);save();render();toast(ant.length?`Exercício ${ex}: revisão ${ant.length+1} lançada; a anterior foi preservada.`:`Exercício ${ex} lançado.`);break}
     case 'confr':t.confr.push({tipo:F.tipo,m:lerNum(F.m),conf:F.conf});save();render();break;
     case 'dilig':t.dilig.push({id:uid(),cat:F.cat,titulo:F.titulo,sit:F.sit,resp:F.resp,prov:F.prov});log(t,`Diligência: ${F.titulo}`);save();render();toast('Diligência registrada.');break;
-    case 'pessoa':if(F.papel==='proprietario'&&lerNum(F.pct)!=null){const tot=t.pessoas.filter(p=>p.papel==='proprietario').reduce((a,p)=>a+(p.pct||0),0);if(tot+lerNum(F.pct)>100){toast(`A soma passaria de 100% (já há ${num(tot,2)}% informado).`,true);return}}
+    case 'pessoa':if(F.papel==='proprietario'&&lerNum(F.pct)!=null&&!partesAtivas(t).length){const tot=t.pessoas.filter(p=>p.papel==='proprietario').reduce((a,p)=>a+(p.pct||0),0);if(tot+lerNum(F.pct)>100){toast(`A soma passaria de 100% (já há ${num(tot,2)}% informado).`,true);return}}
       t.pessoas.push({nome:F.nome,tipo:F.tipo,papel:F.papel,pct:F.papel==='proprietario'?lerNum(F.pct):null,tel:F.tel});save();render();break;
     case 'tarefa':t.tarefas.push({id:uid(),titulo:F.titulo,desc:F.desc,resp:F.resp,prazo:F.prazo,status:'pendente',prio:F.prio,resultado:'',marcados:[]});notifTarefa(t,t.tarefas[t.tarefas.length-1],null);log(t,`Tarefa criada: ${F.titulo}`);save();render();toast('Tarefa adicionada.');break;
     case 'poi':{S.pontos=S.pontos||[];S.pontos.push({id:uid(),nome:F.nome.trim(),cat:F.cat,lat:UI.novoPoi.lat,lng:UI.novoPoi.lng});UI.modal=null;save();const volta=UI.poiVolta;UI.poiVolta=null;if(volta&&T(volta))go('terreno',{id:volta,tab:'geral'});else render();toast('Ponto de interesse salvo.');break}

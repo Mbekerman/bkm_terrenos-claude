@@ -30,7 +30,7 @@ await ctx.route('**/*',async r=>{const u=r.request().url();
 const p=await ctx.newPage();p.on('pageerror',e=>errs.push(e.message));p.on('console',m=>{if(m.type()==='error'&&!/Failed to load resource/.test(m.text()))errs.push(m.text())});
 await p.goto('file:///x/a.html');await p.evaluate(()=>localStorage.clear());await p.reload();await p.waitForTimeout(600);
 const toast=()=>p.$eval('#toast',x=>x.textContent);
-const KEY='bkm-terrenos-prototipo-v8',ter=n=>p.evaluate(([k,n])=>JSON.parse(localStorage.getItem(k)).terrenos.find(x=>x.nome===n),[KEY,n]);
+const KEY='bkm-terrenos-prototipo-v9',ter=n=>p.evaluate(([k,n])=>JSON.parse(localStorage.getItem(k)).terrenos.find(x=>x.nome===n),[KEY,n]);
 const kmlQuadra=(lat,lng,m=20)=>{const dy=m/2/111320,dx=m/2/(111320*Math.cos(lat*Math.PI/180)),c=[[lng-dx,lat-dy],[lng+dx,lat-dy],[lng+dx,lat+dy],[lng-dx,lat+dy],[lng-dx,lat-dy]].map(p=>p.join(',')).join(' ');
   return `<?xml version="1.0"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><Placemark><name>Lote</name><Polygon><outerBoundaryIs><LinearRing><coordinates>${c}</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark></Document></kml>`};
 const importarKml=async kml=>{const [fc]=await Promise.all([p.waitForEvent('filechooser'),p.click('[data-a=nv-kmz]')]);await fc.setFiles({name:'l.kml',mimeType:'application/vnd.google-earth.kml+xml',buffer:Buffer.from(kml)});await p.waitForSelector('#f-novo',{timeout:10000});await p.waitForTimeout(300)};

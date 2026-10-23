@@ -425,6 +425,12 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .lg-poi { width: 18px; height: 18px; display: grid; place-items: center; flex: none }
 .lg-poi .poi-b { width: 12px; height: 12px; border-width: 2.5px; box-shadow: none }
 .lg-i[aria-pressed="false"] .lg-poi { filter: grayscale(1) }
+.lg-r { display: flex; align-items: center; gap: 2px }
+.lg-r .lg-i { flex: 1; min-width: 0 }
+.lg-d { width: 28px; height: 28px; flex: none }
+.lg-h { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500; padding: 0 4px 4px 0; margin-bottom: 2px; border-bottom: 1px solid var(--m-outline-variant, #c4c7c5) }
+.lg-h .lg-v { width: 32px; height: 32px; flex: none }
+:root[data-tema="escuro"] .lg-h { border-bottom-color: #1a2240 }
 :root[data-tema="escuro"] .mp-leg-l .lg-sep { border-top-color: #1a2240 }
 
 /* menu do clique direito no mapa (mesmo visual do menu do ponto) */
@@ -627,9 +633,9 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .kcard.aprov { outline: 2px solid #ffdf99; outline-offset: -2px }
 .katr { color: #b3261e !important; font-weight: 500 }
 .col-ab { display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent; color: inherit; font: inherit; padding: 4px 6px; margin: -4px -6px; border-radius: 8px }
+.col-ab span { text-align: left }
 .col-ab:hover { background: rgba(127,127,127,.12) }
 .col-s { font-size: 12px; padding: 0 var(--e2) var(--e1) }
-.neg-et { margin-bottom: 12px }
 :root[data-tema="escuro"] .ksub { background: rgba(99,112,255,.14); color: #c9d6ff }
 :root[data-tema="escuro"] .kped { color: #ffdf99 }
 
@@ -670,6 +676,39 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
   .cfg-r, .cfg-r.cfg-sub, .cfg-r.cfg-st, .cfg-r.cfg-mot, .cfg-r.cfg-nt, .cfg-r.cfg-eq { grid-template-columns: 1fr 1fr; padding: 10px 0; border-bottom: 1px solid var(--m-outline-var) }
   .cfg-r > :first-child, .cfg-ap { grid-column: 1 / -1 }
   .cfg-r.cfg-sub > input:first-of-type { grid-column: 1 / -1 }
+}
+/* Fases: configuração, seção da ficha, chip da fase */
+.cfg-r.cfg-fase { grid-template-columns: 72px minmax(160px, 1.4fr) 80px minmax(140px, 1fr) 80px 70px 70px }
+.cfg-r.cfg-fe { grid-template-columns: 72px minmax(160px, 1fr) 100px minmax(260px, 2.4fr) 70px }
+.cfg-subs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center }
+.cfg-subs .chip { gap: 4px }
+.chip-x { border: 0; background: none; color: inherit; font-size: 16px; line-height: 1; padding: 0 2px; cursor: pointer }
+.cfg-fs-add input { height: 30px !important; width: 140px !important; border-radius: 8px; border: 1px dashed var(--m-outline); background: transparent; color: var(--m-on-surface); padding: 0 10px; font: inherit; font-size: 13px }
+.chip.fase-n { background: var(--m-sc-low); border-color: var(--m-outline-var); font-weight: 500 }
+.fs-lst { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column }
+.fs-i { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--m-outline-var) }
+.fs-i:last-child { border-bottom: 0 }
+.fs-it { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center }
+.fs-st { display: inline-flex; flex-wrap: wrap; gap: 6px }
+.fs-d { font-size: 13px }
+.fs-deps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; font-size: 13px }
+.fs-deps li { display: flex; gap: 6px; align-items: center }
+.fs-deps li.ok { color: #146c2e }
+.fs-deps li.no { color: var(--m-on-var) }
+:root[data-tema="escuro"] .fs-deps li.ok { color: #6dd58c }
+.drill-h { display: flex; align-items: flex-start; gap: 8px }
+.drill-v { margin: 2px 0 0 -8px; flex: none }
+.drill-h:has(.drill-v) .sub { margin-left: 0 }
+.drill-t { list-style: none; margin: 0 0 2px; padding: 0; display: flex; flex-wrap: wrap; font-size: 14px; color: var(--m-on-var) }
+.drill-t li + li::before { content: "›"; margin: 0 6px; color: var(--m-on-var) }
+.drill-t .linkbtn { font-size: 14px; padding: 0 }
+.board-fases .ksub > span:first-child { white-space: normal }
+.tl-topo .sd { overflow: hidden; text-overflow: ellipsis }
+.fsel { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--m-on-var) }
+.fsel select { height: 32px; border-radius: 8px; border: 1px solid var(--m-outline); background: transparent; color: var(--m-on-surface); padding: 0 8px; font: inherit; font-size: 14px }
+@media (max-width: 899px) {
+  .cfg-r.cfg-fase, .cfg-r.cfg-fe { grid-template-columns: 1fr 1fr; padding: 10px 0; border-bottom: 1px solid var(--m-outline-var) }
+  .cfg-r.cfg-fase > input:first-of-type, .cfg-r.cfg-fe > input:first-of-type, .cfg-subs { grid-column: 1 / -1 }
 }
 /* celular: quatro papéis não cabem por extenso na barra; fica a inicial (nome completo no title) */
 @media (max-width: 480px) {
@@ -810,3 +849,28 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .perfil-eu b { font-weight: 500; font-size: 14px } .perfil-eu span { font-size: 12px; color: var(--m-on-var, #444746) }
 .perfil-av { width: 24px; height: 24px; border-radius: 50%; background: #8e4ec6; color: #fff; font-size: 12px; font-weight: 500; display: grid; place-items: center; flex: none }
 #perfil .tema-menu { min-width: 240px }
+/* partes do terreno (vários donos): resumo e um cartão por parte, cada um com a sua negociação (23/out/2026) */
+.pt-res { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px 16px; margin-bottom: 16px }
+.pt-res > div { display: flex; flex-direction: column; gap: 2px } .pt-res b { font-weight: 500; font-size: 16px }
+.pt-res .lbl, .pt-f .lbl { font-size: 12px; color: var(--m-on-var, #444746) }
+#sec-partes .banner { margin-bottom: 12px }
+.pt-lista { display: flex; flex-direction: column; gap: 12px }
+.pt-card { border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0 }
+.pt-card.comprado { box-shadow: inset 3px 0 0 #146c2e } .pt-card.perdido, .pt-card.descartado { box-shadow: inset 3px 0 0 #b3261e } .pt-card.stand_by { box-shadow: inset 3px 0 0 #7a5900 }
+.pt-card.fora { opacity: .7; border-style: dashed }
+.pt-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap } .pt-n { display: flex; align-items: baseline; gap: 8px; margin-right: auto; min-width: 0 }
+.pt-n b { font-weight: 500; font-size: 15px } .pt-n .num { font-size: 12px }
+.pt-m { font-size: 13px } .pt-x { font-size: 13px }
+.pt-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px 16px; align-items: start }
+.pt-f { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 14px } .pt-f select { height: 36px; max-width: 100% } .pt-f .faint { font-size: 12px }
+.pt-f .temp { margin: 0 }
+.pt-ped { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; padding: 8px 12px; border-radius: 8px; background: var(--m-sc-low, #f0f4f9) }
+.pt-ped > span { margin-right: auto }
+.pt-a { display: flex; align-items: center; gap: 8px; flex-wrap: wrap }
+.pt-a .adv-mais { margin-left: auto } .pt-a .adv-mais .adv-mb { width: 36px; padding: 0; justify-content: center }
+.t-warn { color: #7a5900; font-weight: 500 }
+.kcard .kpt { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--m-on-var, #444746) }
+:root[data-tema="escuro"] .pt-card { border-color: rgba(124,140,255,.22); background: #060c20 }
+:root[data-tema="escuro"] .pt-ped { background: rgba(124,140,255,.07) }
+:root[data-tema="escuro"] .t-warn { color: #f5c451 }
+:root[data-tema="escuro"] .pt-card.comprado { box-shadow: inset 3px 0 0 #6dd58c } :root[data-tema="escuro"] .pt-card.perdido, :root[data-tema="escuro"] .pt-card.descartado { box-shadow: inset 3px 0 0 #f2b8b5 } :root[data-tema="escuro"] .pt-card.stand_by { box-shadow: inset 3px 0 0 #f5c451 }
