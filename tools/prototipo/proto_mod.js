@@ -198,7 +198,7 @@ function pgMapa(){
     <div id="mapa" class="mapa"></div>
     <div class="mp-barra">
       ${mpBuscaHtml()}
-      <div class="seg" role="group" aria-label="Fundo do mapa">${Object.entries(GG?CAMADAS_G:CAMADAS_L).map(([k,l])=>`<button type="button" data-a="mp-base" data-v="${k}" aria-pressed="${(UI.mpBase||'mapa')===k}">${l}</button>`).join('')}</div>
+      <div class="seg" role="group" aria-label="Fundo do mapa">${Object.entries(GG?CAMADAS_G:CAMADAS_L).map(([k,l])=>`<button type="button" data-a="mp-base" data-v="${k}" aria-pressed="${(UI.mpBase||'satelite')===k}">${l}</button>`).join('')}</div>
       <button class="btn sm mp-kmz" data-a="mp-kmz" title="Importar KMZ/KML" aria-label="Importar KMZ/KML">${ic('upload',16)}<span class="t">Importar KMZ/KML</span></button>
     </div>
     <div id="mp-modo" class="mp-modo" aria-live="polite">${modoBanner()}</div>
@@ -251,7 +251,7 @@ function L_initMapa(){const el=$('#mapa');if(!el)return;
   if(!window.L){el.innerHTML='<div class="mapa-erro">Não foi possível carregar a biblioteca de mapas. Verifique a conexão e recarregue a página.</div>';return}
   MAPA=L.map(el,{zoomControl:true,doubleClickZoom:false});
   L.control.scale({imperial:false,position:'bottomright'}).addTo(MAPA);
-  setBase(UI.mpBase||'mapa');PINS=L.layerGroup().addTo(MAPA);POIS=L.layerGroup();CONC=L.layerGroup();DES=L.layerGroup().addTo(MAPA);if(UI.mpPoi!==false)POIS.addTo(MAPA);if(UI.mpConc!==false)CONC.addTo(MAPA);
+  setBase(UI.mpBase||'satelite');PINS=L.layerGroup().addTo(MAPA);POIS=L.layerGroup();CONC=L.layerGroup();DES=L.layerGroup().addTo(MAPA);if(UI.mpPoi!==false)POIS.addTo(MAPA);if(UI.mpConc!==false)CONC.addTo(MAPA);
   ctxGestos(el,(x,y)=>{const ll=MAPA.containerPointToLatLng([x,y]);return {lat:ll.lat,lng:ll.lng}});MAPA.on('movestart zoomstart',ctxFechar);
   desenhaPins();desenhaPois();desenhaRascunho();el.classList.toggle('modo',!!UI.mpModo);
   const vista=UI.mpView,enquadrar=()=>{if(vista)return MAPA.setView(vista.c,vista.z);const pts=ativosBanco().filter(t=>t.lat!=null).map(t=>[t.lat,t.lng]);pts.length?MAPA.fitBounds(pts,{padding:[48,48],maxZoom:15}):MAPA.setView([-23.55,-46.63],11)};
