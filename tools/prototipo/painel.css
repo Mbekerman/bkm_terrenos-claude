@@ -451,7 +451,10 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 :root[data-tema="escuro"] .mp-barra .mp-lug { background: rgba(6,12,32,.72); color: #c9d6ff; box-shadow: 0 0 0 1px rgba(124,140,255,.35) }
 :root[data-tema="escuro"] .mp-barra .mp-lug[aria-pressed="true"] { background: rgba(99,112,255,.28); box-shadow: 0 0 0 1px rgba(124,140,255,.7) }
 /* quadro do lugar (InfoWindow do Google): nome, nota e até 3 avaliações */
-.lug { font: 13px/1.4 "Google Sans Flex", system-ui, sans-serif; color: #1f1f1f; max-width: 290px }
+.lug { position: relative; font: 13px/1.4 "Google Sans Flex", system-ui, sans-serif; color: #1f1f1f; max-width: 290px; padding-right: 28px }
+.lug .muted, .lug.muted { color: #5f6368 !important }
+.lug-x { position: absolute; top: -4px; right: -6px; width: 32px; height: 32px; display: grid; place-items: center; border: 0 !important; border-radius: 16px; background: transparent !important; color: #444746 !important; cursor: pointer; padding: 0 !important; min-height: 0 !important; box-shadow: none !important }
+.lug-x:hover { background: rgba(68,71,70,.08) !important }
 .lug-n { font-size: 15px; font-weight: 500; margin-bottom: 2px }
 .lug-e { font-size: 12px; margin-bottom: 6px }
 .lug-nota { display: flex; align-items: baseline; gap: 6px; margin-bottom: 6px }
