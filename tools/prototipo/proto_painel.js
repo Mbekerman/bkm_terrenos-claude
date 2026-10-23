@@ -201,7 +201,7 @@ function painelFicha(t){
   if(!PN.aberto)return `<aside class="pn pn-min" aria-label="Logs e ações"><button class="pn-rb" data-a="pn-abrir" title="Expandir painel" aria-label="Expandir painel">${PN_IC.abrir}</button>
     <button class="pn-rb" data-a="pn-aba" data-v="logs" title="Logs" aria-label="Logs, ${nL} registros">${PN_IC.logs}<span class="pn-badge">${nL}</span></button>
     <button class="pn-rb" data-a="pn-aba" data-v="acoes" title="Ações" aria-label="Ações, ${nA} pendências">${PN_IC.acoes}<span class="pn-badge">${nA}</span></button></aside>`;
-  const adv=painelNeg(t);
+  const adv=painelAvanco(t);
   return `<aside class="pn" aria-label="Logs e ações">${adv?`<div class="pn-adv">${adv}</div>`:''}<div class="pn-h"><div class="seg" role="tablist" aria-label="Painel">${[['logs','Logs',nL],['acoes','Ações',nA]].map(([k,l,q])=>`<button role="tab" data-a="pn-aba" data-v="${k}" aria-pressed="${PN.aba===k}" aria-selected="${PN.aba===k}">${l} <span class="pn-q">${q}</span></button>`).join('')}</div>
     <button class="iconbtn" data-a="pn-fechar" title="Recolher painel" aria-label="Recolher painel">${PN_IC.fechar}</button></div>
     <div class="pn-b">${PN.aba==='logs'?pnLogs(t):pnAcoes(t)}</div></aside>`;

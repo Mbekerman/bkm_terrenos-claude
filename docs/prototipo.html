@@ -2124,6 +2124,12 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .lg-poi { width: 18px; height: 18px; display: grid; place-items: center; flex: none }
 .lg-poi .poi-b { width: 12px; height: 12px; border-width: 2.5px; box-shadow: none }
 .lg-i[aria-pressed="false"] .lg-poi { filter: grayscale(1) }
+.lg-r { display: flex; align-items: center; gap: 2px }
+.lg-r .lg-i { flex: 1; min-width: 0 }
+.lg-d { width: 28px; height: 28px; flex: none }
+.lg-h { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500; padding: 0 4px 4px 0; margin-bottom: 2px; border-bottom: 1px solid var(--m-outline-variant, #c4c7c5) }
+.lg-h .lg-v { width: 32px; height: 32px; flex: none }
+:root[data-tema="escuro"] .lg-h { border-bottom-color: #1a2240 }
 :root[data-tema="escuro"] .mp-leg-l .lg-sep { border-top-color: #1a2240 }
 
 /* menu do clique direito no mapa (mesmo visual do menu do ponto) */
@@ -2326,9 +2332,9 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .kcard.aprov { outline: 2px solid #ffdf99; outline-offset: -2px }
 .katr { color: #b3261e !important; font-weight: 500 }
 .col-ab { display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent; color: inherit; font: inherit; padding: 4px 6px; margin: -4px -6px; border-radius: 8px }
+.col-ab span { text-align: left }
 .col-ab:hover { background: rgba(127,127,127,.12) }
 .col-s { font-size: 12px; padding: 0 var(--e2) var(--e1) }
-.neg-et { margin-bottom: 12px }
 :root[data-tema="escuro"] .ksub { background: rgba(99,112,255,.14); color: #c9d6ff }
 :root[data-tema="escuro"] .kped { color: #ffdf99 }
 
@@ -2369,6 +2375,39 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
   .cfg-r, .cfg-r.cfg-sub, .cfg-r.cfg-st, .cfg-r.cfg-mot, .cfg-r.cfg-nt, .cfg-r.cfg-eq { grid-template-columns: 1fr 1fr; padding: 10px 0; border-bottom: 1px solid var(--m-outline-var) }
   .cfg-r > :first-child, .cfg-ap { grid-column: 1 / -1 }
   .cfg-r.cfg-sub > input:first-of-type { grid-column: 1 / -1 }
+}
+/* Fases: configuração, seção da ficha, chip da fase */
+.cfg-r.cfg-fase { grid-template-columns: 72px minmax(160px, 1.4fr) 80px minmax(140px, 1fr) 80px 70px 70px }
+.cfg-r.cfg-fe { grid-template-columns: 72px minmax(160px, 1fr) 100px minmax(260px, 2.4fr) 70px }
+.cfg-subs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center }
+.cfg-subs .chip { gap: 4px }
+.chip-x { border: 0; background: none; color: inherit; font-size: 16px; line-height: 1; padding: 0 2px; cursor: pointer }
+.cfg-fs-add input { height: 30px !important; width: 140px !important; border-radius: 8px; border: 1px dashed var(--m-outline); background: transparent; color: var(--m-on-surface); padding: 0 10px; font: inherit; font-size: 13px }
+.chip.fase-n { background: var(--m-sc-low); border-color: var(--m-outline-var); font-weight: 500 }
+.fs-lst { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column }
+.fs-i { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--m-outline-var) }
+.fs-i:last-child { border-bottom: 0 }
+.fs-it { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center }
+.fs-st { display: inline-flex; flex-wrap: wrap; gap: 6px }
+.fs-d { font-size: 13px }
+.fs-deps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; font-size: 13px }
+.fs-deps li { display: flex; gap: 6px; align-items: center }
+.fs-deps li.ok { color: #146c2e }
+.fs-deps li.no { color: var(--m-on-var) }
+:root[data-tema="escuro"] .fs-deps li.ok { color: #6dd58c }
+.drill-h { display: flex; align-items: flex-start; gap: 8px }
+.drill-v { margin: 2px 0 0 -8px; flex: none }
+.drill-h:has(.drill-v) .sub { margin-left: 0 }
+.drill-t { list-style: none; margin: 0 0 2px; padding: 0; display: flex; flex-wrap: wrap; font-size: 14px; color: var(--m-on-var) }
+.drill-t li + li::before { content: "›"; margin: 0 6px; color: var(--m-on-var) }
+.drill-t .linkbtn { font-size: 14px; padding: 0 }
+.board-fases .ksub > span:first-child { white-space: normal }
+.tl-topo .sd { overflow: hidden; text-overflow: ellipsis }
+.fsel { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--m-on-var) }
+.fsel select { height: 32px; border-radius: 8px; border: 1px solid var(--m-outline); background: transparent; color: var(--m-on-surface); padding: 0 8px; font: inherit; font-size: 14px }
+@media (max-width: 899px) {
+  .cfg-r.cfg-fase, .cfg-r.cfg-fe { grid-template-columns: 1fr 1fr; padding: 10px 0; border-bottom: 1px solid var(--m-outline-var) }
+  .cfg-r.cfg-fase > input:first-of-type, .cfg-r.cfg-fe > input:first-of-type, .cfg-subs { grid-column: 1 / -1 }
 }
 /* celular: quatro papéis não cabem por extenso na barra; fica a inicial (nome completo no title) */
 @media (max-width: 480px) {
@@ -2769,16 +2808,32 @@ function seed(){
     propostas:[{v:1,origem:'bkm',data:H(70),valor:7200000,forma:'permuta_com_torna',cond:'R$ 5 mi + 7% do VGV em permuta física.',status:'aceita'}],
     docs:['matricula','onus','iptu','vend','topo','minuta'].map(t=>({tipo:t,status:'validado',emitido:H(30),versoes:1})),
     neg:neg('contrato','em_ajuste',45,{status:'comprado',temp:5,ofRef:'o11',encerradoEm:H(20),relato:'<p>Compromisso assinado com a família Albuquerque em <b>permuta com torna</b>: R$ 5 mi em dinheiro e 7% do VGV em unidades.</p><ul><li>Escritura condicionada à aprovação do projeto em 240 dias</li><li>Corretor Marcos Lemos com 4% sobre a parte em dinheiro</li></ul>',pontos:'Visita conjunta logo na primeira semana; proposta com permuta já no primeiro contato; certidões pedidas antes da minuta.'},10)}));
+  /* processo numa fase depois de Novos Negócios (no banco: processos.fase); concluídas antes, a atual por último */
+  const proc=(fase,pref,etapa,sub,dias,status,extra)=>({id:uid(),fase,codigo:pref+'-'+String(Math.floor(Math.random()*900)+100).padStart(5,'0'),etapa,sub,status:status||'ativo',desde:H(dias),subDesde:H(Math.min(dias,6)),
+    encerradoEm:status==='concluido'?H(Math.max(dias-60,1)):null,trilha:[{em:H(dias)+'T09:00:00.000',user:null,ev:'abertura',paraEtapa:etapa,paraSub:sub,status:'ativo'}],...(extra||{})});
+  const fim=(fase,pref,etapa,sub,dias)=>proc(fase,pref,etapa,sub,dias,'concluido',{relato:'Concluída conforme o cronograma.'});
+  const comprado=(dias,of)=>neg('contrato','em_ajuste',dias+40,{status:'comprado',temp:5,ofRef:of,encerradoEm:H(dias),relato:'<p>Compra fechada em permuta com torna.</p>',pontos:'Proposta com permuta logo no primeiro contato.'},10);
+  T[T.length-1].procs=[proc('aprovacao','APR','prefeitura','protocolado',20,'ativo',{desde:H(8),subDesde:H(8)})];
+  // 6e — em obras: passou por todas as fases até Obras
+  T.push(base({codigo:'TER-000090',nome:'Gleba Av. Raimundo Pereira de Magalhães',prioridade:'alta',resp:'Moisés',origem:'corretor',dataIdent:H(820),logradouro:'Av. Raimundo Pereira de Magalhães',numero:'8.100',bairro:'Pirituba',zona:'norte',aDoc:9800,fonteArea:'documental',topografia:'plano',ocupacao:'vazio',
+    ofertas:[{id:'o12',cid:'c2',data:H(820),valor:12500000,forma:'permuta_com_torna',status:'ativa',obsPag:'',aceita:''}],corretores:[{cid:'c2',principal:true}],
+    neg:comprado(700,'o12'),procs:[fim('aprovacao','APR','alvaras','alvara_execucao',700),fim('incorporacao','INC','cartorio','exigencias',480),fim('caixa','CEF','contratacao','assinatura',400),
+      fim('lancamento','LAN','vendas','vendas_iniciais',330),proc('obras','OBR','execucao','estrutura',260,'ativo',{desde:H(150),subDesde:H(40)})]}));
+  // 6f — entregue: obra entregue, em assistência técnica
+  T.push(base({codigo:'TER-000085',nome:'Residencial Itaquera',resp:'Ana Prado',origem:'corretor',dataIdent:H(1500),logradouro:'Rua Gregório Ramalho',numero:'500',bairro:'Itaquera',zona:'leste',aDoc:7200,fonteArea:'documental',topografia:'plano',ocupacao:'vazio',
+    ofertas:[{id:'o13',cid:'c3',data:H(1500),valor:9100000,forma:'dinheiro',status:'ativa',obsPag:'',aceita:''}],corretores:[{cid:'c3',principal:true}],
+    neg:comprado(1400,'o13'),procs:[fim('aprovacao','APR','alvaras','alvara_execucao',1400),fim('incorporacao','INC','cartorio','exigencias',1150),fim('caixa','CEF','contratacao','assinatura',1060),
+      fim('lancamento','LAN','vendas','vendas_iniciais',980),fim('obras','OBR','entrega','entrega_chaves',900),proc('entregue','ENT','pos_entrega','assistencia_tecnica',90)]}));
   // 6d — stand by
   T.push(base({codigo:'TER-000121',nome:'Lote Rua Ipiranguinha',resp:'Rafael Souza',origem:'indicacao',dataIdent:H(50),logradouro:'Rua Ipiranguinha',numero:'210',bairro:'Ipiranga',zona:'sul',aCad:900,fonteArea:'cadastral',
     neg:neg('estudos','estudo_massa',28,{status:'stand_by',temp:2,retomar:H(-5),detalhe:'Proprietários em inventário; retomar depois da partilha.',encerradoEm:H(25)},28)}));
   // 7 — prospecção sem oferta
   T.push(base({codigo:'TER-000132',nome:'Lote vizinho ao TER-000123',resp:'Ana Prado',origem:'prospeccao',dataIdent:H(2),logradouro:'Rua Benedito Mendes',numero:'40',bairro:'Cidade Ademar',zona:'sul',eixo:'e1',insc:[{sql:'089.123.0052-1',area:610,valores:[]}],
     obs:'Abordar para compor a área com o terreno da esquina.',tarefas:[{id:uid(),titulo:'Localizar proprietário pelo SQL',desc:'',resp:'Ana Prado',prazo:H(-5),status:'pendente',prio:'media',resultado:''}]}));
-  T.forEach(t=>{if(t.neg)t.neg.trilha.forEach(x=>{x.user=x.user||t.resp});t.hist=[{em:t.dataIdent,user:t.resp,txt:'Terreno cadastrado'}];if(t.neg){t.hist.push({em:t.neg.desde,user:t.resp,txt:`Negociação em ${SN(t.neg.etapa)}`})}});
+  T.forEach(t=>{if(t.neg)t.neg.trilha.forEach(x=>{x.user=x.user||t.resp});(t.procs||[]).forEach(p=>p.trilha.forEach(x=>{x.user=x.user||t.resp}));t.hist=[{em:t.dataIdent,user:t.resp,txt:'Terreno cadastrado'}];if(t.neg){t.hist.push({em:t.neg.desde,user:t.resp,txt:`Negociação em ${SN(t.neg.etapa)}`})}});
   const COORD={'TER-000123':[-23.66812,-46.65131],'TER-000118':[-23.54480,-46.40660],'TER-000131':[-23.52630,-46.54400],'TER-000127':[-23.45700,-46.74000],
     'TER-000112':[-23.58500,-46.58100],'TER-000125':[-23.53800,-46.57000],'TER-000109':[-23.46300,-46.68700],
-    'TER-000104':[-23.61050,-46.47900],'TER-000098':[-23.71000,-46.77000],'TER-000121':[-23.59500,-46.60200]};
+    'TER-000104':[-23.61050,-46.47900],'TER-000098':[-23.71000,-46.77000],'TER-000090':[-23.48700,-46.71500],'TER-000085':[-23.54000,-46.45600],'TER-000121':[-23.59500,-46.60200]};
   const POLY={'TER-000123':[[-23.66794,-46.65152],[-23.66792,-46.65111],[-23.66830,-46.65108],[-23.66833,-46.65150]],
     'TER-000112':[[-23.58478,-46.58126],[-23.58476,-46.58072],[-23.58522,-46.58070],[-23.58525,-46.58124]],
     'TER-000118':[[-23.54420,-46.40720],[-23.54410,-46.40590],[-23.54535,-46.40580],[-23.54560,-46.40700],[-23.54500,-46.40740]],
@@ -2802,7 +2857,7 @@ function seed(){
 }
 
 /* ===================== estado ===================== */
-const KEY='bkm-terrenos-prototipo-v8';
+const KEY='bkm-terrenos-prototipo-v9';
 let S;try{const r=localStorage.getItem(KEY);S=r?JSON.parse(r):null}catch(e){S=null}
 if(!S||!S.terrenos)S=seed();
 S.terrenos.forEach(t=>(t.docs||[]).forEach(d=>{if(/^geosampa_/.test(d.tipo))d.tipo=d.tipo.replace('geosampa_','lote_')}));
@@ -3169,31 +3224,32 @@ function pgFicha(){
   const t=T(UI.id),c=completude(t),n=t.neg;
   const endereco=[t.logradouro&&(t.logradouro+(t.numero?', '+t.numero:'')),t.bairro,t.zona&&'Zona '+OPT.zona[t.zona],eixo(t.eixo)].filter(Boolean).join(' · ');
   const zt=zonasTxt(t),ad=areaAdotada(t);
-  const tabs=[['geral','Visão geral',''],['cadastro','Cadastro do imóvel',''],['comercial','Comercial',t.ofertas.length],['negociacao','Negociação',t.propostas.length+t.reunioes.length],['tarefas','Tarefas',abertas(t).length],['urbanismo','Urbanismo e infraestrutura',''],['documentos','Documentos e diligências',t.docs.length+t.dilig.filter(d=>d.sit!=='resolvida').length],['historico','Histórico','']];
-  const FN={geral:abaGeral,cadastro:abaCadastro,comercial:abaComercial,negociacao:abaNegociacao,tarefas:abaTarefas,urbanismo:abaUrbanismo,documentos:abaDocs,historico:abaHist};
+  const tabs=[['geral','Visão geral',''],['cadastro','Cadastro do imóvel',''],['comercial','Comercial',t.ofertas.length],['negociacao','Negociação',t.propostas.length+t.reunioes.length],['fases','Fases',fasesAbertas(t).length],['tarefas','Tarefas',abertas(t).length],['urbanismo','Urbanismo e infraestrutura',''],['documentos','Documentos e diligências',t.docs.length+t.dilig.filter(d=>d.sit!=='resolvida').length],['historico','Histórico','']];
+  const FN={geral:abaGeral,cadastro:abaCadastro,comercial:abaComercial,negociacao:abaNegociacao,fases:abaFases,tarefas:abaTarefas,urbanismo:abaUrbanismo,documentos:abaDocs,historico:abaHist};
   const blocos=tabs.map(([k,l,q])=>{const fe=blocoFechado(k);
     return `<section class="bl${k==='historico'?' bl-hist':''}" id="bl-${k}"><h2 class="bl-t"><button class="bl-h" data-a="bloco" data-t="${k}" aria-expanded="${!fe}" aria-controls="blc-${k}"><svg class="bl-seta" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span>${l}</span>${q!==''&&q!==0?`<span class="n">${q}</span>`:''}</button></h2>
       <div class="bl-c" id="blc-${k}" ${fe?'hidden':''}>${fe?'':FN[k](t)+`<div class="bl-fim"><button class="bl-rec" data-a="bloco" data-t="${k}" data-fim="1" aria-label="Recolher ${l}" title="Recolher ${l}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg><span>Recolher</span></button></div>`}</div></section>`}).join('');
-  return `${linhaEtapas(t)}<button class="back" data-a="nav" data-r="${UI.from}">${ic('back',20)}${UI.from==='negociacoes'?'Negociações':UI.from==='inicio'?'Início':'Terrenos'}</button>
-  <div class="dhead"><div style="min-width:0"><div class="eyebrow"><span class="num">${t.codigo}</span>${n?`<span>·</span><span class="num">${n.codigo}</span>`:''}<span>·</span><span>identificado em ${fd(t.dataIdent)}</span>${t.situacao==='arquivado'?'<span class="chip">Arquivado</span>':''}</div>
+  return `${linhaTopo(t)}<button class="back" data-a="nav" data-r="${UI.from}">${ic('back',20)}${UI.from==='negociacoes'?'Fases':UI.from==='inicio'?'Início':'Terrenos'}</button>
+  <div class="dhead"><div style="min-width:0"><div class="eyebrow"><span class="num">${t.codigo}</span>${n?`<span>·</span><span class="num">${n.codigo}</span>`:''}${fasesAbertas(t).filter(f=>f!==faseEnt()).map(f=>`<span>·</span><span class="num">${procAberto(t,f).codigo}</span>`).join('')}<span>·</span><span>identificado em ${fd(t.dataIdent)}</span>${t.situacao==='arquivado'?'<span class="chip">Arquivado</span>':''}</div>
     <h1>${esc(t.nome)}</h1><div class="muted" style="margin-top:4px">${esc(endereco)||'<span class="faint">Endereço não informado</span>'}</div>
-    <div class="dchips">${chipNeg(t)}${ad!=null?`<span class="chip num">${m2(ad)}</span>`:''}${zt?`<span class="chip">${esc(zt)}${caMax(t)!=null?' · CA '+num(caMax(t),2):''}</span>`:''}${t.prioridade?`<span class="chip ${t.prioridade==='estrategica'||t.prioridade==='alta'?'warn':''}">Prioridade ${OPT.prioridade[t.prioridade].toLowerCase()}</span>`:''}${atrasadas(t).length?`<span class="chip crit">${atrasadas(t).length} tarefa${atrasadas(t).length>1?'s':''} atrasada${atrasadas(t).length>1?'s':''}</span>`:''}</div></div>
+    <div class="dchips">${chipFase(t)}${ad!=null?`<span class="chip num">${m2(ad)}</span>`:''}${zt?`<span class="chip">${esc(zt)}${caMax(t)!=null?' · CA '+num(caMax(t),2):''}</span>`:''}${t.prioridade?`<span class="chip ${t.prioridade==='estrategica'||t.prioridade==='alta'?'warn':''}">Prioridade ${OPT.prioridade[t.prioridade].toLowerCase()}</span>`:''}${atrasadas(t).length?`<span class="chip crit">${atrasadas(t).length} tarefa${atrasadas(t).length>1?'s':''} atrasada${atrasadas(t).length>1?'s':''}</span>`:''}</div></div>
     <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-end"><div style="display:flex;align-items:center;gap:8px">${av(t.resp)}<div><div style="font-weight:500">${esc(t.resp)}</div><div class="faint" style="font-size:12px">Responsável</div></div></div>${n?tempPicker(t):''}</div></div>
   <div class="stack">
   <div class="complete"><span class="progress"><span class="bar"><span style="width:${c.pct}%"></span></span><b>Ficha ${c.pct}% completa</b></span>${c.faltam.length?`<span class="muted" style="font-size:13px">Falta:</span><span class="missing">${c.faltam.slice(0,6).map(f=>`<button data-a="ir" data-t="${f[2]}" data-s="${f[3]||''}">${f[0]}</button>`).join('')}${c.faltam.length>6?`<span class="faint" style="font-size:12px;align-self:center">+${c.faltam.length-6}</span>`:''}</span>`:''}</div>
-  <div class="adv-main">${painelNeg(t)}</div>
+  <div class="adv-main">${painelAvanco(t)}</div>
   </div>
   <div class="blocos">${blocos}</div>`;
 }
 function bateBusca(t,q){if(!q)return true;q=q.toLowerCase();const hay=[t.codigo,t.nome,t.logradouro,t.numero,t.bairro,OPT.zona[t.zona],eixo(t.eixo),t.resp,...t.mats.map(m=>m.num+' '+digits(m.num)),...t.insc.map(i=>i.sql+' '+digits(i.sql)),...t.ofertas.map(o=>corretor(o.cid)?.nome),...t.pessoas.map(p=>p.nome)].join(' ').toLowerCase();return q.split(/\s+/).every(w=>hay.includes(w))}
 const FILT={ativos:['Em negociação',t=>t.neg?.status==='ativo'],sem:['Sem negociação',t=>!t.neg&&t.situacao==='ativo'],standby:['Stand By',t=>t.neg?.status==='stand_by'],encerrados:['Comprados, perdidos e descartados',t=>['comprado','perdido','descartado'].includes(t.neg?.status)],todos:['Todos',()=>true]};
 function linhas(){
-  const l=S.terrenos.filter(FILT[UI.fT][1]).filter(t=>bateBusca(t,UI.q)).sort((a,b)=>(b.neg?.temp||0)-(a.neg?.temp||0)||b.codigo.localeCompare(a.codigo));
+  const l=S.terrenos.filter(FILT[UI.fT][1]).filter(t=>!UI.fFase||faseAtual(t)?.k===UI.fFase).filter(t=>bateBusca(t,UI.q)).sort((a,b)=>(b.neg?.temp||0)-(a.neg?.temp||0)||b.codigo.localeCompare(a.codigo));
   return tabela('terrenos',l,COLS_TERRENOS,{attr:attrAbrir('terrenos'),vazio:`Nenhum terreno${UI.q?` para “${esc(UI.q)}”`:''}.<br><button class="btn sm" style="margin-top:12px" data-a="novo">${ic('add',16)}Novo terreno</button>`});
 }
 function pgTerrenos(){
   return `<div class="page-h"><div><h1><span class="marca"></span>Terrenos</h1><div class="sub">Ordenados por temperatura da negociação.</div></div><button class="btn primary" data-a="novo">${ic('add',18)}Novo terreno</button></div>
-  <div class="split"><div class="fchips">${Object.entries(FILT).map(([k,[l,f]])=>`<button class="fchip" data-a="fT" data-v="${k}" aria-pressed="${UI.fT===k}">${UI.fT===k?ic('check',16):''}${l} <span class="n">${S.terrenos.filter(f).length}</span></button>`).join('')}</div></div>
+  <div class="split"><div class="fchips">${Object.entries(FILT).map(([k,[l,f]])=>`<button class="fchip" data-a="fT" data-v="${k}" aria-pressed="${UI.fT===k}">${UI.fT===k?ic('check',16):''}${l} <span class="n">${S.terrenos.filter(f).length}</span></button>`).join('')}</div>
+  <label class="fsel"><span>Fase</span><select data-ch="fFase" aria-label="Filtrar por fase"><option value="">Todas</option>${fasesL().filter(f=>f.ativo).map(f=>`<option value="${f.k}" ${UI.fFase===f.k?'selected':''}>${esc(f.nome)} (${S.terrenos.filter(t=>faseAtual(t)?.k===f.k).length})</option>`).join('')}</select></label></div>
   <section class="sec lista"><div id="rows">${linhas()}</div></section>`;
 }
 function pgInicio(){
@@ -3216,7 +3272,7 @@ function pgInicio(){
 }
 
 /* ===================== shell ===================== */
-const NAV=[['inicio','Início','casa'],['terrenos','Terrenos','terrenos'],['mapa','Mapa','mapa'],['negociacoes','Negociações','contrato'],['tarefas','Tarefas','checklist'],['dashboard','Dashboard','indicadores']];
+const NAV=[['inicio','Início','casa'],['terrenos','Terrenos','terrenos'],['mapa','Mapa','mapa'],['negociacoes','Fases','contrato'],['tarefas','Tarefas','checklist'],['dashboard','Dashboard','indicadores']];
 /* Configurações › Funil: só para administrador (no menu lateral; no celular, pelo sino) */
 const navSide=()=>ehAdmin(me())?[...NAV,['config','Configurações','config']]:NAV;
 function render(){
@@ -3238,7 +3294,7 @@ function go(route,x={}){Object.assign(UI,{route,edit:null,propForm:false,reuForm
 function renderModal(){
   const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.nv=null;UI.nvKmz=null;UI.ofPoly=null;UI.kmzNovo=false;UI.lotes=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;return}
   let h='';const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`;
-  h=funilModal(M,fechar);
+  h=fasesModal(M,fechar)||funilModal(M,fechar);
   if(M==='novo')h=UI.nv?nvDadosHtml(fechar):nvPasso1Html(fechar);
   if(M==='novo-sobre')h=nvSobreHtml(fechar);
   if(M==='lotes-poly')h=lotesPolyHtml(fechar);
@@ -3311,7 +3367,7 @@ document.addEventListener('click',e=>{
   if(!e.target.closest('.adv-mais'))document.querySelectorAll('.adv-mais.aberto').forEach(x=>{x.classList.remove('aberto');x.querySelector('.adv-mb')?.setAttribute('aria-expanded','false')});
   const a=e.target.closest('[data-a]');if(!a)return;const A=a.dataset.a;const t=UI.route==='terreno'?T(UI.id):null;
   if(A==='scrim'){if(e.target===a){UI.modal=null;renderModal()}return}
-  if(funilClick(A,a,t))return;
+  if(fasesClick(A,a,t)||funilClick(A,a,t))return;
   switch(A){
     case 'nav':go(a.dataset.r);break;
     case 'abrir':BLA={geral:true};blId=a.dataset.id;go('terreno',{id:a.dataset.id,tab:a.dataset.tab||'geral',from:a.dataset.from||(UI.route==='terreno'?UI.from:UI.route==='inicio'?'inicio':'terrenos')});if(a.dataset.tab&&a.dataset.tab!=='geral'){blocoAbre(a.dataset.tab);render();rolarBloco(a.dataset.tab)}break;
@@ -3364,7 +3420,9 @@ document.addEventListener('click',e=>{
     case 'fs-fechar':UI.fichaSheet=null;fichaSheet();break;
     case 'mp-foco':{const x=T(a.dataset.id);if(x.lat!=null)focar(x);else if(UI.role!=='Leitura'){UI.mpModo='marcar';UI.mpAlvo=x.id;mpRefresh()}else toast('Terreno sem localização.');break}
     case 'mp-sit':{const v=a.dataset.v,o=UI.mp.ocultas;UI.mp.ocultas=o.includes(v)?o.filter(x=>x!==v):[...o,v];mpRefresh();break}
-    case 'mp-limpar':UI.mp={q:'',cor:'',zona:'',ocultas:[]};render();break;
+    case 'mp-limpar':UI.mp={q:'',cor:'',zona:'',f:UI.mp.f,e:UI.mp.e,ocultas:[]};render();break;
+    case 'mp-desce':if(UI.mp.f)UI.mp.e=a.dataset.v;else UI.mp.f=a.dataset.v;UI.mp.ocultas=[];mpRefresh();mpEnquadrar();break;
+    case 'mp-nivel':UI.mp.f=a.dataset.v||'';UI.mp.e='';UI.mp.ocultas=[];mpRefresh();mpEnquadrar();break;
     case 'mp-base':setBase(a.dataset.v);break;
     case 'mp-lugares':G_lugares(UI.mpLugares===false);break;
     case 'lug-fechar':lugarFechar();break;
@@ -3401,9 +3459,10 @@ $('#file-in').addEventListener('change',e=>{const f=e.target.files?.[0],t=T(UI.i
   const unico=k!=='foto'&&k!=='planta';let d=unico?t.docs.find(x=>x.tipo===k):null;
   if(!d){d={tipo:k,status:'recebido',emitido:HOJE,versoes:0,nome:unico?null:f.name};t.docs.push(d)}d.versoes++;d.emitido=HOJE;d.status='recebido';log(t,`${TIPOS_DOC[k][0]}: versão ${d.versoes} enviada`);save();render();toast('Arquivo enviado. Falta validar.')});
 document.addEventListener('change',e=>{const el=e.target;
-  if(funilChange(el))return;
+  if(fasesChange(el)||funilChange(el))return;
   if(el.dataset.ch==='mp-cor'){UI.mp.cor=el.value;mpRefresh();return}
   if(el.dataset.ch==='mp-zona'){UI.mp.zona=el.value;mpRefresh();return}
+  if(el.dataset.ch==='fFase'){UI.fFase=el.value;if(el.value)UI.fT='todos';render();return}
   if(el.dataset.ch==='dash-sel'){const s=UI.dash.sel;UI.dash.sel=el.checked?Object.keys(DIMS).filter(k=>s.includes(k)||k===el.value):s.filter(k=>k!==el.value);render();return}
   if(el.dataset.ch==='tk-f'){UI.tk[el.dataset.k]=el.type==='checkbox'?el.checked:el.value;render();return}
   if(el.id==='kmz-in'){const f=el.files?.[0];if(!f||!UI.kmzNovo)return;UI.kmzNovo=false;lerKmz(f).then(nvKmzLido).catch(err=>toast(err.message,true));return}
@@ -3423,7 +3482,7 @@ document.addEventListener('input',e=>{const el=e.target;
   if(el.id==='pp-v'){const t=T(UI.id),v=lerNum(el.value),w=$('#pp-warn');w.innerHTML=t.neg.viab&&v>t.neg.viab.pmax?`<div class="banner warn">${ic('warn')}<div>${brl(v)} fica ${mi(v-t.neg.viab.pmax)} acima do preço máximo (${mi(t.neg.viab.pmax)}).</div></div>`:''}
 });
 document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Object.fromEntries(new FormData(f)),t=UI.alvo?T(UI.alvo):UI.route==='terreno'?T(UI.id):null;
-  if(funilSubmit(f.dataset.form,F,t,f))return;
+  if(fasesSubmit(f.dataset.form,F,t,f)||funilSubmit(f.dataset.form,F,t,f))return;
   switch(f.dataset.form){
     case 'sec':{const s=SECOES[f.dataset.s];s.campos.forEach(([k,,tipo])=>{if(tipo==='fixo'||!(k in F))return;let v=F[k].trim();if(['m2','m','dec'].includes(tipo))v=lerNum(v);else if(tipo==='sel'&&v==='')v=k==='precisao'?'nao_informada':['topografia','posicao','formato','ocupacao'].includes(k)?'nao_informado':k==='demolicao'?'nao_avaliada':null;else if(v==='')v=k==='nome'?t.nome:null;t[k]=v});
       if(t.aDemolir!=null&&t.aConst!=null&&t.aDemolir>t.aConst){toast('A área a demolir não pode passar da área construída.',true);return}
@@ -3505,7 +3564,7 @@ document.addEventListener('drop',e=>{const col=e.target.closest?.('.col[data-col
    e quadro de tarefas. Injetado dentro do mesmo escopo do protótipo.
    ===================================================================== */
 UI.sorts=UI.sorts||{};
-UI.mp=UI.mp||{q:'',cor:'',zona:'',ocultas:[]};
+UI.mp=UI.mp||{q:'',cor:'',zona:'',f:'',e:'',ocultas:[]};
 UI.dash=UI.dash||{f:{},sel:['situacao','zona','valor','mes']};
 UI.tk=UI.tk||{vista:'quadro',q:'',resp:'',ter:'',prio:'',atras:false,canc:false};
 
@@ -3521,6 +3580,19 @@ const sitNome=k=>STAGES.find(s=>s[0]===k)?.[1]||SIT[k][0];
 const sitMapa=t=>!t.neg?'sem_negociacao':t.neg.status==='ativo'?t.neg.etapa:t.neg.status;
 const sitChip=k=>`<span class="sitchip"><span class="sw" style="background:${SIT[k][1]}"></span>${esc(sitNome(k))}</span>`;
 const ativosBanco=()=>S.terrenos.filter(t=>t.situacao!=='arquivado');
+/* mapa em três níveis, como o kanban: fases › etapas de uma fase (UI.mp.f) › subetapas de uma etapa (UI.mp.e).
+   Cada nível tem a sua legenda (rótulo, cor, glifo, cor do glifo) e classifica o terreno; fora do nível = não aparece. */
+const COR_FASE=['#0b74d6','#863d8f','#c67355','#00838f','#c2477a','#7d8a3e','#1d2e5c','#5f6368'];
+const RAMPA=['#8fc8f7','#4aa3f0','#0b74d6','#0a4fa0','#1d2e5c'];
+const rampa=(i,n)=>{const j=n<=1?2:Math.round(i*(RAMPA.length-1)/(n-1));return [RAMPA[j],j===0?'#1d2e5c':'#fff']};
+function mpItens(){const m=UI.mp,sit=k=>({k,nome:SIT[k][0],cor:SIT[k][1],g:SIT[k][2],fg:SIT[k][3]});
+  if(!m.f)return [sit('sem_negociacao'),...fasesL().filter(f=>f.ativo).map((f,i)=>({k:f.k,nome:f.nome,cor:COR_FASE[i%COR_FASE.length],g:String(i+1),fg:'#fff',desce:etapasF(f.k).length>0})),sit('perdido'),sit('descartado')];
+  const L=m.e?(etapaF(m.f,m.e)?.subs||[]):etapasF(m.f);
+  return [...L.map((x,i)=>{const [cor,fg]=rampa(i,L.length);return {k:x.k,nome:x.nome,cor,g:String(i+1),fg,desce:!m.e&&x.subs?.length>0}}),sit('stand_by')]}
+function mpClasse(t){const m=UI.mp;
+  if(!m.f){const a=faseAtual(t);if(!a)return 'sem_negociacao';if(!a.aberta&&['perdido','descartado'].includes(a.p?.status))return a.p.status;return a.k}
+  const p=procDaFase(t,m.f);if(!p||(m.e&&p.etapa!==m.e))return null;return p.status==='stand_by'?'stand_by':m.e?p.sub:p.etapa}
+const mpInfo=k=>{const x=mpItens().find(i=>i.k===k);return x?[x.nome,x.cor,x.g,x.fg]:['Sem subetapa','#8a8d91','·','#fff']};
 
 /* ---------- geografia ---------- */
 const distKm=(a,b,c,d)=>{const r=x=>x*Math.PI/180,R=6371,dl=r(c-a),dg=r(d-b);const h=Math.sin(dl/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dg/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
@@ -3589,7 +3661,7 @@ const COLS_TERRENOS=[
   {k:'area',l:'Área',cls:'hm num',v:t=>{const a=areaAdotada(t);return a!=null?m2(a):'<span class="faint">—</span>'},s:t=>areaAdotada(t)},
   {k:'valor',l:'Valor pedido',cls:'num',v:t=>{const o=ofertaRef(t),a=areaAdotada(t);return o?.valor?`${mi(o.valor)}${a?`<div class="t2">${brl(o.valor/a)}/m²</div>`:''}`:'<span class="faint">—</span>'},s:t=>ofertaRef(t)?.valor??null},
   {k:'temp',l:'Temperatura',cls:'hm',v:t=>tempMini(t.neg?.temp),s:t=>t.neg?.temp??null},
-  {k:'etapa',l:'Etapa',v:t=>`<span class="c-etapa">${chipNeg(t)}</span>`,s:t=>Object.keys(SIT).indexOf(sitMapa(t))},
+  {k:'etapa',l:'Fase e etapa',v:t=>`<span class="c-etapa">${chipFase(t)}</span>`,s:t=>(fIdx(faseAtual(t)?.k)+1)*100+Object.keys(SIT).indexOf(sitMapa(t))},
   {k:'tarefa',l:'Próxima tarefa',cls:'hm',v:t=>{const pt=proxTarefa(t),at=atrasadas(t).length;return pt?`<div class="t2" style="color:var(--texto)">${esc(pt.titulo)}</div><div class="t2" style="${pt.prazo<HOJE?'color:var(--terracota);font-weight:600':''}">${fd(pt.prazo)}${at>1?` · ${at} atrasadas`:''}</div>`:'<span class="faint">—</span>'},s:t=>proxTarefa(t)?.prazo??null}];
 const attrAbrir=from=>t=>`data-a="abrir" data-id="${t.id}" data-from="${from}" tabindex="0"`;
 
@@ -3675,20 +3747,23 @@ function camada(k,el){
   let ok=false;ls.forEach(l=>{l.on('tileload',()=>{ok=true;el.classList.remove('sem-fundo')});l.on('tileerror',()=>{if(!ok)el.classList.add('sem-fundo')})});
   return L.layerGroup(ls);
 }
-function pinIcon(k,sel){const [,c,g,fg]=SIT[k];return L.divIcon({className:'pin'+(sel?' sel':''),html:`<span class="pin-b" style="background:${c}"><b style="color:${fg}">${g}</b></span>`,iconSize:[30,40],iconAnchor:[15,38],popupAnchor:[0,-34],tooltipAnchor:[0,-34]})}
+function pinIcon(k,sel){const [,c,g,fg]=Array.isArray(k)?k:SIT[k];return L.divIcon({className:'pin'+(sel?' sel':''),html:`<span class="pin-b" style="background:${c}"><b style="color:${fg}">${g}</b></span>`,iconSize:[30,40],iconAnchor:[15,38],popupAnchor:[0,-34],tooltipAnchor:[0,-34]})}
 const poiIcon=()=>L.divIcon({className:'poi',html:'<span class="poi-b"></span>',iconSize:[14,14],iconAnchor:[7,7],tooltipAnchor:[0,-8]});
 function mpVisiveis(){const m=UI.mp,q=m.q.trim().toLowerCase();
-  return ativosBanco().filter(t=>!m.ocultas.includes(sitMapa(t))&&(!m.zona||t.zona===m.zona)&&(!m.cor||t.corretores.some(x=>x.principal&&x.cid===m.cor))&&(!q||bateBusca(t,q)))}
+  return ativosBanco().filter(t=>{const k=mpClasse(t);return k!=null&&!m.ocultas.includes(k)}).filter(t=>(!m.zona||t.zona===m.zona)&&(!m.cor||t.corretores.some(x=>x.principal&&x.cid===m.cor))&&(!q||bateBusca(t,q)))}
 /* lista lateral do mapa: só o número do pino (etapa), o nome e a área; a lupa abre a ficha.
    Clicar no pino ou na poligonal seleciona o terreno aqui (não há balão no mapa). */
-function mpItem(t,cartao){const k=sitMapa(t),[nm,c,g,fg]=SIT[k],sel=UI.mpSel===t.id,ad=areaAdotada(t)||(t.poly?areaPoly(t.poly):null);
+function mpItem(t,cartao){const [nm,c,g,fg]=mpInfo(mpClasse(t)),sel=UI.mpSel===t.id,ad=areaAdotada(t)||(t.poly?areaPoly(t.poly):null);
   const acoes=sel&&t.lat!=null?`<div class="mp-it-a">${UI.role!=='Leitura'?`<button class="linkbtn" data-a="mp-desenhar" data-id="${t.id}">${t.poly?'Editar':'Desenhar'} poligonal</button>`:''}${GG?`<button class="linkbtn" data-a="mp-sv" data-id="${t.id}">Street View</button>`:''}</div>`:'';
   return `<div class="mp-it${sel?' sel':''}${cartao?' cartao':''}" data-a="mp-foco" data-id="${t.id}" tabindex="0" role="listitem" aria-current="${sel}">
     <span class="pin-mini" style="background:${c};color:${fg}" title="${esc(nm)}">${g}</span>
     <div class="mp-it-t"><div class="t1">${esc(t.nome)}</div><div class="t2">${ad?m2(ad):'Área não informada'} · ${esc(nm)}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div></div>
     <button class="iconbtn mp-lupa" data-a="fs-abrir" data-id="${t.id}" title="Ver ficha" aria-label="Ver ficha de ${esc(t.nome)}">${bi('busca',22)}</button>${cartao?`<button class="iconbtn mp-lupa mp-fx" data-a="mp-desel" title="Fechar" aria-label="Fechar">${ic('close',22)}</button>`:''}${acoes}</div>`}
-function mpLista(){const v=mpVisiveis(),sem=v.filter(t=>t.lat==null),ord=Object.keys(SIT);
-  const rows=v.slice().sort((a,b)=>ord.indexOf(sitMapa(a))-ord.indexOf(sitMapa(b))||a.nome.localeCompare(b.nome,'pt'));
+/* ao descer ou subir de nível, o mapa enquadra os terrenos que ficaram */
+function mpEnquadrar(){if(!MAPA)return;const pts=mpVisiveis().filter(t=>t.lat!=null).map(t=>[t.lat,t.lng]);if(!pts.length)return;
+  if(GG)gEnquadrar(pts.map(([a,b])=>gLL(a,b)),15);else MAPA.fitBounds(pts,{padding:[48,48],maxZoom:15,animate:false})}
+function mpLista(){const v=mpVisiveis(),sem=v.filter(t=>t.lat==null),ord=mpItens().map(i=>i.k);
+  const rows=v.slice().sort((a,b)=>ord.indexOf(mpClasse(a))-ord.indexOf(mpClasse(b))||a.nome.localeCompare(b.nome,'pt'));
   return `${entornoHtml()}<div class="mp-resumo"><span><b>${v.length}</b> terrenos</span><span><b>${num(v.reduce((s,t)=>s+(areaAdotada(t)||0),0))}</b> m²</span></div>
   ${rows.length?`<div class="mp-lst" role="list">${rows.map(t=>mpItem(t)).join('')}</div>`:'<div class="empty">Nenhum terreno com esses filtros.</div>'}
   ${sem.length?`<div class="hint" style="margin-top:8px">${sem.length} sem localização. Clique na linha para marcar no mapa.</div>`:''}`;
@@ -3712,9 +3787,10 @@ function mpSelecionar(id){UI.mpSel=id;mpMarcarPinos();if(UI.fichaSheet&&id&&id!=
   if(it&&getComputedStyle(lado).overflowY==='auto'){const a=lado.getBoundingClientRect(),r=it.getBoundingClientRect();
     if(r.top<a.top||r.bottom>a.bottom)lado.scrollBy({top:r.top-a.top-a.height/2+r.height/2,behavior:'smooth'})}}
 function mpCartao(){const c=$('#mp-cartao');if(!c)return;const t=UI.mpSel&&T(UI.mpSel);c.innerHTML=t&&!UI.mpModo&&mpVisiveis().includes(t)?mpItem(t,true):''}
-function mpLegenda(){const base=ativosBanco();
-  return Object.keys(SIT).map(k=>{const n=base.filter(t=>sitMapa(t)===k).length;const on=!UI.mp.ocultas.includes(k);
-    return `<button type="button" class="lg-i" data-a="mp-sit" data-v="${k}" aria-pressed="${on}"><span class="pin-mini" style="background:${SIT[k][1]};color:${SIT[k][3]}">${SIT[k][2]}</span>${sitNome(k)}<span class="n">${n}</span></button>`}).join('')
+function mpLegenda(){const base=ativosBanco(),m=UI.mp,cl=new Map(base.map(t=>[t.id,mpClasse(t)])),volta=m.e?faseN(m.f):'Fases';
+  const topo=m.f?`<div class="lg-h"><button type="button" class="iconbtn lg-v" data-a="mp-nivel" data-v="${m.e?esc(m.f):''}" title="Voltar para ${esc(volta)}" aria-label="Voltar para ${esc(volta)}">${ic('back',18)}</button><span><span class="faint">${m.e?esc(faseN(m.f))+' › ':'Fases › '}</span>${esc(m.e?etapaF(m.f,m.e)?.nome||m.e:faseN(m.f))}</span></div>`:'';
+  return topo+mpItens().map(x=>{const n=base.filter(t=>cl.get(t.id)===x.k).length,on=!m.ocultas.includes(x.k);
+    return `<div class="lg-r"><button type="button" class="lg-i" data-a="mp-sit" data-v="${x.k}" aria-pressed="${on}"><span class="pin-mini" style="background:${x.cor};color:${x.fg}">${x.g}</span>${esc(x.nome)}<span class="n">${n}</span></button>${x.desce?`<button type="button" class="iconbtn lg-d" data-a="mp-desce" data-v="${x.k}" title="Ver ${m.f?'subetapas':'etapas'} de ${esc(x.nome)}" aria-label="Ver ${m.f?'subetapas':'etapas'} de ${esc(x.nome)}">${ic('chev',16)}</button>`:''}</div>`}).join('')
     +`<hr class="lg-sep"><button type="button" class="lg-i" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}"><span class="lg-poi"><span class="poi-b"></span></span>Pontos de interesse<span class="n">${(S.pontos||[]).length}</span></button>`
     +`<button type="button" class="lg-i" data-a="mp-conc" aria-pressed="${UI.mpConc!==false}"><span class="lg-poi"><span class="conc-b"></span></span>Concorrência<span class="n">${(S.concorrentes||[]).length}</span></button>`;
 }
@@ -3758,8 +3834,8 @@ function modoBanner(){const m=UI.mpModo;if(!m)return '';
 function L_setBase(k){if(!MAPA)return;UI.mpBase=k;if(BASE)MAPA.removeLayer(BASE);BASE=camada(k,MAPA.getContainer().closest('.mapa-area')||MAPA.getContainer()).addTo(MAPA);BASE.eachLayer(l=>l.bringToBack());
   document.querySelectorAll('[data-a="mp-base"]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===k))}
 function L_desenhaPins(){if(!MAPA||!PINS)return;PINS.clearLayers();
-  mpVisiveis().filter(t=>t.lat!=null).forEach(t=>{const k=sitMapa(t);
-    if(t.poly&&!(UI.mpModo&&UI.mpAlvo===t.id)){const pg=L.polygon(t.poly,{color:SIT[k][1],weight:2,fillOpacity:.18,interactive:!UI.mpModo})
+  mpVisiveis().filter(t=>t.lat!=null).forEach(t=>{const k=mpInfo(mpClasse(t));
+    if(t.poly&&!(UI.mpModo&&UI.mpAlvo===t.id)){const pg=L.polygon(t.poly,{color:k[1],weight:2,fillOpacity:.18,interactive:!UI.mpModo})
       .on('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<700)return;clearTimeout(pg._tc);pg._tc=setTimeout(()=>{if(!UI.mpModo)mpSelecionar(t.id)},260)})
       .on('dblclick',e=>{L.DomEvent.stop(e);clearTimeout(pg._tc);editarPoligonal(t.id)});
       pg.on('add',()=>polyGestos(pg.getElement(),t.id));pg.addTo(PINS)}
@@ -4130,7 +4206,7 @@ function carregarGoogle(){
 }
 
 /* ---------- mapa principal ---------- */
-function gPinEl(k,sel){const d=document.createElement('div');d.className='pin g'+(sel?' sel':'');d.innerHTML=`<span class="pin-b" style="background:${SIT[k][1]}"><b style="color:${SIT[k][3]}">${SIT[k][2]}</b></span>`;return d}
+function gPinEl(k,sel){const v=Array.isArray(k)?k:SIT[k],d=document.createElement('div');d.className='pin g'+(sel?' sel':'');d.innerHTML=`<span class="pin-b" style="background:${v[1]}"><b style="color:${v[3]}">${v[2]}</b></span>`;return d}
 function gPoiEl(){const d=document.createElement('div');d.className='poi g';d.innerHTML='<span class="poi-b"></span>';return d}
 function G_setBase(k){UI.mpBase=k;if(MAPA&&MAPA.setMapTypeId)MAPA.setMapTypeId(TIPO_G[k]||'roadmap');document.querySelectorAll('[data-a="mp-base"]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===k))}
 function G_fecharPopup(){gInfo?.close()}
@@ -4138,11 +4214,11 @@ function G_mostrarPois(on){gSet(gPois,on?MAPA:null)}
 /* destaca o pino selecionado sem recriar os marcadores */
 function gPinsSel(){gPins.forEach(m=>{if(m._terreno&&m.content){m.content.classList.toggle('sel',UI.mpSel===m._terreno);m.zIndex=UI.mpSel===m._terreno?10:1}})}
 function G_desenhaPins(){if(!MAPA)return;gSet(gPins,null);gPins=[];const {AdvancedMarkerElement}=gLib.marker;
-  mpVisiveis().filter(t=>t.lat!=null).forEach(t=>{const k=sitMapa(t);
+  mpVisiveis().filter(t=>t.lat!=null).forEach(t=>{const k=mpInfo(mpClasse(t));
     const mk=new AdvancedMarkerElement({map:MAPA,position:gLL(t.lat,t.lng),content:gPinEl(k,UI.mpSel===t.id),title:t.nome,gmpClickable:!UI.mpModo,zIndex:UI.mpSel===t.id?10:1});
     mk.addEventListener('gmp-click',()=>{if(Date.now()-(UI.polyLongoEm||0)<900)return;mpSelecionar(t.id)});mk._terreno=t.id;gPins.push(mk);
     if(t.poly&&t.poly.length>=3&&mk.content){polyGestos(mk.content,t.id);mk.content.addEventListener('dblclick',e=>{e.stopPropagation();editarPoligonal(t.id)})}
-    if(t.poly&&!(UI.mpModo&&UI.mpAlvo===t.id)){const pg=new google.maps.Polygon({map:MAPA,paths:t.poly.map(p=>gLL(p[0],p[1])),strokeColor:SIT[k][1],strokeWeight:2,fillColor:SIT[k][1],fillOpacity:.18,clickable:!UI.mpModo});
+    if(t.poly&&!(UI.mpModo&&UI.mpAlvo===t.id)){const pg=new google.maps.Polygon({map:MAPA,paths:t.poly.map(p=>gLL(p[0],p[1])),strokeColor:k[1],strokeWeight:2,fillColor:k[1],fillOpacity:.18,clickable:!UI.mpModo});
       let tc=null;pg.addListener('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<700)return;clearTimeout(tc);tc=setTimeout(()=>{if(!UI.mpModo)mpSelecionar(t.id)},260)});
       pg.addListener('dblclick',e=>{e?.stop?.();clearTimeout(tc);editarPoligonal(t.id)});
       /* segurar o dedo sobre a poligonal entra em edição */
@@ -4596,7 +4672,7 @@ function painelFicha(t){
   if(!PN.aberto)return `<aside class="pn pn-min" aria-label="Logs e ações"><button class="pn-rb" data-a="pn-abrir" title="Expandir painel" aria-label="Expandir painel">${PN_IC.abrir}</button>
     <button class="pn-rb" data-a="pn-aba" data-v="logs" title="Logs" aria-label="Logs, ${nL} registros">${PN_IC.logs}<span class="pn-badge">${nL}</span></button>
     <button class="pn-rb" data-a="pn-aba" data-v="acoes" title="Ações" aria-label="Ações, ${nA} pendências">${PN_IC.acoes}<span class="pn-badge">${nA}</span></button></aside>`;
-  const adv=painelNeg(t);
+  const adv=painelAvanco(t);
   return `<aside class="pn" aria-label="Logs e ações">${adv?`<div class="pn-adv">${adv}</div>`:''}<div class="pn-h"><div class="seg" role="tablist" aria-label="Painel">${[['logs','Logs',nL],['acoes','Ações',nA]].map(([k,l,q])=>`<button role="tab" data-a="pn-aba" data-v="${k}" aria-pressed="${PN.aba===k}" aria-selected="${PN.aba===k}">${l} <span class="pn-q">${q}</span></button>`).join('')}</div>
     <button class="iconbtn" data-a="pn-fechar" title="Recolher painel" aria-label="Recolher painel">${PN_IC.fechar}</button></div>
     <div class="pn-b">${PN.aba==='logs'?pnLogs(t):pnAcoes(t)}</div></aside>`;
@@ -4697,6 +4773,271 @@ document.addEventListener('click',e=>{
 });
 
 /* =====================================================================
+   Fases acima das etapas (no banco: fases_modelo, fase_dependencias,
+   processos.fase, app._abrir_fases_liberadas, app.abrir_fase). Cada fase é
+   um processo do terreno; a de entrada (Novos Negócios) é a negociação de
+   sempre (t.neg); as outras ficam em t.procs. Injetado no mesmo escopo.
+   ===================================================================== */
+const etx=(L)=>L.map(([k,nome,sla,subs])=>({k,nome,sla,subs:subs.map(([k,nome])=>({k,nome}))}));
+const FASES_PADRAO=()=>[
+  {k:'novos_negocios',nome:'Novos Negócios',prefixo:'NEG',entrada:true,ativo:true,conc:'Comprado',descarta:true},
+  {k:'aprovacao',nome:'Aprovação de Projetos',prefixo:'APR',ativo:true,conc:'Aprovado',descarta:true,etapas:etx([
+    ['projeto','Projeto',60,[['estudo_implantacao','Estudo de Implantação'],['projeto_legal','Projeto Legal']]],
+    ['prefeitura','Análise na Prefeitura',120,[['protocolado','Protocolado'],['comunique_se','Comunique-se']]],
+    ['alvaras','Alvarás',30,[['alvara_aprovacao','Alvará de Aprovação'],['alvara_execucao','Alvará de Execução']]]])},
+  {k:'incorporacao',nome:'Registro de Incorporação',prefixo:'INC',ativo:true,conc:'Incorporação registrada',descarta:true,etapas:etx([
+    ['memorial','Memorial e Certidões',30,[['memorial_incorporacao','Memorial de Incorporação'],['certidoes','Certidões']]],
+    ['cartorio','Cartório',45,[['prenotado','Prenotado'],['exigencias','Exigências do Cartório']]]])},
+  {k:'caixa',nome:'Contratação Caixa',prefixo:'CEF',ativo:true,conc:'Contratado',descarta:true,etapas:etx([
+    ['analise','Análise Caixa',60,[['engenharia','Engenharia'],['juridico','Jurídico'],['risco','Risco']]],
+    ['contratacao','Contratação',30,[['demanda_minima','Demanda Mínima'],['assinatura','Assinatura']]]])},
+  {k:'lancamento',nome:'Lançamento',prefixo:'LAN',ativo:true,conc:'Lançado',descarta:true,etapas:etx([
+    ['preparacao','Preparação',60,[['produto','Produto e Tabela'],['stand','Stand e Decorado']]],
+    ['vendas','Vendas Iniciais',60,[['evento','Evento de Lançamento'],['vendas_iniciais','Vendas Iniciais']]]])},
+  {k:'obras',nome:'Obras',prefixo:'OBR',ativo:true,conc:'Obra entregue',descarta:true,etapas:etx([
+    ['inicio','Início',60,[['mobilizacao','Mobilização'],['fundacao','Fundação']]],
+    ['execucao','Execução',540,[['estrutura','Estrutura'],['vedacoes','Vedações e Instalações'],['acabamento','Acabamento']]],
+    ['entrega','Entrega',60,[['habite_se','Vistoria e Habite-se'],['entrega_chaves','Entrega das Chaves']]]])},
+  {k:'entregue',nome:'Entregue',prefixo:'ENT',ativo:true,conc:'Garantia encerrada',descarta:false,etapas:etx([
+    ['pos_entrega','Pós-entrega',null,[['assistencia_tecnica','Assistência Técnica'],['garantia','Em Garantia']]]])}];
+/* cada fase abre quando a anterior é concluída */
+const DEPS_PADRAO=()=>[['aprovacao','novos_negocios'],['incorporacao','aprovacao'],['caixa','incorporacao'],['lancamento','caixa'],['obras','lancamento'],['entregue','obras']]
+  .map(([fase,reqFase],i)=>({id:'fd'+i,fase,reqFase,tipo:'conclusao',req:null}));
+
+const fasesL=()=>cfg().fases||[];
+const faseCfg=k=>fasesL().find(f=>f.k===k);
+const faseN=k=>faseCfg(k)?.nome||k||'';
+const faseEnt=()=>(fasesL().find(f=>f.entrada)||{}).k;
+const fIdx=k=>fasesL().findIndex(f=>f.k===k);
+/* etapas da fase (a de entrada usa o funil de sempre) */
+const etapasF=k=>k===faseEnt()?cfg().etapas.map(e=>({k:e.k,nome:e.nome,sla:e.sla,subs:subsDe(e.k).map(s=>({k:s.k,nome:s.nome}))})):(faseCfg(k)?.etapas||[]);
+const etapaF=(f,e)=>etapasF(f).find(x=>x.k===e);
+const subF=(f,s)=>etapasF(f).flatMap(e=>e.subs).find(x=>x.k===s);
+const procsDe=t=>t.procs||(t.procs=[]);
+const aberto=p=>p&&['ativo','stand_by'].includes(p.status);
+const procAberto=(t,f)=>procsDe(t).find(p=>p.fase===f&&aberto(p));
+const ultimoProc=(t,f)=>procsDe(t).filter(p=>p.fase===f).slice(-1)[0];
+const teveFase=(t,f)=>f===faseEnt()?!!t.neg:procsDe(t).some(p=>p.fase===f);
+const concluiu=(t,f)=>f===faseEnt()?t.neg?.status==='comprado':procsDe(t).some(p=>p.fase===f&&p.status==='concluido');
+const passou=(t,f,tipo,k)=>{if(concluiu(t,f))return true;const L=f===faseEnt()?(t.neg?[t.neg]:[]):procsDe(t).filter(p=>p.fase===f);
+  return L.some(p=>(tipo==='etapa'?p.etapa===k:p.sub===k)||(p.trilha||[]).some(x=>(tipo==='etapa'?x.paraEtapa:x.paraSub)===k))};
+const depTxt=d=>d.tipo==='conclusao'?`${faseCfg(d.reqFase)?.conc||'Concluir'} em ${faseN(d.reqFase)}`:d.tipo==='etapa'?`${faseN(d.reqFase)}: chegar à etapa ${etapaF(d.reqFase,d.req)?.nome||d.req}`:`${faseN(d.reqFase)}: passar por ${subF(d.reqFase,d.req)?.nome||d.req}`;
+const depsDe=(t,f)=>(cfg().deps||[]).filter(d=>d.fase===f).map(d=>({ok:passou(t,d.reqFase,d.tipo,d.req)&&(d.tipo!=='conclusao'||concluiu(t,d.reqFase)),txt:depTxt(d)}));
+/* fase atual: a aberta mais adiante; sem nenhuma aberta, a última encerrada (no banco: v_terrenos.fase) */
+function faseAtual(t){const ent=faseEnt(),abertas=fasesL().filter(f=>f.entrada?aberto(t.neg):procAberto(t,f.k));
+  if(abertas.length){const f=abertas[abertas.length-1];return {k:f.k,p:f.entrada?t.neg:procAberto(t,f.k),aberta:true}}
+  const teve=fasesL().filter(f=>teveFase(t,f.k));if(!teve.length)return null;const f=teve[teve.length-1];
+  return {k:f.k,p:f.entrada?t.neg:ultimoProc(t,f.k),aberta:false}}
+const fasesAbertas=t=>fasesL().filter(f=>f.entrada?aberto(t.neg):procAberto(t,f.k)).map(f=>f.k);
+const naEntrada=t=>{const a=faseAtual(t);return !a||a.k===faseEnt()};
+
+/* abrir: primeira etapa com subetapa da fase (no banco: app._abrir_processo) */
+function abrirFase(t,f,just){const fc=faseCfg(f),e=etapasF(f).find(x=>x.subs.length);if(!fc||!e)return null;
+  const p={id:uid(),fase:f,codigo:fc.prefixo+'-'+String(Math.floor(Math.random()*900)+100).padStart(5,'0'),etapa:e.k,sub:e.subs[0].k,status:'ativo',desde:HOJE,subDesde:HOJE,
+    trilha:[{em:agora(),user:me(),ev:'abertura',paraEtapa:e.k,paraSub:e.subs[0].k,status:'ativo',forcado:just||null}]};
+  procsDe(t).push(p);log(t,`Fase aberta: ${fc.nome} (${p.codigo})${just?' · sem as dependências: '+just:''}`);
+  notificar(t.resp,'aprovacao_decidida',`${t.nome} entrou em ${fc.nome}`,t);return p}
+/* depois de cada passagem: abre a fase que o terreno nunca teve e cujas dependências se cumpriram */
+function abrirLiberadas(t){if(t.situacao==='arquivado')return [];const abertas=[];let mudou=true,n=0;
+  while(mudou&&n++<20){mudou=false;fasesL().filter(f=>!f.entrada&&f.ativo&&(cfg().deps||[]).some(d=>d.fase===f.k)&&!teveFase(t,f.k)).forEach(f=>{
+    if(depsDe(t,f.k).every(x=>x.ok)&&abrirFase(t,f.k)){abertas.push(f.nome);mudou=true}})}
+  if(abertas.length)setTimeout(()=>toast(`${t.nome} entrou em ${abertas.join(' e ')}.`),1200);
+  return abertas}
+
+/* passagens do processo de uma fase (etapa, subetapa, status) */
+function procIr(t,p,tipo,dest,d={}){const ev={em:agora(),user:me(),deEtapa:p.etapa,deSub:p.sub};const es=etapasF(p.fase),ix=k=>es.findIndex(e=>e.k===k);
+  if(tipo==='etapa'){const volta=ix(dest)<ix(p.etapa),e=etapaF(p.fase,dest);p.etapa=dest;p.sub=e.subs[0]?.k||null;p.desde=HOJE;p.subDesde=HOJE;ev.ev=volta?'retorno':'avanco';
+    log(t,`${faseN(p.fase)}: ${volta?'voltou':'avançou'} para ${e.nome}${volta&&d.motivo?' · '+d.motivo:''}`)}
+  else if(tipo==='subetapa'){p.sub=dest;p.subDesde=HOJE;ev.ev='subetapa';log(t,`${faseN(p.fase)}: ${subF(p.fase,dest)?.nome}`)}
+  else{p.status=dest;p.encerradoEm=HOJE;ev.ev={concluido:'conclusao',descartado:'descarte',stand_by:'stand_by'}[dest];Object.assign(p,{relato:d.relato||null,motivo:d.motivo||null,detalhe:d.detalhe||null,retomar:d.retomar||null});
+    log(t,`${faseN(p.fase)}: ${procStatusN(p)}${d.motivo?' · '+motivoN(dest,d.motivo):''}${dest==='stand_by'?' até '+fd(d.retomar):''}`)}
+  Object.assign(ev,{paraEtapa:p.etapa,paraSub:p.sub,status:p.status});(p.trilha=p.trilha||[]).push(ev);abrirLiberadas(t)}
+function procRetomar(t,p){const parado=p.encerradoEm?diff(p.encerradoEm,HOJE):0;p.status='ativo';p.desde=addD(p.desde,parado);p.subDesde=addD(p.subDesde||HOJE,parado);p.retomar=null;p.encerradoEm=null;
+  p.trilha.push({em:agora(),user:me(),ev:'retomada',paraEtapa:p.etapa,paraSub:p.sub,status:'ativo'});log(t,`${faseN(p.fase)}: retomada`)}
+const procStatusN=p=>p.status==='concluido'?faseCfg(p.fase)?.conc||'Concluído':STATUS_N[p.status]||p.status;
+const procAtrasada=p=>{const e=etapaF(p.fase,p.etapa);return !!(p.status==='ativo'&&e?.sla&&diff(p.desde,HOJE)>e.sla)};
+const ultimaEtapa=p=>{const es=etapasF(p.fase);return es[es.length-1]?.k===p.etapa};
+
+/* ---------- desenho ---------- */
+/* chip da situação: na entrada, o de sempre; depois, a fase com a etapa e a subetapa */
+function chipFase(t){const a=faseAtual(t);if(!a||a.k===faseEnt())return chipNeg(t);const p=a.p,e=etapaF(p.fase,p.etapa);
+  const st=p.status==='ativo'?`<span class="chip sub ${procAtrasada(p)?'warn':''}">${esc(e?.nome||p.etapa)}${p.sub?' · '+esc(subF(p.fase,p.sub)?.nome||''):''}</span>`:`<span class="chip ${p.status==='concluido'?'good':p.status==='stand_by'?'warn':''}"><span class="d"></span>${esc(procStatusN(p))}</span>`;
+  const mais=fasesAbertas(t).length>1?`<span class="chip" title="${esc(fasesAbertas(t).map(faseN).join(', '))}">+${fasesAbertas(t).length-1} fase</span>`:'';
+  return `<span class="chip fase-n">${esc(faseN(a.k))}</span>${st}${mais}`}
+/* linha do tempo do topo: na entrada, as etapas da negociação; depois, as fases */
+function linhaTopo(t){if(naEntrada(t))return linhaEtapas(t);const a=faseAtual(t),ia=fIdx(a.k);
+  return `<nav class="tl-topo" aria-label="Fases do terreno"><ol class="stepper">${fasesL().filter(f=>f.ativo||teveFase(t,f.k)).map((f,i)=>{const p=f.entrada?t.neg:ultimoProc(t,f.k),fim=concluiu(t,f.k),cur=f.k===a.k&&!fim,st=fim?'done':cur||aberto(p)?'cur':'fut';
+    /* atual: a etapa; concluída: a data da conclusão; futuras: só o nome */
+    const sd=!p?'':cur||aberto(p)?(f.entrada?SN(p.etapa):etapaF(f.k,p.etapa)?.nome||''):fim?fd(p.encerradoEm):'';
+    return `<li class="step ${st}" ${cur?'aria-current="step"':''}><span class="dot">${st==='done'?ic('check',14):i+1}</span><span class="sl-w"><span class="sl" title="${esc(f.nome)}">${esc(f.nome)}</span>${sd?`<span class="sd" title="${esc(sd)}">${esc(sd)}</span>`:''}</span></li>`}).join('')}</ol></nav>`}
+/* quadro de avanço do processo de uma fase (a de entrada usa painelNeg) */
+function painelProc(t,p){const ro=UI.role==='Leitura',fc=faseCfg(p.fase),es=etapasF(p.fase),e=etapaF(p.fase,p.etapa),ix=es.findIndex(x=>x.k===p.etapa),prox=es[ix+1];
+  if(p.status==='stand_by')return `<section class="sec sec-adv"><div class="banner warn" style="justify-content:space-between;flex-wrap:wrap"><span style="display:flex;gap:12px">${ic('pause')}<span><b>${esc(fc.nome)} em Stand By · ${esc(e?.nome||'')} · revisitar em ${fd(p.retomar)}</b>${p.detalhe?`<br><span>${esc(p.detalhe)}</span>`:''}</span></span>${ro?'':`<button class="btn sm" data-a="p-retomar" data-p="${p.id}">Retomar</button>`}</div></section>`;
+  if(p.status!=='ativo')return '';
+  const subSel=`<label class="adv-sub"><span>${esc(fc.nome)} · ${esc(e?.nome||'')}</span><select data-ch="psub" data-p="${p.id}" ${ro?'disabled':''} aria-label="Subetapa">${(e?.subs||[]).map(s=>`<option value="${s.k}" ${s.k===p.sub?'selected':''}>${esc(s.nome)}</option>`).join('')}</select><span class="faint">${diff(p.subDesde||p.desde,HOJE)} d${e?.sla?` · etapa ${diff(p.desde,HOJE)} de ${e.sla} d`:''}</span>${procAtrasada(p)?'<span class="chip warn">acima do SLA</span>':''}</label>`;
+  const menu=`<div class="adv-mais"><button class="btn adv-mb" data-a="adv-mais" aria-haspopup="menu" aria-expanded="false" aria-label="Mais ações" title="Stand By${fc.descarta?' ou Descartado':''}"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" d="M12 5.5h.01M12 12h.01M12 18.5h.01"/></svg></button><div class="adv-menu" role="menu"><button role="menuitem" data-a="p-suspender" data-p="${p.id}">${ic('pause',18)}Colocar em Stand By</button>${fc.descarta?`<button role="menuitem" class="danger" data-a="p-descartar" data-p="${p.id}">${ic('close',18)}Descartar</button>`:''}</div></div>`;
+  return `<section class="sec sec-adv"><div class="adv adv-c">${subSel}<div class="adv-l1"><span class="adv-t">${prox?'Próxima: '+esc(prox.nome):'Próxima: concluir como '+esc(fc.conc)}</span></div>
+    ${ro?'':`<div class="adv-l2"><button class="btn primary" data-a="p-ir" data-p="${p.id}">${ic(prox?'fwd':'check',18)}<span>${prox?'Avançar':'Concluir como '+esc(fc.conc)}</span></button>${menu}</div>`}</div></section>`}
+/* quadro de avanço da ficha: o da fase atual, e o de cada outra fase aberta ao mesmo tempo */
+function painelAvanco(t){const ab=fasesAbertas(t);if(!ab.length||ab.length===1&&ab[0]===faseEnt())return painelNeg(t);
+  return ab.slice().reverse().map(f=>f===faseEnt()?painelNeg(t):painelProc(t,procAberto(t,f))).join('')}
+/* seção Fases da ficha: cada fase com a situação, o processo e o que falta para abrir */
+function abaFases(t){const ent=faseEnt(),ro=UI.role==='Leitura';
+  return `<section class="sec"><div class="sec-h"><h2>Fases do terreno</h2><span class="faint" style="font-size:13px">Cada fase abre quando as dependências dela se cumprem</span></div><div class="sec-b"><ul class="fs-lst">${fasesL().filter(f=>f.ativo||teveFase(t,f.k)).map(f=>{
+    const p=f.entrada?t.neg:ultimoProc(t,f.k),deps=f.entrada?[]:depsDe(t,f.k),falta=deps.filter(x=>!x.ok);
+    const st=!p?`<span class="chip">${f.entrada?'Sem negociação':'Não aberta'}</span>`:f.entrada?chipNeg(t):p.status==='ativo'?`<span class="chip fase">${esc(etapaF(f.k,p.etapa)?.nome||'')}</span><span class="chip sub">${esc(subF(f.k,p.sub)?.nome||'')}</span>`:`<span class="chip ${p.status==='concluido'?'good':p.status==='stand_by'?'warn':''}"><span class="d"></span>${esc(procStatusN(p))}</span>`;
+    /* abrir à mão: a próxima fase que falta, fase sem dependência, ou reabrir a descartada */
+    const proxima=fasesL().find(x=>x.ativo&&!x.entrada&&!teveFase(t,x.k))?.k===f.k;
+    const pode=!f.entrada&&!ro&&(p?p.status==='descartado':f.ativo&&(proxima||!deps.length));
+    return `<li class="fs-i ${p&&aberto(p)?'aberta':''}"><div class="fs-it"><b>${esc(f.nome)}</b>${p?`<span class="num faint">${esc(p.codigo)}</span>`:''}<span class="fs-st">${st}</span></div>
+      ${p?`<div class="faint fs-d">${fd(p.trilha?.[0]?.em?.slice(0,10)||p.desde)}${p.encerradoEm&&!aberto(p)?' → '+fd(p.encerradoEm):''}${p.relato&&!f.entrada?' · '+esc(textoDe(p.relato)):''}</div>`:''}
+      ${!p&&deps.length?`<ul class="fs-deps">${deps.map(x=>`<li class="${x.ok?'ok':'no'}">${ic(x.ok?'check':'close',14)}${esc(x.txt)}</li>`).join('')}</ul>`:''}
+      ${!p&&!f.entrada&&!deps.length?'<div class="faint fs-d">Sem dependência: abre à mão.</div>':''}
+      ${pode?`<button class="btn sm ${p?'text':''}" data-a="f-abrir" data-v="${f.k}">${ic('add',16)}${p?'Reabrir':'Abrir'} ${esc(f.nome)}${falta.length?' antes da hora':''}</button>`:''}</li>`}).join('')}</ul></div></section>`}
+
+/* ---------- kanban em três níveis: fase › etapa › subetapa ----------
+   UI.negFase vazio = quadro das fases; com fase = etapas dela; com UI.negEtapa = subetapas.
+   O título de cada coluna desce um nível; a seta e a trilha no topo voltam. */
+const procDaFase=(t,f)=>f===faseEnt()?(aberto(t.neg)?t.neg:null):procAberto(t,f);
+function negTopo(titulo,sub){const f=UI.negFase,e=UI.negEtapa,it=[{l:'Fases',v:''}];
+  if(f)it.push({l:faseN(f),v:f});if(f&&e)it.push({l:etapaF(f,e)?.nome||e,v:f+'|'+e});const volta=it[it.length-2];
+  return `<div class="page-h"><div class="drill-h">${volta?`<button class="iconbtn drill-v" data-a="neg-nivel" data-v="${esc(volta.v)}" title="Voltar para ${esc(volta.l)}" aria-label="Voltar para ${esc(volta.l)}">${ic('back',22)}</button>`:''}<div>
+    ${volta?`<ol class="drill-t" aria-label="Nível do quadro">${it.slice(0,-1).map(x=>`<li><button class="linkbtn" data-a="neg-nivel" data-v="${esc(x.v)}">${esc(x.l)}</button></li>`).join('')}</ol>`:''}
+    <h1>${volta?'':'<span class="marca"></span>'}${esc(titulo)}</h1><div class="sub">${sub}</div></div></div></div>`}
+/* título de coluna que desce um nível */
+const colDesce=(a,v,l,dica)=>`<button class="col-ab" data-a="${a}" data-v="${esc(v)}" title="${esc(dica)}"><span>${esc(l)}</span>${ic('chev',16)}</button>`;
+function kcardFase(t,f,p){const e=etapaF(f,p.etapa),s=p.sub&&subF(f,p.sub),sb=p.status==='stand_by',outras=fasesAbertas(t).filter(x=>x!==f);
+  return `<button class="kcard" data-a="abrir" data-id="${t.id}" data-from="negociacoes"><div class="kr"><span class="num faint">${t.codigo}</span>${f===faseEnt()?tempMini(p.temp):`<span class="num faint">${esc(p.codigo||'')}</span>`}</div><div class="kt">${esc(t.nome)}</div>
+  <div class="ksub"><span>${esc(e?.nome||'')}${s?' · '+esc(s.nome):''}</span>${sb?'<span class="faint">Stand By</span>':''}</div>
+  <div class="ks">${esc(t.bairro||'')}${outras.length?' · também em '+esc(outras.map(faseN).join(', ')):''}</div>
+  <div class="kr">${av(t.resp,'sm')}<span class="faint">${sb?'revisitar '+fd(p.retomar):diff(p.desde,HOJE)+' d na etapa'}</span></div></button>`}
+function pgFasesBoard(){const F=fasesL().filter(f=>f.ativo);
+  return `${negTopo('Fases','Cada coluna é uma fase. Clique no nome da fase para ver as etapas dela; ali, no nome da etapa, as subetapas.')}
+  <div class="board board-fases" id="board">${F.map(f=>{const L=S.terrenos.map(t=>[t,procDaFase(t,f.k)]).filter(([,p])=>p);
+  return `<section class="col" data-fase="${f.k}" aria-label="${esc(f.nome)}"><div class="col-h">${colDesce('neg-fase',f.k,f.nome,'Ver etapas de '+f.nome)}<span class="n">${L.length}</span></div>${L.map(([t,p])=>kcardFase(t,f.k,p)).join('')||'<div class="col-empty">Nenhum</div>'}</section>`}).join('')}</div>`}
+function kcardProc(t,p){return `<button class="kcard" data-a="abrir" data-id="${t.id}" data-from="negociacoes" ${UI.role!=='Leitura'?'draggable="true"':''}><div class="kr"><span class="num faint">${esc(p.codigo)}</span><span class="num faint">${t.codigo}</span></div><div class="kt">${esc(t.nome)}</div>
+  ${p.sub?`<div class="ksub"><span>${esc(subF(p.fase,p.sub)?.nome||'')}</span><span class="faint">${diff(p.subDesde||p.desde,HOJE)} d</span></div>`:''}
+  <div class="ks">${esc(t.bairro||'')}${p.status==='stand_by'?' · parou em '+esc(etapaF(p.fase,p.etapa)?.nome||''):''}${fasesAbertas(t).length>1?' · também em '+esc(fasesAbertas(t).filter(f=>f!==p.fase).map(faseN).join(', ')):''}</div>
+  <div class="kr">${av(t.resp,'sm')}<span class="faint ${procAtrasada(p)?'katr':''}">${p.status==='stand_by'?'revisitar '+fd(p.retomar):diff(p.desde,HOJE)+' d na etapa'}</span></div></button>`}
+function pgFaseBoard(f){const fc=faseCfg(f),es=etapasF(f),L=S.terrenos.map(t=>[t,procAberto(t,f)]).filter(([,p])=>p),e=UI.negEtapa&&etapaF(f,UI.negEtapa);
+  const cols=e?e.subs.map(s=>({k:'fe:sub:'+s.k,l:s.nome,f:([,p])=>p.status==='ativo'&&p.etapa===e.k&&p.sub===s.k}))
+    :[...es.map(x=>({k:'fe:'+x.k,l:x.nome,sla:x.sla,abre:x.k,f:([,p])=>p.status==='ativo'&&p.etapa===x.k})),{k:'fe:stand_by',l:'Stand By',cls:'enc',f:([,p])=>p.status==='stand_by'}];
+  return `${negTopo(e?e.nome:fc.nome,e?`Subetapas de ${esc(e.nome)}, em ${esc(fc.nome)}. Arraste o card para mudar a subetapa.`:`Arraste os cards entre as colunas para mudar a etapa. Clique no nome da etapa para ver as subetapas. ${esc(fc.conc)} sai do quadro e abre a fase seguinte, se as dependências dela se cumprirem.`)}
+  <div class="board ${e?'board-sub':''}" id="board">${cols.map(c=>{const ts=L.filter(c.f);
+  return `<section class="col ${c.cls||''}" data-col="${c.k}" aria-label="${esc(c.l)}"><div class="col-h">${c.abre?colDesce('neg-etapa',c.abre,c.l,'Ver subetapas de '+c.l):`<span>${esc(c.l)}</span>`}<span class="n">${ts.length}</span></div>${c.sla?`<div class="col-s faint">SLA ${c.sla} d</div>`:''}${ts.map(([t,p])=>kcardProc(t,p)).join('')||'<div class="col-empty">Nenhuma</div>'}</section>`}).join('')}</div>`}
+function soltarProc(id,col){const t=T(id),f=UI.negFase,p=t&&procAberto(t,f);if(!p||UI.role==='Leitura')return;
+  if(col==='stand_by'){if(p.status==='ativo'){UI.alvo=id;UI.alvoProc=p.id;UI.modal='p-suspender';renderModal()}return}
+  if(col.startsWith('sub:')){const k=col.slice(4);if(p.status!=='ativo'||p.etapa!==UI.negEtapa||p.sub===k)return;procIr(t,p,'subetapa',k);save();render();toast(`${t.nome}: ${subF(f,k)?.nome}.`);return}
+  if(p.status==='stand_by'){procRetomar(t,p);if(p.etapa===col){save();render();toast('Retomada.');return}}
+  if(p.etapa===col){save();render();return}
+  const es=etapasF(f),ix=k=>es.findIndex(e=>e.k===k);
+  if(ix(col)<ix(p.etapa)){save();render();UI.alvo=id;UI.alvoProc=p.id;UI.alvoEtapa=col;UI.modal='p-retornar';renderModal();return}
+  procIr(t,p,'etapa',col);save();render();toast(`${t.nome}: ${etapaF(f,col).nome}.`)}
+
+/* ---------- Configurações › Fases ---------- */
+const slug=(nome,usados)=>{let k=nome.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')||'x';while(usados.includes(k))k+='_';return k};
+const faseUsada=k=>S.terrenos.some(t=>k===faseEnt()?!!t.neg:procsDe(t).some(p=>p.fase===k));
+const etapaUsada=(f,e)=>S.terrenos.some(t=>procsDe(t).some(p=>p.fase===f&&(p.etapa===e||(p.trilha||[]).some(x=>x.paraEtapa===e||x.deEtapa===e))));
+/* dependência: sem ciclo e sem dependência na fase de entrada (no banco: adicionar_dependencia) */
+function validaDep(f,rf){if(f===rf)return 'Uma fase não depende dela mesma.';if(faseCfg(f)?.entrada)return `${faseN(f)} abre pela oferta, sem dependência.`;
+  const dep=(x,vis=new Set())=>{if(vis.has(x))return false;vis.add(x);return (cfg().deps||[]).filter(d=>d.fase===x).some(d=>d.reqFase===f||dep(d.reqFase,vis))};
+  if(rf===f||dep(rf))return 'Isso cria um ciclo entre as fases.';return null}
+function cfgFasesHtml(){const C=cfg(),F=fasesL(),ent=faseEnt();
+  const opReq=F.map(f=>`<optgroup label="${esc(f.nome)}"><option value="${f.k}|conclusao|">${esc(f.conc)} (concluir a fase)</option>${etapasF(f.k).map(e=>`<option value="${f.k}|etapa|${e.k}">Chegar à etapa ${esc(e.nome)}</option>${e.subs.map(s=>`<option value="${f.k}|subetapa|${s.k}">Passar por ${esc(s.nome)}</option>`).join('')}`).join('')}</optgroup>`).join('');
+  return `<section class="sec"><div class="sec-h"><h2>Fases</h2><span class="faint" style="font-size:13px">Acima das etapas; cada fase é um processo do terreno</span></div><div class="sec-b"><div class="cfg-t">
+    <div class="cfg-r cfg-hd cfg-fase"><span></span><span>Fase</span><span>Prefixo</span><span>Nome do concluído</span><span>Descartar</span><span>Ativa</span><span></span></div>
+    ${F.map((f,i)=>`<div class="cfg-r cfg-fase ${f.ativo?'':'inativa'}"><span class="cfg-ord"><button class="iconbtn sm" data-a="cfg-fase-ord" data-i="${i}" data-v="-1" ${i?'':'disabled'} aria-label="Subir">↑</button><button class="iconbtn sm" data-a="cfg-fase-ord" data-i="${i}" data-v="1" ${i<F.length-1?'':'disabled'} aria-label="Descer">↓</button></span>
+      <input data-ch="cfg" data-p="fases.${i}.nome" value="${esc(f.nome)}" aria-label="Nome da fase"><input data-ch="cfg-prefixo" data-i="${i}" value="${esc(f.prefixo)}" maxlength="5" aria-label="Prefixo de ${esc(f.nome)}">
+      <input data-ch="cfg" data-p="fases.${i}.conc" value="${esc(f.conc)}" aria-label="Nome do concluído em ${esc(f.nome)}">
+      <label class="chk"><input type="checkbox" data-ch="cfg" data-p="fases.${i}.descarta" ${f.descarta?'checked':''} aria-label="Permite descartar"></label>
+      <label class="chk"><input type="checkbox" data-ch="cfg-fase-ativa" data-i="${i}" ${f.ativo?'checked':''} ${f.entrada?'disabled':''} aria-label="Ativa">${f.entrada?'<span class="faint" style="font-size:12px">entrada</span>':''}</label>
+      <span>${f.entrada||faseUsada(f.k)?'':`<button class="linkbtn danger" data-a="cfg-fase-del" data-i="${i}">Apagar</button>`}</span></div>`).join('')}</div>
+    <form class="inline-form" data-form="cfg-fase"><div class="field grow"><label for="nf-n">Nova fase</label><input id="nf-n" name="nome" required placeholder="Ex.: Regularização"></div><div class="field" style="flex:0 1 110px"><label for="nf-p">Prefixo</label><input id="nf-p" name="prefixo" required maxlength="5" placeholder="REG"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form>
+    <div class="hint">${esc(faseN(ent))} é a fase de entrada: a oferta abre a negociação nela. O prefixo vai no código do processo (${esc(faseCfg(ent)?.prefixo||'')}-00012). Fase já usada não se apaga; desative.</div></div></section>
+  <section class="sec"><div class="sec-h"><h2>Dependências</h2></div><div class="sec-b"><p class="muted" style="margin-top:0">A fase abre sozinha quando todas as dependências dela se cumprem no terreno. Fase sem dependência abre à mão, na ficha. Gestor e diretor podem abrir antes da hora, com justificativa.</p>
+    <ul class="cfg-pre">${(C.deps||[]).map(d=>`<li><span><b>${esc(faseN(d.fase))}</b> abre quando: ${esc(depTxt(d))}</span><button class="linkbtn danger" data-a="cfg-dep-del" data-v="${d.id}">Remover</button></li>`).join('')||'<li class="faint">Nenhuma dependência. Toda fase abre à mão.</li>'}</ul>
+    <form class="inline-form" data-form="cfg-dep"><div class="field grow"><label for="dp-f">Fase</label><select id="dp-f" name="fase" required>${F.filter(f=>!f.entrada).map(f=>`<option value="${f.k}">${esc(f.nome)}</option>`).join('')}</select></div><div class="field grow"><label for="dp-r">Abre quando</label><select id="dp-r" name="req" required>${opReq}</select></div><button class="btn sm">${ic('add',16)}Adicionar</button></form></div></section>
+  ${F.filter(f=>!f.entrada).map(f=>{const i=fIdx(f.k);return `<section class="sec"><div class="sec-h"><h2>Etapas · ${esc(f.nome)}</h2></div><div class="sec-b"><div class="cfg-t">
+    <div class="cfg-r cfg-hd cfg-fe"><span></span><span>Etapa</span><span>SLA (dias)</span><span>Subetapas</span><span></span></div>
+    ${f.etapas.map((e,j)=>`<div class="cfg-r cfg-fe"><span class="cfg-ord"><button class="iconbtn sm" data-a="cfg-fe-ord" data-f="${i}" data-i="${j}" data-v="-1" ${j?'':'disabled'} aria-label="Subir">↑</button><button class="iconbtn sm" data-a="cfg-fe-ord" data-f="${i}" data-i="${j}" data-v="1" ${j<f.etapas.length-1?'':'disabled'} aria-label="Descer">↓</button></span>
+      <input data-ch="cfg" data-p="fases.${i}.etapas.${j}.nome" value="${esc(e.nome)}" aria-label="Nome da etapa"><input type="number" min="0" data-ch="cfg" data-p="fases.${i}.etapas.${j}.sla" value="${e.sla??''}" aria-label="SLA de ${esc(e.nome)}">
+      <span class="cfg-subs">${e.subs.map((s,m)=>`<span class="chip">${esc(s.nome)}${e.subs.length>1&&!S.terrenos.some(t=>procsDe(t).some(p=>p.fase===f.k&&p.sub===s.k))?`<button class="chip-x" data-a="cfg-fs-del" data-f="${i}" data-i="${j}" data-m="${m}" aria-label="Tirar ${esc(s.nome)}">×</button>`:''}</span>`).join('')}
+        <form class="cfg-fs-add" data-form="cfg-fs" data-f="${i}" data-i="${j}"><input name="nome" required placeholder="+ subetapa" aria-label="Nova subetapa em ${esc(e.nome)}"></form></span>
+      <span>${etapaUsada(f.k,e.k)||f.etapas.length<2?'':`<button class="linkbtn danger" data-a="cfg-fe-del" data-f="${i}" data-i="${j}">Apagar</button>`}</span></div>`).join('')||'<div class="faint" style="padding:12px 0">Sem etapas: a fase não abre até ter uma.</div>'}</div>
+    <form class="inline-form" data-form="cfg-fe" data-f="${i}"><div class="field grow"><label for="fe-${f.k}">Nova etapa</label><input id="fe-${f.k}" name="nome" required></div><div class="field" style="flex:0 1 120px"><label for="fs-${f.k}">SLA (dias)</label><input id="fs-${f.k}" name="sla" type="number" min="0"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form>
+    <div class="hint">Etapa nova nasce com a subetapa "Em andamento". Etapa já usada não se apaga.</div></div></section>`}).join('')}`}
+
+/* ---------- eventos (chamados antes dos do funil) ---------- */
+function fasesClick(A,a,t){const P=()=>t&&procsDe(t).find(p=>p.id===a.dataset.p);
+  switch(A){
+    case 'neg-fase':UI.negFase=a.dataset.v;UI.negEtapa=null;render();return true;
+    case 'neg-nivel':{const [f,e]=(a.dataset.v||'').split('|');UI.negFase=f||null;UI.negEtapa=e||null;render();return true}
+    case 'f-abrir':{const f=a.dataset.v,falta=depsDe(t,f).filter(x=>!x.ok);
+      if(!falta.length){abrirFase(t,f);abrirLiberadas(t);save();render();toast(`${faseN(f)} aberta.`);return true}
+      UI.acao={fase:f,pend:falta.map(x=>x.txt)};UI.modal=nivelDe(me())>=2?'f-forcar':'f-bloq';renderModal();return true}
+    case 'p-ir':{const p=P();if(!p)return true;const es=etapasF(p.fase),ix=es.findIndex(e=>e.k===p.etapa);
+      if(es[ix+1]){procIr(t,p,'etapa',es[ix+1].k);save();render();toast(`${t.nome}: ${es[ix+1].nome}.`)}else{UI.alvoProc=p.id;UI.modal='p-concluir';renderModal()}return true}
+    case 'p-suspender':UI.alvoProc=a.dataset.p;UI.modal='p-suspender';renderModal();return true;
+    case 'p-descartar':UI.alvoProc=a.dataset.p;UI.modal='p-descartar';renderModal();return true;
+    case 'p-retomar':{const p=P();if(p){procRetomar(t,p);save();render();toast('Retomada. O tempo parado não conta no prazo.')}return true}
+    case 'cfg-fase-ord':{const F=fasesL(),i=+a.dataset.i,j=i+Number(a.dataset.v);if(!F[j])return true;[F[i],F[j]]=[F[j],F[i]];save();render();return true}
+    case 'cfg-fase-del':{const F=fasesL(),f=F[+a.dataset.i];if(faseUsada(f.k)){toast('Fase já usada: desative em vez de apagar.',true);return true}
+      F.splice(+a.dataset.i,1);cfg().deps=(cfg().deps||[]).filter(d=>d.fase!==f.k&&d.reqFase!==f.k);save();render();toast(`${f.nome} apagada.`);return true}
+    case 'cfg-dep-del':cfg().deps=(cfg().deps||[]).filter(d=>d.id!==a.dataset.v);save();render();toast('Dependência removida.');return true;
+    case 'cfg-fe-ord':{const L=fasesL()[+a.dataset.f].etapas,i=+a.dataset.i,j=i+Number(a.dataset.v);if(!L[j])return true;[L[i],L[j]]=[L[j],L[i]];save();render();return true}
+    case 'cfg-fe-del':{const f=fasesL()[+a.dataset.f],e=f.etapas[+a.dataset.i];
+      if(etapaUsada(f.k,e.k)){toast('Etapa já usada: não pode ser apagada.',true);return true}
+      if((cfg().deps||[]).some(d=>d.reqFase===f.k&&(d.req===e.k||e.subs.some(s=>s.k===d.req)))){toast('Outra fase depende desta etapa: remova a dependência antes.',true);return true}
+      f.etapas.splice(+a.dataset.i,1);save();render();toast(`${e.nome} apagada.`);return true}
+    case 'cfg-fs-del':{const e=fasesL()[+a.dataset.f].etapas[+a.dataset.i];e.subs.splice(+a.dataset.m,1);save();render();return true}
+  }
+  return false}
+function fasesChange(el){
+  if(el.dataset.ch==='psub'){const t=T(UI.id),p=t&&procsDe(t).find(x=>x.id===el.dataset.p);if(p&&el.value!==p.sub){procIr(t,p,'subetapa',el.value);save();render()}return true}
+  if(el.dataset.ch==='cfg-prefixo'){const F=fasesL(),i=+el.dataset.i,v=el.value.trim().toUpperCase();
+    if(!/^[A-Z]{2,5}$/.test(v))toast('Prefixo: de 2 a 5 letras.',true);else if(F.some((f,j)=>j!==i&&f.prefixo===v))toast(`O prefixo ${v} já é de outra fase.`,true);else{F[i].prefixo=v;save();toast('Prefixo salvo.')}render();return true}
+  if(el.dataset.ch==='cfg-fase-ativa'){const f=fasesL()[+el.dataset.i];
+    if(!el.checked&&S.terrenos.some(t=>procAberto(t,f.k))){toast('Há terrenos nesta fase: encerre os processos antes de desativar.',true);render();return true}
+    f.ativo=el.checked;save();render();return true}
+  return false}
+function fasesSubmit(form,F,t,f){const C=cfg();
+  switch(form){
+    case 'cfg-fase':{const p=F.prefixo.trim().toUpperCase();if(!/^[A-Z]{2,5}$/.test(p)){toast('Prefixo: de 2 a 5 letras.',true);return true}
+      if(fasesL().some(x=>x.prefixo===p)){toast(`O prefixo ${p} já é de outra fase.`,true);return true}
+      const nome=F.nome.trim(),k=slug(nome,fasesL().map(x=>x.k));
+      fasesL().push({k,nome,prefixo:p,ativo:true,conc:'Concluído',descarta:true,etapas:[{k:'andamento',nome:'Em andamento',sla:null,subs:[{k:'andamento',nome:'Em andamento'}]}]});
+      save();render();toast(`${nome} criada. Defina as etapas e as dependências dela.`);return true}
+    case 'cfg-dep':{const [rf,tipo,req]=F.req.split('|'),e=validaDep(F.fase,rf);if(e){toast(e,true);return true}
+      if((C.deps||[]).some(d=>d.fase===F.fase&&d.reqFase===rf&&d.tipo===tipo&&(d.req||'')===req)){toast('Essa dependência já existe.',true);return true}
+      (C.deps=C.deps||[]).push({id:uid(),fase:F.fase,reqFase:rf,tipo,req:req||null});
+      const n=S.terrenos.filter(x=>abrirLiberadas(x).length).length;save();render();toast(`Dependência adicionada.${n?` ${n} terreno${n>1?'s entraram':' entrou'} na fase.`:''}`);return true}
+    case 'cfg-fe':{const fs=fasesL()[+f.dataset.f],nome=F.nome.trim(),k=slug(nome,[...fs.etapas.map(e=>e.k),...fs.etapas.flatMap(e=>e.subs.map(s=>s.k))]);
+      fs.etapas.push({k,nome,sla:lerNum(F.sla),subs:[{k,nome:'Em andamento'}]});save();render();toast(`${nome} adicionada em ${fs.nome}.`);return true}
+    case 'cfg-fs':{const fs=fasesL()[+f.dataset.f],e=fs.etapas[+f.dataset.i],nome=F.nome.trim();
+      if(e.subs.some(s=>s.nome.toLowerCase()===nome.toLowerCase())){toast('Já existe uma subetapa com esse nome.',true);return true}
+      e.subs.push({k:slug(nome,fs.etapas.flatMap(x=>[x.k,...x.subs.map(s=>s.k)])),nome});save();render();return true}
+    case 'f-forcar':{const a=UI.acao;if(!F.j.trim()){toast('Justifique a abertura antes da hora.',true);return true}abrirFase(t,a.fase,F.j.trim());abrirLiberadas(t);UI.modal=null;UI.acao=null;save();render();toast(`${faseN(a.fase)} aberta.`);return true}
+    case 'p-concluir':{const p=procsDe(t).find(x=>x.id===UI.alvoProc);if(!F.relato.trim()){toast('Escreva o relato da conclusão.',true);return true}
+      UI.modal=null;procIr(t,p,'status','concluido',{relato:F.relato.trim()});save();render();toast(`${faseN(p.fase)}: ${faseCfg(p.fase).conc}.`);return true}
+    case 'p-suspender':{const p=procsDe(t).find(x=>x.id===UI.alvoProc);UI.modal=null;procIr(t,p,'status','stand_by',{retomar:F.retomar,detalhe:F.detalhe.trim()});save();render();toast('Em Stand By.');return true}
+    case 'p-descartar':{const p=procsDe(t).find(x=>x.id===UI.alvoProc),m=(C.motivos.descartado||[]).find(x=>x.k===F.motivo);
+      if(m?.texto&&!F.detalhe.trim()){toast('Esse motivo pede uma explicação no texto.',true);return true}
+      UI.modal=null;procIr(t,p,'status','descartado',{motivo:F.motivo,detalhe:F.detalhe.trim()});save();render();toast(`${faseN(p.fase)}: descartada.`);return true}
+    case 'p-retornar':{const p=procsDe(t).find(x=>x.id===UI.alvoProc);UI.modal=null;procIr(t,p,'etapa',UI.alvoEtapa,{motivo:F.motivo});save();render();toast(`Voltou para ${etapaF(p.fase,p.etapa).nome}.`);return true}
+  }
+  return false}
+function fasesModal(M,fechar){const t=UI.alvo?T(UI.alvo):T(UI.id),p=t&&procsDe(t).find(x=>x.id===UI.alvoProc);
+  const df=(id,l)=>`<div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="${id}">${l}</button></div>`;
+  if(M==='f-bloq'){const a=UI.acao||{};return `<div class="dh"><div><h2>${esc(faseN(a.fase))} ainda não abre</h2><p class="muted" style="margin:6px 0 0">Gestor e diretor podem abrir antes da hora, com justificativa.</p></div>${fechar}</div><ul class="adv-lista adv-modal">${(a.pend||[]).map(x=>`<li><span class="no">${ic('close',16)}</span><span>${esc(x)}</span></li>`).join('')}</ul><div class="df"><button class="btn primary" data-a="close">Entendi</button></div>`}
+  if(M==='f-forcar'){const a=UI.acao||{};return `<div class="dh"><div><h2>Abrir ${esc(faseN(a.fase))} antes da hora?</h2><ul class="pend">${(a.pend||[]).map(x=>`<li>${ic('close',16)}${esc(x)}</li>`).join('')}</ul></div>${fechar}</div><form data-form="f-forcar" id="f-ff"><div class="field"><label for="ff-j">Justificativa (vai para o histórico)</label><textarea id="ff-j" name="j" required></textarea></div></form>${df('f-ff','Abrir fase')}`}
+  if(!p)return '';const fc=faseCfg(p.fase);
+  if(M==='p-concluir')return `<div class="dh"><div><h2>Concluir como ${esc(fc.conc)}</h2><div class="muted" style="margin-top:4px">${esc(t.nome)} · ${esc(fc.nome)}</div></div>${fechar}</div><form data-form="p-concluir" id="f-pc"><div class="field"><label for="pc-r">Relato</label><textarea id="pc-r" name="relato" required placeholder="O que foi concluído, datas e documentos"></textarea></div></form>${df('f-pc','Concluir')}`;
+  if(M==='p-suspender')return `<div class="dh"><h2>${esc(fc.nome)} em Stand By</h2>${fechar}</div><form data-form="p-suspender" id="f-ps"><div class="fields"><div class="field"><label for="ps-d">Retomar em</label><input id="ps-d" name="retomar" type="date" min="${addD(HOJE,1)}" value="${addD(HOJE,30)}" required></div><div class="field full"><label for="ps-t">Justificativa</label><textarea id="ps-t" name="detalhe" required></textarea></div></div></form>${df('f-ps','Colocar em Stand By')}`;
+  if(M==='p-descartar')return `<div class="dh"><div><h2>Descartar ${esc(fc.nome)}</h2><div class="muted" style="margin-top:4px">${esc(t.nome)}</div></div>${fechar}</div><form data-form="p-descartar" id="f-pd"><div class="fields"><div class="field full"><label for="pd-m">Motivo</label><select id="pd-m" name="motivo" required><option value="">Escolha</option>${cfg().motivos.descartado.filter(m=>m.ativo).map(m=>`<option value="${m.k}">${esc(m.nome)}</option>`).join('')}</select></div><div class="field full"><label for="pd-t">Detalhe</label><textarea id="pd-t" name="detalhe" placeholder="Obrigatório quando o motivo é Outros"></textarea></div></div></form>${df('f-pd','Descartar')}`;
+  if(M==='p-retornar')return `<div class="dh"><div><h2>Voltar para ${esc(etapaF(p.fase,UI.alvoEtapa)?.nome||'')}?</h2><div class="muted" style="margin-top:4px">${esc(t.nome)} está em ${esc(etapaF(p.fase,p.etapa)?.nome||'')}. Volta na subetapa inicial.</div></div>${fechar}</div><form data-form="p-retornar" id="f-pr"><div class="field"><label for="pr-m">Motivo (vai para o histórico)</label><textarea id="pr-m" name="motivo" required></textarea></div></form>${df('f-pr','Voltar etapa')}`;
+  return ''}
+
+/* =====================================================================
    Funil da negociação: etapas, subetapas, status, pré-requisitos,
    aprovações por hierarquia, notificações e Configurações › Funil.
    Espelha as RPCs do banco (app._passagem, app.decidir_aprovacao,
@@ -4721,7 +5062,7 @@ const destinoCfg=(tipo,k)=>tipo==='etapa'?etapaCfg(k):tipo==='subetapa'?subCfg(k
 const destinoNome=(tipo,k)=>tipo==='etapa'?SN(k):tipo==='subetapa'?subN(k):STATUS_N[k]||k;
 function syncCfg(){STAGES.splice(0,STAGES.length,...cfg().etapas.map(e=>[e.k,e.nome]))}
 /* dados carregados ou restaurados: garante configuração, equipe e avisos dos pedidos de exemplo */
-function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];syncCfg();
+function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.cfg.fases)S.cfg.fases=FASES_PADRAO();if(!S.cfg.deps)S.cfg.deps=DEPS_PADRAO();if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];syncCfg();
   if(!S.pedidosAvisados){S.terrenos.forEach(t=>{if(t.neg?.pedido)avisarAprovadores(t)});S.pedidosAvisados=true}}
 
 /* ---------- regras da passagem ---------- */
@@ -4772,7 +5113,7 @@ function executar(t,tipo,dest,d){const n=t.neg,ev={em:agora(),user:me(),deEtapa:
     if(dest==='perdido'||dest==='descartado')Object.assign(n,{motivo:d.motivo,detalhe:d.detalhe});
     if(dest==='stand_by')Object.assign(n,{retomar:d.retomar,detalhe:d.detalhe});
     log(t,`Status: ${STATUS_N[dest]}${d.motivo?' · '+motivoN(dest,d.motivo):''}${dest==='stand_by'?' até '+fd(d.retomar):''}${d.forcado?' · sem requisitos: '+d.forcado:''}`)}
-  Object.assign(ev,{paraEtapa:n.etapa,paraSub:n.sub,status:n.status});n.trilha.push(ev)}
+  Object.assign(ev,{paraEtapa:n.etapa,paraSub:n.sub,status:n.status});n.trilha.push(ev);if(tipo==='status')abrirLiberadas(t)}
 function decidir(t,aprovar,coment){const n=t.neg,p=n.pedido,eu=me();if(!p)return null;
   if(!naVez(p).some(r=>podeDecidir(r,eu)))return {erro:`Este pedido aguarda ${quemFalta(p)}.`};
   if(!aprovar){p.niveis.forEach(r=>{if(r.status==='pendente')r.status='cancelado'});n.pedido=null;
@@ -4882,16 +5223,15 @@ function kcardNeg(t,modo){const n=t.neg,o=ofertaRef(t),lp=lastProp(t),pr=proxReu
   <div class="kr"><span>${lp?'Prop. '+mi(lp.valor):'Pedido '+(o?.valor?mi(o.valor):'—')}</span>${atrasadas(t).length?`<span class="flag crit" title="Tarefas atrasadas">${ic('clock',14)}${atrasadas(t).length}</span>`:''}${acimaMax(t)?`<span class="flag warn">${ic('money',14)}</span>`:''}</div>${pr?`<div class="kr"><span class="faint">Reunião ${fd(pr.data)} · ${pr.hora}</span></div>`:''}
   ${n.pedido?`<div class="kped">${ic('clock',14)}Aguardando ${esc(quemFalta(n.pedido))}</div>`:''}
   <div class="kr">${av(t.resp,'sm')}<span class="faint ${!sb&&etapaAtrasada(n)?'katr':''}">${sb?'revisitar '+fd(n.retomar):modo==='sub'?diasSub(n)+' d na subetapa':diff(n.desde,HOJE)+' d na etapa'}</span></div></button>`}
-function pgNeg(){const e=UI.negEtapa&&etapaCfg(UI.negEtapa)?UI.negEtapa:null,ativos=S.terrenos.filter(t=>t.neg?.status==='ativo');
-  const seg=`<div class="fchips neg-et" role="group" aria-label="Etapa"><button class="fchip" data-a="neg-etapa" data-v="" aria-pressed="${!e}">${!e?ic('check',16):''}Todas as etapas</button>${STAGES.map(([k,l])=>`<button class="fchip" data-a="neg-etapa" data-v="${k}" aria-pressed="${e===k}">${e===k?ic('check',16):''}${esc(l)} <span class="n">${ativos.filter(t=>t.neg.etapa===k).length}</span></button>`).join('')}</div>`;
+function pgNeg(){if(!UI.negFase||!faseCfg(UI.negFase))return pgFasesBoard();if(UI.negFase!==faseEnt())return pgFaseBoard(UI.negFase);const e=UI.negEtapa&&etapaCfg(UI.negEtapa)?UI.negEtapa:null,ativos=S.terrenos.filter(t=>t.neg?.status==='ativo');
   let cols;
   if(!e)cols=[...STAGES.map(([k,l])=>({k,l,f:t=>t.neg?.status==='ativo'&&t.neg.etapa===k,abre:k,sla:etapaCfg(k)?.sla})),{k:'stand_by',l:'Stand By',f:t=>t.neg?.status==='stand_by',cls:'enc'}];
   else{const subs=subsDe(e);cols=subs.map(s=>({k:'sub:'+s.k,l:s.nome,f:t=>t.neg?.status==='ativo'&&t.neg.etapa===e&&t.neg.sub===s.k,prazo:s.prazo}));
     const orf=ativos.filter(t=>t.neg.etapa===e&&!subs.some(s=>s.k===t.neg.sub));if(orf.length)cols.unshift({k:'sub:',l:'Sem subetapa ativa',f:t=>orf.includes(t),cls:'enc'})}
-  return `<div class="page-h"><div><h1><span class="marca"></span>Negociações</h1><div class="sub">${e?`Subetapas de ${esc(SN(e))}. Arraste o card para mudar a subetapa.`:'Arraste os cards entre as colunas para mudar a etapa. Abra uma etapa para ver as subetapas. Comprados, perdidos e descartados saem do quadro.'}</div></div></div>
-  ${seg}<div class="board ${e?'board-sub':''}" id="board">${cols.map(c=>{const ts=S.terrenos.filter(c.f);
-  return `<section class="col ${c.cls||''}" data-col="${c.k}" aria-label="${esc(c.l)}"><div class="col-h">${c.abre?`<button class="col-ab" data-a="neg-etapa" data-v="${c.abre}" title="Ver subetapas de ${esc(c.l)}"><span>${esc(c.l)}</span>${ic('chev',16)}</button>`:`<span>${esc(c.l)}</span>`}<span class="n">${ts.length}</span></div>${c.sla||c.prazo?`<div class="col-s faint">${c.sla?'SLA '+c.sla+' d':'Prazo '+c.prazo+' d'}</div>`:''}${ts.map(t=>kcardNeg(t,e?'sub':'')).join('')||'<div class="col-empty">Nenhuma</div>'}</section>`}).join('')}</div>`}
-function soltar(id,col){const t=T(id);if(!t||!t.neg||UI.role==='Leitura')return;const n=t.neg;
+  return `${negTopo(e?SN(e):faseN(faseEnt()),e?`Subetapas de ${esc(SN(e))}, em ${esc(faseN(faseEnt()))}. Arraste o card para mudar a subetapa.`:'Arraste os cards entre as colunas para mudar a etapa. Clique no nome da etapa para ver as subetapas. Comprados, perdidos e descartados saem do quadro.')}
+  <div class="board ${e?'board-sub':''}" id="board">${cols.map(c=>{const ts=S.terrenos.filter(c.f);
+  return `<section class="col ${c.cls||''}" data-col="${c.k}" aria-label="${esc(c.l)}"><div class="col-h">${c.abre?colDesce('neg-etapa',c.abre,c.l,'Ver subetapas de '+c.l):`<span>${esc(c.l)}</span>`}<span class="n">${ts.length}</span></div>${c.sla||c.prazo?`<div class="col-s faint">${c.sla?'SLA '+c.sla+' d':'Prazo '+c.prazo+' d'}</div>`:''}${ts.map(t=>kcardNeg(t,e?'sub':'')).join('')||'<div class="col-empty">Nenhuma</div>'}</section>`}).join('')}</div>`}
+function soltar(id,col){if(col.startsWith('fe:')){soltarProc(id,col.slice(3));return}const t=T(id);if(!t||!t.neg||UI.role==='Leitura')return;const n=t.neg;
   if(col==='stand_by'){if(n.status==='ativo'){UI.alvo=id;UI.modal='suspender';renderModal()}return}
   if(col.startsWith('sub:')){const k=col.slice(4);if(!k||n.status!=='ativo'||n.sub===k)return;tentar(t,'subetapa',k);return}
   if(n.status==='stand_by'){retomar(t);if(n.etapa===col){save();render();toast('Negociação retomada.');return}}
@@ -4915,10 +5255,11 @@ const apCells=(p,c)=>`<label class="chk"><input type="checkbox" data-ch="cfg" da
 const usada=k=>S.terrenos.some(t=>t.neg&&(t.neg.sub===k||(t.neg.trilha||[]).some(x=>x.paraSub===k||x.deSub===k)));
 function pgConfig(){
   if(!ehAdmin(me()))return `<div class="page-h"><div><h1><span class="marca"></span>Configurações</h1></div></div><section class="sec"><div class="sec-b"><div class="empty">Só administradores alteram a configuração do funil. Teste como Diretor (Moisés é administrador).</div></div></section>`;
-  const C=cfg(),aba=UI.cfgAba||'funil';
-  const abas=[['funil','Etapas e subetapas'],['prereq','Pré-requisitos'],['status','Status e motivos'],['checklist','Checklist'],['notif','Notificações'],['equipe','Equipe']];
+  const C=cfg(),aba=UI.cfgAba||'fases';
+  const abas=[['fases','Fases'],['funil','Etapas de '+faseN(faseEnt())],['prereq','Pré-requisitos'],['status','Status e motivos'],['checklist','Checklist'],['notif','Notificações'],['equipe','Equipe']];
   let corpo='';
-  if(aba==='funil')corpo=`<section class="sec"><div class="sec-h"><h2>Etapas</h2><span class="faint" style="font-size:13px">Criar ou apagar etapa continua por migration</span></div><div class="sec-b"><div class="cfg-t">
+  if(aba==='fases')corpo=cfgFasesHtml();
+  if(aba==='funil')corpo=`<section class="sec"><div class="sec-h"><h2>Etapas de ${esc(faseN(faseEnt()))}</h2><span class="faint" style="font-size:13px">No protótipo, etapa nova só nas outras fases (aba Fases)</span></div><div class="sec-b"><div class="cfg-t">
     <div class="cfg-r cfg-hd"><span>Etapa</span><span>SLA (dias)</span><span>Aprovação para entrar</span></div>
     ${C.etapas.map((e,i)=>`<div class="cfg-r"><input data-ch="cfg" data-p="etapas.${i}.nome" value="${esc(e.nome)}" aria-label="Nome da etapa"><input type="number" min="0" data-ch="cfg" data-p="etapas.${i}.sla" value="${e.sla??''}" aria-label="SLA de ${esc(e.nome)}"><span class="cfg-ap">${apCells('etapas.'+i,e)}</span></div>`).join('')}</div></div></section>
     ${C.etapas.map(e=>{const ss=C.subs.map((s,i)=>[s,i]).filter(([s])=>s.etapa===e.k).sort((a,b)=>a[0].ordem-b[0].ordem);
@@ -4986,7 +5327,7 @@ function funilClick(A,a,t){
     case 'cancelar-pedido':cancelarPedido(t);save();render();toast('Pedido cancelado.');return true;
     case 'rt-bold':case 'rt-ital':case 'rt-list':document.execCommand(A==='rt-bold'?'bold':A==='rt-ital'?'italic':'insertUnorderedList');$('#cp-rel')?.focus();return true;
     case 'cfg-aba':UI.cfgAba=a.dataset.v;render();return true;
-    case 'cfg-padrao':if(!confirm('Restaurar a configuração padrão do funil? As subetapas criadas aqui somem.'))return true;S.cfg=CFG_PADRAO();syncCfg();save();render();toast('Configuração padrão restaurada.');return true;
+    case 'cfg-padrao':if(!confirm('Restaurar a configuração padrão do funil? As subetapas criadas aqui somem.'))return true;S.cfg=CFG_PADRAO();S.cfg.fases=FASES_PADRAO();S.cfg.deps=DEPS_PADRAO();syncCfg();save();render();toast('Configuração padrão restaurada.');return true;
     case 'cfg-ord':{const C=cfg(),s=C.subs[+a.dataset.i],ss=C.subs.filter(x=>x.etapa===s.etapa).sort((x,y)=>x.ordem-y.ordem),j=ss.indexOf(s),o=ss[j+Number(a.dataset.v)];if(!o)return true;[s.ordem,o.ordem]=[o.ordem,s.ordem];save();render();return true}
     case 'cfg-sub-del':{const C=cfg(),s=C.subs[+a.dataset.i];if(usada(s.k)){toast('Subetapa já usada: desative em vez de apagar.',true);return true}C.subs.splice(+a.dataset.i,1);C.prereq=C.prereq.filter(p=>p.req!==s.k&&!(p.alvoTipo==='subetapa'&&p.alvo===s.k));save();render();toast(`${s.nome} apagada.`);return true}
     case 'cfg-pre-del':cfg().prereq=cfg().prereq.filter(p=>p.id!==a.dataset.v);save();render();toast('Regra removida.');return true;

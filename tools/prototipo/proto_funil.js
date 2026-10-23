@@ -23,7 +23,7 @@ const destinoCfg=(tipo,k)=>tipo==='etapa'?etapaCfg(k):tipo==='subetapa'?subCfg(k
 const destinoNome=(tipo,k)=>tipo==='etapa'?SN(k):tipo==='subetapa'?subN(k):STATUS_N[k]||k;
 function syncCfg(){STAGES.splice(0,STAGES.length,...cfg().etapas.map(e=>[e.k,e.nome]))}
 /* dados carregados ou restaurados: garante configuração, equipe e avisos dos pedidos de exemplo */
-function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];syncCfg();
+function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.cfg.fases)S.cfg.fases=FASES_PADRAO();if(!S.cfg.deps)S.cfg.deps=DEPS_PADRAO();if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];syncCfg();
   if(!S.pedidosAvisados){S.terrenos.forEach(t=>{if(t.neg?.pedido)avisarAprovadores(t)});S.pedidosAvisados=true}}
 
 /* ---------- regras da passagem ---------- */
@@ -74,7 +74,7 @@ function executar(t,tipo,dest,d){const n=t.neg,ev={em:agora(),user:me(),deEtapa:
     if(dest==='perdido'||dest==='descartado')Object.assign(n,{motivo:d.motivo,detalhe:d.detalhe});
     if(dest==='stand_by')Object.assign(n,{retomar:d.retomar,detalhe:d.detalhe});
     log(t,`Status: ${STATUS_N[dest]}${d.motivo?' · '+motivoN(dest,d.motivo):''}${dest==='stand_by'?' até '+fd(d.retomar):''}${d.forcado?' · sem requisitos: '+d.forcado:''}`)}
-  Object.assign(ev,{paraEtapa:n.etapa,paraSub:n.sub,status:n.status});n.trilha.push(ev)}
+  Object.assign(ev,{paraEtapa:n.etapa,paraSub:n.sub,status:n.status});n.trilha.push(ev);if(tipo==='status')abrirLiberadas(t)}
 function decidir(t,aprovar,coment){const n=t.neg,p=n.pedido,eu=me();if(!p)return null;
   if(!naVez(p).some(r=>podeDecidir(r,eu)))return {erro:`Este pedido aguarda ${quemFalta(p)}.`};
   if(!aprovar){p.niveis.forEach(r=>{if(r.status==='pendente')r.status='cancelado'});n.pedido=null;
@@ -184,16 +184,15 @@ function kcardNeg(t,modo){const n=t.neg,o=ofertaRef(t),lp=lastProp(t),pr=proxReu
   <div class="kr"><span>${lp?'Prop. '+mi(lp.valor):'Pedido '+(o?.valor?mi(o.valor):'—')}</span>${atrasadas(t).length?`<span class="flag crit" title="Tarefas atrasadas">${ic('clock',14)}${atrasadas(t).length}</span>`:''}${acimaMax(t)?`<span class="flag warn">${ic('money',14)}</span>`:''}</div>${pr?`<div class="kr"><span class="faint">Reunião ${fd(pr.data)} · ${pr.hora}</span></div>`:''}
   ${n.pedido?`<div class="kped">${ic('clock',14)}Aguardando ${esc(quemFalta(n.pedido))}</div>`:''}
   <div class="kr">${av(t.resp,'sm')}<span class="faint ${!sb&&etapaAtrasada(n)?'katr':''}">${sb?'revisitar '+fd(n.retomar):modo==='sub'?diasSub(n)+' d na subetapa':diff(n.desde,HOJE)+' d na etapa'}</span></div></button>`}
-function pgNeg(){const e=UI.negEtapa&&etapaCfg(UI.negEtapa)?UI.negEtapa:null,ativos=S.terrenos.filter(t=>t.neg?.status==='ativo');
-  const seg=`<div class="fchips neg-et" role="group" aria-label="Etapa"><button class="fchip" data-a="neg-etapa" data-v="" aria-pressed="${!e}">${!e?ic('check',16):''}Todas as etapas</button>${STAGES.map(([k,l])=>`<button class="fchip" data-a="neg-etapa" data-v="${k}" aria-pressed="${e===k}">${e===k?ic('check',16):''}${esc(l)} <span class="n">${ativos.filter(t=>t.neg.etapa===k).length}</span></button>`).join('')}</div>`;
+function pgNeg(){if(!UI.negFase||!faseCfg(UI.negFase))return pgFasesBoard();if(UI.negFase!==faseEnt())return pgFaseBoard(UI.negFase);const e=UI.negEtapa&&etapaCfg(UI.negEtapa)?UI.negEtapa:null,ativos=S.terrenos.filter(t=>t.neg?.status==='ativo');
   let cols;
   if(!e)cols=[...STAGES.map(([k,l])=>({k,l,f:t=>t.neg?.status==='ativo'&&t.neg.etapa===k,abre:k,sla:etapaCfg(k)?.sla})),{k:'stand_by',l:'Stand By',f:t=>t.neg?.status==='stand_by',cls:'enc'}];
   else{const subs=subsDe(e);cols=subs.map(s=>({k:'sub:'+s.k,l:s.nome,f:t=>t.neg?.status==='ativo'&&t.neg.etapa===e&&t.neg.sub===s.k,prazo:s.prazo}));
     const orf=ativos.filter(t=>t.neg.etapa===e&&!subs.some(s=>s.k===t.neg.sub));if(orf.length)cols.unshift({k:'sub:',l:'Sem subetapa ativa',f:t=>orf.includes(t),cls:'enc'})}
-  return `<div class="page-h"><div><h1><span class="marca"></span>Negociações</h1><div class="sub">${e?`Subetapas de ${esc(SN(e))}. Arraste o card para mudar a subetapa.`:'Arraste os cards entre as colunas para mudar a etapa. Abra uma etapa para ver as subetapas. Comprados, perdidos e descartados saem do quadro.'}</div></div></div>
-  ${seg}<div class="board ${e?'board-sub':''}" id="board">${cols.map(c=>{const ts=S.terrenos.filter(c.f);
-  return `<section class="col ${c.cls||''}" data-col="${c.k}" aria-label="${esc(c.l)}"><div class="col-h">${c.abre?`<button class="col-ab" data-a="neg-etapa" data-v="${c.abre}" title="Ver subetapas de ${esc(c.l)}"><span>${esc(c.l)}</span>${ic('chev',16)}</button>`:`<span>${esc(c.l)}</span>`}<span class="n">${ts.length}</span></div>${c.sla||c.prazo?`<div class="col-s faint">${c.sla?'SLA '+c.sla+' d':'Prazo '+c.prazo+' d'}</div>`:''}${ts.map(t=>kcardNeg(t,e?'sub':'')).join('')||'<div class="col-empty">Nenhuma</div>'}</section>`}).join('')}</div>`}
-function soltar(id,col){const t=T(id);if(!t||!t.neg||UI.role==='Leitura')return;const n=t.neg;
+  return `${negTopo(e?SN(e):faseN(faseEnt()),e?`Subetapas de ${esc(SN(e))}, em ${esc(faseN(faseEnt()))}. Arraste o card para mudar a subetapa.`:'Arraste os cards entre as colunas para mudar a etapa. Clique no nome da etapa para ver as subetapas. Comprados, perdidos e descartados saem do quadro.')}
+  <div class="board ${e?'board-sub':''}" id="board">${cols.map(c=>{const ts=S.terrenos.filter(c.f);
+  return `<section class="col ${c.cls||''}" data-col="${c.k}" aria-label="${esc(c.l)}"><div class="col-h">${c.abre?colDesce('neg-etapa',c.abre,c.l,'Ver subetapas de '+c.l):`<span>${esc(c.l)}</span>`}<span class="n">${ts.length}</span></div>${c.sla||c.prazo?`<div class="col-s faint">${c.sla?'SLA '+c.sla+' d':'Prazo '+c.prazo+' d'}</div>`:''}${ts.map(t=>kcardNeg(t,e?'sub':'')).join('')||'<div class="col-empty">Nenhuma</div>'}</section>`}).join('')}</div>`}
+function soltar(id,col){if(col.startsWith('fe:')){soltarProc(id,col.slice(3));return}const t=T(id);if(!t||!t.neg||UI.role==='Leitura')return;const n=t.neg;
   if(col==='stand_by'){if(n.status==='ativo'){UI.alvo=id;UI.modal='suspender';renderModal()}return}
   if(col.startsWith('sub:')){const k=col.slice(4);if(!k||n.status!=='ativo'||n.sub===k)return;tentar(t,'subetapa',k);return}
   if(n.status==='stand_by'){retomar(t);if(n.etapa===col){save();render();toast('Negociação retomada.');return}}
@@ -217,10 +216,11 @@ const apCells=(p,c)=>`<label class="chk"><input type="checkbox" data-ch="cfg" da
 const usada=k=>S.terrenos.some(t=>t.neg&&(t.neg.sub===k||(t.neg.trilha||[]).some(x=>x.paraSub===k||x.deSub===k)));
 function pgConfig(){
   if(!ehAdmin(me()))return `<div class="page-h"><div><h1><span class="marca"></span>Configurações</h1></div></div><section class="sec"><div class="sec-b"><div class="empty">Só administradores alteram a configuração do funil. Teste como Diretor (Moisés é administrador).</div></div></section>`;
-  const C=cfg(),aba=UI.cfgAba||'funil';
-  const abas=[['funil','Etapas e subetapas'],['prereq','Pré-requisitos'],['status','Status e motivos'],['checklist','Checklist'],['notif','Notificações'],['equipe','Equipe']];
+  const C=cfg(),aba=UI.cfgAba||'fases';
+  const abas=[['fases','Fases'],['funil','Etapas de '+faseN(faseEnt())],['prereq','Pré-requisitos'],['status','Status e motivos'],['checklist','Checklist'],['notif','Notificações'],['equipe','Equipe']];
   let corpo='';
-  if(aba==='funil')corpo=`<section class="sec"><div class="sec-h"><h2>Etapas</h2><span class="faint" style="font-size:13px">Criar ou apagar etapa continua por migration</span></div><div class="sec-b"><div class="cfg-t">
+  if(aba==='fases')corpo=cfgFasesHtml();
+  if(aba==='funil')corpo=`<section class="sec"><div class="sec-h"><h2>Etapas de ${esc(faseN(faseEnt()))}</h2><span class="faint" style="font-size:13px">No protótipo, etapa nova só nas outras fases (aba Fases)</span></div><div class="sec-b"><div class="cfg-t">
     <div class="cfg-r cfg-hd"><span>Etapa</span><span>SLA (dias)</span><span>Aprovação para entrar</span></div>
     ${C.etapas.map((e,i)=>`<div class="cfg-r"><input data-ch="cfg" data-p="etapas.${i}.nome" value="${esc(e.nome)}" aria-label="Nome da etapa"><input type="number" min="0" data-ch="cfg" data-p="etapas.${i}.sla" value="${e.sla??''}" aria-label="SLA de ${esc(e.nome)}"><span class="cfg-ap">${apCells('etapas.'+i,e)}</span></div>`).join('')}</div></div></section>
     ${C.etapas.map(e=>{const ss=C.subs.map((s,i)=>[s,i]).filter(([s])=>s.etapa===e.k).sort((a,b)=>a[0].ordem-b[0].ordem);
@@ -288,7 +288,7 @@ function funilClick(A,a,t){
     case 'cancelar-pedido':cancelarPedido(t);save();render();toast('Pedido cancelado.');return true;
     case 'rt-bold':case 'rt-ital':case 'rt-list':document.execCommand(A==='rt-bold'?'bold':A==='rt-ital'?'italic':'insertUnorderedList');$('#cp-rel')?.focus();return true;
     case 'cfg-aba':UI.cfgAba=a.dataset.v;render();return true;
-    case 'cfg-padrao':if(!confirm('Restaurar a configuração padrão do funil? As subetapas criadas aqui somem.'))return true;S.cfg=CFG_PADRAO();syncCfg();save();render();toast('Configuração padrão restaurada.');return true;
+    case 'cfg-padrao':if(!confirm('Restaurar a configuração padrão do funil? As subetapas criadas aqui somem.'))return true;S.cfg=CFG_PADRAO();S.cfg.fases=FASES_PADRAO();S.cfg.deps=DEPS_PADRAO();syncCfg();save();render();toast('Configuração padrão restaurada.');return true;
     case 'cfg-ord':{const C=cfg(),s=C.subs[+a.dataset.i],ss=C.subs.filter(x=>x.etapa===s.etapa).sort((x,y)=>x.ordem-y.ordem),j=ss.indexOf(s),o=ss[j+Number(a.dataset.v)];if(!o)return true;[s.ordem,o.ordem]=[o.ordem,s.ordem];save();render();return true}
     case 'cfg-sub-del':{const C=cfg(),s=C.subs[+a.dataset.i];if(usada(s.k)){toast('Subetapa já usada: desative em vez de apagar.',true);return true}C.subs.splice(+a.dataset.i,1);C.prereq=C.prereq.filter(p=>p.req!==s.k&&!(p.alvoTipo==='subetapa'&&p.alvo===s.k));save();render();toast(`${s.nome} apagada.`);return true}
     case 'cfg-pre-del':cfg().prereq=cfg().prereq.filter(p=>p.id!==a.dataset.v);save();render();toast('Regra removida.');return true;

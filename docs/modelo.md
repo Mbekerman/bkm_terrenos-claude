@@ -2,9 +2,29 @@
 
 Gerado a partir de `supabase/migrations/`. Campos de auditoria (`criado_*`, `atualizado_*`) e `empresa_id` (presente em todas as tabelas da empresa) foram omitidos. Tudo no schema `app`.
 
-## Funil da negociação
+## Fases
 
-Quatro etapas, cada uma com subetapas. O card está sempre numa subetapa; dentro da etapa, ela muda em qualquer ordem (a ordem é só a coluna do kanban).
+Acima das etapas fica a **fase**: o grande momento do terreno. Cada fase é um processo próprio do terreno (`processos.fase`), com etapas, subetapas, status, responsável e histórico próprios; um terreno tem no máximo um processo aberto por fase, e fases podem correr juntas.
+
+| Fase | Prefixo | Concluído | Etapas (ponto de partida) |
+| --- | --- | --- | --- |
+| Novos Negócios (entrada) | NEG | Comprado | Em Triagem, Estudos Preliminares, Negociação, Contrato |
+| Aprovação de Projetos | APR | Aprovado | Projeto, Análise na Prefeitura, Alvarás |
+| Registro de Incorporação | INC | Incorporação registrada | Memorial e Certidões, Cartório |
+| Contratação Caixa | CEF | Contratado | Análise Caixa, Contratação |
+| Lançamento | LAN | Lançado | Preparação, Vendas Iniciais |
+| Obras | OBR | Obra entregue | Início, Execução, Entrega |
+| Entregue | ENT | Garantia encerrada | Pós-entrega (Assistência Técnica, Em Garantia) |
+
+- **Fase de entrada** (`fases_modelo.entrada`, uma por empresa): a que a oferta abre (`abrir_negociacao`) e a única com negociação (temperatura, propostas, viabilidade). Concluir nela é a compra: pede relato e pontos de sucesso e nenhuma diligência impeditiva.
+- **Dependências** (`fase_dependencias`): a fase abre quando, no mesmo terreno, a fase requisito foi concluída ou passou pela etapa ou subetapa indicada; todas precisam valer. O padrão encadeia cada fase na conclusão da anterior. Depois de cada passagem, `_abrir_fases_liberadas` abre sozinha a fase que o terreno nunca teve e cujas dependências se cumpriram (fase encerrada não reabre sozinha). Fase sem dependência, reabertura ou abertura antes da hora: `abrir_fase(terreno, fase)`, com dependência pendente só gestor ou diretor, com justificativa (`forcado`).
+- **Status por fase** (`status_modelo`): Concluído e Stand By em toda fase, com o nome da fase para o Concluído; Perdido (o vendedor disse não) só em Novos Negócios; Descartado em todas menos Entregue. Status sem linha não existe na fase.
+- **Fase atual do terreno** (`v_terrenos.fase`): a aberta mais adiante pela ordem; sem nenhuma aberta, a última encerrada. `fases_abertas` lista as que correm juntas; `fases_do_terreno(terreno)` dá cada fase com o processo, o status e o que falta para abrir.
+- Código do processo com o prefixo da fase (`NEG-00012`, `APR-00013`), numeração única.
+
+## Funil de cada fase
+
+Cada fase tem etapas, cada uma com subetapas. Abaixo, as de Novos Negócios; as das outras fases são um ponto de partida que o administrador ajusta. O card está sempre numa subetapa; dentro da etapa, ela muda em qualquer ordem (a ordem é só a coluna do kanban).
 
 | Etapa | Subetapas (colunas do kanban) |
 | --- | --- |
@@ -13,16 +33,16 @@ Quatro etapas, cada uma com subetapas. O card está sempre numa subetapa; dentro
 | Negociação | Aguardando Primeira Reunião, Preparando Proposta, Proposta Enviada, Contra Proposta |
 | Contrato | Em Elaboração, Contrato Enviado, Em Ajuste |
 
-Entrar numa etapa leva à subetapa inicial (a primeira ativa). O fim da tratativa é **status**, não etapa: `ativo`, `comprado`, `perdido`, `descartado` ou `stand_by`. Fora de ativo, o processo guarda a etapa e a subetapa onde estava (mostra onde o funil perde terrenos).
+Entrar numa etapa leva à subetapa inicial (a primeira ativa). O fim do processo da fase é **status**, não etapa: `ativo`, `concluido` (em Novos Negócios, Comprado), `perdido`, `descartado` ou `stand_by`. Fora de ativo, o processo guarda a etapa e a subetapa onde estava (mostra onde o funil perde terrenos).
 
 | Status | Exige | Quem |
 | --- | --- | --- |
-| Comprado | estar na última etapa; relato e pontos de sucesso (rich text); checklist da etapa e nenhuma diligência impeditiva | conforme `status_modelo` (padrão: gestor e depois diretor) |
+| Concluído (Comprado) | estar na última etapa; relato e pontos de sucesso (rich text); checklist da etapa e nenhuma diligência impeditiva | conforme `status_modelo` (padrão: gestor e depois diretor) |
 | Perdido | motivo da lista (`motivos_encerramento`) e relato | analista ou acima |
 | Descartado | motivo da lista; texto obrigatório quando o motivo pede (Outros) | analista ou acima |
 | Stand By | justificativa e data futura para retomar; retomar volta à mesma etapa e subetapa | analista ou acima |
 
-Comprado, Perdido e Descartado não voltam: se o terreno voltar ao radar, abre-se outra tratativa.
+Comprado, Perdido e Descartado não voltam: se o terreno voltar ao radar, abre-se outra tratativa. Nas outras fases, Concluído pede só o relato.
 
 **Toda passagem** (etapa, subetapa ou status) passa por `app._passagem`:
 
@@ -32,7 +52,7 @@ Comprado, Perdido e Descartado não voltam: se o terreno voltar ao radar, abre-s
 
 Quem aprova: o aprovador previsto vem da hierarquia de quem pediu (`membros.superior_id`: analista → gestor → diretor). Qualquer superior dele também aprova, sempre; quem aprovou de fato fica em `decidido_por`. Em sequência, o diretor só recebe depois do gestor; em paralelo, os dois recebem juntos e a passagem acontece quando ambos aprovarem. Uma recusa (com comentário) encerra o pedido. Aprovado, a passagem é gravada no nome de quem pediu, com `aprovacao_id`.
 
-Arrastar no quadro de etapas chama `mover_para_etapa` (para frente, etapa por etapa, e só a última pode ficar aguardando aprovação; para trás, exige motivo e grava `retorno`). No kanban da etapa, `mover_subetapa`. `checar_passagem(processo, destino_tipo, destino)` diz o que falta (padrão: a próxima etapa, ou a compra na última), quais aprovações serão pedidas e o pedido aberto, com `posso_decidir` para quem vê.
+Arrastar no quadro de etapas chama `mover_para_etapa` (para frente, etapa por etapa, e só a última pode ficar aguardando aprovação; para trás, exige motivo e grava `retorno`). No kanban da etapa, `mover_subetapa`. `checar_passagem(processo, destino_tipo, destino)` diz o que falta (padrão: a próxima etapa, ou concluir a fase na última), quais aprovações serão pedidas e o pedido aberto, com `posso_decidir` para quem vê.
 
 **SLA:** só do histórico. `v_periodos_processo` corta o histórico em períodos (cada transição até a seguinte), com stand by em período próprio. `v_tempo_subetapas` soma por etapa e subetapa: primeira entrada, última saída, passagens, tempo ativo, tempo em stand by e se é a atual. Retomar o stand by empurra `etapa_desde` e `subetapa_desde` pelo tempo parado. Prazo estourado = agora − `subetapa_desde` > `subetapas_modelo.prazo_dias` (`v_terrenos.subetapa_atrasada`).
 
@@ -44,18 +64,24 @@ A configuração do funil é **por empresa** (`empresa_id`); as linhas com `empr
 
 | O quê | RPC | Não pode |
 | --- | --- | --- |
-| Etapas: nome, prazo, aprovações | `configurar_etapa` | criar ou apagar etapa (migration) |
+| Fases: criar, renomear, reordenar, prefixo, desativar | `salvar_fase`, `apagar_fase` (só sem processo) | mudar ou desativar a fase de entrada; desativar com terreno dentro |
+| Dependências entre fases | `adicionar_dependencia`, `remover_dependencia` | ciclo; dependência na fase de entrada |
+| Etapas: criar (nasce com uma subetapa), renomear, reordenar, prazo, aprovações | `salvar_etapa`, `apagar_etapa` (só sem histórico) | apagar etapa de que outra fase depende |
 | Subetapas: criar, renomear, reordenar, prazo, aprovações, desativar | `salvar_subetapa` (desativar com terrenos dentro pede `mover_para`) | mudar de etapa; apagar com histórico (`apagar_subetapa` só sem histórico); desativar de que um pré-requisito depende |
 | Pré-requisitos | `adicionar_prerequisito`, `remover_prerequisito` | ciclo; exigir subetapa de etapa posterior; exigir na subetapa inicial outra da própria etapa |
 | Motivos de encerramento | `salvar_motivo`, `apagar_motivo` (só nunca usado) | |
 | Checklist de documentos por etapa | `salvar_checklist`, `remover_checklist` | |
-| Aprovação dos status (Comprado) | `configurar_status` | |
+| Status da fase: nome, aprovações, incluir ou tirar (Perdido, Descartado) | `configurar_status` | tirar Concluído ou Stand By; tirar status em uso |
 | Tipos de notificação e lembretes padrão | `configurar_notificacao` | |
 
 ```mermaid
 erDiagram
   empresas ||--o{ membros : equipe
   membros |o--o{ membros : "superior"
+  fases_modelo ||--o{ etapas_modelo : tem
+  fases_modelo ||--o{ status_modelo : encerra
+  fases_modelo ||--o{ fase_dependencias : "abre quando"
+  fases_modelo ||--o{ processos : "terreno na fase"
   etapas_modelo ||--o{ subetapas_modelo : tem
   etapas_modelo ||--o{ checklist_modelo : "para sair"
   subetapas_modelo ||--o{ prerequisitos_modelo : "requisito"
@@ -69,8 +95,25 @@ erDiagram
     uuid superior_id FK "um nivel acima"
     bool administrador
   }
+  fases_modelo {
+    uuid empresa_id "null = modelo padrao"
+    text codigo
+    text nome
+    int ordem
+    text prefixo "NEG, APR..."
+    bool entrada "a que a oferta abre"
+    bool ativo
+  }
+  fase_dependencias {
+    uuid id PK
+    text fase
+    text requisito_fase
+    text requisito_tipo "conclusao | etapa | subetapa"
+    text requisito
+  }
   etapas_modelo {
     uuid empresa_id "null = modelo padrao"
+    text fase FK
     text codigo
     text nome
     int ordem
@@ -80,7 +123,7 @@ erDiagram
     text aprovacao_modo "sequencia | paralelo"
   }
   subetapas_modelo {
-    text codigo "unico no tipo de processo"
+    text codigo "unico na fase"
     text etapa FK
     text nome
     int ordem "coluna do kanban"
@@ -91,7 +134,9 @@ erDiagram
     bool ativo
   }
   status_modelo {
-    text status "comprado | perdido | descartado | stand_by"
+    text fase FK
+    text status "concluido | perdido | descartado | stand_by"
+    text nome "Comprado, Aprovado..."
     bool aprova_gestor
     bool aprova_diretor
     text aprovacao_modo
@@ -126,7 +171,7 @@ erDiagram
   }
   processo_transicoes {
     uuid id PK
-    text evento "abertura | avanco | retorno | subetapa | compra | perda | descarte | stand_by | retomada | temperatura"
+    text evento "abertura | avanco | retorno | subetapa | conclusao | perda | descarte | stand_by | retomada | temperatura"
     text de_etapa
     text para_etapa
     text de_subetapa
@@ -372,16 +417,16 @@ erDiagram
   }
   processos {
     uuid id PK
-    text codigo "NEG-00012"
-    text tipo "negociacao"
+    text codigo "NEG-00012 (prefixo da fase)"
+    text fase FK
     uuid terreno_id FK
     text etapa_atual
     text subetapa_atual
     timestamptz subetapa_desde
-    text status "ativo | comprado | perdido | descartado | stand_by"
+    text status "ativo | concluido | perdido | descartado | stand_by"
     text motivo_encerramento "codigo do motivo"
     text detalhe_encerramento "relato ou justificativa"
-    text pontos_sucesso "comprado"
+    text pontos_sucesso "compra"
     date retomar_em
     uuid responsavel_id FK
     uuid viabilidade_id FK
@@ -491,7 +536,7 @@ erDiagram
 
 | View / função | Para quê |
 | --- | --- |
-| `v_mapa` | um pin por terreno ativo, com `situacao_mapa` (sem negociação, etapa da negociação ativa, ou o status: comprado, perdido, descartado, stand by), a subetapa e a poligonal |
+| `v_mapa` | um pin por terreno ativo, com `situacao_mapa` (sem negociação, etapa do processo atual, ou o status dele: concluido, perdido, descartado, stand by), a fase atual e as abertas (filtro por fase), a subetapa e a poligonal |
 | `v_terreno_pontos` | todos os pontos de interesse da empresa para cada terreno localizado: linha reta sempre; a pé e de carro pela rota quando medidos para a coordenada atual (`precisa_medir` quando não) |
 | `salvar_distancias_pontos(terreno, lat, lng, itens)` | grava as distâncias pela rota (a pé e de carro) do terreno aos pontos da empresa; recusa coordenada diferente da atual |
 | `distancia_km(lat1, lng1, lat2, lng2)` | haversine; rota de verdade vem do serviço de mapas |

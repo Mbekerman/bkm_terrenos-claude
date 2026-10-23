@@ -3,7 +3,7 @@
 // localização com escolha do endereço principal. OpenStreetMap simulado. Prints em saida/t_novo/.
 const path=require('path'),fs=require('fs'),{chromium,devices}=require('playwright');
 const TMP=path.join(__dirname,'..','saida')+'/',OUT=TMP+'t_novo/',L=path.join(__dirname,'..','libs','l')+'/';fs.mkdirSync(OUT,{recursive:true});
-const html=fs.readFileSync(TMP+'bkm-terrenos.html','utf8').replace('<title>','<meta name="viewport" content="width=device-width, initial-scale=1"><title>'),KEY='bkm-terrenos-prototipo-v8';
+const html=fs.readFileSync(TMP+'bkm-terrenos.html','utf8').replace('<title>','<meta name="viewport" content="width=device-width, initial-scale=1"><title>'),KEY='bkm-terrenos-prototipo-v9';
 // lugar vazio para o terreno novo e o TER-000123 dos exemplos
 const LUGAR={vazio:[-23.60000,-46.62000],cupece:[-23.668125,-46.6513]};
 const errs=[],ok=(c,m)=>{console.log((c?'ok  ':'FALHA ')+m);if(!c)errs.push(m)};

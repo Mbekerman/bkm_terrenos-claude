@@ -12,11 +12,11 @@ const papel=async(p,r)=>{await p.evaluate(r=>{document.querySelector('[data-a=pe
 const nav=async(p,r)=>{await p.evaluate(r=>document.querySelector(`[data-a=nav][data-r=${r}]`).click(),r);await p.waitForTimeout(200)};
 const ficha=async(p,txt)=>{await nav(p,'terrenos');await p.evaluate(()=>{const b=document.querySelector('[data-a=fT][data-v=todos]');b&&b.click()});await p.waitForTimeout(100);await p.evaluate(t=>[...document.querySelectorAll('[data-a=abrir]')].find(x=>x.textContent.includes(t)).click(),txt);await p.waitForTimeout(400)};
 const txt=(p,s)=>p.evaluate(s=>[...document.querySelectorAll(s)].filter(x=>x.offsetParent).map(x=>x.textContent.trim().replace(/\s+/g,' ')).join(' | '),s);
-const neg=(p,nome)=>p.evaluate(n=>{const S=JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-v8'));return S.terrenos.find(t=>t.nome.includes(n)).neg},nome);
+const neg=(p,nome)=>p.evaluate(n=>{const S=JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-v9'));return S.terrenos.find(t=>t.nome.includes(n)).neg},nome);
 let {p,ctx}=await abre(1440,900);
 
 // kanban por etapa
-await nav(p,'negociacoes');await p.screenshot({path:O+'1_kanban.png'});
+await nav(p,'negociacoes');await p.evaluate(()=>document.querySelector('[data-a=neg-fase][data-v=novos_negocios]').click());await p.waitForTimeout(200);await p.screenshot({path:O+'1_kanban.png'});
 ok((await txt(p,'.col-h')).includes('Em Triagem'),'colunas com as etapas novas');
 ok((await txt(p,'.kcard .ksub')).includes('Proposta Enviada'),'card mostra a subetapa');
 ok((await txt(p,'.kped')).includes('Ana Prado'),'card com pedido aguardando a gestora');
@@ -97,9 +97,10 @@ n=await neg(p,'Pico Alto');ok(n.status==='perdido'&&n.motivo==='vendido_terceiro
 
 // Configurações › Funil
 await nav(p,'config');await p.screenshot({path:O+'14_config.png',fullPage:true});
+await p.evaluate(()=>document.querySelector('[data-a=cfg-aba][data-v=funil]').click());await p.waitForTimeout(150);
 ok((await txt(p,'h1')).includes('Configurações'),'admin abre a configuração');
 await p.fill('form[data-form=cfg-sub][data-e=triagem] input[name=nome]','Visita ao terreno');await p.click('form[data-form=cfg-sub][data-e=triagem] .btn');await p.waitForTimeout(150);
-ok((await p.evaluate(()=>JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-v8')).cfg.subs.some(s=>s.nome==='Visita ao terreno'))),'cria subetapa');
+ok((await p.evaluate(()=>JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-v9')).cfg.subs.some(s=>s.nome==='Visita ao terreno'))),'cria subetapa');
 await p.evaluate(()=>document.querySelector('[data-a=cfg-aba][data-v=prereq]').click());await p.waitForTimeout(150);await p.screenshot({path:O+'15_prereq.png',fullPage:true});
 await p.selectOption('#pr-a','subetapa:aguardando_documentos');await p.selectOption('#pr-r','aguardando_documentos');await p.click('form[data-form=cfg-pre] .btn');await p.waitForTimeout(150);
 ok((await p.evaluate(()=>document.querySelector('#toast').textContent)).includes('ela mesma'),'recusa pré-requisito para si mesma');
@@ -110,10 +111,10 @@ await papel(p,'Gestor');ok(!(await p.$('.nav-item[data-r=config]')),'gestor sem 
 await ctx.close();
 
 // celular e escuro
-({p,ctx}=await abre(390,844));await nav(p,'negociacoes');await p.screenshot({path:O+'20_cel_kanban.png'});
+({p,ctx}=await abre(390,844));await nav(p,'negociacoes');await p.evaluate(()=>document.querySelector('[data-a=neg-fase][data-v=novos_negocios]').click());await p.waitForTimeout(200);await p.screenshot({path:O+'20_cel_kanban.png'});
 await ficha(p,'Barão');await p.evaluate(()=>document.querySelector('.adv-main').scrollIntoView({block:'center'}));await p.waitForTimeout(150);await p.screenshot({path:O+'21_cel_quadro.png'});
 await papel(p,'Gestor');await p.click('[data-a=sino]');await p.waitForTimeout(150);await p.screenshot({path:O+'22_cel_sino.png'});
 const sobra=await p.evaluate(()=>document.documentElement.scrollWidth-innerWidth);ok(sobra<=0,'celular sem rolagem horizontal');
 await ctx.close();
-({p,ctx}=await abre(1440,900,'escuro'));await ficha(p,'Barão');await p.screenshot({path:O+'23_escuro.png'});await nav(p,'negociacoes');await p.screenshot({path:O+'24_escuro_kanban.png'});await ctx.close();
+({p,ctx}=await abre(1440,900,'escuro'));await ficha(p,'Barão');await p.screenshot({path:O+'23_escuro.png'});await nav(p,'negociacoes');await p.evaluate(()=>document.querySelector('[data-a=neg-fase][data-v=novos_negocios]').click());await p.waitForTimeout(200);await p.screenshot({path:O+'24_escuro_kanban.png'});await ctx.close();
 console.log('ERROS',erros);console.log(falhas.length?`${falhas.length} falha(s)`:'tudo ok');await b.close()})();

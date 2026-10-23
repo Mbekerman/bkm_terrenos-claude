@@ -21,7 +21,7 @@ await escolher(p,'#sec-g-end','601');await p.waitForTimeout(300);
 await p.fill('#sec-g-end #f-complemento','Lote 4');await p.selectOption('#sec-g-end #f-zona','centro');
 await p.screenshot({path:OUT+tema+'_resumo_preenchido.png'});
 await p.click('#sec-g-end .btn.primary');await p.waitForTimeout(250);
-console.log(tema,'salvo:',JSON.stringify(await p.evaluate(()=>{const t=JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-v8')).terrenos.find(t=>t.nome.includes('Barão'));return {cep:t.cep,log:t.logradouro,num:t.numero,comp:t.complemento,bairro:t.bairro,mun:t.municipio,zona:t.zona,lat:t.lat}})));
+console.log(tema,'salvo:',JSON.stringify(await p.evaluate(()=>{const t=JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-v9')).terrenos.find(t=>t.nome.includes('Barão'));return {cep:t.cep,log:t.logradouro,num:t.numero,comp:t.complemento,bairro:t.bairro,mun:t.municipio,zona:t.zona,lat:t.lat}})));
 // Cadastro: Google sem número destrava o campo número; corrigir à mão destrava todos
 await p.click('#bl-cadastro .bl-h');await p.click('#sec-loc [data-a=edit]');await p.waitForTimeout(200);
 await escolher(p,'#sec-loc','');await p.waitForTimeout(300);

@@ -62,42 +62,43 @@ create table app.viabilidades (
 );
 
 -- ---------------------------------------------------------------------
--- Processo: núcleo genérico (negociação hoje; aprovação, incorporação,
--- financiamento depois). Etapas, transições, checklist e tarefas penduram aqui.
+-- Processo: o terreno numa fase (Novos Negócios, Aprovação de Projetos...).
+-- Etapas, transições, checklist e tarefas penduram aqui. Código com o prefixo
+-- da fase (NEG-00012), dado na abertura (app._abrir_processo).
 -- ---------------------------------------------------------------------
 create sequence app.processo_seq;
 create table app.processos (
   id                   uuid primary key default gen_random_uuid(),
   empresa_id           uuid not null references app.empresas(id),
-  codigo               text not null default ('NEG-' || lpad(nextval('app.processo_seq')::text, 5, '0')),
-  tipo                 text not null default 'negociacao',
+  codigo               text not null,
+  fase                 text not null,
   terreno_id           uuid not null references app.terrenos(id),
   etapa_atual          text not null,
   etapa_desde          timestamptz not null default now(),
   subetapa_atual       text not null,
   subetapa_desde       timestamptz not null default now(),
   -- fora de "ativo", guarda a etapa e a subetapa em que estava
-  status               text not null default 'ativo' check (status in ('ativo','comprado','perdido','descartado','stand_by')),
+  status               text not null default 'ativo' check (status in ('ativo','concluido','perdido','descartado','stand_by')),
   responsavel_id       uuid references auth.users(id),
   viabilidade_id       uuid references app.viabilidades(id),
   motivo_encerramento  text,   -- código de motivos_encerramento (descartado, perdido)
-  detalhe_encerramento text,   -- relato (comprado, perdido), texto livre (descartado) ou justificativa (stand by); rich text
-  pontos_sucesso       text,   -- comprado: rich text
+  detalhe_encerramento text,   -- relato (concluído, perdido), texto livre (descartado) ou justificativa (stand by); rich text
+  pontos_sucesso       text,   -- concluído na fase de entrada (compra): rich text
   retomar_em           date,
   data_inicio          timestamptz not null default now(),
   data_encerramento    timestamptz,
   criado_por           uuid default auth.uid(),
   atualizado_em        timestamptz not null default now(),
   unique (empresa_id, codigo),
-  foreign key (empresa_id, tipo, etapa_atual) references app.etapas_modelo(empresa_id, tipo_processo, codigo),
-  foreign key (empresa_id, tipo, etapa_atual, subetapa_atual) references app.subetapas_modelo(empresa_id, tipo_processo, etapa, codigo),
+  foreign key (empresa_id, fase) references app.fases_modelo(empresa_id, codigo),
+  foreign key (empresa_id, fase, etapa_atual) references app.etapas_modelo(empresa_id, fase, codigo),
+  foreign key (empresa_id, fase, etapa_atual, subetapa_atual) references app.subetapas_modelo(empresa_id, fase, etapa, codigo),
   check (status not in ('perdido','descartado') or motivo_encerramento is not null),
-  check (status not in ('comprado','perdido') or detalhe_encerramento is not null),
-  check (status <> 'comprado' or pontos_sucesso is not null),
+  check (status not in ('concluido','perdido') or detalhe_encerramento is not null),
   check (status <> 'stand_by' or (retomar_em is not null and detalhe_encerramento is not null))
 );
-create index on app.processos (empresa_id, status, etapa_atual, subetapa_atual);
-create unique index processos_um_aberto_por_terreno on app.processos (terreno_id, tipo) where status in ('ativo','stand_by');
+create index on app.processos (empresa_id, fase, status, etapa_atual, subetapa_atual);
+create unique index processos_um_aberto_por_terreno on app.processos (terreno_id, fase) where status in ('ativo','stand_by');
 
 -- Dados próprios da negociação (1:1 com o processo).
 create table app.negociacoes (
@@ -115,7 +116,7 @@ create table app.processo_transicoes (
   id            uuid primary key default gen_random_uuid(),
   empresa_id    uuid not null references app.empresas(id),
   processo_id   uuid not null references app.processos(id) on delete cascade,
-  evento        text not null check (evento in ('abertura','avanco','retorno','subetapa','compra','descarte','perda','stand_by','retomada','temperatura')),
+  evento        text not null check (evento in ('abertura','avanco','retorno','subetapa','conclusao','descarte','perda','stand_by','retomada','temperatura')),
   de_etapa      text,
   para_etapa    text,
   de_subetapa   text,
