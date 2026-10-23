@@ -947,10 +947,11 @@ function posRender(){try{if(MAPA){MAPA.remove()}}catch(e){}MAPA=null;PINS=POIS=D
   if(UI.route==='mapa')initMapa();if(UI.route==='terreno'&&!blocoFechado('geral'))initMini();fichaSheet()}
 document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const el=e.target;if(!(el instanceof HTMLElement)||el.matches('button,a,input,select,textarea'))return;if(el.matches('[data-a][tabindex]')){e.preventDefault();el.click()}});
 let arrastando=null;
-document.addEventListener('dragstart',e=>{const c=e.target.closest?.('.kcard[draggable="true"]');if(!c)return;arrastando=c.dataset.id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',arrastando);c.classList.add('arrastando');document.body.classList.add('dnd')});
-document.addEventListener('dragend',e=>{arrastando=null;document.body.classList.remove('dnd');document.querySelectorAll('.arrastando,.col.sobre').forEach(x=>x.classList.remove('arrastando','sobre'))});
-document.addEventListener('dragover',e=>{const col=e.target.closest?.('.col[data-col]');if(!col||!arrastando)return;e.preventDefault();e.dataTransfer.dropEffect='move';
+document.addEventListener('dragstart',e=>{const c=e.target.closest?.('.kcard[draggable="true"]');if(!c)return;arrastando=c.dataset.id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',arrastando);c.classList.add('arrastando');c.closest('.col')?.classList.add('origem');document.body.classList.add('dnd')});
+document.addEventListener('dragend',e=>{arrastando=null;document.body.classList.remove('dnd');document.querySelectorAll('.arrastando,.col.sobre,.col.origem').forEach(x=>x.classList.remove('arrastando','sobre','origem'))});
+// a coluna sob o card acende (a de origem não: soltar ali não muda nada); fora das colunas, nenhuma
+document.addEventListener('dragover',e=>{if(!arrastando)return;const col=e.target.closest?.('.col[data-col]:not(.origem)');if(!col){document.querySelectorAll('.col.sobre').forEach(x=>x.classList.remove('sobre'));return}e.preventDefault();e.dataTransfer.dropEffect='move';
   document.querySelectorAll('.col.sobre').forEach(x=>x!==col&&x.classList.remove('sobre'));col.classList.add('sobre')});
-document.addEventListener('drop',e=>{const col=e.target.closest?.('.col[data-col]');if(!col||!arrastando)return;e.preventDefault();const id=arrastando;arrastando=null;document.body.classList.remove('dnd');col.classList.remove('sobre');soltar(id,col.dataset.col)});
+document.addEventListener('drop',e=>{const col=e.target.closest?.('.col[data-col]:not(.origem)');if(!col||!arrastando)return;e.preventDefault();const id=arrastando;arrastando=null;document.body.classList.remove('dnd');document.querySelectorAll('.col.sobre,.col.origem').forEach(x=>x.classList.remove('sobre','origem'));soltar(id,col.dataset.col)});
 render();
 })();
