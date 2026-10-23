@@ -2569,7 +2569,15 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .pt-a .adv-mais { margin-left: auto } .pt-a .adv-mais .adv-mb { width: 36px; padding: 0; justify-content: center }
 .t-warn { color: #7a5900; font-weight: 500 }
 .kcard .kpt { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--m-on-var, #444746) }
+.ptc-lista { display: flex; flex-direction: column; gap: 10px }
+.ptc { border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px; padding: 8px 8px 10px 16px; display: flex; flex-direction: column; gap: 4px; min-width: 0 }
+.ptc-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 36px } .ptc-h b { font-weight: 500; font-size: 15px } .ptc-h > .faint { font-size: 13px; margin-right: auto }
+.ptc-l { display: flex; gap: 12px; font-size: 14px; min-width: 0; padding-right: 8px } .ptc-l > .faint:first-child { flex: 0 0 96px; font-size: 13px } .ptc-l > span:last-child { min-width: 0; overflow-wrap: anywhere }
+.nv-pt { border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px; padding: 4px 16px 12px; margin: 0 0 12px; min-width: 0 }
+.nv-pt legend { padding: 0 6px; font-size: 13px; font-weight: 500; color: var(--m-on-var, #444746) }
+.nv-pt .btn { margin-top: 8px }
 :root[data-tema="escuro"] .pt-card { border-color: rgba(124,140,255,.22); background: #060c20 }
+:root[data-tema="escuro"] .ptc, :root[data-tema="escuro"] .nv-pt { border-color: rgba(124,140,255,.22) }
 :root[data-tema="escuro"] .pt-ped { background: rgba(124,140,255,.07) }
 :root[data-tema="escuro"] .t-warn { color: #f5c451 }
 :root[data-tema="escuro"] .pt-card.comprado { box-shadow: inset 3px 0 0 #6dd58c } :root[data-tema="escuro"] .pt-card.perdido, :root[data-tema="escuro"] .pt-card.descartado { box-shadow: inset 3px 0 0 #f2b8b5 } :root[data-tema="escuro"] .pt-card.stand_by { box-shadow: inset 3px 0 0 #f5c451 }
@@ -3085,7 +3093,7 @@ function secaoPessoas(t){
 
 /* ===================== abas da ficha ===================== */
 function abaCadastro(t){
-  return `<div class="stack">${secaoGenerica(t,'ident')}${secaoGenerica(t,'loc')}${secaoAreas(t)}${secaoConfr(t)}${secaoGenerica(t,'fis')}${secaoMats(t)}${secaoInsc(t)}${secaoPessoas(t)}</div>`;
+  return `<div class="stack">${secaoGenerica(t,'ident')}${secaoGenerica(t,'loc')}${secaoAreas(t)}${secaoConfr(t)}${secaoGenerica(t,'fis')}${secPartesCad(t)}${secaoMats(t)}${secaoInsc(t)}${secaoPessoas(t)}</div>`;
 }
 function condicoes(t){
   const o=ofertaRef(t),ad=areaAdotada(t),cp=corrPrincipal(t);
@@ -3555,8 +3563,12 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       t.analises.forEach(a=>{if(a.status==='vigente')a.status='substituida'});t.analises.push({id:uid(),data:F.data,fonte:F.fonte,status:'vigente',zonas});UI.edit=null;log(t,'Nova análise urbanística: '+zonas.map(z=>z.sigla).join(' + '));save();render();toast('Análise registrada. A anterior foi preservada.');break}
     case 'novo':{const dup=f.dataset.dup;let alvo;if(!UI.nv){toast('Comece pela poligonal do terreno.',true);return}
       if(F.sql&&F.mun!=='outro'&&cidDoNome(F.municipio)!==F.mun){toast(`A inscrição é de ${CIDADES_INSC[F.mun].cidade} e o terreno fica em ${F.municipio.split(' · ')[0]}.`,true);return}
-      if(dup){alvo=T(dup)}else{S.seqT++;alvo={...seedVazio(),codigo:'TER-'+String(S.seqT).padStart(6,'0'),nome:F.nome,logradouro:F.logradouro.trim(),numero:F.numero.trim(),bairro:F.bairro.trim(),zona:F.zona||null,resp:F.resp,origem:F.origem,dataIdent:HOJE,
-        mats:F.mat?[{num:F.mat,cri:F.cri,area:null,data:null}]:[],insc:F.sql?[{mun:F.mun,sql:F.sql,area:null,valores:[]}]:[]};alvo.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado'}];nvGravar(alvo,F);S.terrenos.push(alvo)}
+      const nvPt=dup?[]:nvPartesLer(f);
+      if(nvPt.some(d=>!d.nome)){toast('Dê um nome a cada parte (ou tire a parte vazia).',true);return}
+      if(new Set(nvPt.map(d=>d.nome.toLowerCase())).size<nvPt.length){toast('Duas partes com o mesmo nome.',true);return}
+      if(dup){alvo=T(dup)}else{do S.seqT++;while(S.terrenos.some(x=>x.codigo==='TER-'+String(S.seqT).padStart(6,'0')));alvo={...seedVazio(),codigo:'TER-'+String(S.seqT).padStart(6,'0'),nome:F.nome,logradouro:F.logradouro.trim(),numero:F.numero.trim(),bairro:F.bairro.trim(),zona:F.zona||null,resp:F.resp,origem:F.origem,dataIdent:HOJE,
+        mats:F.mat?[{num:F.mat,cri:F.cri,area:null,data:null}]:[],insc:F.sql?[{mun:F.mun,sql:F.sql,area:null,valores:[]}]:[]};alvo.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado'}];nvGravar(alvo,F);S.terrenos.push(alvo);
+        nvPt.forEach(d=>gravarParteNova(alvo,{...d,mun:F.mun||cidDoNome(F.municipio)||'outro'}));if(nvPt.length)log(alvo,`${nvPt.length} parte${nvPt.length>1?'s':''} cadastrada${nvPt.length>1?'s':''}: ${nvPt.map(d=>d.nome).join(', ')}`)}
       const val=lerNum(F.valor);
       if(val||F.cid){const o={id:uid(),cid:F.cid||null,data:HOJE,valor:val,forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,status:'ativa'};alvo.ofertas.push(o);
         if(o.cid&&!alvo.corretores.some(x=>x.cid===o.cid))alvo.corretores.push({cid:o.cid,principal:!alvo.corretores.some(x=>x.principal)});
@@ -5449,6 +5461,27 @@ const vtParte=(t,pa)=>Object.assign(Object.create(t),{neg:pa.neg,propostas:pa.pr
 const terrenoDe=t=>t._parte?Object.getPrototypeOf(t):t;
 const donosParte=(t,pa)=>t.pessoas.filter(p=>p.parte===pa.id&&p.papel==='proprietario').map(p=>p.nome);
 const matsParte=(t,pa)=>t.mats.filter(m=>m.parte===pa.id);
+const inscParte=(t,pa)=>t.insc.filter(i=>i.parte===pa.id);
+const corParte=(t,pa)=>t.corretores.filter(x=>x.parte===pa.id).map(x=>corretor(x.cid)?.nome).filter(Boolean);
+const listaTxt=v=>String(v||'').split(/[,;\n]/).map(x=>x.trim()).filter(Boolean);
+/* partes digitadas no Novo terreno ou na ficha: só o nome é obrigatório; matrículas, inscrições e
+   vendedores digitados entram no cadastro do terreno já ligados à parte */
+function gravarParteNova(t,d){const pa={id:uid(),ativa:true,neg:null,propostas:[],nome:d.nome,essencial:true,area:d.area??null};partesDe(t).push(pa);
+  listaTxt(d.mats).forEach(n=>{const m=t.mats.find(x=>digits(x.num)===digits(n));if(m)m.parte=pa.id;else t.mats.push({num:n,cri:d.cri||'',area:null,data:null,parte:pa.id})});
+  listaTxt(d.insc).forEach(n=>{const i=t.insc.find(x=>digits(x.sql)===digits(n));if(i)i.parte=pa.id;else t.insc.push({mun:d.mun||'outro',sql:n,area:null,valores:[],parte:pa.id})});
+  listaTxt(d.vend).forEach(n=>t.pessoas.push({nome:n,tipo:'PF',papel:'proprietario',pct:null,tel:'',parte:pa.id}));
+  if(d.cid){const x=t.corretores.find(y=>y.cid===d.cid);if(x){if(!x.parte)x.parte=pa.id}else t.corretores.push({cid:d.cid,principal:!t.corretores.some(y=>y.principal),parte:pa.id})}
+  return pa}
+/* quadro Partes do Cadastro: o que cada parte tem; a negociação de cada uma fica na seção Negociação */
+function secPartesCad(t){const P=partesAtivas(t),ro=UI.role==='Leitura';
+  const add=ro?'':`<button class="btn text sm" data-a="pt-nova">${ic('add',16)}Adicionar parte</button>`;
+  const linha=(l,v)=>v?`<div class="ptc-l"><span class="faint">${l}</span><span>${v}</span></div>`:'';
+  return `<section class="sec" id="sec-partes-cad"><div class="sec-h"><h2>Partes</h2>${add}</div><div class="sec-b">
+    ${P.length?`<div class="ptc-lista">${P.map(pa=>{const ms=matsParte(t,pa),is=inscParte(t,pa),vs=donosParte(t,pa),cs=corParte(t,pa);
+      return `<div class="ptc"><div class="ptc-h"><b>${esc(pa.nome)}</b>${pa.essencial?'':'<span class="chip">Dispensável</span>'}<span class="faint">${pa.area?m2(pa.area):'tamanho não informado'}</span>${ro?'':`<button class="btn text sm" data-a="pt-editar" data-p="${pa.id}" aria-label="Editar ${esc(pa.nome)}">${ic('edit',16)}Editar</button>`}</div>
+        ${linha('Matrículas',ms.map(m=>esc(m.num)).join(', '))}${linha('Inscrições',is.map(i=>esc(i.sql)).join(', '))}${linha('Vendedores',vs.map(esc).join(', '))}${linha('Corretor',cs.map(esc).join(', '))}
+        ${!ms.length&&!is.length&&!vs.length&&!cs.length?'<div class="faint ptc-l">Nada vinculado ainda.</div>':''}</div>`}).join('')}</div>`
+    :`<div class="muted">Se os lotes têm donos que negociam separado, cadastre uma parte para cada dono ou grupo de donos. Só o nome é obrigatório.</div>`}</div></section>`}
 const ordSub=(e,s)=>subsDe(e).findIndex(x=>x.k===s);
 const precoParte=(t,pa)=>{const o=t.ofertas.find(x=>x.id===pa.neg?.ofRef)||t.ofertas.filter(x=>x.partes&&pa.id in x.partes).slice(-1)[0];
   if(!o||!o.partes||!(pa.id in o.partes))return null;return o.partes[pa.id]??(Object.keys(o.partes).length===1?o.valor:null)};
@@ -5572,6 +5605,10 @@ function partesSubmit(form,F,t,f){if(!t)return false;const pa=UI.alvoParte?parte
     const mats=f.querySelectorAll('input[name=mat]'),pes=f.querySelectorAll('input[name=pes]');
     mats.forEach(c=>{const m=t.mats[+c.value];if(c.checked)m.parte=alvo.id;else if(m.parte===alvo.id)m.parte=null});
     pes.forEach(c=>{const p=t.pessoas[+c.value];if(c.checked)p.parte=alvo.id;else if(p.parte===alvo.id)p.parte=null});
+    f.querySelectorAll('input[name=ins]').forEach(c=>{const x=t.insc[+c.value];if(c.checked)x.parte=alvo.id;else if(x.parte===alvo.id)x.parte=null});
+    f.querySelectorAll('input[name=cor]').forEach(c=>{let x=t.corretores.find(y=>y.cid===c.value);
+      if(c.checked){if(!x)t.corretores.push(x={cid:c.value,principal:!t.corretores.some(y=>y.principal)});x.parte=alvo.id}else if(x?.parte===alvo.id)x.parte=null});
+    listaTxt(F.vend).forEach(n=>t.pessoas.push({nome:n,tipo:'PF',papel:'proprietario',pct:null,tel:'',parte:alvo.id}));
     if(!pa){partesDe(t).push(alvo);log(t,`Parte ${nome} cadastrada${ess?'':' (dispensável)'}`);abrirPartes(t)}else log(t,`Parte ${nome} atualizada`);
     UI.modal=null;save();render();toast(pa?'Parte atualizada.':dividida(t)&&alvo.neg?`${nome} ganhou a sua negociação.`:'Parte cadastrada.');return true}
   if(!pa)return false;
@@ -5597,12 +5634,18 @@ function partesModal(M,fechar){const t=T(UI.id);if(!t)return '';const pa=UI.alvo
   const df=(id,l)=>`<div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="${id}">${l}</button></div>`;
   if(M==='pt-parte'){const ms=t.mats.map((m,i)=>`<label class="chk"><input type="checkbox" name="mat" value="${i}" ${pa&&m.parte===pa.id?'checked':''} ${m.parte&&(!pa||m.parte!==pa.id)?'disabled':''}>${esc(m.num)} <span class="faint">${esc(m.cri)}${m.parte&&(!pa||m.parte!==pa.id)?' · '+esc(parteDe(t,m.parte)?.nome||''):''}</span></label>`).join('');
     const ps=t.pessoas.map((p,i)=>`<label class="chk"><input type="checkbox" name="pes" value="${i}" ${pa&&p.parte===pa.id?'checked':''}>${esc(p.nome)} <span class="faint">${OPT.papel[p.papel]}${p.parte&&(!pa||p.parte!==pa.id)?' · '+esc(parteDe(t,p.parte)?.nome||''):''}</span></label>`).join('');
+    const is=t.insc.map((x,i)=>`<label class="chk"><input type="checkbox" name="ins" value="${i}" ${pa&&x.parte===pa.id?'checked':''} ${x.parte&&(!pa||x.parte!==pa.id)?'disabled':''}>${esc(x.sql)}${x.parte&&(!pa||x.parte!==pa.id)?` <span class="faint">${esc(parteDe(t,x.parte)?.nome||'')}</span>`:''}</label>`).join('');
+    const cs=S.corretores.map(c=>{const x=t.corretores.find(y=>y.cid===c.id),out=x?.parte&&(!pa||x.parte!==pa.id);return `<label class="chk"><input type="checkbox" name="cor" value="${c.id}" ${pa&&x?.parte===pa.id?'checked':''} ${out?'disabled':''}>${esc(c.nome)} <span class="faint">${esc(c.imob)}${out?' · '+esc(parteDe(t,x.parte)?.nome||''):''}</span></label>`}).join('');
     return `<div class="dh"><div><h2>${pa?'Editar parte':'Nova parte'}</h2><div class="muted" style="margin-top:4px">Um dono, ou um grupo de donos que negocia junto (herdeiros, sócios).</div></div>${fechar}</div>
-    <form data-form="pt-parte" id="f-pt"><div class="fields"><div class="field full"><label for="pt-n">Nome</label><input id="pt-n" name="nome" required value="${esc(pa?.nome||'')}" placeholder="Família Souza, Carlos Pires..."></div>
-    <div class="field"><label for="pt-a">Área (m²)</label><input id="pt-a" name="area" inputmode="decimal" value="${pa?.area??''}"></div>
+    <form data-form="pt-parte" id="f-pt"><div class="fields"><div class="field full"><label for="pt-n">Nome ou identificador *</label><input id="pt-n" name="nome" required value="${esc(pa?.nome||'')}" placeholder="Família Souza, Carlos Pires..."></div>
+    <div class="field"><label for="pt-a">Tamanho do lote (m²)</label><input id="pt-a" name="area" inputmode="decimal" value="${pa?.area??''}"></div>
     <div class="field"><span class="lbl-f">Importância</span><label class="chk" style="height:44px"><input type="checkbox" name="essencial" ${!pa||pa.essencial?'checked':''}>Essencial (sem ela o terreno não serve)</label></div>
     <div class="field full"><span class="lbl-f">Matrículas da parte</span><div class="marc">${ms||'<span class="faint">Nenhuma matrícula no terreno.</span>'}</div></div>
-    <div class="field full"><span class="lbl-f">Donos e contatos da parte</span><div class="marc">${ps||'<span class="faint">Ninguém vinculado ao terreno.</span>'}</div></div></div>
+    <div class="field full"><span class="lbl-f">Inscrições da parte</span><div class="marc">${is||'<span class="faint">Nenhuma inscrição no terreno.</span>'}</div></div>
+    <div class="field full"><span class="lbl-f">Vendedores e contatos da parte</span><div class="marc">${ps||'<span class="faint">Ninguém vinculado ao terreno.</span>'}</div></div>
+    <div class="field full"><label for="pt-v">Acrescentar vendedores</label><input id="pt-v" name="vend" placeholder="Nomes separados por vírgula"><span class="hint">Entram em Proprietários e contatos, ligados a esta parte.</span></div>
+    <div class="field full"><span class="lbl-f">Corretor que traz esta parte</span><div class="marc">${cs||'<span class="faint">Nenhum corretor cadastrado.</span>'}</div></div>
+    <div class="field full faint">Tudo é opcional, menos o nome. Dá para vincular depois.</div></div>
     ${!pa&&t.neg&&SIDX(t.neg.etapa)>=SIDX(etapaPartes())&&partesAtivas(t).length>=1?`<div class="banner blue" style="margin-top:12px">${ic('layers')}<div>O terreno já está em ${esc(SN(t.neg.etapa))}: ${dividida(t)?'a parte nova ganha a sua negociação.':'com esta parte, cada uma ganha a sua negociação.'}</div></div>`:''}</form>${df('f-pt',pa?'Salvar':'Cadastrar parte')}`}
   if(!pa)return '';
   if(M==='pt-remover')return `<div class="dh"><div><h2>Tirar ${esc(pa.nome)} do terreno?</h2><div class="muted" style="margin-top:4px">${pa.essencial?'É uma parte essencial: sem ela, o estudo do terreno precisa ser refeito.':'O terreno segue com área menor.'} Matrículas e donos continuam no histórico.</div></div>${fechar}</div><form data-form="pt-remover" id="f-ptr"><div class="field"><label for="ptr-m">Motivo (vai para o histórico)</label><textarea id="ptr-m" name="motivo" required placeholder="Ex.: dono vendeu para outra incorporadora"></textarea></div></form>${df('f-ptr','Tirar do terreno')}`;
@@ -5618,7 +5661,7 @@ function partesModal(M,fechar){const t=T(UI.id);if(!t)return '';const pa=UI.alvo
   return ''}
 
 /* ---------- exemplo: três lotes de donos diferentes, já na Negociação ---------- */
-function partesPreparar(){if(S.partesExemplo)return;S.partesExemplo=true;if(S.terrenos.some(t=>t.codigo==='TER-000133'))return;
+function partesPreparar(){if(S.partesExemplo)return;S.partesExemplo=true;if(S.terrenos.some(t=>t.codigo==='TER-000133'))return;S.seqT=Math.max(S.seqT||0,133);
   const H=n=>addD(HOJE,-n),la=-23.5868,lo=-46.5772,dy=45/110574,dx=60/(111320*Math.cos(la*Math.PI/180));
   const t=Object.assign(seedVazio(),{codigo:'TER-000133',nome:'Três lotes Rua Ibitirama',prioridade:'alta',resp:'Ana Prado',origem:'corretor',dataIdent:H(55),logradouro:'Rua Ibitirama',numero:'1.200',bairro:'Vila Prudente',zona:'sudeste',municipio:'São Paulo · SP',
     lat:la,lng:lo,precisao:'conferida',poly:[[la+dy,lo-dx],[la+dy,lo+dx],[la-dy,lo+dx],[la-dy,lo-dx]].map(p=>p.map(v=>+v.toFixed(6))),aDoc:5400,fonteArea:'documental',testada:120,topografia:'plano',posicao:'meio_quadra',formato:'regular',ocupacao:'parcialmente_ocupado'});
@@ -6144,6 +6187,9 @@ function nvDadosHtml(fechar){const nv=UI.nv,l=nv.local,mun=l?.cidade?l.cidade+(l
     ${campoInsc('n',cid,'',false)}
     <div class="field"><label for="n-mat">Matrícula</label><span style="display:flex;gap:6px"><input id="n-mat" name="mat" inputmode="numeric" placeholder="Número" style="flex:1 1 55%"><select id="n-cri" name="cri" aria-label="Cartório" style="flex:1 1 45%">${Array.from({length:18},(_,i)=>`<option>${i+1}º CRI</option>`).join('')}</select></span></div>
     <div id="dedupe" class="field full" aria-live="polite"></div></div></details>
+  <details class="details field full" id="nv-partes"><summary>Vários donos negociando separado? Cadastrar as partes</summary><div style="margin-top:8px">
+    <div class="muted" style="margin-bottom:8px">Uma parte para cada dono ou grupo de donos que negocia junto. Só o nome é obrigatório; o resto pode ficar para a ficha.</div>
+    <div id="nv-pt-lista"></div><button type="button" class="btn text sm" data-a="nv-pt-add">${ic('add',16)}Adicionar parte</button></div></details>
   <details class="details field full"><summary>Já recebeu uma oferta? Registrar condições pedidas</summary><div class="fields" style="margin-top:8px">
     <div class="field"><label for="n-cor">Corretor</label><select id="n-cor" name="cid"><option value="">Sem corretor / direto</option>${S.corretores.map(c=>`<option value="${c.id}">${esc(c.nome)} · ${esc(c.imob)}</option>`).join('')}</select></div>
     <div class="field"><label for="n-val">Valor pedido (R$)</label><input id="n-val" name="valor" inputmode="decimal"></div>
@@ -6152,6 +6198,18 @@ function nvDadosHtml(fechar){const nv=UI.nv,l=nv.local,mun=l?.cidade?l.cidade+(l
     <div class="field full"><label for="n-obs">Observação sobre a forma de pagamento</label><input id="n-obs" name="obsPag"></div>
     <div class="field full"><label for="n-ace">Aceita permuta</label><input id="n-ace" name="aceita"></div></div></details>
   </div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-novo" id="btn-novo">Cadastrar terreno</button></div>`}
+// uma linha de parte no passo 2 (acrescentada no lugar, para não perder o que já foi digitado)
+function nvParteLinha(i){const id=k=>`nvp-${k}-${i}`;
+  return `<fieldset class="nv-pt" data-i="${i}"><legend>Parte ${i+1}</legend><div class="fields">
+    <div class="field"><label for="${id('n')}">Nome ou identificador *</label><input id="${id('n')}" data-k="nome" placeholder="Família Souza, Lote 3..."></div>
+    <div class="field"><label for="${id('a')}">Tamanho do lote (m²)</label><input id="${id('a')}" data-k="area" inputmode="decimal"></div>
+    <div class="field"><label for="${id('m')}">Matrículas</label><input id="${id('m')}" data-k="mats" placeholder="Números separados por vírgula"></div>
+    <div class="field"><label for="${id('i')}">Inscrições (SQL)</label><input id="${id('i')}" data-k="insc" placeholder="Separadas por vírgula"></div>
+    <div class="field"><label for="${id('v')}">Vendedores</label><input id="${id('v')}" data-k="vend" placeholder="Nomes separados por vírgula"></div>
+    <div class="field"><label for="${id('c')}">Corretor</label><select id="${id('c')}" data-k="cid"><option value="">Sem corretor / direto</option>${S.corretores.map(c=>`<option value="${c.id}">${esc(c.nome)} · ${esc(c.imob)}</option>`).join('')}</select></div>
+  </div><button type="button" class="btn sm text danger" data-a="nv-pt-del">Tirar esta parte</button></fieldset>`}
+function nvPartesLer(f){return [...f.querySelectorAll('.nv-pt')].map(fs=>{const d={};fs.querySelectorAll('[data-k]').forEach(el=>d[el.dataset.k]=el.value.trim());d.area=lerNum(d.area);return d})
+  .filter(d=>d.nome||d.area||d.mats||d.insc||d.vend||d.cid)}
 // depois de desenhar a tela do passo 2: checagem de duplicidade
 function nvPosRender(){const f=$('#f-novo');if(!f||!UI.nv)return;dedupe()}
 // passo 2 gravado: o terreno novo com a poligonal, o município e as frentes
@@ -6176,6 +6234,9 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="nv-"]'
   if(A==='nv-desenhar'){UI.modal=null;renderModal();nvDesenhar()}
   if(A==='nv-kmz'){UI.kmzNovo=true;$('#kmz-in').value='';$('#kmz-in').click()}
   if(A==='nv-kmz-i'){const it=UI.nvKmz[Number(a.dataset.i)];UI.nvKmz=null;nvPoligonal(it.pts,'kmz',{nome:it.nome})}
+  if(A==='nv-pt-add'){const L=$('#nv-pt-lista');if(!L)return;const i=L.children.length?Math.max(...[...L.children].map(x=>+x.dataset.i))+1:0;L.insertAdjacentHTML('beforeend',nvParteLinha(i));
+    [...L.children].forEach((x,k)=>x.querySelector('legend').textContent='Parte '+(k+1));L.lastElementChild.querySelector('input').focus()}
+  if(A==='nv-pt-del'){const L=a.closest('#nv-pt-lista');a.closest('.nv-pt').remove();[...(L?.children||[])].forEach((x,k)=>x.querySelector('legend').textContent='Parte '+(k+1))}
   if(A==='nv-voltar'){UI.nv=null;UI.modal='novo';renderModal()}
   if(A==='nv-mesmo'){UI.nv.ignorados=UI.nv.sobre;UI.modal='novo';renderModal()}
   if(['nv-oferta','nv-oferta-p','nv-recad','nv-juntar'].includes(A))nvDecidir(A,a.dataset.id)});

@@ -870,7 +870,15 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .pt-a .adv-mais { margin-left: auto } .pt-a .adv-mais .adv-mb { width: 36px; padding: 0; justify-content: center }
 .t-warn { color: #7a5900; font-weight: 500 }
 .kcard .kpt { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--m-on-var, #444746) }
+.ptc-lista { display: flex; flex-direction: column; gap: 10px }
+.ptc { border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px; padding: 8px 8px 10px 16px; display: flex; flex-direction: column; gap: 4px; min-width: 0 }
+.ptc-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 36px } .ptc-h b { font-weight: 500; font-size: 15px } .ptc-h > .faint { font-size: 13px; margin-right: auto }
+.ptc-l { display: flex; gap: 12px; font-size: 14px; min-width: 0; padding-right: 8px } .ptc-l > .faint:first-child { flex: 0 0 96px; font-size: 13px } .ptc-l > span:last-child { min-width: 0; overflow-wrap: anywhere }
+.nv-pt { border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px; padding: 4px 16px 12px; margin: 0 0 12px; min-width: 0 }
+.nv-pt legend { padding: 0 6px; font-size: 13px; font-weight: 500; color: var(--m-on-var, #444746) }
+.nv-pt .btn { margin-top: 8px }
 :root[data-tema="escuro"] .pt-card { border-color: rgba(124,140,255,.22); background: #060c20 }
+:root[data-tema="escuro"] .ptc, :root[data-tema="escuro"] .nv-pt { border-color: rgba(124,140,255,.22) }
 :root[data-tema="escuro"] .pt-ped { background: rgba(124,140,255,.07) }
 :root[data-tema="escuro"] .t-warn { color: #f5c451 }
 :root[data-tema="escuro"] .pt-card.comprado { box-shadow: inset 3px 0 0 #6dd58c } :root[data-tema="escuro"] .pt-card.perdido, :root[data-tema="escuro"] .pt-card.descartado { box-shadow: inset 3px 0 0 #f2b8b5 } :root[data-tema="escuro"] .pt-card.stand_by { box-shadow: inset 3px 0 0 #f5c451 }

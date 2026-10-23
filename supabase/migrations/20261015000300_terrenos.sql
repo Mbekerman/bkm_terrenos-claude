@@ -292,7 +292,7 @@ begin
 end $$;
 create trigger t_soma after insert or update on app.terreno_pessoas for each row execute function app.tg_soma_participacao();
 
--- Matrícula, inscrição e pessoa só entram numa parte ativa do mesmo terreno.
+-- Matrícula, inscrição, pessoa e corretor só entram numa parte ativa do mesmo terreno.
 create or replace function app.tg_parte_do_terreno()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin
@@ -311,10 +311,12 @@ create table app.terreno_corretores (
   corretor_id uuid not null references app.corretores(id),
   empresa_id  uuid not null references app.empresas(id),
   principal   boolean not null default false,
+  parte_id    uuid references app.terreno_partes(id),  -- corretor que traz só uma das partes (vários donos)
   observacoes text,
   primary key (terreno_id, corretor_id)
 );
 create unique index terreno_corretor_principal_unico on app.terreno_corretores (terreno_id) where principal;
+create trigger t_parte before insert or update of parte_id, terreno_id on app.terreno_corretores for each row execute function app.tg_parte_do_terreno();
 
 create table app.terreno_infraestrutura (
   terreno_id      uuid not null references app.terrenos(id) on delete cascade,

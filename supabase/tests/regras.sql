@@ -838,6 +838,10 @@ insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel, perce
   (:'emp', :'tv', :'pas', 'proprietario', 50, :'pa'), (:'emp', :'tv', :'pbs', 'proprietario', 50, :'pa'), (:'emp', :'tv', :'pcp', 'proprietario', 100, :'pb');
 select pg_temp.ok((select sum(percentual_participacao) from app.terreno_pessoas where terreno_id = :'tv') = 200, 'participações somam 100% em cada parte (herdeiros juntos numa parte)');
 select pg_temp.ok((select qtd_matriculas = 2 and proprietarios = 'Ana Souza, Beto Souza' from app.v_partes where id = :'pa'), 'parte mostra matrículas e donos');
+insert into app.terreno_corretores (empresa_id, terreno_id, corretor_id, parte_id) values (:'emp', :'tv', :'c1', :'pb');
+select pg_temp.ok((select parte_id from app.terreno_corretores where terreno_id = :'tv' and corretor_id = :'c1') = :'pb', 'corretor que traz só uma parte fica ligado a ela');
+select pg_temp.ok((select corretores is not null from app.v_partes where id = :'pb') and (select corretores is null from app.v_partes where id = :'pa'), 'parte mostra o seu corretor');
+select pg_temp.falha(format($$update app.terreno_corretores set parte_id = %L where terreno_id = %L and corretor_id = %L$$, :'pb', :'t1', :'c1'), 'corretor só entra em parte do próprio terreno');
 
 select app.registrar_oferta(:'tv', 9000000, p_partes => format('[{"parte_id":"%s","valor":3500000},{"parte_id":"%s"}]', :'pa', :'pb')::jsonb) as rv \gset
 select (:'rv'::jsonb->>'processo_id') as nv \gset
