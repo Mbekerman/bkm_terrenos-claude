@@ -2042,7 +2042,7 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 @media (max-width: 720px) { .areas { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
 
 /* ---------- Setores do IBGE: camada de renda no mapa e quadro "Renda e população do entorno" na ficha ---------- */
-.lg-i .rd-ic { display: block; width: 14px; height: 14px; border-radius: 3px; background: conic-gradient(#7f7f7f 0 25%, #e3141b 0 50%, #0a9cf0 0 75%, #1fc43a 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
+.lg-i .rd-ic { display: block; width: 14px; height: 14px; border-radius: 3px; background: conic-gradient(#ffde81 0 25%, #ff7657 0 50%, #9d35a0 0 75%, #272f76 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
 .rd-leg { position: absolute; z-index: 1000; right: 10px; top: 64px; width: 200px; max-height: calc(100% - 160px); overflow-y: auto; overscroll-behavior: contain; background: #fff; color: #1f1f1f; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 2px 8px rgba(0,0,0,.12); font-size: 12px; line-height: 16px }
 .rd-leg summary { cursor: pointer; list-style: none; padding: 8px 12px; font-size: 13px; font-weight: 500 }
 .rd-leg summary::-webkit-details-marker { display: none }
@@ -2055,7 +2055,7 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .rd-esc-u { font-size: 11px; line-height: 14px; color: #5f6368 }
 .mp-renda-b { flex: none; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 20px; border: 0; font: inherit; font-size: 14px; font-weight: 500; color: #1f1f1f; cursor: pointer; background: rgba(255,255,255,.78); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 1px 2px rgba(0,0,0,.1) }
 .mp-renda-b[aria-pressed="true"] { background: #c2e7ff; color: #001d35 }
-.mp-renda-b .rd-ic { display: block; width: 16px; height: 16px; border-radius: 4px; background: conic-gradient(#7f7f7f 0 25%, #e3141b 0 50%, #0a9cf0 0 75%, #1fc43a 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
+.mp-renda-b .rd-ic { display: block; width: 16px; height: 16px; border-radius: 4px; background: conic-gradient(#ffde81 0 25%, #ff7657 0 50%, #9d35a0 0 75%, #272f76 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
 :root[data-tema="escuro"] .mp-renda-b { background: rgba(6,12,32,.72); color: #e6ecff; box-shadow: 0 0 0 1px rgba(124,140,255,.35) }
 :root[data-tema="escuro"] .mp-renda-b[aria-pressed="true"] { background: rgba(99,112,255,.22); color: #c9d6ff; box-shadow: 0 0 0 1px rgba(124,140,255,.5) }
 :root[data-tema="escuro"] :is(.rd-esc-m, .rd-esc-u) { color: #8e9ac4 }

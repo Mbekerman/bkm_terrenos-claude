@@ -92,7 +92,7 @@ function rdBox(){const area=$('.mapa-area');let el=$('#rd-box');if(RD.sel==null|
 /* ---------- legenda da renda sobre o mapa (recolhível; no celular começa fechada) ---------- */
 function rdLegendaHtml(){const m=RENDA_MET;
   // fechada, a legenda mostra a escala de cores em uma linha (com os limites em mil reais); aberta, a lista das faixas
-  const marcas={1:'2',4:'5',9:'10',11:'15',13:'22',15:'30'};
+  const marcas={2:'3',4:'5',7:'8',10:'13',13:'22',15:'30'};
   const escala=`<span class="rd-esc" aria-hidden="true"><span class="rd-esc-c">${m.faixas.map(f=>`<i style="background:${f.cor}"></i>`).join('')}</span><span class="rd-esc-m">${Object.entries(marcas).map(([k,v])=>`<b style="left:${k/m.faixas.length*100}%">${v}</b>`).join('')}</span><span class="rd-esc-u">mil R$ por mês · toque para ver as faixas</span></span>`;
   return `<summary><span class="rd-leg-t">Renda familiar estimada</span>${escala}</summary><div class="rd-leg-l">${m.faixas.map(f=>`<div class="rd-li"><span class="rd-q" style="background:${rdHex2rgba(f.cor,Math.max(m.opacidade,.85))}"></span>${esc(f.rotulo)}</div>`).join('')}
     <div class="rd-li"><span class="rd-q rd-sem"></span>Sem dado do IBGE</div>
