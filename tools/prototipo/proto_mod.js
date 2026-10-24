@@ -118,7 +118,6 @@ function desenhaPins(){return GG?G_desenhaPins():L_desenhaPins()}
 function desenhaPois(){desenhaConc();return GG?G_desenhaPois():L_desenhaPois()}
 function desenhaConc(){return GG?G_desenhaConc():L_desenhaConc()}
 function mostrarConc(on){if(GG)return G_mostrarConc(on);if(MAPA&&CONC){on?CONC.addTo(MAPA):MAPA.removeLayer(CONC)}}
-const concTip=c=>{const r=ccResumo(c),e=ccEmpN(c);return `${esc(c.nome)}${e?' · '+esc(e):''}${r.m2!=null?' · '+ccM2(r.m2):''}`};
 /* ---------- menu do clique direito no mapa (no toque, segurar no vazio): novo terreno, ponto de interesse ou concorrência ali ---------- */
 function ctxAbrir(x,y,lat,lng){ctxFechar();if(UI.mpModo||UI.role==='Leitura')return;const area=$('.mapa-area');if(!area)return;UI.ctxLL={lat,lng};
   const m=document.createElement('div');m.className='mp-ctx';m.setAttribute('role','menu');
@@ -234,7 +233,7 @@ function mpLegenda(){const base=fxLista('mapa'),m=UI.mp,cl=new Map(base.map(t=>[
   return topo+mpItens().map(x=>{const n=base.filter(t=>cl.get(t.id)===x.k).length,on=!m.ocultas.includes(x.k);
     return `<div class="lg-r"><button type="button" class="lg-i" data-a="mp-sit" data-v="${x.k}" aria-pressed="${on}"><span class="pin-mini" style="background:${x.cor};color:${x.fg}">${x.g}</span>${esc(x.nome)}<span class="n">${n}</span></button>${x.desce?`<button type="button" class="iconbtn lg-d" data-a="mp-desce" data-v="${x.k}" title="Ver ${m.f?'subetapas':'etapas'} de ${esc(x.nome)}" aria-label="Ver ${m.f?'subetapas':'etapas'} de ${esc(x.nome)}">${ic('chev',16)}</button>`:''}</div>`}).join('')
     +`<hr class="lg-sep"><button type="button" class="lg-i" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}"><span class="lg-poi"><span class="poi-b"></span></span>Pontos de interesse<span class="n">${(S.pontos||[]).length}</span></button>`
-    +`<button type="button" class="lg-i" data-a="mp-conc" aria-pressed="${UI.mpConc!==false}"><span class="lg-poi"><span class="conc-b"></span></span>Concorrência<span class="n">${ccAtivos().length}</span></button>`;
+    +`<button type="button" class="lg-i" data-a="mp-conc" aria-pressed="${UI.mpConc!==false}"><span class="lg-poi">${ccMarcaHtml()}</span>Concorrência<span class="n">${ccAtivos().length}</span></button>`;
 }
 function pgMapa(){
   const opt=(o,v)=>Object.entries(o).map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${esc(l)}</option>`).join('');
@@ -284,9 +283,9 @@ function L_desenhaPins(){if(!MAPA||!PINS)return;PINS.clearLayers();
     /* o pino fica sobre a poligonal: segurar nele (ou dois cliques) também entra em edição */
     if(t.poly&&t.poly.length>=3){mk.on('add',()=>polyGestos(mk.getElement(),t.id));mk.on('dblclick',e=>{L.DomEvent.stop(e);editarPoligonal(t.id)})}
     mk.addTo(PINS);mk._terreno=t.id})}
-const concIcon=()=>L.divIcon({className:'conc',html:'<span class="conc-b"></span>',iconSize:[16,16],iconAnchor:[8,8],tooltipAnchor:[0,-10]});
-function L_desenhaConc(){if(!MAPA||!CONC)return;CONC.clearLayers();ccAtivos().forEach(c=>L.marker([c.lat,c.lng],{icon:concIcon(),title:c.nome,interactive:!UI.mpModo,keyboard:true}).bindTooltip(concTip(c),{direction:'top'}).on('click',()=>{if(!UI.mpModo)ccAbrir(c.id)}).addTo(CONC));
-  if(!MAPA._cc){MAPA._cc=1;MAPA.on('click',ccFecharDoMapa)}}
+const concIcon=c=>L.divIcon({className:'conc',html:ccMarcaHtml(c),iconSize:[24,24],iconAnchor:[12,12],tooltipAnchor:[0,-14]});
+function L_desenhaConc(){if(!MAPA||!CONC)return;CONC.clearLayers();ccAtivos().forEach(c=>L.marker([c.lat,c.lng],{icon:concIcon(c),title:c.nome,interactive:!UI.mpModo,keyboard:true}).on('click',()=>{if(!UI.mpModo)ccAbrir(c.id)}).addTo(CONC));
+  if(!MAPA._cc){MAPA._cc=1;MAPA.on('click',ccFecharDoMapa);MAPA.on('zoomend',()=>ccNomes(MAPA.getZoom()))}ccNomes(MAPA.getZoom())}
 function L_desenhaPois(){if(!MAPA||!POIS)return;POIS.clearLayers();(S.pontos||[]).forEach(p=>L.marker([p.lat,p.lng],{icon:poiIcon(),title:p.nome,interactive:!UI.mpModo}).bindTooltip(`${esc(p.nome)} · ${CAT_POI[p.cat]||''}`,{direction:'top'}).addTo(POIS))}
 function L_desenhaRascunho(){const D=UI.edMini?MINI_DES:DES;if(!D)return;D.clearLayers();const p=UI.desenho||[];if(!p.length)return;
   (p.length>=3?L.polygon(p,{color:'#0094fe',weight:2,dashArray:UI.mpModo==='editar'?null:'6 4',fillOpacity:UI.mpModo==='editar'?.2:.12,interactive:false}):L.polyline(p,{color:'#0094fe',weight:2,dashArray:'6 4',interactive:false})).addTo(D);

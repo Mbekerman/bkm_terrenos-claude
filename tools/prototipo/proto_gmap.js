@@ -43,12 +43,12 @@ function G_desenhaPins(){if(!MAPA)return;gSet(gPins,null);gPins=[];const {Advanc
       ['mouseup','mouseout'].forEach(ev=>pg.addListener(ev,limpa));google.maps.event.addListener(MAPA,'dragstart',limpa);
       gPins.push(pg)}})}
 let gConc=[];
-function gConcEl(){const d=document.createElement('div');d.className='conc g';d.innerHTML='<span class="conc-b"></span>';return d}
+function gConcEl(c){const d=document.createElement('div');d.className='conc g';d.innerHTML=ccMarcaHtml(c);return d}
 function G_mostrarConc(on){gSet(gConc,on?MAPA:null)}
 function G_desenhaConc(){if(!MAPA)return;gSet(gConc,null);gConc=[];const {AdvancedMarkerElement}=gLib.marker;
-  ccAtivos().forEach(c=>{const m=new AdvancedMarkerElement({map:UI.mpConc===false?null:MAPA,position:gLL(c.lat,c.lng),content:gConcEl(),title:`${c.nome}${ccEmpN(c)?' · '+ccEmpN(c):''}`,gmpClickable:!UI.mpModo});
+  ccAtivos().forEach(c=>{const m=new AdvancedMarkerElement({map:UI.mpConc===false?null:MAPA,position:gLL(c.lat,c.lng),content:gConcEl(c),title:`${c.nome}${ccEmpN(c)?' · '+ccEmpN(c):''}`,gmpClickable:!UI.mpModo});
     m.addListener?.('click',()=>{if(!UI.mpModo)ccAbrir(c.id)});gConc.push(m)});
-  if(!MAPA._cc){MAPA._cc=1;MAPA.addListener('click',ccFecharDoMapa)}}
+  if(!MAPA._cc){MAPA._cc=1;MAPA.addListener('click',ccFecharDoMapa);MAPA.addListener('zoom_changed',()=>ccNomes(MAPA.getZoom()))}ccNomes(MAPA.getZoom())}
 function G_desenhaPois(){if(!MAPA)return;gSet(gPois,null);gPois=[];const {AdvancedMarkerElement}=gLib.marker;
   (S.pontos||[]).forEach(p=>gPois.push(new AdvancedMarkerElement({map:UI.mpPoi===false?null:MAPA,position:gLL(p.lat,p.lng),content:gPoiEl(),title:`${p.nome} · ${CAT_POI[p.cat]||''}`,gmpClickable:false})))}
 function G_desenhaRascunho(){const M=edMapa();gSet(gDes,null);gDes=[];if(!M)return;gDes=[];const p=(UI.desenho||[]).map(q=>gLL(q[0],q[1]));if(!p.length)return;
