@@ -212,8 +212,14 @@ create index on app.auditoria (empresa_id, em desc, id desc);
 -- registro some. Grava na hora (nada se perde se a aba fechar); só o
 -- histórico é que junta. Processos ficam de fora: o histórico do funil
 -- (processo_transicoes) é a base do SLA e cada passagem conta.
-create or replace function app.janela_log()
-returns interval language sql immutable as $$ select interval '7 seconds' $$;
+-- Ajuste na poligonal do terreno (só ela mudou, com o que vem junto) junta
+-- por 2 minutos: quem ajusta salva várias vezes seguidas e o histórico
+-- mostra um "Ajuste na poligonal" só (decisão do Moisés, 24/out/2026).
+create or replace function app.janela_log(p_tabela text default null, p_cols text[] default null)
+returns interval language sql immutable as $$
+  select case when p_tabela = 'terrenos' and 'poligono_geojson' = any(p_cols)
+                   and p_cols <@ array['poligono_geojson','poligono','latitude','longitude','precisao_localizacao','sobreposicoes_aceitas']
+              then interval '2 minutes' else interval '7 seconds' end $$;
 
 -- Colunas que mudaram entre dois retratos, sem as de controle.
 create or replace function app.colunas_mudadas(a jsonb, b jsonb)
@@ -237,7 +243,7 @@ begin
   where tabela = p_tabela and registro_id = coalesce(v_row->>'id', v_row->>'user_id')::uuid
   order by em desc, id desc limit 1;
   if not found or u.acao <> 'update' or u.user_id is distinct from auth.uid()
-     or u.em < clock_timestamp() - app.janela_log()
+     or u.em < clock_timestamp() - app.janela_log(p_tabela, v_cols)
      or app.colunas_mudadas(u.antes, u.depois) <> v_cols then
     return false;
   end if;

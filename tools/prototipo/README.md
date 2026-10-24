@@ -52,6 +52,7 @@ Rodar só o que a mudança toca; a varredura completa (`tvaza` e `tscroll`) ao f
 | `tlista.js` | página Mapa sem balão: clicar no pino destaca a linha, cartão no celular, lupa abre a ficha |
 | `tmini.js` | mini-mapa da Visão geral: Shift + roda, dois cliques fora da poligonal abrem o Mapa, Ver no mapa só no celular |
 | `tminied.js` | mini-mapa da Visão geral: dois cliques (dois toques no celular) na poligonal editam ali mesmo, menu do ponto, Ctrl+Z, Esc, clique fora salva, Leitura abre o Mapa (claro, escuro, celular) |
+| `tpolyfora.js` | edição da poligonal na página Mapa: no celular só Cancelar e Concluir (Desfazer no menu do ponto), clique fora do mapa cancela, clique no mapa fora da poligonal conclui, pino vai para dentro da poligonal e sem número, log "Ajuste na poligonal" junta ajustes a menos de 2 minutos (computador e celular) |
 | `tedmenu.js` | menu do clique direito no ponto, sem barra no desktop, Desfazer/Cancelar, Ctrl+Z e Esc (claro e escuro) |
 | `tent.js`, `tent2.js`, `tent3.js`, `tentshot.js` | pontos de interesse: busca e rota a pé simuladas, pontos da empresa, adicionar ponto |
 | `tgeo.js` | GeoSampa pelo SQL com respostas gravadas do servidor real em `testes/geosampa/` (`GRAVAR=1` regrava pelo Caddy local na porta 8099): campos completados, o que toca o lote, análise, PDF e DXF, "Usar a poligonal dos lotes" (diferença de área, inscrição sem lote fora, Leitura sem botão) |

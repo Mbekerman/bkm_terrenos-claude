@@ -595,6 +595,28 @@ update app.auditoria set em = em - interval '8 seconds' where registro_id = :'tl
 select pg_temp.como(:'diretor');
 update app.tarefas set titulo = 'Log A2' where id = :'tlog';
 select pg_temp.ok((select count(*) from app.auditoria where registro_id = :'tlog' and acao = 'update') = 3, 'passados 7 segundos, a mesma mudança é outro log');
+-- ajuste na poligonal: salvamentos seguidos juntam por 2 minutos
+select versao as vp from app.terrenos where id = :'tx' \gset
+select count(*) as np0 from app.auditoria where registro_id = :'tx' and acao = 'update' \gset
+select app.salvar_terreno(:'tx', :vp, jsonb_build_object('poligono_geojson', pg_temp.quadra(-46.6000, -23.6000, 32))) as vp \gset
+select app.salvar_terreno(:'tx', :vp, jsonb_build_object('poligono_geojson', pg_temp.quadra(-46.6000, -23.6000, 34))) as vp \gset
+reset role;
+update app.auditoria set em = em - interval '90 seconds' where registro_id = :'tx';
+select pg_temp.como(:'diretor');
+select app.salvar_terreno(:'tx', :vp, jsonb_build_object('poligono_geojson', pg_temp.quadra(-46.6000, -23.6000, 36))) as vp \gset
+select pg_temp.ok((select count(*) = :np0 + 1 and bool_or(depois->'poligono_geojson' = pg_temp.quadra(-46.6000, -23.6000, 36)) from app.auditoria where registro_id = :'tx' and acao = 'update'),
+  'ajustes na poligonal a menos de 2 minutos um do outro viram um log só');
+reset role;
+update app.auditoria set em = em - interval '3 minutes' where registro_id = :'tx';
+select pg_temp.como(:'diretor');
+select app.salvar_terreno(:'tx', :vp, jsonb_build_object('poligono_geojson', pg_temp.quadra(-46.6000, -23.6000, 38))) as vp \gset
+select pg_temp.ok((select count(*) from app.auditoria where registro_id = :'tx' and acao = 'update') = :np0 + 2, 'passados 2 minutos, o ajuste seguinte é outro log');
+select app.salvar_terreno(:'tx', :vp, '{"nome":"Outro terreno."}') as vp \gset
+reset role;
+update app.auditoria set em = em - interval '30 seconds' where registro_id = :'tx';
+select pg_temp.como(:'diretor');
+select app.salvar_terreno(:'tx', :vp, '{"nome":"Outro terreno"}') as vp \gset
+select pg_temp.ok((select count(*) from app.auditoria where registro_id = :'tx' and acao = 'update') = :np0 + 4, 'outros campos seguem com a janela de 7 segundos');
 
 \echo '# fechamento como comprado'
 select app.registrar_oferta(:'t2', 3000000) \gset

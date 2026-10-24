@@ -32,7 +32,9 @@ function diffTerreno(a,b){
   Object.keys({...a,...b}).forEach(k=>{
     if(['hist','relevo','id','codigo'].includes(k))return;
     const va=a[k],vb=b[k];if(JSON.stringify(va)===JSON.stringify(vb))return;
-    if(k==='poly'){campos.push({k,txt:vb?'Poligonal alterada':'Poligonal removida'});return}
+    /* o pino acompanha a poligonal: a mudança de lugar dele vai junto do ajuste, sem log próprio */
+    if(['lat','lng','precisao'].includes(k)&&JSON.stringify(a.poly)!==JSON.stringify(b.poly))return;
+    if(k==='poly'){campos.push({k,txt:!vb?'Poligonal removida':va?polyLogTxt(areaPoly(va),areaPoly(vb)):'Poligonal desenhada'});return}
     if(k==='neg'){const na=va||{},nb=vb||{};if(!va&&vb){itens.push('Negociação aberta');return}
       Object.keys({...na,...nb}).forEach(x=>{if(NEG_SEM_LOG.includes(x)||JSON.stringify(na[x])===JSON.stringify(nb[x])||typeof (nb[x]??na[x])==='object'&&x!=='viab')return;
         if(x==='viab'){campos.push({k:'neg.viab',txt:nb.viab?`Estudo de viabilidade vinculado: ${nb.viab.nome||''}`:'Estudo de viabilidade desvinculado'});return}
@@ -54,6 +56,9 @@ function diffTerreno(a,b){
    de antes da sequência e o final; se o final é o de antes, os dois somem. Mudança de etapa, subetapa e status fica
    de fora (cada passagem conta para o SLA). O registro é gravado na hora; só o histórico junta. */
 const JANELA_LOG=7000,LOG_NAO_JUNTA=['neg.etapa','neg.sub','neg.status'];
+/* ajuste na poligonal junta por 2 minutos (app.janela_log no banco; decisão do Moisés, 24/out/2026) */
+const janelaLog=ks=>ks.join()==='poly'?120000:JANELA_LOG;
+const polyLogTxt=(a0,a)=>`Ajuste na poligonal${a0&&a?`: ${m2(a0)} → ${m2(a)}`:''}`;
 const valCampo=(o,k)=>{const [a,b]=k.split('.');const v=b?o[a]?.[b]:o[a];return v===undefined?null:v};
 function juntarLog(t,s,campos,itens,nNovos){
   const e=t.hist[t.hist.length-1];if(!e||!campos.length)return;
@@ -61,7 +66,7 @@ function juntarLog(t,s,campos,itens,nNovos){
   if(itens.length||nNovos>1||ks.some(k=>LOG_NAO_JUNTA.includes(k))||e.det&&e.det.length>ks.length)return;
   const a=JSON.parse(s.j);e.ks=ks;e.ant=Object.fromEntries(ks.map(k=>[k,valCampo(a,k)]));
   const p=t.hist[t.hist.length-2];
-  if(!p||!p.ks||p.user!==e.user||p.ks.join()!==ks.join()||Date.parse(e.em)-Date.parse(p.em)>=JANELA_LOG)return;
+  if(!p||!p.ks||p.user!==e.user||p.ks.join()!==ks.join()||Date.parse(e.em)-Date.parse(p.em)>=janelaLog(ks))return;
   const atual=JSON.parse(retrato(t));
   if(ks.every(k=>JSON.stringify(valCampo(atual,k))===JSON.stringify(p.ant[k]))){t.hist.splice(-2,2);return}
   const base=JSON.parse(retrato(t));ks.forEach(k=>{const [x,y]=k.split('.');if(y)base[x]={...base[x],[y]:p.ant[k]};else base[x]=p.ant[k]});
