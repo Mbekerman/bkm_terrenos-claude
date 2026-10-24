@@ -106,7 +106,9 @@ const COLS_TERRENOS=[
 const attrAbrir=from=>t=>`data-a="abrir" data-id="${t.id}" data-from="${from}" tabindex="0"`;
 
 /* ===================== MAPA ===================== */
-let MAPA=null,MINI=null,PINS=null,POIS=null,CONC=null,DES=null,BASE=null;
+let MAPA=null,MINI=null,PINS=null,POIS=null,CONC=null,DES=null,BASE=null,MINI_DES=null;
+/* a edição da poligonal acontece na página Mapa ou no mini-mapa da ficha (UI.edMini): estas dizem em qual */
+const edMapa=()=>UI.edMini?MINI:MAPA,edArea=()=>UI.edMini?$('.mini-wrap'):$('.mapa-area');
 // Satélite já vem com rótulos (ruas e lugares); sem Relevo nem opção sem rótulos (decisões do Moisés, 23/out/2026)
 const CAMADAS_L={mapa:'Mapa',satelite:'Satélite'},CAMADAS_G={mapa:'Mapa',satelite:'Satélite'};
 // motor do mapa: Google quando a chave carrega; Leaflet (Esri/OSM) como reserva
@@ -286,17 +288,17 @@ const concIcon=()=>L.divIcon({className:'conc',html:'<span class="conc-b"></span
 function L_desenhaConc(){if(!MAPA||!CONC)return;CONC.clearLayers();ccAtivos().forEach(c=>L.marker([c.lat,c.lng],{icon:concIcon(),title:c.nome,interactive:!UI.mpModo,keyboard:true}).bindTooltip(concTip(c),{direction:'top'}).on('click',()=>{if(!UI.mpModo)ccAbrir(c.id)}).addTo(CONC));
   if(!MAPA._cc){MAPA._cc=1;MAPA.on('click',ccFecharDoMapa)}}
 function L_desenhaPois(){if(!MAPA||!POIS)return;POIS.clearLayers();(S.pontos||[]).forEach(p=>L.marker([p.lat,p.lng],{icon:poiIcon(),title:p.nome,interactive:!UI.mpModo}).bindTooltip(`${esc(p.nome)} · ${CAT_POI[p.cat]||''}`,{direction:'top'}).addTo(POIS))}
-function L_desenhaRascunho(){if(!DES)return;DES.clearLayers();const p=UI.desenho||[];if(!p.length)return;
-  (p.length>=3?L.polygon(p,{color:'#0094fe',weight:2,dashArray:UI.mpModo==='editar'?null:'6 4',fillOpacity:UI.mpModo==='editar'?.2:.12,interactive:false}):L.polyline(p,{color:'#0094fe',weight:2,dashArray:'6 4',interactive:false})).addTo(DES);
-  const poli=DES.getLayers()[0];
+function L_desenhaRascunho(){const D=UI.edMini?MINI_DES:DES;if(!D)return;D.clearLayers();const p=UI.desenho||[];if(!p.length)return;
+  (p.length>=3?L.polygon(p,{color:'#0094fe',weight:2,dashArray:UI.mpModo==='editar'?null:'6 4',fillOpacity:UI.mpModo==='editar'?.2:.12,interactive:false}):L.polyline(p,{color:'#0094fe',weight:2,dashArray:'6 4',interactive:false})).addTo(D);
+  const poli=D.getLayers()[0];
   p.forEach((q,i)=>{const sel=UI.vSel===i;
     const mk=L.marker(q,{draggable:true,keyboard:false,zIndexOffset:sel?1000:0,icon:L.divIcon({className:'v-alvo',iconSize:[44,44],iconAnchor:[22,22],html:`<span class="v-dot${sel?' sel':''}"></span>`})});
     mk.on('add',()=>vGestos(mk.getElement(),i));
     mk.on('drag',e=>{const ll=e.target.getLatLng(),pp=p.map(x=>x.slice());pp[i]=[ll.lat,ll.lng];poli&&poli.setLatLngs(pp)});
-    mk.on('dragstart',()=>{UI.vMenu=false;$('.mapa-area .v-menu')?.remove()});
+    mk.on('dragstart',()=>{UI.vMenu=false;edArea()?.querySelector('.v-menu')?.remove()});
     mk.on('dragend',e=>{const ll=e.target.getLatLng();vArrastado(i,ll.lat,ll.lng)});
-    mk.addTo(DES)})}
-function mpRefresh(){desenhaPois();const l=$('#mp-lista');if(l)l.innerHTML=mpLista();const g=$('#mp-leg');if(g)g.innerHTML=mpLegenda();const m=$('#mp-modo');if(m)m.innerHTML=modoBanner();
+    mk.addTo(D)})}
+function mpRefresh(){if(UI.edMini){miniEdRefresh();return}desenhaPois();const l=$('#mp-lista');if(l)l.innerHTML=mpLista();const g=$('#mp-leg');if(g)g.innerHTML=mpLegenda();const m=$('#mp-modo');if(m)m.innerHTML=modoBanner();
   if(MAPA){$('#mapa')?.classList.toggle('modo',!!UI.mpModo);desenhaPins();desenhaRascunho();vMenuDesenha()}mpCartao()}
 function L_initMapa(){const el=$('#mapa');if(!el)return;
   if(!window.L){el.innerHTML='<div class="mapa-erro">Não foi possível carregar a biblioteca de mapas. Verifique a conexão e recarregue a página.</div>';return}
@@ -339,18 +341,18 @@ function mapaClique(lat,lng){const m=UI.mpModo;if(!m)return;
    No desktop a edição não tem a barra de aviso: o menu do ponto traz também Desfazer e Cancelar edição (Ctrl+Z e Esc). */
 const TOQUE=()=>matchMedia('(pointer: coarse)').matches;
 function desGuardar(){(UI.desHist=UI.desHist||[]).push((UI.desenho||[]).map(x=>x.slice()));if(UI.desHist.length>60)UI.desHist.shift()}
-function desAtualizar(){desenhaRascunho();const b=$('#mp-modo');if(b)b.innerHTML=modoBanner();vMenuDesenha()}
+function desAtualizar(){desenhaRascunho();const b=$(UI.edMini?'#mini-modo':'#mp-modo');if(b)b.innerHTML=modoBanner();vMenuDesenha()}
 function dentroPoly(lat,lng,p){let d=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const [yi,xi]=p[i],[yj,xj]=p[j];if((yi>lat)!==(yj>lat)&&lng<(xj-xi)*(lat-yi)/(yj-yi)+xi)d=!d}return d}
-function editarPoligonal(id){const t=T(id);if(!t||!t.poly||t.poly.length<3||UI.role==='Leitura')return;
-  Object.assign(UI,{mpModo:'editar',mpAlvo:id,desEditando:true,desenho:t.poly.map(q=>q.slice()),desHist:[],vSel:null,vMenu:false,vMover:false,desOrig:JSON.stringify(t.poly),polyLongoEm:Date.now()});
-  fecharPopup();mpRefresh();enquadrarEdicao(t.poly);if(!TOQUE())toast('Editando a poligonal. Clique direito num ponto para mais opções; clique fora para salvar.')}
+function editarPoligonal(id,mini){const t=T(id);if(!t||!t.poly||t.poly.length<3||UI.role==='Leitura')return;
+  Object.assign(UI,{edMini:!!mini,mpModo:'editar',mpAlvo:id,desEditando:true,desenho:t.poly.map(q=>q.slice()),desHist:[],vSel:null,vMenu:false,vMover:false,desOrig:JSON.stringify(t.poly),polyLongoEm:Date.now()});
+  if(mini)miniEdRefresh();else{fecharPopup();mpRefresh();enquadrarEdicao(t.poly)}if(!TOQUE())toast('Editando a poligonal. Clique direito num ponto para mais opções; clique fora para salvar.')}
 /* enquadra a poligonal deixando livre a faixa do aviso (embaixo, no celular) */
 function enquadrarEdicao(poly){if(!MAPA||!poly)return;const cel=matchMedia('(max-width: 899px)').matches,pad={top:cel?70:60,bottom:cel?150:40,left:40,right:40};
   if(GG){const b=new google.maps.LatLngBounds();poly.forEach(q=>b.extend(gLL(q[0],q[1])));MAPA.fitBounds(b,pad);google.maps.event.addListenerOnce(MAPA,'idle',()=>{if(MAPA.getZoom()>19)MAPA.setZoom(19)})}
   else MAPA.fitBounds(poly,{maxZoom:19,paddingTopLeft:[pad.left,pad.top],paddingBottomRight:[pad.right,pad.bottom]})}
 function vSelecionar(i){UI.vSel=i;UI.vMenu=true;UI.vToqueEm=Date.now();desAtualizar()}
 function vFecharMenu(){UI.vMenu=false;UI.vSel=null;desAtualizar()}
-function vMenuDesenha(){const area=$('.mapa-area');if(!area)return;area.querySelector('.v-menu')?.remove();
+function vMenuDesenha(){const area=edArea();if(!area)return;area.querySelector('.v-menu')?.remove();
   if(!UI.vMenu||UI.vSel==null||!['desenhar','editar'].includes(UI.mpModo))return;const q=(UI.desenho||[])[UI.vSel];if(!q)return;
   const px=pontoNaTela(q[0],q[1]);if(!px)return;const m=document.createElement('div');m.className='v-menu';m.setAttribute('role','menu');
   const p=UI.desenho,a=areaPoly(p),ed=UI.mpModo==='editar'&&!TOQUE();
@@ -361,7 +363,7 @@ function vMenuDesenha(){const area=$('.mapa-area');if(!area)return;area.querySel
   const topo=Math.max(8,(document.querySelector('.top')?.getBoundingClientRect().bottom||0)-ar.top+8),base=Math.min(H,innerHeight-ar.top)-8;
   let x=px.x-w/2,y=px.y-h-24;if(y<topo)y=px.y+24;m.style.left=Math.max(8,Math.min(W-w-8,x))+'px';m.style.top=Math.max(topo,Math.min(base-h,y))+'px';
   m.querySelector('button')?.focus({preventScroll:true})}
-function pontoNaTela(lat,lng){if(!MAPA)return null;if(GG)return typeof gPontoNaTela==='function'?gPontoNaTela(lat,lng):null;const p=MAPA.latLngToContainerPoint([lat,lng]);return {x:p.x,y:p.y}}
+function pontoNaTela(lat,lng){const M=edMapa();if(!M)return null;if(GG)return typeof gPontoNaTela==='function'?gPontoNaTela(lat,lng):null;const p=M.latLngToContainerPoint([lat,lng]);return {x:p.x,y:p.y}}
 function desDesfazer(){const h=UI.desHist||[];if(!h.length)return false;UI.desenho=h.pop();UI.vSel=null;UI.vMenu=false;UI.vMover=false;mpRefresh();return true}
 function desCancelar(){Object.assign(UI,{mpModo:null,nvDesenho:false,desenho:null,desHist:null,vSel:null,vMenu:false,vMover:false});mpRefresh();toast('Edição cancelada, poligonal sem mudanças.')}
 function vAcao(a){const i=UI.vSel,p=UI.desenho||[];
@@ -537,7 +539,7 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     ${lin('Próxima reunião',pr?`${fd(pr.data)} · ${esc(pr.hora||'')}`:'')}
     ${pt?linLink('Próxima tarefa',`${esc(pt.titulo)} · <span style="${pt.prazo<HOJE?'color:var(--terracota);font-weight:600':''}">${fd(pt.prazo)}</span>`,`<button class="kv-ed" data-a="tk-abrir" data-id="${t.id}" data-tk="${pt.id}" aria-label="Editar a tarefa ${esc(pt.titulo)}" title="Editar tarefa">${lapis}</button>`):lin('Próxima tarefa','')}</dl></div></section>`:'';
   const loc=`<section class="sec g-loc"><div class="sec-h"><h2>${bi('localizacao',32)}Localização</h2></div><div class="sec-b">
-    ${t.lat!=null?`<div id="mini-mapa" class="mini-mapa"></div><div class="mini-pe"><span></span><span>${GG?`<button class="btn sm" data-a="g-sv-mini" data-id="${t.id}">Street View</button>`:''}<button class="btn sm mini-ir" data-a="mp-ir" data-id="${t.id}">Ver no mapa</button></span></div>
+    ${t.lat!=null?`<div class="mini-wrap"><div id="mini-mapa" class="mini-mapa"></div></div><div class="mini-pe"><span></span><span>${GG?`<button class="btn sm" data-a="g-sv-mini" data-id="${t.id}">Street View</button>`:''}<button class="btn sm mini-ir" data-a="mp-ir" data-id="${t.id}">Ver no mapa</button></span></div>
       <div class="mp-aviso mini">O fundo do mapa não carrega neste link de visualização.</div>`
     :`<div class="empty" style="padding:var(--e6) 0">Sem localização.<br><span style="display:inline-flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center">${GG&&(t.logradouro||t.bairro)?`<button class="btn sm primary ed" data-a="g-geo" data-id="${t.id}">Localizar pelo endereço</button>`:''}<button class="btn sm ed" data-a="mp-marcar" data-id="${t.id}">Marcar no mapa</button></span></div>`}</div></section>`;
   const poi=entornoCard(t);
@@ -555,13 +557,41 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
 function L_initMini(){const el=$('#mini-mapa'),t=T(UI.id);if(!el||!t||t.lat==null)return;if(!window.L){el.innerHTML='<div class="mapa-erro">Mapa indisponível.</div>';return}
   MINI=L.map(el,{zoomControl:true,attributionControl:true,scrollWheelZoom:false,doubleClickZoom:false,dragging:!L.Browser.mobile});
   const mini0=MINI;miniGestos(el,d=>mini0.setZoom(mini0.getZoom()+d));
-  MINI.on('dblclick',e=>miniAbrirMapa(t,e.latlng.lat,e.latlng.lng,mini0.getZoom()));
+  /* dois cliques: sobre a poligonal (ou o pino) editam a poligonal ali mesmo; no resto do mapa abrem a página Mapa */
+  MINI.on('dblclick',e=>miniDuplo(t,e.latlng.lat,e.latlng.lng,false));
+  MINI.on('click',e=>{if(UI.edMini)mapaClique(e.latlng.lat,e.latlng.lng)});
+  miniToqueDuplo(el,t,(x,y)=>{const ll=mini0.containerPointToLatLng([x,y]);return [ll.lat,ll.lng]});
   camada('satelite',el.closest('.sec')).addTo(MINI);const k=sitMapa(t);
   const enq=()=>t.poly?MINI.fitBounds(t.poly,{padding:[24,24],maxZoom:18}):MINI.setView([t.lat,t.lng],17);
-  if(t.poly)L.polygon(t.poly,{color:'#0094fe',weight:2,fillOpacity:.2}).addTo(MINI);enq();
-  const mini=MINI;requestAnimationFrame(()=>setTimeout(()=>{if(MINI!==mini)return;MINI.invalidateSize();enq()},60));
-  L.marker([t.lat,t.lng],{icon:pinIcon(k)}).addTo(MINI)}
+  if(t.poly)MINI.__poly=L.polygon(t.poly,{color:'#0094fe',weight:2,fillOpacity:.2}).on('dblclick',e=>{L.DomEvent.stop(e);miniDuplo(t,e.latlng.lat,e.latlng.lng,true)}).addTo(MINI);enq();
+  MINI_DES=L.layerGroup().addTo(MINI);
+  const mini=MINI;requestAnimationFrame(()=>setTimeout(()=>{if(MINI!==mini)return;MINI.invalidateSize();enq();if(UI.edMini)desenhaRascunho()},60));
+  const pin=L.marker([t.lat,t.lng],{icon:pinIcon(k)}).addTo(MINI);if(t.poly)pin.on('dblclick',e=>{L.DomEvent.stop(e);miniDuplo(t,t.lat,t.lng,true)});
+  if(UI.edMini&&UI.mpModo==='editar'&&UI.mpAlvo===t.id)miniEdDesenha()}
 
+/* dois cliques (ou dois toques) no mini-mapa. Sobre a poligonal: entra em edição ali mesmo, com os pontos e o menu do ponto
+   da página Mapa (Leitura não edita: abre o Mapa). No resto do mapa: abre a página Mapa. Editando, não faz nada (o clique fora conclui). */
+function miniDuplo(t,lat,lng,naPoly,toque){if(!toque&&Date.now()-(UI.miniToqueEm||0)<600)return; /* os dois toques já foram tratados por miniToqueDuplo */
+  if(UI.edMini&&UI.mpModo==='editar')return;
+  if(naPoly&&UI.role!=='Leitura'&&t.poly&&t.poly.length>=3){editarPoligonal(t.id,true);return}
+  miniAbrirMapa(t,lat,lng,MINI?.getZoom?.())}
+/* no celular o navegador nem sempre transforma dois toques em duplo clique: contamos os toques aqui */
+function miniToqueDuplo(el,t,ll){let ult=null,x0=0,y0=0,mov=false;
+  el.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch')return;x0=e.clientX;y0=e.clientY;mov=false},true);
+  el.addEventListener('pointermove',e=>{if(e.pointerType==='touch'&&Math.hypot(e.clientX-x0,e.clientY-y0)>10)mov=true},true);
+  el.addEventListener('pointerup',e=>{if(e.pointerType!=='touch'||mov||e.target.closest('.v-alvo,.gm-control-active,.leaflet-control,button'))return;
+    const agora=Date.now();if(ult&&agora-ult.em<350&&Math.hypot(e.clientX-ult.x,e.clientY-ult.y)<30){ult=null;
+      if(UI.edMini&&UI.mpModo==='editar')return;const r=el.getBoundingClientRect(),q=ll(e.clientX-r.left,e.clientY-r.top);if(!q)return;
+      const naPoly=!!(t.poly&&t.poly.length>=3&&dentroPoly(q[0],q[1],t.poly));UI.miniToqueEm=Date.now();setTimeout(()=>miniDuplo(t,q[0],q[1],naPoly,true),0);return}
+    ult={em:agora,x:e.clientX,y:e.clientY}},true)}
+/* edição no mini-mapa: some a poligonal fixa, aparecem os pontos; no celular, a barra de aviso fica logo abaixo do mapa */
+function miniEdDesenha(){const el=$('#mini-mapa');if(!el||!MINI)return;el.classList.add('modo');
+  if(GG){MINI.__poly?.setMap(null);MINI.setOptions({gestureHandling:'greedy'})}else{MINI.__poly&&MINI.removeLayer(MINI.__poly);MINI.dragging?.enable()}
+  let b=$('#mini-modo');if(!b){b=document.createElement('div');b.id='mini-modo';b.className='mp-modo mini-modo';b.setAttribute('aria-live','polite');el.after(b)}b.innerHTML=modoBanner();
+  desenhaRascunho();vMenuDesenha()}
+function miniEdRefresh(){if(UI.mpModo==='editar'&&UI.edMini)return miniEdDesenha();
+  /* saiu da edição (salvou, cancelou ou nada mudou): a ficha redesenha com a poligonal nova */
+  UI.edMini=false;render()}
 /* mini-mapa da Visão geral: a roda sozinha rola a página; Shift + roda dá zoom.
    Com Shift o navegador costuma mandar a rolagem como horizontal (deltaX), por isso vale qualquer eixo.
    A escuta é na captura do contêiner, antes do mapa: sem Shift o evento não chega ao mapa e a página rola. */

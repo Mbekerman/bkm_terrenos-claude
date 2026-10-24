@@ -50,7 +50,8 @@ Rodar só o que a mudança toca; a varredura completa (`tvaza` e `tscroll`) ao f
 | `tctx.js` | menu do clique direito no mapa (toque longo no celular), concorrência, barra do mapa |
 | `tconc.js` | concorrência: quadro ao tocar no losango (preço por m² ponderado e média simples, período, histórico da tipologia), Atualizar preços cria registro novo, cadastro na gaveta com Incluir empresa e endereço pelo ponto, Esc e clique no mapa fecham, desativar, Leitura sem botões, escuro e celular |
 | `tlista.js` | página Mapa sem balão: clicar no pino destaca a linha, cartão no celular, lupa abre a ficha |
-| `tmini.js` | mini-mapa da Visão geral: Shift + roda, dois cliques abrem o Mapa, Ver no mapa só no celular |
+| `tmini.js` | mini-mapa da Visão geral: Shift + roda, dois cliques fora da poligonal abrem o Mapa, Ver no mapa só no celular |
+| `tminied.js` | mini-mapa da Visão geral: dois cliques (dois toques no celular) na poligonal editam ali mesmo, menu do ponto, Ctrl+Z, Esc, clique fora salva, Leitura abre o Mapa (claro, escuro, celular) |
 | `tedmenu.js` | menu do clique direito no ponto, sem barra no desktop, Desfazer/Cancelar, Ctrl+Z e Esc (claro e escuro) |
 | `tent.js`, `tent2.js`, `tent3.js`, `tentshot.js` | pontos de interesse: busca e rota a pé simuladas, pontos da empresa, adicionar ponto |
 | `tgeo.js` | GeoSampa pelo SQL com respostas gravadas do servidor real em `testes/geosampa/` (`GRAVAR=1` regrava pelo Caddy local na porta 8099): campos completados, o que toca o lote, análise, PDF e DXF, "Usar a poligonal dos lotes" (diferença de área, inscrição sem lote fora, Leitura sem botão) |

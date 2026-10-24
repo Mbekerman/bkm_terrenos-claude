@@ -51,21 +51,21 @@ function G_desenhaConc(){if(!MAPA)return;gSet(gConc,null);gConc=[];const {Advanc
   if(!MAPA._cc){MAPA._cc=1;MAPA.addListener('click',ccFecharDoMapa)}}
 function G_desenhaPois(){if(!MAPA)return;gSet(gPois,null);gPois=[];const {AdvancedMarkerElement}=gLib.marker;
   (S.pontos||[]).forEach(p=>gPois.push(new AdvancedMarkerElement({map:UI.mpPoi===false?null:MAPA,position:gLL(p.lat,p.lng),content:gPoiEl(),title:`${p.nome} · ${CAT_POI[p.cat]||''}`,gmpClickable:false})))}
-function G_desenhaRascunho(){if(!MAPA)return;gSet(gDes,null);gDes=[];const p=(UI.desenho||[]).map(q=>gLL(q[0],q[1]));if(!p.length)return;
+function G_desenhaRascunho(){const M=edMapa();gSet(gDes,null);gDes=[];if(!M)return;gDes=[];const p=(UI.desenho||[]).map(q=>gLL(q[0],q[1]));if(!p.length)return;
   const traco={icons:[{icon:{path:'M 0,-1 0,1',strokeOpacity:1,strokeColor:'#0094fe',scale:2},offset:'0',repeat:'10px'}],strokeOpacity:0,clickable:false};
-  gDes.push(p.length>=3?new google.maps.Polygon({map:MAPA,paths:p,strokeColor:'#0094fe',strokeWeight:UI.mpModo==='editar'?2.5:2,fillColor:'#0094fe',fillOpacity:UI.mpModo==='editar'?.2:.12,clickable:false}):new google.maps.Polyline({map:MAPA,path:p,...traco}));
+  gDes.push(p.length>=3?new google.maps.Polygon({map:M,paths:p,strokeColor:'#0094fe',strokeWeight:UI.mpModo==='editar'?2.5:2,fillColor:'#0094fe',fillOpacity:UI.mpModo==='editar'?.2:.12,clickable:false}):new google.maps.Polyline({map:M,path:p,...traco}));
   const poli=gDes[0],{AdvancedMarkerElement}=gLib.marker;
   p.forEach((q,i)=>{const sel=UI.vSel===i;
     const el=document.createElement('div');el.className='v-alvo';el.innerHTML=`<span class="v-dot${sel?' sel':''}"></span>`;
-    const mk=new AdvancedMarkerElement({map:MAPA,position:q,content:el,gmpDraggable:true,zIndex:sel?1000:10});
+    const mk=new AdvancedMarkerElement({map:M,position:q,content:el,gmpDraggable:true,zIndex:sel?1000:10});
     vGestos(el,i);
     mk.addListener('drag',()=>{const pos=mk.position,pp=p.slice();pp[i]=gLL(typeof pos.lat==='function'?pos.lat():pos.lat,typeof pos.lng==='function'?pos.lng():pos.lng);poli.setPath?poli.setPath(pp):poli.setPaths(pp)});
-    mk.addListener('dragstart',()=>{UI.vMenu=false;$('.mapa-area .v-menu')?.remove()});
+    mk.addListener('dragstart',()=>{UI.vMenu=false;edArea()?.querySelector('.v-menu')?.remove()});
     mk.addListener('dragend',()=>{const pos=mk.position;vArrastado(i,typeof pos.lat==='function'?pos.lat():pos.lat,typeof pos.lng==='function'?pos.lng():pos.lng)});
     gDes.push(mk)})}
 /* posição de um ponto na tela do mapa (para abrir o menu do ponto ao lado dele) */
 let gProj=null;
-function gPontoNaTela(lat,lng){if(!MAPA)return null;if(!gProj||gProj.getMap()!==MAPA){gProj=new google.maps.OverlayView();gProj.onAdd=()=>{};gProj.draw=()=>{};gProj.onRemove=()=>{};gProj.setMap(MAPA)}
+function gPontoNaTela(lat,lng){const M=edMapa();if(!M)return null;if(!gProj||gProj.getMap()!==M){gProj=new google.maps.OverlayView();gProj.onAdd=()=>{};gProj.draw=()=>{};gProj.onRemove=()=>{};gProj.setMap(M)}
   const pr=gProj.getProjection();if(!pr)return null;const p=pr.fromLatLngToContainerPixel(new google.maps.LatLng(lat,lng));return p?{x:p.x,y:p.y}:null}
 function gEnquadrar(pts,maxZoom){if(!MAPA||!pts.length)return;if(pts.length===1){MAPA.setCenter(pts[0]);MAPA.setZoom(maxZoom||17);return}
   const b=new google.maps.LatLngBounds();pts.forEach(p=>b.extend(p));MAPA.fitBounds(b,48);if(maxZoom)google.maps.event.addListenerOnce(MAPA,'idle',()=>{if(MAPA.getZoom()>maxZoom)MAPA.setZoom(maxZoom)})}
@@ -252,10 +252,19 @@ function relevoHtml(t){const r=t.relevo;if(!GG&&!r)return '';
 /* ---------- mini mapa da ficha ---------- */
 function G_initMini(){const el=$('#mini-mapa'),t=T(UI.id);if(!el||!t||t.lat==null)return;el.innerHTML='';
   MINI=new google.maps.Map(el,{mapId:'DEMO_MAP_ID',center:gLL(t.lat,t.lng),zoom:18,mapTypeId:'hybrid',mapTypeControl:false,streetViewControl:true,fullscreenControl:true,clickableIcons:false,gestureHandling:'cooperative',disableDoubleClickZoom:true,tilt:0});
-  const mini0=MINI;miniGestos(el,d=>mini0.setZoom(mini0.getZoom()+d));MINI.addListener('dblclick',e=>{if(e.latLng)miniAbrirMapa(t,e.latLng.lat(),e.latLng.lng(),mini0.getZoom())});
-  const k=sitMapa(t);new gLib.marker.AdvancedMarkerElement({map:MINI,position:gLL(t.lat,t.lng),content:gPinEl(k)});
-  if(t.poly){new google.maps.Polygon({map:MINI,paths:t.poly.map(p=>gLL(p[0],p[1])),strokeColor:'#0094fe',strokeWeight:2,fillColor:'#0094fe',fillOpacity:.2,clickable:false});
-    const b=new google.maps.LatLngBounds();t.poly.forEach(p=>b.extend(gLL(p[0],p[1])));MINI.fitBounds(b,24)}}
+  const mini0=MINI;miniGestos(el,d=>mini0.setZoom(mini0.getZoom()+d));
+  /* dois cliques: sobre a poligonal (ou o pino) editam a poligonal ali mesmo; no resto do mapa abrem a página Mapa */
+  MINI.addListener('dblclick',e=>{if(e.latLng)miniDuplo(t,e.latLng.lat(),e.latLng.lng(),false)});
+  MINI.addListener('click',e=>{if(UI.edMini&&e.latLng)mapaClique(e.latLng.lat(),e.latLng.lng())});
+  miniToqueDuplo(el,t,(x,y)=>{const pr=gProjDe(mini0).getProjection(),ll=pr?.fromContainerPixelToLatLng(new google.maps.Point(x,y));return ll?[ll.lat(),ll.lng()]:null});
+  const k=sitMapa(t),pin=gPinEl(k);new gLib.marker.AdvancedMarkerElement({map:MINI,position:gLL(t.lat,t.lng),content:pin});
+  if(t.poly){const pg=MINI.__poly=new google.maps.Polygon({map:MINI,paths:t.poly.map(p=>gLL(p[0],p[1])),strokeColor:'#0094fe',strokeWeight:2,fillColor:'#0094fe',fillOpacity:.2,clickable:true});
+    pg.addListener('dblclick',e=>{e?.stop?.();if(e.latLng)miniDuplo(t,e.latLng.lat(),e.latLng.lng(),true)});
+    pin.addEventListener('dblclick',e=>{e.stopPropagation();miniDuplo(t,t.lat,t.lng,true)});
+    const b=new google.maps.LatLngBounds();t.poly.forEach(p=>b.extend(gLL(p[0],p[1])));MINI.fitBounds(b,24)}
+  if(UI.edMini&&UI.mpModo==='editar'&&UI.mpAlvo===t.id)miniEdDesenha()}
+/* projeção de um mapa do Google (pixel ↔ coordenada), criada uma vez por mapa */
+function gProjDe(m){if(!m.__proj){const o=m.__proj=new google.maps.OverlayView();o.onAdd=()=>{};o.draw=()=>{};o.onRemove=()=>{};o.setMap(m)}return m.__proj}
 
 /* ---------- autocompletar de endereço (Places API New) ---------- */
 /* converte o lugar escolhido nos campos da ficha */

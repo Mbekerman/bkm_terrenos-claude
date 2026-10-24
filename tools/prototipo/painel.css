@@ -284,8 +284,11 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .v-alvo:not(.leaflet-marker-icon) { transform: translateY(50%) }
 .leaflet-dragging .v-alvo, .v-alvo:active { cursor: grabbing }
 /* a cruz do modo de edição (.mapa.modo .leaflet-interactive) não vale nos pontos: neles, mãozinha; arrastando, mão fechada */
-.mapa.modo .v-alvo, .mapa.modo .v-alvo .v-dot { cursor: pointer !important }
-.mapa.modo .leaflet-dragging .v-alvo, .mapa.modo .v-alvo:active, .mapa.modo.leaflet-dragging .v-alvo { cursor: grabbing !important }
+:is(.mapa, .mini-mapa).modo .v-alvo, :is(.mapa, .mini-mapa).modo .v-alvo .v-dot { cursor: pointer !important }
+:is(.mapa, .mini-mapa).modo .leaflet-dragging .v-alvo, :is(.mapa, .mini-mapa).modo .v-alvo:active, :is(.mapa, .mini-mapa).modo.leaflet-dragging .v-alvo { cursor: grabbing !important }
+/* edição da poligonal no mini-mapa da ficha: o menu do ponto pode passar da borda do mapa; no celular a barra de aviso fica logo abaixo */
+.mini-wrap { position: relative }
+.mini-modo { position: static !important; transform: none !important; margin-top: 8px; max-width: none !important; box-shadow: none !important }
 :is(.v-menu, .mp-ctx) { position: absolute; z-index: 1200; display: flex; flex-direction: column; width: 220px; padding: 6px 0; border-radius: 12px; background: var(--m-sc-low, #f0f4f9); box-shadow: 0 2px 6px rgba(0,0,0,.2), 0 8px 20px rgba(0,0,0,.18); font-size: 14px }
 :is(.v-menu, .mp-ctx) .v-t { padding: 6px 16px 4px; font-size: 12px; font-weight: 500; color: var(--texto-suave) }
 :is(.v-menu, .mp-ctx) button { border: 0; background: transparent; min-height: 44px; padding: 0 16px; text-align: left; font-size: 14px; font-weight: 500; color: var(--m-on-surface, #1f1f1f) }
