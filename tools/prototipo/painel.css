@@ -989,3 +989,27 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .cc-tn { white-space: nowrap }
 /* pino sem o número dentro (pedido do Moisés, 24/out/2026): só um ponto no meio */
 .pin-b b.pin-d { display: block; width: 8px; height: 8px; border-radius: 50%; font-size: 0 }
+/* olhinho e lixeira nos logs (pedido do Moisés, 24/out/2026) */
+.pn-la { display: flex; justify-content: flex-end; gap: 2px; margin: 2px -6px -4px 0 }
+.pn-lb { width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 16px; background: transparent; color: var(--m-on-surface-var, #444746); cursor: pointer }
+.pn-lb:hover { background: rgba(127,127,127,.12) }
+.pn-lb:focus-visible { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: 0 }
+.pn-lb.on { color: #b3261e; background: #ffdad6 }
+.pn-log.off, .pn-log.desf { background: rgba(127,127,127,.08) }
+.pn-log.off .pn-lt, .pn-log.off .pn-det, .pn-log.off .pn-lm, .pn-log.desf .pn-lt, .pn-log.desf .pn-det { text-decoration: line-through; color: #8e918f }
+.pn-log.off .avatar, .pn-log.desf .avatar { filter: grayscale(1); opacity: .55 }
+.pn-lx { font-size: 12px; color: #b3261e; margin-top: 2px }
+.pn-lconf { margin-top: 6px; padding: 8px 10px; border-radius: 8px; background: #ffdad6; color: #410e0b; font-size: 13px; line-height: 18px; cursor: default }
+.pn-lconf-b { display: flex; justify-content: flex-end; gap: 4px; margin-top: 6px }
+.pn-lconf .btn.primary.crit { background: #b3261e !important; color: #fff !important; border-color: transparent !important }
+.log-previa { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; padding: 8px 8px 8px 16px; margin-bottom: 12px; border-radius: 12px; background: #ffdf99; color: #3f2e00; font-size: 14px; line-height: 20px }
+.log-previa > span { flex: 1 1 220px }
+.log-previa .btn.text { color: #3f2e00 !important; font-weight: 500 }
+:root[data-tema="escuro"] .pn-lb { color: #8e9ac4 }
+:root[data-tema="escuro"] .pn-lb.on { color: #ffb4ab; background: rgba(255,180,171,.12) }
+:root[data-tema="escuro"] .pn-log.off, :root[data-tema="escuro"] .pn-log.desf { background: rgba(124,140,255,.05) }
+:root[data-tema="escuro"] .pn-log.off .pn-lt, :root[data-tema="escuro"] .pn-log.off .pn-det, :root[data-tema="escuro"] .pn-log.off .pn-lm, :root[data-tema="escuro"] .pn-log.desf .pn-lt, :root[data-tema="escuro"] .pn-log.desf .pn-det { color: #5d6688 }
+:root[data-tema="escuro"] .pn-lx { color: #ffb4ab }
+:root[data-tema="escuro"] .pn-lconf { background: rgba(255,180,171,.12); color: #ffdad6 }
+:root[data-tema="escuro"] .log-previa { background: rgba(255,223,153,.12); color: #ffdf99 }
+:root[data-tema="escuro"] .log-previa .btn.text { color: #ffdf99 !important }
