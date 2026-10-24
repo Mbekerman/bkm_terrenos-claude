@@ -991,4 +991,42 @@ select pg_temp.ok((select filtros->'temperatura' = '[5]' from app.filtros_salvos
 select pg_temp.como(:'intruso');
 select pg_temp.ok((select count(*) from app.filtros_salvos) = 0, 'outra empresa não vê as visões');
 
+-- ---------------------------------------------------------------------
+\echo '# concorrência'
+select pg_temp.como(:'analista');
+insert into app.concorrentes (empresa_id, nome) values (:'emp', 'Construtora Exemplo') returning id as cc \gset
+select pg_temp.falha(format($$insert into app.concorrentes (empresa_id, nome) values (%L, ' construtora exemplo ')$$, :'emp'), 'empresa concorrente com o mesmo nome');
+insert into app.concorrencia_empreendimentos (empresa_id, concorrente_id, nome, latitude, longitude, unidades, situacao, data_lancamento)
+  values (:'emp', :'cc', 'Residencial Jardim', -23.5862, -46.5795, 200, 'lancamento', '2026-03-01') returning id as ce \gset
+insert into app.concorrencia_tipologias (empresa_id, empreendimento_id, area_privativa_m2, dormitorios, unidades, faixa)
+  values (:'emp', :'ce', 40, 2, 150, 'his2') returning id as tp1 \gset
+insert into app.concorrencia_tipologias (empresa_id, empreendimento_id, area_privativa_m2, dormitorios, unidades, faixa)
+  values (:'emp', :'ce', 50, 2, 50, 'hmp') returning id as tp2 \gset
+select pg_temp.ok((select preco_m2 is null and tipologias = 2 and tipologias_com_preco = 0 from app.v_concorrencia where id = :'ce'), 'sem preço apurado, sem preço por m²');
+insert into app.concorrencia_precos (empresa_id, tipologia_id, apurado_em, preco_medio, fonte) values
+  (:'emp', :'tp1', '2026-03-10', 240000, 'stand'), (:'emp', :'tp2', '2026-03-10', 350000, 'stand');
+-- (240000×150 + 350000×50) ÷ (40×150 + 50×50) = 53.500.000 ÷ 8.500
+select pg_temp.ok((select preco_m2 = 6294.12 and mix_completo from app.v_concorrencia where id = :'ce'), 'preço por m² ponderado pelo mix de unidades');
+insert into app.concorrencia_precos (empresa_id, tipologia_id, apurado_em, preco_medio) values (:'emp', :'tp1', '2026-09-01', 260000);
+select pg_temp.ok((select count(*) from app.concorrencia_precos where tipologia_id = :'tp1') = 2, 'preço novo vira linha nova, o anterior fica');
+select pg_temp.ok((select apurado_de = '2026-03-10' and apurado_ate = '2026-09-01' from app.v_concorrencia where id = :'ce'), 'o resumo mostra o período dos preços usados');
+select pg_temp.ok((select preco_m2 from app.concorrencia_resumo('2026-04-01') where empreendimento_id = :'ce') = 6294.12, 'o preço por m² de uma data passada usa os preços daquela data');
+select pg_temp.falha(format($$insert into app.concorrencia_precos (empresa_id, tipologia_id, apurado_em, preco_medio) values (%L, %L, '2026-09-01', 1)$$, :'emp', :'tp1'), 'um preço por tipologia e data');
+select pg_temp.falha(format($$insert into app.concorrencia_precos (empresa_id, tipologia_id, apurado_em, preco_medio) values (%L, %L, current_date + 1, 1)$$, :'emp', :'tp1'), 'apuração no futuro');
+update app.concorrencia_tipologias set unidades = null where id = :'tp2';
+-- média simples: (260000/40 + 350000/50) ÷ 2 = (6500 + 7000) ÷ 2
+select pg_temp.ok((select preco_m2 = 6750 and not mix_completo from app.v_concorrencia where id = :'ce'), 'sem o mix, média simples do preço por m² das tipologias');
+select pg_temp.ok((select faixas = '{his2,hmp}' from app.v_concorrencia where id = :'ce'), 'faixas sociais das tipologias');
+update app.concorrencia_tipologias set ativo = false where id = :'tp2';
+select pg_temp.ok((select preco_m2 = 6500 and tipologias = 1 from app.v_concorrencia where id = :'ce'), 'tipologia desativada sai do cálculo');
+select pg_temp.falha(format($$update app.concorrencia_precos set tipologia_id = %L where tipologia_id = %L$$, :'tp2', :'tp1'), 'preço não muda de tipologia');
+select pg_temp.como(:'leitor');
+select pg_temp.ok((select count(*) from app.v_concorrencia) = 1, 'Leitura vê a concorrência');
+select pg_temp.falha(format($$insert into app.concorrencia_precos (empresa_id, tipologia_id, apurado_em, preco_medio) values (%L, %L, '2026-08-01', 1)$$, :'emp', :'tp1'), 'Leitura não lança preço');
+select pg_temp.como(:'intruso');
+select pg_temp.ok((select count(*) from app.v_concorrencia) = 0 and (select count(*) from app.concorrentes) = 0, 'outra empresa não vê a concorrência');
+select pg_temp.falha(format($$insert into app.concorrencia_empreendimentos (empresa_id, concorrente_id, nome, latitude, longitude) values (%L, %L, 'X', 0, 0)$$, :'emp2', :'cc'), 'empreendimento não aponta empresa concorrente de outra empresa');
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'concorrencia_precos') >= 3, 'preços entram na auditoria');
+
 \echo 'TODOS OS TESTES PASSARAM'
