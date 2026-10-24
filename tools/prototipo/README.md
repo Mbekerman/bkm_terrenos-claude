@@ -13,6 +13,7 @@ O `docs/prototipo.html` (servido pelo Railway em `/prototipo`) e o artifact do c
 | `proto_geosampa.js` | GeoSampa pelo SQL: lote, camadas que tocam a poligonal, análise, planta (PDF) e desenho (DXF) |
 | `proto_geosanja.js` | GeoSanja pela inscrição imobiliária de SJC: poligonal, camadas que tocam o lote, análise, planta (PDF montado no navegador) e desenho (DXF) |
 | `proto_novo.js` | Novo terreno pela poligonal: passo 1 (desenhar ou KMZ/KML; único lugar que importa KMZ), sobreposição com outros terrenos e o que fazer, município e frentes pela localização, busca de endereço no mapa |
+| `proto_concorrencia.js` | concorrência: empresas, empreendimentos, tipologias e preços por data de apuração (espelha as tabelas `concorrencia_*`), preço por m² calculado, gaveta de cadastro, quadro ao tocar no losango, Atualizar preços |
 | `proto_filtros.js` | filtros de terrenos: gaveta à direita (tela cheia no celular) com os grupos de filtros, barra com chips, Limpar e visões salvas, a mesma seleção em Terrenos, Mapa e Fases (`fxLista`, `fxBarra`), guardada na sessão e no endereço (`#f=`) |
 | `proto_fases.js` | fases acima das etapas: configuração padrão, fase atual, abertura pelas dependências, kanban em três níveis (fase › etapa › subetapa, com seta de voltar), seção Fases da ficha, quadro de avanço da fase e Configurações › Fases |
 | `proto_partes.js` | terreno com vários donos: partes, negociação por parte (pelas mesmas regras do funil), terreno que anda pela parte mais atrasada, seção Partes da ficha e terreno de exemplo (TER-000133) |
@@ -47,6 +48,7 @@ Rodar só o que a mudança toca; a varredura completa (`tvaza` e `tscroll`) ao f
 | `tfunil.js` | novo funil: quadro por etapa e subetapa, quadro de avanço, aprovações por hierarquia, Comprado/Perdido/Descartado/Stand By, sino e Configurações › Funil |
 | `ted2.js` | edição da poligonal (desktop e celular) |
 | `tctx.js` | menu do clique direito no mapa (toque longo no celular), concorrência, barra do mapa |
+| `tconc.js` | concorrência: quadro ao tocar no losango (preço por m² ponderado e média simples, período, histórico da tipologia), Atualizar preços cria registro novo, cadastro na gaveta com Incluir empresa e endereço pelo ponto, Esc e clique no mapa fecham, desativar, Leitura sem botões, escuro e celular |
 | `tlista.js` | página Mapa sem balão: clicar no pino destaca a linha, cartão no celular, lupa abre a ficha |
 | `tmini.js` | mini-mapa da Visão geral: Shift + roda, dois cliques abrem o Mapa, Ver no mapa só no celular |
 | `tedmenu.js` | menu do clique direito no ponto, sem barra no desktop, Desfazer/Cancelar, Ctrl+Z e Esc (claro e escuro) |

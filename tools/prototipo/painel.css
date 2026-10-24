@@ -942,3 +942,38 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 :root[data-tema="escuro"] .fx-op[data-zero] { color: #5d688f }
 :root[data-tema="escuro"] .fx-vis select { background: #081028 }
 :root[data-tema="escuro"] .fx-in { background: transparent }
+/* ---------- Concorrência: quadro ao tocar no losango e gaveta de cadastro ---------- */
+.cc-box { position: absolute; z-index: 1060; top: 64px; right: 10px; width: min(400px, calc(100% - 20px)); max-height: calc(100% - 150px); overflow-y: auto; overscroll-behavior: contain; background: #fff; color: #1f1f1f; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 4px 16px rgba(0,0,0,.16); padding: 4px 0 12px }
+.cc-hd { display: flex; align-items: flex-start; gap: 8px; padding: 12px 8px 4px 20px }
+.cc-ti { flex: 1; min-width: 0 } .cc-n { font-size: 16px; line-height: 24px; font-weight: 500 }
+.cc-ti .muted { font-size: 14px; line-height: 20px }
+.cc-k { margin: 8px 20px 4px; padding: 12px 16px; border-radius: 12px; background: #f3f0f7; border-left: 3px solid #863d8f }
+.cc-big { font-size: 24px; line-height: 32px; font-weight: 400 } .cc-k .faint { font-size: 12px; line-height: 16px }
+.cc-meta { padding: 4px 20px 0; font-size: 14px; line-height: 20px }
+.cc-tw { margin-top: 8px; overflow-x: auto }
+.cc-t { width: 100%; border-collapse: collapse; font-size: 13px; line-height: 18px }
+.cc-t th { font-weight: 500; color: #444746; text-align: left; padding: 8px 6px; border-bottom: 1px solid #e3e3e3; white-space: nowrap }
+.cc-t td { padding: 8px 6px; border-bottom: 1px solid #eef0f2; vertical-align: top } .cc-t .num { text-align: right; white-space: nowrap }
+.cc-t :is(th, td):first-child { padding-left: 20px } .cc-t :is(th, td):last-child { padding-right: 20px }
+.cc-t td .faint { font-size: 12px } .cc-tr.cc-tem { cursor: pointer } .cc-tr.cc-tem:hover { background: #f3f6fc }
+.cc-tr .ic { vertical-align: -2px; margin-left: 2px; transition: transform .15s } .cc-tr[aria-expanded="true"] .ic { transform: rotate(180deg) }
+.cc-h-r td { background: #f8fafd; padding-top: 4px; padding-bottom: 4px }
+.cc-hl { list-style: none; margin: 0; padding: 0 } .cc-hl li { display: grid; grid-template-columns: 76px 1fr 1fr 1fr; gap: 8px; padding: 4px 0; font-size: 12px }
+.cc-ac { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 20px 0 } .cc-ac [data-a=cc-desat] { margin-left: auto }
+.cc-dr .cc-f { padding: 8px 24px 24px } .cc-sec { padding: 12px 0; border-bottom: 1px solid #e3e3e3 } .cc-sec:last-child { border-bottom: 0 }
+.cc-sh { font-size: 16px; line-height: 24px; font-weight: 500; margin-bottom: 8px }
+.cc-dr .fields { grid-template-columns: 1fr 1fr; gap: 12px } .cc-dr .field.full { grid-column: 1 / -1 } .cc-dr .hint { margin-top: 8px }
+.cc-emp { display: flex; gap: 8px; align-items: center } .cc-emp select { flex: 1; min-width: 0 }
+.cc-tp { border: 1px solid #c4c7c5; border-radius: 12px; padding: 8px 16px 16px; margin-bottom: 12px }
+.cc-tp-h { display: flex; align-items: center; justify-content: space-between; min-height: 40px; font-weight: 500; font-size: 14px; margin-right: -8px }
+@media (max-width: 899px) {
+  .cc-box { top: auto; bottom: 8px; left: 8px; right: 8px; width: auto; max-height: 62% }
+  .mapa-area:has(.cc-box) .mp-legenda { display: none }
+  .cc-dr .cc-f { padding: 8px 16px 24px }
+}
+:root[data-tema="escuro"] .cc-box { background: #0d1530; color: #e6ecff; box-shadow: 0 0 0 1px rgba(124,140,255,.35), 0 10px 28px rgba(0,0,0,.55) }
+:root[data-tema="escuro"] .cc-k { background: rgba(168,85,247,.10); border-left-color: #a855f7 }
+:root[data-tema="escuro"] .cc-t th { color: #8e9ac4; border-color: #1a2240 } :root[data-tema="escuro"] .cc-t td { border-color: #1a2240 }
+:root[data-tema="escuro"] .cc-tr.cc-tem:hover, :root[data-tema="escuro"] .cc-h-r td { background: rgba(99,112,255,.08) }
+:root[data-tema="escuro"] :is(.cc-sec) { border-color: #1a2240 } :root[data-tema="escuro"] .cc-tp { border-color: rgba(124,140,255,.25) }
+.cc-tn { white-space: nowrap }

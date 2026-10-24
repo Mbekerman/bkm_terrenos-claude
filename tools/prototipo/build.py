@@ -14,7 +14,7 @@ lcss = open(lpath, encoding='utf-8').read() if os.path.exists(lpath) else ''
 if not lcss: print('aviso: libs/l/leaflet.css ausente (baixe do branch libs-prototipo); o CSS do Leaflet fica de fora')
 lcss = re.sub(r'url\([^)]*\)', 'none', lcss)  # ícones padrão do Leaflet não são usados (pins próprios)
 body = ler('proto_body.html'); js = ler('proto.js')
-mod = ler('proto_mod.js') + '\n' + ler('proto_gmap.js') + '\n' + ler('proto_painel.js') + '\n' + ler('proto_fases.js') + '\n' + ler('proto_funil.js') + '\n' + ler('proto_partes.js') + '\n' + ler('proto_lote.js') + '\n' + ler('proto_geosampa.js') + '\n' + ler('proto_geosanja.js') + '\n' + ler('proto_novo.js') + '\n' + ler('proto_filtros.js')
+mod = ler('proto_mod.js') + '\n' + ler('proto_gmap.js') + '\n' + ler('proto_painel.js') + '\n' + ler('proto_fases.js') + '\n' + ler('proto_funil.js') + '\n' + ler('proto_partes.js') + '\n' + ler('proto_lote.js') + '\n' + ler('proto_geosampa.js') + '\n' + ler('proto_geosanja.js') + '\n' + ler('proto_novo.js') + '\n' + ler('proto_filtros.js') + '\n' + ler('proto_concorrencia.js')
 assert js.rstrip().endswith('render();\n})();'), 'fim inesperado'
 i = js.rstrip().rindex('render();\n})();')
 js = js[:i] + mod + '\n' + js[i:]

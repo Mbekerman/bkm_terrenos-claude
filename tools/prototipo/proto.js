@@ -268,11 +268,9 @@ function seed(){
     {id:'p3',nome:'Estação Tatuapé (Linha 3)',cat:'transporte',lat:-23.54040,lng:-46.57700},{id:'p4',nome:'Estação Penha (Linha 3)',cat:'transporte',lat:-23.53340,lng:-46.54280},
     {id:'p5',nome:'Estação Guaianases (Linha 11)',cat:'transporte',lat:-23.54200,lng:-46.41440},{id:'p6',nome:'Estação Jaraguá (Linha 7)',cat:'transporte',lat:-23.45610,lng:-46.73980},
     {id:'p7',nome:'Shopping Aricanduva',cat:'comercio',lat:-23.56690,lng:-46.50610},{id:'p8',nome:'Hospital Municipal Cidade Ademar',cat:'saude',lat:-23.67330,lng:-46.64470}];
-  /* concorrência de exemplo (empreendimentos de outras empresas; nomes fictícios) */
-  const concorrentes=[{id:'c1',nome:'Residencial Jardim Prudente',empresa:'Construtora Exemplo A',obs:'Lançado em 2026, 2 dormitórios',lat:-23.58620,lng:-46.57950},
-    {id:'c2',nome:'Condomínio Parque Tatuapé',empresa:'Incorporadora Exemplo B',obs:'Em obras',lat:-23.54250,lng:-46.57300},
-    {id:'c3',nome:'Vila Cupecê Residencial',empresa:'Construtora Exemplo C',obs:'',lat:-23.66450,lng:-46.64900}];
-  return {eixos,corretores,terrenos:T,pontos,concorrentes,areasInteresse:[{id:'ai1',nome:'Área Cupecê A',terrenos:['TER-000123','TER-000132']}],seqT:132,cfg:CFG_PADRAO(),membros:MEMBROS_PADRAO(),notifs:[]};
+  /* concorrência de exemplo (empreendimentos de outras empresas; nomes fictícios): proto_concorrencia.js */
+  const {E:concEmpresas,C:concorrentes}=ccSeed();
+  return {eixos,corretores,terrenos:T,pontos,concorrentes,concEmpresas,areasInteresse:[{id:'ai1',nome:'Área Cupecê A',terrenos:['TER-000123','TER-000132']}],seqT:132,cfg:CFG_PADRAO(),membros:MEMBROS_PADRAO(),notifs:[]};
 }
 
 /* ===================== estado ===================== */
@@ -733,12 +731,6 @@ function renderModal(){
   <div class="field"><label for="po-c">Categoria</label><select id="po-c" name="cat">${Object.entries(CAT_POI).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
   <div class="field"><span class="lbl-f">Local</span><span class="num muted" style="line-height:44px">${num(UI.novoPoi.lat,5)}, ${num(UI.novoPoi.lng,5)}</span></div></div></form>
   <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-poi">Salvar ponto</button></div>`;
-  if(M==='conc')h=`<div class="dh"><div><h2>Nova concorrência</h2><div class="muted" style="margin-top:4px">Empreendimento de outra empresa perto dos terrenos.</div></div>${fechar}</div>
-  <form data-form="conc" id="f-conc"><div class="fields"><div class="field full"><label for="cc-n">Empreendimento</label><input id="cc-n" name="nome" required placeholder="Nome do empreendimento"></div>
-  <div class="field"><label for="cc-e">Empresa</label><input id="cc-e" name="empresa" placeholder="Incorporadora ou construtora"></div>
-  <div class="field"><span class="lbl-f">Local</span><span class="num muted" style="line-height:44px">${num(UI.novoConc.lat,5)}, ${num(UI.novoConc.lng,5)}</span></div>
-  <div class="field full"><label for="cc-o">Observação</label><input id="cc-o" name="obs" placeholder="Produto, preço, fase da obra..."></div></div></form>
-  <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-conc">Salvar</button></div>`;
   if(M==='grafico'){const k=UI.grafico;h=`<div class="dh g-exp"><h2>${DIMS[k].l}</h2>${fechar}</div>${grafico(k,true)}<h3 class="lbl-up" style="margin-top:var(--e6)">Dados do gráfico</h3>${tabelaGrafico(k)}`}
   if(M==='tarefa'){const sel=UI.tkSel,t=sel.tid?T(sel.tid):null,k=t?t.tarefas.find(x=>x.id===sel.kid):null,ro=UI.role==='Leitura';
     const o=(obj,v)=>Object.entries(obj).map(([x,l])=>`<option value="${x}" ${v===x?'selected':''}>${esc(l)}</option>`).join('');
@@ -924,7 +916,6 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       t.pessoas.push({nome:F.nome,tipo:F.tipo,papel:F.papel,pct:F.papel==='proprietario'?lerNum(F.pct):null,tel:F.tel});save();render();break;
     case 'tarefa':t.tarefas.push({id:uid(),titulo:F.titulo,desc:F.desc,resp:F.resp,prazo:F.prazo,status:'pendente',prio:F.prio,resultado:'',marcados:[]});notifTarefa(t,t.tarefas[t.tarefas.length-1],null);log(t,`Tarefa criada: ${F.titulo}`);save();render();toast('Tarefa adicionada.');break;
     case 'poi':{S.pontos=S.pontos||[];S.pontos.push({id:uid(),nome:F.nome.trim(),cat:F.cat,lat:UI.novoPoi.lat,lng:UI.novoPoi.lng});UI.modal=null;save();const volta=UI.poiVolta;UI.poiVolta=null;if(volta&&T(volta))go('terreno',{id:volta,tab:'geral'});else render();toast('Ponto de interesse salvo.');break}
-    case 'conc':{S.concorrentes=S.concorrentes||[];S.concorrentes.push({id:uid(),nome:F.nome.trim(),empresa:(F.empresa||'').trim(),obs:(F.obs||'').trim(),lat:UI.novoConc.lat,lng:UI.novoConc.lng});UI.modal=null;save();render();toast('Concorrência salva.');break}
     case 'tarefa-m':{const sel=UI.tkSel;if(sel.tid){const t=T(sel.tid),k=t.tarefas.find(x=>x.id===sel.kid);const de=k.status,antes={resp:k.resp,marcados:(k.marcados||[]).slice()};Object.assign(k,{titulo:F.titulo.trim(),resp:F.resp,prazo:F.prazo,prio:F.prio,status:F.status,desc:F.desc,resultado:F.resultado||'',marcados:new FormData(f).getAll('marc')});notifTarefa(t,k,antes);
         if(de!==k.status)log(t,`Tarefa "${k.titulo}": ${OPT.statusTar[de]} → ${OPT.statusTar[k.status]}`);toast('Tarefa salva.')}
       else{const t=T(F.ter);if(!t){toast('Escolha o terreno da tarefa.',true);return}const irm=todasTarefas().filter(x=>x.k.status===F.status);

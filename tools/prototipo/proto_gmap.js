@@ -46,7 +46,9 @@ let gConc=[];
 function gConcEl(){const d=document.createElement('div');d.className='conc g';d.innerHTML='<span class="conc-b"></span>';return d}
 function G_mostrarConc(on){gSet(gConc,on?MAPA:null)}
 function G_desenhaConc(){if(!MAPA)return;gSet(gConc,null);gConc=[];const {AdvancedMarkerElement}=gLib.marker;
-  (S.concorrentes||[]).forEach(c=>gConc.push(new AdvancedMarkerElement({map:UI.mpConc===false?null:MAPA,position:gLL(c.lat,c.lng),content:gConcEl(),title:`${c.nome}${c.empresa?' · '+c.empresa:''}`,gmpClickable:false})))}
+  ccAtivos().forEach(c=>{const m=new AdvancedMarkerElement({map:UI.mpConc===false?null:MAPA,position:gLL(c.lat,c.lng),content:gConcEl(),title:`${c.nome}${ccEmpN(c)?' · '+ccEmpN(c):''}`,gmpClickable:!UI.mpModo});
+    m.addListener?.('click',()=>{if(!UI.mpModo)ccAbrir(c.id)});gConc.push(m)});
+  if(!MAPA._cc){MAPA._cc=1;MAPA.addListener('click',ccFecharDoMapa)}}
 function G_desenhaPois(){if(!MAPA)return;gSet(gPois,null);gPois=[];const {AdvancedMarkerElement}=gLib.marker;
   (S.pontos||[]).forEach(p=>gPois.push(new AdvancedMarkerElement({map:UI.mpPoi===false?null:MAPA,position:gLL(p.lat,p.lng),content:gPoiEl(),title:`${p.nome} · ${CAT_POI[p.cat]||''}`,gmpClickable:false})))}
 function G_desenhaRascunho(){if(!MAPA)return;gSet(gDes,null);gDes=[];const p=(UI.desenho||[]).map(q=>gLL(q[0],q[1]));if(!p.length)return;
