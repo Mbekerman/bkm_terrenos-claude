@@ -2041,7 +2041,8 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .areas { grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)) }
 @media (max-width: 720px) { .areas { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
 
-/* ---------- Setores do IBGE: camada de renda no mapa e quadro "Renda e população do entorno" na ficha ---------- */
+/* ---------- Setores do IBGE: camadas de renda e densidade no mapa e quadro "Renda e população do entorno" na ficha ---------- */
+.lg-i .ds-ic { display: block; width: 14px; height: 14px; border-radius: 3px; background: conic-gradient(#a8dfcb 0 25%, #54b997 0 50%, #1f8668 0 75%, #0a5140 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
 .lg-i .rd-ic { display: block; width: 14px; height: 14px; border-radius: 3px; background: conic-gradient(#feb600 0 25%, #c04c07 0 50%, #97d6ff 0 75%, #296baf 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
 .rd-leg { position: absolute; z-index: 1000; right: 10px; top: 64px; width: 200px; max-height: calc(100% - 160px); overflow-y: auto; overscroll-behavior: contain; background: #fff; color: #1f1f1f; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 2px 8px rgba(0,0,0,.12); font-size: 12px; line-height: 16px }
 .rd-leg summary { cursor: pointer; list-style: none; padding: 8px 12px; font-size: 13px; font-weight: 500 }
@@ -2055,6 +2056,17 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .rd-esc-u { font-size: 11px; line-height: 14px; color: #5f6368 }
 .mp-renda-b { flex: none; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 20px; border: 0; font: inherit; font-size: 14px; font-weight: 500; color: #1f1f1f; cursor: pointer; background: rgba(255,255,255,.78); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 1px 2px rgba(0,0,0,.1) }
 .mp-renda-b[aria-pressed="true"] { background: #c2e7ff; color: #001d35 }
+.mp-renda-b .ds-ic { display: block; width: 16px; height: 16px; border-radius: 4px; background: conic-gradient(#a8dfcb 0 25%, #54b997 0 50%, #1f8668 0 75%, #0a5140 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
+.mp-renda-b { padding-right: 10px } .mp-renda-b .cam-seta { display: inline-flex; transform: rotate(90deg); margin-left: -4px; opacity: .7 } .mp-renda-b[aria-expanded="true"] .cam-seta { transform: rotate(-90deg) }
+.mp-cam { position: relative; flex: none; pointer-events: auto }
+.mapa-area:has(.mp-cam-m) .mp-barra { z-index: 1101 } /* a lista abre por cima da legenda */
+.mp-cam-m { position: absolute; z-index: 1100; top: calc(100% + 6px); right: 0; min-width: 232px; padding: 6px 0; border-radius: 12px; background: #fff; color: #1f1f1f; box-shadow: 0 2px 6px rgba(0,0,0,.18), 0 8px 24px rgba(0,0,0,.14) }
+.mp-cam-m button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 0 16px; border: 0; background: none; font: inherit; font-size: 14px; color: inherit; text-align: left; cursor: pointer }
+.mp-cam-m button:hover { background: rgba(31,31,31,.06) } .mp-cam-m button[aria-checked="true"] { background: #c2e7ff; color: #001d35; font-weight: 500 }
+.mp-cam-m :is(.rd-ic, .ds-ic, .cam-off) { display: block; flex: none; width: 16px; height: 16px; border-radius: 4px; box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
+.mp-cam-m .rd-ic { background: conic-gradient(#feb600 0 25%, #c04c07 0 50%, #97d6ff 0 75%, #296baf 0) } .mp-cam-m .ds-ic { background: conic-gradient(#a8dfcb 0 25%, #54b997 0 50%, #1f8668 0 75%, #0a5140 0) } .mp-cam-m .cam-off { box-shadow: inset 0 0 0 1px #747775 }
+:root[data-tema="escuro"] .mp-cam-m { background: #0d1530; color: #e6ecff; box-shadow: 0 0 0 1px rgba(124,140,255,.35), 0 10px 28px rgba(0,0,0,.55) }
+:root[data-tema="escuro"] .mp-cam-m button:hover { background: rgba(124,140,255,.12) } :root[data-tema="escuro"] .mp-cam-m button[aria-checked="true"] { background: rgba(99,112,255,.22); color: #c9d6ff }
 .mp-renda-b .rd-ic { display: block; width: 16px; height: 16px; border-radius: 4px; background: conic-gradient(#feb600 0 25%, #c04c07 0 50%, #97d6ff 0 75%, #296baf 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
 :root[data-tema="escuro"] .mp-renda-b { background: rgba(6,12,32,.72); color: #e6ecff; box-shadow: 0 0 0 1px rgba(124,140,255,.35) }
 :root[data-tema="escuro"] .mp-renda-b[aria-pressed="true"] { background: rgba(99,112,255,.22); color: #c9d6ff; box-shadow: 0 0 0 1px rgba(124,140,255,.5) }

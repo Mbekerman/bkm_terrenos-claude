@@ -50,7 +50,7 @@ Rodar só o que a mudança toca; a varredura completa (`tvaza` e `tscroll`) ao f
 | `ted2.js` | edição da poligonal (desktop e celular) |
 | `tctx.js` | menu do clique direito no mapa (toque longo no celular), concorrência, barra do mapa |
 | `tconc.js` | concorrência: quadro ao tocar no ícone (preço por m² ponderado e média simples, período, histórico da tipologia), Atualizar preços cria registro novo, cadastro na gaveta com Incluir empresa e endereço pelo ponto, Esc e clique no mapa fecham, desativar, Leitura sem botões, escuro e celular |
-| `trenda.js` | camada de renda: liga na legenda, pinta, clique abre o setor, quadro da ficha com raios e poligonal, metodologia (servido em http://bkm.test porque o fetch não lê file://) |
+| `trenda.js` | camadas de renda e densidade: liga pelo botão Camadas, troca de uma para a outra, Nenhuma desliga, pinta, clique abre o setor, quadro da ficha com raios e poligonal, metodologia (servido em http://bkm.test porque o fetch não lê file://) |
 | `tlista.js` | página Mapa sem balão: clicar no pino destaca a linha, cartão no celular, lupa abre a ficha |
 | `tmini.js` | mini-mapa da Visão geral: Shift + roda, dois cliques fora da poligonal abrem o Mapa, Ver no mapa só no celular |
 | `tminied.js` | mini-mapa da Visão geral: dois cliques (dois toques no celular) na poligonal editam ali mesmo, menu do ponto, Ctrl+Z, Esc, clique fora salva, Leitura abre o Mapa (claro, escuro, celular) |

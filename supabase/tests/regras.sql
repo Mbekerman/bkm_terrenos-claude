@@ -1131,6 +1131,16 @@ select pg_temp.ok((select m.fator_familiar = (c->>'fatorFamiliar')::numeric and 
   from app.metodologias_renda m, (select :'cfg'::jsonb as c) x where m.vigente), 'metodologia do banco igual à do protótipo (metodologia_renda.json)');
 select pg_temp.ok((select bool_and(f.ate is not distinct from (j->>'ate')::numeric and f.cor = j->>'cor' and f.rotulo = j->>'rotulo') and count(*) = 16
   from app.renda_faixas f join jsonb_array_elements((:'cfg'::jsonb)->'faixas') with ordinality e(j, n) on n = f.ordem), 'faixas e cores do banco iguais às do protótipo');
+-- densidade bruta: pessoas ÷ área do setor; 0 é "sem moradores", separado da primeira faixa
+select pg_temp.ok((select densidade_hab_km2 = 30000 and faixa_densidade = 6 from app.setores_renda where cd_setor = '355030899999991')
+  and (select densidade_hab_km2 = 20000 and faixa_densidade = 5 from app.setores_renda where cd_setor = '355030899999992'),
+  'densidade: 300 pessoas em 0,01 km² = 30.000 hab/km² (20 a 30 mil, o limite entra); 200 = 20.000 (15 a 20 mil)');
+select pg_temp.ok(app.densidade_faixa(0) = 0 and app.densidade_faixa(0.4) = 1 and app.densidade_faixa(2500) = 1 and app.densidade_faixa(2500.1) = 2
+  and app.densidade_faixa(100000) = 8 and app.densidade_faixa(100000.1) = 9 and app.densidade_faixa(null) is null,
+  'densidade: zero é sem moradores, nada se arredonda, o limite de cima entra na faixa');
+\set cfgd `cat tools/setores/metodologia_densidade.json`
+select pg_temp.ok((select bool_and(f.ate is not distinct from (j->>'ate')::numeric and f.cor = j->>'cor' and f.rotulo = j->>'rotulo') and count(*) = 10 and count(distinct f.cor) = 10
+  from app.densidade_faixas f join jsonb_array_elements((:'cfgd'::jsonb)->'faixas') with ordinality e(j, n) on n - 1 = f.ordem), 'faixas e cores da densidade iguais às do protótipo');
 -- área: todo o setor A e metade do B
 select app.estatisticas_area(extensions.st_geomfromgeojson(pg_temp.quadra(-46.60000 + 25 / (111320 * cos(radians(-23.55))), -23.55, 150)::text)
   ) as est \gset
@@ -1140,7 +1150,7 @@ select pg_temp.ok((select (e->>'renda_familiar_media_estimada')::numeric = 8807.
   and (select (d->>'pct')::numeric from jsonb_array_elements(e->'distribuicao') d where (d->>'faixa')::int = 8) = 100 from (select :'est'::jsonb e) x),
   'renda média só com os setores que têm renda, e a cobertura diz quanto ficou de fora');
 select pg_temp.ok((select (e->>'pessoas')::numeric between 145 and 152 from (select app.estatisticas_raio(-23.55, -46.60, 40) e) x), 'raio de 40 m no meio do setor A: π × 40² de 100 × 100 m, cerca de 150 das 300 pessoas');
-select pg_temp.ok((select count(*) = 2 and bool_and(geojson ? 'coordinates') from app.setores_no_retangulo(-46.61, -23.56, -46.59, -23.54, 15)), 'setores da tela para o mapa');
+select pg_temp.ok((select count(*) = 2 and bool_and(geojson ? 'coordinates') and bool_and(faixa_densidade is not null) from app.setores_no_retangulo(-46.61, -23.56, -46.59, -23.54, 15)), 'setores da tela para o mapa, com a faixa de renda e a de densidade');
 select pg_temp.falha($$insert into app.metodologias_renda (versao, censo_ano, variavel_base, fator_familiar, fator_familiar_origem, pnad_ano_base, pnad_valor_base, pnad_ano_atual, pnad_valor_atual, pnad_fonte) values (2, 2022, 'V06004', 1.5, 'x', 2022, 1, 2025, 1, 'x')$$, 'só o carregamento escreve metodologia e setores');
 select pg_temp.como(:'diretor');
 

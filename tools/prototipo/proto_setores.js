@@ -1,5 +1,6 @@
 /* ===================== Setores censitários do IBGE (Censo 2022) =====================
-   Camadas por setor no mapa (por ora, a renda familiar estimada) e o quadro "Renda e
+   Camadas por setor no mapa (renda familiar estimada e densidade demográfica; uma de cada
+   vez) e o quadro "Renda e
    população do entorno" na ficha. Os valores do IBGE vêm como estão (V06004 etc.) no arquivo
    gerado por tools/setores/gerar.py; a estimativa é calculada aqui pela metodologia de
    tools/setores/metodologia_renda.json (o build injeta em RENDA_MET), a mesma da visão
@@ -9,13 +10,19 @@
    para reais. Setor sem renda divulgada fica sem cor, nunca zero. */
 const RENDA_MET=__METODOLOGIA_RENDA__;
 RENDA_MET.fatorPnad=RENDA_MET.pnadValorAtual/RENDA_MET.pnadValorBase;
+/* densidade bruta: pessoas (V0001) ÷ área do setor; faixas de tools/setores/metodologia_densidade.json
+   (a primeira, até 0, é "sem moradores"); o limite de cima entra na faixa, sem arredondar */
+const DENS_MET=__METODOLOGIA_DENSIDADE__;
+const dsFaixa=v=>{if(v==null)return null;for(let i=0;i<DENS_MET.faixas.length;i++){const a=DENS_MET.faixas[i].ate;if(a==null||v<=a)return i}return null};
 const SET_ARQ={'3550308':'dados/setores-3550308-2022.json'};
 const SET={d:null,promessa:null,erro:null};
 const rdFaixa=v=>{if(v==null)return null;const r=Math.round(v);for(let i=0;i<RENDA_MET.faixas.length;i++){const a=RENDA_MET.faixas[i].ate;if(a==null||r<=a)return i}return null};
 const rdNum=(v,d)=>Number(v).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
 const rdHex2rgba=(h,a)=>`rgba(${parseInt(h.slice(1,3),16)},${parseInt(h.slice(3,5),16)},${parseInt(h.slice(5,7),16)},${a})`;
-/* camadas por setor: cada uma diz a cor de um setor (null = sem dado). Só a renda por enquanto. */
-const CAMADAS_SETOR={renda:{nome:'Renda familiar estimada',cor:i=>{const f=SET.d.faixa[i];return f==null?null:RENDA_MET.faixas[f].cor}}};
+/* camadas por setor: cada uma diz a cor de um setor (null = sem dado) */
+const CAMADAS_SETOR={
+  renda:{nome:'Renda familiar estimada',curto:'Renda',met:RENDA_MET,cor:i=>{const f=SET.d.faixa[i];return f==null?null:RENDA_MET.faixas[f].cor}},
+  dens:{nome:'Densidade demográfica',curto:'Densidade',met:DENS_MET,cor:i=>{const f=SET.d.dfaixa[i];return f==null?null:DENS_MET.faixas[f].cor}}};
 
 function setUrl(){return (location.pathname.startsWith('/prototipo')?'/prototipo/':'')+SET_ARQ['3550308']}
 function setCarregar(){if(SET.d)return Promise.resolve(SET.d);if(SET.promessa)return SET.promessa;
@@ -31,7 +38,8 @@ function setPreparar(j){const n=j.n,Q=1e5,G=0.002,bb=new Float64Array(n*4),rings
     for(let gx=Math.floor(x0/G);gx<=Math.floor(x1/G);gx++)for(let gy=Math.floor(y0/G);gy<=Math.floor(y1/G);gy++){const k=gx+':'+gy;let l=idx.get(k);if(!l)idx.set(k,l=[]);l.push(i)}}
   const ff=RENDA_MET.fatorFamiliar,fp=RENDA_MET.fatorPnad;
   const r22=j.v4.map(v=>v==null?null:Math.round(v*ff*100)/100),rAt=j.v4.map(v=>v==null?null:Math.round(v*ff*fp*100)/100);
-  return {...j,rings,bb,idx,G,r22,rAt,faixa:rAt.map(rdFaixa)}}
+  const dens=j.pop.map((p,i)=>j.area[i]>0?p/(j.area[i]/1e6):null);
+  return {...j,rings,bb,idx,G,r22,rAt,faixa:rAt.map(rdFaixa),dens,dfaixa:dens.map(dsFaixa)}}
 function setCandidatos(x0,y0,x1,y1){const d=SET.d,G=d.G,s=new Set();
   for(let gx=Math.floor(x0/G);gx<=Math.floor(x1/G);gx++)for(let gy=Math.floor(y0/G);gy<=Math.floor(y1/G);gy++){const l=d.idx.get(gx+':'+gy);if(l)for(const i of l)s.add(i)}
   return s}
@@ -43,7 +51,7 @@ function setEm(lat,lng){if(!SET.d)return null;for(const i of setCandidatos(lng,l
 /* ---------- desenho em ladrilhos (mesmo código no Leaflet e no Google) ---------- */
 function setDesenhaLadrilho(cv,x,y,z,camada){const T=256,dpr=Math.min(2,window.devicePixelRatio||1),ctx=cv.getContext('2d');cv.width=cv.height=T*dpr;cv.style.width=cv.style.height=T+'px';
   if(!SET.d)return;ctx.scale(dpr,dpr);const W=T*2**z,lon=px=>px/W*360-180,lat=py=>{const n=Math.PI-2*Math.PI*py/W;return 180/Math.PI*Math.atan(Math.sinh(n))};
-  const x0=lon(x*T),x1=lon((x+1)*T),y1=lat(y*T),y0=lat((y+1)*T),c=CAMADAS_SETOR[camada],op=RENDA_MET.opacidade;
+  const x0=lon(x*T),x1=lon((x+1)*T),y1=lat(y*T),y0=lat((y+1)*T),c=CAMADAS_SETOR[camada],op=c.met.opacidade;
   const PX=g=>(g+180)/360*W-x*T,PY=g=>{const s=Math.sin(g*Math.PI/180);return (.5-Math.log((1+s)/(1-s))/(4*Math.PI))*W-y*T};
   const borda=z>=14,sem=temaEscuro()?'rgba(200,210,255,.45)':'rgba(60,64,67,.45)';
   for(const i of setCandidatos(x0,y0,x1,y1)){const b=i*4,d=SET.d;if(d.bb[b]>x1||d.bb[b+2]<x0||d.bb[b+1]>y1||d.bb[b+3]<y0)continue;
@@ -52,12 +60,13 @@ function setDesenhaLadrilho(cv,x,y,z,camada){const T=256,dpr=Math.min(2,window.d
     if(cor){ctx.fillStyle=rdHex2rgba(cor,op);ctx.fill('evenodd');if(borda){ctx.lineWidth=.6;ctx.strokeStyle='rgba(255,255,255,.55)';ctx.stroke()}}
     else if(z>=13){ctx.setLineDash([3,3]);ctx.lineWidth=.8;ctx.strokeStyle=sem;ctx.stroke();ctx.setLineDash([])}}}
 let RD_L=null,RD_G=null,RD_SEL=null;
-function rdLigada(){return UI.mpRenda===true}
+function rdLigada(){return !!CAMADAS_SETOR[UI.mpSetor]}
+function rdCamada(){return rdLigada()?UI.mpSetor:null}
 function rdCamadaLigar(){if(!MAPA||!rdLigada())return;
   if(!SET.d){setCarregar().then(()=>{rdCamadaLigar();rdLegenda()}).catch(()=>toast('Não foi possível carregar os setores do IBGE.',true));return}
-  if(GG){if(RD_G)return;RD_G={tileSize:new google.maps.Size(256,256),maxZoom:22,name:'renda',getTile(co,z,doc){const cv=doc.createElement('canvas');const n=2**z;setDesenhaLadrilho(cv,((co.x%n)+n)%n,co.y,z,'renda');return cv},releaseTile(){}};
+  if(GG){if(RD_G)return;RD_G={tileSize:new google.maps.Size(256,256),maxZoom:22,name:'setores',getTile(co,z,doc){const cv=doc.createElement('canvas');const n=2**z;setDesenhaLadrilho(cv,((co.x%n)+n)%n,co.y,z,rdCamada()||'renda');return cv},releaseTile(){}};
     MAPA.overlayMapTypes.insertAt(0,RD_G)}
-  else{if(RD_L)return;const Lr=L.GridLayer.extend({createTile(co){const cv=document.createElement('canvas');setDesenhaLadrilho(cv,co.x,co.y,co.z,'renda');return cv}});
+  else{if(RD_L)return;const Lr=L.GridLayer.extend({createTile(co){const cv=document.createElement('canvas');setDesenhaLadrilho(cv,co.x,co.y,co.z,rdCamada()||'renda');return cv}});
     RD_L=new Lr({pane:'overlayPane',zIndex:2,updateWhenZooming:false,keepBuffer:2}).addTo(MAPA)}}
 function rdCamadaDesligar(){if(RD_G&&MAPA?.overlayMapTypes){const i=MAPA.overlayMapTypes.getArray().indexOf(RD_G);if(i>=0)MAPA.overlayMapTypes.removeAt(i)}RD_G=null;
   if(RD_L){try{MAPA?.removeLayer(RD_L)}catch(e){}}RD_L=null;rdSelLimpa()}
@@ -73,7 +82,17 @@ const RD={sel:null,abertoEm:0};
 function rdAbrirEm(lat,lng){if(!rdLigada()||!SET.d||UI.mpModo)return false;const i=setEm(lat,lng);if(i==null){rdFechar();return false}
   RD.sel=i;RD.abertoEm=Date.now();if(typeof ccFechar==='function')ccFechar();rdSelDesenha(i);rdBox();return true}
 function rdFechar(){if(RD.sel==null)return false;RD.sel=null;rdSelLimpa();rdBox();return true}
-function rdBoxHtml(i){const d=SET.d,m=RENDA_MET,cd=d.municipio+d.cd[i],sit=d.sit[i],v=d.v4[i],at=d.rAt[i],f=d.faixa[i];
+function dsBoxHtml(i){const d=SET.d,m=DENS_MET,cd=d.municipio+d.cd[i],f=d.dfaixa[i],a=d.area[i]/1e6;
+  return `<div class="cc-box rd-box" role="dialog" aria-label="Setor censitário ${cd}">
+  <div class="cc-hd"><div class="cc-ti"><div class="cc-n">Setor censitário</div><div class="muted">${esc(d.distritos[d.di[i]]||'')} · São Paulo</div></div><button type="button" class="iconbtn" data-a="rd-x" aria-label="Fechar" title="Fechar (Esc)">${ic('close',20)}</button></div>
+  ${d.pop[i]>0?`<div class="cc-k rd-k" style="border-left-color:${m.faixas[f].cor}"><div class="faint">Densidade demográfica bruta</div><div class="cc-big">${num(Math.round(d.dens[i]))} hab/km²</div><div class="faint">Faixa ${esc(m.faixas[f].rotulo)} hab/km²</div></div>`
+    :`<div class="cc-meta">Setor sem moradores no Censo ${m.censoAno}.</div>`}
+  <dl class="rd-kv"><div><dt>Pessoas – Censo ${m.censoAno}</dt><dd>${num(d.pop[i])}</dd></div>
+    <div><dt>Domicílios ocupados</dt><dd>${num(d.dom[i])}</dd></div>
+    <div><dt>Área do setor</dt><dd>${a<0.1?m2(Math.round(d.area[i])):num(a,2)+' km²'}</dd></div>
+    <div><dt>Código do setor</dt><dd class="rd-cd">${cd}</dd></div></dl>
+  <div class="rd-nota">Pessoas ÷ área total do setor, com parques, vias e terrenos vazios. <button class="linkbtn" data-a="ds-met">Metodologia</button></div></div>`}
+function rdBoxHtml(i){if(rdCamada()==='dens')return dsBoxHtml(i);const d=SET.d,m=RENDA_MET,cd=d.municipio+d.cd[i],sit=d.sit[i],v=d.v4[i],at=d.rAt[i],f=d.faixa[i];
   const motivo=sit===1?'O IBGE não divulgou a renda deste setor (sigilo, poucos domicílios).':sit===3?'Setor sem moradores no Censo 2022.':'O IBGE não divulgou a renda deste setor.';
   const dist=v!=null&&d.v6[i]!=null&&v>m.distorcidaRazao*d.v6[i];
   return `<div class="cc-box rd-box" role="dialog" aria-label="Setor censitário ${cd}">
@@ -90,7 +109,13 @@ function rdBox(){const area=$('.mapa-area');let el=$('#rd-box');if(RD.sel==null|
   if(!el||el.parentNode!==area){el?.remove();el=document.createElement('div');el.id='rd-box';area.appendChild(el)}el.innerHTML=rdBoxHtml(RD.sel)}
 
 /* ---------- legenda da renda sobre o mapa (recolhível; no celular começa fechada) ---------- */
-function rdLegendaHtml(){const m=RENDA_MET;
+function dsLegendaHtml(){const m=DENS_MET,fx=m.faixas.slice(1);
+  const marcas={2:'5',3:'10',5:'20',7:'50',8:'100'};
+  const escala=`<span class="rd-esc" aria-hidden="true"><span class="rd-esc-c">${fx.map(f=>`<i style="background:${f.cor}"></i>`).join('')}</span><span class="rd-esc-m">${Object.entries(marcas).map(([k,v])=>`<b style="left:${k/fx.length*100}%">${v}</b>`).join('')}</span><span class="rd-esc-u">mil hab/km² · toque para ver as faixas</span></span>`;
+  return `<summary><span class="rd-leg-t">Densidade demográfica</span>${escala}</summary><div class="rd-leg-l">${m.faixas.map(f=>`<div class="rd-li"><span class="rd-q" style="background:${rdHex2rgba(f.cor,Math.max(m.opacidade,.85))}"></span>${esc(f.rotulo)}</div>`).join('')}
+    <div class="rd-leg-p">Habitantes por km², bruta · Censo ${m.censoAno} · <button class="linkbtn" data-a="ds-met">Metodologia</button></div>
+    ${SET.d?'':`<div class="rd-leg-p">${SET.erro?'Não foi possível carregar os setores.':'Carregando os setores do IBGE…'}</div>`}</div>`}
+function rdLegendaHtml(){if(rdCamada()==='dens')return dsLegendaHtml();const m=RENDA_MET;
   // fechada, a legenda mostra a escala de cores em uma linha (com os limites em mil reais); aberta, a lista das faixas
   const marcas={2:'3',4:'5',7:'8',10:'13',13:'22',15:'30'};
   const escala=`<span class="rd-esc" aria-hidden="true"><span class="rd-esc-c">${m.faixas.map(f=>`<i style="background:${f.cor}"></i>`).join('')}</span><span class="rd-esc-m">${Object.entries(marcas).map(([k,v])=>`<b style="left:${k/m.faixas.length*100}%">${v}</b>`).join('')}</span><span class="rd-esc-u">mil R$ por mês · toque para ver as faixas</span></span>`;
@@ -104,11 +129,24 @@ function rdLegenda(){const area=$('.mapa-area');let el=$('#rd-leg');if(!area||UI
   el.innerHTML=rdLegendaHtml();
   // no celular a barra do mapa tem uma ou duas linhas (a busca pode ir para a própria linha): a legenda fica logo abaixo dela
   const b=$('.mapa-area .mp-barra');el.style.top=innerWidth<900&&b?(b.offsetTop+b.offsetHeight+8)+'px':''}
-function rdBarraBotao(){return `<button type="button" class="mp-renda-b" data-a="mp-renda" aria-pressed="${rdLigada()}" title="Camada de renda familiar por setor censitário"><span class="rd-ic"></span>Renda</button>`}
-function rdLegItem(){return `<button type="button" class="lg-i" data-a="mp-renda" aria-pressed="${rdLigada()}"><span class="lg-poi"><span class="rd-ic"></span></span>Renda familiar (setores)</button>`}
-function rdLigar(on){UI.mpRenda=on;if(on){if((UI.mpBase||'satelite')==='satelite'){UI.rdBaseAntes='satelite';setBase('mapa')}rdCamadaLigar()}
-  else{rdCamadaDesligar();RD.sel=null;rdBox();if(UI.rdBaseAntes&&UI.mpBase==='mapa')setBase(UI.rdBaseAntes);UI.rdBaseAntes=null}
-  rdLegenda();document.querySelectorAll('[data-a="mp-renda"]').forEach(b=>b.setAttribute('aria-pressed',on))}
+/* barra do mapa: um botão Camadas que abre a lista das camadas por setor (uma ligada de cada vez);
+   ligado, o botão mostra o nome curto da camada */
+const RD_IC={renda:'rd-ic',dens:'ds-ic'};
+function rdBarraBotao(){const k=rdCamada();
+  return `<div class="mp-cam"><button type="button" class="mp-renda-b" data-a="mp-camadas" aria-haspopup="menu" aria-expanded="false" aria-pressed="${!!k}" title="Camadas por setor censitário (IBGE)">${k?`<span class="${RD_IC[k]}"></span>`:ic('layers',18)}${k?CAMADAS_SETOR[k].curto:'Camadas'}<span class="cam-seta">${ic('chev',16)}</span></button></div>`}
+function rdMenu(abrir){const w=$('.mapa-area .mp-cam');if(!w)return;w.querySelector('.mp-cam-m')?.remove();const b=w.querySelector('[data-a="mp-camadas"]');b.setAttribute('aria-expanded',!!abrir);if(!abrir)return;
+  const k=rdCamada(),it=(v,ico,l)=>`<button type="button" role="menuitemradio" aria-checked="${k===v}" data-a="mp-camada" data-v="${v||''}"><span class="${ico}"></span>${l}</button>`;
+  w.insertAdjacentHTML('beforeend',`<div class="mp-cam-m" role="menu" aria-label="Camadas">${it('renda','rd-ic','Renda familiar')}${it('dens','ds-ic','Densidade demográfica')}${it(null,'cam-off','Nenhuma')}</div>`)}
+document.addEventListener('pointerdown',e=>{if($('.mp-cam-m')&&!e.target.closest('.mp-cam'))rdMenu(false)},true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('.mp-cam-m')){rdMenu(false);e.preventDefault();e.stopImmediatePropagation()}},true);
+function rdLegItem(){const k=rdCamada();return `<button type="button" class="lg-i" data-a="mp-renda" aria-pressed="${k==='renda'}"><span class="lg-poi"><span class="rd-ic"></span></span>Renda familiar (setores)</button>`
+  +`<button type="button" class="lg-i" data-a="mp-dens" aria-pressed="${k==='dens'}"><span class="lg-poi"><span class="ds-ic"></span></span>Densidade demográfica (setores)</button>`}
+function rdLigar(k){const antes=rdCamada();k=CAMADAS_SETOR[k]?k:null;if(k===antes)return;UI.mpSetor=k;
+  if(antes)rdCamadaDesligar();
+  if(k){if(!antes&&(UI.mpBase||'satelite')==='satelite'){UI.rdBaseAntes='satelite';setBase('mapa')}rdCamadaLigar();if(RD.sel!=null&&SET.d){rdSelDesenha(RD.sel);rdBox()}}
+  else{RD.sel=null;rdBox();if(UI.rdBaseAntes&&UI.mpBase==='mapa')setBase(UI.rdBaseAntes);UI.rdBaseAntes=null}
+  rdLegenda();const b=$('.mapa-area .mp-cam');if(b)b.outerHTML=rdBarraBotao();
+  document.querySelectorAll('[data-a="mp-renda"]').forEach(b=>b.setAttribute('aria-pressed',k==='renda'));document.querySelectorAll('[data-a="mp-dens"]').forEach(b=>b.setAttribute('aria-pressed',k==='dens'))}
 /* chamado depois de criar o mapa (initMapa): a camada, a legenda e o quadro voltam como estavam */
 function rdPosMapa(){if(typeof achadoPin==='function')achadoPin();RD_L=null;RD_G=null;RD_SEL=null;if(!rdLigada()){rdLegenda();return}rdCamadaLigar();rdLegenda();if(RD.sel!=null&&SET.d){rdSelDesenha(RD.sel);rdBox()}}
 
@@ -150,7 +188,14 @@ function setoresCard(t){if(t.lat==null)return '';const raio=UI.rdRaio||1000;
 function rdCardAtualiza(id){const t=T(id),c=$('#rd-corpo');if(t&&c)c.innerHTML=rdCardCorpo(t)}
 
 /* ---------- metodologia ---------- */
-function setoresModal(M,fechar){if(M!=='rd-met')return '';const m=RENDA_MET,c=m.fatorFamiliar*m.fatorPnad;
+function dsModal(fechar){const m=DENS_MET,f=m.faixas;
+  return `<div class="dh"><h2>Metodologia da densidade</h2>${fechar}</div><div class="rd-mt">
+  <p>Densidade demográfica bruta de cada setor censitário: pessoas que moram no setor divididas pela área total dele, em habitantes por km².</p>
+  <h3>Dado oficial (IBGE)</h3><p><b>${m.variavel}</b>: ${esc(m.variavelDescricao)}. Área: ${esc(m.areaOrigem)}.</p>
+  <p class="rd-f">Densidade = ${m.variavel} ÷ área do setor (km²)</p>
+  <h3>Limites</h3><ul><li>É densidade bruta: a área inclui parques, vias, represas, galpões e terrenos vazios. Um setor com um parque dentro parece pouco denso mesmo com muita gente morando na borda.</li><li>Setores muito pequenos de prédios ou de favela passam de 100 mil hab/km²; ficam todos na última faixa.</li><li>Sem moradores é zero de verdade (o IBGE contou ninguém), em cinza, separado da primeira faixa.</li><li>Faixas fixas, nunca quantis: o limite de cima entra na faixa (até ${num(f[1].ate)} inclui ${num(f[1].ate)}).</li></ul>
+  <p class="faint">${esc(m.faixasOrigem)} Versão ${m.versao}.</p></div><div class="df"><button class="btn primary" data-a="close">Fechar</button></div>`}
+function setoresModal(M,fechar){if(M==='ds-met')return dsModal(fechar);if(M!=='rd-met')return '';const m=RENDA_MET,c=m.fatorFamiliar*m.fatorPnad;
   return `<div class="dh"><h2>Metodologia da renda</h2>${fechar}</div><div class="rd-mt">
   <p>Os valores apresentados são estimativas de renda familiar mensal. A base espacial e a renda do responsável são provenientes do Censo Demográfico ${m.censoAno} do IBGE. A renda familiar foi estimada a partir da relação observada entre renda do responsável e renda domiciliar nos microdados do Censo. Os valores foram posteriormente atualizados pela evolução nominal da renda domiciliar per capita da PNAD Contínua para o Estado de São Paulo.</p>
   <h3>Dado oficial (IBGE)</h3><p><b>${m.variavelBase}</b>: ${esc(m.variavelBaseDescricao)}, Censo ${m.censoAno}. Não é renda familiar nem renda per capita. Geometria: malha oficial dos setores censitários de ${m.censoAno}.</p>
@@ -162,11 +207,15 @@ function setoresModal(M,fechar){if(M!=='rd-met')return '';const m=RENDA_MET,c=m.
 
 function setoresClick(A,a,t){
   switch(A){
-    case 'mp-renda':rdLigar(!rdLigada());return true;
+    case 'mp-renda':rdLigar(rdCamada()==='renda'?null:'renda');return true;
+    case 'mp-dens':rdLigar(rdCamada()==='dens'?null:'dens');return true;
+    case 'mp-camadas':rdMenu(!$('.mp-cam-m'));return true;
+    case 'mp-camada':rdMenu(false);rdLigar(a.dataset.v||null);return true;
+    case 'ds-met':UI.modal='ds-met';renderModal();return true;
     case 'rd-x':rdFechar();return true;
     case 'rd-met':UI.modal='rd-met';renderModal();return true;
     case 'rd-raio':{const v=a.dataset.v;UI.rdRaio=v==='poly'?'poly':Number(v);document.querySelectorAll('[data-a="rd-raio"]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));if(t)rdCardAtualiza(t.id);return true}
-    case 'rd-ver':{const x=T(a.dataset.id);UI.mpRenda=true;if(x&&x.lat!=null){UI.mpView={c:{lat:x.lat,lng:x.lng},z:15}}go('mapa');return true}
+    case 'rd-ver':{const x=T(a.dataset.id);UI.mpSetor=rdCamada()||'renda';if(x&&x.lat!=null){UI.mpView={c:{lat:x.lat,lng:x.lng},z:15}}go('mapa');return true}
   }
   return false}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&RD.sel!=null&&!UI.modal&&UI.route==='mapa'){rdFechar();e.preventDefault()}});
