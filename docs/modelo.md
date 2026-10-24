@@ -595,6 +595,32 @@ Entorno do terreno: as categorias são configuração (`entorno_categorias`: tip
 
 O dashboard agrega `v_terrenos` no front (filtro cruzado por clique). A poligonal continua em `terrenos.poligono_geojson`; importar KMZ/KML é feito no front e gravado por `salvar_terreno`.
 
+## Setores censitários e renda familiar estimada
+
+Camada do mapa e quadro "Renda e população do entorno" da ficha (decisão do Moisés, 24/out/2026). Dados do IBGE, Censo 2022, carregados por `tools/setores/gerar.py` (malha oficial, agregados de renda do responsável e composição oficial setor → área de ponderação); nada é estimado na carga. Tabelas comuns a todas as empresas, só leitura para o front.
+
+```mermaid
+erDiagram
+  municipios ||--o{ setores_censitarios : "municipio_codigo"
+  setores_censitarios ||--o{ setor_valores : "cd_setor"
+  setor_variaveis ||--o{ setor_valores : "variavel"
+  metodologias_renda ||..o{ setores_renda : "vigente"
+  renda_faixas ||..o{ setores_renda : "faixa"
+```
+
+| Tabela / função | O que guarda |
+|---|---|
+| `setores_censitarios` | setor (15 dígitos), município (calculado), área de ponderação oficial, distrito, área e polígono do IBGE (`geom`, 4326) |
+| `setor_variaveis` | catálogo das variáveis guardadas (V0001 pessoas, V0007 domicílios, V06001, V06002, V06004, V06006) |
+| `setor_valores` | valor de cada variável por setor como o IBGE publicou; sigilo (`X`) e sem valor (`.`) ficam nulos com a `situacao`, nunca zero |
+| `metodologias_renda` | versões da metodologia; uma `vigente`: fator familiar (1,6, decisão do Moisés), PNAD base e atual (`fator_pnad` calculado) |
+| `renda_faixas` | as 16 faixas fixas e suas cores (decisão de produto; o limite de cima entra na faixa, depois de arredondar para reais) |
+| `setores_renda` (view) | por setor: V06004 original, renda familiar estimada 2022 e atual, faixa, média distorcida (média acima de 3 × a mediana) |
+| `estatisticas_area(geom)`, `estatisticas_raio(lat, lng, m)`, `estatisticas_terreno(id, raio)` | população, domicílios, densidade, renda média ponderada pelos responsáveis com rendimento e distribuição por faixa; cada setor entra pela fração da área dentro do recorte |
+| `setores_no_retangulo(...)` | setores da tela, simplificados pelo zoom, para o mapa |
+
+Fonte única da metodologia, faixas e cores: `tools/setores/metodologia_renda.json`; o teste do banco confere que a migration tem os mesmos valores.
+
 ## Concorrência
 
 Empreendimentos de outras empresas, marcados no mapa (decisão do Moisés, 24/out/2026). Cadastro sem regra de funil: escrita direta pelo front (Leitura só vê), com auditoria e isolamento por `empresa_id`.
