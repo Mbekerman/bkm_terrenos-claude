@@ -1730,6 +1730,55 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
+-- Lixeira do log: desfazer uma alteração da ficha (decisão do Moisés, 24/out/2026)
+-- ---------------------------------------------------------------------
+-- Volta os campos daquela alteração ao valor de antes, pela salvar_terreno.
+-- O histórico não perde nada: o registro original fica marcado (desfeito_em,
+-- desfeito_por) e a volta é um registro novo que aponta para ele (desfaz_id).
+-- Pode quem fez a alteração, os superiores dessa pessoa e o administrador.
+-- Só vale enquanto os campos ainda têm os valores daquela alteração: se
+-- mudaram depois, desfaz-se primeiro a mudança mais recente. A prévia do
+-- olhinho é só da tela e não passa pelo banco.
+create or replace function app.desfazer_alteracao(p_auditoria bigint)
+returns int
+language plpgsql security definer set search_path = ''
+as $$
+declare a app.auditoria; t app.terrenos; v_cols text[]; v_dados jsonb; v_versao int; c text;
+begin
+  select * into a from app.auditoria where id = p_auditoria for update;
+  if not found or a.tabela <> 'terrenos' or a.acao <> 'update' then
+    raise exception 'Só alterações da ficha do terreno podem ser desfeitas' using errcode = '22023';
+  end if;
+  select * into t from app.terrenos where id = a.registro_id for update;
+  if not found or t.empresa_id <> a.empresa_id then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  if not (a.user_id = auth.uid() or app.eh_administrador(t.empresa_id) or app.eh_superior(t.empresa_id, auth.uid(), a.user_id)) then
+    raise exception 'Só quem fez a alteração, os superiores dessa pessoa ou o administrador podem desfazê-la' using errcode = '42501';
+  end if;
+  if a.desfeito_em is not null then raise exception 'Esta alteração já foi desfeita' using errcode = '22023'; end if;
+  if a.desfaz_id is not null then raise exception 'Um desfazer não se desfaz: altere o campo de novo' using errcode = '22023'; end if;
+  -- a geometria sai da poligonal (coluna gerada)
+  v_cols := array(select x from unnest(app.colunas_mudadas(a.antes, a.depois)) x where x <> 'poligono');
+  if cardinality(v_cols) = 0 then raise exception 'Nada a desfazer' using errcode = '22023'; end if;
+  if v_cols && array['situacao_cadastral','arquivado_em','motivo_arquivamento','criado_por','criado_em','codigo'] then
+    raise exception 'Esta alteração não se desfaz por aqui' using errcode = '22023';
+  end if;
+  foreach c in array v_cols loop
+    if to_jsonb(t) -> c is distinct from a.depois -> c then
+      raise exception 'O campo % mudou depois desta alteração: desfaça primeiro a mudança mais recente', c using errcode = '40001';
+    end if;
+  end loop;
+  select jsonb_object_agg(x, a.antes -> x) into v_dados from unnest(v_cols) x;
+  perform set_config('app.desfazendo', '1', true);
+  v_versao := app.salvar_terreno(t.id, t.versao, v_dados);
+  perform set_config('app.desfazendo', '', true);
+  update app.auditoria set desfeito_em = clock_timestamp(), desfeito_por = auth.uid() where id = a.id;
+  update app.auditoria set desfaz_id = a.id
+  where id = (select max(id) from app.auditoria where tabela = 'terrenos' and registro_id = t.id and acao = 'update');
+  return v_versao;
+end $$;
+
+-- ---------------------------------------------------------------------
 -- Arquivar / reativar terreno (nunca apagar)
 -- ---------------------------------------------------------------------
 create or replace function app.arquivar_terreno(p_terreno uuid, p_motivo text)
@@ -2279,7 +2328,7 @@ revoke execute on all functions in schema app from public;
 grant execute on function
   app.geojson_poligono_valido(jsonb), app.distancia_km(double precision, double precision, double precision, double precision), app.minhas_empresas(), app.empresas_edicao(), app.papel(uuid), app.eh_membro(uuid), app.eh_gestor(uuid), app.exigir_membro(uuid), app.exigir_editor(uuid),
   app.nivel_papel(text), app.eh_administrador(uuid), app.exigir_administrador(uuid), app.eh_superior(uuid, uuid, uuid),
-  app.salvar_terreno(uuid, int, jsonb),
+  app.salvar_terreno(uuid, int, jsonb), app.desfazer_alteracao(bigint),
   app.salvar_entorno(uuid, double precision, double precision, jsonb, boolean),
   app.salvar_distancias_pontos(uuid, double precision, double precision, jsonb),
   app.registrar_consulta_lote(uuid, jsonb, jsonb, numeric, jsonb, jsonb, text[], boolean),

@@ -200,7 +200,12 @@ create table app.auditoria (
   depois      jsonb,
   user_id     uuid default auth.uid(),
   -- clock_timestamp, não now(): várias alterações na mesma transação (uma RPC) ficam em instantes distintos e ordenáveis
-  em          timestamptz not null default clock_timestamp()
+  em          timestamptz not null default clock_timestamp(),
+  -- lixeira do log (app.desfazer_alteracao): o registro nunca some; fica marcado como desfeito,
+  -- e o registro da volta ao valor de antes aponta para ele
+  desfeito_em  timestamptz,
+  desfeito_por uuid,
+  desfaz_id    bigint references app.auditoria(id)
 );
 create index on app.auditoria (empresa_id, tabela, registro_id);
 create index on app.auditoria (empresa_id, em desc, id desc);
@@ -243,6 +248,7 @@ begin
   where tabela = p_tabela and registro_id = coalesce(v_row->>'id', v_row->>'user_id')::uuid
   order by em desc, id desc limit 1;
   if not found or u.acao <> 'update' or u.user_id is distinct from auth.uid()
+     or u.desfeito_em is not null or u.desfaz_id is not null  -- o desfazer e o desfeito não se juntam com nada
      or u.em < clock_timestamp() - app.janela_log(p_tabela, v_cols)
      or app.colunas_mudadas(u.antes, u.depois) <> v_cols then
     return false;
@@ -265,7 +271,8 @@ declare
   v_row jsonb := coalesce(v_new, v_old);
 begin
   if tg_op = 'UPDATE' and v_old = v_new then return new; end if;
-  if tg_op = 'UPDATE' and tg_table_name <> 'processos' and app.juntar_auditoria(tg_table_name, v_old, v_new) then return new; end if;
+  if tg_op = 'UPDATE' and tg_table_name <> 'processos' and coalesce(current_setting('app.desfazendo', true), '') <> '1'
+     and app.juntar_auditoria(tg_table_name, v_old, v_new) then return new; end if;
   insert into app.auditoria (empresa_id, tabela, registro_id, acao, antes, depois)
   values ((v_row->>'empresa_id')::uuid, tg_table_name, coalesce(v_row->>'id', v_row->>'user_id')::uuid, lower(tg_op), v_old, v_new);
   return coalesce(new, old);
