@@ -2711,6 +2711,10 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 :root[data-tema="escuro"] .pn-lconf { background: rgba(255,180,171,.12); color: #ffdad6 }
 :root[data-tema="escuro"] .log-previa { background: rgba(255,223,153,.12); color: #ffdf99 }
 :root[data-tema="escuro"] .log-previa .btn.text { color: #ffdf99 !important }
+
+/* Áreas: cinco fontes (a quinta é a da poligonal, calculada pelo desenho) */
+.areas { grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)) }
+@media (max-width: 720px) { .areas { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
 </style>
 <header class="top">
   <div class="top-in">
@@ -2803,7 +2807,7 @@ const OPT={
   prioridade:{baixa:'Baixa',media:'Média',alta:'Alta',estrategica:'Estratégica'},
   origem:{prospeccao:'Prospecção própria',corretor:'Corretor',indicacao:'Indicação',portal:'Portal',proprietario:'Proprietário direto',outro:'Outro'},
   precisao:{nao_informada:'Não informada',aproximada:'Aproximada',conferida:'Conferida'},
-  fonteArea:{documental:'Documental (matrícula)',cadastral:'Cadastral (IPTU)',levantamento:'Levantamento topográfico',estimativa:'Estimativa'},
+  fonteArea:{documental:'Documental (matrícula)',cadastral:'Cadastral (IPTU)',levantamento:'Levantamento topográfico',estimativa:'Estimativa',poligonal:'Poligonal (desenho no mapa)'},
   topografia:{nao_informado:'Não informado',plano:'Plano',aclive:'Aclive',declive:'Declive',irregular:'Irregular'},
   posicao:{nao_informado:'Não informado',meio_quadra:'Meio de quadra',esquina:'Esquina',duas_frentes:'Duas frentes',quadra_inteira:'Quadra inteira'},
   formato:{nao_informado:'Não informado',regular:'Regular',irregular:'Irregular'},
@@ -3059,7 +3063,9 @@ const histOrd=hist=>(hist||[]).map((h,i)=>[h,i]).sort((a,b)=>b[0].em.localeCompa
 const log=(t,txt)=>t.hist.push({em:agora(),user:me(),txt:(t._parte?`Parte ${t._parte.nome} · `:'')+txt});
 
 /* ===================== regras derivadas ===================== */
-const areaAdotada=t=>({documental:t.aDoc,cadastral:t.aCad,levantamento:t.aLev,estimativa:t.aEst})[t.fonteArea]??null;
+/* a área da poligonal não é digitada: sai do desenho, em m² inteiros, e acompanha cada ajuste (pedido do Moisés, 24/out/2026) */
+const areaPolT=t=>t.poly&&t.poly.length>=3&&typeof areaPoly==='function'?Math.round(areaPoly(t.poly)):null;
+const areaAdotada=t=>t.fonteArea==='poligonal'?areaPolT(t):({documental:t.aDoc,cadastral:t.aCad,levantamento:t.aLev,estimativa:t.aEst})[t.fonteArea]??null;
 const ofertaRef=t=>t.ofertas.find(o=>o.id===t.neg?.ofRef)||t.ofertas.filter(o=>o.status==='ativa').sort((a,b)=>b.data.localeCompare(a.data))[0]||t.ofertas[0]||null;
 const corrPrincipal=t=>{const c=t.corretores.find(x=>x.principal);return c?corretor(c.cid):null};
 const analiseVig=t=>t.analises.find(a=>a.status==='vigente');
@@ -3161,18 +3167,20 @@ function secaoGenerica(t,id){
 function secaoAreas(t){
   const ed=UI.edit==='areas',ad=areaAdotada(t);
   const vals=[['aDoc','Documental','documental','matrícula'],['aCad','Cadastral','cadastral','IPTU'],['aLev','Levantamento','levantamento','topografia'],['aEst','Estimativa','estimativa','sem documento']];
-  const preench=vals.map(v=>t[v[0]]).filter(v=>v!=null);
+  const apol=areaPolT(t),cards=[...vals.map(([k,l,f,s])=>[t[k],l,f,s]),[apol,'Poligonal','poligonal','desenho']];
+  const preench=cards.map(v=>v[0]).filter(v=>v!=null);
   let div='';
   if(preench.length>1){const mx=Math.max(...preench),mn=Math.min(...preench);if((mx-mn)/mx>0.01)div=`<div class="diverg">${ic('warn',16)}Diferença de ${m2(mx-mn)} (${num((mx-mn)/mx*100,1)}%) entre as fontes. Confira qual entra na viabilidade.</div>`}
   if(!ed)return `<section class="sec" id="sec-areas"><div class="sec-h"><h2>Áreas e dimensões</h2><button class="btn text sm" data-a="edit" data-s="areas">${ic('edit',16)}Editar</button></div><div class="sec-b">
-    <div class="areas">${vals.map(([k,l,f,s])=>`<div class="area ${t.fonteArea===f?'sel':''}"><div class="al">${l} <span class="faint">· ${s}</span></div><div class="av">${t[k]==null?'<span class="faint" style="font-size:14px;font-style:italic">Não informada</span>':m2(t[k])}</div>${t.fonteArea===f?'<div class="as">Área adotada</div>':''}</div>`).join('')}</div>
+    <div class="areas">${cards.map(([v,l,f,s])=>`<div class="area ${t.fonteArea===f?'sel':''}"${f==='poligonal'?' title="Calculada pelo desenho; muda quando a poligonal é ajustada"':''}><div class="al">${l} <span class="faint">· ${s}</span></div><div class="av">${v==null?'<span class="faint" style="font-size:14px;font-style:italic">Não informada</span>':m2(v)}</div>${t.fonteArea===f?'<div class="as">Área adotada</div>':''}</div>`).join('')}</div>
     ${div}<div class="kvg" style="margin-top:14px"><div><div class="k">Área adotada</div>${ad==null?'<span class="v ni">Escolha a fonte</span>':`<div class="v">${m2(ad)}</div>`}</div><div><div class="k">Testada principal</div>${t.testada==null?ni:`<div class="v">${num(t.testada,2)} m</div>`}</div>
     <div><div class="k">Valor pedido por m²</div>${ad&&ofertaRef(t)?.valor?`<div class="v">${brl(ofertaRef(t).valor/ad)}</div>`:ni}</div></div></div></section>`;
   return `<section class="sec" id="sec-areas"><form data-form="areas"><div class="sec-h"><h2>Áreas e dimensões</h2></div><div class="sec-b"><div class="editgrid">
     ${vals.map(([k,l,,s])=>`<div class="field"><label for="f-${k}">${l} (${s})</label><input id="f-${k}" name="${k}" inputmode="decimal" placeholder="m²" value="${t[k]==null?'':String(t[k]).replace('.',',')}"></div>`).join('')}
+    <div class="field"><label>Poligonal (desenho no mapa)</label><div class="v" style="padding:10px 0">${apol==null?'<span class="ni">Sem poligonal</span>':m2(apol)} <span class="faint">· calculada</span></div></div>
     <div class="field"><label for="f-fonteArea">Área adotada vem de</label>${optSel('fonteArea',OPT.fonteArea,t.fonteArea)}</div>
     <div class="field"><label for="f-testada">Testada principal (m)</label><input id="f-testada" name="testada" inputmode="decimal" value="${t.testada==null?'':String(t.testada).replace('.',',')}"></div>
-    </div><div class="hint" style="margin-top:8px">A área adotada é sempre uma das quatro acima, com a fonte registrada. Medidas de terrenos irregulares (segmentos e confrontações) entram depois em tabela própria.</div></div>
+    </div><div class="hint" style="margin-top:8px">A área adotada é sempre uma das cinco acima, com a fonte registrada. A da poligonal é calculada pelo desenho e acompanha cada ajuste. Medidas de terrenos irregulares (segmentos e confrontações) entram depois em tabela própria.</div></div>
     <div class="sec-f"><button type="button" class="btn text" data-a="cancel-edit">Cancelar</button><button class="btn primary">Salvar</button></div></form></section>`;
 }
 function secaoMats(t){
@@ -4254,7 +4262,7 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     ${linE('Eixo comercial',esc(eixo(t.eixo)||''),'eixo',['eixo'])}
     ${linLink('Zoneamento',a?esc(zonasTxt(t))+(caMax(t)!=null?` · CA máx. ${num(caMax(t),2)}`:''):'',`<button class="kv-ed kv-ir" data-a="tab" data-t="urbanismo" title="Registrar nova análise em Urbanismo" aria-label="Registrar nova análise em Urbanismo">${ic('fwd',16)}</button>`)}
     ${linArea('Área adotada',ad!=null?`${m2(ad)} <span class="faint">(${esc(OPT.fonteArea[t.fonteArea]||'')})</span>`:'','area')}
-    ${t.poly?lin('Área da poligonal',m2(areaPoly(t.poly))):''}
+    ${t.poly&&t.fonteArea!=='poligonal'?lin('Área da poligonal',m2(areaPolT(t))):''}
     ${linArea('Testada principal',t.testada!=null?num(t.testada,2)+' m':'','testada')}
     ${linE('Topografia e posição',[t.topografia!=='nao_informado'&&OPT.topografia[t.topografia],t.posicao!=='nao_informado'&&OPT.posicao[t.posicao]].filter(Boolean).join(' · '),'topo',['topografia','posicao'])}
     ${linE('Ocupação',t.ocupacao!=='nao_informado'?OPT.ocupacao[t.ocupacao]:'','ocup',['ocupacao'])}
