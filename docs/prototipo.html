@@ -2139,11 +2139,14 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .mp-ctx button { justify-content: flex-start !important; gap: 12px !important; white-space: nowrap }
 .mp-ctx button .ic { color: #444746 }
 :root[data-tema="escuro"] .mp-ctx button .ic { color: #aab4d6 }
-/* concorrência no mapa e na legenda: losango roxo */
-.conc { background: none; border: 0 }
-.conc-b { display: block; width: 12px; height: 12px; background: #863d8f; border: 2px solid #fff; transform: rotate(45deg); box-shadow: 0 1px 3px rgba(0,0,0,.35) }
-.conc.g { width: 16px; height: 16px; display: grid; place-items: center; transform: translateY(50%) }
-.lg-poi .conc-b { width: 10px; height: 10px; border-width: 1.5px; box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
+/* concorrência no mapa e na legenda: quadrado roxo com prédio; nome ao lado de perto */
+.conc { background: none; border: 0; overflow: visible }
+.conc-b { display: grid; place-items: center; width: 24px; height: 24px; box-sizing: border-box; border-radius: 7px; background: #863d8f; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.4) }
+.conc-n { display: none; position: absolute; left: 30px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,.95); color: #1f1f1f; font: 500 12px/16px "Google Sans Flex", system-ui, sans-serif; padding: 3px 8px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.35); white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; pointer-events: auto }
+#mapa.conc-nomes .conc-n { display: block }
+.conc.g { position: relative; width: 24px; height: 24px; transform: translateY(50%) }
+.lg-poi .conc-b { width: 16px; height: 16px; border-radius: 5px; border-width: 1.5px; box-shadow: 0 0 0 1px rgba(0,0,0,.15) } .lg-poi .conc-b svg { width: 10px; height: 10px }
+:root[data-tema="escuro"] .conc-n { background: rgba(13,21,48,.95); color: #e6ecff; box-shadow: 0 0 0 1px rgba(124,140,255,.35) }
 /* barra do mapa sem o fundo branco: só o seletor do tipo de mapa e o Importar KMZ/KML, cada um com a sua sombra */
 .mapa-area .mp-barra { background: transparent !important; box-shadow: none !important; border-radius: 0 !important; align-items: center; flex-wrap: nowrap !important; flex-direction: row !important }
 :root[data-tema="escuro"] .mapa-area .mp-barra { background: transparent !important }
@@ -2643,7 +2646,7 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 :root[data-tema="escuro"] .fx-op[data-zero] { color: #5d688f }
 :root[data-tema="escuro"] .fx-vis select { background: #081028 }
 :root[data-tema="escuro"] .fx-in { background: transparent }
-/* ---------- Concorrência: quadro ao tocar no losango e gaveta de cadastro ---------- */
+/* ---------- Concorrência: quadro ao tocar no ícone e gaveta de cadastro ---------- */
 .cc-box { position: absolute; z-index: 1060; top: 64px; right: 10px; width: min(400px, calc(100% - 20px)); max-height: calc(100% - 150px); overflow-y: auto; overscroll-behavior: contain; background: #fff; color: #1f1f1f; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 4px 16px rgba(0,0,0,.16); padding: 4px 0 12px }
 .cc-hd { display: flex; align-items: flex-start; gap: 8px; padding: 12px 8px 4px 20px }
 .cc-ti { flex: 1; min-width: 0 } .cc-n { font-size: 16px; line-height: 24px; font-weight: 500 }
@@ -3803,7 +3806,6 @@ function desenhaPins(){return GG?G_desenhaPins():L_desenhaPins()}
 function desenhaPois(){desenhaConc();return GG?G_desenhaPois():L_desenhaPois()}
 function desenhaConc(){return GG?G_desenhaConc():L_desenhaConc()}
 function mostrarConc(on){if(GG)return G_mostrarConc(on);if(MAPA&&CONC){on?CONC.addTo(MAPA):MAPA.removeLayer(CONC)}}
-const concTip=c=>{const r=ccResumo(c),e=ccEmpN(c);return `${esc(c.nome)}${e?' · '+esc(e):''}${r.m2!=null?' · '+ccM2(r.m2):''}`};
 /* ---------- menu do clique direito no mapa (no toque, segurar no vazio): novo terreno, ponto de interesse ou concorrência ali ---------- */
 function ctxAbrir(x,y,lat,lng){ctxFechar();if(UI.mpModo||UI.role==='Leitura')return;const area=$('.mapa-area');if(!area)return;UI.ctxLL={lat,lng};
   const m=document.createElement('div');m.className='mp-ctx';m.setAttribute('role','menu');
@@ -3919,7 +3921,7 @@ function mpLegenda(){const base=fxLista('mapa'),m=UI.mp,cl=new Map(base.map(t=>[
   return topo+mpItens().map(x=>{const n=base.filter(t=>cl.get(t.id)===x.k).length,on=!m.ocultas.includes(x.k);
     return `<div class="lg-r"><button type="button" class="lg-i" data-a="mp-sit" data-v="${x.k}" aria-pressed="${on}"><span class="pin-mini" style="background:${x.cor};color:${x.fg}">${x.g}</span>${esc(x.nome)}<span class="n">${n}</span></button>${x.desce?`<button type="button" class="iconbtn lg-d" data-a="mp-desce" data-v="${x.k}" title="Ver ${m.f?'subetapas':'etapas'} de ${esc(x.nome)}" aria-label="Ver ${m.f?'subetapas':'etapas'} de ${esc(x.nome)}">${ic('chev',16)}</button>`:''}</div>`}).join('')
     +`<hr class="lg-sep"><button type="button" class="lg-i" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}"><span class="lg-poi"><span class="poi-b"></span></span>Pontos de interesse<span class="n">${(S.pontos||[]).length}</span></button>`
-    +`<button type="button" class="lg-i" data-a="mp-conc" aria-pressed="${UI.mpConc!==false}"><span class="lg-poi"><span class="conc-b"></span></span>Concorrência<span class="n">${ccAtivos().length}</span></button>`;
+    +`<button type="button" class="lg-i" data-a="mp-conc" aria-pressed="${UI.mpConc!==false}"><span class="lg-poi">${ccMarcaHtml()}</span>Concorrência<span class="n">${ccAtivos().length}</span></button>`;
 }
 function pgMapa(){
   const opt=(o,v)=>Object.entries(o).map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${esc(l)}</option>`).join('');
@@ -3969,9 +3971,9 @@ function L_desenhaPins(){if(!MAPA||!PINS)return;PINS.clearLayers();
     /* o pino fica sobre a poligonal: segurar nele (ou dois cliques) também entra em edição */
     if(t.poly&&t.poly.length>=3){mk.on('add',()=>polyGestos(mk.getElement(),t.id));mk.on('dblclick',e=>{L.DomEvent.stop(e);editarPoligonal(t.id)})}
     mk.addTo(PINS);mk._terreno=t.id})}
-const concIcon=()=>L.divIcon({className:'conc',html:'<span class="conc-b"></span>',iconSize:[16,16],iconAnchor:[8,8],tooltipAnchor:[0,-10]});
-function L_desenhaConc(){if(!MAPA||!CONC)return;CONC.clearLayers();ccAtivos().forEach(c=>L.marker([c.lat,c.lng],{icon:concIcon(),title:c.nome,interactive:!UI.mpModo,keyboard:true}).bindTooltip(concTip(c),{direction:'top'}).on('click',()=>{if(!UI.mpModo)ccAbrir(c.id)}).addTo(CONC));
-  if(!MAPA._cc){MAPA._cc=1;MAPA.on('click',ccFecharDoMapa)}}
+const concIcon=c=>L.divIcon({className:'conc',html:ccMarcaHtml(c),iconSize:[24,24],iconAnchor:[12,12],tooltipAnchor:[0,-14]});
+function L_desenhaConc(){if(!MAPA||!CONC)return;CONC.clearLayers();ccAtivos().forEach(c=>L.marker([c.lat,c.lng],{icon:concIcon(c),title:c.nome,interactive:!UI.mpModo,keyboard:true}).on('click',()=>{if(!UI.mpModo)ccAbrir(c.id)}).addTo(CONC));
+  if(!MAPA._cc){MAPA._cc=1;MAPA.on('click',ccFecharDoMapa);MAPA.on('zoomend',()=>ccNomes(MAPA.getZoom()))}ccNomes(MAPA.getZoom())}
 function L_desenhaPois(){if(!MAPA||!POIS)return;POIS.clearLayers();(S.pontos||[]).forEach(p=>L.marker([p.lat,p.lng],{icon:poiIcon(),title:p.nome,interactive:!UI.mpModo}).bindTooltip(`${esc(p.nome)} · ${CAT_POI[p.cat]||''}`,{direction:'top'}).addTo(POIS))}
 function L_desenhaRascunho(){const D=UI.edMini?MINI_DES:DES;if(!D)return;D.clearLayers();const p=UI.desenho||[];if(!p.length)return;
   (p.length>=3?L.polygon(p,{color:'#0094fe',weight:2,dashArray:UI.mpModo==='editar'?null:'6 4',fillOpacity:UI.mpModo==='editar'?.2:.12,interactive:false}):L.polyline(p,{color:'#0094fe',weight:2,dashArray:'6 4',interactive:false})).addTo(D);
@@ -4381,12 +4383,12 @@ function G_desenhaPins(){if(!MAPA)return;gSet(gPins,null);gPins=[];const {Advanc
       ['mouseup','mouseout'].forEach(ev=>pg.addListener(ev,limpa));google.maps.event.addListener(MAPA,'dragstart',limpa);
       gPins.push(pg)}})}
 let gConc=[];
-function gConcEl(){const d=document.createElement('div');d.className='conc g';d.innerHTML='<span class="conc-b"></span>';return d}
+function gConcEl(c){const d=document.createElement('div');d.className='conc g';d.innerHTML=ccMarcaHtml(c);return d}
 function G_mostrarConc(on){gSet(gConc,on?MAPA:null)}
 function G_desenhaConc(){if(!MAPA)return;gSet(gConc,null);gConc=[];const {AdvancedMarkerElement}=gLib.marker;
-  ccAtivos().forEach(c=>{const m=new AdvancedMarkerElement({map:UI.mpConc===false?null:MAPA,position:gLL(c.lat,c.lng),content:gConcEl(),title:`${c.nome}${ccEmpN(c)?' · '+ccEmpN(c):''}`,gmpClickable:!UI.mpModo});
+  ccAtivos().forEach(c=>{const m=new AdvancedMarkerElement({map:UI.mpConc===false?null:MAPA,position:gLL(c.lat,c.lng),content:gConcEl(c),title:`${c.nome}${ccEmpN(c)?' · '+ccEmpN(c):''}`,gmpClickable:!UI.mpModo});
     m.addListener?.('click',()=>{if(!UI.mpModo)ccAbrir(c.id)});gConc.push(m)});
-  if(!MAPA._cc){MAPA._cc=1;MAPA.addListener('click',ccFecharDoMapa)}}
+  if(!MAPA._cc){MAPA._cc=1;MAPA.addListener('click',ccFecharDoMapa);MAPA.addListener('zoom_changed',()=>ccNomes(MAPA.getZoom()))}ccNomes(MAPA.getZoom())}
 function G_desenhaPois(){if(!MAPA)return;gSet(gPois,null);gPois=[];const {AdvancedMarkerElement}=gLib.marker;
   (S.pontos||[]).forEach(p=>gPois.push(new AdvancedMarkerElement({map:UI.mpPoi===false?null:MAPA,position:gLL(p.lat,p.lng),content:gPoiEl(),title:`${p.nome} · ${CAT_POI[p.cat]||''}`,gmpClickable:false})))}
 function G_desenhaRascunho(){const M=edMapa();gSet(gDes,null);gDes=[];if(!M)return;gDes=[];const p=(UI.desenho||[]).map(q=>gLL(q[0],q[1]));if(!p.length)return;
@@ -6784,7 +6786,7 @@ document.addEventListener('submit',e=>{const f=e.target;if(f.dataset?.form!=='fx
 /* ---------- concorrência: empreendimentos de outras empresas no mapa ----------
    Espelha app.concorrentes / concorrencia_empreendimentos / concorrencia_tipologias / concorrencia_precos
    (decisão do Moisés, 24/out/2026). Cadastro numa gaveta à direita, aberta pelo clique direito no mapa
-   (toque longo no celular); o toque no losango abre o quadro com os dados. O preço médio de cada
+   (toque longo no celular); o toque no ícone abre o quadro com os dados. O preço médio de cada
    tipologia nunca é sobrescrito: cada data de apuração é uma linha nova (a mesma data corrige aquele
    valor). O preço por m² do empreendimento sai das tipologias, como app.concorrencia_resumo. */
 const CC_SIT={lancamento:'Lançamento',em_obras:'Em obras',pronto:'Pronto',nao_informado:'Não informada'};
@@ -6796,6 +6798,12 @@ const ccCurta=s=>{if(!s)return '—';const [y,m,d]=s.split('-');return `${d}/${m
 const ccMes=s=>{if(!s)return '—';const [y,m]=s.split('-');return MES[+m-1]+'/'+y};
 const ccDorm=d=>d==null?'—':d===0?'Studio':d+' dorm';
 const ccM2=v=>v==null?'—':brl(v)+'/m²';
+/* marca no mapa (opção A, decisão do Moisés de 24/out/2026): quadrado roxo com prédio; o nome aparece ao lado
+   a partir do zoom CC_ZOOM_NOME, para não embolar com o mapa afastado */
+const CC_PREDIO='<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 21V5l8-3v19M12 9l8 3v9M2 21h20M7 8h2M7 12h2M7 16h2M15 14h2M15 18h2"/></svg>';
+const CC_ZOOM_NOME=15;
+const ccMarcaHtml=c=>`<span class="conc-b">${CC_PREDIO}</span>${c?`<span class="conc-n">${esc(c.nome)}</span>`:''}`;
+function ccNomes(z){$('#mapa')?.classList.toggle('conc-nomes',z>=CC_ZOOM_NOME)}
 const ccAtivos=()=>(S.concorrentes||[]).filter(c=>c.ativo!==false);
 const ccC=id=>(S.concorrentes||[]).find(c=>c.id===id);
 const ccEmp=id=>(S.concEmpresas||[]).find(e=>e.id===id);
@@ -6825,7 +6833,7 @@ function ccResumo(c,data=HOJE){const ts=(c.tip||[]).filter(t=>t.ativo!==false),c
   return {n:ts.length,ncp:cp.length,m2:m2==null?null:Math.round(m2*100)/100,mix,de:ds[0]||null,ate:ds[ds.length-1]||null,
     faixas:[...new Set(ts.map(t=>t.faixa).filter(f=>f&&f!=='nao_informado'))].sort()}}
 
-/* ---------- quadro ao tocar no losango ---------- */
+/* ---------- quadro ao tocar no ícone ---------- */
 function ccBoxHtml(c){const r=ccResumo(c),ro=UI.role==='Leitura',ts=(c.tip||[]).filter(t=>t.ativo!==false);
   const per=r.de?(r.de===r.ate?`apurado em ${ccData(r.de)}`:`apurados de ${ccMes(r.de)} a ${ccMes(r.ate)}`):'';
   const meta=[c.unid!=null?num(c.unid)+' unidades':'Unidades não informadas',c.lanc?'lançado em '+ccMes(c.lanc):'',r.faixas.map(f=>CC_FAIXA[f]).join(', ')].filter(Boolean).join(' · ');

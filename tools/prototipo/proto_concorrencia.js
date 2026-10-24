@@ -1,7 +1,7 @@
 /* ---------- concorrência: empreendimentos de outras empresas no mapa ----------
    Espelha app.concorrentes / concorrencia_empreendimentos / concorrencia_tipologias / concorrencia_precos
    (decisão do Moisés, 24/out/2026). Cadastro numa gaveta à direita, aberta pelo clique direito no mapa
-   (toque longo no celular); o toque no losango abre o quadro com os dados. O preço médio de cada
+   (toque longo no celular); o toque no ícone abre o quadro com os dados. O preço médio de cada
    tipologia nunca é sobrescrito: cada data de apuração é uma linha nova (a mesma data corrige aquele
    valor). O preço por m² do empreendimento sai das tipologias, como app.concorrencia_resumo. */
 const CC_SIT={lancamento:'Lançamento',em_obras:'Em obras',pronto:'Pronto',nao_informado:'Não informada'};
@@ -13,6 +13,12 @@ const ccCurta=s=>{if(!s)return '—';const [y,m,d]=s.split('-');return `${d}/${m
 const ccMes=s=>{if(!s)return '—';const [y,m]=s.split('-');return MES[+m-1]+'/'+y};
 const ccDorm=d=>d==null?'—':d===0?'Studio':d+' dorm';
 const ccM2=v=>v==null?'—':brl(v)+'/m²';
+/* marca no mapa (opção A, decisão do Moisés de 24/out/2026): quadrado roxo com prédio; o nome aparece ao lado
+   a partir do zoom CC_ZOOM_NOME, para não embolar com o mapa afastado */
+const CC_PREDIO='<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 21V5l8-3v19M12 9l8 3v9M2 21h20M7 8h2M7 12h2M7 16h2M15 14h2M15 18h2"/></svg>';
+const CC_ZOOM_NOME=15;
+const ccMarcaHtml=c=>`<span class="conc-b">${CC_PREDIO}</span>${c?`<span class="conc-n">${esc(c.nome)}</span>`:''}`;
+function ccNomes(z){$('#mapa')?.classList.toggle('conc-nomes',z>=CC_ZOOM_NOME)}
 const ccAtivos=()=>(S.concorrentes||[]).filter(c=>c.ativo!==false);
 const ccC=id=>(S.concorrentes||[]).find(c=>c.id===id);
 const ccEmp=id=>(S.concEmpresas||[]).find(e=>e.id===id);
@@ -42,7 +48,7 @@ function ccResumo(c,data=HOJE){const ts=(c.tip||[]).filter(t=>t.ativo!==false),c
   return {n:ts.length,ncp:cp.length,m2:m2==null?null:Math.round(m2*100)/100,mix,de:ds[0]||null,ate:ds[ds.length-1]||null,
     faixas:[...new Set(ts.map(t=>t.faixa).filter(f=>f&&f!=='nao_informado'))].sort()}}
 
-/* ---------- quadro ao tocar no losango ---------- */
+/* ---------- quadro ao tocar no ícone ---------- */
 function ccBoxHtml(c){const r=ccResumo(c),ro=UI.role==='Leitura',ts=(c.tip||[]).filter(t=>t.ativo!==false);
   const per=r.de?(r.de===r.ate?`apurado em ${ccData(r.de)}`:`apurados de ${ccMes(r.de)} a ${ccMes(r.ate)}`):'';
   const meta=[c.unid!=null?num(c.unid)+' unidades':'Unidades não informadas',c.lanc?'lançado em '+ccMes(c.lanc):'',r.faixas.map(f=>CC_FAIXA[f]).join(', ')].filter(Boolean).join(' · ');
