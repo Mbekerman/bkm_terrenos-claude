@@ -83,8 +83,12 @@ create table app.terrenos (
   area_documental_m2    numeric(12,2) check (area_documental_m2 > 0),
   area_cadastral_m2     numeric(12,2) check (area_cadastral_m2 > 0),
   area_levantamento_m2  numeric(12,2) check (area_levantamento_m2 > 0),
+  -- área do desenho, em m² inteiros: não é digitada e acompanha cada ajuste na poligonal (pedido do Moisés, 24/out/2026)
+  area_poligonal_m2     numeric(12,2) generated always as
+                          (round(extensions.st_area(extensions.st_makevalid(extensions.st_setsrid(extensions.st_geomfromgeojson(poligono_geojson::text), 4326))::extensions.geography)::numeric, 0)) stored,
   area_adotada_m2       numeric(12,2) check (area_adotada_m2 > 0),
-  fonte_area_adotada    text check (fonte_area_adotada in ('documental','cadastral','levantamento','estimativa')),
+  -- 'poligonal': a adotada é a área do desenho, recalculada pelo trigger t_norm a cada gravação
+  fonte_area_adotada    text check (fonte_area_adotada in ('documental','cadastral','levantamento','estimativa','poligonal')),
   testada_principal_m   numeric(8,2) check (testada_principal_m > 0),
   topografia            text not null default 'nao_informado' check (topografia in ('nao_informado','plano','aclive','declive','irregular')),
   desnivel_estimado_m   numeric(6,2),
@@ -540,6 +544,11 @@ returns trigger language plpgsql as $$
 begin
   new.cep := nullif(regexp_replace(coalesce(new.cep, ''), '\D', '', 'g'), '');
   new.nome := trim(new.nome);
+  -- adotada pela poligonal: segue o desenho (a coluna gerada só é calculada depois deste trigger)
+  if new.fonte_area_adotada = 'poligonal' then
+    new.area_adotada_m2 := round(extensions.st_area(extensions.st_makevalid(extensions.st_setsrid(
+      extensions.st_geomfromgeojson(new.poligono_geojson::text), 4326))::extensions.geography)::numeric, 0);
+  end if;
   return new;
 end $$;
 create trigger t_norm before insert or update on app.terrenos for each row execute function app.tg_normalizar_terreno();

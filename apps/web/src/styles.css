@@ -2037,5 +2037,9 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 :root[data-tema="escuro"] .log-previa { background: rgba(255,223,153,.12); color: #ffdf99 }
 :root[data-tema="escuro"] .log-previa .btn.text { color: #ffdf99 !important }
 
+/* Áreas: cinco fontes (a quinta é a da poligonal, calculada pelo desenho) */
+.areas { grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)) }
+@media (max-width: 720px) { .areas { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
