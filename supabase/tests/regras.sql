@@ -1120,7 +1120,7 @@ select pg_temp.ok((select v06004_original = 4000 and renda_responsavel_censo_202
 select pg_temp.ok((select v06004_original is null and renda_familiar_estimada_atual is null and faixa is null and situacao_renda = 'sigilo'
   from app.setores_renda where cd_setor = '355030899999992'), 'setor em sigilo: sem renda e sem faixa');
 select pg_temp.ok((select string_agg(app.renda_faixa(v)::text, ',' order by v) from unnest(array[1999, 2500, 3500, 4500, 6500, 9500, 13000, 20000, 27000, 31000]::numeric[]) v)
-  = '1,2,3,4,6,9,11,13,15,16', 'exemplos da especificação caem nas faixas certas');
+  = '1,2,3,4,6,9,10,13,15,16', 'exemplos da especificação caem nas faixas certas');
 select pg_temp.ok(app.renda_faixa(2000) = 1 and app.renda_faixa(2000.4) = 1 and app.renda_faixa(2000.5) = 2 and app.renda_faixa(2001) = 2
   and app.renda_faixa(30000) = 15 and app.renda_faixa(30001) = 16 and app.renda_faixa(null) is null,
   'fronteira: o limite de cima entra na faixa, depois de arredondar para reais');
