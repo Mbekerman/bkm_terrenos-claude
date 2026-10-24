@@ -620,8 +620,13 @@ erDiagram
     float longitude
     text endereco
     int unidades "nulo = nao informado"
-    text situacao "lancamento | em_obras | pronto | nao_informado"
+    text situacao "lancamento | breve_lancamento | em_obras | pronto | usado | nao_informado"
     date data_lancamento
+    date previsao_entrega
+    text tipo "vertical | horizontal | unidade_avulsa | sobrado | loteamento | industrial | galpao"
+    text finalidade "residencial | comercial | misto | nao_informado"
+    text origem "manual | importado"
+    text bairro
     bool ativo
   }
   concorrencia_tipologias {
@@ -647,7 +652,81 @@ erDiagram
 - **Preço por m² do empreendimento é calculado** (`app.concorrencia_resumo(data)`), com o último preço de cada tipologia ativa até a data: com as unidades de todas as tipologias precificadas, média ponderada pelo mix (soma de preço × unidades ÷ soma de área × unidades); faltando alguma, média simples do preço por m² das tipologias (`mix_completo = false`). Devolve também o período dos preços usados (`apurado_de`, `apurado_ate`) e as faixas.
 - **Faixa social na tipologia**, não no empreendimento, porque um empreendimento mistura HIS, HMP e R2V.
 - `v_concorrencia`: empreendimentos ativos com a empresa e o resumo de hoje; é o que o mapa e o quadro leem. `app.concorrencia_tipologias_em(data)`: cada tipologia com o preço vigente na data.
-- Estoque e velocidade de vendas ficaram de fora (decisão do Moisés). A concorrência perto do terreno na ficha e uma página de lista ficam para depois.
+- O cadastro feito à mão não tem estoque nem velocidade: isso é o monitor. A concorrência perto do terreno na ficha e uma página de lista ficam para depois. Empreendimento `manual` não é alterado pela importação (`observacao` e `ativo` ficam).
+
+## Monitor de mercado
+
+Coleta de empreendimentos de outras empresas (spec definitiva do Moisés, 24/out/2026). A fonte é `orulo_api`, `orulo_planilha`, `orulo_login` ou `manual`. O empreendimento é o da concorrência; a unidade, o preço vigente e a venda nascem da coleta. Não há tabela de grupos.
+
+```mermaid
+erDiagram
+  empresas ||--|| mercado_config : configura
+  empresas ||--o{ mercado_tipos_unidade : classifica
+  empresas ||--o{ mercado_coletas : coleta
+  mercado_coletas ||--o{ mercado_empreendimento_estados : "situacao vigente"
+  mercado_coletas ||--o{ mercado_unidade_estados : "preco vigente"
+  concorrencia_empreendimentos ||--o{ mercado_empreendimento_estados : historico
+  concorrencia_empreendimentos ||--o{ mercado_unidades : tem
+  mercado_unidades ||--o{ mercado_unidade_estados : historico
+  mercado_unidades ||--o{ mercado_vendas : vende
+  mercado_coletas ||--o{ mercado_vendas : confirma
+  concorrencia_empreendimentos ||--o{ mercado_sugestoes_vinculo : "perto de um manual"
+  mercado_ids_externos }o--|| concorrencia_empreendimentos : "id da fonte"
+  mercado_ids_externos }o--|| mercado_unidades : "id da fonte"
+
+  mercado_config {
+    numeric salto_area_pct "padrao 3"
+    numeric largura_area_pct "padrao 8, nao parte a rampa"
+    numeric salto_preco_m2_pct "padrao 4"
+    int min_unidades_grupo "padrao 3"
+    int meses_lancamento "padrao 6"
+    int meses_recem_entregue "padrao 24"
+    int dias_preco_lancamento "padrao 60"
+    int dias_tabela_desatualizada "padrao 45"
+    numeric cobertura_minima_pct "padrao 90"
+    bool nr_conta_como_residencial "padrao true"
+    uuid_array municipios "SP e SJC ao nascer"
+  }
+  mercado_coletas {
+    uuid id PK
+    text fonte
+    text tipo "completa_mensal | lancamentos"
+    date referencia "unica com empresa, fonte e tipo"
+    text situacao "rodando | completa | incompleta | falhou"
+    text bruto_caminho "empresa/mercado/referencia-tipo.json.gz"
+    text_array tipos_desconhecidos
+  }
+  mercado_unidades {
+    uuid id PK
+    text torre_norm "sem torre, bloco, edificio"
+    text numero_norm
+    text tipo_unidade
+    text tipo_fonte
+    bool studio_nr
+    bool residencial "calculado, nao e generated"
+    numeric preco_primeiro
+    bool preco_de_lancamento
+    uuid vinculo_pendente_id
+  }
+  mercado_vendas {
+    uuid id PK
+    date vendida_de
+    date vendida_ate
+    numeric preco
+    text origem_preco "ultimo_visto | estimado"
+    bool antes_do_monitor
+    uuid desfeita_coleta_id "distrato"
+  }
+```
+
+- **Filtro em dois níveis.** O empreendimento entra se é vertical, finalidade residencial ou misto, município da config, com ao menos uma unidade residencial, e está em lançamento, breve lançamento ou obras — ou o lançamento cabe em `meses_lancamento`, ou está pronto com entrega dentro de `meses_recem_entregue`. Fora sempre: horizontal, unidade avulsa, sobrado, loteamento, industrial, galpão, usado, e empreendimento sem unidade residencial. Quem nunca passou não é gravado (`no_filtro` fica no estado de quem já passou um dia e saiu).
+- **Unidade:** todas as do empreendimento que entrou são gravadas, com `tipo_unidade` e `residencial`. Conta, vista e grupo usam só `residencial = true`. O administrador completa `mercado_tipos_unidade`: apartamento, studio, cobertura, garden e duplex nascem residenciais; loja, sala, laje, vaga e depósito, não. Tipo desconhecido vira `nao_informado` (fora das contas) e o texto da fonte vai para `mercado_coletas.tipos_desconhecidos`. Studio com "- NR" segue `nr_conta_como_residencial` (padrão true). Preço `0,1` é sentinela: gravado nulo, com a marca `preco_sentinela`.
+- **Coleta.** Única por `(empresa_id, fonte, tipo, referencia)`. `bruto_caminho` é `{empresa_id}/mercado/{referencia}-{tipo}.json.gz`. Abrir a mesma chave desfaz o que aquela coleta gravou e recomeça. Cobertura e a mensal completa anterior são da **mesma fonte**: API, planilha e login são séries diferentes. Incompleta (cobertura abaixo do mínimo, contra `esperados` ou contra a mensal anterior) não gera venda nem marca remoção. Remoção só na mensal completa, para unidade que sumiu de um empreendimento que veio nesta coleta. Coleta de lançamentos atualiza quem veio e não remove nem vende no fechamento.
+- **Venda.** `vendida_de` é a última data em que a unidade estava disponível ou reservada; `vendida_ate` é a referência da mensal completa que confirma. A foto anterior é a última situação aberta por uma mensal completa da mesma fonte com referência até a mensal completa anterior: incompleta no meio muda o estado, mas não apaga a passagem. `ultimo_visto` é o preço não nulo mais recente. `antes_do_monitor` é a unidade vista já vendida, sem disponível ou reservada antes; o preço é a mediana do preço/m² das disponíveis residenciais do mesmo empreendimento, mesmos dormitórios e vagas, área até 3% diferente, vezes a área da unidade (os 3% são desta regra, não de `salto_area_pct`). Voltar a disponível ou reservada preenche `desfeita_coleta_id`. Não há `grupo_id`.
+- **Vínculo.** No fechamento da mensal completa, unidade que sumiu e outra que apareceu com a mesma área, o mesmo andar e preço a até 5% ficam com `vinculo_pendente_id` e a antiga não é removida. `confirmar_vinculo_unidade(id, true)` funde na antiga e leva o id de fora; `false` fica com a nova e marca a antiga como removida.
+- **Grupo só na leitura**, `app.mercado_grupos(p_data date, p_empreendimentos uuid[] default null)`. Por unidade residencial vigente na data, a chave é empreendimento + dormitórios + vagas + nº do bloco de área + nº do bloco de preço, com as faixas, a quantidade e `pequeno`. O bloco de área corta quando o salto entre uma área e a seguinte passa de `salto_area_pct`. A rampa de degraus menores que o salto fica um grupo, mesmo que a ponta a ponta passe de `largura_area_pct`: a largura fica na config e não parte essa cadeia. O bloco de preço corta em `salto_preco_m2_pct` sobre `preco_primeiro ÷ área`. Grupo com menos de `min_unidades_grupo` junta no grupo de preço mais próximo do mesmo bloco de área e fica `pequeno`. Unidade sem preço vai para o grupo de preço do bloco com mais unidades do mesmo andar; senão, para o maior grupo do bloco. Comparar meses é por unidade e depois somado no grupo da data mais recente (`mercado_precos`, `mercado_velocidade`, `mercado_vendas_periodo`). Mudar um limite muda o resultado sem regravar tabela. Não há `mercado_agrupar`, `mercado_reagrupar` nem `v_mercado_grupos`.
+- **Contas.** `mercado_estoque`, `mercado_precos`, `mercado_velocidade` (VSO = vendas ÷ (estoque no início do mês + lançadas); mês sem mensal completa não tem velocidade; `antes_do_monitor` fica de fora) e `mercado_lancamentos` (`lancamento`, `entrou_na_base`, `saiu_breve`). Nível `cidade` é `municipio`. `v_mercado_unidades` e `v_mercado_empreendimentos` são `security_invoker` e só mostram unidade residencial não removida.
+- **Escrita** só por `importar_mercado`, `fechar_coleta_mercado` e `confirmar_vinculo_unidade` (`security definer`), administrador ou `service_role`. Leitura pela RLS de `app.minhas_empresas()`. Configuração por `salvar_config_mercado` e `salvar_tipo_unidade_mercado`. Empresa nova nasce com a config e os tipos; São Paulo e São José dos Campos entram em `municipios`.
 
 ## 3. Documentos
 
@@ -720,3 +799,7 @@ erDiagram
 | "Atrasada" é calculada (prazo vencido e status aberto) | `v_terrenos` |
 | Documento de checklist reaproveitado; versões nunca sobrescritas | `registrar_documento` |
 | Terreno nunca é apagado: arquiva com motivo, só sem negociação aberta | `arquivar_terreno` |
+| Monitor: empreendimento que nunca passou no filtro não entra; unidade entra sempre e só a residencial conta | `_mercado_passa_filtro`, `mercado_tipos_unidade`, `nr_conta_como_residencial` |
+| Monitor: grupo não é gravado; o bloco de área corta no salto consecutivo e a largura não parte a rampa | `mercado_grupos` |
+| Monitor: venda e remoção só na mensal completa; a foto da passagem ignora a incompleta | `fechar_coleta_mercado` |
+| Monitor: escrita só pelas três RPCs | `importar_mercado`, `fechar_coleta_mercado`, `confirmar_vinculo_unidade` |

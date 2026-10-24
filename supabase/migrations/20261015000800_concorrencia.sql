@@ -33,8 +33,22 @@ create table app.concorrencia_empreendimentos (
   municipio_id    uuid references app.municipios(id),
   unidades        int check (unidades > 0),                       -- nulo = não informado
   situacao        text not null default 'nao_informado'
-                  check (situacao in ('lancamento','em_obras','pronto','nao_informado')),
+                  check (situacao in ('lancamento','breve_lancamento','em_obras','pronto','usado','nao_informado')),
   data_lancamento date,
+  previsao_entrega date,
+  torres          smallint check (torres is null or torres > 0),
+  programa_social text not null default 'nao_informado'
+                  check (programa_social in ('sim','nao','nao_informado')),
+  -- vertical entra no monitor; o resto é "fora sempre" (migration do mercado)
+  tipo            text not null default 'nao_informado'
+                  check (tipo in ('vertical','horizontal','unidade_avulsa','sobrado','loteamento','industrial','galpao','nao_informado')),
+  finalidade      text not null default 'nao_informado'
+                  check (finalidade in ('residencial','comercial','misto','nao_informado')),
+  origem          text not null default 'manual' check (origem in ('manual','importado')),
+  bairro          text,
+  link_fonte      text,
+  primeira_coleta_id uuid,                                       -- fk na migration do mercado
+  ultima_coleta_id   uuid,
   observacao      text,
   ativo           boolean not null default true,                  -- desativar tira do mapa; o histórico fica
   criado_por      uuid references auth.users(id) default auth.uid(),
