@@ -1,5 +1,5 @@
 -- =====================================================================
--- BKM Terrenos · 0009 · setores censitários e camadas do IBGE
+-- BKM Terrenos · 0009 · setores censitários e camadas do IBGE (renda e densidade)
 -- Setores do Censo 2022 com os valores do IBGE como vieram (renda do
 -- responsável, pessoas, domicílios) e a renda familiar ESTIMADA calculada
 -- por uma metodologia versionada (pedido do Moisés, 24/out/2026):
@@ -99,6 +99,29 @@ language sql stable set search_path = '' as $$
   where p_valor is not null and (f.ate is null or round(p_valor) <= f.ate)
   order by f.ordem limit 1 $$;
 
+-- faixas da densidade demográfica bruta (hab/km²; decisão de produto, nunca quantis; verde-água ao
+-- verde-escuro): a 0 é "sem moradores" (zero de verdade); o limite de cima entra na faixa, sem arredondar;
+-- a última não tem limite (tools/setores/metodologia_densidade.json; o teste confere)
+create table app.densidade_faixas (
+  ordem   smallint primary key check (ordem between 0 and 9),
+  ate     numeric unique,
+  rotulo  text not null,
+  cor     text not null check (cor ~ '^#[0-9a-f]{6}$'),
+  check ((ate is null) = (ordem = 9))
+);
+insert into app.densidade_faixas (ordem, ate, rotulo, cor) values
+  (0, 0, 'Sem moradores', '#bdbdbd'), (1, 2500, 'Até 2.500', '#d4efe4'),
+  (2, 5000, '2.500 – 5.000', '#a8dfcb'), (3, 10000, '5.000 – 10.000', '#7ccdb1'),
+  (4, 15000, '10.000 – 15.000', '#54b997'), (5, 20000, '15.000 – 20.000', '#34a07f'),
+  (6, 30000, '20.000 – 30.000', '#1f8668'), (7, 50000, '30.000 – 50.000', '#136b53'),
+  (8, 100000, '50.000 – 100.000', '#0a5140'), (9, null, 'Acima de 100.000', '#03382c');
+
+create or replace function app.densidade_faixa(p_valor numeric) returns smallint
+language sql stable set search_path = '' as $$
+  select f.ordem from app.densidade_faixas f
+  where p_valor is not null and (f.ate is null or p_valor <= f.ate)
+  order by f.ordem limit 1 $$;
+
 -- um setor por linha: os valores originais e a estimativa pela metodologia vigente
 create view app.setores_renda with (security_invoker = true) as
 with v as (
@@ -122,7 +145,9 @@ select s.cd_setor, s.municipio_codigo, s.area_ponderacao, s.distrito, s.area_km2
   round(v.v06004_original * m.fator_familiar * m.fator_pnad, 2) as renda_familiar_estimada_atual,
   app.renda_faixa(v.v06004_original * m.fator_familiar * m.fator_pnad) as faixa,
   coalesce(v.v06004_original > m.distorcida_razao * v.v06006_original, false) as media_distorcida,
-  m.versao as metodologia_versao, m.pnad_ano_atual as valores_de
+  m.versao as metodologia_versao, m.pnad_ano_atual as valores_de,
+  round(v.pessoas / nullif(coalesce(s.area_km2, (extensions.st_area(s.geom::extensions.geography) / 1e6)::numeric), 0), 1) as densidade_hab_km2,
+  app.densidade_faixa(v.pessoas / nullif(coalesce(s.area_km2, (extensions.st_area(s.geom::extensions.geography) / 1e6)::numeric), 0)) as faixa_densidade
 from app.setores_censitarios s
 left join v on v.cd_setor = s.cd_setor
 cross join (select * from app.metodologias_renda where vigente) m;
@@ -179,9 +204,9 @@ returns jsonb language sql stable set search_path = '' as $$
 
 -- setores da tela para o mapa, simplificados pelo zoom (meio pixel de tolerância)
 create or replace function app.setores_no_retangulo(p_oeste float8, p_sul float8, p_leste float8, p_norte float8, p_zoom int)
-returns table (cd_setor text, faixa smallint, renda numeric, geojson jsonb)
+returns table (cd_setor text, faixa smallint, renda numeric, faixa_densidade smallint, densidade numeric, geojson jsonb)
 language sql stable set search_path = '' as $$
-  select r.cd_setor, r.faixa, r.renda_familiar_estimada_atual,
+  select r.cd_setor, r.faixa, r.renda_familiar_estimada_atual, r.faixa_densidade, r.densidade_hab_km2,
     extensions.st_asgeojson(extensions.st_simplifypreservetopology(s.geom, 360.0 / (512 * 2 ^ greatest(p_zoom, 10))), 6)::jsonb
   from app.setores_censitarios s join app.setores_renda r on r.cd_setor = s.cd_setor
   where p_zoom >= 10 and s.geom operator(extensions.&&) extensions.st_makeenvelope(p_oeste, p_sul, p_leste, p_norte, 4326) $$;
@@ -189,12 +214,12 @@ language sql stable set search_path = '' as $$
 do $$
 declare t text;
 begin
-  foreach t in array array['setores_censitarios','setor_variaveis','setor_valores','metodologias_renda','renda_faixas'] loop
+  foreach t in array array['setores_censitarios','setor_variaveis','setor_valores','metodologias_renda','renda_faixas','densidade_faixas'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (true)', t);
     execute format('grant select on app.%I to authenticated', t);
   end loop;
 end $$;
 grant select on app.setores_renda to authenticated;
-grant execute on function app.renda_faixa(numeric), app.estatisticas_area(extensions.geometry), app.estatisticas_raio(float8, float8, float8),
+grant execute on function app.renda_faixa(numeric), app.densidade_faixa(numeric), app.estatisticas_area(extensions.geometry), app.estatisticas_raio(float8, float8, float8),
   app.estatisticas_terreno(uuid, float8), app.setores_no_retangulo(float8, float8, float8, float8, int) to authenticated;

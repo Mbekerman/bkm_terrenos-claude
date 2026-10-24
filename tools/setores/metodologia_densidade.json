@@ -1,0 +1,24 @@
+{
+  "_leia": "Fonte única das faixas e das cores da camada de densidade demográfica. O protótipo lê daqui (build.py) e o teste do banco confere que a migration 20261015000900_setores.sql tem os mesmos valores.",
+  "versao": 1,
+  "censoAno": 2022,
+  "variavel": "V0001",
+  "variavelDescricao": "Total de pessoas (Censo 2022, malha com atributos)",
+  "areaOrigem": "Área do polígono oficial do setor na malha do IBGE (igual ao AREA_KM2 do IBGE, com diferença abaixo de 0,03%)",
+  "unidade": "hab/km²",
+  "opacidade": 0.6,
+  "faixasOrigem": "Proposta de 24/out/2026 a partir da distribuição dos 27.301 setores de São Paulo (média da cidade 7.529 hab/km², mediana dos setores 18.612): faixas fixas, nunca quantis. O limite de cima entra na faixa. Sem moradores é zero de verdade (o IBGE contou ninguém), separado da primeira faixa.",
+  "corOrigem": "Um matiz só, do verde-água claro ao verde-escuro (mais escuro = mais denso), para não confundir com a renda (amarelos, marrons e azuis). Setor sem moradores em cinza.",
+  "faixas": [
+    {"ate": 0, "rotulo": "Sem moradores", "cor": "#bdbdbd", "nome": "cinza"},
+    {"ate": 2500, "rotulo": "Até 2.500", "cor": "#d4efe4", "nome": "verde-água muito claro"},
+    {"ate": 5000, "rotulo": "2.500 – 5.000", "cor": "#a8dfcb", "nome": "verde-água claro"},
+    {"ate": 10000, "rotulo": "5.000 – 10.000", "cor": "#7ccdb1", "nome": "verde-água"},
+    {"ate": 15000, "rotulo": "10.000 – 15.000", "cor": "#54b997", "nome": "verde-menta"},
+    {"ate": 20000, "rotulo": "15.000 – 20.000", "cor": "#34a07f", "nome": "verde"},
+    {"ate": 30000, "rotulo": "20.000 – 30.000", "cor": "#1f8668", "nome": "verde-médio"},
+    {"ate": 50000, "rotulo": "30.000 – 50.000", "cor": "#136b53", "nome": "verde-escuro"},
+    {"ate": 100000, "rotulo": "50.000 – 100.000", "cor": "#0a5140", "nome": "verde-floresta"},
+    {"ate": null, "rotulo": "Acima de 100.000", "cor": "#03382c", "nome": "verde-quase-preto"}
+  ]
+}

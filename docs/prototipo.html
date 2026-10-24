@@ -2716,7 +2716,8 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .areas { grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)) }
 @media (max-width: 720px) { .areas { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
 
-/* ---------- Setores do IBGE: camada de renda no mapa e quadro "Renda e população do entorno" na ficha ---------- */
+/* ---------- Setores do IBGE: camadas de renda e densidade no mapa e quadro "Renda e população do entorno" na ficha ---------- */
+.lg-i .ds-ic { display: block; width: 14px; height: 14px; border-radius: 3px; background: conic-gradient(#a8dfcb 0 25%, #54b997 0 50%, #1f8668 0 75%, #0a5140 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
 .lg-i .rd-ic { display: block; width: 14px; height: 14px; border-radius: 3px; background: conic-gradient(#feb600 0 25%, #c04c07 0 50%, #97d6ff 0 75%, #296baf 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
 .rd-leg { position: absolute; z-index: 1000; right: 10px; top: 64px; width: 200px; max-height: calc(100% - 160px); overflow-y: auto; overscroll-behavior: contain; background: #fff; color: #1f1f1f; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 2px 8px rgba(0,0,0,.12); font-size: 12px; line-height: 16px }
 .rd-leg summary { cursor: pointer; list-style: none; padding: 8px 12px; font-size: 13px; font-weight: 500 }
@@ -2730,6 +2731,17 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .rd-esc-u { font-size: 11px; line-height: 14px; color: #5f6368 }
 .mp-renda-b { flex: none; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 20px; border: 0; font: inherit; font-size: 14px; font-weight: 500; color: #1f1f1f; cursor: pointer; background: rgba(255,255,255,.78); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 1px 2px rgba(0,0,0,.1) }
 .mp-renda-b[aria-pressed="true"] { background: #c2e7ff; color: #001d35 }
+.mp-renda-b .ds-ic { display: block; width: 16px; height: 16px; border-radius: 4px; background: conic-gradient(#a8dfcb 0 25%, #54b997 0 50%, #1f8668 0 75%, #0a5140 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
+.mp-renda-b { padding-right: 10px } .mp-renda-b .cam-seta { display: inline-flex; transform: rotate(90deg); margin-left: -4px; opacity: .7 } .mp-renda-b[aria-expanded="true"] .cam-seta { transform: rotate(-90deg) }
+.mp-cam { position: relative; flex: none; pointer-events: auto }
+.mapa-area:has(.mp-cam-m) .mp-barra { z-index: 1101 } /* a lista abre por cima da legenda */
+.mp-cam-m { position: absolute; z-index: 1100; top: calc(100% + 6px); right: 0; min-width: 232px; padding: 6px 0; border-radius: 12px; background: #fff; color: #1f1f1f; box-shadow: 0 2px 6px rgba(0,0,0,.18), 0 8px 24px rgba(0,0,0,.14) }
+.mp-cam-m button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 0 16px; border: 0; background: none; font: inherit; font-size: 14px; color: inherit; text-align: left; cursor: pointer }
+.mp-cam-m button:hover { background: rgba(31,31,31,.06) } .mp-cam-m button[aria-checked="true"] { background: #c2e7ff; color: #001d35; font-weight: 500 }
+.mp-cam-m :is(.rd-ic, .ds-ic, .cam-off) { display: block; flex: none; width: 16px; height: 16px; border-radius: 4px; box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
+.mp-cam-m .rd-ic { background: conic-gradient(#feb600 0 25%, #c04c07 0 50%, #97d6ff 0 75%, #296baf 0) } .mp-cam-m .ds-ic { background: conic-gradient(#a8dfcb 0 25%, #54b997 0 50%, #1f8668 0 75%, #0a5140 0) } .mp-cam-m .cam-off { box-shadow: inset 0 0 0 1px #747775 }
+:root[data-tema="escuro"] .mp-cam-m { background: #0d1530; color: #e6ecff; box-shadow: 0 0 0 1px rgba(124,140,255,.35), 0 10px 28px rgba(0,0,0,.55) }
+:root[data-tema="escuro"] .mp-cam-m button:hover { background: rgba(124,140,255,.12) } :root[data-tema="escuro"] .mp-cam-m button[aria-checked="true"] { background: rgba(99,112,255,.22); color: #c9d6ff }
 .mp-renda-b .rd-ic { display: block; width: 16px; height: 16px; border-radius: 4px; background: conic-gradient(#feb600 0 25%, #c04c07 0 50%, #97d6ff 0 75%, #296baf 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
 :root[data-tema="escuro"] .mp-renda-b { background: rgba(6,12,32,.72); color: #e6ecff; box-shadow: 0 0 0 1px rgba(124,140,255,.35) }
 :root[data-tema="escuro"] .mp-renda-b[aria-pressed="true"] { background: rgba(99,112,255,.22); color: #c9d6ff; box-shadow: 0 0 0 1px rgba(124,140,255,.5) }
@@ -6598,7 +6610,7 @@ function mpResMostrar(rs,msg){const box=$('#mp-res');if(!box)return;box.hidden=f
   box.innerHTML=rs.length?rs.map((x,i)=>`<button type="button" role="option" data-a="mp-res" data-i="${i}">${bi('mapa',18)}<span>${esc(x.nome)}</span></button>`).join(''):`<div class="hint">${msg||'Nada encontrado.'}</div>`}
 async function mpBuscaRodar(q,ir){try{const rs=await mpBuscar(q);if(($('#mp-end')?.value||'').trim()!==q.trim())return;if(ir&&rs[0])return mpIrPara(rs[0]);mpResMostrar(rs)}catch(e){console.warn(e);mpResMostrar([],'Busca indisponível agora.')}}
 function mpIrPara(x){const box=$('#mp-res');if(box)box.hidden=true;const q=$('#mp-end');if(q)q.value=x.nome;if(!MAPA)return;
-  const z=UI.mpRenda?17:18;UI.mpAchado={lat:x.lat,lng:x.lng,nome:x.nome};
+  const z=rdLigada()?17:18;UI.mpAchado={lat:x.lat,lng:x.lng,nome:x.nome};
   if(GG){MAPA.setCenter(gLL(x.lat,x.lng));MAPA.setZoom(z)}else MAPA.setView([x.lat,x.lng],z);UI.mpView={c:{lat:x.lat,lng:x.lng},z};achadoPin()}
 /* pino do endereço buscado: fica até a próxima busca ou até sair do mapa */
 let ACHADO=null;
@@ -7150,7 +7162,8 @@ document.addEventListener('click',e=>{
 abaHist=function(t){return `<section class="sec pn-hist"><div class="sec-b">${pnLogs(t)}</div></section>`};
 
 /* ===================== Setores censitários do IBGE (Censo 2022) =====================
-   Camadas por setor no mapa (por ora, a renda familiar estimada) e o quadro "Renda e
+   Camadas por setor no mapa (renda familiar estimada e densidade demográfica; uma de cada
+   vez) e o quadro "Renda e
    população do entorno" na ficha. Os valores do IBGE vêm como estão (V06004 etc.) no arquivo
    gerado por tools/setores/gerar.py; a estimativa é calculada aqui pela metodologia de
    tools/setores/metodologia_renda.json (o build injeta em RENDA_MET), a mesma da visão
@@ -7160,13 +7173,19 @@ abaHist=function(t){return `<section class="sec pn-hist"><div class="sec-b">${pn
    para reais. Setor sem renda divulgada fica sem cor, nunca zero. */
 const RENDA_MET={"_leia":"Fonte única da metodologia, das faixas e das cores da camada de renda. O protótipo lê daqui (build.py), o arquivo de setores leva uma cópia e o teste do banco confere que a migration 20261015000900_setores.sql tem os mesmos valores. Mudou a PNAD: troque aqui e na migration (o teste acusa se esquecer) e rode tools/setores/gerar.py.","versao":1,"censoAno":2022,"variavelBase":"V06004","variavelBaseDescricao":"Valor do rendimento nominal médio mensal das pessoas responsáveis com rendimentos por domicílios particulares permanentes ocupados","fatorFamiliar":1.6,"fatorFamiliarOrigem":"Decisão do Moisés (24/out/2026): fator único de 1,6 para a capital, igual em todos os setores. Medidas de apoio: Estado de São Paulo 1,6102 nos microdados públicos da amostra do Censo 2022 (renda domiciliar média D0350 ÷ renda média do responsável P1110, P0170 = 1, peso D0110: R$ 6.156,18 ÷ R$ 3.823,32); capital estimada em 1,576 pela proporção entre capital e Estado nas tabelas oficiais (os microdados públicos não descem abaixo da UF)","pnadAnoBase":2022,"pnadValorBase":2148,"pnadAnoAtual":2025,"pnadValorAtual":2956,"pnadFonte":"PNAD Contínua, rendimento domiciliar per capita do Estado de São Paulo (Lei Complementar 143/2013)","distorcidaRazao":3,"opacidade":0.55,"corOrigem":"Decisão do Moisés (24/out/2026): duas famílias separadas no teto da Faixa 4 do MCMV (R$ 13 mil, Portaria MCID 333/2026). Até 13 mil, do amarelo-claro ao vinho (amarelos, laranjas e marrons), quanto mais escuro, mais renda; acima de 13 mil, do azul-claro ao azul-marinho, fora do MCMV. Substituiu a rampa única do amarelo ao azul-marinho.","faixas":[{"ate":2000,"rotulo":"Até R$ 2.000","cor":"#fff198","nome":"amarelo-claro"},{"ate":3000,"rotulo":"R$ 2.000 – 3.000","cor":"#fed559","nome":"amarelo"},{"ate":4000,"rotulo":"R$ 3.000 – 4.000","cor":"#feb600","nome":"amarelo-ouro"},{"ate":5000,"rotulo":"R$ 4.000 – 5.000","cor":"#fa9500","nome":"laranja-claro"},{"ate":6000,"rotulo":"R$ 5.000 – 6.000","cor":"#ef7700","nome":"laranja"},{"ate":7000,"rotulo":"R$ 6.000 – 7.000","cor":"#db5d00","nome":"laranja-escuro"},{"ate":8000,"rotulo":"R$ 7.000 – 8.000","cor":"#c04c07","nome":"ferrugem"},{"ate":9000,"rotulo":"R$ 8.000 – 9.000","cor":"#9f422d","nome":"marrom-claro"},{"ate":10000,"rotulo":"R$ 9.000 – 10.000","cor":"#833431","nome":"marrom"},{"ate":13000,"rotulo":"R$ 10.000 – 13.000","cor":"#6e202c","nome":"vinho"},{"ate":15000,"rotulo":"R$ 13.000 – 15.000","cor":"#97d6ff","nome":"azul-claro"},{"ate":18000,"rotulo":"R$ 15.000 – 18.000","cor":"#70b2e7","nome":"azul-céu"},{"ate":22000,"rotulo":"R$ 18.000 – 22.000","cor":"#4c8ecb","nome":"azul"},{"ate":25000,"rotulo":"R$ 22.000 – 25.000","cor":"#296baf","nome":"azul-médio"},{"ate":30000,"rotulo":"R$ 25.000 – 30.000","cor":"#024893","nome":"azul-escuro"},{"ate":null,"rotulo":"Acima de R$ 30.000","cor":"#002377","nome":"azul-marinho"}]};
 RENDA_MET.fatorPnad=RENDA_MET.pnadValorAtual/RENDA_MET.pnadValorBase;
+/* densidade bruta: pessoas (V0001) ÷ área do setor; faixas de tools/setores/metodologia_densidade.json
+   (a primeira, até 0, é "sem moradores"); o limite de cima entra na faixa, sem arredondar */
+const DENS_MET={"_leia":"Fonte única das faixas e das cores da camada de densidade demográfica. O protótipo lê daqui (build.py) e o teste do banco confere que a migration 20261015000900_setores.sql tem os mesmos valores.","versao":1,"censoAno":2022,"variavel":"V0001","variavelDescricao":"Total de pessoas (Censo 2022, malha com atributos)","areaOrigem":"Área do polígono oficial do setor na malha do IBGE (igual ao AREA_KM2 do IBGE, com diferença abaixo de 0,03%)","unidade":"hab/km²","opacidade":0.6,"faixasOrigem":"Proposta de 24/out/2026 a partir da distribuição dos 27.301 setores de São Paulo (média da cidade 7.529 hab/km², mediana dos setores 18.612): faixas fixas, nunca quantis. O limite de cima entra na faixa. Sem moradores é zero de verdade (o IBGE contou ninguém), separado da primeira faixa.","corOrigem":"Um matiz só, do verde-água claro ao verde-escuro (mais escuro = mais denso), para não confundir com a renda (amarelos, marrons e azuis). Setor sem moradores em cinza.","faixas":[{"ate":0,"rotulo":"Sem moradores","cor":"#bdbdbd","nome":"cinza"},{"ate":2500,"rotulo":"Até 2.500","cor":"#d4efe4","nome":"verde-água muito claro"},{"ate":5000,"rotulo":"2.500 – 5.000","cor":"#a8dfcb","nome":"verde-água claro"},{"ate":10000,"rotulo":"5.000 – 10.000","cor":"#7ccdb1","nome":"verde-água"},{"ate":15000,"rotulo":"10.000 – 15.000","cor":"#54b997","nome":"verde-menta"},{"ate":20000,"rotulo":"15.000 – 20.000","cor":"#34a07f","nome":"verde"},{"ate":30000,"rotulo":"20.000 – 30.000","cor":"#1f8668","nome":"verde-médio"},{"ate":50000,"rotulo":"30.000 – 50.000","cor":"#136b53","nome":"verde-escuro"},{"ate":100000,"rotulo":"50.000 – 100.000","cor":"#0a5140","nome":"verde-floresta"},{"ate":null,"rotulo":"Acima de 100.000","cor":"#03382c","nome":"verde-quase-preto"}]};
+const dsFaixa=v=>{if(v==null)return null;for(let i=0;i<DENS_MET.faixas.length;i++){const a=DENS_MET.faixas[i].ate;if(a==null||v<=a)return i}return null};
 const SET_ARQ={'3550308':'dados/setores-3550308-2022.json'};
 const SET={d:null,promessa:null,erro:null};
 const rdFaixa=v=>{if(v==null)return null;const r=Math.round(v);for(let i=0;i<RENDA_MET.faixas.length;i++){const a=RENDA_MET.faixas[i].ate;if(a==null||r<=a)return i}return null};
 const rdNum=(v,d)=>Number(v).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
 const rdHex2rgba=(h,a)=>`rgba(${parseInt(h.slice(1,3),16)},${parseInt(h.slice(3,5),16)},${parseInt(h.slice(5,7),16)},${a})`;
-/* camadas por setor: cada uma diz a cor de um setor (null = sem dado). Só a renda por enquanto. */
-const CAMADAS_SETOR={renda:{nome:'Renda familiar estimada',cor:i=>{const f=SET.d.faixa[i];return f==null?null:RENDA_MET.faixas[f].cor}}};
+/* camadas por setor: cada uma diz a cor de um setor (null = sem dado) */
+const CAMADAS_SETOR={
+  renda:{nome:'Renda familiar estimada',curto:'Renda',met:RENDA_MET,cor:i=>{const f=SET.d.faixa[i];return f==null?null:RENDA_MET.faixas[f].cor}},
+  dens:{nome:'Densidade demográfica',curto:'Densidade',met:DENS_MET,cor:i=>{const f=SET.d.dfaixa[i];return f==null?null:DENS_MET.faixas[f].cor}}};
 
 function setUrl(){return (location.pathname.startsWith('/prototipo')?'/prototipo/':'')+SET_ARQ['3550308']}
 function setCarregar(){if(SET.d)return Promise.resolve(SET.d);if(SET.promessa)return SET.promessa;
@@ -7182,7 +7201,8 @@ function setPreparar(j){const n=j.n,Q=1e5,G=0.002,bb=new Float64Array(n*4),rings
     for(let gx=Math.floor(x0/G);gx<=Math.floor(x1/G);gx++)for(let gy=Math.floor(y0/G);gy<=Math.floor(y1/G);gy++){const k=gx+':'+gy;let l=idx.get(k);if(!l)idx.set(k,l=[]);l.push(i)}}
   const ff=RENDA_MET.fatorFamiliar,fp=RENDA_MET.fatorPnad;
   const r22=j.v4.map(v=>v==null?null:Math.round(v*ff*100)/100),rAt=j.v4.map(v=>v==null?null:Math.round(v*ff*fp*100)/100);
-  return {...j,rings,bb,idx,G,r22,rAt,faixa:rAt.map(rdFaixa)}}
+  const dens=j.pop.map((p,i)=>j.area[i]>0?p/(j.area[i]/1e6):null);
+  return {...j,rings,bb,idx,G,r22,rAt,faixa:rAt.map(rdFaixa),dens,dfaixa:dens.map(dsFaixa)}}
 function setCandidatos(x0,y0,x1,y1){const d=SET.d,G=d.G,s=new Set();
   for(let gx=Math.floor(x0/G);gx<=Math.floor(x1/G);gx++)for(let gy=Math.floor(y0/G);gy<=Math.floor(y1/G);gy++){const l=d.idx.get(gx+':'+gy);if(l)for(const i of l)s.add(i)}
   return s}
@@ -7194,7 +7214,7 @@ function setEm(lat,lng){if(!SET.d)return null;for(const i of setCandidatos(lng,l
 /* ---------- desenho em ladrilhos (mesmo código no Leaflet e no Google) ---------- */
 function setDesenhaLadrilho(cv,x,y,z,camada){const T=256,dpr=Math.min(2,window.devicePixelRatio||1),ctx=cv.getContext('2d');cv.width=cv.height=T*dpr;cv.style.width=cv.style.height=T+'px';
   if(!SET.d)return;ctx.scale(dpr,dpr);const W=T*2**z,lon=px=>px/W*360-180,lat=py=>{const n=Math.PI-2*Math.PI*py/W;return 180/Math.PI*Math.atan(Math.sinh(n))};
-  const x0=lon(x*T),x1=lon((x+1)*T),y1=lat(y*T),y0=lat((y+1)*T),c=CAMADAS_SETOR[camada],op=RENDA_MET.opacidade;
+  const x0=lon(x*T),x1=lon((x+1)*T),y1=lat(y*T),y0=lat((y+1)*T),c=CAMADAS_SETOR[camada],op=c.met.opacidade;
   const PX=g=>(g+180)/360*W-x*T,PY=g=>{const s=Math.sin(g*Math.PI/180);return (.5-Math.log((1+s)/(1-s))/(4*Math.PI))*W-y*T};
   const borda=z>=14,sem=temaEscuro()?'rgba(200,210,255,.45)':'rgba(60,64,67,.45)';
   for(const i of setCandidatos(x0,y0,x1,y1)){const b=i*4,d=SET.d;if(d.bb[b]>x1||d.bb[b+2]<x0||d.bb[b+1]>y1||d.bb[b+3]<y0)continue;
@@ -7203,12 +7223,13 @@ function setDesenhaLadrilho(cv,x,y,z,camada){const T=256,dpr=Math.min(2,window.d
     if(cor){ctx.fillStyle=rdHex2rgba(cor,op);ctx.fill('evenodd');if(borda){ctx.lineWidth=.6;ctx.strokeStyle='rgba(255,255,255,.55)';ctx.stroke()}}
     else if(z>=13){ctx.setLineDash([3,3]);ctx.lineWidth=.8;ctx.strokeStyle=sem;ctx.stroke();ctx.setLineDash([])}}}
 let RD_L=null,RD_G=null,RD_SEL=null;
-function rdLigada(){return UI.mpRenda===true}
+function rdLigada(){return !!CAMADAS_SETOR[UI.mpSetor]}
+function rdCamada(){return rdLigada()?UI.mpSetor:null}
 function rdCamadaLigar(){if(!MAPA||!rdLigada())return;
   if(!SET.d){setCarregar().then(()=>{rdCamadaLigar();rdLegenda()}).catch(()=>toast('Não foi possível carregar os setores do IBGE.',true));return}
-  if(GG){if(RD_G)return;RD_G={tileSize:new google.maps.Size(256,256),maxZoom:22,name:'renda',getTile(co,z,doc){const cv=doc.createElement('canvas');const n=2**z;setDesenhaLadrilho(cv,((co.x%n)+n)%n,co.y,z,'renda');return cv},releaseTile(){}};
+  if(GG){if(RD_G)return;RD_G={tileSize:new google.maps.Size(256,256),maxZoom:22,name:'setores',getTile(co,z,doc){const cv=doc.createElement('canvas');const n=2**z;setDesenhaLadrilho(cv,((co.x%n)+n)%n,co.y,z,rdCamada()||'renda');return cv},releaseTile(){}};
     MAPA.overlayMapTypes.insertAt(0,RD_G)}
-  else{if(RD_L)return;const Lr=L.GridLayer.extend({createTile(co){const cv=document.createElement('canvas');setDesenhaLadrilho(cv,co.x,co.y,co.z,'renda');return cv}});
+  else{if(RD_L)return;const Lr=L.GridLayer.extend({createTile(co){const cv=document.createElement('canvas');setDesenhaLadrilho(cv,co.x,co.y,co.z,rdCamada()||'renda');return cv}});
     RD_L=new Lr({pane:'overlayPane',zIndex:2,updateWhenZooming:false,keepBuffer:2}).addTo(MAPA)}}
 function rdCamadaDesligar(){if(RD_G&&MAPA?.overlayMapTypes){const i=MAPA.overlayMapTypes.getArray().indexOf(RD_G);if(i>=0)MAPA.overlayMapTypes.removeAt(i)}RD_G=null;
   if(RD_L){try{MAPA?.removeLayer(RD_L)}catch(e){}}RD_L=null;rdSelLimpa()}
@@ -7224,7 +7245,17 @@ const RD={sel:null,abertoEm:0};
 function rdAbrirEm(lat,lng){if(!rdLigada()||!SET.d||UI.mpModo)return false;const i=setEm(lat,lng);if(i==null){rdFechar();return false}
   RD.sel=i;RD.abertoEm=Date.now();if(typeof ccFechar==='function')ccFechar();rdSelDesenha(i);rdBox();return true}
 function rdFechar(){if(RD.sel==null)return false;RD.sel=null;rdSelLimpa();rdBox();return true}
-function rdBoxHtml(i){const d=SET.d,m=RENDA_MET,cd=d.municipio+d.cd[i],sit=d.sit[i],v=d.v4[i],at=d.rAt[i],f=d.faixa[i];
+function dsBoxHtml(i){const d=SET.d,m=DENS_MET,cd=d.municipio+d.cd[i],f=d.dfaixa[i],a=d.area[i]/1e6;
+  return `<div class="cc-box rd-box" role="dialog" aria-label="Setor censitário ${cd}">
+  <div class="cc-hd"><div class="cc-ti"><div class="cc-n">Setor censitário</div><div class="muted">${esc(d.distritos[d.di[i]]||'')} · São Paulo</div></div><button type="button" class="iconbtn" data-a="rd-x" aria-label="Fechar" title="Fechar (Esc)">${ic('close',20)}</button></div>
+  ${d.pop[i]>0?`<div class="cc-k rd-k" style="border-left-color:${m.faixas[f].cor}"><div class="faint">Densidade demográfica bruta</div><div class="cc-big">${num(Math.round(d.dens[i]))} hab/km²</div><div class="faint">Faixa ${esc(m.faixas[f].rotulo)} hab/km²</div></div>`
+    :`<div class="cc-meta">Setor sem moradores no Censo ${m.censoAno}.</div>`}
+  <dl class="rd-kv"><div><dt>Pessoas – Censo ${m.censoAno}</dt><dd>${num(d.pop[i])}</dd></div>
+    <div><dt>Domicílios ocupados</dt><dd>${num(d.dom[i])}</dd></div>
+    <div><dt>Área do setor</dt><dd>${a<0.1?m2(Math.round(d.area[i])):num(a,2)+' km²'}</dd></div>
+    <div><dt>Código do setor</dt><dd class="rd-cd">${cd}</dd></div></dl>
+  <div class="rd-nota">Pessoas ÷ área total do setor, com parques, vias e terrenos vazios. <button class="linkbtn" data-a="ds-met">Metodologia</button></div></div>`}
+function rdBoxHtml(i){if(rdCamada()==='dens')return dsBoxHtml(i);const d=SET.d,m=RENDA_MET,cd=d.municipio+d.cd[i],sit=d.sit[i],v=d.v4[i],at=d.rAt[i],f=d.faixa[i];
   const motivo=sit===1?'O IBGE não divulgou a renda deste setor (sigilo, poucos domicílios).':sit===3?'Setor sem moradores no Censo 2022.':'O IBGE não divulgou a renda deste setor.';
   const dist=v!=null&&d.v6[i]!=null&&v>m.distorcidaRazao*d.v6[i];
   return `<div class="cc-box rd-box" role="dialog" aria-label="Setor censitário ${cd}">
@@ -7241,7 +7272,13 @@ function rdBox(){const area=$('.mapa-area');let el=$('#rd-box');if(RD.sel==null|
   if(!el||el.parentNode!==area){el?.remove();el=document.createElement('div');el.id='rd-box';area.appendChild(el)}el.innerHTML=rdBoxHtml(RD.sel)}
 
 /* ---------- legenda da renda sobre o mapa (recolhível; no celular começa fechada) ---------- */
-function rdLegendaHtml(){const m=RENDA_MET;
+function dsLegendaHtml(){const m=DENS_MET,fx=m.faixas.slice(1);
+  const marcas={2:'5',3:'10',5:'20',7:'50',8:'100'};
+  const escala=`<span class="rd-esc" aria-hidden="true"><span class="rd-esc-c">${fx.map(f=>`<i style="background:${f.cor}"></i>`).join('')}</span><span class="rd-esc-m">${Object.entries(marcas).map(([k,v])=>`<b style="left:${k/fx.length*100}%">${v}</b>`).join('')}</span><span class="rd-esc-u">mil hab/km² · toque para ver as faixas</span></span>`;
+  return `<summary><span class="rd-leg-t">Densidade demográfica</span>${escala}</summary><div class="rd-leg-l">${m.faixas.map(f=>`<div class="rd-li"><span class="rd-q" style="background:${rdHex2rgba(f.cor,Math.max(m.opacidade,.85))}"></span>${esc(f.rotulo)}</div>`).join('')}
+    <div class="rd-leg-p">Habitantes por km², bruta · Censo ${m.censoAno} · <button class="linkbtn" data-a="ds-met">Metodologia</button></div>
+    ${SET.d?'':`<div class="rd-leg-p">${SET.erro?'Não foi possível carregar os setores.':'Carregando os setores do IBGE…'}</div>`}</div>`}
+function rdLegendaHtml(){if(rdCamada()==='dens')return dsLegendaHtml();const m=RENDA_MET;
   // fechada, a legenda mostra a escala de cores em uma linha (com os limites em mil reais); aberta, a lista das faixas
   const marcas={2:'3',4:'5',7:'8',10:'13',13:'22',15:'30'};
   const escala=`<span class="rd-esc" aria-hidden="true"><span class="rd-esc-c">${m.faixas.map(f=>`<i style="background:${f.cor}"></i>`).join('')}</span><span class="rd-esc-m">${Object.entries(marcas).map(([k,v])=>`<b style="left:${k/m.faixas.length*100}%">${v}</b>`).join('')}</span><span class="rd-esc-u">mil R$ por mês · toque para ver as faixas</span></span>`;
@@ -7255,11 +7292,24 @@ function rdLegenda(){const area=$('.mapa-area');let el=$('#rd-leg');if(!area||UI
   el.innerHTML=rdLegendaHtml();
   // no celular a barra do mapa tem uma ou duas linhas (a busca pode ir para a própria linha): a legenda fica logo abaixo dela
   const b=$('.mapa-area .mp-barra');el.style.top=innerWidth<900&&b?(b.offsetTop+b.offsetHeight+8)+'px':''}
-function rdBarraBotao(){return `<button type="button" class="mp-renda-b" data-a="mp-renda" aria-pressed="${rdLigada()}" title="Camada de renda familiar por setor censitário"><span class="rd-ic"></span>Renda</button>`}
-function rdLegItem(){return `<button type="button" class="lg-i" data-a="mp-renda" aria-pressed="${rdLigada()}"><span class="lg-poi"><span class="rd-ic"></span></span>Renda familiar (setores)</button>`}
-function rdLigar(on){UI.mpRenda=on;if(on){if((UI.mpBase||'satelite')==='satelite'){UI.rdBaseAntes='satelite';setBase('mapa')}rdCamadaLigar()}
-  else{rdCamadaDesligar();RD.sel=null;rdBox();if(UI.rdBaseAntes&&UI.mpBase==='mapa')setBase(UI.rdBaseAntes);UI.rdBaseAntes=null}
-  rdLegenda();document.querySelectorAll('[data-a="mp-renda"]').forEach(b=>b.setAttribute('aria-pressed',on))}
+/* barra do mapa: um botão Camadas que abre a lista das camadas por setor (uma ligada de cada vez);
+   ligado, o botão mostra o nome curto da camada */
+const RD_IC={renda:'rd-ic',dens:'ds-ic'};
+function rdBarraBotao(){const k=rdCamada();
+  return `<div class="mp-cam"><button type="button" class="mp-renda-b" data-a="mp-camadas" aria-haspopup="menu" aria-expanded="false" aria-pressed="${!!k}" title="Camadas por setor censitário (IBGE)">${k?`<span class="${RD_IC[k]}"></span>`:ic('layers',18)}${k?CAMADAS_SETOR[k].curto:'Camadas'}<span class="cam-seta">${ic('chev',16)}</span></button></div>`}
+function rdMenu(abrir){const w=$('.mapa-area .mp-cam');if(!w)return;w.querySelector('.mp-cam-m')?.remove();const b=w.querySelector('[data-a="mp-camadas"]');b.setAttribute('aria-expanded',!!abrir);if(!abrir)return;
+  const k=rdCamada(),it=(v,ico,l)=>`<button type="button" role="menuitemradio" aria-checked="${k===v}" data-a="mp-camada" data-v="${v||''}"><span class="${ico}"></span>${l}</button>`;
+  w.insertAdjacentHTML('beforeend',`<div class="mp-cam-m" role="menu" aria-label="Camadas">${it('renda','rd-ic','Renda familiar')}${it('dens','ds-ic','Densidade demográfica')}${it(null,'cam-off','Nenhuma')}</div>`)}
+document.addEventListener('pointerdown',e=>{if($('.mp-cam-m')&&!e.target.closest('.mp-cam'))rdMenu(false)},true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('.mp-cam-m')){rdMenu(false);e.preventDefault();e.stopImmediatePropagation()}},true);
+function rdLegItem(){const k=rdCamada();return `<button type="button" class="lg-i" data-a="mp-renda" aria-pressed="${k==='renda'}"><span class="lg-poi"><span class="rd-ic"></span></span>Renda familiar (setores)</button>`
+  +`<button type="button" class="lg-i" data-a="mp-dens" aria-pressed="${k==='dens'}"><span class="lg-poi"><span class="ds-ic"></span></span>Densidade demográfica (setores)</button>`}
+function rdLigar(k){const antes=rdCamada();k=CAMADAS_SETOR[k]?k:null;if(k===antes)return;UI.mpSetor=k;
+  if(antes)rdCamadaDesligar();
+  if(k){if(!antes&&(UI.mpBase||'satelite')==='satelite'){UI.rdBaseAntes='satelite';setBase('mapa')}rdCamadaLigar();if(RD.sel!=null&&SET.d){rdSelDesenha(RD.sel);rdBox()}}
+  else{RD.sel=null;rdBox();if(UI.rdBaseAntes&&UI.mpBase==='mapa')setBase(UI.rdBaseAntes);UI.rdBaseAntes=null}
+  rdLegenda();const b=$('.mapa-area .mp-cam');if(b)b.outerHTML=rdBarraBotao();
+  document.querySelectorAll('[data-a="mp-renda"]').forEach(b=>b.setAttribute('aria-pressed',k==='renda'));document.querySelectorAll('[data-a="mp-dens"]').forEach(b=>b.setAttribute('aria-pressed',k==='dens'))}
 /* chamado depois de criar o mapa (initMapa): a camada, a legenda e o quadro voltam como estavam */
 function rdPosMapa(){if(typeof achadoPin==='function')achadoPin();RD_L=null;RD_G=null;RD_SEL=null;if(!rdLigada()){rdLegenda();return}rdCamadaLigar();rdLegenda();if(RD.sel!=null&&SET.d){rdSelDesenha(RD.sel);rdBox()}}
 
@@ -7301,7 +7351,14 @@ function setoresCard(t){if(t.lat==null)return '';const raio=UI.rdRaio||1000;
 function rdCardAtualiza(id){const t=T(id),c=$('#rd-corpo');if(t&&c)c.innerHTML=rdCardCorpo(t)}
 
 /* ---------- metodologia ---------- */
-function setoresModal(M,fechar){if(M!=='rd-met')return '';const m=RENDA_MET,c=m.fatorFamiliar*m.fatorPnad;
+function dsModal(fechar){const m=DENS_MET,f=m.faixas;
+  return `<div class="dh"><h2>Metodologia da densidade</h2>${fechar}</div><div class="rd-mt">
+  <p>Densidade demográfica bruta de cada setor censitário: pessoas que moram no setor divididas pela área total dele, em habitantes por km².</p>
+  <h3>Dado oficial (IBGE)</h3><p><b>${m.variavel}</b>: ${esc(m.variavelDescricao)}. Área: ${esc(m.areaOrigem)}.</p>
+  <p class="rd-f">Densidade = ${m.variavel} ÷ área do setor (km²)</p>
+  <h3>Limites</h3><ul><li>É densidade bruta: a área inclui parques, vias, represas, galpões e terrenos vazios. Um setor com um parque dentro parece pouco denso mesmo com muita gente morando na borda.</li><li>Setores muito pequenos de prédios ou de favela passam de 100 mil hab/km²; ficam todos na última faixa.</li><li>Sem moradores é zero de verdade (o IBGE contou ninguém), em cinza, separado da primeira faixa.</li><li>Faixas fixas, nunca quantis: o limite de cima entra na faixa (até ${num(f[1].ate)} inclui ${num(f[1].ate)}).</li></ul>
+  <p class="faint">${esc(m.faixasOrigem)} Versão ${m.versao}.</p></div><div class="df"><button class="btn primary" data-a="close">Fechar</button></div>`}
+function setoresModal(M,fechar){if(M==='ds-met')return dsModal(fechar);if(M!=='rd-met')return '';const m=RENDA_MET,c=m.fatorFamiliar*m.fatorPnad;
   return `<div class="dh"><h2>Metodologia da renda</h2>${fechar}</div><div class="rd-mt">
   <p>Os valores apresentados são estimativas de renda familiar mensal. A base espacial e a renda do responsável são provenientes do Censo Demográfico ${m.censoAno} do IBGE. A renda familiar foi estimada a partir da relação observada entre renda do responsável e renda domiciliar nos microdados do Censo. Os valores foram posteriormente atualizados pela evolução nominal da renda domiciliar per capita da PNAD Contínua para o Estado de São Paulo.</p>
   <h3>Dado oficial (IBGE)</h3><p><b>${m.variavelBase}</b>: ${esc(m.variavelBaseDescricao)}, Censo ${m.censoAno}. Não é renda familiar nem renda per capita. Geometria: malha oficial dos setores censitários de ${m.censoAno}.</p>
@@ -7313,11 +7370,15 @@ function setoresModal(M,fechar){if(M!=='rd-met')return '';const m=RENDA_MET,c=m.
 
 function setoresClick(A,a,t){
   switch(A){
-    case 'mp-renda':rdLigar(!rdLigada());return true;
+    case 'mp-renda':rdLigar(rdCamada()==='renda'?null:'renda');return true;
+    case 'mp-dens':rdLigar(rdCamada()==='dens'?null:'dens');return true;
+    case 'mp-camadas':rdMenu(!$('.mp-cam-m'));return true;
+    case 'mp-camada':rdMenu(false);rdLigar(a.dataset.v||null);return true;
+    case 'ds-met':UI.modal='ds-met';renderModal();return true;
     case 'rd-x':rdFechar();return true;
     case 'rd-met':UI.modal='rd-met';renderModal();return true;
     case 'rd-raio':{const v=a.dataset.v;UI.rdRaio=v==='poly'?'poly':Number(v);document.querySelectorAll('[data-a="rd-raio"]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));if(t)rdCardAtualiza(t.id);return true}
-    case 'rd-ver':{const x=T(a.dataset.id);UI.mpRenda=true;if(x&&x.lat!=null){UI.mpView={c:{lat:x.lat,lng:x.lng},z:15}}go('mapa');return true}
+    case 'rd-ver':{const x=T(a.dataset.id);UI.mpSetor=rdCamada()||'renda';if(x&&x.lat!=null){UI.mpView={c:{lat:x.lat,lng:x.lng},z:15}}go('mapa');return true}
   }
   return false}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&RD.sel!=null&&!UI.modal&&UI.route==='mapa'){rdFechar();e.preventDefault()}});
