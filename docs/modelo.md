@@ -594,6 +594,60 @@ Entorno do terreno: as categorias são configuração (`entorno_categorias`: tip
 
 O dashboard agrega `v_terrenos` no front (filtro cruzado por clique). A poligonal continua em `terrenos.poligono_geojson`; importar KMZ/KML é feito no front e gravado por `salvar_terreno`.
 
+## Concorrência
+
+Empreendimentos de outras empresas, marcados no mapa (decisão do Moisés, 24/out/2026). Cadastro sem regra de funil: escrita direta pelo front (Leitura só vê), com auditoria e isolamento por `empresa_id`.
+
+```mermaid
+erDiagram
+  concorrentes ||--o{ concorrencia_empreendimentos : lanca
+  concorrencia_empreendimentos ||--o{ concorrencia_tipologias : "plantas"
+  concorrencia_tipologias ||--o{ concorrencia_precos : "preco por data de apuracao"
+  municipios |o--o{ concorrencia_empreendimentos : localiza
+
+  concorrentes {
+    uuid id PK
+    text nome "unico por empresa entre os ativos"
+    text cnpj "14 digitos, opcional"
+    bool ativo
+  }
+  concorrencia_empreendimentos {
+    uuid id PK
+    uuid concorrente_id FK
+    text nome
+    float latitude
+    float longitude
+    text endereco
+    int unidades "nulo = nao informado"
+    text situacao "lancamento | em_obras | pronto | nao_informado"
+    date data_lancamento
+    bool ativo
+  }
+  concorrencia_tipologias {
+    uuid id PK
+    uuid empreendimento_id FK
+    numeric area_privativa_m2
+    smallint dormitorios "0 = studio"
+    int unidades "nulo = nao informado"
+    text faixa "his1 | his2 | hmp | r2v | nr | nao_informado"
+    bool ativo
+  }
+  concorrencia_precos {
+    uuid id PK
+    uuid tipologia_id FK
+    date apurado_em "unico por tipologia; nunca no futuro"
+    numeric preco_medio
+    text fonte "stand | site | corretor | portal | outra | nao_informado"
+  }
+```
+
+- **Preço nunca é sobrescrito:** cada data de apuração é uma linha nova em `concorrencia_precos`; lançar de novo na mesma data corrige aquele valor. Um preço lançado errado pode ser apagado (fica na auditoria); empresa, empreendimento e tipologia são desativados.
+- **Preço médio é o da unidade**, digitado pelo usuário; o sistema não distingue tabela de promoção. Não há preço por m² informado.
+- **Preço por m² do empreendimento é calculado** (`app.concorrencia_resumo(data)`), com o último preço de cada tipologia ativa até a data: com as unidades de todas as tipologias precificadas, média ponderada pelo mix (soma de preço × unidades ÷ soma de área × unidades); faltando alguma, média simples do preço por m² das tipologias (`mix_completo = false`). Devolve também o período dos preços usados (`apurado_de`, `apurado_ate`) e as faixas.
+- **Faixa social na tipologia**, não no empreendimento, porque um empreendimento mistura HIS, HMP e R2V.
+- `v_concorrencia`: empreendimentos ativos com a empresa e o resumo de hoje; é o que o mapa e o quadro leem. `app.concorrencia_tipologias_em(data)`: cada tipologia com o preço vigente na data.
+- Estoque e velocidade de vendas ficaram de fora (decisão do Moisés). A concorrência perto do terreno na ficha e uma página de lista ficam para depois.
+
 ## 3. Documentos
 
 ```mermaid

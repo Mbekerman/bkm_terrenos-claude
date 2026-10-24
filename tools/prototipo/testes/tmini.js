@@ -1,5 +1,5 @@
 // Mini-mapa da Visão geral: sem link Google Maps nem coordenadas; "Ver no mapa" só no celular; roda rola a página,
-// Shift + roda dá zoom; dois cliques (desktop) abrem o Mapa centrado no ponto. Prints em saida/t_mini.
+// Shift + roda dá zoom; dois cliques (desktop) fora da poligonal abrem o Mapa centrado no ponto. Prints em saida/t_mini.
 const TMP=require('path').join(__dirname,'..','saida')+'/';const OUT=TMP+'t_mini/';require('fs').mkdirSync(OUT,{recursive:true});
 const {chromium,devices}=require('playwright');
 const L=require('path').join(__dirname,'..','libs','l')+'/';const F=require('path').join(__dirname,'..','..','..','docs','prototipo.html');
@@ -23,7 +23,8 @@ if(modo==='desktop'){const w0=await larg(),y0=await p.evaluate(()=>scrollY);
   const y1=await p.evaluate(()=>scrollY);await p.keyboard.down('Shift');await p.mouse.wheel(0,-120);await p.waitForTimeout(600);await p.keyboard.up('Shift');
   ok(await larg()>w0*1.5,'Shift + roda para cima aproxima ('+w0+' → '+await larg()+')');ok(await p.evaluate(()=>scrollY)===y1,'Shift + roda não rola a página');
   const w1=await larg();await p.keyboard.down('Shift');await p.mouse.wheel(0,120);await p.waitForTimeout(600);await p.keyboard.up('Shift');ok(await larg()<w1*0.7,'Shift + roda para baixo afasta');
-  await p.mouse.dblclick(m2.x+30,m2.y+20);}
+  /* fora da poligonal (canto de cima à direita): sobre ela, os dois cliques editam (ver tminied.js) */
+  const fora=await p.$eval('#mini-mapa',m=>{const r=m.getBoundingClientRect();return {x:r.right-24,y:r.y+24}});await p.mouse.dblclick(fora.x,fora.y);}
 else{await p.touchscreen.tap(mm.x,mm.y);await p.waitForTimeout(600);ok(!(await p.$('.mapa-area #mapa')),'celular: toque no mini-mapa não sai da ficha');await p.tap('.mini-ir')}
 await p.waitForTimeout(1200);
 ok(await p.evaluate(()=>!!document.querySelector('.mapa-area #mapa')),modo+' abriu a página Mapa');
