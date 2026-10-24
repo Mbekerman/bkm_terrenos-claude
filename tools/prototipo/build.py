@@ -4,7 +4,7 @@ Saídas:
   docs/prototipo.html                  versão do Railway (documento completo, chave do Google injetada pelo Caddy)
   tools/prototipo/saida/bkm-terrenos.html  versão para o artifact do claude.ai e para os testes
 """
-import os, re
+import json, os, re, shutil
 AQUI = os.path.dirname(os.path.abspath(__file__))
 RAIZ = os.path.abspath(os.path.join(AQUI, '..', '..'))
 def ler(n): return open(os.path.join(AQUI, n), encoding='utf-8').read()
@@ -14,7 +14,7 @@ lcss = open(lpath, encoding='utf-8').read() if os.path.exists(lpath) else ''
 if not lcss: print('aviso: libs/l/leaflet.css ausente (baixe do branch libs-prototipo); o CSS do Leaflet fica de fora')
 lcss = re.sub(r'url\([^)]*\)', 'none', lcss)  # ícones padrão do Leaflet não são usados (pins próprios)
 body = ler('proto_body.html'); js = ler('proto.js')
-mod = ler('proto_mod.js') + '\n' + ler('proto_gmap.js') + '\n' + ler('proto_painel.js') + '\n' + ler('proto_fases.js') + '\n' + ler('proto_funil.js') + '\n' + ler('proto_partes.js') + '\n' + ler('proto_lote.js') + '\n' + ler('proto_geosampa.js') + '\n' + ler('proto_geosanja.js') + '\n' + ler('proto_novo.js') + '\n' + ler('proto_filtros.js') + '\n' + ler('proto_concorrencia.js') + '\n' + ler('proto_logacoes.js')
+mod = ler('proto_mod.js') + '\n' + ler('proto_gmap.js') + '\n' + ler('proto_painel.js') + '\n' + ler('proto_fases.js') + '\n' + ler('proto_funil.js') + '\n' + ler('proto_partes.js') + '\n' + ler('proto_lote.js') + '\n' + ler('proto_geosampa.js') + '\n' + ler('proto_geosanja.js') + '\n' + ler('proto_novo.js') + '\n' + ler('proto_filtros.js') + '\n' + ler('proto_concorrencia.js') + '\n' + ler('proto_logacoes.js') + '\n' + ler('proto_setores.js').replace('__METODOLOGIA_RENDA__', json.dumps(json.load(open(os.path.join(RAIZ, 'tools', 'setores', 'metodologia_renda.json'), encoding='utf-8')), ensure_ascii=False, separators=(',', ':')))
 assert js.rstrip().endswith('render();\n})();'), 'fim inesperado'
 i = js.rstrip().rindex('render();\n})();')
 js = js[:i] + mod + '\n' + js[i:]
@@ -27,6 +27,8 @@ if '{%' in html or '%}' in html:
     raise SystemExit('O protótipo contém "{%" ou "%}", que o Caddy lê como template; quebre a sequência (ex.: \'{\'+\'%\').')
 os.makedirs(os.path.join(AQUI, 'saida'), exist_ok=True)
 open(os.path.join(AQUI, 'saida', 'bkm-terrenos.html'), 'w', encoding='utf-8').write(html)
+# setores do IBGE (tools/setores/gerar.py): ao lado da página, como no Railway e no artifact
+shutil.copytree(os.path.join(RAIZ, 'docs', 'dados'), os.path.join(AQUI, 'saida', 'dados'), dirs_exist_ok=True)
 doc = ('<!doctype html>\n<html lang="pt-BR">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
        '<meta name="gmaps-key" content="{% env "GOOGLE_MAPS_KEY" %}">\n<meta name="bkm-ambiente" content="{% env "AMBIENTE" %}">\n'
        + html.replace('<style>', '</head>\n<body>\n<style>', 1).replace('<title>BKM Terrenos</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n', '<title>BKM Terrenos</title>\n', 1)

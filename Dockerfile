@@ -15,3 +15,5 @@ FROM caddy:2-alpine
 COPY Caddyfile /etc/caddy/Caddyfile
 COPY --from=build /app/dist /srv
 COPY docs/prototipo.html /srv/prototipo/index.html
+# setores do IBGE para a camada de renda (tools/setores/gerar.py)
+COPY docs/dados /srv/prototipo/dados

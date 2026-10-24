@@ -89,7 +89,8 @@ function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[]
   google.maps.event.addListenerOnce(MAPA,'tilesloaded',()=>setTimeout(mpCtrlPos,300));
   MAPA.addListener('click',e=>{if(e.placeId){e.stop();if(!UI.mpModo){lugarAbrir(e.placeId,e.latLng);return}}
     if(lugarFechar()&&!UI.mpModo)return;
-    if(UI.mpModo&&e.latLng)mapaClique(e.latLng.lat(),e.latLng.lng());else if(UI.mpSel)mpSelecionar(null)});
+    if(UI.mpModo&&e.latLng)mapaClique(e.latLng.lat(),e.latLng.lng());else{if(UI.mpSel)mpSelecionar(null);if(e.latLng&&Date.now()-(CC.abertoEm||0)>350)rdAbrirEm(e.latLng.lat(),e.latLng.lng())}});
+  rdPosMapa();
   if(UI.mpFoco){const t=T(UI.mpFoco);UI.mpFoco=null;if(t&&t.lat!=null)google.maps.event.addListenerOnce(MAPA,'idle',()=>G_focar(t))}
 }
 let gEu=[];
