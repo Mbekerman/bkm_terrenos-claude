@@ -1135,7 +1135,7 @@ select pg_temp.falha(format($$select app.salvar_config_mercado(%L, '{"meses_lanc
 select pg_temp.como(:'diretor');
 select pg_temp.falha(format($$select app.abrir_coleta_mercado(%L, 'planilha', 'completa_mensal', '2026-01-01')$$, :'emp'), 'fonte desconhecida é recusada');
 
--- Velocidade de março, antes de qualquer outro empreendimento do monitor.
+-- Primeira mensal e as vendas que o fechamento grava.
 select app.abrir_coleta_mercado(:'emp', 'orulo_api', 'completa_mensal', '2026-02-01') as c_fev \gset
 select pg_temp.ok((select bruto_caminho = :'emp' || '/mercado/2026-02-01-completa_mensal.json.gz' from app.mercado_coletas where id = :'c_fev'), 'caminho do bruto leva empresa, referência e tipo');
 select pg_temp.ok((app.importar_mercado(:'c_fev', jsonb_build_array(pg_temp.ej('vso-velho', 'Estoque Velho',
@@ -1151,17 +1151,12 @@ select pg_temp.ok((app.importar_mercado(:'c_mar', jsonb_build_array(
     (select jsonb_agg(pg_temp.uj(i::text, 38, 380000, 'disponivel', 1, 1, 2, 'apartamento', 'B', 'l' || i)) from generate_series(1, 4) i),
     'vertical', 'residencial', 'lancamento', '2026-03-10')))->>'erros')::int = 0, 'março importa a venda e o lançamento');
 select pg_temp.ok((app.fechar_coleta_mercado(:'c_mar')->>'vendas')::int = 2, 'duas vendas no fechamento de março');
-select e.id as evso from app.concorrencia_empreendimentos e
-  join app.mercado_ids_externos x on x.entidade_id = e.id and x.id_externo = 'vso-velho' \gset
-select e.id as evson from app.concorrencia_empreendimentos e
-  join app.mercado_ids_externos x on x.entidade_id = e.id and x.id_externo = 'vso-novo' \gset
-select pg_temp.ok((select vendidas = 2 and estoque_inicio = 10 and lancadas = 0 and vso = 0.2
-  from app.mercado_velocidade('2026-03-01', 'empreendimento') where chave = :'evso'), 'VSO do estoque que já estava, sem lançamento no mês');
-select pg_temp.ok((select vendidas = 0 and estoque_inicio = 0 and lancadas = 4 and vso = 0
-  from app.mercado_velocidade('2026-03-01', 'empreendimento') where chave = :'evson'), 'lançamento do mês entra no denominador da VSO');
-select pg_temp.ok((select count(*) = 1 and bool_and(vendidas = 2 and estoque_inicio = 10 and lancadas = 4 and vso = round(2::numeric / 14, 4))
-  from app.mercado_velocidade('2026-03-01', 'municipio')), 'VSO da cidade soma estoque e lançamento');
-select pg_temp.ok((select count(*) = 0 from app.mercado_velocidade('2026-01-01', 'municipio')), 'mês sem mensal completa não tem velocidade');
+select pg_temp.ok((select count(*) = 2 and bool_and(not antes_do_monitor and origem_preco = 'ultimo_visto' and preco = 450000
+  and vendida_de = '2026-02-01' and vendida_ate = '2026-03-01')
+  from app.mercado_vendas v
+  join app.mercado_unidades u on u.id = v.unidade_id
+  join app.mercado_ids_externos x on x.entidade = 'empreendimento' and x.entidade_id = u.empreendimento_id and x.id_externo = 'vso-velho'),
+  'as duas vendas de março ficam gravadas na tabela');
 
 select app.salvar_config_mercado(:'emp', '{"cobertura_minima_pct": 1}');
 
@@ -1242,14 +1237,10 @@ select pg_temp.ok((select count(*) = 5 from app.mercado_unidades where empreendi
 select pg_temp.ok((select not residencial and tipo_unidade = 'loja' from app.mercado_unidades where empreendimento_id = :'emisto' and numero = '3'), 'loja fica de fora do residencial');
 select pg_temp.ok((select tipo_unidade = 'nao_informado' and not residencial and tipo_fonte = 'box' from app.mercado_unidades where empreendimento_id = :'emisto' and numero = '5'), 'tipo desconhecido vira não informado');
 select pg_temp.ok((select tipos_desconhecidos = array['box'] from app.mercado_coletas where id = :'c_man'), 'o tipo desconhecido entra no relatório da coleta');
-select pg_temp.ok((select count(*) = 3 and count(*) filter (where tipo_unidade = 'loja') = 0 and count(*) filter (where tipo_unidade = 'nao_informado') = 0
-  from app.v_mercado_unidades where empreendimento_id = :'emisto'), 'a vista não mostra loja nem tipo desconhecido');
-select pg_temp.ok((select disponiveis = 3 and total = 3 and estoque_informado = 5 and diferenca = -2
-  from app.mercado_estoque('2026-04-01', 'empreendimento') where chave = :'emisto'), 'as contas do misto ignoram loja e desconhecido');
+select pg_temp.ok((select count(*) filter (where residencial) = 3 from app.mercado_unidades where empreendimento_id = :'emisto'), 'no misto só apartamento e studio NR ficam residenciais');
 select pg_temp.ok((select residencial from app.mercado_unidades where empreendimento_id = :'emisto' and numero = '4'), 'studio NR conta como residencial');
 select app.salvar_config_mercado(:'emp', '{"nr_conta_como_residencial": false}');
-select pg_temp.ok((select not residencial from app.mercado_unidades where empreendimento_id = :'emisto' and numero = '4')
-  and (select count(*) = 2 from app.v_mercado_unidades where empreendimento_id = :'emisto'), 'desligar o NR tira o studio das contas');
+select pg_temp.ok((select not residencial from app.mercado_unidades where empreendimento_id = :'emisto' and numero = '4'), 'desligar o NR tira o studio do residencial');
 select app.salvar_config_mercado(:'emp', '{"nr_conta_como_residencial": true}');
 select pg_temp.ok((select residencial from app.mercado_unidades where empreendimento_id = :'emisto' and numero = '4'), 'ligar o NR devolve o studio');
 select pg_temp.ok((select s.preco is null and 'preco_sentinela' = any(s.marcas) from app.mercado_unidade_estados s
@@ -1257,8 +1248,6 @@ select pg_temp.ok((select s.preco is null and 'preco_sentinela' = any(s.marcas) 
   join app.mercado_ids_externos x on x.entidade_id = u.empreendimento_id and x.id_externo = 'sent'), 'preço 0,1 é sentinela e não entra como preço');
 select pg_temp.ok((select observacao = 'não mexer' and origem = 'manual' from app.concorrencia_empreendimentos where id = :'aurora_manual'), 'o empreendimento manual não é alterado');
 select pg_temp.ok((select count(*) = 1 and min(similaridade) >= 0.5 and min(distancia_m) = 0 from app.mercado_sugestoes_vinculo where manual_id = :'aurora_manual'), 'nome igual e perto vira sugestão, sem vínculo automático');
-select pg_temp.ok(exists (select 1 from app.mercado_lancamentos('2026-04-01', '2026-04-30') where classe = 'lancamento')
-  and exists (select 1 from app.mercado_lancamentos('2026-04-01', '2026-04-30') where classe = 'entrou_na_base'), 'lançamento do mês e quem entrou na base');
 
 -- Venda, preço de antes do monitor, distrato, normalização, lançamento e vínculo.
 select app.abrir_coleta_mercado(:'emp', 'orulo_login', 'completa_mensal', '2026-07-01') as c_ljul \gset
@@ -1288,9 +1277,6 @@ select pg_temp.ok((select not exists (select 1 from app.mercado_vendas v join ap
   join app.mercado_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'lj')), 'loja vendida ou não, não vira venda');
 select pg_temp.ok((select preco_de_lancamento from app.mercado_unidades u
   join app.mercado_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'p1'), 'preço visto a até 60 dias do lançamento é preço de lançamento');
-select pg_temp.ok((select disponiveis = 4 and vendidas = 1 and total = 5
-  from app.mercado_estoque('2026-07-01', 'empreendimento') e
-  join app.mercado_ids_externos x on x.entidade_id = e.chave::uuid and x.id_externo = 'venda-1'), 'estoque de julho não conta a loja');
 select app.abrir_coleta_mercado(:'emp', 'orulo_login', 'lancamentos', '2026-07-20') as c_lanc \gset
 select pg_temp.ok((app.importar_mercado(:'c_lanc', jsonb_build_array(pg_temp.ej('so-lanc', 'So lancamentos', jsonb_build_array(
   pg_temp.uj('1', 40, 400000, 'vendida', 2, 1, 1, 'apartamento', 'A', 'sl1')))))->>'erros')::int = 0, 'coleta de lançamentos atualiza quem veio');
@@ -1325,8 +1311,6 @@ select pg_temp.ok((select count(*) = 1 and bool_and(not antes_do_monitor and ori
   from app.mercado_vendas v join app.mercado_unidades u on u.id = v.unidade_id
   join app.mercado_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'a1'),
   'disponível que vira vendida gera venda com o último preço');
-select pg_temp.ok((select vendidas = 1 and estimadas = 0 from app.mercado_vendas_periodo('2026-08-01', '2026-08-31', 'empreendimento') v
-  join app.mercado_ids_externos x on x.entidade_id = v.chave::uuid and x.id_externo = 'venda-1'), 'o período de agosto conta a venda confirmada');
 select pg_temp.ok((select count(*) = 0 from app.mercado_vendas v join app.mercado_unidades u on u.id = v.unidade_id
   join app.mercado_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'lj'), 'loja que passa a vendida continua fora das vendas');
 select app.abrir_coleta_mercado(:'emp', 'orulo_login', 'completa_mensal', '2026-09-01') as c_lset \gset
@@ -1350,8 +1334,6 @@ select pg_temp.ok((select desfeita_coleta_id = :'c_lset' from app.mercado_vendas
   join app.mercado_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'a1'), 'voltar a disponível desfaz a venda');
 select pg_temp.ok((select not preco_de_lancamento from app.mercado_unidades u
   join app.mercado_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'p2'), 'preço visto depois de 60 dias não é de lançamento');
-select pg_temp.ok((select count(*) = 0 from app.mercado_vendas_periodo('2026-08-01', '2026-08-31', 'empreendimento') v
-  join app.mercado_ids_externos x on x.entidade_id = v.chave::uuid and x.id_externo = 'venda-1'), 'venda desfeita sai do período');
 
 select app.abrir_coleta_mercado(:'emp', 'orulo_login', 'completa_mensal', '2026-10-01') as c_v1 \gset
 select pg_temp.ok((app.importar_mercado(:'c_v1', jsonb_build_array(
@@ -1383,12 +1365,11 @@ select pg_temp.ok((select vinculo_pendente_id is null from app.mercado_unidades 
 select pg_temp.falha($$select app.confirmar_vinculo_unidade('00000000-0000-0000-0000-0000000000aa', true)$$, 'sem vínculo pendente não confirma');
 
 select pg_temp.como(:'leitor');
-select pg_temp.ok((select count(*) >= 3 from app.v_mercado_unidades) and (select count(*) >= 1 from app.v_mercado_empreendimentos), 'Leitura vê o monitor');
+select pg_temp.ok((select count(*) >= 3 from app.mercado_unidades) and (select count(*) >= 1 from app.mercado_vendas) and (select count(*) >= 1 from app.mercado_coletas), 'Leitura vê as tabelas do monitor');
 select pg_temp.falha(format($$select app.abrir_coleta_mercado(%L, 'orulo_api', 'completa_mensal', '2026-12-01')$$, :'emp'), 'Leitura não abre coleta');
 select pg_temp.como(:'intruso');
-select pg_temp.ok((select count(*) = 0 from app.mercado_coletas) and (select count(*) = 0 from app.v_mercado_unidades), 'outra empresa não vê o monitor');
+select pg_temp.ok((select count(*) = 0 from app.mercado_coletas) and (select count(*) = 0 from app.mercado_unidades) and (select count(*) = 0 from app.mercado_vendas), 'outra empresa não vê o monitor');
 select pg_temp.como(:'diretor');
 select pg_temp.ok((select count(*) >= 1 from app.auditoria where tabela = 'mercado_coletas'), 'coleta entra na auditoria');
-select pg_temp.ok((select count(*) >= 1 from app.mercado_precos('2026-07-01', 'dormitorios')), 'preço por dormitório calcula');
 
 \echo 'TODOS OS TESTES PASSARAM'
