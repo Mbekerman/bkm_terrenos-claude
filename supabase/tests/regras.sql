@@ -1141,6 +1141,34 @@ select pg_temp.ok(app.densidade_faixa(0) = 0 and app.densidade_faixa(0.4) = 1 an
 \set cfgd `cat tools/setores/metodologia_densidade.json`
 select pg_temp.ok((select bool_and(f.ate is not distinct from (j->>'ate')::numeric and f.cor = j->>'cor' and f.rotulo = j->>'rotulo') and count(*) = 10 and count(distinct f.cor) = 10
   from app.densidade_faixas f join jsonb_array_elements((:'cfgd'::jsonb)->'faixas') with ordinality e(j, n) on n - 1 = f.ordem), 'faixas e cores da densidade iguais às do protótipo');
+-- perfil da população (idade, sexo, domicílios): só somas exatas; sigilo e ausência viram "não divulgado"
+reset role;
+insert into app.setor_valores (cd_setor, variavel, valor, situacao) values
+  ('355030899999991', 'V01007', 140, 'divulgado'), ('355030899999991', 'V01008', 160, 'divulgado'),
+  ('355030899999991', 'V01031', 20, 'divulgado'), ('355030899999991', 'V01009', 10, 'divulgado'), ('355030899999991', 'V01020', 10, 'divulgado'),
+  ('355030899999991', 'V01035', 30, 'divulgado'), ('355030899999991', 'V01036', 30, 'divulgado'),
+  ('355030899999991', 'V01013', 15, 'divulgado'), ('355030899999991', 'V01014', 15, 'divulgado'), ('355030899999991', 'V01024', 15, 'divulgado'), ('355030899999991', 'V01025', 15, 'divulgado'),
+  ('355030899999991', 'V00001', 98, 'divulgado'), ('355030899999991', 'V00002', 2, 'divulgado'), ('355030899999991', 'V00005', 290, 'divulgado'), ('355030899999991', 'V00006', 4, 'divulgado'),
+  ('355030899999991', 'V00017', 20, 'divulgado'), ('355030899999991', 'V00018', 30, 'divulgado'), ('355030899999991', 'V00019', 25, 'divulgado'), ('355030899999991', 'V00020', 15, 'divulgado'),
+  ('355030899999991', 'V00049', 60, 'divulgado'), ('355030899999991', 'V0009', 10, 'divulgado'), ('355030899999991', 'V0008', 3, 'divulgado'),
+  ('355030899999992', 'V01007', 100, 'divulgado'), ('355030899999992', 'V01008', 100, 'divulgado'), ('355030899999992', 'V01031', null, 'sigilo');
+select pg_temp.como(:'leitor');
+select app.perfil_area(extensions.st_geomfromgeojson(pg_temp.quadra(-46.60000 + 25 / (111320 * cos(radians(-23.55))), -23.55, 150)::text)) as pf \gset
+select pg_temp.ok((select (e->>'pessoas')::numeric between 399 and 401 and (e->>'homens')::numeric between 189 and 191 and (e->>'mulheres')::numeric between 209 and 211
+  and (e->>'moradores_por_domicilio')::numeric = 2.94 from (select :'pf'::jsonb e) x),
+  'perfil: pessoas e sexo pela fração da área; moradores por domicílio só dos setores com os dois números (294 ÷ 100)');
+select pg_temp.ok((select (e->'idade'->0->>'pessoas')::numeric = 20 and (e->'idade'->3->>'pessoas')::numeric = 60 and (e->'idade'->3->>'homens')::numeric = 30
+  and (e->>'idade_nao_divulgada')::numeric between 319 and 321 and jsonb_array_length(e->'idade') = 8 from (select :'pf'::jsonb e) x),
+  'perfil: 8 grupos de idade por soma exata (20 a 29 = 20–24 + 25–29); setor em sigilo fica fora e o resto é "não divulgado", nunca zero');
+select pg_temp.ok((select (e->'tamanho'->4->>'rotulo') = '5 ou mais moradores' and (e->'tamanho'->4->>'domicilios')::numeric = 8
+  and (e->'especie'->2->>'domicilios')::numeric = 60 and (e->>'vagos')::numeric = 10 and (e->>'uso_ocasional')::numeric = 3 from (select :'pf'::jsonb e) x),
+  'perfil: 5 ou mais moradores = domicílios − os de 1 a 4 (98 − 90); espécie, vagos e uso ocasional');
+\set cfgdemo `cat tools/setores/demografia.json`
+select pg_temp.ok((select count(*) = 8 and bool_and(g.rotulo = j->>'rotulo' and to_jsonb(g.total) = j->'total' and to_jsonb(g.homens) = j->'homens' and to_jsonb(g.mulheres) = j->'mulheres')
+  from app.demografia_grupos g, (select :'cfgdemo'::jsonb c) x, jsonb_array_elements(c->'idade') with ordinality e(j, n) where g.tipo = 'idade' and n = g.ordem)
+  and (select count(*) = 4 from app.demografia_grupos g, (select :'cfgdemo'::jsonb c) x, jsonb_array_elements(c->'tamanho') with ordinality e(j, n) where g.tipo = 'tamanho' and n = g.ordem and g.total = array[j->>'var'] and g.rotulo = j->>'rotulo')
+  and (select count(*) = 5 from app.demografia_grupos g, (select :'cfgdemo'::jsonb c) x, jsonb_array_elements(c->'especie') with ordinality e(j, n) where g.tipo = 'especie' and n = g.ordem and g.total = array[j->>'var'] and g.rotulo = j->>'rotulo'),
+  'grupos do perfil iguais aos do protótipo (demografia.json)');
 -- área: todo o setor A e metade do B
 select app.estatisticas_area(extensions.st_geomfromgeojson(pg_temp.quadra(-46.60000 + 25 / (111320 * cos(radians(-23.55))), -23.55, 150)::text)
   ) as est \gset

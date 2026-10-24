@@ -164,10 +164,10 @@ function setEstat(t,raio){if(!SET.d||t.lat==null)return null;const poly=raio==='
   const area=poly?areaPoly(poly):Math.PI*raio*raio,passo=Math.sqrt(area/30000),sx=passo/mx,sy=passo/my,cont=new Map();let fora=0;
   for(let y=y0+sy/2;y<y1;y+=sy)for(let x=x0+sx/2;x<x1;x+=sx){if(!dentro(x,y))continue;let achou=null;for(const i of setCandidatos(x,y,x,y))if(setDentro(i,x,y)){achou=i;break}
     if(achou==null)fora++;else cont.set(achou,(cont.get(achou)||0)+1)}
-  let pes=0,dom=0,resp=0,respR=0,soma=0,dist=0;const porF=new Array(RENDA_MET.faixas.length).fill(0);
-  for(const [i,c] of cont){const fr=Math.min(1,c*passo*passo/Math.max(d.area[i],1));pes+=d.pop[i]*fr;dom+=d.dom[i]*fr;const w=(d.v1[i]||0)*fr;resp+=w;
+  let pes=0,dom=0,resp=0,respR=0,soma=0,dist=0;const porF=new Array(RENDA_MET.faixas.length).fill(0),frs=new Map();
+  for(const [i,c] of cont){const fr=Math.min(1,c*passo*passo/Math.max(d.area[i],1));frs.set(i,fr);pes+=d.pop[i]*fr;dom+=d.dom[i]*fr;const w=(d.v1[i]||0)*fr;resp+=w;
     if(d.rAt[i]!=null){respR+=w;soma+=d.rAt[i]*w;porF[d.faixa[i]]+=w;if(d.v6[i]!=null&&d.v4[i]>RENDA_MET.distorcidaRazao*d.v6[i])dist++}}
-  const r={area,setores:cont.size,pes,dom,dens:pes/(area/1e6),renda:respR?soma/respR:null,cob:resp?respR/resp*100:null,porF:porF.map(w=>respR?w/respR*100:0),dist,foraPct:fora/(fora+[...cont.values()].reduce((a,b)=>a+b,0))*100};
+  const r={area,setores:cont.size,pes,dom,dens:pes/(area/1e6),renda:respR?soma/respR:null,cob:resp?respR/resp*100:null,porF:porF.map(w=>respR?w/respR*100:0),dist,foraPct:fora/(fora+[...cont.values()].reduce((a,b)=>a+b,0))*100,frs};
   return RD_CACHE[ch]=r}
 function rdCardCorpo(t){if(t.lat==null)return '<div class="muted">Sem localização.</div>';
   if(!SET.d){if(SET.erro)return '<div class="muted">Não foi possível carregar os setores do IBGE.</div>';setCarregar().then(()=>rdCardAtualiza(t.id)).catch(()=>rdCardAtualiza(t.id));return '<div class="muted">Carregando os setores do IBGE…</div>'}
@@ -185,7 +185,80 @@ function setoresCard(t){if(t.lat==null)return '';const raio=UI.rdRaio||1000;
   return `<section class="sec" id="rd-card"><div class="sec-h"><h2>Renda e população do entorno</h2></div>
     <div class="rd-raios seg" role="group" aria-label="Área">${RD_RAIOS.map(([k,l])=>`<button type="button" data-a="rd-raio" data-v="${k}" aria-pressed="${String(raio)===String(k)}" ${k==='poly'&&!t.poly?'disabled':''}>${l}</button>`).join('')}</div>
     <div class="sec-b" id="rd-corpo">${rdCardCorpo(t)}</div></section>`}
-function rdCardAtualiza(id){const t=T(id),c=$('#rd-corpo');if(t&&c)c.innerHTML=rdCardCorpo(t)}
+function rdCardAtualiza(id){const t=T(id),c=$('#rd-corpo');if(t&&c)c.innerHTML=rdCardCorpo(t);pfCardAtualiza(id)}
+
+/* ---------- ficha: perfil da população do entorno (idade, sexo, domicílios) ----------
+   Variáveis do IBGE por setor como vieram (docs/dados/demografia-*.json, gerado por gerar.py), agrupadas
+   só por somas exatas (tools/setores/demografia.json, decisão do Moisés). Cada setor entra pela mesma fração
+   de área do quadro da renda. Sigilo nunca vira zero: o que o IBGE não divulgou aparece como "não divulgado". */
+const DEMO_CFG=__DEMOGRAFIA__;
+const DEMO_ARQ={'3550308':'dados/demografia-3550308-2022.json'};
+const DEMO={d:null,promessa:null,erro:null};
+function demoCarregar(){if(DEMO.d)return Promise.resolve(DEMO.d);if(DEMO.promessa)return DEMO.promessa;
+  const u=(location.pathname.startsWith('/prototipo')?'/prototipo/':'')+DEMO_ARQ['3550308'];
+  DEMO.promessa=fetch(u).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(j=>{j.col=Object.fromEntries(j.vars.map((v,k)=>[v,k]));DEMO.d=j;return j})
+    .catch(e=>{console.warn('demografia',e);DEMO.erro=e;DEMO.promessa=null;throw e});
+  return DEMO.promessa}
+/* soma de variáveis de um setor; null se alguma não foi divulgada */
+function demoSoma(i,vs){const l=DEMO.d.v[i];let s=0;for(const v of vs){const x=l[DEMO.d.col[v]];if(x==null)return null;s+=x}return s}
+function demoEstat(t,raio){const r=setEstat(t,raio);if(!r||!DEMO.d)return null;if(r.demo)return r.demo;const c=DEMO_CFG,d=SET.d;
+  if(DEMO.d.n!==d.n||DEMO.d.cd[0]!==d.cd[0]||DEMO.d.cd[d.n-1]!==d.cd[d.n-1])return null;
+  const G=c.idade.length,o={pes:0,h:0,m:0,sexoCob:0,idade:c.idade.map(()=>({t:0,h:0,m:0})),morD:0,domD:0,tam:new Array(c.tamanho.length+1).fill(0),dppo:0,esp:c.especie.map(()=>0),vag:0,oca:0},M=c.moradores;
+  for(const [i,fr] of r.frs){const pop=d.pop[i]*fr;o.pes+=pop;
+    const h=demoSoma(i,[c.sexo.homens]),m=demoSoma(i,[c.sexo.mulheres]);if(h!=null&&m!=null){o.h+=h*fr;o.m+=m*fr;o.sexoCob+=pop}
+    c.idade.forEach((g,k)=>{const a=demoSoma(i,g.total),b=demoSoma(i,g.homens),e=demoSoma(i,g.mulheres);if(a!=null)o.idade[k].t+=a*fr;if(b!=null)o.idade[k].h+=b*fr;if(e!=null)o.idade[k].m+=e*fr});
+    const mor=demoSoma(i,[M.moradoresDppo,M.moradoresDpio]),dd=demoSoma(i,[M.dppo,M.dpio]);if(mor!=null&&dd!=null){o.morD+=mor*fr;o.domD+=dd*fr}
+    const dppo=demoSoma(i,[M.dppo]);if(dppo!=null){o.dppo+=dppo*fr;const ts=c.tamanho.map(x=>demoSoma(i,[x.var]));
+      if(ts.every(x=>x!=null)){ts.forEach((x,k)=>o.tam[k]+=x*fr);o.tam[c.tamanho.length]+=Math.max(0,dppo-ts.reduce((a,b)=>a+b,0))*fr}
+      else ts.forEach((x,k)=>{if(x!=null)o.tam[k]+=x*fr})}
+    c.especie.forEach((e,k)=>{const x=demoSoma(i,[e.var]);if(x!=null)o.esp[k]+=x*fr});
+    const vg=demoSoma(i,[c.vagos]),oc=demoSoma(i,[c.usoOcasional]);if(vg!=null)o.vag+=vg*fr;if(oc!=null)o.oca+=oc*fr}
+  o.idadeND=Math.max(0,o.pes-o.idade.reduce((a,g)=>a+g.t,0));
+  o.hND=Math.max(0,o.h-o.idade.reduce((a,g)=>a+g.h,0));o.mND=Math.max(0,o.m-o.idade.reduce((a,g)=>a+g.m,0));
+  o.tamND=Math.max(0,o.dppo-o.tam.reduce((a,b)=>a+b,0));o.espND=Math.max(0,o.dppo-o.esp.reduce((a,b)=>a+b,0));
+  return r.demo=o}
+const pfPct=(x,tot)=>tot>0?rdNum(x/tot*100,x/tot*100<10?1:0)+'%':'–';
+function pfBarras(itens,tot,cor){const mx=Math.max(...itens.map(x=>x[1]),1);
+  return `<ul class="rd-dist pf-dist">${itens.map(([l,v,nd])=>`<li${nd?' class="pf-nd"':''}><span class="pf-l">${esc(l)}</span><span class="rd-bar"><span style="width:${Math.max(v>0?1:0,v/mx*100)}%;background:${nd?'transparent':cor}"></span></span><b class="num">${num(Math.round(v))}</b><span class="pf-p">${pfPct(v,tot)}</span></li>`).join('')}</ul>`}
+function pfCorpo(t){if(t.lat==null)return '<div class="muted">Sem localização.</div>';
+  if(!SET.d||!DEMO.d){if(SET.erro||DEMO.erro)return '<div class="muted">Não foi possível carregar os dados do IBGE.</div>';
+    Promise.all([setCarregar(),demoCarregar()]).then(()=>pfCardAtualiza(t.id)).catch(()=>pfCardAtualiza(t.id));return '<div class="muted">Carregando os dados do Censo…</div>'}
+  if(setEm(t.lat,t.lng)==null&&!setCandidatos(t.lng-.01,t.lat-.01,t.lng+.01,t.lat+.01).size)return '<div class="muted">Por ora só há setores do município de São Paulo.</div>';
+  const raio=UI.rdRaio||1000,r=setEstat(t,raio),o=demoEstat(t,raio),c=DEMO_CFG;
+  if(!r)return '<div class="muted">O terreno não tem poligonal.</div>';
+  if(!o)return '<div class="muted">Os arquivos do IBGE não batem entre si; gere de novo com tools/setores/gerar.py.</div>';
+  const mx=Math.max(...o.idade.map(g=>Math.max(g.h,g.m)),1),sx=o.h+o.m;
+  const pir=o.idade.map((g,k)=>`<div class="pf-pr"><span class="pf-b pf-h"><span style="width:${g.h/mx*100}%"></span></span><span class="pf-g"><b>${esc(c.idade[k].rotulo.replace(' anos',''))}</b><span>${num(Math.round(g.t))} · ${pfPct(g.t,o.pes)}</span></span><span class="pf-b pf-m"><span style="width:${g.m/mx*100}%"></span></span></div>`).join('');
+  const nd=o.idadeND/Math.max(o.pes,1)*100;
+  const tam=[...c.tamanho.map((x,k)=>[x.rotulo,o.tam[k]]),[c.tamanhoResto,o.tam[c.tamanho.length]],...(o.tamND/Math.max(o.dppo,1)>.005?[['Não divulgado (sigilo)',o.tamND,1]]:[])];
+  const esp=[...c.especie.map((x,k)=>[x.rotulo,o.esp[k]]).filter(x=>x[1]>=.5),...(o.espND/Math.max(o.dppo,1)>.005?[['Não divulgado (sigilo)',o.espND,1]]:[])];
+  const perm=o.dppo+o.vag+o.oca;
+  return `<div class="rd-met pf-met">
+      <div class="rd-m"><div class="k">População residente</div><div class="v">${num(Math.round(o.pes))}</div><div class="s">${raio==='poly'?m2(Math.round(r.area)):num(r.area/1e6,2)+' km²'}</div></div>
+      <div class="rd-m"><div class="k">Domicílios ocupados</div><div class="v">${num(Math.round(r.dom))}</div><div class="s">particulares</div></div>
+      <div class="rd-m"><div class="k">Moradores por domicílio</div><div class="v">${o.domD?rdNum(o.morD/o.domD,2):'–'}</div><div class="s">domicílios particulares ocupados</div></div>
+      <div class="rd-m"><div class="k">Homens · Mulheres</div><div class="v pf-hm"><span class="pf-h">${pfPct(o.h,sx)}</span> · <span class="pf-m">${pfPct(o.m,sx)}</span></div><div class="s">${num(Math.round(o.h))} · ${num(Math.round(o.m))} pessoas</div></div></div>
+    <div class="rd-dh">Pessoas por idade e sexo</div>
+    <div class="pf-leg"><span><i class="pf-h"></i>Homens</span><span><i class="pf-m"></i>Mulheres</span></div>
+    <div class="pf-pir">${pir}</div>
+    ${nd>=.5?`<div class="hint">Idade não divulgada pelo IBGE (sigilo) para ${rdNum(nd,1)}% das pessoas.</div>`:''}
+    <div class="rd-dh">Domicílios por número de moradores</div>${pfBarras(tam,o.dppo,'#0b57d0')}
+    <div class="rd-dh">Tipo de domicílio</div>${pfBarras(esp,o.dppo,'#0b57d0')}
+    <div class="pf-vg">Fora dos ocupados: <b>${num(Math.round(o.vag))}</b> domicílios vagos (${pfPct(o.vag,perm)} dos permanentes) e <b>${num(Math.round(o.oca))}</b> de uso ocasional (${pfPct(o.oca,perm)}).</div>
+    <div class="hint rd-pe">Censo ${c.censoAno} (IBGE), agregados por setor · ${num(r.setores)} setor${r.setores===1?'':'es'}, cada um pela fração da área dentro${r.foraPct>1?` · ${rdNum(r.foraPct,0)}% da área fora do município`:''}. Domicílios por moradores e tipo: só os particulares permanentes ocupados. <button class="linkbtn" data-a="pf-met">Sobre os dados</button></div>`}
+function perfilCard(t){if(t.lat==null)return '';const raio=UI.rdRaio||1000;
+  return `<section class="sec" id="pf-card"><div class="sec-h"><h2>Perfil da população do entorno</h2></div>
+    <div class="rd-raios seg" role="group" aria-label="Área">${RD_RAIOS.map(([k,l])=>`<button type="button" data-a="rd-raio" data-v="${k}" aria-pressed="${String(raio)===String(k)}" ${k==='poly'&&!t.poly?'disabled':''}>${l}</button>`).join('')}</div>
+    <div class="sec-b" id="pf-corpo">${pfCorpo(t)}</div></section>`}
+function pfCardAtualiza(id){const t=T(id),c=$('#pf-corpo');if(t&&c)c.innerHTML=pfCorpo(t)}
+function pfModal(fechar){const c=DEMO_CFG;
+  return `<div class="dh"><h2>Perfil da população: os dados</h2>${fechar}</div><div class="rd-mt">
+  <p>Tudo vem do Censo Demográfico ${c.censoAno} do IBGE, agregados por setor censitário, sem estimativa: só somas das variáveis publicadas.</p>
+  <h3>Idade e sexo</h3><p>${esc(c.idadeOrigem)} Grupos usados: ${c.idade.map(g=>esc(g.rotulo)).join(', ')}.</p>
+  <h3>Moradores por domicílio</h3><p>Moradores dos domicílios particulares ocupados (permanentes e improvisados) ÷ esses domicílios; asilos, alojamentos e outros coletivos ficam fora.</p>
+  <h3>Raio e poligonal</h3><p>Cada setor entra pela fração da área dele que cai dentro, supondo os moradores espalhados por igual no setor.</p>
+  <h3>Sigilo</h3><p>Quando um setor tem poucas pessoas num grupo, o IBGE não divulga o número (X). Ele nunca vira zero: a diferença para o total aparece como "não divulgado". "5 ou mais moradores" é o total de domicílios menos os de 1 a 4, só nos setores com os quatro divulgados.</p>
+  <p class="faint">Versão ${c.versao}.</p></div><div class="df"><button class="btn primary" data-a="close">Fechar</button></div>`}
 
 /* ---------- metodologia ---------- */
 function dsModal(fechar){const m=DENS_MET,f=m.faixas;
@@ -195,7 +268,7 @@ function dsModal(fechar){const m=DENS_MET,f=m.faixas;
   <p class="rd-f">Densidade = ${m.variavel} ÷ área do setor (km²)</p>
   <h3>Limites</h3><ul><li>É densidade bruta: a área inclui parques, vias, represas, galpões e terrenos vazios. Um setor com um parque dentro parece pouco denso mesmo com muita gente morando na borda.</li><li>Setores muito pequenos de prédios ou de favela passam de 100 mil hab/km²; ficam todos na última faixa.</li><li>Sem moradores é zero de verdade (o IBGE contou ninguém), em cinza, separado da primeira faixa.</li><li>Faixas fixas, nunca quantis: o limite de cima entra na faixa (até ${num(f[1].ate)} inclui ${num(f[1].ate)}).</li></ul>
   <p class="faint">${esc(m.faixasOrigem)} Versão ${m.versao}.</p></div><div class="df"><button class="btn primary" data-a="close">Fechar</button></div>`}
-function setoresModal(M,fechar){if(M==='ds-met')return dsModal(fechar);if(M!=='rd-met')return '';const m=RENDA_MET,c=m.fatorFamiliar*m.fatorPnad;
+function setoresModal(M,fechar){if(M==='ds-met')return dsModal(fechar);if(M==='pf-met')return pfModal(fechar);if(M!=='rd-met')return '';const m=RENDA_MET,c=m.fatorFamiliar*m.fatorPnad;
   return `<div class="dh"><h2>Metodologia da renda</h2>${fechar}</div><div class="rd-mt">
   <p>Os valores apresentados são estimativas de renda familiar mensal. A base espacial e a renda do responsável são provenientes do Censo Demográfico ${m.censoAno} do IBGE. A renda familiar foi estimada a partir da relação observada entre renda do responsável e renda domiciliar nos microdados do Censo. Os valores foram posteriormente atualizados pela evolução nominal da renda domiciliar per capita da PNAD Contínua para o Estado de São Paulo.</p>
   <h3>Dado oficial (IBGE)</h3><p><b>${m.variavelBase}</b>: ${esc(m.variavelBaseDescricao)}, Censo ${m.censoAno}. Não é renda familiar nem renda per capita. Geometria: malha oficial dos setores censitários de ${m.censoAno}.</p>
@@ -212,6 +285,7 @@ function setoresClick(A,a,t){
     case 'mp-camadas':rdMenu(!$('.mp-cam-m'));return true;
     case 'mp-camada':rdMenu(false);rdLigar(a.dataset.v||null);return true;
     case 'ds-met':UI.modal='ds-met';renderModal();return true;
+    case 'pf-met':UI.modal='pf-met';renderModal();return true;
     case 'rd-x':rdFechar();return true;
     case 'rd-met':UI.modal='rd-met';renderModal();return true;
     case 'rd-raio':{const v=a.dataset.v;UI.rdRaio=v==='poly'?'poly':Number(v);document.querySelectorAll('[data-a="rd-raio"]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));if(t)rdCardAtualiza(t.id);return true}
