@@ -1099,4 +1099,49 @@ select pg_temp.falha(format($$insert into app.concorrencia_empreendimentos (empr
 select pg_temp.como(:'diretor');
 select pg_temp.ok((select count(*) from app.auditoria where tabela = 'concorrencia_precos') >= 3, 'preços entram na auditoria');
 
+-- ---------------------------------------------------------------------
+\echo '# setores censitários e renda familiar estimada'
+reset role;
+-- dois setores vizinhos de 100 m (códigos fictícios); B tem a renda em sigilo
+insert into app.setores_censitarios (cd_setor, area_ponderacao, distrito, area_km2, geom, fonte_geometria) values
+  ('355030899999991', '3550308999', 'Teste', 0.01, extensions.st_multi(extensions.st_geomfromgeojson(pg_temp.quadra(-46.60000, -23.55, 100)::text)), 'teste'),
+  ('355030899999992', '3550308999', 'Teste', 0.01, extensions.st_multi(extensions.st_geomfromgeojson(pg_temp.quadra(-46.60000 + 100 / (111320 * cos(radians(-23.55))), -23.55, 100)::text)), 'teste');
+insert into app.setor_valores (cd_setor, variavel, valor, situacao) values
+  ('355030899999991', 'V0001', 300, 'divulgado'), ('355030899999991', 'V0007', 100, 'divulgado'), ('355030899999991', 'V06001', 100, 'divulgado'),
+  ('355030899999991', 'V06004', 4000, 'divulgado'), ('355030899999991', 'V06006', 3000, 'divulgado'),
+  ('355030899999992', 'V0001', 200, 'divulgado'), ('355030899999992', 'V0007', 80, 'divulgado'), ('355030899999992', 'V06001', 80, 'divulgado'),
+  ('355030899999992', 'V06004', null, 'sigilo'), ('355030899999992', 'V06006', null, 'sigilo');
+select pg_temp.falha($$insert into app.setor_valores values ('355030899999992', 'V06002', 0, 'sigilo')$$, 'valor em sigilo fica nulo, nunca zero');
+select pg_temp.falha($$insert into app.setores_censitarios (cd_setor, geom, fonte_geometria) values ('999999999999999', extensions.st_multi(extensions.st_geomfromtext('POLYGON((0 0,1 0,1 1,0 0))', 4326)), 'x')$$, 'setor de município que não existe');
+select pg_temp.como(:'leitor');
+select pg_temp.ok((select v06004_original = 4000 and renda_responsavel_censo_2022 = 4000 and fator_familiar = 1.6
+  and renda_familiar_estimada_2022 = 6400.00 and round(fator_atualizacao_pnad, 6) = 1.376164 and renda_familiar_estimada_atual = 8807.45 and faixa = 8
+  from app.setores_renda where cd_setor = '355030899999991'), 'V06004 R$ 4.000 → R$ 6.400,00 em 2022 → R$ 8.807,45 em valores de 2025 (R$ 8.000 a 9.000); o original fica');
+select pg_temp.ok((select v06004_original is null and renda_familiar_estimada_atual is null and faixa is null and situacao_renda = 'sigilo'
+  from app.setores_renda where cd_setor = '355030899999992'), 'setor em sigilo: sem renda e sem faixa');
+select pg_temp.ok((select string_agg(app.renda_faixa(v)::text, ',' order by v) from unnest(array[1999, 2500, 3500, 4500, 6500, 9500, 13000, 20000, 27000, 31000]::numeric[]) v)
+  = '1,2,3,4,6,9,11,13,15,16', 'exemplos da especificação caem nas faixas certas');
+select pg_temp.ok(app.renda_faixa(2000) = 1 and app.renda_faixa(2000.4) = 1 and app.renda_faixa(2000.5) = 2 and app.renda_faixa(2001) = 2
+  and app.renda_faixa(30000) = 15 and app.renda_faixa(30001) = 16 and app.renda_faixa(null) is null,
+  'fronteira: o limite de cima entra na faixa, depois de arredondar para reais');
+select pg_temp.ok((select count(distinct cor) = 16 and bool_and(app.renda_faixa(ate) = ordem) from app.renda_faixas), '16 faixas, 16 cores diferentes, cada limite na própria faixa');
+\set cfg `cat tools/setores/metodologia_renda.json`
+select pg_temp.ok((select m.fator_familiar = (c->>'fatorFamiliar')::numeric and m.pnad_valor_base = (c->>'pnadValorBase')::numeric
+  and m.pnad_valor_atual = (c->>'pnadValorAtual')::numeric and m.pnad_ano_atual = (c->>'pnadAnoAtual')::int and m.distorcida_razao = (c->>'distorcidaRazao')::numeric
+  from app.metodologias_renda m, (select :'cfg'::jsonb as c) x where m.vigente), 'metodologia do banco igual à do protótipo (metodologia_renda.json)');
+select pg_temp.ok((select bool_and(f.ate is not distinct from (j->>'ate')::numeric and f.cor = j->>'cor' and f.rotulo = j->>'rotulo') and count(*) = 16
+  from app.renda_faixas f join jsonb_array_elements((:'cfg'::jsonb)->'faixas') with ordinality e(j, n) on n = f.ordem), 'faixas e cores do banco iguais às do protótipo');
+-- área: todo o setor A e metade do B
+select app.estatisticas_area(extensions.st_geomfromgeojson(pg_temp.quadra(-46.60000 + 25 / (111320 * cos(radians(-23.55))), -23.55, 150)::text)
+  ) as est \gset
+select pg_temp.ok((select (e->>'setores')::int = 2 and (e->>'pessoas')::numeric between 399 and 401 and (e->>'domicilios')::numeric between 139 and 141 from (select :'est'::jsonb e) x),
+  'raio/poligonal: cada setor entra pela fração da área (300 + metade de 200 pessoas)');
+select pg_temp.ok((select (e->>'renda_familiar_media_estimada')::numeric = 8807.45 and (e->>'cobertura_renda_pct')::numeric between 71.3 and 71.5
+  and (select (d->>'pct')::numeric from jsonb_array_elements(e->'distribuicao') d where (d->>'faixa')::int = 8) = 100 from (select :'est'::jsonb e) x),
+  'renda média só com os setores que têm renda, e a cobertura diz quanto ficou de fora');
+select pg_temp.ok((select (e->>'pessoas')::numeric between 145 and 152 from (select app.estatisticas_raio(-23.55, -46.60, 40) e) x), 'raio de 40 m no meio do setor A: π × 40² de 100 × 100 m, cerca de 150 das 300 pessoas');
+select pg_temp.ok((select count(*) = 2 and bool_and(geojson ? 'coordinates') from app.setores_no_retangulo(-46.61, -23.56, -46.59, -23.54, 15)), 'setores da tela para o mapa');
+select pg_temp.falha($$insert into app.metodologias_renda (versao, censo_ano, variavel_base, fator_familiar, fator_familiar_origem, pnad_ano_base, pnad_valor_base, pnad_ano_atual, pnad_valor_atual, pnad_fonte) values (2, 2022, 'V06004', 1.5, 'x', 2022, 1, 2025, 1, 'x')$$, 'só o carregamento escreve metodologia e setores');
+select pg_temp.como(:'diretor');
+
 \echo 'TODOS OS TESTES PASSARAM'
