@@ -214,7 +214,12 @@ erDiagram
 | `aprovacao_pendente` | na hora, quando é a vez | aprovador previsto (ou todos do nível) |
 | `aprovacao_decidida` | na hora | quem pediu |
 
-`lembretes`: um por item e antecedência (`dias_antes`, destinatário nulo = responsável do item). Nascem com o item pelos padrões de `tipos_notificacao.dias_antes_padrao`, e quem cadastra pode incluir ou tirar. `enviado_para` guarda a data já avisada: se a data do item mudar, o lembrete volta a valer. `app.rotina_diaria()` roda às 6h pelo pg_cron (agendada na migration quando a extensão existe).
+`lembretes`: um por item e antecedência (`dias_antes`, destinatário nulo = responsável do item). Nascem com o item pelos padrões de `tipos_notificacao.dias_antes_padrao`, e quem cadastra pode incluir ou tirar. `enviado_para` guarda a data já avisada: se a data do item mudar, o lembrete volta a valer. `app.rotina_diaria()` é a rotina das 6h (9h UTC). A migration só cria a extensão `pg_cron` com `if not exists`, quando o servidor a oferece. Não grava o agendamento nem altera a publicação `supabase_realtime`, porque isso mexe em configuração global de um banco que já tem outros schemas. Os dois comandos ficam para quem for ligar o sino:
+
+```sql
+alter publication supabase_realtime add table app.notificacoes;
+select cron.schedule('bkm-terrenos-rotina-diaria', '0 9 * * *', 'select app.rotina_diaria()');
+```
 
 ## 1. Terreno e cadastro do imóvel
 
@@ -658,23 +663,29 @@ erDiagram
 
 Coleta de empreendimentos de outras empresas (spec definitiva do Moisés, 24/out/2026). A fonte é `orulo_api`, `orulo_planilha`, `orulo_login` ou `manual`. O empreendimento é o da concorrência; a unidade, o preço vigente e a venda nascem da coleta. Cada unidade é gravada e lida sozinha.
 
+Tabelas e funções do monitor usam o prefixo `im_`, minúsculo e sem aspas. No Postgres, identificador sem aspas é gravado em minúsculo: `IM_coletas` e `im_coletas` são o mesmo nome `im_coletas`. Com aspas, `"IM_coletas"` seria outro objeto e todo acesso teria de citar esse nome. A migration escreve `app.im_coletas`.
+
+Tabelas: `im_config`, `im_tipos_unidade`, `im_coletas`, `im_ids_externos`, `im_empreendimento_estados`, `im_unidades`, `im_unidade_estados`, `im_vendas`, `im_sugestoes_vinculo`.
+
+Funções com grant: `im_abrir_coleta`, `im_importar`, `im_fechar_coleta`, `im_anotar_falha`, `im_falhar_coleta`, `im_confirmar_vinculo_unidade`, `im_salvar_config`, `im_salvar_tipo_unidade`, `im_norm_rotulo`, `im_similaridade_trigrama`, `im_distancia_m`. As internas usam `_im_` (`_im_passa_filtro`, `_im_importar_um`, `_im_desfazer`, `_im_pode` e as demais) e não têm grant. O trigger em `empresas` é `t_im` (`tg_empresa_im`). O caminho do bruto continua `{empresa_id}/mercado/{referencia}-{tipo}.json.gz`. `concorrentes`, `concorrencia_empreendimentos` e as colunas que a 0800 acrescentou neles ficam sem prefixo.
+
 ```mermaid
 erDiagram
-  empresas ||--|| mercado_config : configura
-  empresas ||--o{ mercado_tipos_unidade : classifica
-  empresas ||--o{ mercado_coletas : coleta
-  mercado_coletas ||--o{ mercado_empreendimento_estados : "situacao vigente"
-  mercado_coletas ||--o{ mercado_unidade_estados : "preco vigente"
-  concorrencia_empreendimentos ||--o{ mercado_empreendimento_estados : historico
-  concorrencia_empreendimentos ||--o{ mercado_unidades : tem
-  mercado_unidades ||--o{ mercado_unidade_estados : historico
-  mercado_unidades ||--o{ mercado_vendas : vende
-  mercado_coletas ||--o{ mercado_vendas : confirma
-  concorrencia_empreendimentos ||--o{ mercado_sugestoes_vinculo : "perto de um manual"
-  mercado_ids_externos }o--|| concorrencia_empreendimentos : "id da fonte"
-  mercado_ids_externos }o--|| mercado_unidades : "id da fonte"
+  empresas ||--|| im_config : configura
+  empresas ||--o{ im_tipos_unidade : classifica
+  empresas ||--o{ im_coletas : coleta
+  im_coletas ||--o{ im_empreendimento_estados : "situacao vigente"
+  im_coletas ||--o{ im_unidade_estados : "preco vigente"
+  concorrencia_empreendimentos ||--o{ im_empreendimento_estados : historico
+  concorrencia_empreendimentos ||--o{ im_unidades : tem
+  im_unidades ||--o{ im_unidade_estados : historico
+  im_unidades ||--o{ im_vendas : vende
+  im_coletas ||--o{ im_vendas : confirma
+  concorrencia_empreendimentos ||--o{ im_sugestoes_vinculo : "perto de um manual"
+  im_ids_externos }o--|| concorrencia_empreendimentos : "id da fonte"
+  im_ids_externos }o--|| im_unidades : "id da fonte"
 
-  mercado_config {
+  im_config {
     int meses_lancamento "padrao 6"
     int meses_recem_entregue "padrao 24"
     int dias_preco_lancamento "padrao 60"
@@ -682,7 +693,7 @@ erDiagram
     bool nr_conta_como_residencial "padrao true"
     uuid_array municipios "SP e SJC ao nascer"
   }
-  mercado_coletas {
+  im_coletas {
     uuid id PK
     text fonte
     text tipo "completa_mensal | lancamentos"
@@ -691,7 +702,7 @@ erDiagram
     text bruto_caminho "empresa/mercado/referencia-tipo.json.gz"
     text_array tipos_desconhecidos
   }
-  mercado_unidades {
+  im_unidades {
     uuid id PK
     text torre_norm "sem torre, bloco, edificio"
     text numero_norm
@@ -704,7 +715,7 @@ erDiagram
     bool preco_de_lancamento
     uuid vinculo_pendente_id
   }
-  mercado_vendas {
+  im_vendas {
     uuid id PK
     date vendida_de
     date vendida_ate
@@ -716,11 +727,11 @@ erDiagram
 ```
 
 - **Filtro em dois níveis.** O empreendimento entra se é vertical, finalidade residencial ou misto, município da config, com ao menos uma unidade residencial, e está em lançamento, breve lançamento ou obras — ou o lançamento cabe em `meses_lancamento`, ou está pronto com entrega dentro de `meses_recem_entregue`. Fora sempre: horizontal, unidade avulsa, sobrado, loteamento, industrial, galpão, usado, e empreendimento sem unidade residencial. Quem nunca passou não é gravado (`no_filtro` fica no estado de quem já passou um dia e saiu).
-- **Unidade:** todas as do empreendimento que entrou são gravadas, com `tipo_unidade` e `residencial`. O administrador completa `mercado_tipos_unidade`: apartamento, studio, cobertura, garden e duplex nascem residenciais; loja, sala, laje, vaga e depósito, não. Tipo desconhecido vira `nao_informado` e o texto da fonte vai para `mercado_coletas.tipos_desconhecidos`. Studio com "- NR" segue `nr_conta_como_residencial` (padrão true). `tipologia_fonte` guarda o texto da fonte e não entra no filtro nem na venda. Preço `0,1` é sentinela: gravado nulo, com a marca `preco_sentinela`. `preco_primeiro` e `preco_de_lancamento` ficam na unidade.
-- **Coleta.** Única por `(empresa_id, fonte, tipo, referencia)`. `bruto_caminho` é `{empresa_id}/mercado/{referencia}-{tipo}.json.gz`. Abrir a mesma chave desfaz o que aquela coleta gravou e recomeça. Cobertura e a mensal completa anterior são da **mesma fonte**: API, planilha e login são séries diferentes. Incompleta (cobertura abaixo do mínimo, contra `esperados` ou contra a mensal anterior, ou parada pedida pela fonte) não gera venda nem marca remoção. Remoção só na mensal completa, para unidade que sumiu de um empreendimento que veio nesta coleta. Coleta de lançamentos manda a lista e, só nos novos e em quem saiu de breve lançamento, as unidades. Sem a chave `unidades`, quem já passou pelo filtro mantém essa condição e o resto é recalculado; empreendimento novo sem unidades não entra. Não remove nem vende no fechamento. O segundo 401 encerra a rodada com `falhar_coleta_mercado` (`falhou`), sem venda.
+- **Unidade:** todas as do empreendimento que entrou são gravadas, com `tipo_unidade` e `residencial`. O administrador completa `im_tipos_unidade`: apartamento, studio, cobertura, garden e duplex nascem residenciais; loja, sala, laje, vaga e depósito, não. Tipo desconhecido vira `nao_informado` e o texto da fonte vai para `im_coletas.tipos_desconhecidos`. Studio com "- NR" segue `nr_conta_como_residencial` (padrão true). `tipologia_fonte` guarda o texto da fonte e não entra no filtro nem na venda. Preço `0,1` é sentinela: gravado nulo, com a marca `preco_sentinela`. `preco_primeiro` e `preco_de_lancamento` ficam na unidade.
+- **Coleta.** Única por `(empresa_id, fonte, tipo, referencia)`. `bruto_caminho` é `{empresa_id}/mercado/{referencia}-{tipo}.json.gz`. Abrir a mesma chave desfaz o que aquela coleta gravou e recomeça. Cobertura e a mensal completa anterior são da **mesma fonte**: API, planilha e login são séries diferentes. Incompleta (cobertura abaixo do mínimo, contra `esperados` ou contra a mensal anterior, ou parada pedida pela fonte) não gera venda nem marca remoção. Remoção só na mensal completa, para unidade que sumiu de um empreendimento que veio nesta coleta. Coleta de lançamentos manda a lista e, só nos novos e em quem saiu de breve lançamento, as unidades. Sem a chave `unidades`, quem já passou pelo filtro mantém essa condição e o resto é recalculado; empreendimento novo sem unidades não entra. Não remove nem vende no fechamento. O segundo 401 encerra a rodada com `im_falhar_coleta` (`falhou`), sem venda.
 - **Venda.** `vendida_de` é a última data em que a unidade estava disponível ou reservada; `vendida_ate` é a referência da mensal completa que confirma. A foto anterior é a última situação aberta por uma mensal completa da mesma fonte com referência até a mensal completa anterior: incompleta no meio muda o estado, mas não apaga a passagem. `ultimo_visto` é o preço não nulo mais recente. `antes_do_monitor` é a unidade vista já vendida, sem disponível ou reservada antes; o preço é a mediana do preço/m² das disponíveis residenciais do mesmo empreendimento, mesmos dormitórios e vagas, área até 3% diferente, vezes a área da unidade. Os 3% são desta regra da venda. Voltar a disponível ou reservada preenche `desfeita_coleta_id`.
-- **Vínculo.** No fechamento da mensal completa, unidade que sumiu e outra que apareceu com a mesma área, o mesmo andar e preço a até 5% ficam com `vinculo_pendente_id` e a antiga não é removida. `confirmar_vinculo_unidade(id, true)` funde na antiga e leva o id de fora; `false` fica com a nova e marca a antiga como removida.
-- **Escrita** só por `importar_mercado`, `fechar_coleta_mercado`, `anotar_falha_mercado`, `falhar_coleta_mercado` e `confirmar_vinculo_unidade` (`security definer`), administrador ou `service_role`. Configuração por `salvar_config_mercado` e `salvar_tipo_unidade_mercado`. Empresa nova nasce com a config e os tipos; São Paulo e São José dos Campos entram em `municipios`. O coletor (`tools/coletar`, ver `docs/coletar.md`) é quem chama essas funções; a estatística continua fora desta fase.
+- **Vínculo.** No fechamento da mensal completa, unidade que sumiu e outra que apareceu com a mesma área, o mesmo andar e preço a até 5% ficam com `vinculo_pendente_id` e a antiga não é removida. `im_confirmar_vinculo_unidade(id, true)` funde na antiga e leva o id de fora; `false` fica com a nova e marca a antiga como removida.
+- **Escrita** só por `im_importar`, `im_fechar_coleta`, `im_anotar_falha`, `im_falhar_coleta` e `im_confirmar_vinculo_unidade` (`security definer`), administrador ou `service_role`. Configuração por `im_salvar_config` e `im_salvar_tipo_unidade`. Empresa nova nasce com a config e os tipos; São Paulo e São José dos Campos entram em `municipios`. O coletor (`tools/coletar`, ver `docs/coletar.md`) é quem chama essas funções; a estatística continua fora desta fase.
 - **Leitura.** Nesta fase não há função de consulta nem vista. Quem lê usa as tabelas direto, pela API do Supabase, com a RLS de `app.minhas_empresas()`. Estoque, preço, velocidade, vendas do período e lançamentos ficam para uma fase futura.
 
 ## 3. Documentos
@@ -794,6 +805,6 @@ erDiagram
 | "Atrasada" é calculada (prazo vencido e status aberto) | `v_terrenos` |
 | Documento de checklist reaproveitado; versões nunca sobrescritas | `registrar_documento` |
 | Terreno nunca é apagado: arquiva com motivo, só sem negociação aberta | `arquivar_terreno` |
-| Monitor: empreendimento que nunca passou no filtro não entra; unidade entra sempre e só a residencial conta, uma a uma | `_mercado_passa_filtro`, `mercado_tipos_unidade`, `nr_conta_como_residencial` |
-| Monitor: venda e remoção só na mensal completa; a foto da passagem ignora a incompleta | `fechar_coleta_mercado` |
-| Monitor: escrita só pelas três RPCs | `importar_mercado`, `fechar_coleta_mercado`, `confirmar_vinculo_unidade` |
+| Monitor: empreendimento que nunca passou no filtro não entra; unidade entra sempre e só a residencial conta, uma a uma | `_im_passa_filtro`, `im_tipos_unidade`, `nr_conta_como_residencial` |
+| Monitor: venda e remoção só na mensal completa; a foto da passagem ignora a incompleta | `im_fechar_coleta` |
+| Monitor: escrita só pelas RPCs | `im_importar`, `im_fechar_coleta`, `im_anotar_falha`, `im_falhar_coleta`, `im_confirmar_vinculo_unidade` |

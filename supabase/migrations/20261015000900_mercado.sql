@@ -12,11 +12,11 @@
 --   completa_mensal ou lancamentos. bruto_caminho =
 --   {empresa}/mercado/{referencia}-{tipo}.json.gz. Rodar de novo a mesma
 --   chave desfaz o que aquela coleta gravou e recomeça.
--- * Venda, vínculo pendente e remoção nascem em fechar_coleta_mercado:
+-- * Venda, vínculo pendente e remoção nascem em im_fechar_coleta:
 --   a cobertura só é conhecida ali. A importação grava cadastro, preço e
 --   vigência das unidades que vieram. Incompleta não gera venda nem marca
 --   remoção, e não fecha a vigência de quem faltou. Parada da fonte (429/403)
---   força incompleta. Segundo 401 encerra com falhar_coleta_mercado (falhou).
+--   força incompleta. Segundo 401 encerra com im_falhar_coleta (falhou).
 -- * Lançamentos pode vir sem a chave unidades. Quem já passou herda a unidade
 --   residencial e o resto do filtro é recalculado. Novo sem lista não entra.
 -- * A mensal completa compara a situação da mensal completa anterior com
@@ -38,13 +38,23 @@
 -- * A foto da passagem de venda é a última situação gravada por uma mensal
 --   completa. Incompleta no meio não gera venda nem remoção, e não apaga
 --   a passagem vista na mensal seguinte.
+-- * Prefixo im_, minúsculo e sem aspas. No Postgres, identificador sem
+--   aspas é gravado em minúsculo: IM_coletas e im_coletas são o mesmo nome.
+--   Com aspas, "IM_coletas" seria outro objeto. Tabelas: im_config,
+--   im_tipos_unidade, im_coletas, im_ids_externos, im_empreendimento_estados,
+--   im_unidades, im_unidade_estados, im_vendas, im_sugestoes_vinculo.
+--   Funções públicas: im_abrir_coleta, im_importar, im_fechar_coleta,
+--   im_anotar_falha, im_falhar_coleta, im_confirmar_vinculo_unidade,
+--   im_salvar_config, im_salvar_tipo_unidade, im_norm_rotulo,
+--   im_similaridade_trigrama, im_distancia_m. Internas: _im_*.
+--   concorrencia_* e o caminho do bruto ({empresa}/mercado/...) não mudam.
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
 -- Funções de apoio
 -- ---------------------------------------------------------------------
 -- Maiúsculas, sem acento, sem as palavras TORRE, BLOCO, EDIFICIO e ED, sem espaço.
-create or replace function app.mercado_norm_rotulo(p text)
+create or replace function app.im_norm_rotulo(p text)
 returns text
 language sql immutable parallel safe set search_path = '' as $$
   select coalesce(nullif(regexp_replace(regexp_replace(upper(translate(coalesce(p, ''),
@@ -54,7 +64,7 @@ language sql immutable parallel safe set search_path = '' as $$
 $$;
 
 -- Jaccard dos trigramas, com dois espaços antes e um depois (a conta do pg_trgm).
-create or replace function app.similaridade_trigrama(a text, b text)
+create or replace function app.im_similaridade_trigrama(a text, b text)
 returns numeric
 language sql immutable set search_path = '' as $$
   with na as (select '  ' || lower(btrim(coalesce(a, ''))) || ' ' as s),
@@ -72,7 +82,7 @@ language sql immutable set search_path = '' as $$
   select case when (select c from uni) = 0 then 0 else round((select c from inter) / (select c from uni), 4) end
 $$;
 
-create or replace function app.mercado_distancia_m(lat1 float8, lng1 float8, lat2 float8, lng2 float8)
+create or replace function app.im_distancia_m(lat1 float8, lng1 float8, lat2 float8, lng2 float8)
 returns numeric
 language sql immutable parallel safe set search_path = '' as $$
   select (2 * 6371000 * asin(sqrt(
@@ -80,7 +90,7 @@ language sql immutable parallel safe set search_path = '' as $$
          + cos(radians(lat1)) * cos(radians(lat2)) * power(sin(radians(lng2 - lng1) / 2), 2))))::numeric
 $$;
 
-create or replace function app._mercado_pode(p_empresa uuid)
+create or replace function app._im_pode(p_empresa uuid)
 returns boolean
 language sql stable security definer set search_path = '' as $$
   select app.eh_administrador(p_empresa)
@@ -88,20 +98,20 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 -- Residencial sai do tipo cadastrado. Studio "- NR" obedece a config, não à linha do studio.
-create or replace function app._mercado_residencial(p_empresa uuid, p_codigo text, p_studio_nr boolean)
+create or replace function app._im_residencial(p_empresa uuid, p_codigo text, p_studio_nr boolean)
 returns boolean
 language plpgsql stable security definer set search_path = '' as $$
 begin
   if p_codigo is null or p_codigo = 'nao_informado' then return false; end if;
   if p_studio_nr then
-    return coalesce((select nr_conta_como_residencial from app.mercado_config where empresa_id = p_empresa), true);
+    return coalesce((select nr_conta_como_residencial from app.im_config where empresa_id = p_empresa), true);
   end if;
-  return coalesce((select residencial from app.mercado_tipos_unidade
+  return coalesce((select residencial from app.im_tipos_unidade
                    where empresa_id = p_empresa and codigo = p_codigo and ativo), false);
 end $$;
 
 -- Classifica o texto da fonte. Desconhecido vira nao_informado (fora das contas).
-create or replace function app._mercado_classificar_tipo(p_empresa uuid, p_tipo text)
+create or replace function app._im_classificar_tipo(p_empresa uuid, p_tipo text)
 returns table (codigo text, fonte text, studio_nr boolean, residencial boolean)
 language plpgsql stable security definer set search_path = '' as $$
 declare
@@ -120,7 +130,7 @@ begin
     v_codigo := 'studio';
     v_nr := true;
   else
-    select t.codigo into v_codigo from app.mercado_tipos_unidade t
+    select t.codigo into v_codigo from app.im_tipos_unidade t
      where t.empresa_id = p_empresa and t.ativo
        and t.codigo in (v_chave, v_esp, v)
      order by case when t.codigo = v_chave then 0 when t.codigo = v then 1 else 2 end
@@ -130,11 +140,11 @@ begin
   codigo := v_codigo;
   fonte := nullif(btrim(coalesce(p_tipo, '')), '');
   studio_nr := v_nr;
-  residencial := app._mercado_residencial(p_empresa, v_codigo, v_nr);
+  residencial := app._im_residencial(p_empresa, v_codigo, v_nr);
   return next;
 end $$;
 
-create or replace function app._mercado_passa_filtro(
+create or replace function app._im_passa_filtro(
   p_empresa uuid, p_tipo text, p_finalidade text, p_situacao text,
   p_lancamento date, p_entrega date, p_municipio uuid, p_referencia date,
   p_tem_lista boolean, p_tem_residencial boolean)
@@ -147,7 +157,7 @@ declare
 begin
   select meses_lancamento, meses_recem_entregue, municipios
     into v_meses_lanc, v_meses_rec, v_muns
-    from app.mercado_config where empresa_id = p_empresa;
+    from app.im_config where empresa_id = p_empresa;
   if not found then return false; end if;
   if p_situacao = 'usado' or p_tipo is distinct from 'vertical' then return false; end if;
   if p_finalidade not in ('residencial', 'misto') then return false; end if;
@@ -163,7 +173,7 @@ end $$;
 -- ---------------------------------------------------------------------
 -- Tabelas
 -- ---------------------------------------------------------------------
-create table app.mercado_config (
+create table app.im_config (
   id                         uuid primary key default gen_random_uuid(),
   empresa_id                 uuid not null unique references app.empresas(id),
   meses_recem_entregue       int not null default 24 check (meses_recem_entregue > 0),
@@ -175,7 +185,7 @@ create table app.mercado_config (
   municipios                 uuid[] not null default '{}'
 );
 
-create table app.mercado_tipos_unidade (
+create table app.im_tipos_unidade (
   id          uuid primary key default gen_random_uuid(),
   empresa_id  uuid not null references app.empresas(id),
   codigo      text not null check (codigo ~ '^[a-z0-9_]+$'),
@@ -184,7 +194,7 @@ create table app.mercado_tipos_unidade (
   unique (empresa_id, codigo)
 );
 
-create table app.mercado_coletas (
+create table app.im_coletas (
   id            uuid primary key default gen_random_uuid(),
   empresa_id    uuid not null references app.empresas(id),
   fonte         text not null check (fonte in ('orulo_api','orulo_planilha','orulo_login','manual')),
@@ -204,11 +214,11 @@ create table app.mercado_coletas (
 );
 
 alter table app.concorrencia_empreendimentos
-  add constraint concorrencia_emp_primeira_coleta_fk foreign key (primeira_coleta_id) references app.mercado_coletas(id),
-  add constraint concorrencia_emp_ultima_coleta_fk foreign key (ultima_coleta_id) references app.mercado_coletas(id);
+  add constraint concorrencia_emp_primeira_coleta_fk foreign key (primeira_coleta_id) references app.im_coletas(id),
+  add constraint concorrencia_emp_ultima_coleta_fk foreign key (ultima_coleta_id) references app.im_coletas(id);
 
 -- Id de fora, por fonte. A unidade do Órulo logado não tem id: a linha não é criada e o casamento é torre + número.
-create table app.mercado_ids_externos (
+create table app.im_ids_externos (
   id          uuid primary key default gen_random_uuid(),
   empresa_id  uuid not null references app.empresas(id),
   entidade    text not null check (entidade in ('concorrente','empreendimento','unidade')),
@@ -219,12 +229,12 @@ create table app.mercado_ids_externos (
   unique (empresa_id, fonte, entidade, entidade_id)
 );
 
-create table app.mercado_empreendimento_estados (
+create table app.im_empreendimento_estados (
   id                   uuid primary key default gen_random_uuid(),
   empresa_id           uuid not null references app.empresas(id),
   empreendimento_id    uuid not null references app.concorrencia_empreendimentos(id) on delete cascade,
-  desde_coleta_id      uuid not null references app.mercado_coletas(id),
-  ate_coleta_id        uuid references app.mercado_coletas(id),
+  desde_coleta_id      uuid not null references app.im_coletas(id),
+  ate_coleta_id        uuid references app.im_coletas(id),
   situacao             text not null check (situacao in ('lancamento','breve_lancamento','em_obras','pronto','usado','nao_informado')),
   data_lancamento      date,
   previsao_entrega     date,
@@ -234,10 +244,10 @@ create table app.mercado_empreendimento_estados (
   no_filtro            boolean not null,
   marcas               text[] not null default '{}'
 );
-create unique index mercado_emp_estado_vigente on app.mercado_empreendimento_estados (empreendimento_id) where ate_coleta_id is null;
-create index on app.mercado_empreendimento_estados (desde_coleta_id);
+create unique index im_emp_estado_vigente on app.im_empreendimento_estados (empreendimento_id) where ate_coleta_id is null;
+create index on app.im_empreendimento_estados (desde_coleta_id);
 
-create table app.mercado_unidades (
+create table app.im_unidades (
   id                  uuid primary key default gen_random_uuid(),
   empresa_id          uuid not null references app.empresas(id),
   empreendimento_id   uuid not null references app.concorrencia_empreendimentos(id) on delete cascade,
@@ -258,54 +268,54 @@ create table app.mercado_unidades (
   preco_primeiro      numeric check (preco_primeiro is null or preco_primeiro > 0),
   preco_primeiro_em   date,
   preco_de_lancamento boolean not null default false,
-  primeira_coleta_id  uuid not null references app.mercado_coletas(id),
-  ultima_coleta_id    uuid references app.mercado_coletas(id),
-  removida_coleta_id  uuid references app.mercado_coletas(id),
-  vinculo_pendente_id uuid references app.mercado_unidades(id) on delete set null,
+  primeira_coleta_id  uuid not null references app.im_coletas(id),
+  ultima_coleta_id    uuid references app.im_coletas(id),
+  removida_coleta_id  uuid references app.im_coletas(id),
+  vinculo_pendente_id uuid references app.im_unidades(id) on delete set null,
   marcas              text[] not null default '{}',
   unique (empreendimento_id, torre_norm, numero_norm)
 );
-create index on app.mercado_unidades (empresa_id);
-create index on app.mercado_unidades (ultima_coleta_id);
+create index on app.im_unidades (empresa_id);
+create index on app.im_unidades (ultima_coleta_id);
 
-create table app.mercado_unidade_estados (
+create table app.im_unidade_estados (
   id               uuid primary key default gen_random_uuid(),
   empresa_id       uuid not null references app.empresas(id),
-  unidade_id       uuid not null references app.mercado_unidades(id) on delete cascade,
-  desde_coleta_id  uuid not null references app.mercado_coletas(id),
-  ate_coleta_id    uuid references app.mercado_coletas(id),
+  unidade_id       uuid not null references app.im_unidades(id) on delete cascade,
+  desde_coleta_id  uuid not null references app.im_coletas(id),
+  ate_coleta_id    uuid references app.im_coletas(id),
   situacao         text not null check (situacao in ('disponivel','reservada','vendida','indisponivel','nao_informado')),
   preco            numeric check (preco is null or preco > 0),
   preco_original   numeric check (preco_original is null or preco_original > 0),
   marcas           text[] not null default '{}'
 );
-create unique index mercado_un_estado_vigente on app.mercado_unidade_estados (unidade_id) where ate_coleta_id is null;
-create index on app.mercado_unidade_estados (desde_coleta_id);
+create unique index im_un_estado_vigente on app.im_unidade_estados (unidade_id) where ate_coleta_id is null;
+create index on app.im_unidade_estados (desde_coleta_id);
 
-create table app.mercado_vendas (
+create table app.im_vendas (
   id                 uuid primary key default gen_random_uuid(),
   empresa_id         uuid not null references app.empresas(id),
-  unidade_id         uuid not null references app.mercado_unidades(id) on delete cascade,
-  coleta_id          uuid not null references app.mercado_coletas(id),
+  unidade_id         uuid not null references app.im_unidades(id) on delete cascade,
+  coleta_id          uuid not null references app.im_coletas(id),
   vendida_de         date not null,
   vendida_ate        date not null,
   preco              numeric check (preco is null or preco > 0),
   origem_preco       text not null check (origem_preco in ('ultimo_visto','estimado')),
   antes_do_monitor   boolean not null default false,
-  desfeita_coleta_id uuid references app.mercado_coletas(id)
+  desfeita_coleta_id uuid references app.im_coletas(id)
 );
-create unique index mercado_vendas_aberta on app.mercado_vendas (unidade_id) where desfeita_coleta_id is null;
-create index on app.mercado_vendas (coleta_id);
+create unique index im_vendas_aberta on app.im_vendas (unidade_id) where desfeita_coleta_id is null;
+create index on app.im_vendas (coleta_id);
 
 -- Empreendimento manual perto e com nome parecido: sugestão, sem vínculo automático.
-create table app.mercado_sugestoes_vinculo (
+create table app.im_sugestoes_vinculo (
   id                 uuid primary key default gen_random_uuid(),
   empresa_id         uuid not null references app.empresas(id),
   empreendimento_id  uuid not null references app.concorrencia_empreendimentos(id) on delete cascade,
   manual_id          uuid not null references app.concorrencia_empreendimentos(id) on delete cascade,
   similaridade       numeric not null,
   distancia_m        numeric not null,
-  coleta_id          uuid not null references app.mercado_coletas(id),
+  coleta_id          uuid not null references app.im_coletas(id),
   unique (empreendimento_id, manual_id)
 );
 
@@ -316,9 +326,9 @@ do $$
 declare t text;
 begin
   foreach t in array array[
-    'mercado_config','mercado_tipos_unidade','mercado_coletas','mercado_ids_externos',
-    'mercado_empreendimento_estados','mercado_unidades','mercado_unidade_estados',
-    'mercado_vendas','mercado_sugestoes_vinculo']
+    'im_config','im_tipos_unidade','im_coletas','im_ids_externos',
+    'im_empreendimento_estados','im_unidades','im_unidade_estados',
+    'im_vendas','im_sugestoes_vinculo']
   loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
@@ -330,55 +340,55 @@ end $$;
 -- ---------------------------------------------------------------------
 -- Configuração (administrador)
 -- ---------------------------------------------------------------------
-create or replace function app._mercado_semear(p_empresa uuid)
+create or replace function app._im_semear(p_empresa uuid)
 returns void
 language plpgsql security definer set search_path = '' as $$
 begin
-  insert into app.mercado_config (empresa_id, municipios)
+  insert into app.im_config (empresa_id, municipios)
   select p_empresa, coalesce((select array_agg(id) from app.municipios where codigo_ibge in ('3550308','3549904')), '{}')
-  where not exists (select 1 from app.mercado_config where empresa_id = p_empresa);
+  where not exists (select 1 from app.im_config where empresa_id = p_empresa);
 
-  insert into app.mercado_tipos_unidade (empresa_id, codigo, residencial)
+  insert into app.im_tipos_unidade (empresa_id, codigo, residencial)
   select p_empresa, t.codigo, t.residencial
   from (values
     ('apartamento', true), ('studio', true), ('cobertura', true), ('garden', true), ('duplex', true),
     ('loja', false), ('sala', false), ('laje', false), ('vaga', false), ('deposito', false)
   ) as t(codigo, residencial)
   where not exists (
-    select 1 from app.mercado_tipos_unidade x where x.empresa_id = p_empresa and x.codigo = t.codigo);
+    select 1 from app.im_tipos_unidade x where x.empresa_id = p_empresa and x.codigo = t.codigo);
 end $$;
 
-create or replace function app.tg_empresa_mercado()
+create or replace function app.tg_empresa_im()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin
-  perform app._mercado_semear(new.id);
+  perform app._im_semear(new.id);
   return new;
 end $$;
-create trigger t_mercado after insert on app.empresas for each row execute function app.tg_empresa_mercado();
+create trigger t_im after insert on app.empresas for each row execute function app.tg_empresa_im();
 
 -- Empresas que já existirem quando esta migration rodar (nenhuma, enquanto não houver banco).
-select app._mercado_semear(id) from app.empresas;
+select app._im_semear(id) from app.empresas;
 
-create or replace function app._mercado_recalcular_residencial(p_empresa uuid)
+create or replace function app._im_recalcular_residencial(p_empresa uuid)
 returns void
 language plpgsql security definer set search_path = '' as $$
 begin
-  update app.mercado_unidades u
-     set residencial = app._mercado_residencial(u.empresa_id, u.tipo_unidade, u.studio_nr)
+  update app.im_unidades u
+     set residencial = app._im_residencial(u.empresa_id, u.tipo_unidade, u.studio_nr)
    where u.empresa_id = p_empresa
-     and u.residencial is distinct from app._mercado_residencial(u.empresa_id, u.tipo_unidade, u.studio_nr);
+     and u.residencial is distinct from app._im_residencial(u.empresa_id, u.tipo_unidade, u.studio_nr);
 end $$;
 
-create or replace function app.salvar_config_mercado(p_empresa uuid, p_dados jsonb)
+create or replace function app.im_salvar_config(p_empresa uuid, p_dados jsonb)
 returns void
 language plpgsql security definer set search_path = '' as $$
-declare c app.mercado_config;
+declare c app.im_config;
 begin
   if auth.uid() is null or not app.eh_administrador(p_empresa) then
     raise exception 'Só o administrador muda a configuração' using errcode = '42501';
   end if;
-  perform app._mercado_semear(p_empresa);
-  update app.mercado_config set
+  perform app._im_semear(p_empresa);
+  update app.im_config set
     meses_recem_entregue = coalesce((p_dados->>'meses_recem_entregue')::int, meses_recem_entregue),
     meses_lancamento = coalesce((p_dados->>'meses_lancamento')::int, meses_lancamento),
     dias_preco_lancamento = coalesce((p_dados->>'dias_preco_lancamento')::int, dias_preco_lancamento),
@@ -390,10 +400,10 @@ begin
   where empresa_id = p_empresa
   returning * into c;
   if p_dados ? 'nr_conta_como_residencial' then
-    perform app._mercado_recalcular_residencial(p_empresa);
+    perform app._im_recalcular_residencial(p_empresa);
   end if;
   if p_dados ? 'dias_preco_lancamento' then
-    update app.mercado_unidades u
+    update app.im_unidades u
        set preco_de_lancamento = u.preco_primeiro_em <= e.data_lancamento + c.dias_preco_lancamento
       from app.concorrencia_empreendimentos e
      where u.empreendimento_id = e.id and u.empresa_id = p_empresa
@@ -402,7 +412,7 @@ begin
   end if;
 end $$;
 
-create or replace function app.salvar_tipo_unidade_mercado(p_empresa uuid, p_codigo text, p_residencial boolean, p_ativo boolean default true)
+create or replace function app.im_salvar_tipo_unidade(p_empresa uuid, p_codigo text, p_residencial boolean, p_ativo boolean default true)
 returns void
 language plpgsql security definer set search_path = '' as $$
 begin
@@ -412,101 +422,101 @@ begin
   if p_codigo is null or p_codigo !~ '^[a-z0-9_]+$' then
     raise exception 'Código de tipo inválido' using errcode = '23514';
   end if;
-  insert into app.mercado_tipos_unidade (empresa_id, codigo, residencial, ativo)
+  insert into app.im_tipos_unidade (empresa_id, codigo, residencial, ativo)
   values (p_empresa, p_codigo, p_residencial, coalesce(p_ativo, true))
   on conflict (empresa_id, codigo) do update
     set residencial = excluded.residencial, ativo = excluded.ativo;
-  perform app._mercado_recalcular_residencial(p_empresa);
+  perform app._im_recalcular_residencial(p_empresa);
 end $$;
 -- ---------------------------------------------------------------------
 -- Coleta: abrir (substitui a da mesma chave), desfazer, importar, fechar
 -- ---------------------------------------------------------------------
-create or replace function app._mercado_desfazer(p_coleta uuid)
+create or replace function app._im_desfazer(p_coleta uuid)
 returns void
 language plpgsql security definer set search_path = '' as $$
 declare
   v_ref date;
   v_emp uuid;
 begin
-  select referencia, empresa_id into v_ref, v_emp from app.mercado_coletas where id = p_coleta;
+  select referencia, empresa_id into v_ref, v_emp from app.im_coletas where id = p_coleta;
   if not found then return; end if;
 
   if exists (
-    select 1 from app.mercado_coletas o
-    join app.mercado_coletas c on c.id = p_coleta
+    select 1 from app.im_coletas o
+    join app.im_coletas c on c.id = p_coleta
     where o.empresa_id = c.empresa_id and o.fonte = c.fonte and o.tipo = c.tipo
       and o.referencia > c.referencia)
   then
     raise exception 'Já existe coleta desta fonte e tipo depois desta data' using errcode = '23514';
   end if;
 
-  update app.mercado_vendas set desfeita_coleta_id = null where desfeita_coleta_id = p_coleta;
+  update app.im_vendas set desfeita_coleta_id = null where desfeita_coleta_id = p_coleta;
 
-  delete from app.mercado_ids_externos
+  delete from app.im_ids_externos
    where entidade = 'unidade'
-     and entidade_id in (select id from app.mercado_unidades where primeira_coleta_id = p_coleta);
-  delete from app.mercado_ids_externos
+     and entidade_id in (select id from app.im_unidades where primeira_coleta_id = p_coleta);
+  delete from app.im_ids_externos
    where entidade = 'empreendimento'
      and entidade_id in (select id from app.concorrencia_empreendimentos where primeira_coleta_id = p_coleta);
 
-  delete from app.mercado_sugestoes_vinculo where coleta_id = p_coleta;
+  delete from app.im_sugestoes_vinculo where coleta_id = p_coleta;
 
   -- Unidade nascida nesta coleta (mesmo de empreendimento que já existia) e o empreendimento nascido aqui.
-  delete from app.mercado_unidades where primeira_coleta_id = p_coleta;
+  delete from app.im_unidades where primeira_coleta_id = p_coleta;
   delete from app.concorrencia_empreendimentos where primeira_coleta_id = p_coleta;
 
-  delete from app.mercado_unidade_estados where desde_coleta_id = p_coleta;
-  update app.mercado_unidade_estados set ate_coleta_id = null where ate_coleta_id = p_coleta;
-  delete from app.mercado_empreendimento_estados where desde_coleta_id = p_coleta;
-  update app.mercado_empreendimento_estados set ate_coleta_id = null where ate_coleta_id = p_coleta;
+  delete from app.im_unidade_estados where desde_coleta_id = p_coleta;
+  update app.im_unidade_estados set ate_coleta_id = null where ate_coleta_id = p_coleta;
+  delete from app.im_empreendimento_estados where desde_coleta_id = p_coleta;
+  update app.im_empreendimento_estados set ate_coleta_id = null where ate_coleta_id = p_coleta;
 
-  delete from app.mercado_vendas where coleta_id = p_coleta;
+  delete from app.im_vendas where coleta_id = p_coleta;
 
-  update app.mercado_unidades set removida_coleta_id = null where removida_coleta_id = p_coleta;
+  update app.im_unidades set removida_coleta_id = null where removida_coleta_id = p_coleta;
 
-  update app.mercado_unidades u set ultima_coleta_id = s.desde_coleta_id
+  update app.im_unidades u set ultima_coleta_id = s.desde_coleta_id
     from (
       select distinct on (e.unidade_id) e.unidade_id, e.desde_coleta_id
-      from app.mercado_unidade_estados e
-      join app.mercado_coletas c on c.id = e.desde_coleta_id
+      from app.im_unidade_estados e
+      join app.im_coletas c on c.id = e.desde_coleta_id
       order by e.unidade_id, c.referencia desc, e.id desc
     ) s
    where u.id = s.unidade_id and u.ultima_coleta_id = p_coleta;
 
-  update app.mercado_unidades u
+  update app.im_unidades u
      set preco_primeiro = null, preco_primeiro_em = null, preco_de_lancamento = false
    where u.empresa_id = v_emp and u.preco_primeiro_em = v_ref
-     and not exists (select 1 from app.mercado_unidade_estados e where e.unidade_id = u.id and e.preco is not null);
+     and not exists (select 1 from app.im_unidade_estados e where e.unidade_id = u.id and e.preco is not null);
 
-  update app.mercado_unidades u
+  update app.im_unidades u
      set preco_primeiro = x.preco, preco_primeiro_em = x.referencia
     from (
       select distinct on (e.unidade_id) e.unidade_id, e.preco, c.referencia
-      from app.mercado_unidade_estados e
-      join app.mercado_coletas c on c.id = e.desde_coleta_id
+      from app.im_unidade_estados e
+      join app.im_coletas c on c.id = e.desde_coleta_id
       where e.preco is not null and e.empresa_id = v_emp
       order by e.unidade_id, c.referencia, e.id
     ) x
    where u.id = x.unidade_id and u.empresa_id = v_emp and u.preco_primeiro_em = v_ref;
 
-  update app.mercado_unidades u
+  update app.im_unidades u
      set preco_de_lancamento = (e.data_lancamento is not null
             and u.preco_primeiro_em <= e.data_lancamento + cfg.dias_preco_lancamento)
     from app.concorrencia_empreendimentos e
-    join app.mercado_config cfg on cfg.empresa_id = e.empresa_id
+    join app.im_config cfg on cfg.empresa_id = e.empresa_id
    where u.empreendimento_id = e.id and u.empresa_id = v_emp and u.preco_primeiro_em = v_ref and u.preco_primeiro is not null;
 
   update app.concorrencia_empreendimentos e set ultima_coleta_id = s.desde_coleta_id
     from (
       select distinct on (st.empreendimento_id) st.empreendimento_id, st.desde_coleta_id
-      from app.mercado_empreendimento_estados st
-      join app.mercado_coletas c on c.id = st.desde_coleta_id
+      from app.im_empreendimento_estados st
+      join app.im_coletas c on c.id = st.desde_coleta_id
       order by st.empreendimento_id, c.referencia desc, st.id desc
     ) s
    where e.id = s.empreendimento_id and e.ultima_coleta_id = p_coleta;
 end $$;
 
-create or replace function app.abrir_coleta_mercado(
+create or replace function app.im_abrir_coleta(
   p_empresa uuid, p_fonte text, p_tipo text, p_referencia date,
   p_esperados int default null, p_bruto_caminho text default null)
 returns uuid
@@ -515,7 +525,7 @@ declare
   v_id uuid;
   v_caminho text;
 begin
-  if not app._mercado_pode(p_empresa) then
+  if not app._im_pode(p_empresa) then
     raise exception 'Só o administrador abre a coleta do mercado' using errcode = '42501';
   end if;
   if p_fonte not in ('orulo_api','orulo_planilha','orulo_login','manual') then
@@ -527,32 +537,32 @@ begin
   if p_referencia is null then
     raise exception 'A coleta precisa da data de referência' using errcode = '23514';
   end if;
-  perform app._mercado_semear(p_empresa);
+  perform app._im_semear(p_empresa);
   v_caminho := coalesce(p_bruto_caminho,
     p_empresa::text || '/mercado/' || to_char(p_referencia, 'YYYY-MM-DD') || '-' || p_tipo || '.json.gz');
 
-  select id into v_id from app.mercado_coletas
+  select id into v_id from app.im_coletas
    where empresa_id = p_empresa and fonte = p_fonte and tipo = p_tipo and referencia = p_referencia;
   if found then
-    perform app._mercado_desfazer(v_id);
-    update app.mercado_coletas set
+    perform app._im_desfazer(v_id);
+    update app.im_coletas set
       situacao = 'rodando', iniciada_em = clock_timestamp(), concluida_em = null,
       esperados = p_esperados, coletados = 0, unidades = 0,
       falhas = '[]', tipos_desconhecidos = '{}', bruto_caminho = v_caminho
     where id = v_id;
   else
-    insert into app.mercado_coletas (empresa_id, fonte, tipo, referencia, esperados, bruto_caminho)
+    insert into app.im_coletas (empresa_id, fonte, tipo, referencia, esperados, bruto_caminho)
     values (p_empresa, p_fonte, p_tipo, p_referencia, p_esperados, v_caminho)
     returning id into v_id;
   end if;
   return v_id;
 end $$;
 
-create or replace function app._mercado_falha(p_coleta uuid, p_id text, p_motivo text, p_detalhe text)
+create or replace function app._im_falha(p_coleta uuid, p_id text, p_motivo text, p_detalhe text)
 returns void
 language plpgsql security definer set search_path = '' as $$
 begin
-  update app.mercado_coletas c
+  update app.im_coletas c
      set falhas = c.falhas || jsonb_build_array(jsonb_build_object(
            'id_externo', coalesce(p_id, ''), 'motivo', p_motivo, 'detalhe', p_detalhe))
    where c.id = p_coleta
@@ -561,25 +571,25 @@ begin
         where e->>'id_externo' = coalesce(p_id, '') and e->>'motivo' = p_motivo);
 end $$;
 
-create or replace function app._mercado_num(p jsonb, p_chave text)
+create or replace function app._im_num(p jsonb, p_chave text)
 returns numeric
 language sql immutable set search_path = '' as $$
   select case when p->>p_chave is null or btrim(p->>p_chave) = '' then null else (p->>p_chave)::numeric end
 $$;
 
-create or replace function app._mercado_data(p jsonb, p_chave text)
+create or replace function app._im_data(p jsonb, p_chave text)
 returns date
 language sql immutable set search_path = '' as $$
   select case when p->>p_chave is null or btrim(p->>p_chave) = '' then null else (p->>p_chave)::date end
 $$;
 
--- Um empreendimento da carga. O bloco de exceção de importar_mercado desfaz este item.
-create or replace function app._mercado_importar_um(p_coleta uuid, p jsonb)
+-- Um empreendimento da carga. O bloco de exceção de im_importar desfaz este item.
+create or replace function app._im_importar_um(p_coleta uuid, p jsonb)
 returns void
 language plpgsql security definer set search_path = '' as $$
 declare
-  col app.mercado_coletas;
-  cfg app.mercado_config;
+  col app.im_coletas;
+  cfg app.im_config;
   v_inc jsonb := coalesce(p->'incorporadora', '{}');
   v_fonte_id text := nullif(btrim(coalesce(p->>'id_externo', '')), '');
   v_inc_id text := nullif(btrim(coalesce(v_inc->>'id_externo', '')), '');
@@ -619,8 +629,8 @@ declare
   r record;
   v_unidades_vistas int := 0;
 begin
-  select * into col from app.mercado_coletas where id = p_coleta;
-  select * into cfg from app.mercado_config where empresa_id = col.empresa_id;
+  select * into col from app.im_coletas where id = p_coleta;
+  select * into cfg from app.im_config where empresa_id = col.empresa_id;
 
   v_cnpj := regexp_replace(coalesce(v_inc->>'cnpj', ''), '\D', '', 'g');
   if length(v_cnpj) <> 14 then v_cnpj := null; end if;
@@ -640,9 +650,9 @@ begin
   v_prog := coalesce(nullif(btrim(p->>'programa_social'), ''), 'nao_informado');
   if v_prog not in ('sim','nao','nao_informado') then v_prog := 'nao_informado'; end if;
 
-  v_lanc := app._mercado_data(p, 'data_lancamento');
-  v_ent := app._mercado_data(p, 'previsao_entrega');
-  v_tab := app._mercado_data(p, 'tabela_atualizada_em');
+  v_lanc := app._im_data(p, 'data_lancamento');
+  v_ent := app._im_data(p, 'previsao_entrega');
+  v_tab := app._im_data(p, 'tabela_atualizada_em');
   v_lat := (p->>'latitude')::float8;
   v_lng := (p->>'longitude')::float8;
   if v_lat is null or v_lng is null then
@@ -662,38 +672,38 @@ begin
   v_tem_lista := p ? 'unidades' and jsonb_typeof(p->'unidades') = 'array';
   if v_tem_lista then
     for u in select value from jsonb_array_elements(p->'unidades') loop
-      select * into cls from app._mercado_classificar_tipo(col.empresa_id, u->>'tipo_unidade');
+      select * into cls from app._im_classificar_tipo(col.empresa_id, u->>'tipo_unidade');
       if cls.residencial then v_tem_res := true; end if;
     end loop;
   end if;
 
   -- Casa o empreendimento por id de fora antes do filtro, para saber se já passou um dia.
   if v_fonte_id is not null then
-    select entidade_id into v_emp from app.mercado_ids_externos
+    select entidade_id into v_emp from app.im_ids_externos
      where empresa_id = col.empresa_id and fonte = col.fonte and entidade = 'empreendimento' and id_externo = v_fonte_id;
   end if;
 
   v_ja := v_emp is not null and exists (
-    select 1 from app.mercado_empreendimento_estados s where s.empreendimento_id = v_emp and s.no_filtro);
+    select 1 from app.im_empreendimento_estados s where s.empreendimento_id = v_emp and s.no_filtro);
   -- Sem a chave unidades (coleta de lançamentos, só a lista): quem já passou
   -- herda "tem unidade residencial" e o resto do filtro é recalculado.
   -- Empreendimento novo sem lista não entra. Lista presente, mesmo vazia,
   -- continua valendo como "sem unidade residencial".
   if not v_tem_lista and v_ja then
-    v_passa := app._mercado_passa_filtro(col.empresa_id, v_tipo, v_fin, v_sit, v_lanc, v_ent, v_mun, col.referencia, true, true);
+    v_passa := app._im_passa_filtro(col.empresa_id, v_tipo, v_fin, v_sit, v_lanc, v_ent, v_mun, col.referencia, true, true);
   elsif not v_tem_lista then
     v_passa := false;
   else
-    v_passa := app._mercado_passa_filtro(col.empresa_id, v_tipo, v_fin, v_sit, v_lanc, v_ent, v_mun, col.referencia, true, v_tem_res);
+    v_passa := app._im_passa_filtro(col.empresa_id, v_tipo, v_fin, v_sit, v_lanc, v_ent, v_mun, col.referencia, true, v_tem_res);
   end if;
   if not v_passa and not v_ja then
-    perform app._mercado_falha(p_coleta, v_fonte_id, 'fora_do_filtro', coalesce(p->>'nome', ''));
+    perform app._im_falha(p_coleta, v_fonte_id, 'fora_do_filtro', coalesce(p->>'nome', ''));
     return;
   end if;
 
   -- Incorporadora: id de fora, senão CNPJ, senão nome normalizado.
   if v_inc_id is not null then
-    select entidade_id into v_conc from app.mercado_ids_externos
+    select entidade_id into v_conc from app.im_ids_externos
      where empresa_id = col.empresa_id and fonte = col.fonte and entidade = 'concorrente' and id_externo = v_inc_id;
   end if;
   if v_conc is null and v_cnpj is not null then
@@ -717,10 +727,10 @@ begin
     end;
   end if;
   if v_inc_id is not null and not exists (
-    select 1 from app.mercado_ids_externos
+    select 1 from app.im_ids_externos
      where empresa_id = col.empresa_id and fonte = col.fonte and entidade = 'concorrente' and entidade_id = v_conc)
   then
-    insert into app.mercado_ids_externos (empresa_id, entidade, entidade_id, fonte, id_externo)
+    insert into app.im_ids_externos (empresa_id, entidade, entidade_id, fonte, id_externo)
     values (col.empresa_id, 'concorrente', v_conc, col.fonte, v_inc_id)
     on conflict do nothing;
   end if;
@@ -737,17 +747,17 @@ begin
       'importado', nullif(btrim(p->>'link_fonte'), ''), p_coleta, p_coleta)
     returning id into v_emp;
     if v_fonte_id is not null then
-      insert into app.mercado_ids_externos (empresa_id, entidade, entidade_id, fonte, id_externo)
+      insert into app.im_ids_externos (empresa_id, entidade, entidade_id, fonte, id_externo)
       values (col.empresa_id, 'empreendimento', v_emp, col.fonte, v_fonte_id);
     end if;
-    insert into app.mercado_sugestoes_vinculo (empresa_id, empreendimento_id, manual_id, similaridade, distancia_m, coleta_id)
-    select col.empresa_id, v_emp, m.id, app.similaridade_trigrama(m.nome, p->>'nome'),
-           round(app.mercado_distancia_m(m.latitude, m.longitude, v_lat, v_lng), 1), p_coleta
+    insert into app.im_sugestoes_vinculo (empresa_id, empreendimento_id, manual_id, similaridade, distancia_m, coleta_id)
+    select col.empresa_id, v_emp, m.id, app.im_similaridade_trigrama(m.nome, p->>'nome'),
+           round(app.im_distancia_m(m.latitude, m.longitude, v_lat, v_lng), 1), p_coleta
       from app.concorrencia_empreendimentos m
      where m.empresa_id = col.empresa_id and m.origem = 'manual' and m.ativo and m.id <> v_emp
-       and app.mercado_distancia_m(m.latitude, m.longitude, v_lat, v_lng) <= 150
-       and app.similaridade_trigrama(m.nome, p->>'nome') >= 0.5;
-    insert into app.mercado_empreendimento_estados (
+       and app.im_distancia_m(m.latitude, m.longitude, v_lat, v_lng) <= 150
+       and app.im_similaridade_trigrama(m.nome, p->>'nome') >= 0.5;
+    insert into app.im_empreendimento_estados (
       empresa_id, empreendimento_id, desde_coleta_id, situacao, data_lancamento, previsao_entrega,
       unidades_informadas, estoque_informado, tabela_atualizada_em, no_filtro, marcas)
     values (col.empresa_id, v_emp, p_coleta, v_sit, v_lanc, v_ent, v_unid, v_est, v_tab, v_passa, v_marcas);
@@ -777,24 +787,24 @@ begin
       update app.concorrencia_empreendimentos set ultima_coleta_id = p_coleta where id = v_emp;
     end if;
 
-    select id, desde_coleta_id into v_estado, v_desde from app.mercado_empreendimento_estados
+    select id, desde_coleta_id into v_estado, v_desde from app.im_empreendimento_estados
      where empreendimento_id = v_emp and ate_coleta_id is null;
     if v_desde = p_coleta then
-      update app.mercado_empreendimento_estados set
+      update app.im_empreendimento_estados set
         situacao = v_sit, data_lancamento = v_lanc, previsao_entrega = v_ent,
         unidades_informadas = v_unid, estoque_informado = v_est, tabela_atualizada_em = v_tab,
         no_filtro = v_passa, marcas = v_marcas
       where id = v_estado;
     elsif v_estado is null or exists (
-      select 1 from app.mercado_empreendimento_estados s
+      select 1 from app.im_empreendimento_estados s
        where s.id = v_estado and (
          s.situacao is distinct from v_sit or s.data_lancamento is distinct from v_lanc
          or s.previsao_entrega is distinct from v_ent or s.unidades_informadas is distinct from v_unid
          or s.estoque_informado is distinct from v_est or s.tabela_atualizada_em is distinct from v_tab
          or s.no_filtro is distinct from v_passa or s.marcas is distinct from v_marcas))
     then
-      update app.mercado_empreendimento_estados set ate_coleta_id = p_coleta where id = v_estado;
-      insert into app.mercado_empreendimento_estados (
+      update app.im_empreendimento_estados set ate_coleta_id = p_coleta where id = v_estado;
+      insert into app.im_empreendimento_estados (
         empresa_id, empreendimento_id, desde_coleta_id, situacao, data_lancamento, previsao_entrega,
         unidades_informadas, estoque_informado, tabela_atualizada_em, no_filtro, marcas)
       values (col.empresa_id, v_emp, p_coleta, v_sit, v_lanc, v_ent, v_unid, v_est, v_tab, v_passa, v_marcas);
@@ -806,11 +816,11 @@ begin
   end if;
 
   for u in select value from jsonb_array_elements(p->'unidades') loop
-    select * into cls from app._mercado_classificar_tipo(col.empresa_id, u->>'tipo_unidade');
-    v_norm_torre := app.mercado_norm_rotulo(u->>'torre');
-    v_norm_num := app.mercado_norm_rotulo(u->>'numero');
-    v_preco := app._mercado_num(u, 'preco');
-    v_preco_orig := app._mercado_num(u, 'preco_original');
+    select * into cls from app._im_classificar_tipo(col.empresa_id, u->>'tipo_unidade');
+    v_norm_torre := app.im_norm_rotulo(u->>'torre');
+    v_norm_num := app.im_norm_rotulo(u->>'numero');
+    v_preco := app._im_num(u, 'preco');
+    v_preco_orig := app._im_num(u, 'preco_original');
     v_marcas_u := '{}';
     if v_preco = 0.1 then
       v_preco := null;
@@ -824,7 +834,7 @@ begin
     elsif v_preco_orig is not null and v_preco_orig <= 0 then
       v_preco_orig := null;
     end if;
-    v_area := app._mercado_num(u, 'area_privativa_m2');
+    v_area := app._im_num(u, 'area_privativa_m2');
     if v_area is not null and v_area <= 0 then v_area := null; end if;
     v_sit_u := coalesce(nullif(btrim(u->>'situacao'), ''), 'nao_informado');
     if v_sit_u not in ('disponivel','reservada','vendida','indisponivel','nao_informado') then
@@ -833,17 +843,17 @@ begin
 
     v_uid := null;
     if nullif(btrim(coalesce(u->>'id_externo', '')), '') is not null then
-      select entidade_id into v_uid from app.mercado_ids_externos
+      select entidade_id into v_uid from app.im_ids_externos
        where empresa_id = col.empresa_id and fonte = col.fonte and entidade = 'unidade'
          and id_externo = btrim(u->>'id_externo');
     end if;
     if v_uid is null then
-      select id into v_uid from app.mercado_unidades
+      select id into v_uid from app.im_unidades
        where empreendimento_id = v_emp and torre_norm = v_norm_torre and numero_norm = v_norm_num;
     end if;
 
     if v_uid is null then
-      insert into app.mercado_unidades (
+      insert into app.im_unidades (
         empresa_id, empreendimento_id, torre, numero, torre_norm, numero_norm, andar,
         area_privativa_m2, dormitorios, suites, vagas, tipologia_fonte,
         tipo_unidade, tipo_fonte, studio_nr, residencial,
@@ -861,13 +871,13 @@ begin
         case when v_area is null then array['area_nula'] else '{}' end)
       returning id into v_uid;
       if nullif(btrim(coalesce(u->>'id_externo', '')), '') is not null then
-        insert into app.mercado_ids_externos (empresa_id, entidade, entidade_id, fonte, id_externo)
+        insert into app.im_ids_externos (empresa_id, entidade, entidade_id, fonte, id_externo)
         values (col.empresa_id, 'unidade', v_uid, col.fonte, btrim(u->>'id_externo'));
       end if;
-      insert into app.mercado_unidade_estados (empresa_id, unidade_id, desde_coleta_id, situacao, preco, preco_original, marcas)
+      insert into app.im_unidade_estados (empresa_id, unidade_id, desde_coleta_id, situacao, preco, preco_original, marcas)
       values (col.empresa_id, v_uid, p_coleta, v_sit_u, v_preco, v_preco_orig, v_marcas_u);
     else
-      update app.mercado_unidades set
+      update app.im_unidades set
         torre = coalesce(nullif(btrim(u->>'torre'), ''), torre),
         numero = coalesce(nullif(btrim(u->>'numero'), ''), numero),
         andar = coalesce(nullif(u->>'andar', '')::smallint, andar),
@@ -885,8 +895,8 @@ begin
         marcas = case when coalesce(v_area, area_privativa_m2) is null then array['area_nula'] else array_remove(marcas, 'area_nula') end
       where id = v_uid;
 
-      if v_preco is not null and (select preco_primeiro is null from app.mercado_unidades where id = v_uid) then
-        update app.mercado_unidades set
+      if v_preco is not null and (select preco_primeiro is null from app.im_unidades where id = v_uid) then
+        update app.im_unidades set
           preco_primeiro = v_preco,
           preco_primeiro_em = col.referencia,
           preco_de_lancamento = v_lanc is not null and col.referencia <= v_lanc + cfg.dias_preco_lancamento
@@ -894,27 +904,27 @@ begin
       end if;
 
       if nullif(btrim(coalesce(u->>'id_externo', '')), '') is not null and not exists (
-        select 1 from app.mercado_ids_externos
+        select 1 from app.im_ids_externos
          where empresa_id = col.empresa_id and fonte = col.fonte and entidade = 'unidade' and entidade_id = v_uid)
       then
-        insert into app.mercado_ids_externos (empresa_id, entidade, entidade_id, fonte, id_externo)
+        insert into app.im_ids_externos (empresa_id, entidade, entidade_id, fonte, id_externo)
         values (col.empresa_id, 'unidade', v_uid, col.fonte, btrim(u->>'id_externo'))
         on conflict do nothing;
       end if;
 
-      select id, desde_coleta_id into v_estado, v_desde from app.mercado_unidade_estados
+      select id, desde_coleta_id into v_estado, v_desde from app.im_unidade_estados
        where unidade_id = v_uid and ate_coleta_id is null;
       if v_desde = p_coleta then
-        update app.mercado_unidade_estados set
+        update app.im_unidade_estados set
           situacao = v_sit_u, preco = v_preco, preco_original = v_preco_orig, marcas = v_marcas_u
         where id = v_estado;
       elsif v_estado is null or exists (
-        select 1 from app.mercado_unidade_estados s where s.id = v_estado
+        select 1 from app.im_unidade_estados s where s.id = v_estado
          and (s.situacao is distinct from v_sit_u or s.preco is distinct from v_preco
               or s.preco_original is distinct from v_preco_orig or s.marcas is distinct from v_marcas_u))
       then
-        update app.mercado_unidade_estados set ate_coleta_id = p_coleta where id = v_estado;
-        insert into app.mercado_unidade_estados (empresa_id, unidade_id, desde_coleta_id, situacao, preco, preco_original, marcas)
+        update app.im_unidade_estados set ate_coleta_id = p_coleta where id = v_estado;
+        insert into app.im_unidade_estados (empresa_id, unidade_id, desde_coleta_id, situacao, preco, preco_original, marcas)
         values (col.empresa_id, v_uid, p_coleta, v_sit_u, v_preco, v_preco_orig, v_marcas_u);
       end if;
     end if;
@@ -922,7 +932,7 @@ begin
   end loop;
 end $$;
 
-create or replace function app.importar_mercado(p_coleta uuid, p_dados jsonb)
+create or replace function app.im_importar(p_coleta uuid, p_dados jsonb)
 returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -932,14 +942,14 @@ declare
   v_erros int := 0;
   v_ign int := 0;
 begin
-  select empresa_id into v_emp from app.mercado_coletas where id = p_coleta;
+  select empresa_id into v_emp from app.im_coletas where id = p_coleta;
   if not found then
     raise exception 'Coleta não encontrada' using errcode = 'P0002';
   end if;
-  if not app._mercado_pode(v_emp) then
+  if not app._im_pode(v_emp) then
     raise exception 'Só o administrador importa o mercado' using errcode = '42501';
   end if;
-  if (select situacao from app.mercado_coletas where id = p_coleta) <> 'rodando' then
+  if (select situacao from app.im_coletas where id = p_coleta) <> 'rodando' then
     raise exception 'A coleta não está aberta' using errcode = '23514';
   end if;
   if jsonb_typeof(p_dados) = 'array' then
@@ -952,38 +962,38 @@ begin
 
   for v_item in select value from jsonb_array_elements(v_lista) loop
     begin
-      perform app._mercado_importar_um(p_coleta, v_item);
+      perform app._im_importar_um(p_coleta, v_item);
     exception when others then
       v_erros := v_erros + 1;
-      perform app._mercado_falha(p_coleta, v_item->>'id_externo', 'erro', sqlerrm);
+      perform app._im_falha(p_coleta, v_item->>'id_externo', 'erro', sqlerrm);
     end;
   end loop;
 
-  update app.mercado_coletas c set
+  update app.im_coletas c set
     coletados = (select count(*) from app.concorrencia_empreendimentos e where e.ultima_coleta_id = p_coleta),
-    unidades = (select count(*) from app.mercado_unidades u where u.ultima_coleta_id = p_coleta),
+    unidades = (select count(*) from app.im_unidades u where u.ultima_coleta_id = p_coleta),
     tipos_desconhecidos = coalesce((
       select array_agg(distinct u.tipo_fonte order by u.tipo_fonte)
-      from app.mercado_unidades u
+      from app.im_unidades u
       where u.ultima_coleta_id = p_coleta and u.tipo_unidade = 'nao_informado' and u.tipo_fonte is not null), '{}')
   where c.id = p_coleta;
 
-  select count(*) into v_ign from jsonb_array_elements((select falhas from app.mercado_coletas where id = p_coleta)) e
+  select count(*) into v_ign from jsonb_array_elements((select falhas from app.im_coletas where id = p_coleta)) e
    where e->>'motivo' = 'fora_do_filtro';
   return jsonb_build_object(
-    'coletados', (select coletados from app.mercado_coletas where id = p_coleta),
-    'unidades', (select unidades from app.mercado_coletas where id = p_coleta),
+    'coletados', (select coletados from app.im_coletas where id = p_coleta),
+    'unidades', (select unidades from app.im_coletas where id = p_coleta),
     'ignorados', v_ign,
     'erros', v_erros);
 end $$;
 
-create or replace function app.fechar_coleta_mercado(
+create or replace function app.im_fechar_coleta(
   p_coleta uuid, p_esperados int default null, p_forcar_incompleta boolean default false)
 returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
-  col app.mercado_coletas;
-  cfg app.mercado_config;
+  col app.im_coletas;
+  cfg app.im_config;
   v_prev date;
   v_sit text;
   v_vendas int := 0;
@@ -995,21 +1005,21 @@ declare
   v_de date;
   v_med numeric;
 begin
-  select * into col from app.mercado_coletas where id = p_coleta;
+  select * into col from app.im_coletas where id = p_coleta;
   if not found then raise exception 'Coleta não encontrada' using errcode = 'P0002'; end if;
   if col.situacao <> 'rodando' then
     raise exception 'A coleta não está aberta' using errcode = '23514';
   end if;
-  if not app._mercado_pode(col.empresa_id) then
+  if not app._im_pode(col.empresa_id) then
     raise exception 'Só o administrador fecha a coleta do mercado' using errcode = '42501';
   end if;
   if p_esperados is not null then
-    update app.mercado_coletas set esperados = p_esperados where id = p_coleta;
+    update app.im_coletas set esperados = p_esperados where id = p_coleta;
     col.esperados := p_esperados;
   end if;
-  select * into cfg from app.mercado_config where empresa_id = col.empresa_id;
+  select * into cfg from app.im_config where empresa_id = col.empresa_id;
 
-  select coletados into col.coletados from app.mercado_coletas where id = p_coleta;
+  select coletados into col.coletados from app.im_coletas where id = p_coleta;
 
   v_sit := 'completa';
   if col.esperados is not null and col.esperados > 0
@@ -1017,7 +1027,7 @@ begin
     v_sit := 'incompleta';
   end if;
   select c.coletados into v_preco
-    from app.mercado_coletas c
+    from app.im_coletas c
    where c.empresa_id = col.empresa_id and c.fonte = col.fonte and c.tipo = 'completa_mensal'
      and c.referencia < col.referencia and c.situacao in ('completa','incompleta') and c.id <> p_coleta
    order by c.referencia desc limit 1;
@@ -1033,21 +1043,21 @@ begin
 
   if col.tipo = 'completa_mensal' and v_sit = 'completa' then
     -- Par para confirmação: sumiu uma e apareceu outra com mesma área, andar e preço a até 5%.
-    update app.mercado_unidades n set vinculo_pendente_id = par.antiga
+    update app.im_unidades n set vinculo_pendente_id = par.antiga
       from (
         with novas as (
           select u.id, u.empreendimento_id, u.area_privativa_m2 as area, u.andar,
                  coalesce(e.preco, u.preco_primeiro) as preco
-          from app.mercado_unidades u
-          left join app.mercado_unidade_estados e on e.unidade_id = u.id and e.ate_coleta_id is null
+          from app.im_unidades u
+          left join app.im_unidade_estados e on e.unidade_id = u.id and e.ate_coleta_id is null
           where u.primeira_coleta_id = p_coleta and u.vinculo_pendente_id is null
         ),
         sumidas as (
           select u.id, u.empreendimento_id, u.area_privativa_m2 as area, u.andar,
                  coalesce(e.preco, u.preco_primeiro) as preco
-          from app.mercado_unidades u
+          from app.im_unidades u
           join app.concorrencia_empreendimentos emp on emp.id = u.empreendimento_id and emp.ultima_coleta_id = p_coleta
-          left join app.mercado_unidade_estados e on e.unidade_id = u.id and e.ate_coleta_id is null
+          left join app.im_unidade_estados e on e.unidade_id = u.id and e.ate_coleta_id is null
           where u.ultima_coleta_id is distinct from p_coleta and u.removida_coleta_id is null
             and u.primeira_coleta_id is distinct from p_coleta
         ),
@@ -1067,24 +1077,24 @@ begin
       ) par
      where n.id = par.nova and n.vinculo_pendente_id is null;
 
-    select referencia into v_prev from app.mercado_coletas
+    select referencia into v_prev from app.im_coletas
      where empresa_id = col.empresa_id and fonte = col.fonte and tipo = 'completa_mensal' and situacao = 'completa'
        and referencia < col.referencia and id <> p_coleta
      order by referencia desc limit 1;
 
     for alu in
       select un.id, un.area_privativa_m2, un.dormitorios, un.vagas, un.empreendimento_id, un.empresa_id
-      from app.mercado_unidades un
+      from app.im_unidades un
       where un.ultima_coleta_id = p_coleta and un.residencial and un.vinculo_pendente_id is null
     loop
-      select e.situacao into v_agora from app.mercado_unidade_estados e where e.unidade_id = alu.id and e.ate_coleta_id is null;
+      select e.situacao into v_agora from app.im_unidade_estados e where e.unidade_id = alu.id and e.ate_coleta_id is null;
       -- A foto anterior é a última situação gravada por uma mensal completa.
       -- Coleta incompleta muda o estado, mas não apaga a passagem.
       v_antes := null;
       if v_prev is not null then
         select e.situacao into v_antes
-          from app.mercado_unidade_estados e
-          join app.mercado_coletas d on d.id = e.desde_coleta_id
+          from app.im_unidade_estados e
+          join app.im_coletas d on d.id = e.desde_coleta_id
          where e.unidade_id = alu.id and d.fonte = col.fonte
            and d.tipo = 'completa_mensal' and d.situacao = 'completa'
            and d.referencia <= v_prev
@@ -1093,153 +1103,153 @@ begin
       end if;
 
       if v_agora = 'vendida' and v_antes is distinct from 'vendida'
-         and not exists (select 1 from app.mercado_vendas v where v.unidade_id = alu.id and v.desfeita_coleta_id is null)
+         and not exists (select 1 from app.im_vendas v where v.unidade_id = alu.id and v.desfeita_coleta_id is null)
          and (v_antes in ('disponivel','reservada')
               or exists (
-                select 1 from app.mercado_unidade_estados e
-                join app.mercado_coletas c on c.id = e.desde_coleta_id
+                select 1 from app.im_unidade_estados e
+                join app.im_coletas c on c.id = e.desde_coleta_id
                 where e.unidade_id = alu.id and e.situacao in ('disponivel','reservada') and c.referencia < col.referencia))
       then
         select e.preco into v_preco
-          from app.mercado_unidade_estados e
-          join app.mercado_coletas c on c.id = e.desde_coleta_id
+          from app.im_unidade_estados e
+          join app.im_coletas c on c.id = e.desde_coleta_id
          where e.unidade_id = alu.id and e.preco is not null
          order by c.referencia desc, e.id desc limit 1;
         select c.referencia into v_de
-          from app.mercado_unidade_estados e
-          join app.mercado_coletas c on c.id = e.desde_coleta_id
+          from app.im_unidade_estados e
+          join app.im_coletas c on c.id = e.desde_coleta_id
          where e.unidade_id = alu.id and e.situacao in ('disponivel','reservada')
          order by c.referencia desc limit 1;
-        insert into app.mercado_vendas (empresa_id, unidade_id, coleta_id, vendida_de, vendida_ate, preco, origem_preco, antes_do_monitor)
+        insert into app.im_vendas (empresa_id, unidade_id, coleta_id, vendida_de, vendida_ate, preco, origem_preco, antes_do_monitor)
         values (alu.empresa_id, alu.id, p_coleta, coalesce(v_de, col.referencia), col.referencia, v_preco, 'ultimo_visto', false);
         v_vendas := v_vendas + 1;
       elsif v_antes is null and v_agora = 'vendida'
          and not exists (
-           select 1 from app.mercado_unidade_estados e
-           join app.mercado_coletas c on c.id = e.desde_coleta_id
+           select 1 from app.im_unidade_estados e
+           join app.im_coletas c on c.id = e.desde_coleta_id
                 where e.unidade_id = alu.id and e.situacao in ('disponivel','reservada') and c.referencia < col.referencia)
-         and not exists (select 1 from app.mercado_vendas v where v.unidade_id = alu.id and v.desfeita_coleta_id is null)
+         and not exists (select 1 from app.im_vendas v where v.unidade_id = alu.id and v.desfeita_coleta_id is null)
       then
         v_med := null;
         if alu.area_privativa_m2 is not null and alu.area_privativa_m2 > 0 then
           select percentile_cont(0.5) within group (order by e.preco / un.area_privativa_m2) into v_med
-            from app.mercado_unidades un
-            join app.mercado_unidade_estados e on e.unidade_id = un.id and e.ate_coleta_id is null
+            from app.im_unidades un
+            join app.im_unidade_estados e on e.unidade_id = un.id and e.ate_coleta_id is null
            where un.empreendimento_id = alu.empreendimento_id and un.id <> alu.id and un.residencial
              and e.situacao = 'disponivel' and e.preco is not null and un.area_privativa_m2 > 0
              and un.dormitorios is not distinct from alu.dormitorios
              and un.vagas is not distinct from alu.vagas
              and abs(un.area_privativa_m2 - alu.area_privativa_m2) / alu.area_privativa_m2 <= 0.03;
         end if;
-        insert into app.mercado_vendas (empresa_id, unidade_id, coleta_id, vendida_de, vendida_ate, preco, origem_preco, antes_do_monitor)
+        insert into app.im_vendas (empresa_id, unidade_id, coleta_id, vendida_de, vendida_ate, preco, origem_preco, antes_do_monitor)
         values (alu.empresa_id, alu.id, p_coleta, col.referencia, col.referencia,
                 case when v_med is not null then round((v_med * alu.area_privativa_m2)::numeric, 2) end,
                 'estimado', true);
         v_vendas := v_vendas + 1;
       elsif v_antes = 'vendida' and v_agora in ('disponivel','reservada') then
-        update app.mercado_vendas set desfeita_coleta_id = p_coleta
+        update app.im_vendas set desfeita_coleta_id = p_coleta
          where unidade_id = alu.id and desfeita_coleta_id is null;
       end if;
     end loop;
 
-    update app.mercado_unidades u set removida_coleta_id = p_coleta
+    update app.im_unidades u set removida_coleta_id = p_coleta
       from app.concorrencia_empreendimentos emp
      where u.empreendimento_id = emp.id and emp.ultima_coleta_id = p_coleta
        and u.ultima_coleta_id is distinct from p_coleta
        and u.removida_coleta_id is null
-       and not exists (select 1 from app.mercado_unidades n where n.vinculo_pendente_id = u.id);
+       and not exists (select 1 from app.im_unidades n where n.vinculo_pendente_id = u.id);
     get diagnostics v_removidas = row_count;
   end if;
 
-  update app.mercado_coletas set situacao = v_sit, concluida_em = clock_timestamp() where id = p_coleta;
+  update app.im_coletas set situacao = v_sit, concluida_em = clock_timestamp() where id = p_coleta;
   return jsonb_build_object('situacao', v_sit, 'vendas', v_vendas, 'removidas', v_removidas);
 end $$;
 
 -- Falha de rede ou de leitura anotada pelo coletor, fora do lote importado.
-create or replace function app.anotar_falha_mercado(p_coleta uuid, p_id text, p_motivo text, p_detalhe text)
+create or replace function app.im_anotar_falha(p_coleta uuid, p_id text, p_motivo text, p_detalhe text)
 returns void
 language plpgsql security definer set search_path = '' as $$
 declare
   v_emp uuid;
   v_sit text;
 begin
-  select empresa_id, situacao into v_emp, v_sit from app.mercado_coletas where id = p_coleta;
+  select empresa_id, situacao into v_emp, v_sit from app.im_coletas where id = p_coleta;
   if not found then
     raise exception 'Coleta não encontrada' using errcode = 'P0002';
   end if;
-  if not app._mercado_pode(v_emp) then
+  if not app._im_pode(v_emp) then
     raise exception 'Só o administrador anota falha da coleta' using errcode = '42501';
   end if;
   if v_sit <> 'rodando' then
     raise exception 'A coleta não está aberta' using errcode = '23514';
   end if;
-  perform app._mercado_falha(p_coleta, p_id, p_motivo, p_detalhe);
+  perform app._im_falha(p_coleta, p_id, p_motivo, p_detalhe);
 end $$;
 
 -- Segundo 401, ou login impossível no meio da rodada: encerra como falhou.
 -- Não gera venda. A próxima abertura da mesma chave desfaz o que tiver ficado.
-create or replace function app.falhar_coleta_mercado(p_coleta uuid, p_motivo text)
+create or replace function app.im_falhar_coleta(p_coleta uuid, p_motivo text)
 returns void
 language plpgsql security definer set search_path = '' as $$
 declare
-  col app.mercado_coletas;
+  col app.im_coletas;
 begin
-  select * into col from app.mercado_coletas where id = p_coleta;
+  select * into col from app.im_coletas where id = p_coleta;
   if not found then
     raise exception 'Coleta não encontrada' using errcode = 'P0002';
   end if;
-  if not app._mercado_pode(col.empresa_id) then
+  if not app._im_pode(col.empresa_id) then
     raise exception 'Só o administrador encerra a coleta do mercado' using errcode = '42501';
   end if;
   if col.situacao <> 'rodando' then
     raise exception 'A coleta não está aberta' using errcode = '23514';
   end if;
-  perform app._mercado_falha(p_coleta, '', 'falhou', coalesce(p_motivo, ''));
-  update app.mercado_coletas set situacao = 'falhou', concluida_em = clock_timestamp() where id = p_coleta;
+  perform app._im_falha(p_coleta, '', 'falhou', coalesce(p_motivo, ''));
+  update app.im_coletas set situacao = 'falhou', concluida_em = clock_timestamp() where id = p_coleta;
 end $$;
 
-create or replace function app.confirmar_vinculo_unidade(p_unidade uuid, p_confirmar boolean)
+create or replace function app.im_confirmar_vinculo_unidade(p_unidade uuid, p_confirmar boolean)
 returns void
 language plpgsql security definer set search_path = '' as $$
 declare
-  n app.mercado_unidades;
-  a app.mercado_unidades;
-  est app.mercado_unidade_estados;
-  col app.mercado_coletas;
+  n app.im_unidades;
+  a app.im_unidades;
+  est app.im_unidade_estados;
+  col app.im_coletas;
   v_sit_antes text;
   v_preco numeric;
   v_de date;
   v_ext text;
 begin
-  select * into n from app.mercado_unidades where id = p_unidade;
+  select * into n from app.im_unidades where id = p_unidade;
   if not found or n.vinculo_pendente_id is null then
     raise exception 'Unidade sem vínculo pendente' using errcode = '22023';
   end if;
-  if not app._mercado_pode(n.empresa_id) then
+  if not app._im_pode(n.empresa_id) then
     raise exception 'Só o administrador confirma o vínculo' using errcode = '42501';
   end if;
-  select * into a from app.mercado_unidades where id = n.vinculo_pendente_id;
-  select * into est from app.mercado_unidade_estados where unidade_id = n.id and ate_coleta_id is null;
-  select * into col from app.mercado_coletas where id = n.primeira_coleta_id;
+  select * into a from app.im_unidades where id = n.vinculo_pendente_id;
+  select * into est from app.im_unidade_estados where unidade_id = n.id and ate_coleta_id is null;
+  select * into col from app.im_coletas where id = n.primeira_coleta_id;
 
   if not coalesce(p_confirmar, false) then
-    update app.mercado_unidades set vinculo_pendente_id = null where id = n.id;
-    update app.mercado_unidades set removida_coleta_id = coalesce(removida_coleta_id, n.primeira_coleta_id) where id = a.id;
+    update app.im_unidades set vinculo_pendente_id = null where id = n.id;
+    update app.im_unidades set removida_coleta_id = coalesce(removida_coleta_id, n.primeira_coleta_id) where id = a.id;
     return;
   end if;
 
-  select id_externo into v_ext from app.mercado_ids_externos
+  select id_externo into v_ext from app.im_ids_externos
    where entidade = 'unidade' and entidade_id = n.id limit 1;
 
-  select e.situacao into v_sit_antes from app.mercado_unidade_estados e where e.unidade_id = a.id and e.ate_coleta_id is null;
+  select e.situacao into v_sit_antes from app.im_unidade_estados e where e.unidade_id = a.id and e.ate_coleta_id is null;
 
-  delete from app.mercado_ids_externos where entidade = 'unidade' and entidade_id = n.id;
-  delete from app.mercado_unidade_estados where unidade_id = n.id;
-  delete from app.mercado_vendas where unidade_id = n.id;
-  update app.mercado_unidades set vinculo_pendente_id = null where id = n.id;
-  delete from app.mercado_unidades where id = n.id;
+  delete from app.im_ids_externos where entidade = 'unidade' and entidade_id = n.id;
+  delete from app.im_unidade_estados where unidade_id = n.id;
+  delete from app.im_vendas where unidade_id = n.id;
+  update app.im_unidades set vinculo_pendente_id = null where id = n.id;
+  delete from app.im_unidades where id = n.id;
 
-  update app.mercado_unidades set
+  update app.im_unidades set
     torre = coalesce(n.torre, torre), numero = coalesce(n.numero, numero),
     torre_norm = n.torre_norm, numero_norm = n.numero_norm,
     andar = coalesce(n.andar, andar),
@@ -1254,62 +1264,62 @@ begin
 
   -- A unidade antiga já tem id de fora nesta fonte: o da nova toma o lugar.
   if v_ext is not null then
-    delete from app.mercado_ids_externos
+    delete from app.im_ids_externos
      where empresa_id = a.empresa_id and fonte = col.fonte and entidade = 'unidade' and entidade_id = a.id
        and id_externo is distinct from v_ext;
-    insert into app.mercado_ids_externos (empresa_id, entidade, entidade_id, fonte, id_externo)
+    insert into app.im_ids_externos (empresa_id, entidade, entidade_id, fonte, id_externo)
     values (a.empresa_id, 'unidade', a.id, col.fonte, v_ext)
     on conflict do nothing;
   end if;
 
   if est.situacao is not null and exists (
-    select 1 from app.mercado_unidade_estados e where e.unidade_id = a.id and e.ate_coleta_id is null
+    select 1 from app.im_unidade_estados e where e.unidade_id = a.id and e.ate_coleta_id is null
      and (e.situacao is distinct from est.situacao or e.preco is distinct from est.preco
           or e.preco_original is distinct from est.preco_original))
   then
-    update app.mercado_unidade_estados set ate_coleta_id = col.id where unidade_id = a.id and ate_coleta_id is null and desde_coleta_id <> col.id;
-    if not exists (select 1 from app.mercado_unidade_estados where unidade_id = a.id and ate_coleta_id is null) then
-      insert into app.mercado_unidade_estados (empresa_id, unidade_id, desde_coleta_id, situacao, preco, preco_original, marcas)
+    update app.im_unidade_estados set ate_coleta_id = col.id where unidade_id = a.id and ate_coleta_id is null and desde_coleta_id <> col.id;
+    if not exists (select 1 from app.im_unidade_estados where unidade_id = a.id and ate_coleta_id is null) then
+      insert into app.im_unidade_estados (empresa_id, unidade_id, desde_coleta_id, situacao, preco, preco_original, marcas)
       values (a.empresa_id, a.id, col.id, est.situacao, est.preco, est.preco_original, est.marcas);
     end if;
   end if;
 
   if col.tipo = 'completa_mensal' and col.situacao = 'completa'
      and v_sit_antes in ('disponivel','reservada') and est.situacao = 'vendida'
-     and not exists (select 1 from app.mercado_vendas v where v.unidade_id = a.id and v.desfeita_coleta_id is null)
+     and not exists (select 1 from app.im_vendas v where v.unidade_id = a.id and v.desfeita_coleta_id is null)
   then
-    select e.preco into v_preco from app.mercado_unidade_estados e
-      join app.mercado_coletas c on c.id = e.desde_coleta_id
+    select e.preco into v_preco from app.im_unidade_estados e
+      join app.im_coletas c on c.id = e.desde_coleta_id
      where e.unidade_id = a.id and e.preco is not null order by c.referencia desc limit 1;
-    select max(c.referencia) into v_de from app.mercado_unidade_estados e
-      join app.mercado_coletas c on c.id = e.desde_coleta_id
+    select max(c.referencia) into v_de from app.im_unidade_estados e
+      join app.im_coletas c on c.id = e.desde_coleta_id
      where e.unidade_id = a.id and e.situacao in ('disponivel','reservada');
-    insert into app.mercado_vendas (empresa_id, unidade_id, coleta_id, vendida_de, vendida_ate, preco, origem_preco, antes_do_monitor)
+    insert into app.im_vendas (empresa_id, unidade_id, coleta_id, vendida_de, vendida_ate, preco, origem_preco, antes_do_monitor)
     values (a.empresa_id, a.id, col.id, coalesce(v_de, col.referencia), col.referencia, v_preco, 'ultimo_visto', false);
   end if;
 end $$;
 
 
-revoke all on function app._mercado_desfazer(uuid) from public;
-revoke all on function app._mercado_importar_um(uuid, jsonb) from public;
-revoke all on function app._mercado_falha(uuid, text, text, text) from public;
-revoke all on function app._mercado_semear(uuid) from public;
-revoke all on function app._mercado_recalcular_residencial(uuid) from public;
-revoke all on function app._mercado_residencial(uuid, text, boolean) from public;
-revoke all on function app._mercado_classificar_tipo(uuid, text) from public;
-revoke all on function app._mercado_passa_filtro(uuid, text, text, text, date, date, uuid, date, boolean, boolean) from public;
-revoke all on function app._mercado_pode(uuid) from public;
+revoke all on function app._im_desfazer(uuid) from public;
+revoke all on function app._im_importar_um(uuid, jsonb) from public;
+revoke all on function app._im_falha(uuid, text, text, text) from public;
+revoke all on function app._im_semear(uuid) from public;
+revoke all on function app._im_recalcular_residencial(uuid) from public;
+revoke all on function app._im_residencial(uuid, text, boolean) from public;
+revoke all on function app._im_classificar_tipo(uuid, text) from public;
+revoke all on function app._im_passa_filtro(uuid, text, text, text, date, date, uuid, date, boolean, boolean) from public;
+revoke all on function app._im_pode(uuid) from public;
 
 grant execute on function
-  app.mercado_norm_rotulo(text),
-  app.similaridade_trigrama(text, text),
-  app.mercado_distancia_m(double precision, double precision, double precision, double precision),
-  app.abrir_coleta_mercado(uuid, text, text, date, int, text),
-  app.importar_mercado(uuid, jsonb),
-  app.fechar_coleta_mercado(uuid, int, boolean),
-  app.anotar_falha_mercado(uuid, text, text, text),
-  app.falhar_coleta_mercado(uuid, text),
-  app.confirmar_vinculo_unidade(uuid, boolean),
-  app.salvar_config_mercado(uuid, jsonb),
-  app.salvar_tipo_unidade_mercado(uuid, text, boolean, boolean)
+  app.im_norm_rotulo(text),
+  app.im_similaridade_trigrama(text, text),
+  app.im_distancia_m(double precision, double precision, double precision, double precision),
+  app.im_abrir_coleta(uuid, text, text, date, int, text),
+  app.im_importar(uuid, jsonb),
+  app.im_fechar_coleta(uuid, int, boolean),
+  app.im_anotar_falha(uuid, text, text, text),
+  app.im_falhar_coleta(uuid, text),
+  app.im_confirmar_vinculo_unidade(uuid, boolean),
+  app.im_salvar_config(uuid, jsonb),
+  app.im_salvar_tipo_unidade(uuid, text, boolean, boolean)
 to authenticated, service_role;

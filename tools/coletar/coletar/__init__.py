@@ -1,6 +1,6 @@
 """Coletor do monitor de mercado.
 
-A regra de negócio fica no banco (`importar_mercado`, `fechar_coleta_mercado`).
+A regra de negócio fica no banco (`im_importar`, `im_fechar_coleta`).
 Aqui só se fala com a fonte, no formato da spec, e se grava o bruto.
 """
 

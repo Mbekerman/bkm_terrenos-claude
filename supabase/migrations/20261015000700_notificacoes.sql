@@ -2,7 +2,8 @@
 -- BKM Terrenos · 0007 · notificações e lembretes
 -- Uma tabela genérica de notificações; os gatilhos ficam separados dela.
 -- Na hora: triggers e RPCs (tarefa atribuída, marcado na tarefa, aprovação).
--- Por prazo: app.rotina_diaria(), rodada uma vez por dia pelo pg_cron.
+-- Por prazo: app.rotina_diaria(). O agendamento no pg_cron não entra nesta
+-- migration (não grava em cron.job nem altera publicação). Ver o fim do arquivo.
 -- Um tipo novo de interação só acrescenta um gatilho e uma linha em
 -- tipos_notificacao. E-mail e preferências por usuário vêm depois.
 -- =====================================================================
@@ -340,15 +341,15 @@ create policy gravar on app.filtros_salvos for all to authenticated
               and (user_id = auth.uid() or (user_id is null and app.eh_administrador(empresa_id))));
 grant select, insert, update, delete on app.filtros_salvos to authenticated;
 
--- Sino ao vivo (Realtime do Supabase) e rotina diária às 6h (9h UTC).
--- Fora do Supabase (testes), a publicação e o pg_cron não existem: pula.
+-- A extensão pg_cron, se o servidor a oferece. A migration não grava em
+-- cron.job nem altera a publicação supabase_realtime: o banco de destino
+-- já tem outros schemas, e isso é configuração global. Quem for usar o sino
+-- ao vivo e a rotina das 6h (9h UTC) faz à mão, depois:
+--   alter publication supabase_realtime add table app.notificacoes;
+--   select cron.schedule('bkm-terrenos-rotina-diaria', '0 9 * * *', 'select app.rotina_diaria()');
 do $$
 begin
-  if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
-    execute 'alter publication supabase_realtime add table app.notificacoes';
-  end if;
   if exists (select 1 from pg_available_extensions where name = 'pg_cron') then
     create extension if not exists pg_cron;
-    perform cron.schedule('bkm-terrenos-rotina-diaria', '0 9 * * *', 'select app.rotina_diaria()');
   end if;
 end $$;

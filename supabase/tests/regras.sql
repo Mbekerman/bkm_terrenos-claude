@@ -1122,80 +1122,80 @@ select pg_temp.ok((select count(*) from app.auditoria where tabela = 'concorrenc
 \echo '# monitor de mercado'
 select pg_temp.como(:'diretor');
 select pg_temp.ok((select count(*) = 10 and bool_and(codigo in ('apartamento','studio','cobertura','garden','duplex') = residencial)
-  from app.mercado_tipos_unidade where empresa_id = :'emp'), 'tipos de unidade nascem com a empresa');
+  from app.im_tipos_unidade where empresa_id = :'emp'), 'tipos de unidade nascem com a empresa');
 select pg_temp.ok((select meses_lancamento = 6 and dias_preco_lancamento = 60 and meses_recem_entregue = 24
   and nr_conta_como_residencial and :'sp' = any(municipios)
-  from app.mercado_config where empresa_id = :'emp'), 'config do monitor nasce com os prazos e São Paulo');
-select pg_temp.ok(app.mercado_norm_rotulo('Torre A') = 'A' and app.mercado_norm_rotulo('Bloco A') = 'A'
-  and app.mercado_norm_rotulo('Edifício B') = 'B', 'rótulo tira torre, bloco e edifício');
-select pg_temp.falha(format($$insert into app.mercado_unidades (empresa_id, empreendimento_id, primeira_coleta_id) values (%L, %L, %L)$$, :'emp', :'ce', :'emp'), 'unidade do monitor não entra por insert direto');
+  from app.im_config where empresa_id = :'emp'), 'config do monitor nasce com os prazos e São Paulo');
+select pg_temp.ok(app.im_norm_rotulo('Torre A') = 'A' and app.im_norm_rotulo('Bloco A') = 'A'
+  and app.im_norm_rotulo('Edifício B') = 'B', 'rótulo tira torre, bloco e edifício');
+select pg_temp.falha(format($$insert into app.im_unidades (empresa_id, empreendimento_id, primeira_coleta_id) values (%L, %L, %L)$$, :'emp', :'ce', :'emp'), 'unidade do monitor não entra por insert direto');
 select pg_temp.como(:'analista');
-select pg_temp.falha(format($$select app.abrir_coleta_mercado(%L, 'orulo_api', 'completa_mensal', '2026-01-01')$$, :'emp'), 'analista não abre coleta');
-select pg_temp.falha(format($$select app.salvar_config_mercado(%L, '{"meses_lancamento":9}')$$, :'emp'), 'analista não muda a config do monitor');
+select pg_temp.falha(format($$select app.im_abrir_coleta(%L, 'orulo_api', 'completa_mensal', '2026-01-01')$$, :'emp'), 'analista não abre coleta');
+select pg_temp.falha(format($$select app.im_salvar_config(%L, '{"meses_lancamento":9}')$$, :'emp'), 'analista não muda a config do monitor');
 select pg_temp.como(:'diretor');
-select pg_temp.falha(format($$select app.abrir_coleta_mercado(%L, 'planilha', 'completa_mensal', '2026-01-01')$$, :'emp'), 'fonte desconhecida é recusada');
+select pg_temp.falha(format($$select app.im_abrir_coleta(%L, 'planilha', 'completa_mensal', '2026-01-01')$$, :'emp'), 'fonte desconhecida é recusada');
 
 -- Primeira mensal e as vendas que o fechamento grava.
-select app.abrir_coleta_mercado(:'emp', 'orulo_api', 'completa_mensal', '2026-02-01') as c_fev \gset
-select pg_temp.ok((select bruto_caminho = :'emp' || '/mercado/2026-02-01-completa_mensal.json.gz' from app.mercado_coletas where id = :'c_fev'), 'caminho do bruto leva empresa, referência e tipo');
-select pg_temp.ok((app.importar_mercado(:'c_fev', jsonb_build_array(pg_temp.ej('vso-velho', 'Estoque Velho',
+select app.im_abrir_coleta(:'emp', 'orulo_api', 'completa_mensal', '2026-02-01') as c_fev \gset
+select pg_temp.ok((select bruto_caminho = :'emp' || '/mercado/2026-02-01-completa_mensal.json.gz' from app.im_coletas where id = :'c_fev'), 'caminho do bruto leva empresa, referência e tipo');
+select pg_temp.ok((app.im_importar(:'c_fev', jsonb_build_array(pg_temp.ej('vso-velho', 'Estoque Velho',
   (select jsonb_agg(pg_temp.uj(i::text, 45, 450000, 'disponivel', 2, 1, 1, 'apartamento', 'A', 'v' || i)) from generate_series(1, 10) i),
   'vertical', 'residencial', 'em_obras', '2026-01-15')))->>'erros')::int = 0, 'fevereiro importa o estoque');
-select pg_temp.ok((app.fechar_coleta_mercado(:'c_fev')->>'situacao') = 'completa', 'primeira mensal sem anterior fecha completa');
-select app.abrir_coleta_mercado(:'emp', 'orulo_api', 'completa_mensal', '2026-03-01') as c_mar \gset
-select pg_temp.ok((app.importar_mercado(:'c_mar', jsonb_build_array(
+select pg_temp.ok((app.im_fechar_coleta(:'c_fev')->>'situacao') = 'completa', 'primeira mensal sem anterior fecha completa');
+select app.im_abrir_coleta(:'emp', 'orulo_api', 'completa_mensal', '2026-03-01') as c_mar \gset
+select pg_temp.ok((app.im_importar(:'c_mar', jsonb_build_array(
   pg_temp.ej('vso-velho', 'Estoque Velho',
     (select jsonb_agg(pg_temp.uj(i::text, 45, 450000, case when i <= 2 then 'vendida' else 'disponivel' end, 2, 1, 1, 'apartamento', 'A', 'v' || i)) from generate_series(1, 10) i),
     'vertical', 'residencial', 'em_obras', '2026-01-15'),
   pg_temp.ej('vso-novo', 'Lancamento Marco',
     (select jsonb_agg(pg_temp.uj(i::text, 38, 380000, 'disponivel', 1, 1, 2, 'apartamento', 'B', 'l' || i)) from generate_series(1, 4) i),
     'vertical', 'residencial', 'lancamento', '2026-03-10')))->>'erros')::int = 0, 'março importa a venda e o lançamento');
-select pg_temp.ok((app.fechar_coleta_mercado(:'c_mar')->>'vendas')::int = 2, 'duas vendas no fechamento de março');
+select pg_temp.ok((app.im_fechar_coleta(:'c_mar')->>'vendas')::int = 2, 'duas vendas no fechamento de março');
 select pg_temp.ok((select count(*) = 2 and bool_and(not antes_do_monitor and origem_preco = 'ultimo_visto' and preco = 450000
   and vendida_de = '2026-02-01' and vendida_ate = '2026-03-01')
-  from app.mercado_vendas v
-  join app.mercado_unidades u on u.id = v.unidade_id
-  join app.mercado_ids_externos x on x.entidade = 'empreendimento' and x.entidade_id = u.empreendimento_id and x.id_externo = 'vso-velho'),
+  from app.im_vendas v
+  join app.im_unidades u on u.id = v.unidade_id
+  join app.im_ids_externos x on x.entidade = 'empreendimento' and x.entidade_id = u.empreendimento_id and x.id_externo = 'vso-velho'),
   'as duas vendas de março ficam gravadas na tabela');
 
-select app.salvar_config_mercado(:'emp', '{"cobertura_minima_pct": 1}');
+select app.im_salvar_config(:'emp', '{"cobertura_minima_pct": 1}');
 
 -- Remoção e venda: incompleta no meio não apaga a passagem, e outra mensal completa no intervalo também não.
-select app.abrir_coleta_mercado(:'emp', 'orulo_planilha', 'completa_mensal', '2026-08-01') as c_ago \gset
-select pg_temp.ok((app.importar_mercado(:'c_ago', jsonb_build_array(pg_temp.ej('sumiu', 'Some Uma', jsonb_build_array(
+select app.im_abrir_coleta(:'emp', 'orulo_planilha', 'completa_mensal', '2026-08-01') as c_ago \gset
+select pg_temp.ok((app.im_importar(:'c_ago', jsonb_build_array(pg_temp.ej('sumiu', 'Some Uma', jsonb_build_array(
   pg_temp.uj('1', 42, 420000, 'disponivel', 2, 1, 1, 'apartamento', 'A', 'sa'),
   pg_temp.uj('2', 42, 420000, 'disponivel', 2, 1, 1, 'apartamento', 'A', 'sb')))))->>'erros')::int = 0, 'agosto grava as duas unidades');
-select pg_temp.ok((app.fechar_coleta_mercado(:'c_ago')->>'situacao') = 'completa', 'agosto fecha completo');
-select app.salvar_config_mercado(:'emp', '{"cobertura_minima_pct": 90}');
-select app.abrir_coleta_mercado(:'emp', 'orulo_planilha', 'completa_mensal', '2026-09-01') as c_set \gset
-select pg_temp.ok((app.importar_mercado(:'c_set', jsonb_build_array(pg_temp.ej('sumiu', 'Some Uma', jsonb_build_array(
+select pg_temp.ok((app.im_fechar_coleta(:'c_ago')->>'situacao') = 'completa', 'agosto fecha completo');
+select app.im_salvar_config(:'emp', '{"cobertura_minima_pct": 90}');
+select app.im_abrir_coleta(:'emp', 'orulo_planilha', 'completa_mensal', '2026-09-01') as c_set \gset
+select pg_temp.ok((app.im_importar(:'c_set', jsonb_build_array(pg_temp.ej('sumiu', 'Some Uma', jsonb_build_array(
   pg_temp.uj('1', 42, null, 'vendida', 2, 1, 1, 'apartamento', 'A', 'sa')))))->>'erros')::int = 0, 'setembro manda só a unidade vendida');
-select pg_temp.ok((app.fechar_coleta_mercado(:'c_set', 100)->>'situacao') = 'incompleta', 'cobertura baixa deixa a mensal incompleta');
-select pg_temp.ok((select count(*) = 0 from app.mercado_vendas v join app.mercado_unidades u on u.id = v.unidade_id
-  join app.mercado_ids_externos x on x.entidade_id = u.empreendimento_id and x.id_externo = 'sumiu'), 'incompleta não gera venda');
-select pg_temp.ok((select u.removida_coleta_id is null from app.mercado_unidades u where u.id in (
-  select entidade_id from app.mercado_ids_externos where id_externo = 'sb')), 'incompleta não marca remoção');
-select app.salvar_config_mercado(:'emp', '{"cobertura_minima_pct": 1}');
-select app.abrir_coleta_mercado(:'emp', 'orulo_planilha', 'completa_mensal', '2026-09-15') as c_pon \gset
-select pg_temp.ok((app.importar_mercado(:'c_pon', jsonb_build_array(pg_temp.ej('ponte', 'Ponte', jsonb_build_array(
-  pg_temp.uj('1', 40, 400000)))))->>'erros')::int = 0 and (app.fechar_coleta_mercado(:'c_pon')->>'situacao') = 'completa',
+select pg_temp.ok((app.im_fechar_coleta(:'c_set', 100)->>'situacao') = 'incompleta', 'cobertura baixa deixa a mensal incompleta');
+select pg_temp.ok((select count(*) = 0 from app.im_vendas v join app.im_unidades u on u.id = v.unidade_id
+  join app.im_ids_externos x on x.entidade_id = u.empreendimento_id and x.id_externo = 'sumiu'), 'incompleta não gera venda');
+select pg_temp.ok((select u.removida_coleta_id is null from app.im_unidades u where u.id in (
+  select entidade_id from app.im_ids_externos where id_externo = 'sb')), 'incompleta não marca remoção');
+select app.im_salvar_config(:'emp', '{"cobertura_minima_pct": 1}');
+select app.im_abrir_coleta(:'emp', 'orulo_planilha', 'completa_mensal', '2026-09-15') as c_pon \gset
+select pg_temp.ok((app.im_importar(:'c_pon', jsonb_build_array(pg_temp.ej('ponte', 'Ponte', jsonb_build_array(
+  pg_temp.uj('1', 40, 400000)))))->>'erros')::int = 0 and (app.im_fechar_coleta(:'c_pon')->>'situacao') = 'completa',
   'uma mensal completa de outro empreendimento entra no meio');
-select app.abrir_coleta_mercado(:'emp', 'orulo_planilha', 'completa_mensal', '2026-10-01') as c_out \gset
-select pg_temp.ok((app.importar_mercado(:'c_out', jsonb_build_array(pg_temp.ej('sumiu', 'Some Uma', jsonb_build_array(
+select app.im_abrir_coleta(:'emp', 'orulo_planilha', 'completa_mensal', '2026-10-01') as c_out \gset
+select pg_temp.ok((app.im_importar(:'c_out', jsonb_build_array(pg_temp.ej('sumiu', 'Some Uma', jsonb_build_array(
   pg_temp.uj('1', 42, null, 'vendida', 2, 1, 1, 'apartamento', 'A', 'sa')))))->>'erros')::int = 0, 'outubro confirma a vendida');
-select pg_temp.ok((app.fechar_coleta_mercado(:'c_out')->>'situacao') = 'completa', 'outubro fecha completo');
+select pg_temp.ok((app.im_fechar_coleta(:'c_out')->>'situacao') = 'completa', 'outubro fecha completo');
 select pg_temp.ok((select count(*) = 1 and bool_and(not v.antes_do_monitor and v.origem_preco = 'ultimo_visto' and v.preco = 420000
   and v.vendida_de = '2026-08-01' and v.vendida_ate = '2026-10-01' and v.desfeita_coleta_id is null)
-  from app.mercado_vendas v join app.mercado_unidades u on u.id = v.unidade_id
-  join app.mercado_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'sa'),
+  from app.im_vendas v join app.im_unidades u on u.id = v.unidade_id
+  join app.im_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'sa'),
   'a passagem sobrevive à incompleta e à mensal do meio');
-select pg_temp.ok((select removida_coleta_id = :'c_out' from app.mercado_unidades u
-  join app.mercado_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'sb'), 'a que sumiu na mensal completa é removida');
+select pg_temp.ok((select removida_coleta_id = :'c_out' from app.im_unidades u
+  join app.im_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'sb'), 'a que sumiu na mensal completa é removida');
 
 -- Filtro, loja, tipo desconhecido, sugestão e coleta repetida.
 insert into app.concorrencia_empreendimentos (empresa_id, concorrente_id, nome, latitude, longitude, situacao, observacao)
   values (:'emp', :'cc', 'Residencial Aurora', -23.61, -46.66, 'lancamento', 'não mexer') returning id as aurora_manual \gset
-select app.abrir_coleta_mercado(:'emp', 'manual', 'completa_mensal', '2026-04-01') as c_man \gset
+select app.im_abrir_coleta(:'emp', 'manual', 'completa_mensal', '2026-04-01') as c_man \gset
 create temp table carga_manual (dados jsonb);
 insert into carga_manual values (jsonb_build_array(
   pg_temp.ej('h', 'Horizontal', jsonb_build_array(pg_temp.uj('1', 40, 400000)), 'horizontal'),
@@ -1219,40 +1219,40 @@ insert into carga_manual values (jsonb_build_array(
   pg_temp.ej('sent', 'Sentinela', jsonb_build_array(pg_temp.uj('1', 40, 0.1)), 'vertical', 'residencial', 'lancamento', '2026-04-01'),
   pg_temp.ej('aurora-imp', 'Residencial Aurora', jsonb_build_array(pg_temp.uj('1', 40, 400000)), 'vertical', 'residencial', 'lancamento', '2025-01-01', null, 'São Paulo', 'SP', -23.61, -46.66)
 ));
-select (app.importar_mercado(:'c_man', dados)->>'ignorados')::int = 12 and (app.importar_mercado(:'c_man', dados)->>'erros')::int = 0
+select (app.im_importar(:'c_man', dados)->>'ignorados')::int = 12 and (app.im_importar(:'c_man', dados)->>'erros')::int = 0
   as imp_ok from carga_manual \gset
 select pg_temp.ok(:'imp_ok', 'fora do filtro não entra; o resto importa');
-select pg_temp.ok((select count(*) = 12 from jsonb_array_elements((select falhas from app.mercado_coletas where id = :'c_man')) f where f->>'motivo' = 'fora_do_filtro'), 'os doze rejeitados ficam no relatório');
-select pg_temp.ok((app.fechar_coleta_mercado(:'c_man')->>'situacao') = 'completa', 'coleta manual fecha');
-select (select count(*) from app.mercado_unidades) as un_antes \gset
+select pg_temp.ok((select count(*) = 12 from jsonb_array_elements((select falhas from app.im_coletas where id = :'c_man')) f where f->>'motivo' = 'fora_do_filtro'), 'os doze rejeitados ficam no relatório');
+select pg_temp.ok((app.im_fechar_coleta(:'c_man')->>'situacao') = 'completa', 'coleta manual fecha');
+select (select count(*) from app.im_unidades) as un_antes \gset
 select (select count(*) from app.concorrencia_empreendimentos where origem = 'importado') as emp_antes \gset
-select app.abrir_coleta_mercado(:'emp', 'manual', 'completa_mensal', '2026-04-01') as c_man2 \gset
+select app.im_abrir_coleta(:'emp', 'manual', 'completa_mensal', '2026-04-01') as c_man2 \gset
 select pg_temp.ok(:'c_man2' = :'c_man', 'a mesma chave reabre a coleta e desfaz a anterior');
-select pg_temp.ok((app.importar_mercado(:'c_man', (select dados from carga_manual))->>'erros')::int = 0, 'reimportar a mesma carga não dá erro');
-select pg_temp.ok((app.fechar_coleta_mercado(:'c_man')->>'situacao') = 'completa', 'a coleta reaberta fecha de novo');
-select pg_temp.ok((select count(*) = :un_antes from app.mercado_unidades)
+select pg_temp.ok((app.im_importar(:'c_man', (select dados from carga_manual))->>'erros')::int = 0, 'reimportar a mesma carga não dá erro');
+select pg_temp.ok((app.im_fechar_coleta(:'c_man')->>'situacao') = 'completa', 'a coleta reaberta fecha de novo');
+select pg_temp.ok((select count(*) = :un_antes from app.im_unidades)
   and (select count(*) = :emp_antes from app.concorrencia_empreendimentos where origem = 'importado'), 'rodar de novo não duplica unidade nem empreendimento');
-select e.id as emisto from app.concorrencia_empreendimentos e join app.mercado_ids_externos x on x.entidade_id = e.id and x.id_externo = 'misto-1' \gset
-select pg_temp.ok((select count(*) = 5 from app.mercado_unidades where empreendimento_id = :'emisto'), 'loja e tipo desconhecido são gravados');
-select pg_temp.ok((select not residencial and tipo_unidade = 'loja' from app.mercado_unidades where empreendimento_id = :'emisto' and numero = '3'), 'loja fica de fora do residencial');
-select pg_temp.ok((select tipo_unidade = 'nao_informado' and not residencial and tipo_fonte = 'box' from app.mercado_unidades where empreendimento_id = :'emisto' and numero = '5'), 'tipo desconhecido vira não informado');
-select pg_temp.ok((select tipos_desconhecidos = array['box'] from app.mercado_coletas where id = :'c_man'), 'o tipo desconhecido entra no relatório da coleta');
-select pg_temp.ok((select count(*) filter (where residencial) = 3 from app.mercado_unidades where empreendimento_id = :'emisto'), 'no misto só apartamento e studio NR ficam residenciais');
-select pg_temp.ok((select residencial from app.mercado_unidades where empreendimento_id = :'emisto' and numero = '4'), 'studio NR conta como residencial');
-select app.salvar_config_mercado(:'emp', '{"nr_conta_como_residencial": false}');
-select pg_temp.ok((select not residencial from app.mercado_unidades where empreendimento_id = :'emisto' and numero = '4'), 'desligar o NR tira o studio do residencial');
-select app.salvar_config_mercado(:'emp', '{"nr_conta_como_residencial": true}');
-select pg_temp.ok((select residencial from app.mercado_unidades where empreendimento_id = :'emisto' and numero = '4'), 'ligar o NR devolve o studio');
-select pg_temp.ok((select s.preco is null and 'preco_sentinela' = any(s.marcas) from app.mercado_unidade_estados s
-  join app.mercado_unidades u on u.id = s.unidade_id
-  join app.mercado_ids_externos x on x.entidade_id = u.empreendimento_id and x.id_externo = 'sent'), 'preço 0,1 é sentinela e não entra como preço');
+select e.id as emisto from app.concorrencia_empreendimentos e join app.im_ids_externos x on x.entidade_id = e.id and x.id_externo = 'misto-1' \gset
+select pg_temp.ok((select count(*) = 5 from app.im_unidades where empreendimento_id = :'emisto'), 'loja e tipo desconhecido são gravados');
+select pg_temp.ok((select not residencial and tipo_unidade = 'loja' from app.im_unidades where empreendimento_id = :'emisto' and numero = '3'), 'loja fica de fora do residencial');
+select pg_temp.ok((select tipo_unidade = 'nao_informado' and not residencial and tipo_fonte = 'box' from app.im_unidades where empreendimento_id = :'emisto' and numero = '5'), 'tipo desconhecido vira não informado');
+select pg_temp.ok((select tipos_desconhecidos = array['box'] from app.im_coletas where id = :'c_man'), 'o tipo desconhecido entra no relatório da coleta');
+select pg_temp.ok((select count(*) filter (where residencial) = 3 from app.im_unidades where empreendimento_id = :'emisto'), 'no misto só apartamento e studio NR ficam residenciais');
+select pg_temp.ok((select residencial from app.im_unidades where empreendimento_id = :'emisto' and numero = '4'), 'studio NR conta como residencial');
+select app.im_salvar_config(:'emp', '{"nr_conta_como_residencial": false}');
+select pg_temp.ok((select not residencial from app.im_unidades where empreendimento_id = :'emisto' and numero = '4'), 'desligar o NR tira o studio do residencial');
+select app.im_salvar_config(:'emp', '{"nr_conta_como_residencial": true}');
+select pg_temp.ok((select residencial from app.im_unidades where empreendimento_id = :'emisto' and numero = '4'), 'ligar o NR devolve o studio');
+select pg_temp.ok((select s.preco is null and 'preco_sentinela' = any(s.marcas) from app.im_unidade_estados s
+  join app.im_unidades u on u.id = s.unidade_id
+  join app.im_ids_externos x on x.entidade_id = u.empreendimento_id and x.id_externo = 'sent'), 'preço 0,1 é sentinela e não entra como preço');
 select pg_temp.ok((select observacao = 'não mexer' and origem = 'manual' from app.concorrencia_empreendimentos where id = :'aurora_manual'), 'o empreendimento manual não é alterado');
-select pg_temp.ok((select count(*) = 1 and min(similaridade) >= 0.5 and min(distancia_m) = 0 from app.mercado_sugestoes_vinculo where manual_id = :'aurora_manual'), 'nome igual e perto vira sugestão, sem vínculo automático');
+select pg_temp.ok((select count(*) = 1 and min(similaridade) >= 0.5 and min(distancia_m) = 0 from app.im_sugestoes_vinculo where manual_id = :'aurora_manual'), 'nome igual e perto vira sugestão, sem vínculo automático');
 
 -- Venda, preço de antes do monitor, distrato, normalização, lançamento e vínculo.
-select app.abrir_coleta_mercado(:'emp', 'orulo_login', 'completa_mensal', '2026-07-01') as c_ljul \gset
+select app.im_abrir_coleta(:'emp', 'orulo_login', 'completa_mensal', '2026-07-01') as c_ljul \gset
 select pg_temp.ok(:'c_ljul' is not null, 'a fonte orulo_login abre coleta');
-select pg_temp.ok((app.importar_mercado(:'c_ljul', jsonb_build_array(
+select pg_temp.ok((app.im_importar(:'c_ljul', jsonb_build_array(
   pg_temp.ej('venda-1', 'Venda Um', jsonb_build_array(
     pg_temp.uj('1', 40, 400000, 'disponivel', 2, 1, 1, 'apartamento', 'A', 'a1'),
     pg_temp.uj('2', 40, 400000, 'disponivel', 2, 1, 1, 'apartamento', 'A', 'a2'),
@@ -1268,27 +1268,27 @@ select pg_temp.ok((app.importar_mercado(:'c_ljul', jsonb_build_array(
     pg_temp.uj('1', 40, 400000, 'disponivel', 2, 1, 1, 'apartamento', 'A', 'sl1'),
     pg_temp.uj('2', 40, 400000, 'disponivel', 2, 1, 1, 'apartamento', 'A', 'sl2')))
 ))->>'erros')::int = 0, 'julho do login importa venda, lançamento e loja');
-select pg_temp.ok((app.fechar_coleta_mercado(:'c_ljul')->>'situacao') = 'completa', 'julho do login fecha');
+select pg_temp.ok((app.im_fechar_coleta(:'c_ljul')->>'situacao') = 'completa', 'julho do login fecha');
 select pg_temp.ok((select v.antes_do_monitor and v.origem_preco = 'estimado' and v.preco = 410000 and v.vendida_de = '2026-07-01' and v.vendida_ate = '2026-07-01'
-  from app.mercado_vendas v join app.mercado_unidades u on u.id = v.unidade_id
-  join app.mercado_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 's1'),
+  from app.im_vendas v join app.im_unidades u on u.id = v.unidade_id
+  join app.im_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 's1'),
   'venda anterior ao monitor usa a mediana dos pares a até 3%');
-select pg_temp.ok((select not exists (select 1 from app.mercado_vendas v join app.mercado_unidades u on u.id = v.unidade_id
-  join app.mercado_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'lj')), 'loja vendida ou não, não vira venda');
-select pg_temp.ok((select preco_de_lancamento from app.mercado_unidades u
-  join app.mercado_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'p1'), 'preço visto a até 60 dias do lançamento é preço de lançamento');
-select app.abrir_coleta_mercado(:'emp', 'orulo_login', 'lancamentos', '2026-07-20') as c_lanc \gset
-select pg_temp.ok((app.importar_mercado(:'c_lanc', jsonb_build_array(pg_temp.ej('so-lanc', 'So lancamentos', jsonb_build_array(
+select pg_temp.ok((select not exists (select 1 from app.im_vendas v join app.im_unidades u on u.id = v.unidade_id
+  join app.im_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'lj')), 'loja vendida ou não, não vira venda');
+select pg_temp.ok((select preco_de_lancamento from app.im_unidades u
+  join app.im_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'p1'), 'preço visto a até 60 dias do lançamento é preço de lançamento');
+select app.im_abrir_coleta(:'emp', 'orulo_login', 'lancamentos', '2026-07-20') as c_lanc \gset
+select pg_temp.ok((app.im_importar(:'c_lanc', jsonb_build_array(pg_temp.ej('so-lanc', 'So lancamentos', jsonb_build_array(
   pg_temp.uj('1', 40, 400000, 'vendida', 2, 1, 1, 'apartamento', 'A', 'sl1')))))->>'erros')::int = 0, 'coleta de lançamentos atualiza quem veio');
-select pg_temp.ok((app.fechar_coleta_mercado(:'c_lanc')->>'vendas')::int = 0, 'coleta de lançamentos não gera venda no fechamento');
-select pg_temp.falha(format($$select app.fechar_coleta_mercado(%L)$$, :'c_lanc'), 'coleta fechada não fecha de novo');
-select pg_temp.ok((select removida_coleta_id is null from app.mercado_unidades u
-  join app.mercado_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'sl2'), 'coleta de lançamentos não remove quem faltou');
-select pg_temp.ok((select count(*) = 0 from app.mercado_vendas v join app.mercado_unidades u on u.id = v.unidade_id
-  join app.mercado_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'sl1'), 'coleta de lançamentos não gera venda');
+select pg_temp.ok((app.im_fechar_coleta(:'c_lanc')->>'vendas')::int = 0, 'coleta de lançamentos não gera venda no fechamento');
+select pg_temp.falha(format($$select app.im_fechar_coleta(%L)$$, :'c_lanc'), 'coleta fechada não fecha de novo');
+select pg_temp.ok((select removida_coleta_id is null from app.im_unidades u
+  join app.im_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'sl2'), 'coleta de lançamentos não remove quem faltou');
+select pg_temp.ok((select count(*) = 0 from app.im_vendas v join app.im_unidades u on u.id = v.unidade_id
+  join app.im_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'sl1'), 'coleta de lançamentos não gera venda');
 
-select app.abrir_coleta_mercado(:'emp', 'orulo_login', 'completa_mensal', '2026-08-01') as c_lago \gset
-select pg_temp.ok((app.importar_mercado(:'c_lago', jsonb_build_array(
+select app.im_abrir_coleta(:'emp', 'orulo_login', 'completa_mensal', '2026-08-01') as c_lago \gset
+select pg_temp.ok((app.im_importar(:'c_lago', jsonb_build_array(
   pg_temp.ej('venda-1', 'Venda Um', jsonb_build_array(
     pg_temp.uj('1', 40, null, 'vendida', 2, 1, 1, 'apartamento', 'A', 'a1'),
     pg_temp.uj('2', 40, 400000, 'disponivel', 2, 1, 1, 'apartamento', 'A', 'a2'),
@@ -1301,20 +1301,20 @@ select pg_temp.ok((app.importar_mercado(:'c_lago', jsonb_build_array(
     pg_temp.uj('1', 40, 410000, 'disponivel', 2, 1, 1, 'apartamento', 'A', 'p1')),
     'vertical', 'residencial', 'lancamento', '2026-06-01')
 ))->>'erros')::int = 0, 'agosto marca a venda e normaliza o bloco');
-select pg_temp.ok((app.fechar_coleta_mercado(:'c_lago')->>'situacao') = 'completa', 'agosto do login fecha');
-select pg_temp.ok((select count(*) = 1 from app.mercado_unidades u
+select pg_temp.ok((app.im_fechar_coleta(:'c_lago')->>'situacao') = 'completa', 'agosto do login fecha');
+select pg_temp.ok((select count(*) = 1 from app.im_unidades u
   join app.concorrencia_empreendimentos e on e.id = u.empreendimento_id
-  join app.mercado_ids_externos x on x.entidade_id = e.id and x.id_externo = 'venda-1'
+  join app.im_ids_externos x on x.entidade_id = e.id and x.id_externo = 'venda-1'
   where u.numero_norm = '101'), 'Torre A e Bloco A são a mesma unidade');
 select pg_temp.ok((select count(*) = 1 and bool_and(not antes_do_monitor and origem_preco = 'ultimo_visto' and preco = 400000
   and vendida_de = '2026-07-01' and vendida_ate = '2026-08-01')
-  from app.mercado_vendas v join app.mercado_unidades u on u.id = v.unidade_id
-  join app.mercado_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'a1'),
+  from app.im_vendas v join app.im_unidades u on u.id = v.unidade_id
+  join app.im_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'a1'),
   'disponível que vira vendida gera venda com o último preço');
-select pg_temp.ok((select count(*) = 0 from app.mercado_vendas v join app.mercado_unidades u on u.id = v.unidade_id
-  join app.mercado_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'lj'), 'loja que passa a vendida continua fora das vendas');
-select app.abrir_coleta_mercado(:'emp', 'orulo_login', 'completa_mensal', '2026-09-01') as c_lset \gset
-select pg_temp.ok((app.importar_mercado(:'c_lset', jsonb_build_array(
+select pg_temp.ok((select count(*) = 0 from app.im_vendas v join app.im_unidades u on u.id = v.unidade_id
+  join app.im_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'lj'), 'loja que passa a vendida continua fora das vendas');
+select app.im_abrir_coleta(:'emp', 'orulo_login', 'completa_mensal', '2026-09-01') as c_lset \gset
+select pg_temp.ok((app.im_importar(:'c_lset', jsonb_build_array(
   pg_temp.ej('venda-1', 'Venda Um', jsonb_build_array(
     pg_temp.uj('1', 40, 410000, 'disponivel', 2, 1, 1, 'apartamento', 'A', 'a1'),
     pg_temp.uj('2', 40, 400000, 'disponivel', 2, 1, 1, 'apartamento', 'A', 'a2'),
@@ -1328,79 +1328,79 @@ select pg_temp.ok((app.importar_mercado(:'c_lset', jsonb_build_array(
     pg_temp.uj('2', 40, 420000, 'disponivel', 2, 1, 2, 'apartamento', 'A', 'p2')),
     'vertical', 'residencial', 'lancamento', '2026-06-01')
 ))->>'erros')::int = 0, 'setembro desfaz a venda e traz unidade fora da janela');
-select pg_temp.ok((app.fechar_coleta_mercado(:'c_lset')->>'situacao') = 'completa', 'setembro do login fecha');
-select pg_temp.ok((select desfeita_coleta_id = :'c_lset' from app.mercado_vendas v
-  join app.mercado_unidades u on u.id = v.unidade_id
-  join app.mercado_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'a1'), 'voltar a disponível desfaz a venda');
-select pg_temp.ok((select not preco_de_lancamento from app.mercado_unidades u
-  join app.mercado_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'p2'), 'preço visto depois de 60 dias não é de lançamento');
+select pg_temp.ok((app.im_fechar_coleta(:'c_lset')->>'situacao') = 'completa', 'setembro do login fecha');
+select pg_temp.ok((select desfeita_coleta_id = :'c_lset' from app.im_vendas v
+  join app.im_unidades u on u.id = v.unidade_id
+  join app.im_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'a1'), 'voltar a disponível desfaz a venda');
+select pg_temp.ok((select not preco_de_lancamento from app.im_unidades u
+  join app.im_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'p2'), 'preço visto depois de 60 dias não é de lançamento');
 
-select app.abrir_coleta_mercado(:'emp', 'orulo_login', 'completa_mensal', '2026-10-01') as c_v1 \gset
-select pg_temp.ok((app.importar_mercado(:'c_v1', jsonb_build_array(
+select app.im_abrir_coleta(:'emp', 'orulo_login', 'completa_mensal', '2026-10-01') as c_v1 \gset
+select pg_temp.ok((app.im_importar(:'c_v1', jsonb_build_array(
   pg_temp.ej('liga', 'Liga', jsonb_build_array(pg_temp.uj('101', 40, 400000, 'disponivel', 2, 1, 5, 'apartamento', 'A', 'old-u'))),
   pg_temp.ej('liga-nao', 'Liga Nao', jsonb_build_array(pg_temp.uj('201', 44, 440000, 'disponivel', 2, 1, 4, 'apartamento', 'A', 'old-n')))
-))->>'erros')::int = 0 and (app.fechar_coleta_mercado(:'c_v1')->>'situacao') = 'completa', 'outubro grava as unidades que vão trocar de número');
-select app.abrir_coleta_mercado(:'emp', 'orulo_login', 'completa_mensal', '2026-10-20') as c_v2 \gset
-select pg_temp.ok((app.importar_mercado(:'c_v2', jsonb_build_array(
+))->>'erros')::int = 0 and (app.im_fechar_coleta(:'c_v1')->>'situacao') = 'completa', 'outubro grava as unidades que vão trocar de número');
+select app.im_abrir_coleta(:'emp', 'orulo_login', 'completa_mensal', '2026-10-20') as c_v2 \gset
+select pg_temp.ok((app.im_importar(:'c_v2', jsonb_build_array(
   pg_temp.ej('liga', 'Liga', jsonb_build_array(pg_temp.uj('101A', 40, 400000, 'vendida', 2, 1, 5, 'apartamento', 'A', 'new-u'))),
   pg_temp.ej('liga-nao', 'Liga Nao', jsonb_build_array(pg_temp.uj('201B', 44, 440000, 'disponivel', 2, 1, 4, 'apartamento', 'A', 'new-n')))
 ))->>'erros')::int = 0, 'a unidade nova chega com a mesma área, andar e preço');
-select pg_temp.ok((app.fechar_coleta_mercado(:'c_v2')->>'situacao') = 'completa', 'o par fica pendente no fechamento');
-select u.id as unew from app.mercado_unidades u join app.mercado_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'new-u' \gset
-select u.id as unewn from app.mercado_unidades u join app.mercado_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'new-n' \gset
-select pg_temp.ok((select vinculo_pendente_id is not null from app.mercado_unidades where id = :'unew')
-  and (select removida_coleta_id is null from app.mercado_unidades u join app.mercado_ids_externos x on x.entidade_id = u.id and x.id_externo = 'old-u'),
+select pg_temp.ok((app.im_fechar_coleta(:'c_v2')->>'situacao') = 'completa', 'o par fica pendente no fechamento');
+select u.id as unew from app.im_unidades u join app.im_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'new-u' \gset
+select u.id as unewn from app.im_unidades u join app.im_ids_externos x on x.entidade = 'unidade' and x.entidade_id = u.id and x.id_externo = 'new-n' \gset
+select pg_temp.ok((select vinculo_pendente_id is not null from app.im_unidades where id = :'unew')
+  and (select removida_coleta_id is null from app.im_unidades u join app.im_ids_externos x on x.entidade_id = u.id and x.id_externo = 'old-u'),
   'par pendente não remove a unidade antiga');
-select app.confirmar_vinculo_unidade(:'unew', true);
-select pg_temp.ok(not exists (select 1 from app.mercado_unidades where id = :'unew')
-  and exists (select 1 from app.mercado_ids_externos where id_externo = 'new-u' and entidade_id in (select id from app.mercado_unidades)),
+select app.im_confirmar_vinculo_unidade(:'unew', true);
+select pg_temp.ok(not exists (select 1 from app.im_unidades where id = :'unew')
+  and exists (select 1 from app.im_ids_externos where id_externo = 'new-u' and entidade_id in (select id from app.im_unidades)),
   'confirmar funde na unidade antiga e leva o id de fora');
 select pg_temp.ok((select count(*) = 1 and bool_and(origem_preco = 'ultimo_visto' and not antes_do_monitor)
-  from app.mercado_vendas v join app.mercado_unidades u on u.id = v.unidade_id
-  join app.mercado_ids_externos x on x.entidade_id = u.id and x.id_externo = 'new-u'), 'o vínculo confirmado gera a venda');
-select app.confirmar_vinculo_unidade(:'unewn', false);
-select pg_temp.ok((select vinculo_pendente_id is null from app.mercado_unidades where id = :'unewn')
-  and (select removida_coleta_id is not null from app.mercado_unidades u join app.mercado_ids_externos x on x.entidade_id = u.id and x.id_externo = 'old-n'),
+  from app.im_vendas v join app.im_unidades u on u.id = v.unidade_id
+  join app.im_ids_externos x on x.entidade_id = u.id and x.id_externo = 'new-u'), 'o vínculo confirmado gera a venda');
+select app.im_confirmar_vinculo_unidade(:'unewn', false);
+select pg_temp.ok((select vinculo_pendente_id is null from app.im_unidades where id = :'unewn')
+  and (select removida_coleta_id is not null from app.im_unidades u join app.im_ids_externos x on x.entidade_id = u.id and x.id_externo = 'old-n'),
   'recusar o vínculo remove a antiga e fica com a nova');
-select pg_temp.falha($$select app.confirmar_vinculo_unidade('00000000-0000-0000-0000-0000000000aa', true)$$, 'sem vínculo pendente não confirma');
+select pg_temp.falha($$select app.im_confirmar_vinculo_unidade('00000000-0000-0000-0000-0000000000aa', true)$$, 'sem vínculo pendente não confirma');
 
-select app.abrir_coleta_mercado(:'emp', 'orulo_login', 'lancamentos', '2026-10-22') as c_sem_lista \gset
-select pg_temp.ok((app.importar_mercado(:'c_sem_lista', jsonb_build_array(
+select app.im_abrir_coleta(:'emp', 'orulo_login', 'lancamentos', '2026-10-22') as c_sem_lista \gset
+select pg_temp.ok((app.im_importar(:'c_sem_lista', jsonb_build_array(
   pg_temp.ej('venda-1', 'Venda Um', null),
   pg_temp.ej('nunca-vi', 'Nunca Vi', null)
 ))->>'ignorados')::int = 1, 'lançamentos sem unidades atualiza quem já passou e ignora o novo');
 select pg_temp.ok((select e.ultima_coleta_id = :'c_sem_lista' and s.no_filtro and s.situacao = 'em_obras'
   from app.concorrencia_empreendimentos e
-  join app.mercado_ids_externos x on x.entidade_id = e.id and x.id_externo = 'venda-1'
-  join app.mercado_empreendimento_estados s on s.empreendimento_id = e.id and s.ate_coleta_id is null),
+  join app.im_ids_externos x on x.entidade_id = e.id and x.id_externo = 'venda-1'
+  join app.im_empreendimento_estados s on s.empreendimento_id = e.id and s.ate_coleta_id is null),
   'lançamentos sem lista mantém o empreendimento no filtro');
-select pg_temp.ok((app.fechar_coleta_mercado(:'c_sem_lista')->>'vendas')::int = 0, 'lançamentos sem lista não vende');
+select pg_temp.ok((app.im_fechar_coleta(:'c_sem_lista')->>'vendas')::int = 0, 'lançamentos sem lista não vende');
 
-select app.abrir_coleta_mercado(:'emp', 'orulo_api', 'completa_mensal', '2026-11-01') as c_forca \gset
-select pg_temp.ok((app.fechar_coleta_mercado(:'c_forca', null, true)->>'situacao') = 'incompleta', 'parada na fonte força a coleta incompleta');
-select app.abrir_coleta_mercado(:'emp', 'orulo_api', 'completa_mensal', '2026-11-02') as c_sem_forca \gset
-select pg_temp.ok((app.fechar_coleta_mercado(:'c_sem_forca')->>'situacao') = 'completa', 'sem esperados e sem parada a mensal nova fecha completa');
+select app.im_abrir_coleta(:'emp', 'orulo_api', 'completa_mensal', '2026-11-01') as c_forca \gset
+select pg_temp.ok((app.im_fechar_coleta(:'c_forca', null, true)->>'situacao') = 'incompleta', 'parada na fonte força a coleta incompleta');
+select app.im_abrir_coleta(:'emp', 'orulo_api', 'completa_mensal', '2026-11-02') as c_sem_forca \gset
+select pg_temp.ok((app.im_fechar_coleta(:'c_sem_forca')->>'situacao') = 'completa', 'sem esperados e sem parada a mensal nova fecha completa');
 
-select app.abrir_coleta_mercado(:'emp', 'orulo_api', 'lancamentos', '2026-11-03') as c_auth \gset
-select app.anotar_falha_mercado(:'c_auth', '1', 'http', '500 depois das tentativas');
+select app.im_abrir_coleta(:'emp', 'orulo_api', 'lancamentos', '2026-11-03') as c_auth \gset
+select app.im_anotar_falha(:'c_auth', '1', 'http', '500 depois das tentativas');
 select pg_temp.ok((select falhas->0->>'motivo' = 'http' and falhas->0->>'id_externo' = '1'
-  from app.mercado_coletas where id = :'c_auth'), 'a coleta anota a falha do adaptador');
-select app.falhar_coleta_mercado(:'c_auth', '401 depois do novo login');
-select pg_temp.ok((select situacao = 'falhou' and concluida_em is not null from app.mercado_coletas where id = :'c_auth'), 'segundo 401 encerra a coleta como falhou');
-select pg_temp.falha(format($$select app.fechar_coleta_mercado(%L)$$, :'c_auth'), 'coleta que falhou não fecha');
-select app.abrir_coleta_mercado(:'emp', 'orulo_planilha', 'lancamentos', '2026-11-04') as c_perm \gset
+  from app.im_coletas where id = :'c_auth'), 'a coleta anota a falha do adaptador');
+select app.im_falhar_coleta(:'c_auth', '401 depois do novo login');
+select pg_temp.ok((select situacao = 'falhou' and concluida_em is not null from app.im_coletas where id = :'c_auth'), 'segundo 401 encerra a coleta como falhou');
+select pg_temp.falha(format($$select app.im_fechar_coleta(%L)$$, :'c_auth'), 'coleta que falhou não fecha');
+select app.im_abrir_coleta(:'emp', 'orulo_planilha', 'lancamentos', '2026-11-04') as c_perm \gset
 select pg_temp.como(:'analista');
-select pg_temp.falha(format($$select app.anotar_falha_mercado(%L, '1', 'http', 'x')$$, :'c_perm'), 'analista não anota falha da coleta');
+select pg_temp.falha(format($$select app.im_anotar_falha(%L, '1', 'http', 'x')$$, :'c_perm'), 'analista não anota falha da coleta');
 select pg_temp.como(:'diretor');
-select app.falhar_coleta_mercado(:'c_perm', 'encerrar o teste');
+select app.im_falhar_coleta(:'c_perm', 'encerrar o teste');
 
 select pg_temp.como(:'leitor');
-select pg_temp.ok((select count(*) >= 3 from app.mercado_unidades) and (select count(*) >= 1 from app.mercado_vendas) and (select count(*) >= 1 from app.mercado_coletas), 'Leitura vê as tabelas do monitor');
-select pg_temp.falha(format($$select app.abrir_coleta_mercado(%L, 'orulo_api', 'completa_mensal', '2026-12-01')$$, :'emp'), 'Leitura não abre coleta');
-select pg_temp.falha(format($$select app.falhar_coleta_mercado(%L, 'x')$$, :'c_auth'), 'Leitura não marca a coleta como falhou');
+select pg_temp.ok((select count(*) >= 3 from app.im_unidades) and (select count(*) >= 1 from app.im_vendas) and (select count(*) >= 1 from app.im_coletas), 'Leitura vê as tabelas do monitor');
+select pg_temp.falha(format($$select app.im_abrir_coleta(%L, 'orulo_api', 'completa_mensal', '2026-12-01')$$, :'emp'), 'Leitura não abre coleta');
+select pg_temp.falha(format($$select app.im_falhar_coleta(%L, 'x')$$, :'c_auth'), 'Leitura não marca a coleta como falhou');
 select pg_temp.como(:'intruso');
-select pg_temp.ok((select count(*) = 0 from app.mercado_coletas) and (select count(*) = 0 from app.mercado_unidades) and (select count(*) = 0 from app.mercado_vendas), 'outra empresa não vê o monitor');
+select pg_temp.ok((select count(*) = 0 from app.im_coletas) and (select count(*) = 0 from app.im_unidades) and (select count(*) = 0 from app.im_vendas), 'outra empresa não vê o monitor');
 select pg_temp.como(:'diretor');
-select pg_temp.ok((select count(*) >= 1 from app.auditoria where tabela = 'mercado_coletas'), 'coleta entra na auditoria');
+select pg_temp.ok((select count(*) >= 1 from app.auditoria where tabela = 'im_coletas'), 'coleta entra na auditoria');
 
 \echo 'TODOS OS TESTES PASSARAM'

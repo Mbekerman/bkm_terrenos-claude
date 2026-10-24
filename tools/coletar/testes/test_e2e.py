@@ -134,7 +134,7 @@ def test_rodada_contra_as_funcoes_do_banco(cluster):
             coleta = conn.execute(
                 """
                 select situacao, coletados, unidades, bruto_caminho, esperados
-                  from app.mercado_coletas where empresa_id = %s and tipo = 'completa_mensal'
+                  from app.im_coletas where empresa_id = %s and tipo = 'completa_mensal'
                 """,
                 (empresa,),
             ).fetchone()
@@ -148,22 +148,22 @@ def test_rodada_contra_as_funcoes_do_banco(cluster):
                 select count(*) filter (where tipo_unidade = 'apartamento'),
                        count(*) filter (where situacao = 'vendida'),
                        count(*) filter (where situacao = 'disponivel')
-                  from app.mercado_unidades u
-                  join app.mercado_unidade_estados e on e.unidade_id = u.id and e.ate_coleta_id is null
+                  from app.im_unidades u
+                  join app.im_unidade_estados e on e.unidade_id = u.id and e.ate_coleta_id is null
                  where u.empresa_id = %s
                 """,
                 (empresa,),
             ).fetchone()
             assert tipos == (574, 119, 455)
             vendas = conn.execute(
-                "select count(*) from app.mercado_vendas where empresa_id = %s and antes_do_monitor",
+                "select count(*) from app.im_vendas where empresa_id = %s and antes_do_monitor",
                 (empresa,),
             ).fetchone()[0]
             assert vendas == 119
             sit = conn.execute(
                 """
-                select situacao, no_filtro from app.mercado_empreendimento_estados s
-                  join app.mercado_ids_externos i on i.entidade_id = s.empreendimento_id
+                select situacao, no_filtro from app.im_empreendimento_estados s
+                  join app.im_ids_externos i on i.entidade_id = s.empreendimento_id
                  where i.id_externo = '83029' and s.ate_coleta_id is null
                 """,
             ).fetchone()
@@ -190,8 +190,8 @@ def test_rodada_contra_as_funcoes_do_banco(cluster):
         with psycopg.connect(cluster.dsn, autocommit=True) as conn:
             ainda = conn.execute(
                 """
-                select s.no_filtro from app.mercado_empreendimento_estados s
-                  join app.mercado_ids_externos i on i.entidade_id = s.empreendimento_id and i.id_externo = '83029'
+                select s.no_filtro from app.im_empreendimento_estados s
+                  join app.im_ids_externos i on i.entidade_id = s.empreendimento_id and i.id_externo = '83029'
                  where s.ate_coleta_id is null
                 """,
             ).fetchone()[0]

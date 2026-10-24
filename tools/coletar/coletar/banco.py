@@ -73,7 +73,7 @@ class BancoSupabase:
         return r.json()
 
     def abrir(self, empresa_id: str, fonte: str, tipo: str, referencia: date, caminho: str) -> str:
-        coleta = self._rpc("abrir_coleta_mercado", {
+        coleta = self._rpc("im_abrir_coleta", {
             "p_empresa": empresa_id,
             "p_fonte": fonte,
             "p_tipo": tipo,
@@ -84,17 +84,17 @@ class BancoSupabase:
         return str(coleta).strip('"')
 
     def importar(self, coleta_id: str, empreendimentos: list[dict]) -> dict:
-        return self._rpc("importar_mercado", {"p_coleta": coleta_id, "p_dados": empreendimentos}) or {}
+        return self._rpc("im_importar", {"p_coleta": coleta_id, "p_dados": empreendimentos}) or {}
 
     def fechar_coleta(self, coleta_id: str, esperados: int | None, *, forcar_incompleta: bool = False) -> dict:
-        return self._rpc("fechar_coleta_mercado", {
+        return self._rpc("im_fechar_coleta", {
             "p_coleta": coleta_id,
             "p_esperados": esperados,
             "p_forcar_incompleta": forcar_incompleta,
         }) or {}
 
     def anotar_falha(self, coleta_id: str, id_externo: str | None, motivo: str, detalhe: str) -> None:
-        self._rpc("anotar_falha_mercado", {
+        self._rpc("im_anotar_falha", {
             "p_coleta": coleta_id,
             "p_id": id_externo or "",
             "p_motivo": motivo,
@@ -102,10 +102,10 @@ class BancoSupabase:
         })
 
     def falhar(self, coleta_id: str, motivo: str) -> None:
-        self._rpc("falhar_coleta_mercado", {"p_coleta": coleta_id, "p_motivo": (motivo or "")[:500]})
+        self._rpc("im_falhar_coleta", {"p_coleta": coleta_id, "p_motivo": (motivo or "")[:500]})
 
     def conhecidos(self, empresa_id: str, fonte: str) -> dict[str, str]:
-        ids = self._get("mercado_ids_externos", {
+        ids = self._get("im_ids_externos", {
             "select": "id_externo,entidade_id",
             "empresa_id": f"eq.{empresa_id}",
             "fonte": f"eq.{fonte}",
@@ -117,7 +117,7 @@ class BancoSupabase:
         ents = [row["entidade_id"] for row in ids if row.get("entidade_id")]
         for i in range(0, len(ents), 80):
             lote = ",".join(ents[i:i + 80])
-            estados = self._get("mercado_empreendimento_estados", {
+            estados = self._get("im_empreendimento_estados", {
                 "select": "empreendimento_id,situacao",
                 "ate_coleta_id": "is.null",
                 "empreendimento_id": f"in.({lote})",
@@ -162,34 +162,34 @@ class BancoPostgres:
 
     def abrir(self, empresa_id: str, fonte: str, tipo: str, referencia: date, caminho: str) -> str:
         row = self.conn.execute(
-            "select app.abrir_coleta_mercado(%s::uuid, %s, %s, %s::date, %s::int, %s)",
+            "select app.im_abrir_coleta(%s::uuid, %s, %s, %s::date, %s::int, %s)",
             (empresa_id, fonte, tipo, referencia, None, caminho),
         ).fetchone()
         return str(row[0])
 
     def importar(self, coleta_id: str, empreendimentos: list[dict]) -> dict:
         row = self.conn.execute(
-            "select app.importar_mercado(%s::uuid, %s::jsonb)",
+            "select app.im_importar(%s::uuid, %s::jsonb)",
             (coleta_id, Jsonb(empreendimentos)),
         ).fetchone()
         return _py(row[0]) or {}
 
     def fechar_coleta(self, coleta_id: str, esperados: int | None, *, forcar_incompleta: bool = False) -> dict:
         row = self.conn.execute(
-            "select app.fechar_coleta_mercado(%s::uuid, %s::int, %s)",
+            "select app.im_fechar_coleta(%s::uuid, %s::int, %s)",
             (coleta_id, esperados, forcar_incompleta),
         ).fetchone()
         return _py(row[0]) or {}
 
     def anotar_falha(self, coleta_id: str, id_externo: str | None, motivo: str, detalhe: str) -> None:
         self.conn.execute(
-            "select app.anotar_falha_mercado(%s::uuid, %s, %s, %s)",
+            "select app.im_anotar_falha(%s::uuid, %s, %s, %s)",
             (coleta_id, id_externo or "", motivo, (detalhe or "")[:500]),
         )
 
     def falhar(self, coleta_id: str, motivo: str) -> None:
         self.conn.execute(
-            "select app.falhar_coleta_mercado(%s::uuid, %s)",
+            "select app.im_falhar_coleta(%s::uuid, %s)",
             (coleta_id, (motivo or "")[:500]),
         )
 
@@ -197,8 +197,8 @@ class BancoPostgres:
         rows = self.conn.execute(
             """
             select i.id_externo, s.situacao
-              from app.mercado_ids_externos i
-              join app.mercado_empreendimento_estados s
+              from app.im_ids_externos i
+              join app.im_empreendimento_estados s
                 on s.empreendimento_id = i.entidade_id and s.ate_coleta_id is null
              where i.empresa_id = %s and i.fonte = %s and i.entidade = 'empreendimento'
             """,

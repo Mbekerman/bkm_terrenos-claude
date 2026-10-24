@@ -1,4 +1,4 @@
-"""Conversão do JSON do Órulo para o formato que `app.importar_mercado` lê.
+"""Conversão do JSON do Órulo para o formato que `app.im_importar` lê.
 
 Datas `dd/mm/aaaa` (com ou sem hora) viram ISO. Número em texto vira número.
 Preço `0.1` (sentinela de breve lançamento) e preço vazio viram null.

@@ -148,15 +148,15 @@ def test_banco_supabase_monta_rpc_e_storage():
 
     def handler(request: httpx.Request) -> httpx.Response:
         vistos.append((request.method, request.url.path, request.headers.get("authorization"), request.content))
-        if request.url.path.endswith("/abrir_coleta_mercado"):
+        if request.url.path.endswith("/im_abrir_coleta"):
             return httpx.Response(200, json="coleta-uuid")
-        if request.url.path.endswith("/importar_mercado"):
+        if request.url.path.endswith("/im_importar"):
             return httpx.Response(200, json={"coletados": 1, "unidades": 2, "ignorados": 0, "erros": 0})
-        if request.url.path.endswith("/fechar_coleta_mercado"):
+        if request.url.path.endswith("/im_fechar_coleta"):
             return httpx.Response(200, json={"situacao": "completa", "vendas": 0, "removidas": 0})
         if request.url.path.startswith("/storage/"):
             return httpx.Response(200, json={"Key": "ok"})
-        if "mercado_ids_externos" in request.url.path:
+        if "im_ids_externos" in request.url.path:
             return httpx.Response(200, json=[])
         return httpx.Response(404)
 
