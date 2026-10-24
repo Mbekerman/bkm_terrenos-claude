@@ -4,6 +4,8 @@ Baixa do FTP do IBGE (guardando numa pasta de cache), confere e grava:
   docs/dados/setores-<municipio>-2022.json   arquivo do protótipo (geometria simplificada, ~1 m, e os valores do IBGE como vieram)
   tools/setores/saida/setores.csv            carga do banco: app.setores_censitarios (geometria oficial, sem simplificar)
   tools/setores/saida/valores.csv            carga do banco: app.setor_valores
+  docs/dados/demografia-<municipio>-2022.json arquivo do protótipo: idade e sexo, domicílios por tamanho e espécie,
+                                              vagos e de uso ocasional (variáveis de demografia.json, como vieram)
   tools/setores/saida/carga.sql              \\copy dos dois arquivos (psql)
 
 Nada aqui calcula renda estimada: o arquivo leva os valores originais e a metodologia
@@ -21,12 +23,29 @@ ARQ = {
     # malha oficial com atributos básicos (V0001 pessoas, V0007 domicílios particulares ocupados)
     'malha': FTP + '/Agregados_por_Setores_Censitarios/malha_com_atributos/setores/gpkg/UF/{uf}/{uf}_setores_CD2022.gpkg',
     'renda': FTP + '/Agregados_por_Setores_Censitarios_Rendimento_do_Responsavel/Agregados_por_setores_renda_responsavel_BR_20260508_csv.zip',
+    'demografia': FTP + '/Agregados_por_Setores_Censitarios/Agregados_por_Setor_csv/Agregados_por_setores_demografia_BR.zip',
+    'domicilio1': FTP + '/Agregados_por_Setores_Censitarios/Agregados_por_Setor_csv/Agregados_por_setores_caracteristicas_domicilio1_BR_20261021.zip',
+    'basico': FTP + '/Agregados_por_Setores_Censitarios/Agregados_por_Setor_csv/Agregados_por_setores_basico_BR_20260520.zip',
     'composicao': FTP + '/Microdados_e_Areas_de_Ponderacao/Documentacao/%c3%81reas%20de%20pondera%c3%a7%c3%a3o/Composi%c3%a7%c3%a3o%20das%20%c3%81reas%20de%20Pondera%c3%a7%c3%a3o.xlsx',
 }
 UFS = {'35': 'SP'}
 # variáveis guardadas (código do IBGE → de onde vem)
 VAR_MALHA = ['V0001', 'V0007']
 VAR_RENDA = ['V06001', 'V06002', 'V06004', 'V06006']
+DEMO = json.load(open(os.path.join(AQUI, 'demografia.json'), encoding='utf-8'))
+
+
+def variaveis_demografia():
+    """variáveis do IBGE que o perfil do entorno usa, na ordem do arquivo do protótipo"""
+    vs = [DEMO['sexo']['homens'], DEMO['sexo']['mulheres']]
+    for g in DEMO['idade']:
+        vs += g['total'] + g['homens'] + g['mulheres']
+    vs += list(DEMO['moradores'].values()) + [t['var'] for t in DEMO['tamanho']] + [e['var'] for e in DEMO['especie']]
+    vs += [DEMO['usoOcasional'], DEMO['vagos']]
+    return list(dict.fromkeys(vs))
+
+
+VAR_DEMO = variaveis_demografia()
 SITUACAO = {'': 'divulgado', 'X': 'sigilo', '.': 'sem_valor'}
 
 
@@ -52,6 +71,16 @@ def num(v):
     if v in ('X', '.'):
         return None, SITUACAO[v]
     return float(v), 'divulgado'
+
+
+def ler_agregado(arq, mun):
+    """CSV de um agregado por setor do IBGE (zip): {setor: {variável: texto}}, só o município; colunas em maiúsculas"""
+    with zipfile.ZipFile(arq) as z:
+        nome = [n for n in z.namelist() if n.lower().endswith('.csv')][0]
+        txt = io.TextIOWrapper(z.open(nome), encoding='latin-1')
+        r = csv.reader(txt, delimiter=';')
+        cab = [c.strip().upper() for c in next(r)]
+        return {l[0]: dict(zip(cab, l)) for l in r if l and l[0].startswith(mun)}
 
 
 def anel(coords, q=1e5):
@@ -84,6 +113,13 @@ def main():
         nome = [n for n in z.namelist() if n.lower().endswith('.csv')][0]
         txt = io.TextIOWrapper(z.open(nome), encoding='latin-1')
         renda = {l['CD_SETOR']: l for l in csv.DictReader(txt, delimiter=';') if l['CD_SETOR'].startswith(mun)}
+    agreg = {}
+    for k in ('demografia', 'domicilio1', 'basico'):
+        for c, l in ler_agregado(baixar(ARQ[k], a.cache), mun).items():
+            agreg.setdefault(c, {}).update(l)
+    falta = [v for v in VAR_DEMO if not any(v in l for l in agreg.values())]
+    if falta:
+        sys.exit('ERRO: variáveis de demografia.json que não estão nos arquivos do IBGE: ' + ', '.join(falta))
     comp = pd.read_excel(baixar(ARQ['composicao'], a.cache), dtype=str)
     comp.columns = ['setor', 'municipio', 'ap', 'nome']
     comp = dict(comp[comp.municipio == mun][['setor', 'ap']].values)
@@ -150,6 +186,21 @@ def main():
         json.dump(out, f, ensure_ascii=False, separators=(',', ':'))
     print('protótipo:', dest, f'{os.path.getsize(dest)/1e6:.1f} MB')
 
+    # perfil da população: as variáveis como vieram, na ordem de 'vars'; sigilo (X) e sem valor (.) viram null
+    def inteiro(c, v):
+        x = num(agreg.get(c, {}).get(v, '.'))[0]
+        return None if x is None else int(x)
+    demo = {'municipio': mun, 'censoAno': 2022, 'n': len(cds), 'cd': out['cd'], 'vars': VAR_DEMO,
+            'fontes': {k: ARQ[k] for k in ('demografia', 'domicilio1', 'basico')},
+            'nota': 'Valores do IBGE como vieram, um vetor por setor na ordem de vars (mesma ordem de setores do arquivo de setores); null = sigilo (X), sem valor (.) ou setor sem linha no arquivo.',
+            'v': [[inteiro(c, v) for v in VAR_DEMO] for c in cds]}
+    sem_linha = sum(1 for c in cds if c not in agreg)
+    print(f'demografia: {len(VAR_DEMO)} variáveis, {sem_linha} setores sem linha nos agregados')
+    dd = os.path.join(RAIZ, 'docs', 'dados', f'demografia-{mun}-2022.json')
+    with open(dd, 'w', encoding='utf-8') as f:
+        json.dump(demo, f, ensure_ascii=False, separators=(',', ':'))
+    print('protótipo:', dd, f'{os.path.getsize(dd)/1e6:.1f} MB')
+
     # ---------------- carga do banco ----------------
     sd = os.path.join(AQUI, 'saida')
     os.makedirs(sd, exist_ok=True)
@@ -163,6 +214,10 @@ def main():
             c = r.CD_SETOR
             for v in VAR_MALHA:
                 w.writerow([c, v, int(r[v.lower()]), 'divulgado'])
+            for v in VAR_DEMO:
+                if v in agreg.get(c, {}):
+                    x, s = num(agreg[c][v])
+                    w.writerow([c, v, '' if x is None else x, s])
             lr = renda.get(c)
             if lr:
                 for v in VAR_RENDA:
