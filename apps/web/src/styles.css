@@ -1349,6 +1349,13 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
   .mapa-area:has(.mp-modo:not(:empty)) .leaflet-control-scale { display: none }
 }
 .mp-modo .mp-q { opacity: .75; white-space: nowrap }
+/* edição da poligonal no celular: só os dois botões, sem a faixa escura (decisão do Moisés, 24/out/2026) */
+.mp-modo:not(:has(> span)):not(:empty) { background: transparent !important; box-shadow: none !important; padding: 0 !important; gap: 8px !important; justify-content: flex-end; pointer-events: none }
+.mp-modo:not(:has(> span)) .btn { pointer-events: auto; height: 40px; min-height: 40px !important; padding: 0 20px !important; border-radius: 20px !important; box-shadow: 0 1px 3px rgba(0,0,0,.3), 0 4px 8px rgba(0,0,0,.15) !important }
+.mp-modo:not(:has(> span)) .btn.text { background: #fff !important; color: #0b57d0 !important }
+.mp-modo:not(:has(> span)) .btn.primary { background: #0b57d0 !important; color: #fff !important }
+:root[data-tema="escuro"] .mp-modo:not(:has(> span)) .btn.text { background: #0c1433 !important; color: #c9d6ff !important; border: 1px solid rgba(124,140,255,.5) !important }
+:root[data-tema="escuro"] .mp-modo:not(:has(> span)) .btn.primary { background: #7c8cff !important; color: #081028 !important }
 /* ===== mais área de tela e nada saindo dos quadros ===== */
 /* menu lateral mais estreito (248 → 216 px) */
 @media (min-width: 900px) { .layout { grid-template-columns: 216px minmax(0, 1fr) } body.menu-min .layout { grid-template-columns: 80px minmax(0, 1fr) } }
@@ -2003,6 +2010,8 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 :root[data-tema="escuro"] .cc-tr.cc-tem:hover, :root[data-tema="escuro"] .cc-h-r td { background: rgba(99,112,255,.08) }
 :root[data-tema="escuro"] :is(.cc-sec) { border-color: #1a2240 } :root[data-tema="escuro"] .cc-tp { border-color: rgba(124,140,255,.25) }
 .cc-tn { white-space: nowrap }
+/* pino sem o número dentro (pedido do Moisés, 24/out/2026): só um ponto no meio */
+.pin-b b.pin-d { display: block; width: 8px; height: 8px; border-radius: 50%; font-size: 0 }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

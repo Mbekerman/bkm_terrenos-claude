@@ -49,7 +49,7 @@ if(!cel){
 // 5) clicar dentro não conclui; clicar fora salva
 A=await alvos();P=await pts();const cx=P.reduce((a,q)=>a+q.x,0)/P.length,cy=P.reduce((a,q)=>a+q.y,0)/P.length;await clique(cx,cy);ok((await pts()).length>0,modo+': clique dentro continua editando');
 if(cel)await p.tap('#mini-modo [data-a=mp-concluir]');else await clique(A.fora.x,A.fora.y);await p.waitForTimeout(600);
-const dep=await salvo();ok((await pts()).length===0,modo+': saiu da edição');ok(dep.poly!==antes.poly&&/Poligonal editada/.test(dep.log),modo+': salvou ('+dep.log+')');
+const dep=await salvo();ok((await pts()).length===0,modo+': saiu da edição');ok(dep.poly!==antes.poly&&/Ajuste na poligonal/.test(dep.log),modo+': salvou ('+dep.log+')');
 ok(await p.evaluate(()=>!!document.querySelector('#mini-mapa .leaflet-overlay-pane path')),modo+': mini-mapa redesenhado com a poligonal');
 await p.screenshot({path:OUT+modo+'_3salvo.png'});
 // 6) dois cliques fora da poligonal: página Mapa
