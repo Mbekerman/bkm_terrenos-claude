@@ -4,3 +4,4 @@
 docs/*
 supabase
 !docs/prototipo.html
+!docs/dados
