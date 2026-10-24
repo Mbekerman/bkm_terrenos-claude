@@ -617,6 +617,41 @@ update app.auditoria set em = em - interval '30 seconds' where registro_id = :'t
 select pg_temp.como(:'diretor');
 select app.salvar_terreno(:'tx', :vp, '{"nome":"Outro terreno"}') as vp \gset
 select pg_temp.ok((select count(*) from app.auditoria where registro_id = :'tx' and acao = 'update') = :np0 + 4, 'outros campos seguem com a janela de 7 segundos');
+-- lixeira do log: desfazer uma alteração deixa o rastro
+select pg_temp.como(:'analista');
+select versao as vp from app.terrenos where id = :'tx' \gset
+select coalesce(testada_principal_m::text, '') as td0 from app.terrenos where id = :'tx' \gset
+select app.salvar_terreno(:'tx', :vp, '{"testada_principal_m": 41}') as vp \gset
+reset role;
+select max(id) as aud_a from app.auditoria where registro_id = :'tx' and acao = 'update' \gset
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format('select app.desfazer_alteracao(%s)', :aud_a), 'leitura não desfaz');
+select pg_temp.como(:'analista');
+select app.desfazer_alteracao(:aud_a) as vp \gset
+select pg_temp.ok((select testada_principal_m is not distinct from nullif(:'td0', '')::numeric from app.terrenos where id = :'tx'), 'quem fez desfaz: o campo volta ao valor de antes');
+reset role;
+select pg_temp.ok((select desfeito_em is not null and desfeito_por = :'analista' from app.auditoria where id = :aud_a)
+  and (select desfaz_id = :aud_a and antes->>'testada_principal_m' = '41.00' from app.auditoria where id = (select max(id) from app.auditoria where registro_id = :'tx' and acao = 'update')),
+  'o log original fica marcado como desfeito e a volta é um log novo que aponta para ele');
+select max(id) as aud_v from app.auditoria where registro_id = :'tx' and acao = 'update' \gset
+select pg_temp.como(:'analista');
+select pg_temp.falha(format('select app.desfazer_alteracao(%s)', :aud_a), 'alteração já desfeita não se desfaz de novo');
+select pg_temp.falha(format('select app.desfazer_alteracao(%s)', :aud_v), 'o desfazer não se desfaz');
+select app.salvar_terreno(:'tx', :vp, '{"testada_principal_m": 42}') as vp \gset
+reset role;
+select max(id) as aud_b from app.auditoria where registro_id = :'tx' and acao = 'update' \gset
+select pg_temp.ok(:aud_b > :aud_v, 'mudança logo depois do desfazer é outro log');
+select pg_temp.como(:'gestor');
+select app.salvar_terreno(:'tx', :vp, '{"testada_principal_m": 43}') as vp \gset
+select pg_temp.falha(format('select app.desfazer_alteracao(%s)', :aud_b), 'campo que mudou depois não se desfaz por um log antigo');
+reset role;
+select max(id) as aud_c from app.auditoria where registro_id = :'tx' and acao = 'update' \gset
+select pg_temp.como(:'analista');
+select pg_temp.falha(format('select app.desfazer_alteracao(%s)', :aud_c), 'analista não desfaz a alteração do gestor dele');
+select pg_temp.como(:'diretor');
+select app.desfazer_alteracao(:aud_c) as vp \gset
+select pg_temp.ok((select testada_principal_m = 42 from app.terrenos where id = :'tx'), 'o diretor (superior e administrador) desfaz a alteração do gestor');
+select pg_temp.falha('select app.desfazer_alteracao((select min(id) from app.auditoria where tabela = ''membros''))', 'só alterações da ficha do terreno se desfazem');
 
 \echo '# fechamento como comprado'
 select app.registrar_oferta(:'t2', 3000000) \gset

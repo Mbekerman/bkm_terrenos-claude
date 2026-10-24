@@ -65,7 +65,11 @@ function juntarLog(t,s,campos,itens,nNovos){
   const ks=campos.map(c=>c.k).sort();
   if(itens.length||nNovos>1||ks.some(k=>LOG_NAO_JUNTA.includes(k))||e.det&&e.det.length>ks.length)return;
   const a=JSON.parse(s.j);e.ks=ks;e.ant=Object.fromEntries(ks.map(k=>[k,valCampo(a,k)]));
+  /* valores depois da ação: o olhinho e a lixeira só valem enquanto o campo ainda tem estes valores */
+  {const d=JSON.parse(retrato(t));e.dep=Object.fromEntries(ks.map(k=>[k,valCampo(d,k)]))}
   const p=t.hist[t.hist.length-2];
+  /* o desfazer e a ação desfeita não se juntam com nada */
+  if(e.desfaz||p&&(p.desfeito||p.desfaz))return;
   if(!p||!p.ks||p.user!==e.user||p.ks.join()!==ks.join()||Date.parse(e.em)-Date.parse(p.em)>=janelaLog(ks))return;
   const atual=JSON.parse(retrato(t));
   if(ks.every(k=>JSON.stringify(valCampo(atual,k))===JSON.stringify(p.ant[k]))){t.hist.splice(-2,2);return}
@@ -210,7 +214,7 @@ function pnLogs(t){
   let dia='',out=filtro;
   if(!H.length)out+=`<div class="empty">Nenhum registro ${sel.length?'destes usuários ':''}neste período.</div>`;
   H.forEach(h=>{const d=h.em.slice(0,10);if(d!==dia){dia=d;out+=`<div class="pn-dia">${diaRot(d)}</div>`}
-    out+=`<div class="pn-log" data-a="pn-log" data-i="${t.hist.indexOf(h)}" tabindex="0" role="button" aria-label="${esc(h.txt)}: mostrar na ficha">${av(h.user,'sm')}<div class="pn-lc"><div class="pn-lt">${esc(h.txt)}</div>${h.det&&h.det.length?`<ul class="pn-det">${h.det.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}<div class="pn-lm" title="${esc(emCompleto(h.em))}">${esc(h.user)}${hhmm(h.em)?` · ${hhmm(h.em)}`:''}</div></div></div>`});
+    out+=`<div class="pn-log${typeof logOffCls==='function'?logOffCls(t,h):''}" data-a="pn-log" data-i="${t.hist.indexOf(h)}" tabindex="0" role="button" aria-label="${esc(h.txt)}: mostrar na ficha">${av(h.user,'sm')}<div class="pn-lc"><div class="pn-lt">${esc(h.txt)}</div>${h.det&&h.det.length?`<ul class="pn-det">${h.det.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}<div class="pn-lm" title="${esc(emCompleto(h.em))}">${esc(h.user)}${hhmm(h.em)?` · ${hhmm(h.em)}`:''}</div>${typeof logAcoesHtml==='function'?logAcoesHtml(t,h,t.hist.indexOf(h)):''}</div></div>`});
   return out;
 }
 function pnAcoes(t){
