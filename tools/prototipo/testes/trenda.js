@@ -11,7 +11,7 @@ await ctx.route('**/*',r=>{const u=r.request().url();if(/setores-3550308-2022\.j
 const p=await ctx.newPage();p.on('pageerror',e=>errs.push(tag+': '+e.message));
 await p.goto('http://bkm.test/a.html');await p.evaluate(t=>{localStorage.clear();localStorage.setItem('bkm-terrenos-tema',t)},tema);await p.reload();await p.waitForTimeout(400);
 await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=mapa]').click());await p.waitForTimeout(900);
-await p.evaluate(()=>document.querySelector('#mp-leg [data-a=mp-renda]').click());
+await p.evaluate(()=>document.querySelector('.mp-barra [data-a=mp-renda]').click());
 await p.waitForFunction(()=>BKM_TESTE.setores(),null,{timeout:20000}).catch(()=>{});await p.waitForTimeout(1500);
 ok(await p.evaluate(()=>BKM_TESTE.setores()),tag+' setores carregados');
 const leg=await p.$eval('#rd-leg',x=>x.textContent.replace(/\s+/g,' ')).catch(()=>'');ok(/Até R\$ 2\.000/.test(leg)&&/Acima de R\$ 30\.000/.test(leg),tag+' legenda das 16 faixas');
@@ -19,6 +19,7 @@ const tinta=await p.evaluate(()=>{let n=0;for(const c of document.querySelectorA
 ok(tinta>100,tag+' ladrilhos pintados ('+tinta+')');
 await p.evaluate(()=>document.querySelector('.mapa').scrollIntoView({block:'start'}));await p.waitForTimeout(300);
 await p.screenshot({path:OUT+tag+'_camada.png'});
+if(modo==='celular'){await p.click('#rd-leg summary');await p.waitForTimeout(300);ok(await p.$eval('#rd-leg',x=>x.open),tag+' toque na escala abre as faixas');await p.screenshot({path:OUT+tag+'_faixas.png'});await p.click('#rd-leg summary');await p.waitForTimeout(300)}
 // clique num ponto do mapa sem pino: centro da área do mapa deslocado
 const pt=await p.evaluate(()=>{const r=document.querySelector('#mapa').getBoundingClientRect();return {x:r.x+r.width*0.35,y:r.y+r.height*0.4}});
 if(modo==='desktop')await p.mouse.click(pt.x,pt.y);else await p.touchscreen.tap(pt.x,pt.y);await p.waitForTimeout(600);

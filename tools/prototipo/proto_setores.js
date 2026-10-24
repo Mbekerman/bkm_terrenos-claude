@@ -91,14 +91,20 @@ function rdBox(){const area=$('.mapa-area');let el=$('#rd-box');if(RD.sel==null|
 
 /* ---------- legenda da renda sobre o mapa (recolhível; no celular começa fechada) ---------- */
 function rdLegendaHtml(){const m=RENDA_MET;
-  return `<summary>Renda familiar estimada</summary><div class="rd-leg-l">${m.faixas.map(f=>`<div class="rd-li"><span class="rd-q" style="background:${rdHex2rgba(f.cor,Math.max(m.opacidade,.85))}"></span>${esc(f.rotulo)}</div>`).join('')}
+  // fechada, a legenda mostra a escala de cores em uma linha (com os limites em mil reais); aberta, a lista das faixas
+  const marcas={1:'2',4:'5',9:'10',11:'15',13:'22',15:'30'};
+  const escala=`<span class="rd-esc" aria-hidden="true"><span class="rd-esc-c">${m.faixas.map(f=>`<i style="background:${f.cor}"></i>`).join('')}</span><span class="rd-esc-m">${Object.entries(marcas).map(([k,v])=>`<b style="left:${k/m.faixas.length*100}%">${v}</b>`).join('')}</span><span class="rd-esc-u">mil R$ por mês · toque para ver as faixas</span></span>`;
+  return `<summary><span class="rd-leg-t">Renda familiar estimada</span>${escala}</summary><div class="rd-leg-l">${m.faixas.map(f=>`<div class="rd-li"><span class="rd-q" style="background:${rdHex2rgba(f.cor,Math.max(m.opacidade,.85))}"></span>${esc(f.rotulo)}</div>`).join('')}
     <div class="rd-li"><span class="rd-q rd-sem"></span>Sem dado do IBGE</div>
     <div class="rd-leg-p">Mensal, valores de ${m.pnadAnoAtual} · Censo ${m.censoAno} · <button class="linkbtn" data-a="rd-met">Metodologia</button></div>
     ${SET.d?'':`<div class="rd-leg-p">${SET.erro?'Não foi possível carregar os setores.':'Carregando os setores do IBGE…'}</div>`}</div>`}
 function rdLegenda(){const area=$('.mapa-area');let el=$('#rd-leg');if(!area||UI.route!=='mapa'||!rdLigada()){el?.remove();return}
   if(!el||el.parentNode!==area){el?.remove();el=document.createElement('details');el.id='rd-leg';el.className='rd-leg';el.open=UI.rdLegAberta??innerWidth>899;
     el.addEventListener('toggle',()=>{UI.rdLegAberta=el.open});area.appendChild(el)}
-  el.innerHTML=rdLegendaHtml()}
+  el.innerHTML=rdLegendaHtml();
+  // no celular a barra do mapa tem uma ou duas linhas (a busca pode ir para a própria linha): a legenda fica logo abaixo dela
+  const b=$('.mapa-area .mp-barra');el.style.top=innerWidth<900&&b?(b.offsetTop+b.offsetHeight+8)+'px':''}
+function rdBarraBotao(){return `<button type="button" class="mp-renda-b" data-a="mp-renda" aria-pressed="${rdLigada()}" title="Camada de renda familiar por setor censitário"><span class="rd-ic"></span>Renda</button>`}
 function rdLegItem(){return `<button type="button" class="lg-i" data-a="mp-renda" aria-pressed="${rdLigada()}"><span class="lg-poi"><span class="rd-ic"></span></span>Renda familiar (setores)</button>`}
 function rdLigar(on){UI.mpRenda=on;if(on){if((UI.mpBase||'satelite')==='satelite'){UI.rdBaseAntes='satelite';setBase('mapa')}rdCamadaLigar()}
   else{rdCamadaDesligar();RD.sel=null;rdBox();if(UI.rdBaseAntes&&UI.mpBase==='mapa')setBase(UI.rdBaseAntes);UI.rdBaseAntes=null}
