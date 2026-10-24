@@ -22,7 +22,7 @@ function carregarGoogle(){
 }
 
 /* ---------- mapa principal ---------- */
-function gPinEl(k,sel){const v=Array.isArray(k)?k:SIT[k],d=document.createElement('div');d.className='pin g'+(sel?' sel':'');d.innerHTML=`<span class="pin-b" style="background:${v[1]}"><b style="color:${v[3]}">${v[2]}</b></span>`;return d}
+function gPinEl(k,sel){const v=Array.isArray(k)?k:SIT[k],d=document.createElement('div');d.className='pin g'+(sel?' sel':'');d.innerHTML=`<span class="pin-b" style="background:${v[1]}"><b class="pin-d" style="background:${v[3]}"></b></span>`;return d}
 function gPoiEl(){const d=document.createElement('div');d.className='poi g';d.innerHTML='<span class="poi-b"></span>';return d}
 function G_setBase(k){UI.mpBase=k;if(MAPA&&MAPA.setMapTypeId)MAPA.setMapTypeId(TIPO_G[k]||'roadmap');document.querySelectorAll('[data-a="mp-base"]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===k))}
 function G_fecharPopup(){gInfo?.close()}
