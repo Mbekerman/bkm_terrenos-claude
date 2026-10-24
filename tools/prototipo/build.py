@@ -13,8 +13,11 @@ lpath = os.path.join(AQUI, 'libs', 'l', 'leaflet.css')
 lcss = open(lpath, encoding='utf-8').read() if os.path.exists(lpath) else ''
 if not lcss: print('aviso: libs/l/leaflet.css ausente (baixe do branch libs-prototipo); o CSS do Leaflet fica de fora')
 lcss = re.sub(r'url\([^)]*\)', 'none', lcss)  # ícones padrão do Leaflet não são usados (pins próprios)
+def cfg_setores(nome):
+    return json.dumps(json.load(open(os.path.join(RAIZ, 'tools', 'setores', nome), encoding='utf-8')), ensure_ascii=False, separators=(',', ':'))
+
 body = ler('proto_body.html'); js = ler('proto.js')
-mod = ler('proto_mod.js') + '\n' + ler('proto_gmap.js') + '\n' + ler('proto_painel.js') + '\n' + ler('proto_fases.js') + '\n' + ler('proto_funil.js') + '\n' + ler('proto_partes.js') + '\n' + ler('proto_lote.js') + '\n' + ler('proto_geosampa.js') + '\n' + ler('proto_geosanja.js') + '\n' + ler('proto_novo.js') + '\n' + ler('proto_filtros.js') + '\n' + ler('proto_concorrencia.js') + '\n' + ler('proto_logacoes.js') + '\n' + ler('proto_setores.js').replace('__METODOLOGIA_RENDA__', json.dumps(json.load(open(os.path.join(RAIZ, 'tools', 'setores', 'metodologia_renda.json'), encoding='utf-8')), ensure_ascii=False, separators=(',', ':')))
+mod = ler('proto_mod.js') + '\n' + ler('proto_gmap.js') + '\n' + ler('proto_painel.js') + '\n' + ler('proto_fases.js') + '\n' + ler('proto_funil.js') + '\n' + ler('proto_partes.js') + '\n' + ler('proto_lote.js') + '\n' + ler('proto_geosampa.js') + '\n' + ler('proto_geosanja.js') + '\n' + ler('proto_novo.js') + '\n' + ler('proto_filtros.js') + '\n' + ler('proto_concorrencia.js') + '\n' + ler('proto_logacoes.js') + '\n' + ler('proto_setores.js').replace('__METODOLOGIA_RENDA__', cfg_setores('metodologia_renda.json')).replace('__METODOLOGIA_DENSIDADE__', cfg_setores('metodologia_densidade.json'))
 assert js.rstrip().endswith('render();\n})();'), 'fim inesperado'
 i = js.rstrip().rindex('render();\n})();')
 js = js[:i] + mod + '\n' + js[i:]

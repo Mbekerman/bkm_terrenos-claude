@@ -217,7 +217,7 @@ function mpResMostrar(rs,msg){const box=$('#mp-res');if(!box)return;box.hidden=f
   box.innerHTML=rs.length?rs.map((x,i)=>`<button type="button" role="option" data-a="mp-res" data-i="${i}">${bi('mapa',18)}<span>${esc(x.nome)}</span></button>`).join(''):`<div class="hint">${msg||'Nada encontrado.'}</div>`}
 async function mpBuscaRodar(q,ir){try{const rs=await mpBuscar(q);if(($('#mp-end')?.value||'').trim()!==q.trim())return;if(ir&&rs[0])return mpIrPara(rs[0]);mpResMostrar(rs)}catch(e){console.warn(e);mpResMostrar([],'Busca indisponível agora.')}}
 function mpIrPara(x){const box=$('#mp-res');if(box)box.hidden=true;const q=$('#mp-end');if(q)q.value=x.nome;if(!MAPA)return;
-  const z=UI.mpRenda?17:18;UI.mpAchado={lat:x.lat,lng:x.lng,nome:x.nome};
+  const z=rdLigada()?17:18;UI.mpAchado={lat:x.lat,lng:x.lng,nome:x.nome};
   if(GG){MAPA.setCenter(gLL(x.lat,x.lng));MAPA.setZoom(z)}else MAPA.setView([x.lat,x.lng],z);UI.mpView={c:{lat:x.lat,lng:x.lng},z};achadoPin()}
 /* pino do endereço buscado: fica até a próxima busca ou até sair do mapa */
 let ACHADO=null;
