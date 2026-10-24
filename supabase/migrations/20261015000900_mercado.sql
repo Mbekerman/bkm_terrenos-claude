@@ -15,7 +15,10 @@
 -- * Venda, vínculo pendente e remoção nascem em fechar_coleta_mercado:
 --   a cobertura só é conhecida ali. A importação grava cadastro, preço e
 --   vigência das unidades que vieram. Incompleta não gera venda nem marca
---   remoção, e não fecha a vigência de quem faltou.
+--   remoção, e não fecha a vigência de quem faltou. Parada da fonte (429/403)
+--   força incompleta. Segundo 401 encerra com falhar_coleta_mercado (falhou).
+-- * Lançamentos pode vir sem a chave unidades. Quem já passou herda a unidade
+--   residencial e o resto do filtro é recalculado. Novo sem lista não entra.
 -- * A mensal completa compara a situação da mensal completa anterior com
 --   a desta. Uma incompleta no meio não apaga a passagem.
 -- * Preço estimado de antes_do_monitor: mediana do preço/m² das disponíveis
@@ -670,9 +673,19 @@ begin
      where empresa_id = col.empresa_id and fonte = col.fonte and entidade = 'empreendimento' and id_externo = v_fonte_id;
   end if;
 
-  v_passa := app._mercado_passa_filtro(col.empresa_id, v_tipo, v_fin, v_sit, v_lanc, v_ent, v_mun, col.referencia, v_tem_lista, v_tem_res);
   v_ja := v_emp is not null and exists (
     select 1 from app.mercado_empreendimento_estados s where s.empreendimento_id = v_emp and s.no_filtro);
+  -- Sem a chave unidades (coleta de lançamentos, só a lista): quem já passou
+  -- herda "tem unidade residencial" e o resto do filtro é recalculado.
+  -- Empreendimento novo sem lista não entra. Lista presente, mesmo vazia,
+  -- continua valendo como "sem unidade residencial".
+  if not v_tem_lista and v_ja then
+    v_passa := app._mercado_passa_filtro(col.empresa_id, v_tipo, v_fin, v_sit, v_lanc, v_ent, v_mun, col.referencia, true, true);
+  elsif not v_tem_lista then
+    v_passa := false;
+  else
+    v_passa := app._mercado_passa_filtro(col.empresa_id, v_tipo, v_fin, v_sit, v_lanc, v_ent, v_mun, col.referencia, true, v_tem_res);
+  end if;
   if not v_passa and not v_ja then
     perform app._mercado_falha(p_coleta, v_fonte_id, 'fora_do_filtro', coalesce(p->>'nome', ''));
     return;
@@ -964,7 +977,8 @@ begin
     'erros', v_erros);
 end $$;
 
-create or replace function app.fechar_coleta_mercado(p_coleta uuid, p_esperados int default null)
+create or replace function app.fechar_coleta_mercado(
+  p_coleta uuid, p_esperados int default null, p_forcar_incompleta boolean default false)
 returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -1009,6 +1023,11 @@ begin
    order by c.referencia desc limit 1;
   if v_preco is not null and v_preco > 0 and col.tipo = 'completa_mensal'
      and col.coletados < v_preco * cfg.cobertura_minima_pct / 100.0 then
+    v_sit := 'incompleta';
+  end if;
+  -- 429/403: a fonte pediu para parar. Fica incompleta mesmo com cobertura boa,
+  -- e por isso não gera venda nem marca remoção.
+  if coalesce(p_forcar_incompleta, false) then
     v_sit := 'incompleta';
   end if;
 
@@ -1136,6 +1155,49 @@ begin
   return jsonb_build_object('situacao', v_sit, 'vendas', v_vendas, 'removidas', v_removidas);
 end $$;
 
+-- Falha de rede ou de leitura anotada pelo coletor, fora do lote importado.
+create or replace function app.anotar_falha_mercado(p_coleta uuid, p_id text, p_motivo text, p_detalhe text)
+returns void
+language plpgsql security definer set search_path = '' as $$
+declare
+  v_emp uuid;
+  v_sit text;
+begin
+  select empresa_id, situacao into v_emp, v_sit from app.mercado_coletas where id = p_coleta;
+  if not found then
+    raise exception 'Coleta não encontrada' using errcode = 'P0002';
+  end if;
+  if not app._mercado_pode(v_emp) then
+    raise exception 'Só o administrador anota falha da coleta' using errcode = '42501';
+  end if;
+  if v_sit <> 'rodando' then
+    raise exception 'A coleta não está aberta' using errcode = '23514';
+  end if;
+  perform app._mercado_falha(p_coleta, p_id, p_motivo, p_detalhe);
+end $$;
+
+-- Segundo 401, ou login impossível no meio da rodada: encerra como falhou.
+-- Não gera venda. A próxima abertura da mesma chave desfaz o que tiver ficado.
+create or replace function app.falhar_coleta_mercado(p_coleta uuid, p_motivo text)
+returns void
+language plpgsql security definer set search_path = '' as $$
+declare
+  col app.mercado_coletas;
+begin
+  select * into col from app.mercado_coletas where id = p_coleta;
+  if not found then
+    raise exception 'Coleta não encontrada' using errcode = 'P0002';
+  end if;
+  if not app._mercado_pode(col.empresa_id) then
+    raise exception 'Só o administrador encerra a coleta do mercado' using errcode = '42501';
+  end if;
+  if col.situacao <> 'rodando' then
+    raise exception 'A coleta não está aberta' using errcode = '23514';
+  end if;
+  perform app._mercado_falha(p_coleta, '', 'falhou', coalesce(p_motivo, ''));
+  update app.mercado_coletas set situacao = 'falhou', concluida_em = clock_timestamp() where id = p_coleta;
+end $$;
+
 create or replace function app.confirmar_vinculo_unidade(p_unidade uuid, p_confirmar boolean)
 returns void
 language plpgsql security definer set search_path = '' as $$
@@ -1244,7 +1306,9 @@ grant execute on function
   app.mercado_distancia_m(double precision, double precision, double precision, double precision),
   app.abrir_coleta_mercado(uuid, text, text, date, int, text),
   app.importar_mercado(uuid, jsonb),
-  app.fechar_coleta_mercado(uuid, int),
+  app.fechar_coleta_mercado(uuid, int, boolean),
+  app.anotar_falha_mercado(uuid, text, text, text),
+  app.falhar_coleta_mercado(uuid, text),
   app.confirmar_vinculo_unidade(uuid, boolean),
   app.salvar_config_mercado(uuid, jsonb),
   app.salvar_tipo_unidade_mercado(uuid, text, boolean, boolean)

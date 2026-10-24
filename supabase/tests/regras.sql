@@ -1364,9 +1364,40 @@ select pg_temp.ok((select vinculo_pendente_id is null from app.mercado_unidades 
   'recusar o vínculo remove a antiga e fica com a nova');
 select pg_temp.falha($$select app.confirmar_vinculo_unidade('00000000-0000-0000-0000-0000000000aa', true)$$, 'sem vínculo pendente não confirma');
 
+select app.abrir_coleta_mercado(:'emp', 'orulo_login', 'lancamentos', '2026-10-22') as c_sem_lista \gset
+select pg_temp.ok((app.importar_mercado(:'c_sem_lista', jsonb_build_array(
+  pg_temp.ej('venda-1', 'Venda Um', null),
+  pg_temp.ej('nunca-vi', 'Nunca Vi', null)
+))->>'ignorados')::int = 1, 'lançamentos sem unidades atualiza quem já passou e ignora o novo');
+select pg_temp.ok((select e.ultima_coleta_id = :'c_sem_lista' and s.no_filtro and s.situacao = 'em_obras'
+  from app.concorrencia_empreendimentos e
+  join app.mercado_ids_externos x on x.entidade_id = e.id and x.id_externo = 'venda-1'
+  join app.mercado_empreendimento_estados s on s.empreendimento_id = e.id and s.ate_coleta_id is null),
+  'lançamentos sem lista mantém o empreendimento no filtro');
+select pg_temp.ok((app.fechar_coleta_mercado(:'c_sem_lista')->>'vendas')::int = 0, 'lançamentos sem lista não vende');
+
+select app.abrir_coleta_mercado(:'emp', 'orulo_api', 'completa_mensal', '2026-11-01') as c_forca \gset
+select pg_temp.ok((app.fechar_coleta_mercado(:'c_forca', null, true)->>'situacao') = 'incompleta', 'parada na fonte força a coleta incompleta');
+select app.abrir_coleta_mercado(:'emp', 'orulo_api', 'completa_mensal', '2026-11-02') as c_sem_forca \gset
+select pg_temp.ok((app.fechar_coleta_mercado(:'c_sem_forca')->>'situacao') = 'completa', 'sem esperados e sem parada a mensal nova fecha completa');
+
+select app.abrir_coleta_mercado(:'emp', 'orulo_api', 'lancamentos', '2026-11-03') as c_auth \gset
+select app.anotar_falha_mercado(:'c_auth', '1', 'http', '500 depois das tentativas');
+select pg_temp.ok((select falhas->0->>'motivo' = 'http' and falhas->0->>'id_externo' = '1'
+  from app.mercado_coletas where id = :'c_auth'), 'a coleta anota a falha do adaptador');
+select app.falhar_coleta_mercado(:'c_auth', '401 depois do novo login');
+select pg_temp.ok((select situacao = 'falhou' and concluida_em is not null from app.mercado_coletas where id = :'c_auth'), 'segundo 401 encerra a coleta como falhou');
+select pg_temp.falha(format($$select app.fechar_coleta_mercado(%L)$$, :'c_auth'), 'coleta que falhou não fecha');
+select app.abrir_coleta_mercado(:'emp', 'orulo_planilha', 'lancamentos', '2026-11-04') as c_perm \gset
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$select app.anotar_falha_mercado(%L, '1', 'http', 'x')$$, :'c_perm'), 'analista não anota falha da coleta');
+select pg_temp.como(:'diretor');
+select app.falhar_coleta_mercado(:'c_perm', 'encerrar o teste');
+
 select pg_temp.como(:'leitor');
 select pg_temp.ok((select count(*) >= 3 from app.mercado_unidades) and (select count(*) >= 1 from app.mercado_vendas) and (select count(*) >= 1 from app.mercado_coletas), 'Leitura vê as tabelas do monitor');
 select pg_temp.falha(format($$select app.abrir_coleta_mercado(%L, 'orulo_api', 'completa_mensal', '2026-12-01')$$, :'emp'), 'Leitura não abre coleta');
+select pg_temp.falha(format($$select app.falhar_coleta_mercado(%L, 'x')$$, :'c_auth'), 'Leitura não marca a coleta como falhou');
 select pg_temp.como(:'intruso');
 select pg_temp.ok((select count(*) = 0 from app.mercado_coletas) and (select count(*) = 0 from app.mercado_unidades) and (select count(*) = 0 from app.mercado_vendas), 'outra empresa não vê o monitor');
 select pg_temp.como(:'diretor');
