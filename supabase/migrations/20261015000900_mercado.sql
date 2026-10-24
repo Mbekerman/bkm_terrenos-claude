@@ -1,9 +1,8 @@
 -- =====================================================================
 -- BKM Terrenos · 0009 · monitor de mercado
 -- Estende a concorrência (empresa → empreendimento) com unidade, vigência
--- de preço e situação, e venda. O grupo NÃO é gravado: app.mercado_grupos
--- calcula na leitura com preco_primeiro ÷ área, para o mesmo grupo mês a
--- mês. Limites em mercado_config; mudar um limite muda o resultado na hora.
+-- de preço e situação, e venda. Cada unidade é gravada e lida individualmente.
+-- Não há agrupamento (decisão do Moisés, 24/out/2026).
 --
 -- Decisões de modelagem (spec definitiva do Moisés, 24/out/2026):
 -- * Fonte aceita orulo_api, orulo_planilha, orulo_login e manual.
@@ -19,8 +18,7 @@
 --   a desta. Uma incompleta no meio não apaga a passagem.
 -- * Preço estimado de antes_do_monitor: mediana do preço/m² das disponíveis
 --   do mesmo empreendimento, mesmos dormitórios e vagas, área até 3% de
---   diferença, vezes a área da unidade. Os 3% são da regra da venda, não
---   acompanham salto_area_pct.
+--   diferença, vezes a área da unidade. Os 3% são da regra da venda.
 -- * residencial da unidade é calculado (tipo + nr_conta_como_residencial),
 --   não é coluna generated: depende de outra tabela. Recalcula quando a
 --   config muda.
@@ -29,9 +27,7 @@
 -- * Empreendimento manual não é alterado. observacao e ativo não são
 --   sobrescritos. Tipologia e preço lançados à mão ficam onde estão.
 -- * Studio "- NR": nr_conta_como_residencial (padrão true). Ponto em aberto.
--- * O bloco de área corta no salto entre uma área e a seguinte. A rampa de
---   degraus menores que o salto fica um grupo, mesmo que a ponta a ponta
---   passe de largura_area_pct. A largura fica na config e não parte a rampa.
+-- * tipologia_fonte guarda o texto da fonte e não entra em conta.
 -- * Cobertura e a mensal completa anterior são da mesma fonte: Órulo API,
 --   planilha e login são séries diferentes.
 -- * A foto da passagem de venda é a última situação gravada por uma mensal
@@ -165,10 +161,6 @@ end $$;
 create table app.mercado_config (
   id                         uuid primary key default gen_random_uuid(),
   empresa_id                 uuid not null unique references app.empresas(id),
-  salto_area_pct             numeric not null default 3 check (salto_area_pct > 0 and salto_area_pct < 100),
-  largura_area_pct           numeric not null default 8 check (largura_area_pct > 0 and largura_area_pct < 100),
-  salto_preco_m2_pct         numeric not null default 4 check (salto_preco_m2_pct > 0 and salto_preco_m2_pct < 100),
-  min_unidades_grupo         int not null default 3 check (min_unidades_grupo > 0),
   meses_recem_entregue       int not null default 24 check (meses_recem_entregue > 0),
   meses_lancamento           int not null default 6 check (meses_lancamento > 0),
   dias_preco_lancamento      int not null default 60 check (dias_preco_lancamento >= 0),
@@ -383,10 +375,6 @@ begin
   end if;
   perform app._mercado_semear(p_empresa);
   update app.mercado_config set
-    salto_area_pct = coalesce((p_dados->>'salto_area_pct')::numeric, salto_area_pct),
-    largura_area_pct = coalesce((p_dados->>'largura_area_pct')::numeric, largura_area_pct),
-    salto_preco_m2_pct = coalesce((p_dados->>'salto_preco_m2_pct')::numeric, salto_preco_m2_pct),
-    min_unidades_grupo = coalesce((p_dados->>'min_unidades_grupo')::int, min_unidades_grupo),
     meses_recem_entregue = coalesce((p_dados->>'meses_recem_entregue')::int, meses_recem_entregue),
     meses_lancamento = coalesce((p_dados->>'meses_lancamento')::int, meses_lancamento),
     dias_preco_lancamento = coalesce((p_dados->>'dias_preco_lancamento')::int, dias_preco_lancamento),
@@ -1238,230 +1226,11 @@ begin
     values (a.empresa_id, a.id, col.id, coalesce(v_de, col.referencia), col.referencia, v_preco, 'ultimo_visto', false);
   end if;
 end $$;
--- ---------------------------------------------------------------------
--- Agrupamento na leitura. Nada é gravado. Usa preco_primeiro ÷ área.
--- ---------------------------------------------------------------------
-create or replace function app.mercado_grupos(p_data date, p_empreendimentos uuid[] default null)
-returns table (
-  unidade_id uuid, empreendimento_id uuid, empresa_id uuid, grupo text,
-  dormitorios smallint, vagas smallint, bloco_area int, bloco_preco int,
-  area_min_m2 numeric, area_max_m2 numeric, preco_m2_min numeric, preco_m2_max numeric,
-  quantidade int, pequeno boolean)
-language plpgsql volatile security invoker set search_path = pg_temp as $$
-declare
-  emp record;
-  cfg app.mercado_config;
-  areas numeric[];
-  bloco int[];
-  ix int; n int; b int; k int; guard int;
-  bids int[];
-  split boolean;
-  amin numeric; amax numeric; best_i int; best_ratio numeric; ratio numeric; newb int;
-  v_areas numeric[];
-  pids uuid[]; ppms numeric[]; pbloco int[]; pb int;
-  upr record;
-  v_chosen int;
-  g record;
-  v_small int; v_small_n int; v_small_med float8; v_groups int;
-  v_best int; v_best_n int; v_best_dist float8;
-begin
-  create temp table if not exists _mg_in (
-    unidade_id uuid, empreendimento_id uuid, empresa_id uuid,
-    dormitorios smallint, vagas smallint, andar smallint,
-    area numeric, ppm2 numeric);
-  create temp table if not exists _mg_out (
-    unidade_id uuid, empreendimento_id uuid, empresa_id uuid,
-    dormitorios smallint, vagas smallint,
-    bloco_area int, bloco_preco int, pequeno boolean not null default false,
-    area numeric, ppm2 numeric);
-  truncate _mg_in;
-  truncate _mg_out;
-
-  insert into _mg_in
-  select u.id, u.empreendimento_id, u.empresa_id, u.dormitorios, u.vagas, u.andar, u.area_privativa_m2,
-         case when u.preco_primeiro is not null and u.preco_primeiro_em <= p_data
-              then u.preco_primeiro / u.area_privativa_m2 end
-  from app.mercado_unidades u
-  join app.mercado_coletas pc on pc.id = u.primeira_coleta_id
-  left join app.mercado_coletas rc on rc.id = u.removida_coleta_id
-  where u.residencial and u.area_privativa_m2 > 0
-    and pc.referencia <= p_data
-    and (rc.id is null or rc.referencia > p_data)
-    and (p_empreendimentos is null or u.empreendimento_id = any(p_empreendimentos))
-    and exists (
-      select 1 from app.mercado_empreendimento_estados s
-      join app.mercado_coletas d on d.id = s.desde_coleta_id
-      left join app.mercado_coletas a on a.id = s.ate_coleta_id
-      where s.empreendimento_id = u.empreendimento_id and s.no_filtro
-        and d.referencia <= p_data and (a.id is null or a.referencia > p_data));
-
-  for emp in
-    select distinct i.empresa_id, i.empreendimento_id, i.dormitorios, i.vagas from _mg_in i
-  loop
-    select * into cfg from app.mercado_config c where c.empresa_id = emp.empresa_id;
-    if not found then continue; end if;
-    select coalesce(array_agg(a order by a), '{}') into areas
-      from (select distinct i.area as a from _mg_in i
-            where i.empreendimento_id = emp.empreendimento_id
-              and i.dormitorios is not distinct from emp.dormitorios
-              and i.vagas is not distinct from emp.vagas) s;
-    n := cardinality(areas);
-    if n is null or n = 0 then continue; end if;
-    -- O bloco de área abre no salto entre uma área e a seguinte. Uma rampa de
-    -- degraus menores que o salto fica um bloco só, ainda que a ponta a ponta
-    -- passe de largura_area_pct (rampa de 1% em 20 andares). A largura permanece
-    -- na config; não parte essa corrente.
-    bloco := array_fill(1, array[n]);
-    b := 1;
-    for ix in 2..n loop
-      if areas[ix] > areas[ix - 1] * (1 + cfg.salto_area_pct / 100) then b := b + 1; end if;
-      bloco[ix] := b;
-    end loop;
-
-    for k in 1..coalesce((select max(x) from unnest(bloco) x), 0) loop
-      v_areas := '{}';
-      for ix in 1..n loop
-        if bloco[ix] = k then v_areas := v_areas || areas[ix]; end if;
-      end loop;
-      if cardinality(v_areas) is null then continue; end if;
-
-      pids := null; ppms := null;
-      select array_agg(i.unidade_id order by i.ppm2, i.unidade_id), array_agg(i.ppm2 order by i.ppm2, i.unidade_id)
-        into pids, ppms
-        from _mg_in i
-       where i.empreendimento_id = emp.empreendimento_id
-         and i.dormitorios is not distinct from emp.dormitorios
-         and i.vagas is not distinct from emp.vagas
-         and i.area = any(v_areas) and i.ppm2 is not null;
-
-      if pids is null then
-        insert into _mg_out (unidade_id, empreendimento_id, empresa_id, dormitorios, vagas, bloco_area, bloco_preco, area, ppm2)
-        select i.unidade_id, i.empreendimento_id, i.empresa_id, i.dormitorios, i.vagas, k, 1, i.area, i.ppm2
-          from _mg_in i
-         where i.empreendimento_id = emp.empreendimento_id
-           and i.dormitorios is not distinct from emp.dormitorios
-           and i.vagas is not distinct from emp.vagas
-           and i.area = any(v_areas);
-      else
-        pb := 1;
-        pbloco := array_fill(1, array[cardinality(pids)]);
-        for ix in 2..cardinality(pids) loop
-          if ppms[ix] > ppms[ix - 1] * (1 + cfg.salto_preco_m2_pct / 100) then pb := pb + 1; end if;
-          pbloco[ix] := pb;
-        end loop;
-        insert into _mg_out (unidade_id, empreendimento_id, empresa_id, dormitorios, vagas, bloco_area, bloco_preco, area, ppm2)
-        select i.unidade_id, i.empreendimento_id, i.empresa_id, i.dormitorios, i.vagas, k, pbloco[gs], i.area, i.ppm2
-          from generate_series(1, cardinality(pids)) gs
-          join _mg_in i on i.unidade_id = pids[gs];
-
-        for upr in
-          select * from _mg_in i
-           where i.empreendimento_id = emp.empreendimento_id
-             and i.dormitorios is not distinct from emp.dormitorios
-             and i.vagas is not distinct from emp.vagas
-             and i.area = any(v_areas) and i.ppm2 is null
-        loop
-          v_chosen := null;
-          select o.bloco_preco into v_chosen
-            from _mg_out o
-            join _mg_in i on i.unidade_id = o.unidade_id
-           where o.empreendimento_id = emp.empreendimento_id and o.bloco_area = k
-             and o.dormitorios is not distinct from emp.dormitorios
-             and o.vagas is not distinct from emp.vagas
-             and i.andar is not distinct from upr.andar and i.ppm2 is not null
-           group by o.bloco_preco
-           order by count(*) desc, o.bloco_preco
-           limit 1;
-          if v_chosen is null then
-            select o.bloco_preco into v_chosen
-              from _mg_out o
-             where o.empreendimento_id = emp.empreendimento_id and o.bloco_area = k
-               and o.dormitorios is not distinct from emp.dormitorios
-               and o.vagas is not distinct from emp.vagas
-             group by o.bloco_preco
-             order by count(*) desc, o.bloco_preco
-             limit 1;
-          end if;
-          insert into _mg_out (unidade_id, empreendimento_id, empresa_id, dormitorios, vagas, bloco_area, bloco_preco, area, ppm2)
-          values (upr.unidade_id, upr.empreendimento_id, upr.empresa_id, upr.dormitorios, upr.vagas, k, coalesce(v_chosen, 1), upr.area, null);
-        end loop;
-      end if;
-
-      guard := 0;
-      loop
-        guard := guard + 1;
-        exit when guard > 30;
-        select count(*) into v_groups from (
-          select o.bloco_preco from _mg_out o
-           where o.empreendimento_id = emp.empreendimento_id and o.bloco_area = k
-             and o.dormitorios is not distinct from emp.dormitorios
-             and o.vagas is not distinct from emp.vagas
-           group by o.bloco_preco) s;
-        v_small := null;
-        select g2.bloco_preco, g2.n, g2.med into v_small, v_small_n, v_small_med
-          from (
-            select o.bloco_preco, count(*) as n,
-                   percentile_cont(0.5) within group (order by o.ppm2) filter (where o.ppm2 is not null) as med
-              from _mg_out o
-             where o.empreendimento_id = emp.empreendimento_id and o.bloco_area = k
-               and o.dormitorios is not distinct from emp.dormitorios
-               and o.vagas is not distinct from emp.vagas
-             group by o.bloco_preco
-          ) g2
-         where g2.n < cfg.min_unidades_grupo
-         order by g2.n, g2.bloco_preco
-         limit 1;
-        exit when v_small is null;
-        if v_groups < 2 then
-          update _mg_out o set pequeno = true
-           where o.empreendimento_id = emp.empreendimento_id and o.bloco_area = k and o.bloco_preco = v_small
-             and o.dormitorios is not distinct from emp.dormitorios and o.vagas is not distinct from emp.vagas;
-          exit;
-        end if;
-        v_best := null; v_best_dist := null; v_best_n := 0;
-        for g in
-          select o.bloco_preco, count(*) as n,
-                 percentile_cont(0.5) within group (order by o.ppm2) filter (where o.ppm2 is not null) as med
-            from _mg_out o
-           where o.empreendimento_id = emp.empreendimento_id and o.bloco_area = k and o.bloco_preco <> v_small
-             and o.dormitorios is not distinct from emp.dormitorios and o.vagas is not distinct from emp.vagas
-           group by o.bloco_preco
-        loop
-          if v_small_med is null or g.med is null then
-            if v_best is null or g.n > v_best_n then
-              v_best := g.bloco_preco; v_best_n := g.n; v_best_dist := null;
-            end if;
-          elsif v_best is null or v_best_dist is null or abs(g.med - v_small_med) < v_best_dist
-             or (abs(g.med - v_small_med) = v_best_dist and g.n > v_best_n) then
-            v_best := g.bloco_preco; v_best_dist := abs(g.med - v_small_med); v_best_n := g.n;
-          end if;
-        end loop;
-        exit when v_best is null;
-        update _mg_out o set bloco_preco = v_best, pequeno = true
-         where o.empreendimento_id = emp.empreendimento_id and o.bloco_area = k and o.bloco_preco = v_small
-           and o.dormitorios is not distinct from emp.dormitorios and o.vagas is not distinct from emp.vagas;
-        update _mg_out o set pequeno = true
-         where o.empreendimento_id = emp.empreendimento_id and o.bloco_area = k and o.bloco_preco = v_best
-           and o.dormitorios is not distinct from emp.dormitorios and o.vagas is not distinct from emp.vagas;
-      end loop;
-    end loop;
-  end loop;
-
-  return query
-  select o.unidade_id, o.empreendimento_id, o.empresa_id,
-         (o.empreendimento_id::text || '|' || coalesce(o.dormitorios::text, '-') || '|' ||
-          coalesce(o.vagas::text, '-') || '|' || o.bloco_area::text || '|' || o.bloco_preco::text),
-         o.dormitorios, o.vagas, o.bloco_area, o.bloco_preco,
-         min(o.area) over w, max(o.area) over w, min(o.ppm2) over w, max(o.ppm2) over w,
-         (count(*) over w)::int, bool_or(o.pequeno) over w
-    from _mg_out o
-  window w as (partition by o.empreendimento_id, o.dormitorios, o.vagas, o.bloco_area, o.bloco_preco);
-end $$;
 
 -- ---------------------------------------------------------------------
 -- Cálculos. Só unidade residencial de empreendimento no_filtro na data.
--- No nível grupo, a comparação entre datas é por unidade e soma no grupo
--- da data mais recente (app.mercado_grupos dessa data).
+-- Cada unidade entra sozinha. Níveis: empreendimento, incorporadora,
+-- bairro, dormitorios e municipio (cidade é o mesmo que municipio).
 -- ---------------------------------------------------------------------
 create or replace function app.mercado_unidades_em(p_data date)
 returns table (
@@ -1498,7 +1267,7 @@ create or replace function app._mercado_nivel_ok(p_nivel text)
 returns text
 language sql immutable set search_path = '' as $$
   select case when p_nivel = 'cidade' then 'municipio'
-              when p_nivel in ('grupo','empreendimento','incorporadora','bairro','dormitorios','municipio') then p_nivel
+              when p_nivel in ('empreendimento','incorporadora','bairro','dormitorios','municipio') then p_nivel
               else null end
 $$;
 
@@ -1525,29 +1294,21 @@ begin
         where s.empreendimento_id = e.id and s.no_filtro
           and d.referencia <= v.vendida_ate and (a.id is null or a.referencia > v.vendida_ate))
   ),
-  marcado as (
-    select b.*, g.grupo
-    from base b
-    left join app.mercado_grupos(p_ate) g on g.unidade_id = b.unidade_id
-  ),
   chaveado as (
-    select m.*,
+    select b.*,
       case v_nivel
-        when 'grupo' then m.grupo
-        when 'empreendimento' then m.empreendimento_id::text
-        when 'incorporadora' then m.concorrente_id::text
-        when 'bairro' then coalesce(m.bairro, '')
-        when 'dormitorios' then coalesce(m.dormitorios::text, '-')
-        else m.municipio_id::text end as ch,
+        when 'empreendimento' then b.empreendimento_id::text
+        when 'incorporadora' then b.concorrente_id::text
+        when 'bairro' then coalesce(b.bairro, '')
+        when 'dormitorios' then coalesce(b.dormitorios::text, '-')
+        else b.municipio_id::text end as ch,
       case v_nivel
-        when 'grupo' then m.grupo
-        when 'empreendimento' then m.emp_nome
-        when 'incorporadora' then m.inc_nome
-        when 'bairro' then coalesce(m.bairro, '')
-        when 'dormitorios' then coalesce(m.dormitorios::text, 'não informado')
-        else coalesce(m.mun_nome, '') end as nm
-    from marcado m
-    where v_nivel <> 'grupo' or m.grupo is not null
+        when 'empreendimento' then b.emp_nome
+        when 'incorporadora' then b.inc_nome
+        when 'bairro' then coalesce(b.bairro, '')
+        when 'dormitorios' then coalesce(b.dormitorios::text, 'não informado')
+        else coalesce(b.mun_nome, '') end as nm
+    from base b
   )
   select v_nivel, c.ch, min(c.nm),
          count(*) filter (where not c.antes_do_monitor)::int,
@@ -1574,9 +1335,8 @@ begin
    where c.tipo = 'completa_mensal' and c.situacao = 'completa' and c.referencia < p_data;
   return query
   with agora as (
-    select a.*, g.grupo, a.preco / nullif(a.area_privativa_m2, 0) as m2
+    select a.*, a.preco / nullif(a.area_privativa_m2, 0) as m2
     from app.mercado_unidades_em(p_data) a
-    left join app.mercado_grupos(p_data) g on g.unidade_id = a.unidade_id
     where a.situacao = 'disponivel' and a.preco is not null
   ),
   antes as (
@@ -1586,14 +1346,13 @@ begin
   ),
   ch as (
     select a.*,
-      case v_nivel when 'grupo' then a.grupo when 'empreendimento' then a.empreendimento_id::text
+      case v_nivel when 'empreendimento' then a.empreendimento_id::text
            when 'incorporadora' then a.concorrente_id::text when 'bairro' then coalesce(a.bairro,'')
            when 'dormitorios' then coalesce(a.dormitorios::text,'-') else a.municipio_id::text end as chave,
       case v_nivel when 'empreendimento' then a.empreendimento when 'incorporadora' then a.incorporadora
            when 'bairro' then coalesce(a.bairro,'') when 'dormitorios' then coalesce(a.dormitorios::text,'não informado')
-           when 'grupo' then a.grupo else coalesce(a.municipio,'') end as nome
+           else coalesce(a.municipio,'') end as nome
     from agora a
-    where v_nivel <> 'grupo' or a.grupo is not null
   )
   select v_nivel, c.chave, min(c.nome),
          round((percentile_cont(0.5) within group (order by c.preco))::numeric, 2),
@@ -1622,20 +1381,17 @@ begin
   if v_nivel is null then raise exception 'Nível de mercado desconhecido' using errcode = '22023'; end if;
   return query
   with base as (
-    select a.*, g.grupo
-    from app.mercado_unidades_em(p_data) a
-    left join app.mercado_grupos(p_data) g on g.unidade_id = a.unidade_id
+    select a.* from app.mercado_unidades_em(p_data) a
   ),
   ch as (
     select b.*,
-      case v_nivel when 'grupo' then b.grupo when 'empreendimento' then b.empreendimento_id::text
+      case v_nivel when 'empreendimento' then b.empreendimento_id::text
            when 'incorporadora' then b.concorrente_id::text when 'bairro' then coalesce(b.bairro,'')
            when 'dormitorios' then coalesce(b.dormitorios::text,'-') else b.municipio_id::text end as chv,
       case v_nivel when 'empreendimento' then b.empreendimento when 'incorporadora' then b.incorporadora
            when 'bairro' then coalesce(b.bairro,'') when 'dormitorios' then coalesce(b.dormitorios::text,'não informado')
-           when 'grupo' then b.grupo else coalesce(b.municipio,'') end as nm
+           else coalesce(b.municipio,'') end as nm
     from base b
-    where v_nivel <> 'grupo' or b.grupo is not null
   ),
   emp_info as (
     select c.chv, c.empreendimento_id, max(c.estoque_informado) as info
@@ -1749,20 +1505,15 @@ begin
            e.no_inicio, e.vendeu, e.lancada, e.vendeu_3
     from extra e
   ),
-  marcado as (
-    select t.*, g.grupo from tudo t
-    left join app.mercado_grupos(v_fim) g on g.unidade_id = t.unidade_id
-  ),
   ch as (
-    select m.*,
-      case v_nivel when 'grupo' then m.grupo when 'empreendimento' then m.empreendimento_id::text
-           when 'incorporadora' then m.concorrente_id::text when 'bairro' then coalesce(m.bairro,'')
-           when 'dormitorios' then coalesce(m.dormitorios::text,'-') else m.municipio_id::text end as chv,
-      case v_nivel when 'empreendimento' then m.empreendimento when 'incorporadora' then m.incorporadora
-           when 'bairro' then coalesce(m.bairro,'') when 'dormitorios' then coalesce(m.dormitorios::text,'não informado')
-           when 'grupo' then m.grupo else coalesce(m.municipio,'') end as nm
-    from marcado m
-    where v_nivel <> 'grupo' or m.grupo is not null
+    select t.*,
+      case v_nivel when 'empreendimento' then t.empreendimento_id::text
+           when 'incorporadora' then t.concorrente_id::text when 'bairro' then coalesce(t.bairro,'')
+           when 'dormitorios' then coalesce(t.dormitorios::text,'-') else t.municipio_id::text end as chv,
+      case v_nivel when 'empreendimento' then t.empreendimento when 'incorporadora' then t.incorporadora
+           when 'bairro' then coalesce(t.bairro,'') when 'dormitorios' then coalesce(t.dormitorios::text,'não informado')
+           else coalesce(t.municipio,'') end as nm
+    from tudo t
   )
   select v_nivel, c.chv, min(c.nm),
          count(*) filter (where c.vendeu)::int,
@@ -1806,13 +1557,13 @@ language sql stable security invoker set search_path = '' as $$
 $$;
 
 -- ---------------------------------------------------------------------
--- Vistas. Só unidade residencial. O grupo é o de hoje.
+-- Vistas. Só unidade residencial, uma linha por unidade.
 -- ---------------------------------------------------------------------
 create view app.v_mercado_unidades with (security_invoker = true) as
 select u.id as unidade_id, u.empresa_id, u.empreendimento_id, e.nome as empreendimento,
        c.nome as incorporadora, m.nome as municipio, m.uf, e.bairro,
        u.torre, u.numero, u.andar, u.area_privativa_m2, u.dormitorios, u.suites, u.vagas,
-       u.tipo_unidade, g.grupo, s.situacao, s.preco, s.preco_original,
+       u.tipo_unidade, u.tipologia_fonte, s.situacao, s.preco, s.preco_original,
        u.preco_primeiro, u.preco_de_lancamento, e.data_lancamento, e.previsao_entrega, e.programa_social,
        v.vendida_ate, v.preco as preco_venda, v.origem_preco, v.antes_do_monitor
 from app.mercado_unidades u
@@ -1821,7 +1572,6 @@ join app.concorrentes c on c.id = e.concorrente_id
 left join app.municipios m on m.id = e.municipio_id
 left join app.mercado_unidade_estados s on s.unidade_id = u.id and s.ate_coleta_id is null
 left join app.mercado_vendas v on v.unidade_id = u.id and v.desfeita_coleta_id is null
-left join app.mercado_grupos(current_date) g on g.unidade_id = u.id
 where u.residencial and u.removida_coleta_id is null;
 
 create view app.v_mercado_empreendimentos with (security_invoker = true) as
@@ -1886,7 +1636,6 @@ grant execute on function
   app.confirmar_vinculo_unidade(uuid, boolean),
   app.salvar_config_mercado(uuid, jsonb),
   app.salvar_tipo_unidade_mercado(uuid, text, boolean, boolean),
-  app.mercado_grupos(date, uuid[]),
   app.mercado_unidades_em(date),
   app.mercado_vendas_periodo(date, date, text),
   app.mercado_precos(date, text),

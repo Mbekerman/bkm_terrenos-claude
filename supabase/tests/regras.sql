@@ -1124,16 +1124,14 @@ select pg_temp.como(:'diretor');
 select pg_temp.ok((select count(*) = 10 and bool_and(codigo in ('apartamento','studio','cobertura','garden','duplex') = residencial)
   from app.mercado_tipos_unidade where empresa_id = :'emp'), 'tipos de unidade nascem com a empresa');
 select pg_temp.ok((select meses_lancamento = 6 and dias_preco_lancamento = 60 and meses_recem_entregue = 24
-  and salto_area_pct = 3 and largura_area_pct = 8 and salto_preco_m2_pct = 4 and min_unidades_grupo = 3
   and nr_conta_como_residencial and :'sp' = any(municipios)
   from app.mercado_config where empresa_id = :'emp'), 'config do monitor nasce com os prazos e São Paulo');
 select pg_temp.ok(app.mercado_norm_rotulo('Torre A') = 'A' and app.mercado_norm_rotulo('Bloco A') = 'A'
   and app.mercado_norm_rotulo('Edifício B') = 'B', 'rótulo tira torre, bloco e edifício');
-select pg_temp.ok(to_regclass('app.mercado_grupos') is null, 'não há tabela de grupos');
 select pg_temp.falha(format($$insert into app.mercado_unidades (empresa_id, empreendimento_id, primeira_coleta_id) values (%L, %L, %L)$$, :'emp', :'ce', :'emp'), 'unidade do monitor não entra por insert direto');
 select pg_temp.como(:'analista');
 select pg_temp.falha(format($$select app.abrir_coleta_mercado(%L, 'orulo_api', 'completa_mensal', '2026-01-01')$$, :'emp'), 'analista não abre coleta');
-select pg_temp.falha(format($$select app.salvar_config_mercado(%L, '{"salto_area_pct":5}')$$, :'emp'), 'analista não muda a config do monitor');
+select pg_temp.falha(format($$select app.salvar_config_mercado(%L, '{"meses_lancamento":9}')$$, :'emp'), 'analista não muda a config do monitor');
 select pg_temp.como(:'diretor');
 select pg_temp.falha(format($$select app.abrir_coleta_mercado(%L, 'planilha', 'completa_mensal', '2026-01-01')$$, :'emp'), 'fonte desconhecida é recusada');
 
@@ -1166,71 +1164,6 @@ select pg_temp.ok((select count(*) = 1 and bool_and(vendidas = 2 and estoque_ini
 select pg_temp.ok((select count(*) = 0 from app.mercado_velocidade('2026-01-01', 'municipio')), 'mês sem mensal completa não tem velocidade');
 
 select app.salvar_config_mercado(:'emp', '{"cobertura_minima_pct": 1}');
-
--- Agrupamento na leitura, numa coleta só.
-select app.abrir_coleta_mercado(:'emp', 'orulo_planilha', 'completa_mensal', '2026-06-01') as c_gru \gset
-select pg_temp.ok((app.importar_mercado(:'c_gru', jsonb_build_array(
-  pg_temp.ej('g-areas', 'Faixas de area', jsonb_build_array(
-    pg_temp.uj('1', 40, 320000), pg_temp.uj('2', 41.9, 335200), pg_temp.uj('3', 42.1, 336800))),
-  pg_temp.ej('g-rampa', 'Rampa', (select jsonb_agg(pg_temp.uj(i::text, a, a * 8000, 'disponivel', 2, 1, i::int, 'apartamento', 'A', 'r' || i) order by i)
-    from (select i, round((40 * power(1.01::numeric, i))::numeric, 2) as a from generate_series(0, 19) i) s)),
-  pg_temp.ej('g-patamar', 'Patamares', jsonb_build_array(
-    pg_temp.uj('1', 40, 320000), pg_temp.uj('2', 40, 320000), pg_temp.uj('3', 40, 320000),
-    pg_temp.uj('4', 50, 400000), pg_temp.uj('5', 50, 400000), pg_temp.uj('6', 50, 400000))),
-  pg_temp.ej('g-vaga', 'Vagas', jsonb_build_array(
-    pg_temp.uj('1', 55, 440000, 'disponivel', 2, 0), pg_temp.uj('2', 55, 440000, 'disponivel', 2, 0), pg_temp.uj('3', 55, 440000, 'disponivel', 2, 0),
-    pg_temp.uj('4', 55, 440000, 'disponivel', 2, 1), pg_temp.uj('5', 55, 440000, 'disponivel', 2, 1), pg_temp.uj('6', 55, 440000, 'disponivel', 2, 1))),
-  pg_temp.ej('g-pequeno', 'Grupo pequeno', jsonb_build_array(
-    pg_temp.uj('1', 40, 400000), pg_temp.uj('2', 40, 400000), pg_temp.uj('3', 40, 400000), pg_temp.uj('4', 40, 400000), pg_temp.uj('5', 40, 400000),
-    pg_temp.uj('6', 40, 500000), pg_temp.uj('7', 40, 500000))),
-  pg_temp.ej('g-andar', 'Sem preco', jsonb_build_array(
-    pg_temp.uj('1', 60, 480000, 'disponivel', 2, 1, 5), pg_temp.uj('2', 60, 480000, 'disponivel', 2, 1, 5), pg_temp.uj('3', 60, 480000, 'disponivel', 2, 1, 5),
-    pg_temp.uj('4', 60, 624000, 'disponivel', 2, 1, 6), pg_temp.uj('5', 60, 624000, 'disponivel', 2, 1, 6), pg_temp.uj('6', 60, 624000, 'disponivel', 2, 1, 6),
-    pg_temp.uj('7', 60, null, 'disponivel', 2, 1, 5))),
-  pg_temp.ej('g-venda', 'Vendida sem preco', jsonb_build_array(
-    pg_temp.uj('1', 48, 480000, 'disponivel', 2, 1, 3, 'apartamento', 'A', 'gv1'),
-    pg_temp.uj('2', 48, 480000, 'disponivel', 2, 1, 3, 'apartamento', 'A', 'gv2')))
-))->>'erros')::int = 0, 'a coleta do agrupamento importa sem erro');
-select pg_temp.ok((app.fechar_coleta_mercado(:'c_gru')->>'situacao') = 'completa', 'coleta do agrupamento fecha completa');
-select e.id as gareas from app.concorrencia_empreendimentos e join app.mercado_ids_externos x on x.entidade_id = e.id and x.id_externo = 'g-areas' \gset
-select e.id as grampa from app.concorrencia_empreendimentos e join app.mercado_ids_externos x on x.entidade_id = e.id and x.id_externo = 'g-rampa' \gset
-select e.id as gpat from app.concorrencia_empreendimentos e join app.mercado_ids_externos x on x.entidade_id = e.id and x.id_externo = 'g-patamar' \gset
-select e.id as gvaga from app.concorrencia_empreendimentos e join app.mercado_ids_externos x on x.entidade_id = e.id and x.id_externo = 'g-vaga' \gset
-select e.id as gpeq from app.concorrencia_empreendimentos e join app.mercado_ids_externos x on x.entidade_id = e.id and x.id_externo = 'g-pequeno' \gset
-select e.id as gand from app.concorrencia_empreendimentos e join app.mercado_ids_externos x on x.entidade_id = e.id and x.id_externo = 'g-andar' \gset
-select e.id as gven from app.concorrencia_empreendimentos e join app.mercado_ids_externos x on x.entidade_id = e.id and x.id_externo = 'g-venda' \gset
-select pg_temp.ok((select count(*) = 2
-  and bool_or(areas = array[40::numeric]) and bool_or(areas = array[41.9::numeric, 42.1::numeric])
-  from (select array_agg(u.area_privativa_m2 order by u.area_privativa_m2) as areas
-        from app.mercado_grupos('2026-06-01', array[:'gareas']::uuid[]) g
-        join app.mercado_unidades u on u.id = g.unidade_id group by g.grupo) s), '40, 41,9 e 42,1 viram dois blocos');
-select pg_temp.ok((select count(distinct grupo) = 1 and count(*) = 20 from app.mercado_grupos('2026-06-01', array[:'grampa']::uuid[])), 'rampa de 1% em 20 andares é um grupo');
-select pg_temp.ok((select count(distinct grupo) = 2 and bool_or(area_min_m2 = 40) and bool_or(area_min_m2 = 50)
-  from app.mercado_grupos('2026-06-01', array[:'gpat']::uuid[])), 'dois patamares a 25% são dois grupos');
-select pg_temp.ok((select count(distinct grupo) = 2 and count(distinct vagas) = 2 from app.mercado_grupos('2026-06-01', array[:'gvaga']::uuid[])), 'com vaga e sem vaga são dois grupos');
-select pg_temp.ok((select count(distinct grupo) = 1 and max(quantidade) = 7 and bool_or(pequeno)
-  from app.mercado_grupos('2026-06-01', array[:'gpeq']::uuid[])), 'grupo de 2 é juntado e marcado pequeno');
-select pg_temp.ok((select (select grupo from app.mercado_grupos('2026-06-01', array[:'gand']::uuid[]) g join app.mercado_unidades u on u.id = g.unidade_id where u.numero = '7')
-  = (select grupo from app.mercado_grupos('2026-06-01', array[:'gand']::uuid[]) g join app.mercado_unidades u on u.id = g.unidade_id where u.numero = '1')
-  and (select grupo from app.mercado_grupos('2026-06-01', array[:'gand']::uuid[]) g join app.mercado_unidades u on u.id = g.unidade_id where u.numero = '7')
-  is distinct from (select grupo from app.mercado_grupos('2026-06-01', array[:'gand']::uuid[]) g join app.mercado_unidades u on u.id = g.unidade_id where u.numero = '4')),
-  'unidade sem preço cai no grupo do mesmo andar');
-select u.id as gv1 from app.mercado_unidades u where u.empreendimento_id = :'gven' and u.numero = '1' \gset
-select g.grupo as gantes from app.mercado_grupos('2026-06-01', array[:'gven']::uuid[]) g where g.unidade_id = :'gv1' \gset
-select app.abrir_coleta_mercado(:'emp', 'orulo_planilha', 'completa_mensal', '2026-07-01') as c_gjul \gset
-select pg_temp.ok((app.importar_mercado(:'c_gjul', jsonb_build_array(pg_temp.ej('g-venda', 'Vendida sem preco', jsonb_build_array(
-  pg_temp.uj('1', 48, null, 'vendida', 2, 1, 3, 'apartamento', 'A', 'gv1'),
-  pg_temp.uj('2', 48, 480000, 'disponivel', 2, 1, 3, 'apartamento', 'A', 'gv2')))))->>'erros')::int = 0, 'a vendida volta sem preço atual');
-select pg_temp.ok((select g.grupo = :'gantes' and u.preco_primeiro = 480000
-  from app.mercado_grupos('2026-07-01', array[:'gven']::uuid[]) g
-  join app.mercado_unidades u on u.id = g.unidade_id where u.id = :'gv1'), 'vendida sem preço atual continua no mesmo grupo');
-select (select count(*) from app.mercado_unidade_estados) as n_est \gset
-select (select count(*) from app.mercado_unidades) as n_un \gset
-select app.salvar_config_mercado(:'emp', '{"salto_area_pct": 6}');
-select pg_temp.ok((select count(distinct grupo) = 1 from app.mercado_grupos('2026-06-01', array[:'gareas']::uuid[])), 'subir o salto junta as faixas sem reprocessar');
-select pg_temp.ok((select count(*) = :n_est from app.mercado_unidade_estados) and (select count(*) = :n_un from app.mercado_unidades), 'mudar o limite não grava nas tabelas');
-select app.salvar_config_mercado(:'emp', '{"salto_area_pct": 3}');
-select pg_temp.ok((select count(distinct grupo) = 2 from app.mercado_grupos('2026-06-01', array[:'gareas']::uuid[])), 'o salto de volta separa de novo');
 
 -- Remoção e venda: incompleta no meio não apaga a passagem, e outra mensal completa no intervalo também não.
 select app.abrir_coleta_mercado(:'emp', 'orulo_planilha', 'completa_mensal', '2026-08-01') as c_ago \gset
