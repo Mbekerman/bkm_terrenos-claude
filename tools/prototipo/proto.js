@@ -59,7 +59,7 @@ const OPT={
   prioridade:{baixa:'Baixa',media:'Média',alta:'Alta',estrategica:'Estratégica'},
   origem:{prospeccao:'Prospecção própria',corretor:'Corretor',indicacao:'Indicação',portal:'Portal',proprietario:'Proprietário direto',outro:'Outro'},
   precisao:{nao_informada:'Não informada',aproximada:'Aproximada',conferida:'Conferida'},
-  fonteArea:{documental:'Documental (matrícula)',cadastral:'Cadastral (IPTU)',levantamento:'Levantamento topográfico',estimativa:'Estimativa'},
+  fonteArea:{documental:'Documental (matrícula)',cadastral:'Cadastral (IPTU)',levantamento:'Levantamento topográfico',estimativa:'Estimativa',poligonal:'Poligonal (desenho no mapa)'},
   topografia:{nao_informado:'Não informado',plano:'Plano',aclive:'Aclive',declive:'Declive',irregular:'Irregular'},
   posicao:{nao_informado:'Não informado',meio_quadra:'Meio de quadra',esquina:'Esquina',duas_frentes:'Duas frentes',quadra_inteira:'Quadra inteira'},
   formato:{nao_informado:'Não informado',regular:'Regular',irregular:'Irregular'},
@@ -315,7 +315,9 @@ const histOrd=hist=>(hist||[]).map((h,i)=>[h,i]).sort((a,b)=>b[0].em.localeCompa
 const log=(t,txt)=>t.hist.push({em:agora(),user:me(),txt:(t._parte?`Parte ${t._parte.nome} · `:'')+txt});
 
 /* ===================== regras derivadas ===================== */
-const areaAdotada=t=>({documental:t.aDoc,cadastral:t.aCad,levantamento:t.aLev,estimativa:t.aEst})[t.fonteArea]??null;
+/* a área da poligonal não é digitada: sai do desenho, em m² inteiros, e acompanha cada ajuste (pedido do Moisés, 24/out/2026) */
+const areaPolT=t=>t.poly&&t.poly.length>=3&&typeof areaPoly==='function'?Math.round(areaPoly(t.poly)):null;
+const areaAdotada=t=>t.fonteArea==='poligonal'?areaPolT(t):({documental:t.aDoc,cadastral:t.aCad,levantamento:t.aLev,estimativa:t.aEst})[t.fonteArea]??null;
 const ofertaRef=t=>t.ofertas.find(o=>o.id===t.neg?.ofRef)||t.ofertas.filter(o=>o.status==='ativa').sort((a,b)=>b.data.localeCompare(a.data))[0]||t.ofertas[0]||null;
 const corrPrincipal=t=>{const c=t.corretores.find(x=>x.principal);return c?corretor(c.cid):null};
 const analiseVig=t=>t.analises.find(a=>a.status==='vigente');
@@ -417,18 +419,20 @@ function secaoGenerica(t,id){
 function secaoAreas(t){
   const ed=UI.edit==='areas',ad=areaAdotada(t);
   const vals=[['aDoc','Documental','documental','matrícula'],['aCad','Cadastral','cadastral','IPTU'],['aLev','Levantamento','levantamento','topografia'],['aEst','Estimativa','estimativa','sem documento']];
-  const preench=vals.map(v=>t[v[0]]).filter(v=>v!=null);
+  const apol=areaPolT(t),cards=[...vals.map(([k,l,f,s])=>[t[k],l,f,s]),[apol,'Poligonal','poligonal','desenho']];
+  const preench=cards.map(v=>v[0]).filter(v=>v!=null);
   let div='';
   if(preench.length>1){const mx=Math.max(...preench),mn=Math.min(...preench);if((mx-mn)/mx>0.01)div=`<div class="diverg">${ic('warn',16)}Diferença de ${m2(mx-mn)} (${num((mx-mn)/mx*100,1)}%) entre as fontes. Confira qual entra na viabilidade.</div>`}
   if(!ed)return `<section class="sec" id="sec-areas"><div class="sec-h"><h2>Áreas e dimensões</h2><button class="btn text sm" data-a="edit" data-s="areas">${ic('edit',16)}Editar</button></div><div class="sec-b">
-    <div class="areas">${vals.map(([k,l,f,s])=>`<div class="area ${t.fonteArea===f?'sel':''}"><div class="al">${l} <span class="faint">· ${s}</span></div><div class="av">${t[k]==null?'<span class="faint" style="font-size:14px;font-style:italic">Não informada</span>':m2(t[k])}</div>${t.fonteArea===f?'<div class="as">Área adotada</div>':''}</div>`).join('')}</div>
+    <div class="areas">${cards.map(([v,l,f,s])=>`<div class="area ${t.fonteArea===f?'sel':''}"${f==='poligonal'?' title="Calculada pelo desenho; muda quando a poligonal é ajustada"':''}><div class="al">${l} <span class="faint">· ${s}</span></div><div class="av">${v==null?'<span class="faint" style="font-size:14px;font-style:italic">Não informada</span>':m2(v)}</div>${t.fonteArea===f?'<div class="as">Área adotada</div>':''}</div>`).join('')}</div>
     ${div}<div class="kvg" style="margin-top:14px"><div><div class="k">Área adotada</div>${ad==null?'<span class="v ni">Escolha a fonte</span>':`<div class="v">${m2(ad)}</div>`}</div><div><div class="k">Testada principal</div>${t.testada==null?ni:`<div class="v">${num(t.testada,2)} m</div>`}</div>
     <div><div class="k">Valor pedido por m²</div>${ad&&ofertaRef(t)?.valor?`<div class="v">${brl(ofertaRef(t).valor/ad)}</div>`:ni}</div></div></div></section>`;
   return `<section class="sec" id="sec-areas"><form data-form="areas"><div class="sec-h"><h2>Áreas e dimensões</h2></div><div class="sec-b"><div class="editgrid">
     ${vals.map(([k,l,,s])=>`<div class="field"><label for="f-${k}">${l} (${s})</label><input id="f-${k}" name="${k}" inputmode="decimal" placeholder="m²" value="${t[k]==null?'':String(t[k]).replace('.',',')}"></div>`).join('')}
+    <div class="field"><label>Poligonal (desenho no mapa)</label><div class="v" style="padding:10px 0">${apol==null?'<span class="ni">Sem poligonal</span>':m2(apol)} <span class="faint">· calculada</span></div></div>
     <div class="field"><label for="f-fonteArea">Área adotada vem de</label>${optSel('fonteArea',OPT.fonteArea,t.fonteArea)}</div>
     <div class="field"><label for="f-testada">Testada principal (m)</label><input id="f-testada" name="testada" inputmode="decimal" value="${t.testada==null?'':String(t.testada).replace('.',',')}"></div>
-    </div><div class="hint" style="margin-top:8px">A área adotada é sempre uma das quatro acima, com a fonte registrada. Medidas de terrenos irregulares (segmentos e confrontações) entram depois em tabela própria.</div></div>
+    </div><div class="hint" style="margin-top:8px">A área adotada é sempre uma das cinco acima, com a fonte registrada. A da poligonal é calculada pelo desenho e acompanha cada ajuste. Medidas de terrenos irregulares (segmentos e confrontações) entram depois em tabela própria.</div></div>
     <div class="sec-f"><button type="button" class="btn text" data-a="cancel-edit">Cancelar</button><button class="btn primary">Salvar</button></div></form></section>`;
 }
 function secaoMats(t){

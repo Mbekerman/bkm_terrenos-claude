@@ -276,6 +276,7 @@ erDiagram
     numeric area_documental_m2
     numeric area_cadastral_m2
     numeric area_levantamento_m2
+    numeric area_poligonal_m2 "gerada, do desenho"
     numeric area_adotada_m2
     text fonte_area_adotada
     numeric testada_principal_m
@@ -685,6 +686,7 @@ erDiagram
 | --- | --- |
 | "Não informado" é null ou `nao_informado`, nunca zero ou "não" | defaults e checks de `terrenos`, `terreno_infraestrutura` |
 | Área adotada sempre com a fonte | check em `terrenos` |
+| Área da poligonal calculada pelo desenho (m² inteiros); com a fonte `poligonal`, a adotada acompanha cada ajuste (pedido do Moisés, 24/out/2026) | coluna gerada `area_poligonal_m2` e trigger `t_norm` em `terrenos` |
 | Gabarito (m e pavimentos) e CA têm estado próprio: não informado, limitado (com valor) ou sem limite identificado | checks em `analise_zoneamentos` |
 | Uma análise urbanística vigente por terreno; anteriores preservadas | índice único parcial + trigger |
 | Valor venal e IPTU por inscrição e exercício; correção vira nova revisão, a anterior fica preservada | `inscricao_valores` + trigger |

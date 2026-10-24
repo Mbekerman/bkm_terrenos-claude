@@ -617,6 +617,19 @@ update app.auditoria set em = em - interval '30 seconds' where registro_id = :'t
 select pg_temp.como(:'diretor');
 select app.salvar_terreno(:'tx', :vp, '{"nome":"Outro terreno"}') as vp \gset
 select pg_temp.ok((select count(*) from app.auditoria where registro_id = :'tx' and acao = 'update') = :np0 + 4, 'outros campos seguem com a janela de 7 segundos');
+-- área da poligonal: calculada pelo desenho; adotada pela poligonal acompanha cada ajuste
+select pg_temp.ok((select area_poligonal_m2 between 1440 and 1448 from app.terrenos where id = :'tx'), 'área da poligonal sai do desenho (quadrado de 38 m)');
+select app.salvar_terreno(:'tx', :vp, '{"fonte_area_adotada":"poligonal","area_poligonal_m2":1}') as vp \gset
+select pg_temp.ok((select area_adotada_m2 = area_poligonal_m2 and area_poligonal_m2 > 1 from app.terrenos where id = :'tx'), 'adotada pela poligonal fica igual à área do desenho (e a da poligonal não se digita)');
+reset role;
+update app.auditoria set em = em - interval '3 minutes' where registro_id = :'tx';
+select pg_temp.como(:'diretor');
+select count(*) as np1 from app.auditoria where registro_id = :'tx' and acao = 'update' \gset
+select app.salvar_terreno(:'tx', :vp, jsonb_build_object('poligono_geojson', pg_temp.quadra(-46.6000, -23.6000, 40))) as vp \gset
+select app.salvar_terreno(:'tx', :vp, jsonb_build_object('poligono_geojson', pg_temp.quadra(-46.6000, -23.6000, 39))) as vp \gset
+select pg_temp.ok((select area_adotada_m2 = area_poligonal_m2 and area_poligonal_m2 between 1517 and 1525 from app.terrenos where id = :'tx'), 'ajustar a poligonal muda a área adotada junto');
+select pg_temp.ok((select count(*) from app.auditoria where registro_id = :'tx' and acao = 'update') = :np1 + 1, 'com a área adotada junto, os ajustes seguem num log só por 2 minutos');
+select app.salvar_terreno(:'tx', :vp, '{"fonte_area_adotada":null,"area_adotada_m2":null}') as vp \gset
 -- lixeira do log: desfazer uma alteração deixa o rastro
 select pg_temp.como(:'analista');
 select versao as vp from app.terrenos where id = :'tx' \gset

@@ -223,7 +223,7 @@ create index on app.auditoria (empresa_id, em desc, id desc);
 create or replace function app.janela_log(p_tabela text default null, p_cols text[] default null)
 returns interval language sql immutable as $$
   select case when p_tabela = 'terrenos' and 'poligono_geojson' = any(p_cols)
-                   and p_cols <@ array['poligono_geojson','poligono','latitude','longitude','precisao_localizacao','sobreposicoes_aceitas']
+                   and p_cols <@ array['poligono_geojson','poligono','area_poligonal_m2','area_adotada_m2','latitude','longitude','precisao_localizacao','sobreposicoes_aceitas']
               then interval '2 minutes' else interval '7 seconds' end $$;
 
 -- Colunas que mudaram entre dois retratos, sem as de controle.
