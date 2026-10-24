@@ -612,13 +612,15 @@ erDiagram
 | Tabela / função | O que guarda |
 |---|---|
 | `setores_censitarios` | setor (15 dígitos), município (calculado), área de ponderação oficial, distrito, área e polígono do IBGE (`geom`, 4326) |
-| `setor_variaveis` | catálogo das variáveis guardadas (V0001 pessoas, V0007 domicílios, V06001, V06002, V06004, V06006) |
+| `setor_variaveis` | catálogo das variáveis guardadas (V0001 pessoas, V0007 domicílios, V06001, V06002, V06004, V06006 e as 50 do perfil: demografia V01007–V01041, domicílio V00001–V00052, básico V0008 e V0009) |
 | `setor_valores` | valor de cada variável por setor como o IBGE publicou; sigilo (`X`) e sem valor (`.`) ficam nulos com a `situacao`, nunca zero |
 | `metodologias_renda` | versões da metodologia; uma `vigente`: fator familiar (1,6, decisão do Moisés), PNAD base e atual (`fator_pnad` calculado) |
 | `renda_faixas` | as 16 faixas fixas e suas cores (decisão de produto; o limite de cima entra na faixa, depois de arredondar para reais) |
 | `densidade_faixas` | as 10 faixas fixas da densidade bruta (hab/km²) e suas cores; a 0 é "sem moradores" (zero de verdade); o limite de cima entra, sem arredondar |
 | `setores_renda` (view) | por setor: V06004 original, renda familiar estimada 2022 e atual, faixa, média distorcida (média acima de 3 × a mediana), densidade bruta (pessoas ÷ `area_km2`) e a faixa dela |
 | `estatisticas_area(geom)`, `estatisticas_raio(lat, lng, m)`, `estatisticas_terreno(id, raio)` | população, domicílios, densidade, renda média ponderada pelos responsáveis com rendimento e distribuição por faixa; cada setor entra pela fração da área dentro do recorte |
+| `demografia_grupos` | grupos do perfil da população: idade (8 grupos por soma exata das variáveis do IBGE, total, homens e mulheres), domicílios por número de moradores e por espécie |
+| `setor_soma(setor, vars)`, `perfil_area(geom)`, `perfil_terreno(id, raio)` | perfil do entorno: pessoas, domicílios, moradores por domicílio ocupado, sexo, idade, tamanho e espécie dos domicílios, vagos e uso ocasional; um grupo só entra num setor com todas as variáveis divulgadas, e o resto sai como "não divulgado" |
 | `setores_no_retangulo(...)` | setores da tela, simplificados pelo zoom, para o mapa, com a faixa de renda e a de densidade |
 
 Fonte única da metodologia, faixas e cores: `tools/setores/metodologia_renda.json` (renda) e `tools/setores/metodologia_densidade.json` (densidade); o teste do banco confere que a migration tem os mesmos valores.

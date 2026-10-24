@@ -2099,6 +2099,21 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .rd-dist { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px }
 .rd-dist li { display: grid; grid-template-columns: 14px minmax(110px, auto) 1fr 44px; align-items: center; gap: 8px; font-size: 12px; line-height: 16px }
 .rd-bar { height: 8px; border-radius: 4px; background: #eef0f2; overflow: hidden } .rd-bar span { display: block; height: 100% }
+.pf-met { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+.pf-hm .pf-h { color: #0b57d0 } .pf-hm .pf-m { color: #8430ce }
+.pf-leg { display: flex; gap: 16px; font-size: 12px; color: #444746; margin-bottom: 6px } .pf-leg i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px } .pf-leg i.pf-h { background: #0b57d0 } .pf-leg i.pf-m { background: #8430ce }
+.pf-pir { display: grid; gap: 3px }
+.pf-pr { display: grid; grid-template-columns: 1fr 112px 1fr; align-items: center; gap: 8px; font-size: 12px; line-height: 16px }
+.pf-b { display: flex; height: 12px } .pf-b span { display: block; height: 100%; border-radius: 2px } .pf-b.pf-h { justify-content: flex-end } .pf-b.pf-h span { background: #0b57d0 } .pf-b.pf-m span { background: #8430ce }
+.pf-g { display: flex; flex-direction: column; align-items: center; text-align: center } .pf-g b { font-weight: 500 } .pf-g span { color: #5f6368; font-variant-numeric: tabular-nums }
+.rd-dist.pf-dist li { grid-template-columns: minmax(120px, max-content) 1fr 52px 40px } .pf-l { white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+@media (max-width: 599px) { .rd-dist.pf-dist li { grid-template-columns: minmax(0, 1.4fr) 1fr 48px 38px } } .pf-p { text-align: right; color: #5f6368; font-variant-numeric: tabular-nums }
+.pf-dist li.pf-nd .rd-bar span { outline: 1px dashed #747775; outline-offset: -1px } .pf-dist li.pf-nd { color: #5f6368 }
+.pf-vg { margin-top: 12px; font-size: 13px; line-height: 18px }
+:root[data-tema="escuro"] .pf-hm .pf-h, :root[data-tema="escuro"] .pf-leg i.pf-h, :root[data-tema="escuro"] .pf-b.pf-h span { color: #8ab4f8; background: #8ab4f8 }
+:root[data-tema="escuro"] .pf-hm .pf-m, :root[data-tema="escuro"] .pf-leg i.pf-m, :root[data-tema="escuro"] .pf-b.pf-m span { color: #d7aefb; background: #d7aefb }
+:root[data-tema="escuro"] .pf-hm :is(.pf-h, .pf-m) { background: none }
+:root[data-tema="escuro"] :is(.pf-leg, .pf-g span, .pf-p, .pf-dist li.pf-nd) { color: #8e9ac4 }
 .rd-dist .num { text-align: right; font-weight: 500; font-variant-numeric: tabular-nums }
 .rd-pe { margin-top: 12px }
 .rd-mt { padding: 0 24px 8px; font-size: 14px; line-height: 20px } .rd-mt h3 { font-size: 14px; font-weight: 500; margin: 16px 0 4px } .rd-mt p { margin: 0 0 8px } .rd-mt ul { margin: 0; padding-left: 18px }

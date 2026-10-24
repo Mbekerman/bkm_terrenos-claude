@@ -3,11 +3,11 @@
 // quadro "Renda e população do entorno" na ficha (raios e poligonal); modal da metodologia. Prints em saida/t_renda.
 const path=require('path'),fs=require('fs');const TMP=path.join(__dirname,'..','saida')+'/';const OUT=TMP+'t_renda/';fs.mkdirSync(OUT,{recursive:true});
 const {chromium,devices}=require('playwright');
-const L=path.join(__dirname,'..','libs','l')+'/';const F=path.join(__dirname,'..','..','..','docs','prototipo.html');const D=path.join(__dirname,'..','..','..','docs','dados','setores-3550308-2022.json');
+const L=path.join(__dirname,'..','libs','l')+'/';const F=path.join(__dirname,'..','..','..','docs','prototipo.html');const D=path.join(__dirname,'..','..','..','docs','dados','setores-3550308-2022.json');const DM=path.join(__dirname,'..','..','..','docs','dados','demografia-3550308-2022.json');
 (async()=>{const b=await chromium.launch();const errs=[];const ok=(c,m)=>{console.log((c?'ok  ':'FALHA ')+m);if(!c)errs.push(m)};
 for(const [modo,tema] of [['desktop','claro'],['desktop','escuro'],['celular','claro']]){const tag=modo+'_'+tema;
 const ctx=await b.newContext(modo==='desktop'?{viewport:{width:1440,height:900},deviceScaleFactor:1}:{...devices['Pixel 7']});
-await ctx.route('**/*',r=>{const u=r.request().url();if(/setores-3550308-2022\.json/.test(u))return r.fulfill({path:D,contentType:'application/json'});if(u.startsWith('http://bkm.test/a.html'))return r.fulfill({path:F,contentType:'text/html; charset=utf-8'});if(/leaflet.js|jszip/.test(u))return r.fulfill({path:L+(u.includes('leaflet')?'leaflet.js':'jszip.min.js'),contentType:'application/javascript'});if(/cartocdn|openstreetmap|arcgisonline/.test(u))return r.fulfill({path:path.join(__dirname,'tile.png'),contentType:'image/png'});return r.abort()});
+await ctx.route('**/*',r=>{const u=r.request().url();if(/setores-3550308-2022\.json/.test(u))return r.fulfill({path:D,contentType:'application/json'});if(/demografia-3550308-2022\.json/.test(u))return r.fulfill({path:DM,contentType:'application/json'});if(u.startsWith('http://bkm.test/a.html'))return r.fulfill({path:F,contentType:'text/html; charset=utf-8'});if(/leaflet.js|jszip/.test(u))return r.fulfill({path:L+(u.includes('leaflet')?'leaflet.js':'jszip.min.js'),contentType:'application/javascript'});if(/cartocdn|openstreetmap|arcgisonline/.test(u))return r.fulfill({path:path.join(__dirname,'tile.png'),contentType:'image/png'});return r.abort()});
 const p=await ctx.newPage();p.on('pageerror',e=>errs.push(tag+': '+e.message));
 await p.goto('http://bkm.test/a.html');await p.evaluate(t=>{localStorage.clear();localStorage.setItem('bkm-terrenos-tema',t)},tema);await p.reload();await p.waitForTimeout(400);
 await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=mapa]').click());await p.waitForTimeout(900);
@@ -58,5 +58,20 @@ await (await p.$('#rd-card')).screenshot({path:OUT+tag+'_ficha.png'});
 await p.click('#rd-card [data-a=rd-met]');await p.waitForTimeout(400);
 const met=await p.$eval('#modal',x=>x.innerText.replace(/\s+/g,' ')).catch(()=>'');ok(/Dado oficial/.test(met)&&/Transformação nossa/.test(met)&&/Fator familiar 1,6×/.test(met)&&/× 1,6 ×/.test(met),tag+' metodologia com fator 1,6');
 await p.screenshot({path:OUT+tag+'_metodologia.png'});
+await p.click('#modal [data-a=close]');await p.waitForTimeout(200);
+// perfil da população (idade, sexo, domicílios): mesmo raio do quadro da renda
+await p.waitForFunction(()=>/População residente/.test(document.querySelector('#pf-card')?.innerText||''),null,{timeout:20000}).catch(()=>{});
+const pf=await p.$eval('#pf-card',x=>x.innerText.replace(/\s+/g,' ')).catch(()=>'');console.log('   perfil:',pf.slice(0,420));
+ok(/População residente/.test(pf)&&/Moradores por domicílio \d,\d\d/.test(pf)&&/Homens · Mulheres \d+% · \d+%/.test(pf),tag+' perfil com população, moradores por domicílio e sexo');
+ok(await p.$$eval('#pf-card .pf-pr',x=>x.length)===8&&/20 a 29/.test(pf)&&/60 ou mais/.test(pf),tag+' pirâmide com os 8 grupos de idade');
+ok(/5 ou mais moradores/.test(pf)&&/Apartamento/.test(pf)&&/vagos/.test(pf),tag+' domicílios por moradores, tipo e vagos');
+const pops=await p.evaluate(()=>[document.querySelector('#rd-corpo .rd-m:nth-child(2) .v')?.textContent,document.querySelector('#pf-corpo .rd-m .v')?.textContent]);
+ok(pops[0]&&pops[0]===pops[1],tag+' mesma população nos dois quadros ('+pops.join(' / ')+')');
+await p.click('#pf-card [data-a=rd-raio][data-v="500"]');await p.waitForTimeout(500);
+const pops5=await p.evaluate(()=>[document.querySelector('#rd-corpo .rd-m:nth-child(2) .v')?.textContent,document.querySelector('#pf-corpo .rd-m .v')?.textContent]);
+ok(pops5[0]===pops5[1]&&pops5[1]!==pops[1],tag+' trocar o raio no perfil muda os dois quadros ('+pops5.join(' / ')+')');
+await p.click('#pf-card [data-a=rd-raio][data-v="1000"]');await p.waitForTimeout(400);
+await (await p.$('#pf-card')).screenshot({path:OUT+tag+'_perfil.png'});
+await p.click('#pf-card [data-a=pf-met]');await p.waitForTimeout(300);ok(/Sigilo/.test(await p.$eval('#modal',x=>x.innerText).catch(()=>'')),tag+' nota sobre os dados do perfil');
 await ctx.close()}
 console.log('ERROS',JSON.stringify(errs));await b.close()})();

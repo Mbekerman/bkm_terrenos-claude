@@ -1,5 +1,5 @@
 -- =====================================================================
--- BKM Terrenos · 0009 · setores censitários e camadas do IBGE (renda e densidade)
+-- BKM Terrenos · 0009 · setores censitários e camadas do IBGE (renda, densidade e perfil da população)
 -- Setores do Censo 2022 com os valores do IBGE como vieram (renda do
 -- responsável, pessoas, domicílios) e a renda familiar ESTIMADA calculada
 -- por uma metodologia versionada (pedido do Moisés, 24/out/2026):
@@ -39,6 +39,58 @@ insert into app.setor_variaveis (codigo, descricao, tema, unidade, arquivo) valu
   ('V06002', 'Moradores em domicílios particulares permanentes ocupados', 'Renda do responsável', 'moradores', 'Agregados_por_setores_renda_responsavel_BR_20260508'),
   ('V06004', 'Valor do rendimento nominal médio mensal das pessoas responsáveis com rendimentos por domicílios particulares permanentes ocupados', 'Renda do responsável', 'reais', 'Agregados_por_setores_renda_responsavel_BR_20260508'),
   ('V06006', 'Valor do rendimento nominal mediano mensal das pessoas responsáveis com rendimentos por domicílios particulares permanentes ocupados', 'Renda do responsável', 'reais', 'Agregados_por_setores_renda_responsavel_BR_20260508');
+-- perfil da população do entorno (tools/setores/demografia.json): idade e sexo, domicílios por tamanho e espécie, vagos
+insert into app.setor_variaveis (codigo, descricao, tema, unidade, arquivo) values
+  ('V0008', 'Total de Domicílios Particulares  de Uso Ocasional (DPPUO)', 'Básico', 'domicilios', 'Agregados_por_setores_basico_BR_20260520'),
+  ('V0009', 'Total de Domicílios Particulares Permanentes Vagos (DPPV)', 'Básico', 'domicilios', 'Agregados_por_setores_basico_BR_20260520'),
+  ('V00001', 'Domicílios Particulares Permanentes Ocupados', 'Características do domicílio 1', 'domicilios', 'Agregados_por_setores_caracteristicas_domicilio1_BR_20261021'),
+  ('V00002', 'Domicílios Particulares Improvisados Ocupados', 'Características do domicílio 1', 'domicilios', 'Agregados_por_setores_caracteristicas_domicilio1_BR_20261021'),
+  ('V00005', 'Domicílios Particulares Permanentes Ocupados, Quantidade de moradores', 'Características do domicílio 1', 'moradores', 'Agregados_por_setores_caracteristicas_domicilio1_BR_20261021'),
+  ('V00006', 'Domicílios Particulares Improvisados Ocupados, Quantidade de moradores', 'Características do domicílio 1', 'moradores', 'Agregados_por_setores_caracteristicas_domicilio1_BR_20261021'),
+  ('V00017', 'Domicílios Particulares Permanentes Ocupados, Com 1 morador no domicílio', 'Características do domicílio 1', 'domicilios', 'Agregados_por_setores_caracteristicas_domicilio1_BR_20261021'),
+  ('V00018', 'Domicílios Particulares Permanentes Ocupados, Com 2 moradores no domicílio', 'Características do domicílio 1', 'domicilios', 'Agregados_por_setores_caracteristicas_domicilio1_BR_20261021'),
+  ('V00019', 'Domicílios Particulares Permanentes Ocupados, Com 3 moradores no domicílio', 'Características do domicílio 1', 'domicilios', 'Agregados_por_setores_caracteristicas_domicilio1_BR_20261021'),
+  ('V00020', 'Domicílios Particulares Permanentes Ocupados, Com 4 moradores no domicílio', 'Características do domicílio 1', 'domicilios', 'Agregados_por_setores_caracteristicas_domicilio1_BR_20261021'),
+  ('V00047', 'Domicílios Particulares Permanentes Ocupados, Tipo de espécie é casa', 'Características do domicílio 1', 'domicilios', 'Agregados_por_setores_caracteristicas_domicilio1_BR_20261021'),
+  ('V00048', 'Domicílios Particulares Permanentes Ocupados, Tipo de espécie é casa de vila ou em condomínio', 'Características do domicílio 1', 'domicilios', 'Agregados_por_setores_caracteristicas_domicilio1_BR_20261021'),
+  ('V00049', 'Domicílios Particulares Permanentes Ocupados, Tipo de espécie é apartamento', 'Características do domicílio 1', 'domicilios', 'Agregados_por_setores_caracteristicas_domicilio1_BR_20261021'),
+  ('V00050', 'Domicílios Particulares Permanentes Ocupados, Tipo de espécie é habitação em casa de cômodos ou cortiço', 'Características do domicílio 1', 'domicilios', 'Agregados_por_setores_caracteristicas_domicilio1_BR_20261021'),
+  ('V00052', 'Domicílios Particulares Permanentes Ocupados, Tipo de espécie é estrutura residencial permanente degradada ou inacabada', 'Características do domicílio 1', 'domicilios', 'Agregados_por_setores_caracteristicas_domicilio1_BR_20261021'),
+  ('V01007', 'Sexo masculino', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01008', 'Sexo feminino', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01009', 'Sexo masculino, 0 a 4 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01010', 'Sexo masculino, 5 a 9 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01011', 'Sexo masculino, 10 a 14 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01012', 'Sexo masculino, 15 a 19 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01013', 'Sexo masculino, 20 a 24 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01014', 'Sexo masculino, 25 a 29 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01015', 'Sexo masculino, 30 a 39 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01016', 'Sexo masculino, 40 a 49 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01017', 'Sexo masculino, 50 a 59 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01018', 'Sexo masculino, 60 a 69 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01019', 'Sexo masculino, 70 anos ou mais', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01020', 'Sexo feminino, 0 a 4 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01021', 'Sexo feminino, 5 a 9 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01022', 'Sexo feminino, 10 a 14 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01023', 'Sexo feminino, 15 a 19 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01024', 'Sexo feminino, 20 a 24 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01025', 'Sexo feminino, 25 a 29 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01026', 'Sexo feminino, 30 a 39 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01027', 'Sexo feminino, 40 a 49 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01028', 'Sexo feminino, 50 a 59 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01029', 'Sexo feminino, 60 a 69 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01030', 'Sexo feminino, 70 anos ou mais', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01031', '0 a 4 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01032', '5 a 9 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01033', '10 a 14 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01034', '15 a 19 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01035', '20 a 24 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01036', '25 a 29 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01037', '30 a 39 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01038', '40 a 49 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01039', '50 a 59 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01040', '60 a 69 anos', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR'),
+  ('V01041', '70 anos ou mais', 'Demografia', 'pessoas', 'Agregados_por_setores_demografia_BR');
 
 -- valor do IBGE como veio; sem valor divulgado fica nulo, com o motivo (nunca zero)
 create table app.setor_valores (
@@ -202,6 +254,102 @@ returns jsonb language sql stable set search_path = '' as $$
               else app.estatisticas_raio(t.latitude, t.longitude, p_raio_m) end
   from app.terrenos t where t.id = p_terreno $$;
 
+-- ---------------------------------------------------------------------
+-- perfil da população do entorno (ficha do terreno; decisão do Moisés, 24/out/2026): só somas exatas das
+-- variáveis do IBGE por setor, nada estimado. Grupos em tools/setores/demografia.json (o teste confere).
+-- Um grupo só entra num setor quando todas as variáveis dele foram divulgadas; o resto aparece como
+-- "não divulgado", nunca zero.
+create table app.demografia_grupos (
+  tipo      text not null check (tipo in ('idade','tamanho','especie')),
+  ordem     smallint not null,
+  rotulo    text not null,
+  total     text[] not null,
+  homens    text[],
+  mulheres  text[],
+  primary key (tipo, ordem),
+  check ((tipo = 'idade') = (homens is not null and mulheres is not null))
+);
+insert into app.demografia_grupos (tipo, ordem, rotulo, total, homens, mulheres) values
+  ('idade', 1, '0 a 4 anos', array['V01031'], array['V01009'], array['V01020']),
+  ('idade', 2, '5 a 14 anos', array['V01032', 'V01033'], array['V01010', 'V01011'], array['V01021', 'V01022']),
+  ('idade', 3, '15 a 19 anos', array['V01034'], array['V01012'], array['V01023']),
+  ('idade', 4, '20 a 29 anos', array['V01035', 'V01036'], array['V01013', 'V01014'], array['V01024', 'V01025']),
+  ('idade', 5, '30 a 39 anos', array['V01037'], array['V01015'], array['V01026']),
+  ('idade', 6, '40 a 49 anos', array['V01038'], array['V01016'], array['V01027']),
+  ('idade', 7, '50 a 59 anos', array['V01039'], array['V01017'], array['V01028']),
+  ('idade', 8, '60 anos ou mais', array['V01040', 'V01041'], array['V01018', 'V01019'], array['V01029', 'V01030']),
+  ('tamanho', 1, '1 morador', array['V00017'], null, null),
+  ('tamanho', 2, '2 moradores', array['V00018'], null, null),
+  ('tamanho', 3, '3 moradores', array['V00019'], null, null),
+  ('tamanho', 4, '4 moradores', array['V00020'], null, null),
+  ('especie', 1, 'Casa', array['V00047'], null, null),
+  ('especie', 2, 'Casa de vila ou em condomínio', array['V00048'], null, null),
+  ('especie', 3, 'Apartamento', array['V00049'], null, null),
+  ('especie', 4, 'Casa de cômodos ou cortiço', array['V00050'], null, null),
+  ('especie', 5, 'Estrutura degradada ou inacabada', array['V00052'], null, null);
+
+-- soma de variáveis de um setor; nula se alguma não foi divulgada ou não existe
+create or replace function app.setor_soma(p_setor text, p_vars text[]) returns numeric
+language sql stable set search_path = '' as $$
+  select case when count(*) = cardinality(p_vars) and bool_and(v.valor is not null) then sum(v.valor) end
+  from app.setor_valores v where v.cd_setor = p_setor and v.variavel = any(p_vars) $$;
+
+create or replace function app.perfil_area(p_area extensions.geometry)
+returns jsonb language sql stable set search_path = '' as $$
+  with a as (select extensions.st_makevalid(extensions.st_setsrid(p_area, 4326)) as g),
+  s as (
+    select sc.cd_setor, case when extensions.st_within(sc.geom, a.g) then 1.0
+      else (extensions.st_area(extensions.st_intersection(sc.geom, a.g)::extensions.geography)
+           / nullif(extensions.st_area(sc.geom::extensions.geography), 0))::numeric end as fr
+    from app.setores_censitarios sc join a on extensions.st_intersects(sc.geom, a.g)),
+  b as (
+    select s.cd_setor, s.fr,
+      app.setor_soma(s.cd_setor, '{V0001}') as pessoas, app.setor_soma(s.cd_setor, '{V0007}') as dom,
+      app.setor_soma(s.cd_setor, '{V01007}') as homens, app.setor_soma(s.cd_setor, '{V01008}') as mulheres,
+      app.setor_soma(s.cd_setor, '{V00005,V00006}') as mor, app.setor_soma(s.cd_setor, '{V00001,V00002}') as dom_mor,
+      app.setor_soma(s.cd_setor, '{V00001}') as dppo,
+      app.setor_soma(s.cd_setor, '{V0009}') as vagos, app.setor_soma(s.cd_setor, '{V0008}') as ocasional
+    from s),
+  t as (
+    select count(*) filter (where fr > 0) as setores, sum(coalesce(pessoas, 0) * fr) as pessoas, sum(coalesce(dom, 0) * fr) as dom,
+      sum(homens * fr) filter (where homens is not null and mulheres is not null) as homens,
+      sum(mulheres * fr) filter (where homens is not null and mulheres is not null) as mulheres,
+      sum(mor * fr) filter (where mor is not null and dom_mor is not null) as mor,
+      sum(dom_mor * fr) filter (where mor is not null and dom_mor is not null) as dom_mor,
+      sum(coalesce(dppo, 0) * fr) as dppo, sum(coalesce(vagos, 0) * fr) as vagos, sum(coalesce(ocasional, 0) * fr) as ocasional
+    from b),
+  g as (
+    select dg.tipo, dg.ordem, dg.rotulo,
+      sum(app.setor_soma(b.cd_setor, dg.total) * b.fr) as total,
+      sum(app.setor_soma(b.cd_setor, dg.homens) * b.fr) as homens,
+      sum(app.setor_soma(b.cd_setor, dg.mulheres) * b.fr) as mulheres
+    from app.demografia_grupos dg cross join b group by dg.tipo, dg.ordem, dg.rotulo),
+  -- 5 ou mais moradores: domicílios menos os de 1 a 4, só nos setores com os quatro divulgados
+  cinco as (
+    select sum((b.dppo - x.ate4) * b.fr) as dom
+    from b cross join lateral (select sum(app.setor_soma(b.cd_setor, dg.total)) as ate4, bool_and(app.setor_soma(b.cd_setor, dg.total) is not null) as todos
+                               from app.demografia_grupos dg where dg.tipo = 'tamanho') x
+    where b.dppo is not null and x.todos)
+  select jsonb_build_object(
+    'setores', t.setores, 'pessoas', round(t.pessoas), 'domicilios', round(t.dom),
+    'moradores_por_domicilio', round(t.mor / nullif(t.dom_mor, 0), 2),
+    'homens', round(t.homens), 'mulheres', round(t.mulheres),
+    'idade', (select jsonb_agg(jsonb_build_object('rotulo', rotulo, 'pessoas', round(coalesce(total, 0)), 'homens', round(coalesce(homens, 0)), 'mulheres', round(coalesce(mulheres, 0))) order by ordem) from g where tipo = 'idade'),
+    'idade_nao_divulgada', round(greatest(t.pessoas - (select coalesce(sum(total), 0) from g where tipo = 'idade'), 0)),
+    'tamanho', (select jsonb_agg(jsonb_build_object('rotulo', rotulo, 'domicilios', round(coalesce(total, 0))) order by ordem) from g where tipo = 'tamanho')
+               || jsonb_build_array(jsonb_build_object('rotulo', '5 ou mais moradores', 'domicilios', round(coalesce((select dom from cinco), 0)))),
+    'especie', (select jsonb_agg(jsonb_build_object('rotulo', rotulo, 'domicilios', round(coalesce(total, 0))) order by ordem) from g where tipo = 'especie'),
+    'domicilios_particulares_permanentes_ocupados', round(t.dppo),
+    'vagos', round(t.vagos), 'uso_ocasional', round(t.ocasional))
+  from t $$;
+
+create or replace function app.perfil_terreno(p_terreno uuid, p_raio_m float8 default null)
+returns jsonb language sql stable set search_path = '' as $$
+  select case when p_raio_m is null then app.perfil_area(t.poligono)
+              when p_raio_m > 0 and p_raio_m <= 10000 then app.perfil_area(extensions.st_buffer(extensions.st_setsrid(extensions.st_makepoint(t.longitude, t.latitude), 4326)::extensions.geography, p_raio_m, 32)::extensions.geometry)
+         end
+  from app.terrenos t where t.id = p_terreno $$;
+
 -- setores da tela para o mapa, simplificados pelo zoom (meio pixel de tolerância)
 create or replace function app.setores_no_retangulo(p_oeste float8, p_sul float8, p_leste float8, p_norte float8, p_zoom int)
 returns table (cd_setor text, faixa smallint, renda numeric, faixa_densidade smallint, densidade numeric, geojson jsonb)
@@ -214,7 +362,7 @@ language sql stable set search_path = '' as $$
 do $$
 declare t text;
 begin
-  foreach t in array array['setores_censitarios','setor_variaveis','setor_valores','metodologias_renda','renda_faixas','densidade_faixas'] loop
+  foreach t in array array['setores_censitarios','setor_variaveis','setor_valores','metodologias_renda','renda_faixas','densidade_faixas','demografia_grupos'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (true)', t);
     execute format('grant select on app.%I to authenticated', t);
@@ -222,4 +370,4 @@ begin
 end $$;
 grant select on app.setores_renda to authenticated;
 grant execute on function app.renda_faixa(numeric), app.densidade_faixa(numeric), app.estatisticas_area(extensions.geometry), app.estatisticas_raio(float8, float8, float8),
-  app.estatisticas_terreno(uuid, float8), app.setores_no_retangulo(float8, float8, float8, float8, int) to authenticated;
+  app.estatisticas_terreno(uuid, float8), app.setor_soma(text, text[]), app.perfil_area(extensions.geometry), app.perfil_terreno(uuid, float8), app.setores_no_retangulo(float8, float8, float8, float8, int) to authenticated;
