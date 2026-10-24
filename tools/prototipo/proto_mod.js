@@ -285,7 +285,7 @@ function L_desenhaPins(){if(!MAPA||!PINS)return;PINS.clearLayers();
     mk.addTo(PINS);mk._terreno=t.id})}
 const concIcon=c=>L.divIcon({className:'conc',html:ccMarcaHtml(c),iconSize:[24,24],iconAnchor:[12,12],tooltipAnchor:[0,-14]});
 function L_desenhaConc(){if(!MAPA||!CONC)return;CONC.clearLayers();ccAtivos().forEach(c=>L.marker([c.lat,c.lng],{icon:concIcon(c),title:c.nome,interactive:!UI.mpModo,keyboard:true}).on('click',()=>{if(!UI.mpModo)ccAbrir(c.id)}).addTo(CONC));
-  if(!MAPA._cc){MAPA._cc=1;MAPA.on('click',ccFecharDoMapa);MAPA.on('zoomend',()=>ccNomes(MAPA.getZoom()))}ccNomes(MAPA.getZoom())}
+  if(!MAPA._cc){MAPA._cc=1;MAPA.on('click',ccFecharDoMapa)}}
 function L_desenhaPois(){if(!MAPA||!POIS)return;POIS.clearLayers();(S.pontos||[]).forEach(p=>L.marker([p.lat,p.lng],{icon:poiIcon(),title:p.nome,interactive:!UI.mpModo}).bindTooltip(`${esc(p.nome)} · ${CAT_POI[p.cat]||''}`,{direction:'top'}).addTo(POIS))}
 function L_desenhaRascunho(){const D=UI.edMini?MINI_DES:DES;if(!D)return;D.clearLayers();const p=UI.desenho||[];if(!p.length)return;
   (p.length>=3?L.polygon(p,{color:'#0094fe',weight:2,dashArray:UI.mpModo==='editar'?null:'6 4',fillOpacity:UI.mpModo==='editar'?.2:.12,interactive:false}):L.polyline(p,{color:'#0094fe',weight:2,dashArray:'6 4',interactive:false})).addTo(D);

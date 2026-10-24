@@ -13,12 +13,10 @@ const ccCurta=s=>{if(!s)return '—';const [y,m,d]=s.split('-');return `${d}/${m
 const ccMes=s=>{if(!s)return '—';const [y,m]=s.split('-');return MES[+m-1]+'/'+y};
 const ccDorm=d=>d==null?'—':d===0?'Studio':d+' dorm';
 const ccM2=v=>v==null?'—':brl(v)+'/m²';
-/* marca no mapa (opção A, decisão do Moisés de 24/out/2026): quadrado roxo com prédio; o nome aparece ao lado
-   a partir do zoom CC_ZOOM_NOME, para não embolar com o mapa afastado */
+/* marca no mapa (opção A, decisão do Moisés de 24/out/2026): quadrado roxo com prédio, sem o nome ao lado
+   (atrapalhava a leitura do mapa); o nome fica no quadro que abre ao tocar */
 const CC_PREDIO='<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 21V5l8-3v19M12 9l8 3v9M2 21h20M7 8h2M7 12h2M7 16h2M15 14h2M15 18h2"/></svg>';
-const CC_ZOOM_NOME=15;
-const ccMarcaHtml=c=>`<span class="conc-b">${CC_PREDIO}</span>${c?`<span class="conc-n">${esc(c.nome)}</span>`:''}`;
-function ccNomes(z){$('#mapa')?.classList.toggle('conc-nomes',z>=CC_ZOOM_NOME)}
+const ccMarcaHtml=()=>`<span class="conc-b">${CC_PREDIO}</span>`;
 const ccAtivos=()=>(S.concorrentes||[]).filter(c=>c.ativo!==false);
 const ccC=id=>(S.concorrentes||[]).find(c=>c.id===id);
 const ccEmp=id=>(S.concEmpresas||[]).find(e=>e.id===id);

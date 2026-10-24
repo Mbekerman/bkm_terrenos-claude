@@ -1,4 +1,4 @@
-// Concorrência: quadro ao tocar no ícone (preço por m² ponderado pelo mix, histórico por tipologia), Atualizar preços
+// Concorrência: ícone sem o nome, quadro ao tocar no ícone (preço por m² ponderado pelo mix, histórico por tipologia), Atualizar preços
 // (linha nova, não sobrescreve), cadastro na gaveta pelo clique direito com "Incluir empresa", Esc e clique no mapa fecham,
 // Leitura sem botões, escuro e celular. Prints em saida/t_conc.
 const TMP=require('path').join(__dirname,'..','saida')+'/';const OUT=TMP+'t_conc/';require('fs').mkdirSync(OUT,{recursive:true});
@@ -14,12 +14,10 @@ await p.goto('file:///x/a.html');await p.evaluate(t=>{localStorage.clear();local
 await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=mapa]').click());await p.waitForTimeout(900);
 await p.evaluate(()=>document.querySelector('.mapa').scrollIntoView({block:'start'}));await p.waitForTimeout(300);
 ok(await p.$$eval('#mapa .conc',e=>e.length)===3,tag+' 3 empreendimentos no mapa');
-// nome do empreendimento ao lado do ícone só com o mapa aproximado
-const nomesVis=()=>p.$$eval('#mapa .conc-n',e=>e.filter(x=>x.offsetParent&&getComputedStyle(x).display!=='none').map(x=>x.textContent));
-for(let i=0;i<8&&!(await p.$('#mapa.conc-nomes'));i++){await p.click('.leaflet-control-zoom-in');await p.waitForTimeout(350)}
-ok((await nomesVis()).length>=1,tag+' de perto, o nome aparece ao lado do ícone: '+(await nomesVis()).join(', '));await p.screenshot({path:OUT+tag+'_0_nomes.png'});
-for(let i=0;i<8&&(await p.$('#mapa.conc-nomes'));i++){await p.click('.leaflet-control-zoom-out');await p.waitForTimeout(350)}
-ok((await nomesVis()).length===0,tag+' de longe, só o ícone');
+// só o ícone, sem o nome ao lado, mesmo de perto (decisão do Moisés: o nome atrapalhava o mapa)
+for(let i=0;i<4;i++){await p.click('.leaflet-control-zoom-in');await p.waitForTimeout(300)}
+ok(await p.$$eval('#mapa .conc',e=>e.every(x=>x.textContent.trim()==='')),tag+' de perto, só o ícone, sem o nome');await p.screenshot({path:OUT+tag+'_0_perto.png'});
+for(let i=0;i<4;i++){await p.click('.leaflet-control-zoom-out');await p.waitForTimeout(300)}
 const abre=async nome=>{await p.evaluate(n=>{const m=document.querySelector(`#mapa .conc[title="${n}"]`);m.dispatchEvent(new MouseEvent('click',{bubbles:true}))},nome);await p.waitForTimeout(300)};
 await abre('Residencial Jardim Prudente');
 const box=await p.$eval('#cc-box',x=>x.textContent.replace(/\s+/g,' ')).catch(()=>'');
