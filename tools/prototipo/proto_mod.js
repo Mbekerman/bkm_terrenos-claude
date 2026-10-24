@@ -256,6 +256,7 @@ function pgMapa(){
     <div class="mp-barra">
       ${mpBuscaHtml()}
       <div class="seg" role="group" aria-label="Fundo do mapa">${Object.entries(GG?CAMADAS_G:CAMADAS_L).map(([k,l])=>`<button type="button" data-a="mp-base" data-v="${k}" aria-pressed="${(UI.mpBase||'satelite')===k}">${l}</button>`).join('')}</div>
+      ${rdBarraBotao()}
     </div>
     <div id="mp-modo" class="mp-modo" aria-live="polite">${modoBanner()}</div>
     <div id="mp-cartao" class="mp-cartao" aria-live="polite"></div>
