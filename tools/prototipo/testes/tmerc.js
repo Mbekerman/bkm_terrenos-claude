@@ -17,7 +17,7 @@ const leg=await p.$eval('#mp-leg',x=>x.textContent).catch(()=>'');ok(/Mercado \(
 const abre=async nome=>{await p.evaluate(n=>{const m=[...document.querySelectorAll('#mapa .mk')].find(x=>(x.title||'').startsWith(n));m.dispatchEvent(new MouseEvent('click',{bubbles:true}))},nome);await p.waitForTimeout(300)};
 await abre('Vista Prudente Residencial');
 const box=await p.$eval('#mk-box',x=>x.textContent.replace(/\s+/g,' ')).catch(()=>'');
-ok(/Vista Prudente Residencial/.test(box)&&/Lançamento/.test(box)&&/Entrega/.test(box)&&/Unidades\s*320/.test(box)&&/Em estoque/.test(box)&&/VGV lançado/.test(box)&&/VGV em estoque/.test(box),tag+' janela com os números: '+box.slice(0,200));
+ok(/VSO médio/.test(box)&&/Vista Prudente Residencial/.test(box)&&/Lançamento/.test(box)&&/Entrega/.test(box)&&/Unidades\s*320/.test(box)&&/Em estoque/.test(box)&&/VGV lançado/.test(box)&&/VGV em estoque/.test(box),tag+' janela com os números: '+box.slice(0,200));
 // a mesma planta de 36,2 m² tem preço com teto na torre B até o 10º andar e salto de 17% depois: vira dois grupos
 const g36=await p.$$eval('#mk-box tbody tr',tr=>tr.map(x=>x.textContent.replace(/\s+/g,' ')).filter(t=>/36,2 m²/.test(t)));
 ok(g36.length>=2,tag+' planta de 36,2 m² separada pelo teto de preço ('+g36.length+' grupos)');
@@ -40,5 +40,23 @@ const bt=await p.$('#mp-leg [data-a=mp-merc]');if(bt&&await bt.isVisible()){awai
   ok(!(await p.$('#mapa .mk'))&&!(await p.$('#mk-box .cc-box')),tag+' desligar Mercado na legenda tira os pinos e fecha a janela');
   await p.click('#mp-leg [data-a=mp-merc]');await p.waitForTimeout(300);ok(await p.$$eval('#mapa .mk',e=>e.length)===6,tag+' religar volta os pinos')}
 else ok(true,tag+' legenda escondida com a janela aberta (celular)');
+// ficha do terreno: Mercado na redondeza (seção Comercial), por categoria de produto, raio, com e sem vaga
+const ficha=async lat=>{await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=terrenos]').click());await p.waitForTimeout(400);
+  await p.evaluate(la=>{const k=Object.keys(localStorage).find(k=>{try{return !!JSON.parse(localStorage.getItem(k)).terrenos}catch(e){return false}});
+    const t=JSON.parse(localStorage.getItem(k)).terrenos.find(x=>x.lat===la);document.querySelector(`[data-a=abrir][data-id="${t.id}"]`).click()},lat);await p.waitForTimeout(500);
+  await p.evaluate(()=>{const b=document.querySelector('[data-a=bloco][data-t=comercial]');if(b.getAttribute('aria-expanded')!=='true')b.click()});await p.waitForTimeout(400)};
+const sec=async()=>p.$eval('.mk-sec',x=>x.textContent.replace(/\s+/g,' ')).catch(()=>'');
+await ficha(-23.5868);let tx=await sec();
+ok(/Mercado na redondeza/.test(tx)&&/Vista Prudente Residencial/.test(tx)&&/Vila Ema Garden/.test(tx)&&/2 dorms de 34 a 39 m²/.test(tx),tag+' ficha com categorias no raio de 2 km: '+tx.slice(0,220));
+ok(/R\$\/m² mediano/.test(tx)&&/VSO médio/.test(tx)&&/\d+,\d%/.test(tx),tag+' R$/m² e VSO médio por categoria');
+const nLin=await p.$$eval('.mk-cat tbody tr',t=>t.map(x=>+x.children[2].textContent.replace(/\D/g,'')));ok(nLin.length>0&&nLin.every(n=>n>=20),tag+' só categorias com 20 unidades ou mais ('+nLin.join(',')+')');
+await p.evaluate(()=>document.querySelector('.mk-sec').scrollIntoView({block:'start'}));await p.waitForTimeout(200);await p.screenshot({path:OUT+tag+'_4_ficha.png'});
+await p.click('.mk-sec [data-a=mk-vaga][data-v=com]');await p.waitForTimeout(300);tx=await sec();
+ok(/2 dorms de 45 a 55 m²/.test(tx)&&!/2 dorms de 34 a 39 m²/.test(tx),tag+' Com vaga mostra só as plantas com vaga');
+await p.click('.mk-sec [data-a=mk-vaga][data-v=todas]');await p.waitForTimeout(200);
+await ficha(-23.538);await p.click('.mk-sec [data-a=mk-raio][data-v="1"]');await p.waitForTimeout(300);tx=await sec();
+ok(/Parque das Mangueiras/.test(tx)&&/vaga não preenchida fora do cálculo/.test(tx)&&/Studio|1 dorm de 25 a 32 m²/.test(tx),tag+' 1 km: unidades com vaga não preenchida fora do cálculo');
+await p.screenshot({path:OUT+tag+'_5_ficha_1km.png'});
+await p.click('.mk-sec [data-a=mk-raio][data-v="2"]');await p.waitForTimeout(200);
 await ctx.close()}
 await b.close();console.log(errs.length?'\n'+errs.length+' FALHA(S)\n'+errs.join('\n'):'\ntudo ok');process.exit(errs.length?1:0)})();

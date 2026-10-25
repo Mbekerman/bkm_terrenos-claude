@@ -2148,6 +2148,21 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 @media (max-width: 599px) { .mk-t { font-size: 12px } .cc-t.mk-t :is(th, td) { padding: 8px 4px } .cc-t.mk-t :is(th, td):first-child { padding-left: 16px } .cc-t.mk-t :is(th, td):last-child { padding-right: 16px } .mk-grid { margin: 12px 16px 4px } }
 :root[data-tema="escuro"] .mk-box .mk-k { background: rgba(59,130,246,.10); border-left-color: #3b82f6 }
 :root[data-tema="escuro"] .mk-kv .num { color: #e6ecff }
+.mk-ctl { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px }
+.mk-cat td .faint { font-size: 12px; line-height: 16px }
+.mk-cat td.r, .mk-cat th.r { white-space: nowrap; font-variant-numeric: tabular-nums }
+.mk-emps { margin-top: 8px }
+.mk-sec .sec-h .faint { font-size: 12px; margin-left: auto }
+/* celular: cada categoria vira um cartão (produto em cima, números com rótulo embaixo) */
+@media (max-width: 599px) {
+  .mk-cat, .mk-cat tbody, .mk-cat tr { display: block; width: 100% } .mk-cat thead { display: none }
+  .mk-cat tr { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 12px; padding: 12px 0; border-bottom: 1px solid var(--linha, #e3e3e3) }
+  .mk-cat td { display: block; padding: 0 !important; border: 0 !important; text-align: left !important }
+  .mk-cat td.mk-pr { grid-column: 1 / -1; font-weight: 500; margin-bottom: 4px }
+  .mk-cat td[data-l]::before { content: attr(data-l); display: block; font-size: 12px; line-height: 16px; color: #5f6368 }
+  .mk-cat td[data-l="R$/m² mediano"] { grid-column: span 2 }
+}
+:root[data-tema="escuro"] .mk-cat td[data-l]::before { color: #8e9ac4 }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
