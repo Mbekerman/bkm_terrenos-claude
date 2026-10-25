@@ -5,7 +5,10 @@
    dele (com o id), que é o que o resto do protótipo lê (filtros, preço máximo, Visão geral).
    Lista de despesas da empresa em S.viabDesp (Configurações › Viabilidade), nascida de tools/viabilidade/despesas.json. */
 const VB_CFG=__VIAB_DESPESAS__;
-const VB_TIPO=VB_CFG.tipos,VB_GRUPO=VB_CFG.grupos,VB_OBRA=VB_CFG.obra;
+const VB_TIPO=VB_CFG.tipos,VB_GRUPO=VB_CFG.grupos,VB_OBRA=VB_CFG.obra,VB_SECAO=VB_CFG.secoes;
+/* seção do estudo pelo grupo da despesa (decisão do Moisés, 25/out/2026): Obra → Custo de obras, Comercial → Custos comerciais, Impostos, Financeiro e Gestão e administração → Taxas, o resto → Despesas */
+const vbSecaoDe=g=>VB_CFG.secao_do_grupo[g]||'despesas';
+const vbSecaoLn=l=>vbSecaoDe(vbDesp(l.desp)?.grupo);
 const r2=x=>Math.round((x+Math.sign(x)*Number.EPSILON)*100)/100;
 const VB=id=>S.viabs.find(v=>v.id===id);
 const viabsDe=tid=>S.viabs.filter(v=>v.tid===tid);
@@ -34,10 +37,10 @@ function vbCalc(v){let vgv=0,perm=0,un=0,unp=0,priv=0;
   let ot=0,oi=0;
   v.linhas.forEach(l=>{if(l.tipo.startsWith('pct_obra'))return;const d=vbDesp(l.desp),x=valor(l,base0(l))||0;if(d&&d.obra!=='nao')ot+=x;if(d&&d.obra==='incidente')oi+=x});
   ot=r2(ot);oi=r2(oi);
-  const L={};let desp=0;
-  v.linhas.forEach(l=>{const b=l.tipo==='pct_obra_total'?ot:l.tipo==='pct_obra_incidente'?oi:base0(l),x=valor(l,b);L[l.id]={base:b,valor:x};desp+=x||0});
+  const L={},SEC={obra:0,comercial:0,taxas:0,despesas:0};let desp=0;
+  v.linhas.forEach(l=>{const b=l.tipo==='pct_obra_total'?ot:l.tipo==='pct_obra_incidente'?oi:base0(l),x=valor(l,b);L[l.id]={base:b,valor:x};desp+=x||0;SEC[vbSecaoLn(l)]+=x||0});Object.keys(SEC).forEach(k=>SEC[k]=r2(SEC[k]));
   desp=r2(desp);const lucro=r2(liq-desp);
-  return {vgv,perm,liq,un,unp,priv,ot,oi,desp,lucro,margem:liq>0?r2(lucro/liq*100):null,L}}
+  return {vgv,perm,liq,un,unp,priv,ot,oi,desp,SEC,lucro,margem:liq>0?r2(lucro/liq*100):null,L}}
 
 /* a negociação lê o resumo do estudo vinculado (no banco, processos.viabilidade_id e os totais do estudo) */
 function vbResumo(v){const c=vbCalc(v);return {id:v.id,nome:v.nome,vgv:c.vgv,liq:c.liq,lucro:c.lucro,margem:c.margem,pmax:v.pmax,em:v.em}}
@@ -78,12 +81,18 @@ function pgViab(){const v=VB(UI.vid);if(!v)return `<section class="sec"><div cla
   const inp=(tipo,id,k,val,d,rot,extra='')=>`<label class="vb-c vb-${k}"><span class="vb-l">${rot}</span><input data-vb="${tipo}" data-r="${id}" data-k="${k}" value="${k==='nome'?esc(val??''):vbIn(val,d)}" ${k==='nome'?'':'inputmode="decimal"'} aria-label="${rot}" ${dis} ${extra}></label>`;
   const tips=v.tips.map(p=>`<div class="vb-r" data-tp="${p.id}">${inp('tp',p.id,'nome',p.nome,0,'Tipologia')}${inp('tp',p.id,'area',p.area,2,'Área privativa (m²)')}${inp('tp',p.id,'qtd',p.qtd,0,'Quantidade')}${inp('tp',p.id,'perm',p.perm,0,'Em permuta')}${inp('tp',p.id,'pu',p.pu,2,'Preço unitário (R$)')}${inp('tp',p.id,'pm2',p.pm2,2,'Preço por m² (R$)')}
     <span class="vb-c vb-out"><span class="vb-l">VGV</span><b data-vbo="tp-${p.id}">${brl(p.pu!=null?(p.qtd||0)*p.pu:null)}</b></span>${ro?'<span></span>':`<button class="iconbtn sm vb-del" data-a="vb-tip-del" data-v="${p.id}" aria-label="Remover ${esc(p.nome)}" title="Remover tipologia">${ic('close',18)}</button>`}</div>`).join('');
-  const linhas=v.linhas.map(l=>{const d=vbDesp(l.desp);return `<div class="vb-r" data-ln="${l.id}"><span class="vb-c vb-desp"><span class="vb-l">Despesa</span>${vbCombo(l.id,d?d.nome+(d.ativo?'':' (inativa)'):l.desp,dis)}</span>
+  const linha=l=>{const d=vbDesp(l.desp);return `<div class="vb-r" data-ln="${l.id}"><span class="vb-c vb-desp"><span class="vb-l">Item</span>${vbCombo(l.id,d?d.nome+(d.ativo?'':' (inativa)'):l.desp,dis,vbSecaoLn(l))}</span>
     <label class="vb-c vb-tipo"><span class="vb-l">Tipo de valor</span><select data-vb="ln" data-r="${l.id}" data-k="tipo" aria-label="Tipo de valor" ${dis}>${Object.entries(VB_TIPO).map(([k,n])=>`<option value="${k}" ${l.tipo===k?'selected':''}>${n}</option>`).join('')}</select></label>
     <label class="vb-c vb-mult"><span class="vb-l">Multiplicador</span><span class="vb-adorno"><span class="vb-suf" data-vbo="suf-${l.id}">${vbPct(l.tipo)?'%':'R$'}</span><input data-vb="ln" data-r="${l.id}" data-k="mult" value="${vbIn(l.mult,4)}" inputmode="decimal" aria-label="Multiplicador" ${dis}></span></label>
     <label class="vb-c vb-qtd"><span class="vb-l">Quantidade</span><input data-vb="ln" data-r="${l.id}" data-k="qtd" value="${vbIn(l.qtd,2)}" inputmode="decimal" aria-label="Quantidade de parcelas" ${dis}></label>
-    <span class="vb-c vb-out"><span class="vb-l">Resultado</span><b data-vbo="ln-${l.id}">${brl(c.L[l.id].valor)}</b><small class="faint" data-vbo="lb-${l.id}">${vbBaseTxt(l,c)}</small></span>${ro?'<span></span>':`<button class="iconbtn sm vb-del" data-a="vb-ln-del" data-v="${l.id}" aria-label="Remover ${esc(d?.nome||'despesa')}" title="Remover despesa">${ic('close',18)}</button>`}</div>`}).join('');
-  const nova=UI.vbNova&&!ro?`<div class="vb-r vb-nova"><span class="vb-c vb-desp"><span class="vb-l">Despesa</span>${vbCombo('nova','','')}</span><span class="vb-c vb-dica faint">Escolha na lista da empresa; o tipo de valor e o multiplicador vêm preenchidos e podem ser trocados.</span><button class="iconbtn sm vb-del" data-a="vb-ln-cancela" aria-label="Cancelar" title="Cancelar">${ic('close',18)}</button></div>`:'';
+    <span class="vb-c vb-out"><span class="vb-l">Resultado</span><b data-vbo="ln-${l.id}">${brl(c.L[l.id].valor)}</b><small class="faint" data-vbo="lb-${l.id}">${vbBaseTxt(l,c)}</small></span>${ro?'<span></span>':`<button class="iconbtn sm vb-del" data-a="vb-ln-del" data-v="${l.id}" aria-label="Remover ${esc(d?.nome||'item')}" title="Remover">${ic('close',18)}</button>`}</div>`};
+  const nova=sec=>UI.vbNova===sec&&!ro?`<div class="vb-r vb-nova"><span class="vb-c vb-desp"><span class="vb-l">Item</span>${vbCombo('nova','','',sec)}</span><span class="vb-c vb-dica faint">Escolha na lista da empresa; o tipo de valor e o multiplicador vêm preenchidos e podem ser trocados.</span><button class="iconbtn sm vb-del" data-a="vb-ln-cancela" aria-label="Cancelar" title="Cancelar">${ic('close',18)}</button></div>`:'';
+  const ADD={obra:'Adicionar custo de obra',comercial:'Adicionar custo comercial',taxas:'Adicionar taxa',despesas:'Adicionar despesa'};
+  const secoes=Object.entries(VB_SECAO).map(([sec,nome])=>{const ls=v.linhas.filter(l=>vbSecaoLn(l)===sec).map(linha).join('');
+    return `<section class="sec vb-sec" id="vb-sec-${sec}"><div class="sec-h"><h2>${nome}</h2>${ro?'':`<button class="btn text sm" data-a="vb-ln-add" data-v="${sec}">${ic('add',16)}${ADD[sec]}</button>`}</div><div class="sec-b">
+    <div class="vb-tab vb-lns"><div class="vb-r vb-hd" aria-hidden="true"><span>Item</span><span>Tipo de valor</span><span>Multiplicador</span><span>Quantidade</span><span>Resultado</span><span></span></div>
+    ${ls||(nova(sec)?'':'<div class="muted vb-vazio">Nenhum item.</div>')}${nova(sec)}
+    <div class="vb-r vb-tot" id="vb-tot-${sec}">${vbTotLns(c,sec)}</div></div></div></section>`}).join('');
   return `<button class="back" data-a="vb-voltar">${ic('back',20)}${esc(t.codigo)} · ${esc(t.nome)}</button>
   <div class="page-h vb-h"><div style="min-width:0"><div class="eyebrow">Estudo de viabilidade estática${lig?' · <span class="chip good"><span class="d"></span>Vinculado à negociação</span>':''}</div><h1>${esc(v.nome)}</h1><div class="muted vb-sub">Avaliação prévia, sem fluxo de caixa. Atualizado em ${fd(v.em)}${v.user?' por '+esc(v.user):''}.</div></div><div class="vb-acoes">${acoes}</div></div>
   <div class="kpis vb-kpis" id="vb-kpis">${vbKpis(c)}</div>
@@ -97,29 +106,24 @@ function pgViab(){const v=VB(UI.vid);if(!v)return `<section class="sec"><div cla
     ${tips||'<div class="muted vb-vazio">Nenhuma tipologia.</div>'}
     <div class="vb-r vb-tot" id="vb-tot-tips">${vbTotTips(v,c)}</div></div>
     <div class="hint">Com a área preenchida, o preço unitário e o preço por m² se acompanham: mudar um refaz o outro. Mudar a área refaz o preço por m² (ou completa o preço que falta). As unidades em permuta saem do VGV líquido.</div></div></section>
-  <section class="sec vb-sec"><div class="sec-h"><h2>Despesas</h2>${ro?'':`<button class="btn text sm" data-a="vb-ln-add">${ic('add',16)}Adicionar despesa</button>`}</div><div class="sec-b">
-    <div class="vb-tab vb-lns"><div class="vb-r vb-hd" aria-hidden="true"><span>Despesa</span><span>Tipo de valor</span><span>Multiplicador</span><span>Quantidade</span><span>Resultado</span><span></span></div>
-    ${linhas||(nova?'':'<div class="muted vb-vazio">Nenhuma despesa.</div>')}${nova}
-    <div class="vb-r vb-tot" id="vb-tot-lns">${vbTotLns(c)}</div></div>
-    <div class="hint">Resultado = base × multiplicador × quantidade (parcelas). Nos tipos em %, o multiplicador é o percentual. % do VGV incide sobre o VGV líquido; verba por unidade, sobre todas as unidades (${num(c.un)}); % da obra, sobre as despesas que compõem a obra, definidas em Configurações › Viabilidade.</div></div></section>
+  ${secoes}
+  <div class="hint vb-hint-ln">Resultado = base × multiplicador × quantidade (parcelas). Nos tipos em %, o multiplicador é o percentual. % do VGV incide sobre o VGV líquido; verba por unidade, sobre todas as unidades (${num(c.un)}); % da obra, sobre os itens que compõem a obra, definidos em Configurações › Viabilidade, onde o grupo de cada item define a seção.</div>
   <section class="sec"><div class="sec-h"><h2>Resultado</h2></div><div class="sec-b" id="vb-res">${vbResHtml(v,c)}</div></section>
   </div>`}
-function vbCombo(id,txt,dis){return `<span class="vb-cb"><input data-vb-cb="${id}" value="${esc(txt)}" placeholder="Buscar despesa" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="vb-dd-${id}" aria-label="Despesa" ${dis}><span class="vb-dd" id="vb-dd-${id}" role="listbox" hidden></span></span>`}
+function vbCombo(id,txt,dis,sec){return `<span class="vb-cb"><input data-vb-cb="${id}" data-sec="${sec}" value="${esc(txt)}" placeholder="Buscar na lista" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="vb-dd-${id}" aria-label="Despesa" ${dis}><span class="vb-dd" id="vb-dd-${id}" role="listbox" hidden></span></span>`}
 function vbBaseTxt(l,c){const b=c.L[l.id]?.base,q=l.qtd&&l.qtd!==1?` · ${num(l.qtd,2)} parcelas`:'';
   if(l.tipo==='pct_vgv')return `sobre o VGV líquido (${mi(b)})${q}`;if(l.tipo==='pct_obra_total')return `sobre a obra total (${mi(b)})${q}`;
   if(l.tipo==='pct_obra_incidente')return `sobre a obra incidente (${mi(b)})${q}`;if(l.tipo==='verba_unidade')return `× ${num(b)} unidades${q}`;return q?q.slice(3):''}
 function vbKpis(c){const k=(l,val)=>`<div class="kpi"><span class="v sm">${val}</span><span class="l">${l}</span></div>`;
   return k('VGV',mi(c.vgv))+k('VGV líquido',mi(c.liq))+k('Lucro líquido',mi(c.lucro))+k('Margem líquida',c.margem==null?'—':num(c.margem,1)+'%')}
 function vbTotTips(v,c){return `<span class="vb-c"><b>Total</b></span><span class="vb-c vb-area"><span class="vb-l">Área privativa total</span>${c.priv?m2(c.priv):'—'}</span><span class="vb-c vb-qtd"><span class="vb-l">Unidades</span>${num(c.un)}</span><span class="vb-c vb-perm"><span class="vb-l">Em permuta</span>${num(c.unp)}</span><span class="vb-c vb-pu"><span class="vb-l">Preço médio</span>${c.un?brl(c.vgv/c.un):'—'}</span><span class="vb-c vb-pm2"><span class="vb-l">Preço médio por m²</span>${c.priv?brl(c.vgv/c.priv):'—'}</span><span class="vb-c vb-out"><span class="vb-l">VGV</span><b>${brl(c.vgv)}</b></span><span></span>`}
-function vbTotLns(c){return `<span class="vb-c"><b>Total das despesas</b></span><span class="vb-c vb-tipo"></span><span class="vb-c vb-mult"></span><span class="vb-c vb-qtd"></span><span class="vb-c vb-out"><span class="vb-l">Total</span><b>${brl(c.desp)}</b><small class="faint">${c.liq>0?num(c.desp/c.liq*100,1)+'% do VGV líquido':''}</small></span><span></span>`}
+function vbTotLns(c,sec){const x=c.SEC[sec];return `<span class="vb-c"><b>Total · ${VB_SECAO[sec]}</b></span><span class="vb-c vb-tipo"></span><span class="vb-c vb-mult"></span><span class="vb-c vb-qtd"></span><span class="vb-c vb-out"><span class="vb-l">Total</span><b>${brl(x)}</b><small class="faint">${c.liq>0?num(x/c.liq*100,1)+'% do VGV líquido':''}</small></span><span></span>`}
 function vbResHtml(v,c){const pct=x=>c.liq>0?num(x/c.liq*100,1)+'%':'—';
-  const grupos={};v.linhas.forEach(l=>{const g=vbDesp(l.desp)?.grupo||'outros';grupos[g]=(grupos[g]||0)+(c.L[l.id].valor||0)});
   return `<div class="dt-wrap"><table class="dt compacta vb-rt"><thead><tr><th class="esq">Item</th><th>Valor</th><th>% do VGV líquido</th></tr></thead><tbody>
     <tr><td class="esq">VGV (${num(c.un)} unidades)</td><td class="num">${brl(c.vgv)}</td><td class="num">${c.liq>0?num(c.vgv/c.liq*100,1)+'%':'—'}</td></tr>
     <tr><td class="esq">(−) Unidades em permuta (${num(c.unp)})</td><td class="num">${brl(c.perm)}</td><td class="num">${pct(c.perm)}</td></tr>
     <tr class="forte"><td class="esq">VGV líquido</td><td class="num">${brl(c.liq)}</td><td class="num">${c.liq>0?'100%':'—'}</td></tr>
-    ${Object.keys(VB_GRUPO).filter(g=>g in grupos).map(g=>`<tr class="vb-sub"><td class="esq">${VB_GRUPO[g]}</td><td class="num">${brl(grupos[g])}</td><td class="num">${pct(grupos[g])}</td></tr>`).join('')}
-    <tr><td class="esq">(−) Despesas</td><td class="num">${brl(c.desp)}</td><td class="num">${pct(c.desp)}</td></tr>
+    ${Object.entries(VB_SECAO).map(([k,n])=>`<tr><td class="esq">(−) ${n}</td><td class="num">${brl(c.SEC[k])}</td><td class="num">${pct(c.SEC[k])}</td></tr>`).join('')}
     <tr class="forte"><td class="esq">Lucro líquido</td><td class="num">${brl(c.lucro)}</td><td class="num">${pct(c.lucro)}</td></tr>
     <tr class="forte"><td class="esq">Margem líquida</td><td class="num">${c.margem==null?'—':num(c.margem,2)+'%'}</td><td></td></tr></tbody></table></div>
     <div class="faint vb-obra">Obra total ${brl(c.ot)} · obra incidente ${brl(c.oi)}${v.pmax!=null?` · preço máximo do terreno ${brl(v.pmax)} (${pct(v.pmax)})`:''}</div>`}
@@ -129,15 +133,15 @@ function vbRefresh(v){const c=vbCalc(v),set=(k,h)=>{const el=document.querySelec
   v.tips.forEach(p=>set('tp-'+p.id,brl(p.pu!=null?(p.qtd||0)*p.pu:null)));
   v.linhas.forEach(l=>{set('ln-'+l.id,brl(c.L[l.id].valor));set('lb-'+l.id,vbBaseTxt(l,c));set('suf-'+l.id,vbPct(l.tipo)?'%':'R$')});
   const h=(id,x)=>{const el=document.getElementById(id);if(el)el.innerHTML=x};
-  h('vb-kpis',vbKpis(c));h('vb-tot-tips',vbTotTips(v,c));h('vb-tot-lns',vbTotLns(c));h('vb-res',vbResHtml(v,c))}
+  h('vb-kpis',vbKpis(c));h('vb-tot-tips',vbTotTips(v,c));Object.keys(VB_SECAO).forEach(k=>h('vb-tot-'+k,vbTotLns(c,k)));h('vb-res',vbResHtml(v,c))}
 function vbGravar(v){v.em=HOJE;v.user=me();vbSync(v);save()}
 
 /* ---------- lista de despesas (busca) ---------- */
 let vbDdAtivo=-1;
-function vbDdItens(q){const n=vbSemAcento(q);return S.viabDesp.filter(d=>d.ativo&&(!n||vbSemAcento(d.nome).includes(n)||vbSemAcento(VB_GRUPO[d.grupo]).includes(n)))}
-function vbDdAbrir(inp,filtrar){const dd=inp.parentElement.querySelector('.vb-dd'),its=vbDdItens(filtrar?inp.value:'');vbDdAtivo=its.length?0:-1;
+function vbDdItens(q,sec){const n=vbSemAcento(q);return S.viabDesp.filter(d=>d.ativo&&(!sec||vbSecaoDe(d.grupo)===sec)&&(!n||vbSemAcento(d.nome).includes(n)||vbSemAcento(VB_GRUPO[d.grupo]).includes(n)))}
+function vbDdAbrir(inp,filtrar){const dd=inp.parentElement.querySelector('.vb-dd'),its=vbDdItens(filtrar?inp.value:'',inp.dataset.sec);vbDdAtivo=its.length?0:-1;
   let g='';dd.innerHTML=its.map((d,i)=>{const h=d.grupo!==g?`<span class="vb-dd-g" role="presentation">${VB_GRUPO[d.grupo]}</span>`:'';g=d.grupo;
-    return `${h}<span class="vb-dd-i" role="option" id="vb-op-${i}" data-vb-op="${d.codigo}" aria-selected="${i===vbDdAtivo}"><span>${esc(d.nome)}</span><small class="faint">${VB_TIPO[d.tipo]||''}${d.mult!=null?` · ${vbIn(d.mult,4)}${vbPct(d.tipo)?'%':''}`:''}</small></span>`}).join('')||`<span class="vb-dd-v faint">Nenhuma despesa com esse nome. O administrador inclui em Configurações › Viabilidade.</span>`;
+    return `${h}<span class="vb-dd-i" role="option" id="vb-op-${i}" data-vb-op="${d.codigo}" aria-selected="${i===vbDdAtivo}"><span>${esc(d.nome)}</span><small class="faint">${VB_TIPO[d.tipo]||''}${d.mult!=null?` · ${vbIn(d.mult,4)}${vbPct(d.tipo)?'%':''}`:''}</small></span>`}).join('')||`<span class="vb-dd-v faint">Nada com esse nome nesta seção. O administrador inclui em Configurações › Viabilidade.</span>`;
   dd.hidden=false;inp.setAttribute('aria-expanded','true')}
 function vbDdFechar(inp){const dd=inp?.parentElement?.querySelector('.vb-dd');if(dd){dd.hidden=true;dd.innerHTML=''}inp?.setAttribute('aria-expanded','false')}
 function vbEscolher(inp,cod){const v=VB(UI.vid),d=vbDesp(cod),id=inp.dataset.vbCb;if(!v||!d)return;
@@ -195,7 +199,7 @@ function viabClick(A,a,t){
       S.viabs=S.viabs.filter(y=>y.id!==v.id);log(x,`Estudo de viabilidade apagado: ${v.nome}`);UI.modal=null;save();blocoAbre('negociacao');go('terreno',{id:x.id,tab:'negociacao'});rolarBloco('negociacao','viab');toast('Estudo apagado.');return true}
     case 'vb-tip-add':{const v=VB(UI.vid),p={id:uid(),nome:'Tipologia '+(v.tips.length+1),area:null,qtd:null,perm:0,pu:null,pm2:null};v.tips.push(p);vbGravar(v);render();setTimeout(()=>{const i=document.querySelector(`[data-tp="${p.id}"] [data-k="nome"]`);i?.focus();i?.select()},20);return true}
     case 'vb-tip-del':{const v=VB(UI.vid);v.tips=v.tips.filter(p=>p.id!==a.dataset.v);vbGravar(v);render();return true}
-    case 'vb-ln-add':UI.vbNova=true;render();setTimeout(()=>document.querySelector('[data-vb-cb="nova"]')?.focus(),20);return true;
+    case 'vb-ln-add':UI.vbNova=a.dataset.v;render();setTimeout(()=>document.querySelector('[data-vb-cb="nova"]')?.focus(),20);return true;
     case 'vb-ln-cancela':UI.vbNova=false;render();return true;
     case 'vb-ln-del':{const v=VB(UI.vid);v.linhas=v.linhas.filter(l=>l.id!==a.dataset.v);vbGravar(v);render();return true}
     case 'vb-cfg-ord':{const i=+a.dataset.i,j=i+ +a.dataset.v,L=S.viabDesp;if(j<0||j>=L.length)return true;[L[i],L[j]]=[L[j],L[i]];save();render();return true}

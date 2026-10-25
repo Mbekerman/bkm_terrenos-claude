@@ -1216,10 +1216,15 @@ insert into app.viabilidade_linhas (empresa_id, viabilidade_id, ordem, despesa, 
   (:'emp', :'vb1', 4, 'adm_obra', 'pct_obra_total', 5, 1),
   (:'emp', :'vb1', 5, 'contingencia', 'pct_obra_incidente', 3, 1),
   (:'emp', :'vb1', 6, 'comissao', 'pct_vgv', 4, 1);
+insert into app.viabilidade_linhas (empresa_id, viabilidade_id, ordem, despesa, tipo, multiplicador, quantidade) values (:'emp', :'vb1', 7, 'ret', 'pct_vgv', 4, 1) returning id as ln_ret \gset
+select pg_temp.ok((select taxas = 2903000 and despesas_total = 34806000 from app.viabilidades where id = :'vb1'), 'imposto (RET) cai na seção Taxas: + 4% de 43,2 mi');
+delete from app.viabilidade_linhas where id = :'ln_ret';
 select pg_temp.ok((select vgv = 46000000 and permuta_valor = 2800000 and vgv_liquido = 43200000 and unidades = 150 and unidades_permuta = 10
   and obra_total = 23500000 and obra_incidente = 22500000 and despesas_total = 33078000 and lucro_liquido = 10122000 and margem_pct = 23.43
   from app.viabilidades where id = :'vb1'),
   'VGV 46 mi − permuta 2,8 mi = VGV líquido 43,2 mi; despesas 33,078 mi (terreno 3 parcelas, obra por unidade, % da obra total e incidente, % do VGV líquido); lucro 10,122 mi, margem 23,43%');
+select pg_temp.ok((select custo_obras = 24175000 and custos_comerciais = 1728000 and taxas = 1175000 and despesas_gerais = 6000000 from app.viabilidades where id = :'vb1'),
+  'seções pelo grupo: custo de obras 24,175 mi, custos comerciais 1,728 mi, taxas 1,175 mi (administração da obra), despesas 6 mi');
 select pg_temp.ok((select (x->>'base')::numeric = 23500000 and (x->>'valor')::numeric = 1175000 from jsonb_array_elements(app.calcular_viabilidade(:'vb1')->'linhas') x where x->>'id' = (select id::text from app.viabilidade_linhas where viabilidade_id = :'vb1' and despesa = 'adm_obra')),
   'cada linha com a base e o valor (administração da obra: 5% de 23,5 mi)');
 select pg_temp.falha(format($$insert into app.viabilidade_linhas (empresa_id, viabilidade_id, despesa, tipo, multiplicador) values (%L, %L, 'inexistente', 'verba_total', 1)$$, :'emp', :'vb1'), 'despesa fora da lista da empresa é recusada');
@@ -1242,7 +1247,7 @@ select pg_temp.como(:'intruso');
 select pg_temp.ok(not exists (select 1 from app.viabilidade_tipologias where viabilidade_id = :'vb1') and not exists (select 1 from app.viabilidade_despesas where empresa_id = :'emp'), 'outra empresa não vê estudo nem lista');
 select pg_temp.como(:'diretor');
 select app.salvar_despesa_viabilidade(:'emp', 'infra_externa', '{"obra":"nao"}');
-select pg_temp.ok((select obra_total = 22500000 and despesas_total = 33028000 from app.viabilidades where id = :'vb1'),
+select pg_temp.ok((select obra_total = 22500000 and despesas_total = 33028000 and custo_obras = 24175000 and taxas = 1125000 from app.viabilidades where id = :'vb1'),
   'tirar uma despesa da obra refaz os estudos que a usam (administração da obra cai para 5% de 22,5 mi)');
 select pg_temp.falha(format($$select app.apagar_despesa_viabilidade(%L, 'comissao')$$, :'emp'), 'despesa usada não se apaga (desativa)');
 select app.salvar_despesa_viabilidade(:'emp', 'premio_vendas', '{"nome":"Prêmio de vendas","grupo":"comercial","tipo_padrao":"pct_vgv","multiplicador_padrao":0.5}');

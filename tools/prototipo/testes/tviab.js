@@ -43,24 +43,28 @@ await preenche(await tp(0,'perm'),'120');
 ok((await D()).viabs.at(-1).tips[0].perm===100,tag+' permuta acima da quantidade volta para a quantidade');
 await preenche(await tp(0,'perm'),'10');
 // despesas pela busca
-const desp=async(busca,mult,qtd)=>{await p.evaluate(()=>document.querySelector('[data-a=vb-ln-add]').click());await p.waitForTimeout(150);
+const desp=async(sec,busca,mult,qtd)=>{await p.evaluate(sec=>document.querySelector(`[data-a=vb-ln-add][data-v=${sec}]`).click(),sec);await p.waitForTimeout(150);
   const cb=p.locator('[data-vb-cb="nova"]');await cb.fill(busca);await p.waitForTimeout(80);await cb.press('Enter');await p.waitForTimeout(200);
-  const r=p.locator('.vb-lns .vb-r[data-ln]').last();if(mult!=null){const m=r.locator('[data-k=mult]');await m.fill(mult);await m.press('Tab')}
+  const r=p.locator(`#vb-sec-${sec} .vb-r[data-ln]`).last();if(mult!=null){const m=r.locator('[data-k=mult]');await m.fill(mult);await m.press('Tab')}
   if(qtd!=null){const q=r.locator('[data-k=qtd]');await q.fill(qtd);await q.press('Tab')}await p.waitForTimeout(80);return r};
-await p.evaluate(()=>document.querySelector('[data-a=vb-ln-add]').click());await p.waitForTimeout(150);
+await p.evaluate(()=>document.querySelector('[data-a=vb-ln-add][data-v=obra]').click());await p.waitForTimeout(150);
 await p.locator('[data-vb-cb="nova"]').fill('obra');await p.waitForTimeout(100);
 const ops=await p.$$eval('.vb-dd [data-vb-op]',e=>e.map(x=>x.dataset.vbOp));
-ok(ops.includes('construcao')&&ops.includes('adm_obra')&&!ops.includes('comissao'),tag+' busca "obra" acha as despesas do grupo Obra: '+ops.join(','));
+ok(ops.includes('construcao')&&ops.includes('contingencia')&&!ops.includes('adm_obra')&&!ops.includes('comissao'),tag+' em Custo de obras, a busca "obra" acha só os itens do grupo Obra: '+ops.join(','));
+await p.locator('[data-vb-cb="nova"]').fill('');await p.waitForTimeout(80);
+const ops2=await p.$$eval('.vb-dd [data-vb-op]',e=>e.map(x=>x.dataset.vbOp));ok(!ops2.includes('terreno')&&!ops2.includes('comissao'),tag+' a lista de Custo de obras não mostra itens de outras seções');
 if(modo==='desktop')await p.screenshot({path:OUT+tag+'_1busca.png'});
 await p.evaluate(()=>document.querySelector('[data-a=vb-ln-cancela]').click());await p.waitForTimeout(100);
-await desp('terreno','2.000.000','3');await desp('constru','150.000');await desp('infraestrutura ext','1.000.000');
-const adm=await desp('administração da obra');
+await desp('despesas','terreno','2.000.000','3');await desp('obra','constru','150.000');await desp('obra','infraestrutura ext','1.000.000');
+const adm=await desp('taxas','administração da obra');
 ok(await adm.locator('[data-k=tipo]').inputValue()==='pct_obra_total'&&await adm.locator('[data-k=mult]').inputValue()==='5',tag+' despesa escolhida vem com o tipo e o multiplicador da lista (5% da obra total)');
-await desp('conting');await desp('comiss');
+await desp('obra','conting');await desp('comercial','comiss');
+const tots=await p.evaluate(()=>['obra','comercial','taxas','despesas'].map(k=>document.getElementById('vb-tot-'+k).innerText.replace(/\s+/g,' ')));
+ok(/24\.175\.000/.test(tots[0])&&/1\.728\.000/.test(tots[1])&&/1\.175\.000/.test(tots[2])&&/6\.000\.000/.test(tots[3]),tag+' quatro seções com seus totais (obras 24,175 mi, comerciais 1,728 mi, taxas 1,175 mi, despesas 6 mi): '+tots.join(' | '));
 const kp=await p.$eval('#vb-kpis',e=>e.innerText.replace(/\s+/g,' '));
 ok(/46,00 mi/.test(kp)&&/43,20 mi/.test(kp)&&/10,12 mi/.test(kp)&&/23,4%/.test(kp),tag+' VGV 46 mi, VGV líquido 43,2 mi, lucro 10,12 mi, margem 23,4% (o mesmo do banco): '+kp);
 const res=await p.$eval('#vb-res',e=>e.innerText.replace(/\s+/g,' '));
-ok(/33\.078\.000/.test(res)&&/10\.122\.000/.test(res)&&/23,43%/.test(res)&&/Obra total R\$\s?23\.500\.000/.test(res)&&/incidente R\$\s?22\.500\.000/.test(res),tag+' resultado: despesas 33.078.000, lucro 10.122.000, margem 23,43%, obra total 23,5 mi e incidente 22,5 mi');
+ok(/Custo de obras R\$\s?24\.175\.000/.test(res)&&/Taxas R\$\s?1\.175\.000/.test(res)&&/Custos comerciais R\$\s?1\.728\.000/.test(res)&&/Despesas R\$\s?6\.000\.000/.test(res)&&/10\.122\.000/.test(res)&&/23,43%/.test(res)&&/Obra total R\$\s?23\.500\.000/.test(res)&&/incidente R\$\s?22\.500\.000/.test(res),tag+' resultado: as quatro seções, lucro 10.122.000, margem 23,43%, obra total 23,5 mi e incidente 22,5 mi');
 const vs=(await D()).viabs.at(-1);
 ok(vs.linhas.length===6&&vs.linhas[0].qtd===3,tag+' seis linhas gravadas, terreno em 3 parcelas');
 await p.evaluate(()=>window.scrollTo(0,0));await p.screenshot({path:OUT+tag+'_2estudo.png',fullPage:true});

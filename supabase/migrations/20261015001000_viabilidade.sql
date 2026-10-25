@@ -16,6 +16,9 @@
 --     verba por unidade   base = total de unidades (inclusive as permutadas)
 --   As linhas "% da obra" nunca entram na base da obra.
 --   lucro líquido  = VGV líquido − Σ linhas;  margem = lucro ÷ VGV líquido
+--   As linhas aparecem em quatro seções pelo grupo da despesa: Obra → Custo
+--   de obras, Comercial → Custos comerciais, Impostos, Financeiro e Gestão e
+--   administração → Taxas, o resto → Despesas (decisão do Moisés, 25/out/2026); cada seção tem o seu total.
 -- O estudo é do terreno (vários por terreno); a negociação vincula um
 -- (processos.viabilidade_id). O estudo externo do BKM (tipo 'externa',
 -- app.vincular_viabilidade) continua.
@@ -49,17 +52,17 @@ insert into app.viabilidade_despesas (codigo, nome, grupo, obra, tipo_padrao, mu
   ('infra_interna', 'Infraestrutura interna', 'obra', 'incidente', 'verba_total', null, 8),
   ('infra_externa', 'Infraestrutura externa', 'obra', 'total', 'verba_total', null, 9),
   ('ligacoes', 'Ligações definitivas', 'obra', 'total', 'verba_unidade', null, 10),
-  ('adm_obra', 'Administração da obra', 'obra', 'nao', 'pct_obra_total', 5, 11),
-  ('seguros_obra', 'Seguros e garantias da obra', 'obra', 'nao', 'pct_obra_total', 1, 12),
-  ('contingencia', 'Contingência de obra', 'obra', 'nao', 'pct_obra_incidente', 3, 13),
-  ('comissao', 'Comissão de vendas', 'comercial', 'nao', 'pct_vgv', 4, 14),
-  ('marketing', 'Marketing e publicidade', 'comercial', 'nao', 'pct_vgv', 1.5, 15),
-  ('stand', 'Stand e apartamento decorado', 'comercial', 'nao', 'verba_total', null, 16),
-  ('ret', 'Impostos (RET)', 'impostos', 'nao', 'pct_vgv', 4, 17),
+  ('seguros_obra', 'Seguros e garantias da obra', 'obra', 'nao', 'pct_obra_total', 1, 11),
+  ('contingencia', 'Contingência de obra', 'obra', 'nao', 'pct_obra_incidente', 3, 12),
+  ('comissao', 'Comissão de vendas', 'comercial', 'nao', 'pct_vgv', 4, 13),
+  ('marketing', 'Marketing e publicidade', 'comercial', 'nao', 'pct_vgv', 1.5, 14),
+  ('stand', 'Stand e apartamento decorado', 'comercial', 'nao', 'verba_total', null, 15),
+  ('ret', 'Impostos (RET)', 'impostos', 'nao', 'pct_vgv', 4, 16),
+  ('adm_obra', 'Administração da obra', 'administracao', 'nao', 'pct_obra_total', 5, 17),
   ('adm_incorporacao', 'Administração da incorporação', 'administracao', 'nao', 'pct_vgv', 2, 18),
-  ('juridico', 'Jurídico, cartório e registro da incorporação', 'administracao', 'nao', 'verba_total', null, 19),
-  ('estoque', 'Condomínio e IPTU das unidades em estoque', 'administracao', 'nao', 'verba_unidade', null, 20),
-  ('financiamento', 'Taxas do financiamento (Caixa)', 'financeiro', 'nao', 'pct_vgv', null, 21),
+  ('financiamento', 'Taxas do financiamento (Caixa)', 'financeiro', 'nao', 'pct_vgv', null, 19),
+  ('juridico', 'Jurídico, cartório e registro da incorporação', 'outros', 'nao', 'verba_total', null, 20),
+  ('estoque', 'Condomínio e IPTU das unidades em estoque', 'outros', 'nao', 'verba_unidade', null, 21),
   ('outras', 'Outras despesas', 'outros', 'nao', 'verba_total', null, 22);
 
 alter table app.viabilidade_despesas enable row level security;
@@ -75,7 +78,11 @@ alter table app.viabilidades
   add column tipo             text not null default 'externa' check (tipo in ('externa','estatica')),
   add column vgv_liquido      numeric(16,2),
   add column permuta_valor    numeric(16,2),
-  add column despesas_total   numeric(16,2),
+  add column despesas_total   numeric(16,2),          -- todas as saídas
+  add column custo_obras      numeric(16,2),
+  add column custos_comerciais numeric(16,2),
+  add column taxas            numeric(16,2),
+  add column despesas_gerais  numeric(16,2),          -- seção Despesas
   add column lucro_liquido    numeric(16,2),
   add column obra_total       numeric(16,2),
   add column obra_incidente   numeric(16,2),
@@ -169,7 +176,7 @@ create or replace function app.calcular_viabilidade(p_id uuid)
 returns jsonb
 language plpgsql stable set search_path = ''
 as $$
-declare v_vgv numeric; v_perm numeric; v_un int; v_unp int; v_liq numeric; v_ot numeric; v_oi numeric; v_desp numeric; v_linhas jsonb;
+declare v_vgv numeric; v_perm numeric; v_un int; v_unp int; v_liq numeric; v_ot numeric; v_oi numeric; v_desp numeric; v_linhas jsonb; v_sec jsonb;
 begin
   select coalesce(sum(quantidade * preco_unitario), 0), coalesce(sum(quantidade_permuta * preco_unitario), 0),
          coalesce(sum(quantidade), 0), coalesce(sum(quantidade_permuta), 0)
@@ -185,18 +192,24 @@ begin
             from app.viabilidade_linhas l
             join app.viabilidade_despesas d on d.empresa_id = l.empresa_id and d.codigo = l.despesa
            where l.viabilidade_id = p_id and l.tipo not in ('pct_obra_incidente','pct_obra_total')) x;
-  select coalesce(jsonb_agg(jsonb_build_object('id', y.id, 'base', y.base, 'valor', y.valor) order by y.ordem, y.criado_em), '[]'::jsonb),
-         coalesce(sum(y.valor), 0)
-    into v_linhas, v_desp
+  select coalesce(jsonb_agg(jsonb_build_object('id', y.id, 'secao', y.secao, 'base', y.base, 'valor', y.valor) order by y.ordem, y.criado_em), '[]'::jsonb),
+         coalesce(sum(y.valor), 0),
+         jsonb_build_object('obra', coalesce(sum(y.valor) filter (where y.secao = 'obra'), 0),
+                            'comercial', coalesce(sum(y.valor) filter (where y.secao = 'comercial'), 0),
+                            'taxas', coalesce(sum(y.valor) filter (where y.secao = 'taxas'), 0),
+                            'despesas', coalesce(sum(y.valor) filter (where y.secao = 'despesas'), 0))
+    into v_linhas, v_desp, v_sec
     from (select l.id, l.ordem, l.criado_em, b.base,
+                 case d.grupo when 'obra' then 'obra' when 'comercial' then 'comercial' when 'impostos' then 'taxas' when 'financeiro' then 'taxas' when 'administracao' then 'taxas' else 'despesas' end as secao,
                  round(b.base * l.multiplicador / case when l.tipo like 'pct%' then 100 else 1 end * l.quantidade, 2) as valor
             from app.viabilidade_linhas l
+            join app.viabilidade_despesas d on d.empresa_id = l.empresa_id and d.codigo = l.despesa
             cross join lateral (select case l.tipo when 'pct_vgv' then v_liq when 'pct_obra_incidente' then v_oi
                                                    when 'pct_obra_total' then v_ot when 'verba_total' then 1 else v_un end::numeric as base) b
            where l.viabilidade_id = p_id) y;
   return jsonb_build_object(
     'vgv', v_vgv, 'permuta', v_perm, 'vgv_liquido', v_liq, 'unidades', v_un, 'unidades_permuta', v_unp,
-    'obra_total', v_ot, 'obra_incidente', v_oi, 'despesas', v_desp, 'lucro_liquido', v_liq - v_desp,
+    'obra_total', v_ot, 'obra_incidente', v_oi, 'despesas', v_desp, 'secoes', v_sec, 'lucro_liquido', v_liq - v_desp,
     'margem_pct', case when v_liq > 0 then round((v_liq - v_desp) / v_liq * 100, 2) end,
     'linhas', v_linhas);
 end $$;
@@ -209,7 +222,8 @@ begin
     vgv = (c->>'vgv')::numeric, permuta_valor = (c->>'permuta')::numeric, vgv_liquido = (c->>'vgv_liquido')::numeric,
     unidades = (c->>'unidades')::int, unidades_permuta = (c->>'unidades_permuta')::int,
     obra_total = (c->>'obra_total')::numeric, obra_incidente = (c->>'obra_incidente')::numeric,
-    despesas_total = (c->>'despesas')::numeric, lucro_liquido = (c->>'lucro_liquido')::numeric,
+    despesas_total = (c->>'despesas')::numeric,
+    custo_obras = (c#>>'{secoes,obra}')::numeric, custos_comerciais = (c#>>'{secoes,comercial}')::numeric, taxas = (c#>>'{secoes,taxas}')::numeric, despesas_gerais = (c#>>'{secoes,despesas}')::numeric, lucro_liquido = (c->>'lucro_liquido')::numeric,
     margem_pct = (c->>'margem_pct')::numeric, calculado_em = current_date, atualizado_em = now()
   where id = p_id and tipo = 'estatica';
 end $$;
@@ -228,7 +242,7 @@ begin
 end $$;
 create trigger t_recalc after insert or update or delete on app.viabilidade_tipologias for each row execute function app.tg_viabilidade_recalcular();
 create trigger t_recalc after insert or update or delete on app.viabilidade_linhas for each row execute function app.tg_viabilidade_recalcular();
-create trigger t_recalc after update of obra on app.viabilidade_despesas for each row execute function app.tg_viabilidade_recalcular();
+create trigger t_recalc after update of obra, grupo on app.viabilidade_despesas for each row execute function app.tg_viabilidade_recalcular();
 
 -- Tipologias e linhas: escrita direta (sem regra de funil); o cálculo é do banco.
 do $$

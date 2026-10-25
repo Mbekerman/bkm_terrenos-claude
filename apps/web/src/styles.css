@@ -2226,6 +2226,7 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
   .vb-r.vb-tot .vb-c:nth-child(n+2) { text-align: left }
   .vb-r.vb-tot > span:empty { display: none }
   .vb-lns .vb-tot .vb-tipo, .vb-lns .vb-tot .vb-mult, .vb-lns .vb-tot .vb-qtd { display: none }
+  .vb-hint-ln { padding: 0 4px }
   .vb-nova .vb-dica { grid-column: 1 / -1 }
   .vb-dd { width: 100% }
 }
