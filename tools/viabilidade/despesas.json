@@ -201,12 +201,14 @@
     }
   ],
   "secoes": {
+    "terreno": "Terreno",
     "obra": "Custo de obras",
     "comercial": "Custos comerciais",
     "taxas": "Taxas",
     "despesas": "Despesas"
   },
   "secao_do_grupo": {
+    "terreno": "terreno",
     "obra": "obra",
     "comercial": "comercial",
     "impostos": "taxas",

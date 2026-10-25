@@ -79,6 +79,7 @@ alter table app.viabilidades
   add column vgv_liquido      numeric(16,2),
   add column permuta_valor    numeric(16,2),
   add column despesas_total   numeric(16,2),          -- todas as saídas
+  add column custo_terreno    numeric(16,2),
   add column custo_obras      numeric(16,2),
   add column custos_comerciais numeric(16,2),
   add column taxas            numeric(16,2),
@@ -194,13 +195,14 @@ begin
            where l.viabilidade_id = p_id and l.tipo not in ('pct_obra_incidente','pct_obra_total')) x;
   select coalesce(jsonb_agg(jsonb_build_object('id', y.id, 'secao', y.secao, 'base', y.base, 'valor', y.valor) order by y.ordem, y.criado_em), '[]'::jsonb),
          coalesce(sum(y.valor), 0),
-         jsonb_build_object('obra', coalesce(sum(y.valor) filter (where y.secao = 'obra'), 0),
+         jsonb_build_object('terreno', coalesce(sum(y.valor) filter (where y.secao = 'terreno'), 0),
+                            'obra', coalesce(sum(y.valor) filter (where y.secao = 'obra'), 0),
                             'comercial', coalesce(sum(y.valor) filter (where y.secao = 'comercial'), 0),
                             'taxas', coalesce(sum(y.valor) filter (where y.secao = 'taxas'), 0),
                             'despesas', coalesce(sum(y.valor) filter (where y.secao = 'despesas'), 0))
     into v_linhas, v_desp, v_sec
     from (select l.id, l.ordem, l.criado_em, b.base,
-                 case d.grupo when 'obra' then 'obra' when 'comercial' then 'comercial' when 'impostos' then 'taxas' when 'financeiro' then 'taxas' when 'administracao' then 'taxas' else 'despesas' end as secao,
+                 case d.grupo when 'terreno' then 'terreno' when 'obra' then 'obra' when 'comercial' then 'comercial' when 'impostos' then 'taxas' when 'financeiro' then 'taxas' when 'administracao' then 'taxas' else 'despesas' end as secao,
                  round(b.base * l.multiplicador / case when l.tipo like 'pct%' then 100 else 1 end * l.quantidade, 2) as valor
             from app.viabilidade_linhas l
             join app.viabilidade_despesas d on d.empresa_id = l.empresa_id and d.codigo = l.despesa
@@ -223,7 +225,7 @@ begin
     unidades = (c->>'unidades')::int, unidades_permuta = (c->>'unidades_permuta')::int,
     obra_total = (c->>'obra_total')::numeric, obra_incidente = (c->>'obra_incidente')::numeric,
     despesas_total = (c->>'despesas')::numeric,
-    custo_obras = (c#>>'{secoes,obra}')::numeric, custos_comerciais = (c#>>'{secoes,comercial}')::numeric, taxas = (c#>>'{secoes,taxas}')::numeric, despesas_gerais = (c#>>'{secoes,despesas}')::numeric, lucro_liquido = (c->>'lucro_liquido')::numeric,
+    custo_terreno = (c#>>'{secoes,terreno}')::numeric, custo_obras = (c#>>'{secoes,obra}')::numeric, custos_comerciais = (c#>>'{secoes,comercial}')::numeric, taxas = (c#>>'{secoes,taxas}')::numeric, despesas_gerais = (c#>>'{secoes,despesas}')::numeric, lucro_liquido = (c->>'lucro_liquido')::numeric,
     margem_pct = (c->>'margem_pct')::numeric, calculado_em = current_date, atualizado_em = now()
   where id = p_id and tipo = 'estatica';
 end $$;

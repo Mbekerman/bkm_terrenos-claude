@@ -37,7 +37,7 @@ function vbCalc(v){let vgv=0,perm=0,un=0,unp=0,priv=0;
   let ot=0,oi=0;
   v.linhas.forEach(l=>{if(l.tipo.startsWith('pct_obra'))return;const d=vbDesp(l.desp),x=valor(l,base0(l))||0;if(d&&d.obra!=='nao')ot+=x;if(d&&d.obra==='incidente')oi+=x});
   ot=r2(ot);oi=r2(oi);
-  const L={},SEC={obra:0,comercial:0,taxas:0,despesas:0};let desp=0;
+  const L={},SEC={terreno:0,obra:0,comercial:0,taxas:0,despesas:0};let desp=0;
   v.linhas.forEach(l=>{const b=l.tipo==='pct_obra_total'?ot:l.tipo==='pct_obra_incidente'?oi:base0(l),x=valor(l,b);L[l.id]={base:b,valor:x};desp+=x||0;SEC[vbSecaoLn(l)]+=x||0});Object.keys(SEC).forEach(k=>SEC[k]=r2(SEC[k]));
   desp=r2(desp);const lucro=r2(liq-desp);
   return {vgv,perm,liq,un,unp,priv,ot,oi,desp,SEC,lucro,margem:liq>0?r2(lucro/liq*100):null,L}}
@@ -87,7 +87,7 @@ function pgViab(){const v=VB(UI.vid);if(!v)return `<section class="sec"><div cla
     <label class="vb-c vb-qtd"><span class="vb-l">Quantidade</span><input data-vb="ln" data-r="${l.id}" data-k="qtd" value="${vbIn(l.qtd,2)}" inputmode="decimal" aria-label="Quantidade de parcelas" ${dis}></label>
     <span class="vb-c vb-out"><span class="vb-l">Resultado</span><b data-vbo="ln-${l.id}">${brl(c.L[l.id].valor)}</b><small class="faint" data-vbo="lb-${l.id}">${vbBaseTxt(l,c)}</small></span>${ro?'<span></span>':`<button class="iconbtn sm vb-del" data-a="vb-ln-del" data-v="${l.id}" aria-label="Remover ${esc(d?.nome||'item')}" title="Remover">${ic('close',18)}</button>`}</div>`};
   const nova=sec=>UI.vbNova===sec&&!ro?`<div class="vb-r vb-nova"><span class="vb-c vb-desp"><span class="vb-l">Item</span>${vbCombo('nova','','',sec)}</span><span class="vb-c vb-dica faint">Escolha na lista da empresa; o tipo de valor e o multiplicador vêm preenchidos e podem ser trocados.</span><button class="iconbtn sm vb-del" data-a="vb-ln-cancela" aria-label="Cancelar" title="Cancelar">${ic('close',18)}</button></div>`:'';
-  const ADD={obra:'Adicionar custo de obra',comercial:'Adicionar custo comercial',taxas:'Adicionar taxa',despesas:'Adicionar despesa'};
+  const ADD={terreno:'Adicionar item do terreno',obra:'Adicionar custo de obra',comercial:'Adicionar custo comercial',taxas:'Adicionar taxa',despesas:'Adicionar despesa'};
   const secoes=Object.entries(VB_SECAO).map(([sec,nome])=>{const ls=v.linhas.filter(l=>vbSecaoLn(l)===sec).map(linha).join('');
     return `<section class="sec vb-sec" id="vb-sec-${sec}"><div class="sec-h"><h2>${nome}</h2>${ro?'':`<button class="btn text sm" data-a="vb-ln-add" data-v="${sec}">${ic('add',16)}${ADD[sec]}</button>`}</div><div class="sec-b">
     <div class="vb-tab vb-lns"><div class="vb-r vb-hd" aria-hidden="true"><span>Item</span><span>Tipo de valor</span><span>Multiplicador</span><span>Quantidade</span><span>Resultado</span><span></span></div>

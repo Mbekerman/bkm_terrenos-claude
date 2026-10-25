@@ -1223,8 +1223,8 @@ select pg_temp.ok((select vgv = 46000000 and permuta_valor = 2800000 and vgv_liq
   and obra_total = 23500000 and obra_incidente = 22500000 and despesas_total = 33078000 and lucro_liquido = 10122000 and margem_pct = 23.43
   from app.viabilidades where id = :'vb1'),
   'VGV 46 mi − permuta 2,8 mi = VGV líquido 43,2 mi; despesas 33,078 mi (terreno 3 parcelas, obra por unidade, % da obra total e incidente, % do VGV líquido); lucro 10,122 mi, margem 23,43%');
-select pg_temp.ok((select custo_obras = 24175000 and custos_comerciais = 1728000 and taxas = 1175000 and despesas_gerais = 6000000 from app.viabilidades where id = :'vb1'),
-  'seções pelo grupo: custo de obras 24,175 mi, custos comerciais 1,728 mi, taxas 1,175 mi (administração da obra), despesas 6 mi');
+select pg_temp.ok((select custo_terreno = 6000000 and custo_obras = 24175000 and custos_comerciais = 1728000 and taxas = 1175000 and despesas_gerais = 0 from app.viabilidades where id = :'vb1'),
+  'seções pelo grupo: terreno 6 mi (3 parcelas), custo de obras 24,175 mi, custos comerciais 1,728 mi, taxas 1,175 mi (administração da obra), despesas zero');
 select pg_temp.ok((select (x->>'base')::numeric = 23500000 and (x->>'valor')::numeric = 1175000 from jsonb_array_elements(app.calcular_viabilidade(:'vb1')->'linhas') x where x->>'id' = (select id::text from app.viabilidade_linhas where viabilidade_id = :'vb1' and despesa = 'adm_obra')),
   'cada linha com a base e o valor (administração da obra: 5% de 23,5 mi)');
 select pg_temp.falha(format($$insert into app.viabilidade_linhas (empresa_id, viabilidade_id, despesa, tipo, multiplicador) values (%L, %L, 'inexistente', 'verba_total', 1)$$, :'emp', :'vb1'), 'despesa fora da lista da empresa é recusada');
