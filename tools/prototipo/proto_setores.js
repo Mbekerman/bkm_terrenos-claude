@@ -14,7 +14,17 @@ RENDA_MET.fatorPnad=RENDA_MET.pnadValorAtual/RENDA_MET.pnadValorBase;
    (a primeira, até 0, é "sem moradores"); o limite de cima entra na faixa, sem arredondar */
 const DENS_MET=__METODOLOGIA_DENSIDADE__;
 const dsFaixa=v=>{if(v==null)return null;for(let i=0;i<DENS_MET.faixas.length;i++){const a=DENS_MET.faixas[i].ate;if(a==null||v<=a)return i}return null};
-const SET_ARQ={'3550308':'dados/setores-3550308-2022.json'};
+/* um arquivo por município (tools/setores/gerar.py --municipio); a tela junta todos num conjunto só */
+const SET_MUN={'3550308':'São Paulo','3549904':'São José dos Campos'};
+const setArq=(tipo,mun)=>(location.pathname.startsWith('/prototipo')?'/prototipo/':'')+`dados/${tipo}-${mun}-2022.json`;
+/* junta os arquivos dos municípios: vetores por setor em sequência, código completo do setor em cd,
+   o município de cada setor em mun e os distritos com o índice deslocado */
+const setLocal=(d,i)=>{const di=d.distritos[d.di[i]]||'',m=SET_MUN[d.mun[i]]||'';return di&&di!==m?di+' · '+m:(m||di)};
+function setJuntar(js){const o={...js[0],cd:[],mun:[],distritos:[],di:[],n:0};const vet=Object.keys(js[0]).filter(k=>Array.isArray(js[0][k])&&js[0][k].length===js[0].n&&!['cd','di'].includes(k));
+  vet.forEach(k=>o[k]=[]);
+  for(const j of js){const base=o.distritos.length;o.distritos.push(...j.distritos);j.di.forEach(x=>o.di.push(x+base));j.cd.forEach(c=>{o.cd.push(j.municipio+c);o.mun.push(j.municipio)});
+    vet.forEach(k=>{for(const x of j[k])o[k].push(x)});o.n+=j.n}
+  return o}
 const SET={d:null,promessa:null,erro:null};
 const rdFaixa=v=>{if(v==null)return null;const r=Math.round(v);for(let i=0;i<RENDA_MET.faixas.length;i++){const a=RENDA_MET.faixas[i].ate;if(a==null||r<=a)return i}return null};
 const rdNum=(v,d)=>Number(v).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -24,9 +34,8 @@ const CAMADAS_SETOR={
   renda:{nome:'Renda familiar estimada',curto:'Renda',met:RENDA_MET,cor:i=>{const f=SET.d.faixa[i];return f==null?null:RENDA_MET.faixas[f].cor}},
   dens:{nome:'Densidade demográfica',curto:'Densidade',met:DENS_MET,cor:i=>{const f=SET.d.dfaixa[i];return f==null?null:DENS_MET.faixas[f].cor}}};
 
-function setUrl(){return (location.pathname.startsWith('/prototipo')?'/prototipo/':'')+SET_ARQ['3550308']}
 function setCarregar(){if(SET.d)return Promise.resolve(SET.d);if(SET.promessa)return SET.promessa;
-  SET.promessa=fetch(setUrl()).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(j=>{SET.d=setPreparar(j);return SET.d})
+  SET.promessa=Promise.all(Object.keys(SET_MUN).map(m=>fetch(setArq('setores',m)).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}))).then(js=>{SET.d=setPreparar(setJuntar(js));return SET.d})
     .catch(e=>{console.warn('setores',e);SET.erro=e;SET.promessa=null;throw e});
   return SET.promessa}
 /* geometria em inteiros de 1e-5 grau, em diferenças; índice em grade de 0,002 grau (~220 m) */
@@ -82,9 +91,9 @@ const RD={sel:null,abertoEm:0};
 function rdAbrirEm(lat,lng){if(!rdLigada()||!SET.d||UI.mpModo)return false;const i=setEm(lat,lng);if(i==null){rdFechar();return false}
   RD.sel=i;RD.abertoEm=Date.now();if(typeof ccFechar==='function')ccFechar();rdSelDesenha(i);rdBox();return true}
 function rdFechar(){if(RD.sel==null)return false;RD.sel=null;rdSelLimpa();rdBox();return true}
-function dsBoxHtml(i){const d=SET.d,m=DENS_MET,cd=d.municipio+d.cd[i],f=d.dfaixa[i],a=d.area[i]/1e6;
+function dsBoxHtml(i){const d=SET.d,m=DENS_MET,cd=d.cd[i],f=d.dfaixa[i],a=d.area[i]/1e6;
   return `<div class="cc-box rd-box" role="dialog" aria-label="Setor censitário ${cd}">
-  <div class="cc-hd"><div class="cc-ti"><div class="cc-n">Setor censitário</div><div class="muted">${esc(d.distritos[d.di[i]]||'')} · São Paulo</div></div><button type="button" class="iconbtn" data-a="rd-x" aria-label="Fechar" title="Fechar (Esc)">${ic('close',20)}</button></div>
+  <div class="cc-hd"><div class="cc-ti"><div class="cc-n">Setor censitário</div><div class="muted">${esc(setLocal(d,i))}</div></div><button type="button" class="iconbtn" data-a="rd-x" aria-label="Fechar" title="Fechar (Esc)">${ic('close',20)}</button></div>
   ${d.pop[i]>0?`<div class="cc-k rd-k" style="border-left-color:${m.faixas[f].cor}"><div class="faint">Densidade demográfica bruta</div><div class="cc-big">${num(Math.round(d.dens[i]))} hab/km²</div><div class="faint">Faixa ${esc(m.faixas[f].rotulo)} hab/km²</div></div>`
     :`<div class="cc-meta">Setor sem moradores no Censo ${m.censoAno}.</div>`}
   <dl class="rd-kv"><div><dt>Pessoas – Censo ${m.censoAno}</dt><dd>${num(d.pop[i])}</dd></div>
@@ -92,11 +101,11 @@ function dsBoxHtml(i){const d=SET.d,m=DENS_MET,cd=d.municipio+d.cd[i],f=d.dfaixa
     <div><dt>Área do setor</dt><dd>${a<0.1?m2(Math.round(d.area[i])):num(a,2)+' km²'}</dd></div>
     <div><dt>Código do setor</dt><dd class="rd-cd">${cd}</dd></div></dl>
   <div class="rd-nota">Pessoas ÷ área total do setor, com parques, vias e terrenos vazios. <button class="linkbtn" data-a="ds-met">Metodologia</button></div></div>`}
-function rdBoxHtml(i){if(rdCamada()==='dens')return dsBoxHtml(i);const d=SET.d,m=RENDA_MET,cd=d.municipio+d.cd[i],sit=d.sit[i],v=d.v4[i],at=d.rAt[i],f=d.faixa[i];
+function rdBoxHtml(i){if(rdCamada()==='dens')return dsBoxHtml(i);const d=SET.d,m=RENDA_MET,cd=d.cd[i],sit=d.sit[i],v=d.v4[i],at=d.rAt[i],f=d.faixa[i];
   const motivo=sit===1?'O IBGE não divulgou a renda deste setor (sigilo, poucos domicílios).':sit===3?'Setor sem moradores no Censo 2022.':'O IBGE não divulgou a renda deste setor.';
   const dist=v!=null&&d.v6[i]!=null&&v>m.distorcidaRazao*d.v6[i];
   return `<div class="cc-box rd-box" role="dialog" aria-label="Setor censitário ${cd}">
-  <div class="cc-hd"><div class="cc-ti"><div class="cc-n">Setor censitário</div><div class="muted">${esc(d.distritos[d.di[i]]||'')} · São Paulo</div></div><button type="button" class="iconbtn" data-a="rd-x" aria-label="Fechar" title="Fechar (Esc)">${ic('close',20)}</button></div>
+  <div class="cc-hd"><div class="cc-ti"><div class="cc-n">Setor censitário</div><div class="muted">${esc(setLocal(d,i))}</div></div><button type="button" class="iconbtn" data-a="rd-x" aria-label="Fechar" title="Fechar (Esc)">${ic('close',20)}</button></div>
   ${v!=null?`<div class="cc-k rd-k" style="border-left-color:${m.faixas[f].cor}"><div class="faint">Renda familiar mensal estimada (valores de ${m.pnadAnoAtual})</div><div class="cc-big">${brl(at)}</div><div class="faint">${esc(m.faixas[f].rotulo)}</div></div>
   <dl class="rd-kv"><div><dt>Renda do responsável – Censo ${m.censoAno}</dt><dd>${brl(v)}</dd></div>
     <div><dt>Fator familiar</dt><dd>${rdNum(m.fatorFamiliar,1)}×</dd></div>
@@ -171,7 +180,7 @@ function setEstat(t,raio){if(!SET.d||t.lat==null)return null;const poly=raio==='
   return RD_CACHE[ch]=r}
 function rdCardCorpo(t){if(t.lat==null)return '<div class="muted">Sem localização.</div>';
   if(!SET.d){if(SET.erro)return '<div class="muted">Não foi possível carregar os setores do IBGE.</div>';setCarregar().then(()=>rdCardAtualiza(t.id)).catch(()=>rdCardAtualiza(t.id));return '<div class="muted">Carregando os setores do IBGE…</div>'}
-  if(setEm(t.lat,t.lng)==null&&!setCandidatos(t.lng-.01,t.lat-.01,t.lng+.01,t.lat+.01).size)return '<div class="muted">Por ora só há setores do município de São Paulo.</div>';
+  if(setEm(t.lat,t.lng)==null&&!setCandidatos(t.lng-.01,t.lat-.01,t.lng+.01,t.lat+.01).size)return `<div class="muted">Por ora só há setores de ${Object.values(SET_MUN).join(' e ')}.</div>`;
   const raio=UI.rdRaio||1000,r=setEstat(t,raio),m=RENDA_MET;
   if(!r)return '<div class="muted">O terreno não tem poligonal.</div>';
   const barras=r.porF.map((p,k)=>p>=.05?`<li><span class="rd-q" style="background:${m.faixas[k].cor}"></span><span class="rd-fr">${esc(m.faixas[k].rotulo)}</span><span class="rd-bar"><span style="width:${Math.max(1,p)}%;background:${m.faixas[k].cor}"></span></span><b class="num">${rdNum(p,p<10?1:0)}%</b></li>`:'').join('');
@@ -192,11 +201,12 @@ function rdCardAtualiza(id){const t=T(id),c=$('#rd-corpo');if(t&&c)c.innerHTML=r
    só por somas exatas (tools/setores/demografia.json, decisão do Moisés). Cada setor entra pela mesma fração
    de área do quadro da renda. Sigilo nunca vira zero: o que o IBGE não divulgou aparece como "não divulgado". */
 const DEMO_CFG=__DEMOGRAFIA__;
-const DEMO_ARQ={'3550308':'dados/demografia-3550308-2022.json'};
 const DEMO={d:null,promessa:null,erro:null};
 function demoCarregar(){if(DEMO.d)return Promise.resolve(DEMO.d);if(DEMO.promessa)return DEMO.promessa;
-  const u=(location.pathname.startsWith('/prototipo')?'/prototipo/':'')+DEMO_ARQ['3550308'];
-  DEMO.promessa=fetch(u).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(j=>{j.col=Object.fromEntries(j.vars.map((v,k)=>[v,k]));DEMO.d=j;return j})
+  DEMO.promessa=Promise.all(Object.keys(SET_MUN).map(m=>fetch(setArq('demografia',m)).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}))).then(js=>{
+      if(js.some(j=>j.vars.join()!==js[0].vars.join()))throw new Error('variáveis diferentes entre os municípios');
+      const j={...js[0],n:0,cd:[],v:[]};for(const x of js){x.cd.forEach(c=>j.cd.push(x.municipio+c));x.v.forEach(l=>j.v.push(l));j.n+=x.n}
+      j.col=Object.fromEntries(j.vars.map((v,k)=>[v,k]));DEMO.d=j;return j})
     .catch(e=>{console.warn('demografia',e);DEMO.erro=e;DEMO.promessa=null;throw e});
   return DEMO.promessa}
 /* soma de variáveis de um setor; null se alguma não foi divulgada */
@@ -223,7 +233,7 @@ function pfBarras(itens,tot,cor){const mx=Math.max(...itens.map(x=>x[1]),1);
 function pfCorpo(t){if(t.lat==null)return '<div class="muted">Sem localização.</div>';
   if(!SET.d||!DEMO.d){if(SET.erro||DEMO.erro)return '<div class="muted">Não foi possível carregar os dados do IBGE.</div>';
     Promise.all([setCarregar(),demoCarregar()]).then(()=>pfCardAtualiza(t.id)).catch(()=>pfCardAtualiza(t.id));return '<div class="muted">Carregando os dados do Censo…</div>'}
-  if(setEm(t.lat,t.lng)==null&&!setCandidatos(t.lng-.01,t.lat-.01,t.lng+.01,t.lat+.01).size)return '<div class="muted">Por ora só há setores do município de São Paulo.</div>';
+  if(setEm(t.lat,t.lng)==null&&!setCandidatos(t.lng-.01,t.lat-.01,t.lng+.01,t.lat+.01).size)return `<div class="muted">Por ora só há setores de ${Object.values(SET_MUN).join(' e ')}.</div>`;
   const raio=UI.rdRaio||1000,r=setEstat(t,raio),o=demoEstat(t,raio),c=DEMO_CFG;
   if(!r)return '<div class="muted">O terreno não tem poligonal.</div>';
   if(!o)return '<div class="muted">Os arquivos do IBGE não batem entre si; gere de novo com tools/setores/gerar.py.</div>';
@@ -293,4 +303,6 @@ function setoresClick(A,a,t){
   }
   return false}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&RD.sel!=null&&!UI.modal&&UI.route==='mapa'){rdFechar();e.preventDefault()}});
-window.BKM_TESTE=Object.assign(window.BKM_TESTE||{},{setores:()=>!!SET.d,terreno:n=>{const t=S.terrenos.find(x=>x.nome===n);return {lat:t.lat,lng:t.lng,poly:t.poly}},abrirTerreno:n=>{const t=S.terrenos.find(x=>x.nome===n);go('terreno',{id:t.id,tab:'geral',from:'terrenos'})}});
+window.BKM_TESTE=Object.assign(window.BKM_TESTE||{},{setores:()=>!!SET.d,terreno:n=>{const t=S.terrenos.find(x=>x.nome===n);return {lat:t.lat,lng:t.lng,poly:t.poly}},abrirTerreno:n=>{const t=S.terrenos.find(x=>x.nome===n);go('terreno',{id:t.id,tab:'geral',from:'terrenos'})},
+  estat:async(lat,lng,raio)=>{await Promise.all([setCarregar(),demoCarregar()]);const r=setEstat({lat,lng},raio);const dm=demoEstat({lat,lng},raio);return r&&{setores:r.setores,pes:r.pes,dom:r.dom,renda:r.renda,dens:r.dens,demo:!!dm}},
+  irPara:(lat,lng,z)=>{if(typeof GG!=='undefined'&&GG){MAPA.setCenter(gLL(lat,lng));MAPA.setZoom(z)}else MAPA.setView([lat,lng],z)}});

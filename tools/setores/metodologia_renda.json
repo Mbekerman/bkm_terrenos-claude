@@ -5,7 +5,7 @@
   "variavelBase": "V06004",
   "variavelBaseDescricao": "Valor do rendimento nominal médio mensal das pessoas responsáveis com rendimentos por domicílios particulares permanentes ocupados",
   "fatorFamiliar": 1.6,
-  "fatorFamiliarOrigem": "Decisão do Moisés (24/out/2026): fator único de 1,6 para a capital, igual em todos os setores. Medidas de apoio: Estado de São Paulo 1,6102 nos microdados públicos da amostra do Censo 2022 (renda domiciliar média D0350 ÷ renda média do responsável P1110, P0170 = 1, peso D0110: R$ 6.156,18 ÷ R$ 3.823,32); capital estimada em 1,576 pela proporção entre capital e Estado nas tabelas oficiais (os microdados públicos não descem abaixo da UF)",
+  "fatorFamiliarOrigem": "Decisão do Moisés (24/out/2026): fator único de 1,6 para a capital, igual em todos os setores. Medidas de apoio: Estado de São Paulo 1,6102 nos microdados públicos da amostra do Censo 2022 (renda domiciliar média D0350 ÷ renda média do responsável P1110, P0170 = 1, peso D0110: R$ 6.156,18 ÷ R$ 3.823,32); capital estimada em 1,576 pela proporção entre capital e Estado nas tabelas oficiais (os microdados públicos não descem abaixo da UF). Aplicado do mesmo jeito a São José dos Campos (25/out/2026), sem medida própria da cidade: os microdados públicos não descem abaixo da UF",
   "pnadAnoBase": 2022,
   "pnadValorBase": 2148,
   "pnadAnoAtual": 2025,

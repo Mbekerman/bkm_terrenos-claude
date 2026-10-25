@@ -123,7 +123,7 @@ create unique index metodologias_renda_vigente on app.metodologias_renda (vigent
 insert into app.metodologias_renda (versao, censo_ano, variavel_base, fator_familiar, fator_familiar_origem,
   pnad_ano_base, pnad_valor_base, pnad_ano_atual, pnad_valor_atual, pnad_fonte, distorcida_razao, vigente) values
   (1, 2022, 'V06004', 1.6,
-   'Decisão do Moisés (24/out/2026): fator único de 1,6 para a capital, igual em todos os setores. Medidas de apoio: Estado de São Paulo 1,6102 nos microdados públicos da amostra do Censo 2022 (renda domiciliar média D0350 ÷ renda média do responsável P1110, P0170 = 1, peso D0110: R$ 6.156,18 ÷ R$ 3.823,32); capital estimada em 1,576 pela proporção entre capital e Estado nas tabelas oficiais (os microdados públicos não descem abaixo da UF)',
+   'Decisão do Moisés (24/out/2026): fator único de 1,6 para a capital, igual em todos os setores. Medidas de apoio: Estado de São Paulo 1,6102 nos microdados públicos da amostra do Censo 2022 (renda domiciliar média D0350 ÷ renda média do responsável P1110, P0170 = 1, peso D0110: R$ 6.156,18 ÷ R$ 3.823,32); capital estimada em 1,576 pela proporção entre capital e Estado nas tabelas oficiais (os microdados públicos não descem abaixo da UF). Aplicado do mesmo jeito a São José dos Campos (25/out/2026), sem medida própria da cidade: os microdados públicos não descem abaixo da UF',
    2022, 2148, 2025, 2956, 'PNAD Contínua, rendimento domiciliar per capita do Estado de São Paulo (Lei Complementar 143/2013)', 3, true);
 
 -- faixas do mapa (decisão de produto, nunca quantis; R$ 13 mil = teto da Faixa 4 do MCMV 2026; cores: amarelo-claro ao vinho até 13 mil (MCMV) e azuis acima, mais escuro = mais renda): o limite de cima entra na faixa,
