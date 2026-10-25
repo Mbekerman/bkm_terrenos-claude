@@ -43,7 +43,7 @@ await importarKml(kmlQuadra(-23.56196,-46.65530,22));
 await p.fill('#n-mun','São Paulo · SP');await p.evaluate(()=>document.querySelector('#f-novo details').open=true);await p.fill('#n-sql','00902700091');
 console.log('passo 2:',await p.$eval('#modal .banner',x=>x.innerText.replace(/\s+/g,' ')),'| SQL:',await p.$eval('#n-sql',x=>x.value),'|',await p.$eval('#n-sql-l',x=>x.textContent));
 await p.fill('#f-novo [name=nome]','Paulista 1500');await p.fill('#f-novo [name=logradouro]','Av. Paulista');await p.fill('#f-novo [name=numero]','1500');
-await p.evaluate(()=>document.querySelector('#f-novo').requestSubmit());
+await p.evaluate(()=>{document.querySelector('#f-novo [name=tipoEmp][value=mercado]')?.click();document.querySelector('#f-novo').requestSubmit()});
 await p.waitForFunction(()=>/Planta e desenho/.test(document.querySelector('#toast').textContent),null,{timeout:15000});
 const st=await ter().then(t=>{const i=t.insc[0];return {sqlFmt:i.sql,area:i.area,cib:i.cib,zf:i.zf,aCad:t.aCad,aConst:t.aConst,poly:t.poly&&t.poly.length,lat:t.lat,
   analise:t.analises.find(a=>a.status==='vigente'),docs:t.docs.map(d=>d.tipo+':v'+d.versoes+':'+d.nome),consultas:i.geo.length,erros:i.geo[0].erros,zonas:i.geo[0].zonas,hist:t.hist.map(h=>h.txt)}});

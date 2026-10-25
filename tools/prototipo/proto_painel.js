@@ -271,7 +271,7 @@ function alvoLog(h){
   const R=[[/^Terreno cadastrado/,{b:'cadastro',s:'ident'}],[/^Matr[íi]cula/,{b:'cadastro',s:'mats'}],[/^Inscri[çc][ãa]o/,{b:'cadastro',s:'insc'}],
     [/^Confronta/,{b:'cadastro',s:'confr'}],[/^Pessoa|^Propriet/,{b:'cadastro',s:'pessoas'}],[/^Poligonal|^[ÁA]rea/,{b:'cadastro',s:'areas'}],
     [/^(Oferta|Corretor)/,{b:'comercial'}],[/^Estudo de viabilidade/,{b:'geral'}],[/^(Proposta|Reuni[ãa]o|Oferta de refer)/,{b:'negociacao'}],
-    [/^(Documento|Dilig)/,{b:'documentos'}],[/^Tarefa/,{b:'tarefas'}],[/^(An[áa]lise urban|Infraestrutura|Zoneamento)/,{b:'urbanismo'}],
+    [/^(Documento|Dilig)/,{b:'documentos'}],[/^Tarefa/,{b:'tarefas'}],[/^(Tipo do empreendimento|Zonas d)/,{b:'urbanismo',s:'analise'}],[/^(An[áa]lise urban|Infraestrutura|Zoneamento)/,{b:'urbanismo'}],
     [/^Temperatura/,{topo:'.temp'}],[/^(Etapa|Subetapa|Status|Avan[çc]ou|Voltou|Retomad|Stand [bB]y|Em stand by|Pedido|Aprovad|Aprova[çc][ãa]o|Negocia[çc][ãa]o|Retomar|Revisitar|Motivo|Relato|Pontos)/,{topo:'.tl-topo'}]];
   const r=R.find(([re])=>re.test(x));return r?r[1]:{b:'geral'};
 }

@@ -28,11 +28,14 @@ function parZona(cid,sigla,tipo,macro,area,uso){const A=area??Infinity,ord=['RV2
 
 // Zonas da análise vigente (estados antigos sem lote: com uma inscrição só, é dela)
 const zIns=(t,z)=>z.ins!==undefined?z.ins:t.insc.length===1?t.insc[0].sql:null;
-const temExc=e=>!!e&&(e.ca!=null||e.to!=null||e.gab!=null||e.gabSL!=null);
+// valores alterados pelo usuário no lote: o preenchimento automático não é definitivo (decisão do Moisés, 25/out/2026)
+const EXC_K=['ca_minimo','ca_basico','recuo_frente_m','recuo_lateral_m','recuo_lateral_alto_m','cota_parte_m2','max_unidades','permeabilidade','lote_minimo_m2','frente_minima_m','outorga_gratuita'];
+const temExc=e=>!!e&&(e.ca!=null||e.to!=null||e.gab!=null||e.gabSL!=null||EXC_K.some(k=>e[k]!=null));
 // v_lote_zonas: parâmetros do catálogo com a exceção do lote por cima
-function lz(t,z,tipo){const ar=areaAdotada(t),p=parZona(cidDoTerreno(t),z.sigla,tipo,z.macro,ar),e=temExc(z.exc)?z.exc:{},eg=e.gab!=null||e.gabSL!=null;
+function lz(t,z,tipo){const ar=areaAdotada(t),p0=parZona(cidDoTerreno(t),z.sigla,tipo,z.macro,ar),e=temExc(z.exc)?z.exc:{},eg=e.gab!=null||e.gabSL!=null;
+  const alt=EXC_K.filter(k=>e[k]!=null),p=p0&&{...p0,...Object.fromEntries(alt.map(k=>[k,e[k]]))};
   const perm=p?p.permitido!==false:null,ca=e.ca??p?.ca_maximo??null;
-  return {z,p,perm,ca,cab:p?.ca_basico??null,to:e.to??(p?(p.to_corte_m2&&ar>=p.to_corte_m2?p.to_lote_grande:p.to_maximo):null)??null,
+  return {z,p,alt:new Set([...alt,...(e.ca!=null?['ca_maximo']:[]),...(e.to!=null?['to']:[]),...(eg?['gab']:[])]),perm,ca,cab:p?.ca_basico??null,to:e.to??(p?(p.to_corte_m2&&ar>=p.to_corte_m2?p.to_lote_grande:p.to_maximo):null)??null,
     gab:eg?e.gab:p?.gabarito_m??null,gabSL:eg?!!e.gabSL:!!p?.gabarito_sem_limite,exc:temExc(z.exc),
     potB:perm&&p?.ca_basico&&z.area?z.area*p.ca_basico:null,potM:perm&&ca&&z.area?z.area*ca:null}}
 // v_urbanismo_vigente: potencial nulo se algum pedaço não tem CA ou não admite o tipo
@@ -61,29 +64,61 @@ const lzCabLote=(t,ins)=>{if(!ins)return `<b>Parte sem inscrição</b> <span cla
   const i=t.insc.find(x=>digits(x.sql)===digits(ins)),c=CIDADES_INSC[i?insCid(i):cidDoTerreno(t)];
   return `<b>${esc(c.rotulo)} ${esc(ins)}</b>${i?.area!=null?` <span class="muted">· ${m2(i.area)} cadastrais</span>`:''}`};
 const gabTxt=l=>l.gabSL?'Sem limite':l.gab!=null?num(l.gab,2)+' m':'<span class="ni">—</span>';
-function lzTabela(t,a,ins,tipo,sjc){const zs=a.zonas.map((z,i)=>[z,i]).filter(([z])=>(digits(zIns(t,z)||'')||null)===(digits(ins||'')||null));
-  const ed=UI.role!=='Leitura',LL=zs.map(([z,i])=>[z,i,lz(t,z,tipo)]),cota=LL.some(([,,l])=>l.p?.cota_parte_m2!=null),nc=5+(cota?1:0);
-  return `<div class="tblwrap"><table class="mini-tbl lz-tbl"><thead><tr><th>Zona</th><th class="r">Área</th><th class="r">CA básico / máximo</th><th class="r">TO</th><th>Gabarito</th>${cota?'<th class="r">Cota-parte</th>':''}<th class="r">Potencial</th>${ed?'<th></th>':''}</tr></thead><tbody>
-  ${LL.map(([z,i,l])=>{const p=l.p,mk=[];
-    if(sjc)mk.push(z.macro?`<span class="chip">${esc(MACROS[z.macro])}</span>`:'<span class="chip warn">sem macrozona</span>');
-    if(p&&p.tipo!==tipo)mk.push(`<span class="chip" title="A zona não tem regra própria de ${TIPOS_EMP[tipo]}: vale a de mercado">regra de mercado</span>`);
-    if(p&&l.perm&&p.outorga_gratuita===true)mk.push('<span class="chip good">outorga gratuita</span>');
-    if(p&&p.situacao!=='confirmado')mk.push(`<span class="chip warn" title="${esc(SIT_PAR[p.situacao])} no catálogo">${esc(SIT_PAR[p.situacao])}</span>`);
-    if(l.exc)mk.push(`<span class="chip blue" title="${esc(z.exc.fonte||'')}">exceção do lote</span>`);
-    const cel=!p?`<td colspan="${nc}" class="muted">${sjc&&!z.macro?'Informe a macrozona: em SJC o CA depende dela.':'Zona sem parâmetros no catálogo.'}</td>`
-      :l.perm===false?`<td colspan="${nc}" class="muted">${esc(TIPOS_EMP[tipo])} não admitido${p.regras?': '+esc(p.regras):''}</td>`
-      :`<td class="r">${num(l.cab,3)} / <b>${num(l.ca,3)}</b></td><td class="r">${num(l.to,2)}</td><td>${gabTxt(l)}</td>${cota?`<td class="r">${p.cota_parte_m2!=null?num(p.cota_parte_m2)+' m²':'—'}</td>`:''}<td class="r">${l.potM!=null?m2(l.potM):'—'}</td>`;
-    return `<tr id="lz-${i}"><td><b>${esc(z.sigla)}</b><div class="lz-mk">${mk.join(' ')}</div></td><td class="r">${m2(z.area)}</td>${cel}${ed?`<td><button class="linkbtn" data-a="edit" data-s="zexc:${i}">${l.exc?'Editar exceção':'Exceção'}</button></td>`:''}</tr>
-    ${UI.edit==='zexc:'+i?`<tr><td colspan="${nc+2+(ed?1:0)}">${lzFormExc(z,i,sjc)}</td></tr>`:''}`}).join('')}</tbody></table></div>`}
-function lzFormExc(z,i,sjc){const e=z.exc||{};
+// Tipo do empreendimento pretendido (terrenos.tipo_empreendimento): escolhido no Novo terreno em SP e mudado aqui
+OPT.tipoEmp={nao_informado:'Não informado',...TIPOS_EMP};LAB_CAMPO.tipoEmp='Tipo do empreendimento';TIPO_CAMPO.tipoEmp=['sel','tipoEmp'];
+const tipoEmp=t=>TIPOS_EMP[t.tipoEmp]?t.tipoEmp:null;
+const segTipoEmp=(nome,v,req)=>`<span class="seg3" role="radiogroup" aria-label="Tipo do empreendimento">${Object.entries(TIPOS_EMP).map(([k,l])=>`<label class="opt-radio"><input type="radio" name="${nome}" value="${k}" ${v===k?'checked':''} ${req?'required':''}>${l}</label>`).join('')}</span>`;
+// um valor do quadro: vazio = a lei não fixa (nunca zero)
+const lzV=(v,suf,d)=>v==null?'<span class="ni">—</span>':num(v,d??2)+(suf||'');
+const lzPct=v=>v==null?'<span class="ni">—</span>':num(v*100,0)+'%';
+function lzRecuoLat(p){const a=p.recuo_lateral_m,b=p.recuo_lateral_alto_m,ate=MUN_CID[p.municipio]==='sjc'?'até o 2º pavimento':'até 10 m de altura';
+  if(a==null&&b==null)return '<span class="ni">—</span>';
+  if(b==null)return num(a,2)+' m';
+  return `${a==null||a===0?'Dispensado':num(a,2)+' m'} ${ate}; ${num(b,2)} m acima`}
+// parâmetros de uma zona no lote, pelo tipo escolhido
+function lzZona(t,z,i,tipo,sjc,ed){const l=lz(t,z,tipo),p=l.p,ar=areaAdotada(t),mk=[];
+  if(sjc)mk.push(z.macro?`<span class="chip">${esc(MACROS[z.macro])}</span>`:'<span class="chip warn">sem macrozona</span>');
+  if(p&&p.tipo!==tipo)mk.push(`<span class="chip" title="A zona não tem regra própria de ${TIPOS_EMP[tipo]}: vale a de mercado">regra de mercado</span>`);
+  if(p&&p.situacao!=='confirmado')mk.push(`<span class="chip warn" title="${esc(SIT_PAR[p.situacao])} no catálogo">${esc(SIT_PAR[p.situacao])}</span>`);
+  if(l.exc)mk.push(`<span class="chip blue" title="${esc(z.exc.fonte||'')}">valores alterados no lote</span>`);
+  const cel=(k,v,dica,ch)=>{const a=ch&&l.alt.has(ch);return `<div class="lz-c${a?' alt':''}"><dt>${k}</dt><dd>${v}</dd>${a?'<div class="lz-d">alterado no lote</div>':dica?`<div class="lz-d">${dica}</div>`:''}</div>`};
+  const corpo=!p?`<div class="muted lz-sem">${sjc&&!z.macro?'Informe a macrozona: em SJC o CA depende dela.':'Zona sem parâmetros no catálogo.'}</div>`
+    :l.perm===false?`<div class="muted lz-sem">${esc(TIPOS_EMP[tipo])} não admitido${p.regras?': '+esc(p.regras):''}</div>`
+    :`<dl class="lz-par">
+      ${cel('CA mínimo',lzV(p.ca_minimo,'',3),'','ca_minimo')}${cel('CA básico',lzV(l.cab,'',3),'','ca_basico')}${cel('CA máximo',`<b>${lzV(l.ca,'',3)}</b>`,'','ca_maximo')}
+      ${cel('Potencial máximo',l.potM!=null?`<b>${m2(l.potM)}</b>`:'<span class="ni">—</span>',l.potB!=null?`sem outorga ${m2(l.potB)}`:'')}
+      ${cel('Taxa de ocupação',lzV(l.to,'',2),p.to_corte_m2?`${num(p.to_maximo,2)} em lote até ${num(p.to_corte_m2)} m²; ${num(p.to_lote_grande,2)} acima${ar==null?' (sem área adotada, vale a de lote grande)':''}`:'','to')}
+      ${cel('Gabarito',gabTxt(l),'','gab')}
+      ${cel('Recuo de frente',lzV(p.recuo_frente_m,' m'),'','recuo_frente_m')}${cel('Recuos laterais e de fundo',lzRecuoLat(p),'',l.alt.has('recuo_lateral_m')?'recuo_lateral_m':'recuo_lateral_alto_m')}
+      ${cel('Cota-parte máxima',p.cota_parte_m2!=null?num(p.cota_parte_m2)+' m² por unidade':'<span class="ni">—</span>',p.cota_parte_m2!=null&&z.area?`até ${num(Math.floor(z.area/p.cota_parte_m2))} unidades nesta área`:'','cota_parte_m2')}
+      ${p.max_unidades!=null?cel('Unidades por lote',num(p.max_unidades),'','max_unidades'):''}
+      ${cel('Permeabilidade mínima',lzPct(p.permeabilidade),'','permeabilidade')}${cel('Lote mínimo',lzV(p.lote_minimo_m2,' m²',0),'','lote_minimo_m2')}${cel('Frente mínima',lzV(p.frente_minima_m,' m'),'','frente_minima_m')}
+      ${cel('Outorga onerosa',p.outorga_gratuita===true?'<span class="chip good">Gratuita</span>':p.outorga_gratuita===false?'Paga acima do básico':'<span class="ni">—</span>','','outorga_gratuita')}
+    </dl>${p.regras?`<div class="lz-regra">${esc(p.regras)}</div>`:''}`;
+  return `<div class="lz-z" id="lz-${i}"><div class="lz-zh"><b>${esc(z.sigla)}</b><span class="muted">${m2(z.area)}</span>${mk.join(' ')}
+    ${ed?`<button class="linkbtn lz-zb" data-a="edit" data-s="zexc:${i}">${l.exc?'Editar valores':'Alterar valores'}</button>`:''}</div>
+    ${corpo}${UI.edit==='zexc:'+i?lzFormExc(z,i,sjc,{p0:parZona(cidDoTerreno(t),z.sigla,tipo,z.macro,ar),ar}):''}</div>`}
+function lzTabela(t,a,ins,tipo,sjc){const ed=UI.role!=='Leitura';
+  return a.zonas.map((z,i)=>[z,i]).filter(([z])=>(digits(zIns(t,z)||'')||null)===(digits(ins||'')||null)).map(([z,i])=>lzZona(t,z,i,tipo,sjc,ed)).join('')}
+// demais dados da última consulta do lote no GeoSampa ou GeoSanja: Conpresp, tombamento, ZEIS, mananciais, macrozona...
+function lzCamadas(t,ins){const i=ins&&t.insc.find(x=>digits(x.sql)===digits(ins)),g=i&&(i.geo||[])[0],ad=i&&LOTE_ADAPT[insCid(i)];
+  if(!i)return '';
+  if(!g||!ad?.linhas)return ad?`<div class="hint lz-cam">Sem consulta à base da prefeitura neste lote. Busque em Cadastro › Inscrições para trazer tombamento, ZEIS, mananciais e as demais restrições.</div>`:'';
+  return `<div class="lz-cam">${loteToca(ad.linhas(g)).replace('<div class="geo-st">O que toca o lote</div>',`<div class="geo-st">Demais parâmetros e restrições <span class="faint">· ${esc(CIDADES_INSC[insCid(i)].base||'consulta')} de ${fdh(g.em)}</span></div>`)}</div>`}
+// Alterar valores do lote: vazio segue o catálogo; o que mudar precisa da fonte
+const EXC_CAMPOS=[['ca_minimo','CA mínimo'],['ca_basico','CA básico'],['ca','CA máximo'],['to','Taxa de ocupação'],['recuo_frente_m','Recuo de frente (m)'],['recuo_lateral_m','Recuo lateral e de fundo, até 10 m de altura (m)'],['recuo_lateral_alto_m','Recuo lateral e de fundo, acima (m)'],['cota_parte_m2','Cota-parte máxima (m²)'],['max_unidades','Unidades por lote'],['lote_minimo_m2','Lote mínimo (m²)'],['frente_minima_m','Frente mínima (m)']];
+const vBr=v=>v==null?'':String(v).replace('.',',');  // número no campo como se digita (vírgula)
+function lzFormExc(z,i,sjc,l){const e=z.exc||{},p=l?.p0||{},ph=v=>v==null?'A lei não fixa':'Catálogo: '+num(v,3);
+  const base=k=>({ca:p.ca_maximo,to:p.to_corte_m2&&l?.ar>=p.to_corte_m2?p.to_lote_grande:p.to_maximo})[k]??p[k];
   return `<form data-form="zexc" data-i="${i}" class="lz-exc"><div class="editgrid">
-    ${sjc?`<div class="field"><label for="ze-m${i}">Macrozona</label><select id="ze-m${i}" name="macro"><option value="">Não informada</option>${Object.entries(MACROS).map(([k,l])=>`<option value="${k}" ${z.macro===k?'selected':''}>${l}</option>`).join('')}</select></div>`:''}
-    <div class="field"><label for="ze-c${i}">CA máximo do lote</label><input id="ze-c${i}" name="ca" inputmode="decimal" value="${e.ca??''}" placeholder="Segue o catálogo"></div>
-    <div class="field"><label for="ze-t${i}">TO do lote</label><input id="ze-t${i}" name="to" inputmode="decimal" value="${e.to??''}" placeholder="Segue o catálogo"></div>
-    <div class="field"><label for="ze-g${i}">Gabarito do lote</label><select id="ze-g${i}" name="gabSt"><option value="">Segue o catálogo</option><option value="limitado" ${e.gab!=null?'selected':''}>Limitado</option><option value="sem" ${e.gabSL?'selected':''}>Sem limite</option></select></div>
-    <div class="field"><label for="ze-gv${i}">Gabarito (m)</label><input id="ze-gv${i}" name="gab" inputmode="decimal" value="${e.gab??''}"></div>
-    <div class="field full"><label for="ze-f${i}">Fonte da exceção</label><input id="ze-f${i}" name="fonte" value="${esc(e.fonte||'')}" placeholder="Consulta prévia, operação urbana, certidão..."></div></div>
-    <div class="hint">Vazio segue o catálogo da empresa. Exceção só com a fonte.</div>
+    ${sjc?`<div class="field"><label for="ze-m${i}">Macrozona</label><select id="ze-m${i}" name="macro"><option value="">Não informada</option>${Object.entries(MACROS).map(([k,lb])=>`<option value="${k}" ${z.macro===k?'selected':''}>${lb}</option>`).join('')}</select></div>`:''}
+    ${EXC_CAMPOS.map(([k,lb])=>`<div class="field"><label for="ze-${k}${i}">${lb}</label><input id="ze-${k}${i}" name="${k}" inputmode="decimal" value="${vBr(e[k])}" placeholder="${esc(ph(base(k)))}"></div>`).join('')}
+    <div class="field"><label for="ze-pm${i}">Permeabilidade mínima (%)</label><input id="ze-pm${i}" name="permeabilidade" inputmode="decimal" value="${e.permeabilidade!=null?vBr(Math.round(e.permeabilidade*1000)/10):''}" placeholder="${esc(p.permeabilidade!=null?'Catálogo: '+num(p.permeabilidade*100,0)+'%':'A lei não fixa')}"></div>
+    <div class="field"><label for="ze-g${i}">Gabarito</label><select id="ze-g${i}" name="gabSt"><option value="">Segue o catálogo</option><option value="limitado" ${e.gab!=null?'selected':''}>Limitado</option><option value="sem" ${e.gabSL?'selected':''}>Sem limite</option></select></div>
+    <div class="field"><label for="ze-gv${i}">Gabarito (m)</label><input id="ze-gv${i}" name="gab" inputmode="decimal" value="${vBr(e.gab)}"></div>
+    <div class="field"><label for="ze-o${i}">Outorga onerosa</label><select id="ze-o${i}" name="outorga_gratuita"><option value="">Segue o catálogo</option><option value="1" ${e.outorga_gratuita===true?'selected':''}>Gratuita</option><option value="0" ${e.outorga_gratuita===false?'selected':''}>Paga acima do básico</option></select></div>
+    <div class="field full"><label for="ze-f${i}">Fonte da alteração</label><input id="ze-f${i}" name="fonte" value="${esc(e.fonte||'')}" placeholder="Consulta prévia, operação urbana, certidão, projeto aprovado..."></div></div>
+    <div class="hint">Os valores vieram do catálogo da lei; altere o que for diferente neste lote. Vazio volta ao catálogo. Alteração só com a fonte.</div>
     <div class="sec-f" style="padding:12px 0 0"><button type="button" class="btn text" data-a="cancel-edit">Cancelar</button><button class="btn primary">Salvar</button></div></form>`}
 function lzFormNovo(t){const cid=cidDoTerreno(t),sjc=cid==='sjc',cat=zonasDoCatalogo(cid);
   const lotes=[...t.insc.map(i=>[i.sql,`${CIDADES_INSC[insCid(i)].rotulo} ${i.sql}`]),['','Parte sem inscrição (pela poligonal)']];
@@ -94,21 +129,22 @@ function lzFormNovo(t){const cid=cidDoTerreno(t),sjc=cid==='sjc',cat=zonasDoCata
     ${sjc?`<div class="field"><label for="zm${i}">Macrozona</label><select id="zm${i}" name="macro${i}"><option value="">Não informada</option>${Object.entries(MACROS).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>`:''}</div>`).join('')}
     <div class="hint" style="margin-top:8px">Troca só as zonas deste lote; os outros lotes ficam como estão. Os parâmetros vêm do catálogo (Configurações › Parâmetros urbanísticos).</div>
     <div class="sec-f" style="padding:12px 0 0"><button type="button" class="btn text" data-a="cancel-edit">Cancelar</button><button class="btn primary">Registrar zonas</button></div></form>`}
-function secAnaliseUrb(t){const a=analiseVig(t),hist=t.analises.filter(x=>x.status==='substituida'),tipo=UI.zTipo||'mercado',cid=cidDoTerreno(t),sjc=cid==='sjc';
+function secAnaliseUrb(t){const a=analiseVig(t),hist=t.analises.filter(x=>x.status==='substituida'),tEsc=tipoEmp(t),tipo=tEsc||'mercado',cid=cidDoTerreno(t),sjc=cid==='sjc';
   const R=resumoUrb(t,tipo),ed=UI.role!=='Leitura';
   const lotes=a?[...new Set(a.zonas.map(z=>digits(zIns(t,z)||'')||null))].sort((x,y)=>(x===null)-(y===null)).map(d=>d===null?null:(t.insc.find(i=>digits(i.sql)===d)?.sql||d)):[];
   const zonasArea=a?Object.entries(a.zonas.reduce((o,z)=>(o[z.sigla]=(o[z.sigla]||0)+(z.area||0),o),{})).sort((x,y)=>y[1]-x[1]):[];
   const somaLotes=t.insc.reduce((s,i)=>s+(i.area||0),0),ar=areaAdotada(t),sobra=ar&&somaLotes&&ar-somaLotes>1?ar-somaLotes:null;
   return `<section class="sec" id="sec-analise"><div class="sec-h"><h2>Parâmetros urbanísticos</h2>${ed&&UI.edit!=='analise'?`<button class="btn sm" data-a="edit" data-s="analise">${ic('add',16)}Registrar zonas</button>`:''}</div><div class="sec-b">
-  <div class="lz-topo"><div class="seg" role="group" aria-label="Tipo de empreendimento">${Object.entries(TIPOS_EMP).map(([k,l])=>`<button type="button" data-a="zn-tipo" data-v="${k}" aria-pressed="${tipo===k}">${l}</button>`).join('')}</div>
-    ${a?`<span class="muted" style="font-size:13px">Vigente desde ${fd(a.data)} · ${esc(a.fonte)}</span>`:''}</div>
+  <div class="lz-topo"><span class="lz-tl" id="lz-tipo-l">Tipo do empreendimento</span><div class="seg" role="group" aria-labelledby="lz-tipo-l">${Object.entries(TIPOS_EMP).map(([k,l])=>`<button type="button" data-a="zn-tipo" data-v="${k}" aria-pressed="${tEsc===k}" ${ed?'':'disabled'}>${l}</button>`).join('')}</div>
+    ${a?`<span class="muted" style="font-size:13px">Zonas vigentes desde ${fd(a.data)} · ${esc(a.fonte)}</span>`:''}</div>
+  ${tEsc?'':`<div class="banner warn lz-ni">${ic('warn')}<div>Tipo do empreendimento não informado. ${ed?'Escolha acima. ':''}Até lá, os valores abaixo são os de Mercado, só como referência.</div></div>`}
   ${a&&R?`<dl class="kvl lz-res">
     <div class="kv"><dt>Zonas da área</dt><dd>${zonasArea.map(([s,v])=>`<b>${esc(s)}</b> ${m2(v)}`).join(' · ')}</dd></div>
-    <div class="kv"><dt>Potencial construtivo (${esc(TIPOS_EMP[tipo])})</dt><dd>${R.potM!=null?`<b>${m2(R.potM)}</b>`:`<span class="ni">${R.naoAdm.length?esc(TIPOS_EMP[tipo])+' não admitido em '+esc(R.naoAdm.join(', ')):R.semCa.length?'Falta o CA de '+esc(R.semCa.join(', ')):'Não calculado'}</span>`}</dd></div>
+    <div class="kv"><dt>Potencial construtivo (${esc(TIPOS_EMP[tipo])}${tEsc?'':', referência'})</dt><dd>${R.potM!=null?`<b>${m2(R.potM)}</b>`:`<span class="ni">${R.naoAdm.length?esc(TIPOS_EMP[tipo])+' não admitido em '+esc(R.naoAdm.join(', ')):R.semCa.length?'Falta o CA de '+esc(R.semCa.join(', ')):'Não calculado'}</span>`}</dd></div>
     <div class="kv"><dt>Sem outorga (CA básico)</dt><dd>${R.potB!=null?m2(R.potB):'<span class="ni">—</span>'}</dd></div>
     <div class="kv"><dt>Maior CA máximo</dt><dd>${R.caMax>0?num(R.caMax,3):'<span class="ni">—</span>'}</dd></div></dl>
     <div class="hint" style="margin:0 0 12px">Potencial = soma da área de cada zona no lote × o CA dela. Nunca um "CA médio".${R.validar?' Há parâmetros a validar no catálogo.':''}</div>
-    ${lotes.map(ins=>`<div class="lz-lote"><div class="lz-h">${lzCabLote(t,ins)}</div>${lzTabela(t,a,ins,tipo,sjc)}</div>`).join('')}
+    ${lotes.map(ins=>`<div class="lz-lote"><div class="lz-h">${lzCabLote(t,ins)}</div>${lzTabela(t,a,ins,tipo,sjc)}${lzCamadas(t,ins)}</div>`).join('')}
     ${a.obs?`<div class="hint">${esc(a.obs)}</div>`:''}
     ${sobra&&!lotes.includes(null)?`<div class="hint">A área adotada passa a soma das inscrições em ${m2(sobra)}. Se essa parte não tem inscrição, registre a zona dela como "Parte sem inscrição".</div>`:''}
     <details class="details lz-fontes"><summary>Regras e fontes</summary>${[...new Map(R.L.filter(l=>l.p).map(l=>[l.p.id,l.p])).values()].map(p=>`<div class="lz-fonte"><b>${esc(p.sigla)}</b>${p.uso?' · '+esc(p.uso):''}${p.macrozona?' · '+esc(MACROS[p.macrozona]):''} · ${esc(TIPOS_EMP[p.tipo])}${p.regras?`<div class="muted">${esc(p.regras)}</div>`:''}<div class="faint">${esc(p.fonte_norma)}${p.fonte_dispositivo?', '+esc(p.fonte_dispositivo):''}${p.fonte_url?` · <a href="${esc(p.fonte_url)}" target="_blank" rel="noopener">texto da lei</a>`:''}</div></div>`).join('')}</details>`
@@ -140,7 +176,8 @@ function cfgZonasHtml(){const cid=UI.zpCid||'sp',tipo=UI.zpTipo||'mercado',L=zpa
 // ---------- eventos ----------
 function zonasClick(A,a,t){
   switch(A){
-    case 'zn-tipo':UI.zTipo=a.dataset.v;render();return true;
+    case 'zn-tipo':{if(UI.role==='Leitura'||!t)return true;const v=a.dataset.v,antes=t.tipoEmp||'nao_informado';if(v===antes)return true;
+      t.tipoEmp=v;log(t,`Tipo do empreendimento: ${valTxt('tipoEmp',antes)} → ${valTxt('tipoEmp',v)}`);save();render();toast(`Parâmetros de ${TIPOS_EMP[v]}.`);return true}
     case 'zp-cid':UI.zpCid=a.dataset.v;render();return true;
     case 'zp-tipo':UI.zpTipo=a.dataset.v;render();return true;
     case 'zp-padrao':if(!confirm('Restaurar os parâmetros urbanísticos do modelo padrão? As mudanças feitas aqui somem.'))return true;S.zpar=null;save();render();toast('Parâmetros do modelo padrão restaurados.');return true;
@@ -162,10 +199,16 @@ function zonasSubmit(form,F,t,f){
     if(ok)log(t,`Zonas ${ins?'do lote '+ins:'da parte sem inscrição'}: ${zonas.map(z=>z.sigla).join(' + ')}`);save();render();
     toast(ok?'Zonas registradas. A análise anterior foi preservada.':'As zonas deste lote já eram essas.');return true}
   if(form==='zexc'){const a=analiseVig(t),z=a?.zonas[+f.dataset.i];if(!z)return true;
-    const ca=lerNum(F.ca),to=lerNum(F.to),gab=F.gabSt==='limitado'?lerNum(F.gab):null,exc={ca:ca||null,to:to||null,gab,gabSL:F.gabSt==='sem'?true:F.gabSt==='limitado'?false:null,fonte:F.fonte.trim()};
+    const gab=F.gabSt==='limitado'?lerNum(F.gab):null,exc={ca:lerNum(F.ca),to:lerNum(F.to),gab,gabSL:F.gabSt==='sem'?true:F.gabSt==='limitado'?false:null,fonte:F.fonte.trim()};
+    EXC_CAMPOS.forEach(([k])=>{if(!['ca','to'].includes(k))exc[k]=lerNum(F[k])});
+    const pm=lerNum(F.permeabilidade);exc.permeabilidade=pm==null?null:Math.round(pm*10)/1000;exc.outorga_gratuita=F.outorga_gratuita===''?null:F.outorga_gratuita==='1';
     if(F.gabSt==='limitado'&&!(gab>0)){toast('Informe o gabarito limitado.',true);return true}
-    if(to!=null&&!(to>0&&to<=1)){toast('TO vai de 0 a 1.',true);return true}
-    if(temExc(exc)&&!exc.fonte){toast('Exceção só com a fonte.',true);return true}
+    if(exc.to!=null&&!(exc.to>0&&exc.to<=1)){toast('Taxa de ocupação vai de 0 a 1.',true);return true}
+    if(exc.permeabilidade!=null&&!(exc.permeabilidade>0&&exc.permeabilidade<=1)){toast('Permeabilidade vai de 0 a 100%.',true);return true}
+    if(['ca_minimo','ca_basico','ca','cota_parte_m2','max_unidades','lote_minimo_m2','frente_minima_m'].some(k=>exc[k]!=null&&!(exc[k]>0))){toast('CA, cota-parte, unidades, lote e frente: número maior que zero, ou vazio para seguir o catálogo.',true);return true}
+    if(['recuo_frente_m','recuo_lateral_m','recuo_lateral_alto_m'].some(k=>exc[k]!=null&&exc[k]<0)){toast('Recuo não pode ser negativo.',true);return true}
+    Object.keys(exc).forEach(k=>{if(exc[k]==null)delete exc[k]});
+    if(temExc(exc)&&!exc.fonte){toast('Alteração só com a fonte.',true);return true}
     z.exc=temExc(exc)?exc:null;if('macro' in F)z.macro=F.macro||null;z.ins=zIns(t,z);UI.edit=null;
-    log(t,`Zoneamento: ${z.exc?'exceção no lote':'lote segue o catálogo'} em ${z.sigla}`);save();render();toast('Salvo.');return true}
+    log(t,`Zoneamento: ${z.exc?'valores alterados no lote':'lote segue o catálogo'} em ${z.sigla}`);save();render();toast('Salvo.');return true}
   return false}

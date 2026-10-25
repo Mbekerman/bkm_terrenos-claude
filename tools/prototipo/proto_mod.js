@@ -538,7 +538,7 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     ${linE('Endereço',esc([t.logradouro&&(t.logradouro+(t.numero?', '+t.numero:'')),t.bairro].filter(Boolean).join(' · ')),'end',['cep','logradouro','numero','complemento','bairro','municipio'])}
     ${linE('Município e região',esc([t.municipio||'São Paulo · SP',t.zona&&'Zona '+OPT.zona[t.zona]].filter(Boolean).join(' · ')),'reg',['zona'])}
     ${linE('Eixo comercial',esc(eixo(t.eixo)||''),'eixo',['eixo'])}
-    ${linLink('Zoneamento',a?esc(zonasTxt(t))+(caMax(t)!=null?` · CA máx. ${num(caMax(t),2)}`:''):'',`<button class="kv-ed kv-ir" data-a="tab" data-t="urbanismo" title="Registrar nova análise em Urbanismo" aria-label="Registrar nova análise em Urbanismo">${ic('fwd',16)}</button>`)}
+    ${linLink('Zoneamento',a?esc(zonasTxt(t)):'',`<button class="kv-ed kv-ir" data-a="tab" data-t="urbanismo" title="Registrar nova análise em Urbanismo" aria-label="Registrar nova análise em Urbanismo">${ic('fwd',16)}</button>`)}
     ${linArea('Área adotada',ad!=null?`${m2(ad)} <span class="faint">(${esc(OPT.fonteArea[t.fonteArea]||'')})</span>`:'','area')}
     ${t.poly&&t.fonteArea!=='poligonal'?lin('Área da poligonal',m2(areaPolT(t))):''}
     ${linArea('Testada principal',t.testada!=null?num(t.testada,2)+' m':'','testada')}

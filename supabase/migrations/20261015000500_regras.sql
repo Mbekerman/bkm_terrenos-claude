@@ -59,16 +59,19 @@ create view app.v_lote_zonas with (security_invoker = true) as
 select a.terreno_id, a.empresa_id, a.id as analise_id, az.id, az.inscricao_id, i.inscricao,
        az.zoneamento_id, zo.sigla, zo.descricao as zona_nome, az.macrozona, az.area_abrangida_m2,
        tp.tipo, p.id as parametro_id, p.tipo as tipo_regra, p.permitido,
-       p.ca_minimo, p.ca_basico, coalesce(az.ca_maximo, p.ca_maximo) as ca_maximo,
+       coalesce(az.ca_minimo, p.ca_minimo) as ca_minimo, coalesce(az.ca_basico, p.ca_basico) as ca_basico, coalesce(az.ca_maximo, p.ca_maximo) as ca_maximo,
        coalesce(az.to_maximo, case when p.to_corte_m2 is not null and t.area_adotada_m2 >= p.to_corte_m2 then p.to_lote_grande else p.to_maximo end) as to_maximo,
        case when az.gabarito_m is not null or az.gabarito_sem_limite is not null then az.gabarito_m else p.gabarito_m end as gabarito_m,
        case when az.gabarito_m is not null or az.gabarito_sem_limite is not null then coalesce(az.gabarito_sem_limite, false)
             else p.gabarito_sem_limite end as gabarito_sem_limite,
-       p.recuo_frente_m, p.recuo_lateral_m, p.recuo_lateral_alto_m, p.cota_parte_m2, p.max_unidades, p.permeabilidade,
-       p.lote_minimo_m2, p.frente_minima_m, p.outorga_gratuita, p.regras, p.fonte_norma, p.fonte_dispositivo, p.fonte_url, p.situacao,
-       (az.ca_maximo is not null or az.to_maximo is not null or az.gabarito_m is not null or az.gabarito_sem_limite is not null) as tem_excecao,
+       coalesce(az.recuo_frente_m, p.recuo_frente_m) as recuo_frente_m, coalesce(az.recuo_lateral_m, p.recuo_lateral_m) as recuo_lateral_m,
+       coalesce(az.recuo_lateral_alto_m, p.recuo_lateral_alto_m) as recuo_lateral_alto_m, coalesce(az.cota_parte_m2, p.cota_parte_m2) as cota_parte_m2,
+       coalesce(az.max_unidades, p.max_unidades) as max_unidades, coalesce(az.permeabilidade, p.permeabilidade) as permeabilidade,
+       coalesce(az.lote_minimo_m2, p.lote_minimo_m2) as lote_minimo_m2, coalesce(az.frente_minima_m, p.frente_minima_m) as frente_minima_m,
+       coalesce(az.outorga_gratuita, p.outorga_gratuita) as outorga_gratuita, p.regras, p.fonte_norma, p.fonte_dispositivo, p.fonte_url, p.situacao,
+       num_nonnulls(az.ca_minimo, az.ca_basico, az.ca_maximo, az.to_maximo, az.gabarito_m, az.gabarito_sem_limite, az.recuo_frente_m, az.recuo_lateral_m, az.recuo_lateral_alto_m, az.cota_parte_m2, az.max_unidades, az.permeabilidade, az.lote_minimo_m2, az.frente_minima_m, az.outorga_gratuita) > 0 as tem_excecao,
        az.excecao_fonte, az.restricoes_observacoes,
-       case when p.permitido then round(az.area_abrangida_m2 * p.ca_basico, 2) end as potencial_basico_m2,
+       case when p.permitido then round(az.area_abrangida_m2 * coalesce(az.ca_basico, p.ca_basico), 2) end as potencial_basico_m2,
        case when p.permitido then round(az.area_abrangida_m2 * coalesce(az.ca_maximo, p.ca_maximo), 2) end as potencial_maximo_m2
 from app.analises_urbanisticas a
 join app.analise_zoneamentos az on az.analise_id = a.id
@@ -83,9 +86,14 @@ where a.status = 'vigente';
 -- zonas da área (da maior para a menor), o maior CA de mercado e o potencial
 -- construtivo por tipo de empreendimento (nulo se algum pedaço não tem CA ou
 -- não admite o tipo).
+-- Resumo da análise vigente; o potencial do tipo escolhido no terreno (tipo_empreendimento) vem à parte.
 create view app.v_urbanismo_vigente with (security_invoker = true) as
+select u.*, te.tipo_empreendimento,
+       case te.tipo_empreendimento when 'mercado' then u.potencial_mercado_m2 when 'his' then u.potencial_his_m2
+            when 'hmp' then u.potencial_hmp_m2 end as potencial_tipo_m2
+from (
 select l.terreno_id, l.empresa_id, l.analise_id, a.data_verificacao, a.fonte,
-       (select string_agg(x.sigla, ' + ' order by x.area desc nulls last, x.sigla)
+       (select string_agg(x.sigla, ' / ' order by x.area desc nulls last, x.sigla)
           from (select y.sigla, sum(y.area_abrangida_m2) as area from app.v_lote_zonas y
                  where y.analise_id = l.analise_id and y.tipo = 'mercado' group by y.sigla) x) as zoneamentos,
        max(l.ca_maximo) filter (where l.tipo = 'mercado') as ca_maximo,
@@ -108,7 +116,9 @@ select l.terreno_id, l.empresa_id, l.analise_id, a.data_verificacao, a.fonte,
        bool_or(l.situacao <> 'confirmado') as tem_parametro_a_validar
 from app.v_lote_zonas l
 join app.analises_urbanisticas a on a.id = l.analise_id
-group by l.terreno_id, l.empresa_id, l.analise_id, a.data_verificacao, a.fonte;
+group by l.terreno_id, l.empresa_id, l.analise_id, a.data_verificacao, a.fonte
+) u
+join app.terrenos te on te.id = u.terreno_id;
 
 create view app.v_documentos with (security_invoker = true) as
 select d.*,
@@ -1788,7 +1798,7 @@ begin
     posicao_quadra = v_novo.posicao_quadra, formato = v_novo.formato, situacao_ocupacao = v_novo.situacao_ocupacao,
     uso_atual = v_novo.uso_atual, area_construida_existente_m2 = v_novo.area_construida_existente_m2,
     area_construida_demolir_m2 = v_novo.area_construida_demolir_m2, necessidade_demolicao = v_novo.necessidade_demolicao,
-    observacoes_fisicas = v_novo.observacoes_fisicas, sobreposicoes_aceitas = v_novo.sobreposicoes_aceitas
+    observacoes_fisicas = v_novo.observacoes_fisicas, tipo_empreendimento = v_novo.tipo_empreendimento, sobreposicoes_aceitas = v_novo.sobreposicoes_aceitas
   where id = t.id
   returning versao into t.versao;
   return t.versao;
@@ -2411,14 +2421,14 @@ begin
           case when v_fora is not null then 'Zonas fora do catálogo: ' || array_to_string(v_fora, ', ') end)
   returning id into v_an;
   insert into app.analise_zoneamentos (empresa_id, analise_id, inscricao_id, zoneamento_id, area_abrangida_m2, macrozona,
-                                       ca_maximo, to_maximo, gabarito_m, gabarito_sem_limite, excecao_fonte, restricoes_observacoes)
+                                       ca_minimo, ca_basico, ca_maximo, to_maximo, gabarito_m, gabarito_sem_limite, recuo_frente_m, recuo_lateral_m, recuo_lateral_alto_m, cota_parte_m2, max_unidades, permeabilidade, lote_minimo_m2, frente_minima_m, outorga_gratuita, excecao_fonte, restricoes_observacoes)
   select empresa_id, v_an, inscricao_id, zoneamento_id, area_abrangida_m2, macrozona,
-         ca_maximo, to_maximo, gabarito_m, gabarito_sem_limite, excecao_fonte, restricoes_observacoes
+         ca_minimo, ca_basico, ca_maximo, to_maximo, gabarito_m, gabarito_sem_limite, recuo_frente_m, recuo_lateral_m, recuo_lateral_alto_m, cota_parte_m2, max_unidades, permeabilidade, lote_minimo_m2, frente_minima_m, outorga_gratuita, excecao_fonte, restricoes_observacoes
     from app.analise_zoneamentos where analise_id = v_ant and inscricao_id is distinct from p_inscricao;
   insert into app.analise_zoneamentos (empresa_id, analise_id, inscricao_id, zoneamento_id, area_abrangida_m2, macrozona,
-                                       ca_maximo, to_maximo, gabarito_m, gabarito_sem_limite, excecao_fonte, restricoes_observacoes)
+                                       ca_minimo, ca_basico, ca_maximo, to_maximo, gabarito_m, gabarito_sem_limite, recuo_frente_m, recuo_lateral_m, recuo_lateral_alto_m, cota_parte_m2, max_unidades, permeabilidade, lote_minimo_m2, frente_minima_m, outorga_gratuita, excecao_fonte, restricoes_observacoes)
   select p_terreno.empresa_id, v_an, p_inscricao, (n->>0)::uuid, (n->>1)::numeric, n->>2,
-         o.ca_maximo, o.to_maximo, o.gabarito_m, o.gabarito_sem_limite, o.excecao_fonte, o.restricoes_observacoes
+         o.ca_minimo, o.ca_basico, o.ca_maximo, o.to_maximo, o.gabarito_m, o.gabarito_sem_limite, o.recuo_frente_m, o.recuo_lateral_m, o.recuo_lateral_alto_m, o.cota_parte_m2, o.max_unidades, o.permeabilidade, o.lote_minimo_m2, o.frente_minima_m, o.outorga_gratuita, o.excecao_fonte, o.restricoes_observacoes
     from jsonb_array_elements(v_novo) n
     left join app.analise_zoneamentos o on o.analise_id = v_ant and o.inscricao_id is not distinct from p_inscricao
                                        and o.zoneamento_id = (n->>0)::uuid;
