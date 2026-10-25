@@ -227,9 +227,10 @@ const usada=k=>S.terrenos.some(t=>t.neg&&(t.neg.sub===k||(t.neg.trilha||[]).some
 function pgConfig(){
   if(!ehAdmin(me()))return `<div class="page-h"><div><h1><span class="marca"></span>Configurações</h1></div></div><section class="sec"><div class="sec-b"><div class="empty">Só administradores alteram a configuração do funil. Teste como Diretor (Moisés é administrador).</div></div></section>`;
   const C=cfg(),aba=UI.cfgAba||'fases';
-  const abas=[['fases','Fases'],['funil','Etapas de '+faseN(faseEnt())],['prereq','Pré-requisitos'],['status','Status e motivos'],['checklist','Checklist'],['notif','Notificações'],['equipe','Equipe']];
+  const abas=[['fases','Fases'],['funil','Etapas de '+faseN(faseEnt())],['prereq','Pré-requisitos'],['status','Status e motivos'],['checklist','Checklist'],['notif','Notificações'],['equipe','Equipe'],['viab','Viabilidade']];
   let corpo='';
   if(aba==='fases')corpo=cfgFasesHtml();
+  if(aba==='viab')corpo=cfgViabHtml();
   if(aba==='funil')corpo=`<section class="sec"><div class="sec-h"><h2>Etapas de ${esc(faseN(faseEnt()))}</h2><span class="faint" style="font-size:13px">No protótipo, etapa nova só nas outras fases (aba Fases)</span></div><div class="sec-b"><div class="cfg-t">
     <div class="cfg-r cfg-hd"><span>Etapa</span><span>SLA (dias)</span><span>Aprovação para entrar</span></div>
     ${C.etapas.map((e,i)=>`<div class="cfg-r"><input data-ch="cfg" data-p="etapas.${i}.nome" value="${esc(e.nome)}" aria-label="Nome da etapa"><input type="number" min="0" data-ch="cfg" data-p="etapas.${i}.sla" value="${e.sla??''}" aria-label="SLA de ${esc(e.nome)}"><span class="cfg-ap">${apCells('etapas.'+i,e)}</span></div>`).join('')}</div></div></section>
@@ -263,7 +264,7 @@ function pgConfig(){
       <select data-ch="cfg-eq" data-i="${i}" data-k="sup" aria-label="Superior de ${esc(m.nome)}" ${m.papel==='diretor'||m.papel==='leitura'?'disabled':''}><option value="">—</option>${sups.map(x=>`<option ${m.sup===x.nome?'selected':''}>${esc(x.nome)}</option>`).join('')}</select>
       <label class="chk"><input type="checkbox" data-ch="cfg-eq" data-i="${i}" data-k="admin" ${m.admin?'checked':''} aria-label="Administrador"></label></div>`}).join('')}</div>
     <div class="hint">Analista responde a um gestor; gestor responde a um diretor. Qualquer superior pode aprovar por quem está abaixo dele. Administrador é uma permissão à parte, em qualquer papel.</div></div></section>`;
-  return `<div class="page-h"><div><h1><span class="marca"></span>Configurações › Funil</h1><div class="sub">Vale para toda a empresa. Cada mudança fica na auditoria.</div></div><button class="btn" data-a="cfg-padrao">Restaurar padrão</button></div>
+  return `<div class="page-h"><div><h1><span class="marca"></span>Configurações › ${aba==='viab'?'Viabilidade':'Funil'}</h1><div class="sub">Vale para toda a empresa. Cada mudança fica na auditoria.</div></div><button class="btn" data-a="cfg-padrao">Restaurar padrão</button></div>
   <div class="fchips cfg-abas" role="tablist">${abas.map(([k,l])=>`<button class="fchip" role="tab" data-a="cfg-aba" data-v="${k}" aria-pressed="${aba===k}" aria-selected="${aba===k}">${aba===k?ic('check',16):''}${l}</button>`).join('')}</div><div class="stack">${corpo}</div>`}
 function setPath(o,p,v){const k=p.split('.');let x=o;k.slice(0,-1).forEach(c=>{x=x[c]});x[k[k.length-1]]=v}
 /* pré-requisito: sem ciclo, sem exigir subetapa de etapa posterior, subetapa inicial não exige irmã */

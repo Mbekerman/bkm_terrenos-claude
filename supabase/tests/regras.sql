@@ -1182,4 +1182,72 @@ select pg_temp.ok((select count(*) = 2 and bool_and(geojson ? 'coordinates') and
 select pg_temp.falha($$insert into app.metodologias_renda (versao, censo_ano, variavel_base, fator_familiar, fator_familiar_origem, pnad_ano_base, pnad_valor_base, pnad_ano_atual, pnad_valor_atual, pnad_fonte) values (2, 2022, 'V06004', 1.5, 'x', 2022, 1, 2025, 1, 'x')$$, 'só o carregamento escreve metodologia e setores');
 select pg_temp.como(:'diretor');
 
+-- ---------------------------------------------------------------------
+\echo '# estudo de viabilidade estática'
+\set cfgviab `cat tools/viabilidade/despesas.json`
+select pg_temp.ok((select count(*) from app.viabilidade_despesas where empresa_id = :'emp') = jsonb_array_length((:'cfgviab'::jsonb)->'despesas')
+  and (select bool_and(d.nome = j->>'nome' and d.grupo = j->>'grupo' and d.obra = j->>'obra' and d.tipo_padrao = j->>'tipo' and d.multiplicador_padrao is not distinct from (j->>'multiplicador')::numeric and d.ordem = n)
+       from jsonb_array_elements((:'cfgviab'::jsonb)->'despesas') with ordinality e(j, n) join app.viabilidade_despesas d on d.empresa_id = :'emp' and d.codigo = j->>'codigo'),
+  'empresa recebe a lista padrão de despesas, igual à do protótipo (despesas.json)');
+select pg_temp.como(:'analista');
+select app.criar_viabilidade(:'t1', 'Estudo estático') as vb1 \gset
+insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, ordem, nome, area_privativa, quantidade, quantidade_permuta, preco_unitario)
+values (:'emp', :'vb1', 1, '2 dormitórios', 40, 100, 10, 280000) returning id as tp1 \gset
+insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, ordem, nome, area_privativa, quantidade, preco_m2)
+values (:'emp', :'vb1', 2, '2 dormitórios com suíte', 50, 50, 7200) returning id as tp2 \gset
+select pg_temp.ok((select preco_m2 from app.viabilidade_tipologias where id = :'tp1') = 7000 and (select preco_unitario from app.viabilidade_tipologias where id = :'tp2') = 360000,
+  'com a área, o preço unitário dá o preço por m² e o preço por m² dá o unitário');
+insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, ordem, nome, quantidade, preco_unitario) values (:'emp', :'vb1', 3, 'Teste', 1, 300000) returning id as tp3 \gset
+update app.viabilidade_tipologias set preco_m2 = 6000 where id = :'tp3';
+select pg_temp.ok((select preco_unitario = 300000 and preco_m2 = 6000 from app.viabilidade_tipologias where id = :'tp3'), 'sem área, os dois preços ficam como digitados');
+update app.viabilidade_tipologias set area_privativa = 60 where id = :'tp3';
+select pg_temp.ok((select preco_unitario = 300000 and preco_m2 = 5000 from app.viabilidade_tipologias where id = :'tp3'), 'área nova com os dois preços: mantém o unitário e refaz o m²');
+update app.viabilidade_tipologias set preco_m2 = 5500 where id = :'tp3';
+select pg_temp.ok((select preco_unitario from app.viabilidade_tipologias where id = :'tp3') = 330000, 'mudar o m² com a área refaz o unitário');
+update app.viabilidade_tipologias set preco_unitario = null, area_privativa = null where id = :'tp3';
+update app.viabilidade_tipologias set area_privativa = 50 where id = :'tp3';
+select pg_temp.ok((select preco_unitario from app.viabilidade_tipologias where id = :'tp3') = 275000, 'área nova com só o m²: completa o unitário');
+delete from app.viabilidade_tipologias where id = :'tp3';
+select pg_temp.falha(format($$update app.viabilidade_tipologias set quantidade_permuta = 101 where id = %L$$, :'tp1'), 'permuta não passa da quantidade');
+insert into app.viabilidade_linhas (empresa_id, viabilidade_id, ordem, despesa, tipo, multiplicador, quantidade) values
+  (:'emp', :'vb1', 1, 'terreno', 'verba_total', 2000000, 3),
+  (:'emp', :'vb1', 2, 'construcao', 'verba_unidade', 150000, 1),
+  (:'emp', :'vb1', 3, 'infra_externa', 'verba_total', 1000000, 1),
+  (:'emp', :'vb1', 4, 'adm_obra', 'pct_obra_total', 5, 1),
+  (:'emp', :'vb1', 5, 'contingencia', 'pct_obra_incidente', 3, 1),
+  (:'emp', :'vb1', 6, 'comissao', 'pct_vgv', 4, 1);
+select pg_temp.ok((select vgv = 46000000 and permuta_valor = 2800000 and vgv_liquido = 43200000 and unidades = 150 and unidades_permuta = 10
+  and obra_total = 23500000 and obra_incidente = 22500000 and despesas_total = 33078000 and lucro_liquido = 10122000 and margem_pct = 23.43
+  from app.viabilidades where id = :'vb1'),
+  'VGV 46 mi − permuta 2,8 mi = VGV líquido 43,2 mi; despesas 33,078 mi (terreno 3 parcelas, obra por unidade, % da obra total e incidente, % do VGV líquido); lucro 10,122 mi, margem 23,43%');
+select pg_temp.ok((select (x->>'base')::numeric = 23500000 and (x->>'valor')::numeric = 1175000 from jsonb_array_elements(app.calcular_viabilidade(:'vb1')->'linhas') x where x->>'id' = (select id::text from app.viabilidade_linhas where viabilidade_id = :'vb1' and despesa = 'adm_obra')),
+  'cada linha com a base e o valor (administração da obra: 5% de 23,5 mi)');
+select pg_temp.falha(format($$insert into app.viabilidade_linhas (empresa_id, viabilidade_id, despesa, tipo, multiplicador) values (%L, %L, 'inexistente', 'verba_total', 1)$$, :'emp', :'vb1'), 'despesa fora da lista da empresa é recusada');
+select pg_temp.falha(format($$select app.salvar_despesa_viabilidade(%L, 'outras', '{"ativo":false}')$$, :'emp'), 'analista não mexe na lista de despesas');
+select app.vincular_viabilidade(:'neg', 'Estudo do BKM', 1, 1, 1) as vbx \gset
+select pg_temp.falha(format($$insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, nome, quantidade) values (%L, %L, 'X', 1)$$, :'emp', :'vbx'), 'estudo externo (BKM) não recebe tipologias');
+select app.vincular_estudo(:'neg', :'vb1');
+select pg_temp.ok((select vgv = 46000000 and margem_pct = 23.43 from app.v_terrenos where id = :'t1'), 'a negociação vincula o estudo: VGV e margem aparecem no terreno');
+select pg_temp.falha(format('select app.apagar_viabilidade(%L)', :'vb1'), 'estudo vinculado à negociação não se apaga');
+select app.criar_viabilidade(:'t1', 'Cópia', :'vb1') as vb2 \gset
+select pg_temp.ok((select count(*) from app.viabilidade_tipologias where viabilidade_id = :'vb2') = 2 and (select lucro_liquido from app.viabilidades where id = :'vb2') = 10122000,
+  'duplicar copia tipologias e despesas, com o mesmo resultado');
+select app.apagar_viabilidade(:'vb2');
+select pg_temp.ok(not exists (select 1 from app.viabilidade_linhas where viabilidade_id = :'vb2'), 'estudo solto se apaga, com as linhas');
+select pg_temp.como(:'leitor');
+update app.viabilidade_linhas set multiplicador = 1 where viabilidade_id = :'vb1';
+select pg_temp.ok((select lucro_liquido from app.viabilidades where id = :'vb1') = 10122000, 'leitura vê o estudo mas não altera as linhas');
+select pg_temp.falha(format($$select app.criar_viabilidade(%L, 'X')$$, :'t1'), 'leitura não cria estudo');
+select pg_temp.como(:'intruso');
+select pg_temp.ok(not exists (select 1 from app.viabilidade_tipologias where viabilidade_id = :'vb1') and not exists (select 1 from app.viabilidade_despesas where empresa_id = :'emp'), 'outra empresa não vê estudo nem lista');
+select pg_temp.como(:'diretor');
+select app.salvar_despesa_viabilidade(:'emp', 'infra_externa', '{"obra":"nao"}');
+select pg_temp.ok((select obra_total = 22500000 and despesas_total = 33028000 from app.viabilidades where id = :'vb1'),
+  'tirar uma despesa da obra refaz os estudos que a usam (administração da obra cai para 5% de 22,5 mi)');
+select pg_temp.falha(format($$select app.apagar_despesa_viabilidade(%L, 'comissao')$$, :'emp'), 'despesa usada não se apaga (desativa)');
+select app.salvar_despesa_viabilidade(:'emp', 'premio_vendas', '{"nome":"Prêmio de vendas","grupo":"comercial","tipo_padrao":"pct_vgv","multiplicador_padrao":0.5}');
+select app.apagar_despesa_viabilidade(:'emp', 'premio_vendas');
+select pg_temp.ok(not exists (select 1 from app.viabilidade_despesas where codigo = 'premio_vendas'), 'despesa nova entra na lista e, sem uso, se apaga');
+
+
 \echo 'TODOS OS TESTES PASSARAM'

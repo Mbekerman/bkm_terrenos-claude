@@ -679,6 +679,56 @@ erDiagram
 - `v_concorrencia`: empreendimentos ativos com a empresa e o resumo de hoje; é o que o mapa e o quadro leem. `app.concorrencia_tipologias_em(data)`: cada tipologia com o preço vigente na data.
 - Estoque e velocidade de vendas ficaram de fora (decisão do Moisés). A concorrência perto do terreno na ficha e uma página de lista ficam para depois.
 
+## Estudo de viabilidade estática
+
+Decisão do Moisés, 25/out/2026. Avaliação prévia do terreno, **sem fluxo de caixa**. Migration `20261015001000_viabilidade.sql`; protótipo em `tools/prototipo/proto_viab.js`.
+
+```mermaid
+erDiagram
+  terrenos ||--o{ viabilidades : "estudos"
+  processos |o--o| viabilidades : "vinculado"
+  viabilidades ||--o{ viabilidade_tipologias : tem
+  viabilidades ||--o{ viabilidade_linhas : tem
+  viabilidade_despesas ||--o{ viabilidade_linhas : "despesa da lista"
+  viabilidade_tipologias {
+    uuid id PK
+    uuid viabilidade_id FK
+    text nome
+    numeric area_privativa
+    int quantidade
+    int quantidade_permuta "ate a quantidade"
+    numeric preco_unitario
+    numeric preco_m2
+  }
+  viabilidade_linhas {
+    uuid id PK
+    uuid viabilidade_id FK
+    text despesa FK "codigo na lista da empresa"
+    text tipo "pct_vgv | pct_obra_incidente | pct_obra_total | verba_total | verba_unidade"
+    numeric multiplicador
+    numeric quantidade "parcelas"
+  }
+  viabilidade_despesas {
+    uuid empresa_id "nulo = padrao"
+    text codigo
+    text nome
+    text grupo
+    text obra "nao | incidente | total"
+    text tipo_padrao
+    numeric multiplicador_padrao
+    bool ativo
+  }
+```
+
+- O estudo é do terreno (vários por terreno; `app.viabilidades` com `tipo = 'estatica'`). A negociação vincula um (`app.vincular_estudo`, só na fase de entrada e do mesmo terreno); o estudo externo do BKM (`tipo = 'externa'`, `app.vincular_viabilidade`) continua. Criar e duplicar por `app.criar_viabilidade`, nome e preço máximo por `app.salvar_viabilidade`, apagar por `app.apagar_viabilidade` (vinculado ou usado em proposta não se apaga). Tipologias e linhas são escrita direta (sem regra de funil), com auditoria.
+- **Preços ligados** (trigger `t_precos`): com a área, mudar o preço unitário refaz o m² e mudar o m² refaz o unitário; mudar a área refaz o m² quando há os dois preços e completa o que falta quando há um só.
+- **Cálculo** (`app.calcular_viabilidade`, o mesmo do protótipo; os totais ficam no cabeçalho, refeitos por trigger a cada mudança, inclusive quando a lista muda o "compõe a obra"):
+  - VGV = Σ quantidade × preço unitário; permuta = Σ quantidade em permuta × preço unitário; **VGV líquido** = VGV − permuta.
+  - Linha = base × multiplicador × quantidade (parcelas); nos tipos em %, o multiplicador é o percentual. Bases: % do VGV → VGV líquido; % da obra total → soma das linhas cuja despesa compõe a obra; % da obra incidente → só as marcadas incidente; verba total → 1; verba por unidade → todas as unidades (inclusive as permutadas). Linhas "% da obra" não entram na base da obra.
+  - **Lucro líquido** = VGV líquido − Σ linhas; **margem líquida** = lucro ÷ VGV líquido.
+- Lista de despesas da empresa: configuração do administrador (`app.salvar_despesa_viabilidade`, `app.apagar_despesa_viabilidade`; usada só desativa), copiada para cada empresa nova. Padrão em `tools/viabilidade/despesas.json` (o protótipo e o teste do banco leem).
+- Leituras a confirmar com o Moisés: VGV líquido sem descontar impostos e comissão; o que é "obra incidente".
+
 ## 3. Documentos
 
 ```mermaid

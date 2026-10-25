@@ -2838,6 +2838,81 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
   .mk-cat td[data-l="R$/m² mediano"] { grid-column: span 2 }
 }
 :root[data-tema="escuro"] .mk-cat td[data-l]::before { color: #8e9ac4 }
+
+/* ---------- Estudo de viabilidade estática (página do estudo, seção da negociação, Configurações › Viabilidade) ---------- */
+.vb-h { align-items: flex-end; margin-bottom: 24px }
+.vb-h .eyebrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px }
+.vb-sub { margin-top: 4px }
+.vb-acoes { display: flex; gap: 8px; flex-wrap: wrap }
+.vb-kpis { margin-bottom: 24px }
+.vb-dados { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+.vb-tab { display: flex; flex-direction: column }
+.vb-r { display: grid; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--linha) }
+.vb-tips .vb-r { grid-template-columns: minmax(150px, 1.7fr) minmax(84px, .9fr) minmax(72px, .7fr) minmax(72px, .7fr) minmax(110px, 1.2fr) minmax(100px, 1.1fr) minmax(110px, 1.2fr) 36px }
+.vb-lns .vb-r { grid-template-columns: minmax(200px, 2fr) minmax(150px, 1.3fr) minmax(110px, 1fr) minmax(72px, .6fr) minmax(130px, 1.3fr) 36px }
+.vb-r.vb-hd { font-size: 12px; line-height: 16px; font-weight: 500; color: var(--texto-suave); padding: 0 0 8px }
+.vb-r.vb-hd span:nth-child(n+2) { text-align: right }
+.vb-lns .vb-r.vb-hd span:nth-child(2) { text-align: left }
+.vb-r.vb-tot { border-bottom: 0; padding-top: 12px; font-variant-numeric: tabular-nums }
+.vb-r.vb-tot .vb-c:nth-child(n+2) { text-align: right }
+.vb-c { display: flex; flex-direction: column; min-width: 0; position: relative }
+.vb-l { display: none }
+.vb-c input, .vb-c select { height: 40px; min-width: 0; width: 100%; border: 1px solid var(--linha); border-radius: 8px; padding: 0 10px; background: var(--m-card, #fff); color: var(--texto); font: inherit; font-size: 14px }
+.vb-c input[inputmode="decimal"] { text-align: right; font-variant-numeric: tabular-nums }
+.vb-c input:focus, .vb-c select:focus { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: -1px; border-color: transparent }
+.vb-c input[aria-invalid="true"] { border-color: var(--critico-marca, #b3261e); background: var(--critico-fundo, #ffdad6) }
+.vb-c input:disabled, .vb-c select:disabled { background: transparent; border-color: transparent; color: var(--texto); opacity: 1; padding-left: 0 }
+.vb-c input:disabled[inputmode="decimal"] { padding-right: 0 }
+.vb-out { text-align: right; font-variant-numeric: tabular-nums }
+.vb-out b { font-weight: 500 }
+.vb-out small { font-size: 12px; line-height: 16px }
+.vb-adorno { position: relative; display: block }
+.vb-suf { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--texto-suave); pointer-events: none }
+.vb-adorno input { padding-left: 30px }
+.vb-del { justify-self: end }
+.vb-vazio { padding: 12px 0; border-bottom: 1px solid var(--linha) }
+.vb-nova { grid-template-columns: minmax(200px, 2fr) minmax(0, 4.2fr) 36px !important }
+.vb-dica { font-size: 12px; line-height: 16px }
+.vb-cb { position: relative; display: block }
+.vb-dd { position: absolute; z-index: 30; left: 0; top: calc(100% + 4px); width: max(100%, 340px); max-height: 320px; overflow: auto; background: var(--m-card, #fff); border-radius: 8px; box-shadow: 0 2px 6px 2px rgba(0,0,0,.15), 0 1px 2px rgba(0,0,0,.3); padding: 8px 0 }
+.vb-dd[hidden] { display: none }
+.vb-dd-g { display: block; padding: 8px 16px 4px; font-size: 12px; font-weight: 500; color: var(--texto-suave) }
+.vb-dd-i { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; padding: 8px 16px; cursor: pointer }
+.vb-dd-i small { font-size: 12px; white-space: nowrap }
+.vb-dd-i:hover, .vb-dd-i[aria-selected="true"] { background: var(--m-sc-high, #e9eef6) }
+.vb-dd-v { display: block; padding: 8px 16px; font-size: 13px }
+.vb-rt .vb-sub td { color: var(--texto-suave); font-size: 13px }
+.vb-rt .vb-sub td.esq { padding-left: 28px }
+.vb-obra { font-size: 12px; line-height: 16px; margin-top: 12px }
+.vb-met { margin-bottom: 4px }
+.vb-lista td .linkbtn { text-align: left }
+.vb-cfg-r { grid-template-columns: 64px minmax(180px, 2fr) minmax(130px, 1fr) minmax(170px, 1.2fr) minmax(150px, 1fr) 100px 52px 64px }
+.vb-cfg-r input[inputmode="decimal"] { text-align: right }
+.ro [data-a^="vb-"]:not([data-a="vb-abrir"]):not([data-a="vb-voltar"]) { display: none !important }
+/* sem espaço para as colunas: cada linha vira um cartão com os rótulos */
+@media (max-width: 1100px) {
+  .vb-tab .vb-r.vb-hd { display: none }
+  .vb-tab .vb-r { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px 12px; padding: 12px 40px 12px 0; position: relative }
+  .vb-tab .vb-r > .vb-c:first-child { grid-column: 1 / -1 }
+  .vb-l { display: block; font-size: 12px; line-height: 16px; color: var(--texto-suave); margin-bottom: 4px }
+  .vb-out { justify-content: flex-end; text-align: left }
+  .vb-del { position: absolute; right: 0; top: 12px }
+  .vb-r.vb-tot { padding-right: 0 }
+  .vb-r.vb-tot .vb-c:nth-child(n+2) { text-align: left }
+  .vb-r.vb-tot > span:empty { display: none }
+  .vb-lns .vb-tot .vb-tipo, .vb-lns .vb-tot .vb-mult, .vb-lns .vb-tot .vb-qtd { display: none }
+  .vb-nova .vb-dica { grid-column: 1 / -1 }
+  .vb-dd { width: 100% }
+}
+@media (max-width: 599px) {
+  .vb-dados { grid-template-columns: 1fr }
+  .vb-kpis { gap: 8px }
+  .vb-acoes { width: 100% }
+  .vb-cfg { overflow-x: auto }
+}
+:root[data-tema="escuro"] .vb-c input:not(:disabled), :root[data-tema="escuro"] .vb-c select:not(:disabled) { background: #0a1130; border-color: #2a3560; color: #e6ecff }
+:root[data-tema="escuro"] .vb-dd { background: #0c1433; box-shadow: 0 0 0 1px rgba(124,140,255,.28), 0 8px 24px rgba(0,0,0,.5) }
+:root[data-tema="escuro"] .vb-dd-i:hover, :root[data-tema="escuro"] .vb-dd-i[aria-selected="true"] { background: rgba(99,112,255,.14) }
 </style>
 <header class="top">
   <div class="top-in">
@@ -3060,7 +3135,7 @@ function seed(){
     pessoas:[{nome:'Família Moretti (4 herdeiros)',tipo:'PF',papel:'proprietario',pct:null,tel:''}],
     ofertas:[{id:'o6',cid:'c2',data:H(20),valor:3900000,forma:'permuta_geral',obsPag:'Aberto a combinar dinheiro e unidades.',aceita:'Sim, desde que parte em dinheiro.',status:'ativa'}],corretores:[{cid:'c2',principal:true}],
     neg:neg('estudos','estudo_viabilidade',8,{temp:2,ofRef:'o6'},3),
-    tarefas:[{id:uid(),titulo:'Rodar estudo de viabilidade no BKM',desc:'',resp:'Rafael Souza',prazo:H(-3),status:'em_andamento',prio:'alta',resultado:''}]}));
+    tarefas:[{id:uid(),titulo:'Montar o estudo de viabilidade',desc:'',resp:'Rafael Souza',prazo:H(-3),status:'em_andamento',prio:'alta',resultado:''}]}));
   // 5 — aprovação interna, acima do teto
   T.push(base({codigo:'TER-000112',nome:'Área Barão do Jequitibá',prioridade:'alta',resp:'Moisés',origem:'corretor',dataIdent:H(121),logradouro:'Rua Barão do Jequitibá',numero:'512',bairro:'Vila Prudente',zona:'sudeste',
     aDoc:2950,aLev:2938,fonteArea:'levantamento',testada:38,topografia:'plano',posicao:'meio_quadra',formato:'regular',ocupacao:'parcialmente_ocupado',aConst:420,aDemolir:420,demolicao:'provavel',
@@ -3201,7 +3276,7 @@ const lastProp=t=>t.propostas[t.propostas.length-1];
 const docVal=d=>{const v=TIPOS_DOC[d.tipo][2];return v&&d.emitido?addD(d.emitido,v):null};
 const docSt=d=>{if(!d||!d.emitido)return 'pendente';if(d.status==='rejeitado')return 'rejeitado';const v=docVal(d);return v&&v<HOJE?'vencido':d.status};
 const negAtiva=t=>t.neg&&t.neg.status==='ativo';
-const acimaMax=t=>{const lp=lastProp(t);return !!(t.neg?.viab&&lp&&lp.origem==='bkm'&&lp.valor>t.neg.viab.pmax)};
+const acimaMax=t=>{const lp=lastProp(t);return !!(t.neg?.viab?.pmax!=null&&lp&&lp.origem==='bkm'&&lp.valor>t.neg.viab.pmax)};
 const infraNV=t=>INFRA.filter(([k])=>!t.infra[k]||t.infra[k].d==='nao_verificado').length;
 
 /* completude: campos que importam para decidir a compra */
@@ -3388,7 +3463,6 @@ function abaComercial(t){
 function abaNegociacao(t){
   const n=t.neg;
   if(!n)return `<section class="sec"><div class="sec-b"><div class="empty">Sem negociação aberta. Ela abre quando a primeira oferta é registrada.<br><button class="btn primary sm" style="margin-top:12px" data-a="nova-oferta">${ic('add',16)}Registrar oferta</button></div></div></section>`;
-  const v=n.viab,ad=areaAdotada(t);
   const chain=t.propostas.slice().reverse();
   const form=UI.propForm?`<section class="sec"><form data-form="prop"><div class="sec-h"><h2>Nova proposta · v${t.propostas.length+1}</h2></div><div class="sec-b"><div class="editgrid">
     <div class="field"><label for="pp-o">Origem</label><select id="pp-o" name="origem"><option value="bkm">BKM</option><option value="vendedor">Vendedor</option></select></div>
@@ -3404,14 +3478,12 @@ function abaNegociacao(t){
   return `<div class="stack">${trilhaHtml(t)}
   ${secPartes(t)}
   ${secReunioes(t)}
-  <section class="sec"><div class="sec-h"><h2>Viabilidade</h2></div><div class="sec-b">${v?`<div class="metrics"><div class="metric"><div class="ml">VGV</div><div class="mv">${mi(v.vgv)}</div></div><div class="metric"><div class="ml">Margem</div><div class="mv">${num(v.margem,1)}%</div></div><div class="metric"><div class="ml">Preço máximo do terreno</div><div class="mv">${mi(v.pmax)}</div></div></div>
-    <div class="faint" style="font-size:12px;margin-top:10px">${esc(v.nome)} · ${fd(v.em)}${ad?` · ${brl(v.pmax/ad)}/m² sobre a área adotada`:''}</div>`
-    :`<div class="banner blue">${ic('link')}<div style="flex:1"><div class="bt">Sem estudo vinculado</div><div>Rode a viabilidade no BKM e vincule aqui para ter o preço máximo.</div>${negAtiva(t)?`<button class="btn sm" style="margin-top:10px" data-a="viab">${ic('link',16)}Vincular estudo</button>`:''}</div></div>`}</div></section>
+  ${viabSecao(t)}
   <section class="sec"><div class="sec-h"><h2>Propostas e contrapropostas</h2><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${negAtiva(t)&&!UI.propForm?`<button class="btn primary sm" data-a="prop-form">${ic('add',16)}Nova proposta</button>`:''}</span></div><div class="sec-b">
   ${form}
-  ${chain.length?`<div class="chain" style="margin-top:${UI.propForm?16:0}px">${chain.map((p,i)=>{const over=v&&p.valor>v.pmax;return `<div class="pnode ${p.origem}"><span class="pd">v${p.v}</span><div class="pc">
+  ${chain.length?`<div class="chain" style="margin-top:${UI.propForm?16:0}px">${chain.map((p,i)=>{const over=n.viab?.pmax!=null&&p.valor>n.viab.pmax;return `<div class="pnode ${p.origem}"><span class="pd">v${p.v}</span><div class="pc">
     <div class="ph"><span><span class="pv">${brl(p.valor)}</span> <span class="muted" style="font-size:13px">· ${p.origem==='bkm'?'BKM':'Vendedor'}${p.v>1?` responde à v${p.v-1}`:''}</span></span>
-    <span style="display:flex;gap:6px;flex-wrap:wrap">${i===0&&negAtiva(t)?`<select aria-label="Status da proposta" data-ch="prop-status" class="chip" style="border:0;height:26px;cursor:pointer">${Object.entries(OPT.statusProp).filter(([k])=>k!=='substituida').map(([k,l])=>`<option value="${k}" ${k===p.status?'selected':''}>${l}</option>`).join('')}</select>`:statusPropChip(p.status)}${over&&p.origem==='bkm'?`<span class="chip warn">${mi(p.valor-v.pmax)} acima do máximo</span>`:''}</span></div>
+    <span style="display:flex;gap:6px;flex-wrap:wrap">${i===0&&negAtiva(t)?`<select aria-label="Status da proposta" data-ch="prop-status" class="chip" style="border:0;height:26px;cursor:pointer">${Object.entries(OPT.statusProp).filter(([k])=>k!=='substituida').map(([k,l])=>`<option value="${k}" ${k===p.status?'selected':''}>${l}</option>`).join('')}</select>`:statusPropChip(p.status)}${over&&p.origem==='bkm'?`<span class="chip warn">${mi(p.valor-n.viab.pmax)} acima do máximo</span>`:''}</span></div>
     <div class="pm">${OPT.forma[p.forma]} · apresentada ${fd(p.data)}${p.validade?` · válida até ${fd(p.validade)}`:''}</div>${p.cond?`<div class="pt">${esc(p.cond)}</div>`:''}</div></div>`}).join('')}</div>`:'<div class="muted">Nenhuma proposta ainda.</div>'}</div></section></div>`;
 }
 function abaTarefas(t){
@@ -3569,14 +3641,14 @@ const NAV=[['inicio','Início','casa'],['terrenos','Terrenos','terrenos'],['mapa
 const navSide=()=>ehAdmin(me())?[...NAV,['config','Configurações','config']]:NAV;
 function render(){
   if(UI.route!=='mapa'&&document.body.classList.contains('mp-cheia'))mpTelaCheia(false);
-  const cur=UI.route==='terreno'?UI.from:UI.route;
+  const cur=UI.route==='terreno'||UI.route==='viab'?UI.from:UI.route;
   document.body.classList.toggle('menu-min',menuMin);
   $('#side').innerHTML=`<button class="menu-tg" data-a="menu" aria-expanded="${!menuMin}" aria-label="${menuMin?'Expandir menu':'Recolher menu'}" title="${menuMin?'Expandir menu':'Recolher menu'}">${ic(menuMin?'expandir':'recolher',20)}</button><button class="compose" data-a="novo" ${menuMin?'title="Novo terreno" aria-label="Novo terreno"':''}>${ic('add',24)}<span class="rot">Novo terreno</span></button>`+navSide().map(([r,l,i])=>`<button class="nav-item" data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''} ${menuMin?`title="${l}" aria-label="${l}"`:''}>${bi(i)}<span class="rot">${l}</span></button>`).join('')+`<div class="side-foot"><span class="rot">Protótipo · dados de exemplo</span><button class="linkbtn rot" data-a="reset">Restaurar dados de exemplo</button></div>`;
   $('#bnav').innerHTML=NAV.map(([r,l,i])=>`<button data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''}><span class="pill">${bi(i,32)}</span>${l}</button>`).join('');
   document.body.classList.toggle('ro',UI.role==='Leitura');
   renderTema();{const n0=S.notifs.length;rotinaNotif();if(S.notifs.length!==n0)save()}renderSino();
   renderPerfil();
-  document.body.dataset.rota=UI.route;$('#main').innerHTML=({inicio:pgInicio,terrenos:pgTerrenos,negociacoes:pgNeg,terreno:pgFicha,mapa:pgMapa,dashboard:pgDash,tarefas:pgTarefas,config:pgConfig})[UI.route]();posRender();
+  document.body.dataset.rota=UI.route;$('#main').innerHTML=({inicio:pgInicio,terrenos:pgTerrenos,negociacoes:pgNeg,terreno:pgFicha,mapa:pgMapa,dashboard:pgDash,tarefas:pgTarefas,config:pgConfig,viab:pgViab})[UI.route]();posRender();
   renderModal();
 }
 let tmr;function toast(m,e){const el=$('#toast');el.textContent=m;el.className='toast show'+(e?' err':'');clearTimeout(tmr);tmr=setTimeout(()=>el.className='toast',2800)}
@@ -3586,7 +3658,7 @@ function go(route,x={}){if(UI.edMini)Object.assign(UI,{edMini:false,mpModo:null,
 function renderModal(){
   const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.nv=null;UI.nvPool=null;UI.nvKmz=null;UI.ofPoly=null;UI.kmzNovo=false;UI.lotes=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;UI.alvoParte=null;return}
   let h='';const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`;
-  h=partesModal(M,fechar)||fasesModal(M,fechar)||funilModal(M,fechar)||setoresModal(M,fechar);
+  h=viabModal(M,fechar)||partesModal(M,fechar)||fasesModal(M,fechar)||funilModal(M,fechar)||setoresModal(M,fechar);
   if(M==='novo')h=UI.nv?nvDadosHtml(fechar):nvPasso1Html(fechar);
   if(M==='novo-sobre')h=nvSobreHtml(fechar);
   if(M==='lotes-poly')h=lotesPolyHtml(fechar);
@@ -3599,7 +3671,6 @@ function renderModal(){
     <div class="field full"><label for="o-o">Observação sobre a forma de pagamento</label><input id="o-o" name="obsPag"></div>
     <div class="field full"><label for="o-a">Aceita permuta</label><input id="o-a" name="aceita"></div></div></form>
     <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-of">Registrar</button></div>`}
-  if(M==='viab')h=`<div class="dh"><h2>Vincular estudo de viabilidade</h2>${fechar}</div><form data-form="viab" id="f-vb"><div class="fields"><div class="field full"><label for="vb-n">Nome</label><input id="vb-n" name="nome" value="Estudo base" required></div><div class="field"><label for="vb-v">VGV (R$)</label><input id="vb-v" name="vgv" inputmode="decimal"></div><div class="field"><label for="vb-m">Margem (%)</label><input id="vb-m" name="margem" inputmode="decimal"></div><div class="field full"><label for="vb-p">Preço máximo do terreno (R$)</label><input id="vb-p" name="pmax" inputmode="decimal" required></div></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-vb">Vincular</button></div>`;
   if(M==='geo')h=geoModalHtml(fechar);
   if(M==='poi')h=`<div class="dh"><div><h2>Novo ponto de interesse</h2><div class="muted" style="margin-top:4px">Serve para medir a distância dos terrenos e traçar rotas.</div></div>${fechar}</div>
   <form data-form="poi" id="f-poi"><div class="fields"><div class="field full"><label for="po-n">Nome</label><input id="po-n" name="nome" required placeholder="Estação, escola, terminal..."></div>
@@ -3653,7 +3724,7 @@ document.addEventListener('click',e=>{
   if(!e.target.closest('.adv-mais'))document.querySelectorAll('.adv-mais.aberto').forEach(x=>{x.classList.remove('aberto');x.querySelector('.adv-mb')?.setAttribute('aria-expanded','false')});
   const a=e.target.closest('[data-a]');if(!a)return;const A=a.dataset.a;const t=UI.route==='terreno'?T(UI.id):null;
   if(A==='scrim'){if(e.target===a){UI.modal=null;renderModal()}return}
-  if(partesClick(A,a,t)||fasesClick(A,a,t)||funilClick(A,a,t)||setoresClick(A,a,t))return;
+  if(viabClick(A,a,t||(UI.route==='viab'?T(VB(UI.vid)?.tid):null))||partesClick(A,a,t)||fasesClick(A,a,t)||funilClick(A,a,t)||setoresClick(A,a,t))return;
   switch(A){
     case 'nav':go(a.dataset.r);break;
     case 'abrir':BLA={geral:true};blId=a.dataset.id;go('terreno',{id:a.dataset.id,tab:a.dataset.tab||'geral',from:a.dataset.from||(UI.route==='terreno'?UI.from:UI.route==='inicio'?'inicio':'terrenos')});if(a.dataset.tab&&a.dataset.tab!=='geral'){blocoAbre(a.dataset.tab);render();rolarBloco(a.dataset.tab)}break;
@@ -3684,7 +3755,7 @@ document.addEventListener('click',e=>{
     case 'ent-add-ponto':{const id=a.dataset.id;go('mapa',{mpFoco:id,mpView:null});UI.poiVolta=id;UI.mpModo='poi';mpRefresh();setTimeout(()=>{if(UI.mpModo==='poi')fecharPopup()},400);break}
     case 'adv-req':ADV_REQ=!ADV_REQ;render();break;
     case 'adv-mais':{const w=a.closest('.adv-mais'),ab=!w.classList.contains('aberto');document.querySelectorAll('.adv-mais.aberto').forEach(x=>{x.classList.remove('aberto');x.querySelector('.adv-mb').setAttribute('aria-expanded','false')});if(ab){w.classList.add('aberto');a.setAttribute('aria-expanded','true')}break}
-    case 'viab':UI.modal='viab';renderModal();break;
+    case 'viab':if(viabsDe(t.id).length){blocoAbre('negociacao');render();rolarBloco('negociacao','viab')}else viabClick('vb-novo',a,t);break;
     case 'sv-fechar':svFechar();break;
     case 'mp-desel':mpSelecionar(null);break;
     case 'mp-eu':mpEu();break;
@@ -3743,7 +3814,7 @@ $('#file-in').addEventListener('change',e=>{const f=e.target.files?.[0],t=T(UI.i
   const unico=k!=='foto'&&k!=='planta';let d=unico?t.docs.find(x=>x.tipo===k):null;
   if(!d){d={tipo:k,status:'recebido',emitido:HOJE,versoes:0,nome:unico?null:f.name};t.docs.push(d)}d.versoes++;d.emitido=HOJE;d.status='recebido';log(t,`${TIPOS_DOC[k][0]}: versão ${d.versoes} enviada`);save();render();toast('Arquivo enviado. Falta validar.')});
 document.addEventListener('change',e=>{const el=e.target;
-  if(partesChange(el)||fasesChange(el)||funilChange(el))return;
+  if(viabChange(el)||partesChange(el)||fasesChange(el)||funilChange(el))return;
   if(el.dataset.ch==='mp-cor'){UI.mp.cor=el.value;mpRefresh();return}
   if(el.dataset.ch==='mp-zona'){UI.mp.zona=el.value;mpRefresh();return}
   if(el.dataset.ch==='dash-sel'){const s=UI.dash.sel;UI.dash.sel=el.checked?Object.keys(DIMS).filter(k=>s.includes(k)||k===el.value):s.filter(k=>k!==el.value);render();return}
@@ -3757,15 +3828,16 @@ document.addEventListener('change',e=>{const el=e.target;
   if(el.dataset.ch==='prop-status'){const lp=lastProp(t);lp.status=el.value;log(t,`Proposta v${lp.v}: ${OPT.statusProp[el.value]}`);save();render()}
 });
 document.addEventListener('input',e=>{const el=e.target;
+  if(viabInput(el))return;
   if(el.id==='mp-q'){UI.mp.q=el.value;mpRefresh();return}
   if(el.id==='tk-q'){UI.tk.q=el.value;const p=el.selectionStart;render();const n=$('#tk-q');if(n){n.focus();n.setSelectionRange(p,p)}return}
   if(el.id==='q-top'){UI.q=el.value;if(UI.route!=='terrenos'){go('terrenos');$('#q-top').focus()}else{const r=$('#rows');if(r)r.innerHTML=linhas()}}
   if(el.dataset.masc){const m=mascarar(el.value,el.dataset.masc);if(m!==el.value)el.value=m}
   if(el.form?.dataset.form==='novo')dedupe();
-  if(el.id==='pp-v'){const t=T(UI.id),v=lerNum(el.value),w=$('#pp-warn');w.innerHTML=t.neg.viab&&v>t.neg.viab.pmax?`<div class="banner warn">${ic('warn')}<div>${brl(v)} fica ${mi(v-t.neg.viab.pmax)} acima do preço máximo (${mi(t.neg.viab.pmax)}).</div></div>`:''}
+  if(el.id==='pp-v'){const t=T(UI.id),v=lerNum(el.value),w=$('#pp-warn');w.innerHTML=t.neg.viab?.pmax!=null&&v>t.neg.viab.pmax?`<div class="banner warn">${ic('warn')}<div>${brl(v)} fica ${mi(v-t.neg.viab.pmax)} acima do preço máximo (${mi(t.neg.viab.pmax)}).</div></div>`:''}
 });
 document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Object.fromEntries(new FormData(f)),t=UI.alvo?T(UI.alvo):UI.route==='terreno'?T(UI.id):null;
-  if(partesSubmit(f.dataset.form,F,t,f)||fasesSubmit(f.dataset.form,F,t,f)||funilSubmit(f.dataset.form,F,t,f))return;
+  if(viabSubmit(f.dataset.form,F)||partesSubmit(f.dataset.form,F,t,f)||fasesSubmit(f.dataset.form,F,t,f)||funilSubmit(f.dataset.form,F,t,f))return;
   switch(f.dataset.form){
     case 'sec':{const s=SECOES[f.dataset.s];s.campos.forEach(([k,,tipo])=>{if(tipo==='fixo'||!(k in F))return;let v=F[k].trim();if(['m2','m','dec'].includes(tipo))v=lerNum(v);else if(tipo==='sel'&&v==='')v=k==='precisao'?'nao_informada':['topografia','posicao','formato','ocupacao'].includes(k)?'nao_informado':k==='demolicao'?'nao_avaliada':null;else if(v==='')v=k==='nome'?t.nome:null;t[k]=v});
       if(t.aDemolir!=null&&t.aConst!=null&&t.aDemolir>t.aConst){toast('A área a demolir não pode passar da área construída.',true);return}
@@ -3830,7 +3902,6 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       if(o.cid&&!t.corretores.some(x=>x.cid===o.cid))t.corretores.push({cid:o.cid,principal:!t.corretores.some(x=>x.principal)});
       if(!t.neg||!['ativo','stand_by'].includes(t.neg.status)){t.neg=novaNeg(o.id,null);log(t,'Negociação aberta')}else log(t,`Nova oferta: ${mi(o.valor)}${o.poly?` (parte do terreno, ${m2(Math.round(areaPoly(o.poly)))})`:''}`);
       UI.modal=null;save();render();toast('Oferta registrada.');break}
-    case 'viab':t.neg.viab={nome:F.nome,vgv:lerNum(F.vgv),margem:lerNum(F.margem),pmax:lerNum(F.pmax),em:HOJE};log(t,'Estudo vinculado');UI.modal=null;save();render();break;
   }
 });
 function novaNeg(ofRef,temp){const e=STAGES[0][0],s=subInicial(e);return {codigo:'NEG-'+String(Math.floor(Math.random()*900)+100).padStart(5,'0'),etapa:e,sub:s,status:'ativo',desde:HOJE,subDesde:HOJE,temp,ofRef,viab:null,pedido:null,trilha:[{em:agora(),user:me(),ev:'abertura',deEtapa:null,deSub:null,paraEtapa:e,paraSub:s,status:'ativo'}]}}
@@ -4408,14 +4479,16 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     :`<div class="empty" style="padding:var(--e6) 0">Sem localização.<br><span style="display:inline-flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center">${GG&&(t.logradouro||t.bairro)?`<button class="btn sm primary ed" data-a="g-geo" data-id="${t.id}">Localizar pelo endereço</button>`:''}<button class="btn sm ed" data-a="mp-marcar" data-id="${t.id}">Marcar no mapa</button></span></div>`}</div></section>`;
   const poi=entornoCard(t);
   const pct=(x,b)=>b?num(x/b*100,1)+'%':'—';
-  const viab=`<section class="sec"><div class="sec-h"><h2>Resumo da viabilidade</h2>${v?`<span class="faint" style="font-size:12px">${esc(v.nome)}</span>`:''}</div><div class="sec-b">${v?`<div class="dt-wrap"><table class="dt compacta"><thead><tr><th class="esq">Item</th><th>Valor</th><th>% do VGV</th></tr></thead><tbody>
-    <tr><td class="esq">VGV</td><td class="num">${mi(v.vgv)}</td><td class="num">100%</td></tr>
-    <tr><td class="esq">Preço máximo do terreno</td><td class="num">${mi(v.pmax)}</td><td class="num">${pct(v.pmax,v.vgv)}</td></tr>
-    <tr><td class="esq">Valor pedido</td><td class="num">${o?.valor?mi(o.valor):'—'}</td><td class="num">${o?.valor?pct(o.valor,v.vgv):'—'}</td></tr>
-    ${lp?`<tr><td class="esq">Última proposta (${lp.origem==='bkm'?'BKM':'vendedor'})</td><td class="num">${mi(lp.valor)}</td><td class="num">${pct(lp.valor,v.vgv)}</td></tr>`:''}
-    <tr class="forte"><td class="esq">Margem do estudo</td><td class="num">${num(v.margem,1)}%</td><td></td></tr></tbody></table></div>
-    ${o?.valor&&o.valor>v.pmax?`<div class="banner warn" style="margin-top:12px">${ic('warn')}<div>Valor pedido ${mi(o.valor-v.pmax)} acima do preço máximo.</div></div>`:''}`
-    :`<div class="muted">Sem estudo vinculado.${negAtiva(t)?` <button class="linkbtn ed" data-a="viab">Vincular estudo</button>`:''}</div>`}</div></section>`;
+  const vl=v?(v.liq??v.vgv):null;
+  const viab=`<section class="sec"><div class="sec-h"><h2>Resumo da viabilidade</h2>${v?`<button class="linkbtn" style="font-size:12px" data-a="vb-abrir" data-v="${v.id}">${esc(v.nome)}</button>`:''}</div><div class="sec-b">${v?`<div class="dt-wrap"><table class="dt compacta"><thead><tr><th class="esq">Item</th><th>Valor</th><th>% do VGV</th></tr></thead><tbody>
+    <tr><td class="esq">VGV líquido</td><td class="num">${mi(vl)}</td><td class="num">100%</td></tr>
+    <tr><td class="esq">Preço máximo do terreno</td><td class="num">${mi(v.pmax)}</td><td class="num">${pct(v.pmax,vl)}</td></tr>
+    <tr><td class="esq">Valor pedido</td><td class="num">${o?.valor?mi(o.valor):'—'}</td><td class="num">${o?.valor?pct(o.valor,vl):'—'}</td></tr>
+    ${lp?`<tr><td class="esq">Última proposta (${lp.origem==='bkm'?'BKM':'vendedor'})</td><td class="num">${mi(lp.valor)}</td><td class="num">${pct(lp.valor,vl)}</td></tr>`:''}
+    ${v.lucro!=null?`<tr><td class="esq">Lucro líquido</td><td class="num">${mi(v.lucro)}</td><td class="num">${pct(v.lucro,vl)}</td></tr>`:''}
+    <tr class="forte"><td class="esq">Margem líquida do estudo</td><td class="num">${v.margem==null?'—':num(v.margem,1)+'%'}</td><td></td></tr></tbody></table></div>
+    ${o?.valor&&v.pmax!=null&&o.valor>v.pmax?`<div class="banner warn" style="margin-top:12px">${ic('warn')}<div>Valor pedido ${mi(o.valor-v.pmax)} acima do preço máximo.</div></div>`:''}`
+    :`<div class="muted">Sem estudo vinculado.${negAtiva(t)?` <button class="linkbtn ed" data-a="viab">${viabsDe(t.id).length?'Vincular estudo':'Montar estudo'}</button>`:''}</div>`}</div></section>`;
   const rel=relevoHtml(t)?`<section class="sec"><div class="sec-h"><h2>Relevo</h2>${t.relevo?`<span class="faint" style="font-size:12px">estimado em ${fd(t.relevo.em)}</span>`:''}</div><div class="sec-b">${relevoHtml(t)}</div></section>`:'';
   return `<div class="geral"><div class="geral-c">${info}${condicoes(t)}${neg}</div><div class="geral-c">${loc}${rel}${poi}${setoresCard(t)}${perfilCard(t)}${viab}</div></div>`}
 function L_initMini(){const el=$('#mini-mapa'),t=T(UI.id);if(!el||!t||t.lat==null)return;if(!window.L){el.innerHTML='<div class="mapa-erro">Mapa indisponível.</div>';return}
@@ -4848,7 +4921,7 @@ function diffTerreno(a,b){
     if(k==='poly'){campos.push({k,txt:!vb?'Poligonal removida':va?polyLogTxt(areaPoly(va),areaPoly(vb)):'Poligonal desenhada'});return}
     if(k==='neg'){const na=va||{},nb=vb||{};if(!va&&vb){itens.push('Negociação aberta');return}
       Object.keys({...na,...nb}).forEach(x=>{if(NEG_SEM_LOG.includes(x)||JSON.stringify(na[x])===JSON.stringify(nb[x])||typeof (nb[x]??na[x])==='object'&&x!=='viab')return;
-        if(x==='viab'){campos.push({k:'neg.viab',txt:nb.viab?`Estudo de viabilidade vinculado: ${nb.viab.nome||''}`:'Estudo de viabilidade desvinculado'});return}
+        if(x==='viab'){if(na.viab?.id&&na.viab.id===nb.viab?.id)return;campos.push({k:'neg.viab',txt:nb.viab?`Estudo de viabilidade vinculado: ${nb.viab.nome||''}`:'Estudo de viabilidade desvinculado'});return}
         const f=v=>v==null||v===''?'não informado':x==='etapa'?SN(v):x==='sub'?subN(v):x==='status'?STATUS_N[v]||v:x==='motivo'?motivoN(nb.status,v):x==='retomar'?fd(v):x==='temp'?v+'/5':String(v);
         campos.push({k:'neg.'+x,txt:`${NEG_LAB[x]||x}: ${f(na[x])} → ${f(nb[x])}`})});return}
     if(k==='infra'){Object.keys({...va,...vb}).forEach(x=>{const da=va?.[x]?.d,db=vb?.[x]?.d;if(da!==db)campos.push({k:'infra.'+x,txt:`Infraestrutura · ${x}: ${da||'não verificado'} → ${db||'não verificado'}`})});return}
@@ -5636,9 +5709,10 @@ const usada=k=>S.terrenos.some(t=>t.neg&&(t.neg.sub===k||(t.neg.trilha||[]).some
 function pgConfig(){
   if(!ehAdmin(me()))return `<div class="page-h"><div><h1><span class="marca"></span>Configurações</h1></div></div><section class="sec"><div class="sec-b"><div class="empty">Só administradores alteram a configuração do funil. Teste como Diretor (Moisés é administrador).</div></div></section>`;
   const C=cfg(),aba=UI.cfgAba||'fases';
-  const abas=[['fases','Fases'],['funil','Etapas de '+faseN(faseEnt())],['prereq','Pré-requisitos'],['status','Status e motivos'],['checklist','Checklist'],['notif','Notificações'],['equipe','Equipe']];
+  const abas=[['fases','Fases'],['funil','Etapas de '+faseN(faseEnt())],['prereq','Pré-requisitos'],['status','Status e motivos'],['checklist','Checklist'],['notif','Notificações'],['equipe','Equipe'],['viab','Viabilidade']];
   let corpo='';
   if(aba==='fases')corpo=cfgFasesHtml();
+  if(aba==='viab')corpo=cfgViabHtml();
   if(aba==='funil')corpo=`<section class="sec"><div class="sec-h"><h2>Etapas de ${esc(faseN(faseEnt()))}</h2><span class="faint" style="font-size:13px">No protótipo, etapa nova só nas outras fases (aba Fases)</span></div><div class="sec-b"><div class="cfg-t">
     <div class="cfg-r cfg-hd"><span>Etapa</span><span>SLA (dias)</span><span>Aprovação para entrar</span></div>
     ${C.etapas.map((e,i)=>`<div class="cfg-r"><input data-ch="cfg" data-p="etapas.${i}.nome" value="${esc(e.nome)}" aria-label="Nome da etapa"><input type="number" min="0" data-ch="cfg" data-p="etapas.${i}.sla" value="${e.sla??''}" aria-label="SLA de ${esc(e.nome)}"><span class="cfg-ap">${apCells('etapas.'+i,e)}</span></div>`).join('')}</div></div></section>
@@ -5672,7 +5746,7 @@ function pgConfig(){
       <select data-ch="cfg-eq" data-i="${i}" data-k="sup" aria-label="Superior de ${esc(m.nome)}" ${m.papel==='diretor'||m.papel==='leitura'?'disabled':''}><option value="">—</option>${sups.map(x=>`<option ${m.sup===x.nome?'selected':''}>${esc(x.nome)}</option>`).join('')}</select>
       <label class="chk"><input type="checkbox" data-ch="cfg-eq" data-i="${i}" data-k="admin" ${m.admin?'checked':''} aria-label="Administrador"></label></div>`}).join('')}</div>
     <div class="hint">Analista responde a um gestor; gestor responde a um diretor. Qualquer superior pode aprovar por quem está abaixo dele. Administrador é uma permissão à parte, em qualquer papel.</div></div></section>`;
-  return `<div class="page-h"><div><h1><span class="marca"></span>Configurações › Funil</h1><div class="sub">Vale para toda a empresa. Cada mudança fica na auditoria.</div></div><button class="btn" data-a="cfg-padrao">Restaurar padrão</button></div>
+  return `<div class="page-h"><div><h1><span class="marca"></span>Configurações › ${aba==='viab'?'Viabilidade':'Funil'}</h1><div class="sub">Vale para toda a empresa. Cada mudança fica na auditoria.</div></div><button class="btn" data-a="cfg-padrao">Restaurar padrão</button></div>
   <div class="fchips cfg-abas" role="tablist">${abas.map(([k,l])=>`<button class="fchip" role="tab" data-a="cfg-aba" data-v="${k}" aria-pressed="${aba===k}" aria-selected="${aba===k}">${aba===k?ic('check',16):''}${l}</button>`).join('')}</div><div class="stack">${corpo}</div>`}
 function setPath(o,p,v){const k=p.split('.');let x=o;k.slice(0,-1).forEach(c=>{x=x[c]});x[k[k.length-1]]=v}
 /* pré-requisito: sem ciclo, sem exigir subetapa de etapa posterior, subetapa inicial não exige irmã */
@@ -7412,6 +7486,238 @@ document.addEventListener('click',e=>{
   else if(A==='log-apagar-sim'&&h&&logPodeApagar(h)&&logDesfazivel(t,h))logDesfazer(t,h)},true);
 /* sem o painel (celular ou tela estreita), a seção Histórico usa os mesmos logs do painel, com filtros, olhinho e lixeira */
 abaHist=function(t){return `<section class="sec pn-hist"><div class="sec-b">${pnLogs(t)}</div></section>`};
+
+/* ===================== estudo de viabilidade estática (decisão do Moisés, 25/out/2026) =====================
+   Avaliação prévia, sem fluxo de caixa. Espelha app.viabilidade_tipologias, app.viabilidade_linhas e
+   app.calcular_viabilidade (migration 20261015001000_viabilidade.sql): mesmas regras, mesmos arredondamentos.
+   O estudo é do terreno (S.viabs, vários por terreno); a negociação vincula um, e t.neg.viab guarda o resumo
+   dele (com o id), que é o que o resto do protótipo lê (filtros, preço máximo, Visão geral).
+   Lista de despesas da empresa em S.viabDesp (Configurações › Viabilidade), nascida de tools/viabilidade/despesas.json. */
+const VB_CFG={"_nota":"Lista padrão de despesas do estudo de viabilidade estática. Cada empresa recebe uma cópia e o administrador edita em Configurações › Viabilidade. O protótipo (build.py) e o teste do banco (supabase/tests/regras.sql) leem este arquivo; a migration 20261015001000_viabilidade.sql traz os mesmos itens.","grupos":{"terreno":"Terreno","projetos":"Projetos e aprovações","obra":"Obra","comercial":"Comercial","impostos":"Impostos","administracao":"Administração","financeiro":"Financeiro","outros":"Outros"},"tipos":{"pct_vgv":"% do VGV","pct_obra_incidente":"% da obra incidente","pct_obra_total":"% da obra total","verba_total":"Verba total","verba_unidade":"Verba por unidade"},"obra":{"nao":"Não","incidente":"Incidente (e total)","total":"Só na total"},"despesas":[{"codigo":"terreno","nome":"Terreno","grupo":"terreno","obra":"nao","tipo":"verba_total","multiplicador":null},{"codigo":"itbi_registro","nome":"ITBI e registro do terreno","grupo":"terreno","obra":"nao","tipo":"verba_total","multiplicador":null},{"codigo":"corretagem_terreno","nome":"Corretagem do terreno","grupo":"terreno","obra":"nao","tipo":"verba_total","multiplicador":null},{"codigo":"projetos","nome":"Projetos e consultorias","grupo":"projetos","obra":"nao","tipo":"verba_total","multiplicador":null},{"codigo":"aprovacoes","nome":"Aprovações e licenças","grupo":"projetos","obra":"nao","tipo":"verba_total","multiplicador":null},{"codigo":"outorga","nome":"Outorga onerosa e contrapartidas","grupo":"projetos","obra":"nao","tipo":"verba_total","multiplicador":null},{"codigo":"construcao","nome":"Construção (edificação)","grupo":"obra","obra":"incidente","tipo":"verba_unidade","multiplicador":null},{"codigo":"infra_interna","nome":"Infraestrutura interna","grupo":"obra","obra":"incidente","tipo":"verba_total","multiplicador":null},{"codigo":"infra_externa","nome":"Infraestrutura externa","grupo":"obra","obra":"total","tipo":"verba_total","multiplicador":null},{"codigo":"ligacoes","nome":"Ligações definitivas","grupo":"obra","obra":"total","tipo":"verba_unidade","multiplicador":null},{"codigo":"adm_obra","nome":"Administração da obra","grupo":"obra","obra":"nao","tipo":"pct_obra_total","multiplicador":5},{"codigo":"seguros_obra","nome":"Seguros e garantias da obra","grupo":"obra","obra":"nao","tipo":"pct_obra_total","multiplicador":1},{"codigo":"contingencia","nome":"Contingência de obra","grupo":"obra","obra":"nao","tipo":"pct_obra_incidente","multiplicador":3},{"codigo":"comissao","nome":"Comissão de vendas","grupo":"comercial","obra":"nao","tipo":"pct_vgv","multiplicador":4},{"codigo":"marketing","nome":"Marketing e publicidade","grupo":"comercial","obra":"nao","tipo":"pct_vgv","multiplicador":1.5},{"codigo":"stand","nome":"Stand e apartamento decorado","grupo":"comercial","obra":"nao","tipo":"verba_total","multiplicador":null},{"codigo":"ret","nome":"Impostos (RET)","grupo":"impostos","obra":"nao","tipo":"pct_vgv","multiplicador":4},{"codigo":"adm_incorporacao","nome":"Administração da incorporação","grupo":"administracao","obra":"nao","tipo":"pct_vgv","multiplicador":2},{"codigo":"juridico","nome":"Jurídico, cartório e registro da incorporação","grupo":"administracao","obra":"nao","tipo":"verba_total","multiplicador":null},{"codigo":"estoque","nome":"Condomínio e IPTU das unidades em estoque","grupo":"administracao","obra":"nao","tipo":"verba_unidade","multiplicador":null},{"codigo":"financiamento","nome":"Taxas do financiamento (Caixa)","grupo":"financeiro","obra":"nao","tipo":"pct_vgv","multiplicador":null},{"codigo":"outras","nome":"Outras despesas","grupo":"outros","obra":"nao","tipo":"verba_total","multiplicador":null}]};
+const VB_TIPO=VB_CFG.tipos,VB_GRUPO=VB_CFG.grupos,VB_OBRA=VB_CFG.obra;
+const r2=x=>Math.round((x+Math.sign(x)*Number.EPSILON)*100)/100;
+const VB=id=>S.viabs.find(v=>v.id===id);
+const viabsDe=tid=>S.viabs.filter(v=>v.tid===tid);
+const vbDesp=c=>S.viabDesp.find(d=>d.codigo===c);
+const vbPct=tipo=>tipo.startsWith('pct');
+const vbIn=(v,d=2)=>v==null?'':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:d});
+const vbSemAcento=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+
+/* preço unitário, preço por m² e área ligados (o mesmo de app.tg_viabilidade_tipologia):
+   com a área, mudar o unitário refaz o m² e mudar o m² refaz o unitário; mudar a área refaz o m² quando há
+   os dois preços e completa o que falta quando há um só; apagar um preço não refaz o outro */
+function vbNorm(p,campo){if(p.area==null)return;
+  if(campo==='pm2'){if(p.pm2!=null)p.pu=r2(p.pm2*p.area)}
+  else if(campo==='pu'){if(p.pu!=null)p.pm2=r2(p.pu/p.area)}
+  else if(p.pu!=null)p.pm2=r2(p.pu/p.area);
+  else if(p.pm2!=null)p.pu=r2(p.pm2*p.area)}
+
+/* cálculo (app.calcular_viabilidade): VGV líquido = VGV − permuta; linha = base × multiplicador × quantidade;
+   % do VGV sobre o VGV líquido; obra total = linhas que compõem a obra, incidente = as marcadas incidente,
+   nunca contando as que são % da obra; verba por unidade sobre todas as unidades */
+function vbCalc(v){let vgv=0,perm=0,un=0,unp=0,priv=0;
+  v.tips.forEach(p=>{un+=p.qtd||0;unp+=p.perm||0;if(p.area!=null)priv+=p.area*(p.qtd||0);if(p.pu!=null){vgv+=(p.qtd||0)*p.pu;perm+=(p.perm||0)*p.pu}});
+  vgv=r2(vgv);perm=r2(perm);const liq=r2(vgv-perm);
+  const valor=(l,b)=>l.mult==null?null:r2(b*l.mult/(vbPct(l.tipo)?100:1)*(l.qtd||1));
+  const base0=l=>l.tipo==='pct_vgv'?liq:l.tipo==='verba_total'?1:un;
+  let ot=0,oi=0;
+  v.linhas.forEach(l=>{if(l.tipo.startsWith('pct_obra'))return;const d=vbDesp(l.desp),x=valor(l,base0(l))||0;if(d&&d.obra!=='nao')ot+=x;if(d&&d.obra==='incidente')oi+=x});
+  ot=r2(ot);oi=r2(oi);
+  const L={};let desp=0;
+  v.linhas.forEach(l=>{const b=l.tipo==='pct_obra_total'?ot:l.tipo==='pct_obra_incidente'?oi:base0(l),x=valor(l,b);L[l.id]={base:b,valor:x};desp+=x||0});
+  desp=r2(desp);const lucro=r2(liq-desp);
+  return {vgv,perm,liq,un,unp,priv,ot,oi,desp,lucro,margem:liq>0?r2(lucro/liq*100):null,L}}
+
+/* a negociação lê o resumo do estudo vinculado (no banco, processos.viabilidade_id e os totais do estudo) */
+function vbResumo(v){const c=vbCalc(v);return {id:v.id,nome:v.nome,vgv:c.vgv,liq:c.liq,lucro:c.lucro,margem:c.margem,pmax:v.pmax,em:v.em}}
+function vbSync(v){const t=T(v.tid);if(t?.neg?.viab?.id===v.id)t.neg.viab=vbResumo(v)}
+const vbSyncTodos=()=>S.viabs.forEach(vbSync);
+const vbNovo=(tid,nome)=>({id:uid(),tid,nome,pmax:null,em:HOJE,user:me(),tips:[{id:uid(),nome:'Tipologia 1',area:null,qtd:null,perm:0,pu:null,pm2:null}],linhas:[]});
+
+/* dados de exemplo: um estudo para cada negociação que já tinha viabilidade, montado para dar perto do VGV e da margem de antes */
+function vbExemplo(t,x,i){const v=vbNovo(t.id,x.nome);v.em=x.em||HOJE;v.user=t.resp||'Rafael Souza';v.pmax=x.pmax??null;
+  const N=Math.max(20,Math.round(x.vgv/323400)),nA=Math.round(N*.7),perm=i===0?6:0;
+  v.tips=[{id:uid(),nome:'2 dormitórios',area:40,qtd:nA,perm,pu:300000,pm2:7500},{id:uid(),nome:'2 dormitórios com suíte',area:48,qtd:N-nA,perm:0,pu:378000,pm2:7875}];
+  const liq=nA*300000+(N-nA)*378000-perm*300000,m=(x.margem??15)/100,terreno=x.pmax??Math.round(liq*.12),itbi=Math.round(terreno*.03/1000)*1000,proj=Math.round(liq*.012/1000)*1000;
+  const conhecido=terreno+itbi+proj+liq*(.04+.015+.04),infra=1500000;
+  const custo=Math.max(80000,Math.round(((liq*(1-m)-conhecido)/1.08-infra)/N/100)*100);
+  const L=(desp,tipo,mult,qtd=1)=>({id:uid(),desp,tipo,mult,qtd});
+  v.linhas=[L('terreno','verba_total',terreno),L('itbi_registro','verba_total',itbi),L('projetos','verba_total',proj),L('construcao','verba_unidade',custo),
+    L('infra_interna','verba_total',infra),L('adm_obra','pct_obra_total',5),L('contingencia','pct_obra_incidente',3),L('comissao','pct_vgv',4),L('marketing','pct_vgv',1.5),L('ret','pct_vgv',4)];
+  return v}
+function viabPreparar(){
+  if(!S.viabDesp)S.viabDesp=VB_CFG.despesas.map(d=>({codigo:d.codigo,nome:d.nome,grupo:d.grupo,obra:d.obra,tipo:d.tipo,mult:d.multiplicador,ativo:true}));
+  if(!S.viabs){S.viabs=[];let i=0;S.terrenos.forEach(t=>{const x=t.neg?.viab;if(!x||x.id)return;const v=vbExemplo(t,x,i++);S.viabs.push(v);t.neg.viab=vbResumo(v)})}}
+
+/* ---------- seção Viabilidade da negociação ---------- */
+function viabSecao(t){const vs=viabsDe(t.id),vi=t.neg?.viab,ro=UI.role==='Leitura',ad=areaAdotada(t);
+  const novo=!ro?`<button class="btn sm" data-a="vb-novo">${ic('add',16)}Novo estudo</button>`:'';
+  const ligado=vi?`<div class="metrics vb-met"><div class="metric"><div class="ml">VGV líquido</div><div class="mv">${mi(vi.liq??vi.vgv)}</div></div><div class="metric"><div class="ml">Margem líquida</div><div class="mv">${vi.margem==null?'—':num(vi.margem,1)+'%'}</div></div><div class="metric"><div class="ml">Preço máximo do terreno</div><div class="mv">${mi(vi.pmax)}</div></div></div>
+    <div class="faint" style="font-size:12px;margin-top:10px">Vinculado: ${esc(vi.nome)} · ${fd(vi.em)}${ad&&vi.pmax?` · ${brl(vi.pmax/ad)}/m² sobre a área adotada`:''}</div>`:'';
+  const lista=vs.length?`<div class="dt-wrap vb-lista"><table class="dt compacta"><thead><tr><th class="esq">Estudo</th><th>VGV líquido</th><th>Lucro líquido</th><th>Margem</th><th>Atualizado</th><th></th></tr></thead><tbody>
+    ${vs.map(v=>{const c=vbCalc(v),lig=vi?.id===v.id;return `<tr><td class="esq"><button class="linkbtn" data-a="vb-abrir" data-v="${v.id}">${esc(v.nome)}</button></td><td class="num">${mi(c.liq)}</td><td class="num">${mi(c.lucro)}</td><td class="num">${c.margem==null?'—':num(c.margem,1)+'%'}</td><td>${fd(v.em)}</td>
+      <td>${lig?'<span class="chip good"><span class="d"></span>Vinculado</span>':negAtiva(t)&&!ro?`<button class="btn text sm" data-a="vb-vincular" data-v="${v.id}">Vincular</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`
+    :`<div class="banner blue">${ic('money')}<div style="flex:1"><div class="bt">Nenhum estudo</div><div>Monte o estudo de viabilidade estática: tipologias, despesas e resultado (VGV líquido, lucro e margem).</div></div></div>`;
+  return `<section class="sec" id="sec-viab"><div class="sec-h"><h2>Viabilidade</h2>${novo}</div><div class="sec-b">${ligado}${ligado&&vs.length?'<div style="height:16px"></div>':''}${lista}</div></section>`}
+
+/* ---------- página do estudo ---------- */
+function pgViab(){const v=VB(UI.vid);if(!v)return `<section class="sec"><div class="sec-b"><div class="empty">Estudo não encontrado.</div></div></section>`;
+  const t=T(v.tid),c=vbCalc(v),ro=UI.role==='Leitura',lig=t.neg?.viab?.id===v.id,dis=ro?'disabled':'';
+  const acoes=ro?'':`${lig?'':negAtiva(t)?`<button class="btn" data-a="vb-vincular" data-v="${v.id}">${ic('link',18)}Vincular à negociação</button>`:''}<button class="btn" data-a="vb-duplicar" data-v="${v.id}">Duplicar</button>${lig?'':`<button class="btn text danger" data-a="vb-apagar" data-v="${v.id}">Apagar</button>`}`;
+  const inp=(tipo,id,k,val,d,rot,extra='')=>`<label class="vb-c vb-${k}"><span class="vb-l">${rot}</span><input data-vb="${tipo}" data-r="${id}" data-k="${k}" value="${k==='nome'?esc(val??''):vbIn(val,d)}" ${k==='nome'?'':'inputmode="decimal"'} aria-label="${rot}" ${dis} ${extra}></label>`;
+  const tips=v.tips.map(p=>`<div class="vb-r" data-tp="${p.id}">${inp('tp',p.id,'nome',p.nome,0,'Tipologia')}${inp('tp',p.id,'area',p.area,2,'Área privativa (m²)')}${inp('tp',p.id,'qtd',p.qtd,0,'Quantidade')}${inp('tp',p.id,'perm',p.perm,0,'Em permuta')}${inp('tp',p.id,'pu',p.pu,2,'Preço unitário (R$)')}${inp('tp',p.id,'pm2',p.pm2,2,'Preço por m² (R$)')}
+    <span class="vb-c vb-out"><span class="vb-l">VGV</span><b data-vbo="tp-${p.id}">${brl(p.pu!=null?(p.qtd||0)*p.pu:null)}</b></span>${ro?'<span></span>':`<button class="iconbtn sm vb-del" data-a="vb-tip-del" data-v="${p.id}" aria-label="Remover ${esc(p.nome)}" title="Remover tipologia">${ic('close',18)}</button>`}</div>`).join('');
+  const linhas=v.linhas.map(l=>{const d=vbDesp(l.desp);return `<div class="vb-r" data-ln="${l.id}"><span class="vb-c vb-desp"><span class="vb-l">Despesa</span>${vbCombo(l.id,d?d.nome+(d.ativo?'':' (inativa)'):l.desp,dis)}</span>
+    <label class="vb-c vb-tipo"><span class="vb-l">Tipo de valor</span><select data-vb="ln" data-r="${l.id}" data-k="tipo" aria-label="Tipo de valor" ${dis}>${Object.entries(VB_TIPO).map(([k,n])=>`<option value="${k}" ${l.tipo===k?'selected':''}>${n}</option>`).join('')}</select></label>
+    <label class="vb-c vb-mult"><span class="vb-l">Multiplicador</span><span class="vb-adorno"><span class="vb-suf" data-vbo="suf-${l.id}">${vbPct(l.tipo)?'%':'R$'}</span><input data-vb="ln" data-r="${l.id}" data-k="mult" value="${vbIn(l.mult,4)}" inputmode="decimal" aria-label="Multiplicador" ${dis}></span></label>
+    <label class="vb-c vb-qtd"><span class="vb-l">Quantidade</span><input data-vb="ln" data-r="${l.id}" data-k="qtd" value="${vbIn(l.qtd,2)}" inputmode="decimal" aria-label="Quantidade de parcelas" ${dis}></label>
+    <span class="vb-c vb-out"><span class="vb-l">Resultado</span><b data-vbo="ln-${l.id}">${brl(c.L[l.id].valor)}</b><small class="faint" data-vbo="lb-${l.id}">${vbBaseTxt(l,c)}</small></span>${ro?'<span></span>':`<button class="iconbtn sm vb-del" data-a="vb-ln-del" data-v="${l.id}" aria-label="Remover ${esc(d?.nome||'despesa')}" title="Remover despesa">${ic('close',18)}</button>`}</div>`}).join('');
+  const nova=UI.vbNova&&!ro?`<div class="vb-r vb-nova"><span class="vb-c vb-desp"><span class="vb-l">Despesa</span>${vbCombo('nova','','')}</span><span class="vb-c vb-dica faint">Escolha na lista da empresa; o tipo de valor e o multiplicador vêm preenchidos e podem ser trocados.</span><button class="iconbtn sm vb-del" data-a="vb-ln-cancela" aria-label="Cancelar" title="Cancelar">${ic('close',18)}</button></div>`:'';
+  return `<button class="back" data-a="vb-voltar">${ic('back',20)}${esc(t.codigo)} · ${esc(t.nome)}</button>
+  <div class="page-h vb-h"><div style="min-width:0"><div class="eyebrow">Estudo de viabilidade estática${lig?' · <span class="chip good"><span class="d"></span>Vinculado à negociação</span>':''}</div><h1>${esc(v.nome)}</h1><div class="muted vb-sub">Avaliação prévia, sem fluxo de caixa. Atualizado em ${fd(v.em)}${v.user?' por '+esc(v.user):''}.</div></div><div class="vb-acoes">${acoes}</div></div>
+  <div class="kpis vb-kpis" id="vb-kpis">${vbKpis(c)}</div>
+  <div class="stack">
+  <section class="sec"><div class="sec-h"><h2>Dados do estudo</h2></div><div class="sec-b"><div class="editgrid vb-dados">
+    <div class="field"><label for="vb-nome">Nome do estudo</label><input id="vb-nome" data-vb="hd" data-k="nome" value="${esc(v.nome)}" ${dis}></div>
+    <div class="field"><label for="vb-pmax">Preço máximo do terreno (R$)</label><input id="vb-pmax" data-vb="hd" data-k="pmax" value="${vbIn(v.pmax,2)}" inputmode="decimal" ${dis}></div></div>
+    <div class="hint">O preço máximo é o que acende o aviso de proposta acima do máximo na negociação.</div></div></section>
+  <section class="sec vb-sec"><div class="sec-h"><h2>Tipologias</h2>${ro?'':`<button class="btn text sm" data-a="vb-tip-add">${ic('add',16)}Adicionar tipologia</button>`}</div><div class="sec-b">
+    <div class="vb-tab vb-tips"><div class="vb-r vb-hd" aria-hidden="true"><span>Tipologia</span><span>Área privativa (m²)</span><span>Quantidade</span><span>Em permuta</span><span>Preço unitário (R$)</span><span>Preço por m² (R$)</span><span>VGV</span><span></span></div>
+    ${tips||'<div class="muted vb-vazio">Nenhuma tipologia.</div>'}
+    <div class="vb-r vb-tot" id="vb-tot-tips">${vbTotTips(v,c)}</div></div>
+    <div class="hint">Com a área preenchida, o preço unitário e o preço por m² se acompanham: mudar um refaz o outro. Mudar a área refaz o preço por m² (ou completa o preço que falta). As unidades em permuta saem do VGV líquido.</div></div></section>
+  <section class="sec vb-sec"><div class="sec-h"><h2>Despesas</h2>${ro?'':`<button class="btn text sm" data-a="vb-ln-add">${ic('add',16)}Adicionar despesa</button>`}</div><div class="sec-b">
+    <div class="vb-tab vb-lns"><div class="vb-r vb-hd" aria-hidden="true"><span>Despesa</span><span>Tipo de valor</span><span>Multiplicador</span><span>Quantidade</span><span>Resultado</span><span></span></div>
+    ${linhas||(nova?'':'<div class="muted vb-vazio">Nenhuma despesa.</div>')}${nova}
+    <div class="vb-r vb-tot" id="vb-tot-lns">${vbTotLns(c)}</div></div>
+    <div class="hint">Resultado = base × multiplicador × quantidade (parcelas). Nos tipos em %, o multiplicador é o percentual. % do VGV incide sobre o VGV líquido; verba por unidade, sobre todas as unidades (${num(c.un)}); % da obra, sobre as despesas que compõem a obra, definidas em Configurações › Viabilidade.</div></div></section>
+  <section class="sec"><div class="sec-h"><h2>Resultado</h2></div><div class="sec-b" id="vb-res">${vbResHtml(v,c)}</div></section>
+  </div>`}
+function vbCombo(id,txt,dis){return `<span class="vb-cb"><input data-vb-cb="${id}" value="${esc(txt)}" placeholder="Buscar despesa" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="vb-dd-${id}" aria-label="Despesa" ${dis}><span class="vb-dd" id="vb-dd-${id}" role="listbox" hidden></span></span>`}
+function vbBaseTxt(l,c){const b=c.L[l.id]?.base,q=l.qtd&&l.qtd!==1?` · ${num(l.qtd,2)} parcelas`:'';
+  if(l.tipo==='pct_vgv')return `sobre o VGV líquido (${mi(b)})${q}`;if(l.tipo==='pct_obra_total')return `sobre a obra total (${mi(b)})${q}`;
+  if(l.tipo==='pct_obra_incidente')return `sobre a obra incidente (${mi(b)})${q}`;if(l.tipo==='verba_unidade')return `× ${num(b)} unidades${q}`;return q?q.slice(3):''}
+function vbKpis(c){const k=(l,val)=>`<div class="kpi"><span class="v sm">${val}</span><span class="l">${l}</span></div>`;
+  return k('VGV',mi(c.vgv))+k('VGV líquido',mi(c.liq))+k('Lucro líquido',mi(c.lucro))+k('Margem líquida',c.margem==null?'—':num(c.margem,1)+'%')}
+function vbTotTips(v,c){return `<span class="vb-c"><b>Total</b></span><span class="vb-c vb-area"><span class="vb-l">Área privativa total</span>${c.priv?m2(c.priv):'—'}</span><span class="vb-c vb-qtd"><span class="vb-l">Unidades</span>${num(c.un)}</span><span class="vb-c vb-perm"><span class="vb-l">Em permuta</span>${num(c.unp)}</span><span class="vb-c vb-pu"><span class="vb-l">Preço médio</span>${c.un?brl(c.vgv/c.un):'—'}</span><span class="vb-c vb-pm2"><span class="vb-l">Preço médio por m²</span>${c.priv?brl(c.vgv/c.priv):'—'}</span><span class="vb-c vb-out"><span class="vb-l">VGV</span><b>${brl(c.vgv)}</b></span><span></span>`}
+function vbTotLns(c){return `<span class="vb-c"><b>Total das despesas</b></span><span class="vb-c vb-tipo"></span><span class="vb-c vb-mult"></span><span class="vb-c vb-qtd"></span><span class="vb-c vb-out"><span class="vb-l">Total</span><b>${brl(c.desp)}</b><small class="faint">${c.liq>0?num(c.desp/c.liq*100,1)+'% do VGV líquido':''}</small></span><span></span>`}
+function vbResHtml(v,c){const pct=x=>c.liq>0?num(x/c.liq*100,1)+'%':'—';
+  const grupos={};v.linhas.forEach(l=>{const g=vbDesp(l.desp)?.grupo||'outros';grupos[g]=(grupos[g]||0)+(c.L[l.id].valor||0)});
+  return `<div class="dt-wrap"><table class="dt compacta vb-rt"><thead><tr><th class="esq">Item</th><th>Valor</th><th>% do VGV líquido</th></tr></thead><tbody>
+    <tr><td class="esq">VGV (${num(c.un)} unidades)</td><td class="num">${brl(c.vgv)}</td><td class="num">${c.liq>0?num(c.vgv/c.liq*100,1)+'%':'—'}</td></tr>
+    <tr><td class="esq">(−) Unidades em permuta (${num(c.unp)})</td><td class="num">${brl(c.perm)}</td><td class="num">${pct(c.perm)}</td></tr>
+    <tr class="forte"><td class="esq">VGV líquido</td><td class="num">${brl(c.liq)}</td><td class="num">${c.liq>0?'100%':'—'}</td></tr>
+    ${Object.keys(VB_GRUPO).filter(g=>g in grupos).map(g=>`<tr class="vb-sub"><td class="esq">${VB_GRUPO[g]}</td><td class="num">${brl(grupos[g])}</td><td class="num">${pct(grupos[g])}</td></tr>`).join('')}
+    <tr><td class="esq">(−) Despesas</td><td class="num">${brl(c.desp)}</td><td class="num">${pct(c.desp)}</td></tr>
+    <tr class="forte"><td class="esq">Lucro líquido</td><td class="num">${brl(c.lucro)}</td><td class="num">${pct(c.lucro)}</td></tr>
+    <tr class="forte"><td class="esq">Margem líquida</td><td class="num">${c.margem==null?'—':num(c.margem,2)+'%'}</td><td></td></tr></tbody></table></div>
+    <div class="faint vb-obra">Obra total ${brl(c.ot)} · obra incidente ${brl(c.oi)}${v.pmax!=null?` · preço máximo do terreno ${brl(v.pmax)} (${pct(v.pmax)})`:''}</div>`}
+
+/* atualiza só os números (o campo em edição mantém o foco) */
+function vbRefresh(v){const c=vbCalc(v),set=(k,h)=>{const el=document.querySelector(`[data-vbo="${k}"]`);if(el)el.innerHTML=h};
+  v.tips.forEach(p=>set('tp-'+p.id,brl(p.pu!=null?(p.qtd||0)*p.pu:null)));
+  v.linhas.forEach(l=>{set('ln-'+l.id,brl(c.L[l.id].valor));set('lb-'+l.id,vbBaseTxt(l,c));set('suf-'+l.id,vbPct(l.tipo)?'%':'R$')});
+  const h=(id,x)=>{const el=document.getElementById(id);if(el)el.innerHTML=x};
+  h('vb-kpis',vbKpis(c));h('vb-tot-tips',vbTotTips(v,c));h('vb-tot-lns',vbTotLns(c));h('vb-res',vbResHtml(v,c))}
+function vbGravar(v){v.em=HOJE;v.user=me();vbSync(v);save()}
+
+/* ---------- lista de despesas (busca) ---------- */
+let vbDdAtivo=-1;
+function vbDdItens(q){const n=vbSemAcento(q);return S.viabDesp.filter(d=>d.ativo&&(!n||vbSemAcento(d.nome).includes(n)||vbSemAcento(VB_GRUPO[d.grupo]).includes(n)))}
+function vbDdAbrir(inp,filtrar){const dd=inp.parentElement.querySelector('.vb-dd'),its=vbDdItens(filtrar?inp.value:'');vbDdAtivo=its.length?0:-1;
+  let g='';dd.innerHTML=its.map((d,i)=>{const h=d.grupo!==g?`<span class="vb-dd-g" role="presentation">${VB_GRUPO[d.grupo]}</span>`:'';g=d.grupo;
+    return `${h}<span class="vb-dd-i" role="option" id="vb-op-${i}" data-vb-op="${d.codigo}" aria-selected="${i===vbDdAtivo}"><span>${esc(d.nome)}</span><small class="faint">${VB_TIPO[d.tipo]||''}${d.mult!=null?` · ${vbIn(d.mult,4)}${vbPct(d.tipo)?'%':''}`:''}</small></span>`}).join('')||`<span class="vb-dd-v faint">Nenhuma despesa com esse nome. O administrador inclui em Configurações › Viabilidade.</span>`;
+  dd.hidden=false;inp.setAttribute('aria-expanded','true')}
+function vbDdFechar(inp){const dd=inp?.parentElement?.querySelector('.vb-dd');if(dd){dd.hidden=true;dd.innerHTML=''}inp?.setAttribute('aria-expanded','false')}
+function vbEscolher(inp,cod){const v=VB(UI.vid),d=vbDesp(cod),id=inp.dataset.vbCb;if(!v||!d)return;
+  if(id==='nova'){const l={id:uid(),desp:cod,tipo:d.tipo||'verba_total',mult:d.mult??null,qtd:1};v.linhas.push(l);UI.vbNova=false;vbGravar(v);render();
+    setTimeout(()=>document.querySelector(`[data-ln="${l.id}"] [data-k="mult"]`)?.focus(),20);return}
+  const l=v.linhas.find(x=>x.id===id);if(!l)return;l.desp=cod;if(l.mult==null){l.tipo=d.tipo||l.tipo;l.mult=d.mult??null}
+  vbGravar(v);render();setTimeout(()=>document.querySelector(`[data-ln="${l.id}"] [data-k="mult"]`)?.focus(),20)}
+document.addEventListener('focusin',e=>{const el=e.target;if(el.dataset?.vbCb!=null&&!el.disabled){el.select?.();vbDdAbrir(el,false)}});
+document.addEventListener('focusout',e=>{const el=e.target;if(el.dataset?.vbCb==null)return;setTimeout(()=>{if(document.activeElement===el)return;vbDdFechar(el);
+  const v=VB(UI.vid),l=v?.linhas.find(x=>x.id===el.dataset.vbCb);el.value=l?(vbDesp(l.desp)?.nome||l.desp):''},150)});
+document.addEventListener('mousedown',e=>{const op=e.target.closest?.('[data-vb-op]');if(!op)return;e.preventDefault();const inp=op.closest('.vb-cb').querySelector('input');vbEscolher(inp,op.dataset.vbOp)});
+document.addEventListener('keydown',e=>{const el=e.target;if(el.dataset?.vbCb==null)return;const dd=el.parentElement.querySelector('.vb-dd'),ops=[...dd.querySelectorAll('[data-vb-op]')];
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(dd.hidden){vbDdAbrir(el,false);return}if(!ops.length)return;vbDdAtivo=(vbDdAtivo+(e.key==='ArrowDown'?1:-1)+ops.length)%ops.length;
+    ops.forEach((o,i)=>o.setAttribute('aria-selected',i===vbDdAtivo));ops[vbDdAtivo].scrollIntoView({block:'nearest'});el.setAttribute('aria-activedescendant',ops[vbDdAtivo].id);return}
+  if(e.key==='Enter'){e.preventDefault();if(ops[vbDdAtivo])vbEscolher(el,ops[vbDdAtivo].dataset.vbOp);return}
+  if(e.key==='Escape'&&!dd.hidden){e.preventDefault();e.stopPropagation();vbDdFechar(el)}},true);
+
+/* ---------- eventos ---------- */
+function viabInput(el){
+  if(el.dataset.vbCb!=null){vbDdAbrir(el,true);return true}
+  const tipo=el.dataset.vb;if(!tipo)return false;const v=VB(UI.vid);if(!v)return true;const k=el.dataset.k;
+  if(tipo==='hd'){if(k==='nome')v.nome=el.value;else v.pmax=lerNum(el.value);vbRefresh(v);return true}
+  if(tipo==='tp'){const p=v.tips.find(x=>x.id===el.dataset.r);if(!p)return true;
+    if(k==='nome')p.nome=el.value;else{let n=lerNum(el.value);if(n!=null&&(k==='qtd'||k==='perm'))n=Math.max(0,Math.round(n));if(n!=null&&n<0)n=null;if(k==='area'&&n===0)n=null;p[k]=n;
+      if(['area','pu','pm2'].includes(k)){vbNorm(p,k);['area','pu','pm2'].filter(x=>x!==k).forEach(x=>{const o=document.querySelector(`[data-vb="tp"][data-r="${p.id}"][data-k="${x}"]`);if(o)o.value=vbIn(p[x],2)})}
+      const pe=document.querySelector(`[data-vb="tp"][data-r="${p.id}"][data-k="perm"]`);if(pe){const ruim=(p.perm||0)>(p.qtd||0);pe.setAttribute('aria-invalid',ruim);pe.title=ruim?'Mais unidades em permuta do que a quantidade':''}}
+    vbRefresh(v);return true}
+  if(tipo==='ln'&&k!=='tipo'){const l=v.linhas.find(x=>x.id===el.dataset.r);if(!l)return true;const n=lerNum(el.value);l[k]=k==='qtd'?(n>0?n:null):n;vbRefresh(v);return true}
+  return false}
+function viabChange(el){
+  if(el.dataset.ch==='cfg-vd'){const d=S.viabDesp[+el.dataset.i],k=el.dataset.k;if(!d)return true;
+    if(k==='ativo')d.ativo=el.checked;else if(k==='mult')d.mult=lerNum(el.value);else if(k==='nome'){if(!el.value.trim()){toast('A despesa precisa de nome.',true);el.value=d.nome;return true}d.nome=el.value.trim()}else d[k]=el.value||null;
+    vbSyncTodos();save();render();return true}
+  const tipo=el.dataset.vb;if(!tipo)return false;const v=VB(UI.vid);if(!v)return true;const k=el.dataset.k;
+  if(tipo==='hd'&&k==='nome'&&!v.nome.trim()){v.nome='Estudo';el.value=v.nome}
+  if(tipo==='hd'&&k==='nome'){const h=document.querySelector('.vb-h h1');if(h)h.textContent=v.nome}
+  if(tipo==='tp'){const p=v.tips.find(x=>x.id===el.dataset.r);if(!p)return true;
+    if(k==='nome'&&!p.nome.trim()){p.nome='Tipologia';el.value=p.nome}
+    if((p.perm||0)>(p.qtd||0)){p.perm=p.qtd||0;toast('A permuta não passa da quantidade da tipologia.',true);render();vbGravar(v);return true}
+    if(k!=='nome')el.value=vbIn(p[k],k==='qtd'||k==='perm'?0:2)}
+  if(tipo==='ln'){const l=v.linhas.find(x=>x.id===el.dataset.r);if(!l)return true;
+    if(k==='tipo'){l.tipo=el.value;vbRefresh(v)}else{if(k==='qtd'&&l.qtd==null){l.qtd=1}el.value=vbIn(l[k],k==='qtd'?2:4)}}
+  if(tipo==='hd'&&k==='pmax')el.value=vbIn(v.pmax,2);
+  vbGravar(v);return true}
+function viabClick(A,a,t){
+  switch(A){
+    case 'vb-novo':{const n=viabsDe(t.id).length,v=vbNovo(t.id,n?`Estudo ${n+1}`:'Estudo base');S.viabs.push(v);log(t,`Estudo de viabilidade criado: ${v.nome}`);save();go('viab',{vid:v.id,vbNova:false});return true}
+    case 'vb-abrir':go('viab',{vid:a.dataset.v,vbNova:false});return true;
+    case 'vb-voltar':{const v=VB(UI.vid);UI.vbNova=false;blocoAbre('negociacao');go('terreno',{id:v?v.tid:UI.id,tab:'negociacao'});rolarBloco('negociacao','viab');return true}
+    case 'vb-vincular':{const v=VB(a.dataset.v),x=T(v.tid);if(!negAtiva(x)){toast('A negociação não está ativa.',true);return true}x.neg.viab=vbResumo(v);save();render();toast(`${v.nome} vinculado à negociação.`);return true}
+    case 'vb-duplicar':{const v=VB(a.dataset.v),c=JSON.parse(JSON.stringify(v));c.id=uid();c.nome='Cópia de '+v.nome;c.em=HOJE;c.user=me();c.tips.forEach(p=>p.id=uid());c.linhas.forEach(l=>l.id=uid());
+      c.linhas=c.linhas.filter(l=>vbDesp(l.desp)?.ativo);S.viabs.push(c);log(T(v.tid),`Estudo de viabilidade duplicado: ${c.nome}`);save();go('viab',{vid:c.id,vbNova:false});toast('Estudo duplicado.');return true}
+    case 'vb-apagar':UI.modal='vb-apagar';UI.vbApagar=a.dataset.v;renderModal();return true;
+    case 'vb-apagar-ok':{const v=VB(UI.vbApagar),x=T(v.tid);if(x.neg?.viab?.id===v.id){toast('Estudo vinculado à negociação não se apaga.',true);return true}
+      S.viabs=S.viabs.filter(y=>y.id!==v.id);log(x,`Estudo de viabilidade apagado: ${v.nome}`);UI.modal=null;save();blocoAbre('negociacao');go('terreno',{id:x.id,tab:'negociacao'});rolarBloco('negociacao','viab');toast('Estudo apagado.');return true}
+    case 'vb-tip-add':{const v=VB(UI.vid),p={id:uid(),nome:'Tipologia '+(v.tips.length+1),area:null,qtd:null,perm:0,pu:null,pm2:null};v.tips.push(p);vbGravar(v);render();setTimeout(()=>{const i=document.querySelector(`[data-tp="${p.id}"] [data-k="nome"]`);i?.focus();i?.select()},20);return true}
+    case 'vb-tip-del':{const v=VB(UI.vid);v.tips=v.tips.filter(p=>p.id!==a.dataset.v);vbGravar(v);render();return true}
+    case 'vb-ln-add':UI.vbNova=true;render();setTimeout(()=>document.querySelector('[data-vb-cb="nova"]')?.focus(),20);return true;
+    case 'vb-ln-cancela':UI.vbNova=false;render();return true;
+    case 'vb-ln-del':{const v=VB(UI.vid);v.linhas=v.linhas.filter(l=>l.id!==a.dataset.v);vbGravar(v);render();return true}
+    case 'vb-cfg-ord':{const i=+a.dataset.i,j=i+ +a.dataset.v,L=S.viabDesp;if(j<0||j>=L.length)return true;[L[i],L[j]]=[L[j],L[i]];save();render();return true}
+    case 'vb-cfg-del':{const d=S.viabDesp[+a.dataset.i];if(S.viabs.some(v=>v.linhas.some(l=>l.desp===d.codigo))){toast('Despesa já usada em estudo: desative em vez de apagar.',true);return true}
+      S.viabDesp.splice(+a.dataset.i,1);save();render();toast('Despesa apagada.');return true}
+  }
+  return false}
+function viabSubmit(form,F){if(form!=='vb-cfg-nova')return false;const nome=(F.nome||'').trim();if(!nome){toast('Dê um nome à despesa.',true);return true}
+  if(S.viabDesp.some(d=>vbSemAcento(d.nome)===vbSemAcento(nome))){toast('Já existe uma despesa com esse nome.',true);return true}
+  let base=vbSemAcento(nome).replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'').slice(0,36)||'despesa',cod=base,n=2;if(!/^[a-z]/.test(cod))cod='d_'+cod;while(vbDesp(cod))cod=base+'_'+n++;
+  S.viabDesp.push({codigo:cod,nome,grupo:F.grupo||'outros',obra:F.obra||'nao',tipo:F.tipo||'verba_total',mult:lerNum(F.mult),ativo:true});save();render();toast('Despesa incluída na lista.');return true}
+function viabModal(M,fechar){if(M!=='vb-apagar')return '';const v=VB(UI.vbApagar);if(!v)return '';
+  return `<div class="dh"><h2>Apagar o estudo?</h2>${fechar}</div><p style="margin:0 0 8px">${esc(v.nome)} sai do terreno, com as tipologias e as despesas. Estudo vinculado à negociação não se apaga.</p><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary danger" data-a="vb-apagar-ok">Apagar</button></div>`}
+
+/* ---------- Configurações › Viabilidade ---------- */
+function cfgViabHtml(){const usada=c=>S.viabs.some(v=>v.linhas.some(l=>l.desp===c)),L=S.viabDesp;
+  const sel=(i,k,opts,val,rot)=>`<select data-ch="cfg-vd" data-i="${i}" data-k="${k}" aria-label="${rot}">${k==='tipo'?'<option value="">—</option>':''}${Object.entries(opts).map(([c,n])=>`<option value="${c}" ${val===c?'selected':''}>${n}</option>`).join('')}</select>`;
+  return `<section class="sec"><div class="sec-h"><h2>Despesas do estudo de viabilidade</h2></div><div class="sec-b">
+    <p class="muted" style="margin-top:0">É a lista que aparece na busca de cada linha de despesa. O tipo de valor e o multiplicador entram como sugestão e podem ser trocados no estudo. "Compõe a obra" define as bases dos tipos <b>% da obra total</b> (todas as despesas marcadas) e <b>% da obra incidente</b> (só as marcadas como incidente).</p>
+    <div class="cfg-t vb-cfg"><div class="cfg-r cfg-hd vb-cfg-r"><span></span><span>Despesa</span><span>Grupo</span><span>Compõe a obra</span><span>Tipo de valor</span><span>Multiplicador</span><span>Ativa</span><span></span></div>
+    ${L.map((d,i)=>`<div class="cfg-r vb-cfg-r ${d.ativo?'':'inativa'}"><span class="cfg-ord"><button class="iconbtn sm" data-a="vb-cfg-ord" data-i="${i}" data-v="-1" ${i?'':'disabled'} aria-label="Subir">↑</button><button class="iconbtn sm" data-a="vb-cfg-ord" data-i="${i}" data-v="1" ${i<L.length-1?'':'disabled'} aria-label="Descer">↓</button></span>
+      <input data-ch="cfg-vd" data-i="${i}" data-k="nome" value="${esc(d.nome)}" aria-label="Nome da despesa">${sel(i,'grupo',VB_GRUPO,d.grupo,'Grupo de '+esc(d.nome))}${sel(i,'obra',VB_OBRA,d.obra,'Compõe a obra: '+esc(d.nome))}${sel(i,'tipo',VB_TIPO,d.tipo,'Tipo de valor de '+esc(d.nome))}
+      <input data-ch="cfg-vd" data-i="${i}" data-k="mult" value="${vbIn(d.mult,4)}" inputmode="decimal" placeholder="—" aria-label="Multiplicador de ${esc(d.nome)}">
+      <label class="chk"><input type="checkbox" data-ch="cfg-vd" data-i="${i}" data-k="ativo" ${d.ativo?'checked':''} aria-label="Ativa"></label>
+      <span>${usada(d.codigo)?'':`<button class="linkbtn danger" data-a="vb-cfg-del" data-i="${i}">Apagar</button>`}</span></div>`).join('')}</div>
+    <form class="inline-form" data-form="vb-cfg-nova"><div class="field grow"><label for="vd-n">Nova despesa</label><input id="vd-n" name="nome" required placeholder="Nome"></div>
+      <div class="field" style="flex:0 1 200px"><label for="vd-g">Grupo</label><select id="vd-g" name="grupo">${Object.entries(VB_GRUPO).map(([c,n])=>`<option value="${c}" ${c==='outros'?'selected':''}>${n}</option>`).join('')}</select></div>
+      <div class="field" style="flex:0 1 200px"><label for="vd-t">Tipo de valor</label><select id="vd-t" name="tipo">${Object.entries(VB_TIPO).map(([c,n])=>`<option value="${c}" ${c==='verba_total'?'selected':''}>${n}</option>`).join('')}</select></div>
+      <div class="field" style="flex:0 1 220px"><label for="vd-o">Compõe a obra</label><select id="vd-o" name="obra">${Object.entries(VB_OBRA).map(([c,n])=>`<option value="${c}">${n}</option>`).join('')}</select></div>
+      <button class="btn sm">${ic('add',16)}Adicionar</button></form>
+    <div class="hint">Despesa já usada em estudo não se apaga; desative. Desativada, some da busca, mas os estudos que a usam continuam com ela.</div></div></section>`}
+const _prepararVb=prepararDados;prepararDados=function(){_prepararVb.apply(this,arguments);viabPreparar()};
+viabPreparar();
 
 /* ===================== Setores censitários do IBGE (Censo 2022) =====================
    Camadas por setor no mapa (renda familiar estimada e densidade demográfica; uma de cada

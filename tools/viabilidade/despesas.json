@@ -1,0 +1,49 @@
+{
+  "_nota": "Lista padrão de despesas do estudo de viabilidade estática. Cada empresa recebe uma cópia e o administrador edita em Configurações › Viabilidade. O protótipo (build.py) e o teste do banco (supabase/tests/regras.sql) leem este arquivo; a migration 20261015001000_viabilidade.sql traz os mesmos itens.",
+  "grupos": {
+    "terreno": "Terreno",
+    "projetos": "Projetos e aprovações",
+    "obra": "Obra",
+    "comercial": "Comercial",
+    "impostos": "Impostos",
+    "administracao": "Administração",
+    "financeiro": "Financeiro",
+    "outros": "Outros"
+  },
+  "tipos": {
+    "pct_vgv": "% do VGV",
+    "pct_obra_incidente": "% da obra incidente",
+    "pct_obra_total": "% da obra total",
+    "verba_total": "Verba total",
+    "verba_unidade": "Verba por unidade"
+  },
+  "obra": {
+    "nao": "Não",
+    "incidente": "Incidente (e total)",
+    "total": "Só na total"
+  },
+  "despesas": [
+    {"codigo": "terreno",            "nome": "Terreno",                                   "grupo": "terreno",       "obra": "nao",       "tipo": "verba_total",        "multiplicador": null},
+    {"codigo": "itbi_registro",      "nome": "ITBI e registro do terreno",                "grupo": "terreno",       "obra": "nao",       "tipo": "verba_total",        "multiplicador": null},
+    {"codigo": "corretagem_terreno", "nome": "Corretagem do terreno",                     "grupo": "terreno",       "obra": "nao",       "tipo": "verba_total",        "multiplicador": null},
+    {"codigo": "projetos",           "nome": "Projetos e consultorias",                   "grupo": "projetos",      "obra": "nao",       "tipo": "verba_total",        "multiplicador": null},
+    {"codigo": "aprovacoes",         "nome": "Aprovações e licenças",                     "grupo": "projetos",      "obra": "nao",       "tipo": "verba_total",        "multiplicador": null},
+    {"codigo": "outorga",            "nome": "Outorga onerosa e contrapartidas",          "grupo": "projetos",      "obra": "nao",       "tipo": "verba_total",        "multiplicador": null},
+    {"codigo": "construcao",         "nome": "Construção (edificação)",                   "grupo": "obra",          "obra": "incidente", "tipo": "verba_unidade",      "multiplicador": null},
+    {"codigo": "infra_interna",      "nome": "Infraestrutura interna",                    "grupo": "obra",          "obra": "incidente", "tipo": "verba_total",        "multiplicador": null},
+    {"codigo": "infra_externa",      "nome": "Infraestrutura externa",                    "grupo": "obra",          "obra": "total",     "tipo": "verba_total",        "multiplicador": null},
+    {"codigo": "ligacoes",           "nome": "Ligações definitivas",                      "grupo": "obra",          "obra": "total",     "tipo": "verba_unidade",      "multiplicador": null},
+    {"codigo": "adm_obra",           "nome": "Administração da obra",                     "grupo": "obra",          "obra": "nao",       "tipo": "pct_obra_total",     "multiplicador": 5},
+    {"codigo": "seguros_obra",       "nome": "Seguros e garantias da obra",               "grupo": "obra",          "obra": "nao",       "tipo": "pct_obra_total",     "multiplicador": 1},
+    {"codigo": "contingencia",       "nome": "Contingência de obra",                      "grupo": "obra",          "obra": "nao",       "tipo": "pct_obra_incidente", "multiplicador": 3},
+    {"codigo": "comissao",           "nome": "Comissão de vendas",                        "grupo": "comercial",     "obra": "nao",       "tipo": "pct_vgv",            "multiplicador": 4},
+    {"codigo": "marketing",          "nome": "Marketing e publicidade",                   "grupo": "comercial",     "obra": "nao",       "tipo": "pct_vgv",            "multiplicador": 1.5},
+    {"codigo": "stand",              "nome": "Stand e apartamento decorado",              "grupo": "comercial",     "obra": "nao",       "tipo": "verba_total",        "multiplicador": null},
+    {"codigo": "ret",                "nome": "Impostos (RET)",                            "grupo": "impostos",      "obra": "nao",       "tipo": "pct_vgv",            "multiplicador": 4},
+    {"codigo": "adm_incorporacao",   "nome": "Administração da incorporação",             "grupo": "administracao", "obra": "nao",       "tipo": "pct_vgv",            "multiplicador": 2},
+    {"codigo": "juridico",           "nome": "Jurídico, cartório e registro da incorporação", "grupo": "administracao", "obra": "nao", "tipo": "verba_total",        "multiplicador": null},
+    {"codigo": "estoque",            "nome": "Condomínio e IPTU das unidades em estoque", "grupo": "administracao", "obra": "nao",       "tipo": "verba_unidade",      "multiplicador": null},
+    {"codigo": "financiamento",      "nome": "Taxas do financiamento (Caixa)",            "grupo": "financeiro",    "obra": "nao",       "tipo": "pct_vgv",            "multiplicador": null},
+    {"codigo": "outras",             "nome": "Outras despesas",                           "grupo": "outros",        "obra": "nao",       "tipo": "verba_total",        "multiplicador": null}
+  ]
+}
