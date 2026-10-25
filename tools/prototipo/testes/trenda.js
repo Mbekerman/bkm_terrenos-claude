@@ -7,7 +7,7 @@ const L=path.join(__dirname,'..','libs','l')+'/';const F=path.join(__dirname,'..
 (async()=>{const b=await chromium.launch();const errs=[];const ok=(c,m)=>{console.log((c?'ok  ':'FALHA ')+m);if(!c)errs.push(m)};
 for(const [modo,tema] of [['desktop','claro'],['desktop','escuro'],['celular','claro']]){const tag=modo+'_'+tema;
 const ctx=await b.newContext(modo==='desktop'?{viewport:{width:1440,height:900},deviceScaleFactor:1}:{...devices['Pixel 7']});
-await ctx.route('**/*',r=>{const u=r.request().url();if(/setores-3550308-2022\.json/.test(u))return r.fulfill({path:D,contentType:'application/json'});if(/demografia-3550308-2022\.json/.test(u))return r.fulfill({path:DM,contentType:'application/json'});if(u.startsWith('http://bkm.test/a.html'))return r.fulfill({path:F,contentType:'text/html; charset=utf-8'});if(/leaflet.js|jszip/.test(u))return r.fulfill({path:L+(u.includes('leaflet')?'leaflet.js':'jszip.min.js'),contentType:'application/javascript'});if(/cartocdn|openstreetmap|arcgisonline/.test(u))return r.fulfill({path:path.join(__dirname,'tile.png'),contentType:'image/png'});return r.abort()});
+await ctx.route('**/*',r=>{const u=r.request().url();const dj=u.match(/dados\/((?:setores|demografia)-\d+-2022\.json)/);if(dj)return r.fulfill({path:path.join(path.dirname(D),dj[1]),contentType:'application/json'});if(u.startsWith('http://bkm.test/a.html'))return r.fulfill({path:F,contentType:'text/html; charset=utf-8'});if(/leaflet.js|jszip/.test(u))return r.fulfill({path:L+(u.includes('leaflet')?'leaflet.js':'jszip.min.js'),contentType:'application/javascript'});if(/cartocdn|openstreetmap|arcgisonline/.test(u))return r.fulfill({path:path.join(__dirname,'tile.png'),contentType:'image/png'});return r.abort()});
 const p=await ctx.newPage();p.on('pageerror',e=>errs.push(tag+': '+e.message));
 await p.goto('http://bkm.test/a.html');await p.evaluate(t=>{localStorage.clear();localStorage.setItem('bkm-terrenos-tema',t)},tema);await p.reload();await p.waitForTimeout(400);
 await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=mapa]').click());await p.waitForTimeout(900);
@@ -46,6 +46,12 @@ await p.screenshot({path:OUT+tag+'_densidade_setor.png'});
 await p.click('#rd-box [data-a=ds-met]');await p.waitForTimeout(300);ok(/Metodologia da densidade/.test(await p.$eval('#modal',x=>x.innerText).catch(()=>'')),tag+' metodologia da densidade');
 await p.click('#modal [data-a=close]');await p.waitForTimeout(200);
 await p.keyboard.press('Escape');await p.waitForTimeout(200);
+// São José dos Campos: mesma camada e mesmo cálculo
+const sj=await p.evaluate(()=>BKM_TESTE.estat(-23.1896,-45.8841,1000));console.log('   SJC 1 km:',JSON.stringify(sj));
+ok(sj&&sj.setores>5&&sj.pes>1000&&sj.renda>0&&sj.dens>0&&sj.demo,tag+' São José dos Campos com renda, densidade e perfil');
+if(modo==='desktop'){await camada('renda');await p.evaluate(()=>BKM_TESTE.irPara(-23.1896,-45.8841,13));await p.waitForTimeout(1500);ok(await pintado()>100,tag+' ladrilhos de SJC pintados');await p.screenshot({path:OUT+tag+'_sjc.png'});
+  const c=await p.evaluate(()=>{const r=document.querySelector('#mapa').getBoundingClientRect();return {x:r.x+r.width*0.5,y:r.y+r.height*0.55}});await p.mouse.click(c.x,c.y);await p.waitForTimeout(600);
+  const bs=await p.$eval('#rd-box',x=>x.innerText.replace(/\s+/g,' ')).catch(()=>'');console.log('   setor SJC:',bs.slice(0,200));ok(/São José dos Campos/.test(bs)&&/3549904/.test(bs.replace(/\s/g,'')),tag+' quadro do setor de SJC');await p.keyboard.press('Escape');await p.waitForTimeout(200)}
 await camada('');ok(!(await p.$('#rd-leg'))&&(await p.$eval('.mp-barra [data-a=mp-camadas]',x=>x.textContent)).includes('Camadas'),tag+' Nenhuma desliga a camada e a legenda');
 // ficha do Itapura
 await p.evaluate(()=>BKM_TESTE.abrirTerreno('Terreno Rua Itapura'));await p.waitForTimeout(1200);
