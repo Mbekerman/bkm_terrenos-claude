@@ -105,7 +105,7 @@ function semearHistorico(){
     (t.ofertas||[]).forEach(o=>add(o.data,t.resp,`Oferta registrada: ${mi(o.valor)}`,[typeof corretor==='function'&&corretor(o.cid)?`Corretor: ${corretor(o.cid).nome}`:null,o.forma&&OPT.forma?.[o.forma]?`Forma: ${OPT.forma[o.forma]}`:null].filter(Boolean)));
     (t.mats||[]).forEach(m=>add(m.data||addD(t.dataIdent,1),'Rafael Souza',`Matrícula adicionada: ${m.num}`,[m.cri,m.area!=null?`Área: ${m2(m.area)}`:null].filter(Boolean)));
     (t.insc||[]).forEach(i=>add(i.valores?.[0]?.data||addD(t.dataIdent,2),'Rafael Souza',`Inscrição imobiliária adicionada: ${i.sql}`));
-    (t.analises||[]).forEach(a=>add(a.data,'Rafael Souza',`Análise urbanística registrada (${a.fonte})`,(a.zonas||[]).map(z=>`${z.sigla} · CA ${num(z.ca,2)}`)));
+    (t.analises||[]).forEach(a=>add(a.data,'Rafael Souza',`Análise urbanística registrada (${a.fonte})`,(a.zonas||[]).map(z=>`${z.sigla} · ${m2(z.area)}`)));
     (t.neg?.trilha||[]).forEach(x=>add(x.em.slice(0,10),x.user,x.status!=='ativo'?`Status: ${STATUS_N[x.status]}${t.neg.motivo?' · '+motivoN(x.status,t.neg.motivo):''}`:x.ev==='subetapa'?`Subetapa: ${subN(x.paraSub)}`:`Etapa: ${SN(x.paraEtapa)} · ${subN(x.paraSub)}`,x.status==='ativo'?undefined:[t.neg.detalhe||null,x.status==='stand_by'&&t.neg.retomar?`Retomar em ${fd(t.neg.retomar)}`:null].filter(Boolean)));
     if(t.neg?.pedido)add(t.neg.pedido.em,t.neg.pedido.por,`Pedido de aprovação: ${SN(t.neg.pedido.dest)} (gestor)`);
     if(t.neg?.viab)add(t.neg.viab.em,t.resp,`Estudo de viabilidade vinculado: ${t.neg.viab.nome}`,[`Preço máximo ${mi(t.neg.viab.pmax)}`,`Margem ${num(t.neg.viab.margem,1)}%`]);

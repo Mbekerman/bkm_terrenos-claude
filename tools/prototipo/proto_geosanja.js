@@ -89,7 +89,7 @@ async function gsjBuscar(t,ins){const llLote=await gsjLote(ins.sql);
   const camadas={},zonasF=[];
   GSJ_CAMADAS.forEach(([k,pref,,fmt,,dist],n)=>{if(!res[k])return;const fs=res[k].filter(f=>f.id.split('.')[0]===pref&&gsjToca(featMapa(f,loc),lote,amostra,dist));
     const vals=fs.filter(f=>{try{return fmt(f.properties)}catch(e){return false}});camadas[k+':'+n]=vals.map(f=>f.properties);if(n===0)zonasF.push(...vals.map(f=>featMapa(f,loc)))});
-  const zonas=zonasF.length?geoAreaZonas(lote,zonasF,p=>p.proposta):[];
+  const mz=macroDe((camadas['uso_ocupacao:2']||[])[0]?.subclasses),zonas=(zonasF.length?geoAreaZonas(lote,zonasF,p=>p.proposta):[]).map(z=>({...z,macrozona:mz}));
   const areaPol=Math.round(geoAreaAnel(geoAneis(lote)[0])*100)/100,poly=r0.slice(0,-1).map(p=>[+p[1].toFixed(7),+p[0].toFixed(7)]);
   loteRegistrar(t,ins,{lote:{inscricao:ins.sql},poly,areaPol,zonas,erros:GSJ_CAMADAS.map((c,n)=>erros.includes(c[0])?c[0]+':'+n:null).filter(Boolean),camadas,area:null,aConst:null});
   gsjArquivos(t,ins,llLote,res.uso_ocupacao||[])}

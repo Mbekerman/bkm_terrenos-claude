@@ -2164,5 +2164,21 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 }
 :root[data-tema="escuro"] .mk-cat td[data-l]::before { color: #8e9ac4 }
 
+/* Parâmetros urbanísticos por lote e zona (proto_zonas.js) */
+.lz-topo{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:12px}
+.lz-res{margin-bottom:4px}
+.lz-lote{margin-top:16px}
+.lz-h{margin:0 0 6px}
+.lz-mk{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.lz-mk:empty{display:none}
+.lz-tbl td .linkbtn{white-space:nowrap}
+.lz-exc{padding:8px 0}
+.lz-fontes{margin-top:12px}
+.lz-fonte{padding:6px 0;border-bottom:1px solid var(--linha);font-size:13px}
+.lz-fonte:last-child{border-bottom:0}
+.zp-tbl input:not([type=checkbox]){width:72px;min-width:0}
+.zp-tbl td input[data-k=fonte_norma]{width:180px}
+.zp-tbl tr.inativa td{opacity:.55}
+
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
