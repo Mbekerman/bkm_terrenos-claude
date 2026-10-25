@@ -7,8 +7,11 @@
 
 ```bash
 pip install geopandas openpyxl
-python3 tools/setores/gerar.py --cache /algum/lugar   # ~600 MB de downloads na primeira vez
+python3 tools/setores/gerar.py --cache /algum/lugar                      # São Paulo (3550308), ~600 MB de downloads na primeira vez
+python3 tools/setores/gerar.py --cache /algum/lugar --municipio 3549904  # São José dos Campos
 ```
+
+Uma cidade por vez: cada rodada grava os dois arquivos da cidade em `docs/dados/` e **sobrescreve** `saida/` (carregue o `carga.sql` de uma antes de gerar a outra). Para a cidade entrar no protótipo, inclua o código em `SET_MUN` (`tools/prototipo/proto_setores.js`), que carrega e junta todas. Hoje: São Paulo e São José dos Campos. Mesma metodologia, faixas e cores em todas; a PNAD é a do Estado e o fator 1,6 foi decidido para a capital.
 
 `metodologia_renda.json` é a fonte única da metodologia, das 16 faixas e das cores. Mudou a PNAD ou o fator: troque aqui e na migration `20261015000900_setores.sql` (o teste do banco acusa se as duas divergirem), rode o `gerar.py` e o `build.py` do protótipo.
 
