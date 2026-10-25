@@ -2133,5 +2133,21 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 :root[data-tema="escuro"] .rd-m1 { border-left: 3px solid #7c8cff }
 :root[data-tema="escuro"] .rd-bar { background: #1a2240 }
 
+/* ---------- Mercado (monitor, camada de exemplo): círculo na cor da situação e janela do empreendimento ---------- */
+.mk { background: none; border: 0; overflow: visible }
+.mk-b { display: block; width: 18px; height: 18px; box-sizing: border-box; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.4) }
+.mk.g { position: relative; width: 18px; height: 18px; transform: translateY(50%) }
+.lg-poi .mk-b { width: 14px; height: 14px; border-width: 1.5px; box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
+.mk-box { width: min(480px, calc(100% - 20px)) }
+.mk-box .mk-k { background: #eef6ff; border-left-color: #0094fe }
+.mk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin: 12px 20px 4px }
+.mk-kv { display: flex; flex-direction: column; min-width: 0; font-size: 12px; line-height: 16px }
+.mk-kv .num { font-size: 15px; line-height: 22px; color: #1f1f1f; font-variant-numeric: tabular-nums }
+.mk-t th:nth-child(n+2), .mk-t td:nth-child(n+2) { font-variant-numeric: tabular-nums }
+.mk-nota { font-size: 12px; line-height: 16px; margin-top: 8px }
+@media (max-width: 599px) { .mk-t { font-size: 12px } .cc-t.mk-t :is(th, td) { padding: 8px 4px } .cc-t.mk-t :is(th, td):first-child { padding-left: 16px } .cc-t.mk-t :is(th, td):last-child { padding-right: 16px } .mk-grid { margin: 12px 16px 4px } }
+:root[data-tema="escuro"] .mk-box .mk-k { background: rgba(59,130,246,.10); border-left-color: #3b82f6 }
+:root[data-tema="escuro"] .mk-kv .num { color: #e6ecff }
+
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
