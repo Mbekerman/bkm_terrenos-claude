@@ -1361,3 +1361,14 @@ body.vb-aberto { overflow: hidden }
 .zp-tbl input:not([type=checkbox]){width:72px;min-width:0}
 .zp-tbl td input[data-k=fonte_norma]{width:180px}
 .zp-tbl tr.inativa td{opacity:.55}
+
+/* Topográfico preliminar (proto_topo.js): plano, andamento e prévia */
+.topo-plano { margin: 0 0 8px; padding-left: 20px; display: grid; gap: 6px; color: var(--m-on-surface-var, #444746) }
+.topo-passos { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 10px }
+.topo-passos li { display: flex; gap: 10px; align-items: center }
+.topo-passos li.feito .ic { color: #146c2e }
+.topo-passos li.erro .ic { color: #b3261e }
+.topo-passos .spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--m-outline-var, #c4c7c5); border-top-color: var(--m-primary, #0b57d0); animation: topo-gira .8s linear infinite; flex: none }
+@keyframes topo-gira { to { transform: rotate(360deg) } }
+.topo-previa { display: block; width: 100%; height: auto; border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 8px; margin-bottom: 12px }
+.topo-kv { margin-bottom: 8px }

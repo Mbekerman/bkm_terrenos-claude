@@ -45,6 +45,22 @@
 				header_down -Access-Control-Allow-Origin
 			}
 		}
+		# Folhas do laser 2020 (MDT 1:1000, .laz) para o topográfico preliminar: o
+		# download do Novo GeoSampa, só a camada de articulação do MDT 2020 (id 125).
+		@mdt {
+			method GET
+			path /Download/File/125
+		}
+		handle @mdt {
+			reverse_proxy https://novogeosampa.prefeitura.sp.gov.br {
+				header_up Host {upstream_hostport}
+				header_up -Origin
+				header_up -Referer
+				header_up -Cookie
+				header_down -Set-Cookie
+				header_down -Access-Control-Allow-Origin
+			}
+		}
 		respond 404
 	}
 
