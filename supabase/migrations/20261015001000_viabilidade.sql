@@ -437,15 +437,120 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
--- RPCs do estudo
+-- Modelos de estudo (decisão do Moisés, 26/out/2026): valores e bases de
+-- cálculo guardados para o estudo novo já nascer com eles. Modelo da
+-- empresa (user_id nulo; só o administrador grava, e um deles pode ser o
+-- padrão, que o estudo novo usa quando ninguém escolhe outro) ou do
+-- usuário (só ele vê e usa). Guarda o valor unitário da obra, a dedução
+-- do VGV, as despesas que saem do VGV líquido e as linhas (item, base,
+-- valor, meses); tipologias e as condições do terreno (permuta, mínimo
+-- garantido, pagamento e comissão em dinheiro) são de cada terreno e
+-- ficam fora. Taxas e Despesas financeiras só entram no modelo gravado
+-- pela diretoria ou pelo administrador e só são aplicadas a partir de
+-- modelo da empresa ou para quem é da diretoria; fora disso, valem os
+-- valores padrão da lista.
 -- ---------------------------------------------------------------------
--- Novo estudo do terreno, já com os itens fixos (Taxas, Despesas financeiras e Despesas
--- comerciais) da lista; com p_copiar_de, duplica dados, tipologias e linhas.
-create or replace function app.criar_viabilidade(p_terreno uuid, p_nome text, p_copiar_de uuid default null)
+create table app.viabilidade_modelos (
+  id            uuid primary key default gen_random_uuid(),
+  empresa_id    uuid not null references app.empresas(id) on delete cascade,
+  user_id       uuid references auth.users(id) on delete cascade,   -- nulo: modelo da empresa
+  nome          text not null check (length(trim(nome)) > 0),
+  padrao        boolean not null default false check (not padrao or user_id is null),
+  dados         jsonb not null check (jsonb_typeof(dados) = 'object'),
+  criado_por    uuid default auth.uid(),
+  criado_em     timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  unique nulls not distinct (empresa_id, user_id, nome)
+);
+create unique index viabilidade_modelo_padrao on app.viabilidade_modelos (empresa_id) where padrao;
+create trigger t_upd before update on app.viabilidade_modelos for each row execute function app.tg_atualizado_em();
+alter table app.viabilidade_modelos enable row level security;
+create policy ver on app.viabilidade_modelos for select to authenticated
+  using (empresa_id in (select app.minhas_empresas()) and (user_id is null or user_id = auth.uid()));
+grant select on app.viabilidade_modelos to authenticated;
+create trigger t_aud after insert or update or delete on app.viabilidade_modelos for each row execute function app.tg_auditoria();
+
+-- Grava o estudo como modelo: novo (p_modelo nulo) ou por cima de um modelo
+-- existente (o dono, ou o administrador no da empresa).
+create or replace function app.salvar_modelo_viabilidade(p_viab uuid, p_nome text, p_da_empresa boolean default false, p_modelo uuid default null)
 returns uuid
 language plpgsql security definer set search_path = ''
 as $$
-declare t app.terrenos; o app.viabilidades; v_id uuid;
+declare v app.viabilidades; m app.viabilidade_modelos; v_dados jsonb; v_id uuid;
+begin
+  select * into v from app.viabilidades where id = p_viab and tipo = 'estatica';
+  if not found then raise exception 'Estudo não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(v.empresa_id);
+  if length(trim(coalesce(p_nome, ''))) = 0 then raise exception 'Dê um nome ao modelo' using errcode = '22023'; end if;
+  if p_modelo is not null then
+    select * into m from app.viabilidade_modelos where id = p_modelo and empresa_id = v.empresa_id for update;
+    if not found or (m.user_id is not null and m.user_id <> auth.uid()) then
+      raise exception 'Modelo não encontrado' using errcode = 'P0002';
+    end if;
+    p_da_empresa := m.user_id is null;
+  end if;
+  if p_da_empresa then perform app.exigir_administrador(v.empresa_id); end if;
+  select jsonb_build_object(
+           'custo_m2', v.custo_m2, 'deducao_vgv_pct', v.deducao_vgv_pct, 'deduz_vgv', to_jsonb(v.deduz_vgv),
+           'linhas', coalesce(jsonb_agg(jsonb_build_object('despesa', l.despesa, 'tipo', l.tipo, 'valor', l.valor, 'quantidade', l.quantidade)
+                                        order by l.ordem, l.criado_em), '[]'::jsonb))
+    into v_dados
+    from app.viabilidade_linhas l join app.viabilidade_despesas d on d.empresa_id = l.empresa_id and d.codigo = l.despesa
+   where l.viabilidade_id = v.id and (not app.viab_restrito(d.grupo) or app.eh_diretoria(v.empresa_id));
+  if p_modelo is not null then
+    update app.viabilidade_modelos set nome = trim(p_nome), dados = v_dados where id = p_modelo;
+    return p_modelo;
+  end if;
+  insert into app.viabilidade_modelos (empresa_id, user_id, nome, dados)
+  values (v.empresa_id, case when p_da_empresa then null else auth.uid() end, trim(p_nome), v_dados)
+  returning id into v_id;
+  return v_id;
+exception when unique_violation then
+  raise exception 'Já existe um modelo com esse nome' using errcode = '23505';
+end $$;
+
+create or replace function app.apagar_modelo_viabilidade(p_modelo uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare m app.viabilidade_modelos;
+begin
+  select * into m from app.viabilidade_modelos where id = p_modelo for update;
+  if not found or (m.user_id is not null and m.user_id is distinct from auth.uid()) then
+    raise exception 'Modelo não encontrado' using errcode = 'P0002';
+  end if;
+  if m.user_id is null then perform app.exigir_administrador(m.empresa_id); else perform app.exigir_editor(m.empresa_id); end if;
+  delete from app.viabilidade_modelos where id = p_modelo;
+end $$;
+
+-- O padrão da empresa (só modelo da empresa; nulo tira o padrão).
+create or replace function app.marcar_modelo_padrao(p_empresa uuid, p_modelo uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  perform app.exigir_administrador(p_empresa);
+  if p_modelo is not null and not exists (select 1 from app.viabilidade_modelos
+                                           where id = p_modelo and empresa_id = p_empresa and user_id is null) then
+    raise exception 'Só modelo da empresa pode ser o padrão' using errcode = 'P0002';
+  end if;
+  update app.viabilidade_modelos set padrao = false where empresa_id = p_empresa and padrao and id is distinct from p_modelo;
+  update app.viabilidade_modelos set padrao = true where id = p_modelo and not padrao;
+end $$;
+
+-- ---------------------------------------------------------------------
+-- RPCs do estudo
+-- ---------------------------------------------------------------------
+-- Novo estudo do terreno, já com os itens fixos (Taxas, Despesas financeiras e Despesas
+-- comerciais) da lista; com p_copiar_de, duplica dados, tipologias e linhas; senão,
+-- usa o modelo escolhido (p_modelo) ou, sem escolha, o padrão da empresa
+-- (p_sem_modelo = true: só a lista).
+create or replace function app.criar_viabilidade(p_terreno uuid, p_nome text, p_copiar_de uuid default null,
+                                                 p_modelo uuid default null, p_sem_modelo boolean default false)
+returns uuid
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos; o app.viabilidades; m app.viabilidade_modelos; v_id uuid;
 begin
   select * into t from app.terrenos where id = p_terreno;
   if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
@@ -454,6 +559,18 @@ begin
   if p_copiar_de is not null then
     select * into o from app.viabilidades where id = p_copiar_de and empresa_id = t.empresa_id and tipo = 'estatica';
     if not found then raise exception 'Estudo de origem não encontrado' using errcode = 'P0002'; end if;
+  elsif p_modelo is not null then
+    select * into m from app.viabilidade_modelos
+     where id = p_modelo and empresa_id = t.empresa_id and (user_id is null or user_id = auth.uid());
+    if not found then raise exception 'Modelo não encontrado' using errcode = 'P0002'; end if;
+  elsif not p_sem_modelo then
+    select * into m from app.viabilidade_modelos where empresa_id = t.empresa_id and padrao;
+  end if;
+  if m.id is not null then
+    o.custo_m2 := (m.dados->>'custo_m2')::numeric;
+    o.deducao_vgv_pct := (m.dados->>'deducao_vgv_pct')::numeric;
+    select coalesce(array_agg(x), '{}') into o.deduz_vgv from jsonb_array_elements_text(coalesce(m.dados->'deduz_vgv', '[]')) x
+     where exists (select 1 from app.viabilidade_despesas d where d.empresa_id = t.empresa_id and d.codigo = x and d.deduz_vgv);
   end if;
   insert into app.viabilidades (empresa_id, terreno_id, nome, tipo, custo_m2, permuta_fin_pct, deducao_vgv_pct,
                                 minimo_garantido, deduz_vgv, pagamento_dinheiro, comissao_dinheiro)
@@ -468,6 +585,18 @@ begin
     select l.empresa_id, v_id, l.ordem, l.despesa, l.tipo, l.valor, l.quantidade
       from app.viabilidade_linhas l join app.viabilidade_despesas d on d.empresa_id = l.empresa_id and d.codigo = l.despesa and d.ativo
      where l.viabilidade_id = p_copiar_de order by l.ordem, l.criado_em;
+  elsif m.id is not null then
+    -- só itens ativos, com base ainda aceita pelo grupo, uma linha por item fixo;
+    -- Taxas e Despesas financeiras só de modelo da empresa ou para a diretoria
+    insert into app.viabilidade_linhas (empresa_id, viabilidade_id, ordem, despesa, tipo, valor, quantidade)
+    select t.empresa_id, v_id, x.n, d.codigo, x.l->>'tipo', (x.l->>'valor')::numeric, coalesce((x.l->>'quantidade')::numeric, 1)
+      from jsonb_array_elements(coalesce(m.dados->'linhas', '[]')) with ordinality x(l, n)
+      join app.viabilidade_despesas d on d.empresa_id = t.empresa_id and d.codigo = x.l->>'despesa' and d.ativo
+     where x.l->>'tipo' = any (app.viab_tipos(d.grupo))
+       and (not app.viab_restrito(d.grupo) or m.user_id is null or app.eh_diretoria(t.empresa_id))
+       and (not app.viab_fixo(d.grupo) or x.n = (select min(y.n) from jsonb_array_elements(m.dados->'linhas') with ordinality y(l, n)
+                                                  where y.l->>'despesa' = d.codigo))
+     order by x.n;
   end if;
   insert into app.viabilidade_linhas (empresa_id, viabilidade_id, ordem, despesa, tipo, valor)
   select d.empresa_id, v_id, d.ordem, d.codigo, coalesce(d.tipo_padrao, (app.viab_tipos(d.grupo))[1]), d.valor_padrao
@@ -607,9 +736,11 @@ on conflict do nothing;
 
 revoke execute on function app.tg_viabilidade_tipologia(), app.tg_viabilidade_filha(), app.tg_viabilidade_linha_apagar(), app.tg_viabilidade_recalcular(),
   app._recalcular_viabilidade(uuid) from public;
-revoke execute on function app.calcular_viabilidade(uuid), app.criar_viabilidade(uuid, text, uuid), app.salvar_viabilidade(uuid, jsonb),
+revoke execute on function app.calcular_viabilidade(uuid), app.criar_viabilidade(uuid, text, uuid, uuid, boolean), app.salvar_viabilidade(uuid, jsonb),
   app.apagar_viabilidade(uuid), app.vincular_estudo(uuid, uuid), app.salvar_despesa_viabilidade(uuid, text, jsonb),
-  app.apagar_despesa_viabilidade(uuid, text), app.salvar_margem_minima(uuid, numeric) from public;
-grant execute on function app.calcular_viabilidade(uuid), app.criar_viabilidade(uuid, text, uuid), app.salvar_viabilidade(uuid, jsonb),
+  app.apagar_despesa_viabilidade(uuid, text), app.salvar_margem_minima(uuid, numeric),
+  app.salvar_modelo_viabilidade(uuid, text, boolean, uuid), app.apagar_modelo_viabilidade(uuid), app.marcar_modelo_padrao(uuid, uuid) from public;
+grant execute on function app.calcular_viabilidade(uuid), app.criar_viabilidade(uuid, text, uuid, uuid, boolean), app.salvar_viabilidade(uuid, jsonb),
   app.apagar_viabilidade(uuid), app.vincular_estudo(uuid, uuid), app.salvar_despesa_viabilidade(uuid, text, jsonb),
-  app.apagar_despesa_viabilidade(uuid, text), app.salvar_margem_minima(uuid, numeric) to authenticated;
+  app.apagar_despesa_viabilidade(uuid, text), app.salvar_margem_minima(uuid, numeric),
+  app.salvar_modelo_viabilidade(uuid, text, boolean, uuid), app.apagar_modelo_viabilidade(uuid), app.marcar_modelo_padrao(uuid, uuid) to authenticated;
