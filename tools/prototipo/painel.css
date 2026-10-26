@@ -1140,3 +1140,41 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
   .mk-cat td[data-l="R$/m² mediano"] { grid-column: span 2 }
 }
 :root[data-tema="escuro"] .mk-cat td[data-l]::before { color: #8e9ac4 }
+
+/* Parâmetros urbanísticos por lote e zona (proto_zonas.js) */
+.lz-topo{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:12px}
+.lz-res{margin-bottom:4px}
+.lz-lote{margin-top:16px}
+.lz-h{margin:0 0 6px}
+.lz-mk{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.lz-mk:empty{display:none}
+.lz-tl{font-size:14px;font-weight:500}
+.lz-ni{margin:0 0 12px}
+.lz-lote{border:1px solid var(--linha);border-radius:12px;padding:12px 16px}
+.lz-h{margin:0 0 4px}
+.lz-z{padding:12px 0;border-top:1px solid var(--linha)}
+.lz-zh{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-bottom:8px}
+.lz-zh b{font-size:16px}
+.lz-zb{margin-left:auto;white-space:nowrap}
+.lz-par{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin:0}
+.lz-c{background:#f0f4f9;border-radius:8px;padding:8px 10px;min-width:0}
+.lz-c dt{font-size:12px;color:var(--texto-suave,#444746);margin:0}
+.lz-c dd{margin:2px 0 0;font-size:15px}
+.lz-c.alt{box-shadow:inset 0 0 0 1px #0b57d0}
+.lz-c.alt .lz-d{color:#0b57d0}
+:root[data-tema="escuro"] .lz-c.alt{box-shadow:inset 0 0 0 1px rgba(124,140,255,.6)}
+:root[data-tema="escuro"] .lz-c.alt .lz-d{color:#c9d6ff}
+.lz-d{font-size:12px;color:var(--texto-suave,#444746);margin-top:2px}
+.lz-regra{font-size:13px;color:var(--texto-suave,#444746);margin-top:8px}
+.lz-sem{padding:4px 0}
+.lz-cam{border-top:1px solid var(--linha);padding-top:10px;margin-top:4px}
+.lz-cam .geo-toca{margin:0}
+:root[data-tema="escuro"] .lz-c{background:rgba(124,140,255,.07)}
+@media (max-width:600px){.lz-lote{padding:10px 12px}.lz-par{grid-template-columns:1fr 1fr}}
+.lz-exc{padding:8px 0}
+.lz-fontes{margin-top:12px}
+.lz-fonte{padding:6px 0;border-bottom:1px solid var(--linha);font-size:13px}
+.lz-fonte:last-child{border-bottom:0}
+.zp-tbl input:not([type=checkbox]){width:72px;min-width:0}
+.zp-tbl td input[data-k=fonte_norma]{width:180px}
+.zp-tbl tr.inativa td{opacity:.55}

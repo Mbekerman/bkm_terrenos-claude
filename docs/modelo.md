@@ -240,8 +240,10 @@ erDiagram
   terrenos ||--o{ terreno_infraestrutura : verifica
   itens_infraestrutura ||--o{ terreno_infraestrutura : item
   terrenos ||--o{ analises_urbanisticas : analisa
-  analises_urbanisticas ||--o{ analise_zoneamentos : "uma porcao por zona"
+  analises_urbanisticas ||--o{ analise_zoneamentos : "uma porcao por lote e zona"
+  inscricoes_municipais |o--o{ analise_zoneamentos : "lote (nulo = parte sem inscricao)"
   zoneamentos ||--o{ analise_zoneamentos : aplica
+  zoneamentos ||--o{ zona_parametros : "parametros por tipo de empreendimento"
   areas_interesse ||--o{ area_interesse_terrenos : agrupa
   terrenos ||--o{ area_interesse_terrenos : integra
   terrenos ||--o| terreno_entorno_buscas : "busca do entorno (coordenada usada)"
@@ -287,6 +289,7 @@ erDiagram
     numeric area_construida_existente_m2
     numeric area_construida_demolir_m2
     text necessidade_demolicao
+    text tipo_empreendimento "nao_informado, mercado, his, hmp"
     int versao "edicao simultanea"
   }
   confrontacoes {
@@ -384,24 +387,56 @@ erDiagram
   }
   analise_zoneamentos {
     uuid analise_id FK
+    uuid inscricao_id FK "nulo = parte do terreno sem inscricao"
     uuid zoneamento_id FK
     numeric area_abrangida_m2
-    text gabarito_m_status "nao_informado | limitado | sem_limite_identificado"
-    numeric gabarito_maximo_m
-    text gabarito_pav_status
-    int gabarito_maximo_pavimentos
-    text ca_status
+    text macrozona "MC | ME | MOC (SJC)"
+    numeric ca_maximo "excecao do lote; nulo = catalogo"
+    numeric to_maximo "excecao"
+    numeric gabarito_m "excecao"
+    bool gabarito_sem_limite "excecao"
+    text excecao_fonte "obrigatoria com excecao"
+  }
+  zona_parametros {
+    uuid id PK
+    uuid empresa_id FK "nulo = modelo padrao"
+    uuid zoneamento_id FK
+    text tipo "mercado | his | hmp"
+    text uso "R | RH | RV1 | RV2 | nulo"
+    text macrozona "MC | ME | MOC | nulo"
+    numeric lote_area_min_m2
+    numeric lote_area_max_m2
+    bool permitido
+    numeric ca_minimo
+    numeric ca_basico
     numeric ca_maximo
+    numeric to_maximo "lote abaixo do corte"
+    numeric to_lote_grande
+    numeric gabarito_m
+    bool gabarito_sem_limite
+    numeric cota_parte_m2
+    bool outorga_gratuita
+    text fonte_norma
+    text situacao "confirmado | validar | nao_confirmado"
   }
 ```
 
 `municipios` traz os 5.571 municípios do IBGE (código, nome e UF), então o terreno pode estar em qualquer cidade. A busca de endereço do Google devolve cidade e UF, e o front obtém o `municipio_id` por `app.municipio_por_nome(nome, uf)`, que compara sem acento, maiúsculas, hífen ou apóstrofo. O catálogo de `zoneamentos` tem São Paulo (LPUOS) e São José dos Campos (LC 623/2019, siglas da legenda do mapa do GeoSanja).
 
+**Parâmetros urbanísticos por lote e zona** (decisão do Moisés, 25/out/2026). O parâmetro é da zona, aplicado à parte do lote que ela cobre, e o CA muda com o tipo de empreendimento. Por isso:
+- `zona_parametros` é o que a lei diz para cada zona, por tipo (`mercado`, `his`, `hmp`; em SP, `his` é o EHIS, ou o EZEIS nas ZEIS, e `hmp` o EHMP) e, quando a lei separa, por uso (SJC: R, RH, RV1, RV2), macrozona (SJC: MC, ME, MOC) e tamanho do lote (SP: ZEIS em lote pequeno). É configuração por empresa, copiada do modelo padrão (empresa nula), que o administrador edita por `app.salvar_zona_parametro` (com auditoria; desativar em vez de apagar). Cada linha leva a fonte (norma, dispositivo, link) e a situação (`confirmado`, `validar`, `nao_confirmado`). A carga inicial vem da pesquisa de 25/out/2026 (Quadro 3 da LPUOS e Quadro 2 do Decreto 63.728/2024 em SP; Anexo VI da LC 623/2019 em SJC), aceita como correta até o Moisés validar.
+- `analise_zoneamentos` tem uma linha por lote (`inscricao_id`) e zona, com a área da zona no lote e a macrozona; `inscricao_id` nulo é a parte do terreno sem inscrição, com a zona tirada pela poligonal (`app.registrar_zonas_sem_inscricao`). Os números saem do catálogo; na linha ficam só os valores que o usuário alterou naquele lote (qualquer parâmetro: CA mínimo, básico e máximo, TO, gabarito, recuos, cota-parte, unidades, permeabilidade, lote e frente mínimos, outorga), sempre com a fonte, porque o preenchimento automático não é definitivo.
+- A consulta de um lote (`registrar_consulta_lote`, por `app._substituir_zonas`) cria uma análise nova que copia os outros lotes da vigente e troca só as zonas desse lote, levando as exceções das zonas que continuam; se as zonas do lote não mudaram, nada é gravado. Assim um lote nunca apaga o outro.
+- `app.parametros_zona(empresa, zona, tipo, macrozona, área do lote, uso)` escolhe a linha: a do tipo pedido ou, sem regra própria, a de mercado (o campo `tipo` diz qual valeu); a mais específica em macrozona e uso; sem uso, a permitida, preferindo o vertical. A condição de tamanho de lote usa a área adotada do terreno, que é o lote do empreendimento; sem área, vale a de lote grande. Em SJC, sem macrozona não há parâmetro (não informado).
+- `v_lote_zonas` dá cada lote × zona × tipo com os parâmetros e o potencial construtivo (área × CA); `v_urbanismo_vigente` resume o terreno: todas as zonas, o maior CA de mercado e o potencial por tipo (nulo se algum pedaço não tem CA ou não admite o tipo). Nunca um "CA médio". As zonas saem separadas por barra ("ZC / ZM / ZEU"), da maior área para a menor.
+- O terreno guarda o tipo de empreendimento pretendido (`terrenos.tipo_empreendimento`: mercado, HIS ou HMP; escolhido no Novo terreno em São Paulo e mudado na seção de parâmetros). `v_urbanismo_vigente.potencial_tipo_m2` é o potencial desse tipo; sem tipo informado, fica nulo (nunca vira mercado sozinho).
+- As camadas que a consulta do lote trouxe (Conpresp, tombamento, ZEIS, mananciais, operação urbana, macrozona, centralidade...) ficam na consulta (`consultas_lote`), e a seção de parâmetros mostra as da última consulta de cada lote.
+
 **Poligonal primeiro.** O cadastro começa pela poligonal, obrigatória (`check` em `terrenos`; PostGIS no schema `extensions`, coluna gerada `poligono` com índice GiST). Antes de criar, o front chama `app.terrenos_sobrepostos(empresa, poligonal)`, que usa `app.sobreposicao(a, b, folga = 5 m)`: a parte em comum conta quando passa de 1 m² e tem mais de 5 m de largura (diâmetro do maior círculo que cabe nela, `ST_MaximumInscribedCircle` na UTM do lugar) ou cobre metade de um dos dois. Assim a imprecisão do desenho na divisa não conta, mas o mesmo lote estreito desenhado de novo sempre avisa. Cada achado vem como `mesma_area` (90% ou mais dos dois lados) ou `parcial`, com área, largura e percentuais. O usuário escolhe: nova oferta no existente (com `ofertas.poligono_geojson` quando oferece só parte, conferido em `registrar_oferta` para caber no terreno com 5 m de folga), recadastrar o existente com a área nova ou a soma das duas (`salvar_terreno`), ou confirmar que é outro terreno. Nesse caso os ids vão em `sobreposicoes_aceitas`, e o trigger `t_sobre` recusa qualquer poligonal (cadastro, edição, importação) que ocupe outro terreno sem essa confirmação. Município e endereço vêm da localização da poligonal (geocodificação reversa no front, com `municipio_por_nome`); as ruas de cada lado viram as frentes, o usuário escolhe a principal (`logradouro`, `numero`) e as outras entram em `confrontacoes` com tipo `frente`.
 
 **Inscrição por cidade.** Cada inscrição guarda a cidade (`municipio_id`), escolhida antes de digitar: São Paulo, São José dos Campos ou outro município (nulo, inscrição digitada). A cidade com base da prefeitura está em `bases_cadastrais`, com o nome da base, como a prefeitura chama a inscrição e a máscara (`000.000.0000-0` em SP, `00.0000.0000.0000` em SJC); o front abre o campo com essa máscara e busca o lote na base. A inscrição de uma cidade tem que ser da cidade do terreno (trigger `tg_inscricao_municipio`), e a unicidade é por empresa, cidade e número. Nos dois cadastros os 6 primeiros dígitos são setor e quadra, o que dá o aviso de "mesma quadra" em `buscar_duplicados`. A consulta do lote, nas duas bases, é gravada por `app.registrar_consulta_lote` em `consultas_lote` (campo `base`), e planta e desenho são os documentos `lote_pdf` e `lote_dxf`.
 
-**GeoSampa pelo SQL (São Paulo).** Na inscrição, "Buscar no GeoSampa" (automático ao cadastrar o SQL) consulta o servidor de camadas do Novo GeoSampa (`geoserver.geosampa.prefeitura.sp.gov.br`, WFS/WMS) pelo repasse do Caddy em `/geosampa`, porque o servidor só aceita chamadas de navegador vindas do próprio GeoSampa. Traz o lote fiscal (`lote_cidadao`: poligonal em UTM 23S SIRGAS 2000, áreas, uso, CIB, condomínio) e os atributos de cada camada que toca a poligonal (zoneamento das Leis 18.081 e 18.177, ZEIS, eixos, macroárea e fator de planejamento, operação urbana, mananciais, tombamento e áreas envoltórias, áreas contaminadas, melhoramento viário, faixa não edificável, córrego a até 50 m, risco, inundação, influência de Metrô e CPTM, vegetação significativa, zona fiscal). `app.registrar_consulta_lote` confere que o lote é o da inscrição, grava a consulta inteira (nunca alterada), completa só o que está vazio na inscrição (área cadastral) e o cadastro fiscal (CIB, zona fiscal) e, se pedido, registra uma análise urbanística nova com a área de cada zona no lote. Poligonal e áreas do terreno continuam passando por `app.salvar_terreno`. A planta (PDF, gerada pelo próprio servidor) e o desenho (DXF R12 com lotes, calçada, quadra, edificações, curvas de nível com cota e pontos cotados, montado no navegador) entram como documentos `lote_pdf` e `lote_dxf`, com versão. Testada, valor do m² e valor venal não estão no GeoSampa novo; continuam digitados por exercício em `inscricao_valores`.
+**GeoSampa pelo SQL (São Paulo).** Na inscrição, "Buscar no GeoSampa" (automático ao cadastrar o SQL) consulta o servidor de camadas do Novo GeoSampa (`geoserver.geosampa.prefeitura.sp.gov.br`, WFS/WMS) pelo repasse do Caddy em `/geosampa`, porque o servidor só aceita chamadas de navegador vindas do próprio GeoSampa. Traz o lote fiscal (`lote_cidadao`: poligonal em UTM 23S SIRGAS 2000, áreas, uso, CIB, condomínio) e os atributos de cada camada que toca a poligonal (zoneamento das Leis 18.081 e 18.177, ZEIS, eixos, macroárea e fator de planejamento, operação urbana, mananciais, tombamento e áreas envoltórias, áreas contaminadas, melhoramento viário, faixa não edificável, córrego a até 50 m, risco, inundação, influência de Metrô e CPTM, vegetação significativa, zona fiscal). `app.registrar_consulta_lote` confere que o lote é o da inscrição, grava a consulta inteira (nunca alterada), completa só o que está vazio na inscrição (área cadastral) e o cadastro fiscal (CIB, zona fiscal) e, se pedido, troca as zonas desse lote (com a área de cada uma) na análise urbanística, sem mexer nos outros lotes. Poligonal e áreas do terreno continuam passando por `app.salvar_terreno`. A planta (PDF, gerada pelo próprio servidor) e o desenho (DXF R12 com lotes, calçada, quadra, edificações, curvas de nível com cota e pontos cotados, montado no navegador) entram como documentos `lote_pdf` e `lote_dxf`, com versão. Testada, valor do m² e valor venal não estão no GeoSampa novo; continuam digitados por exercício em `inscricao_valores`.
 
 **GeoSanja pela inscrição imobiliária (São José dos Campos).** Não há serviço público de camadas: a ficha usa a API do próprio site (`geo.sjc.sp.gov.br/v1`) com o token de visitante (`autenticar?token=VISITANTE`, vale um ano), pelo repasse do Caddy em `/geosanja` (o site não libera CORS). A busca pela inscrição (`localizar`, ferramenta `SearchICTool`) devolve só a poligonal do lote, sem área cadastral, uso nem endereço. As camadas liberadas ao visitante são lidas por `GetFeatureInfo` com raio cobrindo o lote e conferidas no navegador contra a poligonal: zona da LC 623 com a área no lote e o link da ficha da zona, macrozona, área de desenvolvimento estratégico, centralidade com o CA máximo, região, setor e subsetor, corredores, recarga de aquífero, parques e unidades de conservação, núcleos informais, risco de escorregamento e PMRR, linha de transmissão e ferrovia. A planta é montada no navegador (ortofoto de 8 cm, curvas e zoneamento, com o lote em vermelho, num PDF de uma página) e o DXF leva lote, arruamentos, curvas do IGC (1:10.000, cota como elevação) e zonas, em UTM 23S SIRGAS 2000. Fechadas ao visitante: atributos do lote, inundação, APAs estaduais e federais, bens tombados, loteamentos e circunscrição imobiliária. É uma API interna da prefeitura, que pode mudar sem aviso.
 
@@ -717,7 +752,9 @@ erDiagram
 | "Não informado" é null ou `nao_informado`, nunca zero ou "não" | defaults e checks de `terrenos`, `terreno_infraestrutura` |
 | Área adotada sempre com a fonte | check em `terrenos` |
 | Área da poligonal calculada pelo desenho (m² inteiros); com a fonte `poligonal`, a adotada acompanha cada ajuste (pedido do Moisés, 24/out/2026) | coluna gerada `area_poligonal_m2` e trigger `t_norm` em `terrenos` |
-| Gabarito (m e pavimentos) e CA têm estado próprio: não informado, limitado (com valor) ou sem limite identificado | checks em `analise_zoneamentos` |
+| Parâmetros urbanísticos vêm do catálogo da empresa por zona e tipo de empreendimento; exceção do lote só com a fonte; gabarito "sem limite" é booleano e nunca leva valor; CA nunca é zero | checks em `zona_parametros` e `analise_zoneamentos` |
+| Zonas da análise por lote: a consulta de um lote troca só as zonas dele | `app._substituir_zonas` |
+| Catálogo de parâmetros só muda pelo administrador, com fonte e auditoria | `app.salvar_zona_parametro` |
 | Uma análise urbanística vigente por terreno; anteriores preservadas | índice único parcial + trigger |
 | Valor venal e IPTU por inscrição e exercício; correção vira nova revisão, a anterior fica preservada | `inscricao_valores` + trigger |
 | Consulta do lote na base da prefeitura (GeoSampa, GeoSanja) só pela RPC, conferindo que o lote é o da inscrição e que o terreno é da cidade da base; nunca alterada; completa só campos vazios | `app.registrar_consulta_lote` |

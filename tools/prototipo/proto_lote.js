@@ -46,7 +46,7 @@ function loteVazio(t,ins,i,txt){const c=CIDADES_INSC[insCid(ins)],ad=LOTE_ADAPT[
   return `<div class="geo-vazio">${loteBotao(t,ins,i)}<span class="hint">${ad.url()?txt:`A busca no ${c.base} funciona na versão publicada no Railway.`}</span></div>`}
 function loteCab(t,ins,i){const c=CIDADES_INSC[insCid(ins)],g=ins.geo[0],n=ins.geo.length-1;
   return `<div class="geo-h"><span>${bi('mapa',20)}<b>${c.base}</b> <span class="muted">consultado em ${fdh(g.em)} por ${esc(g.user)}${n?` · ${n} consulta${n>1?'s':''} anterior${n>1?'es':''} guardada${n>1?'s':''}`:''}</span></span>${loteBotao(t,ins,i)}</div>`}
-// Grava a consulta e completa só o que está vazio; cria análise quando as zonas mudam.
+// Grava a consulta e completa só o que está vazio; troca as zonas DESTE lote na análise (os outros lotes ficam).
 function loteRegistrar(t,ins,{lote,poly,areaPol,zonas,erros,camadas,area,aConst}){const c=CIDADES_INSC[insCid(ins)];
   ins.geo=ins.geo||[];ins.geo.unshift({em:agora(),user:me(),lote,poly,areaPol,zonas,erros,camadas});
   const feito=[];
@@ -54,10 +54,7 @@ function loteRegistrar(t,ins,{lote,poly,areaPol,zonas,erros,camadas,area,aConst}
   if(t.aCad==null&&t.insc.every(x=>x.area!=null)){t.aCad=t.insc.reduce((s,x)=>s+x.area,0);feito.push('área cadastral do terreno')}
   if(t.aConst==null&&aConst!=null&&t.insc.length===1){t.aConst=Number(aConst);feito.push('área construída')}
   if(!t.poly&&t.insc.length===1&&poly){t.poly=poly;feito.push('poligonal');if(t.lat==null){const m=centro(poly);t.lat=+m[0].toFixed(7);t.lng=+m[1].toFixed(7);t.precisao='aproximada'}}
-  const cat=zonasDoCatalogo(insCid(ins)),doCat=zonas.filter(z=>cat.includes(z.sigla)),vig=analiseVig(t),chaveZ=zs=>zs.map(z=>z.sigla+':'+Math.round(z.area)).sort().join();
-  const igual=vig&&(vig.fonte||'').startsWith(c.base)&&chaveZ(vig.zonas)===chaveZ(doCat.map(z=>({sigla:z.sigla,area:z.area_m2})));
-  if(doCat.length&&!igual){t.analises.forEach(a=>{if(a.status==='vigente')a.status='substituida'});
-    t.analises.push({id:uid(),data:HOJE,fonte:`${c.base} (${c.rotulo} ${ins.sql})`,status:'vigente',zonas:doCat.map(z=>({sigla:z.sigla,area:z.area_m2,gmS:'nao_informado',gabM:null,gpS:'nao_informado',gabPav:null,caS:'nao_informado',ca:null,obs:''}))});feito.push('análise urbanística')}
+  if(zonas.length&&substituirZonas(t,ins.sql,zonas.map(z=>({sigla:z.sigla,area:z.area_m2,macro:z.macrozona||null})),`${c.base} (${c.rotulo} ${ins.sql})`))feito.push('zonas do lote')
   log(t,`${c.base} consultado pela inscrição ${ins.sql}${feito.length?': '+feito.join(', '):''}`);save();render();
   toast(erros.length?`${c.base} consultado; ${erros.length} camada${erros.length>1?'s':''} não respondeu.`:`${c.base} consultado. Gerando a planta e o desenho...`)}
 // Catálogo de zonas por cidade (no banco, app.zoneamentos).

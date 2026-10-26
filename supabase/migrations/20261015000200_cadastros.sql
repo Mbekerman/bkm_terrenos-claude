@@ -2,7 +2,8 @@
 -- BKM Terrenos · 0002 · cadastros de apoio
 -- Municípios, zoneamentos, itens de infraestrutura e tipos de documento:
 -- configuração comum a todas as empresas.
--- Funil (etapas, subetapas, status, pré-requisitos, checklist, motivos):
+-- Funil (etapas, subetapas, status, pré-requisitos, checklist, motivos) e
+-- parâmetros urbanísticos por zona (zona_parametros, em 0002b):
 -- configuração por empresa, copiada do modelo padrão.
 -- Eixos comerciais, pessoas e corretores: por empresa.
 -- =====================================================================
@@ -398,6 +399,15 @@ begin
   select new.id, fase, etapa, tipo_documento, obrigatorio, ordem from app.checklist_modelo where empresa_id is null;
   insert into app.motivos_encerramento (empresa_id, status, codigo, nome, ordem, exige_texto, ativo)
   select new.id, status, codigo, nome, ordem, exige_texto, ativo from app.motivos_encerramento where empresa_id is null;
+  insert into app.zona_parametros (empresa_id, zoneamento_id, tipo, uso, macrozona, lote_area_min_m2, lote_area_max_m2, permitido,
+    ca_minimo, ca_basico, ca_maximo, to_maximo, to_lote_grande, to_corte_m2, gabarito_m, gabarito_sem_limite, recuo_frente_m,
+    recuo_lateral_m, recuo_lateral_alto_m, cota_parte_m2, max_unidades, permeabilidade, lote_minimo_m2, frente_minima_m,
+    outorga_gratuita, regras, fonte_norma, fonte_dispositivo, fonte_url, situacao)
+  select new.id, zoneamento_id, tipo, uso, macrozona, lote_area_min_m2, lote_area_max_m2, permitido,
+    ca_minimo, ca_basico, ca_maximo, to_maximo, to_lote_grande, to_corte_m2, gabarito_m, gabarito_sem_limite, recuo_frente_m,
+    recuo_lateral_m, recuo_lateral_alto_m, cota_parte_m2, max_unidades, permeabilidade, lote_minimo_m2, frente_minima_m,
+    outorga_gratuita, regras, fonte_norma, fonte_dispositivo, fonte_url, situacao
+  from app.zona_parametros where empresa_id is null and ativo;
   -- tipos de notificação: ver notificacoes
   if to_regclass('app.tipos_notificacao') is not null then
     execute 'insert into app.tipos_notificacao (empresa_id, codigo, nome, ativo, dias_antes_padrao)

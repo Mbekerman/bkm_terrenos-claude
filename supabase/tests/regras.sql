@@ -148,21 +148,93 @@ insert into app.terreno_infraestrutura (terreno_id, item, empresa_id, disponibil
 select pg_temp.ok((select disponibilidade from app.v_terreno_infraestrutura where terreno_id = :'t1' and item = 'agua') = 'sim', 'água registrada como sim');
 
 -- ---------------------------------------------------------------------
-\echo '# análise urbanística com dois zoneamentos'
-insert into app.analises_urbanisticas (empresa_id, terreno_id, responsavel_id, fonte) values (:'emp', :'t1', :'diretor', 'GeoSampa') returning id as a1 \gset
-insert into app.analise_zoneamentos (empresa_id, analise_id, zoneamento_id, area_abrangida_m2, gabarito_m_status, ca_status, ca_maximo)
-select :'emp', :'a1', id, 1400, 'sem_limite_identificado', 'limitado', 4 from app.zoneamentos where sigla = 'ZEU' and municipio_id = :'sp';
-insert into app.analise_zoneamentos (empresa_id, analise_id, zoneamento_id, area_abrangida_m2, gabarito_m_status, gabarito_maximo_m, ca_status, ca_maximo)
-select :'emp', :'a1', id, 520, 'limitado', 28, 'limitado', 2 from app.zoneamentos where sigla = 'ZM' and municipio_id = :'sp';
-select pg_temp.ok((select zoneamentos from app.v_urbanismo_vigente where terreno_id = :'t1') = 'ZEU + ZM', 'terreno com dois zoneamentos');
-select pg_temp.ok((select algum_gabarito_sem_limite and ca_maximo = 4 from app.v_urbanismo_vigente where terreno_id = :'t1'), 'sem limite e CA máximo resumidos');
-select pg_temp.falha(format($$insert into app.analise_zoneamentos (empresa_id, analise_id, zoneamento_id, gabarito_m_status, gabarito_maximo_m) select %L, %L, id, 'sem_limite_identificado', 30 from app.zoneamentos where sigla = 'ZC' limit 1$$, :'emp', :'a1'),
-  'sem limite não leva valor');
-select pg_temp.falha(format($$insert into app.analise_zoneamentos (empresa_id, analise_id, zoneamento_id, ca_status) select %L, %L, id, 'limitado' from app.zoneamentos where sigla = 'ZC' limit 1$$, :'emp', :'a1'),
-  'limitado exige o valor');
-select pg_temp.falha(format($$insert into app.analise_zoneamentos (empresa_id, analise_id, zoneamento_id, ca_status, ca_maximo) select %L, %L, id, 'limitado', 0 from app.zoneamentos where sigla = 'ZC' limit 1$$, :'emp', :'a1'),
-  'CA nunca é zero');
-insert into app.analises_urbanisticas (empresa_id, terreno_id, fonte) values (:'emp', :'t1', 'Certidão de uso do solo') returning id as a2 \gset
+\echo '# parâmetros urbanísticos por zona e tipo de empreendimento'
+select id as zeu from app.zoneamentos where sigla = 'ZEU' and municipio_id = :'sp' \gset
+select id as zm from app.zoneamentos where sigla = 'ZM' and municipio_id = :'sp' \gset
+select id as zeis2 from app.zoneamentos where sigla = 'ZEIS-2' and municipio_id = :'sp' \gset
+select id as sjc from app.municipios where codigo_ibge = '3549904' \gset
+select id as zm3 from app.zoneamentos where sigla = 'ZM3' and municipio_id = :'sjc' \gset
+select id as zm2 from app.zoneamentos where sigla = 'ZM2' and municipio_id = :'sjc' \gset
+select pg_temp.ok((select count(*) from app.zona_parametros where empresa_id = :'emp') = (select count(*) from app.zona_parametros where empresa_id is null)
+              and (select count(*) from app.zona_parametros where empresa_id is null) > 200, 'empresa nova recebe a cópia do catálogo de parâmetros (SP e SJC)');
+select pg_temp.ok((select ca_maximo from app.parametros_zona(:'emp', :'zeu', 'mercado')) = 4 and (select ca_maximo from app.parametros_zona(:'emp', :'zeu', 'his')) = 6
+              and (select ca_maximo from app.parametros_zona(:'emp', :'zeu', 'hmp')) = 5, 'ZEU: CA máximo 4 no mercado, 6 no EHIS e 5 no EHMP');
+select pg_temp.ok((select gabarito_sem_limite and gabarito_m is null and cota_parte_m2 = 20 from app.parametros_zona(:'emp', :'zeu', 'his')), 'ZEU sem limite de gabarito e cota-parte de 20 m²');
+select pg_temp.ok((select tipo = 'mercado' and ca_maximo = 1 from app.parametros_zona(:'emp', (select id from app.zoneamentos where sigla = 'ZPR' and municipio_id = :'sp'), 'his')),
+  'zona sem regra própria de HIS usa a de mercado e diz isso');
+select pg_temp.ok((select not permitido from app.parametros_zona(:'emp', (select id from app.zoneamentos where sigla = 'ZMIS' and municipio_id = :'sp'), 'hmp')), 'EHMP proibido na ZMIS');
+select pg_temp.ok((select ca_maximo from app.parametros_zona(:'emp', :'zeis2', 'his', null, 800)) = 2 and (select ca_maximo from app.parametros_zona(:'emp', :'zeis2', 'his', null, 1000)) = 4
+              and (select ca_maximo from app.parametros_zona(:'emp', :'zeis2', 'his')) = 4, 'ZEIS-2: lote menor que 1.000 m² cai para CA 2; sem área, vale o lote grande');
+select pg_temp.ok((select ca_maximo from app.parametros_zona(:'emp', :'zm3', 'mercado', 'MC')) = 3 and (select ca_maximo from app.parametros_zona(:'emp', :'zm3', 'mercado', 'ME')) = 2
+              and (select ca_maximo from app.parametros_zona(:'emp', :'zm3', 'mercado', 'MOC')) = 1.3, 'SJC: CA máximo da ZM3 muda pela macrozona (3, 2 e 1,3 na Ocupação Controlada)');
+select pg_temp.ok(not exists (select 1 from app.parametros_zona(:'emp', :'zm3', 'mercado')), 'SJC sem macrozona: parâmetro não informado');
+select pg_temp.ok((select uso = 'RV1' and permitido from app.parametros_zona(:'emp', :'zm2', 'mercado', 'MC')), 'ZM2 sem uso escolhido: vale o vertical admitido (RV1), não o RV2 proibido');
+select pg_temp.ok((select outorga_gratuita and ca_maximo = 3 and situacao = 'validar' from app.parametros_zona(:'emp', :'zm3', 'his', 'MC', null, 'RV2')),
+  'SJC: HIS tem o mesmo CA do mercado e outorga gratuita (a validar)');
+\set pj `cat tools/parametros/parametros.json`
+select pg_temp.ok((select coalesce(jsonb_agg(r order by r->>'municipio', r->>'sigla', r->>'tipo', coalesce(r->>'uso', ''), coalesce(r->>'macrozona', ''),
+                                        coalesce((r->>'lote_area_min_m2')::numeric, 0), coalesce((r->>'lote_area_max_m2')::numeric, 0)), '[]')
+from (
+  select jsonb_strip_nulls(jsonb_build_object(
+    'municipio', m.codigo_ibge, 'sigla', z.sigla, 'tipo', p.tipo, 'uso', p.uso, 'macrozona', p.macrozona,
+    'lote_area_min_m2', p.lote_area_min_m2, 'lote_area_max_m2', p.lote_area_max_m2, 'permitido', p.permitido,
+    'ca_minimo', p.ca_minimo, 'ca_basico', p.ca_basico, 'ca_maximo', p.ca_maximo,
+    'to_maximo', p.to_maximo, 'to_lote_grande', p.to_lote_grande, 'to_corte_m2', p.to_corte_m2,
+    'gabarito_m', p.gabarito_m, 'gabarito_sem_limite', p.gabarito_sem_limite,
+    'recuo_frente_m', p.recuo_frente_m, 'recuo_lateral_m', p.recuo_lateral_m, 'recuo_lateral_alto_m', p.recuo_lateral_alto_m,
+    'cota_parte_m2', p.cota_parte_m2, 'max_unidades', p.max_unidades, 'permeabilidade', p.permeabilidade,
+    'lote_minimo_m2', p.lote_minimo_m2, 'frente_minima_m', p.frente_minima_m, 'outorga_gratuita', p.outorga_gratuita,
+    'regras', p.regras, 'fonte_norma', p.fonte_norma, 'fonte_dispositivo', p.fonte_dispositivo, 'fonte_url', p.fonte_url,
+    'situacao', p.situacao)) as r
+  from app.zona_parametros p
+  join app.zoneamentos z on z.id = p.zoneamento_id
+  join app.municipios m on m.id = z.municipio_id
+  where p.empresa_id is null and p.ativo
+) x) = :'pj'::jsonb, 'catálogo padrão do banco igual ao do protótipo (tools/parametros/parametros.json)');
+select id as pzm from app.zona_parametros where empresa_id = :'emp' and zoneamento_id = :'zm' and tipo = 'mercado' \gset
+select app.salvar_zona_parametro(:'emp', :'pzm', '{"gabarito_m":30,"situacao":"confirmado"}') \gset
+select pg_temp.ok((select gabarito_m = 30 from app.zona_parametros where id = :'pzm') and (select gabarito_m = 28 from app.zona_parametros where empresa_id is null and zoneamento_id = :'zm' and tipo = 'mercado'),
+  'administrador edita o parâmetro da empresa; o modelo padrão fica como está');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'zona_parametros' and registro_id = :'pzm' and acao = 'update') = 1, 'mudança no catálogo vai para os logs');
+select pg_temp.falha(format($$select app.salvar_zona_parametro(%L, %L, '{"gabarito_m":30,"gabarito_sem_limite":true}')$$, :'emp', :'pzm'), 'gabarito sem limite não leva valor');
+select pg_temp.falha(format($$select app.salvar_zona_parametro(%L, %L, '{"fonte_norma":""}')$$, :'emp', :'pzm'), 'parâmetro sempre com a fonte');
+select pg_temp.falha(format($$select app.salvar_zona_parametro(%L, null, '{"zoneamento_id":"%s","tipo":"mercado","fonte_norma":"X"}')$$, :'emp', :'zm'), 'uma linha ativa por zona, tipo e condição');
+select app.salvar_zona_parametro(:'emp', :'pzm', '{"gabarito_m":28}') \gset
+select pg_temp.falha(format($$update app.zona_parametros set ca_maximo = 9 where id = %L$$, :'pzm'), 'catálogo só muda pela RPC');
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format($$select app.salvar_zona_parametro(%L, %L, '{"ca_maximo":9}')$$, :'emp', :'pzm'), 'só o administrador edita o catálogo de parâmetros');
+select pg_temp.como(:'diretor');
+
+\echo '# análise urbanística: zonas por lote, com os parâmetros do catálogo'
+insert into app.analises_urbanisticas (empresa_id, terreno_id, responsavel_id, fonte) values (:'emp', :'t1', :'diretor', 'Certidão de uso do solo') returning id as a1 \gset
+insert into app.analise_zoneamentos (empresa_id, analise_id, zoneamento_id, area_abrangida_m2) values (:'emp', :'a1', :'zeu', 1400) returning id as az1 \gset
+insert into app.analise_zoneamentos (empresa_id, analise_id, zoneamento_id, area_abrangida_m2) values (:'emp', :'a1', :'zm', 520) returning id as az2 \gset
+select pg_temp.ok((select zoneamentos from app.v_urbanismo_vigente where terreno_id = :'t1') = 'ZEU / ZM', 'terreno com dois zoneamentos, do maior para o menor, separados por barra');
+select pg_temp.ok((select algum_gabarito_sem_limite and ca_maximo = 4 and menor_gabarito_m = 28 and tem_area_sem_inscricao from app.v_urbanismo_vigente where terreno_id = :'t1'),
+  'sem limite, menor gabarito e CA máximo resumidos');
+select pg_temp.ok((select potencial_mercado_m2 = 1400*4 + 520*2 and potencial_his_m2 = 1400*6 + 520*3 and potencial_hmp_m2 = 1400*5 + 520*2.5 and potencial_basico_m2 = 1920
+                     from app.v_urbanismo_vigente where terreno_id = :'t1'), 'potencial construtivo por tipo = soma de área × CA de cada zona');
+select pg_temp.ok((select tipo_empreendimento = 'nao_informado' and potencial_tipo_m2 is null from app.v_urbanismo_vigente where terreno_id = :'t1'),
+  'tipo do empreendimento não informado: sem potencial escolhido (nunca vira mercado sozinho)');
+select versao as vt from app.terrenos where id = :'t1' \gset
+select pg_temp.falha(format($$select app.salvar_terreno(%L, %s, '{"tipo_empreendimento":"r2v"}')$$, :'t1', :vt), 'tipo do empreendimento só mercado, HIS ou HMP');
+select app.salvar_terreno(:'t1', :vt, '{"tipo_empreendimento":"his"}') as vt \gset
+select pg_temp.ok((select potencial_tipo_m2 = 1400*6 + 520*3 from app.v_urbanismo_vigente where terreno_id = :'t1')
+              and exists (select 1 from app.auditoria where tabela = 'terrenos' and registro_id = :'t1' and depois->>'tipo_empreendimento' = 'his'),
+  'tipo HIS escolhido na ficha: potencial do tipo pela regra de EHIS, com log');
+select pg_temp.ok((select to_maximo from app.v_lote_zonas where id = :'az1' and tipo = 'mercado') = 0.70, 'TO pelo tamanho do lote (1.920 m²: a de lote grande)');
+select pg_temp.falha(format($$update app.analise_zoneamentos set ca_maximo = 2.5 where id = %L$$, :'az2'), 'exceção do lote exige a fonte');
+select pg_temp.falha(format($$update app.analise_zoneamentos set gabarito_m = 30, gabarito_sem_limite = true, excecao_fonte = 'X' where id = %L$$, :'az2'), 'sem limite não leva valor');
+select pg_temp.falha(format($$update app.analise_zoneamentos set ca_maximo = 0, excecao_fonte = 'X' where id = %L$$, :'az2'), 'CA nunca é zero');
+update app.analise_zoneamentos set ca_maximo = 2.5, excecao_fonte = 'Consulta prévia 2026/123' where id = :'az2';
+select pg_temp.ok((select ca_maximo = 2.5 and tem_excecao from app.v_lote_zonas where id = :'az2' and tipo = 'his')
+              and (select potencial_mercado_m2 from app.v_urbanismo_vigente where terreno_id = :'t1') = 1400*4 + 520*2.5, 'exceção do lote vale por cima do catálogo');
+select pg_temp.falha(format($$update app.analise_zoneamentos set recuo_frente_m = 0, excecao_fonte = null where id = %L$$, :'az1'), 'recuo alterado no lote também exige a fonte');
+update app.analise_zoneamentos set recuo_frente_m = 0, cota_parte_m2 = 25, ca_basico = 1.5, outorga_gratuita = true, excecao_fonte = 'Projeto aprovado 2026/77' where id = :'az1';
+select pg_temp.ok((select recuo_frente_m = 0 and cota_parte_m2 = 25 and outorga_gratuita and tem_excecao and potencial_basico_m2 = 1400*1.5 and lote_minimo_m2 = 1000
+                     from app.v_lote_zonas where id = :'az1' and tipo = 'mercado'), 'qualquer parâmetro preenchido sozinho pode ser alterado no lote (recuo, cota-parte, CA básico, outorga); o resto segue o catálogo');
+update app.analise_zoneamentos set recuo_frente_m = null, cota_parte_m2 = null, ca_basico = null, outorga_gratuita = null where id = :'az1';
+insert into app.analises_urbanisticas (empresa_id, terreno_id, fonte) values (:'emp', :'t1', 'Certidão nova') returning id as a2 \gset
 select pg_temp.ok((select status from app.analises_urbanisticas where id = :'a1') = 'substituida', 'nova análise aposenta a anterior');
 select pg_temp.ok((select count(*) from app.analise_zoneamentos where analise_id = :'a1') = 2, 'análise anterior preservada');
 
@@ -503,6 +575,28 @@ select app.registrar_consulta_lote(:'gi', :'glote', null, null, '{}', '[]', '{}'
 select pg_temp.ok((select area_cadastral_m2 from app.inscricoes_municipais where id = :'gi') = 600, 'área cadastral já preenchida não é trocada');
 select pg_temp.ok((select count(*) from app.consultas_lote where terreno_id = :'tm') = 2
               and (select count(*) from app.analises_urbanisticas where terreno_id = :'tm') = 1, 'cada consulta é linha nova; sem zonas, nenhuma análise nova');
+-- dois lotes no mesmo terreno: cada consulta troca só as zonas do próprio lote
+insert into app.inscricoes_municipais (empresa_id, terreno_id, municipio_id, inscricao) values (:'emp', :'tm', :msp, '009.027.0010-5') returning id as gi2 \gset
+select app.registrar_consulta_lote(:'gi2', '{"cd_setor_fiscal":"009","cd_quadra_fiscal":"027","cd_lote":"0010","cd_digito_sql":"5"}', null, null, '{}',
+  '[{"sigla":"ZM","area_m2":300},{"sigla":"ZEU","area_m2":20}]') \gset
+select pg_temp.ok((select string_agg(sigla || ':' || area_abrangida_m2::int, ' ' order by inscricao, sigla) from app.v_lote_zonas where terreno_id = :'tm' and tipo = 'mercado')
+  = 'ZEU:593 ZEU:20 ZM:300', 'segundo lote não apaga o primeiro: zonas de cada lote na análise vigente');
+select pg_temp.ok((select zoneamentos = 'ZEU / ZM' and qtd_lotes = 2 and not tem_area_sem_inscricao from app.v_urbanismo_vigente where terreno_id = :'tm'), 'resumo com todas as zonas da área');
+update app.analise_zoneamentos set gabarito_sem_limite = false, gabarito_m = 40, excecao_fonte = 'Operação urbana'
+ where inscricao_id = :'gi' and analise_id = (select id from app.analises_urbanisticas where terreno_id = :'tm' and status = 'vigente');
+select count(*) as nan from app.analises_urbanisticas where terreno_id = :'tm' \gset
+select app.registrar_consulta_lote(:'gi', :'glote', null, null, '{}', '[{"sigla":"ZEU","area_m2":593.4}]') \gset
+select pg_temp.ok((select count(*) from app.analises_urbanisticas where terreno_id = :'tm') = :nan, 'consulta com as mesmas zonas do lote não cria análise nova');
+select app.registrar_consulta_lote(:'gi', :'glote', null, null, '{}', '[{"sigla":"ZEU","area_m2":590}]') \gset
+select pg_temp.ok((select gabarito_m = 40 and not gabarito_sem_limite and area_abrangida_m2 = 590 from app.v_lote_zonas where inscricao_id = :'gi' and tipo = 'mercado')
+              and (select count(*) from app.v_lote_zonas where inscricao_id = :'gi2' and tipo = 'mercado') = 2, 'exceção do lote passa para a análise nova; o outro lote fica como estava');
+select app.registrar_zonas_sem_inscricao(:'tm', '[{"sigla":"ZM","area_m2":45.5}]') \gset
+select pg_temp.ok((select tem_area_sem_inscricao and qtd_lotes = 2 from app.v_urbanismo_vigente where terreno_id = :'tm')
+              and (select area_abrangida_m2 from app.v_lote_zonas where terreno_id = :'tm' and inscricao_id is null and tipo = 'mercado') = 45.5,
+  'parte do terreno sem inscrição entra com a zona da poligonal');
+select pg_temp.falha(format($$select app.registrar_zonas_sem_inscricao(%L, '[{"sigla":"ZM","area_m2":0}]')$$, :'tm'), 'zona com área zerada é recusada');
+select pg_temp.falha(format($$insert into app.analise_zoneamentos (empresa_id, analise_id, inscricao_id, zoneamento_id) values (%L, %L, %L, %L)$$,
+  :'emp', (select id from app.analises_urbanisticas where terreno_id = :'tm' and status = 'vigente'), :'ins', :'zm'), 'lote de outro terreno é recusado');
 select pg_temp.falha(format('select app.registrar_consulta_lote(%L, %L, null, null, %L, %L)', :'gi',
   '{"cd_setor_fiscal":"009","cd_quadra_fiscal":"027","cd_lote":"0010","cd_digito_sql":"1"}', '{}', '[]'), 'lote de outro SQL é recusado');
 select pg_temp.falha(format($$update app.consultas_lote set zonas = '[]' where id = %L$$, :'gc'), 'consulta não é alterada');
@@ -512,20 +606,21 @@ select app.registrar_documento(:'tm', 'lote_dxf', :'emp' || '/' || :'tm' || '/lo
 select pg_temp.ok(:'gd' = :'gd2' and (select count(*) from app.documento_versoes where documento_id = :'gd') = 2, 'DXF do lote vira documento com versões');
 select pg_temp.como(:'leitor');
 select pg_temp.falha(format('select app.registrar_consulta_lote(%L, %L, null, null, %L, %L)', :'gi', :'glote', '{}', '[]'), 'leitura não consulta a base da prefeitura');
-select pg_temp.ok((select count(*) from app.consultas_lote where terreno_id = :'tm') = 2, 'leitura vê as consultas');
+select pg_temp.ok((select count(*) from app.consultas_lote where terreno_id = :'tm') = 5, 'leitura vê as consultas');
 select pg_temp.como(:'diretor');
 -- São José dos Campos: o GeoSanja devolve só a inscrição e a poligonal
 insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro, poligono_geojson)
   values (:'emp', 'Em SJC', :'diretor', 'prospeccao', :msj, 'Vila Adyanna', pg_temp.quadra(-45.8860, -23.1890)) returning id as tsj \gset
 insert into app.inscricoes_municipais (empresa_id, terreno_id, municipio_id, inscricao) values (:'emp', :'tsj', :msj, '41.0024.0011.0000') returning id as gs \gset
 select app.registrar_consulta_lote(:'gs', '{"inscricao":"41.0024.0011.0000"}', :'gpoli', 412.5,
-  '{"anexo_07":[{"nome":"Centro expandido","ca_max":4}]}', '[{"sigla":"ZM2","area_m2":412.5}]') as gcs \gset
+  '{"anexo_07":[{"nome":"Centro expandido","ca_max":4}]}', '[{"sigla":"ZM2","area_m2":412.5,"macrozona":"MC"}]') as gcs \gset
 select pg_temp.ok((select base = 'geosanja' and inscricao_norm = '41002400110000' from app.consultas_lote where id = :'gcs')
               and (select a.fonte = 'GeoSanja (Inscrição imobiliária 41.0024.0011.0000)' and a.observacoes is null and zz.sigla = 'ZM2'
                      from app.analises_urbanisticas a join app.analise_zoneamentos z on z.analise_id = a.id join app.zoneamentos zz on zz.id = z.zoneamento_id
                     where a.terreno_id = :'tsj' and a.status = 'vigente')
               and (select area_cadastral_m2 is null and cib is null from app.inscricoes_municipais where id = :'gs'),
   'GeoSanja: consulta e análise com a zona do catálogo de SJC; área cadastral fica vazia (não vem)');
+select pg_temp.ok((select ca_maximo = 3 and macrozona = 'MC' from app.v_lote_zonas where terreno_id = :'tsj' and tipo = 'mercado'), 'GeoSanja: macrozona do lote escolhe o CA máximo de SJC');
 select pg_temp.falha(format('select app.registrar_consulta_lote(%L, %L, null, null, %L, %L)', :'gs', '{"inscricao":"41.0024.0012.0000"}', '{}', '[]'),
   'GeoSanja: lote de outra inscrição é recusado');
 select pg_temp.falha(format($$insert into app.inscricoes_municipais (empresa_id, terreno_id, municipio_id, inscricao) values (%L, %L, %s, '111.222.3333-4')$$,
@@ -537,11 +632,11 @@ insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao) values
 select pg_temp.ok(:'gdup' is not null, 'mesmo número em outra cidade não é duplicata');
 select pg_temp.ok((select count(*) from app.buscar_duplicados(:'emp', p_inscricao => '41.0024.0099.0000') where certeza = 'mesma_quadra') = 1,
   'inscrição de SJC da mesma quadra avisa vizinho');
-select pg_temp.ok((select count(*) from app.auditoria where tabela = 'consultas_lote') = 3, 'consultas do lote vão para os logs');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'consultas_lote') = 6, 'consultas do lote vão para os logs');
 -- limpa o que os testes seguintes contam (como superusuário)
 reset role;
 delete from app.terrenos where id = :'tsj';
-delete from app.inscricoes_municipais where id in (:'gi', :'gdup');
+delete from app.inscricoes_municipais where id in (:'gi', :'gi2', :'gdup');
 select pg_temp.como(:'diretor');
 select pg_temp.ok(not exists (select 1 from app.v_mapa where id = :'t1'), 'terreno arquivado sai do mapa');
 insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (:'emp', :'tm', 'Visitar o lote', current_date - 1) returning id as k1 \gset

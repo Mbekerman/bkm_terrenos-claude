@@ -100,6 +100,8 @@ create table app.terrenos (
   area_construida_demolir_m2   numeric(12,2) check (area_construida_demolir_m2 >= 0),
   necessidade_demolicao text not null default 'nao_avaliada' check (necessidade_demolicao in ('nao_avaliada','provavel','confirmada','dispensada')),
   observacoes_fisicas   text,
+  -- Tipo de empreendimento pretendido: escolhe a regra da lei nos parâmetros urbanísticos (decisão do Moisés, 25/out/2026)
+  tipo_empreendimento   text not null default 'nao_informado' check (tipo_empreendimento in ('nao_informado','mercado','his','hmp')),
 
   criado_por            uuid default auth.uid(),
   criado_em             timestamptz not null default now(),
@@ -372,25 +374,56 @@ create table app.analises_urbanisticas (
 );
 create unique index analise_vigente_unica on app.analises_urbanisticas (terreno_id) where status = 'vigente';
 
+-- Zonas da análise, por lote: cada linha é a porção de uma zona num lote
+-- (inscrição) do terreno; inscricao_id nulo = parte do terreno sem inscrição,
+-- com a zona tirada pela poligonal. Os parâmetros vêm do catálogo
+-- (zona_parametros) pelo tipo de empreendimento; aqui só ficam a macrozona
+-- (SJC) e as exceções do lote (eixo, operação urbana, consulta prévia...),
+-- sempre com a fonte. Exceção nula = segue o catálogo.
 create table app.analise_zoneamentos (
   id                         uuid primary key default gen_random_uuid(),
   empresa_id                 uuid not null references app.empresas(id),
   analise_id                 uuid not null references app.analises_urbanisticas(id) on delete cascade,
+  inscricao_id               uuid references app.inscricoes_municipais(id) on delete cascade,
   zoneamento_id              uuid not null references app.zoneamentos(id),
-  area_abrangida_m2          numeric(12,2),
-  -- cada parâmetro tem estado próprio: não informado, limitado (com valor) ou sem limite identificado
-  gabarito_m_status          text not null default 'nao_informado' check (gabarito_m_status in ('nao_informado','limitado','sem_limite_identificado')),
-  gabarito_maximo_m          numeric(6,2) check (gabarito_maximo_m > 0),
-  gabarito_pav_status        text not null default 'nao_informado' check (gabarito_pav_status in ('nao_informado','limitado','sem_limite_identificado')),
-  gabarito_maximo_pavimentos int check (gabarito_maximo_pavimentos > 0),
-  ca_status                  text not null default 'nao_informado' check (ca_status in ('nao_informado','limitado','sem_limite_identificado')),
-  ca_maximo                  numeric(5,2) check (ca_maximo > 0),
+  area_abrangida_m2          numeric(12,2) check (area_abrangida_m2 > 0),
+  macrozona                  text check (macrozona in ('MC','ME','MOC')),
+  -- valores alterados pelo usuário no lote (o preenchimento automático não é definitivo; decisão do Moisés, 25/out/2026)
+  ca_minimo                  numeric(6,3) check (ca_minimo > 0),
+  ca_basico                  numeric(6,3) check (ca_basico > 0),
+  ca_maximo                  numeric(6,3) check (ca_maximo > 0),
+  to_maximo                  numeric(4,3) check (to_maximo > 0 and to_maximo <= 1),
+  gabarito_m                 numeric(6,2) check (gabarito_m > 0),
+  gabarito_sem_limite        boolean,
+  recuo_frente_m             numeric(5,2) check (recuo_frente_m >= 0),
+  recuo_lateral_m            numeric(5,2) check (recuo_lateral_m >= 0),
+  recuo_lateral_alto_m       numeric(5,2) check (recuo_lateral_alto_m >= 0),
+  cota_parte_m2              numeric(8,2) check (cota_parte_m2 > 0),
+  max_unidades               int check (max_unidades > 0),
+  permeabilidade             numeric(4,3) check (permeabilidade > 0 and permeabilidade <= 1),
+  lote_minimo_m2             numeric(10,2) check (lote_minimo_m2 > 0),
+  frente_minima_m            numeric(6,2) check (frente_minima_m > 0),
+  outorga_gratuita           boolean,
+  excecao_fonte              text,
   restricoes_observacoes     text,
-  unique (analise_id, zoneamento_id),
-  check ((gabarito_m_status = 'limitado') = (gabarito_maximo_m is not null)),
-  check ((gabarito_pav_status = 'limitado') = (gabarito_maximo_pavimentos is not null)),
-  check ((ca_status = 'limitado') = (ca_maximo is not null))
+  unique nulls not distinct (analise_id, inscricao_id, zoneamento_id),
+  check (not coalesce(gabarito_sem_limite and gabarito_m is not null, false)),
+  check (num_nonnulls(ca_minimo, ca_basico, ca_maximo, to_maximo, gabarito_m, gabarito_sem_limite, recuo_frente_m, recuo_lateral_m, recuo_lateral_alto_m, cota_parte_m2, max_unidades, permeabilidade, lote_minimo_m2, frente_minima_m, outorga_gratuita) = 0
+         or nullif(trim(excecao_fonte), '') is not null)
 );
+
+-- O lote da linha tem que ser do terreno da análise.
+create or replace function app.tg_analise_zona_lote()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if new.inscricao_id is not null and not exists (
+       select 1 from app.inscricoes_municipais i join app.analises_urbanisticas a on a.terreno_id = i.terreno_id
+        where i.id = new.inscricao_id and a.id = new.analise_id) then
+    raise exception 'O lote é de outro terreno' using errcode = '23514';
+  end if;
+  return new;
+end $$;
+create trigger t_lote before insert or update on app.analise_zoneamentos for each row execute function app.tg_analise_zona_lote();
 
 -- Nova análise vigente aposenta a anterior.
 create or replace function app.tg_analise_vigente()
@@ -476,7 +509,7 @@ begin
     select empresa_id into v from app.terrenos where id = (j->>'terreno_id')::uuid;
   elsif j ? 'processo_id' and j->>'processo_id' is not null then
     select empresa_id into v from app.processos where id = (j->>'processo_id')::uuid;
-  elsif j ? 'inscricao_id' then
+  elsif j ? 'inscricao_id' and (j->>'inscricao_id' is not null or not j ? 'analise_id') then
     select empresa_id into v from app.inscricoes_municipais where id = (j->>'inscricao_id')::uuid;
   elsif j ? 'reuniao_id' and j->>'reuniao_id' is not null then
     select empresa_id into v from app.reunioes where id = (j->>'reuniao_id')::uuid;
