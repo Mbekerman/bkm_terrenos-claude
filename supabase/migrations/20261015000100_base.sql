@@ -106,6 +106,12 @@ returns boolean
 language sql stable security definer set search_path = ''
 as $$ select exists (select 1 from app.membros where user_id = auth.uid() and empresa_id = p_empresa and administrador) $$;
 
+-- Diretoria ou administrador: mexe nas taxas e despesas financeiras do estudo de viabilidade.
+create or replace function app.eh_diretoria(p_empresa uuid)
+returns boolean
+language sql stable security definer set search_path = ''
+as $$ select coalesce(app.papel(p_empresa) = 'diretor', false) or app.eh_administrador(p_empresa) $$;
+
 create or replace function app.exigir_administrador(p_empresa uuid)
 returns void
 language plpgsql stable security definer set search_path = ''
