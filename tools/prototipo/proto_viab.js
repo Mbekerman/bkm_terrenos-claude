@@ -4,7 +4,9 @@
    O estudo é do terreno (S.viabs, vários por terreno); a negociação vincula um, e t.neg.viab guarda o resumo
    dele (com o id), que é o que o resto do protótipo lê (filtros, rentabilidade mínima, Visão geral).
    Lista de itens da empresa em S.viabDesp (Configurações › Viabilidade), nascida de tools/viabilidade/despesas.json;
-   o grupo do item define a seção, as bases de cálculo aceitas e se ele é fixo (Taxas e Despesas comerciais). */
+   o grupo do item define a seção, as bases de cálculo aceitas e se ele é fixo (Taxas, Despesas financeiras e Despesas comerciais).
+   Despesas financeiras (Alavancagem, Juros PJ, Impostos) ficam depois do EBITDA; o Juros PJ não é item da lista:
+   é o % da obra total que o administrador define (S.vbJurosPj; decisão do Moisés, 26/out/2026). */
 const VB_CFG=__VIAB_DESPESAS__;
 const VB_TIPO=VB_CFG.tipos,VB_GRUPO=VB_CFG.grupos,VB_SECAO=VB_CFG.secoes;
 const VB_DG=['terreno','incorporacao','cef','adm_financeiro'];
@@ -32,7 +34,9 @@ function vbNorm(p,campo){if(p.area==null)return;
    VGV líquido = vendido − % de dedução − despesas comerciais marcadas para deduzir;
    obra: incidente (típico) = R$/m² × área privativa; raso = incidente + atípicos; total = raso + não incidente; + projetos e pós-obra;
    terreno: permuta financeira = % × VGV líquido, nunca abaixo do mínimo garantido; + dinheiro + comissão em dinheiro;
-   % do lucro líquido (Despesas gerais e Taxas): lucro = L0 ÷ (1 + Σ%), zero quando L0 ≤ 0 */
+   juros PJ = % da empresa × obra total;
+   % do lucro líquido (Despesas gerais, Taxas e Despesas financeiras): lucro = L0 ÷ (1 + Σ%), zero quando L0 ≤ 0;
+   EBITDA = lucro líquido + despesas financeiras */
 function vbCalc(v){let A=0,un=0,unp=0,unc=0,ap=0,ac=0,vgv=0,vp=0,vc=0;
   v.tips.forEach(p=>{const q=p.qtd||0,pe=p.perm||0,co=p.com||0;un+=q;unp+=pe;unc+=co;
     if(p.area!=null){A+=p.area*q;ap+=p.area*pe;ac+=p.area*co}if(p.pu!=null){vgv+=q*p.pu;vp+=pe*p.pu;vc+=co*p.pu}});
@@ -49,21 +53,22 @@ function vbCalc(v){let A=0,un=0,unp=0,unc=0,ap=0,ac=0,vgv=0,vp=0,vc=0;
   const ot=r2(raso+soma(['obra_nao_incidente']));b.pct_obra_total=ot;
   const obras=r2(ot+soma(['projetos','pos_obra']));
   const pfc=r2(liq*(v.pfp||0)/100),pf=Math.max(pfc,v.min||0),terr=r2(pf+(v.din||0)+(v.comd||0));
-  const DT=[...VB_DG,'taxas'],pl=v.linhas.filter(l=>l.tipo==='pct_lucro'&&DT.includes(vbGrupoLn(l))).reduce((s,l)=>s+(l.valor||0),0);
-  const l0=r2(liq-terr-obras-(com-dedc)-soma(DT,true)),lb=l0>0?r2(l0/(1+pl/100)):0;b.pct_lucro=lb;
+  const jpj=r2(ot*(S.vbJurosPj||0)/100);
+  const DT=[...VB_DG,'taxas','financeiro'],pl=v.linhas.filter(l=>l.tipo==='pct_lucro'&&DT.includes(vbGrupoLn(l))).reduce((s,l)=>s+(l.valor||0),0);
+  const l0=r2(liq-terr-obras-(com-dedc)-jpj-soma(DT,true)),lb=l0>0?r2(l0/(1+pl/100)):0;b.pct_lucro=lb;
   const L={},GR={};let lu=0;
   v.linhas.forEach(l=>{const x=val(l),g=vbGrupoLn(l);L[l.id]={base:l.tipo==='verba_unidade'?unl:vbPct(l.tipo)||l.tipo==='area'?b[l.tipo]:null,valor:x,ded:ded(l)};
     GR[g]=r2((GR[g]||0)+(x||0));if(l.tipo==='pct_lucro')lu+=x||0});
   const sg=gs=>r2(gs.reduce((s,g)=>s+(GR[g]||0),0));
-  const SEC={obra:obras,terreno:terr,despesas:sg(VB_DG),taxas:sg(['taxas']),comercial:com};
+  const SEC={obra:obras,terreno:terr,despesas:sg(VB_DG),taxas:sg(['taxas']),financeiro:r2(jpj+sg(['financeiro'])),comercial:com};
   const lucro=r2(l0-lu),desp=r2(Object.values(SEC).reduce((s,x)=>s+x,0));
-  return {A,un,unp,unc,unl,ap,ac,vgv,vp,vc,vv,dedp,dedc,liq,oi,raso,ot,obras,pfc,pf,minimo:pf>pfc,terr,desp,SEC,GR,lb,lucro,margem:liq>0?r2(lucro/liq*100):null,L}}
+  return {A,un,unp,unc,unl,ap,ac,vgv,vp,vc,vv,dedp,dedc,liq,oi,raso,ot,obras,pfc,pf,minimo:pf>pfc,terr,desp,SEC,GR,lb,jpj,ebitda:r2(lucro+SEC.financeiro),lucro,margem:liq>0?r2(lucro/liq*100):null,L}}
 
 /* a negociação lê o resumo do estudo vinculado (no banco, processos.viabilidade_id e os totais do estudo) */
 function vbResumo(v){const c=vbCalc(v);return {id:v.id,nome:v.nome,vgv:c.vgv,liq:c.liq,lucro:c.lucro,margem:c.margem,em:v.em}}
 function vbSync(v){const t=T(v.tid);if(t?.neg?.viab?.id===v.id)t.neg.viab=vbResumo(v)}
 const vbSyncTodos=()=>S.viabs.forEach(vbSync);
-/* itens fixos (Taxas e Despesas comerciais) sempre no estudo: o que faltar entra com a base e o valor da lista */
+/* itens fixos (Taxas, Despesas financeiras e Despesas comerciais) sempre no estudo: o que faltar entra com a base e o valor da lista */
 function vbFixos(v){S.viabDesp.forEach(d=>{if(d.ativo&&VB_GRUPO[d.grupo]?.fixo&&!v.linhas.some(l=>l.desp===d.codigo))
   v.linhas.push({id:uid(),desp:d.codigo,tipo:d.tipo||VB_GRUPO[d.grupo].tipos[0],valor:d.valor??null,qtd:1})});return v}
 const vbNovo=(tid,nome)=>vbFixos({id:uid(),tid,nome,em:HOJE,user:me(),cm2:null,pfp:null,dedp:null,min:null,deduz:[],din:null,comd:null,
@@ -80,6 +85,9 @@ function vbExemplo(t,x,i){const v=vbNovo(t.id,x.nome);v.em=x.em||HOJE;v.user=t.r
   return v}
 function viabPreparar(){
   if(S.vbMargemMin===undefined)S.vbMargemMin=15;
+  if(S.vbJurosPj===undefined)S.vbJurosPj=null;
+  /* Alavancagem, Custo financeiro e Impostos saíram de Taxas para Despesas financeiras (26/out/2026) */
+  S.viabDesp?.forEach(d=>{if(d.grupo==='taxas'&&VB_CFG.despesas.some(x=>x.codigo===d.codigo&&x.grupo==='financeiro'))d.grupo='financeiro'});
   /* estudo no formato de antes de 26/out (multiplicador, "compõe a obra"): refaz a lista e os exemplos */
   if(S.viabDesp&&(S.viabDesp.some(d=>!VB_GRUPO[d.grupo])||S.viabs?.some(v=>v.linhas.some(l=>'mult' in l)))){S.viabDesp=null;S.viabs=null;S.terrenos.forEach(t=>{if(t.neg?.viab)delete t.neg.viab.id})}
   if(!S.viabDesp)S.viabDesp=VB_CFG.despesas.map(d=>({codigo:d.codigo,nome:d.nome,grupo:d.grupo,tipo:d.tipo,valor:d.valor,deduz:d.deduz,ativo:true}));
@@ -99,12 +107,12 @@ function viabSecao(t){const vs=viabsDe(t.id),vi=t.neg?.viab,ro=UI.role==='Leitur
 
 /* ---------- o estudo, num popup aberto pela ficha (decisão do Moisés, 26/out/2026) ----------
    Indicadores fixos no topo enquanto rola; seções na ordem Tipologias, Custo do terreno, Despesas comerciais,
-   Custo de obras, Despesas gerais, Taxas e DRE, uma de cada vez: os botões das seções ficam sob os indicadores,
+   Custo de obras, Despesas gerais, Taxas, Despesas financeiras e DRE, uma de cada vez: os botões das seções ficam sob os indicadores,
    sempre visíveis ao rolar, cada um com o total e o % do VGV, e o fim da seção leva à anterior e à próxima
    (decisão do Moisés, 26/out/2026). Tudo se edita no lugar e o resultado se refaz enquanto digita. */
 const VB_ADD={obra_atipica:'Adicionar item atípico',obra_nao_incidente:'Adicionar item',projetos:'Adicionar projeto',pos_obra:'Adicionar item',terreno:'Adicionar despesa',incorporacao:'Adicionar despesa',cef:'Adicionar despesa',adm_financeiro:'Adicionar despesa'};
-const VB_ORDEM=['tip','terreno','comercial','obra','despesas','taxas','res'];
-const VB_ROT={tip:'Tipologias',terreno:'Terreno',comercial:'Comercial',obra:'Obras',despesas:'Gerais',taxas:'Taxas',res:'DRE'};
+const VB_ORDEM=['tip','terreno','comercial','obra','despesas','taxas','financeiro','res'];
+const VB_ROT={tip:'Tipologias',terreno:'Terreno',comercial:'Comercial',obra:'Obras',despesas:'Gerais',taxas:'Taxas',financeiro:'Financeiras',res:'DRE'};
 const vbAba=()=>VB_ORDEM.includes(UI.vbAba)?UI.vbAba:'tip';
 function vbShTxt(k,c){if(k==='tip')return `${brl(c.vgv)} · ${num(c.un)} unidades`;if(k==='res')return `Lucro ${brl(c.lucro)} · margem ${c.margem==null?'—':num(c.margem,1)+'%'}`;
   const x=c.SEC[k];return `${brl(x)} · ${c.vgv>0?num(x/c.vgv*100,1)+'%':'—'} do VGV`}
@@ -154,7 +162,12 @@ function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
     ${grupo('projetos')}${grupo('pos_obra')}${tot('vb-tot-obra','Total · '+VB_SECAO.obra,c.SEC.obra)}</div>`;
   const lns=sec=>()=>`<div class="vb-tab vb-lns">${hd}
     ${vbGruposDe(sec).map(g=>VB_GRUPO[g].fixo?vbLinhasGrupo(v,g).map(l=>vbLinha(v,l,c,dis,ro)).join(''):grupo(g)).join('')}${tot('vb-tot-'+sec,'Total · '+VB_SECAO[sec],c.SEC[sec])}</div>`;
-  const corpo={tip:tips,terreno,comercial:lns('comercial'),obra,despesas:lns('despesas'),taxas:lns('taxas'),
+  const fin=()=>`<div class="vb-tab vb-lns">${hd}
+    <div class="vb-r" data-ln="jpj"><span class="vb-c vb-desp"><span class="vb-l">Item</span><span class="vb-nome">Custo de juros PJ</span></span><span class="vb-c vb-tipo"><span class="vb-l">Base de cálculo</span><span class="vb-nome">${VB_TIPO.pct_obra_total}</span></span>
+      <span class="vb-c vb-mult"><span class="vb-l">Valor</span><span class="vb-nome">${S.vbJurosPj==null?'Não definido':num(S.vbJurosPj,2)+'%'}</span></span><span class="vb-c vb-qtd"></span>
+      <span class="vb-c vb-out"><span class="vb-l">Resultado</span><b data-vbo="jpj">${brl(c.jpj)}</b><small class="faint" data-vbo="jpj-b">sobre a obra total (${mi(c.ot)}) · % da empresa, em Configurações › Viabilidade</small></span><span></span></div>
+    ${vbLinhasGrupo(v,'financeiro').map(l=>vbLinha(v,l,c,dis,ro)).join('')}${tot('vb-tot-financeiro','Total · '+VB_SECAO.financeiro,c.SEC.financeiro)}</div>`;
+  const corpo={tip:tips,terreno,comercial:lns('comercial'),obra,despesas:lns('despesas'),taxas:lns('taxas'),financeiro:fin,
     res:()=>`<div id="vb-res">${vbResHtml(v,c)}</div><div class="hint vb-hint-ln">Resultado de cada item = valor × base de cálculo (× meses na verba mensal). Nas bases em %, o valor é o percentual. <b>% do VGV</b> incide sobre o VGV vendido (sem as unidades em permuta e da comissão); <b>verba por unidade</b>, sobre as unidades líquidas (${num(c.unl)}); <b>% do lucro líquido</b> já desconta o próprio item (lucro ÷ (1 + soma dos %)) e vale zero sem lucro. O grupo de cada item, em Configurações › Viabilidade, define a seção e as bases aceitas.</div>`};
   const titulo={tip:'Tipologias',res:'DRE',...VB_SECAO};
   const acao={tip:ro?'':`<button class="btn text sm" data-a="vb-tip-add">${ic('add',16)}Adicionar tipologia</button>`};
@@ -223,6 +236,8 @@ function vbResHtml(v,c){const pct=x=>c.liq>0&&x!=null?num(x/c.liq*100,1)+'%':'';
     ${ln('(−) '+VB_SECAO.despesas,c.SEC.despesas)}${VB_DG.map(g=>sub(VB_GRUPO[g].nome,c.GR[g])).join('')}
     ${ln('(=) Resultado antes das taxas',antes,'vb-tt')}
     ${ln('(−) '+VB_SECAO.taxas,c.SEC.taxas)}${itens(lsDe(['taxas']))}
+    ${ln('(=) EBITDA',c.ebitda,'vb-tt')}
+    ${ln('(−) '+VB_SECAO.financeiro,c.SEC.financeiro)}${itens(lsDe(['financeiro']).filter(l=>l.desp==='custo_alavancagem'))}${sub('Custo de juros PJ',c.jpj)}${itens(lsDe(['financeiro']).filter(l=>l.desp!=='custo_alavancagem'))}
     ${ln('(=) Lucro líquido',c.lucro,'vb-tt forte')}
     <tr class="vb-tt forte"><td class="esq">Margem líquida</td><td class="num">${c.margem==null?'—':num(c.margem,2)+'%'}</td><td></td></tr></tbody></table></div>
     <div class="faint vb-obra">Margem bruta ${c.liq>0?num(bruto/c.liq*100,1)+'%':'—'} · obra raso ${brl(c.raso)} · obra total ${brl(c.ot)}</div>`}
@@ -231,7 +246,7 @@ function vbResHtml(v,c){const pct=x=>c.liq>0&&x!=null?num(x/c.liq*100,1)+'%':'';
 function vbRefresh(v){const c=vbCalc(v),set=(k,h)=>{const el=document.querySelector(`[data-vbo="${k}"]`);if(el)el.innerHTML=h};
   v.tips.forEach(p=>set('tp-'+p.id,brl(p.pu!=null?(p.qtd||0)*p.pu:null)));
   v.linhas.forEach(l=>{if(!c.L[l.id])return;set('ln-'+l.id,brl(c.L[l.id].valor));set('lb-'+l.id,vbBaseTxt(l,c));set('dd-'+l.desp,brl(c.L[l.id].valor))});
-  set('oi',brl(c.oi));set('oi-b',`× ${m2(c.A)} de área privativa`);set('pfis',vbPermFis(c));set('pfin',vbPermFin(v,c));set('pcom',vbComissao(c));
+  set('oi',brl(c.oi));set('jpj',brl(c.jpj));set('jpj-b',`sobre a obra total (${mi(c.ot)}) · % da empresa, em Configurações › Viabilidade`);set('oi-b',`× ${m2(c.A)} de área privativa`);set('pfis',vbPermFis(c));set('pfin',vbPermFin(v,c));set('pcom',vbComissao(c));
   const h=(id,x)=>{const el=document.getElementById(id);if(el)el.innerHTML=x};
   h('vb-kpis',vbKpis(c));h('vb-tot-tips',vbTotTips(v,c));h('vb-raso',vbTotRow('Custo de obra raso (incidente + atípicos)',c.raso,c));h('vb-ot',vbTotRow('Custo de obra total (raso + não incidente)',c.ot,c));
   Object.keys(VB_GRUPO).forEach(g=>h('vb-gst-'+g,vbTotRow('Subtotal · '+VB_GRUPO[g].nome,c.GR[g]||0,c)));
@@ -276,6 +291,8 @@ function viabInput(el){
   return false}
 function viabChange(el){
   if(el.dataset.ch==='vb-valido'){if(el.value)viabClick('vb-vincular',{dataset:{v:el.value}});return true}
+  if(el.dataset.ch==='vb-jpj'){const x=lerNum(el.value);const ant=S.vbJurosPj;S.vbJurosPj=x==null||isNaN(x)||x<0?null:Math.min(x,100);
+    if(ant!==S.vbJurosPj){vbSyncTodos();toast(S.vbJurosPj==null?'Sem juros PJ.':`Juros PJ: ${num(S.vbJurosPj,2)}% da obra total.`)}save();render();return true}
   if(el.dataset.ch==='vb-mmin'){const x=lerNum(el.value);const ant=S.vbMargemMin;S.vbMargemMin=x==null||isNaN(x)?null:x;
     if(ant!==S.vbMargemMin)toast(S.vbMargemMin==null?'Sem rentabilidade mínima.':`Rentabilidade mínima: ${num(S.vbMargemMin,1)}%.`);save();render();return true}
   if(el.dataset.ch==='cfg-vd'){const d=vbDesp(el.dataset.c),k=el.dataset.k;if(!d)return true;
@@ -348,8 +365,11 @@ function cfgViabHtml(){const L=S.viabDesp;
   return `<section class="sec"><div class="sec-h"><h2>Rentabilidade mínima</h2></div><div class="sec-b">
     <div class="editgrid vb-campos"><div class="field"><label for="vb-mmin">Margem líquida mínima (%)</label><input id="vb-mmin" data-ch="vb-mmin" value="${vbIn(S.vbMargemMin,2)}" inputmode="decimal" placeholder="Sem mínima"></div></div>
     <div class="hint">Estudo válido com margem líquida abaixo dela acende "Rentabilidade abaixo da mínima" na negociação, no Início, no kanban e no filtro, e cria a ação "Levar ao comitê". Vazio: sem aviso.</div></div></section>
+  <section class="sec"><div class="sec-h"><h2>Juros PJ</h2></div><div class="sec-b">
+    <div class="editgrid vb-campos"><div class="field"><label for="vb-jpj">Custo de juros PJ (% do custo de obra total)</label><input id="vb-jpj" data-ch="vb-jpj" value="${vbIn(S.vbJurosPj,4)}" inputmode="decimal" placeholder="Não definido"></div></div>
+    <div class="hint">Entra em todo estudo, em Despesas financeiras (depois do EBITDA), sobre o custo de obra total do estudo. Mudar aqui refaz todos os estudos, inclusive os válidos. Vazio: zero.</div></div></section>
   <section class="sec"><div class="sec-h"><h2>Itens do estudo de viabilidade</h2></div><div class="sec-b">
-    <p class="muted" style="margin-top:0">É a lista de cada seção do estudo. O grupo define a seção e as bases de cálculo aceitas; nos grupos de Taxas e Despesas comerciais os itens aparecem sempre no estudo. A base e o valor entram como sugestão e podem ser trocados no estudo. <b>Sai do VGV</b> marca as despesas comerciais que o estudo pode deduzir do VGV líquido (na permuta financeira).</p>
+    <p class="muted" style="margin-top:0">É a lista de cada seção do estudo. O grupo define a seção e as bases de cálculo aceitas; nos grupos de Taxas, Despesas financeiras e Despesas comerciais os itens aparecem sempre no estudo. A base e o valor entram como sugestão e podem ser trocados no estudo. <b>Sai do VGV</b> marca as despesas comerciais que o estudo pode deduzir do VGV líquido (na permuta financeira).</p>
     <div class="cfg-t vb-cfg"><div class="cfg-r cfg-hd vb-cfg-r"><span></span><span>Item</span><span>Grupo</span><span>Base de cálculo</span><span>Valor</span><span>Sai do VGV</span><span>Ativo</span><span></span></div>
     ${linhas}</div>
     <form class="inline-form" data-form="vb-cfg-nova"><div class="field grow"><label for="vd-n">Novo item</label><input id="vd-n" name="nome" required placeholder="Nome"></div>
