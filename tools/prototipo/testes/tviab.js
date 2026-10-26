@@ -20,11 +20,14 @@ const ficha=async()=>{await p.evaluate(id=>{document.querySelector('[data-a=nav]
   await p.evaluate(()=>{const b=[...document.querySelectorAll('[data-a=bloco]')].find(x=>/Negociação/.test(x.textContent));b&&b.getAttribute('aria-expanded')!=='true'&&b.click()});await p.waitForTimeout(300)};
 await ficha();
 const sec=await p.$eval('#sec-viab',e=>e.innerText.replace(/\s+/g,' '));
-ok(/Vinculado/.test(sec)&&/Margem líquida/.test(sec),tag+' seção Viabilidade da negociação lista o estudo vinculado');
+ok(/Estudo válido/.test(sec)&&/Margem líquida/.test(sec)&&await p.$('#sec-viab .vb-radio input:checked'),tag+' seção Viabilidade da negociação lista os estudos com o válido marcado');
 await p.evaluate(()=>document.querySelector('#sec-viab').scrollIntoView({block:'start'}));await p.screenshot({path:OUT+tag+'_0secao.png'});
 // novo estudo
 await p.evaluate(()=>document.querySelector('#sec-viab [data-a=vb-novo]').click());await p.waitForTimeout(300);
-ok(await p.evaluate(()=>document.body.dataset.rota==='viab'),tag+' Novo estudo abre a página do estudo');
+ok(await p.evaluate(()=>document.body.dataset.rota==='terreno'&&!!document.querySelector('#vb-pop .vb-pop-d[role=dialog]')),tag+' Novo estudo abre o popup sobre a ficha');
+const ordem=await p.$$eval('#vb-pop .vb-sec',e=>e.map(x=>x.id.slice(7)+(x.classList.contains('fechada')?'-':'+')));
+ok(ordem.join()==='tip+,terreno-,comercial-,obra-,despesas-,taxas-,res+',tag+' seções na ordem Tipologias, Terreno, Comerciais, Obras, Gerais, Taxas, Resultado; só Tipologias e Resultado abertas: '+ordem.join());
+for(const k of ['terreno','comercial','obra','despesas','taxas']){await p.evaluate(k=>document.querySelector(`#vb-sec-${k} .vb-tg`).click(),k);await p.waitForTimeout(80)}
 ok(await p.$$eval('#vb-sec-taxas .vb-r[data-ln]',e=>e.length)===6&&await p.$$eval('#vb-sec-comercial .vb-r[data-ln]',e=>e.length)===9,tag+' Taxas (6) e Despesas comerciais (9) já vêm com os itens fixos');
 const tp=async(i,k)=>p.locator('.vb-tips .vb-r[data-tp]').nth(i).locator(`[data-k="${k}"]`);
 const preenche=async(loc,v)=>{await loc.click();await loc.fill(v);await loc.press('Tab');await p.waitForTimeout(80)};
@@ -81,7 +84,12 @@ const res=await txt('#vb-res');
 ok(/VGV vendido R\$\s?42\.640\.000/.test(res)&&/5\.299\.509/.test(res)&&/13,47%/.test(res)&&/fora as deduzidas\) R\$\s?3\.545\.200/.test(res),tag+' resultado: lucro 5.299.509,09, margem 13,47%, comerciais sem as deduzidas 3.545.200');
 const des=await p.evaluate(()=>{const r=[...document.querySelectorAll('#vb-sec-taxas .vb-r[data-ln]')].find(r=>/desenvolvimento/.test(r.innerText));return r.innerText.replace(/\s+/g,' ')});
 ok(/529\.951/.test(des)&&/lucro líquido/.test(des),tag+' taxa de desenvolvimento: 10% do lucro líquido (529.950,91)');
-await p.evaluate(()=>window.scrollTo(0,0));await p.screenshot({path:OUT+tag+'_2estudo.png',fullPage:true});
+const sh=await txt('[data-vbo=sh-terreno]');ok(/4\.348\.416/.test(sh)&&/9,5% do VGV/.test(sh),tag+' título da seção com o total e o % do VGV: '+sh);
+await p.evaluate(()=>{const sc=document.querySelector('.vb-pop-sc');sc.scrollTop=sc.scrollHeight/2});await p.waitForTimeout(150);
+ok(await p.evaluate(()=>Math.abs(document.getElementById('vb-kpis').getBoundingClientRect().top-document.querySelector('.vb-pop-sc').getBoundingClientRect().top)<2),tag+' indicadores ficam fixos no topo ao rolar o estudo');
+await p.screenshot({path:OUT+tag+'_2fixo.png'});
+await p.evaluate(()=>{const st=document.createElement('style');st.id='t-print';st.textContent='.vb-pop{position:absolute!important;bottom:auto!important;padding:0!important}.vb-pop-d{height:auto!important;border-radius:0!important}.vb-pop-sc{overflow:visible!important}';document.head.appendChild(st)});await p.evaluate(()=>window.scrollTo(0,0));
+await p.screenshot({path:OUT+tag+'_2estudo.png',fullPage:true});await p.evaluate(()=>document.getElementById('t-print').remove());
 await hd('min','3.500.000');
 ok(/mínimo garantido/.test(await txt('[data-vbo=pfin]'))&&/4\.979\.887/.test(await txt('#vb-res')),tag+' abaixo do mínimo garantido, a permuta financeira usa o mínimo (lucro 4.979.887,27)');
 await hd('min','3.000.000');
@@ -90,7 +98,9 @@ ok(/4\.767\.000/.test(await txt('#vb-tot-comercial'))&&/138 unidades líquidas/.
 await val(cef,'');
 const vs=(await D()).viabs.at(-1);
 ok(vs.linhas.length===15+10&&vs.deduz.length===2,tag+' linhas gravadas (15 fixas e 10 da lista) e as duas deduções');
-ok(await p.evaluate(()=>document.scrollingElement.scrollWidth<=innerWidth+1),tag+' sem rolagem horizontal');
+ok(await p.evaluate(()=>{const sc=document.querySelector('.vb-pop-sc');return sc.scrollWidth<=sc.clientWidth+1&&document.scrollingElement.scrollWidth<=innerWidth+1||[sc.scrollWidth,sc.clientWidth,document.scrollingElement.scrollWidth,innerWidth,[...sc.querySelectorAll('*')].filter(e=>e.getBoundingClientRect().right>sc.getBoundingClientRect().right+1).slice(0,3).map(e=>e.className).join('|')].join(',')}),tag+' sem rolagem horizontal');
+await p.evaluate(()=>document.querySelector('#vb-sec-obra .bl-rec').click());await p.waitForTimeout(150);
+ok(await p.evaluate(()=>document.getElementById('vb-sec-obra').classList.contains('fechada')&&!document.getElementById('vb-sc-obra')),tag+' Recolher no fim da seção fecha a seção');
 // vincular
 await p.evaluate(()=>document.querySelector('.vb-acoes [data-a=vb-vincular]').click());await p.waitForTimeout(250);
 const neg=(await D()).terrenos.find(t=>t.id===tid).neg.viab;
@@ -121,5 +131,13 @@ await ficha();
 await p.evaluate(()=>{const b=[...document.querySelectorAll('[data-a=bloco]')].find(x=>/Visão geral/.test(x.textContent));b&&b.getAttribute('aria-expanded')!=='true'&&b.click()});await p.waitForTimeout(300);
 const rv=await p.evaluate(()=>[...document.querySelectorAll('.sec')].find(s=>/Resumo da viabilidade/.test(s.innerText))?.innerText.replace(/\s+/g,' '));
 ok(/VGV líquido/.test(rv)&&/Lucro líquido/.test(rv)&&/Margem líquida/.test(rv),tag+' Visão geral mostra VGV líquido, lucro e margem do estudo vinculado');
+const nv=(await D()).viabs.filter(v=>v.tid===tid);const sel=p.locator('[data-ch=vb-valido]').first();
+ok(await sel.locator('option').count()===nv.length,tag+' Visão geral lista todos os estudos do terreno ('+nv.length+') para escolher o válido');
+await sel.selectOption(nv[0].id);await p.waitForTimeout(200);
+if(tag==='desktop_claro'){await p.evaluate(()=>document.querySelector('.vb-escolha').scrollIntoView({block:'center'}));await p.waitForTimeout(150);await p.screenshot({path:OUT+tag+'_5valido.png'})}
+ok((await D()).terrenos.find(t=>t.id===tid).neg.viab.id===nv[0].id,tag+' escolher outro estudo na Visão geral o torna o válido');
+await p.evaluate(()=>document.querySelector('.vb-escolha [data-a=vb-abrir]').click());await p.waitForTimeout(250);
+ok(await p.$('#vb-pop'),tag+' Abrir estudo abre o popup pela ficha');
+await p.keyboard.press('Escape');await p.waitForTimeout(150);ok(!(await p.$('#vb-pop')),tag+' Esc fecha o popup');
 await ctx.close()}
 await b.close();console.log(errs.length?'\nFALHAS: '+errs.length+'\n'+errs.join('\n'):'\ntudo ok');process.exit(errs.length?1:0)})();

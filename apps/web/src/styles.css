@@ -2212,6 +2212,28 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .vb-met { margin-bottom: 4px }
 .vb-lista td .linkbtn { text-align: left }
 .vb-cfg-r { grid-template-columns: 64px minmax(180px, 2fr) minmax(170px, 1.2fr) minmax(190px, 1.3fr) 100px 84px 52px 64px }
+.vb-pop { position: fixed; inset: 0; z-index: 35; display: flex; align-items: center; justify-content: center; padding: 24px }
+.vb-pop-fundo { position: absolute; inset: 0; background: rgba(29, 46, 92, .45) }
+.vb-pop-d { position: relative; display: flex; flex-direction: column; width: min(1320px, 100%); height: 100%; background: var(--m-surface, #f8fafd); border-radius: 28px; box-shadow: 0 8px 32px rgba(0,0,0,.25); overflow: hidden }
+.vb-pop-h { display: flex; align-items: flex-start; gap: 16px; padding: 20px 20px 12px 24px; border-bottom: 1px solid var(--linha) }
+.vb-pop-tt { flex: 1; min-width: 0 }
+.vb-pop-tt .eyebrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 2px }
+.vb-pop-nome { width: 100%; font: inherit; font-size: 24px; line-height: 32px; font-weight: 400; color: var(--texto); background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 2px 8px; margin-left: -9px }
+.vb-pop-nome:hover:not(:disabled) { border-color: var(--linha) }
+.vb-pop-nome:focus { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: -1px }
+.vb-pop-h .vb-acoes { align-self: center }
+.vb-pop-sc { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 0 24px 24px }
+.vb-pop .vb-kpis { position: sticky; top: 0; z-index: 5; margin: 0 -24px 16px; padding: 12px 24px; background: var(--m-surface, #f8fafd); border-bottom: 1px solid var(--linha) }
+body.vb-aberto { overflow: hidden }
+.vb-sh { gap: 12px }
+.vb-sh .vb-tg { display: flex; align-items: center; gap: 4px; flex: 0 1 auto; min-width: 0; background: none; border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer; text-align: left }
+.vb-sh .vb-tg h2 { margin: 0 }
+.vb-sh-t { flex: 1; text-align: right; font-size: 14px; line-height: 20px; color: var(--texto-suave); font-variant-numeric: tabular-nums; white-space: nowrap }
+.vb-sec.fechada > .sec-h { border-bottom: 0 }
+.vb-escolha { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; margin-bottom: 16px }
+.vb-escolha label { width: 100%; font-size: 12px; line-height: 16px; color: var(--texto-suave) }
+.vb-escolha select { flex: 1 1 200px; min-width: 0; height: 40px; border: 1px solid var(--linha); border-radius: 8px; padding: 0 10px; background: var(--m-card, #fff); color: var(--texto); font: inherit; font-size: 14px }
+.vb-radio input { width: 18px; height: 18px; accent-color: var(--m-primary, #0b57d0) }
 .vb-cfg-g { padding: 16px 0 6px; font-size: 14px; font-weight: 500; border-bottom: 1px solid var(--linha) }
 .vb-gt { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding-top: 8px; border-bottom: 1px solid var(--linha) }
 .vb-gt h3, .vb-h3 { margin: 0; font-size: 14px; line-height: 20px; font-weight: 500 }
@@ -2245,6 +2267,21 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
   .vb-r.vb-tot > span:empty { display: none }
   .vb-lns .vb-tot .vb-tipo, .vb-lns .vb-tot .vb-mult, .vb-lns .vb-tot .vb-qtd, .vb-lns .vb-qtd:empty { display: none }
   .vb-r.vb-marco { padding: 10px 12px }
+  .vb-pop { padding: 0 }
+  .vb-pop-d { border-radius: 0 }
+  .vb-pop-h { flex-wrap: wrap; padding: 12px 8px 10px 16px }
+  .vb-pop-h .vb-acoes { order: 3; width: 100% }
+  .vb-pop-nome { font-size: 20px; line-height: 28px }
+  .vb-pop-sc { padding: 0 12px 16px }
+  .vb-pop .vb-kpis { margin: 0 -12px 12px; padding: 8px 12px; grid-template-columns: repeat(2, minmax(0, 1fr)) !important }
+  .vb-sh { flex-wrap: wrap; row-gap: 0 }
+  .vb-sh-t { order: 3; flex: 1 1 100% !important; width: 100%; text-align: left; padding: 0 0 8px 36px; white-space: normal }
+  .vb-sh > .btn { order: 4; margin-left: 24px }
+  .vb-pop-h .vb-sub { display: none }
+  .vb-pop .vb-kpis { gap: 6px !important }
+  .vb-pop .vb-kpis .kpi { padding: 8px 12px !important; min-height: 0 !important; gap: 0 !important }
+  :root .vb-pop .vb-kpis .kpi .v.sm, :root[data-tema="escuro"] .vb-pop .vb-kpis .kpi .v.sm, :root:not([data-tema="escuro"]) .vb-pop .vb-kpis .kpi .v.sm { font-size: 20px !important; line-height: 26px !important }
+  .vb-pop .vb-kpis .kpi .l { font-size: 12px !important }
   .vb-lns .vb-r > .vb-tipo { grid-column: 1 / -1 }
   .vb-hint-ln { padding: 0 4px }
   .vb-nova .vb-dica { grid-column: 1 / -1 }
@@ -2257,6 +2294,9 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
   .vb-cfg { overflow-x: auto }
 }
 :root[data-tema="escuro"] .vb-c input:not(:disabled), :root[data-tema="escuro"] .vb-c select:not(:disabled) { background: #0a1130; border-color: #2a3560; color: #e6ecff }
+:root[data-tema="escuro"] .vb-pop-d, :root[data-tema="escuro"] .vb-pop .vb-kpis { background: #081028 }
+:root[data-tema="escuro"] .vb-pop-d { box-shadow: 0 0 0 1px #1a2240, 0 8px 32px rgba(0,0,0,.6) }
+:root[data-tema="escuro"] .vb-escolha select { background: #0a1130; border-color: #2a3560; color: #e6ecff }
 :root[data-tema="escuro"] .vb-r.vb-marco { background: rgba(99,112,255,.08) }
 :root[data-tema="escuro"] .vb-dd { background: #0c1433; box-shadow: 0 0 0 1px rgba(124,140,255,.28), 0 8px 24px rgba(0,0,0,.5) }
 :root[data-tema="escuro"] .vb-dd-i:hover, :root[data-tema="escuro"] .vb-dd-i[aria-selected="true"] { background: rgba(99,112,255,.14) }

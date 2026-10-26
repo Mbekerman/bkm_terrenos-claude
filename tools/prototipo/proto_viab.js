@@ -88,22 +88,31 @@ function viabPreparar(){
 function viabSecao(t){const vs=viabsDe(t.id),vi=t.neg?.viab,ro=UI.role==='Leitura',ad=areaAdotada(t);
   const novo=!ro?`<button class="btn sm" data-a="vb-novo">${ic('add',16)}Novo estudo</button>`:'';
   const ligado=vi?`<div class="metrics vb-met"><div class="metric"><div class="ml">VGV líquido</div><div class="mv">${mi(vi.liq??vi.vgv)}</div></div><div class="metric"><div class="ml">Margem líquida</div><div class="mv">${vi.margem==null?'—':num(vi.margem,1)+'%'}</div></div><div class="metric"><div class="ml">Preço máximo do terreno</div><div class="mv">${mi(vi.pmax)}</div></div></div>
-    <div class="faint" style="font-size:12px;margin-top:10px">Vinculado: ${esc(vi.nome)} · ${fd(vi.em)}${ad&&vi.pmax?` · ${brl(vi.pmax/ad)}/m² sobre a área adotada`:''}</div>`:'';
-  const lista=vs.length?`<div class="dt-wrap vb-lista"><table class="dt compacta"><thead><tr><th class="esq">Estudo</th><th>VGV líquido</th><th>Lucro líquido</th><th>Margem</th><th>Atualizado</th><th></th></tr></thead><tbody>
+    <div class="faint" style="font-size:12px;margin-top:10px">Estudo válido: ${esc(vi.nome)} · ${fd(vi.em)}${ad&&vi.pmax?` · ${brl(vi.pmax/ad)}/m² sobre a área adotada`:''}</div>`:'';
+  const lista=vs.length?`<div class="dt-wrap vb-lista"><table class="dt compacta"><thead><tr><th class="esq">Estudo</th><th>VGV líquido</th><th>Lucro líquido</th><th>Margem</th><th>Atualizado</th><th>Válido</th></tr></thead><tbody>
     ${vs.map(v=>{const c=vbCalc(v),lig=vi?.id===v.id;return `<tr><td class="esq"><button class="linkbtn" data-a="vb-abrir" data-v="${v.id}">${esc(v.nome)}</button></td><td class="num">${mi(c.liq)}</td><td class="num">${mi(c.lucro)}</td><td class="num">${c.margem==null?'—':num(c.margem,1)+'%'}</td><td>${fd(v.em)}</td>
-      <td>${lig?'<span class="chip good"><span class="d"></span>Vinculado</span>':negAtiva(t)&&!ro?`<button class="btn text sm" data-a="vb-vincular" data-v="${v.id}">Vincular</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`
+      <td><label class="vb-radio"><input type="radio" name="vb-valido-${t.id}" ${lig?'checked':''} ${lig?'':negAtiva(t)&&!ro?`data-a="vb-vincular" data-v="${v.id}"`:'disabled'} aria-label="${esc(v.nome)} é o estudo válido"></label></td></tr>`}).join('')}</tbody></table></div>`
     :`<div class="banner blue">${ic('money')}<div style="flex:1"><div class="bt">Nenhum estudo</div><div>Monte o estudo de viabilidade estática: tipologias, custos e resultado (VGV líquido, lucro e margem).</div></div></div>`;
   return `<section class="sec" id="sec-viab"><div class="sec-h"><h2>Viabilidade</h2>${novo}</div><div class="sec-b">${ligado}${ligado&&vs.length?'<div style="height:16px"></div>':''}${lista}</div></section>`}
 
-/* ---------- página do estudo ---------- */
+/* ---------- o estudo, num popup aberto pela ficha (decisão do Moisés, 26/out/2026) ----------
+   Indicadores fixos no topo enquanto rola; seções na ordem Tipologias, Custo do terreno, Despesas comerciais,
+   Custo de obras, Despesas gerais, Taxas e Resultado, cada uma abre e fecha (seta no título e Recolher no fim)
+   e mostra no título o total e o % do VGV. Tudo se edita no lugar e o resultado se refaz enquanto digita. */
 const VB_ADD={obra_atipica:'Adicionar item atípico',obra_nao_incidente:'Adicionar item',projetos:'Adicionar projeto',pos_obra:'Adicionar item',terreno:'Adicionar despesa',incorporacao:'Adicionar despesa',cef:'Adicionar despesa',adm_financeiro:'Adicionar despesa'};
-function pgViab(){const v=VB(UI.vid);if(!v)return `<section class="sec"><div class="sec-b"><div class="empty">Estudo não encontrado.</div></div></section>`;
-  vbFixos(v);
+const VB_ORDEM=['tip','terreno','comercial','obra','despesas','taxas','res'];
+const VB_SETA=`<svg class="bl-seta" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>`;
+const vbAberta=k=>UI.vbAbertas?.has(k);
+function vbShTxt(k,c){if(k==='tip')return `${brl(c.vgv)} · ${num(c.un)} unidades`;if(k==='res')return `Lucro ${brl(c.lucro)} · margem ${c.margem==null?'—':num(c.margem,1)+'%'}`;
+  const x=c.SEC[k];return `${brl(x)} · ${c.vgv>0?num(x/c.vgv*100,1)+'%':'—'} do VGV`}
+function vbSec(k,titulo,c,corpo,acao=''){const ab=vbAberta(k);
+  return `<section class="sec vb-sec${ab?'':' fechada'}" id="vb-sec-${k}"><div class="sec-h vb-sh"><button class="vb-tg bl-h" data-a="vb-sec" data-v="${k}" aria-expanded="${ab}" aria-controls="vb-sc-${k}">${VB_SETA}<h2>${titulo}</h2></button>
+    <span class="vb-sh-t" data-vbo="sh-${k}">${vbShTxt(k,c)}</span>${ab?acao:''}</div>
+    ${ab?`<div class="sec-b" id="vb-sc-${k}">${corpo()}<div class="bl-fim"><button class="bl-rec" data-a="vb-sec" data-v="${k}" data-fim="1" aria-label="Recolher ${titulo}" title="Recolher ${titulo}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg><span>Recolher</span></button></div></div>`:''}</section>`}
+function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
   const t=T(v.tid),c=vbCalc(v),ro=UI.role==='Leitura',lig=t.neg?.viab?.id===v.id,dis=ro?'disabled':'';
-  const acoes=ro?'':`${lig?'':negAtiva(t)?`<button class="btn" data-a="vb-vincular" data-v="${v.id}">${ic('link',18)}Vincular à negociação</button>`:''}<button class="btn" data-a="vb-duplicar" data-v="${v.id}">Duplicar</button>${lig?'':`<button class="btn text danger" data-a="vb-apagar" data-v="${v.id}">Apagar</button>`}`;
+  const acoes=ro?'':`${lig?'':negAtiva(t)?`<button class="btn sm" data-a="vb-vincular" data-v="${v.id}">Marcar como válido</button>`:''}<button class="btn sm" data-a="vb-duplicar" data-v="${v.id}">Duplicar</button>${lig?'':`<button class="btn text sm danger" data-a="vb-apagar" data-v="${v.id}">Apagar</button>`}`;
   const inp=(id,k,val,d,rot)=>`<label class="vb-c vb-${k}"><span class="vb-l">${rot}</span><input data-vb="tp" data-r="${id}" data-k="${k}" value="${k==='nome'?esc(val??''):vbIn(val,d)}" ${k==='nome'?'':'inputmode="decimal"'} aria-label="${rot}" ${dis}></label>`;
-  const tips=v.tips.map(p=>`<div class="vb-r" data-tp="${p.id}">${inp(p.id,'nome',p.nome,0,'Tipologia')}${inp(p.id,'area',p.area,2,'Área privativa (m²)')}${inp(p.id,'qtd',p.qtd,0,'Quantidade')}${inp(p.id,'perm',p.perm,0,'Em permuta')}${inp(p.id,'com',p.com,0,'Comissão')}${inp(p.id,'pu',p.pu,2,'Preço unitário (R$)')}${inp(p.id,'pm2',p.pm2,2,'Preço por m² (R$)')}
-    <span class="vb-c vb-out"><span class="vb-l">VGV</span><b data-vbo="tp-${p.id}">${brl(p.pu!=null?(p.qtd||0)*p.pu:null)}</b></span>${ro?'<span></span>':`<button class="iconbtn sm vb-del" data-a="vb-tip-del" data-v="${p.id}" aria-label="Remover ${esc(p.nome)}" title="Remover tipologia">${ic('close',18)}</button>`}</div>`).join('');
   const campo=(k,rot,val,d=2,dica='')=>`<div class="field"><label for="vb-${k}">${rot}</label><input id="vb-${k}" data-vb="hd" data-k="${k}" value="${vbIn(val,d)}" inputmode="decimal" ${dis}>${dica?`<div class="hint">${dica}</div>`:''}</div>`;
   const hd=`<div class="vb-r vb-hd" aria-hidden="true"><span>Item</span><span>Base de cálculo</span><span>Valor</span><span>Meses</span><span>Resultado</span><span></span></div>`;
   const tot=(id,rot,x,cls='')=>`<div class="vb-r vb-tot ${cls}" id="${id}">${vbTotRow(rot,x,c)}</div>`;
@@ -111,16 +120,13 @@ function pgViab(){const v=VB(UI.vid);if(!v)return `<section class="sec"><div cla
     return `<div class="vb-gt"><h3>${G.nome}</h3>${ro||G.fixo?'':`<button class="btn text sm" data-a="vb-ln-add" data-v="${g}">${ic('add',16)}${VB_ADD[g]}</button>`}</div>
       ${ls.map(l=>vbLinha(v,l,c,dis,ro)).join('')||(UI.vbNova===g&&!ro?'':'<div class="muted vb-vazio">Nenhum item.</div>')}${UI.vbNova===g&&!ro?vbNovaLinha(g):''}
       ${G.fixo?'':tot('vb-gst-'+g,'Subtotal · '+G.nome,c.GR[g]||0,'vb-st')}`};
-  const obra=`<section class="sec vb-sec" id="vb-sec-obra"><div class="sec-h"><h2>${VB_SECAO.obra}</h2></div><div class="sec-b"><div class="vb-tab vb-lns">${hd}
-    <div class="vb-gt"><h3>Custo de obra incidente (típico)</h3></div>
-    <div class="vb-r" data-ln="oi"><span class="vb-c vb-desp"><span class="vb-l">Item</span><span class="vb-nome">Obra incidente</span></span><span class="vb-c vb-tipo"><span class="vb-l">Base de cálculo</span><span class="vb-nome">${VB_TIPO.area}</span></span>
-      <label class="vb-c vb-mult"><span class="vb-l">Valor unitário</span><span class="vb-adorno"><span class="vb-suf">R$</span><input data-vb="hd" data-k="cm2" value="${vbIn(v.cm2,2)}" inputmode="decimal" aria-label="Valor unitário da obra incidente (R$ por m²)" ${dis}></span></label><span class="vb-c vb-qtd"></span>
-      <span class="vb-c vb-out"><span class="vb-l">Resultado</span><b data-vbo="oi">${brl(c.oi)}</b><small class="faint" data-vbo="oi-b">× ${m2(c.A)} de área privativa</small></span><span></span></div>
-    ${grupo('obra_atipica')}${tot('vb-raso','Custo de obra raso (incidente + atípicos)',c.raso,'vb-marco')}
-    ${grupo('obra_nao_incidente')}${tot('vb-ot','Custo de obra total (raso + não incidente)',c.ot,'vb-marco')}
-    ${grupo('projetos')}${grupo('pos_obra')}${tot('vb-tot-obra','Total · '+VB_SECAO.obra,c.SEC.obra)}</div></div></section>`;
+  const tips=()=>`<div class="vb-tab vb-tips"><div class="vb-r vb-hd" aria-hidden="true"><span>Tipologia</span><span>Área privativa (m²)</span><span>Quantidade</span><span>Em permuta</span><span>Comissão</span><span>Preço unitário (R$)</span><span>Preço por m² (R$)</span><span>VGV</span><span></span></div>
+    ${v.tips.map(p=>`<div class="vb-r" data-tp="${p.id}">${inp(p.id,'nome',p.nome,0,'Tipologia')}${inp(p.id,'area',p.area,2,'Área privativa (m²)')}${inp(p.id,'qtd',p.qtd,0,'Quantidade')}${inp(p.id,'perm',p.perm,0,'Em permuta')}${inp(p.id,'com',p.com,0,'Comissão')}${inp(p.id,'pu',p.pu,2,'Preço unitário (R$)')}${inp(p.id,'pm2',p.pm2,2,'Preço por m² (R$)')}
+    <span class="vb-c vb-out"><span class="vb-l">VGV</span><b data-vbo="tp-${p.id}">${brl(p.pu!=null?(p.qtd||0)*p.pu:null)}</b></span>${ro?'<span></span>':`<button class="iconbtn sm vb-del" data-a="vb-tip-del" data-v="${p.id}" aria-label="Remover ${esc(p.nome)}" title="Remover tipologia">${ic('close',18)}</button>`}</div>`).join('')||'<div class="muted vb-vazio">Nenhuma tipologia.</div>'}
+    <div class="vb-r vb-tot" id="vb-tot-tips">${vbTotTips(v,c)}</div></div>
+    <div class="hint">Com a área preenchida, o preço unitário e o preço por m² se acompanham: mudar um refaz o outro. Mudar a área refaz o preço por m² (ou completa o preço que falta). <b>Em permuta</b> são as unidades da permuta física e <b>Comissão</b>, as dadas em pagamento da comissão do terreno: as duas saem do VGV vendido.</div>`;
   const dedutiveis=S.viabDesp.filter(d=>d.grupo==='comercial'&&d.deduz&&(d.ativo||v.deduz.includes(d.codigo)));
-  const terreno=`<section class="sec vb-sec" id="vb-sec-terreno"><div class="sec-h"><h2>${VB_SECAO.terreno}</h2></div><div class="sec-b">
+  const terreno=()=>`<div class="editgrid vb-campos">${campo('pmax','Preço máximo do terreno (R$)',v.pmax,2,'Acende o aviso de proposta acima do máximo na negociação.')}</div>
     <h3 class="vb-h3">Permuta física</h3><div class="vb-ro" data-vbo="pfis">${vbPermFis(c)}</div>
     <h3 class="vb-h3">Permuta financeira</h3>
     <div class="editgrid vb-campos">${campo('pfp','Permuta financeira (% do VGV líquido)',v.pfp,4)}${campo('dedp','Dedução do VGV para o VGV líquido (%)',v.dedp,4)}${campo('min','Valor mínimo garantido (R$)',v.min)}</div>
@@ -130,26 +136,37 @@ function pgViab(){const v=VB(UI.vid);if(!v)return `<section class="sec"><div cla
     <h3 class="vb-h3">Pagamento em dinheiro</h3><div class="editgrid vb-campos">${campo('din','Valor pago em dinheiro (R$)',v.din)}</div>
     <h3 class="vb-h3">Comissão</h3><div class="vb-ro" data-vbo="pcom">${vbComissao(c)}</div>
     <div class="editgrid vb-campos">${campo('comd','Comissão em dinheiro (R$)',v.comd)}</div>
-    <div class="vb-tab vb-lns">${tot('vb-tot-terreno','Total · '+VB_SECAO.terreno,c.SEC.terreno)}</div></div></section>`;
-  const secLns=sec=>`<section class="sec vb-sec" id="vb-sec-${sec}"><div class="sec-h"><h2>${VB_SECAO[sec]}</h2></div><div class="sec-b"><div class="vb-tab vb-lns">${hd}
-    ${vbGruposDe(sec).map(g=>VB_GRUPO[g].fixo?vbLinhasGrupo(v,g).map(l=>vbLinha(v,l,c,dis,ro)).join(''):grupo(g)).join('')}${tot('vb-tot-'+sec,'Total · '+VB_SECAO[sec],c.SEC[sec])}</div></div></section>`;
-  return `<button class="back" data-a="vb-voltar">${ic('back',20)}${esc(t.codigo)} · ${esc(t.nome)}</button>
-  <div class="page-h vb-h"><div style="min-width:0"><div class="eyebrow">Estudo de viabilidade estática${lig?' · <span class="chip good"><span class="d"></span>Vinculado à negociação</span>':''}</div><h1>${esc(v.nome)}</h1><div class="muted vb-sub">Avaliação prévia, sem fluxo de caixa. Atualizado em ${fd(v.em)}${v.user?' por '+esc(v.user):''}.</div></div><div class="vb-acoes">${acoes}</div></div>
-  <div class="kpis vb-kpis" id="vb-kpis">${vbKpis(c)}</div>
-  <div class="stack">
-  <section class="sec"><div class="sec-h"><h2>Dados do estudo</h2></div><div class="sec-b"><div class="editgrid vb-dados">
-    <div class="field"><label for="vb-nome">Nome do estudo</label><input id="vb-nome" data-vb="hd" data-k="nome" value="${esc(v.nome)}" ${dis}></div>
-    ${campo('pmax','Preço máximo do terreno (R$)',v.pmax)}</div>
-    <div class="hint">O preço máximo é o que acende o aviso de proposta acima do máximo na negociação.</div></div></section>
-  <section class="sec vb-sec"><div class="sec-h"><h2>Tipologias</h2>${ro?'':`<button class="btn text sm" data-a="vb-tip-add">${ic('add',16)}Adicionar tipologia</button>`}</div><div class="sec-b">
-    <div class="vb-tab vb-tips"><div class="vb-r vb-hd" aria-hidden="true"><span>Tipologia</span><span>Área privativa (m²)</span><span>Quantidade</span><span>Em permuta</span><span>Comissão</span><span>Preço unitário (R$)</span><span>Preço por m² (R$)</span><span>VGV</span><span></span></div>
-    ${tips||'<div class="muted vb-vazio">Nenhuma tipologia.</div>'}
-    <div class="vb-r vb-tot" id="vb-tot-tips">${vbTotTips(v,c)}</div></div>
-    <div class="hint">Com a área preenchida, o preço unitário e o preço por m² se acompanham: mudar um refaz o outro. Mudar a área refaz o preço por m² (ou completa o preço que falta). <b>Em permuta</b> são as unidades da permuta física e <b>Comissão</b>, as dadas em pagamento da comissão do terreno: as duas saem do VGV vendido.</div></div></section>
-  ${obra}${terreno}${secLns('despesas')}${secLns('taxas')}${secLns('comercial')}
-  <div class="hint vb-hint-ln">Resultado = valor × base de cálculo (× meses na verba mensal). Nas bases em %, o valor é o percentual. <b>% do VGV</b> incide sobre o VGV vendido (sem as unidades em permuta e da comissão); <b>verba por unidade</b>, sobre as unidades líquidas (${num(c.unl)}); <b>% do lucro líquido</b> já desconta o próprio item (lucro ÷ (1 + soma dos %)) e vale zero sem lucro. O grupo de cada item, em Configurações › Viabilidade, define a seção e as bases aceitas.</div>
-  <section class="sec"><div class="sec-h"><h2>Resultado</h2></div><div class="sec-b" id="vb-res">${vbResHtml(v,c)}</div></section>
-  </div>`}
+    <div class="vb-tab vb-lns">${tot('vb-tot-terreno','Total · '+VB_SECAO.terreno,c.SEC.terreno)}</div>`;
+  const obra=()=>`<div class="vb-tab vb-lns">${hd}
+    <div class="vb-gt"><h3>Custo de obra incidente (típico)</h3></div>
+    <div class="vb-r" data-ln="oi"><span class="vb-c vb-desp"><span class="vb-l">Item</span><span class="vb-nome">Obra incidente</span></span><span class="vb-c vb-tipo"><span class="vb-l">Base de cálculo</span><span class="vb-nome">${VB_TIPO.area}</span></span>
+      <label class="vb-c vb-mult"><span class="vb-l">Valor unitário</span><span class="vb-adorno"><span class="vb-suf">R$</span><input data-vb="hd" data-k="cm2" value="${vbIn(v.cm2,2)}" inputmode="decimal" aria-label="Valor unitário da obra incidente (R$ por m²)" ${dis}></span></label><span class="vb-c vb-qtd"></span>
+      <span class="vb-c vb-out"><span class="vb-l">Resultado</span><b data-vbo="oi">${brl(c.oi)}</b><small class="faint" data-vbo="oi-b">× ${m2(c.A)} de área privativa</small></span><span></span></div>
+    ${grupo('obra_atipica')}${tot('vb-raso','Custo de obra raso (incidente + atípicos)',c.raso,'vb-marco')}
+    ${grupo('obra_nao_incidente')}${tot('vb-ot','Custo de obra total (raso + não incidente)',c.ot,'vb-marco')}
+    ${grupo('projetos')}${grupo('pos_obra')}${tot('vb-tot-obra','Total · '+VB_SECAO.obra,c.SEC.obra)}</div>`;
+  const lns=sec=>()=>`<div class="vb-tab vb-lns">${hd}
+    ${vbGruposDe(sec).map(g=>VB_GRUPO[g].fixo?vbLinhasGrupo(v,g).map(l=>vbLinha(v,l,c,dis,ro)).join(''):grupo(g)).join('')}${tot('vb-tot-'+sec,'Total · '+VB_SECAO[sec],c.SEC[sec])}</div>`;
+  const corpo={tip:tips,terreno,comercial:lns('comercial'),obra,despesas:lns('despesas'),taxas:lns('taxas'),
+    res:()=>`<div id="vb-res">${vbResHtml(v,c)}</div><div class="hint vb-hint-ln">Resultado de cada item = valor × base de cálculo (× meses na verba mensal). Nas bases em %, o valor é o percentual. <b>% do VGV</b> incide sobre o VGV vendido (sem as unidades em permuta e da comissão); <b>verba por unidade</b>, sobre as unidades líquidas (${num(c.unl)}); <b>% do lucro líquido</b> já desconta o próprio item (lucro ÷ (1 + soma dos %)) e vale zero sem lucro. O grupo de cada item, em Configurações › Viabilidade, define a seção e as bases aceitas.</div>`};
+  const titulo={tip:'Tipologias',res:'Resultado',...VB_SECAO};
+  const acao={tip:ro?'':`<button class="btn text sm" data-a="vb-tip-add">${ic('add',16)}Adicionar tipologia</button>`};
+  return `<div class="vb-pop-h"><div class="vb-pop-tt"><div class="eyebrow">Estudo de viabilidade estática · ${esc(t.codigo)} · ${esc(t.nome)}${lig?' · <span class="chip good"><span class="d"></span>Válido</span>':''}</div>
+      <input id="vb-pop-t" class="vb-pop-nome" data-vb="hd" data-k="nome" value="${esc(v.nome)}" aria-label="Nome do estudo" ${dis}>
+      <div class="faint vb-sub">Avaliação prévia, sem fluxo de caixa. Atualizado em ${fd(v.em)}${v.user?' por '+esc(v.user):''}.</div></div>
+    <div class="vb-acoes">${acoes}</div><button class="iconbtn vb-pop-x" data-a="vb-fechar" aria-label="Fechar o estudo" title="Fechar (Esc)">${ic('close')}</button></div>
+  <div class="vb-pop-sc"><div class="kpis vb-kpis" id="vb-kpis">${vbKpis(c)}</div>
+    <div class="stack">${VB_ORDEM.map(k=>vbSec(k,titulo[k],c,corpo[k],acao[k]||'')).join('')}</div></div>`}
+function vbPopRender(){let el=document.getElementById('vb-pop');
+  if(UI.vbPop&&(!VB(UI.vbPop)||UI.route!==UI.vbPopRota))UI.vbPop=null;
+  if(!UI.vbPop){if(el){el.remove();document.body.classList.remove('vb-aberto')}return}
+  const novo=!el;if(novo){el=document.createElement('div');el.id='vb-pop';el.className='vb-pop';document.body.appendChild(el)}
+  const sc=el.querySelector('.vb-pop-sc')?.scrollTop||0;UI.vid=UI.vbPop;
+  el.innerHTML=`<div class="vb-pop-fundo" data-a="vb-fechar"></div><div class="vb-pop-d" role="dialog" aria-modal="true" aria-labelledby="vb-pop-t">${vbPopHtml()}</div>`;
+  el.querySelector('.vb-pop-sc').scrollTop=novo?0:sc;document.body.classList.add('vb-aberto');if(novo)el.querySelector('.vb-pop-x')?.focus()}
+function vbAbrir(id){UI.vbPop=id;UI.vid=id;UI.vbPopRota=UI.route;UI.vbNova=false;UI.vbAbertas=new Set(['tip','res']);render()}
+const _renderVb=render;render=function(){_renderVb.apply(this,arguments);vbPopRender()};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&UI.vbPop&&!UI.modal&&!e.defaultPrevented){e.preventDefault();UI.vbPop=null;render()}});
 /* linhas de um grupo; nos fixos, na ordem da lista da empresa */
 function vbLinhasGrupo(v,g){const ls=v.linhas.filter(l=>vbGrupoLn(l)===g);if(!VB_GRUPO[g]?.fixo)return ls;
   const o=c=>S.viabDesp.findIndex(d=>d.codigo===c);return ls.filter(l=>vbDesp(l.desp)?.ativo||l.valor!=null).sort((a,b)=>o(a.desp)-o(b.desp))}
@@ -168,7 +185,7 @@ function vbBaseTxt(l,c){const L=c.L[l.id],b=L?.base,d=L?.ded?' · sai do VGV lí
 function vbKpis(c){const k=(l,val)=>`<div class="kpi"><span class="v sm">${val}</span><span class="l">${l}</span></div>`;
   return k('VGV',mi(c.vgv))+k('VGV líquido',mi(c.liq))+k('Lucro líquido',mi(c.lucro))+k('Margem líquida',c.margem==null?'—':num(c.margem,1)+'%')}
 function vbTotTips(v,c){return `<span class="vb-c"><b>Total</b></span><span class="vb-c vb-area"><span class="vb-l">Área privativa total</span>${c.A?m2(c.A):'—'}</span><span class="vb-c vb-qtd"><span class="vb-l">Unidades</span>${num(c.un)}</span><span class="vb-c vb-perm"><span class="vb-l">Em permuta</span>${num(c.unp)}</span><span class="vb-c vb-com"><span class="vb-l">Comissão</span>${num(c.unc)}</span><span class="vb-c vb-pu"><span class="vb-l">Preço médio</span>${c.un?brl(c.vgv/c.un):'—'}</span><span class="vb-c vb-pm2"><span class="vb-l">Preço médio por m²</span>${c.A?brl(c.vgv/c.A):'—'}</span><span class="vb-c vb-out"><span class="vb-l">VGV</span><b>${brl(c.vgv)}</b></span><span></span>`}
-function vbTotRow(rot,x,c){return `<span class="vb-c"><b>${rot}</b></span><span class="vb-c vb-tipo"></span><span class="vb-c vb-mult"></span><span class="vb-c vb-qtd"></span><span class="vb-c vb-out"><span class="vb-l">Total</span><b>${brl(x)}</b><small class="faint">${c.liq>0?num(x/c.liq*100,1)+'% do VGV líquido':''}</small></span><span></span>`}
+function vbTotRow(rot,x,c){return `<span class="vb-c"><b>${rot}</b></span><span class="vb-c vb-tipo"></span><span class="vb-c vb-mult"></span><span class="vb-c vb-qtd"></span><span class="vb-c vb-out"><span class="vb-l">Total</span><b>${brl(x)}</b><small class="faint">${c.vgv>0?num(x/c.vgv*100,1)+'% do VGV':''}</small></span><span></span>`}
 const vbPctTxt=(a,b)=>b>0?num(a/b*100,1)+'%':'—';
 const vbRo=items=>items.map(([l,v,s])=>`<div><span class="vb-rl">${l}</span><b>${v}</b>${s?`<small class="faint">${s}</small>`:''}</div>`).join('');
 const vbPermFis=c=>vbRo([['Unidades permutadas',num(c.unp)],['Área privativa permutada',c.ap?m2(c.ap):'—'],['% das unidades',vbPctTxt(c.unp,c.un)],['% da área privativa',vbPctTxt(c.ap,c.A)]]);
@@ -180,8 +197,8 @@ function vbResHtml(v,c){const pct=x=>c.liq>0?num(x/c.liq*100,1)+'%':'—',ln=(ro
   return `<div class="dt-wrap"><table class="dt compacta vb-rt"><thead><tr><th class="esq">Item</th><th>Valor</th><th>% do VGV líquido</th></tr></thead><tbody>
     ${ln(`VGV (${num(c.un)} unidades)`,c.vgv)}${ln(`(−) Permuta física (${num(c.unp)} unidades)`,c.vp)}${ln(`(−) Unidades da comissão (${num(c.unc)})`,c.vc)}
     ${ln('VGV vendido',c.vv,'forte')}${c.dedp?ln(`(−) Dedução de ${num(v.dedp,2)}% do VGV`,c.dedp):''}${c.dedc?ln(`(−) ${esc(nomesDed)}`,c.dedc):''}
-    ${ln('VGV líquido',c.liq,'forte')}${ln('(−) '+VB_SECAO.obra,c.SEC.obra)}${ln('(−) '+VB_SECAO.terreno,c.SEC.terreno)}${ln('(−) '+VB_SECAO.despesas,c.SEC.despesas)}${ln('(−) '+VB_SECAO.taxas,c.SEC.taxas)}
-    ${ln(`(−) ${VB_SECAO.comercial}${c.dedc?' (fora as deduzidas)':''}`,r2(c.SEC.comercial-c.dedc))}
+    ${ln('VGV líquido',c.liq,'forte')}${ln('(−) '+VB_SECAO.terreno,c.SEC.terreno)}${ln(`(−) ${VB_SECAO.comercial}${c.dedc?' (fora as deduzidas)':''}`,r2(c.SEC.comercial-c.dedc))}
+    ${ln('(−) '+VB_SECAO.obra,c.SEC.obra)}${ln('(−) '+VB_SECAO.despesas,c.SEC.despesas)}${ln('(−) '+VB_SECAO.taxas,c.SEC.taxas)}
     ${ln('Lucro líquido',c.lucro,'forte')}
     <tr class="forte"><td class="esq">Margem líquida</td><td class="num">${c.margem==null?'—':num(c.margem,2)+'%'}</td><td></td></tr></tbody></table></div>
     <div class="faint vb-obra">Obra incidente ${brl(c.oi)} · raso ${brl(c.raso)} · total ${brl(c.ot)}${v.pmax!=null?` · preço máximo do terreno ${brl(v.pmax)} (${pct(v.pmax)})`:''}</div>`}
@@ -194,7 +211,7 @@ function vbRefresh(v){const c=vbCalc(v),set=(k,h)=>{const el=document.querySelec
   const h=(id,x)=>{const el=document.getElementById(id);if(el)el.innerHTML=x};
   h('vb-kpis',vbKpis(c));h('vb-tot-tips',vbTotTips(v,c));h('vb-raso',vbTotRow('Custo de obra raso (incidente + atípicos)',c.raso,c));h('vb-ot',vbTotRow('Custo de obra total (raso + não incidente)',c.ot,c));
   Object.keys(VB_GRUPO).forEach(g=>h('vb-gst-'+g,vbTotRow('Subtotal · '+VB_GRUPO[g].nome,c.GR[g]||0,c)));
-  Object.keys(VB_SECAO).forEach(k=>h('vb-tot-'+k,vbTotRow('Total · '+VB_SECAO[k],c.SEC[k],c)));h('vb-res',vbResHtml(v,c))}
+  Object.keys(VB_SECAO).forEach(k=>h('vb-tot-'+k,vbTotRow('Total · '+VB_SECAO[k],c.SEC[k],c)));h('vb-res',vbResHtml(v,c));VB_ORDEM.forEach(k=>set('sh-'+k,vbShTxt(k,c)))}
 function vbGravar(v){v.em=HOJE;v.user=me();vbSync(v);save()}
 
 /* ---------- lista de itens (busca) ---------- */
@@ -234,6 +251,7 @@ function viabInput(el){
   if(tipo==='ln'&&k!=='tipo'){const l=v.linhas.find(x=>x.id===el.dataset.r);if(!l)return true;const n=lerNum(el.value);l[k]=k==='qtd'?(n>0?n:null):n;vbRefresh(v);return true}
   return false}
 function viabChange(el){
+  if(el.dataset.ch==='vb-valido'){if(el.value)viabClick('vb-vincular',{dataset:{v:el.value}});return true}
   if(el.dataset.ch==='cfg-vd'){const d=vbDesp(el.dataset.c),k=el.dataset.k;if(!d)return true;
     if(k==='ativo'||k==='deduz')d[k]=el.checked;else if(k==='valor')d.valor=lerNum(el.value);
     else if(k==='nome'){if(!el.value.trim()){toast('O item precisa de nome.',true);el.value=d.nome;return true}d.nome=el.value.trim()}
@@ -256,15 +274,17 @@ function viabChange(el){
   vbGravar(v);return true}
 function viabClick(A,a,t){
   switch(A){
-    case 'vb-novo':{const n=viabsDe(t.id).length,v=vbNovo(t.id,n?`Estudo ${n+1}`:'Estudo base');S.viabs.push(v);log(t,`Estudo de viabilidade criado: ${v.nome}`);save();go('viab',{vid:v.id,vbNova:false});return true}
-    case 'vb-abrir':go('viab',{vid:a.dataset.v,vbNova:false});return true;
-    case 'vb-voltar':{const v=VB(UI.vid);UI.vbNova=false;blocoAbre('negociacao');go('terreno',{id:v?v.tid:UI.id,tab:'negociacao'});rolarBloco('negociacao','viab');return true}
-    case 'vb-vincular':{const v=VB(a.dataset.v),x=T(v.tid);if(!negAtiva(x)){toast('A negociação não está ativa.',true);return true}x.neg.viab=vbResumo(v);save();render();toast(`${v.nome} vinculado à negociação.`);return true}
+    case 'vb-novo':{const n=viabsDe(t.id).length,v=vbNovo(t.id,n?`Estudo ${n+1}`:'Estudo base');S.viabs.push(v);log(t,`Estudo de viabilidade criado: ${v.nome}`);save();vbAbrir(v.id);return true}
+    case 'vb-abrir':vbAbrir(a.dataset.v);return true;
+    case 'vb-fechar':UI.vbPop=null;UI.vbNova=false;render();return true;
+    case 'vb-sec':{const k=a.dataset.v;if(!UI.vbAbertas)UI.vbAbertas=new Set();UI.vbAbertas.has(k)?UI.vbAbertas.delete(k):UI.vbAbertas.add(k);render();
+      if(a.dataset.fim)document.querySelector(`#vb-sec-${k}`)?.scrollIntoView({block:'nearest'});document.querySelector(`#vb-sec-${k} .vb-tg`)?.focus({preventScroll:true});return true}
+    case 'vb-vincular':{const v=VB(a.dataset.v),x=T(v.tid);if(!negAtiva(x)){toast('A negociação não está ativa.',true);return true}x.neg.viab=vbResumo(v);save();render();toast(`${v.nome} é o estudo válido.`);return true}
     case 'vb-duplicar':{const v=VB(a.dataset.v),c=JSON.parse(JSON.stringify(v));c.id=uid();c.nome='Cópia de '+v.nome;c.em=HOJE;c.user=me();c.tips.forEach(p=>p.id=uid());c.linhas.forEach(l=>l.id=uid());
-      c.linhas=c.linhas.filter(l=>vbDesp(l.desp)?.ativo);vbFixos(c);S.viabs.push(c);log(T(v.tid),`Estudo de viabilidade duplicado: ${c.nome}`);save();go('viab',{vid:c.id,vbNova:false});toast('Estudo duplicado.');return true}
+      c.linhas=c.linhas.filter(l=>vbDesp(l.desp)?.ativo);vbFixos(c);S.viabs.push(c);log(T(v.tid),`Estudo de viabilidade duplicado: ${c.nome}`);save();vbAbrir(c.id);toast('Estudo duplicado.');return true}
     case 'vb-apagar':UI.modal='vb-apagar';UI.vbApagar=a.dataset.v;renderModal();return true;
     case 'vb-apagar-ok':{const v=VB(UI.vbApagar),x=T(v.tid);if(x.neg?.viab?.id===v.id){toast('Estudo vinculado à negociação não se apaga.',true);return true}
-      S.viabs=S.viabs.filter(y=>y.id!==v.id);log(x,`Estudo de viabilidade apagado: ${v.nome}`);UI.modal=null;save();blocoAbre('negociacao');go('terreno',{id:x.id,tab:'negociacao'});rolarBloco('negociacao','viab');toast('Estudo apagado.');return true}
+      S.viabs=S.viabs.filter(y=>y.id!==v.id);log(x,`Estudo de viabilidade apagado: ${v.nome}`);UI.modal=null;UI.vbPop=null;save();render();toast('Estudo apagado.');return true}
     case 'vb-tip-add':{const v=VB(UI.vid),p={id:uid(),nome:'Tipologia '+(v.tips.length+1),area:null,qtd:null,perm:0,com:0,pu:null,pm2:null};v.tips.push(p);vbGravar(v);render();setTimeout(()=>{const i=document.querySelector(`[data-tp="${p.id}"] [data-k="nome"]`);i?.focus();i?.select()},20);return true}
     case 'vb-tip-del':{const v=VB(UI.vid);v.tips=v.tips.filter(p=>p.id!==a.dataset.v);vbGravar(v);render();return true}
     case 'vb-ln-add':UI.vbNova=a.dataset.v;render();setTimeout(()=>document.querySelector('[data-vb-cb="nova"]')?.focus(),20);return true;

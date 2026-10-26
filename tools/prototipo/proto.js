@@ -695,14 +695,14 @@ const NAV=[['inicio','Início','casa'],['terrenos','Terrenos','terrenos'],['mapa
 const navSide=()=>ehAdmin(me())?[...NAV,['config','Configurações','config']]:NAV;
 function render(){
   if(UI.route!=='mapa'&&document.body.classList.contains('mp-cheia'))mpTelaCheia(false);
-  const cur=UI.route==='terreno'||UI.route==='viab'?UI.from:UI.route;
+  const cur=UI.route==='terreno'?UI.from:UI.route;
   document.body.classList.toggle('menu-min',menuMin);
   $('#side').innerHTML=`<button class="menu-tg" data-a="menu" aria-expanded="${!menuMin}" aria-label="${menuMin?'Expandir menu':'Recolher menu'}" title="${menuMin?'Expandir menu':'Recolher menu'}">${ic(menuMin?'expandir':'recolher',20)}</button><button class="compose" data-a="novo" ${menuMin?'title="Novo terreno" aria-label="Novo terreno"':''}>${ic('add',24)}<span class="rot">Novo terreno</span></button>`+navSide().map(([r,l,i])=>`<button class="nav-item" data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''} ${menuMin?`title="${l}" aria-label="${l}"`:''}>${bi(i)}<span class="rot">${l}</span></button>`).join('')+`<div class="side-foot"><span class="rot">Protótipo · dados de exemplo</span><button class="linkbtn rot" data-a="reset">Restaurar dados de exemplo</button></div>`;
   $('#bnav').innerHTML=NAV.map(([r,l,i])=>`<button data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''}><span class="pill">${bi(i,32)}</span>${l}</button>`).join('');
   document.body.classList.toggle('ro',UI.role==='Leitura');
   renderTema();{const n0=S.notifs.length;rotinaNotif();if(S.notifs.length!==n0)save()}renderSino();
   renderPerfil();
-  document.body.dataset.rota=UI.route;$('#main').innerHTML=({inicio:pgInicio,terrenos:pgTerrenos,negociacoes:pgNeg,terreno:pgFicha,mapa:pgMapa,dashboard:pgDash,tarefas:pgTarefas,config:pgConfig,viab:pgViab})[UI.route]();posRender();
+  document.body.dataset.rota=UI.route;$('#main').innerHTML=({inicio:pgInicio,terrenos:pgTerrenos,negociacoes:pgNeg,terreno:pgFicha,mapa:pgMapa,dashboard:pgDash,tarefas:pgTarefas,config:pgConfig})[UI.route]();posRender();
   renderModal();
 }
 let tmr;function toast(m,e){const el=$('#toast');el.textContent=m;el.className='toast show'+(e?' err':'');clearTimeout(tmr);tmr=setTimeout(()=>el.className='toast',2800)}
@@ -778,7 +778,7 @@ document.addEventListener('click',e=>{
   if(!e.target.closest('.adv-mais'))document.querySelectorAll('.adv-mais.aberto').forEach(x=>{x.classList.remove('aberto');x.querySelector('.adv-mb')?.setAttribute('aria-expanded','false')});
   const a=e.target.closest('[data-a]');if(!a)return;const A=a.dataset.a;const t=UI.route==='terreno'?T(UI.id):null;
   if(A==='scrim'){if(e.target===a){UI.modal=null;renderModal()}return}
-  if(viabClick(A,a,t||(UI.route==='viab'?T(VB(UI.vid)?.tid):null))||partesClick(A,a,t)||fasesClick(A,a,t)||funilClick(A,a,t)||setoresClick(A,a,t))return;
+  if(viabClick(A,a,t||(UI.vbPop?T(VB(UI.vbPop)?.tid):null))||partesClick(A,a,t)||fasesClick(A,a,t)||funilClick(A,a,t)||setoresClick(A,a,t))return;
   switch(A){
     case 'nav':go(a.dataset.r);break;
     case 'abrir':BLA={geral:true};blId=a.dataset.id;go('terreno',{id:a.dataset.id,tab:a.dataset.tab||'geral',from:a.dataset.from||(UI.route==='terreno'?UI.from:UI.route==='inicio'?'inicio':'terrenos')});if(a.dataset.tab&&a.dataset.tab!=='geral'){blocoAbre(a.dataset.tab);render();rolarBloco(a.dataset.tab)}break;
