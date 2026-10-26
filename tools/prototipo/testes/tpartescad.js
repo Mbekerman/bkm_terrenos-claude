@@ -27,7 +27,7 @@ const incluir=async(p,sc,tipo,a,bv,shot)=>{const b=await abreMs(p,sc,tipo);await
   await p.evaluate(()=>document.getElementById('ms-f').requestSubmit());await p.waitForTimeout(150)};
 const R=i=>`#nv-pt-lista .nv-pt:nth-child(${i})`;
 const bloco=async(p,k)=>{await p.evaluate(k=>{const b=document.querySelector(`[data-a=bloco][data-t=${k}]`);if(b.getAttribute('aria-expanded')!=='true')b.click()},k);await p.waitForTimeout(250)};
-const enviar=async(p,id)=>{await p.evaluate(id=>document.getElementById(id).requestSubmit(),id);await p.waitForTimeout(300)};
+const enviar=async(p,id)=>{await p.evaluate(id=>{if(id==='f-novo')document.querySelector('#f-novo [name=tipoEmp][value=mercado]')?.click();document.getElementById(id).requestSubmit()},id);await p.waitForTimeout(300)};
 
 let {p,ctx}=await abre(1440,900);
 await passo2(p);
