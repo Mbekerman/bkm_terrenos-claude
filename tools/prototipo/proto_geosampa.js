@@ -114,14 +114,16 @@ function geoDxf(desenho,feic,bb,titulo,rotulo){const L=[],out=(...a)=>{for(let i
 function geoBaixar(t,k){const a=GEO_ARQ[t.id]?.[k];if(!a){toast('Arquivo gerado em outra sessão: busque de novo para baixar.',true);return}
   const d=t.docs.find(x=>x.tipo==='lote_'+k),url=URL.createObjectURL(a),el=document.createElement('a');el.href=url;el.download=d?.nome||'lote.'+k;document.body.appendChild(el);el.click();el.remove();setTimeout(()=>URL.revokeObjectURL(url),4000)}
 
+// O que toca o lote, camada a camada (também na seção de parâmetros urbanísticos)
+const geoLinhas=g=>GEO_CAMADAS.filter(c=>!/^zona_fiscal$|^perimetro_zona/.test(c[0])).map(([k,tema,,fmt,grav])=>{const fs=g.camadas[k],erro=g.erros.includes(k);
+  const vals=fs?[...new Set(fs.map(x=>{try{return fmt(x)}catch(e){return null}}).filter(Boolean))]:[];
+  return {tema,grav,erro,vals}});
 // Quadro na inscrição: última consulta e o que toca o lote.
 function geoQuadro(t,ins,i){const g=(ins.geo||[])[0];
   if(!g)return loteVazio(t,ins,i,'Traz do GeoSampa o lote, a poligonal, o zoneamento e as restrições, e guarda a planta (PDF) e o desenho (DXF).');
   const p=g.lote,end=[p.nm_logradouro_completo,p.cd_numero_porta].filter(Boolean).join(', ');
   const lin=(k,v)=>`<div class="kv"><dt>${k}</dt><dd>${v}</dd></div>`;
-  const linhas=GEO_CAMADAS.filter(c=>!/^zona_fiscal$|^perimetro_zona/.test(c[0])).map(([k,tema,,fmt,grav])=>{const fs=g.camadas[k],erro=g.erros.includes(k);
-    const vals=fs?[...new Set(fs.map(x=>{try{return fmt(x)}catch(e){return null}}).filter(Boolean))]:[];
-    return {tema,grav,erro,vals}});
+  const linhas=geoLinhas(g);
   const zonasTxt=g.zonas.map(z=>`${esc(z.sigla)} <span class="faint">${m2(z.area_m2)}</span>`).join(' + ');
   const siglas=k=>[...new Set((g.camadas[k]||[]).map(x=>x.cd_zoneamento_perimetro))].sort().join(' + ');
   const dif=siglas('perimetro_zona_lei_18081_24')&&siglas('perimetro_zona_lei_18177_24')&&siglas('perimetro_zona_lei_18081_24')!==siglas('perimetro_zona_lei_18177_24');
@@ -140,4 +142,4 @@ async function geoPoligono(sql){const d=digits(sql);
   const lote=lotes.find(f=>String(f.properties.cd_digito_sql)===d[10]&&f.properties.tx_situ_lote!=='INATIVO');
   if(!lote){if(lotes.length)throw `O dígito do SQL não confere (no GeoSampa é ${lotes[0].properties.cd_digito_sql}).`;return null}
   return geoAneis(lote.geometry)[0].slice(0,-1).map(p=>utmLatLng(p[0],p[1]))}
-LOTE_ADAPT.sp={url:()=>GEO_BASE,buscar:geoBuscar,quadro:geoQuadro,poligono:geoPoligono};
+LOTE_ADAPT.sp={url:()=>GEO_BASE,buscar:geoBuscar,quadro:geoQuadro,poligono:geoPoligono,linhas:geoLinhas};

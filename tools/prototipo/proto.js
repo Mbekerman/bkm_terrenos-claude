@@ -147,8 +147,8 @@ function seed(){
     pessoas:[{nome:'Construpar Participações Ltda.',tipo:'PJ',papel:'proprietario',pct:100,tel:''},{nome:'Dr. Álvaro Mendes',tipo:'PF',papel:'procurador',pct:null,tel:'(11) 98888-1234'}],
     corretores:[{cid:'c1',principal:true},{cid:'c2',principal:false}],
     infra:infra({energia:'sim',agua:'sim',esgoto:'sim',gas:'nao',asfalto:'sim',drenagem:'sim',iluminacao:'sim',calcada:'sim',fibra:'sim'}),
-    analises:[{id:uid(),data:H(50),fonte:'GeoSampa',status:'substituida',zonas:[{sigla:'ZM',area:2000,gmS:'limitado',gabM:28,gpS:'nao_informado',gabPav:null,caS:'limitado',ca:2,obs:''}]},
-              {id:uid(),data:H(18),fonte:'Certidão de uso do solo',status:'vigente',zonas:[{sigla:'ZEU',area:1400,gmS:'sem_limite',gabM:null,gpS:'sem_limite',gabPav:null,caS:'limitado',ca:4,obs:'Eixo de transformação urbana'},{sigla:'ZM',area:520,gmS:'limitado',gabM:28,gpS:'nao_informado',gabPav:null,caS:'limitado',ca:2,obs:'Fundos do lote'}]}],
+    analises:[{id:uid(),data:H(50),fonte:'GeoSampa',status:'substituida',zonas:[{sigla:'ZM',area:2000,ins:'089.123.0045-6',macro:null,exc:null,obs:''}]},
+              {id:uid(),data:H(18),fonte:'Certidão de uso do solo',status:'vigente',zonas:[{sigla:'ZEU',area:1400,ins:'089.123.0045-6',macro:null,exc:null,obs:'Eixo de transformação urbana'},{sigla:'ZM',area:520,ins:'089.123.0045-6',macro:null,exc:null,obs:'Fundos do lote'}]}],
     ofertas:[{id:'o1',cid:'c1',data:H(62),valor:9000000,forma:'permuta_com_torna',obsPag:'60% em dinheiro na escritura; 40% em unidades no próprio empreendimento.',aceita:'Aceita permuta de até 40% em unidades, preferindo 2 dormitórios com vaga.',validade:H(-30),status:'ativa'},
              {id:'o2',cid:'c2',data:H(41),valor:8700000,forma:'dinheiro',obsPag:'À vista, com desconto para pagamento em 60 dias.',aceita:'Não aceita permuta.',validade:null,status:'ativa'}],
     neg:neg('negociacao','proposta_enviada',9,{temp:4,ofRef:'o1',viab:{nome:'Estudo base · 2 dormitórios',vgv:62400000,margem:15.2,pmax:8400000,em:H(35)}},7),
@@ -170,7 +170,7 @@ function seed(){
     dilig:[{id:uid(),cat:'ambiental',titulo:'Área de preservação no fundo do lote (córrego)',sit:'impeditiva',resp:'Camila Torres',prov:'Levantar APP e área remanescente antes de seguir.'},{id:uid(),cat:'ocupacional',titulo:'Confirmar ausência de ocupação irregular',sit:'em_analise',resp:'Camila Torres',prov:''}],
     pessoas:[{nome:'Lajeado Empreendimentos Ltda.',tipo:'PJ',papel:'proprietario',pct:100,tel:'(11) 3333-1010'}],
     infra:infra({energia:'sim',agua:'sim',esgoto:'nao',asfalto:'sim'}),
-    analises:[{id:uid(),data:H(30),fonte:'GeoSampa',status:'vigente',zonas:[{sigla:'ZEIS-2',area:5400,gmS:'sem_limite',gabM:null,gpS:'nao_informado',gabPav:null,caS:'limitado',ca:2,obs:''}]}],
+    analises:[{id:uid(),data:H(30),fonte:'GeoSampa',status:'vigente',zonas:[{sigla:'ZEIS-2',area:5400,ins:'228.004.0012-1',macro:null,exc:null,obs:''}]}],
     ofertas:[{id:'o3',cid:null,data:H(48),valor:9800000,forma:'dinheiro',obsPag:'Pagamento em 3 parcelas.',aceita:'Aceita conversar sobre permuta financeira.',status:'ativa'}],
     neg:neg('contrato','contrato_enviado',26,{temp:3,ofRef:'o3',viab:{nome:'ZEIS-2 · 2 dormitórios',vgv:78300000,margem:16.2,pmax:10900000,em:H(30)}},6),
     propostas:[{v:1,origem:'bkm',data:H(40),valor:9200000,forma:'dinheiro',cond:'Três parcelas: 30% na promessa, 70% em duas parcelas condicionadas à aprovação.',status:'aceita'}],
@@ -189,14 +189,14 @@ function seed(){
     pessoas:[{nome:'Família Moretti (4 herdeiros)',tipo:'PF',papel:'proprietario',pct:null,tel:''}],
     ofertas:[{id:'o6',cid:'c2',data:H(20),valor:3900000,forma:'permuta_geral',obsPag:'Aberto a combinar dinheiro e unidades.',aceita:'Sim, desde que parte em dinheiro.',status:'ativa'}],corretores:[{cid:'c2',principal:true}],
     neg:neg('estudos','estudo_viabilidade',8,{temp:2,ofRef:'o6'},3),
-    tarefas:[{id:uid(),titulo:'Rodar estudo de viabilidade no BKM',desc:'',resp:'Rafael Souza',prazo:H(-3),status:'em_andamento',prio:'alta',resultado:''}]}));
+    tarefas:[{id:uid(),titulo:'Montar o estudo de viabilidade',desc:'',resp:'Rafael Souza',prazo:H(-3),status:'em_andamento',prio:'alta',resultado:''}]}));
   // 5 — aprovação interna, acima do teto
   T.push(base({codigo:'TER-000112',nome:'Área Barão do Jequitibá',prioridade:'alta',resp:'Moisés',origem:'corretor',dataIdent:H(121),logradouro:'Rua Barão do Jequitibá',numero:'512',bairro:'Vila Prudente',zona:'sudeste',
     aDoc:2950,aLev:2938,fonteArea:'levantamento',testada:38,topografia:'plano',posicao:'meio_quadra',formato:'regular',ocupacao:'parcialmente_ocupado',aConst:420,aDemolir:420,demolicao:'provavel',
     mats:[{num:'98.442',cri:'6º CRI',area:1500,data:H(14)},{num:'98.443',cri:'6º CRI',area:1450,data:H(14)}],
     pessoas:[{nome:'Têxtil Paulistana S.A.',tipo:'PJ',papel:'proprietario',pct:100,tel:''}],
     infra:infra({energia:'sim',agua:'sim',esgoto:'sim',gas:'sim',asfalto:'sim',drenagem:'sim',iluminacao:'sim',calcada:'sim',fibra:'sim'}),
-    analises:[{id:uid(),data:H(80),fonte:'GeoSampa',status:'vigente',zonas:[{sigla:'ZM',area:2950,gmS:'limitado',gabM:28,gpS:'nao_informado',gabPav:null,caS:'limitado',ca:2,obs:''}]}],
+    analises:[{id:uid(),data:H(80),fonte:'GeoSampa',status:'vigente',zonas:[{sigla:'ZM',area:2950,ins:'171.058.0033-9',macro:null,exc:null,obs:''}]}],
     ofertas:[{id:'o7',cid:'c2',data:H(121),valor:6900000,forma:'dinheiro',status:'ativa',obsPag:'',aceita:''}],corretores:[{cid:'c2',principal:true}],
     neg:neg('negociacao','contra_proposta',30,{temp:5,ofRef:'o7',viab:{nome:'Estudo base',vgv:44200000,margem:14.2,pmax:6400000,em:H(90)},
       pedido:{id:'ped1',tipo:'etapa',dest:'contrato',modo:'sequencia',por:'Rafael Souza',em:H(1)+'T16:20:00.000',dados:{},niveis:[{nivel:2,ordem:1,previsto:'Ana Prado',status:'pendente'}]}},12),
@@ -321,8 +321,8 @@ const areaAdotada=t=>t.fonteArea==='poligonal'?areaPolT(t):({documental:t.aDoc,c
 const ofertaRef=t=>t.ofertas.find(o=>o.id===t.neg?.ofRef)||t.ofertas.filter(o=>o.status==='ativa').sort((a,b)=>b.data.localeCompare(a.data))[0]||t.ofertas[0]||null;
 const corrPrincipal=t=>{const c=t.corretores.find(x=>x.principal);return c?corretor(c.cid):null};
 const analiseVig=t=>t.analises.find(a=>a.status==='vigente');
-const zonasTxt=t=>{const a=analiseVig(t);return a?a.zonas.slice().sort((x,y)=>(y.area||0)-(x.area||0)).map(z=>z.sigla).join(' + '):null};
-const caMax=t=>{const a=analiseVig(t);const v=a?a.zonas.filter(z=>z.caS==='limitado').map(z=>z.ca):[];return v.length?Math.max(...v):null};
+const zonasTxt=t=>{const a=analiseVig(t);if(!a)return null;const o={};a.zonas.forEach(z=>o[z.sigla]=(o[z.sigla]||0)+(z.area||0));return Object.entries(o).sort((x,y)=>y[1]-x[1]).map(([s])=>s).join(' / ')};
+const caMax=t=>{const r=resumoUrb(t,'mercado');return r&&r.caMax>0?r.caMax:null};  // maior CA máximo de mercado (catálogo + exceções; proto_zonas.js)
 const abertas=t=>t.tarefas.filter(k=>k.status!=='concluida'&&k.status!=='cancelada');
 const atrasadas=t=>abertas(t).filter(k=>k.prazo<HOJE);
 const proxTarefa=t=>abertas(t).sort((a,b)=>a.prazo.localeCompare(b.prazo))[0];
@@ -330,7 +330,7 @@ const lastProp=t=>t.propostas[t.propostas.length-1];
 const docVal=d=>{const v=TIPOS_DOC[d.tipo][2];return v&&d.emitido?addD(d.emitido,v):null};
 const docSt=d=>{if(!d||!d.emitido)return 'pendente';if(d.status==='rejeitado')return 'rejeitado';const v=docVal(d);return v&&v<HOJE?'vencido':d.status};
 const negAtiva=t=>t.neg&&t.neg.status==='ativo';
-const acimaMax=t=>{const lp=lastProp(t);return !!(t.neg?.viab&&lp&&lp.origem==='bkm'&&lp.valor>t.neg.viab.pmax)};
+const acimaMax=t=>{const lp=lastProp(t);return !!(t.neg?.viab?.pmax!=null&&lp&&lp.origem==='bkm'&&lp.valor>t.neg.viab.pmax)};
 const infraNV=t=>INFRA.filter(([k])=>!t.infra[k]||t.infra[k].d==='nao_verificado').length;
 
 /* completude: campos que importam para decidir a compra */
@@ -517,7 +517,6 @@ function abaComercial(t){
 function abaNegociacao(t){
   const n=t.neg;
   if(!n)return `<section class="sec"><div class="sec-b"><div class="empty">Sem negociação aberta. Ela abre quando a primeira oferta é registrada.<br><button class="btn primary sm" style="margin-top:12px" data-a="nova-oferta">${ic('add',16)}Registrar oferta</button></div></div></section>`;
-  const v=n.viab,ad=areaAdotada(t);
   const chain=t.propostas.slice().reverse();
   const form=UI.propForm?`<section class="sec"><form data-form="prop"><div class="sec-h"><h2>Nova proposta · v${t.propostas.length+1}</h2></div><div class="sec-b"><div class="editgrid">
     <div class="field"><label for="pp-o">Origem</label><select id="pp-o" name="origem"><option value="bkm">BKM</option><option value="vendedor">Vendedor</option></select></div>
@@ -533,14 +532,12 @@ function abaNegociacao(t){
   return `<div class="stack">${trilhaHtml(t)}
   ${secPartes(t)}
   ${secReunioes(t)}
-  <section class="sec"><div class="sec-h"><h2>Viabilidade</h2></div><div class="sec-b">${v?`<div class="metrics"><div class="metric"><div class="ml">VGV</div><div class="mv">${mi(v.vgv)}</div></div><div class="metric"><div class="ml">Margem</div><div class="mv">${num(v.margem,1)}%</div></div><div class="metric"><div class="ml">Preço máximo do terreno</div><div class="mv">${mi(v.pmax)}</div></div></div>
-    <div class="faint" style="font-size:12px;margin-top:10px">${esc(v.nome)} · ${fd(v.em)}${ad?` · ${brl(v.pmax/ad)}/m² sobre a área adotada`:''}</div>`
-    :`<div class="banner blue">${ic('link')}<div style="flex:1"><div class="bt">Sem estudo vinculado</div><div>Rode a viabilidade no BKM e vincule aqui para ter o preço máximo.</div>${negAtiva(t)?`<button class="btn sm" style="margin-top:10px" data-a="viab">${ic('link',16)}Vincular estudo</button>`:''}</div></div>`}</div></section>
+  ${viabSecao(t)}
   <section class="sec"><div class="sec-h"><h2>Propostas e contrapropostas</h2><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${negAtiva(t)&&!UI.propForm?`<button class="btn primary sm" data-a="prop-form">${ic('add',16)}Nova proposta</button>`:''}</span></div><div class="sec-b">
   ${form}
-  ${chain.length?`<div class="chain" style="margin-top:${UI.propForm?16:0}px">${chain.map((p,i)=>{const over=v&&p.valor>v.pmax;return `<div class="pnode ${p.origem}"><span class="pd">v${p.v}</span><div class="pc">
+  ${chain.length?`<div class="chain" style="margin-top:${UI.propForm?16:0}px">${chain.map((p,i)=>{const over=n.viab?.pmax!=null&&p.valor>n.viab.pmax;return `<div class="pnode ${p.origem}"><span class="pd">v${p.v}</span><div class="pc">
     <div class="ph"><span><span class="pv">${brl(p.valor)}</span> <span class="muted" style="font-size:13px">· ${p.origem==='bkm'?'BKM':'Vendedor'}${p.v>1?` responde à v${p.v-1}`:''}</span></span>
-    <span style="display:flex;gap:6px;flex-wrap:wrap">${i===0&&negAtiva(t)?`<select aria-label="Status da proposta" data-ch="prop-status" class="chip" style="border:0;height:26px;cursor:pointer">${Object.entries(OPT.statusProp).filter(([k])=>k!=='substituida').map(([k,l])=>`<option value="${k}" ${k===p.status?'selected':''}>${l}</option>`).join('')}</select>`:statusPropChip(p.status)}${over&&p.origem==='bkm'?`<span class="chip warn">${mi(p.valor-v.pmax)} acima do máximo</span>`:''}</span></div>
+    <span style="display:flex;gap:6px;flex-wrap:wrap">${i===0&&negAtiva(t)?`<select aria-label="Status da proposta" data-ch="prop-status" class="chip" style="border:0;height:26px;cursor:pointer">${Object.entries(OPT.statusProp).filter(([k])=>k!=='substituida').map(([k,l])=>`<option value="${k}" ${k===p.status?'selected':''}>${l}</option>`).join('')}</select>`:statusPropChip(p.status)}${over&&p.origem==='bkm'?`<span class="chip warn">${mi(p.valor-n.viab.pmax)} acima do máximo</span>`:''}</span></div>
     <div class="pm">${OPT.forma[p.forma]} · apresentada ${fd(p.data)}${p.validade?` · válida até ${fd(p.validade)}`:''}</div>${p.cond?`<div class="pt">${esc(p.cond)}</div>`:''}</div></div>`}).join('')}</div>`:'<div class="muted">Nenhuma proposta ainda.</div>'}</div></section></div>`;
 }
 function abaTarefas(t){
@@ -560,20 +557,7 @@ function abaTarefas(t){
   <div class="hint" style="margin-top:8px">"Atrasada" é calculada: prazo vencido e status em aberto. Ninguém precisa marcar.</div></div></section></div>`;
 }
 function abaUrbanismo(t){
-  const a=analiseVig(t),hist=t.analises.filter(x=>x.status==='substituida');
-  const lim=(st,v,suf)=>st==='sem_limite'?'<span class="chip good">Sem limite</span>':st==='limitado'?`${num(v,2)}${suf}`:'<span class="faint">Não informado</span>';
-  const novo=UI.edit==='analise'?`<form data-form="analise" style="margin-top:12px"><div class="editgrid"><div class="field"><label for="an-d">Data da verificação</label><input id="an-d" name="data" type="date" value="${HOJE}"></div><div class="field"><label for="an-f">Fonte</label><input id="an-f" name="fonte" placeholder="GeoSampa, certidão de uso do solo..." required></div></div>
-    ${[0,1,2].map(i=>`<div class="editgrid" style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--linha)"><div class="field"><label for="z${i}">Zoneamento ${i+1}${i?' (opcional)':''}</label><select id="z${i}" name="sigla${i}" ${i?'':'required'}><option value="">—</option>${ZONEAMENTOS.map(z=>`<option>${z}</option>`).join('')}</select></div>
-    <div class="field"><label for="za${i}">Área abrangida (m²)</label><input id="za${i}" name="area${i}" inputmode="decimal"></div>
-    ${[['gm','Gabarito (m)'],['gp','Gabarito (pavimentos)'],['ca','CA máximo']].map(([k,l])=>`<div class="field"><label for="${k}s${i}">${l}</label><span style="display:flex;gap:6px"><select id="${k}s${i}" name="${k}S${i}" style="flex:1 1 55%">${Object.entries(OPT.limite).map(([v,t])=>`<option value="${v}">${t}</option>`).join('')}</select><input aria-label="${l}: valor" name="${k}V${i}" inputmode="decimal" placeholder="valor" style="flex:1 1 45%"></span></div>`).join('')}</div>`).join('')}
-    <div class="hint" style="margin-top:8px">Cada parâmetro é não informado, limitado (com valor) ou sem limite identificado. Zero nunca significa "sem limite".</div>
-    <div class="sec-f" style="padding:12px 0 0"><button type="button" class="btn text" data-a="cancel-edit">Cancelar</button><button class="btn primary">Registrar análise</button></div></form>`:'';
-  return `<div class="stack"><section class="sec"><div class="sec-h"><h2>Análise urbanística</h2>${UI.edit!=='analise'?`<button class="btn sm" data-a="edit" data-s="analise">${ic('add',16)}${a?'Nova análise':'Registrar análise'}</button>`:''}</div><div class="sec-b">
-  ${a?`<div class="muted" style="font-size:13px;margin-bottom:10px">Vigente · verificada em ${fd(a.data)} · fonte: ${esc(a.fonte)}</div>
-  <div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Zoneamento</th><th class="r">Área abrangida</th><th>Gabarito (m)</th><th>Gabarito (pav.)</th><th>CA máximo</th><th>Restrições</th></tr></thead><tbody>${a.zonas.map(z=>`<tr><td><b>${esc(z.sigla)}</b></td><td class="r">${m2(z.area)}</td><td>${lim(z.gmS,z.gabM,' m')}</td><td>${lim(z.gpS,z.gabPav,' pav.')}</td><td>${lim(z.caS,z.ca,'')}</td><td class="muted">${esc(z.obs||'—')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Nenhuma análise. Zoneamento, gabarito e CA ficam ligados à análise e à porção do terreno, com fonte e data.</div>'}
-  ${novo}
-  ${hist.length?`<details class="details" style="margin-top:12px"><summary>${hist.length} análise${hist.length>1?'s':''} anterior${hist.length>1?'es':''}</summary>${hist.map(h=>`<div class="muted" style="font-size:13px;padding:4px 0">${fd(h.data)} · ${esc(h.fonte)} · ${h.zonas.map(z=>`${z.sigla} CA ${num(z.ca,2)}`).join(', ')}</div>`).join('')}</details>`:''}
-  </div></section>
+  return `<div class="stack">${secAnaliseUrb(t)}
   <section class="sec"><div class="sec-h"><h2>Infraestrutura na porta</h2><span class="faint" style="font-size:13px">${infraNV(t)} não verificados</span></div><div style="padding-bottom:6px">
   ${INFRA.map(([k,l])=>{const r=t.infra[k]||{d:'nao_verificado'};return `<div class="infra"><span>${l}</span><span class="seg3" role="group" aria-label="${l}">${[['nao_verificado','Não verificado','nv'],['sim','Sim','sim'],['nao','Não','nao']].map(([v,lb,c])=>`<button type="button" class="${c}" aria-pressed="${r.d===v}" data-a="infra" data-k="${k}" data-v="${v}">${lb}</button>`).join('')}</span>
   <span class="meta">${r.d!=='nao_verificado'?`${fd(r.data)} · <input aria-label="Fonte da verificação de ${l}" data-ch="infra-fonte" data-k="${k}" value="${esc(r.fonte)}" style="border:0;border-bottom:1px dashed var(--linha);background:transparent;font-size:12px;color:var(--texto-suave);width:60%">`:''}</span></div>`}).join('')}</div>
@@ -654,7 +638,7 @@ function pgFicha(){
   return `${linhaTopo(t)}<button class="back" data-a="nav" data-r="${UI.from}">${ic('back',20)}${UI.from==='negociacoes'?'Fases':UI.from==='inicio'?'Início':'Terrenos'}</button>
   <div class="dhead"><div style="min-width:0"><div class="eyebrow"><span class="num">${t.codigo}</span>${n?`<span>·</span><span class="num">${n.codigo}</span>`:''}${fasesAbertas(t).filter(f=>f!==faseEnt()).map(f=>`<span>·</span><span class="num">${procAberto(t,f).codigo}</span>`).join('')}<span>·</span><span>identificado em ${fd(t.dataIdent)}</span>${t.situacao==='arquivado'?'<span class="chip">Arquivado</span>':''}</div>
     <h1>${esc(t.nome)}</h1><div class="muted" style="margin-top:4px">${esc(endereco)||'<span class="faint">Endereço não informado</span>'}</div>
-    <div class="dchips">${chipFase(t)}${ad!=null?`<span class="chip num">${m2(ad)}</span>`:''}${zt?`<span class="chip">${esc(zt)}${caMax(t)!=null?' · CA '+num(caMax(t),2):''}</span>`:''}${t.prioridade?`<span class="chip ${t.prioridade==='estrategica'||t.prioridade==='alta'?'warn':''}">Prioridade ${OPT.prioridade[t.prioridade].toLowerCase()}</span>`:''}${atrasadas(t).length?`<span class="chip crit">${atrasadas(t).length} tarefa${atrasadas(t).length>1?'s':''} atrasada${atrasadas(t).length>1?'s':''}</span>`:''}</div></div>
+    <div class="dchips">${chipFase(t)}${ad!=null?`<span class="chip num">${m2(ad)}</span>`:''}${zt?`<span class="chip">${esc(zt)}</span>`:''}${t.prioridade?`<span class="chip ${t.prioridade==='estrategica'||t.prioridade==='alta'?'warn':''}">Prioridade ${OPT.prioridade[t.prioridade].toLowerCase()}</span>`:''}${atrasadas(t).length?`<span class="chip crit">${atrasadas(t).length} tarefa${atrasadas(t).length>1?'s':''} atrasada${atrasadas(t).length>1?'s':''}</span>`:''}</div></div>
     <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-end"><div style="display:flex;align-items:center;gap:8px">${av(t.resp)}<div><div style="font-weight:500">${esc(t.resp)}</div><div class="faint" style="font-size:12px">Responsável</div></div></div>${n?tempPicker(t):''}</div></div>
   <div class="stack">
   <div class="complete"><span class="progress"><span class="bar"><span style="width:${c.pct}%"></span></span><b>Ficha ${c.pct}% completa</b></span>${c.faltam.length?`<span class="muted" style="font-size:13px">Falta:</span><span class="missing">${c.faltam.slice(0,6).map(f=>`<button data-a="ir" data-t="${f[2]}" data-s="${f[3]||''}">${f[0]}</button>`).join('')}${c.faltam.length>6?`<span class="faint" style="font-size:12px;align-self:center">+${c.faltam.length-6}</span>`:''}</span>`:''}</div>
@@ -715,7 +699,7 @@ function go(route,x={}){if(UI.edMini)Object.assign(UI,{edMini:false,mpModo:null,
 function renderModal(){
   const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.nv=null;UI.nvPool=null;UI.nvKmz=null;UI.ofPoly=null;UI.kmzNovo=false;UI.lotes=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;UI.alvoParte=null;return}
   let h='';const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`;
-  h=partesModal(M,fechar)||fasesModal(M,fechar)||funilModal(M,fechar)||setoresModal(M,fechar);
+  h=viabModal(M,fechar)||partesModal(M,fechar)||fasesModal(M,fechar)||funilModal(M,fechar)||setoresModal(M,fechar);
   if(M==='novo')h=UI.nv?nvDadosHtml(fechar):nvPasso1Html(fechar);
   if(M==='novo-sobre')h=nvSobreHtml(fechar);
   if(M==='lotes-poly')h=lotesPolyHtml(fechar);
@@ -728,7 +712,6 @@ function renderModal(){
     <div class="field full"><label for="o-o">Observação sobre a forma de pagamento</label><input id="o-o" name="obsPag"></div>
     <div class="field full"><label for="o-a">Aceita permuta</label><input id="o-a" name="aceita"></div></div></form>
     <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-of">Registrar</button></div>`}
-  if(M==='viab')h=`<div class="dh"><h2>Vincular estudo de viabilidade</h2>${fechar}</div><form data-form="viab" id="f-vb"><div class="fields"><div class="field full"><label for="vb-n">Nome</label><input id="vb-n" name="nome" value="Estudo base" required></div><div class="field"><label for="vb-v">VGV (R$)</label><input id="vb-v" name="vgv" inputmode="decimal"></div><div class="field"><label for="vb-m">Margem (%)</label><input id="vb-m" name="margem" inputmode="decimal"></div><div class="field full"><label for="vb-p">Preço máximo do terreno (R$)</label><input id="vb-p" name="pmax" inputmode="decimal" required></div></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-vb">Vincular</button></div>`;
   if(M==='geo')h=geoModalHtml(fechar);
   if(M==='poi')h=`<div class="dh"><div><h2>Novo ponto de interesse</h2><div class="muted" style="margin-top:4px">Serve para medir a distância dos terrenos e traçar rotas.</div></div>${fechar}</div>
   <form data-form="poi" id="f-poi"><div class="fields"><div class="field full"><label for="po-n">Nome</label><input id="po-n" name="nome" required placeholder="Estação, escola, terminal..."></div>
@@ -782,7 +765,7 @@ document.addEventListener('click',e=>{
   if(!e.target.closest('.adv-mais'))document.querySelectorAll('.adv-mais.aberto').forEach(x=>{x.classList.remove('aberto');x.querySelector('.adv-mb')?.setAttribute('aria-expanded','false')});
   const a=e.target.closest('[data-a]');if(!a)return;const A=a.dataset.a;const t=UI.route==='terreno'?T(UI.id):null;
   if(A==='scrim'){if(e.target===a){UI.modal=null;renderModal()}return}
-  if(partesClick(A,a,t)||fasesClick(A,a,t)||funilClick(A,a,t)||setoresClick(A,a,t))return;
+  if(viabClick(A,a,t||(UI.vbPop?T(VB(UI.vbPop)?.tid):null))||partesClick(A,a,t)||fasesClick(A,a,t)||funilClick(A,a,t)||setoresClick(A,a,t)||zonasClick(A,a,t))return;
   switch(A){
     case 'nav':go(a.dataset.r);break;
     case 'abrir':BLA={geral:true};blId=a.dataset.id;go('terreno',{id:a.dataset.id,tab:a.dataset.tab||'geral',from:a.dataset.from||(UI.route==='terreno'?UI.from:UI.route==='inicio'?'inicio':'terrenos')});if(a.dataset.tab&&a.dataset.tab!=='geral'){blocoAbre(a.dataset.tab);render();rolarBloco(a.dataset.tab)}break;
@@ -813,7 +796,7 @@ document.addEventListener('click',e=>{
     case 'ent-add-ponto':{const id=a.dataset.id;go('mapa',{mpFoco:id,mpView:null});UI.poiVolta=id;UI.mpModo='poi';mpRefresh();setTimeout(()=>{if(UI.mpModo==='poi')fecharPopup()},400);break}
     case 'adv-req':ADV_REQ=!ADV_REQ;render();break;
     case 'adv-mais':{const w=a.closest('.adv-mais'),ab=!w.classList.contains('aberto');document.querySelectorAll('.adv-mais.aberto').forEach(x=>{x.classList.remove('aberto');x.querySelector('.adv-mb').setAttribute('aria-expanded','false')});if(ab){w.classList.add('aberto');a.setAttribute('aria-expanded','true')}break}
-    case 'viab':UI.modal='viab';renderModal();break;
+    case 'viab':if(viabsDe(t.id).length){blocoAbre('negociacao');render();rolarBloco('negociacao','viab')}else viabClick('vb-novo',a,t);break;
     case 'sv-fechar':svFechar();break;
     case 'mp-desel':mpSelecionar(null);break;
     case 'mp-eu':mpEu();break;
@@ -872,7 +855,7 @@ $('#file-in').addEventListener('change',e=>{const f=e.target.files?.[0],t=T(UI.i
   const unico=k!=='foto'&&k!=='planta';let d=unico?t.docs.find(x=>x.tipo===k):null;
   if(!d){d={tipo:k,status:'recebido',emitido:HOJE,versoes:0,nome:unico?null:f.name};t.docs.push(d)}d.versoes++;d.emitido=HOJE;d.status='recebido';log(t,`${TIPOS_DOC[k][0]}: versão ${d.versoes} enviada`);save();render();toast('Arquivo enviado. Falta validar.')});
 document.addEventListener('change',e=>{const el=e.target;
-  if(partesChange(el)||fasesChange(el)||funilChange(el))return;
+  if(viabChange(el)||partesChange(el)||fasesChange(el)||funilChange(el)||zonasChange(el))return;
   if(el.dataset.ch==='mp-cor'){UI.mp.cor=el.value;mpRefresh();return}
   if(el.dataset.ch==='mp-zona'){UI.mp.zona=el.value;mpRefresh();return}
   if(el.dataset.ch==='dash-sel'){const s=UI.dash.sel;UI.dash.sel=el.checked?Object.keys(DIMS).filter(k=>s.includes(k)||k===el.value):s.filter(k=>k!==el.value);render();return}
@@ -886,15 +869,16 @@ document.addEventListener('change',e=>{const el=e.target;
   if(el.dataset.ch==='prop-status'){const lp=lastProp(t);lp.status=el.value;log(t,`Proposta v${lp.v}: ${OPT.statusProp[el.value]}`);save();render()}
 });
 document.addEventListener('input',e=>{const el=e.target;
+  if(viabInput(el))return;
   if(el.id==='mp-q'){UI.mp.q=el.value;mpRefresh();return}
   if(el.id==='tk-q'){UI.tk.q=el.value;const p=el.selectionStart;render();const n=$('#tk-q');if(n){n.focus();n.setSelectionRange(p,p)}return}
   if(el.id==='q-top'){UI.q=el.value;if(UI.route!=='terrenos'){go('terrenos');$('#q-top').focus()}else{const r=$('#rows');if(r)r.innerHTML=linhas()}}
   if(el.dataset.masc){const m=mascarar(el.value,el.dataset.masc);if(m!==el.value)el.value=m}
   if(el.form?.dataset.form==='novo')dedupe();
-  if(el.id==='pp-v'){const t=T(UI.id),v=lerNum(el.value),w=$('#pp-warn');w.innerHTML=t.neg.viab&&v>t.neg.viab.pmax?`<div class="banner warn">${ic('warn')}<div>${brl(v)} fica ${mi(v-t.neg.viab.pmax)} acima do preço máximo (${mi(t.neg.viab.pmax)}).</div></div>`:''}
+  if(el.id==='pp-v'){const t=T(UI.id),v=lerNum(el.value),w=$('#pp-warn');w.innerHTML=t.neg.viab?.pmax!=null&&v>t.neg.viab.pmax?`<div class="banner warn">${ic('warn')}<div>${brl(v)} fica ${mi(v-t.neg.viab.pmax)} acima do preço máximo (${mi(t.neg.viab.pmax)}).</div></div>`:''}
 });
 document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Object.fromEntries(new FormData(f)),t=UI.alvo?T(UI.alvo):UI.route==='terreno'?T(UI.id):null;
-  if(partesSubmit(f.dataset.form,F,t,f)||fasesSubmit(f.dataset.form,F,t,f)||funilSubmit(f.dataset.form,F,t,f))return;
+  if(viabSubmit(f.dataset.form,F)||partesSubmit(f.dataset.form,F,t,f)||fasesSubmit(f.dataset.form,F,t,f)||funilSubmit(f.dataset.form,F,t,f)||zonasSubmit(f.dataset.form,F,t,f))return;
   switch(f.dataset.form){
     case 'sec':{const s=SECOES[f.dataset.s];s.campos.forEach(([k,,tipo])=>{if(tipo==='fixo'||!(k in F))return;let v=F[k].trim();if(['m2','m','dec'].includes(tipo))v=lerNum(v);else if(tipo==='sel'&&v==='')v=k==='precisao'?'nao_informada':['topografia','posicao','formato','ocupacao'].includes(k)?'nao_informado':k==='demolicao'?'nao_avaliada':null;else if(v==='')v=k==='nome'?t.nome:null;t[k]=v});
       if(t.aDemolir!=null&&t.aConst!=null&&t.aDemolir>t.aConst){toast('A área a demolir não pode passar da área construída.',true);return}
@@ -934,10 +918,6 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       if(lp&&['rascunho','apresentada','em_analise'].includes(lp.status))lp.status=lp.origem===F.origem?'substituida':'recusada';
       t.propostas.push({v:(lp?.v||0)+1,origem:F.origem,data:F.data,validade:F.validade||null,valor:v,forma:F.forma,cond:F.cond,status:F.status});
       log(t,`Proposta v${(lp?.v||0)+1} (${F.origem==='bkm'?'BKM':'Vendedor'}): ${mi(v)}`);UI.propForm=false;save();render();toast('Proposta registrada.');break}
-    case 'analise':{let erro=null;const zonas=[0,1,2].map(i=>{if(!F['sigla'+i])return null;const par=k=>{const st=F[k+'S'+i],v=lerNum(F[k+'V'+i]);if(st==='limitado'&&!(v>0))erro=`Informe o valor de ${k==='ca'?'CA':'gabarito'} limitado em ${F['sigla'+i]}.`;return [st,st==='limitado'?v:null]};
-        const [gmS,gabM]=par('gm'),[gpS,gabPav]=par('gp'),[caS,ca]=par('ca');return {sigla:F['sigla'+i],area:lerNum(F['area'+i]),gmS,gabM,gpS,gabPav,caS,ca,obs:''}}).filter(Boolean);
-      if(erro){toast(erro,true);return}
-      t.analises.forEach(a=>{if(a.status==='vigente')a.status='substituida'});t.analises.push({id:uid(),data:F.data,fonte:F.fonte,status:'vigente',zonas});UI.edit=null;log(t,'Nova análise urbanística: '+zonas.map(z=>z.sigla).join(' + '));save();render();toast('Análise registrada. A anterior foi preservada.');break}
     case 'novo':{const dup=f.dataset.dup;let alvo;if(!UI.nv){toast('Comece pela poligonal do terreno.',true);return}
       if(F.sql&&F.mun!=='outro'&&cidDoNome(F.municipio)!==F.mun){toast(`A inscrição é de ${CIDADES_INSC[F.mun].cidade} e o terreno fica em ${F.municipio.split(' · ')[0]}.`,true);return}
       const nvPt=dup?[]:nvPartesLer(f);
@@ -959,7 +939,6 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       if(o.cid&&!t.corretores.some(x=>x.cid===o.cid))t.corretores.push({cid:o.cid,principal:!t.corretores.some(x=>x.principal)});
       if(!t.neg||!['ativo','stand_by'].includes(t.neg.status)){t.neg=novaNeg(o.id,null);log(t,'Negociação aberta')}else log(t,`Nova oferta: ${mi(o.valor)}${o.poly?` (parte do terreno, ${m2(Math.round(areaPoly(o.poly)))})`:''}`);
       UI.modal=null;save();render();toast('Oferta registrada.');break}
-    case 'viab':t.neg.viab={nome:F.nome,vgv:lerNum(F.vgv),margem:lerNum(F.margem),pmax:lerNum(F.pmax),em:HOJE};log(t,'Estudo vinculado');UI.modal=null;save();render();break;
   }
 });
 function novaNeg(ofRef,temp){const e=STAGES[0][0],s=subInicial(e);return {codigo:'NEG-'+String(Math.floor(Math.random()*900)+100).padStart(5,'0'),etapa:e,sub:s,status:'ativo',desde:HOJE,subDesde:HOJE,temp,ofRef,viab:null,pedido:null,trilha:[{em:agora(),user:me(),ev:'abertura',deEtapa:null,deSub:null,paraEtapa:e,paraSub:s,status:'ativo'}]}}

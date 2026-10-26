@@ -37,7 +37,7 @@ function diffTerreno(a,b){
     if(k==='poly'){campos.push({k,txt:!vb?'Poligonal removida':va?polyLogTxt(areaPoly(va),areaPoly(vb)):'Poligonal desenhada'});return}
     if(k==='neg'){const na=va||{},nb=vb||{};if(!va&&vb){itens.push('Negociação aberta');return}
       Object.keys({...na,...nb}).forEach(x=>{if(NEG_SEM_LOG.includes(x)||JSON.stringify(na[x])===JSON.stringify(nb[x])||typeof (nb[x]??na[x])==='object'&&x!=='viab')return;
-        if(x==='viab'){campos.push({k:'neg.viab',txt:nb.viab?`Estudo de viabilidade vinculado: ${nb.viab.nome||''}`:'Estudo de viabilidade desvinculado'});return}
+        if(x==='viab'){if(na.viab?.id&&na.viab.id===nb.viab?.id)return;campos.push({k:'neg.viab',txt:nb.viab?`Estudo de viabilidade vinculado: ${nb.viab.nome||''}`:'Estudo de viabilidade desvinculado'});return}
         const f=v=>v==null||v===''?'não informado':x==='etapa'?SN(v):x==='sub'?subN(v):x==='status'?STATUS_N[v]||v:x==='motivo'?motivoN(nb.status,v):x==='retomar'?fd(v):x==='temp'?v+'/5':String(v);
         campos.push({k:'neg.'+x,txt:`${NEG_LAB[x]||x}: ${f(na[x])} → ${f(nb[x])}`})});return}
     if(k==='infra'){Object.keys({...va,...vb}).forEach(x=>{const da=va?.[x]?.d,db=vb?.[x]?.d;if(da!==db)campos.push({k:'infra.'+x,txt:`Infraestrutura · ${x}: ${da||'não verificado'} → ${db||'não verificado'}`})});return}
@@ -105,7 +105,7 @@ function semearHistorico(){
     (t.ofertas||[]).forEach(o=>add(o.data,t.resp,`Oferta registrada: ${mi(o.valor)}`,[typeof corretor==='function'&&corretor(o.cid)?`Corretor: ${corretor(o.cid).nome}`:null,o.forma&&OPT.forma?.[o.forma]?`Forma: ${OPT.forma[o.forma]}`:null].filter(Boolean)));
     (t.mats||[]).forEach(m=>add(m.data||addD(t.dataIdent,1),'Rafael Souza',`Matrícula adicionada: ${m.num}`,[m.cri,m.area!=null?`Área: ${m2(m.area)}`:null].filter(Boolean)));
     (t.insc||[]).forEach(i=>add(i.valores?.[0]?.data||addD(t.dataIdent,2),'Rafael Souza',`Inscrição imobiliária adicionada: ${i.sql}`));
-    (t.analises||[]).forEach(a=>add(a.data,'Rafael Souza',`Análise urbanística registrada (${a.fonte})`,(a.zonas||[]).map(z=>`${z.sigla} · CA ${num(z.ca,2)}`)));
+    (t.analises||[]).forEach(a=>add(a.data,'Rafael Souza',`Análise urbanística registrada (${a.fonte})`,(a.zonas||[]).map(z=>`${z.sigla} · ${m2(z.area)}`)));
     (t.neg?.trilha||[]).forEach(x=>add(x.em.slice(0,10),x.user,x.status!=='ativo'?`Status: ${STATUS_N[x.status]}${t.neg.motivo?' · '+motivoN(x.status,t.neg.motivo):''}`:x.ev==='subetapa'?`Subetapa: ${subN(x.paraSub)}`:`Etapa: ${SN(x.paraEtapa)} · ${subN(x.paraSub)}`,x.status==='ativo'?undefined:[t.neg.detalhe||null,x.status==='stand_by'&&t.neg.retomar?`Retomar em ${fd(t.neg.retomar)}`:null].filter(Boolean)));
     if(t.neg?.pedido)add(t.neg.pedido.em,t.neg.pedido.por,`Pedido de aprovação: ${SN(t.neg.pedido.dest)} (gestor)`);
     if(t.neg?.viab)add(t.neg.viab.em,t.resp,`Estudo de viabilidade vinculado: ${t.neg.viab.nome}`,[`Preço máximo ${mi(t.neg.viab.pmax)}`,`Margem ${num(t.neg.viab.margem,1)}%`]);
@@ -271,7 +271,7 @@ function alvoLog(h){
   const R=[[/^Terreno cadastrado/,{b:'cadastro',s:'ident'}],[/^Matr[íi]cula/,{b:'cadastro',s:'mats'}],[/^Inscri[çc][ãa]o/,{b:'cadastro',s:'insc'}],
     [/^Confronta/,{b:'cadastro',s:'confr'}],[/^Pessoa|^Propriet/,{b:'cadastro',s:'pessoas'}],[/^Poligonal|^[ÁA]rea/,{b:'cadastro',s:'areas'}],
     [/^(Oferta|Corretor)/,{b:'comercial'}],[/^Estudo de viabilidade/,{b:'geral'}],[/^(Proposta|Reuni[ãa]o|Oferta de refer)/,{b:'negociacao'}],
-    [/^(Documento|Dilig)/,{b:'documentos'}],[/^Tarefa/,{b:'tarefas'}],[/^(An[áa]lise urban|Infraestrutura|Zoneamento)/,{b:'urbanismo'}],
+    [/^(Documento|Dilig)/,{b:'documentos'}],[/^Tarefa/,{b:'tarefas'}],[/^(Tipo do empreendimento|Zonas d)/,{b:'urbanismo',s:'analise'}],[/^(An[áa]lise urban|Infraestrutura|Zoneamento)/,{b:'urbanismo'}],
     [/^Temperatura/,{topo:'.temp'}],[/^(Etapa|Subetapa|Status|Avan[çc]ou|Voltou|Retomad|Stand [bB]y|Em stand by|Pedido|Aprovad|Aprova[çc][ãa]o|Negocia[çc][ãa]o|Retomar|Revisitar|Motivo|Relato|Pontos)/,{topo:'.tl-topo'}]];
   const r=R.find(([re])=>re.test(x));return r?r[1]:{b:'geral'};
 }

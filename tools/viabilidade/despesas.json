@@ -1,0 +1,428 @@
+{
+  "_nota": "Lista padrão de itens do estudo de viabilidade estática (decisão do Moisés, 26/out/2026). Cada empresa recebe uma cópia e o administrador edita em Configurações › Viabilidade. O protótipo (build.py) e o teste do banco (supabase/tests/regras.sql) leem este arquivo; a migration 20261015001000_viabilidade.sql traz os mesmos itens, grupos e bases (app.viab_tipos, app.viab_secao). O grupo define a seção, as bases de cálculo aceitas e se o item é fixo (aparece sempre no estudo, sem incluir nem tirar).",
+  "secoes": {
+    "obra": "Custo de obras",
+    "terreno": "Custo do terreno",
+    "despesas": "Despesas gerais",
+    "taxas": "Taxas",
+    "comercial": "Despesas comerciais"
+  },
+  "grupos": {
+    "obra_atipica": {
+      "nome": "Itens atípicos",
+      "secao": "obra",
+      "fixo": false,
+      "tipos": [
+        "area",
+        "pct_obra_tipica",
+        "pct_vgv",
+        "verba"
+      ]
+    },
+    "obra_nao_incidente": {
+      "nome": "Obra não incidente",
+      "secao": "obra",
+      "fixo": false,
+      "tipos": [
+        "area",
+        "pct_obra_tipica",
+        "pct_vgv",
+        "verba",
+        "pct_obra_raso"
+      ]
+    },
+    "projetos": {
+      "nome": "Projetos",
+      "secao": "obra",
+      "fixo": false,
+      "tipos": [
+        "area",
+        "pct_obra_tipica",
+        "pct_vgv",
+        "verba",
+        "pct_obra_raso",
+        "pct_obra_total"
+      ]
+    },
+    "pos_obra": {
+      "nome": "Pós-obra",
+      "secao": "obra",
+      "fixo": false,
+      "tipos": [
+        "area",
+        "pct_obra_tipica",
+        "pct_vgv",
+        "verba",
+        "pct_obra_raso",
+        "pct_obra_total"
+      ]
+    },
+    "terreno": {
+      "nome": "Terreno",
+      "secao": "despesas",
+      "fixo": false,
+      "tipos": [
+        "pct_vgv",
+        "pct_obra_total",
+        "pct_lucro",
+        "verba"
+      ]
+    },
+    "incorporacao": {
+      "nome": "Incorporação",
+      "secao": "despesas",
+      "fixo": false,
+      "tipos": [
+        "pct_vgv",
+        "pct_obra_total",
+        "pct_lucro",
+        "verba"
+      ]
+    },
+    "cef": {
+      "nome": "CEF",
+      "secao": "despesas",
+      "fixo": false,
+      "tipos": [
+        "pct_vgv",
+        "pct_obra_total",
+        "pct_lucro",
+        "verba"
+      ]
+    },
+    "adm_financeiro": {
+      "nome": "Administrativo e financeiro",
+      "secao": "despesas",
+      "fixo": false,
+      "tipos": [
+        "pct_vgv",
+        "pct_obra_total",
+        "pct_lucro",
+        "verba"
+      ]
+    },
+    "taxas": {
+      "nome": "Taxas",
+      "secao": "taxas",
+      "fixo": true,
+      "tipos": [
+        "pct_vgv",
+        "pct_obra_total",
+        "pct_lucro",
+        "verba"
+      ]
+    },
+    "comercial": {
+      "nome": "Despesas comerciais",
+      "secao": "comercial",
+      "fixo": true,
+      "tipos": [
+        "pct_vgv",
+        "verba",
+        "verba_unidade",
+        "verba_mensal"
+      ]
+    }
+  },
+  "tipos": {
+    "area": "R$ por m² de área privativa",
+    "pct_obra_tipica": "% do custo de obra típico",
+    "pct_obra_raso": "% do custo de obra raso",
+    "pct_obra_total": "% do custo de obra total",
+    "pct_vgv": "% do VGV",
+    "pct_lucro": "% do lucro líquido",
+    "verba": "Verba total",
+    "verba_unidade": "Verba por unidade",
+    "verba_mensal": "Verba mensal"
+  },
+  "despesas": [
+    {
+      "codigo": "fundacoes_especiais",
+      "nome": "Fundações especiais",
+      "grupo": "obra_atipica",
+      "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "contencoes",
+      "nome": "Contenções",
+      "grupo": "obra_atipica",
+      "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "demolicao",
+      "nome": "Demolição e limpeza do terreno",
+      "grupo": "obra_atipica",
+      "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "infra_externa",
+      "nome": "Infraestrutura externa",
+      "grupo": "obra_nao_incidente",
+      "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "ligacoes",
+      "nome": "Ligações definitivas (água, esgoto, energia)",
+      "grupo": "obra_nao_incidente",
+      "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "areas_comuns",
+      "nome": "Equipamentos e decoração das áreas comuns",
+      "grupo": "obra_nao_incidente",
+      "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "projetos",
+      "nome": "Projetos e consultorias",
+      "grupo": "projetos",
+      "tipo": "pct_obra_total",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "aprovacoes",
+      "nome": "Aprovações e licenças",
+      "grupo": "projetos",
+      "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "outorga",
+      "nome": "Outorga onerosa e contrapartidas",
+      "grupo": "projetos",
+      "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "assistencia_tecnica",
+      "nome": "Assistência técnica pós-obra",
+      "grupo": "pos_obra",
+      "tipo": "pct_obra_total",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "estoque",
+      "nome": "Condomínio e IPTU das unidades em estoque",
+      "grupo": "pos_obra",
+      "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "itbi_terreno",
+      "nome": "ITBI do terreno",
+      "grupo": "terreno",
+      "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "registro_terreno",
+      "nome": "Escritura e registro do terreno",
+      "grupo": "terreno",
+      "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "certidoes",
+      "nome": "Diligência e certidões",
+      "grupo": "terreno",
+      "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "registro_incorporacao",
+      "nome": "Registro da incorporação",
+      "grupo": "incorporacao",
+      "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "juridico",
+      "nome": "Jurídico",
+      "grupo": "incorporacao",
+      "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "seguros",
+      "nome": "Seguros e garantias",
+      "grupo": "incorporacao",
+      "tipo": "pct_obra_total",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "taxas_cef",
+      "nome": "Taxas e avaliações da CEF",
+      "grupo": "cef",
+      "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "adm_central",
+      "nome": "Administração central",
+      "grupo": "adm_financeiro",
+      "tipo": "pct_vgv",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "contabilidade",
+      "nome": "Contabilidade e auditoria",
+      "grupo": "adm_financeiro",
+      "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "iptu_obra",
+      "nome": "IPTU durante a obra",
+      "grupo": "adm_financeiro",
+      "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "impostos",
+      "nome": "Impostos",
+      "grupo": "taxas",
+      "tipo": "pct_vgv",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "taxa_desenvolvimento",
+      "nome": "Taxa de desenvolvimento",
+      "grupo": "taxas",
+      "tipo": "pct_lucro",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "taxa_gestao_obra",
+      "nome": "Taxa de gestão de obra",
+      "grupo": "taxas",
+      "tipo": "pct_obra_total",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "taxa_contingencias",
+      "nome": "Taxa de contingências",
+      "grupo": "taxas",
+      "tipo": "pct_obra_total",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "custo_financeiro",
+      "nome": "Custo financeiro",
+      "grupo": "taxas",
+      "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "custo_alavancagem",
+      "nome": "Custo de alavancagem",
+      "grupo": "taxas",
+      "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "construcao_pdv",
+      "nome": "Construção do PDV",
+      "grupo": "comercial",
+      "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "custo_fixo_comercial",
+      "nome": "Custo fixo comercial",
+      "grupo": "comercial",
+      "tipo": "verba_mensal",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "marketing",
+      "nome": "Marketing",
+      "grupo": "comercial",
+      "tipo": "pct_vgv",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "comissao",
+      "nome": "Comissão",
+      "grupo": "comercial",
+      "tipo": "pct_vgv",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "itbi_vendas",
+      "nome": "ITBI de unidades vendidas",
+      "grupo": "comercial",
+      "tipo": "pct_vgv",
+      "valor": null,
+      "deduz": true
+    },
+    {
+      "codigo": "registro_vendas",
+      "nome": "Registro de unidades vendidas",
+      "grupo": "comercial",
+      "tipo": "pct_vgv",
+      "valor": null,
+      "deduz": true
+    },
+    {
+      "codigo": "contratos_cef",
+      "nome": "Taxa de emissão de contratos CEF",
+      "grupo": "comercial",
+      "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "produto_caixa",
+      "nome": "Produto Caixa",
+      "grupo": "comercial",
+      "tipo": "pct_vgv",
+      "valor": null,
+      "deduz": true
+    },
+    {
+      "codigo": "outros_comercial",
+      "nome": "Outros",
+      "grupo": "comercial",
+      "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    }
+  ]
+}

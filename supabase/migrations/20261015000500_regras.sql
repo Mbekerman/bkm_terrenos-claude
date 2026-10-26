@@ -29,21 +29,96 @@ left join lateral (
   select * from app.inscricao_valores x where x.inscricao_id = ins.id and x.vigente order by exercicio desc limit 1
 ) v on true;
 
--- Parâmetros urbanísticos da análise vigente, resumidos por terreno.
-create view app.v_urbanismo_vigente with (security_invoker = true) as
-select a.terreno_id, a.empresa_id, a.id as analise_id, a.data_verificacao, a.fonte,
-       string_agg(z.sigla, ' + ' order by az.area_abrangida_m2 desc nulls last, z.sigla) as zoneamentos,
-       max(az.ca_maximo) as ca_maximo,
-       bool_or(az.ca_status = 'nao_informado') as ca_incompleto,
-       min(az.gabarito_maximo_m) as menor_gabarito_m,
-       bool_or(az.gabarito_m_status = 'sem_limite_identificado') as algum_gabarito_sem_limite,
-       count(*) as qtd_zonas,
-       array_agg(distinct z.sigla order by z.sigla) as zonas_siglas  -- filtro por zoneamento
+-- Parâmetros do catálogo (zona_parametros) para uma zona do lote: a linha do
+-- tipo de empreendimento pedido ou, se a zona não tem regra própria para ele,
+-- a de mercado (o campo tipo da linha diz qual valeu). A linha mais específica
+-- ganha: macrozona, depois o uso pedido; sem uso, a permitida, preferindo o
+-- vertical (RV2, RV1), depois RH e R. A condição de tamanho de lote (ZEIS em
+-- SP) usa a área do terreno, que é o lote do empreendimento; sem área, vale a
+-- linha de lote grande.
+create or replace function app.parametros_zona(p_empresa uuid, p_zoneamento uuid, p_tipo text,
+  p_macrozona text default null, p_lote_area numeric default null, p_uso text default null)
+returns setof app.zona_parametros
+language sql stable set search_path = ''
+as $$
+  select z.* from app.zona_parametros z
+   where z.empresa_id = p_empresa and z.zoneamento_id = p_zoneamento and z.ativo and z.tipo in (p_tipo, 'mercado')
+     and (z.macrozona is null or z.macrozona = p_macrozona)
+     and (z.uso is null or p_uso is null or z.uso = p_uso)
+     and (z.lote_area_min_m2 is null or coalesce(p_lote_area, 'infinity'::numeric) >= z.lote_area_min_m2)
+     and (z.lote_area_max_m2 is null or coalesce(p_lote_area, 'infinity'::numeric) < z.lote_area_max_m2)
+   order by (z.tipo = p_tipo) desc, (z.macrozona is not null) desc, (z.uso is not distinct from p_uso) desc,
+            z.permitido desc, array_position(array['RV2','RV1','RH','R'], z.uso) nulls first
+   limit 1
+$$;
+
+-- Zonas de cada lote na análise vigente, com os parâmetros do catálogo para
+-- cada tipo de empreendimento (mercado, his, hmp) e as exceções do lote por
+-- cima. Potencial construtivo = área da zona no lote × CA.
+create view app.v_lote_zonas with (security_invoker = true) as
+select a.terreno_id, a.empresa_id, a.id as analise_id, az.id, az.inscricao_id, i.inscricao,
+       az.zoneamento_id, zo.sigla, zo.descricao as zona_nome, az.macrozona, az.area_abrangida_m2,
+       tp.tipo, p.id as parametro_id, p.tipo as tipo_regra, p.permitido,
+       coalesce(az.ca_minimo, p.ca_minimo) as ca_minimo, coalesce(az.ca_basico, p.ca_basico) as ca_basico, coalesce(az.ca_maximo, p.ca_maximo) as ca_maximo,
+       coalesce(az.to_maximo, case when p.to_corte_m2 is not null and t.area_adotada_m2 >= p.to_corte_m2 then p.to_lote_grande else p.to_maximo end) as to_maximo,
+       case when az.gabarito_m is not null or az.gabarito_sem_limite is not null then az.gabarito_m else p.gabarito_m end as gabarito_m,
+       case when az.gabarito_m is not null or az.gabarito_sem_limite is not null then coalesce(az.gabarito_sem_limite, false)
+            else p.gabarito_sem_limite end as gabarito_sem_limite,
+       coalesce(az.recuo_frente_m, p.recuo_frente_m) as recuo_frente_m, coalesce(az.recuo_lateral_m, p.recuo_lateral_m) as recuo_lateral_m,
+       coalesce(az.recuo_lateral_alto_m, p.recuo_lateral_alto_m) as recuo_lateral_alto_m, coalesce(az.cota_parte_m2, p.cota_parte_m2) as cota_parte_m2,
+       coalesce(az.max_unidades, p.max_unidades) as max_unidades, coalesce(az.permeabilidade, p.permeabilidade) as permeabilidade,
+       coalesce(az.lote_minimo_m2, p.lote_minimo_m2) as lote_minimo_m2, coalesce(az.frente_minima_m, p.frente_minima_m) as frente_minima_m,
+       coalesce(az.outorga_gratuita, p.outorga_gratuita) as outorga_gratuita, p.regras, p.fonte_norma, p.fonte_dispositivo, p.fonte_url, p.situacao,
+       num_nonnulls(az.ca_minimo, az.ca_basico, az.ca_maximo, az.to_maximo, az.gabarito_m, az.gabarito_sem_limite, az.recuo_frente_m, az.recuo_lateral_m, az.recuo_lateral_alto_m, az.cota_parte_m2, az.max_unidades, az.permeabilidade, az.lote_minimo_m2, az.frente_minima_m, az.outorga_gratuita) > 0 as tem_excecao,
+       az.excecao_fonte, az.restricoes_observacoes,
+       case when p.permitido then round(az.area_abrangida_m2 * coalesce(az.ca_basico, p.ca_basico), 2) end as potencial_basico_m2,
+       case when p.permitido then round(az.area_abrangida_m2 * coalesce(az.ca_maximo, p.ca_maximo), 2) end as potencial_maximo_m2
 from app.analises_urbanisticas a
 join app.analise_zoneamentos az on az.analise_id = a.id
-join app.zoneamentos z on z.id = az.zoneamento_id
-where a.status = 'vigente'
-group by a.terreno_id, a.empresa_id, a.id, a.data_verificacao, a.fonte;
+join app.zoneamentos zo on zo.id = az.zoneamento_id
+join app.terrenos t on t.id = a.terreno_id
+left join app.inscricoes_municipais i on i.id = az.inscricao_id
+cross join (values ('mercado'), ('his'), ('hmp')) as tp(tipo)
+left join lateral app.parametros_zona(a.empresa_id, az.zoneamento_id, tp.tipo, az.macrozona, t.area_adotada_m2) p on true
+where a.status = 'vigente';
+
+-- Parâmetros urbanísticos da análise vigente, resumidos por terreno: todas as
+-- zonas da área (da maior para a menor), o maior CA de mercado e o potencial
+-- construtivo por tipo de empreendimento (nulo se algum pedaço não tem CA ou
+-- não admite o tipo).
+-- Resumo da análise vigente; o potencial do tipo escolhido no terreno (tipo_empreendimento) vem à parte.
+create view app.v_urbanismo_vigente with (security_invoker = true) as
+select u.*, te.tipo_empreendimento,
+       case te.tipo_empreendimento when 'mercado' then u.potencial_mercado_m2 when 'his' then u.potencial_his_m2
+            when 'hmp' then u.potencial_hmp_m2 end as potencial_tipo_m2
+from (
+select l.terreno_id, l.empresa_id, l.analise_id, a.data_verificacao, a.fonte,
+       (select string_agg(x.sigla, ' / ' order by x.area desc nulls last, x.sigla)
+          from (select y.sigla, sum(y.area_abrangida_m2) as area from app.v_lote_zonas y
+                 where y.analise_id = l.analise_id and y.tipo = 'mercado' group by y.sigla) x) as zoneamentos,
+       max(l.ca_maximo) filter (where l.tipo = 'mercado') as ca_maximo,
+       bool_or(l.ca_maximo is null) filter (where l.tipo = 'mercado') as ca_incompleto,
+       min(l.gabarito_m) filter (where l.tipo = 'mercado') as menor_gabarito_m,
+       bool_or(l.gabarito_sem_limite) filter (where l.tipo = 'mercado') as algum_gabarito_sem_limite,
+       count(distinct l.zoneamento_id) as qtd_zonas,
+       array_agg(distinct l.sigla order by l.sigla) as zonas_siglas,  -- filtro por zoneamento
+       count(distinct l.inscricao_id) as qtd_lotes,
+       coalesce(bool_or(l.inscricao_id is null), false) as tem_area_sem_inscricao,
+       sum(l.area_abrangida_m2) filter (where l.tipo = 'mercado') as area_zoneada_m2,
+       case when bool_and(l.potencial_basico_m2 is not null) filter (where l.tipo = 'mercado')
+            then sum(l.potencial_basico_m2) filter (where l.tipo = 'mercado') end as potencial_basico_m2,
+       case when bool_and(l.potencial_maximo_m2 is not null) filter (where l.tipo = 'mercado')
+            then sum(l.potencial_maximo_m2) filter (where l.tipo = 'mercado') end as potencial_mercado_m2,
+       case when bool_and(l.potencial_maximo_m2 is not null) filter (where l.tipo = 'his')
+            then sum(l.potencial_maximo_m2) filter (where l.tipo = 'his') end as potencial_his_m2,
+       case when bool_and(l.potencial_maximo_m2 is not null) filter (where l.tipo = 'hmp')
+            then sum(l.potencial_maximo_m2) filter (where l.tipo = 'hmp') end as potencial_hmp_m2,
+       bool_or(l.situacao <> 'confirmado') as tem_parametro_a_validar
+from app.v_lote_zonas l
+join app.analises_urbanisticas a on a.id = l.analise_id
+group by l.terreno_id, l.empresa_id, l.analise_id, a.data_verificacao, a.fonte
+) u
+join app.terrenos te on te.id = u.terreno_id;
 
 create view app.v_documentos with (security_invoker = true) as
 select d.*,
@@ -304,7 +379,7 @@ left join app.membros mp on mp.empresa_id = a.empresa_id and mp.user_id = a.pedi
 left join app.membros mv on mv.empresa_id = a.empresa_id and mv.user_id = a.aprovador_previsto
 left join app.membros md on md.empresa_id = a.empresa_id and md.user_id = a.decidido_por;
 
-grant select on app.v_terreno_infraestrutura, app.v_inscricoes, app.v_urbanismo_vigente,
+grant select on app.v_terreno_infraestrutura, app.v_inscricoes, app.v_urbanismo_vigente, app.v_lote_zonas,
                 app.v_documentos, app.v_checklist, app.v_reunioes, app.v_terrenos,
                 app.v_mapa, app.v_terreno_pontos, app.v_tarefas, app.v_terreno_entorno, app.v_entorno_buscas,
                 app.v_periodos_processo, app.v_tempo_subetapas, app.v_aprovacoes to authenticated;
@@ -1723,7 +1798,7 @@ begin
     posicao_quadra = v_novo.posicao_quadra, formato = v_novo.formato, situacao_ocupacao = v_novo.situacao_ocupacao,
     uso_atual = v_novo.uso_atual, area_construida_existente_m2 = v_novo.area_construida_existente_m2,
     area_construida_demolir_m2 = v_novo.area_construida_demolir_m2, necessidade_demolicao = v_novo.necessidade_demolicao,
-    observacoes_fisicas = v_novo.observacoes_fisicas, sobreposicoes_aceitas = v_novo.sobreposicoes_aceitas
+    observacoes_fisicas = v_novo.observacoes_fisicas, tipo_empreendimento = v_novo.tipo_empreendimento, sobreposicoes_aceitas = v_novo.sobreposicoes_aceitas
   where id = t.id
   returning versao into t.versao;
   return t.versao;
@@ -2258,11 +2333,10 @@ end $$;
 -- GeoSampa, setor, quadra, lote e dígito; no GeoSanja, a inscrição que a busca
 -- devolve). Completa na inscrição só o que está vazio (área cadastral) e o que
 -- é do cadastro fiscal (CIB, zona fiscal, só em São Paulo). Com
--- p_criar_analise, registra uma análise urbanística nova (fonte = base) com
--- as zonas do catálogo e a área de cada uma no lote; a anterior fica como
--- substituída. Siglas fora do catálogo vão para as observações da análise.
+-- p_criar_analise, troca as zonas DESTE lote na análise urbanística (ver
+-- app._substituir_zonas): os outros lotes ficam como estavam.
 -- p_lote: atributos do lote; p_camadas: {camada: [atributos]};
--- p_zonas: [{sigla, area_m2}].
+-- p_zonas: [{sigla, area_m2, macrozona}] (macrozona MC, ME ou MOC, em SJC).
 -- ---------------------------------------------------------------------
 create or replace function app.registrar_consulta_lote(
   p_inscricao uuid, p_lote jsonb, p_poligono jsonb, p_area_poligono numeric,
@@ -2270,7 +2344,7 @@ create or replace function app.registrar_consulta_lote(
 returns uuid
 language plpgsql security definer set search_path = ''
 as $$
-declare i app.inscricoes_municipais; t app.terrenos; b app.bases_cadastrais; v_mun text; v_ins text; v_id uuid; v_an uuid; v_fora text[];
+declare i app.inscricoes_municipais; t app.terrenos; b app.bases_cadastrais; v_mun text; v_ins text; v_id uuid;
 begin
   select * into i from app.inscricoes_municipais where id = p_inscricao;
   if not found then raise exception 'Inscrição não encontrada' using errcode = 'P0002'; end if;
@@ -2305,20 +2379,124 @@ begin
    where id = i.id;
 
   if p_criar_analise and jsonb_array_length(coalesce(p_zonas, '[]')) > 0 then
-    select array_agg(distinct z.sigla) into v_fora
-      from jsonb_to_recordset(p_zonas) as z(sigla text, area_m2 numeric)
-     where not exists (select 1 from app.zoneamentos c where c.municipio_id = t.municipio_id and c.sigla = z.sigla and c.ativo);
-    insert into app.analises_urbanisticas (empresa_id, terreno_id, responsavel_id, fonte, observacoes)
-    values (t.empresa_id, t.id, auth.uid(), b.nome || ' (' || b.rotulo || ' ' || i.inscricao || ')',
-            case when v_fora is not null then 'Zonas fora do catálogo: ' || array_to_string(v_fora, ', ') end)
-    returning id into v_an;
-    insert into app.analise_zoneamentos (empresa_id, analise_id, zoneamento_id, area_abrangida_m2)
-    select t.empresa_id, v_an, c.id, round(sum(z.area_m2), 2)
-      from jsonb_to_recordset(p_zonas) as z(sigla text, area_m2 numeric)
-      join app.zoneamentos c on c.municipio_id = t.municipio_id and c.sigla = z.sigla and c.ativo
-     group by c.id;
+    perform app._substituir_zonas(t, i.id, p_zonas, b.nome || ' (' || b.rotulo || ' ' || i.inscricao || ')');
   end if;
   return v_id;
+end $$;
+
+-- ---------------------------------------------------------------------
+-- Zonas da análise urbanística, por lote. Troca as zonas de um lote
+-- (p_inscricao; nulo = parte do terreno sem inscrição, pela poligonal) numa
+-- análise nova, que copia as zonas dos outros lotes da vigente; a anterior
+-- fica como substituída. As exceções do lote numa zona que continua passam
+-- para a análise nova. Se as zonas do lote não mudaram, nada é gravado.
+-- Siglas fora do catálogo da cidade vão para as observações.
+-- ---------------------------------------------------------------------
+create or replace function app._substituir_zonas(p_terreno app.terrenos, p_inscricao uuid, p_zonas jsonb, p_fonte text)
+returns uuid
+language plpgsql security definer set search_path = ''
+as $$
+declare v_ant uuid; v_an uuid; v_fora text[]; v_novo jsonb; v_velho jsonb;
+begin
+  if jsonb_typeof(coalesce(p_zonas, '[]')) <> 'array' then raise exception 'Zonas devem ser uma lista' using errcode = '22023'; end if;
+  if exists (select 1 from jsonb_to_recordset(coalesce(p_zonas, '[]')) as z(sigla text, area_m2 numeric, macrozona text)
+              where coalesce(z.area_m2, 1) <= 0 or upper(z.macrozona) not in ('MC','ME','MOC')) then
+    raise exception 'Zona com área zerada ou macrozona inválida (MC, ME ou MOC)' using errcode = '22023';
+  end if;
+  select id into v_ant from app.analises_urbanisticas where terreno_id = p_terreno.id and status = 'vigente';
+  select array_agg(distinct z.sigla) into v_fora
+    from jsonb_to_recordset(coalesce(p_zonas, '[]')) as z(sigla text, area_m2 numeric)
+   where not exists (select 1 from app.zoneamentos c where c.municipio_id = p_terreno.municipio_id and c.sigla = z.sigla and c.ativo);
+  select coalesce(jsonb_agg(jsonb_build_array(n.zid, n.area, n.macro) order by n.zid), '[]') into v_novo
+    from (select c.id as zid, round(sum(z.area_m2), 2) as area, max(upper(z.macrozona)) as macro
+            from jsonb_to_recordset(coalesce(p_zonas, '[]')) as z(sigla text, area_m2 numeric, macrozona text)
+            join app.zoneamentos c on c.municipio_id = p_terreno.municipio_id and c.sigla = z.sigla and c.ativo
+           group by c.id) n;
+  select coalesce(jsonb_agg(jsonb_build_array(o.zoneamento_id, o.area_abrangida_m2, o.macrozona) order by o.zoneamento_id), '[]') into v_velho
+    from app.analise_zoneamentos o where o.analise_id = v_ant and o.inscricao_id is not distinct from p_inscricao;
+  if v_ant is not null and v_novo = v_velho and v_fora is null then return null; end if;
+
+  insert into app.analises_urbanisticas (empresa_id, terreno_id, responsavel_id, fonte, observacoes)
+  values (p_terreno.empresa_id, p_terreno.id, auth.uid(), p_fonte,
+          case when v_fora is not null then 'Zonas fora do catálogo: ' || array_to_string(v_fora, ', ') end)
+  returning id into v_an;
+  insert into app.analise_zoneamentos (empresa_id, analise_id, inscricao_id, zoneamento_id, area_abrangida_m2, macrozona,
+                                       ca_minimo, ca_basico, ca_maximo, to_maximo, gabarito_m, gabarito_sem_limite, recuo_frente_m, recuo_lateral_m, recuo_lateral_alto_m, cota_parte_m2, max_unidades, permeabilidade, lote_minimo_m2, frente_minima_m, outorga_gratuita, excecao_fonte, restricoes_observacoes)
+  select empresa_id, v_an, inscricao_id, zoneamento_id, area_abrangida_m2, macrozona,
+         ca_minimo, ca_basico, ca_maximo, to_maximo, gabarito_m, gabarito_sem_limite, recuo_frente_m, recuo_lateral_m, recuo_lateral_alto_m, cota_parte_m2, max_unidades, permeabilidade, lote_minimo_m2, frente_minima_m, outorga_gratuita, excecao_fonte, restricoes_observacoes
+    from app.analise_zoneamentos where analise_id = v_ant and inscricao_id is distinct from p_inscricao;
+  insert into app.analise_zoneamentos (empresa_id, analise_id, inscricao_id, zoneamento_id, area_abrangida_m2, macrozona,
+                                       ca_minimo, ca_basico, ca_maximo, to_maximo, gabarito_m, gabarito_sem_limite, recuo_frente_m, recuo_lateral_m, recuo_lateral_alto_m, cota_parte_m2, max_unidades, permeabilidade, lote_minimo_m2, frente_minima_m, outorga_gratuita, excecao_fonte, restricoes_observacoes)
+  select p_terreno.empresa_id, v_an, p_inscricao, (n->>0)::uuid, (n->>1)::numeric, n->>2,
+         o.ca_minimo, o.ca_basico, o.ca_maximo, o.to_maximo, o.gabarito_m, o.gabarito_sem_limite, o.recuo_frente_m, o.recuo_lateral_m, o.recuo_lateral_alto_m, o.cota_parte_m2, o.max_unidades, o.permeabilidade, o.lote_minimo_m2, o.frente_minima_m, o.outorga_gratuita, o.excecao_fonte, o.restricoes_observacoes
+    from jsonb_array_elements(v_novo) n
+    left join app.analise_zoneamentos o on o.analise_id = v_ant and o.inscricao_id is not distinct from p_inscricao
+                                       and o.zoneamento_id = (n->>0)::uuid;
+  return v_an;
+end $$;
+
+-- Parte do terreno sem inscrição: as zonas tiradas pela poligonal do terreno,
+-- fora dos lotes (o front cruza a poligonal com a camada de zoneamento).
+-- Lista vazia tira essa parte (o terreno ficou todo coberto por lotes).
+create or replace function app.registrar_zonas_sem_inscricao(p_terreno uuid, p_zonas jsonb, p_fonte text default null)
+returns uuid
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos;
+begin
+  select * into t from app.terrenos where id = p_terreno;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  return app._substituir_zonas(t, null, p_zonas, coalesce(nullif(trim(p_fonte), ''), 'Poligonal do terreno (parte sem inscrição)'));
+end $$;
+
+-- Parâmetro urbanístico do catálogo da empresa: cria (p_id nulo; precisa de
+-- zona, tipo e fonte) ou altera. Desativar = ativo false; a linha nunca é
+-- apagada (a auditoria guarda cada mudança).
+create or replace function app.salvar_zona_parametro(p_empresa uuid, p_id uuid, p_dados jsonb)
+returns uuid
+language plpgsql security definer set search_path = ''
+as $$
+declare r app.zona_parametros;
+begin
+  perform app.exigir_administrador(p_empresa);
+  perform app._chaves_permitidas(p_dados, array['zoneamento_id','tipo','uso','macrozona','lote_area_min_m2','lote_area_max_m2','permitido',
+    'ca_minimo','ca_basico','ca_maximo','to_maximo','to_lote_grande','to_corte_m2','gabarito_m','gabarito_sem_limite','recuo_frente_m',
+    'recuo_lateral_m','recuo_lateral_alto_m','cota_parte_m2','max_unidades','permeabilidade','lote_minimo_m2','frente_minima_m',
+    'outorga_gratuita','regras','fonte_norma','fonte_dispositivo','fonte_url','situacao','ativo']);
+  if p_id is null then
+    r := jsonb_populate_record(null::app.zona_parametros, p_dados);
+    if r.zoneamento_id is null or r.tipo is null or coalesce(trim(r.fonte_norma), '') = '' then
+      raise exception 'Parâmetro novo precisa de zona, tipo de empreendimento e fonte' using errcode = '22023';
+    end if;
+    insert into app.zona_parametros (empresa_id, zoneamento_id, tipo, uso, macrozona, lote_area_min_m2, lote_area_max_m2, permitido,
+      ca_minimo, ca_basico, ca_maximo, to_maximo, to_lote_grande, to_corte_m2, gabarito_m, gabarito_sem_limite, recuo_frente_m,
+      recuo_lateral_m, recuo_lateral_alto_m, cota_parte_m2, max_unidades, permeabilidade, lote_minimo_m2, frente_minima_m,
+      outorga_gratuita, regras, fonte_norma, fonte_dispositivo, fonte_url, situacao, ativo)
+    values (p_empresa, r.zoneamento_id, r.tipo, r.uso, r.macrozona, r.lote_area_min_m2, r.lote_area_max_m2, coalesce(r.permitido, true),
+      r.ca_minimo, r.ca_basico, r.ca_maximo, r.to_maximo, r.to_lote_grande, r.to_corte_m2, r.gabarito_m, coalesce(r.gabarito_sem_limite, false), r.recuo_frente_m,
+      r.recuo_lateral_m, r.recuo_lateral_alto_m, r.cota_parte_m2, r.max_unidades, r.permeabilidade, r.lote_minimo_m2, r.frente_minima_m,
+      r.outorga_gratuita, r.regras, trim(r.fonte_norma), r.fonte_dispositivo, r.fonte_url, coalesce(r.situacao, 'confirmado'), coalesce(r.ativo, true))
+    returning id into r.id;
+    return r.id;
+  end if;
+  select * into r from app.zona_parametros where id = p_id and empresa_id = p_empresa for update;
+  if not found then raise exception 'Parâmetro não encontrado' using errcode = 'P0002'; end if;
+  r := jsonb_populate_record(r, p_dados);
+  if coalesce(trim(r.fonte_norma), '') = '' then raise exception 'O parâmetro precisa da fonte' using errcode = '22023'; end if;
+  update app.zona_parametros set
+    zoneamento_id = r.zoneamento_id, tipo = r.tipo, uso = r.uso, macrozona = r.macrozona,
+    lote_area_min_m2 = r.lote_area_min_m2, lote_area_max_m2 = r.lote_area_max_m2, permitido = coalesce(r.permitido, true),
+    ca_minimo = r.ca_minimo, ca_basico = r.ca_basico, ca_maximo = r.ca_maximo,
+    to_maximo = r.to_maximo, to_lote_grande = r.to_lote_grande, to_corte_m2 = r.to_corte_m2,
+    gabarito_m = r.gabarito_m, gabarito_sem_limite = coalesce(r.gabarito_sem_limite, false),
+    recuo_frente_m = r.recuo_frente_m, recuo_lateral_m = r.recuo_lateral_m, recuo_lateral_alto_m = r.recuo_lateral_alto_m,
+    cota_parte_m2 = r.cota_parte_m2, max_unidades = r.max_unidades, permeabilidade = r.permeabilidade,
+    lote_minimo_m2 = r.lote_minimo_m2, frente_minima_m = r.frente_minima_m, outorga_gratuita = r.outorga_gratuita,
+    regras = r.regras, fonte_norma = trim(r.fonte_norma), fonte_dispositivo = r.fonte_dispositivo, fonte_url = r.fonte_url,
+    situacao = coalesce(r.situacao, 'confirmado'), ativo = coalesce(r.ativo, true)
+  where id = p_id;
+  return p_id;
 end $$;
 
 -- ---------------------------------------------------------------------
@@ -2332,6 +2510,8 @@ grant execute on function
   app.salvar_entorno(uuid, double precision, double precision, jsonb, boolean),
   app.salvar_distancias_pontos(uuid, double precision, double precision, jsonb),
   app.registrar_consulta_lote(uuid, jsonb, jsonb, numeric, jsonb, jsonb, text[], boolean),
+  app.registrar_zonas_sem_inscricao(uuid, jsonb, text), app.salvar_zona_parametro(uuid, uuid, jsonb),
+  app.parametros_zona(uuid, uuid, text, text, numeric, text),
   app.criar_empresa(text, text),
   app.buscar_duplicados(uuid, text, text, text, text, text),
   app.terrenos_sobrepostos(uuid, jsonb, uuid),
