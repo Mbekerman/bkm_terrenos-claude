@@ -1,6 +1,6 @@
 import { Link, useOutletContext } from 'react-router-dom';
 import { rpc, useAcao, useDocumentos, useEtapas, useFeed, useNomes, useOfertasRecentes, useProcessos, useTarefasAbertas } from '../lib/api';
-import { data, hojeISO, milhoes } from '../lib/format';
+import { data, hojeISO } from '../lib/format';
 import { diasParaVencer, docEmAlerta } from '../lib/regras';
 import { useSessao } from '../lib/sessao';
 import { mensagemErro } from '../lib/supabase';
@@ -67,7 +67,7 @@ export default function Inicio() {
       : { sev: 'warn', i: 'clock', titulo: `${d.tipo_nome} vence em ${n} dias`, sub: `${p.bairro} · ${p.etapa_nome}`, para: `/terrenos/${p.terreno_id}/documentos`, ordem: 2 });
   }
   for (const p of ativos) {
-    if (p.acima_preco_max) alertas.push({ sev: 'warn', i: 'money', titulo: `Proposta ${milhoes(p.ultima_proposta_valor)} acima do preço máximo de ${milhoes(p.preco_max_terreno)}`, sub: `${p.bairro} · ${p.etapa_nome}`, para: `/terrenos/${p.terreno_id}/propostas`, ordem: 1 });
+    if (p.abaixo_margem_min) alertas.push({ sev: 'warn', i: 'money', titulo: `Rentabilidade abaixo da mínima: margem de ${Number(p.margem_pct).toLocaleString('pt-BR')}% (mínima ${Number(p.margem_minima_pct).toLocaleString('pt-BR')}%)`, sub: `${p.bairro} · ${p.etapa_nome}`, para: `/terrenos/${p.terreno_id}/propostas`, ordem: 1 });
     if (p.dias_na_etapa >= 21) alertas.push({ sev: 'warn', i: 'pause', titulo: `Parada há ${p.dias_na_etapa} dias em ${p.etapa_nome}`, sub: `${p.bairro} · ${p.responsavel_nome ?? '—'}`, para: `/terrenos/${p.terreno_id}`, ordem: 3 });
   }
   const atrasadas = tarefas.filter((t) => t.prazo < hoje && ativosIds.has(t.processo_id));

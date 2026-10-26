@@ -126,6 +126,8 @@ if(modo==='desktop'){
 await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=config]').click());await p.waitForTimeout(200);
 await p.evaluate(()=>document.querySelector('[data-a=cfg-aba][data-v=viab]').click());await p.waitForTimeout(200);
 ok(await p.$$eval('.vb-cfg-r:not(.cfg-hd)',e=>e.length)===36,tag+' Configurações › Viabilidade lista os 36 itens por grupo');
+await p.fill('#vb-mmin','14');await p.press('#vb-mmin','Tab');await p.waitForTimeout(200);
+ok((await D()).vbMargemMin===14,tag+' administrador define a rentabilidade mínima da empresa (14%)');
 await p.screenshot({path:OUT+tag+'_4config.png',fullPage:true});
 await p.locator('[data-ch=cfg-vd][data-c=registro_vendas][data-k=deduz]').uncheck();await p.waitForTimeout(200);
 const n2=(await D()).terrenos.find(t=>t.id===tid).neg.viab;
@@ -139,6 +141,7 @@ await ficha();
 await p.evaluate(()=>{const b=[...document.querySelectorAll('[data-a=bloco]')].find(x=>/Visão geral/.test(x.textContent));b&&b.getAttribute('aria-expanded')!=='true'&&b.click()});await p.waitForTimeout(300);
 const rv=await p.evaluate(()=>[...document.querySelectorAll('.sec')].find(s=>/Resumo da viabilidade/.test(s.innerText))?.innerText.replace(/\s+/g,' '));
 ok(/VGV líquido/.test(rv)&&/Lucro líquido/.test(rv)&&/Margem líquida/.test(rv),tag+' Visão geral mostra VGV líquido, lucro e margem do estudo vinculado');
+ok(/Rentabilidade abaixo da mínima/.test(rv)&&!/Preço máximo/.test(rv),tag+' estudo válido abaixo da margem mínima acende o aviso na Visão geral (sem preço máximo)');
 const nv=(await D()).viabs.filter(v=>v.tid===tid);const sel=p.locator('[data-ch=vb-valido]').first();
 ok(await sel.locator('option').count()===nv.length,tag+' Visão geral lista todos os estudos do terreno ('+nv.length+') para escolher o válido');
 await sel.selectOption(nv[0].id);await p.waitForTimeout(200);

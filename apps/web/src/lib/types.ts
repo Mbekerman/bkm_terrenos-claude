@@ -55,7 +55,7 @@ export interface ProcessoResumo {
   area_m2: number | null;
   zoneamento: string | null;
   responsavel_nome: string | null;
-  preco_max_terreno: number | null;
+  margem_minima_pct: number | null;
   vgv: number | null;
   margem_pct: number | null;
   ultima_proposta_valor: number | null;
@@ -64,7 +64,7 @@ export interface ProcessoResumo {
   ultimo_valor_pedido: number | null;
   qtd_ofertas: number;
   valor_referencia: number | null;
-  acima_preco_max: boolean | null;
+  abaixo_margem_min: boolean | null;
   tarefas_atrasadas: number;
   docs_vencidos: number;
   dias_na_etapa: number;
@@ -100,7 +100,6 @@ export interface Viabilidade {
   nome: string;
   vgv: number | null;
   margem_pct: number | null;
-  preco_max_terreno: number | null;
   calculado_em: string;
 }
 

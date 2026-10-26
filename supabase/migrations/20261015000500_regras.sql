@@ -191,8 +191,8 @@ select t.id, t.empresa_id, t.codigo, t.nome, t.situacao_cadastral, t.prioridade,
        (select count(*) from app.ofertas x where x.terreno_id = t.id) as qtd_ofertas,
        cp.nome_razao_social as corretor_principal,
        lp.valor_total as ultima_proposta_valor, lp.origem as ultima_proposta_origem, lp.status as ultima_proposta_status,
-       vb.preco_max_terreno,
-       (vb.preco_max_terreno is not null and lp.origem = 'bkm' and lp.valor_total > vb.preco_max_terreno) as acima_preco_max,
+       vc.margem_minima_pct,
+       coalesce(vb.margem_pct < vc.margem_minima_pct, false) as abaixo_margem_min,
        u.zoneamentos, u.ca_maximo,
        nt.titulo as proxima_tarefa, nt.prazo as proxima_tarefa_prazo,
        (select count(*) from app.tarefas k where k.terreno_id = t.id and k.status not in ('concluida','cancelada') and k.prazo < current_date) as tarefas_atrasadas,
@@ -255,6 +255,7 @@ left join lateral (select * from app.propostas x where x.processo_id = pn.id ord
 left join lateral (select x.valor_total from app.propostas x where x.processo_id = pn.id
                    and x.status in ('apresentada','em_analise','aceita') order by versao desc limit 1) pa on true
 left join app.viabilidades vb on vb.id = pn.viabilidade_id
+left join app.viabilidade_config vc on vc.empresa_id = t.empresa_id
 left join app.v_urbanismo_vigente u on u.terreno_id = t.id
 left join lateral (
   select titulo, prazo from app.tarefas k where k.terreno_id = t.id and k.status not in ('concluida','cancelada')
@@ -1604,7 +1605,7 @@ end $$;
 -- Viabilidade
 -- ---------------------------------------------------------------------
 create or replace function app.vincular_viabilidade(
-  p_processo uuid, p_nome text, p_vgv numeric, p_margem_pct numeric, p_preco_max numeric, p_bkm_id uuid default null)
+  p_processo uuid, p_nome text, p_vgv numeric, p_margem_pct numeric, p_bkm_id uuid default null)
 returns uuid
 language plpgsql security definer set search_path = ''
 as $$
@@ -1613,8 +1614,8 @@ begin
   select * into p from app.processos where id = p_processo for update;
   if not found then raise exception 'Processo não encontrado' using errcode = 'P0002'; end if;
   perform app.exigir_editor(p.empresa_id);
-  insert into app.viabilidades (empresa_id, terreno_id, bkm_viabilidade_id, nome, vgv, margem_pct, preco_max_terreno)
-  values (p.empresa_id, p.terreno_id, p_bkm_id, p_nome, p_vgv, p_margem_pct, p_preco_max) returning id into v_id;
+  insert into app.viabilidades (empresa_id, terreno_id, bkm_viabilidade_id, nome, vgv, margem_pct)
+  values (p.empresa_id, p.terreno_id, p_bkm_id, p_nome, p_vgv, p_margem_pct) returning id into v_id;
   update app.processos set viabilidade_id = v_id where id = p.id;
   return v_id;
 end $$;
@@ -2532,7 +2533,7 @@ grant execute on function
   app.salvar_motivo(uuid, text, text, jsonb), app.apagar_motivo(uuid, text, text),
   app.salvar_checklist(uuid, text, text, text, boolean, int), app.remover_checklist(uuid, text, text, text),
   app.registrar_proposta(uuid, text, numeric, text, text, date, date, text), app.atualizar_status_proposta(uuid, text),
-  app.vincular_viabilidade(uuid, text, numeric, numeric, numeric, uuid),
+  app.vincular_viabilidade(uuid, text, numeric, numeric, uuid),
   app.registrar_documento(uuid, text, text, text, uuid, uuid, uuid, text, bigint, date, uuid), app.revisar_documento(uuid, boolean),
   app.arquivar_terreno(uuid, text)
 to authenticated;
