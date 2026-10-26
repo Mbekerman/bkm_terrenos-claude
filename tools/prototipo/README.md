@@ -77,6 +77,7 @@ Rodar só o que a mudança toca; a varredura completa (`tvaza` e `tscroll`) ao f
 | `tarrasto.js` | Kanban: colunas tracejadas ao arrastar, a coluna sob o card acende (a de origem não), nada fora das colunas, tudo limpo ao soltar; negociações e tarefas, claro e escuro |
 | `tnovo.js` | Novo terreno pela poligonal, com OpenStreetMap simulado: passo 1 (desenhar, KMZ), busca de endereço no mapa, sobreposição (mesma área, área nova maior, cruzada com união, faixa de 3 m na divisa que não conta), município e frentes pela localização com escolha do endereço principal, oferta com o pedaço oferecido, celular e escuro |
 | `tgeosjc.js` | Inscrição por cidade e GeoSanja com respostas gravadas do servidor real em `testes/geosanja/` (`GRAVAR=1` regrava pelo Caddy local na porta 8099; o token de visitante não é gravado): rótulo e máscara pela cidade do terreno (sem seletor), duplicidade por cidade, busca sozinha ao cadastrar, quadro, PDF e DXF, inscrição de outra cidade recusada, celular e escuro |
+| `texcl.js` | excluir ponto de interesse (Google e da empresa), confirmação, lista de excluídos e Restaurar (claro, escuro, celular) |
 | `ticones.js` | prints dos ícones do menu (aberto, recolhido, celular, tema escuro) |
 
 `fake_gmaps.js` / `fake_gmaps2.js` simulam o Google (o 2 também responde `Place.searchNearby`); `tile.png` é o fundo de mapa falso. Prints e saídas vão para `saida/` (fora do git).
