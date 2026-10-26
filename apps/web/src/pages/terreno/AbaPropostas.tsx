@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { rpc, useAcao } from '../../lib/api';
-import { data, FORMA, lerValor, milhoes, reais, SITUACAO_PROPOSTA } from '../../lib/format';
+import { data, FORMA, lerValor, reais, SITUACAO_PROPOSTA } from '../../lib/format';
 import { mensagemErro } from '../../lib/supabase';
 import type { ProcessoResumo, Proposta, SituacaoProposta } from '../../lib/types';
 import { Icon, useToast } from '../../components/ui';
@@ -12,7 +12,6 @@ export default function AbaPropostas({ p, propostas }: { p: ProcessoResumo; prop
   const [aberto, setAberto] = useState(false);
   const [f, setF] = useState({ autor: 'nos', valor: '', forma: 'dinheiro', pct: '', cond: '' });
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
-  const pmax = p.preco_max_terreno;
   const v = lerValor(f.valor);
   const ativa = p.status === 'ativo';
 
@@ -35,7 +34,7 @@ export default function AbaPropostas({ p, propostas }: { p: ProcessoResumo; prop
   return (
     <>
       <div className="split">
-        <div className="muted">{pmax != null ? <>Preço máximo pela viabilidade: <b className="num" style={{ color: 'var(--ink)' }}>{milhoes(pmax)}</b></> : 'Sem estudo de viabilidade vinculado.'}</div>
+        <div className="muted">{p.margem_pct != null ? <>Margem do estudo: <b className="num" style={{ color: 'var(--ink)' }}>{Number(p.margem_pct).toLocaleString('pt-BR')}%</b></> : 'Sem estudo de viabilidade vinculado.'}</div>
         {ativa && !aberto && <button className="btn primary" onClick={() => setAberto(true)}><Icon n="add" s={18} />Nova proposta</button>}
       </div>
 
@@ -57,10 +56,9 @@ export default function AbaPropostas({ p, propostas }: { p: ProcessoResumo; prop
                 <div className="field full"><label htmlFor="pp-c">Condições</label>
                   <textarea id="pp-c" value={f.cond} onChange={set('cond')} placeholder="Parcelas, condição suspensiva de aprovação, prazos" /></div>
                 <div className="field full">
-                  {pmax != null && v > pmax && (
-                    <div className="banner warn"><Icon n="warn" /><div>{reais(v)} fica {milhoes(v - pmax)} acima do preço máximo da viabilidade ({milhoes(pmax)}). A aprovação interna vai precisar decidir.</div></div>
+                  {p.abaixo_margem_min && (
+                    <div className="banner warn"><Icon n="warn" /><div>Rentabilidade do estudo abaixo da mínima da empresa. A aprovação interna vai precisar decidir.</div></div>
                   )}
-                  {pmax != null && v > 0 && v <= pmax && <div className="hint">{milhoes(pmax - v)} abaixo do preço máximo.</div>}
                 </div>
               </div>
               <div className="df" style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
@@ -74,7 +72,6 @@ export default function AbaPropostas({ p, propostas }: { p: ProcessoResumo; prop
 
       <section className="card">
         {propostas.length ? propostas.map((x, i) => {
-          const acima = pmax != null && x.valor_total > pmax;
           const ultima = i === 0;
           return (
             <div key={x.id} className={`prop ${x.autor === 'nos' ? 'nos' : ''}`}>
@@ -99,7 +96,6 @@ export default function AbaPropostas({ p, propostas }: { p: ProcessoResumo; prop
                     {Object.entries(SITUACAO_PROPOSTA).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
                   </select>
                 ) : <span className={`chip ${COR[x.situacao]}`}>{SITUACAO_PROPOSTA[x.situacao]}</span>}
-                {acima && <span className="chip warn"><Icon n="warn" s={14} />{milhoes(x.valor_total - pmax!)} acima do máximo</span>}
               </div>
             </div>
           );

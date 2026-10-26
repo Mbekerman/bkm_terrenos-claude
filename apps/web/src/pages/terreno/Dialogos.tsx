@@ -81,11 +81,11 @@ export function DialogoForcar({ p, onFechar }: Props) {
 /** Enquanto o BKM não está integrado, os números do estudo são digitados aqui. */
 export function DialogoViabilidade({ p, area, onFechar }: Props & { area: number | null }) {
   const toast = useToast();
-  const [f, setF] = useState({ nome: 'Estudo base', vgv: '', margem: '', pmax: '' });
+  const [f, setF] = useState({ nome: 'Estudo base', vgv: '', margem: '' });
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
   const acao = useAcao(() => rpc('vincular_viabilidade', {
     p_processo: p.id, p_nome: f.nome, p_vgv: lerValor(f.vgv) || null,
-    p_margem_pct: lerValor(f.margem) || null, p_preco_max: lerValor(f.pmax) || null,
+    p_margem_pct: lerValor(f.margem) || null,
   }));
   async function enviar(e: FormEvent) {
     e.preventDefault();
@@ -100,7 +100,6 @@ export function DialogoViabilidade({ p, area, onFechar }: Props & { area: number
         <div className="field full"><label htmlFor="vb-n">Nome do estudo</label><input id="vb-n" required value={f.nome} onChange={set('nome')} /></div>
         <div className="field"><label htmlFor="vb-v">VGV (R$)</label><input id="vb-v" inputMode="numeric" value={f.vgv} onChange={set('vgv')} placeholder="46.800.000" /></div>
         <div className="field"><label htmlFor="vb-m">Margem (%)</label><input id="vb-m" inputMode="decimal" value={f.margem} onChange={set('margem')} placeholder="14,8" /></div>
-        <div className="field full"><label htmlFor="vb-p">Preço máximo do terreno (R$)</label><input id="vb-p" inputMode="numeric" required value={f.pmax} onChange={set('pmax')} placeholder="6.200.000" /></div>
       </div></form>
       <div className="hint">Quando o BKM estiver no mesmo banco, esta tela vira uma lista dos estudos do terreno e nada é digitado.</div>
     </Dialogo>

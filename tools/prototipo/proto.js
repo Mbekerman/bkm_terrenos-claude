@@ -151,7 +151,7 @@ function seed(){
               {id:uid(),data:H(18),fonte:'Certidão de uso do solo',status:'vigente',zonas:[{sigla:'ZEU',area:1400,ins:'089.123.0045-6',macro:null,exc:null,obs:'Eixo de transformação urbana'},{sigla:'ZM',area:520,ins:'089.123.0045-6',macro:null,exc:null,obs:'Fundos do lote'}]}],
     ofertas:[{id:'o1',cid:'c1',data:H(62),valor:9000000,forma:'permuta_com_torna',obsPag:'60% em dinheiro na escritura; 40% em unidades no próprio empreendimento.',aceita:'Aceita permuta de até 40% em unidades, preferindo 2 dormitórios com vaga.',validade:H(-30),status:'ativa'},
              {id:'o2',cid:'c2',data:H(41),valor:8700000,forma:'dinheiro',obsPag:'À vista, com desconto para pagamento em 60 dias.',aceita:'Não aceita permuta.',validade:null,status:'ativa'}],
-    neg:neg('negociacao','proposta_enviada',9,{temp:4,ofRef:'o1',viab:{nome:'Estudo base · 2 dormitórios',vgv:62400000,margem:15.2,pmax:8400000,em:H(35)}},7),
+    neg:neg('negociacao','proposta_enviada',9,{temp:4,ofRef:'o1',viab:{nome:'Estudo base · 2 dormitórios',vgv:62400000,margem:15.2,em:H(35)}},7),
     propostas:[{v:1,origem:'bkm',data:H(30),validade:H(15),valor:8000000,forma:'dinheiro',cond:'À vista na escritura, condição suspensiva de aprovação do projeto em 180 dias.',status:'recusada'},
                {v:2,origem:'vendedor',data:H(24),validade:H(9),valor:9000000,forma:'permuta_com_torna',cond:'R$ 5,4 mi em dinheiro + 40% em unidades.',status:'recusada'},
                {v:3,origem:'bkm',data:H(8),validade:H(-7),valor:8500000,forma:'permuta_com_torna',cond:'R$ 6 mi em dinheiro + 8% do VGV em permuta física.',status:'em_analise'}],
@@ -172,7 +172,7 @@ function seed(){
     infra:infra({energia:'sim',agua:'sim',esgoto:'nao',asfalto:'sim'}),
     analises:[{id:uid(),data:H(30),fonte:'GeoSampa',status:'vigente',zonas:[{sigla:'ZEIS-2',area:5400,ins:'228.004.0012-1',macro:null,exc:null,obs:''}]}],
     ofertas:[{id:'o3',cid:null,data:H(48),valor:9800000,forma:'dinheiro',obsPag:'Pagamento em 3 parcelas.',aceita:'Aceita conversar sobre permuta financeira.',status:'ativa'}],
-    neg:neg('contrato','contrato_enviado',26,{temp:3,ofRef:'o3',viab:{nome:'ZEIS-2 · 2 dormitórios',vgv:78300000,margem:16.2,pmax:10900000,em:H(30)}},6),
+    neg:neg('contrato','contrato_enviado',26,{temp:3,ofRef:'o3',viab:{nome:'ZEIS-2 · 2 dormitórios',vgv:78300000,margem:16.2,em:H(30)}},6),
     propostas:[{v:1,origem:'bkm',data:H(40),valor:9200000,forma:'dinheiro',cond:'Três parcelas: 30% na promessa, 70% em duas parcelas condicionadas à aprovação.',status:'aceita'}],
     tarefas:[{id:uid(),titulo:'Contratar levantamento planialtimétrico',desc:'',resp:'Camila Torres',prazo:H(4),status:'pendente',prio:'alta',resultado:''},{id:uid(),titulo:'Cobrar novas certidões do vendedor',desc:'',resp:'Camila Torres',prazo:H(2),status:'aguardando_terceiro',prio:'media',resultado:''}],
     docs:[{tipo:'matricula',status:'validado',emitido:H(13),versoes:1},{tipo:'onus',status:'validado',emitido:H(13),versoes:1},{tipo:'iptu',status:'recebido',emitido:H(55),versoes:1},{tipo:'vend',status:'validado',emitido:H(39),versoes:1}]
@@ -198,18 +198,18 @@ function seed(){
     infra:infra({energia:'sim',agua:'sim',esgoto:'sim',gas:'sim',asfalto:'sim',drenagem:'sim',iluminacao:'sim',calcada:'sim',fibra:'sim'}),
     analises:[{id:uid(),data:H(80),fonte:'GeoSampa',status:'vigente',zonas:[{sigla:'ZM',area:2950,ins:'171.058.0033-9',macro:null,exc:null,obs:''}]}],
     ofertas:[{id:'o7',cid:'c2',data:H(121),valor:6900000,forma:'dinheiro',status:'ativa',obsPag:'',aceita:''}],corretores:[{cid:'c2',principal:true}],
-    neg:neg('negociacao','contra_proposta',30,{temp:5,ofRef:'o7',viab:{nome:'Estudo base',vgv:44200000,margem:14.2,pmax:6400000,em:H(90)},
+    neg:neg('negociacao','contra_proposta',30,{temp:5,ofRef:'o7',viab:{nome:'Estudo base',vgv:44200000,margem:14.2,em:H(90)},
       pedido:{id:'ped1',tipo:'etapa',dest:'contrato',modo:'sequencia',por:'Rafael Souza',em:H(1)+'T16:20:00.000',dados:{},niveis:[{nivel:2,ordem:1,previsto:'Ana Prado',status:'pendente'}]}},12),
     propostas:[{v:1,origem:'bkm',data:H(50),valor:5900000,forma:'permuta_com_torna',cond:'R$ 4,5 mi + 6% em permuta.',status:'recusada'},{v:2,origem:'vendedor',data:H(30),valor:6900000,forma:'dinheiro',cond:'À vista.',status:'recusada'},{v:3,origem:'bkm',data:H(10),valor:6500000,forma:'dinheiro',cond:'40% na assinatura, 60% na aprovação.',status:'aceita'}],
     reunioes:[{id:uid(),status:'realizada',data:H(31),hora:'09:30',modalidade:'presencial',local:'externo',endereco:'Sede da Têxtil Paulistana',part:{bkm:'Moisés',ext:'Diretoria financeira da Têxtil'},pauta:'Primeira conversa sobre preço.',resumo:'Querem à vista. Não aceitam permuta.',enc:'',ata:{nome:'ata-textil.pdf',versoes:2}}],
-    tarefas:[{id:uid(),titulo:'Levar ao comitê: valor acima do preço máximo',desc:'',resp:'Moisés',prazo:H(-3),status:'pendente',prio:'alta',resultado:''}],
+    tarefas:[{id:uid(),titulo:'Levar ao comitê: rentabilidade abaixo da mínima',desc:'',resp:'Moisés',prazo:H(-3),status:'pendente',prio:'alta',resultado:''}],
     docs:['matricula','onus','iptu','vend','topo','sond','amb'].map(t=>({tipo:t,status:'validado',emitido:H(12),versoes:1}))}));
   // 5b — negociação com contraproposta do vendedor
   T.push(base({codigo:'TER-000125',nome:'Terreno Rua Itapura',prioridade:'media',resp:'Ana Prado',origem:'corretor',dataIdent:H(70),logradouro:'Rua Itapura',numero:'1.410',bairro:'Tatuapé',zona:'leste',
     aDoc:1650,fonteArea:'documental',testada:30,topografia:'plano',posicao:'meio_quadra',formato:'regular',ocupacao:'vazio',demolicao:'dispensada',
     pessoas:[{nome:'Espólio de João Ferraz',tipo:'PF',papel:'proprietario',pct:100,tel:''}],
     ofertas:[{id:'o9',cid:'c1',data:H(70),valor:7400000,forma:'dinheiro',obsPag:'',aceita:'Não aceita permuta.',status:'ativa'}],corretores:[{cid:'c1',principal:true}],
-    neg:neg('negociacao','contra_proposta',15,{temp:3,ofRef:'o9',viab:{nome:'Estudo base',vgv:52800000,margem:15.8,pmax:7600000,em:H(40)}},5),
+    neg:neg('negociacao','contra_proposta',15,{temp:3,ofRef:'o9',viab:{nome:'Estudo base',vgv:52800000,margem:15.8,em:H(40)}},5),
     propostas:[{v:1,origem:'bkm',data:H(30),valor:6800000,forma:'dinheiro',cond:'À vista na escritura.',status:'recusada'},{v:2,origem:'vendedor',data:H(5),validade:H(-10),valor:7300000,forma:'dinheiro',cond:'50% no compromisso, 50% em 90 dias.',status:'apresentada'}],
     tarefas:[{id:uid(),titulo:'Responder contraproposta de R$ 7,3 mi',desc:'',resp:'Ana Prado',prazo:H(-4),status:'pendente',prio:'alta',resultado:''}]}));
   // 6 — perdida
@@ -330,7 +330,10 @@ const lastProp=t=>t.propostas[t.propostas.length-1];
 const docVal=d=>{const v=TIPOS_DOC[d.tipo][2];return v&&d.emitido?addD(d.emitido,v):null};
 const docSt=d=>{if(!d||!d.emitido)return 'pendente';if(d.status==='rejeitado')return 'rejeitado';const v=docVal(d);return v&&v<HOJE?'vencido':d.status};
 const negAtiva=t=>t.neg&&t.neg.status==='ativo';
-const acimaMax=t=>{const lp=lastProp(t);return !!(t.neg?.viab?.pmax!=null&&lp&&lp.origem==='bkm'&&lp.valor>t.neg.viab.pmax)};
+/* rentabilidade abaixo da mínima (decisão do Moisés, 26/out/2026): margem líquida do estudo válido abaixo da mínima da empresa
+   (Configurações › Viabilidade; v_terrenos.abaixo_margem_min). Substitui o aviso de proposta acima do preço máximo. */
+const abaixoMin=t=>{const m=t.neg?.viab?.margem;return m!=null&&S.vbMargemMin!=null&&m<S.vbMargemMin};
+const abaixoMinTxt=t=>`Rentabilidade abaixo da mínima: margem de ${num(t.neg.viab.margem,1)}% no estudo válido, mínima de ${num(S.vbMargemMin,1)}%`;
 const infraNV=t=>INFRA.filter(([k])=>!t.infra[k]||t.infra[k].d==='nao_verificado').length;
 
 /* completude: campos que importam para decidir a compra */
@@ -526,7 +529,7 @@ function abaNegociacao(t){
     <div class="field"><label for="pp-d">Apresentada em</label><input id="pp-d" name="data" type="date" value="${HOJE}"></div>
     <div class="field"><label for="pp-val">Validade</label><input id="pp-val" name="validade" type="date" value="${addD(HOJE,15)}"></div>
     <div class="field full"><label for="pp-c">Condições de pagamento</label><textarea id="pp-c" name="cond" placeholder="Entrada, parcelas, permuta, torna, condição suspensiva"></textarea></div>
-    <div class="field full" id="pp-warn"></div></div>
+    <div class="field full" id="pp-warn">${abaixoMin(t)?`<div class="banner warn">${ic('warn')}<div>${abaixoMinTxt(t)}.</div></div>`:''}</div></div>
     <div class="hint">${t.propostas.length?`Responde à v${t.propostas.length}. Se vier do outro lado, a v${t.propostas.length} vira Recusada; se vier do mesmo lado, vira Substituída.`:'Primeira proposta da negociação.'}</div></div>
     <div class="sec-f"><button type="button" class="btn text" data-a="prop-form">Cancelar</button><button class="btn primary">Registrar</button></div></form></section>`:'';
   return `<div class="stack">${trilhaHtml(t)}
@@ -535,9 +538,9 @@ function abaNegociacao(t){
   ${viabSecao(t)}
   <section class="sec"><div class="sec-h"><h2>Propostas e contrapropostas</h2><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${negAtiva(t)&&!UI.propForm?`<button class="btn primary sm" data-a="prop-form">${ic('add',16)}Nova proposta</button>`:''}</span></div><div class="sec-b">
   ${form}
-  ${chain.length?`<div class="chain" style="margin-top:${UI.propForm?16:0}px">${chain.map((p,i)=>{const over=n.viab?.pmax!=null&&p.valor>n.viab.pmax;return `<div class="pnode ${p.origem}"><span class="pd">v${p.v}</span><div class="pc">
+  ${chain.length?`<div class="chain" style="margin-top:${UI.propForm?16:0}px">${chain.map((p,i)=>{return `<div class="pnode ${p.origem}"><span class="pd">v${p.v}</span><div class="pc">
     <div class="ph"><span><span class="pv">${brl(p.valor)}</span> <span class="muted" style="font-size:13px">· ${p.origem==='bkm'?'BKM':'Vendedor'}${p.v>1?` responde à v${p.v-1}`:''}</span></span>
-    <span style="display:flex;gap:6px;flex-wrap:wrap">${i===0&&negAtiva(t)?`<select aria-label="Status da proposta" data-ch="prop-status" class="chip" style="border:0;height:26px;cursor:pointer">${Object.entries(OPT.statusProp).filter(([k])=>k!=='substituida').map(([k,l])=>`<option value="${k}" ${k===p.status?'selected':''}>${l}</option>`).join('')}</select>`:statusPropChip(p.status)}${over&&p.origem==='bkm'?`<span class="chip warn">${mi(p.valor-n.viab.pmax)} acima do máximo</span>`:''}</span></div>
+    <span style="display:flex;gap:6px;flex-wrap:wrap">${i===0&&negAtiva(t)?`<select aria-label="Status da proposta" data-ch="prop-status" class="chip" style="border:0;height:26px;cursor:pointer">${Object.entries(OPT.statusProp).filter(([k])=>k!=='substituida').map(([k,l])=>`<option value="${k}" ${k===p.status?'selected':''}>${l}</option>`).join('')}</select>`:statusPropChip(p.status)}</span></div>
     <div class="pm">${OPT.forma[p.forma]} · apresentada ${fd(p.data)}${p.validade?` · válida até ${fd(p.validade)}`:''}</div>${p.cond?`<div class="pt">${esc(p.cond)}</div>`:''}</div></div>`}).join('')}</div>`:'<div class="muted">Nenhuma proposta ainda.</div>'}</div></section></div>`;
 }
 function abaTarefas(t){
@@ -665,7 +668,7 @@ function pgInicio(){
   const incompletos=S.terrenos.filter(t=>t.situacao==='ativo'&&completude(t).pct<50);
   const aprov=S.terrenos.filter(t=>t.neg?.status==='ativo'&&t.neg.pedido&&naVez(t.neg.pedido).some(r=>podeDecidir(r,me())));
   const att=[...aprov.map(t=>({sev:'warn',i:'check',ti:`Aprovar: ${destinoNome(t.neg.pedido.tipo,t.neg.pedido.dest)}`,su:`${t.nome} · pedido por ${t.neg.pedido.por}`,id:t.id,tab:'geral'})),...tarefas.map(({t,k})=>({sev:'crit',i:'clock',ti:k.titulo,su:`${t.nome} · ${k.resp} · venceu ${fd(k.prazo)}`,id:t.id,tab:'tarefas'})),
-    ...ativos.filter(acimaMax).map(t=>({sev:'warn',i:'money',ti:`Proposta acima do preço máximo`,su:`${t.nome} · ${mi(lastProp(t).valor)} vs ${mi(t.neg.viab.pmax)}`,id:t.id,tab:'negociacao'})),
+    ...ativos.filter(abaixoMin).map(t=>({sev:'warn',i:'money',ti:`Rentabilidade abaixo da mínima`,su:`${t.nome} · margem ${num(t.neg.viab.margem,1)}% vs ${num(S.vbMargemMin,1)}%`,id:t.id,tab:'negociacao'})),
     ...ativos.filter(t=>!t.neg.temp).map(t=>({sev:'warn',i:'warn',ti:'Temperatura não avaliada',su:t.nome,id:t.id,tab:'cadastro'}))];
   return `<div class="forma"><div class="page-h"><div><h1><span class="marca"></span>${s}, ${esc(me().split(' ')[0])}</h1><div class="sub">${ativos.length} negociações em andamento</div></div></div>
   <div class="kpis"><button class="kpi" data-a="nav" data-r="negociacoes"><span class="v">${ativos.length}</span><span class="l">Negociações ativas</span></button>
@@ -875,7 +878,7 @@ document.addEventListener('input',e=>{const el=e.target;
   if(el.id==='q-top'){UI.q=el.value;if(UI.route!=='terrenos'){go('terrenos');$('#q-top').focus()}else{const r=$('#rows');if(r)r.innerHTML=linhas()}}
   if(el.dataset.masc){const m=mascarar(el.value,el.dataset.masc);if(m!==el.value)el.value=m}
   if(el.form?.dataset.form==='novo')dedupe();
-  if(el.id==='pp-v'){const t=T(UI.id),v=lerNum(el.value),w=$('#pp-warn');w.innerHTML=t.neg.viab?.pmax!=null&&v>t.neg.viab.pmax?`<div class="banner warn">${ic('warn')}<div>${brl(v)} fica ${mi(v-t.neg.viab.pmax)} acima do preço máximo (${mi(t.neg.viab.pmax)}).</div></div>`:''}
+
 });
 document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Object.fromEntries(new FormData(f)),t=UI.alvo?T(UI.alvo):UI.route==='terreno'?T(UI.id):null;
   if(viabSubmit(f.dataset.form,F)||partesSubmit(f.dataset.form,F,t,f)||fasesSubmit(f.dataset.form,F,t,f)||funilSubmit(f.dataset.form,F,t,f)||zonasSubmit(f.dataset.form,F,t,f))return;

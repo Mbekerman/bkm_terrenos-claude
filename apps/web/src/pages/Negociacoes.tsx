@@ -19,7 +19,7 @@ function Cartao({ p }: { p: ProcessoResumo }) {
         <span className="flags">
           {p.docs_vencidos > 0 && <span className="flag crit" title="Documentos vencidos"><Icon n="doc" s={14} />{p.docs_vencidos}</span>}
           {p.tarefas_atrasadas > 0 && <span className="flag crit" title="Tarefas atrasadas"><Icon n="clock" s={14} />{p.tarefas_atrasadas}</span>}
-          {p.acima_preco_max && <span className="flag warn" title="Proposta acima do preço máximo"><Icon n="money" s={14} /></span>}
+          {p.abaixo_margem_min && <span className="flag warn" title="Rentabilidade abaixo da mínima"><Icon n="money" s={14} /></span>}
         </span>
       </div>
     </Link>

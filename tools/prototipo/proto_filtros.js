@@ -56,7 +56,7 @@ const FX=[
   {k:'m2',g:'comercial',l:'Preço pedido por m²',tipo:'faixa',un:'R$',v:fxM2},
   {k:'prop',g:'comercial',l:'Última proposta ativa',dica2:'apresentada, em análise ou aceita',tipo:'faixa',un:'R$',v:fxProposta},
   {k:'vgv',g:'comercial',l:'VGV estimado',dica2:'da viabilidade',tipo:'faixa',un:'R$',v:t=>t.neg?.viab?.vgv??null},
-  {k:'acima',g:'comercial',l:'Proposta acima do preço máximo',tipo:'marca',p:t=>acimaMax(t)},
+  {k:'acima',g:'comercial',l:'Rentabilidade abaixo da mínima',tipo:'marca',p:t=>abaixoMin(t)},
   {k:'corretor',g:'comercial',l:'Corretor',dica2:'do terreno ou de qualquer parte',tipo:'lista',busca:true,op:()=>S.corretores.map(c=>[c.id,c.nome]),v:fxCorretores},
   {k:'forma',g:'comercial',l:'Forma de pagamento pedida',tipo:'lista',op:()=>Object.entries(OPT.forma),v:t=>ofertaRef(t)?.forma||null},
   {k:'origem',g:'comercial',l:'Origem do cadastro',tipo:'lista',op:()=>Object.entries(OPT.origem),v:t=>t.origem||null},

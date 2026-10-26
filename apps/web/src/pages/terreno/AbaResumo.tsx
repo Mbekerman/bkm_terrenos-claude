@@ -37,34 +37,22 @@ function Viab({ p, onVincular }: { p: ProcessoResumo; onVincular: () => void }) 
     return (
       <div className="banner blue"><Icon n="link" /><div style={{ flex: 1 }}>
         <div className="bt">Sem estudo vinculado</div>
-        <div>Rode a viabilidade no BKM e vincule aqui para ver o preço máximo do terreno.</div>
+        <div>Rode a viabilidade no BKM e vincule aqui para ver a margem do estudo.</div>
         {p.status === 'ativo' && <button className="btn sm" style={{ marginTop: 10 }} onClick={onVincular}><Icon n="link" s={16} />Vincular estudo</button>}
       </div></div>
     );
   }
   if (!v) return <div className="muted">Carregando…</div>;
-  const ref = p.ultima_proposta_valor ?? p.valor_referencia ?? 0;
-  const pmax = v.preco_max_terreno;
-  const escala = pmax ? pmax * 1.25 : 1;
-  const acima = pmax != null && ref > pmax;
+  const fmt = (x: number | null) => (x != null ? `${Number(x).toLocaleString('pt-BR')}%` : '—');
   return (
     <>
       <div className="metrics">
         <div className="metric"><div className="ml">VGV</div><div className="mv">{milhoes(v.vgv)}</div></div>
-        <div className="metric"><div className="ml">Margem</div><div className="mv">{v.margem_pct != null ? `${Number(v.margem_pct).toLocaleString('pt-BR')}%` : '—'}</div></div>
-        <div className="metric"><div className="ml">Preço máximo do terreno</div><div className="mv">{milhoes(pmax)}</div></div>
+        <div className="metric"><div className="ml">Margem</div><div className="mv">{fmt(v.margem_pct)}</div></div>
+        <div className="metric"><div className="ml">Rentabilidade mínima</div><div className="mv">{fmt(p.margem_minima_pct)}</div></div>
       </div>
-      {pmax != null && ref > 0 && (
-        <div className="vsbar">
-          <div className="track">
-            <span className={`fill ${acima ? 'over' : ''}`} style={{ width: `${Math.min(100, (ref / escala) * 100)}%` }} />
-            <span className="mark" style={{ left: `${(pmax / escala) * 100}%` }} />
-          </div>
-          <div className="lg">
-            <span>{p.ultima_proposta_valor ? 'Última proposta' : 'Valor pedido'}: <b className="num" style={{ color: acima ? 'var(--warn)' : 'var(--ink)' }}>{milhoes(ref)}</b></span>
-            <span>{acima ? `${milhoes(ref - pmax)} acima do máximo` : `${milhoes(pmax - ref)} de folga`}</span>
-          </div>
-        </div>
+      {p.abaixo_margem_min && (
+        <div className="banner warn" style={{ marginTop: 12 }}><Icon n="warn" /><div>Rentabilidade abaixo da mínima da empresa.</div></div>
       )}
       <div className="faint" style={{ fontSize: 12, marginTop: 12 }}>{v.nome} · {data(v.calculado_em)}</div>
     </>
