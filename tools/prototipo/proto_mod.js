@@ -565,12 +565,12 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     ${v?`<button class="btn sm" data-a="vb-abrir" data-v="${v.id}">Abrir estudo</button>`:''}${UI.role!=='Leitura'?`<button class="btn text sm" data-a="vb-novo">${ic('add',16)}Novo estudo</button>`:''}</div>`:'';
   const viab=`<section class="sec"><div class="sec-h"><h2>Resumo da viabilidade</h2></div><div class="sec-b">${escolha}${v?`<div class="dt-wrap"><table class="dt compacta"><thead><tr><th class="esq">Item</th><th>Valor</th><th>% do VGV</th></tr></thead><tbody>
     <tr><td class="esq">VGV líquido</td><td class="num">${mi(vl)}</td><td class="num">100%</td></tr>
-    <tr><td class="esq">Preço máximo do terreno</td><td class="num">${mi(v.pmax)}</td><td class="num">${pct(v.pmax,vl)}</td></tr>
     <tr><td class="esq">Valor pedido</td><td class="num">${o?.valor?mi(o.valor):'—'}</td><td class="num">${o?.valor?pct(o.valor,vl):'—'}</td></tr>
     ${lp?`<tr><td class="esq">Última proposta (${lp.origem==='bkm'?'BKM':'vendedor'})</td><td class="num">${mi(lp.valor)}</td><td class="num">${pct(lp.valor,vl)}</td></tr>`:''}
     ${v.lucro!=null?`<tr><td class="esq">Lucro líquido</td><td class="num">${mi(v.lucro)}</td><td class="num">${pct(v.lucro,vl)}</td></tr>`:''}
-    <tr class="forte"><td class="esq">Margem líquida do estudo</td><td class="num">${v.margem==null?'—':num(v.margem,1)+'%'}</td><td></td></tr></tbody></table></div>
-    ${o?.valor&&v.pmax!=null&&o.valor>v.pmax?`<div class="banner warn" style="margin-top:12px">${ic('warn')}<div>Valor pedido ${mi(o.valor-v.pmax)} acima do preço máximo.</div></div>`:''}`
+    <tr class="forte"><td class="esq">Margem líquida do estudo</td><td class="num">${v.margem==null?'—':num(v.margem,1)+'%'}</td><td></td></tr>
+    ${S.vbMargemMin!=null?`<tr><td class="esq">Rentabilidade mínima da empresa</td><td class="num">${num(S.vbMargemMin,1)}%</td><td></td></tr>`:''}</tbody></table></div>
+    ${abaixoMin(t)?`<div class="banner warn" style="margin-top:12px">${ic('warn')}<div>${abaixoMinTxt(t)}.</div></div>`:''}`
     :`<div class="muted">${vs.length?'Nenhum estudo marcado como válido.':`Sem estudo.${UI.role!=='Leitura'?' <button class="linkbtn ed" data-a="vb-novo">Montar estudo</button>':''}`}</div>`}</div></section>`;
   const rel=relevoHtml(t)?`<section class="sec"><div class="sec-h"><h2>Relevo</h2>${t.relevo?`<span class="faint" style="font-size:12px">estimado em ${fd(t.relevo.em)}</span>`:''}</div><div class="sec-b">${relevoHtml(t)}</div></section>`:'';
   return `<div class="geral"><div class="geral-c">${info}${condicoes(t)}${neg}</div><div class="geral-c">${loc}${rel}${poi}${setoresCard(t)}${perfilCard(t)}${viab}</div></div>`}

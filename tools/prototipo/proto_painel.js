@@ -108,7 +108,7 @@ function semearHistorico(){
     (t.analises||[]).forEach(a=>add(a.data,'Rafael Souza',`Análise urbanística registrada (${a.fonte})`,(a.zonas||[]).map(z=>`${z.sigla} · ${m2(z.area)}`)));
     (t.neg?.trilha||[]).forEach(x=>add(x.em.slice(0,10),x.user,x.status!=='ativo'?`Status: ${STATUS_N[x.status]}${t.neg.motivo?' · '+motivoN(x.status,t.neg.motivo):''}`:x.ev==='subetapa'?`Subetapa: ${subN(x.paraSub)}`:`Etapa: ${SN(x.paraEtapa)} · ${subN(x.paraSub)}`,x.status==='ativo'?undefined:[t.neg.detalhe||null,x.status==='stand_by'&&t.neg.retomar?`Retomar em ${fd(t.neg.retomar)}`:null].filter(Boolean)));
     if(t.neg?.pedido)add(t.neg.pedido.em,t.neg.pedido.por,`Pedido de aprovação: ${SN(t.neg.pedido.dest)} (gestor)`);
-    if(t.neg?.viab)add(t.neg.viab.em,t.resp,`Estudo de viabilidade vinculado: ${t.neg.viab.nome}`,[`Preço máximo ${mi(t.neg.viab.pmax)}`,`Margem ${num(t.neg.viab.margem,1)}%`]);
+    if(t.neg?.viab)add(t.neg.viab.em,t.resp,`Estudo de viabilidade vinculado: ${t.neg.viab.nome}`,[`Margem ${num(t.neg.viab.margem,1)}%`]);
     (t.propostas||[]).forEach(p=>add(p.data,p.origem==='bkm'?t.resp:t.resp,`Proposta v${p.v} registrada (${p.origem==='bkm'?'BKM':'vendedor'}): ${mi(p.valor)}`,[p.cond].filter(Boolean)));
     (t.propostas||[]).filter(p=>['recusada','aceita'].includes(p.status)).forEach(p=>add(addD(p.data,3),t.resp,`Proposta v${p.v}: ${OPT.statusProp[p.status]}`));
     (t.reunioes||[]).forEach(r=>add(r.status==='realizada'?r.data:addD(r.data,-7),t.resp,r.status==='realizada'?`Reunião registrada (${fd(r.data)})`:`Reunião agendada para ${fd(r.data)} ${r.hora||''}`.trim(),[r.pauta].filter(Boolean)));
@@ -146,7 +146,7 @@ function proximasAcoes(t){
     if(r&&r.ok&&!n.pedido)L.push({sev:'good',i:'fwd',txt:`Pronto para ${r.compra?'concluir como Comprado':'avançar para '+r.next[1]}${r.aprov.niveis.length?' (pede aprovação)':''}`,fix:null});
     const lp=lastProp(t);
     if(lp&&['apresentada','em_analise'].includes(lp.status))L.push({sev:'warn',i:'money',txt:lp.origem==='bkm'?`Cobrar resposta da proposta v${lp.v} (enviada em ${fd(lp.data)})`:`Responder à proposta v${lp.v} do vendedor (${mi(lp.valor)})`,fix:fixBtn('tab','Ver propostas','data-t="negociacao"')});
-    if(acimaMax(t))L.push({sev:'crit',i:'money',txt:`Levar ao comitê: proposta ${mi(lastProp(t).valor)} acima do preço máximo (${mi(n.viab.pmax)})`,fix:null});
+    if(abaixoMin(t))L.push({sev:'crit',i:'money',txt:`Levar ao comitê: ${abaixoMinTxt(t).replace('Rentabilidade','rentabilidade')}`,fix:null});
     if(!n.temp)L.push({sev:'warn',i:'warn',txt:'Avaliar a temperatura da negociação',fix:null});
     const pr=proxReuniao(t);if(pr)L.push({sev:'',i:'clock',txt:`Reunião ${fd(pr.data)}${pr.hora?' às '+pr.hora:''}${pr.pauta?' · '+pr.pauta:''}`,fix:fixBtn('tab','Ver','data-t="negociacao"')});
   }

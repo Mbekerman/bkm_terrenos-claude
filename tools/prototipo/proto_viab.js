@@ -2,7 +2,7 @@
    Avaliação prévia, sem fluxo de caixa. Espelha app.viabilidade_tipologias, app.viabilidade_linhas e
    app.calcular_viabilidade (migration 20261015001000_viabilidade.sql): mesmas regras, mesmos arredondamentos.
    O estudo é do terreno (S.viabs, vários por terreno); a negociação vincula um, e t.neg.viab guarda o resumo
-   dele (com o id), que é o que o resto do protótipo lê (filtros, preço máximo, Visão geral).
+   dele (com o id), que é o que o resto do protótipo lê (filtros, rentabilidade mínima, Visão geral).
    Lista de itens da empresa em S.viabDesp (Configurações › Viabilidade), nascida de tools/viabilidade/despesas.json;
    o grupo do item define a seção, as bases de cálculo aceitas e se ele é fixo (Taxas e Despesas comerciais). */
 const VB_CFG=__VIAB_DESPESAS__;
@@ -60,25 +60,26 @@ function vbCalc(v){let A=0,un=0,unp=0,unc=0,ap=0,ac=0,vgv=0,vp=0,vc=0;
   return {A,un,unp,unc,unl,ap,ac,vgv,vp,vc,vv,dedp,dedc,liq,oi,raso,ot,obras,pfc,pf,minimo:pf>pfc,terr,desp,SEC,GR,lb,lucro,margem:liq>0?r2(lucro/liq*100):null,L}}
 
 /* a negociação lê o resumo do estudo vinculado (no banco, processos.viabilidade_id e os totais do estudo) */
-function vbResumo(v){const c=vbCalc(v);return {id:v.id,nome:v.nome,vgv:c.vgv,liq:c.liq,lucro:c.lucro,margem:c.margem,pmax:v.pmax,em:v.em}}
+function vbResumo(v){const c=vbCalc(v);return {id:v.id,nome:v.nome,vgv:c.vgv,liq:c.liq,lucro:c.lucro,margem:c.margem,em:v.em}}
 function vbSync(v){const t=T(v.tid);if(t?.neg?.viab?.id===v.id)t.neg.viab=vbResumo(v)}
 const vbSyncTodos=()=>S.viabs.forEach(vbSync);
 /* itens fixos (Taxas e Despesas comerciais) sempre no estudo: o que faltar entra com a base e o valor da lista */
 function vbFixos(v){S.viabDesp.forEach(d=>{if(d.ativo&&VB_GRUPO[d.grupo]?.fixo&&!v.linhas.some(l=>l.desp===d.codigo))
   v.linhas.push({id:uid(),desp:d.codigo,tipo:d.tipo||VB_GRUPO[d.grupo].tipos[0],valor:d.valor??null,qtd:1})});return v}
-const vbNovo=(tid,nome)=>vbFixos({id:uid(),tid,nome,pmax:null,em:HOJE,user:me(),cm2:null,pfp:null,dedp:null,min:null,deduz:[],din:null,comd:null,
+const vbNovo=(tid,nome)=>vbFixos({id:uid(),tid,nome,em:HOJE,user:me(),cm2:null,pfp:null,dedp:null,min:null,deduz:[],din:null,comd:null,
   tips:[{id:uid(),nome:'Tipologia 1',area:null,qtd:null,perm:0,com:0,pu:null,pm2:null}],linhas:[]});
 
 /* dados de exemplo: um estudo para cada negociação que já tinha viabilidade, montado para dar perto do VGV e da margem de antes */
-function vbExemplo(t,x,i){const v=vbNovo(t.id,x.nome);v.em=x.em||HOJE;v.user=t.resp||'Rafael Souza';v.pmax=x.pmax??null;
+function vbExemplo(t,x,i){const v=vbNovo(t.id,x.nome);v.em=x.em||HOJE;v.user=t.resp||'Rafael Souza';
   const N=Math.max(20,Math.round(x.vgv/323400)),nA=Math.round(N*.7),perm=i===0?6:0;
   v.tips=[{id:uid(),nome:'2 dormitórios',area:40,qtd:nA,perm,com:0,pu:300000,pm2:7500},{id:uid(),nome:'2 dormitórios com suíte',area:48,qtd:N-nA,perm:0,com:0,pu:378000,pm2:7875}];
-  const vv=nA*300000+(N-nA)*378000-perm*300000,A=nA*40+(N-nA)*48,m=(x.margem??15)/100,terreno=x.pmax??Math.round(vv*.12),itbi=Math.round(terreno*.03/1000)*1000;
+  const vv=nA*300000+(N-nA)*378000-perm*300000,A=nA*40+(N-nA)*48,m=(x.margem??15)/100,terreno=Math.round(vv*.12),itbi=Math.round(terreno*.03/1000)*1000;
   v.din=terreno;v.cm2=Math.max(1500,Math.round((vv*(1-m-.095)-terreno-itbi)/1.03/A/10)*10);
   const fx=(c,valor)=>{const l=v.linhas.find(y=>y.desp===c);if(l)l.valor=valor};fx('comissao',4);fx('marketing',1.5);fx('impostos',4);
   v.linhas.push({id:uid(),desp:'projetos',tipo:'pct_obra_total',valor:3,qtd:1},{id:uid(),desp:'itbi_terreno',tipo:'verba',valor:itbi,qtd:1});
   return v}
 function viabPreparar(){
+  if(S.vbMargemMin===undefined)S.vbMargemMin=15;
   /* estudo no formato de antes de 26/out (multiplicador, "compõe a obra"): refaz a lista e os exemplos */
   if(S.viabDesp&&(S.viabDesp.some(d=>!VB_GRUPO[d.grupo])||S.viabs?.some(v=>v.linhas.some(l=>'mult' in l)))){S.viabDesp=null;S.viabs=null;S.terrenos.forEach(t=>{if(t.neg?.viab)delete t.neg.viab.id})}
   if(!S.viabDesp)S.viabDesp=VB_CFG.despesas.map(d=>({codigo:d.codigo,nome:d.nome,grupo:d.grupo,tipo:d.tipo,valor:d.valor,deduz:d.deduz,ativo:true}));
@@ -87,8 +88,9 @@ function viabPreparar(){
 /* ---------- seção Viabilidade da negociação ---------- */
 function viabSecao(t){const vs=viabsDe(t.id),vi=t.neg?.viab,ro=UI.role==='Leitura',ad=areaAdotada(t);
   const novo=!ro?`<button class="btn sm" data-a="vb-novo">${ic('add',16)}Novo estudo</button>`:'';
-  const ligado=vi?`<div class="metrics vb-met"><div class="metric"><div class="ml">VGV líquido</div><div class="mv">${mi(vi.liq??vi.vgv)}</div></div><div class="metric"><div class="ml">Margem líquida</div><div class="mv">${vi.margem==null?'—':num(vi.margem,1)+'%'}</div></div><div class="metric"><div class="ml">Preço máximo do terreno</div><div class="mv">${mi(vi.pmax)}</div></div></div>
-    <div class="faint" style="font-size:12px;margin-top:10px">Estudo válido: ${esc(vi.nome)} · ${fd(vi.em)}${ad&&vi.pmax?` · ${brl(vi.pmax/ad)}/m² sobre a área adotada`:''}</div>`:'';
+  const ligado=vi?`<div class="metrics vb-met"><div class="metric"><div class="ml">VGV líquido</div><div class="mv">${mi(vi.liq??vi.vgv)}</div></div><div class="metric"><div class="ml">Margem líquida</div><div class="mv">${vi.margem==null?'—':num(vi.margem,1)+'%'}</div></div><div class="metric"><div class="ml">Rentabilidade mínima</div><div class="mv">${S.vbMargemMin==null?'—':num(S.vbMargemMin,1)+'%'}</div></div></div>
+    ${abaixoMin(t)?`<div class="banner warn" style="margin-top:12px">${ic('warn')}<div>${abaixoMinTxt(t)}.</div></div>`:''}
+    <div class="faint" style="font-size:12px;margin-top:10px">Estudo válido: ${esc(vi.nome)} · ${fd(vi.em)}</div>`:'';
   const lista=vs.length?`<div class="dt-wrap vb-lista"><table class="dt compacta"><thead><tr><th class="esq">Estudo</th><th>VGV líquido</th><th>Lucro líquido</th><th>Margem</th><th>Atualizado</th><th>Válido</th></tr></thead><tbody>
     ${vs.map(v=>{const c=vbCalc(v),lig=vi?.id===v.id;return `<tr><td class="esq"><button class="linkbtn" data-a="vb-abrir" data-v="${v.id}">${esc(v.nome)}</button></td><td class="num">${mi(c.liq)}</td><td class="num">${mi(c.lucro)}</td><td class="num">${c.margem==null?'—':num(c.margem,1)+'%'}</td><td>${fd(v.em)}</td>
       <td><label class="vb-radio"><input type="radio" name="vb-valido-${t.id}" ${lig?'checked':''} ${lig?'':negAtiva(t)&&!ro?`data-a="vb-vincular" data-v="${v.id}"`:'disabled'} aria-label="${esc(v.nome)} é o estudo válido"></label></td></tr>`}).join('')}</tbody></table></div>`
@@ -274,6 +276,8 @@ function viabInput(el){
   return false}
 function viabChange(el){
   if(el.dataset.ch==='vb-valido'){if(el.value)viabClick('vb-vincular',{dataset:{v:el.value}});return true}
+  if(el.dataset.ch==='vb-mmin'){const x=lerNum(el.value);const ant=S.vbMargemMin;S.vbMargemMin=x==null||isNaN(x)?null:x;
+    if(ant!==S.vbMargemMin)toast(S.vbMargemMin==null?'Sem rentabilidade mínima.':`Rentabilidade mínima: ${num(S.vbMargemMin,1)}%.`);save();render();return true}
   if(el.dataset.ch==='cfg-vd'){const d=vbDesp(el.dataset.c),k=el.dataset.k;if(!d)return true;
     if(k==='ativo'||k==='deduz')d[k]=el.checked;else if(k==='valor')d.valor=lerNum(el.value);
     else if(k==='nome'){if(!el.value.trim()){toast('O item precisa de nome.',true);el.value=d.nome;return true}d.nome=el.value.trim()}
@@ -341,7 +345,10 @@ function cfgViabHtml(){const L=S.viabDesp;
       <span>${g==='comercial'?`<label class="chk"><input type="checkbox" data-ch="cfg-vd" data-c="${d.codigo}" data-k="deduz" ${d.deduz?'checked':''} aria-label="${esc(d.nome)} pode sair do VGV líquido"></label>`:''}</span>
       <label class="chk"><input type="checkbox" data-ch="cfg-vd" data-c="${d.codigo}" data-k="ativo" ${d.ativo?'checked':''} aria-label="Ativo"></label>
       <span>${u?'':`<button class="linkbtn danger" data-a="vb-cfg-del" data-c="${d.codigo}">Apagar</button>`}</span></div>`}).join('')||'<div class="muted vb-vazio">Nenhum item.</div>'}`}).join('');
-  return `<section class="sec"><div class="sec-h"><h2>Itens do estudo de viabilidade</h2></div><div class="sec-b">
+  return `<section class="sec"><div class="sec-h"><h2>Rentabilidade mínima</h2></div><div class="sec-b">
+    <div class="editgrid vb-campos"><div class="field"><label for="vb-mmin">Margem líquida mínima (%)</label><input id="vb-mmin" data-ch="vb-mmin" value="${vbIn(S.vbMargemMin,2)}" inputmode="decimal" placeholder="Sem mínima"></div></div>
+    <div class="hint">Estudo válido com margem líquida abaixo dela acende "Rentabilidade abaixo da mínima" na negociação, no Início, no kanban e no filtro, e cria a ação "Levar ao comitê". Vazio: sem aviso.</div></div></section>
+  <section class="sec"><div class="sec-h"><h2>Itens do estudo de viabilidade</h2></div><div class="sec-b">
     <p class="muted" style="margin-top:0">É a lista de cada seção do estudo. O grupo define a seção e as bases de cálculo aceitas; nos grupos de Taxas e Despesas comerciais os itens aparecem sempre no estudo. A base e o valor entram como sugestão e podem ser trocados no estudo. <b>Sai do VGV</b> marca as despesas comerciais que o estudo pode deduzir do VGV líquido (na permuta financeira).</p>
     <div class="cfg-t vb-cfg"><div class="cfg-r cfg-hd vb-cfg-r"><span></span><span>Item</span><span>Grupo</span><span>Base de cálculo</span><span>Valor</span><span>Sai do VGV</span><span>Ativo</span><span></span></div>
     ${linhas}</div>

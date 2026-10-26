@@ -337,13 +337,19 @@ select pg_temp.falha(format('select app.mover_etapa(%L)', :'neg'), 'sem passar p
 select pg_temp.falha(format('select app.mover_etapa(%L, true, %L)', :'neg', 'x'), 'analista não força');
 select app.mover_subetapa(:'neg', 'estudo_viabilidade') \gset
 select app.mover_subetapa(:'neg', 'analise_tecnica') \gset
-select app.vincular_viabilidade(:'neg', 'Estudo base', 62000000, 15.2, 8400000) \gset
+select app.vincular_viabilidade(:'neg', 'Estudo base', 62000000, 15.2) \gset
 select app.mover_etapa(:'neg') \gset
 select pg_temp.ok((select etapa_atual = 'negociacao' and subetapa_atual = 'aguardando_reuniao' from app.processos where id = :'neg'),
   'passou pelo Estudo de Viabilidade (mesmo tendo saído dele) e entra em Negociação');
-select pg_temp.ok((select acima_preco_max from app.v_terrenos where id = :'t1'), 'proposta da BKM acima do preço máximo sinalizada');
+select pg_temp.ok((select abaixo_margem_min from app.v_terrenos where id = :'t1') is false, 'sem rentabilidade mínima definida, o aviso não acende');
+select pg_temp.como(:'diretor');
+select app.salvar_margem_minima(:'emp', 16);
+select pg_temp.ok((select abaixo_margem_min and margem_minima_pct = 16 from app.v_terrenos where id = :'t1'), 'margem do estudo válido (15,2%) abaixo da mínima da empresa (16%) acende o aviso');
+select app.salvar_margem_minima(:'emp', 15);
+select pg_temp.ok((select abaixo_margem_min from app.v_terrenos where id = :'t1') is false, 'margem acima da mínima não acende');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'viabilidade_config') = 2, 'mudança da rentabilidade mínima vai para a auditoria');
+select pg_temp.como(:'analista');
 select app.registrar_proposta(:'neg', 'vendedor', 8900000, 'permuta_com_torna', 'Pede 9% em permuta') as p5 \gset
-select pg_temp.ok((select acima_preco_max from app.v_terrenos where id = :'t1') is not true, 'contraproposta do vendedor não acende o alerta de preço máximo');
 select pg_temp.falha(format('select app.mover_subetapa(%L, %L)', :'neg', 'proposta_enviada'), 'Proposta Enviada exige ter passado por Preparando Proposta');
 select pg_temp.como(:'gestor');
 select pg_temp.falha(format('select app.mover_subetapa(%L, %L, true)', :'neg', 'proposta_enviada'), 'avanço forçado exige justificativa');
@@ -1363,7 +1369,8 @@ select pg_temp.falha(format($$insert into app.viabilidade_linhas (empresa_id, vi
 select pg_temp.falha(format($$select app.salvar_viabilidade(%L, '{"deduz_vgv":["comissao"]}')$$, :'vb1'), 'só despesa comercial dedutível sai do VGV líquido');
 select pg_temp.falha(format($$insert into app.viabilidade_linhas (empresa_id, viabilidade_id, despesa, tipo, valor) values (%L, %L, 'inexistente', 'verba', 1)$$, :'emp', :'vb1'), 'item fora da lista da empresa é recusado');
 select pg_temp.falha(format($$select app.salvar_despesa_viabilidade(%L, 'outros_comercial', '{"ativo":false}')$$, :'emp'), 'analista não mexe na lista de itens');
-select app.vincular_viabilidade(:'neg', 'Estudo do BKM', 1, 1, 1) as vbx \gset
+select pg_temp.falha(format('select app.salvar_margem_minima(%L, 10)', :'emp'), 'analista não muda a rentabilidade mínima');
+select app.vincular_viabilidade(:'neg', 'Estudo do BKM', 1, 1) as vbx \gset
 select pg_temp.falha(format($$insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, nome, quantidade) values (%L, %L, 'X', 1)$$, :'emp', :'vbx'), 'estudo externo (BKM) não recebe tipologias');
 select app.vincular_estudo(:'neg', :'vb1');
 select pg_temp.ok((select vgv = 46000000 and margem_pct = 13.47 from app.v_terrenos where id = :'t1'), 'a negociação vincula o estudo: VGV e margem aparecem no terreno');

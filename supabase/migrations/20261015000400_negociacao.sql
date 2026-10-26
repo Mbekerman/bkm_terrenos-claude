@@ -77,10 +77,19 @@ create table app.viabilidades (
   nome               text not null,
   vgv                numeric(16,2),
   margem_pct         numeric(10,2),
-  preco_max_terreno  numeric(14,2),
   calculado_em       date not null default current_date,
   criado_em          timestamptz not null default now(),
   check (num_nonnulls(terreno_id, area_interesse_id) = 1)
+);
+
+-- Rentabilidade mínima da empresa (decisão do Moisés, 26/out/2026): margem líquida
+-- do estudo válido abaixo dela acende "Rentabilidade abaixo da mínima" (no lugar do
+-- antigo preço máximo do terreno). Nulo = sem mínimo. Só o administrador muda
+-- (app.salvar_margem_minima), com auditoria.
+create table app.viabilidade_config (
+  id                 uuid primary key default gen_random_uuid(),
+  empresa_id         uuid not null unique references app.empresas(id) on delete cascade,
+  margem_minima_pct  numeric(5,2) check (margem_minima_pct between -100 and 100)
 );
 
 -- ---------------------------------------------------------------------

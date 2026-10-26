@@ -116,6 +116,22 @@ create policy ver on app.viabilidade_despesas for select to authenticated using 
 grant select on app.viabilidade_despesas to authenticated;
 create trigger t_aud after insert or update or delete on app.viabilidade_despesas for each row execute function app.tg_auditoria();
 
+-- rentabilidade mínima da empresa (tabela em 20261015000400_negociacao.sql, lida por v_terrenos)
+alter table app.viabilidade_config enable row level security;
+create policy ver on app.viabilidade_config for select to authenticated using (empresa_id in (select app.minhas_empresas()));
+grant select on app.viabilidade_config to authenticated;
+create trigger t_aud after insert or update or delete on app.viabilidade_config for each row execute function app.tg_auditoria();
+
+create or replace function app.salvar_margem_minima(p_empresa uuid, p_pct numeric)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  perform app.exigir_administrador(p_empresa);
+  insert into app.viabilidade_config (empresa_id, margem_minima_pct) values (p_empresa, p_pct)
+  on conflict (empresa_id) do update set margem_minima_pct = excluded.margem_minima_pct;
+end $$;
+
 -- ---------------------------------------------------------------------
 -- O estudo: cabeçalho em app.viabilidades (tipo 'estatica'), com os dados
 -- digitados do terreno e da obra incidente e os totais recalculados a cada
@@ -405,9 +421,9 @@ begin
     select * into o from app.viabilidades where id = p_copiar_de and empresa_id = t.empresa_id and tipo = 'estatica';
     if not found then raise exception 'Estudo de origem não encontrado' using errcode = 'P0002'; end if;
   end if;
-  insert into app.viabilidades (empresa_id, terreno_id, nome, tipo, preco_max_terreno, custo_m2, permuta_fin_pct, deducao_vgv_pct,
+  insert into app.viabilidades (empresa_id, terreno_id, nome, tipo, custo_m2, permuta_fin_pct, deducao_vgv_pct,
                                 minimo_garantido, deduz_vgv, pagamento_dinheiro, comissao_dinheiro)
-  values (t.empresa_id, t.id, trim(p_nome), 'estatica', o.preco_max_terreno, o.custo_m2, o.permuta_fin_pct, o.deducao_vgv_pct,
+  values (t.empresa_id, t.id, trim(p_nome), 'estatica', o.custo_m2, o.permuta_fin_pct, o.deducao_vgv_pct,
           o.minimo_garantido, coalesce(o.deduz_vgv, '{}'), o.pagamento_dinheiro, o.comissao_dinheiro) returning id into v_id;
   if p_copiar_de is not null then
     insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, ordem, nome, area_privativa, quantidade, quantidade_permuta, quantidade_comissao, preco_unitario, preco_m2)
@@ -428,7 +444,7 @@ begin
   return v_id;
 end $$;
 
--- Nome, preço máximo e os dados digitados da obra incidente e do terreno.
+-- Nome e os dados digitados da obra incidente e do terreno.
 create or replace function app.salvar_viabilidade(p_id uuid, p_dados jsonb)
 returns void
 language plpgsql security definer set search_path = ''
@@ -438,7 +454,7 @@ begin
   select * into v from app.viabilidades where id = p_id for update;
   if not found then raise exception 'Estudo não encontrado' using errcode = 'P0002'; end if;
   perform app.exigir_editor(v.empresa_id);
-  perform app._chaves_permitidas(p_dados, array['nome','preco_max_terreno','custo_m2','permuta_fin_pct','deducao_vgv_pct',
+  perform app._chaves_permitidas(p_dados, array['nome','custo_m2','permuta_fin_pct','deducao_vgv_pct',
                                                 'minimo_garantido','deduz_vgv','pagamento_dinheiro','comissao_dinheiro']);
   if p_dados ? 'nome' and length(trim(coalesce(p_dados->>'nome', ''))) = 0 then raise exception 'Dê um nome ao estudo' using errcode = '22023'; end if;
   if p_dados ? 'deduz_vgv' then
@@ -450,7 +466,6 @@ begin
   end if;
   update app.viabilidades set
     nome = case when p_dados ? 'nome' then trim(p_dados->>'nome') else nome end,
-    preco_max_terreno  = case when p_dados ? 'preco_max_terreno'  then (p_dados->>'preco_max_terreno')::numeric  else preco_max_terreno end,
     custo_m2           = case when p_dados ? 'custo_m2'           then (p_dados->>'custo_m2')::numeric           else custo_m2 end,
     permuta_fin_pct    = case when p_dados ? 'permuta_fin_pct'    then (p_dados->>'permuta_fin_pct')::numeric    else permuta_fin_pct end,
     deducao_vgv_pct    = case when p_dados ? 'deducao_vgv_pct'    then (p_dados->>'deducao_vgv_pct')::numeric    else deducao_vgv_pct end,
@@ -479,7 +494,7 @@ begin
   delete from app.viabilidades where id = p_id;
 end $$;
 
--- A negociação usa o estudo (VGV, margem e preço máximo vêm dele).
+-- A negociação usa o estudo (VGV e margem vêm dele; a margem abaixo da mínima da empresa acende o aviso).
 create or replace function app.vincular_estudo(p_processo uuid, p_viabilidade uuid)
 returns void
 language plpgsql security definer set search_path = ''
@@ -558,7 +573,7 @@ revoke execute on function app.tg_viabilidade_tipologia(), app.tg_viabilidade_fi
   app._recalcular_viabilidade(uuid) from public;
 revoke execute on function app.calcular_viabilidade(uuid), app.criar_viabilidade(uuid, text, uuid), app.salvar_viabilidade(uuid, jsonb),
   app.apagar_viabilidade(uuid), app.vincular_estudo(uuid, uuid), app.salvar_despesa_viabilidade(uuid, text, jsonb),
-  app.apagar_despesa_viabilidade(uuid, text) from public;
+  app.apagar_despesa_viabilidade(uuid, text), app.salvar_margem_minima(uuid, numeric) from public;
 grant execute on function app.calcular_viabilidade(uuid), app.criar_viabilidade(uuid, text, uuid), app.salvar_viabilidade(uuid, jsonb),
   app.apagar_viabilidade(uuid), app.vincular_estudo(uuid, uuid), app.salvar_despesa_viabilidade(uuid, text, jsonb),
-  app.apagar_despesa_viabilidade(uuid, text) to authenticated;
+  app.apagar_despesa_viabilidade(uuid, text), app.salvar_margem_minima(uuid, numeric) to authenticated;
