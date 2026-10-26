@@ -76,7 +76,7 @@ create table app.viabilidades (
   bkm_viabilidade_id uuid,
   nome               text not null,
   vgv                numeric(16,2),
-  margem_pct         numeric(6,2),
+  margem_pct         numeric(10,2),
   preco_max_terreno  numeric(14,2),
   calculado_em       date not null default current_date,
   criado_em          timestamptz not null default now(),

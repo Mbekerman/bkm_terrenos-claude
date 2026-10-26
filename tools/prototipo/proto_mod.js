@@ -559,14 +559,19 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     :`<div class="empty" style="padding:var(--e6) 0">Sem localização.<br><span style="display:inline-flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center">${GG&&(t.logradouro||t.bairro)?`<button class="btn sm primary ed" data-a="g-geo" data-id="${t.id}">Localizar pelo endereço</button>`:''}<button class="btn sm ed" data-a="mp-marcar" data-id="${t.id}">Marcar no mapa</button></span></div>`}</div></section>`;
   const poi=entornoCard(t);
   const pct=(x,b)=>b?num(x/b*100,1)+'%':'—';
-  const viab=`<section class="sec"><div class="sec-h"><h2>Resumo da viabilidade</h2>${v?`<span class="faint" style="font-size:12px">${esc(v.nome)}</span>`:''}</div><div class="sec-b">${v?`<div class="dt-wrap"><table class="dt compacta"><thead><tr><th class="esq">Item</th><th>Valor</th><th>% do VGV</th></tr></thead><tbody>
-    <tr><td class="esq">VGV</td><td class="num">${mi(v.vgv)}</td><td class="num">100%</td></tr>
-    <tr><td class="esq">Preço máximo do terreno</td><td class="num">${mi(v.pmax)}</td><td class="num">${pct(v.pmax,v.vgv)}</td></tr>
-    <tr><td class="esq">Valor pedido</td><td class="num">${o?.valor?mi(o.valor):'—'}</td><td class="num">${o?.valor?pct(o.valor,v.vgv):'—'}</td></tr>
-    ${lp?`<tr><td class="esq">Última proposta (${lp.origem==='bkm'?'BKM':'vendedor'})</td><td class="num">${mi(lp.valor)}</td><td class="num">${pct(lp.valor,v.vgv)}</td></tr>`:''}
-    <tr class="forte"><td class="esq">Margem do estudo</td><td class="num">${num(v.margem,1)}%</td><td></td></tr></tbody></table></div>
-    ${o?.valor&&o.valor>v.pmax?`<div class="banner warn" style="margin-top:12px">${ic('warn')}<div>Valor pedido ${mi(o.valor-v.pmax)} acima do preço máximo.</div></div>`:''}`
-    :`<div class="muted">Sem estudo vinculado.${negAtiva(t)?` <button class="linkbtn ed" data-a="viab">Vincular estudo</button>`:''}</div>`}</div></section>`;
+  const vl=v?(v.liq??v.vgv):null;
+  const vs=viabsDe(t.id),roV=UI.role==='Leitura'||!negAtiva(t);
+  const escolha=vs.length?`<div class="vb-escolha"><label for="vb-val-${t.id}">Estudo válido</label><select id="vb-val-${t.id}" data-ch="vb-valido" ${roV?'disabled':''}>${v?'':'<option value="">Escolha o estudo</option>'}${vs.map(x=>{const c=vbCalc(x);return `<option value="${x.id}" ${v?.id===x.id?'selected':''}>${esc(x.nome)} · margem ${c.margem==null?'—':num(c.margem,1)+'%'}</option>`}).join('')}</select>
+    ${v?`<button class="btn sm" data-a="vb-abrir" data-v="${v.id}">Abrir estudo</button>`:''}${UI.role!=='Leitura'?`<button class="btn text sm" data-a="vb-novo">${ic('add',16)}Novo estudo</button>`:''}</div>`:'';
+  const viab=`<section class="sec"><div class="sec-h"><h2>Resumo da viabilidade</h2></div><div class="sec-b">${escolha}${v?`<div class="dt-wrap"><table class="dt compacta"><thead><tr><th class="esq">Item</th><th>Valor</th><th>% do VGV</th></tr></thead><tbody>
+    <tr><td class="esq">VGV líquido</td><td class="num">${mi(vl)}</td><td class="num">100%</td></tr>
+    <tr><td class="esq">Preço máximo do terreno</td><td class="num">${mi(v.pmax)}</td><td class="num">${pct(v.pmax,vl)}</td></tr>
+    <tr><td class="esq">Valor pedido</td><td class="num">${o?.valor?mi(o.valor):'—'}</td><td class="num">${o?.valor?pct(o.valor,vl):'—'}</td></tr>
+    ${lp?`<tr><td class="esq">Última proposta (${lp.origem==='bkm'?'BKM':'vendedor'})</td><td class="num">${mi(lp.valor)}</td><td class="num">${pct(lp.valor,vl)}</td></tr>`:''}
+    ${v.lucro!=null?`<tr><td class="esq">Lucro líquido</td><td class="num">${mi(v.lucro)}</td><td class="num">${pct(v.lucro,vl)}</td></tr>`:''}
+    <tr class="forte"><td class="esq">Margem líquida do estudo</td><td class="num">${v.margem==null?'—':num(v.margem,1)+'%'}</td><td></td></tr></tbody></table></div>
+    ${o?.valor&&v.pmax!=null&&o.valor>v.pmax?`<div class="banner warn" style="margin-top:12px">${ic('warn')}<div>Valor pedido ${mi(o.valor-v.pmax)} acima do preço máximo.</div></div>`:''}`
+    :`<div class="muted">${vs.length?'Nenhum estudo marcado como válido.':`Sem estudo.${UI.role!=='Leitura'?' <button class="linkbtn ed" data-a="vb-novo">Montar estudo</button>':''}`}</div>`}</div></section>`;
   const rel=relevoHtml(t)?`<section class="sec"><div class="sec-h"><h2>Relevo</h2>${t.relevo?`<span class="faint" style="font-size:12px">estimado em ${fd(t.relevo.em)}</span>`:''}</div><div class="sec-b">${relevoHtml(t)}</div></section>`:'';
   return `<div class="geral"><div class="geral-c">${info}${condicoes(t)}${neg}</div><div class="geral-c">${loc}${rel}${poi}${setoresCard(t)}${perfilCard(t)}${viab}</div></div>`}
 function L_initMini(){const el=$('#mini-mapa'),t=T(UI.id);if(!el||!t||t.lat==null)return;if(!window.L){el.innerHTML='<div class="mapa-erro">Mapa indisponível.</div>';return}

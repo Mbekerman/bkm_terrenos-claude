@@ -413,6 +413,11 @@ begin
     execute 'insert into app.tipos_notificacao (empresa_id, codigo, nome, ativo, dias_antes_padrao)
              select $1, codigo, nome, ativo, dias_antes_padrao from app.tipos_notificacao where empresa_id is null' using new.id;
   end if;
+  -- lista de despesas do estudo de viabilidade: ver viabilidade
+  if to_regclass('app.viabilidade_despesas') is not null then
+    execute 'insert into app.viabilidade_despesas (empresa_id, codigo, nome, grupo, tipo_padrao, valor_padrao, deduz_vgv, ordem, ativo)
+             select $1, codigo, nome, grupo, tipo_padrao, valor_padrao, deduz_vgv, ordem, ativo from app.viabilidade_despesas where empresa_id is null' using new.id;
+  end if;
   return new;
 end $$;
 create trigger t_configuracao after insert on app.empresas for each row execute function app.tg_copiar_configuracao();

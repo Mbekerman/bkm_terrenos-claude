@@ -714,6 +714,71 @@ erDiagram
 - `v_concorrencia`: empreendimentos ativos com a empresa e o resumo de hoje; é o que o mapa e o quadro leem. `app.concorrencia_tipologias_em(data)`: cada tipologia com o preço vigente na data.
 - Estoque e velocidade de vendas ficaram de fora (decisão do Moisés). A concorrência perto do terreno na ficha e uma página de lista ficam para depois.
 
+## Estudo de viabilidade estática
+
+Decisões do Moisés, 25 e 26/out/2026. Avaliação prévia do terreno, **sem fluxo de caixa**. Migration `20261015001000_viabilidade.sql`; protótipo em `tools/prototipo/proto_viab.js`.
+
+```mermaid
+erDiagram
+  terrenos ||--o{ viabilidades : "estudos"
+  processos |o--o| viabilidades : "vinculado"
+  viabilidades ||--o{ viabilidade_tipologias : tem
+  viabilidades ||--o{ viabilidade_linhas : tem
+  viabilidade_despesas ||--o{ viabilidade_linhas : "item da lista"
+  viabilidades {
+    numeric custo_m2 "obra incidente, R$/m2"
+    numeric permuta_fin_pct
+    numeric deducao_vgv_pct
+    numeric minimo_garantido
+    text_arr deduz_vgv "despesas comerciais que saem do VGV liquido"
+    numeric pagamento_dinheiro
+    numeric comissao_dinheiro
+  }
+  viabilidade_tipologias {
+    uuid id PK
+    uuid viabilidade_id FK
+    text nome
+    numeric area_privativa
+    int quantidade
+    int quantidade_permuta "permuta fisica"
+    int quantidade_comissao "comissao do terreno; as duas ate a quantidade"
+    numeric preco_unitario
+    numeric preco_m2
+  }
+  viabilidade_linhas {
+    uuid id PK
+    uuid viabilidade_id FK
+    text despesa FK "codigo na lista da empresa"
+    text tipo "base de calculo aceita pelo grupo"
+    numeric valor "percentual nas bases em %"
+    numeric quantidade "meses, so na verba mensal"
+  }
+  viabilidade_despesas {
+    uuid empresa_id "nulo = padrao"
+    text codigo
+    text nome
+    text grupo "define secao, bases e se e fixo"
+    text tipo_padrao
+    numeric valor_padrao
+    bool deduz_vgv "so comercial"
+    bool ativo
+  }
+```
+
+- O estudo é do terreno (vários por terreno; `app.viabilidades` com `tipo = 'estatica'`). A negociação vincula um (`app.vincular_estudo`, só na fase de entrada e do mesmo terreno); o estudo externo do BKM (`tipo = 'externa'`, `app.vincular_viabilidade`) continua. Criar e duplicar por `app.criar_viabilidade` (já com os itens fixos), nome, preço máximo e os dados digitados da obra e do terreno por `app.salvar_viabilidade`, apagar por `app.apagar_viabilidade` (vinculado ou usado em proposta não se apaga). Tipologias e linhas são escrita direta (sem regra de funil), com auditoria; o trigger recusa base que o grupo não aceita e item fixo repetido.
+- **Preços ligados** (trigger `t_precos`): com a área, mudar o preço unitário refaz o m² e mudar o m² refaz o unitário; mudar a área refaz o m² quando há os dois preços e completa o que falta quando há um só.
+- **Grupos** (`app.viab_tipos`, `app.viab_secao`, `app.viab_fixo`, iguais a `grupos` em `despesas.json`): Custo de obras › Itens atípicos, Obra não incidente, Projetos, Pós-obra; Despesas gerais › Terreno, Incorporação, CEF, Administrativo e financeiro; Taxas (fixos); Despesas comerciais (fixos). Itens fixos aparecem sempre no estudo, sem incluir nem tirar.
+- **Cálculo** (`app.calcular_viabilidade`, o mesmo do protótipo; os totais ficam no cabeçalho, refeitos por trigger):
+  - VGV = Σ quantidade × preço unitário. **VGV vendido** = VGV − unidades em permuta física − unidades da comissão; é o "VGV" das bases % do VGV. Unidades líquidas = unidades − permuta − comissão (base da verba por unidade).
+  - **VGV líquido** = VGV vendido − % de dedução × VGV vendido − as despesas comerciais marcadas para deduzir (só as que a lista marca como dedutíveis: ITBI e registro de unidades vendidas, Produto Caixa).
+  - **Custo de obras** em camadas: incidente (típico) = valor unitário × área privativa total; atípicos (área privativa, % do típico, % do VGV, verba); **raso** = incidente + atípicos; não incidente (+ % do raso); **obra total** = raso + não incidente; projetos e pós-obra (+ % da obra total). A seção soma tudo.
+  - **Custo do terreno**: permuta física e comissão em unidades só informam (quantidade, área, %), porque já saíram do VGV vendido; permuta financeira = % × VGV líquido, nunca abaixo do mínimo garantido; + pagamento em dinheiro + comissão em dinheiro.
+  - Despesas gerais e Taxas: % do VGV, % da obra total, % do lucro líquido ou verba. O % do lucro é circular: lucro = L0 ÷ (1 + Σ%), com L0 o lucro antes desses itens; sem lucro, valem zero.
+  - Despesas comerciais: % do VGV, verba total, verba por unidade (× unidades líquidas) ou verba mensal (× meses).
+  - **Lucro líquido** = VGV líquido − obras − terreno − despesas gerais − taxas − despesas comerciais não deduzidas; **margem líquida** = lucro ÷ VGV líquido. `despesas_total` soma todas as saídas, inclusive as deduzidas.
+- Lista de itens da empresa: configuração do administrador (`app.salvar_despesa_viabilidade`, `app.apagar_despesa_viabilidade`; usado só desativa e não muda de grupo), copiada para cada empresa nova. Padrão em `tools/viabilidade/despesas.json` (o protótipo e o teste do banco leem).
+- Leituras a confirmar com o Moisés: custo de obra típico = incidente; a dedução em % também sai do lucro (é custo, não só base da permuta); % do VGV sobre o VGV vendido.
+
 ## 3. Documentos
 
 ```mermaid
