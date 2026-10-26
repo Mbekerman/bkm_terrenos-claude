@@ -13,7 +13,7 @@ await ctx.route('**/*',r=>{const u=r.request().url();if(u.startsWith('file://'))
 const p=await ctx.newPage();p.on('pageerror',e=>errs.push(tag+': '+e.message));
 await p.goto('file:///x/a.html');await p.evaluate(t=>{localStorage.clear();localStorage.setItem('bkm-terrenos-tema',t)},tema);await p.reload();await p.waitForTimeout(400);
 const D=()=>p.evaluate(k=>JSON.parse(localStorage.getItem(k)),KEY);
-const d0=await D();ok(d0.viabs.length>=4&&d0.viabDesp.length===36,tag+' estudos de exemplo e a lista padrão de 36 itens');
+const d0=await D();ok(d0.viabs.length>=4&&d0.viabDesp.length===37,tag+' estudos de exemplo e a lista padrão de 37 itens');
 const tid=d0.viabs[0].tid;
 const ficha=async()=>{await p.evaluate(id=>{document.querySelector('[data-a=nav][data-r=terrenos]').click()},tid);await p.waitForTimeout(200);
   await p.evaluate(id=>document.querySelector(`[data-a=abrir][data-id="${id}"]`).click(),tid);await p.waitForTimeout(400);
@@ -26,12 +26,12 @@ await p.evaluate(()=>document.querySelector('#sec-viab').scrollIntoView({block:'
 await p.evaluate(()=>document.querySelector('#sec-viab [data-a=vb-novo]').click());await p.waitForTimeout(300);
 ok(await p.evaluate(()=>document.body.dataset.rota==='terreno'&&!!document.querySelector('#vb-pop .vb-pop-d[role=dialog]')),tag+' Novo estudo abre o popup sobre a ficha');
 const abas=await p.$$eval('#vb-pop .vb-nav .vb-aba',e=>e.map(x=>x.dataset.v+':'+x.querySelector('b').textContent+(x.hasAttribute('aria-current')?'*':'')));
-ok(abas.join()==='tip:Tipologias*,terreno:Terreno,comercial:Comercial,obra:Obras,despesas:Gerais,taxas:Taxas,financeiro:Financeiras,res:DRE'&&await p.$$eval('#vb-pop .vb-sec',e=>e.length)===1,tag+' botões das seções sob os indicadores, na ordem, e uma seção de cada vez (abre em Tipologias): '+abas.join());
+ok(abas.join()==='tip:Tipologias*,terreno:Terreno,comercial:Comercial,obra:Obras,despesas:Gerais,financeiro:Financeiras,taxas:Taxas,res:DRE'&&await p.$$eval('#vb-pop .vb-sec',e=>e.length)===1,tag+' botões das seções sob os indicadores, na ordem, e uma seção de cada vez (abre em Tipologias): '+abas.join());
 const aba=async k=>{await p.evaluate(k=>document.querySelector(`.vb-nav [data-a=vb-aba][data-v=${k}]`).click(),k);await p.waitForTimeout(120)};
 const G2A={obra_atipica:'obra',obra_nao_incidente:'obra',projetos:'obra',pos_obra:'obra',terreno:'despesas',incorporacao:'despesas',cef:'despesas',adm_financeiro:'despesas'};
 await aba('taxas');const nTx=await p.$$eval('#vb-sec-taxas .vb-r[data-ln]',e=>e.length);
 await aba('financeiro');const nFi=await p.$$eval('#vb-sec-financeiro .vb-r[data-ln]',e=>e.map(r=>r.querySelector('.vb-nome')?.textContent).join('|'));await aba('comercial');
-ok(nFi==='Custo de juros PJ|Custo de alavancagem|Custo financeiro|Impostos',tag+' Despesas financeiras: juros PJ (da configuração), alavancagem, custo financeiro e impostos: '+nFi);
+ok(nFi==='Custo de alavancagem|Custo de juros PJ|Custo financeiro|Impostos',tag+' Despesas financeiras: alavancagem, juros PJ, custo financeiro e impostos: '+nFi);
 ok(nTx===3&&await p.$$eval('#vb-sec-comercial .vb-r[data-ln]',e=>e.length)===9&&await p.$('.vb-aba[data-v=comercial][aria-current]'),tag+' Taxas (3) e Despesas comerciais (9) já vêm com os itens fixos; o botão ativo acompanha a seção');
 await aba('tip');
 const tp=async(i,k)=>p.locator('.vb-tips .vb-r[data-tp]').nth(i).locator(`[data-k="${k}"]`);
@@ -88,7 +88,8 @@ const kp=await txt('#vb-kpis');
 ok(/46,00 mi/.test(kp)&&/39,36 mi/.test(kp)&&/5,30 mi/.test(kp)&&/13,5%/.test(kp),tag+' VGV 46 mi, VGV líquido 39,36 mi, lucro 5,30 mi, margem 13,5% (o mesmo do banco): '+kp);
 await aba('res');const res=await txt('#vb-res');
 ok(/VGV vendido R\$\s?42\.640\.000/.test(res)&&/Deduções da receita R\$\s?3\.284\.800/.test(res)&&/Receita líquida \(VGV líquido\) R\$\s?39\.355\.200/.test(res)&&/Lucro bruto R\$\s?12\.191\.568/.test(res)
-  &&/Resultado antes das taxas R\$\s?7\.969\.968/.test(res)&&/EBITDA R\$\s?7\.005\.109/.test(res)&&/Despesas financeiras R\$\s?1\.705\.600/.test(res)&&res.indexOf('EBITDA')<res.indexOf('Despesas financeiras')&&res.indexOf('Despesas financeiras')<res.indexOf('Lucro líquido')&&/Lucro líquido R\$\s?5\.299\.509/.test(res)&&/13,47%/.test(res)&&/fora as deduzidas da receita\) R\$\s?3\.545\.200/.test(res),tag+' DRE: receita líquida 39.355.200, lucro bruto 12.191.568, antes das taxas 7.969.968, EBITDA 7.005.109, financeiras 1.705.600, lucro 5.299.509,09, margem 13,47%: '+res.slice(0,200));
+  &&/EBITDA R\$\s?7\.969\.968/.test(res)&&/Despesas financeiras R\$\s?1\.705\.600/.test(res)&&/Resultado sem as taxas R\$\s?6\.264\.368/.test(res)&&/Taxas R\$\s?964\.859/.test(res)
+  &&['EBITDA','Despesas financeiras','Resultado sem as taxas','(−) Taxas','Lucro líquido (pagando'].every((x,i,a)=>i===0||res.indexOf(a[i-1])<res.indexOf(x))&&/Lucro líquido \(pagando as taxas\) R\$\s?5\.299\.509/.test(res)&&/13,47%/.test(res)&&/fora as deduzidas da receita\) R\$\s?3\.545\.200/.test(res),tag+' DRE: receita líquida 39.355.200, lucro bruto 12.191.568, EBITDA 7.969.968, financeiras 1.705.600, sem as taxas 6.264.368, taxas 964.859 por último, lucro 5.299.509,09, margem 13,47%: '+res.slice(-900));
 if(modo==='desktop')await p.screenshot({path:OUT+tag+'_2dre.png'});
 const inteira=async(k,nome)=>{await aba(k);await p.evaluate(()=>{const st=document.createElement('style');st.id='t-print';st.textContent='.vb-pop{position:absolute!important;bottom:auto!important;padding:0!important}.vb-pop-d{height:auto!important;border-radius:0!important}.vb-pop-sc{overflow:visible!important}';document.head.appendChild(st)});
   await p.locator('#vb-sec-'+k).screenshot({path:OUT+tag+nome});await p.evaluate(()=>document.getElementById('t-print').remove())};
@@ -108,7 +109,7 @@ const cef=await fixo('comercial','Taxa de emissão de contratos CEF','500','verb
 ok(/4\.767\.000/.test(await txt('#vb-tot-comercial'))&&/138 unidades líquidas/.test(await txt(`[data-ln="${cef}"]`)),tag+' verba por unidade: 500 × 138 unidades líquidas');
 await val(cef,'');
 const vs=(await D()).viabs.at(-1);
-ok(vs.linhas.length===15+10&&vs.deduz.length===2,tag+' linhas gravadas (15 fixas e 10 da lista) e as duas deduções');
+ok(vs.linhas.length===16+10&&vs.deduz.length===2,tag+' linhas gravadas (16 fixas e 10 da lista) e as duas deduções');
 ok(await p.evaluate(()=>{const sc=document.querySelector('.vb-pop-sc');return sc.scrollWidth<=sc.clientWidth+1&&document.scrollingElement.scrollWidth<=innerWidth+1||[sc.scrollWidth,sc.clientWidth,document.scrollingElement.scrollWidth,innerWidth,[...sc.querySelectorAll('*')].filter(e=>e.getBoundingClientRect().right>sc.getBoundingClientRect().right+1).slice(0,3).map(e=>e.className).join('|')].join(',')}),tag+' sem rolagem horizontal');
 await aba('obra');await p.evaluate(()=>document.querySelector('.vb-pop-sc').scrollTop=1e6);await p.waitForTimeout(100);
 await p.evaluate(()=>[...document.querySelectorAll('.vb-passo [data-a=vb-aba]')].find(b=>/Gerais/.test(b.textContent)).click());await p.waitForTimeout(200);
@@ -123,6 +124,8 @@ ok(!(await p.$('.vb-acoes [data-a=vb-apagar]')),tag+' estudo vinculado não tem 
 await p.evaluate(()=>{document.querySelector('#perfil button')?.click()});await p.waitForTimeout(100);
 await p.evaluate(()=>[...document.querySelectorAll('[data-a=role]')].find(x=>x.dataset.v==='Leitura')?.click());await p.waitForTimeout(250);
 ok(await p.evaluate(()=>[...document.querySelectorAll('.vb-tab input')].every(i=>i.disabled)&&!document.querySelector('[data-a=vb-tip-add]')&&!document.querySelector('[data-a=vb-ln-add]')),tag+' Leitura vê o estudo sem editar');
+const abL=await p.$$eval('#vb-pop .vb-nav .vb-aba',e=>e.map(x=>x.dataset.v).join());await aba('res');const resL=await txt('#vb-res');
+ok(abL==='tip,terreno,comercial,obra,despesas,res'&&/Resultado sem as taxas/.test(resL)&&!/Impostos|Taxa de gestão/.test(resL),tag+' fora da diretoria, sem as abas Financeiras e Taxas, e a DRE só com os totais delas: '+abL);
 if(modo==='desktop'&&tema==='claro')await p.screenshot({path:OUT+tag+'_3leitura.png'});
 await p.evaluate(()=>{document.querySelector('#perfil button')?.click()});await p.waitForTimeout(100);
 await p.evaluate(()=>[...document.querySelectorAll('[data-a=role]')].find(x=>x.dataset.v==='Diretor')?.click());await p.waitForTimeout(250);
@@ -130,18 +133,13 @@ await p.evaluate(()=>[...document.querySelectorAll('[data-a=role]')].find(x=>x.d
 if(modo==='desktop'){
 await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=config]').click());await p.waitForTimeout(200);
 await p.evaluate(()=>document.querySelector('[data-a=cfg-aba][data-v=viab]').click());await p.waitForTimeout(200);
-ok(await p.$$eval('.vb-cfg-r:not(.cfg-hd)',e=>e.length)===36,tag+' Configurações › Viabilidade lista os 36 itens por grupo');
+ok(await p.$$eval('.vb-cfg-r:not(.cfg-hd)',e=>e.length)===37&&await p.$('.vb-cfg-r [data-c=juros_pj][data-k=tipo]'),tag+' Configurações › Viabilidade lista os 37 itens por grupo, com o Custo de juros PJ em Despesas financeiras');
 await p.fill('#vb-mmin','14');await p.press('#vb-mmin','Tab');await p.waitForTimeout(200);
 ok((await D()).vbMargemMin===14,tag+' administrador define a rentabilidade mínima da empresa (14%)');
 await p.screenshot({path:OUT+tag+'_4config.png',fullPage:true});
 await p.locator('[data-ch=cfg-vd][data-c=registro_vendas][data-k=deduz]').uncheck();await p.waitForTimeout(200);
 const n2=(await D()).terrenos.find(t=>t.id===tid).neg.viab;
 ok(n2.lucro===5277690.91&&n2.margem===13.31,tag+' registro das vendas deixa de sair do VGV: o estudo vinculado se refaz (lucro 5.277.690,91, margem 13,31, como no banco)');
-await p.fill('#vb-jpj','2');await p.press('#vb-jpj','Tab');await p.waitForTimeout(200);
-const n3=(await D()).terrenos.find(t=>t.id===tid).neg.viab;
-ok((await D()).vbJurosPj===2&&n3.lucro<n2.lucro,tag+' juros PJ de 2% da obra total refaz o estudo válido (lucro '+n2.lucro+' → '+n3.lucro+')');
-await p.fill('#vb-jpj','');await p.press('#vb-jpj','Tab');await p.waitForTimeout(200);
-ok((await D()).vbJurosPj===null&&(await D()).terrenos.find(t=>t.id===tid).neg.viab.lucro===n2.lucro,tag+' sem juros PJ, vale zero');
 ok(await p.locator('[data-ch=cfg-vd][data-c=comissao][data-k=grupo]').isDisabled(),tag+' item usado em estudo não muda de grupo');
 await p.fill('#vd-n','Prêmio de vendas');await p.selectOption('#vd-g','comercial');await p.evaluate(()=>document.querySelector('[data-form=vb-cfg-nova]').requestSubmit());await p.waitForTimeout(200);
 ok((await D()).viabDesp.some(d=>d.nome==='Prêmio de vendas'&&d.grupo==='comercial'&&d.tipo==='pct_vgv'),tag+' item novo entra no grupo, com a primeira base aceita');

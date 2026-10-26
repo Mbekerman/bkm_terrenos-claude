@@ -85,14 +85,11 @@ create table app.viabilidades (
 -- Rentabilidade mínima da empresa (decisão do Moisés, 26/out/2026): margem líquida
 -- do estudo válido abaixo dela acende "Rentabilidade abaixo da mínima" (no lugar do
 -- antigo preço máximo do terreno). Nulo = sem mínimo. Só o administrador muda
--- (app.salvar_margem_minima), com auditoria. Juros PJ (decisão do Moisés,
--- 26/out/2026): % do custo de obra total que o estudo lança em Despesas
--- financeiras, definido pelo administrador (app.salvar_juros_pj); nulo = zero.
+-- (app.salvar_margem_minima), com auditoria.
 create table app.viabilidade_config (
   id                 uuid primary key default gen_random_uuid(),
   empresa_id         uuid not null unique references app.empresas(id) on delete cascade,
-  margem_minima_pct  numeric(5,2) check (margem_minima_pct between -100 and 100),
-  juros_pj_pct       numeric(7,4) check (juros_pj_pct between 0 and 100)
+  margem_minima_pct  numeric(5,2) check (margem_minima_pct between -100 and 100)
 );
 
 -- ---------------------------------------------------------------------

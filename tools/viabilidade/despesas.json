@@ -349,6 +349,14 @@
       "deduz": false
     },
     {
+      "codigo": "juros_pj",
+      "nome": "Custo de juros PJ",
+      "grupo": "financeiro",
+      "tipo": "pct_obra_total",
+      "valor": null,
+      "deduz": false
+    },
+    {
       "codigo": "custo_financeiro",
       "nome": "Custo financeiro",
       "grupo": "financeiro",
