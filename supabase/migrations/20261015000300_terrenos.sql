@@ -438,7 +438,8 @@ end $$;
 create trigger t_vigente before insert on app.analises_urbanisticas for each row execute function app.tg_analise_vigente();
 
 -- Entorno do terreno: lugares do Google a até o raio a pé da categoria, com a
--- distância e o tempo pela rota a pé. Gravado só por app.salvar_entorno, que troca
+-- distância e o tempo pela rota a pé. Buscado uma vez quando o terreno é localizado e
+-- de novo só quando ele muda de lugar. Gravado só por app.salvar_entorno, que troca
 -- a busca inteira; a busca vale para a coordenada guardada em terreno_entorno_buscas.
 create table app.terreno_entorno_buscas (
   terreno_id   uuid primary key references app.terrenos(id) on delete cascade,
@@ -461,6 +462,8 @@ create table app.terreno_entorno (
   distancia_pe_m   int not null check (distancia_pe_m >= 0),
   duracao_pe_s     int check (duracao_pe_s >= 0),
   distancia_reta_m int check (distancia_reta_m >= 0),
+  excluido_em      timestamptz,   -- excluído pelo usuário neste terreno: some da ficha e continua fora nas buscas seguintes
+  excluido_por     uuid references auth.users(id),
   unique (terreno_id, google_place_id)
 );
 create index on app.terreno_entorno (terreno_id, categoria, distancia_pe_m);
@@ -637,3 +640,6 @@ create policy ver on app.terreno_partes for select to authenticated using (empre
 grant select on app.terreno_partes to authenticated;
 create trigger t_emp before insert or update on app.terreno_partes for each row execute function app.tg_mesma_empresa();
 create trigger t_aud after insert or update or delete on app.terreno_partes for each row execute function app.tg_auditoria();
+
+-- só exclusão e restauração alteram um lugar; a busca troca as linhas sem passar por update
+create trigger t_aud after update on app.terreno_entorno for each row execute function app.tg_auditoria();
