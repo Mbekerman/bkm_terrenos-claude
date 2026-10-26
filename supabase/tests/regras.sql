@@ -1451,4 +1451,51 @@ select app.apagar_despesa_viabilidade(:'emp', 'premio_vendas');
 select pg_temp.ok(not exists (select 1 from app.viabilidade_despesas where codigo = 'premio_vendas'), 'item novo entra na lista e, sem uso, se apaga');
 
 
+-- modelos de estudo: do usuário e da empresa, com o padrão da empresa
+select pg_temp.como(:'analista');
+select app.salvar_modelo_viabilidade(:'vb1', 'Meu modelo') as mdu \gset
+select pg_temp.ok((select user_id = :'analista' and not padrao and (dados->>'custo_m2')::numeric = 3000
+                     and not exists (select 1 from jsonb_array_elements(dados->'linhas') l where l->>'despesa' in ('impostos','taxa_desenvolvimento'))
+                     and exists (select 1 from jsonb_array_elements(dados->'linhas') l where l->>'despesa' = 'comissao')
+                   from app.viabilidade_modelos where id = :'mdu'),
+  'modelo do analista guarda o valor da obra e as linhas, sem Taxas e Despesas financeiras');
+select pg_temp.falha(format($$select app.salvar_modelo_viabilidade(%L, 'Meu modelo')$$, :'vb1'), 'nome de modelo repetido é recusado');
+select pg_temp.falha(format($$select app.salvar_modelo_viabilidade(%L, 'Da empresa', true)$$, :'vb1'), 'analista não grava modelo da empresa');
+select app.criar_viabilidade(:'t1', 'Pelo meu modelo', null, :'mdu') as vbm \gset
+select pg_temp.ok((select custo_m2 = 3000 and deduz_vgv = '{itbi_vendas}'
+                     and not exists (select 1 from app.viabilidade_tipologias where viabilidade_id = :'vbm') from app.viabilidades where id = :'vbm')
+  and (select count(*) from app.viabilidade_linhas where viabilidade_id = :'vbm') = (select count(*) from app.viabilidade_linhas where viabilidade_id = :'vb1')
+  and (select valor is null from app.viabilidade_linhas where viabilidade_id = :'vbm' and despesa = 'impostos')
+  and exists (select 1 from app.viabilidade_linhas a join app.viabilidade_linhas b on b.despesa = a.despesa and b.viabilidade_id = :'vb1'
+               where a.viabilidade_id = :'vbm' and a.despesa = 'comissao' and a.tipo = b.tipo and a.valor is not distinct from b.valor),
+  'estudo pelo modelo do usuário: valores e bases do modelo (sem o que deixou de ser dedutível), sem tipologias; Taxas e Despesas financeiras com o padrão da lista');
+select app.apagar_viabilidade(:'vbm');
+select pg_temp.como(:'gestor');
+select pg_temp.ok(not exists (select 1 from app.viabilidade_modelos where id = :'mdu'), 'modelo do usuário só ele vê');
+select pg_temp.falha(format($$select app.criar_viabilidade(%L, 'X', null, %L)$$, :'t1', :'mdu'), 'ninguém usa o modelo de outro usuário');
+select pg_temp.falha(format($$select app.apagar_modelo_viabilidade(%L)$$, :'mdu'), 'ninguém apaga o modelo de outro usuário');
+select pg_temp.como(:'diretor');
+select app.salvar_modelo_viabilidade(:'vb1', 'Padrão BKM', true) as mde \gset
+select app.marcar_modelo_padrao(:'emp', :'mde');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$select app.marcar_modelo_padrao(%L, null)$$, :'emp'), 'só o administrador escolhe o modelo padrão');
+select pg_temp.falha(format($$select app.apagar_modelo_viabilidade(%L)$$, :'mde'), 'analista não apaga modelo da empresa');
+select pg_temp.falha(format($$select app.marcar_modelo_padrao(%L, %L)$$, :'emp', :'mdu'), 'modelo do usuário não vira padrão');
+select app.criar_viabilidade(:'t1', 'Novo') as vbp \gset
+select pg_temp.ok((select custo_m2 = 3000 from app.viabilidades where id = :'vbp')
+  and (select valor = 4 from app.viabilidade_linhas where viabilidade_id = :'vbp' and despesa = 'impostos'),
+  'estudo novo nasce com o modelo padrão da empresa, com as Taxas e Despesas financeiras dele (gravado pela diretoria)');
+select app.criar_viabilidade(:'t1', 'Só a lista', null, null, true) as vbs \gset
+select pg_temp.ok((select custo_m2 is null from app.viabilidades where id = :'vbs')
+  and (select valor is null from app.viabilidade_linhas where viabilidade_id = :'vbs' and despesa = 'impostos'),
+  'sem modelo, o estudo nasce só com a lista da empresa');
+select app.apagar_viabilidade(:'vbp');
+select app.apagar_viabilidade(:'vbs');
+select app.apagar_modelo_viabilidade(:'mdu');
+select pg_temp.ok(not exists (select 1 from app.viabilidade_modelos where id = :'mdu'), 'o usuário apaga o próprio modelo');
+select pg_temp.como(:'diretor');
+select app.marcar_modelo_padrao(:'emp', null);
+select pg_temp.ok(not exists (select 1 from app.viabilidade_modelos where padrao), 'o administrador tira o padrão');
+select app.apagar_modelo_viabilidade(:'mde');
+
 \echo 'TODOS OS TESTES PASSARAM'

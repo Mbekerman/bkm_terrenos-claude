@@ -2275,6 +2275,16 @@ body.vb-aberto { overflow: hidden }
 .vb-chks legend { font-size: 12px; line-height: 16px; color: var(--texto-suave); padding: 0; margin-bottom: 6px }
 .vb-chks .chk { display: flex; align-items: center; gap: 8px }
 .vb-cfg-r input[inputmode="decimal"] { text-align: right }
+/* modelos de estudo: escolha no Novo estudo e lista em Configurações */
+.vb-mods { display: flex; flex-direction: column; gap: 6px; margin-top: 6px }
+.vb-mod-r { display: flex; align-items: center; gap: 8px }
+.vb-mod-r .opt-radio { flex: 1; min-width: 0; justify-content: flex-start; position: relative; padding: 8px 14px; white-space: normal; border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 8px !important }
+.vb-mod-r .opt-radio span { display: flex; flex-direction: column; gap: 2px }
+.vb-mod-r .opt-radio b { font-weight: 500 }
+.vb-mod-r .opt-radio small { font-size: 12px; line-height: 16px; opacity: .8 }
+.vb-mod-r .opt-radio:has(input:checked) { background: #c2e7ff; border-color: #c2e7ff; color: #001d35; font-weight: 400 }
+:root[data-tema="escuro"] .vb-mod-r .opt-radio:has(input:checked) { background: rgba(99,112,255,.10); border-color: rgba(124,140,255,.5); color: #c9d6ff }
+.vb-mod-cfg .cfg-r { grid-template-columns: 64px minmax(200px, 1fr) 100px 72px; align-items: center }
 .ro [data-a^="vb-"]:not([data-a="vb-abrir"]):not([data-a="vb-voltar"]) { display: none !important }
 /* sem espaço para as colunas: cada linha vira um cartão com os rótulos */
 @media (max-width: 1100px) {

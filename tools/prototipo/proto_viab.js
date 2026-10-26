@@ -72,6 +72,27 @@ function vbFixos(v){S.viabDesp.forEach(d=>{if(d.ativo&&VB_GRUPO[d.grupo]?.fixo&&
 const vbNovo=(tid,nome)=>vbFixos({id:uid(),tid,nome,em:HOJE,user:me(),cm2:null,pfp:null,dedp:null,min:null,deduz:[],din:null,comd:null,
   tips:[{id:uid(),nome:'Tipologia 1',area:null,qtd:null,perm:0,com:0,pu:null,pm2:null}],linhas:[]});
 
+/* ---------- modelos de estudo (decisão do Moisés, 26/out/2026; no banco, app.viabilidade_modelos) ----------
+   Da empresa (dono nulo; só o administrador grava; um pode ser o padrão, usado no estudo novo quando ninguém
+   escolhe outro) ou do usuário (só ele vê). Guardam o valor da obra, a dedução do VGV, o que sai do VGV
+   líquido e as linhas (item, base, valor, meses); tipologias e as condições do terreno ficam fora. Taxas e
+   Despesas financeiras só entram no modelo gravado pela diretoria e só se aplicam de modelo da empresa ou
+   para a diretoria; senão, valem os padrões da lista. */
+const vbModelos=()=>(S.viabModelos||[]).filter(m=>!m.dono||m.dono===me()).sort((a,b)=>(!!a.dono-!!b.dono)||(b.padrao-a.padrao)||a.nome.localeCompare(b.nome,'pt-BR'));
+const vbModeloPadrao=()=>(S.viabModelos||[]).find(m=>m.padrao&&!m.dono);
+function vbModeloDados(v){const dir=vbDiretoria();
+  return {cm2:v.cm2,dedp:v.dedp,deduz:[...v.deduz],linhas:v.linhas.filter(l=>{const d=vbDesp(l.desp);return d&&(!VB_RESTRITO.includes(VB_GRUPO[d.grupo]?.secao)||dir)})
+    .map(l=>({desp:l.desp,tipo:l.tipo,valor:l.valor,qtd:l.qtd??1}))}}
+function vbAplicarModelo(v,m){const x=m.dados,dir=vbDiretoria(),vistos=new Set();
+  v.cm2=x.cm2??null;v.dedp=x.dedp??null;v.deduz=(x.deduz||[]).filter(c=>vbDesp(c)?.deduz);
+  x.linhas.forEach(l=>{const d=vbDesp(l.desp),G=VB_GRUPO[d?.grupo];if(!d?.ativo||!G.tipos.includes(l.tipo))return;
+    if(VB_RESTRITO.includes(G.secao)&&m.dono&&!dir)return;if(G.fixo){if(vistos.has(d.codigo))return;vistos.add(d.codigo)}
+    v.linhas.push({id:uid(),desp:d.codigo,tipo:l.tipo,valor:l.valor,qtd:l.qtd??1})});
+  return vbFixos(v)}
+function vbCriar(tid,nome,mid){const v={...vbNovo(tid,nome),linhas:[]},m=mid?(S.viabModelos||[]).find(x=>x.id===mid):null;
+  if(m)vbAplicarModelo(v,m);else vbFixos(v);v.modelo=m?.nome||null;S.viabs.push(v);
+  log(T(tid),`Estudo de viabilidade criado: ${v.nome}${m?` (modelo ${m.nome})`:''}`);save();UI.modal=null;renderModal();vbAbrir(v.id)}
+
 /* dados de exemplo: um estudo para cada negociação que já tinha viabilidade, montado para dar perto do VGV e da margem de antes */
 function vbExemplo(t,x,i){const v=vbNovo(t.id,x.nome);v.em=x.em||HOJE;v.user=t.resp||'Rafael Souza';
   const N=Math.max(20,Math.round(x.vgv/323400)),nA=Math.round(N*.7),perm=i===0?6:0;
@@ -89,6 +110,7 @@ function viabPreparar(){
     S.viabDesp.splice(i<0?S.viabDesp.length:i+1,0,{codigo:j.codigo,nome:j.nome,grupo:j.grupo,tipo:j.tipo,valor:j.valor,deduz:j.deduz,ativo:true})}
   /* estudo no formato de antes de 26/out (multiplicador, "compõe a obra"): refaz a lista e os exemplos */
   if(S.viabDesp&&(S.viabDesp.some(d=>!VB_GRUPO[d.grupo])||S.viabs?.some(v=>v.linhas.some(l=>'mult' in l)))){S.viabDesp=null;S.viabs=null;S.terrenos.forEach(t=>{if(t.neg?.viab)delete t.neg.viab.id})}
+  if(!S.viabModelos)S.viabModelos=[];
   if(!S.viabDesp)S.viabDesp=VB_CFG.despesas.map(d=>({codigo:d.codigo,nome:d.nome,grupo:d.grupo,tipo:d.tipo,valor:d.valor,deduz:d.deduz,ativo:true}));
   if(!S.viabs){S.viabs=[];let i=0;S.terrenos.forEach(t=>{const x=t.neg?.viab;if(!x||x.id)return;const v=vbExemplo(t,x,i++);S.viabs.push(v);t.neg.viab=vbResumo(v)})}}
 
@@ -130,7 +152,7 @@ function vbSec(k,titulo,c,corpo,acao=''){const O=vbOrdem(),i=O.indexOf(k),ant=O[
     <div class="sec-b">${corpo()}</div><div class="vb-passo">${passo(ant,-1)}${passo(prox,1)}</div></section>`}
 function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
   const t=T(v.tid),c=vbCalc(v),ro=UI.role==='Leitura',lig=t.neg?.viab?.id===v.id,dis=ro?'disabled':'';
-  const acoes=ro?'':`${lig?'':negAtiva(t)?`<button class="btn sm" data-a="vb-vincular" data-v="${v.id}">Marcar como válido</button>`:''}<button class="btn sm" data-a="vb-duplicar" data-v="${v.id}">Duplicar</button>${lig?'':`<button class="btn text sm danger" data-a="vb-apagar" data-v="${v.id}">Apagar</button>`}`;
+  const acoes=ro?'':`${lig?'':negAtiva(t)?`<button class="btn sm" data-a="vb-vincular" data-v="${v.id}">Marcar como válido</button>`:''}<button class="btn sm" data-a="vb-duplicar" data-v="${v.id}">Duplicar</button><button class="btn sm" data-a="vb-modelo" data-v="${v.id}">Salvar como modelo</button>${lig?'':`<button class="btn text sm danger" data-a="vb-apagar" data-v="${v.id}">Apagar</button>`}`;
   const inp=(id,k,val,d,rot)=>`<label class="vb-c vb-${k}"><span class="vb-l">${rot}</span><input data-vb="tp" data-r="${id}" data-k="${k}" value="${k==='nome'?esc(val??''):vbIn(val,d)}" ${k==='nome'?'':'inputmode="decimal"'} aria-label="${rot}" ${dis}></label>`;
   const campo=(k,rot,val,d=2,dica='')=>`<div class="field"><label for="vb-${k}">${rot}</label><input id="vb-${k}" data-vb="hd" data-k="${k}" value="${vbIn(val,d)}" inputmode="decimal" ${dis}>${dica?`<div class="hint">${dica}</div>`:''}</div>`;
   const hd=`<div class="vb-r vb-hd" aria-hidden="true"><span>Item</span><span>Base de cálculo</span><span>Valor</span><span>Meses</span><span>Resultado</span><span></span></div>`;
@@ -316,7 +338,14 @@ function viabChange(el){
   vbGravar(v);return true}
 function viabClick(A,a,t){
   switch(A){
-    case 'vb-novo':{const n=viabsDe(t.id).length,v=vbNovo(t.id,n?`Estudo ${n+1}`:'Estudo base');S.viabs.push(v);log(t,`Estudo de viabilidade criado: ${v.nome}`);save();vbAbrir(v.id);return true}
+    case 'vb-novo':{const n=viabsDe(t.id).length,nome=n?`Estudo ${n+1}`:'Estudo base';
+      if(!vbModelos().length){vbCriar(t.id,nome,null);return true}
+      UI.vbNovoT=t.id;UI.vbNovoNome=nome;UI.modal='vb-novo';renderModal();setTimeout(()=>$('#vbn-n')?.select(),30);return true}
+    case 'vb-modelo':UI.vbModeloDe=a.dataset.v;UI.modal='vb-modelo';renderModal();setTimeout(()=>$('#vbm-n')?.focus(),30);return true;
+    case 'vb-mod-del':{const m=S.viabModelos.find(x=>x.id===a.dataset.v);if(!m)return true;if(!m.dono&&!ehAdmin(me())){toast('Só o administrador apaga modelo da empresa.',true);return true}
+      S.viabModelos=S.viabModelos.filter(x=>x!==m);save();if(UI.modal==='vb-novo'&&!vbModelos().length){UI.modal=null;renderModal()}else if(UI.modal)renderModal();render();toast(`Modelo "${m.nome}" apagado.`);return true}
+    case 'vb-mod-padrao':{if(!ehAdmin(me()))return true;const id=a.dataset.v;S.viabModelos.forEach(m=>m.padrao=!m.dono&&m.id===id);
+      save();render();const p=vbModeloPadrao();toast(p?`"${p.nome}" é o modelo padrão da empresa.`:'Sem modelo padrão: o estudo novo nasce só com a lista.');return true}
     case 'vb-abrir':vbAbrir(a.dataset.v);return true;
     case 'vb-fechar':UI.vbPop=null;UI.vbNova=false;render();return true;
     case 'vb-aba':{UI.vbAba=a.dataset.v;UI.vbNova=false;render();const sc=document.querySelector('.vb-pop-sc'),fx=document.querySelector('.vb-fixo');
@@ -340,12 +369,36 @@ function viabClick(A,a,t){
   }
   return false}
 const vbUsada=c=>S.viabs.some(v=>v.linhas.some(l=>l.desp===c&&(l.valor!=null||!VB_GRUPO[vbDesp(c)?.grupo]?.fixo)));
-function viabSubmit(form,F){if(form!=='vb-cfg-nova')return false;const nome=(F.nome||'').trim(),g=VB_GRUPO[F.grupo]?F.grupo:'adm_financeiro';if(!nome){toast('Dê um nome ao item.',true);return true}
+function viabSubmit(form,F){
+  if(form==='vb-novo'){const nome=(F.nome||'').trim()||UI.vbNovoNome;vbCriar(UI.vbNovoT,nome,F.modelo||null);return true}
+  if(form==='vb-modelo'){const v=VB(UI.vbModeloDe),nome=(F.nome||'').trim(),emp=['empresa','padrao'].includes(F.escopo)&&ehAdmin(me()),dono=emp?null:me();if(!v||!nome){toast('Dê um nome ao modelo.',true);return true}
+    S.viabModelos=S.viabModelos||[];let m=S.viabModelos.find(x=>x.dono===dono&&vbSemAcento(x.nome)===vbSemAcento(nome));const novo=!m;
+    if(novo){m={id:uid(),nome,dono,padrao:false,em:HOJE};S.viabModelos.push(m)}m.nome=nome;m.dados=vbModeloDados(v);m.em=HOJE;
+    if(emp&&F.escopo==='padrao'){S.viabModelos.forEach(x=>x.padrao=x===m)}
+    save();UI.modal=null;renderModal();render();
+    toast(`${novo?'Modelo':'Modelo atualizado:'} "${nome}"${novo?' salvo':''}${emp?' para a empresa':''}${m.padrao?', padrão do estudo novo':''}.`);return true}
+  if(form!=='vb-cfg-nova')return false;const nome=(F.nome||'').trim(),g=VB_GRUPO[F.grupo]?F.grupo:'adm_financeiro';if(!nome){toast('Dê um nome ao item.',true);return true}
   if(S.viabDesp.some(d=>d.grupo===g&&vbSemAcento(d.nome)===vbSemAcento(nome))){toast('Já existe um item com esse nome no grupo.',true);return true}
   let base=vbSemAcento(nome).replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'').slice(0,36)||'item',cod=base,n=2;if(!/^[a-z]/.test(cod))cod='d_'+cod;while(vbDesp(cod))cod=base+'_'+n++;
   const d={codigo:cod,nome,grupo:g,tipo:VB_GRUPO[g].tipos[0],valor:null,deduz:false,ativo:true},j=S.viabDesp.map(x=>x.grupo).lastIndexOf(g);
   S.viabDesp.splice(j<0?S.viabDesp.length:j+1,0,d);save();render();toast('Item incluído na lista.');return true}
-function viabModal(M,fechar){if(M!=='vb-apagar')return '';const v=VB(UI.vbApagar);if(!v)return '';
+function vbModeloResumo(m){const x=m.dados,n=x.linhas.filter(l=>l.valor!=null).length;
+  return [x.cm2!=null?`obra ${brl(x.cm2)}/m²`:'',`${n} ite${n===1?'m':'ns'} com valor`].filter(Boolean).join(' · ')}
+function vbNovoHtml(fechar){const ms=vbModelos(),p=vbModeloPadrao(),adm=ehAdmin(me());
+  const op=(id,nome,info,ck,del)=>`<div class="vb-mod-r"><label class="opt-radio"><input type="radio" name="modelo" value="${id}" ${ck?'checked':''}><span><b>${nome}</b><small>${info}</small></span></label>${del}</div>`;
+  return `<div class="dh"><div><h2>Novo estudo</h2><div class="muted" style="margin-top:4px">O estudo nasce com os valores e as bases de cálculo do modelo. As tipologias e as condições do terreno você preenche no estudo.</div></div>${fechar}</div>
+  <form data-form="vb-novo" id="f-vbn"><div class="fields"><div class="field full"><label for="vbn-n">Nome do estudo</label><input id="vbn-n" name="nome" maxlength="80" value="${esc(UI.vbNovoNome||'')}"></div>
+  <div class="field full"><span class="lbl" id="vbn-m">Modelo</span><div class="vb-mods" role="radiogroup" aria-labelledby="vbn-m">
+  ${ms.map(m=>op(m.id,esc(m.nome),`${m.dono?'Meu modelo':m.padrao?'Padrão da empresa':'Da empresa'} · ${vbModeloResumo(m)}`,p?m===p:false,
+     m.dono||adm?`<button type="button" class="linkbtn danger" data-a="vb-mod-del" data-v="${m.id}" aria-label="Apagar o modelo ${esc(m.nome)}">Apagar</button>`:'')).join('')}
+  ${op('','Sem modelo','Só a lista de itens da empresa, com os valores padrão dela',!p,'')}</div></div></div></form>
+  <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-vbn">Criar estudo</button></div>`}
+function vbModeloHtml(fechar){const v=VB(UI.vbModeloDe),adm=ehAdmin(me()),dir=vbDiretoria();if(!v)return '';
+  return `<div class="dh"><div><h2>Salvar como modelo</h2><div class="muted" style="margin-top:4px">Guarda os valores e as bases de cálculo deste estudo (custo de obras, dedução do VGV e os itens de cada seção) para usar ao criar um estudo novo. Tipologias, permuta, mínimo garantido e pagamentos do terreno ficam fora.${dir?'':' Taxas e Despesas financeiras não entram: o estudo novo usa os valores da empresa.'}</div></div>${fechar}</div>
+  <form data-form="vb-modelo" id="f-vbm"><div class="fields"><div class="field full"><label for="vbm-n">Nome do modelo</label><input id="vbm-n" name="nome" required maxlength="60" placeholder="Ex.: MCMV Faixa 2 em São Paulo"><div class="hint">Com o nome de um modelo seu que já existe, ele é atualizado.</div></div>
+  ${adm?`<div class="field full"><span class="lbl" id="vbm-e">Para quem</span><span class="seg3" role="radiogroup" aria-labelledby="vbm-e"><label class="opt-radio"><input type="radio" name="escopo" value="meu" checked>Só para mim</label><label class="opt-radio"><input type="radio" name="escopo" value="empresa">Para a empresa</label><label class="opt-radio"><input type="radio" name="escopo" value="padrao">Padrão da empresa</label></span><div class="hint">O padrão abre todo estudo novo; quem cria pode trocar por outro modelo.</div></div>`:''}</div></form>
+  <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-vbm">Salvar modelo</button></div>`}
+function viabModal(M,fechar){if(M==='vb-novo')return vbNovoHtml(fechar);if(M==='vb-modelo')return vbModeloHtml(fechar);if(M!=='vb-apagar')return '';const v=VB(UI.vbApagar);if(!v)return '';
   return `<div class="dh"><h2>Apagar o estudo?</h2>${fechar}</div><p style="margin:0 0 8px">${esc(v.nome)} sai do terreno, com as tipologias e os custos. Estudo vinculado à negociação não se apaga.</p><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary danger" data-a="vb-apagar-ok">Apagar</button></div>`}
 
 /* ---------- Configurações › Viabilidade ---------- */
@@ -361,7 +414,13 @@ function cfgViabHtml(){const L=S.viabDesp;
       <span>${g==='comercial'?`<label class="chk"><input type="checkbox" data-ch="cfg-vd" data-c="${d.codigo}" data-k="deduz" ${d.deduz?'checked':''} aria-label="${esc(d.nome)} pode sair do VGV líquido"></label>`:''}</span>
       <label class="chk"><input type="checkbox" data-ch="cfg-vd" data-c="${d.codigo}" data-k="ativo" ${d.ativo?'checked':''} aria-label="Ativo"></label>
       <span>${u?'':`<button class="linkbtn danger" data-a="vb-cfg-del" data-c="${d.codigo}">Apagar</button>`}</span></div>`}).join('')||'<div class="muted vb-vazio">Nenhum item.</div>'}`}).join('');
-  return `<section class="sec"><div class="sec-h"><h2>Rentabilidade mínima</h2></div><div class="sec-b">
+  const mods=(S.viabModelos||[]).filter(m=>!m.dono),p=vbModeloPadrao();
+  const modelos=`<section class="sec"><div class="sec-h"><h2>Modelos de estudo</h2></div><div class="sec-b">
+    <p class="muted" style="margin-top:0">O modelo padrão abre todo estudo novo com os valores e as bases de cálculo dele; quem cria pode escolher outro modelo da empresa, um seu ou nenhum. Para criar, abra um estudo e use <b>Salvar como modelo</b>.</p>
+    ${mods.length?`<div class="cfg-t vb-mod-cfg"><div class="cfg-r cfg-hd"><span>Padrão</span><span>Modelo</span><span>Atualizado</span><span></span></div>
+    ${mods.map(m=>`<div class="cfg-r"><label class="vb-radio"><input type="radio" name="vb-mod-padrao" ${m.padrao?'checked':''} data-a="vb-mod-padrao" data-v="${m.id}" aria-label="${esc(m.nome)} é o padrão"></label><span><b>${esc(m.nome)}</b><small class="faint" style="display:block">${vbModeloResumo(m)}</small></span><span class="faint">${fd(m.em)}</span><span><button class="linkbtn danger" data-a="vb-mod-del" data-v="${m.id}">Apagar</button></span></div>`).join('')}</div>
+    ${p?`<button class="btn text sm" data-a="vb-mod-padrao" data-v="">Sem modelo padrão</button>`:''}`:'<div class="muted vb-vazio">Nenhum modelo da empresa. Sem padrão, o estudo novo nasce com os valores padrão da lista abaixo.</div>'}</div></section>`;
+  return `${modelos}<section class="sec"><div class="sec-h"><h2>Rentabilidade mínima</h2></div><div class="sec-b">
     <div class="editgrid vb-campos"><div class="field"><label for="vb-mmin">Margem líquida mínima (%)</label><input id="vb-mmin" data-ch="vb-mmin" value="${vbIn(S.vbMargemMin,2)}" inputmode="decimal" placeholder="Sem mínima"></div></div>
     <div class="hint">Estudo válido com margem líquida abaixo dela acende "Rentabilidade abaixo da mínima" na negociação, no Início, no kanban e no filtro, e cria a ação "Levar ao comitê". Vazio: sem aviso.</div></div></section>
   <section class="sec"><div class="sec-h"><h2>Itens do estudo de viabilidade</h2></div><div class="sec-b">

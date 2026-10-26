@@ -729,6 +729,14 @@ erDiagram
   viabilidades ||--o{ viabilidade_tipologias : tem
   viabilidades ||--o{ viabilidade_linhas : tem
   viabilidade_despesas ||--o{ viabilidade_linhas : "item da lista"
+  viabilidade_modelos |o..o{ viabilidades : "estudo novo nasce do modelo"
+  viabilidade_modelos {
+    uuid empresa_id
+    uuid user_id "nulo = da empresa"
+    text nome
+    bool padrao "um por empresa, so da empresa"
+    jsonb dados "custo_m2, deducao_vgv_pct, deduz_vgv, linhas"
+  }
   viabilidades {
     numeric custo_m2 "obra incidente, R$/m2"
     numeric permuta_fin_pct
@@ -780,6 +788,7 @@ erDiagram
   - Despesas gerais, Taxas e Despesas financeiras: % do VGV, % da obra total, % do lucro líquido ou verba. O % do lucro é circular: lucro = L0 ÷ (1 + Σ%), com L0 o lucro antes desses itens; sem lucro, valem zero.
   - Despesas comerciais: % do VGV, verba total, verba por unidade (× unidades líquidas) ou verba mensal (× meses).
   - **EBITDA** = VGV líquido − obras − terreno − despesas gerais − despesas comerciais não deduzidas; **resultado sem as taxas** = EBITDA − despesas financeiras; **lucro líquido** = resultado sem as taxas − taxas (as taxas saem por último; `ebitda`, `despesas_financeiras`, `lucro_sem_taxas`); **margem líquida** = lucro ÷ VGV líquido. `despesas_total` soma todas as saídas, inclusive as deduzidas.
+- **Modelos de estudo** (`app.viabilidade_modelos`, decisão do Moisés de 26/out/2026): valores e bases de cálculo guardados para o estudo novo nascer com eles. `app.salvar_modelo_viabilidade(estudo, nome, da_empresa, modelo)` grava o estudo como modelo novo ou por cima de um existente: guarda o valor unitário da obra, a dedução do VGV, as despesas que saem do VGV líquido e as linhas (item, base, valor, meses); tipologias, permuta financeira, mínimo garantido e pagamento e comissão em dinheiro são do terreno e ficam fora. Modelo da empresa (`user_id` nulo) só o administrador grava e apaga, e um deles pode ser o padrão (`app.marcar_modelo_padrao`); o do usuário só ele vê, usa e apaga (`app.apagar_modelo_viabilidade`). Taxas e Despesas financeiras só entram no modelo gravado pela diretoria e só se aplicam de modelo da empresa ou para quem é da diretoria; senão, ficam os valores padrão da lista. `criar_viabilidade(terreno, nome, copiar_de, modelo, sem_modelo)`: sem cópia nem modelo escolhido, usa o padrão da empresa (`sem_modelo = true`: só a lista); do modelo entram só itens ativos, com base ainda aceita pelo grupo, e só o que ainda é dedutível; os itens fixos que faltarem vêm da lista.
 - Lista de itens da empresa: configuração do administrador (`app.salvar_despesa_viabilidade`, `app.apagar_despesa_viabilidade`; usado só desativa e não muda de grupo), copiada para cada empresa nova. Padrão em `tools/viabilidade/despesas.json` (o protótipo e o teste do banco leem).
 - Leituras a confirmar com o Moisés: custo de obra típico = incidente; a dedução em % também sai do lucro (é custo, não só base da permuta); % do VGV sobre o VGV vendido.
 
