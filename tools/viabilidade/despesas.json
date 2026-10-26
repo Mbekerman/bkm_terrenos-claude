@@ -1,10 +1,11 @@
 {
-  "_nota": "Lista padrão de itens do estudo de viabilidade estática (decisão do Moisés, 26/out/2026). Cada empresa recebe uma cópia e o administrador edita em Configurações › Viabilidade. O protótipo (build.py) e o teste do banco (supabase/tests/regras.sql) leem este arquivo; a migration 20261015001000_viabilidade.sql traz os mesmos itens, grupos e bases (app.viab_tipos, app.viab_secao). O grupo define a seção, as bases de cálculo aceitas e se o item é fixo (aparece sempre no estudo, sem incluir nem tirar).",
+  "_nota": "Lista padrão de itens do estudo de viabilidade estática (decisão do Moisés, 26/out/2026). Cada empresa recebe uma cópia e o administrador edita em Configurações › Viabilidade. O protótipo (build.py) e o teste do banco (supabase/tests/regras.sql) leem este arquivo; a migration 20261015001000_viabilidade.sql traz os mesmos itens, grupos e bases (app.viab_tipos, app.viab_secao). O grupo define a seção, as bases de cálculo aceitas e se o item é fixo (Taxas, Despesas financeiras e Despesas comerciais: aparece sempre no estudo, sem incluir nem tirar).",
   "secoes": {
     "obra": "Custo de obras",
     "terreno": "Custo do terreno",
     "despesas": "Despesas gerais",
     "taxas": "Taxas",
+    "financeiro": "Despesas financeiras",
     "comercial": "Despesas comerciais"
   },
   "grupos": {
@@ -104,6 +105,17 @@
     "taxas": {
       "nome": "Taxas",
       "secao": "taxas",
+      "fixo": true,
+      "tipos": [
+        "pct_vgv",
+        "pct_obra_total",
+        "pct_lucro",
+        "verba"
+      ]
+    },
+    "financeiro": {
+      "nome": "Despesas financeiras",
+      "secao": "financeiro",
       "fixo": true,
       "tipos": [
         "pct_vgv",
@@ -305,14 +317,6 @@
       "deduz": false
     },
     {
-      "codigo": "impostos",
-      "nome": "Impostos",
-      "grupo": "taxas",
-      "tipo": "pct_vgv",
-      "valor": null,
-      "deduz": false
-    },
-    {
       "codigo": "taxa_desenvolvimento",
       "nome": "Taxa de desenvolvimento",
       "grupo": "taxas",
@@ -337,18 +341,34 @@
       "deduz": false
     },
     {
-      "codigo": "custo_financeiro",
-      "nome": "Custo financeiro",
-      "grupo": "taxas",
+      "codigo": "custo_alavancagem",
+      "nome": "Custo de alavancagem",
+      "grupo": "financeiro",
       "tipo": "verba",
       "valor": null,
       "deduz": false
     },
     {
-      "codigo": "custo_alavancagem",
-      "nome": "Custo de alavancagem",
-      "grupo": "taxas",
+      "codigo": "juros_pj",
+      "nome": "Custo de juros PJ",
+      "grupo": "financeiro",
+      "tipo": "pct_obra_total",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "custo_financeiro",
+      "nome": "Custo financeiro",
+      "grupo": "financeiro",
       "tipo": "verba",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "impostos",
+      "nome": "Impostos",
+      "grupo": "financeiro",
+      "tipo": "pct_vgv",
       "valor": null,
       "deduz": false
     },
