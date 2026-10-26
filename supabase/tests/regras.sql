@@ -1186,13 +1186,21 @@ select pg_temp.como(:'diretor');
 \echo '# estudo de viabilidade estática'
 \set cfgviab `cat tools/viabilidade/despesas.json`
 select pg_temp.ok((select count(*) from app.viabilidade_despesas where empresa_id = :'emp') = jsonb_array_length((:'cfgviab'::jsonb)->'despesas')
-  and (select bool_and(d.nome = j->>'nome' and d.grupo = j->>'grupo' and d.obra = j->>'obra' and d.tipo_padrao = j->>'tipo' and d.multiplicador_padrao is not distinct from (j->>'multiplicador')::numeric and d.ordem = n)
+  and (select bool_and(d.nome = j->>'nome' and d.grupo = j->>'grupo' and d.tipo_padrao = j->>'tipo' and d.valor_padrao is not distinct from (j->>'valor')::numeric
+                       and d.deduz_vgv = (j->>'deduz')::boolean and d.ordem = n)
        from jsonb_array_elements((:'cfgviab'::jsonb)->'despesas') with ordinality e(j, n) join app.viabilidade_despesas d on d.empresa_id = :'emp' and d.codigo = j->>'codigo'),
-  'empresa recebe a lista padrão de despesas, igual à do protótipo (despesas.json)');
+  'empresa recebe a lista padrão de itens, igual à do protótipo (despesas.json)');
+select pg_temp.ok((select bool_and(app.viab_tipos(g.key) = array(select jsonb_array_elements_text(g.value->'tipos'))
+                                   and app.viab_secao(g.key) = g.value->>'secao' and app.viab_fixo(g.key) = (g.value->>'fixo')::boolean)
+                     from jsonb_each((:'cfgviab'::jsonb)->'grupos') g),
+  'grupos com as mesmas bases de cálculo, seção e itens fixos do protótipo');
 select pg_temp.como(:'analista');
 select app.criar_viabilidade(:'t1', 'Estudo estático') as vb1 \gset
-insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, ordem, nome, area_privativa, quantidade, quantidade_permuta, preco_unitario)
-values (:'emp', :'vb1', 1, '2 dormitórios', 40, 100, 10, 280000) returning id as tp1 \gset
+select pg_temp.ok((select count(*) from app.viabilidade_linhas where viabilidade_id = :'vb1')
+                  = (select count(*) from app.viabilidade_despesas where empresa_id = :'emp' and grupo in ('taxas','comercial')),
+  'estudo novo já vem com os itens fixos de Taxas e Despesas comerciais');
+insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, ordem, nome, area_privativa, quantidade, quantidade_permuta, quantidade_comissao, preco_unitario)
+values (:'emp', :'vb1', 1, '2 dormitórios', 40, 100, 10, 2, 280000) returning id as tp1 \gset
 insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, ordem, nome, area_privativa, quantidade, preco_m2)
 values (:'emp', :'vb1', 2, '2 dormitórios com suíte', 50, 50, 7200) returning id as tp2 \gset
 select pg_temp.ok((select preco_m2 from app.viabilidade_tipologias where id = :'tp1') = 7000 and (select preco_unitario from app.viabilidade_tipologias where id = :'tp2') = 360000,
@@ -1208,51 +1216,86 @@ update app.viabilidade_tipologias set preco_unitario = null, area_privativa = nu
 update app.viabilidade_tipologias set area_privativa = 50 where id = :'tp3';
 select pg_temp.ok((select preco_unitario from app.viabilidade_tipologias where id = :'tp3') = 275000, 'área nova com só o m²: completa o unitário');
 delete from app.viabilidade_tipologias where id = :'tp3';
-select pg_temp.falha(format($$update app.viabilidade_tipologias set quantidade_permuta = 101 where id = %L$$, :'tp1'), 'permuta não passa da quantidade');
-insert into app.viabilidade_linhas (empresa_id, viabilidade_id, ordem, despesa, tipo, multiplicador, quantidade) values
-  (:'emp', :'vb1', 1, 'terreno', 'verba_total', 2000000, 3),
-  (:'emp', :'vb1', 2, 'construcao', 'verba_unidade', 150000, 1),
-  (:'emp', :'vb1', 3, 'infra_externa', 'verba_total', 1000000, 1),
-  (:'emp', :'vb1', 4, 'adm_obra', 'pct_obra_total', 5, 1),
-  (:'emp', :'vb1', 5, 'contingencia', 'pct_obra_incidente', 3, 1),
-  (:'emp', :'vb1', 6, 'comissao', 'pct_vgv', 4, 1);
-insert into app.viabilidade_linhas (empresa_id, viabilidade_id, ordem, despesa, tipo, multiplicador, quantidade) values (:'emp', :'vb1', 7, 'ret', 'pct_vgv', 4, 1) returning id as ln_ret \gset
-select pg_temp.ok((select taxas = 2903000 and despesas_total = 34806000 from app.viabilidades where id = :'vb1'), 'imposto (RET) cai na seção Taxas: + 4% de 43,2 mi');
-delete from app.viabilidade_linhas where id = :'ln_ret';
-select pg_temp.ok((select vgv = 46000000 and permuta_valor = 2800000 and vgv_liquido = 43200000 and unidades = 150 and unidades_permuta = 10
-  and obra_total = 23500000 and obra_incidente = 22500000 and despesas_total = 33078000 and lucro_liquido = 10122000 and margem_pct = 23.43
-  from app.viabilidades where id = :'vb1'),
-  'VGV 46 mi − permuta 2,8 mi = VGV líquido 43,2 mi; despesas 33,078 mi (terreno 3 parcelas, obra por unidade, % da obra total e incidente, % do VGV líquido); lucro 10,122 mi, margem 23,43%');
-select pg_temp.ok((select custo_terreno = 6000000 and custo_obras = 24175000 and custos_comerciais = 1728000 and taxas = 1175000 and despesas_gerais = 0 from app.viabilidades where id = :'vb1'),
-  'seções pelo grupo: terreno 6 mi (3 parcelas), custo de obras 24,175 mi, custos comerciais 1,728 mi, taxas 1,175 mi (administração da obra), despesas zero');
-select pg_temp.ok((select (x->>'base')::numeric = 23500000 and (x->>'valor')::numeric = 1175000 from jsonb_array_elements(app.calcular_viabilidade(:'vb1')->'linhas') x where x->>'id' = (select id::text from app.viabilidade_linhas where viabilidade_id = :'vb1' and despesa = 'adm_obra')),
-  'cada linha com a base e o valor (administração da obra: 5% de 23,5 mi)');
-select pg_temp.falha(format($$insert into app.viabilidade_linhas (empresa_id, viabilidade_id, despesa, tipo, multiplicador) values (%L, %L, 'inexistente', 'verba_total', 1)$$, :'emp', :'vb1'), 'despesa fora da lista da empresa é recusada');
-select pg_temp.falha(format($$select app.salvar_despesa_viabilidade(%L, 'outras', '{"ativo":false}')$$, :'emp'), 'analista não mexe na lista de despesas');
+select pg_temp.falha(format($$update app.viabilidade_tipologias set quantidade_comissao = 91 where id = %L$$, :'tp1'), 'permuta mais comissão não passa da quantidade');
+-- despesas comerciais (fixas): % do VGV, verba e verba mensal
+update app.viabilidade_linhas set valor = 4 where viabilidade_id = :'vb1' and despesa = 'comissao';
+update app.viabilidade_linhas set valor = 1.5 where viabilidade_id = :'vb1' and despesa = 'marketing';
+update app.viabilidade_linhas set valor = 2 where viabilidade_id = :'vb1' and despesa = 'itbi_vendas';
+update app.viabilidade_linhas set tipo = 'verba', valor = 300000 where viabilidade_id = :'vb1' and despesa = 'registro_vendas';
+update app.viabilidade_linhas set valor = 50000, quantidade = 24 where viabilidade_id = :'vb1' and despesa = 'custo_fixo_comercial';
+-- taxas (fixas)
+update app.viabilidade_linhas set valor = 4 where viabilidade_id = :'vb1' and despesa = 'impostos';
+update app.viabilidade_linhas set valor = 2 where viabilidade_id = :'vb1' and despesa = 'taxa_gestao_obra';
+update app.viabilidade_linhas set valor = 10 where viabilidade_id = :'vb1' and despesa = 'taxa_desenvolvimento';
+-- obra em camadas e despesas gerais
+insert into app.viabilidade_linhas (empresa_id, viabilidade_id, ordem, despesa, tipo, valor) values
+  (:'emp', :'vb1', 1, 'fundacoes_especiais', 'area', 100),
+  (:'emp', :'vb1', 2, 'contencoes', 'pct_obra_tipica', 2),
+  (:'emp', :'vb1', 3, 'infra_externa', 'verba', 1000000),
+  (:'emp', :'vb1', 4, 'ligacoes', 'pct_obra_raso', 1),
+  (:'emp', :'vb1', 5, 'projetos', 'pct_obra_total', 3),
+  (:'emp', :'vb1', 6, 'aprovacoes', 'verba', 200000),
+  (:'emp', :'vb1', 7, 'assistencia_tecnica', 'pct_obra_total', 1),
+  (:'emp', :'vb1', 8, 'itbi_terreno', 'verba', 150000),
+  (:'emp', :'vb1', 9, 'registro_incorporacao', 'verba', 100000),
+  (:'emp', :'vb1', 10, 'adm_central', 'pct_vgv', 1);
+select app.salvar_viabilidade(:'vb1', '{"custo_m2":3000,"deducao_vgv_pct":5,"permuta_fin_pct":8,"minimo_garantido":3000000,"pagamento_dinheiro":1000000,"comissao_dinheiro":200000,"deduz_vgv":["itbi_vendas","registro_vendas"]}');
+select pg_temp.ok((select vgv = 46000000 and permuta_valor = 2800000 and comissao_valor = 560000 and vgv_vendido = 42640000 and unidades = 150 and unidades_permuta = 10 and unidades_comissao = 2
+  and area_privativa = 6500 and deducoes = 3284800 and vgv_liquido = 39355200 from app.viabilidades where id = :'vb1'),
+  'VGV 46 mi − permuta 2,8 mi − comissão 0,56 mi = vendido 42,64 mi; − 5% e ITBI e registro das vendas (3,2848 mi) = VGV líquido 39,3552 mi');
+select pg_temp.ok((select obra_incidente = 19500000 and obra_raso = 20540000 and obra_total = 21745400 and custo_obras = 22815216 from app.viabilidades where id = :'vb1'),
+  'obra: incidente 3.000/m² × 6.500 m² = 19,5 mi; raso + atípicos (100/m² e 2% do típico) = 20,54 mi; total + não incidente (verba e 1% do raso) = 21,7454 mi; + projetos e pós-obra (% da total) = 22,815216 mi');
+select pg_temp.ok((select permuta_financeira = 3148416 and custo_terreno = 4348416 from app.viabilidades where id = :'vb1'),
+  'terreno: permuta financeira 8% do VGV líquido (3,148416 mi, acima do mínimo) + 1 mi em dinheiro + 0,2 mi de comissão');
+select pg_temp.ok((select despesas_gerais = 676400 and taxas = 2670458.91 and custos_comerciais = 4698000 and despesas_total = 35208490.91
+  and lucro_liquido = 5299509.09 and margem_pct = 13.47 from app.viabilidades where id = :'vb1'),
+  'despesas gerais 676,4 mil, taxas 2,67 mi (com 10% do lucro), comerciais 4,698 mi; lucro 5,299 mi, margem 13,47%');
+select pg_temp.ok((select (x->>'base')::numeric = 5299509.09 and (x->>'valor')::numeric = 529950.91 from jsonb_array_elements(app.calcular_viabilidade(:'vb1')->'linhas') x
+                    where x->>'id' = (select id::text from app.viabilidade_linhas where viabilidade_id = :'vb1' and despesa = 'taxa_desenvolvimento')),
+  'taxa de desenvolvimento: 10% do lucro líquido, já descontada ela mesma');
+update app.viabilidade_linhas set tipo = 'verba_unidade', valor = 500 where viabilidade_id = :'vb1' and despesa = 'contratos_cef';
+select pg_temp.ok((select custos_comerciais from app.viabilidades where id = :'vb1') = 4767000, 'verba por unidade: 500 × 138 unidades líquidas (150 − 10 em permuta − 2 da comissão)');
+update app.viabilidade_linhas set tipo = 'verba', valor = null where viabilidade_id = :'vb1' and despesa = 'contratos_cef';
+select app.salvar_viabilidade(:'vb1', '{"minimo_garantido":3500000}');
+select pg_temp.ok((select permuta_financeira = 3500000 and custo_terreno = 4700000 and lucro_liquido = 4979887.27 from app.viabilidades where id = :'vb1')
+  and (app.calcular_viabilidade(:'vb1')->>'minimo_aplicado')::boolean, 'permuta financeira abaixo do mínimo garantido usa o mínimo');
+select app.salvar_viabilidade(:'vb1', '{"minimo_garantido":3000000}');
+select app.salvar_viabilidade(:'vb1', '{"custo_m2":10000}');
+select pg_temp.ok((select lucro_liquido = -43857086 and taxas = 3077990 from app.viabilidades where id = :'vb1'), 'sem lucro, os itens em % do lucro valem zero');
+select app.salvar_viabilidade(:'vb1', '{"custo_m2":3000}');
+select pg_temp.falha(format($$update app.viabilidade_linhas set tipo = 'pct_lucro' where viabilidade_id = %L and despesa = 'comissao'$$, :'vb1'), 'base que o grupo não aceita é recusada (comercial em % do lucro)');
+select pg_temp.falha(format($$insert into app.viabilidade_linhas (empresa_id, viabilidade_id, despesa, tipo, valor) values (%L, %L, 'comissao', 'pct_vgv', 1)$$, :'emp', :'vb1'), 'item fixo não entra duas vezes');
+select pg_temp.falha(format($$select app.salvar_viabilidade(%L, '{"deduz_vgv":["comissao"]}')$$, :'vb1'), 'só despesa comercial dedutível sai do VGV líquido');
+select pg_temp.falha(format($$insert into app.viabilidade_linhas (empresa_id, viabilidade_id, despesa, tipo, valor) values (%L, %L, 'inexistente', 'verba', 1)$$, :'emp', :'vb1'), 'item fora da lista da empresa é recusado');
+select pg_temp.falha(format($$select app.salvar_despesa_viabilidade(%L, 'outros_comercial', '{"ativo":false}')$$, :'emp'), 'analista não mexe na lista de itens');
 select app.vincular_viabilidade(:'neg', 'Estudo do BKM', 1, 1, 1) as vbx \gset
 select pg_temp.falha(format($$insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, nome, quantidade) values (%L, %L, 'X', 1)$$, :'emp', :'vbx'), 'estudo externo (BKM) não recebe tipologias');
 select app.vincular_estudo(:'neg', :'vb1');
-select pg_temp.ok((select vgv = 46000000 and margem_pct = 23.43 from app.v_terrenos where id = :'t1'), 'a negociação vincula o estudo: VGV e margem aparecem no terreno');
+select pg_temp.ok((select vgv = 46000000 and margem_pct = 13.47 from app.v_terrenos where id = :'t1'), 'a negociação vincula o estudo: VGV e margem aparecem no terreno');
 select pg_temp.falha(format('select app.apagar_viabilidade(%L)', :'vb1'), 'estudo vinculado à negociação não se apaga');
 select app.criar_viabilidade(:'t1', 'Cópia', :'vb1') as vb2 \gset
-select pg_temp.ok((select count(*) from app.viabilidade_tipologias where viabilidade_id = :'vb2') = 2 and (select lucro_liquido from app.viabilidades where id = :'vb2') = 10122000,
-  'duplicar copia tipologias e despesas, com o mesmo resultado');
+select pg_temp.ok((select count(*) from app.viabilidade_tipologias where viabilidade_id = :'vb2') = 2 and (select lucro_liquido from app.viabilidades where id = :'vb2') = 5299509.09
+  and (select count(*) from app.viabilidade_linhas where viabilidade_id = :'vb2') = (select count(*) from app.viabilidade_linhas where viabilidade_id = :'vb1'),
+  'duplicar copia dados, tipologias e linhas, com o mesmo resultado');
 select app.apagar_viabilidade(:'vb2');
 select pg_temp.ok(not exists (select 1 from app.viabilidade_linhas where viabilidade_id = :'vb2'), 'estudo solto se apaga, com as linhas');
 select pg_temp.como(:'leitor');
-update app.viabilidade_linhas set multiplicador = 1 where viabilidade_id = :'vb1';
-select pg_temp.ok((select lucro_liquido from app.viabilidades where id = :'vb1') = 10122000, 'leitura vê o estudo mas não altera as linhas');
+update app.viabilidade_linhas set valor = 1 where viabilidade_id = :'vb1';
+select pg_temp.ok((select lucro_liquido from app.viabilidades where id = :'vb1') = 5299509.09, 'leitura vê o estudo mas não altera as linhas');
 select pg_temp.falha(format($$select app.criar_viabilidade(%L, 'X')$$, :'t1'), 'leitura não cria estudo');
+select pg_temp.falha(format($$select app.salvar_viabilidade(%L, '{"custo_m2":1}')$$, :'vb1'), 'leitura não muda os dados do estudo');
 select pg_temp.como(:'intruso');
 select pg_temp.ok(not exists (select 1 from app.viabilidade_tipologias where viabilidade_id = :'vb1') and not exists (select 1 from app.viabilidade_despesas where empresa_id = :'emp'), 'outra empresa não vê estudo nem lista');
 select pg_temp.como(:'diretor');
-select app.salvar_despesa_viabilidade(:'emp', 'infra_externa', '{"obra":"nao"}');
-select pg_temp.ok((select obra_total = 22500000 and despesas_total = 33028000 and custo_obras = 24175000 and taxas = 1125000 from app.viabilidades where id = :'vb1'),
-  'tirar uma despesa da obra refaz os estudos que a usam (administração da obra cai para 5% de 22,5 mi)');
-select pg_temp.falha(format($$select app.apagar_despesa_viabilidade(%L, 'comissao')$$, :'emp'), 'despesa usada não se apaga (desativa)');
-select app.salvar_despesa_viabilidade(:'emp', 'premio_vendas', '{"nome":"Prêmio de vendas","grupo":"comercial","tipo_padrao":"pct_vgv","multiplicador_padrao":0.5}');
+select app.salvar_despesa_viabilidade(:'emp', 'registro_vendas', '{"deduz_vgv":false}');
+select pg_temp.ok((select vgv_liquido = 39655200 and permuta_financeira = 3172416 and lucro_liquido = 5277690.91 and margem_pct = 13.31 from app.viabilidades where id = :'vb1'),
+  'registro das vendas deixa de ser dedutível: VGV líquido sobe 0,3 mi, a permuta financeira acompanha e o estudo se refaz');
+select pg_temp.falha(format($$select app.salvar_despesa_viabilidade(%L, 'infra_externa', '{"grupo":"projetos"}')$$, :'emp'), 'item usado em estudo não muda de grupo');
+select pg_temp.falha(format($$select app.apagar_despesa_viabilidade(%L, 'comissao')$$, :'emp'), 'item usado não se apaga (desativa)');
+select app.salvar_despesa_viabilidade(:'emp', 'premio_vendas', '{"nome":"Prêmio de vendas","grupo":"comercial","tipo_padrao":"pct_vgv","valor_padrao":0.5}');
+select pg_temp.falha(format($$select app.salvar_despesa_viabilidade(%L, 'x_lucro', '{"nome":"X","grupo":"comercial","tipo_padrao":"pct_lucro"}')$$, :'emp'), 'item novo só com base aceita pelo grupo');
 select app.apagar_despesa_viabilidade(:'emp', 'premio_vendas');
-select pg_temp.ok(not exists (select 1 from app.viabilidade_despesas where codigo = 'premio_vendas'), 'despesa nova entra na lista e, sem uso, se apaga');
+select pg_temp.ok(not exists (select 1 from app.viabilidade_despesas where codigo = 'premio_vendas'), 'item novo entra na lista e, sem uso, se apaga');
 
 
 \echo 'TODOS OS TESTES PASSARAM'

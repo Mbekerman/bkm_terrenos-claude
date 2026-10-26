@@ -2173,8 +2173,8 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .vb-dados { grid-template-columns: repeat(2, minmax(0, 1fr)) }
 .vb-tab { display: flex; flex-direction: column }
 .vb-r { display: grid; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--linha) }
-.vb-tips .vb-r { grid-template-columns: minmax(150px, 1.7fr) minmax(84px, .9fr) minmax(72px, .7fr) minmax(72px, .7fr) minmax(110px, 1.2fr) minmax(100px, 1.1fr) minmax(110px, 1.2fr) 36px }
-.vb-lns .vb-r { grid-template-columns: minmax(200px, 2fr) minmax(150px, 1.3fr) minmax(110px, 1fr) minmax(72px, .6fr) minmax(130px, 1.3fr) 36px }
+.vb-tips .vb-r { grid-template-columns: minmax(140px, 1.6fr) minmax(80px, .9fr) minmax(64px, .65fr) minmax(64px, .65fr) minmax(64px, .65fr) minmax(104px, 1.15fr) minmax(96px, 1fr) minmax(110px, 1.2fr) 36px }
+.vb-lns .vb-r { grid-template-columns: minmax(200px, 2fr) minmax(170px, 1.4fr) minmax(110px, 1fr) minmax(64px, .5fr) minmax(150px, 1.4fr) 36px }
 .vb-r.vb-hd { font-size: 12px; line-height: 16px; font-weight: 500; color: var(--texto-suave); padding: 0 0 8px }
 .vb-r.vb-hd span:nth-child(n+2) { text-align: right }
 .vb-lns .vb-r.vb-hd span:nth-child(2) { text-align: left }
@@ -2211,7 +2211,25 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .vb-obra { font-size: 12px; line-height: 16px; margin-top: 12px }
 .vb-met { margin-bottom: 4px }
 .vb-lista td .linkbtn { text-align: left }
-.vb-cfg-r { grid-template-columns: 64px minmax(180px, 2fr) minmax(130px, 1fr) minmax(170px, 1.2fr) minmax(150px, 1fr) 100px 52px 64px }
+.vb-cfg-r { grid-template-columns: 64px minmax(180px, 2fr) minmax(170px, 1.2fr) minmax(190px, 1.3fr) 100px 84px 52px 64px }
+.vb-cfg-g { padding: 16px 0 6px; font-size: 14px; font-weight: 500; border-bottom: 1px solid var(--linha) }
+.vb-gt { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding-top: 8px; border-bottom: 1px solid var(--linha) }
+.vb-gt h3, .vb-h3 { margin: 0; font-size: 14px; line-height: 20px; font-weight: 500 }
+.vb-h3 { margin: 20px 0 10px }
+.vb-h3:first-child { margin-top: 4px }
+.vb-nome { line-height: 20px; overflow-wrap: anywhere }
+.vb-r.vb-st b, .vb-r.vb-st .vb-out b { font-weight: 500 }
+.vb-r.vb-st { color: var(--texto-suave); padding-top: 8px; border-bottom: 1px solid var(--linha) }
+.vb-r.vb-marco { background: var(--m-sc-low, #f0f4f9); padding: 10px 12px; margin: 4px 0; border-radius: 8px; border-bottom: 0 }
+.vb-ro { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px 24px; padding: 4px 0 8px; font-variant-numeric: tabular-nums }
+.vb-ro > div { display: flex; flex-direction: column; min-width: 0 }
+.vb-rl { font-size: 12px; line-height: 16px; color: var(--texto-suave) }
+.vb-ro b { font-weight: 500; font-size: 16px; line-height: 24px }
+.vb-ro small { font-size: 12px; line-height: 16px }
+.vb-campos { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 8px }
+.vb-chks { border: 0; margin: 4px 0 12px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 24px }
+.vb-chks legend { font-size: 12px; line-height: 16px; color: var(--texto-suave); padding: 0; margin-bottom: 6px }
+.vb-chks .chk { display: flex; align-items: center; gap: 8px }
 .vb-cfg-r input[inputmode="decimal"] { text-align: right }
 .ro [data-a^="vb-"]:not([data-a="vb-abrir"]):not([data-a="vb-voltar"]) { display: none !important }
 /* sem espaço para as colunas: cada linha vira um cartão com os rótulos */
@@ -2225,7 +2243,9 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
   .vb-r.vb-tot { padding-right: 0 }
   .vb-r.vb-tot .vb-c:nth-child(n+2) { text-align: left }
   .vb-r.vb-tot > span:empty { display: none }
-  .vb-lns .vb-tot .vb-tipo, .vb-lns .vb-tot .vb-mult, .vb-lns .vb-tot .vb-qtd { display: none }
+  .vb-lns .vb-tot .vb-tipo, .vb-lns .vb-tot .vb-mult, .vb-lns .vb-tot .vb-qtd, .vb-lns .vb-qtd:empty { display: none }
+  .vb-r.vb-marco { padding: 10px 12px }
+  .vb-lns .vb-r > .vb-tipo { grid-column: 1 / -1 }
   .vb-hint-ln { padding: 0 4px }
   .vb-nova .vb-dica { grid-column: 1 / -1 }
   .vb-dd { width: 100% }
@@ -2237,6 +2257,7 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
   .vb-cfg { overflow-x: auto }
 }
 :root[data-tema="escuro"] .vb-c input:not(:disabled), :root[data-tema="escuro"] .vb-c select:not(:disabled) { background: #0a1130; border-color: #2a3560; color: #e6ecff }
+:root[data-tema="escuro"] .vb-r.vb-marco { background: rgba(99,112,255,.08) }
 :root[data-tema="escuro"] .vb-dd { background: #0c1433; box-shadow: 0 0 0 1px rgba(124,140,255,.28), 0 8px 24px rgba(0,0,0,.5) }
 :root[data-tema="escuro"] .vb-dd-i:hover, :root[data-tema="escuro"] .vb-dd-i[aria-selected="true"] { background: rgba(99,112,255,.14) }
 

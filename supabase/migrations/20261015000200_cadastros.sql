@@ -405,8 +405,8 @@ begin
   end if;
   -- lista de despesas do estudo de viabilidade: ver viabilidade
   if to_regclass('app.viabilidade_despesas') is not null then
-    execute 'insert into app.viabilidade_despesas (empresa_id, codigo, nome, grupo, obra, tipo_padrao, multiplicador_padrao, ordem, ativo)
-             select $1, codigo, nome, grupo, obra, tipo_padrao, multiplicador_padrao, ordem, ativo from app.viabilidade_despesas where empresa_id is null' using new.id;
+    execute 'insert into app.viabilidade_despesas (empresa_id, codigo, nome, grupo, tipo_padrao, valor_padrao, deduz_vgv, ordem, ativo)
+             select $1, codigo, nome, grupo, tipo_padrao, valor_padrao, deduz_vgv, ordem, ativo from app.viabilidade_despesas where empresa_id is null' using new.id;
   end if;
   return new;
 end $$;
