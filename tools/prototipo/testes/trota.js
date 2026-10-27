@@ -26,7 +26,9 @@ await p.goBack();await p.goBack();await espera();ok(await rota()==='inicio','vol
 await p.goto(B+'/terrenos/TER-000123/negociacao');await espera();
 ok(await rota()==='terreno'&&await p.evaluate(()=>document.querySelector('#bl-negociacao .bl-h').getAttribute('aria-expanded'))==='true','link da ficha com seção abre a seção');
 ok(await p.evaluate(()=>document.querySelector('#side [aria-current=page]')?.dataset.r)==='terrenos','menu marca Terrenos');
-await p.waitForTimeout(500);await p.screenshot({path:OUT+'1_ficha_secao.png'});
+ok(await p.evaluate(()=>[...document.querySelectorAll('.bl-h[aria-expanded=true]')].map(x=>x.dataset.t).join())==='negociacao','link com seção: só ela aberta (Visão geral fechada)');
+await p.waitForTimeout(900);ok(await p.evaluate(()=>{const t=document.getElementById('bl-negociacao').getBoundingClientRect().top;return t>=0&&t<200}),'link com seção: a página rola até a seção');
+await p.screenshot({path:OUT+'1_ficha_secao.png'});
 await p.goto(B+'/terrenos/ter-000123');await espera();ok(await rota()==='terreno'&&url()==='/prototipo/terrenos/TER-000123','código em minúsculas também abre');
 await p.goto(B+'/terrenos/TER-999999');await espera();ok(await rota()==='terrenos'&&url()==='/prototipo/terrenos'&&/não encontrado/.test(await p.textContent('#toast')),'código que não existe cai em Terrenos com aviso');
 await p.goto(B+'/mapa/TER-000123/ficha');await p.waitForTimeout(1200);

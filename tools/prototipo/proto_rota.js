@@ -47,10 +47,10 @@ function rtAplicar(s){const [a,b,c,d]=s,limpo={vbPop:null,vbNova:false,fichaShee
   if(a==='terrenos'&&b&&b.toLowerCase()!=='novo'){const id=rtId(b);
     if(!id){go('terrenos',limpo);toast(`Terreno ${b} não encontrado.`,true);return}
     const from=history.state?.from||(UI.route==='terreno'&&UI.id===id?UI.from:'terrenos');
-    if(UI.route!=='terreno'||UI.id!==id){BLA={geral:true};blId=id}
+    /* link com seção: só ela vem aberta (a Visão geral cresce depois de carregar o mapa e o entorno e empurraria a seção para baixo) */
+    const sec=RT_SEC.includes(c)?c:'geral';if(UI.route!=='terreno'||UI.id!==id||sec!=='geral'){BLA={[sec]:true};blId=id}
     if(c==='viabilidade'){go('terreno',{...limpo,id,tab:'geral',from});const v=rtViabs(id)[(parseInt(d,10)||1)-1];if(v)vbAbrir(v.id);else toast('Estudo de viabilidade não encontrado.',true);return}
-    const sec=RT_SEC.includes(c)?c:'geral';go('terreno',{...limpo,id,tab:sec,from});
-    if(sec!=='geral'){blocoAbre(sec);render();rolarBloco(sec)}return}
+    go('terreno',{...limpo,id,tab:sec,from});if(sec!=='geral')rolarBloco(sec);return}
   if(a==='terrenos'){go('terrenos',limpo);if(b){UI.modal='novo';renderModal()}return}
   if(a==='mapa'){const id=rtId(b);go('mapa',{...limpo,mpSel:id,mpFoco:id});if(id&&c==='ficha'){UI.fichaSheet=id;fichaSheet()}return}
   if(a==='fases'){const f=b&&fIdx(b)>=0?b:null,e=f&&c&&etapaF(f,c)?c:null;go('negociacoes',{...limpo,negFase:f,negEtapa:e});return}
