@@ -27,8 +27,18 @@ doc = ezdxf.new('R2000', setup=['linetypes'])
 doc.units = ezdxf.units.M
 doc.header['$INSUNITS'] = 6
 doc.styles.add('BKM', font='arial.ttf')
+# espessura de cada layer em centésimos de mm, nas convenções usuais de desenho
+# topográfico (decisão do Moisés, 27/out/2026): divisa do terreno 0,50; mestra
+# 0,35; intermediárias 0,13; quadras 0,25; lotes, calçadas e edificações 0,18;
+# córregos 0,35; o resto 0,13 (textos sem espessura). O PDF usa as suas próprias.
+ESPESSURA = {
+    'TERRENO': 50, 'CURVA_MESTRA': 35, 'QUADRAS': 25, 'CORREGOS': 35, 'CORREGOS_CANALIZADOS': 25,
+    'MASSA_DAGUA': 25, 'LOTES': 18, 'LOTES_QUADRA': 18, 'CALCADAS': 18, 'EDIFICACOES': 13,
+    'MELHORAMENTO_VIARIO': 25, 'FOLGA_30M': 18, 'CURSO_DAGUA_FAIXA': 18,
+}
 for nome, cor, lt in LAYERS:
-    doc.layers.add(nome, color=cor, linetype=lt)
+    doc.layers.add(nome, color=cor, linetype=lt, lineweight=ESPESSURA.get(nome, 13))
+doc.header['$LWDISPLAY'] = 1  # mostra as espessuras na tela
 msp = doc.modelspace()
 # marcadores trocados pelo proto_topo.js (valores impossíveis de aparecer por acaso)
 imgdef = doc.add_image_def(filename='__IMAGEM__.jpg', size_in_pixel=(7771, 7772))
