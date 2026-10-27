@@ -58,10 +58,10 @@ async function gsjMapa(camada,bb,w,h,fmt){const u=new URL(GSJ_BASE+'proxy');
   Object.entries({SERVICE:'WMS',VERSION:'1.1.1',REQUEST:'GetMap',LAYERS:'geoSJC:'+camada,STYLES:'',SRS:'EPSG:4326',BBOX:bb.join(','),WIDTH:w,HEIGHT:h,FORMAT:fmt,TRANSPARENT:fmt==='image/png',authToken:await gsjToken()}).forEach(([k,v])=>u.searchParams.set(k,v));
   const r=await fetch(u);if(!r.ok)throw new Error('GeoSanja respondeu '+r.status);return createImageBitmap(await r.blob())}
 
-// --- coordenadas: graus -> metros locais (área e distâncias) e -> UTM 23S SIRGAS 2000 (DXF)
+// --- coordenadas: graus -> metros locais (área e distâncias) e -> UTM SIRGAS 2000 (DXF; l0 = meridiano central, padrão fuso 23S)
 const mapCoord=(c,f)=>!c.length?c:typeof c[0]==='number'?f(c):c.map(x=>mapCoord(x,f));
 const geoMapa=(g,f)=>g&&{...g,coordinates:mapCoord(g.coordinates,f)},featMapa=(ft,f)=>({...ft,geometry:geoMapa(ft.geometry,f)});
-function latLngUtm(lat,lng){const a=6378137,f=1/298.257222101,k0=.9996,e2=f*(2-f),ep2=e2/(1-e2),p=lat*Math.PI/180,l=(lng+45)*Math.PI/180,s=Math.sin(p),c=Math.cos(p),
+function latLngUtm(lat,lng,l0=-45){const a=6378137,f=1/298.257222101,k0=.9996,e2=f*(2-f),ep2=e2/(1-e2),p=lat*Math.PI/180,l=(lng-l0)*Math.PI/180,s=Math.sin(p),c=Math.cos(p),
   N=a/Math.sqrt(1-e2*s*s),T=Math.tan(p)**2,C=ep2*c*c,A=c*l,
   M=a*((1-e2/4-3*e2*e2/64-5*e2**3/256)*p-(3*e2/8+3*e2*e2/32+45*e2**3/1024)*Math.sin(2*p)+(15*e2*e2/256+45*e2**3/1024)*Math.sin(4*p)-(35*e2**3/3072)*Math.sin(6*p));
   return [5e5+k0*N*(A+(1-T+C)*A**3/6+(5-18*T+T*T+72*C-58*ep2)*A**5/120),
@@ -114,8 +114,8 @@ async function gsjArquivos(t,ins,llLote,usoOcup){const r=geoAneis(llLote)[0],xs=
     arq.dxf=new Blob([geoDxf(GSJ_DESENHO,feic,[u0[0],u0[1],u1[0],u1[1]],`GeoSanja - Inscricao ${ins.sql}`,(k,p)=>k==='lote'?p.rotulo:k==='zonas'?p.proposta:null)],{type:'application/dxf'});loteDoc(t,ins,'lote_dxf',nomeBase+'.dxf')}
   catch(e){console.error(e);toast('O desenho em DXF não saiu agora.',true)}
   save();render();toast('Planta e desenho do lote guardados nos documentos.')}
-// PDF de uma página com a imagem (JPEG), em pontos: 1 px = 0,75 pt.
-function pdfImagem(jpg,w,h){const W=(w*.75).toFixed(2),H=(h*.75).toFixed(2),cont=`q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`,enc=new TextEncoder(),partes=[],offs=[];let n=0;
+// PDF de uma página com a imagem (JPEG), em pontos: 1 px = 0,75 pt, ou a página no tamanho pedido (pw × ph pt).
+function pdfImagem(jpg,w,h,pw,ph){const W=(pw||w*.75).toFixed(2),H=(ph||h*.75).toFixed(2),cont=`q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`,enc=new TextEncoder(),partes=[],offs=[];let n=0;
   const add=x=>{const b=typeof x==='string'?enc.encode(x):x;partes.push(b);n+=b.length};
   add('%PDF-1.4\n');[`<< /Type /Catalog /Pages 2 0 R >>`,`<< /Type /Pages /Kids [3 0 R] /Count 1 >>`,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`].forEach((o,i)=>{offs.push(n);add(`${i+1} 0 obj\n${o}\nendobj\n`)});
   offs.push(n);add(`4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${w} /Height ${h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpg.length} >>\nstream\n`);add(jpg);add('\nendstream\nendobj\n');

@@ -241,6 +241,8 @@ insert into app.tipos_documento (codigo, nome, categoria, validade_dias, unico_p
   ('planta',             'Planta ou croqui',                     'Técnico',   null, false),
   ('lote_pdf',           'Planta do lote da prefeitura (PDF)',   'Técnico',   null, false),
   ('lote_dxf',           'Desenho do lote da prefeitura (DXF)',  'Técnico',   null, false),
+  ('topo_pdf',           'Topográfico preliminar (PDF)',         'Técnico',   null, false),
+  ('topo_dxf',           'Topográfico preliminar (DXF + imagem)', 'Técnico',  null, false),
   ('outro',              'Outro documento',                      'Outros',    null, false);
 
 -- Modelo padrão do funil (empresa_id nulo). Concluído, Perdido, Descartado e
