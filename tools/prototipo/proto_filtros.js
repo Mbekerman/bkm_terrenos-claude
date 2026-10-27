@@ -13,7 +13,7 @@
 P.filtro='M4 6h16M7 12h10M10 18h4';
 const FX_KEY='bkm-terrenos-filtros';
 const FX_VAZIO=()=>({});
-UI.fx=UI.fx||(()=>{try{const h=location.hash.match(/[#&]f=([^&]+)/);if(h)return JSON.parse(decodeURIComponent(h[1]))}catch(e){}try{return JSON.parse(sessionStorage.getItem(FX_KEY)||'{}')}catch(e){return {}}})();
+UI.fx=UI.fx||(()=>{try{const h=location.hash.match(/[#&?]f=([^&]+)/);if(h)return JSON.parse(decodeURIComponent(h[1]))}catch(e){}try{return JSON.parse(sessionStorage.getItem(FX_KEY)||'{}')}catch(e){return {}}})();
 UI.fxAb=UI.fxAb||['funil','comercial','local'];
 let FX_ABERTO=false,FX_SO_RESULTADO=false;
 
@@ -122,7 +122,7 @@ function fxConta(d,val,ctx){const base=S.terrenos.filter(t=>fxPassa(t,ctx,d.k));
 
 /* ---------- mudar o filtro ---------- */
 function fxGuardar(){try{sessionStorage.setItem(FX_KEY,JSON.stringify(UI.fx))}catch(e){}
-  try{const s=Object.keys(UI.fx).length?'#f='+encodeURIComponent(JSON.stringify(UI.fx)):'';history.replaceState(null,'',location.pathname+location.search+s)}catch(e){}}
+  if(typeof rtSync==='function')rtSync()}
 function fxLimparDependentes(){const fs=fxFasesSel();if(UI.fx.etapa){UI.fx.etapa=UI.fx.etapa.filter(x=>fs.includes(x.split(':')[0]));if(!UI.fx.etapa.length)delete UI.fx.etapa}
   const es=fxEtapasSel();if(UI.fx.sub){UI.fx.sub=UI.fx.sub.filter(x=>{const [f,s]=x.split(':');return es.some(([ff,e])=>ff===f&&(etapaF(f,e)?.subs||[]).some(z=>z.k===s))});if(!UI.fx.sub.length)delete UI.fx.sub}
   if(UI.fx.zona&&fxSel('cidade').length!==1)delete UI.fx.zona;
