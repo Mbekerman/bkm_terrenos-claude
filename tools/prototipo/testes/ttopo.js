@@ -35,7 +35,8 @@ const SJC=[[-23.227157,-45.848835],[-23.226302,-45.84839],[-23.226398,-45.847316
   const mudar=async(cod,fn)=>{await p.evaluate(([k,c,f])=>{const s=JSON.parse(localStorage.getItem(k));const t=s.terrenos.find(x=>x.codigo===c);(new Function('t',f))(t);localStorage.setItem(k,JSON.stringify(s))},[KEY,cod,fn]);await p.reload();await p.waitForTimeout(1500)};
   const abrir=async cod=>{await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=terrenos]').click());await p.waitForTimeout(300);
     await p.evaluate(c=>[...document.querySelectorAll('[data-a=abrir]')].find(x=>x.closest('tr,.card,li,div')?.textContent.includes(c)||x.textContent.includes(c)).click(),cod);await p.waitForTimeout(800)};
-  const gerar=async(cod,nome)=>{await abrir(cod);const bt=await p.$('[data-a=topo-abrir]');if(!bt)throw new Error('sem botão Topográfico em '+cod);
+  // COR='{"inter":...,"mestra":...,"casca":...}' troca as cores das curvas (para comparar)
+  const gerar=async(cod,nome)=>{await abrir(cod);if(process.env.COR)await p.evaluate(c=>Object.assign(window.TOPO_COR,c),JSON.parse(process.env.COR));const bt=await p.$('[data-a=topo-abrir]');if(!bt)throw new Error('sem botão Topográfico em '+cod);
     await p.waitForTimeout(1500);await p.$eval('[data-a=topo-abrir]',x=>x.scrollIntoView({block:'center'}));await p.screenshot({path:OUT+nome+'_0_relevo.png'});await p.click('[data-a=topo-abrir]');await p.waitForTimeout(300);await p.screenshot({path:OUT+nome+'_1_plano.png'});
     const t0=Date.now();await p.click('[data-a=topo-gerar]');await p.waitForTimeout(2500);await p.screenshot({path:OUT+nome+'_2_andamento.png'});
     await p.waitForSelector('[data-a=topo-baixar],.dh + .banner.warn',{timeout:240000});console.log(nome,'gerado em',((Date.now()-t0)/1000).toFixed(1),'s');
@@ -45,7 +46,7 @@ const SJC=[[-23.227157,-45.848835],[-23.226302,-45.84839],[-23.226398,-45.847316
     const docs=await p.evaluate(([k,c])=>JSON.parse(localStorage.getItem(k)).terrenos.find(x=>x.codigo===c).docs.filter(d=>d.tipo.startsWith('topo')).map(d=>d.tipo+' v'+d.versoes),[KEY,cod]);
     console.log(nome,'documentos:',docs.join(', ')||'nenhum');await p.click('[data-a=close]');await p.waitForTimeout(200)};
   const caso=process.argv[2]||'todos';
-  if(/todos|sp/.test(caso))await gerar('TER-000118','sp_laser');
+  if(/todos|sp/.test(caso))await gerar('TER-000118',process.env.NOME||'sp_laser');
   if(/todos|sql/.test(caso)){await mudar('TER-000112',"t.insc=[{sql:'009.027.0009-1',mun:'sp'}];t.municipio='São Paulo · SP'");await gerar('TER-000112','sp_sql')}
   if(/todos|sjc/.test(caso)){await mudar('TER-000123',`t.municipio='São José dos Campos · SP';t.insc=[];t.poly=${JSON.stringify(SJC)};t.lat=${SJC[0][0]};t.lng=${SJC[0][1]}`);await gerar('TER-000123','sjc_google')}
   // GeoSampa fora do ar: em São Paulo não pode cair no Google; a janela mostra o erro e "Tentar de novo"

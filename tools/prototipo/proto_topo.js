@@ -181,8 +181,14 @@ const topoNomeVia=p=>p?[p.cd_tipo_logradouro,p.cd_titulo_logradouro,p.tx_preposi
 // --- imagem: ortofoto da prefeitura no próprio UTM; fora de SP e SJC, Google (Maps Static) ou Esri, ajustada ao UTM
 async function topoImagem(cid,bb,w,h,l0,epsg){const bm=async u=>{const r=await fetch(u,{signal:AbortSignal.timeout(30000)});if(!r.ok||!/image/.test(r.headers.get('content-type')||''))throw new Error('imagem '+r.status);return createImageBitmap(await r.blob())};
   const wms=(base,ly,extra)=>{const u=new URL(base);Object.entries({SERVICE:'WMS',VERSION:'1.1.1',REQUEST:'GetMap',LAYERS:ly,STYLES:'',SRS:'EPSG:'+epsg,BBOX:bb.join(','),WIDTH:w,HEIGHT:h,FORMAT:'image/jpeg',...extra}).forEach(([k,v])=>u.searchParams.set(k,v));return u};
-  if(cid==='sp'&&GEO_BASE&&epsg===31983)try{return {img:await bm(wms(GEO_BASE+'ows','Orto_IGC_2023')),fonte:'Ortofoto 2023/2024 da Prefeitura de São Paulo (GeoSampa)'}}catch(e){console.warn(e)}
-  if(cid==='sjc'&&GSJ_BASE&&epsg===31983)try{return {img:await bm(wms(GSJ_BASE+'proxy','geoSJC:pm_sjc_ortomosaico_8cm_nov25',{authToken:await gsjToken()})),fonte:'Ortofoto 8 cm (nov/2025) da Prefeitura de São José dos Campos (GeoSanja)'}}catch(e){console.warn(e)}
+  // o servidor recusa imagem acima de ~4.000 px: folha grande vai em pedaços, montados num canvas
+  const pedacos=async(base,ly,extra)=>{const nx=Math.ceil(w/4000),ny=Math.ceil(h/4000);if(nx*ny===1)return bm(wms(base,ly,extra));
+    const cv=document.createElement('canvas');cv.width=w;cv.height=h;const g=cv.getContext('2d'),tw=Math.ceil(w/nx),th=Math.ceil(h/ny),sx=(bb[2]-bb[0])/w,sy=(bb[3]-bb[1])/h;
+    await Promise.all(Array.from({length:nx*ny},async(_,k)=>{const i=k%nx,j=Math.floor(k/nx),pw=Math.min(tw,w-i*tw),ph=Math.min(th,h-j*th);
+      const u=wms(base,ly,extra);u.searchParams.set('WIDTH',pw);u.searchParams.set('HEIGHT',ph);
+      u.searchParams.set('BBOX',[bb[0]+i*tw*sx,bb[3]-(j*th+ph)*sy,bb[0]+(i*tw+pw)*sx,bb[3]-j*th*sy].join(','));g.drawImage(await bm(u),i*tw,j*th)}));return cv};
+  if(cid==='sp'&&GEO_BASE&&epsg===31983)try{return {img:await pedacos(GEO_BASE+'ows','Orto_IGC_2023'),fonte:'Ortofoto 2023/2024 da Prefeitura de São Paulo (GeoSampa)'}}catch(e){console.warn(e)}
+  if(cid==='sjc'&&GSJ_BASE&&epsg===31983)try{return {img:await pedacos(GSJ_BASE+'proxy','geoSJC:pm_sjc_ortomosaico_8cm_nov25',{authToken:await gsjToken()}),fonte:'Ortofoto 8 cm (nov/2025) da Prefeitura de São José dos Campos (GeoSanja)'}}catch(e){console.warn(e)}
   if(GKEY)try{return await topoImgGoogle(bb,w,h,l0)}catch(e){console.warn('Google Maps Static indisponível',e)}
   try{const u=new URL('https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export');
     Object.entries({bbox:bb.join(','),bboxSR:epsg,imageSR:epsg,size:w+','+h,format:'jpg',f:'image'}).forEach(([k,v])=>u.searchParams.set(k,v));return {img:await bm(u),fonte:'Imagem Esri World Imagery'}}
@@ -229,20 +235,20 @@ async function topoGerar(t){if(TOPO_EM)return;const passos=[];TOPO_EM={tid:t.id,
     const dz=dentro.length?{min:dentro.reduce((a,b)=>a<b?a:b),max:dentro.reduce((a,b)=>a>b?a:b)}:{min:zmin,max:zmax};
     // folha 1 sempre no terreno + 30 m (a mesma escala com ou sem SQL); com a quadra inteira, folha 2 com ela
     const extT=topoExt(P.flat()),quadroT=topoQuadro([extT[0]-TOPO_FOLGA-2,extT[1]-TOPO_FOLGA-2,extT[2]+TOPO_FOLGA+2,extT[3]+TOPO_FOLGA+2].map(v=>Math.round(v))),
-      quadro=PB===P?quadroT:topoQuadro(lev),bbTudo=topoExt([quadroT.bb.slice(0,2),quadroT.bb.slice(2),quadro.bb.slice(0,2),quadro.bb.slice(2)]);
-    passo('Vias, calçadas e córregos da prefeitura');const cam=await topoCamadas(cid,bbTudo,l0);const larg=topoLarguras(cam.camadas,P);
+      quadro=PB===P?quadroT:topoQuadro(lev,quadroT.esc);
+    passo('Vias, calçadas e córregos da prefeitura');const cam=await topoCamadas(cid,quadro.bb,l0);const larg=topoLarguras(cam.camadas,P);
     // lotes das quadras do terreno numa layer própria, com o número (SQL); os demais lotes do quadro ficam como estão
     if(qd){const sqls=new Set(qd.lotes.map(l=>l.sql));cam.camadas.LOTES=(cam.camadas.LOTES||[]).filter(f=>!sqls.has(f.p.nr_contribuinte));
       cam.camadas.LOTES_QUADRA=qd.lotes}
-    passo('Imagem de fundo');const im=await topoImagem(cid,quadro.bb,quadro.wi,quadro.hi,l0,epsg),imT=quadro===quadroT?im:await topoImagem(cid,quadroT.bb,quadroT.wi,quadroT.hi,l0,epsg);
+    passo('Imagem de fundo');const im=await topoImagem(cid,quadro.bb,quadro.wi,quadro.hi,l0,epsg);
     passo('PDF e DXF');const nome=`topografico_${t.codigo}`,area0=Math.round(P.reduce((s,r)=>s+geoAreaAnel(r),0));
     const R={t,ct,P,PB,qd,G,curvas,folga,cam:cam.camadas,erros:cam.erros,larg,im,quadro,fz,iv,mestra,zona,epsg,l0,area:area0,dz,dec:nd?dec/nd*100:null,em:new Date()};
-    const folhas=quadro===quadroT?[R]:[{...R,quadro:quadroT,im:imT,folha:'Folha 1 de 2 · terreno + 30 m'},{...R,folha:'Folha 2 de 2 · quadra inteira'}],pgs=folhas.map(topoPagina),pg=pgs[0];
-    const pdf=topoPdf(await Promise.all(pgs.map(async c=>({w:c.width,h:c.height,jpg:new Uint8Array(await(await new Promise(ok=>c.toBlob(ok,'image/jpeg',.88))).arrayBuffer())}))),1190.55,841.89);
+    const pg=topoPagina(R),jpg=new Uint8Array(await(await new Promise(ok=>pg.toBlob(ok,'image/jpeg',.88))).arrayBuffer());
+    const pdf=topoPdf([{w:pg.width,h:pg.height,jpg}],quadro.pag.pw,quadro.pag.ph);
     const zip=await topoZip(R,nome),previa=topoPrevia(pg);
     const resumo={contorno:ct.fonte==='lotes'?`Lotes da prefeitura (${ct.n} inscriç${ct.n>1?'ões':'ão'})`:'Poligonal desenhada'+(ct.faltam.length?` (sem o lote de ${ct.faltam.join(', ')})`:''),
       cotas:topoFonteTxt(fz),imagem:im.fonte,curvas:`de ${iv} em ${iv} m (mestra de ${mestra} em ${mestra} m)`,area:area0,min:dz.min,max:dz.max,dec:nd?dec/nd*100:null,
-      vias:larg.length,erros:cam.erros,escala:quadroT.esc,folhas:folhas.length,guarda:true,levantado:topoLevTxt(R)};
+      vias:larg.length,erros:cam.erros,escala:quadro.esc,papel:quadro.pag.papel,guarda:true,levantado:topoLevTxt(R)};
     TOPO[t.id]={pdf,zip,previa,resumo,nome,em:agora()};
     if(resumo.guarda&&UI.role!=='Leitura'){topoDoc(t,'topo_pdf',nome+'.pdf');topoDoc(t,'topo_dxf',nome+'.zip')}
     log(t,`Topográfico preliminar gerado (${resumo.cotas.split(';')[0]}; contorno: ${resumo.contorno.toLowerCase()})`);
@@ -255,14 +261,23 @@ const topoFonteTxt=fz=>fz.fonte==='laser'?`Laser 2020 da Prefeitura de São Paul
 function topoDoc(t,k,nome){let d=t.docs.find(x=>x.tipo===k);if(!d){d={tipo:k,status:'recebido',emitido:HOJE,versoes:0,nome};t.docs.push(d)}d.versoes++;d.emitido=HOJE;d.nome=nome}
 
 // --- página A3 deitada a 160 dpi: quadro do mapa à esquerda, legenda e dados à direita
-const TOPO_PAG={w:Math.round(420/25.4*TOPO_DPI),h:Math.round(297/25.4*TOPO_DPI),m:44,lat:640};
+// folhas deitadas, em mm; a coluna da direita e as letras têm o mesmo tamanho em qualquer folha
+const TOPO_PAPEIS=[['A3',420,297],['A2',594,420],['A1',841,594],['A0',1189,841]];
+const topoPag=([papel,wmm,hmm])=>({papel,w:Math.round(wmm/25.4*TOPO_DPI),h:Math.round(hmm/25.4*TOPO_DPI),pw:wmm/25.4*72,ph:hmm/25.4*72,m:44,lat:640});
+const TOPO_PAG=topoPag(TOPO_PAPEIS[0]);
 const TOPO_ESC=[200,250,500,750,1000,1250,1500,2000,2500,3000,4000,5000,7500,10000,15000,20000];
-function topoQuadro(lev){const {w,h,m,lat}=TOPO_PAG,fw=w-2*m-lat-28,fh=h-2*m,mm=px=>px/TOPO_DPI*25.4,cx=(lev[0]+lev[2])/2,cy=(lev[1]+lev[3])/2;
-  const esc=TOPO_ESC.find(e=>mm(fw)*e/1000>=(lev[2]-lev[0])+16&&mm(fh)*e/1000>=(lev[3]-lev[1])+16)||TOPO_ESC[TOPO_ESC.length-1],gw=mm(fw)*esc/1000,gh=mm(fh)*esc/1000;
-  const bb=[cx-gw/2,cy-gh/2,cx+gw/2,cy+gh/2],wi=Math.min(4000,Math.round(fw*1.4));
-  return {bb,esc,fx:m,fy:m,fw,fh,wi,hi:Math.round(wi*fh/fw)}}
+// Quadro do mapa. Sem escala dada: A3 e a maior escala padrão que cabe. Com escala dada (quadra inteira sem SQL, na escala
+// do terreno): a menor folha em que cabe nessa escala; se nem o A0 couber, A0 na maior escala que caiba (decisão do Moisés, 27/out/2026).
+function topoQuadro(lev,escDada){const mm=px=>px/TOPO_DPI*25.4,cx=(lev[0]+lev[2])/2,cy=(lev[1]+lev[3])/2,dim=pg=>[pg.w-2*pg.m-pg.lat-28,pg.h-2*pg.m],
+    cabe=(pg,e)=>{const [fw,fh]=dim(pg);return mm(fw)*e/1000>=(lev[2]-lev[0])+16&&mm(fh)*e/1000>=(lev[3]-lev[1])+16};
+  let pag=TOPO_PAG,esc;
+  if(escDada){pag=TOPO_PAPEIS.map(topoPag).find(pg=>cabe(pg,escDada));if(pag)esc=escDada;else{pag=topoPag(TOPO_PAPEIS[TOPO_PAPEIS.length-1]);esc=TOPO_ESC.find(e=>e>=escDada&&cabe(pag,e))||TOPO_ESC[TOPO_ESC.length-1]}}
+  else esc=TOPO_ESC.find(e=>cabe(pag,e))||TOPO_ESC[TOPO_ESC.length-1];
+  const [fw,fh]=dim(pag),gw=mm(fw)*esc/1000,gh=mm(fh)*esc/1000,bb=[cx-gw/2,cy-gh/2,cx+gw/2,cy+gh/2],wi=Math.min(pag.papel==='A3'?4000:8000,Math.round(fw*1.4));
+  return {bb,esc,pag,fx:pag.m,fy:pag.m,fw,fh,wi,hi:Math.round(wi*fh/fw)}}
 const TOPO_COR={terreno:'#2ee86b',folga:'#ffffff',inter:'#ffe066',mestra:'#ff9100',calc:'rgba(77,208,225,.8)',quadra:'rgba(255,255,255,.75)',lote:'rgba(255,255,255,.3)',loteq:'rgba(255,255,255,.8)',corrego:'#2f8cff',agua:'rgba(47,140,255,.35)',melh:'#ff4fd8',eixo:'rgba(255,255,255,.9)',faixa:'#7fd3ff'};
-function topoPagina(R){const {w,h}=TOPO_PAG,Q=R.quadro,cv=document.createElement('canvas');cv.width=w;cv.height=h;const g=cv.getContext('2d'),F='"Google Sans Flex", Arial, sans-serif';
+window.TOPO_COR=TOPO_COR;  // o roteiro de teste troca as cores para comparar
+function topoPagina(R){const Q=R.quadro,{w,h}=Q.pag,cv=document.createElement('canvas');cv.width=w;cv.height=h;const g=cv.getContext('2d'),F='"Google Sans Flex", Arial, sans-serif';
   g.fillStyle='#fff';g.fillRect(0,0,w,h);const X=x=>Q.fx+(x-Q.bb[0])/(Q.bb[2]-Q.bb[0])*Q.fw,Y=y=>Q.fy+(Q.bb[3]-y)/(Q.bb[3]-Q.bb[1])*Q.fh,pxm=Q.fw/(Q.bb[2]-Q.bb[0]);
   g.save();g.beginPath();g.rect(Q.fx,Q.fy,Q.fw,Q.fh);g.clip();g.fillStyle='#2b2b2b';g.fillRect(Q.fx,Q.fy,Q.fw,Q.fh);
   if(R.im.img)g.drawImage(R.im.img,Q.fx,Q.fy,Q.fw,Q.fh);
@@ -274,6 +289,8 @@ function topoPagina(R){const {w,h}=TOPO_PAG,Q=R.quadro,cv=document.createElement
   linhas('MELHORAMENTO_VIARIO',TOPO_COR.melh,2.4,[14,8],'rgba(255,79,216,.12)');linhas('CURSO_DAGUA_FAIXA',TOPO_COR.faixa,2,[10,6],'rgba(127,211,255,.12)');
   linhas('EIXO_VIAS',TOPO_COR.eixo,1.4,[18,8,4,8]);linhas('MASSA_DAGUA',TOPO_COR.corrego,2,null,TOPO_COR.agua);linhas('CORREGOS',TOPO_COR.corrego,4.5);linhas('CORREGOS_CANALIZADOS',TOPO_COR.corrego,3.5,[12,7]);
   // curvas: intermediárias finas, mestras grossas com a cota
+  // contorno escuro por baixo (casca) para a curva se destacar da imagem
+  if(TOPO_COR.casca)R.curvas.forEach(c=>{caminho([c.pts]);g.strokeStyle=TOPO_COR.casca;g.lineWidth=(c.mestra?2.8:1.6)+2.4;g.stroke()});
   R.curvas.forEach(c=>{caminho([c.pts]);g.strokeStyle=c.mestra?TOPO_COR.mestra:TOPO_COR.inter;g.lineWidth=c.mestra?2.8:1.6;g.stroke()});
   caminho(R.folga);g.setLineDash([16,10]);g.strokeStyle=TOPO_COR.folga;g.lineWidth=2.2;g.stroke();g.setLineDash([]);
   const halo=(txt,x,y,ang,tam,cor,peso)=>{g.save();g.translate(x,y);g.rotate(ang);g.font=`${peso||500} ${tam}px ${F}`;g.textAlign='center';g.textBaseline='middle';g.lineJoin='round';g.lineWidth=Math.max(3,tam/4);g.strokeStyle='rgba(0,0,0,.85)';g.strokeText(txt,0,0);g.fillStyle=cor;g.fillText(txt,0,0);g.restore()};
@@ -302,10 +319,10 @@ function topoPagina(R){const {w,h}=TOPO_PAG,Q=R.quadro,cv=document.createElement
   for(let y=Math.ceil(Q.bb[1]/passoC)*passoC;y<Q.bb[3];y+=passoC){const py=Y(y);g.beginPath();g.moveTo(Q.fx,py);g.lineTo(Q.fx+10,py);g.moveTo(Q.fx+Q.fw,py);g.lineTo(Q.fx+Q.fw-10,py);g.stroke();g.save();g.translate(Q.fx-8,py);g.rotate(-Math.PI/2);g.textAlign='center';g.fillText('N '+num(y,0),0,0);g.restore()}
   g.strokeStyle='#1f1f1f';g.lineWidth=2;g.strokeRect(Q.fx,Q.fy,Q.fw,Q.fh);
   topoLateral(g,R,F,pxm);return cv}
-function topoLateral(g,R,F,pxm){const {w,h,m,lat}=TOPO_PAG,x0=w-m-lat,t=R.t;let y=m;
+function topoLateral(g,R,F,pxm){const {w,h,m,lat}=R.quadro.pag,x0=w-m-lat,t=R.t;let y=m;
   const txt=(s,tam,cor,peso,lh,larg)=>{g.font=`${peso||400} ${tam}px ${F}`;g.fillStyle=cor||'#1f1f1f';g.textAlign='left';g.textBaseline='top';const pal=String(s).split(' ');let l='';
     for(const p of pal){const tst=l?l+' '+p:p;if(g.measureText(tst).width>(larg||lat)&&l){g.fillText(l,x0,y);y+=lh||tam*1.3;l=p}else l=tst}if(l){g.fillText(l,x0,y);y+=lh||tam*1.3}};
-  txt('PLANTA TOPOGRÁFICA PRELIMINAR',30,'#1f1f1f',500);y+=4;if(R.folha){txt(R.folha,16,'#0b57d0',500);y+=2}txt(`${t.nome} · ${t.codigo}`,20,'#1f1f1f',500);
+  txt('PLANTA TOPOGRÁFICA PRELIMINAR',30,'#1f1f1f',500);y+=4;txt(`${t.nome} · ${t.codigo}`,20,'#1f1f1f',500);
   txt(`${(t.municipio||'São Paulo · SP').replace(' · ',' - ')} · Área do contorno: ${num(R.area,0)} m²`,16,'#444746');y+=14;
   g.fillStyle='#c4c7c5';g.fillRect(x0,y,lat,1.5);y+=16;
   const kv=(k,v)=>{txt(k,13,'#5f6368',500);y-=2;txt(v,15,'#1f1f1f');y+=6};
@@ -324,8 +341,8 @@ function topoLateral(g,R,F,pxm){const {w,h,m,lat}=TOPO_PAG,x0=w-m-lat,t=R.t;let 
   const fundo='#5d6b63';
   item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);g.strokeStyle=TOPO_COR.terreno;g.lineWidth=3.5;g.strokeRect(3,-6,38,12)},'Terreno (contorno)');
   item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);traco(TOPO_COR.folga,2,[8,5])()},`Limite do levantamento (${TOPO_FOLGA} m)`);
-  item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);traco(TOPO_COR.mestra,2.6)()},`Curva mestra (${R.mestra} m)`);
-  item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);traco(TOPO_COR.inter,1.6)()},`Curva intermediária (${R.iv} m)`);
+  item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);if(TOPO_COR.casca)traco(TOPO_COR.casca,2.6+2.4)();traco(TOPO_COR.mestra,2.6)()},`Curva mestra (${R.mestra} m)`);
+  item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);if(TOPO_COR.casca)traco(TOPO_COR.casca,1.6+2.4)();traco(TOPO_COR.inter,1.6)()},`Curva intermediária (${R.iv} m)`);
   if(R.cam.CALCADAS?.length)item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);g.fillStyle='rgba(77,208,225,.35)';g.fillRect(4,-6,36,12);g.strokeStyle=TOPO_COR.calc;g.lineWidth=1.6;g.strokeRect(4,-6,36,12)},'Calçada');
   if(R.cam.QUADRAS?.length)item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);traco(TOPO_COR.quadra,1.6)()},'Alinhamento da quadra');
   if(R.cam.EIXO_VIAS?.length)item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);traco(TOPO_COR.eixo,1.4,[10,4,3,4])()},'Eixo da via');
@@ -338,7 +355,7 @@ function topoLateral(g,R,F,pxm){const {w,h,m,lat}=TOPO_PAG,x0=w-m-lat,t=R.t;let 
   if(R.cam.CURSO_DAGUA_FAIXA?.length)item(traco(TOPO_COR.faixa,2,[10,6],'rgba(127,211,255,.15)'),"Faixa de curso d'água (PDDI)");
   if(R.larg.length)item(()=>{g.fillStyle='rgba(255,213,79,.95)';g.fillRect(0,-9,44,18)},'Largura da via e do leito (medida)');
   // escala, norte, data e aviso no pé da coluna
-  let yb=h-m-250;g.fillStyle='#c4c7c5';g.fillRect(x0,yb,lat,1.5);yb+=18;g.font=`500 16px ${F}`;g.fillStyle='#1f1f1f';g.textAlign='left';g.textBaseline='top';g.fillText(`Escala 1:${num(R.quadro.esc)} (impressão em A3)`,x0,yb);yb+=30;
+  let yb=h-m-250;g.fillStyle='#c4c7c5';g.fillRect(x0,yb,lat,1.5);yb+=18;g.font=`500 16px ${F}`;g.fillStyle='#1f1f1f';g.textAlign='left';g.textBaseline='top';g.fillText(`Escala 1:${num(R.quadro.esc)} (impressão em ${R.quadro.pag.papel})`,x0,yb);yb+=30;
   const L=[5,10,20,25,50,100,200,250,500].find(s=>s*pxm>=lat*.5/4)||500;for(let i=0;i<4;i++){g.fillStyle=i%2?'#fff':'#1f1f1f';g.fillRect(x0+i*L*pxm,yb,L*pxm,10)}g.strokeStyle='#1f1f1f';g.lineWidth=1;g.strokeRect(x0,yb,4*L*pxm,10);
   g.font=`13px ${F}`;g.fillStyle='#1f1f1f';g.textAlign='center';for(let i=0;i<=4;i++)g.fillText(num(i*L)+(i===4?' m':''),x0+i*L*pxm,yb+16);
   const nx=x0+lat-40,ny=yb-28;g.beginPath();g.moveTo(nx,ny-34);g.lineTo(nx+14,ny+10);g.lineTo(nx,ny);g.closePath();g.fillStyle='#1f1f1f';g.fill();g.beginPath();g.moveTo(nx,ny-34);g.lineTo(nx-14,ny+10);g.lineTo(nx,ny);g.closePath();g.strokeStyle='#1f1f1f';g.lineWidth=1.5;g.stroke();
@@ -355,7 +372,7 @@ function topoPdf(pags,pw,ph){const enc=new TextEncoder(),partes=[],offs=[];let n
     offs[a]=n;add(`${a+1} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${p.w} /Height ${p.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${p.jpg.length} >>\nstream\n`);add(p.jpg);add('\nendstream\nendobj\n');
     obj(a+2,`<< /Length ${cont.length} >>\nstream\n${cont}\nendstream`)});
   const x=n,tot=3+3*k;add(`xref\n0 ${tot}\n0000000000 65535 f \n${offs.map(o=>String(o).padStart(10,'0')+' 00000 n \n').join('')}trailer\n<< /Size ${tot} /Root 1 0 R >>\nstartxref\n${x}\n%%EOF\n`);return new Blob(partes,{type:'application/pdf'})}
-function topoPrevia(pg){const Q=TOPO_PAG,k=900/pg.width,c=document.createElement('canvas');c.width=900;c.height=Math.round(pg.height*k);c.getContext('2d').drawImage(pg,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.82)}
+function topoPrevia(pg){const k=900/pg.width,c=document.createElement('canvas');c.width=900;c.height=Math.round(pg.height*k);c.getContext('2d').drawImage(pg,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.82)}
 
 // --- DXF 2000 a partir do modelo (topo_dxf_modelo.py) + imagem ao lado, num ZIP
 const TOPO_DXF_MODELO=__TOPO_DXF__;
@@ -403,7 +420,7 @@ function topoModal(M,fechar){if(M!=='topo')return '';const t=T(UI.id);if(!t)retu
   const andamento=em?`<ol class="topo-passos">${em.passos.map(([p,st,det])=>`<li class="${st}">${st==='andando'?'<span class="spin" aria-hidden="true"></span>':st==='erro'?ic('warn',16):ic('check',16)}<span>${esc(p)}${det?` <span class="faint">· ${esc(det)}</span>`:''}</span></li>`).join('')}</ol>`:'';
   const S=R&&R.resumo,res=S?`<img class="topo-previa" src="${R.previa}" alt="Prévia do topográfico">
     <dl class="kvl topo-kv"><div class="kv"><dt>Contorno</dt><dd>${esc(S.contorno)}</dd></div><div class="kv"><dt>Cotas no terreno</dt><dd>${num(S.min,1)} a ${num(S.max,1)} m · desnível ${num(S.max-S.min,1)} m${S.dec!=null?` · declividade média ${num(S.dec,1)}%`:''}</dd></div>
-    <div class="kv"><dt>Fonte das cotas</dt><dd>${esc(S.cotas)}</dd></div><div class="kv"><dt>Curvas</dt><dd>${esc(S.curvas)}</dd></div><div class="kv"><dt>Imagem</dt><dd>${esc(S.imagem)}</dd></div>
+    <div class="kv"><dt>Fonte das cotas</dt><dd>${esc(S.cotas)}</dd></div><div class="kv"><dt>Curvas</dt><dd>${esc(S.curvas)}</dd></div><div class="kv"><dt>Folha</dt><dd>${S.papel} · escala 1:${num(S.escala)}${S.papel!=='A3'?' (para plotter)':''}</dd></div><div class="kv"><dt>Imagem</dt><dd>${esc(S.imagem)}</dd></div>
     ${S.erros.length?`<div class="kv"><dt>Não responderam</dt><dd>${esc(S.erros.join(', '))}</dd></div>`:''}</dl>
     <div class="hint">${UI.role!=='Leitura'?'Os dois arquivos foram guardados em Documentos, com versão.':''}${/^Google/.test(S.cotas)?' Os pontos do Google não são guardados: o DXF leva só as curvas.':''} O ZIP traz o DXF e a imagem referenciada; no AutoCAD, Salvar como DWG.</div>`
     :R&&R.erro?`<div class="banner warn">${ic('warn')}<div>O topográfico não saiu: ${esc(R.erro)}</div></div>`:'';
