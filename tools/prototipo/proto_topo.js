@@ -227,19 +227,22 @@ async function topoGerar(t){if(TOPO_EM)return;const passos=[];TOPO_EM={tid:t.id,
     const folga=topoIsolinhas(G.nx,G.ny,G.x0,G.y0,G.s,G.D.map(v=>-v),[-TOPO_FOLGA]).map(c=>c.pts);
     let dec=0,nd=0;for(let j=1;j<G.ny-1;j++)for(let i=1;i<G.nx-1;i++){const c=j*G.nx+i;if(!noT(c))continue;const gx=(G.Z[c+1]-G.Z[c-1])/(2*G.s),gy=(G.Z[c+G.nx]-G.Z[c-G.nx])/(2*G.s),v=Math.hypot(gx,gy);if(v===v){dec+=v;nd++}}
     const dz=dentro.length?{min:dentro.reduce((a,b)=>a<b?a:b),max:dentro.reduce((a,b)=>a>b?a:b)}:{min:zmin,max:zmax};
-    passo('Vias, calçadas e córregos da prefeitura');const quadro=topoQuadro(lev),cam=await topoCamadas(cid,quadro.bb,l0);const larg=topoLarguras(cam.camadas,P);
+    // folha 1 sempre no terreno + 30 m (a mesma escala com ou sem SQL); com a quadra inteira, folha 2 com ela
+    const extT=topoExt(P.flat()),quadroT=topoQuadro([extT[0]-TOPO_FOLGA-2,extT[1]-TOPO_FOLGA-2,extT[2]+TOPO_FOLGA+2,extT[3]+TOPO_FOLGA+2].map(v=>Math.round(v))),
+      quadro=PB===P?quadroT:topoQuadro(lev),bbTudo=topoExt([quadroT.bb.slice(0,2),quadroT.bb.slice(2),quadro.bb.slice(0,2),quadro.bb.slice(2)]);
+    passo('Vias, calçadas e córregos da prefeitura');const cam=await topoCamadas(cid,bbTudo,l0);const larg=topoLarguras(cam.camadas,P);
     // lotes das quadras do terreno numa layer própria, com o número (SQL); os demais lotes do quadro ficam como estão
     if(qd){const sqls=new Set(qd.lotes.map(l=>l.sql));cam.camadas.LOTES=(cam.camadas.LOTES||[]).filter(f=>!sqls.has(f.p.nr_contribuinte));
       cam.camadas.LOTES_QUADRA=qd.lotes}
-    passo('Imagem de fundo');const im=await topoImagem(cid,quadro.bb,quadro.wi,quadro.hi,l0,epsg);
+    passo('Imagem de fundo');const im=await topoImagem(cid,quadro.bb,quadro.wi,quadro.hi,l0,epsg),imT=quadro===quadroT?im:await topoImagem(cid,quadroT.bb,quadroT.wi,quadroT.hi,l0,epsg);
     passo('PDF e DXF');const nome=`topografico_${t.codigo}`,area0=Math.round(P.reduce((s,r)=>s+geoAreaAnel(r),0));
     const R={t,ct,P,PB,qd,G,curvas,folga,cam:cam.camadas,erros:cam.erros,larg,im,quadro,fz,iv,mestra,zona,epsg,l0,area:area0,dz,dec:nd?dec/nd*100:null,em:new Date()};
-    const pg=topoPagina(R),jpg=new Uint8Array(await(await new Promise(ok=>pg.toBlob(ok,'image/jpeg',.88))).arrayBuffer());
-    const pdf=pdfImagem(jpg,pg.width,pg.height,1190.55,841.89);
+    const folhas=quadro===quadroT?[R]:[{...R,quadro:quadroT,im:imT,folha:'Folha 1 de 2 · terreno + 30 m'},{...R,folha:'Folha 2 de 2 · quadra inteira'}],pgs=folhas.map(topoPagina),pg=pgs[0];
+    const pdf=topoPdf(await Promise.all(pgs.map(async c=>({w:c.width,h:c.height,jpg:new Uint8Array(await(await new Promise(ok=>c.toBlob(ok,'image/jpeg',.88))).arrayBuffer())}))),1190.55,841.89);
     const zip=await topoZip(R,nome),previa=topoPrevia(pg);
     const resumo={contorno:ct.fonte==='lotes'?`Lotes da prefeitura (${ct.n} inscriç${ct.n>1?'ões':'ão'})`:'Poligonal desenhada'+(ct.faltam.length?` (sem o lote de ${ct.faltam.join(', ')})`:''),
       cotas:topoFonteTxt(fz),imagem:im.fonte,curvas:`de ${iv} em ${iv} m (mestra de ${mestra} em ${mestra} m)`,area:area0,min:dz.min,max:dz.max,dec:nd?dec/nd*100:null,
-      vias:larg.length,erros:cam.erros,escala:quadro.esc,guarda:true,levantado:topoLevTxt(R)};
+      vias:larg.length,erros:cam.erros,escala:quadroT.esc,folhas:folhas.length,guarda:true,levantado:topoLevTxt(R)};
     TOPO[t.id]={pdf,zip,previa,resumo,nome,em:agora()};
     if(resumo.guarda&&UI.role!=='Leitura'){topoDoc(t,'topo_pdf',nome+'.pdf');topoDoc(t,'topo_dxf',nome+'.zip')}
     log(t,`Topográfico preliminar gerado (${resumo.cotas.split(';')[0]}; contorno: ${resumo.contorno.toLowerCase()})`);
@@ -302,7 +305,7 @@ function topoPagina(R){const {w,h}=TOPO_PAG,Q=R.quadro,cv=document.createElement
 function topoLateral(g,R,F,pxm){const {w,h,m,lat}=TOPO_PAG,x0=w-m-lat,t=R.t;let y=m;
   const txt=(s,tam,cor,peso,lh,larg)=>{g.font=`${peso||400} ${tam}px ${F}`;g.fillStyle=cor||'#1f1f1f';g.textAlign='left';g.textBaseline='top';const pal=String(s).split(' ');let l='';
     for(const p of pal){const tst=l?l+' '+p:p;if(g.measureText(tst).width>(larg||lat)&&l){g.fillText(l,x0,y);y+=lh||tam*1.3;l=p}else l=tst}if(l){g.fillText(l,x0,y);y+=lh||tam*1.3}};
-  txt('PLANTA TOPOGRÁFICA PRELIMINAR',30,'#1f1f1f',500);y+=4;txt(`${t.nome} · ${t.codigo}`,20,'#1f1f1f',500);
+  txt('PLANTA TOPOGRÁFICA PRELIMINAR',30,'#1f1f1f',500);y+=4;if(R.folha){txt(R.folha,16,'#0b57d0',500);y+=2}txt(`${t.nome} · ${t.codigo}`,20,'#1f1f1f',500);
   txt(`${(t.municipio||'São Paulo · SP').replace(' · ',' - ')} · Área do contorno: ${num(R.area,0)} m²`,16,'#444746');y+=14;
   g.fillStyle='#c4c7c5';g.fillRect(x0,y,lat,1.5);y+=16;
   const kv=(k,v)=>{txt(k,13,'#5f6368',500);y-=2;txt(v,15,'#1f1f1f');y+=6};
@@ -343,6 +346,15 @@ function topoLateral(g,R,F,pxm){const {w,h,m,lat}=TOPO_PAG,x0=w-m-lat,t=R.t;let 
   g.fillStyle='#fff6e0';g.fillRect(x0,yb,lat,128);g.strokeStyle='#e8c66d';g.strokeRect(x0,yb,lat,128);y=yb+12;const xs=x0;
   g.save();g.translate(14,0);txt('Levantamento preliminar, gerado automaticamente para estudo de viabilidade. Não substitui o levantamento planialtimétrico cadastral feito por profissional habilitado (ART/RRT). Distâncias e cotas podem divergir das medidas de campo.',14,'#5c4300',400,19,lat-28);g.restore();
   g.font=`13px ${F}`;g.fillStyle='#5f6368';g.textAlign='left';g.textBaseline='top';g.fillText(`BKM Terrenos · gerado em ${R.em.toLocaleDateString('pt-BR')} ${R.em.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} por ${me()}`,xs,h-m-6)}
+function topoPdf(pags,pw,ph){const enc=new TextEncoder(),partes=[],offs=[];let n=0;const add=x=>{const b=typeof x==='string'?enc.encode(x):x;partes.push(b);n+=b.length};
+  const W=pw.toFixed(2),H=ph.toFixed(2),obj=(i,o)=>{offs[i-1]=n;add(`${i} 0 obj\n${o}\nendobj\n`)},k=pags.length;add('%PDF-1.4\n');
+  // 1 catálogo, 2 páginas; por folha: página, imagem e conteúdo
+  obj(1,'<< /Type /Catalog /Pages 2 0 R >>');obj(2,`<< /Type /Pages /Kids [${pags.map((p,i)=>`${3+3*i} 0 R`).join(' ')}] /Count ${k} >>`);
+  pags.forEach((p,i)=>{const a=3+3*i,cont=`q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`;
+    obj(a,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 ${a+1} 0 R >> >> /Contents ${a+2} 0 R >>`);
+    offs[a]=n;add(`${a+1} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${p.w} /Height ${p.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${p.jpg.length} >>\nstream\n`);add(p.jpg);add('\nendstream\nendobj\n');
+    obj(a+2,`<< /Length ${cont.length} >>\nstream\n${cont}\nendstream`)});
+  const x=n,tot=3+3*k;add(`xref\n0 ${tot}\n0000000000 65535 f \n${offs.map(o=>String(o).padStart(10,'0')+' 00000 n \n').join('')}trailer\n<< /Size ${tot} /Root 1 0 R >>\nstartxref\n${x}\n%%EOF\n`);return new Blob(partes,{type:'application/pdf'})}
 function topoPrevia(pg){const Q=TOPO_PAG,k=900/pg.width,c=document.createElement('canvas');c.width=900;c.height=Math.round(pg.height*k);c.getContext('2d').drawImage(pg,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.82)}
 
 // --- DXF 2000 a partir do modelo (topo_dxf_modelo.py) + imagem ao lado, num ZIP
@@ -353,7 +365,7 @@ function topoDxf(R,arqImg,wi,hi){const asc=s=>String(s??'').normalize('NFD').rep
   const texto=(ly,x,y,alt,s,rot)=>ent('TEXT',ly,'AcDbText',['10',f(x),'20',f(y),'30','0','40',f(alt),'1',asc(s),'50',f(rot||0),'7','BKM','72','1','11',f(x),'21',f(y),'31','0','100','AcDbText','73','2']);
   R.P.forEach(r=>poli('TERRENO',r,true));R.folga.forEach(p=>poli('FOLGA_30M',p,false));
   R.P.forEach(r=>r.forEach((p,i)=>{const q=r[(i+1)%r.length],d=Math.hypot(q[0]-p[0],q[1]-p[1]);if(d<3)return;let a=Math.atan2(q[1]-p[1],q[0]-p[0])*180/Math.PI;if(a>90||a<-90)a+=180;texto('MEDIDAS',(p[0]+q[0])/2,(p[1]+q[1])/2,1,num(d,2)+' m',a)}));
-  R.curvas.forEach(c=>{poli(c.mestra?'CURVA_MESTRA':'CURVA_INTERMEDIARIA',c.pts,false,c.z);if(c.mestra&&c.pts.length>4){const m=Math.floor(c.pts.length/2),a=c.pts[m-1],b=c.pts[m];let ang=Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI;if(ang>90||ang<-90)ang+=180;texto('COTA_CURVA',(a[0]+b[0])/2,(a[1]+b[1])/2,1.2,num(c.z,0),ang)}});
+  R.curvas.forEach(c=>{poli(c.mestra?'CURVA_MESTRA':'CURVA_INTERMEDIARIA',c.pts,false,c.z);if(c.pts.length>4){const m=Math.floor(c.pts.length/2),a=c.pts[m-1],b=c.pts[m];let ang=Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI;if(ang>90||ang<-90)ang+=180;texto('COTA_CURVA',(a[0]+b[0])/2,(a[1]+b[1])/2,c.mestra?1.2:.8,num(c.z,0),ang)}});
   // pontos cotados só do laser: os do Google não são guardados
   const G=R.G,k=Math.round(TOPO_PASSO_G/G.s);if(R.fz.fonte!=='google')for(let j=0;j<G.ny;j+=k)for(let i=0;i<G.nx;i+=k){const z=G.Z[j*G.nx+i];if(z===z)ent('POINT','MALHA_COTAS','AcDbPoint',['10',f(G.x0+i*G.s),'20',f(G.y0+j*G.s),'30',f(z)])}
   Object.entries(R.cam).forEach(([ly,fs])=>fs.forEach(ft=>{const pol=/Polygon/.test(ft.g.type),z=ly==='CURVAS_PREFEITURA'?ft.p.avg_z:0;geoAneis(ft.g).forEach(r=>poli(ly,pol&&r.length>1&&r[0][0]===r[r.length-1][0]&&r[0][1]===r[r.length-1][1]?r.slice(0,-1):r,pol,z))}));
@@ -372,7 +384,7 @@ async function topoZip(R,nome){const Q=R.quadro,z=new JSZip(),arqImg=nome+'_imag
     const ps=(Q.bb[2]-Q.bb[0])/wi,py=(Q.bb[3]-Q.bb[1])/hi;z.file(nome+'_imagem.jgw',[ps,0,0,-py,Q.bb[0]+ps/2,Q.bb[3]-py/2].map(v=>v.toFixed(6)).join('\r\n')+'\r\n')}
   z.file(nome+'.dxf',topoDxf(R,arqImg,wi,hi));
   z.file('LEIA-ME.txt',[`Topografico preliminar - ${R.t.codigo}`,'',`${nome}.dxf: DXF 2000 em SIRGAS 2000 / UTM ${R.zona}S (EPSG:${R.epsg}), em metros.`,
-    R.fz.fonte!=='google'?'  Curvas com a cota como elevacao (CURVA_MESTRA, CURVA_INTERMEDIARIA), malha de pontos cotados a cada 5 m (MALHA_COTAS),':'  Curvas com a cota como elevacao (CURVA_MESTRA, CURVA_INTERMEDIARIA; sem os pontos do Google),',
+    R.fz.fonte!=='google'?'  Curvas com a cota como elevacao (CURVA_MESTRA, CURVA_INTERMEDIARIA), malha de pontos cotados a cada 5 m (MALHA_COTAS),':'  Curvas com a cota como elevacao e o texto da cota em cada uma (CURVA_MESTRA, CURVA_INTERMEDIARIA, COTA_CURVA); sem os pontos do Google,',
     '  terreno, limite do levantamento (30 m) e as camadas da prefeitura (calcadas, eixos, corregos...).',
     R.qd?`  Lotes da quadra em LOTES_QUADRA, com o SQL de cada um em NUMERO_LOTES.`:'',
     R.im.img?`${arqImg}: imagem de fundo, referenciada pelo DXF. Deixe os dois na mesma pasta.`:'Sem imagem de fundo.',
