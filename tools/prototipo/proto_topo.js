@@ -275,12 +275,13 @@ function topoQuadro(lev,escDada){const mm=px=>px/TOPO_DPI*25.4,cx=(lev[0]+lev[2]
   else esc=TOPO_ESC.find(e=>cabe(pag,e))||TOPO_ESC[TOPO_ESC.length-1];
   const [fw,fh]=dim(pag),gw=mm(fw)*esc/1000,gh=mm(fh)*esc/1000,bb=[cx-gw/2,cy-gh/2,cx+gw/2,cy+gh/2],wi=Math.min(pag.papel==='A3'?4000:8000,Math.round(fw*1.4));
   return {bb,esc,pag,fx:pag.m,fy:pag.m,fw,fh,wi,hi:Math.round(wi*fh/fw)}}
-const TOPO_COR={terreno:'#2ee86b',folga:'#ffffff',inter:'#ffe066',mestra:'#ff9100',calc:'rgba(77,208,225,.8)',quadra:'rgba(255,255,255,.75)',lote:'rgba(255,255,255,.3)',loteq:'rgba(255,255,255,.8)',corrego:'#2f8cff',agua:'rgba(47,140,255,.35)',melh:'#ff4fd8',eixo:'rgba(255,255,255,.9)',faixa:'#7fd3ff'};
+const TOPO_MM=mm=>mm/25.4*TOPO_DPI;
+const TOPO_COR={lwI:TOPO_MM(1),lwM:TOPO_MM(1.5),casca:'rgba(0,0,0,.85)',fundo:'',terreno:'#2ee86b',folga:'#ffffff',inter:'#39ff14',mestra:'#00b0ff',calc:'rgba(77,208,225,.8)',quadra:'rgba(255,255,255,.75)',lote:'rgba(255,255,255,.3)',loteq:'rgba(255,255,255,.8)',corrego:'#2f8cff',agua:'rgba(47,140,255,.35)',melh:'#ff4fd8',eixo:'rgba(255,255,255,.9)',faixa:'#7fd3ff'};
 window.TOPO_COR=TOPO_COR;  // o roteiro de teste troca as cores para comparar
 function topoPagina(R){const Q=R.quadro,{w,h}=Q.pag,cv=document.createElement('canvas');cv.width=w;cv.height=h;const g=cv.getContext('2d'),F='"Google Sans Flex", Arial, sans-serif';
   g.fillStyle='#fff';g.fillRect(0,0,w,h);const X=x=>Q.fx+(x-Q.bb[0])/(Q.bb[2]-Q.bb[0])*Q.fw,Y=y=>Q.fy+(Q.bb[3]-y)/(Q.bb[3]-Q.bb[1])*Q.fh,pxm=Q.fw/(Q.bb[2]-Q.bb[0]);
   g.save();g.beginPath();g.rect(Q.fx,Q.fy,Q.fw,Q.fh);g.clip();g.fillStyle='#2b2b2b';g.fillRect(Q.fx,Q.fy,Q.fw,Q.fh);
-  if(R.im.img)g.drawImage(R.im.img,Q.fx,Q.fy,Q.fw,Q.fh);
+  if(R.im.img){g.save();if(TOPO_COR.fundo)g.filter=TOPO_COR.fundo;g.drawImage(R.im.img,Q.fx,Q.fy,Q.fw,Q.fh);g.restore()}
   // fora da área levantada, a imagem fica mais escura
   const caminho=(L,fechar)=>{g.beginPath();L.forEach(pts=>{pts.forEach((p,i)=>i?g.lineTo(X(p[0]),Y(p[1])):g.moveTo(X(p[0]),Y(p[1])));if(fechar)g.closePath()})};
   g.save();g.beginPath();g.rect(Q.fx,Q.fy,Q.fw,Q.fh);R.folga.forEach(pts=>{pts.forEach((p,i)=>i?g.lineTo(X(p[0]),Y(p[1])):g.moveTo(X(p[0]),Y(p[1])));g.closePath()});g.fillStyle='rgba(0,0,0,.4)';g.fill('evenodd');g.restore();
@@ -290,8 +291,8 @@ function topoPagina(R){const Q=R.quadro,{w,h}=Q.pag,cv=document.createElement('c
   linhas('EIXO_VIAS',TOPO_COR.eixo,1.4,[18,8,4,8]);linhas('MASSA_DAGUA',TOPO_COR.corrego,2,null,TOPO_COR.agua);linhas('CORREGOS',TOPO_COR.corrego,4.5);linhas('CORREGOS_CANALIZADOS',TOPO_COR.corrego,3.5,[12,7]);
   // curvas: intermediárias finas, mestras grossas com a cota
   // contorno escuro por baixo (casca) para a curva se destacar da imagem
-  if(TOPO_COR.casca)R.curvas.forEach(c=>{caminho([c.pts]);g.strokeStyle=TOPO_COR.casca;g.lineWidth=(c.mestra?2.8:1.6)+2.4;g.stroke()});
-  R.curvas.forEach(c=>{caminho([c.pts]);g.strokeStyle=c.mestra?TOPO_COR.mestra:TOPO_COR.inter;g.lineWidth=c.mestra?2.8:1.6;g.stroke()});
+  if(TOPO_COR.casca)R.curvas.forEach(c=>{caminho([c.pts]);g.strokeStyle=TOPO_COR.casca;g.lineWidth=(c.mestra?TOPO_COR.lwM:TOPO_COR.lwI)+2.4;g.stroke()});
+  R.curvas.forEach(c=>{caminho([c.pts]);g.strokeStyle=c.mestra?TOPO_COR.mestra:TOPO_COR.inter;g.lineWidth=c.mestra?TOPO_COR.lwM:TOPO_COR.lwI;g.stroke()});
   caminho(R.folga);g.setLineDash([16,10]);g.strokeStyle=TOPO_COR.folga;g.lineWidth=2.2;g.stroke();g.setLineDash([]);
   const halo=(txt,x,y,ang,tam,cor,peso)=>{g.save();g.translate(x,y);g.rotate(ang);g.font=`${peso||500} ${tam}px ${F}`;g.textAlign='center';g.textBaseline='middle';g.lineJoin='round';g.lineWidth=Math.max(3,tam/4);g.strokeStyle='rgba(0,0,0,.85)';g.strokeText(txt,0,0);g.fillStyle=cor;g.fillText(txt,0,0);g.restore()};
   const leg=a=>{a=((a%(2*Math.PI))+2*Math.PI)%(2*Math.PI);return a>Math.PI/2&&a<3*Math.PI/2?a-Math.PI:a};
@@ -330,7 +331,7 @@ function topoLateral(g,R,F,pxm){const {w,h,m,lat}=R.quadro.pag,x0=w-m-lat,t=R.t;
   kv('Área levantada',topoLevTxt(R));
   if(R.qd&&R.qd.lotes.length)kv('Lotes numerados pelo SQL',`setor e quadra fiscal ${R.qd.quadras.join(', ')}; em cada lote, o número do lote e o dígito`);
   kv('Cotas no terreno',`mínima ${num(R.dz.min,1)} m · máxima ${num(R.dz.max,1)} m · desnível ${num(R.dz.max-R.dz.min,1)} m`+(R.dec!=null?` · declividade média ${num(R.dec,1)}%`:''));
-  kv('Fonte das cotas',topoFonteTxt(R.fz));kv('Curvas de nível',`de ${R.iv} em ${R.iv} m; mestra de ${R.mestra} em ${R.mestra} m (laranja, com a cota)`);
+  kv('Fonte das cotas',topoFonteTxt(R.fz));kv('Curvas de nível',`de ${R.iv} em ${R.iv} m; mestra de ${R.mestra} em ${R.mestra} m (azul, com a cota)`);
   kv('Imagem',R.im.fonte);
   const extras=[R.cam.CALCADAS?.length&&'calçadas',R.cam.EIXO_VIAS?.length&&'eixos de via',R.larg.length&&'largura das vias medida entre as calçadas',(R.cam.CORREGOS?.length||R.cam.CORREGOS_CANALIZADOS?.length)&&'córregos',R.cam.MASSA_DAGUA?.length&&"corpos d'água",R.cam.MELHORAMENTO_VIARIO?.length&&'melhoramento viário',R.cam.CURSO_DAGUA_FAIXA?.length&&"faixa de curso d'água",(R.cam.LOTES?.length||R.cam.LOTES_QUADRA?.length)&&'lotes'].filter(Boolean);
   if(extras.length)kv(R.t&&cidDoTerreno(R.t)==='sjc'?'Do GeoSanja':'Do GeoSampa',extras.join(', ').replace(/^./,c=>c.toUpperCase()));
@@ -341,8 +342,8 @@ function topoLateral(g,R,F,pxm){const {w,h,m,lat}=R.quadro.pag,x0=w-m-lat,t=R.t;
   const fundo='#5d6b63';
   item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);g.strokeStyle=TOPO_COR.terreno;g.lineWidth=3.5;g.strokeRect(3,-6,38,12)},'Terreno (contorno)');
   item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);traco(TOPO_COR.folga,2,[8,5])()},`Limite do levantamento (${TOPO_FOLGA} m)`);
-  item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);if(TOPO_COR.casca)traco(TOPO_COR.casca,2.6+2.4)();traco(TOPO_COR.mestra,2.6)()},`Curva mestra (${R.mestra} m)`);
-  item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);if(TOPO_COR.casca)traco(TOPO_COR.casca,1.6+2.4)();traco(TOPO_COR.inter,1.6)()},`Curva intermediária (${R.iv} m)`);
+  item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);if(TOPO_COR.casca)traco(TOPO_COR.casca,TOPO_COR.lwM+2.4)();traco(TOPO_COR.mestra,TOPO_COR.lwM)()},`Curva mestra (${R.mestra} m)`);
+  item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);if(TOPO_COR.casca)traco(TOPO_COR.casca,TOPO_COR.lwI+2.4)();traco(TOPO_COR.inter,TOPO_COR.lwI)()},`Curva intermediária (${R.iv} m)`);
   if(R.cam.CALCADAS?.length)item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);g.fillStyle='rgba(77,208,225,.35)';g.fillRect(4,-6,36,12);g.strokeStyle=TOPO_COR.calc;g.lineWidth=1.6;g.strokeRect(4,-6,36,12)},'Calçada');
   if(R.cam.QUADRAS?.length)item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);traco(TOPO_COR.quadra,1.6)()},'Alinhamento da quadra');
   if(R.cam.EIXO_VIAS?.length)item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);traco(TOPO_COR.eixo,1.4,[10,4,3,4])()},'Eixo da via');
