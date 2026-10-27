@@ -7913,7 +7913,7 @@ async function topoGerar(t){if(TOPO_EM)return;const passos=[];TOPO_EM={tid:t.id,
     const R={t,ct,P,PB,qd,G,curvas,folga,cam:cam.camadas,erros:cam.erros,larg,im,quadro,fz,iv,mestra,zona,epsg,l0,area:area0,dz,dec:nd?dec/nd*100:null,em:new Date()};
     const pg=topoPagina(R),jpg=new Uint8Array(await(await new Promise(ok=>pg.toBlob(ok,'image/jpeg',.88))).arrayBuffer());
     const pdf=topoPdf([{w:pg.width,h:pg.height,jpg}],quadro.pag.pw,quadro.pag.ph);
-    const zip=await topoZip(R,nome),previa=topoPrevia(pg);
+    const zip=await topoZip(R,nome,pdf),previa=topoPrevia(pg);
     const resumo={contorno:ct.fonte==='lotes'?`Lotes da prefeitura (${ct.n} inscriç${ct.n>1?'ões':'ão'})`:'Poligonal desenhada'+(ct.faltam.length?` (sem o lote de ${ct.faltam.join(', ')})`:''),
       cotas:topoFonteTxt(fz),imagem:im.fonte,curvas:`de ${iv} em ${iv} m (mestra de ${mestra} em ${mestra} m)`,area:area0,min:dz.min,max:dz.max,dec:nd?dec/nd*100:null,
       vias:larg.length,erros:cam.erros,escala:quadro.esc,papel:quadro.pag.papel,guarda:true,levantado:topoLevTxt(R)};
@@ -8069,7 +8069,8 @@ function topoDxf(R,arqImg,wi,hi){const asc=s=>String(s??'').normalize('NFD').rep
   if(!R.im.img)s=s.replace(/\n {2}0\nIMAGE\n[\s\S]*?(?=\n {2}0\nENDSEC)/,'');
   const i=s.indexOf('\nENTITIES\n'),j=s.indexOf('\n  0\nENDSEC\n',i);s=s.slice(0,j)+'\n'+L.join('\n')+s.slice(j);
   return s.replace(/(\$HANDSEED\n {2}5\n)[0-9A-F]+/,'$1'+hnd.toString(16).toUpperCase()).replace(/\n/g,'\r\n')}
-async function topoZip(R,nome){const Q=R.quadro,z=new JSZip(),arqImg=nome+'_imagem.jpg';let wi=Q.wi,hi=Q.hi;
+async function topoZip(R,nome,pdf){const Q=R.quadro,z=new JSZip(),arqImg=nome+'_imagem.jpg';let wi=Q.wi,hi=Q.hi;
+  if(pdf)z.file(nome+'.pdf',pdf);  // o PDF vai também no ZIP: tudo num arquivo só (Moisés, 27/out/2026)
   if(R.im.img){const c=document.createElement('canvas');c.width=wi;c.height=hi;c.getContext('2d').drawImage(R.im.img,0,0,wi,hi);z.file(arqImg,await new Promise(ok=>c.toBlob(ok,'image/jpeg',.9)));
     const ps=(Q.bb[2]-Q.bb[0])/wi,py=(Q.bb[3]-Q.bb[1])/hi;z.file(nome+'_imagem.jgw',[ps,0,0,-py,Q.bb[0]+ps/2,Q.bb[3]-py/2].map(v=>v.toFixed(6)).join('\r\n')+'\r\n')}
   z.file(nome+'.dxf',topoDxf(R,arqImg,wi,hi));
@@ -8077,6 +8078,7 @@ async function topoZip(R,nome){const Q=R.quadro,z=new JSZip(),arqImg=nome+'_imag
     R.fz.fonte!=='google'?'  Curvas com a cota como elevacao (CURVA_MESTRA; CURVA_INTERMEDIARIA_1 a _4, da mais escura, a mais alta, a mais clara, a mais baixa), malha de pontos cotados a cada 5 m (MALHA_COTAS),':'  Curvas com a cota como elevacao e o texto da cota em cada uma (CURVA_MESTRA; CURVA_INTERMEDIARIA_1 a _4, da mais escura, a mais alta, a mais clara, a mais baixa; COTA_CURVA); sem os pontos do Google,',
     '  terreno, limite do levantamento (30 m) e as camadas da prefeitura (calcadas, eixos, corregos...).',
     R.qd?`  Lotes da quadra em LOTES_QUADRA, com o SQL de cada um em NUMERO_LOTES.`:'',
+    pdf?`${nome}.pdf: a planta para imprimir (a mesma do botao PDF).`:'',
     R.im.img?`${arqImg}: imagem de fundo, referenciada pelo DXF. Deixe os dois na mesma pasta.`:'Sem imagem de fundo.',
     '','No AutoCAD: abra o DXF e use Salvar como > DWG. A imagem continua como arquivo a parte (o AutoCAD nunca guarda imagem dentro do DWG);',
     'para enviar, use eTransmit, que junta o DWG e a imagem.','',`Fonte das cotas: ${topoFonteTxt(R.fz).normalize('NFD').replace(/[^\x20-\x7e]/g,'')}`,
@@ -8095,7 +8097,7 @@ function topoModal(M,fechar){if(M!=='topo')return '';const t=T(UI.id);if(!t)retu
     <dl class="kvl topo-kv"><div class="kv"><dt>Contorno</dt><dd>${esc(S.contorno)}</dd></div><div class="kv"><dt>Cotas no terreno</dt><dd>${num(S.min,1)} a ${num(S.max,1)} m · desnível ${num(S.max-S.min,1)} m${S.dec!=null?` · declividade média ${num(S.dec,1)}%`:''}</dd></div>
     <div class="kv"><dt>Fonte das cotas</dt><dd>${esc(S.cotas)}</dd></div><div class="kv"><dt>Curvas</dt><dd>${esc(S.curvas)}</dd></div><div class="kv"><dt>Folha</dt><dd>${S.papel} · escala 1:${num(S.escala)}${S.papel!=='A3'?' (para plotter)':''}</dd></div><div class="kv"><dt>Imagem</dt><dd>${esc(S.imagem)}</dd></div>
     ${S.erros.length?`<div class="kv"><dt>Não responderam</dt><dd>${esc(S.erros.join(', '))}</dd></div>`:''}</dl>
-    <div class="hint">${UI.role!=='Leitura'?'Os dois arquivos foram guardados em Documentos, com versão.':''}${/^Google/.test(S.cotas)?' Os pontos do Google não são guardados: o DXF leva só as curvas.':''} O ZIP traz o DXF e a imagem referenciada; no AutoCAD, Salvar como DWG.</div>`
+    <div class="hint">${UI.role!=='Leitura'?'Os dois arquivos foram guardados em Documentos, com versão.':''}${/^Google/.test(S.cotas)?' Os pontos do Google não são guardados: o DXF leva só as curvas.':''} O ZIP traz o DXF, a imagem referenciada e o PDF; no AutoCAD, Salvar como DWG.</div>`
     :R&&R.erro?`<div class="banner warn">${ic('warn')}<div>O topográfico não saiu: ${esc(R.erro)}</div></div>`:'';
   return `<div class="dh"><div><h2>Topográfico preliminar</h2><div class="muted" style="margin-top:4px">${esc(t.nome)}</div></div>${fechar}</div>
     ${em?andamento:res||plano}
