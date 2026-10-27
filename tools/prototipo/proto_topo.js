@@ -2,9 +2,12 @@
 // Topográfico preliminar do terreno (decisão do Moisés, 26/out/2026).
 // Contorno: a soma dos lotes da prefeitura quando todas as inscrições com base
 // (GeoSampa, GeoSanja) têm o lote; senão, a poligonal desenhada. O levantamento
-// cobre a área até 30 m em volta do contorno.
-// Cotas: em São Paulo, o laser de 2020 da prefeitura (MDT 1:1000 do GeoSampa,
-// folhas .laz lidas aqui com o laz-perf); fora dele, o Google Elevation numa
+// cobre a área até 30 m em volta do contorno. Em São Paulo sem SQL, cobre a
+// quadra fiscal inteira (todas as quadras que a poligonal toca) mais os 30 m,
+// com os lotes numerados pelo SQL (decisão do Moisés, 27/out/2026).
+// Cotas: em São Paulo, sempre o laser de 2020 da prefeitura (MDT 1:1000 do GeoSampa,
+// folhas .laz lidas aqui com o laz-perf); se ele falhar, "Tentar de novo", nunca o
+// Google (decisão do Moisés, 27/out/2026). Fora de SP, o Google Elevation numa
 // grade de 5 m. A grade de origem do Google tem 9,5 m: medir mais denso só
 // encarece (a grade de 10 m reproduz a de 1 m com 9 cm de diferença) e, contra
 // o laser, o Google erra 3,7 m em média (medido em 26/out/2026).
@@ -15,8 +18,9 @@
 // cota como elevação, malha de pontos cotados, camadas da prefeitura) e a
 // ortofoto como imagem referenciada (o DXF aponta para o JPG ao lado; o mesmo
 // vale para um DWG salvo no AutoCAD: imagem nunca vai dentro do desenho).
-// No banco: documentos topo_pdf e topo_dxf, com versão, quando as cotas são da
-// prefeitura (os termos do Google pedem não guardar dados de elevação).
+// No banco: documentos topo_pdf e topo_dxf, com versão, sempre. Com cotas do Google,
+// a planta (curvas feitas aqui sobre a poligonal) é guardada, mas os pontos do Google
+// não: o DXF sai sem a malha de pontos cotados (decisão do Moisés, com o advogado, 27/out/2026).
 // ---------------------------------------------------------------------
 const TOPO_FOLGA=30,TOPO_PASSO_G=5,TOPO_DPI=160;
 const TOPO_LAZ=(()=>{const m=document.querySelector('meta[name="lazperf-url"]');return m&&m.content?m.content:'https://cdn.jsdelivr.net/npm/laz-perf@0.0.7/lib/web/'})();
@@ -33,6 +37,36 @@ async function topoContorno(t){const L=lotesInsc(t),polys=[],faltam=[];
   if(L.length&&!faltam.length){const u=lotesUniao(polys);return {polys:u?[u]:polys,fonte:'lotes',n:polys.length,lotes:polys,faltam}}
   if(t.poly&&t.poly.length>=3)return {polys:[t.poly],fonte:'desenhada',n:0,lotes:polys,faltam};
   return polys.length?{polys:[lotesUniao(polys)||polys[0]],fonte:'lotes',n:polys.length,lotes:polys,faltam}:null}
+
+// Tenta de novo o que depende da prefeitura (o GeoSampa às vezes demora ou cai): 3 vezes, com espera crescente.
+async function topoTenta(fn,n=3){for(let k=1;;k++){try{return await fn()}catch(e){if(k>=n)throw e;await new Promise(ok=>setTimeout(ok,1500*k))}}}
+// extremos sem espalhar o vetor (a área de uma quadra grande passa do limite de argumentos)
+const topoExt=pts=>pts.reduce((b,p)=>[Math.min(b[0],p[0]),Math.min(b[1],p[1]),Math.max(b[2],p[0]),Math.max(b[3],p[1])],[Infinity,Infinity,-Infinity,-Infinity]);
+// São Paulo sem SQL: as quadras (o quarteirão entre as ruas, quadra_viaria_editada do GeoSampa) que a poligonal
+// ocupa, e os lotes ativos de dentro delas, um por SQL. A quadra fiscal não serve: pode juntar vários quarteirões.
+// Tudo em UTM (EPSG:31983), como vem do GeoSampa.
+async function topoQuadras(P){const bb=topoExt(P.flat()),bbs=b=>b.join(',')+',urn:ogc:def:crs:EPSG::31983';
+  const qs=(await topoTenta(()=>geoWfs({typeNames:'geoportal:quadra_viaria_editada',bbox:bbs(bb),count:500}))).filter(f=>f.geometry&&/Polygon/.test(f.geometry.type));
+  const passo=Math.max(.5,Math.sqrt((bb[2]-bb[0])*(bb[3]-bb[1])/1600)),cont=new Map();let n=0;
+  for(let x=bb[0]+passo/2;x<bb[2];x+=passo)for(let y=bb[1]+passo/2;y<bb[3];y+=passo){const pt=[x,y];if(!P.some(r=>geoNoAnel(pt,r)))continue;n++;
+    const q=qs.findIndex(f=>geoDentro(pt,f.geometry));if(q>=0)cont.set(q,(cont.get(q)||0)+1)}
+  // a quadra conta se tem pelo menos 5% da poligonal (o desenho costuma passar um pouco da divisa); quadra enorme
+  // (acima de 6 ha e de 3 vezes o terreno, como as que margeiam a ferrovia) fica de fora: dela, só os lotes até 30 m do terreno
+  const areaT=P.reduce((s,r)=>s+geoAreaAnel(r),0),ocup=[...cont].filter(([q,c])=>c>=Math.max(1,n*.05)).map(([q])=>qs[q].geometry),
+    grande=g=>geoAneis(g).slice(0,1).reduce((s,r)=>s+geoAreaAnel(r),0)>Math.max(6e4,3*areaT),sel=ocup.filter(g=>!grande(g)),grandes=ocup.filter(grande);
+  if(!ocup.length)return null;const perto=pt=>P.some(r=>geoNoAnel(pt,r))||Math.min(...P.flatMap(r=>r.map((p,i)=>distSeg(pt,p,r[(i+1)%r.length]))))<=TOPO_FOLGA;
+  const aneis=sel.flatMap(g=>(g.type==='Polygon'?[g.coordinates]:g.coordinates).map(pl=>pl[0]));
+  const ext=topoExt([...aneis.flat(),[bb[0]-TOPO_FOLGA,bb[1]-TOPO_FOLGA],[bb[2]+TOPO_FOLGA,bb[3]+TOPO_FOLGA]]);
+  const fs=await topoTenta(()=>geoWfs({typeNames:'geoportal:lote_cidadao',bbox:bbs(ext),count:5000}));
+  const lotes=[],vistos=new Set(),fiscais=new Set();
+  for(const f of fs){const p=f.properties;if(!f.geometry||p.tx_situ_lote==='INATIVO')continue;const r=geoAneis(f.geometry)[0];if(!r)continue;const m=topoMiolo(r);
+    if(!sel.some(g=>geoDentro(m.pt,g))&&!(grandes.some(g=>geoDentro(m.pt,g))&&perto(m.pt)))continue;const sql=p.nr_contribuinte||`${p.cd_setor_fiscal}.${p.cd_quadra_fiscal}.${p.cd_lote}-${p.cd_digito_sql}`;
+    if(vistos.has(sql))continue;vistos.add(sql);fiscais.add(p.cd_setor_fiscal+'.'+p.cd_quadra_fiscal);lotes.push({g:f.geometry,p,sql,c:'lote_cidadao',...m})}
+  return {n:sel.length,grandes:grandes.length,quadras:[...fiscais].sort(),lotes,aneis}}
+// Ponto para o número do lote: o mais longe das bordas numa amostra dentro dele (o centro pode cair fora em lote em L).
+function topoMiolo(r){const xs=r.map(p=>p[0]),ys=r.map(p=>p[1]),x0=Math.min(...xs),y0=Math.min(...ys),x1=Math.max(...xs),y1=Math.max(...ys),s=Math.max((x1-x0),(y1-y0))/14;let best=null,bd=-1;
+  for(let x=x0+s/2;x<x1;x+=s)for(let y=y0+s/2;y<y1;y+=s){const pt=[x,y];if(!geoNoAnel(pt,r))continue;const d=Math.min(...r.map((p,i)=>distSeg(pt,p,r[(i+1)%r.length])));if(d>bd){bd=d;best=pt}}
+  return best?{pt:best,folga:bd}:{pt:[(x0+x1)/2,(y0+y1)/2],folga:Math.min(x1-x0,y1-y0)/2}}
 
 // --- grade de 1 m sobre a área do levantamento; D = distância ao contorno (0 dentro)
 function topoGrade(P,bb,passo){const nx=Math.ceil((bb[2]-bb[0])/passo)+1,ny=Math.ceil((bb[3]-bb[1])/passo)+1,D=new Float32Array(nx*ny),ed=[];
@@ -65,12 +99,11 @@ async function topoLazPerf(){if(TOPO_LZ)return TOPO_LZ;
   if(!window.createLazPerf)await new Promise((ok,erro)=>{const s=document.createElement('script');s.src=TOPO_LAZ+'laz-perf.js';s.onload=ok;s.onerror=()=>erro(new Error('Não foi possível carregar o leitor do laser.'));document.head.appendChild(s)});
   TOPO_LZ=await window.createLazPerf({locateFile:f=>TOPO_LAZ+f});return TOPO_LZ}
 async function topoLaser(G,bb,av){if(!TOPO_MDT())throw new Error('sem repasse do GeoSampa');
-  const fol=await geoWfs({typeNames:'geoportal:quadricula_folha_mdt_mds_2020',bbox:bb.join(',')+',urn:ogc:def:crs:EPSG::31983'});if(!fol.length)throw new Error('sem folha do laser');
+  const fol=await topoTenta(()=>geoWfs({typeNames:'geoportal:quadricula_folha_mdt_mds_2020',bbox:bb.join(',')+',urn:ogc:def:crs:EPSG::31983'}));if(!fol.length)throw new Error('sem folha do laser');
   if(!window.JSZip)throw new Error('biblioteca de compactação indisponível');const M=await topoLazPerf(),S=new Float64Array(G.nx*G.ny),N=new Uint16Array(G.nx*G.ny);let k=0;
   for(const f of fol){const q=f.properties.cd_quadricula;av(`folha ${++k} de ${fol.length} do laser (${q})`);
-    const r=await fetch(TOPO_MDT()+encodeURIComponent(q));if(!r.ok)throw new Error('GeoSampa respondeu '+r.status);
-    const z=await JSZip.loadAsync(await r.arrayBuffer()),arq=Object.values(z.files).find(x=>/\.laz$/i.test(x.name));if(!arq)throw new Error('folha sem .laz');
-    const buf=await arq.async('uint8array'),dv=new DataView(buf.buffer,buf.byteOffset,buf.byteLength),sx=dv.getFloat64(131,true),sy=dv.getFloat64(139,true),sz=dv.getFloat64(147,true),ox=dv.getFloat64(155,true),oy=dv.getFloat64(163,true),oz=dv.getFloat64(171,true);
+    const buf=await topoTenta(async()=>{const r=await fetch(TOPO_MDT()+encodeURIComponent(q));if(!r.ok)throw new Error('GeoSampa respondeu '+r.status);
+      const z=await JSZip.loadAsync(await r.arrayBuffer()),arq=Object.values(z.files).find(x=>/\.laz$/i.test(x.name));if(!arq)throw new Error('folha sem .laz');return arq.async('uint8array')}),dv=new DataView(buf.buffer,buf.byteOffset,buf.byteLength),sx=dv.getFloat64(131,true),sy=dv.getFloat64(139,true),sz=dv.getFloat64(147,true),ox=dv.getFloat64(155,true),oy=dv.getFloat64(163,true),oz=dv.getFloat64(171,true);
     const p=M._malloc(buf.length);M.HEAPU8.set(buf,p);const lz=new M.LASZip();
     try{lz.open(p,buf.length);const n=lz.getCount(),len=lz.getPointLength(),pp=M._malloc(len);
       try{for(let i=0;i<n;i++){lz.getPoint(pp);const d=new DataView(M.HEAPU8.buffer,pp,len),x=d.getInt32(0,true)*sx+ox,y=d.getInt32(4,true)*sy+oy;
@@ -173,36 +206,47 @@ async function topoGerar(t){if(TOPO_EM)return;const passos=[];TOPO_EM={tid:t.id,
   const passo=txt=>{passos.forEach(p=>{if(p[1]==='andando')p[1]='feito'});passos.push([txt,'andando']);renderModal()},av=txt=>{passos[passos.length-1][2]=txt;renderModal()};
   try{passo('Contorno do terreno');const ct=await topoContorno(t);if(!ct)throw new Error('O terreno não tem poligonal nem lote da prefeitura.');
     const c0=centro(ct.polys[0]),zona=Math.floor((c0[1]+180)/6)+1,l0=-183+6*zona,epsg=31960+zona;
-    const P=ct.polys.map(r=>r.map(([la,lo])=>latLngUtm(la,lo,l0))),xs=P.flat().map(p=>p[0]),ys=P.flat().map(p=>p[1]);
-    const lev=[Math.min(...xs)-TOPO_FOLGA-2,Math.min(...ys)-TOPO_FOLGA-2,Math.max(...xs)+TOPO_FOLGA+2,Math.max(...ys)+TOPO_FOLGA+2].map(v=>Math.round(v));
-    const area=(lev[2]-lev[0])*(lev[3]-lev[1]),G=topoGrade(P,lev,area>1.5e6?2:1);
-    passo(cid==='sp'?'Cotas pelo laser de 2020 da prefeitura':'Cotas pelo Google (grade de 5 m)');let fz;
-    if(cid==='sp'&&epsg===31983)try{fz=await topoLaser(G,lev,av)}catch(e){console.warn(e);G.Z.fill(NaN);passos[passos.length-1][0]=`Laser indisponível (${e.message}); cotas pelo Google`;renderModal()}
-    if(!fz)fz=await topoGoogle(G,l0,av);
+    const P=ct.polys.map(r=>r.map(([la,lo])=>latLngUtm(la,lo,l0)));const sp=cid==='sp'&&epsg===31983;
+    if(cid==='sp'&&!GEO_BASE)throw new Error('em São Paulo as cotas vêm do laser da prefeitura, e o GeoSampa só responde na versão publicada no Railway.');
+    // São Paulo sem SQL: o levantamento cobre as quadras fiscais inteiras que a poligonal toca
+    let qd=null;if(sp){passo('Quadra e lotes da prefeitura');try{qd=await topoQuadras(P)}catch(e){throw new Error(`o GeoSampa não respondeu ao buscar os lotes da quadra (${e.message}).`)}
+      if(qd)av(`${qd.n} quadra${qd.n>1?'s':''} · ${qd.lotes.length} lotes`)}
+    const PB=ct.fonte==='desenhada'&&qd&&qd.aneis.length?[...qd.aneis,...P]:P,ext=topoExt(PB.flat());
+    const lev=[ext[0]-TOPO_FOLGA-2,ext[1]-TOPO_FOLGA-2,ext[2]+TOPO_FOLGA+2,ext[3]+TOPO_FOLGA+2].map(v=>Math.round(v));
+    const area=(lev[2]-lev[0])*(lev[3]-lev[1]),G=topoGrade(PB,lev,area>1.5e6?2:1);
+    // células dentro do terreno (com a quadra inteira, D = 0 vale para todos os lotes dela)
+    const noT=PB===P?c=>G.D[c]===0:(()=>{const m=new Uint8Array(G.nx*G.ny);for(let j=0;j<G.ny;j++)for(let i=0;i<G.nx;i++){const c=j*G.nx+i;if(G.D[c]===0&&P.some(r=>geoNoAnel([G.x0+i*G.s,G.y0+j*G.s],r)))m[c]=1}return c=>m[c]===1})();
+    passo(sp?'Cotas pelo laser de 2020 da prefeitura':'Cotas pelo Google (grade de 5 m)');let fz;
+    if(sp)try{fz=await topoLaser(G,lev,av)}catch(e){throw new Error(`o laser da prefeitura não respondeu (${e.message}). Em São Paulo o topográfico não usa o Google.`)}
+    else fz=await topoGoogle(G,l0,av);
     for(let c=0;c<G.Z.length;c++)if(G.D[c]>TOPO_FOLGA)G.Z[c]=NaN;
-    passo('Curvas de nível');const dentro=[],todas=[];for(let c=0;c<G.Z.length;c++){const z=G.Z[c];if(z!==z)continue;todas.push(z);if(G.D[c]===0)dentro.push(z)}
+    passo('Curvas de nível');const dentro=[],todas=[];for(let c=0;c<G.Z.length;c++){const z=G.Z[c];if(z!==z)continue;todas.push(z);if(noT(c))dentro.push(z)}
     if(!todas.length)throw new Error('Nenhuma cota na área do levantamento.');
-    const zmin=Math.min(...todas),zmax=Math.max(...todas),iv=zmax-zmin>300?5:zmax-zmin>120?2:1,mestra=iv*5,niveis=[];for(let z=Math.ceil(zmin/iv)*iv;z<=zmax;z+=iv)niveis.push(z);
+    const zmin=todas.reduce((a,b)=>a<b?a:b),zmax=todas.reduce((a,b)=>a>b?a:b),iv=zmax-zmin>300?5:zmax-zmin>120?2:1,mestra=iv*5,niveis=[];for(let z=Math.ceil(zmin/iv)*iv;z<=zmax;z+=iv)niveis.push(z);
     const curvas=topoIsolinhas(G.nx,G.ny,G.x0,G.y0,G.s,G.Z,niveis).map(c=>({...c,mestra:Math.abs(c.z/mestra-Math.round(c.z/mestra))<1e-6}));
     const folga=topoIsolinhas(G.nx,G.ny,G.x0,G.y0,G.s,G.D.map(v=>-v),[-TOPO_FOLGA]).map(c=>c.pts);
-    let dec=0,nd=0;for(let j=1;j<G.ny-1;j++)for(let i=1;i<G.nx-1;i++){const c=j*G.nx+i;if(G.D[c]!==0)continue;const gx=(G.Z[c+1]-G.Z[c-1])/(2*G.s),gy=(G.Z[c+G.nx]-G.Z[c-G.nx])/(2*G.s),v=Math.hypot(gx,gy);if(v===v){dec+=v;nd++}}
-    const dz=dentro.length?{min:Math.min(...dentro),max:Math.max(...dentro)}:{min:zmin,max:zmax};
+    let dec=0,nd=0;for(let j=1;j<G.ny-1;j++)for(let i=1;i<G.nx-1;i++){const c=j*G.nx+i;if(!noT(c))continue;const gx=(G.Z[c+1]-G.Z[c-1])/(2*G.s),gy=(G.Z[c+G.nx]-G.Z[c-G.nx])/(2*G.s),v=Math.hypot(gx,gy);if(v===v){dec+=v;nd++}}
+    const dz=dentro.length?{min:dentro.reduce((a,b)=>a<b?a:b),max:dentro.reduce((a,b)=>a>b?a:b)}:{min:zmin,max:zmax};
     passo('Vias, calçadas e córregos da prefeitura');const quadro=topoQuadro(lev),cam=await topoCamadas(cid,quadro.bb,l0);const larg=topoLarguras(cam.camadas,P);
+    // lotes das quadras do terreno numa layer própria, com o número (SQL); os demais lotes do quadro ficam como estão
+    if(qd){const sqls=new Set(qd.lotes.map(l=>l.sql));cam.camadas.LOTES=(cam.camadas.LOTES||[]).filter(f=>!sqls.has(f.p.nr_contribuinte));
+      cam.camadas.LOTES_QUADRA=qd.lotes}
     passo('Imagem de fundo');const im=await topoImagem(cid,quadro.bb,quadro.wi,quadro.hi,l0,epsg);
     passo('PDF e DXF');const nome=`topografico_${t.codigo}`,area0=Math.round(P.reduce((s,r)=>s+geoAreaAnel(r),0));
-    const R={t,ct,P,G,curvas,folga,cam:cam.camadas,erros:cam.erros,larg,im,quadro,fz,iv,mestra,zona,epsg,l0,area:area0,dz,dec:nd?dec/nd*100:null,em:new Date()};
+    const R={t,ct,P,PB,qd,G,curvas,folga,cam:cam.camadas,erros:cam.erros,larg,im,quadro,fz,iv,mestra,zona,epsg,l0,area:area0,dz,dec:nd?dec/nd*100:null,em:new Date()};
     const pg=topoPagina(R),jpg=new Uint8Array(await(await new Promise(ok=>pg.toBlob(ok,'image/jpeg',.88))).arrayBuffer());
     const pdf=pdfImagem(jpg,pg.width,pg.height,1190.55,841.89);
     const zip=await topoZip(R,nome),previa=topoPrevia(pg);
     const resumo={contorno:ct.fonte==='lotes'?`Lotes da prefeitura (${ct.n} inscriç${ct.n>1?'ões':'ão'})`:'Poligonal desenhada'+(ct.faltam.length?` (sem o lote de ${ct.faltam.join(', ')})`:''),
       cotas:topoFonteTxt(fz),imagem:im.fonte,curvas:`de ${iv} em ${iv} m (mestra de ${mestra} em ${mestra} m)`,area:area0,min:dz.min,max:dz.max,dec:nd?dec/nd*100:null,
-      vias:larg.length,erros:cam.erros,escala:quadro.esc,guarda:fz.fonte!=='google'};
+      vias:larg.length,erros:cam.erros,escala:quadro.esc,guarda:true,levantado:topoLevTxt(R)};
     TOPO[t.id]={pdf,zip,previa,resumo,nome,em:agora()};
     if(resumo.guarda&&UI.role!=='Leitura'){topoDoc(t,'topo_pdf',nome+'.pdf');topoDoc(t,'topo_dxf',nome+'.zip')}
     log(t,`Topográfico preliminar gerado (${resumo.cotas.split(';')[0]}; contorno: ${resumo.contorno.toLowerCase()})`);
     passos.forEach(p=>p[1]='feito');save()}
   catch(e){console.error(e);passos.forEach(p=>{if(p[1]==='andando')p[1]='erro'});TOPO[t.id]={erro:e.message||String(e)}}
   finally{TOPO_EM=null;render();renderModal()}}
+const topoLevTxt=R=>(R.PB!==R.P?(R.qd.n>1?`As ${R.qd.n} quadras que o terreno ocupa, inteiras`:'A quadra do terreno inteira')+` (${R.qd.lotes.length} lotes)`+(R.qd.grandes?` e o contorno na parte em quadra grande demais (acima de 6 ha)`:''):'Contorno')+` + ${TOPO_FOLGA} m em volta`;
 const topoFonteTxt=fz=>fz.fonte==='laser'?`Laser 2020 da Prefeitura de São Paulo (MDT 1:1000, folha${fz.folhas.length>1?'s':''} ${fz.folhas.join(', ')}); diferença típica de 0,2 m nas cotas de esquina da prefeitura`
   :`Google Elevation, ${num(fz.n)} pontos a cada ${TOPO_PASSO_G} m; grade de origem de ${num(fz.res,1)} m e erro típico de 3 a 4 m`;
 function topoDoc(t,k,nome){let d=t.docs.find(x=>x.tipo===k);if(!d){d={tipo:k,status:'recebido',emitido:HOJE,versoes:0,nome};t.docs.push(d)}d.versoes++;d.emitido=HOJE;d.nome=nome}
@@ -214,7 +258,7 @@ function topoQuadro(lev){const {w,h,m,lat}=TOPO_PAG,fw=w-2*m-lat-28,fh=h-2*m,mm=
   const esc=TOPO_ESC.find(e=>mm(fw)*e/1000>=(lev[2]-lev[0])+16&&mm(fh)*e/1000>=(lev[3]-lev[1])+16)||TOPO_ESC[TOPO_ESC.length-1],gw=mm(fw)*esc/1000,gh=mm(fh)*esc/1000;
   const bb=[cx-gw/2,cy-gh/2,cx+gw/2,cy+gh/2],wi=Math.min(4000,Math.round(fw*1.4));
   return {bb,esc,fx:m,fy:m,fw,fh,wi,hi:Math.round(wi*fh/fw)}}
-const TOPO_COR={terreno:'#2ee86b',folga:'#ffffff',inter:'#ffe066',mestra:'#ff9100',calc:'rgba(77,208,225,.8)',quadra:'rgba(255,255,255,.75)',lote:'rgba(255,255,255,.3)',corrego:'#2f8cff',agua:'rgba(47,140,255,.35)',melh:'#ff4fd8',eixo:'rgba(255,255,255,.9)',faixa:'#7fd3ff'};
+const TOPO_COR={terreno:'#2ee86b',folga:'#ffffff',inter:'#ffe066',mestra:'#ff9100',calc:'rgba(77,208,225,.8)',quadra:'rgba(255,255,255,.75)',lote:'rgba(255,255,255,.3)',loteq:'rgba(255,255,255,.8)',corrego:'#2f8cff',agua:'rgba(47,140,255,.35)',melh:'#ff4fd8',eixo:'rgba(255,255,255,.9)',faixa:'#7fd3ff'};
 function topoPagina(R){const {w,h}=TOPO_PAG,Q=R.quadro,cv=document.createElement('canvas');cv.width=w;cv.height=h;const g=cv.getContext('2d'),F='"Google Sans Flex", Arial, sans-serif';
   g.fillStyle='#fff';g.fillRect(0,0,w,h);const X=x=>Q.fx+(x-Q.bb[0])/(Q.bb[2]-Q.bb[0])*Q.fw,Y=y=>Q.fy+(Q.bb[3]-y)/(Q.bb[3]-Q.bb[1])*Q.fh,pxm=Q.fw/(Q.bb[2]-Q.bb[0]);
   g.save();g.beginPath();g.rect(Q.fx,Q.fy,Q.fw,Q.fh);g.clip();g.fillStyle='#2b2b2b';g.fillRect(Q.fx,Q.fy,Q.fw,Q.fh);
@@ -223,7 +267,7 @@ function topoPagina(R){const {w,h}=TOPO_PAG,Q=R.quadro,cv=document.createElement
   const caminho=(L,fechar)=>{g.beginPath();L.forEach(pts=>{pts.forEach((p,i)=>i?g.lineTo(X(p[0]),Y(p[1])):g.moveTo(X(p[0]),Y(p[1])));if(fechar)g.closePath()})};
   g.save();g.beginPath();g.rect(Q.fx,Q.fy,Q.fw,Q.fh);R.folga.forEach(pts=>{pts.forEach((p,i)=>i?g.lineTo(X(p[0]),Y(p[1])):g.moveTo(X(p[0]),Y(p[1])));g.closePath()});g.fillStyle='rgba(0,0,0,.4)';g.fill('evenodd');g.restore();
   const linhas=(ly,cor,lw,dash,fill)=>{(R.cam[ly]||[]).forEach(f=>{const an=geoAneis(f.g),pol=/Polygon/.test(f.g.type);caminho(an,pol);if(fill&&pol){g.fillStyle=fill;g.fill('evenodd')}g.setLineDash(dash||[]);g.strokeStyle=cor;g.lineWidth=lw;g.stroke()});g.setLineDash([])};
-  linhas('LOTES',TOPO_COR.lote,1);linhas('CALCADAS',TOPO_COR.calc,1.2,null,'rgba(77,208,225,.14)');linhas('QUADRAS',TOPO_COR.quadra,1.6);
+  linhas('LOTES',TOPO_COR.lote,1);linhas('LOTES_QUADRA',TOPO_COR.loteq,1.3);linhas('CALCADAS',TOPO_COR.calc,1.2,null,'rgba(77,208,225,.14)');linhas('QUADRAS',TOPO_COR.quadra,1.6);
   linhas('MELHORAMENTO_VIARIO',TOPO_COR.melh,2.4,[14,8],'rgba(255,79,216,.12)');linhas('CURSO_DAGUA_FAIXA',TOPO_COR.faixa,2,[10,6],'rgba(127,211,255,.12)');
   linhas('EIXO_VIAS',TOPO_COR.eixo,1.4,[18,8,4,8]);linhas('MASSA_DAGUA',TOPO_COR.corrego,2,null,TOPO_COR.agua);linhas('CORREGOS',TOPO_COR.corrego,4.5);linhas('CORREGOS_CANALIZADOS',TOPO_COR.corrego,3.5,[12,7]);
   // curvas: intermediárias finas, mestras grossas com a cota
@@ -242,7 +286,9 @@ function topoPagina(R){const {w,h}=TOPO_PAG,Q=R.quadro,cv=document.createElement
     const n=[-v.dir[1],v.dir[0]];g.strokeStyle='rgba(255,213,79,.95)';g.lineWidth=2;g.beginPath();g.moveTo(X(v.o[0]+n[0]*v.via/2),Y(v.o[1]+n[1]*v.via/2));g.lineTo(X(v.o[0]-n[0]*v.via/2),Y(v.o[1]-n[1]*v.via/2));g.stroke()});
   // calçadas que encostam no levantamento: largura média
   const vc=new Set();(R.cam.CALCADAS||[]).forEach(f=>{const r=geoAneis(f.g)[0],lm=f.p.qt_largura_media_trecho;if(!r||lm==null)return;const c=r.reduce((s,p)=>[s[0]+p[0]/r.length,s[1]+p[1]/r.length],[0,0]);
-    if(Math.min(...R.P.flatMap(a=>a.map((p,i)=>distSeg(c,p,a[(i+1)%a.length]))))>18)return;const k=f.p.cd_identificador_segmento_logradouro+'';if(vc.has(k))return;vc.add(k);halo(`calçada ${num(lm,1)} m`,X(c[0]),Y(c[1]),0,14,'#b2f5ff',600)});
+    if(Math.min(...R.PB.flatMap(a=>a.map((p,i)=>distSeg(c,p,a[(i+1)%a.length]))))>18)return;const k=f.p.cd_identificador_segmento_logradouro+'';if(vc.has(k))return;vc.add(k);halo(`calçada ${num(lm,1)} m`,X(c[0]),Y(c[1]),0,14,'#b2f5ff',600)});
+  // número de cada lote da quadra (lote-dígito do SQL; setor e quadra vão na lateral), do tamanho que cabe nele
+  (R.cam.LOTES_QUADRA||[]).forEach(l=>{const tam=Math.min(15,l.folga*pxm*.9);if(tam<7)return;halo(l.p.cd_lote+'-'+l.p.cd_digito_sql,X(l.pt[0]),Y(l.pt[1]),0,tam,'#fff',500)});
   // terreno e medidas dos lados
   caminho(R.P,true);g.strokeStyle='rgba(0,0,0,.7)';g.lineWidth=7;g.stroke();g.strokeStyle=TOPO_COR.terreno;g.lineWidth=3.5;g.stroke();
   R.P.forEach(r=>r.forEach((p,i)=>{const q=r[(i+1)%r.length],d=Math.hypot(q[0]-p[0],q[1]-p[1]);if(d<3||d*pxm<70)return;const ang=leg(Math.atan2(Y(q[1])-Y(p[1]),X(q[0])-X(p[0])));
@@ -261,11 +307,12 @@ function topoLateral(g,R,F,pxm){const {w,h,m,lat}=TOPO_PAG,x0=w-m-lat,t=R.t;let 
   g.fillStyle='#c4c7c5';g.fillRect(x0,y,lat,1.5);y+=16;
   const kv=(k,v)=>{txt(k,13,'#5f6368',500);y-=2;txt(v,15,'#1f1f1f');y+=6};
   kv('Contorno',R.ct.fonte==='lotes'?`Lotes da prefeitura (${R.ct.n} inscriç${R.ct.n>1?'ões':'ão'})`:'Poligonal desenhada no BKM Terrenos'+(R.ct.faltam.length?` (sem o lote de ${R.ct.faltam.join(', ')})`:''));
-  kv('Área levantada',`Contorno + ${TOPO_FOLGA} m em volta`);
+  kv('Área levantada',topoLevTxt(R));
+  if(R.qd&&R.qd.lotes.length)kv('Lotes numerados pelo SQL',`setor e quadra fiscal ${R.qd.quadras.join(', ')}; em cada lote, o número do lote e o dígito`);
   kv('Cotas no terreno',`mínima ${num(R.dz.min,1)} m · máxima ${num(R.dz.max,1)} m · desnível ${num(R.dz.max-R.dz.min,1)} m`+(R.dec!=null?` · declividade média ${num(R.dec,1)}%`:''));
   kv('Fonte das cotas',topoFonteTxt(R.fz));kv('Curvas de nível',`de ${R.iv} em ${R.iv} m; mestra de ${R.mestra} em ${R.mestra} m (laranja, com a cota)`);
   kv('Imagem',R.im.fonte);
-  const extras=[R.cam.CALCADAS?.length&&'calçadas',R.cam.EIXO_VIAS?.length&&'eixos de via',R.larg.length&&'largura das vias medida entre as calçadas',(R.cam.CORREGOS?.length||R.cam.CORREGOS_CANALIZADOS?.length)&&'córregos',R.cam.MASSA_DAGUA?.length&&"corpos d'água",R.cam.MELHORAMENTO_VIARIO?.length&&'melhoramento viário',R.cam.CURSO_DAGUA_FAIXA?.length&&"faixa de curso d'água",R.cam.LOTES?.length&&'lotes'].filter(Boolean);
+  const extras=[R.cam.CALCADAS?.length&&'calçadas',R.cam.EIXO_VIAS?.length&&'eixos de via',R.larg.length&&'largura das vias medida entre as calçadas',(R.cam.CORREGOS?.length||R.cam.CORREGOS_CANALIZADOS?.length)&&'córregos',R.cam.MASSA_DAGUA?.length&&"corpos d'água",R.cam.MELHORAMENTO_VIARIO?.length&&'melhoramento viário',R.cam.CURSO_DAGUA_FAIXA?.length&&"faixa de curso d'água",(R.cam.LOTES?.length||R.cam.LOTES_QUADRA?.length)&&'lotes'].filter(Boolean);
   if(extras.length)kv(R.t&&cidDoTerreno(R.t)==='sjc'?'Do GeoSanja':'Do GeoSampa',extras.join(', ').replace(/^./,c=>c.toUpperCase()));
   kv('Coordenadas',`SIRGAS 2000 / UTM ${R.zona}S (EPSG:${R.epsg}); cotas em metros, altitude ortométrica`);
   y+=4;g.fillStyle='#c4c7c5';g.fillRect(x0,y,lat,1.5);y+=16;txt('Legenda',16,'#1f1f1f',500);y+=4;
@@ -279,7 +326,8 @@ function topoLateral(g,R,F,pxm){const {w,h,m,lat}=TOPO_PAG,x0=w-m-lat,t=R.t;let 
   if(R.cam.CALCADAS?.length)item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);g.fillStyle='rgba(77,208,225,.35)';g.fillRect(4,-6,36,12);g.strokeStyle=TOPO_COR.calc;g.lineWidth=1.6;g.strokeRect(4,-6,36,12)},'Calçada');
   if(R.cam.QUADRAS?.length)item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);traco(TOPO_COR.quadra,1.6)()},'Alinhamento da quadra');
   if(R.cam.EIXO_VIAS?.length)item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);traco(TOPO_COR.eixo,1.4,[10,4,3,4])()},'Eixo da via');
-  if(R.cam.LOTES?.length)item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);traco(TOPO_COR.lote,1.2)()},'Lotes');
+  if(R.cam.LOTES_QUADRA?.length)item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);traco(TOPO_COR.loteq,1.4)()},'Lotes da quadra (número = lote-dígito do SQL)');
+  if(R.cam.LOTES?.length)item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);traco(TOPO_COR.lote,1.2)()},R.cam.LOTES_QUADRA?.length?'Outros lotes':'Lotes');
   if(R.cam.CORREGOS?.length)item(traco(TOPO_COR.corrego,4.5),'Córrego a céu aberto');
   if(R.cam.CORREGOS_CANALIZADOS?.length)item(traco(TOPO_COR.corrego,3.5,[10,6]),'Córrego canalizado');
   if(R.cam.MASSA_DAGUA?.length)item(()=>{g.fillStyle=TOPO_COR.agua;g.fillRect(0,-8,44,16);g.strokeStyle=TOPO_COR.corrego;g.lineWidth=2;g.strokeRect(0,-8,44,16)},"Corpo d'água");
@@ -306,9 +354,11 @@ function topoDxf(R,arqImg,wi,hi){const asc=s=>String(s??'').normalize('NFD').rep
   R.P.forEach(r=>poli('TERRENO',r,true));R.folga.forEach(p=>poli('FOLGA_30M',p,false));
   R.P.forEach(r=>r.forEach((p,i)=>{const q=r[(i+1)%r.length],d=Math.hypot(q[0]-p[0],q[1]-p[1]);if(d<3)return;let a=Math.atan2(q[1]-p[1],q[0]-p[0])*180/Math.PI;if(a>90||a<-90)a+=180;texto('MEDIDAS',(p[0]+q[0])/2,(p[1]+q[1])/2,1,num(d,2)+' m',a)}));
   R.curvas.forEach(c=>{poli(c.mestra?'CURVA_MESTRA':'CURVA_INTERMEDIARIA',c.pts,false,c.z);if(c.mestra&&c.pts.length>4){const m=Math.floor(c.pts.length/2),a=c.pts[m-1],b=c.pts[m];let ang=Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI;if(ang>90||ang<-90)ang+=180;texto('COTA_CURVA',(a[0]+b[0])/2,(a[1]+b[1])/2,1.2,num(c.z,0),ang)}});
-  const G=R.G,k=Math.round(TOPO_PASSO_G/G.s);for(let j=0;j<G.ny;j+=k)for(let i=0;i<G.nx;i+=k){const z=G.Z[j*G.nx+i];if(z===z)ent('POINT','MALHA_COTAS','AcDbPoint',['10',f(G.x0+i*G.s),'20',f(G.y0+j*G.s),'30',f(z)])}
+  // pontos cotados só do laser: os do Google não são guardados
+  const G=R.G,k=Math.round(TOPO_PASSO_G/G.s);if(R.fz.fonte!=='google')for(let j=0;j<G.ny;j+=k)for(let i=0;i<G.nx;i+=k){const z=G.Z[j*G.nx+i];if(z===z)ent('POINT','MALHA_COTAS','AcDbPoint',['10',f(G.x0+i*G.s),'20',f(G.y0+j*G.s),'30',f(z)])}
   Object.entries(R.cam).forEach(([ly,fs])=>fs.forEach(ft=>{const pol=/Polygon/.test(ft.g.type),z=ly==='CURVAS_PREFEITURA'?ft.p.avg_z:0;geoAneis(ft.g).forEach(r=>poli(ly,pol&&r.length>1&&r[0][0]===r[r.length-1][0]&&r[0][1]===r[r.length-1][1]?r.slice(0,-1):r,pol,z))}));
   (R.cam.EIXO_VIAS||[]).forEach(ft=>{const Lh=geoAneis(ft.g)[0],n=topoNomeVia(ft.p);if(!Lh||!n||Lh.length<2)return;const m=Math.floor((Lh.length-1)/2),a=Lh[m],b=Lh[m+1];let ang=Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI;if(ang>90||ang<-90)ang+=180;texto('TEXTO_VIAS',(a[0]+b[0])/2,(a[1]+b[1])/2,2,n,ang)});
+  (R.cam.LOTES_QUADRA||[]).forEach(l=>texto('NUMERO_LOTES',l.pt[0],l.pt[1],Math.max(.4,Math.min(1.2,l.folga*.25)),l.sql,0));
   R.larg.forEach(v=>{const n=[-v.dir[1],v.dir[0]];poli('LARGURA_VIAS',[[v.o[0]+n[0]*v.via/2,v.o[1]+n[1]*v.via/2],[v.o[0]-n[0]*v.via/2,v.o[1]-n[1]*v.via/2]]);texto('LARGURA_VIAS',v.o[0]+v.dir[0]*6,v.o[1]+v.dir[1]*6,1.2,`via ${num(v.via,1)} m / leito ${num(v.leito,1)} m`,Math.atan2(n[1],n[0])*180/Math.PI>90?Math.atan2(n[1],n[0])*180/Math.PI-180:Math.atan2(n[1],n[0])*180/Math.PI)});
   const Q=R.quadro.bb,ps=(Q[2]-Q[0])/wi,psy=(Q[3]-Q[1])/hi;let s=TOPO_DXF_MODELO;
   s=s.replace('911111.25',f(Q[0])).replace('922222.25',f(Q[1])).replace('\n 11\n0.125\n',`\n 11\n${ps.toFixed(6)}\n`).replace('\n 22\n0.125\n',`\n 22\n${psy.toFixed(6)}\n`)
@@ -322,8 +372,9 @@ async function topoZip(R,nome){const Q=R.quadro,z=new JSZip(),arqImg=nome+'_imag
     const ps=(Q.bb[2]-Q.bb[0])/wi,py=(Q.bb[3]-Q.bb[1])/hi;z.file(nome+'_imagem.jgw',[ps,0,0,-py,Q.bb[0]+ps/2,Q.bb[3]-py/2].map(v=>v.toFixed(6)).join('\r\n')+'\r\n')}
   z.file(nome+'.dxf',topoDxf(R,arqImg,wi,hi));
   z.file('LEIA-ME.txt',[`Topografico preliminar - ${R.t.codigo}`,'',`${nome}.dxf: DXF 2000 em SIRGAS 2000 / UTM ${R.zona}S (EPSG:${R.epsg}), em metros.`,
-    '  Curvas com a cota como elevacao (CURVA_MESTRA, CURVA_INTERMEDIARIA), malha de pontos cotados a cada 5 m (MALHA_COTAS),',
+    R.fz.fonte!=='google'?'  Curvas com a cota como elevacao (CURVA_MESTRA, CURVA_INTERMEDIARIA), malha de pontos cotados a cada 5 m (MALHA_COTAS),':'  Curvas com a cota como elevacao (CURVA_MESTRA, CURVA_INTERMEDIARIA; sem os pontos do Google),',
     '  terreno, limite do levantamento (30 m) e as camadas da prefeitura (calcadas, eixos, corregos...).',
+    R.qd?`  Lotes da quadra em LOTES_QUADRA, com o SQL de cada um em NUMERO_LOTES.`:'',
     R.im.img?`${arqImg}: imagem de fundo, referenciada pelo DXF. Deixe os dois na mesma pasta.`:'Sem imagem de fundo.',
     '','No AutoCAD: abra o DXF e use Salvar como > DWG. A imagem continua como arquivo a parte (o AutoCAD nunca guarda imagem dentro do DWG);',
     'para enviar, use eTransmit, que junta o DWG e a imagem.','',`Fonte das cotas: ${topoFonteTxt(R.fz).normalize('NFD').replace(/[^\x20-\x7e]/g,'')}`,
@@ -334,20 +385,20 @@ async function topoZip(R,nome){const Q=R.quadro,z=new JSZip(),arqImg=nome+'_imag
 function topoBotao(t){return t.poly||lotesInsc(t).length?`<button class="btn sm" data-a="topo-abrir">${ic('download',16)}Topográfico</button>`:''}
 function topoModal(M,fechar){if(M!=='topo')return '';const t=T(UI.id);if(!t)return '';const R=TOPO[t.id],em=TOPO_EM&&TOPO_EM.tid===t.id?TOPO_EM:null,cid=cidDoTerreno(t);
   const plano=`<ul class="topo-plano"><li>${lotesInsc(t).length?'Contorno pelos lotes da prefeitura (soma das inscrições); sem eles, a poligonal desenhada.':'Contorno pela poligonal desenhada (o terreno não tem inscrição com base da prefeitura).'}</li>
-    <li>Levantamento até ${TOPO_FOLGA} m em volta do contorno.</li>
-    <li>${cid==='sp'?'Cotas do laser de 2020 da Prefeitura de São Paulo (erro típico de 0,2 m); sem folha do laser, Google.':`Cotas do Google, um ponto a cada ${TOPO_PASSO_G} m (a origem do Google tem 9,5 m; erro típico de 3 a 4 m).`}</li>
+    <li>${cid==='sp'&&!lotesInsc(t).length?`Sem SQL: levantamento da quadra inteira (o quarteirão entre as ruas) que a poligonal ocupa, até ${TOPO_FOLGA} m em volta, com todos os lotes numerados pelo SQL.`:`Levantamento até ${TOPO_FOLGA} m em volta do contorno.`}</li>
+    <li>${cid==='sp'?'Cotas do laser de 2020 da Prefeitura de São Paulo (erro típico de 0,1 a 0,2 m na forma do terreno). Se a prefeitura não responder, tente de novo: em São Paulo o Google não é usado.':`Cotas do Google, um ponto a cada ${TOPO_PASSO_G} m (a origem do Google tem 9,5 m; erro típico de 3 a 4 m).`}</li>
     <li>${cid==='sp'?'Ortofoto 2023/2024, calçadas com largura, eixos, quadras, lotes, córregos e melhoramentos do GeoSampa.':cid==='sjc'?'Ortofoto 8 cm de nov/2025, arruamentos, faixas de curso d’água e curvas do IGC do GeoSanja.':'Imagem de satélite do Google (ou Esri).'}</li></ul>${!GEO_BASE&&!GG?'<div class="hint">As bases da prefeitura e o Google só respondem na versão publicada no Railway.</div>':''}`;
   const andamento=em?`<ol class="topo-passos">${em.passos.map(([p,st,det])=>`<li class="${st}">${st==='andando'?'<span class="spin" aria-hidden="true"></span>':st==='erro'?ic('warn',16):ic('check',16)}<span>${esc(p)}${det?` <span class="faint">· ${esc(det)}</span>`:''}</span></li>`).join('')}</ol>`:'';
   const S=R&&R.resumo,res=S?`<img class="topo-previa" src="${R.previa}" alt="Prévia do topográfico">
     <dl class="kvl topo-kv"><div class="kv"><dt>Contorno</dt><dd>${esc(S.contorno)}</dd></div><div class="kv"><dt>Cotas no terreno</dt><dd>${num(S.min,1)} a ${num(S.max,1)} m · desnível ${num(S.max-S.min,1)} m${S.dec!=null?` · declividade média ${num(S.dec,1)}%`:''}</dd></div>
     <div class="kv"><dt>Fonte das cotas</dt><dd>${esc(S.cotas)}</dd></div><div class="kv"><dt>Curvas</dt><dd>${esc(S.curvas)}</dd></div><div class="kv"><dt>Imagem</dt><dd>${esc(S.imagem)}</dd></div>
     ${S.erros.length?`<div class="kv"><dt>Não responderam</dt><dd>${esc(S.erros.join(', '))}</dd></div>`:''}</dl>
-    <div class="hint">${S.guarda?(UI.role!=='Leitura'?'Os dois arquivos foram guardados em Documentos, com versão.':''):'Com cotas do Google, os arquivos só são baixados: os termos do Google pedem não guardar dados de elevação.'} O ZIP traz o DXF e a imagem referenciada; no AutoCAD, Salvar como DWG.</div>`
+    <div class="hint">${UI.role!=='Leitura'?'Os dois arquivos foram guardados em Documentos, com versão.':''}${/^Google/.test(S.cotas)?' Os pontos do Google não são guardados: o DXF leva só as curvas.':''} O ZIP traz o DXF e a imagem referenciada; no AutoCAD, Salvar como DWG.</div>`
     :R&&R.erro?`<div class="banner warn">${ic('warn')}<div>O topográfico não saiu: ${esc(R.erro)}</div></div>`:'';
   return `<div class="dh"><div><h2>Topográfico preliminar</h2><div class="muted" style="margin-top:4px">${esc(t.nome)}</div></div>${fechar}</div>
     ${em?andamento:res||plano}
     <div class="df">${S&&!em?`<button class="btn text" data-a="topo-gerar">Gerar de novo</button><button class="btn" data-a="topo-baixar" data-k="zip">${ic('download',16)}DXF + imagem (.zip)</button><button class="btn primary" data-a="topo-baixar" data-k="pdf">${ic('download',16)}PDF</button>`
-      :em?'':`<button class="btn primary" data-a="topo-gerar">Gerar topográfico</button>`}</div>`}
+      :em?'':`<button class="btn primary" data-a="topo-gerar">${R&&R.erro?'Tentar de novo':'Gerar topográfico'}</button>`}</div>`}
 function topoBaixar(t,k){const R=TOPO[t.id];if(!R||!R[k])return;const url=URL.createObjectURL(R[k]),el=document.createElement('a');el.href=url;el.download=R.nome+'.'+k;document.body.appendChild(el);el.click();el.remove();setTimeout(()=>URL.revokeObjectURL(url),4000)}
 function topoClick(A,a,t){if(!A.startsWith('topo-'))return false;if(!t)return true;
   if(A==='topo-abrir'){UI.modal='topo';renderModal()}
