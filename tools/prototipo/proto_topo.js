@@ -276,7 +276,7 @@ function topoQuadro(lev,escDada){const mm=px=>px/TOPO_DPI*25.4,cx=(lev[0]+lev[2]
   const [fw,fh]=dim(pag),gw=mm(fw)*esc/1000,gh=mm(fh)*esc/1000,bb=[cx-gw/2,cy-gh/2,cx+gw/2,cy+gh/2],wi=Math.min(pag.papel==='A3'?4000:8000,Math.round(fw*1.4));
   return {bb,esc,pag,fx:pag.m,fy:pag.m,fw,fh,wi,hi:Math.round(wi*fh/fw)}}
 const TOPO_MM=mm=>mm/25.4*TOPO_DPI;
-const TOPO_COR={lwI:TOPO_MM(.75),lwM:TOPO_MM(1),casca:'rgba(0,0,0,.85)',fundo:'',terreno:'#2ee86b',folga:'#ffffff',inter:['#00b81f','#1ee81e','#5cff3a','#b2ff73'],mestra:'#b026ff',calc:'rgba(77,208,225,.8)',quadra:'rgba(255,255,255,.75)',lote:'rgba(255,255,255,.3)',loteq:'rgba(255,255,255,.8)',corrego:'#2f8cff',agua:'rgba(47,140,255,.35)',melh:'#ff4fd8',eixo:'rgba(255,255,255,.9)',faixa:'#7fd3ff'};
+const TOPO_COR={lwI:TOPO_MM(.75),lwM:TOPO_MM(1),casca:'rgba(0,0,0,.85)',fundo:'',terreno:'#00e5ff',folga:'#ffffff',inter:['#00b81f','#1ee81e','#5cff3a','#b2ff73'],mestra:'#b026ff',calc:'rgba(77,208,225,.8)',quadra:'rgba(255,255,255,.75)',lote:'rgba(255,255,255,.3)',loteq:'rgba(255,255,255,.8)',corrego:'#2f8cff',agua:'rgba(47,140,255,.35)',melh:'#ff4fd8',eixo:'rgba(255,255,255,.9)',faixa:'#7fd3ff'};
 window.TOPO_COR=TOPO_COR;
 // intermediárias em tons: a mais alta entre duas mestras a mais escura, a mais baixa a mais clara (Moisés, 27/out/2026)
 function topoTomInter(z,R){const n=Math.max(1,Math.round(R.mestra/R.iv)-1),k=((Math.round(z/R.iv)%(n+1))+n+1)%(n+1);return n<2?0:Math.round((n-k)*3/(n-1))}  // 0 a 3, do escuro (a mais alta) ao claro (a mais baixa)
