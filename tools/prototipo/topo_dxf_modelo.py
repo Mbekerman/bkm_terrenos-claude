@@ -43,6 +43,8 @@ msp = doc.modelspace()
 # marcadores trocados pelo proto_topo.js (valores impossíveis de aparecer por acaso)
 imgdef = doc.add_image_def(filename='__IMAGEM__.jpg', size_in_pixel=(7771, 7772))
 msp.add_image(imgdef, insert=(911111.25, 922222.25), size_in_units=(7771 * 0.125, 7772 * 0.125), dxfattribs={'layer': 'IMAGEM'})
+# vista do Model: sem ela o AutoCAD abre o Model centrado em 0,0 e parece vazio
+doc.set_modelspace_vport(height=99999.25, center=(977777.25, 988888.25))
 doc.header['$EXTMIN'] = (933333.25, 944444.25, 0)
 doc.header['$EXTMAX'] = (955555.25, 966666.25, 0)
 saida = os.path.join(AQUI, 'topo_modelo.dxf')

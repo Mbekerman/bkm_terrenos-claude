@@ -396,7 +396,8 @@ function topoDxf(R,arqImg,wi,hi){const asc=s=>String(s??'').normalize('NFD').rep
   const Q=R.quadro.bb,ps=(Q[2]-Q[0])/wi,psy=(Q[3]-Q[1])/hi;let s=TOPO_DXF_MODELO;
   s=s.replace('911111.25',f(Q[0])).replace('922222.25',f(Q[1])).replace('\n 11\n0.125\n',`\n 11\n${ps.toFixed(6)}\n`).replace('\n 22\n0.125\n',`\n 22\n${psy.toFixed(6)}\n`)
     .replace(/7771\.0/g,wi+'.0').replace(/7772\.0/g,hi+'.0').replace('\n7770.5\n',`\n${wi-.5}\n`).replace('\n7771.5\n',`\n${hi-.5}\n`).replace(/__IMAGEM__\.jpg/g,arqImg)
-    .replace(/\$EXTMIN\n 10\n[^\n]+\n 20\n[^\n]+/,`$EXTMIN\n 10\n${f(Q[0])}\n 20\n${f(Q[1])}`).replace(/\$EXTMAX\n 10\n[^\n]+\n 20\n[^\n]+/,`$EXTMAX\n 10\n${f(Q[2])}\n 20\n${f(Q[3])}`);
+    .replace(/\$EXTMIN\n 10\n[^\n]+\n 20\n[^\n]+\n 30\n[^\n]+/,`$EXTMIN\n 10\n${f(Q[0])}\n 20\n${f(Q[1])}\n 30\n0.0`).replace(/\$EXTMAX\n 10\n[^\n]+\n 20\n[^\n]+\n 30\n[^\n]+/,`$EXTMAX\n 10\n${f(Q[2])}\n 20\n${f(Q[3])}\n 30\n0.0`)
+    .replace('977777.25',f((Q[0]+Q[2])/2)).replace('988888.25',f((Q[1]+Q[3])/2)).replace('99999.25',f((Q[3]-Q[1])*1.05));
   if(!R.im.img)s=s.replace(/\n {2}0\nIMAGE\n[\s\S]*?(?=\n {2}0\nENDSEC)/,'');
   const i=s.indexOf('\nENTITIES\n'),j=s.indexOf('\n  0\nENDSEC\n',i);s=s.slice(0,j)+'\n'+L.join('\n')+s.slice(j);
   return s.replace(/(\$HANDSEED\n {2}5\n)[0-9A-F]+/,'$1'+hnd.toString(16).toUpperCase()).replace(/\n/g,'\r\n')}
