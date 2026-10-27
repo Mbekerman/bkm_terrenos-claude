@@ -7944,7 +7944,7 @@ function topoQuadro(lev,escDada){const mm=px=>px/TOPO_DPI*25.4,cx=(lev[0]+lev[2]
   const [fw,fh]=dim(pag),gw=mm(fw)*esc/1000,gh=mm(fh)*esc/1000,bb=[cx-gw/2,cy-gh/2,cx+gw/2,cy+gh/2],wi=Math.min(pag.papel==='A3'?4000:8000,Math.round(fw*1.4));
   return {bb,esc,pag,fx:pag.m,fy:pag.m,fw,fh,wi,hi:Math.round(wi*fh/fw)}}
 const TOPO_MM=mm=>mm/25.4*TOPO_DPI;
-const TOPO_COR={lwI:TOPO_MM(.75),lwM:TOPO_MM(1),casca:'rgba(0,0,0,.85)',fundo:'',terreno:'#00e5ff',folga:'#ffffff',inter:['#00b81f','#1ee81e','#5cff3a','#b2ff73'],mestra:'#b026ff',calc:'rgba(77,208,225,.8)',quadra:'rgba(255,255,255,.75)',lote:'rgba(255,255,255,.3)',loteq:'rgba(255,255,255,.8)',corrego:'#2f8cff',agua:'rgba(47,140,255,.35)',melh:'#ff4fd8',eixo:'rgba(255,255,255,.9)',faixa:'#7fd3ff'};
+const TOPO_COR={lwT:TOPO_MM(2),lwI:TOPO_MM(.75),lwM:TOPO_MM(1),casca:'rgba(0,0,0,.85)',fundo:'',terreno:'#00e5ff',folga:'#ffffff',inter:['#00b81f','#1ee81e','#5cff3a','#b2ff73'],mestra:'#b026ff',calc:'rgba(77,208,225,.8)',quadra:'rgba(255,255,255,.75)',lote:'rgba(255,255,255,.3)',loteq:'rgba(255,255,255,.8)',corrego:'#2f8cff',agua:'rgba(47,140,255,.35)',melh:'#ff4fd8',eixo:'rgba(255,255,255,.9)',faixa:'#7fd3ff'};
 window.TOPO_COR=TOPO_COR;
 // intermediárias em tons: a mais alta entre duas mestras a mais escura, a mais baixa a mais clara (Moisés, 27/out/2026)
 function topoTomInter(z,R){const n=Math.max(1,Math.round(R.mestra/R.iv)-1),k=((Math.round(z/R.iv)%(n+1))+n+1)%(n+1);return n<2?0:Math.round((n-k)*3/(n-1))}  // 0 a 3, do escuro (a mais alta) ao claro (a mais baixa)
@@ -7982,7 +7982,7 @@ function topoPagina(R){const Q=R.quadro,{w,h}=Q.pag,cv=document.createElement('c
   // número de cada lote da quadra (lote-dígito do SQL; setor e quadra vão na lateral), do tamanho que cabe nele
   (R.cam.LOTES_QUADRA||[]).forEach(l=>{const tam=Math.min(15,l.folga*pxm*.9);if(tam<7)return;halo(l.p.cd_lote+'-'+l.p.cd_digito_sql,X(l.pt[0]),Y(l.pt[1]),0,tam,'#fff',500)});
   // terreno e medidas dos lados
-  caminho(R.P,true);g.strokeStyle='rgba(0,0,0,.7)';g.lineWidth=7;g.stroke();g.strokeStyle=TOPO_COR.terreno;g.lineWidth=3.5;g.stroke();
+  caminho(R.P,true);g.strokeStyle='rgba(0,0,0,.7)';g.lineWidth=TOPO_COR.lwT+3.5;g.stroke();g.strokeStyle=TOPO_COR.terreno;g.lineWidth=TOPO_COR.lwT;g.stroke();
   R.P.forEach(r=>r.forEach((p,i)=>{const q=r[(i+1)%r.length],d=Math.hypot(q[0]-p[0],q[1]-p[1]);if(d<3||d*pxm<70)return;const ang=leg(Math.atan2(Y(q[1])-Y(p[1]),X(q[0])-X(p[0])));
     g.save();g.translate((X(p[0])+X(q[0]))/2,(Y(p[1])+Y(q[1]))/2);g.rotate(ang);g.font=`600 15px ${F}`;const txt=num(d,2)+' m',tw=g.measureText(txt).width;g.fillStyle='#111';g.fillRect(-tw/2-6,-12,tw+12,24);g.fillStyle=TOPO_COR.terreno;g.textAlign='center';g.textBaseline='middle';g.fillText(txt,0,0);g.restore()}));
   // coordenadas UTM nas bordas
@@ -8011,7 +8011,7 @@ function topoLateral(g,R,F,pxm){const {w,h,m,lat}=R.quadro.pag,x0=w-m-lat,t=R.t;
   const item=(desenho,rot)=>{g.save();g.translate(x0,y+9);desenho();g.restore();g.font=`14px ${F}`;g.fillStyle='#1f1f1f';g.textBaseline='middle';g.textAlign='left';g.fillText(rot,x0+56,y+9);y+=26};
   const traco=(cor,lw,dash,fundo)=>()=>{if(fundo){g.fillStyle=fundo;g.fillRect(0,-8,44,16)}g.setLineDash(dash||[]);g.strokeStyle=cor;g.lineWidth=lw;g.beginPath();g.moveTo(0,0);g.lineTo(44,0);g.stroke()};
   const fundo='#5d6b63';
-  item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);g.strokeStyle=TOPO_COR.terreno;g.lineWidth=3.5;g.strokeRect(3,-6,38,12)},'Terreno (contorno)');
+  item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);g.strokeStyle=TOPO_COR.terreno;g.lineWidth=6;g.strokeRect(4,-5,36,10)},'Terreno (contorno)');
   item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);traco(TOPO_COR.folga,2,[8,5])()},`Limite do levantamento (${TOPO_FOLGA} m)`);
   item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);if(TOPO_COR.casca)traco(TOPO_COR.casca,TOPO_COR.lwM+2.4)();traco(TOPO_COR.mestra,TOPO_COR.lwM)()},`Curva mestra (${R.mestra} m)`);
   item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);if(TOPO_COR.casca)traco(TOPO_COR.casca,TOPO_COR.lwI+2.4)();[].concat(TOPO_COR.inter).forEach((c,i,a)=>{g.save();g.beginPath();g.rect(i*44/a.length,-9,44/a.length,18);g.clip();traco(c,TOPO_COR.lwI)();g.restore()})},`Curvas intermediárias (${R.iv} m; mais alta escura, mais baixa clara)`);
