@@ -278,8 +278,9 @@ function topoQuadro(lev,escDada){const mm=px=>px/TOPO_DPI*25.4,cx=(lev[0]+lev[2]
 const TOPO_MM=mm=>mm/25.4*TOPO_DPI;
 const TOPO_COR={lwI:TOPO_MM(.75),lwM:TOPO_MM(1),casca:'rgba(0,0,0,.85)',fundo:'',terreno:'#2ee86b',folga:'#ffffff',inter:['#00b81f','#1ee81e','#5cff3a','#b2ff73'],mestra:'#b026ff',calc:'rgba(77,208,225,.8)',quadra:'rgba(255,255,255,.75)',lote:'rgba(255,255,255,.3)',loteq:'rgba(255,255,255,.8)',corrego:'#2f8cff',agua:'rgba(47,140,255,.35)',melh:'#ff4fd8',eixo:'rgba(255,255,255,.9)',faixa:'#7fd3ff'};
 window.TOPO_COR=TOPO_COR;
-// intermediárias em tons: a primeira acima da mestra a mais escura, a última a mais clara (Moisés, 27/out/2026)
-function topoCorInter(z,R){const t=TOPO_COR.inter;if(!Array.isArray(t))return t;const n=Math.max(1,Math.round(R.mestra/R.iv)-1),k=((Math.round(z/R.iv)%(n+1))+n+1)%(n+1);return t[n<2?0:Math.round((k-1)*(t.length-1)/(n-1))]}  // o roteiro de teste troca as cores para comparar
+// intermediárias em tons: a mais alta entre duas mestras a mais escura, a mais baixa a mais clara (Moisés, 27/out/2026)
+function topoTomInter(z,R){const n=Math.max(1,Math.round(R.mestra/R.iv)-1),k=((Math.round(z/R.iv)%(n+1))+n+1)%(n+1);return n<2?0:Math.round((n-k)*3/(n-1))}  // 0 a 3, do escuro (a mais alta) ao claro (a mais baixa)
+function topoCorInter(z,R){const t=TOPO_COR.inter;return Array.isArray(t)?t[Math.round(topoTomInter(z,R)*(t.length-1)/3)]:t}  // o roteiro de teste troca as cores para comparar
 function topoPagina(R){const Q=R.quadro,{w,h}=Q.pag,cv=document.createElement('canvas');cv.width=w;cv.height=h;const g=cv.getContext('2d'),F='"Google Sans Flex", Arial, sans-serif';
   g.fillStyle='#fff';g.fillRect(0,0,w,h);const X=x=>Q.fx+(x-Q.bb[0])/(Q.bb[2]-Q.bb[0])*Q.fw,Y=y=>Q.fy+(Q.bb[3]-y)/(Q.bb[3]-Q.bb[1])*Q.fh,pxm=Q.fw/(Q.bb[2]-Q.bb[0]);
   g.save();g.beginPath();g.rect(Q.fx,Q.fy,Q.fw,Q.fh);g.clip();g.fillStyle='#2b2b2b';g.fillRect(Q.fx,Q.fy,Q.fw,Q.fh);
@@ -345,7 +346,7 @@ function topoLateral(g,R,F,pxm){const {w,h,m,lat}=R.quadro.pag,x0=w-m-lat,t=R.t;
   item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);g.strokeStyle=TOPO_COR.terreno;g.lineWidth=3.5;g.strokeRect(3,-6,38,12)},'Terreno (contorno)');
   item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);traco(TOPO_COR.folga,2,[8,5])()},`Limite do levantamento (${TOPO_FOLGA} m)`);
   item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);if(TOPO_COR.casca)traco(TOPO_COR.casca,TOPO_COR.lwM+2.4)();traco(TOPO_COR.mestra,TOPO_COR.lwM)()},`Curva mestra (${R.mestra} m)`);
-  item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);if(TOPO_COR.casca)traco(TOPO_COR.casca,TOPO_COR.lwI+2.4)();[].concat(TOPO_COR.inter).forEach((c,i,a)=>{g.save();g.beginPath();g.rect(i*44/a.length,-9,44/a.length,18);g.clip();traco(c,TOPO_COR.lwI)();g.restore()})},`Curvas intermediárias (${R.iv} m; do escuro, logo acima da mestra, ao claro)`);
+  item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);if(TOPO_COR.casca)traco(TOPO_COR.casca,TOPO_COR.lwI+2.4)();[].concat(TOPO_COR.inter).forEach((c,i,a)=>{g.save();g.beginPath();g.rect(i*44/a.length,-9,44/a.length,18);g.clip();traco(c,TOPO_COR.lwI)();g.restore()})},`Curvas intermediárias (${R.iv} m; mais alta escura, mais baixa clara)`);
   if(R.cam.CALCADAS?.length)item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);g.fillStyle='rgba(77,208,225,.35)';g.fillRect(4,-6,36,12);g.strokeStyle=TOPO_COR.calc;g.lineWidth=1.6;g.strokeRect(4,-6,36,12)},'Calçada');
   if(R.cam.QUADRAS?.length)item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);traco(TOPO_COR.quadra,1.6)()},'Alinhamento da quadra');
   if(R.cam.EIXO_VIAS?.length)item(()=>{g.fillStyle=fundo;g.fillRect(0,-9,44,18);traco(TOPO_COR.eixo,1.4,[10,4,3,4])()},'Eixo da via');
@@ -385,7 +386,7 @@ function topoDxf(R,arqImg,wi,hi){const asc=s=>String(s??'').normalize('NFD').rep
   const texto=(ly,x,y,alt,s,rot)=>ent('TEXT',ly,'AcDbText',['10',f(x),'20',f(y),'30','0','40',f(alt),'1',asc(s),'50',f(rot||0),'7','BKM','72','1','11',f(x),'21',f(y),'31','0','100','AcDbText','73','2']);
   R.P.forEach(r=>poli('TERRENO',r,true));R.folga.forEach(p=>poli('FOLGA_30M',p,false));
   R.P.forEach(r=>r.forEach((p,i)=>{const q=r[(i+1)%r.length],d=Math.hypot(q[0]-p[0],q[1]-p[1]);if(d<3)return;let a=Math.atan2(q[1]-p[1],q[0]-p[0])*180/Math.PI;if(a>90||a<-90)a+=180;texto('MEDIDAS',(p[0]+q[0])/2,(p[1]+q[1])/2,1,num(d,2)+' m',a)}));
-  R.curvas.forEach(c=>{poli(c.mestra?'CURVA_MESTRA':'CURVA_INTERMEDIARIA',c.pts,false,c.z);if(c.pts.length>4){const m=Math.floor(c.pts.length/2),a=c.pts[m-1],b=c.pts[m];let ang=Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI;if(ang>90||ang<-90)ang+=180;texto('COTA_CURVA',(a[0]+b[0])/2,(a[1]+b[1])/2,c.mestra?1.2:.8,num(c.z,0),ang)}});
+  R.curvas.forEach(c=>{poli(c.mestra?'CURVA_MESTRA':'CURVA_INTERMEDIARIA_'+(topoTomInter(c.z,R)+1),c.pts,false,c.z);if(c.pts.length>4){const m=Math.floor(c.pts.length/2),a=c.pts[m-1],b=c.pts[m];let ang=Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI;if(ang>90||ang<-90)ang+=180;texto('COTA_CURVA',(a[0]+b[0])/2,(a[1]+b[1])/2,c.mestra?1.2:.8,num(c.z,0),ang)}});
   // pontos cotados só do laser: os do Google não são guardados
   const G=R.G,k=Math.round(TOPO_PASSO_G/G.s);if(R.fz.fonte!=='google')for(let j=0;j<G.ny;j+=k)for(let i=0;i<G.nx;i+=k){const z=G.Z[j*G.nx+i];if(z===z)ent('POINT','MALHA_COTAS','AcDbPoint',['10',f(G.x0+i*G.s),'20',f(G.y0+j*G.s),'30',f(z)])}
   Object.entries(R.cam).forEach(([ly,fs])=>fs.forEach(ft=>{const pol=/Polygon/.test(ft.g.type),z=ly==='CURVAS_PREFEITURA'?ft.p.avg_z:0;geoAneis(ft.g).forEach(r=>poli(ly,pol&&r.length>1&&r[0][0]===r[r.length-1][0]&&r[0][1]===r[r.length-1][1]?r.slice(0,-1):r,pol,z))}));
@@ -404,7 +405,7 @@ async function topoZip(R,nome){const Q=R.quadro,z=new JSZip(),arqImg=nome+'_imag
     const ps=(Q.bb[2]-Q.bb[0])/wi,py=(Q.bb[3]-Q.bb[1])/hi;z.file(nome+'_imagem.jgw',[ps,0,0,-py,Q.bb[0]+ps/2,Q.bb[3]-py/2].map(v=>v.toFixed(6)).join('\r\n')+'\r\n')}
   z.file(nome+'.dxf',topoDxf(R,arqImg,wi,hi));
   z.file('LEIA-ME.txt',[`Topografico preliminar - ${R.t.codigo}`,'',`${nome}.dxf: DXF 2000 em SIRGAS 2000 / UTM ${R.zona}S (EPSG:${R.epsg}), em metros.`,
-    R.fz.fonte!=='google'?'  Curvas com a cota como elevacao (CURVA_MESTRA, CURVA_INTERMEDIARIA), malha de pontos cotados a cada 5 m (MALHA_COTAS),':'  Curvas com a cota como elevacao e o texto da cota em cada uma (CURVA_MESTRA, CURVA_INTERMEDIARIA, COTA_CURVA); sem os pontos do Google,',
+    R.fz.fonte!=='google'?'  Curvas com a cota como elevacao (CURVA_MESTRA; CURVA_INTERMEDIARIA_1 a _4, da mais escura, a mais alta, a mais clara, a mais baixa), malha de pontos cotados a cada 5 m (MALHA_COTAS),':'  Curvas com a cota como elevacao e o texto da cota em cada uma (CURVA_MESTRA; CURVA_INTERMEDIARIA_1 a _4, da mais escura, a mais alta, a mais clara, a mais baixa; COTA_CURVA); sem os pontos do Google,',
     '  terreno, limite do levantamento (30 m) e as camadas da prefeitura (calcadas, eixos, corregos...).',
     R.qd?`  Lotes da quadra em LOTES_QUADRA, com o SQL de cada um em NUMERO_LOTES.`:'',
     R.im.img?`${arqImg}: imagem de fundo, referenciada pelo DXF. Deixe os dois na mesma pasta.`:'Sem imagem de fundo.',
