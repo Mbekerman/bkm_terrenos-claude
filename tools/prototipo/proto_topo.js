@@ -276,7 +276,7 @@ function topoQuadro(lev,escDada){const mm=px=>px/TOPO_DPI*25.4,cx=(lev[0]+lev[2]
   const [fw,fh]=dim(pag),gw=mm(fw)*esc/1000,gh=mm(fh)*esc/1000,bb=[cx-gw/2,cy-gh/2,cx+gw/2,cy+gh/2],wi=Math.min(pag.papel==='A3'?4000:8000,Math.round(fw*1.4));
   return {bb,esc,pag,fx:pag.m,fy:pag.m,fw,fh,wi,hi:Math.round(wi*fh/fw)}}
 const TOPO_MM=mm=>mm/25.4*TOPO_DPI;
-const TOPO_COR={lwI:TOPO_MM(1),lwM:TOPO_MM(1.5),casca:'rgba(0,0,0,.85)',fundo:'',terreno:'#2ee86b',folga:'#ffffff',inter:'#39ff14',mestra:'#00b0ff',calc:'rgba(77,208,225,.8)',quadra:'rgba(255,255,255,.75)',lote:'rgba(255,255,255,.3)',loteq:'rgba(255,255,255,.8)',corrego:'#2f8cff',agua:'rgba(47,140,255,.35)',melh:'#ff4fd8',eixo:'rgba(255,255,255,.9)',faixa:'#7fd3ff'};
+const TOPO_COR={lwI:TOPO_MM(1),lwM:TOPO_MM(1),casca:'rgba(0,0,0,.85)',fundo:'',terreno:'#2ee86b',folga:'#ffffff',inter:'#39ff14',mestra:'#ff10f0',calc:'rgba(77,208,225,.8)',quadra:'rgba(255,255,255,.75)',lote:'rgba(255,255,255,.3)',loteq:'rgba(255,255,255,.8)',corrego:'#2f8cff',agua:'rgba(47,140,255,.35)',melh:'#ff4fd8',eixo:'rgba(255,255,255,.9)',faixa:'#7fd3ff'};
 window.TOPO_COR=TOPO_COR;  // o roteiro de teste troca as cores para comparar
 function topoPagina(R){const Q=R.quadro,{w,h}=Q.pag,cv=document.createElement('canvas');cv.width=w;cv.height=h;const g=cv.getContext('2d'),F='"Google Sans Flex", Arial, sans-serif';
   g.fillStyle='#fff';g.fillRect(0,0,w,h);const X=x=>Q.fx+(x-Q.bb[0])/(Q.bb[2]-Q.bb[0])*Q.fw,Y=y=>Q.fy+(Q.bb[3]-y)/(Q.bb[3]-Q.bb[1])*Q.fh,pxm=Q.fw/(Q.bb[2]-Q.bb[0]);
@@ -331,7 +331,7 @@ function topoLateral(g,R,F,pxm){const {w,h,m,lat}=R.quadro.pag,x0=w-m-lat,t=R.t;
   kv('Área levantada',topoLevTxt(R));
   if(R.qd&&R.qd.lotes.length)kv('Lotes numerados pelo SQL',`setor e quadra fiscal ${R.qd.quadras.join(', ')}; em cada lote, o número do lote e o dígito`);
   kv('Cotas no terreno',`mínima ${num(R.dz.min,1)} m · máxima ${num(R.dz.max,1)} m · desnível ${num(R.dz.max-R.dz.min,1)} m`+(R.dec!=null?` · declividade média ${num(R.dec,1)}%`:''));
-  kv('Fonte das cotas',topoFonteTxt(R.fz));kv('Curvas de nível',`de ${R.iv} em ${R.iv} m; mestra de ${R.mestra} em ${R.mestra} m (azul, com a cota)`);
+  kv('Fonte das cotas',topoFonteTxt(R.fz));kv('Curvas de nível',`de ${R.iv} em ${R.iv} m; mestra de ${R.mestra} em ${R.mestra} m (rosa, com a cota)`);
   kv('Imagem',R.im.fonte);
   const extras=[R.cam.CALCADAS?.length&&'calçadas',R.cam.EIXO_VIAS?.length&&'eixos de via',R.larg.length&&'largura das vias medida entre as calçadas',(R.cam.CORREGOS?.length||R.cam.CORREGOS_CANALIZADOS?.length)&&'córregos',R.cam.MASSA_DAGUA?.length&&"corpos d'água",R.cam.MELHORAMENTO_VIARIO?.length&&'melhoramento viário',R.cam.CURSO_DAGUA_FAIXA?.length&&"faixa de curso d'água",(R.cam.LOTES?.length||R.cam.LOTES_QUADRA?.length)&&'lotes'].filter(Boolean);
   if(extras.length)kv(R.t&&cidDoTerreno(R.t)==='sjc'?'Do GeoSanja':'Do GeoSampa',extras.join(', ').replace(/^./,c=>c.toUpperCase()));
