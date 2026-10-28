@@ -154,8 +154,8 @@
   },
   "tipos": {
     "area": "R$ por m² de área privativa",
-    "pct_obra_tipica": "% do custo de obra típico",
-    "pct_obra_raso": "% do custo de obra raso",
+    "pct_obra_tipica": "% do custo de obra raso",
+    "pct_obra_raso": "% do custo de obra incidente",
     "pct_obra_total": "% do custo de obra total",
     "pct_vgv": "% do VGV",
     "pct_lucro": "% do lucro líquido",

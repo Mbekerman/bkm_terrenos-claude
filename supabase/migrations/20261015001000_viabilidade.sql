@@ -101,7 +101,7 @@ insert into app.viabilidade_despesas (codigo, nome, grupo, tipo_padrao, deduz_vg
   ('aprovacoes', 'Aprovações e licenças', 'projetos', 'verba', false, 8),
   ('outorga', 'Outorga onerosa e contrapartidas', 'projetos', 'verba', false, 9),
   ('assistencia_tecnica', 'Assistência técnica pós-obra', 'pos_obra', 'pct_obra_total', false, 10),
-  ('estoque', 'Condomínio e IPTU das unidades em estoque', 'pos_obra', 'verba', false, 11),
+  ('estoque', 'Manutenção e taxas de unidades em estoque', 'pos_obra', 'verba', false, 11),
   ('itbi_terreno', 'ITBI do terreno', 'terreno', 'verba', false, 12),
   ('registro_terreno', 'Escritura e registro do terreno', 'terreno', 'verba', false, 13),
   ('certidoes', 'Diligência e certidões', 'terreno', 'verba', false, 14),
