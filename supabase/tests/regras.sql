@@ -1517,4 +1517,34 @@ select app.marcar_modelo_padrao(:'emp', null);
 select pg_temp.ok(not exists (select 1 from app.viabilidade_modelos where padrao), 'o administrador tira o padrão');
 select app.apagar_modelo_viabilidade(:'mde');
 
+-- ---------------------------------------------------------------------
+\echo '# login pelo Google: perfil, @ e perfil básico'
+reset role;
+select pg_temp.como(:'diretor');
+insert into app.empresa_dominios (dominio, empresa_id) values ('bkm.test', :'emp');
+reset role;
+select pg_temp.ok((app.hook_antes_de_criar_usuario('{"user":{"email":"nova@bkm.test"}}') = '{}'::jsonb)
+  and (app.hook_antes_de_criar_usuario('{"user":{"email":"x@gmail.com"}}') ? 'error')
+  and (app.hook_antes_de_criar_usuario('{"user":{"email":"x@bkm.test.evil.com"}}') ? 'error'),
+  'o gancho do Auth só deixa criar usuário de domínio cadastrado');
+insert into auth.users values
+  ('00000000-0000-0000-0000-0000000000f1', 'João.Silva@BKM.test', '{"full_name":"João Silva","avatar_url":"https://foto/1"}', now()),
+  ('00000000-0000-0000-0000-0000000000f2', 'joao.silva@bkm.test', '{"full_name":"Outro João"}', now());
+select pg_temp.ok((select arroba = 'joao.silva' and nome = 'João Silva' and foto_url = 'https://foto/1' and email = 'joão.silva@bkm.test'
+  from app.usuarios where user_id = '00000000-0000-0000-0000-0000000000f1'),
+  'primeiro login cria o perfil com nome, foto e o @ do e-mail, em minúsculas e sem acento');
+select pg_temp.ok((select arroba from app.usuarios where user_id = '00000000-0000-0000-0000-0000000000f2') = 'joao.silva2', '@ repetido ganha número no fim');
+select pg_temp.ok((select papel = 'basico' and not administrador from app.membros where user_id = '00000000-0000-0000-0000-0000000000f1' and empresa_id = :'emp'),
+  'quem entra pelo domínio vira membro básico da empresa');
+update auth.users set raw_user_meta_data = '{"full_name":"João S. Silva","avatar_url":"https://foto/2"}' where id = '00000000-0000-0000-0000-0000000000f1';
+select pg_temp.ok((select nome = 'João S. Silva' and foto_url = 'https://foto/2' and arroba = 'joao.silva' from app.usuarios where user_id = '00000000-0000-0000-0000-0000000000f1'),
+  'novo login atualiza nome e foto e mantém o @');
+select pg_temp.como('00000000-0000-0000-0000-0000000000f1');
+select pg_temp.ok(exists (select 1 from app.terrenos), 'o básico consulta os dados da empresa, como leitura');
+select pg_temp.falha(format($$update app.terrenos set nome = 'X' where id = %L$$, :'t1'), 'o básico não altera nada');
+select pg_temp.falha(format($$select app.mudar_arroba(%L, 'jj')$$, '00000000-0000-0000-0000-0000000000f1'), 'o básico não muda o próprio @');
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.usuarios where arroba like 'joao.silva%') = 2, 'a equipe vê nome, foto e @ de quem está na empresa');
+select pg_temp.falha(format($$select app.mudar_arroba(%L, 'joao.silva')$$, '00000000-0000-0000-0000-0000000000f2'), '@ já usado é recusado');
+select pg_temp.ok(app.mudar_arroba('00000000-0000-0000-0000-0000000000f2', '@Joao.Outro') = 'joao.outro', 'o administrador muda o @');
 \echo 'TODOS OS TESTES PASSARAM'

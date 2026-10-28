@@ -23,8 +23,9 @@ create table app.empresas (
 create table app.membros (
   empresa_id    uuid not null references app.empresas(id) on delete cascade,
   user_id       uuid not null references auth.users(id) on delete cascade,
-  -- diretor > gestor > analista; leitura só consulta
-  papel         text not null check (papel in ('diretor','gestor','analista','leitura')),
+  -- diretor > gestor > analista; leitura só consulta; basico é quem entrou pelo
+  -- domínio da empresa e, até os perfis definitivos, consulta como leitura
+  papel         text not null check (papel in ('diretor','gestor','analista','leitura','basico')),
   nome          text not null,
   criado_em     timestamptz not null default now(),
   -- a quem responde: analista -> gestor, gestor -> diretor (sempre um nível acima)
@@ -60,7 +61,7 @@ begin
   end if;
   if new.superior_id is not null then
     select * into sup from app.membros where empresa_id = new.empresa_id and user_id = new.superior_id;
-    if app.nivel_papel(sup.papel) <> app.nivel_papel(new.papel) + 1 or new.papel = 'leitura' then
+    if app.nivel_papel(sup.papel) <> app.nivel_papel(new.papel) + 1 or new.papel in ('leitura','basico') then
       raise exception 'O superior de um % é um %', new.papel,
         case new.papel when 'analista' then 'gestor' when 'gestor' then 'diretor' else 'nível acima (diretor não tem superior)' end
         using errcode = '23514';
