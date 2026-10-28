@@ -27,7 +27,10 @@ await p.evaluate(()=>document.querySelector('#sec-viab [data-a=vb-novo]').click(
 ok(await p.evaluate(()=>document.body.dataset.rota==='terreno'&&!!document.querySelector('#vb-pop .vb-pop-d[role=dialog]')),tag+' Novo estudo abre o popup sobre a ficha');
 const abas=await p.$$eval('#vb-pop .vb-nav .vb-aba',e=>e.map(x=>x.dataset.v+':'+x.querySelector('b').textContent+(x.hasAttribute('aria-current')?'*':'')));
 ok(abas.join()==='tip:Tipologias*,terreno:Terreno,comercial:Comercial,obra:Obras,despesas:Gerais,financeiro:Financeiras,taxas:Taxas,res:DRE'&&await p.$$eval('#vb-pop .vb-sec',e=>e.length)===1,tag+' botões das seções sob os indicadores, na ordem, e uma seção de cada vez (abre em Tipologias): '+abas.join());
-const aba=async k=>{await p.evaluate(k=>document.querySelector(`.vb-nav [data-a=vb-aba][data-v=${k}]`).click(),k);await p.waitForTimeout(120)};
+const aba=async k=>{const ja=await p.evaluate(k=>!!document.querySelector(`.vb-nav [data-a=vb-aba][data-v=${k}][aria-current]`),k);await p.evaluate(k=>document.querySelector(`.vb-nav [data-a=vb-aba][data-v=${k}]`).click(),k);await p.waitForTimeout(120);
+  /* Obras abre com os quadros fechados; o roteiro confere e abre todos para mexer nos itens */
+  if(k==='obra'&&!ja){const st=await p.$$eval('[data-a=vb-q-tg]',e=>e.map(b=>b.getAttribute('aria-expanded')));ok(st.length===4&&st.every(x=>x==='false'),tag+' a aba Obras abre com os 4 quadros fechados: '+st.join());
+    await p.evaluate(()=>{let b;while(b=document.querySelector('[data-a=vb-q-tg][aria-expanded=false]'))b.click()});await p.waitForTimeout(120)}};
 const G2A={obra_atipica:'obra',obra_nao_incidente:'obra',projetos:'obra',pos_obra:'obra',terreno:'despesas',incorporacao:'despesas',cef:'despesas',adm_financeiro:'despesas'};
 await aba('taxas');const nTx=await p.$$eval('#vb-sec-taxas .vb-r[data-ln]',e=>e.length);
 await aba('financeiro');const nFi=await p.$$eval('#vb-sec-financeiro .vb-r[data-ln]',e=>e.map(r=>r.querySelector('.vb-nome')?.textContent).join('|'));await aba('comercial');
