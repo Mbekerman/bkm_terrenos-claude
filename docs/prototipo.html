@@ -4281,6 +4281,24 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
   .vb-tab .vb-q.sub > .vb-r.vb-qh + .vb-r { padding-top: 8px }
   .vb-lns .vb-r:not(.vb-hd):not(.vb-qh) { padding: 16px 40px 16px 0; row-gap: 14px }
 }
+
+/* ---------- menção com @ e e-mail das notificações ---------- */
+.mencao { color: var(--m-primary, #0b57d0); font-weight: 500; background: color-mix(in srgb, var(--m-primary, #0b57d0) 10%, transparent); border-radius: 4px; padding: 0 2px }
+.mn-pop { position: fixed; z-index: 1000; background: var(--m-surface, #fff); border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.14); padding: 4px 0; max-height: 280px; overflow: auto }
+.mn-pop[hidden] { display: none }
+.mn-i { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; min-height: 40px }
+.mn-i[aria-selected="true"], .mn-i:hover { background: var(--m-sec-cont, #c2e7ff) }
+.mn-n { font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.mn-a { color: var(--m-on-var, #444746); font-size: 13px; margin-left: auto; white-space: nowrap }
+.sino-mail { display: inline-flex; align-items: center; gap: 3px; margin-left: 6px }
+.mnp { display: flex; flex-direction: column; padding: 4px 0 8px }
+.mnp-r { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 48px; border-bottom: 1px solid var(--m-outline-var, #c4c7c5); cursor: pointer }
+.mnp-r:last-child { border-bottom: 0 }
+.mnp-r input { width: 18px; height: 18px; flex: none }
+@media (min-width: 900px) { .cfg-r.cfg-nt { grid-template-columns: minmax(200px, 1.6fr) 70px 70px minmax(140px, 1fr) } }
+html[data-tema="escuro"] .mn-pop { background: #0c1433; border-color: #1a2240 }
+html[data-tema="escuro"] .mn-i[aria-selected="true"], html[data-tema="escuro"] .mn-i:hover { background: rgba(99,112,255,.10) }
+html[data-tema="escuro"] .mencao { color: #c9d6ff; background: rgba(99,112,255,.16) }
 </style>
 <header class="top">
   <div class="top-in">
@@ -4349,7 +4367,7 @@ const P={
   recolher:'M13 6l-6 6 6 6M19 6l-6 6 6 6',tela:'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',eu:'M12 5a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM12 2v3M12 19v3M2 12h3M19 12h3',telaSair:'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5',expandir:'M11 6l6 6-6 6M5 6l6 6-6 6',
   lugar:'M12 21s-6-5.6-6-10.5a6 6 0 0 1 12 0C18 15.4 12 21 12 21zM12 8.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4z',
   rota:'M12 2.8 21.2 12 12 21.2 2.8 12zM9 14v-3h6M12.8 8.8 15 11l-2.2 2.2',undo:'M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11',lixo:'M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5',
-  task:'M9 4h6v3H9zM9 5.5H6a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6.5a1 1 0 0 0-1-1h-3M8.5 14l2.5 2.5 4.5-5'
+mail:'M3.5 6h17v12h-17zM4 6.5l8 6 8-6',  task:'M9 4h6v3H9zM9 5.5H6a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6.5a1 1 0 0 0-1-1h-3M8.5 14l2.5 2.5 4.5-5'
 };
 const ic=(n,s=20)=>`<svg class="ic" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="${P[n]}"/></svg>`;
 const BI={
@@ -4410,8 +4428,8 @@ const CFG_PADRAO=()=>({
   checklist:{contrato:[['matricula',1],['onus',1],['iptu',1],['vend',1],['topo',1],['sond',0],['amb',0],['minuta',1]].map(([doc,o])=>({doc,obrig:!!o}))},
   motivos:{descartado:[['tecnica','Inviabilidade Técnica'],['financeira','Inviabilidade Financeira'],['contratual','Inviabilidade Contratual'],['formato_negocio','Inviabilidade Formato de Negócio'],['garantias','Inviabilidade Garantias'],['urbanistica','Inviabilidade Urbanística'],['documental','Inviabilidade Documental'],['outros','Outros',1]].map(([k,nome,tx])=>({k,nome,texto:!!tx,ativo:true})),
     perdido:[['vendido_terceiro','Vendido para terceiro'],['desistiu_vender','Proprietário desistiu de vender'],['preco_pagamento','Vendedor não aceitou preço ou pagamento'],['formato','Vendedor não aceitou o formato (permuta etc.)'],['garantias','Vendedor não aceitou as garantias'],['sem_retorno','Sem retorno do proprietário'],['outros','Outros',1]].map(([k,nome,tx])=>({k,nome,texto:!!tx,ativo:true}))},
-  notif:{tarefa_atribuida:{ativo:true,dias:null},tarefa_marcado:{ativo:true,dias:null},tarefa_prazo:{ativo:true,dias:[0]},tarefa_atrasada:{ativo:true,dias:null},subetapa_prazo:{ativo:true,dias:null},
-    stand_by_retomar:{ativo:true,dias:[7,0]},documento_vencendo:{ativo:true,dias:[30,7]},reuniao_agendada:{ativo:true,dias:[1]},aprovacao_pendente:{ativo:true,dias:null},aprovacao_decidida:{ativo:true,dias:null}}
+  notif:{tarefa_atribuida:{ativo:true,dias:null,email:true},tarefa_marcado:{ativo:true,dias:null,email:true},mencao:{ativo:true,dias:null,email:true},tarefa_prazo:{ativo:true,dias:[0],email:false},tarefa_atrasada:{ativo:true,dias:null,email:false},subetapa_prazo:{ativo:true,dias:null,email:false},
+    stand_by_retomar:{ativo:true,dias:[7,0],email:false},documento_vencendo:{ativo:true,dias:[30,7],email:false},reuniao_agendada:{ativo:true,dias:[1],email:false},aprovacao_pendente:{ativo:true,dias:null,email:true},aprovacao_decidida:{ativo:true,dias:null,email:true}}
 });
 const CFG0=CFG_PADRAO();
 const cfg=()=>(typeof S!=='undefined'&&S&&S.cfg)||CFG0;
@@ -4617,7 +4635,7 @@ function renderTema(){const el=document.getElementById('tema');if(!el)return;
 let perfilMenu=false;
 function renderPerfil(){const el=document.getElementById('perfil');if(!el)return;const u=ROLE_USER[UI.role];
   el.innerHTML=`<button class="perfil-btn" data-a="perfil-menu" aria-haspopup="menu" aria-expanded="${perfilMenu}" aria-label="${u}, ${UI.role}" title="${u} · ${UI.role}">${u[0]}</button>`+
-   (perfilMenu?`<div class="tema-menu" role="menu"><div class="perfil-eu"><b>${u}</b><span>${UI.role}</span></div><div class="tl">Entrar como (protótipo)</div>${['Diretor','Gestor','Analista','Leitura'].map(r=>`<button role="menuitemradio" aria-checked="${UI.role===r}" data-a="role" data-v="${r}"><span class="perfil-av">${ROLE_USER[r][0]}</span>${ROLE_USER[r]} · ${r}</button>`).join('')}<div class="tl"></div><button role="menuitem" data-a="reset">Restaurar dados de exemplo</button></div>`:'')}
+   (perfilMenu?`<div class="tema-menu" role="menu"><div class="perfil-eu"><b>${u}</b><span>@${arrobaDe(u)} · ${UI.role}</span></div><button role="menuitem" data-a="mn-prefs">${ic('mail',18)}Notificações por e-mail</button><div class="tl">Entrar como (protótipo)</div>${['Diretor','Gestor','Analista','Leitura'].map(r=>`<button role="menuitemradio" aria-checked="${UI.role===r}" data-a="role" data-v="${r}"><span class="perfil-av">${ROLE_USER[r][0]}</span>${ROLE_USER[r]} · ${r}</button>`).join('')}<div class="tl"></div><button role="menuitem" data-a="reset">Restaurar dados de exemplo</button></div>`:'')}
 
 const UI={route:'inicio',id:null,tab:'cadastro',from:'terrenos',q:'',role:'Diretor',edit:null,modal:null,upload:null,propForm:false};
 const me=()=>ROLE_USER[UI.role];
@@ -4865,11 +4883,11 @@ function abaNegociacao(t){
 function abaTarefas(t){
   const lista=t.tarefas.slice().sort((a,b)=>{const fa=['concluida','cancelada'].includes(a.status),fb=['concluida','cancelada'].includes(b.status);return fa-fb||a.prazo.localeCompare(b.prazo)});
   return `<div class="stack"><section class="sec"><div class="sec-h"><h2>Próximos passos</h2><span class="faint" style="font-size:13px">${(n=>n+(n===1?' aberta':' abertas'))(abertas(t).length)} · ${(n=>n+(n===1?' atrasada':' atrasadas'))(atrasadas(t).length)}</span></div><div class="sec-b" style="padding-top:4px">
-  ${lista.map(k=>{const late=!['concluida','cancelada'].includes(k.status)&&k.prazo<HOJE;return `<div class="task" style="align-items:flex-start;padding:12px 0">
+  ${lista.map(k=>{const late=!['concluida','cancelada'].includes(k.status)&&k.prazo<HOJE;return `<div class="task" data-mid="${k.id}" style="align-items:flex-start;padding:12px 0">
     <span style="flex:none;margin-top:2px">${av(k.resp,'sm')}</span>
     <span class="tt"><div class="t1" style="${k.status==='concluida'||k.status==='cancelada'?'text-decoration:line-through;color:var(--texto-suave)':''}">${escT(k.titulo)} ${k.prio==='alta'?'<span class="chip warn" style="height:20px">Alta</span>':''}</div>
-    ${k.desc?`<div class="muted" style="font-size:13px">${esc(k.desc)}</div>`:''}<div class="tm ${late?'late':''}">${esc(k.resp)} · ${late?'atrasada desde ':'prazo '}${fd(k.prazo).replace(' ','\u00a0')}</div>
-    ${k.status==='concluida'?`<textarea class="tk-res" rows="1" aria-label="Resultado" data-ch="tar-res" data-k="${k.id}" placeholder="O que foi feito ou obtido">${esc(k.resultado)}</textarea>`:''}</span>
+    ${k.desc?`<div class="muted" style="font-size:13px">${escM(k.desc)}</div>`:''}<div class="tm ${late?'late':''}">${esc(k.resp)} · ${late?'atrasada desde ':'prazo '}${fd(k.prazo).replace(' ','\u00a0')}</div>
+    ${k.status==='concluida'?`<textarea class="tk-res" rows="1" aria-label="Resultado" data-ch="tar-res" data-k="${k.id}" data-mencao placeholder="O que foi feito ou obtido (@ avisa um colega)">${esc(k.resultado)}</textarea>`:''}</span>
     <select aria-label="Status" data-ch="tar-st" data-k="${k.id}" class="chip chip-sel tkst ${k.status}" style="flex:none">${Object.entries(OPT.statusTar).map(([s,l])=>`<option value="${s}" ${s===k.status?'selected':''}>${l}</option>`).join('')}</select></div>`}).join('')||'<div class="muted lista-vazia">Nenhuma tarefa.</div>'}
   <form class="inline-form" data-form="tarefa"><div class="field grow"><label for="tk-t">Nova tarefa</label><input id="tk-t" name="titulo" required placeholder="Ex.: cobrar contraproposta do proprietário"></div>
   <div class="field"><label for="tk-p">Prazo</label><input id="tk-p" name="prazo" type="date" value="${addD(HOJE,7)}" required></div>
@@ -4899,16 +4917,16 @@ function secReunioes(t){
     <div class="field" data-so="externo"><label for="ru-e">Endereço</label><input id="ru-e" name="endereco" placeholder="Escritório do vendedor, no terreno..."></div>
     <div class="field"><label for="ru-pb">Participantes da BKM</label><input id="ru-pb" name="pbkm" value="${esc(me())}"></div>
     <div class="field"><label for="ru-pe">Participantes externos</label><input id="ru-pe" name="pext" placeholder="Vendedor, corretor, advogado"></div>
-    <div class="field full"><label for="ru-p">Pauta</label><input id="ru-p" name="pauta"></div>
-    <div class="field full" data-so="realizada"><label for="ru-r">O que foi tratado</label><textarea id="ru-r" name="resumo" placeholder="Posições de cada lado, valores citados, objeções"></textarea></div>
-    <div class="field full" data-so="realizada"><label for="ru-n">Encaminhamentos</label><textarea id="ru-n" name="enc" placeholder="Quem faz o quê, até quando"></textarea></div>
+    <div class="field full"><label for="ru-p">Pauta</label><input id="ru-p" name="pauta" data-mencao></div>
+    <div class="field full" data-so="realizada"><label for="ru-r">O que foi tratado</label><textarea id="ru-r" name="resumo" data-mencao placeholder="Posições de cada lado, valores citados, objeções"></textarea></div>
+    <div class="field full" data-so="realizada"><label for="ru-n">Encaminhamentos</label><textarea id="ru-n" name="enc" data-mencao placeholder="Quem faz o quê, até quando (@ avisa um colega)"></textarea></div>
     </div><div class="sec-f" style="padding:12px 0 0"><button type="button" class="btn text" data-a="reu-form">Cancelar</button><button class="btn primary">Registrar reunião</button></div></form>`:'';
   return `<section class="sec"><div class="sec-h"><h2>Reuniões${ms.length?` <span class="h-n">${ms.length}</span>`:''}</h2><span class="sec-acoes">${negAtiva(t)&&!UI.reuForm?`<button class="btn primary sm" data-a="reu-form">${ic('add',16)}Registrar reunião</button>`:''}</span></div><div class="sec-b">
   ${form}
-  ${ms.length?`<div class="reus">${ms.map(m=>`<article class="reu ${m.status}"><div class="reu-h"><div><div class="reu-t">${fd(m.data)} · ${esc(m.hora||'')}</div><div class="reu-m">${OPT_REU.modalidade[m.modalidade]}${m.modalidade==='presencial'?' · '+OPT_REU.local[m.local]+(m.endereco?' · '+esc(m.endereco):''):''}</div></div>
+  ${ms.length?`<div class="reus">${ms.map(m=>`<article class="reu ${m.status}" data-mid="${m.id}"><div class="reu-h"><div><div class="reu-t">${fd(m.data)} · ${esc(m.hora||'')}</div><div class="reu-m">${OPT_REU.modalidade[m.modalidade]}${m.modalidade==='presencial'?' · '+OPT_REU.local[m.local]+(m.endereco?' · '+esc(m.endereco):''):''}</div></div>
     <span class="reu-acts">${m.status==='agendada'?`<span class="chip blue">Agendada</span>${negAtiva(t)&&m.data<=HOJE?`<button class="btn sm" data-a="reu-feita" data-k="${m.id}">${ic('check',16)}Marcar realizada</button>`:''}`:m.status==='cancelada'?'<span class="chip">Cancelada</span>':`<span class="chip good">Realizada</span>`}</span></div>
     ${m.part.bkm||m.part.ext?`<div class="reu-p"><span><b>BKM</b> ${esc(m.part.bkm||'—')}</span><span><b>Externos</b> ${esc(m.part.ext||'—')}</span></div>`:''}
-    ${m.pauta?`<div class="reu-x"><span class="k">Pauta</span>${esc(m.pauta)}</div>`:''}${m.resumo?`<div class="reu-x"><span class="k">Tratado</span>${esc(m.resumo)}</div>`:''}${m.enc?`<div class="reu-x"><span class="k">Encaminhamentos</span>${esc(m.enc)}</div>`:''}
+    ${m.pauta?`<div class="reu-x"><span class="k">Pauta</span>${escM(m.pauta)}</div>`:''}${m.resumo?`<div class="reu-x"><span class="k">Tratado</span>${escM(m.resumo)}</div>`:''}${m.enc?`<div class="reu-x"><span class="k">Encaminhamentos</span>${escM(m.enc)}</div>`:''}
     ${m.status==='realizada'?`<div class="reu-ata">${m.ata?`${ic('doc',18)}<span><b>Ata</b> · ${esc(m.ata.nome)} · v${m.ata.versoes}</span><button class="btn sm text" data-a="upload" data-k="ata:${m.id}">${ic('upload',16)}Nova versão</button>`:`${ic('doc',18)}<span class="muted">Sem ata</span><button class="btn sm text" data-a="upload" data-k="ata:${m.id}">${ic('upload',16)}Anexar ata</button>`}</div>`:''}
   </article>`).join('')}</div>`:'<div class="muted">Nenhuma reunião registrada.</div>'}
   </div></section>`;
@@ -5055,8 +5073,8 @@ function renderModal(){
     <div class="field"><label for="tm-pr">Prioridade</label><select id="tm-pr" name="prio">${o(OPT.prioTar,k?.prio||'media')}</select></div>
     <div class="field"><label for="tm-s">Status</label><select id="tm-s" name="status">${o(OPT.statusTar,k?.status||sel.status||'pendente')}</select></div>
     <div class="field full"><span class="lbl-f">Marcar colegas (recebem notificação)</span><div class="marc">${USERS.map(u=>`<label class="chk"><input type="checkbox" name="marc" value="${esc(u)}" ${(k?.marcados||[]).includes(u)?'checked':''}>${esc(u)}</label>`).join('')}</div></div>
-    <div class="field full"><label for="tm-d">Descrição</label><textarea id="tm-d" name="desc">${esc(k?.desc||'')}</textarea></div>
-    ${k?`<div class="field full"><label for="tm-res">Resultado</label><textarea id="tm-res" name="resultado" placeholder="O que foi feito ou decidido">${esc(k.resultado||'')}</textarea></div>`:''}</div></fieldset></form>
+    <div class="field full"><label for="tm-d">Descrição</label><textarea id="tm-d" name="desc" data-mencao placeholder="Use @ para avisar um colega">${esc(k?.desc||'')}</textarea></div>
+    ${k?`<div class="field full"><label for="tm-res">Resultado</label><textarea id="tm-res" name="resultado" data-mencao placeholder="O que foi feito ou decidido">${esc(k.resultado||'')}</textarea></div>`:''}</div></fieldset></form>
     <div class="df">${t?`<button class="btn text" data-a="abrir" data-id="${t.id}" data-tab="tarefas" data-from="tarefas">Abrir terreno</button>`:''}<button class="btn text" data-a="close">${ro?'Fechar':'Cancelar'}</button>${ro?'':`<button class="btn primary" type="submit" form="f-tk">${k?'Salvar':'Criar tarefa'}</button>`}</div>`}
   el.innerHTML=`<div class="scrim" data-a="scrim"><div class="dialog" role="dialog" aria-modal="true">${h}</div></div>`;
   if(M==='novo')nvPosRender();
@@ -5201,7 +5219,7 @@ document.addEventListener('change',e=>{const el=e.target;
   const t=UI.route==='terreno'?T(UI.id):null;if(!t)return;
   if(el.dataset.ch==='tar-st'){const k=t.tarefas.find(x=>x.id===el.dataset.k);k.status=el.value;log(t,`Tarefa "${k.titulo}": ${OPT.statusTar[el.value]}`);save();render()}
   if(el.dataset.ch==='dil-sit'){const d=t.dilig.find(x=>x.id===el.dataset.k);d.sit=el.value;log(t,`Diligência "${d.titulo}": ${OPT.sitDil[el.value]}`);save();render()}
-  if(el.dataset.ch==='tar-res'){t.tarefas.find(x=>x.id===el.dataset.k).resultado=el.value;save()}
+  if(el.dataset.ch==='tar-res'){const k=t.tarefas.find(x=>x.id===el.dataset.k),antes=k.resultado;k.resultado=el.value;mencionarTarefa(t,k,antes);save();renderSino()}
   if(el.dataset.ch==='infra-fonte'){t.infra[el.dataset.k].fonte=el.value;save()}
   if(el.dataset.ch==='prop-status'){const lp=lastProp(t);lp.status=el.value;log(t,`Proposta v${lp.v}: ${OPT.statusProp[el.value]}`);save();render()}
 });
@@ -5242,15 +5260,16 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       t.pessoas.push({nome:F.nome,tipo:F.tipo,papel:F.papel,pct:F.papel==='proprietario'?lerNum(F.pct):null,tel:F.tel});save();render();break;
     case 'tarefa':t.tarefas.push({id:uid(),titulo:F.titulo,desc:F.desc,resp:F.resp,prazo:F.prazo,status:'pendente',prio:F.prio,resultado:'',marcados:[]});notifTarefa(t,t.tarefas[t.tarefas.length-1],null);log(t,`Tarefa criada: ${F.titulo}`);save();render();toast('Tarefa adicionada.');break;
     case 'poi':{S.pontos=S.pontos||[];S.pontos.push({id:uid(),nome:F.nome.trim(),cat:F.cat,lat:UI.novoPoi.lat,lng:UI.novoPoi.lng});UI.modal=null;save();const volta=UI.poiVolta;UI.poiVolta=null;if(volta&&T(volta))go('terreno',{id:volta,tab:'geral'});else render();toast('Ponto de interesse salvo.');break}
-    case 'tarefa-m':{const sel=UI.tkSel;if(sel.tid){const t=T(sel.tid),k=t.tarefas.find(x=>x.id===sel.kid);const de=k.status,antes={resp:k.resp,marcados:(k.marcados||[]).slice()};Object.assign(k,{titulo:F.titulo.trim(),resp:F.resp,prazo:F.prazo,prio:F.prio,status:F.status,desc:F.desc,resultado:F.resultado||'',marcados:new FormData(f).getAll('marc')});notifTarefa(t,k,antes);
+    case 'tarefa-m':{const sel=UI.tkSel;if(sel.tid){const t=T(sel.tid),k=t.tarefas.find(x=>x.id===sel.kid);const de=k.status,antes={resp:k.resp,marcados:(k.marcados||[]).slice(),txt:(k.desc||'')+'\n'+(k.resultado||'')};Object.assign(k,{titulo:F.titulo.trim(),resp:F.resp,prazo:F.prazo,prio:F.prio,status:F.status,desc:F.desc,resultado:F.resultado||'',marcados:new FormData(f).getAll('marc')});notifTarefa(t,k,antes);mencionarTarefa(t,k,antes.txt);
         if(de!==k.status)log(t,`Tarefa "${k.titulo}": ${OPT.statusTar[de]} → ${OPT.statusTar[k.status]}`);toast('Tarefa salva.')}
       else{const t=T(F.ter);if(!t){toast('Escolha o terreno da tarefa.',true);return}const irm=todasTarefas().filter(x=>x.k.status===F.status);
-        t.tarefas.push({id:uid(),titulo:F.titulo.trim(),desc:F.desc,resp:F.resp,prazo:F.prazo,status:F.status,prio:F.prio,resultado:'',marcados:new FormData(f).getAll('marc'),pos:Math.max(0,...irm.map(x=>x.k.pos||0))+1000});notifTarefa(t,t.tarefas[t.tarefas.length-1],null);log(t,`Tarefa criada: ${F.titulo.trim()}`);toast('Tarefa criada.')}
+        t.tarefas.push({id:uid(),titulo:F.titulo.trim(),desc:F.desc,resp:F.resp,prazo:F.prazo,status:F.status,prio:F.prio,resultado:'',marcados:new FormData(f).getAll('marc'),pos:Math.max(0,...irm.map(x=>x.k.pos||0))+1000});notifTarefa(t,t.tarefas[t.tarefas.length-1],null);mencionarTarefa(t,t.tarefas[t.tarefas.length-1],'');log(t,`Tarefa criada: ${F.titulo.trim()}`);toast('Tarefa criada.')}
       UI.modal=null;save();render();break}
     case 'reuniao':{if(F.status==='realizada'&&F.data>HOJE){toast('Reunião realizada não pode ter data futura.',true);return}
       if(F.status==='agendada'&&F.data<HOJE){toast('Para registrar uma reunião passada, escolha Realizada.',true);return}
       const pres=F.modalidade==='presencial';
-      t.reunioes.push({id:uid(),status:F.status,data:F.data,hora:F.hora,modalidade:F.modalidade,local:pres?F.local:null,endereco:pres&&F.local==='externo'?F.endereco:'',part:{bkm:F.pbkm,ext:F.pext},pauta:F.pauta,resumo:F.status==='realizada'?F.resumo:'',enc:F.status==='realizada'?F.enc:'',ata:null});
+      const rid=uid();t.reunioes.push({id:rid,status:F.status,data:F.data,hora:F.hora,modalidade:F.modalidade,local:pres?F.local:null,endereco:pres&&F.local==='externo'?F.endereco:'',part:{bkm:F.pbkm,ext:F.pext},pauta:F.pauta,resumo:F.status==='realizada'?F.resumo:'',enc:F.status==='realizada'?F.enc:'',ata:null});
+      {const m=t.reunioes[t.reunioes.length-1];mencionar(t,'',[m.pauta,m.resumo,m.enc].join('\n'),`na reunião de ${fd(m.data)}`,{b:'negociacao',alvo:rid})}
       log(t,`Reunião ${F.status==='realizada'?'realizada':'agendada'} em ${fd(F.data)} (${OPT_REU.modalidade[F.modalidade]}${pres?', '+OPT_REU.local[F.local].toLowerCase():''})`);UI.reuForm=false;save();render();toast('Reunião registrada.');break}
     case 'prop':{const v=lerNum(F.valor);if(!v){toast('Informe o valor.',true);return}const lp=lastProp(t);
       if(lp&&['rascunho','apresentada','em_analise'].includes(lp.status))lp.status=lp.origem===F.origem?'substituida':'recusada';
@@ -6914,7 +6933,7 @@ const destinoCfg=(tipo,k)=>tipo==='etapa'?etapaCfg(k):tipo==='subetapa'?subCfg(k
 const destinoNome=(tipo,k)=>tipo==='etapa'?SN(k):tipo==='subetapa'?subN(k):STATUS_N[k]||k;
 function syncCfg(){STAGES.splice(0,STAGES.length,...cfg().etapas.map(e=>[e.k,e.nome]))}
 /* dados carregados ou restaurados: garante configuração, equipe e avisos dos pedidos de exemplo */
-function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.cfg.fases)S.cfg.fases=FASES_PADRAO();if(!S.cfg.deps)S.cfg.deps=DEPS_PADRAO();if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];syncCfg();partesPreparar();
+function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.cfg.fases)S.cfg.fases=FASES_PADRAO();if(!S.cfg.deps)S.cfg.deps=DEPS_PADRAO();if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];{const N0=CFG_PADRAO().notif;Object.entries(N0).forEach(([k,v])=>{const c=S.cfg.notif[k];if(!c)S.cfg.notif[k]=v;else if(c.email==null)c.email=v.email})}if(!S.prefsNotif)S.prefsNotif={};syncCfg();partesPreparar();
   if(!S.pedidosAvisados){S.terrenos.forEach(t=>{if(t.neg?.pedido)avisarAprovadores(t)});S.pedidosAvisados=true}}
 
 /* ---------- regras da passagem ---------- */
@@ -6998,10 +7017,11 @@ function levarAte(t,alvo,o={}){const snap=JSON.stringify(t.neg),h=t.hist.length,
   return {ok:true}}
 
 /* ---------- notificações (no banco: notificacoes, lembretes, rotina_diaria) ---------- */
-function notificar(para,tipo,txt,t,chave){const c=cfg().notif[tipo];if(!para||!c||!c.ativo)return;
+/* ir: onde o aviso leva ({b: bloco da ficha, alvo: data-mid do item}); email: vai também por e-mail (padrão do tipo ou preferência da pessoa) */
+function notificar(para,tipo,txt,t,chave,ir){const c=cfg().notif[tipo];if(!para||!c||!c.ativo)return;
   if(!chave&&para===me())return;
   const k=chave?`${tipo}|${chave}|${para}`:null;if(k&&S.notifs.some(x=>x.chave===k))return;
-  S.notifs.unshift({id:uid(),para,tipo,txt,tid:t?t.id:null,em:agora(),lida:false,chave:k,autor:chave?null:me()})}
+  S.notifs.unshift({id:uid(),para,tipo,txt,tid:t?t.id:null,em:agora(),lida:false,chave:k,autor:chave?null:me(),ir:ir||null,email:mnEmail(para,tipo)})}
 function avisarAprovadores(t){const p=t.neg.pedido;if(!p)return;
   naVez(p).forEach(r=>{const dest=r.previsto?[r.previsto]:S.membros.filter(m=>NIVEL[m.papel]===r.nivel).map(m=>m.nome);
     dest.forEach(u=>notificar(u,'aprovacao_pendente',`${p.por} pede aprovação para ${destinoNome(p.tipo,p.dest)}`,t,p.id+':'+r.nivel))})}
@@ -7018,15 +7038,15 @@ function rotinaNotif(){const N=cfg().notif,dentro=(data,tipo)=>(N[tipo].dias||[]
     t.docs.forEach(d=>{const v=docVal(d);if(v)dentro(v,'documento_vencendo').forEach(x=>notificar(t.resp,'documento_vencendo',`${TIPOS_DOC[d.tipo][0]} vence ${quando(v)}`,t,d.tipo+':'+v+':'+x))});
     (t.reunioes||[]).filter(r=>r.status==='agendada').forEach(r=>dentro(r.data,'reuniao_agendada').forEach(x=>notificar(t.resp,'reuniao_agendada',`Reunião ${quando(r.data)}${r.hora?' às '+r.hora:''}`,t,r.id+':'+r.data+':'+x)))})}
 /* tarefa criada ou editada: avisa o responsável e quem foi marcado */
-function notifTarefa(t,k,antes){if(k.resp!==antes?.resp)notificar(k.resp,'tarefa_atribuida',`${me()} atribuiu a você: ${k.titulo}`,t);
-  (k.marcados||[]).filter(u=>!(antes?.marcados||[]).includes(u)&&u!==k.resp).forEach(u=>notificar(u,'tarefa_marcado',`${me()} marcou você na tarefa: ${k.titulo}`,t))}
+function notifTarefa(t,k,antes){const ir={b:'tarefas',alvo:k.id};if(k.resp!==antes?.resp)notificar(k.resp,'tarefa_atribuida',`${me()} atribuiu a você: ${k.titulo}`,t,null,ir);
+  (k.marcados||[]).filter(u=>!(antes?.marcados||[]).includes(u)&&u!==k.resp).forEach(u=>notificar(u,'tarefa_marcado',`${me()} marcou você na tarefa: ${k.titulo}`,t,null,ir))}
 const minhasNotifs=()=>S.notifs.filter(x=>x.para===me());
 let sinoAberto=false;
 const IC_SINO='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"/></svg>';
 function renderSino(){const el=document.getElementById('sino');if(!el)return;const L=minhasNotifs(),nl=L.filter(x=>!x.lida).length;
   el.innerHTML=`<button class="sino-btn" data-a="sino" aria-haspopup="true" aria-expanded="${sinoAberto}" aria-label="Notificações${nl?`, ${nl} não lidas`:''}" title="Notificações">${IC_SINO}${nl?`<span class="sino-n">${nl>9?'9+':nl}</span>`:''}</button>`+
   (sinoAberto?`<div class="sino-menu" role="dialog" aria-label="Notificações"><div class="sino-h"><span>Notificações</span>${nl?'<button class="linkbtn" data-a="notif-lidas">Marcar todas como lidas</button>':''}</div>
-  <div class="sino-l">${L.slice(0,30).map(x=>{const t=x.tid?T(x.tid):null;return `<button class="sino-i ${x.lida?'':'nova'}" data-a="notif" data-v="${x.id}"><span class="sino-d"></span><span class="sino-c"><span class="sino-t">${esc(x.txt)}</span><span class="sino-s">${t?esc(t.codigo+' · '+t.nome)+' · ':''}${fd(x.em.slice(0,10))}${x.autor?' · '+esc(x.autor):''}</span></span></button>`}).join('')||'<div class="empty" style="padding:24px 16px">Nada por aqui.</div>'}</div>
+  <div class="sino-l">${L.slice(0,30).map(x=>{const t=x.tid?T(x.tid):null;return `<button class="sino-i ${x.lida?'':'nova'}" data-a="notif" data-v="${x.id}"><span class="sino-d"></span><span class="sino-c"><span class="sino-t">${esc(x.txt)}</span><span class="sino-s">${t?esc(t.codigo+' · '+t.nome)+' · ':''}${fd(x.em.slice(0,10))}${x.autor?' · '+esc(x.autor):''}${x.email?`<span class="sino-mail" title="Também enviada por e-mail">${ic('mail',14)}e-mail</span>`:''}</span></span></button>`}).join('')||'<div class="empty" style="padding:24px 16px">Nada por aqui.</div>'}</div>
   ${ehAdmin(me())?'<div class="sino-f"><button class="linkbtn" data-a="nav" data-r="config" data-cfg="notif">Configurar notificações</button></div>':''}</div>`:'')}
 
 /* ---------- desenho: chip, linha do tempo, quadro de avanço ---------- */
@@ -7112,7 +7132,7 @@ function tentar(t,tipo,dest,dados){const r=moverPara(t,tipo,dest,{dados});save()
   toast(r.erro,true);return r}
 
 /* ---------- Configurações › Funil (só administrador) ---------- */
-const TIPOS_NOTIF_N={tarefa_atribuida:'Tarefa atribuída a você',tarefa_marcado:'Marcado em uma tarefa',tarefa_prazo:'Prazo de tarefa chegando',tarefa_atrasada:'Tarefa atrasada',subetapa_prazo:'Subetapa passou do prazo',stand_by_retomar:'Data de retomar um Stand By',documento_vencendo:'Documento vencendo',reuniao_agendada:'Reunião agendada',aprovacao_pendente:'Pedido de aprovação para você',aprovacao_decidida:'Seu pedido foi aprovado ou recusado'};
+const TIPOS_NOTIF_N={tarefa_atribuida:'Tarefa atribuída a você',tarefa_marcado:'Marcado em uma tarefa',mencao:'Mencionado com @',tarefa_prazo:'Prazo de tarefa chegando',tarefa_atrasada:'Tarefa atrasada',subetapa_prazo:'Subetapa passou do prazo',stand_by_retomar:'Data de retomar um Stand By',documento_vencendo:'Documento vencendo',reuniao_agendada:'Reunião agendada',aprovacao_pendente:'Pedido de aprovação para você',aprovacao_decidida:'Seu pedido foi aprovado ou recusado'};
 const apCells=(p,c)=>`<label class="chk"><input type="checkbox" data-ch="cfg" data-p="${p}.g" ${c.g?'checked':''}>Gestor</label><label class="chk"><input type="checkbox" data-ch="cfg" data-p="${p}.d" ${c.d?'checked':''}>Diretor</label>${c.g&&c.d?`<select data-ch="cfg" data-p="${p}.modo" aria-label="Ordem das aprovações"><option value="sequencia" ${c.modo!=='paralelo'?'selected':''}>Em sequência</option><option value="paralelo" ${c.modo==='paralelo'?'selected':''}>Em paralelo</option></select>`:''}`;
 const usada=k=>S.terrenos.some(t=>t.neg&&(t.neg.sub===k||(t.neg.trilha||[]).some(x=>x.paraSub===k||x.deSub===k)));
 function pgConfig(){
@@ -7148,8 +7168,8 @@ function pgConfig(){
     <form class="inline-form" data-form="cfg-mot" data-s="${st}"><div class="field grow"><label for="mt-${st}">Novo motivo</label><input id="mt-${st}" name="nome" required></div><button class="btn sm">${ic('add',16)}Adicionar</button></form></div></section>`).join('')}`;
   if(aba==='checklist')corpo=C.etapas.map(e=>{const L=C.checklist[e.k]||[];return `<section class="sec"><div class="sec-h"><h2>Para sair de ${esc(e.nome)}</h2></div><div class="sec-b"><div class="cfg-docs">${Object.entries(TIPOS_DOC).filter(([k])=>!['foto','planta','ata'].includes(k)).map(([k,[l]])=>{const c=L.find(x=>x.doc===k);
       return `<button class="fchip" data-a="cfg-doc" data-e="${e.k}" data-v="${k}" aria-pressed="${!!c}" title="${c?(c.obrig?'Obrigatório: clique para tornar opcional':'Opcional: clique para tirar'):'Fora do checklist: clique para exigir'}">${c?ic(c.obrig?'check':'clock',16):''}${esc(l)}${c&&!c.obrig?' <span class="faint">(opcional)</span>':''}</button>`}).join('')}</div></div></section>`}).join('')+'<div class="hint" style="margin:0 4px">Clique para alternar: obrigatório, opcional, fora do checklist. O obrigatório trava a saída da etapa (gestor e diretor passam com justificativa).</div>';
-  if(aba==='notif')corpo=`<section class="sec"><div class="sec-h"><h2>Notificações</h2></div><div class="sec-b"><div class="cfg-t"><div class="cfg-r cfg-hd cfg-nt"><span>Tipo</span><span>Ativa</span><span>Lembretes (dias antes)</span></div>
-    ${Object.entries(C.notif).map(([k,c])=>`<div class="cfg-r cfg-nt"><span>${TIPOS_NOTIF_N[k]||k}</span><label class="chk"><input type="checkbox" data-ch="cfg" data-p="notif.${k}.ativo" ${c.ativo?'checked':''} aria-label="Ativa"></label>${c.dias?`<input data-ch="cfg-dias" data-k="${k}" value="${c.dias.join(', ')}" placeholder="Ex.: 7, 1, 0" aria-label="Lembretes de ${TIPOS_NOTIF_N[k]}">`:'<span class="faint">Na hora</span>'}</div>`).join('')}</div>
+  if(aba==='notif')corpo=`<section class="sec"><div class="sec-h"><h2>Notificações</h2></div><div class="sec-b"><div class="cfg-t"><div class="cfg-r cfg-hd cfg-nt"><span>Tipo</span><span>Ativa</span><span>E-mail</span><span>Lembretes (dias antes)</span></div>
+    ${Object.entries(C.notif).map(([k,c])=>`<div class="cfg-r cfg-nt"><span>${TIPOS_NOTIF_N[k]||k}</span><label class="chk"><input type="checkbox" data-ch="cfg" data-p="notif.${k}.ativo" ${c.ativo?'checked':''} aria-label="Ativa"></label><label class="chk"><input type="checkbox" data-ch="cfg" data-p="notif.${k}.email" ${c.email?'checked':''} aria-label="Também por e-mail, para quem não escolheu"></label>${c.dias?`<input data-ch="cfg-dias" data-k="${k}" value="${c.dias.join(', ')}" placeholder="Ex.: 7, 1, 0" aria-label="Lembretes de ${TIPOS_NOTIF_N[k]}">`:'<span class="faint">Na hora</span>'}</div>`).join('')}</div>
     </div></section>`;
   if(aba==='equipe')corpo=`<section class="sec"><div class="sec-h"><h2>Equipe e hierarquia</h2></div><div class="sec-b"><div class="cfg-t"><div class="cfg-r cfg-hd cfg-eq"><span>Pessoa</span><span>Papel</span><span>Superior</span><span>Administrador</span></div>
     ${S.membros.map((m,i)=>{const sups=S.membros.filter(x=>NIVEL[x.papel]===NIVEL[m.papel]+1);return `<div class="cfg-r cfg-eq"><span>${av(m.nome,'sm')} ${esc(m.nome)}</span><select data-ch="cfg-eq" data-i="${i}" data-k="papel" aria-label="Papel de ${esc(m.nome)}">${Object.entries(PAPEL_N).map(([k,l])=>`<option value="${k}" ${m.papel===k?'selected':''}>${l}</option>`).join('')}</select>
@@ -7177,7 +7197,7 @@ function validaEquipe(){const M=S.membros;if(!M.some(m=>m.admin))return 'A empre
 function funilClick(A,a,t){
   switch(A){
     case 'sino':sinoAberto=!sinoAberto;renderSino();return true;
-    case 'notif':{const x=S.notifs.find(n=>n.id===a.dataset.v);if(!x)return true;x.lida=true;sinoAberto=false;save();renderSino();if(x.tid&&T(x.tid)){BLA={geral:true};blId=x.tid;go('terreno',{id:x.tid,tab:'geral',from:UI.route==='terreno'?UI.from:'inicio'})}return true}
+    case 'notif':{const x=S.notifs.find(n=>n.id===a.dataset.v);if(!x)return true;x.lida=true;sinoAberto=false;save();renderSino();if(x.tid&&T(x.tid)){BLA={geral:true};blId=x.tid;go('terreno',{id:x.tid,tab:'geral',from:UI.route==='terreno'?UI.from:'inicio'});if(x.ir)mnIr(x.ir)}return true}
     case 'notif-lidas':minhasNotifs().forEach(x=>x.lida=true);save();renderSino();return true;
     case 'neg-etapa':UI.negEtapa=a.dataset.v||null;render();return true;
     case 'adv-ir':{const r=checkAdv(t);if(!r)return true;const pend=r.items.filter(x=>!x.ok);
@@ -7258,6 +7278,66 @@ function funilModal(M,fechar){const t=UI.alvo?T(UI.alvo):T(UI.id);
 prepararDados();
 // Ambiente: o Caddy injeta AMBIENTE na meta bkm-ambiente; fora da produção, selo ao lado do logo e prefixo no título
 (()=>{const a=(document.querySelector('meta[name="bkm-ambiente"]')?.content||'').trim().toLowerCase();if(!a||a==='producao'||a.includes('{'+'%'))return;const n=a==='dev'?'Desenvolvimento':a;document.title='['+(a==='dev'?'DEV':a.toUpperCase())+'] '+document.title;const b=document.querySelector('.top .brand');if(b){const s=document.createElement('span');s.className='amb-selo';s.title=n;s.innerHTML='<span class="amb-l">'+n+'</span><span class="amb-c">'+(a==='dev'?'DEV':a.slice(0,3).toUpperCase())+'</span>';b.after(s)}})();
+
+/* ---------- menção com @ e e-mail das notificações (decisão do Moisés, 28/out/2026) ----------
+   No banco: app.mencoes e app.tg_mencoes (o @ em tarefas, atividades e reuniões avisa a pessoa),
+   preferencias_notificacao e tipos_notificacao.email_padrao. Campo com data-mencao abre a lista dos
+   colegas ao digitar @; o texto mostra o @ destacado; o aviso leva ao item. WhatsApp fica para depois. */
+function arrobaDe(n){return String(n||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim().split(/\s+/).join('.').replace(/[^a-z0-9._-]/g,'')}
+function mnEquipe(){return (S.membros||[]).map(m=>({nome:m.nome,arroba:arrobaDe(m.nome)}))}
+function mnArrobas(tx){return [...new Set([...String(tx||'').matchAll(/(^|[^A-Za-z0-9._@-])@([A-Za-z0-9][A-Za-z0-9._-]{0,39})/g)].map(m=>m[2].toLowerCase().replace(/[._-]+$/,'')))]}
+function mnPessoas(tx){const a=mnArrobas(tx);return mnEquipe().filter(u=>a.includes(u.arroba)).map(u=>u.nome)}
+/* texto com os @ da equipe destacados (o resto como escT) */
+function escM(tx){const eq=new Set(mnEquipe().map(u=>u.arroba));
+  return escT(tx).replace(/(^|[^A-Za-z0-9._@-])@([A-Za-z0-9][A-Za-z0-9._-]{0,39})/g,(m,p,a)=>{const k=a.toLowerCase().replace(/[._-]+$/,'');return eq.has(k)?`${p}<span class="mencao">@${k}</span>${a.slice(k.length)}`:m})}
+/* vai por e-mail? a escolha da pessoa vence o padrão do tipo */
+function mnEmail(para,tipo){const p=S.prefsNotif?.[para]?.[tipo];return p!=null?p:!!cfg().notif[tipo]?.email}
+/* avisa só quem entrou agora no texto, e nunca quem escreveu */
+function mencionar(t,antes,depois,onde,ir){const ja=mnPessoas(antes);
+  mnPessoas(depois).filter(u=>!ja.includes(u)&&u!==me()).forEach(u=>notificar(u,'mencao',`${me()} mencionou você ${onde}`,t,null,ir))}
+function mencionarTarefa(t,k,antes){mencionar(t,antes,(k.desc||'')+'\n'+(k.resultado||''),`na tarefa: ${k.titulo}`,{b:'tarefas',alvo:k.id})}
+/* do sino ao item: abre o bloco da ficha, rola até o item e acende */
+function mnIr(ir){blocoAbre(ir.b);render();setTimeout(()=>{const el=document.querySelector(`[data-mid="${ir.alvo}"]`)||document.getElementById('bl-'+ir.b);if(!el)return;
+  el.scrollIntoView({behavior:'smooth',block:'center'});document.querySelectorAll('.pisca').forEach(x=>x.classList.remove('pisca'));
+  let feito=false;const acende=()=>{if(feito)return;feito=true;void el.offsetWidth;el.classList.add('pisca');setTimeout(()=>el.classList.remove('pisca'),4200)};
+  if('onscrollend' in window){window.addEventListener('scrollend',acende,{once:true});setTimeout(acende,900)}else setTimeout(acende,500)},60)}
+
+/* lista dos colegas ao digitar @ */
+let MN=null;
+function mnPop(){let el=document.getElementById('mn-pop');if(!el){el=document.createElement('div');el.id='mn-pop';el.className='mn-pop';el.setAttribute('role','listbox');el.setAttribute('aria-label','Colegas');document.body.appendChild(el)}return el}
+function mnFechar(){MN=null;const el=document.getElementById('mn-pop');if(el)el.hidden=true}
+function mnAbrir(el){const pos=el.selectionStart??el.value.length,m=/(?:^|[^A-Za-z0-9._@-])@([A-Za-z0-9._-]{0,40})$/.exec(el.value.slice(0,pos));
+  if(!m){mnFechar();return}
+  const q=arrobaDe(m[1]),lista=mnEquipe().filter(u=>u.nome!==me()&&(!q||u.arroba.startsWith(q)||u.arroba.split('.').some(w=>w.startsWith(q)))).slice(0,6);
+  if(!lista.length){mnFechar();return}
+  MN={el,ini:pos-m[1].length-1,fim:pos,lista,i:MN&&MN.el===el?Math.min(MN.i,lista.length-1):0};mnDesenhar()}
+function mnDesenhar(){const p=mnPop(),r=MN.el.getBoundingClientRect();
+  p.innerHTML=MN.lista.map((u,i)=>`<div class="mn-i" role="option" id="mn-o${i}" aria-selected="${i===MN.i}" data-mn="${i}">${av(u.nome,'sm')}<span class="mn-n">${esc(u.nome)}</span><span class="mn-a">@${esc(u.arroba)}</span></div>`).join('');
+  p.hidden=false;const h=p.offsetHeight,w=Math.min(300,window.innerWidth-16),cima=r.bottom+4+h>window.innerHeight&&r.top-4-h>0;
+  Object.assign(p.style,{width:w+'px',left:Math.max(8,Math.min(r.left,window.innerWidth-w-8))+'px',top:(cima?r.top-4-h:r.bottom+4)+'px'});
+  MN.el.setAttribute('aria-activedescendant','mn-o'+MN.i)}
+function mnEscolher(i){const u=MN.lista[i],el=MN.el,v=el.value,ins='@'+u.arroba+' ';
+  el.value=v.slice(0,MN.ini)+ins+v.slice(MN.fim);const c=MN.ini+ins.length;el.setSelectionRange(c,c);mnFechar();el.focus();
+  el.dispatchEvent(new Event('input',{bubbles:true}))}
+document.addEventListener('input',e=>{const el=e.target;if(el.matches?.('[data-mencao]'))mnAbrir(el);else if(MN)mnFechar()});
+window.addEventListener('keydown',e=>{if(!MN||e.target!==MN.el)return;
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();e.stopImmediatePropagation();MN.i=(MN.i+(e.key==='ArrowDown'?1:-1)+MN.lista.length)%MN.lista.length;mnDesenhar()}
+  else if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();e.stopImmediatePropagation();mnEscolher(MN.i)}
+  else if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();mnFechar()}},true);
+document.addEventListener('mousedown',e=>{const o=e.target.closest?.('[data-mn]');if(o&&MN){e.preventDefault();mnEscolher(+o.dataset.mn)}},true);
+document.addEventListener('focusout',e=>{if(MN&&e.target===MN.el)setTimeout(()=>{if(MN&&document.activeElement!==MN.el)mnFechar()},120)});
+window.addEventListener('scroll',()=>{if(MN)mnFechar()},true);window.addEventListener('resize',()=>{if(MN)mnFechar()});
+
+/* Notificações por e-mail, no menu do avatar: cada um escolhe por tipo; o app sempre mostra */
+const _renderModalMn=renderModal;renderModal=function(){if(UI.modal!=='mn-prefs')return _renderModalMn.apply(this,arguments);
+  const el=$('#modal'),eu=me(),N=cfg().notif,tipos=Object.entries(N).filter(([,c])=>c.ativo);
+  el.innerHTML=`<div class="scrim" data-a="scrim"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="mnp-h"><div class="dh"><div><h2 id="mnp-h">Notificações por e-mail</h2><div class="muted" style="margin-top:4px">Para ${esc(arrobaDe(eu))}@bkm.com.br. No sino aparecem todas.</div></div><button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button></div>
+  <div class="mnp">${tipos.map(([k,c])=>`<label class="mnp-r"><span>${esc(TIPOS_NOTIF_N[k]||k)}</span><input type="checkbox" data-mn-email="${k}" ${mnEmail(eu,k)?'checked':''}></label>`).join('')}</div>
+  <div class="df"><button class="btn primary" data-a="close">Pronto</button></div></div></div>`;
+  setTimeout(()=>el.querySelector('input')?.focus(),30)};
+document.addEventListener('change',e=>{const k=e.target.dataset?.mnEmail;if(!k)return;const eu=me();S.prefsNotif[eu]=S.prefsNotif[eu]||{};
+  if(e.target.checked===!!cfg().notif[k]?.email)delete S.prefsNotif[eu][k];else S.prefsNotif[eu][k]=e.target.checked;save();toast(e.target.checked?'Vai também por e-mail.':'Só no sino.')});
+document.addEventListener('click',e=>{const a=e.target.closest?.('[data-a="mn-prefs"]');if(!a)return;e.stopImmediatePropagation();perfilMenu=false;renderPerfil();UI.modal='mn-prefs';renderModal()},true);
 
 /* ===================== partes: terreno com vários donos =====================
    No banco: terreno_partes, oferta_partes e processos com parte_id/principal_id

@@ -35,7 +35,7 @@ const P={
   recolher:'M13 6l-6 6 6 6M19 6l-6 6 6 6',tela:'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',eu:'M12 5a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM12 2v3M12 19v3M2 12h3M19 12h3',telaSair:'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5',expandir:'M11 6l6 6-6 6M5 6l6 6-6 6',
   lugar:'M12 21s-6-5.6-6-10.5a6 6 0 0 1 12 0C18 15.4 12 21 12 21zM12 8.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4z',
   rota:'M12 2.8 21.2 12 12 21.2 2.8 12zM9 14v-3h6M12.8 8.8 15 11l-2.2 2.2',undo:'M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11',lixo:'M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5',
-  task:'M9 4h6v3H9zM9 5.5H6a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6.5a1 1 0 0 0-1-1h-3M8.5 14l2.5 2.5 4.5-5'
+mail:'M3.5 6h17v12h-17zM4 6.5l8 6 8-6',  task:'M9 4h6v3H9zM9 5.5H6a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6.5a1 1 0 0 0-1-1h-3M8.5 14l2.5 2.5 4.5-5'
 };
 const ic=(n,s=20)=>`<svg class="ic" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="${P[n]}"/></svg>`;
 const BI={
@@ -96,8 +96,8 @@ const CFG_PADRAO=()=>({
   checklist:{contrato:[['matricula',1],['onus',1],['iptu',1],['vend',1],['topo',1],['sond',0],['amb',0],['minuta',1]].map(([doc,o])=>({doc,obrig:!!o}))},
   motivos:{descartado:[['tecnica','Inviabilidade Técnica'],['financeira','Inviabilidade Financeira'],['contratual','Inviabilidade Contratual'],['formato_negocio','Inviabilidade Formato de Negócio'],['garantias','Inviabilidade Garantias'],['urbanistica','Inviabilidade Urbanística'],['documental','Inviabilidade Documental'],['outros','Outros',1]].map(([k,nome,tx])=>({k,nome,texto:!!tx,ativo:true})),
     perdido:[['vendido_terceiro','Vendido para terceiro'],['desistiu_vender','Proprietário desistiu de vender'],['preco_pagamento','Vendedor não aceitou preço ou pagamento'],['formato','Vendedor não aceitou o formato (permuta etc.)'],['garantias','Vendedor não aceitou as garantias'],['sem_retorno','Sem retorno do proprietário'],['outros','Outros',1]].map(([k,nome,tx])=>({k,nome,texto:!!tx,ativo:true}))},
-  notif:{tarefa_atribuida:{ativo:true,dias:null},tarefa_marcado:{ativo:true,dias:null},tarefa_prazo:{ativo:true,dias:[0]},tarefa_atrasada:{ativo:true,dias:null},subetapa_prazo:{ativo:true,dias:null},
-    stand_by_retomar:{ativo:true,dias:[7,0]},documento_vencendo:{ativo:true,dias:[30,7]},reuniao_agendada:{ativo:true,dias:[1]},aprovacao_pendente:{ativo:true,dias:null},aprovacao_decidida:{ativo:true,dias:null}}
+  notif:{tarefa_atribuida:{ativo:true,dias:null,email:true},tarefa_marcado:{ativo:true,dias:null,email:true},mencao:{ativo:true,dias:null,email:true},tarefa_prazo:{ativo:true,dias:[0],email:false},tarefa_atrasada:{ativo:true,dias:null,email:false},subetapa_prazo:{ativo:true,dias:null,email:false},
+    stand_by_retomar:{ativo:true,dias:[7,0],email:false},documento_vencendo:{ativo:true,dias:[30,7],email:false},reuniao_agendada:{ativo:true,dias:[1],email:false},aprovacao_pendente:{ativo:true,dias:null,email:true},aprovacao_decidida:{ativo:true,dias:null,email:true}}
 });
 const CFG0=CFG_PADRAO();
 const cfg=()=>(typeof S!=='undefined'&&S&&S.cfg)||CFG0;
@@ -303,7 +303,7 @@ function renderTema(){const el=document.getElementById('tema');if(!el)return;
 let perfilMenu=false;
 function renderPerfil(){const el=document.getElementById('perfil');if(!el)return;const u=ROLE_USER[UI.role];
   el.innerHTML=`<button class="perfil-btn" data-a="perfil-menu" aria-haspopup="menu" aria-expanded="${perfilMenu}" aria-label="${u}, ${UI.role}" title="${u} · ${UI.role}">${u[0]}</button>`+
-   (perfilMenu?`<div class="tema-menu" role="menu"><div class="perfil-eu"><b>${u}</b><span>${UI.role}</span></div><div class="tl">Entrar como (protótipo)</div>${['Diretor','Gestor','Analista','Leitura'].map(r=>`<button role="menuitemradio" aria-checked="${UI.role===r}" data-a="role" data-v="${r}"><span class="perfil-av">${ROLE_USER[r][0]}</span>${ROLE_USER[r]} · ${r}</button>`).join('')}<div class="tl"></div><button role="menuitem" data-a="reset">Restaurar dados de exemplo</button></div>`:'')}
+   (perfilMenu?`<div class="tema-menu" role="menu"><div class="perfil-eu"><b>${u}</b><span>@${arrobaDe(u)} · ${UI.role}</span></div><button role="menuitem" data-a="mn-prefs">${ic('mail',18)}Notificações por e-mail</button><div class="tl">Entrar como (protótipo)</div>${['Diretor','Gestor','Analista','Leitura'].map(r=>`<button role="menuitemradio" aria-checked="${UI.role===r}" data-a="role" data-v="${r}"><span class="perfil-av">${ROLE_USER[r][0]}</span>${ROLE_USER[r]} · ${r}</button>`).join('')}<div class="tl"></div><button role="menuitem" data-a="reset">Restaurar dados de exemplo</button></div>`:'')}
 
 const UI={route:'inicio',id:null,tab:'cadastro',from:'terrenos',q:'',role:'Diretor',edit:null,modal:null,upload:null,propForm:false};
 const me=()=>ROLE_USER[UI.role];
@@ -551,11 +551,11 @@ function abaNegociacao(t){
 function abaTarefas(t){
   const lista=t.tarefas.slice().sort((a,b)=>{const fa=['concluida','cancelada'].includes(a.status),fb=['concluida','cancelada'].includes(b.status);return fa-fb||a.prazo.localeCompare(b.prazo)});
   return `<div class="stack"><section class="sec"><div class="sec-h"><h2>Próximos passos</h2><span class="faint" style="font-size:13px">${(n=>n+(n===1?' aberta':' abertas'))(abertas(t).length)} · ${(n=>n+(n===1?' atrasada':' atrasadas'))(atrasadas(t).length)}</span></div><div class="sec-b" style="padding-top:4px">
-  ${lista.map(k=>{const late=!['concluida','cancelada'].includes(k.status)&&k.prazo<HOJE;return `<div class="task" style="align-items:flex-start;padding:12px 0">
+  ${lista.map(k=>{const late=!['concluida','cancelada'].includes(k.status)&&k.prazo<HOJE;return `<div class="task" data-mid="${k.id}" style="align-items:flex-start;padding:12px 0">
     <span style="flex:none;margin-top:2px">${av(k.resp,'sm')}</span>
     <span class="tt"><div class="t1" style="${k.status==='concluida'||k.status==='cancelada'?'text-decoration:line-through;color:var(--texto-suave)':''}">${escT(k.titulo)} ${k.prio==='alta'?'<span class="chip warn" style="height:20px">Alta</span>':''}</div>
-    ${k.desc?`<div class="muted" style="font-size:13px">${esc(k.desc)}</div>`:''}<div class="tm ${late?'late':''}">${esc(k.resp)} · ${late?'atrasada desde ':'prazo '}${fd(k.prazo).replace(' ','\u00a0')}</div>
-    ${k.status==='concluida'?`<textarea class="tk-res" rows="1" aria-label="Resultado" data-ch="tar-res" data-k="${k.id}" placeholder="O que foi feito ou obtido">${esc(k.resultado)}</textarea>`:''}</span>
+    ${k.desc?`<div class="muted" style="font-size:13px">${escM(k.desc)}</div>`:''}<div class="tm ${late?'late':''}">${esc(k.resp)} · ${late?'atrasada desde ':'prazo '}${fd(k.prazo).replace(' ','\u00a0')}</div>
+    ${k.status==='concluida'?`<textarea class="tk-res" rows="1" aria-label="Resultado" data-ch="tar-res" data-k="${k.id}" data-mencao placeholder="O que foi feito ou obtido (@ avisa um colega)">${esc(k.resultado)}</textarea>`:''}</span>
     <select aria-label="Status" data-ch="tar-st" data-k="${k.id}" class="chip chip-sel tkst ${k.status}" style="flex:none">${Object.entries(OPT.statusTar).map(([s,l])=>`<option value="${s}" ${s===k.status?'selected':''}>${l}</option>`).join('')}</select></div>`}).join('')||'<div class="muted lista-vazia">Nenhuma tarefa.</div>'}
   <form class="inline-form" data-form="tarefa"><div class="field grow"><label for="tk-t">Nova tarefa</label><input id="tk-t" name="titulo" required placeholder="Ex.: cobrar contraproposta do proprietário"></div>
   <div class="field"><label for="tk-p">Prazo</label><input id="tk-p" name="prazo" type="date" value="${addD(HOJE,7)}" required></div>
@@ -585,16 +585,16 @@ function secReunioes(t){
     <div class="field" data-so="externo"><label for="ru-e">Endereço</label><input id="ru-e" name="endereco" placeholder="Escritório do vendedor, no terreno..."></div>
     <div class="field"><label for="ru-pb">Participantes da BKM</label><input id="ru-pb" name="pbkm" value="${esc(me())}"></div>
     <div class="field"><label for="ru-pe">Participantes externos</label><input id="ru-pe" name="pext" placeholder="Vendedor, corretor, advogado"></div>
-    <div class="field full"><label for="ru-p">Pauta</label><input id="ru-p" name="pauta"></div>
-    <div class="field full" data-so="realizada"><label for="ru-r">O que foi tratado</label><textarea id="ru-r" name="resumo" placeholder="Posições de cada lado, valores citados, objeções"></textarea></div>
-    <div class="field full" data-so="realizada"><label for="ru-n">Encaminhamentos</label><textarea id="ru-n" name="enc" placeholder="Quem faz o quê, até quando"></textarea></div>
+    <div class="field full"><label for="ru-p">Pauta</label><input id="ru-p" name="pauta" data-mencao></div>
+    <div class="field full" data-so="realizada"><label for="ru-r">O que foi tratado</label><textarea id="ru-r" name="resumo" data-mencao placeholder="Posições de cada lado, valores citados, objeções"></textarea></div>
+    <div class="field full" data-so="realizada"><label for="ru-n">Encaminhamentos</label><textarea id="ru-n" name="enc" data-mencao placeholder="Quem faz o quê, até quando (@ avisa um colega)"></textarea></div>
     </div><div class="sec-f" style="padding:12px 0 0"><button type="button" class="btn text" data-a="reu-form">Cancelar</button><button class="btn primary">Registrar reunião</button></div></form>`:'';
   return `<section class="sec"><div class="sec-h"><h2>Reuniões${ms.length?` <span class="h-n">${ms.length}</span>`:''}</h2><span class="sec-acoes">${negAtiva(t)&&!UI.reuForm?`<button class="btn primary sm" data-a="reu-form">${ic('add',16)}Registrar reunião</button>`:''}</span></div><div class="sec-b">
   ${form}
-  ${ms.length?`<div class="reus">${ms.map(m=>`<article class="reu ${m.status}"><div class="reu-h"><div><div class="reu-t">${fd(m.data)} · ${esc(m.hora||'')}</div><div class="reu-m">${OPT_REU.modalidade[m.modalidade]}${m.modalidade==='presencial'?' · '+OPT_REU.local[m.local]+(m.endereco?' · '+esc(m.endereco):''):''}</div></div>
+  ${ms.length?`<div class="reus">${ms.map(m=>`<article class="reu ${m.status}" data-mid="${m.id}"><div class="reu-h"><div><div class="reu-t">${fd(m.data)} · ${esc(m.hora||'')}</div><div class="reu-m">${OPT_REU.modalidade[m.modalidade]}${m.modalidade==='presencial'?' · '+OPT_REU.local[m.local]+(m.endereco?' · '+esc(m.endereco):''):''}</div></div>
     <span class="reu-acts">${m.status==='agendada'?`<span class="chip blue">Agendada</span>${negAtiva(t)&&m.data<=HOJE?`<button class="btn sm" data-a="reu-feita" data-k="${m.id}">${ic('check',16)}Marcar realizada</button>`:''}`:m.status==='cancelada'?'<span class="chip">Cancelada</span>':`<span class="chip good">Realizada</span>`}</span></div>
     ${m.part.bkm||m.part.ext?`<div class="reu-p"><span><b>BKM</b> ${esc(m.part.bkm||'—')}</span><span><b>Externos</b> ${esc(m.part.ext||'—')}</span></div>`:''}
-    ${m.pauta?`<div class="reu-x"><span class="k">Pauta</span>${esc(m.pauta)}</div>`:''}${m.resumo?`<div class="reu-x"><span class="k">Tratado</span>${esc(m.resumo)}</div>`:''}${m.enc?`<div class="reu-x"><span class="k">Encaminhamentos</span>${esc(m.enc)}</div>`:''}
+    ${m.pauta?`<div class="reu-x"><span class="k">Pauta</span>${escM(m.pauta)}</div>`:''}${m.resumo?`<div class="reu-x"><span class="k">Tratado</span>${escM(m.resumo)}</div>`:''}${m.enc?`<div class="reu-x"><span class="k">Encaminhamentos</span>${escM(m.enc)}</div>`:''}
     ${m.status==='realizada'?`<div class="reu-ata">${m.ata?`${ic('doc',18)}<span><b>Ata</b> · ${esc(m.ata.nome)} · v${m.ata.versoes}</span><button class="btn sm text" data-a="upload" data-k="ata:${m.id}">${ic('upload',16)}Nova versão</button>`:`${ic('doc',18)}<span class="muted">Sem ata</span><button class="btn sm text" data-a="upload" data-k="ata:${m.id}">${ic('upload',16)}Anexar ata</button>`}</div>`:''}
   </article>`).join('')}</div>`:'<div class="muted">Nenhuma reunião registrada.</div>'}
   </div></section>`;
@@ -741,8 +741,8 @@ function renderModal(){
     <div class="field"><label for="tm-pr">Prioridade</label><select id="tm-pr" name="prio">${o(OPT.prioTar,k?.prio||'media')}</select></div>
     <div class="field"><label for="tm-s">Status</label><select id="tm-s" name="status">${o(OPT.statusTar,k?.status||sel.status||'pendente')}</select></div>
     <div class="field full"><span class="lbl-f">Marcar colegas (recebem notificação)</span><div class="marc">${USERS.map(u=>`<label class="chk"><input type="checkbox" name="marc" value="${esc(u)}" ${(k?.marcados||[]).includes(u)?'checked':''}>${esc(u)}</label>`).join('')}</div></div>
-    <div class="field full"><label for="tm-d">Descrição</label><textarea id="tm-d" name="desc">${esc(k?.desc||'')}</textarea></div>
-    ${k?`<div class="field full"><label for="tm-res">Resultado</label><textarea id="tm-res" name="resultado" placeholder="O que foi feito ou decidido">${esc(k.resultado||'')}</textarea></div>`:''}</div></fieldset></form>
+    <div class="field full"><label for="tm-d">Descrição</label><textarea id="tm-d" name="desc" data-mencao placeholder="Use @ para avisar um colega">${esc(k?.desc||'')}</textarea></div>
+    ${k?`<div class="field full"><label for="tm-res">Resultado</label><textarea id="tm-res" name="resultado" data-mencao placeholder="O que foi feito ou decidido">${esc(k.resultado||'')}</textarea></div>`:''}</div></fieldset></form>
     <div class="df">${t?`<button class="btn text" data-a="abrir" data-id="${t.id}" data-tab="tarefas" data-from="tarefas">Abrir terreno</button>`:''}<button class="btn text" data-a="close">${ro?'Fechar':'Cancelar'}</button>${ro?'':`<button class="btn primary" type="submit" form="f-tk">${k?'Salvar':'Criar tarefa'}</button>`}</div>`}
   el.innerHTML=`<div class="scrim" data-a="scrim"><div class="dialog" role="dialog" aria-modal="true">${h}</div></div>`;
   if(M==='novo')nvPosRender();
@@ -887,7 +887,7 @@ document.addEventListener('change',e=>{const el=e.target;
   const t=UI.route==='terreno'?T(UI.id):null;if(!t)return;
   if(el.dataset.ch==='tar-st'){const k=t.tarefas.find(x=>x.id===el.dataset.k);k.status=el.value;log(t,`Tarefa "${k.titulo}": ${OPT.statusTar[el.value]}`);save();render()}
   if(el.dataset.ch==='dil-sit'){const d=t.dilig.find(x=>x.id===el.dataset.k);d.sit=el.value;log(t,`Diligência "${d.titulo}": ${OPT.sitDil[el.value]}`);save();render()}
-  if(el.dataset.ch==='tar-res'){t.tarefas.find(x=>x.id===el.dataset.k).resultado=el.value;save()}
+  if(el.dataset.ch==='tar-res'){const k=t.tarefas.find(x=>x.id===el.dataset.k),antes=k.resultado;k.resultado=el.value;mencionarTarefa(t,k,antes);save();renderSino()}
   if(el.dataset.ch==='infra-fonte'){t.infra[el.dataset.k].fonte=el.value;save()}
   if(el.dataset.ch==='prop-status'){const lp=lastProp(t);lp.status=el.value;log(t,`Proposta v${lp.v}: ${OPT.statusProp[el.value]}`);save();render()}
 });
@@ -928,15 +928,16 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       t.pessoas.push({nome:F.nome,tipo:F.tipo,papel:F.papel,pct:F.papel==='proprietario'?lerNum(F.pct):null,tel:F.tel});save();render();break;
     case 'tarefa':t.tarefas.push({id:uid(),titulo:F.titulo,desc:F.desc,resp:F.resp,prazo:F.prazo,status:'pendente',prio:F.prio,resultado:'',marcados:[]});notifTarefa(t,t.tarefas[t.tarefas.length-1],null);log(t,`Tarefa criada: ${F.titulo}`);save();render();toast('Tarefa adicionada.');break;
     case 'poi':{S.pontos=S.pontos||[];S.pontos.push({id:uid(),nome:F.nome.trim(),cat:F.cat,lat:UI.novoPoi.lat,lng:UI.novoPoi.lng});UI.modal=null;save();const volta=UI.poiVolta;UI.poiVolta=null;if(volta&&T(volta))go('terreno',{id:volta,tab:'geral'});else render();toast('Ponto de interesse salvo.');break}
-    case 'tarefa-m':{const sel=UI.tkSel;if(sel.tid){const t=T(sel.tid),k=t.tarefas.find(x=>x.id===sel.kid);const de=k.status,antes={resp:k.resp,marcados:(k.marcados||[]).slice()};Object.assign(k,{titulo:F.titulo.trim(),resp:F.resp,prazo:F.prazo,prio:F.prio,status:F.status,desc:F.desc,resultado:F.resultado||'',marcados:new FormData(f).getAll('marc')});notifTarefa(t,k,antes);
+    case 'tarefa-m':{const sel=UI.tkSel;if(sel.tid){const t=T(sel.tid),k=t.tarefas.find(x=>x.id===sel.kid);const de=k.status,antes={resp:k.resp,marcados:(k.marcados||[]).slice(),txt:(k.desc||'')+'\n'+(k.resultado||'')};Object.assign(k,{titulo:F.titulo.trim(),resp:F.resp,prazo:F.prazo,prio:F.prio,status:F.status,desc:F.desc,resultado:F.resultado||'',marcados:new FormData(f).getAll('marc')});notifTarefa(t,k,antes);mencionarTarefa(t,k,antes.txt);
         if(de!==k.status)log(t,`Tarefa "${k.titulo}": ${OPT.statusTar[de]} → ${OPT.statusTar[k.status]}`);toast('Tarefa salva.')}
       else{const t=T(F.ter);if(!t){toast('Escolha o terreno da tarefa.',true);return}const irm=todasTarefas().filter(x=>x.k.status===F.status);
-        t.tarefas.push({id:uid(),titulo:F.titulo.trim(),desc:F.desc,resp:F.resp,prazo:F.prazo,status:F.status,prio:F.prio,resultado:'',marcados:new FormData(f).getAll('marc'),pos:Math.max(0,...irm.map(x=>x.k.pos||0))+1000});notifTarefa(t,t.tarefas[t.tarefas.length-1],null);log(t,`Tarefa criada: ${F.titulo.trim()}`);toast('Tarefa criada.')}
+        t.tarefas.push({id:uid(),titulo:F.titulo.trim(),desc:F.desc,resp:F.resp,prazo:F.prazo,status:F.status,prio:F.prio,resultado:'',marcados:new FormData(f).getAll('marc'),pos:Math.max(0,...irm.map(x=>x.k.pos||0))+1000});notifTarefa(t,t.tarefas[t.tarefas.length-1],null);mencionarTarefa(t,t.tarefas[t.tarefas.length-1],'');log(t,`Tarefa criada: ${F.titulo.trim()}`);toast('Tarefa criada.')}
       UI.modal=null;save();render();break}
     case 'reuniao':{if(F.status==='realizada'&&F.data>HOJE){toast('Reunião realizada não pode ter data futura.',true);return}
       if(F.status==='agendada'&&F.data<HOJE){toast('Para registrar uma reunião passada, escolha Realizada.',true);return}
       const pres=F.modalidade==='presencial';
-      t.reunioes.push({id:uid(),status:F.status,data:F.data,hora:F.hora,modalidade:F.modalidade,local:pres?F.local:null,endereco:pres&&F.local==='externo'?F.endereco:'',part:{bkm:F.pbkm,ext:F.pext},pauta:F.pauta,resumo:F.status==='realizada'?F.resumo:'',enc:F.status==='realizada'?F.enc:'',ata:null});
+      const rid=uid();t.reunioes.push({id:rid,status:F.status,data:F.data,hora:F.hora,modalidade:F.modalidade,local:pres?F.local:null,endereco:pres&&F.local==='externo'?F.endereco:'',part:{bkm:F.pbkm,ext:F.pext},pauta:F.pauta,resumo:F.status==='realizada'?F.resumo:'',enc:F.status==='realizada'?F.enc:'',ata:null});
+      {const m=t.reunioes[t.reunioes.length-1];mencionar(t,'',[m.pauta,m.resumo,m.enc].join('\n'),`na reunião de ${fd(m.data)}`,{b:'negociacao',alvo:rid})}
       log(t,`Reunião ${F.status==='realizada'?'realizada':'agendada'} em ${fd(F.data)} (${OPT_REU.modalidade[F.modalidade]}${pres?', '+OPT_REU.local[F.local].toLowerCase():''})`);UI.reuForm=false;save();render();toast('Reunião registrada.');break}
     case 'prop':{const v=lerNum(F.valor);if(!v){toast('Informe o valor.',true);return}const lp=lastProp(t);
       if(lp&&['rascunho','apresentada','em_analise'].includes(lp.status))lp.status=lp.origem===F.origem?'substituida':'recusada';
