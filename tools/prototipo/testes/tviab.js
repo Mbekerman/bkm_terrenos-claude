@@ -100,7 +100,7 @@ ok(cap.every(x=>!x.sel&&x.base==='Aporte'&&x.fmt==='pct')&&/62\.968/.test(cap[0]
   tag+' custo de capital: base só Aporte, valor em %; 2% da permuta financeira (3.148.416) = 62.968,32 e 1% do pagamento (1.000.000) = 10.000: '+JSON.stringify(cap));
 ok(/1\.778\.568/.test(await txt('#vb-tot-financeiro')),tag+' Despesas financeiras somam o custo de capital: 1.778.568,32');
 const hdA=await p.$$eval('#vb-sec-financeiro .vb-hd > span',e=>e.filter(x=>getComputedStyle(x).display!=='none').map(x=>x.textContent+':'+getComputedStyle(x).textAlign));
-ok(modo!=='desktop'||hdA.join().replace('Item:start','Item:left')==='Item:left,Base de cálculo:left,Valor:right,Resultado:right',tag+' cabeçalho de Financeiras: texto à esquerda, números à direita, sem a coluna Meses: '+hdA.join());
+ok(modo!=='desktop'||hdA.join().replace('Item:start','Item:left')==='Item:left,Base de cálculo:center,Valor:center,Resultado:right',tag+' cabeçalho de Financeiras: Item à esquerda, Base e Valor centralizados, Resultado à direita, sem a coluna Meses: '+hdA.join());
 await aba('res');const resC=await txt('#vb-res');ok(/Custo de capital permuta financeira R\$\s?62\.968/.test(resC)&&/Custo de capital pagamento terreno R\$\s?10\.000/.test(resC),tag+' DRE detalha o custo de capital nas despesas financeiras (diretoria)');
 if(tema==='claro'){await inteira('res','_2dre_inteira.png');await inteira('financeiro','_2financeiras.png')}
 if(modo==='desktop'&&tema==='escuro')await inteira('financeiro','_2financeiras.png');
