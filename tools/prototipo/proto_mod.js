@@ -64,14 +64,14 @@ function entornoCard(t){if(t.lat==null)return '';
     corpo=`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${ENT_CAT.map(([k,l,pl])=>{const its=e.itens.filter(x=>x.cat===k&&!x.excl).sort((a,b)=>a.pe-b.pe);
       if(!its.length)return `<li class="ent-vazio"><span><span class="t2">Sem ${pl} a até ${raio} a pé</span></span></li>`;
       sobra+=Math.max(0,its.length-lim);
-      return its.slice(0,lim).map(p=>`<li><span><span class="t1">${esc(p.nome)}</span><span class="t2">${l}${p.min!=null?` · ${p.min} min a pé`:''}</span></span><b class="num">${p.pe<1000?Math.round(p.pe/10)*10+' m':num(p.pe/1000,2)+' km'}</b><a href="${rotaPeUrl(t,p)}" target="_blank" rel="noopener">Rota</a>${poiX('g',p.gid,p.nome,t)}</li>`).join('')}).join('')}</ul>
+      return its.slice(0,lim).map(p=>`<li><span><span class="t1">${esc(p.nome)}</span><span class="t2">${l}${p.min!=null?` · ${p.min} min a pé`:''}</span></span><span class="num poi-d">${p.pe<1000?Math.round(p.pe/10)*10+'\u00a0m':num(p.pe/1000,2)+'\u00a0km'}</span><a class="iconbtn sm poi-rota" href="${rotaPeUrl(t,p)}" target="_blank" rel="noopener" aria-label="Rota até ${esc(p.nome)}" title="Rota">${ic('rota',18)}</a>${poiX('g',p.gid,p.nome,t)}</li>`).join('')}).join('')}</ul>
     ${sobra||ENT_TODOS?`<button class="linkbtn" data-a="ent-todos" style="margin-top:6px">${ENT_TODOS?'Mostrar menos':`Mostrar mais ${sobra}`}</button>`:''}
-    <div class="hint ent-pe">${busc?'Atualizando no Google… · ':''}${e.fonte==='exemplo'?'Dados de exemplo':'Google'} · ${e.semPe?'distância em linha reta (a rota a pé não respondeu)':'distância pela rota a pé'} · buscado em ${fd(e.em)}${mudou?' · <b>a localização mudou depois da busca</b>':''}</div>`}
+    <div class="hint ent-pe">${busc?'Atualizando no Google… · ':''}${e.fonte==='exemplo'?'Exemplo':'Google'} · ${e.semPe?'linha reta (sem rota a pé)':'rota a pé'} · ${fd(e.em)}${mudou?' · <b>a localização mudou depois da busca</b>':''}</div>`}
   corpo+=pontosEmpresa(t)+poiExcluidos(t);
   return `<section class="sec" id="ent-card"><div class="sec-h"><h2>Pontos de interesse</h2><span class="faint" style="font-size:12px">a pé · até ${raio}</span></div><div class="sec-b">${corpo}</div></section>`}
 /* pontos cadastrados pela empresa: todos aparecem; a pé se está a até RAIO_PE a pé, senão de carro; sem rota medida, linha reta */
 let EMP_TODOS=false;
-const kmTxt=m=>m<1000?Math.round(m/10)*10+' m':num(m/1000,m<10000?2:1)+' km';
+const kmTxt=m=>m<1000?Math.round(m/10)*10+'\u00a0m':num(m/1000,m<10000?2:1)+'\u00a0km';
 function pontosEmpresa(t){const pts=S.pontos||[];const d=t.dist&&t.dist.lat===t.lat&&t.dist.lng===t.lng?t.dist.m:{};
   const its=pts.map(p=>{const x=d[p.id]||{},reta=distKm(t.lat,t.lng,p.lat,p.lng)*1000;
     if(x.pe!=null&&x.pe<=RAIO_PE)return {p,ord:x.pe,dist:kmTxt(x.pe),modo:`${x.pm} min a pé`,url:rotaPeUrl(t,p)};
@@ -79,7 +79,7 @@ function pontosEmpresa(t){const pts=S.pontos||[];const d=t.dist&&t.dist.lat===t.
     return {p,ord:reta,dist:kmTxt(reta),modo:'em linha reta',url:reta<=RAIO_PE?rotaPeUrl(t,p):rotaUrl(t,p)}}).sort((a,b)=>a.ord-b.ord);
   const lim=EMP_TODOS?999:5;
   return `<div class="ent-emp"><div class="ent-emp-h"><span>Cadastrados pela empresa</span>${UI.role!=='Leitura'?`<button class="linkbtn ed" data-a="ent-add-ponto" data-id="${t.id}">${ic('add',16)}Adicionar ponto</button>`:''}</div>
-    ${its.length?`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${its.slice(0,lim).map(x=>`<li><span><span class="t1">${esc(x.p.nome)}</span><span class="t2">${CAT_POI[x.p.cat]||'Outro'} · ${x.modo}</span></span><b class="num">${x.dist}</b><a href="${x.url}" target="_blank" rel="noopener">Rota</a>${poiX('e',x.p.id,x.p.nome,t)}</li>`).join('')}</ul>
+    ${its.length?`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${its.slice(0,lim).map(x=>`<li><span><span class="t1">${esc(x.p.nome)}</span><span class="t2">${CAT_POI[x.p.cat]||'Outro'} · ${x.modo}</span></span><span class="num poi-d">${x.dist}</span><a class="iconbtn sm poi-rota" href="${x.url}" target="_blank" rel="noopener" aria-label="Rota até ${esc(x.p.nome)}" title="Rota">${ic('rota',18)}</a>${poiX('e',x.p.id,x.p.nome,t)}</li>`).join('')}</ul>
     ${its.length>5?`<button class="linkbtn" data-a="emp-todos" style="margin-top:6px">${EMP_TODOS?'Mostrar menos':`Mostrar mais ${its.length-5}`}</button>`:''}`
     :'<div class="muted" style="font-size:14px">Nenhum ponto cadastrado pela empresa.</div>'}
     ${DIST_BUSCA_ON(t)?'<div class="hint">Medindo as rotas no Google…</div>':''}</div>`}
@@ -254,7 +254,7 @@ function pgMapa(){
   const opt=(o,v)=>Object.entries(o).map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${esc(l)}</option>`).join('');
   return `<div class="mapa-pg">
   <aside class="mapa-lado" aria-label="Terrenos no mapa">
-    <div class="page-h compacto"><div><h1><span class="marca"></span>Mapa</h1></div></div>
+    <div class="page-h compacto"><div><h1>Mapa</h1></div></div>
     <label class="search sm" for="mp-q">${bi('busca',24)}<input id="mp-q" type="search" placeholder="Buscar por nome, bairro, SQL..." value="${esc(UI.mp.q)}" autocomplete="off"></label>
     ${fxBarra('mapa')}
     ${UI.mp.q||UI.mp.ocultas.length?'<button class="linkbtn" data-a="mp-limpar" style="align-self:flex-start">Limpar busca e legenda</button>':''}
@@ -488,7 +488,7 @@ function tabelaGrafico(k){const d=DIMS[k];let s;
 function pgDash(){const f=UI.dash.f,rows=dashBase(null),ativos=rows.filter(t=>t.neg?.status==='ativo');
   const chips=Object.entries(f).flatMap(([d,vs])=>vs.map(v=>`<button class="fchip on" data-a="dash-f" data-d="${d}" data-v="${esc(v)}" aria-label="Remover filtro ${esc(DIMS[d].lab?DIMS[d].lab(v):v)}">${esc(d==='mes'?v.split('-').reverse().join('/'):DIMS[d].lab(v))}${ic('close',14)}</button>`));
   return `<div id="dash" class="dash">
-  <div class="page-h"><div><h1><span class="marca"></span>Dashboard</h1><div class="sub">Clique numa barra ou num mês para filtrar todos os gráficos e a lista.</div></div>
+  <div class="page-h"><div><h1>Dashboard</h1><div class="sub">Clique numa barra ou num mês para filtrar todos os gráficos e a lista.</div></div>
     <button class="btn" data-a="dash-full">${ic(document.fullscreenElement||document.body.classList.contains('dash-fixo')?'telaSair':'tela',18)}${document.fullscreenElement||document.body.classList.contains('dash-fixo')?'Sair da tela cheia':'Tela cheia'}</button></div>
   <div class="dash-g">
   <aside class="dash-lado">
@@ -581,7 +581,7 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     ${S.vbMargemMin!=null?`<tr><td class="esq">Rentabilidade mínima da empresa</td><td class="num">${num(S.vbMargemMin,1)}%</td><td></td></tr>`:''}</tbody></table></div>
     ${abaixoMin(t)?`<div class="banner warn" style="margin-top:12px">${ic('warn')}<div>${abaixoMinTxt(t)}.</div></div>`:''}`
     :`<div class="muted">${vs.length?'Nenhum estudo marcado como válido.':`Sem estudo.${UI.role!=='Leitura'?' <button class="linkbtn ed" data-a="vb-novo">Montar estudo</button>':''}`}</div>`}</div></section>`;
-  const rel=relevoHtml(t)||topoBotao(t)?`<section class="sec"><div class="sec-h"><h2>Relevo</h2>${t.relevo?`<span class="faint" style="font-size:12px">estimado em ${fd(t.relevo.em)}</span>`:''}${topoBotao(t)}</div><div class="sec-b">${relevoHtml(t)||'<div class="muted">O topográfico preliminar traz as curvas de nível com 30 m em volta, sobre a imagem, em PDF e DXF.</div>'}</div></section>`:'';
+  const rel=relevoHtml(t)||topoBotao(t)?`<section class="sec"><div class="sec-h"><h2>Relevo</h2>${t.relevo?`<span class="faint" style="font-size:12px">estimado em ${fd(t.relevo.em)}</span>`:''}${topoBotao(t)}</div>${relevoHtml(t)?`<div class="sec-b">${relevoHtml(t)}</div>`:''}</section>`:'';
   return `<div class="geral"><div class="geral-c">${info}${condicoes(t)}${neg}</div><div class="geral-c">${loc}${rel}${poi}${setoresCard(t)}${perfilCard(t)}${viab}</div></div>`}
 function L_initMini(){const el=$('#mini-mapa'),t=T(UI.id);if(!el||!t||t.lat==null)return;if(!window.L){el.innerHTML='<div class="mapa-erro">Mapa indisponível.</div>';return}
   MINI=L.map(el,{zoomControl:true,attributionControl:true,scrollWheelZoom:false,doubleClickZoom:false,dragging:!L.Browser.mobile});
@@ -661,7 +661,7 @@ function pgTarefas(){const f=UI.tk,l=tkFiltradas();const cols=COLS_TK.filter(c=>
     {k:'prio',l:'Prioridade',cls:'hm',v:({k})=>OPT.prioTar[k.prio]||'—',s:({k})=>['alta','media','baixa'].indexOf(k.prio)},
     {k:'status',l:'Status',v:({k})=>`<span class="chip tkst ${k.status}">${OPT.statusTar[k.status]}</span>`,s:({k})=>COLS_TK.indexOf(k.status)}];
   const atras=todasTarefas().filter(({k})=>k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)).length;
-  return `<div class="page-h"><div><h1><span class="marca"></span>Tarefas</h1><div class="sub">${l.filter(x=>!['concluida','cancelada'].includes(x.k.status)).length} abertas · ${atras} atrasadas. Arraste os cartões para mudar o status.</div></div>
+  return `<div class="page-h"><div><h1>Tarefas</h1><div class="sub">${l.filter(x=>!['concluida','cancelada'].includes(x.k.status)).length} abertas · ${atras} atrasadas</div></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="seg" role="group" aria-label="Visualização">${[['quadro','Quadro'],['tabela','Tabela']].map(([k,x])=>`<button data-a="tk-vista" data-v="${k}" aria-pressed="${f.vista===k}">${x}</button>`).join('')}</div>
     <button class="btn primary ed" data-a="tk-nova" data-v="pendente">${ic('add',18)}Nova tarefa</button></div></div>
   ${filtros}${f.vista==='tabela'?`<section class="sec"><div class="sec-b">${tabela('tarefas',l,colsT,{attr:({k,t})=>`data-a="tk-abrir" data-tk="${k.id}" data-id="${t.id}" tabindex="0"`,padrao:{k:'prazo',dir:'asc'},vazio:'Nenhuma tarefa com esses filtros.'})}</div></section>`:quadro}`}

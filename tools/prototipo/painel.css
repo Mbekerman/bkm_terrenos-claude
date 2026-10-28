@@ -1372,3 +1372,150 @@ body.vb-aberto { overflow: hidden }
 @keyframes topo-gira { to { transform: rotate(360deg) } }
 .topo-previa { display: block; width: 100%; height: auto; border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 8px; margin-bottom: 12px }
 .topo-kv { margin-bottom: 8px }
+
+/* ===================== Revisão de design (28/out/2026) ===================== */
+/* Campo de número com a unidade dentro (máscara ao digitar, proto_ui.js) */
+.adorno { position: relative; display: block; min-width: 0; width: 100% }
+.adorno > input { width: 100% }
+.adorno.moeda > input { padding-left: 40px !important }
+.adorno.pct > input { padding-right: 34px !important }
+.adorno-t { position: absolute; top: 50%; transform: translateY(-50%); color: var(--m-on-var, #444746); font-size: 14px; line-height: 1; pointer-events: none }
+.adorno.moeda > .adorno-t { left: 12px }
+.adorno.pct > .adorno-t { right: 12px }
+input[data-fmt]:not([data-fmt="none"]) { font-variant-numeric: tabular-nums }
+:root[data-tema="escuro"] .adorno-t { color: #8e9ac4 }
+
+/* Lista chave/valor: valor logo depois do rótulo, alinhado à esquerda (nada de texto em degrau) */
+.kv dd { text-align: left !important; justify-content: flex-start !important }
+.kv dt { align-self: center; line-height: 20px }
+.kv dd .faint { font-size: 12px }
+.kv-2 { display: block; font-size: 12px; color: var(--m-on-var, var(--texto-suave)) }
+.kv dd .ni { font-style: normal }
+/* Condições pedidas: dois números e a lista */
+.cond2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--m-outline-var, var(--linha)); margin-bottom: 4px }
+.cond2 .lbl { font-size: 12px; font-weight: 500; color: var(--m-on-var, var(--texto-suave)) }
+.cond2 .big { font-size: 24px; line-height: 32px; font-weight: 400; font-variant-numeric: tabular-nums; margin-top: 2px; white-space: nowrap }
+.cond2 .big .ni { font-size: 14px; color: var(--texto-suave) }
+.sec-acoes { display: flex; gap: 4px; align-items: center; flex: none }
+.sec-h h2 { min-width: 0 }
+/* Valores com unidade nunca quebram no meio ("R$ 6,90 / mi") */
+.num, .big, .mv, .kpi .v, .chip { font-variant-numeric: tabular-nums }
+
+/* Campos no padrão Material 3 (campo contornado): altura 40, raio 4, contorno #747775, seta própria no select */
+:is(.field, .cfg-r, .vb-c, .zp-tbl, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select, textarea) {
+  border: 1px solid #747775 !important; border-radius: 4px !important; background-color: transparent; color: var(--m-on-surface, #1f1f1f); font-size: 14px }
+:is(.field, .cfg-r, .vb-c, .zp-tbl, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select) { height: 40px !important; min-height: 40px !important; padding: 0 12px }
+:is(.field, .cfg-r, .vb-c, .zp-tbl, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :is(input, select, textarea):focus { outline: 2px solid var(--m-primary, #0b57d0) !important; outline-offset: -2px; border-color: transparent !important }
+select:not([multiple]) { -webkit-appearance: none; appearance: none; padding-right: 36px !important; background-repeat: no-repeat; background-position: right 10px center; background-size: 18px 18px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23444746' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important }
+:root[data-tema="escuro"] select:not([multiple]) { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23c4c7f0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important }
+:root[data-tema="escuro"] :is(.field, .cfg-r, .vb-c, .zp-tbl, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not(.auto-v):not(.vb-pop-nome), select, textarea) { border-color: rgba(142,154,196,.5) !important; background-color: transparent !important; color: #e6ecff }
+:root[data-tema="escuro"] { color-scheme: dark }
+input[type=date] { font-variant-numeric: tabular-nums }
+input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
+:root[data-tema="escuro"] input[type=checkbox] { accent-color: #7c8cff }
+.vb-c input:disabled, .vb-c select:disabled { border-color: transparent !important; background-image: none !important }
+/* Abrir e fechar (details) com seta, sem o triângulo do navegador */
+.details > summary { list-style: none; display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--m-on-surface, var(--texto)); min-height: 40px; padding: 0 }
+.details > summary::-webkit-details-marker { display: none }
+.details > summary::after { content: ""; width: 20px; height: 20px; margin-left: auto; flex: none; transition: transform .15s;
+  background: no-repeat center/20px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23444746' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") }
+.details[open] > summary::after { transform: rotate(180deg) }
+:root[data-tema="escuro"] .details > summary::after { filter: invert(.85) }
+
+/* Segmentado do raio nos dois quadros do entorno, com o mesmo recuo do quadro */
+.sec > .rd-raios { margin: 16px var(--q-px, 24px) 0 !important; align-self: flex-start; width: fit-content; max-width: calc(100% - 2 * var(--q-px, 24px)); overflow-x: auto; scrollbar-width: none }
+.sec > .rd-raios button { white-space: nowrap; padding: 0 14px !important; font-size: 13px; min-height: 36px !important }
+
+/* Configurações: navegação à esquerda (como no Gmail e no Drive), abas roláveis no celular */
+.cfg-lay { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px; align-items: start }
+.cfg-nav { display: flex; flex-direction: column; gap: 2px; position: sticky; top: 88px }
+.cfg-tab { border: 0; background: transparent; text-align: left; height: 40px; padding: 0 16px; border-radius: 20px; font-size: 14px; font-weight: 500; color: var(--m-on-var, #444746); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.cfg-tab:hover { background: rgba(68,71,70,.08) }
+.cfg-tab[aria-selected="true"] { background: #c2e7ff; color: #001d35 }
+:root[data-tema="escuro"] .cfg-tab { color: #b9c3e6 }
+:root[data-tema="escuro"] .cfg-tab:hover { background: rgba(124,140,255,.08) }
+:root[data-tema="escuro"] .cfg-tab[aria-selected="true"] { background: rgba(99,112,255,.10); box-shadow: inset 0 0 0 1px rgba(124,140,255,.5); color: #c9d6ff }
+.cfg-corpo { min-width: 0 }
+@media (max-width: 899px) {
+  .cfg-lay { grid-template-columns: minmax(0, 1fr); gap: 12px }
+  .cfg-nav { flex-direction: row; overflow-x: auto; position: static; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; border-bottom: 1px solid var(--m-outline-var, #c4c7c5); gap: 0 }
+  .cfg-nav::-webkit-scrollbar { display: none }
+  .cfg-tab { border-radius: 0; height: 48px; padding: 0 14px; flex: none; position: relative }
+  .cfg-tab[aria-selected="true"], :root[data-tema="escuro"] .cfg-tab[aria-selected="true"] { background: transparent; box-shadow: none; color: var(--m-primary, #0b57d0) }
+  .cfg-tab[aria-selected="true"]::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: currentColor }
+  :root[data-tema="escuro"] .cfg-tab[aria-selected="true"] { color: #c9d6ff }
+}
+/* Catálogo de parâmetros: tabela que rola para o lado, com a zona fixa */
+.tblwrap.rola { overflow-x: auto }
+.zp-tbl { min-width: 100%; white-space: nowrap }
+.zp-tbl th, .zp-tbl td { padding: 6px 8px !important; vertical-align: middle }
+.zp-tbl input:not([type=checkbox]) { width: 76px !important; text-align: right; padding: 0 8px !important }
+.zp-tbl td input[data-k=fonte_norma] { width: 220px !important; text-align: left }
+.zp-tbl select { width: auto !important; min-width: 110px }
+.zp-tbl th:first-child, .zp-tbl td:first-child { position: sticky; left: 0; background: var(--m-card, #fff); z-index: 1 }
+:root[data-tema="escuro"] .zp-tbl th:first-child, :root[data-tema="escuro"] .zp-tbl td:first-child { background: #060c20 }
+
+/* Tabelas: cabeçalho alinhado como a coluna; fase e etapa em texto de duas linhas */
+.dt th { text-align: left !important }
+.dt th.num, .dt td.num { text-align: right !important }
+.dt td { text-align: left }
+.dt .temp-mini { margin: 0 }
+.dt th .dt-sort { gap: 2px }
+.dt th[aria-sort="none"] .dt-ar { opacity: 0; transition: opacity .12s }
+.dt th:hover .dt-ar, .dt th:focus-within .dt-ar { opacity: .6 }
+.dt td { padding-top: 10px !important; padding-bottom: 10px !important }
+.dt .c-etapa { align-items: flex-start !important; gap: 0 !important; display: flex !important }
+.dt .c-etapa .chip.fase, .dt .c-etapa .chip.fase-n { border: 0 !important; background: none !important; padding: 0 !important; min-height: 0; height: auto; font-size: 12px; line-height: 16px; font-weight: 500; color: var(--m-on-var, #444746) !important }
+.dt .c-etapa .chip.sub { border: 0 !important; background: none !important; padding: 0 !important; min-height: 0; height: auto; font-size: 14px; line-height: 20px; color: var(--m-on-surface, #1f1f1f) !important; white-space: normal; text-align: left }
+.dt .c-etapa .chip.sub.warn { color: #7a5900 !important }
+.dt .c-etapa .chip.sub.warn::after { content: " · atrasada"; font-size: 12px }
+.dt .c-etapa .chip.blue { border: 0 !important; background: none !important; padding: 0 !important; height: auto; min-height: 0; font-size: 12px; line-height: 16px; color: var(--m-primary, #0b57d0) !important }
+:root[data-tema="escuro"] .dt .c-etapa .chip.sub { color: #e6ecff !important }
+:root[data-tema="escuro"] .dt .c-etapa .chip.sub.warn { color: #ffd479 !important }
+:root[data-tema="escuro"] .dt .c-etapa .chip.blue { color: #a8b4ff !important }
+:root[data-tema="escuro"] .dt .c-etapa :is(.chip.fase, .chip.fase-n) { color: #8e9ac4 !important }
+.dt td.col-tarefa .t2:first-child { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 260px }
+/* Terrenos no celular: linha de lista (nome, bairro; valor à direita; etapa embaixo), sem rótulos */
+.empilha .dt.lista-t tr { display: grid !important; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; row-gap: 4px; padding: 12px 16px !important }
+.empilha .dt.lista-t td { padding: 0 !important; text-align: left !important; font-weight: 400 }
+.empilha .dt.lista-t td::before { content: none !important }
+.empilha .dt.lista-t td.hm { display: none !important }
+.empilha .dt.lista-t td.col-nome { grid-column: 1; grid-row: 1 }
+.empilha .dt.lista-t td.col-nome .t1 { font-weight: 500 }
+.empilha .dt.lista-t td.col-valor { grid-column: 2; grid-row: 1 / span 2; text-align: right !important; white-space: nowrap !important }
+.empilha .dt.lista-t td.col-etapa { grid-column: 1; grid-row: 2 }
+.empilha .dt.lista-t .c-etapa { flex-direction: row !important; flex-wrap: wrap; column-gap: 6px !important; align-items: baseline !important }
+.empilha .dt.lista-t .c-etapa .chip.fase::after, .empilha .dt.lista-t .c-etapa .chip.fase-n::after { content: " ·" }
+.page-h .sub { margin-left: 0 !important; font-size: 14px; line-height: 20px; margin-top: 4px }
+.empilha .dt.lista-t .c-etapa .chip.fase::after, .empilha .dt.lista-t .c-etapa .chip.fase-n::after { content: none }
+.empilha .dt.lista-t .c-etapa { flex-direction: column !important }
+.sec.lista .dt { border: 0 !important; border-radius: 0 !important }
+.sec.lista .dt-wrap { border-radius: 12px }
+
+/* Pontos de interesse: distância discreta, rota e lixeira como ícones */
+.poil li { grid-template-columns: minmax(0, 1fr) auto auto auto !important; gap: 4px 8px !important }
+.poil .poi-d { font-size: 13px; color: var(--m-on-var, #444746); white-space: nowrap; font-weight: 400 }
+.poil .poi-rota { color: var(--m-primary, #0b57d0); text-decoration: none }
+:root[data-tema="escuro"] .poil .poi-rota { color: #a8b4ff }
+:root[data-tema="escuro"] .poil .poi-d { color: #8e9ac4 }
+.ent-pe { font-size: 12px }
+/* Lixeira de linha (Confrontações, Matrículas, Configurações...) */
+.iconbtn.lixo { color: var(--m-on-var, #444746) }
+.iconbtn.lixo:hover { color: #b3261e; background: rgba(179,38,30,.08) }
+:root[data-tema="escuro"] .iconbtn.lixo { color: #8e9ac4 }
+/* Seções da ficha: título um nível abaixo do nome do terreno; Recolher discreto à direita */
+.bl-h { font-size: 20px !important; line-height: 28px !important; min-height: 56px !important }
+.bl-fim { justify-content: flex-end !important; padding-top: 8px !important }
+.bl-rec { border: 0 !important; height: 36px; color: var(--m-primary, #0b57d0) !important; font-weight: 500; padding: 0 12px 0 8px !important }
+:root[data-tema="escuro"] .bl-rec { color: #a8b4ff !important }
+@media (max-width: 599px) { .bl-h { font-size: 18px !important; min-height: 52px !important } }
+/* Lista chave/valor só de leitura não reserva a coluna do lápis */
+.kvl:not(:has(.kv-ed)) > .kv { grid-template-columns: minmax(110px, 40%) minmax(0, 1fr) !important }
+/* Cabeçalho de quadro: ações sempre como botão de texto com ícone (o cheio fica para a ação principal da página) */
+.sec-h .btn:not(.text):not(.iconbtn) { background: transparent !important; border: 0 !important; box-shadow: none !important; color: var(--m-primary, #0b57d0) !important; padding: 0 12px !important; height: 40px; min-height: 40px }
+.sec-h .btn:not(.text):not(.iconbtn):hover { background: rgba(11,87,208,.08) !important }
+:root[data-tema="escuro"] .sec-h .btn:not(.text):not(.iconbtn) { color: #a8b4ff !important; background: transparent !important }
+.sec-h .sec-acoes { margin-right: -12px }
+.sec-h h2 .h-n { font-size: 13px; color: var(--m-on-var, #444746); font-weight: 400; margin-left: 4px }
+@media (max-width: 599px) { .sec-h { flex-wrap: nowrap } .sec-h h2 { overflow-wrap: anywhere } }

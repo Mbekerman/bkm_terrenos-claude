@@ -8,11 +8,11 @@ const addD=(s,n)=>{const x=pd(s);x.setDate(x.getDate()+n);return iso(x)};
 const diff=(a,b)=>Math.round((pd(b)-pd(a))/864e5);
 const MES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
 const fd=s=>{if(!s)return '—';const x=pd(s);return `${x.getDate()} ${MES[x.getMonth()]}${x.getFullYear()!==new Date().getFullYear()?' '+x.getFullYear():''}`};
-const mi=v=>v==null?'—':'R$ '+(v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' mi';
+const mi=v=>v==null?'—':'R$\u00a0'+(v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'\u00a0mi';
 const brl=v=>v==null?'—':Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
 const brl2=v=>v==null?'—':Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const num=(v,d=0)=>v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:d});
-const m2=v=>v==null?'—':num(v,2)+' m²';
+const m2=v=>v==null?'—':num(v,2)+'\u00a0m²';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const lerNum=s=>{if(s==null)return null;s=String(s).trim();if(!s)return null;const n=Number(s.replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,''));return isNaN(n)?null:n};
 const digits=s=>String(s||'').replace(/\D/g,'');
@@ -32,7 +32,7 @@ const P={
   money:'M4 7h16v10H4zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM7 10v4M17 10v4',
   recolher:'M13 6l-6 6 6 6M19 6l-6 6 6 6',tela:'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',eu:'M12 5a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM12 2v3M12 19v3M2 12h3M19 12h3',telaSair:'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5',expandir:'M11 6l6 6-6 6M5 6l6 6-6 6',
   lugar:'M12 21s-6-5.6-6-10.5a6 6 0 0 1 12 0C18 15.4 12 21 12 21zM12 8.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4z',
-  lixo:'M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5',
+  rota:'M12 2.8 21.2 12 12 21.2 2.8 12zM9 14v-3h6M12.8 8.8 15 11l-2.2 2.2',lixo:'M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5',
   task:'M9 4h6v3H9zM9 5.5H6a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6.5a1 1 0 0 0-1-1h-3M8.5 14l2.5 2.5 4.5-5'
 };
 const ic=(n,s=20)=>`<svg class="ic" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="${P[n]}"/></svg>`;
@@ -300,7 +300,7 @@ function renderTema(){const el=document.getElementById('tema');if(!el)return;
 let perfilMenu=false;
 function renderPerfil(){const el=document.getElementById('perfil');if(!el)return;const u=ROLE_USER[UI.role];
   el.innerHTML=`<button class="perfil-btn" data-a="perfil-menu" aria-haspopup="menu" aria-expanded="${perfilMenu}" aria-label="${u}, ${UI.role}" title="${u} · ${UI.role}">${u[0]}</button>`+
-   (perfilMenu?`<div class="tema-menu" role="menu"><div class="perfil-eu"><b>${u}</b><span>${UI.role}</span></div><div class="tl">Entrar como (protótipo)</div>${['Diretor','Gestor','Analista','Leitura'].map(r=>`<button role="menuitemradio" aria-checked="${UI.role===r}" data-a="role" data-v="${r}"><span class="perfil-av">${ROLE_USER[r][0]}</span>${ROLE_USER[r]} · ${r}</button>`).join('')}</div>`:'')}
+   (perfilMenu?`<div class="tema-menu" role="menu"><div class="perfil-eu"><b>${u}</b><span>${UI.role}</span></div><div class="tl">Entrar como (protótipo)</div>${['Diretor','Gestor','Analista','Leitura'].map(r=>`<button role="menuitemradio" aria-checked="${UI.role===r}" data-a="role" data-v="${r}"><span class="perfil-av">${ROLE_USER[r][0]}</span>${ROLE_USER[r]} · ${r}</button>`).join('')}<div class="tl"></div><button role="menuitem" data-a="reset">Restaurar dados de exemplo</button></div>`:'')}
 
 const UI={route:'inicio',id:null,tab:'cadastro',from:'terrenos',q:'',role:'Diretor',edit:null,modal:null,upload:null,propForm:false};
 const me=()=>ROLE_USER[UI.role];
@@ -417,7 +417,7 @@ function secaoGenerica(t,id){
     ${id==='fis'&&t.aConst!=null&&t.aDemolir!=null&&t.aDemolir<t.aConst?`<div class="hint" style="margin-top:10px">Demolição parcial: ${m2(t.aConst-t.aDemolir)} permanecem.</div>`:''}</div></section>`;
   const inp=c=>campoInp(t,c);
   return `<section class="sec" id="sec-${id}"><form data-form="sec" data-s="${id}"><div class="sec-h"><h2>${s.titulo}</h2></div>
-    <div class="sec-b">${id==='loc'?camposEndereco(t,true):''}<div class="editgrid">${(id==='loc'?s.campos.filter(c=>!END_CAMPOS.includes(c[0])):s.campos).map(inp).join('')}</div>${id==='loc'?'<div class="hint" style="margin-top:8px">Localização mínima para cadastrar: logradouro, bairro ou ponto no mapa. O polígono entra depois, na análise.</div>':''}</div>
+    <div class="sec-b">${id==='loc'?camposEndereco(t,true):''}<div class="editgrid">${(id==='loc'?s.campos.filter(c=>!END_CAMPOS.includes(c[0])):s.campos).map(inp).join('')}</div>${id==='loc'?'':''}</div>
     <div class="sec-f"><button type="button" class="btn text" data-a="cancel-edit">Cancelar</button><button class="btn primary">Salvar</button></div></form></section>`;
 }
 function secaoAreas(t){
@@ -436,12 +436,12 @@ function secaoAreas(t){
     <div class="field"><label>Poligonal (desenho no mapa)</label><div class="v" style="padding:10px 0">${apol==null?'<span class="ni">Sem poligonal</span>':m2(apol)} <span class="faint">· calculada</span></div></div>
     <div class="field"><label for="f-fonteArea">Área adotada vem de</label>${optSel('fonteArea',OPT.fonteArea,t.fonteArea)}</div>
     <div class="field"><label for="f-testada">Testada principal (m)</label><input id="f-testada" name="testada" inputmode="decimal" value="${t.testada==null?'':String(t.testada).replace('.',',')}"></div>
-    </div><div class="hint" style="margin-top:8px">A área adotada é sempre uma das cinco acima, com a fonte registrada. A da poligonal é calculada pelo desenho e acompanha cada ajuste. Medidas de terrenos irregulares (segmentos e confrontações) entram depois em tabela própria.</div></div>
+    </div></div>
     <div class="sec-f"><button type="button" class="btn text" data-a="cancel-edit">Cancelar</button><button class="btn primary">Salvar</button></div></form></section>`;
 }
 function secaoMats(t){
   return `<section class="sec" id="sec-mats"><div class="sec-h"><h2>Matrículas</h2><span class="faint" style="font-size:13px">${t.mats.length}</span></div><div class="sec-b">
-    ${t.mats.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Número</th><th>Cartório</th><th class="r">Área registrada</th><th>Certidão de</th>${partesAtivas(t).length?'<th>Parte</th>':''}<th></th></tr></thead><tbody>${t.mats.map((m,i)=>`<tr><td class="num">${esc(m.num)}</td><td>${esc(m.cri)}</td><td class="r">${m2(m.area)}</td><td>${fd(m.data)}</td>${partesAtivas(t).length?`<td>${selParte(t,'mat-parte',i,m.parte)}</td>`:''}<td class="r"><button class="btn sm text danger" data-a="del-mat" data-i="${i}">Remover</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Nenhuma matrícula. Um terreno pode somar várias.</div>'}
+    ${t.mats.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Número</th><th>Cartório</th><th class="r">Área registrada</th><th>Certidão de</th>${partesAtivas(t).length?'<th>Parte</th>':''}<th></th></tr></thead><tbody>${t.mats.map((m,i)=>`<tr><td class="num">${esc(m.num)}</td><td>${esc(m.cri)}</td><td class="r">${m2(m.area)}</td><td>${fd(m.data)}</td>${partesAtivas(t).length?`<td>${selParte(t,'mat-parte',i,m.parte)}</td>`:''}<td class="r"><button class="iconbtn sm lixo" data-a="del-mat" data-i="${i}" aria-label="Remover" title="Remover">${ic('lixo',18)}</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Nenhuma matrícula. Um terreno pode somar várias.</div>'}
     <form class="inline-form" data-form="mat"><div class="field"><label for="m-n">Número</label><input id="m-n" name="num" required placeholder="184.552"></div>
     <div class="field"><label for="m-c">Cartório</label><select id="m-c" name="cri">${Array.from({length:18},(_,i)=>`<option>${i+1}º CRI</option>`).join('')}</select></div>
     <div class="field"><label for="m-a">Área (m²)</label><input id="m-a" name="area" inputmode="decimal"></div>
@@ -464,20 +464,20 @@ function secaoInsc(t){
       <div class="field"><label for="v-i${i}">IPTU anual (R$)</label><input id="v-i${i}" name="iptu" inputmode="decimal"></div><div class="field" style="flex:0 1 86px"><label for="v-p${i}">Parcelas</label><input id="v-p${i}" name="parc" inputmode="numeric" value="10"></div>
       <div class="field"><label for="v-m${i}">IPTU mensal informado (R$)</label><input id="v-m${i}" name="mensal" inputmode="decimal" placeholder="se a fonte trouxer"></div>
       <div class="field grow"><label for="v-f${i}">Fonte</label><input id="v-f${i}" name="fonte" placeholder="Carnê, certidão de dados cadastrais..." required></div>
-      <button class="btn sm">${ic('add',16)}Lançar</button></form><div class="hint">Lançar um exercício que já existe cria uma revisão nova; a anterior fica guardada.</div></details></div>`}).join(''):'<div class="muted" style="margin-bottom:8px">Nenhuma inscrição. O valor venal e o IPTU são lançados por inscrição e por ano.</div>'}
+      <button class="btn sm">${ic('add',16)}Lançar</button></form></details></div>`}).join(''):'<div class="muted" style="margin-bottom:8px">Nenhuma inscrição. O valor venal e o IPTU são lançados por inscrição e por ano.</div>'}
     <form class="inline-form" data-form="insc">${campoInsc('i',cidDoTerreno(t),'Nova inscrição',true)}<div class="field"><label for="i-a">Área cadastral (m²)</label><input id="i-a" name="area" inputmode="decimal"></div><button class="btn sm">${ic('add',16)}Adicionar inscrição</button></form>
-    <div class="hint" style="margin-top:8px">Em São Paulo o IPTU é anual, em até 10 parcelas. Se a fonte trouxer o valor mensal, ele é usado; senão, o mensal mostrado é o anual ÷ 12.</div></div></section>`;
+    </div></section>`;
 }
 function secaoConfr(t){
   const tot=t.confr.reduce((a,c)=>a+(c.m||0),0);
   return `<section class="sec" id="sec-confr"><div class="sec-h"><h2>Confrontações</h2><span class="faint" style="font-size:13px">${t.confr.length?`${t.confr.length} segmentos · perímetro ${num(tot,2)} m`:''}</span></div><div class="sec-b">
-    ${t.confr.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>#</th><th>Segmento</th><th class="r">Comprimento</th><th>Confronta com</th><th></th></tr></thead><tbody>${t.confr.map((c,i)=>`<tr><td class="faint">${i+1}</td><td>${OPT.confr[c.tipo]}</td><td class="r">${num(c.m,2)} m</td><td>${esc(c.conf||'—')}</td><td class="r"><button class="btn sm text danger" data-a="del-confr" data-i="${i}">Remover</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Para terrenos irregulares ou com várias frentes: um segmento por linha, na ordem do perímetro.</div>'}
+    ${t.confr.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>#</th><th>Segmento</th><th class="r">Comprimento</th><th>Confronta com</th><th></th></tr></thead><tbody>${t.confr.map((c,i)=>`<tr><td class="faint">${i+1}</td><td>${OPT.confr[c.tipo]}</td><td class="r">${num(c.m,2)} m</td><td>${esc(c.conf||'—')}</td><td class="r"><button class="iconbtn sm lixo" data-a="del-confr" data-i="${i}" aria-label="Remover" title="Remover">${ic('lixo',18)}</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Para terrenos irregulares ou com várias frentes: um segmento por linha, na ordem do perímetro.</div>'}
     <form class="inline-form" data-form="confr"><div class="field" style="flex:0 1 160px"><label for="cf-t">Segmento</label><select id="cf-t" name="tipo">${Object.entries(OPT.confr).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
     <div class="field" style="flex:0 1 120px"><label for="cf-m">Comprimento (m)</label><input id="cf-m" name="m" inputmode="decimal" required></div><div class="field grow"><label for="cf-c">Confronta com</label><input id="cf-c" name="conf" placeholder="Rua, lote vizinho, matrícula"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form></div></section>`;
 }
 function secaoPessoas(t){
   return `<section class="sec" id="sec-pessoas"><div class="sec-h"><h2>Proprietários e contatos</h2></div><div class="sec-b">
-    ${t.pessoas.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Nome</th><th>Vínculo</th><th class="r">Participação</th><th>Telefone</th>${partesAtivas(t).length?'<th>Parte</th>':''}<th></th></tr></thead><tbody>${t.pessoas.map((p,i)=>`<tr><td>${esc(p.nome)} <span class="faint" style="font-size:12px">${p.tipo}</span></td><td>${OPT.papel[p.papel]}</td><td class="r">${p.pct!=null?num(p.pct,2)+'%':'—'}</td><td>${esc(p.tel||'—')}</td>${partesAtivas(t).length?`<td>${selParte(t,'pes-parte',i,p.parte)}</td>`:''}<td class="r"><button class="btn sm text danger" data-a="del-pes" data-i="${i}">Remover</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Ninguém vinculado.</div>'}
+    ${t.pessoas.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Nome</th><th>Vínculo</th><th class="r">Participação</th><th>Telefone</th>${partesAtivas(t).length?'<th>Parte</th>':''}<th></th></tr></thead><tbody>${t.pessoas.map((p,i)=>`<tr><td>${esc(p.nome)} <span class="faint" style="font-size:12px">${p.tipo}</span></td><td>${OPT.papel[p.papel]}</td><td class="r">${p.pct!=null?num(p.pct,2)+'%':'—'}</td><td>${esc(p.tel||'—')}</td>${partesAtivas(t).length?`<td>${selParte(t,'pes-parte',i,p.parte)}</td>`:''}<td class="r"><button class="iconbtn sm lixo" data-a="del-pes" data-i="${i}" aria-label="Remover" title="Remover">${ic('lixo',18)}</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Ninguém vinculado.</div>'}
     <form class="inline-form" data-form="pessoa"><div class="field grow"><label for="p-n">Nome ou razão social</label><input id="p-n" name="nome" required></div><div class="field" style="flex:0 1 120px"><label for="p-t">Tipo</label><select id="p-t" name="tipo"><option value="PF">PF</option><option value="PJ">PJ</option></select></div>
     <div class="field"><label for="p-p">Vínculo</label><select id="p-p" name="papel">${Object.entries(OPT.papel).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div><div class="field" style="flex:0 1 110px"><label for="p-pc">% (prop.)</label><input id="p-pc" name="pct" inputmode="decimal"></div>
     <div class="field"><label for="p-tel">Telefone</label><input id="p-tel" name="tel"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form></div></section>`;
@@ -497,15 +497,16 @@ function condicoes(t){
     <div class="field full"><label for="c-o">Observação sobre a forma de pagamento</label><textarea id="c-o" name="obsPag">${esc(o.obsPag)}</textarea></div>
     <div class="field full"><label for="c-a">Aceita permuta</label><textarea id="c-a" name="aceita" placeholder="Como o vendedor encara a permuta e em que condições">${esc(o.aceita)}</textarea></div></div></div>
     <div class="sec-f"><button type="button" class="btn text" data-a="cancel-edit">Cancelar</button><button class="btn primary">Salvar</button></div></form></section>`;
-  return `<section class="sec" id="sec-cond"><div class="sec-h"><h2>${ic('money',18)}Condições pedidas</h2><div style="display:flex;gap:8px;align-items:center">${t.ofertas.length>1?`<button class="btn text sm" data-a="tab" data-t="comercial">${t.ofertas.length} ofertas</button>`:''}${o?`<button class="btn text sm" data-a="edit" data-s="cond">${ic('edit',16)}Editar</button>`:`<button class="btn sm" data-a="nova-oferta">${ic('add',16)}Registrar oferta</button>`}</div></div>
-    <div class="sec-b">${o?`<div class="cond">
-      <div><div class="lbl">Valor pedido</div><div class="big">${o.valor?mi(o.valor):'<span class="faint" style="font-size:15px">Não informado</span>'}</div></div>
-      <div><div class="lbl">Por m² (área adotada)</div><div class="big">${o.valor&&ad?brl(o.valor/ad):'<span class="faint" style="font-size:15px">—</span>'}</div></div>
-      <div><div class="lbl">Forma de pagamento pedida</div><div class="big" style="font-size:17px">${o.forma?OPT.forma[o.forma]:'<span class="faint" style="font-size:15px">Não informada</span>'}</div></div>
-      <div><div class="lbl">Corretor principal</div><div class="big" style="font-size:17px">${cp?esc(cp.nome):'<span class="faint" style="font-size:15px">—</span>'}</div>${cp?`<div class="faint" style="font-size:12px">${esc(cp.imob)}</div>`:''}</div></div>
-      <div class="grid2" style="margin-top:14px"><div><div class="lbl muted" style="font-size:12px">Aceita permuta</div><div class="txt">${o.aceita?esc(o.aceita):'<span class="faint">Não informado</span>'}</div></div>
-      <div><div class="lbl muted" style="font-size:12px">Observação sobre o pagamento</div><div class="txt">${o.obsPag?esc(o.obsPag):'<span class="faint">Não informado</span>'}</div></div></div>`
-    :'<div class="muted">Nenhuma oferta registrada. Registre o que o vendedor pede para abrir a negociação.</div>'}</div></section>`;
+  const ni=x=>`<span class="ni">${x}</span>`;
+  return `<section class="sec" id="sec-cond"><div class="sec-h"><h2>Condições pedidas</h2><div class="sec-acoes">${t.ofertas.length>1?`<button class="btn text sm" data-a="tab" data-t="comercial">${t.ofertas.length} ofertas</button>`:''}${o?`<button class="btn text sm" data-a="edit" data-s="cond">${ic('edit',16)}Editar</button>`:`<button class="btn sm" data-a="nova-oferta">${ic('add',16)}Registrar oferta</button>`}</div></div>
+    <div class="sec-b">${o?`<div class="cond2">
+      <div><div class="lbl">Valor pedido</div><div class="big">${o.valor?mi(o.valor):ni('Não informado')}</div></div>
+      <div><div class="lbl">Por m²</div><div class="big">${o.valor&&ad?brl(o.valor/ad):ni('—')}</div></div></div>
+      <dl class="kvl"><div class="kv"><dt>Forma de pagamento</dt><dd>${o.forma?OPT.forma[o.forma]:ni('Não informada')}</dd></div>
+      <div class="kv"><dt>Corretor</dt><dd>${cp?`<span>${esc(cp.nome)}<span class="kv-2">${esc(cp.imob)}</span></span>`:ni('—')}</dd></div>
+      <div class="kv"><dt>Aceita permuta</dt><dd>${o.aceita?esc(o.aceita):ni('Não informado')}</dd></div>
+      <div class="kv"><dt>Pagamento</dt><dd>${o.obsPag?esc(o.obsPag):ni('Não informado')}</dd></div></dl>`
+    :'<div class="muted">Nenhuma oferta registrada.</div>'}</div></section>`;
 }
 function abaComercial(t){
   const ref=ofertaRef(t);
@@ -514,7 +515,7 @@ function abaComercial(t){
   ${t.ofertas.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Data</th><th>Corretor</th><th class="r">Valor pedido</th><th>Forma</th><th>Status</th><th></th></tr></thead><tbody>
   ${t.ofertas.slice().sort((a,b)=>a.data.localeCompare(b.data)).map((o,i)=>{const c=corretor(o.cid);return `<tr><td>${fd(o.data)}${i===0&&t.ofertas.length>1?'<div class="tag-ref" style="color:var(--texto-suave)">primeira</div>':''}</td><td>${c?esc(c.nome)+`<div class="faint" style="font-size:12px">${esc(c.imob)}</div>`:'Direto'}</td><td class="r">${brl(o.valor)}</td><td>${o.forma?OPT.forma[o.forma]:'—'}</td><td>${o.status}</td>
   <td class="r">${o===ref?'<span class="tag-ref">referência</span>':t.neg?`<button class="btn sm text" data-a="ofref" data-o="${o.id}">Usar como referência</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`:'<div class="muted">Nenhuma oferta.</div>'}
-  <div class="hint" style="margin-top:8px">Cada oferta guarda o que aquele corretor apresentou. A ficha mostra a oferta de referência da negociação.</div></div></section>
+  </div></section>
   <section class="sec"><div class="sec-h"><h2>Corretores do terreno</h2></div><div class="sec-b">
   ${t.corretores.length?t.corretores.map(x=>{const c=corretor(x.cid);return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0"><button class="star ${x.principal?'on':''}" data-a="principal" data-c="${x.cid}" aria-label="Marcar ${esc(c.nome)} como principal" title="${x.principal?'Principal':'Marcar como principal'}">★</button><span><b>${esc(c.nome)}</b> <span class="muted" style="font-size:13px">· ${esc(c.imob)} · CRECI ${esc(c.creci)}</span></span>${x.principal?'<span class="chip blue">Principal</span>':''}</div>`}).join(''):'<div class="muted">Entram automaticamente quando apresentam uma oferta.</div>'}</div></section></div>`;
 }
@@ -537,7 +538,7 @@ function abaNegociacao(t){
   ${secPartes(t)}
   ${secReunioes(t)}
   ${viabSecao(t)}
-  <section class="sec"><div class="sec-h"><h2>Propostas e contrapropostas</h2><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${negAtiva(t)&&!UI.propForm?`<button class="btn primary sm" data-a="prop-form">${ic('add',16)}Nova proposta</button>`:''}</span></div><div class="sec-b">
+  <section class="sec"><div class="sec-h"><h2>Propostas</h2><span class="sec-acoes">${negAtiva(t)&&!UI.propForm?`<button class="btn primary sm" data-a="prop-form">${ic('add',16)}Nova proposta</button>`:''}</span></div><div class="sec-b">
   ${form}
   ${chain.length?`<div class="chain" style="margin-top:${UI.propForm?16:0}px">${chain.map((p,i)=>{return `<div class="pnode ${p.origem}"><span class="pd">v${p.v}</span><div class="pc">
     <div class="ph"><span><span class="pv">${brl(p.valor)}</span> <span class="muted" style="font-size:13px">· ${p.origem==='bkm'?'BKM':'Vendedor'}${p.v>1?` responde à v${p.v-1}`:''}</span></span>
@@ -558,14 +559,14 @@ function abaTarefas(t){
   <div class="field"><label for="tk-r">Responsável</label><select id="tk-r" name="resp">${USERS.map(u=>`<option ${u===t.resp?'selected':''}>${u}</option>`).join('')}</select></div>
   <div class="field" style="flex:0 1 110px"><label for="tk-pr">Prioridade</label><select id="tk-pr" name="prio"><option value="media">Média</option><option value="alta">Alta</option><option value="baixa">Baixa</option></select></div>
   <div class="field full" style="flex-basis:100%"><label for="tk-d">Descrição</label><input id="tk-d" name="desc"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form>
-  <div class="hint" style="margin-top:8px">"Atrasada" é calculada: prazo vencido e status em aberto. Ninguém precisa marcar.</div></div></section></div>`;
+  </div></section></div>`;
 }
 function abaUrbanismo(t){
   return `<div class="stack">${secAnaliseUrb(t)}
   <section class="sec"><div class="sec-h"><h2>Infraestrutura na porta</h2><span class="faint" style="font-size:13px">${infraNV(t)} não verificados</span></div><div style="padding-bottom:6px">
   ${INFRA.map(([k,l])=>{const r=t.infra[k]||{d:'nao_verificado'};return `<div class="infra"><span>${l}</span><span class="seg3" role="group" aria-label="${l}">${[['nao_verificado','Não verificado','nv'],['sim','Sim','sim'],['nao','Não','nao']].map(([v,lb,c])=>`<button type="button" class="${c}" aria-pressed="${r.d===v}" data-a="infra" data-k="${k}" data-v="${v}">${lb}</button>`).join('')}</span>
   <span class="meta">${r.d!=='nao_verificado'?`${fd(r.data)} · <input aria-label="Fonte da verificação de ${l}" data-ch="infra-fonte" data-k="${k}" value="${esc(r.fonte)}" style="border:0;border-bottom:1px dashed var(--linha);background:transparent;font-size:12px;color:var(--texto-suave);width:60%">`:''}</span></div>`}).join('')}</div>
-  <div class="hint" style="padding:4px var(--q-px) 14px">Rede existente não confirma capacidade para o empreendimento; isso entra na análise técnica.</div></section></div>`;
+  </section></div>`;
 }
 const OPT_REU={modalidade:{presencial:'Presencial',online:'Online'},local:{bkm:'Na BKM',externo:'Externa'},status:{realizada:'Realizada',agendada:'Agendada',cancelada:'Cancelada'}};
 const proxReuniao=t=>(t.reunioes||[]).filter(m=>m.status==='agendada'&&m.data>=HOJE).sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora))[0];
@@ -585,7 +586,7 @@ function secReunioes(t){
     <div class="field full" data-so="realizada"><label for="ru-r">O que foi tratado</label><textarea id="ru-r" name="resumo" placeholder="Posições de cada lado, valores citados, objeções"></textarea></div>
     <div class="field full" data-so="realizada"><label for="ru-n">Encaminhamentos</label><textarea id="ru-n" name="enc" placeholder="Quem faz o quê, até quando"></textarea></div>
     </div><div class="sec-f" style="padding:12px 0 0"><button type="button" class="btn text" data-a="reu-form">Cancelar</button><button class="btn primary">Registrar reunião</button></div></form>`:'';
-  return `<section class="sec"><div class="sec-h"><h2>Reuniões</h2><span style="display:flex;align-items:center;gap:12px"><span class="faint" style="font-size:13px">${real} realizada${real===1?'':'s'}</span>${negAtiva(t)&&!UI.reuForm?`<button class="btn primary sm" data-a="reu-form">${ic('add',16)}Registrar reunião</button>`:''}</span></div><div class="sec-b">
+  return `<section class="sec"><div class="sec-h"><h2>Reuniões${real?` <span class="h-n">${real}</span>`:''}</h2><span class="sec-acoes">${negAtiva(t)&&!UI.reuForm?`<button class="btn primary sm" data-a="reu-form">${ic('add',16)}Registrar reunião</button>`:''}</span></div><div class="sec-b">
   ${form}
   ${ms.length?`<div class="reus">${ms.map(m=>`<article class="reu ${m.status}"><div class="reu-h"><div><div class="reu-t">${fd(m.data)} · ${esc(m.hora||'')}</div><div class="reu-m">${OPT_REU.modalidade[m.modalidade]}${m.modalidade==='presencial'?' · '+OPT_REU.local[m.local]+(m.endereco?' · '+esc(m.endereco):''):''}</div></div>
     <span class="reu-acts">${m.status==='agendada'?`<span class="chip blue">Agendada</span>${negAtiva(t)&&m.data<=HOJE?`<button class="btn sm" data-a="reu-feita" data-k="${m.id}">${ic('check',16)}Marcar realizada</button>`:''}`:m.status==='cancelada'?'<span class="chip">Cancelada</span>':`<span class="chip good">Realizada</span>`}</span></div>
@@ -593,7 +594,7 @@ function secReunioes(t){
     ${m.pauta?`<div class="reu-x"><span class="k">Pauta</span>${esc(m.pauta)}</div>`:''}${m.resumo?`<div class="reu-x"><span class="k">Tratado</span>${esc(m.resumo)}</div>`:''}${m.enc?`<div class="reu-x"><span class="k">Encaminhamentos</span>${esc(m.enc)}</div>`:''}
     ${m.status==='realizada'?`<div class="reu-ata">${m.ata?`${ic('doc',18)}<span><b>Ata</b> · ${esc(m.ata.nome)} · v${m.ata.versoes}</span><button class="btn sm text" data-a="upload" data-k="ata:${m.id}">${ic('upload',16)}Nova versão</button>`:`${ic('doc',18)}<span class="muted">Sem ata</span><button class="btn sm" data-a="upload" data-k="ata:${m.id}">${ic('upload',16)}Anexar ata</button>`}</div>`:''}
   </article>`).join('')}</div>`:'<div class="muted">Nenhuma reunião registrada.</div>'}
-  <div class="hint" style="margin-top:12px">Cada ata fica guardada com versões e texto pesquisável. O resumo do andamento por IA, a partir das atas, entra numa fase seguinte.</div></div></section>`;
+  </div></section>`;
 }
 function abaDocs(t){
   const ativo=t.neg&&SIDX(t.neg.etapa)>=SIDX('contrato');
@@ -609,7 +610,7 @@ function abaDocs(t){
     <div class="field" style="flex:0 1 150px"><label for="dl-s">Situação</label><select id="dl-s" name="sit">${Object.entries(OPT.sitDil).map(([k,l])=>`<option value="${k}" ${k==='pendente'?'selected':''}>${l}</option>`).join('')}</select></div>
     <div class="field"><label for="dl-r">Responsável</label><select id="dl-r" name="resp">${USERS.map(u=>`<option ${u===t.resp?'selected':''}>${u}</option>`).join('')}</select></div>
     <div class="field full" style="flex-basis:100%"><label for="dl-p">Providência</label><input id="dl-p" name="prov"></div><button class="btn sm">${ic('add',16)}Registrar</button></form>
-    <div class="hint" style="margin-top:8px">Diligência impeditiva em aberto impede concluir a Minutagem como ganha (o gestor pode forçar, com justificativa).</div></div></section>`;
+    </div></section>`;
   return `<div class="stack">${secDil}<section class="sec chk-group"><div class="chk-gh"><span class="gt">Checklist de documentos</span>${ativo?`<span class="progress"><span class="bar"><span style="width:${CHECK_DIL.filter(([k,o])=>o&&docSt(doc(k))==='validado').length/CHECK_DIL.filter(c=>c[1]).length*100}%"></span></span>${CHECK_DIL.filter(([k,o])=>o&&docSt(doc(k))==='validado').length} de ${CHECK_DIL.filter(c=>c[1]).length} obrigatórios</span>`:'<span class="chip">Vale a partir da Diligência</span>'}</div>
   ${CHECK_DIL.map(([k,o])=>{const d=doc(k),st=docSt(d),va=d?docVal(d):null;return `<div class="doc"><span class="di">${ic('doc',18)}</span><div style="min-width:0"><div class="dn">${TIPOS_DOC[k][0]} ${o?'':'<span class="opt">opcional</span>'}</div><div class="ds">${d?`v${d.versoes} · emitido ${fd(d.emitido)}${va?` · ${st==='vencido'?'venceu':'vence'} ${fd(va)}`:''}`:`Validade: ${TIPOS_DOC[k][2]?TIPOS_DOC[k][2]+' dias':'não vence'}`}</div></div>
   <div class="da">${docChip(st)}${st==='recebido'?`<button class="btn sm" data-a="doc-ok" data-k="${k}">${ic('check',16)}Validar</button>`:''}<button class="btn sm ${d?'text':''}" data-a="upload" data-k="${k}">${ic('upload',16)}${d?'Nova versão':'Enviar'}</button></div></div>`}).join('')}</section>
@@ -642,10 +643,10 @@ function pgFicha(){
   return `${linhaTopo(t)}<button class="back" data-a="nav" data-r="${UI.from}">${ic('back',20)}${UI.from==='negociacoes'?'Fases':UI.from==='inicio'?'Início':'Terrenos'}</button>
   <div class="dhead"><div style="min-width:0"><div class="eyebrow"><span class="num">${t.codigo}</span>${n?`<span>·</span><span class="num">${n.codigo}</span>`:''}${fasesAbertas(t).filter(f=>f!==faseEnt()).map(f=>`<span>·</span><span class="num">${procAberto(t,f).codigo}</span>`).join('')}<span>·</span><span>identificado em ${fd(t.dataIdent)}</span>${t.situacao==='arquivado'?'<span class="chip">Arquivado</span>':''}</div>
     <h1>${esc(t.nome)}</h1><div class="muted" style="margin-top:4px">${esc(endereco)||'<span class="faint">Endereço não informado</span>'}</div>
-    <div class="dchips">${chipFase(t)}${ad!=null?`<span class="chip num">${m2(ad)}</span>`:''}${zt?`<span class="chip">${esc(zt)}</span>`:''}${t.prioridade?`<span class="chip ${t.prioridade==='estrategica'||t.prioridade==='alta'?'warn':''}">Prioridade ${OPT.prioridade[t.prioridade].toLowerCase()}</span>`:''}${atrasadas(t).length?`<span class="chip crit">${atrasadas(t).length} tarefa${atrasadas(t).length>1?'s':''} atrasada${atrasadas(t).length>1?'s':''}</span>`:''}</div></div>
+    <div class="dchips">${naEntrada(t)&&t.neg?.status==='ativo'?'':chipFase(t)}${ad!=null?`<span class="chip num">${m2(ad)}</span>`:''}${zt?`<span class="chip">${esc(zt)}</span>`:''}${t.prioridade?`<span class="chip ${t.prioridade==='estrategica'||t.prioridade==='alta'?'warn':''}">Prioridade ${OPT.prioridade[t.prioridade].toLowerCase()}</span>`:''}${atrasadas(t).length?`<span class="chip crit">${atrasadas(t).length} tarefa${atrasadas(t).length>1?'s':''} atrasada${atrasadas(t).length>1?'s':''}</span>`:''}</div></div>
     <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-end"><div style="display:flex;align-items:center;gap:8px">${av(t.resp)}<div><div style="font-weight:500">${esc(t.resp)}</div><div class="faint" style="font-size:12px">Responsável</div></div></div>${n?tempPicker(t):''}</div></div>
   <div class="stack">
-  <div class="complete"><span class="progress"><span class="bar"><span style="width:${c.pct}%"></span></span><b>Ficha ${c.pct}% completa</b></span>${c.faltam.length?`<span class="muted" style="font-size:13px">Falta:</span><span class="missing">${c.faltam.slice(0,6).map(f=>`<button data-a="ir" data-t="${f[2]}" data-s="${f[3]||''}">${f[0]}</button>`).join('')}${c.faltam.length>6?`<span class="faint" style="font-size:12px;align-self:center">+${c.faltam.length-6}</span>`:''}</span>`:''}</div>
+  ${c.pct<100?`<div class="complete"><span class="progress"><span class="bar"><span style="width:${c.pct}%"></span></span><b>Ficha ${c.pct}% completa</b></span>${c.faltam.length?`<span class="muted" style="font-size:13px">Falta:</span><span class="missing">${c.faltam.slice(0,6).map(f=>`<button data-a="ir" data-t="${f[2]}" data-s="${f[3]||''}">${f[0]}</button>`).join('')}${c.faltam.length>6?`<span class="faint" style="font-size:12px;align-self:center">+${c.faltam.length-6}</span>`:''}</span>`:''}</div>`:''}
   <div class="adv-main">${painelAvanco(t)}</div>
   </div>
   <div class="blocos">${blocos}</div>`;
@@ -654,10 +655,10 @@ function bateBusca(t,q){if(!q)return true;q=q.toLowerCase();const hay=[t.codigo,
 /* filtros: gaveta e chips em proto_filtros.js (fxLista, fxBarra) */
 function linhas(){
   const l=fxLista('terrenos').filter(t=>bateBusca(t,UI.q)).sort((a,b)=>(b.neg?.temp||0)-(a.neg?.temp||0)||b.codigo.localeCompare(a.codigo));
-  return tabela('terrenos',l,COLS_TERRENOS,{attr:attrAbrir('terrenos'),vazio:`Nenhum terreno${UI.q?` para “${esc(UI.q)}”`:''}.<br><button class="btn sm" style="margin-top:12px" data-a="novo">${ic('add',16)}Novo terreno</button>`});
+  return tabela('terrenos',l,COLS_TERRENOS,{cls:'lista-t',attr:attrAbrir('terrenos'),vazio:`Nenhum terreno${UI.q?` para “${esc(UI.q)}”`:''}.<br><button class="btn sm" style="margin-top:12px" data-a="novo">${ic('add',16)}Novo terreno</button>`});
 }
 function pgTerrenos(){
-  return `<div class="page-h"><div><h1><span class="marca"></span>Terrenos</h1><div class="sub">Ordenados por temperatura da negociação. ${fxLista('terrenos').length} de ${S.terrenos.length}.</div></div><button class="btn primary" data-a="novo">${ic('add',18)}Novo terreno</button></div>
+  return `<div class="page-h"><div><h1>Terrenos</h1><div class="sub">${fxLista('terrenos').length===S.terrenos.length?S.terrenos.length+' terrenos':fxLista('terrenos').length+' de '+S.terrenos.length+' terrenos'}</div></div></div>
   ${fxBarra('terrenos')}
   <section class="sec lista"><div id="rows">${linhas()}</div></section>`;
 }
@@ -671,7 +672,7 @@ function pgInicio(){
   const att=[...aprov.map(t=>({sev:'warn',i:'check',ti:`Aprovar: ${destinoNome(t.neg.pedido.tipo,t.neg.pedido.dest)}`,su:`${t.nome} · pedido por ${t.neg.pedido.por}`,id:t.id,tab:'geral'})),...tarefas.map(({t,k})=>({sev:'crit',i:'clock',ti:k.titulo,su:`${t.nome} · ${k.resp} · venceu ${fd(k.prazo)}`,id:t.id,tab:'tarefas'})),
     ...ativos.filter(abaixoMin).map(t=>({sev:'warn',i:'money',ti:`Rentabilidade abaixo da mínima`,su:`${t.nome} · margem ${num(t.neg.viab.margem,1)}% vs ${num(S.vbMargemMin,1)}%`,id:t.id,tab:'negociacao'})),
     ...ativos.filter(t=>!t.neg.temp).map(t=>({sev:'warn',i:'warn',ti:'Temperatura não avaliada',su:t.nome,id:t.id,tab:'cadastro'}))];
-  return `<div class="forma"><div class="page-h"><div><h1><span class="marca"></span>${s}, ${esc(me().split(' ')[0])}</h1><div class="sub">${ativos.length} negociações em andamento</div></div></div>
+  return `<div class="forma"><div class="page-h"><div><h1>${s}, ${esc(me().split(' ')[0])}</h1><div class="sub">${ativos.length} negociações em andamento</div></div></div>
   <div class="kpis"><button class="kpi" data-a="nav" data-r="negociacoes"><span class="v">${ativos.length}</span><span class="l">Negociações ativas</span></button>
   <button class="kpi" data-a="nav" data-r="terrenos"><span class="v">${quentes.length}</span><span class="l">Quentes (temperatura 4 ou 5)</span></button>
   <button class="kpi ${tarefas.length?'crit':''}" data-a="nav" data-r="terrenos"><span class="v">${tarefas.length}</span><span class="l">Tarefas atrasadas</span></button>
@@ -688,7 +689,7 @@ function render(){
   if(UI.route!=='mapa'&&document.body.classList.contains('mp-cheia'))mpTelaCheia(false);
   const cur=UI.route==='terreno'?UI.from:UI.route;
   document.body.classList.toggle('menu-min',menuMin);
-  $('#side').innerHTML=`<button class="menu-tg" data-a="menu" aria-expanded="${!menuMin}" aria-label="${menuMin?'Expandir menu':'Recolher menu'}" title="${menuMin?'Expandir menu':'Recolher menu'}">${ic(menuMin?'expandir':'recolher',20)}</button><button class="compose" data-a="novo" ${menuMin?'title="Novo terreno" aria-label="Novo terreno"':''}>${ic('add',24)}<span class="rot">Novo terreno</span></button>`+navSide().map(([r,l,i])=>`<button class="nav-item" data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''} ${menuMin?`title="${l}" aria-label="${l}"`:''}>${bi(i)}<span class="rot">${l}</span></button>`).join('')+`<div class="side-foot"><span class="rot">Protótipo · dados de exemplo</span><button class="linkbtn rot" data-a="reset">Restaurar dados de exemplo</button></div>`;
+  $('#side').innerHTML=`<button class="menu-tg" data-a="menu" aria-expanded="${!menuMin}" aria-label="${menuMin?'Expandir menu':'Recolher menu'}" title="${menuMin?'Expandir menu':'Recolher menu'}">${ic(menuMin?'expandir':'recolher',20)}</button><button class="compose" data-a="novo" ${menuMin?'title="Novo terreno" aria-label="Novo terreno"':''}>${ic('add',24)}<span class="rot">Novo terreno</span></button>`+navSide().map(([r,l,i])=>`<button class="nav-item" data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''} ${menuMin?`title="${l}" aria-label="${l}"`:''}>${bi(i)}<span class="rot">${l}</span></button>`).join('')+``;
   $('#bnav').innerHTML=NAV.map(([r,l,i])=>`<button data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''}><span class="pill">${bi(i,32)}</span>${l}</button>`).join('');
   document.body.classList.toggle('ro',UI.role==='Leitura');
   renderTema();{const n0=S.notifs.length;rotinaNotif();if(S.notifs.length!==n0)save()}renderSino();

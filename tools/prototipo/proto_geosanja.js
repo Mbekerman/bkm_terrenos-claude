@@ -128,7 +128,7 @@ const gsjVals=(g,n)=>[...new Set((g.camadas[GSJ_CAMADAS[n][0]+':'+n]||[]).map(x=
 const gsjLinhas=(g,comFicha)=>GSJ_CAMADAS.map(([k,pref,tema,,grav],j)=>({tema,grav,erro:g.erros.includes(k+':'+j),vals:g.camadas[k+':'+j]?gsjVals(g,j):[],j,ficha:GSJ_FICHA.includes(pref)}))
   .filter(l=>l.j>0&&(comFicha||!l.ficha)).sort((a,b)=>b.ficha-a.ficha);
 function gsjQuadro(t,ins,i){const g=(ins.geo||[])[0];
-  if(!g)return loteVazio(t,ins,i,'Traz do GeoSanja a poligonal do lote, o zoneamento e as restrições, e guarda a planta (PDF) e o desenho (DXF).');
+  if(!g)return loteVazio(t,ins,i,'Poligonal do lote, zoneamento, restrições, planta e DXF.');
   const lin=(k,v)=>`<div class="kv"><dt>${k}</dt><dd>${v}</dd></div>`,n=pref=>GSJ_CAMADAS.findIndex(c=>c[1]===pref),cam=n=>g.camadas[GSJ_CAMADAS[n][0]+':'+n]||[];
   const valsDe=n=>gsjVals(g,n),linhas=gsjLinhas(g);
   const vals=pref=>valsDe(n(pref)).map(esc).join(', ')||'—';
@@ -138,7 +138,7 @@ function gsjQuadro(t,ins,i){const g=(ins.geo||[])[0];
     <div class="geo-kv">${lin('Área da poligonal',m2(g.areaPol)+(ins.area&&Math.abs(g.areaPol/ins.area-1)>.05?` <span class="chip warn">${g.areaPol>ins.area?'+':''}${num((g.areaPol/ins.area-1)*100,0)}% sobre o cadastro</span>`:''))}
     ${lin('Zona no lote',zonasTxt||'—')}${GSJ_FICHA.map(p=>lin(GSJ_CAMADAS[n(p)][2],vals(p))).join('')}</div>
     ${loteToca(linhas)}
-    <div class="hint" style="margin:4px 0 8px">O GeoSanja não informa área cadastral, área construída, uso nem endereço do lote: seguem digitados. Curvas de nível do IGC, em escala 1:10.000.</div>
+    
     ${loteArqBotoes(t)}</div>`}
 async function gsjPoligono(ic){const g=await gsjLote(ic);return g?geoAneis(g)[0].slice(0,-1).map(p=>[p[1],p[0]]):null}
 LOTE_ADAPT.sjc={url:()=>GSJ_BASE,buscar:gsjBuscar,quadro:gsjQuadro,poligono:gsjPoligono,linhas:g=>gsjLinhas(g,true)};

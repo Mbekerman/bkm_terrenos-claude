@@ -106,7 +106,7 @@ function ccDrawer(){let el=$('#cc-dr'),sc=$('#cc-scrim');const d=CC.dr;
   <div class="cc-sec"><div class="cc-sh">Apuração dos preços</div><div class="fields">
     <div class="field"><label for="cc-em">Data de apuração</label><input id="cc-em" name="em" type="date" max="${HOJE}" value="${HOJE}" required></div>
     <div class="field"><label for="cc-fonte">Fonte</label><select id="cc-fonte" name="fonte">${opt(CC_FONTE,'stand')}</select></div></div>
-    <div class="hint">Vale para os preços preenchidos abaixo. Cada data vira um registro novo; na mesma data, corrige o preço daquele dia.</div></div>
+    </div>
   <div class="cc-sec"><div class="cc-sh">Tipologias</div>${ts.map((t,i)=>ccTipHtml(t,i,d.modo)).join('')||'<div class="faint">Nenhuma tipologia.</div>'}
     ${so?'':`<button type="button" class="btn text sm" data-a="cc-tp-add">${ic('add',16)}Adicionar tipologia</button>`}</div>
   </form><div class="fx-f"><span class="fx-tot"></span><button class="btn text sm" data-a="cc-dr-x">Cancelar</button><button class="btn primary sm" type="submit" form="cc-f">Salvar</button></div>`}

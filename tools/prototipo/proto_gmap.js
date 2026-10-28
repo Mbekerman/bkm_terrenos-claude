@@ -166,7 +166,7 @@ function entornoHtml(){const e=UI.entorno;if(!e||!GG)return '';const t=T(e.tid);
   return `<section class="sec entorno"><div class="sec-h"><h2>Perto de ${esc(t.nome)}</h2><button class="btn sm text" data-a="mp-entorno-fechar">Fechar</button></div><div class="sec-b">
   ${e.itens.length?`<ul class="poil">${e.itens.map((p,i)=>`<li><span><span class="t1">${esc(p.nome)}</span><span class="t2">${CAT_POI[p.cat]||'Outro'} · em linha reta</span></span><b class="num">${fKm(p.d)}</b>
     ${(S.pontos||[]).some(x=>x.gid===p.gid)?'<span class="faint" style="font-size:12px">salvo</span>':`<button class="linkbtn ed" data-a="mp-entorno-salvar" data-i="${i}">Salvar</button>`}</li>`).join('')}</ul>`:'<div class="muted">Nada encontrado num raio de 2 km.</div>'}
-  <div class="hint" style="margin-top:8px">Fonte: Google Places. “Salvar” guarda o lugar nos pontos de interesse da empresa.</div></div></section>`}
+  </div></section>`}
 
 /* ---------- pontos de interesse do terreno: Places (busca por raio) + Routes (distância a pé) ---------- */
 const normNome=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim();

@@ -243,9 +243,9 @@ function ajustaDash(){const g=document.querySelector('.dash-g'),s=g&&g.querySele
   if(cabe())return;s.classList.add('enxuta');if(cabe())return;s.classList.remove('enxuta');g.classList.add('tab-larga');if(cabe())return;s.classList.add('enxuta');if(cabe())return;
   s.classList.remove('enxuta');g.classList.remove('tab-larga')}  // nem assim: ajustaTabelas empilha como nas outras listas
 function ajustaTabelas(){ajustaDash();document.querySelectorAll('.tblwrap,.dt-wrap').forEach(w=>{const t=w.querySelector('table');if(!t)return;
-  const cab=[...t.querySelectorAll('thead th')].map(th=>th.textContent.trim());
+  const cab=[...t.querySelectorAll('thead th')].map(th=>{const c=th.cloneNode(true);c.querySelectorAll('.dt-ar').forEach(x=>x.remove());return c.textContent.trim()});
   t.querySelectorAll('tbody tr').forEach(tr=>{let i=0;[...tr.children].forEach(td=>{if(!td.hasAttribute('data-l'))td.setAttribute('data-l',cab[i]||'');i+=td.colSpan||1})});
-  w.classList.remove('empilha');if(t.scrollWidth>w.clientWidth+1)w.classList.add('empilha')})}
+  w.classList.remove('empilha');if(!w.classList.contains('rola')&&t.scrollWidth>w.clientWidth+1)w.classList.add('empilha')})}
 let tbRz;window.addEventListener('resize',()=>{cancelAnimationFrame(tbRz);tbRz=requestAnimationFrame(ajustaTabelas)});
 const _posRender=posRender;posRender=function(){_posRender.apply(this,arguments);ajustaTabelas();if(typeof gBuscasEndereco==='function')gBuscasEndereco();if(typeof gEntornoAuto==='function')gEntornoAuto();
   if(pnFoco){const el=document.querySelector(pnFoco);el&&el.focus({preventScroll:true});pnFoco=null}};

@@ -141,7 +141,7 @@ const VB_ROT={tip:'Tipologias',terreno:'Terreno',comercial:'Comercial',obra:'Obr
 const vbAba=()=>vbOrdem().includes(UI.vbAba)?UI.vbAba:'tip';
 function vbShTxt(k,c){if(k==='tip')return `${brl(c.vgv)} · ${num(c.un)} unidades`;if(k==='res')return `Lucro ${brl(c.lucro)} · margem ${c.margem==null?'—':num(c.margem,1)+'%'}`;
   const x=c.SEC[k];return `${brl(x)} · ${c.vgv>0?num(x/c.vgv*100,1)+'%':'—'} do VGV`}
-const vbMiC=x=>mi(x).replace('R$ ','');
+const vbMiC=x=>mi(x).replace(/R\$\s/,'');
 function vbNavTxt(k,c){if(k==='tip')return vbMiC(c.vgv);if(k==='res')return 'Margem '+(c.margem==null?'—':num(c.margem,1)+'%');
   const x=c.SEC[k];return `${vbMiC(x)} · ${c.vgv>0?num(x/c.vgv*100,1)+'%':'—'}`}
 const vbNav=c=>{const ab=vbAba();return `<nav class="vb-nav" aria-label="Seções do estudo">${vbOrdem().map(k=>`<button class="vb-aba" data-a="vb-aba" data-v="${k}"${k===ab?' aria-current="page"':''}><b>${VB_ROT[k]}</b><small data-vbo="nv-${k}">${vbNavTxt(k,c)}</small></button>`).join('')}</nav>`};
@@ -153,8 +153,8 @@ function vbSec(k,titulo,c,corpo,acao=''){const O=vbOrdem(),i=O.indexOf(k),ant=O[
 function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
   const t=T(v.tid),c=vbCalc(v),ro=UI.role==='Leitura',lig=t.neg?.viab?.id===v.id,dis=ro?'disabled':'';
   const acoes=ro?'':`${lig?'':negAtiva(t)?`<button class="btn sm" data-a="vb-vincular" data-v="${v.id}">Marcar como válido</button>`:''}<button class="btn sm" data-a="vb-duplicar" data-v="${v.id}">Duplicar</button><button class="btn sm" data-a="vb-modelo" data-v="${v.id}">Salvar como modelo</button>${lig?'':`<button class="btn text sm danger" data-a="vb-apagar" data-v="${v.id}">Apagar</button>`}`;
-  const inp=(id,k,val,d,rot)=>`<label class="vb-c vb-${k}"><span class="vb-l">${rot}</span><input data-vb="tp" data-r="${id}" data-k="${k}" value="${k==='nome'?esc(val??''):vbIn(val,d)}" ${k==='nome'?'':'inputmode="decimal"'} aria-label="${rot}" ${dis}></label>`;
-  const campo=(k,rot,val,d=2,dica='')=>`<div class="field"><label for="vb-${k}">${rot}</label><input id="vb-${k}" data-vb="hd" data-k="${k}" value="${vbIn(val,d)}" inputmode="decimal" ${dis}>${dica?`<div class="hint">${dica}</div>`:''}</div>`;
+  const inp=(id,k,val,d,rot)=>`<label class="vb-c vb-${k}"><span class="vb-l">${rot}</span><input data-vb="tp" data-r="${id}" data-k="${k}" ${k==='nome'?'':`data-fmt="${['pu','pm2'].includes(k)?'moeda':['qtd','perm','com'].includes(k)?'int':'num'}"`} value="${k==='nome'?esc(val??''):vbIn(val,d)}" ${k==='nome'?'':'inputmode="decimal"'} aria-label="${rot}" ${dis}></label>`;
+  const campo=(k,rot,val,d=2,dica='')=>`<div class="field"><label for="vb-${k}">${rot}</label><input id="vb-${k}" data-vb="hd" data-k="${k}" data-fmt="${k==='pfp'||k==='dedp'?'pct':'moeda'}" value="${vbIn(val,d)}" inputmode="decimal" ${dis}>${dica?`<div class="hint">${dica}</div>`:''}</div>`;
   const hd=`<div class="vb-r vb-hd" aria-hidden="true"><span>Item</span><span>Base de cálculo</span><span>Valor</span><span>Meses</span><span>Resultado</span><span></span></div>`;
   const tot=(id,rot,x,cls='')=>`<div class="vb-r vb-tot ${cls}" id="${id}">${vbTotRow(rot,x,c)}</div>`;
   const grupo=g=>{const G=VB_GRUPO[g],ls=vbLinhasGrupo(v,g);
@@ -165,7 +165,7 @@ function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
     ${v.tips.map(p=>`<div class="vb-r" data-tp="${p.id}">${inp(p.id,'nome',p.nome,0,'Tipologia')}${inp(p.id,'area',p.area,2,'Área privativa (m²)')}${inp(p.id,'qtd',p.qtd,0,'Quantidade')}${inp(p.id,'perm',p.perm,0,'Em permuta')}${inp(p.id,'com',p.com,0,'Comissão')}${inp(p.id,'pu',p.pu,2,'Preço unitário (R$)')}${inp(p.id,'pm2',p.pm2,2,'Preço por m² (R$)')}
     <span class="vb-c vb-out"><span class="vb-l">VGV</span><b data-vbo="tp-${p.id}">${brl(p.pu!=null?(p.qtd||0)*p.pu:null)}</b></span>${ro?'<span></span>':`<button class="iconbtn sm vb-del" data-a="vb-tip-del" data-v="${p.id}" aria-label="Remover ${esc(p.nome)}" title="Remover tipologia">${ic('close',18)}</button>`}</div>`).join('')||'<div class="muted vb-vazio">Nenhuma tipologia.</div>'}
     <div class="vb-r vb-tot" id="vb-tot-tips">${vbTotTips(v,c)}</div></div>
-    <div class="hint">Com a área preenchida, o preço unitário e o preço por m² se acompanham: mudar um refaz o outro. Mudar a área refaz o preço por m² (ou completa o preço que falta). <b>Em permuta</b> são as unidades da permuta física e <b>Comissão</b>, as dadas em pagamento da comissão do terreno: as duas saem do VGV vendido.</div>`;
+    `;
   const dedutiveis=S.viabDesp.filter(d=>d.grupo==='comercial'&&d.deduz&&(d.ativo||v.deduz.includes(d.codigo)));
   const terreno=()=>`<h3 class="vb-h3 vb-h3-1">Permuta física</h3><div class="vb-ro" data-vbo="pfis">${vbPermFis(c)}</div>
     <h3 class="vb-h3">Permuta financeira</h3>
@@ -180,7 +180,7 @@ function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
   const obra=()=>`<div class="vb-tab vb-lns">${hd}
     <div class="vb-gt"><h3>Custo de obra incidente (típico)</h3></div>
     <div class="vb-r" data-ln="oi"><span class="vb-c vb-desp"><span class="vb-l">Item</span><span class="vb-nome">Obra incidente</span></span><span class="vb-c vb-tipo"><span class="vb-l">Base de cálculo</span><span class="vb-nome">${VB_TIPO.area}</span></span>
-      <label class="vb-c vb-mult"><span class="vb-l">Valor unitário</span><span class="vb-adorno"><span class="vb-suf">R$</span><input data-vb="hd" data-k="cm2" value="${vbIn(v.cm2,2)}" inputmode="decimal" aria-label="Valor unitário da obra incidente (R$ por m²)" ${dis}></span></label><span class="vb-c vb-qtd"></span>
+      <label class="vb-c vb-mult"><span class="vb-l">Valor unitário</span><input data-fmt="moeda" data-vb="hd" data-k="cm2" value="${vbIn(v.cm2,2)}" inputmode="decimal" aria-label="Valor unitário da obra incidente (R$ por m²)" ${dis}></label><span class="vb-c vb-qtd"></span>
       <span class="vb-c vb-out"><span class="vb-l">Resultado</span><b data-vbo="oi">${brl(c.oi)}</b><small class="faint" data-vbo="oi-b">× ${m2(c.A)} de área privativa</small></span><span></span></div>
     ${grupo('obra_atipica')}${tot('vb-raso','Custo de obra raso (incidente + atípicos)',c.raso,'vb-marco')}
     ${grupo('obra_nao_incidente')}${tot('vb-ot','Custo de obra total (raso + não incidente)',c.ot,'vb-marco')}
@@ -188,13 +188,13 @@ function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
   const lns=sec=>()=>`<div class="vb-tab vb-lns">${hd}
     ${vbGruposDe(sec).map(g=>VB_GRUPO[g].fixo?vbLinhasGrupo(v,g).map(l=>vbLinha(v,l,c,dis,ro)).join(''):grupo(g)).join('')}${tot('vb-tot-'+sec,'Total · '+VB_SECAO[sec],c.SEC[sec])}</div>`;
   const corpo={tip:tips,terreno,comercial:lns('comercial'),obra,despesas:lns('despesas'),taxas:lns('taxas'),financeiro:lns('financeiro'),
-    res:()=>`<div id="vb-res">${vbResHtml(v,c)}</div><div class="hint vb-hint-ln">Resultado de cada item = valor × base de cálculo (× meses na verba mensal). Nas bases em %, o valor é o percentual. <b>% do VGV</b> incide sobre o VGV vendido (sem as unidades em permuta e da comissão); <b>verba por unidade</b>, sobre as unidades líquidas (${num(c.unl)}); <b>% do lucro líquido</b> já desconta o próprio item (lucro ÷ (1 + soma dos %)) e vale zero sem lucro. O grupo de cada item, em Configurações › Viabilidade, define a seção e as bases aceitas.</div>`};
+    res:()=>`<div id="vb-res">${vbResHtml(v,c)}</div>`};
   const titulo={tip:'Tipologias',res:'DRE',...VB_SECAO};
   const acao={tip:ro?'':`<button class="btn text sm" data-a="vb-tip-add">${ic('add',16)}Adicionar tipologia</button>`};
   const sobre=`Estudo de viabilidade estática · ${esc(t.codigo)} · ${esc(t.nome)}${lig?' · <span class="chip good"><span class="d"></span>Válido</span>':''}`,ab=vbAba();
   return `<div class="vb-pop-h"><div class="vb-pop-tt"><div class="eyebrow">${sobre}</div>
       <input id="vb-pop-t" class="vb-pop-nome" data-vb="hd" data-k="nome" value="${esc(v.nome)}" aria-label="Nome do estudo" ${dis}>
-      <div class="faint vb-sub">Avaliação prévia, sem fluxo de caixa. Atualizado em ${fd(v.em)}${v.user?' por '+esc(v.user):''}.</div></div>
+      <div class="faint vb-sub">Atualizado em ${fd(v.em)}${v.user?' por '+esc(v.user):''}.</div></div>
     <div class="vb-acoes">${acoes}</div><button class="iconbtn vb-pop-x" data-a="vb-fechar" aria-label="Fechar o estudo" title="Fechar (Esc)">${ic('close')}</button></div>
   <div class="vb-pop-sc"><div class="vb-pop-meta"><div class="eyebrow">${sobre}</div>${acoes?`<div class="vb-acoes">${acoes}</div>`:''}</div>
     <div class="vb-fixo"><div class="kpis vb-kpis" id="vb-kpis">${vbKpis(c)}</div>${vbNav(c)}</div>
@@ -216,7 +216,7 @@ function vbLinha(v,l,c,dis,ro){const d=vbDesp(l.desp),g=d?.grupo,fixo=VB_GRUPO[g
   if(VB_RESTRITO.includes(VB_GRUPO[g]?.secao)&&!vbDiretoria())dis='disabled';
   return `<div class="vb-r" data-ln="${l.id}"><span class="vb-c vb-desp"><span class="vb-l">Item</span>${fixo?`<span class="vb-nome">${esc(nome)}</span>`:vbCombo(l.id,nome,dis,g)}</span>
     <label class="vb-c vb-tipo"><span class="vb-l">Base de cálculo</span><select data-vb="ln" data-r="${l.id}" data-k="tipo" aria-label="Base de cálculo de ${esc(nome)}" ${dis}>${(VB_GRUPO[g]?.tipos||[l.tipo]).map(k=>`<option value="${k}" ${l.tipo===k?'selected':''}>${VB_TIPO[k]}</option>`).join('')}</select></label>
-    <label class="vb-c vb-mult"><span class="vb-l">${l.tipo==='area'?'Valor unitário':'Valor'}</span><span class="vb-adorno"><span class="vb-suf">${vbPct(l.tipo)?'%':'R$'}</span><input data-vb="ln" data-r="${l.id}" data-k="valor" value="${vbIn(l.valor,4)}" inputmode="decimal" aria-label="Valor de ${esc(nome)}" ${dis}></span></label>
+    <label class="vb-c vb-mult"><span class="vb-l">${l.tipo==='area'?'Valor unitário':'Valor'}</span><input data-fmt="${vbPct(l.tipo)?'pct':'moeda'}" data-vb="ln" data-r="${l.id}" data-k="valor" value="${vbIn(l.valor,4)}" inputmode="decimal" aria-label="Valor de ${esc(nome)}" ${dis}></label>
     ${l.tipo==='verba_mensal'?`<label class="vb-c vb-qtd"><span class="vb-l">Meses</span><input data-vb="ln" data-r="${l.id}" data-k="qtd" value="${vbIn(l.qtd,2)}" inputmode="decimal" aria-label="Meses de ${esc(nome)}" ${dis}></label>`:'<span class="vb-c vb-qtd"></span>'}
     <span class="vb-c vb-out"><span class="vb-l">Resultado</span><b data-vbo="ln-${l.id}">${brl(c.L[l.id].valor)}</b><small class="faint" data-vbo="lb-${l.id}">${vbBaseTxt(l,c)}</small></span>${ro||fixo?'<span></span>':`<button class="iconbtn sm vb-del" data-a="vb-ln-del" data-v="${l.id}" aria-label="Remover ${esc(nome)}" title="Remover">${ic('close',18)}</button>`}</div>`}
 const vbNovaLinha=g=>`<div class="vb-r vb-nova"><span class="vb-c vb-desp"><span class="vb-l">Item</span>${vbCombo('nova','','',g)}</span><span class="vb-c vb-dica faint">Escolha na lista da empresa; a base de cálculo e o valor vêm preenchidos e podem ser trocados.</span><button class="iconbtn sm vb-del" data-a="vb-ln-cancela" aria-label="Cancelar" title="Cancelar">${ic('close',18)}</button></div>`;
@@ -225,7 +225,7 @@ function vbBaseTxt(l,c){const L=c.L[l.id],b=L?.base,d=L?.ded?' · sai do VGV lí
   switch(l.tipo){case 'pct_vgv':return `sobre o VGV vendido (${mi(b)})${d}`;case 'pct_obra_tipica':return `sobre a obra típica (${mi(b)})`;case 'pct_obra_raso':return `sobre a obra raso (${mi(b)})`;
     case 'pct_obra_total':return `sobre a obra total (${mi(b)})`;case 'pct_lucro':return `sobre o lucro líquido (${mi(b)})`;case 'area':return `× ${m2(b)}`;
     case 'verba_unidade':return `× ${num(b)} unidades líquidas${d}`;case 'verba_mensal':return `${l.qtd&&l.qtd!==1?num(l.qtd,2)+' meses':'1 mês'}${d}`;default:return d.slice(3)}}
-function vbKpis(c){const k=(l,val)=>`<div class="kpi"><span class="v sm">${String(val).replace('R$ ','<span class="vb-rs">R$ </span>')}</span><span class="l">${l}</span></div>`;
+function vbKpis(c){const k=(l,val)=>`<div class="kpi"><span class="v sm">${String(val).replace(/R\$\s/,'<span class="vb-rs">R$ </span>')}</span><span class="l">${l}</span></div>`;
   return k('VGV',mi(c.vgv))+k('VGV líquido',mi(c.liq))+k('Lucro líquido',mi(c.lucro))+k('Margem líquida',c.margem==null?'—':num(c.margem,1)+'%')}
 function vbTotTips(v,c){return `<span class="vb-c"><b>Total</b></span><span class="vb-c vb-area"><span class="vb-l">Área privativa total</span>${c.A?m2(c.A):'—'}</span><span class="vb-c vb-qtd"><span class="vb-l">Unidades</span>${num(c.un)}</span><span class="vb-c vb-perm"><span class="vb-l">Em permuta</span>${num(c.unp)}</span><span class="vb-c vb-com"><span class="vb-l">Comissão</span>${num(c.unc)}</span><span class="vb-c vb-pu"><span class="vb-l">Preço médio</span>${c.un?brl(c.vgv/c.un):'—'}</span><span class="vb-c vb-pm2"><span class="vb-l">Preço médio por m²</span>${c.A?brl(c.vgv/c.A):'—'}</span><span class="vb-c vb-out"><span class="vb-l">VGV</span><b>${brl(c.vgv)}</b></span><span></span>`}
 function vbTotRow(rot,x,c){return `<span class="vb-c"><b>${rot}</b></span><span class="vb-c vb-tipo"></span><span class="vb-c vb-mult"></span><span class="vb-c vb-qtd"></span><span class="vb-c vb-out"><span class="vb-l">Total</span><b>${brl(x)}</b><small class="faint">${c.vgv>0?num(x/c.vgv*100,1)+'% do VGV':''}</small></span><span></span>`}
@@ -390,13 +390,13 @@ function vbNovoHtml(fechar){const ms=vbModelos(),p=vbModeloPadrao(),adm=ehAdmin(
   <form data-form="vb-novo" id="f-vbn"><div class="fields"><div class="field full"><label for="vbn-n">Nome do estudo</label><input id="vbn-n" name="nome" maxlength="80" value="${esc(UI.vbNovoNome||'')}"></div>
   <div class="field full"><span class="lbl" id="vbn-m">Modelo</span><div class="vb-mods" role="radiogroup" aria-labelledby="vbn-m">
   ${ms.map(m=>op(m.id,esc(m.nome),`${m.dono?'Meu modelo':m.padrao?'Padrão da empresa':'Da empresa'} · ${vbModeloResumo(m)}`,p?m===p:false,
-     m.dono||adm?`<button type="button" class="linkbtn danger" data-a="vb-mod-del" data-v="${m.id}" aria-label="Apagar o modelo ${esc(m.nome)}">Apagar</button>`:'')).join('')}
+     m.dono||adm?`<button type="button" class="iconbtn sm lixo" data-a="vb-mod-del" data-v="${m.id}" aria-label="Apagar o modelo ${esc(m.nome)}" title="Apagar">${ic('lixo',18)}</button>`:'')).join('')}
   ${op('','Sem modelo','Só a lista de itens da empresa, com os valores padrão dela',!p,'')}</div></div></div></form>
   <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-vbn">Criar estudo</button></div>`}
 function vbModeloHtml(fechar){const v=VB(UI.vbModeloDe),adm=ehAdmin(me()),dir=vbDiretoria();if(!v)return '';
   return `<div class="dh"><div><h2>Salvar como modelo</h2><div class="muted" style="margin-top:4px">Guarda os valores e as bases de cálculo deste estudo (custo de obras, dedução do VGV e os itens de cada seção) para usar ao criar um estudo novo. Tipologias, permuta, mínimo garantido e pagamentos do terreno ficam fora.${dir?'':' Taxas e Despesas financeiras não entram: o estudo novo usa os valores da empresa.'}</div></div>${fechar}</div>
   <form data-form="vb-modelo" id="f-vbm"><div class="fields"><div class="field full"><label for="vbm-n">Nome do modelo</label><input id="vbm-n" name="nome" required maxlength="60" placeholder="Ex.: MCMV Faixa 2 em São Paulo"><div class="hint">Com o nome de um modelo seu que já existe, ele é atualizado.</div></div>
-  ${adm?`<div class="field full"><span class="lbl" id="vbm-e">Para quem</span><span class="seg3" role="radiogroup" aria-labelledby="vbm-e"><label class="opt-radio"><input type="radio" name="escopo" value="meu" checked>Só para mim</label><label class="opt-radio"><input type="radio" name="escopo" value="empresa">Para a empresa</label><label class="opt-radio"><input type="radio" name="escopo" value="padrao">Padrão da empresa</label></span><div class="hint">O padrão abre todo estudo novo; quem cria pode trocar por outro modelo.</div></div>`:''}</div></form>
+  ${adm?`<div class="field full"><span class="lbl" id="vbm-e">Para quem</span><span class="seg3" role="radiogroup" aria-labelledby="vbm-e"><label class="opt-radio"><input type="radio" name="escopo" value="meu" checked>Só para mim</label><label class="opt-radio"><input type="radio" name="escopo" value="empresa">Para a empresa</label><label class="opt-radio"><input type="radio" name="escopo" value="padrao">Padrão da empresa</label></span></div>`:''}</div></form>
   <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-vbm">Salvar modelo</button></div>`}
 function viabModal(M,fechar){if(M==='vb-novo')return vbNovoHtml(fechar);if(M==='vb-modelo')return vbModeloHtml(fechar);if(M!=='vb-apagar')return '';const v=VB(UI.vbApagar);if(!v)return '';
   return `<div class="dh"><h2>Apagar o estudo?</h2>${fechar}</div><p style="margin:0 0 8px">${esc(v.nome)} sai do terreno, com as tipologias e os custos. Estudo vinculado à negociação não se apaga.</p><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary danger" data-a="vb-apagar-ok">Apagar</button></div>`}
@@ -413,23 +413,23 @@ function cfgViabHtml(){const L=S.viabDesp;
       <input data-ch="cfg-vd" data-c="${d.codigo}" data-k="valor" value="${vbIn(d.valor,4)}" inputmode="decimal" placeholder="—" aria-label="Valor padrão de ${esc(d.nome)}">
       <span>${g==='comercial'?`<label class="chk"><input type="checkbox" data-ch="cfg-vd" data-c="${d.codigo}" data-k="deduz" ${d.deduz?'checked':''} aria-label="${esc(d.nome)} pode sair do VGV líquido"></label>`:''}</span>
       <label class="chk"><input type="checkbox" data-ch="cfg-vd" data-c="${d.codigo}" data-k="ativo" ${d.ativo?'checked':''} aria-label="Ativo"></label>
-      <span>${u?'':`<button class="linkbtn danger" data-a="vb-cfg-del" data-c="${d.codigo}">Apagar</button>`}</span></div>`}).join('')||'<div class="muted vb-vazio">Nenhum item.</div>'}`}).join('');
+      <span>${u?'':`<button class="iconbtn sm lixo" data-a="vb-cfg-del" data-c="${d.codigo}" aria-label="Apagar" title="Apagar">${ic('lixo',18)}</button>`}</span></div>`}).join('')||'<div class="muted vb-vazio">Nenhum item.</div>'}`}).join('');
   const mods=(S.viabModelos||[]).filter(m=>!m.dono),p=vbModeloPadrao();
   const modelos=`<section class="sec"><div class="sec-h"><h2>Modelos de estudo</h2></div><div class="sec-b">
-    <p class="muted" style="margin-top:0">O modelo padrão abre todo estudo novo com os valores e as bases de cálculo dele; quem cria pode escolher outro modelo da empresa, um seu ou nenhum. Para criar, abra um estudo e use <b>Salvar como modelo</b>.</p>
+    
     ${mods.length?`<div class="cfg-t vb-mod-cfg"><div class="cfg-r cfg-hd"><span>Padrão</span><span>Modelo</span><span>Atualizado</span><span></span></div>
-    ${mods.map(m=>`<div class="cfg-r"><label class="vb-radio"><input type="radio" name="vb-mod-padrao" ${m.padrao?'checked':''} data-a="vb-mod-padrao" data-v="${m.id}" aria-label="${esc(m.nome)} é o padrão"></label><span><b>${esc(m.nome)}</b><small class="faint" style="display:block">${vbModeloResumo(m)}</small></span><span class="faint">${fd(m.em)}</span><span><button class="linkbtn danger" data-a="vb-mod-del" data-v="${m.id}">Apagar</button></span></div>`).join('')}</div>
+    ${mods.map(m=>`<div class="cfg-r"><label class="vb-radio"><input type="radio" name="vb-mod-padrao" ${m.padrao?'checked':''} data-a="vb-mod-padrao" data-v="${m.id}" aria-label="${esc(m.nome)} é o padrão"></label><span><b>${esc(m.nome)}</b><small class="faint" style="display:block">${vbModeloResumo(m)}</small></span><span class="faint">${fd(m.em)}</span><span><button class="iconbtn sm lixo" data-a="vb-mod-del" data-v="${m.id}" aria-label="Apagar" title="Apagar">${ic('lixo',18)}</button></span></div>`).join('')}</div>
     ${p?`<button class="btn text sm" data-a="vb-mod-padrao" data-v="">Sem modelo padrão</button>`:''}`:'<div class="muted vb-vazio">Nenhum modelo da empresa. Sem padrão, o estudo novo nasce com os valores padrão da lista abaixo.</div>'}</div></section>`;
   return `${modelos}<section class="sec"><div class="sec-h"><h2>Rentabilidade mínima</h2></div><div class="sec-b">
     <div class="editgrid vb-campos"><div class="field"><label for="vb-mmin">Margem líquida mínima (%)</label><input id="vb-mmin" data-ch="vb-mmin" value="${vbIn(S.vbMargemMin,2)}" inputmode="decimal" placeholder="Sem mínima"></div></div>
-    <div class="hint">Estudo válido com margem líquida abaixo dela acende "Rentabilidade abaixo da mínima" na negociação, no Início, no kanban e no filtro, e cria a ação "Levar ao comitê". Vazio: sem aviso.</div></div></section>
+    </div></section>
   <section class="sec"><div class="sec-h"><h2>Itens do estudo de viabilidade</h2></div><div class="sec-b">
-    <p class="muted" style="margin-top:0">É a lista de cada seção do estudo. O grupo define a seção e as bases de cálculo aceitas; nos grupos de Taxas, Despesas financeiras e Despesas comerciais os itens aparecem sempre no estudo. A base e o valor entram como padrão no estudo novo; nas Taxas e Despesas financeiras (como o Custo de juros PJ, em % do custo de obra total), só a diretoria ou o administrador vê e troca no estudo. <b>Sai do VGV</b> marca as despesas comerciais que o estudo pode deduzir do VGV líquido (na permuta financeira).</p>
+    
     <div class="cfg-t vb-cfg"><div class="cfg-r cfg-hd vb-cfg-r"><span></span><span>Item</span><span>Grupo</span><span>Base de cálculo</span><span>Valor</span><span>Sai do VGV</span><span>Ativo</span><span></span></div>
     ${linhas}</div>
     <form class="inline-form" data-form="vb-cfg-nova"><div class="field grow"><label for="vd-n">Novo item</label><input id="vd-n" name="nome" required placeholder="Nome"></div>
       <div class="field" style="flex:0 1 240px"><label for="vd-g">Grupo</label><select id="vd-g" name="grupo">${Object.entries(VB_GRUPO).map(([c,G])=>`<option value="${c}">${VB_SECAO[G.secao]}${G.nome!==VB_SECAO[G.secao]?' › '+G.nome:''}</option>`).join('')}</select></div>
       <button class="btn sm">${ic('add',16)}Adicionar</button></form>
-    <div class="hint">Item já usado em estudo não se apaga nem muda de grupo; desative. Desativado, some da busca e dos itens fixos de estudo novo, mas os estudos que o usam continuam com ele.</div></div></section>`}
+    </div></section>`}
 const _prepararVb=prepararDados;prepararDados=function(){_prepararVb.apply(this,arguments);viabPreparar()};
 viabPreparar();

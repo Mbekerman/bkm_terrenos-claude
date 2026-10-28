@@ -118,7 +118,7 @@ function lzFormExc(z,i,sjc,l){const e=z.exc||{},p=l?.p0||{},ph=v=>v==null?'A lei
     <div class="field"><label for="ze-gv${i}">Gabarito (m)</label><input id="ze-gv${i}" name="gab" inputmode="decimal" value="${vBr(e.gab)}"></div>
     <div class="field"><label for="ze-o${i}">Outorga onerosa</label><select id="ze-o${i}" name="outorga_gratuita"><option value="">Segue o catálogo</option><option value="1" ${e.outorga_gratuita===true?'selected':''}>Gratuita</option><option value="0" ${e.outorga_gratuita===false?'selected':''}>Paga acima do básico</option></select></div>
     <div class="field full"><label for="ze-f${i}">Fonte da alteração</label><input id="ze-f${i}" name="fonte" value="${esc(e.fonte||'')}" placeholder="Consulta prévia, operação urbana, certidão, projeto aprovado..."></div></div>
-    <div class="hint">Os valores vieram do catálogo da lei; altere o que for diferente neste lote. Vazio volta ao catálogo. Alteração só com a fonte.</div>
+    
     <div class="sec-f" style="padding:12px 0 0"><button type="button" class="btn text" data-a="cancel-edit">Cancelar</button><button class="btn primary">Salvar</button></div></form>`}
 function lzFormNovo(t){const cid=cidDoTerreno(t),sjc=cid==='sjc',cat=zonasDoCatalogo(cid);
   const lotes=[...t.insc.map(i=>[i.sql,`${CIDADES_INSC[insCid(i)].rotulo} ${i.sql}`]),['','Parte sem inscrição (pela poligonal)']];
@@ -127,7 +127,7 @@ function lzFormNovo(t){const cid=cidDoTerreno(t),sjc=cid==='sjc',cat=zonasDoCata
     ${[0,1,2].map(i=>`<div class="editgrid" style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--linha)"><div class="field"><label for="z${i}">Zona ${i+1}${i?' (opcional)':''}</label><select id="z${i}" name="sigla${i}" ${i?'':'required'}><option value="">—</option>${cat.map(z=>`<option>${esc(z)}</option>`).join('')}</select></div>
     <div class="field"><label for="za${i}">Área da zona no lote (m²)</label><input id="za${i}" name="area${i}" inputmode="decimal"></div>
     ${sjc?`<div class="field"><label for="zm${i}">Macrozona</label><select id="zm${i}" name="macro${i}"><option value="">Não informada</option>${Object.entries(MACROS).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>`:''}</div>`).join('')}
-    <div class="hint" style="margin-top:8px">Troca só as zonas deste lote; os outros lotes ficam como estão. Os parâmetros vêm do catálogo (Configurações › Parâmetros urbanísticos).</div>
+    
     <div class="sec-f" style="padding:12px 0 0"><button type="button" class="btn text" data-a="cancel-edit">Cancelar</button><button class="btn primary">Registrar zonas</button></div></form>`}
 function secAnaliseUrb(t){const a=analiseVig(t),hist=t.analises.filter(x=>x.status==='substituida'),tEsc=tipoEmp(t),tipo=tEsc||'mercado',cid=cidDoTerreno(t),sjc=cid==='sjc';
   const R=resumoUrb(t,tipo),ed=UI.role!=='Leitura';
@@ -143,7 +143,7 @@ function secAnaliseUrb(t){const a=analiseVig(t),hist=t.analises.filter(x=>x.stat
     <div class="kv"><dt>Potencial construtivo (${esc(TIPOS_EMP[tipo])}${tEsc?'':', referência'})</dt><dd>${R.potM!=null?`<b>${m2(R.potM)}</b>`:`<span class="ni">${R.naoAdm.length?esc(TIPOS_EMP[tipo])+' não admitido em '+esc(R.naoAdm.join(', ')):R.semCa.length?'Falta o CA de '+esc(R.semCa.join(', ')):'Não calculado'}</span>`}</dd></div>
     <div class="kv"><dt>Sem outorga (CA básico)</dt><dd>${R.potB!=null?m2(R.potB):'<span class="ni">—</span>'}</dd></div>
     <div class="kv"><dt>Maior CA máximo</dt><dd>${R.caMax>0?num(R.caMax,3):'<span class="ni">—</span>'}</dd></div></dl>
-    <div class="hint" style="margin:0 0 12px">Potencial = soma da área de cada zona no lote × o CA dela. Nunca um "CA médio".${R.validar?' Há parâmetros a validar no catálogo.':''}</div>
+    ${R.validar?'<div class="hint">Há parâmetros a validar no catálogo.</div>':''}
     ${lotes.map(ins=>`<div class="lz-lote"><div class="lz-h">${lzCabLote(t,ins)}</div>${lzTabela(t,a,ins,tipo,sjc)}${lzCamadas(t,ins)}</div>`).join('')}
     ${a.obs?`<div class="hint">${esc(a.obs)}</div>`:''}
     ${sobra&&!lotes.includes(null)?`<div class="hint">A área adotada passa a soma das inscrições em ${m2(sobra)}. Se essa parte não tem inscrição, registre a zona dela como "Parte sem inscrição".</div>`:''}
@@ -157,21 +157,21 @@ function secAnaliseUrb(t){const a=analiseVig(t),hist=t.analises.filter(x=>x.stat
 const ZP_COLS=[['ca_minimo','CA mín.'],['ca_basico','CA bás.'],['ca_maximo','CA máx.'],['to_maximo','TO'],['to_lote_grande','TO lote ≥ corte'],['gabarito_m','Gabarito (m)'],['cota_parte_m2','Cota-parte (m²)'],['lote_minimo_m2','Lote mín. (m²)'],['frente_minima_m','Frente mín. (m)']];
 function cfgZonasHtml(){const cid=UI.zpCid||'sp',tipo=UI.zpTipo||'mercado',L=zpar().map((r,i)=>[r,i]).filter(([r])=>MUN_CID[r.municipio]===cid&&r.tipo===tipo);
   const cond=r=>[r.uso,r.macrozona&&MACROS[r.macrozona],r.lote_area_max_m2!=null?`lote < ${num(r.lote_area_max_m2)} m²`:'',r.lote_area_min_m2!=null?`lote ≥ ${num(r.lote_area_min_m2)} m²`:''].filter(Boolean).join(' · ');
-  const nI=v=>v==null?'':v;
+  const nI=v=>v==null?'':String(v).replace('.',',');
   return `<section class="sec"><div class="sec-h"><h2>Parâmetros urbanísticos</h2><button class="btn text" data-a="zp-padrao">Restaurar padrão</button></div><div class="sec-b">
-    <p class="muted" style="margin-top:0">O que a lei diz para cada zona, por tipo de empreendimento. A ficha do terreno usa estes valores para cada lote; exceção de um lote fica no próprio terreno. Carga de 25/out/2026 (pesquisa da legislação vigente), a validar.</p>
+    
     <div class="lz-topo"><div class="seg" role="group" aria-label="Cidade">${[['sp','São Paulo'],['sjc','São José dos Campos']].map(([k,l])=>`<button type="button" data-a="zp-cid" data-v="${k}" aria-pressed="${cid===k}">${l}</button>`).join('')}</div>
     <div class="seg" role="group" aria-label="Tipo de empreendimento">${Object.entries(TIPOS_EMP).map(([k,l])=>`<button type="button" data-a="zp-tipo" data-v="${k}" aria-pressed="${tipo===k}">${l}</button>`).join('')}</div></div>
-    <div class="tblwrap"><table class="mini-tbl zp-tbl"><thead><tr><th>Zona</th><th>Condição</th><th>Admitido</th>${ZP_COLS.map(([,l])=>`<th class="r">${l}</th>`).join('')}<th>Sem limite</th><th>Outorga grátis</th><th>Situação</th><th>Fonte</th><th>Ativo</th></tr></thead><tbody>
+    <div class="tblwrap rola"><table class="mini-tbl zp-tbl"><thead><tr><th>Zona</th><th>Condição</th><th>Admitido</th>${ZP_COLS.map(([,l])=>`<th class="r">${l}</th>`).join('')}<th>Sem limite</th><th>Outorga grátis</th><th>Situação</th><th>Fonte</th><th>Ativo</th></tr></thead><tbody>
     ${L.map(([r,i])=>`<tr class="${r.ativo?'':'inativa'}"><td><b>${esc(r.sigla)}</b></td><td class="muted">${esc(cond(r))||'—'}</td>
       <td><input type="checkbox" data-ch="zpar" data-i="${i}" data-k="permitido" ${r.permitido!==false?'checked':''} aria-label="Admitido em ${esc(r.sigla)}"></td>
-      ${ZP_COLS.map(([k,l])=>`<td class="r"><input data-ch="zpar" data-i="${i}" data-k="${k}" value="${nI(r[k])}" inputmode="decimal" aria-label="${l} de ${esc(r.sigla)}" ${k==='to_lote_grande'&&r.to_corte_m2==null?`disabled title="Sem corte por tamanho de lote"`:''}></td>`).join('')}
+      ${ZP_COLS.map(([k,l])=>`<td class="r"><input data-ch="zpar" data-i="${i}" data-k="${k}" value="${nI(r[k])}" inputmode="decimal" data-fmt="num" data-dec="3" aria-label="${l} de ${esc(r.sigla)}" ${k==='to_lote_grande'&&r.to_corte_m2==null?`disabled title="Sem corte por tamanho de lote"`:''}></td>`).join('')}
       <td><input type="checkbox" data-ch="zpar" data-i="${i}" data-k="gabarito_sem_limite" ${r.gabarito_sem_limite?'checked':''} aria-label="Gabarito sem limite em ${esc(r.sigla)}"></td>
       <td><select data-ch="zpar" data-i="${i}" data-k="outorga_gratuita" aria-label="Outorga em ${esc(r.sigla)}"><option value="" ${r.outorga_gratuita==null?'selected':''}>—</option><option value="1" ${r.outorga_gratuita===true?'selected':''}>Sim</option><option value="0" ${r.outorga_gratuita===false?'selected':''}>Não</option></select></td>
       <td><select data-ch="zpar" data-i="${i}" data-k="situacao" aria-label="Situação de ${esc(r.sigla)}">${Object.entries(SIT_PAR).map(([k,l])=>`<option value="${k}" ${r.situacao===k?'selected':''}>${l}</option>`).join('')}</select></td>
       <td><input data-ch="zpar" data-i="${i}" data-k="fonte_norma" value="${esc(r.fonte_norma||'')}" aria-label="Fonte de ${esc(r.sigla)}" title="${esc([r.fonte_dispositivo,r.regras].filter(Boolean).join(' · '))}"></td>
       <td><input type="checkbox" data-ch="zpar" data-i="${i}" data-k="ativo" ${r.ativo?'checked':''} aria-label="Ativo"></td></tr>`).join('')}</tbody></table></div>
-    <div class="hint">Vazio = a lei não fixa (nunca zero). "Sem limite" de gabarito é a marca, não um número. Cada mudança fica na auditoria; desative em vez de apagar.</div></div></section>`}
+    </div></section>`}
 
 // ---------- eventos ----------
 function zonasClick(A,a,t){
