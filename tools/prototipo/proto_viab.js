@@ -168,10 +168,12 @@ function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
   const lnsCls=sec=>{const gs=vbGruposDe(sec);return (gs.some(g=>VB_GRUPO[g].tipos.includes('verba_mensal'))?'':' sem-meses')+(gs.some(g=>!VB_GRUPO[g].fixo)?'':' sem-x')};
   const tot=(id,rot,x,cls='')=>`<div class="vb-r vb-tot ${cls}" id="${id}">${vbTotRow(rot,x,c)}</div>`;
   /* quadros (28/out/2026): título destacado com o total do quadro, sem linha de soma no fim; "Adicionar" embaixo da lista */
-  const qh=(k,titulo,x,sub,extra='')=>`<div class="vb-r vb-qh${sub?' sub':''}"><span class="vb-c vb-qt">${sub?`<h4>${titulo}</h4>`:`<h3>${titulo}</h3>`}${extra}</span>
+  /* os quadros grandes abrem e fecham pela seta do título (fechado mostra só o título com o total); guardado na sessão */
+  const qFe=k=>UI.vbFechados?.has(k);
+  const qh=(k,titulo,x,sub,extra='')=>`<div class="vb-r vb-qh${sub?' sub':''}"><span class="vb-c vb-qt">${sub?`<h4>${titulo}</h4>`:`<h3><button class="vb-qtg" data-a="vb-q-tg" data-v="${k}" aria-expanded="${!qFe(k)}"><svg class="bl-seta" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span>${titulo}</span></button></h3>`}${extra}</span>
     <span class="vb-c vb-out"><b data-vbo="qt-${k}">${brl(x)}</b><small class="faint" data-vbo="qp-${k}">${vbPctVgv(x,c)}</small></span><span class="vb-x"></span></div>`;
   const grupo=(g,sub)=>{const G=VB_GRUPO[g],ls=vbLinhasGrupo(v,g);
-    return `<div class="vb-q${sub?' sub':''}">${qh('g-'+g,G.nome,c.GR[g]||0,sub)}
+    return `<div class="vb-q${sub?' sub':''}${!sub&&qFe('g-'+g)?' fechado':''}">${qh('g-'+g,G.nome,c.GR[g]||0,sub)}
       ${ls.map(l=>vbLinha(v,l,c,dis,ro)).join('')||(UI.vbNova===g&&!ro?'':'<div class="muted vb-vazio">Nenhum item.</div>')}${UI.vbNova===g&&!ro?vbNovaLinha(g):''}
       ${ro||G.fixo?'':`<div class="vb-qadd"><button class="btn text sm" data-a="vb-ln-add" data-v="${g}">${ic('add',16)}${VB_ADD[g]}</button></div>`}</div>`};
   const tips=()=>`<div class="vb-tab vb-tips"><div class="vb-r vb-hd" aria-hidden="true"><span>Tipologia</span><span>Área privativa (m²)</span><span>Quantidade</span><span>Em permuta</span><span>Comissão</span><span>Preço unitário (R$)</span><span>Preço por m² (R$)</span><span class="vb-hr">VGV</span><span></span></div>
@@ -191,7 +193,7 @@ function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
     <div class="editgrid vb-campos">${campo('comd','Comissão em dinheiro (R$)',v.comd)}</div>
     `;
   const obra=()=>`<div class="vb-tab vb-lns${lnsCls('obra')}">${hd}
-    <div class="vb-q">${qh('raso','Custo de obra incidente',c.raso)}
+    <div class="vb-q${qFe('raso')?' fechado':''}">${qh('raso','Custo de obra incidente',c.raso)}
     <div class="vb-q sub">${qh('oi','Custo de obra típico',c.oi,true)}
     <div class="vb-r" data-ln="oi"><span class="vb-c vb-desp"><span class="vb-l">Item</span><span class="vb-nome">Obra típica</span></span><span class="vb-c vb-tipo"><span class="vb-l">Base de cálculo</span><span class="vb-nome">${VB_TIPO.area}</span></span>
       <label class="vb-c vb-mult"><span class="vb-l">Valor unitário</span><input data-fmt="moeda" data-vb="hd" data-k="cm2" value="${vbIn(v.cm2,2)}" inputmode="decimal" aria-label="Valor unitário da obra incidente (R$ por m²)" ${dis}></label><span class="vb-c vb-qtd"></span>
@@ -374,6 +376,7 @@ function viabClick(A,a,t){
       S.viabs=S.viabs.filter(y=>y.id!==v.id);log(x,`Estudo de viabilidade apagado: ${v.nome}`);UI.modal=null;UI.vbPop=null;save();render();toast('Estudo apagado.');return true}
     case 'vb-tip-add':{const v=VB(UI.vid),p={id:uid(),nome:'Tipologia '+(v.tips.length+1),area:null,qtd:null,perm:0,com:0,pu:null,pm2:null};v.tips.push(p);vbGravar(v);render();setTimeout(()=>{const i=document.querySelector(`[data-tp="${p.id}"] [data-k="nome"]`);i?.focus();i?.select()},20);return true}
     case 'vb-tip-del':{const v=VB(UI.vid);v.tips=v.tips.filter(p=>p.id!==a.dataset.v);vbGravar(v);render();return true}
+    case 'vb-q-tg':{const f=UI.vbFechados||(UI.vbFechados=new Set()),k=a.dataset.v;f.has(k)?f.delete(k):f.add(k);render();return true}
     case 'vb-ln-add':UI.vbNova=a.dataset.v;render();setTimeout(()=>document.querySelector('[data-vb-cb="nova"]')?.focus(),20);return true;
     case 'vb-ln-cancela':UI.vbNova=false;render();return true;
     case 'vb-ln-del':{const v=VB(UI.vid);v.linhas=v.linhas.filter(l=>l.id!==a.dataset.v);vbGravar(v);render();return true}

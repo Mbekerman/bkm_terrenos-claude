@@ -3575,6 +3575,14 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 .vb-q.sub:last-child > :last-child { border-bottom: 0 }
 .vb-q.sub + .vb-q.sub { border-top: 1px solid var(--linha) }
 .vb-qadd { padding: 4px 0 8px; margin-left: -12px }
+/* seta de abrir e fechar dos quadros grandes (a mesma das seções da ficha) */
+.vb-qtg { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; padding: 0; margin: -8px 0; font: inherit; color: inherit; cursor: pointer; text-align: left }
+.vb-qtg .bl-seta { margin-left: -10px }
+.vb-qtg:hover .bl-seta { background: rgba(127,127,127,.12) }
+.vb-qtg[aria-expanded="true"] .bl-seta { transform: rotate(90deg) }
+.vb-qtg:focus-visible { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: 2px; border-radius: 8px }
+.vb-q.fechado > :not(.vb-qh) { display: none }
+.vb-q.fechado > .vb-r.vb-qh { border-bottom: 0; border-radius: 11px }
 :root[data-tema="escuro"] .vb-r.vb-qh { background: rgba(99,112,255,.08) }
 :root[data-tema="escuro"] .vb-q.sub > .vb-r.vb-qh { background: rgba(99,112,255,.03) }
 @media (max-width: 1100px) {
