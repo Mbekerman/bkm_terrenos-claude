@@ -23,8 +23,9 @@ create table app.empresas (
 create table app.membros (
   empresa_id    uuid not null references app.empresas(id) on delete cascade,
   user_id       uuid not null references auth.users(id) on delete cascade,
-  -- diretor > gestor > analista; leitura só consulta
-  papel         text not null check (papel in ('diretor','gestor','analista','leitura')),
+  -- diretor > gestor > analista; leitura só consulta; basico é quem entrou pelo
+  -- domínio da empresa e espera o administrador liberar (não vê os dados da empresa)
+  papel         text not null check (papel in ('diretor','gestor','analista','leitura','basico')),
   nome          text not null,
   criado_em     timestamptz not null default now(),
   -- a quem responde: analista -> gestor, gestor -> diretor (sempre um nível acima)
@@ -60,7 +61,7 @@ begin
   end if;
   if new.superior_id is not null then
     select * into sup from app.membros where empresa_id = new.empresa_id and user_id = new.superior_id;
-    if app.nivel_papel(sup.papel) <> app.nivel_papel(new.papel) + 1 or new.papel = 'leitura' then
+    if app.nivel_papel(sup.papel) <> app.nivel_papel(new.papel) + 1 or new.papel in ('leitura','basico') then
       raise exception 'O superior de um % é um %', new.papel,
         case new.papel when 'analista' then 'gestor' when 'gestor' then 'diretor' else 'nível acima (diretor não tem superior)' end
         using errcode = '23514';
@@ -80,10 +81,11 @@ end $$;
 create trigger t_hierarquia before insert or update or delete on app.membros for each row execute function app.tg_membro_hierarquia();
 
 -- Funções de acesso. SECURITY DEFINER para não recursar na RLS de membros.
+-- O perfil básico não conta como membro para ver os dados (só o administrador libera).
 create or replace function app.minhas_empresas()
 returns setof uuid
 language sql stable security definer set search_path = ''
-as $$ select empresa_id from app.membros where user_id = auth.uid() $$;
+as $$ select empresa_id from app.membros where user_id = auth.uid() and (papel <> 'basico' or administrador) $$;
 
 create or replace function app.papel(p_empresa uuid)
 returns text
@@ -93,7 +95,7 @@ as $$ select papel from app.membros where user_id = auth.uid() and empresa_id = 
 create or replace function app.eh_membro(p_empresa uuid)
 returns boolean
 language sql stable security definer set search_path = ''
-as $$ select exists (select 1 from app.membros where user_id = auth.uid() and empresa_id = p_empresa) $$;
+as $$ select exists (select 1 from app.membros where user_id = auth.uid() and empresa_id = p_empresa and (papel <> 'basico' or administrador)) $$;
 
 -- Gestor ou acima (diretor): força avanço, vê a auditoria.
 create or replace function app.eh_gestor(p_empresa uuid)
