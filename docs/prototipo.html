@@ -9518,7 +9518,7 @@ function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
   const tot=(id,rot,x,cls='')=>`<div class="vb-r vb-tot ${cls}" id="${id}">${vbTotRow(rot,x,c)}</div>`;
   /* quadros (28/out/2026): título destacado com o total do quadro, sem linha de soma no fim; "Adicionar" embaixo da lista */
   /* os quadros grandes abrem e fecham pela seta do título (fechado mostra só o título com o total); guardado na sessão */
-  const qFe=k=>UI.vbFechados?.has(k);
+  const qFe=k=>(UI.vbFechados||(UI.vbFechados=vbQPadrao())).has(k);
   const qh=(k,titulo,x,sub,extra='')=>`<div class="vb-r vb-qh${sub?' sub':''}"><span class="vb-c vb-qt">${sub?`<h4>${titulo}</h4>`:`<h3><button class="vb-qtg" data-a="vb-q-tg" data-v="${k}" aria-expanded="${!qFe(k)}"><svg class="bl-seta" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span>${titulo}</span></button></h3>`}${extra}</span>
     <span class="vb-c vb-out"><b data-vbo="qt-${k}">${brl(x)}</b><small class="faint" data-vbo="qp-${k}">${vbPctVgv(x,c)}</small></span><span class="vb-x"></span></div>`;
   const grupo=(g,sub)=>{const G=VB_GRUPO[g],ls=vbLinhasGrupo(v,g);
@@ -9570,7 +9570,9 @@ function vbPopRender(){let el=document.getElementById('vb-pop');
   const sc=el.querySelector('.vb-pop-sc')?.scrollTop||0;UI.vid=UI.vbPop;
   el.innerHTML=`<div class="vb-pop-fundo" data-a="vb-fechar"></div><div class="vb-pop-d" role="dialog" aria-modal="true" aria-labelledby="vb-pop-t">${vbPopHtml()}</div>`;
   el.querySelector('.vb-pop-sc').scrollTop=novo?0:sc;document.body.classList.add('vb-aberto');if(novo)el.querySelector('.vb-pop-x')?.focus()}
-function vbAbrir(id){UI.vbPop=id;UI.vid=id;UI.vbPopRota=UI.route;UI.vbNova=false;UI.vbAba='tip';render()}
+/* a aba Obras sempre abre com todos os quadros fechados (decisão do Moisés, 28/out/2026) */
+const vbQPadrao=()=>new Set(['raso','g-obra_nao_incidente','g-projetos','g-pos_obra']);
+function vbAbrir(id){UI.vbPop=id;UI.vid=id;UI.vbPopRota=UI.route;UI.vbNova=false;UI.vbAba='tip';UI.vbFechados=vbQPadrao();render()}
 const _renderVb=render;render=function(){_renderVb.apply(this,arguments);vbPopRender()};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&UI.vbPop&&!UI.modal&&!e.defaultPrevented){e.preventDefault();UI.vbPop=null;render()}});
 /* linhas de um grupo; nos fixos, na ordem da lista da empresa */
@@ -9714,7 +9716,7 @@ function viabClick(A,a,t){
       save();render();const p=vbModeloPadrao();toast(p?`"${p.nome}" é o modelo padrão da empresa.`:'Sem modelo padrão: o estudo novo nasce só com a lista.');return true}
     case 'vb-abrir':vbAbrir(a.dataset.v);return true;
     case 'vb-fechar':UI.vbPop=null;UI.vbNova=false;render();return true;
-    case 'vb-aba':{UI.vbAba=a.dataset.v;UI.vbNova=false;render();const sc=document.querySelector('.vb-pop-sc'),fx=document.querySelector('.vb-fixo');
+    case 'vb-aba':{if(a.dataset.v==='obra'&&UI.vbAba!=='obra')UI.vbFechados=vbQPadrao();UI.vbAba=a.dataset.v;UI.vbNova=false;render();const sc=document.querySelector('.vb-pop-sc'),fx=document.querySelector('.vb-fixo');
       if(sc&&fx)sc.scrollTop=Math.min(sc.scrollTop,fx.offsetTop);document.querySelector('.vb-aba[aria-current]')?.scrollIntoView({inline:'center',block:'nearest'});
       document.querySelector(`#vb-st-${UI.vbAba}`)?.setAttribute('tabindex','-1');document.querySelector(`.vb-aba[data-v="${UI.vbAba}"]`)?.focus({preventScroll:true});return true}
     case 'vb-vincular':{const v=VB(a.dataset.v),x=T(v.tid);if(!negAtiva(x)){toast('A negociação não está ativa.',true);return true}x.neg.viab=vbResumo(v);save();render();toast(`${v.nome} é o estudo válido.`);return true}
