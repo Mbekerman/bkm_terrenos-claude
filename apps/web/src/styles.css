@@ -3049,7 +3049,7 @@ input[type=checkbox]:not(.fchk input):focus-visible { outline: 2px solid var(--m
 /* Selo de situação com a largura do texto (Diligências) */
 :root:not(#_) .task > .chip { width: auto !important; min-width: 0 !important; flex: none !important; max-width: max-content }
 /* Infraestrutura: data e fonte por inteiro, o campo da fonte ocupa o que sobra */
-.infra { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.3fr) !important }
+@media (min-width: 600px) { .infra { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.3fr) !important } }
 .infra .meta { display: flex; align-items: center; gap: 8px; overflow: visible !important; white-space: nowrap }
 .infra .meta .infra-f { flex: 1; min-width: 0; width: auto }
 .seg3 button { min-height: 32px }
@@ -3069,6 +3069,40 @@ input[type=checkbox]:not(.fchk input):focus-visible { outline: 2px solid var(--m
 /* Campo desabilitado nas grades de edição: mesmo formato preenchido, esmaecido */
 :is(.cfg-r, .zp-b, .adv-sub, .lz-tbl, .vb-c) :is(input:not([type=checkbox]):not([type=radio]), select):disabled { border: 0 !important; border-bottom: 1px solid rgba(31,31,31,.38) !important; border-radius: 4px 4px 0 0 !important; background-color: rgba(31,31,31,.04) !important; color: rgba(31,31,31,.6) !important }
 :root[data-tema="escuro"] :is(.cfg-r, .zp-b, .adv-sub, .lz-tbl, .vb-c) :is(input:not([type=checkbox]):not([type=radio]), select):disabled { border-bottom-color: rgba(142,154,196,.3) !important; background-color: rgba(124,140,255,.03) !important; color: #8e9ac4 !important }
+
+/* ===================== Revisão de design, rodada 9 ===================== */
+/* Situação que se muda no próprio chip (diligência, tarefa da ficha): largura do texto e setinha */
+select.chip-sel, :root:not(#_) select.chip.chip-sel { -webkit-appearance: none; appearance: none; field-sizing: content; width: auto !important; min-width: 0 !important; max-width: max-content; height: 28px !important; min-height: 28px !important; border: 0 !important; border-radius: 8px !important; padding: 0 26px 0 10px !important; font-size: 12px; font-weight: 500; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23444746' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important; background-repeat: no-repeat !important; background-position: right 6px center !important; background-size: 16px 16px !important }
+select.chip-sel:focus-visible { outline: 2px solid var(--m-primary, #0b57d0) !important; outline-offset: 2px }
+select.chip-sel:not(.warn):not(.good):not(.crit):not(.blue):not(.tkst) { background-color: #e9eef6 !important; color: #444746 !important }
+:root:not(#_)[data-tema="escuro"] select.chip.chip-sel { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23b9c3e6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important }
+:root[data-tema="escuro"] select.chip-sel:not(.warn):not(.good):not(.crit):not(.blue):not(.tkst) { background-color: rgba(142,154,196,.14) !important; color: #b9c3e6 !important }
+select.chip-sel option { background: #fff; color: #1f1f1f }
+:root[data-tema="escuro"] select.chip-sel option { background: #0c1433; color: #e6ecff }
+/* Valor venal: valores em quatro colunas e a fonte numa linha só no fim */
+.empilha .mini-tbl.vv tr { grid-template-columns: repeat(4, minmax(0, 1fr)) !important }
+.empilha .mini-tbl.vv td:last-child { grid-column: 1 / -1 }
+@media (max-width: 599px) { .empilha .mini-tbl.vv tr { grid-template-columns: repeat(2, minmax(0, 1fr)) !important } }
+/* Ofertas no celular: o link de referência ocupa a linha e quebra */
+.empilha .mini-tbl td:has(> .btn.text) { grid-column: 1 / -1 }
+.empilha .mini-tbl td .btn.text { white-space: normal !important; height: auto !important; min-height: 32px; max-width: 100%; text-align: left; margin-left: -12px }
+/* Rótulo e valor no celular: rótulo com mais espaço */
+@media (max-width: 599px) {
+  :root:not(#_) .kv { grid-template-columns: minmax(0, 1fr) auto !important; row-gap: 2px !important; align-items: center }
+  :root:not(#_) .kv > dt { grid-column: 1; font-size: 12px; line-height: 16px; white-space: normal }
+  :root:not(#_) .kv > dd { grid-column: 1; grid-row: 2; margin: 0 }
+  :root:not(#_) .kv > .kv-ed { grid-column: 2; grid-row: 1 / span 2 }
+}
+/* Configurações › Viabilidade: texto menor nas células para caber o nome do item e do grupo */
+@media (min-width: 900px) {
+  .vb-cfg-r { grid-template-columns: 40px minmax(200px, 1fr) 152px 152px 92px 56px 40px 40px !important; column-gap: 8px !important }
+  .vb-cfg-r :is(input:not([type=checkbox]), select) { font-size: 13px !important; padding-left: 8px !important }
+  .vb-cfg-r select { padding-right: 26px !important; background-position: right 4px center !important }
+}
+/* Margem mínima: mesmo campo preenchido das grades */
+.vb-campos .field input:not(:disabled) { border: 0 !important; border-bottom: 1px solid #747775 !important; border-radius: 4px 4px 0 0 !important; background-color: #f0f4f9 !important }
+:root[data-tema="escuro"] .vb-campos .field input:not(:disabled) { background-color: rgba(124,140,255,.07) !important; border-bottom-color: rgba(142,154,196,.6) !important }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

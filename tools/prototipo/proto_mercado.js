@@ -197,7 +197,7 @@ function mkSecaoHtml(t){if(t.lat==null)return '';const raio=UI.mkRaio||2,vaga=UI
   return `<section class="sec mk-sec" data-bloco-item="mercado"><div class="sec-h"><h2>Mercado na redondeza</h2><span class="faint">dados de exemplo</span></div><div class="sec-b">
     <div class="mk-ctl">${seg('mk-raio',MK_RAIOS.map(k=>[k,k+' km']),raio)}${seg('mk-vaga',[['todas','Todas'],['com','Com vaga'],['sem','Sem vaga']],vaga)}</div>
     ${corpo}
-    ${r.emps.length?`<div class="hint mk-emps">${r.emps.map(x=>`${esc(x.e.nome)} (${num(x.d,1)} km)`).join(' · ')}</div>`:''}
+    ${r.emps.length?`<div class="hint mk-emps">Empreendimentos no raio: ${r.emps.map(x=>`${esc(x.e.nome)} (${num(x.d,1)} km)`).join(' · ')}</div>`:''}
     ${notas.length?`<div class="hint">${notas.join('; ')}.</div>`:''}</div></section>`}
 const _abaComercialMk=abaComercial;abaComercial=function(t){const h=_abaComercialMk.apply(this,arguments),i=h.lastIndexOf('</div>');return h.slice(0,i)+mkSecaoHtml(t)+h.slice(i)};
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a="mk-raio"],[data-a="mk-vaga"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();
