@@ -29,7 +29,7 @@ npm run dev
 Crie a conta, crie a empresa (você vira gestor) e use **Carregar dados de exemplo** na tela inicial para ter 12 terrenos de teste.
 
 ### 3. Railway (dois ambientes)
-Mesmo código, dois ambientes no projeto "BKM Terrenos":
+Mesmo código, dois serviços no projeto "BKM Terrenos": `terrenos-web` (produção) e `terrenos-web-dev` (desenvolvimento).
 
 | Ambiente | Branch | Variáveis próprias |
 | --- | --- | --- |
@@ -37,7 +37,7 @@ Mesmo código, dois ambientes no projeto "BKM Terrenos":
 | desenvolvimento | `develop` | `AMBIENTE=dev` (selo "Desenvolvimento" na barra superior e `[DEV]` no título), `GOOGLE_MAPS_KEY`, `VITE_SUPABASE_*` do banco de desenvolvimento |
 
 1. Serviço a partir deste repositório; o Railway usa o `Dockerfile` (ver `railway.json`). Em **Settings → Networking**, gere o domínio.
-2. Em **Settings → Source**, ligue **Wait for CI** nos dois ambientes.
+2. Em **Settings → Source**, ligue **Wait for CI** nos dois serviços.
 3. As `VITE_*` entram no bundle no build: mudar uma delas exige novo deploy.
 4. A chave do Google é restrita por domínio no Cloud Console: inclua o domínio de cada ambiente.
 5. No Supabase, em **Authentication → URL Configuration**, adicione o domínio do ambiente que usa aquele banco.
