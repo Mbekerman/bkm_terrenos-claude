@@ -213,7 +213,10 @@ where m.codigo_ibge = '3550308';
 insert into app.entorno_categorias (codigo, nome, tipos_google, raio_pe_m, ordem) values
   ('metro_trem', 'Estação de metrô ou trem', array['subway_station','train_station','light_rail_station'], 1500, 1),
   ('shopping',   'Shopping center',          array['shopping_mall'],                                       1500, 2),
-  ('hospital',   'Hospital',                 array['hospital'],                                            1500, 3);
+  ('hospital',   'Hospital',                 array['hospital'],                                            1500, 3),
+  ('escola',     'Escola ou creche',         array['school','preschool','primary_school','secondary_school'], 1500, 4),
+  ('supermercado','Supermercado',            array['supermarket'],                                         1500, 5),
+  ('parque',     'Parque',                   array['park'],                                                1500, 6);
 
 insert into app.itens_infraestrutura (codigo, nome, ordem) values
   ('energia',     'Rede de energia na porta',  1),
