@@ -3446,5 +3446,25 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 :root:not(#_) .vb-sec > .sec-b:has(+ .vb-passo) { padding-bottom: 8px !important }
 :root:not(#_) .ficha-sheet .fs-b .sec > .sec-h { border-bottom: 0 !important; min-height: 48px !important }
 
+/* Revisão de design, rodada 21 */
+@media (max-width: 899px) {
+  :root:not(#_) .vb-cfg-r:not(.cfg-hd) > :nth-child(5) { grid-column: 1 !important }
+  :root:not(#_) .vb-cfg-r:not(.cfg-hd) > :nth-child(6):empty { display: none !important }
+  :root:not(#_) .vb-cfg-r:not(.cfg-hd) > label.chk:nth-child(7) { grid-column: 2 !important }
+}
+@media (min-width: 900px) and (max-width: 1679px) { :root:not(#_) .vb-cfg-r { grid-template-columns: 56px minmax(0, 1fr) minmax(0, 1fr) 128px 72px 48px 36px !important } }
+:root:not(#_) .vb-cfg-r select:disabled { background-image: none !important }
+:root:not(#_) .cfg-fe .cfg-fs-add input { width: 104px !important }
+:root:not(#_) .cfg-fe .cfg-fs-add input:focus { width: 180px !important }
+:root:not(#_)[data-tema="escuro"] .cfg-fe .cfg-fs-add input { border-color: rgba(185,195,230,.7) !important }
+:root:not(#_) .chip-fixo { opacity: 1; color: inherit }
+.cfg-padrao-w { border-top: 1px solid var(--m-outline-var, #c4c7c5); padding-top: 12px; margin-top: 8px }
+:root[data-tema="escuro"] .cfg-padrao-w { border-top-color: #1a2240 }
+:root:not(#_) .cfg-padrao-w .cfg-padrao-m { margin-left: -12px; color: var(--m-on-var, #444746) !important; gap: 8px }
+:root[data-tema="escuro"]:not(#_) .cfg-padrao-w .cfg-padrao-m { color: #b9c3e6 !important }
+:root[data-tema="escuro"]:not(#_) .kcard.aprov { outline: 1px solid rgba(255,223,153,.45) !important; outline-offset: -1px }
+:root:not(#_) .ficha-sheet .fs-b .sec > .sec-h { min-height: 40px !important; padding-top: 4px; padding-bottom: 0 }
+:root:not(#_) .ficha-sheet .fs-b { padding-left: 0 !important; padding-right: 0 !important }
+
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

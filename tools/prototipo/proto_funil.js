@@ -267,7 +267,7 @@ function pgConfig(){
     </div></section>`;
   const rot=(abas.find(x=>x[0]===aba)||abas[0])[1];
   return `<div class="page-h"><div><h1>Configurações</h1></div></div>
-  <div class="cfg-lay"><nav class="cfg-nav" role="tablist" aria-label="Configurações">${abas.map(([k,l])=>`<button class="cfg-tab" role="tab" data-a="cfg-aba" data-v="${k}" aria-pressed="${aba===k}" aria-selected="${aba===k}">${l}</button>`).join('')}${['viab','zonas','equipe'].includes(aba)?'':'<button class="btn text cfg-padrao" data-a="cfg-padrao">Restaurar padrão do funil</button>'}</nav><div class="stack cfg-corpo" aria-label="${esc(rot)}">${corpo}${['viab','zonas','equipe'].includes(aba)?'':'<button class="btn text cfg-padrao-m" data-a="cfg-padrao">Restaurar padrão do funil</button>'}</div></div>`}
+  <div class="cfg-lay"><nav class="cfg-nav" role="tablist" aria-label="Configurações">${abas.map(([k,l])=>`<button class="cfg-tab" role="tab" data-a="cfg-aba" data-v="${k}" aria-pressed="${aba===k}" aria-selected="${aba===k}">${l}</button>`).join('')}${['viab','zonas','equipe'].includes(aba)?'':'<button class="btn text cfg-padrao" data-a="cfg-padrao">Restaurar padrão do funil</button>'}</nav><div class="stack cfg-corpo" aria-label="${esc(rot)}">${corpo}${['viab','zonas','equipe'].includes(aba)?'':`<div class="cfg-padrao-w"><button class="btn text cfg-padrao-m" data-a="cfg-padrao">${ic('undo',18)}Restaurar padrão do funil</button></div>`}</div></div>`}
 function setPath(o,p,v){const k=p.split('.');let x=o;k.slice(0,-1).forEach(c=>{x=x[c]});x[k[k.length-1]]=v}
 /* pré-requisito: sem ciclo, sem exigir subetapa de etapa posterior, subetapa inicial não exige irmã */
 function validaPre(alvoTipo,alvo,req){const C=cfg(),rs=subCfg(req);if(!rs)return 'Subetapa inválida.';
