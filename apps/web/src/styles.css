@@ -3466,5 +3466,35 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 :root:not(#_) .ficha-sheet .fs-b .sec > .sec-h { min-height: 40px !important; padding-top: 4px; padding-bottom: 0 }
 :root:not(#_) .ficha-sheet .fs-b { padding-left: 0 !important; padding-right: 0 !important }
 
+/* Revisão de design, rodada 22 */
+@media (max-width: 599px) {
+  :root:not(#_) .empilha .mini-tbl.lst2 tr > td.l1 + td:not(:first-child):not(.l2):not(:last-child)::before { content: none !important; display: none !important }
+  :root:not(#_) .empilha .mini-tbl.lst2 tr > td.l1 + td.l0 + td:not(.l2):not(:last-child)::before { content: none !important; display: none !important }
+}
+@media (max-width: 599px) {
+  :root:not(#_) .infra { display: grid !important; grid-template-columns: minmax(0, 1fr); row-gap: 8px; align-items: start }
+  :root:not(#_) .infra > .seg3 { width: 100%; display: grid !important; grid-template-columns: repeat(3, 1fr) }
+  :root:not(#_) .infra > .seg3 > button { min-height: 40px; justify-content: center }
+  :root:not(#_) .infra > .meta:empty { display: none }
+}
+:root:not(#_) .infra-f, :root[data-tema="escuro"]:not(#_) .infra-f { border: 0 !important; box-shadow: none !important; background: transparent !important }
+@media (max-width: 599px) {
+  :root:not(#_) .ent-l .poi-d { display: none !important }
+  :root:not(#_) .ent-l .poi-rota, :root:not(#_) .ent-l .poi-x { width: 40px !important; height: 40px !important; min-width: 40px }
+  :root:not(#_) .cfg-r .cfg-ord .iconbtn.sm, :root:not(#_) .cfg-r .iconbtn.sm.lixo { width: 40px !important; height: 40px !important; min-width: 40px }
+  :root:not(#_) .cfg-subs .chip { min-height: 32px; padding-right: 4px }
+  :root:not(#_) .cfg-subs .chip-x { width: 28px; height: 28px; display: inline-grid; place-items: center }
+  :root:not(#_) .vb-pop-sc { padding-left: 16px !important; padding-right: 16px !important }
+}
+@media (max-width: 599px) {
+  :root:not(#_) .rd-dist.pf-dist li { grid-template-columns: minmax(0, 1fr) 52px 40px !important; grid-template-areas: "l n p" "b b b"; row-gap: 4px }
+  :root:not(#_) .rd-dist.pf-dist li > .pf-l { grid-area: l; white-space: normal } :root:not(#_) .rd-dist.pf-dist li > .rd-bar { grid-area: b }
+  :root:not(#_) .rd-dist.pf-dist li > .num { grid-area: n } :root:not(#_) .rd-dist.pf-dist li > .pf-p { grid-area: p }
+}
+@media (max-width: 599px) {
+  :root:not(#_) .dhead .muted { text-wrap: balance }
+}
+@media (max-width: 599px) { :root:not(#_) .infra > .seg3 > button { white-space: nowrap; font-size: 13px !important; padding-left: 4px !important; padding-right: 4px !important } }
+
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

@@ -4140,6 +4140,36 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 :root[data-tema="escuro"]:not(#_) .kcard.aprov { outline: 1px solid rgba(255,223,153,.45) !important; outline-offset: -1px }
 :root:not(#_) .ficha-sheet .fs-b .sec > .sec-h { min-height: 40px !important; padding-top: 4px; padding-bottom: 0 }
 :root:not(#_) .ficha-sheet .fs-b { padding-left: 0 !important; padding-right: 0 !important }
+
+/* Revisão de design, rodada 22 */
+@media (max-width: 599px) {
+  :root:not(#_) .empilha .mini-tbl.lst2 tr > td.l1 + td:not(:first-child):not(.l2):not(:last-child)::before { content: none !important; display: none !important }
+  :root:not(#_) .empilha .mini-tbl.lst2 tr > td.l1 + td.l0 + td:not(.l2):not(:last-child)::before { content: none !important; display: none !important }
+}
+@media (max-width: 599px) {
+  :root:not(#_) .infra { display: grid !important; grid-template-columns: minmax(0, 1fr); row-gap: 8px; align-items: start }
+  :root:not(#_) .infra > .seg3 { width: 100%; display: grid !important; grid-template-columns: repeat(3, 1fr) }
+  :root:not(#_) .infra > .seg3 > button { min-height: 40px; justify-content: center }
+  :root:not(#_) .infra > .meta:empty { display: none }
+}
+:root:not(#_) .infra-f, :root[data-tema="escuro"]:not(#_) .infra-f { border: 0 !important; box-shadow: none !important; background: transparent !important }
+@media (max-width: 599px) {
+  :root:not(#_) .ent-l .poi-d { display: none !important }
+  :root:not(#_) .ent-l .poi-rota, :root:not(#_) .ent-l .poi-x { width: 40px !important; height: 40px !important; min-width: 40px }
+  :root:not(#_) .cfg-r .cfg-ord .iconbtn.sm, :root:not(#_) .cfg-r .iconbtn.sm.lixo { width: 40px !important; height: 40px !important; min-width: 40px }
+  :root:not(#_) .cfg-subs .chip { min-height: 32px; padding-right: 4px }
+  :root:not(#_) .cfg-subs .chip-x { width: 28px; height: 28px; display: inline-grid; place-items: center }
+  :root:not(#_) .vb-pop-sc { padding-left: 16px !important; padding-right: 16px !important }
+}
+@media (max-width: 599px) {
+  :root:not(#_) .rd-dist.pf-dist li { grid-template-columns: minmax(0, 1fr) 52px 40px !important; grid-template-areas: "l n p" "b b b"; row-gap: 4px }
+  :root:not(#_) .rd-dist.pf-dist li > .pf-l { grid-area: l; white-space: normal } :root:not(#_) .rd-dist.pf-dist li > .rd-bar { grid-area: b }
+  :root:not(#_) .rd-dist.pf-dist li > .num { grid-area: n } :root:not(#_) .rd-dist.pf-dist li > .pf-p { grid-area: p }
+}
+@media (max-width: 599px) {
+  :root:not(#_) .dhead .muted { text-wrap: balance }
+}
+@media (max-width: 599px) { :root:not(#_) .infra > .seg3 > button { white-space: nowrap; font-size: 13px !important; padding-left: 4px !important; padding-right: 4px !important } }
 </style>
 <header class="top">
   <div class="top-in">
@@ -4788,7 +4818,7 @@ function abaDocs(t){
     <div class="field full" style="flex-basis:100%"><label for="dl-p">Providência</label><input id="dl-p" name="prov"></div><button class="btn sm">${ic('add',16)}Registrar</button></form>
     </div></section>`;
   return `<div class="stack">${secDil}<section class="sec chk-group"><div class="chk-gh"><span class="gt">Checklist de documentos</span>${ativo?`<span class="progress"><span class="bar"><span style="width:${CHECK_DIL.filter(([k,o])=>o&&docSt(doc(k))==='validado').length/CHECK_DIL.filter(c=>c[1]).length*100}%"></span></span>${CHECK_DIL.filter(([k,o])=>o&&docSt(doc(k))==='validado').length} de ${CHECK_DIL.filter(c=>c[1]).length} obrigatórios</span>`:'<span class="faint" style="font-size:13px">Vale a partir da Diligência</span>'}</div>
-  ${CHECK_DIL.map(([k,o])=>{const d=doc(k),st=docSt(d),va=d?docVal(d):null;return `<div class="doc"><span class="di">${ic('doc',18)}</span><div style="min-width:0"><div class="dn">${TIPOS_DOC[k][0]} ${o?'':'<span class="opt">opcional</span>'}</div><div class="ds">${d?`v${d.versoes} · emitido ${fd(d.emitido)}${va?` · ${st==='vencido'?'venceu':(va<=addD(HOJE,15)&&va>=HOJE?'<span class="vence-logo">vence':'vence')} ${fd(va)}${st!=='vencido'&&va<=addD(HOJE,15)&&va>=HOJE?'</span>':''}`:''}`:`Validade: ${TIPOS_DOC[k][2]?TIPOS_DOC[k][2]+' dias':'não vence'}`}</div></div>
+  ${CHECK_DIL.map(([k,o])=>{const d=doc(k),st=docSt(d),va=d?docVal(d):null;return `<div class="doc"><span class="di">${ic('doc',18)}</span><div style="min-width:0"><div class="dn">${TIPOS_DOC[k][0]}</div><div class="ds">${o?'':'Opcional · '}${d?`v${d.versoes} · emitido ${fd(d.emitido)}${va?` · ${st==='vencido'?'venceu':(va<=addD(HOJE,15)&&va>=HOJE?'<span class="vence-logo">vence':'vence')} ${fd(va)}${st!=='vencido'&&va<=addD(HOJE,15)&&va>=HOJE?'</span>':''}`:''}`:`Validade: ${TIPOS_DOC[k][2]?TIPOS_DOC[k][2]+' dias':'não vence'}`}</div></div>
   <div class="da">${docChip(st)}${st==='recebido'?`<button class="btn sm text" data-a="doc-ok" data-k="${k}">${ic('check',16)}Validar</button>`:''}<button class="btn sm text" data-a="upload" data-k="${k}">${ic('upload',16)}${d?'Nova versão':'Enviar'}</button></div></div>`}).join('')}</section>
   <section class="sec chk-group"><div class="chk-gh"><span class="gt">Fotos, plantas e outros</span><button class="btn sm text" data-a="upload" data-k="foto">${ic('upload',16)}Enviar foto</button></div>
   ${outros.map(d=>`<div class="doc"><span class="di">${ic('doc',18)}</span><div><div class="dn">${esc(d.nome||TIPOS_DOC[d.tipo][0])}</div><div class="ds">${TIPOS_DOC[d.tipo][1]} · ${fd(d.emitido)}</div></div><div class="da">${docChip(docSt(d))}</div></div>`).join('')||'<div class="empty">Nada enviado.</div>'}</section></div>`;
@@ -5218,7 +5248,7 @@ function entornoCard(t){if(t.lat==null)return '';
     corpo=`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${ENT_CAT.map(([k,l,pl])=>{const its=e.itens.filter(x=>x.cat===k&&!x.excl).sort((a,b)=>a.pe-b.pe);
       if(!its.length)return `<li class="ent-vazio"><span><span class="t2">Sem ${pl}</span></span></li>`;
       sobra+=Math.max(0,its.length-lim);
-      return its.slice(0,lim).map(p=>`<li><span><span class="t1">${esc(p.nome)}</span><span class="t2">${l}${p.min!=null?` · ${p.min} min a pé`:''}</span></span><span class="num poi-d">${p.pe<1000?Math.round(p.pe/10)*10+'\u00a0m':num(p.pe/1000,2)+'\u00a0km'}</span><a class="iconbtn sm poi-rota" href="${rotaPeUrl(t,p)}" target="_blank" rel="noopener" aria-label="Rota até ${esc(p.nome)}" title="Rota">${ic('rota',18)}</a>${poiX('g',p.gid,p.nome,t)}</li>`).join('')}).join('')}</ul>
+      return its.slice(0,lim).map(p=>`<li><span><span class="t1">${esc(p.nome)}</span><span class="t2">${l}${p.min!=null?` · ${p.min} min a pé`:''}<span class="so-m"> · ${p.pe<1000?Math.round(p.pe/10)*10+'\u00a0m':num(p.pe/1000,2)+'\u00a0km'}</span></span></span><span class="num poi-d">${p.pe<1000?Math.round(p.pe/10)*10+'\u00a0m':num(p.pe/1000,2)+'\u00a0km'}</span><a class="iconbtn sm poi-rota" href="${rotaPeUrl(t,p)}" target="_blank" rel="noopener" aria-label="Rota até ${esc(p.nome)}" title="Rota">${ic('rota',18)}</a>${poiX('g',p.gid,p.nome,t)}</li>`).join('')}).join('')}</ul>
     ${sobra||ENT_TODOS?`<button class="linkbtn" data-a="ent-todos" style="margin-top:6px">${ENT_TODOS?'Mostrar menos':`Mostrar mais ${sobra}`}</button>`:''}
     ${busc||e.semPe||mudou?`<div class="hint ent-pe">${busc?'Atualizando no Google… · ':''}${e.semPe?'Em linha reta (sem rota a pé) · ':''}${fd(e.em)}${mudou?' · <b>a localização mudou depois da busca</b>':''}</div>`:''}`}
   corpo+=pontosEmpresa(t)+poiExcluidos(t);
@@ -5233,7 +5263,7 @@ function pontosEmpresa(t){const pts=S.pontos||[];const d=t.dist&&t.dist.lat===t.
     return {p,ord:reta,dist:kmTxt(reta),modo:'em linha reta',url:reta<=RAIO_PE?rotaPeUrl(t,p):rotaUrl(t,p)}}).sort((a,b)=>a.ord-b.ord);
   const lim=EMP_TODOS?999:5;
   return `<div class="ent-emp"><div class="ent-emp-h"><span>Cadastrados pela empresa</span>${UI.role!=='Leitura'?`<button class="linkbtn ed" data-a="ent-add-ponto" data-id="${t.id}">${ic('add',16)}Adicionar ponto</button>`:''}</div>
-    ${its.length?`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${its.slice(0,lim).map(x=>`<li><span><span class="t1">${esc(x.p.nome)}</span><span class="t2">${CAT_POI[x.p.cat]||'Outro'} · ${x.modo}</span></span><span class="num poi-d">${x.dist}</span><a class="iconbtn sm poi-rota" href="${x.url}" target="_blank" rel="noopener" aria-label="Rota até ${esc(x.p.nome)}" title="Rota">${ic('rota',18)}</a>${poiX('e',x.p.id,x.p.nome,t)}</li>`).join('')}</ul>
+    ${its.length?`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${its.slice(0,lim).map(x=>`<li><span><span class="t1">${esc(x.p.nome)}</span><span class="t2">${CAT_POI[x.p.cat]||'Outro'} · ${x.modo}<span class="so-m"> · ${x.dist}</span></span></span><span class="num poi-d">${x.dist}</span><a class="iconbtn sm poi-rota" href="${x.url}" target="_blank" rel="noopener" aria-label="Rota até ${esc(x.p.nome)}" title="Rota">${ic('rota',18)}</a>${poiX('e',x.p.id,x.p.nome,t)}</li>`).join('')}</ul>
     ${its.length>5?`<button class="linkbtn" data-a="emp-todos" style="margin-top:6px">${EMP_TODOS?'Mostrar menos':`Mostrar mais ${its.length-5}`}</button>`:''}`
     :'<div class="muted" style="font-size:14px">Nenhum ponto cadastrado pela empresa.</div>'}
     ${DIST_BUSCA_ON(t)?'<div class="hint">Medindo as rotas no Google…</div>':''}</div>`}
