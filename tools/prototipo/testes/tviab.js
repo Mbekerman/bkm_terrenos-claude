@@ -13,7 +13,7 @@ await ctx.route('**/*',r=>{const u=r.request().url();if(u.startsWith('file://'))
 const p=await ctx.newPage();p.on('pageerror',e=>errs.push(tag+': '+e.message));
 await p.goto('file:///x/a.html');await p.evaluate(t=>{localStorage.clear();localStorage.setItem('bkm-terrenos-tema',t)},tema);await p.reload();await p.waitForTimeout(400);
 const D=()=>p.evaluate(k=>JSON.parse(localStorage.getItem(k)),KEY);
-const d0=await D();ok(d0.viabs.length>=4&&d0.viabDesp.length===37,tag+' estudos de exemplo e a lista padrão de 37 itens');
+const d0=await D();ok(d0.viabs.length>=4&&d0.viabDesp.length===39,tag+' estudos de exemplo e a lista padrão de 39 itens');
 const tid=d0.viabs[0].tid;
 const ficha=async()=>{await p.evaluate(id=>{document.querySelector('[data-a=nav][data-r=terrenos]').click()},tid);await p.waitForTimeout(200);
   await p.evaluate(id=>document.querySelector(`[data-a=abrir][data-id="${id}"]`).click(),tid);await p.waitForTimeout(400);
@@ -31,7 +31,7 @@ const aba=async k=>{await p.evaluate(k=>document.querySelector(`.vb-nav [data-a=
 const G2A={obra_atipica:'obra',obra_nao_incidente:'obra',projetos:'obra',pos_obra:'obra',terreno:'despesas',incorporacao:'despesas',cef:'despesas',adm_financeiro:'despesas'};
 await aba('taxas');const nTx=await p.$$eval('#vb-sec-taxas .vb-r[data-ln]',e=>e.length);
 await aba('financeiro');const nFi=await p.$$eval('#vb-sec-financeiro .vb-r[data-ln]',e=>e.map(r=>r.querySelector('.vb-nome')?.textContent).join('|'));await aba('comercial');
-ok(nFi==='Custo de alavancagem|Custo de juros PJ|Custo financeiro|Impostos',tag+' Despesas financeiras: alavancagem, juros PJ, custo financeiro e impostos: '+nFi);
+ok(nFi==='Custo de alavancagem|Custo de juros PJ|Custo financeiro|Impostos|Custo de capital permuta financeira|Custo de capital pagamento terreno',tag+' Despesas financeiras: alavancagem, juros PJ, custo financeiro, impostos e os dois custos de capital: '+nFi);
 ok(nTx===3&&await p.$$eval('#vb-sec-comercial .vb-r[data-ln]',e=>e.length)===9&&await p.$('.vb-aba[data-v=comercial][aria-current]'),tag+' Taxas (3) e Despesas comerciais (9) já vêm com os itens fixos; o botão ativo acompanha a seção');
 await aba('tip');
 const tp=async(i,k)=>p.locator('.vb-tips .vb-r[data-tp]').nth(i).locator(`[data-k="${k}"]`);
@@ -93,7 +93,18 @@ ok(/VGV vendido R\$\s?42\.640\.000/.test(res)&&/Deduções da receita R\$\s?3\.2
 if(modo==='desktop')await p.screenshot({path:OUT+tag+'_2dre.png'});
 const inteira=async(k,nome)=>{await aba(k);await p.evaluate(()=>{const st=document.createElement('style');st.id='t-print';st.textContent='.vb-pop{position:absolute!important;bottom:auto!important;padding:0!important}.vb-pop-d{height:auto!important;border-radius:0!important}.vb-pop-sc{overflow:visible!important}';document.head.appendChild(st)});
   await p.locator('#vb-sec-'+k).screenshot({path:OUT+tag+nome});await p.evaluate(()=>document.getElementById('t-print').remove())};
+// custo de capital (28/out/2026): base única Aporte (permuta financeira em dinheiro; pagamento em dinheiro do terreno), valor em %
+const cp=await fixo('financeiro','Custo de capital permuta financeira','2'),cg=await fixo('financeiro','Custo de capital pagamento terreno','1');
+const cap=await p.evaluate(([a,b])=>[a,b].map(id=>{const r=document.querySelector(`[data-ln="${id}"]`);return {sel:!!r.querySelector('select'),base:r.querySelector('.vb-tipo .vb-nome').innerText.replace(/\s+/g,' ').trim(),fmt:r.querySelector('[data-k=valor]').dataset.fmt,out:r.querySelector('.vb-out').innerText.replace(/\s+/g,' ')}}),[cp,cg]);
+ok(cap.every(x=>!x.sel&&x.base==='Aporte'&&x.fmt==='pct')&&/62\.968/.test(cap[0].out)&&/permuta financeira em dinheiro \(R\$ 3,15 mi\)/.test(cap[0].out)&&/10\.000/.test(cap[1].out)&&/pagamento em dinheiro \(R\$ 1,00 mi\)/.test(cap[1].out),
+  tag+' custo de capital: base só Aporte, valor em %; 2% da permuta financeira (3.148.416) = 62.968,32 e 1% do pagamento (1.000.000) = 10.000: '+JSON.stringify(cap));
+ok(/1\.778\.568/.test(await txt('#vb-tot-financeiro')),tag+' Despesas financeiras somam o custo de capital: 1.778.568,32');
+const hdA=await p.$$eval('#vb-sec-financeiro .vb-hd > span',e=>e.filter(x=>getComputedStyle(x).display!=='none').map(x=>x.textContent+':'+getComputedStyle(x).textAlign));
+ok(modo!=='desktop'||hdA.join().replace('Item:start','Item:left')==='Item:left,Base de cálculo:left,Valor:right,Resultado:right',tag+' cabeçalho de Financeiras: texto à esquerda, números à direita, sem a coluna Meses: '+hdA.join());
+await aba('res');const resC=await txt('#vb-res');ok(/Custo de capital permuta financeira R\$\s?62\.968/.test(resC)&&/Custo de capital pagamento terreno R\$\s?10\.000/.test(resC),tag+' DRE detalha o custo de capital nas despesas financeiras (diretoria)');
 if(tema==='claro'){await inteira('res','_2dre_inteira.png');await inteira('financeiro','_2financeiras.png')}
+if(modo==='desktop'&&tema==='escuro')await inteira('financeiro','_2financeiras.png');
+await val(cp,'');await val(cg,'');
 await aba('taxas');const des=await p.evaluate(()=>{const r=[...document.querySelectorAll('#vb-sec-taxas .vb-r[data-ln]')].find(r=>/desenvolvimento/.test(r.innerText));return r.innerText.replace(/\s+/g,' ')});
 ok(/529\.951/.test(des)&&/lucro líquido/.test(des),tag+' taxa de desenvolvimento: 10% do lucro líquido (529.950,91)');
 await aba('terreno');const sh=await txt('[data-vbo=sh-terreno]');ok(/4\.348\.416/.test(sh)&&/9,5% do VGV/.test(sh),tag+' título da seção com o total e o % do VGV: '+sh);
@@ -109,7 +120,7 @@ const cef=await fixo('comercial','Taxa de emissão de contratos CEF','500','verb
 ok(/4\.767\.000/.test(await txt('#vb-tot-comercial'))&&/138 unidades líquidas/.test(await txt(`[data-ln="${cef}"]`)),tag+' verba por unidade: 500 × 138 unidades líquidas');
 await val(cef,'');
 const vs=(await D()).viabs.at(-1);
-ok(vs.linhas.length===16+10&&vs.deduz.length===2,tag+' linhas gravadas (16 fixas e 10 da lista) e as duas deduções');
+ok(vs.linhas.length===18+10&&vs.deduz.length===2,tag+' linhas gravadas (18 fixas e 10 da lista) e as duas deduções');
 ok(await p.evaluate(()=>{const sc=document.querySelector('.vb-pop-sc');return sc.scrollWidth<=sc.clientWidth+1&&document.scrollingElement.scrollWidth<=innerWidth+1||[sc.scrollWidth,sc.clientWidth,document.scrollingElement.scrollWidth,innerWidth,[...sc.querySelectorAll('*')].filter(e=>e.getBoundingClientRect().right>sc.getBoundingClientRect().right+1).slice(0,3).map(e=>e.className).join('|')].join(',')}),tag+' sem rolagem horizontal');
 await aba('obra');await p.evaluate(()=>document.querySelector('.vb-pop-sc').scrollTop=1e6);await p.waitForTimeout(100);
 await p.evaluate(()=>[...document.querySelectorAll('.vb-passo [data-a=vb-aba]')].find(b=>/Gerais/.test(b.textContent)).click());await p.waitForTimeout(200);
@@ -125,7 +136,7 @@ await p.evaluate(()=>{document.querySelector('#perfil button')?.click()});await 
 await p.evaluate(()=>[...document.querySelectorAll('[data-a=role]')].find(x=>x.dataset.v==='Leitura')?.click());await p.waitForTimeout(250);
 ok(await p.evaluate(()=>[...document.querySelectorAll('.vb-tab input')].every(i=>i.disabled)&&!document.querySelector('[data-a=vb-tip-add]')&&!document.querySelector('[data-a=vb-ln-add]')),tag+' Leitura vê o estudo sem editar');
 const abL=await p.$$eval('#vb-pop .vb-nav .vb-aba',e=>e.map(x=>x.dataset.v).join());await aba('res');const resL=await txt('#vb-res');
-ok(abL==='tip,terreno,comercial,obra,despesas,res'&&/Resultado sem as taxas/.test(resL)&&!/Impostos|Taxa de gestão/.test(resL),tag+' fora da diretoria, sem as abas Financeiras e Taxas, e a DRE só com os totais delas: '+abL);
+ok(abL==='tip,terreno,comercial,obra,despesas,res'&&/Resultado sem as taxas/.test(resL)&&!/Impostos|Taxa de gestão|Custo de capital/.test(resL),tag+' fora da diretoria, sem as abas Financeiras e Taxas, e a DRE só com os totais delas: '+abL);
 if(modo==='desktop'&&tema==='claro')await p.screenshot({path:OUT+tag+'_3leitura.png'});
 await p.evaluate(()=>{document.querySelector('#perfil button')?.click()});await p.waitForTimeout(100);
 await p.evaluate(()=>[...document.querySelectorAll('[data-a=role]')].find(x=>x.dataset.v==='Diretor')?.click());await p.waitForTimeout(250);
@@ -133,7 +144,7 @@ await p.evaluate(()=>[...document.querySelectorAll('[data-a=role]')].find(x=>x.d
 if(modo==='desktop'){
 await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=config]').click());await p.waitForTimeout(200);
 await p.evaluate(()=>document.querySelector('[data-a=cfg-aba][data-v=viab]').click());await p.waitForTimeout(200);
-ok(await p.$$eval('.vb-cfg-r:not(.cfg-hd)',e=>e.length)===37&&await p.$('.vb-cfg-r [data-c=juros_pj][data-k=tipo]'),tag+' Configurações › Viabilidade lista os 37 itens por grupo, com o Custo de juros PJ em Despesas financeiras');
+ok(await p.$$eval('.vb-cfg-r:not(.cfg-hd)',e=>e.length)===39&&await p.$('.vb-cfg-r [data-c=juros_pj][data-k=tipo]'),tag+' Configurações › Viabilidade lista os 39 itens por grupo, com o Custo de juros PJ em Despesas financeiras');
 await p.fill('#vb-mmin','14');await p.press('#vb-mmin','Tab');await p.waitForTimeout(200);
 ok((await D()).vbMargemMin===14,tag+' administrador define a rentabilidade mínima da empresa (14%)');
 await p.screenshot({path:OUT+tag+'_4config.png',fullPage:true});
