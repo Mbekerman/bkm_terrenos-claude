@@ -3282,10 +3282,10 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 :root[data-tema="escuro"] .tk-res { color: #8e9ac4; background: transparent !important }
 /* Configurações no celular: setas e lixeira no canto de cima do item; caixas de marcar centradas na altura do campo */
 @media (max-width: 899px) {
-  :root:not(#_) :is(.cfg-r.cfg-fase, .vb-cfg-r):not(.cfg-hd) { position: relative; padding-top: 12px !important }
-  :root:not(#_) :is(.cfg-r.cfg-fase, .vb-cfg-r):not(.cfg-hd) > .cfg-ord { position: absolute; top: 4px; right: 0; display: flex; gap: 0; z-index: 1 }
-  :root:not(#_) :is(.cfg-r.cfg-fase, .vb-cfg-r):not(.cfg-hd) > span:last-child:has(.lixo) { position: absolute; top: 4px; right: 76px; z-index: 1 }
-  :root:not(#_) :is(.cfg-r.cfg-fase, .vb-cfg-r):not(.cfg-hd) > span:last-child:not(:has(*)) { display: none }
+  :root:not(#_) :is(.cfg-r.cfg-fase, .cfg-r.cfg-fe, .cfg-r.cfg-sub, .vb-cfg-r):not(.cfg-hd) { position: relative; padding-top: 12px !important }
+  :root:not(#_) :is(.cfg-r.cfg-fase, .cfg-r.cfg-fe, .cfg-r.cfg-sub, .vb-cfg-r):not(.cfg-hd) > .cfg-ord { position: absolute; top: 4px; right: 0; display: flex; gap: 0; z-index: 1 }
+  :root:not(#_) :is(.cfg-r.cfg-fase, .cfg-r.cfg-fe, .cfg-r.cfg-sub, .vb-cfg-r):not(.cfg-hd) > span:last-child:has(.lixo) { position: absolute; top: 4px; right: 76px; z-index: 1 }
+  :root:not(#_) :is(.cfg-r.cfg-fase, .cfg-r.cfg-fe, .cfg-r.cfg-sub, .vb-cfg-r):not(.cfg-hd) > span:last-child:not(:has(*)) { display: none }
   :root:not(#_) .cfg-r.cfg-fase:not(.cfg-hd) { grid-template-columns: 96px 1fr auto !important }
   :root:not(#_) .cfg-r.cfg-fase:not(.cfg-hd) > :nth-child(2) { grid-column: 1 / -1 !important }
   :root:not(#_) .cfg-r.cfg-fase:not(.cfg-hd) > :nth-child(3) { grid-column: 1 !important }
@@ -3313,6 +3313,32 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 :root:not(#_) .mini-tbl.vv td.vv-ex::before { display: none !important }
 /* Infraestrutura: o item marcado leva o visto, como nos segmentados do Material */
 @media (min-width: 600px) { :root:not(#_) .infra .seg3 button[aria-pressed="true"]::before { content: '✓'; margin-right: 4px; font-weight: 600 } }
+/* ===================== Revisão de design, rodada 16 ===================== */
+.chip.cfg-tag { height: 24px; font-size: 12px; margin-left: 8px; padding: 0 8px }
+/* Parâmetros por zona no celular: valores alinhados pela linha da grade mesmo quando um rótulo quebra */
+@media (max-width: 599px) { :root:not(#_) .lz-par > .lz-c { display: flex; flex-direction: column; justify-content: space-between } }
+/* Infraestrutura: visto no marcado também no celular */
+@media (max-width: 599px) { :root:not(#_) .infra .seg3 button[aria-pressed="true"]::before { content: '✓'; margin-right: 3px; font-weight: 600 } :root:not(#_) .infra .seg3 button { padding: 0 10px } }
+/* Tarefas no celular: filtros dividem a largura em linhas cheias */
+@media (max-width: 599px) { :root:not(#_) .tk-fl { display: grid !important; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; width: 100% }
+  :root:not(#_) .tk-fl > :is(select.fsel-chip, .fchk) { max-width: none !important; width: 100% !important; min-width: 0 !important; justify-content: center; font-size: 13px; padding-left: 8px; padding-right: 8px }
+  :root:not(#_) .tk-fl > select.fsel-chip { padding-right: 26px !important; padding-left: 10px !important; grid-column: span 3 }
+  :root:not(#_) .tk-fl > select.fsel-chip#tk-prio, :root:not(#_) .tk-fl > .fchk { grid-column: span 2 } }
+.vb-med { font-size: 12px }
+@media (max-width: 599px) { .vb-med { display: none } }
+@media (max-width: 599px) {
+  .so-d { display: none }
+  :root:not(#_) .dhead .muted { white-space: normal !important; overflow: visible !important; text-overflow: clip !important }
+  :root:not(#_) .empilha .mini-tbl.lst2 td.l1 { flex: 1 1 100% !important; font-weight: 500 }
+  :root:not(#_) .empilha .mini-tbl.lst2 td.l1 + td::before { content: none !important }
+}
+.vence-logo { color: #7a5900; font-weight: 500 }
+:root[data-tema="escuro"] .vence-logo { color: #ffd77a }
+@media (min-width: 900px) { :root:not(#_) .cfg-r.cfg-eq { grid-template-columns: minmax(200px, 320px) 200px 200px 140px !important; justify-content: start } }
+@media (min-width: 900px) { :root:not(#_) .vb-cfg-r { grid-template-columns: 40px minmax(200px, 1fr) 150px 150px 76px 72px 48px 40px !important } }
+@media (min-width: 900px) { :root:not(#_) .cfg-r.cfg-sub { grid-template-columns: 72px minmax(200px, 1fr) 110px 190px 120px 40px !important } }
+.so-m { display: none }
+@media (max-width: 599px) { .so-m { display: inline } }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

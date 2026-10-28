@@ -3957,10 +3957,10 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 :root[data-tema="escuro"] .tk-res { color: #8e9ac4; background: transparent !important }
 /* Configurações no celular: setas e lixeira no canto de cima do item; caixas de marcar centradas na altura do campo */
 @media (max-width: 899px) {
-  :root:not(#_) :is(.cfg-r.cfg-fase, .vb-cfg-r):not(.cfg-hd) { position: relative; padding-top: 12px !important }
-  :root:not(#_) :is(.cfg-r.cfg-fase, .vb-cfg-r):not(.cfg-hd) > .cfg-ord { position: absolute; top: 4px; right: 0; display: flex; gap: 0; z-index: 1 }
-  :root:not(#_) :is(.cfg-r.cfg-fase, .vb-cfg-r):not(.cfg-hd) > span:last-child:has(.lixo) { position: absolute; top: 4px; right: 76px; z-index: 1 }
-  :root:not(#_) :is(.cfg-r.cfg-fase, .vb-cfg-r):not(.cfg-hd) > span:last-child:not(:has(*)) { display: none }
+  :root:not(#_) :is(.cfg-r.cfg-fase, .cfg-r.cfg-fe, .cfg-r.cfg-sub, .vb-cfg-r):not(.cfg-hd) { position: relative; padding-top: 12px !important }
+  :root:not(#_) :is(.cfg-r.cfg-fase, .cfg-r.cfg-fe, .cfg-r.cfg-sub, .vb-cfg-r):not(.cfg-hd) > .cfg-ord { position: absolute; top: 4px; right: 0; display: flex; gap: 0; z-index: 1 }
+  :root:not(#_) :is(.cfg-r.cfg-fase, .cfg-r.cfg-fe, .cfg-r.cfg-sub, .vb-cfg-r):not(.cfg-hd) > span:last-child:has(.lixo) { position: absolute; top: 4px; right: 76px; z-index: 1 }
+  :root:not(#_) :is(.cfg-r.cfg-fase, .cfg-r.cfg-fe, .cfg-r.cfg-sub, .vb-cfg-r):not(.cfg-hd) > span:last-child:not(:has(*)) { display: none }
   :root:not(#_) .cfg-r.cfg-fase:not(.cfg-hd) { grid-template-columns: 96px 1fr auto !important }
   :root:not(#_) .cfg-r.cfg-fase:not(.cfg-hd) > :nth-child(2) { grid-column: 1 / -1 !important }
   :root:not(#_) .cfg-r.cfg-fase:not(.cfg-hd) > :nth-child(3) { grid-column: 1 !important }
@@ -3988,6 +3988,32 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 :root:not(#_) .mini-tbl.vv td.vv-ex::before { display: none !important }
 /* Infraestrutura: o item marcado leva o visto, como nos segmentados do Material */
 @media (min-width: 600px) { :root:not(#_) .infra .seg3 button[aria-pressed="true"]::before { content: '✓'; margin-right: 4px; font-weight: 600 } }
+/* ===================== Revisão de design, rodada 16 ===================== */
+.chip.cfg-tag { height: 24px; font-size: 12px; margin-left: 8px; padding: 0 8px }
+/* Parâmetros por zona no celular: valores alinhados pela linha da grade mesmo quando um rótulo quebra */
+@media (max-width: 599px) { :root:not(#_) .lz-par > .lz-c { display: flex; flex-direction: column; justify-content: space-between } }
+/* Infraestrutura: visto no marcado também no celular */
+@media (max-width: 599px) { :root:not(#_) .infra .seg3 button[aria-pressed="true"]::before { content: '✓'; margin-right: 3px; font-weight: 600 } :root:not(#_) .infra .seg3 button { padding: 0 10px } }
+/* Tarefas no celular: filtros dividem a largura em linhas cheias */
+@media (max-width: 599px) { :root:not(#_) .tk-fl { display: grid !important; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; width: 100% }
+  :root:not(#_) .tk-fl > :is(select.fsel-chip, .fchk) { max-width: none !important; width: 100% !important; min-width: 0 !important; justify-content: center; font-size: 13px; padding-left: 8px; padding-right: 8px }
+  :root:not(#_) .tk-fl > select.fsel-chip { padding-right: 26px !important; padding-left: 10px !important; grid-column: span 3 }
+  :root:not(#_) .tk-fl > select.fsel-chip#tk-prio, :root:not(#_) .tk-fl > .fchk { grid-column: span 2 } }
+.vb-med { font-size: 12px }
+@media (max-width: 599px) { .vb-med { display: none } }
+@media (max-width: 599px) {
+  .so-d { display: none }
+  :root:not(#_) .dhead .muted { white-space: normal !important; overflow: visible !important; text-overflow: clip !important }
+  :root:not(#_) .empilha .mini-tbl.lst2 td.l1 { flex: 1 1 100% !important; font-weight: 500 }
+  :root:not(#_) .empilha .mini-tbl.lst2 td.l1 + td::before { content: none !important }
+}
+.vence-logo { color: #7a5900; font-weight: 500 }
+:root[data-tema="escuro"] .vence-logo { color: #ffd77a }
+@media (min-width: 900px) { :root:not(#_) .cfg-r.cfg-eq { grid-template-columns: minmax(200px, 320px) 200px 200px 140px !important; justify-content: start } }
+@media (min-width: 900px) { :root:not(#_) .vb-cfg-r { grid-template-columns: 40px minmax(200px, 1fr) 150px 150px 76px 72px 48px 40px !important } }
+@media (min-width: 900px) { :root:not(#_) .cfg-r.cfg-sub { grid-template-columns: 72px minmax(200px, 1fr) 110px 190px 120px 40px !important } }
+.so-m { display: none }
+@media (max-width: 599px) { .so-m { display: inline } }
 </style>
 <header class="top">
   <div class="top-in">
@@ -4501,7 +4527,7 @@ function secaoConfr(t){
 }
 function secaoPessoas(t){
   return `<section class="sec" id="sec-pessoas"><div class="sec-h"><h2>Proprietários e contatos</h2></div><div class="sec-b">
-    ${t.pessoas.length?`<div class="tblwrap"><table class="mini-tbl lst2"><thead><tr><th>Nome</th><th>Vínculo</th><th class="r">Participação</th><th>Telefone</th>${partesAtivas(t).length?'<th>Parte</th>':''}<th></th></tr></thead><tbody>${t.pessoas.map((p,i)=>`<tr><td>${esc(p.nome)} <span class="faint" style="font-size:12px">${p.tipo}</span></td><td>${OPT.papel[p.papel]}</td><td class="r${p.pct!=null?'':' l0'}">${p.pct!=null?num(p.pct,2)+'%':'—'}</td><td class="l2${p.tel?'':' l0'}">${esc(p.tel||'—')}</td>${partesAtivas(t).length?`<td>${selParte(t,'pes-parte',i,p.parte)}</td>`:''}<td class="r"><button class="iconbtn sm lixo" data-a="del-pes" data-i="${i}" aria-label="Remover" title="Remover">${ic('lixo',18)}</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Ninguém vinculado.</div>'}
+    ${t.pessoas.length?`<div class="tblwrap"><table class="mini-tbl lst2"><thead><tr><th>Nome</th><th>Vínculo</th><th class="r">Participação</th><th>Telefone</th>${partesAtivas(t).length?'<th>Parte</th>':''}<th></th></tr></thead><tbody>${t.pessoas.map((p,i)=>`<tr><td class="l1">${esc(p.nome)} <span class="faint" style="font-size:12px">${p.tipo}</span></td><td>${OPT.papel[p.papel]}</td><td class="r${p.pct!=null?'':' l0'}">${p.pct!=null?num(p.pct,2)+'%':'—'}</td><td class="l2${p.tel?'':' l0'}">${esc(p.tel||'—')}</td>${partesAtivas(t).length?`<td>${selParte(t,'pes-parte',i,p.parte)}</td>`:''}<td class="r"><button class="iconbtn sm lixo" data-a="del-pes" data-i="${i}" aria-label="Remover" title="Remover">${ic('lixo',18)}</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Ninguém vinculado.</div>'}
     <form class="inline-form" data-form="pessoa"><div class="field grow"><label for="p-n">Nome ou razão social</label><input id="p-n" name="nome" required></div><div class="field" style="flex:0 1 120px"><label for="p-t">Tipo</label><select id="p-t" name="tipo"><option value="PF">PF</option><option value="PJ">PJ</option></select></div>
     <div class="field"><label for="p-p">Vínculo</label><select id="p-p" name="papel">${Object.entries(OPT.papel).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div><div class="field" style="flex:0 1 110px"><label for="p-pc">% (prop.)</label><input id="p-pc" name="pct" inputmode="decimal"></div>
     <div class="field"><label for="p-tel">Telefone</label><input id="p-tel" name="tel"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form></div></section>`;
@@ -4575,7 +4601,7 @@ function abaTarefas(t){
   ${lista.map(k=>{const late=!['concluida','cancelada'].includes(k.status)&&k.prazo<HOJE;return `<div class="task" style="align-items:flex-start;padding:12px 0">
     <span style="flex:none;margin-top:2px">${av(k.resp,'sm')}</span>
     <span class="tt"><div class="t1" style="${k.status==='concluida'||k.status==='cancelada'?'text-decoration:line-through;color:var(--texto-suave)':''}">${escT(k.titulo)} ${k.prio==='alta'?'<span class="chip warn" style="height:20px">Alta</span>':''}</div>
-    ${k.desc?`<div class="muted" style="font-size:13px">${esc(k.desc)}</div>`:''}<div class="tm ${late?'late':''}">${esc(k.resp)} · ${late?'atrasada desde ':'prazo '}${fd(k.prazo)}</div>
+    ${k.desc?`<div class="muted" style="font-size:13px">${esc(k.desc)}</div>`:''}<div class="tm ${late?'late':''}">${esc(k.resp)} · ${late?'atrasada desde ':'prazo '}${fd(k.prazo).replace(' ','\u00a0')}</div>
     ${k.status==='concluida'?`<textarea class="tk-res" rows="1" aria-label="Resultado" data-ch="tar-res" data-k="${k.id}" placeholder="O que foi feito ou obtido">${esc(k.resultado)}</textarea>`:''}</span>
     <select aria-label="Status" data-ch="tar-st" data-k="${k.id}" class="chip chip-sel tkst ${k.status}" style="flex:none">${Object.entries(OPT.statusTar).map(([s,l])=>`<option value="${s}" ${s===k.status?'selected':''}>${l}</option>`).join('')}</select></div>`}).join('')||'<div class="muted lista-vazia">Nenhuma tarefa.</div>'}
   <form class="inline-form" data-form="tarefa"><div class="field grow"><label for="tk-t">Nova tarefa</label><input id="tk-t" name="titulo" required placeholder="Ex.: cobrar contraproposta do proprietário"></div>
@@ -4636,7 +4662,7 @@ function abaDocs(t){
     <div class="field full" style="flex-basis:100%"><label for="dl-p">Providência</label><input id="dl-p" name="prov"></div><button class="btn sm">${ic('add',16)}Registrar</button></form>
     </div></section>`;
   return `<div class="stack">${secDil}<section class="sec chk-group"><div class="chk-gh"><span class="gt">Checklist de documentos</span>${ativo?`<span class="progress"><span class="bar"><span style="width:${CHECK_DIL.filter(([k,o])=>o&&docSt(doc(k))==='validado').length/CHECK_DIL.filter(c=>c[1]).length*100}%"></span></span>${CHECK_DIL.filter(([k,o])=>o&&docSt(doc(k))==='validado').length} de ${CHECK_DIL.filter(c=>c[1]).length} obrigatórios</span>`:'<span class="faint" style="font-size:13px">Vale a partir da Diligência</span>'}</div>
-  ${CHECK_DIL.map(([k,o])=>{const d=doc(k),st=docSt(d),va=d?docVal(d):null;return `<div class="doc"><span class="di">${ic('doc',18)}</span><div style="min-width:0"><div class="dn">${TIPOS_DOC[k][0]} ${o?'':'<span class="opt">opcional</span>'}</div><div class="ds">${d?`v${d.versoes} · emitido ${fd(d.emitido)}${va?` · ${st==='vencido'?'venceu':'vence'} ${fd(va)}`:''}`:`Validade: ${TIPOS_DOC[k][2]?TIPOS_DOC[k][2]+' dias':'não vence'}`}</div></div>
+  ${CHECK_DIL.map(([k,o])=>{const d=doc(k),st=docSt(d),va=d?docVal(d):null;return `<div class="doc"><span class="di">${ic('doc',18)}</span><div style="min-width:0"><div class="dn">${TIPOS_DOC[k][0]} ${o?'':'<span class="opt">opcional</span>'}</div><div class="ds">${d?`v${d.versoes} · emitido ${fd(d.emitido)}${va?` · ${st==='vencido'?'venceu':(va<=addD(HOJE,15)&&va>=HOJE?'<span class="vence-logo">vence':'vence')} ${fd(va)}${st!=='vencido'&&va<=addD(HOJE,15)&&va>=HOJE?'</span>':''}`:''}`:`Validade: ${TIPOS_DOC[k][2]?TIPOS_DOC[k][2]+' dias':'não vence'}`}</div></div>
   <div class="da">${docChip(st)}${st==='recebido'?`<button class="btn sm text" data-a="doc-ok" data-k="${k}">${ic('check',16)}Validar</button>`:''}<button class="btn sm text" data-a="upload" data-k="${k}">${ic('upload',16)}${d?'Nova versão':'Enviar'}</button></div></div>`}).join('')}</section>
   <section class="sec chk-group"><div class="chk-gh"><span class="gt">Fotos, plantas e outros</span><button class="btn sm text" data-a="upload" data-k="foto">${ic('upload',16)}Enviar foto</button></div>
   ${outros.map(d=>`<div class="doc"><span class="di">${ic('doc',18)}</span><div><div class="dn">${esc(d.nome||TIPOS_DOC[d.tipo][0])}</div><div class="ds">${TIPOS_DOC[d.tipo][1]} · ${fd(d.emitido)}</div></div><div class="da">${docChip(docSt(d))}</div></div>`).join('')||'<div class="empty">Nada enviado.</div>'}</section></div>`;
@@ -4667,7 +4693,7 @@ function pgFicha(){
   return `${linhaTopo(t)}<button class="back" data-a="nav" data-r="${UI.from}">${ic('back',20)}${UI.from==='negociacoes'?'Fases':UI.from==='inicio'?'Início':'Terrenos'}</button>
   <div class="dhead"><div style="min-width:0"><div class="eyebrow"><span class="num">${t.codigo}</span>${n?`<span>·</span><span class="num">${n.codigo}</span>`:''}${fasesAbertas(t).filter(f=>f!==faseEnt()).map(f=>`<span>·</span><span class="num">${procAberto(t,f).codigo}</span>`).join('')}<span>·</span><span>identificado em ${fd(t.dataIdent)}</span>${t.situacao==='arquivado'?'<span class="chip">Arquivado</span>':''}</div>
     <h1>${esc(t.nome)}</h1><div class="muted" style="margin-top:4px">${esc(endereco)||'<span class="faint">Endereço não informado</span>'}</div>
-    <div class="dchips">${naEntrada(t)&&t.neg?.status==='ativo'?'':chipFase(t)}${ad!=null?`<span class="chip num">${m2(ad)}</span>`:''}${zt?`<span class="chip">${esc(zt)}</span>`:''}${t.prioridade?`<span class="chip ${t.prioridade==='estrategica'||t.prioridade==='alta'?'warn':''}">Prioridade ${OPT.prioridade[t.prioridade].toLowerCase()}</span>`:''}${atrasadas(t).length?`<span class="chip crit">${atrasadas(t).length} tarefa${atrasadas(t).length>1?'s':''} atrasada${atrasadas(t).length>1?'s':''}</span>`:''}</div></div>
+    <div class="dchips">${naEntrada(t)&&t.neg?.status==='ativo'?'':chipFase(t)}${ad!=null?`<span class="chip num">${m2(ad)}</span>`:''}${zt?`<span class="chip">${esc(zt)}</span>`:''}${t.prioridade?`<span class="chip ${t.prioridade==='estrategica'||t.prioridade==='alta'?'warn':''}">Prioridade ${OPT.prioridade[t.prioridade].toLowerCase()}</span>`:''}${atrasadas(t).length?`<span class="chip crit">${atrasadas(t).length}<span class="so-d"> tarefa${atrasadas(t).length>1?'s':''}</span> atrasada${atrasadas(t).length>1?'s':''}</span>`:''}</div></div>
     <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-end"><div style="display:flex;align-items:center;gap:8px">${av(t.resp)}<div><div style="font-weight:500">${esc(t.resp)}</div><div class="faint" style="font-size:12px">Responsável</div></div></div>${n?tempPicker(t):''}</div></div>
   <div class="stack">
   ${c.pct<100?`<div class="complete"><span class="progress"><span class="bar"><span style="width:${c.pct}%"></span></span><b>Ficha ${c.pct}% completa</b></span>${c.faltam.length?`<span class="muted" style="font-size:13px">Falta:</span><span class="missing">${c.faltam.slice(0,6).map(f=>`<button data-a="ir" data-t="${f[2]}" data-s="${f[3]||''}">${f[0]}</button>`).join('')}${c.faltam.length>6?`<span class="faint" style="font-size:12px;align-self:center">+${c.faltam.length-6}</span>`:''}</span>`:''}</div>`:''}
@@ -5113,7 +5139,7 @@ function ordenar(id,k){const st=UI.sorts[id];UI.sorts[id]=st&&st.k===k?(st.dir==
 /* ---------- lista de terrenos em tabela ---------- */
 const COLS_TERRENOS=[
   {k:'codigo',l:'Código',cls:'hm num faint',v:t=>t.codigo,s:t=>t.codigo},
-  {k:'nome',l:'Terreno',cls:'esq',v:t=>`<div class="t1">${esc(t.nome)}</div><div class="t2">${esc([t.bairro,t.zona&&OPT.zona[t.zona]].filter(Boolean).join(' · '))}</div>`,s:t=>t.nome},
+  {k:'nome',l:'Terreno',cls:'esq',v:t=>`<div class="t1">${esc(t.nome)}</div><div class="t2">${esc([t.bairro,t.zona&&OPT.zona[t.zona]].filter(Boolean).join(' · '))}${areaAdotada(t)!=null?`<span class="so-m"> · ${m2(areaAdotada(t))}</span>`:''}</div>`,s:t=>t.nome},
   {k:'area',l:'Área',cls:'hm num',v:t=>{const a=areaAdotada(t);return a!=null?m2(a):'<span class="faint">—</span>'},s:t=>areaAdotada(t)},
   {k:'valor',l:'Valor pedido',cls:'num',v:t=>{const o=ofertaRef(t),a=areaAdotada(t);return o?.valor?`${mi(o.valor)}${a?`<div class="t2">${brl(o.valor/a)}/m²</div>`:''}`:'<span class="faint">—</span>'},s:t=>ofertaRef(t)?.valor??null},
   {k:'temp',l:'Temperatura',cls:'hm',v:t=>tempMini(t.neg?.temp),s:t=>t.neg?.temp??null},
@@ -6494,7 +6520,7 @@ function cfgFasesHtml(){const C=cfg(),F=fasesL(),ent=faseEnt();
       <input data-ch="cfg" data-p="fases.${i}.nome" value="${esc(f.nome)}" aria-label="Nome da fase"><input data-ch="cfg-prefixo" data-i="${i}" value="${esc(f.prefixo)}" maxlength="5" aria-label="Prefixo de ${esc(f.nome)}">
       <input data-ch="cfg" data-p="fases.${i}.conc" value="${esc(f.conc)}" aria-label="Nome do concluído em ${esc(f.nome)}">
       <label class="chk"><input type="checkbox" data-ch="cfg" data-p="fases.${i}.descarta" ${f.descarta?'checked':''} aria-label="Permite descartar"></label>
-      <label class="chk"><input type="checkbox" data-ch="cfg-fase-ativa" data-i="${i}" ${f.ativo?'checked':''} ${f.entrada?'disabled':''} aria-label="Ativa">${f.entrada?'<span class="faint" style="font-size:12px">entrada</span>':''}</label>
+      <label class="chk"><input type="checkbox" data-ch="cfg-fase-ativa" data-i="${i}" ${f.ativo?'checked':''} ${f.entrada?'disabled':''} aria-label="Ativa">${f.entrada?'<span class="chip blue cfg-tag" title="A fase de entrada fica sempre ativa">Entrada</span>':''}</label>
       <span>${f.entrada||faseUsada(f.k)?'':`<button class="iconbtn sm lixo" data-a="cfg-fase-del" data-i="${i}" aria-label="Apagar" title="Apagar">${ic('lixo',18)}</button>`}</span></div>`).join('')}</div>
     <form class="inline-form" data-form="cfg-fase"><div class="field grow"><label for="nf-n">Nova fase</label><input id="nf-n" name="nome" required placeholder="Ex.: Regularização"></div><div class="field" style="flex:0 1 110px"><label for="nf-p">Prefixo</label><input id="nf-p" name="prefixo" required maxlength="5" placeholder="REG"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form>
     </div></section>
@@ -6823,7 +6849,7 @@ function pgConfig(){
       <div class="cfg-r cfg-hd cfg-sub"><span></span><span>Subetapa</span><span>Prazo (dias)</span><span>Aprovação para entrar</span><span>Ativa</span><span></span></div>
       ${ss.map(([s,i],j)=>`<div class="cfg-r cfg-sub ${s.ativo?'':'inativa'}"><span class="cfg-ord"><button class="iconbtn sm" data-a="cfg-ord" data-i="${i}" data-v="-1" ${j?'':'disabled'} aria-label="Subir">↑</button><button class="iconbtn sm" data-a="cfg-ord" data-i="${i}" data-v="1" ${j<ss.length-1?'':'disabled'} aria-label="Descer">↓</button></span>
         <input data-ch="cfg" data-p="subs.${i}.nome" value="${esc(s.nome)}" aria-label="Nome da subetapa"><input type="number" min="0" data-ch="cfg" data-p="subs.${i}.prazo" value="${s.prazo??''}" placeholder="Sem prazo" aria-label="Prazo de ${esc(s.nome)}">
-        <span class="cfg-ap">${apCells('subs.'+i,s)}</span><label class="chk"><input type="checkbox" data-ch="cfg" data-p="subs.${i}.ativo" ${s.ativo?'checked':''} aria-label="Ativa">${j===0&&s.ativo?'<span class="faint" style="font-size:12px">inicial</span>':''}</label>
+        <span class="cfg-ap">${apCells('subs.'+i,s)}</span><label class="chk"><input type="checkbox" data-ch="cfg" data-p="subs.${i}.ativo" ${s.ativo?'checked':''} aria-label="Ativa">${j===0&&s.ativo?'<span class="chip blue cfg-tag" title="Primeira subetapa da etapa">Inicial</span>':''}</label>
         <span>${usada(s.k)?'':`<button class="iconbtn sm lixo" data-a="cfg-sub-del" data-i="${i}" aria-label="Apagar" title="Apagar">${ic('lixo',18)}</button>`}</span></div>`).join('')}</div>
       <form class="inline-form" data-form="cfg-sub" data-e="${e.k}"><div class="field grow"><label for="cs-${e.k}">Nova subetapa</label><input id="cs-${e.k}" name="nome" required placeholder="Nome"></div><div class="field" style="flex:0 1 120px"><label for="cp-${e.k}">Prazo (dias)</label><input id="cp-${e.k}" name="prazo" type="number" min="0"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form>
       </div></section>`}).join('')}`;
@@ -9268,7 +9294,7 @@ function vbBaseTxt(l,c){const L=c.L[l.id],b=L?.base,d=L?.ded?' · sai do VGV lí
     case 'verba_unidade':return `× ${num(b)} unidades líquidas${d}`;case 'verba_mensal':return `${l.qtd&&l.qtd!==1?num(l.qtd,2)+' meses':'1 mês'}${d}`;default:return d.slice(3)}}
 function vbKpis(c){const k=(l,val)=>`<div class="kpi"><span class="v sm">${String(val).replace(/R\$\s/,'<span class="vb-rs">R$ </span>')}</span><span class="l">${l}</span></div>`;
   return k('VGV',mi(c.vgv))+k('VGV líquido',mi(c.liq))+k('Lucro líquido',mi(c.lucro))+k('Margem líquida',c.margem==null?'—':num(c.margem,1)+'%')}
-function vbTotTips(v,c){return `<span class="vb-c"><b>Total</b></span><span class="vb-c vb-area"><span class="vb-l">Área privativa total</span>${c.A?m2(c.A):'—'}</span><span class="vb-c vb-qtd"><span class="vb-l">Unidades</span>${num(c.un)}</span><span class="vb-c vb-perm"><span class="vb-l">Em permuta</span>${num(c.unp)}</span><span class="vb-c vb-com"><span class="vb-l">Comissão</span>${num(c.unc)}</span><span class="vb-c vb-pu"><span class="vb-l">Preço médio</span>${c.un?brl(c.vgv/c.un):'—'}</span><span class="vb-c vb-pm2"><span class="vb-l">Preço médio por m²</span>${c.A?brl(c.vgv/c.A):'—'}</span><span class="vb-c vb-out"><span class="vb-l">VGV</span><b>${brl(c.vgv)}</b></span><span></span>`}
+function vbTotTips(v,c){return `<span class="vb-c"><b>Total</b></span><span class="vb-c vb-area"><span class="vb-l">Área privativa total</span>${c.A?m2(c.A):'—'}</span><span class="vb-c vb-qtd"><span class="vb-l">Unidades</span>${num(c.un)}</span><span class="vb-c vb-perm"><span class="vb-l">Em permuta</span>${num(c.unp)}</span><span class="vb-c vb-com"><span class="vb-l">Comissão</span>${num(c.unc)}</span><span class="vb-c vb-pu"><span class="vb-l">Preço médio</span>${c.un?'<small class="faint vb-med">média </small>'+brl(c.vgv/c.un):'—'}</span><span class="vb-c vb-pm2"><span class="vb-l">Preço médio por m²</span>${c.A?'<small class="faint vb-med">média </small>'+brl(c.vgv/c.A):'—'}</span><span class="vb-c vb-out"><span class="vb-l">VGV</span><b>${brl(c.vgv)}</b></span><span></span>`}
 function vbTotRow(rot,x,c){return `<span class="vb-c"><b>${rot}</b></span><span class="vb-c vb-tipo"></span><span class="vb-c vb-mult"></span><span class="vb-c vb-qtd"></span><span class="vb-c vb-out"><span class="vb-l">Total</span><b>${brl(x)}</b><small class="faint">${c.vgv>0?num(x/c.vgv*100,1)+'% do VGV':''}</small></span><span></span>`}
 const vbPctTxt=(a,b)=>b>0?num(a/b*100,1)+'%':'—';
 const vbRo=items=>items.map(([l,v,s])=>`<div><span class="vb-rl">${l}</span><b>${v}</b>${s?`<small class="faint">${s}</small>`:''}</div>`).join('');

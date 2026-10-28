@@ -111,7 +111,7 @@ function ordenar(id,k){const st=UI.sorts[id];UI.sorts[id]=st&&st.k===k?(st.dir==
 /* ---------- lista de terrenos em tabela ---------- */
 const COLS_TERRENOS=[
   {k:'codigo',l:'Código',cls:'hm num faint',v:t=>t.codigo,s:t=>t.codigo},
-  {k:'nome',l:'Terreno',cls:'esq',v:t=>`<div class="t1">${esc(t.nome)}</div><div class="t2">${esc([t.bairro,t.zona&&OPT.zona[t.zona]].filter(Boolean).join(' · '))}</div>`,s:t=>t.nome},
+  {k:'nome',l:'Terreno',cls:'esq',v:t=>`<div class="t1">${esc(t.nome)}</div><div class="t2">${esc([t.bairro,t.zona&&OPT.zona[t.zona]].filter(Boolean).join(' · '))}${areaAdotada(t)!=null?`<span class="so-m"> · ${m2(areaAdotada(t))}</span>`:''}</div>`,s:t=>t.nome},
   {k:'area',l:'Área',cls:'hm num',v:t=>{const a=areaAdotada(t);return a!=null?m2(a):'<span class="faint">—</span>'},s:t=>areaAdotada(t)},
   {k:'valor',l:'Valor pedido',cls:'num',v:t=>{const o=ofertaRef(t),a=areaAdotada(t);return o?.valor?`${mi(o.valor)}${a?`<div class="t2">${brl(o.valor/a)}/m²</div>`:''}`:'<span class="faint">—</span>'},s:t=>ofertaRef(t)?.valor??null},
   {k:'temp',l:'Temperatura',cls:'hm',v:t=>tempMini(t.neg?.temp),s:t=>t.neg?.temp??null},
