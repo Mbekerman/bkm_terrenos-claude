@@ -56,7 +56,8 @@ document.addEventListener('click',e=>{const b=e.target.closest?.('.if-abre,.if-c
   else{const f=b.closest('form');f.reset();f.classList.add('if-fechado');IF_AB.delete(ifChave(f));const a=f.previousElementSibling;if(a?.classList.contains('if-abre')){a.hidden=false;a.focus()}}},true);
 /* Linhas de configuração: no celular (sem o cabeçalho da tabela) cada campo leva o nome da coluna em cima */
 function uiCfgCel(){document.querySelectorAll('.cfg-r:not(.cfg-hd):not([data-cel-ok])').forEach(r=>{r.dataset.celOk='1';const hd=r.parentElement?.querySelector(':scope > .cfg-hd');if(!hd)return;
-  const nomes=[...hd.children].map(x=>x.textContent.trim());[...r.children].forEach((c,i)=>{if(!i||!nomes[i]||!c.matches('input:not([type=checkbox]),select,.cfg-ap'))return;
+  const nomes=[...hd.children].map(x=>x.textContent.trim()),k=[...r.children],comOrd=hd.children.length>=k.length||!nomes[0];
+  (comOrd?k:k.filter(c=>!c.matches('.cfg-ord'))).forEach((c,i)=>{if(!nomes[i]||!c.matches('input:not([type=checkbox]),select,.cfg-ap'))return;
     const w=document.createElement(c.matches('.cfg-ap')?'div':'label');w.className='cfg-cel';c.replaceWith(w);w.innerHTML=`<span class="cfg-cl">${nomes[i].replace(/[<&]/g,'')}</span>`;w.append(c)})})}
 /* Abas roláveis de Configurações no celular: a aba ativa aparece */
 function uiCfgAba(){const n=document.querySelector('.cfg-nav:not([data-aba-ok])');if(!n)return;n.dataset.abaOk='1';const a=n.querySelector('.cfg-tab[aria-selected="true"]');

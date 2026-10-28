@@ -1784,12 +1784,12 @@ form.inline-form.if-fechado { display: none !important }
 .sec .dt-wrap, .sec.lista .dt-wrap { background: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important }
 /* Mapa com a ficha aberta: a legenda recolhe para não ficar embaixo do painel */
 @media (min-width: 900px) { body:has(#ficha-sheet) .mp-legenda > :not(summary) { display: none !important } body:has(#ficha-sheet) .mp-legenda summary::after { transform: none !important } }
-/* Parâmetros urbanísticos no celular: um cartão por zona, parâmetros em grade de duas colunas */
-@media (max-width: 599px) {
+/* Parâmetros urbanísticos: um bloco por zona, parâmetros em grade (sem rolar para o lado); duas colunas no celular */
+@media all {
   .tblwrap.rola:has(.zp-tbl) { overflow: visible; mask-image: none; -webkit-mask-image: none }
   .zp-tbl, .zp-tbl tbody { display: block; white-space: normal; min-width: 0 }
   .zp-tbl thead { display: none }
-  .zp-tbl tr { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; padding: 12px 0 !important; border-bottom: 1px solid var(--m-outline-var, #c4c7c5) }
+  .zp-tbl tr { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 8px 12px; padding: 12px 0 !important; border-bottom: 1px solid var(--m-outline-var, #c4c7c5) }
   .zp-tbl td { display: flex; flex-direction: column; gap: 4px; padding: 0 !important; border: 0 !important; position: static !important; background: none !important; min-width: 0 }
   .zp-tbl td::before { content: attr(data-l); font-size: 12px; color: var(--m-on-var, #444746) }
   .zp-tbl td:first-child { grid-column: 1 / -1; font-size: 16px }
@@ -1866,3 +1866,45 @@ form.inline-form.if-fechado { display: none !important }
 .empilha .dt td.col-ter.hm { display: inline-flex !important }
 .empilha .dt td.col-ter::before, .empilha .dt td.col-ter .t2 + .t2 { content: none !important; display: none }
 .empilha .dt td.col-ter::before { display: none }
+
+/* ===================== Revisão de design, rodada 6 ===================== */
+@media (max-width: 899px) { .cfg-r > label.cfg-cel:first-of-type { grid-column: 1 / -1 } }
+/* Caixa de marcar no padrão Material (contorno de 2 px; cheia só quando marcada), nos dois temas */
+input[type=checkbox]:not(.fchk input) { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; margin: 0; flex: none; border: 2px solid #444746; border-radius: 2px; background: transparent no-repeat center / 14px 14px; cursor: pointer; display: inline-block; vertical-align: middle }
+input[type=checkbox]:not(.fchk input):checked { background-color: var(--m-primary, #0b57d0); border-color: var(--m-primary, #0b57d0);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5 10 17 19 7' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") }
+input[type=checkbox]:not(.fchk input):disabled { opacity: .38; cursor: default }
+input[type=checkbox]:not(.fchk input):focus-visible { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: 2px }
+:root[data-tema="escuro"] input[type=checkbox]:not(.fchk input) { border-color: #8e9ac4; background-color: transparent }
+:root[data-tema="escuro"] input[type=checkbox]:not(.fchk input):checked { background-color: #7c8cff; border-color: #7c8cff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5 10 17 19 7' fill='none' stroke='%23081028' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") }
+/* Aviso de atenção no escuro: tonal, não mostarda cheia */
+:root[data-tema="escuro"] .banner.warn { background: rgba(245,196,81,.12) !important; color: #ffd479 !important; border-radius: 12px }
+:root[data-tema="escuro"] .banner.warn .ic { color: #ffd479 }
+/* Título do estudo: texto, contorno só ao passar o mouse e no foco */
+:root[data-tema="escuro"] .vb-pop-nome { border-color: transparent !important }
+:root[data-tema="escuro"] .vb-pop-nome:hover:not(:disabled) { border-color: rgba(142,154,196,.5) !important }
+/* Campos do estudo no estilo preenchido do Material (fundo tonal e fio embaixo), mais leves que caixas contornadas */
+.vb-c input:not(:disabled), .vb-c select:not(:disabled) { border: 0 !important; border-bottom: 1px solid #747775 !important; border-radius: 4px 4px 0 0 !important; background-color: #f0f4f9 !important }
+.vb-c input:not(:disabled):hover, .vb-c select:not(:disabled):hover { background-color: #e9eef6 !important }
+.vb-c input:focus, .vb-c select:focus { outline: 0 !important; border-bottom: 2px solid var(--m-primary, #0b57d0) !important }
+:root[data-tema="escuro"] .vb-c input:not(:disabled), :root[data-tema="escuro"] .vb-c select:not(:disabled) { background-color: rgba(124,140,255,.07) !important; border-bottom-color: rgba(142,154,196,.6) !important }
+:root[data-tema="escuro"] .vb-c input:focus, :root[data-tema="escuro"] .vb-c select:focus { border-bottom-color: #a8b4ff !important }
+/* Áreas: rótulo com altura de duas linhas para os valores alinharem */
+.area .al { min-height: 40px }
+/* Infraestrutura e quadros no escuro: fios discretos */
+:root[data-tema="escuro"] .infra { border-top-color: #1a2240 !important }
+.infra-f { width: 100% }
+/* Painel lateral: seletor da subetapa na largura do bloco */
+.adv-sub select { width: 100% !important; max-width: none !important }
+/* Ficha: voltar para Terrenos acima da linha do tempo */
+.ficha-main { display: flex; flex-direction: column }
+.ficha-main > .back { order: -1; align-self: flex-start }
+/* Configurações › Viabilidade: campo da margem curto; colunas mais largas */
+@media (min-width: 900px) { .vb-cfg-r { grid-template-columns: 56px minmax(200px, 2.6fr) minmax(150px, 1.2fr) minmax(160px, 1.3fr) 88px 56px 40px 40px !important } }
+@media (max-width: 899px) { .vb-cfg-r > :nth-child(4) { grid-column: 1 / -1 } }
+/* Ofertas no celular: o link de referência quebra a linha em vez de cortar */
+.dt td .btn.text { white-space: normal; height: auto; min-height: 32px; text-align: left }
+@media (max-width: 599px) { .zp-tbl tr { grid-template-columns: 1fr 1fr !important } }
+.zp-tbl td:first-child { position: static !important }
+.vb-campos .field:has(#vb-mmin) { max-width: 200px }
