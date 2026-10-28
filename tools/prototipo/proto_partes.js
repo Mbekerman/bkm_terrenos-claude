@@ -39,7 +39,7 @@ function secPartesCad(t){const P=partesAtivas(t),ro=UI.role==='Leitura';
       return `<div class="ptc"><div class="ptc-h"><b>${esc(pa.nome)}</b>${pa.essencial?'':'<span class="chip">Dispensável</span>'}<span class="faint">${pa.area?m2(pa.area):'tamanho não informado'}</span>${ro?'':`<button class="btn text sm" data-a="pt-editar" data-p="${pa.id}" aria-label="Editar ${esc(pa.nome)}">${ic('edit',16)}Editar</button>`}</div>
         ${linha('Matrículas',ms.map(m=>esc(m.num)).join(', '))}${linha('Inscrições',is.map(i=>esc(i.sql)).join(', '))}${linha('Vendedores',vs.map(esc).join(', '))}${linha(cs.length>1?'Corretores':'Corretor',cs.map(esc).join(', '))}
         ${!ms.length&&!is.length&&!vs.length&&!cs.length?'<div class="faint ptc-l">Nada vinculado ainda.</div>':''}</div>`}).join('')}</div>`
-    :`<div class="muted">Se os lotes têm donos que negociam separado, cadastre uma parte para cada dono ou grupo de donos. Só o nome é obrigatório.</div>`}</div></section>`}
+    :`<div class="muted">Um só dono negociando.</div>`}</div></section>`}
 const ordSub=(e,s)=>subsDe(e).findIndex(x=>x.k===s);
 const precoParte=(t,pa)=>{const o=t.ofertas.find(x=>x.id===pa.neg?.ofRef)||t.ofertas.filter(x=>x.partes&&pa.id in x.partes).slice(-1)[0];
   if(!o||!o.partes||!(pa.id in o.partes))return null;return o.partes[pa.id]??(Object.keys(o.partes).length===1?o.valor:null)};
@@ -109,7 +109,7 @@ function parteMenu(t,pa){const n=pa.neg,it=[];if(!pa.ativa)return '';
   return `<div class="adv-mais"><button class="btn sm adv-mb" data-a="adv-mais" aria-haspopup="menu" aria-expanded="false" aria-label="Mais ações da parte ${esc(pa.nome)}"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" d="M12 5.5h.01M12 12h.01M12 18.5h.01"/></svg></button><div class="adv-menu" role="menu">${it.join('')}</div></div>`}
 function secPartes(t){const P=t.partes||[],at=partesAtivas(t),ro=UI.role==='Leitura',div=dividida(t);
   const add=ro?'':`<button class="btn text sm" data-a="pt-nova">${ic('add',16)}Adicionar parte</button>`;
-  if(!P.length)return `<section class="sec" id="sec-partes"><div class="sec-h"><h2>Partes</h2>${add}</div><div class="sec-b"><div class="muted">Um dono, mesmo com várias matrículas, é uma negociação só. Se os lotes têm donos que negociam separado, cadastre uma parte para cada dono ou grupo de donos: cada uma terá preço, propostas e status próprios (a temperatura é uma só, a da negociação do terreno) a partir de ${esc(SN(etapaPartes()))}.</div></div></section>`;
+  if(!P.length)return `<section class="sec" id="sec-partes"><div class="sec-h"><h2>Partes</h2>${add}</div><div class="sec-b"><div class="muted">Um só dono negociando.</div></div></section>`;
   const co=at.filter(pa=>pa.neg?.status==='comprado'),aT=at.reduce((s,p)=>s+(p.area||0),0),aC=co.reduce((s,p)=>s+(p.area||0),0);
   const pedidos=at.map(pa=>precoParte(t,pa)),soma=pedidos.every(v=>v!=null)?pedidos.reduce((a,b)=>a+b,0):null;
   const prob=at.filter(pa=>['perdido','descartado'].includes(pa.neg?.status));
@@ -189,7 +189,7 @@ function partesModal(M,fechar){const t=T(UI.id);if(!t)return '';const pa=UI.alvo
   if(M==='pt-parte'){const sel=k=>mselHtml(k,k==='ins'?'ins':k==='pes'?'pes':k==='cor'?'cor':'mat',msOptsFicha(t,pa,k),msSelFicha(t,pa,k));
     return `<div class="dh"><div><h2>${pa?'Editar parte':'Nova parte'}</h2><div class="muted" style="margin-top:4px">Um dono, ou um grupo de donos que negocia junto (herdeiros, sócios).</div></div>${fechar}</div>
     <form data-form="pt-parte" id="f-pt"><div class="fields"><div class="field full"><label for="pt-n">Nome ou identificador *</label><input id="pt-n" name="nome" required value="${esc(pa?.nome||'')}" placeholder="Família Souza, Carlos Pires..."></div>
-    <div class="field"><label for="pt-a">Tamanho do lote (m²)</label><input id="pt-a" name="area" inputmode="decimal" value="${pa?.area??''}"></div>
+    <div class="field"><label for="pt-a">Tamanho do lote (m²)</label><input id="pt-a" name="area" inputmode="decimal" value="${pa?.area==null?'':num(pa.area,2)}"></div>
     <div class="field"><span class="lbl-f">Importância</span><label class="chk" style="height:44px"><input type="checkbox" name="essencial" ${!pa||pa.essencial?'checked':''}>Essencial (sem ela o terreno não serve)</label></div>
     <div class="field full"><span class="lbl-f">Matrículas da parte</span>${sel('mat')}</div>
     <div class="field full"><span class="lbl-f">Inscrições da parte</span>${sel('ins')}</div>

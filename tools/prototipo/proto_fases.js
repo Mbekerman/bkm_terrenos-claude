@@ -109,7 +109,7 @@ function painelAvanco(t){const ab=fasesAbertas(t);if(!ab.length||ab.length===1&&
   return ab.slice().reverse().map(f=>f===faseEnt()?painelNeg(t):painelProc(t,procAberto(t,f))).join('')}
 /* seção Fases da ficha: cada fase com a situação, o processo e o que falta para abrir */
 function abaFases(t){const ent=faseEnt(),ro=UI.role==='Leitura';
-  return `<section class="sec"><div class="sec-h"><h2>Fases do terreno</h2><span class="faint" style="font-size:13px">Cada fase abre quando as dependências dela se cumprem</span></div><div class="sec-b"><ul class="fs-lst">${fasesL().filter(f=>f.ativo||teveFase(t,f.k)).map(f=>{
+  return `<section class="sec"><div class="sec-h"><h2>Fases do terreno</h2></div><div class="sec-b"><ul class="fs-lst">${fasesL().filter(f=>f.ativo||teveFase(t,f.k)).map(f=>{
     const p=f.entrada?t.neg:ultimoProc(t,f.k),deps=f.entrada?[]:depsDe(t,f.k),falta=deps.filter(x=>!x.ok);
     const st=!p?`<span class="chip">${f.entrada?'Sem negociação':'Não aberta'}</span>`:f.entrada?chipNeg(t):p.status==='ativo'?`<span class="chip fase">${esc(etapaF(f.k,p.etapa)?.nome||'')}</span><span class="chip sub">${esc(subF(f.k,p.sub)?.nome||'')}</span>`:`<span class="chip ${p.status==='concluido'?'good':p.status==='stand_by'?'warn':''}"><span class="d"></span>${esc(procStatusN(p))}</span>`;
     /* abrir à mão: a próxima fase que falta, fase sem dependência, ou reabrir a descartada */
@@ -117,9 +117,9 @@ function abaFases(t){const ent=faseEnt(),ro=UI.role==='Leitura';
     const pode=!f.entrada&&!ro&&(p?p.status==='descartado':f.ativo&&(proxima||!deps.length));
     return `<li class="fs-i ${p&&aberto(p)?'aberta':''}"><div class="fs-it"><b>${esc(f.nome)}</b>${p?`<span class="num faint">${esc(p.codigo)}</span>`:''}<span class="fs-st">${st}</span></div>
       ${p?`<div class="faint fs-d">${fd(p.trilha?.[0]?.em?.slice(0,10)||p.desde)}${p.encerradoEm&&!aberto(p)?' → '+fd(p.encerradoEm):''}${p.relato&&!f.entrada?' · '+esc(textoDe(p.relato)):''}</div>`:''}
-      ${!p&&deps.length?`<ul class="fs-deps">${deps.map(x=>`<li class="${x.ok?'ok':'no'}">${ic(x.ok?'check':'close',14)}${esc(x.txt)}</li>`).join('')}</ul>`:''}
+      ${!p&&deps.length?`<ul class="fs-deps">${deps.map(x=>`<li class="${x.ok?'ok':'no'}">${x.ok?ic('check',14):'<span class="dep-o" aria-hidden="true"></span>'}${x.ok?'':'Falta: '}${esc(x.txt)}</li>`).join('')}</ul>`:''}
       ${!p&&!f.entrada&&!deps.length?'<div class="faint fs-d">Sem dependência: abre à mão.</div>':''}
-      ${pode?`<button class="btn sm ${p?'text':''}" data-a="f-abrir" data-v="${f.k}">${ic('add',16)}${p?'Reabrir':'Abrir'} ${esc(f.nome)}${falta.length?' antes da hora':''}</button>`:''}</li>`}).join('')}</ul></div></section>`}
+      ${pode?`<button class="btn sm ${p?'text':''}" data-a="f-abrir" data-v="${f.k}" aria-label="${p?'Reabrir':'Abrir'} ${esc(f.nome)}${falta.length?' antes da hora':''}">${ic('fwd',16)}${p?'Reabrir':'Abrir'}${falta.length?' antes da hora':''}</button>`:''}</li>`}).join('')}</ul></div></section>`}
 
 /* ---------- kanban em três níveis: fase › etapa › subetapa ----------
    UI.negFase vazio = quadro das fases; com fase = etapas dela; com UI.negEtapa = subetapas.
@@ -129,16 +129,16 @@ function negTopo(titulo,sub){const f=UI.negFase,e=UI.negEtapa,it=[{l:'Fases',v:'
   if(f)it.push({l:faseN(f),v:f});if(f&&e)it.push({l:etapaF(f,e)?.nome||e,v:f+'|'+e});const volta=it[it.length-2];
   return `<div class="page-h"><div class="drill-h">${volta?`<button class="iconbtn drill-v" data-a="neg-nivel" data-v="${esc(volta.v)}" title="Voltar para ${esc(volta.l)}" aria-label="Voltar para ${esc(volta.l)}">${ic('back',22)}</button>`:''}<div>
     ${volta?`<ol class="drill-t" aria-label="Nível do quadro">${it.slice(0,-1).map(x=>`<li><button class="linkbtn" data-a="neg-nivel" data-v="${esc(x.v)}">${esc(x.l)}</button></li>`).join('')}</ol>`:''}
-    <h1>${volta?'':'<span class="marca"></span>'}${esc(titulo)}</h1><div class="sub">${sub}</div></div></div></div>${fxBarra('kanban')}`}
+    <h1>${esc(titulo)}</h1>${sub?`<div class="sub">${sub}</div>`:''}</div></div></div>${fxBarra('kanban')}`}
 /* título de coluna que desce um nível */
 const colDesce=(a,v,l,dica)=>`<button class="col-ab" data-a="${a}" data-v="${esc(v)}" title="${esc(dica)}"><span>${esc(l)}</span>${ic('chev',16)}</button>`;
 function kcardFase(t,f,p){const e=etapaF(f,p.etapa),s=p.sub&&subF(f,p.sub),sb=p.status==='stand_by',outras=fasesAbertas(t).filter(x=>x!==f);
-  return `<button class="kcard" data-a="abrir" data-id="${t.id}" data-from="negociacoes"><div class="kr"><span class="num faint">${t.codigo}</span>${f===faseEnt()?tempMini(p.temp):`<span class="num faint">${esc(p.codigo||'')}</span>`}</div><div class="kt">${esc(t.nome)}</div>
-  <div class="ksub"><span>${esc(e?.nome||'')}${s?' · '+esc(s.nome):''}</span>${sb?'<span class="faint">Stand By</span>':''}</div>
+  return `<button class="kcard" data-a="abrir" data-id="${t.id}" data-from="negociacoes"><div class="kr"><span class="num faint">${t.codigo}</span>${f===faseEnt()&&p.temp?tempMini(p.temp):''}</div><div class="kt">${esc(t.nome)}</div>
+  ${s?`<div class="kfe">${esc(e?.nome||'')}</div>`:''}<div class="ksub"><span>${esc(s?s.nome:(e?.nome||''))}</span>${sb?'<span class="faint">Stand By</span>':''}</div>
   <div class="ks">${esc(t.bairro||'')}${outras.length?' · também em '+esc(outras.map(faseN).join(', ')):''}</div>${f===faseEnt()&&typeof dividida==='function'&&dividida(t)?`<div class="kpt">${ic('layers',14)}${esc(resumoPartes(t))}</div>`:''}
   <div class="kr">${av(t.resp,'sm')}<span class="faint">${sb?'revisitar '+fd(p.retomar):diff(p.desde,HOJE)+' d na etapa'}</span></div></button>`}
 function pgFasesBoard(){const F=fasesL().filter(f=>f.ativo);
-  return `${negTopo('Fases','Cada coluna é uma fase. Clique no nome da fase para ver as etapas dela; ali, no nome da etapa, as subetapas.')}
+  return `${negTopo('Fases','')}
   <div class="board board-fases" id="board">${F.map(f=>{const L=fxLista('kanban').map(t=>[t,procDaFase(t,f.k)]).filter(([,p])=>p);
   return `<section class="col" data-fase="${f.k}" aria-label="${esc(f.nome)}"><div class="col-h">${colDesce('neg-fase',f.k,f.nome,'Ver etapas de '+f.nome)}<span class="n">${L.length}</span></div>${L.map(([t,p])=>kcardFase(t,f.k,p)).join('')||'<div class="col-empty">Nenhum</div>'}</section>`}).join('')}</div>`}
 function kcardProc(t,p){return `<button class="kcard" data-a="abrir" data-id="${t.id}" data-from="negociacoes" ${UI.role!=='Leitura'?'draggable="true"':''}><div class="kr"><span class="num faint">${esc(p.codigo)}</span><span class="num faint">${t.codigo}</span></div><div class="kt">${esc(t.nome)}</div>
@@ -148,7 +148,7 @@ function kcardProc(t,p){return `<button class="kcard" data-a="abrir" data-id="${
 function pgFaseBoard(f){const fc=faseCfg(f),es=etapasF(f),L=fxLista('kanban').map(t=>[t,procAberto(t,f)]).filter(([,p])=>p),e=UI.negEtapa&&etapaF(f,UI.negEtapa);
   const cols=e?e.subs.map(s=>({k:'fe:sub:'+s.k,l:s.nome,f:([,p])=>p.status==='ativo'&&p.etapa===e.k&&p.sub===s.k}))
     :[...es.map(x=>({k:'fe:'+x.k,l:x.nome,sla:x.sla,abre:x.k,f:([,p])=>p.status==='ativo'&&p.etapa===x.k})),{k:'fe:stand_by',l:'Stand By',cls:'enc',f:([,p])=>p.status==='stand_by'}];
-  return `${negTopo(e?e.nome:fc.nome,e?`Subetapas de ${esc(e.nome)}, em ${esc(fc.nome)}. Arraste o card para mudar a subetapa.`:`Arraste os cards entre as colunas para mudar a etapa. Clique no nome da etapa para ver as subetapas. ${esc(fc.conc)} sai do quadro e abre a fase seguinte, se as dependências dela se cumprirem.`)}
+  return `${negTopo(e?e.nome:fc.nome,'')}
   <div class="board ${e?'board-sub':''}" id="board">${cols.map(c=>{const ts=L.filter(c.f);
   return `<section class="col ${c.cls||''}" data-col="${c.k}" aria-label="${esc(c.l)}"><div class="col-h">${c.abre?colDesce('neg-etapa',c.abre,c.l,'Ver subetapas de '+c.l):`<span>${esc(c.l)}</span>`}<span class="n">${ts.length}</span></div>${c.sla?`<div class="col-s faint">SLA ${c.sla} d</div>`:''}${ts.map(([t,p])=>kcardProc(t,p)).join('')||'<div class="col-empty">Nenhuma</div>'}</section>`}).join('')}</div>`}
 function soltarProc(id,col){const t=T(id),f=UI.negFase,p=t&&procAberto(t,f);if(!p||UI.role==='Leitura')return;
@@ -170,28 +170,28 @@ function validaDep(f,rf){if(f===rf)return 'Uma fase não depende dela mesma.';if
   if(rf===f||dep(rf))return 'Isso cria um ciclo entre as fases.';return null}
 function cfgFasesHtml(){const C=cfg(),F=fasesL(),ent=faseEnt();
   const opReq=F.map(f=>`<optgroup label="${esc(f.nome)}"><option value="${f.k}|conclusao|">${esc(f.conc)} (concluir a fase)</option>${etapasF(f.k).map(e=>`<option value="${f.k}|etapa|${e.k}">Chegar à etapa ${esc(e.nome)}</option>${e.subs.map(s=>`<option value="${f.k}|subetapa|${s.k}">Passar por ${esc(s.nome)}</option>`).join('')}`).join('')}</optgroup>`).join('');
-  return `<section class="sec"><div class="sec-h"><h2>Fases</h2><span class="faint" style="font-size:13px">Acima das etapas; cada fase é um processo do terreno</span></div><div class="sec-b"><div class="cfg-t">
-    <div class="cfg-r cfg-hd cfg-fase"><span></span><span>Fase</span><span>Prefixo</span><span>Nome do concluído</span><span>Descartar</span><span>Ativa</span><span></span></div>
+  return `<section class="sec"><div class="sec-h"><h2>Fases</h2></div><div class="sec-b"><div class="cfg-t">
+    <div class="cfg-r cfg-hd cfg-fase"><span></span><span>Fase</span><span>Prefixo</span><span>Nome do concluído</span><span>Permite descartar</span><span>Ativa</span><span></span></div>
     ${F.map((f,i)=>`<div class="cfg-r cfg-fase ${f.ativo?'':'inativa'}"><span class="cfg-ord"><button class="iconbtn sm" data-a="cfg-fase-ord" data-i="${i}" data-v="-1" ${i?'':'disabled'} aria-label="Subir">↑</button><button class="iconbtn sm" data-a="cfg-fase-ord" data-i="${i}" data-v="1" ${i<F.length-1?'':'disabled'} aria-label="Descer">↓</button></span>
       <input data-ch="cfg" data-p="fases.${i}.nome" value="${esc(f.nome)}" aria-label="Nome da fase"><input data-ch="cfg-prefixo" data-i="${i}" value="${esc(f.prefixo)}" maxlength="5" aria-label="Prefixo de ${esc(f.nome)}">
       <input data-ch="cfg" data-p="fases.${i}.conc" value="${esc(f.conc)}" aria-label="Nome do concluído em ${esc(f.nome)}">
       <label class="chk"><input type="checkbox" data-ch="cfg" data-p="fases.${i}.descarta" ${f.descarta?'checked':''} aria-label="Permite descartar"></label>
-      <label class="chk"><input type="checkbox" data-ch="cfg-fase-ativa" data-i="${i}" ${f.ativo?'checked':''} ${f.entrada?'disabled':''} aria-label="Ativa">${f.entrada?'<span class="faint" style="font-size:12px">entrada</span>':''}</label>
-      <span>${f.entrada||faseUsada(f.k)?'':`<button class="linkbtn danger" data-a="cfg-fase-del" data-i="${i}">Apagar</button>`}</span></div>`).join('')}</div>
+      ${f.entrada?'<span class="cfg-sempre" title="A fase de entrada (onde a oferta abre) não se desativa">Sempre ativa</span>':`<label class="chk"><input type="checkbox" data-ch="cfg-fase-ativa" data-i="${i}" ${f.ativo?'checked':''} aria-label="Ativa"></label>`}
+      <span>${f.entrada||faseUsada(f.k)?`<button class="iconbtn sm lixo" disabled aria-label="Não pode ser apagada" title="${f.entrada?'Fase de entrada: não pode ser apagada':'Tem histórico: não pode ser apagada'}">${ic('lixo',18)}</button>`:`<button class="iconbtn sm lixo" data-a="cfg-fase-del" data-i="${i}" aria-label="Apagar" title="Apagar">${ic('lixo',18)}</button>`}</span></div>`).join('')}</div>
     <form class="inline-form" data-form="cfg-fase"><div class="field grow"><label for="nf-n">Nova fase</label><input id="nf-n" name="nome" required placeholder="Ex.: Regularização"></div><div class="field" style="flex:0 1 110px"><label for="nf-p">Prefixo</label><input id="nf-p" name="prefixo" required maxlength="5" placeholder="REG"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form>
-    <div class="hint">${esc(faseN(ent))} é a fase de entrada: a oferta abre a negociação nela. O prefixo vai no código do processo (${esc(faseCfg(ent)?.prefixo||'')}-00012). Fase já usada não se apaga; desative.</div></div></section>
-  <section class="sec"><div class="sec-h"><h2>Dependências</h2></div><div class="sec-b"><p class="muted" style="margin-top:0">A fase abre sozinha quando todas as dependências dela se cumprem no terreno. Fase sem dependência abre à mão, na ficha. Gestor e diretor podem abrir antes da hora, com justificativa.</p>
-    <ul class="cfg-pre">${(C.deps||[]).map(d=>`<li><span><b>${esc(faseN(d.fase))}</b> abre quando: ${esc(depTxt(d))}</span><button class="linkbtn danger" data-a="cfg-dep-del" data-v="${d.id}">Remover</button></li>`).join('')||'<li class="faint">Nenhuma dependência. Toda fase abre à mão.</li>'}</ul>
+    </div></section>
+  <section class="sec"><div class="sec-h"><h2>Dependências</h2></div><div class="sec-b">
+    <ul class="cfg-pre">${(C.deps||[]).map(d=>`<li><span><b>${esc(faseN(d.fase))}</b> abre quando: ${esc(depTxt(d))}</span><button class="iconbtn sm lixo" data-a="cfg-dep-del" data-v="${d.id}" aria-label="Remover" title="Remover">${ic('lixo',18)}</button></li>`).join('')||'<li class="faint">Nenhuma dependência. Toda fase abre à mão.</li>'}</ul>
     <form class="inline-form" data-form="cfg-dep"><div class="field grow"><label for="dp-f">Fase</label><select id="dp-f" name="fase" required>${F.filter(f=>!f.entrada).map(f=>`<option value="${f.k}">${esc(f.nome)}</option>`).join('')}</select></div><div class="field grow"><label for="dp-r">Abre quando</label><select id="dp-r" name="req" required>${opReq}</select></div><button class="btn sm">${ic('add',16)}Adicionar</button></form></div></section>
   ${F.filter(f=>!f.entrada).map(f=>{const i=fIdx(f.k);return `<section class="sec"><div class="sec-h"><h2>Etapas · ${esc(f.nome)}</h2></div><div class="sec-b"><div class="cfg-t">
     <div class="cfg-r cfg-hd cfg-fe"><span></span><span>Etapa</span><span>SLA (dias)</span><span>Subetapas</span><span></span></div>
     ${f.etapas.map((e,j)=>`<div class="cfg-r cfg-fe"><span class="cfg-ord"><button class="iconbtn sm" data-a="cfg-fe-ord" data-f="${i}" data-i="${j}" data-v="-1" ${j?'':'disabled'} aria-label="Subir">↑</button><button class="iconbtn sm" data-a="cfg-fe-ord" data-f="${i}" data-i="${j}" data-v="1" ${j<f.etapas.length-1?'':'disabled'} aria-label="Descer">↓</button></span>
       <input data-ch="cfg" data-p="fases.${i}.etapas.${j}.nome" value="${esc(e.nome)}" aria-label="Nome da etapa"><input type="number" min="0" data-ch="cfg" data-p="fases.${i}.etapas.${j}.sla" value="${e.sla??''}" aria-label="SLA de ${esc(e.nome)}">
-      <span class="cfg-subs">${e.subs.map((s,m)=>`<span class="chip">${esc(s.nome)}${e.subs.length>1&&!S.terrenos.some(t=>procsDe(t).some(p=>p.fase===f.k&&p.sub===s.k))?`<button class="chip-x" data-a="cfg-fs-del" data-f="${i}" data-i="${j}" data-m="${m}" aria-label="Tirar ${esc(s.nome)}">×</button>`:''}</span>`).join('')}
+      <span class="cfg-subs">${e.subs.map((s,m)=>`<span class="chip"${e.subs.length>1&&!S.terrenos.some(t=>procsDe(t).some(p=>p.fase===f.k&&p.sub===s.k))?'':` title="${e.subs.length>1?'Tem terreno nesta subetapa: não sai':'Única subetapa da etapa'}"`}>${esc(s.nome)}${e.subs.length>1&&!S.terrenos.some(t=>procsDe(t).some(p=>p.fase===f.k&&p.sub===s.k))?'':`<span class="chip-fixo" aria-hidden="true">${ic('lock',12)}</span>`}${e.subs.length>1&&!S.terrenos.some(t=>procsDe(t).some(p=>p.fase===f.k&&p.sub===s.k))?`<button class="chip-x" data-a="cfg-fs-del" data-f="${i}" data-i="${j}" data-m="${m}" aria-label="Tirar ${esc(s.nome)}">×</button>`:''}</span>`).join('')}
         <form class="cfg-fs-add" data-form="cfg-fs" data-f="${i}" data-i="${j}"><input name="nome" required placeholder="+ subetapa" aria-label="Nova subetapa em ${esc(e.nome)}"></form></span>
-      <span>${etapaUsada(f.k,e.k)||f.etapas.length<2?'':`<button class="linkbtn danger" data-a="cfg-fe-del" data-f="${i}" data-i="${j}">Apagar</button>`}</span></div>`).join('')||'<div class="faint" style="padding:12px 0">Sem etapas: a fase não abre até ter uma.</div>'}</div>
+      <span>${etapaUsada(f.k,e.k)||f.etapas.length<2?`<button class="iconbtn sm lixo" disabled aria-label="Não pode ser apagada" title="${f.etapas.length<2?'A fase precisa de ao menos uma etapa':'Tem histórico: não pode ser apagada'}">${ic('lixo',18)}</button>`:`<button class="iconbtn sm lixo" data-a="cfg-fe-del" data-f="${i}" data-i="${j}" aria-label="Apagar" title="Apagar">${ic('lixo',18)}</button>`}</span></div>`).join('')||'<div class="faint" style="padding:12px 0">Sem etapas: a fase não abre até ter uma.</div>'}</div>
     <form class="inline-form" data-form="cfg-fe" data-f="${i}"><div class="field grow"><label for="fe-${f.k}">Nova etapa</label><input id="fe-${f.k}" name="nome" required></div><div class="field" style="flex:0 1 120px"><label for="fs-${f.k}">SLA (dias)</label><input id="fs-${f.k}" name="sla" type="number" min="0"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form>
-    <div class="hint">Etapa nova nasce com a subetapa "Em andamento". Etapa já usada não se apaga.</div></div></section>`}).join('')}`}
+    </div></section>`}).join('')}`}
 
 /* ---------- eventos (chamados antes dos do funil) ---------- */
 function fasesClick(A,a,t){const P=()=>t&&procsDe(t).find(p=>p.id===a.dataset.p);

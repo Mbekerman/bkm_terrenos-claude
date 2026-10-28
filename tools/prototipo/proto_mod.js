@@ -62,16 +62,16 @@ function entornoCard(t){if(t.lat==null)return '';
     :`<div class="muted">${GG?'Os pontos de interesse ainda não foram buscados.':'Os pontos são buscados no Google quando o terreno é localizado pela busca de endereço ou no mapa. O Google não carrega neste link de visualização.'}</div>${GG?`<button class="btn sm ed" style="margin-top:12px" data-a="ent-buscar" data-id="${t.id}">Buscar agora</button>`:''}`;
   else{const lim=ENT_TODOS?99:3;let sobra=0;
     corpo=`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${ENT_CAT.map(([k,l,pl])=>{const its=e.itens.filter(x=>x.cat===k&&!x.excl).sort((a,b)=>a.pe-b.pe);
-      if(!its.length)return `<li class="ent-vazio"><span><span class="t2">Sem ${pl} a até ${raio} a pé</span></span></li>`;
+      if(!its.length)return `<li class="ent-vazio"><span><span class="t2">Sem ${pl}</span></span></li>`;
       sobra+=Math.max(0,its.length-lim);
-      return its.slice(0,lim).map(p=>`<li><span><span class="t1">${esc(p.nome)}</span><span class="t2">${l}${p.min!=null?` · ${p.min} min a pé`:''}</span></span><b class="num">${p.pe<1000?Math.round(p.pe/10)*10+' m':num(p.pe/1000,2)+' km'}</b><a href="${rotaPeUrl(t,p)}" target="_blank" rel="noopener">Rota</a>${poiX('g',p.gid,p.nome,t)}</li>`).join('')}).join('')}</ul>
+      return its.slice(0,lim).map(p=>`<li><span><span class="t1">${esc(p.nome)}</span><span class="t2">${l}${p.min!=null?` · ${p.min} min a pé`:''}<span class="so-m"> · ${p.pe<1000?Math.round(p.pe/10)*10+'\u00a0m':num(p.pe/1000,2)+'\u00a0km'}</span></span></span><span class="num poi-d">${p.pe<1000?Math.round(p.pe/10)*10+'\u00a0m':num(p.pe/1000,2)+'\u00a0km'}</span><a class="iconbtn sm poi-rota" href="${rotaPeUrl(t,p)}" target="_blank" rel="noopener" aria-label="Rota até ${esc(p.nome)}" title="Rota">${ic('rota',18)}</a>${poiX('g',p.gid,p.nome,t)}</li>`).join('')}).join('')}</ul>
     ${sobra||ENT_TODOS?`<button class="linkbtn" data-a="ent-todos" style="margin-top:6px">${ENT_TODOS?'Mostrar menos':`Mostrar mais ${sobra}`}</button>`:''}
-    <div class="hint ent-pe">${busc?'Atualizando no Google… · ':''}${e.fonte==='exemplo'?'Dados de exemplo':'Google'} · ${e.semPe?'distância em linha reta (a rota a pé não respondeu)':'distância pela rota a pé'} · buscado em ${fd(e.em)}${mudou?' · <b>a localização mudou depois da busca</b>':''}</div>`}
+    ${busc||e.semPe||mudou?`<div class="hint ent-pe">${busc?'Atualizando no Google… · ':''}${e.semPe?'Em linha reta (sem rota a pé) · ':''}${fd(e.em)}${mudou?' · <b>a localização mudou depois da busca</b>':''}</div>`:''}`}
   corpo+=pontosEmpresa(t)+poiExcluidos(t);
   return `<section class="sec" id="ent-card"><div class="sec-h"><h2>Pontos de interesse</h2><span class="faint" style="font-size:12px">a pé · até ${raio}</span></div><div class="sec-b">${corpo}</div></section>`}
 /* pontos cadastrados pela empresa: todos aparecem; a pé se está a até RAIO_PE a pé, senão de carro; sem rota medida, linha reta */
 let EMP_TODOS=false;
-const kmTxt=m=>m<1000?Math.round(m/10)*10+' m':num(m/1000,m<10000?2:1)+' km';
+const kmTxt=m=>m<1000?Math.round(m/10)*10+'\u00a0m':num(m/1000,m<10000?2:1)+'\u00a0km';
 function pontosEmpresa(t){const pts=S.pontos||[];const d=t.dist&&t.dist.lat===t.lat&&t.dist.lng===t.lng?t.dist.m:{};
   const its=pts.map(p=>{const x=d[p.id]||{},reta=distKm(t.lat,t.lng,p.lat,p.lng)*1000;
     if(x.pe!=null&&x.pe<=RAIO_PE)return {p,ord:x.pe,dist:kmTxt(x.pe),modo:`${x.pm} min a pé`,url:rotaPeUrl(t,p)};
@@ -79,7 +79,7 @@ function pontosEmpresa(t){const pts=S.pontos||[];const d=t.dist&&t.dist.lat===t.
     return {p,ord:reta,dist:kmTxt(reta),modo:'em linha reta',url:reta<=RAIO_PE?rotaPeUrl(t,p):rotaUrl(t,p)}}).sort((a,b)=>a.ord-b.ord);
   const lim=EMP_TODOS?999:5;
   return `<div class="ent-emp"><div class="ent-emp-h"><span>Cadastrados pela empresa</span>${UI.role!=='Leitura'?`<button class="linkbtn ed" data-a="ent-add-ponto" data-id="${t.id}">${ic('add',16)}Adicionar ponto</button>`:''}</div>
-    ${its.length?`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${its.slice(0,lim).map(x=>`<li><span><span class="t1">${esc(x.p.nome)}</span><span class="t2">${CAT_POI[x.p.cat]||'Outro'} · ${x.modo}</span></span><b class="num">${x.dist}</b><a href="${x.url}" target="_blank" rel="noopener">Rota</a>${poiX('e',x.p.id,x.p.nome,t)}</li>`).join('')}</ul>
+    ${its.length?`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${its.slice(0,lim).map(x=>`<li><span><span class="t1">${esc(x.p.nome)}</span><span class="t2">${CAT_POI[x.p.cat]||'Outro'} · ${x.modo}<span class="so-m"> · ${x.dist}</span></span></span><span class="num poi-d">${x.dist}</span><a class="iconbtn sm poi-rota" href="${x.url}" target="_blank" rel="noopener" aria-label="Rota até ${esc(x.p.nome)}" title="Rota">${ic('rota',18)}</a>${poiX('e',x.p.id,x.p.nome,t)}</li>`).join('')}</ul>
     ${its.length>5?`<button class="linkbtn" data-a="emp-todos" style="margin-top:6px">${EMP_TODOS?'Mostrar menos':`Mostrar mais ${its.length-5}`}</button>`:''}`
     :'<div class="muted" style="font-size:14px">Nenhum ponto cadastrado pela empresa.</div>'}
     ${DIST_BUSCA_ON(t)?'<div class="hint">Medindo as rotas no Google…</div>':''}</div>`}
@@ -111,12 +111,12 @@ function ordenar(id,k){const st=UI.sorts[id];UI.sorts[id]=st&&st.k===k?(st.dir==
 /* ---------- lista de terrenos em tabela ---------- */
 const COLS_TERRENOS=[
   {k:'codigo',l:'Código',cls:'hm num faint',v:t=>t.codigo,s:t=>t.codigo},
-  {k:'nome',l:'Terreno',cls:'esq',v:t=>`<div class="t1">${esc(t.nome)}</div><div class="t2">${esc([t.bairro,t.zona&&OPT.zona[t.zona]].filter(Boolean).join(' · '))}</div>`,s:t=>t.nome},
+  {k:'nome',l:'Terreno',cls:'esq',v:t=>`<div class="t1">${esc(t.nome)}</div><div class="t2">${esc([t.bairro,t.zona&&OPT.zona[t.zona]].filter(Boolean).join(' · '))}${areaAdotada(t)!=null?`<span class="so-m"> · ${m2(areaAdotada(t))}</span>`:''}</div>`,s:t=>t.nome},
   {k:'area',l:'Área',cls:'hm num',v:t=>{const a=areaAdotada(t);return a!=null?m2(a):'<span class="faint">—</span>'},s:t=>areaAdotada(t)},
   {k:'valor',l:'Valor pedido',cls:'num',v:t=>{const o=ofertaRef(t),a=areaAdotada(t);return o?.valor?`${mi(o.valor)}${a?`<div class="t2">${brl(o.valor/a)}/m²</div>`:''}`:'<span class="faint">—</span>'},s:t=>ofertaRef(t)?.valor??null},
   {k:'temp',l:'Temperatura',cls:'hm',v:t=>tempMini(t.neg?.temp),s:t=>t.neg?.temp??null},
-  {k:'etapa',l:'Fase e etapa',v:t=>`<span class="c-etapa">${chipFase(t)}</span>`,s:t=>(fIdx(faseAtual(t)?.k)+1)*100+Object.keys(SIT).indexOf(sitMapa(t))},
-  {k:'tarefa',l:'Próxima tarefa',cls:'hm',v:t=>{const pt=proxTarefa(t),at=atrasadas(t).length;return pt?`<div class="t2" style="color:var(--texto)">${esc(pt.titulo)}</div><div class="t2" style="${pt.prazo<HOJE?'color:var(--terracota);font-weight:600':''}">${fd(pt.prazo)}${at>1?` · ${at} atrasadas`:''}</div>`:'<span class="faint">—</span>'},s:t=>proxTarefa(t)?.prazo??null}];
+  {k:'etapa',l:'Fase e etapa',v:t=>colFaseEtapa(t),s:t=>(fIdx(faseAtual(t)?.k)+1)*100+Object.keys(SIT).indexOf(sitMapa(t))},
+  {k:'tarefa',l:'Próxima tarefa',cls:'hm',v:t=>{const pt=proxTarefa(t),at=atrasadas(t).length;return pt?`<div class="t2" style="color:var(--texto)">${esc(pt.titulo)}</div><div class="t2" style="${pt.prazo<HOJE?'color:var(--atraso,#b3261e);font-weight:600':''}">${fd(pt.prazo)}${at>1?` · ${at} atrasadas`:''}</div>`:'<span class="faint">—</span>'},s:t=>proxTarefa(t)?.prazo??null}];
 const attrAbrir=from=>t=>`data-a="abrir" data-id="${t.id}" data-from="${from}" tabindex="0"`;
 
 /* ===================== MAPA ===================== */
@@ -188,7 +188,7 @@ let EU=null;
 function L_eu(u,centrar){EU?.remove();EU=L.layerGroup([L.circle([u.lat,u.lng],{radius:u.acc||0,color:'#1a73e8',weight:1,fillOpacity:.12,interactive:false}),
   L.circleMarker([u.lat,u.lng],{radius:7,color:'#fff',weight:2,fillColor:'#1a73e8',fillOpacity:1,interactive:false})]).addTo(MAPA);
   if(centrar)MAPA.setView([u.lat,u.lng],Math.max(MAPA.getZoom()||0,17))}
-function focar(t){return GG?G_focar(t):L_focar(t)}
+function focar(t){const r=GG?G_focar(t):L_focar(t);if(UI.fichaSheet&&innerWidth>=900)setTimeout(()=>mpLivre(t),400);return r}
 function initMini(){return GG?G_initMini():L_initMini()}
 function fecharPopup(){if(GG)G_fecharPopup();else MAPA?.closePopup?.()}
 function mostrarPois(on){if(GG)return G_mostrarPois(on);if(MAPA&&POIS){on?POIS.addTo(MAPA):MAPA.removeLayer(POIS)}}
@@ -212,7 +212,7 @@ function mpItem(t,cartao){const [nm,c,g,fg]=mpInfo(mpClasse(t)),sel=UI.mpSel===t
   const acoes=sel&&t.lat!=null?`<div class="mp-it-a">${UI.role!=='Leitura'?`<button class="linkbtn" data-a="mp-desenhar" data-id="${t.id}">${t.poly?'Editar':'Desenhar'} poligonal</button>`:''}${GG?`<button class="linkbtn" data-a="mp-sv" data-id="${t.id}">Street View</button>`:''}</div>`:'';
   return `<div class="mp-it${sel?' sel':''}${cartao?' cartao':''}" data-a="mp-foco" data-id="${t.id}" tabindex="0" role="listitem" aria-current="${sel}">
     <span class="pin-mini" style="background:${c};color:${fg}" title="${esc(nm)}">${g}</span>
-    <div class="mp-it-t"><div class="t1">${esc(t.nome)}</div><div class="t2">${ad?m2(ad):'Área não informada'} · ${esc(nm)}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div></div>
+    <div class="mp-it-t"><div class="t1">${esc(t.nome)}</div><div class="t2">${ad?num(Math.round(ad))+'\u00a0m²':'Área não informada'} · ${esc(nm)}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div></div>
     <button class="iconbtn mp-lupa" data-a="fs-abrir" data-id="${t.id}" title="Ver ficha" aria-label="Ver ficha de ${esc(t.nome)}">${bi('busca',22)}</button>${cartao?`<button class="iconbtn mp-lupa mp-fx" data-a="mp-desel" title="Fechar" aria-label="Fechar">${ic('close',22)}</button>`:''}${acoes}</div>`}
 /* ao descer ou subir de nível, o mapa enquadra os terrenos que ficaram */
 function mpEnquadrar(){if(!MAPA)return;const pts=mpVisiveis().filter(t=>t.lat!=null).map(t=>[t.lat,t.lng]);if(!pts.length)return;
@@ -235,7 +235,26 @@ function fichaSheet(){let el=$('#ficha-sheet');const t=UI.fichaSheet&&UI.route==
     <button class="iconbtn" data-a="fs-fechar" aria-label="Fechar" title="Fechar (Esc)">${ic('close',22)}</button></div>
     <div class="fs-b bl-c fs-ro">${abaGeral(t)}</div>
     <div class="fs-f"><button class="btn primary" data-a="abrir" data-id="${t.id}" data-tab="geral" data-from="mapa">Abrir ficha completa</button></div>`;
-  el.querySelector('.g-loc')?.remove();el.querySelector('.fs-b').scrollTop=0}
+  el.querySelector('.g-loc')?.remove();el.querySelector('.fs-b').scrollTop=0;
+  if(el.dataset.id!==t.id){el.dataset.id=t.id;setTimeout(()=>mpLivre(t),60)}}
+/* com o painel da ficha aberto (desktop), o terreno vai para o meio do pedaço do mapa que fica livre */
+/* coluna Fase e etapa da tabela: fase em cima, etapa · subetapa (ou situação) embaixo, avisos numa fileira própria */
+function colFaseEtapa(t){const a=faseAtual(t),ent=!a||a.k===faseEnt(),pe=x=>`<span class="end-p">${esc(x)}</span>`;
+  let fase=faseN(ent?faseEnt():a.k),linha='',fl=[];
+  if(ent){const n=t.neg;
+    if(!n)linha='<span class="fe-st">Sem negociação</span>';
+    else if(n.status!=='ativo')linha=`<span class="fe-st ${n.status}">${{perdido:'Perdido',descartado:'Descartado',stand_by:'Stand By',comprado:'Comprado'}[n.status]||n.status}</span>`;
+    else{linha=[SN(n.etapa),n.sub?subN(n.sub):''].filter(Boolean).map(pe).join(' · ');if(subAtrasada(n))fl.push('<span class="fe-fl fe-warn">Acima do prazo</span>');if(n.pedido)fl.push('<span class="fe-fl fe-ap">Aguardando aprovação</span>')}}
+  else{const p=a.p,e=etapaF(p.fase,p.etapa);
+    linha=p.status==='ativo'?[e?.nome||p.etapa,p.sub?subF(p.fase,p.sub)?.nome||'':''].filter(Boolean).map(pe).join(' · '):`<span class="fe-st ${p.status}">${esc(procStatusN(p))}</span>`;
+    if(procAtrasada(p))fl.push('<span class="fe-fl fe-warn">Acima do prazo</span>')}
+  const n=fasesAbertas(t).length;if(n>1)fl.push(`<span class="fe-fl" title="${esc(fasesAbertas(t).map(faseN).join(', '))}">+${n-1} fase</span>`);
+  return `<span class="c-etapa c-fe"><span class="fe-f">${esc(fase)}</span><span class="fe-e">${linha}</span>${fl.length?`<span class="fe-fls">${fl.join('')}</span>`:''}</span>`}
+function mpLivre(t){const m=$('#mapa'),fs=$('#ficha-sheet');if(!MAPA||!m||!fs||t.lat==null||innerWidth<900)return;
+  const r=m.getBoundingClientRect(),f=fs.getBoundingClientRect(),dir=Math.min(r.right,f.left-16),x0=r.left,cx=(x0+dir)/2-r.left,cy=r.height/2;
+  if(GG){const w=r.right-dir;MAPA.panTo(gLL(t.lat,t.lng));if(w>0)MAPA.panBy(Math.round(w/2),0);return}
+  const p=MAPA.latLngToContainerPoint([t.lat,t.lng]);if(p.x>40&&p.x<dir-r.left-40&&p.y>80&&p.y<r.height-40)return;
+  MAPA.panBy([p.x-cx,p.y-cy],{animate:false})}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&UI.fichaSheet&&!UI.modal&&!$('.mp-ctx')&&!$('.v-menu')){UI.fichaSheet=null;fichaSheet();e.preventDefault()}});
 function mpSelecionar(id){UI.mpSel=id;mpMarcarPinos();if(UI.fichaSheet&&id&&id!==UI.fichaSheet){UI.fichaSheet=id;fichaSheet()}const l=$('#mp-lista');if(l)l.innerHTML=mpLista();mpCartao();
   const lado=$('.mapa-lado'),it=lado?.querySelector(`.mp-it[data-id="${id}"]`);
@@ -254,8 +273,7 @@ function pgMapa(){
   const opt=(o,v)=>Object.entries(o).map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${esc(l)}</option>`).join('');
   return `<div class="mapa-pg">
   <aside class="mapa-lado" aria-label="Terrenos no mapa">
-    <div class="page-h compacto"><div><h1><span class="marca"></span>Mapa</h1></div></div>
-    <label class="search sm" for="mp-q">${bi('busca',24)}<input id="mp-q" type="search" placeholder="Buscar por nome, bairro, SQL..." value="${esc(UI.mp.q)}" autocomplete="off"></label>
+    <h1 class="sr-only">Mapa</h1>
     ${fxBarra('mapa')}
     ${UI.mp.q||UI.mp.ocultas.length?'<button class="linkbtn" data-a="mp-limpar" style="align-self:flex-start">Limpar busca e legenda</button>':''}
     <div id="mp-lista">${mpLista()}</div>
@@ -270,8 +288,8 @@ function pgMapa(){
     <div id="mp-modo" class="mp-modo" aria-live="polite">${modoBanner()}</div>
     <div id="mp-cartao" class="mp-cartao" aria-live="polite"></div>
     ${mpCtrlHtml()}
-    <details class="mp-legenda" ${UI.mpLeg??innerWidth>899?'open':''}><summary>Legenda</summary><div id="mp-leg" class="mp-leg-l">${mpLegenda()}</div></details>
-    <div class="mp-aviso">O fundo do mapa (ruas e satélite) não carrega neste link de visualização, que bloqueia imagens externas. Os pins, poligonais e distâncias funcionam. No app publicado, ou abrindo o arquivo do protótipo no navegador, o fundo aparece.</div>
+    <details class="mp-legenda" ${(UI.mpLeg??innerWidth>899)?'open':''}><summary>Legenda</summary><div id="mp-leg" class="mp-leg-l">${mpLegenda()}</div></details>
+    <div class="mp-aviso">Fundo do mapa indisponível nesta visualização.</div>
   </section></div>`;
 }
 function modoBanner(){const m=UI.mpModo;if(!m)return '';
@@ -488,7 +506,7 @@ function tabelaGrafico(k){const d=DIMS[k];let s;
 function pgDash(){const f=UI.dash.f,rows=dashBase(null),ativos=rows.filter(t=>t.neg?.status==='ativo');
   const chips=Object.entries(f).flatMap(([d,vs])=>vs.map(v=>`<button class="fchip on" data-a="dash-f" data-d="${d}" data-v="${esc(v)}" aria-label="Remover filtro ${esc(DIMS[d].lab?DIMS[d].lab(v):v)}">${esc(d==='mes'?v.split('-').reverse().join('/'):DIMS[d].lab(v))}${ic('close',14)}</button>`));
   return `<div id="dash" class="dash">
-  <div class="page-h"><div><h1><span class="marca"></span>Dashboard</h1><div class="sub">Clique numa barra ou num mês para filtrar todos os gráficos e a lista.</div></div>
+  <div class="page-h"><div><h1>Dashboard</h1><div class="sub">Clique numa barra ou num mês para filtrar todos os gráficos e a lista.</div></div>
     <button class="btn" data-a="dash-full">${ic(document.fullscreenElement||document.body.classList.contains('dash-fixo')?'telaSair':'tela',18)}${document.fullscreenElement||document.body.classList.contains('dash-fixo')?'Sair da tela cheia':'Tela cheia'}</button></div>
   <div class="dash-g">
   <aside class="dash-lado">
@@ -548,7 +566,7 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     ${linE('Município e região',esc([t.municipio||'São Paulo · SP',t.zona&&'Zona '+OPT.zona[t.zona]].filter(Boolean).join(' · ')),'reg',['zona'])}
     ${linE('Eixo comercial',esc(eixo(t.eixo)||''),'eixo',['eixo'])}
     ${linLink('Zoneamento',a?esc(zonasTxt(t)):'',`<button class="kv-ed kv-ir" data-a="tab" data-t="urbanismo" title="Registrar nova análise em Urbanismo" aria-label="Registrar nova análise em Urbanismo">${ic('fwd',16)}</button>`)}
-    ${linArea('Área adotada',ad!=null?`${m2(ad)} <span class="faint">(${esc(OPT.fonteArea[t.fonteArea]||'')})</span>`:'','area')}
+    ${linArea('Área adotada',ad!=null?`<span>${m2(ad)}${OPT.fonteArea[t.fonteArea]?`<span class="kv-2">${esc(OPT.fonteArea[t.fonteArea])}</span>`:''}</span>`:'','area')}
     ${t.poly&&t.fonteArea!=='poligonal'?lin('Área da poligonal',m2(areaPolT(t))):''}
     ${linArea('Testada principal',t.testada!=null?num(t.testada,2)+' m':'','testada')}
     ${linE('Topografia e posição',[t.topografia!=='nao_informado'&&OPT.topografia[t.topografia],t.posicao!=='nao_informado'&&OPT.posicao[t.posicao]].filter(Boolean).join(' · '),'topo',['topografia','posicao'])}
@@ -561,28 +579,27 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     ${n.status==='ativo'?`<div class="kv"><dt>Temperatura</dt><dd>${tempPicker(t)}</dd></div>`:lin('Temperatura',n.temp?`${tempMini(n.temp)} ${TEMP[n.temp]}`:'')}
     ${lin('Última proposta',lp?`${mi(lp.valor)} · ${lp.origem==='bkm'?'BKM':'Vendedor'} · ${OPT.statusProp[lp.status]}`:'')}
     ${lin('Próxima reunião',pr?`${fd(pr.data)} · ${esc(pr.hora||'')}`:'')}
-    ${pt?linLink('Próxima tarefa',`${esc(pt.titulo)} · <span style="${pt.prazo<HOJE?'color:var(--terracota);font-weight:600':''}">${fd(pt.prazo)}</span>`,`<button class="kv-ed" data-a="tk-abrir" data-id="${t.id}" data-tk="${pt.id}" aria-label="Editar a tarefa ${esc(pt.titulo)}" title="Editar tarefa">${lapis}</button>`):lin('Próxima tarefa','')}</dl></div></section>`:'';
+    ${pt?linLink('Próxima tarefa',`${esc(pt.titulo)} · <span style="${pt.prazo<HOJE?'color:var(--atraso,#b3261e);font-weight:600':''}">${fd(pt.prazo)}</span>`,`<button class="kv-ed" data-a="tk-abrir" data-id="${t.id}" data-tk="${pt.id}" aria-label="Editar a tarefa ${esc(pt.titulo)}" title="Editar tarefa">${lapis}</button>`):lin('Próxima tarefa','')}</dl></div></section>`:'';
   const loc=`<section class="sec g-loc"><div class="sec-h"><h2>${bi('localizacao',32)}Localização</h2></div><div class="sec-b">
     ${t.lat!=null?`<div class="mini-wrap"><div id="mini-mapa" class="mini-mapa"></div></div><div class="mini-pe"><span></span><span>${GG?`<button class="btn sm" data-a="g-sv-mini" data-id="${t.id}">Street View</button>`:''}<button class="btn sm mini-ir" data-a="mp-ir" data-id="${t.id}">Ver no mapa</button></span></div>
-      <div class="mp-aviso mini">O fundo do mapa não carrega neste link de visualização.</div>`
+      <div class="mp-aviso mini">Fundo do mapa indisponível nesta visualização.</div>`
     :`<div class="empty" style="padding:var(--e6) 0">Sem localização.<br><span style="display:inline-flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center">${GG&&(t.logradouro||t.bairro)?`<button class="btn sm primary ed" data-a="g-geo" data-id="${t.id}">Localizar pelo endereço</button>`:''}<button class="btn sm ed" data-a="mp-marcar" data-id="${t.id}">Marcar no mapa</button></span></div>`}</div></section>`;
   const poi=entornoCard(t);
   const pct=(x,b)=>b?num(x/b*100,1)+'%':'—';
   const vl=v?(v.liq??v.vgv):null;
   const vs=viabsDe(t.id),roV=UI.role==='Leitura'||!negAtiva(t);
-  const escolha=vs.length?`<div class="vb-escolha"><label for="vb-val-${t.id}">Estudo válido</label><select id="vb-val-${t.id}" data-ch="vb-valido" ${roV?'disabled':''}>${v?'':'<option value="">Escolha o estudo</option>'}${vs.map(x=>{const c=vbCalc(x);return `<option value="${x.id}" ${v?.id===x.id?'selected':''}>${esc(x.nome)} · margem ${c.margem==null?'—':num(c.margem,1)+'%'}</option>`}).join('')}</select>
+  const escolha=vs.length?`<div class="vb-escolha"><label for="vb-val-${t.id}">Estudo válido</label><select id="vb-val-${t.id}" data-ch="vb-valido" ${roV?'disabled':''}>${v?'':'<option value="">Escolha o estudo</option>'}${vs.map(x=>{const c=vbCalc(x);return `<option value="${x.id}" ${v?.id===x.id?'selected':''}>${esc(x.nome)} · ${c.margem==null?'—':num(c.margem,1)+'%'}</option>`}).join('')}</select>
     ${v?`<button class="btn sm" data-a="vb-abrir" data-v="${v.id}">Abrir estudo</button>`:''}${UI.role!=='Leitura'?`<button class="btn text sm" data-a="vb-novo">${ic('add',16)}Novo estudo</button>`:''}</div>`:'';
-  const viab=`<section class="sec"><div class="sec-h"><h2>Resumo da viabilidade</h2></div><div class="sec-b">${escolha}${v?`<div class="dt-wrap"><table class="dt compacta"><thead><tr><th class="esq">Item</th><th>Valor</th><th>% do VGV</th></tr></thead><tbody>
+  const viab=`<section class="sec"><div class="sec-h"><h2>Resumo da viabilidade</h2></div><div class="sec-b">${escolha}${v?`<div class="cond2 vb-res2"><div><div class="lbl">Margem líquida</div><div class="big">${v.margem==null?'—':num(v.margem,1)+'%'}</div></div>${S.vbMargemMin!=null?`<div><div class="lbl">Mínima da empresa</div><div class="big">${num(S.vbMargemMin,1)}%</div></div>`:''}</div><div class="dt-wrap"><table class="dt compacta"><thead><tr><th class="esq"><span class="sr-only">Item</span></th><th class="num">Valor</th><th class="num">% do VGV</th></tr></thead><tbody>
     <tr><td class="esq">VGV líquido</td><td class="num">${mi(vl)}</td><td class="num">100%</td></tr>
     <tr><td class="esq">Valor pedido</td><td class="num">${o?.valor?mi(o.valor):'—'}</td><td class="num">${o?.valor?pct(o.valor,vl):'—'}</td></tr>
-    ${lp?`<tr><td class="esq">Última proposta (${lp.origem==='bkm'?'BKM':'vendedor'})</td><td class="num">${mi(lp.valor)}</td><td class="num">${pct(lp.valor,vl)}</td></tr>`:''}
+    ${lp?`<tr><td class="esq">Última proposta</td><td class="num">${mi(lp.valor)}</td><td class="num">${pct(lp.valor,vl)}</td></tr>`:''}
     ${v.lucro!=null?`<tr><td class="esq">Lucro líquido</td><td class="num">${mi(v.lucro)}</td><td class="num">${pct(v.lucro,vl)}</td></tr>`:''}
-    <tr class="forte"><td class="esq">Margem líquida do estudo</td><td class="num">${v.margem==null?'—':num(v.margem,1)+'%'}</td><td></td></tr>
-    ${S.vbMargemMin!=null?`<tr><td class="esq">Rentabilidade mínima da empresa</td><td class="num">${num(S.vbMargemMin,1)}%</td><td></td></tr>`:''}</tbody></table></div>
+</tbody></table></div>
     ${abaixoMin(t)?`<div class="banner warn" style="margin-top:12px">${ic('warn')}<div>${abaixoMinTxt(t)}.</div></div>`:''}`
     :`<div class="muted">${vs.length?'Nenhum estudo marcado como válido.':`Sem estudo.${UI.role!=='Leitura'?' <button class="linkbtn ed" data-a="vb-novo">Montar estudo</button>':''}`}</div>`}</div></section>`;
-  const rel=relevoHtml(t)||topoBotao(t)?`<section class="sec"><div class="sec-h"><h2>Relevo</h2>${t.relevo?`<span class="faint" style="font-size:12px">estimado em ${fd(t.relevo.em)}</span>`:''}${topoBotao(t)}</div><div class="sec-b">${relevoHtml(t)||'<div class="muted">O topográfico preliminar traz as curvas de nível com 30 m em volta, sobre a imagem, em PDF e DXF.</div>'}</div></section>`:'';
-  return `<div class="geral"><div class="geral-c">${info}${condicoes(t)}${neg}</div><div class="geral-c">${loc}${rel}${poi}${setoresCard(t)}${perfilCard(t)}${viab}</div></div>`}
+  const rel=relevoHtml(t)||topoBotao(t)?`<section class="sec"><div class="sec-h"><h2>Relevo</h2>${t.relevo?`<span class="faint" style="font-size:12px">estimado em ${fd(t.relevo.em)}</span>`:''}${topoBotao(t)}</div>${relevoHtml(t)?`<div class="sec-b">${relevoHtml(t)}</div>`:''}</section>`:'';
+  return `<div class="geral"><div class="geral-c">${info}${condicoes(t)}${neg}${poi}</div><div class="geral-c">${loc}${rel}${setoresCard(t)}${perfilCard(t)}${viab}</div></div>`}
 function L_initMini(){const el=$('#mini-mapa'),t=T(UI.id);if(!el||!t||t.lat==null)return;if(!window.L){el.innerHTML='<div class="mapa-erro">Mapa indisponível.</div>';return}
   MINI=L.map(el,{zoomControl:true,attributionControl:true,scrollWheelZoom:false,doubleClickZoom:false,dragging:!L.Browser.mobile});
   const mini0=MINI;miniGestos(el,d=>mini0.setZoom(mini0.getZoom()+d));
@@ -638,32 +655,32 @@ function tkFiltradas(){const f=UI.tk,q=f.q.trim().toLowerCase();
   return todasTarefas().filter(({k,t})=>(!f.resp||k.resp===f.resp)&&(!f.ter||t.id===f.ter)&&(!f.prio||k.prio===f.prio)&&(!f.atras||(k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)))&&(!q||(k.titulo+' '+(k.desc||'')+' '+t.nome+' '+t.codigo).toLowerCase().includes(q)))}
 const ordemTk=(a,b)=>(a.k.pos??9e15)-(b.k.pos??9e15)||a.k.prazo.localeCompare(b.k.prazo);
 function cardTk({k,t}){const at=k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status);
-  return `<article class="tk ${k.status}" draggable="${UI.role!=='Leitura'}" data-tk="${k.id}" data-a="tk-abrir" data-id="${t.id}" tabindex="0" aria-label="${esc(k.titulo)}">
-  <div class="tk-t">${esc(k.titulo)}</div>${k.desc?`<div class="tk-d">${esc(k.desc)}</div>`:''}
-  <div class="tk-ter"><span class="num">${t.codigo}</span> · ${esc(t.nome)}</div>
+  return `<article class="tk ${k.status}" draggable="${UI.role!=='Leitura'}" data-tk="${k.id}" data-a="tk-abrir" data-id="${t.id}" tabindex="0" aria-label="${escT(k.titulo)}">
+  <div class="tk-t">${escT(k.titulo)}</div>${k.desc?`<div class="tk-d">${esc(k.desc)}</div>`:''}
+  <div class="tk-ter"><span class="num">${t.codigo}</span> · ${esc(t.nome).replace(/\b[A-Z]{3}-\d+/g,m=>`<span class="end-p">${m}</span>`)}</div>
   <div class="tk-p"><span class="tk-prazo ${at?'atras':''}">${ic('clock',14)}${fd(k.prazo)}</span>${k.prio==='alta'?'<span class="chip warn">Alta</span>':k.prio==='baixa'?'<span class="chip">Baixa</span>':''}<span style="margin-left:auto">${av(k.resp,'sm')}</span></div></article>`}
 function pgTarefas(){const f=UI.tk,l=tkFiltradas();const cols=COLS_TK.filter(c=>c!=='cancelada'||f.canc);
   const opt=(o,v)=>Object.entries(o).map(([k,x])=>`<option value="${k}" ${v===k?'selected':''}>${esc(x)}</option>`).join('');
   const filtros=`<div class="tk-filtros"><label class="search sm" for="tk-q">${bi('busca',24)}<input id="tk-q" type="search" placeholder="Buscar tarefa ou terreno" value="${esc(f.q)}" autocomplete="off"></label>
-    <div class="field"><label for="tk-resp">Responsável</label><select id="tk-resp" data-ch="tk-f" data-k="resp"><option value="">Todos</option>${opt(Object.fromEntries(USERS.map(u=>[u,u])),f.resp)}</select></div>
-    <div class="field"><label for="tk-ter">Terreno</label><select id="tk-ter" data-ch="tk-f" data-k="ter"><option value="">Todos</option>${opt(Object.fromEntries(ativosBanco().map(t=>[t.id,t.codigo+' · '+t.nome])),f.ter)}</select></div>
-    <div class="field"><label for="tk-prio">Prioridade</label><select id="tk-prio" data-ch="tk-f" data-k="prio"><option value="">Todas</option>${opt(OPT.prioTar,f.prio)}</select></div>
-    <label class="chk"><input type="checkbox" data-ch="tk-f" data-k="atras" ${f.atras?'checked':''}>Só atrasadas</label>
-    <label class="chk"><input type="checkbox" data-ch="tk-f" data-k="canc" ${f.canc?'checked':''}>Mostrar canceladas</label></div>`;
+    <div class="tk-fl"><label class="sr-only" for="tk-resp">Responsável</label><select id="tk-resp" class="fsel-chip${f.resp?' on':''}" data-ch="tk-f" data-k="resp"><option value="">Responsável</option>${opt(Object.fromEntries(USERS.map(u=>[u,u])),f.resp)}</select>
+    <label class="sr-only" for="tk-ter">Terreno</label><select id="tk-ter" class="fsel-chip${f.ter?' on':''}" data-ch="tk-f" data-k="ter"><option value="">Terreno</option>${opt(Object.fromEntries(ativosBanco().map(t=>[t.id,t.codigo+' · '+t.nome])),f.ter)}</select>
+    <label class="sr-only" for="tk-prio">Prioridade</label><select id="tk-prio" class="fsel-chip${f.prio?' on':''}" data-ch="tk-f" data-k="prio"><option value="">Prioridade</option>${opt(OPT.prioTar,f.prio)}</select>
+    <label class="fchk"><input type="checkbox" data-ch="tk-f" data-k="atras" ${f.atras?'checked':''}>${ic('check',16)}Só atrasadas</label>
+    <label class="fchk"><input type="checkbox" data-ch="tk-f" data-k="canc" ${f.canc?'checked':''}>${ic('check',16)}Canceladas</label></div></div>`;
   const quadro=`<div class="board tk-board">${cols.map(c=>{const ks=l.filter(x=>x.k.status===c).sort(ordemTk);
     return `<section class="col tk-col" data-tkcol="${c}" aria-label="${OPT.statusTar[c]}"><div class="col-h"><span>${OPT.statusTar[c]}</span><span class="n">${ks.length}</span></div>
     <div class="tk-lista">${ks.map(cardTk).join('')||'<div class="col-empty">Nenhuma</div>'}</div>
-    ${UI.role!=='Leitura'&&c!=='cancelada'?`<button class="tk-add" data-a="tk-nova" data-v="${c}">${ic('add',16)}Adicionar tarefa</button>`:''}</section>`}).join('')}</div>`;
-  const colsT=[{k:'titulo',l:'Tarefa',cls:'esq',v:({k})=>`<div class="t1">${esc(k.titulo)}</div>${k.desc?`<div class="t2">${esc(k.desc)}</div>`:''}`,s:({k})=>k.titulo},
-    {k:'ter',l:'Terreno',cls:'esq hm',v:({t})=>`<div class="t2" style="color:var(--texto)">${t.codigo}</div><div class="t2">${esc(t.nome)}</div>`,s:({t})=>t.codigo},
+    ${UI.role!=='Leitura'&&c!=='cancelada'&&c!=='concluida'?`<button class="tk-add" data-a="tk-nova" data-v="${c}">${ic('add',16)}Adicionar tarefa</button>`:''}</section>`}).join('')}</div>`;
+  const colsT=[{k:'titulo',l:'Tarefa',cls:'esq',v:({k,t})=>`<div class="t1">${escT(k.titulo)}</div>${k.desc?`<div class="t2">${esc(k.desc)}</div>`:''}<div class="t2 so-m">${t.codigo} · ${esc(t.nome)}</div>`,s:({k})=>k.titulo},
+    {k:'ter',l:'Terreno',cls:'esq hm tk-ter',v:({t})=>`<div class="t2" style="color:var(--texto)">${t.codigo}</div><div class="t2">${esc(t.nome)}</div>`,s:({t})=>t.codigo},
     {k:'resp',l:'Responsável',cls:'hm',v:({k})=>esc(k.resp),s:({k})=>k.resp},
-    {k:'prazo',l:'Prazo',cls:'num',v:({k})=>`<span style="${k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)?'color:var(--terracota);font-weight:600':''}">${fd(k.prazo)}</span>`,s:({k})=>k.prazo},
+    {k:'prazo',l:'Prazo',cls:'num',v:({k})=>`<span style="${k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)?'color:var(--atraso,#b3261e);font-weight:600':''}">${fd(k.prazo)}</span>`,s:({k})=>(['concluida','cancelada'].includes(k.status)?'9':'0')+k.prazo},
     {k:'prio',l:'Prioridade',cls:'hm',v:({k})=>OPT.prioTar[k.prio]||'—',s:({k})=>['alta','media','baixa'].indexOf(k.prio)},
     {k:'status',l:'Status',v:({k})=>`<span class="chip tkst ${k.status}">${OPT.statusTar[k.status]}</span>`,s:({k})=>COLS_TK.indexOf(k.status)}];
   const atras=todasTarefas().filter(({k})=>k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)).length;
-  return `<div class="page-h"><div><h1><span class="marca"></span>Tarefas</h1><div class="sub">${l.filter(x=>!['concluida','cancelada'].includes(x.k.status)).length} abertas · ${atras} atrasadas. Arraste os cartões para mudar o status.</div></div>
+  return `<div class="page-h"><div><h1>Tarefas</h1><div class="sub">${(n=>n+(n===1?' aberta':' abertas'))(l.filter(x=>!['concluida','cancelada'].includes(x.k.status)).length)} · ${atras+(atras===1?' atrasada':' atrasadas')}</div></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="seg" role="group" aria-label="Visualização">${[['quadro','Quadro'],['tabela','Tabela']].map(([k,x])=>`<button data-a="tk-vista" data-v="${k}" aria-pressed="${f.vista===k}">${x}</button>`).join('')}</div>
-    <button class="btn primary ed" data-a="tk-nova" data-v="pendente">${ic('add',18)}Nova tarefa</button></div></div>
+    <button class="btn ed" data-a="tk-nova" data-v="pendente">${ic('add',18)}Nova tarefa</button></div></div>
   ${filtros}${f.vista==='tabela'?`<section class="sec"><div class="sec-b">${tabela('tarefas',l,colsT,{attr:({k,t})=>`data-a="tk-abrir" data-tk="${k.id}" data-id="${t.id}" tabindex="0"`,padrao:{k:'prazo',dir:'asc'},vazio:'Nenhuma tarefa com esses filtros.'})}</div></section>`:quadro}`}
 function moverTk(tid,kid,col,antesDe){const t=T(tid),k=t.tarefas.find(x=>x.id===kid);if(!k)return;
   const irmas=todasTarefas().filter(x=>x.k.status===col&&x.k.id!==kid).sort(ordemTk);

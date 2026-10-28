@@ -24,7 +24,7 @@ await p.evaluate(()=>document.querySelector('.mapa').scrollIntoView({block:'star
 await p.screenshot({path:OUT+tag+'_camada.png'});
 if(modo==='celular'){await p.click('#rd-leg summary');await p.waitForTimeout(300);ok(await p.$eval('#rd-leg',x=>x.open),tag+' toque na escala abre as faixas');await p.screenshot({path:OUT+tag+'_faixas.png'});await p.click('#rd-leg summary');await p.waitForTimeout(300)}
 // clique num ponto do mapa sem pino: centro da área do mapa deslocado
-const pt=await p.evaluate(f=>{const r=document.querySelector('#mapa').getBoundingClientRect();return {x:r.x+r.width*0.35,y:r.y+r.height*f}},modo==='desktop'?0.3:0.4); // fora das legendas
+const pt=await p.evaluate(f=>{const r=document.querySelector('#mapa').getBoundingClientRect();return {x:r.x+r.width*0.35,y:r.y+r.height*f}},modo==='desktop'?0.25:0.4); // fora das legendas (a do mapa começa abaixo de 30%)
 if(modo==='desktop')await p.mouse.click(pt.x,pt.y);else await p.touchscreen.tap(pt.x,pt.y);await p.waitForTimeout(600);
 const box=await p.$eval('#rd-box',x=>x.innerText.replace(/\s+/g,' ')).catch(()=>'');console.log('   setor:',box.slice(0,260));
 ok(/Renda familiar/.test(box)&&/1,6×/.test(box)&&/3550308\d{8}/.test(box.replace(/\D+/g,m=>m.includes(' ')?' ':'')),tag+' painel do setor com renda, fator e código');
