@@ -101,9 +101,13 @@ ok(cap.every(x=>!x.sel&&x.base==='Aporte'&&x.fmt==='pct')&&/62\.968/.test(cap[0]
 ok(/1\.778\.568/.test(await txt('#vb-tot-financeiro')),tag+' Despesas financeiras somam o custo de capital: 1.778.568,32');
 const hdA=await p.$$eval('#vb-sec-financeiro .vb-hd > span',e=>e.filter(x=>getComputedStyle(x).display!=='none').map(x=>x.textContent+':'+getComputedStyle(x).textAlign));
 ok(modo!=='desktop'||hdA.join().replace('Item:start','Item:left')==='Item:left,Base de cálculo:left,Valor:left,Resultado:right',tag+' cabeçalho de Financeiras: Item à esquerda, Base e Valor à esquerda, Resultado à direita, sem a coluna Meses: '+hdA.join());
+const al=async s=>p.$$eval(s,e=>e.filter(x=>getComputedStyle(x).display!=='none').map(x=>(x.textContent||'·')+':'+getComputedStyle(x).textAlign.replace('start','left')).join());
+await aba('comercial');const hdC=await al('#vb-sec-comercial .vb-hd > span');await aba('tip');const hdT=await al('.vb-tips .vb-hd > span');
+ok(modo!=='desktop'||(hdC==='Item:left,Base de cálculo:left,Valor:left,Meses:left,Resultado:right'&&/^Tipologia:left,.*Preço por m² \(R\$\):left,VGV:right/.test(hdT)&&!/Quantidade:right|Área privativa \(m²\):right/.test(hdT)),tag+' Comercial e Tipologias: títulos à esquerda, só o resultado à direita: '+hdC+' | '+hdT);
 await aba('res');const resC=await txt('#vb-res');ok(/Custo de capital permuta financeira R\$\s?62\.968/.test(resC)&&/Custo de capital pagamento terreno R\$\s?10\.000/.test(resC),tag+' DRE detalha o custo de capital nas despesas financeiras (diretoria)');
 if(tema==='claro'){await inteira('res','_2dre_inteira.png');await inteira('financeiro','_2financeiras.png')}
 if(modo==='desktop'&&tema==='escuro')await inteira('financeiro','_2financeiras.png');
+if(modo==='desktop'&&tema==='claro'){await inteira('tip','_2tipologias.png');await inteira('comercial','_2comercial.png');await aba('financeiro')}
 await val(cp,'');await val(cg,'');
 await aba('taxas');const des=await p.evaluate(()=>{const r=[...document.querySelectorAll('#vb-sec-taxas .vb-r[data-ln]')].find(r=>/desenvolvimento/.test(r.innerText));return r.innerText.replace(/\s+/g,' ')});
 ok(/529\.951/.test(des)&&/lucro líquido/.test(des),tag+' taxa de desenvolvimento: 10% do lucro líquido (529.950,91)');
