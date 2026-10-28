@@ -1201,6 +1201,10 @@ body.menu-min .side > .menu-tg { align-self: center; margin-left: 0 }
 /* logs clicáveis: levam ao campo alterado na página */
 .pn-log { cursor: pointer; margin: 0 -8px; padding: 8px; border-radius: 8px }
 .pn-log:hover { background: rgba(127,127,127,.08) }
+.pn-log.pn-log-sel { background: var(--m-sc, #c2e7ff); animation: pn-log-sel 4s ease-out both }
+@keyframes pn-log-sel { 0%, 80% { background: var(--m-sc, #c2e7ff) } 100% { background: transparent } }
+:root[data-tema="escuro"] .pn-log.pn-log-sel { animation-name: pn-log-sel-escuro }
+@keyframes pn-log-sel-escuro { 0%, 80% { background: rgba(99,112,255,.24) } 100% { background: transparent } }
 .pn-log:focus-visible { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: -2px }
 :root[data-tema="escuro"] .pn-log:hover { background: rgba(124,140,255,.08) }
 @keyframes pisca { 0% { background: transparent; box-shadow: 0 0 0 0 transparent } 8%, 75% { background: var(--m-sc, #c2e7ff); box-shadow: 0 0 0 6px var(--m-sc, #c2e7ff), 0 0 0 8px var(--m-primary, #0b57d0) } 100% { background: transparent; box-shadow: 0 0 0 6px transparent, 0 0 0 8px transparent } }
