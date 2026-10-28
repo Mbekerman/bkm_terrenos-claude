@@ -10,7 +10,7 @@
   },
   "grupos": {
     "obra_atipica": {
-      "nome": "Itens atípicos",
+      "nome": "Custo de obra atípico",
       "secao": "obra",
       "fixo": false,
       "tipos": [
@@ -21,7 +21,7 @@
       ]
     },
     "obra_nao_incidente": {
-      "nome": "Obra não incidente",
+      "nome": "Custo de obra não incidente",
       "secao": "obra",
       "fixo": false,
       "tipos": [
@@ -33,7 +33,7 @@
       ]
     },
     "projetos": {
-      "nome": "Projetos",
+      "nome": "Custo de projetos",
       "secao": "obra",
       "fixo": false,
       "tipos": [
@@ -46,7 +46,7 @@
       ]
     },
     "pos_obra": {
-      "nome": "Pós-obra",
+      "nome": "Custo pós-obra",
       "secao": "obra",
       "fixo": false,
       "tipos": [
@@ -248,7 +248,7 @@
     },
     {
       "codigo": "estoque",
-      "nome": "Condomínio e IPTU das unidades em estoque",
+      "nome": "Manutenção e taxas de unidades em estoque",
       "grupo": "pos_obra",
       "tipo": "verba",
       "valor": null,

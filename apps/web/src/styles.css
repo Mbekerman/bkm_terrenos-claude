@@ -3558,5 +3558,33 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 :root[data-tema="escuro"] .c-fe .fe-st.perdido { color: #ffb4ab } :root[data-tema="escuro"] .c-fe .fe-st.comprado, :root[data-tema="escuro"] .c-fe .fe-st.concluido { color: #6dd58c } :root[data-tema="escuro"] .c-fe .fe-st.stand_by { color: #ffd479 }
 :root:not(#_) .empilha .dt.lista-t .c-etapa.c-fe { flex-direction: column !important }
 
+/* ===== Viabilidade › quadros das tabelas (28/out/2026): título destacado com o total, sem linha de soma no fim ===== */
+.vb-lns > .vb-r.vb-hd { padding-left: 17px; padding-right: 17px }
+.vb-q { border: 1px solid var(--m-outline-v, #c4c7c5); border-radius: 12px; padding: 0 16px; margin-top: 12px }
+.vb-q > .vb-r.vb-qh:first-child { border-radius: 11px 11px 0 0 }
+.vb-q > .vb-r:last-child, .vb-q > .vb-vazio:last-child { border-bottom: 0 }
+.vb-r.vb-qh { background: var(--m-sc-low, #f0f4f9); margin: 0 -16px; padding: 12px 16px; border-bottom: 1px solid var(--linha) }
+.vb-r.vb-qh > .vb-qt { grid-column: 1 / -3 }
+.vb-qh h3 { margin: 0; font-size: 16px; line-height: 24px; font-weight: 500 }
+.vb-qh h4 { margin: 0; font-size: 14px; line-height: 20px; font-weight: 500 }
+.vb-qh .vb-out b { font-size: 16px; font-weight: 500 }
+/* subquadro: mesmas colunas do quadro, título num tom mais leve */
+.vb-q.sub { border: 0; border-radius: 0; margin: 0; padding: 0; overflow: visible }
+.vb-q.sub > .vb-r.vb-qh { background: var(--m-sc-lowest, #f8fafd); padding: 10px 16px }
+.vb-q.sub > .vb-r.vb-qh .vb-out b { font-size: 14px }
+.vb-q.sub:last-child > :last-child { border-bottom: 0 }
+.vb-q.sub + .vb-q.sub { border-top: 1px solid var(--linha) }
+.vb-qadd { padding: 4px 0 8px; margin-left: -12px }
+:root[data-tema="escuro"] .vb-r.vb-qh { background: rgba(99,112,255,.08) }
+:root[data-tema="escuro"] .vb-q.sub > .vb-r.vb-qh { background: rgba(99,112,255,.03) }
+@media (max-width: 1100px) {
+  .vb-q { padding: 0 12px }
+  .vb-tab .vb-r.vb-qh { margin: 0 -12px; padding: 12px; grid-template-columns: minmax(0, 1fr) auto !important; align-items: start }
+  .vb-tab .vb-r.vb-qh > .vb-qt { grid-column: 1 }
+  .vb-tab .vb-r.vb-qh .vb-x { display: none }
+  .vb-tab .vb-r.vb-qh .vb-out { text-align: right }
+  .vb-tab .vb-q.sub > .vb-r.vb-qh { padding: 10px 12px }
+}
+
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
