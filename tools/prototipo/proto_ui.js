@@ -74,6 +74,11 @@ function uiHdIc(){document.querySelectorAll(':is(.sec-h,.card-h,.chk-gh) :is(.bt
   const t=b.textContent.trim();if(!t||!/^(Adicionar|Nova|Novo|Editar)\b/.test(t))return;b.classList.add('hd-ic');if(!b.getAttribute('aria-label'))b.setAttribute('aria-label',t);if(!b.title)b.title=t})}
 /* Campos estreitos das grades (Configurações › Viabilidade): texto inteiro na dica ao passar o mouse */
 function uiDicas(){document.querySelectorAll('.vb-cfg-r select, .vb-cfg-r input:not([type=checkbox])').forEach(e=>{const t=e.tagName==='SELECT'?e.selectedOptions[0]?.text||'':e.value;if(e.title!==t)e.title=t})}
-const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel();uiCfgAba();uiBoardPontos();uiHdIc();uiDicas()};
+/* Quadros que rolam de lado (kanban, abas do estudo): o esmaecido da borda só aparece enquanto há coluna escondida */
+function uiRolaFim(){document.querySelectorAll('.board, .vb-nav').forEach(b=>{const marca=()=>b.classList.toggle('fim',b.scrollLeft+b.clientWidth>=b.scrollWidth-24);
+  if(!b.dataset.fimOk){b.dataset.fimOk='1';b.addEventListener('scroll',()=>requestAnimationFrame(marca),{passive:true});
+    const at=b.querySelector('[aria-current="page"]');if(at&&b.scrollWidth>b.clientWidth){const x=at.offsetLeft-b.clientWidth/2+at.offsetWidth/2;if(x>0)b.scrollLeft=x}}marca()})}
+addEventListener('resize',()=>uiRolaFim());
+const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel();uiCfgAba();uiBoardPontos();uiHdIc();uiDicas();uiRolaFim()};
 /* Legenda do mapa: lembra se ficou aberta ou fechada */
 document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legenda'))UI.mpLeg=e.target.open},true);

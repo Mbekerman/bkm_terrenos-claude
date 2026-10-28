@@ -116,7 +116,7 @@ const COLS_TERRENOS=[
   {k:'valor',l:'Valor pedido',cls:'num',v:t=>{const o=ofertaRef(t),a=areaAdotada(t);return o?.valor?`${mi(o.valor)}${a?`<div class="t2">${brl(o.valor/a)}/m²</div>`:''}`:'<span class="faint">—</span>'},s:t=>ofertaRef(t)?.valor??null},
   {k:'temp',l:'Temperatura',cls:'hm',v:t=>tempMini(t.neg?.temp),s:t=>t.neg?.temp??null},
   {k:'etapa',l:'Fase e etapa',v:t=>`<span class="c-etapa">${chipFase(t)}</span>`,s:t=>(fIdx(faseAtual(t)?.k)+1)*100+Object.keys(SIT).indexOf(sitMapa(t))},
-  {k:'tarefa',l:'Próxima tarefa',cls:'hm',v:t=>{const pt=proxTarefa(t),at=atrasadas(t).length;return pt?`<div class="t2" style="color:var(--texto)">${esc(pt.titulo)}</div><div class="t2" style="${pt.prazo<HOJE?'color:var(--terracota);font-weight:600':''}">${fd(pt.prazo)}${at>1?` · ${at} atrasadas`:''}</div>`:'<span class="faint">—</span>'},s:t=>proxTarefa(t)?.prazo??null}];
+  {k:'tarefa',l:'Próxima tarefa',cls:'hm',v:t=>{const pt=proxTarefa(t),at=atrasadas(t).length;return pt?`<div class="t2" style="color:var(--texto)">${esc(pt.titulo)}</div><div class="t2" style="${pt.prazo<HOJE?'color:var(--atraso,#b3261e);font-weight:600':''}">${fd(pt.prazo)}${at>1?` · ${at} atrasadas`:''}</div>`:'<span class="faint">—</span>'},s:t=>proxTarefa(t)?.prazo??null}];
 const attrAbrir=from=>t=>`data-a="abrir" data-id="${t.id}" data-from="${from}" tabindex="0"`;
 
 /* ===================== MAPA ===================== */
@@ -567,7 +567,7 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     ${n.status==='ativo'?`<div class="kv"><dt>Temperatura</dt><dd>${tempPicker(t)}</dd></div>`:lin('Temperatura',n.temp?`${tempMini(n.temp)} ${TEMP[n.temp]}`:'')}
     ${lin('Última proposta',lp?`${mi(lp.valor)} · ${lp.origem==='bkm'?'BKM':'Vendedor'} · ${OPT.statusProp[lp.status]}`:'')}
     ${lin('Próxima reunião',pr?`${fd(pr.data)} · ${esc(pr.hora||'')}`:'')}
-    ${pt?linLink('Próxima tarefa',`${esc(pt.titulo)} · <span style="${pt.prazo<HOJE?'color:var(--terracota);font-weight:600':''}">${fd(pt.prazo)}</span>`,`<button class="kv-ed" data-a="tk-abrir" data-id="${t.id}" data-tk="${pt.id}" aria-label="Editar a tarefa ${esc(pt.titulo)}" title="Editar tarefa">${lapis}</button>`):lin('Próxima tarefa','')}</dl></div></section>`:'';
+    ${pt?linLink('Próxima tarefa',`${esc(pt.titulo)} · <span style="${pt.prazo<HOJE?'color:var(--atraso,#b3261e);font-weight:600':''}">${fd(pt.prazo)}</span>`,`<button class="kv-ed" data-a="tk-abrir" data-id="${t.id}" data-tk="${pt.id}" aria-label="Editar a tarefa ${esc(pt.titulo)}" title="Editar tarefa">${lapis}</button>`):lin('Próxima tarefa','')}</dl></div></section>`:'';
   const loc=`<section class="sec g-loc"><div class="sec-h"><h2>${bi('localizacao',32)}Localização</h2></div><div class="sec-b">
     ${t.lat!=null?`<div class="mini-wrap"><div id="mini-mapa" class="mini-mapa"></div></div><div class="mini-pe"><span></span><span>${GG?`<button class="btn sm" data-a="g-sv-mini" data-id="${t.id}">Street View</button>`:''}<button class="btn sm mini-ir" data-a="mp-ir" data-id="${t.id}">Ver no mapa</button></span></div>
       <div class="mp-aviso mini">Fundo do mapa indisponível nesta visualização.</div>`
@@ -662,7 +662,7 @@ function pgTarefas(){const f=UI.tk,l=tkFiltradas();const cols=COLS_TK.filter(c=>
   const colsT=[{k:'titulo',l:'Tarefa',cls:'esq',v:({k})=>`<div class="t1">${escT(k.titulo)}</div>${k.desc?`<div class="t2">${esc(k.desc)}</div>`:''}`,s:({k})=>k.titulo},
     {k:'ter',l:'Terreno',cls:'esq hm',v:({t})=>`<div class="t2" style="color:var(--texto)">${t.codigo}</div><div class="t2">${esc(t.nome)}</div>`,s:({t})=>t.codigo},
     {k:'resp',l:'Responsável',cls:'hm',v:({k})=>esc(k.resp),s:({k})=>k.resp},
-    {k:'prazo',l:'Prazo',cls:'num',v:({k})=>`<span style="${k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)?'color:var(--terracota);font-weight:600':''}">${fd(k.prazo)}</span>`,s:({k})=>k.prazo},
+    {k:'prazo',l:'Prazo',cls:'num',v:({k})=>`<span style="${k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)?'color:var(--atraso,#b3261e);font-weight:600':''}">${fd(k.prazo)}</span>`,s:({k})=>(['concluida','cancelada'].includes(k.status)?'9':'0')+k.prazo},
     {k:'prio',l:'Prioridade',cls:'hm',v:({k})=>OPT.prioTar[k.prio]||'—',s:({k})=>['alta','media','baixa'].indexOf(k.prio)},
     {k:'status',l:'Status',v:({k})=>`<span class="chip tkst ${k.status}">${OPT.statusTar[k.status]}</span>`,s:({k})=>COLS_TK.indexOf(k.status)}];
   const atras=todasTarefas().filter(({k})=>k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)).length;

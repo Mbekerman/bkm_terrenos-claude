@@ -1469,7 +1469,7 @@ input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
 .dt .c-etapa .chip.fase, .dt .c-etapa .chip.fase-n { border: 0 !important; background: none !important; padding: 0 !important; min-height: 0; height: auto; font-size: 12px; line-height: 16px; font-weight: 500; color: var(--m-on-var, #444746) !important }
 .dt .c-etapa .chip.sub { border: 0 !important; background: none !important; padding: 0 !important; min-height: 0; height: auto; font-size: 14px; line-height: 20px; color: var(--m-on-surface, #1f1f1f) !important; white-space: normal; text-align: left }
 .dt .c-etapa .chip.sub.warn { color: #7a5900 !important }
-.dt .c-etapa .chip.sub.warn::after { content: " · atrasada"; font-size: 12px }
+.dt .c-etapa .chip.sub.warn::after { content: " · acima do prazo"; font-size: 12px }
 .dt .c-etapa .chip.blue { border: 0 !important; background: none !important; padding: 0 !important; height: auto; min-height: 0; font-size: 12px; line-height: 16px; color: var(--m-primary, #0b57d0) !important }
 :root[data-tema="escuro"] .dt .c-etapa .chip.sub { color: #e6ecff !important }
 :root[data-tema="escuro"] .dt .c-etapa .chip.sub.warn { color: #ffd479 !important }
@@ -1775,7 +1775,7 @@ form.inline-form.if-fechado { display: none !important }
 .kvl:not(:has(.kv-ed)) > .kv, .ro .kv:has(.kv-ed[data-a="edit"]), .fs-ro .kv:has(.kv-ed) { grid-template-columns: clamp(120px, 36%, 160px) minmax(0, 1fr) !important }
 /* Terrenos: etapa em texto neutro; atraso e aprovação em chip pequeno */
 .dt .c-etapa .chip.sub.warn { color: var(--m-on-surface, #1f1f1f) !important }
-.dt .c-etapa .chip.sub.warn::after { content: "atrasada"; display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 6px; background: #ffdf99; color: #3d2c00; font-size: 11px; line-height: 18px; font-weight: 500 }
+.dt .c-etapa .chip.sub.warn::after { content: "acima do prazo"; display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 6px; background: #ffdf99; color: #3d2c00; font-size: 11px; line-height: 18px; font-weight: 500 }
 .dt .c-etapa .chip.blue { display: inline-block !important; margin-top: 4px; padding: 0 6px !important; border-radius: 6px !important; background: #d3e3fd !important; color: #041e49 !important; font-size: 11px; line-height: 18px; font-weight: 500 }
 :root[data-tema="escuro"] .dt .c-etapa .chip.sub.warn { color: #e6ecff !important }
 :root[data-tema="escuro"] .dt .c-etapa .chip.sub.warn::after { background: rgba(245,196,81,.16); color: #ffd479 }
@@ -2316,3 +2316,26 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 @media (min-width: 900px) { :root:not(#_) .cfg-r.cfg-sub { grid-template-columns: 72px minmax(200px, 1fr) 110px 190px 120px 40px !important } }
 .so-m { display: none }
 @media (max-width: 599px) { .so-m { display: inline } }
+/* ===================== Revisão de design, rodada 17 ===================== */
+:root { --atraso: #b3261e }
+:root[data-tema="escuro"] { --atraso: #f2b8b5 }
+:root:not(#_) :is(.pn-tm.late, .tm.late, .tk-prazo.atras) { color: var(--atraso) !important }
+/* Esmaecido de rolagem só quando ainda há conteúdo à direita */
+:root:not(#_) :is(.board, .vb-nav).fim { -webkit-mask-image: none !important; mask-image: none !important }
+/* Parâmetros por zona no celular: valor logo abaixo do rótulo */
+@media (max-width: 599px) { :root:not(#_) .lz-par > .lz-c { justify-content: flex-start !important } }
+/* Fase de entrada: "Sempre ativa" no lugar da caixa */
+.cfg-sempre { font-size: 12px; color: var(--m-on-var, #444746); align-self: center }
+:root[data-tema="escuro"] .cfg-sempre { color: #8e9ac4 }
+/* Configurações › Viabilidade: mais largura para o nome do item; texto do seletor antes da seta */
+@media (min-width: 900px) { :root:not(#_) .vb-cfg-r { grid-template-columns: 40px minmax(240px, 1fr) 150px 138px 64px 72px 48px 40px !important } }
+:root:not(#_) .vb-cfg-r select { padding-right: 30px !important; text-overflow: ellipsis }
+/* Lista de Terrenos no celular: nome mais forte que a subetapa */
+@media (max-width: 599px) { :root:not(#_) .dt.lista-t .t1, :root:not(#_) .empilha .dt .t1 { font-weight: 500 } :root:not(#_) .dt .c-etapa .chip.sub { font-weight: 400 !important } }
+.cfg-nota { margin: 12px 0 0; font-size: 13px; color: var(--m-on-var, #444746) }
+:root[data-tema="escuro"] .cfg-nota { color: #8e9ac4 }
+/* Temperatura nas listas: barras maiores e o número ao lado */
+.temp-mini { display: inline-flex; align-items: flex-end; gap: 2px }
+.temp-mini .temp-n { margin-left: 6px; font-size: 13px; font-weight: 500; line-height: 1; color: var(--m-on-var, #444746) }
+:root[data-tema="escuro"] .temp-mini .temp-n { color: #c9d6ff }
+:root:not(#_) .dt .c-etapa .chip.sub.warn::after { white-space: nowrap }

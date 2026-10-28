@@ -3167,7 +3167,7 @@ input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
 .dt .c-etapa .chip.fase, .dt .c-etapa .chip.fase-n { border: 0 !important; background: none !important; padding: 0 !important; min-height: 0; height: auto; font-size: 12px; line-height: 16px; font-weight: 500; color: var(--m-on-var, #444746) !important }
 .dt .c-etapa .chip.sub { border: 0 !important; background: none !important; padding: 0 !important; min-height: 0; height: auto; font-size: 14px; line-height: 20px; color: var(--m-on-surface, #1f1f1f) !important; white-space: normal; text-align: left }
 .dt .c-etapa .chip.sub.warn { color: #7a5900 !important }
-.dt .c-etapa .chip.sub.warn::after { content: " · atrasada"; font-size: 12px }
+.dt .c-etapa .chip.sub.warn::after { content: " · acima do prazo"; font-size: 12px }
 .dt .c-etapa .chip.blue { border: 0 !important; background: none !important; padding: 0 !important; height: auto; min-height: 0; font-size: 12px; line-height: 16px; color: var(--m-primary, #0b57d0) !important }
 :root[data-tema="escuro"] .dt .c-etapa .chip.sub { color: #e6ecff !important }
 :root[data-tema="escuro"] .dt .c-etapa .chip.sub.warn { color: #ffd479 !important }
@@ -3473,7 +3473,7 @@ form.inline-form.if-fechado { display: none !important }
 .kvl:not(:has(.kv-ed)) > .kv, .ro .kv:has(.kv-ed[data-a="edit"]), .fs-ro .kv:has(.kv-ed) { grid-template-columns: clamp(120px, 36%, 160px) minmax(0, 1fr) !important }
 /* Terrenos: etapa em texto neutro; atraso e aprovação em chip pequeno */
 .dt .c-etapa .chip.sub.warn { color: var(--m-on-surface, #1f1f1f) !important }
-.dt .c-etapa .chip.sub.warn::after { content: "atrasada"; display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 6px; background: #ffdf99; color: #3d2c00; font-size: 11px; line-height: 18px; font-weight: 500 }
+.dt .c-etapa .chip.sub.warn::after { content: "acima do prazo"; display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 6px; background: #ffdf99; color: #3d2c00; font-size: 11px; line-height: 18px; font-weight: 500 }
 .dt .c-etapa .chip.blue { display: inline-block !important; margin-top: 4px; padding: 0 6px !important; border-radius: 6px !important; background: #d3e3fd !important; color: #041e49 !important; font-size: 11px; line-height: 18px; font-weight: 500 }
 :root[data-tema="escuro"] .dt .c-etapa .chip.sub.warn { color: #e6ecff !important }
 :root[data-tema="escuro"] .dt .c-etapa .chip.sub.warn::after { background: rgba(245,196,81,.16); color: #ffd479 }
@@ -4014,6 +4014,29 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 @media (min-width: 900px) { :root:not(#_) .cfg-r.cfg-sub { grid-template-columns: 72px minmax(200px, 1fr) 110px 190px 120px 40px !important } }
 .so-m { display: none }
 @media (max-width: 599px) { .so-m { display: inline } }
+/* ===================== Revisão de design, rodada 17 ===================== */
+:root { --atraso: #b3261e }
+:root[data-tema="escuro"] { --atraso: #f2b8b5 }
+:root:not(#_) :is(.pn-tm.late, .tm.late, .tk-prazo.atras) { color: var(--atraso) !important }
+/* Esmaecido de rolagem só quando ainda há conteúdo à direita */
+:root:not(#_) :is(.board, .vb-nav).fim { -webkit-mask-image: none !important; mask-image: none !important }
+/* Parâmetros por zona no celular: valor logo abaixo do rótulo */
+@media (max-width: 599px) { :root:not(#_) .lz-par > .lz-c { justify-content: flex-start !important } }
+/* Fase de entrada: "Sempre ativa" no lugar da caixa */
+.cfg-sempre { font-size: 12px; color: var(--m-on-var, #444746); align-self: center }
+:root[data-tema="escuro"] .cfg-sempre { color: #8e9ac4 }
+/* Configurações › Viabilidade: mais largura para o nome do item; texto do seletor antes da seta */
+@media (min-width: 900px) { :root:not(#_) .vb-cfg-r { grid-template-columns: 40px minmax(240px, 1fr) 150px 138px 64px 72px 48px 40px !important } }
+:root:not(#_) .vb-cfg-r select { padding-right: 30px !important; text-overflow: ellipsis }
+/* Lista de Terrenos no celular: nome mais forte que a subetapa */
+@media (max-width: 599px) { :root:not(#_) .dt.lista-t .t1, :root:not(#_) .empilha .dt .t1 { font-weight: 500 } :root:not(#_) .dt .c-etapa .chip.sub { font-weight: 400 !important } }
+.cfg-nota { margin: 12px 0 0; font-size: 13px; color: var(--m-on-var, #444746) }
+:root[data-tema="escuro"] .cfg-nota { color: #8e9ac4 }
+/* Temperatura nas listas: barras maiores e o número ao lado */
+.temp-mini { display: inline-flex; align-items: flex-end; gap: 2px }
+.temp-mini .temp-n { margin-left: 6px; font-size: 13px; font-weight: 500; line-height: 1; color: var(--m-on-var, #444746) }
+:root[data-tema="escuro"] .temp-mini .temp-n { color: #c9d6ff }
+:root:not(#_) .dt .c-etapa .chip.sub.warn::after { white-space: nowrap }
 </style>
 <header class="top">
   <div class="top-in">
@@ -4413,7 +4436,7 @@ function tempPicker(t){
   const v=t.neg?.temp||0,on=!!t.neg&&t.neg.status==='ativo';
   return `<div class="temp" title="Temperatura da negociação"><span class="bars" role="radiogroup" aria-label="Temperatura da negociação">${[1,2,3,4,5].map(n=>`<button type="button" role="radio" aria-checked="${v===n}" aria-label="${n} · ${TEMP[n]}" class="${n<=v?'on':''} t${v}" ${on?`data-a="temp" data-v="${n===v?0:n}"`:'disabled'}></button>`).join('')}</span><span class="tl" style="color:${v?`var(--t${v})`:'var(--texto-suave)'}">${v?`${v} · ${TEMP[v]}`:'Não avaliada'}</span></div>`;
 }
-const tempMini=v=>v?`<span class="temp-mini t${v}" title="Temperatura ${v} · ${TEMP[v]}">${[1,2,3,4,5].map(n=>`<i class="${n<=v?'on':''}"></i>`).join('')}</span>`:'<span class="faint" style="font-size:12px">—</span>';
+const tempMini=v=>v?`<span class="temp-mini t${v}" title="Temperatura ${v} · ${TEMP[v]}">${[1,2,3,4,5].map(n=>`<i class="${n<=v?'on':''}"></i>`).join('')}<b class="temp-n">${v}</b></span>`:'<span class="faint" style="font-size:12px">—</span>';
 const docChip=st=>({pendente:'<span class="chip">Pendente</span>',recebido:'<span class="chip blue">Aguardando validação</span>',validado:'<span class="chip good">Validado</span>',vencido:'<span class="chip crit">Vencido</span>',rejeitado:'<span class="chip crit">Rejeitado</span>'}[st]);
 const statusPropChip=s=>`<span class="chip ${({aceita:'good',recusada:'crit',expirada:'crit',retirada:'',substituida:'',rascunho:'',apresentada:'blue',em_analise:'blue'})[s]}">${OPT.statusProp[s]}</span>`;
 const ni='<span class="v ni">Não informado</span>';
@@ -4479,7 +4502,7 @@ function secaoAreas(t){
   if(preench.length>1){const mx=Math.max(...preench),mn=Math.min(...preench);if((mx-mn)/mx>0.01)div=`<div class="diverg">${ic('warn',16)}Diferença de ${m2(mx-mn)} (${num((mx-mn)/mx*100,1)}%) entre as fontes. Confira qual entra na viabilidade.</div>`}
   if(!ed)return `<section class="sec" id="sec-areas"><div class="sec-h"><h2>Áreas e dimensões</h2><button class="btn text sm" data-a="edit" data-s="areas">${ic('edit',16)}Editar</button></div><div class="sec-b">
     <div class="areas">${cards.map(([v,l,f,s])=>`<div class="area ${t.fonteArea===f?'sel':''}"${f==='poligonal'?' title="Calculada pelo desenho; muda quando a poligonal é ajustada"':''}><div class="al">${l} <span class="faint">· ${s}</span></div><div class="av">${v==null?'<span class="faint" style="font-size:14px;font-style:italic">Não informada</span>':m2(v)}</div>${t.fonteArea===f?'<div class="as">Área adotada</div>':''}</div>`).join('')}</div>
-    ${div}<div class="kvg" style="margin-top:14px"><div><div class="k">Área adotada</div>${ad==null?'<span class="v ni">Escolha a fonte</span>':`<div class="v">${m2(ad)}</div>`}</div><div><div class="k">Testada principal</div>${t.testada==null?ni:`<div class="v">${num(t.testada,2)} m</div>`}</div>
+    ${div}<div class="kvg" style="margin-top:14px">${ad==null?'<div><div class="k">Área adotada</div><span class="v ni">Escolha a fonte</span></div>':''}<div><div class="k">Testada principal</div>${t.testada==null?ni:`<div class="v">${num(t.testada,2)} m</div>`}</div>
     <div><div class="k">Valor pedido por m²</div>${ad&&ofertaRef(t)?.valor?`<div class="v">${brl(ofertaRef(t).valor/ad)}</div>`:ni}</div></div></div></section>`;
   return `<section class="sec" id="sec-areas"><form data-form="areas"><div class="sec-h"><h2>Áreas e dimensões</h2></div><div class="sec-b"><div class="editgrid">
     ${vals.map(([k,l,,s])=>`<div class="field"><label for="f-${k}">${l} (${s})</label><input id="f-${k}" name="${k}" inputmode="decimal" placeholder="m²" value="${t[k]==null?'':String(t[k]).replace('.',',')}"></div>`).join('')}
@@ -4567,7 +4590,7 @@ function abaComercial(t){
   <td class="r">${o===ref?'<span class="chip blue">Referência</span>':t.neg?`<button class="btn sm text" data-a="ofref" data-o="${o.id}">Usar como referência</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`:'<div class="muted">Nenhuma oferta.</div>'}
   </div></section>
   <section class="sec"><div class="sec-h"><h2>Corretores do terreno</h2></div><div class="sec-b">
-  ${t.corretores.length?t.corretores.map(x=>{const c=corretor(x.cid);return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0"><button class="star ${x.principal?'on':''}" data-a="principal" data-c="${x.cid}" aria-label="Marcar ${esc(c.nome)} como principal" title="${x.principal?'Principal':'Marcar como principal'}">★</button><span><b>${esc(c.nome)}</b> <span class="muted" style="font-size:13px">· ${esc(c.imob)} · CRECI ${esc(c.creci)}</span></span>${x.principal?'<span class="faint" style="font-size:12px;margin-left:auto">Principal</span>':''}</div>`}).join(''):'<div class="muted">Entram automaticamente quando apresentam uma oferta.</div>'}</div></section></div>`;
+  ${t.corretores.length?t.corretores.map(x=>{const c=corretor(x.cid);return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0"><button class="star ${x.principal?'on':''}" data-a="principal" data-c="${x.cid}" aria-label="Marcar ${esc(c.nome)} como principal" title="${x.principal?'Principal':'Marcar como principal'}">★</button><span style="min-width:0"><b>${esc(c.nome)}</b>${x.principal?' <span class="chip blue cfg-tag">Principal</span>':''}<span class="muted" style="display:block;font-size:13px">${esc(c.imob)} · CRECI\u00a0${esc(c.creci)}</span></span></div>`}).join(''):'<div class="muted">Entram automaticamente quando apresentam uma oferta.</div>'}</div></section></div>`;
 }
 function abaNegociacao(t){
   const n=t.neg;
@@ -5144,7 +5167,7 @@ const COLS_TERRENOS=[
   {k:'valor',l:'Valor pedido',cls:'num',v:t=>{const o=ofertaRef(t),a=areaAdotada(t);return o?.valor?`${mi(o.valor)}${a?`<div class="t2">${brl(o.valor/a)}/m²</div>`:''}`:'<span class="faint">—</span>'},s:t=>ofertaRef(t)?.valor??null},
   {k:'temp',l:'Temperatura',cls:'hm',v:t=>tempMini(t.neg?.temp),s:t=>t.neg?.temp??null},
   {k:'etapa',l:'Fase e etapa',v:t=>`<span class="c-etapa">${chipFase(t)}</span>`,s:t=>(fIdx(faseAtual(t)?.k)+1)*100+Object.keys(SIT).indexOf(sitMapa(t))},
-  {k:'tarefa',l:'Próxima tarefa',cls:'hm',v:t=>{const pt=proxTarefa(t),at=atrasadas(t).length;return pt?`<div class="t2" style="color:var(--texto)">${esc(pt.titulo)}</div><div class="t2" style="${pt.prazo<HOJE?'color:var(--terracota);font-weight:600':''}">${fd(pt.prazo)}${at>1?` · ${at} atrasadas`:''}</div>`:'<span class="faint">—</span>'},s:t=>proxTarefa(t)?.prazo??null}];
+  {k:'tarefa',l:'Próxima tarefa',cls:'hm',v:t=>{const pt=proxTarefa(t),at=atrasadas(t).length;return pt?`<div class="t2" style="color:var(--texto)">${esc(pt.titulo)}</div><div class="t2" style="${pt.prazo<HOJE?'color:var(--atraso,#b3261e);font-weight:600':''}">${fd(pt.prazo)}${at>1?` · ${at} atrasadas`:''}</div>`:'<span class="faint">—</span>'},s:t=>proxTarefa(t)?.prazo??null}];
 const attrAbrir=from=>t=>`data-a="abrir" data-id="${t.id}" data-from="${from}" tabindex="0"`;
 
 /* ===================== MAPA ===================== */
@@ -5595,7 +5618,7 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     ${n.status==='ativo'?`<div class="kv"><dt>Temperatura</dt><dd>${tempPicker(t)}</dd></div>`:lin('Temperatura',n.temp?`${tempMini(n.temp)} ${TEMP[n.temp]}`:'')}
     ${lin('Última proposta',lp?`${mi(lp.valor)} · ${lp.origem==='bkm'?'BKM':'Vendedor'} · ${OPT.statusProp[lp.status]}`:'')}
     ${lin('Próxima reunião',pr?`${fd(pr.data)} · ${esc(pr.hora||'')}`:'')}
-    ${pt?linLink('Próxima tarefa',`${esc(pt.titulo)} · <span style="${pt.prazo<HOJE?'color:var(--terracota);font-weight:600':''}">${fd(pt.prazo)}</span>`,`<button class="kv-ed" data-a="tk-abrir" data-id="${t.id}" data-tk="${pt.id}" aria-label="Editar a tarefa ${esc(pt.titulo)}" title="Editar tarefa">${lapis}</button>`):lin('Próxima tarefa','')}</dl></div></section>`:'';
+    ${pt?linLink('Próxima tarefa',`${esc(pt.titulo)} · <span style="${pt.prazo<HOJE?'color:var(--atraso,#b3261e);font-weight:600':''}">${fd(pt.prazo)}</span>`,`<button class="kv-ed" data-a="tk-abrir" data-id="${t.id}" data-tk="${pt.id}" aria-label="Editar a tarefa ${esc(pt.titulo)}" title="Editar tarefa">${lapis}</button>`):lin('Próxima tarefa','')}</dl></div></section>`:'';
   const loc=`<section class="sec g-loc"><div class="sec-h"><h2>${bi('localizacao',32)}Localização</h2></div><div class="sec-b">
     ${t.lat!=null?`<div class="mini-wrap"><div id="mini-mapa" class="mini-mapa"></div></div><div class="mini-pe"><span></span><span>${GG?`<button class="btn sm" data-a="g-sv-mini" data-id="${t.id}">Street View</button>`:''}<button class="btn sm mini-ir" data-a="mp-ir" data-id="${t.id}">Ver no mapa</button></span></div>
       <div class="mp-aviso mini">Fundo do mapa indisponível nesta visualização.</div>`
@@ -5690,7 +5713,7 @@ function pgTarefas(){const f=UI.tk,l=tkFiltradas();const cols=COLS_TK.filter(c=>
   const colsT=[{k:'titulo',l:'Tarefa',cls:'esq',v:({k})=>`<div class="t1">${escT(k.titulo)}</div>${k.desc?`<div class="t2">${esc(k.desc)}</div>`:''}`,s:({k})=>k.titulo},
     {k:'ter',l:'Terreno',cls:'esq hm',v:({t})=>`<div class="t2" style="color:var(--texto)">${t.codigo}</div><div class="t2">${esc(t.nome)}</div>`,s:({t})=>t.codigo},
     {k:'resp',l:'Responsável',cls:'hm',v:({k})=>esc(k.resp),s:({k})=>k.resp},
-    {k:'prazo',l:'Prazo',cls:'num',v:({k})=>`<span style="${k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)?'color:var(--terracota);font-weight:600':''}">${fd(k.prazo)}</span>`,s:({k})=>k.prazo},
+    {k:'prazo',l:'Prazo',cls:'num',v:({k})=>`<span style="${k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)?'color:var(--atraso,#b3261e);font-weight:600':''}">${fd(k.prazo)}</span>`,s:({k})=>(['concluida','cancelada'].includes(k.status)?'9':'0')+k.prazo},
     {k:'prio',l:'Prioridade',cls:'hm',v:({k})=>OPT.prioTar[k.prio]||'—',s:({k})=>['alta','media','baixa'].indexOf(k.prio)},
     {k:'status',l:'Status',v:({k})=>`<span class="chip tkst ${k.status}">${OPT.statusTar[k.status]}</span>`,s:({k})=>COLS_TK.indexOf(k.status)}];
   const atras=todasTarefas().filter(({k})=>k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)).length;
@@ -6520,7 +6543,7 @@ function cfgFasesHtml(){const C=cfg(),F=fasesL(),ent=faseEnt();
       <input data-ch="cfg" data-p="fases.${i}.nome" value="${esc(f.nome)}" aria-label="Nome da fase"><input data-ch="cfg-prefixo" data-i="${i}" value="${esc(f.prefixo)}" maxlength="5" aria-label="Prefixo de ${esc(f.nome)}">
       <input data-ch="cfg" data-p="fases.${i}.conc" value="${esc(f.conc)}" aria-label="Nome do concluído em ${esc(f.nome)}">
       <label class="chk"><input type="checkbox" data-ch="cfg" data-p="fases.${i}.descarta" ${f.descarta?'checked':''} aria-label="Permite descartar"></label>
-      <label class="chk"><input type="checkbox" data-ch="cfg-fase-ativa" data-i="${i}" ${f.ativo?'checked':''} ${f.entrada?'disabled':''} aria-label="Ativa">${f.entrada?'<span class="chip blue cfg-tag" title="A fase de entrada fica sempre ativa">Entrada</span>':''}</label>
+      ${f.entrada?'<span class="cfg-sempre" title="A fase de entrada (onde a oferta abre) não se desativa">Sempre ativa</span>':`<label class="chk"><input type="checkbox" data-ch="cfg-fase-ativa" data-i="${i}" ${f.ativo?'checked':''} aria-label="Ativa"></label>`}
       <span>${f.entrada||faseUsada(f.k)?'':`<button class="iconbtn sm lixo" data-a="cfg-fase-del" data-i="${i}" aria-label="Apagar" title="Apagar">${ic('lixo',18)}</button>`}</span></div>`).join('')}</div>
     <form class="inline-form" data-form="cfg-fase"><div class="field grow"><label for="nf-n">Nova fase</label><input id="nf-n" name="nome" required placeholder="Ex.: Regularização"></div><div class="field" style="flex:0 1 110px"><label for="nf-p">Prefixo</label><input id="nf-p" name="prefixo" required maxlength="5" placeholder="REG"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form>
     </div></section>
@@ -6843,13 +6866,13 @@ function pgConfig(){
   if(aba==='zonas')corpo=cfgZonasHtml();
   if(aba==='funil')corpo=`<section class="sec"><div class="sec-h"><h2>Etapas de ${esc(faseN(faseEnt()))}</h2></div><div class="sec-b"><div class="cfg-t">
     <div class="cfg-r cfg-hd"><span>Etapa</span><span>SLA (dias)</span><span>Aprovação para entrar</span></div>
-    ${C.etapas.map((e,i)=>`<div class="cfg-r"><input data-ch="cfg" data-p="etapas.${i}.nome" value="${esc(e.nome)}" aria-label="Nome da etapa"><input type="number" min="0" data-ch="cfg" data-p="etapas.${i}.sla" value="${e.sla??''}" aria-label="SLA de ${esc(e.nome)}"><span class="cfg-ap">${apCells('etapas.'+i,e)}</span></div>`).join('')}</div></div></section>
+    ${C.etapas.map((e,i)=>`<div class="cfg-r"><input data-ch="cfg" data-p="etapas.${i}.nome" value="${esc(e.nome)}" aria-label="Nome da etapa"><input type="number" min="0" data-ch="cfg" data-p="etapas.${i}.sla" value="${e.sla??''}" aria-label="SLA de ${esc(e.nome)}"><span class="cfg-ap">${apCells('etapas.'+i,e)}</span></div>`).join('')}</div><p class="cfg-nota">Criar, ordenar e desativar etapas fica em <button type="button" class="linkbtn" data-a="cfg-aba" data-v="fases">Fases</button>.</p></div></section>
     ${C.etapas.map(e=>{const ss=C.subs.map((s,i)=>[s,i]).filter(([s])=>s.etapa===e.k).sort((a,b)=>a[0].ordem-b[0].ordem);
       return `<section class="sec"><div class="sec-h"><h2>Subetapas · ${esc(e.nome)}</h2></div><div class="sec-b"><div class="cfg-t">
       <div class="cfg-r cfg-hd cfg-sub"><span></span><span>Subetapa</span><span>Prazo (dias)</span><span>Aprovação para entrar</span><span>Ativa</span><span></span></div>
       ${ss.map(([s,i],j)=>`<div class="cfg-r cfg-sub ${s.ativo?'':'inativa'}"><span class="cfg-ord"><button class="iconbtn sm" data-a="cfg-ord" data-i="${i}" data-v="-1" ${j?'':'disabled'} aria-label="Subir">↑</button><button class="iconbtn sm" data-a="cfg-ord" data-i="${i}" data-v="1" ${j<ss.length-1?'':'disabled'} aria-label="Descer">↓</button></span>
         <input data-ch="cfg" data-p="subs.${i}.nome" value="${esc(s.nome)}" aria-label="Nome da subetapa"><input type="number" min="0" data-ch="cfg" data-p="subs.${i}.prazo" value="${s.prazo??''}" placeholder="Sem prazo" aria-label="Prazo de ${esc(s.nome)}">
-        <span class="cfg-ap">${apCells('subs.'+i,s)}</span><label class="chk"><input type="checkbox" data-ch="cfg" data-p="subs.${i}.ativo" ${s.ativo?'checked':''} aria-label="Ativa">${j===0&&s.ativo?'<span class="chip blue cfg-tag" title="Primeira subetapa da etapa">Inicial</span>':''}</label>
+        <span class="cfg-ap">${apCells('subs.'+i,s)}</span><label class="chk"><input type="checkbox" data-ch="cfg" data-p="subs.${i}.ativo" ${s.ativo?'checked':''} aria-label="Ativa"></label>
         <span>${usada(s.k)?'':`<button class="iconbtn sm lixo" data-a="cfg-sub-del" data-i="${i}" aria-label="Apagar" title="Apagar">${ic('lixo',18)}</button>`}</span></div>`).join('')}</div>
       <form class="inline-form" data-form="cfg-sub" data-e="${e.k}"><div class="field grow"><label for="cs-${e.k}">Nova subetapa</label><input id="cs-${e.k}" name="nome" required placeholder="Nome"></div><div class="field" style="flex:0 1 120px"><label for="cp-${e.k}">Prazo (dias)</label><input id="cp-${e.k}" name="prazo" type="number" min="0"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form>
       </div></section>`}).join('')}`;
@@ -10108,7 +10131,12 @@ function uiHdIc(){document.querySelectorAll(':is(.sec-h,.card-h,.chk-gh) :is(.bt
   const t=b.textContent.trim();if(!t||!/^(Adicionar|Nova|Novo|Editar)\b/.test(t))return;b.classList.add('hd-ic');if(!b.getAttribute('aria-label'))b.setAttribute('aria-label',t);if(!b.title)b.title=t})}
 /* Campos estreitos das grades (Configurações › Viabilidade): texto inteiro na dica ao passar o mouse */
 function uiDicas(){document.querySelectorAll('.vb-cfg-r select, .vb-cfg-r input:not([type=checkbox])').forEach(e=>{const t=e.tagName==='SELECT'?e.selectedOptions[0]?.text||'':e.value;if(e.title!==t)e.title=t})}
-const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel();uiCfgAba();uiBoardPontos();uiHdIc();uiDicas()};
+/* Quadros que rolam de lado (kanban, abas do estudo): o esmaecido da borda só aparece enquanto há coluna escondida */
+function uiRolaFim(){document.querySelectorAll('.board, .vb-nav').forEach(b=>{const marca=()=>b.classList.toggle('fim',b.scrollLeft+b.clientWidth>=b.scrollWidth-24);
+  if(!b.dataset.fimOk){b.dataset.fimOk='1';b.addEventListener('scroll',()=>requestAnimationFrame(marca),{passive:true});
+    const at=b.querySelector('[aria-current="page"]');if(at&&b.scrollWidth>b.clientWidth){const x=at.offsetLeft-b.clientWidth/2+at.offsetWidth/2;if(x>0)b.scrollLeft=x}}marca()})}
+addEventListener('resize',()=>uiRolaFim());
+const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel();uiCfgAba();uiBoardPontos();uiHdIc();uiDicas();uiRolaFim()};
 /* Legenda do mapa: lembra se ficou aberta ou fechada */
 document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legenda'))UI.mpLeg=e.target.open},true);
 

@@ -22,7 +22,7 @@ await p.evaluate(()=>document.querySelector('[data-a=edit][data-s=areas]').click
 await p.selectOption('#sec-areas [name=fonteArea]','poligonal');await p.evaluate(()=>document.querySelector('#sec-areas form').requestSubmit());await p.waitForTimeout(400);
 const t1=await p.evaluate(k=>JSON.parse(localStorage.getItem(k)).terrenos.find(t=>t.nome.includes('Barão')),KEY);
 ok(t1.fonteArea==='poligonal',tag+' adotada = poligonal gravada');
-const kv=async()=>p.evaluate(()=>document.querySelector('#sec-areas .kvg')?.innerText.replace(/\s+/g,' '));
+const kv=async()=>p.evaluate(()=>document.querySelector('#sec-areas .area.sel')?.innerText.replace(/\s+/g,' '));
 ok(nm(await kv())===pol,tag+' área adotada = área da poligonal '+pol);
 const adot=await p.$eval('#sec-areas .area.sel',e=>e.innerText);ok(/Poligonal/.test(adot)&&/adotada/i.test(adot),tag+' o card da poligonal fica marcado como adotado');
 // ajuste na poligonal muda a adotada
