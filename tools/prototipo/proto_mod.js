@@ -645,7 +645,7 @@ const ordemTk=(a,b)=>(a.k.pos??9e15)-(b.k.pos??9e15)||a.k.prazo.localeCompare(b.
 function cardTk({k,t}){const at=k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status);
   return `<article class="tk ${k.status}" draggable="${UI.role!=='Leitura'}" data-tk="${k.id}" data-a="tk-abrir" data-id="${t.id}" tabindex="0" aria-label="${escT(k.titulo)}">
   <div class="tk-t">${escT(k.titulo)}</div>${k.desc?`<div class="tk-d">${esc(k.desc)}</div>`:''}
-  <div class="tk-ter"><span class="num">${t.codigo}</span> · ${esc(t.nome)}</div>
+  <div class="tk-ter"><span class="num">${t.codigo}</span> · ${esc(t.nome).replace(/\b[A-Z]{3}-\d+/g,m=>`<span class="end-p">${m}</span>`)}</div>
   <div class="tk-p"><span class="tk-prazo ${at?'atras':''}">${ic('clock',14)}${fd(k.prazo)}</span>${k.prio==='alta'?'<span class="chip warn">Alta</span>':k.prio==='baixa'?'<span class="chip">Baixa</span>':''}<span style="margin-left:auto">${av(k.resp,'sm')}</span></div></article>`}
 function pgTarefas(){const f=UI.tk,l=tkFiltradas();const cols=COLS_TK.filter(c=>c!=='cancelada'||f.canc);
   const opt=(o,v)=>Object.entries(o).map(([k,x])=>`<option value="${k}" ${v===k?'selected':''}>${esc(x)}</option>`).join('');

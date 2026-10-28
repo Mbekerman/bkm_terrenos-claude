@@ -134,7 +134,7 @@ function secAnaliseUrb(t){const a=analiseVig(t),hist=t.analises.filter(x=>x.stat
   const lotes=a?[...new Set(a.zonas.map(z=>digits(zIns(t,z)||'')||null))].sort((x,y)=>(x===null)-(y===null)).map(d=>d===null?null:(t.insc.find(i=>digits(i.sql)===d)?.sql||d)):[];
   const zonasArea=a?Object.entries(a.zonas.reduce((o,z)=>(o[z.sigla]=(o[z.sigla]||0)+(z.area||0),o),{})).sort((x,y)=>y[1]-x[1]):[];
   const somaLotes=t.insc.reduce((s,i)=>s+(i.area||0),0),ar=areaAdotada(t),sobra=ar&&somaLotes&&ar-somaLotes>1?ar-somaLotes:null;
-  return `<section class="sec" id="sec-analise"><div class="sec-h"><h2>Parâmetros urbanísticos</h2>${ed&&UI.edit!=='analise'?`<button class="btn sm" data-a="edit" data-s="analise">${ic('add',16)}Registrar zonas</button>`:''}</div><div class="sec-b">
+  return `<section class="sec" id="sec-analise"><div class="sec-h"><h2>Parâmetros urbanísticos</h2>${ed&&UI.edit!=='analise'?`<button class="btn sm zn-reg" data-a="edit" data-s="analise" aria-label="Registrar zonas" title="Registrar zonas">${ic('add',16)}<span class="oc-m">Registrar zonas</span></button>`:''}</div><div class="sec-b">
   <div class="lz-topo"><span class="lz-tl" id="lz-tipo-l">Tipo do empreendimento</span><div class="seg" role="group" aria-labelledby="lz-tipo-l">${Object.entries(TIPOS_EMP).map(([k,l])=>`<button type="button" data-a="zn-tipo" data-v="${k}" aria-pressed="${tEsc===k}" ${ed?'':'disabled'}>${l}</button>`).join('')}</div>
     ${a?`<span class="muted" style="font-size:13px">Zonas vigentes desde ${fd(a.data)} · ${esc(a.fonte)}</span>`:''}</div>
   ${tEsc?'':`<div class="banner warn lz-ni">${ic('warn')}<div>Sem tipo de empreendimento: valores de Mercado, só como referência.</div></div>`}

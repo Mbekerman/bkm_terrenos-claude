@@ -4192,6 +4192,24 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
   :root[data-tema="escuro"]:not(#_) .empilha .mini-tbl.lst2 td:not(.l1) { color: #8e9ac4 !important }
 }
 @media (max-width: 599px) { :root:not(#_) .doc .ds { white-space: normal !important; overflow: visible !important; text-overflow: clip !important } }
+
+/* Revisão de design, rodada 24 */
+@media (max-width: 599px) {
+  :root:not(#_) .mk-ctl { flex-direction: column; flex-wrap: nowrap }
+  :root:not(#_) .mk-ctl > .seg { display: flex !important; width: 100% !important; max-width: none !important; box-sizing: border-box }
+  :root:not(#_) .mk-ctl > .seg > button { flex: 1 1 0 !important; min-width: 0 !important }
+}
+@media (min-width: 600px) {
+  :root:not(#_) .doc .da > [data-a="upload"], :root:not(#_) .doc .da > [data-a="doc-ok"] { justify-self: end !important }
+  :root:not(#_) .doc .da { grid-template-columns: auto auto 132px !important; column-gap: 8px !important }
+}
+:root:not(#_) .rd-dist .rd-bar { height: 10px; border-radius: 5px }
+:root:not(#_) .rd-dist .rd-bar span:not([style*="width:0%"]):not([style*="width: 0%"]) { min-width: 3px }
+@media (min-width: 600px) { :root:not(#_) .doc .da > .btn.text:last-child { margin-right: -12px !important } }
+@media (max-width: 599px) {
+  .oc-m { display: none }
+  :root:not(#_) .btn.zn-reg { width: 40px; min-width: 40px; height: 40px; padding: 0 !important; justify-content: center; gap: 0 }
+}
 </style>
 <header class="top">
   <div class="top-in">
@@ -4840,7 +4858,7 @@ function abaDocs(t){
     <div class="field full" style="flex-basis:100%"><label for="dl-p">Providência</label><input id="dl-p" name="prov"></div><button class="btn sm">${ic('add',16)}Registrar</button></form>
     </div></section>`;
   return `<div class="stack">${secDil}<section class="sec chk-group"><div class="chk-gh"><span class="gt">Checklist de documentos</span>${ativo?`<span class="progress"><span class="bar"><span style="width:${CHECK_DIL.filter(([k,o])=>o&&docSt(doc(k))==='validado').length/CHECK_DIL.filter(c=>c[1]).length*100}%"></span></span>${CHECK_DIL.filter(([k,o])=>o&&docSt(doc(k))==='validado').length} de ${CHECK_DIL.filter(c=>c[1]).length} obrigatórios</span>`:'<span class="faint" style="font-size:13px">Vale a partir da Diligência</span>'}</div>
-  ${CHECK_DIL.map(([k,o])=>{const d=doc(k),st=docSt(d),va=d?docVal(d):null;return `<div class="doc"><span class="di">${ic('doc',18)}</span><div style="min-width:0"><div class="dn">${TIPOS_DOC[k][0]}</div><div class="ds">${o?'':'Opcional · '}${d?`v${d.versoes} · emitido ${fd(d.emitido)}${va?` · ${st==='vencido'?'venceu':(va<=addD(HOJE,15)&&va>=HOJE?'<span class="vence-logo">vence':'vence')} ${fd(va)}${st!=='vencido'&&va<=addD(HOJE,15)&&va>=HOJE?'</span>':''}`:''}`:`Validade: ${TIPOS_DOC[k][2]?TIPOS_DOC[k][2]+' dias':'não vence'}`}</div></div>
+  ${CHECK_DIL.map(([k,o])=>{const d=doc(k),st=docSt(d),va=d?docVal(d):null;return `<div class="doc"><span class="di">${ic('doc',18)}</span><div style="min-width:0"><div class="dn">${TIPOS_DOC[k][0]}</div><div class="ds">${o?'':'Opcional · '}${d?`v${d.versoes} · emitido\u00a0${fd(d.emitido).replace(' ','\u00a0')}${va?` · ${st==='vencido'?'venceu':(va<=addD(HOJE,15)&&va>=HOJE?'<span class="vence-logo">vence':'vence')}\u00a0${fd(va).replace(' ','\u00a0')}${st!=='vencido'&&va<=addD(HOJE,15)&&va>=HOJE?'</span>':''}`:''}`:`Validade: ${TIPOS_DOC[k][2]?TIPOS_DOC[k][2]+' dias':'não vence'}`}</div></div>
   <div class="da">${docChip(st)}${st==='recebido'?`<button class="btn sm text" data-a="doc-ok" data-k="${k}">${ic('check',16)}Validar</button>`:''}<button class="btn sm text" data-a="upload" data-k="${k}">${ic('upload',16)}${d?'Nova versão':'Enviar'}</button></div></div>`}).join('')}</section>
   <section class="sec chk-group"><div class="chk-gh"><span class="gt">Fotos, plantas e outros</span><button class="btn sm text" data-a="upload" data-k="foto">${ic('upload',16)}Enviar foto</button></div>
   ${outros.map(d=>`<div class="doc"><span class="di">${ic('doc',18)}</span><div><div class="dn">${esc(d.nome||TIPOS_DOC[d.tipo][0])}</div><div class="ds">${TIPOS_DOC[d.tipo][1]} · ${fd(d.emitido)}</div></div><div class="da">${docChip(docSt(d))}</div></div>`).join('')||'<div class="empty">Nada enviado.</div>'}</section></div>`;
@@ -5851,7 +5869,7 @@ const ordemTk=(a,b)=>(a.k.pos??9e15)-(b.k.pos??9e15)||a.k.prazo.localeCompare(b.
 function cardTk({k,t}){const at=k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status);
   return `<article class="tk ${k.status}" draggable="${UI.role!=='Leitura'}" data-tk="${k.id}" data-a="tk-abrir" data-id="${t.id}" tabindex="0" aria-label="${escT(k.titulo)}">
   <div class="tk-t">${escT(k.titulo)}</div>${k.desc?`<div class="tk-d">${esc(k.desc)}</div>`:''}
-  <div class="tk-ter"><span class="num">${t.codigo}</span> · ${esc(t.nome)}</div>
+  <div class="tk-ter"><span class="num">${t.codigo}</span> · ${esc(t.nome).replace(/\b[A-Z]{3}-\d+/g,m=>`<span class="end-p">${m}</span>`)}</div>
   <div class="tk-p"><span class="tk-prazo ${at?'atras':''}">${ic('clock',14)}${fd(k.prazo)}</span>${k.prio==='alta'?'<span class="chip warn">Alta</span>':k.prio==='baixa'?'<span class="chip">Baixa</span>':''}<span style="margin-left:auto">${av(k.resp,'sm')}</span></div></article>`}
 function pgTarefas(){const f=UI.tk,l=tkFiltradas();const cols=COLS_TK.filter(c=>c!=='cancelada'||f.canc);
   const opt=(o,v)=>Object.entries(o).map(([k,x])=>`<option value="${k}" ${v===k?'selected':''}>${esc(x)}</option>`).join('');
@@ -9821,7 +9839,7 @@ function secAnaliseUrb(t){const a=analiseVig(t),hist=t.analises.filter(x=>x.stat
   const lotes=a?[...new Set(a.zonas.map(z=>digits(zIns(t,z)||'')||null))].sort((x,y)=>(x===null)-(y===null)).map(d=>d===null?null:(t.insc.find(i=>digits(i.sql)===d)?.sql||d)):[];
   const zonasArea=a?Object.entries(a.zonas.reduce((o,z)=>(o[z.sigla]=(o[z.sigla]||0)+(z.area||0),o),{})).sort((x,y)=>y[1]-x[1]):[];
   const somaLotes=t.insc.reduce((s,i)=>s+(i.area||0),0),ar=areaAdotada(t),sobra=ar&&somaLotes&&ar-somaLotes>1?ar-somaLotes:null;
-  return `<section class="sec" id="sec-analise"><div class="sec-h"><h2>Parâmetros urbanísticos</h2>${ed&&UI.edit!=='analise'?`<button class="btn sm" data-a="edit" data-s="analise">${ic('add',16)}Registrar zonas</button>`:''}</div><div class="sec-b">
+  return `<section class="sec" id="sec-analise"><div class="sec-h"><h2>Parâmetros urbanísticos</h2>${ed&&UI.edit!=='analise'?`<button class="btn sm zn-reg" data-a="edit" data-s="analise" aria-label="Registrar zonas" title="Registrar zonas">${ic('add',16)}<span class="oc-m">Registrar zonas</span></button>`:''}</div><div class="sec-b">
   <div class="lz-topo"><span class="lz-tl" id="lz-tipo-l">Tipo do empreendimento</span><div class="seg" role="group" aria-labelledby="lz-tipo-l">${Object.entries(TIPOS_EMP).map(([k,l])=>`<button type="button" data-a="zn-tipo" data-v="${k}" aria-pressed="${tEsc===k}" ${ed?'':'disabled'}>${l}</button>`).join('')}</div>
     ${a?`<span class="muted" style="font-size:13px">Zonas vigentes desde ${fd(a.data)} · ${esc(a.fonte)}</span>`:''}</div>
   ${tEsc?'':`<div class="banner warn lz-ni">${ic('warn')}<div>Sem tipo de empreendimento: valores de Mercado, só como referência.</div></div>`}
