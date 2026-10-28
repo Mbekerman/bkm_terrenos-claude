@@ -4167,9 +4167,31 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
   :root:not(#_) .rd-dist.pf-dist li > .num { grid-area: n } :root:not(#_) .rd-dist.pf-dist li > .pf-p { grid-area: p }
 }
 @media (max-width: 599px) {
-  :root:not(#_) .dhead .muted { text-wrap: balance }
 }
 @media (max-width: 599px) { :root:not(#_) .infra > .seg3 > button { white-space: nowrap; font-size: 13px !important; padding-left: 4px !important; padding-right: 4px !important } }
+
+/* Revisão de design, rodada 23 */
+.end-p { white-space: nowrap }
+:root:not(#_) .iconbtn:disabled:not(.lixo) { opacity: .38; cursor: default; background: none !important }
+@media (max-width: 599px) {
+  :root:not(#_) .infra > .seg3 > button { flex: 1 1 0 !important; min-width: 0 !important; width: auto !important }
+}
+:root[data-tema="escuro"]:not(#_) .dchips .chip.warn { border: 0 !important; background: rgba(255,223,153,.16) !important; color: #ffdf99 !important }
+@media (max-width: 599px) {
+  :root:not(#_) .lz-topo > .seg { width: 100% !important } :root:not(#_) .lz-topo > .seg, :root:not(#_) .rd-raios.seg { display: flex !important; max-width: none !important; box-sizing: border-box }
+  :root:not(#_) .lz-topo > .seg > button, :root:not(#_) .rd-raios.seg > button { flex: 1 1 auto !important; min-width: 0 !important; padding-left: 4px !important; padding-right: 4px !important }
+}
+@media (max-width: 599px) { :root:not(#_) .rd-raios.seg { width: auto !important } }
+@media (max-width: 599px) {
+  :root:not(#_) .doc { grid-template-columns: minmax(0, 1fr) auto !important; align-items: start !important; column-gap: 8px !important }
+  :root:not(#_) .doc > .di { display: none !important }
+  :root:not(#_) .doc > .da { grid-column: 2 !important; grid-row: 1 !important; display: flex !important; align-items: center; gap: 0; justify-content: flex-end; flex-wrap: nowrap }
+  :root:not(#_) .doc > .da > .btn.text { font-size: 0 !important; gap: 0 !important; width: 40px; height: 40px; min-width: 40px; padding: 0 !important; justify-content: center; margin: 0 !important }
+  :root:not(#_) .doc > .da > .btn.text svg { width: 20px; height: 20px }
+  :root:not(#_) .empilha .mini-tbl.lst2 td:not(.l1) { color: var(--m-on-var, #444746) }
+  :root[data-tema="escuro"]:not(#_) .empilha .mini-tbl.lst2 td:not(.l1) { color: #8e9ac4 !important }
+}
+@media (max-width: 599px) { :root:not(#_) .doc .ds { white-space: normal !important; overflow: visible !important; text-overflow: clip !important } }
 </style>
 <header class="top">
   <div class="top-in">
@@ -4848,7 +4870,7 @@ function pgFicha(){
       <div class="bl-c" id="blc-${k}" ${fe?'hidden':''}>${fe?'':FN[k](t)+`<div class="bl-fim"><button class="bl-rec" data-a="bloco" data-t="${k}" data-fim="1" aria-label="Recolher ${l}" title="Recolher ${l}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg><span>Recolher</span></button></div>`}</div></section>`}).join('');
   return `${linhaTopo(t)}<button class="back" data-a="nav" data-r="${UI.from}">${ic('back',20)}${UI.from==='negociacoes'?'Fases':UI.from==='inicio'?'Início':'Terrenos'}</button>
   <div class="dhead"><div style="min-width:0"><div class="eyebrow"><span class="num">${t.codigo}</span>${n?`<span>·</span><span class="num">${n.codigo}</span>`:''}${fasesAbertas(t).filter(f=>f!==faseEnt()).map(f=>`<span>·</span><span class="num">${procAberto(t,f).codigo}</span>`).join('')}<span>·</span><span>identificado em ${fd(t.dataIdent)}</span>${t.situacao==='arquivado'?'<span class="chip">Arquivado</span>':''}</div>
-    <h1>${esc(t.nome)}</h1><div class="muted" style="margin-top:4px">${esc(endereco)||'<span class="faint">Endereço não informado</span>'}</div>
+    <h1>${esc(t.nome)}</h1><div class="muted" style="margin-top:4px">${endereco?esc(endereco).split(' · ').map(x=>`<span class="end-p">${x}</span>`).join(' · '):'<span class="faint">Endereço não informado</span>'}</div>
     <div class="dchips">${naEntrada(t)&&t.neg?.status==='ativo'?'':chipFase(t)}${ad!=null?`<span class="chip num">${m2(ad)}</span>`:''}${zt?`<span class="chip">${esc(zt)}</span>`:''}${t.prioridade?`<span class="chip ${t.prioridade==='estrategica'||t.prioridade==='alta'?'warn':''}">Prioridade ${OPT.prioridade[t.prioridade].toLowerCase()}</span>`:''}${atrasadas(t).length?`<span class="chip crit">${atrasadas(t).length}<span class="so-d"> tarefa${atrasadas(t).length>1?'s':''}</span> atrasada${atrasadas(t).length>1?'s':''}</span>`:''}</div></div>
     <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-end"><div style="display:flex;align-items:center;gap:8px">${av(t.resp)}<div><div style="font-weight:500">${esc(t.resp)}</div><div class="faint" style="font-size:12px">Responsável</div></div></div>${n?tempPicker(t):''}</div></div>
   <div class="stack">

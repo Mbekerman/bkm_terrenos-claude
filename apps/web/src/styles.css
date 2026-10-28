@@ -3492,9 +3492,31 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
   :root:not(#_) .rd-dist.pf-dist li > .num { grid-area: n } :root:not(#_) .rd-dist.pf-dist li > .pf-p { grid-area: p }
 }
 @media (max-width: 599px) {
-  :root:not(#_) .dhead .muted { text-wrap: balance }
 }
 @media (max-width: 599px) { :root:not(#_) .infra > .seg3 > button { white-space: nowrap; font-size: 13px !important; padding-left: 4px !important; padding-right: 4px !important } }
+
+/* Revisão de design, rodada 23 */
+.end-p { white-space: nowrap }
+:root:not(#_) .iconbtn:disabled:not(.lixo) { opacity: .38; cursor: default; background: none !important }
+@media (max-width: 599px) {
+  :root:not(#_) .infra > .seg3 > button { flex: 1 1 0 !important; min-width: 0 !important; width: auto !important }
+}
+:root[data-tema="escuro"]:not(#_) .dchips .chip.warn { border: 0 !important; background: rgba(255,223,153,.16) !important; color: #ffdf99 !important }
+@media (max-width: 599px) {
+  :root:not(#_) .lz-topo > .seg { width: 100% !important } :root:not(#_) .lz-topo > .seg, :root:not(#_) .rd-raios.seg { display: flex !important; max-width: none !important; box-sizing: border-box }
+  :root:not(#_) .lz-topo > .seg > button, :root:not(#_) .rd-raios.seg > button { flex: 1 1 auto !important; min-width: 0 !important; padding-left: 4px !important; padding-right: 4px !important }
+}
+@media (max-width: 599px) { :root:not(#_) .rd-raios.seg { width: auto !important } }
+@media (max-width: 599px) {
+  :root:not(#_) .doc { grid-template-columns: minmax(0, 1fr) auto !important; align-items: start !important; column-gap: 8px !important }
+  :root:not(#_) .doc > .di { display: none !important }
+  :root:not(#_) .doc > .da { grid-column: 2 !important; grid-row: 1 !important; display: flex !important; align-items: center; gap: 0; justify-content: flex-end; flex-wrap: nowrap }
+  :root:not(#_) .doc > .da > .btn.text { font-size: 0 !important; gap: 0 !important; width: 40px; height: 40px; min-width: 40px; padding: 0 !important; justify-content: center; margin: 0 !important }
+  :root:not(#_) .doc > .da > .btn.text svg { width: 20px; height: 20px }
+  :root:not(#_) .empilha .mini-tbl.lst2 td:not(.l1) { color: var(--m-on-var, #444746) }
+  :root[data-tema="escuro"]:not(#_) .empilha .mini-tbl.lst2 td:not(.l1) { color: #8e9ac4 !important }
+}
+@media (max-width: 599px) { :root:not(#_) .doc .ds { white-space: normal !important; overflow: visible !important; text-overflow: clip !important } }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
