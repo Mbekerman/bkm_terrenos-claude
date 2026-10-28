@@ -2548,9 +2548,12 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 /* subquadro: mesmas colunas do quadro, título num tom mais leve */
 .vb-q.sub { border: 0; border-radius: 0; margin: 0; padding: 0; overflow: visible }
 /* subtítulo sem fundo, no padrão de subcabeçalho do Material (texto na cor primária) */
-.vb-q.sub > .vb-r.vb-qh { background: none; padding: 16px 16px 4px; border-bottom: 0 }
+.vb-q.sub > .vb-r.vb-qh { background: none; padding: 10px 16px 0; border-bottom: 0 }
+.vb-q.sub > .vb-r.vb-qh + .vb-r { padding-top: 6px }
 .vb-q.sub > .vb-r.vb-qh h4, .vb-q.sub > .vb-r.vb-qh .vb-out b { color: var(--m-primary, #0b57d0); font-size: 14px }
 .vb-q.sub > .vb-r.vb-qh .vb-out small { font-size: 12px }
+/* no desktop, o % do VGV vai ao lado do total, numa linha só */
+@media (min-width: 1101px) { .vb-q.sub > .vb-r.vb-qh .vb-out { display: flex; flex-direction: row-reverse; justify-content: flex-start; align-items: baseline; gap: 8px } }
 .vb-q.sub:last-child > :last-child { border-bottom: 0 }
 .vb-q.sub + .vb-q.sub { border-top: 1px solid var(--linha) }
 .vb-qadd { padding: 4px 0 8px; margin-left: -12px }
@@ -2573,6 +2576,7 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
   .vb-tab .vb-r.vb-qh > .vb-qt { grid-column: 1 }
   .vb-tab .vb-r.vb-qh .vb-x { display: none }
   .vb-tab .vb-r.vb-qh .vb-out { text-align: right }
-  .vb-tab .vb-q.sub > .vb-r.vb-qh { padding: 16px 12px 0 }
+  .vb-tab .vb-q.sub > .vb-r.vb-qh { padding: 12px 12px 0 }
+  .vb-tab .vb-q.sub > .vb-r.vb-qh + .vb-r { padding-top: 8px }
   .vb-lns .vb-r:not(.vb-hd):not(.vb-qh) { padding: 16px 40px 16px 0; row-gap: 14px }
 }
