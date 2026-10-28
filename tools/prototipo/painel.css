@@ -2556,7 +2556,8 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 @media (min-width: 1101px) { .vb-q.sub > .vb-r.vb-qh .vb-out { display: flex; flex-direction: row-reverse; justify-content: flex-start; align-items: baseline; gap: 8px } }
 .vb-q.sub:last-child > :last-child { border-bottom: 0 }
 .vb-q.sub + .vb-q.sub { border-top: 1px solid var(--linha) }
-.vb-qadd { padding: 4px 0 8px; margin-left: -12px }
+.vb-qadd { padding: 12px 0 16px }
+.vb-qadd .btn { padding-left: 12px; padding-right: 16px; gap: 6px }
 /* seta de abrir e fechar dos quadros grandes (a mesma das seções da ficha) */
 .vb-qtg { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; padding: 0; margin: -8px 0; font: inherit; color: inherit; cursor: pointer; text-align: left }
 .vb-qtg .bl-seta { margin-left: -10px }
