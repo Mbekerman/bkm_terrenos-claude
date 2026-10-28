@@ -2840,6 +2840,11 @@ form.inline-form.if-fechado { display: none !important }
 .tr-e ul li .faint { line-height: 16px }
 @media (min-width: 600px) { .tr-e ul li { flex-direction: row !important; justify-content: space-between !important; gap: 12px !important } }
 .sec > .rd-raios button { padding: 0 12px !important }
+@media (max-width: 599px) { .zp-tbl td { text-align: left !important; align-items: flex-start !important } }
+/* Nome da coluna do quadro quebra em duas linhas em vez de cortar */
+.board .col-h .col-ab span { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; text-align: left; line-height: 20px }
+.board .col-h { align-items: flex-start !important }
+.board .col-h > .n { line-height: 20px }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

@@ -230,7 +230,7 @@ function seed(){
     docs:['matricula','onus','iptu','vend','topo','minuta'].map(t=>({tipo:t,status:'validado',emitido:H(30),versoes:1})),
     neg:neg('contrato','em_ajuste',45,{status:'comprado',temp:5,ofRef:'o11',encerradoEm:H(20),relato:'<p>Compromisso assinado com a família Albuquerque em <b>permuta com torna</b>: R$ 5 mi em dinheiro e 7% do VGV em unidades.</p><ul><li>Escritura condicionada à aprovação do projeto em 240 dias</li><li>Corretor Marcos Lemos com 4% sobre a parte em dinheiro</li></ul>',pontos:'Visita conjunta logo na primeira semana; proposta com permuta já no primeiro contato; certidões pedidas antes da minuta.'},10)}));
   /* processo numa fase depois de Novos Negócios (no banco: processos.fase); concluídas antes, a atual por último */
-  const proc=(fase,pref,etapa,sub,dias,status,extra)=>({id:uid(),fase,codigo:pref+'-'+String(Math.floor(Math.random()*900)+100).padStart(5,'0'),etapa,sub,status:status||'ativo',desde:H(dias),subDesde:H(Math.min(dias,6)),
+  const proc=(fase,pref,etapa,sub,dias,status,extra)=>({id:uid(),fase,codigo:pref+'-'+String(++NEG_SEQ+200).padStart(5,'0'),etapa,sub,status:status||'ativo',desde:H(dias),subDesde:H(Math.min(dias,6)),
     encerradoEm:status==='concluido'?H(Math.max(dias-60,1)):null,trilha:[{em:H(dias)+'T09:00:00.000',user:null,ev:'abertura',paraEtapa:etapa,paraSub:sub,status:'ativo'}],...(extra||{})});
   const fim=(fase,pref,etapa,sub,dias)=>proc(fase,pref,etapa,sub,dias,'concluido',{relato:'Concluída conforme o cronograma.'});
   const comprado=(dias,of)=>neg('contrato','em_ajuste',dias+40,{status:'comprado',temp:5,ofRef:of,encerradoEm:H(dias),relato:'<p>Compra fechada em permuta com torna.</p>',pontos:'Proposta com permuta logo no primeiro contato.'},10);
