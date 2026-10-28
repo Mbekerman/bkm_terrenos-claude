@@ -119,7 +119,7 @@ function abaFases(t){const ent=faseEnt(),ro=UI.role==='Leitura';
       ${p?`<div class="faint fs-d">${fd(p.trilha?.[0]?.em?.slice(0,10)||p.desde)}${p.encerradoEm&&!aberto(p)?' → '+fd(p.encerradoEm):''}${p.relato&&!f.entrada?' · '+esc(textoDe(p.relato)):''}</div>`:''}
       ${!p&&deps.length?`<ul class="fs-deps">${deps.map(x=>`<li class="${x.ok?'ok':'no'}">${ic(x.ok?'check':'close',14)}${esc(x.txt)}</li>`).join('')}</ul>`:''}
       ${!p&&!f.entrada&&!deps.length?'<div class="faint fs-d">Sem dependência: abre à mão.</div>':''}
-      ${pode?`<button class="btn sm ${p?'text':''}" data-a="f-abrir" data-v="${f.k}">${ic('add',16)}${p?'Reabrir':'Abrir'} ${esc(f.nome)}${falta.length?' antes da hora':''}</button>`:''}</li>`}).join('')}</ul></div></section>`}
+      ${pode?`<button class="btn sm ${p?'text':''}" data-a="f-abrir" data-v="${f.k}" aria-label="${p?'Reabrir':'Abrir'} ${esc(f.nome)}${falta.length?' antes da hora':''}">${ic('add',16)}${p?'Reabrir':'Abrir'}${falta.length?' antes da hora':''}</button>`:''}</li>`}).join('')}</ul></div></section>`}
 
 /* ---------- kanban em três níveis: fase › etapa › subetapa ----------
    UI.negFase vazio = quadro das fases; com fase = etapas dela; com UI.negEtapa = subetapas.

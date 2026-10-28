@@ -14,7 +14,7 @@ const TELAS=[
 ];
 (async()=>{const b=await chromium.launch();const errs=[];
 for(const [dev,vp,mob] of [['d',{width:1440,height:900},false],['m',{width:390,height:844},true]])for(const tema of ['claro','escuro']){
- const ctx=await b.newContext({viewport:vp,deviceScaleFactor:1,isMobile:mob,hasTouch:mob});
+ const ctx=await b.newContext({viewport:vp,deviceScaleFactor:1,isMobile:mob,hasTouch:mob,locale:'pt-BR'});
  await ctx.route('**/*',r=>{const u=r.request().url();
   if(u.includes('leaflet.js'))return r.fulfill({path:L+'leaflet.js'});if(u.includes('leaflet.css'))return r.fulfill({path:L+'leaflet.css'});if(u.includes('jszip'))return r.fulfill({path:L+'jszip.min.js'});
   if(u.includes('fonts.g'))return r.continue();
@@ -24,7 +24,7 @@ for(const [dev,vp,mob] of [['d',{width:1440,height:900},false],['m',{width:390,h
  await ctx.addInitScript(t=>{try{localStorage.setItem('bkm-terrenos-tema',t)}catch(e){}},tema);
  const p=await ctx.newPage();p.on('pageerror',e=>errs.push(dev+tema+': '+e.message));
  for(const [n,u] of TELAS){if(FILTRO&&!n.includes(FILTRO))continue;
-  await p.goto('http://bkm.test/prototipo'+u);await p.waitForTimeout(n.startsWith('mapa')?1500:700);
+  await p.goto('http://bkm.test/prototipo'+u);await p.waitForTimeout(/^(mapa|ficha)/.test(n)?1500:700);
   await p.screenshot({path:`${OUT}${n}_${dev}_${tema}.png`,fullPage:!n.startsWith('mapa')&&!n.startsWith('viab')&&!n.startsWith('novo')});
   const ov=await p.evaluate(()=>{const W=document.documentElement.clientWidth;const r=[];document.querySelectorAll('#main *, .modal *, .vb-pop *').forEach(e=>{const b=e.getBoundingClientRect();if(b.width&&b.right>W+1&&getComputedStyle(e).position!=='fixed')r.push((e.className||e.tagName)+'');});
     const t=[];document.querySelectorAll('#main *').forEach(e=>{if(e.children.length)return;if(e.scrollWidth>e.clientWidth+2&&getComputedStyle(e).overflow==='visible'&&e.clientWidth>0)t.push((e.className||e.tagName)+':'+e.textContent.slice(0,30))});return {fora:r.slice(0,5),estoura:t.slice(0,5)}});

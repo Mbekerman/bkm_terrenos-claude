@@ -1634,8 +1634,7 @@ select:not([multiple]) { background-repeat: no-repeat !important; background-pos
 .fx-vis select, .mapa-lado .fx-vis select { flex: 0 1 auto !important; width: auto !important; max-width: 220px !important; border-radius: 20px !important; height: 40px !important; font-weight: 500; color: var(--m-on-var, #444746) }
 @media (max-width: 599px) { .fx-visw { flex: 0 1 auto !important } .fx-vis select { max-width: 180px !important } }
 /* Logs: filtros de usuário e período lado a lado, como chips */
-.pn-filtros { flex-direction: row !important; flex-wrap: wrap }
-.pn-filtros .pn-dd { flex: 1 1 140px; min-width: 0 }
+.pn-filtros { gap: 6px !important }
 .pn-dd-b { height: 36px !important; border-radius: 8px !important; font-size: 13px; padding: 0 8px 0 12px !important }
 .pn-dd-b .pn-dd-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; text-align: left }
 /* Estudo de viabilidade: seções em abas (texto e valor, indicador embaixo), sem caixas */
@@ -1670,3 +1669,82 @@ select:not([multiple]) { background-repeat: no-repeat !important; background-pos
 /* Pontos de interesse: categoria sem resultado em texto normal */
 .ent-l li.ent-vazio .t2 { font-style: normal !important; font-size: 13px }
 .empilha .dt:not(.lista-t) td:has(> .chip:only-child)::before { content: none !important }
+/* Linha do tempo do topo: bolinha e fio na altura do nome; a data fica embaixo (etapa futura sem data não desalinha) */
+.tl-topo .stepper, .tl-topo .step { align-items: flex-start !important }
+.tl-topo .step .dot { margin-top: 0 }
+.tl-topo .step:not(:last-child)::after { margin-top: 11px !important }
+.tl-topo .step .sl-w { padding-top: 1px }
+/* Folha de baixo no celular: alça de arrastar, como no Material */
+@media (max-width: 599px) { .scrim .dialog::before { content: ""; display: block; width: 32px; height: 4px; border-radius: 2px; background: #79747e; opacity: .4; margin: -12px auto 12px } }
+/* Inclusão aberta só no clique */
+form.inline-form.if-fechado { display: none !important }
+.btn.text.if-abre { align-self: flex-start; margin: 4px 0 0 -12px; color: var(--m-primary, #0b57d0) }
+:root[data-tema="escuro"] .btn.text.if-abre { color: #a8b4ff }
+.if-abre[hidden] { display: none !important }
+/* Ação no fim do cabeçalho: o texto termina no recuo do quadro (o botão de texto compensa o próprio respiro, uma vez só) */
+.sec-h .sec-acoes > .btn:last-child { margin-right: 0 !important }
+:is(.sec-h, .card-h) > .btn:not(.iconbtn):last-child, :is(.sec-h, .card-h) > label.btn:last-child { margin-right: -12px !important }
+.sec-h label.btn:not(.iconbtn) { background: transparent !important; border: 0 !important; box-shadow: none !important; color: var(--m-primary, #0b57d0) !important; padding: 0 12px !important }
+:root[data-tema="escuro"] .sec-h label.btn:not(.iconbtn) { color: #a8b4ff !important }
+.cfg-cel { display: flex; flex-direction: column; gap: 4px; min-width: 0 }
+.cfg-cel > :is(input, select) { width: 100% }
+.cfg-cl { font-size: 12px; color: var(--m-on-var, #444746) }
+:root[data-tema="escuro"] .cfg-cl { color: #8e9ac4 }
+@media (min-width: 900px) { .cfg-cl { display: none } .cfg-cel { display: contents } }
+.cfg-nav .cfg-padrao { margin-top: 16px; align-self: flex-start; font-size: 13px; color: var(--m-on-var, #444746) !important; padding: 0 16px !important }
+@media (max-width: 899px) { .cfg-nav .cfg-padrao { display: none } }
+.cfg-padrao-m { align-self: flex-start; margin-left: -12px }
+@media (min-width: 900px) { .cfg-padrao-m { display: none !important } }
+/* Chips de status: todos tonais, uma regra só (neutro, em andamento, atenção, ok, crítico) */
+.chip.blue, .chip.tkst.em_andamento { background: #d3e3fd !important; border-color: transparent !important; color: #041e49 !important }
+.chip.good, .chip.tkst.concluida { background: #c4eed0 !important; border-color: transparent !important; color: #0a3818 !important }
+.chip.warn, .chip.tkst.aguardando_terceiro { background: #ffdf99 !important; border-color: transparent !important; color: #3d2c00 !important }
+.chip.crit { background: #ffdad6 !important; border-color: transparent !important; color: #410e0b !important }
+.chip.tkst.pendente, .chip.tkst.cancelada { background: #e9eef6 !important; border-color: transparent !important; color: #444746 !important }
+:root[data-tema="escuro"] :is(.chip.blue, .chip.tkst.em_andamento) { background: rgba(124,140,255,.18) !important; color: #c9d6ff !important }
+:root[data-tema="escuro"] :is(.chip.good, .chip.tkst.concluida) { background: rgba(109,213,140,.16) !important; color: #a6f0bb !important }
+:root[data-tema="escuro"] :is(.chip.warn, .chip.tkst.aguardando_terceiro) { background: rgba(245,196,81,.16) !important; color: #ffd479 !important }
+:root[data-tema="escuro"] .chip.crit { background: rgba(242,184,181,.16) !important; color: #f2b8b5 !important }
+:root[data-tema="escuro"] :is(.chip.tkst.pendente, .chip.tkst.cancelada) { background: rgba(142,154,196,.14) !important; color: #b9c3e6 !important }
+/* Faixas laterais só nos indicadores do Início e do Dashboard; os demais blocos ficam tonais */
+.rd-m1::after, .cc-k::after, .vb-pop .vb-kpis .kpi::after { content: none !important }
+.banner { border-left: 0 !important }
+.prop, .prop.atual, .reu { box-shadow: none !important }
+/* Reuniões: itens separados por fio, sem cartão dentro do quadro */
+.reu { border: 0 !important; border-bottom: 1px solid var(--m-outline-var, #c4c7c5) !important; border-radius: 0 !important; padding: 12px 0 !important }
+.reu:last-child { border-bottom: 0 !important }
+:root[data-tema="escuro"] .reu { border-bottom-color: #1a2240 !important }
+/* Quadro (kanban): colunas de largura igual; coluna vazia só da altura do conteúdo; borda direita esmaece quando há mais */
+.board { align-items: flex-start !important; mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); padding-right: 32px }
+.board .col { flex: 0 0 280px !important }
+.col[data-col] { min-height: 120px !important }
+@media (max-width: 599px) { .board { mask-image: none; -webkit-mask-image: none; padding-right: 16px } }
+.pnode.bkm .pc { box-shadow: none !important }
+.empilha .dt td:is(.col-prazo, .col-status)::before { content: none !important }
+@media (max-width: 599px) { .tk-fl::after { content: ""; flex: 0 0 4px } }
+/* Estudo: a janela acompanha o conteúdo; anterior e próxima sem fio, no recuo do quadro */
+.vb-pop-d { height: auto !important; max-height: 100%; min-height: min(640px, 100%) }
+.vb-pop-sc { min-height: 0 }
+.vb-passo { border-top: 0 !important; padding: 4px calc(var(--q-px, 24px) - 12px) 12px !important }
+/* Configurações: nomes cabem */
+.cfg-r.cfg-fase { grid-template-columns: 72px minmax(160px, 1.4fr) 80px minmax(180px, 1.2fr) 80px 70px 70px !important }
+.vb-cfg-r { grid-template-columns: 64px minmax(180px, 2.4fr) minmax(130px, 1.2fr) minmax(120px, 1.1fr) 96px 64px 48px 40px !important }
+/* Tabela que rola para o lado: a borda direita esmaece para mostrar que há mais */
+.tblwrap.rola { mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent) }
+/* Topo da ficha: menos vazio entre o cabeçalho e as seções */
+.ficha-main .dhead { margin-bottom: 8px !important; row-gap: 12px !important }
+.ficha-main > .stack:empty { display: none }
+.ficha-main .blocos { margin-top: 16px !important }
+/* Infraestrutura: fonte da verificação como texto (editável no clique), sem traço */
+.infra-f { border: 0; border-bottom: 1px solid transparent; background: transparent; font: inherit; font-size: 12px; color: var(--m-on-var, #444746); width: 60%; padding: 0; height: 20px }
+.infra-f:hover { border-bottom-color: var(--m-outline, #747775) }
+.infra-f:focus { outline: 0; border-bottom: 2px solid var(--m-primary, #0b57d0) }
+:root[data-tema="escuro"] .infra-f { color: #8e9ac4 }
+/* Tabelas pequenas empilhadas (valor venal, IPTU...): grade com rótulo pequeno em cima do valor */
+.empilha .mini-tbl tr { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px 16px }
+.empilha .mini-tbl td:first-child { grid-column: 1 / -1 }
+.empilha .mini-tbl td:not(:first-child) { display: flex !important; flex-direction: column; align-items: flex-start; gap: 0; font-size: 14px; color: var(--m-on-surface, #1f1f1f) }
+.empilha .mini-tbl td:not(:first-child)::before { font-size: 12px !important; line-height: 16px }
+:root[data-tema="escuro"] .empilha .mini-tbl td:not(:first-child) { color: #e6ecff }
+.board .col { width: 280px; max-width: 280px } @media (max-width: 599px) { .board .col { width: auto; max-width: none } }
+.sec .dt-wrap > .dt, .sec .tblwrap > table { background: transparent !important }

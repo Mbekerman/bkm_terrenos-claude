@@ -62,7 +62,7 @@ function entornoCard(t){if(t.lat==null)return '';
     :`<div class="muted">${GG?'Os pontos de interesse ainda não foram buscados.':'Os pontos são buscados no Google quando o terreno é localizado pela busca de endereço ou no mapa. O Google não carrega neste link de visualização.'}</div>${GG?`<button class="btn sm ed" style="margin-top:12px" data-a="ent-buscar" data-id="${t.id}">Buscar agora</button>`:''}`;
   else{const lim=ENT_TODOS?99:3;let sobra=0;
     corpo=`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${ENT_CAT.map(([k,l,pl])=>{const its=e.itens.filter(x=>x.cat===k&&!x.excl).sort((a,b)=>a.pe-b.pe);
-      if(!its.length)return `<li class="ent-vazio"><span><span class="t2">Sem ${pl} a até ${raio} a pé</span></span></li>`;
+      if(!its.length)return `<li class="ent-vazio"><span><span class="t2">Sem ${pl}</span></span></li>`;
       sobra+=Math.max(0,its.length-lim);
       return its.slice(0,lim).map(p=>`<li><span><span class="t1">${esc(p.nome)}</span><span class="t2">${l}${p.min!=null?` · ${p.min} min a pé`:''}</span></span><span class="num poi-d">${p.pe<1000?Math.round(p.pe/10)*10+'\u00a0m':num(p.pe/1000,2)+'\u00a0km'}</span><a class="iconbtn sm poi-rota" href="${rotaPeUrl(t,p)}" target="_blank" rel="noopener" aria-label="Rota até ${esc(p.nome)}" title="Rota">${ic('rota',18)}</a>${poiX('g',p.gid,p.nome,t)}</li>`).join('')}).join('')}</ul>
     ${sobra||ENT_TODOS?`<button class="linkbtn" data-a="ent-todos" style="margin-top:6px">${ENT_TODOS?'Mostrar menos':`Mostrar mais ${sobra}`}</button>`:''}
@@ -212,7 +212,7 @@ function mpItem(t,cartao){const [nm,c,g,fg]=mpInfo(mpClasse(t)),sel=UI.mpSel===t
   const acoes=sel&&t.lat!=null?`<div class="mp-it-a">${UI.role!=='Leitura'?`<button class="linkbtn" data-a="mp-desenhar" data-id="${t.id}">${t.poly?'Editar':'Desenhar'} poligonal</button>`:''}${GG?`<button class="linkbtn" data-a="mp-sv" data-id="${t.id}">Street View</button>`:''}</div>`:'';
   return `<div class="mp-it${sel?' sel':''}${cartao?' cartao':''}" data-a="mp-foco" data-id="${t.id}" tabindex="0" role="listitem" aria-current="${sel}">
     <span class="pin-mini" style="background:${c};color:${fg}" title="${esc(nm)}">${g}</span>
-    <div class="mp-it-t"><div class="t1">${esc(t.nome)}</div><div class="t2">${ad?m2(ad):'Área não informada'} · ${esc(nm)}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div></div>
+    <div class="mp-it-t"><div class="t1">${esc(t.nome)}</div><div class="t2">${ad?num(Math.round(ad))+'\u00a0m²':'Área não informada'} · ${esc(nm)}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div></div>
     <button class="iconbtn mp-lupa" data-a="fs-abrir" data-id="${t.id}" title="Ver ficha" aria-label="Ver ficha de ${esc(t.nome)}">${bi('busca',22)}</button>${cartao?`<button class="iconbtn mp-lupa mp-fx" data-a="mp-desel" title="Fechar" aria-label="Fechar">${ic('close',22)}</button>`:''}${acoes}</div>`}
 /* ao descer ou subir de nível, o mapa enquadra os terrenos que ficaram */
 function mpEnquadrar(){if(!MAPA)return;const pts=mpVisiveis().filter(t=>t.lat!=null).map(t=>[t.lat,t.lng]);if(!pts.length)return;
@@ -269,7 +269,7 @@ function pgMapa(){
     <div id="mp-modo" class="mp-modo" aria-live="polite">${modoBanner()}</div>
     <div id="mp-cartao" class="mp-cartao" aria-live="polite"></div>
     ${mpCtrlHtml()}
-    <details class="mp-legenda" ${UI.mpLeg??innerWidth>899?'open':''}><summary>Legenda</summary><div id="mp-leg" class="mp-leg-l">${mpLegenda()}</div></details>
+    <details class="mp-legenda" ${(UI.mpLeg??innerWidth>899)?'open':''}><summary>Legenda</summary><div id="mp-leg" class="mp-leg-l">${mpLegenda()}</div></details>
     <div class="mp-aviso">Fundo do mapa indisponível nesta visualização.</div>
   </section></div>`;
 }
@@ -580,7 +580,7 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     ${abaixoMin(t)?`<div class="banner warn" style="margin-top:12px">${ic('warn')}<div>${abaixoMinTxt(t)}.</div></div>`:''}`
     :`<div class="muted">${vs.length?'Nenhum estudo marcado como válido.':`Sem estudo.${UI.role!=='Leitura'?' <button class="linkbtn ed" data-a="vb-novo">Montar estudo</button>':''}`}</div>`}</div></section>`;
   const rel=relevoHtml(t)||topoBotao(t)?`<section class="sec"><div class="sec-h"><h2>Relevo</h2>${t.relevo?`<span class="faint" style="font-size:12px">estimado em ${fd(t.relevo.em)}</span>`:''}${topoBotao(t)}</div>${relevoHtml(t)?`<div class="sec-b">${relevoHtml(t)}</div>`:''}</section>`:'';
-  return `<div class="geral"><div class="geral-c">${info}${condicoes(t)}${neg}${viab}${poi}</div><div class="geral-c">${loc}${rel}${setoresCard(t)}${perfilCard(t)}</div></div>`}
+  return `<div class="geral"><div class="geral-c">${info}${condicoes(t)}${neg}${poi}</div><div class="geral-c">${loc}${rel}${setoresCard(t)}${perfilCard(t)}${viab}</div></div>`}
 function L_initMini(){const el=$('#mini-mapa'),t=T(UI.id);if(!el||!t||t.lat==null)return;if(!window.L){el.innerHTML='<div class="mapa-erro">Mapa indisponível.</div>';return}
   MINI=L.map(el,{zoomControl:true,attributionControl:true,scrollWheelZoom:false,doubleClickZoom:false,dragging:!L.Browser.mobile});
   const mini0=MINI;miniGestos(el,d=>mini0.setZoom(mini0.getZoom()+d));

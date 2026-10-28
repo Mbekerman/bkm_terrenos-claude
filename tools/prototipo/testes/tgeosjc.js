@@ -55,7 +55,7 @@ await p.screenshot({path:OUT+'2_quadro.png'});
 for(const k of ['pdf','dxf']){const [d]=await Promise.all([p.waitForEvent('download'),p.click(`[data-a=geo-baixar][data-k=${k}]`)]);await d.saveAs(OUT+'lote.'+k);
   console.log('baixou',k,d.suggestedFilename(),fs.statSync(OUT+'lote.'+k).size,'bytes',fs.readFileSync(OUT+'lote.'+k).slice(0,8).toString())}
 // 2. nova inscrição na ficha: sem seletor, a cidade é a do terreno (pela poligonal); outra inscrição de SJC entra
-console.log('ficha: seletor?',await p.$$eval('[data-form=insc] .insc-cid',x=>x.length),'| cidade:',await p.$eval('[data-form=insc] [name=mun]:checked',x=>x.value),'|',await p.$eval('#i-sql-l',x=>x.textContent),'|',await p.$eval('#i-sql',x=>x.placeholder));
+await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));console.log('ficha: seletor?',await p.$$eval('[data-form=insc] .insc-cid',x=>x.length),'| cidade:',await p.$eval('[data-form=insc] [name=mun]:checked',x=>x.value),'|',await p.$eval('#i-sql-l',x=>x.textContent),'|',await p.$eval('#i-sql',x=>x.placeholder));
 await p.fill('#i-sql','41002400120000');await p.evaluate(()=>document.querySelector('[data-form=insc]').requestSubmit());await p.waitForTimeout(400);
 console.log('inscrições:',JSON.stringify((await ter('Lote SJC')).insc.map(i=>i.mun+':'+i.sql)));
 // 3. passo 2 (área de outro lugar de SJC importada de KML): a inscrição acompanha o município digitado

@@ -99,12 +99,12 @@ n=await neg(p,'Pico Alto');ok(n.status==='perdido'&&n.motivo==='vendido_terceiro
 await nav(p,'config');await p.screenshot({path:O+'14_config.png',fullPage:true});
 await p.evaluate(()=>document.querySelector('[data-a=cfg-aba][data-v=funil]').click());await p.waitForTimeout(150);
 ok((await txt(p,'h1')).includes('Configurações'),'admin abre a configuração');
-await p.fill('form[data-form=cfg-sub][data-e=triagem] input[name=nome]','Visita ao terreno');await p.click('form[data-form=cfg-sub][data-e=triagem] .btn');await p.waitForTimeout(150);
+await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));await p.fill('form[data-form=cfg-sub][data-e=triagem] input[name=nome]','Visita ao terreno');await p.click('form[data-form=cfg-sub][data-e=triagem] .btn');await p.waitForTimeout(150);
 ok((await p.evaluate(()=>JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-v9')).cfg.subs.some(s=>s.nome==='Visita ao terreno'))),'cria subetapa');
 await p.evaluate(()=>document.querySelector('[data-a=cfg-aba][data-v=prereq]').click());await p.waitForTimeout(150);await p.screenshot({path:O+'15_prereq.png',fullPage:true});
-await p.selectOption('#pr-a','subetapa:aguardando_documentos');await p.selectOption('#pr-r','aguardando_documentos');await p.click('form[data-form=cfg-pre] .btn');await p.waitForTimeout(150);
+await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));await p.selectOption('#pr-a','subetapa:aguardando_documentos');await p.selectOption('#pr-r','aguardando_documentos');await p.click('form[data-form=cfg-pre] .btn');await p.waitForTimeout(150);
 ok((await p.evaluate(()=>document.querySelector('#toast').textContent)).includes('ela mesma'),'recusa pré-requisito para si mesma');
-await p.selectOption('#pr-a','etapa:estudos');await p.selectOption('#pr-r','contra_proposta');await p.click('form[data-form=cfg-pre] .btn');await p.waitForTimeout(150);
+await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));await p.selectOption('#pr-a','etapa:estudos');await p.selectOption('#pr-r','contra_proposta');await p.click('form[data-form=cfg-pre] .btn');await p.waitForTimeout(150);
 ok((await p.evaluate(()=>document.querySelector('#toast').textContent)).includes('depois'),'recusa requisito de etapa posterior');
 for(const a of ['status','checklist','notif','equipe']){await p.evaluate(a=>document.querySelector(`[data-a=cfg-aba][data-v=${a}]`).click(),a);await p.waitForTimeout(150);await p.screenshot({path:O+`16_${a}.png`,fullPage:true})}
 await papel(p,'Gestor');ok(!(await p.$('.nav-item[data-r=config]')),'gestor sem administrador não vê Configurações');

@@ -137,7 +137,7 @@ function secAnaliseUrb(t){const a=analiseVig(t),hist=t.analises.filter(x=>x.stat
   return `<section class="sec" id="sec-analise"><div class="sec-h"><h2>Parâmetros urbanísticos</h2>${ed&&UI.edit!=='analise'?`<button class="btn sm" data-a="edit" data-s="analise">${ic('add',16)}Registrar zonas</button>`:''}</div><div class="sec-b">
   <div class="lz-topo"><span class="lz-tl" id="lz-tipo-l">Tipo do empreendimento</span><div class="seg" role="group" aria-labelledby="lz-tipo-l">${Object.entries(TIPOS_EMP).map(([k,l])=>`<button type="button" data-a="zn-tipo" data-v="${k}" aria-pressed="${tEsc===k}" ${ed?'':'disabled'}>${l}</button>`).join('')}</div>
     ${a?`<span class="muted" style="font-size:13px">Zonas vigentes desde ${fd(a.data)} · ${esc(a.fonte)}</span>`:''}</div>
-  ${tEsc?'':`<div class="banner warn lz-ni">${ic('warn')}<div>Tipo do empreendimento não informado. ${ed?'Escolha acima. ':''}Até lá, os valores abaixo são os de Mercado, só como referência.</div></div>`}
+  ${tEsc?'':`<div class="banner warn lz-ni">${ic('warn')}<div>Sem tipo de empreendimento: valores de Mercado, só como referência.</div></div>`}
   ${a&&R?`<dl class="kvl lz-res">
     <div class="kv"><dt>Zonas da área</dt><dd>${zonasArea.map(([s,v])=>`<b>${esc(s)}</b> ${m2(v)}`).join(' · ')}</dd></div>
     <div class="kv"><dt>Potencial construtivo (${esc(TIPOS_EMP[tipo])}${tEsc?'':', referência'})</dt><dd>${R.potM!=null?`<b>${m2(R.potM)}</b>`:`<span class="ni">${R.naoAdm.length?esc(TIPOS_EMP[tipo])+' não admitido em '+esc(R.naoAdm.join(', ')):R.semCa.length?'Falta o CA de '+esc(R.semCa.join(', ')):'Não calculado'}</span>`}</dd></div>

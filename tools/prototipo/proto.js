@@ -518,7 +518,7 @@ function abaComercial(t){
   <td class="r">${o===ref?'<span class="tag-ref">referência</span>':t.neg?`<button class="btn sm text" data-a="ofref" data-o="${o.id}">Usar como referência</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`:'<div class="muted">Nenhuma oferta.</div>'}
   </div></section>
   <section class="sec"><div class="sec-h"><h2>Corretores do terreno</h2></div><div class="sec-b">
-  ${t.corretores.length?t.corretores.map(x=>{const c=corretor(x.cid);return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0"><button class="star ${x.principal?'on':''}" data-a="principal" data-c="${x.cid}" aria-label="Marcar ${esc(c.nome)} como principal" title="${x.principal?'Principal':'Marcar como principal'}">★</button><span><b>${esc(c.nome)}</b> <span class="muted" style="font-size:13px">· ${esc(c.imob)} · CRECI ${esc(c.creci)}</span></span>${x.principal?'<span class="chip blue">Principal</span>':''}</div>`}).join(''):'<div class="muted">Entram automaticamente quando apresentam uma oferta.</div>'}</div></section></div>`;
+  ${t.corretores.length?t.corretores.map(x=>{const c=corretor(x.cid);return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0"><button class="star ${x.principal?'on':''}" data-a="principal" data-c="${x.cid}" aria-label="Marcar ${esc(c.nome)} como principal" title="${x.principal?'Principal':'Marcar como principal'}">★</button><span><b>${esc(c.nome)}</b> <span class="muted" style="font-size:13px">· ${esc(c.imob)} · CRECI ${esc(c.creci)}</span></span></div>`}).join(''):'<div class="muted">Entram automaticamente quando apresentam uma oferta.</div>'}</div></section></div>`;
 }
 function abaNegociacao(t){
   const n=t.neg;
@@ -566,7 +566,7 @@ function abaUrbanismo(t){
   return `<div class="stack">${secAnaliseUrb(t)}
   <section class="sec"><div class="sec-h"><h2>Infraestrutura na porta</h2>${infraNV(t)?`<span class="faint" style="font-size:13px">${infraNV(t)} não verificado${infraNV(t)>1?"s":""}</span>`:""}</div><div style="padding-bottom:6px">
   ${INFRA.map(([k,l])=>{const r=t.infra[k]||{d:'nao_verificado'};return `<div class="infra"><span>${l}</span><span class="seg3" role="group" aria-label="${l}">${[['nao_verificado','Não verificado','nv'],['sim','Sim','sim'],['nao','Não','nao']].map(([v,lb,c])=>`<button type="button" class="${c}" aria-pressed="${r.d===v}" data-a="infra" data-k="${k}" data-v="${v}">${lb}</button>`).join('')}</span>
-  <span class="meta">${r.d!=='nao_verificado'?`${fd(r.data)} · <input aria-label="Fonte da verificação de ${l}" data-ch="infra-fonte" data-k="${k}" value="${esc(r.fonte)}" style="border:0;border-bottom:1px dashed var(--linha);background:transparent;font-size:12px;color:var(--texto-suave);width:60%">`:''}</span></div>`}).join('')}</div>
+  <span class="meta">${r.d!=='nao_verificado'?`${fd(r.data)} · <input aria-label="Fonte da verificação de ${l}" data-ch="infra-fonte" data-k="${k}" value="${esc(r.fonte)}" class="infra-f">`:''}</span></div>`}).join('')}</div>
   </section></div>`;
 }
 const OPT_REU={modalidade:{presencial:'Presencial',online:'Online'},local:{bkm:'Na BKM',externo:'Externa'},status:{realizada:'Realizada',agendada:'Agendada',cancelada:'Cancelada'}};

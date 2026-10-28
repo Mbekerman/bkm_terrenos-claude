@@ -41,4 +41,22 @@ function uiRotulos(){document.querySelectorAll('.cfg-r:not(.cfg-hd) label.chk:no
 /* Cabeçalho de tabela alinhado como a coluna: coluna de números (td.num) leva o th.num */
 function uiThNum(){document.querySelectorAll('table.dt:not([data-th-ok])').forEach(t=>{const r=t.tBodies[0]?.rows[0],h=t.tHead?.rows[0];if(!r||!h)return;t.dataset.thOk='1';
   [...h.cells].forEach((th,i)=>{if(r.cells[i]?.classList.contains('num'))th.classList.add('num')})})}
-const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum()};
+/* Formulários de inclusão (Nova tarefa, matrícula, confrontação...): fechados atrás de um botão "Adicionar" até o clique */
+const IF_ROT={mat:'Adicionar matrícula',insc:'Adicionar inscrição',confr:'Adicionar confrontação',pessoa:'Adicionar proprietário',tarefa:'Nova tarefa',dilig:'Adicionar diligência',
+  'cfg-fase':'Nova fase','cfg-dep':'Nova dependência','cfg-fe':'Nova etapa','cfg-sub':'Nova subetapa','cfg-pre':'Novo pré-requisito','cfg-mot':'Novo motivo','vb-cfg-nova':'Novo item'};
+const IF_AB=new Set(),ifChave=f=>f.dataset.form+'|'+(f.dataset.e||f.dataset.f||f.dataset.s||'')+'|'+UI.route;
+function uiInline(){document.querySelectorAll('form.inline-form:not([data-if-ok])').forEach(f=>{const r=IF_ROT[f.dataset.form];if(!r)return;f.dataset.ifOk='1';
+  const b=document.createElement('button');b.type='button';b.className='btn text if-abre';b.innerHTML=ic('add',18)+r;f.before(b);
+  const c=document.createElement('button');c.type='button';c.className='btn text if-cancela';c.textContent='Cancelar';
+  const env=[...f.querySelectorAll('button')].filter(x=>x.type!=='button').pop();env?env.after(c):f.append(c);
+  if(IF_AB.has(ifChave(f)))b.hidden=true;else f.classList.add('if-fechado')})}
+document.addEventListener('click',e=>{const b=e.target.closest?.('.if-abre,.if-cancela');if(!b)return;
+  if(b.classList.contains('if-abre')){const f=b.nextElementSibling;if(!f)return;f.classList.remove('if-fechado');b.hidden=true;IF_AB.add(ifChave(f));f.querySelector('input:not([type=hidden]):not([type=radio]),select,textarea')?.focus()}
+  else{const f=b.closest('form');f.reset();f.classList.add('if-fechado');IF_AB.delete(ifChave(f));const a=f.previousElementSibling;if(a?.classList.contains('if-abre')){a.hidden=false;a.focus()}}},true);
+/* Linhas de configuração: no celular (sem o cabeçalho da tabela) cada campo leva o nome da coluna em cima */
+function uiCfgCel(){document.querySelectorAll('.cfg-r:not(.cfg-hd):not([data-cel-ok])').forEach(r=>{r.dataset.celOk='1';const hd=r.parentElement?.querySelector(':scope > .cfg-hd');if(!hd)return;
+  const nomes=[...hd.children].map(x=>x.textContent.trim());[...r.children].forEach((c,i)=>{if(!i||!nomes[i]||!c.matches('input:not([type=checkbox]),select'))return;
+    const w=document.createElement('label');w.className='cfg-cel';c.replaceWith(w);w.innerHTML=`<span class="cfg-cl">${nomes[i].replace(/[<&]/g,'')}</span>`;w.append(c)})})}
+const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel()};
+/* Legenda do mapa: lembra se ficou aberta ou fechada */
+document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legenda'))UI.mpLeg=e.target.open},true);
