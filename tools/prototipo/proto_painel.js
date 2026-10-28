@@ -205,7 +205,7 @@ function pnLogs(t){
   const nSel=sel.reduce((a,x)=>a+(cont.get(x)||0),0);
   const rot=!sel.length?`Todos os usuários (${noPer.length})`:sel.length===1?`${sel[0]} (${nSel})`:sel.length===2?`${sel.map(x=>x.split(' ')[0]).join(', ')} (${nSel})`:`${sel.length} usuários (${nSel})`;
   const ck='<span class="pn-ck" aria-hidden="true"></span>',ab=k=>pnMenu===k?'aberto':'';
-  const perAtivo=!!fx;
+  const perAtivo=!!fx&&(PN.per?.k||'30d')!=='30d';
   const filtro=`<div class="pn-filtros">
     <div class="pn-dd ${ab('user')}" data-dd="user"><button class="pn-dd-b ${sel.length?'ativo':''}" data-a="pn-menu" data-v="user" aria-haspopup="menu" aria-expanded="${pnMenu==='user'}" aria-label="Filtrar por usuário: ${esc(rot)}"><span class="pn-dd-t">${esc(rot)}</span>${CHEV}</button>
     <div class="pn-menu" role="menu" aria-label="Usuários"><button role="menuitemcheckbox" aria-checked="${!sel.length}" data-a="pn-todos">${ck}<span class="pn-mn">Todos os usuários</span><span class="n">${noPer.length}</span></button><div class="pn-msep"></div>${users.map(x=>`<button role="menuitemcheckbox" aria-checked="${sel.includes(x)}" data-a="pn-u" data-v="${esc(x)}" class="${cont.get(x)?'':'zero'}">${ck}${av(x,'xs')}<span class="pn-mn">${esc(x)}</span><span class="n">${cont.get(x)||0}</span></button>`).join('')}</div></div>

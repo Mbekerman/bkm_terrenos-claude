@@ -38,4 +38,7 @@ document.addEventListener('input',e=>{const el=e.target;if(el.tagName==='INPUT'&
 /* Caixas de marcar das linhas de configuração: no celular, sem o cabeçalho da tabela, mostram o nome ao lado */
 function uiRotulos(){document.querySelectorAll('.cfg-r:not(.cfg-hd) label.chk:not([data-rot-ok])').forEach(l=>{l.dataset.rotOk='1';
   const i=l.querySelector('input[type=checkbox]');if(!i||l.textContent.trim())return;const r=i.getAttribute('aria-label');if(r)l.insertAdjacentHTML('beforeend',`<span class="chk-rot">${r.replace(/[<&]/g,'')}</span>`)})}
-const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos()};
+/* Cabeçalho de tabela alinhado como a coluna: coluna de números (td.num) leva o th.num */
+function uiThNum(){document.querySelectorAll('table.dt:not([data-th-ok])').forEach(t=>{const r=t.tBodies[0]?.rows[0],h=t.tHead?.rows[0];if(!r||!h)return;t.dataset.thOk='1';
+  [...h.cells].forEach((th,i)=>{if(r.cells[i]?.classList.contains('num'))th.classList.add('num')})})}
+const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum()};

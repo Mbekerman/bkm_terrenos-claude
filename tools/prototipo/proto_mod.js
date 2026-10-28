@@ -66,7 +66,7 @@ function entornoCard(t){if(t.lat==null)return '';
       sobra+=Math.max(0,its.length-lim);
       return its.slice(0,lim).map(p=>`<li><span><span class="t1">${esc(p.nome)}</span><span class="t2">${l}${p.min!=null?` · ${p.min} min a pé`:''}</span></span><span class="num poi-d">${p.pe<1000?Math.round(p.pe/10)*10+'\u00a0m':num(p.pe/1000,2)+'\u00a0km'}</span><a class="iconbtn sm poi-rota" href="${rotaPeUrl(t,p)}" target="_blank" rel="noopener" aria-label="Rota até ${esc(p.nome)}" title="Rota">${ic('rota',18)}</a>${poiX('g',p.gid,p.nome,t)}</li>`).join('')}).join('')}</ul>
     ${sobra||ENT_TODOS?`<button class="linkbtn" data-a="ent-todos" style="margin-top:6px">${ENT_TODOS?'Mostrar menos':`Mostrar mais ${sobra}`}</button>`:''}
-    <div class="hint ent-pe">${busc?'Atualizando no Google… · ':''}${e.fonte==='exemplo'?'Exemplo':'Google'} · ${e.semPe?'linha reta (sem rota a pé)':'rota a pé'} · ${fd(e.em)}${mudou?' · <b>a localização mudou depois da busca</b>':''}</div>`}
+    ${busc||e.semPe||mudou?`<div class="hint ent-pe">${busc?'Atualizando no Google… · ':''}${e.semPe?'Em linha reta (sem rota a pé) · ':''}${fd(e.em)}${mudou?' · <b>a localização mudou depois da busca</b>':''}</div>`:''}`}
   corpo+=pontosEmpresa(t)+poiExcluidos(t);
   return `<section class="sec" id="ent-card"><div class="sec-h"><h2>Pontos de interesse</h2><span class="faint" style="font-size:12px">a pé · até ${raio}</span></div><div class="sec-b">${corpo}</div></section>`}
 /* pontos cadastrados pela empresa: todos aparecem; a pé se está a até RAIO_PE a pé, senão de carro; sem rota medida, linha reta */
@@ -270,7 +270,7 @@ function pgMapa(){
     <div id="mp-cartao" class="mp-cartao" aria-live="polite"></div>
     ${mpCtrlHtml()}
     <details class="mp-legenda" ${UI.mpLeg??innerWidth>899?'open':''}><summary>Legenda</summary><div id="mp-leg" class="mp-leg-l">${mpLegenda()}</div></details>
-    <div class="mp-aviso">O fundo do mapa (ruas e satélite) não carrega neste link de visualização, que bloqueia imagens externas. Os pins, poligonais e distâncias funcionam. No app publicado, ou abrindo o arquivo do protótipo no navegador, o fundo aparece.</div>
+    <div class="mp-aviso">Fundo do mapa indisponível nesta visualização.</div>
   </section></div>`;
 }
 function modoBanner(){const m=UI.mpModo;if(!m)return '';
@@ -563,7 +563,7 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     ${pt?linLink('Próxima tarefa',`${esc(pt.titulo)} · <span style="${pt.prazo<HOJE?'color:var(--terracota);font-weight:600':''}">${fd(pt.prazo)}</span>`,`<button class="kv-ed" data-a="tk-abrir" data-id="${t.id}" data-tk="${pt.id}" aria-label="Editar a tarefa ${esc(pt.titulo)}" title="Editar tarefa">${lapis}</button>`):lin('Próxima tarefa','')}</dl></div></section>`:'';
   const loc=`<section class="sec g-loc"><div class="sec-h"><h2>${bi('localizacao',32)}Localização</h2></div><div class="sec-b">
     ${t.lat!=null?`<div class="mini-wrap"><div id="mini-mapa" class="mini-mapa"></div></div><div class="mini-pe"><span></span><span>${GG?`<button class="btn sm" data-a="g-sv-mini" data-id="${t.id}">Street View</button>`:''}<button class="btn sm mini-ir" data-a="mp-ir" data-id="${t.id}">Ver no mapa</button></span></div>
-      <div class="mp-aviso mini">O fundo do mapa não carrega neste link de visualização.</div>`
+      <div class="mp-aviso mini">Fundo do mapa indisponível nesta visualização.</div>`
     :`<div class="empty" style="padding:var(--e6) 0">Sem localização.<br><span style="display:inline-flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center">${GG&&(t.logradouro||t.bairro)?`<button class="btn sm primary ed" data-a="g-geo" data-id="${t.id}">Localizar pelo endereço</button>`:''}<button class="btn sm ed" data-a="mp-marcar" data-id="${t.id}">Marcar no mapa</button></span></div>`}</div></section>`;
   const poi=entornoCard(t);
   const pct=(x,b)=>b?num(x/b*100,1)+'%':'—';
@@ -571,17 +571,16 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
   const vs=viabsDe(t.id),roV=UI.role==='Leitura'||!negAtiva(t);
   const escolha=vs.length?`<div class="vb-escolha"><label for="vb-val-${t.id}">Estudo válido</label><select id="vb-val-${t.id}" data-ch="vb-valido" ${roV?'disabled':''}>${v?'':'<option value="">Escolha o estudo</option>'}${vs.map(x=>{const c=vbCalc(x);return `<option value="${x.id}" ${v?.id===x.id?'selected':''}>${esc(x.nome)} · margem ${c.margem==null?'—':num(c.margem,1)+'%'}</option>`}).join('')}</select>
     ${v?`<button class="btn sm" data-a="vb-abrir" data-v="${v.id}">Abrir estudo</button>`:''}${UI.role!=='Leitura'?`<button class="btn text sm" data-a="vb-novo">${ic('add',16)}Novo estudo</button>`:''}</div>`:'';
-  const viab=`<section class="sec"><div class="sec-h"><h2>Resumo da viabilidade</h2></div><div class="sec-b">${escolha}${v?`<div class="dt-wrap"><table class="dt compacta"><thead><tr><th class="esq">Item</th><th>Valor</th><th>% do VGV</th></tr></thead><tbody>
+  const viab=`<section class="sec"><div class="sec-h"><h2>Resumo da viabilidade</h2></div><div class="sec-b">${escolha}${v?`<div class="cond2 vb-res2"><div><div class="lbl">Margem líquida</div><div class="big">${v.margem==null?'—':num(v.margem,1)+'%'}</div></div>${S.vbMargemMin!=null?`<div><div class="lbl">Mínima da empresa</div><div class="big">${num(S.vbMargemMin,1)}%</div></div>`:''}</div><div class="dt-wrap"><table class="dt compacta"><thead><tr><th class="esq"><span class="sr-only">Item</span></th><th class="num">Valor</th><th class="num">% do VGV</th></tr></thead><tbody>
     <tr><td class="esq">VGV líquido</td><td class="num">${mi(vl)}</td><td class="num">100%</td></tr>
     <tr><td class="esq">Valor pedido</td><td class="num">${o?.valor?mi(o.valor):'—'}</td><td class="num">${o?.valor?pct(o.valor,vl):'—'}</td></tr>
     ${lp?`<tr><td class="esq">Última proposta (${lp.origem==='bkm'?'BKM':'vendedor'})</td><td class="num">${mi(lp.valor)}</td><td class="num">${pct(lp.valor,vl)}</td></tr>`:''}
     ${v.lucro!=null?`<tr><td class="esq">Lucro líquido</td><td class="num">${mi(v.lucro)}</td><td class="num">${pct(v.lucro,vl)}</td></tr>`:''}
-    <tr class="forte"><td class="esq">Margem líquida do estudo</td><td class="num">${v.margem==null?'—':num(v.margem,1)+'%'}</td><td></td></tr>
-    ${S.vbMargemMin!=null?`<tr><td class="esq">Rentabilidade mínima da empresa</td><td class="num">${num(S.vbMargemMin,1)}%</td><td></td></tr>`:''}</tbody></table></div>
+</tbody></table></div>
     ${abaixoMin(t)?`<div class="banner warn" style="margin-top:12px">${ic('warn')}<div>${abaixoMinTxt(t)}.</div></div>`:''}`
     :`<div class="muted">${vs.length?'Nenhum estudo marcado como válido.':`Sem estudo.${UI.role!=='Leitura'?' <button class="linkbtn ed" data-a="vb-novo">Montar estudo</button>':''}`}</div>`}</div></section>`;
   const rel=relevoHtml(t)||topoBotao(t)?`<section class="sec"><div class="sec-h"><h2>Relevo</h2>${t.relevo?`<span class="faint" style="font-size:12px">estimado em ${fd(t.relevo.em)}</span>`:''}${topoBotao(t)}</div>${relevoHtml(t)?`<div class="sec-b">${relevoHtml(t)}</div>`:''}</section>`:'';
-  return `<div class="geral"><div class="geral-c">${info}${condicoes(t)}${neg}</div><div class="geral-c">${loc}${rel}${poi}${setoresCard(t)}${perfilCard(t)}${viab}</div></div>`}
+  return `<div class="geral"><div class="geral-c">${info}${condicoes(t)}${neg}${viab}${poi}</div><div class="geral-c">${loc}${rel}${setoresCard(t)}${perfilCard(t)}</div></div>`}
 function L_initMini(){const el=$('#mini-mapa'),t=T(UI.id);if(!el||!t||t.lat==null)return;if(!window.L){el.innerHTML='<div class="mapa-erro">Mapa indisponível.</div>';return}
   MINI=L.map(el,{zoomControl:true,attributionControl:true,scrollWheelZoom:false,doubleClickZoom:false,dragging:!L.Browser.mobile});
   const mini0=MINI;miniGestos(el,d=>mini0.setZoom(mini0.getZoom()+d));

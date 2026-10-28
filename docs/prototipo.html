@@ -3273,6 +3273,101 @@ input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
 .kv dd .chip { white-space: normal !important; max-width: 100%; height: auto; min-height: 24px }
 .chk-rot { font-size: 13px; color: var(--m-on-var, #444746) }
 @media (min-width: 900px) { .cfg-r .chk-rot { display: none } }
+
+/* ===================== Revisão de design, rodada 2 (28/out/2026) ===================== */
+/* Seta do select: nunca repete, mesmo quando outra regra redefine o fundo */
+select:not([multiple]) { background-repeat: no-repeat !important; background-position: right 10px center !important; background-size: 18px 18px !important }
+.tk-filtros select.fsel-chip { background-position: right 6px center !important }
+/* Cabeçalho do estudo no celular: o título quebra a linha em vez de virar uma coluna de letras */
+@media (max-width: 599px) { .sec-h.vb-sh { flex-wrap: wrap !important } .vb-sh h2 { flex: 1 1 auto !important; overflow-wrap: normal } }
+/* Lista chave/valor: rótulo com largura contida, o valor ganha o espaço */
+.kv:has(.kv-ed), .kvl:has(> .kv > .kv-ed) > .kv:not(.editando) { grid-template-columns: clamp(104px, 34%, 150px) minmax(0, 1fr) 32px !important }
+.kvl:not(:has(.kv-ed)) > .kv, .ro .kv:has(.kv-ed[data-a="edit"]), .fs-ro .kv:has(.kv-ed) { grid-template-columns: clamp(104px, 34%, 150px) minmax(0, 1fr) !important }
+.kv dd .chip.sub { border: 0 !important; background: none !important; padding: 0 !important; height: auto; min-height: 0; color: var(--m-on-var, #444746) !important; font-weight: 400; display: block; margin-top: 2px }
+:root[data-tema="escuro"] .kv dd .chip.sub { color: #8e9ac4 !important }
+/* Faixa lateral reta (a sombra interna dobrava no raio do quadro) */
+.kpis .kpi, .rd-m1, .cc-k { position: relative; overflow: hidden }
+:root:not(#_) .kpis .kpi { box-shadow: none !important }
+.rd-m1, :root[data-tema="escuro"] .rd-m1, .cc-k { border-left: 0 !important }
+.kpis .kpi::after, .rd-m1::after, .cc-k::after { content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 3px; border-radius: 0 3px 3px 0; background: var(--faixa, #0b57d0) }
+.cc-k { --faixa: #863d8f }
+:root:not([data-tema="escuro"]) .kpis .kpi:nth-child(4n+1) { --faixa: #0094fe }
+:root:not([data-tema="escuro"]) .kpis .kpi:nth-child(4n+2) { --faixa: #863d8f }
+:root:not([data-tema="escuro"]) .kpis .kpi:nth-child(4n+3) { --faixa: #c67355 }
+:root:not([data-tema="escuro"]) .kpis .kpi:nth-child(4n+4) { --faixa: #7d8a3e }
+:root[data-tema="escuro"] .kpis .kpi, :root[data-tema="escuro"] .rd-m1 { --faixa: #7c8cff }
+:root[data-tema="escuro"] .kpis .kpi.crit { --faixa: #f2b8b5 }
+:root[data-tema="escuro"] .kpis .kpi.warn { --faixa: #f5c451 }
+/* Reuniões e propostas: cartão contornado, sem a borda azul */
+.reu { border-left: 0 !important; border: 1px solid var(--m-outline-var, #c4c7c5) !important; border-radius: 12px !important; background: transparent !important }
+:root[data-tema="escuro"] .reu { border-color: #1a2240 !important }
+/* Tabela dentro de quadro: sem contorno duplo; cabeçalho sem faixa cinza */
+.sec .dt-wrap > .dt { border: 0 !important; border-radius: 0 !important }
+.dt th, .tr.th { background: var(--m-card, #fff) !important; font-size: 12px !important; color: var(--m-on-var, #444746) !important }
+:root[data-tema="escuro"] .dt th, :root[data-tema="escuro"] .tr.th { background: #060c20 !important; color: #8e9ac4 !important }
+.page .dt-wrap > .dt th { background: var(--m-surface, #f8fafd) !important }
+/* Tabela que não cabe: no celular vira linha de lista (título; os demais dados numa linha corrida, rótulo discreto) */
+.empilha .dt:not(.lista-t) tr, .empilha .mini-tbl tr { display: flex !important; flex-wrap: wrap; align-items: baseline; gap: 2px 16px; padding: 12px 16px !important; position: relative }
+.empilha .dt:not(.lista-t) td, .empilha .mini-tbl td { display: inline-flex !important; width: auto !important; align-items: baseline; gap: 6px; text-align: left !important; font-size: 13px; padding: 0 !important; color: var(--m-on-var, #444746) }
+.empilha .dt:not(.lista-t) td::before, .empilha .mini-tbl td::before { float: none !important; margin: 0 !important; max-width: none !important; font-size: 12px !important; color: var(--m-on-var, #5f6368) }
+.empilha .dt:not(.lista-t) td:first-child, .empilha .mini-tbl td:first-child { flex: 1 1 100%; display: block !important; font-size: 14px; font-weight: 500; color: var(--m-on-surface, #1f1f1f); padding-right: 44px !important }
+.empilha .dt:not(.lista-t) td:first-child::before, .empilha .mini-tbl td:first-child::before { content: none !important }
+.empilha .dt:not(.lista-t) td:first-child .t2 { font-weight: 400 }
+.empilha .dt:not(.lista-t) td:has(> .iconbtn), .empilha .mini-tbl td:has(> .iconbtn) { position: absolute !important; right: 8px; top: 6px }
+.empilha .dt:not(.lista-t) td:has(> .iconbtn)::before { content: none !important }
+.empilha .dt:not(.lista-t) td.hm { display: none !important }
+.empilha .dt:not(.lista-t) td .chip { height: 24px; min-height: 24px; font-size: 12px }
+.empilha .dt:not(.lista-t) td:empty { display: none !important }
+:root[data-tema="escuro"] .empilha .dt:not(.lista-t) td:first-child { color: #e6ecff }
+/* Quadro (kanban) no celular: uma coluna por vez, com a próxima aparecendo; colunas só da altura dos cartões */
+@media (max-width: 599px) {
+  .board { scroll-snap-type: x mandatory; align-items: flex-start !important; margin: 0 -16px; padding: 0 16px 12px; scroll-padding: 0 16px; scrollbar-width: none }
+  .board::-webkit-scrollbar { display: none }
+  .board .col { flex: 0 0 calc(100% - 40px) !important; min-height: 160px !important; scroll-snap-align: start }
+}
+.kcard .ksub > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+/* Barra de filtros: Filtros e Visões salvas na mesma linha, em cápsula */
+.fx-visw, .mapa-lado .fx-visw { margin-left: auto !important; flex: 0 1 auto !important; min-width: 0 }
+.fx-vis, .mapa-lado .fx-vis { flex: 0 1 auto !important; min-width: 0 }
+.fx-vis select, .mapa-lado .fx-vis select { flex: 0 1 auto !important; width: auto !important; max-width: 220px !important; border-radius: 20px !important; height: 40px !important; font-weight: 500; color: var(--m-on-var, #444746) }
+@media (max-width: 599px) { .fx-visw { flex: 0 1 auto !important } .fx-vis select { max-width: 180px !important } }
+/* Logs: filtros de usuário e período lado a lado, como chips */
+.pn-filtros { flex-direction: row !important; flex-wrap: wrap }
+.pn-filtros .pn-dd { flex: 1 1 140px; min-width: 0 }
+.pn-dd-b { height: 36px !important; border-radius: 8px !important; font-size: 13px; padding: 0 8px 0 12px !important }
+.pn-dd-b .pn-dd-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; text-align: left }
+/* Estudo de viabilidade: seções em abas (texto e valor, indicador embaixo), sem caixas */
+.vb-nav { gap: 0 !important; padding: 0 !important; margin-top: 12px; border-top: 0 }
+.vb-aba { border: 0 !important; border-radius: 0 !important; background: transparent !important; padding: 10px 16px 12px !important; min-width: 0 !important; flex: 0 0 auto !important; position: relative; align-items: center !important; color: var(--m-on-var, #444746) !important }
+.vb-aba:hover { background: rgba(68,71,70,.06) !important }
+.vb-aba b { font-weight: 500 }
+.vb-aba small { color: var(--m-on-var, #5f6368) !important }
+.vb-aba[aria-current] { color: var(--m-primary, #0b57d0) !important; background: transparent !important }
+.vb-aba[aria-current] small { color: var(--m-primary, #0b57d0) !important }
+.vb-aba[aria-current]::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: currentColor }
+.vb-aba:focus-visible { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: -2px }
+:root[data-tema="escuro"] .vb-aba { color: #b9c3e6 !important }
+:root[data-tema="escuro"] .vb-aba small { color: #8e9ac4 !important }
+:root[data-tema="escuro"] .vb-aba[aria-current], :root[data-tema="escuro"] .vb-aba[aria-current] small { color: #c9d6ff !important; background: transparent !important; border: 0 !important }
+@media (max-width: 599px) {
+  .vb-pop .vb-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 6px !important }
+  .vb-pop .vb-kpis .kpi { display: flex !important; flex-direction: row !important; align-items: baseline !important; justify-content: space-between; padding: 6px 10px 6px 12px !important }
+  .vb-pop .vb-kpis .kpi::after { top: 8px; bottom: 8px }
+  .vb-pop .vb-kpis .kpi .l { order: -1 }
+  .vb-aba { padding: 8px 12px 10px !important }
+}
+/* Resumo da viabilidade: margem e mínima em destaque, tabela só com valores */
+.vb-res2 { margin-top: 16px }
+/* Parâmetros por zona: lista de rótulo e valor com fio, sem blocos cinza */
+.lz-par { gap: 0 24px !important; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important }
+.lz-c, :root[data-tema="escuro"] .lz-c { background: transparent !important; border-radius: 0 !important; padding: 10px 0 !important; border-bottom: 1px solid var(--m-outline-var, #c4c7c5) }
+:root[data-tema="escuro"] .lz-c { border-bottom-color: #1a2240 }
+.lz-c.alt { box-shadow: inset 3px 0 0 #0b57d0 !important; padding-left: 10px !important }
+/* Configurações › Viabilidade: colunas que cabem no quadro */
+.vb-cfg-r { grid-template-columns: 64px minmax(120px, 2fr) minmax(110px, 1.3fr) minmax(120px, 1.3fr) 96px 64px 48px 40px !important }
+/* Pontos de interesse: categoria sem resultado em texto normal */
+.ent-l li.ent-vazio .t2 { font-style: normal !important; font-size: 13px }
+.empilha .dt:not(.lista-t) td:has(> .chip:only-child)::before { content: none !important }
 </style>
 <header class="top">
   <div class="top-in">
@@ -3427,6 +3522,7 @@ const ini=n=>String(n||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperC
 const av=(n,c='')=>`<span class="avatar ${c}" style="background:var(${AVC[n]||'--av3'})" title="${esc(n)}">${esc(ini(n))}</span>`;
 
 /* ===================== dados de exemplo ===================== */
+let NEG_SEQ=100;
 function seed(){
   const H=n=>addD(HOJE,-n);
   const eixos=[{id:'e1',nome:'Eixo Cupecê'},{id:'e2',nome:'Eixo Interlagos'},{id:'e3',nome:'Eixo Radial Leste'},{id:'e4',nome:'Eixo Inajar de Souza'},{id:'e5',nome:'Eixo Raposo Tavares'}];
@@ -3438,7 +3534,7 @@ function seed(){
   const neg=(etapa,sub,dias,extra,dSub)=>{const ix=STAGES.findIndex(s=>s[0]===etapa),tr=[];let pe=null,ps=null;
     for(let i=0;i<=ix;i++){const e=STAGES[i][0],subs=subsDe(e).map(x=>x.k),cur=i===ix,ate=cur?subs.slice(0,subs.indexOf(sub)+1):subs,ini=cur?dias:dias+12*(ix-i),fim=cur?(dSub??Math.min(dias,4)):dias+12*(ix-i-1);
       ate.forEach((s,j)=>{const d=j===0?ini:Math.round(ini-(ini-fim)*j/(cur?Math.max(1,ate.length-1):ate.length));tr.push({em:H(d)+'T09:00:00.000',user:null,ev:j?'subetapa':i?'avanco':'abertura',deEtapa:pe,deSub:ps,paraEtapa:e,paraSub:s,status:'ativo'});pe=e;ps=s})}
-    const n=Object.assign({codigo:'NEG-'+String(Math.floor(Math.random()*900)+100).padStart(5,'0'),etapa,sub,status:'ativo',desde:H(dias),subDesde:tr[tr.length-1].em.slice(0,10),temp:null,ofRef:null,viab:null,trilha:tr,pedido:null},extra||{});
+    const n=Object.assign({codigo:'NEG-'+String(++NEG_SEQ).padStart(5,'0'),etapa,sub,status:'ativo',desde:H(dias),subDesde:tr[tr.length-1].em.slice(0,10),temp:null,ofRef:null,viab:null,trilha:tr,pedido:null},extra||{});
     if(n.status!=='ativo')tr.push({em:n.encerradoEm+'T10:00:00.000',user:null,ev:{comprado:'compra',perdido:'perda',descartado:'descarte',stand_by:'stand_by'}[n.status],deEtapa:etapa,deSub:sub,paraEtapa:etapa,paraSub:sub,status:n.status});
     return n};
   const infra=(o)=>{const r={};for(const [k,v] of Object.entries(o))r[k]={d:v,data:H(20),fonte:'Visita ao local',obs:''};return r};
@@ -4268,7 +4364,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       UI.modal=null;save();render();toast('Oferta registrada.');break}
   }
 });
-function novaNeg(ofRef,temp){const e=STAGES[0][0],s=subInicial(e);return {codigo:'NEG-'+String(Math.floor(Math.random()*900)+100).padStart(5,'0'),etapa:e,sub:s,status:'ativo',desde:HOJE,subDesde:HOJE,temp,ofRef,viab:null,pedido:null,trilha:[{em:agora(),user:me(),ev:'abertura',deEtapa:null,deSub:null,paraEtapa:e,paraSub:s,status:'ativo'}]}}
+function novaNeg(ofRef,temp){const e=STAGES[0][0],s=subInicial(e);NEG_SEQ=Math.max(NEG_SEQ,...S.terrenos.map(t=>parseInt((t.neg?.codigo||'').slice(4))||0));return {codigo:'NEG-'+String(++NEG_SEQ).padStart(5,'0'),etapa:e,sub:s,status:'ativo',desde:HOJE,subDesde:HOJE,temp,ofRef,viab:null,pedido:null,trilha:[{em:agora(),user:me(),ev:'abertura',deEtapa:null,deSub:null,paraEtapa:e,paraSub:s,status:'ativo'}]}}
 function seedVazio(){return {id:uid(),situacao:'ativo',prioridade:null,descricao:'',url:'',obs:'',cep:'',complemento:'',referencia:'',lat:null,lng:null,precisao:'nao_informada',aDoc:null,aCad:null,aLev:null,aEst:null,fonteArea:null,testada:null,topografia:'nao_informado',desnivel:null,posicao:'nao_informado',formato:'nao_informado',ocupacao:'nao_informado',uso:'',aConst:null,aDemolir:null,demolicao:'nao_avaliada',obsFis:'',eixo:null,mats:[],insc:[],confr:[],dilig:[],pessoas:[],corretores:[],infra:{},analises:[],ofertas:[],neg:null,propostas:[],reunioes:[],tarefas:[],docs:[],hist:[]}}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&GG&&(svFechar()||lugarFechar())){e.preventDefault();return}if(e.key==='Escape'&&temaMenu){temaMenu=false;renderTema();return}if(e.key==='Escape'&&perfilMenu){perfilMenu=false;renderPerfil();return}if(e.key==='Escape'&&UI.modal){UI.modal=null;renderModal()}});
 /* ===================== kanban: arrastar e soltar (regras em proto_funil.js: levarAte, soltar) ===================== */
@@ -4350,7 +4446,7 @@ function entornoCard(t){if(t.lat==null)return '';
       sobra+=Math.max(0,its.length-lim);
       return its.slice(0,lim).map(p=>`<li><span><span class="t1">${esc(p.nome)}</span><span class="t2">${l}${p.min!=null?` · ${p.min} min a pé`:''}</span></span><span class="num poi-d">${p.pe<1000?Math.round(p.pe/10)*10+'\u00a0m':num(p.pe/1000,2)+'\u00a0km'}</span><a class="iconbtn sm poi-rota" href="${rotaPeUrl(t,p)}" target="_blank" rel="noopener" aria-label="Rota até ${esc(p.nome)}" title="Rota">${ic('rota',18)}</a>${poiX('g',p.gid,p.nome,t)}</li>`).join('')}).join('')}</ul>
     ${sobra||ENT_TODOS?`<button class="linkbtn" data-a="ent-todos" style="margin-top:6px">${ENT_TODOS?'Mostrar menos':`Mostrar mais ${sobra}`}</button>`:''}
-    <div class="hint ent-pe">${busc?'Atualizando no Google… · ':''}${e.fonte==='exemplo'?'Exemplo':'Google'} · ${e.semPe?'linha reta (sem rota a pé)':'rota a pé'} · ${fd(e.em)}${mudou?' · <b>a localização mudou depois da busca</b>':''}</div>`}
+    ${busc||e.semPe||mudou?`<div class="hint ent-pe">${busc?'Atualizando no Google… · ':''}${e.semPe?'Em linha reta (sem rota a pé) · ':''}${fd(e.em)}${mudou?' · <b>a localização mudou depois da busca</b>':''}</div>`:''}`}
   corpo+=pontosEmpresa(t)+poiExcluidos(t);
   return `<section class="sec" id="ent-card"><div class="sec-h"><h2>Pontos de interesse</h2><span class="faint" style="font-size:12px">a pé · até ${raio}</span></div><div class="sec-b">${corpo}</div></section>`}
 /* pontos cadastrados pela empresa: todos aparecem; a pé se está a até RAIO_PE a pé, senão de carro; sem rota medida, linha reta */
@@ -4554,7 +4650,7 @@ function pgMapa(){
     <div id="mp-cartao" class="mp-cartao" aria-live="polite"></div>
     ${mpCtrlHtml()}
     <details class="mp-legenda" ${UI.mpLeg??innerWidth>899?'open':''}><summary>Legenda</summary><div id="mp-leg" class="mp-leg-l">${mpLegenda()}</div></details>
-    <div class="mp-aviso">O fundo do mapa (ruas e satélite) não carrega neste link de visualização, que bloqueia imagens externas. Os pins, poligonais e distâncias funcionam. No app publicado, ou abrindo o arquivo do protótipo no navegador, o fundo aparece.</div>
+    <div class="mp-aviso">Fundo do mapa indisponível nesta visualização.</div>
   </section></div>`;
 }
 function modoBanner(){const m=UI.mpModo;if(!m)return '';
@@ -4847,7 +4943,7 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     ${pt?linLink('Próxima tarefa',`${esc(pt.titulo)} · <span style="${pt.prazo<HOJE?'color:var(--terracota);font-weight:600':''}">${fd(pt.prazo)}</span>`,`<button class="kv-ed" data-a="tk-abrir" data-id="${t.id}" data-tk="${pt.id}" aria-label="Editar a tarefa ${esc(pt.titulo)}" title="Editar tarefa">${lapis}</button>`):lin('Próxima tarefa','')}</dl></div></section>`:'';
   const loc=`<section class="sec g-loc"><div class="sec-h"><h2>${bi('localizacao',32)}Localização</h2></div><div class="sec-b">
     ${t.lat!=null?`<div class="mini-wrap"><div id="mini-mapa" class="mini-mapa"></div></div><div class="mini-pe"><span></span><span>${GG?`<button class="btn sm" data-a="g-sv-mini" data-id="${t.id}">Street View</button>`:''}<button class="btn sm mini-ir" data-a="mp-ir" data-id="${t.id}">Ver no mapa</button></span></div>
-      <div class="mp-aviso mini">O fundo do mapa não carrega neste link de visualização.</div>`
+      <div class="mp-aviso mini">Fundo do mapa indisponível nesta visualização.</div>`
     :`<div class="empty" style="padding:var(--e6) 0">Sem localização.<br><span style="display:inline-flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center">${GG&&(t.logradouro||t.bairro)?`<button class="btn sm primary ed" data-a="g-geo" data-id="${t.id}">Localizar pelo endereço</button>`:''}<button class="btn sm ed" data-a="mp-marcar" data-id="${t.id}">Marcar no mapa</button></span></div>`}</div></section>`;
   const poi=entornoCard(t);
   const pct=(x,b)=>b?num(x/b*100,1)+'%':'—';
@@ -4855,17 +4951,16 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
   const vs=viabsDe(t.id),roV=UI.role==='Leitura'||!negAtiva(t);
   const escolha=vs.length?`<div class="vb-escolha"><label for="vb-val-${t.id}">Estudo válido</label><select id="vb-val-${t.id}" data-ch="vb-valido" ${roV?'disabled':''}>${v?'':'<option value="">Escolha o estudo</option>'}${vs.map(x=>{const c=vbCalc(x);return `<option value="${x.id}" ${v?.id===x.id?'selected':''}>${esc(x.nome)} · margem ${c.margem==null?'—':num(c.margem,1)+'%'}</option>`}).join('')}</select>
     ${v?`<button class="btn sm" data-a="vb-abrir" data-v="${v.id}">Abrir estudo</button>`:''}${UI.role!=='Leitura'?`<button class="btn text sm" data-a="vb-novo">${ic('add',16)}Novo estudo</button>`:''}</div>`:'';
-  const viab=`<section class="sec"><div class="sec-h"><h2>Resumo da viabilidade</h2></div><div class="sec-b">${escolha}${v?`<div class="dt-wrap"><table class="dt compacta"><thead><tr><th class="esq">Item</th><th>Valor</th><th>% do VGV</th></tr></thead><tbody>
+  const viab=`<section class="sec"><div class="sec-h"><h2>Resumo da viabilidade</h2></div><div class="sec-b">${escolha}${v?`<div class="cond2 vb-res2"><div><div class="lbl">Margem líquida</div><div class="big">${v.margem==null?'—':num(v.margem,1)+'%'}</div></div>${S.vbMargemMin!=null?`<div><div class="lbl">Mínima da empresa</div><div class="big">${num(S.vbMargemMin,1)}%</div></div>`:''}</div><div class="dt-wrap"><table class="dt compacta"><thead><tr><th class="esq"><span class="sr-only">Item</span></th><th class="num">Valor</th><th class="num">% do VGV</th></tr></thead><tbody>
     <tr><td class="esq">VGV líquido</td><td class="num">${mi(vl)}</td><td class="num">100%</td></tr>
     <tr><td class="esq">Valor pedido</td><td class="num">${o?.valor?mi(o.valor):'—'}</td><td class="num">${o?.valor?pct(o.valor,vl):'—'}</td></tr>
     ${lp?`<tr><td class="esq">Última proposta (${lp.origem==='bkm'?'BKM':'vendedor'})</td><td class="num">${mi(lp.valor)}</td><td class="num">${pct(lp.valor,vl)}</td></tr>`:''}
     ${v.lucro!=null?`<tr><td class="esq">Lucro líquido</td><td class="num">${mi(v.lucro)}</td><td class="num">${pct(v.lucro,vl)}</td></tr>`:''}
-    <tr class="forte"><td class="esq">Margem líquida do estudo</td><td class="num">${v.margem==null?'—':num(v.margem,1)+'%'}</td><td></td></tr>
-    ${S.vbMargemMin!=null?`<tr><td class="esq">Rentabilidade mínima da empresa</td><td class="num">${num(S.vbMargemMin,1)}%</td><td></td></tr>`:''}</tbody></table></div>
+</tbody></table></div>
     ${abaixoMin(t)?`<div class="banner warn" style="margin-top:12px">${ic('warn')}<div>${abaixoMinTxt(t)}.</div></div>`:''}`
     :`<div class="muted">${vs.length?'Nenhum estudo marcado como válido.':`Sem estudo.${UI.role!=='Leitura'?' <button class="linkbtn ed" data-a="vb-novo">Montar estudo</button>':''}`}</div>`}</div></section>`;
   const rel=relevoHtml(t)||topoBotao(t)?`<section class="sec"><div class="sec-h"><h2>Relevo</h2>${t.relevo?`<span class="faint" style="font-size:12px">estimado em ${fd(t.relevo.em)}</span>`:''}${topoBotao(t)}</div>${relevoHtml(t)?`<div class="sec-b">${relevoHtml(t)}</div>`:''}</section>`:'';
-  return `<div class="geral"><div class="geral-c">${info}${condicoes(t)}${neg}</div><div class="geral-c">${loc}${rel}${poi}${setoresCard(t)}${perfilCard(t)}${viab}</div></div>`}
+  return `<div class="geral"><div class="geral-c">${info}${condicoes(t)}${neg}${viab}${poi}</div><div class="geral-c">${loc}${rel}${setoresCard(t)}${perfilCard(t)}</div></div>`}
 function L_initMini(){const el=$('#mini-mapa'),t=T(UI.id);if(!el||!t||t.lat==null)return;if(!window.L){el.innerHTML='<div class="mapa-erro">Mapa indisponível.</div>';return}
   MINI=L.map(el,{zoomControl:true,attributionControl:true,scrollWheelZoom:false,doubleClickZoom:false,dragging:!L.Browser.mobile});
   const mini0=MINI;miniGestos(el,d=>mini0.setZoom(mini0.getZoom()+d));
@@ -5466,7 +5561,7 @@ function pnLogs(t){
   const nSel=sel.reduce((a,x)=>a+(cont.get(x)||0),0);
   const rot=!sel.length?`Todos os usuários (${noPer.length})`:sel.length===1?`${sel[0]} (${nSel})`:sel.length===2?`${sel.map(x=>x.split(' ')[0]).join(', ')} (${nSel})`:`${sel.length} usuários (${nSel})`;
   const ck='<span class="pn-ck" aria-hidden="true"></span>',ab=k=>pnMenu===k?'aberto':'';
-  const perAtivo=!!fx;
+  const perAtivo=!!fx&&(PN.per?.k||'30d')!=='30d';
   const filtro=`<div class="pn-filtros">
     <div class="pn-dd ${ab('user')}" data-dd="user"><button class="pn-dd-b ${sel.length?'ativo':''}" data-a="pn-menu" data-v="user" aria-haspopup="menu" aria-expanded="${pnMenu==='user'}" aria-label="Filtrar por usuário: ${esc(rot)}"><span class="pn-dd-t">${esc(rot)}</span>${CHEV}</button>
     <div class="pn-menu" role="menu" aria-label="Usuários"><button role="menuitemcheckbox" aria-checked="${!sel.length}" data-a="pn-todos">${ck}<span class="pn-mn">Todos os usuários</span><span class="n">${noPer.length}</span></button><div class="pn-msep"></div>${users.map(x=>`<button role="menuitemcheckbox" aria-checked="${sel.includes(x)}" data-a="pn-u" data-v="${esc(x)}" class="${cont.get(x)?'':'zero'}">${ck}${av(x,'xs')}<span class="pn-mn">${esc(x)}</span><span class="n">${cont.get(x)||0}</span></button>`).join('')}</div></div>
@@ -5727,12 +5822,12 @@ function negTopo(titulo,sub){const f=UI.negFase,e=UI.negEtapa,it=[{l:'Fases',v:'
 /* título de coluna que desce um nível */
 const colDesce=(a,v,l,dica)=>`<button class="col-ab" data-a="${a}" data-v="${esc(v)}" title="${esc(dica)}"><span>${esc(l)}</span>${ic('chev',16)}</button>`;
 function kcardFase(t,f,p){const e=etapaF(f,p.etapa),s=p.sub&&subF(f,p.sub),sb=p.status==='stand_by',outras=fasesAbertas(t).filter(x=>x!==f);
-  return `<button class="kcard" data-a="abrir" data-id="${t.id}" data-from="negociacoes"><div class="kr"><span class="num faint">${t.codigo}</span>${f===faseEnt()?tempMini(p.temp):`<span class="num faint">${esc(p.codigo||'')}</span>`}</div><div class="kt">${esc(t.nome)}</div>
+  return `<button class="kcard" data-a="abrir" data-id="${t.id}" data-from="negociacoes"><div class="kr"><span class="num faint">${t.codigo}</span>${f===faseEnt()?(p.temp?tempMini(p.temp):''):`<span class="num faint">${esc(p.codigo||'')}</span>`}</div><div class="kt">${esc(t.nome)}</div>
   <div class="ksub"><span>${esc(e?.nome||'')}${s?' · '+esc(s.nome):''}</span>${sb?'<span class="faint">Stand By</span>':''}</div>
   <div class="ks">${esc(t.bairro||'')}${outras.length?' · também em '+esc(outras.map(faseN).join(', ')):''}</div>${f===faseEnt()&&typeof dividida==='function'&&dividida(t)?`<div class="kpt">${ic('layers',14)}${esc(resumoPartes(t))}</div>`:''}
   <div class="kr">${av(t.resp,'sm')}<span class="faint">${sb?'revisitar '+fd(p.retomar):diff(p.desde,HOJE)+' d na etapa'}</span></div></button>`}
 function pgFasesBoard(){const F=fasesL().filter(f=>f.ativo);
-  return `${negTopo('Fases','Cada coluna é uma fase. Clique no nome da fase para ver as etapas dela; ali, no nome da etapa, as subetapas.')}
+  return `${negTopo('Fases','')}
   <div class="board board-fases" id="board">${F.map(f=>{const L=fxLista('kanban').map(t=>[t,procDaFase(t,f.k)]).filter(([,p])=>p);
   return `<section class="col" data-fase="${f.k}" aria-label="${esc(f.nome)}"><div class="col-h">${colDesce('neg-fase',f.k,f.nome,'Ver etapas de '+f.nome)}<span class="n">${L.length}</span></div>${L.map(([t,p])=>kcardFase(t,f.k,p)).join('')||'<div class="col-empty">Nenhum</div>'}</section>`}).join('')}</div>`}
 function kcardProc(t,p){return `<button class="kcard" data-a="abrir" data-id="${t.id}" data-from="negociacoes" ${UI.role!=='Leitura'?'draggable="true"':''}><div class="kr"><span class="num faint">${esc(p.codigo)}</span><span class="num faint">${t.codigo}</span></div><div class="kt">${esc(t.nome)}</div>
@@ -6047,7 +6142,7 @@ const textoDe=h=>{const d=document.createElement('div');d.innerHTML=limpaHtml(h)
 
 /* ---------- negociações: quadro por etapa e, ao abrir uma etapa, por subetapa ---------- */
 function kcardNeg(t,modo){const n=t.neg,o=ofertaRef(t),lp=lastProp(t),pr=proxReuniao(t),sb=n.status==='stand_by';
-  return `<button class="kcard ${n.pedido?'aprov':''}" data-a="abrir" data-id="${t.id}" data-from="negociacoes" ${UI.role!=='Leitura'?'draggable="true"':''}><div class="kr"><span class="num faint">${t.codigo}</span>${tempMini(n.temp)}</div><div class="kt">${esc(t.nome)}</div>
+  return `<button class="kcard ${n.pedido?'aprov':''}" data-a="abrir" data-id="${t.id}" data-from="negociacoes" ${UI.role!=='Leitura'?'draggable="true"':''}><div class="kr"><span class="num faint">${t.codigo}</span>${n.temp?tempMini(n.temp):''}</div><div class="kt">${esc(t.nome)}</div>
   ${modo!=='sub'&&n.sub?`<div class="ksub"><span>${esc(subN(n.sub))}</span><span class="faint">${diasSub(n)} d</span>${subAtrasada(n)?`<span class="flag warn" title="Passou do prazo da subetapa">${ic('clock',14)}</span>`:''}</div>`:''}
   <div class="ks">${esc(t.bairro||'')}${sb?' · parou em '+SN(n.etapa):''}</div>${dividida(t)?`<div class="kpt">${ic('layers',14)}${esc(resumoPartes(t))}</div>`:''}
   <div class="kr"><span>${lp?'Prop. '+mi(lp.valor):'Pedido '+(o?.valor?mi(o.valor):'—')}</span>${atrasadas(t).length?`<span class="flag crit" title="Tarefas atrasadas">${ic('clock',14)}${atrasadas(t).length}</span>`:''}${abaixoMin(t)?`<span class="flag warn" title="Rentabilidade abaixo da mínima">${ic('money',14)}</span>`:''}</div>${pr?`<div class="kr"><span class="faint">Reunião ${fd(pr.data)} · ${pr.hora}</span></div>`:''}
@@ -7337,7 +7432,7 @@ function fxBarra(ctx=fxCtx()){const at=fxAtivos(ctx),n=at.length+(UI.fx.arq&&ctx
   const pod=cur&&(cur.dono===me()||(!cur.dono&&ehAdmin(me())));
   return `<div class="fx-barra" id="fx-barra"><button class="fx-btn" data-a="fx-abrir" aria-pressed="${n>0}" aria-expanded="${FX_ABERTO}" aria-controls="fx-dr">${ic('filtro',18)}Filtros${n?`<span class="fx-n">${n}</span>`:''}</button>
     ${chips}${n?'<button class="linkbtn fx-limpar" data-a="fx-limpar">Limpar</button>':''}
-    <span class="fx-visw"><label class="fx-vis"><span>Visão</span><select data-ch="fx-visao" aria-label="Visão salva"><option value="">${cur?'Nenhuma':'Escolher…'}</option>
+    <span class="fx-visw"><label class="fx-vis"><span class="sr-only">Visão</span><select data-ch="fx-visao" aria-label="Visão salva"><option value="">${cur?'Nenhuma':'Visões salvas'}</option>
       ${['empresa','minhas'].map(g=>{const L=vs.filter(v=>g==='empresa'?!v.dono:v.dono);return L.length?`<optgroup label="${g==='empresa'?'Da empresa':'Minhas'}">${L.map(v=>`<option value="${v.id}" ${v.id===UI.fxVisao?'selected':''}>${esc(v.nome)}${v.id===UI.fxVisao&&UI.fxVisaoMudou?' (alterada)':''}</option>`).join('')}</optgroup>`:''}).join('')}</select></label>
     ${pod?`<button class="iconbtn fx-vx" data-a="fx-visao-x" title="Excluir a visão ${esc(cur.nome)}" aria-label="Excluir a visão ${esc(cur.nome)}">${ic('close',18)}</button>`:''}</span></div>`}
 
@@ -8562,7 +8657,7 @@ function vbResHtml(v,c){const pct=x=>c.liq>0&&x!=null?num(x/c.liq*100,1)+'%':'';
   const dedLs=v.linhas.filter(l=>c.L[l.id]?.ded),comLs=lsDe(['comercial']).filter(l=>!c.L[l.id]?.ded);
   const bruto=r2(c.liq-c.SEC.terreno-c.SEC.obra),com=r2(c.SEC.comercial-c.dedc);
   const det=gs=>vbDiretoria()?itens(lsDe(gs)):'';
-  return `<div class="dt-wrap"><table class="dt compacta vb-rt vb-dre"><thead><tr><th class="esq">Demonstração do resultado</th><th>Valor</th><th>% da receita líquida</th></tr></thead><tbody>
+  return `<div class="dt-wrap"><table class="dt compacta vb-rt vb-dre"><thead><tr><th class="esq"><span class="sr-only">Demonstração do resultado</span></th><th class="num">Valor</th><th class="num">% da receita líquida</th></tr></thead><tbody>
     ${ln(`Receita bruta de vendas (VGV, ${num(c.un)} unidades)`,c.vgv,'forte')}
     ${c.vp?ln(`(−) Permuta física (${num(c.unp)} unidades)`,c.vp):''}${c.vc?ln(`(−) Unidades dadas na comissão (${num(c.unc)})`,c.vc):''}
     ${c.vp||c.vc?ln('(=) VGV vendido',c.vv,'forte'):''}
@@ -9315,7 +9410,10 @@ document.addEventListener('input',e=>{const el=e.target;if(el.tagName==='INPUT'&
 /* Caixas de marcar das linhas de configuração: no celular, sem o cabeçalho da tabela, mostram o nome ao lado */
 function uiRotulos(){document.querySelectorAll('.cfg-r:not(.cfg-hd) label.chk:not([data-rot-ok])').forEach(l=>{l.dataset.rotOk='1';
   const i=l.querySelector('input[type=checkbox]');if(!i||l.textContent.trim())return;const r=i.getAttribute('aria-label');if(r)l.insertAdjacentHTML('beforeend',`<span class="chk-rot">${r.replace(/[<&]/g,'')}</span>`)})}
-const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos()};
+/* Cabeçalho de tabela alinhado como a coluna: coluna de números (td.num) leva o th.num */
+function uiThNum(){document.querySelectorAll('table.dt:not([data-th-ok])').forEach(t=>{const r=t.tBodies[0]?.rows[0],h=t.tHead?.rows[0];if(!r||!h)return;t.dataset.thOk='1';
+  [...h.cells].forEach((th,i)=>{if(r.cells[i]?.classList.contains('num'))th.classList.add('num')})})}
+const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum()};
 
 /* ===================== endereço da página ===================== */
 /* Cada tela tem endereço próprio, que abre direto quando o link é enviado:

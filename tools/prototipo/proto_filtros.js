@@ -150,7 +150,7 @@ function fxBarra(ctx=fxCtx()){const at=fxAtivos(ctx),n=at.length+(UI.fx.arq&&ctx
   const pod=cur&&(cur.dono===me()||(!cur.dono&&ehAdmin(me())));
   return `<div class="fx-barra" id="fx-barra"><button class="fx-btn" data-a="fx-abrir" aria-pressed="${n>0}" aria-expanded="${FX_ABERTO}" aria-controls="fx-dr">${ic('filtro',18)}Filtros${n?`<span class="fx-n">${n}</span>`:''}</button>
     ${chips}${n?'<button class="linkbtn fx-limpar" data-a="fx-limpar">Limpar</button>':''}
-    <span class="fx-visw"><label class="fx-vis"><span>Visão</span><select data-ch="fx-visao" aria-label="Visão salva"><option value="">${cur?'Nenhuma':'Escolher…'}</option>
+    <span class="fx-visw"><label class="fx-vis"><span class="sr-only">Visão</span><select data-ch="fx-visao" aria-label="Visão salva"><option value="">${cur?'Nenhuma':'Visões salvas'}</option>
       ${['empresa','minhas'].map(g=>{const L=vs.filter(v=>g==='empresa'?!v.dono:v.dono);return L.length?`<optgroup label="${g==='empresa'?'Da empresa':'Minhas'}">${L.map(v=>`<option value="${v.id}" ${v.id===UI.fxVisao?'selected':''}>${esc(v.nome)}${v.id===UI.fxVisao&&UI.fxVisaoMudou?' (alterada)':''}</option>`).join('')}</optgroup>`:''}).join('')}</select></label>
     ${pod?`<button class="iconbtn fx-vx" data-a="fx-visao-x" title="Excluir a visão ${esc(cur.nome)}" aria-label="Excluir a visão ${esc(cur.nome)}">${ic('close',18)}</button>`:''}</span></div>`}
 

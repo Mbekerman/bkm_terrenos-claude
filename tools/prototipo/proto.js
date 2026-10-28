@@ -121,6 +121,7 @@ const ini=n=>String(n||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperC
 const av=(n,c='')=>`<span class="avatar ${c}" style="background:var(${AVC[n]||'--av3'})" title="${esc(n)}">${esc(ini(n))}</span>`;
 
 /* ===================== dados de exemplo ===================== */
+let NEG_SEQ=100;
 function seed(){
   const H=n=>addD(HOJE,-n);
   const eixos=[{id:'e1',nome:'Eixo Cupecê'},{id:'e2',nome:'Eixo Interlagos'},{id:'e3',nome:'Eixo Radial Leste'},{id:'e4',nome:'Eixo Inajar de Souza'},{id:'e5',nome:'Eixo Raposo Tavares'}];
@@ -132,7 +133,7 @@ function seed(){
   const neg=(etapa,sub,dias,extra,dSub)=>{const ix=STAGES.findIndex(s=>s[0]===etapa),tr=[];let pe=null,ps=null;
     for(let i=0;i<=ix;i++){const e=STAGES[i][0],subs=subsDe(e).map(x=>x.k),cur=i===ix,ate=cur?subs.slice(0,subs.indexOf(sub)+1):subs,ini=cur?dias:dias+12*(ix-i),fim=cur?(dSub??Math.min(dias,4)):dias+12*(ix-i-1);
       ate.forEach((s,j)=>{const d=j===0?ini:Math.round(ini-(ini-fim)*j/(cur?Math.max(1,ate.length-1):ate.length));tr.push({em:H(d)+'T09:00:00.000',user:null,ev:j?'subetapa':i?'avanco':'abertura',deEtapa:pe,deSub:ps,paraEtapa:e,paraSub:s,status:'ativo'});pe=e;ps=s})}
-    const n=Object.assign({codigo:'NEG-'+String(Math.floor(Math.random()*900)+100).padStart(5,'0'),etapa,sub,status:'ativo',desde:H(dias),subDesde:tr[tr.length-1].em.slice(0,10),temp:null,ofRef:null,viab:null,trilha:tr,pedido:null},extra||{});
+    const n=Object.assign({codigo:'NEG-'+String(++NEG_SEQ).padStart(5,'0'),etapa,sub,status:'ativo',desde:H(dias),subDesde:tr[tr.length-1].em.slice(0,10),temp:null,ofRef:null,viab:null,trilha:tr,pedido:null},extra||{});
     if(n.status!=='ativo')tr.push({em:n.encerradoEm+'T10:00:00.000',user:null,ev:{comprado:'compra',perdido:'perda',descartado:'descarte',stand_by:'stand_by'}[n.status],deEtapa:etapa,deSub:sub,paraEtapa:etapa,paraSub:sub,status:n.status});
     return n};
   const infra=(o)=>{const r={};for(const [k,v] of Object.entries(o))r[k]={d:v,data:H(20),fonte:'Visita ao local',obs:''};return r};
@@ -962,7 +963,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       UI.modal=null;save();render();toast('Oferta registrada.');break}
   }
 });
-function novaNeg(ofRef,temp){const e=STAGES[0][0],s=subInicial(e);return {codigo:'NEG-'+String(Math.floor(Math.random()*900)+100).padStart(5,'0'),etapa:e,sub:s,status:'ativo',desde:HOJE,subDesde:HOJE,temp,ofRef,viab:null,pedido:null,trilha:[{em:agora(),user:me(),ev:'abertura',deEtapa:null,deSub:null,paraEtapa:e,paraSub:s,status:'ativo'}]}}
+function novaNeg(ofRef,temp){const e=STAGES[0][0],s=subInicial(e);NEG_SEQ=Math.max(NEG_SEQ,...S.terrenos.map(t=>parseInt((t.neg?.codigo||'').slice(4))||0));return {codigo:'NEG-'+String(++NEG_SEQ).padStart(5,'0'),etapa:e,sub:s,status:'ativo',desde:HOJE,subDesde:HOJE,temp,ofRef,viab:null,pedido:null,trilha:[{em:agora(),user:me(),ev:'abertura',deEtapa:null,deSub:null,paraEtapa:e,paraSub:s,status:'ativo'}]}}
 function seedVazio(){return {id:uid(),situacao:'ativo',prioridade:null,descricao:'',url:'',obs:'',cep:'',complemento:'',referencia:'',lat:null,lng:null,precisao:'nao_informada',aDoc:null,aCad:null,aLev:null,aEst:null,fonteArea:null,testada:null,topografia:'nao_informado',desnivel:null,posicao:'nao_informado',formato:'nao_informado',ocupacao:'nao_informado',uso:'',aConst:null,aDemolir:null,demolicao:'nao_avaliada',obsFis:'',eixo:null,mats:[],insc:[],confr:[],dilig:[],pessoas:[],corretores:[],infra:{},analises:[],ofertas:[],neg:null,propostas:[],reunioes:[],tarefas:[],docs:[],hist:[]}}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&GG&&(svFechar()||lugarFechar())){e.preventDefault();return}if(e.key==='Escape'&&temaMenu){temaMenu=false;renderTema();return}if(e.key==='Escape'&&perfilMenu){perfilMenu=false;renderPerfil();return}if(e.key==='Escape'&&UI.modal){UI.modal=null;renderModal()}});
 /* ===================== kanban: arrastar e soltar (regras em proto_funil.js: levarAte, soltar) ===================== */

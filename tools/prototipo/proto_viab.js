@@ -245,7 +245,7 @@ function vbResHtml(v,c){const pct=x=>c.liq>0&&x!=null?num(x/c.liq*100,1)+'%':'';
   const dedLs=v.linhas.filter(l=>c.L[l.id]?.ded),comLs=lsDe(['comercial']).filter(l=>!c.L[l.id]?.ded);
   const bruto=r2(c.liq-c.SEC.terreno-c.SEC.obra),com=r2(c.SEC.comercial-c.dedc);
   const det=gs=>vbDiretoria()?itens(lsDe(gs)):'';
-  return `<div class="dt-wrap"><table class="dt compacta vb-rt vb-dre"><thead><tr><th class="esq">Demonstração do resultado</th><th>Valor</th><th>% da receita líquida</th></tr></thead><tbody>
+  return `<div class="dt-wrap"><table class="dt compacta vb-rt vb-dre"><thead><tr><th class="esq"><span class="sr-only">Demonstração do resultado</span></th><th class="num">Valor</th><th class="num">% da receita líquida</th></tr></thead><tbody>
     ${ln(`Receita bruta de vendas (VGV, ${num(c.un)} unidades)`,c.vgv,'forte')}
     ${c.vp?ln(`(−) Permuta física (${num(c.unp)} unidades)`,c.vp):''}${c.vc?ln(`(−) Unidades dadas na comissão (${num(c.unc)})`,c.vc):''}
     ${c.vp||c.vc?ln('(=) VGV vendido',c.vv,'forte'):''}

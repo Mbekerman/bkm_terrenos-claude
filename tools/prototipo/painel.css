@@ -1575,3 +1575,98 @@ input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
 .kv dd .chip { white-space: normal !important; max-width: 100%; height: auto; min-height: 24px }
 .chk-rot { font-size: 13px; color: var(--m-on-var, #444746) }
 @media (min-width: 900px) { .cfg-r .chk-rot { display: none } }
+
+/* ===================== Revisão de design, rodada 2 (28/out/2026) ===================== */
+/* Seta do select: nunca repete, mesmo quando outra regra redefine o fundo */
+select:not([multiple]) { background-repeat: no-repeat !important; background-position: right 10px center !important; background-size: 18px 18px !important }
+.tk-filtros select.fsel-chip { background-position: right 6px center !important }
+/* Cabeçalho do estudo no celular: o título quebra a linha em vez de virar uma coluna de letras */
+@media (max-width: 599px) { .sec-h.vb-sh { flex-wrap: wrap !important } .vb-sh h2 { flex: 1 1 auto !important; overflow-wrap: normal } }
+/* Lista chave/valor: rótulo com largura contida, o valor ganha o espaço */
+.kv:has(.kv-ed), .kvl:has(> .kv > .kv-ed) > .kv:not(.editando) { grid-template-columns: clamp(104px, 34%, 150px) minmax(0, 1fr) 32px !important }
+.kvl:not(:has(.kv-ed)) > .kv, .ro .kv:has(.kv-ed[data-a="edit"]), .fs-ro .kv:has(.kv-ed) { grid-template-columns: clamp(104px, 34%, 150px) minmax(0, 1fr) !important }
+.kv dd .chip.sub { border: 0 !important; background: none !important; padding: 0 !important; height: auto; min-height: 0; color: var(--m-on-var, #444746) !important; font-weight: 400; display: block; margin-top: 2px }
+:root[data-tema="escuro"] .kv dd .chip.sub { color: #8e9ac4 !important }
+/* Faixa lateral reta (a sombra interna dobrava no raio do quadro) */
+.kpis .kpi, .rd-m1, .cc-k { position: relative; overflow: hidden }
+:root:not(#_) .kpis .kpi { box-shadow: none !important }
+.rd-m1, :root[data-tema="escuro"] .rd-m1, .cc-k { border-left: 0 !important }
+.kpis .kpi::after, .rd-m1::after, .cc-k::after { content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 3px; border-radius: 0 3px 3px 0; background: var(--faixa, #0b57d0) }
+.cc-k { --faixa: #863d8f }
+:root:not([data-tema="escuro"]) .kpis .kpi:nth-child(4n+1) { --faixa: #0094fe }
+:root:not([data-tema="escuro"]) .kpis .kpi:nth-child(4n+2) { --faixa: #863d8f }
+:root:not([data-tema="escuro"]) .kpis .kpi:nth-child(4n+3) { --faixa: #c67355 }
+:root:not([data-tema="escuro"]) .kpis .kpi:nth-child(4n+4) { --faixa: #7d8a3e }
+:root[data-tema="escuro"] .kpis .kpi, :root[data-tema="escuro"] .rd-m1 { --faixa: #7c8cff }
+:root[data-tema="escuro"] .kpis .kpi.crit { --faixa: #f2b8b5 }
+:root[data-tema="escuro"] .kpis .kpi.warn { --faixa: #f5c451 }
+/* Reuniões e propostas: cartão contornado, sem a borda azul */
+.reu { border-left: 0 !important; border: 1px solid var(--m-outline-var, #c4c7c5) !important; border-radius: 12px !important; background: transparent !important }
+:root[data-tema="escuro"] .reu { border-color: #1a2240 !important }
+/* Tabela dentro de quadro: sem contorno duplo; cabeçalho sem faixa cinza */
+.sec .dt-wrap > .dt { border: 0 !important; border-radius: 0 !important }
+.dt th, .tr.th { background: var(--m-card, #fff) !important; font-size: 12px !important; color: var(--m-on-var, #444746) !important }
+:root[data-tema="escuro"] .dt th, :root[data-tema="escuro"] .tr.th { background: #060c20 !important; color: #8e9ac4 !important }
+.page .dt-wrap > .dt th { background: var(--m-surface, #f8fafd) !important }
+/* Tabela que não cabe: no celular vira linha de lista (título; os demais dados numa linha corrida, rótulo discreto) */
+.empilha .dt:not(.lista-t) tr, .empilha .mini-tbl tr { display: flex !important; flex-wrap: wrap; align-items: baseline; gap: 2px 16px; padding: 12px 16px !important; position: relative }
+.empilha .dt:not(.lista-t) td, .empilha .mini-tbl td { display: inline-flex !important; width: auto !important; align-items: baseline; gap: 6px; text-align: left !important; font-size: 13px; padding: 0 !important; color: var(--m-on-var, #444746) }
+.empilha .dt:not(.lista-t) td::before, .empilha .mini-tbl td::before { float: none !important; margin: 0 !important; max-width: none !important; font-size: 12px !important; color: var(--m-on-var, #5f6368) }
+.empilha .dt:not(.lista-t) td:first-child, .empilha .mini-tbl td:first-child { flex: 1 1 100%; display: block !important; font-size: 14px; font-weight: 500; color: var(--m-on-surface, #1f1f1f); padding-right: 44px !important }
+.empilha .dt:not(.lista-t) td:first-child::before, .empilha .mini-tbl td:first-child::before { content: none !important }
+.empilha .dt:not(.lista-t) td:first-child .t2 { font-weight: 400 }
+.empilha .dt:not(.lista-t) td:has(> .iconbtn), .empilha .mini-tbl td:has(> .iconbtn) { position: absolute !important; right: 8px; top: 6px }
+.empilha .dt:not(.lista-t) td:has(> .iconbtn)::before { content: none !important }
+.empilha .dt:not(.lista-t) td.hm { display: none !important }
+.empilha .dt:not(.lista-t) td .chip { height: 24px; min-height: 24px; font-size: 12px }
+.empilha .dt:not(.lista-t) td:empty { display: none !important }
+:root[data-tema="escuro"] .empilha .dt:not(.lista-t) td:first-child { color: #e6ecff }
+/* Quadro (kanban) no celular: uma coluna por vez, com a próxima aparecendo; colunas só da altura dos cartões */
+@media (max-width: 599px) {
+  .board { scroll-snap-type: x mandatory; align-items: flex-start !important; margin: 0 -16px; padding: 0 16px 12px; scroll-padding: 0 16px; scrollbar-width: none }
+  .board::-webkit-scrollbar { display: none }
+  .board .col { flex: 0 0 calc(100% - 40px) !important; min-height: 160px !important; scroll-snap-align: start }
+}
+.kcard .ksub > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+/* Barra de filtros: Filtros e Visões salvas na mesma linha, em cápsula */
+.fx-visw, .mapa-lado .fx-visw { margin-left: auto !important; flex: 0 1 auto !important; min-width: 0 }
+.fx-vis, .mapa-lado .fx-vis { flex: 0 1 auto !important; min-width: 0 }
+.fx-vis select, .mapa-lado .fx-vis select { flex: 0 1 auto !important; width: auto !important; max-width: 220px !important; border-radius: 20px !important; height: 40px !important; font-weight: 500; color: var(--m-on-var, #444746) }
+@media (max-width: 599px) { .fx-visw { flex: 0 1 auto !important } .fx-vis select { max-width: 180px !important } }
+/* Logs: filtros de usuário e período lado a lado, como chips */
+.pn-filtros { flex-direction: row !important; flex-wrap: wrap }
+.pn-filtros .pn-dd { flex: 1 1 140px; min-width: 0 }
+.pn-dd-b { height: 36px !important; border-radius: 8px !important; font-size: 13px; padding: 0 8px 0 12px !important }
+.pn-dd-b .pn-dd-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; text-align: left }
+/* Estudo de viabilidade: seções em abas (texto e valor, indicador embaixo), sem caixas */
+.vb-nav { gap: 0 !important; padding: 0 !important; margin-top: 12px; border-top: 0 }
+.vb-aba { border: 0 !important; border-radius: 0 !important; background: transparent !important; padding: 10px 16px 12px !important; min-width: 0 !important; flex: 0 0 auto !important; position: relative; align-items: center !important; color: var(--m-on-var, #444746) !important }
+.vb-aba:hover { background: rgba(68,71,70,.06) !important }
+.vb-aba b { font-weight: 500 }
+.vb-aba small { color: var(--m-on-var, #5f6368) !important }
+.vb-aba[aria-current] { color: var(--m-primary, #0b57d0) !important; background: transparent !important }
+.vb-aba[aria-current] small { color: var(--m-primary, #0b57d0) !important }
+.vb-aba[aria-current]::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: currentColor }
+.vb-aba:focus-visible { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: -2px }
+:root[data-tema="escuro"] .vb-aba { color: #b9c3e6 !important }
+:root[data-tema="escuro"] .vb-aba small { color: #8e9ac4 !important }
+:root[data-tema="escuro"] .vb-aba[aria-current], :root[data-tema="escuro"] .vb-aba[aria-current] small { color: #c9d6ff !important; background: transparent !important; border: 0 !important }
+@media (max-width: 599px) {
+  .vb-pop .vb-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 6px !important }
+  .vb-pop .vb-kpis .kpi { display: flex !important; flex-direction: row !important; align-items: baseline !important; justify-content: space-between; padding: 6px 10px 6px 12px !important }
+  .vb-pop .vb-kpis .kpi::after { top: 8px; bottom: 8px }
+  .vb-pop .vb-kpis .kpi .l { order: -1 }
+  .vb-aba { padding: 8px 12px 10px !important }
+}
+/* Resumo da viabilidade: margem e mínima em destaque, tabela só com valores */
+.vb-res2 { margin-top: 16px }
+/* Parâmetros por zona: lista de rótulo e valor com fio, sem blocos cinza */
+.lz-par { gap: 0 24px !important; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important }
+.lz-c, :root[data-tema="escuro"] .lz-c { background: transparent !important; border-radius: 0 !important; padding: 10px 0 !important; border-bottom: 1px solid var(--m-outline-var, #c4c7c5) }
+:root[data-tema="escuro"] .lz-c { border-bottom-color: #1a2240 }
+.lz-c.alt { box-shadow: inset 3px 0 0 #0b57d0 !important; padding-left: 10px !important }
+/* Configurações › Viabilidade: colunas que cabem no quadro */
+.vb-cfg-r { grid-template-columns: 64px minmax(120px, 2fr) minmax(110px, 1.3fr) minmax(120px, 1.3fr) 96px 64px 48px 40px !important }
+/* Pontos de interesse: categoria sem resultado em texto normal */
+.ent-l li.ent-vazio .t2 { font-style: normal !important; font-size: 13px }
+.empilha .dt:not(.lista-t) td:has(> .chip:only-child)::before { content: none !important }
