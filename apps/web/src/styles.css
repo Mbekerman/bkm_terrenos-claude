@@ -2193,7 +2193,8 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .vb-lns:has(.vb-tipo select:not(:disabled)) .vb-tipo > .vb-nome { padding-left: 11px }
 .vb-r.vb-hd { font-size: 12px; line-height: 16px; font-weight: 500; color: var(--texto-suave); padding: 0 0 8px }
 .vb-r.vb-hd span:nth-child(n+2) { text-align: right }
-.vb-lns .vb-r.vb-hd span:nth-child(2) { text-align: left }
+/* Base de cálculo e Valor centralizados sobre os campos (pedido do Moisés, 28/out/2026) */
+.vb-lns .vb-r.vb-hd span:nth-child(2), .vb-lns .vb-r.vb-hd span:nth-child(3) { text-align: center }
 .vb-r.vb-tot { border-bottom: 0; padding-top: 12px; font-variant-numeric: tabular-nums }
 .vb-r.vb-tot .vb-c:nth-child(n+2) { text-align: right }
 .vb-c { display: flex; flex-direction: column; min-width: 0; position: relative }
