@@ -43,4 +43,16 @@ const tit=await p.$('form[data-form=tarefa] input[name=titulo]');
 if(tit){await tit.fill('Tarefa pelo Enter');let i=0;while(i++<campos.length&&await p.evaluate(()=>!!document.activeElement.form)){await p.keyboard.press('Enter');await p.waitForTimeout(80)}
   ok(await p.evaluate(()=>[...document.querySelectorAll('.tt .t1')].some(x=>x.children.length===0&&/Tarefa pelo Enter/.test(x.textContent))),'Enter campo a campo até o último grava a tarefa')}
 else ok(false,'formulário de tarefa não achado');
+// último campo: grava e sai
+await p.goto('http://bkm.test/prototipo/terrenos/TER-000123/viabilidade/1');await p.waitForTimeout(700);
+const ult=await p.evaluateHandle(()=>{const d=document.querySelector('[role=dialog]');const l=[...d.querySelectorAll('input,select')].filter(x=>!x.disabled&&!x.readOnly&&x.getClientRects().length&&x.type!=='search'&&x.type!=='checkbox'&&!x.matches('[role=combobox]'));return l[l.length-1]});
+const kk=await ult.evaluate(x=>x.dataset.k);await ult.click();await p.keyboard.type('9');await p.keyboard.press('Enter');await p.waitForTimeout(300);
+ok(!(await p.$('#vb-pop [role=dialog]')),'Enter no último campo da viabilidade fecha o estudo ('+kk+')');
+await p.goto('http://bkm.test/prototipo/terrenos/TER-000123/viabilidade/1');await p.waitForTimeout(700);
+ok(await p.evaluate(k=>[...document.querySelectorAll('[role=dialog] [data-k="'+k+'"]')].some(x=>/9/.test(x.value)),kk),'e o valor digitado ficou gravado');
+await p.goto('http://bkm.test/prototipo/terrenos/TER-000123');await p.waitForTimeout(600);
+await p.click('#sec-cond [data-a=edit]');await p.waitForTimeout(300);
+await p.fill('form[data-form=cond] input[name=valor]','');await p.type('form[data-form=cond] input[name=valor]','8800000');
+for(let i=0;i<12&&await p.evaluate(()=>document.activeElement?.tagName!=='TEXTAREA'&&!!document.activeElement?.form);i++){await p.keyboard.press('Enter');await p.waitForTimeout(80)}
+ok(await p.evaluate(()=>document.activeElement?.name==='obsPag'),'Enter campo a campo nas Condições pedidas chega à observação (texto livre: Enter ali quebra a linha)');
 console.log(errs.length?'\n'+errs.length+' falha(s)':'\ntudo ok');await b.close();process.exit(errs.length?1:0)})();

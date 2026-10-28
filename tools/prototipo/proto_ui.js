@@ -84,7 +84,7 @@ const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();u
 document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legenda'))UI.mpLeg=e.target.open},true);
 /* ===================== Enter passa para o próximo campo; clique seleciona o conteúdo ===================== */
 /* Enter num campo leva ao próximo campo do mesmo quadro (pop-up aberto, senão a página), como o Tab.
-   No último campo de um formulário o Enter continua enviando (busca de endereço, Salvar visão...).
+   No último campo o Enter grava e sai (decisão do Moisés, 28/out/2026): ver campoSai.
    Ficam de fora: textarea (Enter é quebra de linha), campos de busca (type=search), listas com
    sugestão (role=combobox) e quem marca data-enter="manter". */
 const CAMPO_TXT='input:not([type]),input[type=text],input[type=number],input[type=email],input[type=tel],input[type=url],input[type=password]';
@@ -100,10 +100,15 @@ function campoFoca(prox){const ass=campoAssin(prox),todos=[...document.querySele
   // a saída do campo (change) pode redesenhar o quadro, como no estudo de viabilidade: procura o mesmo campo no quadro novo
   setTimeout(()=>{if(prox.isConnected&&document.activeElement===prox)return;const n=[...document.querySelectorAll(CAMPO_ALVO)].filter(x=>campoAssin(x)===ass)[ord];
     if(n&&document.activeElement!==n&&campoVivo(n))vai(n)},30)}
+/* Último campo: num formulário o Enter envia (grava e fecha a edição); fora de formulário, grava (a saída do campo dispara o change)
+   e fecha o pop-up em que está, pelo botão de fechar dele (ex.: estudo de viabilidade) */
+function campoSai(el){const dlg=el.closest('[role=dialog]');el.blur();
+  if(!dlg)return;setTimeout(()=>{const raiz=dlg.isConnected?dlg:document.querySelector('[role=dialog][aria-modal=true]');
+    raiz?.querySelector('[data-a$="fechar"],[aria-label^="Fechar"],.dh .iconbtn')?.click()},30)}
 addEventListener('keydown',e=>{if(e.key!=='Enter'||e.defaultPrevented||e.isComposing||e.shiftKey||e.ctrlKey||e.altKey||e.metaKey)return;
   const el=e.target;if(!(el instanceof HTMLElement)||!el.matches(CAMPO_TXT+',input[type=date],input[type=time],input[type=datetime-local],input[type=month],select'))return;
   if(el.matches('[role=combobox],[aria-autocomplete],[list],[data-enter=manter]')||el.closest('[data-enter=manter]'))return;
-  const prox=campoProximo(el);if(!prox){if(!el.form)e.preventDefault();return}
+  const prox=campoProximo(el);if(!prox){if(!el.form){e.preventDefault();campoSai(el)}return}
   e.preventDefault();campoFoca(prox)});
 /* Clicar (ou tocar) num campo de texto ou número seleciona todo o conteúdo; o segundo clique, já no campo, põe o cursor.
    Arrastar para marcar um pedaço continua valendo. Foco dado pelo próprio sistema (ao redesenhar) não seleciona. */
