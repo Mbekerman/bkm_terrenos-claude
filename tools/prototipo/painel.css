@@ -2381,7 +2381,7 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 :root:not(#_) .iconbtn.lixo:disabled { opacity: .3; cursor: default; background: none !important }
 @media (min-width: 900px) { :root:not(#_) .cfg-r.cfg-fase { grid-template-columns: 64px minmax(140px, 1.3fr) 64px minmax(130px, 1fr) 84px 84px 40px !important; column-gap: 8px !important } }
 /* Configurações › Viabilidade em telas médias: nome do item na linha de cima, o resto embaixo */
-@media (min-width: 900px) and (max-width: 1439px) {
+@media (min-width: 900px) and (max-width: 1679px) {
   :root:not(#_) .vb-cfg-r { grid-template-columns: 56px minmax(0, 1fr) minmax(0, 1fr) 96px 72px 48px 36px !important; column-gap: 8px !important; row-gap: 6px !important;
     grid-template-areas: "ord nome nome nome nome nome lixo" ". grupo base valor sai ativo ." }
   :root:not(#_) .vb-cfg-r > :nth-child(1), :root:not(#_) .vb-cfg-r > .cfg-cel:nth-child(1) > :is(input, select) { grid-area: ord !important } :root:not(#_) .vb-cfg-r > :nth-child(2), :root:not(#_) .vb-cfg-r > .cfg-cel:nth-child(2) > :is(input, select) { grid-area: nome !important }
@@ -2391,8 +2391,8 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
   :root:not(#_) .vb-cfg-r:not(.cfg-hd) { padding: 10px 0 !important; border-bottom: 1px solid var(--m-outline-var, #c4c7c5) }
   :root:not(#_)[data-tema="escuro"] .vb-cfg-r:not(.cfg-hd) { border-bottom-color: #1a2240 }
 }
-@media (min-width: 1440px) { :root:not(#_) .vb-cfg-r { grid-template-columns: 56px minmax(200px, 1fr) 160px 138px 88px 72px 48px 36px !important; column-gap: 8px !important } }
-@media (min-width: 900px) and (max-width: 1439px) { :root:not(#_) .vb-cfg-r:not(.cfg-hd) > :nth-child(6) { justify-self: center } :root:not(#_) .vb-cfg-r.cfg-hd > :nth-child(6), :root:not(#_) .vb-cfg-r.cfg-hd > :nth-child(7) { justify-self: center; text-align: center } :root:not(#_) .vb-cfg-r > label.chk:nth-child(7) { justify-self: center } }
+@media (min-width: 1680px) { :root:not(#_) .vb-cfg-r { grid-template-columns: 56px minmax(200px, 1fr) 160px 138px 88px 72px 48px 36px !important; column-gap: 8px !important } }
+@media (min-width: 900px) and (max-width: 1679px) { :root:not(#_) .vb-cfg-r:not(.cfg-hd) > :nth-child(6) { justify-self: center } :root:not(#_) .vb-cfg-r.cfg-hd > :nth-child(6), :root:not(#_) .vb-cfg-r.cfg-hd > :nth-child(7) { justify-self: center; text-align: center } :root:not(#_) .vb-cfg-r > label.chk:nth-child(7) { justify-self: center } }
 @media (max-width: 599px) {
   :root:not(#_) .pnode { grid-template-columns: 24px minmax(0, 1fr); gap: 8px }
   :root:not(#_) .pnode .pd { width: 24px; height: 24px; font-size: 11px }
@@ -2403,3 +2403,22 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
   :root:not(#_) .pnode .pv { font-size: 18px; line-height: 24px }
 }
 @media (max-width: 599px) { :root:not(#_) .pnode .p-sep { display: none } }
+
+/* Revisão de design, rodada 20 */
+.cfg-nav .cfg-padrao { display: none !important }
+@media (min-width: 900px) { :root:not(#_) .cfg-padrao-m { display: inline-flex !important } }
+.chip-fixo { display: inline-flex; margin-left: 4px; opacity: .6 }
+:root:not(#_) .cfg-hd.cfg-fase > :nth-child(5) { white-space: normal; line-height: 16px }
+@media (min-width: 900px) {
+  :root:not(#_) .cfg-r.cfg-fe:not(.cfg-hd) { align-items: start !important }
+  :root:not(#_) .cfg-r.cfg-fe:not(.cfg-hd) > .cfg-ord, :root:not(#_) .cfg-r.cfg-fe:not(.cfg-hd) > :last-child { min-height: 40px; display: flex; align-items: center }
+  :root:not(#_) .cfg-fe .cfg-subs { display: flex !important; flex-wrap: wrap; gap: 6px; align-items: center; padding-top: 6px; min-height: 40px; box-sizing: border-box }
+}
+:root:not(#_) .cfg-fe .cfg-fs-add { display: inline-flex; margin: 0 }
+:root:not(#_) .cfg-fe .cfg-fs-add input { height: 28px !important; min-height: 28px !important; width: 132px; border-radius: 8px !important; border: 1px dashed var(--m-outline, #747775) !important; background: transparent !important; padding: 0 10px !important; font-size: 13px; box-shadow: none !important }
+:root:not(#_)[data-tema="escuro"] .cfg-fe .cfg-fs-add input { border-color: rgba(142,154,196,.5) !important }
+@media (min-width: 900px) { :root:not(#_) .cfg-subs .cfg-fs-add { flex: 0 0 auto } }
+@media (min-width: 900px) { :root:not(#_) .cfg-r.cfg-fe { grid-template-columns: 64px minmax(150px, 200px) 72px minmax(0, 1fr) 40px !important; column-gap: 8px !important } }
+:root:not(#_) .tblwrap:not(.empilha) td.r > .of-ref { margin-right: -12px }
+:root:not(#_) .vb-sec > .sec-b:has(+ .vb-passo) { padding-bottom: 8px !important }
+:root:not(#_) .ficha-sheet .fs-b .sec > .sec-h { border-bottom: 0 !important; min-height: 48px !important }

@@ -4079,7 +4079,7 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 :root:not(#_) .iconbtn.lixo:disabled { opacity: .3; cursor: default; background: none !important }
 @media (min-width: 900px) { :root:not(#_) .cfg-r.cfg-fase { grid-template-columns: 64px minmax(140px, 1.3fr) 64px minmax(130px, 1fr) 84px 84px 40px !important; column-gap: 8px !important } }
 /* Configurações › Viabilidade em telas médias: nome do item na linha de cima, o resto embaixo */
-@media (min-width: 900px) and (max-width: 1439px) {
+@media (min-width: 900px) and (max-width: 1679px) {
   :root:not(#_) .vb-cfg-r { grid-template-columns: 56px minmax(0, 1fr) minmax(0, 1fr) 96px 72px 48px 36px !important; column-gap: 8px !important; row-gap: 6px !important;
     grid-template-areas: "ord nome nome nome nome nome lixo" ". grupo base valor sai ativo ." }
   :root:not(#_) .vb-cfg-r > :nth-child(1), :root:not(#_) .vb-cfg-r > .cfg-cel:nth-child(1) > :is(input, select) { grid-area: ord !important } :root:not(#_) .vb-cfg-r > :nth-child(2), :root:not(#_) .vb-cfg-r > .cfg-cel:nth-child(2) > :is(input, select) { grid-area: nome !important }
@@ -4089,8 +4089,8 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
   :root:not(#_) .vb-cfg-r:not(.cfg-hd) { padding: 10px 0 !important; border-bottom: 1px solid var(--m-outline-var, #c4c7c5) }
   :root:not(#_)[data-tema="escuro"] .vb-cfg-r:not(.cfg-hd) { border-bottom-color: #1a2240 }
 }
-@media (min-width: 1440px) { :root:not(#_) .vb-cfg-r { grid-template-columns: 56px minmax(200px, 1fr) 160px 138px 88px 72px 48px 36px !important; column-gap: 8px !important } }
-@media (min-width: 900px) and (max-width: 1439px) { :root:not(#_) .vb-cfg-r:not(.cfg-hd) > :nth-child(6) { justify-self: center } :root:not(#_) .vb-cfg-r.cfg-hd > :nth-child(6), :root:not(#_) .vb-cfg-r.cfg-hd > :nth-child(7) { justify-self: center; text-align: center } :root:not(#_) .vb-cfg-r > label.chk:nth-child(7) { justify-self: center } }
+@media (min-width: 1680px) { :root:not(#_) .vb-cfg-r { grid-template-columns: 56px minmax(200px, 1fr) 160px 138px 88px 72px 48px 36px !important; column-gap: 8px !important } }
+@media (min-width: 900px) and (max-width: 1679px) { :root:not(#_) .vb-cfg-r:not(.cfg-hd) > :nth-child(6) { justify-self: center } :root:not(#_) .vb-cfg-r.cfg-hd > :nth-child(6), :root:not(#_) .vb-cfg-r.cfg-hd > :nth-child(7) { justify-self: center; text-align: center } :root:not(#_) .vb-cfg-r > label.chk:nth-child(7) { justify-self: center } }
 @media (max-width: 599px) {
   :root:not(#_) .pnode { grid-template-columns: 24px minmax(0, 1fr); gap: 8px }
   :root:not(#_) .pnode .pd { width: 24px; height: 24px; font-size: 11px }
@@ -4101,6 +4101,25 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
   :root:not(#_) .pnode .pv { font-size: 18px; line-height: 24px }
 }
 @media (max-width: 599px) { :root:not(#_) .pnode .p-sep { display: none } }
+
+/* Revisão de design, rodada 20 */
+.cfg-nav .cfg-padrao { display: none !important }
+@media (min-width: 900px) { :root:not(#_) .cfg-padrao-m { display: inline-flex !important } }
+.chip-fixo { display: inline-flex; margin-left: 4px; opacity: .6 }
+:root:not(#_) .cfg-hd.cfg-fase > :nth-child(5) { white-space: normal; line-height: 16px }
+@media (min-width: 900px) {
+  :root:not(#_) .cfg-r.cfg-fe:not(.cfg-hd) { align-items: start !important }
+  :root:not(#_) .cfg-r.cfg-fe:not(.cfg-hd) > .cfg-ord, :root:not(#_) .cfg-r.cfg-fe:not(.cfg-hd) > :last-child { min-height: 40px; display: flex; align-items: center }
+  :root:not(#_) .cfg-fe .cfg-subs { display: flex !important; flex-wrap: wrap; gap: 6px; align-items: center; padding-top: 6px; min-height: 40px; box-sizing: border-box }
+}
+:root:not(#_) .cfg-fe .cfg-fs-add { display: inline-flex; margin: 0 }
+:root:not(#_) .cfg-fe .cfg-fs-add input { height: 28px !important; min-height: 28px !important; width: 132px; border-radius: 8px !important; border: 1px dashed var(--m-outline, #747775) !important; background: transparent !important; padding: 0 10px !important; font-size: 13px; box-shadow: none !important }
+:root:not(#_)[data-tema="escuro"] .cfg-fe .cfg-fs-add input { border-color: rgba(142,154,196,.5) !important }
+@media (min-width: 900px) { :root:not(#_) .cfg-subs .cfg-fs-add { flex: 0 0 auto } }
+@media (min-width: 900px) { :root:not(#_) .cfg-r.cfg-fe { grid-template-columns: 64px minmax(150px, 200px) 72px minmax(0, 1fr) 40px !important; column-gap: 8px !important } }
+:root:not(#_) .tblwrap:not(.empilha) td.r > .of-ref { margin-right: -12px }
+:root:not(#_) .vb-sec > .sec-b:has(+ .vb-passo) { padding-bottom: 8px !important }
+:root:not(#_) .ficha-sheet .fs-b .sec > .sec-h { border-bottom: 0 !important; min-height: 48px !important }
 </style>
 <header class="top">
   <div class="top-in">
@@ -4162,7 +4181,7 @@ const P={
   warn:'M12 4 2.5 20h19zM12 10v4.5M12 17.2v.1',clock:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3.5 2.5',
   upload:'M12 16V4M7 9l5-5 5 5M5 20h14',close:'M6 6l12 12M18 6 6 18',
   chev:'M9 6l6 6-6 6',pause:'M9 5v14M15 5v14',
-  block:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8',
+  block:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8',lock:'M7.5 11V8a4.5 4.5 0 0 1 9 0v3M5.5 11h13v9h-13z',
   link:'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
   fwd:'M5 12h14M13 6l6 6-6 6',edit:'M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4',
   money:'M4 7h16v10H4zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM7 10v4M17 10v4',
@@ -5773,7 +5792,7 @@ function pgTarefas(){const f=UI.tk,l=tkFiltradas();const cols=COLS_TK.filter(c=>
   const quadro=`<div class="board tk-board">${cols.map(c=>{const ks=l.filter(x=>x.k.status===c).sort(ordemTk);
     return `<section class="col tk-col" data-tkcol="${c}" aria-label="${OPT.statusTar[c]}"><div class="col-h"><span>${OPT.statusTar[c]}</span><span class="n">${ks.length}</span></div>
     <div class="tk-lista">${ks.map(cardTk).join('')||'<div class="col-empty">Nenhuma</div>'}</div>
-    ${UI.role!=='Leitura'&&c!=='cancelada'?`<button class="tk-add" data-a="tk-nova" data-v="${c}">${ic('add',16)}Adicionar tarefa</button>`:''}</section>`}).join('')}</div>`;
+    ${UI.role!=='Leitura'&&c!=='cancelada'&&c!=='concluida'?`<button class="tk-add" data-a="tk-nova" data-v="${c}">${ic('add',16)}Adicionar tarefa</button>`:''}</section>`}).join('')}</div>`;
   const colsT=[{k:'titulo',l:'Tarefa',cls:'esq',v:({k,t})=>`<div class="t1">${escT(k.titulo)}</div>${k.desc?`<div class="t2">${esc(k.desc)}</div>`:''}<div class="t2 so-m">${t.codigo} · ${esc(t.nome)}</div>`,s:({k})=>k.titulo},
     {k:'ter',l:'Terreno',cls:'esq hm tk-ter',v:({t})=>`<div class="t2" style="color:var(--texto)">${t.codigo}</div><div class="t2">${esc(t.nome)}</div>`,s:({t})=>t.codigo},
     {k:'resp',l:'Responsável',cls:'hm',v:({k})=>esc(k.resp),s:({k})=>k.resp},
@@ -6605,7 +6624,7 @@ function validaDep(f,rf){if(f===rf)return 'Uma fase não depende dela mesma.';if
 function cfgFasesHtml(){const C=cfg(),F=fasesL(),ent=faseEnt();
   const opReq=F.map(f=>`<optgroup label="${esc(f.nome)}"><option value="${f.k}|conclusao|">${esc(f.conc)} (concluir a fase)</option>${etapasF(f.k).map(e=>`<option value="${f.k}|etapa|${e.k}">Chegar à etapa ${esc(e.nome)}</option>${e.subs.map(s=>`<option value="${f.k}|subetapa|${s.k}">Passar por ${esc(s.nome)}</option>`).join('')}`).join('')}</optgroup>`).join('');
   return `<section class="sec"><div class="sec-h"><h2>Fases</h2></div><div class="sec-b"><div class="cfg-t">
-    <div class="cfg-r cfg-hd cfg-fase"><span></span><span>Fase</span><span>Prefixo</span><span>Nome do concluído</span><span>Descartar</span><span>Ativa</span><span></span></div>
+    <div class="cfg-r cfg-hd cfg-fase"><span></span><span>Fase</span><span>Prefixo</span><span>Nome do concluído</span><span>Permite descartar</span><span>Ativa</span><span></span></div>
     ${F.map((f,i)=>`<div class="cfg-r cfg-fase ${f.ativo?'':'inativa'}"><span class="cfg-ord"><button class="iconbtn sm" data-a="cfg-fase-ord" data-i="${i}" data-v="-1" ${i?'':'disabled'} aria-label="Subir">↑</button><button class="iconbtn sm" data-a="cfg-fase-ord" data-i="${i}" data-v="1" ${i<F.length-1?'':'disabled'} aria-label="Descer">↓</button></span>
       <input data-ch="cfg" data-p="fases.${i}.nome" value="${esc(f.nome)}" aria-label="Nome da fase"><input data-ch="cfg-prefixo" data-i="${i}" value="${esc(f.prefixo)}" maxlength="5" aria-label="Prefixo de ${esc(f.nome)}">
       <input data-ch="cfg" data-p="fases.${i}.conc" value="${esc(f.conc)}" aria-label="Nome do concluído em ${esc(f.nome)}">
@@ -6621,7 +6640,7 @@ function cfgFasesHtml(){const C=cfg(),F=fasesL(),ent=faseEnt();
     <div class="cfg-r cfg-hd cfg-fe"><span></span><span>Etapa</span><span>SLA (dias)</span><span>Subetapas</span><span></span></div>
     ${f.etapas.map((e,j)=>`<div class="cfg-r cfg-fe"><span class="cfg-ord"><button class="iconbtn sm" data-a="cfg-fe-ord" data-f="${i}" data-i="${j}" data-v="-1" ${j?'':'disabled'} aria-label="Subir">↑</button><button class="iconbtn sm" data-a="cfg-fe-ord" data-f="${i}" data-i="${j}" data-v="1" ${j<f.etapas.length-1?'':'disabled'} aria-label="Descer">↓</button></span>
       <input data-ch="cfg" data-p="fases.${i}.etapas.${j}.nome" value="${esc(e.nome)}" aria-label="Nome da etapa"><input type="number" min="0" data-ch="cfg" data-p="fases.${i}.etapas.${j}.sla" value="${e.sla??''}" aria-label="SLA de ${esc(e.nome)}">
-      <span class="cfg-subs">${e.subs.map((s,m)=>`<span class="chip"${e.subs.length>1&&!S.terrenos.some(t=>procsDe(t).some(p=>p.fase===f.k&&p.sub===s.k))?'':` title="${e.subs.length>1?'Tem terreno nesta subetapa: não sai':'Única subetapa da etapa'}"`}>${esc(s.nome)}${e.subs.length>1&&!S.terrenos.some(t=>procsDe(t).some(p=>p.fase===f.k&&p.sub===s.k))?`<button class="chip-x" data-a="cfg-fs-del" data-f="${i}" data-i="${j}" data-m="${m}" aria-label="Tirar ${esc(s.nome)}">×</button>`:''}</span>`).join('')}
+      <span class="cfg-subs">${e.subs.map((s,m)=>`<span class="chip"${e.subs.length>1&&!S.terrenos.some(t=>procsDe(t).some(p=>p.fase===f.k&&p.sub===s.k))?'':` title="${e.subs.length>1?'Tem terreno nesta subetapa: não sai':'Única subetapa da etapa'}"`}>${esc(s.nome)}${e.subs.length>1&&!S.terrenos.some(t=>procsDe(t).some(p=>p.fase===f.k&&p.sub===s.k))?'':`<span class="chip-fixo" aria-hidden="true">${ic('lock',12)}</span>`}${e.subs.length>1&&!S.terrenos.some(t=>procsDe(t).some(p=>p.fase===f.k&&p.sub===s.k))?`<button class="chip-x" data-a="cfg-fs-del" data-f="${i}" data-i="${j}" data-m="${m}" aria-label="Tirar ${esc(s.nome)}">×</button>`:''}</span>`).join('')}
         <form class="cfg-fs-add" data-form="cfg-fs" data-f="${i}" data-i="${j}"><input name="nome" required placeholder="+ subetapa" aria-label="Nova subetapa em ${esc(e.nome)}"></form></span>
       <span>${etapaUsada(f.k,e.k)||f.etapas.length<2?`<button class="iconbtn sm lixo" disabled aria-label="Não pode ser apagada" title="${f.etapas.length<2?'A fase precisa de ao menos uma etapa':'Tem histórico: não pode ser apagada'}">${ic('lixo',18)}</button>`:`<button class="iconbtn sm lixo" data-a="cfg-fe-del" data-f="${i}" data-i="${j}" aria-label="Apagar" title="Apagar">${ic('lixo',18)}</button>`}</span></div>`).join('')||'<div class="faint" style="padding:12px 0">Sem etapas: a fase não abre até ter uma.</div>'}</div>
     <form class="inline-form" data-form="cfg-fe" data-f="${i}"><div class="field grow"><label for="fe-${f.k}">Nova etapa</label><input id="fe-${f.k}" name="nome" required></div><div class="field" style="flex:0 1 120px"><label for="fs-${f.k}">SLA (dias)</label><input id="fs-${f.k}" name="sla" type="number" min="0"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form>
@@ -9570,8 +9589,8 @@ function cfgViabHtml(){const L=S.viabDesp;
     ${ds.map((d,i)=>{const u=vbUsada(d.codigo);return `<div class="cfg-r vb-cfg-r ${d.ativo?'':'inativa'}"><span class="cfg-ord"><button class="iconbtn sm" data-a="vb-cfg-ord" data-c="${d.codigo}" data-v="-1" ${i?'':'disabled'} aria-label="Subir">↑</button><button class="iconbtn sm" data-a="vb-cfg-ord" data-c="${d.codigo}" data-v="1" ${i<ds.length-1?'':'disabled'} aria-label="Descer">↓</button></span>
       <input data-ch="cfg-vd" data-c="${d.codigo}" data-k="nome" value="${esc(d.nome)}" aria-label="Nome do item">${sel(d,'grupo',grupos,d.grupo,'Grupo de '+esc(d.nome),u?'disabled title="Item já usado em estudo não muda de grupo"':'')}
       ${sel(d,'tipo',Object.fromEntries(G.tipos.map(k=>[k,VB_TIPO_CURTO[k]||VB_TIPO[k]])),d.tipo,'Base de cálculo de '+esc(d.nome))}
-      <input data-ch="cfg-vd" data-c="${d.codigo}" data-k="valor" value="${vbIn(d.valor,4)}" inputmode="decimal" placeholder="—" title="Sem valor padrão quando vazio" aria-label="Valor padrão de ${esc(d.nome)}">
-      <span>${g==='comercial'?`<label class="chk"><input type="checkbox" data-ch="cfg-vd" data-c="${d.codigo}" data-k="deduz" ${d.deduz?'checked':''} aria-label="${esc(d.nome)} pode sair do VGV líquido"></label>`:'<span class="faint" aria-hidden="true">—</span>'}</span>
+      <input data-ch="cfg-vd" data-c="${d.codigo}" data-k="valor" value="${vbIn(d.valor,4)}" inputmode="decimal" placeholder="Sem valor" title="Sem valor padrão quando vazio" aria-label="Valor padrão de ${esc(d.nome)}">
+      <span>${g==='comercial'?`<label class="chk"><input type="checkbox" data-ch="cfg-vd" data-c="${d.codigo}" data-k="deduz" ${d.deduz?'checked':''} aria-label="${esc(d.nome)} pode sair do VGV líquido"></label>`:''}</span>
       <label class="chk"><input type="checkbox" data-ch="cfg-vd" data-c="${d.codigo}" data-k="ativo" ${d.ativo?'checked':''} aria-label="Ativo"></label>
       <span>${u?'':`<button class="iconbtn sm lixo" data-a="vb-cfg-del" data-c="${d.codigo}" aria-label="Apagar" title="Apagar">${ic('lixo',18)}</button>`}</span></div>`}).join('')||'<div class="muted vb-vazio">Nenhum item.</div>'}`}).join('');
   const mods=(S.viabModelos||[]).filter(m=>!m.dono),p=vbModeloPadrao();

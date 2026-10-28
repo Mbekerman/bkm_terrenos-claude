@@ -658,7 +658,7 @@ function pgTarefas(){const f=UI.tk,l=tkFiltradas();const cols=COLS_TK.filter(c=>
   const quadro=`<div class="board tk-board">${cols.map(c=>{const ks=l.filter(x=>x.k.status===c).sort(ordemTk);
     return `<section class="col tk-col" data-tkcol="${c}" aria-label="${OPT.statusTar[c]}"><div class="col-h"><span>${OPT.statusTar[c]}</span><span class="n">${ks.length}</span></div>
     <div class="tk-lista">${ks.map(cardTk).join('')||'<div class="col-empty">Nenhuma</div>'}</div>
-    ${UI.role!=='Leitura'&&c!=='cancelada'?`<button class="tk-add" data-a="tk-nova" data-v="${c}">${ic('add',16)}Adicionar tarefa</button>`:''}</section>`}).join('')}</div>`;
+    ${UI.role!=='Leitura'&&c!=='cancelada'&&c!=='concluida'?`<button class="tk-add" data-a="tk-nova" data-v="${c}">${ic('add',16)}Adicionar tarefa</button>`:''}</section>`}).join('')}</div>`;
   const colsT=[{k:'titulo',l:'Tarefa',cls:'esq',v:({k,t})=>`<div class="t1">${escT(k.titulo)}</div>${k.desc?`<div class="t2">${esc(k.desc)}</div>`:''}<div class="t2 so-m">${t.codigo} · ${esc(t.nome)}</div>`,s:({k})=>k.titulo},
     {k:'ter',l:'Terreno',cls:'esq hm tk-ter',v:({t})=>`<div class="t2" style="color:var(--texto)">${t.codigo}</div><div class="t2">${esc(t.nome)}</div>`,s:({t})=>t.codigo},
     {k:'resp',l:'Responsável',cls:'hm',v:({k})=>esc(k.resp),s:({k})=>k.resp},
