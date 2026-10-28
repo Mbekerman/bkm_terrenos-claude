@@ -10,7 +10,7 @@
   },
   "grupos": {
     "obra_atipica": {
-      "nome": "Itens atípicos",
+      "nome": "Custo de obra atípico",
       "secao": "obra",
       "fixo": false,
       "tipos": [
@@ -21,7 +21,7 @@
       ]
     },
     "obra_nao_incidente": {
-      "nome": "Obra não incidente",
+      "nome": "Custo de obra não incidente",
       "secao": "obra",
       "fixo": false,
       "tipos": [
@@ -33,7 +33,7 @@
       ]
     },
     "projetos": {
-      "nome": "Projetos",
+      "nome": "Custo de projetos",
       "secao": "obra",
       "fixo": false,
       "tipos": [
@@ -46,7 +46,7 @@
       ]
     },
     "pos_obra": {
-      "nome": "Pós-obra",
+      "nome": "Custo pós-obra",
       "secao": "obra",
       "fixo": false,
       "tipos": [
@@ -154,8 +154,8 @@
   },
   "tipos": {
     "area": "R$ por m² de área privativa",
-    "pct_obra_tipica": "% do custo de obra típico",
-    "pct_obra_raso": "% do custo de obra raso",
+    "pct_obra_tipica": "% do custo de obra raso",
+    "pct_obra_raso": "% do custo de obra incidente",
     "pct_obra_total": "% do custo de obra total",
     "pct_vgv": "% do VGV",
     "pct_lucro": "% do lucro líquido",
@@ -248,7 +248,7 @@
     },
     {
       "codigo": "estoque",
-      "nome": "Condomínio e IPTU das unidades em estoque",
+      "nome": "Manutenção e taxas de unidades em estoque",
       "grupo": "pos_obra",
       "tipo": "verba",
       "valor": null,

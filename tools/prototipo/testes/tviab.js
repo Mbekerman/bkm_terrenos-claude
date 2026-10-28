@@ -61,7 +61,7 @@ const fixo=async(sec,nome,v,t,meses)=>{await aba(sec);const id=await p.evaluate(
 const hd=async(k,v)=>{await aba(k==='cm2'?'obra':'terreno');const m=p.locator(`[data-vb=hd][data-k=${k}]`);await m.fill(v);await m.press('Tab');await p.waitForTimeout(80)};
 await aba('obra');await p.evaluate(()=>document.querySelector('[data-a=vb-ln-add][data-v=obra_atipica]').click());await p.waitForTimeout(150);
 const ops=await p.$$eval('.vb-dd [data-vb-op]',e=>e.map(x=>x.dataset.vbOp));
-ok(ops.join()==='fundacoes_especiais,contencoes,demolicao',tag+' a busca de Itens atípicos só mostra os itens do grupo: '+ops.join(','));
+ok(ops.join()==='fundacoes_especiais,contencoes,demolicao',tag+' a busca de Custo de obra atípico só mostra os itens do grupo: '+ops.join(','));
 if(modo==='desktop')await p.screenshot({path:OUT+tag+'_1busca.png'});
 await p.evaluate(()=>document.querySelector('[data-a=vb-ln-cancela]').click());await p.waitForTimeout(100);
 await hd('cm2','3.000');
@@ -77,11 +77,11 @@ await fixo('comercial','Registro de unidades vendidas','300.000','verba');await 
 await hd('pfp','8');await hd('dedp','5');await hd('min','3.000.000');await hd('din','1.000.000');await hd('comd','200.000');
 await aba('terreno');for(const c of ['itbi_vendas','registro_vendas']){await p.locator(`[data-vb=ded][value=${c}]`).check();await p.waitForTimeout(150)}
 const txt=async s=>(await p.$eval(s,e=>e.innerText)).replace(/\s+/g,' ');
-await aba('obra');ok(/19\.500\.000/.test(await txt('[data-vbo=oi]'))&&/20\.540\.000/.test(await txt('#vb-raso'))&&/21\.745\.400/.test(await txt('#vb-ot'))&&/22\.815\.216/.test(await txt('#vb-tot-obra')),
-  tag+' obra: incidente 19,5 mi, raso 20,54 mi, total 21,7454 mi, seção 22,815216 mi (como no banco)');
+await aba('obra');ok(/19\.500\.000/.test(await txt('[data-vbo=oi]'))&&/20\.540\.000/.test(await txt('[data-vbo=qt-raso]'))&&/1\.205\.400/.test(await txt('[data-vbo="qt-g-obra_nao_incidente"]'))&&/22\.815\.216/.test(await txt('[data-vbo=sh-obra]')),
+  tag+' obra: típica 19,5 mi, quadro incidente 20,54 mi, não incidente 1,2054 mi (obra total 21,7454 mi), seção 22,815216 mi (como no banco)');
 await aba('terreno');const pf=await txt('[data-vbo=pfis]');ok(/10/.test(pf)&&/400 m²/.test(pf)&&/6,7%/.test(pf)&&/6,2%/.test(pf),tag+' permuta física: 10 unidades, 400 m², 6,7% das unidades e 6,2% da área: '+pf);
 const pfin=await txt('[data-vbo=pfin]');ok(/42\.640\.000/.test(pfin)&&/3\.284\.800/.test(pfin)&&/39\.355\.200/.test(pfin)&&/3\.148\.416/.test(pfin),tag+' permuta financeira: VGV vendido 42,64 mi, deduções 3,2848 mi, VGV líquido 39,3552 mi, 8% = 3,148416 mi: '+pfin);
-const tots=[];for(const k of ['terreno','despesas','taxas','comercial','financeiro']){await aba(k);tots.push(await txt('#vb-tot-'+k))}
+const tots=[];for(const k of ['terreno','despesas','taxas','comercial','financeiro']){await aba(k);tots.push(await txt('[data-vbo=sh-'+k+']'))}
 const nvt=await txt('.vb-aba[data-v=terreno] small');ok(/4,35 mi/.test(nvt)&&/9,5%/.test(nvt),tag+' botão da seção com o total e o % do VGV: '+nvt);
 ok(/4\.348\.416/.test(tots[0])&&/676\.400/.test(tots[1])&&/964\.859/.test(tots[2])&&/4\.698\.000/.test(tots[3])&&/1\.705\.600/.test(tots[4]),tag+' totais: terreno 4,348 mi, despesas gerais 676,4 mil, taxas 964,9 mil, comerciais 4,698 mi, financeiras 1,7056 mi: '+tots.join(' | '));
 const kp=await txt('#vb-kpis');
@@ -98,7 +98,7 @@ const cp=await fixo('financeiro','Custo de capital permuta financeira','2'),cg=a
 const cap=await p.evaluate(([a,b])=>[a,b].map(id=>{const r=document.querySelector(`[data-ln="${id}"]`);return {sel:!!r.querySelector('select'),base:r.querySelector('.vb-tipo .vb-nome').innerText.replace(/\s+/g,' ').trim(),fmt:r.querySelector('[data-k=valor]').dataset.fmt,out:r.querySelector('.vb-out').innerText.replace(/\s+/g,' ')}}),[cp,cg]);
 ok(cap.every(x=>!x.sel&&x.base==='Aporte'&&x.fmt==='pct')&&/62\.968/.test(cap[0].out)&&/permuta financeira em dinheiro \(R\$ 3,15 mi\)/.test(cap[0].out)&&/10\.000/.test(cap[1].out)&&/pagamento em dinheiro \(R\$ 1,00 mi\)/.test(cap[1].out),
   tag+' custo de capital: base só Aporte, valor em %; 2% da permuta financeira (3.148.416) = 62.968,32 e 1% do pagamento (1.000.000) = 10.000: '+JSON.stringify(cap));
-ok(/1\.778\.568/.test(await txt('#vb-tot-financeiro')),tag+' Despesas financeiras somam o custo de capital: 1.778.568,32');
+ok(/1\.778\.568/.test(await txt('[data-vbo=sh-financeiro]')),tag+' Despesas financeiras somam o custo de capital: 1.778.568,32');
 const hdA=await p.$$eval('#vb-sec-financeiro .vb-hd > span',e=>e.filter(x=>getComputedStyle(x).display!=='none').map(x=>x.textContent+':'+getComputedStyle(x).textAlign));
 ok(modo!=='desktop'||hdA.join().replace('Item:start','Item:left')==='Item:left,Base de cálculo:left,Valor:left,Resultado:right',tag+' cabeçalho de Financeiras: Item à esquerda, Base e Valor à esquerda, Resultado à direita, sem a coluna Meses: '+hdA.join());
 const al=async s=>p.$$eval(s,e=>e.filter(x=>getComputedStyle(x).display!=='none').map(x=>(x.textContent||'·')+':'+getComputedStyle(x).textAlign.replace('start','left')).join());
@@ -121,7 +121,7 @@ await hd('min','3.500.000');const pmin=await txt('[data-vbo=pfin]');await aba('r
 ok(/mínimo garantido/.test(pmin)&&/4\.979\.887/.test(await txt('#vb-res')),tag+' abaixo do mínimo garantido, a permuta financeira usa o mínimo (lucro 4.979.887,27)');
 await hd('min','3.000.000');
 const cef=await fixo('comercial','Taxa de emissão de contratos CEF','500','verba_unidade');
-ok(/4\.767\.000/.test(await txt('#vb-tot-comercial'))&&/138 unidades líquidas/.test(await txt(`[data-ln="${cef}"]`)),tag+' verba por unidade: 500 × 138 unidades líquidas');
+ok(/4\.767\.000/.test(await txt('[data-vbo=sh-comercial]'))&&/138 unidades líquidas/.test(await txt(`[data-ln="${cef}"]`)),tag+' verba por unidade: 500 × 138 unidades líquidas');
 await val(cef,'');
 const vs=(await D()).viabs.at(-1);
 ok(vs.linhas.length===18+10&&vs.deduz.length===2,tag+' linhas gravadas (18 fixas e 10 da lista) e as duas deduções');
