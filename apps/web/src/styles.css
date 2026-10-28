@@ -2786,8 +2786,8 @@ form.inline-form.if-fechado { display: none !important }
 .kcard .ksub > span:first-child { white-space: normal !important; overflow: visible; text-overflow: clip }
 .kcard .ksub { height: auto !important; align-items: flex-start }
 /* Status neutro (Pendente, Não aberta, Descartado...) também tonal, nunca contornado como botão */
-:is(.dt td, .doc, .fs-lst, .chk-group, .docs) .chip:not(.warn):not(.crit):not(.good):not(.blue):not(.sub):not(.fase):not(.fase-n):not(.num) { background: #e9eef6 !important; border-color: transparent !important; color: #444746 !important }
-:root[data-tema="escuro"] :is(.dt td, .doc, .fs-lst, .chk-group, .docs) .chip:not(.warn):not(.crit):not(.good):not(.blue):not(.sub):not(.fase):not(.fase-n):not(.num) { background: rgba(142,154,196,.14) !important; color: #b9c3e6 !important }
+:is(.dt td, .doc, .fs-lst, .chk-group, .docs) .chip:not(.warn):not(.crit):not(.good):not(.blue):not(.sub):not(.fase):not(.fase-n):not(.num):not(.tkst) { background: #e9eef6 !important; border-color: transparent !important; color: #444746 !important }
+:root[data-tema="escuro"] :is(.dt td, .doc, .fs-lst, .chk-group, .docs) .chip:not(.warn):not(.crit):not(.good):not(.blue):not(.sub):not(.fase):not(.fase-n):not(.num):not(.tkst) { background: rgba(142,154,196,.14) !important; color: #b9c3e6 !important }
 /* Lixeira de linha: no desktop aparece ao passar o mouse ou com o foco na linha */
 @media (hover: hover) and (min-width: 900px) {
   :is(tr, li, .cfg-r, .kv, .doc) .iconbtn.lixo { opacity: 0; transition: opacity .12s }
@@ -2845,6 +2845,50 @@ form.inline-form.if-fechado { display: none !important }
 .board .col-h .col-ab span { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; text-align: left; line-height: 20px }
 .board .col-h { align-items: flex-start !important }
 .board .col-h > .n { line-height: 20px }
+
+/* ===================== Revisão de design, rodada 5 ===================== */
+/* Escuro: campos que se leem como texto ficam sem fundo */
+:root[data-tema="escuro"] :is(.infra-f, .vb-pop-nome) { background: transparent !important }
+/* Escuro: etapa atrasada sem a pílula antiga */
+:root[data-tema="escuro"] .dt .c-etapa .chip.sub { background: none !important; border: 0 !important; padding: 0 !important }
+/* Parâmetros da ficha no celular: duas colunas */
+@media (max-width: 599px) { .lz-par { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 0 12px !important } }
+/* Configurações no celular: nome em largura total; grupo de aprovação com rótulo */
+@media (max-width: 899px) {
+  .cfg-r.cfg-fase > :nth-child(2), .cfg-r.cfg-fe > :nth-child(2) { grid-column: 1 / -1 }
+  .cfg-cel:has(> .cfg-ap) { grid-column: 1 / -1 }
+}
+@media (min-width: 900px) { .cfg-cel:has(> .cfg-ap) { display: contents } }
+/* Caixas de marcar do catálogo de parâmetros no tamanho das outras */
+.zp-tbl input[type=checkbox] { width: 18px; height: 18px }
+/* Configurações › Viabilidade: seletores sem corte */
+@media (min-width: 900px) { .vb-cfg-r { grid-template-columns: 64px minmax(180px, 2.2fr) minmax(130px, 1.1fr) minmax(160px, 1.4fr) 88px 56px 44px 40px !important } }
+/* Filtros de Tarefas no celular: borda direita esmaece (há mais chips) */
+@media (max-width: 599px) { .tk-fl { mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent) } }
+/* Quadro: seta logo depois do nome; cartões contornados, sombra só ao passar o mouse */
+.board .col-h .col-ab { display: block !important; text-align: left; min-width: 0 }
+.board .col-h .col-ab span { display: inline }
+.board .col-h .col-ab svg { display: inline-block; vertical-align: -4px; margin-left: 2px }
+:root:not([data-tema="escuro"]) .kcard { box-shadow: none !important; border: 1px solid #dde3ea !important }
+:root:not([data-tema="escuro"]) .kcard:hover { box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 1px 3px 1px rgba(0,0,0,.15) !important }
+/* Linha do tempo da negociação: data sempre embaixo do nome */
+.tr-e ul li { flex-direction: column !important; justify-content: flex-start !important; gap: 0 !important }
+/* Topo da ficha no celular: chips numa linha que rola; endereço numa linha */
+@media (max-width: 599px) {
+  .dchips { gap: 6px !important }
+  .dhead .muted { white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+}
+/* Infraestrutura no escuro: Sim e Não tonais */
+:root[data-tema="escuro"] .seg3 button[aria-pressed="true"].sim { background: rgba(109,213,140,.16) !important; color: #a6f0bb !important }
+:root[data-tema="escuro"] .seg3 button[aria-pressed="true"].nao { background: rgba(242,184,181,.16) !important; color: #f2b8b5 !important }
+/* Diálogos: título em 24 px */
+.scrim .dialog .dh h2 { font-size: 24px !important; line-height: 32px !important; font-weight: 400 }
+/* Lixeira com a mesma cor em todas as listas */
+.poil .iconbtn.lixo, .poil .poi-x { color: var(--m-on-var, #444746) }
+/* Tarefas no celular: código do terreno na linha */
+.empilha .dt td.col-ter.hm { display: inline-flex !important }
+.empilha .dt td.col-ter::before, .empilha .dt td.col-ter .t2 + .t2 { content: none !important; display: none }
+.empilha .dt td.col-ter::before { display: none }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
