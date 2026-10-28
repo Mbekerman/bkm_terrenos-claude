@@ -27,7 +27,7 @@ await p.evaluate(()=>document.querySelector('#sec-analise .lz-cam')?.scrollIntoV
 const zs=()=>p.$$eval('#sec-analise .lz-z',e=>e.map(x=>x.innerText.replace(/\s+/g,' ')));
 const lin=await zs();
 ok(lin.length===2&&/^ZEU/.test(lin[0])&&/Gabarito Sem limite/.test(lin[0])&&/^ZM/.test(lin[1])&&/Gabarito 28 m/.test(lin[1]),tag+' quadro do lote com ZEU (sem limite) e ZM (28 m)');
-ok(/Recuo de frente 5 m/.test(lin[1])&&/Recuos laterais e de fundo Dispensado até 10 m de altura; 3 m acima/.test(lin[1])&&/Lote mínimo 125 m²/.test(lin[1])&&/Frente mínima 5 m/.test(lin[1])&&/CA mínimo 0,3/.test(lin[1]),tag+' ZM com recuos, lote e frente mínimos e CA mínimo: '+lin[1].slice(0,300));
+ok(/Recuo de frente 5 m/.test(lin[1])&&/Recuos laterais e fundo Dispensado até 10 m de altura; 3 m acima/.test(lin[1])&&/Lote mínimo 125 m²/.test(lin[1])&&/Frente mínima 5 m/.test(lin[1])&&/CA mínimo 0,3/.test(lin[1]),tag+' ZM com recuos, lote e frente mínimos e CA mínimo: '+lin[1].slice(0,300));
 ok(/Cota-parte máxima 20 m² por unidade/.test(lin[0])&&/até 70 unidades/.test(lin[0]),tag+' ZEU com cota-parte (1.400 ÷ 20 = 70 unidades)');
 ok(!!(await p.$('#sec-analise .lz-ni')),tag+' tipo não informado: aviso e Mercado só como referência');
 const vg=await p.evaluate(()=>[...document.querySelectorAll('.kv')].find(x=>x.querySelector('dt')?.textContent==='Zoneamento')?.innerText||'');
@@ -77,12 +77,13 @@ await tipo('mercado');
 await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=config]')?.click());await p.waitForTimeout(200);
 await p.evaluate(()=>document.querySelector('[data-a=cfg-aba][data-v=zonas]').click());await p.waitForTimeout(200);
 await p.evaluate(()=>document.querySelector('[data-a=zp-cid][data-v=sjc]').click());await p.waitForTimeout(200);
-const sel='tr:has(td b:text-is("ZM3")):has(td:text-is("RV1 · Estruturação")) input[data-k=ca_maximo]';
+const zz=c=>`details.zp-z:has(summary b:text-is("ZM3")):has(.zp-cond:text-is("${c}"))`,sel=zz('RV1 · Estruturação')+' input[data-k=ca_maximo]';
+await p.evaluate(()=>document.querySelectorAll('details.zp-z').forEach(d=>d.open=true));await p.waitForTimeout(100);
 ok(await p.$eval(sel,e=>e.value)==='2',tag+' Configurações mostra o CA máximo da ZM3 RV1 na Estruturação: 2');
 await p.screenshot({path:OUT+tag+'_5config.png'});
 await p.fill(sel,'0');await p.$eval(sel,e=>e.dispatchEvent(new Event('change',{bubbles:true})));await p.waitForTimeout(200);
 ok(/maior que zero/.test(await toast()),tag+' CA zero é recusado no catálogo');
-for(const s of ['tr:has(td b:text-is("ZM3")):has(td:text-is("RV2 · Estruturação")) input[data-k=ca_maximo]',sel]){await p.fill(s,'2,5');await p.$eval(s,e=>e.dispatchEvent(new Event('change',{bubbles:true})));await p.waitForTimeout(200)}
+for(const s of [zz('RV2 · Estruturação')+' input[data-k=ca_maximo]',sel]){await p.fill(s,'2,5');await p.$eval(s,e=>e.dispatchEvent(new Event('change',{bubbles:true})));await p.waitForTimeout(200)}
 await abrir('Cupecê');ok(/4\.800 m²/.test(await res()),tag+' ficha usa o catálogo editado (1.920×2,5 = 4.800 m²)');
 // Leitura
 await p.evaluate(()=>{document.querySelector('[data-a=perfil-menu]').click();document.querySelector('[data-a=role][data-v=Leitura]').click()});await p.waitForTimeout(200);

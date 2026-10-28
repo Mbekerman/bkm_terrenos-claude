@@ -141,7 +141,7 @@ await p.locator('[data-ch=cfg-vd][data-c=registro_vendas][data-k=deduz]').unchec
 const n2=(await D()).terrenos.find(t=>t.id===tid).neg.viab;
 ok(n2.lucro===5277690.91&&n2.margem===13.31,tag+' registro das vendas deixa de sair do VGV: o estudo vinculado se refaz (lucro 5.277.690,91, margem 13,31, como no banco)');
 ok(await p.locator('[data-ch=cfg-vd][data-c=comissao][data-k=grupo]').isDisabled(),tag+' item usado em estudo não muda de grupo');
-await p.fill('#vd-n','Prêmio de vendas');await p.selectOption('#vd-g','comercial');await p.evaluate(()=>document.querySelector('[data-form=vb-cfg-nova]').requestSubmit());await p.waitForTimeout(200);
+await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));await p.fill('#vd-n','Prêmio de vendas');await p.selectOption('#vd-g','comercial');await p.evaluate(()=>document.querySelector('[data-form=vb-cfg-nova]').requestSubmit());await p.waitForTimeout(200);
 ok((await D()).viabDesp.some(d=>d.nome==='Prêmio de vendas'&&d.grupo==='comercial'&&d.tipo==='pct_vgv'),tag+' item novo entra no grupo, com a primeira base aceita');
 }
 // volta para a ficha: Visão geral com o resumo do estudo

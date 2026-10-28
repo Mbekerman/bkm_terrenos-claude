@@ -91,14 +91,14 @@ await clica(p,'[data-a=close]');await papel(p,'Diretor');
 // Configurações › Fases
 await nav(p,'config');await p.screenshot({path:O+'7_config_fases.png',fullPage:true});
 ok((await txt(p,'.cfg-fase input')).length>=0&&(await p.evaluate(()=>document.querySelectorAll('.cfg-r.cfg-fase:not(.cfg-hd)').length))===7,'7 fases na configuração');
-await p.fill('#nf-n','Regularização');await p.fill('#nf-p','neg');await clica(p,'form[data-form=cfg-fase] .btn');
+await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));await p.fill('#nf-n','Regularização');await p.fill('#nf-p','neg');await clica(p,'form[data-form=cfg-fase] .btn');
 ok((await p.evaluate(()=>document.querySelector('#toast').textContent)).includes('já é de outra fase'),'prefixo repetido é recusado');
-await p.fill('#nf-p','REG');await clica(p,'form[data-form=cfg-fase] .btn');
+await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));await p.fill('#nf-p','REG');await clica(p,'form[data-form=cfg-fase] .btn');
 ok((await p.evaluate(()=>document.querySelectorAll('.cfg-r.cfg-fase:not(.cfg-hd)').length))===8,'fase nova criada');
-await p.selectOption('#dp-f','aprovacao');await p.selectOption('#dp-r','regularizacao|conclusao|');await clica(p,'form[data-form=cfg-dep] .btn');
-await p.selectOption('#dp-f','regularizacao');await p.selectOption('#dp-r','aprovacao|conclusao|');await clica(p,'form[data-form=cfg-dep] .btn');
+await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));await p.selectOption('#dp-f','aprovacao');await p.selectOption('#dp-r','regularizacao|conclusao|');await clica(p,'form[data-form=cfg-dep] .btn');
+await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));await p.selectOption('#dp-f','regularizacao');await p.selectOption('#dp-r','aprovacao|conclusao|');await clica(p,'form[data-form=cfg-dep] .btn');
 ok((await p.evaluate(()=>document.querySelector('#toast').textContent)).includes('ciclo'),'dependência em ciclo é recusada');
-await p.fill('#fe-regularizacao','Levantamento');await clica(p,'form[data-form=cfg-fe][data-f="7"] .btn');
+await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));await p.fill('#fe-regularizacao','Levantamento');await clica(p,'form[data-form=cfg-fe][data-f="7"] .btn');
 ok((await txt(p,'.cfg-fe input')).length>=0&&(await p.evaluate(()=>[...document.querySelectorAll('.cfg-fe input')].some(i=>i.value==='Levantamento'))),'etapa nova na fase nova');
 await p.screenshot({path:O+'8_config_nova.png',fullPage:true});
 

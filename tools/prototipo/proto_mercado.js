@@ -136,7 +136,7 @@ function mkBoxHtml(e){const r=mkResumo(e),pct=r.unidades?Math.round(100*r.estoqu
   <div class="mk-grid">${kv('Lançamento',ccMes(e.lanc))}${kv('Entrega',ccMes(e.ent))}${kv('Unidades',num(r.unidades))}${kv('Em estoque',num(r.estoque),pct+'%')}
     ${kv(r.vgvLEst?'VGV lançado (estimado)':'VGV lançado',vg(r.vgvL))}${kv('VGV em estoque',vg(r.vgvE))}${kv('VSO médio (3 meses)',mkPct(r.vso))}</div>
   <div class="cc-tw"><table class="cc-t mk-t"><thead><tr><th>Grupo</th><th class="num">Preço médio</th><th class="num">Por m²</th><th class="num">Lançadas</th><th class="num">Estoque</th><th class="num" title="VSO médio dos últimos 3 meses">VSO</th></tr></thead><tbody>${linhas}</tbody></table></div>
-  <div class="cc-meta faint mk-nota">Dados de exemplo. Grupos calculados na leitura: mesmos dormitórios, vagas e área parecida, separando quando o preço por m² salta mais de ${num(MK_CFG.porAndar)}% por andar (${num(MK_CFG.semAndar)}% ${r.inc?'neste empreendimento, que tem andares inconsistentes':'quando falta o andar'}). Preço médio e por m² são do estoque; VSO médio dos últimos 3 meses = vendas somadas ÷ ofertas somadas${r.grupos.some(g=>g.preco==null&&g.m2p1!=null)?'; * grupo esgotado, pelo primeiro preço visto':''}.${r.vgvLEst?' O VGV lançado usa o primeiro preço visto e, nas vendidas antes do monitor, o preço por m² do grupo × área.':''}</div></div>`}
+  <div class="cc-meta faint mk-nota">Dados de exemplo · VSO médio dos últimos 3 meses${r.inc?` · andares inconsistentes: grupos pelo salto de ${num(MK_CFG.semAndar)}%`:''}${r.grupos.some(g=>g.preco==null&&g.m2p1!=null)?' · * grupo esgotado, pelo primeiro preço visto':''}</div></div>`}
 function mkBox(){const area=$('.mapa-area');let el=$('#mk-box');const e=MK.box&&UI.route==='mapa'?mkEmp(MK.box):null;
   if(!e||!area){el?.remove();if(!e)MK.box=null;return}
   if(!el||el.parentNode!==area){el?.remove();el=document.createElement('div');el.id='mk-box';area.appendChild(el)}
@@ -197,8 +197,8 @@ function mkSecaoHtml(t){if(t.lat==null)return '';const raio=UI.mkRaio||2,vaga=UI
   return `<section class="sec mk-sec" data-bloco-item="mercado"><div class="sec-h"><h2>Mercado na redondeza</h2><span class="faint">dados de exemplo</span></div><div class="sec-b">
     <div class="mk-ctl">${seg('mk-raio',MK_RAIOS.map(k=>[k,k+' km']),raio)}${seg('mk-vaga',[['todas','Todas'],['com','Com vaga'],['sem','Sem vaga']],vaga)}</div>
     ${corpo}
-    ${r.emps.length?`<div class="hint mk-emps">${r.emps.map(x=>`${esc(x.e.nome)} (${num(x.d,1)} km)`).join(' · ')}</div>`:''}
-    <div class="hint">R$/m² mediano das unidades em estoque, com a faixa do meio (P25 a P75). VSO médio dos últimos 3 meses: vendas somadas ÷ ofertas somadas (estoque no início do mês + lançadas no mês).${notas.length?' '+notas.join('; ')+'.':''}</div></div></section>`}
+    ${r.emps.length?`<div class="hint mk-emps">Empreendimentos no raio: ${r.emps.map(x=>`${esc(x.e.nome)} (${num(x.d,1)} km)`).join(' · ')}</div>`:''}
+    ${notas.length?`<div class="hint">${notas.join('; ')}.</div>`:''}</div></section>`}
 const _abaComercialMk=abaComercial;abaComercial=function(t){const h=_abaComercialMk.apply(this,arguments),i=h.lastIndexOf('</div>');return h.slice(0,i)+mkSecaoHtml(t)+h.slice(i)};
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a="mk-raio"],[data-a="mk-vaga"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();
   if(a.dataset.a==='mk-raio')UI.mkRaio=+a.dataset.v;else UI.mkVaga=a.dataset.v;const sec=a.closest('.mk-sec'),t=T(UI.id);

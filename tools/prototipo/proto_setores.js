@@ -189,7 +189,7 @@ function rdCardCorpo(t){if(t.lat==null)return '<div class="muted">Sem localizaç
       <div class="rd-m"><div class="k">População</div><div class="v">${num(Math.round(r.pes))}</div><div class="s">${num(Math.round(r.dens))} hab/km²</div></div>
       <div class="rd-m"><div class="k">Domicílios ocupados</div><div class="v">${num(Math.round(r.dom))}</div><div class="s">${raio==='poly'?m2(Math.round(r.area)):num(r.area/1e6,2)+' km²'}</div></div></div>
     ${barras?`<div class="rd-dh">Domicílios pela faixa de renda média do setor</div><ul class="rd-dist">${barras}</ul>`:''}
-    <div class="hint rd-pe">Censo ${m.censoAno} (IBGE) · ${num(r.setores)} setor${r.setores===1?'':'es'}${r.cob!=null&&r.cob<99.5?` · renda divulgada para ${rdNum(r.cob,0)}% dos domicílios`:''}${r.dist?` · ${r.dist} com média puxada por poucas rendas altas`:''}${r.foraPct>1?` · ${rdNum(r.foraPct,0)}% da área fora do município`:''}. Renda familiar estimada, não observação direta do IBGE. <button class="linkbtn" data-a="rd-met">Metodologia</button> · <button class="linkbtn" data-a="rd-ver" data-id="${t.id}">Ver no mapa</button></div>`}
+    <div class="hint rd-pe">Censo ${m.censoAno} (IBGE) · ${num(r.setores)} setor${r.setores===1?'':'es'}${r.cob!=null&&r.cob<99.5?` · renda divulgada para ${rdNum(r.cob,0)}% dos domicílios`:''}${r.foraPct>1?` · ${rdNum(r.foraPct,0)}% da área fora do município`:''} · <button class="linkbtn" data-a="rd-met">Metodologia</button> · <button class="linkbtn" data-a="rd-ver" data-id="${t.id}">Ver no mapa</button></div>`}
 function setoresCard(t){if(t.lat==null)return '';const raio=UI.rdRaio||1000;
   return `<section class="sec" id="rd-card"><div class="sec-h"><h2>Renda e população do entorno</h2></div>
     <div class="rd-raios seg" role="group" aria-label="Área">${RD_RAIOS.map(([k,l])=>`<button type="button" data-a="rd-raio" data-v="${k}" aria-pressed="${String(raio)===String(k)}" ${k==='poly'&&!t.poly?'disabled':''}>${l}</button>`).join('')}</div>
@@ -255,7 +255,7 @@ function pfCorpo(t){if(t.lat==null)return '<div class="muted">Sem localização.
     <div class="rd-dh">Domicílios por número de moradores</div>${pfBarras(tam,o.dppo,'#0b57d0')}
     <div class="rd-dh">Tipo de domicílio</div>${pfBarras(esp,o.dppo,'#0b57d0')}
     <div class="pf-vg">Fora dos ocupados: <b>${num(Math.round(o.vag))}</b> domicílios vagos (${pfPct(o.vag,perm)} dos permanentes) e <b>${num(Math.round(o.oca))}</b> de uso ocasional (${pfPct(o.oca,perm)}).</div>
-    <div class="hint rd-pe">Censo ${c.censoAno} (IBGE), agregados por setor · ${num(r.setores)} setor${r.setores===1?'':'es'}, cada um pela fração da área dentro${r.foraPct>1?` · ${rdNum(r.foraPct,0)}% da área fora do município`:''}. Domicílios por moradores e tipo: só os particulares permanentes ocupados. <button class="linkbtn" data-a="pf-met">Sobre os dados</button></div>`}
+    <div class="hint rd-pe">Censo ${c.censoAno} (IBGE) · ${num(r.setores)} setor${r.setores===1?'':'es'}${r.foraPct>1?` · ${rdNum(r.foraPct,0)}% da área fora do município`:''} · <button class="linkbtn" data-a="pf-met">Sobre os dados</button></div>`}
 function perfilCard(t){if(t.lat==null)return '';const raio=UI.rdRaio||1000;
   return `<section class="sec" id="pf-card"><div class="sec-h"><h2>Perfil da população do entorno</h2></div>
     <div class="rd-raios seg" role="group" aria-label="Área">${RD_RAIOS.map(([k,l])=>`<button type="button" data-a="rd-raio" data-v="${k}" aria-pressed="${String(raio)===String(k)}" ${k==='poly'&&!t.poly?'disabled':''}>${l}</button>`).join('')}</div>

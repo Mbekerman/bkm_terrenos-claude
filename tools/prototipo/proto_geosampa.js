@@ -120,7 +120,7 @@ const geoLinhas=g=>GEO_CAMADAS.filter(c=>!/^zona_fiscal$|^perimetro_zona/.test(c
   return {tema,grav,erro,vals}});
 // Quadro na inscrição: última consulta e o que toca o lote.
 function geoQuadro(t,ins,i){const g=(ins.geo||[])[0];
-  if(!g)return loteVazio(t,ins,i,'Traz do GeoSampa o lote, a poligonal, o zoneamento e as restrições, e guarda a planta (PDF) e o desenho (DXF).');
+  if(!g)return loteVazio(t,ins,i,'Lote, zoneamento, restrições, planta e DXF.');
   const p=g.lote,end=[p.nm_logradouro_completo,p.cd_numero_porta].filter(Boolean).join(', ');
   const lin=(k,v)=>`<div class="kv"><dt>${k}</dt><dd>${v}</dd></div>`;
   const linhas=geoLinhas(g);

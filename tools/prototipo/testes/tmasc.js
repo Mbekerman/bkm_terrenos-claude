@@ -1,0 +1,32 @@
+// Máscaras de número ao digitar (proto_ui.js): R$ com milhar e vírgula, % dentro do campo, caret no lugar.
+const path=require('path');const {chromium}=require('playwright');
+const L=path.join(__dirname,'..','libs','l')+'/';const F=path.join(__dirname,'..','..','..','docs','prototipo.html');
+(async()=>{const b=await chromium.launch();const errs=[];const ok=(c,m)=>{console.log((c?'ok  ':'FALHA ')+m);if(!c)errs.push(m)};
+const ctx=await b.newContext({viewport:{width:1440,height:900}});
+await ctx.route('**/*',r=>{const u=r.request().url();if(u.includes('leaflet.js'))return r.fulfill({path:L+'leaflet.js'});if(u.includes('jszip'))return r.fulfill({path:L+'jszip.min.js'});
+ if(u.startsWith('http://bkm.test/prototipo')&&!u.includes('/dados/'))return r.fulfill({path:F,contentType:'text/html'});return r.fulfill({status:404,body:''})});
+const p=await ctx.newPage();p.on('pageerror',e=>errs.push(e.message));
+await p.goto('http://bkm.test/prototipo/terrenos/TER-000123/viabilidade/1');await p.waitForTimeout(700);
+const pu='[data-vb=tp][data-k=pu]';
+ok(await p.evaluate(s=>document.querySelector(s).closest('.adorno.moeda')?.querySelector('.adorno-t')?.textContent,pu)==='R$','preço unitário tem R$ dentro do campo');
+await p.fill(pu,'');await p.type(pu,'1234567,891');ok(await p.inputValue(pu)==='1.234.567,89','R$ ganha milhar e vírgula enquanto digita ('+await p.inputValue(pu)+')');
+await p.fill(pu,'');await p.type(pu,'0050');ok(await p.inputValue(pu)==='50','zeros à esquerda saem');
+await p.fill(pu,'');await p.type(pu,'1000');await p.keyboard.press('Home');await p.keyboard.press('ArrowRight');await p.keyboard.type('5');
+ok(await p.inputValue(pu)==='15.000'&&await p.evaluate(s=>document.querySelector(s).selectionStart,pu)===2,'digitar no meio mantém o cursor depois do dígito');
+await p.fill(pu,'');await p.type(pu,'abc12.3');ok(await p.inputValue(pu)==='123','letras e ponto digitado não entram (ponto é só milhar)');
+const qtd='[data-vb=tp][data-k=qtd]';await p.fill(qtd,'');await p.type(qtd,'1500,5');ok(await p.inputValue(qtd)==='15.005','quantidade é inteira');
+await p.click('.vb-aba[data-v=comercial]');await p.waitForTimeout(300);
+const pct=await p.$('.adorno.pct input');ok(!!pct,'item em % do VGV tem o % dentro do campo');
+await pct.fill('');await pct.type('2,755');ok(await pct.inputValue()==='2,755','% aceita casas decimais');
+ok(await p.evaluate(()=>{const w=document.querySelector('.adorno.pct'),i=w.querySelector('input').getBoundingClientRect(),t=w.querySelector('.adorno-t').getBoundingClientRect();return t.right<=i.right&&t.left>i.right-40}),'% fica no fim do campo');
+await p.click('.vb-aba[data-v=terreno]');await p.waitForTimeout(300);
+ok(await p.evaluate(()=>!!document.querySelector('#vb-pfp')?.closest('.adorno.pct')&&!!document.querySelector('#vb-min')?.closest('.adorno.moeda')),'permuta financeira em % e mínimo garantido em R$');
+await p.fill('#vb-min','');await p.type('#vb-min','2500000');ok(await p.inputValue('#vb-min')==='2.500.000','mínimo garantido formatado ao digitar');
+await p.keyboard.press('Tab');await p.waitForTimeout(200);ok(/2\.500\.000/.test(await p.textContent('[data-vbo=pfin]')),'valor formatado é lido certo pelo cálculo');
+// fora da viabilidade: condições pedidas (rótulo com R$)
+await p.goto('http://bkm.test/prototipo/terrenos/TER-000123');await p.waitForTimeout(600);
+await p.click('#sec-cond [data-a=edit]');await p.waitForTimeout(300);
+const vp='form[data-form=cond] input[name=valor]';ok(await p.evaluate(s=>!!document.querySelector(s)?.closest('.adorno.moeda'),vp),'valor pedido da oferta com R$ dentro do campo');
+ok(await p.evaluate(s=>!/\(R\$\)/.test(document.querySelector(`label[for="${document.querySelector(s).id}"]`)?.textContent||''),vp),'rótulo perde o "(R$)"');
+await p.fill(vp,'');await p.type(vp,'9500000');ok(await p.inputValue(vp)==='9.500.000','valor pedido formatado ao digitar');
+console.log(errs.length?'\n'+errs.length+' falha(s)':'\ntudo ok');await b.close();process.exit(errs.length?1:0)})();

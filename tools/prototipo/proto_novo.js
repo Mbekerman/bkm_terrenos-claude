@@ -99,13 +99,13 @@ function nvCidadeInsc(){const f=$('#f-novo');if(!f)return;const cid=cidDoNome(f.
 
 /* ---------- telas ---------- */
 function nvPasso1Html(fechar){const kmz=UI.nvKmz;
-  return `<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Passo 1 de 2 · A poligonal do terreno. Com ela o sistema confere se ele já está cadastrado e descobre o município e as ruas.</div></div>${fechar}</div>
+  return `<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Passo 1 de 2 · Poligonal do terreno</div></div>${fechar}</div>
   <div class="nv-ops">
     <button type="button" class="nv-op" data-a="nv-desenhar"><span class="nv-ic">${bi('mapa',24)}</span><span><b>Desenhar no mapa</b><span class="muted">Ache o endereço na barra do mapa e marque os cantos do terreno.</span></span></button>
     <button type="button" class="nv-op" data-a="nv-kmz"><span class="nv-ic">${ic('upload',24)}</span><span><b>Importar KMZ ou KML</b><span class="muted">Arquivo do Google Earth com o polígono do terreno.</span></span></button>
     ${kmz?`<div class="nv-kmz"><span class="lbl-f">O arquivo tem ${kmz.length} polígonos. Qual é o terreno?</span>${kmz.map((it,i)=>`<button type="button" class="btn sm" data-a="nv-kmz-i" data-i="${i}">${esc(it.nome)} · ${m2(Math.round(areaPoly(it.pts)))}</button>`).join('')}</div>`:''}
   </div>
-  <div class="df"><button class="btn text" data-a="close">Cancelar</button></div>`}
+  `}
 const nvSit=t=>t.situacao==='arquivado'?'<span class="chip">Arquivado</span>':sitChip(sitMapa(t));
 // o que fazer com cada terreno achado, conforme a área nova está dentro dele, o contém ou só cruza
 function nvAcoes(x){const t=x.t;
