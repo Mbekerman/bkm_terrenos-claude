@@ -131,10 +131,82 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
+-- Menções com @ (decisão do Moisés, 28/out/2026): quem escreve @arroba
+-- numa tarefa, numa atividade ou numa reunião avisa a pessoa (no app e,
+-- conforme a preferência dela, por e-mail). Só conta o @ de quem é da
+-- empresa; e-mail escrito no texto (x@bkm.com.br) não é menção. Editar o
+-- texto só avisa quem entrou agora.
+-- ---------------------------------------------------------------------
+create table app.mencoes (
+  id            uuid primary key default gen_random_uuid(),
+  empresa_id    uuid not null references app.empresas(id),
+  terreno_id    uuid references app.terrenos(id) on delete cascade,
+  origem_tabela text not null check (origem_tabela in ('tarefas','atividades','reunioes')),
+  origem_id     uuid not null,
+  user_id       uuid not null references auth.users(id) on delete cascade,
+  por           uuid default auth.uid(),
+  criado_em     timestamptz not null default now(),
+  unique (origem_tabela, origem_id, user_id)
+);
+create index on app.mencoes (user_id, criado_em desc);
+
+-- Os @ de um texto, em minúsculas, sem o ponto final colado ("@ana." = ana).
+create or replace function app.arrobas_no_texto(p_texto text)
+returns text[]
+language sql immutable set search_path = ''
+as $$
+  select coalesce(array_agg(distinct rtrim(lower(m[1]), '._-')), '{}')
+  from regexp_matches(coalesce(p_texto, ''), '(?:^|[^A-Za-z0-9._@-])@([A-Za-z0-9][A-Za-z0-9._-]{0,39})', 'g') m
+$$;
+
+-- Gatilho genérico: os argumentos são as colunas de texto da tabela.
+create or replace function app.tg_mencoes()
+returns trigger
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  c text; v text; novos text[] := '{}'; antigos text[] := '{}';
+  r record; v_autor text; v_onde text;
+begin
+  foreach c in array tg_argv loop
+    v := to_jsonb(new)->>c; novos := novos || app.arrobas_no_texto(v);
+    if tg_op = 'UPDATE' then antigos := antigos || app.arrobas_no_texto(to_jsonb(old)->>c); end if;
+  end loop;
+  if cardinality(novos) = 0 then return new; end if;
+  v_autor := coalesce((select nome from app.usuarios where user_id = auth.uid()),
+                      (select nome from app.membros where user_id = auth.uid() and empresa_id = new.empresa_id), 'Alguém');
+  v_onde := case tg_table_name
+    when 'tarefas' then 'na tarefa: ' || (to_jsonb(new)->>'titulo')
+    when 'atividades' then 'numa atividade: ' || left(to_jsonb(new)->>'resumo', 80)
+    else 'na reunião de ' || to_char((to_jsonb(new)->>'inicio')::timestamptz, 'DD/MM') end;
+  for r in select distinct u.user_id from app.usuarios u
+           join app.membros m on m.user_id = u.user_id and m.empresa_id = new.empresa_id
+           where u.arroba = any(novos) and not (u.arroba = any(antigos)) and u.user_id is distinct from auth.uid() loop
+    insert into app.mencoes (empresa_id, terreno_id, origem_tabela, origem_id, user_id)
+    values (new.empresa_id, new.terreno_id, tg_table_name, new.id, r.user_id)
+    on conflict do nothing;
+    if found then
+      perform app._notificar(new.empresa_id, r.user_id, 'mencao', v_autor || ' mencionou você ' || v_onde,
+                             new.terreno_id, tg_table_name, new.id);
+    end if;
+  end loop;
+  return new;
+end $$;
+create trigger t_mencoes after insert or update of descricao, resultado on app.tarefas
+  for each row execute function app.tg_mencoes('descricao', 'resultado');
+create trigger t_mencoes after insert or update of resumo, resultado on app.atividades
+  for each row execute function app.tg_mencoes('resumo', 'resultado');
+create trigger t_mencoes after insert or update of pauta, resumo, encaminhamentos on app.reunioes
+  for each row execute function app.tg_mencoes('pauta', 'resumo', 'encaminhamentos');
+
+-- ---------------------------------------------------------------------
 -- RLS e permissões
 -- ---------------------------------------------------------------------
 alter table app.empresa_dominios enable row level security;
 alter table app.usuarios enable row level security;
+alter table app.mencoes enable row level security;
+create policy ver on app.mencoes for select to authenticated using (empresa_id in (select app.minhas_empresas()));
+grant select on app.mencoes to authenticated;
 
 create policy dominios_ver on app.empresa_dominios for select to authenticated
   using (empresa_id in (select app.minhas_empresas()));
@@ -149,7 +221,7 @@ grant select, insert, update, delete on app.empresa_dominios to authenticated;
 create trigger t_aud after insert or update or delete on app.empresa_dominios for each row execute function app.tg_auditoria();
 
 revoke execute on function app.gerar_arroba(text, uuid), app.tg_usuario_novo(), app.tg_usuario_login(),
-  app.hook_antes_de_criar_usuario(jsonb), app.mudar_arroba(uuid, text) from public;
+  app.hook_antes_de_criar_usuario(jsonb), app.mudar_arroba(uuid, text), app.tg_mencoes() from public;
 grant execute on function app.mudar_arroba(uuid, text) to authenticated;
 grant usage on schema app to supabase_auth_admin;
 grant execute on function app.hook_antes_de_criar_usuario(jsonb) to supabase_auth_admin;

@@ -412,8 +412,8 @@ begin
   from app.zona_parametros where empresa_id is null and ativo;
   -- tipos de notificação: ver notificacoes
   if to_regclass('app.tipos_notificacao') is not null then
-    execute 'insert into app.tipos_notificacao (empresa_id, codigo, nome, ativo, dias_antes_padrao)
-             select $1, codigo, nome, ativo, dias_antes_padrao from app.tipos_notificacao where empresa_id is null' using new.id;
+    execute 'insert into app.tipos_notificacao (empresa_id, codigo, nome, ativo, dias_antes_padrao, email_padrao)
+             select $1, codigo, nome, ativo, dias_antes_padrao, email_padrao from app.tipos_notificacao where empresa_id is null' using new.id;
   end if;
   -- lista de despesas do estudo de viabilidade: ver viabilidade
   if to_regclass('app.viabilidade_despesas') is not null then

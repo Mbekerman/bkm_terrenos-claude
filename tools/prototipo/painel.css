@@ -2583,3 +2583,21 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
   .vb-tab .vb-q.sub > .vb-r.vb-qh + .vb-r { padding-top: 8px }
   .vb-lns .vb-r:not(.vb-hd):not(.vb-qh) { padding: 16px 40px 16px 0; row-gap: 14px }
 }
+
+/* ---------- menção com @ e e-mail das notificações ---------- */
+.mencao { color: var(--m-primary, #0b57d0); font-weight: 500; background: color-mix(in srgb, var(--m-primary, #0b57d0) 10%, transparent); border-radius: 4px; padding: 0 2px }
+.mn-pop { position: fixed; z-index: 1000; background: var(--m-surface, #fff); border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.14); padding: 4px 0; max-height: 280px; overflow: auto }
+.mn-pop[hidden] { display: none }
+.mn-i { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; min-height: 40px }
+.mn-i[aria-selected="true"], .mn-i:hover { background: var(--m-sec-cont, #c2e7ff) }
+.mn-n { font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.mn-a { color: var(--m-on-var, #444746); font-size: 13px; margin-left: auto; white-space: nowrap }
+.sino-mail { display: inline-flex; align-items: center; gap: 3px; margin-left: 6px }
+.mnp { display: flex; flex-direction: column; padding: 4px 0 8px }
+.mnp-r { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 48px; border-bottom: 1px solid var(--m-outline-var, #c4c7c5); cursor: pointer }
+.mnp-r:last-child { border-bottom: 0 }
+.mnp-r input { width: 18px; height: 18px; flex: none }
+@media (min-width: 900px) { .cfg-r.cfg-nt { grid-template-columns: minmax(200px, 1.6fr) 70px 70px minmax(140px, 1fr) } }
+html[data-tema="escuro"] .mn-pop { background: #0c1433; border-color: #1a2240 }
+html[data-tema="escuro"] .mn-i[aria-selected="true"], html[data-tema="escuro"] .mn-i:hover { background: rgba(99,112,255,.10) }
+html[data-tema="escuro"] .mencao { color: #c9d6ff; background: rgba(99,112,255,.16) }

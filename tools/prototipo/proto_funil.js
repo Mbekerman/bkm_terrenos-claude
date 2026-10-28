@@ -23,7 +23,7 @@ const destinoCfg=(tipo,k)=>tipo==='etapa'?etapaCfg(k):tipo==='subetapa'?subCfg(k
 const destinoNome=(tipo,k)=>tipo==='etapa'?SN(k):tipo==='subetapa'?subN(k):STATUS_N[k]||k;
 function syncCfg(){STAGES.splice(0,STAGES.length,...cfg().etapas.map(e=>[e.k,e.nome]))}
 /* dados carregados ou restaurados: garante configuração, equipe e avisos dos pedidos de exemplo */
-function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.cfg.fases)S.cfg.fases=FASES_PADRAO();if(!S.cfg.deps)S.cfg.deps=DEPS_PADRAO();if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];syncCfg();partesPreparar();
+function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.cfg.fases)S.cfg.fases=FASES_PADRAO();if(!S.cfg.deps)S.cfg.deps=DEPS_PADRAO();if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];{const N0=CFG_PADRAO().notif;Object.entries(N0).forEach(([k,v])=>{const c=S.cfg.notif[k];if(!c)S.cfg.notif[k]=v;else if(c.email==null)c.email=v.email})}if(!S.prefsNotif)S.prefsNotif={};syncCfg();partesPreparar();
   if(!S.pedidosAvisados){S.terrenos.forEach(t=>{if(t.neg?.pedido)avisarAprovadores(t)});S.pedidosAvisados=true}}
 
 /* ---------- regras da passagem ---------- */
@@ -107,10 +107,11 @@ function levarAte(t,alvo,o={}){const snap=JSON.stringify(t.neg),h=t.hist.length,
   return {ok:true}}
 
 /* ---------- notificações (no banco: notificacoes, lembretes, rotina_diaria) ---------- */
-function notificar(para,tipo,txt,t,chave){const c=cfg().notif[tipo];if(!para||!c||!c.ativo)return;
+/* ir: onde o aviso leva ({b: bloco da ficha, alvo: data-mid do item}); email: vai também por e-mail (padrão do tipo ou preferência da pessoa) */
+function notificar(para,tipo,txt,t,chave,ir){const c=cfg().notif[tipo];if(!para||!c||!c.ativo)return;
   if(!chave&&para===me())return;
   const k=chave?`${tipo}|${chave}|${para}`:null;if(k&&S.notifs.some(x=>x.chave===k))return;
-  S.notifs.unshift({id:uid(),para,tipo,txt,tid:t?t.id:null,em:agora(),lida:false,chave:k,autor:chave?null:me()})}
+  S.notifs.unshift({id:uid(),para,tipo,txt,tid:t?t.id:null,em:agora(),lida:false,chave:k,autor:chave?null:me(),ir:ir||null,email:mnEmail(para,tipo)})}
 function avisarAprovadores(t){const p=t.neg.pedido;if(!p)return;
   naVez(p).forEach(r=>{const dest=r.previsto?[r.previsto]:S.membros.filter(m=>NIVEL[m.papel]===r.nivel).map(m=>m.nome);
     dest.forEach(u=>notificar(u,'aprovacao_pendente',`${p.por} pede aprovação para ${destinoNome(p.tipo,p.dest)}`,t,p.id+':'+r.nivel))})}
@@ -127,15 +128,15 @@ function rotinaNotif(){const N=cfg().notif,dentro=(data,tipo)=>(N[tipo].dias||[]
     t.docs.forEach(d=>{const v=docVal(d);if(v)dentro(v,'documento_vencendo').forEach(x=>notificar(t.resp,'documento_vencendo',`${TIPOS_DOC[d.tipo][0]} vence ${quando(v)}`,t,d.tipo+':'+v+':'+x))});
     (t.reunioes||[]).filter(r=>r.status==='agendada').forEach(r=>dentro(r.data,'reuniao_agendada').forEach(x=>notificar(t.resp,'reuniao_agendada',`Reunião ${quando(r.data)}${r.hora?' às '+r.hora:''}`,t,r.id+':'+r.data+':'+x)))})}
 /* tarefa criada ou editada: avisa o responsável e quem foi marcado */
-function notifTarefa(t,k,antes){if(k.resp!==antes?.resp)notificar(k.resp,'tarefa_atribuida',`${me()} atribuiu a você: ${k.titulo}`,t);
-  (k.marcados||[]).filter(u=>!(antes?.marcados||[]).includes(u)&&u!==k.resp).forEach(u=>notificar(u,'tarefa_marcado',`${me()} marcou você na tarefa: ${k.titulo}`,t))}
+function notifTarefa(t,k,antes){const ir={b:'tarefas',alvo:k.id};if(k.resp!==antes?.resp)notificar(k.resp,'tarefa_atribuida',`${me()} atribuiu a você: ${k.titulo}`,t,null,ir);
+  (k.marcados||[]).filter(u=>!(antes?.marcados||[]).includes(u)&&u!==k.resp).forEach(u=>notificar(u,'tarefa_marcado',`${me()} marcou você na tarefa: ${k.titulo}`,t,null,ir))}
 const minhasNotifs=()=>S.notifs.filter(x=>x.para===me());
 let sinoAberto=false;
 const IC_SINO='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"/></svg>';
 function renderSino(){const el=document.getElementById('sino');if(!el)return;const L=minhasNotifs(),nl=L.filter(x=>!x.lida).length;
   el.innerHTML=`<button class="sino-btn" data-a="sino" aria-haspopup="true" aria-expanded="${sinoAberto}" aria-label="Notificações${nl?`, ${nl} não lidas`:''}" title="Notificações">${IC_SINO}${nl?`<span class="sino-n">${nl>9?'9+':nl}</span>`:''}</button>`+
   (sinoAberto?`<div class="sino-menu" role="dialog" aria-label="Notificações"><div class="sino-h"><span>Notificações</span>${nl?'<button class="linkbtn" data-a="notif-lidas">Marcar todas como lidas</button>':''}</div>
-  <div class="sino-l">${L.slice(0,30).map(x=>{const t=x.tid?T(x.tid):null;return `<button class="sino-i ${x.lida?'':'nova'}" data-a="notif" data-v="${x.id}"><span class="sino-d"></span><span class="sino-c"><span class="sino-t">${esc(x.txt)}</span><span class="sino-s">${t?esc(t.codigo+' · '+t.nome)+' · ':''}${fd(x.em.slice(0,10))}${x.autor?' · '+esc(x.autor):''}</span></span></button>`}).join('')||'<div class="empty" style="padding:24px 16px">Nada por aqui.</div>'}</div>
+  <div class="sino-l">${L.slice(0,30).map(x=>{const t=x.tid?T(x.tid):null;return `<button class="sino-i ${x.lida?'':'nova'}" data-a="notif" data-v="${x.id}"><span class="sino-d"></span><span class="sino-c"><span class="sino-t">${esc(x.txt)}</span><span class="sino-s">${t?esc(t.codigo+' · '+t.nome)+' · ':''}${fd(x.em.slice(0,10))}${x.autor?' · '+esc(x.autor):''}${x.email?`<span class="sino-mail" title="Também enviada por e-mail">${ic('mail',14)}e-mail</span>`:''}</span></span></button>`}).join('')||'<div class="empty" style="padding:24px 16px">Nada por aqui.</div>'}</div>
   ${ehAdmin(me())?'<div class="sino-f"><button class="linkbtn" data-a="nav" data-r="config" data-cfg="notif">Configurar notificações</button></div>':''}</div>`:'')}
 
 /* ---------- desenho: chip, linha do tempo, quadro de avanço ---------- */
@@ -221,7 +222,7 @@ function tentar(t,tipo,dest,dados){const r=moverPara(t,tipo,dest,{dados});save()
   toast(r.erro,true);return r}
 
 /* ---------- Configurações › Funil (só administrador) ---------- */
-const TIPOS_NOTIF_N={tarefa_atribuida:'Tarefa atribuída a você',tarefa_marcado:'Marcado em uma tarefa',tarefa_prazo:'Prazo de tarefa chegando',tarefa_atrasada:'Tarefa atrasada',subetapa_prazo:'Subetapa passou do prazo',stand_by_retomar:'Data de retomar um Stand By',documento_vencendo:'Documento vencendo',reuniao_agendada:'Reunião agendada',aprovacao_pendente:'Pedido de aprovação para você',aprovacao_decidida:'Seu pedido foi aprovado ou recusado'};
+const TIPOS_NOTIF_N={tarefa_atribuida:'Tarefa atribuída a você',tarefa_marcado:'Marcado em uma tarefa',mencao:'Mencionado com @',tarefa_prazo:'Prazo de tarefa chegando',tarefa_atrasada:'Tarefa atrasada',subetapa_prazo:'Subetapa passou do prazo',stand_by_retomar:'Data de retomar um Stand By',documento_vencendo:'Documento vencendo',reuniao_agendada:'Reunião agendada',aprovacao_pendente:'Pedido de aprovação para você',aprovacao_decidida:'Seu pedido foi aprovado ou recusado'};
 const apCells=(p,c)=>`<label class="chk"><input type="checkbox" data-ch="cfg" data-p="${p}.g" ${c.g?'checked':''}>Gestor</label><label class="chk"><input type="checkbox" data-ch="cfg" data-p="${p}.d" ${c.d?'checked':''}>Diretor</label>${c.g&&c.d?`<select data-ch="cfg" data-p="${p}.modo" aria-label="Ordem das aprovações"><option value="sequencia" ${c.modo!=='paralelo'?'selected':''}>Em sequência</option><option value="paralelo" ${c.modo==='paralelo'?'selected':''}>Em paralelo</option></select>`:''}`;
 const usada=k=>S.terrenos.some(t=>t.neg&&(t.neg.sub===k||(t.neg.trilha||[]).some(x=>x.paraSub===k||x.deSub===k)));
 function pgConfig(){
@@ -257,8 +258,8 @@ function pgConfig(){
     <form class="inline-form" data-form="cfg-mot" data-s="${st}"><div class="field grow"><label for="mt-${st}">Novo motivo</label><input id="mt-${st}" name="nome" required></div><button class="btn sm">${ic('add',16)}Adicionar</button></form></div></section>`).join('')}`;
   if(aba==='checklist')corpo=C.etapas.map(e=>{const L=C.checklist[e.k]||[];return `<section class="sec"><div class="sec-h"><h2>Para sair de ${esc(e.nome)}</h2></div><div class="sec-b"><div class="cfg-docs">${Object.entries(TIPOS_DOC).filter(([k])=>!['foto','planta','ata'].includes(k)).map(([k,[l]])=>{const c=L.find(x=>x.doc===k);
       return `<button class="fchip" data-a="cfg-doc" data-e="${e.k}" data-v="${k}" aria-pressed="${!!c}" title="${c?(c.obrig?'Obrigatório: clique para tornar opcional':'Opcional: clique para tirar'):'Fora do checklist: clique para exigir'}">${c?ic(c.obrig?'check':'clock',16):''}${esc(l)}${c&&!c.obrig?' <span class="faint">(opcional)</span>':''}</button>`}).join('')}</div></div></section>`}).join('')+'<div class="hint" style="margin:0 4px">Clique para alternar: obrigatório, opcional, fora do checklist. O obrigatório trava a saída da etapa (gestor e diretor passam com justificativa).</div>';
-  if(aba==='notif')corpo=`<section class="sec"><div class="sec-h"><h2>Notificações</h2></div><div class="sec-b"><div class="cfg-t"><div class="cfg-r cfg-hd cfg-nt"><span>Tipo</span><span>Ativa</span><span>Lembretes (dias antes)</span></div>
-    ${Object.entries(C.notif).map(([k,c])=>`<div class="cfg-r cfg-nt"><span>${TIPOS_NOTIF_N[k]||k}</span><label class="chk"><input type="checkbox" data-ch="cfg" data-p="notif.${k}.ativo" ${c.ativo?'checked':''} aria-label="Ativa"></label>${c.dias?`<input data-ch="cfg-dias" data-k="${k}" value="${c.dias.join(', ')}" placeholder="Ex.: 7, 1, 0" aria-label="Lembretes de ${TIPOS_NOTIF_N[k]}">`:'<span class="faint">Na hora</span>'}</div>`).join('')}</div>
+  if(aba==='notif')corpo=`<section class="sec"><div class="sec-h"><h2>Notificações</h2></div><div class="sec-b"><div class="cfg-t"><div class="cfg-r cfg-hd cfg-nt"><span>Tipo</span><span>Ativa</span><span>E-mail</span><span>Lembretes (dias antes)</span></div>
+    ${Object.entries(C.notif).map(([k,c])=>`<div class="cfg-r cfg-nt"><span>${TIPOS_NOTIF_N[k]||k}</span><label class="chk"><input type="checkbox" data-ch="cfg" data-p="notif.${k}.ativo" ${c.ativo?'checked':''} aria-label="Ativa"></label><label class="chk"><input type="checkbox" data-ch="cfg" data-p="notif.${k}.email" ${c.email?'checked':''} aria-label="Também por e-mail, para quem não escolheu"></label>${c.dias?`<input data-ch="cfg-dias" data-k="${k}" value="${c.dias.join(', ')}" placeholder="Ex.: 7, 1, 0" aria-label="Lembretes de ${TIPOS_NOTIF_N[k]}">`:'<span class="faint">Na hora</span>'}</div>`).join('')}</div>
     </div></section>`;
   if(aba==='equipe')corpo=`<section class="sec"><div class="sec-h"><h2>Equipe e hierarquia</h2></div><div class="sec-b"><div class="cfg-t"><div class="cfg-r cfg-hd cfg-eq"><span>Pessoa</span><span>Papel</span><span>Superior</span><span>Administrador</span></div>
     ${S.membros.map((m,i)=>{const sups=S.membros.filter(x=>NIVEL[x.papel]===NIVEL[m.papel]+1);return `<div class="cfg-r cfg-eq"><span>${av(m.nome,'sm')} ${esc(m.nome)}</span><select data-ch="cfg-eq" data-i="${i}" data-k="papel" aria-label="Papel de ${esc(m.nome)}">${Object.entries(PAPEL_N).map(([k,l])=>`<option value="${k}" ${m.papel===k?'selected':''}>${l}</option>`).join('')}</select>
@@ -286,7 +287,7 @@ function validaEquipe(){const M=S.membros;if(!M.some(m=>m.admin))return 'A empre
 function funilClick(A,a,t){
   switch(A){
     case 'sino':sinoAberto=!sinoAberto;renderSino();return true;
-    case 'notif':{const x=S.notifs.find(n=>n.id===a.dataset.v);if(!x)return true;x.lida=true;sinoAberto=false;save();renderSino();if(x.tid&&T(x.tid)){BLA={geral:true};blId=x.tid;go('terreno',{id:x.tid,tab:'geral',from:UI.route==='terreno'?UI.from:'inicio'})}return true}
+    case 'notif':{const x=S.notifs.find(n=>n.id===a.dataset.v);if(!x)return true;x.lida=true;sinoAberto=false;save();renderSino();if(x.tid&&T(x.tid)){BLA={geral:true};blId=x.tid;go('terreno',{id:x.tid,tab:'geral',from:UI.route==='terreno'?UI.from:'inicio'});if(x.ir)mnIr(x.ir)}return true}
     case 'notif-lidas':minhasNotifs().forEach(x=>x.lida=true);save();renderSino();return true;
     case 'neg-etapa':UI.negEtapa=a.dataset.v||null;render();return true;
     case 'adv-ir':{const r=checkAdv(t);if(!r)return true;const pend=r.items.filter(x=>!x.ok);
