@@ -1540,17 +1540,11 @@ update auth.users set raw_user_meta_data = '{"full_name":"João S. Silva","avata
 select pg_temp.ok((select nome = 'João S. Silva' and foto_url = 'https://foto/2' and arroba = 'joao.silva' from app.usuarios where user_id = '00000000-0000-0000-0000-0000000000f1'),
   'novo login atualiza nome e foto e mantém o @');
 select pg_temp.como('00000000-0000-0000-0000-0000000000f1');
-select pg_temp.ok(not exists (select 1 from app.terrenos) and not exists (select 1 from app.empresas)
-  and (select count(*) from app.membros) = 1 and (select count(*) from app.usuarios) = 1,
-  'o básico não vê os dados da empresa, só o próprio perfil e a própria linha de membro');
+select pg_temp.ok(exists (select 1 from app.terrenos), 'o básico consulta os dados da empresa, como leitura');
+select pg_temp.falha(format($$update app.terrenos set nome = 'X' where id = %L$$, :'t1'), 'o básico não altera nada');
 select pg_temp.falha(format($$select app.mudar_arroba(%L, 'jj')$$, '00000000-0000-0000-0000-0000000000f1'), 'o básico não muda o próprio @');
 select pg_temp.como(:'diretor');
 select pg_temp.ok((select count(*) from app.usuarios where arroba like 'joao.silva%') = 2, 'a equipe vê nome, foto e @ de quem está na empresa');
 select pg_temp.falha(format($$select app.mudar_arroba(%L, 'joao.silva')$$, '00000000-0000-0000-0000-0000000000f2'), '@ já usado é recusado');
 select pg_temp.ok(app.mudar_arroba('00000000-0000-0000-0000-0000000000f2', '@Joao.Outro') = 'joao.outro', 'o administrador muda o @');
-update app.membros set papel = 'leitura' where user_id = '00000000-0000-0000-0000-0000000000f1';
-select pg_temp.como('00000000-0000-0000-0000-0000000000f1');
-select pg_temp.ok(exists (select 1 from app.terrenos), 'liberado pelo administrador, passa a ver os dados');
-select pg_temp.como(:'diretor');
-
 \echo 'TODOS OS TESTES PASSARAM'

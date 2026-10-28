@@ -2,8 +2,8 @@
 -- BKM Terrenos · 0011 · usuários: login pelo Google do Workspace
 -- Quem tem e-mail de um domínio cadastrado (bkm.com.br) entra pelo Google;
 -- no primeiro login nasce o perfil (nome, e-mail, foto, @) e a pessoa entra
--- na empresa com o papel `basico`, até o administrador liberar (decisão do
--- Moisés, 28/out/2026). Outros domínios são recusados no Supabase Auth pelo
+-- na empresa com o papel `basico`, que por ora só consulta, como `leitura`
+-- (decisão do Moisés, 28/out/2026; os perfis definitivos virão depois). Outros domínios são recusados no Supabase Auth pelo
 -- gancho "Before User Created" (app.hook_antes_de_criar_usuario).
 -- =====================================================================
 
@@ -143,9 +143,6 @@ create policy dominios_admin on app.empresa_dominios for all to authenticated
 -- Cada um vê o próprio perfil e o de quem está nas suas empresas (nomes, fotos e @ nas telas).
 create policy usuarios_ver on app.usuarios for select to authenticated
   using (user_id = auth.uid() or user_id in (select user_id from app.membros where empresa_id in (select app.minhas_empresas())));
--- O básico vê a própria linha de membro (a tela mostra "aguardando liberação").
-create policy membros_ver_proprio on app.membros for select to authenticated
-  using (user_id = auth.uid());
 
 grant select on app.usuarios to authenticated;
 grant select, insert, update, delete on app.empresa_dominios to authenticated;
