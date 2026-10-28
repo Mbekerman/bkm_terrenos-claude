@@ -107,7 +107,7 @@ const subN=k=>(cfg().subs.find(s=>s.k===k)||{}).nome||k||'';
 const STATUS_N={ativo:'Ativo',comprado:'Comprado',perdido:'Perdido',descartado:'Descartado',stand_by:'Stand By'};
 const motivoN=(st,k)=>((cfg().motivos[st]||[]).find(m=>m.k===k)||{}).nome||k||'';
 const SIDX=k=>STAGES.findIndex(s=>s[0]===k);const SN=k=>(STAGES.find(s=>s[0]===k)||[,k])[1];
-const INFRA=[['energia','Rede de energia na porta'],['agua','Rede de água na porta'],['esgoto','Rede de esgoto na porta'],['gas','Gás canalizado na porta'],['asfalto','Asfalto na porta'],['drenagem','Drenagem pluvial'],['iluminacao','Iluminação pública'],['calcada','Calçada'],['fibra','Telefonia / fibra óptica']];
+const INFRA=[['energia','Energia'],['agua','Água'],['esgoto','Esgoto'],['gas','Gás canalizado'],['asfalto','Asfalto'],['drenagem','Drenagem pluvial'],['iluminacao','Iluminação pública'],['calcada','Calçada'],['fibra','Telefonia / fibra óptica']];
 const ZONEAMENTOS=['ZEU','ZEUa','ZEUP','ZEUPa','ZEM','ZEMP','ZC','ZCa','ZC-ZEIS','ZCOR-1','ZCOR-2','ZCOR-3','ZM','ZMa','ZMIS','ZMISa','ZEIS-1','ZEIS-2','ZEIS-3','ZEIS-4','ZEIS-5','ZDE-1','ZDE-2','ZPI-1','ZPI-2','ZER-1','ZER-2','ZERa','ZPR','ZEP','ZEPAM','ZPDS','ZOE'];
 const TIPOS_DOC={ata:['Ata de reunião','Reuniões',null],matricula:['Matrícula atualizada','Imóvel',30],onus:['Certidão de ônus reais','Imóvel',30],iptu:['Certidão negativa de IPTU','Imóvel',90],vend:['Certidões pessoais do vendedor','Vendedor',30],topo:['Levantamento planialtimétrico','Técnico',null],sond:['Sondagem SPT','Técnico',null],amb:['Avaliação ambiental preliminar','Técnico',null],minuta:['Minuta de promessa de compra e venda','Contratos',null],foto:['Foto','Mídia',null],planta:['Planta ou croqui','Técnico',null],lote_pdf:['Planta do lote da prefeitura (PDF)','Técnico',null],lote_dxf:['Desenho do lote da prefeitura (DXF)','Técnico',null],topo_pdf:['Topográfico preliminar (PDF)','Técnico',null],topo_dxf:['Topográfico preliminar (DXF + imagem)','Técnico',null]};
 const CHECK_DIL=[['matricula',1],['onus',1],['iptu',1],['vend',1],['topo',1],['sond',0],['amb',0],['minuta',1]];
@@ -563,7 +563,7 @@ function abaTarefas(t){
 }
 function abaUrbanismo(t){
   return `<div class="stack">${secAnaliseUrb(t)}
-  <section class="sec"><div class="sec-h"><h2>Infraestrutura na porta</h2><span class="faint" style="font-size:13px">${infraNV(t)} não verificados</span></div><div style="padding-bottom:6px">
+  <section class="sec"><div class="sec-h"><h2>Infraestrutura na porta</h2>${infraNV(t)?`<span class="faint" style="font-size:13px">${infraNV(t)} não verificado${infraNV(t)>1?"s":""}</span>`:""}</div><div style="padding-bottom:6px">
   ${INFRA.map(([k,l])=>{const r=t.infra[k]||{d:'nao_verificado'};return `<div class="infra"><span>${l}</span><span class="seg3" role="group" aria-label="${l}">${[['nao_verificado','Não verificado','nv'],['sim','Sim','sim'],['nao','Não','nao']].map(([v,lb,c])=>`<button type="button" class="${c}" aria-pressed="${r.d===v}" data-a="infra" data-k="${k}" data-v="${v}">${lb}</button>`).join('')}</span>
   <span class="meta">${r.d!=='nao_verificado'?`${fd(r.data)} · <input aria-label="Fonte da verificação de ${l}" data-ch="infra-fonte" data-k="${k}" value="${esc(r.fonte)}" style="border:0;border-bottom:1px dashed var(--linha);background:transparent;font-size:12px;color:var(--texto-suave);width:60%">`:''}</span></div>`}).join('')}</div>
   </section></div>`;
