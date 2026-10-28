@@ -72,7 +72,9 @@ Um dono com várias matrículas é **uma** negociação. Vários donos que negoc
 
 ## Papéis, hierarquia e configuração
 
-Papéis: `diretor`, `gestor`, `analista` (editam) e `leitura` (consulta). `membros.superior_id` liga cada analista a um gestor e cada gestor a um diretor, sempre um nível acima (trigger). `administrador` é permissão à parte, em qualquer papel: gerencia a equipe e a configuração do funil. Quem cria a empresa vira diretor e administrador.
+Papéis: `diretor`, `gestor`, `analista` (editam), `leitura` (consulta) e `basico` (entrou pelo domínio da empresa; até os perfis definitivos, consulta como `leitura`, decisão do Moisés de 28/out/2026). `membros.superior_id` liga cada analista a um gestor e cada gestor a um diretor, sempre um nível acima (trigger). `administrador` é permissão à parte, em qualquer papel: gerencia a equipe e a configuração do funil. Quem cria a empresa vira diretor e administrador.
+
+**Login e perfil do usuário** (decisão do Moisés, 28/out/2026). Só login pelo Google do Workspace; e-mail e senha ficam desligados no Supabase Auth. `empresa_dominios` liga um domínio de e-mail (bkm.com.br) a uma empresa, editado pelo administrador. O gancho "Before User Created" do Auth chama `app.hook_antes_de_criar_usuario`, que recusa e-mail de domínio não cadastrado (o `hd` do Google é só dica na tela). No primeiro login, o trigger `t_usuario_novo` em `auth.users` cria `usuarios` (nome, e-mail, foto do Google e o `arroba`, o texto antes do @ do e-mail em minúsculas e sem acento, único, com número no fim se repetir) e o membro `basico` da empresa do domínio. A cada login, nome, foto e e-mail se atualizam (`t_usuario_login`); o @ fica, e só o administrador o muda (`app.mudar_arroba`). Quem cada um vê em `usuarios`: o próprio perfil e os de quem está nas suas empresas. O primeiro administrador é promovido à mão no banco. As chaves do Google para Agenda e Gmail (refresh token) não passam pelo navegador nem ficam em tabela legível: ficam no Vault, gravadas por uma função do servidor (a fazer).
 
 A configuração do funil é **por empresa** (`empresa_id`); as linhas com `empresa_id` nulo são o modelo padrão, copiado para cada empresa nova. O administrador edita pelo app, só por RPC, e toda alteração vai para a auditoria:
 
@@ -86,7 +88,8 @@ A configuração do funil é **por empresa** (`empresa_id`); as linhas com `empr
 | Motivos de encerramento | `salvar_motivo`, `apagar_motivo` (só nunca usado) | |
 | Checklist de documentos por etapa | `salvar_checklist`, `remover_checklist` | |
 | Status da fase: nome, aprovações, incluir ou tirar (Perdido, Descartado) | `configurar_status` | tirar Concluído ou Stand By; tirar status em uso |
-| Tipos de notificação e lembretes padrão | `configurar_notificacao` | |
+| Tipos de notificação, lembretes e e-mail padrão | `configurar_notificacao` | |
+| Receber ou não por e-mail, por tipo (cada um o seu) | `salvar_preferencia_notificacao` | |
 
 ```mermaid
 erDiagram
@@ -105,7 +108,7 @@ erDiagram
 
   membros {
     uuid user_id PK
-    text papel "diretor | gestor | analista | leitura"
+    text papel "diretor | gestor | analista | leitura | basico"
     uuid superior_id FK "um nivel acima"
     bool administrador
   }
@@ -205,6 +208,7 @@ erDiagram
 | --- | --- | --- |
 | `tarefa_atribuida` | na hora (trigger em `tarefas`) | responsável |
 | `tarefa_marcado` | na hora (`tarefa_marcados`) | pessoa marcada |
+| `mencao` | na hora, @arroba no texto (trigger em `tarefas`, `atividades`, `reunioes`) | pessoa mencionada |
 | `tarefa_prazo` | lembrete (padrão: no dia) | responsável |
 | `tarefa_atrasada` | rotina diária, uma vez por prazo | responsável |
 | `stand_by_retomar` | lembrete (padrão: 7 dias antes e no dia) | responsável da tratativa |
@@ -213,6 +217,10 @@ erDiagram
 | `reuniao_agendada` | lembrete (padrão: 1 dia antes) | responsável da tratativa ou do terreno |
 | `aprovacao_pendente` | na hora, quando é a vez | aprovador previsto (ou todos do nível) |
 | `aprovacao_decidida` | na hora | quem pediu |
+
+**Menções com @** (decisão do Moisés, 28/out/2026): quem escreve `@arroba` (o @ de `usuarios`) na descrição ou no resultado da tarefa, no resumo ou no resultado da atividade, ou na pauta, no resumo ou nos encaminhamentos da reunião avisa a pessoa (`app.tg_mencoes`, que lê os @ por `app.arrobas_no_texto`). Só conta o @ de quem é da empresa; o autor não avisa a si mesmo, e-mail escrito no texto não é menção, e editar o texto só avisa quem entrou agora. Cada menção fica em `mencoes` (origem e pessoa, uma vez).
+
+**E-mail:** cada tipo tem o padrão da empresa (`tipos_notificacao.email_padrao`; nascem ligados os de atribuição, marcação, menção e aprovação) e cada pessoa escolhe por tipo em `preferencias_notificacao` (`app.salvar_preferencia_notificacao(empresa, tipo, email)`; nulo volta ao padrão). A notificação que vai por e-mail nasce com `email_status = 'pendente'`; uma função do servidor (a fazer) envia pela conta do sistema (bkm@) e marca `enviado` ou `falhou`. No app a notificação sempre aparece; o administrador desliga o tipo inteiro. WhatsApp fica para depois (decisão do Moisés, 28/out/2026).
 
 `lembretes`: um por item e antecedência (`dias_antes`, destinatário nulo = responsável do item). Nascem com o item pelos padrões de `tipos_notificacao.dias_antes_padrao`, e quem cadastra pode incluir ou tirar. `enviado_para` guarda a data já avisada: se a data do item mudar, o lembrete volta a valer. `app.rotina_diaria()` roda às 6h pelo pg_cron (agendada na migration quando a extensão existe).
 

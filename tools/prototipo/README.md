@@ -26,6 +26,7 @@ O `docs/prototipo.html` (servido pelo Railway em `/prototipo`) e o artifact do c
 | `topo_dxf_modelo.py` + `topo_modelo.dxf` | esqueleto DXF 2000 (layers, imagem referenciada) feito pelo ezdxf; o `build.py` embute o `.dxf` no `proto_topo.js` |
 | `proto_rota.js` | endereço de cada tela: `/terrenos`, `/terrenos/TER-000123/negociacao`, `/terrenos/TER-000123/viabilidade/1`, `/mapa/TER-000123/ficha`, `/fases/aprovacao/projeto`, `/tarefas/tabela`, `/configuracoes/parametros`, `/terrenos/novo`; no Railway no caminho (`/prototipo/...`), fora dele depois do `#`; troca de tela entra no histórico do navegador, seção aberta e seleção no mapa só atualizam o endereço; link recebido abre direto |
 | `proto_funil.js` | funil: passagem com pendências e aprovações (espelha `app._passagem`), quadro de avanço, kanban, notificações e Configurações › Funil |
+| `proto_mencao.js` | menção com @: lista dos colegas ao digitar @ nos campos `data-mencao` (tarefa e reunião), @ destacado no texto, aviso só para quem entrou no texto, aviso do sino que leva ao item (`data-mid`), e-mail pelo padrão do tipo ou pela escolha de cada um (menu do avatar › Notificações por e-mail); espelha `app.tg_mencoes` e `preferencias_notificacao` |
 | `bkm.pre-painel.css` + `painel.css` | estilos; o `painel.css` tem os blocos mais novos e sobrepõe o anterior |
 | `build.py` | junta tudo: grava `docs/prototipo.html`, `saida/bkm-terrenos.html` (artifact e testes) e atualiza `apps/web/src/styles.css` |
 | `mkdemo.py` | gera `saida/demo/...` com 6 usuários a mais (usado por `tpisca.js`, `tend2.js`, `tgmock.js`) |
@@ -54,6 +55,7 @@ Rodar só o que a mudança toca; a varredura completa (`tvaza` e `tscroll`) ao f
 | `tlogjunta.js` | cliques seguidos na temperatura viram um log só; voltar ao valor de antes não deixa log; passados 7 s, outro log |
 | `tend2.js`, `tgmock.js` | endereço pela busca do Google (simulado) |
 | `tfunil.js` | novo funil: quadro por etapa e subetapa, quadro de avanço, aprovações por hierarquia, Comprado/Perdido/Descartado/Stand By, sino e Configurações › Funil |
+| `tmencao.js` | menção com @: lista ao digitar, Enter e Esc só na lista, aviso no sino com e-mail, salvar de novo não repete, preferência de e-mail por pessoa, aviso leva à tarefa e acende, menção na reunião, coluna E-mail em Configurações (desktop e celular escuro) |
 | `ted2.js` | edição da poligonal (desktop e celular) |
 | `tctx.js` | menu do clique direito no mapa (toque longo no celular), concorrência, barra do mapa |
 | `tconc.js` | concorrência: quadro ao tocar no ícone (preço por m² ponderado e média simples, período, histórico da tipologia), Atualizar preços cria registro novo, cadastro na gaveta com Incluir empresa e endereço pelo ponto, Esc e clique no mapa fecham, desativar, Leitura sem botões, escuro e celular |

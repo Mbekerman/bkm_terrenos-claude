@@ -4,7 +4,10 @@
 -- Na hora: triggers e RPCs (tarefa atribuída, marcado na tarefa, aprovação).
 -- Por prazo: app.rotina_diaria(), rodada uma vez por dia pelo pg_cron.
 -- Um tipo novo de interação só acrescenta um gatilho e uma linha em
--- tipos_notificacao. E-mail e preferências por usuário vêm depois.
+-- tipos_notificacao. E-mail: cada tipo tem o padrão da empresa e cada
+-- pessoa escolhe por tipo (preferencias_notificacao); a notificação nasce com
+-- email_status 'pendente' e uma função do servidor envia pela conta do
+-- sistema. WhatsApp fica para depois (decisão do Moisés, 28/out/2026).
 -- =====================================================================
 
 -- Configuração por empresa (empresa_id nulo = modelo padrão, copiado para
@@ -15,20 +18,33 @@ create table app.tipos_notificacao (
   nome              text not null,
   ativo             boolean not null default true,
   dias_antes_padrao int[] not null default '{}' check (0 <= all(dias_antes_padrao) and 365 >= all(dias_antes_padrao)),
+  email_padrao      boolean not null default false,   -- também por e-mail, para quem não escolheu
   unique nulls not distinct (empresa_id, codigo)
 );
 
-insert into app.tipos_notificacao (codigo, nome, dias_antes_padrao) values
-  ('tarefa_atribuida',   'Tarefa atribuída a você',          '{}'),
-  ('tarefa_marcado',     'Você foi marcado numa tarefa',     '{}'),
-  ('tarefa_prazo',       'Prazo de tarefa',                  '{0}'),     -- 0 = no dia: "vence hoje"
-  ('tarefa_atrasada',    'Tarefa atrasada',                  '{}'),
-  ('stand_by_retomar',   'Retomar negociação em stand by',   '{7,0}'),
-  ('subetapa_prazo',     'Subetapa com prazo estourado',     '{}'),
-  ('documento_vencendo', 'Documento vencendo',               '{30,7}'),
-  ('reuniao_agendada',   'Reunião agendada',                 '{1}'),
-  ('aprovacao_pendente', 'Aprovação pendente',               '{}'),
-  ('aprovacao_decidida', 'Seu pedido de aprovação foi decidido', '{}');
+insert into app.tipos_notificacao (codigo, nome, dias_antes_padrao, email_padrao) values
+  ('tarefa_atribuida',   'Tarefa atribuída a você',          '{}',    true),
+  ('tarefa_marcado',     'Você foi marcado numa tarefa',     '{}',    true),
+  ('mencao',             'Você foi mencionado com @',        '{}',    true),
+  ('tarefa_prazo',       'Prazo de tarefa',                  '{0}',   false),  -- 0 = no dia: "vence hoje"
+  ('tarefa_atrasada',    'Tarefa atrasada',                  '{}',    false),
+  ('stand_by_retomar',   'Retomar negociação em stand by',   '{7,0}', false),
+  ('subetapa_prazo',     'Subetapa com prazo estourado',     '{}',    false),
+  ('documento_vencendo', 'Documento vencendo',               '{30,7}', false),
+  ('reuniao_agendada',   'Reunião agendada',                 '{1}',   false),
+  ('aprovacao_pendente', 'Aprovação pendente',               '{}',    true),
+  ('aprovacao_decidida', 'Seu pedido de aprovação foi decidido', '{}', true);
+
+-- O que cada pessoa quer receber por e-mail, por tipo. Sem linha = o padrão do tipo.
+-- No app a notificação sempre aparece (o administrador desliga o tipo inteiro).
+create table app.preferencias_notificacao (
+  empresa_id  uuid not null references app.empresas(id) on delete cascade,
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  tipo        text not null,
+  email       boolean not null,
+  alterado_em timestamptz not null default now(),
+  primary key (empresa_id, user_id, tipo)
+);
 
 create table app.notificacoes (
   id             uuid primary key default gen_random_uuid(),
@@ -43,6 +59,8 @@ create table app.notificacoes (
   referencia     date not null,      -- data que motivou o aviso (dia, prazo, vencimento)
   criada_em      timestamptz not null default clock_timestamp(),
   lida_em        timestamptz,
+  email_status   text check (email_status in ('pendente','enviado','falhou')),  -- nulo = não vai por e-mail
+  email_em       timestamptz,
   -- a rotina diária pode rodar de novo sem repetir o aviso
   unique (tipo, origem_tabela, origem_id, destinatario_id, referencia)
 );
@@ -92,8 +110,12 @@ begin
   if p_destinatario is null or p_destinatario is not distinct from p_autor then return; end if;
   if not exists (select 1 from app.membros where empresa_id = p_empresa and user_id = p_destinatario) then return; end if;
   if not coalesce((select ativo from app.tipos_notificacao where empresa_id = p_empresa and codigo = p_fase), false) then return; end if;
-  insert into app.notificacoes (empresa_id, destinatario_id, tipo, texto, autor_id, terreno_id, origem_tabela, origem_id, referencia)
-  values (p_empresa, p_destinatario, p_fase, p_texto, p_autor, p_terreno, p_origem_tabela, p_origem_id, coalesce(p_referencia, current_date))
+  insert into app.notificacoes (empresa_id, destinatario_id, tipo, texto, autor_id, terreno_id, origem_tabela, origem_id, referencia, email_status)
+  values (p_empresa, p_destinatario, p_fase, p_texto, p_autor, p_terreno, p_origem_tabela, p_origem_id, coalesce(p_referencia, current_date),
+          case when coalesce((select email from app.preferencias_notificacao
+                               where empresa_id = p_empresa and user_id = p_destinatario and tipo = p_fase),
+                             (select email_padrao from app.tipos_notificacao where empresa_id = p_empresa and codigo = p_fase))
+               then 'pendente' end)
   on conflict do nothing;
 end $$;
 
@@ -266,17 +288,39 @@ begin
   return n;
 end $$;
 
--- Administrador liga/desliga um tipo e define os lembretes padrão.
-create or replace function app.configurar_notificacao(p_empresa uuid, p_codigo text, p_ativo boolean default null, p_dias_antes int[] default null)
+-- Administrador liga/desliga um tipo, define os lembretes padrão e se vai por e-mail para quem não escolheu.
+create or replace function app.configurar_notificacao(p_empresa uuid, p_codigo text, p_ativo boolean default null, p_dias_antes int[] default null,
+  p_email_padrao boolean default null)
 returns void
 language plpgsql security definer set search_path = ''
 as $$
 begin
   perform app.exigir_administrador(p_empresa);
   update app.tipos_notificacao set ativo = coalesce(p_ativo, ativo),
-         dias_antes_padrao = coalesce((select array_agg(distinct d order by d desc) from unnest(p_dias_antes) d), dias_antes_padrao)
+         dias_antes_padrao = coalesce((select array_agg(distinct d order by d desc) from unnest(p_dias_antes) d), dias_antes_padrao),
+         email_padrao = coalesce(p_email_padrao, email_padrao)
    where empresa_id = p_empresa and codigo = p_codigo;
   if not found then raise exception 'Tipo de notificação não encontrado' using errcode = 'P0002'; end if;
+end $$;
+
+-- Cada pessoa escolhe, por tipo, se recebe também por e-mail (nulo = volta ao padrão do tipo).
+create or replace function app.salvar_preferencia_notificacao(p_empresa uuid, p_tipo text, p_email boolean)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if p_empresa is null or p_empresa not in (select app.minhas_empresas()) then
+    raise exception 'Sem acesso a esta empresa' using errcode = '42501';
+  end if;
+  if not exists (select 1 from app.tipos_notificacao where empresa_id = p_empresa and codigo = p_tipo) then
+    raise exception 'Tipo de notificação não encontrado' using errcode = 'P0002';
+  end if;
+  if p_email is null then
+    delete from app.preferencias_notificacao where empresa_id = p_empresa and user_id = auth.uid() and tipo = p_tipo;
+  else
+    insert into app.preferencias_notificacao (empresa_id, user_id, tipo, email) values (p_empresa, auth.uid(), p_tipo, p_email)
+    on conflict (empresa_id, user_id, tipo) do update set email = excluded.email, alterado_em = now();
+  end if;
 end $$;
 
 -- ---------------------------------------------------------------------
@@ -292,6 +336,12 @@ alter table app.notificacoes enable row level security;
 create policy ver on app.notificacoes for select to authenticated
   using (destinatario_id = auth.uid() and empresa_id in (select app.minhas_empresas()));
 grant select on app.notificacoes to authenticated;
+
+-- cada um vê as próprias preferências; grava só pela RPC
+alter table app.preferencias_notificacao enable row level security;
+create policy ver on app.preferencias_notificacao for select to authenticated
+  using (user_id = auth.uid() and empresa_id in (select app.minhas_empresas()));
+grant select on app.preferencias_notificacao to authenticated;
 
 do $$
 declare t text;
@@ -310,7 +360,8 @@ end $$;
 revoke execute on function app._notificar(uuid, uuid, text, text, uuid, text, uuid, date, uuid), app._lembretes_padrao(uuid, text, uuid, text),
   app._item_lembrete(text, uuid), app.rotina_diaria(date), app.tg_tarefa_notificar(), app.tg_marcado_notificar(),
   app.tg_reuniao_lembretes(), app.tg_documento_lembretes(), app.tg_lembrete_valido() from public;
-grant execute on function app.marcar_notificacao_lida(uuid), app.configurar_notificacao(uuid, text, boolean, int[]) to authenticated;
+grant execute on function app.marcar_notificacao_lida(uuid), app.configurar_notificacao(uuid, text, boolean, int[], boolean),
+  app.salvar_preferencia_notificacao(uuid, text, boolean) to authenticated;
 
 -- ---------------------------------------------------------------------
 -- Visões salvas dos filtros (Terrenos, Mapa e Fases): nome + filtros.
