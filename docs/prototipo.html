@@ -3694,16 +3694,56 @@ input[type=checkbox]:not(.fchk input):focus-visible { outline: 2px solid var(--m
 .if-abre { font-size: 14px !important }
 .reu-ata > .btn.text:last-child { margin-right: -12px }
 /* Colunas de número seguidas de texto: respiro */
-.dt td.num + td:not(.num), .dt th.num + th:not(.num), .mini-tbl td.r + td:not(.r), .mini-tbl th.r + th:not(.r) { padding-left: 24px !important }
+@media (min-width: 600px) { .dt td.num + td:not(.num), .dt th.num + th:not(.num), .mini-tbl td.r + td:not(.r), .mini-tbl th.r + th:not(.r) { padding-left: 24px !important } }
 .mini-tbl td.nw { white-space: nowrap }
 /* Terrenos: código alinhado à esquerda, como o título da coluna */
-.dt .col-codigo { text-align: left !important }
+:root:not(#_) .dt :is(th, td).col-codigo { text-align: left !important }
+:root:not(#_) .dt th.col-codigo .dt-sort { justify-content: flex-start !important; margin: 0 !important; padding-left: 0 !important; flex-direction: row !important }
 @media (max-width: 599px) { .sec.lista .empilha .dt tbody tr { padding-left: 0 !important; padding-right: 0 !important } }
 /* Configurações › Viabilidade: item e grupo sem corte; cabeçalho numa linha; grupo em largura total no celular */
-@media (min-width: 900px) { .vb-cfg-r { grid-template-columns: 56px minmax(240px, 1fr) 180px 170px 96px 88px 40px 40px !important } }
+@media (min-width: 900px) { .vb-cfg-r { grid-template-columns: 48px minmax(180px, 1fr) minmax(120px, 140px) minmax(120px, 140px) 96px 80px 40px 40px !important } }
 .cfg-hd > span { white-space: nowrap }
 @media (max-width: 899px) { .vb-cfg-r > :nth-child(3) { grid-column: 1 / -1 } }
 .vb-vazio { border: 0 !important; padding: 8px 0 }
+
+/* ===================== Revisão de design, rodada 8 ===================== */
+/* Cartão do quadro das fases: etapa em texto, chip só com a subetapa, numa linha */
+.kcard .kfe { font-size: 12px; line-height: 16px; color: var(--m-on-var, #444746); margin-top: 2px }
+:root[data-tema="escuro"] .kcard .kfe { color: #8e9ac4 }
+:root:not(#_) .kcard .ksub { display: inline-flex !important; max-width: 100%; flex-wrap: nowrap !important; align-items: center !important; height: 24px !important; white-space: nowrap }
+:root:not(#_) .kcard .ksub > span:first-child { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; min-width: 0 }
+:root:not(#_) .kcard .ksub > span + span { flex: none }
+.kcard .kr { flex-wrap: wrap; row-gap: 4px } .kcard .kr > span { white-space: nowrap }
+/* Título da coluna numa linha, a seta junto (corta com reticências) */
+@media (min-width: 600px) {
+  :root:not(#_) .board .col:has(.kcard) .col-h .col-ab, :root:not(#_) .board.tk-board .col-h > span:first-child { display: inline-flex !important; align-items: center; min-width: 0; max-width: 100% }
+  :root:not(#_) .board .col:has(.kcard) .col-h .col-ab span { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; display: block }
+  :root:not(#_) .board .col:has(.kcard) .col-h .col-ab svg { flex: none }
+  :root:not(#_) .board .col:has(.kcard) .col-h { align-items: center !important }
+}
+/* Selo de situação com a largura do texto (Diligências) */
+:root:not(#_) .task > .chip { width: auto !important; min-width: 0 !important; flex: none !important; max-width: max-content }
+/* Infraestrutura: data e fonte por inteiro, o campo da fonte ocupa o que sobra */
+.infra { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.3fr) !important }
+.infra .meta { display: flex; align-items: center; gap: 8px; overflow: visible !important; white-space: nowrap }
+.infra .meta .infra-f { flex: 1; min-width: 0; width: auto }
+.seg3 button { min-height: 32px }
+/* Parâmetros da ficha (leitura): sem fio embaixo de cada valor, que parecia campo */
+.lz-c, :root[data-tema="escuro"] .lz-c { border-bottom: 0 !important; padding: 6px 0 !important }
+.lz-par { row-gap: 8px !important }
+/* Perfil da população no celular: rótulo quebra linha em vez de cortar */
+@media (max-width: 599px) { .pf-l { white-space: normal !important; overflow: visible !important; line-height: 16px } .rd-dist.pf-dist li { align-items: start; padding: 2px 0 } }
+/* Cabeçalhos de quadro no celular: o título fica inteiro; ações e textos de apoio descem para a linha de baixo quando não cabem */
+@media (max-width: 599px) {
+  :is(.sec-h, .card-h, .chk-gh) { flex-wrap: wrap; row-gap: 0 }
+  :is(.sec-h, .card-h, .chk-gh) > :is(h2, h3, .gt):first-child { flex: 1 0 auto; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+  :is(.sec-h, .card-h, .chk-gh) > :not(:first-child) { margin-left: auto }
+}
+/* Seletor do estudo válido: corta com reticências */
+.vb-sel select, select#vb-valido { text-overflow: ellipsis }
+/* Campo desabilitado nas grades de edição: mesmo formato preenchido, esmaecido */
+:is(.cfg-r, .zp-b, .adv-sub, .lz-tbl, .vb-c) :is(input:not([type=checkbox]):not([type=radio]), select):disabled { border: 0 !important; border-bottom: 1px solid rgba(31,31,31,.38) !important; border-radius: 4px 4px 0 0 !important; background-color: rgba(31,31,31,.04) !important; color: rgba(31,31,31,.6) !important }
+:root[data-tema="escuro"] :is(.cfg-r, .zp-b, .adv-sub, .lz-tbl, .vb-c) :is(input:not([type=checkbox]):not([type=radio]), select):disabled { border-bottom-color: rgba(142,154,196,.3) !important; background-color: rgba(124,140,255,.03) !important; color: #8e9ac4 !important }
 </style>
 <header class="top">
   <div class="top-in">
@@ -4352,7 +4392,7 @@ function abaDocs(t){
   return `<div class="stack">${secDil}<section class="sec chk-group"><div class="chk-gh"><span class="gt">Checklist de documentos</span>${ativo?`<span class="progress"><span class="bar"><span style="width:${CHECK_DIL.filter(([k,o])=>o&&docSt(doc(k))==='validado').length/CHECK_DIL.filter(c=>c[1]).length*100}%"></span></span>${CHECK_DIL.filter(([k,o])=>o&&docSt(doc(k))==='validado').length} de ${CHECK_DIL.filter(c=>c[1]).length} obrigatórios</span>`:'<span class="faint" style="font-size:13px">Vale a partir da Diligência</span>'}</div>
   ${CHECK_DIL.map(([k,o])=>{const d=doc(k),st=docSt(d),va=d?docVal(d):null;return `<div class="doc"><span class="di">${ic('doc',18)}</span><div style="min-width:0"><div class="dn">${TIPOS_DOC[k][0]} ${o?'':'<span class="opt">opcional</span>'}</div><div class="ds">${d?`v${d.versoes} · emitido ${fd(d.emitido)}${va?` · ${st==='vencido'?'venceu':'vence'} ${fd(va)}`:''}`:`Validade: ${TIPOS_DOC[k][2]?TIPOS_DOC[k][2]+' dias':'não vence'}`}</div></div>
   <div class="da">${docChip(st)}${st==='recebido'?`<button class="btn sm text" data-a="doc-ok" data-k="${k}">${ic('check',16)}Validar</button>`:''}<button class="btn sm text" data-a="upload" data-k="${k}">${ic('upload',16)}${d?'Nova versão':'Enviar'}</button></div></div>`}).join('')}</section>
-  <section class="sec chk-group"><div class="chk-gh"><span class="gt">Fotos, plantas e outros</span><button class="btn sm" data-a="upload" data-k="foto">${ic('upload',16)}Enviar foto</button></div>
+  <section class="sec chk-group"><div class="chk-gh"><span class="gt">Fotos, plantas e outros</span><button class="btn sm text" data-a="upload" data-k="foto">${ic('upload',16)}Enviar foto</button></div>
   ${outros.map(d=>`<div class="doc"><span class="di">${ic('doc',18)}</span><div><div class="dn">${esc(d.nome||TIPOS_DOC[d.tipo][0])}</div><div class="ds">${TIPOS_DOC[d.tipo][1]} · ${fd(d.emitido)}</div></div><div class="da">${docChip(docSt(d))}</div></div>`).join('')||'<div class="empty">Nada enviado.</div>'}</section></div>`;
 }
 function abaHist(t){
@@ -5377,7 +5417,7 @@ function pgTarefas(){const f=UI.tk,l=tkFiltradas();const cols=COLS_TK.filter(c=>
   const atras=todasTarefas().filter(({k})=>k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)).length;
   return `<div class="page-h"><div><h1>Tarefas</h1><div class="sub">${l.filter(x=>!['concluida','cancelada'].includes(x.k.status)).length} abertas · ${atras} atrasadas</div></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="seg" role="group" aria-label="Visualização">${[['quadro','Quadro'],['tabela','Tabela']].map(([k,x])=>`<button data-a="tk-vista" data-v="${k}" aria-pressed="${f.vista===k}">${x}</button>`).join('')}</div>
-    <button class="btn tonal ed" data-a="tk-nova" data-v="pendente">${ic('add',18)}Nova tarefa</button></div></div>
+    <button class="btn ed" data-a="tk-nova" data-v="pendente">${ic('add',18)}Nova tarefa</button></div></div>
   ${filtros}${f.vista==='tabela'?`<section class="sec"><div class="sec-b">${tabela('tarefas',l,colsT,{attr:({k,t})=>`data-a="tk-abrir" data-tk="${k.id}" data-id="${t.id}" tabindex="0"`,padrao:{k:'prazo',dir:'asc'},vazio:'Nenhuma tarefa com esses filtros.'})}</div></section>`:quadro}`}
 function moverTk(tid,kid,col,antesDe){const t=T(tid),k=t.tarefas.find(x=>x.id===kid);if(!k)return;
   const irmas=todasTarefas().filter(x=>x.k.status===col&&x.k.id!==kid).sort(ordemTk);
@@ -6159,7 +6199,7 @@ function negTopo(titulo,sub){const f=UI.negFase,e=UI.negEtapa,it=[{l:'Fases',v:'
 const colDesce=(a,v,l,dica)=>`<button class="col-ab" data-a="${a}" data-v="${esc(v)}" title="${esc(dica)}"><span>${esc(l)}</span>${ic('chev',16)}</button>`;
 function kcardFase(t,f,p){const e=etapaF(f,p.etapa),s=p.sub&&subF(f,p.sub),sb=p.status==='stand_by',outras=fasesAbertas(t).filter(x=>x!==f);
   return `<button class="kcard" data-a="abrir" data-id="${t.id}" data-from="negociacoes"><div class="kr"><span class="num faint">${t.codigo}</span>${f===faseEnt()?(p.temp?tempMini(p.temp):''):`<span class="num faint">${esc(p.codigo||'')}</span>`}</div><div class="kt">${esc(t.nome)}</div>
-  <div class="ksub"><span>${esc(e?.nome||'')}${s?' · '+esc(s.nome):''}</span>${sb?'<span class="faint">Stand By</span>':''}</div>
+  ${s?`<div class="kfe">${esc(e?.nome||'')}</div>`:''}<div class="ksub"><span>${esc(s?s.nome:(e?.nome||''))}</span>${sb?'<span class="faint">Stand By</span>':''}</div>
   <div class="ks">${esc(t.bairro||'')}${outras.length?' · também em '+esc(outras.map(faseN).join(', ')):''}</div>${f===faseEnt()&&typeof dividida==='function'&&dividida(t)?`<div class="kpt">${ic('layers',14)}${esc(resumoPartes(t))}</div>`:''}
   <div class="kr">${av(t.resp,'sm')}<span class="faint">${sb?'revisitar '+fd(p.retomar):diff(p.desde,HOJE)+' d na etapa'}</span></div></button>`}
 function pgFasesBoard(){const F=fasesL().filter(f=>f.ativo);

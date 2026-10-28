@@ -1996,13 +1996,53 @@ input[type=checkbox]:not(.fchk input):focus-visible { outline: 2px solid var(--m
 .if-abre { font-size: 14px !important }
 .reu-ata > .btn.text:last-child { margin-right: -12px }
 /* Colunas de número seguidas de texto: respiro */
-.dt td.num + td:not(.num), .dt th.num + th:not(.num), .mini-tbl td.r + td:not(.r), .mini-tbl th.r + th:not(.r) { padding-left: 24px !important }
+@media (min-width: 600px) { .dt td.num + td:not(.num), .dt th.num + th:not(.num), .mini-tbl td.r + td:not(.r), .mini-tbl th.r + th:not(.r) { padding-left: 24px !important } }
 .mini-tbl td.nw { white-space: nowrap }
 /* Terrenos: código alinhado à esquerda, como o título da coluna */
-.dt .col-codigo { text-align: left !important }
+:root:not(#_) .dt :is(th, td).col-codigo { text-align: left !important }
+:root:not(#_) .dt th.col-codigo .dt-sort { justify-content: flex-start !important; margin: 0 !important; padding-left: 0 !important; flex-direction: row !important }
 @media (max-width: 599px) { .sec.lista .empilha .dt tbody tr { padding-left: 0 !important; padding-right: 0 !important } }
 /* Configurações › Viabilidade: item e grupo sem corte; cabeçalho numa linha; grupo em largura total no celular */
-@media (min-width: 900px) { .vb-cfg-r { grid-template-columns: 56px minmax(240px, 1fr) 180px 170px 96px 88px 40px 40px !important } }
+@media (min-width: 900px) { .vb-cfg-r { grid-template-columns: 48px minmax(180px, 1fr) minmax(120px, 140px) minmax(120px, 140px) 96px 80px 40px 40px !important } }
 .cfg-hd > span { white-space: nowrap }
 @media (max-width: 899px) { .vb-cfg-r > :nth-child(3) { grid-column: 1 / -1 } }
 .vb-vazio { border: 0 !important; padding: 8px 0 }
+
+/* ===================== Revisão de design, rodada 8 ===================== */
+/* Cartão do quadro das fases: etapa em texto, chip só com a subetapa, numa linha */
+.kcard .kfe { font-size: 12px; line-height: 16px; color: var(--m-on-var, #444746); margin-top: 2px }
+:root[data-tema="escuro"] .kcard .kfe { color: #8e9ac4 }
+:root:not(#_) .kcard .ksub { display: inline-flex !important; max-width: 100%; flex-wrap: nowrap !important; align-items: center !important; height: 24px !important; white-space: nowrap }
+:root:not(#_) .kcard .ksub > span:first-child { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; min-width: 0 }
+:root:not(#_) .kcard .ksub > span + span { flex: none }
+.kcard .kr { flex-wrap: wrap; row-gap: 4px } .kcard .kr > span { white-space: nowrap }
+/* Título da coluna numa linha, a seta junto (corta com reticências) */
+@media (min-width: 600px) {
+  :root:not(#_) .board .col:has(.kcard) .col-h .col-ab, :root:not(#_) .board.tk-board .col-h > span:first-child { display: inline-flex !important; align-items: center; min-width: 0; max-width: 100% }
+  :root:not(#_) .board .col:has(.kcard) .col-h .col-ab span { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; display: block }
+  :root:not(#_) .board .col:has(.kcard) .col-h .col-ab svg { flex: none }
+  :root:not(#_) .board .col:has(.kcard) .col-h { align-items: center !important }
+}
+/* Selo de situação com a largura do texto (Diligências) */
+:root:not(#_) .task > .chip { width: auto !important; min-width: 0 !important; flex: none !important; max-width: max-content }
+/* Infraestrutura: data e fonte por inteiro, o campo da fonte ocupa o que sobra */
+.infra { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.3fr) !important }
+.infra .meta { display: flex; align-items: center; gap: 8px; overflow: visible !important; white-space: nowrap }
+.infra .meta .infra-f { flex: 1; min-width: 0; width: auto }
+.seg3 button { min-height: 32px }
+/* Parâmetros da ficha (leitura): sem fio embaixo de cada valor, que parecia campo */
+.lz-c, :root[data-tema="escuro"] .lz-c { border-bottom: 0 !important; padding: 6px 0 !important }
+.lz-par { row-gap: 8px !important }
+/* Perfil da população no celular: rótulo quebra linha em vez de cortar */
+@media (max-width: 599px) { .pf-l { white-space: normal !important; overflow: visible !important; line-height: 16px } .rd-dist.pf-dist li { align-items: start; padding: 2px 0 } }
+/* Cabeçalhos de quadro no celular: o título fica inteiro; ações e textos de apoio descem para a linha de baixo quando não cabem */
+@media (max-width: 599px) {
+  :is(.sec-h, .card-h, .chk-gh) { flex-wrap: wrap; row-gap: 0 }
+  :is(.sec-h, .card-h, .chk-gh) > :is(h2, h3, .gt):first-child { flex: 1 0 auto; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+  :is(.sec-h, .card-h, .chk-gh) > :not(:first-child) { margin-left: auto }
+}
+/* Seletor do estudo válido: corta com reticências */
+.vb-sel select, select#vb-valido { text-overflow: ellipsis }
+/* Campo desabilitado nas grades de edição: mesmo formato preenchido, esmaecido */
+:is(.cfg-r, .zp-b, .adv-sub, .lz-tbl, .vb-c) :is(input:not([type=checkbox]):not([type=radio]), select):disabled { border: 0 !important; border-bottom: 1px solid rgba(31,31,31,.38) !important; border-radius: 4px 4px 0 0 !important; background-color: rgba(31,31,31,.04) !important; color: rgba(31,31,31,.6) !important }
+:root[data-tema="escuro"] :is(.cfg-r, .zp-b, .adv-sub, .lz-tbl, .vb-c) :is(input:not([type=checkbox]):not([type=radio]), select):disabled { border-bottom-color: rgba(142,154,196,.3) !important; background-color: rgba(124,140,255,.03) !important; color: #8e9ac4 !important }
