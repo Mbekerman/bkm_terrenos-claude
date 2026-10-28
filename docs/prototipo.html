@@ -3945,6 +3945,49 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 :root[data-tema="escuro"]:not(#_) .infra .seg3 button[aria-pressed="true"].sim { background: rgba(109,213,140,.16) !important; color: #a6f0bb }
 :root[data-tema="escuro"]:not(#_) .infra .seg3 button[aria-pressed="true"].nao { background: rgba(242,184,181,.16) !important; color: #f2b8b5 }
 :root:not(#_) .infra .meta { gap: 4px !important }
+/* ===================== Revisão de design, rodada 15 ===================== */
+/* Valor venal: exercício, revisão e "Atual" numa linha só */
+.mini-tbl.vv td.vv-ex { white-space: nowrap }
+.mini-tbl.vv td.vv-ex .chip { margin-left: 6px; vertical-align: middle }
+/* Tarefas da ficha: o chip de situação sempre à direita do título; o resultado é texto que quebra linha */
+@media (max-width: 599px) { :root:not(#_) .task:has(> select.tkst) { flex-wrap: nowrap !important } :root:not(#_) .task > select.chip-sel.tkst { order: 0 !important; margin-left: auto !important; align-self: flex-start !important; flex: none !important } }
+.tk-res { display: block; margin-top: 4px; width: 100%; field-sizing: content; min-height: 24px; resize: none; border: 0; border-bottom: 1px solid transparent; border-radius: 0; padding: 2px 0; background: transparent; font: inherit; font-size: 13px; line-height: 20px; color: var(--m-on-var, #444746) }
+.tk-res:hover { border-bottom-color: var(--m-outline, #747775) }
+.tk-res:focus { outline: 0; border-bottom: 2px solid var(--m-primary, #0b57d0) }
+:root[data-tema="escuro"] .tk-res { color: #8e9ac4; background: transparent !important }
+/* Configurações no celular: setas e lixeira no canto de cima do item; caixas de marcar centradas na altura do campo */
+@media (max-width: 899px) {
+  :root:not(#_) :is(.cfg-r.cfg-fase, .vb-cfg-r):not(.cfg-hd) { position: relative; padding-top: 12px !important }
+  :root:not(#_) :is(.cfg-r.cfg-fase, .vb-cfg-r):not(.cfg-hd) > .cfg-ord { position: absolute; top: 4px; right: 0; display: flex; gap: 0; z-index: 1 }
+  :root:not(#_) :is(.cfg-r.cfg-fase, .vb-cfg-r):not(.cfg-hd) > span:last-child:has(.lixo) { position: absolute; top: 4px; right: 76px; z-index: 1 }
+  :root:not(#_) :is(.cfg-r.cfg-fase, .vb-cfg-r):not(.cfg-hd) > span:last-child:not(:has(*)) { display: none }
+  :root:not(#_) .cfg-r.cfg-fase:not(.cfg-hd) { grid-template-columns: 96px 1fr auto !important }
+  :root:not(#_) .cfg-r.cfg-fase:not(.cfg-hd) > :nth-child(2) { grid-column: 1 / -1 !important }
+  :root:not(#_) .cfg-r.cfg-fase:not(.cfg-hd) > :nth-child(3) { grid-column: 1 !important }
+  :root:not(#_) .cfg-r.cfg-fase:not(.cfg-hd) > :nth-child(4) { grid-column: 2 / -1 !important }
+  :root:not(#_) .cfg-r.cfg-fase:not(.cfg-hd) > :nth-child(5) { grid-column: 1 / 3 !important }
+  :root:not(#_) .cfg-r.cfg-fase:not(.cfg-hd) > :nth-child(6) { grid-column: 3 !important }
+  :root:not(#_) .cfg-r:not(.cfg-hd) > label.chk { align-self: end; min-height: 40px; display: flex; align-items: center }
+}
+/* Escuro: fio sob o cabeçalho dos quadros no mesmo tom dos outros fios */
+:root[data-tema="escuro"]:not(#_) :is(.sec-h, .card-h, .chk-gh) { border-bottom-color: #1a2240 !important }
+/* Configurações › Viabilidade no celular: Grupo e Base lado a lado */
+@media (max-width: 899px) {
+  :root:not(#_) .vb-cfg-r:not(.cfg-hd) > :nth-child(3) { grid-column: 1 !important }
+  :root:not(#_) .vb-cfg-r:not(.cfg-hd) > :nth-child(4) { grid-column: 2 !important }
+}
+/* Configurações › Viabilidade no computador: respiro entre "Sai do VGV" e "Ativo" */
+@media (min-width: 900px) { :root:not(#_) .vb-cfg-r { column-gap: 12px !important } }
+/* Tarefas: busca e filtros na mesma altura */
+.tk-filtros .search.sm { height: 40px }
+:root:not(#_) .tk-filtros select.fsel-chip, :root:not(#_) .tk-filtros .fchk { height: 40px !important; min-height: 40px !important }
+/* Lista de estudos no celular: "Válido" ao lado da bolinha, na altura do nome */
+@media (max-width: 599px) { :root:not(#_) .vb-lista td:last-child { display: flex !important; align-items: center; gap: 8px; align-self: center } :root:not(#_) .vb-lista td:last-child::before { float: none !important; margin: 0 !important; line-height: 20px !important } }
+:root:not(#_) .mini-tbl.vv td.vv-ex > * { display: inline !important; float: none !important }
+:root:not(#_) .mini-tbl.vv td.vv-ex > .chip { display: inline-flex !important }
+:root:not(#_) .mini-tbl.vv td.vv-ex::before { display: none !important }
+/* Infraestrutura: o item marcado leva o visto, como nos segmentados do Material */
+@media (min-width: 600px) { :root:not(#_) .infra .seg3 button[aria-pressed="true"]::before { content: '✓'; margin-right: 4px; font-weight: 600 } }
 </style>
 <header class="top">
   <div class="top-in">
@@ -4435,7 +4478,7 @@ function secaoInsc(t){
     ${t.insc.length?t.insc.map((ins,i)=>{const vs=vig(ins),revs=ins.valores.filter(v=>!v.vig).length;return `<div style="margin-bottom:18px"><div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px"><b class="num">${CIDADES_INSC[insCid(ins)].rotulo} ${esc(ins.sql)}</b><span class="muted" style="font-size:13px">${esc(CIDADES_INSC[insCid(ins)].cidade)}</span><span class="muted" style="font-size:13px">Área cadastral ${m2(ins.area)}</span>${revs?`<span class="faint" style="font-size:12px">${revs} revis${revs>1?'ões anteriores preservadas':'ão anterior preservada'}</span>`:''}</div>
       ${loteQuadro(t,ins,i)}
       <div class="tblwrap"><table class="mini-tbl vv"><thead><tr><th>Exercício</th><th class="r">Venal terreno</th><th class="r">Venal construção</th><th class="r">Venal do imóvel</th><th>IPTU</th><th class="r">Anual</th><th class="r">Parcela</th><th class="r">Mensal</th><th>Fonte</th></tr></thead><tbody>
-      ${vs.map((v,j)=>`<tr><td><b>${v.ex}</b>${v.rev>1?` <span class="faint" style="font-size:11px">rev. ${v.rev}</span>`:''}${j===0?' <span class="tag-ref">atual</span>':''}</td><td class="r">${brl(v.vt)}</td><td class="r">${brl(v.vc)}</td><td class="r"><b>${brl(venal(v))}</b></td>
+      ${vs.map((v,j)=>`<tr><td class="vv-ex"><b>${v.ex}</b>${v.rev>1?`<span class="faint"> · rev. ${v.rev}</span>`:''}${j===0?' <span class="chip blue">Atual</span>':''}</td><td class="r">${brl(v.vt)}</td><td class="r">${brl(v.vc)}</td><td class="r"><b>${brl(venal(v))}</b></td>
       <td>${v.sit==='isento'?'<span class="chip good">Isento</span>':OPT.sitIptu[v.sit]}</td><td class="r">${v.sit==='isento'?'—':brl2(v.iptu)}</td><td class="r">${v.iptu!=null&&v.parc&&v.sit!=='isento'?`${brl2(v.iptu/v.parc)} <span class="faint">× ${v.parc}</span>`:'—'}</td>
       <td class="r">${v.sit==='isento'?'—':v.mensal!=null?`${brl2(v.mensal)} <span class="faint">(informado)</span>`:v.iptu!=null?`${brl2(v.iptu/12)} <span class="faint">(anual ÷ 12)</span>`:'—'}</td><td class="muted vv-f">${esc(v.fonte||'—')}${v.data?` · ${fd(v.data)}`:''}</td></tr>`).join('')||'<tr><td colspan="9" class="muted">Sem valores lançados.</td></tr>'}</tbody></table></div>
       <details class="details"><summary>Lançar exercício ou corrigir valores</summary><form class="inline-form" data-form="iptu" data-i="${i}" style="border:0;padding-top:4px">
@@ -4528,12 +4571,12 @@ function abaNegociacao(t){
 }
 function abaTarefas(t){
   const lista=t.tarefas.slice().sort((a,b)=>{const fa=['concluida','cancelada'].includes(a.status),fb=['concluida','cancelada'].includes(b.status);return fa-fb||a.prazo.localeCompare(b.prazo)});
-  return `<div class="stack"><section class="sec"><div class="sec-h"><h2>Próximos passos</h2><span class="faint" style="font-size:13px">${abertas(t).length} abertas · ${atrasadas(t).length} atrasadas</span></div><div class="sec-b" style="padding-top:4px">
+  return `<div class="stack"><section class="sec"><div class="sec-h"><h2>Próximos passos</h2><span class="faint" style="font-size:13px">${(n=>n+(n===1?' aberta':' abertas'))(abertas(t).length)} · ${(n=>n+(n===1?' atrasada':' atrasadas'))(atrasadas(t).length)}</span></div><div class="sec-b" style="padding-top:4px">
   ${lista.map(k=>{const late=!['concluida','cancelada'].includes(k.status)&&k.prazo<HOJE;return `<div class="task" style="align-items:flex-start;padding:12px 0">
     <span style="flex:none;margin-top:2px">${av(k.resp,'sm')}</span>
     <span class="tt"><div class="t1" style="${k.status==='concluida'||k.status==='cancelada'?'text-decoration:line-through;color:var(--texto-suave)':''}">${escT(k.titulo)} ${k.prio==='alta'?'<span class="chip warn" style="height:20px">Alta</span>':''}</div>
     ${k.desc?`<div class="muted" style="font-size:13px">${esc(k.desc)}</div>`:''}<div class="tm ${late?'late':''}">${esc(k.resp)} · ${late?'atrasada desde ':'prazo '}${fd(k.prazo)}</div>
-    ${k.status==='concluida'?`<input aria-label="Resultado" data-ch="tar-res" data-k="${k.id}" value="${esc(k.resultado)}" placeholder="O que foi feito ou obtido" style="margin-top:6px;width:100%;height:34px;border:1px solid var(--linha);border-radius:6px;padding:0 10px;background:var(--superficie)">`:''}</span>
+    ${k.status==='concluida'?`<textarea class="tk-res" rows="1" aria-label="Resultado" data-ch="tar-res" data-k="${k.id}" placeholder="O que foi feito ou obtido">${esc(k.resultado)}</textarea>`:''}</span>
     <select aria-label="Status" data-ch="tar-st" data-k="${k.id}" class="chip chip-sel tkst ${k.status}" style="flex:none">${Object.entries(OPT.statusTar).map(([s,l])=>`<option value="${s}" ${s===k.status?'selected':''}>${l}</option>`).join('')}</select></div>`}).join('')||'<div class="muted lista-vazia">Nenhuma tarefa.</div>'}
   <form class="inline-form" data-form="tarefa"><div class="field grow"><label for="tk-t">Nova tarefa</label><input id="tk-t" name="titulo" required placeholder="Ex.: cobrar contraproposta do proprietário"></div>
   <div class="field"><label for="tk-p">Prazo</label><input id="tk-p" name="prazo" type="date" value="${addD(HOJE,7)}" required></div>
@@ -5625,7 +5668,7 @@ function pgTarefas(){const f=UI.tk,l=tkFiltradas();const cols=COLS_TK.filter(c=>
     {k:'prio',l:'Prioridade',cls:'hm',v:({k})=>OPT.prioTar[k.prio]||'—',s:({k})=>['alta','media','baixa'].indexOf(k.prio)},
     {k:'status',l:'Status',v:({k})=>`<span class="chip tkst ${k.status}">${OPT.statusTar[k.status]}</span>`,s:({k})=>COLS_TK.indexOf(k.status)}];
   const atras=todasTarefas().filter(({k})=>k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)).length;
-  return `<div class="page-h"><div><h1>Tarefas</h1><div class="sub">${l.filter(x=>!['concluida','cancelada'].includes(x.k.status)).length} abertas · ${atras} atrasadas</div></div>
+  return `<div class="page-h"><div><h1>Tarefas</h1><div class="sub">${(n=>n+(n===1?' aberta':' abertas'))(l.filter(x=>!['concluida','cancelada'].includes(x.k.status)).length)} · ${atras+(atras===1?' atrasada':' atrasadas')}</div></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="seg" role="group" aria-label="Visualização">${[['quadro','Quadro'],['tabela','Tabela']].map(([k,x])=>`<button data-a="tk-vista" data-v="${k}" aria-pressed="${f.vista===k}">${x}</button>`).join('')}</div>
     <button class="btn ed" data-a="tk-nova" data-v="pendente">${ic('add',18)}Nova tarefa</button></div></div>
   ${filtros}${f.vista==='tabela'?`<section class="sec"><div class="sec-b">${tabela('tarefas',l,colsT,{attr:({k,t})=>`data-a="tk-abrir" data-tk="${k.id}" data-id="${t.id}" tabindex="0"`,padrao:{k:'prazo',dir:'asc'},vazio:'Nenhuma tarefa com esses filtros.'})}</div></section>`:quadro}`}
@@ -9141,7 +9184,7 @@ function vbShTxt(k,c){if(k==='tip')return `${brl(c.vgv)} · ${num(c.un)} unidade
   const x=c.SEC[k];return `${brl(x)} · ${c.vgv>0?num(x/c.vgv*100,1)+'%':'—'} do VGV`}
 const vbMiC=x=>mi(x).replace(/R\$\s/,'');
 function vbNavTxt(k,c){if(k==='tip')return vbMiC(c.vgv);if(k==='res')return 'Margem '+(c.margem==null?'—':num(c.margem,1)+'%');
-  const x=c.SEC[k];return `${vbMiC(x)} · ${c.vgv>0?num(x/c.vgv*100,1)+'%':'—'}`}
+  const x=c.SEC[k];if(!x)return '—';return `${vbMiC(x)} · ${c.vgv>0?num(x/c.vgv*100,1)+'%':'—'}`}
 const vbNav=c=>{const ab=vbAba();return `<nav class="vb-nav" aria-label="Seções do estudo">${vbOrdem().map(k=>`<button class="vb-aba" data-a="vb-aba" data-v="${k}"${k===ab?' aria-current="page"':''}><b>${VB_ROT[k]}</b><small data-vbo="nv-${k}">${vbNavTxt(k,c)}</small></button>`).join('')}</nav>`};
 function vbSec(k,titulo,c,corpo,acao=''){const O=vbOrdem(),i=O.indexOf(k),ant=O[i-1],prox=O[i+1];
   const passo=(x,seta)=>x?`<button class="btn text sm" data-a="vb-aba" data-v="${x}">${seta<0?'‹ ':''}${VB_ROT[x]}${seta>0?' ›':''}</button>`:'<span></span>';

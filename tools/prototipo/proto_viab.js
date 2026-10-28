@@ -143,7 +143,7 @@ function vbShTxt(k,c){if(k==='tip')return `${brl(c.vgv)} · ${num(c.un)} unidade
   const x=c.SEC[k];return `${brl(x)} · ${c.vgv>0?num(x/c.vgv*100,1)+'%':'—'} do VGV`}
 const vbMiC=x=>mi(x).replace(/R\$\s/,'');
 function vbNavTxt(k,c){if(k==='tip')return vbMiC(c.vgv);if(k==='res')return 'Margem '+(c.margem==null?'—':num(c.margem,1)+'%');
-  const x=c.SEC[k];return `${vbMiC(x)} · ${c.vgv>0?num(x/c.vgv*100,1)+'%':'—'}`}
+  const x=c.SEC[k];if(!x)return '—';return `${vbMiC(x)} · ${c.vgv>0?num(x/c.vgv*100,1)+'%':'—'}`}
 const vbNav=c=>{const ab=vbAba();return `<nav class="vb-nav" aria-label="Seções do estudo">${vbOrdem().map(k=>`<button class="vb-aba" data-a="vb-aba" data-v="${k}"${k===ab?' aria-current="page"':''}><b>${VB_ROT[k]}</b><small data-vbo="nv-${k}">${vbNavTxt(k,c)}</small></button>`).join('')}</nav>`};
 function vbSec(k,titulo,c,corpo,acao=''){const O=vbOrdem(),i=O.indexOf(k),ant=O[i-1],prox=O[i+1];
   const passo=(x,seta)=>x?`<button class="btn text sm" data-a="vb-aba" data-v="${x}">${seta<0?'‹ ':''}${VB_ROT[x]}${seta>0?' ›':''}</button>`:'<span></span>';
