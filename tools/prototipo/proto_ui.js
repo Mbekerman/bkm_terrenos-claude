@@ -16,6 +16,7 @@ function fmtTipo(el){if(el.dataset.fmt)return el.dataset.fmt;
   return /R\$/.test(t)?'moeda':/%/.test(t)?'pct':'num'}
 function fmtVivo(el){const t=el.dataset.fmt;if(!FMT_DEC.hasOwnProperty(t))return;
   const dec=el.dataset.dec!=null?+el.dataset.dec:FMT_DEC[t],v=el.value,c=el.selectionStart??v.length;
+  if(/\d\s*(m|mi|mil|b|bi|k)\s*$/i.test(v))return;  // atalhos como "270 mil" e "12 mi" ficam como digitados (lerNum entende)
   const sig=s=>(s.match(/[\d,]/g)||[]).length;let antes=sig(v.slice(0,c));
   const neg=el.dataset.neg!=null&&/^\s*-/.test(v);
   let s=v.replace(/[^\d,]/g,'');const i=s.indexOf(',');

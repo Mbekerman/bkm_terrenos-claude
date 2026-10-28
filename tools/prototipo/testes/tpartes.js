@@ -82,7 +82,7 @@ ok((t.procs||[]).some(x=>x.fase==='aprovacao'&&x.status==='ativo'),'a compra do 
 
 // parte nova divide a negociação; cadastro com coluna Parte
 await ficha(p,'Terreno Rua Itapura');await bloco(p,'negociacao');
-ok((await txt(p,'#sec-partes')).includes('negociação só'),'sem partes: texto explica quando dividir');
+ok((await txt(p,'#sec-partes')).includes('Um só dono'),'sem partes: texto diz que é um dono só');
 for(const n of ['Espólio Ferraz','Dona Rosa']){await clica(p,'[data-a=pt-nova]');await p.fill('#pt-n',n);await enviar(p,'pt-parte')}
 t=await ter(p,'Rua Itapura');ok(t.partes.length===2&&t.partes.every(x=>x.neg&&x.neg.etapa==='negociacao'),'duas partes na Negociação: cada uma ganha a sua negociação');
 ok(t.partes[0].neg.codigo===t.neg.codigo+'-1','código da parte com o do terreno');

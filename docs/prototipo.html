@@ -3363,7 +3363,7 @@ select:not([multiple]) { background-repeat: no-repeat !important; background-pos
 :root[data-tema="escuro"] .lz-c { border-bottom-color: #1a2240 }
 .lz-c.alt { box-shadow: inset 3px 0 0 #0b57d0 !important; padding-left: 10px !important }
 /* Configurações › Viabilidade: colunas que cabem no quadro */
-.vb-cfg-r { grid-template-columns: 64px minmax(120px, 2fr) minmax(110px, 1.3fr) minmax(120px, 1.3fr) 96px 64px 48px 40px !important }
+
 /* Pontos de interesse: categoria sem resultado em texto normal */
 .ent-l li.ent-vazio .t2 { font-style: normal !important; font-size: 13px }
 .empilha .dt:not(.lista-t) td:has(> .chip:only-child)::before { content: none !important }
@@ -3425,8 +3425,10 @@ form.inline-form.if-fechado { display: none !important }
 .vb-pop-sc { min-height: 0 }
 .vb-passo { border-top: 0 !important; padding: 4px calc(var(--q-px, 24px) - 12px) 12px !important }
 /* Configurações: nomes cabem */
-.cfg-r.cfg-fase { grid-template-columns: 72px minmax(160px, 1.4fr) 80px minmax(180px, 1.2fr) 80px 70px 70px !important }
-.vb-cfg-r { grid-template-columns: 64px minmax(180px, 2.4fr) minmax(130px, 1.2fr) minmax(120px, 1.1fr) 96px 64px 48px 40px !important }
+@media (min-width: 900px) {
+  .cfg-r.cfg-fase { grid-template-columns: 72px minmax(160px, 1.4fr) 80px minmax(180px, 1.2fr) 80px 70px 70px !important }
+  .vb-cfg-r { grid-template-columns: 64px minmax(200px, 3fr) minmax(120px, 1.2fr) minmax(120px, 1.2fr) 88px 56px 44px 40px !important }
+}
 /* Tabela que rola para o lado: a borda direita esmaece para mostrar que há mais */
 .tblwrap.rola { mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent) }
 /* Topo da ficha: menos vazio entre o cabeçalho e as seções */
@@ -3446,6 +3448,73 @@ form.inline-form.if-fechado { display: none !important }
 :root[data-tema="escuro"] .empilha .mini-tbl td:not(:first-child) { color: #e6ecff }
 .board .col { width: 280px; max-width: 280px } @media (max-width: 599px) { .board .col { width: auto; max-width: none } }
 .sec .dt-wrap > .dt, .sec .tblwrap > table { background: transparent !important }
+@media (max-width: 899px) {
+  .vb-cfg-r { grid-template-columns: 1fr 1fr !important; padding: 10px 0; border-bottom: 1px solid var(--m-outline-var, #c4c7c5) }
+  .vb-cfg-r > :first-child { grid-column: 1 / -1 }
+  .vb-cfg-r > :nth-child(2) { grid-column: 1 / -1 }
+}
+/* Quadro: colunas de 248 px (a próxima aparece pela metade); coluna vazia estreita; chip quebra em duas linhas */
+@media (min-width: 600px) {
+  .board .col { flex: 0 0 248px !important; width: 248px; max-width: 248px }
+  .board .col:not(:has(.kcard)) { flex-basis: 176px !important; width: 176px; max-width: 176px }
+}
+.kcard .ksub > span:first-child { white-space: normal !important; overflow: visible; text-overflow: clip }
+.kcard .ksub { height: auto !important; align-items: flex-start }
+/* Status neutro (Pendente, Não aberta, Descartado...) também tonal, nunca contornado como botão */
+:is(.dt td, .doc, .fs-lst, .chk-group, .docs) .chip:not(.warn):not(.crit):not(.good):not(.blue):not(.sub):not(.fase):not(.fase-n):not(.num) { background: #e9eef6 !important; border-color: transparent !important; color: #444746 !important }
+:root[data-tema="escuro"] :is(.dt td, .doc, .fs-lst, .chk-group, .docs) .chip:not(.warn):not(.crit):not(.good):not(.blue):not(.sub):not(.fase):not(.fase-n):not(.num) { background: rgba(142,154,196,.14) !important; color: #b9c3e6 !important }
+/* Lixeira de linha: no desktop aparece ao passar o mouse ou com o foco na linha */
+@media (hover: hover) and (min-width: 900px) {
+  :is(tr, li, .cfg-r, .kv, .doc) .iconbtn.lixo { opacity: 0; transition: opacity .12s }
+  :is(tr, li, .cfg-r, .kv, .doc):is(:hover, :focus-within) .iconbtn.lixo { opacity: 1 }
+}
+/* Rótulos da lista chave/valor um pouco mais largos (menos quebra) */
+.kv:has(.kv-ed), .kvl:has(> .kv > .kv-ed) > .kv:not(.editando) { grid-template-columns: clamp(120px, 36%, 160px) minmax(0, 1fr) 32px !important }
+.kvl:not(:has(.kv-ed)) > .kv, .ro .kv:has(.kv-ed[data-a="edit"]), .fs-ro .kv:has(.kv-ed) { grid-template-columns: clamp(120px, 36%, 160px) minmax(0, 1fr) !important }
+/* Terrenos: etapa em texto neutro; atraso e aprovação em chip pequeno */
+.dt .c-etapa .chip.sub.warn { color: var(--m-on-surface, #1f1f1f) !important }
+.dt .c-etapa .chip.sub.warn::after { content: "atrasada"; display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 6px; background: #ffdf99; color: #3d2c00; font-size: 11px; line-height: 18px; font-weight: 500 }
+.dt .c-etapa .chip.blue { display: inline-block !important; margin-top: 4px; padding: 0 6px !important; border-radius: 6px !important; background: #d3e3fd !important; color: #041e49 !important; font-size: 11px; line-height: 18px; font-weight: 500 }
+:root[data-tema="escuro"] .dt .c-etapa .chip.sub.warn { color: #e6ecff !important }
+:root[data-tema="escuro"] .dt .c-etapa .chip.sub.warn::after { background: rgba(245,196,81,.16); color: #ffd479 }
+:root[data-tema="escuro"] .dt .c-etapa .chip.blue { background: rgba(124,140,255,.18) !important; color: #c9d6ff !important }
+/* Tabela dentro do quadro de Terrenos e Tarefas: um contêiner só */
+.sec .dt-wrap, .sec.lista .dt-wrap { background: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important }
+/* Mapa com a ficha aberta: a legenda recolhe para não ficar embaixo do painel */
+@media (min-width: 900px) { body:has(#ficha-sheet) .mp-legenda > :not(summary) { display: none !important } body:has(#ficha-sheet) .mp-legenda summary::after { transform: none !important } }
+/* Parâmetros urbanísticos no celular: um cartão por zona, parâmetros em grade de duas colunas */
+@media (max-width: 599px) {
+  .tblwrap.rola:has(.zp-tbl) { overflow: visible; mask-image: none; -webkit-mask-image: none }
+  .zp-tbl, .zp-tbl tbody { display: block; white-space: normal; min-width: 0 }
+  .zp-tbl thead { display: none }
+  .zp-tbl tr { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; padding: 12px 0 !important; border-bottom: 1px solid var(--m-outline-var, #c4c7c5) }
+  .zp-tbl td { display: flex; flex-direction: column; gap: 4px; padding: 0 !important; border: 0 !important; position: static !important; background: none !important; min-width: 0 }
+  .zp-tbl td::before { content: attr(data-l); font-size: 12px; color: var(--m-on-var, #444746) }
+  .zp-tbl td:first-child { grid-column: 1 / -1; font-size: 16px }
+  .zp-tbl td:first-child::before { content: none }
+  .zp-tbl td input:not([type=checkbox]), .zp-tbl td select { width: 100% !important; text-align: left }
+  .zp-tbl td input[data-k=fonte_norma] { width: 100% !important }
+  .zp-tbl td:has(input[data-k=fonte_norma]) { grid-column: 1 / -1 }
+  :root[data-tema="escuro"] .zp-tbl td::before { color: #8e9ac4 }
+}
+/* Botão tonal (ação da página que não é a principal do app) */
+.btn.tonal { background: #c2e7ff !important; color: #001d35 !important; border: 0 !important }
+.btn.tonal:hover { box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 1px 3px 1px rgba(0,0,0,.15) }
+:root[data-tema="escuro"] .btn.tonal { background: rgba(99,112,255,.10) !important; box-shadow: inset 0 0 0 1px rgba(124,140,255,.5) !important; color: #c9d6ff !important }
+/* Estudo: indicadores compactos no desktop (rótulo em cima) */
+@media (min-width: 600px) {
+  .vb-pop .vb-kpis .kpi { min-height: 0 !important; padding: 10px 16px !important; gap: 2px !important }
+  .vb-pop .vb-kpis .kpi .l { order: -1 }
+  :root .vb-pop .vb-kpis .kpi .v, :root .vb-pop .vb-kpis .kpi .v.sm { font-size: 24px !important; line-height: 32px !important }
+}
+.kcard .flag.warn { background: #ffdf99; color: #3d2c00; border-radius: 6px; padding: 0 6px; font-size: 11px; font-weight: 500; line-height: 18px }
+:root[data-tema="escuro"] .kcard .flag.warn { background: rgba(245,196,81,.16); color: #ffd479 }
+/* Linha do tempo da negociação: nome e data juntos (data embaixo), itens separados por 10 px */
+.tr-e ul { gap: 10px !important }
+.tr-e ul li { flex-direction: column !important; gap: 0 !important; justify-content: flex-start !important; line-height: 20px }
+.tr-e ul li .faint { line-height: 16px }
+@media (min-width: 600px) { .tr-e ul li { flex-direction: row !important; justify-content: space-between !important; gap: 12px !important } }
+.sec > .rd-raios button { padding: 0 12px !important }
 </style>
 <header class="top">
   <div class="top-in">
@@ -3994,10 +4063,10 @@ function abaComercial(t){
   <section class="sec"><div class="sec-h"><h2>Ofertas recebidas</h2><button class="btn sm" data-a="nova-oferta">${ic('add',16)}Registrar oferta</button></div><div class="sec-b">
   ${t.ofertas.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Data</th><th>Corretor</th><th class="r">Valor pedido</th><th>Forma</th><th>Status</th><th></th></tr></thead><tbody>
   ${t.ofertas.slice().sort((a,b)=>a.data.localeCompare(b.data)).map((o,i)=>{const c=corretor(o.cid);return `<tr><td>${fd(o.data)}${i===0&&t.ofertas.length>1?'<div class="tag-ref" style="color:var(--texto-suave)">primeira</div>':''}</td><td>${c?esc(c.nome)+`<div class="faint" style="font-size:12px">${esc(c.imob)}</div>`:'Direto'}</td><td class="r">${brl(o.valor)}</td><td>${o.forma?OPT.forma[o.forma]:'—'}</td><td>${o.status}</td>
-  <td class="r">${o===ref?'<span class="tag-ref">referência</span>':t.neg?`<button class="btn sm text" data-a="ofref" data-o="${o.id}">Usar como referência</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`:'<div class="muted">Nenhuma oferta.</div>'}
+  <td class="r">${o===ref?'<span class="chip blue">Referência</span>':t.neg?`<button class="btn sm text" data-a="ofref" data-o="${o.id}">Usar como referência</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`:'<div class="muted">Nenhuma oferta.</div>'}
   </div></section>
   <section class="sec"><div class="sec-h"><h2>Corretores do terreno</h2></div><div class="sec-b">
-  ${t.corretores.length?t.corretores.map(x=>{const c=corretor(x.cid);return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0"><button class="star ${x.principal?'on':''}" data-a="principal" data-c="${x.cid}" aria-label="Marcar ${esc(c.nome)} como principal" title="${x.principal?'Principal':'Marcar como principal'}">★</button><span><b>${esc(c.nome)}</b> <span class="muted" style="font-size:13px">· ${esc(c.imob)} · CRECI ${esc(c.creci)}</span></span></div>`}).join(''):'<div class="muted">Entram automaticamente quando apresentam uma oferta.</div>'}</div></section></div>`;
+  ${t.corretores.length?t.corretores.map(x=>{const c=corretor(x.cid);return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0"><button class="star ${x.principal?'on':''}" data-a="principal" data-c="${x.cid}" aria-label="Marcar ${esc(c.nome)} como principal" title="${x.principal?'Principal':'Marcar como principal'}">★</button><span><b>${esc(c.nome)}</b> <span class="muted" style="font-size:13px">· ${esc(c.imob)} · CRECI ${esc(c.creci)}</span></span>${x.principal?'<span class="faint" style="font-size:12px;margin-left:auto">Principal</span>':''}</div>`}).join(''):'<div class="muted">Entram automaticamente quando apresentam uma oferta.</div>'}</div></section></div>`;
 }
 function abaNegociacao(t){
   const n=t.neg;
@@ -4066,7 +4135,7 @@ function secReunioes(t){
     <div class="field full" data-so="realizada"><label for="ru-r">O que foi tratado</label><textarea id="ru-r" name="resumo" placeholder="Posições de cada lado, valores citados, objeções"></textarea></div>
     <div class="field full" data-so="realizada"><label for="ru-n">Encaminhamentos</label><textarea id="ru-n" name="enc" placeholder="Quem faz o quê, até quando"></textarea></div>
     </div><div class="sec-f" style="padding:12px 0 0"><button type="button" class="btn text" data-a="reu-form">Cancelar</button><button class="btn primary">Registrar reunião</button></div></form>`:'';
-  return `<section class="sec"><div class="sec-h"><h2>Reuniões${real?` <span class="h-n">${real}</span>`:''}</h2><span class="sec-acoes">${negAtiva(t)&&!UI.reuForm?`<button class="btn primary sm" data-a="reu-form">${ic('add',16)}Registrar reunião</button>`:''}</span></div><div class="sec-b">
+  return `<section class="sec"><div class="sec-h"><h2>Reuniões${ms.length?` <span class="h-n">${ms.length}</span>`:''}</h2><span class="sec-acoes">${negAtiva(t)&&!UI.reuForm?`<button class="btn primary sm" data-a="reu-form">${ic('add',16)}Registrar reunião</button>`:''}</span></div><div class="sec-b">
   ${form}
   ${ms.length?`<div class="reus">${ms.map(m=>`<article class="reu ${m.status}"><div class="reu-h"><div><div class="reu-t">${fd(m.data)} · ${esc(m.hora||'')}</div><div class="reu-m">${OPT_REU.modalidade[m.modalidade]}${m.modalidade==='presencial'?' · '+OPT_REU.local[m.local]+(m.endereco?' · '+esc(m.endereco):''):''}</div></div>
     <span class="reu-acts">${m.status==='agendada'?`<span class="chip blue">Agendada</span>${negAtiva(t)&&m.data<=HOJE?`<button class="btn sm" data-a="reu-feita" data-k="${m.id}">${ic('check',16)}Marcar realizada</button>`:''}`:m.status==='cancelada'?'<span class="chip">Cancelada</span>':`<span class="chip good">Realizada</span>`}</span></div>
@@ -4091,7 +4160,7 @@ function abaDocs(t){
     <div class="field"><label for="dl-r">Responsável</label><select id="dl-r" name="resp">${USERS.map(u=>`<option ${u===t.resp?'selected':''}>${u}</option>`).join('')}</select></div>
     <div class="field full" style="flex-basis:100%"><label for="dl-p">Providência</label><input id="dl-p" name="prov"></div><button class="btn sm">${ic('add',16)}Registrar</button></form>
     </div></section>`;
-  return `<div class="stack">${secDil}<section class="sec chk-group"><div class="chk-gh"><span class="gt">Checklist de documentos</span>${ativo?`<span class="progress"><span class="bar"><span style="width:${CHECK_DIL.filter(([k,o])=>o&&docSt(doc(k))==='validado').length/CHECK_DIL.filter(c=>c[1]).length*100}%"></span></span>${CHECK_DIL.filter(([k,o])=>o&&docSt(doc(k))==='validado').length} de ${CHECK_DIL.filter(c=>c[1]).length} obrigatórios</span>`:'<span class="chip">Vale a partir da Diligência</span>'}</div>
+  return `<div class="stack">${secDil}<section class="sec chk-group"><div class="chk-gh"><span class="gt">Checklist de documentos</span>${ativo?`<span class="progress"><span class="bar"><span style="width:${CHECK_DIL.filter(([k,o])=>o&&docSt(doc(k))==='validado').length/CHECK_DIL.filter(c=>c[1]).length*100}%"></span></span>${CHECK_DIL.filter(([k,o])=>o&&docSt(doc(k))==='validado').length} de ${CHECK_DIL.filter(c=>c[1]).length} obrigatórios</span>`:'<span class="faint" style="font-size:13px">Vale a partir da Diligência</span>'}</div>
   ${CHECK_DIL.map(([k,o])=>{const d=doc(k),st=docSt(d),va=d?docVal(d):null;return `<div class="doc"><span class="di">${ic('doc',18)}</span><div style="min-width:0"><div class="dn">${TIPOS_DOC[k][0]} ${o?'':'<span class="opt">opcional</span>'}</div><div class="ds">${d?`v${d.versoes} · emitido ${fd(d.emitido)}${va?` · ${st==='vencido'?'venceu':'vence'} ${fd(va)}`:''}`:`Validade: ${TIPOS_DOC[k][2]?TIPOS_DOC[k][2]+' dias':'não vence'}`}</div></div>
   <div class="da">${docChip(st)}${st==='recebido'?`<button class="btn sm" data-a="doc-ok" data-k="${k}">${ic('check',16)}Validar</button>`:''}<button class="btn sm ${d?'text':''}" data-a="upload" data-k="${k}">${ic('upload',16)}${d?'Nova versão':'Enviar'}</button></div></div>`}).join('')}</section>
   <section class="sec chk-group"><div class="chk-gh"><span class="gt">Fotos, plantas e outros</span><button class="btn sm" data-a="upload" data-k="foto">${ic('upload',16)}Enviar foto</button></div>
@@ -5119,7 +5188,7 @@ function pgTarefas(){const f=UI.tk,l=tkFiltradas();const cols=COLS_TK.filter(c=>
   const atras=todasTarefas().filter(({k})=>k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)).length;
   return `<div class="page-h"><div><h1>Tarefas</h1><div class="sub">${l.filter(x=>!['concluida','cancelada'].includes(x.k.status)).length} abertas · ${atras} atrasadas</div></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="seg" role="group" aria-label="Visualização">${[['quadro','Quadro'],['tabela','Tabela']].map(([k,x])=>`<button data-a="tk-vista" data-v="${k}" aria-pressed="${f.vista===k}">${x}</button>`).join('')}</div>
-    <button class="btn primary ed" data-a="tk-nova" data-v="pendente">${ic('add',18)}Nova tarefa</button></div></div>
+    <button class="btn tonal ed" data-a="tk-nova" data-v="pendente">${ic('add',18)}Nova tarefa</button></div></div>
   ${filtros}${f.vista==='tabela'?`<section class="sec"><div class="sec-b">${tabela('tarefas',l,colsT,{attr:({k,t})=>`data-a="tk-abrir" data-tk="${k.id}" data-id="${t.id}" tabindex="0"`,padrao:{k:'prazo',dir:'asc'},vazio:'Nenhuma tarefa com esses filtros.'})}</div></section>`:quadro}`}
 function moverTk(tid,kid,col,antesDe){const t=T(tid),k=t.tarefas.find(x=>x.id===kid);if(!k)return;
   const irmas=todasTarefas().filter(x=>x.k.status===col&&x.k.id!==kid).sort(ordemTk);
@@ -6223,7 +6292,7 @@ function kcardNeg(t,modo){const n=t.neg,o=ofertaRef(t),lp=lastProp(t),pr=proxReu
   return `<button class="kcard ${n.pedido?'aprov':''}" data-a="abrir" data-id="${t.id}" data-from="negociacoes" ${UI.role!=='Leitura'?'draggable="true"':''}><div class="kr"><span class="num faint">${t.codigo}</span>${n.temp?tempMini(n.temp):''}</div><div class="kt">${esc(t.nome)}</div>
   ${modo!=='sub'&&n.sub?`<div class="ksub"><span>${esc(subN(n.sub))}</span><span class="faint">${diasSub(n)} d</span>${subAtrasada(n)?`<span class="flag warn" title="Passou do prazo da subetapa">${ic('clock',14)}</span>`:''}</div>`:''}
   <div class="ks">${esc(t.bairro||'')}${sb?' · parou em '+SN(n.etapa):''}</div>${dividida(t)?`<div class="kpt">${ic('layers',14)}${esc(resumoPartes(t))}</div>`:''}
-  <div class="kr"><span>${lp?'Prop. '+mi(lp.valor):'Pedido '+(o?.valor?mi(o.valor):'—')}</span>${atrasadas(t).length?`<span class="flag crit" title="Tarefas atrasadas">${ic('clock',14)}${atrasadas(t).length}</span>`:''}${abaixoMin(t)?`<span class="flag warn" title="Rentabilidade abaixo da mínima">${ic('money',14)}</span>`:''}</div>${pr?`<div class="kr"><span class="faint">Reunião ${fd(pr.data)} · ${pr.hora}</span></div>`:''}
+  <div class="kr"><span>${lp?'Prop. '+mi(lp.valor):'Pedido '+(o?.valor?mi(o.valor):'—')}</span>${atrasadas(t).length?`<span class="flag crit" title="Tarefas atrasadas">${ic('clock',14)}${atrasadas(t).length}</span>`:''}${abaixoMin(t)?`<span class="flag warn" title="Rentabilidade abaixo da mínima">Margem baixa</span>`:''}</div>${pr?`<div class="kr"><span class="faint">Reunião ${fd(pr.data)} · ${pr.hora}</span></div>`:''}
   ${n.pedido?`<div class="kped">${ic('clock',14)}Aguardando ${esc(quemFalta(n.pedido))}</div>`:''}
   <div class="kr">${av(t.resp,'sm')}<span class="faint ${!sb&&etapaAtrasada(n)?'katr':''}">${sb?'revisitar '+fd(n.retomar):modo==='sub'?diasSub(n)+' d na subetapa':diff(n.desde,HOJE)+' d na etapa'}</span></div></button>`}
 function pgNeg(){if(!UI.negFase||!faseCfg(UI.negFase))return pgFasesBoard();if(UI.negFase!==faseEnt())return pgFaseBoard(UI.negFase);const e=UI.negEtapa&&etapaCfg(UI.negEtapa)?UI.negEtapa:null,ativos=S.terrenos.filter(t=>t.neg?.status==='ativo');
@@ -7917,7 +7986,7 @@ function mkBoxHtml(e){const r=mkResumo(e),pct=r.unidades?Math.round(100*r.estoqu
   <div class="mk-grid">${kv('Lançamento',ccMes(e.lanc))}${kv('Entrega',ccMes(e.ent))}${kv('Unidades',num(r.unidades))}${kv('Em estoque',num(r.estoque),pct+'%')}
     ${kv(r.vgvLEst?'VGV lançado (estimado)':'VGV lançado',vg(r.vgvL))}${kv('VGV em estoque',vg(r.vgvE))}${kv('VSO médio (3 meses)',mkPct(r.vso))}</div>
   <div class="cc-tw"><table class="cc-t mk-t"><thead><tr><th>Grupo</th><th class="num">Preço médio</th><th class="num">Por m²</th><th class="num">Lançadas</th><th class="num">Estoque</th><th class="num" title="VSO médio dos últimos 3 meses">VSO</th></tr></thead><tbody>${linhas}</tbody></table></div>
-  <div class="cc-meta faint mk-nota">Dados de exemplo · VSO médio dos últimos 3 meses${r.grupos.some(g=>g.preco==null&&g.m2p1!=null)?' · * grupo esgotado, pelo primeiro preço visto':''}</div></div>`}
+  <div class="cc-meta faint mk-nota">Dados de exemplo · VSO médio dos últimos 3 meses${r.inc?` · andares inconsistentes: grupos pelo salto de ${num(MK_CFG.semAndar)}%`:''}${r.grupos.some(g=>g.preco==null&&g.m2p1!=null)?' · * grupo esgotado, pelo primeiro preço visto':''}</div></div>`}
 function mkBox(){const area=$('.mapa-area');let el=$('#mk-box');const e=MK.box&&UI.route==='mapa'?mkEmp(MK.box):null;
   if(!e||!area){el?.remove();if(!e)MK.box=null;return}
   if(!el||el.parentNode!==area){el?.remove();el=document.createElement('div');el.id='mk-box';area.appendChild(el)}
@@ -9466,6 +9535,7 @@ function fmtTipo(el){if(el.dataset.fmt)return el.dataset.fmt;
   return /R\$/.test(t)?'moeda':/%/.test(t)?'pct':'num'}
 function fmtVivo(el){const t=el.dataset.fmt;if(!FMT_DEC.hasOwnProperty(t))return;
   const dec=el.dataset.dec!=null?+el.dataset.dec:FMT_DEC[t],v=el.value,c=el.selectionStart??v.length;
+  if(/\d\s*(m|mi|mil|b|bi|k)\s*$/i.test(v))return;  // atalhos como "270 mil" e "12 mi" ficam como digitados (lerNum entende)
   const sig=s=>(s.match(/[\d,]/g)||[]).length;let antes=sig(v.slice(0,c));
   const neg=el.dataset.neg!=null&&/^\s*-/.test(v);
   let s=v.replace(/[^\d,]/g,'');const i=s.indexOf(',');

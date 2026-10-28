@@ -136,7 +136,7 @@ function mkBoxHtml(e){const r=mkResumo(e),pct=r.unidades?Math.round(100*r.estoqu
   <div class="mk-grid">${kv('Lançamento',ccMes(e.lanc))}${kv('Entrega',ccMes(e.ent))}${kv('Unidades',num(r.unidades))}${kv('Em estoque',num(r.estoque),pct+'%')}
     ${kv(r.vgvLEst?'VGV lançado (estimado)':'VGV lançado',vg(r.vgvL))}${kv('VGV em estoque',vg(r.vgvE))}${kv('VSO médio (3 meses)',mkPct(r.vso))}</div>
   <div class="cc-tw"><table class="cc-t mk-t"><thead><tr><th>Grupo</th><th class="num">Preço médio</th><th class="num">Por m²</th><th class="num">Lançadas</th><th class="num">Estoque</th><th class="num" title="VSO médio dos últimos 3 meses">VSO</th></tr></thead><tbody>${linhas}</tbody></table></div>
-  <div class="cc-meta faint mk-nota">Dados de exemplo · VSO médio dos últimos 3 meses${r.grupos.some(g=>g.preco==null&&g.m2p1!=null)?' · * grupo esgotado, pelo primeiro preço visto':''}</div></div>`}
+  <div class="cc-meta faint mk-nota">Dados de exemplo · VSO médio dos últimos 3 meses${r.inc?` · andares inconsistentes: grupos pelo salto de ${num(MK_CFG.semAndar)}%`:''}${r.grupos.some(g=>g.preco==null&&g.m2p1!=null)?' · * grupo esgotado, pelo primeiro preço visto':''}</div></div>`}
 function mkBox(){const area=$('.mapa-area');let el=$('#mk-box');const e=MK.box&&UI.route==='mapa'?mkEmp(MK.box):null;
   if(!e||!area){el?.remove();if(!e)MK.box=null;return}
   if(!el||el.parentNode!==area){el?.remove();el=document.createElement('div');el.id='mk-box';area.appendChild(el)}

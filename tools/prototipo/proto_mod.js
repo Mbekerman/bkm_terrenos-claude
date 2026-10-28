@@ -661,7 +661,7 @@ function pgTarefas(){const f=UI.tk,l=tkFiltradas();const cols=COLS_TK.filter(c=>
   const atras=todasTarefas().filter(({k})=>k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)).length;
   return `<div class="page-h"><div><h1>Tarefas</h1><div class="sub">${l.filter(x=>!['concluida','cancelada'].includes(x.k.status)).length} abertas · ${atras} atrasadas</div></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="seg" role="group" aria-label="Visualização">${[['quadro','Quadro'],['tabela','Tabela']].map(([k,x])=>`<button data-a="tk-vista" data-v="${k}" aria-pressed="${f.vista===k}">${x}</button>`).join('')}</div>
-    <button class="btn primary ed" data-a="tk-nova" data-v="pendente">${ic('add',18)}Nova tarefa</button></div></div>
+    <button class="btn tonal ed" data-a="tk-nova" data-v="pendente">${ic('add',18)}Nova tarefa</button></div></div>
   ${filtros}${f.vista==='tabela'?`<section class="sec"><div class="sec-b">${tabela('tarefas',l,colsT,{attr:({k,t})=>`data-a="tk-abrir" data-tk="${k.id}" data-id="${t.id}" tabindex="0"`,padrao:{k:'prazo',dir:'asc'},vazio:'Nenhuma tarefa com esses filtros.'})}</div></section>`:quadro}`}
 function moverTk(tid,kid,col,antesDe){const t=T(tid),k=t.tarefas.find(x=>x.id===kid);if(!k)return;
   const irmas=todasTarefas().filter(x=>x.k.status===col&&x.k.id!==kid).sort(ordemTk);

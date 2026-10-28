@@ -2688,7 +2688,7 @@ select:not([multiple]) { background-repeat: no-repeat !important; background-pos
 :root[data-tema="escuro"] .lz-c { border-bottom-color: #1a2240 }
 .lz-c.alt { box-shadow: inset 3px 0 0 #0b57d0 !important; padding-left: 10px !important }
 /* Configurações › Viabilidade: colunas que cabem no quadro */
-.vb-cfg-r { grid-template-columns: 64px minmax(120px, 2fr) minmax(110px, 1.3fr) minmax(120px, 1.3fr) 96px 64px 48px 40px !important }
+
 /* Pontos de interesse: categoria sem resultado em texto normal */
 .ent-l li.ent-vazio .t2 { font-style: normal !important; font-size: 13px }
 .empilha .dt:not(.lista-t) td:has(> .chip:only-child)::before { content: none !important }
@@ -2750,8 +2750,10 @@ form.inline-form.if-fechado { display: none !important }
 .vb-pop-sc { min-height: 0 }
 .vb-passo { border-top: 0 !important; padding: 4px calc(var(--q-px, 24px) - 12px) 12px !important }
 /* Configurações: nomes cabem */
-.cfg-r.cfg-fase { grid-template-columns: 72px minmax(160px, 1.4fr) 80px minmax(180px, 1.2fr) 80px 70px 70px !important }
-.vb-cfg-r { grid-template-columns: 64px minmax(180px, 2.4fr) minmax(130px, 1.2fr) minmax(120px, 1.1fr) 96px 64px 48px 40px !important }
+@media (min-width: 900px) {
+  .cfg-r.cfg-fase { grid-template-columns: 72px minmax(160px, 1.4fr) 80px minmax(180px, 1.2fr) 80px 70px 70px !important }
+  .vb-cfg-r { grid-template-columns: 64px minmax(200px, 3fr) minmax(120px, 1.2fr) minmax(120px, 1.2fr) 88px 56px 44px 40px !important }
+}
 /* Tabela que rola para o lado: a borda direita esmaece para mostrar que há mais */
 .tblwrap.rola { mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent) }
 /* Topo da ficha: menos vazio entre o cabeçalho e as seções */
@@ -2771,6 +2773,73 @@ form.inline-form.if-fechado { display: none !important }
 :root[data-tema="escuro"] .empilha .mini-tbl td:not(:first-child) { color: #e6ecff }
 .board .col { width: 280px; max-width: 280px } @media (max-width: 599px) { .board .col { width: auto; max-width: none } }
 .sec .dt-wrap > .dt, .sec .tblwrap > table { background: transparent !important }
+@media (max-width: 899px) {
+  .vb-cfg-r { grid-template-columns: 1fr 1fr !important; padding: 10px 0; border-bottom: 1px solid var(--m-outline-var, #c4c7c5) }
+  .vb-cfg-r > :first-child { grid-column: 1 / -1 }
+  .vb-cfg-r > :nth-child(2) { grid-column: 1 / -1 }
+}
+/* Quadro: colunas de 248 px (a próxima aparece pela metade); coluna vazia estreita; chip quebra em duas linhas */
+@media (min-width: 600px) {
+  .board .col { flex: 0 0 248px !important; width: 248px; max-width: 248px }
+  .board .col:not(:has(.kcard)) { flex-basis: 176px !important; width: 176px; max-width: 176px }
+}
+.kcard .ksub > span:first-child { white-space: normal !important; overflow: visible; text-overflow: clip }
+.kcard .ksub { height: auto !important; align-items: flex-start }
+/* Status neutro (Pendente, Não aberta, Descartado...) também tonal, nunca contornado como botão */
+:is(.dt td, .doc, .fs-lst, .chk-group, .docs) .chip:not(.warn):not(.crit):not(.good):not(.blue):not(.sub):not(.fase):not(.fase-n):not(.num) { background: #e9eef6 !important; border-color: transparent !important; color: #444746 !important }
+:root[data-tema="escuro"] :is(.dt td, .doc, .fs-lst, .chk-group, .docs) .chip:not(.warn):not(.crit):not(.good):not(.blue):not(.sub):not(.fase):not(.fase-n):not(.num) { background: rgba(142,154,196,.14) !important; color: #b9c3e6 !important }
+/* Lixeira de linha: no desktop aparece ao passar o mouse ou com o foco na linha */
+@media (hover: hover) and (min-width: 900px) {
+  :is(tr, li, .cfg-r, .kv, .doc) .iconbtn.lixo { opacity: 0; transition: opacity .12s }
+  :is(tr, li, .cfg-r, .kv, .doc):is(:hover, :focus-within) .iconbtn.lixo { opacity: 1 }
+}
+/* Rótulos da lista chave/valor um pouco mais largos (menos quebra) */
+.kv:has(.kv-ed), .kvl:has(> .kv > .kv-ed) > .kv:not(.editando) { grid-template-columns: clamp(120px, 36%, 160px) minmax(0, 1fr) 32px !important }
+.kvl:not(:has(.kv-ed)) > .kv, .ro .kv:has(.kv-ed[data-a="edit"]), .fs-ro .kv:has(.kv-ed) { grid-template-columns: clamp(120px, 36%, 160px) minmax(0, 1fr) !important }
+/* Terrenos: etapa em texto neutro; atraso e aprovação em chip pequeno */
+.dt .c-etapa .chip.sub.warn { color: var(--m-on-surface, #1f1f1f) !important }
+.dt .c-etapa .chip.sub.warn::after { content: "atrasada"; display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 6px; background: #ffdf99; color: #3d2c00; font-size: 11px; line-height: 18px; font-weight: 500 }
+.dt .c-etapa .chip.blue { display: inline-block !important; margin-top: 4px; padding: 0 6px !important; border-radius: 6px !important; background: #d3e3fd !important; color: #041e49 !important; font-size: 11px; line-height: 18px; font-weight: 500 }
+:root[data-tema="escuro"] .dt .c-etapa .chip.sub.warn { color: #e6ecff !important }
+:root[data-tema="escuro"] .dt .c-etapa .chip.sub.warn::after { background: rgba(245,196,81,.16); color: #ffd479 }
+:root[data-tema="escuro"] .dt .c-etapa .chip.blue { background: rgba(124,140,255,.18) !important; color: #c9d6ff !important }
+/* Tabela dentro do quadro de Terrenos e Tarefas: um contêiner só */
+.sec .dt-wrap, .sec.lista .dt-wrap { background: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important }
+/* Mapa com a ficha aberta: a legenda recolhe para não ficar embaixo do painel */
+@media (min-width: 900px) { body:has(#ficha-sheet) .mp-legenda > :not(summary) { display: none !important } body:has(#ficha-sheet) .mp-legenda summary::after { transform: none !important } }
+/* Parâmetros urbanísticos no celular: um cartão por zona, parâmetros em grade de duas colunas */
+@media (max-width: 599px) {
+  .tblwrap.rola:has(.zp-tbl) { overflow: visible; mask-image: none; -webkit-mask-image: none }
+  .zp-tbl, .zp-tbl tbody { display: block; white-space: normal; min-width: 0 }
+  .zp-tbl thead { display: none }
+  .zp-tbl tr { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; padding: 12px 0 !important; border-bottom: 1px solid var(--m-outline-var, #c4c7c5) }
+  .zp-tbl td { display: flex; flex-direction: column; gap: 4px; padding: 0 !important; border: 0 !important; position: static !important; background: none !important; min-width: 0 }
+  .zp-tbl td::before { content: attr(data-l); font-size: 12px; color: var(--m-on-var, #444746) }
+  .zp-tbl td:first-child { grid-column: 1 / -1; font-size: 16px }
+  .zp-tbl td:first-child::before { content: none }
+  .zp-tbl td input:not([type=checkbox]), .zp-tbl td select { width: 100% !important; text-align: left }
+  .zp-tbl td input[data-k=fonte_norma] { width: 100% !important }
+  .zp-tbl td:has(input[data-k=fonte_norma]) { grid-column: 1 / -1 }
+  :root[data-tema="escuro"] .zp-tbl td::before { color: #8e9ac4 }
+}
+/* Botão tonal (ação da página que não é a principal do app) */
+.btn.tonal { background: #c2e7ff !important; color: #001d35 !important; border: 0 !important }
+.btn.tonal:hover { box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 1px 3px 1px rgba(0,0,0,.15) }
+:root[data-tema="escuro"] .btn.tonal { background: rgba(99,112,255,.10) !important; box-shadow: inset 0 0 0 1px rgba(124,140,255,.5) !important; color: #c9d6ff !important }
+/* Estudo: indicadores compactos no desktop (rótulo em cima) */
+@media (min-width: 600px) {
+  .vb-pop .vb-kpis .kpi { min-height: 0 !important; padding: 10px 16px !important; gap: 2px !important }
+  .vb-pop .vb-kpis .kpi .l { order: -1 }
+  :root .vb-pop .vb-kpis .kpi .v, :root .vb-pop .vb-kpis .kpi .v.sm { font-size: 24px !important; line-height: 32px !important }
+}
+.kcard .flag.warn { background: #ffdf99; color: #3d2c00; border-radius: 6px; padding: 0 6px; font-size: 11px; font-weight: 500; line-height: 18px }
+:root[data-tema="escuro"] .kcard .flag.warn { background: rgba(245,196,81,.16); color: #ffd479 }
+/* Linha do tempo da negociação: nome e data juntos (data embaixo), itens separados por 10 px */
+.tr-e ul { gap: 10px !important }
+.tr-e ul li { flex-direction: column !important; gap: 0 !important; justify-content: flex-start !important; line-height: 20px }
+.tr-e ul li .faint { line-height: 16px }
+@media (min-width: 600px) { .tr-e ul li { flex-direction: row !important; justify-content: space-between !important; gap: 12px !important } }
+.sec > .rd-raios button { padding: 0 12px !important }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
