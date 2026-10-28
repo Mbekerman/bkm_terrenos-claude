@@ -3386,5 +3386,46 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 .cfg-subs .cfg-fs-add { flex: 1 0 100% }
 .cfg-subs .cfg-fs-add input { max-width: 220px }
 
+/* Revisão de design, rodada 19 */
+@media (min-width: 900px) { :root:not(#_) .vb-cfg-r { grid-template-columns: 40px minmax(220px, 1fr) 160px 138px 88px 72px 48px 40px !important } }
+@media (max-width: 599px) {
+  :root:not(#_) .vb-pop .vb-kpis .kpi { flex-direction: column !important; align-items: flex-start !important; justify-content: center; gap: 2px !important; padding: 8px 12px !important }
+  :root:not(#_) .vb-pop .vb-kpis .kpi .l { font-size: 12px !important; line-height: 16px !important }
+}
+@media (max-width: 599px) {
+  :root:not(#_) .task:has(> select.tkst) { display: grid !important; grid-template-columns: auto minmax(0, 1fr); column-gap: 12px; row-gap: 6px }
+  :root:not(#_) .task > select.chip-sel.tkst { grid-column: 2; justify-self: start; margin-left: 0 !important }
+}
+.reus > .reu:last-child { padding-bottom: 0 !important }
+:root:not(#_) .chip.of-1a { background: var(--m-sc-high, #e9eef6) !important; border: 0 !important; color: var(--m-on-var, #444746) !important; height: 24px }
+:root:not(#_)[data-tema="escuro"] .chip.of-1a { background: rgba(142,154,196,.14) !important; color: #b9c3e6 !important }
+:root:not(#_) .board .tk-ter { white-space: normal !important; overflow: hidden; text-overflow: clip; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical }
+:root:not(#_) .kr.kr-fl { justify-content: flex-start; gap: 8px; flex-wrap: wrap }
+:root:not(#_) .iconbtn.lixo:disabled { opacity: .3; cursor: default; background: none !important }
+@media (min-width: 900px) { :root:not(#_) .cfg-r.cfg-fase { grid-template-columns: 64px minmax(140px, 1.3fr) 64px minmax(130px, 1fr) 84px 84px 40px !important; column-gap: 8px !important } }
+/* Configurações › Viabilidade em telas médias: nome do item na linha de cima, o resto embaixo */
+@media (min-width: 900px) and (max-width: 1439px) {
+  :root:not(#_) .vb-cfg-r { grid-template-columns: 56px minmax(0, 1fr) minmax(0, 1fr) 96px 72px 48px 36px !important; column-gap: 8px !important; row-gap: 6px !important;
+    grid-template-areas: "ord nome nome nome nome nome lixo" ". grupo base valor sai ativo ." }
+  :root:not(#_) .vb-cfg-r > :nth-child(1), :root:not(#_) .vb-cfg-r > .cfg-cel:nth-child(1) > :is(input, select) { grid-area: ord !important } :root:not(#_) .vb-cfg-r > :nth-child(2), :root:not(#_) .vb-cfg-r > .cfg-cel:nth-child(2) > :is(input, select) { grid-area: nome !important }
+  :root:not(#_) .vb-cfg-r > :nth-child(3), :root:not(#_) .vb-cfg-r > .cfg-cel:nth-child(3) > :is(input, select) { grid-area: grupo !important } :root:not(#_) .vb-cfg-r > :nth-child(4), :root:not(#_) .vb-cfg-r > .cfg-cel:nth-child(4) > :is(input, select) { grid-area: base !important }
+  :root:not(#_) .vb-cfg-r > :nth-child(5), :root:not(#_) .vb-cfg-r > .cfg-cel:nth-child(5) > :is(input, select) { grid-area: valor !important } :root:not(#_) .vb-cfg-r > :nth-child(6), :root:not(#_) .vb-cfg-r > .cfg-cel:nth-child(6) > :is(input, select) { grid-area: sai !important }
+  :root:not(#_) .vb-cfg-r > :nth-child(7), :root:not(#_) .vb-cfg-r > .cfg-cel:nth-child(7) > :is(input, select) { grid-area: ativo !important } :root:not(#_) .vb-cfg-r > :nth-child(8), :root:not(#_) .vb-cfg-r > .cfg-cel:nth-child(8) > :is(input, select) { grid-area: lixo !important }
+  :root:not(#_) .vb-cfg-r:not(.cfg-hd) { padding: 10px 0 !important; border-bottom: 1px solid var(--m-outline-var, #c4c7c5) }
+  :root:not(#_)[data-tema="escuro"] .vb-cfg-r:not(.cfg-hd) { border-bottom-color: #1a2240 }
+}
+@media (min-width: 1440px) { :root:not(#_) .vb-cfg-r { grid-template-columns: 56px minmax(200px, 1fr) 160px 138px 88px 72px 48px 36px !important; column-gap: 8px !important } }
+@media (min-width: 900px) and (max-width: 1439px) { :root:not(#_) .vb-cfg-r:not(.cfg-hd) > :nth-child(6) { justify-self: center } :root:not(#_) .vb-cfg-r.cfg-hd > :nth-child(6), :root:not(#_) .vb-cfg-r.cfg-hd > :nth-child(7) { justify-self: center; text-align: center } :root:not(#_) .vb-cfg-r > label.chk:nth-child(7) { justify-self: center } }
+@media (max-width: 599px) {
+  :root:not(#_) .pnode { grid-template-columns: 24px minmax(0, 1fr); gap: 8px }
+  :root:not(#_) .pnode .pd { width: 24px; height: 24px; font-size: 11px }
+  :root:not(#_) .pnode:not(:last-child)::before { left: 11px; top: 26px }
+  :root:not(#_) .pnode .pc { padding: 12px !important }
+  :root:not(#_) .pnode .ph { display: grid !important; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; align-items: start }
+  :root:not(#_) .pnode .ph > span:first-child > .muted { display: block; font-size: 12px !important; line-height: 16px }
+  :root:not(#_) .pnode .pv { font-size: 18px; line-height: 24px }
+}
+@media (max-width: 599px) { :root:not(#_) .pnode .p-sep { display: none } }
+
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

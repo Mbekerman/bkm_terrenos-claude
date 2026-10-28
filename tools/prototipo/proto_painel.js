@@ -171,6 +171,8 @@ function pnFaixa(){const P=PN.per||{k:'30d'},h=HOJE;
 const fdc=s=>{const x=pd(s);return `${x.getDate()} ${MES[x.getMonth()]}${x.getFullYear()!==pd(HOJE).getFullYear()?' '+x.getFullYear():''}`};
 function pnPerRot(){const P=PN.per||{k:'tudo'};if(P.k==='custom'&&P.ini){const f=P.fim||P.ini;return f===P.ini?fdc(P.ini):`${fdc(P.ini)} – ${fdc(f)}`}
   return (PER_OPC.find(x=>x[0]===P.k)||PER_OPC[0])[1]}
+const PER_CURTO={tudo:'Tudo',hoje:'Hoje',semana:'Semana',mes:'Mês','30d':'30 dias',ano:'Ano'};
+function pnPerCurto(){const P=PN.per||{k:'tudo'};return P.k==='custom'?pnPerRot():PER_CURTO[P.k]||pnPerRot()}
 const CHEV='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
 const CAL_IC='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>';
 const MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
@@ -204,12 +206,13 @@ function pnLogs(t){
   const H=sel.length?noPer.filter(h=>sel.includes(h.user)):noPer;
   const nSel=sel.reduce((a,x)=>a+(cont.get(x)||0),0);
   const rot=!sel.length?`Todos os usuários (${noPer.length})`:sel.length===1?`${sel[0]} (${nSel})`:sel.length===2?`${sel.map(x=>x.split(' ')[0]).join(', ')} (${nSel})`:`${sel.length} usuários (${nSel})`;
+  const rotC=!sel.length?'Usuários':sel.length===1?sel[0].split(' ')[0]:`${sel.length} usuários`;
   const ck='<span class="pn-ck" aria-hidden="true"></span>',ab=k=>pnMenu===k?'aberto':'';
   const perAtivo=!!fx&&(PN.per?.k||'30d')!=='30d';
   const filtro=`<div class="pn-filtros">
-    <div class="pn-dd ${ab('user')}" data-dd="user"><button class="pn-dd-b ${sel.length?'ativo':''}" data-a="pn-menu" data-v="user" aria-haspopup="menu" aria-expanded="${pnMenu==='user'}" aria-label="Filtrar por usuário: ${esc(rot)}"><span class="pn-dd-t">${esc(rot)}</span>${CHEV}</button>
+    <div class="pn-dd ${ab('user')}" data-dd="user"><button class="pn-dd-b ${sel.length?'ativo':''}" data-a="pn-menu" data-v="user" aria-haspopup="menu" aria-expanded="${pnMenu==='user'}" aria-label="Filtrar por usuário: ${esc(rot)}"><span class="pn-dd-t">${esc(rotC)}</span>${CHEV}</button>
     <div class="pn-menu" role="menu" aria-label="Usuários"><button role="menuitemcheckbox" aria-checked="${!sel.length}" data-a="pn-todos">${ck}<span class="pn-mn">Todos os usuários</span><span class="n">${noPer.length}</span></button><div class="pn-msep"></div>${users.map(x=>`<button role="menuitemcheckbox" aria-checked="${sel.includes(x)}" data-a="pn-u" data-v="${esc(x)}" class="${cont.get(x)?'':'zero'}">${ck}${av(x,'xs')}<span class="pn-mn">${esc(x)}</span><span class="n">${cont.get(x)||0}</span></button>`).join('')}</div></div>
-    <div class="pn-dd ${ab('per')}" data-dd="per"><button class="pn-dd-b ${perAtivo?'ativo':''}" data-a="pn-menu" data-v="per" aria-haspopup="menu" aria-expanded="${pnMenu==='per'}" aria-label="Filtrar por período: ${esc(pnPerRot())}">${CAL_IC}<span class="pn-dd-t">${esc(pnPerRot())}</span>${CHEV}</button>
+    <div class="pn-dd ${ab('per')}" data-dd="per"><button class="pn-dd-b ${perAtivo?'ativo':''}" data-a="pn-menu" data-v="per" aria-haspopup="menu" aria-expanded="${pnMenu==='per'}" aria-label="Filtrar por período: ${esc(pnPerRot())}">${CAL_IC}<span class="pn-dd-t">${esc(pnPerCurto())}</span>${CHEV}</button>
     <div class="pn-menu ${pnCal?'cal':''}" role="menu" aria-label="Período">${pnPerMenu()}</div></div></div>`;
   let dia='',out=filtro;
   if(!H.length)out+=`<div class="empty">Nenhum registro ${sel.length?'destes usuários ':''}neste período.</div>`;

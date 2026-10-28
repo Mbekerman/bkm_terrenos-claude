@@ -119,7 +119,7 @@ function abaFases(t){const ent=faseEnt(),ro=UI.role==='Leitura';
       ${p?`<div class="faint fs-d">${fd(p.trilha?.[0]?.em?.slice(0,10)||p.desde)}${p.encerradoEm&&!aberto(p)?' → '+fd(p.encerradoEm):''}${p.relato&&!f.entrada?' · '+esc(textoDe(p.relato)):''}</div>`:''}
       ${!p&&deps.length?`<ul class="fs-deps">${deps.map(x=>`<li class="${x.ok?'ok':'no'}">${x.ok?ic('check',14):'<span class="dep-o" aria-hidden="true"></span>'}${x.ok?'':'Falta: '}${esc(x.txt)}</li>`).join('')}</ul>`:''}
       ${!p&&!f.entrada&&!deps.length?'<div class="faint fs-d">Sem dependência: abre à mão.</div>':''}
-      ${pode?`<button class="btn sm ${p?'text':''}" data-a="f-abrir" data-v="${f.k}" aria-label="${p?'Reabrir':'Abrir'} ${esc(f.nome)}${falta.length?' antes da hora':''}">${ic('add',16)}${p?'Reabrir':'Abrir'}${falta.length?' antes da hora':''}</button>`:''}</li>`}).join('')}</ul></div></section>`}
+      ${pode?`<button class="btn sm ${p?'text':''}" data-a="f-abrir" data-v="${f.k}" aria-label="${p?'Reabrir':'Abrir'} ${esc(f.nome)}${falta.length?' antes da hora':''}">${ic('fwd',16)}${p?'Reabrir':'Abrir'}${falta.length?' antes da hora':''}</button>`:''}</li>`}).join('')}</ul></div></section>`}
 
 /* ---------- kanban em três níveis: fase › etapa › subetapa ----------
    UI.negFase vazio = quadro das fases; com fase = etapas dela; com UI.negEtapa = subetapas.
@@ -133,7 +133,7 @@ function negTopo(titulo,sub){const f=UI.negFase,e=UI.negEtapa,it=[{l:'Fases',v:'
 /* título de coluna que desce um nível */
 const colDesce=(a,v,l,dica)=>`<button class="col-ab" data-a="${a}" data-v="${esc(v)}" title="${esc(dica)}"><span>${esc(l)}</span>${ic('chev',16)}</button>`;
 function kcardFase(t,f,p){const e=etapaF(f,p.etapa),s=p.sub&&subF(f,p.sub),sb=p.status==='stand_by',outras=fasesAbertas(t).filter(x=>x!==f);
-  return `<button class="kcard" data-a="abrir" data-id="${t.id}" data-from="negociacoes"><div class="kr"><span class="num faint">${t.codigo}</span>${f===faseEnt()?(p.temp?tempMini(p.temp):''):`<span class="num faint">${esc(p.codigo||'')}</span>`}</div><div class="kt">${esc(t.nome)}</div>
+  return `<button class="kcard" data-a="abrir" data-id="${t.id}" data-from="negociacoes"><div class="kr"><span class="num faint">${t.codigo}</span>${f===faseEnt()&&p.temp?tempMini(p.temp):''}</div><div class="kt">${esc(t.nome)}</div>
   ${s?`<div class="kfe">${esc(e?.nome||'')}</div>`:''}<div class="ksub"><span>${esc(s?s.nome:(e?.nome||''))}</span>${sb?'<span class="faint">Stand By</span>':''}</div>
   <div class="ks">${esc(t.bairro||'')}${outras.length?' · também em '+esc(outras.map(faseN).join(', ')):''}</div>${f===faseEnt()&&typeof dividida==='function'&&dividida(t)?`<div class="kpt">${ic('layers',14)}${esc(resumoPartes(t))}</div>`:''}
   <div class="kr">${av(t.resp,'sm')}<span class="faint">${sb?'revisitar '+fd(p.retomar):diff(p.desde,HOJE)+' d na etapa'}</span></div></button>`}
@@ -171,13 +171,13 @@ function validaDep(f,rf){if(f===rf)return 'Uma fase não depende dela mesma.';if
 function cfgFasesHtml(){const C=cfg(),F=fasesL(),ent=faseEnt();
   const opReq=F.map(f=>`<optgroup label="${esc(f.nome)}"><option value="${f.k}|conclusao|">${esc(f.conc)} (concluir a fase)</option>${etapasF(f.k).map(e=>`<option value="${f.k}|etapa|${e.k}">Chegar à etapa ${esc(e.nome)}</option>${e.subs.map(s=>`<option value="${f.k}|subetapa|${s.k}">Passar por ${esc(s.nome)}</option>`).join('')}`).join('')}</optgroup>`).join('');
   return `<section class="sec"><div class="sec-h"><h2>Fases</h2></div><div class="sec-b"><div class="cfg-t">
-    <div class="cfg-r cfg-hd cfg-fase"><span></span><span>Fase</span><span>Prefixo</span><span>Nome do concluído</span><span>Permite descartar</span><span>Ativa</span><span></span></div>
+    <div class="cfg-r cfg-hd cfg-fase"><span></span><span>Fase</span><span>Prefixo</span><span>Nome do concluído</span><span>Descartar</span><span>Ativa</span><span></span></div>
     ${F.map((f,i)=>`<div class="cfg-r cfg-fase ${f.ativo?'':'inativa'}"><span class="cfg-ord"><button class="iconbtn sm" data-a="cfg-fase-ord" data-i="${i}" data-v="-1" ${i?'':'disabled'} aria-label="Subir">↑</button><button class="iconbtn sm" data-a="cfg-fase-ord" data-i="${i}" data-v="1" ${i<F.length-1?'':'disabled'} aria-label="Descer">↓</button></span>
       <input data-ch="cfg" data-p="fases.${i}.nome" value="${esc(f.nome)}" aria-label="Nome da fase"><input data-ch="cfg-prefixo" data-i="${i}" value="${esc(f.prefixo)}" maxlength="5" aria-label="Prefixo de ${esc(f.nome)}">
       <input data-ch="cfg" data-p="fases.${i}.conc" value="${esc(f.conc)}" aria-label="Nome do concluído em ${esc(f.nome)}">
       <label class="chk"><input type="checkbox" data-ch="cfg" data-p="fases.${i}.descarta" ${f.descarta?'checked':''} aria-label="Permite descartar"></label>
       ${f.entrada?'<span class="cfg-sempre" title="A fase de entrada (onde a oferta abre) não se desativa">Sempre ativa</span>':`<label class="chk"><input type="checkbox" data-ch="cfg-fase-ativa" data-i="${i}" ${f.ativo?'checked':''} aria-label="Ativa"></label>`}
-      <span>${f.entrada||faseUsada(f.k)?'':`<button class="iconbtn sm lixo" data-a="cfg-fase-del" data-i="${i}" aria-label="Apagar" title="Apagar">${ic('lixo',18)}</button>`}</span></div>`).join('')}</div>
+      <span>${f.entrada||faseUsada(f.k)?`<button class="iconbtn sm lixo" disabled aria-label="Não pode ser apagada" title="${f.entrada?'Fase de entrada: não pode ser apagada':'Tem histórico: não pode ser apagada'}">${ic('lixo',18)}</button>`:`<button class="iconbtn sm lixo" data-a="cfg-fase-del" data-i="${i}" aria-label="Apagar" title="Apagar">${ic('lixo',18)}</button>`}</span></div>`).join('')}</div>
     <form class="inline-form" data-form="cfg-fase"><div class="field grow"><label for="nf-n">Nova fase</label><input id="nf-n" name="nome" required placeholder="Ex.: Regularização"></div><div class="field" style="flex:0 1 110px"><label for="nf-p">Prefixo</label><input id="nf-p" name="prefixo" required maxlength="5" placeholder="REG"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form>
     </div></section>
   <section class="sec"><div class="sec-h"><h2>Dependências</h2></div><div class="sec-b">
@@ -189,7 +189,7 @@ function cfgFasesHtml(){const C=cfg(),F=fasesL(),ent=faseEnt();
       <input data-ch="cfg" data-p="fases.${i}.etapas.${j}.nome" value="${esc(e.nome)}" aria-label="Nome da etapa"><input type="number" min="0" data-ch="cfg" data-p="fases.${i}.etapas.${j}.sla" value="${e.sla??''}" aria-label="SLA de ${esc(e.nome)}">
       <span class="cfg-subs">${e.subs.map((s,m)=>`<span class="chip"${e.subs.length>1&&!S.terrenos.some(t=>procsDe(t).some(p=>p.fase===f.k&&p.sub===s.k))?'':` title="${e.subs.length>1?'Tem terreno nesta subetapa: não sai':'Única subetapa da etapa'}"`}>${esc(s.nome)}${e.subs.length>1&&!S.terrenos.some(t=>procsDe(t).some(p=>p.fase===f.k&&p.sub===s.k))?`<button class="chip-x" data-a="cfg-fs-del" data-f="${i}" data-i="${j}" data-m="${m}" aria-label="Tirar ${esc(s.nome)}">×</button>`:''}</span>`).join('')}
         <form class="cfg-fs-add" data-form="cfg-fs" data-f="${i}" data-i="${j}"><input name="nome" required placeholder="+ subetapa" aria-label="Nova subetapa em ${esc(e.nome)}"></form></span>
-      <span>${etapaUsada(f.k,e.k)||f.etapas.length<2?'':`<button class="iconbtn sm lixo" data-a="cfg-fe-del" data-f="${i}" data-i="${j}" aria-label="Apagar" title="Apagar">${ic('lixo',18)}</button>`}</span></div>`).join('')||'<div class="faint" style="padding:12px 0">Sem etapas: a fase não abre até ter uma.</div>'}</div>
+      <span>${etapaUsada(f.k,e.k)||f.etapas.length<2?`<button class="iconbtn sm lixo" disabled aria-label="Não pode ser apagada" title="${f.etapas.length<2?'A fase precisa de ao menos uma etapa':'Tem histórico: não pode ser apagada'}">${ic('lixo',18)}</button>`:`<button class="iconbtn sm lixo" data-a="cfg-fe-del" data-f="${i}" data-i="${j}" aria-label="Apagar" title="Apagar">${ic('lixo',18)}</button>`}</span></div>`).join('')||'<div class="faint" style="padding:12px 0">Sem etapas: a fase não abre até ter uma.</div>'}</div>
     <form class="inline-form" data-form="cfg-fe" data-f="${i}"><div class="field grow"><label for="fe-${f.k}">Nova etapa</label><input id="fe-${f.k}" name="nome" required></div><div class="field" style="flex:0 1 120px"><label for="fs-${f.k}">SLA (dias)</label><input id="fs-${f.k}" name="sla" type="number" min="0"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form>
     </div></section>`}).join('')}`}
 

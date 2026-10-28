@@ -4060,6 +4060,47 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 /* Subetapas das fases: o campo de incluir sempre numa linha própria, no fim */
 .cfg-subs .cfg-fs-add { flex: 1 0 100% }
 .cfg-subs .cfg-fs-add input { max-width: 220px }
+
+/* Revisão de design, rodada 19 */
+@media (min-width: 900px) { :root:not(#_) .vb-cfg-r { grid-template-columns: 40px minmax(220px, 1fr) 160px 138px 88px 72px 48px 40px !important } }
+@media (max-width: 599px) {
+  :root:not(#_) .vb-pop .vb-kpis .kpi { flex-direction: column !important; align-items: flex-start !important; justify-content: center; gap: 2px !important; padding: 8px 12px !important }
+  :root:not(#_) .vb-pop .vb-kpis .kpi .l { font-size: 12px !important; line-height: 16px !important }
+}
+@media (max-width: 599px) {
+  :root:not(#_) .task:has(> select.tkst) { display: grid !important; grid-template-columns: auto minmax(0, 1fr); column-gap: 12px; row-gap: 6px }
+  :root:not(#_) .task > select.chip-sel.tkst { grid-column: 2; justify-self: start; margin-left: 0 !important }
+}
+.reus > .reu:last-child { padding-bottom: 0 !important }
+:root:not(#_) .chip.of-1a { background: var(--m-sc-high, #e9eef6) !important; border: 0 !important; color: var(--m-on-var, #444746) !important; height: 24px }
+:root:not(#_)[data-tema="escuro"] .chip.of-1a { background: rgba(142,154,196,.14) !important; color: #b9c3e6 !important }
+:root:not(#_) .board .tk-ter { white-space: normal !important; overflow: hidden; text-overflow: clip; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical }
+:root:not(#_) .kr.kr-fl { justify-content: flex-start; gap: 8px; flex-wrap: wrap }
+:root:not(#_) .iconbtn.lixo:disabled { opacity: .3; cursor: default; background: none !important }
+@media (min-width: 900px) { :root:not(#_) .cfg-r.cfg-fase { grid-template-columns: 64px minmax(140px, 1.3fr) 64px minmax(130px, 1fr) 84px 84px 40px !important; column-gap: 8px !important } }
+/* Configurações › Viabilidade em telas médias: nome do item na linha de cima, o resto embaixo */
+@media (min-width: 900px) and (max-width: 1439px) {
+  :root:not(#_) .vb-cfg-r { grid-template-columns: 56px minmax(0, 1fr) minmax(0, 1fr) 96px 72px 48px 36px !important; column-gap: 8px !important; row-gap: 6px !important;
+    grid-template-areas: "ord nome nome nome nome nome lixo" ". grupo base valor sai ativo ." }
+  :root:not(#_) .vb-cfg-r > :nth-child(1), :root:not(#_) .vb-cfg-r > .cfg-cel:nth-child(1) > :is(input, select) { grid-area: ord !important } :root:not(#_) .vb-cfg-r > :nth-child(2), :root:not(#_) .vb-cfg-r > .cfg-cel:nth-child(2) > :is(input, select) { grid-area: nome !important }
+  :root:not(#_) .vb-cfg-r > :nth-child(3), :root:not(#_) .vb-cfg-r > .cfg-cel:nth-child(3) > :is(input, select) { grid-area: grupo !important } :root:not(#_) .vb-cfg-r > :nth-child(4), :root:not(#_) .vb-cfg-r > .cfg-cel:nth-child(4) > :is(input, select) { grid-area: base !important }
+  :root:not(#_) .vb-cfg-r > :nth-child(5), :root:not(#_) .vb-cfg-r > .cfg-cel:nth-child(5) > :is(input, select) { grid-area: valor !important } :root:not(#_) .vb-cfg-r > :nth-child(6), :root:not(#_) .vb-cfg-r > .cfg-cel:nth-child(6) > :is(input, select) { grid-area: sai !important }
+  :root:not(#_) .vb-cfg-r > :nth-child(7), :root:not(#_) .vb-cfg-r > .cfg-cel:nth-child(7) > :is(input, select) { grid-area: ativo !important } :root:not(#_) .vb-cfg-r > :nth-child(8), :root:not(#_) .vb-cfg-r > .cfg-cel:nth-child(8) > :is(input, select) { grid-area: lixo !important }
+  :root:not(#_) .vb-cfg-r:not(.cfg-hd) { padding: 10px 0 !important; border-bottom: 1px solid var(--m-outline-var, #c4c7c5) }
+  :root:not(#_)[data-tema="escuro"] .vb-cfg-r:not(.cfg-hd) { border-bottom-color: #1a2240 }
+}
+@media (min-width: 1440px) { :root:not(#_) .vb-cfg-r { grid-template-columns: 56px minmax(200px, 1fr) 160px 138px 88px 72px 48px 36px !important; column-gap: 8px !important } }
+@media (min-width: 900px) and (max-width: 1439px) { :root:not(#_) .vb-cfg-r:not(.cfg-hd) > :nth-child(6) { justify-self: center } :root:not(#_) .vb-cfg-r.cfg-hd > :nth-child(6), :root:not(#_) .vb-cfg-r.cfg-hd > :nth-child(7) { justify-self: center; text-align: center } :root:not(#_) .vb-cfg-r > label.chk:nth-child(7) { justify-self: center } }
+@media (max-width: 599px) {
+  :root:not(#_) .pnode { grid-template-columns: 24px minmax(0, 1fr); gap: 8px }
+  :root:not(#_) .pnode .pd { width: 24px; height: 24px; font-size: 11px }
+  :root:not(#_) .pnode:not(:last-child)::before { left: 11px; top: 26px }
+  :root:not(#_) .pnode .pc { padding: 12px !important }
+  :root:not(#_) .pnode .ph { display: grid !important; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; align-items: start }
+  :root:not(#_) .pnode .ph > span:first-child > .muted { display: block; font-size: 12px !important; line-height: 16px }
+  :root:not(#_) .pnode .pv { font-size: 18px; line-height: 24px }
+}
+@media (max-width: 599px) { :root:not(#_) .pnode .p-sep { display: none } }
 </style>
 <header class="top">
   <div class="top-in">
@@ -4609,8 +4650,8 @@ function abaComercial(t){
   return `<div class="stack">${blocoFechado('geral')?condicoes(t):''}
   <section class="sec"><div class="sec-h"><h2>Ofertas recebidas</h2><button class="btn sm" data-a="nova-oferta">${ic('add',16)}Registrar oferta</button></div><div class="sec-b">
   ${t.ofertas.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Data</th><th>Corretor</th><th class="r">Valor pedido</th><th>Forma</th><th>Status</th><th></th></tr></thead><tbody>
-  ${t.ofertas.slice().sort((a,b)=>a.data.localeCompare(b.data)).map((o,i)=>{const c=corretor(o.cid);return `<tr><td>${fd(o.data)}${i===0&&t.ofertas.length>1?'<div><span class="chip cfg-tag" style="margin:4px 0 0">Primeira</span></div>':''}</td><td class="nw">${c?esc(c.nome)+`<div class="faint" style="font-size:12px">${esc(c.imob)}</div>`:'Direto'}</td><td class="r">${brl(o.valor)}</td><td>${o.forma?OPT.forma[o.forma]:'—'}</td><td><span class="chip ${o.status==='ativa'?'good':''}">${esc(o.status.charAt(0).toUpperCase()+o.status.slice(1))}</span></td>
-  <td class="r">${o===ref?'<span class="chip blue">Referência</span>':t.neg?`<button class="btn sm text" data-a="ofref" data-o="${o.id}">Usar como referência</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`:'<div class="muted">Nenhuma oferta.</div>'}
+  ${t.ofertas.slice().sort((a,b)=>a.data.localeCompare(b.data)).map((o,i)=>{const c=corretor(o.cid);return `<tr><td>${fd(o.data)}${i===0&&t.ofertas.length>1?'<div><span class="chip of-1a" style="margin:4px 0 0">Primeira</span></div>':''}</td><td class="nw">${c?esc(c.nome)+`<div class="faint" style="font-size:12px">${esc(c.imob)}</div>`:'Direto'}</td><td class="r">${brl(o.valor)}</td><td>${o.forma?OPT.forma[o.forma]:'—'}</td><td><span class="chip ${o.status==='ativa'?'good':''}">${esc(o.status.charAt(0).toUpperCase()+o.status.slice(1))}</span></td>
+  <td class="r">${o===ref?'<span class="chip blue">Referência</span>':t.neg?`<button class="btn sm text of-ref" data-a="ofref" data-o="${o.id}">Usar como referência</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`:'<div class="muted">Nenhuma oferta.</div>'}
   </div></section>
   <section class="sec"><div class="sec-h"><h2>Corretores do terreno</h2></div><div class="sec-b">
   ${t.corretores.length?t.corretores.map(x=>{const c=corretor(x.cid);return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0"><button class="star ${x.principal?'on':''}" data-a="principal" data-c="${x.cid}" aria-label="Marcar ${esc(c.nome)} como principal" title="${x.principal?'Principal':'Marcar como principal'}">★</button><span style="min-width:0"><b>${esc(c.nome)}</b>${x.principal?' <span class="chip blue cfg-tag">Principal</span>':''}<span class="muted" style="display:block;font-size:13px">${esc(c.imob)} · CRECI\u00a0${esc(c.creci)}</span></span></div>`}).join(''):'<div class="muted">Entram automaticamente quando apresentam uma oferta.</div>'}</div></section></div>`;
@@ -4637,7 +4678,7 @@ function abaNegociacao(t){
   <section class="sec"><div class="sec-h"><h2>Propostas</h2><span class="sec-acoes">${negAtiva(t)&&!UI.propForm?`<button class="btn primary sm" data-a="prop-form">${ic('add',16)}Nova proposta</button>`:''}</span></div><div class="sec-b">
   ${form}
   ${chain.length?`<div class="chain" style="margin-top:${UI.propForm?16:0}px">${chain.map((p,i)=>{return `<div class="pnode ${p.origem}"><span class="pd">v${p.v}</span><div class="pc">
-    <div class="ph"><span><span class="pv">${brl(p.valor)}</span> <span class="muted" style="font-size:13px">· ${p.origem==='bkm'?'BKM':'Vendedor'}${p.v>1?` responde à v${p.v-1}`:''}</span></span>
+    <div class="ph"><span><span class="pv">${brl(p.valor)}</span> <span class="muted" style="font-size:13px"><span class="p-sep">· </span>${p.origem==='bkm'?'BKM':'Vendedor'}${p.v>1?` responde à v${p.v-1}`:''}</span></span>
     <span style="display:flex;gap:6px;flex-wrap:wrap">${i===0&&negAtiva(t)?`<select aria-label="Status da proposta" data-ch="prop-status" class="chip chip-sel">${Object.entries(OPT.statusProp).filter(([k])=>k!=='substituida').map(([k,l])=>`<option value="${k}" ${k===p.status?'selected':''}>${l}</option>`).join('')}</select>`:statusPropChip(p.status)}</span></div>
     <div class="pm">${OPT.forma[p.forma]} · apresentada ${fd(p.data)}${p.validade?` · válida até ${fd(p.validade)}`:''}</div>${p.cond?`<div class="pt">${esc(p.cond)}</div>`:''}</div></div>`}).join('')}</div>`:'<div class="muted">Nenhuma proposta ainda.</div>'}</div></section></div>`;
 }
@@ -6228,6 +6269,8 @@ function pnFaixa(){const P=PN.per||{k:'30d'},h=HOJE;
 const fdc=s=>{const x=pd(s);return `${x.getDate()} ${MES[x.getMonth()]}${x.getFullYear()!==pd(HOJE).getFullYear()?' '+x.getFullYear():''}`};
 function pnPerRot(){const P=PN.per||{k:'tudo'};if(P.k==='custom'&&P.ini){const f=P.fim||P.ini;return f===P.ini?fdc(P.ini):`${fdc(P.ini)} – ${fdc(f)}`}
   return (PER_OPC.find(x=>x[0]===P.k)||PER_OPC[0])[1]}
+const PER_CURTO={tudo:'Tudo',hoje:'Hoje',semana:'Semana',mes:'Mês','30d':'30 dias',ano:'Ano'};
+function pnPerCurto(){const P=PN.per||{k:'tudo'};return P.k==='custom'?pnPerRot():PER_CURTO[P.k]||pnPerRot()}
 const CHEV='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
 const CAL_IC='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>';
 const MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
@@ -6261,12 +6304,13 @@ function pnLogs(t){
   const H=sel.length?noPer.filter(h=>sel.includes(h.user)):noPer;
   const nSel=sel.reduce((a,x)=>a+(cont.get(x)||0),0);
   const rot=!sel.length?`Todos os usuários (${noPer.length})`:sel.length===1?`${sel[0]} (${nSel})`:sel.length===2?`${sel.map(x=>x.split(' ')[0]).join(', ')} (${nSel})`:`${sel.length} usuários (${nSel})`;
+  const rotC=!sel.length?'Usuários':sel.length===1?sel[0].split(' ')[0]:`${sel.length} usuários`;
   const ck='<span class="pn-ck" aria-hidden="true"></span>',ab=k=>pnMenu===k?'aberto':'';
   const perAtivo=!!fx&&(PN.per?.k||'30d')!=='30d';
   const filtro=`<div class="pn-filtros">
-    <div class="pn-dd ${ab('user')}" data-dd="user"><button class="pn-dd-b ${sel.length?'ativo':''}" data-a="pn-menu" data-v="user" aria-haspopup="menu" aria-expanded="${pnMenu==='user'}" aria-label="Filtrar por usuário: ${esc(rot)}"><span class="pn-dd-t">${esc(rot)}</span>${CHEV}</button>
+    <div class="pn-dd ${ab('user')}" data-dd="user"><button class="pn-dd-b ${sel.length?'ativo':''}" data-a="pn-menu" data-v="user" aria-haspopup="menu" aria-expanded="${pnMenu==='user'}" aria-label="Filtrar por usuário: ${esc(rot)}"><span class="pn-dd-t">${esc(rotC)}</span>${CHEV}</button>
     <div class="pn-menu" role="menu" aria-label="Usuários"><button role="menuitemcheckbox" aria-checked="${!sel.length}" data-a="pn-todos">${ck}<span class="pn-mn">Todos os usuários</span><span class="n">${noPer.length}</span></button><div class="pn-msep"></div>${users.map(x=>`<button role="menuitemcheckbox" aria-checked="${sel.includes(x)}" data-a="pn-u" data-v="${esc(x)}" class="${cont.get(x)?'':'zero'}">${ck}${av(x,'xs')}<span class="pn-mn">${esc(x)}</span><span class="n">${cont.get(x)||0}</span></button>`).join('')}</div></div>
-    <div class="pn-dd ${ab('per')}" data-dd="per"><button class="pn-dd-b ${perAtivo?'ativo':''}" data-a="pn-menu" data-v="per" aria-haspopup="menu" aria-expanded="${pnMenu==='per'}" aria-label="Filtrar por período: ${esc(pnPerRot())}">${CAL_IC}<span class="pn-dd-t">${esc(pnPerRot())}</span>${CHEV}</button>
+    <div class="pn-dd ${ab('per')}" data-dd="per"><button class="pn-dd-b ${perAtivo?'ativo':''}" data-a="pn-menu" data-v="per" aria-haspopup="menu" aria-expanded="${pnMenu==='per'}" aria-label="Filtrar por período: ${esc(pnPerRot())}">${CAL_IC}<span class="pn-dd-t">${esc(pnPerCurto())}</span>${CHEV}</button>
     <div class="pn-menu ${pnCal?'cal':''}" role="menu" aria-label="Período">${pnPerMenu()}</div></div></div>`;
   let dia='',out=filtro;
   if(!H.length)out+=`<div class="empty">Nenhum registro ${sel.length?'destes usuários ':''}neste período.</div>`;
@@ -6509,7 +6553,7 @@ function abaFases(t){const ent=faseEnt(),ro=UI.role==='Leitura';
       ${p?`<div class="faint fs-d">${fd(p.trilha?.[0]?.em?.slice(0,10)||p.desde)}${p.encerradoEm&&!aberto(p)?' → '+fd(p.encerradoEm):''}${p.relato&&!f.entrada?' · '+esc(textoDe(p.relato)):''}</div>`:''}
       ${!p&&deps.length?`<ul class="fs-deps">${deps.map(x=>`<li class="${x.ok?'ok':'no'}">${x.ok?ic('check',14):'<span class="dep-o" aria-hidden="true"></span>'}${x.ok?'':'Falta: '}${esc(x.txt)}</li>`).join('')}</ul>`:''}
       ${!p&&!f.entrada&&!deps.length?'<div class="faint fs-d">Sem dependência: abre à mão.</div>':''}
-      ${pode?`<button class="btn sm ${p?'text':''}" data-a="f-abrir" data-v="${f.k}" aria-label="${p?'Reabrir':'Abrir'} ${esc(f.nome)}${falta.length?' antes da hora':''}">${ic('add',16)}${p?'Reabrir':'Abrir'}${falta.length?' antes da hora':''}</button>`:''}</li>`}).join('')}</ul></div></section>`}
+      ${pode?`<button class="btn sm ${p?'text':''}" data-a="f-abrir" data-v="${f.k}" aria-label="${p?'Reabrir':'Abrir'} ${esc(f.nome)}${falta.length?' antes da hora':''}">${ic('fwd',16)}${p?'Reabrir':'Abrir'}${falta.length?' antes da hora':''}</button>`:''}</li>`}).join('')}</ul></div></section>`}
 
 /* ---------- kanban em três níveis: fase › etapa › subetapa ----------
    UI.negFase vazio = quadro das fases; com fase = etapas dela; com UI.negEtapa = subetapas.
@@ -6523,7 +6567,7 @@ function negTopo(titulo,sub){const f=UI.negFase,e=UI.negEtapa,it=[{l:'Fases',v:'
 /* título de coluna que desce um nível */
 const colDesce=(a,v,l,dica)=>`<button class="col-ab" data-a="${a}" data-v="${esc(v)}" title="${esc(dica)}"><span>${esc(l)}</span>${ic('chev',16)}</button>`;
 function kcardFase(t,f,p){const e=etapaF(f,p.etapa),s=p.sub&&subF(f,p.sub),sb=p.status==='stand_by',outras=fasesAbertas(t).filter(x=>x!==f);
-  return `<button class="kcard" data-a="abrir" data-id="${t.id}" data-from="negociacoes"><div class="kr"><span class="num faint">${t.codigo}</span>${f===faseEnt()?(p.temp?tempMini(p.temp):''):`<span class="num faint">${esc(p.codigo||'')}</span>`}</div><div class="kt">${esc(t.nome)}</div>
+  return `<button class="kcard" data-a="abrir" data-id="${t.id}" data-from="negociacoes"><div class="kr"><span class="num faint">${t.codigo}</span>${f===faseEnt()&&p.temp?tempMini(p.temp):''}</div><div class="kt">${esc(t.nome)}</div>
   ${s?`<div class="kfe">${esc(e?.nome||'')}</div>`:''}<div class="ksub"><span>${esc(s?s.nome:(e?.nome||''))}</span>${sb?'<span class="faint">Stand By</span>':''}</div>
   <div class="ks">${esc(t.bairro||'')}${outras.length?' · também em '+esc(outras.map(faseN).join(', ')):''}</div>${f===faseEnt()&&typeof dividida==='function'&&dividida(t)?`<div class="kpt">${ic('layers',14)}${esc(resumoPartes(t))}</div>`:''}
   <div class="kr">${av(t.resp,'sm')}<span class="faint">${sb?'revisitar '+fd(p.retomar):diff(p.desde,HOJE)+' d na etapa'}</span></div></button>`}
@@ -6561,13 +6605,13 @@ function validaDep(f,rf){if(f===rf)return 'Uma fase não depende dela mesma.';if
 function cfgFasesHtml(){const C=cfg(),F=fasesL(),ent=faseEnt();
   const opReq=F.map(f=>`<optgroup label="${esc(f.nome)}"><option value="${f.k}|conclusao|">${esc(f.conc)} (concluir a fase)</option>${etapasF(f.k).map(e=>`<option value="${f.k}|etapa|${e.k}">Chegar à etapa ${esc(e.nome)}</option>${e.subs.map(s=>`<option value="${f.k}|subetapa|${s.k}">Passar por ${esc(s.nome)}</option>`).join('')}`).join('')}</optgroup>`).join('');
   return `<section class="sec"><div class="sec-h"><h2>Fases</h2></div><div class="sec-b"><div class="cfg-t">
-    <div class="cfg-r cfg-hd cfg-fase"><span></span><span>Fase</span><span>Prefixo</span><span>Nome do concluído</span><span>Permite descartar</span><span>Ativa</span><span></span></div>
+    <div class="cfg-r cfg-hd cfg-fase"><span></span><span>Fase</span><span>Prefixo</span><span>Nome do concluído</span><span>Descartar</span><span>Ativa</span><span></span></div>
     ${F.map((f,i)=>`<div class="cfg-r cfg-fase ${f.ativo?'':'inativa'}"><span class="cfg-ord"><button class="iconbtn sm" data-a="cfg-fase-ord" data-i="${i}" data-v="-1" ${i?'':'disabled'} aria-label="Subir">↑</button><button class="iconbtn sm" data-a="cfg-fase-ord" data-i="${i}" data-v="1" ${i<F.length-1?'':'disabled'} aria-label="Descer">↓</button></span>
       <input data-ch="cfg" data-p="fases.${i}.nome" value="${esc(f.nome)}" aria-label="Nome da fase"><input data-ch="cfg-prefixo" data-i="${i}" value="${esc(f.prefixo)}" maxlength="5" aria-label="Prefixo de ${esc(f.nome)}">
       <input data-ch="cfg" data-p="fases.${i}.conc" value="${esc(f.conc)}" aria-label="Nome do concluído em ${esc(f.nome)}">
       <label class="chk"><input type="checkbox" data-ch="cfg" data-p="fases.${i}.descarta" ${f.descarta?'checked':''} aria-label="Permite descartar"></label>
       ${f.entrada?'<span class="cfg-sempre" title="A fase de entrada (onde a oferta abre) não se desativa">Sempre ativa</span>':`<label class="chk"><input type="checkbox" data-ch="cfg-fase-ativa" data-i="${i}" ${f.ativo?'checked':''} aria-label="Ativa"></label>`}
-      <span>${f.entrada||faseUsada(f.k)?'':`<button class="iconbtn sm lixo" data-a="cfg-fase-del" data-i="${i}" aria-label="Apagar" title="Apagar">${ic('lixo',18)}</button>`}</span></div>`).join('')}</div>
+      <span>${f.entrada||faseUsada(f.k)?`<button class="iconbtn sm lixo" disabled aria-label="Não pode ser apagada" title="${f.entrada?'Fase de entrada: não pode ser apagada':'Tem histórico: não pode ser apagada'}">${ic('lixo',18)}</button>`:`<button class="iconbtn sm lixo" data-a="cfg-fase-del" data-i="${i}" aria-label="Apagar" title="Apagar">${ic('lixo',18)}</button>`}</span></div>`).join('')}</div>
     <form class="inline-form" data-form="cfg-fase"><div class="field grow"><label for="nf-n">Nova fase</label><input id="nf-n" name="nome" required placeholder="Ex.: Regularização"></div><div class="field" style="flex:0 1 110px"><label for="nf-p">Prefixo</label><input id="nf-p" name="prefixo" required maxlength="5" placeholder="REG"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form>
     </div></section>
   <section class="sec"><div class="sec-h"><h2>Dependências</h2></div><div class="sec-b">
@@ -6579,7 +6623,7 @@ function cfgFasesHtml(){const C=cfg(),F=fasesL(),ent=faseEnt();
       <input data-ch="cfg" data-p="fases.${i}.etapas.${j}.nome" value="${esc(e.nome)}" aria-label="Nome da etapa"><input type="number" min="0" data-ch="cfg" data-p="fases.${i}.etapas.${j}.sla" value="${e.sla??''}" aria-label="SLA de ${esc(e.nome)}">
       <span class="cfg-subs">${e.subs.map((s,m)=>`<span class="chip"${e.subs.length>1&&!S.terrenos.some(t=>procsDe(t).some(p=>p.fase===f.k&&p.sub===s.k))?'':` title="${e.subs.length>1?'Tem terreno nesta subetapa: não sai':'Única subetapa da etapa'}"`}>${esc(s.nome)}${e.subs.length>1&&!S.terrenos.some(t=>procsDe(t).some(p=>p.fase===f.k&&p.sub===s.k))?`<button class="chip-x" data-a="cfg-fs-del" data-f="${i}" data-i="${j}" data-m="${m}" aria-label="Tirar ${esc(s.nome)}">×</button>`:''}</span>`).join('')}
         <form class="cfg-fs-add" data-form="cfg-fs" data-f="${i}" data-i="${j}"><input name="nome" required placeholder="+ subetapa" aria-label="Nova subetapa em ${esc(e.nome)}"></form></span>
-      <span>${etapaUsada(f.k,e.k)||f.etapas.length<2?'':`<button class="iconbtn sm lixo" data-a="cfg-fe-del" data-f="${i}" data-i="${j}" aria-label="Apagar" title="Apagar">${ic('lixo',18)}</button>`}</span></div>`).join('')||'<div class="faint" style="padding:12px 0">Sem etapas: a fase não abre até ter uma.</div>'}</div>
+      <span>${etapaUsada(f.k,e.k)||f.etapas.length<2?`<button class="iconbtn sm lixo" disabled aria-label="Não pode ser apagada" title="${f.etapas.length<2?'A fase precisa de ao menos uma etapa':'Tem histórico: não pode ser apagada'}">${ic('lixo',18)}</button>`:`<button class="iconbtn sm lixo" data-a="cfg-fe-del" data-f="${i}" data-i="${j}" aria-label="Apagar" title="Apagar">${ic('lixo',18)}</button>`}</span></div>`).join('')||'<div class="faint" style="padding:12px 0">Sem etapas: a fase não abre até ter uma.</div>'}</div>
     <form class="inline-form" data-form="cfg-fe" data-f="${i}"><div class="field grow"><label for="fe-${f.k}">Nova etapa</label><input id="fe-${f.k}" name="nome" required></div><div class="field" style="flex:0 1 120px"><label for="fs-${f.k}">SLA (dias)</label><input id="fs-${f.k}" name="sla" type="number" min="0"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form>
     </div></section>`}).join('')}`}
 
@@ -6846,7 +6890,7 @@ function kcardNeg(t,modo){const n=t.neg,o=ofertaRef(t),lp=lastProp(t),pr=proxReu
   return `<button class="kcard ${n.pedido?'aprov':''}" data-a="abrir" data-id="${t.id}" data-from="negociacoes" ${UI.role!=='Leitura'?'draggable="true"':''}><div class="kr"><span class="num faint">${t.codigo}</span>${n.temp?tempMini(n.temp):''}</div><div class="kt">${esc(t.nome)}</div>
   ${modo!=='sub'&&n.sub?`<div class="ksub"><span>${esc(subN(n.sub))}</span><span class="faint">${diasSub(n)} d</span>${subAtrasada(n)?`<span class="flag warn" title="Passou do prazo da subetapa">${ic('clock',14)}</span>`:''}</div>`:''}
   <div class="ks">${esc(t.bairro||'')}${sb?' · parou em '+SN(n.etapa):''}</div>${dividida(t)?`<div class="kpt">${ic('layers',14)}${esc(resumoPartes(t))}</div>`:''}
-  <div class="kr"><span>${lp?'Prop. '+mi(lp.valor):'Pedido '+(o?.valor?mi(o.valor):'—')}</span>${atrasadas(t).length?`<span class="flag crit" title="Tarefas atrasadas">${ic('clock',14)}${atrasadas(t).length} atrasada${atrasadas(t).length>1?'s':''}</span>`:''}${abaixoMin(t)?`<span class="flag warn" title="Rentabilidade abaixo da mínima">Abaixo da mínima</span>`:''}</div>${pr?`<div class="kr"><span class="faint">Reunião ${fd(pr.data)} · ${pr.hora}</span></div>`:''}
+  <div class="kr"><span>${lp?'Prop. '+mi(lp.valor):'Pedido '+(o?.valor?mi(o.valor):'—')}</span></div>${atrasadas(t).length||abaixoMin(t)?'<div class="kr kr-fl">':''}${atrasadas(t).length?`<span class="flag crit" title="Tarefas atrasadas">${ic('clock',14)}${atrasadas(t).length} atrasada${atrasadas(t).length>1?'s':''}</span>`:''}${abaixoMin(t)?`<span class="flag warn" title="Rentabilidade abaixo da mínima">Abaixo da mínima</span>`:''}${atrasadas(t).length||abaixoMin(t)?'</div>':''}${pr?`<div class="kr"><span class="faint">Reunião ${fd(pr.data)} · ${pr.hora}</span></div>`:''}
   ${n.pedido?`<div class="kped">${ic('clock',14)}Aguardando ${esc(quemFalta(n.pedido))}</div>`:''}
   <div class="kr">${av(t.resp,'sm')}<span class="faint ${!sb&&etapaAtrasada(n)?'katr':''}">${sb?'revisitar '+fd(n.retomar):modo==='sub'?diasSub(n)+' d na subetapa':diff(n.desde,HOJE)+' d na etapa'}</span></div></button>`}
 function pgNeg(){if(!UI.negFase||!faseCfg(UI.negFase))return pgFasesBoard();if(UI.negFase!==faseEnt())return pgFaseBoard(UI.negFase);const e=UI.negEtapa&&etapaCfg(UI.negEtapa)?UI.negEtapa:null,ativos=S.terrenos.filter(t=>t.neg?.status==='ativo');
@@ -9517,7 +9561,7 @@ function viabModal(M,fechar){if(M==='vb-novo')return vbNovoHtml(fechar);if(M==='
 /* ---------- Configurações › Viabilidade ---------- */
 /* Nomes curtos das bases, só na grade estreita de Configurações (o estudo usa os nomes inteiros) */
 const VB_TIPO_CURTO={area:'R$/m² privativo',pct_obra_tipica:'% da obra típica',pct_obra_raso:'% da obra rasa',pct_obra_total:'% da obra total',pct_vgv:'% do VGV',pct_lucro:'% do lucro líquido',verba:'Verba total',verba_unidade:'Verba por unidade',verba_mensal:'Verba mensal'};
-const VB_GRUPO_CURTO={adm_financeiro:'Adm. e financeiro',financeiro:'Financeiras',comercial:'Comerciais'};
+const VB_GRUPO_CURTO={obra_nao_incidente:'Não incidente',obra_atipica:'Atípicos',adm_financeiro:'Adm. e financeiro',financeiro:'Financeiras',comercial:'Comerciais'};
 function cfgViabHtml(){const L=S.viabDesp;
   const sel=(d,k,opts,val,rot,extra='')=>`<select data-ch="cfg-vd" data-c="${d.codigo}" data-k="${k}" aria-label="${rot}" ${extra}>${Object.entries(opts).map(([c,n])=>`<option value="${c}" ${val===c?'selected':''}>${n}</option>`).join('')}</select>`;
   const grupos=Object.fromEntries(Object.entries(VB_GRUPO).map(([g,G])=>[g,VB_GRUPO_CURTO[g]||G.nome]));
@@ -9526,7 +9570,7 @@ function cfgViabHtml(){const L=S.viabDesp;
     ${ds.map((d,i)=>{const u=vbUsada(d.codigo);return `<div class="cfg-r vb-cfg-r ${d.ativo?'':'inativa'}"><span class="cfg-ord"><button class="iconbtn sm" data-a="vb-cfg-ord" data-c="${d.codigo}" data-v="-1" ${i?'':'disabled'} aria-label="Subir">↑</button><button class="iconbtn sm" data-a="vb-cfg-ord" data-c="${d.codigo}" data-v="1" ${i<ds.length-1?'':'disabled'} aria-label="Descer">↓</button></span>
       <input data-ch="cfg-vd" data-c="${d.codigo}" data-k="nome" value="${esc(d.nome)}" aria-label="Nome do item">${sel(d,'grupo',grupos,d.grupo,'Grupo de '+esc(d.nome),u?'disabled title="Item já usado em estudo não muda de grupo"':'')}
       ${sel(d,'tipo',Object.fromEntries(G.tipos.map(k=>[k,VB_TIPO_CURTO[k]||VB_TIPO[k]])),d.tipo,'Base de cálculo de '+esc(d.nome))}
-      <input data-ch="cfg-vd" data-c="${d.codigo}" data-k="valor" value="${vbIn(d.valor,4)}" inputmode="decimal" placeholder="Sem padrão" aria-label="Valor padrão de ${esc(d.nome)}">
+      <input data-ch="cfg-vd" data-c="${d.codigo}" data-k="valor" value="${vbIn(d.valor,4)}" inputmode="decimal" placeholder="—" title="Sem valor padrão quando vazio" aria-label="Valor padrão de ${esc(d.nome)}">
       <span>${g==='comercial'?`<label class="chk"><input type="checkbox" data-ch="cfg-vd" data-c="${d.codigo}" data-k="deduz" ${d.deduz?'checked':''} aria-label="${esc(d.nome)} pode sair do VGV líquido"></label>`:'<span class="faint" aria-hidden="true">—</span>'}</span>
       <label class="chk"><input type="checkbox" data-ch="cfg-vd" data-c="${d.codigo}" data-k="ativo" ${d.ativo?'checked':''} aria-label="Ativo"></label>
       <span>${u?'':`<button class="iconbtn sm lixo" data-a="vb-cfg-del" data-c="${d.codigo}" aria-label="Apagar" title="Apagar">${ic('lixo',18)}</button>`}</span></div>`}).join('')||'<div class="muted vb-vazio">Nenhum item.</div>'}`}).join('');

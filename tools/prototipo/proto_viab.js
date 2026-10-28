@@ -404,7 +404,7 @@ function viabModal(M,fechar){if(M==='vb-novo')return vbNovoHtml(fechar);if(M==='
 /* ---------- Configurações › Viabilidade ---------- */
 /* Nomes curtos das bases, só na grade estreita de Configurações (o estudo usa os nomes inteiros) */
 const VB_TIPO_CURTO={area:'R$/m² privativo',pct_obra_tipica:'% da obra típica',pct_obra_raso:'% da obra rasa',pct_obra_total:'% da obra total',pct_vgv:'% do VGV',pct_lucro:'% do lucro líquido',verba:'Verba total',verba_unidade:'Verba por unidade',verba_mensal:'Verba mensal'};
-const VB_GRUPO_CURTO={adm_financeiro:'Adm. e financeiro',financeiro:'Financeiras',comercial:'Comerciais'};
+const VB_GRUPO_CURTO={obra_nao_incidente:'Não incidente',obra_atipica:'Atípicos',adm_financeiro:'Adm. e financeiro',financeiro:'Financeiras',comercial:'Comerciais'};
 function cfgViabHtml(){const L=S.viabDesp;
   const sel=(d,k,opts,val,rot,extra='')=>`<select data-ch="cfg-vd" data-c="${d.codigo}" data-k="${k}" aria-label="${rot}" ${extra}>${Object.entries(opts).map(([c,n])=>`<option value="${c}" ${val===c?'selected':''}>${n}</option>`).join('')}</select>`;
   const grupos=Object.fromEntries(Object.entries(VB_GRUPO).map(([g,G])=>[g,VB_GRUPO_CURTO[g]||G.nome]));
@@ -413,7 +413,7 @@ function cfgViabHtml(){const L=S.viabDesp;
     ${ds.map((d,i)=>{const u=vbUsada(d.codigo);return `<div class="cfg-r vb-cfg-r ${d.ativo?'':'inativa'}"><span class="cfg-ord"><button class="iconbtn sm" data-a="vb-cfg-ord" data-c="${d.codigo}" data-v="-1" ${i?'':'disabled'} aria-label="Subir">↑</button><button class="iconbtn sm" data-a="vb-cfg-ord" data-c="${d.codigo}" data-v="1" ${i<ds.length-1?'':'disabled'} aria-label="Descer">↓</button></span>
       <input data-ch="cfg-vd" data-c="${d.codigo}" data-k="nome" value="${esc(d.nome)}" aria-label="Nome do item">${sel(d,'grupo',grupos,d.grupo,'Grupo de '+esc(d.nome),u?'disabled title="Item já usado em estudo não muda de grupo"':'')}
       ${sel(d,'tipo',Object.fromEntries(G.tipos.map(k=>[k,VB_TIPO_CURTO[k]||VB_TIPO[k]])),d.tipo,'Base de cálculo de '+esc(d.nome))}
-      <input data-ch="cfg-vd" data-c="${d.codigo}" data-k="valor" value="${vbIn(d.valor,4)}" inputmode="decimal" placeholder="Sem padrão" aria-label="Valor padrão de ${esc(d.nome)}">
+      <input data-ch="cfg-vd" data-c="${d.codigo}" data-k="valor" value="${vbIn(d.valor,4)}" inputmode="decimal" placeholder="—" title="Sem valor padrão quando vazio" aria-label="Valor padrão de ${esc(d.nome)}">
       <span>${g==='comercial'?`<label class="chk"><input type="checkbox" data-ch="cfg-vd" data-c="${d.codigo}" data-k="deduz" ${d.deduz?'checked':''} aria-label="${esc(d.nome)} pode sair do VGV líquido"></label>`:'<span class="faint" aria-hidden="true">—</span>'}</span>
       <label class="chk"><input type="checkbox" data-ch="cfg-vd" data-c="${d.codigo}" data-k="ativo" ${d.ativo?'checked':''} aria-label="Ativo"></label>
       <span>${u?'':`<button class="iconbtn sm lixo" data-a="vb-cfg-del" data-c="${d.codigo}" aria-label="Apagar" title="Apagar">${ic('lixo',18)}</button>`}</span></div>`}).join('')||'<div class="muted vb-vazio">Nenhum item.</div>'}`}).join('');
