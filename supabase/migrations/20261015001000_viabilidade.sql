@@ -25,7 +25,11 @@
 --     % do lucro líquido ou verba. Despesas financeiras (Alavancagem, Juros
 --     PJ, Custo financeiro, Impostos) e Taxas: decisões do Moisés de
 --     26/out/2026; o estudo nasce com o valor padrão da empresa e só a
---     diretoria ou o administrador muda (app.eh_diretoria). O % do lucro é circular: lucro = L0 ÷ (1 + Σ%), onde L0 é o
+--     diretoria ou o administrador muda (app.eh_diretoria). Custo de capital da
+--     permuta financeira e do pagamento do terreno (decisão do Moisés,
+--     28/out/2026): um grupo cada, dentro de Despesas financeiras, com uma base
+--     só, o Aporte, em %: a permuta financeira em dinheiro (com o mínimo
+--     garantido, quando ele vale) e o pagamento em dinheiro do terreno. O % do lucro é circular: lucro = L0 ÷ (1 + Σ%), onde L0 é o
 --     lucro antes desses itens; sem lucro (L0 ≤ 0), eles valem zero.
 --   Despesas comerciais: % do VGV, verba total, verba por unidade (× unidades
 --     líquidas: total − permuta − comissão; decisão do Moisés, 26/out/2026)
@@ -52,19 +56,22 @@ returns text[] language sql immutable set search_path = '' as $$
     when 'projetos'           then array['area','pct_obra_tipica','pct_vgv','verba','pct_obra_raso','pct_obra_total']
     when 'pos_obra'           then array['area','pct_obra_tipica','pct_vgv','verba','pct_obra_raso','pct_obra_total']
     when 'comercial'          then array['pct_vgv','verba','verba_unidade','verba_mensal']
+    when 'capital_permuta'    then array['pct_aporte_permuta']
+    when 'capital_pagamento'  then array['pct_aporte_pagamento']
     else array['pct_vgv','pct_obra_total','pct_lucro','verba'] end
 $$;
 create or replace function app.viab_secao(p_grupo text)
 returns text language sql immutable set search_path = '' as $$
   select case when p_grupo in ('obra_atipica','obra_nao_incidente','projetos','pos_obra') then 'obra'
+              when p_grupo in ('capital_permuta','capital_pagamento') then 'financeiro'
               when p_grupo in ('taxas','financeiro','comercial') then p_grupo else 'despesas' end
 $$;
 create or replace function app.viab_fixo(p_grupo text)
-returns boolean language sql immutable set search_path = '' as $$ select p_grupo in ('taxas','financeiro','comercial') $$;
+returns boolean language sql immutable set search_path = '' as $$ select p_grupo in ('taxas','financeiro','capital_permuta','capital_pagamento','comercial') $$;
 -- Taxas e Despesas financeiras: o estudo nasce com o valor padrão da empresa e só a
 -- diretoria ou o administrador muda (decisão do Moisés, 26/out/2026).
 create or replace function app.viab_restrito(p_grupo text)
-returns boolean language sql immutable set search_path = '' as $$ select p_grupo in ('taxas','financeiro') $$;
+returns boolean language sql immutable set search_path = '' as $$ select p_grupo in ('taxas','financeiro','capital_permuta','capital_pagamento') $$;
 
 -- ---------------------------------------------------------------------
 -- Lista de itens da empresa (configuração; empresa nula = padrão)
@@ -74,7 +81,8 @@ create table app.viabilidade_despesas (
   codigo        text not null,
   nome          text not null check (length(trim(nome)) > 0),
   grupo         text not null check (grupo in ('obra_atipica','obra_nao_incidente','projetos','pos_obra',
-                                               'terreno','incorporacao','cef','adm_financeiro','taxas','financeiro','comercial')),
+                                               'terreno','incorporacao','cef','adm_financeiro','taxas','financeiro',
+                                               'capital_permuta','capital_pagamento','comercial')),
   tipo_padrao   text check (tipo_padrao = any (app.viab_tipos(grupo))),
   valor_padrao  numeric(16,4),
   deduz_vgv     boolean not null default false check (not deduz_vgv or grupo = 'comercial'),  -- pode sair do VGV líquido
@@ -111,15 +119,17 @@ insert into app.viabilidade_despesas (codigo, nome, grupo, tipo_padrao, deduz_vg
   ('juros_pj', 'Custo de juros PJ', 'financeiro', 'pct_obra_total', false, 26),
   ('custo_financeiro', 'Custo financeiro', 'financeiro', 'verba', false, 27),
   ('impostos', 'Impostos', 'financeiro', 'pct_vgv', false, 28),
-  ('construcao_pdv', 'Construção do PDV', 'comercial', 'verba', false, 29),
-  ('custo_fixo_comercial', 'Custo fixo comercial', 'comercial', 'verba_mensal', false, 30),
-  ('marketing', 'Marketing', 'comercial', 'pct_vgv', false, 31),
-  ('comissao', 'Comissão', 'comercial', 'pct_vgv', false, 32),
-  ('itbi_vendas', 'ITBI de unidades vendidas', 'comercial', 'pct_vgv', true, 33),
-  ('registro_vendas', 'Registro de unidades vendidas', 'comercial', 'pct_vgv', true, 34),
-  ('contratos_cef', 'Taxa de emissão de contratos CEF', 'comercial', 'verba', false, 35),
-  ('produto_caixa', 'Produto Caixa', 'comercial', 'pct_vgv', true, 36),
-  ('outros_comercial', 'Outros', 'comercial', 'verba', false, 37);
+  ('capital_permuta', 'Custo de capital permuta financeira', 'capital_permuta', 'pct_aporte_permuta', false, 29),
+  ('capital_pagamento', 'Custo de capital pagamento terreno', 'capital_pagamento', 'pct_aporte_pagamento', false, 30),
+  ('construcao_pdv', 'Construção do PDV', 'comercial', 'verba', false, 31),
+  ('custo_fixo_comercial', 'Custo fixo comercial', 'comercial', 'verba_mensal', false, 32),
+  ('marketing', 'Marketing', 'comercial', 'pct_vgv', false, 33),
+  ('comissao', 'Comissão', 'comercial', 'pct_vgv', false, 34),
+  ('itbi_vendas', 'ITBI de unidades vendidas', 'comercial', 'pct_vgv', true, 35),
+  ('registro_vendas', 'Registro de unidades vendidas', 'comercial', 'pct_vgv', true, 36),
+  ('contratos_cef', 'Taxa de emissão de contratos CEF', 'comercial', 'verba', false, 37),
+  ('produto_caixa', 'Produto Caixa', 'comercial', 'pct_vgv', true, 38),
+  ('outros_comercial', 'Outros', 'comercial', 'verba', false, 39);
 
 alter table app.viabilidade_despesas enable row level security;
 create policy ver on app.viabilidade_despesas for select to authenticated using (empresa_id in (select app.minhas_empresas()));
@@ -207,7 +217,8 @@ create table app.viabilidade_linhas (
   viabilidade_id     uuid not null references app.viabilidades(id) on delete cascade,
   ordem              int  not null default 0,
   despesa            text not null,
-  tipo               text not null check (tipo in ('area','pct_obra_tipica','pct_obra_raso','pct_obra_total','pct_vgv','pct_lucro','verba','verba_unidade','verba_mensal')),
+  tipo               text not null check (tipo in ('area','pct_obra_tipica','pct_obra_raso','pct_obra_total','pct_vgv','pct_lucro','verba','verba_unidade','verba_mensal',
+                                         'pct_aporte_permuta','pct_aporte_pagamento')),
   valor              numeric(16,4),               -- nos tipos em %, o percentual (4 = 4%); nulo: ainda sem valor (conta zero)
   quantidade         numeric(10,2) not null default 1 check (quantidade > 0),   -- meses, só na verba mensal
   criado_em          timestamptz not null default now(),
@@ -320,7 +331,7 @@ declare
   v_oi numeric; v_raso numeric; v_ot numeric; v_obras numeric;
   v_pfc numeric; v_pf numeric; v_terr numeric; v_pl numeric; v_l0 numeric; v_lb numeric;
   v_linhas jsonb; v_sec jsonb; v_lucro numeric;
-  DT constant text[] := array['terreno','incorporacao','cef','adm_financeiro','taxas','financeiro'];
+  DT constant text[] := array['terreno','incorporacao','cef','adm_financeiro','taxas','financeiro','capital_permuta','capital_pagamento'];
 begin
   select * into v from app.viabilidades where id = p_id;
   select coalesce(sum(quantidade * area_privativa), 0), coalesce(sum(quantidade), 0), coalesce(sum(quantidade_permuta), 0), coalesce(sum(quantidade_comissao), 0),
@@ -349,6 +360,8 @@ begin
   v_pfc := round(v_liq * coalesce(v.permuta_fin_pct, 0) / 100, 2);
   v_pf := greatest(v_pfc, coalesce(v.minimo_garantido, 0));
   v_terr := v_pf + coalesce(v.pagamento_dinheiro, 0) + coalesce(v.comissao_dinheiro, 0);
+  -- Aporte do custo de capital: a permuta financeira em dinheiro e o pagamento em dinheiro do terreno
+  b := b || jsonb_build_object('pct_aporte_permuta', v_pf, 'pct_aporte_pagamento', coalesce(v.pagamento_dinheiro, 0));
   -- % do lucro líquido (circular): lucro antes desses itens ÷ (1 + Σ%)
   select coalesce(sum(l.valor), 0) into v_pl
     from app.viabilidade_linhas l join app.viabilidade_despesas d on d.empresa_id = l.empresa_id and d.codigo = l.despesa
