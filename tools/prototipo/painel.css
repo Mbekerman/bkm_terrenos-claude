@@ -2534,3 +2534,52 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 :root[data-tema="escuro"] .c-fe .fe-fl { background: rgba(142,154,196,.14); color: #b9c3e6 } :root[data-tema="escuro"] .c-fe .fe-warn { background: rgba(245,196,81,.16); color: #ffd479 } :root[data-tema="escuro"] .c-fe .fe-ap { background: rgba(124,140,255,.18); color: #c9d6ff }
 :root[data-tema="escuro"] .c-fe .fe-st.perdido { color: #ffb4ab } :root[data-tema="escuro"] .c-fe .fe-st.comprado, :root[data-tema="escuro"] .c-fe .fe-st.concluido { color: #6dd58c } :root[data-tema="escuro"] .c-fe .fe-st.stand_by { color: #ffd479 }
 :root:not(#_) .empilha .dt.lista-t .c-etapa.c-fe { flex-direction: column !important }
+
+/* ===== Viabilidade › quadros das tabelas (28/out/2026): título destacado com o total, sem linha de soma no fim ===== */
+.vb-lns > .vb-r.vb-hd { padding-left: 17px; padding-right: 17px }
+.vb-q { border: 1px solid var(--m-outline-v, #c4c7c5); border-radius: 12px; padding: 0 16px; margin-top: 12px }
+.vb-q > .vb-r.vb-qh:first-child { border-radius: 11px 11px 0 0 }
+.vb-q > .vb-r:last-child, .vb-q > .vb-vazio:last-child { border-bottom: 0 }
+.vb-r.vb-qh { background: var(--m-sc-low, #f0f4f9); margin: 0 -16px; padding: 12px 16px; border-bottom: 1px solid var(--linha) }
+.vb-r.vb-qh > .vb-qt { grid-column: 1 / -3 }
+.vb-qh h3 { margin: 0; font-size: 16px; line-height: 24px; font-weight: 500 }
+.vb-qh h4 { margin: 0; font-size: 14px; line-height: 20px; font-weight: 500 }
+.vb-qh .vb-out b { font-size: 16px; font-weight: 500 }
+/* subquadro: mesmas colunas do quadro, título num tom mais leve */
+.vb-q.sub { border: 0; border-radius: 0; margin: 0; padding: 0; overflow: visible }
+/* subtítulo sem fundo, no padrão de subcabeçalho do Material (texto na cor primária) */
+.vb-q.sub > .vb-r.vb-qh { background: none; padding: 10px 16px 0; border-bottom: 0 }
+.vb-q.sub > .vb-r.vb-qh + .vb-r { padding-top: 6px }
+.vb-q.sub > .vb-r.vb-qh h4, .vb-q.sub > .vb-r.vb-qh .vb-out b { color: var(--m-primary, #0b57d0); font-size: 14px }
+.vb-q.sub > .vb-r.vb-qh .vb-out small { font-size: 12px }
+/* no desktop, o % do VGV vai ao lado do total, numa linha só */
+@media (min-width: 1101px) { .vb-q.sub > .vb-r.vb-qh .vb-out { display: flex; flex-direction: row-reverse; justify-content: flex-start; align-items: baseline; gap: 8px } }
+.vb-q.sub:last-child > :last-child { border-bottom: 0 }
+.vb-q.sub + .vb-q.sub { border-top: 1px solid var(--linha) }
+.vb-qadd { padding: 8px 0 12px }
+.vb-qadd .btn { padding: 0 12px !important; gap: 6px; margin-left: -12px; color: var(--m-on-surface-v, #444746) !important; border-color: transparent !important; background: none }
+.vb-qadd .btn:hover { background: rgba(68,71,70,.08) !important }
+:root[data-tema="escuro"] .vb-qadd .btn { color: #c4c7c5 !important }
+/* seta de abrir e fechar dos quadros grandes (a mesma das seções da ficha) */
+.vb-qtg { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; padding: 0; margin: -8px 0; font: inherit; color: inherit; cursor: pointer; text-align: left }
+.vb-qtg .bl-seta { margin-left: -10px }
+.vb-qtg:hover .bl-seta { background: rgba(127,127,127,.12) }
+.vb-qtg[aria-expanded="true"] .bl-seta { transform: rotate(90deg) }
+.vb-qtg:focus-visible { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: 2px; border-radius: 8px }
+.vb-q.fechado > :not(.vb-qh) { display: none }
+.vb-q.fechado > .vb-r.vb-qh { border-bottom: 0; border-radius: 11px }
+:root[data-tema="escuro"] .vb-r.vb-qh { background: rgba(99,112,255,.08) }
+:root[data-tema="escuro"] .vb-q.sub > .vb-r.vb-qh { background: none }
+:root[data-tema="escuro"] .vb-q.sub > .vb-r.vb-qh h4, :root[data-tema="escuro"] .vb-q.sub > .vb-r.vb-qh .vb-out b { color: #a8c7fa }
+/* mais respiro entre as linhas de campos (28/out/2026) */
+.vb-lns .vb-r:not(.vb-hd):not(.vb-qh) { padding: 12px 0; column-gap: 12px }
+@media (max-width: 1100px) {
+  .vb-q { padding: 0 12px }
+  .vb-tab .vb-r.vb-qh { margin: 0 -12px; padding: 12px; grid-template-columns: minmax(0, 1fr) auto !important; align-items: start }
+  .vb-tab .vb-r.vb-qh > .vb-qt { grid-column: 1 }
+  .vb-tab .vb-r.vb-qh .vb-x { display: none }
+  .vb-tab .vb-r.vb-qh .vb-out { text-align: right }
+  .vb-tab .vb-q.sub > .vb-r.vb-qh { padding: 12px 12px 0 }
+  .vb-tab .vb-q.sub > .vb-r.vb-qh + .vb-r { padding-top: 8px }
+  .vb-lns .vb-r:not(.vb-hd):not(.vb-qh) { padding: 16px 40px 16px 0; row-gap: 14px }
+}
