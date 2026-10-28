@@ -3134,7 +3134,7 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 :root:not(#_) .vb-pop .metric, :root:not(#_) .vb-met .metric { border: 0 !important; border-radius: 16px !important; background: var(--m-sc-low, #f0f4f9) !important; box-shadow: none !important }
 :root:not(#_)[data-tema="escuro"] .vb-pop .metric, :root:not(#_)[data-tema="escuro"] .vb-met .metric { background: rgba(124,140,255,.08) !important }
 /* Logs do painel: esmaece o fim da lista em vez de cortar uma linha ao meio */
-.pn-b { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent) }
+.pn-b { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 56px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 56px), transparent) }
 :root:not(#_) .vb-kpis .kpi { border: 0 !important; border-radius: 16px !important; background: var(--m-sc-low, #f0f4f9) !important; box-shadow: none !important }
 :root:not(#_)[data-tema="escuro"] .vb-kpis .kpi { background: rgba(124,140,255,.08) !important }
 
@@ -3191,7 +3191,32 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 /* Configurações › Fases no celular: nome do concluído na largura toda */
 @media (max-width: 899px) { .cfg-fase > .cfg-cel:has(input[data-p$=".conc"]) { grid-column: 1 / -1 } }
 /* Mapa com a ficha aberta: a barra do mapa termina antes do painel */
-@media (min-width: 900px) { body:has(#ficha-sheet) .mp-barra { right: 472px !important } }
+@media (min-width: 900px) { body:has(#ficha-sheet) .mp-barra { right: 472px !important; flex-wrap: wrap; row-gap: 8px } body:has(#ficha-sheet) .mp-barra > .mp-busca { flex: 1 1 100% !important; min-width: 0 !important; max-width: none !important } }
+
+/* ===================== Revisão de design, rodada 13 ===================== */
+/* Reuniões: a situação fica sempre à direita da data */
+.reu-h { flex-wrap: nowrap !important; align-items: flex-start !important; gap: 12px }
+.reu-h > div:first-child { flex: 1 1 auto; min-width: 0 }
+.reu-acts { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px }
+/* Segmentados no celular: recuo e altura do padrão */
+@media (max-width: 599px) { :root:not(#_) .seg > button { padding: 0 12px !important; min-height: 40px } }
+/* Parâmetros no celular: quadro do lote sem contorno (título com fio) e linha sozinha na largura toda */
+@media (max-width: 599px) {
+  :root:not(#_) .lz-lote { border: 0 !important; border-top: 1px solid var(--m-outline-var, #c4c7c5) !important; border-radius: 0 !important; padding: 12px 0 0 !important }
+  :root[data-tema="escuro"]:not(#_) .lz-lote { border-top-color: #1a2240 !important }
+  .lz-par > .lz-c:last-child:nth-child(odd) { grid-column: 1 / -1 }
+}
+/* Situação nas listas de Terrenos: chips sem bolinha, todos no mesmo formato */
+.dt .chip > .d, .empilha .chip > .d { display: none !important }
+/* Notas de regras no escuro: texto secundário neutro */
+:root[data-tema="escuro"] .lz-lote :is(.muted, .faint, .lz-regra, .lz-r) { color: #8e9ac4 !important; border-color: #1a2240 !important }
+/* Quadro que rola de lado (kanban, abas do estudo): borda direita esmaecida mais visível */
+@media (min-width: 600px) { .board { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 64px), transparent) !important; mask-image: linear-gradient(to right, #000 calc(100% - 64px), transparent) !important } }
+@media (max-width: 599px) { .vb-nav { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent) } }
+/* Configurações › Viabilidade: nome do item com reticências */
+.vb-cfg-r input { text-overflow: ellipsis }
+@media (min-width: 900px) { :root:not(#_) body:has(#ficha-sheet) .mp-barra { flex-wrap: wrap !important; justify-content: flex-start !important; align-content: flex-start } :root:not(#_) body:has(#ficha-sheet) .mp-barra > .mp-busca { flex: 1 1 100% !important; width: auto !important; min-width: 0 !important } }
+@media (min-width: 900px) { :root:not(#_) body:has(#ficha-sheet) .mp-cam > button, :root:not(#_) body:has(#ficha-sheet) .mp-cam > summary { font-size: 0 !important; gap: 0 !important; padding: 0 12px !important } :root:not(#_) body:has(#ficha-sheet) .mp-cam svg:last-child:not(:first-child) { display: none } }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

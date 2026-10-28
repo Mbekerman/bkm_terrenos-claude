@@ -72,6 +72,8 @@ function uiBoardPontos(){if(innerWidth>599)return;document.querySelectorAll('.bo
 /* Botões com ícone nos cabeçalhos de quadro: no celular ficam só com o ícone (o nome vai para o rótulo acessível e a dica) */
 function uiHdIc(){document.querySelectorAll(':is(.sec-h,.card-h,.chk-gh) :is(.btn,.linkbtn):not([data-hd-ok])').forEach(b=>{b.dataset.hdOk='1';if(!b.querySelector('svg'))return;
   const t=b.textContent.trim();if(!t||!/^(Adicionar|Nova|Novo|Editar)\b/.test(t))return;b.classList.add('hd-ic');if(!b.getAttribute('aria-label'))b.setAttribute('aria-label',t);if(!b.title)b.title=t})}
-const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel();uiCfgAba();uiBoardPontos();uiHdIc()};
+/* Campos estreitos das grades (Configurações › Viabilidade): texto inteiro na dica ao passar o mouse */
+function uiDicas(){document.querySelectorAll('.vb-cfg-r select, .vb-cfg-r input:not([type=checkbox])').forEach(e=>{const t=e.tagName==='SELECT'?e.selectedOptions[0]?.text||'':e.value;if(e.title!==t)e.title=t})}
+const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel();uiCfgAba();uiBoardPontos();uiHdIc();uiDicas()};
 /* Legenda do mapa: lembra se ficou aberta ou fechada */
 document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legenda'))UI.mpLeg=e.target.open},true);

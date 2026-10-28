@@ -3809,7 +3809,7 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 :root:not(#_) .vb-pop .metric, :root:not(#_) .vb-met .metric { border: 0 !important; border-radius: 16px !important; background: var(--m-sc-low, #f0f4f9) !important; box-shadow: none !important }
 :root:not(#_)[data-tema="escuro"] .vb-pop .metric, :root:not(#_)[data-tema="escuro"] .vb-met .metric { background: rgba(124,140,255,.08) !important }
 /* Logs do painel: esmaece o fim da lista em vez de cortar uma linha ao meio */
-.pn-b { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent) }
+.pn-b { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 56px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 56px), transparent) }
 :root:not(#_) .vb-kpis .kpi { border: 0 !important; border-radius: 16px !important; background: var(--m-sc-low, #f0f4f9) !important; box-shadow: none !important }
 :root:not(#_)[data-tema="escuro"] .vb-kpis .kpi { background: rgba(124,140,255,.08) !important }
 
@@ -3866,7 +3866,32 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 /* Configurações › Fases no celular: nome do concluído na largura toda */
 @media (max-width: 899px) { .cfg-fase > .cfg-cel:has(input[data-p$=".conc"]) { grid-column: 1 / -1 } }
 /* Mapa com a ficha aberta: a barra do mapa termina antes do painel */
-@media (min-width: 900px) { body:has(#ficha-sheet) .mp-barra { right: 472px !important } }
+@media (min-width: 900px) { body:has(#ficha-sheet) .mp-barra { right: 472px !important; flex-wrap: wrap; row-gap: 8px } body:has(#ficha-sheet) .mp-barra > .mp-busca { flex: 1 1 100% !important; min-width: 0 !important; max-width: none !important } }
+
+/* ===================== Revisão de design, rodada 13 ===================== */
+/* Reuniões: a situação fica sempre à direita da data */
+.reu-h { flex-wrap: nowrap !important; align-items: flex-start !important; gap: 12px }
+.reu-h > div:first-child { flex: 1 1 auto; min-width: 0 }
+.reu-acts { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px }
+/* Segmentados no celular: recuo e altura do padrão */
+@media (max-width: 599px) { :root:not(#_) .seg > button { padding: 0 12px !important; min-height: 40px } }
+/* Parâmetros no celular: quadro do lote sem contorno (título com fio) e linha sozinha na largura toda */
+@media (max-width: 599px) {
+  :root:not(#_) .lz-lote { border: 0 !important; border-top: 1px solid var(--m-outline-var, #c4c7c5) !important; border-radius: 0 !important; padding: 12px 0 0 !important }
+  :root[data-tema="escuro"]:not(#_) .lz-lote { border-top-color: #1a2240 !important }
+  .lz-par > .lz-c:last-child:nth-child(odd) { grid-column: 1 / -1 }
+}
+/* Situação nas listas de Terrenos: chips sem bolinha, todos no mesmo formato */
+.dt .chip > .d, .empilha .chip > .d { display: none !important }
+/* Notas de regras no escuro: texto secundário neutro */
+:root[data-tema="escuro"] .lz-lote :is(.muted, .faint, .lz-regra, .lz-r) { color: #8e9ac4 !important; border-color: #1a2240 !important }
+/* Quadro que rola de lado (kanban, abas do estudo): borda direita esmaecida mais visível */
+@media (min-width: 600px) { .board { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 64px), transparent) !important; mask-image: linear-gradient(to right, #000 calc(100% - 64px), transparent) !important } }
+@media (max-width: 599px) { .vb-nav { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent) } }
+/* Configurações › Viabilidade: nome do item com reticências */
+.vb-cfg-r input { text-overflow: ellipsis }
+@media (min-width: 900px) { :root:not(#_) body:has(#ficha-sheet) .mp-barra { flex-wrap: wrap !important; justify-content: flex-start !important; align-content: flex-start } :root:not(#_) body:has(#ficha-sheet) .mp-barra > .mp-busca { flex: 1 1 100% !important; width: auto !important; min-width: 0 !important } }
+@media (min-width: 900px) { :root:not(#_) body:has(#ficha-sheet) .mp-cam > button, :root:not(#_) body:has(#ficha-sheet) .mp-cam > summary { font-size: 0 !important; gap: 0 !important; padding: 0 12px !important } :root:not(#_) body:has(#ficha-sheet) .mp-cam svg:last-child:not(:first-child) { display: none } }
 </style>
 <header class="top">
   <div class="top-in">
@@ -4342,7 +4367,7 @@ function secaoAreas(t){
 }
 function secaoMats(t){
   return `<section class="sec" id="sec-mats"><div class="sec-h"><h2>Matrículas${t.mats.length?` <span class="h-n">${t.mats.length}</span>`:''}</h2></div><div class="sec-b">
-    ${t.mats.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Número</th><th>Cartório</th><th class="r">Área registrada</th><th>Certidão de</th>${partesAtivas(t).length?'<th>Parte</th>':''}<th></th></tr></thead><tbody>${t.mats.map((m,i)=>`<tr><td class="num">${esc(m.num)}</td><td>${esc(m.cri)}</td><td class="r">${m2(m.area)}</td><td>${fd(m.data)}</td>${partesAtivas(t).length?`<td>${selParte(t,'mat-parte',i,m.parte)}</td>`:''}<td class="r"><button class="iconbtn sm lixo" data-a="del-mat" data-i="${i}" aria-label="Remover" title="Remover">${ic('lixo',18)}</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Nenhuma matrícula. Um terreno pode somar várias.</div>'}
+    ${t.mats.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Número</th><th>Cartório</th><th class="r">Área registrada</th><th>Data da certidão</th>${partesAtivas(t).length?'<th>Parte</th>':''}<th></th></tr></thead><tbody>${t.mats.map((m,i)=>`<tr><td class="num">${esc(m.num)}</td><td>${esc(m.cri)}</td><td class="r">${m2(m.area)}</td><td>${fd(m.data)}</td>${partesAtivas(t).length?`<td>${selParte(t,'mat-parte',i,m.parte)}</td>`:''}<td class="r"><button class="iconbtn sm lixo" data-a="del-mat" data-i="${i}" aria-label="Remover" title="Remover">${ic('lixo',18)}</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Nenhuma matrícula. Um terreno pode somar várias.</div>'}
     <form class="inline-form" data-form="mat"><div class="field"><label for="m-n">Número</label><input id="m-n" name="num" required placeholder="184.552"></div>
     <div class="field"><label for="m-c">Cartório</label><select id="m-c" name="cri">${Array.from({length:18},(_,i)=>`<option>${i+1}º CRI</option>`).join('')}</select></div>
     <div class="field"><label for="m-a">Área (m²)</label><input id="m-a" name="area" inputmode="decimal"></div>
@@ -4357,7 +4382,7 @@ function secaoInsc(t){
       <div class="tblwrap"><table class="mini-tbl vv"><thead><tr><th>Exercício</th><th class="r">Venal terreno</th><th class="r">Venal construção</th><th class="r">Venal do imóvel</th><th>IPTU</th><th class="r">Anual</th><th class="r">Parcela</th><th class="r">Mensal</th><th>Fonte</th></tr></thead><tbody>
       ${vs.map((v,j)=>`<tr><td><b>${v.ex}</b>${v.rev>1?` <span class="faint" style="font-size:11px">rev. ${v.rev}</span>`:''}${j===0?' <span class="tag-ref">atual</span>':''}</td><td class="r">${brl(v.vt)}</td><td class="r">${brl(v.vc)}</td><td class="r"><b>${brl(venal(v))}</b></td>
       <td>${v.sit==='isento'?'<span class="chip good">Isento</span>':OPT.sitIptu[v.sit]}</td><td class="r">${v.sit==='isento'?'—':brl2(v.iptu)}</td><td class="r">${v.iptu!=null&&v.parc&&v.sit!=='isento'?`${brl2(v.iptu/v.parc)} <span class="faint">× ${v.parc}</span>`:'—'}</td>
-      <td class="r">${v.sit==='isento'?'—':v.mensal!=null?`${brl2(v.mensal)}`:v.iptu!=null?`${brl2(v.iptu/12)} <span class="faint">(anual ÷ 12)</span>`:'—'}</td><td class="muted vv-f">${esc(v.fonte||'—')}${v.data?` · ${fd(v.data)}`:''}</td></tr>`).join('')||'<tr><td colspan="9" class="muted">Sem valores lançados.</td></tr>'}</tbody></table></div>
+      <td class="r">${v.sit==='isento'?'—':v.mensal!=null?`${brl2(v.mensal)} <span class="faint">(informado)</span>`:v.iptu!=null?`${brl2(v.iptu/12)} <span class="faint">(anual ÷ 12)</span>`:'—'}</td><td class="muted vv-f">${esc(v.fonte||'—')}${v.data?` · ${fd(v.data)}`:''}</td></tr>`).join('')||'<tr><td colspan="9" class="muted">Sem valores lançados.</td></tr>'}</tbody></table></div>
       <details class="details"><summary>Lançar exercício ou corrigir valores</summary><form class="inline-form" data-form="iptu" data-i="${i}" style="border:0;padding-top:4px">
       <div class="field" style="flex:0 1 96px"><label for="v-e${i}">Exercício</label><input id="v-e${i}" name="ex" inputmode="numeric" value="${new Date().getFullYear()}" required></div>
       <div class="field"><label for="v-vt${i}">Venal terreno (R$)</label><input id="v-vt${i}" name="vt" inputmode="decimal"></div><div class="field"><label for="v-vc${i}">Venal construção (R$)</label><input id="v-vc${i}" name="vc" inputmode="decimal"></div>
@@ -6359,7 +6384,7 @@ function validaDep(f,rf){if(f===rf)return 'Uma fase não depende dela mesma.';if
 function cfgFasesHtml(){const C=cfg(),F=fasesL(),ent=faseEnt();
   const opReq=F.map(f=>`<optgroup label="${esc(f.nome)}"><option value="${f.k}|conclusao|">${esc(f.conc)} (concluir a fase)</option>${etapasF(f.k).map(e=>`<option value="${f.k}|etapa|${e.k}">Chegar à etapa ${esc(e.nome)}</option>${e.subs.map(s=>`<option value="${f.k}|subetapa|${s.k}">Passar por ${esc(s.nome)}</option>`).join('')}`).join('')}</optgroup>`).join('');
   return `<section class="sec"><div class="sec-h"><h2>Fases</h2></div><div class="sec-b"><div class="cfg-t">
-    <div class="cfg-r cfg-hd cfg-fase"><span></span><span>Fase</span><span>Prefixo</span><span>Nome do concluído</span><span>Descartar</span><span>Ativa</span><span></span></div>
+    <div class="cfg-r cfg-hd cfg-fase"><span></span><span>Fase</span><span>Prefixo</span><span>Nome do concluído</span><span>Permite descartar</span><span>Ativa</span><span></span></div>
     ${F.map((f,i)=>`<div class="cfg-r cfg-fase ${f.ativo?'':'inativa'}"><span class="cfg-ord"><button class="iconbtn sm" data-a="cfg-fase-ord" data-i="${i}" data-v="-1" ${i?'':'disabled'} aria-label="Subir">↑</button><button class="iconbtn sm" data-a="cfg-fase-ord" data-i="${i}" data-v="1" ${i<F.length-1?'':'disabled'} aria-label="Descer">↓</button></span>
       <input data-ch="cfg" data-p="fases.${i}.nome" value="${esc(f.nome)}" aria-label="Nome da fase"><input data-ch="cfg-prefixo" data-i="${i}" value="${esc(f.prefixo)}" maxlength="5" aria-label="Prefixo de ${esc(f.nome)}">
       <input data-ch="cfg" data-p="fases.${i}.conc" value="${esc(f.conc)}" aria-label="Nome do concluído em ${esc(f.nome)}">
@@ -9947,7 +9972,9 @@ function uiBoardPontos(){if(innerWidth>599)return;document.querySelectorAll('.bo
 /* Botões com ícone nos cabeçalhos de quadro: no celular ficam só com o ícone (o nome vai para o rótulo acessível e a dica) */
 function uiHdIc(){document.querySelectorAll(':is(.sec-h,.card-h,.chk-gh) :is(.btn,.linkbtn):not([data-hd-ok])').forEach(b=>{b.dataset.hdOk='1';if(!b.querySelector('svg'))return;
   const t=b.textContent.trim();if(!t||!/^(Adicionar|Nova|Novo|Editar)\b/.test(t))return;b.classList.add('hd-ic');if(!b.getAttribute('aria-label'))b.setAttribute('aria-label',t);if(!b.title)b.title=t})}
-const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel();uiCfgAba();uiBoardPontos();uiHdIc()};
+/* Campos estreitos das grades (Configurações › Viabilidade): texto inteiro na dica ao passar o mouse */
+function uiDicas(){document.querySelectorAll('.vb-cfg-r select, .vb-cfg-r input:not([type=checkbox])').forEach(e=>{const t=e.tagName==='SELECT'?e.selectedOptions[0]?.text||'':e.value;if(e.title!==t)e.title=t})}
+const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel();uiCfgAba();uiBoardPontos();uiHdIc();uiDicas()};
 /* Legenda do mapa: lembra se ficou aberta ou fechada */
 document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legenda'))UI.mpLeg=e.target.open},true);
 
