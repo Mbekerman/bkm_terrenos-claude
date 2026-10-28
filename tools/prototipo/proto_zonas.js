@@ -89,7 +89,7 @@ function lzZona(t,z,i,tipo,sjc,ed){const l=lz(t,z,tipo),p=l.p,ar=areaAdotada(t),
       ${cel('Potencial máximo',l.potM!=null?`<b>${m2(l.potM)}</b>`:'<span class="ni">—</span>',l.potB!=null?`sem outorga ${m2(l.potB)}`:'')}
       ${cel('Taxa de ocupação',lzV(l.to,'',2),p.to_corte_m2?`${num(p.to_maximo,2)} em lote até ${num(p.to_corte_m2)} m²; ${num(p.to_lote_grande,2)} acima${ar==null?' (sem área adotada, vale a de lote grande)':''}`:'','to')}
       ${cel('Gabarito',gabTxt(l),'','gab')}
-      ${cel('Recuo de frente',lzV(p.recuo_frente_m,' m'),'','recuo_frente_m')}${cel('Recuos laterais e de fundo',lzRecuoLat(p),'',l.alt.has('recuo_lateral_m')?'recuo_lateral_m':'recuo_lateral_alto_m')}
+      ${cel('Recuo de frente',lzV(p.recuo_frente_m,' m'),'','recuo_frente_m')}${cel('Recuos laterais e fundo',lzRecuoLat(p),'',l.alt.has('recuo_lateral_m')?'recuo_lateral_m':'recuo_lateral_alto_m')}
       ${cel('Cota-parte máxima',p.cota_parte_m2!=null?num(p.cota_parte_m2)+' m² por unidade':'<span class="ni">—</span>',p.cota_parte_m2!=null&&z.area?`até ${num(Math.floor(z.area/p.cota_parte_m2))} unidades nesta área`:'','cota_parte_m2')}
       ${p.max_unidades!=null?cel('Unidades por lote',num(p.max_unidades),'','max_unidades'):''}
       ${cel('Permeabilidade mínima',lzPct(p.permeabilidade),'','permeabilidade')}${cel('Lote mínimo',lzV(p.lote_minimo_m2,' m²',0),'','lote_minimo_m2')}${cel('Frente mínima',lzV(p.frente_minima_m,' m'),'','frente_minima_m')}
@@ -103,7 +103,7 @@ function lzTabela(t,a,ins,tipo,sjc){const ed=UI.role!=='Leitura';
 // demais dados da última consulta do lote no GeoSampa ou GeoSanja: Conpresp, tombamento, ZEIS, mananciais, macrozona...
 function lzCamadas(t,ins){const i=ins&&t.insc.find(x=>digits(x.sql)===digits(ins)),g=i&&(i.geo||[])[0],ad=i&&LOTE_ADAPT[insCid(i)];
   if(!i)return '';
-  if(!g||!ad?.linhas)return ad?`<div class="hint lz-cam">Sem consulta à base da prefeitura neste lote. Busque em Cadastro › Inscrições para trazer tombamento, ZEIS, mananciais e as demais restrições.</div>`:'';
+  if(!g||!ad?.linhas)return ad?`<div class="hint lz-cam">Sem consulta à prefeitura neste lote (tombamento, ZEIS, mananciais e outras restrições). <button type="button" class="linkbtn" data-a="tab" data-t="cadastro">Buscar em Inscrições</button></div>`:'';
   return `<div class="lz-cam">${loteToca(ad.linhas(g)).replace('<div class="geo-st">O que toca o lote</div>',`<div class="geo-st">Demais parâmetros e restrições <span class="faint">· ${esc(CIDADES_INSC[insCid(i)].base||'consulta')} de ${fdh(g.em)}</span></div>`)}</div>`}
 // Alterar valores do lote: vazio segue o catálogo; o que mudar precisa da fonte
 const EXC_CAMPOS=[['ca_minimo','CA mínimo'],['ca_basico','CA básico'],['ca','CA máximo'],['to','Taxa de ocupação'],['recuo_frente_m','Recuo de frente (m)'],['recuo_lateral_m','Recuo lateral e de fundo, até 10 m de altura (m)'],['recuo_lateral_alto_m','Recuo lateral e de fundo, acima (m)'],['cota_parte_m2','Cota-parte máxima (m²)'],['max_unidades','Unidades por lote'],['lote_minimo_m2','Lote mínimo (m²)'],['frente_minima_m','Frente mínima (m)']];

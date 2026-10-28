@@ -2304,7 +2304,6 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 .vb-med { font-size: 12px }
 @media (max-width: 599px) { .vb-med { display: none } }
 @media (max-width: 599px) {
-  .so-d { display: none }
   :root:not(#_) .dhead .muted { white-space: normal !important; overflow: visible !important; text-overflow: clip !important }
   :root:not(#_) .empilha .mini-tbl.lst2 td.l1 { flex: 1 1 100% !important; font-weight: 500 }
   :root:not(#_) .empilha .mini-tbl.lst2 td.l1 + td::before { content: none !important }
@@ -2339,3 +2338,27 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 .temp-mini .temp-n { margin-left: 6px; font-size: 13px; font-weight: 500; line-height: 1; color: var(--m-on-var, #444746) }
 :root[data-tema="escuro"] .temp-mini .temp-n { color: #c9d6ff }
 :root:not(#_) .dt .c-etapa .chip.sub.warn::after { white-space: nowrap }
+/* ===================== Revisão de design, rodada 18 ===================== */
+/* Painel Logs: os dois filtros numa linha de chips, mais altura para os registros */
+:root:not(#_) .pn-filtros { flex-direction: row !important; gap: 8px; padding: 8px 0 4px }
+:root:not(#_) .pn-filtros > .pn-dd { flex: 1 1 0; min-width: 0; width: auto }
+:root:not(#_) .pn-filtros .pn-dd-b { height: 32px !important; padding: 0 8px 0 12px !important; font-size: 13px; gap: 6px }
+:root:not(#_) .pn-filtros .pn-dd-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+:root:not(#_) .pn-filtros > .pn-dd:last-child > .pn-menu { left: auto; right: 0 }
+.dep-o { display: inline-block; width: 10px; height: 10px; border: 1.5px solid currentColor; border-radius: 50%; margin: 0 6px 0 2px; flex: none }
+.cfg-sempre { white-space: nowrap }
+/* Configurações no celular: subetapa com prazo, aprovação e Ativa numa linha só abaixo do nome */
+@media (max-width: 899px) {
+  :root:not(#_) .cfg-r.cfg-sub:not(.cfg-hd) { grid-template-columns: 120px 1fr !important; align-items: end }
+  :root:not(#_) .cfg-r.cfg-sub:not(.cfg-hd) > :nth-child(3) { grid-column: 1 !important; order: 1 }
+  :root:not(#_) .cfg-r.cfg-sub:not(.cfg-hd) > :nth-child(5) { grid-column: 2 !important; order: 1; justify-self: start }
+  :root:not(#_) .cfg-r.cfg-sub:not(.cfg-hd) > :nth-child(4) { grid-column: 1 / -1 !important; order: 2 }
+  :root:not(#_) .cfg-r.cfg-sub:not(.cfg-hd) > .cfg-cel:has(.cfg-ap) .cfg-ap { display: flex; gap: 16px }
+}
+/* Parâmetros por zona no celular: rótulo e valor em linhas da grade, para os vizinhos alinharem */
+@media (max-width: 599px) { :root:not(#_) .vb-rs { display: inline; font-size: 11px; font-weight: 400; margin-right: 1px } }
+@media (max-width: 599px) { div.so-m { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap } }
+@media (max-width: 599px) { :root:not(#_) td.tk-ter { display: none !important } }
+/* Subetapas das fases: o campo de incluir sempre numa linha própria, no fim */
+.cfg-subs .cfg-fs-add { flex: 1 0 100% }
+.cfg-subs .cfg-fs-add input { max-width: 220px }

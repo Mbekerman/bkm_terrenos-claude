@@ -27,7 +27,7 @@ await p.evaluate(()=>document.querySelector('#sec-analise .lz-cam')?.scrollIntoV
 const zs=()=>p.$$eval('#sec-analise .lz-z',e=>e.map(x=>x.innerText.replace(/\s+/g,' ')));
 const lin=await zs();
 ok(lin.length===2&&/^ZEU/.test(lin[0])&&/Gabarito Sem limite/.test(lin[0])&&/^ZM/.test(lin[1])&&/Gabarito 28 m/.test(lin[1]),tag+' quadro do lote com ZEU (sem limite) e ZM (28 m)');
-ok(/Recuo de frente 5 m/.test(lin[1])&&/Recuos laterais e de fundo Dispensado até 10 m de altura; 3 m acima/.test(lin[1])&&/Lote mínimo 125 m²/.test(lin[1])&&/Frente mínima 5 m/.test(lin[1])&&/CA mínimo 0,3/.test(lin[1]),tag+' ZM com recuos, lote e frente mínimos e CA mínimo: '+lin[1].slice(0,300));
+ok(/Recuo de frente 5 m/.test(lin[1])&&/Recuos laterais e fundo Dispensado até 10 m de altura; 3 m acima/.test(lin[1])&&/Lote mínimo 125 m²/.test(lin[1])&&/Frente mínima 5 m/.test(lin[1])&&/CA mínimo 0,3/.test(lin[1]),tag+' ZM com recuos, lote e frente mínimos e CA mínimo: '+lin[1].slice(0,300));
 ok(/Cota-parte máxima 20 m² por unidade/.test(lin[0])&&/até 70 unidades/.test(lin[0]),tag+' ZEU com cota-parte (1.400 ÷ 20 = 70 unidades)');
 ok(!!(await p.$('#sec-analise .lz-ni')),tag+' tipo não informado: aviso e Mercado só como referência');
 const vg=await p.evaluate(()=>[...document.querySelectorAll('.kv')].find(x=>x.querySelector('dt')?.textContent==='Zoneamento')?.innerText||'');
