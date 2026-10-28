@@ -3771,13 +3771,47 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 }
 /* Configurações › Viabilidade: texto menor nas células para caber o nome do item e do grupo */
 @media (min-width: 900px) {
-  .vb-cfg-r { grid-template-columns: 40px minmax(200px, 1fr) 152px 152px 92px 56px 40px 40px !important; column-gap: 8px !important }
+  .vb-cfg-r { grid-template-columns: 40px minmax(190px, 1fr) 140px 160px 84px 80px 48px 40px !important; column-gap: 8px !important }
   .vb-cfg-r :is(input:not([type=checkbox]), select) { font-size: 13px !important; padding-left: 8px !important }
   .vb-cfg-r select { padding-right: 26px !important; background-position: right 4px center !important }
 }
 /* Margem mínima: mesmo campo preenchido das grades */
 .vb-campos .field input:not(:disabled) { border: 0 !important; border-bottom: 1px solid #747775 !important; border-radius: 4px 4px 0 0 !important; background-color: #f0f4f9 !important }
 :root[data-tema="escuro"] .vb-campos .field input:not(:disabled) { background-color: rgba(124,140,255,.07) !important; border-bottom-color: rgba(142,154,196,.6) !important }
+
+/* ===================== Revisão de design, rodada 10 ===================== */
+/* Cabeçalhos de quadro no celular: botão com ícone fica só com o ícone */
+@media (max-width: 599px) {
+  :root:not(#_) .hd-ic { font-size: 0 !important; gap: 0 !important; width: 40px; min-width: 40px; height: 40px; padding: 0 !important; justify-content: center; border-radius: 20px; margin-right: -8px !important; flex: none }
+  :root:not(#_) .hd-ic svg { width: 20px; height: 20px; margin: 0 !important }
+}
+/* Valor venal: anotações na linha do valor; fonte numa linha só, alinhada */
+.empilha .mini-tbl.vv td:not(:first-child) { display: block !important }
+.empilha .mini-tbl.vv td:not(:first-child)::before { display: block }
+.empilha .mini-tbl.vv td.vv-f { display: flex !important; flex-direction: row !important; gap: 6px; align-items: baseline; font-size: 13px; color: var(--m-on-var, #444746) }
+.empilha .mini-tbl.vv td.vv-f::before { display: inline; content: "Fonte:" !important }
+.mini-tbl.vv td.vv-f { white-space: normal }
+/* Área adotada: a fonte acompanha o valor, menor */
+.kv-2 { display: inline !important; font-size: 12px !important; color: var(--m-on-var, #444746) !important; margin: 0 0 0 4px !important }
+.kv-2::before { content: "· " }
+:root[data-tema="escuro"] .kv-2 { color: #8e9ac4 !important }
+/* Listas que viram linhas dentro de um quadro: texto no mesmo recuo do fio */
+.sec .empilha .dt:not(.lista-t) tr, .sec .empilha .mini-tbl tr, .sec-b .empilha .dt:not(.lista-t) tr { padding-left: 0 !important; padding-right: 0 !important }
+.sec .empilha .dt:not(.lista-t) td:has(> .iconbtn), .sec .empilha .mini-tbl td:has(> .iconbtn) { right: -8px !important }
+/* Estudos na Negociação (celular): nome em cima, números numa linha */
+@media (max-width: 599px) { .vb-lista.empilha .dt tr { gap: 2px 12px !important } .vb-lista.empilha .dt td[data-l="Válido"] { position: absolute !important; right: 0; top: 10px } .vb-lista.empilha .dt td:first-child { padding-right: 48px !important } }
+/* Categoria da diligência: chip neutro (cores só para situação) */
+.task .chip.cat { background: transparent !important; border: 1px solid var(--m-outline-var, #c4c7c5) !important; color: var(--m-on-var, #444746) !important }
+:root[data-tema="escuro"] .task .chip.cat { border-color: rgba(142,154,196,.35) !important; color: #b9c3e6 !important }
+/* Rótulo e valor no desktop: coluna de rótulo mais curta para o valor caber numa linha */
+@media (min-width: 600px) { :root:not(#_) .kvl > .kv { grid-template-columns: clamp(104px, 32%, 150px) minmax(0, 1fr) auto !important } :root:not(#_) .kvl:not(:has(.kv-ed)) > .kv { grid-template-columns: clamp(104px, 32%, 150px) minmax(0, 1fr) !important } }
+/* Indicadores do estudo: blocos tonais, raio 16, sem contorno */
+:root:not(#_) .vb-pop .metric, :root:not(#_) .vb-met .metric { border: 0 !important; border-radius: 16px !important; background: var(--m-sc-low, #f0f4f9) !important; box-shadow: none !important }
+:root:not(#_)[data-tema="escuro"] .vb-pop .metric, :root:not(#_)[data-tema="escuro"] .vb-met .metric { background: rgba(124,140,255,.08) !important }
+/* Logs do painel: esmaece o fim da lista em vez de cortar uma linha ao meio */
+.pn-b { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent) }
+:root:not(#_) .vb-kpis .kpi { border: 0 !important; border-radius: 16px !important; background: var(--m-sc-low, #f0f4f9) !important; box-shadow: none !important }
+:root:not(#_)[data-tema="escuro"] .vb-kpis .kpi { background: rgba(124,140,255,.08) !important }
 </style>
 <header class="top">
   <div class="top-in">
@@ -3877,7 +3911,7 @@ const OPT={
   formato:{nao_informado:'Não informado',regular:'Regular',irregular:'Irregular'},
   ocupacao:{nao_informado:'Não informado',vazio:'Vazio',ocupado:'Ocupado',parcialmente_ocupado:'Parcialmente ocupado'},
   demolicao:{nao_avaliada:'Não avaliada',provavel:'Provável',confirmada:'Confirmada',dispensada:'Dispensada'},
-  forma:{dinheiro:'Dinheiro',permuta_fisica:'Permuta Física',permuta_financeira:'Permuta Financeira',permuta_geral:'Permuta Geral',permuta_com_torna:'Permuta Com Torna'},
+  forma:{dinheiro:'Dinheiro',permuta_fisica:'Permuta física',permuta_financeira:'Permuta financeira',permuta_geral:'Permuta geral',permuta_com_torna:'Permuta com torna'},
   statusProp:{rascunho:'Rascunho',apresentada:'Apresentada',em_analise:'Em análise',aceita:'Aceita',recusada:'Recusada',expirada:'Expirada',retirada:'Retirada',substituida:'Substituída'},
   statusTar:{pendente:'Pendente',em_andamento:'Em andamento',aguardando_terceiro:'Aguardando terceiro',concluida:'Concluída',cancelada:'Cancelada'},
   prioTar:{baixa:'Baixa',media:'Média',alta:'Alta'},
@@ -4268,7 +4302,7 @@ function secaoInsc(t){
       <div class="tblwrap"><table class="mini-tbl vv"><thead><tr><th>Exercício</th><th class="r">Venal terreno</th><th class="r">Venal construção</th><th class="r">Venal do imóvel</th><th>IPTU</th><th class="r">Anual</th><th class="r">Parcela</th><th class="r">Mensal</th><th>Fonte</th></tr></thead><tbody>
       ${vs.map((v,j)=>`<tr><td><b>${v.ex}</b>${v.rev>1?` <span class="faint" style="font-size:11px">rev. ${v.rev}</span>`:''}${j===0?' <span class="tag-ref">atual</span>':''}</td><td class="r">${brl(v.vt)}</td><td class="r">${brl(v.vc)}</td><td class="r"><b>${brl(venal(v))}</b></td>
       <td>${v.sit==='isento'?'<span class="chip good">Isento</span>':OPT.sitIptu[v.sit]}</td><td class="r">${v.sit==='isento'?'—':brl2(v.iptu)}</td><td class="r">${v.iptu!=null&&v.parc&&v.sit!=='isento'?`${brl2(v.iptu/v.parc)} <span class="faint">× ${v.parc}</span>`:'—'}</td>
-      <td class="r">${v.sit==='isento'?'—':v.mensal!=null?`${brl2(v.mensal)}<div class="faint" style="font-size:11px">informado</div>`:v.iptu!=null?`${brl2(v.iptu/12)}<div class="faint" style="font-size:11px">anual ÷ 12</div>`:'—'}</td><td class="muted" style="font-size:12px">${esc(v.fonte||'—')}${v.data?`<div>${fd(v.data)}</div>`:''}</td></tr>`).join('')||'<tr><td colspan="9" class="muted">Sem valores lançados.</td></tr>'}</tbody></table></div>
+      <td class="r">${v.sit==='isento'?'—':v.mensal!=null?`${brl2(v.mensal)}`:v.iptu!=null?`${brl2(v.iptu/12)} <span class="faint">(anual ÷ 12)</span>`:'—'}</td><td class="muted vv-f">${esc(v.fonte||'—')}${v.data?` · ${fd(v.data)}`:''}</td></tr>`).join('')||'<tr><td colspan="9" class="muted">Sem valores lançados.</td></tr>'}</tbody></table></div>
       <details class="details"><summary>Lançar exercício ou corrigir valores</summary><form class="inline-form" data-form="iptu" data-i="${i}" style="border:0;padding-top:4px">
       <div class="field" style="flex:0 1 96px"><label for="v-e${i}">Exercício</label><input id="v-e${i}" name="ex" inputmode="numeric" value="${new Date().getFullYear()}" required></div>
       <div class="field"><label for="v-vt${i}">Venal terreno (R$)</label><input id="v-vt${i}" name="vt" inputmode="decimal"></div><div class="field"><label for="v-vc${i}">Venal construção (R$)</label><input id="v-vc${i}" name="vc" inputmode="decimal"></div>
@@ -4354,7 +4388,7 @@ function abaNegociacao(t){
   ${form}
   ${chain.length?`<div class="chain" style="margin-top:${UI.propForm?16:0}px">${chain.map((p,i)=>{return `<div class="pnode ${p.origem}"><span class="pd">v${p.v}</span><div class="pc">
     <div class="ph"><span><span class="pv">${brl(p.valor)}</span> <span class="muted" style="font-size:13px">· ${p.origem==='bkm'?'BKM':'Vendedor'}${p.v>1?` responde à v${p.v-1}`:''}</span></span>
-    <span style="display:flex;gap:6px;flex-wrap:wrap">${i===0&&negAtiva(t)?`<select aria-label="Status da proposta" data-ch="prop-status" class="chip" style="border:0;height:26px;cursor:pointer">${Object.entries(OPT.statusProp).filter(([k])=>k!=='substituida').map(([k,l])=>`<option value="${k}" ${k===p.status?'selected':''}>${l}</option>`).join('')}</select>`:statusPropChip(p.status)}</span></div>
+    <span style="display:flex;gap:6px;flex-wrap:wrap">${i===0&&negAtiva(t)?`<select aria-label="Status da proposta" data-ch="prop-status" class="chip chip-sel">${Object.entries(OPT.statusProp).filter(([k])=>k!=='substituida').map(([k,l])=>`<option value="${k}" ${k===p.status?'selected':''}>${l}</option>`).join('')}</select>`:statusPropChip(p.status)}</span></div>
     <div class="pm">${OPT.forma[p.forma]} · apresentada ${fd(p.data)}${p.validade?` · válida até ${fd(p.validade)}`:''}</div>${p.cond?`<div class="pt">${esc(p.cond)}</div>`:''}</div></div>`}).join('')}</div>`:'<div class="muted">Nenhuma proposta ainda.</div>'}</div></section></div>`;
 }
 function abaTarefas(t){
@@ -4415,7 +4449,7 @@ function abaDocs(t){
   const dl=t.dilig.slice().sort((a,b)=>(a.sit==='resolvida')-(b.sit==='resolvida'));
   const corDil={nao_avaliada:'',em_analise:'blue',pendente:'warn',resolvida:'good',impeditiva:'crit'};
   const secDil=`<section class="sec"><div class="sec-h"><h2>Diligências e pendências</h2><span class="faint" style="font-size:13px">${t.dilig.filter(d=>d.sit!=='resolvida').length} em aberto${t.dilig.some(d=>d.sit==='impeditiva')?' · <b style="color:var(--terracota)">há impeditiva</b>':''}</span></div><div class="sec-b" style="padding-top:4px">
-    ${dl.map(d=>`<div class="task" style="align-items:flex-start;padding:12px 0"><span class="chip ${corDil[d.sit]}" style="flex:none;margin-top:2px">${OPT.catDil[d.cat]}</span><span class="tt"><div class="t1">${esc(d.titulo)}</div>${d.prov?`<div class="muted" style="font-size:13px">${esc(d.prov)}</div>`:''}<div class="tm">${esc(d.resp)}</div></span>
+    ${dl.map(d=>`<div class="task" style="align-items:flex-start;padding:12px 0"><span class="chip cat" style="flex:none;margin-top:2px">${OPT.catDil[d.cat]}</span><span class="tt"><div class="t1">${esc(d.titulo)}</div>${d.prov?`<div class="muted" style="font-size:13px">${esc(d.prov)}</div>`:''}<div class="tm">${esc(d.resp)}</div></span>
     <select aria-label="Situação" data-ch="dil-sit" data-k="${d.id}" class="chip chip-sel ${corDil[d.sit]}" style="flex:none">${Object.entries(OPT.sitDil).map(([k,l])=>`<option value="${k}" ${k===d.sit?'selected':''}>${l}</option>`).join('')}</select></div>`).join('')||'<div class="muted lista-vazia">Nenhuma diligência registrada.</div>'}
     <form class="inline-form" data-form="dilig"><div class="field" style="flex:0 1 150px"><label for="dl-c">Categoria</label><select id="dl-c" name="cat">${Object.entries(OPT.catDil).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
     <div class="field grow"><label for="dl-t">Questão</label><input id="dl-t" name="titulo" required placeholder="Ex.: confirmar inventário concluído"></div>
@@ -5364,7 +5398,7 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
   const viab=`<section class="sec"><div class="sec-h"><h2>Resumo da viabilidade</h2></div><div class="sec-b">${escolha}${v?`<div class="cond2 vb-res2"><div><div class="lbl">Margem líquida</div><div class="big">${v.margem==null?'—':num(v.margem,1)+'%'}</div></div>${S.vbMargemMin!=null?`<div><div class="lbl">Mínima da empresa</div><div class="big">${num(S.vbMargemMin,1)}%</div></div>`:''}</div><div class="dt-wrap"><table class="dt compacta"><thead><tr><th class="esq"><span class="sr-only">Item</span></th><th class="num">Valor</th><th class="num">% do VGV</th></tr></thead><tbody>
     <tr><td class="esq">VGV líquido</td><td class="num">${mi(vl)}</td><td class="num">100%</td></tr>
     <tr><td class="esq">Valor pedido</td><td class="num">${o?.valor?mi(o.valor):'—'}</td><td class="num">${o?.valor?pct(o.valor,vl):'—'}</td></tr>
-    ${lp?`<tr><td class="esq">Última proposta (${lp.origem==='bkm'?'BKM':'vendedor'})</td><td class="num">${mi(lp.valor)}</td><td class="num">${pct(lp.valor,vl)}</td></tr>`:''}
+    ${lp?`<tr><td class="esq">Última proposta</td><td class="num">${mi(lp.valor)}</td><td class="num">${pct(lp.valor,vl)}</td></tr>`:''}
     ${v.lucro!=null?`<tr><td class="esq">Lucro líquido</td><td class="num">${mi(v.lucro)}</td><td class="num">${pct(v.lucro,vl)}</td></tr>`:''}
 </tbody></table></div>
     ${abaixoMin(t)?`<div class="banner warn" style="margin-top:12px">${ic('warn')}<div>${abaixoMinTxt(t)}.</div></div>`:''}`
@@ -9233,7 +9267,7 @@ function cfgViabHtml(){const L=S.viabDesp;
       <input data-ch="cfg-vd" data-c="${d.codigo}" data-k="nome" value="${esc(d.nome)}" aria-label="Nome do item">${sel(d,'grupo',grupos,d.grupo,'Grupo de '+esc(d.nome),u?'disabled title="Item já usado em estudo não muda de grupo"':'')}
       ${sel(d,'tipo',Object.fromEntries(G.tipos.map(k=>[k,VB_TIPO[k]])),d.tipo,'Base de cálculo de '+esc(d.nome))}
       <input data-ch="cfg-vd" data-c="${d.codigo}" data-k="valor" value="${vbIn(d.valor,4)}" inputmode="decimal" placeholder="" aria-label="Valor padrão de ${esc(d.nome)}">
-      <span>${g==='comercial'?`<label class="chk"><input type="checkbox" data-ch="cfg-vd" data-c="${d.codigo}" data-k="deduz" ${d.deduz?'checked':''} aria-label="${esc(d.nome)} pode sair do VGV líquido"></label>`:''}</span>
+      <span>${g==='comercial'?`<label class="chk"><input type="checkbox" data-ch="cfg-vd" data-c="${d.codigo}" data-k="deduz" ${d.deduz?'checked':''} aria-label="${esc(d.nome)} pode sair do VGV líquido"></label>`:'<span class="faint" aria-hidden="true">—</span>'}</span>
       <label class="chk"><input type="checkbox" data-ch="cfg-vd" data-c="${d.codigo}" data-k="ativo" ${d.ativo?'checked':''} aria-label="Ativo"></label>
       <span>${u?'':`<button class="iconbtn sm lixo" data-a="vb-cfg-del" data-c="${d.codigo}" aria-label="Apagar" title="Apagar">${ic('lixo',18)}</button>`}</span></div>`}).join('')||'<div class="muted vb-vazio">Nenhum item.</div>'}`}).join('');
   const mods=(S.viabModelos||[]).filter(m=>!m.dono),p=vbModeloPadrao();
@@ -9855,7 +9889,10 @@ function uiBoardPontos(){if(innerWidth>599)return;document.querySelectorAll('.bo
   const marca=()=>{const w=cols[1].offsetLeft-cols[0].offsetLeft||1,i=Math.min(cols.length-1,Math.round(b.scrollLeft/w));n.querySelectorAll('button').forEach((x,j)=>x.setAttribute('aria-selected',j===i))};
   b.addEventListener('scroll',()=>requestAnimationFrame(marca),{passive:true});marca();
   n.addEventListener('click',e=>{const x=e.target.closest('button');if(!x)return;const i=[...n.children].indexOf(x);b.scrollTo({left:cols[i].offsetLeft-cols[0].offsetLeft,behavior:'smooth'})})})}
-const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel();uiCfgAba();uiBoardPontos()};
+/* Botões com ícone nos cabeçalhos de quadro: no celular ficam só com o ícone (o nome vai para o rótulo acessível e a dica) */
+function uiHdIc(){document.querySelectorAll(':is(.sec-h,.card-h,.chk-gh) :is(.btn,.linkbtn):not([data-hd-ok])').forEach(b=>{b.dataset.hdOk='1';if(!b.querySelector('svg'))return;
+  const t=b.textContent.trim();if(!t)return;b.classList.add('hd-ic');if(!b.getAttribute('aria-label'))b.setAttribute('aria-label',t);if(!b.title)b.title=t})}
+const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel();uiCfgAba();uiBoardPontos();uiHdIc()};
 /* Legenda do mapa: lembra se ficou aberta ou fechada */
 document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legenda'))UI.mpLeg=e.target.open},true);
 

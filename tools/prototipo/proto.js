@@ -66,7 +66,7 @@ const OPT={
   formato:{nao_informado:'Não informado',regular:'Regular',irregular:'Irregular'},
   ocupacao:{nao_informado:'Não informado',vazio:'Vazio',ocupado:'Ocupado',parcialmente_ocupado:'Parcialmente ocupado'},
   demolicao:{nao_avaliada:'Não avaliada',provavel:'Provável',confirmada:'Confirmada',dispensada:'Dispensada'},
-  forma:{dinheiro:'Dinheiro',permuta_fisica:'Permuta Física',permuta_financeira:'Permuta Financeira',permuta_geral:'Permuta Geral',permuta_com_torna:'Permuta Com Torna'},
+  forma:{dinheiro:'Dinheiro',permuta_fisica:'Permuta física',permuta_financeira:'Permuta financeira',permuta_geral:'Permuta geral',permuta_com_torna:'Permuta com torna'},
   statusProp:{rascunho:'Rascunho',apresentada:'Apresentada',em_analise:'Em análise',aceita:'Aceita',recusada:'Recusada',expirada:'Expirada',retirada:'Retirada',substituida:'Substituída'},
   statusTar:{pendente:'Pendente',em_andamento:'Em andamento',aguardando_terceiro:'Aguardando terceiro',concluida:'Concluída',cancelada:'Cancelada'},
   prioTar:{baixa:'Baixa',media:'Média',alta:'Alta'},
@@ -457,7 +457,7 @@ function secaoInsc(t){
       <div class="tblwrap"><table class="mini-tbl vv"><thead><tr><th>Exercício</th><th class="r">Venal terreno</th><th class="r">Venal construção</th><th class="r">Venal do imóvel</th><th>IPTU</th><th class="r">Anual</th><th class="r">Parcela</th><th class="r">Mensal</th><th>Fonte</th></tr></thead><tbody>
       ${vs.map((v,j)=>`<tr><td><b>${v.ex}</b>${v.rev>1?` <span class="faint" style="font-size:11px">rev. ${v.rev}</span>`:''}${j===0?' <span class="tag-ref">atual</span>':''}</td><td class="r">${brl(v.vt)}</td><td class="r">${brl(v.vc)}</td><td class="r"><b>${brl(venal(v))}</b></td>
       <td>${v.sit==='isento'?'<span class="chip good">Isento</span>':OPT.sitIptu[v.sit]}</td><td class="r">${v.sit==='isento'?'—':brl2(v.iptu)}</td><td class="r">${v.iptu!=null&&v.parc&&v.sit!=='isento'?`${brl2(v.iptu/v.parc)} <span class="faint">× ${v.parc}</span>`:'—'}</td>
-      <td class="r">${v.sit==='isento'?'—':v.mensal!=null?`${brl2(v.mensal)}<div class="faint" style="font-size:11px">informado</div>`:v.iptu!=null?`${brl2(v.iptu/12)}<div class="faint" style="font-size:11px">anual ÷ 12</div>`:'—'}</td><td class="muted" style="font-size:12px">${esc(v.fonte||'—')}${v.data?`<div>${fd(v.data)}</div>`:''}</td></tr>`).join('')||'<tr><td colspan="9" class="muted">Sem valores lançados.</td></tr>'}</tbody></table></div>
+      <td class="r">${v.sit==='isento'?'—':v.mensal!=null?`${brl2(v.mensal)}`:v.iptu!=null?`${brl2(v.iptu/12)} <span class="faint">(anual ÷ 12)</span>`:'—'}</td><td class="muted vv-f">${esc(v.fonte||'—')}${v.data?` · ${fd(v.data)}`:''}</td></tr>`).join('')||'<tr><td colspan="9" class="muted">Sem valores lançados.</td></tr>'}</tbody></table></div>
       <details class="details"><summary>Lançar exercício ou corrigir valores</summary><form class="inline-form" data-form="iptu" data-i="${i}" style="border:0;padding-top:4px">
       <div class="field" style="flex:0 1 96px"><label for="v-e${i}">Exercício</label><input id="v-e${i}" name="ex" inputmode="numeric" value="${new Date().getFullYear()}" required></div>
       <div class="field"><label for="v-vt${i}">Venal terreno (R$)</label><input id="v-vt${i}" name="vt" inputmode="decimal"></div><div class="field"><label for="v-vc${i}">Venal construção (R$)</label><input id="v-vc${i}" name="vc" inputmode="decimal"></div>
@@ -543,7 +543,7 @@ function abaNegociacao(t){
   ${form}
   ${chain.length?`<div class="chain" style="margin-top:${UI.propForm?16:0}px">${chain.map((p,i)=>{return `<div class="pnode ${p.origem}"><span class="pd">v${p.v}</span><div class="pc">
     <div class="ph"><span><span class="pv">${brl(p.valor)}</span> <span class="muted" style="font-size:13px">· ${p.origem==='bkm'?'BKM':'Vendedor'}${p.v>1?` responde à v${p.v-1}`:''}</span></span>
-    <span style="display:flex;gap:6px;flex-wrap:wrap">${i===0&&negAtiva(t)?`<select aria-label="Status da proposta" data-ch="prop-status" class="chip" style="border:0;height:26px;cursor:pointer">${Object.entries(OPT.statusProp).filter(([k])=>k!=='substituida').map(([k,l])=>`<option value="${k}" ${k===p.status?'selected':''}>${l}</option>`).join('')}</select>`:statusPropChip(p.status)}</span></div>
+    <span style="display:flex;gap:6px;flex-wrap:wrap">${i===0&&negAtiva(t)?`<select aria-label="Status da proposta" data-ch="prop-status" class="chip chip-sel">${Object.entries(OPT.statusProp).filter(([k])=>k!=='substituida').map(([k,l])=>`<option value="${k}" ${k===p.status?'selected':''}>${l}</option>`).join('')}</select>`:statusPropChip(p.status)}</span></div>
     <div class="pm">${OPT.forma[p.forma]} · apresentada ${fd(p.data)}${p.validade?` · válida até ${fd(p.validade)}`:''}</div>${p.cond?`<div class="pt">${esc(p.cond)}</div>`:''}</div></div>`}).join('')}</div>`:'<div class="muted">Nenhuma proposta ainda.</div>'}</div></section></div>`;
 }
 function abaTarefas(t){
@@ -604,7 +604,7 @@ function abaDocs(t){
   const dl=t.dilig.slice().sort((a,b)=>(a.sit==='resolvida')-(b.sit==='resolvida'));
   const corDil={nao_avaliada:'',em_analise:'blue',pendente:'warn',resolvida:'good',impeditiva:'crit'};
   const secDil=`<section class="sec"><div class="sec-h"><h2>Diligências e pendências</h2><span class="faint" style="font-size:13px">${t.dilig.filter(d=>d.sit!=='resolvida').length} em aberto${t.dilig.some(d=>d.sit==='impeditiva')?' · <b style="color:var(--terracota)">há impeditiva</b>':''}</span></div><div class="sec-b" style="padding-top:4px">
-    ${dl.map(d=>`<div class="task" style="align-items:flex-start;padding:12px 0"><span class="chip ${corDil[d.sit]}" style="flex:none;margin-top:2px">${OPT.catDil[d.cat]}</span><span class="tt"><div class="t1">${esc(d.titulo)}</div>${d.prov?`<div class="muted" style="font-size:13px">${esc(d.prov)}</div>`:''}<div class="tm">${esc(d.resp)}</div></span>
+    ${dl.map(d=>`<div class="task" style="align-items:flex-start;padding:12px 0"><span class="chip cat" style="flex:none;margin-top:2px">${OPT.catDil[d.cat]}</span><span class="tt"><div class="t1">${esc(d.titulo)}</div>${d.prov?`<div class="muted" style="font-size:13px">${esc(d.prov)}</div>`:''}<div class="tm">${esc(d.resp)}</div></span>
     <select aria-label="Situação" data-ch="dil-sit" data-k="${d.id}" class="chip chip-sel ${corDil[d.sit]}" style="flex:none">${Object.entries(OPT.sitDil).map(([k,l])=>`<option value="${k}" ${k===d.sit?'selected':''}>${l}</option>`).join('')}</select></div>`).join('')||'<div class="muted lista-vazia">Nenhuma diligência registrada.</div>'}
     <form class="inline-form" data-form="dilig"><div class="field" style="flex:0 1 150px"><label for="dl-c">Categoria</label><select id="dl-c" name="cat">${Object.entries(OPT.catDil).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
     <div class="field grow"><label for="dl-t">Questão</label><input id="dl-t" name="titulo" required placeholder="Ex.: confirmar inventário concluído"></div>

@@ -2073,10 +2073,44 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 }
 /* Configurações › Viabilidade: texto menor nas células para caber o nome do item e do grupo */
 @media (min-width: 900px) {
-  .vb-cfg-r { grid-template-columns: 40px minmax(200px, 1fr) 152px 152px 92px 56px 40px 40px !important; column-gap: 8px !important }
+  .vb-cfg-r { grid-template-columns: 40px minmax(190px, 1fr) 140px 160px 84px 80px 48px 40px !important; column-gap: 8px !important }
   .vb-cfg-r :is(input:not([type=checkbox]), select) { font-size: 13px !important; padding-left: 8px !important }
   .vb-cfg-r select { padding-right: 26px !important; background-position: right 4px center !important }
 }
 /* Margem mínima: mesmo campo preenchido das grades */
 .vb-campos .field input:not(:disabled) { border: 0 !important; border-bottom: 1px solid #747775 !important; border-radius: 4px 4px 0 0 !important; background-color: #f0f4f9 !important }
 :root[data-tema="escuro"] .vb-campos .field input:not(:disabled) { background-color: rgba(124,140,255,.07) !important; border-bottom-color: rgba(142,154,196,.6) !important }
+
+/* ===================== Revisão de design, rodada 10 ===================== */
+/* Cabeçalhos de quadro no celular: botão com ícone fica só com o ícone */
+@media (max-width: 599px) {
+  :root:not(#_) .hd-ic { font-size: 0 !important; gap: 0 !important; width: 40px; min-width: 40px; height: 40px; padding: 0 !important; justify-content: center; border-radius: 20px; margin-right: -8px !important; flex: none }
+  :root:not(#_) .hd-ic svg { width: 20px; height: 20px; margin: 0 !important }
+}
+/* Valor venal: anotações na linha do valor; fonte numa linha só, alinhada */
+.empilha .mini-tbl.vv td:not(:first-child) { display: block !important }
+.empilha .mini-tbl.vv td:not(:first-child)::before { display: block }
+.empilha .mini-tbl.vv td.vv-f { display: flex !important; flex-direction: row !important; gap: 6px; align-items: baseline; font-size: 13px; color: var(--m-on-var, #444746) }
+.empilha .mini-tbl.vv td.vv-f::before { display: inline; content: "Fonte:" !important }
+.mini-tbl.vv td.vv-f { white-space: normal }
+/* Área adotada: a fonte acompanha o valor, menor */
+.kv-2 { display: inline !important; font-size: 12px !important; color: var(--m-on-var, #444746) !important; margin: 0 0 0 4px !important }
+.kv-2::before { content: "· " }
+:root[data-tema="escuro"] .kv-2 { color: #8e9ac4 !important }
+/* Listas que viram linhas dentro de um quadro: texto no mesmo recuo do fio */
+.sec .empilha .dt:not(.lista-t) tr, .sec .empilha .mini-tbl tr, .sec-b .empilha .dt:not(.lista-t) tr { padding-left: 0 !important; padding-right: 0 !important }
+.sec .empilha .dt:not(.lista-t) td:has(> .iconbtn), .sec .empilha .mini-tbl td:has(> .iconbtn) { right: -8px !important }
+/* Estudos na Negociação (celular): nome em cima, números numa linha */
+@media (max-width: 599px) { .vb-lista.empilha .dt tr { gap: 2px 12px !important } .vb-lista.empilha .dt td[data-l="Válido"] { position: absolute !important; right: 0; top: 10px } .vb-lista.empilha .dt td:first-child { padding-right: 48px !important } }
+/* Categoria da diligência: chip neutro (cores só para situação) */
+.task .chip.cat { background: transparent !important; border: 1px solid var(--m-outline-var, #c4c7c5) !important; color: var(--m-on-var, #444746) !important }
+:root[data-tema="escuro"] .task .chip.cat { border-color: rgba(142,154,196,.35) !important; color: #b9c3e6 !important }
+/* Rótulo e valor no desktop: coluna de rótulo mais curta para o valor caber numa linha */
+@media (min-width: 600px) { :root:not(#_) .kvl > .kv { grid-template-columns: clamp(104px, 32%, 150px) minmax(0, 1fr) auto !important } :root:not(#_) .kvl:not(:has(.kv-ed)) > .kv { grid-template-columns: clamp(104px, 32%, 150px) minmax(0, 1fr) !important } }
+/* Indicadores do estudo: blocos tonais, raio 16, sem contorno */
+:root:not(#_) .vb-pop .metric, :root:not(#_) .vb-met .metric { border: 0 !important; border-radius: 16px !important; background: var(--m-sc-low, #f0f4f9) !important; box-shadow: none !important }
+:root:not(#_)[data-tema="escuro"] .vb-pop .metric, :root:not(#_)[data-tema="escuro"] .vb-met .metric { background: rgba(124,140,255,.08) !important }
+/* Logs do painel: esmaece o fim da lista em vez de cortar uma linha ao meio */
+.pn-b { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent) }
+:root:not(#_) .vb-kpis .kpi { border: 0 !important; border-radius: 16px !important; background: var(--m-sc-low, #f0f4f9) !important; box-shadow: none !important }
+:root:not(#_)[data-tema="escuro"] .vb-kpis .kpi { background: rgba(124,140,255,.08) !important }

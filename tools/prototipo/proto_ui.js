@@ -69,6 +69,9 @@ function uiBoardPontos(){if(innerWidth>599)return;document.querySelectorAll('.bo
   const marca=()=>{const w=cols[1].offsetLeft-cols[0].offsetLeft||1,i=Math.min(cols.length-1,Math.round(b.scrollLeft/w));n.querySelectorAll('button').forEach((x,j)=>x.setAttribute('aria-selected',j===i))};
   b.addEventListener('scroll',()=>requestAnimationFrame(marca),{passive:true});marca();
   n.addEventListener('click',e=>{const x=e.target.closest('button');if(!x)return;const i=[...n.children].indexOf(x);b.scrollTo({left:cols[i].offsetLeft-cols[0].offsetLeft,behavior:'smooth'})})})}
-const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel();uiCfgAba();uiBoardPontos()};
+/* Botões com ícone nos cabeçalhos de quadro: no celular ficam só com o ícone (o nome vai para o rótulo acessível e a dica) */
+function uiHdIc(){document.querySelectorAll(':is(.sec-h,.card-h,.chk-gh) :is(.btn,.linkbtn):not([data-hd-ok])').forEach(b=>{b.dataset.hdOk='1';if(!b.querySelector('svg'))return;
+  const t=b.textContent.trim();if(!t)return;b.classList.add('hd-ic');if(!b.getAttribute('aria-label'))b.setAttribute('aria-label',t);if(!b.title)b.title=t})}
+const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel();uiCfgAba();uiBoardPontos();uiHdIc()};
 /* Legenda do mapa: lembra se ficou aberta ou fechada */
 document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legenda'))UI.mpLeg=e.target.open},true);

@@ -574,7 +574,7 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
   const viab=`<section class="sec"><div class="sec-h"><h2>Resumo da viabilidade</h2></div><div class="sec-b">${escolha}${v?`<div class="cond2 vb-res2"><div><div class="lbl">Margem líquida</div><div class="big">${v.margem==null?'—':num(v.margem,1)+'%'}</div></div>${S.vbMargemMin!=null?`<div><div class="lbl">Mínima da empresa</div><div class="big">${num(S.vbMargemMin,1)}%</div></div>`:''}</div><div class="dt-wrap"><table class="dt compacta"><thead><tr><th class="esq"><span class="sr-only">Item</span></th><th class="num">Valor</th><th class="num">% do VGV</th></tr></thead><tbody>
     <tr><td class="esq">VGV líquido</td><td class="num">${mi(vl)}</td><td class="num">100%</td></tr>
     <tr><td class="esq">Valor pedido</td><td class="num">${o?.valor?mi(o.valor):'—'}</td><td class="num">${o?.valor?pct(o.valor,vl):'—'}</td></tr>
-    ${lp?`<tr><td class="esq">Última proposta (${lp.origem==='bkm'?'BKM':'vendedor'})</td><td class="num">${mi(lp.valor)}</td><td class="num">${pct(lp.valor,vl)}</td></tr>`:''}
+    ${lp?`<tr><td class="esq">Última proposta</td><td class="num">${mi(lp.valor)}</td><td class="num">${pct(lp.valor,vl)}</td></tr>`:''}
     ${v.lucro!=null?`<tr><td class="esq">Lucro líquido</td><td class="num">${mi(v.lucro)}</td><td class="num">${pct(v.lucro,vl)}</td></tr>`:''}
 </tbody></table></div>
     ${abaixoMin(t)?`<div class="banner warn" style="margin-top:12px">${ic('warn')}<div>${abaixoMinTxt(t)}.</div></div>`:''}`
