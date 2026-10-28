@@ -4245,8 +4245,10 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 .vb-qh .vb-out b { font-size: 16px; font-weight: 500 }
 /* subquadro: mesmas colunas do quadro, título num tom mais leve */
 .vb-q.sub { border: 0; border-radius: 0; margin: 0; padding: 0; overflow: visible }
-.vb-q.sub > .vb-r.vb-qh { background: var(--m-sc-lowest, #f8fafd); padding: 10px 16px }
-.vb-q.sub > .vb-r.vb-qh .vb-out b { font-size: 14px }
+/* subtítulo sem fundo, no padrão de subcabeçalho do Material (texto na cor primária) */
+.vb-q.sub > .vb-r.vb-qh { background: none; padding: 16px 16px 4px; border-bottom: 0 }
+.vb-q.sub > .vb-r.vb-qh h4, .vb-q.sub > .vb-r.vb-qh .vb-out b { color: var(--m-primary, #0b57d0); font-size: 14px }
+.vb-q.sub > .vb-r.vb-qh .vb-out small { font-size: 12px }
 .vb-q.sub:last-child > :last-child { border-bottom: 0 }
 .vb-q.sub + .vb-q.sub { border-top: 1px solid var(--linha) }
 .vb-qadd { padding: 4px 0 8px; margin-left: -12px }
@@ -4259,14 +4261,18 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 .vb-q.fechado > :not(.vb-qh) { display: none }
 .vb-q.fechado > .vb-r.vb-qh { border-bottom: 0; border-radius: 11px }
 :root[data-tema="escuro"] .vb-r.vb-qh { background: rgba(99,112,255,.08) }
-:root[data-tema="escuro"] .vb-q.sub > .vb-r.vb-qh { background: rgba(99,112,255,.03) }
+:root[data-tema="escuro"] .vb-q.sub > .vb-r.vb-qh { background: none }
+:root[data-tema="escuro"] .vb-q.sub > .vb-r.vb-qh h4, :root[data-tema="escuro"] .vb-q.sub > .vb-r.vb-qh .vb-out b { color: #a8c7fa }
+/* mais respiro entre as linhas de campos (28/out/2026) */
+.vb-lns .vb-r:not(.vb-hd):not(.vb-qh) { padding: 12px 0; column-gap: 12px }
 @media (max-width: 1100px) {
   .vb-q { padding: 0 12px }
   .vb-tab .vb-r.vb-qh { margin: 0 -12px; padding: 12px; grid-template-columns: minmax(0, 1fr) auto !important; align-items: start }
   .vb-tab .vb-r.vb-qh > .vb-qt { grid-column: 1 }
   .vb-tab .vb-r.vb-qh .vb-x { display: none }
   .vb-tab .vb-r.vb-qh .vb-out { text-align: right }
-  .vb-tab .vb-q.sub > .vb-r.vb-qh { padding: 10px 12px }
+  .vb-tab .vb-q.sub > .vb-r.vb-qh { padding: 16px 12px 0 }
+  .vb-lns .vb-r:not(.vb-hd):not(.vb-qh) { padding: 16px 40px 16px 0; row-gap: 14px }
 }
 </style>
 <header class="top">
