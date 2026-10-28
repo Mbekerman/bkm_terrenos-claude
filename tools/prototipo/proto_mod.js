@@ -254,8 +254,7 @@ function pgMapa(){
   const opt=(o,v)=>Object.entries(o).map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${esc(l)}</option>`).join('');
   return `<div class="mapa-pg">
   <aside class="mapa-lado" aria-label="Terrenos no mapa">
-    <div class="page-h compacto"><div><h1>Mapa</h1></div></div>
-    <label class="search sm" for="mp-q">${bi('busca',24)}<input id="mp-q" type="search" placeholder="Buscar por nome, bairro, SQL..." value="${esc(UI.mp.q)}" autocomplete="off"></label>
+    <h1 class="sr-only">Mapa</h1>
     ${fxBarra('mapa')}
     ${UI.mp.q||UI.mp.ocultas.length?'<button class="linkbtn" data-a="mp-limpar" style="align-self:flex-start">Limpar busca e legenda</button>':''}
     <div id="mp-lista">${mpLista()}</div>
@@ -548,7 +547,7 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     ${linE('Município e região',esc([t.municipio||'São Paulo · SP',t.zona&&'Zona '+OPT.zona[t.zona]].filter(Boolean).join(' · ')),'reg',['zona'])}
     ${linE('Eixo comercial',esc(eixo(t.eixo)||''),'eixo',['eixo'])}
     ${linLink('Zoneamento',a?esc(zonasTxt(t)):'',`<button class="kv-ed kv-ir" data-a="tab" data-t="urbanismo" title="Registrar nova análise em Urbanismo" aria-label="Registrar nova análise em Urbanismo">${ic('fwd',16)}</button>`)}
-    ${linArea('Área adotada',ad!=null?`${m2(ad)} <span class="faint">(${esc(OPT.fonteArea[t.fonteArea]||'')})</span>`:'','area')}
+    ${linArea('Área adotada',ad!=null?`<span>${m2(ad)}${OPT.fonteArea[t.fonteArea]?`<span class="kv-2">${esc(OPT.fonteArea[t.fonteArea])}</span>`:''}</span>`:'','area')}
     ${t.poly&&t.fonteArea!=='poligonal'?lin('Área da poligonal',m2(areaPolT(t))):''}
     ${linArea('Testada principal',t.testada!=null?num(t.testada,2)+' m':'','testada')}
     ${linE('Topografia e posição',[t.topografia!=='nao_informado'&&OPT.topografia[t.topografia],t.posicao!=='nao_informado'&&OPT.posicao[t.posicao]].filter(Boolean).join(' · '),'topo',['topografia','posicao'])}
@@ -645,11 +644,11 @@ function cardTk({k,t}){const at=k.prazo<HOJE&&!['concluida','cancelada'].include
 function pgTarefas(){const f=UI.tk,l=tkFiltradas();const cols=COLS_TK.filter(c=>c!=='cancelada'||f.canc);
   const opt=(o,v)=>Object.entries(o).map(([k,x])=>`<option value="${k}" ${v===k?'selected':''}>${esc(x)}</option>`).join('');
   const filtros=`<div class="tk-filtros"><label class="search sm" for="tk-q">${bi('busca',24)}<input id="tk-q" type="search" placeholder="Buscar tarefa ou terreno" value="${esc(f.q)}" autocomplete="off"></label>
-    <div class="field"><label for="tk-resp">Responsável</label><select id="tk-resp" data-ch="tk-f" data-k="resp"><option value="">Todos</option>${opt(Object.fromEntries(USERS.map(u=>[u,u])),f.resp)}</select></div>
-    <div class="field"><label for="tk-ter">Terreno</label><select id="tk-ter" data-ch="tk-f" data-k="ter"><option value="">Todos</option>${opt(Object.fromEntries(ativosBanco().map(t=>[t.id,t.codigo+' · '+t.nome])),f.ter)}</select></div>
-    <div class="field"><label for="tk-prio">Prioridade</label><select id="tk-prio" data-ch="tk-f" data-k="prio"><option value="">Todas</option>${opt(OPT.prioTar,f.prio)}</select></div>
-    <label class="chk"><input type="checkbox" data-ch="tk-f" data-k="atras" ${f.atras?'checked':''}>Só atrasadas</label>
-    <label class="chk"><input type="checkbox" data-ch="tk-f" data-k="canc" ${f.canc?'checked':''}>Mostrar canceladas</label></div>`;
+    <div class="tk-fl"><label class="sr-only" for="tk-resp">Responsável</label><select id="tk-resp" class="fsel-chip${f.resp?' on':''}" data-ch="tk-f" data-k="resp"><option value="">Responsável</option>${opt(Object.fromEntries(USERS.map(u=>[u,u])),f.resp)}</select>
+    <label class="sr-only" for="tk-ter">Terreno</label><select id="tk-ter" class="fsel-chip${f.ter?' on':''}" data-ch="tk-f" data-k="ter"><option value="">Terreno</option>${opt(Object.fromEntries(ativosBanco().map(t=>[t.id,t.codigo+' · '+t.nome])),f.ter)}</select>
+    <label class="sr-only" for="tk-prio">Prioridade</label><select id="tk-prio" class="fsel-chip${f.prio?' on':''}" data-ch="tk-f" data-k="prio"><option value="">Prioridade</option>${opt(OPT.prioTar,f.prio)}</select>
+    <label class="fchk"><input type="checkbox" data-ch="tk-f" data-k="atras" ${f.atras?'checked':''}>${ic('check',16)}Só atrasadas</label>
+    <label class="fchk"><input type="checkbox" data-ch="tk-f" data-k="canc" ${f.canc?'checked':''}>${ic('check',16)}Canceladas</label></div></div>`;
   const quadro=`<div class="board tk-board">${cols.map(c=>{const ks=l.filter(x=>x.k.status===c).sort(ordemTk);
     return `<section class="col tk-col" data-tkcol="${c}" aria-label="${OPT.statusTar[c]}"><div class="col-h"><span>${OPT.statusTar[c]}</span><span class="n">${ks.length}</span></div>
     <div class="tk-lista">${ks.map(cardTk).join('')||'<div class="col-empty">Nenhuma</div>'}</div>

@@ -2425,14 +2425,14 @@ input[data-fmt]:not([data-fmt="none"]) { font-variant-numeric: tabular-nums }
 .num, .big, .mv, .kpi .v, .chip { font-variant-numeric: tabular-nums }
 
 /* Campos no padrão Material 3 (campo contornado): altura 40, raio 4, contorno #747775, seta própria no select */
-:is(.field, .cfg-r, .vb-c, .zp-tbl, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select, textarea) {
+:is(.field, .cfg-r, .vb-c, .zp-tbl, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select, textarea) {
   border: 1px solid #747775 !important; border-radius: 4px !important; background-color: transparent; color: var(--m-on-surface, #1f1f1f); font-size: 14px }
-:is(.field, .cfg-r, .vb-c, .zp-tbl, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select) { height: 40px !important; min-height: 40px !important; padding: 0 12px }
-:is(.field, .cfg-r, .vb-c, .zp-tbl, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :is(input, select, textarea):focus { outline: 2px solid var(--m-primary, #0b57d0) !important; outline-offset: -2px; border-color: transparent !important }
+:is(.field, .cfg-r, .vb-c, .zp-tbl, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select) { height: 40px !important; min-height: 40px !important; padding: 0 12px }
+:is(.field, .cfg-r, .vb-c, .zp-tbl, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :where(input, select, textarea):focus { outline: 2px solid var(--m-primary, #0b57d0) !important; outline-offset: -2px; border-color: transparent !important }
 select:not([multiple]) { -webkit-appearance: none; appearance: none; padding-right: 36px !important; background-repeat: no-repeat; background-position: right 10px center; background-size: 18px 18px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23444746' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important }
 :root[data-tema="escuro"] select:not([multiple]) { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23c4c7f0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important }
-:root[data-tema="escuro"] :is(.field, .cfg-r, .vb-c, .zp-tbl, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not(.auto-v):not(.vb-pop-nome), select, textarea) { border-color: rgba(142,154,196,.5) !important; background-color: transparent !important; color: #e6ecff }
+:root[data-tema="escuro"] :is(.field, .cfg-r, .vb-c, .zp-tbl, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not(.auto-v):not(.vb-pop-nome), select, textarea) { border-color: rgba(142,154,196,.5) !important; background-color: transparent !important; color: #e6ecff }
 :root[data-tema="escuro"] { color-scheme: dark }
 input[type=date] { font-variant-numeric: tabular-nums }
 input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
@@ -2542,6 +2542,62 @@ input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
 .sec-h .sec-acoes { margin-right: -12px }
 .sec-h h2 .h-n { font-size: 13px; color: var(--m-on-var, #444746); font-weight: 400; margin-left: 4px }
 @media (max-width: 599px) { .sec-h { flex-wrap: nowrap } .sec-h h2 { overflow-wrap: anywhere } }
+
+.sr-only { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap }
+/* Mapa: zoom em botões redondos como os demais; legenda com seta e contagens alinhadas */
+.leaflet-control-zoom { border: 0 !important; border-radius: 20px !important; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.3) !important }
+.leaflet-control-zoom a { width: 40px !important; height: 40px !important; line-height: 40px !important; border: 0 !important; color: #444746 !important; font: 400 22px/40px 'Google Sans Flex', sans-serif !important; background: #fff !important }
+.leaflet-control-zoom a + a { border-top: 1px solid #e3e3e3 !important }
+:root[data-tema="escuro"] .leaflet-control-zoom a { background: #0c1433 !important; color: #c9d6ff !important }
+:root[data-tema="escuro"] .leaflet-control-zoom a + a { border-top-color: rgba(124,140,255,.16) !important }
+.mp-legenda summary { display: flex !important; align-items: center; gap: 6px; text-transform: none !important; letter-spacing: 0 !important; font-size: 13px !important; font-weight: 500 !important; color: var(--m-on-surface, #1f1f1f) !important; min-height: 36px; list-style: none }
+.mp-legenda summary::after { content: "" !important; width: 18px; height: 18px; margin-left: auto; transition: transform .15s;
+  background: no-repeat center/18px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23444746' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") }
+.mp-legenda[open] summary::after { transform: rotate(180deg) }
+:root[data-tema="escuro"] .mp-legenda summary { color: #e6ecff !important }
+:root[data-tema="escuro"] .mp-legenda summary::after { filter: invert(.85) }
+.lg-r { display: grid !important; grid-template-columns: minmax(0, 1fr) 32px }
+.lg-r .lg-d { width: 32px; height: 32px }
+.mp-leg-l > .lg-i { margin-right: 34px }
+.lg-i[aria-pressed="false"] { opacity: .6 !important }
+@media (max-width: 899px) { .mapa-lado .page-h { display: none } }
+/* Tarefas: barra de filtros em chips de filtro (menu e liga/desliga), numa linha */
+.tk-filtros { display: flex !important; flex-wrap: wrap; align-items: center; gap: 8px 12px !important }
+.tk-filtros .search { flex: 1 1 260px; max-width: 420px; margin: 0 !important }
+.tk-fl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap }
+.tk-filtros select.fsel-chip { height: 32px !important; min-height: 32px !important; border-radius: 8px !important; border: 1px solid #747775 !important; padding: 0 30px 0 12px !important; font-size: 14px; font-weight: 500; color: var(--m-on-var, #444746); background-color: transparent; background-position: right 6px center !important; max-width: 220px; width: auto }
+.tk-filtros select.fsel-chip.on { background-color: #c2e7ff !important; border-color: transparent !important; color: #001d35 }
+.fchk { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #747775; font-size: 14px; font-weight: 500; color: var(--m-on-var, #444746); cursor: pointer; white-space: nowrap; user-select: none }
+.fchk input { position: absolute; opacity: 0; pointer-events: none }
+.fchk .ic { display: none }
+.fchk:has(input:checked) { background: #c2e7ff; border-color: transparent; color: #001d35; padding-left: 8px }
+.fchk:has(input:checked) .ic { display: block }
+.fchk:has(input:focus-visible) { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: 2px }
+:root[data-tema="escuro"] :is(.fchk, .tk-filtros select.fsel-chip) { border-color: rgba(124,140,255,.35) !important; color: #c9d6ff }
+:root[data-tema="escuro"] :is(.fchk:has(input:checked), .tk-filtros select.fsel-chip.on) { background-color: rgba(99,112,255,.18) !important; border-color: rgba(124,140,255,.5) !important; color: #e6ecff }
+@media (max-width: 599px) {
+  .tk-filtros .search { flex-basis: 100%; max-width: none }
+  .tk-fl { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; width: calc(100% + 32px) }
+  .tk-fl::-webkit-scrollbar { display: none }
+  .tk-fl > * { flex: none }
+}
+/* Quadro: nome da coluna e contagem separados */
+.col-h { gap: 12px }
+.col-h .col-ab { min-width: 0 }
+.col-h .col-ab span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.col-h > .n { flex: none; margin-left: auto }
+/* Renda do entorno: os dois números menores dividem a linha por igual */
+.rd-met { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px !important }
+.rd-met .rd-m1 { grid-column: 1 / -1 }
+.rd-met .rd-m { min-width: 0 }
+/* Áreas e dimensões: números na mesma linha, rótulo de uma linha */
+.area .as { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block }
+/* Equipe: avatar ao lado do nome */
+.cfg-r.cfg-eq > span:first-child { display: flex; align-items: center; gap: 10px; min-width: 0 }
+/* Chips dentro da lista chave/valor podem quebrar em vez de vazar */
+.kv dd .chip { white-space: normal !important; max-width: 100%; height: auto; min-height: 24px }
+.chk-rot { font-size: 13px; color: var(--m-on-var, #444746) }
+@media (min-width: 900px) { .cfg-r .chk-rot { display: none } }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

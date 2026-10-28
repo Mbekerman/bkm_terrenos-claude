@@ -191,7 +191,7 @@ function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
     res:()=>`<div id="vb-res">${vbResHtml(v,c)}</div>`};
   const titulo={tip:'Tipologias',res:'DRE',...VB_SECAO};
   const acao={tip:ro?'':`<button class="btn text sm" data-a="vb-tip-add">${ic('add',16)}Adicionar tipologia</button>`};
-  const sobre=`Estudo de viabilidade estática · ${esc(t.codigo)} · ${esc(t.nome)}${lig?' · <span class="chip good"><span class="d"></span>Válido</span>':''}`,ab=vbAba();
+  const sobre=`<span>Viabilidade · ${esc(t.codigo)} · ${esc(t.nome)}</span>${lig?'<span class="chip good"><span class="d"></span>Válido</span>':''}`,ab=vbAba();
   return `<div class="vb-pop-h"><div class="vb-pop-tt"><div class="eyebrow">${sobre}</div>
       <input id="vb-pop-t" class="vb-pop-nome" data-vb="hd" data-k="nome" value="${esc(v.nome)}" aria-label="Nome do estudo" ${dis}>
       <div class="faint vb-sub">Atualizado em ${fd(v.em)}${v.user?' por '+esc(v.user):''}.</div></div>

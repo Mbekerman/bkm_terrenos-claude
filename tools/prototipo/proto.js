@@ -892,6 +892,7 @@ document.addEventListener('input',e=>{const el=e.target;
   if(viabInput(el))return;
   if(el.id==='mp-q'){UI.mp.q=el.value;mpRefresh();return}
   if(el.id==='tk-q'){UI.tk.q=el.value;const p=el.selectionStart;render();const n=$('#tk-q');if(n){n.focus();n.setSelectionRange(p,p)}return}
+  if(el.id==='q-top'&&UI.route==='mapa'){UI.mp.q=el.value;mpRefresh();return}
   if(el.id==='q-top'){UI.q=el.value;if(UI.route!=='terrenos'){go('terrenos');$('#q-top').focus()}else{const r=$('#rows');if(r)r.innerHTML=linhas()}}
   if(el.dataset.masc){const m=mascarar(el.value,el.dataset.masc);if(m!==el.value)el.value=m}
   if(el.form?.dataset.form==='novo')dedupe();
