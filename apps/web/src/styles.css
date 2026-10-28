@@ -3529,12 +3529,14 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
   :root:not(#_) .doc .da { grid-template-columns: auto auto 132px !important; column-gap: 8px !important }
 }
 :root:not(#_) .rd-dist .rd-bar { height: 10px; border-radius: 5px }
-:root:not(#_) .rd-dist .rd-bar span:not([style*="width:0%"]):not([style*="width: 0%"]) { min-width: 3px }
+:root:not(#_) .rd-dist .rd-bar span:not([style*="width:0%"]):not([style*="width: 0%"]) { min-width: 10px }
 @media (min-width: 600px) { :root:not(#_) .doc .da > .btn.text:last-child { margin-right: -12px !important } }
 @media (max-width: 599px) {
   .oc-m { display: none }
   :root:not(#_) .btn.zn-reg { width: 40px; min-width: 40px; height: 40px; padding: 0 !important; justify-content: center; gap: 0 }
 }
+
+@media (min-width: 600px) { :root:not(#_) .rd-dist.pf-dist li { grid-template-columns: 200px 1fr 52px 40px !important } }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
