@@ -2114,3 +2114,30 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 .pn-b { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent) }
 :root:not(#_) .vb-kpis .kpi { border: 0 !important; border-radius: 16px !important; background: var(--m-sc-low, #f0f4f9) !important; box-shadow: none !important }
 :root:not(#_)[data-tema="escuro"] .vb-kpis .kpi { background: rgba(124,140,255,.08) !important }
+
+/* ===================== Revisão de design, rodada 11 ===================== */
+/* Indicadores da Viabilidade na Negociação: respiro interno */
+:root:not(#_) .vb-met .metric { padding: 12px 16px !important }
+/* Rótulo e valor: em quadro estreito (menos de 520 px), rótulo em cima do valor, como no celular */
+.kvl { container-type: inline-size }
+@container (max-width: 520px) {
+  :root:not(#_) .kvl > .kv { grid-template-columns: minmax(0, 1fr) auto !important; row-gap: 2px !important; align-items: center }
+  :root:not(#_) .kvl > .kv > dt { grid-column: 1; font-size: 12px; line-height: 16px; white-space: normal }
+  :root:not(#_) .kvl > .kv > dd { grid-column: 1; grid-row: 2; margin: 0 }
+  :root:not(#_) .kvl > .kv > .kv-ed { grid-column: 2; grid-row: 1 / span 2 }
+}
+@container (min-width: 521px) { :root:not(#_) .kvl > .kv > dt { white-space: nowrap } :root:not(#_) .kvl > .kv { grid-template-columns: 160px minmax(0, 1fr) auto !important } :root:not(#_) .kvl:not(:has(.kv-ed)) > .kv { grid-template-columns: 160px minmax(0, 1fr) !important } }
+/* Cabeçalho no celular: texto de apoio vira subtítulo embaixo; as ações ficam na linha do título */
+@media (max-width: 599px) {
+  :root:not(#_) :is(.sec-h, .card-h, .chk-gh) > :not(:first-child):not(.btn):not(.linkbtn):not(.iconbtn):not(.seg):not(:has(.btn, .linkbtn, .iconbtn, select)) { order: 3; flex-basis: 100%; margin-left: 0 !important; text-align: left; margin-top: -10px; padding-bottom: 10px }
+}
+/* Contador nos quadros: o mesmo selo das seções */
+.sec-h h2 .h-n { display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 8px; background: var(--m-sc-low, #f0f4f9); font-size: 12px !important; font-weight: 500 !important; vertical-align: 2px; margin-left: 6px !important }
+:root[data-tema="escuro"] .sec-h h2 .h-n { background: rgba(142,154,196,.14); color: #b9c3e6 }
+/* Valor venal: anotação sem quebrar e fonte alinhada à primeira coluna */
+.mini-tbl.vv .faint { white-space: nowrap }
+:root:not(#_) .mini-tbl.vv td.vv-f { padding-left: 0 !important }
+/* Ficha no celular: respiro acima do quadro de avanço */
+@media (max-width: 899px) { .ficha-main .sec-adv, .ficha-main > .adv-box { margin-top: 16px } }
+/* Diligências no celular: categoria em cima, texto na largura toda */
+@media (max-width: 599px) { .task:has(> .chip.cat) { flex-wrap: wrap; row-gap: 6px } .task > .chip.cat { margin-right: 100% } .task:has(> .chip.cat) > .tt { flex: 1 1 0 } }
