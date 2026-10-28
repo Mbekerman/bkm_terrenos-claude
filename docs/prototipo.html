@@ -4254,8 +4254,9 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 @media (min-width: 1101px) { .vb-q.sub > .vb-r.vb-qh .vb-out { display: flex; flex-direction: row-reverse; justify-content: flex-start; align-items: baseline; gap: 8px } }
 .vb-q.sub:last-child > :last-child { border-bottom: 0 }
 .vb-q.sub + .vb-q.sub { border-top: 1px solid var(--linha) }
-.vb-qadd { padding: 12px 0 16px }
-.vb-qadd .btn { padding-left: 12px; padding-right: 16px; gap: 6px; color: var(--m-on-surface-v, #444746) !important }
+.vb-qadd { padding: 8px 0 12px }
+.vb-qadd .btn { padding: 0 12px !important; gap: 6px; margin-left: -12px; color: var(--m-on-surface-v, #444746) !important; border-color: transparent !important; background: none }
+.vb-qadd .btn:hover { background: rgba(68,71,70,.08) !important }
 :root[data-tema="escuro"] .vb-qadd .btn { color: #c4c7c5 !important }
 /* seta de abrir e fechar dos quadros grandes (a mesma das seções da ficha) */
 .vb-qtg { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; padding: 0; margin: -8px 0; font: inherit; color: inherit; cursor: pointer; text-align: left }
