@@ -4212,6 +4212,19 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 }
 
 @media (min-width: 600px) { :root:not(#_) .rd-dist.pf-dist li { grid-template-columns: 200px 1fr 52px 40px !important } }
+
+/* Tabela de Terrenos: coluna Fase e etapa (fase em cima, etapa · subetapa, avisos numa fileira) */
+:root:not(#_) .dt .c-etapa.c-fe { display: flex !important; flex-direction: column !important; align-items: flex-start !important; gap: 2px !important }
+.c-fe .fe-f { font-size: 12px; line-height: 16px; font-weight: 500; color: var(--m-on-var, #444746) }
+.c-fe .fe-e { font-size: 14px; line-height: 20px; color: var(--m-on-surface, #1f1f1f) }
+.c-fe .fe-st.perdido { color: #b3261e } .c-fe .fe-st.comprado, .c-fe .fe-st.concluido { color: #146c2e } .c-fe .fe-st.stand_by { color: #7a5900 }
+.c-fe .fe-fls { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px }
+.c-fe .fe-fl { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border-radius: 8px; font-size: 12px; font-weight: 500; white-space: nowrap; background: #e9eef6; color: #444746 }
+.c-fe .fe-warn { background: #ffdf99; color: #3d2c00 } .c-fe .fe-ap { background: #d3e3fd; color: #041e49 }
+:root[data-tema="escuro"] .c-fe .fe-f { color: #8e9ac4 } :root[data-tema="escuro"] .c-fe .fe-e { color: #e6ecff }
+:root[data-tema="escuro"] .c-fe .fe-fl { background: rgba(142,154,196,.14); color: #b9c3e6 } :root[data-tema="escuro"] .c-fe .fe-warn { background: rgba(245,196,81,.16); color: #ffd479 } :root[data-tema="escuro"] .c-fe .fe-ap { background: rgba(124,140,255,.18); color: #c9d6ff }
+:root[data-tema="escuro"] .c-fe .fe-st.perdido { color: #ffb4ab } :root[data-tema="escuro"] .c-fe .fe-st.comprado, :root[data-tema="escuro"] .c-fe .fe-st.concluido { color: #6dd58c } :root[data-tema="escuro"] .c-fe .fe-st.stand_by { color: #ffd479 }
+:root:not(#_) .empilha .dt.lista-t .c-etapa.c-fe { flex-direction: column !important }
 </style>
 <header class="top">
   <div class="top-in">
@@ -5341,7 +5354,7 @@ const COLS_TERRENOS=[
   {k:'area',l:'Área',cls:'hm num',v:t=>{const a=areaAdotada(t);return a!=null?m2(a):'<span class="faint">—</span>'},s:t=>areaAdotada(t)},
   {k:'valor',l:'Valor pedido',cls:'num',v:t=>{const o=ofertaRef(t),a=areaAdotada(t);return o?.valor?`${mi(o.valor)}${a?`<div class="t2">${brl(o.valor/a)}/m²</div>`:''}`:'<span class="faint">—</span>'},s:t=>ofertaRef(t)?.valor??null},
   {k:'temp',l:'Temperatura',cls:'hm',v:t=>tempMini(t.neg?.temp),s:t=>t.neg?.temp??null},
-  {k:'etapa',l:'Fase e etapa',v:t=>`<span class="c-etapa">${chipFase(t)}</span>`,s:t=>(fIdx(faseAtual(t)?.k)+1)*100+Object.keys(SIT).indexOf(sitMapa(t))},
+  {k:'etapa',l:'Fase e etapa',v:t=>colFaseEtapa(t),s:t=>(fIdx(faseAtual(t)?.k)+1)*100+Object.keys(SIT).indexOf(sitMapa(t))},
   {k:'tarefa',l:'Próxima tarefa',cls:'hm',v:t=>{const pt=proxTarefa(t),at=atrasadas(t).length;return pt?`<div class="t2" style="color:var(--texto)">${esc(pt.titulo)}</div><div class="t2" style="${pt.prazo<HOJE?'color:var(--atraso,#b3261e);font-weight:600':''}">${fd(pt.prazo)}${at>1?` · ${at} atrasadas`:''}</div>`:'<span class="faint">—</span>'},s:t=>proxTarefa(t)?.prazo??null}];
 const attrAbrir=from=>t=>`data-a="abrir" data-id="${t.id}" data-from="${from}" tabindex="0"`;
 
@@ -5464,6 +5477,18 @@ function fichaSheet(){let el=$('#ficha-sheet');const t=UI.fichaSheet&&UI.route==
   el.querySelector('.g-loc')?.remove();el.querySelector('.fs-b').scrollTop=0;
   if(el.dataset.id!==t.id){el.dataset.id=t.id;setTimeout(()=>mpLivre(t),60)}}
 /* com o painel da ficha aberto (desktop), o terreno vai para o meio do pedaço do mapa que fica livre */
+/* coluna Fase e etapa da tabela: fase em cima, etapa · subetapa (ou situação) embaixo, avisos numa fileira própria */
+function colFaseEtapa(t){const a=faseAtual(t),ent=!a||a.k===faseEnt(),pe=x=>`<span class="end-p">${esc(x)}</span>`;
+  let fase=faseN(ent?faseEnt():a.k),linha='',fl=[];
+  if(ent){const n=t.neg;
+    if(!n)linha='<span class="fe-st">Sem negociação</span>';
+    else if(n.status!=='ativo')linha=`<span class="fe-st ${n.status}">${{perdido:'Perdido',descartado:'Descartado',stand_by:'Stand By',comprado:'Comprado'}[n.status]||n.status}</span>`;
+    else{linha=[SN(n.etapa),n.sub?subN(n.sub):''].filter(Boolean).map(pe).join(' · ');if(subAtrasada(n))fl.push('<span class="fe-fl fe-warn">Acima do prazo</span>');if(n.pedido)fl.push('<span class="fe-fl fe-ap">Aguardando aprovação</span>')}}
+  else{const p=a.p,e=etapaF(p.fase,p.etapa);
+    linha=p.status==='ativo'?[e?.nome||p.etapa,p.sub?subF(p.fase,p.sub)?.nome||'':''].filter(Boolean).map(pe).join(' · '):`<span class="fe-st ${p.status}">${esc(procStatusN(p))}</span>`;
+    if(procAtrasada(p))fl.push('<span class="fe-fl fe-warn">Acima do prazo</span>')}
+  const n=fasesAbertas(t).length;if(n>1)fl.push(`<span class="fe-fl" title="${esc(fasesAbertas(t).map(faseN).join(', '))}">+${n-1} fase</span>`);
+  return `<span class="c-etapa c-fe"><span class="fe-f">${esc(fase)}</span><span class="fe-e">${linha}</span>${fl.length?`<span class="fe-fls">${fl.join('')}</span>`:''}</span>`}
 function mpLivre(t){const m=$('#mapa'),fs=$('#ficha-sheet');if(!MAPA||!m||!fs||t.lat==null||innerWidth<900)return;
   const r=m.getBoundingClientRect(),f=fs.getBoundingClientRect(),dir=Math.min(r.right,f.left-16),x0=r.left,cx=(x0+dir)/2-r.left,cy=r.height/2;
   if(GG){const w=r.right-dir;MAPA.panTo(gLL(t.lat,t.lng));if(w>0)MAPA.panBy(Math.round(w/2),0);return}

@@ -115,7 +115,7 @@ const COLS_TERRENOS=[
   {k:'area',l:'Área',cls:'hm num',v:t=>{const a=areaAdotada(t);return a!=null?m2(a):'<span class="faint">—</span>'},s:t=>areaAdotada(t)},
   {k:'valor',l:'Valor pedido',cls:'num',v:t=>{const o=ofertaRef(t),a=areaAdotada(t);return o?.valor?`${mi(o.valor)}${a?`<div class="t2">${brl(o.valor/a)}/m²</div>`:''}`:'<span class="faint">—</span>'},s:t=>ofertaRef(t)?.valor??null},
   {k:'temp',l:'Temperatura',cls:'hm',v:t=>tempMini(t.neg?.temp),s:t=>t.neg?.temp??null},
-  {k:'etapa',l:'Fase e etapa',v:t=>`<span class="c-etapa">${chipFase(t)}</span>`,s:t=>(fIdx(faseAtual(t)?.k)+1)*100+Object.keys(SIT).indexOf(sitMapa(t))},
+  {k:'etapa',l:'Fase e etapa',v:t=>colFaseEtapa(t),s:t=>(fIdx(faseAtual(t)?.k)+1)*100+Object.keys(SIT).indexOf(sitMapa(t))},
   {k:'tarefa',l:'Próxima tarefa',cls:'hm',v:t=>{const pt=proxTarefa(t),at=atrasadas(t).length;return pt?`<div class="t2" style="color:var(--texto)">${esc(pt.titulo)}</div><div class="t2" style="${pt.prazo<HOJE?'color:var(--atraso,#b3261e);font-weight:600':''}">${fd(pt.prazo)}${at>1?` · ${at} atrasadas`:''}</div>`:'<span class="faint">—</span>'},s:t=>proxTarefa(t)?.prazo??null}];
 const attrAbrir=from=>t=>`data-a="abrir" data-id="${t.id}" data-from="${from}" tabindex="0"`;
 
@@ -238,6 +238,18 @@ function fichaSheet(){let el=$('#ficha-sheet');const t=UI.fichaSheet&&UI.route==
   el.querySelector('.g-loc')?.remove();el.querySelector('.fs-b').scrollTop=0;
   if(el.dataset.id!==t.id){el.dataset.id=t.id;setTimeout(()=>mpLivre(t),60)}}
 /* com o painel da ficha aberto (desktop), o terreno vai para o meio do pedaço do mapa que fica livre */
+/* coluna Fase e etapa da tabela: fase em cima, etapa · subetapa (ou situação) embaixo, avisos numa fileira própria */
+function colFaseEtapa(t){const a=faseAtual(t),ent=!a||a.k===faseEnt(),pe=x=>`<span class="end-p">${esc(x)}</span>`;
+  let fase=faseN(ent?faseEnt():a.k),linha='',fl=[];
+  if(ent){const n=t.neg;
+    if(!n)linha='<span class="fe-st">Sem negociação</span>';
+    else if(n.status!=='ativo')linha=`<span class="fe-st ${n.status}">${{perdido:'Perdido',descartado:'Descartado',stand_by:'Stand By',comprado:'Comprado'}[n.status]||n.status}</span>`;
+    else{linha=[SN(n.etapa),n.sub?subN(n.sub):''].filter(Boolean).map(pe).join(' · ');if(subAtrasada(n))fl.push('<span class="fe-fl fe-warn">Acima do prazo</span>');if(n.pedido)fl.push('<span class="fe-fl fe-ap">Aguardando aprovação</span>')}}
+  else{const p=a.p,e=etapaF(p.fase,p.etapa);
+    linha=p.status==='ativo'?[e?.nome||p.etapa,p.sub?subF(p.fase,p.sub)?.nome||'':''].filter(Boolean).map(pe).join(' · '):`<span class="fe-st ${p.status}">${esc(procStatusN(p))}</span>`;
+    if(procAtrasada(p))fl.push('<span class="fe-fl fe-warn">Acima do prazo</span>')}
+  const n=fasesAbertas(t).length;if(n>1)fl.push(`<span class="fe-fl" title="${esc(fasesAbertas(t).map(faseN).join(', '))}">+${n-1} fase</span>`);
+  return `<span class="c-etapa c-fe"><span class="fe-f">${esc(fase)}</span><span class="fe-e">${linha}</span>${fl.length?`<span class="fe-fls">${fl.join('')}</span>`:''}</span>`}
 function mpLivre(t){const m=$('#mapa'),fs=$('#ficha-sheet');if(!MAPA||!m||!fs||t.lat==null||innerWidth<900)return;
   const r=m.getBoundingClientRect(),f=fs.getBoundingClientRect(),dir=Math.min(r.right,f.left-16),x0=r.left,cx=(x0+dir)/2-r.left,cy=r.height/2;
   if(GG){const w=r.right-dir;MAPA.panTo(gLL(t.lat,t.lng));if(w>0)MAPA.panBy(Math.round(w/2),0);return}

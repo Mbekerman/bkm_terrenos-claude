@@ -2514,3 +2514,16 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 }
 
 @media (min-width: 600px) { :root:not(#_) .rd-dist.pf-dist li { grid-template-columns: 200px 1fr 52px 40px !important } }
+
+/* Tabela de Terrenos: coluna Fase e etapa (fase em cima, etapa · subetapa, avisos numa fileira) */
+:root:not(#_) .dt .c-etapa.c-fe { display: flex !important; flex-direction: column !important; align-items: flex-start !important; gap: 2px !important }
+.c-fe .fe-f { font-size: 12px; line-height: 16px; font-weight: 500; color: var(--m-on-var, #444746) }
+.c-fe .fe-e { font-size: 14px; line-height: 20px; color: var(--m-on-surface, #1f1f1f) }
+.c-fe .fe-st.perdido { color: #b3261e } .c-fe .fe-st.comprado, .c-fe .fe-st.concluido { color: #146c2e } .c-fe .fe-st.stand_by { color: #7a5900 }
+.c-fe .fe-fls { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px }
+.c-fe .fe-fl { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border-radius: 8px; font-size: 12px; font-weight: 500; white-space: nowrap; background: #e9eef6; color: #444746 }
+.c-fe .fe-warn { background: #ffdf99; color: #3d2c00 } .c-fe .fe-ap { background: #d3e3fd; color: #041e49 }
+:root[data-tema="escuro"] .c-fe .fe-f { color: #8e9ac4 } :root[data-tema="escuro"] .c-fe .fe-e { color: #e6ecff }
+:root[data-tema="escuro"] .c-fe .fe-fl { background: rgba(142,154,196,.14); color: #b9c3e6 } :root[data-tema="escuro"] .c-fe .fe-warn { background: rgba(245,196,81,.16); color: #ffd479 } :root[data-tema="escuro"] .c-fe .fe-ap { background: rgba(124,140,255,.18); color: #c9d6ff }
+:root[data-tema="escuro"] .c-fe .fe-st.perdido { color: #ffb4ab } :root[data-tema="escuro"] .c-fe .fe-st.comprado, :root[data-tema="escuro"] .c-fe .fe-st.concluido { color: #6dd58c } :root[data-tema="escuro"] .c-fe .fe-st.stand_by { color: #ffd479 }
+:root:not(#_) .empilha .dt.lista-t .c-etapa.c-fe { flex-direction: column !important }
