@@ -3144,15 +3144,16 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 /* Rótulo e valor: em quadro estreito (menos de 520 px), rótulo em cima do valor, como no celular */
 .kvl { container-type: inline-size }
 @container (max-width: 520px) {
-  :root:not(#_) .kvl > .kv { grid-template-columns: minmax(0, 1fr) auto !important; row-gap: 2px !important; align-items: center }
+  :root:not(#_) .kvl > .kv, :root:not(#_) .kvl:not(:has(.kv-ed)) > .kv { grid-template-columns: minmax(0, 1fr) auto !important; row-gap: 2px !important; align-items: center }
   :root:not(#_) .kvl > .kv > dt { grid-column: 1; font-size: 12px; line-height: 16px; white-space: normal }
   :root:not(#_) .kvl > .kv > dd { grid-column: 1; grid-row: 2; margin: 0 }
   :root:not(#_) .kvl > .kv > .kv-ed { grid-column: 2; grid-row: 1 / span 2 }
 }
-@container (min-width: 521px) { :root:not(#_) .kvl > .kv > dt { white-space: nowrap } :root:not(#_) .kvl > .kv { grid-template-columns: 160px minmax(0, 1fr) auto !important } :root:not(#_) .kvl:not(:has(.kv-ed)) > .kv { grid-template-columns: 160px minmax(0, 1fr) !important } }
+@container (min-width: 521px) { :root:not(#_) .kvl > .kv > dt { white-space: normal } :root:not(#_) .kvl > .kv { grid-template-columns: minmax(160px, 30%) minmax(0, 1fr) auto !important } :root:not(#_) .kvl:not(:has(.kv-ed)) > .kv { grid-template-columns: minmax(160px, 30%) minmax(0, 1fr) !important } }
 /* Cabeçalho no celular: texto de apoio vira subtítulo embaixo; as ações ficam na linha do título */
 @media (max-width: 599px) {
-  :root:not(#_) :is(.sec-h, .card-h, .chk-gh) > :not(:first-child):not(.btn):not(.linkbtn):not(.iconbtn):not(.seg):not(:has(.btn, .linkbtn, .iconbtn, select)) { order: 3; flex-basis: 100%; margin-left: 0 !important; text-align: left; margin-top: -10px; padding-bottom: 10px }
+  :root:not(#_) :is(.sec-h, .card-h, .chk-gh) > :is(.faint, .muted, .hint):not(:first-child):not(:has(.btn, .linkbtn, .iconbtn, select)) { order: 3; flex-basis: 100%; margin: 0 !important; text-align: left; line-height: 18px }
+  :root:not(#_) :is(.sec-h, .card-h, .chk-gh):has(> :is(.faint, .muted, .hint):not(:first-child)) { padding-top: 12px !important; padding-bottom: 12px !important; row-gap: 2px !important; height: auto !important; align-items: center !important }
 }
 /* Contador nos quadros: o mesmo selo das seções */
 .sec-h h2 .h-n { display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 8px; background: var(--m-sc-low, #f0f4f9); font-size: 12px !important; font-weight: 500 !important; vertical-align: 2px; margin-left: 6px !important }
@@ -3164,6 +3165,33 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 @media (max-width: 899px) { .ficha-main .sec-adv, .ficha-main > .adv-box { margin-top: 16px } }
 /* Diligências no celular: categoria em cima, texto na largura toda */
 @media (max-width: 599px) { .task:has(> .chip.cat) { flex-wrap: wrap; row-gap: 6px } .task > .chip.cat { margin-right: 100% } .task:has(> .chip.cat) > .tt { flex: 1 1 0 } }
+
+/* ===================== Revisão de design, rodada 12 ===================== */
+/* Quadro só com cabeçalho (Relevo): sem o fio de baixo */
+.sec > .sec-h:only-child { border-bottom: 0 !important }
+/* Janelas no escuro: véu mais forte atrás */
+:root[data-tema="escuro"] dialog::backdrop, :root[data-tema="escuro"] .modal-bg, :root[data-tema="escuro"] .scrim { background: rgba(0,0,0,.62) !important }
+/* Valor venal: a conta do mensal em linha pequena abaixo, igual em todos os exercícios */
+.mini-tbl.vv td .faint { display: block; font-size: 12px }
+/* Cabeçalho das seções do estudo no celular: título e resumo um abaixo do outro, o botão na altura deles */
+@media (max-width: 599px) {
+  :root:not(#_) .sec-h.vb-sh { display: grid !important; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "t b" "s b"; align-items: center; row-gap: 2px; padding-top: 12px !important; padding-bottom: 12px !important; height: auto !important }
+  :root:not(#_) .sec-h.vb-sh > h2 { grid-area: t; margin: 0 }
+  :root:not(#_) .sec-h.vb-sh > .vb-sh-t { grid-area: s; margin: 0 !important; text-align: left }
+  :root:not(#_) .sec-h.vb-sh > :is(.btn, .iconbtn) { grid-area: b; align-self: center }
+}
+/* Viabilidade na Negociação, celular: indicadores em lista (rótulo à esquerda, valor à direita) */
+@media (max-width: 599px) {
+  :root:not(#_) .vb-met { display: grid !important; grid-template-columns: 1fr !important; gap: 8px !important }
+  :root:not(#_) .vb-met .metric { display: flex !important; align-items: baseline; justify-content: space-between; gap: 12px }
+  :root:not(#_) .vb-met .metric .mv { font-size: 18px !important }
+}
+/* Características físicas no celular: valores curtos em duas colunas */
+@media (max-width: 599px) { :root:not(#_) .sec-b > .kvg { grid-template-columns: 1fr 1fr !important; column-gap: 16px } }
+/* Configurações › Fases no celular: nome do concluído na largura toda */
+@media (max-width: 899px) { .cfg-fase > .cfg-cel:has(input[data-p$=".conc"]) { grid-column: 1 / -1 } }
+/* Mapa com a ficha aberta: a barra do mapa termina antes do painel */
+@media (min-width: 900px) { body:has(#ficha-sheet) .mp-barra { right: 472px !important } }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
