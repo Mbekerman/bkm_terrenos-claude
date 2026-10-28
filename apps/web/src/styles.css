@@ -2751,7 +2751,7 @@ form.inline-form.if-fechado { display: none !important }
 .vb-passo { border-top: 0 !important; padding: 4px calc(var(--q-px, 24px) - 12px) 12px !important }
 /* Configurações: nomes cabem */
 @media (min-width: 900px) {
-  .cfg-r.cfg-fase { grid-template-columns: 72px minmax(160px, 1.4fr) 80px minmax(180px, 1.2fr) 80px 70px 70px !important }
+  .cfg-r.cfg-fase { grid-template-columns: 72px minmax(160px, 1.4fr) 80px minmax(180px, 1.2fr) 128px 70px 56px !important }
   .vb-cfg-r { grid-template-columns: 64px minmax(200px, 3fr) minmax(120px, 1.2fr) minmax(120px, 1.2fr) 88px 56px 44px 40px !important }
 }
 /* Tabela que rola para o lado: a borda direita esmaece para mostrar que há mais */
@@ -3096,7 +3096,7 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 }
 /* Configurações › Viabilidade: texto menor nas células para caber o nome do item e do grupo */
 @media (min-width: 900px) {
-  .vb-cfg-r { grid-template-columns: 40px minmax(190px, 1fr) 140px 160px 84px 80px 48px 40px !important; column-gap: 8px !important }
+  .vb-cfg-r { grid-template-columns: 40px minmax(180px, 1fr) 168px 150px 84px 64px 48px 40px !important; column-gap: 8px !important }
   .vb-cfg-r :is(input:not([type=checkbox]), select) { font-size: 13px !important; padding-left: 8px !important }
   .vb-cfg-r select { padding-right: 26px !important; background-position: right 4px center !important }
 }
@@ -3217,6 +3217,59 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 .vb-cfg-r input { text-overflow: ellipsis }
 @media (min-width: 900px) { :root:not(#_) body:has(#ficha-sheet) .mp-barra { flex-wrap: wrap !important; justify-content: flex-start !important; align-content: flex-start } :root:not(#_) body:has(#ficha-sheet) .mp-barra > .mp-busca { flex: 1 1 100% !important; width: auto !important; min-width: 0 !important } }
 @media (min-width: 900px) { :root:not(#_) body:has(#ficha-sheet) .mp-cam > button, :root:not(#_) body:has(#ficha-sheet) .mp-cam > summary { font-size: 0 !important; gap: 0 !important; padding: 0 12px !important } :root:not(#_) body:has(#ficha-sheet) .mp-cam svg:last-child:not(:first-child) { display: none } }
+/* ===================== Revisão de design, rodada 14 ===================== */
+/* Configurações › Viabilidade no celular: sem o traço solto de "Sai do VGV" e com mais respiro entre os itens */
+@media (max-width: 899px) {
+  .vb-cfg-r > span:has(> .faint[aria-hidden="true"]:only-child) { display: none }
+  :root:not(#_) .vb-cfg-r:not(.cfg-hd) { padding: 16px 0 !important; border-bottom: 1px solid var(--m-outline, #747775) !important }
+  :root[data-tema="escuro"]:not(#_) .vb-cfg-r:not(.cfg-hd) { border-bottom-color: rgba(124,140,255,.28) !important }
+}
+/* Documentos: chips de situação numa coluna só (as ações têm largura fixa) */
+@media (min-width: 600px) {
+  .doc .da { display: grid !important; grid-template-columns: auto 92px 132px; align-items: center; column-gap: 4px }
+  .doc .da > .chip { grid-column: 1; justify-self: end }
+  .doc .da > [data-a="doc-ok"] { grid-column: 2; justify-self: start }
+  .doc .da > [data-a="upload"] { grid-column: 3; justify-self: start }
+  :root:not(#_) .doc .da > .btn.text:last-child { margin-right: 0 !important }
+}
+/* Infraestrutura: o mesmo segmentado contornado das outras telas */
+:root:not(#_) .infra .seg3 { padding: 0 !important; border: 1px solid #747775; border-radius: 16px; overflow: hidden; background: transparent !important; box-shadow: none !important }
+:root:not(#_) .infra .seg3 button { border-radius: 0 !important; min-height: 32px; padding: 0 12px; font-size: 13px; font-weight: 500; color: #1f1f1f; background: transparent }
+:root:not(#_) .infra .seg3 button + button { border-left: 1px solid #747775 }
+:root:not(#_) .infra .seg3 button[aria-pressed="true"].nv { background: #c2e7ff !important; color: #001d35 }
+:root:not(#_) .infra .seg3 button[aria-pressed="true"].sim { background: #c4eed0 !important; color: #072711 }
+:root:not(#_) .infra .seg3 button[aria-pressed="true"].nao { background: #ffdad6 !important; color: #410e0b }
+:root[data-tema="escuro"]:not(#_) .infra .seg3, :root[data-tema="escuro"]:not(#_) .infra .seg3 button + button { border-color: rgba(124,140,255,.35) }
+:root[data-tema="escuro"]:not(#_) .infra .seg3 button { color: #c9d6ff }
+:root[data-tema="escuro"]:not(#_) .infra .seg3 button[aria-pressed="true"].nv { background: rgba(99,112,255,.18) !important; color: #e6ecff }
+/* Zoom do mapa no escuro: fundo e contorno dos outros botões redondos */
+:root[data-tema="escuro"] .leaflet-control-zoom { box-shadow: 0 0 0 1px rgba(124,140,255,.35), 0 6px 16px rgba(0,0,0,.5) !important }
+:root[data-tema="escuro"] .leaflet-control-zoom a { background: #0d1530 !important }
+/* Parâmetros por lote também no computador: o lote é título com fio, sem quadro dentro do quadro */
+:root:not(#_) .lz-lote { border: 0 !important; border-top: 1px solid var(--m-outline-var, #c4c7c5) !important; border-radius: 0 !important; padding: 16px 0 0 !important; background: transparent !important }
+:root[data-tema="escuro"]:not(#_) .lz-lote { border-top-color: #1a2240 !important }
+/* Painel da ficha no mapa: os quadros viram blocos com fio, sem moldura dentro do painel */
+:root:not(#_) .ficha-sheet .fs-b .sec { border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; border-top: 1px solid var(--m-outline-var, #c4c7c5) !important }
+:root:not(#_) .ficha-sheet .fs-b .sec:first-child, :root:not(#_) .ficha-sheet .fs-b :first-child > .sec:first-child { border-top: 0 !important }
+:root[data-tema="escuro"]:not(#_) .ficha-sheet .fs-b .sec { border-top-color: #1a2240 !important }
+/* Confrontações e proprietários no celular: linha de lista em duas linhas, sem repetir o rótulo */
+@media (max-width: 599px) {
+  :root:not(#_) .empilha .mini-tbl.lst2 tr { display: flex !important; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; position: relative; padding: 12px 44px 12px 0 !important }
+  :root:not(#_) .empilha .mini-tbl.lst2 td { display: inline !important; flex: none !important; grid-column: auto !important; padding: 0 !important; border: 0 !important; width: auto !important; text-align: left !important; font-size: 14px }
+  :root:not(#_) .empilha .mini-tbl.lst2 td::before { display: none !important }
+  :root:not(#_) .empilha .mini-tbl.lst2 td:not(:first-child):not(.l2):not(:last-child)::before { content: '·' !important; display: inline !important; margin-right: 6px !important; color: var(--m-on-var, #444746) }
+  :root:not(#_) .empilha .mini-tbl.lst2 td.l2 { flex: 1 1 100% !important; color: var(--m-on-var, #444746) }
+  :root:not(#_) .empilha .mini-tbl.lst2 td.l0 { display: none !important }
+  :root:not(#_) .empilha .mini-tbl.lst2 td:last-child { position: absolute; right: 0; top: 50%; transform: translateY(-50%) }
+  :root[data-tema="escuro"]:not(#_) .empilha .mini-tbl.lst2 td.l2 { color: #8e9ac4 }
+}
+/* Estrela do corretor que não é o principal: visível no escuro */
+:root[data-tema="escuro"] .star:not(.on):not([aria-pressed="true"]) { color: #8e9ac4 !important }
+/* Abas do estudo no celular: esmaecido maior na borda */
+@media (max-width: 599px) { :root:not(#_) .vb-nav { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 72px), transparent) !important; mask-image: linear-gradient(to right, #000 calc(100% - 72px), transparent) !important } }
+:root[data-tema="escuro"]:not(#_) .infra .seg3 button[aria-pressed="true"].sim { background: rgba(109,213,140,.16) !important; color: #a6f0bb }
+:root[data-tema="escuro"]:not(#_) .infra .seg3 button[aria-pressed="true"].nao { background: rgba(242,184,181,.16) !important; color: #f2b8b5 }
+:root:not(#_) .infra .meta { gap: 4px !important }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

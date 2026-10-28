@@ -158,7 +158,7 @@ const ZP_COLS=[['ca_minimo','CA mín.'],['ca_basico','CA bás.'],['ca_maximo','C
 function cfgZonasHtml(){const cid=UI.zpCid||'sp',tipo=UI.zpTipo||'mercado',L=zpar().map((r,i)=>[r,i]).filter(([r])=>MUN_CID[r.municipio]===cid&&r.tipo===tipo);
   const cond=r=>[r.uso,r.macrozona&&MACROS[r.macrozona],r.lote_area_max_m2!=null?`lote < ${num(r.lote_area_max_m2)} m²`:'',r.lote_area_min_m2!=null?`lote ≥ ${num(r.lote_area_min_m2)} m²`:''].filter(Boolean).join(' · ');
   const nI=v=>v==null?'':String(v).replace('.',',');
-  return `<section class="sec"><div class="sec-h"><h2>Parâmetros urbanísticos</h2><button class="btn text" data-a="zp-padrao">Restaurar padrão</button></div><div class="sec-b">
+  return `<section class="sec"><div class="sec-h"><h2>Parâmetros urbanísticos</h2><button class="btn text hd-ic" data-a="zp-padrao" aria-label="Restaurar padrão" title="Restaurar padrão">${ic('undo',18)}Restaurar padrão</button></div><div class="sec-b">
     
     <div class="lz-topo"><div class="seg" role="group" aria-label="Cidade">${[['sp','São Paulo'],['sjc','São José dos Campos']].map(([k,l])=>`<button type="button" data-a="zp-cid" data-v="${k}" aria-pressed="${cid===k}">${l}</button>`).join('')}</div>
     <div class="seg" role="group" aria-label="Tipo de empreendimento">${Object.entries(TIPOS_EMP).map(([k,l])=>`<button type="button" data-a="zp-tipo" data-v="${k}" aria-pressed="${tipo===k}">${l}</button>`).join('')}</div></div>

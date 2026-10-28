@@ -188,7 +188,7 @@ let EU=null;
 function L_eu(u,centrar){EU?.remove();EU=L.layerGroup([L.circle([u.lat,u.lng],{radius:u.acc||0,color:'#1a73e8',weight:1,fillOpacity:.12,interactive:false}),
   L.circleMarker([u.lat,u.lng],{radius:7,color:'#fff',weight:2,fillColor:'#1a73e8',fillOpacity:1,interactive:false})]).addTo(MAPA);
   if(centrar)MAPA.setView([u.lat,u.lng],Math.max(MAPA.getZoom()||0,17))}
-function focar(t){return GG?G_focar(t):L_focar(t)}
+function focar(t){const r=GG?G_focar(t):L_focar(t);if(UI.fichaSheet&&innerWidth>=900)setTimeout(()=>mpLivre(t),400);return r}
 function initMini(){return GG?G_initMini():L_initMini()}
 function fecharPopup(){if(GG)G_fecharPopup();else MAPA?.closePopup?.()}
 function mostrarPois(on){if(GG)return G_mostrarPois(on);if(MAPA&&POIS){on?POIS.addTo(MAPA):MAPA.removeLayer(POIS)}}
@@ -235,7 +235,14 @@ function fichaSheet(){let el=$('#ficha-sheet');const t=UI.fichaSheet&&UI.route==
     <button class="iconbtn" data-a="fs-fechar" aria-label="Fechar" title="Fechar (Esc)">${ic('close',22)}</button></div>
     <div class="fs-b bl-c fs-ro">${abaGeral(t)}</div>
     <div class="fs-f"><button class="btn primary" data-a="abrir" data-id="${t.id}" data-tab="geral" data-from="mapa">Abrir ficha completa</button></div>`;
-  el.querySelector('.g-loc')?.remove();el.querySelector('.fs-b').scrollTop=0}
+  el.querySelector('.g-loc')?.remove();el.querySelector('.fs-b').scrollTop=0;
+  if(el.dataset.id!==t.id){el.dataset.id=t.id;setTimeout(()=>mpLivre(t),60)}}
+/* com o painel da ficha aberto (desktop), o terreno vai para o meio do pedaço do mapa que fica livre */
+function mpLivre(t){const m=$('#mapa'),fs=$('#ficha-sheet');if(!MAPA||!m||!fs||t.lat==null||innerWidth<900)return;
+  const r=m.getBoundingClientRect(),f=fs.getBoundingClientRect(),dir=Math.min(r.right,f.left-16),x0=r.left,cx=(x0+dir)/2-r.left,cy=r.height/2;
+  if(GG){const w=r.right-dir;MAPA.panTo(gLL(t.lat,t.lng));if(w>0)MAPA.panBy(Math.round(w/2),0);return}
+  const p=MAPA.latLngToContainerPoint([t.lat,t.lng]);if(p.x>40&&p.x<dir-r.left-40&&p.y>80&&p.y<r.height-40)return;
+  MAPA.panBy([p.x-cx,p.y-cy],{animate:false})}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&UI.fichaSheet&&!UI.modal&&!$('.mp-ctx')&&!$('.v-menu')){UI.fichaSheet=null;fichaSheet();e.preventDefault()}});
 function mpSelecionar(id){UI.mpSel=id;mpMarcarPinos();if(UI.fichaSheet&&id&&id!==UI.fichaSheet){UI.fichaSheet=id;fichaSheet()}const l=$('#mp-lista');if(l)l.innerHTML=mpLista();mpCartao();
   const lado=$('.mapa-lado'),it=lado?.querySelector(`.mp-it[data-id="${id}"]`);
@@ -636,8 +643,8 @@ function tkFiltradas(){const f=UI.tk,q=f.q.trim().toLowerCase();
   return todasTarefas().filter(({k,t})=>(!f.resp||k.resp===f.resp)&&(!f.ter||t.id===f.ter)&&(!f.prio||k.prio===f.prio)&&(!f.atras||(k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)))&&(!q||(k.titulo+' '+(k.desc||'')+' '+t.nome+' '+t.codigo).toLowerCase().includes(q)))}
 const ordemTk=(a,b)=>(a.k.pos??9e15)-(b.k.pos??9e15)||a.k.prazo.localeCompare(b.k.prazo);
 function cardTk({k,t}){const at=k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status);
-  return `<article class="tk ${k.status}" draggable="${UI.role!=='Leitura'}" data-tk="${k.id}" data-a="tk-abrir" data-id="${t.id}" tabindex="0" aria-label="${esc(k.titulo)}">
-  <div class="tk-t">${esc(k.titulo)}</div>${k.desc?`<div class="tk-d">${esc(k.desc)}</div>`:''}
+  return `<article class="tk ${k.status}" draggable="${UI.role!=='Leitura'}" data-tk="${k.id}" data-a="tk-abrir" data-id="${t.id}" tabindex="0" aria-label="${escT(k.titulo)}">
+  <div class="tk-t">${escT(k.titulo)}</div>${k.desc?`<div class="tk-d">${esc(k.desc)}</div>`:''}
   <div class="tk-ter"><span class="num">${t.codigo}</span> · ${esc(t.nome)}</div>
   <div class="tk-p"><span class="tk-prazo ${at?'atras':''}">${ic('clock',14)}${fd(k.prazo)}</span>${k.prio==='alta'?'<span class="chip warn">Alta</span>':k.prio==='baixa'?'<span class="chip">Baixa</span>':''}<span style="margin-left:auto">${av(k.resp,'sm')}</span></div></article>`}
 function pgTarefas(){const f=UI.tk,l=tkFiltradas();const cols=COLS_TK.filter(c=>c!=='cancelada'||f.canc);
@@ -652,7 +659,7 @@ function pgTarefas(){const f=UI.tk,l=tkFiltradas();const cols=COLS_TK.filter(c=>
     return `<section class="col tk-col" data-tkcol="${c}" aria-label="${OPT.statusTar[c]}"><div class="col-h"><span>${OPT.statusTar[c]}</span><span class="n">${ks.length}</span></div>
     <div class="tk-lista">${ks.map(cardTk).join('')||'<div class="col-empty">Nenhuma</div>'}</div>
     ${UI.role!=='Leitura'&&c!=='cancelada'?`<button class="tk-add" data-a="tk-nova" data-v="${c}">${ic('add',16)}Adicionar tarefa</button>`:''}</section>`}).join('')}</div>`;
-  const colsT=[{k:'titulo',l:'Tarefa',cls:'esq',v:({k})=>`<div class="t1">${esc(k.titulo)}</div>${k.desc?`<div class="t2">${esc(k.desc)}</div>`:''}`,s:({k})=>k.titulo},
+  const colsT=[{k:'titulo',l:'Tarefa',cls:'esq',v:({k})=>`<div class="t1">${escT(k.titulo)}</div>${k.desc?`<div class="t2">${esc(k.desc)}</div>`:''}`,s:({k})=>k.titulo},
     {k:'ter',l:'Terreno',cls:'esq hm',v:({t})=>`<div class="t2" style="color:var(--texto)">${t.codigo}</div><div class="t2">${esc(t.nome)}</div>`,s:({t})=>t.codigo},
     {k:'resp',l:'Responsável',cls:'hm',v:({k})=>esc(k.resp),s:({k})=>k.resp},
     {k:'prazo',l:'Prazo',cls:'num',v:({k})=>`<span style="${k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)?'color:var(--terracota);font-weight:600':''}">${fd(k.prazo)}</span>`,s:({k})=>k.prazo},

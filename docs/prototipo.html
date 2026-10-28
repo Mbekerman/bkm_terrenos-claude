@@ -3426,7 +3426,7 @@ form.inline-form.if-fechado { display: none !important }
 .vb-passo { border-top: 0 !important; padding: 4px calc(var(--q-px, 24px) - 12px) 12px !important }
 /* Configurações: nomes cabem */
 @media (min-width: 900px) {
-  .cfg-r.cfg-fase { grid-template-columns: 72px minmax(160px, 1.4fr) 80px minmax(180px, 1.2fr) 80px 70px 70px !important }
+  .cfg-r.cfg-fase { grid-template-columns: 72px minmax(160px, 1.4fr) 80px minmax(180px, 1.2fr) 128px 70px 56px !important }
   .vb-cfg-r { grid-template-columns: 64px minmax(200px, 3fr) minmax(120px, 1.2fr) minmax(120px, 1.2fr) 88px 56px 44px 40px !important }
 }
 /* Tabela que rola para o lado: a borda direita esmaece para mostrar que há mais */
@@ -3771,7 +3771,7 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 }
 /* Configurações › Viabilidade: texto menor nas células para caber o nome do item e do grupo */
 @media (min-width: 900px) {
-  .vb-cfg-r { grid-template-columns: 40px minmax(190px, 1fr) 140px 160px 84px 80px 48px 40px !important; column-gap: 8px !important }
+  .vb-cfg-r { grid-template-columns: 40px minmax(180px, 1fr) 168px 150px 84px 64px 48px 40px !important; column-gap: 8px !important }
   .vb-cfg-r :is(input:not([type=checkbox]), select) { font-size: 13px !important; padding-left: 8px !important }
   .vb-cfg-r select { padding-right: 26px !important; background-position: right 4px center !important }
 }
@@ -3892,6 +3892,59 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 .vb-cfg-r input { text-overflow: ellipsis }
 @media (min-width: 900px) { :root:not(#_) body:has(#ficha-sheet) .mp-barra { flex-wrap: wrap !important; justify-content: flex-start !important; align-content: flex-start } :root:not(#_) body:has(#ficha-sheet) .mp-barra > .mp-busca { flex: 1 1 100% !important; width: auto !important; min-width: 0 !important } }
 @media (min-width: 900px) { :root:not(#_) body:has(#ficha-sheet) .mp-cam > button, :root:not(#_) body:has(#ficha-sheet) .mp-cam > summary { font-size: 0 !important; gap: 0 !important; padding: 0 12px !important } :root:not(#_) body:has(#ficha-sheet) .mp-cam svg:last-child:not(:first-child) { display: none } }
+/* ===================== Revisão de design, rodada 14 ===================== */
+/* Configurações › Viabilidade no celular: sem o traço solto de "Sai do VGV" e com mais respiro entre os itens */
+@media (max-width: 899px) {
+  .vb-cfg-r > span:has(> .faint[aria-hidden="true"]:only-child) { display: none }
+  :root:not(#_) .vb-cfg-r:not(.cfg-hd) { padding: 16px 0 !important; border-bottom: 1px solid var(--m-outline, #747775) !important }
+  :root[data-tema="escuro"]:not(#_) .vb-cfg-r:not(.cfg-hd) { border-bottom-color: rgba(124,140,255,.28) !important }
+}
+/* Documentos: chips de situação numa coluna só (as ações têm largura fixa) */
+@media (min-width: 600px) {
+  .doc .da { display: grid !important; grid-template-columns: auto 92px 132px; align-items: center; column-gap: 4px }
+  .doc .da > .chip { grid-column: 1; justify-self: end }
+  .doc .da > [data-a="doc-ok"] { grid-column: 2; justify-self: start }
+  .doc .da > [data-a="upload"] { grid-column: 3; justify-self: start }
+  :root:not(#_) .doc .da > .btn.text:last-child { margin-right: 0 !important }
+}
+/* Infraestrutura: o mesmo segmentado contornado das outras telas */
+:root:not(#_) .infra .seg3 { padding: 0 !important; border: 1px solid #747775; border-radius: 16px; overflow: hidden; background: transparent !important; box-shadow: none !important }
+:root:not(#_) .infra .seg3 button { border-radius: 0 !important; min-height: 32px; padding: 0 12px; font-size: 13px; font-weight: 500; color: #1f1f1f; background: transparent }
+:root:not(#_) .infra .seg3 button + button { border-left: 1px solid #747775 }
+:root:not(#_) .infra .seg3 button[aria-pressed="true"].nv { background: #c2e7ff !important; color: #001d35 }
+:root:not(#_) .infra .seg3 button[aria-pressed="true"].sim { background: #c4eed0 !important; color: #072711 }
+:root:not(#_) .infra .seg3 button[aria-pressed="true"].nao { background: #ffdad6 !important; color: #410e0b }
+:root[data-tema="escuro"]:not(#_) .infra .seg3, :root[data-tema="escuro"]:not(#_) .infra .seg3 button + button { border-color: rgba(124,140,255,.35) }
+:root[data-tema="escuro"]:not(#_) .infra .seg3 button { color: #c9d6ff }
+:root[data-tema="escuro"]:not(#_) .infra .seg3 button[aria-pressed="true"].nv { background: rgba(99,112,255,.18) !important; color: #e6ecff }
+/* Zoom do mapa no escuro: fundo e contorno dos outros botões redondos */
+:root[data-tema="escuro"] .leaflet-control-zoom { box-shadow: 0 0 0 1px rgba(124,140,255,.35), 0 6px 16px rgba(0,0,0,.5) !important }
+:root[data-tema="escuro"] .leaflet-control-zoom a { background: #0d1530 !important }
+/* Parâmetros por lote também no computador: o lote é título com fio, sem quadro dentro do quadro */
+:root:not(#_) .lz-lote { border: 0 !important; border-top: 1px solid var(--m-outline-var, #c4c7c5) !important; border-radius: 0 !important; padding: 16px 0 0 !important; background: transparent !important }
+:root[data-tema="escuro"]:not(#_) .lz-lote { border-top-color: #1a2240 !important }
+/* Painel da ficha no mapa: os quadros viram blocos com fio, sem moldura dentro do painel */
+:root:not(#_) .ficha-sheet .fs-b .sec { border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; border-top: 1px solid var(--m-outline-var, #c4c7c5) !important }
+:root:not(#_) .ficha-sheet .fs-b .sec:first-child, :root:not(#_) .ficha-sheet .fs-b :first-child > .sec:first-child { border-top: 0 !important }
+:root[data-tema="escuro"]:not(#_) .ficha-sheet .fs-b .sec { border-top-color: #1a2240 !important }
+/* Confrontações e proprietários no celular: linha de lista em duas linhas, sem repetir o rótulo */
+@media (max-width: 599px) {
+  :root:not(#_) .empilha .mini-tbl.lst2 tr { display: flex !important; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; position: relative; padding: 12px 44px 12px 0 !important }
+  :root:not(#_) .empilha .mini-tbl.lst2 td { display: inline !important; flex: none !important; grid-column: auto !important; padding: 0 !important; border: 0 !important; width: auto !important; text-align: left !important; font-size: 14px }
+  :root:not(#_) .empilha .mini-tbl.lst2 td::before { display: none !important }
+  :root:not(#_) .empilha .mini-tbl.lst2 td:not(:first-child):not(.l2):not(:last-child)::before { content: '·' !important; display: inline !important; margin-right: 6px !important; color: var(--m-on-var, #444746) }
+  :root:not(#_) .empilha .mini-tbl.lst2 td.l2 { flex: 1 1 100% !important; color: var(--m-on-var, #444746) }
+  :root:not(#_) .empilha .mini-tbl.lst2 td.l0 { display: none !important }
+  :root:not(#_) .empilha .mini-tbl.lst2 td:last-child { position: absolute; right: 0; top: 50%; transform: translateY(-50%) }
+  :root[data-tema="escuro"]:not(#_) .empilha .mini-tbl.lst2 td.l2 { color: #8e9ac4 }
+}
+/* Estrela do corretor que não é o principal: visível no escuro */
+:root[data-tema="escuro"] .star:not(.on):not([aria-pressed="true"]) { color: #8e9ac4 !important }
+/* Abas do estudo no celular: esmaecido maior na borda */
+@media (max-width: 599px) { :root:not(#_) .vb-nav { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 72px), transparent) !important; mask-image: linear-gradient(to right, #000 calc(100% - 72px), transparent) !important } }
+:root[data-tema="escuro"]:not(#_) .infra .seg3 button[aria-pressed="true"].sim { background: rgba(109,213,140,.16) !important; color: #a6f0bb }
+:root[data-tema="escuro"]:not(#_) .infra .seg3 button[aria-pressed="true"].nao { background: rgba(242,184,181,.16) !important; color: #f2b8b5 }
+:root:not(#_) .infra .meta { gap: 4px !important }
 </style>
 <header class="top">
   <div class="top-in">
@@ -3939,6 +3992,8 @@ const brl2=v=>v==null?'—':Number(v).toLocaleString('pt-BR',{style:'currency',c
 const num=(v,d=0)=>v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:d});
 const m2=v=>v==null?'—':num(v,2)+'\u00a0m²';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* texto com valor ("R$ 7,3 mi") não quebra entre o R$, o número e o "mi" */
+const escT=s=>esc(s).replace(/R\$ ([\d.,]+)( (?:mi|mil|bi)\b)?/g,(m,n,u)=>"R$\u00a0"+n+(u?"\u00a0"+u.trim():""));
 const lerNum=s=>{if(s==null)return null;s=String(s).trim();if(!s)return null;const n=Number(s.replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,''));return isNaN(n)?null:n};
 const digits=s=>String(s||'').replace(/\D/g,'');
 const $=s=>document.querySelector(s);
@@ -3957,7 +4012,7 @@ const P={
   money:'M4 7h16v10H4zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM7 10v4M17 10v4',
   recolher:'M13 6l-6 6 6 6M19 6l-6 6 6 6',tela:'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',eu:'M12 5a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM12 2v3M12 19v3M2 12h3M19 12h3',telaSair:'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5',expandir:'M11 6l6 6-6 6M5 6l6 6-6 6',
   lugar:'M12 21s-6-5.6-6-10.5a6 6 0 0 1 12 0C18 15.4 12 21 12 21zM12 8.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4z',
-  rota:'M12 2.8 21.2 12 12 21.2 2.8 12zM9 14v-3h6M12.8 8.8 15 11l-2.2 2.2',lixo:'M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5',
+  rota:'M12 2.8 21.2 12 12 21.2 2.8 12zM9 14v-3h6M12.8 8.8 15 11l-2.2 2.2',undo:'M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11',lixo:'M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5',
   task:'M9 4h6v3H9zM9 5.5H6a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6.5a1 1 0 0 0-1-1h-3M8.5 14l2.5 2.5 4.5-5'
 };
 const ic=(n,s=20)=>`<svg class="ic" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="${P[n]}"/></svg>`;
@@ -4068,7 +4123,7 @@ function seed(){
     cep:'04366-000',logradouro:'Av. Cupecê',numero:'5.120',bairro:'Cidade Ademar',zona:'sul',eixo:'e1',referencia:'Em frente ao terminal Cidade Ademar',lat:-23.6681,lng:-46.6513,precisao:'conferida',
     aDoc:2000,aCad:1985,aLev:1920,fonteArea:'levantamento',testada:42,topografia:'plano',desnivel:0.8,posicao:'esquina',formato:'regular',ocupacao:'ocupado',uso:'Galpão de depósito',aConst:860,aDemolir:860,demolicao:'confirmada',obsFis:'Galpão com cobertura de fibrocimento: prever destinação adequada na demolição.',
     mats:[{num:'184.552',cri:'11º CRI',area:2000,data:H(40)}],
-    insc:[{sql:'089.123.0045-6',area:1985,valores:[{ex:2025,rev:1,vig:true,vt:3300000,vc:500000,sit:'tributado',iptu:41200,parc:10,mensal:null,fonte:'Carnê 2025',data:H(300)},{ex:2026,rev:1,vig:false,vt:3600000,vc:520000,sit:'tributado',iptu:45300,parc:10,mensal:null,fonte:'Carnê 2026',data:H(200)},{ex:2026,rev:2,vig:true,vt:3600000,vc:520000,sit:'tributado',iptu:45300,parc:10,mensal:4530,fonte:'Certidão de dados cadastrais',data:H(20)}]}],
+    insc:[{sql:'089.123.0045-6',area:1985,valores:[{ex:2025,rev:1,vig:true,vt:3300000,vc:500000,sit:'tributado',iptu:41200,parc:10,mensal:null,fonte:'Carnê 2025',data:H(300)},{ex:2026,rev:1,vig:false,vt:3600000,vc:520000,sit:'tributado',iptu:45300,parc:10,mensal:null,fonte:'Carnê 2026',data:H(200)},{ex:2026,rev:2,vig:true,vt:3600000,vc:520000,sit:'tributado',iptu:45300,parc:10,mensal:null,fonte:'Certidão de dados cadastrais',data:H(20)}]}],
     confr:[{tipo:'frente',m:42,conf:'Av. Cupecê'},{tipo:'lateral_direita',m:48.5,conf:'Rua Benedito Mendes (esquina)'},{tipo:'fundos',m:41,conf:'Lote 12 · matrícula 184.553'},{tipo:'lateral_esquerda',m:47.2,conf:'Lote 08 · matrícula 184.540'}],
     dilig:[{id:uid(),cat:'ambiental',titulo:'Passivo do galpão (fibrocimento) na demolição',sit:'resolvida',resp:'Rafael Souza',prov:'Orçamento de descarte com empresa licenciada.'},{id:uid(),cat:'juridica',titulo:'Procuração do representante da Construpar',sit:'pendente',resp:'Ana Prado',prov:'Pedir procuração atualizada com poderes para vender.'}],
     pessoas:[{nome:'Construpar Participações Ltda.',tipo:'PJ',papel:'proprietario',pct:100,tel:''},{nome:'Dr. Álvaro Mendes',tipo:'PF',papel:'procurador',pct:null,tel:'(11) 98888-1234'}],
@@ -4397,13 +4452,13 @@ function secaoInsc(t){
 function secaoConfr(t){
   const tot=t.confr.reduce((a,c)=>a+(c.m||0),0);
   return `<section class="sec" id="sec-confr"><div class="sec-h"><h2>Confrontações</h2><span class="faint" style="font-size:13px">${t.confr.length?`${t.confr.length} segmentos · perímetro ${num(tot,2)} m`:''}</span></div><div class="sec-b">
-    ${t.confr.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>#</th><th>Segmento</th><th class="r">Comprimento</th><th>Confronta com</th><th></th></tr></thead><tbody>${t.confr.map((c,i)=>`<tr><td class="faint">${i+1}</td><td>${OPT.confr[c.tipo]}</td><td class="r">${num(c.m,2)} m</td><td>${esc(c.conf||'—')}</td><td class="r"><button class="iconbtn sm lixo" data-a="del-confr" data-i="${i}" aria-label="Remover" title="Remover">${ic('lixo',18)}</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Para terrenos irregulares ou com várias frentes: um segmento por linha, na ordem do perímetro.</div>'}
+    ${t.confr.length?`<div class="tblwrap"><table class="mini-tbl lst2"><thead><tr><th>#</th><th>Segmento</th><th class="r">Comprimento</th><th>Confronta com</th><th></th></tr></thead><tbody>${t.confr.map((c,i)=>`<tr><td class="faint">${i+1}</td><td>${OPT.confr[c.tipo]}</td><td class="r">${num(c.m,2)} m</td><td class="l2">${esc(c.conf||'—')}</td><td class="r"><button class="iconbtn sm lixo" data-a="del-confr" data-i="${i}" aria-label="Remover" title="Remover">${ic('lixo',18)}</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Para terrenos irregulares ou com várias frentes: um segmento por linha, na ordem do perímetro.</div>'}
     <form class="inline-form" data-form="confr"><div class="field" style="flex:0 1 160px"><label for="cf-t">Segmento</label><select id="cf-t" name="tipo">${Object.entries(OPT.confr).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
     <div class="field" style="flex:0 1 120px"><label for="cf-m">Comprimento (m)</label><input id="cf-m" name="m" inputmode="decimal" required></div><div class="field grow"><label for="cf-c">Confronta com</label><input id="cf-c" name="conf" placeholder="Rua, lote vizinho, matrícula"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form></div></section>`;
 }
 function secaoPessoas(t){
   return `<section class="sec" id="sec-pessoas"><div class="sec-h"><h2>Proprietários e contatos</h2></div><div class="sec-b">
-    ${t.pessoas.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Nome</th><th>Vínculo</th><th class="r">Participação</th><th>Telefone</th>${partesAtivas(t).length?'<th>Parte</th>':''}<th></th></tr></thead><tbody>${t.pessoas.map((p,i)=>`<tr><td>${esc(p.nome)} <span class="faint" style="font-size:12px">${p.tipo}</span></td><td>${OPT.papel[p.papel]}</td><td class="r">${p.pct!=null?num(p.pct,2)+'%':'—'}</td><td>${esc(p.tel||'—')}</td>${partesAtivas(t).length?`<td>${selParte(t,'pes-parte',i,p.parte)}</td>`:''}<td class="r"><button class="iconbtn sm lixo" data-a="del-pes" data-i="${i}" aria-label="Remover" title="Remover">${ic('lixo',18)}</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Ninguém vinculado.</div>'}
+    ${t.pessoas.length?`<div class="tblwrap"><table class="mini-tbl lst2"><thead><tr><th>Nome</th><th>Vínculo</th><th class="r">Participação</th><th>Telefone</th>${partesAtivas(t).length?'<th>Parte</th>':''}<th></th></tr></thead><tbody>${t.pessoas.map((p,i)=>`<tr><td>${esc(p.nome)} <span class="faint" style="font-size:12px">${p.tipo}</span></td><td>${OPT.papel[p.papel]}</td><td class="r${p.pct!=null?'':' l0'}">${p.pct!=null?num(p.pct,2)+'%':'—'}</td><td class="l2${p.tel?'':' l0'}">${esc(p.tel||'—')}</td>${partesAtivas(t).length?`<td>${selParte(t,'pes-parte',i,p.parte)}</td>`:''}<td class="r"><button class="iconbtn sm lixo" data-a="del-pes" data-i="${i}" aria-label="Remover" title="Remover">${ic('lixo',18)}</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Ninguém vinculado.</div>'}
     <form class="inline-form" data-form="pessoa"><div class="field grow"><label for="p-n">Nome ou razão social</label><input id="p-n" name="nome" required></div><div class="field" style="flex:0 1 120px"><label for="p-t">Tipo</label><select id="p-t" name="tipo"><option value="PF">PF</option><option value="PJ">PJ</option></select></div>
     <div class="field"><label for="p-p">Vínculo</label><select id="p-p" name="papel">${Object.entries(OPT.papel).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div><div class="field" style="flex:0 1 110px"><label for="p-pc">% (prop.)</label><input id="p-pc" name="pct" inputmode="decimal"></div>
     <div class="field"><label for="p-tel">Telefone</label><input id="p-tel" name="tel"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form></div></section>`;
@@ -4476,7 +4531,7 @@ function abaTarefas(t){
   return `<div class="stack"><section class="sec"><div class="sec-h"><h2>Próximos passos</h2><span class="faint" style="font-size:13px">${abertas(t).length} abertas · ${atrasadas(t).length} atrasadas</span></div><div class="sec-b" style="padding-top:4px">
   ${lista.map(k=>{const late=!['concluida','cancelada'].includes(k.status)&&k.prazo<HOJE;return `<div class="task" style="align-items:flex-start;padding:12px 0">
     <span style="flex:none;margin-top:2px">${av(k.resp,'sm')}</span>
-    <span class="tt"><div class="t1" style="${k.status==='concluida'||k.status==='cancelada'?'text-decoration:line-through;color:var(--texto-suave)':''}">${esc(k.titulo)} ${k.prio==='alta'?'<span class="chip warn" style="height:20px">Alta</span>':''}</div>
+    <span class="tt"><div class="t1" style="${k.status==='concluida'||k.status==='cancelada'?'text-decoration:line-through;color:var(--texto-suave)':''}">${escT(k.titulo)} ${k.prio==='alta'?'<span class="chip warn" style="height:20px">Alta</span>':''}</div>
     ${k.desc?`<div class="muted" style="font-size:13px">${esc(k.desc)}</div>`:''}<div class="tm ${late?'late':''}">${esc(k.resp)} · ${late?'atrasada desde ':'prazo '}${fd(k.prazo)}</div>
     ${k.status==='concluida'?`<input aria-label="Resultado" data-ch="tar-res" data-k="${k.id}" value="${esc(k.resultado)}" placeholder="O que foi feito ou obtido" style="margin-top:6px;width:100%;height:34px;border:1px solid var(--linha);border-radius:6px;padding:0 10px;background:var(--superficie)">`:''}</span>
     <select aria-label="Status" data-ch="tar-st" data-k="${k.id}" class="chip chip-sel tkst ${k.status}" style="flex:none">${Object.entries(OPT.statusTar).map(([s,l])=>`<option value="${s}" ${s===k.status?'selected':''}>${l}</option>`).join('')}</select></div>`}).join('')||'<div class="muted lista-vazia">Nenhuma tarefa.</div>'}
@@ -4491,7 +4546,7 @@ function abaUrbanismo(t){
   return `<div class="stack">${secAnaliseUrb(t)}
   <section class="sec"><div class="sec-h"><h2>Infraestrutura na porta</h2>${infraNV(t)?`<span class="faint" style="font-size:13px">${infraNV(t)} não verificado${infraNV(t)>1?"s":""}</span>`:""}</div><div style="padding-bottom:6px">
   ${INFRA.map(([k,l])=>{const r=t.infra[k]||{d:'nao_verificado'};return `<div class="infra"><span>${l}</span><span class="seg3" role="group" aria-label="${l}">${[['nao_verificado','Não verificado','nv'],['sim','Sim','sim'],['nao','Não','nao']].map(([v,lb,c])=>`<button type="button" class="${c}" aria-pressed="${r.d===v}" data-a="infra" data-k="${k}" data-v="${v}">${lb}</button>`).join('')}</span>
-  <span class="meta">${r.d!=='nao_verificado'?`${fd(r.data)} · <input aria-label="Fonte da verificação de ${l}" data-ch="infra-fonte" data-k="${k}" value="${esc(r.fonte)}" class="infra-f">`:''}</span></div>`}).join('')}</div>
+  <span class="meta">${r.d!=='nao_verificado'?`${fd(r.data)} ·<input aria-label="Fonte da verificação de ${l}" data-ch="infra-fonte" data-k="${k}" value="${esc(r.fonte)}" class="infra-f">`:''}</span></div>`}).join('')}</div>
   </section></div>`;
 }
 const OPT_REU={modalidade:{presencial:'Presencial',online:'Online'},local:{bkm:'Na BKM',externo:'Externa'},status:{realizada:'Realizada',agendada:'Agendada',cancelada:'Cancelada'}};
@@ -4655,7 +4710,7 @@ function renderModal(){
   if(M==='grafico'){const k=UI.grafico;h=`<div class="dh g-exp"><h2>${DIMS[k].l}</h2>${fechar}</div>${grafico(k,true)}<h3 class="lbl-up" style="margin-top:var(--e6)">Dados do gráfico</h3>${tabelaGrafico(k)}`}
   if(M==='tarefa'){const sel=UI.tkSel,t=sel.tid?T(sel.tid):null,k=t?t.tarefas.find(x=>x.id===sel.kid):null,ro=UI.role==='Leitura';
     const o=(obj,v)=>Object.entries(obj).map(([x,l])=>`<option value="${x}" ${v===x?'selected':''}>${esc(l)}</option>`).join('');
-    h=`<div class="dh"><div><h2>${k?esc(k.titulo):'Nova tarefa'}</h2>${t?`<div class="muted" style="margin-top:4px">${t.codigo} · ${esc(t.nome)}</div>`:''}</div>${fechar}</div>
+    h=`<div class="dh"><div><h2>${k?escT(k.titulo):'Nova tarefa'}</h2>${t?`<div class="muted" style="margin-top:4px">${t.codigo} · ${esc(t.nome)}</div>`:''}</div>${fechar}</div>
     <form data-form="tarefa-m" id="f-tk"><fieldset ${ro?'disabled':''} style="border:0;padding:0;margin:0"><div class="fields">
     <div class="field full"><label for="tm-t">Tarefa</label><input id="tm-t" name="titulo" required value="${esc(k?.titulo||'')}"></div>
     ${k?'':`<div class="field full"><label for="tm-ter">Terreno</label><select id="tm-ter" name="ter" required><option value="">Escolha o terreno</option>${o(Object.fromEntries(ativosBanco().map(x=>[x.id,x.codigo+' · '+x.nome])),UI.tk.ter)}</select></div>`}
@@ -5092,7 +5147,7 @@ let EU=null;
 function L_eu(u,centrar){EU?.remove();EU=L.layerGroup([L.circle([u.lat,u.lng],{radius:u.acc||0,color:'#1a73e8',weight:1,fillOpacity:.12,interactive:false}),
   L.circleMarker([u.lat,u.lng],{radius:7,color:'#fff',weight:2,fillColor:'#1a73e8',fillOpacity:1,interactive:false})]).addTo(MAPA);
   if(centrar)MAPA.setView([u.lat,u.lng],Math.max(MAPA.getZoom()||0,17))}
-function focar(t){return GG?G_focar(t):L_focar(t)}
+function focar(t){const r=GG?G_focar(t):L_focar(t);if(UI.fichaSheet&&innerWidth>=900)setTimeout(()=>mpLivre(t),400);return r}
 function initMini(){return GG?G_initMini():L_initMini()}
 function fecharPopup(){if(GG)G_fecharPopup();else MAPA?.closePopup?.()}
 function mostrarPois(on){if(GG)return G_mostrarPois(on);if(MAPA&&POIS){on?POIS.addTo(MAPA):MAPA.removeLayer(POIS)}}
@@ -5139,7 +5194,14 @@ function fichaSheet(){let el=$('#ficha-sheet');const t=UI.fichaSheet&&UI.route==
     <button class="iconbtn" data-a="fs-fechar" aria-label="Fechar" title="Fechar (Esc)">${ic('close',22)}</button></div>
     <div class="fs-b bl-c fs-ro">${abaGeral(t)}</div>
     <div class="fs-f"><button class="btn primary" data-a="abrir" data-id="${t.id}" data-tab="geral" data-from="mapa">Abrir ficha completa</button></div>`;
-  el.querySelector('.g-loc')?.remove();el.querySelector('.fs-b').scrollTop=0}
+  el.querySelector('.g-loc')?.remove();el.querySelector('.fs-b').scrollTop=0;
+  if(el.dataset.id!==t.id){el.dataset.id=t.id;setTimeout(()=>mpLivre(t),60)}}
+/* com o painel da ficha aberto (desktop), o terreno vai para o meio do pedaço do mapa que fica livre */
+function mpLivre(t){const m=$('#mapa'),fs=$('#ficha-sheet');if(!MAPA||!m||!fs||t.lat==null||innerWidth<900)return;
+  const r=m.getBoundingClientRect(),f=fs.getBoundingClientRect(),dir=Math.min(r.right,f.left-16),x0=r.left,cx=(x0+dir)/2-r.left,cy=r.height/2;
+  if(GG){const w=r.right-dir;MAPA.panTo(gLL(t.lat,t.lng));if(w>0)MAPA.panBy(Math.round(w/2),0);return}
+  const p=MAPA.latLngToContainerPoint([t.lat,t.lng]);if(p.x>40&&p.x<dir-r.left-40&&p.y>80&&p.y<r.height-40)return;
+  MAPA.panBy([p.x-cx,p.y-cy],{animate:false})}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&UI.fichaSheet&&!UI.modal&&!$('.mp-ctx')&&!$('.v-menu')){UI.fichaSheet=null;fichaSheet();e.preventDefault()}});
 function mpSelecionar(id){UI.mpSel=id;mpMarcarPinos();if(UI.fichaSheet&&id&&id!==UI.fichaSheet){UI.fichaSheet=id;fichaSheet()}const l=$('#mp-lista');if(l)l.innerHTML=mpLista();mpCartao();
   const lado=$('.mapa-lado'),it=lado?.querySelector(`.mp-it[data-id="${id}"]`);
@@ -5540,8 +5602,8 @@ function tkFiltradas(){const f=UI.tk,q=f.q.trim().toLowerCase();
   return todasTarefas().filter(({k,t})=>(!f.resp||k.resp===f.resp)&&(!f.ter||t.id===f.ter)&&(!f.prio||k.prio===f.prio)&&(!f.atras||(k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)))&&(!q||(k.titulo+' '+(k.desc||'')+' '+t.nome+' '+t.codigo).toLowerCase().includes(q)))}
 const ordemTk=(a,b)=>(a.k.pos??9e15)-(b.k.pos??9e15)||a.k.prazo.localeCompare(b.k.prazo);
 function cardTk({k,t}){const at=k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status);
-  return `<article class="tk ${k.status}" draggable="${UI.role!=='Leitura'}" data-tk="${k.id}" data-a="tk-abrir" data-id="${t.id}" tabindex="0" aria-label="${esc(k.titulo)}">
-  <div class="tk-t">${esc(k.titulo)}</div>${k.desc?`<div class="tk-d">${esc(k.desc)}</div>`:''}
+  return `<article class="tk ${k.status}" draggable="${UI.role!=='Leitura'}" data-tk="${k.id}" data-a="tk-abrir" data-id="${t.id}" tabindex="0" aria-label="${escT(k.titulo)}">
+  <div class="tk-t">${escT(k.titulo)}</div>${k.desc?`<div class="tk-d">${esc(k.desc)}</div>`:''}
   <div class="tk-ter"><span class="num">${t.codigo}</span> · ${esc(t.nome)}</div>
   <div class="tk-p"><span class="tk-prazo ${at?'atras':''}">${ic('clock',14)}${fd(k.prazo)}</span>${k.prio==='alta'?'<span class="chip warn">Alta</span>':k.prio==='baixa'?'<span class="chip">Baixa</span>':''}<span style="margin-left:auto">${av(k.resp,'sm')}</span></div></article>`}
 function pgTarefas(){const f=UI.tk,l=tkFiltradas();const cols=COLS_TK.filter(c=>c!=='cancelada'||f.canc);
@@ -5556,7 +5618,7 @@ function pgTarefas(){const f=UI.tk,l=tkFiltradas();const cols=COLS_TK.filter(c=>
     return `<section class="col tk-col" data-tkcol="${c}" aria-label="${OPT.statusTar[c]}"><div class="col-h"><span>${OPT.statusTar[c]}</span><span class="n">${ks.length}</span></div>
     <div class="tk-lista">${ks.map(cardTk).join('')||'<div class="col-empty">Nenhuma</div>'}</div>
     ${UI.role!=='Leitura'&&c!=='cancelada'?`<button class="tk-add" data-a="tk-nova" data-v="${c}">${ic('add',16)}Adicionar tarefa</button>`:''}</section>`}).join('')}</div>`;
-  const colsT=[{k:'titulo',l:'Tarefa',cls:'esq',v:({k})=>`<div class="t1">${esc(k.titulo)}</div>${k.desc?`<div class="t2">${esc(k.desc)}</div>`:''}`,s:({k})=>k.titulo},
+  const colsT=[{k:'titulo',l:'Tarefa',cls:'esq',v:({k})=>`<div class="t1">${escT(k.titulo)}</div>${k.desc?`<div class="t2">${esc(k.desc)}</div>`:''}`,s:({k})=>k.titulo},
     {k:'ter',l:'Terreno',cls:'esq hm',v:({t})=>`<div class="t2" style="color:var(--texto)">${t.codigo}</div><div class="t2">${esc(t.nome)}</div>`,s:({t})=>t.codigo},
     {k:'resp',l:'Responsável',cls:'hm',v:({k})=>esc(k.resp),s:({k})=>k.resp},
     {k:'prazo',l:'Prazo',cls:'num',v:({k})=>`<span style="${k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)?'color:var(--terracota);font-weight:600':''}">${fd(k.prazo)}</span>`,s:({k})=>k.prazo},
@@ -6102,8 +6164,8 @@ function pnAcoes(t){
   return `<div class="pn-grupo"><div class="pn-gt">Próximas ações <span class="n">${A.length}</span></div>
     ${A.length?A.map(x=>`<div class="pn-acao ${x.sev}"><span class="pn-ai">${ic(x.i,16)}</span><div class="pn-ac"><div>${esc(x.txt)}</div>${x.fix?`<button class="linkbtn" data-a="${x.fix.a}" ${x.fix.extra}>${esc(x.fix.l)}</button>`:''}</div></div>`).join(''):'<div class="empty">Nada pendente.</div>'}</div>
   <div class="pn-grupo"><div class="pn-gt">Tarefas em aberto <span class="n">${K.length}</span>${ed?`<button class="btn text sm" data-a="tab" data-t="tarefas" style="margin-left:auto">${ic('add',16)}Nova</button>`:''}</div>
-    ${K.length?K.map(k=>{const late=k.prazo<HOJE;return `<div class="pn-tar">${ed?`<button class="pn-chk" data-a="pn-concluir" data-k="${k.id}" aria-label="Concluir ${esc(k.titulo)}" title="Concluir"></button>`:''}
-      <button class="pn-tc" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}"><span class="pn-tt">${esc(k.titulo)}${k.prio==='alta'?' <span class="chip warn" style="height:20px">Alta</span>':''}</span>
+    ${K.length?K.map(k=>{const late=k.prazo<HOJE;return `<div class="pn-tar">${ed?`<button class="pn-chk" data-a="pn-concluir" data-k="${k.id}" aria-label="Concluir ${escT(k.titulo)}" title="Concluir"></button>`:''}
+      <button class="pn-tc" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}"><span class="pn-tt">${escT(k.titulo)}${k.prio==='alta'?' <span class="chip warn" style="height:20px">Alta</span>':''}</span>
       <span class="pn-tm ${late?'late':''}">${esc(k.resp)} · ${late?'atrasada desde ':'prazo '}${fd(k.prazo)} · ${OPT.statusTar[k.status]}</span></button></div>`}).join(''):'<div class="empty">Nenhuma tarefa aberta.</div>'}</div>`;
 }
 function painelFicha(t){
@@ -9338,14 +9400,17 @@ function viabModal(M,fechar){if(M==='vb-novo')return vbNovoHtml(fechar);if(M==='
   return `<div class="dh"><h2>Apagar o estudo?</h2>${fechar}</div><p style="margin:0 0 8px">${esc(v.nome)} sai do terreno, com as tipologias e os custos. Estudo vinculado à negociação não se apaga.</p><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary danger" data-a="vb-apagar-ok">Apagar</button></div>`}
 
 /* ---------- Configurações › Viabilidade ---------- */
+/* Nomes curtos das bases, só na grade estreita de Configurações (o estudo usa os nomes inteiros) */
+const VB_TIPO_CURTO={area:'R$/m² privativo',pct_obra_tipica:'% da obra típica',pct_obra_raso:'% da obra rasa',pct_obra_total:'% da obra total',pct_vgv:'% do VGV',pct_lucro:'% do lucro líquido',verba:'Verba total',verba_unidade:'Verba por unidade',verba_mensal:'Verba mensal'};
+const VB_GRUPO_CURTO={adm_financeiro:'Adm. e financeiro',financeiro:'Financeiras',comercial:'Comerciais'};
 function cfgViabHtml(){const L=S.viabDesp;
   const sel=(d,k,opts,val,rot,extra='')=>`<select data-ch="cfg-vd" data-c="${d.codigo}" data-k="${k}" aria-label="${rot}" ${extra}>${Object.entries(opts).map(([c,n])=>`<option value="${c}" ${val===c?'selected':''}>${n}</option>`).join('')}</select>`;
-  const grupos=Object.fromEntries(Object.entries(VB_GRUPO).map(([g,G])=>[g,G.nome]));
+  const grupos=Object.fromEntries(Object.entries(VB_GRUPO).map(([g,G])=>[g,VB_GRUPO_CURTO[g]||G.nome]));
   const linhas=Object.keys(VB_GRUPO).map(g=>{const ds=L.filter(d=>d.grupo===g),G=VB_GRUPO[g];
     return `<div class="vb-cfg-g">${VB_SECAO[G.secao]}${G.nome!==VB_SECAO[G.secao]?' › '+G.nome:''}${G.fixo?' <span class="faint">· fixos no estudo</span>':''}</div>
     ${ds.map((d,i)=>{const u=vbUsada(d.codigo);return `<div class="cfg-r vb-cfg-r ${d.ativo?'':'inativa'}"><span class="cfg-ord"><button class="iconbtn sm" data-a="vb-cfg-ord" data-c="${d.codigo}" data-v="-1" ${i?'':'disabled'} aria-label="Subir">↑</button><button class="iconbtn sm" data-a="vb-cfg-ord" data-c="${d.codigo}" data-v="1" ${i<ds.length-1?'':'disabled'} aria-label="Descer">↓</button></span>
       <input data-ch="cfg-vd" data-c="${d.codigo}" data-k="nome" value="${esc(d.nome)}" aria-label="Nome do item">${sel(d,'grupo',grupos,d.grupo,'Grupo de '+esc(d.nome),u?'disabled title="Item já usado em estudo não muda de grupo"':'')}
-      ${sel(d,'tipo',Object.fromEntries(G.tipos.map(k=>[k,VB_TIPO[k]])),d.tipo,'Base de cálculo de '+esc(d.nome))}
+      ${sel(d,'tipo',Object.fromEntries(G.tipos.map(k=>[k,VB_TIPO_CURTO[k]||VB_TIPO[k]])),d.tipo,'Base de cálculo de '+esc(d.nome))}
       <input data-ch="cfg-vd" data-c="${d.codigo}" data-k="valor" value="${vbIn(d.valor,4)}" inputmode="decimal" placeholder="" aria-label="Valor padrão de ${esc(d.nome)}">
       <span>${g==='comercial'?`<label class="chk"><input type="checkbox" data-ch="cfg-vd" data-c="${d.codigo}" data-k="deduz" ${d.deduz?'checked':''} aria-label="${esc(d.nome)} pode sair do VGV líquido"></label>`:'<span class="faint" aria-hidden="true">—</span>'}</span>
       <label class="chk"><input type="checkbox" data-ch="cfg-vd" data-c="${d.codigo}" data-k="ativo" ${d.ativo?'checked':''} aria-label="Ativo"></label>
@@ -9530,7 +9595,7 @@ const ZP_COLS=[['ca_minimo','CA mín.'],['ca_basico','CA bás.'],['ca_maximo','C
 function cfgZonasHtml(){const cid=UI.zpCid||'sp',tipo=UI.zpTipo||'mercado',L=zpar().map((r,i)=>[r,i]).filter(([r])=>MUN_CID[r.municipio]===cid&&r.tipo===tipo);
   const cond=r=>[r.uso,r.macrozona&&MACROS[r.macrozona],r.lote_area_max_m2!=null?`lote < ${num(r.lote_area_max_m2)} m²`:'',r.lote_area_min_m2!=null?`lote ≥ ${num(r.lote_area_min_m2)} m²`:''].filter(Boolean).join(' · ');
   const nI=v=>v==null?'':String(v).replace('.',',');
-  return `<section class="sec"><div class="sec-h"><h2>Parâmetros urbanísticos</h2><button class="btn text" data-a="zp-padrao">Restaurar padrão</button></div><div class="sec-b">
+  return `<section class="sec"><div class="sec-h"><h2>Parâmetros urbanísticos</h2><button class="btn text hd-ic" data-a="zp-padrao" aria-label="Restaurar padrão" title="Restaurar padrão">${ic('undo',18)}Restaurar padrão</button></div><div class="sec-b">
     
     <div class="lz-topo"><div class="seg" role="group" aria-label="Cidade">${[['sp','São Paulo'],['sjc','São José dos Campos']].map(([k,l])=>`<button type="button" data-a="zp-cid" data-v="${k}" aria-pressed="${cid===k}">${l}</button>`).join('')}</div>
     <div class="seg" role="group" aria-label="Tipo de empreendimento">${Object.entries(TIPOS_EMP).map(([k,l])=>`<button type="button" data-a="zp-tipo" data-v="${k}" aria-pressed="${tipo===k}">${l}</button>`).join('')}</div></div>

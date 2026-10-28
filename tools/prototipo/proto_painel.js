@@ -222,8 +222,8 @@ function pnAcoes(t){
   return `<div class="pn-grupo"><div class="pn-gt">Próximas ações <span class="n">${A.length}</span></div>
     ${A.length?A.map(x=>`<div class="pn-acao ${x.sev}"><span class="pn-ai">${ic(x.i,16)}</span><div class="pn-ac"><div>${esc(x.txt)}</div>${x.fix?`<button class="linkbtn" data-a="${x.fix.a}" ${x.fix.extra}>${esc(x.fix.l)}</button>`:''}</div></div>`).join(''):'<div class="empty">Nada pendente.</div>'}</div>
   <div class="pn-grupo"><div class="pn-gt">Tarefas em aberto <span class="n">${K.length}</span>${ed?`<button class="btn text sm" data-a="tab" data-t="tarefas" style="margin-left:auto">${ic('add',16)}Nova</button>`:''}</div>
-    ${K.length?K.map(k=>{const late=k.prazo<HOJE;return `<div class="pn-tar">${ed?`<button class="pn-chk" data-a="pn-concluir" data-k="${k.id}" aria-label="Concluir ${esc(k.titulo)}" title="Concluir"></button>`:''}
-      <button class="pn-tc" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}"><span class="pn-tt">${esc(k.titulo)}${k.prio==='alta'?' <span class="chip warn" style="height:20px">Alta</span>':''}</span>
+    ${K.length?K.map(k=>{const late=k.prazo<HOJE;return `<div class="pn-tar">${ed?`<button class="pn-chk" data-a="pn-concluir" data-k="${k.id}" aria-label="Concluir ${escT(k.titulo)}" title="Concluir"></button>`:''}
+      <button class="pn-tc" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}"><span class="pn-tt">${escT(k.titulo)}${k.prio==='alta'?' <span class="chip warn" style="height:20px">Alta</span>':''}</span>
       <span class="pn-tm ${late?'late':''}">${esc(k.resp)} · ${late?'atrasada desde ':'prazo '}${fd(k.prazo)} · ${OPT.statusTar[k.status]}</span></button></div>`}).join(''):'<div class="empty">Nenhuma tarefa aberta.</div>'}</div>`;
 }
 function painelFicha(t){
