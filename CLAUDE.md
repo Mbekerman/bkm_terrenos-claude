@@ -73,7 +73,7 @@ Modelo de dados com diagramas: [docs/modelo.md](docs/modelo.md). Mantenha-o em d
 ## Comandos
 
 ```bash
-bash supabase/tests/run.sh          # migrations + 579 testes de regra num Postgres 16 temporário
+bash supabase/tests/run.sh          # migrations + 593 testes de regra num Postgres 16 temporário
 cd apps/web && npm install
 npm run dev                          # precisa de apps/web/.env.local (ver .env.example)
 npm run typecheck && npm run build
@@ -89,7 +89,7 @@ Toda mudança de regra no banco vem com teste em `supabase/tests/regras.sql`.
 - Municípios: `app.municipios` tem os 5.571 do IBGE e o front resolve o `municipio_id` pela cidade/UF da busca do Google (`app.municipio_por_nome`). O catálogo de `zoneamentos` tem São Paulo e São José dos Campos; para outras cidades falta definir (zona digitada ou catálogo por cidade).
 - PostGIS entrou em 22/out/2026 para a poligonal obrigatória e a sobreposição entre terrenos (`app.sobreposicao`, `terrenos_sobrepostos`, trigger `t_sobre`); no Supabase, ligar a extensão `postgis` no schema `extensions`. Busca por raio e a distância a pontos de interesse ainda são haversine (`app.distancia_km`).
 - Mapa: Google Maps JS (mapa, relevo, satélite, Street View, AdvancedMarker com `DEMO_MAP_ID`; criar um Map ID próprio), Routes API (rota no mapa, Directions como reserva), Places API New (autocompletar no cadastro, "o que tem perto" e entorno do terreno), Routes API também na matriz de distâncias a pé, Geocoding (localizar pelo endereço) e Elevation (relevo da poligonal). Sem chave ou com a chave recusada, cai no Leaflet (Esri/OSM). Address Validation ainda não usada. Separar em chave de navegador + chave de servidor fica para depois.
-- Notificações no app e lembretes existem no banco (`notificacoes`, `lembretes`, `app.rotina_diaria()` pelo pg_cron, agendada na migration quando a extensão existe; no Supabase, ligar pg_cron antes). E-mail e preferências por usuário ainda não.
+- Notificações no app e lembretes existem no banco (`notificacoes`, `lembretes`, `app.rotina_diaria()` pelo pg_cron, agendada na migration quando a extensão existe; no Supabase, ligar pg_cron antes). Menção com @ em tarefas, atividades e reuniões avisa a pessoa (`app.mencoes`); e-mail por tipo com preferência de cada um (`preferencias_notificacao`, `email_status`), falta a função que envia pela conta bkm@ (decisão do Moisés, 28/out/2026; WhatsApp depois).
 - Login (decisão do Moisés, 28/out/2026): só Google do Workspace, app OAuth "Interno" no projeto do Google Cloud da organização bkm.com.br; qualquer e-mail de domínio em `app.empresa_dominios` entra como `basico` (ver "Login e perfil do usuário" em `docs/modelo.md`). Agenda (`calendar.events`) e Gmail (`gmail.send`) por um botão "Conectar Agenda e Gmail" depois do login, com o refresh token no Vault por função do servidor (a fazer; falta o Moisés dizer o que o sistema faz na agenda e no e-mail).
 - Acesso externo (corretor, advogado) fora do escopo atual.
 - IA sobre atas: `documento_versoes.texto_extraido` já existe; faltam a extração (OCR/PDF) e o resumo/perguntas sobre a negociação (provável pgvector + função no servidor).

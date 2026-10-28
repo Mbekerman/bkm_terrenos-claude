@@ -1547,4 +1547,40 @@ select pg_temp.como(:'diretor');
 select pg_temp.ok((select count(*) from app.usuarios where arroba like 'joao.silva%') = 2, 'a equipe vê nome, foto e @ de quem está na empresa');
 select pg_temp.falha(format($$select app.mudar_arroba(%L, 'joao.silva')$$, '00000000-0000-0000-0000-0000000000f2'), '@ já usado é recusado');
 select pg_temp.ok(app.mudar_arroba('00000000-0000-0000-0000-0000000000f2', '@Joao.Outro') = 'joao.outro', 'o administrador muda o @');
+
+\echo '# menções com @ e e-mail das notificações'
+select pg_temp.ok(app.arrobas_no_texto('Fala @Gestor e @joao.silva. Copiar x@bkm.test e @@ ninguém') = array['gestor','joao.silva'],
+  'acha os @ do texto, sem e-mail e sem o ponto final');
+select pg_temp.como(:'analista');
+insert into app.tarefas (empresa_id, terreno_id, titulo, descricao, prazo)
+  values (:'emp', :'tm', 'Conferir matrícula', 'Ver com @gestor e @joao.silva; @analista e @intruso não contam', current_date + 5) returning id as km \gset
+select pg_temp.ok((select array_agg(user_id order by user_id) from app.mencoes where origem_id = :'km')
+  = array[:'gestor', '00000000-0000-0000-0000-0000000000f1']::uuid[], 'o @ de quem é da empresa vira menção; o próprio autor e quem é de fora, não');
+update app.tarefas set descricao = 'Ver com @gestor, @joao.silva e @diretor' where id = :'km';
+select pg_temp.ok((select count(*) from app.mencoes where origem_id = :'km') = 3, 'editar o texto só acrescenta quem entrou agora');
+select pg_temp.como(:'gestor');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'mencao' and origem_id = :'km') = 1
+  and (select texto from app.notificacoes where tipo = 'mencao' and origem_id = :'km') like '% mencionou você na tarefa: Conferir matrícula',
+  'quem é mencionado é avisado uma vez, com o lugar da menção');
+select pg_temp.ok((select email_status from app.notificacoes where tipo = 'mencao' and origem_id = :'km') = 'pendente',
+  'menção vai também por e-mail pelo padrão do tipo');
+select app.salvar_preferencia_notificacao(:'emp', 'mencao', false);
+select pg_temp.como(:'analista');
+insert into app.atividades (empresa_id, terreno_id, tipo, resumo) values (:'emp', :'tm', 'nota', 'Liguei para o vendedor, @gestor assume') returning id as am \gset
+select pg_temp.como(:'gestor');
+select pg_temp.ok((select email_status from app.notificacoes where tipo = 'mencao' and origem_id = :'am') is null
+  and exists (select 1 from app.notificacoes where tipo = 'mencao' and origem_id = :'am'),
+  'quem desligou o e-mail da menção continua avisado só no app');
+select pg_temp.ok((select count(*) from app.preferencias_notificacao) = 1, 'cada um vê só as próprias preferências');
+select app.salvar_preferencia_notificacao(:'emp', 'mencao', null);
+select pg_temp.ok(not exists (select 1 from app.preferencias_notificacao), 'preferência vazia volta ao padrão do tipo');
+select pg_temp.ok((select bool_and(email_status is null) from app.notificacoes where tipo = 'tarefa_prazo'), 'lembrete de prazo não vai por e-mail no padrão');
+select pg_temp.falha(format($$select app.salvar_preferencia_notificacao(%L, 'nao_existe', true)$$, :'emp'), 'tipo de notificação desconhecido é recusado');
+select pg_temp.falha(format($$insert into app.preferencias_notificacao values (%L, %L, 'mencao', true)$$, :'emp', :'gestor'), 'preferência só se grava pela função');
+select pg_temp.como(:'intruso');
+select pg_temp.falha(format($$select app.salvar_preferencia_notificacao(%L, 'mencao', true)$$, :'emp'), 'quem é de fora não grava preferência na empresa');
+select pg_temp.ok(not exists (select 1 from app.mencoes), 'quem é de fora não vê as menções');
+select pg_temp.como(:'diretor');
+select app.configurar_notificacao(:'emp', 'tarefa_prazo', p_email_padrao => true);
+select pg_temp.ok((select email_padrao from app.tipos_notificacao where empresa_id = :'emp' and codigo = 'tarefa_prazo'), 'administrador liga o e-mail padrão de um tipo');
 \echo 'TODOS OS TESTES PASSARAM'
