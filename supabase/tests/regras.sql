@@ -1328,8 +1328,8 @@ select pg_temp.ok((select bool_and(app.viab_tipos(g.key) = array(select jsonb_ar
 select pg_temp.como(:'analista');
 select app.criar_viabilidade(:'t1', 'Estudo estático') as vb1 \gset
 select pg_temp.ok((select count(*) from app.viabilidade_linhas where viabilidade_id = :'vb1')
-                  = (select count(*) from app.viabilidade_despesas where empresa_id = :'emp' and grupo in ('taxas','financeiro','comercial')),
-  'estudo novo já vem com os itens fixos de Taxas, Despesas financeiras e Despesas comerciais');
+                  = (select count(*) from app.viabilidade_despesas where empresa_id = :'emp' and app.viab_fixo(grupo)),
+  'estudo novo já vem com os itens fixos de Taxas, Despesas financeiras (com os dois custos de capital) e Despesas comerciais');
 insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, ordem, nome, area_privativa, quantidade, quantidade_permuta, quantidade_comissao, preco_unitario)
 values (:'emp', :'vb1', 1, '2 dormitórios', 40, 100, 10, 2, 280000) returning id as tp1 \gset
 insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, ordem, nome, area_privativa, quantidade, preco_m2)
@@ -1406,6 +1406,25 @@ update app.viabilidade_linhas set valor = 2 where viabilidade_id = :'vb1' and de
 select pg_temp.ok((select despesas_financeiras = 2140508 and lucro_liquido = 4904138.18 from app.viabilidades where id = :'vb1'),
   'juros PJ de 2% da obra total (21,7454 mi) = 434.908 nas despesas financeiras; lucro 4,904 mi (a taxa de 10% do lucro cai junto)');
 update app.viabilidade_linhas set valor = null where viabilidade_id = :'vb1' and despesa = 'juros_pj';
+-- custo de capital (28/out/2026): % sobre o Aporte, que é a permuta financeira em dinheiro ou o pagamento em dinheiro do terreno
+update app.viabilidade_linhas set valor = 2 where viabilidade_id = :'vb1' and despesa = 'capital_permuta';
+update app.viabilidade_linhas set valor = 1 where viabilidade_id = :'vb1' and despesa = 'capital_pagamento';
+select pg_temp.ok((select despesas_financeiras = 1778568.32 and lucro_sem_taxas = 6191399.68 from app.viabilidades where id = :'vb1')
+  and (select bool_and((x->>'base')::numeric = case l.despesa when 'capital_permuta' then 3148416 else 1000000 end and x->>'secao' = 'financeiro')
+         from jsonb_array_elements(app.calcular_viabilidade(:'vb1')->'linhas') x join app.viabilidade_linhas l on l.id::text = x->>'id'
+        where l.despesa in ('capital_permuta','capital_pagamento')),
+  'custo de capital: 2% da permuta financeira em dinheiro (3.148.416) + 1% do pagamento em dinheiro (1 mi) = 72.968,32 nas despesas financeiras');
+select pg_temp.falha(format($$update app.viabilidade_linhas set tipo = 'pct_vgv' where viabilidade_id = %L and despesa = 'capital_permuta'$$, :'vb1'), 'custo de capital só aceita a base Aporte');
+select pg_temp.falha(format($$update app.viabilidade_linhas set tipo = 'pct_aporte_permuta' where viabilidade_id = %L and despesa = 'impostos'$$, :'vb1'), 'Aporte só vale no custo de capital');
+select app.salvar_viabilidade(:'vb1', '{"minimo_garantido":3500000}');
+select pg_temp.ok((select (x->>'valor')::numeric = 70000 from jsonb_array_elements(app.calcular_viabilidade(:'vb1')->'linhas') x
+                    where x->>'id' = (select id::text from app.viabilidade_linhas where viabilidade_id = :'vb1' and despesa = 'capital_permuta')),
+  'com o mínimo garantido, o aporte da permuta é o mínimo (2% de 3,5 mi)');
+select app.salvar_viabilidade(:'vb1', '{"minimo_garantido":3000000}');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$update app.viabilidade_linhas set valor = 5 where viabilidade_id = %L and despesa = 'capital_pagamento'$$, :'vb1'), 'analista não muda o custo de capital');
+select pg_temp.como(:'diretor');
+update app.viabilidade_linhas set valor = null where viabilidade_id = :'vb1' and despesa in ('capital_permuta','capital_pagamento');
 select app.salvar_despesa_viabilidade(:'emp', 'juros_pj', '{"valor_padrao":1.5}');
 select pg_temp.como(:'analista');
 select app.criar_viabilidade(:'t1', 'Com juros padrão') as vbj \gset

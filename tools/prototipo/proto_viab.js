@@ -11,6 +11,7 @@ const VB_CFG=__VIAB_DESPESAS__;
 const VB_TIPO=VB_CFG.tipos,VB_GRUPO=VB_CFG.grupos,VB_SECAO=VB_CFG.secoes;
 const VB_DG=['terreno','incorporacao','cef','adm_financeiro'];
 const vbGruposDe=sec=>Object.keys(VB_GRUPO).filter(g=>VB_GRUPO[g].secao===sec);
+const VB_FIN=vbGruposDe('financeiro');
 const r2=x=>Math.round((x+Math.sign(x)*Number.EPSILON)*100)/100;
 const VB=id=>S.viabs.find(v=>v.id===id);
 const viabsDe=tid=>S.viabs.filter(v=>v.tid===tid);
@@ -35,6 +36,8 @@ function vbNorm(p,campo){if(p.area==null)return;
    obra: incidente (típico) = R$/m² × área privativa; raso = incidente + atípicos; total = raso + não incidente; + projetos e pós-obra;
    terreno: permuta financeira = % × VGV líquido, nunca abaixo do mínimo garantido; + dinheiro + comissão em dinheiro;
    % do lucro líquido (Despesas gerais, Taxas e Despesas financeiras): lucro = L0 ÷ (1 + Σ%), zero quando L0 ≤ 0;
+   custo de capital (Despesas financeiras, 28/out/2026): % sobre o Aporte, que é a permuta financeira em dinheiro
+   (com o mínimo garantido, quando ele vale) ou o pagamento em dinheiro do terreno;
    resultado sem taxas = lucro líquido + taxas; EBITDA = resultado sem taxas + despesas financeiras (as taxas saem por último) */
 function vbCalc(v){let A=0,un=0,unp=0,unc=0,ap=0,ac=0,vgv=0,vp=0,vc=0;
   v.tips.forEach(p=>{const q=p.qtd||0,pe=p.perm||0,co=p.com||0;un+=q;unp+=pe;unc+=co;
@@ -52,13 +55,14 @@ function vbCalc(v){let A=0,un=0,unp=0,unc=0,ap=0,ac=0,vgv=0,vp=0,vc=0;
   const ot=r2(raso+soma(['obra_nao_incidente']));b.pct_obra_total=ot;
   const obras=r2(ot+soma(['projetos','pos_obra']));
   const pfc=r2(liq*(v.pfp||0)/100),pf=Math.max(pfc,v.min||0),terr=r2(pf+(v.din||0)+(v.comd||0));
-  const DT=[...VB_DG,'taxas','financeiro'],pl=v.linhas.filter(l=>l.tipo==='pct_lucro'&&DT.includes(vbGrupoLn(l))).reduce((s,l)=>s+(l.valor||0),0);
+  b.pct_aporte_permuta=pf;b.pct_aporte_pagamento=v.din||0;
+  const DT=[...VB_DG,'taxas',...VB_FIN],pl=v.linhas.filter(l=>l.tipo==='pct_lucro'&&DT.includes(vbGrupoLn(l))).reduce((s,l)=>s+(l.valor||0),0);
   const l0=r2(liq-terr-obras-(com-dedc)-soma(DT,true)),lb=l0>0?r2(l0/(1+pl/100)):0;b.pct_lucro=lb;
   const L={},GR={};let lu=0;
   v.linhas.forEach(l=>{const x=val(l),g=vbGrupoLn(l);L[l.id]={base:l.tipo==='verba_unidade'?unl:vbPct(l.tipo)||l.tipo==='area'?b[l.tipo]:null,valor:x,ded:ded(l)};
     GR[g]=r2((GR[g]||0)+(x||0));if(l.tipo==='pct_lucro')lu+=x||0});
   const sg=gs=>r2(gs.reduce((s,g)=>s+(GR[g]||0),0));
-  const SEC={obra:obras,terreno:terr,despesas:sg(VB_DG),taxas:sg(['taxas']),financeiro:sg(['financeiro']),comercial:com};
+  const SEC={obra:obras,terreno:terr,despesas:sg(VB_DG),taxas:sg(['taxas']),financeiro:sg(VB_FIN),comercial:com};
   const lucro=r2(l0-lu),desp=r2(Object.values(SEC).reduce((s,x)=>s+x,0));
   return {A,un,unp,unc,unl,ap,ac,vgv,vp,vc,vv,dedp,dedc,liq,oi,raso,ot,obras,pfc,pf,minimo:pf>pfc,terr,desp,SEC,GR,lb,semTaxas:r2(lucro+SEC.taxas),ebitda:r2(lucro+SEC.taxas+SEC.financeiro),lucro,margem:liq>0?r2(lucro/liq*100):null,L}}
 
@@ -108,6 +112,9 @@ function viabPreparar(){
   S.viabDesp?.forEach(d=>{if(d.grupo==='taxas'&&VB_CFG.despesas.some(x=>x.codigo===d.codigo&&x.grupo==='financeiro'))d.grupo='financeiro'});
   if(S.viabDesp&&!S.viabDesp.some(d=>d.codigo==='juros_pj')){const j=VB_CFG.despesas.find(d=>d.codigo==='juros_pj'),i=S.viabDesp.findIndex(d=>d.codigo==='custo_alavancagem');
     S.viabDesp.splice(i<0?S.viabDesp.length:i+1,0,{codigo:j.codigo,nome:j.nome,grupo:j.grupo,tipo:j.tipo,valor:j.valor,deduz:j.deduz,ativo:true})}
+  /* custos de capital da permuta financeira e do pagamento do terreno, depois de Impostos (28/out/2026) */
+  if(S.viabDesp)VB_CFG.despesas.filter(j=>j.grupo.startsWith('capital_')&&!S.viabDesp.some(d=>d.codigo===j.codigo)).forEach(j=>{const i=S.viabDesp.map(d=>VB_FIN.includes(d.grupo)).lastIndexOf(true);
+    S.viabDesp.splice(i<0?S.viabDesp.length:i+1,0,{codigo:j.codigo,nome:j.nome,grupo:j.grupo,tipo:j.tipo,valor:j.valor,deduz:j.deduz,ativo:true})});
   /* estudo no formato de antes de 26/out (multiplicador, "compõe a obra"): refaz a lista e os exemplos */
   if(S.viabDesp&&(S.viabDesp.some(d=>!VB_GRUPO[d.grupo])||S.viabs?.some(v=>v.linhas.some(l=>'mult' in l)))){S.viabDesp=null;S.viabs=null;S.terrenos.forEach(t=>{if(t.neg?.viab)delete t.neg.viab.id})}
   if(!S.viabModelos)S.viabModelos=[];
@@ -155,7 +162,10 @@ function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
   const acoes=ro?'':`${lig?'':negAtiva(t)?`<button class="btn sm" data-a="vb-vincular" data-v="${v.id}">Marcar como válido</button>`:''}<button class="btn sm" data-a="vb-duplicar" data-v="${v.id}">Duplicar</button><button class="btn sm" data-a="vb-modelo" data-v="${v.id}">Salvar como modelo</button>${lig?'':`<button class="btn text sm danger" data-a="vb-apagar" data-v="${v.id}">Apagar</button>`}`;
   const inp=(id,k,val,d,rot)=>`<label class="vb-c vb-${k}"><span class="vb-l">${rot}</span><input data-vb="tp" data-r="${id}" data-k="${k}" ${k==='nome'?'':`data-fmt="${['pu','pm2'].includes(k)?'moeda':['qtd','perm','com'].includes(k)?'int':'num'}"`} value="${k==='nome'?esc(val??''):vbIn(val,d)}" ${k==='nome'?'':'inputmode="decimal"'} aria-label="${rot}" ${dis}></label>`;
   const campo=(k,rot,val,d=2,dica='')=>`<div class="field"><label for="vb-${k}">${rot}</label><input id="vb-${k}" data-vb="hd" data-k="${k}" data-fmt="${k==='pfp'||k==='dedp'?'pct':'moeda'}" value="${vbIn(val,d)}" inputmode="decimal" ${dis}>${dica?`<div class="hint">${dica}</div>`:''}</div>`;
-  const hd=`<div class="vb-r vb-hd" aria-hidden="true"><span>Item</span><span>Base de cálculo</span><span>Valor</span><span>Meses</span><span>Resultado</span><span></span></div>`;
+  const hd=`<div class="vb-r vb-hd" aria-hidden="true"><span>Item</span><span>Base de cálculo</span><span>Valor</span><span class="vb-qtd">Meses</span><span>Resultado</span><span class="vb-x"></span></div>`;
+  /* cabeçalho padronizado (28/out/2026): texto à esquerda, números à direita; a coluna Meses só onde há verba mensal
+     e a da lixeira só onde se tira item (seção com grupo que não é fixo) */
+  const lnsCls=sec=>{const gs=vbGruposDe(sec);return (gs.some(g=>VB_GRUPO[g].tipos.includes('verba_mensal'))?'':' sem-meses')+(gs.some(g=>!VB_GRUPO[g].fixo)?'':' sem-x')};
   const tot=(id,rot,x,cls='')=>`<div class="vb-r vb-tot ${cls}" id="${id}">${vbTotRow(rot,x,c)}</div>`;
   const grupo=g=>{const G=VB_GRUPO[g],ls=vbLinhasGrupo(v,g);
     return `<div class="vb-gt"><h3>${G.nome}</h3>${ro||G.fixo?'':`<button class="btn text sm" data-a="vb-ln-add" data-v="${g}">${ic('add',16)}${VB_ADD[g]}</button>`}</div>
@@ -177,15 +187,15 @@ function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
     <h3 class="vb-h3">Comissão</h3><div class="vb-ro" data-vbo="pcom">${vbComissao(c)}</div>
     <div class="editgrid vb-campos">${campo('comd','Comissão em dinheiro (R$)',v.comd)}</div>
     <div class="vb-tab vb-lns">${tot('vb-tot-terreno','Total · '+VB_SECAO.terreno,c.SEC.terreno)}</div>`;
-  const obra=()=>`<div class="vb-tab vb-lns">${hd}
+  const obra=()=>`<div class="vb-tab vb-lns${lnsCls('obra')}">${hd}
     <div class="vb-gt"><h3>Custo de obra incidente (típico)</h3></div>
     <div class="vb-r" data-ln="oi"><span class="vb-c vb-desp"><span class="vb-l">Item</span><span class="vb-nome">Obra incidente</span></span><span class="vb-c vb-tipo"><span class="vb-l">Base de cálculo</span><span class="vb-nome">${VB_TIPO.area}</span></span>
       <label class="vb-c vb-mult"><span class="vb-l">Valor unitário</span><input data-fmt="moeda" data-vb="hd" data-k="cm2" value="${vbIn(v.cm2,2)}" inputmode="decimal" aria-label="Valor unitário da obra incidente (R$ por m²)" ${dis}></label><span class="vb-c vb-qtd"></span>
-      <span class="vb-c vb-out"><span class="vb-l">Resultado</span><b data-vbo="oi">${brl(c.oi)}</b><small class="faint" data-vbo="oi-b">× ${m2(c.A)} de área privativa</small></span><span></span></div>
+      <span class="vb-c vb-out"><span class="vb-l">Resultado</span><b data-vbo="oi">${brl(c.oi)}</b><small class="faint" data-vbo="oi-b">× ${m2(c.A)} de área privativa</small></span><span class="vb-x"></span></div>
     ${grupo('obra_atipica')}${tot('vb-raso','Custo de obra raso (incidente + atípicos)',c.raso,'vb-marco')}
     ${grupo('obra_nao_incidente')}${tot('vb-ot','Custo de obra total (raso + não incidente)',c.ot,'vb-marco')}
     ${grupo('projetos')}${grupo('pos_obra')}${tot('vb-tot-obra','Total · '+VB_SECAO.obra,c.SEC.obra)}</div>`;
-  const lns=sec=>()=>`<div class="vb-tab vb-lns">${hd}
+  const lns=sec=>()=>`<div class="vb-tab vb-lns${lnsCls(sec)}">${hd}
     ${vbGruposDe(sec).map(g=>VB_GRUPO[g].fixo?vbLinhasGrupo(v,g).map(l=>vbLinha(v,l,c,dis,ro)).join(''):grupo(g)).join('')}${tot('vb-tot-'+sec,'Total · '+VB_SECAO[sec],c.SEC[sec])}</div>`;
   const corpo={tip:tips,terreno,comercial:lns('comercial'),obra,despesas:lns('despesas'),taxas:lns('taxas'),financeiro:lns('financeiro'),
     res:()=>`<div id="vb-res">${vbResHtml(v,c)}</div>`};
@@ -215,20 +225,22 @@ function vbLinhasGrupo(v,g){const ls=v.linhas.filter(l=>vbGrupoLn(l)===g);if(!VB
 function vbLinha(v,l,c,dis,ro){const d=vbDesp(l.desp),g=d?.grupo,fixo=VB_GRUPO[g]?.fixo,nome=d?d.nome+(d.ativo?'':' (inativo)'):l.desp;
   if(VB_RESTRITO.includes(VB_GRUPO[g]?.secao)&&!vbDiretoria())dis='disabled';
   return `<div class="vb-r" data-ln="${l.id}"><span class="vb-c vb-desp"><span class="vb-l">Item</span>${fixo?`<span class="vb-nome">${esc(nome)}</span>`:vbCombo(l.id,nome,dis,g)}</span>
-    <label class="vb-c vb-tipo"><span class="vb-l">Base de cálculo</span><select data-vb="ln" data-r="${l.id}" data-k="tipo" aria-label="Base de cálculo de ${esc(nome)}" ${dis}>${(VB_GRUPO[g]?.tipos||[l.tipo]).map(k=>`<option value="${k}" ${l.tipo===k?'selected':''}>${VB_TIPO[k]}</option>`).join('')}</select></label>
+    ${(VB_GRUPO[g]?.tipos||[l.tipo]).length===1?`<span class="vb-c vb-tipo"><span class="vb-l">Base de cálculo</span><span class="vb-nome">${VB_TIPO[l.tipo]}</span></span>`
+      :`<label class="vb-c vb-tipo"><span class="vb-l">Base de cálculo</span><select data-vb="ln" data-r="${l.id}" data-k="tipo" aria-label="Base de cálculo de ${esc(nome)}" ${dis}>${VB_GRUPO[g].tipos.map(k=>`<option value="${k}" ${l.tipo===k?'selected':''}>${VB_TIPO[k]}</option>`).join('')}</select></label>`}
     <label class="vb-c vb-mult"><span class="vb-l">${l.tipo==='area'?'Valor unitário':'Valor'}</span><input data-fmt="${vbPct(l.tipo)?'pct':'moeda'}" data-vb="ln" data-r="${l.id}" data-k="valor" value="${vbIn(l.valor,4)}" inputmode="decimal" aria-label="Valor de ${esc(nome)}" ${dis}></label>
     ${l.tipo==='verba_mensal'?`<label class="vb-c vb-qtd"><span class="vb-l">Meses</span><input data-vb="ln" data-r="${l.id}" data-k="qtd" value="${vbIn(l.qtd,2)}" inputmode="decimal" aria-label="Meses de ${esc(nome)}" ${dis}></label>`:'<span class="vb-c vb-qtd"></span>'}
-    <span class="vb-c vb-out"><span class="vb-l">Resultado</span><b data-vbo="ln-${l.id}">${brl(c.L[l.id].valor)}</b><small class="faint" data-vbo="lb-${l.id}">${vbBaseTxt(l,c)}</small></span>${ro||fixo?'<span></span>':`<button class="iconbtn sm vb-del" data-a="vb-ln-del" data-v="${l.id}" aria-label="Remover ${esc(nome)}" title="Remover">${ic('close',18)}</button>`}</div>`}
+    <span class="vb-c vb-out"><span class="vb-l">Resultado</span><b data-vbo="ln-${l.id}">${brl(c.L[l.id].valor)}</b><small class="faint" data-vbo="lb-${l.id}">${vbBaseTxt(l,c)}</small></span>${ro||fixo?'<span class="vb-x"></span>':`<button class="iconbtn sm vb-del vb-x" data-a="vb-ln-del" data-v="${l.id}" aria-label="Remover ${esc(nome)}" title="Remover">${ic('close',18)}</button>`}</div>`}
 const vbNovaLinha=g=>`<div class="vb-r vb-nova"><span class="vb-c vb-desp"><span class="vb-l">Item</span>${vbCombo('nova','','',g)}</span><span class="vb-c vb-dica faint">Escolha na lista da empresa; a base de cálculo e o valor vêm preenchidos e podem ser trocados.</span><button class="iconbtn sm vb-del" data-a="vb-ln-cancela" aria-label="Cancelar" title="Cancelar">${ic('close',18)}</button></div>`;
 function vbCombo(id,txt,dis,g){return `<span class="vb-cb"><input data-vb-cb="${id}" data-grupo="${g}" value="${esc(txt)}" placeholder="Buscar na lista" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="vb-dd-${id}" aria-label="Item" ${dis}><span class="vb-dd" id="vb-dd-${id}" role="listbox" hidden></span></span>`}
 function vbBaseTxt(l,c){const L=c.L[l.id],b=L?.base,d=L?.ded?' · sai do VGV líquido':'';
   switch(l.tipo){case 'pct_vgv':return `sobre o VGV vendido (${mi(b)})${d}`;case 'pct_obra_tipica':return `sobre a obra típica (${mi(b)})`;case 'pct_obra_raso':return `sobre a obra raso (${mi(b)})`;
-    case 'pct_obra_total':return `sobre a obra total (${mi(b)})`;case 'pct_lucro':return `sobre o lucro líquido (${mi(b)})`;case 'area':return `× ${m2(b)}`;
+    case 'pct_obra_total':return `sobre a obra total (${mi(b)})`;case 'pct_lucro':return `sobre o lucro líquido (${mi(b)})`;
+    case 'pct_aporte_permuta':return `sobre a permuta financeira em dinheiro (${mi(b)})`;case 'pct_aporte_pagamento':return `sobre o pagamento em dinheiro (${mi(b)})`;case 'area':return `× ${m2(b)}`;
     case 'verba_unidade':return `× ${num(b)} unidades líquidas${d}`;case 'verba_mensal':return `${l.qtd&&l.qtd!==1?num(l.qtd,2)+' meses':'1 mês'}${d}`;default:return d.slice(3)}}
 function vbKpis(c){const k=(l,val)=>`<div class="kpi"><span class="v sm">${String(val).replace(/R\$\s/,'<span class="vb-rs">R$ </span>')}</span><span class="l">${l}</span></div>`;
   return k('VGV',mi(c.vgv))+k('VGV líquido',mi(c.liq))+k('Lucro líquido',mi(c.lucro))+k('Margem líquida',c.margem==null?'—':num(c.margem,1)+'%')}
 function vbTotTips(v,c){return `<span class="vb-c"><b>Total</b></span><span class="vb-c vb-area"><span class="vb-l">Área privativa total</span>${c.A?m2(c.A):'—'}</span><span class="vb-c vb-qtd"><span class="vb-l">Unidades</span>${num(c.un)}</span><span class="vb-c vb-perm"><span class="vb-l">Em permuta</span>${num(c.unp)}</span><span class="vb-c vb-com"><span class="vb-l">Comissão</span>${num(c.unc)}</span><span class="vb-c vb-pu"><span class="vb-l">Preço médio</span>${c.un?'<small class="faint vb-med">média </small>'+brl(c.vgv/c.un):'—'}</span><span class="vb-c vb-pm2"><span class="vb-l">Preço médio por m²</span>${c.A?'<small class="faint vb-med">média </small>'+brl(c.vgv/c.A):'—'}</span><span class="vb-c vb-out"><span class="vb-l">VGV</span><b>${brl(c.vgv)}</b></span><span></span>`}
-function vbTotRow(rot,x,c){return `<span class="vb-c"><b>${rot}</b></span><span class="vb-c vb-tipo"></span><span class="vb-c vb-mult"></span><span class="vb-c vb-qtd"></span><span class="vb-c vb-out"><span class="vb-l">Total</span><b>${brl(x)}</b><small class="faint">${c.vgv>0?num(x/c.vgv*100,1)+'% do VGV':''}</small></span><span></span>`}
+function vbTotRow(rot,x,c){return `<span class="vb-c"><b>${rot}</b></span><span class="vb-c vb-tipo"></span><span class="vb-c vb-mult"></span><span class="vb-c vb-qtd"></span><span class="vb-c vb-out"><span class="vb-l">Total</span><b>${brl(x)}</b><small class="faint">${c.vgv>0?num(x/c.vgv*100,1)+'% do VGV':''}</small></span><span class="vb-x"></span>`}
 const vbPctTxt=(a,b)=>b>0?num(a/b*100,1)+'%':'—';
 const vbRo=items=>items.map(([l,v,s])=>`<div><span class="vb-rl">${l}</span><b>${v}</b>${s?`<small class="faint">${s}</small>`:''}</div>`).join('');
 const vbPermFis=c=>vbRo([['Unidades permutadas',num(c.unp)],['Área privativa permutada',c.ap?m2(c.ap):'—'],['% das unidades',vbPctTxt(c.unp,c.un)],['% da área privativa',vbPctTxt(c.ap,c.A)]]);
@@ -257,7 +269,7 @@ function vbResHtml(v,c){const pct=x=>c.liq>0&&x!=null?num(x/c.liq*100,1)+'%':'';
     ${ln(`(−) ${VB_SECAO.comercial}${c.dedc?' (fora as deduzidas da receita)':''}`,com)}${itens(comLs)}
     ${ln('(−) '+VB_SECAO.despesas,c.SEC.despesas)}${VB_DG.map(g=>sub(VB_GRUPO[g].nome,c.GR[g])).join('')}
     ${ln('(=) EBITDA',c.ebitda,'vb-tt')}
-    ${ln('(−) '+VB_SECAO.financeiro,c.SEC.financeiro)}${det(['financeiro'])}
+    ${ln('(−) '+VB_SECAO.financeiro,c.SEC.financeiro)}${det(VB_FIN)}
     ${ln('(=) Resultado sem as taxas',c.semTaxas,'vb-tt forte')}
     <tr class="vb-tt"><td class="esq">Margem sem as taxas</td><td class="num">${c.liq>0?num(c.semTaxas/c.liq*100,2)+'%':'—'}</td><td></td></tr>
     ${ln('(−) '+VB_SECAO.taxas,c.SEC.taxas)}${det(['taxas'])}

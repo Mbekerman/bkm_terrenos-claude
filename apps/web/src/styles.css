@@ -2185,6 +2185,12 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .vb-r { display: grid; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--linha) }
 .vb-tips .vb-r { grid-template-columns: minmax(140px, 1.6fr) minmax(80px, .9fr) minmax(64px, .65fr) minmax(64px, .65fr) minmax(64px, .65fr) minmax(104px, 1.15fr) minmax(96px, 1fr) minmax(110px, 1.2fr) 36px }
 .vb-lns .vb-r { grid-template-columns: minmax(200px, 2fr) minmax(170px, 1.4fr) minmax(110px, 1fr) minmax(64px, .5fr) minmax(150px, 1.4fr) 36px }
+.vb-lns.sem-meses .vb-r { grid-template-columns: minmax(200px, 2fr) minmax(170px, 1.4fr) minmax(110px, 1fr) minmax(150px, 1.4fr) 36px }
+.vb-lns.sem-x .vb-r { grid-template-columns: minmax(200px, 2fr) minmax(170px, 1.4fr) minmax(110px, 1fr) minmax(64px, .5fr) minmax(150px, 1.4fr) }
+.vb-lns.sem-meses.sem-x .vb-r { grid-template-columns: minmax(200px, 2fr) minmax(170px, 1.4fr) minmax(110px, 1fr) minmax(150px, 1.4fr) }
+.vb-lns.sem-meses .vb-qtd, .vb-lns.sem-x .vb-x { display: none }
+/* base de cálculo única (sem lista) começa onde começa o texto das listas ao lado */
+.vb-lns:has(.vb-tipo select:not(:disabled)) .vb-tipo > .vb-nome { padding-left: 11px }
 .vb-r.vb-hd { font-size: 12px; line-height: 16px; font-weight: 500; color: var(--texto-suave); padding: 0 0 8px }
 .vb-r.vb-hd span:nth-child(n+2) { text-align: right }
 .vb-lns .vb-r.vb-hd span:nth-child(2) { text-align: left }
