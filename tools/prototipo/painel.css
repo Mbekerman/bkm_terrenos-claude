@@ -1402,14 +1402,14 @@ input[data-fmt]:not([data-fmt="none"]) { font-variant-numeric: tabular-nums }
 .num, .big, .mv, .kpi .v, .chip { font-variant-numeric: tabular-nums }
 
 /* Campos no padrão Material 3 (campo contornado): altura 40, raio 4, contorno #747775, seta própria no select */
-:is(.field, .cfg-r, .vb-c, .zp-tbl, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select, textarea) {
+:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select, textarea) {
   border: 1px solid #747775 !important; border-radius: 4px !important; background-color: transparent; color: var(--m-on-surface, #1f1f1f); font-size: 14px }
-:is(.field, .cfg-r, .vb-c, .zp-tbl, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select) { height: 40px !important; min-height: 40px !important; padding: 0 12px }
-:is(.field, .cfg-r, .vb-c, .zp-tbl, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :where(input, select, textarea):focus { outline: 2px solid var(--m-primary, #0b57d0) !important; outline-offset: -2px; border-color: transparent !important }
+:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select) { height: 40px !important; min-height: 40px !important; padding: 0 12px }
+:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :where(input, select, textarea):focus { outline: 2px solid var(--m-primary, #0b57d0) !important; outline-offset: -2px; border-color: transparent !important }
 select:not([multiple]) { -webkit-appearance: none; appearance: none; padding-right: 36px !important; background-repeat: no-repeat; background-position: right 10px center; background-size: 18px 18px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23444746' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important }
 :root[data-tema="escuro"] select:not([multiple]) { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23c4c7f0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important }
-:root[data-tema="escuro"] :is(.field, .cfg-r, .vb-c, .zp-tbl, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not(.auto-v):not(.vb-pop-nome), select, textarea) { border-color: rgba(142,154,196,.5) !important; background-color: transparent !important; color: #e6ecff }
+:root[data-tema="escuro"] :is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not(.auto-v):not(.vb-pop-nome), select, textarea) { border-color: rgba(142,154,196,.5) !important; background-color: transparent !important; color: #e6ecff }
 :root[data-tema="escuro"] { color-scheme: dark }
 input[type=date] { font-variant-numeric: tabular-nums }
 input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
@@ -1758,7 +1758,7 @@ form.inline-form.if-fechado { display: none !important }
 /* Quadro: colunas de 248 px (a próxima aparece pela metade); coluna vazia estreita; chip quebra em duas linhas */
 @media (min-width: 600px) {
   .board .col { flex: 0 0 248px !important; width: 248px; max-width: 248px }
-  .board .col:not(:has(.kcard)) { flex-basis: 176px !important; width: 176px; max-width: 176px }
+  .board:not(.tk-board) .col:not(:has(.kcard)) { flex-basis: 176px !important; width: 176px; max-width: 176px }
 }
 .kcard .ksub > span:first-child { white-space: normal !important; overflow: visible; text-overflow: clip }
 .kcard .ksub { height: auto !important; align-items: flex-start }
@@ -1908,3 +1908,101 @@ input[type=checkbox]:not(.fchk input):focus-visible { outline: 2px solid var(--m
 @media (max-width: 599px) { .zp-tbl tr { grid-template-columns: 1fr 1fr !important } }
 .zp-tbl td:first-child { position: static !important }
 .vb-campos .field:has(#vb-mmin) { max-width: 200px }
+
+/* ===================== Revisão de design, rodada 7 ===================== */
+/* Catálogo de parâmetros: uma linha por zona com o resumo (CA, TO, gabarito, situação); abre para editar */
+.zp-lista { border-top: 1px solid var(--m-outline-var, #c4c7c5); margin-top: 8px }
+.zp-z { border-bottom: 1px solid var(--m-outline-var, #c4c7c5) }
+.zp-z > summary { list-style: none; display: grid; grid-template-columns: minmax(0, 1fr) 300px 104px 24px; align-items: center; gap: 4px 16px; min-height: 56px; padding: 8px 0; cursor: pointer }
+.zp-z > summary::-webkit-details-marker { display: none }
+.zp-z > summary::after { content: ""; width: 24px; height: 24px; background: currentColor; color: var(--m-on-var, #444746); transition: transform .15s;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 24px no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 24px no-repeat }
+.zp-z[open] > summary::after { transform: rotate(180deg) }
+.zp-z > summary:hover { background: linear-gradient(var(--m-sc-low, #f0f4f9), var(--m-sc-low, #f0f4f9)) padding-box; box-shadow: -16px 0 0 var(--m-sc-low, #f0f4f9), 16px 0 0 var(--m-sc-low, #f0f4f9) }
+.zp-n { display: flex; align-items: baseline; gap: 4px 12px; flex-wrap: wrap; min-width: 0 }
+.zp-n b { font-size: 16px; font-weight: 500 }
+.zp-cond { font-size: 13px; color: var(--m-on-var, #444746) }
+.zp-res { font-size: 14px; color: var(--m-on-var, #444746); font-variant-numeric: tabular-nums; white-space: nowrap }
+.zp-chips { display: flex; gap: 6px; justify-content: flex-end }
+.zp-z.inativa > summary { opacity: .6 }
+.zp-b { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; padding: 4px 0 20px }
+.zp-f { display: flex; flex-direction: column; gap: 4px; min-width: 0; margin: 0 }
+.zp-l { font-size: 12px; color: var(--m-on-var, #444746) }
+.zp-b input:not([type=checkbox]), .zp-b select { width: 100% !important; text-align: left }
+.zp-gab { gap: 8px }
+.zp-gab .chk { min-height: 0; font-size: 14px }
+.zp-fonte { grid-column: span 2 }
+.zp-chk { grid-column: 1 / -1; display: flex; gap: 8px 24px; flex-wrap: wrap }
+.zp-chk .chk { font-size: 14px; min-height: 40px }
+.zp-b .chk { display: inline-flex; align-items: center; gap: 8px }
+:root[data-tema="escuro"] :is(.zp-lista, .zp-z) { border-color: #1a2240 }
+:root[data-tema="escuro"] :is(.zp-cond, .zp-res, .zp-l) { color: #8e9ac4 }
+:root[data-tema="escuro"] .zp-z > summary::after { color: #8e9ac4 }
+:root[data-tema="escuro"] .zp-z > summary:hover { background: rgba(124,140,255,.06); box-shadow: -16px 0 0 rgba(124,140,255,.06), 16px 0 0 rgba(124,140,255,.06) }
+@media (max-width: 599px) {
+  .zp-z > summary { grid-template-columns: minmax(0, 1fr) auto 24px; grid-template-areas: "n c s" "r r s" }
+  .zp-n { grid-area: n } .zp-res { grid-area: r; white-space: normal } .zp-chips { grid-area: c } .zp-z > summary::after { grid-area: s }
+  .zp-b { grid-template-columns: 1fr 1fr; gap: 12px }
+  .zp-fonte { grid-column: 1 / -1 }
+}
+/* Um estilo de campo por uso: grades de edição (estudo, Configurações, catálogo, painel) no estilo preenchido; formulários e filtros contornados */
+:is(.cfg-r, .zp-b, .adv-sub, .lz-tbl) :is(input:not([type=checkbox]):not([type=radio]):not([type=search]):not(:disabled), select:not(:disabled)) { border: 0 !important; border-bottom: 1px solid #747775 !important; border-radius: 4px 4px 0 0 !important; background-color: #f0f4f9 !important }
+:is(.cfg-r, .zp-b, .adv-sub, .lz-tbl) :is(input:not([type=checkbox]):not([type=radio]):not(:disabled), select:not(:disabled)):hover { background-color: #e9eef6 !important }
+:is(.cfg-r, .zp-b, .adv-sub, .lz-tbl) :is(input, select):focus { outline: 0 !important; border-bottom: 2px solid var(--m-primary, #0b57d0) !important }
+:root[data-tema="escuro"] :is(.cfg-r, .zp-b, .adv-sub, .lz-tbl) :is(input:not([type=checkbox]):not([type=radio]):not([type=search]):not(:disabled), select:not(:disabled)) { background-color: rgba(124,140,255,.07) !important; border-bottom-color: rgba(142,154,196,.6) !important }
+:root[data-tema="escuro"] :is(.cfg-r, .zp-b, .adv-sub, .lz-tbl) :is(input, select):focus { border-bottom-color: #a8b4ff !important }
+.adv .adv-sub select { background-color: #fff !important }
+:root[data-tema="escuro"] .adv .adv-sub select { background-color: rgba(124,140,255,.07) !important }
+/* Tarefas no celular: filtros em chips que quebram linha, todos à vista, dentro da margem */
+@media (max-width: 599px) {
+  .tk-fl { flex-wrap: wrap !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; width: 100% !important; mask-image: none !important; -webkit-mask-image: none !important }
+  .tk-filtros select.fsel-chip { height: 32px !important; min-height: 32px !important; max-width: calc(50% - 4px) }
+}
+/* Quadro no celular: pontinhos de posição das colunas */
+.board-pt { display: flex; justify-content: center; gap: 0; margin: -4px 0 4px }
+.board-pt button { width: 24px; height: 24px; border: 0; padding: 0; background: none; cursor: pointer; display: grid; place-items: center }
+.board-pt button::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #c4c7c5; transition: width .15s }
+.board-pt button[aria-selected="true"]::before { width: 20px; border-radius: 4px; background: var(--m-primary, #0b57d0) }
+:root[data-tema="escuro"] .board-pt button::before { background: #2a3358 }
+:root[data-tema="escuro"] .board-pt button[aria-selected="true"]::before { background: #7c8cff }
+@media (min-width: 600px) { .board-pt { display: none } }
+/* Quadro no computador: colunas com cartões dividem o espaço; coluna vazia recolhida numa faixa com o nome na vertical (continua recebendo cartões) */
+@media (min-width: 600px) {
+  .board .col { flex: 1 0 228px !important; width: auto; max-width: 300px }
+  .board:not(.tk-board) .col:not(:has(.kcard)) { flex: 0 0 52px !important; width: 52px; max-width: 52px; min-height: 280px !important; padding: 12px 0 !important }
+  .board:not(.tk-board) .col:not(:has(.kcard)) .col-h { writing-mode: vertical-rl; flex-direction: row-reverse; justify-content: flex-end; align-items: center !important; gap: 12px; padding: 0 !important; margin: 0 auto; min-height: 0; height: auto }
+  .board:not(.tk-board) .col:not(:has(.kcard)) .col-h .col-ab { display: inline-flex !important; align-items: center; gap: 4px; padding: 8px 0 }
+  .board:not(.tk-board) .col:not(:has(.kcard)) .col-h .col-ab svg { transform: rotate(0deg); margin: 0 !important; vertical-align: 0 }
+  .board:not(.tk-board) .col:not(:has(.kcard)) :is(.col-empty, .col-s) { display: none }
+}
+/* Mapa com a ficha aberta: painel mais estreito, sobra mapa */
+@media (min-width: 900px) { .ficha-sheet { width: min(440px, calc(100vw - 32px)) } }
+/* Chips de status sempre tonais (fase e subetapa também); dados do topo da ficha no mesmo neutro */
+.chip.fase:not(.dt .chip) { background: #d3e3fd !important; border-color: transparent !important; color: #041e49 !important }
+.chip.sub:not(.dt .chip):not(.kv .chip) { background: #e9eef6 !important; border-color: transparent !important; color: #1f1f1f !important }
+.dchips .chip:not(.warn):not(.crit):not(.good):not(.blue):not(.fase):not(.sub) { background: #e9eef6 !important; border-color: transparent !important }
+:root[data-tema="escuro"] .chip.fase:not(.dt .chip) { background: rgba(124,140,255,.18) !important; color: #c9d6ff !important }
+:root[data-tema="escuro"] .chip.sub:not(.dt .chip):not(.kv .chip), :root[data-tema="escuro"] .dchips .chip:not(.warn):not(.crit):not(.good):not(.blue):not(.fase):not(.sub) { background: rgba(142,154,196,.14) !important; color: #e6ecff !important }
+:root[data-tema="escuro"] .chip.crit { background: rgba(255,107,107,.16) !important; border-color: transparent !important; color: #ffb4ab !important }
+/* Chip de status com a largura do texto (Diligências no celular) */
+.empilha .dt td .chip, .dt td > .chip { width: auto !important; max-width: max-content; justify-self: start; align-self: flex-start }
+/* Temperatura no escuro: barras vazias visíveis */
+:root[data-tema="escuro"] .temp .bars button:not(.on) { background: #2a3358 !important }
+/* Caixa do lote no escuro: mesmo fio dos quadros */
+:root[data-tema="escuro"] .lz-lote { border-color: #1a2240 !important }
+:root[data-tema="escuro"] .lz-lote :is(.lz-z, hr) { border-color: #1a2240 !important }
+/* Ações de linha: botão de texto 14/500, alinhado à margem */
+.if-abre { font-size: 14px !important }
+.reu-ata > .btn.text:last-child { margin-right: -12px }
+/* Colunas de número seguidas de texto: respiro */
+.dt td.num + td:not(.num), .dt th.num + th:not(.num), .mini-tbl td.r + td:not(.r), .mini-tbl th.r + th:not(.r) { padding-left: 24px !important }
+.mini-tbl td.nw { white-space: nowrap }
+/* Terrenos: código alinhado à esquerda, como o título da coluna */
+.dt .col-codigo { text-align: left !important }
+@media (max-width: 599px) { .sec.lista .empilha .dt tbody tr { padding-left: 0 !important; padding-right: 0 !important } }
+/* Configurações › Viabilidade: item e grupo sem corte; cabeçalho numa linha; grupo em largura total no celular */
+@media (min-width: 900px) { .vb-cfg-r { grid-template-columns: 56px minmax(240px, 1fr) 180px 170px 96px 88px 40px 40px !important } }
+.cfg-hd > span { white-space: nowrap }
+@media (max-width: 899px) { .vb-cfg-r > :nth-child(3) { grid-column: 1 / -1 } }
+.vb-vazio { border: 0 !important; padding: 8px 0 }

@@ -77,12 +77,13 @@ await tipo('mercado');
 await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=config]')?.click());await p.waitForTimeout(200);
 await p.evaluate(()=>document.querySelector('[data-a=cfg-aba][data-v=zonas]').click());await p.waitForTimeout(200);
 await p.evaluate(()=>document.querySelector('[data-a=zp-cid][data-v=sjc]').click());await p.waitForTimeout(200);
-const sel='tr:has(td b:text-is("ZM3")):has(td:text-is("RV1 · Estruturação")) input[data-k=ca_maximo]';
+const zz=c=>`details.zp-z:has(summary b:text-is("ZM3")):has(.zp-cond:text-is("${c}"))`,sel=zz('RV1 · Estruturação')+' input[data-k=ca_maximo]';
+await p.evaluate(()=>document.querySelectorAll('details.zp-z').forEach(d=>d.open=true));await p.waitForTimeout(100);
 ok(await p.$eval(sel,e=>e.value)==='2',tag+' Configurações mostra o CA máximo da ZM3 RV1 na Estruturação: 2');
 await p.screenshot({path:OUT+tag+'_5config.png'});
 await p.fill(sel,'0');await p.$eval(sel,e=>e.dispatchEvent(new Event('change',{bubbles:true})));await p.waitForTimeout(200);
 ok(/maior que zero/.test(await toast()),tag+' CA zero é recusado no catálogo');
-for(const s of ['tr:has(td b:text-is("ZM3")):has(td:text-is("RV2 · Estruturação")) input[data-k=ca_maximo]',sel]){await p.fill(s,'2,5');await p.$eval(s,e=>e.dispatchEvent(new Event('change',{bubbles:true})));await p.waitForTimeout(200)}
+for(const s of [zz('RV2 · Estruturação')+' input[data-k=ca_maximo]',sel]){await p.fill(s,'2,5');await p.$eval(s,e=>e.dispatchEvent(new Event('change',{bubbles:true})));await p.waitForTimeout(200)}
 await abrir('Cupecê');ok(/4\.800 m²/.test(await res()),tag+' ficha usa o catálogo editado (1.920×2,5 = 4.800 m²)');
 // Leitura
 await p.evaluate(()=>{document.querySelector('[data-a=perfil-menu]').click();document.querySelector('[data-a=role][data-v=Leitura]').click()});await p.waitForTimeout(200);

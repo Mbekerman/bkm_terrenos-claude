@@ -162,17 +162,21 @@ function cfgZonasHtml(){const cid=UI.zpCid||'sp',tipo=UI.zpTipo||'mercado',L=zpa
     
     <div class="lz-topo"><div class="seg" role="group" aria-label="Cidade">${[['sp','São Paulo'],['sjc','São José dos Campos']].map(([k,l])=>`<button type="button" data-a="zp-cid" data-v="${k}" aria-pressed="${cid===k}">${l}</button>`).join('')}</div>
     <div class="seg" role="group" aria-label="Tipo de empreendimento">${Object.entries(TIPOS_EMP).map(([k,l])=>`<button type="button" data-a="zp-tipo" data-v="${k}" aria-pressed="${tipo===k}">${l}</button>`).join('')}</div></div>
-    <div class="tblwrap rola"><table class="mini-tbl zp-tbl"><thead><tr><th>Zona</th><th>Condição</th><th>Admitido</th>${ZP_COLS.map(([,l])=>`<th class="r">${l}</th>`).join('')}<th>Sem limite</th><th>Outorga grátis</th><th>Situação</th><th>Fonte</th><th>Ativo</th></tr></thead><tbody>
-    ${L.map(([r,i])=>`<tr class="${r.ativo?'':'inativa'}"><td><b>${esc(r.sigla)}</b></td><td class="muted">${esc(cond(r))||'—'}</td>
-      <td><input type="checkbox" data-ch="zpar" data-i="${i}" data-k="permitido" ${r.permitido!==false?'checked':''} aria-label="Admitido em ${esc(r.sigla)}"></td>
-      ${ZP_COLS.map(([k,l])=>`<td class="r"><input data-ch="zpar" data-i="${i}" data-k="${k}" value="${nI(r[k])}" inputmode="decimal" data-fmt="num" data-dec="3" aria-label="${l} de ${esc(r.sigla)}" ${k==='to_lote_grande'&&r.to_corte_m2==null?`disabled title="Sem corte por tamanho de lote"`:''}></td>`).join('')}
-      <td><input type="checkbox" data-ch="zpar" data-i="${i}" data-k="gabarito_sem_limite" ${r.gabarito_sem_limite?'checked':''} aria-label="Gabarito sem limite em ${esc(r.sigla)}"></td>
-      <td><select data-ch="zpar" data-i="${i}" data-k="outorga_gratuita" aria-label="Outorga em ${esc(r.sigla)}"><option value="" ${r.outorga_gratuita==null?'selected':''}>—</option><option value="1" ${r.outorga_gratuita===true?'selected':''}>Sim</option><option value="0" ${r.outorga_gratuita===false?'selected':''}>Não</option></select></td>
-      <td><select data-ch="zpar" data-i="${i}" data-k="situacao" aria-label="Situação de ${esc(r.sigla)}">${Object.entries(SIT_PAR).map(([k,l])=>`<option value="${k}" ${r.situacao===k?'selected':''}>${l}</option>`).join('')}</select></td>
-      <td><input data-ch="zpar" data-i="${i}" data-k="fonte_norma" value="${esc(r.fonte_norma||'')}" aria-label="Fonte de ${esc(r.sigla)}" title="${esc([r.fonte_dispositivo,r.regras].filter(Boolean).join(' · '))}"></td>
-      <td><input type="checkbox" data-ch="zpar" data-i="${i}" data-k="ativo" ${r.ativo?'checked':''} aria-label="Ativo"></td></tr>`).join('')}</tbody></table></div>
+    <div class="zp-lista">${L.map(([r,i])=>{const ab=UI.zpAb?.has(r.id),gab=r.gabarito_sem_limite?'sem limite':r.gabarito_m!=null?nI(r.gabarito_m)+' m':'',
+      res=[`CA ${nI(r.ca_basico)||'—'} / ${nI(r.ca_maximo)||'—'}`,r.to_maximo!=null?'TO '+nI(r.to_maximo):'',gab?'Gabarito '+gab:''].filter(Boolean).join(' · '),
+      sc={confirmado:'good',validar:'warn'}[r.situacao]||'',
+      f=(k,l,x='')=>`<label class="zp-f"><span class="zp-l">${l}</span><input data-ch="zpar" data-i="${i}" data-k="${k}" value="${nI(r[k])}" inputmode="decimal" data-fmt="num" data-dec="3" aria-label="${l} de ${esc(r.sigla)}" ${x}></label>`;
+      return `<details class="zp-z${r.ativo?'':' inativa'}" data-zp="${r.id}"${ab?' open':''}><summary><span class="zp-n"><b>${esc(r.sigla)}</b><span class="zp-cond">${esc(cond(r))}</span></span><span class="zp-res">${res}</span><span class="zp-chips">${r.ativo?'':'<span class="chip">Inativa</span>'}${r.situacao==='confirmado'?'':`<span class="chip ${sc}">${SIT_PAR[r.situacao]||'Sem situação'}</span>`}</span></summary>
+      <div class="zp-b">${ZP_COLS.map(([k,l])=>k==='gabarito_m'?`<div class="zp-f zp-gab">${f(k,l)}<label class="chk"><input type="checkbox" data-ch="zpar" data-i="${i}" data-k="gabarito_sem_limite" ${r.gabarito_sem_limite?'checked':''} aria-label="Gabarito sem limite em ${esc(r.sigla)}">Sem limite</label></div>`
+        :f(k,l,k==='to_lote_grande'&&r.to_corte_m2==null?'disabled title="Sem corte por tamanho de lote"':'')).join('')}
+        <label class="zp-f"><span class="zp-l">Outorga grátis</span><select data-ch="zpar" data-i="${i}" data-k="outorga_gratuita" aria-label="Outorga em ${esc(r.sigla)}"><option value="" ${r.outorga_gratuita==null?'selected':''}>—</option><option value="1" ${r.outorga_gratuita===true?'selected':''}>Sim</option><option value="0" ${r.outorga_gratuita===false?'selected':''}>Não</option></select></label>
+        <label class="zp-f"><span class="zp-l">Situação</span><select data-ch="zpar" data-i="${i}" data-k="situacao" aria-label="Situação de ${esc(r.sigla)}">${Object.entries(SIT_PAR).map(([k,l])=>`<option value="${k}" ${r.situacao===k?'selected':''}>${l}</option>`).join('')}</select></label>
+        <label class="zp-f zp-fonte"><span class="zp-l">Fonte</span><input data-ch="zpar" data-i="${i}" data-k="fonte_norma" value="${esc(r.fonte_norma||'')}" aria-label="Fonte de ${esc(r.sigla)}" title="${esc([r.fonte_dispositivo,r.regras].filter(Boolean).join(' · '))}"></label>
+        <div class="zp-chk"><label class="chk"><input type="checkbox" data-ch="zpar" data-i="${i}" data-k="permitido" ${r.permitido!==false?'checked':''} aria-label="Admitido em ${esc(r.sigla)}">Admitido nesta zona</label><label class="chk"><input type="checkbox" data-ch="zpar" data-i="${i}" data-k="ativo" ${r.ativo?'checked':''} aria-label="Ativo">Ativo</label></div></div></details>`}).join('')}</div>
     </div></section>`}
 
+// zonas abertas no catálogo continuam abertas depois de gravar
+document.addEventListener('toggle',e=>{const d=e.target;if(!d.classList?.contains('zp-z'))return;(UI.zpAb||(UI.zpAb=new Set()))[d.open?'add':'delete'](d.dataset.zp)},true);
 // ---------- eventos ----------
 function zonasClick(A,a,t){
   switch(A){

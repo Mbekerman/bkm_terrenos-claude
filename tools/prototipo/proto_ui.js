@@ -62,6 +62,13 @@ function uiCfgCel(){document.querySelectorAll('.cfg-r:not(.cfg-hd):not([data-cel
 /* Abas roláveis de Configurações no celular: a aba ativa aparece */
 function uiCfgAba(){const n=document.querySelector('.cfg-nav:not([data-aba-ok])');if(!n)return;n.dataset.abaOk='1';const a=n.querySelector('.cfg-tab[aria-selected="true"]');
   if(a&&n.scrollWidth>n.clientWidth)n.scrollLeft=a.offsetLeft-n.clientWidth/2+a.offsetWidth/2}
-const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel();uiCfgAba()};
+/* Quadro (kanban) no celular: uma coluna por vez; pontinhos acima do quadro dizem quantas são e qual está na tela (o toque leva à coluna) */
+function uiBoardPontos(){if(innerWidth>599)return;document.querySelectorAll('.board:not([data-pt-ok])').forEach(b=>{const cols=[...b.querySelectorAll(':scope > .col')];if(cols.length<2)return;b.dataset.ptOk='1';if(b.previousElementSibling?.classList.contains('board-pt'))b.previousElementSibling.remove();
+  const n=document.createElement('div');n.className='board-pt';n.setAttribute('role','tablist');n.setAttribute('aria-label','Colunas do quadro');
+  n.innerHTML=cols.map((c,i)=>`<button type="button" role="tab" aria-label="${(c.getAttribute('aria-label')||'Coluna '+(i+1)).replace(/[<&"]/g,'')}" aria-selected="${i===0}"></button>`).join('');b.before(n);
+  const marca=()=>{const w=cols[1].offsetLeft-cols[0].offsetLeft||1,i=Math.min(cols.length-1,Math.round(b.scrollLeft/w));n.querySelectorAll('button').forEach((x,j)=>x.setAttribute('aria-selected',j===i))};
+  b.addEventListener('scroll',()=>requestAnimationFrame(marca),{passive:true});marca();
+  n.addEventListener('click',e=>{const x=e.target.closest('button');if(!x)return;const i=[...n.children].indexOf(x);b.scrollTo({left:cols[i].offsetLeft-cols[0].offsetLeft,behavior:'smooth'})})})}
+const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel();uiCfgAba();uiBoardPontos()};
 /* Legenda do mapa: lembra se ficou aberta ou fechada */
 document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legenda'))UI.mpLeg=e.target.open},true);
