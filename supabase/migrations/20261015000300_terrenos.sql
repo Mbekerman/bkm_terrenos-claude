@@ -593,7 +593,8 @@ create trigger t_norm before insert or update on app.terrenos for each row execu
 create or replace function app.tg_terreno_quadro()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin
-  perform fluxo.quadro_de(new.empresa_id, 'terreno', new.id);
+  -- o quadro nasce com as listas da empresa e, se houver, as tarefas do modelo padrão (responsável do terreno onde o modelo pede)
+  perform fluxo.aplicar_padrao(fluxo.quadro_de(new.empresa_id, 'terreno', new.id), new.responsavel_id);
   return new;
 end $$;
 create trigger t_quadro after insert on app.terrenos for each row execute function app.tg_terreno_quadro();
