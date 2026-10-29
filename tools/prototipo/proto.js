@@ -23,7 +23,7 @@ const uid=()=>Math.random().toString(36).slice(2,9);
 const P={
   search:'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4',download:'M12 4v11M7 10l5 5 5-5M5 20h14',
   home:'M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z',layers:'M12 4 3 9l9 5 9-5zM3 14l9 5 9-5',
-  board:'M4 5h4v14H4zM10 5h4v9h-4zM16 5h4v12h-4z',doc:'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4',
+  notas:'M4 6h16M4 12h16M4 18h10',board:'M4 5h4v14H4zM10 5h4v9h-4zM16 5h4v12h-4z',doc:'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4',
   add:'M12 5v14M5 12h14',back:'M19 12H5M11 6l-6 6 6 6',check:'M5 12.5 10 17 19 7',
   warn:'M12 4 2.5 20h19zM12 10v4.5M12 17.2v.1',clock:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3.5 2.5',
   upload:'M12 16V4M7 9l5-5 5 5M5 20h14',close:'M6 6l12 12M18 6 6 18',

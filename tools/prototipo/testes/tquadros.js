@@ -18,7 +18,7 @@ const abre=async(w,h,tema)=>{const ctx=await b.newContext({viewport:{width:w,hei
 // ---------- desktop claro: o caminho inteiro ----------
 {const {ctx,p}=await abre(1440,900,'claro');
 await nav(p,'tarefas');await p.waitForTimeout(250);
-const cols=await p.$$eval('.tk-col .col-h > span:first-child',x=>x.map(y=>y.textContent));
+const cols=await p.$$eval('.tk-col .tkl-h > span:first-child',x=>x.map(y=>y.textContent));
 ok(cols.join(',')==='Backlog,Fazer,Fazendo,Aguardando retorno,Pausadas,Feito',`quadro geral com as listas do modelo (${cols.join(', ')})`);
 let s=await est(p);ok(s.terrenos.every(t=>t.tarefas.every(k=>/^TAR-\d{6}$/.test(k.codigo)&&k.lista&&!('status' in k))),'tarefas antigas ganham código TAR e lista no lugar do status');
 await p.screenshot({path:O+'1_quadro_geral.png'});

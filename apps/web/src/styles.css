@@ -3641,10 +3641,6 @@ html[data-tema="escuro"] .etq-roxo { background: rgba(200,140,255,.22); color: #
 .tk-avs { margin-left: auto; display: inline-flex } .tk-avs .avatar + .avatar { margin-left: -6px; box-shadow: 0 0 0 2px var(--superficie) }
 .tk.arq { opacity: .7 }
 .tk-sec .sec-h { flex-wrap: wrap } .tk-sub { font-size: 13px } .tk-sh { margin-left: auto; display: inline-flex; gap: 4px }
-/* na ficha o quadro quebra em linhas (sem rolagem para o lado): 3 listas por linha no desktop, 1 no celular */
-.tk-sb { padding-top: 4px }
-:root:not(#_) .tk-sb .tk-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; overflow: visible }
-:root:not(#_) .tk-sb .tk-board .tk-col { min-width: 0; width: auto; max-width: none; flex: none }
 /* janela do cartão */
 .dialog:has(.tkm) { width: min(980px, 100%) }
 .tkm .dh { align-items: flex-start }
@@ -3729,6 +3725,79 @@ body.menu-min .compose { margin-bottom: 12px }
 :root[data-tema="escuro"] body.menu-min .nav-item[aria-current="page"] .ri { background: rgba(99,112,255,.10); box-shadow: inset 0 0 0 1px rgba(124,140,255,.5) }
 :root[data-tema="escuro"] body.menu-min .nav-item .rot { color: #8e9ac4 }
 :root[data-tema="escuro"] body.menu-min .nav-item[aria-current="page"] .rot { color: #c9d6ff }
+/* Quadro em tela cheia (botão Tela cheia na seção Tarefas da ficha e na página Tarefas; pedido do Moisés, 29/out/2026): cobre a página acima do menu e abaixo das janelas */
+.tk-full.on { position: fixed; inset: 0; z-index: 25; margin: 0 !important; border-radius: 0 !important; border: 0 !important; background: var(--bg, #f8fafd) !important; overflow: auto; padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px) }
+div.tk-full.on { padding: calc(8px + env(safe-area-inset-top, 0px)) var(--q-px, 24px) 24px }
+.tk-full-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px }
+.tk-full-h h2 { margin: 0; font-size: 22px; font-weight: 400 }
+.tk-full.on .tk-sb { padding-bottom: 24px }
+body:has(.tk-full.on) :is(.fab, .bnav) { display: none !important }
+.tk-cheia-b svg { margin-right: 6px }
+html[data-tema="escuro"] .tk-full.on { background: #081028 !important }
+
+/* Quadro no desenho do Trello (pedido do Moisés, 29/out/2026): listas de 272 px lado a lado com rolagem lateral do próprio quadro,
+   lista em cinza com cantos de 12, cartão branco com sombra leve, etiquetas em cima, indicadores pequenos e membros à direita,
+   "Adicionar um cartão" no pé da lista. No celular, uma lista por tela, com encaixe ao deslizar. */
+:root:not(#_) .tkb { display: flex; align-items: flex-start; gap: 12px; overflow-x: auto; overflow-y: hidden; padding: 4px 2px 12px; margin: 0; scrollbar-width: thin; mask-image: none; -webkit-mask-image: none }
+:root:not(#_) .tkb .tk-col { flex: 0 0 272px; width: 272px; max-width: 272px; min-height: 0; display: flex; flex-direction: column; gap: 0; padding: 0 0 4px; background: #f1f2f4; border: 0; border-radius: 12px; box-shadow: none; max-height: none }
+:root:not(#_) .tkb .tkl-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 40px; padding: 8px 12px 4px 16px; font-size: 14px; font-weight: 600; line-height: 20px; color: #172b4d; text-transform: none; letter-spacing: 0 }
+:root:not(#_) .tkb .tkl-h > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0 }
+:root:not(#_) .tkb .tkl-h .n { font-size: 12px; font-weight: 500; color: #626f86; flex: none }
+:root:not(#_) .tkb .tk-lista { display: flex; flex-direction: column; gap: 8px; padding: 4px 8px; min-height: 8px; overflow-y: auto }
+:root:not(#_) .tkb .tk { padding: 0; gap: 0; border: 0; border-radius: 8px; background: #fff; box-shadow: 0 1px 1px rgba(9,30,66,.25), 0 0 1px rgba(9,30,66,.31); cursor: pointer; overflow: hidden }
+:root:not(#_) .tkb .tk:hover { box-shadow: inset 0 0 0 2px #388bff, 0 1px 1px rgba(9,30,66,.25) }
+:root:not(#_) .tkb .tk:focus-visible { outline: 2px solid #388bff; outline-offset: 0 }
+:root:not(#_) .tkb .tk-capa { height: 32px; margin: 0; border-radius: 0 }
+:root:not(#_) .tkb .tk-c { display: flex; flex-direction: column; gap: 4px; padding: 8px 12px 6px }
+:root:not(#_) .tkb .tk-etqs { gap: 4px; margin-bottom: 2px }
+:root:not(#_) .tkb .tk-etqs .etq { height: 16px; line-height: 16px; min-width: 40px; padding: 0 8px; border-radius: 4px; font-size: 12px; font-weight: 500 }
+:root:not(#_) .tkb .tk-t { font-size: 14px; font-weight: 400; line-height: 20px; color: #172b4d; overflow-wrap: anywhere }
+:root:not(#_) .tkb .tk.concluida .tk-t { text-decoration: none; color: #172b4d }
+:root:not(#_) .tkb .tk-ter { font-size: 12px; line-height: 16px; color: #626f86 }
+:root:not(#_) .tkb .tk-p { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-top: 2px; min-height: 24px }
+:root:not(#_) .tkb .tk-b { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 4px; border-radius: 3px; font-size: 12px; line-height: 16px; color: #44546f; white-space: nowrap }
+:root:not(#_) .tkb .tk-b .ic { flex: none }
+:root:not(#_) .tkb .tk-b.ok { background: #1f845a; color: #fff }
+:root:not(#_) .tkb .tk-prazo.atras { background: #c9372c; color: #fff !important; font-weight: 500 }
+:root:not(#_) .tkb .tk-prazo.feito { background: #1f845a; color: #fff }
+:root:not(#_) .tkb .tk-pr { background: #dcdfe4; color: #44546f; font-weight: 500; padding: 0 6px; height: 20px }
+:root:not(#_) .tkb .tk-pr.alta { background: #ffd5d2; color: #ae2e24 }
+:root:not(#_) .tkb .tk-avs { margin-left: auto; display: inline-flex }
+:root:not(#_) .tkb .tk-avs .avatar { width: 24px; height: 24px; font-size: 10px }
+:root:not(#_) .tkb .tk-avs .avatar + .avatar { margin-left: -4px; box-shadow: 0 0 0 2px #fff }
+:root:not(#_) .tkb .tk.arq { opacity: .75 }
+:root:not(#_) .tkb .tk-add { margin: 4px 8px 0; padding: 6px 8px; height: 32px; border-radius: 8px; color: #44546f; font-size: 14px; font-weight: 500; gap: 6px; justify-content: flex-start }
+:root:not(#_) .tkb .tk-add:hover { background: rgba(9,30,66,.14); color: #172b4d }
+/* etiquetas no cartão: as cores cheias do Trello */
+:root:not(#_) .tkb .etq-verde { background: #4bce97; color: #164b35 } :root:not(#_) .tkb .etq-amarelo { background: #f5cd47; color: #533f04 } :root:not(#_) .tkb .etq-laranja { background: #fea362; color: #702e00 }
+:root:not(#_) .tkb .etq-vermelho { background: #f87168; color: #5d1f1a } :root:not(#_) .tkb .etq-roxo { background: #9f8fef; color: #352c63 } :root:not(#_) .tkb .etq-azul { background: #579dff; color: #09326c }
+:root:not(#_) .tkb .etq-rosa { background: #e774bb; color: #50253f } :root:not(#_) .tkb .etq-cinza { background: #8590a2; color: #fff }
+/* arrastando: lista de destino tracejada e a que está sob o cartão acesa (mesma regra das outras telas) */
+:root:not(#_) body.dnd-tk .tkb .tk-col { outline: 2px dashed rgba(11,87,208,.35); outline-offset: -2px }
+:root:not(#_) .tkb .tk-col.sobre { background: #e9f2ff !important; outline: 2px solid #388bff !important }
+/* seção da ficha: o quadro encosta nas bordas do quadro da seção */
+:root:not(#_) .tk-sb { padding: 12px 16px 4px }
+/* tela cheia: listas com a altura da tela e rolagem dentro de cada uma, como no Trello */
+:root:not(#_) .tk-full.on .tkb { align-items: flex-start }
+:root:not(#_) .tk-full.on .tkb .tk-col { max-height: calc(100vh - 150px); max-height: calc(100dvh - 150px) }
+:root:not(#_) div.tk-full.on .tkb .tk-col { max-height: calc(100dvh - 190px) }
+@media (max-width: 599px) {
+  :root:not(#_) .tkb { scroll-snap-type: x mandatory; scroll-padding: 0 16px; margin: 0 -16px; padding: 4px 16px 12px; scrollbar-width: none }
+  :root:not(#_) .tkb::-webkit-scrollbar { display: none }
+  :root:not(#_) .tkb .tk-col { flex: 0 0 calc(100% - 40px); width: auto; max-width: none; scroll-snap-align: start }
+  :root:not(#_) .tk-sb .tkb { margin: 0 -16px }
+}
+/* escuro */
+html[data-tema="escuro"]:not(#_) .tkb .tk-col { background: #0c1433; box-shadow: inset 0 0 0 1px rgba(124,140,255,.12) }
+html[data-tema="escuro"]:not(#_) .tkb .tkl-h { color: #dfe5ff } html[data-tema="escuro"]:not(#_) .tkb .tkl-h .n { color: #8e9ac4 }
+html[data-tema="escuro"]:not(#_) .tkb .tk { background: #16204a; box-shadow: 0 1px 1px rgba(0,0,0,.4) }
+html[data-tema="escuro"]:not(#_) .tkb .tk:hover { box-shadow: inset 0 0 0 2px #7c8cff }
+html[data-tema="escuro"]:not(#_) .tkb :is(.tk-t, .tk.concluida .tk-t) { color: #e3e8ff } html[data-tema="escuro"]:not(#_) .tkb .tk-ter { color: #8e9ac4 }
+html[data-tema="escuro"]:not(#_) .tkb .tk-b { color: #a9b4dc } html[data-tema="escuro"]:not(#_) .tkb .tk-pr { background: rgba(196,199,197,.16); color: #c9d6ff }
+html[data-tema="escuro"]:not(#_) .tkb .tk-pr.alta { background: rgba(255,120,110,.22); color: #ffdad6 }
+html[data-tema="escuro"]:not(#_) .tkb .tk-avs .avatar + .avatar { box-shadow: 0 0 0 2px #16204a }
+html[data-tema="escuro"]:not(#_) .tkb .tk-add { color: #a9b4dc } html[data-tema="escuro"]:not(#_) .tkb .tk-add:hover { background: rgba(255,255,255,.08); color: #e3e8ff }
+html[data-tema="escuro"]:not(#_) .tkb .tk-col.sobre { background: rgba(99,112,255,.18) !important; outline-color: rgba(124,140,255,.9) !important }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
