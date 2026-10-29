@@ -741,7 +741,43 @@ erDiagram
 - **Calendário:** dias corridos por padrão; o administrador passa a empresa para dias úteis (`fluxo.salvar_calendario`), que pulam sábado, domingo e `feriados` (nacionais de 2026 a 2030, com Carnaval e Corpus Christi; a empresa pode ter os seus). `fluxo.somar_dias` e `fluxo.duracao_dias` fazem a conta nos dois modos.
 - **Linha de base:** `fluxo.enviar_cronograma(quadro, motivo)` tira o retrato das tarefas não arquivadas com início e prazo; quem edita manda, e fica `pendente` até o gestor de quem mandou (ou alguém acima, um diretor ou o administrador) decidir (`fluxo.decidir_linha_base`, que também deixa quem pediu desistir). Quem já aprova tem a sua aprovada na hora. Depois da primeira, trocar pede motivo; a anterior vira `substituida` e fica guardada. As datas seguem livres depois da aprovação: `fluxo.v_cronograma` mostra a linha de base aprovada, o desvio de início e de prazo em dias e `atrasada_base`; quem mudou cada data está em `app.auditoria` (as empurradas pela cascata ficam com quem fez a mudança que as empurrou).
 - **Modelos de tarefas:** o modelo da empresa (`dono_id` nulo) só o administrador mexe e pode ser o padrão do tipo de quadro (`fluxo.definir_modelo_padrao`): entra sozinho no quadro novo (no terreno, pelo `t_quadro`, com o responsável do terreno onde o modelo pede). Cada pessoa cria os seus (só ela vê) e aplica à mão (`fluxo.aplicar_modelo(modelo, quadro, data)`). O modelo guarda lista, prioridade, prazos relativos (`inicio_dias`, `duracao`), responsável fixo ou o do objeto, aprovadores, executores e quem acompanha, etiquetas, checklists e as predecessoras (`modelo_vinculos`), que ao aplicar já empurram as datas. `fluxo.salvar_quadro_como_modelo` transforma os cartões abertos de um quadro em modelo, com os prazos relativos ao primeiro início.
-- **Fica para os próximos blocos:** aprovação formal da tarefa, SLA com pausa aprovada, visibilidade por cartão (empresa, grupo, envolvidos, com exceções e papel por pessoa), campos personalizados, recorrência, automações e WhatsApp.
+
+### Aprovação formal da tarefa (bloco 3)
+
+Decisões do Moisés de 29/out/2026. Mesmo esquema `fluxo`, mesma migration.
+
+```mermaid
+erDiagram
+  tarefas ||--o{ aprovacoes : "pedidos"
+  aprovacoes ||--|{ aprovacao_votos : "um por aprovador"
+  empresas ||--o| regras : "regra de conclusão"
+  tarefas {
+    text aprovacao_modo "paralelo | sequencia"
+  }
+  aprovacoes {
+    text modo
+    text situacao "pendente | aprovada | recusada | cancelada | invalidada"
+    text motivo
+    uuid pedida_por
+  }
+  aprovacao_votos {
+    uuid aprovador_id
+    int ordem
+    text decisao "aprovou | recusou"
+    uuid decidido_por "o aprovador ou um superior dele"
+    text justificativa "obrigatória ao recusar"
+  }
+  regras {
+    bool conclui_exige_checklist "padrão: sim"
+  }
+```
+
+- **Quem aprova:** os aprovadores do cartão (`tarefa_pessoas`, papel `aprovador`, com `ordem` para a sequência). Um superior de um aprovador decide no lugar dele, como no funil; o voto guarda `decidido_por`.
+- **Pedido:** `fluxo.pedir_aprovacao(tarefa, motivo)` tira o retrato dos aprovadores; o pedido aberto anterior é cancelado e o aprovador que pede tem o próprio voto dado. Em paralelo (padrão) todos aprovam, em qualquer ordem; em sequência, só o da vez decide (`fluxo.votos_da_vez`). `fluxo.decidir_aprovacao(aprovacao, aprovar, justificativa)`: recusar exige justificativa e encerra o pedido; aprovado por todos, a tarefa conclui sozinha (vai para a lista que conclui). `fluxo.cancelar_aprovacao` desiste. Pedido e votos só mudam pelas funções.
+- **Bloqueio de conclusão** (`fluxo.pendencias_conclusao`, conferido no `t_lista`): tarefa com aprovador só conclui aprovada; com `regras.conclui_exige_checklist` (padrão ligado, `fluxo.salvar_regras` pelo administrador), só com os itens do checklist concluídos (item que virou cartão não conta). Reabrir uma tarefa aprovada invalida a aprovação.
+- **Avisos:** o aprovador na vez recebe `aprovacao_pendente` (em sequência, o próximo quando o anterior aprova); quem pediu e o responsável recebem `aprovacao_decidida`, com a justificativa na recusa (origem `tarefa_aprovacoes`).
+- O modelo de tarefas guarda o modo de aprovação e a ordem dos aprovadores.
+- **Fica para os próximos blocos:** SLA com pausa aprovada, visibilidade por cartão (empresa, grupo, envolvidos, com exceções e papel por pessoa), campos personalizados, recorrência, automações e WhatsApp.
 
 ## Setores censitários e renda familiar estimada
 

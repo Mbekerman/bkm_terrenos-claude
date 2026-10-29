@@ -3971,5 +3971,21 @@ html[data-tema="escuro"] .cr-bar.feita { background: #2e8b57 } html[data-tema="e
 :root:not(#_) .cr-mr :is(input, select):disabled { opacity: .6 }
 :root:not(#_) input.cr-mnome { border: 0 !important; height: auto }
 
+/* ---------- Aprovação formal da tarefa (proto_aprovacao.js; bloco 3, 29/out/2026) ---------- */
+.ap-bloco .tkm-sh .chip { margin-left: 8px }
+.ap-vs { display: flex; flex-direction: column; gap: 6px }
+.ap-v { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font-size: 14px }
+.ap-n { width: 14px; text-align: right; color: var(--tk-sub) } .ap-u { font-weight: 500 }
+.ap-st { display: inline-flex; align-items: center; height: 20px; padding: 0 6px; border-radius: 3px; font-size: 12px; font-weight: 600; background: var(--tk-btn); color: var(--tk-sub) }
+.ap-st.ok { background: #1f845a; color: #fff } .ap-st.erro { background: #c9372c; color: #fff } .ap-st.vez { background: #fff7d6; color: #533f04 }
+.ap-j { flex-basis: 100%; padding-left: 58px; color: var(--tk-sub); font-size: 13px }
+.ap-ped { font-size: 13px }
+.ap-rf { display: flex; flex-direction: column; gap: 8px }
+:root:not(#_) .tkm .ap-rf textarea { min-height: 64px; border: 0; border-radius: 4px; box-shadow: inset 0 0 0 1px var(--tk-borda); background: var(--tk-campo); padding: 8px 10px; font: inherit; font-size: 14px; color: var(--tk-tx) }
+.tkm .ap-rec { background: #c9372c } .ap-canc, .ap-bloco .tkm-btn { align-self: flex-start }
+.ap-modo { align-self: flex-start }
+:root:not(#_) .tkb .tk-b.ap-selo { background: #fff7d6; color: #533f04; padding: 0 6px; font-weight: 500 }
+html[data-tema="escuro"]:not(#_) .tkb .tk-b.ap-selo, html[data-tema="escuro"] .ap-st.vez { background: rgba(255,205,90,.18); color: #ffdf99 }
+
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

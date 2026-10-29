@@ -98,6 +98,7 @@ create table fluxo.tarefas (
   prazo_hora     time,
   prioridade     text not null default 'media' check (prioridade in ('baixa','media','alta')),
   capa           text check (capa is null or capa in ('cinza','azul','verde','amarelo','laranja','vermelho','roxo','rosa')),
+  aprovacao_modo text not null default 'paralelo' check (aprovacao_modo in ('paralelo','sequencia')),  -- bloco 3
   processo_id    uuid,
   etapa          text,
   subetapa       text,
@@ -123,6 +124,7 @@ create table fluxo.tarefa_pessoas (
   tarefa_id   uuid not null references fluxo.tarefas(id) on delete cascade,
   user_id     uuid not null references auth.users(id) on delete cascade,
   papel       text not null check (papel in ('executor','aprovador','acompanha')),
+  ordem       int,                     -- aprovadores em sequência: a vez de cada um
   incluido_por uuid default auth.uid(),
   incluido_em timestamptz not null default now(),
   primary key (tarefa_id, user_id, papel)
@@ -238,7 +240,7 @@ end $$;
 -- reabrir leva para a primeira aberta.
 create or replace function fluxo.tg_tarefa_lista()
 returns trigger language plpgsql security definer set search_path = '' as $$
-declare v_tipo text; v_mudou_lista boolean := tg_op = 'INSERT' or new.lista_id is distinct from old.lista_id;
+declare v_tipo text; v_pend text[]; v_mudou_lista boolean := tg_op = 'INSERT' or new.lista_id is distinct from old.lista_id;
 begin
   if not v_mudou_lista and tg_op = 'UPDATE' and (new.concluida_em is null) <> (old.concluida_em is null) then
     select id into new.lista_id from fluxo.listas
@@ -249,8 +251,21 @@ begin
   end if;
   select tipo into v_tipo from fluxo.listas where id = new.lista_id;
   if v_tipo = 'conclui' and (new.concluida_em is null or tg_op = 'INSERT' or old.concluida_em is null) then
+    -- bloqueio de conclusão (bloco 3): aprovação e checklist; a aprovação conclui por conta própria
+    if tg_op = 'UPDATE' and coalesce(current_setting('fluxo.aprovando', true), '') <> '1' then
+      v_pend := fluxo.pendencias_conclusao(new.id);
+      if 'aprovacao' = any (v_pend) then
+        raise exception 'A tarefa precisa ser aprovada antes de concluir' using errcode = '23514';
+      elsif 'checklist' = any (v_pend) then
+        raise exception 'Conclua os itens do checklist antes de concluir a tarefa' using errcode = '23514';
+      end if;
+    end if;
     new.concluida_em := coalesce(new.concluida_em, now()); new.concluida_por := auth.uid();
   elsif v_tipo <> 'conclui' then
+    -- reabrir: a aprovação dada deixa de valer e um pedido em aberto é cancelado
+    if tg_op = 'UPDATE' and old.concluida_em is not null then
+      update fluxo.aprovacoes set situacao = 'invalidada' where tarefa_id = new.id and situacao = 'aprovada';
+    end if;
     new.concluida_em := null; new.concluida_por := null;
   end if;
   if tg_op = 'UPDATE' and (new.arquivada_em is null) <> (old.arquivada_em is null) then
@@ -809,6 +824,7 @@ create table fluxo.modelo_tarefas (
   pessoas             jsonb not null default '[]',      -- [{papel, user_id} ou {papel, objeto: true}]
   etiquetas           uuid[] not null default '{}',
   checklists          jsonb not null default '[]',      -- [{nome, itens: [texto]}]
+  aprovacao_modo      text not null default 'paralelo' check (aprovacao_modo in ('paralelo','sequencia')),
   check (not (responsavel_objeto and responsavel_id is not null)),
   check (jsonb_typeof(pessoas) = 'array' and jsonb_typeof(checklists) = 'array')
 );
@@ -852,7 +868,7 @@ create trigger t_modelo before insert or update on fluxo.modelo_vinculos for eac
 -- Cria os cartões do modelo no quadro (sem conferir permissão: uso interno).
 create or replace function fluxo.aplicar_modelo_interno(p_modelo uuid, p_quadro uuid, p_data date, p_resp_objeto uuid)
 returns int language plpgsql security definer set search_path = '' as $$
-declare m fluxo.modelos_quadro; t fluxo.modelo_tarefas; v_emp uuid; v_lista uuid; v_ini date; v_id uuid; v_n int := 0; mapa jsonb := '{}'; p jsonb; c jsonb; v_ck uuid; x text; v_user uuid;
+declare m fluxo.modelos_quadro; t fluxo.modelo_tarefas; v_emp uuid; v_lista uuid; v_ini date; v_id uuid; v_n int := 0; mapa jsonb := '{}'; p jsonb; c jsonb; v_ck uuid; x text; v_user uuid; v_ord int;
 begin
   select * into m from fluxo.modelos_quadro where id = p_modelo and ativo;
   select empresa_id into v_emp from fluxo.quadros where id = p_quadro;
@@ -863,17 +879,20 @@ begin
       select id into v_lista from fluxo.listas where quadro_id = p_quadro and tipo = 'aberta' and not oculta order by posicao limit 1;
     end if;
     v_ini := case when t.inicio_dias is not null then fluxo.somar_dias(v_emp, p_data, t.inicio_dias) end;
-    insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, descricao, prioridade, inicio, prazo, responsavel_id, posicao)
-    values (v_emp, p_quadro, v_lista, t.titulo, t.descricao, t.prioridade, v_ini,
+    insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, descricao, prioridade, aprovacao_modo, inicio, prazo, responsavel_id, posicao)
+    values (v_emp, p_quadro, v_lista, t.titulo, t.descricao, t.prioridade, t.aprovacao_modo, v_ini,
             case when v_ini is not null then fluxo.somar_dias(v_emp, v_ini, coalesce(t.duracao, 1) - 1) end,
             case when t.responsavel_objeto then p_resp_objeto else t.responsavel_id end,
             extract(epoch from clock_timestamp()) + t.ordem)
     returning id into v_id;
     mapa := mapa || jsonb_build_object(t.id::text, v_id);
+    v_ord := 0;
     for p in select * from jsonb_array_elements(t.pessoas) loop
       v_user := case when (p->>'objeto')::boolean then p_resp_objeto else (p->>'user_id')::uuid end;
       if v_user is not null and exists (select 1 from app.membros where empresa_id = v_emp and user_id = v_user) then
-        insert into fluxo.tarefa_pessoas (empresa_id, tarefa_id, user_id, papel) values (v_emp, v_id, v_user, p->>'papel') on conflict do nothing;
+        v_ord := v_ord + 1;   -- a ordem do modelo é a ordem dos aprovadores
+        insert into fluxo.tarefa_pessoas (empresa_id, tarefa_id, user_id, papel, ordem)
+        values (v_emp, v_id, v_user, p->>'papel', case when p->>'papel' = 'aprovador' then v_ord end) on conflict do nothing;
       end if;
     end loop;
     insert into fluxo.tarefa_etiquetas (empresa_id, tarefa_id, etiqueta_id)
@@ -930,19 +949,19 @@ begin
   for k in select t.*, l.nome as lista_nome from fluxo.tarefas t join fluxo.listas l on l.id = t.lista_id
            where t.quadro_id = p_quadro and t.arquivada_em is null and t.concluida_em is null order by t.inicio nulls last, t.posicao loop
     insert into fluxo.modelo_tarefas (empresa_id, modelo_id, ordem, titulo, descricao, lista_nome, prioridade, inicio_dias, duracao,
-                                      responsavel_id, responsavel_objeto, pessoas, etiquetas, checklists)
+                                      responsavel_id, responsavel_objeto, pessoas, etiquetas, checklists, aprovacao_modo)
     values (q.empresa_id, v, (select count(*) from fluxo.modelo_tarefas where modelo_id = v), k.titulo, k.descricao, k.lista_nome, k.prioridade,
             case when k.inicio is not null then k.inicio - v_base end, k.duracao,
             case when p_resp_objeto is not null and k.responsavel_id = p_resp_objeto then null else k.responsavel_id end,
             p_resp_objeto is not null and k.responsavel_id = p_resp_objeto,
             coalesce((select jsonb_agg(case when p_resp_objeto is not null and tp.user_id = p_resp_objeto
                                             then jsonb_build_object('papel', tp.papel, 'objeto', true)
-                                            else jsonb_build_object('papel', tp.papel, 'user_id', tp.user_id) end)
+                                            else jsonb_build_object('papel', tp.papel, 'user_id', tp.user_id) end order by tp.ordem nulls last, tp.incluido_em)
                       from fluxo.tarefa_pessoas tp where tp.tarefa_id = k.id), '[]'),
             coalesce((select array_agg(etiqueta_id) from fluxo.tarefa_etiquetas where tarefa_id = k.id), '{}'),
             coalesce((select jsonb_agg(jsonb_build_object('nome', c.nome, 'itens',
                         coalesce((select jsonb_agg(i.texto order by i.posicao) from fluxo.checklist_itens i where i.checklist_id = c.id), '[]')) order by c.posicao)
-                      from fluxo.checklists c where c.tarefa_id = k.id), '[]'))
+                      from fluxo.checklists c where c.tarefa_id = k.id), '[]'), k.aprovacao_modo)
     returning id into v_mt;
     mapa := mapa || jsonb_build_object(k.id::text, v_mt);
   end loop;
@@ -992,3 +1011,170 @@ revoke all on function fluxo.aplicar_modelo(uuid, uuid, date, uuid), fluxo.salva
                        fluxo.definir_modelo_padrao(uuid, uuid, text) from public;
 grant execute on function fluxo.aplicar_modelo(uuid, uuid, date, uuid), fluxo.salvar_quadro_como_modelo(uuid, text, boolean, uuid),
                           fluxo.definir_modelo_padrao(uuid, uuid, text) to authenticated;
+
+-- =====================================================================
+-- Aprovação formal da tarefa (bloco 3; decisões do Moisés, 29/out/2026).
+-- Quem aprova são os aprovadores do cartão (tarefa_pessoas, papel
+-- aprovador); um superior de um aprovador decide no lugar dele, como no
+-- funil, e o voto guarda quem decidiu. O pedido tira uma foto dos
+-- aprovadores. Em paralelo (padrão) todos aprovam, em qualquer ordem; em
+-- sequência, cada um na sua vez (tarefa_pessoas.ordem). Recusar exige
+-- justificativa e encerra o pedido. Aprovado por todos, o cartão conclui
+-- sozinho. Reabrir um cartão aprovado invalida a aprovação.
+-- Bloqueio de conclusão: com aprovador, só conclui aprovado; com a regra
+-- da empresa ligada (padrão), só com o checklist completo.
+-- =====================================================================
+create table fluxo.regras (
+  empresa_id              uuid primary key references app.empresas(id) on delete cascade,
+  conclui_exige_checklist boolean not null default true
+);
+
+create table fluxo.aprovacoes (
+  id           uuid primary key default gen_random_uuid(),
+  empresa_id   uuid not null references app.empresas(id),
+  tarefa_id    uuid not null references fluxo.tarefas(id) on delete cascade,
+  modo         text not null check (modo in ('paralelo','sequencia')),
+  situacao     text not null default 'pendente' check (situacao in ('pendente','aprovada','recusada','cancelada','invalidada')),
+  motivo       text,                                 -- o que quem pediu escreveu
+  pedida_por   uuid not null default auth.uid() references auth.users(id),
+  pedida_em    timestamptz not null default clock_timestamp(),
+  decidida_em  timestamptz
+);
+create unique index on fluxo.aprovacoes (tarefa_id) where situacao = 'pendente';
+create index on fluxo.aprovacoes (tarefa_id, pedida_em);
+
+create table fluxo.aprovacao_votos (
+  aprovacao_id  uuid not null references fluxo.aprovacoes(id) on delete cascade,
+  empresa_id    uuid not null references app.empresas(id),
+  aprovador_id  uuid not null references auth.users(id),
+  ordem         int  not null,
+  decisao       text check (decisao in ('aprovou','recusou')),
+  decidido_por  uuid references auth.users(id),      -- o próprio aprovador ou um superior dele
+  decidido_em   timestamptz,
+  justificativa text,
+  primary key (aprovacao_id, aprovador_id),
+  check (decisao is distinct from 'recusou' or length(trim(coalesce(justificativa, ''))) > 0)
+);
+
+-- O que impede concluir: 'aprovacao' e/ou 'checklist'
+create or replace function fluxo.pendencias_conclusao(p_tarefa uuid)
+returns text[] language sql stable security definer set search_path = '' as $$
+  select array_remove(array[
+    case when exists (select 1 from fluxo.tarefa_pessoas where tarefa_id = p_tarefa and papel = 'aprovador')
+          and not exists (select 1 from fluxo.aprovacoes where tarefa_id = p_tarefa and situacao = 'aprovada') then 'aprovacao' end,
+    case when coalesce((select r.conclui_exige_checklist from fluxo.regras r join fluxo.tarefas k on k.empresa_id = r.empresa_id where k.id = p_tarefa), true)
+          and exists (select 1 from fluxo.checklist_itens i join fluxo.checklists c on c.id = i.checklist_id
+                      where c.tarefa_id = p_tarefa and i.concluido_em is null and i.virou_tarefa_id is null) then 'checklist' end
+  ], null) $$;
+
+-- Votos que esperam decisão agora (em sequência, só o da vez)
+create or replace function fluxo.votos_da_vez(p_aprovacao uuid)
+returns setof fluxo.aprovacao_votos language sql stable security definer set search_path = '' as $$
+  select v.* from fluxo.aprovacao_votos v join fluxo.aprovacoes a on a.id = v.aprovacao_id
+  where v.aprovacao_id = p_aprovacao and a.situacao = 'pendente' and v.decisao is null
+    and (a.modo = 'paralelo' or v.ordem = (select min(ordem) from fluxo.aprovacao_votos where aprovacao_id = p_aprovacao and decisao is null)) $$;
+
+-- Fecha o pedido aprovado por todos: aprova e conclui o cartão
+create or replace function fluxo._fechar_aprovacao(p_id uuid)
+returns void language plpgsql security definer set search_path = '' as $$
+declare a fluxo.aprovacoes;
+begin
+  select * into a from fluxo.aprovacoes where id = p_id;
+  if exists (select 1 from fluxo.aprovacao_votos where aprovacao_id = p_id and decisao is distinct from 'aprovou') then return; end if;
+  update fluxo.aprovacoes set situacao = 'aprovada', decidida_em = clock_timestamp() where id = p_id;
+  perform set_config('fluxo.aprovando', '1', true);
+  update fluxo.tarefas set concluida_em = clock_timestamp() where id = a.tarefa_id and concluida_em is null;
+  perform set_config('fluxo.aprovando', '', true);
+end $$;
+
+-- Pede a aprovação. Só com o resto pronto (checklist, se a regra vale).
+-- Um aprovador que pede tem o próprio voto dado na hora.
+create or replace function fluxo.pedir_aprovacao(p_tarefa uuid, p_motivo text default null)
+returns uuid language plpgsql security definer set search_path = '' as $$
+declare k fluxo.tarefas; v uuid;
+begin
+  select * into k from fluxo.tarefas where id = p_tarefa for update;
+  if k.id is null then raise exception 'Tarefa não encontrada' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(k.empresa_id);
+  if k.arquivada_em is not null or k.concluida_em is not null then raise exception 'A tarefa já está concluída ou arquivada' using errcode = '23514'; end if;
+  if not exists (select 1 from fluxo.tarefa_pessoas where tarefa_id = p_tarefa and papel = 'aprovador') then
+    raise exception 'A tarefa não tem aprovador' using errcode = '23514';
+  end if;
+  if 'checklist' = any (fluxo.pendencias_conclusao(p_tarefa)) then
+    raise exception 'Conclua os itens do checklist antes de pedir a aprovação' using errcode = '23514';
+  end if;
+  update fluxo.aprovacoes set situacao = 'cancelada', decidida_em = clock_timestamp() where tarefa_id = p_tarefa and situacao = 'pendente';
+  insert into fluxo.aprovacoes (empresa_id, tarefa_id, modo, motivo) values (k.empresa_id, p_tarefa, k.aprovacao_modo, nullif(trim(p_motivo), ''))
+  returning id into v;
+  insert into fluxo.aprovacao_votos (aprovacao_id, empresa_id, aprovador_id, ordem)
+  select v, k.empresa_id, user_id, row_number() over (order by ordem nulls last, incluido_em, user_id)
+  from fluxo.tarefa_pessoas where tarefa_id = p_tarefa and papel = 'aprovador';
+  update fluxo.aprovacao_votos set decisao = 'aprovou', decidido_por = auth.uid(), decidido_em = clock_timestamp()
+  where aprovacao_id = v and aprovador_id = auth.uid();
+  perform fluxo._fechar_aprovacao(v);
+  return v;
+end $$;
+
+-- Decide o pedido. O voto é o do próprio aprovador ou, por um superior,
+-- o de um aprovador abaixo dele; em sequência, só o da vez.
+create or replace function fluxo.decidir_aprovacao(p_aprovacao uuid, p_aprovar boolean, p_justificativa text default null)
+returns void language plpgsql security definer set search_path = '' as $$
+declare a fluxo.aprovacoes; v_voto uuid;
+begin
+  select * into a from fluxo.aprovacoes where id = p_aprovacao for update;
+  if a.id is null then raise exception 'Pedido não encontrado' using errcode = 'P0002'; end if;
+  if a.empresa_id not in (select app.minhas_empresas()) then raise exception 'Pedido não encontrado' using errcode = 'P0002'; end if;
+  if a.situacao <> 'pendente' then raise exception 'Este pedido já foi decidido' using errcode = '23514'; end if;
+  select aprovador_id into v_voto from fluxo.votos_da_vez(p_aprovacao)
+  where aprovador_id = auth.uid() or app.eh_superior(a.empresa_id, auth.uid(), aprovador_id)
+  order by (aprovador_id = auth.uid()) desc, ordem limit 1;
+  if v_voto is null then
+    raise exception 'Você não é aprovador desta tarefa (nem superior de um aprovador na vez)' using errcode = '42501';
+  end if;
+  if not p_aprovar and coalesce(trim(p_justificativa), '') = '' then
+    raise exception 'Diga por que a tarefa foi recusada' using errcode = '23514';
+  end if;
+  update fluxo.aprovacao_votos set decisao = case when p_aprovar then 'aprovou' else 'recusou' end, decidido_por = auth.uid(),
+         decidido_em = clock_timestamp(), justificativa = nullif(trim(p_justificativa), '')
+  where aprovacao_id = p_aprovacao and aprovador_id = v_voto;
+  if p_aprovar then perform fluxo._fechar_aprovacao(p_aprovacao);
+  else update fluxo.aprovacoes set situacao = 'recusada', decidida_em = clock_timestamp() where id = p_aprovacao;
+  end if;
+end $$;
+
+-- Quem pediu (ou quem edita a tarefa) desiste do pedido
+create or replace function fluxo.cancelar_aprovacao(p_aprovacao uuid)
+returns void language plpgsql security definer set search_path = '' as $$
+declare a fluxo.aprovacoes;
+begin
+  select * into a from fluxo.aprovacoes where id = p_aprovacao for update;
+  if a.id is null then raise exception 'Pedido não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(a.empresa_id);
+  if a.situacao <> 'pendente' then raise exception 'Este pedido já foi decidido' using errcode = '23514'; end if;
+  update fluxo.aprovacoes set situacao = 'cancelada', decidida_em = clock_timestamp() where id = p_aprovacao;
+end $$;
+
+-- Administrador: concluir exige o checklist completo?
+create or replace function fluxo.salvar_regras(p_empresa uuid, p_conclui_exige_checklist boolean)
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  perform app.exigir_administrador(p_empresa);
+  insert into fluxo.regras (empresa_id, conclui_exige_checklist) values (p_empresa, p_conclui_exige_checklist)
+  on conflict (empresa_id) do update set conclui_exige_checklist = excluded.conclui_exige_checklist;
+end $$;
+
+do $$
+declare t text;
+begin
+  foreach t in array array['regras','aprovacoes','aprovacao_votos'] loop
+    execute format('alter table fluxo.%I enable row level security', t);
+    execute format('create policy ver on fluxo.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
+    execute format('grant select on fluxo.%I to authenticated', t);
+  end loop;
+end $$;
+-- o pedido e os votos já são o registro (quem, quando, justificativa); só a regra vai para a auditoria
+create trigger t_aud after insert or update or delete on fluxo.regras for each row execute function app.tg_auditoria();
+revoke all on function fluxo._fechar_aprovacao(uuid), fluxo.pedir_aprovacao(uuid, text), fluxo.decidir_aprovacao(uuid, boolean, text),
+                       fluxo.cancelar_aprovacao(uuid), fluxo.salvar_regras(uuid, boolean), fluxo.votos_da_vez(uuid) from public;
+grant execute on function fluxo.pedir_aprovacao(uuid, text), fluxo.decidir_aprovacao(uuid, boolean, text), fluxo.cancelar_aprovacao(uuid),
+                          fluxo.salvar_regras(uuid, boolean), fluxo.pendencias_conclusao(uuid), fluxo.votos_da_vez(uuid) to authenticated;

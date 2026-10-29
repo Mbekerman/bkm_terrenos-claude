@@ -214,6 +214,41 @@ begin
 end $$;
 create trigger t_notificar after insert on fluxo.comentarios for each row execute function app.tg_comentario_notificar();
 
+-- Aprovação da tarefa (bloco 3): o aprovador na vez recebe o pedido (em
+-- sequência, o próximo quando o anterior aprova); quem pediu e o
+-- responsável recebem a decisão.
+create or replace function app.tg_voto_notificar()
+returns trigger language plpgsql security definer set search_path = ''
+as $$
+declare a fluxo.aprovacoes; v_tit text; r record;
+begin
+  select * into a from fluxo.aprovacoes where id = new.aprovacao_id;
+  if a.situacao <> 'pendente' then return new; end if;
+  v_tit := (select titulo from fluxo.tarefas where id = a.tarefa_id);
+  for r in select aprovador_id from fluxo.votos_da_vez(a.id) loop
+    perform app._notificar(a.empresa_id, r.aprovador_id, 'aprovacao_pendente', 'Aprovar a tarefa: ' || v_tit,
+                           app.terreno_da_tarefa(a.tarefa_id), 'tarefa_aprovacoes', a.id);
+  end loop;
+  return new;
+end $$;
+create trigger t_notificar after insert or update of decisao on fluxo.aprovacao_votos for each row execute function app.tg_voto_notificar();
+
+create or replace function app.tg_aprovacao_notificar()
+returns trigger language plpgsql security definer set search_path = ''
+as $$
+declare k fluxo.tarefas; v_txt text; u uuid;
+begin
+  if new.situacao not in ('aprovada','recusada') or old.situacao <> 'pendente' then return new; end if;
+  select * into k from fluxo.tarefas where id = new.tarefa_id;
+  v_txt := case when new.situacao = 'aprovada' then 'Tarefa aprovada: ' else 'Tarefa recusada: ' end || k.titulo
+           || coalesce(' (' || (select justificativa from fluxo.aprovacao_votos where aprovacao_id = new.id and decisao = 'recusou' limit 1) || ')', '');
+  foreach u in array array[new.pedida_por, k.responsavel_id] loop
+    perform app._notificar(new.empresa_id, u, 'aprovacao_decidida', v_txt, app.terreno_da_tarefa(k.id), 'tarefa_aprovacoes', new.id);
+  end loop;
+  return new;
+end $$;
+create trigger t_notificar after update of situacao on fluxo.aprovacoes for each row execute function app.tg_aprovacao_notificar();
+
 create or replace function app.tg_reuniao_lembretes()
 returns trigger language plpgsql security definer set search_path = ''
 as $$
