@@ -3986,6 +3986,11 @@ html[data-tema="escuro"] .cr-bar.feita { background: #2e8b57 } html[data-tema="e
 .ap-modo { align-self: flex-start }
 :root:not(#_) .tkb .tk-b.ap-selo { background: #fff7d6; color: #533f04; padding: 0 6px; font-weight: 500 }
 html[data-tema="escuro"]:not(#_) .tkb .tk-b.ap-selo, html[data-tema="escuro"] .ap-st.vez { background: rgba(255,205,90,.18); color: #ffdf99 }
+/* SLA com pausa (proto_pausa.js) */
+.pz-mot { font-size: 14px } .pz-ret { align-self: flex-start }
+.pz-sla { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--tk-sub) } .pz-sla b { color: var(--tk-tx); font-weight: 600 }
+.pz-hist { display: flex; flex-direction: column; gap: 2px; font-size: 13px }
+.pz-bloco .tkm-sh .chip { margin-left: 8px }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
