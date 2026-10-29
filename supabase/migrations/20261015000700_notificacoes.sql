@@ -1,7 +1,9 @@
 -- =====================================================================
 -- BKM Terrenos · 0007 · notificações e lembretes
 -- Uma tabela genérica de notificações; os gatilhos ficam separados dela.
--- Na hora: triggers e RPCs (tarefa atribuída, marcado na tarefa, aprovação).
+-- Na hora: triggers e RPCs (tarefa atribuída, menção com @, aprovação). Só
+-- quem é chamado com @ é avisado: não há lista de marcados (decisão do
+-- Moisés, 29/out/2026, para não virar spam).
 -- Por prazo: app.rotina_diaria(), rodada uma vez por dia pelo pg_cron.
 -- Um tipo novo de interação só acrescenta um gatilho e uma linha em
 -- tipos_notificacao. E-mail: cada tipo tem o padrão da empresa e cada
@@ -24,7 +26,6 @@ create table app.tipos_notificacao (
 
 insert into app.tipos_notificacao (codigo, nome, dias_antes_padrao, email_padrao) values
   ('tarefa_atribuida',   'Tarefa atribuída a você',          '{}',    true),
-  ('tarefa_marcado',     'Você foi marcado numa tarefa',     '{}',    true),
   ('mencao',             'Você foi mencionado com @',        '{}',    true),
   ('tarefa_prazo',       'Prazo de tarefa',                  '{0}',   false),  -- 0 = no dia: "vence hoje"
   ('tarefa_atrasada',    'Tarefa atrasada',                  '{}',    false),
@@ -85,16 +86,6 @@ create table app.lembretes (
   unique nulls not distinct (origem_tabela, origem_id, dias_antes, destinatario_id)
 );
 create index on app.lembretes (origem_tabela, origem_id);
-
--- Pessoas marcadas numa tarefa (a menção com @ em comentários usa a mesma notificação).
-create table app.tarefa_marcados (
-  tarefa_id  uuid not null references app.tarefas(id) on delete cascade,
-  user_id    uuid not null references auth.users(id),
-  empresa_id uuid not null references app.empresas(id),
-  marcado_por uuid default auth.uid(),
-  criado_em  timestamptz not null default now(),
-  primary key (tarefa_id, user_id)
-);
 
 -- ---------------------------------------------------------------------
 -- Funções internas
@@ -172,23 +163,6 @@ begin
   return new;
 end $$;
 create trigger t_notificar after insert or update of responsavel_id on app.tarefas for each row execute function app.tg_tarefa_notificar();
-
-create or replace function app.tg_marcado_notificar()
-returns trigger language plpgsql security definer set search_path = ''
-as $$
-declare k app.tarefas;
-begin
-  select * into k from app.tarefas where id = new.tarefa_id;
-  if k.empresa_id is distinct from new.empresa_id then
-    raise exception 'Registro não pertence à mesma empresa do pai' using errcode = '42501';
-  end if;
-  if not exists (select 1 from app.membros where empresa_id = new.empresa_id and user_id = new.user_id) then
-    raise exception 'Só membros da empresa podem ser marcados' using errcode = '23514';
-  end if;
-  perform app._notificar(k.empresa_id, new.user_id, 'tarefa_marcado', 'Você foi marcado na tarefa: ' || k.titulo, k.terreno_id, 'tarefas', k.id);
-  return new;
-end $$;
-create trigger t_notificar before insert on app.tarefa_marcados for each row execute function app.tg_marcado_notificar();
 
 create or replace function app.tg_reuniao_lembretes()
 returns trigger language plpgsql security definer set search_path = ''
@@ -346,7 +320,7 @@ grant select on app.preferencias_notificacao to authenticated;
 do $$
 declare t text;
 begin
-  foreach t in array array['lembretes','tarefa_marcados'] loop
+  foreach t in array array['lembretes'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
     execute format('create policy inserir on app.%I for insert to authenticated with check (empresa_id in (select app.empresas_edicao()))', t);
@@ -358,7 +332,7 @@ begin
 end $$;
 
 revoke execute on function app._notificar(uuid, uuid, text, text, uuid, text, uuid, date, uuid), app._lembretes_padrao(uuid, text, uuid, text),
-  app._item_lembrete(text, uuid), app.rotina_diaria(date), app.tg_tarefa_notificar(), app.tg_marcado_notificar(),
+  app._item_lembrete(text, uuid), app.rotina_diaria(date), app.tg_tarefa_notificar(),
   app.tg_reuniao_lembretes(), app.tg_documento_lembretes(), app.tg_lembrete_valido() from public;
 grant execute on function app.marcar_notificacao_lida(uuid), app.configurar_notificacao(uuid, text, boolean, int[], boolean),
   app.salvar_preferencia_notificacao(uuid, text, boolean) to authenticated;

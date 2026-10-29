@@ -16,6 +16,7 @@ for(const [w,h,tema,nome] of [[1440,900,null,'desk'],[390,844,'escuro','cel']]){
   let {p,ctx}=await abre(w,h,tema);
   // Moisés (diretor) abre uma tarefa e escreve @ana na descrição
   await nav(p,'tarefas');await p.evaluate(()=>document.querySelector('[data-a=tk-abrir]').click());await p.waitForTimeout(250);
+  ok(!(await p.$('[name=marc]'))&&!(await txt(p,'.dialog')).includes('Marcar colegas'),nome+': a tarefa não tem mais Marcar colegas; só o @ avisa');
   await p.click('#tm-d');await p.keyboard.press('End');await p.keyboard.type(' Fala com @an');await p.waitForTimeout(150);
   await p.screenshot({path:O+nome+'_1_lista.png'});
   ok(await p.evaluate(()=>!document.getElementById('mn-pop').hidden),nome+': digitar @ abre a lista dos colegas');

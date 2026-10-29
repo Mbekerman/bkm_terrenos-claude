@@ -663,8 +663,6 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .rt-ed ul, .relato ul { margin: 4px 0; padding-left: 20px }
 .relato p { margin: 4px 0 }
 
-/* tarefa: colegas marcados */
-.marc { display: flex; flex-wrap: wrap; gap: 4px 16px }
 
 /* Configurações › Funil */
 .cfg-abas { margin-bottom: 12px }
