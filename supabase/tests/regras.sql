@@ -1850,4 +1850,97 @@ select pg_temp.falha(format($$select fluxo.aplicar_modelo(%L, %L)$$, :'mp', :'qm
 select pg_temp.como(:'diretor');
 select fluxo.definir_modelo_padrao(:'emp', null);
 select pg_temp.ok(not exists (select 1 from fluxo.modelos_quadro where empresa_id = :'emp' and padrao), 'o administrador tira o padrão');
+\echo '# aprovação formal da tarefa (fluxo, bloco 3)'
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tm', 'Minuta do compromisso', current_date + 5, :'analista', null, 'Fazendo') as ka \gset
+insert into fluxo.checklists (empresa_id, tarefa_id, nome) values (:'emp', :'ka', 'Conferir') returning id as cka \gset
+insert into fluxo.checklist_itens (empresa_id, checklist_id, texto) values (:'emp', :'cka', 'Cláusula de permuta') returning id as ika \gset
+select pg_temp.falha(format($$update fluxo.tarefas set concluida_em = now() where id = %L$$, :'ka'), 'com item do checklist em aberto, não conclui');
+update fluxo.checklist_itens set concluido_em = now() where id = :'ika';
+insert into fluxo.tarefa_pessoas (empresa_id, tarefa_id, user_id, papel, ordem) values (:'emp', :'ka', :'gestor', 'aprovador', 1), (:'emp', :'ka', :'diretor', 'aprovador', 2);
+select pg_temp.falha(format($$update fluxo.tarefas set lista_id = %L where id = %L$$, pg_temp.lista(:'tm', 'Feito'), :'ka'), 'com aprovador, arrastar para Feito sem aprovação é recusado');
+select fluxo.pedir_aprovacao(:'ka', 'Minuta pronta') as apa \gset
+select pg_temp.ok((select situacao = 'pendente' and modo = 'paralelo' from fluxo.aprovacoes where id = :'apa')
+  and (select count(*) from fluxo.aprovacao_votos where aprovacao_id = :'apa' and decisao is null) = 2,
+  'o pedido tira a foto dos dois aprovadores, em paralelo');
+select pg_temp.falha(format($$select fluxo.decidir_aprovacao(%L, true)$$, :'apa'), 'quem não é aprovador não decide');
+select pg_temp.como(:'gestor');
+select pg_temp.ok(exists (select 1 from app.notificacoes where tipo = 'aprovacao_pendente' and origem_tabela = 'tarefa_aprovacoes' and origem_id = :'apa' and terreno_id = :'tm'),
+  'em paralelo, os aprovadores são avisados do pedido');
+select pg_temp.falha(format($$select fluxo.decidir_aprovacao(%L, false)$$, :'apa'), 'recusar sem justificativa é recusado');
+select fluxo.decidir_aprovacao(:'apa', true, 'Ok do jurídico');
+select pg_temp.ok((select situacao = 'pendente' from fluxo.aprovacoes where id = :'apa') and (select concluida_em is null from fluxo.tarefas where id = :'ka'),
+  'um aprovou: segue pendente e a tarefa não conclui');
+select pg_temp.falha(format($$select fluxo.decidir_aprovacao(%L, true)$$, :'apa'), 'o mesmo aprovador não vota duas vezes');
+select pg_temp.como(:'diretor');
+select fluxo.decidir_aprovacao(:'apa', true);
+select pg_temp.ok((select situacao = 'aprovada' from fluxo.aprovacoes where id = :'apa')
+  and (select lista_nome = 'Feito' and concluida_em is not null from fluxo.v_tarefas where id = :'ka'),
+  'todos aprovaram: o pedido fica aprovado e a tarefa conclui sozinha');
+select pg_temp.como(:'analista');
+select pg_temp.ok(exists (select 1 from app.notificacoes where tipo = 'aprovacao_decidida' and origem_id = :'apa' and texto like 'Tarefa aprovada:%'),
+  'quem pediu é avisado da aprovação');
+update fluxo.tarefas set concluida_em = null where id = :'ka';
+select pg_temp.ok((select situacao = 'invalidada' from fluxo.aprovacoes where id = :'apa'), 'reabrir a tarefa aprovada invalida a aprovação');
+select pg_temp.falha(format($$update fluxo.tarefas set concluida_em = now() where id = %L$$, :'ka'), 'reaberta, só conclui com aprovação nova');
+-- em sequência: cada um na sua vez; o superior decide pelo aprovador abaixo dele
+update fluxo.tarefas set aprovacao_modo = 'sequencia' where id = :'ka';
+delete from fluxo.tarefa_pessoas where tarefa_id = :'ka' and papel = 'aprovador';
+insert into fluxo.tarefa_pessoas (empresa_id, tarefa_id, user_id, papel, ordem) values (:'emp', :'ka', :'diretor', 'aprovador', 1), (:'emp', :'ka', :'gestor', 'aprovador', 2);
+select fluxo.pedir_aprovacao(:'ka') as aps \gset
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format($$select fluxo.decidir_aprovacao(%L, true)$$, :'aps'), 'em sequência, o segundo não decide antes do primeiro');
+select pg_temp.como(:'diretor');
+select fluxo.decidir_aprovacao(:'aps', true);
+select pg_temp.como(:'gestor');
+select pg_temp.ok(exists (select 1 from app.notificacoes where tipo = 'aprovacao_pendente' and origem_id = :'aps' and destinatario_id = :'gestor'),
+  'em sequência, o próximo é avisado quando o anterior aprova');
+select fluxo.decidir_aprovacao(:'aps', false, 'Falta a cláusula de multa');
+select pg_temp.ok((select situacao = 'recusada' from fluxo.aprovacoes where id = :'aps') and (select concluida_em is null from fluxo.tarefas where id = :'ka')
+  and (select justificativa = 'Falta a cláusula de multa' and decidido_por = :'gestor' from fluxo.aprovacao_votos where aprovacao_id = :'aps' and aprovador_id = :'gestor'),
+  'recusa com justificativa encerra o pedido e a tarefa segue aberta');
+select pg_temp.como(:'analista');
+select pg_temp.ok(exists (select 1 from app.notificacoes where tipo = 'aprovacao_decidida' and origem_id = :'aps' and texto like '%Falta a cláusula de multa%'),
+  'quem pediu recebe a recusa com a justificativa');
+-- superior decide por quem está abaixo: o diretor aprova pelo gestor
+update fluxo.tarefas set aprovacao_modo = 'paralelo' where id = :'ka';
+delete from fluxo.tarefa_pessoas where tarefa_id = :'ka' and papel = 'aprovador' and user_id = :'diretor';
+select fluxo.pedir_aprovacao(:'ka') as apd \gset
+select pg_temp.como(:'diretor');
+select fluxo.decidir_aprovacao(:'apd', true, 'Aprovo pela Paula');
+select pg_temp.ok((select decidido_por = :'diretor' and aprovador_id = :'gestor' from fluxo.aprovacao_votos where aprovacao_id = :'apd')
+  and (select situacao = 'aprovada' from fluxo.aprovacoes where id = :'apd'),
+  'o superior decide no lugar do aprovador e o voto guarda quem decidiu');
+-- aprovador que pede tem o próprio voto dado; pedido novo cancela o anterior; quem pede desiste
+select pg_temp.como(:'gestor');
+select pg_temp.tarefa(:'tm', 'Parecer do jurídico', current_date + 5, :'gestor', null, 'Fazer') as kb \gset
+insert into fluxo.tarefa_pessoas (empresa_id, tarefa_id, user_id, papel) values (:'emp', :'kb', :'gestor', 'aprovador'), (:'emp', :'kb', :'diretor', 'aprovador');
+select fluxo.pedir_aprovacao(:'kb') as apb1 \gset
+select pg_temp.ok((select decisao = 'aprovou' from fluxo.aprovacao_votos where aprovacao_id = :'apb1' and aprovador_id = :'gestor'),
+  'o aprovador que pede tem o próprio voto dado');
+select fluxo.pedir_aprovacao(:'kb') as apb2 \gset
+select pg_temp.ok((select situacao = 'cancelada' from fluxo.aprovacoes where id = :'apb1'), 'pedido novo cancela o que estava aberto');
+select fluxo.cancelar_aprovacao(:'apb2');
+select pg_temp.ok((select situacao = 'cancelada' from fluxo.aprovacoes where id = :'apb2'), 'quem edita desiste do pedido');
+select pg_temp.falha(format($$insert into fluxo.aprovacoes (empresa_id, tarefa_id, modo, situacao) values (%L, %L, 'paralelo', 'aprovada')$$, :'emp', :'kb'), 'aprovação não se escreve direto, só pelas funções');
+select pg_temp.falha(format($$select fluxo.pedir_aprovacao(%L)$$, :'kf'), 'tarefa sem aprovador não pede aprovação');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$select fluxo.pedir_aprovacao(%L)$$, :'kb'), 'leitura não pede aprovação');
+-- a regra do checklist é da empresa e só o administrador muda
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format($$select fluxo.salvar_regras(%L, false)$$, :'emp'), 'só o administrador muda a regra do checklist');
+select pg_temp.como(:'diretor');
+select fluxo.salvar_regras(:'emp', false);
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tm', 'Pedir certidões', current_date + 5, :'analista', null, 'Fazer') as kc \gset
+insert into fluxo.checklists (empresa_id, tarefa_id, nome) values (:'emp', :'kc', 'Certidões') returning id as ckc \gset
+insert into fluxo.checklist_itens (empresa_id, checklist_id, texto) values (:'emp', :'ckc', 'Ônus reais');
+update fluxo.tarefas set concluida_em = now() where id = :'kc';
+select pg_temp.ok((select concluida_em is not null from fluxo.tarefas where id = :'kc'), 'com a regra desligada, conclui com item em aberto');
+-- o modo de aprovação e a ordem dos aprovadores passam pelo modelo
+select pg_temp.como(:'analista');
+update fluxo.tarefas set aprovacao_modo = 'sequencia' where id = :'kb';
+select fluxo.salvar_quadro_como_modelo(:'qm', 'Com aprovação') as mapr \gset
+select pg_temp.ok((select aprovacao_modo = 'sequencia' and pessoas->0->>'papel' = 'aprovador' from fluxo.modelo_tarefas where modelo_id = :'mapr' and titulo = 'Parecer do jurídico'),
+  'o modelo guarda o modo de aprovação do cartão');
 \echo 'TODOS OS TESTES PASSARAM'

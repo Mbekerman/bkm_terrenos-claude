@@ -114,7 +114,7 @@ const crOrdem=(a,b)=>String(a.k.inicio||a.k.prazo||'9').localeCompare(String(b.k
 /* faixa da linha de base no cronograma do terreno */
 function crBaseBarra(t){const a=crLbAprov(t),p=crLbPend(t),eu=me(),ed=tkEd(),pode=p&&crAprova(eu,p.por)&&ed;
   const atr=(t.tarefas||[]).filter(k=>!k.arq&&crBase(t,k)&&k.prazo&&k.prazo>crBase(t,k).pz).length;
-  return `<div class="cr-lbb">${a?`<span class="chip ${atr?'warn':'ok'}">Linha de base ${a.n}</span><span class="faint">aprovada por ${esc(a.decPor)} em ${fd(a.decEm.slice(0,10))}${atr?` · ${atr} tarefa${atr>1?'s':''} depois da base`:' · em dia com a base'}</span>`:'<span class="faint">Sem linha de base: o cronograma ainda não foi aprovado.</span>'}
+  return `<div class="cr-lbb">${a?`<span class="chip ${atr?'warn':'good'}">Linha de base ${a.n}</span><span class="faint">aprovada por ${esc(a.decPor)} em ${fd(a.decEm.slice(0,10))}${atr?` · ${atr} tarefa${atr>1?'s':''} depois da base`:' · em dia com a base'}</span>`:'<span class="faint">Sem linha de base: o cronograma ainda não foi aprovado.</span>'}
     ${p?`<span class="chip warn">Aguardando aprovação</span><span class="faint">pedido por ${esc(p.por)}${p.motivo?`: ${esc(p.motivo)}`:''}</span>`:''}
     <span class="cr-lbs">${pode?`<button class="btn sm" data-a="cr-lb-aprovar" data-id="${t.id}">${ic('check',16)}Aprovar</button><button class="btn sm text" data-a="cr-lb-recusar" data-id="${t.id}">Recusar</button>`:''}
     ${p&&p.por===eu&&!pode?`<button class="btn sm text" data-a="cr-lb-desistir" data-id="${t.id}">Cancelar pedido</button>`:''}
@@ -151,7 +151,7 @@ function crAplicar(t,m,data){const mapa={},resp=u=>u===RESP_OBJ?t.resp||null:u||
     const k=tkCriar(t,{titulo:x.titulo,resp:resp(x.resp),prio:x.prio,lista:l.id});
     if(x.iniD!=null){k.inicio=k.iniMin=crSomar(data,x.iniD);k.dur=x.dur||1;k.prazo=crSomar(k.inicio,k.dur-1)}
     (x.pessoas||[]).forEach(p=>{const u=resp(p.user);if(u&&!(k[p.papel]||[]).includes(u))k[p.papel]=[...(k[p.papel]||[]),u]});
-    k.etq=(x.etq||[]).filter(id=>S.etiquetas.some(e=>e.id===id));k.checklists=(x.cks||[]).map(c=>({id:uid(),nome:c.nome,esconder:false,itens:c.itens.map(s=>({id:uid(),texto:s,resp:null,prazo:null,feito:null}))}));
+    k.apModo=x.apModo||'paralelo';k.etq=(x.etq||[]).filter(id=>S.etiquetas.some(e=>e.id===id));k.checklists=(x.cks||[]).map(c=>({id:uid(),nome:c.nome,esconder:false,itens:c.itens.map(s=>({id:uid(),texto:s,resp:null,prazo:null,feito:null}))}));
     mapa[x.id]=k});
   m.tarefas.forEach(x=>{mapa[x.id].preds=(x.preds||[]).filter(v=>mapa[v.id]).map(v=>({id:mapa[v.id].id,tipo:v.tipo,def:v.def||0}))});
   crCascata(t);log(t,`Modelo "${m.nome}" aplicado: ${m.tarefas.length} tarefas`);return m.tarefas.length}
@@ -160,7 +160,7 @@ function crSalvarQuadro(t,nome,daEmpresa){const ks=t.tarefas.filter(k=>!k.arq&&!
   const m={id:uid(),nome,dono:daEmpresa?null:me(),padrao:false,ativo:true,tarefas:[]};
   ks.forEach(k=>{const x={id:uid(),titulo:k.titulo,lista:tkLista(t,k).nome,prio:k.prio,iniD:k.inicio&&base?crDias(base,k.inicio):null,dur:k.dur||null,
     resp:k.resp&&k.resp===t.resp?RESP_OBJ:k.resp,pessoas:PAPEIS_TK.flatMap(([p])=>(k[p]||[]).map(u=>({papel:p,user:u===t.resp?RESP_OBJ:u}))),etq:[...(k.etq||[])],
-    cks:(k.checklists||[]).map(c=>({nome:c.nome,itens:c.itens.map(i=>i.texto)})),preds:[]};mapa[k.id]=x;m.tarefas.push(x)});
+    cks:(k.checklists||[]).map(c=>({nome:c.nome,itens:c.itens.map(i=>i.texto)})),apModo:k.apModo||'paralelo',preds:[]};mapa[k.id]=x;m.tarefas.push(x)});
   ks.forEach(k=>{mapa[k.id].preds=crPreds(k).filter(v=>mapa[v.id]).map(v=>({id:mapa[v.id].id,tipo:v.tipo,def:v.def||0}))});
   crModelos().push(m);return m}
 const crPessoaOpts=(v,vazio)=>`<option value="">${vazio}</option><option value="${RESP_OBJ}" ${v===RESP_OBJ?'selected':''}>Responsável do terreno</option>${USERS.map(u=>`<option ${u===v?'selected':''}>${esc(u)}</option>`).join('')}`;
@@ -190,7 +190,7 @@ function crModEdHtml(fechar){const m=crModelos().find(x=>x.id===UI.crModEd);if(!
   ${ed?`<form class="tkm-nf" data-form="cr-mt-novo" style="margin-top:12px"><input name="titulo" required placeholder="Nova tarefa do modelo" aria-label="Nova tarefa do modelo"><button class="btn tonal sm" type="submit">Adicionar</button></form>`:''}
   <div class="df"><button class="btn text" data-a="close">Fechar</button>${ed?`<button class="btn text" data-a="cr-mod-desativar" data-v="${m.id}">${m.padrao?'':'Desativar modelo'}</button>`:''}</div>`}
 function crHistHtml(fechar){const t=T(UI.crHist);if(!t)return '';const SIT={pendente:'Aguardando aprovação',aprovada:'Aprovada (vale agora)',recusada:'Recusada',substituida:'Substituída',cancelada:'Cancelada'};
-  return `<div class="dh"><h2>Linhas de base</h2>${fechar}</div><div class="cr-hist">${crLbs(t).slice().reverse().map(b=>`<div class="cr-hr"><div><b>${b.n?'Linha de base '+b.n:'Pedido'}</b> · <span class="chip ${b.sit==='aprovada'?'ok':b.sit==='pendente'?'warn':''}">${SIT[b.sit]}</span></div>
+  return `<div class="dh"><h2>Linhas de base</h2>${fechar}</div><div class="cr-hist">${crLbs(t).slice().reverse().map(b=>`<div class="cr-hr"><div><b>${b.n?'Linha de base '+b.n:'Pedido'}</b> · <span class="chip ${b.sit==='aprovada'?'good':b.sit==='pendente'?'warn':''}">${SIT[b.sit]}</span></div>
     <div class="faint">Pedida por ${esc(b.por)} em ${fd(b.em.slice(0,10))}${b.motivo?` · ${esc(b.motivo)}`:''}${b.decPor?` · decidida por ${esc(b.decPor)} em ${fd(b.decEm.slice(0,10))}`:''}${b.decMotivo?` · ${esc(b.decMotivo)}`:''} · ${Object.keys(b.itens).length} tarefas</div></div>`).join('')}</div>`}
 function crMotivoHtml(fechar){const m=UI.crMotivo;if(!m)return '';const t=T(m.tid);
   return `<div class="dh"><h2>${m.acao==='recusar'?'Recusar o cronograma':'Por que a linha de base muda?'}</h2>${fechar}</div>
