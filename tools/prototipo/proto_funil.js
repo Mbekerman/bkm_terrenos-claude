@@ -23,7 +23,7 @@ const destinoCfg=(tipo,k)=>tipo==='etapa'?etapaCfg(k):tipo==='subetapa'?subCfg(k
 const destinoNome=(tipo,k)=>tipo==='etapa'?SN(k):tipo==='subetapa'?subN(k):STATUS_N[k]||k;
 function syncCfg(){STAGES.splice(0,STAGES.length,...cfg().etapas.map(e=>[e.k,e.nome]))}
 /* dados carregados ou restaurados: garante configuração, equipe e avisos dos pedidos de exemplo */
-function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.cfg.fases)S.cfg.fases=FASES_PADRAO();if(!S.cfg.deps)S.cfg.deps=DEPS_PADRAO();if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];{const N0=CFG_PADRAO().notif;Object.entries(N0).forEach(([k,v])=>{const c=S.cfg.notif[k];if(!c)S.cfg.notif[k]=v;else if(c.email==null)c.email=v.email})}if(!S.prefsNotif)S.prefsNotif={};syncCfg();partesPreparar();
+function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.cfg.fases)S.cfg.fases=FASES_PADRAO();if(!S.cfg.deps)S.cfg.deps=DEPS_PADRAO();if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];{const N0=CFG_PADRAO().notif;delete S.cfg.notif.tarefa_marcado;Object.entries(N0).forEach(([k,v])=>{const c=S.cfg.notif[k];if(!c)S.cfg.notif[k]=v;else if(c.email==null)c.email=v.email})}if(!S.prefsNotif)S.prefsNotif={};syncCfg();partesPreparar();
   if(!S.pedidosAvisados){S.terrenos.forEach(t=>{if(t.neg?.pedido)avisarAprovadores(t)});S.pedidosAvisados=true}}
 
 /* ---------- regras da passagem ---------- */
@@ -127,9 +127,8 @@ function rotinaNotif(){const N=cfg().notif,dentro=(data,tipo)=>(N[tipo].dias||[]
     if(n.status!=='ativo')return;
     t.docs.forEach(d=>{const v=docVal(d);if(v)dentro(v,'documento_vencendo').forEach(x=>notificar(t.resp,'documento_vencendo',`${TIPOS_DOC[d.tipo][0]} vence ${quando(v)}`,t,d.tipo+':'+v+':'+x))});
     (t.reunioes||[]).filter(r=>r.status==='agendada').forEach(r=>dentro(r.data,'reuniao_agendada').forEach(x=>notificar(t.resp,'reuniao_agendada',`Reunião ${quando(r.data)}${r.hora?' às '+r.hora:''}`,t,r.id+':'+r.data+':'+x)))})}
-/* tarefa criada ou editada: avisa o responsável e quem foi marcado */
-function notifTarefa(t,k,antes){const ir={b:'tarefas',alvo:k.id};if(k.resp!==antes?.resp)notificar(k.resp,'tarefa_atribuida',`${me()} atribuiu a você: ${k.titulo}`,t,null,ir);
-  (k.marcados||[]).filter(u=>!(antes?.marcados||[]).includes(u)&&u!==k.resp).forEach(u=>notificar(u,'tarefa_marcado',`${me()} marcou você na tarefa: ${k.titulo}`,t,null,ir))}
+/* tarefa criada ou editada: avisa o responsável; os demais só pelo @ (decisão do Moisés, 29/out/2026: sem lista de marcados, para não virar spam) */
+function notifTarefa(t,k,antes){if(k.resp!==antes?.resp)notificar(k.resp,'tarefa_atribuida',`${me()} atribuiu a você: ${k.titulo}`,t,null,{b:'tarefas',alvo:k.id})}
 const minhasNotifs=()=>S.notifs.filter(x=>x.para===me());
 let sinoAberto=false;
 const IC_SINO='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"/></svg>';
@@ -222,7 +221,7 @@ function tentar(t,tipo,dest,dados){const r=moverPara(t,tipo,dest,{dados});save()
   toast(r.erro,true);return r}
 
 /* ---------- Configurações › Funil (só administrador) ---------- */
-const TIPOS_NOTIF_N={tarefa_atribuida:'Tarefa atribuída a você',tarefa_marcado:'Marcado em uma tarefa',mencao:'Mencionado com @',tarefa_prazo:'Prazo de tarefa chegando',tarefa_atrasada:'Tarefa atrasada',subetapa_prazo:'Subetapa passou do prazo',stand_by_retomar:'Data de retomar um Stand By',documento_vencendo:'Documento vencendo',reuniao_agendada:'Reunião agendada',aprovacao_pendente:'Pedido de aprovação para você',aprovacao_decidida:'Seu pedido foi aprovado ou recusado'};
+const TIPOS_NOTIF_N={tarefa_atribuida:'Tarefa atribuída a você',mencao:'Mencionado com @',tarefa_prazo:'Prazo de tarefa chegando',tarefa_atrasada:'Tarefa atrasada',subetapa_prazo:'Subetapa passou do prazo',stand_by_retomar:'Data de retomar um Stand By',documento_vencendo:'Documento vencendo',reuniao_agendada:'Reunião agendada',aprovacao_pendente:'Pedido de aprovação para você',aprovacao_decidida:'Seu pedido foi aprovado ou recusado'};
 const apCells=(p,c)=>`<label class="chk"><input type="checkbox" data-ch="cfg" data-p="${p}.g" ${c.g?'checked':''}>Gestor</label><label class="chk"><input type="checkbox" data-ch="cfg" data-p="${p}.d" ${c.d?'checked':''}>Diretor</label>${c.g&&c.d?`<select data-ch="cfg" data-p="${p}.modo" aria-label="Ordem das aprovações"><option value="sequencia" ${c.modo!=='paralelo'?'selected':''}>Em sequência</option><option value="paralelo" ${c.modo==='paralelo'?'selected':''}>Em paralelo</option></select>`:''}`;
 const usada=k=>S.terrenos.some(t=>t.neg&&(t.neg.sub===k||(t.neg.trilha||[]).some(x=>x.paraSub===k||x.deSub===k)));
 function pgConfig(){
