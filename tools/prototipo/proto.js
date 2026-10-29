@@ -282,7 +282,8 @@ let S;try{const r=localStorage.getItem(KEY);S=r?JSON.parse(r):null}catch(e){S=nu
 if(!S||!S.terrenos)S=seed();
 S.terrenos.forEach(t=>(t.docs||[]).forEach(d=>{if(/^geosampa_/.test(d.tipo))d.tipo=d.tipo.replace('geosampa_','lote_')}));
 const save=()=>{try{if(typeof audit==='function')audit()}catch(e){console.error(e)}try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
-let menuMin=false;try{menuMin=localStorage.getItem('bkm-terrenos-menu')==='min'}catch(e){}
+/* menu lateral começa encolhido (só ícone e rótulo curto); aberto só se a pessoa abriu */
+let menuMin=true;try{menuMin=localStorage.getItem('bkm-terrenos-menu')!=='aberto'}catch(e){}
 // Tema: claro, escuro ou auto (segue o sistema). Preferência por navegador.
 const TEMAS=[['claro','Claro','#f8fafd'],['escuro','Escuro','linear-gradient(135deg,#3b82f6,#7c5cff)'],['auto','Automático (segue o sistema)','linear-gradient(135deg,#f8fafd 50%,#0d1436 50%)']];
 let TEMA='claro';try{TEMA=localStorage.getItem('bkm-terrenos-tema')||'claro'}catch(e){}
@@ -670,12 +671,13 @@ function pgInicio(){
 /* ===================== shell ===================== */
 const NAV=[['inicio','Início','casa'],['terrenos','Terrenos','terrenos'],['mapa','Mapa','mapa'],['negociacoes','Fases','contrato'],['tarefas','Tarefas','checklist'],['dashboard','Dashboard','indicadores']];
 /* Configurações › Funil: só para administrador (no menu lateral; no celular, pelo sino) */
+const NAV_CURTO={Configurações:'Admin',Dashboard:'Dash'}; // rótulo da barra encolhida
 const navSide=()=>ehAdmin(me())?[...NAV,['config','Configurações','config']]:NAV;
 function render(){
   if(UI.route!=='mapa'&&document.body.classList.contains('mp-cheia'))mpTelaCheia(false);
   const cur=UI.route==='terreno'?UI.from:UI.route;
   document.body.classList.toggle('menu-min',menuMin);
-  $('#side').innerHTML=`<button class="menu-tg" data-a="menu" aria-expanded="${!menuMin}" aria-label="${menuMin?'Expandir menu':'Recolher menu'}" title="${menuMin?'Expandir menu':'Recolher menu'}">${ic(menuMin?'expandir':'recolher',20)}</button><button class="compose" data-a="novo" ${menuMin?'title="Novo terreno" aria-label="Novo terreno"':''}>${ic('add',24)}<span class="rot">Novo terreno</span></button>`+navSide().map(([r,l,i])=>`<button class="nav-item" data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''} ${menuMin?`title="${l}" aria-label="${l}"`:''}>${bi(i)}<span class="rot">${l}</span></button>`).join('')+``;
+  $('#side').innerHTML=`<button class="menu-tg" data-a="menu" aria-expanded="${!menuMin}" aria-label="${menuMin?'Expandir menu':'Recolher menu'}" title="${menuMin?'Expandir menu':'Recolher menu'}">${ic(menuMin?'expandir':'recolher',20)}</button><button class="compose" data-a="novo" ${menuMin?'title="Novo terreno" aria-label="Novo terreno"':''}>${ic('add',24)}<span class="rot">Novo terreno</span></button>`+navSide().map(([r,l,i])=>`<button class="nav-item" data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''} ${menuMin?`title="${l}" aria-label="${l}"`:''}><span class="ri">${bi(i)}</span><span class="rot">${menuMin?(NAV_CURTO[l]||l):l}</span></button>`).join('')+``;
   $('#bnav').innerHTML=NAV.map(([r,l,i])=>`<button data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''}><span class="pill">${bi(i,32)}</span>${l}</button>`).join('');
   document.body.classList.toggle('ro',UI.role==='Leitura');
   renderTema();{const n0=S.notifs.length;rotinaNotif();if(S.notifs.length!==n0)save()}renderSino();
@@ -833,7 +835,7 @@ document.addEventListener('click',e=>{
     case 'tema-menu':temaMenu=!temaMenu;renderTema();break;
     case 'perfil-menu':perfilMenu=!perfilMenu;renderPerfil();break;
     case 'tema':TEMA=a.dataset.v;try{localStorage.setItem('bkm-terrenos-tema',TEMA)}catch(e){}temaMenu=false;aplicaTema();renderTema();toast('Tema: '+TEMAS.find(x=>x[0]===TEMA)[1]+'.');break;
-    case 'menu':menuMin=!menuMin;try{localStorage.setItem('bkm-terrenos-menu',menuMin?'min':'')}catch(e){}render();break;
+    case 'menu':menuMin=!menuMin;try{localStorage.setItem('bkm-terrenos-menu',menuMin?'min':'aberto')}catch(e){}render();break;
     case 'reu-form':UI.reuForm=!UI.reuForm;render();break;
     case 'reu-feita':{const m=t.reunioes.find(x=>x.id===a.dataset.k);if(m.data>HOJE){toast('A data ainda não chegou. Ajuste a data antes de marcar como realizada.',true);break}m.status='realizada';log(t,`Reunião de ${fd(m.data)} marcada como realizada`);save();render();break}
     case 'doc-ok':{const d=t.docs.find(x=>x.tipo===a.dataset.k);d.status='validado';log(t,`${TIPOS_DOC[d.tipo][0]} validado`);save();render();break}

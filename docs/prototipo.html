@@ -2033,7 +2033,7 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 :root[data-tema="escuro"] .mp-modo:not(:has(> span)) .btn.primary { background: #7c8cff !important; color: #081028 !important }
 /* ===== mais área de tela e nada saindo dos quadros ===== */
 /* menu lateral mais estreito (248 → 216 px) */
-@media (min-width: 900px) { .layout { grid-template-columns: 216px minmax(0, 1fr) } body.menu-min .layout { grid-template-columns: 80px minmax(0, 1fr) } }
+@media (min-width: 900px) { .layout { grid-template-columns: 216px minmax(0, 1fr) } body.menu-min .layout { grid-template-columns: 72px minmax(0, 1fr) } body.menu-min .main { padding-left: 16px } }
 .side { padding-right: 12px }
 .side .compose { padding: 0 20px 0 16px }
 .nav-item { padding-right: 12px }
@@ -4385,6 +4385,25 @@ html[data-tema="escuro"] .tkm-re.on { background: rgba(99,112,255,.18); border-c
 @media (max-width: 599px) { .tkm-lst select { min-width: 0 } .tkm-it { align-items: flex-start } .tkm-im { flex-wrap: wrap; padding-left: 28px } }
 :root:not(#_) .tkm .tkm-nf > :is(input, select) { width: auto } :root:not(#_) .tkm .tkm-nf > input:first-child { flex: 1 1 200px } :root:not(#_) .tkm .tkm-nf.vert > :is(input, select) { width: 100%; flex: none }
 @media (min-width: 600px) { .tkm-it { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px } }
+/* Menu lateral encolhido (padrão): ícone com rótulo pequeno embaixo, como a barra do Material; 72 px e conteúdo a 16 px dela */
+.nav-item .ri { display: inline-flex }
+body.menu-min .side { padding-left: 0 !important; padding-right: 0 !important; gap: 2px }
+body.menu-min .nav-item { flex-direction: column; justify-content: center; align-self: center; width: 68px !important; min-height: 52px !important; padding: 2px 0 5px !important; gap: 3px; background: transparent !important; box-shadow: none !important }
+body.menu-min .nav-item .ri { width: 48px; height: 30px; align-items: center; justify-content: center; border-radius: 15px }
+body.menu-min .nav-item .ri .bkm-ico { width: 22px !important; height: 22px !important }
+body.menu-min .nav-item:hover .ri { background: rgba(31,31,31,.08) }
+body.menu-min .nav-item[aria-current="page"] .ri { background: var(--m-sc) }
+body.menu-min .nav-item:focus-visible { outline: 0 }
+body.menu-min .nav-item:focus-visible .ri { outline: 2px solid var(--foco); outline-offset: 1px }
+body.menu-min .nav-item .rot { display: block !important; font-size: 11px !important; line-height: 14px !important; font-weight: 400 !important; letter-spacing: .1px; text-align: center; white-space: nowrap; color: #5f6368 }
+body.menu-min .nav-item[aria-current="page"] .rot { font-weight: 500 !important; color: #1f1f1f }
+body.menu-min .compose .rot { display: none !important }
+body.menu-min .compose { margin-bottom: 12px }
+:root[data-tema="escuro"] body.menu-min .nav-item[aria-current="page"] { background: transparent !important; box-shadow: none !important }
+:root[data-tema="escuro"] body.menu-min .nav-item:hover .ri { background: rgba(255,255,255,.08) }
+:root[data-tema="escuro"] body.menu-min .nav-item[aria-current="page"] .ri { background: rgba(99,112,255,.10); box-shadow: inset 0 0 0 1px rgba(124,140,255,.5) }
+:root[data-tema="escuro"] body.menu-min .nav-item .rot { color: #8e9ac4 }
+:root[data-tema="escuro"] body.menu-min .nav-item[aria-current="page"] .rot { color: #c9d6ff }
 </style>
 <header class="top">
   <div class="top-in">
@@ -4700,7 +4719,8 @@ let S;try{const r=localStorage.getItem(KEY);S=r?JSON.parse(r):null}catch(e){S=nu
 if(!S||!S.terrenos)S=seed();
 S.terrenos.forEach(t=>(t.docs||[]).forEach(d=>{if(/^geosampa_/.test(d.tipo))d.tipo=d.tipo.replace('geosampa_','lote_')}));
 const save=()=>{try{if(typeof audit==='function')audit()}catch(e){console.error(e)}try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
-let menuMin=false;try{menuMin=localStorage.getItem('bkm-terrenos-menu')==='min'}catch(e){}
+/* menu lateral começa encolhido (só ícone e rótulo curto); aberto só se a pessoa abriu */
+let menuMin=true;try{menuMin=localStorage.getItem('bkm-terrenos-menu')!=='aberto'}catch(e){}
 // Tema: claro, escuro ou auto (segue o sistema). Preferência por navegador.
 const TEMAS=[['claro','Claro','#f8fafd'],['escuro','Escuro','linear-gradient(135deg,#3b82f6,#7c5cff)'],['auto','Automático (segue o sistema)','linear-gradient(135deg,#f8fafd 50%,#0d1436 50%)']];
 let TEMA='claro';try{TEMA=localStorage.getItem('bkm-terrenos-tema')||'claro'}catch(e){}
@@ -5088,12 +5108,13 @@ function pgInicio(){
 /* ===================== shell ===================== */
 const NAV=[['inicio','Início','casa'],['terrenos','Terrenos','terrenos'],['mapa','Mapa','mapa'],['negociacoes','Fases','contrato'],['tarefas','Tarefas','checklist'],['dashboard','Dashboard','indicadores']];
 /* Configurações › Funil: só para administrador (no menu lateral; no celular, pelo sino) */
+const NAV_CURTO={Configurações:'Admin',Dashboard:'Dash'}; // rótulo da barra encolhida
 const navSide=()=>ehAdmin(me())?[...NAV,['config','Configurações','config']]:NAV;
 function render(){
   if(UI.route!=='mapa'&&document.body.classList.contains('mp-cheia'))mpTelaCheia(false);
   const cur=UI.route==='terreno'?UI.from:UI.route;
   document.body.classList.toggle('menu-min',menuMin);
-  $('#side').innerHTML=`<button class="menu-tg" data-a="menu" aria-expanded="${!menuMin}" aria-label="${menuMin?'Expandir menu':'Recolher menu'}" title="${menuMin?'Expandir menu':'Recolher menu'}">${ic(menuMin?'expandir':'recolher',20)}</button><button class="compose" data-a="novo" ${menuMin?'title="Novo terreno" aria-label="Novo terreno"':''}>${ic('add',24)}<span class="rot">Novo terreno</span></button>`+navSide().map(([r,l,i])=>`<button class="nav-item" data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''} ${menuMin?`title="${l}" aria-label="${l}"`:''}>${bi(i)}<span class="rot">${l}</span></button>`).join('')+``;
+  $('#side').innerHTML=`<button class="menu-tg" data-a="menu" aria-expanded="${!menuMin}" aria-label="${menuMin?'Expandir menu':'Recolher menu'}" title="${menuMin?'Expandir menu':'Recolher menu'}">${ic(menuMin?'expandir':'recolher',20)}</button><button class="compose" data-a="novo" ${menuMin?'title="Novo terreno" aria-label="Novo terreno"':''}>${ic('add',24)}<span class="rot">Novo terreno</span></button>`+navSide().map(([r,l,i])=>`<button class="nav-item" data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''} ${menuMin?`title="${l}" aria-label="${l}"`:''}><span class="ri">${bi(i)}</span><span class="rot">${menuMin?(NAV_CURTO[l]||l):l}</span></button>`).join('')+``;
   $('#bnav').innerHTML=NAV.map(([r,l,i])=>`<button data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''}><span class="pill">${bi(i,32)}</span>${l}</button>`).join('');
   document.body.classList.toggle('ro',UI.role==='Leitura');
   renderTema();{const n0=S.notifs.length;rotinaNotif();if(S.notifs.length!==n0)save()}renderSino();
@@ -5251,7 +5272,7 @@ document.addEventListener('click',e=>{
     case 'tema-menu':temaMenu=!temaMenu;renderTema();break;
     case 'perfil-menu':perfilMenu=!perfilMenu;renderPerfil();break;
     case 'tema':TEMA=a.dataset.v;try{localStorage.setItem('bkm-terrenos-tema',TEMA)}catch(e){}temaMenu=false;aplicaTema();renderTema();toast('Tema: '+TEMAS.find(x=>x[0]===TEMA)[1]+'.');break;
-    case 'menu':menuMin=!menuMin;try{localStorage.setItem('bkm-terrenos-menu',menuMin?'min':'')}catch(e){}render();break;
+    case 'menu':menuMin=!menuMin;try{localStorage.setItem('bkm-terrenos-menu',menuMin?'min':'aberto')}catch(e){}render();break;
     case 'reu-form':UI.reuForm=!UI.reuForm;render();break;
     case 'reu-feita':{const m=t.reunioes.find(x=>x.id===a.dataset.k);if(m.data>HOJE){toast('A data ainda não chegou. Ajuste a data antes de marcar como realizada.',true);break}m.status='realizada';log(t,`Reunião de ${fd(m.data)} marcada como realizada`);save();render();break}
     case 'doc-ok':{const d=t.docs.find(x=>x.tipo===a.dataset.k);d.status='validado';log(t,`${TIPOS_DOC[d.tipo][0]} validado`);save();render();break}

@@ -335,7 +335,7 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 :root[data-tema="escuro"] .mp-modo:not(:has(> span)) .btn.primary { background: #7c8cff !important; color: #081028 !important }
 /* ===== mais área de tela e nada saindo dos quadros ===== */
 /* menu lateral mais estreito (248 → 216 px) */
-@media (min-width: 900px) { .layout { grid-template-columns: 216px minmax(0, 1fr) } body.menu-min .layout { grid-template-columns: 80px minmax(0, 1fr) } }
+@media (min-width: 900px) { .layout { grid-template-columns: 216px minmax(0, 1fr) } body.menu-min .layout { grid-template-columns: 72px minmax(0, 1fr) } body.menu-min .main { padding-left: 16px } }
 .side { padding-right: 12px }
 .side .compose { padding: 0 20px 0 16px }
 .nav-item { padding-right: 12px }
@@ -2687,3 +2687,22 @@ html[data-tema="escuro"] .tkm-re.on { background: rgba(99,112,255,.18); border-c
 @media (max-width: 599px) { .tkm-lst select { min-width: 0 } .tkm-it { align-items: flex-start } .tkm-im { flex-wrap: wrap; padding-left: 28px } }
 :root:not(#_) .tkm .tkm-nf > :is(input, select) { width: auto } :root:not(#_) .tkm .tkm-nf > input:first-child { flex: 1 1 200px } :root:not(#_) .tkm .tkm-nf.vert > :is(input, select) { width: 100%; flex: none }
 @media (min-width: 600px) { .tkm-it { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px } }
+/* Menu lateral encolhido (padrão): ícone com rótulo pequeno embaixo, como a barra do Material; 72 px e conteúdo a 16 px dela */
+.nav-item .ri { display: inline-flex }
+body.menu-min .side { padding-left: 0 !important; padding-right: 0 !important; gap: 2px }
+body.menu-min .nav-item { flex-direction: column; justify-content: center; align-self: center; width: 68px !important; min-height: 52px !important; padding: 2px 0 5px !important; gap: 3px; background: transparent !important; box-shadow: none !important }
+body.menu-min .nav-item .ri { width: 48px; height: 30px; align-items: center; justify-content: center; border-radius: 15px }
+body.menu-min .nav-item .ri .bkm-ico { width: 22px !important; height: 22px !important }
+body.menu-min .nav-item:hover .ri { background: rgba(31,31,31,.08) }
+body.menu-min .nav-item[aria-current="page"] .ri { background: var(--m-sc) }
+body.menu-min .nav-item:focus-visible { outline: 0 }
+body.menu-min .nav-item:focus-visible .ri { outline: 2px solid var(--foco); outline-offset: 1px }
+body.menu-min .nav-item .rot { display: block !important; font-size: 11px !important; line-height: 14px !important; font-weight: 400 !important; letter-spacing: .1px; text-align: center; white-space: nowrap; color: #5f6368 }
+body.menu-min .nav-item[aria-current="page"] .rot { font-weight: 500 !important; color: #1f1f1f }
+body.menu-min .compose .rot { display: none !important }
+body.menu-min .compose { margin-bottom: 12px }
+:root[data-tema="escuro"] body.menu-min .nav-item[aria-current="page"] { background: transparent !important; box-shadow: none !important }
+:root[data-tema="escuro"] body.menu-min .nav-item:hover .ri { background: rgba(255,255,255,.08) }
+:root[data-tema="escuro"] body.menu-min .nav-item[aria-current="page"] .ri { background: rgba(99,112,255,.10); box-shadow: inset 0 0 0 1px rgba(124,140,255,.5) }
+:root[data-tema="escuro"] body.menu-min .nav-item .rot { color: #8e9ac4 }
+:root[data-tema="escuro"] body.menu-min .nav-item[aria-current="page"] .rot { color: #c9d6ff }
