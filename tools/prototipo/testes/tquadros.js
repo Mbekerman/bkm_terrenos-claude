@@ -43,7 +43,7 @@ s=await est(p);ok(s.notifs.some(n=>n.para==='Ana Prado'&&n.tipo==='mencao'&&n.tx
 ok(s.notifs.some(n=>n.para==='Rafael Souza'&&n.tipo==='tarefa_acompanhada'&&n.txt.includes('comentou')),'quem acompanha é avisado do comentário');
 ok(await p.$eval('.tkm-cot .mencao',x=>x.textContent==='@ana.prado'),'o @ aparece destacado no comentário');
 await clica(p,'[data-a=tkc-reage][data-r="👍"]');await p.waitForTimeout(100);ok(await p.$$eval('.tkm-re.on',x=>x.length)===1,'reação marcada');
-await clica(p,'[data-a=tkc-etq]','Jurídico');await p.waitForTimeout(100);
+await clica(p,'[data-a=tkc-pop][data-v=etq]');await p.waitForTimeout(100);await clica(p,'[data-a=tkc-etq]','Jurídico');await p.waitForTimeout(100);
 await p.screenshot({path:O+'2_cartao.png'});
 // concluir e arquivar
 await clica(p,'[data-a=tkc-concluir]');await p.waitForTimeout(150);

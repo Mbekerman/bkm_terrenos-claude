@@ -615,7 +615,9 @@ const advItens=items=>items.map(x=>`<li><span class="${x.ok?'ok':'no'}">${ic(x.o
 /* ficha em página única: cada seção é um bloco com seta; ao abrir um terreno, só a Visão geral nasce aberta (nada é guardado) */
 let BLA={},blId=null;
 const blocoFechado=k=>!BLA[k];
-const blocoAbre=k=>{BLA[k]=true};
+/* abrir a seção Tarefas recolhe o painel da direita, para o quadro ganhar a largura (pedido do Moisés, 29/out/2026); não muda a preferência guardada */
+const tkRecolhePainel=k=>{if(k==='tarefas'&&typeof PN!=='undefined')PN.aberto=false};
+const blocoAbre=k=>{BLA[k]=true;tkRecolhePainel(k)};
 function rolarBloco(k,s){setTimeout(()=>{const el=(s&&document.getElementById('sec-'+s))||document.getElementById('bl-'+k);el&&el.scrollIntoView({behavior:'smooth',block:'start'})},30)}
 function pgFicha(){
   if(UI.id!==blId){BLA={geral:true};blId=UI.id}
@@ -717,6 +719,8 @@ function renderModal(){
   if(M==='grafico'){const k=UI.grafico;h=`<div class="dh g-exp"><h2>${DIMS[k].l}</h2>${fechar}</div>${grafico(k,true)}<h3 class="lbl-up" style="margin-top:var(--e6)">Dados do gráfico</h3>${tabelaGrafico(k)}`}
   el.innerHTML=`<div class="scrim" data-a="scrim"><div class="dialog" role="dialog" aria-modal="true">${h}</div></div>`;
   if(M==='novo')nvPosRender();
+  /* o cartão de tarefa abre sem cursor no título (como o Trello): o foco vai para a janela */
+  const tkm=el.querySelector('.tkm');if(tkm){const d=el.querySelector('.dialog');d.tabIndex=-1;setTimeout(()=>{if(!d.contains(document.activeElement))d.focus({preventScroll:true})},30);return}
   const f=el.querySelector('input:not([type=hidden]),select');if(f)setTimeout(()=>f.focus(),30);
 }
 function dedupe(){
@@ -752,7 +756,7 @@ document.addEventListener('click',e=>{
     case 'nav':go(a.dataset.r);break;
     case 'abrir':BLA={geral:true};blId=a.dataset.id;go('terreno',{id:a.dataset.id,tab:a.dataset.tab||'geral',from:a.dataset.from||(UI.route==='terreno'?UI.from:UI.route==='inicio'?'inicio':'terrenos')});if(a.dataset.tab&&a.dataset.tab!=='geral'){blocoAbre(a.dataset.tab);render();rolarBloco(a.dataset.tab)}break;
     case 'tab':if(UI.modal){UI.modal=null;renderModal()}UI.tab=a.dataset.t;blocoAbre(a.dataset.t);render();rolarBloco(a.dataset.t);break;
-    case 'bloco':{const k=a.dataset.t,fim=!!a.dataset.fim;if(BLA[k]){delete BLA[k];if(UI.tab===k)UI.tab='geral'}else{BLA[k]=true;UI.tab=k}render();
+    case 'bloco':{const k=a.dataset.t,fim=!!a.dataset.fim;if(BLA[k]){delete BLA[k];if(UI.tab===k)UI.tab='geral'}else{BLA[k]=true;UI.tab=k;tkRecolhePainel(k)}render();
       /* recolhida pelo fim: traz o título de volta à tela, para não perder o lugar */
       if(!BLA[k]){const h=document.getElementById('bl-'+k);if(h&&(fim||h.getBoundingClientRect().top<72))h.scrollIntoView({block:'start'});document.querySelector(`#bl-${k} .bl-h`)?.focus({preventScroll:true})}break}
     case 'ir':UI.tab=a.dataset.t;blocoAbre(a.dataset.t);UI.edit=a.dataset.s&&SECOES[a.dataset.s]||a.dataset.s==='areas'?a.dataset.s:null;render();rolarBloco(a.dataset.t,a.dataset.s);break;
