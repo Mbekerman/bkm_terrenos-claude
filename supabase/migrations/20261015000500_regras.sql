@@ -196,7 +196,8 @@ select t.id, t.empresa_id, t.codigo, t.nome, t.situacao_cadastral, t.prioridade,
        u.zoneamentos, u.ca_maximo,
        nt.titulo as proxima_tarefa, nt.prazo as proxima_tarefa_prazo,
        (select count(*) from fluxo.tarefas k join fluxo.quadros q on q.id = k.quadro_id where q.objeto_tipo = 'terreno' and q.objeto_id = t.id
-          and k.concluida_em is null and k.arquivada_em is null and k.prazo < current_date) as tarefas_atrasadas,
+          and k.concluida_em is null and k.arquivada_em is null and k.prazo < current_date
+          and not exists (select 1 from fluxo.listas l where l.id = k.lista_id and l.tipo = 'pausa')) as tarefas_atrasadas,
        (select count(*) from app.v_documentos d where d.terreno_id = t.id and d.processo_id = p.id and d.situacao_efetiva = 'vencido') as docs_vencidos,
        (select count(*) from app.diligencias g where g.terreno_id = t.id and g.situacao not in ('resolvida')) as diligencias_abertas,
        (select count(*) from app.diligencias g where g.terreno_id = t.id and g.situacao = 'impeditiva') as diligencias_impeditivas,

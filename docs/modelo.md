@@ -777,7 +777,36 @@ erDiagram
 - **Bloqueio de conclusão** (`fluxo.pendencias_conclusao`, conferido no `t_lista`): tarefa com aprovador só conclui aprovada; com `regras.conclui_exige_checklist` (padrão ligado, `fluxo.salvar_regras` pelo administrador), só com os itens do checklist concluídos (item que virou cartão não conta). Reabrir uma tarefa aprovada invalida a aprovação.
 - **Avisos:** o aprovador na vez recebe `aprovacao_pendente` (em sequência, o próximo quando o anterior aprova); quem pediu e o responsável recebem `aprovacao_decidida`, com a justificativa na recusa (origem `tarefa_aprovacoes`).
 - O modelo de tarefas guarda o modo de aprovação e a ordem dos aprovadores.
-- **Fica para os próximos blocos:** SLA com pausa aprovada, visibilidade por cartão (empresa, grupo, envolvidos, com exceções e papel por pessoa), campos personalizados, recorrência, automações e WhatsApp.
+
+### SLA com pausa aprovada (bloco 3)
+
+Decisões do Moisés de 29/out/2026. Mesma migration.
+
+```mermaid
+erDiagram
+  tarefas ||--o{ pausas : "pausas"
+  empresas ||--o| regras : "quem aprova pausa"
+  pausas {
+    text situacao "pendente | ativa | encerrada | recusada | cancelada"
+    text motivo "obrigatório"
+    uuid pedida_por
+    uuid decidida_por
+    text motivo_decisao "obrigatório ao recusar"
+    uuid lista_anterior_id
+    timestamptz inicio
+    timestamptz fim
+    int dias "dias pausada, ao retomar"
+  }
+  regras {
+    text pausa_aprova "ninguem | gestor | diretor (padrão gestor)"
+  }
+```
+
+- **O prazo é o do cartão** e pausada não atrasa (`v_tarefas.atrasada`, `app.tarefas_atrasadas` e a rotina diária deixam de fora a lista de tipo `pausa`).
+- **Pausar:** `fluxo.pausar(tarefa, motivo)`; entrar na lista Pausadas só por ela (o `t_lista` recusa o arraste direto). Quem tem o nível de `regras.pausa_aprova` (o próprio nível, ou administrador) pausa na hora; os demais deixam o pedido pendente, com o cartão na lista em que está, e o primeiro superior com o nível recebe `aprovacao_pendente` (origem `tarefa_pausas`). `fluxo.decidir_pausa(pausa, aprovar, motivo)`: aprovar move para Pausadas guardando a lista de antes; recusar exige motivo; quem pediu pode desistir. `fluxo.salvar_regra_pausa` pelo administrador.
+- **Retomar:** `fluxo.retomar(tarefa)` encerra a pausa, volta à lista de antes (se ainda aberta) e empurra o prazo pelos dias pausados (corridos, ou úteis quando a empresa conta dias úteis); as sucessoras do cronograma andam em cascata. Concluir a tarefa direto da pausa encerra a pausa sem empurrar.
+- **Tempo:** `fluxo.v_tarefa_sla` dá dias aberta, dias pausada, dias líquidos, número de pausas e se há pausa ativa ou pedida.
+- **Fica para os próximos blocos:** visibilidade por cartão (empresa, grupo, envolvidos, com exceções e papel por pessoa), campos personalizados, recorrência, automações e WhatsApp.
 
 ## Setores censitários e renda familiar estimada
 

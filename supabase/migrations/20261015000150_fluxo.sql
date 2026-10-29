@@ -240,7 +240,7 @@ end $$;
 -- reabrir leva para a primeira aberta.
 create or replace function fluxo.tg_tarefa_lista()
 returns trigger language plpgsql security definer set search_path = '' as $$
-declare v_tipo text; v_pend text[]; v_mudou_lista boolean := tg_op = 'INSERT' or new.lista_id is distinct from old.lista_id;
+declare v_tipo text; v_tipo_ant text; v_lista_ant uuid; v_pend text[]; v_mudou_lista boolean := tg_op = 'INSERT' or new.lista_id is distinct from old.lista_id;
 begin
   if not v_mudou_lista and tg_op = 'UPDATE' and (new.concluida_em is null) <> (old.concluida_em is null) then
     select id into new.lista_id from fluxo.listas
@@ -250,6 +250,17 @@ begin
     new.posicao := extract(epoch from clock_timestamp());
   end if;
   select tipo into v_tipo from fluxo.listas where id = new.lista_id;
+  -- pausa (bloco 3): entrar e sair da lista de pausa só por fluxo.pausar e fluxo.retomar; concluir encerra a pausa
+  if tg_op = 'UPDATE' then v_lista_ant := old.lista_id; v_tipo_ant := (select tipo from fluxo.listas where id = old.lista_id); end if;
+  if coalesce(current_setting('fluxo.pausando', true), '') <> '1' and new.lista_id is distinct from v_lista_ant then
+    if v_tipo = 'pausa' and v_tipo_ant is distinct from 'pausa' then
+      raise exception 'Para pausar, use Pausar (com o motivo)' using errcode = '23514';
+    elsif v_tipo_ant = 'pausa' and v_tipo <> 'pausa' then
+      if v_tipo <> 'conclui' then raise exception 'Para tirar a tarefa da pausa, use Retomar' using errcode = '23514'; end if;
+      update fluxo.pausas set situacao = 'encerrada', fim = clock_timestamp(), dias = 0, retomada_por = auth.uid()
+      where tarefa_id = new.id and situacao = 'ativa';
+    end if;
+  end if;
   if v_tipo = 'conclui' and (new.concluida_em is null or tg_op = 'INSERT' or old.concluida_em is null) then
     -- bloqueio de conclusão (bloco 3): aprovação e checklist; a aprovação conclui por conta própria
     if tg_op = 'UPDATE' and coalesce(current_setting('fluxo.aprovando', true), '') <> '1' then
@@ -367,7 +378,7 @@ end $$;
 -- Cartão com o atraso calculado e o andamento do checklist (base das telas).
 create view fluxo.v_tarefas with (security_invoker = true) as
 select k.*, l.nome as lista_nome, l.tipo as lista_tipo, q.objeto_tipo, q.objeto_id,
-       (k.concluida_em is null and k.arquivada_em is null and k.prazo < current_date) as atrasada,
+       (k.concluida_em is null and k.arquivada_em is null and k.prazo < current_date and l.tipo <> 'pausa') as atrasada,  -- pausada não atrasa
        coalesce(ci.total, 0) as checklist_total, coalesce(ci.feitos, 0) as checklist_feitos
 from fluxo.tarefas k
 join fluxo.listas l on l.id = k.lista_id
@@ -1026,7 +1037,8 @@ grant execute on function fluxo.aplicar_modelo(uuid, uuid, date, uuid), fluxo.sa
 -- =====================================================================
 create table fluxo.regras (
   empresa_id              uuid primary key references app.empresas(id) on delete cascade,
-  conclui_exige_checklist boolean not null default true
+  conclui_exige_checklist boolean not null default true,
+  pausa_aprova            text not null default 'gestor' check (pausa_aprova in ('ninguem','gestor','diretor'))  -- SLA (abaixo)
 );
 
 create table fluxo.aprovacoes (
@@ -1178,3 +1190,158 @@ revoke all on function fluxo._fechar_aprovacao(uuid), fluxo.pedir_aprovacao(uuid
                        fluxo.cancelar_aprovacao(uuid), fluxo.salvar_regras(uuid, boolean), fluxo.votos_da_vez(uuid) from public;
 grant execute on function fluxo.pedir_aprovacao(uuid, text), fluxo.decidir_aprovacao(uuid, boolean, text), fluxo.cancelar_aprovacao(uuid),
                           fluxo.salvar_regras(uuid, boolean), fluxo.pendencias_conclusao(uuid), fluxo.votos_da_vez(uuid) to authenticated;
+
+-- =====================================================================
+-- SLA com pausa aprovada (bloco 3; decisões do Moisés, 29/out/2026).
+-- O prazo que conta é o do cartão; pausada (na lista de pausa), a tarefa
+-- não fica atrasada. Pausar pede motivo; quem aprova é o nível que o
+-- administrador escolhe (ninguém, gestor ou diretor; padrão gestor): um
+-- superior de quem pediu com esse nível ou acima, ou o administrador; quem
+-- já tem o nível pausa direto. Aprovada, a pausa começa e o cartão vai para
+-- a lista de pausa. Retomar volta para a lista de antes e empurra o prazo
+-- pelos dias pausados (no calendário da empresa), e o cronograma leva as
+-- sucessoras junto. Tempo líquido = aberta − pausada (fluxo.v_tarefa_sla).
+-- =====================================================================
+create table fluxo.pausas (
+  id                uuid primary key default gen_random_uuid(),
+  empresa_id        uuid not null references app.empresas(id),
+  tarefa_id         uuid not null references fluxo.tarefas(id) on delete cascade,
+  situacao          text not null default 'pendente' check (situacao in ('pendente','ativa','encerrada','recusada','cancelada')),
+  motivo            text not null check (length(trim(motivo)) > 0),
+  pedida_por        uuid not null default auth.uid() references auth.users(id),
+  pedida_em         timestamptz not null default clock_timestamp(),
+  decidida_por      uuid references auth.users(id),
+  decidida_em       timestamptz,
+  motivo_decisao    text,
+  lista_anterior_id uuid references fluxo.listas(id),
+  inicio            timestamptz,                    -- quando a pausa começou a valer
+  fim               timestamptz,
+  retomada_por      uuid references auth.users(id),
+  dias              int                             -- dias que empurraram o prazo
+);
+create unique index on fluxo.pausas (tarefa_id) where situacao in ('pendente','ativa');
+create index on fluxo.pausas (tarefa_id, pedida_em);
+
+create or replace function fluxo.nivel_pausa(p_empresa uuid)
+returns int language sql stable security definer set search_path = '' as $$
+  select case coalesce((select pausa_aprova from fluxo.regras where empresa_id = p_empresa), 'gestor')
+              when 'ninguem' then 0 when 'gestor' then 2 else 3 end $$;
+
+-- Quem aprova a pausa pedida por p_pedinte
+create or replace function fluxo.aprova_pausa(p_empresa uuid, p_pedinte uuid)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select fluxo.nivel_pausa(p_empresa) = 0 or app.eh_administrador(p_empresa)
+      or (app.nivel_papel(app.papel(p_empresa)) >= fluxo.nivel_pausa(p_empresa)
+          and (p_pedinte = auth.uid() or app.eh_superior(p_empresa, auth.uid(), p_pedinte))) $$;
+
+create or replace function fluxo._iniciar_pausa(p_id uuid)
+returns void language plpgsql security definer set search_path = '' as $$
+declare z fluxo.pausas; k fluxo.tarefas; v_lista uuid;
+begin
+  select * into z from fluxo.pausas where id = p_id;
+  select * into k from fluxo.tarefas where id = z.tarefa_id;
+  select id into v_lista from fluxo.listas where quadro_id = k.quadro_id and tipo = 'pausa' order by oculta, posicao limit 1;
+  if v_lista is null then raise exception 'O quadro não tem lista de pausa' using errcode = '23514'; end if;
+  update fluxo.pausas set situacao = 'ativa', inicio = clock_timestamp(), lista_anterior_id = k.lista_id,
+         decidida_por = coalesce(decidida_por, auth.uid()), decidida_em = coalesce(decidida_em, clock_timestamp())
+  where id = p_id;
+  perform set_config('fluxo.pausando', '1', true);
+  update fluxo.tarefas set lista_id = v_lista, posicao = extract(epoch from clock_timestamp()) where id = k.id;
+  perform set_config('fluxo.pausando', '', true);
+end $$;
+
+create or replace function fluxo.pausar(p_tarefa uuid, p_motivo text)
+returns uuid language plpgsql security definer set search_path = '' as $$
+declare k fluxo.tarefas; v uuid;
+begin
+  select * into k from fluxo.tarefas where id = p_tarefa for update;
+  if k.id is null then raise exception 'Tarefa não encontrada' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(k.empresa_id);
+  if k.concluida_em is not null or k.arquivada_em is not null then raise exception 'A tarefa já está concluída ou arquivada' using errcode = '23514'; end if;
+  if exists (select 1 from fluxo.pausas where tarefa_id = p_tarefa and situacao = 'ativa') then raise exception 'A tarefa já está pausada' using errcode = '23514'; end if;
+  if coalesce(trim(p_motivo), '') = '' then raise exception 'Diga por que a tarefa vai pausar' using errcode = '23514'; end if;
+  update fluxo.pausas set situacao = 'cancelada', decidida_em = clock_timestamp() where tarefa_id = p_tarefa and situacao = 'pendente';
+  insert into fluxo.pausas (empresa_id, tarefa_id, motivo) values (k.empresa_id, p_tarefa, trim(p_motivo)) returning id into v;
+  if fluxo.aprova_pausa(k.empresa_id, auth.uid()) then perform fluxo._iniciar_pausa(v); end if;
+  return v;
+end $$;
+
+-- Aprovar ou recusar (com motivo); quem pediu pode desistir (aprovar = false)
+create or replace function fluxo.decidir_pausa(p_pausa uuid, p_aprovar boolean, p_motivo text default null)
+returns void language plpgsql security definer set search_path = '' as $$
+declare z fluxo.pausas;
+begin
+  select * into z from fluxo.pausas where id = p_pausa for update;
+  if z.id is null or z.empresa_id not in (select app.minhas_empresas()) then raise exception 'Pedido não encontrado' using errcode = 'P0002'; end if;
+  if z.situacao <> 'pendente' then raise exception 'Este pedido já foi decidido' using errcode = '23514'; end if;
+  if not p_aprovar and z.pedida_por = auth.uid() then
+    update fluxo.pausas set situacao = 'cancelada', decidida_em = clock_timestamp() where id = p_pausa; return;
+  end if;
+  if not fluxo.aprova_pausa(z.empresa_id, z.pedida_por) then
+    raise exception 'Só um superior de quem pediu, com o nível que a empresa exige, ou o administrador decide a pausa' using errcode = '42501';
+  end if;
+  if p_aprovar then
+    update fluxo.pausas set decidida_por = auth.uid(), decidida_em = clock_timestamp(), motivo_decisao = nullif(trim(p_motivo), '') where id = p_pausa;
+    perform fluxo._iniciar_pausa(p_pausa);
+  else
+    if coalesce(trim(p_motivo), '') = '' then raise exception 'Diga por que a pausa foi recusada' using errcode = '23514'; end if;
+    update fluxo.pausas set situacao = 'recusada', decidida_por = auth.uid(), decidida_em = clock_timestamp(), motivo_decisao = trim(p_motivo) where id = p_pausa;
+  end if;
+end $$;
+
+-- Retomar: volta para a lista de antes e empurra o prazo pelos dias pausados
+create or replace function fluxo.retomar(p_tarefa uuid)
+returns int language plpgsql security definer set search_path = '' as $$
+declare z fluxo.pausas; k fluxo.tarefas; v_lista uuid; v_dias int;
+begin
+  select * into k from fluxo.tarefas where id = p_tarefa for update;
+  if k.id is null then raise exception 'Tarefa não encontrada' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(k.empresa_id);
+  select * into z from fluxo.pausas where tarefa_id = p_tarefa and situacao = 'ativa' for update;
+  if z.id is null then raise exception 'A tarefa não está pausada' using errcode = '23514'; end if;
+  v_dias := case when fluxo.usa_dias_uteis(k.empresa_id)
+                 then (select count(*)::int from generate_series(z.inicio::date, current_date - 1, interval '1 day') g(d) where fluxo.dia_util(k.empresa_id, g.d::date))
+                 else current_date - z.inicio::date end;
+  select id into v_lista from fluxo.listas where id = z.lista_anterior_id and quadro_id = k.quadro_id and not oculta and tipo = 'aberta';
+  if v_lista is null then
+    select id into v_lista from fluxo.listas where quadro_id = k.quadro_id and tipo = 'aberta' and not oculta order by posicao limit 1;
+  end if;
+  update fluxo.pausas set situacao = 'encerrada', fim = clock_timestamp(), retomada_por = auth.uid(), dias = v_dias where id = z.id;
+  perform set_config('fluxo.pausando', '1', true);
+  update fluxo.tarefas set lista_id = v_lista, posicao = extract(epoch from clock_timestamp()),
+         prazo = case when prazo is not null and v_dias > 0 then fluxo.somar_dias(empresa_id, prazo, v_dias) else prazo end
+  where id = p_tarefa;
+  perform set_config('fluxo.pausando', '', true);
+  return v_dias;
+end $$;
+
+-- Administrador: quem aprova a pausa (ninguem, gestor, diretor)
+create or replace function fluxo.salvar_regra_pausa(p_empresa uuid, p_pausa_aprova text)
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  perform app.exigir_administrador(p_empresa);
+  insert into fluxo.regras (empresa_id, pausa_aprova) values (p_empresa, p_pausa_aprova)
+  on conflict (empresa_id) do update set pausa_aprova = excluded.pausa_aprova;
+end $$;
+
+-- Tempo da tarefa: dias aberta, dias pausada e tempo líquido
+create view fluxo.v_tarefa_sla with (security_invoker = true) as
+select k.id as tarefa_id, k.empresa_id,
+       (coalesce(k.concluida_em, now())::date - k.criado_em::date) as dias_aberta,
+       coalesce(ps.dias, 0) as dias_pausada,
+       (coalesce(k.concluida_em, now())::date - k.criado_em::date) - coalesce(ps.dias, 0) as dias_liquidos,
+       ps.vezes as pausas,
+       exists (select 1 from fluxo.pausas where tarefa_id = k.id and situacao = 'ativa') as pausada,
+       exists (select 1 from fluxo.pausas where tarefa_id = k.id and situacao = 'pendente') as pausa_pedida
+from fluxo.tarefas k
+left join lateral (select sum(coalesce(z.fim, now())::date - z.inicio::date)::int as dias, count(*)::int as vezes
+                   from fluxo.pausas z where z.tarefa_id = k.id and z.inicio is not null) ps on true;
+
+alter table fluxo.pausas enable row level security;
+create policy ver on fluxo.pausas for select to authenticated using (empresa_id in (select app.minhas_empresas()));
+grant select on fluxo.pausas, fluxo.v_tarefa_sla to authenticated;
+create trigger t_aud after insert or update or delete on fluxo.pausas for each row execute function app.tg_auditoria();
+revoke all on function fluxo._iniciar_pausa(uuid), fluxo.pausar(uuid, text), fluxo.decidir_pausa(uuid, boolean, text), fluxo.retomar(uuid),
+                       fluxo.salvar_regra_pausa(uuid, text) from public;
+grant execute on function fluxo.pausar(uuid, text), fluxo.decidir_pausa(uuid, boolean, text), fluxo.retomar(uuid),
+                          fluxo.salvar_regra_pausa(uuid, text), fluxo.aprova_pausa(uuid, uuid) to authenticated;

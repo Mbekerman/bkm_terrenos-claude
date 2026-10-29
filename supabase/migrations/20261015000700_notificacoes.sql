@@ -249,6 +249,34 @@ begin
 end $$;
 create trigger t_notificar after update of situacao on fluxo.aprovacoes for each row execute function app.tg_aprovacao_notificar();
 
+-- Pausa (SLA): o pedido vai ao primeiro superior de quem pediu com o nível
+-- que a empresa exige; a decisão volta para quem pediu e para o responsável.
+create or replace function app.tg_pausa_notificar()
+returns trigger language plpgsql security definer set search_path = ''
+as $$
+declare k fluxo.tarefas; v_aprov uuid; u uuid;
+begin
+  select * into k from fluxo.tarefas where id = new.tarefa_id;
+  if tg_op = 'INSERT' and new.situacao = 'pendente' and not fluxo.aprova_pausa(new.empresa_id, new.pedida_por) then
+    with recursive acima as (
+      select m.superior_id as u, 1 as n from app.membros m where m.empresa_id = new.empresa_id and m.user_id = new.pedida_por
+      union all
+      select m.superior_id, a.n + 1 from acima a join app.membros m on m.empresa_id = new.empresa_id and m.user_id = a.u where a.n < 10)
+    select a.u into v_aprov from acima a join app.membros m on m.empresa_id = new.empresa_id and m.user_id = a.u
+    where app.nivel_papel(m.papel) >= fluxo.nivel_pausa(new.empresa_id) order by a.n limit 1;
+    perform app._notificar(new.empresa_id, v_aprov, 'aprovacao_pendente', 'Aprovar a pausa de ' || k.titulo || ': ' || new.motivo,
+                           app.terreno_da_tarefa(k.id), 'tarefa_pausas', new.id);
+  elsif tg_op = 'UPDATE' and old.situacao = 'pendente' and new.situacao in ('ativa','recusada') and new.decidida_por is distinct from new.pedida_por then
+    foreach u in array array[new.pedida_por, k.responsavel_id] loop
+      perform app._notificar(new.empresa_id, u, 'aprovacao_decidida',
+        case when new.situacao = 'ativa' then 'Pausa aprovada: ' else 'Pausa recusada: ' end || k.titulo || coalesce(' (' || new.motivo_decisao || ')', ''),
+        app.terreno_da_tarefa(k.id), 'tarefa_pausas', new.id);
+    end loop;
+  end if;
+  return new;
+end $$;
+create trigger t_notificar after insert or update of situacao on fluxo.pausas for each row execute function app.tg_pausa_notificar();
+
 create or replace function app.tg_reuniao_lembretes()
 returns trigger language plpgsql security definer set search_path = ''
 as $$
@@ -311,7 +339,8 @@ begin
   end loop;
 
   -- tarefa atrasada: uma vez, no primeiro dia de atraso (ou quando a rotina vir)
-  for r in select * from fluxo.tarefas k where k.concluida_em is null and k.arquivada_em is null and k.prazo < p_hoje and k.responsavel_id is not null loop
+  for r in select * from fluxo.tarefas k where k.concluida_em is null and k.arquivada_em is null and k.prazo < p_hoje and k.responsavel_id is not null
+             and not exists (select 1 from fluxo.listas l where l.id = k.lista_id and l.tipo = 'pausa') loop
     perform app._notificar(r.empresa_id, r.responsavel_id, 'tarefa_atrasada', 'Tarefa atrasada: ' || r.titulo, app.terreno_da_tarefa(r.id), 'tarefas', r.id, r.prazo, null);
     get diagnostics n = row_count; total := total + n;
   end loop;

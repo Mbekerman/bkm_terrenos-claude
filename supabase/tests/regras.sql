@@ -1610,8 +1610,7 @@ update fluxo.tarefas set concluida_em = now() where id = :'kf';
 select pg_temp.ok((select lista_nome = 'Feito' and concluida_por = :'analista' from fluxo.v_tarefas where id = :'kf'), 'marcar concluída leva o cartão para a lista que conclui');
 update fluxo.tarefas set concluida_em = null where id = :'kf';
 select pg_temp.ok((select lista_nome = 'Backlog' and concluida_em is null from fluxo.v_tarefas where id = :'kf'), 'reabrir leva para a primeira lista aberta');
-update fluxo.tarefas set lista_id = pg_temp.lista(:'tm', 'Pausadas') where id = :'kf';
-select pg_temp.ok((select lista_tipo = 'pausa' and concluida_em is null from fluxo.v_tarefas where id = :'kf'), 'Pausadas é lista de pausa, não conclui');
+select pg_temp.falha(format($$update fluxo.tarefas set lista_id = %L where id = %L$$, pg_temp.lista(:'tm', 'Pausadas'), :'kf'), 'Pausadas é lista de pausa: só se entra por Pausar');
 select pg_temp.falha(format($$update fluxo.tarefas set lista_id = %L where id = %L$$, pg_temp.lista(:'t2', 'Fazer'), :'kf'), 'lista de outro quadro é recusada');
 select pg_temp.falha(format($$update fluxo.tarefas set quadro_id = %L, lista_id = %L where id = %L$$, :'q2', :'l2', :'kf'), 'cartão não muda de quadro');
 select pg_temp.falha(format($$delete from fluxo.tarefas where id = %L$$, :'kf'), 'tarefa não se apaga, só se arquiva');
@@ -1943,4 +1942,70 @@ update fluxo.tarefas set aprovacao_modo = 'sequencia' where id = :'kb';
 select fluxo.salvar_quadro_como_modelo(:'qm', 'Com aprovação') as mapr \gset
 select pg_temp.ok((select aprovacao_modo = 'sequencia' and pessoas->0->>'papel' = 'aprovador' from fluxo.modelo_tarefas where modelo_id = :'mapr' and titulo = 'Parecer do jurídico'),
   'o modelo guarda o modo de aprovação do cartão');
+\echo '# SLA com pausa aprovada (fluxo, bloco 3)'
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tm', 'Aguardar cartório', current_date + 2, :'analista', null, 'Fazendo') as kp \gset
+select pg_temp.falha(format($$select fluxo.pausar(%L, '')$$, :'kp'), 'pausar sem motivo é recusado');
+select fluxo.pausar(:'kp', 'Cartório em greve') as zp \gset
+select pg_temp.ok((select situacao = 'pendente' from fluxo.pausas where id = :'zp') and (select lista_nome = 'Fazendo' from fluxo.v_tarefas where id = :'kp'),
+  'analista pede a pausa: fica pendente e o cartão não sai da lista');
+select pg_temp.falha(format($$select fluxo.decidir_pausa(%L, true)$$, :'zp'), 'quem pediu não aprova a própria pausa');
+select pg_temp.como(:'gestor');
+select pg_temp.ok(exists (select 1 from app.notificacoes where tipo = 'aprovacao_pendente' and origem_tabela = 'tarefa_pausas' and origem_id = :'zp'),
+  'o gestor de quem pediu é avisado do pedido de pausa');
+select pg_temp.falha(format($$select fluxo.decidir_pausa(%L, false)$$, :'zp'), 'recusar a pausa exige motivo');
+select fluxo.decidir_pausa(:'zp', true);
+select pg_temp.ok((select situacao = 'ativa' and inicio is not null from fluxo.pausas where id = :'zp')
+  and (select lista_tipo = 'pausa' from fluxo.v_tarefas where id = :'kp'), 'aprovada, a pausa começa e o cartão vai para Pausadas');
+select pg_temp.como(:'analista');
+select pg_temp.ok(exists (select 1 from app.notificacoes where tipo = 'aprovacao_decidida' and origem_id = :'zp' and texto like 'Pausa aprovada:%'), 'quem pediu é avisado da aprovação da pausa');
+-- pausada não atrasa; sair de Pausadas só por Retomar; retomar empurra o prazo pelos dias pausados
+reset role;
+update fluxo.pausas set inicio = inicio - interval '5 days' where id = :'zp';  -- simula 5 dias de pausa (como dono do banco)
+select pg_temp.como(:'analista');
+update fluxo.tarefas set prazo = current_date - 1 where id = :'kp';
+select pg_temp.ok((select not atrasada from fluxo.v_tarefas where id = :'kp'), 'pausada, a tarefa não fica atrasada');
+select pg_temp.ok((select dias_pausada = 5 and pausada from fluxo.v_tarefa_sla where tarefa_id = :'kp'), 'o tempo pausado conta enquanto a pausa dura');
+select pg_temp.falha(format($$update fluxo.tarefas set lista_id = %L where id = %L$$, pg_temp.lista(:'tm', 'Fazer'), :'kp'), 'tirar de Pausadas arrastando é recusado: use Retomar');
+select fluxo.retomar(:'kp') as dret \gset
+select pg_temp.ok(:dret = 5 and (select prazo = current_date + 4 and lista_nome = 'Fazendo' from fluxo.v_tarefas where id = :'kp')
+  and (select situacao = 'encerrada' and dias = 5 and retomada_por = :'analista' from fluxo.pausas where id = :'zp'),
+  'retomar volta para a lista de antes e empurra o prazo pelos 5 dias pausados');
+select pg_temp.ok((select dias_pausada = 5 and pausas = 1 and not pausada from fluxo.v_tarefa_sla where tarefa_id = :'kp'), 'o tempo líquido desconta a pausa encerrada');
+-- quem já tem o nível pausa direto; concluir uma pausada encerra a pausa
+select pg_temp.como(:'gestor');
+select fluxo.pausar(:'kp', 'Esperando o vendedor') as zg \gset
+select pg_temp.ok((select situacao = 'ativa' from fluxo.pausas where id = :'zg'), 'gestor pausa direto, sem pedido');
+update fluxo.tarefas set concluida_em = now() where id = :'kp';
+select pg_temp.ok((select situacao = 'encerrada' from fluxo.pausas where id = :'zg') and (select lista_nome = 'Feito' from fluxo.v_tarefas where id = :'kp'),
+  'concluir a tarefa pausada encerra a pausa');
+-- recusa e regra da empresa
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tm', 'Esperar topografia', current_date + 2, :'analista', null, 'Fazer') as kq \gset
+select fluxo.pausar(:'kq', 'Topógrafo sem agenda') as zq \gset
+select pg_temp.como(:'diretor');
+select fluxo.decidir_pausa(:'zq', false, 'Contrate outro topógrafo');
+select pg_temp.ok((select situacao = 'recusada' and motivo_decisao = 'Contrate outro topógrafo' from fluxo.pausas where id = :'zq')
+  and (select lista_nome = 'Fazer' from fluxo.v_tarefas where id = :'kq'), 'o diretor (acima do gestor) recusa com motivo e o cartão fica onde está');
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format($$select fluxo.salvar_regra_pausa(%L, 'ninguem')$$, :'emp'), 'só o administrador escolhe quem aprova a pausa');
+select pg_temp.como(:'diretor');
+select fluxo.salvar_regra_pausa(:'emp', 'diretor');
+select pg_temp.como(:'analista');
+select fluxo.pausar(:'kq', 'Topógrafo sem agenda de novo') as zq2 \gset
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format($$select fluxo.decidir_pausa(%L, true)$$, :'zq2'), 'com a regra "diretor", o gestor não aprova a pausa');
+select pg_temp.como(:'diretor');
+select fluxo.decidir_pausa(:'zq2', true);
+select pg_temp.ok((select situacao = 'ativa' from fluxo.pausas where id = :'zq2'), 'o diretor aprova a pausa');
+select fluxo.salvar_regra_pausa(:'emp', 'ninguem');
+select pg_temp.como(:'analista');
+select fluxo.retomar(:'kq');
+select fluxo.pausar(:'kq', 'Chuva') as zq3 \gset
+select pg_temp.ok((select situacao = 'ativa' from fluxo.pausas where id = :'zq3'), 'com a regra "ninguém", a pausa vale na hora');
+select pg_temp.falha(format($$select fluxo.pausar(%L, 'De novo')$$, :'kq'), 'tarefa já pausada não pausa de novo');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$select fluxo.retomar(%L)$$, :'kq'), 'leitura não retoma');
+select pg_temp.como(:'diretor');
+select fluxo.salvar_regra_pausa(:'emp', 'gestor');
 \echo 'TODOS OS TESTES PASSARAM'

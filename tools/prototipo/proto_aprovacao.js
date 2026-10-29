@@ -70,7 +70,7 @@ const apRotulo=k=>!k.feita&&apPrecisa(k)?(apPend(k)?'Aguardando aprovação':'Pe
 /* Configurações › Tarefas: regra de conclusão */
 const apCfgHtml=()=>`<section class="sec"><div class="sec-h"><h2>Conclusão da tarefa</h2></div><div class="sec-b">
   <label class="fchk"><input type="checkbox" data-a="ap-regra" ${apRegraCk()?'checked':''}>${ic('check',16)}Concluir exige o checklist completo</label>
-  <p class="faint" style="margin:8px 0 0">Tarefa com aprovador só conclui depois de aprovada, sempre.</p></div></section>`;
+  <p class="faint" style="margin:8px 0 0">Tarefa com aprovador só conclui depois de aprovada, sempre.</p>${pzCfgHtml()}</div></section>`;
 
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="ap-"]');if(!a)return;const A=a.dataset.a;
   if(A==='ap-regra'){e.stopImmediatePropagation();S.tkRegras={...(S.tkRegras||{}),checklist:a.checked};toast(a.checked?'Concluir exige o checklist completo.':'Concluir não exige mais o checklist completo.');save();render();return}
