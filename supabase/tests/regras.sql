@@ -954,8 +954,7 @@ select pg_temp.como(:'diretor');
 \echo '# notificações e lembretes'
 select pg_temp.como(:'analista');
 insert into app.tarefas (empresa_id, terreno_id, titulo, responsavel_id, prazo) values (:'emp', :'tm', 'Pedir certidões', :'gestor', current_date + 2) returning id as kn \gset
-insert into app.tarefa_marcados (tarefa_id, user_id, empresa_id) values (:'kn', :'diretor', :'emp');
-select pg_temp.falha(format($$insert into app.tarefa_marcados (tarefa_id, user_id, empresa_id) values (%L, %L, %L)$$, :'kn', :'intruso', :'emp'), 'só membros da empresa são marcados');
+select pg_temp.ok(to_regclass('app.tarefa_marcados') is null, 'tarefa não tem lista de marcados: só o @ avisa');
 select pg_temp.ok((select array_agg(dias_antes) from app.lembretes where origem_id = :'kn') = '{0}', 'tarefa nasce com lembrete no dia do prazo');
 insert into app.lembretes (empresa_id, origem_tabela, origem_id, dias_antes) values (:'emp', 'tarefas', :'kn', 1);
 select pg_temp.falha(format($$insert into app.lembretes (empresa_id, origem_tabela, origem_id, dias_antes) values (%L, 'tarefas', %L, 400)$$, :'emp', :'kn'), 'antecedência até 365 dias');
@@ -963,7 +962,7 @@ select pg_temp.falha(format($$insert into app.lembretes (empresa_id, origem_tabe
 select pg_temp.falha(format($$insert into app.notificacoes (empresa_id, destinatario_id, tipo, texto, origem_tabela, origem_id, referencia) values (%L, %L, 'x', 'x', 'x', %L, current_date)$$, :'emp', :'gestor', :'kn'),
   'notificação só é criada pelo banco');
 select pg_temp.como(:'diretor');
-select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'tarefa_marcado') = 1, 'quem é marcado na tarefa é avisado');
+select pg_temp.ok(not exists (select 1 from app.tipos_notificacao where codigo = 'tarefa_marcado'), 'não existe aviso de marcado na tarefa, só de menção');
 reset role;
 select app.rotina_diaria(current_date + 1) \gset
 select app.rotina_diaria(current_date + 2) \gset
