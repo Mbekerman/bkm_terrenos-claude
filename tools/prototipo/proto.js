@@ -23,7 +23,7 @@ const uid=()=>Math.random().toString(36).slice(2,9);
 const P={
   search:'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4',download:'M12 4v11M7 10l5 5 5-5M5 20h14',
   home:'M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z',layers:'M12 4 3 9l9 5 9-5zM3 14l9 5 9-5',
-  board:'M4 5h4v14H4zM10 5h4v9h-4zM16 5h4v12h-4z',doc:'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4',
+  notas:'M4 6h16M4 12h16M4 18h10',board:'M4 5h4v14H4zM10 5h4v9h-4zM16 5h4v12h-4z',doc:'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4',
   add:'M12 5v14M5 12h14',back:'M19 12H5M11 6l-6 6 6 6',check:'M5 12.5 10 17 19 7',
   warn:'M12 4 2.5 20h19zM12 10v4.5M12 17.2v.1',clock:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3.5 2.5',
   upload:'M12 16V4M7 9l5-5 5 5M5 20h14',close:'M6 6l12 12M18 6 6 18',
@@ -615,7 +615,9 @@ const advItens=items=>items.map(x=>`<li><span class="${x.ok?'ok':'no'}">${ic(x.o
 /* ficha em página única: cada seção é um bloco com seta; ao abrir um terreno, só a Visão geral nasce aberta (nada é guardado) */
 let BLA={},blId=null;
 const blocoFechado=k=>!BLA[k];
-const blocoAbre=k=>{BLA[k]=true};
+/* abrir a seção Tarefas recolhe o painel da direita, para o quadro ganhar a largura (pedido do Moisés, 29/out/2026); não muda a preferência guardada */
+const tkRecolhePainel=k=>{if(k==='tarefas'&&typeof PN!=='undefined')PN.aberto=false};
+const blocoAbre=k=>{BLA[k]=true;tkRecolhePainel(k)};
 function rolarBloco(k,s){setTimeout(()=>{const el=(s&&document.getElementById('sec-'+s))||document.getElementById('bl-'+k);el&&el.scrollIntoView({behavior:'smooth',block:'start'})},30)}
 function pgFicha(){
   if(UI.id!==blId){BLA={geral:true};blId=UI.id}
@@ -717,6 +719,8 @@ function renderModal(){
   if(M==='grafico'){const k=UI.grafico;h=`<div class="dh g-exp"><h2>${DIMS[k].l}</h2>${fechar}</div>${grafico(k,true)}<h3 class="lbl-up" style="margin-top:var(--e6)">Dados do gráfico</h3>${tabelaGrafico(k)}`}
   el.innerHTML=`<div class="scrim" data-a="scrim"><div class="dialog" role="dialog" aria-modal="true">${h}</div></div>`;
   if(M==='novo')nvPosRender();
+  /* o cartão de tarefa abre sem cursor no título (como o Trello): o foco vai para a janela */
+  const tkm=el.querySelector('.tkm');if(tkm){const d=el.querySelector('.dialog');d.tabIndex=-1;setTimeout(()=>{if(!d.contains(document.activeElement))d.focus({preventScroll:true})},30);return}
   const f=el.querySelector('input:not([type=hidden]),select');if(f)setTimeout(()=>f.focus(),30);
 }
 function dedupe(){
@@ -752,7 +756,7 @@ document.addEventListener('click',e=>{
     case 'nav':go(a.dataset.r);break;
     case 'abrir':BLA={geral:true};blId=a.dataset.id;go('terreno',{id:a.dataset.id,tab:a.dataset.tab||'geral',from:a.dataset.from||(UI.route==='terreno'?UI.from:UI.route==='inicio'?'inicio':'terrenos')});if(a.dataset.tab&&a.dataset.tab!=='geral'){blocoAbre(a.dataset.tab);render();rolarBloco(a.dataset.tab)}break;
     case 'tab':if(UI.modal){UI.modal=null;renderModal()}UI.tab=a.dataset.t;blocoAbre(a.dataset.t);render();rolarBloco(a.dataset.t);break;
-    case 'bloco':{const k=a.dataset.t,fim=!!a.dataset.fim;if(BLA[k]){delete BLA[k];if(UI.tab===k)UI.tab='geral'}else{BLA[k]=true;UI.tab=k}render();
+    case 'bloco':{const k=a.dataset.t,fim=!!a.dataset.fim;if(BLA[k]){delete BLA[k];if(UI.tab===k)UI.tab='geral'}else{BLA[k]=true;UI.tab=k;tkRecolhePainel(k)}render();
       /* recolhida pelo fim: traz o título de volta à tela, para não perder o lugar */
       if(!BLA[k]){const h=document.getElementById('bl-'+k);if(h&&(fim||h.getBoundingClientRect().top<72))h.scrollIntoView({block:'start'});document.querySelector(`#bl-${k} .bl-h`)?.focus({preventScroll:true})}break}
     case 'ir':UI.tab=a.dataset.t;blocoAbre(a.dataset.t);UI.edit=a.dataset.s&&SECOES[a.dataset.s]||a.dataset.s==='areas'?a.dataset.s:null;render();rolarBloco(a.dataset.t,a.dataset.s);break;

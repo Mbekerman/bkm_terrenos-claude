@@ -1,3 +1,4 @@
+// o quadro de tarefas (.tkb) rola para o lado de propósito, como o Trello (pedido do Moisés, 29/out/2026)
 const TMP=require('path').join(__dirname,'..','saida')+'/';
 const {chromium}=require('playwright');
 const L=require('path').join(__dirname,'..','libs','l')+'/';const F=require('path').join(__dirname,'..','saida','bkm-terrenos.html');
@@ -11,7 +12,7 @@ const ok=await p.evaluate(n=>{const a=[...document.querySelectorAll('[data-a=abr
 await p.waitForTimeout(250);
 for(const k of ['geral','cadastro','comercial','negociacao','fases','tarefas','urbanismo','documentos','historico']){const h=await p.$(`#bl-${k} .bl-h[aria-expanded=false]`);if(h&&await h.isVisible()){await h.click();await p.waitForTimeout(60)}}
 await p.waitForTimeout(200);
-const r=await p.evaluate(()=>{const out=[];document.querySelectorAll('#main *').forEach(e=>{const c=getComputedStyle(e);if(e.scrollWidth>e.clientWidth+1&&e.offsetParent&&(['auto','scroll'].includes(c.overflowX)||e.matches('.tblwrap,.dt-wrap'))){const sec=e.closest('.sec')?.querySelector('h2')?.textContent?.trim()||e.closest('.bl')?.id||'';out.push((e.className.toString().split(' ')[0]||e.tagName)+' @ '+sec+' ('+e.scrollWidth+'>'+e.clientWidth+')')}});
+const r=await p.evaluate(()=>{const out=[];document.querySelectorAll('#main *').forEach(e=>{const c=getComputedStyle(e);if(e.scrollWidth>e.clientWidth+1&&e.offsetParent&&!e.matches('.tkb')&&(['auto','scroll'].includes(c.overflowX)||e.matches('.tblwrap,.dt-wrap'))){const sec=e.closest('.sec')?.querySelector('h2')?.textContent?.trim()||e.closest('.bl')?.id||'';out.push((e.className.toString().split(' ')[0]||e.tagName)+' @ '+sec+' ('+e.scrollWidth+'>'+e.clientWidth+')')}});
   return {itens:out,pagina:document.documentElement.scrollWidth>innerWidth}});
 r.itens.forEach(x=>{const key=x.replace(/ \(.*/,'');if(!achados.has(key))achados.set(key,[]);achados.get(key).push(w+(mm?'m':'')+' '+nome+' '+x.match(/\(.*\)/)[0])});
 if(r.pagina){const key='PÁGINA';if(!achados.has(key))achados.set(key,[]);achados.get(key).push(w+(mm?'m':'')+' '+nome)}
