@@ -777,6 +777,7 @@ erDiagram
 - **Bloqueio de conclusão** (`fluxo.pendencias_conclusao`, conferido no `t_lista`): tarefa com aprovador só conclui aprovada; com `regras.conclui_exige_checklist` (padrão ligado, `fluxo.salvar_regras` pelo administrador), só com os itens do checklist concluídos (item que virou cartão não conta). Reabrir uma tarefa aprovada invalida a aprovação.
 - **Avisos:** o aprovador na vez recebe `aprovacao_pendente` (em sequência, o próximo quando o anterior aprova); quem pediu e o responsável recebem `aprovacao_decidida`, com a justificativa na recusa (origem `tarefa_aprovacoes`).
 - O modelo de tarefas guarda o modo de aprovação e a ordem dos aprovadores.
+
 ### SLA com pausa aprovada (bloco 3)
 
 Decisões do Moisés de 29/out/2026. Mesma migration.
