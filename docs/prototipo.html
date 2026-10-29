@@ -4297,6 +4297,94 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 html[data-tema="escuro"] .mn-pop { background: #0c1433; border-color: #1a2240 }
 html[data-tema="escuro"] .mn-i[aria-selected="true"], html[data-tema="escuro"] .mn-i:hover { background: rgba(99,112,255,.10) }
 html[data-tema="escuro"] .mencao { color: #c9d6ff; background: rgba(99,112,255,.16) }
+
+/* ---------- Quadros e tarefas (proto_quadros.js; bloco 1, 29/out/2026) ---------- */
+.etq { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 8px; border-radius: 4px; font-size: 12px; font-weight: 500; line-height: 20px; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; border: 0 }
+.etq-cinza { background: #e3e3e3; color: #1f1f1f } .etq-azul { background: #d3e3fd; color: #041e49 } .etq-verde { background: #c4eed0; color: #0a3818 } .etq-amarelo { background: #ffdf99; color: #3f2e00 }
+.etq-laranja { background: #ffdcc1; color: #3a1d00 } .etq-vermelho { background: #ffdad6; color: #410002 } .etq-roxo { background: #f0dbff; color: #2c0a3d } .etq-rosa { background: #ffd8e8; color: #3e0021 }
+html[data-tema="escuro"] .etq-cinza { background: rgba(196,199,197,.16); color: #e3e3e3 } html[data-tema="escuro"] .etq-azul { background: rgba(124,160,255,.22); color: #d3e3fd }
+html[data-tema="escuro"] .etq-verde { background: rgba(110,210,140,.2); color: #c4eed0 } html[data-tema="escuro"] .etq-amarelo { background: rgba(255,205,90,.2); color: #ffdf99 }
+html[data-tema="escuro"] .etq-laranja { background: rgba(255,170,110,.2); color: #ffdcc1 } html[data-tema="escuro"] .etq-vermelho { background: rgba(255,120,110,.2); color: #ffdad6 }
+html[data-tema="escuro"] .etq-roxo { background: rgba(200,140,255,.22); color: #f0dbff } html[data-tema="escuro"] .etq-rosa { background: rgba(255,130,180,.2); color: #ffd8e8 }
+.tk { position: relative; overflow: hidden }
+.tk-capa { height: 8px; margin: -12px -12px 4px; border-radius: 0 }
+.tk-etqs { display: flex; flex-wrap: wrap; gap: 4px }
+.tk-p { display: flex; align-items: center; gap: 4px 10px; flex-wrap: wrap }
+.tk-ind { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: var(--texto-suave); white-space: nowrap }
+.tk-ind.ok { color: #146c2e } html[data-tema="escuro"] .tk-ind.ok { color: #6dd58c }
+.tk-prazo { white-space: nowrap }
+.tk-avs { margin-left: auto; display: inline-flex } .tk-avs .avatar + .avatar { margin-left: -6px; box-shadow: 0 0 0 2px var(--superficie) }
+.tk.arq { opacity: .7 }
+.tk-sec .sec-h { flex-wrap: wrap } .tk-sub { font-size: 13px } .tk-sh { margin-left: auto; display: inline-flex; gap: 4px }
+/* na ficha o quadro quebra em linhas (sem rolagem para o lado): 3 listas por linha no desktop, 1 no celular */
+.tk-sb { padding-top: 4px }
+:root:not(#_) .tk-sb .tk-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; overflow: visible }
+:root:not(#_) .tk-sb .tk-board .tk-col { min-width: 0; width: auto; max-width: none; flex: none }
+/* janela do cartão */
+.dialog:has(.tkm) { width: min(980px, 100%) }
+.tkm .dh { align-items: flex-start }
+.tkm-hd { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px }
+.tkm-cod { font-size: 13px } .tkm-cod .linkbtn { font-size: 13px }
+.tkm input.tkm-tit { font-size: 22px; line-height: 30px; font-weight: 400; border: 1px solid transparent; border-radius: 8px; padding: 2px 8px; margin-left: -9px; background: transparent; width: 100%; min-height: 0; color: var(--texto) }
+.tkm input.tkm-tit:hover:not(:disabled) { border-color: var(--m-outline-var, #c4c7c5) } .tkm input.tkm-tit:focus { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: 0 }
+.tkm :is(input:not([type=checkbox]):not(.tkm-tit), select, textarea) { min-height: 40px; border: 1px solid var(--m-outline, #747775); border-radius: 4px; padding: 0 12px; background: var(--superficie); color: var(--texto); font: inherit; font-size: 14px; width: 100%; min-width: 0 }
+.tkm textarea { padding: 8px 12px; min-height: 72px; resize: vertical; line-height: 20px }
+.tkm :is(input, select, textarea):focus { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: -1px }
+.tkm :is(input, select, textarea):disabled { border-color: transparent; background: transparent; padding-left: 0; opacity: 1; color: var(--texto); appearance: none }
+.tkm-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 4px 0 8px }
+.tkm-lst { display: flex; align-items: center; gap: 8px } .tkm-lst select { width: auto; min-width: 180px }
+.tkm-g { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 32px }
+.tkm-main, .tkm-side { display: flex; flex-direction: column; gap: 20px; min-width: 0 }
+.tkm-f { display: flex; flex-direction: column; gap: 6px; min-width: 0 }
+.tkm-f > .lbl-f, .tkm-lst .lbl-f { font-size: 13px; color: var(--texto-suave); font-weight: 500 }
+.tkm-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
+.tkm-bl { display: flex; flex-direction: column; gap: 10px }
+.tkm-blh { display: flex; align-items: center; gap: 8px; min-height: 40px } .tkm-blh h3 { margin: 0; font-size: 16px; font-weight: 500 } .tkm-blh .btn { margin-left: auto }
+.tkm-ck { display: flex; flex-direction: column; gap: 6px; padding: 12px 0; border-top: 1px solid var(--m-outline-var, #c4c7c5) }
+.tkm-ckh { display: flex; align-items: center; gap: 8px; min-height: 40px } .tkm-sp { flex: 1 }
+.tkm-bar { height: 6px; border-radius: 3px; background: var(--m-outline-var, #e3e3e3); overflow: hidden } .tkm-bar span { display: block; height: 100%; background: var(--m-primary, #0b57d0); border-radius: 3px }
+.tkm-it { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 4px 0; min-height: 40px }
+.tkm-ch { display: flex; align-items: center; gap: 10px; flex: 1 1 220px; min-width: 0; cursor: pointer }
+.tkm-ch input { width: 18px; height: 18px; flex: none; accent-color: var(--m-primary, #0b57d0) }
+.tkm-it.feito .tkm-ch span { text-decoration: line-through; color: var(--texto-suave) }
+.tkm-im { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--texto-suave) }
+.tkm .tkm-sel { width: auto !important; min-height: 32px !important; height: 32px; font-size: 13px !important; padding: 0 8px !important }
+.tkm-nf { display: flex; gap: 8px; align-items: center; flex-wrap: wrap } .tkm-nf > input:first-child { flex: 1 1 200px; width: auto }
+.tkm-nf > select, .tkm-nf > input[type=date] { width: auto; flex: 0 1 auto }
+.tkm-nf.vert { flex-direction: column; align-items: stretch } .tkm-nf.vert .btn { align-self: flex-start }
+.tkm-cf { display: flex; flex-direction: column; gap: 8px } .tkm-cf .btn { align-self: flex-end }
+.tkm-co { display: flex; gap: 10px; padding: 8px 0 } .tkm-cob { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px }
+.tkm-coh { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: 13px } .tkm-coh b { font-weight: 500 }
+.tkm-cot { background: var(--m-surf-c, #f0f4f9); border-radius: 12px; padding: 8px 12px; white-space: pre-wrap; overflow-wrap: anywhere }
+.tkm-co.apagado .faint { font-style: italic }
+.tkm-acs { display: flex; gap: 6px; align-items: center; flex-wrap: wrap }
+.tkm-re { height: 28px; padding: 0 8px; border-radius: 14px; border: 1px solid var(--m-outline-var, #c4c7c5); background: transparent; font-size: 13px; cursor: pointer; color: var(--texto) }
+.tkm-re.on { background: var(--m-sc, #c2e7ff); border-color: transparent }
+.tkm-ps { display: flex; flex-wrap: wrap; gap: 6px; align-items: center }
+.tkm-p { display: inline-flex; align-items: center; gap: 6px; padding: 0 4px 0 2px; height: 32px }
+.tkm-x { border: 0; background: transparent; padding: 2px; border-radius: 50%; cursor: pointer; display: inline-flex; color: var(--texto-suave) } .tkm-x:hover { background: rgba(127,127,127,.15) }
+.tkm .tkm-add { width: auto; min-height: 32px; height: 32px; font-size: 13px }
+.tkm-ets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center }
+.tkm-et { height: 28px; padding: 0 10px; cursor: pointer; opacity: .55 } .tkm-et.on { opacity: 1; box-shadow: inset 0 0 0 1.5px currentColor } .tkm-et:disabled { cursor: default }
+.tkm-capas { display: flex; gap: 6px; flex-wrap: wrap }
+.tkm-capa { width: 28px; height: 20px; border-radius: 4px; border: 1px solid transparent; cursor: pointer; padding: 0 }
+.tkm-capa.nenhuma { background: transparent; border-color: var(--m-outline, #747775); background-image: linear-gradient(135deg, transparent 45%, var(--m-outline, #747775) 45%, var(--m-outline, #747775) 55%, transparent 55%) }
+.tkm-capa.on { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: 2px }
+.tkm-an { display: flex; align-items: center; gap: 8px; min-height: 36px; overflow-wrap: anywhere } .tkm-an a { color: var(--m-primary, #0b57d0) } .tkm-an .iconbtn { margin-left: auto }
+.tkm-acoes { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding-top: 8px; border-top: 1px solid var(--m-outline-var, #c4c7c5) }
+.tkl { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px }
+.tkl-r { display: flex; align-items: center; gap: 8px } .tkl-r input { flex: 1; min-width: 0; min-height: 40px; border: 1px solid var(--m-outline, #747775); border-radius: 4px; padding: 0 12px; background: var(--superficie); color: var(--texto); font: inherit }
+.tkl-r select { min-height: 40px; border: 1px solid var(--m-outline, #747775); border-radius: 4px; padding: 0 8px; background: var(--superficie); color: var(--texto); font: inherit }
+.tkl-r.oculta input { opacity: .55 } .tkl-r [data-a$="-sobe"] svg { transform: rotate(-90deg) } .tkl-r + .tkl-r { margin-top: 6px }
+.dialog:has(.tkl) .tkm-nf input, .dialog:has(.tkl) .tkm-nf select, .sec .tkm-nf input, .sec .tkm-nf select { min-height: 40px; border: 1px solid var(--m-outline, #747775); border-radius: 4px; padding: 0 12px; background: var(--superficie); color: var(--texto); font: inherit }
+html[data-tema="escuro"] .tkm-cot { background: rgba(124,140,255,.08) }
+html[data-tema="escuro"] .tkm :is(input:not([type=checkbox]):not(.tkm-tit), select, textarea), html[data-tema="escuro"] .tkl-r :is(input, select) { background: transparent; border-color: rgba(142,154,196,.55) }
+html[data-tema="escuro"] :is(.tkm-ck, .tkm-acoes) { border-color: #1a2240 } html[data-tema="escuro"] .tkm-bar { background: rgba(124,140,255,.15) } html[data-tema="escuro"] .tkm-bar span { background: #7c8cff }
+html[data-tema="escuro"] .tkm-re.on { background: rgba(99,112,255,.18); border-color: rgba(124,140,255,.5) } html[data-tema="escuro"] .tkm-an a { color: #a8b6ff }
+@media (max-width: 799px) { .tkm-g { grid-template-columns: minmax(0, 1fr); gap: 20px } .tkm-side { order: -1 } .tkm input.tkm-tit { font-size: 20px } }
+@media (max-width: 599px) { .tkm-lst select { min-width: 0 } .tkm-it { align-items: flex-start } .tkm-im { flex-wrap: wrap; padding-left: 28px } }
+:root:not(#_) .tkm .tkm-nf > :is(input, select) { width: auto } :root:not(#_) .tkm .tkm-nf > input:first-child { flex: 1 1 200px } :root:not(#_) .tkm .tkm-nf.vert > :is(input, select) { width: 100%; flex: none }
+@media (min-width: 600px) { .tkm-it { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px } }
 </style>
 <header class="top">
   <div class="top-in">
@@ -4400,7 +4488,6 @@ const OPT={
   demolicao:{nao_avaliada:'Não avaliada',provavel:'Provável',confirmada:'Confirmada',dispensada:'Dispensada'},
   forma:{dinheiro:'Dinheiro',permuta_fisica:'Permuta física',permuta_financeira:'Permuta financeira',permuta_geral:'Permuta geral',permuta_com_torna:'Permuta com torna'},
   statusProp:{rascunho:'Rascunho',apresentada:'Apresentada',em_analise:'Em análise',aceita:'Aceita',recusada:'Recusada',expirada:'Expirada',retirada:'Retirada',substituida:'Substituída'},
-  statusTar:{pendente:'Pendente',em_andamento:'Em andamento',aguardando_terceiro:'Aguardando terceiro',concluida:'Concluída',cancelada:'Cancelada'},
   prioTar:{baixa:'Baixa',media:'Média',alta:'Alta'},
   papel:{proprietario:'Proprietário',representante:'Representante',procurador:'Procurador',contato:'Contato'},
   tipoPessoa:{PF:'Pessoa física',PJ:'Pessoa jurídica'},
@@ -4426,7 +4513,7 @@ const CFG_PADRAO=()=>({
   checklist:{contrato:[['matricula',1],['onus',1],['iptu',1],['vend',1],['topo',1],['sond',0],['amb',0],['minuta',1]].map(([doc,o])=>({doc,obrig:!!o}))},
   motivos:{descartado:[['tecnica','Inviabilidade Técnica'],['financeira','Inviabilidade Financeira'],['contratual','Inviabilidade Contratual'],['formato_negocio','Inviabilidade Formato de Negócio'],['garantias','Inviabilidade Garantias'],['urbanistica','Inviabilidade Urbanística'],['documental','Inviabilidade Documental'],['outros','Outros',1]].map(([k,nome,tx])=>({k,nome,texto:!!tx,ativo:true})),
     perdido:[['vendido_terceiro','Vendido para terceiro'],['desistiu_vender','Proprietário desistiu de vender'],['preco_pagamento','Vendedor não aceitou preço ou pagamento'],['formato','Vendedor não aceitou o formato (permuta etc.)'],['garantias','Vendedor não aceitou as garantias'],['sem_retorno','Sem retorno do proprietário'],['outros','Outros',1]].map(([k,nome,tx])=>({k,nome,texto:!!tx,ativo:true}))},
-  notif:{tarefa_atribuida:{ativo:true,dias:null,email:true},mencao:{ativo:true,dias:null,email:true},tarefa_prazo:{ativo:true,dias:[0],email:false},tarefa_atrasada:{ativo:true,dias:null,email:false},subetapa_prazo:{ativo:true,dias:null,email:false},
+  notif:{tarefa_atribuida:{ativo:true,dias:null,email:true},mencao:{ativo:true,dias:null,email:true},tarefa_prazo:{ativo:true,dias:[0],email:false},tarefa_atrasada:{ativo:true,dias:null,email:false},tarefa_acompanhada:{ativo:true,dias:null,email:false},subetapa_prazo:{ativo:true,dias:null,email:false},
     stand_by_retomar:{ativo:true,dias:[7,0],email:false},documento_vencendo:{ativo:true,dias:[30,7],email:false},reuniao_agendada:{ativo:true,dias:[1],email:false},aprovacao_pendente:{ativo:true,dias:null,email:true},aprovacao_decidida:{ativo:true,dias:null,email:true}}
 });
 const CFG0=CFG_PADRAO();
@@ -4657,9 +4744,9 @@ const corrPrincipal=t=>{const c=t.corretores.find(x=>x.principal);return c?corre
 const analiseVig=t=>t.analises.find(a=>a.status==='vigente');
 const zonasTxt=t=>{const a=analiseVig(t);if(!a)return null;const o={};a.zonas.forEach(z=>o[z.sigla]=(o[z.sigla]||0)+(z.area||0));return Object.entries(o).sort((x,y)=>y[1]-x[1]).map(([s])=>s).join(' / ')};
 const caMax=t=>{const r=resumoUrb(t,'mercado');return r&&r.caMax>0?r.caMax:null};  // maior CA máximo de mercado (catálogo + exceções; proto_zonas.js)
-const abertas=t=>t.tarefas.filter(k=>k.status!=='concluida'&&k.status!=='cancelada');
-const atrasadas=t=>abertas(t).filter(k=>k.prazo<HOJE);
-const proxTarefa=t=>abertas(t).sort((a,b)=>a.prazo.localeCompare(b.prazo))[0];
+const abertas=t=>t.tarefas.filter(k=>!k.feita&&!k.arq);  // quadros e tarefas: proto_quadros.js
+const atrasadas=t=>abertas(t).filter(k=>k.prazo&&k.prazo<HOJE);
+const proxTarefa=t=>abertas(t).filter(k=>k.prazo).sort((a,b)=>a.prazo.localeCompare(b.prazo))[0];
 const lastProp=t=>t.propostas[t.propostas.length-1];
 const docVal=d=>{const v=TIPOS_DOC[d.tipo][2];return v&&d.emitido?addD(d.emitido,v):null};
 const docSt=d=>{if(!d||!d.emitido)return 'pendente';if(d.status==='rejeitado')return 'rejeitado';const v=docVal(d);return v&&v<HOJE?'vencido':d.status};
@@ -4878,22 +4965,6 @@ function abaNegociacao(t){
     <span style="display:flex;gap:6px;flex-wrap:wrap">${i===0&&negAtiva(t)?`<select aria-label="Status da proposta" data-ch="prop-status" class="chip chip-sel">${Object.entries(OPT.statusProp).filter(([k])=>k!=='substituida').map(([k,l])=>`<option value="${k}" ${k===p.status?'selected':''}>${l}</option>`).join('')}</select>`:statusPropChip(p.status)}</span></div>
     <div class="pm">${OPT.forma[p.forma]} · apresentada ${fd(p.data)}${p.validade?` · válida até ${fd(p.validade)}`:''}</div>${p.cond?`<div class="pt">${esc(p.cond)}</div>`:''}</div></div>`}).join('')}</div>`:'<div class="muted">Nenhuma proposta ainda.</div>'}</div></section></div>`;
 }
-function abaTarefas(t){
-  const lista=t.tarefas.slice().sort((a,b)=>{const fa=['concluida','cancelada'].includes(a.status),fb=['concluida','cancelada'].includes(b.status);return fa-fb||a.prazo.localeCompare(b.prazo)});
-  return `<div class="stack"><section class="sec"><div class="sec-h"><h2>Próximos passos</h2><span class="faint" style="font-size:13px">${(n=>n+(n===1?' aberta':' abertas'))(abertas(t).length)} · ${(n=>n+(n===1?' atrasada':' atrasadas'))(atrasadas(t).length)}</span></div><div class="sec-b" style="padding-top:4px">
-  ${lista.map(k=>{const late=!['concluida','cancelada'].includes(k.status)&&k.prazo<HOJE;return `<div class="task" data-mid="${k.id}" style="align-items:flex-start;padding:12px 0">
-    <span style="flex:none;margin-top:2px">${av(k.resp,'sm')}</span>
-    <span class="tt"><div class="t1" style="${k.status==='concluida'||k.status==='cancelada'?'text-decoration:line-through;color:var(--texto-suave)':''}">${escT(k.titulo)} ${k.prio==='alta'?'<span class="chip warn" style="height:20px">Alta</span>':''}</div>
-    ${k.desc?`<div class="muted" style="font-size:13px">${escM(k.desc)}</div>`:''}<div class="tm ${late?'late':''}">${esc(k.resp)} · ${late?'atrasada desde ':'prazo '}${fd(k.prazo).replace(' ','\u00a0')}</div>
-    ${k.status==='concluida'?`<textarea class="tk-res" rows="1" aria-label="Resultado" data-ch="tar-res" data-k="${k.id}" data-mencao placeholder="O que foi feito ou obtido (@ avisa um colega)">${esc(k.resultado)}</textarea>`:''}</span>
-    <select aria-label="Status" data-ch="tar-st" data-k="${k.id}" class="chip chip-sel tkst ${k.status}" style="flex:none">${Object.entries(OPT.statusTar).map(([s,l])=>`<option value="${s}" ${s===k.status?'selected':''}>${l}</option>`).join('')}</select></div>`}).join('')||'<div class="muted lista-vazia">Nenhuma tarefa.</div>'}
-  <form class="inline-form" data-form="tarefa"><div class="field grow"><label for="tk-t">Nova tarefa</label><input id="tk-t" name="titulo" required placeholder="Ex.: cobrar contraproposta do proprietário"></div>
-  <div class="field"><label for="tk-p">Prazo</label><input id="tk-p" name="prazo" type="date" value="${addD(HOJE,7)}" required></div>
-  <div class="field"><label for="tk-r">Responsável</label><select id="tk-r" name="resp">${USERS.map(u=>`<option ${u===t.resp?'selected':''}>${u}</option>`).join('')}</select></div>
-  <div class="field" style="flex:0 1 110px"><label for="tk-pr">Prioridade</label><select id="tk-pr" name="prio"><option value="media">Média</option><option value="alta">Alta</option><option value="baixa">Baixa</option></select></div>
-  <div class="field full" style="flex-basis:100%"><label for="tk-d">Descrição</label><input id="tk-d" name="desc"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form>
-  </div></section></div>`;
-}
 function abaUrbanismo(t){
   return `<div class="stack">${secAnaliseUrb(t)}
   <section class="sec"><div class="sec-h"><h2>Infraestrutura na porta</h2>${infraNV(t)?`<span class="faint" style="font-size:13px">${infraNV(t)} não verificado${infraNV(t)>1?"s":""}</span>`:""}</div><div style="padding-bottom:6px">
@@ -5037,7 +5108,7 @@ function go(route,x={}){if(UI.edMini)Object.assign(UI,{edMini:false,mpModo:null,
 function renderModal(){
   const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.nv=null;UI.nvPool=null;UI.nvKmz=null;UI.ofPoly=null;UI.kmzNovo=false;UI.lotes=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.grafico=null;UI.geo=null;UI.alvoParte=null;UI.poiExcl=null;return}
   let h='';const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`;
-  h=viabModal(M,fechar)||partesModal(M,fechar)||fasesModal(M,fechar)||funilModal(M,fechar)||setoresModal(M,fechar)||topoModal(M,fechar);
+  h=quadrosModal(M,fechar)||viabModal(M,fechar)||partesModal(M,fechar)||fasesModal(M,fechar)||funilModal(M,fechar)||setoresModal(M,fechar)||topoModal(M,fechar);
   if(M==='novo')h=UI.nv?nvDadosHtml(fechar):nvPasso1Html(fechar);
   if(M==='novo-sobre')h=nvSobreHtml(fechar);
   if(M==='lotes-poly')h=lotesPolyHtml(fechar);
@@ -5060,19 +5131,6 @@ function renderModal(){
   <div class="field"><span class="lbl-f">Local</span><span class="num muted" style="line-height:44px">${num(UI.novoPoi.lat,5)}, ${num(UI.novoPoi.lng,5)}</span></div></div></form>
   <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-poi">Salvar ponto</button></div>`;
   if(M==='grafico'){const k=UI.grafico;h=`<div class="dh g-exp"><h2>${DIMS[k].l}</h2>${fechar}</div>${grafico(k,true)}<h3 class="lbl-up" style="margin-top:var(--e6)">Dados do gráfico</h3>${tabelaGrafico(k)}`}
-  if(M==='tarefa'){const sel=UI.tkSel,t=sel.tid?T(sel.tid):null,k=t?t.tarefas.find(x=>x.id===sel.kid):null,ro=UI.role==='Leitura';
-    const o=(obj,v)=>Object.entries(obj).map(([x,l])=>`<option value="${x}" ${v===x?'selected':''}>${esc(l)}</option>`).join('');
-    h=`<div class="dh"><div><h2>${k?escT(k.titulo):'Nova tarefa'}</h2>${t?`<div class="muted" style="margin-top:4px">${t.codigo} · ${esc(t.nome)}</div>`:''}</div>${fechar}</div>
-    <form data-form="tarefa-m" id="f-tk"><fieldset ${ro?'disabled':''} style="border:0;padding:0;margin:0"><div class="fields">
-    <div class="field full"><label for="tm-t">Tarefa</label><input id="tm-t" name="titulo" required value="${esc(k?.titulo||'')}"></div>
-    ${k?'':`<div class="field full"><label for="tm-ter">Terreno</label><select id="tm-ter" name="ter" required><option value="">Escolha o terreno</option>${o(Object.fromEntries(ativosBanco().map(x=>[x.id,x.codigo+' · '+x.nome])),UI.tk.ter)}</select></div>`}
-    <div class="field"><label for="tm-r">Responsável</label><select id="tm-r" name="resp">${o(Object.fromEntries(USERS.map(u=>[u,u])),k?.resp||me())}</select></div>
-    <div class="field"><label for="tm-p">Prazo</label><input id="tm-p" name="prazo" type="date" required value="${k?.prazo||addD(HOJE,3)}"></div>
-    <div class="field"><label for="tm-pr">Prioridade</label><select id="tm-pr" name="prio">${o(OPT.prioTar,k?.prio||'media')}</select></div>
-    <div class="field"><label for="tm-s">Status</label><select id="tm-s" name="status">${o(OPT.statusTar,k?.status||sel.status||'pendente')}</select></div>
-    <div class="field full"><label for="tm-d">Descrição</label><textarea id="tm-d" name="desc" data-mencao placeholder="Use @ para avisar um colega">${esc(k?.desc||'')}</textarea></div>
-    ${k?`<div class="field full"><label for="tm-res">Resultado</label><textarea id="tm-res" name="resultado" data-mencao placeholder="O que foi feito ou decidido">${esc(k.resultado||'')}</textarea></div>`:''}</div></fieldset></form>
-    <div class="df">${t?`<button class="btn text" data-a="abrir" data-id="${t.id}" data-tab="tarefas" data-from="tarefas">Abrir terreno</button>`:''}<button class="btn text" data-a="close">${ro?'Fechar':'Cancelar'}</button>${ro?'':`<button class="btn primary" type="submit" form="f-tk">${k?'Salvar':'Criar tarefa'}</button>`}</div>`}
   el.innerHTML=`<div class="scrim" data-a="scrim"><div class="dialog" role="dialog" aria-modal="true">${h}</div></div>`;
   if(M==='novo')nvPosRender();
   const f=el.querySelector('input:not([type=hidden]),select');if(f)setTimeout(()=>f.focus(),30);
@@ -5189,8 +5247,6 @@ document.addEventListener('click',e=>{
     case 'dash-limpar':UI.dash.f={};render();break;
     case 'dash-full':telaCheia();break;
     case 'dash-exp':UI.grafico=a.dataset.k;UI.modal='grafico';renderModal();break;
-    case 'tk-abrir':UI.tkSel={tid:a.dataset.id,kid:a.dataset.tk};UI.modal='tarefa';renderModal();break;
-    case 'tk-nova':UI.tkSel={status:a.dataset.v};UI.modal='tarefa';renderModal();break;
     case 'tk-vista':UI.tk.vista=a.dataset.v;render();break;
     case 'tema-menu':temaMenu=!temaMenu;renderTema();break;
     case 'perfil-menu':perfilMenu=!perfilMenu;renderPerfil();break;
@@ -5214,9 +5270,7 @@ document.addEventListener('change',e=>{const el=e.target;
   if(el.dataset.ch==='tk-f'){UI.tk[el.dataset.k]=el.type==='checkbox'?el.checked:el.value;render();return}
   if(el.id==='kmz-in'){const f=el.files?.[0];if(!f||!UI.kmzNovo)return;UI.kmzNovo=false;lerKmz(f).then(nvKmzLido).catch(err=>toast(err.message,true));return}
   const t=UI.route==='terreno'?T(UI.id):null;if(!t)return;
-  if(el.dataset.ch==='tar-st'){const k=t.tarefas.find(x=>x.id===el.dataset.k);k.status=el.value;log(t,`Tarefa "${k.titulo}": ${OPT.statusTar[el.value]}`);save();render()}
   if(el.dataset.ch==='dil-sit'){const d=t.dilig.find(x=>x.id===el.dataset.k);d.sit=el.value;log(t,`Diligência "${d.titulo}": ${OPT.sitDil[el.value]}`);save();render()}
-  if(el.dataset.ch==='tar-res'){const k=t.tarefas.find(x=>x.id===el.dataset.k),antes=k.resultado;k.resultado=el.value;mencionarTarefa(t,k,antes);save();renderSino()}
   if(el.dataset.ch==='infra-fonte'){t.infra[el.dataset.k].fonte=el.value;save()}
   if(el.dataset.ch==='prop-status'){const lp=lastProp(t);lp.status=el.value;log(t,`Proposta v${lp.v}: ${OPT.statusProp[el.value]}`);save();render()}
 });
@@ -5255,13 +5309,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
     case 'dilig':t.dilig.push({id:uid(),cat:F.cat,titulo:F.titulo,sit:F.sit,resp:F.resp,prov:F.prov});log(t,`Diligência: ${F.titulo}`);save();render();toast('Diligência registrada.');break;
     case 'pessoa':if(F.papel==='proprietario'&&lerNum(F.pct)!=null&&!partesAtivas(t).length){const tot=t.pessoas.filter(p=>p.papel==='proprietario').reduce((a,p)=>a+(p.pct||0),0);if(tot+lerNum(F.pct)>100){toast(`A soma passaria de 100% (já há ${num(tot,2)}% informado).`,true);return}}
       t.pessoas.push({nome:F.nome,tipo:F.tipo,papel:F.papel,pct:F.papel==='proprietario'?lerNum(F.pct):null,tel:F.tel});save();render();break;
-    case 'tarefa':t.tarefas.push({id:uid(),titulo:F.titulo,desc:F.desc,resp:F.resp,prazo:F.prazo,status:'pendente',prio:F.prio,resultado:''});notifTarefa(t,t.tarefas[t.tarefas.length-1],null);log(t,`Tarefa criada: ${F.titulo}`);save();render();toast('Tarefa adicionada.');break;
     case 'poi':{S.pontos=S.pontos||[];S.pontos.push({id:uid(),nome:F.nome.trim(),cat:F.cat,lat:UI.novoPoi.lat,lng:UI.novoPoi.lng});UI.modal=null;save();const volta=UI.poiVolta;UI.poiVolta=null;if(volta&&T(volta))go('terreno',{id:volta,tab:'geral'});else render();toast('Ponto de interesse salvo.');break}
-    case 'tarefa-m':{const sel=UI.tkSel;if(sel.tid){const t=T(sel.tid),k=t.tarefas.find(x=>x.id===sel.kid);const de=k.status,antes={resp:k.resp,txt:(k.desc||'')+'\n'+(k.resultado||'')};Object.assign(k,{titulo:F.titulo.trim(),resp:F.resp,prazo:F.prazo,prio:F.prio,status:F.status,desc:F.desc,resultado:F.resultado||''});notifTarefa(t,k,antes);mencionarTarefa(t,k,antes.txt);
-        if(de!==k.status)log(t,`Tarefa "${k.titulo}": ${OPT.statusTar[de]} → ${OPT.statusTar[k.status]}`);toast('Tarefa salva.')}
-      else{const t=T(F.ter);if(!t){toast('Escolha o terreno da tarefa.',true);return}const irm=todasTarefas().filter(x=>x.k.status===F.status);
-        t.tarefas.push({id:uid(),titulo:F.titulo.trim(),desc:F.desc,resp:F.resp,prazo:F.prazo,status:F.status,prio:F.prio,resultado:'',pos:Math.max(0,...irm.map(x=>x.k.pos||0))+1000});notifTarefa(t,t.tarefas[t.tarefas.length-1],null);mencionarTarefa(t,t.tarefas[t.tarefas.length-1],'');log(t,`Tarefa criada: ${F.titulo.trim()}`);toast('Tarefa criada.')}
-      UI.modal=null;save();render();break}
     case 'reuniao':{if(F.status==='realizada'&&F.data>HOJE){toast('Reunião realizada não pode ter data futura.',true);return}
       if(F.status==='agendada'&&F.data<HOJE){toast('Para registrar uma reunião passada, escolha Realizada.',true);return}
       const pres=F.modalidade==='presencial';
@@ -5317,7 +5365,6 @@ document.addEventListener('drop',e=>{const col=e.target.closest?.('.col[data-col
 UI.sorts=UI.sorts||{};
 UI.mp=UI.mp||{q:'',cor:'',zona:'',f:'',e:'',ocultas:[]};
 UI.dash=UI.dash||{f:{},sel:['situacao','zona','valor','mes']};
-UI.tk=UI.tk||{vista:'quadro',q:'',resp:'',ter:'',prio:'',atras:false,canc:false};
 
 /* ---------- situação do terreno (cor do pin, gráficos) ---------- */
 // rótulo, cor, glifo no pin, cor do glifo. Etapas ativas em rampa de azul (ordem = avanço);
@@ -5959,46 +6006,116 @@ function miniGestos(el,zoom){let acc=0,ult=0;
 /* dois cliques no mini-mapa: abre a página Mapa centrada no ponto clicado, no mesmo zoom, com o terreno selecionado */
 function miniAbrirMapa(t,lat,lng,z){go('mapa',{mpView:{c:{lat,lng},z:Math.max(z||17,15)},mpSel:t.id,mpFoco:null})}
 
-/* ===================== TAREFAS (quadro) ===================== */
-const COLS_TK=['pendente','em_andamento','aguardando_terceiro','concluida','cancelada'];
-function todasTarefas(){return ativosBanco().flatMap(t=>t.tarefas.map(k=>({k,t})))}
+
+/* ===================== QUADROS E TAREFAS (bloco 1; decisões do Moisés, 29/out/2026) =====================
+   Espelha o esquema fluxo do banco: cada terreno tem o seu quadro (t.listas), com as listas do modelo da
+   empresa (S.listasModelo: Backlog, Fazer, Fazendo, Aguardando retorno, Pausadas, Feito; Configurações ›
+   Tarefas). O cartão (t.tarefas) tem código TAR, lista, solicitante, responsável, executores, aprovadores,
+   quem acompanha, etiquetas da empresa (S.etiquetas), checklists com responsável e prazo por item (item
+   vira cartão), comentários com reações, anexos e capa; não se apaga, arquiva. Entrar numa lista do tipo
+   "conclui" conclui. A página Tarefas junta os quadros de todos os terrenos, com filtros. */
+Object.assign(P,{chat:'M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H10l-4 3v-3H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z',clip:'M16 7l-7 7a2 2 0 0 0 3 3l7-7a4 4 0 0 0-6-6l-7 7a6 6 0 0 0 8 8l6-6',
+  olho:'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',etq:'M3 12V4h8l9 9-8 8zM7.5 7.5h.01',arq:'M4 5h16v4H4zM5 9v10h14V9M10 13h4'});
+const LISTAS_PADRAO=()=>[['Backlog','aberta'],['Fazer','aberta'],['Fazendo','aberta'],['Aguardando retorno','aberta'],['Pausadas','pausa'],['Feito','conclui']].map(([nome,tipo],i)=>({id:'lm'+(i+1),nome,tipo,ativo:true}));
+const ETIQUETAS_PADRAO=()=>[['Urgente','vermelho'],['Jurídico','roxo'],['Aguardando cliente','amarelo'],['Financeiro','verde'],['Projeto','azul']].map(([nome,cor],i)=>({id:'et'+(i+1),nome,cor}));
+const ETQ_CORES={cinza:'Cinza',azul:'Azul',verde:'Verde',amarelo:'Amarelo',laranja:'Laranja',vermelho:'Vermelho',roxo:'Roxo',rosa:'Rosa'};
+const TIPO_LISTA={aberta:'Aberta',pausa:'Pausa',conclui:'Conclui a tarefa'};
+const PAPEIS_TK=[['exec','Executores'],['aprov','Aprovadores'],['acomp','Acompanham']];
+const REACOES=['👍','✅','👀','🎉'];
+const DE_STATUS={pendente:'Fazer',em_andamento:'Fazendo',aguardando_terceiro:'Aguardando retorno',concluida:'Feito',cancelada:'Fazer'};
+UI.tk=Object.assign({vista:'quadro',q:'',resp:'',ter:'',prio:'',etq:'',atras:false,arq:false},UI.tk||{});delete UI.tk.canc;
+
+/* dados: lista e campos novos nos cartões (inclusive os salvos antes do bloco 1) */
+function tkL(t){if(!t.listas)t.listas=(S.listasModelo||LISTAS_PADRAO()).filter(l=>l.ativo).map(l=>({id:uid(),nome:l.nome,tipo:l.tipo,oculta:false}));return t.listas}
+function tkNorm(t,k){if(!k.codigo)k.codigo='TAR-'+String(S.tkSeq=(S.tkSeq||0)+1).padStart(6,'0');
+  if(!k.lista||!tkL(t).some(l=>l.id===k.lista)){const nm=DE_STATUS[k.status]||'Fazer';k.lista=(tkL(t).find(l=>l.nome===nm)||tkPrim(t,'aberta')).id;
+    if(k.status==='concluida'&&!k.feita)k.feita=HOJE;if(k.status==='cancelada'&&!k.arq)k.arq=HOJE}
+  delete k.status;if(k.solic===undefined)k.solic=k.resp||null;if(!k.prio)k.prio='media';['exec','aprov','acomp','etq','checklists','coments','anexos'].forEach(c=>{if(!Array.isArray(k[c]))k[c]=[]});return k}
+function tkPrep(){if(!S.listasModelo)S.listasModelo=LISTAS_PADRAO();if(!S.etiquetas)S.etiquetas=ETIQUETAS_PADRAO();
+  S.terrenos.forEach(t=>{tkL(t);(t.tarefas||[]).forEach(k=>tkNorm(t,k))});
+  // exemplo: um cartão completo no primeiro terreno
+  const t=S.terrenos[0],k=t?.tarefas[0];if(k&&!S.tkExemplo){S.tkExemplo=true;k.etq=['et1'];k.exec=['Camila Torres'];k.acomp=['Moisés'];k.inicio=addD(HOJE,-3);
+    k.checklists=[{id:uid(),nome:'Antes de responder',esconder:false,itens:[{id:uid(),texto:'Conferir a contraproposta com o jurídico',resp:'Camila Torres',prazo:addD(HOJE,1),feito:HOJE,feitoPor:'Camila Torres'},{id:uid(),texto:'Atualizar o estudo com o valor novo',resp:'Rafael Souza',prazo:addD(HOJE,2),feito:null}]}];
+    k.coments=[{id:uid(),autor:'Camila Torres',texto:'O jurídico viu a minuta da contraproposta e não tem objeção.',em:addD(HOJE,-1)+' 10:12',reacoes:{'👍':['Ana Prado']}}];
+    k.anexos=[{id:uid(),tipo:'link',nome:'Contraproposta (PDF)',url:'https://drive.google.com/'}]}}
+const tkLista=(t,k)=>tkL(t).find(l=>l.id===k.lista)||tkL(t)[0];
+const tkPrim=(t,tipo)=>tkL(t).filter(l=>!l.oculta).find(l=>l.tipo===tipo)||tkL(t).find(l=>l.tipo===tipo)||tkL(t)[0];
+const tkAberta=k=>!k.feita&&!k.arq;
+const tkAtras=k=>tkAberta(k)&&!!k.prazo&&k.prazo<HOJE;
+const tkPessoas=k=>[...new Set([k.resp,...(k.exec||[])].filter(Boolean))];
+const tkEd=()=>UI.role!=='Leitura';
+const tkAcha=(tid,kid)=>{const t=T(tid);return {t,k:t?.tarefas.find(x=>x.id===kid)}};
+const tkIr=k=>({b:'tarefas',alvo:k.id});
+function tkAvisarAcomp(t,k,txt){(k.acomp||[]).forEach(u=>notificar(u,'tarefa_acompanhada',txt,t,null,tkIr(k)))}
+
+/* mudanças (no banco: tg_tarefa_lista, notificações e auditoria) */
+function tkMover(t,k,lid,pos){const de=tkLista(t,k),l=tkL(t).find(x=>x.id===lid);if(!l)return;
+  if(pos!=null)k.pos=pos;if(de.id===l.id)return;k.lista=l.id;
+  if(l.tipo==='conclui'&&!k.feita){k.feita=HOJE;k.feitaPor=me();tkAvisarAcomp(t,k,`Tarefa concluída: ${k.titulo}`)}else if(l.tipo!=='conclui'){k.feita=null;k.feitaPor=null}
+  log(t,`Tarefa "${k.titulo}": ${de.nome} → ${l.nome}`)}
+function tkConcluir(t,k,sim){const l=sim?tkPrim(t,'conclui'):tkPrim(t,'aberta');k.pos=Date.now();tkMover(t,k,l.id)}
+function tkCriar(t,d){const k=tkNorm(t,{id:uid(),titulo:d.titulo.trim(),desc:d.desc||'',resultado:'',resp:d.resp||null,solic:me(),prazo:d.prazo||null,prio:d.prio||'media',lista:d.lista||tkPrim(t,'aberta').id,pos:Date.now()});
+  t.tarefas.push(k);if(tkLista(t,k).tipo==='conclui'){k.feita=HOJE;k.feitaPor=me()}notifTarefa(t,k,null);mencionarTarefa(t,k,'');log(t,`Tarefa criada: ${k.titulo}`);return k}
+
+/* ---------- frente do cartão ---------- */
+const etqChip=(e,cls='')=>`<span class="etq etq-${e.cor} ${cls}" title="${esc(e.nome)}">${esc(e.nome)}</span>`;
+function cardTk({k,t},geral){const at=tkAtras(k),ets=(k.etq||[]).map(id=>S.etiquetas.find(e=>e.id===id)).filter(Boolean);
+  const its=(k.checklists||[]).flatMap(c=>c.itens),fe=its.filter(i=>i.feito).length,nc=(k.coments||[]).filter(c=>!c.apagado).length,na=(k.anexos||[]).filter(a=>!a.removido).length;
+  return `<article class="tk ${k.feita?'concluida':''} ${k.arq?'arq':''}" draggable="${tkEd()&&!k.arq}" data-tk="${k.id}" data-a="tk-abrir" data-id="${t.id}" data-mid="${k.id}" tabindex="0" aria-label="${escT(k.titulo)}">
+  ${k.capa?`<div class="tk-capa etq-${k.capa}"></div>`:''}${ets.length?`<div class="tk-etqs">${ets.map(e=>etqChip(e)).join('')}</div>`:''}
+  <div class="tk-t">${k.feita?ic('check',14)+' ':''}${escT(k.titulo)}</div>
+  ${geral?`<div class="tk-ter"><span class="num">${t.codigo}</span> · ${esc(t.nome).replace(/\b[A-Z]{3}-\d+/g,m=>`<span class="end-p">${m}</span>`)}</div>`:''}
+  <div class="tk-p">${k.prazo?`<span class="tk-prazo ${at?'atras':''}">${ic('clock',14)}${fd(k.prazo)}</span>`:''}${its.length?`<span class="tk-ind ${fe===its.length?'ok':''}" title="Checklist">${ic('check',14)}${fe}/${its.length}</span>`:''}${nc?`<span class="tk-ind" title="Comentários">${ic('chat',14)}${nc}</span>`:''}${na?`<span class="tk-ind" title="Anexos">${ic('clip',14)}${na}</span>`:''}${k.prio==='alta'?'<span class="chip warn">Alta</span>':k.prio==='baixa'?'<span class="chip">Baixa</span>':''}
+  <span class="tk-avs">${tkPessoas(k).slice(0,3).map(u=>av(u,'sm')).join('')}</span></div></article>`}
+
+/* ---------- quadro (da ficha ou de todos os terrenos) ---------- */
+const ordemTk=(a,b)=>(a.k.pos??9e15)-(b.k.pos??9e15)||String(a.k.prazo||'9').localeCompare(String(b.k.prazo||'9'));
+function todasTarefas(){return ativosBanco().flatMap(t=>(t.tarefas||[]).map(k=>({k,t})))}
 function tkFiltradas(){const f=UI.tk,q=f.q.trim().toLowerCase();
-  return todasTarefas().filter(({k,t})=>(!f.resp||k.resp===f.resp)&&(!f.ter||t.id===f.ter)&&(!f.prio||k.prio===f.prio)&&(!f.atras||(k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)))&&(!q||(k.titulo+' '+(k.desc||'')+' '+t.nome+' '+t.codigo).toLowerCase().includes(q)))}
-const ordemTk=(a,b)=>(a.k.pos??9e15)-(b.k.pos??9e15)||a.k.prazo.localeCompare(b.k.prazo);
-function cardTk({k,t}){const at=k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status);
-  return `<article class="tk ${k.status}" draggable="${UI.role!=='Leitura'}" data-tk="${k.id}" data-a="tk-abrir" data-id="${t.id}" tabindex="0" aria-label="${escT(k.titulo)}">
-  <div class="tk-t">${escT(k.titulo)}</div>${k.desc?`<div class="tk-d">${esc(k.desc)}</div>`:''}
-  <div class="tk-ter"><span class="num">${t.codigo}</span> · ${esc(t.nome).replace(/\b[A-Z]{3}-\d+/g,m=>`<span class="end-p">${m}</span>`)}</div>
-  <div class="tk-p"><span class="tk-prazo ${at?'atras':''}">${ic('clock',14)}${fd(k.prazo)}</span>${k.prio==='alta'?'<span class="chip warn">Alta</span>':k.prio==='baixa'?'<span class="chip">Baixa</span>':''}<span style="margin-left:auto">${av(k.resp,'sm')}</span></div></article>`}
-function pgTarefas(){const f=UI.tk,l=tkFiltradas();const cols=COLS_TK.filter(c=>c!=='cancelada'||f.canc);
+  return todasTarefas().filter(({k,t})=>(f.arq?!!k.arq:!k.arq)&&(!f.resp||k.resp===f.resp||(k.exec||[]).includes(f.resp))&&(!f.ter||t.id===f.ter)&&(!f.prio||k.prio===f.prio)&&(!f.etq||(k.etq||[]).includes(f.etq))&&(!f.atras||tkAtras(k))
+    &&(!q||[k.codigo,k.titulo,k.desc,t.nome,t.codigo,...(k.etq||[]).map(id=>S.etiquetas.find(e=>e.id===id)?.nome)].join(' ').toLowerCase().includes(q)))}
+/* colunas do quadro geral: pelo nome da lista (a ordem do modelo da empresa e, depois, as criadas nos terrenos) */
+function tkColunas(lista){const nomes=[...(S.listasModelo||[]).filter(l=>l.ativo).map(l=>l.nome)];
+  lista.forEach(({t})=>tkL(t).forEach(l=>{if(!l.oculta&&!nomes.includes(l.nome))nomes.push(l.nome)}));return nomes}
+function tkQuadro(itens,cols,geral,tid,add){
+  return `<div class="board tk-board">${cols.map(c=>{const ks=itens.filter(x=>tkLista(x.t,x.k).nome===c.nome).sort(ordemTk);
+    return `<section class="col tk-col" data-tkcol="${esc(c.nome)}" aria-label="${esc(c.nome)}"><div class="col-h"><span>${esc(c.nome)}</span><span class="n">${ks.length}</span></div>
+    <div class="tk-lista">${ks.map(x=>cardTk(x,geral)).join('')||'<div class="col-empty">Nenhuma</div>'}</div>
+    ${tkEd()&&add?`<button class="tk-add" data-a="tk-nova" data-v="${esc(c.nome)}"${tid?` data-id="${tid}"`:''}>${ic('add',16)}Adicionar tarefa</button>`:''}</section>`}).join('')}</div>`}
+function pgTarefas(){const f=UI.tk,l=tkFiltradas();
   const opt=(o,v)=>Object.entries(o).map(([k,x])=>`<option value="${k}" ${v===k?'selected':''}>${esc(x)}</option>`).join('');
-  const filtros=`<div class="tk-filtros"><label class="search sm" for="tk-q">${bi('busca',24)}<input id="tk-q" type="search" placeholder="Buscar tarefa ou terreno" value="${esc(f.q)}" autocomplete="off"></label>
-    <div class="tk-fl"><label class="sr-only" for="tk-resp">Responsável</label><select id="tk-resp" class="fsel-chip${f.resp?' on':''}" data-ch="tk-f" data-k="resp"><option value="">Responsável</option>${opt(Object.fromEntries(USERS.map(u=>[u,u])),f.resp)}</select>
+  const filtros=`<div class="tk-filtros"><label class="search sm" for="tk-q">${bi('busca',24)}<input id="tk-q" type="search" placeholder="Buscar tarefa, código, etiqueta ou terreno" value="${esc(f.q)}" autocomplete="off"></label>
+    <div class="tk-fl"><label class="sr-only" for="tk-resp">Pessoa</label><select id="tk-resp" class="fsel-chip${f.resp?' on':''}" data-ch="tk-f" data-k="resp"><option value="">Pessoa</option>${opt(Object.fromEntries(USERS.map(u=>[u,u])),f.resp)}</select>
     <label class="sr-only" for="tk-ter">Terreno</label><select id="tk-ter" class="fsel-chip${f.ter?' on':''}" data-ch="tk-f" data-k="ter"><option value="">Terreno</option>${opt(Object.fromEntries(ativosBanco().map(t=>[t.id,t.codigo+' · '+t.nome])),f.ter)}</select>
+    <label class="sr-only" for="tk-etq">Etiqueta</label><select id="tk-etq" class="fsel-chip${f.etq?' on':''}" data-ch="tk-f" data-k="etq"><option value="">Etiqueta</option>${opt(Object.fromEntries(S.etiquetas.map(e=>[e.id,e.nome])),f.etq)}</select>
     <label class="sr-only" for="tk-prio">Prioridade</label><select id="tk-prio" class="fsel-chip${f.prio?' on':''}" data-ch="tk-f" data-k="prio"><option value="">Prioridade</option>${opt(OPT.prioTar,f.prio)}</select>
     <label class="fchk"><input type="checkbox" data-ch="tk-f" data-k="atras" ${f.atras?'checked':''}>${ic('check',16)}Só atrasadas</label>
-    <label class="fchk"><input type="checkbox" data-ch="tk-f" data-k="canc" ${f.canc?'checked':''}>${ic('check',16)}Canceladas</label></div></div>`;
-  const quadro=`<div class="board tk-board">${cols.map(c=>{const ks=l.filter(x=>x.k.status===c).sort(ordemTk);
-    return `<section class="col tk-col" data-tkcol="${c}" aria-label="${OPT.statusTar[c]}"><div class="col-h"><span>${OPT.statusTar[c]}</span><span class="n">${ks.length}</span></div>
-    <div class="tk-lista">${ks.map(cardTk).join('')||'<div class="col-empty">Nenhuma</div>'}</div>
-    ${UI.role!=='Leitura'&&c!=='cancelada'&&c!=='concluida'?`<button class="tk-add" data-a="tk-nova" data-v="${c}">${ic('add',16)}Adicionar tarefa</button>`:''}</section>`}).join('')}</div>`;
-  const colsT=[{k:'titulo',l:'Tarefa',cls:'esq',v:({k,t})=>`<div class="t1">${escT(k.titulo)}</div>${k.desc?`<div class="t2">${esc(k.desc)}</div>`:''}<div class="t2 so-m">${t.codigo} · ${esc(t.nome)}</div>`,s:({k})=>k.titulo},
+    <label class="fchk"><input type="checkbox" data-ch="tk-f" data-k="arq" ${f.arq?'checked':''}>${ic('check',16)}Arquivadas</label></div></div>`;
+  const t1=f.ter?T(f.ter):null,cols=t1?tkL(t1).filter(x=>!x.oculta):tkColunas(l).map(nome=>({nome}));
+  const colsT=[{k:'titulo',l:'Tarefa',cls:'esq',v:({k,t})=>`<div class="t1">${escT(k.titulo)}</div><div class="t2">${k.codigo}</div><div class="t2 so-m">${t.codigo} · ${esc(t.nome)}</div>`,s:({k})=>k.titulo},
     {k:'ter',l:'Terreno',cls:'esq hm tk-ter',v:({t})=>`<div class="t2" style="color:var(--texto)">${t.codigo}</div><div class="t2">${esc(t.nome)}</div>`,s:({t})=>t.codigo},
-    {k:'resp',l:'Responsável',cls:'hm',v:({k})=>esc(k.resp),s:({k})=>k.resp},
-    {k:'prazo',l:'Prazo',cls:'num',v:({k})=>`<span style="${k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)?'color:var(--atraso,#b3261e);font-weight:600':''}">${fd(k.prazo)}</span>`,s:({k})=>(['concluida','cancelada'].includes(k.status)?'9':'0')+k.prazo},
+    {k:'resp',l:'Responsável',cls:'hm',v:({k})=>esc(k.resp||'—'),s:({k})=>k.resp||''},
+    {k:'prazo',l:'Prazo',cls:'num',v:({k})=>`<span style="${tkAtras(k)?'color:var(--atraso,#b3261e);font-weight:600':''}">${fd(k.prazo)}</span>`,s:({k})=>(tkAberta(k)?'0':'9')+(k.prazo||'9')},
     {k:'prio',l:'Prioridade',cls:'hm',v:({k})=>OPT.prioTar[k.prio]||'—',s:({k})=>['alta','media','baixa'].indexOf(k.prio)},
-    {k:'status',l:'Status',v:({k})=>`<span class="chip tkst ${k.status}">${OPT.statusTar[k.status]}</span>`,s:({k})=>COLS_TK.indexOf(k.status)}];
-  const atras=todasTarefas().filter(({k})=>k.prazo<HOJE&&!['concluida','cancelada'].includes(k.status)).length;
-  return `<div class="page-h"><div><h1>Tarefas</h1><div class="sub">${(n=>n+(n===1?' aberta':' abertas'))(l.filter(x=>!['concluida','cancelada'].includes(x.k.status)).length)} · ${atras+(atras===1?' atrasada':' atrasadas')}</div></div>
+    {k:'lista',l:'Lista',v:({k,t})=>`<span class="chip tkst ${k.feita?'concluida':''}">${esc(tkLista(t,k).nome)}</span>`,s:({k,t})=>tkL(t).indexOf(tkLista(t,k))}];
+  const ab=todasTarefas().filter(({k})=>tkAberta(k)),atras=ab.filter(({k})=>tkAtras(k)).length;
+  return `<div class="page-h"><div><h1>Tarefas</h1><div class="sub">${ab.length+(ab.length===1?' aberta':' abertas')} · ${atras+(atras===1?' atrasada':' atrasadas')} · quadros de ${ativosBanco().length} terrenos</div></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="seg" role="group" aria-label="Visualização">${[['quadro','Quadro'],['tabela','Tabela']].map(([k,x])=>`<button data-a="tk-vista" data-v="${k}" aria-pressed="${f.vista===k}">${x}</button>`).join('')}</div>
-    <button class="btn ed" data-a="tk-nova" data-v="pendente">${ic('add',18)}Nova tarefa</button></div></div>
-  ${filtros}${f.vista==='tabela'?`<section class="sec"><div class="sec-b">${tabela('tarefas',l,colsT,{attr:({k,t})=>`data-a="tk-abrir" data-tk="${k.id}" data-id="${t.id}" tabindex="0"`,padrao:{k:'prazo',dir:'asc'},vazio:'Nenhuma tarefa com esses filtros.'})}</div></section>`:quadro}`}
-function moverTk(tid,kid,col,antesDe){const t=T(tid),k=t.tarefas.find(x=>x.id===kid);if(!k)return;
-  const irmas=todasTarefas().filter(x=>x.k.status===col&&x.k.id!==kid).sort(ordemTk);
-  const i=antesDe?irmas.findIndex(x=>x.k.id===antesDe):-1;const pos=x=>x?.k.pos??(Date.parse(x?.k.prazo||HOJE)/1000);
-  if(i<0)k.pos=(irmas.length?pos(irmas.at(-1)):0)+1000;else k.pos=i===0?pos(irmas[0])-1000:(pos(irmas[i-1])+pos(irmas[i]))/2;
-  if(k.status!==col){const de=k.status;k.status=col;if(col==='concluida')k.feita=HOJE;log(t,`Tarefa "${k.titulo}": ${OPT.statusTar[de]} → ${OPT.statusTar[col]}`);toast(`${k.titulo}: ${OPT.statusTar[col]}.`)}
-  save();render()}
+    ${tkEd()?`<button class="btn ed" data-a="tk-nova" data-v="">${ic('add',18)}Nova tarefa</button>`:''}</div></div>
+  ${filtros}${f.vista==='tabela'?`<section class="sec"><div class="sec-b">${tabela('tarefas',l,colsT,{attr:({k,t})=>`data-a="tk-abrir" data-tk="${k.id}" data-id="${t.id}" tabindex="0"`,padrao:{k:'prazo',dir:'asc'},vazio:'Nenhuma tarefa com esses filtros.'})}</div></section>`:tkQuadro(l,cols,true,t1?.id,!f.arq)}`}
+/* seção Tarefas da ficha: o quadro do terreno */
+function abaTarefas(t){const arq=!!UI.tkArqFicha,its=t.tarefas.filter(k=>arq?k.arq:!k.arq).map(k=>({k,t})),ab=t.tarefas.filter(tkAberta),at=ab.filter(tkAtras).length,na=t.tarefas.filter(k=>k.arq).length;
+  const q=tkQuadro(its,tkL(t).filter(l=>!l.oculta),false,t.id,!arq);
+  return `<div class="stack"><section class="sec tk-sec"><div class="sec-h"><h2>Quadro do terreno</h2><span class="faint tk-sub">${ab.length+(ab.length===1?' aberta':' abertas')} · ${at+(at===1?' atrasada':' atrasadas')}</span>
+    <span class="tk-sh">${na||arq?`<button class="btn text sm" data-a="tk-arqficha">${arq?'Voltar ao quadro':`Arquivadas (${na})`}</button>`:''}${tkEd()?`<button class="btn text sm" data-a="tk-listas" data-id="${t.id}">Listas</button>`:''}</span></div>
+  <div class="sec-b tk-sb">${q}</div></section></div>`}
+
+/* ---------- arrastar (lista e posição) ---------- */
+function moverTk(tid,kid,colNome,antesDe){const {t,k}=tkAcha(tid,kid);if(!k)return;const l=tkL(t).find(x=>x.nome===colNome&&!x.oculta)||tkL(t).find(x=>x.nome===colNome);
+  if(!l){toast(`${t.codigo} não tem a lista ${colNome}.`,true);return}
+  const irmas=t.tarefas.filter(x=>x.lista===l.id&&x.id!==kid&&!x.arq).map(x=>({k:x})).sort(ordemTk),i=antesDe?irmas.findIndex(x=>x.k.id===antesDe):-1,pos=x=>x?.k.pos??0;
+  const np=i<0?(irmas.length?pos(irmas.at(-1)):0)+1000:i===0?pos(irmas[0])-1000:(pos(irmas[i-1])+pos(irmas[i]))/2;
+  const mudou=k.lista!==l.id;tkMover(t,k,l.id,np);if(mudou)toast(`${k.titulo}: ${l.nome}.`);save();render()}
 let tkArr=null;
 document.addEventListener('dragstart',e=>{const c=e.target.closest?.('.tk[draggable="true"]');if(!c)return;tkArr={kid:c.dataset.tk,tid:c.dataset.id};e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',c.dataset.tk);c.classList.add('arrastando');document.body.classList.add('dnd-tk')});
 document.addEventListener('dragend',()=>{tkArr=null;document.body.classList.remove('dnd-tk');document.querySelectorAll('.tk.arrastando,.tk-col.sobre,.tk-marca').forEach(x=>x.classList.contains('tk-marca')?x.remove():x.classList.remove('arrastando','sobre'))});
@@ -6007,6 +6124,179 @@ document.addEventListener('dragover',e=>{if(!tkArr)return;const col=e.target.clo
   document.querySelectorAll('.tk-col.sobre').forEach(x=>x!==col&&x.classList.remove('sobre'));col.classList.add('sobre');
   let m=document.querySelector('.tk-marca');if(!m){m=document.createElement('div');m.className='tk-marca'}const a=tkAntes(col,e.clientY),lista=col.querySelector('.tk-lista');if(a)lista.insertBefore(m,a);else lista.appendChild(m)});
 document.addEventListener('drop',e=>{const col=e.target.closest?.('.tk-col');if(!col||!tkArr)return;e.preventDefault();const a=tkAntes(col,e.clientY),x=tkArr;tkArr=null;document.body.classList.remove('dnd-tk');document.querySelectorAll('.tk-col.sobre').forEach(x=>x.classList.remove('sobre'));document.querySelector('.tk-marca')?.remove();moverTk(x.tid,x.kid,col.dataset.tkcol,a?.dataset.tk)});
+
+/* ---------- janela do cartão ---------- */
+const tkSelU=(nm,v,vazio,extra='')=>`<select ${extra} name="${nm}">${vazio!=null?`<option value="">${vazio}</option>`:''}${USERS.map(u=>`<option ${u===v?'selected':''}>${esc(u)}</option>`).join('')}</select>`;
+function tkNovaHtml(fechar){const sel=UI.tkSel,t=sel.tid?T(sel.tid):null,opt=(o,v)=>Object.entries(o).map(([x,l])=>`<option value="${x}" ${v===x?'selected':''}>${esc(l)}</option>`).join('');
+  const listas=t?tkL(t).filter(l=>!l.oculta).map(l=>l.nome):(S.listasModelo||[]).filter(l=>l.ativo).map(l=>l.nome),lv=sel.lista&&listas.includes(sel.lista)?sel.lista:listas.includes('Fazer')?'Fazer':listas[0];
+  return `<div class="dh"><div><h2>Nova tarefa</h2>${t?`<div class="muted" style="margin-top:4px">${t.codigo} · ${esc(t.nome)}</div>`:''}</div>${fechar}</div>
+  <form data-form="tarefa-m" id="f-tk"><div class="fields">
+  <div class="field full"><label for="tm-t">Tarefa</label><input id="tm-t" name="titulo" required placeholder="Ex.: cobrar a contraproposta do proprietário"></div>
+  ${t?'':`<div class="field full"><label for="tm-ter">Terreno</label><select id="tm-ter" name="ter" required><option value="">Escolha o terreno</option>${opt(Object.fromEntries(ativosBanco().map(x=>[x.id,x.codigo+' · '+x.nome])),UI.tk.ter)}</select></div>`}
+  <div class="field"><label for="tm-l">Lista</label><select id="tm-l" name="lista">${listas.map(n=>`<option ${n===lv?'selected':''}>${esc(n)}</option>`).join('')}</select></div>
+  <div class="field"><label for="tm-r">Responsável</label>${tkSelU('resp',me(),'Sem responsável','id="tm-r"')}</div>
+  <div class="field"><label for="tm-p">Prazo</label><input id="tm-p" name="prazo" type="date" value="${addD(HOJE,3)}"></div>
+  <div class="field"><label for="tm-pr">Prioridade</label><select id="tm-pr" name="prio">${opt(OPT.prioTar,'media')}</select></div>
+  <div class="field full"><label for="tm-d">Descrição</label><textarea id="tm-d" name="desc" data-mencao placeholder="Use @ para avisar um colega"></textarea></div></div></form>
+  <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-tk">Criar tarefa</button></div>`}
+function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!k)return `<div class="dh"><h2>Tarefa não encontrada</h2>${fechar}</div>`;
+  const ro=!tkEd(),dis=ro?'disabled':'',l=tkLista(t,k),eu=me(),acompanho=(k.acomp||[]).includes(eu);
+  const pessoas=PAPEIS_TK.map(([p,n])=>`<div class="tkm-f"><span class="lbl-f">${n}</span><div class="tkm-ps">${(k[p]||[]).map(u=>`<span class="chip tkm-p">${av(u,'sm')}${esc(u)}${ro?'':`<button class="tkm-x" data-a="tkc-tira" data-p="${p}" data-v="${esc(u)}" aria-label="Tirar ${esc(u)}">${ic('close',14)}</button>`}</span>`).join('')}
+    ${ro?'':`<select class="tkm-add" data-tkc="add-${p}" aria-label="Incluir em ${n}"><option value="">Incluir…</option>${USERS.filter(u=>!(k[p]||[]).includes(u)).map(u=>`<option>${esc(u)}</option>`).join('')}</select>`}${ro&&!(k[p]||[]).length?'<span class="faint">—</span>':''}</div></div>`).join('');
+  const checks=(k.checklists||[]).map(c=>{const it=c.itens,fe=it.filter(i=>i.feito).length,pc=it.length?Math.round(100*fe/it.length):0;
+    return `<div class="tkm-ck" data-ck="${c.id}"><div class="tkm-ckh">${ic('check',18)}<b>${esc(c.nome)}</b><span class="faint">${fe}/${it.length}</span>
+      <span class="tkm-sp"></span>${fe?`<button class="btn text sm" data-a="tkc-esconder" data-c="${c.id}">${c.esconder?'Mostrar feitos':'Esconder feitos'}</button>`:''}${ro?'':`<button class="iconbtn sm" data-a="tkc-ck-x" data-c="${c.id}" aria-label="Excluir checklist ${esc(c.nome)}" title="Excluir checklist">${ic('lixo',18)}</button>`}</div>
+      <div class="tkm-bar" role="progressbar" aria-valuenow="${pc}" aria-valuemin="0" aria-valuemax="100" aria-label="${esc(c.nome)}: ${pc}%"><span style="width:${pc}%"></span></div>
+      ${it.filter(i=>!(c.esconder&&i.feito)).map(i=>`<div class="tkm-it ${i.feito?'feito':''}"><label class="tkm-ch"><input type="checkbox" data-tkc="item-feito" data-c="${c.id}" data-i="${i.id}" ${i.feito?'checked':''} ${dis}><span>${esc(i.texto)}</span></label>
+        <span class="tkm-im">${i.virou?`<button class="linkbtn" data-a="tk-abrir" data-id="${t.id}" data-tk="${i.virou}">Virou cartão</button>`:''}
+        ${ro?`${i.resp?esc(i.resp):''}${i.prazo?' · '+fd(i.prazo):''}`:`${tkSelU('',i.resp,'Sem responsável',`class="tkm-sel" data-tkc="item-resp" data-c="${c.id}" data-i="${i.id}" aria-label="Responsável do item"`)}
+        <input type="date" class="tkm-sel" value="${i.prazo||''}" data-tkc="item-prazo" data-c="${c.id}" data-i="${i.id}" aria-label="Prazo do item">
+        ${i.virou?'':`<button class="iconbtn sm" data-a="tkc-item-cartao" data-c="${c.id}" data-i="${i.id}" title="Transformar em cartão" aria-label="Transformar ${esc(i.texto)} em cartão">${ic('fwd',18)}</button>`}<button class="iconbtn sm" data-a="tkc-item-x" data-c="${c.id}" data-i="${i.id}" title="Excluir item" aria-label="Excluir ${esc(i.texto)}">${ic('close',18)}</button>`}</span></div>`).join('')}
+      ${ro?'':`<form class="tkm-nf" data-form="tkc-item" data-c="${c.id}"><input name="texto" required placeholder="Novo item" aria-label="Novo item de ${esc(c.nome)}">${tkSelU('resp','','Responsável','aria-label="Responsável do novo item"')}<input type="date" name="prazo" aria-label="Prazo do novo item"><button class="btn tonal sm" type="submit">Adicionar</button></form>`}</div>`}).join('');
+  const coms=(k.coments||[]).slice().reverse().map(c=>{const meu=c.autor===eu&&!ro;
+    return `<div class="tkm-co ${c.apagado?'apagado':''}" id="co-${c.id}"><span class="tkm-coa">${av(c.autor,'sm')}</span><div class="tkm-cob"><div class="tkm-coh"><b>${esc(c.autor)}</b><span class="faint">${fd(c.em.slice(0,10))} ${esc(c.em.slice(11,16))}${c.editado?' · editado':''}</span></div>
+      ${c.apagado?'<div class="faint">Comentário apagado.</div>':UI.tkEdCom===c.id?`<form data-form="tkc-com-ed" data-v="${c.id}"><textarea name="texto" data-mencao required>${esc(c.texto)}</textarea><div class="tkm-acs"><button class="btn text sm" type="button" data-a="tkc-com-cancela">Cancelar</button><button class="btn tonal sm" type="submit">Salvar</button></div></form>`
+        :`<div class="tkm-cot">${escM(c.texto)}</div><div class="tkm-acs">${REACOES.map(r=>{const q=(c.reacoes?.[r]||[]);return q.length||!ro?`<button class="tkm-re ${q.includes(eu)?'on':''}" data-a="tkc-reage" data-v="${c.id}" data-r="${r}" ${ro?'disabled':''} aria-label="${r} ${q.length}" title="${esc(q.join(', '))}">${r}${q.length?` ${q.length}`:''}</button>`:''}).join('')}
+        ${meu?`<button class="linkbtn" data-a="tkc-com-edita" data-v="${c.id}">Editar</button><button class="linkbtn" data-a="tkc-com-apaga" data-v="${c.id}">Apagar</button>`:''}</div>`}</div></div>`}).join('');
+  const anexos=(k.anexos||[]).filter(a=>!a.removido).map(a=>`<div class="tkm-an">${ic(a.tipo==='tarefa'?'board':'link',18)}${a.tipo==='tarefa'?`<button class="linkbtn" data-a="tk-abrir" data-id="${t.id}" data-tk="${a.ref}">${esc(a.nome)}</button>`:`<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.nome)}</a>`}
+    ${ro?'':`<button class="iconbtn sm" data-a="tkc-an-x" data-v="${a.id}" aria-label="Tirar ${esc(a.nome)}" title="Tirar o anexo">${ic('close',18)}</button>`}</div>`).join('');
+  const outros=t.tarefas.filter(x=>x.id!==k.id&&!x.arq);
+  return `<div class="tkm"><div class="dh"><div class="tkm-hd"><div class="muted tkm-cod"><span class="num">${k.codigo}</span> · <button class="linkbtn" data-a="abrir" data-id="${t.id}" data-tab="tarefas" data-from="tarefas">${t.codigo} · ${esc(t.nome)}</button></div>
+    <input class="tkm-tit" value="${esc(k.titulo)}" data-tkc="titulo" aria-label="Título da tarefa" ${dis} required></div>${fechar}</div>
+  ${k.arq?`<div class="banner">${ic('arq')}<div>Tarefa arquivada em ${fd(k.arq)}. Fica fora dos quadros; restaure para voltar.</div></div>`:''}
+  <div class="tkm-top"><label class="tkm-lst"><span class="lbl-f">Lista</span><select data-tkc="lista" ${dis||(k.arq?'disabled':'')}>${tkL(t).map(x=>`<option value="${x.id}" ${x.id===l.id?'selected':''}>${esc(x.nome)}${x.oculta?' (oculta)':''}</option>`).join('')}</select></label>
+    ${ro||k.arq?(k.feita?`<span class="chip ok">Concluída em ${fd(k.feita)}</span>`:''):`<button class="btn ${k.feita?'':'tonal'}" data-a="tkc-concluir">${ic('check',18)}${k.feita?'Reabrir':'Marcar como concluída'}</button>`}
+    ${k.feita&&!ro&&!k.arq?`<span class="faint">Concluída em ${fd(k.feita)}${k.feitaPor?' por '+esc(k.feitaPor):''}</span>`:''}</div>
+  <div class="tkm-g"><div class="tkm-main">
+    <div class="tkm-f"><label class="lbl-f" for="tkc-d">Descrição</label><textarea id="tkc-d" data-tkc="desc" data-mencao placeholder="Objetivo, instruções e critério de pronto (@ avisa um colega)" ${dis}>${esc(k.desc||'')}</textarea></div>
+    ${k.feita||k.resultado?`<div class="tkm-f"><label class="lbl-f" for="tkc-r">Resultado</label><textarea id="tkc-r" data-tkc="resultado" data-mencao placeholder="O que foi feito ou decidido" ${dis}>${esc(k.resultado||'')}</textarea></div>`:''}
+    <div class="tkm-bl"><div class="tkm-blh"><h3>Checklists</h3>${ro?'':`<button class="btn text sm if-x" data-a="tkc-ck-novo">${ic('add',16)}Adicionar checklist</button>`}</div>
+      ${UI.tkCkNovo&&!ro?`<form class="tkm-nf" data-form="tkc-ck"><input name="nome" required placeholder="Nome do checklist" aria-label="Nome do checklist" value="Checklist"><button class="btn text sm" type="button" data-a="tkc-ck-cancela">Cancelar</button><button class="btn tonal sm" type="submit">Criar</button></form>`:''}
+      ${checks||(UI.tkCkNovo?'':'<div class="faint">Nenhum checklist.</div>')}</div>
+    <div class="tkm-bl"><div class="tkm-blh"><h3>Comentários</h3></div>
+      ${ro?'':`<form class="tkm-cf" data-form="tkc-com"><textarea name="texto" data-mencao required placeholder="Escreva um comentário (@ avisa um colega)" aria-label="Novo comentário"></textarea><button class="btn tonal sm" type="submit">Comentar</button></form>`}
+      ${coms||'<div class="faint">Nenhum comentário.</div>'}</div>
+  </div><aside class="tkm-side">
+    <div class="tkm-f"><label class="lbl-f" for="tkc-sol">Solicitante</label>${tkSelU('',k.solic,'—',`id="tkc-sol" data-tkc="solic" ${dis}`)}</div>
+    <div class="tkm-f"><label class="lbl-f" for="tkc-resp">Responsável</label>${tkSelU('',k.resp,'Sem responsável',`id="tkc-resp" data-tkc="resp" ${dis}`)}</div>
+    ${pessoas}
+    <div class="tkm-2"><div class="tkm-f"><label class="lbl-f" for="tkc-ini">Início</label><input id="tkc-ini" type="date" value="${k.inicio||''}" data-tkc="inicio" ${dis}></div>
+    <div class="tkm-f"><label class="lbl-f" for="tkc-pz">Prazo</label><input id="tkc-pz" type="date" value="${k.prazo||''}" data-tkc="prazo" ${dis}></div></div>
+    <div class="tkm-f"><label class="lbl-f" for="tkc-pr">Prioridade</label><select id="tkc-pr" data-tkc="prio" ${dis}>${Object.entries(OPT.prioTar).map(([x,n])=>`<option value="${x}" ${x===k.prio?'selected':''}>${n}</option>`).join('')}</select></div>
+    <div class="tkm-f"><span class="lbl-f">Etiquetas</span><div class="tkm-ets">${S.etiquetas.map(e=>{const on=(k.etq||[]).includes(e.id);return ro&&!on?'':`<button class="etq etq-${e.cor} tkm-et ${on?'on':''}" data-a="tkc-etq" data-v="${e.id}" aria-pressed="${on}" ${dis}>${on?ic('check',14):''}${esc(e.nome)}</button>`}).join('')}
+      ${ro?'':UI.tkEtqNova?`<form class="tkm-nf" data-form="tkc-etq-nova"><input name="nome" required placeholder="Nome" aria-label="Nome da etiqueta"><select name="cor" aria-label="Cor">${Object.entries(ETQ_CORES).map(([c,n])=>`<option value="${c}">${n}</option>`).join('')}</select><button class="btn tonal sm" type="submit">Criar</button></form>`:`<button class="btn text sm" data-a="tkc-etq-nova">${ic('add',16)}Nova etiqueta</button>`}</div></div>
+    <div class="tkm-f"><span class="lbl-f">Capa</span><div class="tkm-capas">${['',...Object.keys(ETQ_CORES)].map(c=>`<button class="tkm-capa ${c?'etq-'+c:'nenhuma'} ${(k.capa||'')===c?'on':''}" data-a="tkc-capa" data-v="${c}" aria-label="${c?ETQ_CORES[c]:'Sem capa'}" title="${c?ETQ_CORES[c]:'Sem capa'}" aria-pressed="${(k.capa||'')===c}" ${dis}></button>`).join('')}</div></div>
+    <div class="tkm-f"><span class="lbl-f">Anexos</span>${anexos||'<div class="faint">Nenhum anexo.</div>'}
+      ${ro?'':`<form class="tkm-nf vert" data-form="tkc-anexo"><input name="nome" required placeholder="Nome do link" aria-label="Nome do link"><input name="url" type="url" required placeholder="https://" aria-label="Endereço do link"><button class="btn tonal sm" type="submit">${ic('link',16)}Anexar link</button></form>
+      ${outros.length?`<select data-tkc="ligar" aria-label="Ligar a outro cartão"><option value="">Ligar a outro cartão…</option>${outros.map(x=>`<option value="${x.id}">${x.codigo} · ${esc(x.titulo)}</option>`).join('')}</select>`:''}`}</div>
+    <div class="tkm-acoes">${ro?'':`<button class="btn text sm" data-a="tkc-acomp">${ic('olho',18)}${acompanho?'Deixar de acompanhar':'Acompanhar'}</button>`}
+      <button class="btn text sm" data-a="tkc-link">${ic('link',18)}Copiar link</button>
+      ${ro?'':`<button class="btn text sm" data-a="tkc-arq">${ic('arq',18)}${k.arq?'Restaurar':'Arquivar'}</button>`}</div>
+  </aside></div></div>`}
+/* gerenciar as listas do quadro do terreno */
+function tkListasHtml(fechar){const t=T(UI.tkSel.tid),n=k=>t.tarefas.filter(x=>x.lista===k&&!x.arq).length;
+  return `<div class="dh"><div><h2>Listas do quadro</h2><div class="muted" style="margin-top:4px">${t.codigo} · ${esc(t.nome)}. Valem só para este terreno.</div></div>${fechar}</div>
+  <div class="tkl">${tkL(t).map((l,i)=>`<div class="tkl-r ${l.oculta?'oculta':''}"><input value="${esc(l.nome)}" data-tkl="nome" data-v="${l.id}" aria-label="Nome da lista ${i+1}"><span class="chip">${TIPO_LISTA[l.tipo]}</span><span class="faint num">${n(l.id)}</span>
+    <button class="iconbtn sm" data-a="tkl-sobe" data-v="${l.id}" ${i?'':'disabled'} aria-label="Subir ${esc(l.nome)}" title="Subir">${ic('chev',18)}</button>
+    <button class="btn text sm" data-a="tkl-oculta" data-v="${l.id}">${l.oculta?'Mostrar':'Ocultar'}</button></div>`).join('')}</div>
+  <form class="tkm-nf" data-form="tkl-nova"><input name="nome" required placeholder="Nova lista" aria-label="Nome da nova lista"><select name="tipo" aria-label="Tipo da lista">${Object.entries(TIPO_LISTA).map(([x,n])=>`<option value="${x}">${n}</option>`).join('')}</select><button class="btn tonal sm" type="submit">Criar lista</button></form>
+  <div class="df"><button class="btn primary" data-a="close">Pronto</button></div>`}
+function quadrosModal(M,fechar){if(M==='tarefa')return UI.tkSel?.kid?tkCartaoHtml(fechar):tkNovaHtml(fechar);if(M==='tk-listas')return tkListasHtml(fechar);return ''}
+
+/* refaz a tela mantendo a rolagem da janela */
+function tkRe(){const d=document.querySelector('#modal .dialog'),st=d?d.scrollTop:0;save();render();const n=document.querySelector('#modal .dialog');if(n)n.scrollTop=st}
+function tkAtual(){return tkAcha(UI.tkSel?.tid,UI.tkSel?.kid)}
+const tkItem=(k,cid,iid)=>{const c=k.checklists.find(x=>x.id===cid);return {c,i:c?.itens.find(x=>x.id===iid)}};
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="tkc-"],[data-a^="tkl-"],[data-a="tk-listas"],[data-a="tk-arqficha"],[data-a="tk-nova"],[data-a="tk-abrir"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const A=a.dataset.a;
+  if(A==='tk-abrir'){UI.tkSel={tid:a.dataset.id,kid:a.dataset.tk};UI.tkEdCom=null;UI.tkCkNovo=false;UI.tkEtqNova=false;UI.modal='tarefa';renderModal();return}
+  if(A==='tk-nova'){UI.tkSel={tid:a.dataset.id||(UI.route==='terreno'?UI.id:null),lista:a.dataset.v||null};UI.modal='tarefa';renderModal();return}
+  if(A==='tk-listas'){UI.tkSel={tid:a.dataset.id};UI.modal='tk-listas';renderModal();return}
+  if(A==='tk-arqficha'){UI.tkArqFicha=!UI.tkArqFicha;render();return}
+  if(A.startsWith('tkl-')){const t=T(UI.tkSel.tid),L=tkL(t),l=L.find(x=>x.id===a.dataset.v);if(!l)return;
+    if(A==='tkl-oculta'){if(!l.oculta&&L.filter(x=>!x.oculta).length<2){toast('O quadro precisa de uma lista à mostra.',true);return}if(!l.oculta&&l.tipo==='conclui'&&!L.some(x=>x!==l&&x.tipo==='conclui'&&!x.oculta)){toast('Mantenha uma lista que conclui a tarefa à mostra.',true);return}
+      l.oculta=!l.oculta;log(t,`Tarefa: lista ${l.nome} ${l.oculta?'ocultada':'à mostra'}`)}
+    if(A==='tkl-sobe'){const i=L.indexOf(l);if(i>0){L.splice(i,1);L.splice(i-1,0,l)}}
+    tkRe();return}
+  const {t,k}=tkAtual();if(!k)return;const eu=me();
+  switch(A){
+    case 'tkc-concluir':tkConcluir(t,k,!k.feita);break;
+    case 'tkc-arq':k.arq=k.arq?null:HOJE;log(t,`Tarefa "${k.titulo}": ${k.arq?'arquivada':'restaurada'}`);toast(k.arq?'Tarefa arquivada.':'Tarefa restaurada.');break;
+    case 'tkc-acomp':{const on=k.acomp.includes(eu);k.acomp=on?k.acomp.filter(u=>u!==eu):[...k.acomp,eu];toast(on?'Você deixou de acompanhar.':'Você vai ser avisado dos comentários e da conclusão.');break}
+    case 'tkc-link':{const u=RT_BASE?location.origin+RT_BASE+'/tarefas/'+k.codigo:location.href.split('#')[0]+'#/tarefas/'+k.codigo;try{navigator.clipboard?.writeText(u)}catch(_){}toast(`Link de ${k.codigo} copiado.`);return}
+    case 'tkc-tira':{const p=a.dataset.p;k[p]=k[p].filter(u=>u!==a.dataset.v);log(t,`Tarefa "${k.titulo}": ${a.dataset.v} saiu de ${PAPEIS_TK.find(x=>x[0]===p)[1].toLowerCase()}`);break}
+    case 'tkc-etq':{const v=a.dataset.v,on=k.etq.includes(v);k.etq=on?k.etq.filter(x=>x!==v):[...k.etq,v];log(t,`Tarefa "${k.titulo}": etiqueta ${S.etiquetas.find(x=>x.id===v)?.nome} ${on?'tirada':'posta'}`);break}
+    case 'tkc-etq-nova':UI.tkEtqNova=true;break;
+    case 'tkc-capa':k.capa=a.dataset.v||null;break;
+    case 'tkc-ck-novo':UI.tkCkNovo=true;break;
+    case 'tkc-ck-cancela':UI.tkCkNovo=false;break;
+    case 'tkc-ck-x':{const c=k.checklists.find(x=>x.id===a.dataset.c);k.checklists=k.checklists.filter(x=>x!==c);log(t,`Tarefa "${k.titulo}": checklist ${c.nome} excluído`);break}
+    case 'tkc-esconder':{const c=k.checklists.find(x=>x.id===a.dataset.c);c.esconder=!c.esconder;break}
+    case 'tkc-item-x':{const {c,i}=tkItem(k,a.dataset.c,a.dataset.i);c.itens=c.itens.filter(x=>x!==i);break}
+    case 'tkc-item-cartao':{const {i}=tkItem(k,a.dataset.c,a.dataset.i);const n=tkCriar(t,{titulo:i.texto,resp:i.resp,prazo:i.prazo,desc:`Veio do checklist de ${k.codigo} · ${k.titulo}`});
+      n.anexos.push({id:uid(),tipo:'tarefa',nome:`${k.codigo} · ${k.titulo}`,ref:k.id});i.virou=n.id;if(!i.feito){i.feito=HOJE;i.feitoPor=eu}toast(`${n.codigo} criada a partir do item.`);break}
+    case 'tkc-com-edita':UI.tkEdCom=a.dataset.v;break;
+    case 'tkc-com-cancela':UI.tkEdCom=null;break;
+    case 'tkc-com-apaga':{const c=k.coments.find(x=>x.id===a.dataset.v);c.apagado=true;log(t,`Tarefa "${k.titulo}": comentário apagado`);break}
+    case 'tkc-reage':{const c=k.coments.find(x=>x.id===a.dataset.v),r=a.dataset.r;c.reacoes=c.reacoes||{};const q=c.reacoes[r]||[];c.reacoes[r]=q.includes(eu)?q.filter(u=>u!==eu):[...q,eu];break}
+    case 'tkc-an-x':{const x=k.anexos.find(y=>y.id===a.dataset.v);x.removido=true;log(t,`Tarefa "${k.titulo}": anexo ${x.nome} tirado`);break}
+  }tkRe()},true);
+document.addEventListener('change',e=>{const el=e.target;
+  if(el.dataset?.tkl==='nome'){const t=T(UI.tkSel.tid),l=tkL(t).find(x=>x.id===el.dataset.v),v=el.value.trim();if(!v||tkL(t).some(x=>x!==l&&x.nome===v)){toast(v?'Já existe uma lista com esse nome.':'A lista precisa de nome.',true);el.value=l.nome;return}
+    e.stopImmediatePropagation();log(t,`Tarefa: lista ${l.nome} renomeada para ${v}`);l.nome=v;save();setTimeout(tkRe,0);return}
+  const c=el.dataset?.tkc;if(!c)return;e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k)return;const v=el.type==='checkbox'?el.checked:el.value;
+  if(c==='titulo'){if(!v.trim()){el.value=k.titulo;return}log(t,`Tarefa "${k.titulo}": título → ${v.trim()}`);k.titulo=v.trim()}
+  else if(c==='desc'||c==='resultado'){const antes=(k.desc||'')+'\n'+(k.resultado||'');k[c]=v;mencionarTarefa(t,k,antes)}
+  else if(c==='lista'){k.pos=Date.now();tkMover(t,k,v)}
+  else if(c==='resp'){const antes={resp:k.resp};k.resp=v||null;notifTarefa(t,k,antes);log(t,`Tarefa "${k.titulo}": responsável ${k.resp||'nenhum'}`)}
+  else if(c==='solic')k.solic=v||null;
+  else if(c==='prio'){k.prio=v;log(t,`Tarefa "${k.titulo}": prioridade ${OPT.prioTar[v].toLowerCase()}`)}
+  else if(c==='inicio'||c==='prazo'){const ini=c==='inicio'?v:k.inicio,pz=c==='prazo'?v:k.prazo;if(ini&&pz&&ini>pz){toast('O início não pode ser depois do prazo.',true);el.value=k[c]||'';return}k[c]=v||null;log(t,`Tarefa "${k.titulo}": ${c==='inicio'?'início':'prazo'} ${fd(k[c])}`)}
+  else if(c.startsWith('add-')){const p=c.slice(4);if(!v)return;k[p]=[...new Set([...(k[p]||[]),v])];log(t,`Tarefa "${k.titulo}": ${v} em ${PAPEIS_TK.find(x=>x[0]===p)[1].toLowerCase()}`);
+    if(p==='exec')notificar(v,'tarefa_atribuida',`${me()} incluiu você como executor: ${k.titulo}`,t,null,tkIr(k))}
+  else if(c==='item-feito'){const {i}=tkItem(k,el.dataset.c,el.dataset.i);i.feito=v?HOJE:null;i.feitoPor=v?me():null}
+  else if(c==='item-resp'){const {i}=tkItem(k,el.dataset.c,el.dataset.i);i.resp=v||null;if(v)notificar(v,'tarefa_atribuida',`Item para você em ${k.titulo}: ${i.texto}`,t,null,tkIr(k))}
+  else if(c==='item-prazo'){const {i}=tkItem(k,el.dataset.c,el.dataset.i);i.prazo=v||null}
+  else if(c==='ligar'){const o=t.tarefas.find(x=>x.id===v);if(!o)return;k.anexos.push({id:uid(),tipo:'tarefa',nome:`${o.codigo} · ${o.titulo}`,ref:o.id})}
+  // o change de texto chega no blur, no meio do clique em outro botão: refaz a tela depois dele
+  save();setTimeout(tkRe,0)},true);
+document.addEventListener('submit',e=>{const f=e.target,n=f.dataset?.form;if(!n||!(n.startsWith('tkc-')||n==='tkl-nova'||n==='tarefa-m'))return;e.preventDefault();e.stopImmediatePropagation();const F=Object.fromEntries(new FormData(f));
+  if(n==='tarefa-m'){const sel=UI.tkSel,t=T(sel.tid||F.ter);if(!t){toast('Escolha o terreno da tarefa.',true);return}if(!F.titulo.trim())return;
+    const l=tkL(t).find(x=>x.nome===F.lista&&!x.oculta)||tkPrim(t,'aberta');const k=tkCriar(t,{...F,lista:l.id});toast(`${k.codigo} criada.`);UI.tkSel={tid:t.id,kid:k.id};UI.modal='tarefa';tkRe();return}
+  if(n==='tkl-nova'){const t=T(UI.tkSel.tid),v=F.nome.trim();if(tkL(t).some(x=>x.nome===v)){toast('Já existe uma lista com esse nome.',true);return}tkL(t).push({id:uid(),nome:v,tipo:F.tipo,oculta:false});log(t,`Tarefa: lista ${v} criada`);tkRe();return}
+  const {t,k}=tkAtual();if(!k)return;const eu=me();
+  if(n==='tkc-ck'){k.checklists.push({id:uid(),nome:F.nome.trim(),esconder:false,itens:[]});UI.tkCkNovo=false;log(t,`Tarefa "${k.titulo}": checklist ${F.nome.trim()} criado`)}
+  if(n==='tkc-item'){const c=k.checklists.find(x=>x.id===f.dataset.c);const i={id:uid(),texto:F.texto.trim(),resp:F.resp||null,prazo:F.prazo||null,feito:null};c.itens.push(i);
+    if(i.resp)notificar(i.resp,'tarefa_atribuida',`Item para você em ${k.titulo}: ${i.texto}`,t,null,tkIr(k));setTimeout(()=>document.querySelector(`[data-form="tkc-item"][data-c="${c.id}"] input[name=texto]`)?.focus(),0)}
+  if(n==='tkc-com'){const c={id:uid(),autor:eu,texto:F.texto.trim(),em:agora().slice(0,16).replace('T',' '),reacoes:{}};k.coments.push(c);mencionar(t,'',c.texto,`num comentário da tarefa: ${k.titulo}`,tkIr(k));
+    tkAvisarAcomp(t,k,`${eu} comentou em ${k.titulo}`);log(t,`Tarefa "${k.titulo}": comentário de ${eu}`)}
+  if(n==='tkc-com-ed'){const c=k.coments.find(x=>x.id===f.dataset.v);const antes=c.texto;c.texto=F.texto.trim();c.editado=true;UI.tkEdCom=null;mencionar(t,antes,c.texto,`num comentário da tarefa: ${k.titulo}`,tkIr(k))}
+  if(n==='tkc-etq-nova'){const v=F.nome.trim();let x=S.etiquetas.find(y=>y.nome.toLowerCase()===v.toLowerCase());if(!x){x={id:uid(),nome:v,cor:F.cor};S.etiquetas.push(x)}if(!k.etq.includes(x.id))k.etq.push(x.id);UI.tkEtqNova=false}
+  if(n==='tkc-anexo'){k.anexos.push({id:uid(),tipo:'link',nome:F.nome.trim(),url:F.url.trim()});log(t,`Tarefa "${k.titulo}": anexo ${F.nome.trim()}`)}
+  tkRe()},true);
+
+/* ---------- Configurações › Tarefas (administrador): listas padrão e etiquetas da empresa ---------- */
+function cfgTarefasHtml(){const L=S.listasModelo,E=S.etiquetas;
+  return `<section class="sec"><div class="sec-h"><h2>Listas padrão do quadro</h2></div><div class="sec-b"><p class="muted" style="margin-top:0">Valem para os terrenos novos; os quadros que já existem mantêm as suas listas.</p>
+    ${L.map((l,i)=>`<div class="tkl-r ${l.ativo?'':'oculta'}"><input value="${esc(l.nome)}" data-tkcfg="nome" data-v="${l.id}" aria-label="Nome da lista ${i+1}">
+      <select data-tkcfg="tipo" data-v="${l.id}" aria-label="Tipo de ${esc(l.nome)}">${Object.entries(TIPO_LISTA).map(([x,n])=>`<option value="${x}" ${x===l.tipo?'selected':''}>${n}</option>`).join('')}</select>
+      <button class="iconbtn sm" data-a="tkcfg-sobe" data-v="${l.id}" ${i?'':'disabled'} aria-label="Subir ${esc(l.nome)}" title="Subir">${ic('chev',18)}</button>
+      <button class="btn text sm" data-a="tkcfg-ativo" data-v="${l.id}">${l.ativo?'Desativar':'Ativar'}</button></div>`).join('')}
+    <form class="tkm-nf" data-form="tkcfg-lista"><input name="nome" required placeholder="Nova lista" aria-label="Nome da nova lista padrão"><select name="tipo" aria-label="Tipo">${Object.entries(TIPO_LISTA).map(([x,n])=>`<option value="${x}">${n}</option>`).join('')}</select><button class="btn tonal sm" type="submit">Adicionar lista</button></form></div></section>
+  <section class="sec"><div class="sec-h"><h2>Etiquetas da empresa</h2></div><div class="sec-b">
+    ${E.map(e=>`<div class="tkl-r">${etqChip(e)}<input value="${esc(e.nome)}" data-tkcfg="etq-nome" data-v="${e.id}" aria-label="Nome da etiqueta"><select data-tkcfg="etq-cor" data-v="${e.id}" aria-label="Cor de ${esc(e.nome)}">${Object.entries(ETQ_CORES).map(([c,n])=>`<option value="${c}" ${c===e.cor?'selected':''}>${n}</option>`).join('')}</select></div>`).join('')}
+    <form class="tkm-nf" data-form="tkcfg-etq"><input name="nome" required placeholder="Nova etiqueta" aria-label="Nome da nova etiqueta"><select name="cor" aria-label="Cor">${Object.entries(ETQ_CORES).map(([c,n])=>`<option value="${c}">${n}</option>`).join('')}</select><button class="btn tonal sm" type="submit">Adicionar etiqueta</button></form></div></section>`}
+const tkCfgOk=L=>L.some(l=>l.ativo&&l.tipo==='conclui');
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="tkcfg-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const L=S.listasModelo,l=L.find(x=>x.id===a.dataset.v);if(!l)return;
+  if(a.dataset.a==='tkcfg-sobe'){const i=L.indexOf(l);L.splice(i,1);L.splice(i-1,0,l)}
+  if(a.dataset.a==='tkcfg-ativo'){l.ativo=!l.ativo;if(!tkCfgOk(L)){l.ativo=true;toast('O modelo precisa de uma lista que conclui a tarefa.',true);return}}
+  save();render()},true);
+document.addEventListener('change',e=>{const el=e.target,c=el.dataset?.tkcfg;if(!c)return;e.stopImmediatePropagation();
+  if(c.startsWith('etq-')){const x=S.etiquetas.find(y=>y.id===el.dataset.v);if(c==='etq-nome'){if(!el.value.trim()){el.value=x.nome;return}x.nome=el.value.trim()}else x.cor=el.value}
+  else{const l=S.listasModelo.find(x=>x.id===el.dataset.v),ant=l[c];l[c]=c==='nome'?el.value.trim()||ant:el.value;if(!tkCfgOk(S.listasModelo)){l[c]=ant;toast('O modelo precisa de uma lista que conclui a tarefa.',true)}}
+  save();render()},true);
+document.addEventListener('submit',e=>{const f=e.target,n=f.dataset?.form;if(n!=='tkcfg-lista'&&n!=='tkcfg-etq')return;e.preventDefault();e.stopImmediatePropagation();const F=Object.fromEntries(new FormData(f)),v=F.nome.trim();
+  if(n==='tkcfg-lista')S.listasModelo.push({id:uid(),nome:v,tipo:F.tipo,ativo:true});else S.etiquetas.push({id:uid(),nome:v,cor:F.cor});save();render()},true);
+tkPrep();
 
 
 /* =====================================================================
@@ -6421,7 +6711,7 @@ function semearHistorico(){
     (t.docs||[]).forEach(d=>add(d.emitido?addD(d.emitido,1):null,'Camila Torres',`Documento enviado: ${(TIPOS_DOC[d.tipo]||[d.nome||d.tipo])[0]}`));
     (t.docs||[]).filter(d=>d.status==='validado').forEach(d=>add(d.emitido?addD(d.emitido,2):null,'Moisés',`Documento validado: ${(TIPOS_DOC[d.tipo]||[d.nome||d.tipo])[0]}`));
     (t.dilig||[]).forEach(d=>add(addD(t.dataIdent,3),d.resp||t.resp,`Diligência aberta: ${d.titulo}`));
-    (t.tarefas||[]).forEach(k=>add(addD(k.prazo,-7),k.resp===t.resp?'Moisés':t.resp,`Tarefa criada: ${k.titulo}`,[`Responsável: ${k.resp}`,`Prazo: ${fd(k.prazo)}`]));
+    (t.tarefas||[]).forEach(k=>add(addD(k.prazo||HOJE,-7),k.resp===t.resp?'Moisés':t.resp,`Tarefa criada: ${k.titulo}`,[`Responsável: ${k.resp}`,`Prazo: ${fd(k.prazo)}`]));
     t.hist=H.filter(h=>h.em.slice(0,10)<=HOJE).sort((a,b)=>a.em.localeCompare(b.em));
   });
 }
@@ -6527,13 +6817,13 @@ function pnLogs(t){
   return out;
 }
 function pnAcoes(t){
-  const A=proximasAcoes(t),K=abertas(t).sort((a,b)=>a.prazo.localeCompare(b.prazo)),ed=UI.role!=='Leitura';
+  const A=proximasAcoes(t),K=abertas(t).sort((a,b)=>String(a.prazo||'9').localeCompare(String(b.prazo||'9'))),ed=UI.role!=='Leitura';
   return `<div class="pn-grupo"><div class="pn-gt">Próximas ações <span class="n">${A.length}</span></div>
     ${A.length?A.map(x=>`<div class="pn-acao ${x.sev}"><span class="pn-ai">${ic(x.i,16)}</span><div class="pn-ac"><div>${esc(x.txt)}</div>${x.fix?`<button class="linkbtn" data-a="${x.fix.a}" ${x.fix.extra}>${esc(x.fix.l)}</button>`:''}</div></div>`).join(''):'<div class="empty">Nada pendente.</div>'}</div>
   <div class="pn-grupo"><div class="pn-gt">Tarefas em aberto <span class="n">${K.length}</span>${ed?`<button class="btn text sm" data-a="tab" data-t="tarefas" style="margin-left:auto">${ic('add',16)}Nova</button>`:''}</div>
-    ${K.length?K.map(k=>{const late=k.prazo<HOJE;return `<div class="pn-tar">${ed?`<button class="pn-chk" data-a="pn-concluir" data-k="${k.id}" aria-label="Concluir ${escT(k.titulo)}" title="Concluir"></button>`:''}
+    ${K.length?K.map(k=>{const late=!!k.prazo&&k.prazo<HOJE;return `<div class="pn-tar">${ed?`<button class="pn-chk" data-a="pn-concluir" data-k="${k.id}" aria-label="Concluir ${escT(k.titulo)}" title="Concluir"></button>`:''}
       <button class="pn-tc" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}"><span class="pn-tt">${escT(k.titulo)}${k.prio==='alta'?' <span class="chip warn" style="height:20px">Alta</span>':''}</span>
-      <span class="pn-tm ${late?'late':''}">${esc(k.resp)} · ${late?'atrasada desde ':'prazo '}${fd(k.prazo)} · ${OPT.statusTar[k.status]}</span></button></div>`}).join(''):'<div class="empty">Nenhuma tarefa aberta.</div>'}</div>`;
+      <span class="pn-tm ${late?'late':''}">${esc(k.resp||'Sem responsável')} · ${k.prazo?(late?'atrasada desde ':'prazo ')+fd(k.prazo):'sem prazo'} · ${esc(tkLista(t,k).nome)}</span></button></div>`}).join(''):'<div class="empty">Nenhuma tarefa aberta.</div>'}</div>`;
 }
 function painelFicha(t){
   const nL=(t.hist||[]).length,nA=proximasAcoes(t).length+abertas(t).length;
@@ -6637,7 +6927,7 @@ document.addEventListener('click',e=>{
   else if(A==='pn-cal-cancel'){pnCal=null;pnPerRefresh();document.querySelector('[data-a="pn-per-custom"]')?.focus()}
   else if(A==='pn-cal-ok'){if(!pnCal||!pnCal.ini)return;PN.per={k:'custom',ini:pnCal.ini,fim:pnCal.fim||pnCal.ini};pnSalva();pnCal=null;pnMenu=null;pnFoco='.pn-dd[data-dd="per"] .pn-dd-b';render()}
   else if(A==='pn-aba'){PN.aba=a.dataset.v;PN.aberto=true;pnSalva();render()}
-  else if(A==='pn-concluir'){const t=T(UI.id),k=t?.tarefas.find(x=>x.id===a.dataset.k);if(!k)return;const de=k.status;k.status='concluida';log(t,`Tarefa "${k.titulo}": ${OPT.statusTar[de]} → Concluída`);save();render();toast('Tarefa concluída.')}
+  else if(A==='pn-concluir'){const t=T(UI.id),k=t?.tarefas.find(x=>x.id===a.dataset.k);if(!k)return;tkConcluir(t,k,true);save();render();toast('Tarefa concluída.')}
 });
 
 /* =====================================================================
@@ -6930,7 +7220,7 @@ const destinoCfg=(tipo,k)=>tipo==='etapa'?etapaCfg(k):tipo==='subetapa'?subCfg(k
 const destinoNome=(tipo,k)=>tipo==='etapa'?SN(k):tipo==='subetapa'?subN(k):STATUS_N[k]||k;
 function syncCfg(){STAGES.splice(0,STAGES.length,...cfg().etapas.map(e=>[e.k,e.nome]))}
 /* dados carregados ou restaurados: garante configuração, equipe e avisos dos pedidos de exemplo */
-function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.cfg.fases)S.cfg.fases=FASES_PADRAO();if(!S.cfg.deps)S.cfg.deps=DEPS_PADRAO();if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];{const N0=CFG_PADRAO().notif;delete S.cfg.notif.tarefa_marcado;Object.entries(N0).forEach(([k,v])=>{const c=S.cfg.notif[k];if(!c)S.cfg.notif[k]=v;else if(c.email==null)c.email=v.email})}if(!S.prefsNotif)S.prefsNotif={};syncCfg();partesPreparar();
+function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.cfg.fases)S.cfg.fases=FASES_PADRAO();if(!S.cfg.deps)S.cfg.deps=DEPS_PADRAO();if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];{const N0=CFG_PADRAO().notif;delete S.cfg.notif.tarefa_marcado;Object.entries(N0).forEach(([k,v])=>{const c=S.cfg.notif[k];if(!c)S.cfg.notif[k]=v;else if(c.email==null)c.email=v.email})}if(!S.prefsNotif)S.prefsNotif={};syncCfg();partesPreparar();tkPrep();
   if(!S.pedidosAvisados){S.terrenos.forEach(t=>{if(t.neg?.pedido)avisarAprovadores(t)});S.pedidosAvisados=true}}
 
 /* ---------- regras da passagem ---------- */
@@ -7128,17 +7418,18 @@ function tentar(t,tipo,dest,dados){const r=moverPara(t,tipo,dest,{dados});save()
   toast(r.erro,true);return r}
 
 /* ---------- Configurações › Funil (só administrador) ---------- */
-const TIPOS_NOTIF_N={tarefa_atribuida:'Tarefa atribuída a você',mencao:'Mencionado com @',tarefa_prazo:'Prazo de tarefa chegando',tarefa_atrasada:'Tarefa atrasada',subetapa_prazo:'Subetapa passou do prazo',stand_by_retomar:'Data de retomar um Stand By',documento_vencendo:'Documento vencendo',reuniao_agendada:'Reunião agendada',aprovacao_pendente:'Pedido de aprovação para você',aprovacao_decidida:'Seu pedido foi aprovado ou recusado'};
+const TIPOS_NOTIF_N={tarefa_atribuida:'Tarefa atribuída a você',mencao:'Mencionado com @',tarefa_prazo:'Prazo de tarefa chegando',tarefa_atrasada:'Tarefa atrasada',tarefa_acompanhada:'Tarefa que você acompanha (comentário ou conclusão)',subetapa_prazo:'Subetapa passou do prazo',stand_by_retomar:'Data de retomar um Stand By',documento_vencendo:'Documento vencendo',reuniao_agendada:'Reunião agendada',aprovacao_pendente:'Pedido de aprovação para você',aprovacao_decidida:'Seu pedido foi aprovado ou recusado'};
 const apCells=(p,c)=>`<label class="chk"><input type="checkbox" data-ch="cfg" data-p="${p}.g" ${c.g?'checked':''}>Gestor</label><label class="chk"><input type="checkbox" data-ch="cfg" data-p="${p}.d" ${c.d?'checked':''}>Diretor</label>${c.g&&c.d?`<select data-ch="cfg" data-p="${p}.modo" aria-label="Ordem das aprovações"><option value="sequencia" ${c.modo!=='paralelo'?'selected':''}>Em sequência</option><option value="paralelo" ${c.modo==='paralelo'?'selected':''}>Em paralelo</option></select>`:''}`;
 const usada=k=>S.terrenos.some(t=>t.neg&&(t.neg.sub===k||(t.neg.trilha||[]).some(x=>x.paraSub===k||x.deSub===k)));
 function pgConfig(){
   if(!ehAdmin(me()))return `<div class="page-h"><div><h1>Configurações</h1></div></div><section class="sec"><div class="sec-b"><div class="empty">Só administradores alteram a configuração do funil. Teste como Diretor (Moisés é administrador).</div></div></section>`;
   const C=cfg(),aba=UI.cfgAba||'fases';
-  const abas=[['fases','Fases'],['funil','Etapas de '+faseN(faseEnt())],['prereq','Pré-requisitos'],['status','Status e motivos'],['checklist','Checklist'],['notif','Notificações'],['equipe','Equipe'],['viab','Viabilidade'],['zonas','Parâmetros urbanísticos']];
+  const abas=[['fases','Fases'],['funil','Etapas de '+faseN(faseEnt())],['prereq','Pré-requisitos'],['status','Status e motivos'],['checklist','Checklist'],['notif','Notificações'],['equipe','Equipe'],['viab','Viabilidade'],['zonas','Parâmetros urbanísticos'],['tarefas','Tarefas']];
   let corpo='';
   if(aba==='fases')corpo=cfgFasesHtml();
   if(aba==='viab')corpo=cfgViabHtml();
   if(aba==='zonas')corpo=cfgZonasHtml();
+  if(aba==='tarefas')corpo=cfgTarefasHtml();
   if(aba==='funil')corpo=`<section class="sec"><div class="sec-h"><h2>Etapas de ${esc(faseN(faseEnt()))}</h2></div><div class="sec-b"><div class="cfg-t">
     <div class="cfg-r cfg-hd"><span>Etapa</span><span>SLA (dias)</span><span>Aprovação para entrar</span></div>
     ${C.etapas.map((e,i)=>`<div class="cfg-r"><input data-ch="cfg" data-p="etapas.${i}.nome" value="${esc(e.nome)}" aria-label="Nome da etapa"><input type="number" min="0" data-ch="cfg" data-p="etapas.${i}.sla" value="${e.sla??''}" aria-label="SLA de ${esc(e.nome)}"><span class="cfg-ap">${apCells('etapas.'+i,e)}</span></div>`).join('')}</div><p class="cfg-nota">Criar, ordenar e desativar etapas fica em <button type="button" class="linkbtn" data-a="cfg-aba" data-v="fases">Fases</button>.</p></div></section>
@@ -10503,14 +10794,14 @@ document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legen
      /terrenos/TER-000123/viabilidade/2 segundo estudo de viabilidade do terreno, no popup
      /mapa  /mapa/TER-000123 (selecionado)  /mapa/TER-000123/ficha (com a ficha no painel)
      /fases  /fases/aprovacao  /fases/aprovacao/projeto   (os três níveis do quadro)
-     /tarefas  /tarefas/tabela   /dashboard   /configuracoes/etapas ...
+     /tarefas  /tarefas/tabela  /tarefas/TAR-000123 (a janela do cartão)   /dashboard   /configuracoes/etapas ...
    No Railway vai no caminho (/prototipo/terrenos/...; o Caddy devolve a página para qualquer caminho);
    aberto como arquivo ou no artifact, depois do # (#/terrenos/...). Os filtros seguem em f=.
    Troca de tela entra no histórico (voltar e avançar do navegador); seção aberta, terreno
    selecionado no mapa e vista das tarefas só atualizam o endereço. O terreno vai pelo código. */
 const RT_BASE=location.pathname.startsWith('/prototipo')?'/prototipo':null;
 const RT_SEC=['cadastro','comercial','negociacao','fases','tarefas','urbanismo','documentos','historico'];
-const RT_CFG={fases:'fases',funil:'etapas',prereq:'pre-requisitos',status:'status',checklist:'checklist',notif:'notificacoes',equipe:'equipe',viab:'viabilidade',zonas:'parametros'};
+const RT_CFG={fases:'fases',funil:'etapas',prereq:'pre-requisitos',status:'status',checklist:'checklist',notif:'notificacoes',equipe:'equipe',viab:'viabilidade',zonas:'parametros',tarefas:'tarefas'};
 const rtCod=id=>T(id)?.codigo||null;
 const rtId=c=>c&&S.terrenos.find(t=>(t.codigo||'').toUpperCase()===c.toUpperCase())?.id||null;
 const rtViabs=id=>(S.viabs||[]).filter(v=>v.tid===id);
@@ -10551,7 +10842,9 @@ function rtAplicar(s){const [a,b,c,d]=s,limpo={vbPop:null,vbNova:false,fichaShee
   if(a==='terrenos'){go('terrenos',limpo);if(b){UI.modal='novo';renderModal()}return}
   if(a==='mapa'){const id=rtId(b);go('mapa',{...limpo,mpSel:id,mpFoco:id});if(id&&c==='ficha'){UI.fichaSheet=id;fichaSheet()}return}
   if(a==='fases'){const f=b&&fIdx(b)>=0?b:null,e=f&&c&&etapaF(f,c)?c:null;go('negociacoes',{...limpo,negFase:f,negEtapa:e});return}
-  if(a==='tarefas'){if(UI.tk)UI.tk.vista=b==='tabela'?'tabela':'quadro';go('tarefas',limpo);return}
+  if(a==='tarefas'){if(UI.tk)UI.tk.vista=b==='tabela'?'tabela':'quadro';go('tarefas',limpo);
+    // link de um cartão: /tarefas/TAR-000123 abre a janela dele
+    if(/^TAR-\d+$/i.test(b||'')){const x=todasTarefas().find(y=>y.k.codigo===b.toUpperCase());if(x){UI.tkSel={tid:x.t.id,kid:x.k.id};UI.modal='tarefa';renderModal()}else toast('Tarefa não encontrada.',true)}return}
   if(a==='dashboard'){go('dashboard',limpo);return}
   if(a==='configuracoes'){const k=Object.keys(RT_CFG).find(k=>RT_CFG[k]===b);go('config',{...limpo,cfgAba:k||'fases'});return}
   go('inicio',limpo)}

@@ -115,7 +115,7 @@ function semearHistorico(){
     (t.docs||[]).forEach(d=>add(d.emitido?addD(d.emitido,1):null,'Camila Torres',`Documento enviado: ${(TIPOS_DOC[d.tipo]||[d.nome||d.tipo])[0]}`));
     (t.docs||[]).filter(d=>d.status==='validado').forEach(d=>add(d.emitido?addD(d.emitido,2):null,'Moisés',`Documento validado: ${(TIPOS_DOC[d.tipo]||[d.nome||d.tipo])[0]}`));
     (t.dilig||[]).forEach(d=>add(addD(t.dataIdent,3),d.resp||t.resp,`Diligência aberta: ${d.titulo}`));
-    (t.tarefas||[]).forEach(k=>add(addD(k.prazo,-7),k.resp===t.resp?'Moisés':t.resp,`Tarefa criada: ${k.titulo}`,[`Responsável: ${k.resp}`,`Prazo: ${fd(k.prazo)}`]));
+    (t.tarefas||[]).forEach(k=>add(addD(k.prazo||HOJE,-7),k.resp===t.resp?'Moisés':t.resp,`Tarefa criada: ${k.titulo}`,[`Responsável: ${k.resp}`,`Prazo: ${fd(k.prazo)}`]));
     t.hist=H.filter(h=>h.em.slice(0,10)<=HOJE).sort((a,b)=>a.em.localeCompare(b.em));
   });
 }
@@ -221,13 +221,13 @@ function pnLogs(t){
   return out;
 }
 function pnAcoes(t){
-  const A=proximasAcoes(t),K=abertas(t).sort((a,b)=>a.prazo.localeCompare(b.prazo)),ed=UI.role!=='Leitura';
+  const A=proximasAcoes(t),K=abertas(t).sort((a,b)=>String(a.prazo||'9').localeCompare(String(b.prazo||'9'))),ed=UI.role!=='Leitura';
   return `<div class="pn-grupo"><div class="pn-gt">Próximas ações <span class="n">${A.length}</span></div>
     ${A.length?A.map(x=>`<div class="pn-acao ${x.sev}"><span class="pn-ai">${ic(x.i,16)}</span><div class="pn-ac"><div>${esc(x.txt)}</div>${x.fix?`<button class="linkbtn" data-a="${x.fix.a}" ${x.fix.extra}>${esc(x.fix.l)}</button>`:''}</div></div>`).join(''):'<div class="empty">Nada pendente.</div>'}</div>
   <div class="pn-grupo"><div class="pn-gt">Tarefas em aberto <span class="n">${K.length}</span>${ed?`<button class="btn text sm" data-a="tab" data-t="tarefas" style="margin-left:auto">${ic('add',16)}Nova</button>`:''}</div>
-    ${K.length?K.map(k=>{const late=k.prazo<HOJE;return `<div class="pn-tar">${ed?`<button class="pn-chk" data-a="pn-concluir" data-k="${k.id}" aria-label="Concluir ${escT(k.titulo)}" title="Concluir"></button>`:''}
+    ${K.length?K.map(k=>{const late=!!k.prazo&&k.prazo<HOJE;return `<div class="pn-tar">${ed?`<button class="pn-chk" data-a="pn-concluir" data-k="${k.id}" aria-label="Concluir ${escT(k.titulo)}" title="Concluir"></button>`:''}
       <button class="pn-tc" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}"><span class="pn-tt">${escT(k.titulo)}${k.prio==='alta'?' <span class="chip warn" style="height:20px">Alta</span>':''}</span>
-      <span class="pn-tm ${late?'late':''}">${esc(k.resp)} · ${late?'atrasada desde ':'prazo '}${fd(k.prazo)} · ${OPT.statusTar[k.status]}</span></button></div>`}).join(''):'<div class="empty">Nenhuma tarefa aberta.</div>'}</div>`;
+      <span class="pn-tm ${late?'late':''}">${esc(k.resp||'Sem responsável')} · ${k.prazo?(late?'atrasada desde ':'prazo ')+fd(k.prazo):'sem prazo'} · ${esc(tkLista(t,k).nome)}</span></button></div>`}).join(''):'<div class="empty">Nenhuma tarefa aberta.</div>'}</div>`;
 }
 function painelFicha(t){
   const nL=(t.hist||[]).length,nA=proximasAcoes(t).length+abertas(t).length;
@@ -331,5 +331,5 @@ document.addEventListener('click',e=>{
   else if(A==='pn-cal-cancel'){pnCal=null;pnPerRefresh();document.querySelector('[data-a="pn-per-custom"]')?.focus()}
   else if(A==='pn-cal-ok'){if(!pnCal||!pnCal.ini)return;PN.per={k:'custom',ini:pnCal.ini,fim:pnCal.fim||pnCal.ini};pnSalva();pnCal=null;pnMenu=null;pnFoco='.pn-dd[data-dd="per"] .pn-dd-b';render()}
   else if(A==='pn-aba'){PN.aba=a.dataset.v;PN.aberto=true;pnSalva();render()}
-  else if(A==='pn-concluir'){const t=T(UI.id),k=t?.tarefas.find(x=>x.id===a.dataset.k);if(!k)return;const de=k.status;k.status='concluida';log(t,`Tarefa "${k.titulo}": ${OPT.statusTar[de]} → Concluída`);save();render();toast('Tarefa concluída.')}
+  else if(A==='pn-concluir'){const t=T(UI.id),k=t?.tarefas.find(x=>x.id===a.dataset.k);if(!k)return;tkConcluir(t,k,true);save();render();toast('Tarefa concluída.')}
 });

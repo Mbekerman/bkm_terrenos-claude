@@ -2599,3 +2599,91 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 html[data-tema="escuro"] .mn-pop { background: #0c1433; border-color: #1a2240 }
 html[data-tema="escuro"] .mn-i[aria-selected="true"], html[data-tema="escuro"] .mn-i:hover { background: rgba(99,112,255,.10) }
 html[data-tema="escuro"] .mencao { color: #c9d6ff; background: rgba(99,112,255,.16) }
+
+/* ---------- Quadros e tarefas (proto_quadros.js; bloco 1, 29/out/2026) ---------- */
+.etq { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 8px; border-radius: 4px; font-size: 12px; font-weight: 500; line-height: 20px; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; border: 0 }
+.etq-cinza { background: #e3e3e3; color: #1f1f1f } .etq-azul { background: #d3e3fd; color: #041e49 } .etq-verde { background: #c4eed0; color: #0a3818 } .etq-amarelo { background: #ffdf99; color: #3f2e00 }
+.etq-laranja { background: #ffdcc1; color: #3a1d00 } .etq-vermelho { background: #ffdad6; color: #410002 } .etq-roxo { background: #f0dbff; color: #2c0a3d } .etq-rosa { background: #ffd8e8; color: #3e0021 }
+html[data-tema="escuro"] .etq-cinza { background: rgba(196,199,197,.16); color: #e3e3e3 } html[data-tema="escuro"] .etq-azul { background: rgba(124,160,255,.22); color: #d3e3fd }
+html[data-tema="escuro"] .etq-verde { background: rgba(110,210,140,.2); color: #c4eed0 } html[data-tema="escuro"] .etq-amarelo { background: rgba(255,205,90,.2); color: #ffdf99 }
+html[data-tema="escuro"] .etq-laranja { background: rgba(255,170,110,.2); color: #ffdcc1 } html[data-tema="escuro"] .etq-vermelho { background: rgba(255,120,110,.2); color: #ffdad6 }
+html[data-tema="escuro"] .etq-roxo { background: rgba(200,140,255,.22); color: #f0dbff } html[data-tema="escuro"] .etq-rosa { background: rgba(255,130,180,.2); color: #ffd8e8 }
+.tk { position: relative; overflow: hidden }
+.tk-capa { height: 8px; margin: -12px -12px 4px; border-radius: 0 }
+.tk-etqs { display: flex; flex-wrap: wrap; gap: 4px }
+.tk-p { display: flex; align-items: center; gap: 4px 10px; flex-wrap: wrap }
+.tk-ind { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: var(--texto-suave); white-space: nowrap }
+.tk-ind.ok { color: #146c2e } html[data-tema="escuro"] .tk-ind.ok { color: #6dd58c }
+.tk-prazo { white-space: nowrap }
+.tk-avs { margin-left: auto; display: inline-flex } .tk-avs .avatar + .avatar { margin-left: -6px; box-shadow: 0 0 0 2px var(--superficie) }
+.tk.arq { opacity: .7 }
+.tk-sec .sec-h { flex-wrap: wrap } .tk-sub { font-size: 13px } .tk-sh { margin-left: auto; display: inline-flex; gap: 4px }
+/* na ficha o quadro quebra em linhas (sem rolagem para o lado): 3 listas por linha no desktop, 1 no celular */
+.tk-sb { padding-top: 4px }
+:root:not(#_) .tk-sb .tk-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; overflow: visible }
+:root:not(#_) .tk-sb .tk-board .tk-col { min-width: 0; width: auto; max-width: none; flex: none }
+/* janela do cartão */
+.dialog:has(.tkm) { width: min(980px, 100%) }
+.tkm .dh { align-items: flex-start }
+.tkm-hd { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px }
+.tkm-cod { font-size: 13px } .tkm-cod .linkbtn { font-size: 13px }
+.tkm input.tkm-tit { font-size: 22px; line-height: 30px; font-weight: 400; border: 1px solid transparent; border-radius: 8px; padding: 2px 8px; margin-left: -9px; background: transparent; width: 100%; min-height: 0; color: var(--texto) }
+.tkm input.tkm-tit:hover:not(:disabled) { border-color: var(--m-outline-var, #c4c7c5) } .tkm input.tkm-tit:focus { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: 0 }
+.tkm :is(input:not([type=checkbox]):not(.tkm-tit), select, textarea) { min-height: 40px; border: 1px solid var(--m-outline, #747775); border-radius: 4px; padding: 0 12px; background: var(--superficie); color: var(--texto); font: inherit; font-size: 14px; width: 100%; min-width: 0 }
+.tkm textarea { padding: 8px 12px; min-height: 72px; resize: vertical; line-height: 20px }
+.tkm :is(input, select, textarea):focus { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: -1px }
+.tkm :is(input, select, textarea):disabled { border-color: transparent; background: transparent; padding-left: 0; opacity: 1; color: var(--texto); appearance: none }
+.tkm-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 4px 0 8px }
+.tkm-lst { display: flex; align-items: center; gap: 8px } .tkm-lst select { width: auto; min-width: 180px }
+.tkm-g { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 32px }
+.tkm-main, .tkm-side { display: flex; flex-direction: column; gap: 20px; min-width: 0 }
+.tkm-f { display: flex; flex-direction: column; gap: 6px; min-width: 0 }
+.tkm-f > .lbl-f, .tkm-lst .lbl-f { font-size: 13px; color: var(--texto-suave); font-weight: 500 }
+.tkm-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
+.tkm-bl { display: flex; flex-direction: column; gap: 10px }
+.tkm-blh { display: flex; align-items: center; gap: 8px; min-height: 40px } .tkm-blh h3 { margin: 0; font-size: 16px; font-weight: 500 } .tkm-blh .btn { margin-left: auto }
+.tkm-ck { display: flex; flex-direction: column; gap: 6px; padding: 12px 0; border-top: 1px solid var(--m-outline-var, #c4c7c5) }
+.tkm-ckh { display: flex; align-items: center; gap: 8px; min-height: 40px } .tkm-sp { flex: 1 }
+.tkm-bar { height: 6px; border-radius: 3px; background: var(--m-outline-var, #e3e3e3); overflow: hidden } .tkm-bar span { display: block; height: 100%; background: var(--m-primary, #0b57d0); border-radius: 3px }
+.tkm-it { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 4px 0; min-height: 40px }
+.tkm-ch { display: flex; align-items: center; gap: 10px; flex: 1 1 220px; min-width: 0; cursor: pointer }
+.tkm-ch input { width: 18px; height: 18px; flex: none; accent-color: var(--m-primary, #0b57d0) }
+.tkm-it.feito .tkm-ch span { text-decoration: line-through; color: var(--texto-suave) }
+.tkm-im { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--texto-suave) }
+.tkm .tkm-sel { width: auto !important; min-height: 32px !important; height: 32px; font-size: 13px !important; padding: 0 8px !important }
+.tkm-nf { display: flex; gap: 8px; align-items: center; flex-wrap: wrap } .tkm-nf > input:first-child { flex: 1 1 200px; width: auto }
+.tkm-nf > select, .tkm-nf > input[type=date] { width: auto; flex: 0 1 auto }
+.tkm-nf.vert { flex-direction: column; align-items: stretch } .tkm-nf.vert .btn { align-self: flex-start }
+.tkm-cf { display: flex; flex-direction: column; gap: 8px } .tkm-cf .btn { align-self: flex-end }
+.tkm-co { display: flex; gap: 10px; padding: 8px 0 } .tkm-cob { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px }
+.tkm-coh { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: 13px } .tkm-coh b { font-weight: 500 }
+.tkm-cot { background: var(--m-surf-c, #f0f4f9); border-radius: 12px; padding: 8px 12px; white-space: pre-wrap; overflow-wrap: anywhere }
+.tkm-co.apagado .faint { font-style: italic }
+.tkm-acs { display: flex; gap: 6px; align-items: center; flex-wrap: wrap }
+.tkm-re { height: 28px; padding: 0 8px; border-radius: 14px; border: 1px solid var(--m-outline-var, #c4c7c5); background: transparent; font-size: 13px; cursor: pointer; color: var(--texto) }
+.tkm-re.on { background: var(--m-sc, #c2e7ff); border-color: transparent }
+.tkm-ps { display: flex; flex-wrap: wrap; gap: 6px; align-items: center }
+.tkm-p { display: inline-flex; align-items: center; gap: 6px; padding: 0 4px 0 2px; height: 32px }
+.tkm-x { border: 0; background: transparent; padding: 2px; border-radius: 50%; cursor: pointer; display: inline-flex; color: var(--texto-suave) } .tkm-x:hover { background: rgba(127,127,127,.15) }
+.tkm .tkm-add { width: auto; min-height: 32px; height: 32px; font-size: 13px }
+.tkm-ets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center }
+.tkm-et { height: 28px; padding: 0 10px; cursor: pointer; opacity: .55 } .tkm-et.on { opacity: 1; box-shadow: inset 0 0 0 1.5px currentColor } .tkm-et:disabled { cursor: default }
+.tkm-capas { display: flex; gap: 6px; flex-wrap: wrap }
+.tkm-capa { width: 28px; height: 20px; border-radius: 4px; border: 1px solid transparent; cursor: pointer; padding: 0 }
+.tkm-capa.nenhuma { background: transparent; border-color: var(--m-outline, #747775); background-image: linear-gradient(135deg, transparent 45%, var(--m-outline, #747775) 45%, var(--m-outline, #747775) 55%, transparent 55%) }
+.tkm-capa.on { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: 2px }
+.tkm-an { display: flex; align-items: center; gap: 8px; min-height: 36px; overflow-wrap: anywhere } .tkm-an a { color: var(--m-primary, #0b57d0) } .tkm-an .iconbtn { margin-left: auto }
+.tkm-acoes { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding-top: 8px; border-top: 1px solid var(--m-outline-var, #c4c7c5) }
+.tkl { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px }
+.tkl-r { display: flex; align-items: center; gap: 8px } .tkl-r input { flex: 1; min-width: 0; min-height: 40px; border: 1px solid var(--m-outline, #747775); border-radius: 4px; padding: 0 12px; background: var(--superficie); color: var(--texto); font: inherit }
+.tkl-r select { min-height: 40px; border: 1px solid var(--m-outline, #747775); border-radius: 4px; padding: 0 8px; background: var(--superficie); color: var(--texto); font: inherit }
+.tkl-r.oculta input { opacity: .55 } .tkl-r [data-a$="-sobe"] svg { transform: rotate(-90deg) } .tkl-r + .tkl-r { margin-top: 6px }
+.dialog:has(.tkl) .tkm-nf input, .dialog:has(.tkl) .tkm-nf select, .sec .tkm-nf input, .sec .tkm-nf select { min-height: 40px; border: 1px solid var(--m-outline, #747775); border-radius: 4px; padding: 0 12px; background: var(--superficie); color: var(--texto); font: inherit }
+html[data-tema="escuro"] .tkm-cot { background: rgba(124,140,255,.08) }
+html[data-tema="escuro"] .tkm :is(input:not([type=checkbox]):not(.tkm-tit), select, textarea), html[data-tema="escuro"] .tkl-r :is(input, select) { background: transparent; border-color: rgba(142,154,196,.55) }
+html[data-tema="escuro"] :is(.tkm-ck, .tkm-acoes) { border-color: #1a2240 } html[data-tema="escuro"] .tkm-bar { background: rgba(124,140,255,.15) } html[data-tema="escuro"] .tkm-bar span { background: #7c8cff }
+html[data-tema="escuro"] .tkm-re.on { background: rgba(99,112,255,.18); border-color: rgba(124,140,255,.5) } html[data-tema="escuro"] .tkm-an a { color: #a8b6ff }
+@media (max-width: 799px) { .tkm-g { grid-template-columns: minmax(0, 1fr); gap: 20px } .tkm-side { order: -1 } .tkm input.tkm-tit { font-size: 20px } }
+@media (max-width: 599px) { .tkm-lst select { min-width: 0 } .tkm-it { align-items: flex-start } .tkm-im { flex-wrap: wrap; padding-left: 28px } }
+:root:not(#_) .tkm .tkm-nf > :is(input, select) { width: auto } :root:not(#_) .tkm .tkm-nf > input:first-child { flex: 1 1 200px } :root:not(#_) .tkm .tkm-nf.vert > :is(input, select) { width: 100%; flex: none }
+@media (min-width: 600px) { .tkm-it { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px } }
