@@ -195,7 +195,8 @@ select t.id, t.empresa_id, t.codigo, t.nome, t.situacao_cadastral, t.prioridade,
        coalesce(vb.margem_pct < vc.margem_minima_pct, false) as abaixo_margem_min,
        u.zoneamentos, u.ca_maximo,
        nt.titulo as proxima_tarefa, nt.prazo as proxima_tarefa_prazo,
-       (select count(*) from app.tarefas k where k.terreno_id = t.id and k.status not in ('concluida','cancelada') and k.prazo < current_date) as tarefas_atrasadas,
+       (select count(*) from fluxo.tarefas k join fluxo.quadros q on q.id = k.quadro_id where q.objeto_tipo = 'terreno' and q.objeto_id = t.id
+          and k.concluida_em is null and k.arquivada_em is null and k.prazo < current_date) as tarefas_atrasadas,
        (select count(*) from app.v_documentos d where d.terreno_id = t.id and d.processo_id = p.id and d.situacao_efetiva = 'vencido') as docs_vencidos,
        (select count(*) from app.diligencias g where g.terreno_id = t.id and g.situacao not in ('resolvida')) as diligencias_abertas,
        (select count(*) from app.diligencias g where g.terreno_id = t.id and g.situacao = 'impeditiva') as diligencias_impeditivas,
@@ -258,8 +259,9 @@ left join app.viabilidades vb on vb.id = pn.viabilidade_id
 left join app.viabilidade_config vc on vc.empresa_id = t.empresa_id
 left join app.v_urbanismo_vigente u on u.terreno_id = t.id
 left join lateral (
-  select titulo, prazo from app.tarefas k where k.terreno_id = t.id and k.status not in ('concluida','cancelada')
-  order by prazo, prazo_hora nulls last limit 1
+  select k.titulo, k.prazo from fluxo.tarefas k join fluxo.quadros q on q.id = k.quadro_id
+  where q.objeto_tipo = 'terreno' and q.objeto_id = t.id and k.concluida_em is null and k.arquivada_em is null and k.prazo is not null
+  order by k.prazo, k.prazo_hora nulls last limit 1
 ) nt on true;
 
 -- Distância em linha reta (haversine). Rota de verdade é com o serviço de mapas.
@@ -322,12 +324,13 @@ from app.terrenos t
 left join app.terreno_entorno_buscas b on b.terreno_id = t.id
 where t.latitude is not null;
 
--- Quadro de tarefas: tarefa com o terreno e o atraso calculado.
+-- Tarefas dos quadros dos terrenos: o cartão (fluxo.v_tarefas, com lista,
+-- atraso e checklist) com o código e o nome do terreno.
 create view app.v_tarefas with (security_invoker = true) as
-select k.*, t.codigo as terreno_codigo, t.nome as terreno_nome,
-       (k.status not in ('concluida','cancelada') and k.prazo < current_date) as atrasada
-from app.tarefas k
-join app.terrenos t on t.id = k.terreno_id;
+select k.*, t.id as terreno_id, t.codigo as terreno_codigo, t.nome as terreno_nome
+from fluxo.v_tarefas k
+join app.terrenos t on t.id = k.objeto_id
+where k.objeto_tipo = 'terreno';
 
 -- Períodos do processo, lidos só do histórico: cada transição que muda a
 -- posição ou o status abre um período que dura até a seguinte. Stand by

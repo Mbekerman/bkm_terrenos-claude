@@ -589,6 +589,21 @@ begin
 end $$;
 create trigger t_norm before insert or update on app.terrenos for each row execute function app.tg_normalizar_terreno();
 
+-- Cada terreno nasce com o seu quadro de tarefas (fluxo), com as listas do modelo da empresa.
+create or replace function app.tg_terreno_quadro()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  perform fluxo.quadro_de(new.empresa_id, 'terreno', new.id);
+  return new;
+end $$;
+create trigger t_quadro after insert on app.terrenos for each row execute function app.tg_terreno_quadro();
+
+-- Quadro do terreno de uma tarefa (nulo se a tarefa é de outro tipo de quadro).
+create or replace function app.terreno_da_tarefa(p_tarefa uuid)
+returns uuid language sql stable security definer set search_path = '' as $$
+  select q.objeto_id from fluxo.tarefas k join fluxo.quadros q on q.id = k.quadro_id
+  where k.id = p_tarefa and q.objeto_tipo = 'terreno' $$;
+
 -- Poligonal que ocupa parte de outro terreno da empresa só entra se o usuário
 -- confirmou que é outro terreno (sobreposicoes_aceitas). A tela pergunta antes,
 -- com app.terrenos_sobrepostos; aqui é a garantia para qualquer caminho (importação, API).

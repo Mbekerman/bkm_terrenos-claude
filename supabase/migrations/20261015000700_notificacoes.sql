@@ -29,6 +29,7 @@ insert into app.tipos_notificacao (codigo, nome, dias_antes_padrao, email_padrao
   ('mencao',             'Você foi mencionado com @',        '{}',    true),
   ('tarefa_prazo',       'Prazo de tarefa',                  '{0}',   false),  -- 0 = no dia: "vence hoje"
   ('tarefa_atrasada',    'Tarefa atrasada',                  '{}',    false),
+  ('tarefa_acompanhada', 'Tarefa que você acompanha',        '{}',    false),  -- comentário novo ou tarefa concluída
   ('stand_by_retomar',   'Retomar negociação em stand by',   '{7,0}', false),
   ('subetapa_prazo',     'Subetapa com prazo estourado',     '{}',    false),
   ('documento_vencendo', 'Documento vencendo',               '{30,7}', false),
@@ -129,8 +130,9 @@ create or replace function app._item_lembrete(p_origem_tabela text, p_origem_id 
 returns table (empresa_id uuid, terreno_id uuid, tipo text, data date, responsavel uuid, titulo text)
 language sql stable security definer set search_path = ''
 as $$
-  select k.empresa_id, k.terreno_id, 'tarefa_prazo', k.prazo, k.responsavel_id, 'Tarefa "' || k.titulo || '"'
-  from app.tarefas k where p_origem_tabela = 'tarefas' and k.id = p_origem_id and k.status not in ('concluida','cancelada')
+  select k.empresa_id, app.terreno_da_tarefa(k.id), 'tarefa_prazo', k.prazo, k.responsavel_id, 'Tarefa "' || k.titulo || '"'
+  from fluxo.tarefas k where p_origem_tabela = 'tarefas' and k.id = p_origem_id and k.concluida_em is null and k.arquivada_em is null
+    and k.prazo is not null
   union all
   select p.empresa_id, p.terreno_id, 'stand_by_retomar', p.retomar_em, p.responsavel_id, 'Retomar ' || p.codigo || ' (' || t.nome || ')'
   from app.processos p join app.terrenos t on t.id = p.terreno_id
@@ -151,18 +153,66 @@ $$;
 -- ---------------------------------------------------------------------
 -- Gatilhos na hora
 -- ---------------------------------------------------------------------
+-- Tarefas (esquema fluxo): o responsável e quem entra como executor são
+-- avisados; quem acompanha recebe a conclusão e cada comentário novo.
 create or replace function app.tg_tarefa_notificar()
 returns trigger language plpgsql security definer set search_path = ''
 as $$
+declare v_ter uuid := app.terreno_da_tarefa(new.id); r record;
 begin
   if new.responsavel_id is not null and (tg_op = 'INSERT' or new.responsavel_id is distinct from old.responsavel_id) then
     perform app._notificar(new.empresa_id, new.responsavel_id, 'tarefa_atribuida', 'Tarefa para você: ' || new.titulo,
-                           new.terreno_id, 'tarefas', new.id);
+                           v_ter, 'tarefas', new.id);
   end if;
   if tg_op = 'INSERT' then perform app._lembretes_padrao(new.empresa_id, 'tarefas', new.id, 'tarefa_prazo'); end if;
+  if tg_op = 'UPDATE' and new.concluida_em is not null and old.concluida_em is null then
+    for r in select user_id from fluxo.tarefa_pessoas where tarefa_id = new.id and papel = 'acompanha' loop
+      perform app._notificar(new.empresa_id, r.user_id, 'tarefa_acompanhada', 'Tarefa concluída: ' || new.titulo, v_ter, 'tarefas', new.id);
+    end loop;
+  end if;
   return new;
 end $$;
-create trigger t_notificar after insert or update of responsavel_id on app.tarefas for each row execute function app.tg_tarefa_notificar();
+create trigger t_notificar after insert or update of responsavel_id, concluida_em on fluxo.tarefas for each row execute function app.tg_tarefa_notificar();
+
+create or replace function app.tg_tarefa_pessoa_notificar()
+returns trigger language plpgsql security definer set search_path = ''
+as $$
+begin
+  if new.papel = 'executor' then
+    perform app._notificar(new.empresa_id, new.user_id, 'tarefa_atribuida',
+                           'Tarefa para você: ' || (select titulo from fluxo.tarefas where id = new.tarefa_id),
+                           app.terreno_da_tarefa(new.tarefa_id), 'tarefas', new.tarefa_id);
+  end if;
+  return new;
+end $$;
+create trigger t_notificar after insert on fluxo.tarefa_pessoas for each row execute function app.tg_tarefa_pessoa_notificar();
+
+create or replace function app.tg_item_notificar()
+returns trigger language plpgsql security definer set search_path = ''
+as $$
+declare k fluxo.tarefas;
+begin
+  if new.responsavel_id is not null and (tg_op = 'INSERT' or new.responsavel_id is distinct from old.responsavel_id) then
+    select t.* into k from fluxo.tarefas t join fluxo.checklists c on c.tarefa_id = t.id where c.id = new.checklist_id;
+    perform app._notificar(new.empresa_id, new.responsavel_id, 'tarefa_atribuida',
+                           'Item para você em ' || k.titulo || ': ' || new.texto, app.terreno_da_tarefa(k.id), 'tarefas', k.id);
+  end if;
+  return new;
+end $$;
+create trigger t_notificar after insert or update of responsavel_id on fluxo.checklist_itens for each row execute function app.tg_item_notificar();
+
+create or replace function app.tg_comentario_notificar()
+returns trigger language plpgsql security definer set search_path = ''
+as $$
+declare r record; v_tit text := (select titulo from fluxo.tarefas where id = new.tarefa_id);
+begin
+  for r in select user_id from fluxo.tarefa_pessoas where tarefa_id = new.tarefa_id and papel = 'acompanha' loop
+    perform app._notificar(new.empresa_id, r.user_id, 'tarefa_acompanhada', 'Comentário novo em ' || v_tit,
+                           app.terreno_da_tarefa(new.tarefa_id), 'tarefas', new.tarefa_id);
+  end loop;
+  return new;
+end $$;
+create trigger t_notificar after insert on fluxo.comentarios for each row execute function app.tg_comentario_notificar();
 
 create or replace function app.tg_reuniao_lembretes()
 returns trigger language plpgsql security definer set search_path = ''
@@ -190,7 +240,8 @@ returns trigger language plpgsql security definer set search_path = ''
 as $$
 declare v uuid;
 begin
-  execute format('select empresa_id from app.%I where id = $1', new.origem_tabela) into v using new.origem_id;
+  execute format('select empresa_id from %s.%I where id = $1', case new.origem_tabela when 'tarefas' then 'fluxo' else 'app' end, new.origem_tabela)
+    into v using new.origem_id;
   if v is distinct from new.empresa_id then raise exception 'Registro não pertence à mesma empresa do pai' using errcode = '42501'; end if;
   if new.destinatario_id is not null and not exists (select 1 from app.membros where empresa_id = new.empresa_id and user_id = new.destinatario_id) then
     raise exception 'O destinatário tem que ser da empresa' using errcode = '23514';
@@ -225,8 +276,8 @@ begin
   end loop;
 
   -- tarefa atrasada: uma vez, no primeiro dia de atraso (ou quando a rotina vir)
-  for r in select * from app.tarefas k where k.status not in ('concluida','cancelada') and k.prazo < p_hoje and k.responsavel_id is not null loop
-    perform app._notificar(r.empresa_id, r.responsavel_id, 'tarefa_atrasada', 'Tarefa atrasada: ' || r.titulo, r.terreno_id, 'tarefas', r.id, r.prazo, null);
+  for r in select * from fluxo.tarefas k where k.concluida_em is null and k.arquivada_em is null and k.prazo < p_hoje and k.responsavel_id is not null loop
+    perform app._notificar(r.empresa_id, r.responsavel_id, 'tarefa_atrasada', 'Tarefa atrasada: ' || r.titulo, app.terreno_da_tarefa(r.id), 'tarefas', r.id, r.prazo, null);
     get diagnostics n = row_count; total := total + n;
   end loop;
 
@@ -332,7 +383,7 @@ begin
 end $$;
 
 revoke execute on function app._notificar(uuid, uuid, text, text, uuid, text, uuid, date, uuid), app._lembretes_padrao(uuid, text, uuid, text),
-  app._item_lembrete(text, uuid), app.rotina_diaria(date), app.tg_tarefa_notificar(),
+  app._item_lembrete(text, uuid), app.rotina_diaria(date), app.tg_tarefa_notificar(), app.tg_tarefa_pessoa_notificar(), app.tg_item_notificar(), app.tg_comentario_notificar(),
   app.tg_reuniao_lembretes(), app.tg_documento_lembretes(), app.tg_lembrete_valido() from public;
 grant execute on function app.marcar_notificacao_lida(uuid), app.configurar_notificacao(uuid, text, boolean, int[], boolean),
   app.salvar_preferencia_notificacao(uuid, text, boolean) to authenticated;

@@ -252,7 +252,7 @@ declare
 begin
   if cardinality(v_cols) = 0 then return false; end if;
   select * into u from app.auditoria
-  where tabela = p_tabela and registro_id = coalesce(v_row->>'id', v_row->>'user_id')::uuid
+  where tabela = p_tabela and registro_id = coalesce(v_row->>'id', v_row->>'tarefa_id', v_row->>'comentario_id', v_row->>'user_id')::uuid
   order by em desc, id desc limit 1;
   if not found or u.acao <> 'update' or u.user_id is distinct from auth.uid()
      or u.desfeito_em is not null or u.desfaz_id is not null  -- o desfazer e o desfeito não se juntam com nada
@@ -281,7 +281,7 @@ begin
   if tg_op = 'UPDATE' and tg_table_name <> 'processos' and coalesce(current_setting('app.desfazendo', true), '') <> '1'
      and app.juntar_auditoria(tg_table_name, v_old, v_new) then return new; end if;
   insert into app.auditoria (empresa_id, tabela, registro_id, acao, antes, depois)
-  values ((v_row->>'empresa_id')::uuid, tg_table_name, coalesce(v_row->>'id', v_row->>'user_id')::uuid, lower(tg_op), v_old, v_new);
+  values ((v_row->>'empresa_id')::uuid, tg_table_name, coalesce(v_row->>'id', v_row->>'tarefa_id', v_row->>'comentario_id', v_row->>'user_id')::uuid, lower(tg_op), v_old, v_new);
   return coalesce(new, old);
 end $$;
 
