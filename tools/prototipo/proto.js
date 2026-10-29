@@ -327,7 +327,7 @@ const corrPrincipal=t=>{const c=t.corretores.find(x=>x.principal);return c?corre
 const analiseVig=t=>t.analises.find(a=>a.status==='vigente');
 const zonasTxt=t=>{const a=analiseVig(t);if(!a)return null;const o={};a.zonas.forEach(z=>o[z.sigla]=(o[z.sigla]||0)+(z.area||0));return Object.entries(o).sort((x,y)=>y[1]-x[1]).map(([s])=>s).join(' / ')};
 const caMax=t=>{const r=resumoUrb(t,'mercado');return r&&r.caMax>0?r.caMax:null};  // maior CA máximo de mercado (catálogo + exceções; proto_zonas.js)
-const abertas=t=>t.tarefas.filter(k=>!k.feita&&!k.arq);  // quadros e tarefas: proto_quadros.js
+const abertas=t=>vzTarefas(t).filter(k=>!k.feita&&!k.arq);  // quadros e tarefas: proto_quadros.js
 const atrasadas=t=>abertas(t).filter(k=>k.prazo&&k.prazo<HOJE);
 const proxTarefa=t=>abertas(t).filter(k=>k.prazo).sort((a,b)=>a.prazo.localeCompare(b.prazo))[0];
 const lastProp=t=>t.propostas[t.propostas.length-1];

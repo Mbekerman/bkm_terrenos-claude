@@ -266,6 +266,7 @@ function pgConfig(){
       <select data-ch="cfg-eq" data-i="${i}" data-k="sup" aria-label="Superior de ${esc(m.nome)}" ${m.papel==='diretor'||m.papel==='leitura'?'disabled':''}><option value="">—</option>${sups.map(x=>`<option ${m.sup===x.nome?'selected':''}>${esc(x.nome)}</option>`).join('')}</select>
       <label class="chk"><input type="checkbox" data-ch="cfg-eq" data-i="${i}" data-k="admin" ${m.admin?'checked':''} aria-label="Administrador"></label></div>`}).join('')}</div>
     </div></section>`;
+  if(aba==='equipe')corpo+=vzGruposCfgHtml();  // grupos para liberar cartões restritos (proto_visib.js)
   const rot=(abas.find(x=>x[0]===aba)||abas[0])[1];
   return `<div class="page-h"><div><h1>Configurações</h1></div></div>
   <div class="cfg-lay"><nav class="cfg-nav" role="tablist" aria-label="Configurações">${abas.map(([k,l])=>`<button class="cfg-tab" role="tab" data-a="cfg-aba" data-v="${k}" aria-pressed="${aba===k}" aria-selected="${aba===k}">${l}</button>`).join('')}${['viab','zonas','equipe'].includes(aba)?'':'<button class="btn text cfg-padrao" data-a="cfg-padrao">Restaurar padrão do funil</button>'}</nav><div class="stack cfg-corpo" aria-label="${esc(rot)}">${corpo}${['viab','zonas','equipe'].includes(aba)?'':`<div class="cfg-padrao-w"><button class="btn text cfg-padrao-m" data-a="cfg-padrao">${ic('undo',18)}Restaurar padrão do funil</button></div>`}</div></div>`}

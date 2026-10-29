@@ -2008,4 +2008,96 @@ select pg_temp.como(:'leitor');
 select pg_temp.falha(format($$select fluxo.retomar(%L)$$, :'kq'), 'leitura não retoma');
 select pg_temp.como(:'diretor');
 select fluxo.salvar_regra_pausa(:'emp', 'gestor');
+-- ---------------------------------------------------------------------
+\echo '# visibilidade por cartão (fluxo, bloco 3)'
+reset role;
+insert into auth.users values ('00000000-0000-0000-0000-0000000000f3', 'diretora2@bkm.test');
+update app.membros set papel = 'diretor', nome = 'Diretora sem admin' where user_id = '00000000-0000-0000-0000-0000000000f3' and empresa_id = :'emp';  -- entrou pelo domínio como básico
+\set dir2 '00000000-0000-0000-0000-0000000000f3'
+\set basico '00000000-0000-0000-0000-0000000000f1'
+select pg_temp.como(:'analista');
+insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, visibilidade)
+select q.empresa_id, q.id, pg_temp.lista(:'tm', 'Fazer'), 'Anotação pessoal', 'individual'
+from fluxo.quadros q where q.objeto_tipo = 'terreno' and q.objeto_id = :'tm' returning id as vi \gset
+select pg_temp.ok((select visibilidade = 'individual' from fluxo.tarefas where id = :'vi'), 'quem cria escolhe Individual e vê o próprio cartão');
+select pg_temp.como(:'gestor');
+select pg_temp.ok(not exists (select 1 from fluxo.tarefas where id = :'vi') and not exists (select 1 from fluxo.v_tarefas where id = :'vi'),
+  'individual: o gestor de quem criou não vê');
+select pg_temp.ok(not exists (select 1 from app.auditoria where tabela = 'tarefas' and registro_id = :'vi'), 'nem o histórico do cartão individual');
+select pg_temp.como(:'dir2');
+select pg_temp.ok(not exists (select 1 from fluxo.tarefas where id = :'vi'), 'individual: o diretor também não vê');
+select pg_temp.como(:'diretor');
+select pg_temp.ok(exists (select 1 from fluxo.tarefas where id = :'vi'), 'individual: o administrador do sistema vê os de todos');
+-- pôr outra pessoa no cartão o torna restrito
+select pg_temp.como(:'analista');
+insert into fluxo.tarefa_pessoas (empresa_id, tarefa_id, user_id, papel) values (:'emp', :'vi', :'gestor', 'acompanha');
+select pg_temp.ok((select visibilidade = 'restrito' from fluxo.tarefas where id = :'vi'), 'pôr outra pessoa no individual o torna restrito');
+select pg_temp.como(:'gestor');
+select pg_temp.ok(exists (select 1 from fluxo.tarefas where id = :'vi'), 'restrito: quem está no cartão vê');
+select pg_temp.falha(format($$update fluxo.tarefas set visibilidade = 'publico' where id = %L$$, :'vi'), 'quem só está no cartão não muda a visibilidade');
+select pg_temp.como(:'leitor');
+select pg_temp.ok(not exists (select 1 from fluxo.tarefas where id = :'vi'), 'restrito: quem não foi liberado não vê');
+select pg_temp.como(:'dir2');
+select pg_temp.ok(exists (select 1 from fluxo.tarefas where id = :'vi'), 'restrito: o diretor vê');
+-- grupos e papéis no cartão
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$insert into fluxo.grupos (empresa_id, nome) values (%L, 'Jurídico')$$, :'emp'), 'só o administrador cria grupo');
+select pg_temp.como(:'diretor');
+insert into fluxo.grupos (empresa_id, nome) values (:'emp', 'Jurídico') returning id as gj \gset
+insert into fluxo.grupo_membros (empresa_id, grupo_id, user_id) values (:'emp', :'gj', :'leitor'), (:'emp', :'gj', :'basico');
+select pg_temp.como(:'analista');
+insert into fluxo.tarefa_acessos (empresa_id, tarefa_id, grupo_id, papel) values (:'emp', :'vi', :'gj', 'comentarista');
+select pg_temp.como(:'leitor');
+select pg_temp.ok(fluxo.papel_tarefa(:'vi') = 'comentarista', 'grupo liberado: quem é do grupo vê com o papel dado');
+insert into fluxo.comentarios (empresa_id, tarefa_id, autor_id, texto) values (:'emp', :'vi', :'leitor', 'Vi a matrícula');
+select pg_temp.ok(exists (select 1 from fluxo.comentarios where tarefa_id = :'vi' and autor_id = :'leitor'), 'comentarista comenta, mesmo sendo leitura no sistema');
+update fluxo.tarefas set titulo = 'Mudado' where id = :'vi';
+select pg_temp.ok((select titulo = 'Anotação pessoal' from fluxo.tarefas where id = :'vi'), 'comentarista não edita o cartão');
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format($$insert into fluxo.tarefa_acessos (empresa_id, tarefa_id, user_id, excluido) values (%L, %L, %L, true)$$, :'emp', :'vi', :'basico'),
+  'quem não administra o cartão não dá nem tira acesso');
+select pg_temp.como(:'analista');
+insert into fluxo.tarefa_acessos (empresa_id, tarefa_id, user_id, excluido) values (:'emp', :'vi', :'basico', true);
+select pg_temp.como(:'basico');
+select pg_temp.ok(not exists (select 1 from fluxo.tarefas where id = :'vi'), 'exceção: a pessoa tirada do grupo liberado não vê');
+-- público: papel do sistema, que o cartão pode subir
+select pg_temp.como(:'dir2');
+update fluxo.tarefas set visibilidade = 'publico' where id = :'vi';
+select pg_temp.ok((select visibilidade = 'publico' from fluxo.tarefas where id = :'vi'), 'o diretor muda a visibilidade');
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tm', 'Conferir certidões', current_date + 5) as vp \gset
+select pg_temp.como(:'basico');
+select pg_temp.ok(fluxo.papel_tarefa(:'vp') = 'leitor', 'público: o básico vê e só lê');
+update fluxo.tarefas set titulo = 'Mudado' where id = :'vp';
+select pg_temp.ok((select titulo = 'Conferir certidões' from fluxo.tarefas where id = :'vp'), 'leitor não edita');
+select pg_temp.como(:'analista');
+insert into fluxo.tarefa_acessos (empresa_id, tarefa_id, user_id, papel) values (:'emp', :'vp', :'basico', 'editor');
+select pg_temp.como(:'basico');
+update fluxo.tarefas set titulo = 'Conferir certidões e IPTU' where id = :'vp';
+insert into fluxo.checklists (empresa_id, tarefa_id, nome) values (:'emp', :'vp', 'Certidões');
+select pg_temp.ok((select titulo = 'Conferir certidões e IPTU' from fluxo.tarefas where id = :'vp') and exists (select 1 from fluxo.checklists where tarefa_id = :'vp'),
+  'o papel no cartão passa o do sistema: o básico liberado como editor edita');
+-- item que vira cartão herda a visibilidade
+select pg_temp.como(:'analista');
+insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, visibilidade)
+select q.empresa_id, q.id, pg_temp.lista(:'tm', 'Fazer'), 'Diligência sigilosa', 'restrito'
+from fluxo.quadros q where q.objeto_tipo = 'terreno' and q.objeto_id = :'tm' returning id as vr \gset
+insert into fluxo.checklists (empresa_id, tarefa_id, nome) values (:'emp', :'vr', 'Passos') returning id as vrc \gset
+insert into fluxo.checklist_itens (empresa_id, checklist_id, texto) values (:'emp', :'vrc', 'Pedir certidão de ônus') returning id as vri \gset
+select fluxo.item_para_tarefa(:'vri') as vrk \gset
+select pg_temp.ok((select visibilidade = 'restrito' from fluxo.tarefas where id = :'vrk'), 'item que vira cartão herda a visibilidade do cartão de origem');
+select pg_temp.como(:'gestor');
+select pg_temp.ok(not exists (select 1 from fluxo.tarefas where id in (:'vr', :'vrk')) and not exists (select 1 from fluxo.checklist_itens where id = :'vri'),
+  'restrito: nem o cartão nem o checklist aparecem para quem não está nele');
+select pg_temp.falha(format($$select fluxo.pausar(%L, 'x')$$, :'vr'), 'quem não vê o cartão não o pausa');
+-- teto do objeto: quem não vê o terreno não vê os cartões dele
+reset role;
+create function pg_temp.nao_ve(uuid) returns boolean language sql as $$ select false $$;
+update fluxo.objeto_tipos set funcao = 'pg_temp.nao_ve' where tipo = 'terreno';
+select pg_temp.como(:'basico');
+select pg_temp.ok(not exists (select 1 from fluxo.tarefas where id = :'vp'), 'teto: sem ver o terreno, nem o cartão liberado aparece');
+select pg_temp.como(:'diretor');
+select pg_temp.ok(exists (select 1 from fluxo.tarefas where id = :'vp'), 'o administrador do sistema continua vendo');
+reset role;
+update fluxo.objeto_tipos set funcao = 'app.ve_terreno' where tipo = 'terreno';
 \echo 'TODOS OS TESTES PASSARAM'

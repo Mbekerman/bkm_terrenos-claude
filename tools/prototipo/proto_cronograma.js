@@ -71,7 +71,7 @@ const crBase=(t,k)=>{const b=crLbAprov(t);return b&&b.itens[k.id]};
 function crCartaoDatas(t,k,dis){const b=crBase(t,k),dv=b&&k.prazo?crDias(b.pz,k.prazo):null;
   return `<input id="tkc-dur" type="number" min="1" class="tkm-pill tkm-dur" value="${k.dur||''}" data-tkc="dur" ${dis} aria-label="Duração em dias" title="Duração (${crUteis()?'dias úteis':'dias corridos'})"><span class="faint">${crUteis()?'d úteis':'dias'}</span>
     ${b?`<span class="tkm-lb ${dv>0?'atras':''}" title="Linha de base ${crLbAprov(t).n}">Base: ${fd(b.ini)} – ${fd(b.pz)}${dv?` (${dv>0?'+':''}${dv} d)`:''}</span>`:''}`}
-function crCartaoPreds(t,k,ro){const ps=crPreds(k),outros=t.tarefas.filter(x=>x.id!==k.id&&!x.arq),sucs=t.tarefas.filter(x=>crPreds(x).some(v=>v.id===k.id));
+function crCartaoPreds(t,k,ro){const ps=crPreds(k),outros=vzTarefas(t).filter(x=>x.id!==k.id&&!x.arq),sucs=t.tarefas.filter(x=>crPreds(x).some(v=>v.id===k.id));
   if(ro&&!ps.length&&!sucs.length)return '';
   const nome=id=>{const p=t.tarefas.find(x=>x.id===id);return p?`${p.codigo} · ${esc(p.titulo)}`:'—'};
   return `<div class="tkm-bloco">${tkSecH('rota','Predecessoras',ro||!outros.length?'':`<button class="tkm-btn" data-a="cr-pred-novo">Adicionar</button>`)}<div class="tkm-in">
@@ -122,7 +122,7 @@ function crBaseBarra(t){const a=crLbAprov(t),p=crLbPend(t),eu=me(),ed=tkEd(),pod
     ${crLbs(t).length?`<button class="btn sm text" data-a="cr-lb-hist" data-id="${t.id}">Histórico (${crLbs(t).length})</button>`:''}</span></div>`}
 /* a linha do tempo abre perto de hoje */
 const crRolar=()=>setTimeout(()=>document.querySelectorAll('.cr-tl[data-hoje]:not([data-rolou])').forEach(el=>{el.scrollLeft=Number(el.dataset.hoje);el.dataset.rolou=1}),0);
-function crFichaHtml(t){crRolar();const its=(t.tarefas||[]).filter(k=>!k.arq).map(k=>({k,t})).sort(crOrdem);return crBaseBarra(t)+crGantt([{itens:its}])}
+function crFichaHtml(t){crRolar();const its=vzTarefas(t).filter(k=>!k.arq).map(k=>({k,t})).sort(crOrdem);return crBaseBarra(t)+crGantt([{itens:its}])}
 function crPaginaHtml(lista){crRolar();const por={};lista.forEach(x=>{(por[x.t.id]=por[x.t.id]||[]).push(x)});
   return crGantt(Object.values(por).map(its=>({titulo:`${its[0].t.codigo} · ${esc(its[0].t.nome)}`,itens:its.sort(crOrdem)})))}
 
@@ -148,7 +148,7 @@ function crPrep(){if(!S.modelos){S.modelos=[crModeloPadrao()]}S.terrenos.forEach
 /* aplica o modelo no quadro do terreno, a partir da data */
 function crAplicar(t,m,data){const mapa={},resp=u=>u===RESP_OBJ?t.resp||null:u||null;
   m.tarefas.forEach(x=>{const l=tkL(t).find(y=>y.nome===x.lista&&!y.oculta)||tkPrim(t,'aberta');
-    const k=tkCriar(t,{titulo:x.titulo,resp:resp(x.resp),prio:x.prio,lista:l.id});
+    const k=tkCriar(t,{titulo:x.titulo,resp:resp(x.resp),prio:x.prio,lista:l.id,vis:x.vis||'publico'});
     if(x.iniD!=null){k.inicio=k.iniMin=crSomar(data,x.iniD);k.dur=x.dur||1;k.prazo=crSomar(k.inicio,k.dur-1)}
     (x.pessoas||[]).forEach(p=>{const u=resp(p.user);if(u&&!(k[p.papel]||[]).includes(u))k[p.papel]=[...(k[p.papel]||[]),u]});
     k.apModo=x.apModo||'paralelo';k.etq=(x.etq||[]).filter(id=>S.etiquetas.some(e=>e.id===id));k.checklists=(x.cks||[]).map(c=>({id:uid(),nome:c.nome,esconder:false,itens:c.itens.map(s=>({id:uid(),texto:s,resp:null,prazo:null,feito:null}))}));
@@ -156,11 +156,11 @@ function crAplicar(t,m,data){const mapa={},resp=u=>u===RESP_OBJ?t.resp||null:u||
   m.tarefas.forEach(x=>{mapa[x.id].preds=(x.preds||[]).filter(v=>mapa[v.id]).map(v=>({id:mapa[v.id].id,tipo:v.tipo,def:v.def||0}))});
   crCascata(t);log(t,`Modelo "${m.nome}" aplicado: ${m.tarefas.length} tarefas`);return m.tarefas.length}
 function crAplicarPadrao(t){const m=crModelos().find(x=>x.padrao&&x.ativo!==false&&!x.dono);if(m&&m.tarefas.length)crAplicar(t,m,HOJE)}
-function crSalvarQuadro(t,nome,daEmpresa){const ks=t.tarefas.filter(k=>!k.arq&&!k.feita),base=ks.map(k=>k.inicio).filter(Boolean).sort()[0],mapa={};
+function crSalvarQuadro(t,nome,daEmpresa){const ks=vzTarefas(t).filter(k=>!k.arq&&!k.feita),base=ks.map(k=>k.inicio).filter(Boolean).sort()[0],mapa={};
   const m={id:uid(),nome,dono:daEmpresa?null:me(),padrao:false,ativo:true,tarefas:[]};
   ks.forEach(k=>{const x={id:uid(),titulo:k.titulo,lista:tkLista(t,k).nome,prio:k.prio,iniD:k.inicio&&base?crDias(base,k.inicio):null,dur:k.dur||null,
     resp:k.resp&&k.resp===t.resp?RESP_OBJ:k.resp,pessoas:PAPEIS_TK.flatMap(([p])=>(k[p]||[]).map(u=>({papel:p,user:u===t.resp?RESP_OBJ:u}))),etq:[...(k.etq||[])],
-    cks:(k.checklists||[]).map(c=>({nome:c.nome,itens:c.itens.map(i=>i.texto)})),apModo:k.apModo||'paralelo',preds:[]};mapa[k.id]=x;m.tarefas.push(x)});
+    cks:(k.checklists||[]).map(c=>({nome:c.nome,itens:c.itens.map(i=>i.texto)})),apModo:k.apModo||'paralelo',vis:vzVis(k),preds:[]};mapa[k.id]=x;m.tarefas.push(x)});
   ks.forEach(k=>{mapa[k.id].preds=crPreds(k).filter(v=>mapa[v.id]).map(v=>({id:mapa[v.id].id,tipo:v.tipo,def:v.def||0}))});
   crModelos().push(m);return m}
 const crPessoaOpts=(v,vazio)=>`<option value="">${vazio}</option><option value="${RESP_OBJ}" ${v===RESP_OBJ?'selected':''}>Responsável do terreno</option>${USERS.map(u=>`<option ${u===v?'selected':''}>${esc(u)}</option>`).join('')}`;
@@ -183,6 +183,7 @@ function crModEdHtml(fechar){const m=crModelos().find(x=>x.id===UI.crModEd);if(!
       <label>Começa (dias)<input type="number" min="0" value="${x.iniD??''}" data-crm="iniD" ${dis} placeholder="—"></label>
       <label>Duração<input type="number" min="1" value="${x.dur??''}" data-crm="dur" ${dis} placeholder="—"></label>
       <label>Responsável<select data-crm="resp" ${dis}>${crPessoaOpts(x.resp,'Sem responsável')}</select></label>
+      <label>Visibilidade<select data-crm="vis" ${dis}>${Object.entries(VZ_N).map(([v,n])=>`<option value="${v}" ${(x.vis||'publico')===v?'selected':''}>${n}</option>`).join('')}</select></label>
       <label>Aprovador<select data-crm="aprov" ${dis}>${crPessoaOpts((x.pessoas||[]).find(p=>p.papel==='aprov')?.user,'Nenhum')}</select></label>
       <label>Depois de<select data-crm="pred" ${dis}><option value="">Nenhuma</option>${m.tarefas.filter(y=>y.id!==x.id).map(y=>`<option value="${y.id}" ${(x.preds||[])[0]?.id===y.id?'selected':''}>${esc(y.titulo)}</option>`).join('')}</select></label>
       <label>Vínculo<select data-crm="tipo" ${dis||((x.preds||[]).length?'':'disabled')}>${Object.keys(CR_TIPOS).map(k=>`<option ${(x.preds||[])[0]?.tipo===k?'selected':''}>${k}</option>`).join('')}</select></label>
@@ -236,7 +237,7 @@ document.addEventListener('change',e=>{const el=e.target;
   if(el.dataset?.crm){e.stopImmediatePropagation();const m=crModelos().find(x=>x.id===UI.crModEd);if(!crEditaModelo(m))return;const c=el.dataset.crm,v=el.value;
     if(c==='nome'){m.nome=v.trim()||m.nome}else{const x=m.tarefas.find(y=>y.id===el.closest('[data-mt]').dataset.mt);
       if(c==='titulo')x.titulo=v.trim()||x.titulo;else if(c==='lista')x.lista=v;else if(c==='iniD')x.iniD=v===''?null:Math.max(0,parseInt(v,10)||0);else if(c==='dur')x.dur=v===''?null:Math.max(1,parseInt(v,10)||1);
-      else if(c==='resp')x.resp=v||null;else if(c==='aprov'){x.pessoas=(x.pessoas||[]).filter(p=>p.papel!=='aprov');if(v)x.pessoas.push({papel:'aprov',user:v})}
+      else if(c==='resp')x.resp=v||null;else if(c==='vis')x.vis=v;else if(c==='aprov'){x.pessoas=(x.pessoas||[]).filter(p=>p.papel!=='aprov');if(v)x.pessoas.push({papel:'aprov',user:v})}
       else if(c==='pred'){const resto=(x.preds||[]).slice(1);x.preds=v?[{id:v,tipo:(x.preds||[])[0]?.tipo||'TI',def:0},...resto.filter(r=>r.id!==v)]:resto;
         const ciclo=(ini,alvo,n=0)=>n<50&&m.tarefas.find(y=>y.id===ini)?.preds?.some(p=>p.id===alvo||ciclo(p.id,alvo,n+1));if(v&&ciclo(v,x.id)){x.preds=resto;toast('Esse vínculo fecharia um círculo.',true)}}
       else if(c==='tipo'&&x.preds?.[0])x.preds[0].tipo=v}

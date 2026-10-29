@@ -99,6 +99,7 @@ create table fluxo.tarefas (
   prioridade     text not null default 'media' check (prioridade in ('baixa','media','alta')),
   capa           text check (capa is null or capa in ('cinza','azul','verde','amarelo','laranja','vermelho','roxo','rosa')),
   aprovacao_modo text not null default 'paralelo' check (aprovacao_modo in ('paralelo','sequencia')),  -- bloco 3
+  visibilidade   text not null default 'publico' check (visibilidade in ('publico','individual','restrito')),  -- bloco 3; o front sempre pergunta
   processo_id    uuid,
   etapa          text,
   subetapa       text,
@@ -362,14 +363,18 @@ declare i fluxo.checklist_itens; k fluxo.tarefas; v uuid;
 begin
   select * into i from fluxo.checklist_itens where id = p_item for update;
   if not found then raise exception 'Item não encontrado' using errcode = 'P0002'; end if;
-  perform app.exigir_editor(i.empresa_id);
+  perform fluxo.exigir_edicao_tarefa((select c.tarefa_id from fluxo.checklists c where c.id = i.checklist_id));
   if i.virou_tarefa_id is not null then return i.virou_tarefa_id; end if;
   select t.* into k from fluxo.tarefas t join fluxo.checklists c on c.tarefa_id = t.id where c.id = i.checklist_id;
-  insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, descricao, responsavel_id, prazo, processo_id, etapa, subetapa)
+  insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, descricao, prazo, processo_id, etapa, subetapa, visibilidade)
   values (k.empresa_id, k.quadro_id,
           (select id from fluxo.listas where quadro_id = k.quadro_id and tipo = 'aberta' and not oculta order by posicao limit 1),
-          i.texto, 'Veio do checklist de ' || k.codigo || ' · ' || k.titulo, i.responsavel_id, i.prazo, k.processo_id, k.etapa, k.subetapa)
+          i.texto, 'Veio do checklist de ' || k.codigo || ' · ' || k.titulo, i.prazo, k.processo_id, k.etapa, k.subetapa, k.visibilidade)
   returning id into v;
+  -- herda a visibilidade do cartão de origem (bloco 3), antes de ganhar o responsável
+  insert into fluxo.tarefa_acessos (empresa_id, tarefa_id, user_id, grupo_id, papel, excluido)
+  select empresa_id, v, user_id, grupo_id, papel, excluido from fluxo.tarefa_acessos where tarefa_id = k.id;
+  if i.responsavel_id is not null then update fluxo.tarefas set responsavel_id = i.responsavel_id where id = v; end if;
   insert into fluxo.anexos (empresa_id, tarefa_id, tipo, nome, tarefa_ref_id) values (k.empresa_id, v, 'tarefa', k.codigo || ' · ' || k.titulo, k.id);
   update fluxo.checklist_itens set virou_tarefa_id = v, concluido_em = coalesce(concluido_em, now()) where id = p_item;
   return v;
@@ -836,6 +841,7 @@ create table fluxo.modelo_tarefas (
   etiquetas           uuid[] not null default '{}',
   checklists          jsonb not null default '[]',      -- [{nome, itens: [texto]}]
   aprovacao_modo      text not null default 'paralelo' check (aprovacao_modo in ('paralelo','sequencia')),
+  visibilidade        text not null default 'publico' check (visibilidade in ('publico','individual','restrito')),  -- restrito: só os envolvidos
   check (not (responsavel_objeto and responsavel_id is not null)),
   check (jsonb_typeof(pessoas) = 'array' and jsonb_typeof(checklists) = 'array')
 );
@@ -890,8 +896,8 @@ begin
       select id into v_lista from fluxo.listas where quadro_id = p_quadro and tipo = 'aberta' and not oculta order by posicao limit 1;
     end if;
     v_ini := case when t.inicio_dias is not null then fluxo.somar_dias(v_emp, p_data, t.inicio_dias) end;
-    insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, descricao, prioridade, aprovacao_modo, inicio, prazo, responsavel_id, posicao)
-    values (v_emp, p_quadro, v_lista, t.titulo, t.descricao, t.prioridade, t.aprovacao_modo, v_ini,
+    insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, descricao, prioridade, aprovacao_modo, visibilidade, inicio, prazo, responsavel_id, posicao)
+    values (v_emp, p_quadro, v_lista, t.titulo, t.descricao, t.prioridade, t.aprovacao_modo, t.visibilidade, v_ini,
             case when v_ini is not null then fluxo.somar_dias(v_emp, v_ini, coalesce(t.duracao, 1) - 1) end,
             case when t.responsavel_objeto then p_resp_objeto else t.responsavel_id end,
             extract(epoch from clock_timestamp()) + t.ordem)
@@ -956,11 +962,14 @@ begin
   if p_da_empresa then perform app.exigir_administrador(q.empresa_id); end if;
   insert into fluxo.modelos_quadro (empresa_id, dono_id, objeto_tipo, nome)
   values (q.empresa_id, case when p_da_empresa then null else auth.uid() end, q.objeto_tipo, trim(p_nome)) returning id into v;
-  select min(inicio) into v_base from fluxo.tarefas where quadro_id = p_quadro and arquivada_em is null and concluida_em is null;
+  select min(inicio) into v_base from fluxo.tarefas where quadro_id = p_quadro and arquivada_em is null and concluida_em is null
+    and fluxo.papel_tarefa(id) is not null;
   for k in select t.*, l.nome as lista_nome from fluxo.tarefas t join fluxo.listas l on l.id = t.lista_id
-           where t.quadro_id = p_quadro and t.arquivada_em is null and t.concluida_em is null order by t.inicio nulls last, t.posicao loop
+           where t.quadro_id = p_quadro and t.arquivada_em is null and t.concluida_em is null
+             and fluxo.papel_tarefa(t.id) is not null   -- só o que quem salva enxerga (bloco 3)
+           order by t.inicio nulls last, t.posicao loop
     insert into fluxo.modelo_tarefas (empresa_id, modelo_id, ordem, titulo, descricao, lista_nome, prioridade, inicio_dias, duracao,
-                                      responsavel_id, responsavel_objeto, pessoas, etiquetas, checklists, aprovacao_modo)
+                                      responsavel_id, responsavel_objeto, pessoas, etiquetas, checklists, aprovacao_modo, visibilidade)
     values (q.empresa_id, v, (select count(*) from fluxo.modelo_tarefas where modelo_id = v), k.titulo, k.descricao, k.lista_nome, k.prioridade,
             case when k.inicio is not null then k.inicio - v_base end, k.duracao,
             case when p_resp_objeto is not null and k.responsavel_id = p_resp_objeto then null else k.responsavel_id end,
@@ -972,7 +981,7 @@ begin
             coalesce((select array_agg(etiqueta_id) from fluxo.tarefa_etiquetas where tarefa_id = k.id), '{}'),
             coalesce((select jsonb_agg(jsonb_build_object('nome', c.nome, 'itens',
                         coalesce((select jsonb_agg(i.texto order by i.posicao) from fluxo.checklist_itens i where i.checklist_id = c.id), '[]')) order by c.posicao)
-                      from fluxo.checklists c where c.tarefa_id = k.id), '[]'), k.aprovacao_modo)
+                      from fluxo.checklists c where c.tarefa_id = k.id), '[]'), k.aprovacao_modo, k.visibilidade)
     returning id into v_mt;
     mapa := mapa || jsonb_build_object(k.id::text, v_mt);
   end loop;
@@ -1107,7 +1116,7 @@ declare k fluxo.tarefas; v uuid;
 begin
   select * into k from fluxo.tarefas where id = p_tarefa for update;
   if k.id is null then raise exception 'Tarefa não encontrada' using errcode = 'P0002'; end if;
-  perform app.exigir_editor(k.empresa_id);
+  perform fluxo.exigir_edicao_tarefa(k.id);
   if k.arquivada_em is not null or k.concluida_em is not null then raise exception 'A tarefa já está concluída ou arquivada' using errcode = '23514'; end if;
   if not exists (select 1 from fluxo.tarefa_pessoas where tarefa_id = p_tarefa and papel = 'aprovador') then
     raise exception 'A tarefa não tem aprovador' using errcode = '23514';
@@ -1161,7 +1170,7 @@ declare a fluxo.aprovacoes;
 begin
   select * into a from fluxo.aprovacoes where id = p_aprovacao for update;
   if a.id is null then raise exception 'Pedido não encontrado' using errcode = 'P0002'; end if;
-  perform app.exigir_editor(a.empresa_id);
+  perform fluxo.exigir_edicao_tarefa(a.tarefa_id);
   if a.situacao <> 'pendente' then raise exception 'Este pedido já foi decidido' using errcode = '23514'; end if;
   update fluxo.aprovacoes set situacao = 'cancelada', decidida_em = clock_timestamp() where id = p_aprovacao;
 end $$;
@@ -1256,7 +1265,7 @@ declare k fluxo.tarefas; v uuid;
 begin
   select * into k from fluxo.tarefas where id = p_tarefa for update;
   if k.id is null then raise exception 'Tarefa não encontrada' using errcode = 'P0002'; end if;
-  perform app.exigir_editor(k.empresa_id);
+  perform fluxo.exigir_edicao_tarefa(k.id);
   if k.concluida_em is not null or k.arquivada_em is not null then raise exception 'A tarefa já está concluída ou arquivada' using errcode = '23514'; end if;
   if exists (select 1 from fluxo.pausas where tarefa_id = p_tarefa and situacao = 'ativa') then raise exception 'A tarefa já está pausada' using errcode = '23514'; end if;
   if coalesce(trim(p_motivo), '') = '' then raise exception 'Diga por que a tarefa vai pausar' using errcode = '23514'; end if;
@@ -1296,7 +1305,7 @@ declare z fluxo.pausas; k fluxo.tarefas; v_lista uuid; v_dias int;
 begin
   select * into k from fluxo.tarefas where id = p_tarefa for update;
   if k.id is null then raise exception 'Tarefa não encontrada' using errcode = 'P0002'; end if;
-  perform app.exigir_editor(k.empresa_id);
+  perform fluxo.exigir_edicao_tarefa(k.id);
   select * into z from fluxo.pausas where tarefa_id = p_tarefa and situacao = 'ativa' for update;
   if z.id is null then raise exception 'A tarefa não está pausada' using errcode = '23514'; end if;
   v_dias := case when fluxo.usa_dias_uteis(k.empresa_id)
@@ -1345,3 +1354,299 @@ revoke all on function fluxo._iniciar_pausa(uuid), fluxo.pausar(uuid, text), flu
                        fluxo.salvar_regra_pausa(uuid, text) from public;
 grant execute on function fluxo.pausar(uuid, text), fluxo.decidir_pausa(uuid, boolean, text), fluxo.retomar(uuid),
                           fluxo.salvar_regra_pausa(uuid, text), fluxo.aprova_pausa(uuid, uuid) to authenticated;
+
+-- =====================================================================
+-- Bloco 3: visibilidade por cartão (decisões do Moisés, 29/out/2026)
+--
+-- Ao criar, o cartão escolhe Público, Individual ou Restrito (o front
+-- sempre pergunta; o atalho do pé da lista vem marcado com a última escolha
+-- da pessoa). Acima de tudo vale o teto do objeto: quem não vê o terreno
+-- não vê os cartões dele, nem liberado. Como fluxo não conhece terreno, o
+-- app que usa o quadro registra em fluxo.objeto_tipos a função que diz se
+-- a pessoa vê o objeto (no BKM Terrenos, app.ve_terreno); quadro sem objeto
+-- ou de tipo não registrado tem a empresa como teto.
+--   Público: todos que veem o objeto, cada um com o papel do sistema
+--     (diretor, gestor e analista editam; leitura e básico leem), que um
+--     acesso dado no cartão pode subir.
+--   Individual: só quem criou. Só o administrador do sistema vê os
+--     individuais de todos; o diretor não. Pôr outra pessoa no cartão
+--     (responsável, solicitante, executor, aprovador, acompanha) o torna
+--     restrito, com essa pessoa.
+--   Restrito: quem criou, os envolvidos, as pessoas e os grupos liberados
+--     (fluxo.tarefa_acessos) e o diretor. Exceção: tirar uma pessoa de um
+--     grupo liberado. Quem tem acesso dado no cartão fica com aquele papel.
+-- Papel no cartão: leitor, comentarista, editor ou administrador do cartão,
+-- e pode passar o do sistema (alguém de leitura vira editor ali). Quem
+-- criou é administrador do cartão. Quem dá acesso e muda a visibilidade: o
+-- administrador do cartão, o administrador do sistema ou o diretor.
+-- =====================================================================
+
+-- Teto por tipo de objeto: função (uuid) -> boolean, chamada para quem está lendo
+create table fluxo.objeto_tipos (
+  tipo    text primary key check (tipo ~ '^[a-z_]+$'),
+  funcao  regproc not null
+);
+grant select on fluxo.objeto_tipos to authenticated;
+
+create or replace function fluxo.ve_objeto(p_tipo text, p_id uuid)
+returns boolean language plpgsql stable security definer set search_path = '' as $$
+declare f regproc; v boolean;
+begin
+  if p_id is null then return true; end if;
+  select funcao into f from fluxo.objeto_tipos where tipo = p_tipo;
+  if f is null then return true; end if;
+  execute format('select %s($1)', f) into v using p_id;
+  return coalesce(v, false);
+end $$;
+
+-- Grupos de pessoas da empresa (Jurídico, Diretoria...), do administrador
+create table fluxo.grupos (
+  id          uuid primary key default gen_random_uuid(),
+  empresa_id  uuid not null references app.empresas(id),
+  nome        text not null check (length(trim(nome)) > 0),
+  ativo       boolean not null default true,
+  unique (empresa_id, nome)
+);
+create table fluxo.grupo_membros (
+  empresa_id  uuid not null references app.empresas(id),
+  grupo_id    uuid not null references fluxo.grupos(id) on delete cascade,
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  primary key (grupo_id, user_id)
+);
+
+-- Acessos dados no cartão: a uma pessoa ou a um grupo, com o papel; a
+-- exceção (excluido) tira uma pessoa do que os grupos liberam.
+create table fluxo.tarefa_acessos (
+  id          uuid primary key default gen_random_uuid(),
+  empresa_id  uuid not null references app.empresas(id),
+  tarefa_id   uuid not null references fluxo.tarefas(id) on delete cascade,
+  user_id     uuid references auth.users(id) on delete cascade,
+  grupo_id    uuid references fluxo.grupos(id) on delete cascade,
+  papel       text not null default 'editor' check (papel in ('leitor','comentarista','editor','administrador')),
+  excluido    boolean not null default false,
+  incluido_por uuid default auth.uid(),
+  incluido_em timestamptz not null default now(),
+  check ((user_id is null) <> (grupo_id is null)),
+  check (not excluido or user_id is not null)
+);
+create unique index on fluxo.tarefa_acessos (tarefa_id, user_id) where user_id is not null;
+create unique index on fluxo.tarefa_acessos (tarefa_id, grupo_id) where grupo_id is not null;
+
+create or replace function fluxo.nivel_cartao(p text)
+returns int language sql immutable set search_path = '' as $$
+  select case p when 'leitor' then 1 when 'comentarista' then 2 when 'editor' then 3 when 'administrador' then 4 else 0 end $$;
+
+-- O papel de quem está lendo no cartão (nulo = não vê). Recebe as colunas
+-- da linha, para servir à RLS também no insert (a linha nova ainda não
+-- aparece numa consulta por id).
+create or replace function fluxo.papel_cartao(p_id uuid, p_empresa uuid, p_quadro uuid, p_vis text, p_criado_por uuid,
+                                              p_solicitante uuid, p_responsavel uuid)
+returns text language plpgsql stable security definer set search_path = '' as $$
+declare u uuid := auth.uid(); v_sis text; v_card text; v_env boolean; q fluxo.quadros;
+begin
+  if u is null or p_empresa not in (select app.minhas_empresas()) then return null; end if;
+  if app.eh_administrador(p_empresa) then return 'administrador'; end if;
+  select * into q from fluxo.quadros where id = p_quadro;
+  if not fluxo.ve_objeto(q.objeto_tipo, q.objeto_id) then return null; end if;
+  if p_criado_por = u then return 'administrador'; end if;
+  if p_vis = 'individual' then return null; end if;
+  v_sis := case when app.papel(p_empresa) in ('diretor','gestor','analista') then 'editor' else 'leitor' end;
+  -- acesso dado no cartão: o da pessoa ou o maior dos grupos, salvo exceção
+  select a.papel into v_card from fluxo.tarefa_acessos a
+  where a.tarefa_id = p_id and not a.excluido
+    and (a.user_id = u or (a.grupo_id is not null
+         and exists (select 1 from fluxo.grupo_membros m join fluxo.grupos g on g.id = m.grupo_id
+                     where m.grupo_id = a.grupo_id and m.user_id = u and g.ativo)
+         and not exists (select 1 from fluxo.tarefa_acessos x where x.tarefa_id = p_id and x.user_id = u and x.excluido)))
+  order by (a.user_id is not null) desc, fluxo.nivel_cartao(a.papel) desc limit 1;
+  if p_vis = 'publico' then
+    return case when fluxo.nivel_cartao(v_card) > fluxo.nivel_cartao(v_sis) then v_card else v_sis end;
+  end if;
+  -- restrito
+  if v_card is not null then return v_card; end if;
+  v_env := u in (p_solicitante, p_responsavel)
+           or exists (select 1 from fluxo.tarefa_pessoas where tarefa_id = p_id and user_id = u);
+  if v_env then return 'editor'; end if;
+  if app.papel(p_empresa) = 'diretor' then return 'editor'; end if;
+  return null;
+end $$;
+
+create or replace function fluxo.papel_tarefa(p_tarefa uuid)
+returns text language sql stable security definer set search_path = '' as $$
+  select fluxo.papel_cartao(id, empresa_id, quadro_id, visibilidade, criado_por, solicitante_id, responsavel_id)
+  from fluxo.tarefas where id = p_tarefa $$;
+
+create or replace function fluxo.edita_tarefa(p_tarefa uuid)
+returns boolean language sql stable set search_path = '' as $$
+  select coalesce(fluxo.nivel_cartao(fluxo.papel_tarefa(p_tarefa)) >= 3, false) $$;
+
+create or replace function fluxo.comenta_tarefa(p_tarefa uuid)
+returns boolean language sql stable set search_path = '' as $$
+  select coalesce(fluxo.nivel_cartao(fluxo.papel_tarefa(p_tarefa)) >= 2, false) $$;
+
+-- Dá acesso e muda a visibilidade: administrador do cartão (quem criou ou
+-- quem recebeu o papel; o do sistema também cai aqui) ou diretor que vê o cartão.
+create or replace function fluxo.gerencia_tarefa(p_tarefa uuid)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select coalesce(fluxo.papel_tarefa(p_tarefa) = 'administrador'
+         or (fluxo.papel_tarefa(p_tarefa) is not null and app.papel(k.empresa_id) = 'diretor'), false)
+  from fluxo.tarefas k where k.id = p_tarefa $$;
+
+create or replace function fluxo.exigir_edicao_tarefa(p_tarefa uuid)
+returns void language plpgsql stable security definer set search_path = '' as $$
+begin
+  if auth.uid() is null or not fluxo.edita_tarefa(p_tarefa) then
+    raise exception 'Sem permissão para editar esta tarefa' using errcode = '42501';
+  end if;
+end $$;
+
+-- Visibilidade só muda por quem gerencia; pôr outra pessoa num individual o torna restrito.
+create or replace function fluxo.tg_visibilidade()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if tg_op = 'UPDATE' and new.visibilidade is distinct from old.visibilidade
+     and auth.uid() is not null and coalesce(current_setting('fluxo.restringindo', true), '') <> '1'
+     and not fluxo.gerencia_tarefa(new.id) then
+    raise exception 'Só o administrador do cartão, o administrador do sistema ou o diretor mudam a visibilidade' using errcode = '42501';
+  end if;
+  if new.visibilidade = 'individual'
+     and (new.responsavel_id is distinct from new.criado_por and new.responsavel_id is not null
+          or new.solicitante_id is distinct from new.criado_por and new.solicitante_id is not null) then
+    new.visibilidade := 'restrito';
+  end if;
+  return new;
+end $$;
+create trigger t_visibilidade before insert or update on fluxo.tarefas for each row execute function fluxo.tg_visibilidade();
+
+create or replace function fluxo.tg_pessoa_restringe()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  perform set_config('fluxo.restringindo', '1', true);
+  update fluxo.tarefas set visibilidade = 'restrito'
+  where id = new.tarefa_id and visibilidade = 'individual' and criado_por is distinct from new.user_id;
+  perform set_config('fluxo.restringindo', '', true);
+  return null;
+end $$;
+create trigger t_restringe after insert on fluxo.tarefa_pessoas for each row execute function fluxo.tg_pessoa_restringe();
+
+-- Leitura e escrita pelos papéis do cartão. A escrita de quem edita o
+-- cartão vale mesmo para quem é leitura no sistema (o papel do cartão passa).
+drop policy ver on fluxo.tarefas;
+drop policy alterar on fluxo.tarefas;
+create policy ver on fluxo.tarefas for select to authenticated
+  using (fluxo.papel_cartao(id, empresa_id, quadro_id, visibilidade, criado_por, solicitante_id, responsavel_id) is not null);
+create policy alterar on fluxo.tarefas for update to authenticated
+  using (fluxo.nivel_cartao(fluxo.papel_cartao(id, empresa_id, quadro_id, visibilidade, criado_por, solicitante_id, responsavel_id)) >= 3)
+  with check (fluxo.nivel_cartao(fluxo.papel_cartao(id, empresa_id, quadro_id, visibilidade, criado_por, solicitante_id, responsavel_id)) >= 3);
+
+do $$
+declare t text;
+begin
+  -- filhas com tarefa_id: ver quem vê o cartão
+  foreach t in array array['tarefa_pessoas','tarefa_etiquetas','checklists','comentarios','anexos','aprovacoes','pausas','linha_base_itens'] loop
+    execute format('drop policy ver on fluxo.%I', t);
+    execute format('create policy ver on fluxo.%I for select to authenticated using (fluxo.papel_tarefa(tarefa_id) is not null)', t);
+  end loop;
+  -- e escrever quem edita o cartão
+  foreach t in array array['tarefa_pessoas','tarefa_etiquetas','checklists','anexos'] loop
+    execute format('drop policy inserir on fluxo.%I', t);
+    execute format('drop policy alterar on fluxo.%I', t);
+    execute format('create policy inserir on fluxo.%I for insert to authenticated with check (fluxo.edita_tarefa(tarefa_id))', t);
+    execute format('create policy alterar on fluxo.%I for update to authenticated using (fluxo.edita_tarefa(tarefa_id)) with check (fluxo.edita_tarefa(tarefa_id))', t);
+  end loop;
+  foreach t in array array['tarefa_pessoas','tarefa_etiquetas','checklists'] loop
+    execute format('drop policy remover on fluxo.%I', t);
+    execute format('create policy remover on fluxo.%I for delete to authenticated using (fluxo.edita_tarefa(tarefa_id))', t);
+  end loop;
+end $$;
+
+create or replace function fluxo.tarefa_do_checklist(p_checklist uuid)
+returns uuid language sql stable security definer set search_path = '' as $$ select tarefa_id from fluxo.checklists where id = p_checklist $$;
+create or replace function fluxo.tarefa_do_comentario(p_comentario uuid)
+returns uuid language sql stable security definer set search_path = '' as $$ select tarefa_id from fluxo.comentarios where id = p_comentario $$;
+
+drop policy ver on fluxo.checklist_itens;
+drop policy inserir on fluxo.checklist_itens;
+drop policy alterar on fluxo.checklist_itens;
+drop policy remover on fluxo.checklist_itens;
+create policy ver on fluxo.checklist_itens for select to authenticated using (fluxo.papel_tarefa(fluxo.tarefa_do_checklist(checklist_id)) is not null);
+create policy inserir on fluxo.checklist_itens for insert to authenticated with check (fluxo.edita_tarefa(fluxo.tarefa_do_checklist(checklist_id)));
+create policy alterar on fluxo.checklist_itens for update to authenticated
+  using (fluxo.edita_tarefa(fluxo.tarefa_do_checklist(checklist_id))) with check (fluxo.edita_tarefa(fluxo.tarefa_do_checklist(checklist_id)));
+create policy remover on fluxo.checklist_itens for delete to authenticated using (fluxo.edita_tarefa(fluxo.tarefa_do_checklist(checklist_id)));
+
+-- Comentar e reagir: comentarista para cima; editar e apagar o próprio comentário continua só do autor.
+drop policy inserir on fluxo.comentarios;
+drop policy alterar on fluxo.comentarios;
+create policy inserir on fluxo.comentarios for insert to authenticated with check (autor_id = auth.uid() and fluxo.comenta_tarefa(tarefa_id));
+create policy alterar on fluxo.comentarios for update to authenticated
+  using (autor_id = auth.uid() and fluxo.comenta_tarefa(tarefa_id)) with check (autor_id = auth.uid());
+drop policy ver on fluxo.comentario_reacoes;
+drop policy inserir on fluxo.comentario_reacoes;
+create policy ver on fluxo.comentario_reacoes for select to authenticated using (fluxo.papel_tarefa(fluxo.tarefa_do_comentario(comentario_id)) is not null);
+create policy inserir on fluxo.comentario_reacoes for insert to authenticated
+  with check (user_id = auth.uid() and fluxo.comenta_tarefa(fluxo.tarefa_do_comentario(comentario_id)));
+
+drop policy ver on fluxo.aprovacao_votos;
+create policy ver on fluxo.aprovacao_votos for select to authenticated
+  using (fluxo.papel_tarefa((select a.tarefa_id from fluxo.aprovacoes a where a.id = aprovacao_id)) is not null);
+
+-- Vínculo: ver quando vê as duas pontas; criar e mudar quem edita a sucessora e vê a predecessora.
+drop policy ver on fluxo.vinculos;
+drop policy inserir on fluxo.vinculos;
+drop policy alterar on fluxo.vinculos;
+drop policy remover on fluxo.vinculos;
+create policy ver on fluxo.vinculos for select to authenticated
+  using (fluxo.papel_tarefa(predecessora_id) is not null and fluxo.papel_tarefa(sucessora_id) is not null);
+create policy inserir on fluxo.vinculos for insert to authenticated
+  with check (fluxo.edita_tarefa(sucessora_id) and fluxo.papel_tarefa(predecessora_id) is not null);
+create policy alterar on fluxo.vinculos for update to authenticated
+  using (fluxo.edita_tarefa(sucessora_id)) with check (fluxo.edita_tarefa(sucessora_id) and fluxo.papel_tarefa(predecessora_id) is not null);
+create policy remover on fluxo.vinculos for delete to authenticated using (fluxo.edita_tarefa(sucessora_id));
+
+-- Acessos do cartão: vê quem vê o cartão; mexe quem gerencia
+alter table fluxo.tarefa_acessos enable row level security;
+create policy ver on fluxo.tarefa_acessos for select to authenticated using (fluxo.papel_tarefa(tarefa_id) is not null);
+create policy mexer on fluxo.tarefa_acessos for all to authenticated
+  using (fluxo.gerencia_tarefa(tarefa_id)) with check (fluxo.gerencia_tarefa(tarefa_id));
+create trigger t_emp before insert or update on fluxo.tarefa_acessos for each row execute function fluxo.tg_mesma_empresa();
+create trigger t_aud after insert or update or delete on fluxo.tarefa_acessos for each row execute function app.tg_auditoria();
+
+-- Grupos: todos da empresa veem; só o administrador mexe
+alter table fluxo.grupos enable row level security;
+alter table fluxo.grupo_membros enable row level security;
+create policy ver on fluxo.grupos for select to authenticated using (empresa_id in (select app.minhas_empresas()));
+create policy mexer on fluxo.grupos for all to authenticated using (app.eh_administrador(empresa_id)) with check (app.eh_administrador(empresa_id));
+create policy ver on fluxo.grupo_membros for select to authenticated using (empresa_id in (select app.minhas_empresas()));
+create policy mexer on fluxo.grupo_membros for all to authenticated using (app.eh_administrador(empresa_id)) with check (app.eh_administrador(empresa_id));
+create trigger t_emp before insert or update on fluxo.grupo_membros for each row execute function fluxo.tg_mesma_empresa();
+create trigger t_aud after insert or update or delete on fluxo.grupos for each row execute function app.tg_auditoria();
+create trigger t_aud after insert or update or delete on fluxo.grupo_membros for each row execute function app.tg_auditoria();
+
+grant select, insert, update, delete on fluxo.tarefa_acessos, fluxo.grupos, fluxo.grupo_membros to authenticated;
+grant delete on fluxo.tarefa_acessos to authenticated;
+
+-- O histórico (app.auditoria) não mostra o que se passa num cartão que a pessoa não vê
+create or replace function fluxo.tarefa_do_log(p_tabela text, p_registro uuid, p_antes jsonb, p_depois jsonb)
+returns uuid language sql stable security definer set search_path = '' as $$
+  select k.id from fluxo.tarefas k
+  where k.id = case p_tabela
+                 when 'tarefas' then p_registro
+                 when 'checklist_itens' then fluxo.tarefa_do_checklist((coalesce(p_depois, p_antes)->>'checklist_id')::uuid)
+                 when 'comentario_reacoes' then fluxo.tarefa_do_comentario((coalesce(p_depois, p_antes)->>'comentario_id')::uuid)
+                 else (coalesce(p_depois, p_antes)->>'tarefa_id')::uuid end
+    and p_tabela in ('tarefas','tarefa_pessoas','tarefa_etiquetas','checklists','checklist_itens','comentarios','comentario_reacoes',
+                     'anexos','pausas','tarefa_acessos') $$;
+drop policy auditoria_gestor_ve on app.auditoria;
+create policy auditoria_gestor_ve on app.auditoria for select to authenticated
+  using (app.eh_gestor(empresa_id)
+         and (fluxo.tarefa_do_log(tabela, registro_id, antes, depois) is null
+              or fluxo.papel_tarefa(fluxo.tarefa_do_log(tabela, registro_id, antes, depois)) is not null));
+
+revoke all on function fluxo.ve_objeto(text, uuid), fluxo.papel_cartao(uuid, uuid, uuid, text, uuid, uuid, uuid), fluxo.papel_tarefa(uuid),
+                       fluxo.edita_tarefa(uuid), fluxo.comenta_tarefa(uuid), fluxo.gerencia_tarefa(uuid), fluxo.exigir_edicao_tarefa(uuid),
+                       fluxo.tarefa_do_checklist(uuid), fluxo.tarefa_do_comentario(uuid), fluxo.tarefa_do_log(text, uuid, jsonb, jsonb) from public;
+grant execute on function fluxo.ve_objeto(text, uuid), fluxo.papel_cartao(uuid, uuid, uuid, text, uuid, uuid, uuid), fluxo.papel_tarefa(uuid),
+                          fluxo.edita_tarefa(uuid), fluxo.comenta_tarefa(uuid), fluxo.gerencia_tarefa(uuid), fluxo.exigir_edicao_tarefa(uuid),
+                          fluxo.tarefa_do_checklist(uuid), fluxo.tarefa_do_comentario(uuid), fluxo.tarefa_do_log(text, uuid, jsonb, jsonb),
+                          fluxo.nivel_cartao(text) to authenticated;

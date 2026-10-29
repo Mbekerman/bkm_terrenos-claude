@@ -599,6 +599,15 @@ begin
 end $$;
 create trigger t_quadro after insert on app.terrenos for each row execute function app.tg_terreno_quadro();
 
+-- Teto dos cartões (fluxo, visibilidade por cartão): quem não vê o terreno não
+-- vê os cartões do quadro dele. Hoje vê quem é da empresa; os perfis de acesso
+-- à seção Terrenos e a cada terreno entram aqui quando existirem.
+create or replace function app.ve_terreno(p_terreno uuid)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select exists (select 1 from app.terrenos t where t.id = p_terreno and t.empresa_id in (select app.minhas_empresas())) $$;
+grant execute on function app.ve_terreno(uuid) to authenticated;
+insert into fluxo.objeto_tipos (tipo, funcao) values ('terreno', 'app.ve_terreno');
+
 -- Quadro do terreno de uma tarefa (nulo se a tarefa é de outro tipo de quadro).
 create or replace function app.terreno_da_tarefa(p_tarefa uuid)
 returns uuid language sql stable security definer set search_path = '' as $$
