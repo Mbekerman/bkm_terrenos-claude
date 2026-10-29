@@ -696,7 +696,52 @@ erDiagram
 - **Pessoas:** solicitante (quem criou, por padrão) e responsável principal ficam no cartão; executores, aprovadores e quem acompanha em `tarefa_pessoas`.
 - **Checklist:** vários por cartão, item com responsável e prazo; `fluxo.item_para_tarefa(item)` cria o cartão no mesmo quadro, ligado ao de origem por anexo, e marca o item como feito.
 - **Escrita direta** de quem edita (diretor, gestor, analista), pela RLS por `empresa_id`; Leitura só vê. Todas as tabelas vão para `app.auditoria` (o vínculo sem id próprio registra a tarefa).
-- **Fica para os próximos blocos:** cronograma (predecessoras TI, II, TT e IT com offset, linha de base e replanejamentos), aprovação formal da tarefa, SLA com pausa aprovada, visibilidade por cartão (empresa, grupo, envolvidos, com exceções e papel por pessoa), campos personalizados, recorrência, automações e WhatsApp.
+### Cronograma (bloco 2) e modelos de tarefas
+
+Decisões do Moisés de 29/out/2026. Mesmo esquema `fluxo`, mesma migration.
+
+```mermaid
+erDiagram
+  tarefas ||--o{ vinculos : "predecessora"
+  tarefas ||--o{ vinculos : "sucessora"
+  quadros ||--o{ linhas_base : tem
+  linhas_base ||--o{ linha_base_itens : "retrato das datas"
+  modelos_quadro ||--o{ modelo_tarefas : tem
+  modelo_tarefas ||--o{ modelo_vinculos : liga
+  vinculos {
+    uuid predecessora_id FK
+    uuid sucessora_id FK
+    text tipo "TI | II | TT | IT"
+    int defasagem "dias; negativa adianta"
+  }
+  linhas_base {
+    uuid quadro_id FK
+    int numero "1, 2... das aprovadas"
+    text situacao "pendente | aprovada | recusada | substituida | cancelada"
+    text motivo
+    uuid pedida_por
+    uuid decidida_por
+  }
+  modelos_quadro {
+    uuid dono_id "nulo = da empresa"
+    text objeto_tipo
+    bool padrao "entra sozinho no quadro novo"
+  }
+  modelo_tarefas {
+    int inicio_dias "depois da data de aplicação"
+    int duracao
+    bool responsavel_objeto "o responsável do terreno"
+    jsonb pessoas
+    uuid_arr etiquetas
+    jsonb checklists
+  }
+```
+
+- **Datas como no Project ("o mais cedo possível"):** a tarefa ganha `duracao` (dias no calendário da empresa) e `inicio_min` (o início que a pessoa digitou, a restrição "não começar antes de"). `fluxo.tg_cronograma` põe a tarefa no maior entre `inicio_min` e o que os vínculos pedem (`fluxo.inicio_cedo`): TI começa no dia seguinte ao fim da predecessora, II no início dela, TT termina no fim dela e IT termina no início dela, sempre mais a defasagem; a duração se mantém. Mudar só o início move a tarefa inteira; mudar o prazo ou a `duracao` muda a duração. Mudou uma tarefa, as sucessoras se reposicionam em cascata (`fluxo.reprogramar_sucessoras`, com `fluxo.cascata = 1` para não tomar a data empurrada como digitada); tarefa concluída não se move. Vínculo em círculo é recusado. II e TT juntos com durações diferentes seguem o Project (a sucessora termina junto e começa depois); o front pergunta se estica a duração da sucessora (grava `duracao`) ou adia o início.
+- **Calendário:** dias corridos por padrão; o administrador passa a empresa para dias úteis (`fluxo.salvar_calendario`), que pulam sábado, domingo e `feriados` (nacionais de 2026 a 2030, com Carnaval e Corpus Christi; a empresa pode ter os seus). `fluxo.somar_dias` e `fluxo.duracao_dias` fazem a conta nos dois modos.
+- **Linha de base:** `fluxo.enviar_cronograma(quadro, motivo)` tira o retrato das tarefas não arquivadas com início e prazo; quem edita manda, e fica `pendente` até o gestor de quem mandou (ou alguém acima, um diretor ou o administrador) decidir (`fluxo.decidir_linha_base`, que também deixa quem pediu desistir). Quem já aprova tem a sua aprovada na hora. Depois da primeira, trocar pede motivo; a anterior vira `substituida` e fica guardada. As datas seguem livres depois da aprovação: `fluxo.v_cronograma` mostra a linha de base aprovada, o desvio de início e de prazo em dias e `atrasada_base`; quem mudou cada data está em `app.auditoria` (as empurradas pela cascata ficam com quem fez a mudança que as empurrou).
+- **Modelos de tarefas:** o modelo da empresa (`dono_id` nulo) só o administrador mexe e pode ser o padrão do tipo de quadro (`fluxo.definir_modelo_padrao`): entra sozinho no quadro novo (no terreno, pelo `t_quadro`, com o responsável do terreno onde o modelo pede). Cada pessoa cria os seus (só ela vê) e aplica à mão (`fluxo.aplicar_modelo(modelo, quadro, data)`). O modelo guarda lista, prioridade, prazos relativos (`inicio_dias`, `duracao`), responsável fixo ou o do objeto, aprovadores, executores e quem acompanha, etiquetas, checklists e as predecessoras (`modelo_vinculos`), que ao aplicar já empurram as datas. `fluxo.salvar_quadro_como_modelo` transforma os cartões abertos de um quadro em modelo, com os prazos relativos ao primeiro início.
+- **Fica para os próximos blocos:** aprovação formal da tarefa, SLA com pausa aprovada, visibilidade por cartão (empresa, grupo, envolvidos, com exceções e papel por pessoa), campos personalizados, recorrência, automações e WhatsApp.
 
 ## Setores censitários e renda familiar estimada
 

@@ -1699,4 +1699,155 @@ insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, mun
   values (:'emp', 'Quadro novo', :'diretor', 'prospeccao', :'sp', -23.70, -46.70, pg_temp.quadra(-46.70, -23.70)) returning id as tq \gset
 select pg_temp.ok(pg_temp.lista(:'tq', 'Entrada') is not null and pg_temp.lista(:'tm', 'Backlog') is not null, 'quadro novo usa as listas da empresa; os existentes mantêm as suas');
 select pg_temp.ok((select count(*) from app.auditoria where tabela = 'listas_modelo') >= 7, 'listas padrão vão para a auditoria');
+-- ---------------------------------------------------------------------
+\echo '# cronograma (fluxo, bloco 2)'
+select pg_temp.como(:'analista');
+-- datas de 2030 sem feriado; 05/08/2030 é segunda
+select pg_temp.tarefa(:'tm', 'Cr A', '2030-08-09') as ca \gset
+update fluxo.tarefas set inicio = '2030-08-05' where id = :'ca';
+select pg_temp.ok((select duracao = 5 and inicio_min = '2030-08-05' from fluxo.tarefas where id = :'ca'), 'duração sai do início e do prazo (dias corridos)');
+select pg_temp.tarefa(:'tm', 'Cr B', '2030-08-03') as cb \gset
+update fluxo.tarefas set inicio = '2030-08-01' where id = :'cb';
+insert into fluxo.vinculos (empresa_id, predecessora_id, sucessora_id) values (:'emp', :'ca', :'cb') returning id as vab \gset
+select pg_temp.ok((select inicio = '2030-08-10' and prazo = '2030-08-12' and duracao = 3 and inicio_min = '2030-08-01' from fluxo.tarefas where id = :'cb'),
+  'término-início: a sucessora começa no dia seguinte ao fim da predecessora, com a mesma duração');
+update fluxo.tarefas set prazo = '2030-08-12' where id = :'ca';
+select pg_temp.ok((select inicio = '2030-08-13' and prazo = '2030-08-15' from fluxo.tarefas where id = :'cb'), 'esticar a predecessora empurra a sucessora');
+select pg_temp.tarefa(:'tm', 'Cr C', '2030-08-01') as cc \gset
+update fluxo.tarefas set inicio = '2030-08-01' where id = :'cc';
+insert into fluxo.vinculos (empresa_id, predecessora_id, sucessora_id, defasagem) values (:'emp', :'cb', :'cc', 2);
+select pg_temp.ok((select inicio = '2030-08-18' and prazo = '2030-08-18' from fluxo.tarefas where id = :'cc'), 'defasagem de 2 dias depois do fim');
+update fluxo.tarefas set prazo = '2030-08-09' where id = :'ca';
+select pg_temp.ok((select inicio from fluxo.tarefas where id = :'cb') = '2030-08-10' and (select inicio from fluxo.tarefas where id = :'cc') = '2030-08-15',
+  'encurtar a predecessora puxa a cadeia de volta (o mais cedo possível)');
+select pg_temp.tarefa(:'tm', 'Cr D', '2030-08-01') as cd \gset
+update fluxo.tarefas set inicio = '2030-08-01' where id = :'cd';
+insert into fluxo.vinculos (empresa_id, predecessora_id, sucessora_id, tipo, defasagem) values (:'emp', :'ca', :'cd', 'II', 1);
+select pg_temp.ok((select inicio = '2030-08-06' from fluxo.tarefas where id = :'cd'), 'início-início com defasagem de 1 dia');
+select pg_temp.tarefa(:'tm', 'Cr E', '2030-08-02') as ce \gset
+update fluxo.tarefas set inicio = '2030-08-01' where id = :'ce';
+insert into fluxo.vinculos (empresa_id, predecessora_id, sucessora_id, tipo) values (:'emp', :'ca', :'ce', 'II'), (:'emp', :'ca', :'ce', 'TT');
+select pg_temp.ok((select inicio = '2030-08-08' and prazo = '2030-08-09' from fluxo.tarefas where id = :'ce'),
+  'II e TT com durações diferentes: como no Project, a sucessora termina junto e começa depois');
+update fluxo.tarefas set duracao = 5 where id = :'ce';
+select pg_temp.ok((select inicio = '2030-08-05' and prazo = '2030-08-09' and duracao = 5 from fluxo.tarefas where id = :'ce'), 'esticar a sucessora para a duração da predecessora (a opção do aviso): começam e terminam juntas');
+select pg_temp.tarefa(:'tm', 'Cr F', '2030-08-01') as cf \gset
+update fluxo.tarefas set inicio = '2030-08-01' where id = :'cf';
+insert into fluxo.vinculos (empresa_id, predecessora_id, sucessora_id, tipo) values (:'emp', :'ca', :'cf', 'IT');
+select pg_temp.ok((select prazo = '2030-08-05' from fluxo.tarefas where id = :'cf'), 'início-término: a sucessora termina quando a predecessora começa');
+select pg_temp.falha(format($$insert into fluxo.vinculos (empresa_id, predecessora_id, sucessora_id) values (%L, %L, %L)$$, :'emp', :'cc', :'ca'), 'vínculo em círculo é recusado');
+select pg_temp.falha(format($$insert into fluxo.vinculos (empresa_id, predecessora_id, sucessora_id) values (%L, %L, %L)$$, :'emp', :'ca', :'ca'), 'tarefa não depende dela mesma');
+update fluxo.tarefas set inicio = '2030-08-20' where id = :'cb';
+select pg_temp.ok((select inicio = '2030-08-20' and inicio_min = '2030-08-20' from fluxo.tarefas where id = :'cb'), 'início digitado depois do que o vínculo pede vale (não começar antes de)');
+update fluxo.tarefas set inicio = '2030-08-01' where id = :'cb';
+select pg_temp.ok((select inicio = '2030-08-10' from fluxo.tarefas where id = :'cb'), 'início antes do que o vínculo deixa volta para o mais cedo possível');
+update fluxo.tarefas set concluida_em = now() where id = :'cc';
+select inicio as cc_ini from fluxo.tarefas where id = :'cc' \gset
+update fluxo.tarefas set prazo = '2030-08-11' where id = :'ca';
+select pg_temp.ok((select inicio from fluxo.tarefas where id = :'cc') = :'cc_ini' and (select inicio from fluxo.tarefas where id = :'cb') = '2030-08-12',
+  'tarefa concluída não se move; a aberta acompanha');
+update fluxo.tarefas set concluida_em = null where id = :'cc';
+delete from fluxo.vinculos where id = :'vab';
+select pg_temp.ok((select count(*) from fluxo.vinculos where sucessora_id = :'cb') = 0, 'quem edita tira o vínculo');
+insert into fluxo.vinculos (empresa_id, predecessora_id, sucessora_id) values (:'emp', :'ca', :'cb');
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'tarefas' and registro_id = :'cb' and user_id = :'analista'
+  and antes->>'inicio' is distinct from depois->>'inicio') >= 1, 'a auditoria guarda quem mudou as datas, inclusive as empurradas');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$insert into fluxo.vinculos (empresa_id, predecessora_id, sucessora_id) values (%L, %L, %L)$$, :'emp', :'cd', :'cf'), 'leitura não cria vínculo');
+-- dias úteis
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$select fluxo.salvar_calendario(%L, true)$$, :'emp'), 'só o administrador muda o calendário');
+select pg_temp.como(:'diretor');
+select fluxo.salvar_calendario(:'emp', true);
+select pg_temp.ok(fluxo.somar_dias(:'emp', '2030-08-09', 1) = '2030-08-12' and fluxo.somar_dias(:'emp', '2030-11-14', 1) = '2030-11-18'
+  and fluxo.duracao_dias(:'emp', '2030-08-09', '2030-08-12') = 2 and fluxo.somar_dias(:'emp', '2030-08-12', -1) = '2030-08-09',
+  'dias úteis pulam fim de semana e feriado');
+select fluxo.salvar_calendario(:'emp', false);
+select pg_temp.ok(fluxo.somar_dias(:'emp', '2030-08-09', 1) = '2030-08-10', 'padrão volta a dias corridos');
+-- linha de base
+select pg_temp.como(:'analista');
+select fluxo.enviar_cronograma(:'qm') as lb1 \gset
+select pg_temp.ok((select situacao = 'pendente' and numero is null from fluxo.linhas_base where id = :'lb1')
+  and (select count(*) from fluxo.linha_base_itens where linha_base_id = :'lb1') >= 6, 'quem edita manda o cronograma; fica pendente com o retrato das datas');
+select pg_temp.falha(format($$select fluxo.decidir_linha_base(%L, true)$$, :'lb1'), 'analista não aprova a própria linha de base');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$select fluxo.enviar_cronograma(%L)$$, :'qm'), 'leitura não manda cronograma');
+select pg_temp.como(:'gestor');
+select fluxo.decidir_linha_base(:'lb1', true);
+select pg_temp.ok((select situacao = 'aprovada' and numero = 1 and decidida_por = :'gestor' from fluxo.linhas_base where id = :'lb1'), 'o gestor de quem mandou aprova: linha de base 1');
+select pg_temp.como(:'analista');
+select prazo as a_pz from fluxo.tarefas where id = :'ca' \gset
+update fluxo.tarefas set prazo = prazo + 2 where id = :'ca';
+select pg_temp.ok((select desvio_prazo = 2 and atrasada_base and base_prazo = :'a_pz' from fluxo.v_cronograma where tarefa_id = :'ca')
+  and (select desvio_prazo = 2 from fluxo.v_cronograma where tarefa_id = :'cb'), 'depois de aprovada, as datas seguem livres e o desvio aparece (inclusive na sucessora)');
+select pg_temp.falha(format($$select fluxo.enviar_cronograma(%L)$$, :'qm'), 'mudar a linha de base pede o motivo');
+select fluxo.enviar_cronograma(:'qm', 'Cartório atrasou') as lb2 \gset
+select pg_temp.ok((select situacao from fluxo.linhas_base where id = :'lb2') = 'pendente' and (select situacao from fluxo.linhas_base where id = :'lb1') = 'aprovada',
+  'o analista só pede a troca; a aprovada continua valendo');
+select pg_temp.como(:'gestor');
+select fluxo.decidir_linha_base(:'lb2', false, 'Segura até o retorno do cartório');
+select pg_temp.ok((select situacao = 'recusada' and motivo_decisao is not null from fluxo.linhas_base where id = :'lb2'), 'o gestor recusa com motivo');
+select fluxo.enviar_cronograma(:'qm', 'Replanejado com o cartório') as lb3 \gset
+select pg_temp.ok((select situacao = 'aprovada' and numero = 2 from fluxo.linhas_base where id = :'lb3')
+  and (select situacao from fluxo.linhas_base where id = :'lb1') = 'substituida'
+  and (select desvio_prazo = 0 from fluxo.v_cronograma where tarefa_id = :'ca'), 'gestor troca a linha de base direto; a antiga fica guardada');
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'linhas_base') >= 4, 'linha de base vai para a auditoria');
+select pg_temp.como(:'intruso');
+select pg_temp.ok((select count(*) from fluxo.linhas_base) = 0 and (select count(*) from fluxo.vinculos) = 0, 'outra empresa não vê cronograma');
+-- ---------------------------------------------------------------------
+\echo '# modelos de tarefas (fluxo)'
+select pg_temp.como(:'diretor');
+insert into fluxo.modelos_quadro (empresa_id, nome) values (:'emp', 'Aquisição padrão') returning id as mp \gset
+insert into fluxo.modelo_tarefas (empresa_id, modelo_id, ordem, titulo, lista_nome, inicio_dias, duracao, responsavel_objeto, pessoas, etiquetas, checklists)
+  values (:'emp', :'mp', 1, 'Pedir matrícula atualizada', 'Fazer', 0, 3, true,
+          jsonb_build_array(jsonb_build_object('papel', 'aprovador', 'user_id', :'gestor'), jsonb_build_object('papel', 'acompanha', 'objeto', true)),
+          array[:'et']::uuid[], '[{"nome": "Cartório", "itens": ["Pedir certidão", "Conferir ônus"]}]') returning id as mt1 \gset
+insert into fluxo.modelo_tarefas (empresa_id, modelo_id, ordem, titulo, inicio_dias, duracao, responsavel_id)
+  values (:'emp', :'mp', 2, 'Análise jurídica', 0, 5, :'analista') returning id as mt2 \gset
+insert into fluxo.modelo_vinculos (empresa_id, modelo_id, predecessora_id, sucessora_id) values (:'emp', :'mp', :'mt1', :'mt2');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$select fluxo.definir_modelo_padrao(%L, %L)$$, :'emp', :'mp'), 'só o administrador escolhe o modelo padrão');
+select pg_temp.falha(format($$insert into fluxo.modelos_quadro (empresa_id, nome) values (%L, 'Meu da empresa')$$, :'emp'), 'analista não cria modelo da empresa');
+select pg_temp.falha(format($$update fluxo.modelo_tarefas set titulo = 'x' where id = %L returning 1/0$$, :'mt1'), 'analista não mexe no modelo da empresa');
+select pg_temp.como(:'diretor');
+select fluxo.definir_modelo_padrao(:'emp', :'mp');
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude, poligono_geojson)
+  values (:'emp', 'Terreno com modelo', :'gestor', 'prospeccao', :'sp', -23.72, -46.72, pg_temp.quadra(-46.72, -23.72)) returning id as tmod \gset
+select q.id as qmod from fluxo.quadros q where q.objeto_tipo = 'terreno' and q.objeto_id = :'tmod' \gset
+select id as km1 from fluxo.tarefas where quadro_id = :'qmod' and titulo = 'Pedir matrícula atualizada' \gset
+select id as km2 from fluxo.tarefas where quadro_id = :'qmod' and titulo = 'Análise jurídica' \gset
+select pg_temp.ok((select inicio = current_date and prazo = current_date + 2 and responsavel_id = :'gestor' and lista_nome = 'Fazer' from fluxo.v_tarefas where id = :'km1'),
+  'terreno novo já nasce com as tarefas do modelo padrão: datas relativas e o responsável do terreno');
+select pg_temp.ok((select count(*) from fluxo.tarefa_pessoas where tarefa_id = :'km1' and ((papel = 'aprovador' and user_id = :'gestor') or (papel = 'acompanha' and user_id = :'gestor'))) = 2
+  and exists (select 1 from fluxo.tarefa_etiquetas where tarefa_id = :'km1' and etiqueta_id = :'et')
+  and (select count(*) from fluxo.checklist_itens i join fluxo.checklists c on c.id = i.checklist_id where c.tarefa_id = :'km1' and c.nome = 'Cartório') = 2,
+  'aprovador, quem acompanha, etiqueta e checklist vêm do modelo');
+select pg_temp.ok((select inicio = current_date + 3 and prazo = current_date + 7 and responsavel_id = :'analista' and lista_nome = 'Entrada' from fluxo.v_tarefas where id = :'km2')
+  and exists (select 1 from fluxo.vinculos where predecessora_id = :'km1' and sucessora_id = :'km2'),
+  'a predecessora já vem ligada e empurra a sucessora; lista desconhecida cai na primeira aberta');
+-- modelo próprio: o analista salva o quadro e aplica em outro
+select pg_temp.como(:'analista');
+update fluxo.tarefas set responsavel_id = :'analista' where id = :'km1';
+select fluxo.salvar_quadro_como_modelo(:'qmod', 'Meu roteiro') as mm \gset
+select pg_temp.ok((select dono_id = :'analista' and not padrao from fluxo.modelos_quadro where id = :'mm')
+  and (select count(*) from fluxo.modelo_tarefas where modelo_id = :'mm') = 2
+  and (select count(*) from fluxo.modelo_vinculos where modelo_id = :'mm') = 1
+  and (select inicio_dias from fluxo.modelo_tarefas where modelo_id = :'mm' and titulo = 'Análise jurídica') = 3,
+  'salvar o quadro como modelo próprio guarda tarefas, prazos relativos e predecessoras');
+select pg_temp.falha(format($$select fluxo.salvar_quadro_como_modelo(%L, 'Da empresa', true)$$, :'qmod'), 'analista não salva modelo da empresa');
+select count(*) as antes_k from fluxo.tarefas where quadro_id = :'qm' \gset
+select fluxo.aplicar_modelo(:'mm', :'qm', '2030-09-02') as napl \gset
+select pg_temp.ok(:napl = 2 and (select count(*) from fluxo.tarefas where quadro_id = :'qm') = :antes_k + 2
+  and exists (select 1 from fluxo.tarefas where quadro_id = :'qm' and titulo = 'Análise jurídica' and inicio = '2030-09-05'),
+  'aplicar o modelo à mão cria as tarefas a partir da data escolhida');
+select pg_temp.como(:'gestor');
+select pg_temp.ok((select count(*) from fluxo.modelos_quadro where id = :'mm') = 0, 'o modelo de um não aparece para os outros');
+select pg_temp.falha(format($$select fluxo.aplicar_modelo(%L, %L)$$, :'mm', :'qm'), 'ninguém aplica o modelo de outra pessoa');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$select fluxo.aplicar_modelo(%L, %L)$$, :'mp', :'qm'), 'leitura não aplica modelo');
+select pg_temp.como(:'diretor');
+select fluxo.definir_modelo_padrao(:'emp', null);
+select pg_temp.ok(not exists (select 1 from fluxo.modelos_quadro where empresa_id = :'emp' and padrao), 'o administrador tira o padrão');
 \echo 'TODOS OS TESTES PASSARAM'
