@@ -206,10 +206,11 @@ erDiagram
 
 | Tipo | Gatilho | Quem recebe |
 | --- | --- | --- |
-| `tarefa_atribuida` | na hora (trigger em `tarefas`) | responsável |
-| `mencao` | na hora, @arroba no texto (trigger em `tarefas`, `atividades`, `reunioes`) | pessoa mencionada |
+| `tarefa_atribuida` | na hora (trigger em `fluxo.tarefas`, `fluxo.tarefa_pessoas` e `fluxo.checklist_itens`) | responsável, executor incluído, responsável do item do checklist |
+| `mencao` | na hora, @arroba no texto (trigger em `fluxo.tarefas`, `fluxo.comentarios`, `atividades`, `reunioes`) | pessoa mencionada |
 | `tarefa_prazo` | lembrete (padrão: no dia) | responsável |
 | `tarefa_atrasada` | rotina diária, uma vez por prazo | responsável |
+| `tarefa_acompanhada` | na hora: comentário novo e tarefa concluída (no máximo um aviso por tarefa por dia) | quem acompanha a tarefa |
 | `stand_by_retomar` | lembrete (padrão: 7 dias antes e no dia) | responsável da tratativa |
 | `subetapa_prazo` | rotina diária, uma vez por entrada na subetapa | responsável da tratativa |
 | `documento_vencendo` | lembrete (padrão: 30 e 7 dias antes) | responsável da tratativa ou do terreno |
@@ -217,7 +218,7 @@ erDiagram
 | `aprovacao_pendente` | na hora, quando é a vez | aprovador previsto (ou todos do nível) |
 | `aprovacao_decidida` | na hora | quem pediu |
 
-**Menções com @** (decisão do Moisés, 28/out/2026): quem escreve `@arroba` (o @ de `usuarios`) na descrição ou no resultado da tarefa, no resumo ou no resultado da atividade, ou na pauta, no resumo ou nos encaminhamentos da reunião avisa a pessoa (`app.tg_mencoes`, que lê os @ por `app.arrobas_no_texto`). Só conta o @ de quem é da empresa; o autor não avisa a si mesmo, e-mail escrito no texto não é menção, e editar o texto só avisa quem entrou agora. Cada menção fica em `mencoes` (origem e pessoa, uma vez). Só o @ avisa: não há lista de marcados na tarefa (decisão do Moisés, 29/out/2026, para não virar spam).
+**Menções com @** (decisão do Moisés, 28/out/2026): quem escreve `@arroba` (o @ de `usuarios`) na descrição, no resultado ou num comentário da tarefa, no resumo ou no resultado da atividade, ou na pauta, no resumo ou nos encaminhamentos da reunião avisa a pessoa (`app.tg_mencoes`, que lê os @ por `app.arrobas_no_texto`). Só conta o @ de quem é da empresa; o autor não avisa a si mesmo, e-mail escrito no texto não é menção, e editar o texto só avisa quem entrou agora. Cada menção fica em `mencoes` (origem e pessoa, uma vez). Só o @ avisa: não há lista de marcados na tarefa (decisão do Moisés, 29/out/2026, para não virar spam).
 
 **E-mail:** cada tipo tem o padrão da empresa (`tipos_notificacao.email_padrao`; nascem ligados os de atribuição, menção e aprovação) e cada pessoa escolhe por tipo em `preferencias_notificacao` (`app.salvar_preferencia_notificacao(empresa, tipo, email)`; nulo volta ao padrão). A notificação que vai por e-mail nasce com `email_status = 'pendente'`; uma função do servidor (a fazer) envia pela conta do sistema (bkm@) e marca `enviado` ou `falhou`. No app a notificação sempre aparece; o administrador desliga o tipo inteiro. WhatsApp fica para depois (decisão do Moisés, 28/out/2026).
 
@@ -470,8 +471,6 @@ erDiagram
   processos ||--o{ processo_transicoes : historico
   processos ||--o{ propostas : recebe
   propostas |o--o| propostas : "responde a"
-  terrenos ||--o{ tarefas : tem
-  processos |o--o{ tarefas : contextualiza
   terrenos ||--o{ atividades : registra
   processos |o--o{ viabilidades : usa
   terrenos ||--o{ diligencias : investiga
@@ -608,19 +607,9 @@ erDiagram
     uuid pessoa_id FK
     text nome
   }
-  tarefas {
-    uuid id PK
-    uuid terreno_id FK
-    uuid processo_id FK
-    text titulo
-    uuid responsavel_id FK
-    date prazo
-    text status "pendente | em_andamento | aguardando_terceiro | concluida | cancelada"
-    text prioridade
-    text resultado
-    float posicao "ordem no quadro de tarefas"
-  }
 ```
+
+As tarefas moram no esquema `fluxo` (ver "Quadros e tarefas", abaixo): cada terreno tem o seu quadro e a tarefa pode apontar a negociação (`processo_id`, do mesmo terreno do quadro).
 
 ## Mapa, dashboard e quadro de tarefas
 
@@ -637,11 +626,77 @@ erDiagram
 | `excluir_lugar_entorno(terreno, google_place_id)` | exclui um lugar do Google do entorno deste terreno (`excluido_em`/`excluido_por`); `salvar_entorno` mantém a exclusão quando a busca é refeita |
 | `restaurar_lugar_entorno(terreno, google_place_id)` | desfaz a exclusão; o lugar volta à ficha sem nova busca |
 | `v_entorno_buscas` | por terreno localizado: quando foi buscado, se a rota a pé respondeu e `precisa_buscar` (nunca buscado ou desatualizado) |
-| `v_tarefas` | tarefa com código e nome do terreno e o atraso calculado; o quadro ordena por `status` e `posicao` |
+| `v_tarefas` | cartão dos quadros dos terrenos (`fluxo.v_tarefas`: lista, atraso e andamento do checklist) com o código e o nome do terreno; o quadro ordena por lista e `posicao` |
 
 Entorno do terreno: as categorias são configuração (`entorno_categorias`: tipos do Google e raio a pé; ligar outra categoria é migration de dados). O front busca sozinho quando o terreno é localizado ou muda de lugar (`precisa_buscar`), e só então, e grava por `salvar_entorno`. `pontos_interesse` é a lista cadastrada pela própria empresa (sede, polos, pontos marcados à mão): todos aparecem na ficha de cada terreno, com a distância a pé quando está a até 1,5 km a pé e de carro quando está mais longe (`terreno_ponto_distancias`). Excluir: lugar do Google é marcado no próprio terreno por `excluir_lugar_entorno` (só aquele terreno; continua fora se a busca for refeita porque o terreno mudou de lugar) e volta por `restaurar_lugar_entorno`; ponto da empresa é desligado direto (`ativo = false`, auditado), some de todos os terrenos e do mapa e pode ser religado. A busca no Google é feita uma vez por localização: não há "buscar de novo" manual.
 
 O dashboard agrega `v_terrenos` no front (filtro cruzado por clique). A poligonal continua em `terrenos.poligono_geojson`; importar KMZ/KML é feito no front e gravado por `salvar_terreno`.
+
+## Quadros e tarefas (esquema `fluxo`)
+
+Módulo de quadros e tarefas, o "Trello da BKM" (decisões do Moisés, 29/out/2026; modelo em https://claude.ai/artifact/EdJyXjystX3uEGo4sNQob4). Mora no esquema próprio `fluxo` (migration `00150`), que só conhece empresas, membros e usuários, para servir também a outros apps do mesmo Supabase: o quadro aponta para o que acompanha por `objeto_tipo` e `objeto_id`, sem chave estrangeira. O BKM Terrenos cria um quadro por terreno (trigger `t_quadro` em `terrenos`, por `fluxo.quadro_de`) e liga a tarefa ao processo (chave estrangeira e `app.tg_tarefa_processo`, em `negociacao`). No Supabase, `fluxo` entra em **Settings → API → Exposed schemas** junto com `app`.
+
+```mermaid
+erDiagram
+  quadros ||--o{ listas : tem
+  quadros ||--o{ tarefas : tem
+  listas ||--o{ tarefas : "está em"
+  tarefas ||--o{ tarefa_pessoas : "executores, aprovadores, acompanham"
+  tarefas ||--o{ tarefa_etiquetas : classifica
+  etiquetas ||--o{ tarefa_etiquetas : marca
+  tarefas ||--o{ checklists : tem
+  checklists ||--o{ checklist_itens : tem
+  tarefas ||--o{ comentarios : tem
+  comentarios ||--o{ comentario_reacoes : tem
+  tarefas ||--o{ anexos : tem
+  quadros {
+    uuid id PK
+    text objeto_tipo "terreno, empreendimento, area..."
+    uuid objeto_id "sem FK"
+  }
+  listas {
+    uuid quadro_id FK
+    text nome
+    float posicao
+    text tipo "aberta | pausa | conclui"
+    bool oculta
+  }
+  tarefas {
+    uuid id PK
+    text codigo "TAR-000123"
+    uuid quadro_id FK
+    uuid lista_id FK
+    float posicao
+    text titulo
+    text descricao
+    text resultado
+    uuid solicitante_id
+    uuid responsavel_id "o principal, um só"
+    date inicio
+    date prazo "nulo = backlog"
+    text prioridade
+    text capa
+    uuid processo_id "FK posta pelo app"
+    timestamptz concluida_em
+    timestamptz arquivada_em
+  }
+  checklist_itens {
+    uuid checklist_id FK
+    text texto
+    uuid responsavel_id
+    date prazo
+    timestamptz concluido_em
+    uuid virou_tarefa_id
+  }
+```
+
+- **Listas:** `listas_modelo` traz o padrão da empresa (nulo = modelo de fábrica: Backlog, Fazer, Fazendo, Aguardando retorno, Pausadas, Feito), copiado para cada quadro novo; os quadros existentes mantêm as suas, e cada terreno cria, renomeia, ordena e oculta as dele. Só o administrador muda o padrão (`fluxo.salvar_lista_modelo`, que copia o padrão para a empresa na primeira mudança e recusa ficar sem lista que conclui).
+- **Concluir:** a tarefa não tem status. Entrar numa lista do tipo `conclui` preenche `concluida_em` e `concluida_por`; sair dela reabre; marcar `concluida_em` à mão leva o cartão para a primeira lista que conclui, e limpar leva para a primeira aberta (`fluxo.tg_tarefa_lista`). A lista `pausa` é a que vai pausar o SLA (bloco 3).
+- **Nunca apagada:** sem `delete` em `tarefas`, `listas` e `etiquetas`; a tarefa arquiva (`arquivada_em`, `arquivada_por`) e restaura. Comentário: só o autor edita (`editado_em`) e apaga (`apagado_em`, o texto some da tela e fica na auditoria). Anexo sai com `removido_em`.
+- **Pessoas:** solicitante (quem criou, por padrão) e responsável principal ficam no cartão; executores, aprovadores e quem acompanha em `tarefa_pessoas`.
+- **Checklist:** vários por cartão, item com responsável e prazo; `fluxo.item_para_tarefa(item)` cria o cartão no mesmo quadro, ligado ao de origem por anexo, e marca o item como feito.
+- **Escrita direta** de quem edita (diretor, gestor, analista), pela RLS por `empresa_id`; Leitura só vê. Todas as tabelas vão para `app.auditoria` (o vínculo sem id próprio registra a tarefa).
+- **Fica para os próximos blocos:** cronograma (predecessoras TI, II, TT e IT com offset, linha de base e replanejamentos), aprovação formal da tarefa, SLA com pausa aprovada, visibilidade por cartão (empresa, grupo, envolvidos, com exceções e papel por pessoa), campos personalizados, recorrência, automações e WhatsApp.
 
 ## Setores censitários e renda familiar estimada
 

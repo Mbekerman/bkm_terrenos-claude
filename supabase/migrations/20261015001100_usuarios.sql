@@ -141,7 +141,7 @@ create table app.mencoes (
   id            uuid primary key default gen_random_uuid(),
   empresa_id    uuid not null references app.empresas(id),
   terreno_id    uuid references app.terrenos(id) on delete cascade,
-  origem_tabela text not null check (origem_tabela in ('tarefas','atividades','reunioes')),
+  origem_tabela text not null check (origem_tabela in ('tarefas','comentarios','atividades','reunioes')),
   origem_id     uuid not null,
   user_id       uuid not null references auth.users(id) on delete cascade,
   por           uuid default auth.uid(),
@@ -166,7 +166,7 @@ language plpgsql security definer set search_path = ''
 as $$
 declare
   c text; v text; novos text[] := '{}'; antigos text[] := '{}';
-  r record; v_autor text; v_onde text;
+  r record; v_autor text; v_onde text; v_ter uuid; v_tarefa uuid;
 begin
   foreach c in array tg_argv loop
     v := to_jsonb(new)->>c; novos := novos || app.arrobas_no_texto(v);
@@ -175,25 +175,31 @@ begin
   if cardinality(novos) = 0 then return new; end if;
   v_autor := coalesce((select nome from app.usuarios where user_id = auth.uid()),
                       (select nome from app.membros where user_id = auth.uid() and empresa_id = new.empresa_id), 'Alguém');
+  -- tarefas e comentários moram no fluxo: o terreno é o do quadro, e o aviso leva à tarefa
+  v_tarefa := case tg_table_name when 'tarefas' then new.id when 'comentarios' then (to_jsonb(new)->>'tarefa_id')::uuid end;
+  v_ter := case when v_tarefa is not null then app.terreno_da_tarefa(v_tarefa) else (to_jsonb(new)->>'terreno_id')::uuid end;
   v_onde := case tg_table_name
     when 'tarefas' then 'na tarefa: ' || (to_jsonb(new)->>'titulo')
+    when 'comentarios' then 'num comentário da tarefa: ' || (select titulo from fluxo.tarefas where id = v_tarefa)
     when 'atividades' then 'numa atividade: ' || left(to_jsonb(new)->>'resumo', 80)
     else 'na reunião de ' || to_char((to_jsonb(new)->>'inicio')::timestamptz, 'DD/MM') end;
   for r in select distinct u.user_id from app.usuarios u
            join app.membros m on m.user_id = u.user_id and m.empresa_id = new.empresa_id
            where u.arroba = any(novos) and not (u.arroba = any(antigos)) and u.user_id is distinct from auth.uid() loop
     insert into app.mencoes (empresa_id, terreno_id, origem_tabela, origem_id, user_id)
-    values (new.empresa_id, new.terreno_id, tg_table_name, new.id, r.user_id)
+    values (new.empresa_id, v_ter, tg_table_name, new.id, r.user_id)
     on conflict do nothing;
     if found then
       perform app._notificar(new.empresa_id, r.user_id, 'mencao', v_autor || ' mencionou você ' || v_onde,
-                             new.terreno_id, tg_table_name, new.id);
+                             v_ter, coalesce(case when v_tarefa is not null then 'tarefas' end, tg_table_name), coalesce(v_tarefa, new.id));
     end if;
   end loop;
   return new;
 end $$;
-create trigger t_mencoes after insert or update of descricao, resultado on app.tarefas
+create trigger t_mencoes after insert or update of descricao, resultado on fluxo.tarefas
   for each row execute function app.tg_mencoes('descricao', 'resultado');
+create trigger t_mencoes after insert or update of texto on fluxo.comentarios
+  for each row execute function app.tg_mencoes('texto');
 create trigger t_mencoes after insert or update of resumo, resultado on app.atividades
   for each row execute function app.tg_mencoes('resumo', 'resultado');
 create trigger t_mencoes after insert or update of pauta, resumo, encaminhamentos on app.reunioes

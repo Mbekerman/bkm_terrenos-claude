@@ -221,39 +221,23 @@ create table app.propostas (
 );
 
 -- ---------------------------------------------------------------------
--- Tarefas: sempre do terreno; negociação opcional. "Atrasada" é calculada.
+-- Tarefas: moram no esquema fluxo (quadros e tarefas, ver 00150), no
+-- quadro do terreno. Aqui o BKM Terrenos liga a tarefa à negociação: o
+-- processo, se houver, é do mesmo terreno do quadro.
 -- ---------------------------------------------------------------------
-create table app.tarefas (
-  id             uuid primary key default gen_random_uuid(),
-  empresa_id     uuid not null references app.empresas(id),
-  terreno_id     uuid not null references app.terrenos(id) on delete cascade,
-  processo_id    uuid references app.processos(id),
-  titulo         text not null,
-  descricao      text,
-  responsavel_id uuid references auth.users(id),
-  prazo          date not null,
-  prazo_hora     time,
-  status         text not null default 'pendente' check (status in ('pendente','em_andamento','aguardando_terceiro','concluida','cancelada')),
-  prioridade     text not null default 'media' check (prioridade in ('baixa','media','alta')),
-  concluida_em   timestamptz,
-  resultado      text,
-  posicao        double precision not null default extract(epoch from clock_timestamp()),  -- ordem no quadro (coluna = status)
-  criado_por     uuid default auth.uid(),
-  criado_em      timestamptz not null default now(),
-  check ((status = 'concluida') = (concluida_em is not null))
-);
-create index on app.tarefas (terreno_id);
-create index on app.tarefas (empresa_id, status, posicao);
-create index on app.tarefas (empresa_id, prazo) where status not in ('concluida','cancelada');
+alter table fluxo.tarefas add foreign key (processo_id) references app.processos(id);
 
-create or replace function app.tg_tarefa_conclusao()
-returns trigger language plpgsql as $$
+create or replace function app.tg_tarefa_processo()
+returns trigger language plpgsql security definer set search_path = '' as $$
 begin
-  if new.status = 'concluida' and new.concluida_em is null then new.concluida_em := now(); end if;
-  if new.status <> 'concluida' then new.concluida_em := null; end if;
+  if new.processo_id is not null and not exists (
+       select 1 from app.processos p join fluxo.quadros q on q.objeto_tipo = 'terreno' and q.objeto_id = p.terreno_id
+       where p.id = new.processo_id and q.id = new.quadro_id) then
+    raise exception 'A negociação informada é de outro terreno' using errcode = '23514';
+  end if;
   return new;
 end $$;
-create trigger t_conclusao before insert or update on app.tarefas for each row execute function app.tg_tarefa_conclusao();
+create trigger t_processo before insert or update of processo_id on fluxo.tarefas for each row execute function app.tg_tarefa_processo();
 
 create table app.atividades (
   id          uuid primary key default gen_random_uuid(),
@@ -406,28 +390,26 @@ create trigger t_aud after insert or update or delete on app.processos   for eac
 create trigger t_aud after insert or update or delete on app.aprovacoes  for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.propostas   for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.documentos  for each row execute function app.tg_auditoria();
-create trigger t_aud after insert or update or delete on app.tarefas     for each row execute function app.tg_auditoria();
 create trigger t_upd before update on app.reunioes for each row execute function app.tg_atualizado_em();
 create trigger t_aud after insert or update or delete on app.reunioes    for each row execute function app.tg_auditoria();
 
 do $$
 declare t text;
 begin
-  foreach t in array array['ofertas','oferta_partes','viabilidades','processos','negociacoes','processo_transicoes','aprovacoes','propostas','tarefas','atividades','reunioes','reuniao_participantes','diligencias','documentos','documento_versoes'] loop
+  foreach t in array array['ofertas','oferta_partes','viabilidades','processos','negociacoes','processo_transicoes','aprovacoes','propostas','atividades','reunioes','reuniao_participantes','diligencias','documentos','documento_versoes'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
     execute format('grant select on app.%I to authenticated', t);
   end loop;
   -- escrita direta só onde não há regra de etapa
-  foreach t in array array['ofertas','oferta_partes','tarefas','atividades','reunioes','reuniao_participantes','diligencias'] loop
+  foreach t in array array['ofertas','oferta_partes','atividades','reunioes','reuniao_participantes','diligencias'] loop
     execute format('create policy inserir on app.%I for insert to authenticated with check (empresa_id in (select app.empresas_edicao()))', t);
     execute format('create policy alterar on app.%I for update to authenticated using (empresa_id in (select app.empresas_edicao())) with check (empresa_id in (select app.empresas_edicao()))', t);
     execute format('grant insert, update on app.%I to authenticated', t);
     execute format('create trigger t_emp before insert or update on app.%I for each row execute function app.tg_mesma_empresa()', t);
   end loop;
 end $$;
-create policy remover on app.tarefas for delete to authenticated using (empresa_id in (select app.empresas_edicao()));
 create policy remover on app.reuniao_participantes for delete to authenticated using (empresa_id in (select app.empresas_edicao()));
 create policy remover on app.oferta_partes for delete to authenticated using (empresa_id in (select app.empresas_edicao()));
-grant delete on app.tarefas, app.reuniao_participantes, app.oferta_partes to authenticated;
+grant delete on app.reuniao_participantes, app.oferta_partes to authenticated;
 grant usage on sequence app.processo_seq to authenticated;
