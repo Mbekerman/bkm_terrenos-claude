@@ -2090,9 +2090,16 @@ select pg_temp.como(:'gestor');
 select pg_temp.ok(not exists (select 1 from fluxo.tarefas where id in (:'vr', :'vrk')) and not exists (select 1 from fluxo.checklist_itens where id = :'vri'),
   'restrito: nem o cartão nem o checklist aparecem para quem não está nele');
 select pg_temp.falha(format($$select fluxo.pausar(%L, 'x')$$, :'vr'), 'quem não vê o cartão não o pausa');
+-- @ só avisa quem vê o cartão
+select pg_temp.como(:'analista');
+update fluxo.tarefas set descricao = 'Ver com @joao.silva' where id = :'vr';
+update fluxo.tarefas set descricao = 'Ver com @joao.silva' where id = :'vp';
+select pg_temp.ok(not exists (select 1 from app.mencoes where origem_id = :'vr' and user_id = :'basico')
+  and exists (select 1 from app.mencoes where origem_id = :'vp' and user_id = :'basico'),
+  'o @ num cartão restrito não avisa quem não vê o cartão; no público, avisa');
 -- teto do objeto: quem não vê o terreno não vê os cartões dele
 reset role;
-create function pg_temp.nao_ve(uuid) returns boolean language sql as $$ select false $$;
+create function pg_temp.nao_ve(uuid, uuid) returns boolean language sql as $$ select false $$;
 update fluxo.objeto_tipos set funcao = 'pg_temp.nao_ve' where tipo = 'terreno';
 select pg_temp.como(:'basico');
 select pg_temp.ok(not exists (select 1 from fluxo.tarefas where id = :'vp'), 'teto: sem ver o terreno, nem o cartão liberado aparece');

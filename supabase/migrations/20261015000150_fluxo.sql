@@ -1381,21 +1381,21 @@ grant execute on function fluxo.pausar(uuid, text), fluxo.decidir_pausa(uuid, bo
 -- administrador do cartão, o administrador do sistema ou o diretor.
 -- =====================================================================
 
--- Teto por tipo de objeto: função (uuid) -> boolean, chamada para quem está lendo
+-- Teto por tipo de objeto: função (objeto uuid, pessoa uuid) -> boolean
 create table fluxo.objeto_tipos (
   tipo    text primary key check (tipo ~ '^[a-z_]+$'),
   funcao  regproc not null
 );
 grant select on fluxo.objeto_tipos to authenticated;
 
-create or replace function fluxo.ve_objeto(p_tipo text, p_id uuid)
+create or replace function fluxo.ve_objeto(p_tipo text, p_id uuid, p_user uuid default auth.uid())
 returns boolean language plpgsql stable security definer set search_path = '' as $$
 declare f regproc; v boolean;
 begin
   if p_id is null then return true; end if;
   select funcao into f from fluxo.objeto_tipos where tipo = p_tipo;
   if f is null then return true; end if;
-  execute format('select %s($1)', f) into v using p_id;
+  execute format('select %s($1, $2)', f) into v using p_id, p_user;
   return coalesce(v, false);
 end $$;
 
@@ -1436,21 +1436,23 @@ create or replace function fluxo.nivel_cartao(p text)
 returns int language sql immutable set search_path = '' as $$
   select case p when 'leitor' then 1 when 'comentarista' then 2 when 'editor' then 3 when 'administrador' then 4 else 0 end $$;
 
--- O papel de quem está lendo no cartão (nulo = não vê). Recebe as colunas
--- da linha, para servir à RLS também no insert (a linha nova ainda não
--- aparece numa consulta por id).
+-- O papel de uma pessoa no cartão (nulo = não vê); por padrão, quem está
+-- lendo. Recebe as colunas da linha, para servir à RLS também no insert (a
+-- linha nova ainda não aparece numa consulta por id). Com outra pessoa,
+-- serve para saber se ela pode ser marcada com @ (só quem vê o cartão).
 create or replace function fluxo.papel_cartao(p_id uuid, p_empresa uuid, p_quadro uuid, p_vis text, p_criado_por uuid,
-                                              p_solicitante uuid, p_responsavel uuid)
+                                              p_solicitante uuid, p_responsavel uuid, p_user uuid default auth.uid())
 returns text language plpgsql stable security definer set search_path = '' as $$
-declare u uuid := auth.uid(); v_sis text; v_card text; v_env boolean; q fluxo.quadros;
+declare u uuid := p_user; v_m app.membros; v_sis text; v_card text; v_env boolean; q fluxo.quadros;
 begin
-  if u is null or p_empresa not in (select app.minhas_empresas()) then return null; end if;
-  if app.eh_administrador(p_empresa) then return 'administrador'; end if;
+  select * into v_m from app.membros where user_id = u and empresa_id = p_empresa;
+  if u is null or v_m.user_id is null then return null; end if;
+  if v_m.administrador then return 'administrador'; end if;
   select * into q from fluxo.quadros where id = p_quadro;
-  if not fluxo.ve_objeto(q.objeto_tipo, q.objeto_id) then return null; end if;
+  if not fluxo.ve_objeto(q.objeto_tipo, q.objeto_id, u) then return null; end if;
   if p_criado_por = u then return 'administrador'; end if;
   if p_vis = 'individual' then return null; end if;
-  v_sis := case when app.papel(p_empresa) in ('diretor','gestor','analista') then 'editor' else 'leitor' end;
+  v_sis := case when v_m.papel in ('diretor','gestor','analista') then 'editor' else 'leitor' end;
   -- acesso dado no cartão: o da pessoa ou o maior dos grupos, salvo exceção
   select a.papel into v_card from fluxo.tarefa_acessos a
   where a.tarefa_id = p_id and not a.excluido
@@ -1467,13 +1469,13 @@ begin
   v_env := u in (p_solicitante, p_responsavel)
            or exists (select 1 from fluxo.tarefa_pessoas where tarefa_id = p_id and user_id = u);
   if v_env then return 'editor'; end if;
-  if app.papel(p_empresa) = 'diretor' then return 'editor'; end if;
+  if v_m.papel = 'diretor' then return 'editor'; end if;
   return null;
 end $$;
 
-create or replace function fluxo.papel_tarefa(p_tarefa uuid)
+create or replace function fluxo.papel_tarefa(p_tarefa uuid, p_user uuid default auth.uid())
 returns text language sql stable security definer set search_path = '' as $$
-  select fluxo.papel_cartao(id, empresa_id, quadro_id, visibilidade, criado_por, solicitante_id, responsavel_id)
+  select fluxo.papel_cartao(id, empresa_id, quadro_id, visibilidade, criado_por, solicitante_id, responsavel_id, p_user)
   from fluxo.tarefas where id = p_tarefa $$;
 
 create or replace function fluxo.edita_tarefa(p_tarefa uuid)
@@ -1643,10 +1645,10 @@ create policy auditoria_gestor_ve on app.auditoria for select to authenticated
          and (fluxo.tarefa_do_log(tabela, registro_id, antes, depois) is null
               or fluxo.papel_tarefa(fluxo.tarefa_do_log(tabela, registro_id, antes, depois)) is not null));
 
-revoke all on function fluxo.ve_objeto(text, uuid), fluxo.papel_cartao(uuid, uuid, uuid, text, uuid, uuid, uuid), fluxo.papel_tarefa(uuid),
+revoke all on function fluxo.ve_objeto(text, uuid, uuid), fluxo.papel_cartao(uuid, uuid, uuid, text, uuid, uuid, uuid, uuid), fluxo.papel_tarefa(uuid, uuid),
                        fluxo.edita_tarefa(uuid), fluxo.comenta_tarefa(uuid), fluxo.gerencia_tarefa(uuid), fluxo.exigir_edicao_tarefa(uuid),
                        fluxo.tarefa_do_checklist(uuid), fluxo.tarefa_do_comentario(uuid), fluxo.tarefa_do_log(text, uuid, jsonb, jsonb) from public;
-grant execute on function fluxo.ve_objeto(text, uuid), fluxo.papel_cartao(uuid, uuid, uuid, text, uuid, uuid, uuid), fluxo.papel_tarefa(uuid),
+grant execute on function fluxo.ve_objeto(text, uuid, uuid), fluxo.papel_cartao(uuid, uuid, uuid, text, uuid, uuid, uuid, uuid), fluxo.papel_tarefa(uuid, uuid),
                           fluxo.edita_tarefa(uuid), fluxo.comenta_tarefa(uuid), fluxo.gerencia_tarefa(uuid), fluxo.exigir_edicao_tarefa(uuid),
                           fluxo.tarefa_do_checklist(uuid), fluxo.tarefa_do_comentario(uuid), fluxo.tarefa_do_log(text, uuid, jsonb, jsonb),
                           fluxo.nivel_cartao(text) to authenticated;

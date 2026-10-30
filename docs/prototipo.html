@@ -6634,9 +6634,9 @@ document.addEventListener('submit',e=>{const f=e.target,n=f.dataset?.form;if(!n|
   if(n==='tkc-ck'){const c={id:uid(),nome:F.nome.trim(),esconder:false,itens:[]};k.checklists.push(c);UI.tkCkNovo=false;UI.tkItemNovo=c.id;setTimeout(()=>document.querySelector(`[data-form="tkc-item"][data-c="${c.id}"] input[name=texto]`)?.focus(),0);log(t,`Tarefa "${k.titulo}": checklist ${F.nome.trim()} criado`)}
   if(n==='tkc-item'){const c=k.checklists.find(x=>x.id===f.dataset.c);const i={id:uid(),texto:F.texto.trim(),resp:F.resp||null,prazo:F.prazo||null,feito:null};c.itens.push(i);
     if(i.resp)notificar(i.resp,'tarefa_atribuida',`Item para você em ${k.titulo}: ${i.texto}`,t,null,tkIr(k));setTimeout(()=>document.querySelector(`[data-form="tkc-item"][data-c="${c.id}"] input[name=texto]`)?.focus(),0)}
-  if(n==='tkc-com'){const c={id:uid(),autor:eu,texto:F.texto.trim(),em:agora().slice(0,16).replace('T',' '),reacoes:{}};k.coments.push(c);mencionar(t,'',c.texto,`num comentário da tarefa: ${k.titulo}`,tkIr(k));
+  if(n==='tkc-com'){const c={id:uid(),autor:eu,texto:F.texto.trim(),em:agora().slice(0,16).replace('T',' '),reacoes:{}};k.coments.push(c);mencionar(t,'',c.texto,`num comentário da tarefa: ${k.titulo}`,tkIr(k),u=>!!vzPapel(t,k,u));
     tkAvisarAcomp(t,k,`${eu} comentou em ${k.titulo}`);log(t,`Tarefa "${k.titulo}": comentário de ${eu}`)}
-  if(n==='tkc-com-ed'){const c=k.coments.find(x=>x.id===f.dataset.v);const antes=c.texto;c.texto=F.texto.trim();c.editado=true;UI.tkEdCom=null;mencionar(t,antes,c.texto,`num comentário da tarefa: ${k.titulo}`,tkIr(k))}
+  if(n==='tkc-com-ed'){const c=k.coments.find(x=>x.id===f.dataset.v);const antes=c.texto;c.texto=F.texto.trim();c.editado=true;UI.tkEdCom=null;mencionar(t,antes,c.texto,`num comentário da tarefa: ${k.titulo}`,tkIr(k),u=>!!vzPapel(t,k,u))}
   if(n==='tkc-etq-nova'){const v=F.nome.trim();let x=S.etiquetas.find(y=>y.nome.toLowerCase()===v.toLowerCase());if(!x){x={id:uid(),nome:v,cor:F.cor};S.etiquetas.push(x)}if(!k.etq.includes(x.id))k.etq.push(x.id);UI.tkEtqNova=false}
   if(n==='tkc-anexo'){k.anexos.push({id:uid(),tipo:'link',nome:F.nome.trim(),url:F.url.trim()});UI.tkPop=null;log(t,`Tarefa "${k.titulo}": anexo ${F.nome.trim()}`)}
   tkRe()},true);
@@ -8501,9 +8501,14 @@ function escM(tx){const eq=new Set(mnEquipe().map(u=>u.arroba));
 /* vai por e-mail? a escolha da pessoa vence o padrão do tipo */
 function mnEmail(para,tipo){const p=S.prefsNotif?.[para]?.[tipo];return p!=null?p:!!cfg().notif[tipo]?.email}
 /* avisa só quem entrou agora no texto, e nunca quem escreveu */
-function mencionar(t,antes,depois,onde,ir){const ja=mnPessoas(antes);
-  mnPessoas(depois).filter(u=>!ja.includes(u)&&u!==me()).forEach(u=>notificar(u,'mencao',`${me()} mencionou você ${onde}`,t,null,ir))}
-function mencionarTarefa(t,k,antes){mencionar(t,antes,(k.desc||'')+'\n'+(k.resultado||''),`na tarefa: ${k.titulo}`,{b:'tarefas',alvo:k.id})}
+function mencionar(t,antes,depois,onde,ir,pode){const ja=mnPessoas(antes);
+  mnPessoas(depois).filter(u=>!ja.includes(u)&&u!==me()&&(!pode||pode(u))).forEach(u=>notificar(u,'mencao',`${me()} mencionou você ${onde}`,t,null,ir))}
+function mencionarTarefa(t,k,antes){mencionar(t,antes,(k.desc||'')+'\n'+(k.resultado||''),`na tarefa: ${k.titulo}`,{b:'tarefas',alvo:k.id},u=>!!vzPapel(t,k,u))}
+/* num cartão, a lista do @ só traz quem vê o cartão; na tarefa nova, pela visibilidade marcada no formulário */
+function mnPodeSer(el,u){const f=el.closest('#f-tk');
+  if(f){const v=f.querySelector('input[name=vis]:checked')?.value,resp=f.querySelector('[name=resp]')?.value;if(ehAdmin(u))return true;if(v==='individual')return false;
+    if(v==='restrito'){const lib=[...f.querySelectorAll('input[name=lib]:checked')].map(x=>x.value);return u===resp||membro(u).papel==='diretor'||lib.includes(u)||lib.some(x=>x.startsWith('g:')&&(vzGrupo(x.slice(2))?.membros||[]).includes(u))}return true}
+  if(UI.modal==='tarefa'&&UI.tkSel?.kid&&el.closest('#modal')){const {t,k}=tkAtual();return !k||!!vzPapel(t,k,u)}return true}
 /* do sino ao item: abre o bloco da ficha, rola até o item e acende */
 function mnIr(ir){blocoAbre(ir.b);render();setTimeout(()=>{const el=document.querySelector(`[data-mid="${ir.alvo}"]`)||document.getElementById('bl-'+ir.b);if(!el)return;
   el.scrollIntoView({behavior:'smooth',block:'center'});document.querySelectorAll('.pisca').forEach(x=>x.classList.remove('pisca'));
@@ -8516,7 +8521,7 @@ function mnPop(){let el=document.getElementById('mn-pop');if(!el){el=document.cr
 function mnFechar(){MN=null;const el=document.getElementById('mn-pop');if(el)el.hidden=true}
 function mnAbrir(el){const pos=el.selectionStart??el.value.length,m=/(?:^|[^A-Za-z0-9._@-])@([A-Za-z0-9._-]{0,40})$/.exec(el.value.slice(0,pos));
   if(!m){mnFechar();return}
-  const q=arrobaDe(m[1]),lista=mnEquipe().filter(u=>u.nome!==me()&&(!q||u.arroba.startsWith(q)||u.arroba.split('.').some(w=>w.startsWith(q)))).slice(0,6);
+  const q=arrobaDe(m[1]),lista=mnEquipe().filter(u=>u.nome!==me()&&mnPodeSer(el,u.nome)&&(!q||u.arroba.startsWith(q)||u.arroba.split('.').some(w=>w.startsWith(q)))).slice(0,6);
   if(!lista.length){mnFechar();return}
   MN={el,ini:pos-m[1].length-1,fim:pos,lista,i:MN&&MN.el===el?Math.min(MN.i,lista.length-1):0};mnDesenhar()}
 function mnDesenhar(){const p=mnPop(),r=MN.el.getBoundingClientRect();

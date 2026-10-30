@@ -308,9 +308,9 @@ document.addEventListener('submit',e=>{const f=e.target,n=f.dataset?.form;if(!n|
   if(n==='tkc-ck'){const c={id:uid(),nome:F.nome.trim(),esconder:false,itens:[]};k.checklists.push(c);UI.tkCkNovo=false;UI.tkItemNovo=c.id;setTimeout(()=>document.querySelector(`[data-form="tkc-item"][data-c="${c.id}"] input[name=texto]`)?.focus(),0);log(t,`Tarefa "${k.titulo}": checklist ${F.nome.trim()} criado`)}
   if(n==='tkc-item'){const c=k.checklists.find(x=>x.id===f.dataset.c);const i={id:uid(),texto:F.texto.trim(),resp:F.resp||null,prazo:F.prazo||null,feito:null};c.itens.push(i);
     if(i.resp)notificar(i.resp,'tarefa_atribuida',`Item para você em ${k.titulo}: ${i.texto}`,t,null,tkIr(k));setTimeout(()=>document.querySelector(`[data-form="tkc-item"][data-c="${c.id}"] input[name=texto]`)?.focus(),0)}
-  if(n==='tkc-com'){const c={id:uid(),autor:eu,texto:F.texto.trim(),em:agora().slice(0,16).replace('T',' '),reacoes:{}};k.coments.push(c);mencionar(t,'',c.texto,`num comentário da tarefa: ${k.titulo}`,tkIr(k));
+  if(n==='tkc-com'){const c={id:uid(),autor:eu,texto:F.texto.trim(),em:agora().slice(0,16).replace('T',' '),reacoes:{}};k.coments.push(c);mencionar(t,'',c.texto,`num comentário da tarefa: ${k.titulo}`,tkIr(k),u=>!!vzPapel(t,k,u));
     tkAvisarAcomp(t,k,`${eu} comentou em ${k.titulo}`);log(t,`Tarefa "${k.titulo}": comentário de ${eu}`)}
-  if(n==='tkc-com-ed'){const c=k.coments.find(x=>x.id===f.dataset.v);const antes=c.texto;c.texto=F.texto.trim();c.editado=true;UI.tkEdCom=null;mencionar(t,antes,c.texto,`num comentário da tarefa: ${k.titulo}`,tkIr(k))}
+  if(n==='tkc-com-ed'){const c=k.coments.find(x=>x.id===f.dataset.v);const antes=c.texto;c.texto=F.texto.trim();c.editado=true;UI.tkEdCom=null;mencionar(t,antes,c.texto,`num comentário da tarefa: ${k.titulo}`,tkIr(k),u=>!!vzPapel(t,k,u))}
   if(n==='tkc-etq-nova'){const v=F.nome.trim();let x=S.etiquetas.find(y=>y.nome.toLowerCase()===v.toLowerCase());if(!x){x={id:uid(),nome:v,cor:F.cor};S.etiquetas.push(x)}if(!k.etq.includes(x.id))k.etq.push(x.id);UI.tkEtqNova=false}
   if(n==='tkc-anexo'){k.anexos.push({id:uid(),tipo:'link',nome:F.nome.trim(),url:F.url.trim()});UI.tkPop=null;log(t,`Tarefa "${k.titulo}": anexo ${F.nome.trim()}`)}
   tkRe()},true);

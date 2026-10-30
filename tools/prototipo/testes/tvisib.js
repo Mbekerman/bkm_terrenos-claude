@@ -29,6 +29,13 @@ ok(await p.$eval('.tk[aria-label="Rascunho da contraproposta"]',x=>!!x.querySele
 await papel(p,'Gestor');await p.waitForTimeout(250);
 ok(!(await noQuadro(p,'Rascunho da contraproposta')),'o gestor não vê o individual do analista');
 ok(await noQuadro(p,'Pedir certidão de uso do solo'),'quem criou o restrito o vê');
+await abreCartao(p,'Pedir certidão de uso do solo');await p.click('#tkc-d');await p.keyboard.type(' @');await p.waitForTimeout(200);
+const lst=await p.evaluate(()=>[...document.querySelectorAll('#mn-pop .mn-n')].map(x=>x.textContent));
+ok(lst.includes('Camila Torres')&&lst.includes('Lúcia Mendes')&&!lst.includes('Rafael Souza'),'a lista do @ só traz quem vê o cartão restrito: '+lst.join(', '));
+await p.screenshot({path:O+'0_mencao.png'});
+await p.keyboard.press('Escape');await p.keyboard.type('rafael.souza ');await p.evaluate(()=>document.querySelector('#tkc-d').blur());await p.waitForTimeout(250);
+s=await est(p);ok((tar(s,0,'Pedir certidão de uso do solo').desc||'').includes('@rafael.souza')&&!s.notifs.some(n=>n.para==='Rafael Souza'&&n.tipo==='mencao'&&n.txt.includes('certidão de uso')),'@ digitado à mão para quem não vê o cartão não avisa');
+await fecha(p);
 await papel(p,'Leitura');await p.waitForTimeout(250);
 ok(await noQuadro(p,'Pedir certidão de uso do solo')&&!(await noQuadro(p,'Rascunho da contraproposta')),'o grupo liberado (Jurídico) vê o restrito; o individual não aparece');
 await abreCartao(p,'Pedir certidão de uso do solo');
