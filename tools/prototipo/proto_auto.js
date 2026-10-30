@@ -11,14 +11,22 @@
      cartão arquivado não disparam. Regra que já rodou não se apaga.
    - Prazo vencendo em N dias e prazo vencido rodam na rotina diária, uma
      vez por prazo; pausada não conta.
+   - Bloco 5b (30/out): "Botão no cartão" vira um botão nos cartões que
+     passam nas condições, para quem edita o cartão (fluxo.botoes_cartao,
+     fluxo.apertar_botao); "Agendamento" roda na rotina diária, todo dia,
+     na semana nos dias marcados ou no mês no dia (o último dia quando o mês
+     não tem), em cada cartão que passa nas condições, uma vez por dia
+     (fluxo.automacoes_agenda); a regra agendada precisa de condição.
+     Condição Situação: aberta, atrasada ou concluída.
    Injetado no mesmo escopo.
    ===================================================================== */
 P.raio='M13 2L4 14h7l-1 8 9-12h-7z';
 const AU_GAT={criada:'Cartão criado',entrou_lista:'Cartão entra numa lista',concluida:'Tarefa concluída',etiqueta:'Etiqueta adicionada',
-  campo:'Campo personalizado alterado',checklist_completo:'Checklist completo',prazo_antes:'Prazo vence em N dias',prazo_venceu:'Prazo vencido'};
-const AU_COND={lista:'Está na lista',etiqueta:'Etiqueta',prioridade:'Prioridade',campo:'Campo personalizado'};
+  campo:'Campo personalizado alterado',checklist_completo:'Checklist completo',prazo_antes:'Prazo vence em N dias',prazo_venceu:'Prazo vencido',botao:'Botão no cartão',agenda:'Agendamento'};
+const AU_COND={situacao:'Situação',lista:'Está na lista',etiqueta:'Etiqueta',prioridade:'Prioridade',campo:'Campo personalizado'};
 const AU_ACAO={avisar:'Avisar',mover:'Mover para a lista',etiqueta:'Pôr ou tirar etiqueta',responsavel:'Trocar o responsável',prioridade:'Mudar a prioridade',
   adiar:'Adiar o prazo',checklist:'Adicionar checklist',arquivar:'Arquivar'};
+const AU_SIT={aberta:'Aberta',atrasada:'Atrasada',concluida:'Concluída'},AU_FREQ={diaria:'Todo dia',semanal:'Toda semana',mensal:'Todo mês'};
 const AU_PARA={responsavel:'Responsável',executores:'Executores',aprovadores:'Aprovadores',acompanham:'Quem acompanha',solicitante:'Quem pediu',gestor:'Gestor do responsável'};
 const auRegras=()=>S.automacoes||(S.automacoes=[]);
 const auExecs=()=>S.autoExec||(S.autoExec=[]);
@@ -38,6 +46,7 @@ function auCondOk(t,r,k){return (r.conds||[]).every(c=>{
   if(c.tipo==='lista'){const l=tkLista(t,k);return r.tid?(c.v||[]).includes(l.id):(c.v||[]).some(n=>auNomeL(n)===auNomeL(l.nome))}
   if(c.tipo==='etiqueta')return (k.etq||[]).includes(c.v)===(c.tem!==false);
   if(c.tipo==='prioridade')return (c.v||[]).includes(k.prio);
+  if(c.tipo==='situacao'){const v=c.v||[];return (!k.feita&&v.includes('aberta'))||(!!k.feita&&v.includes('concluida'))||(v.includes('atrasada')&&tkAtras(k))}
   if(c.tipo==='campo'){const x=k.campos?.[c.campo],f=cpoCampos().find(y=>y.id===c.campo);if(c.op==='vazio')return x==null;if(c.op==='preenchido')return x!=null;if(x==null||!f)return false;
     if(f.tipo==='texto')return auNomeL(x)===auNomeL(c.valor);if(f.tipo==='numero')return Number(x)===cpoNum(String(c.valor));if(f.tipo==='caixa')return x===(c.valor==='1'||c.valor===true);return x===c.valor}
   return true})}
@@ -79,7 +88,21 @@ function auRotina(){let n=0;(S.terrenos||[]).forEach(t=>(t.tarefas||[]).forEach(
   const venc=k.prazo<HOJE;if(venc)n+=auEvento(t,k,'prazo_venceu',{ref:k.prazo});
   else auRegras().filter(r=>r.ativa&&r.gat==='prazo_antes'&&(!r.tid||r.tid===t.id)&&(!r.kid||r.kid===k.id)&&addD(k.prazo,-r.gDias)<=HOJE).forEach(r=>{
     if(auExecs().some(e=>e.aid===r.id&&e.kid===k.id&&e.ref===k.prazo)||!auDonoVale(r)||(r.tid&&!vzPapel(t,k,r.dono))||!auCondOk(t,r,k))return;auExecutar(t,r,k,k.prazo);n++})}));
-  S.auDia=HOJE;return n}
+  n+=auAgenda(HOJE);S.auDia=HOJE;return n}
+/* a regra agendada roda hoje? mensal no dia 31 roda no último dia dos meses mais curtos (no banco: fluxo.agenda_hoje) */
+function auAgendaHoje(r,d){const dt=new Date(d+'T12:00:00'),dia=dt.getDate(),ult=new Date(dt.getFullYear(),dt.getMonth()+1,0).getDate(),D=r.aDias||[];
+  return r.aFreq==='diaria'||(r.aFreq==='semanal'&&D.includes(dt.getDay()))||(r.aFreq==='mensal'&&(D.includes(dia)||(dia===ult&&D.some(x=>x>dia))))}
+/* rotina diária: regras agendadas para hoje, em cada cartão do escopo que passa nas condições, uma vez por dia */
+function auAgenda(d){let n=0;auRegras().filter(r=>r.ativa&&r.gat==='agenda'&&auAgendaHoje(r,d)&&auDonoVale(r)).sort((a,b)=>(a.tid?1:0)-(b.tid?1:0)||(a.kid?1:0)-(b.kid?1:0)).forEach(r=>
+  (S.terrenos||[]).filter(t=>!r.tid||r.tid===t.id).forEach(t=>(t.tarefas||[]).forEach(k=>{if(k.arq||k.modelo||(r.kid&&r.kid!==k.id))return;
+    if(auExecs().some(e=>e.aid===r.id&&e.kid===k.id&&e.ref===d)||(r.tid&&!vzPapel(t,k,r.dono))||!auCondOk(t,r,k))return;auExecutar(t,r,k,d);n++})));
+  return n}
+/* botões do cartão: ligados, do escopo, com o dono valendo e as condições; só para quem edita o cartão (no banco: fluxo.botoes_cartao) */
+function auBotoes(t,k){if(!k||k.arq||k.modelo||!vzEdita(t,k))return [];
+  return auRegras().filter(r=>r.ativa&&r.gat==='botao'&&(!r.tid||r.tid===t.id)&&(!r.kid||r.kid===k.id)&&auDonoVale(r)&&(!r.tid||vzPapel(t,k,r.dono))&&auCondOk(t,r,k))
+    .sort((a,b)=>(a.tid?1:0)-(b.tid?1:0)||(a.kid?1:0)-(b.kid?1:0)||a.nome.localeCompare(b.nome))}
+function auBotoesHtml(t,k,ro){if(ro)return '';const B=auBotoes(t,k);if(!B.length)return '';
+  return `<div class="tkm-bts" role="group" aria-label="Botões do cartão">${B.map(r=>`<button class="btn sm tkm-bt" data-a="au-botao" data-v="${r.id}" title="${esc(auFaca(r))}">${ic('raio',16)}${esc(r.nome)}</button>`).join('')}</div>`}
 
 /* ganchos nas mudanças do cartão (no banco: os gatilhos t_auto) */
 {const mover=tkMover;tkMover=function(t,k,lid,pos){const de=k.lista,fe=k.feita,r=mover(t,k,lid,pos);
@@ -103,11 +126,19 @@ function auQuando(r){const g=AU_GAT[r.gat];
   if(r.gat==='entrou_lista')return r.gLista?`Quando o cartão entrar em ${auNomeLista(r,r.gLista)}`:'Quando o cartão mudar de lista';
   if(r.gat==='etiqueta')return r.gEtq?`Quando puserem a etiqueta ${S.etiquetas.find(e=>e.id===r.gEtq)?.nome||'?'}`:'Quando puserem uma etiqueta';
   if(r.gat==='campo')return r.gCampo?`Quando mudar o campo ${cpoCampos().find(c=>c.id===r.gCampo)?.nome||'?'}`:'Quando mudar um campo personalizado';
+  if(r.gat==='botao')return 'Ao apertar o botão no cartão';
+  if(r.gat==='agenda')return auQuandoAgenda(r);
   if(r.gat==='prazo_antes')return r.gDias?`Quando faltarem ${r.gDias} ${r.gDias===1?'dia':'dias'} para o prazo`:'No dia do prazo';
   return {criada:'Quando o cartão for criado',concluida:'Quando a tarefa for concluída',checklist_completo:'Quando o checklist ficar completo',prazo_venceu:'Quando o prazo vencer'}[r.gat]||g}
+const AU_SEM=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+const auE=a=>a.length>1?a.slice(0,-1).join(', ')+' e '+a[a.length-1]:a[0]||'?';
+function auQuandoAgenda(r){const D=[...(r.aDias||[])].sort((a,b)=>a-b);
+  if(r.aFreq==='semanal')return D.length===7?'Todo dia':'Toda '+auE(D.map(d=>AU_SEM[d]));
+  if(r.aFreq==='mensal')return `Todo dia ${auE(D.map(String))} do mês`;return 'Todo dia'}
 function auSe(r){return (r.conds||[]).map(c=>{
   if(c.tipo==='lista')return `está em ${(c.v||[]).map(v=>auNomeLista(r,v)).join(' ou ')||'?'}`;
   if(c.tipo==='etiqueta')return `${c.tem===false?'não tem':'tem'} a etiqueta ${S.etiquetas.find(e=>e.id===c.v)?.nome||'?'}`;
+  if(c.tipo==='situacao')return (c.v||[]).map(v=>AU_SIT[v].toLowerCase()).join(' ou ')||'?';
   if(c.tipo==='prioridade')return `prioridade ${(c.v||[]).map(p=>OPT.prioTar[p].toLowerCase()).join(' ou ')||'?'}`;
   const f=cpoCampos().find(y=>y.id===c.campo),n=f?.nome||'?';
   return c.op==='vazio'?`${n} não informado`:c.op==='preenchido'?`${n} preenchido`:`${n} igual a ${f?cpoTxt(f,f.tipo==='caixa'?c.valor==='1':f.tipo==='numero'?cpoNum(String(c.valor)):c.valor):c.valor}`}).join(' e ')}
@@ -156,11 +187,16 @@ function auGatParam(r){
   if(r.gat==='entrou_lista')return `<span class="au-lbl">Lista</span><select class="tkm-pill" data-au="gLista"><option value="">Qualquer lista</option>${(r.tid?tkL(T(r.tid)):(S.listasModelo||[]).filter(l=>l.ativo)).map(l=>{const v=r.tid?l.id:l.nome;return `<option value="${esc(v)}" ${v===r.gLista?'selected':''}>${esc(l.nome)}</option>`}).join('')}</select>`;
   if(r.gat==='etiqueta')return `<span class="au-lbl">Etiqueta</span><select class="tkm-pill" data-au="gEtq">${auOpts(auEtqs(),r.gEtq,'Qualquer etiqueta')}</select>`;
   if(r.gat==='campo')return `<span class="au-lbl">Campo</span><select class="tkm-pill" data-au="gCampo">${auOpts(Object.fromEntries(cpoAtivos().map(c=>[c.id,c.nome])),r.gCampo,'Qualquer campo')}</select>`;
+  if(r.gat==='agenda'){const f=r.aFreq||'semanal',D=r.aDias||[];
+    return `<select class="tkm-pill" data-au="aFreq" aria-label="Frequência">${auOpts(AU_FREQ,f)}</select>${f==='semanal'?`<span class="au-chks">${AU_SEM.map((n,i)=>`<label class="chk"><input type="checkbox" data-au-dia value="${i}" ${D.includes(i)?'checked':''}>${n.slice(0,3)}</label>`).join('')}</span>`
+      :f==='mensal'?`<span class="au-lbl">Dias</span><input class="tkm-pill au-dm" data-au="aDiasTx" value="${esc(D.join(', '))}" placeholder="1, 15" aria-label="Dias do mês"><span class="faint">o 31 roda no último dia dos meses mais curtos</span>`:''}`}
+  if(r.gat==='botao')return '<span class="faint">quem edita o cartão vê o botão e aperta</span>';
   if(r.gat==='prazo_antes')return `<span class="au-lbl">Dias antes</span><input class="tkm-pill au-n" type="number" min="0" max="60" data-au="gDias" value="${r.gDias??2}" aria-label="Dias antes do prazo">`;
   return ''}
 function auCondHtml(r,c,i){const x=`data-auc="${i}"`;let h='';
   if(c.tipo==='lista')h=auSelLista(r,c.v,`data-auc="${i}" data-k="v" data-cond`,true);
   else if(c.tipo==='etiqueta')h=`<select class="tkm-pill" ${x} data-k="tem"><option value="1" ${c.tem!==false?'selected':''}>tem</option><option value="0" ${c.tem===false?'selected':''}>não tem</option></select><select class="tkm-pill" ${x} data-k="v">${auOpts(auEtqs(),c.v)}</select>`;
+  else if(c.tipo==='situacao')h=`<span class="au-chks">${Object.entries(AU_SIT).map(([v,n])=>`<label class="chk"><input type="checkbox" ${x} data-k="v" value="${v}" ${(c.v||[]).includes(v)?'checked':''}>${n}</label>`).join('')}</span>`;
   else if(c.tipo==='prioridade')h=`<span class="au-chks">${Object.entries(OPT.prioTar).map(([v,n])=>`<label class="chk"><input type="checkbox" ${x} data-k="v" value="${v}" ${(c.v||[]).includes(v)?'checked':''}>${n}</label>`).join('')}</span>`;
   else{const f=cpoCampos().find(y=>y.id===c.campo);h=`<select class="tkm-pill" ${x} data-k="campo">${auOpts(Object.fromEntries(cpoAtivos().map(y=>[y.id,y.nome])),c.campo)}</select>
     <select class="tkm-pill" ${x} data-k="op">${auOpts({igual:'igual a',vazio:'não informado',preenchido:'preenchido'},c.op||'igual')}</select>
@@ -185,7 +221,7 @@ function auEdHtml(fechar){const r=UI.auEd;if(!r)return '';
   <form class="au-ed" data-form="au-salvar">
     <div class="field full"><label for="au-nome">Nome</label><input id="au-nome" data-au="nome" value="${esc(r.nome)}" required placeholder="Ex.: Avisar o gestor quando entrar em Aguardando retorno"></div>
     <div class="au-bl"><h3>Quando</h3><div class="au-it"><select class="tkm-pill" data-au="gat" aria-label="Quando">${auOpts(r.kid?Object.fromEntries(Object.entries(AU_GAT).filter(([g])=>g!=='criada')):AU_GAT,r.gat)}</select>${auGatParam(r)}</div></div>
-    <div class="au-bl"><h3>Se <span class="faint">(opcional; todas valem juntas)</span></h3>${r.conds.map((c,i)=>auCondHtml(r,c,i)).join('')}
+    <div class="au-bl"><h3>Se <span class="faint">(${r.gat==='agenda'?'pelo menos uma: diz em que cartões a regra roda':r.gat==='botao'?'opcional: o botão só aparece nos cartões que passam':'opcional'}; todas valem juntas)</span></h3>${r.conds.map((c,i)=>auCondHtml(r,c,i)).join('')}
       <select class="tkm-pill au-add" data-au-add="conds" aria-label="Adicionar condição">${auOpts(AU_COND,'','Adicionar condição…')}</select></div>
     <div class="au-bl"><h3>Faça</h3>${r.acoes.map((a,i)=>auAcaoHtml(r,a,i)).join('')}
       <select class="tkm-pill au-add" data-au-add="acoes" aria-label="Adicionar ação">${auOpts(AU_ACAO,'','Adicionar ação…')}</select></div>
@@ -195,18 +231,23 @@ function auModal(M,fechar){if(M==='au-regras')return auRegrasHtml(fechar);if(M==
 /* o que falta na regra (no banco: fluxo.tg_automacao) */
 function auValida(r){if(!r.nome.trim())return 'Dê um nome à regra.';if(r.kid&&r.gat==='criada')return 'Regra do cartão não usa "cartão criado": o cartão já existe.';if(!r.acoes.length)return 'A regra precisa de pelo menos uma ação.';
   if(r.gat==='prazo_antes'&&(r.gDias==null||r.gDias<0||r.gDias>60))return 'Dias antes do prazo: de 0 a 60.';
-  for(const c of r.conds){if(c.tipo==='lista'&&!(c.v||[]).length)return 'Marque a lista da condição.';if(c.tipo==='prioridade'&&!(c.v||[]).length)return 'Marque a prioridade da condição.';
+  if(r.gat==='agenda'){if(r.aFreq!=='diaria'&&!(r.aDias||[]).length)return 'Marque os dias em que a regra roda.';
+    if(r.aFreq==='mensal'&&r.aDias.some(d=>!(d>=1&&d<=31)))return 'Dia do mês de 1 a 31.';if(!r.conds.length)return 'Regra agendada precisa de pelo menos uma condição, para dizer em que cartões roda.'}
+  for(const c of r.conds){if(c.tipo==='lista'&&!(c.v||[]).length)return 'Marque a lista da condição.';if(c.tipo==='prioridade'&&!(c.v||[]).length)return 'Marque a prioridade da condição.';if(c.tipo==='situacao'&&!(c.v||[]).length)return 'Marque a situação da condição.';
     if(c.tipo==='campo'&&(!c.campo||((c.op||'igual')==='igual'&&(c.valor==null||c.valor==='')))) return 'Complete a condição do campo.'}
   for(const a of r.acoes){if(a.tipo==='avisar'&&!(a.para||[]).length&&!(a.pessoas||[]).length)return 'Diga quem a regra avisa.';
     if(a.tipo==='checklist'&&(!a.nome?.trim()||!(a.itens||[]).some(x=>x.trim())))return 'O checklist precisa de nome e itens.';
     if(a.tipo==='adiar'&&!(a.dias>=1&&a.dias<=365))return 'Adiar de 1 a 365 dias.'}
   return null}
-const auNovaCond=(r,tipo)=>({lista:{tipo,v:[]},etiqueta:{tipo,v:S.etiquetas[0]?.id,tem:true},prioridade:{tipo,v:['alta']},campo:{tipo,campo:cpoAtivos()[0]?.id,op:'igual',valor:''}}[tipo]);
+const auNovaCond=(r,tipo)=>({situacao:{tipo,v:['aberta']},lista:{tipo,v:[]},etiqueta:{tipo,v:S.etiquetas[0]?.id,tem:true},prioridade:{tipo,v:['alta']},campo:{tipo,campo:cpoAtivos()[0]?.id,op:'igual',valor:''}}[tipo]);
 function auNovaAcao(r,tipo){const L=r.tid?tkL(T(r.tid)).filter(l=>l.tipo!=='pausa'):(S.listasModelo||[]).filter(l=>l.ativo&&l.tipo!=='pausa');
   return {avisar:{tipo,para:['responsavel'],pessoas:[],texto:''},mover:{tipo,lista:L[0]?(r.tid?L[0].id:L[0].nome):''},etiqueta:{tipo,v:S.etiquetas[0]?.id,por:true},
     responsavel:{tipo,v:Object.keys(auPessoas())[0]},prioridade:{tipo,v:'alta'},adiar:{tipo,dias:3},checklist:{tipo,nome:'',itens:[]},arquivar:{tipo}}[tipo]}
 
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="au-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const A=a.dataset.a,v=a.dataset.v;
+  if(A==='au-botao'){const {t,k}=tkAtual();const r=auRegras().find(x=>x.id===v);if(!k||!r)return;
+    if(!auBotoes(t,k).includes(r)){toast('Este botão não vale para este cartão.',true);return}
+    auExecutar(t,r,k);const x=auExecs()[0];toast(x.res==='ok'?`${r.nome}: ${x.det}.`:`${r.nome}: erro: ${x.det}`,x.res!=='ok');save();renderModal();render();return}
   if(A==='au-abrir'){UI.auK=null;UI.auQ={tid:v};UI.modal='au-regras';renderModal();return}
   if(A==='au-nova'){if(a.dataset.k){UI.auK={tid:v,kid:a.dataset.k};UI.auQ=null}else if(!UI.auQ)UI.auK=null;UI.auEd=auNovaRegra(v||null,a.dataset.k);if(a.dataset.k)UI.auEd.gat='concluida';UI.modal='au-ed';renderModal();return}
   if(A==='au-editar'){const r=auRegras().find(x=>x.id===v);if(!r||!auPodeMudar(r))return;if(UI.modal==='tarefa'){UI.auK={...UI.tkSel};UI.auQ=null}UI.auEd=JSON.parse(JSON.stringify(r));UI.modal='au-ed';renderModal();return}
@@ -221,7 +262,12 @@ document.addEventListener('change',e=>{const el=e.target;
   if(el.dataset?.auLiga){e.stopImmediatePropagation();const r=auRegras().find(x=>x.id===el.dataset.auLiga);if(!r||!auPodeMudar(r))return;r.ativa=el.checked;
     if(r.tid)log(T(r.tid),`Automação "${r.nome}" ${r.ativa?'ligada':'desligada'}`);save();if(UI.modal)renderModal();else render();return}
   const r=UI.auEd;if(!r)return;
-  if(el.dataset.au){e.stopImmediatePropagation();const k=el.dataset.au;r[k]=k==='gDias'?(el.value===''?null:+el.value):el.value;if(k!=='nome')renderModal();return}
+  if(el.dataset.auDia!=null){e.stopImmediatePropagation();const s=new Set(r.aDias||[]);el.checked?s.add(+el.value):s.delete(+el.value);r.aDias=[...s].sort((a,b)=>a-b);renderModal();return}
+  if(el.dataset.au==='aDiasTx'){e.stopImmediatePropagation();r.aDias=el.value.split(/[^0-9]+/).filter(Boolean).map(Number);const pv=el.closest('form')?.querySelector('.au-prev');if(pv)pv.innerHTML=`<span class="faint">Resumo:</span> ${esc(auFrase(r))}`;return}   // sem redesenhar: o foco segue para o próximo campo
+  if(el.dataset.au){e.stopImmediatePropagation();const k=el.dataset.au;r[k]=k==='gDias'?(el.value===''?null:+el.value):el.value;
+    if(k==='gat'&&r.gat==='agenda'&&!r.aFreq){r.aFreq='semanal';r.aDias=[1];if(!r.conds.length)r.conds.push(auNovaCond(r,'situacao'))}
+    if(k==='aFreq')r.aDias=r.aFreq==='semanal'?[1]:r.aFreq==='mensal'?[1]:null;
+    if(k!=='nome')renderModal();return}
   if(el.dataset.auAdd){e.stopImmediatePropagation();if(!el.value)return;const g=el.dataset.auAdd;r[g].push(g==='conds'?auNovaCond(r,el.value):auNovaAcao(r,el.value));renderModal();return}
   const ci=el.dataset.auc,ai=el.dataset.aua;if(ci==null&&ai==null)return;e.stopImmediatePropagation();
   const o=ci!=null?r.conds[+ci]:r.acoes[+ai],k=el.dataset.k;
@@ -238,6 +284,7 @@ document.addEventListener('input',e=>{const el=e.target,r=UI.auEd;if(!r)return;i
 document.addEventListener('submit',e=>{const f=e.target;if(f.dataset?.form!=='au-salvar')return;e.preventDefault();e.stopImmediatePropagation();const r=UI.auEd;if(!r)return;
   r.nome=(f.querySelector('#au-nome')?.value||r.nome).trim();r.acoes.forEach(a=>{if(a.tipo==='checklist')a.itens=(a.itens||[]).map(x=>x.trim()).filter(Boolean)});
   const m=auValida(r);if(m){toast(m,true);return}
+  if(r.gat!=='agenda'){r.aFreq=null;r.aDias=null}else if(r.aFreq==='diaria')r.aDias=null;else r.aDias=[...new Set(r.aDias)].sort((a,b)=>a-b);
   if(r.gat!=='entrou_lista')r.gLista='';if(r.gat!=='etiqueta')r.gEtq='';if(r.gat!=='campo')r.gCampo='';if(r.gat!=='prazo_antes')r.gDias=null;
   if(r.id){const i=auRegras().findIndex(x=>x.id===r.id);if(i>=0)auRegras()[i]=r}else{r.id=uid();r.em=agora();auRegras().push(r)}
   if(r.tid)log(T(r.tid),`Automação "${r.nome}"${r.kid?` em ${tkAcha(r.tid,r.kid).k?.codigo}`:''} salva`);UI.auEd=null;save();toast('Regra salva.');
@@ -250,4 +297,10 @@ document.addEventListener('submit',e=>{const f=e.target;if(f.dataset?.form!=='au
   const urg=S.etiquetas.find(e=>e.nome==='Urgente');
   if(urg)auRegras().push({id:uid(),nome:'Urgente sobe a prioridade',tid:null,gat:'etiqueta',gLista:'',gEtq:urg.id,gCampo:'',gDias:null,conds:[],acoes:[{tipo:'prioridade',v:'alta'}],ativa:true,dono:'Moisés',em:agora()});
   auRegras().push({id:uid(),nome:'Prazo em 2 dias',tid:null,gat:'prazo_antes',gLista:'',gEtq:'',gCampo:'',gDias:2,conds:[],acoes:[{tipo:'avisar',para:['responsavel'],pessoas:[],texto:'Vence em 2 dias'}],ativa:true,dono:'Moisés',em:agora()});})();
+/* exemplos do bloco 5b: um botão no primeiro terreno e um agendamento da empresa */
+(()=>{if(S.auExemplo5b)return;S.auExemplo5b=true;const t=S.terrenos?.[0];if(!t)return;const ag=tkL(t).find(l=>l.nome==='Aguardando retorno');
+  if(ag)auRegras().push({id:uid(),nome:'Cobrar retorno',tid:t.id,gat:'botao',gLista:'',gEtq:'',gCampo:'',gDias:null,conds:[{tipo:'situacao',v:['aberta']}],
+    acoes:[{tipo:'mover',lista:ag.id},{tipo:'adiar',dias:3}],ativa:true,dono:'Ana Prado',em:agora()});
+  auRegras().push({id:uid(),nome:'Atrasadas toda segunda',tid:null,gat:'agenda',aFreq:'semanal',aDias:[1],gLista:'',gEtq:'',gCampo:'',gDias:null,conds:[{tipo:'situacao',v:['atrasada']}],
+    acoes:[{tipo:'avisar',para:['responsavel','gestor'],pessoas:[],texto:'Tarefa atrasada'}],ativa:true,dono:'Moisés',em:agora()})})();
 if(S.auDia!==HOJE){auRotina();save()}

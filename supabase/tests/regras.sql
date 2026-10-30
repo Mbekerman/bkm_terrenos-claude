@@ -2383,6 +2383,55 @@ select pg_temp.ok(not exists (select 1 from fluxo.automacoes where id = :'au9'),
 update fluxo.automacoes set ativa = false where quadro_id = :'qm';
 select pg_temp.como(:'diretor');
 update fluxo.automacoes set ativa = false where quadro_id is null;
+\echo '# botões e agendamentos (bloco 5b)'
+select pg_temp.como(:'analista');
+insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, condicoes, acoes)
+values (:'emp', :'qm', 'Cobrar retorno', 'botao', '[{"tipo":"situacao","valores":["aberta"]}]',
+        jsonb_build_array(jsonb_build_object('tipo', 'mover', 'lista', pg_temp.lista(:'tm', 'Aguardando retorno')), '{"tipo":"adiar","dias":3}'::jsonb)) returning id as abt \gset
+select pg_temp.tarefa(:'tm', 'Pedir certidão de ônus', current_date + 5, :'analista') as kb1 \gset
+select pg_temp.tarefa(:'tm', 'Certidão já recebida', current_date + 5, :'analista') as kb2 \gset
+update fluxo.tarefas set lista_id = pg_temp.lista(:'tm', 'Feito') where id = :'kb2';
+select pg_temp.ok(exists (select 1 from fluxo.botoes_cartao(:'kb1') where id = :'abt' and escopo = 'quadro')
+  and not exists (select 1 from fluxo.botoes_cartao(:'kb2') where id = :'abt'), 'o botão aparece só nos cartões que passam nas condições');
+select resultado as rbt from fluxo.apertar_botao(:'abt', :'kb1') \gset
+select pg_temp.ok(:'rbt' = 'ok' and (select lista_id = pg_temp.lista(:'tm', 'Aguardando retorno') and prazo = fluxo.somar_dias(:'emp', current_date + 5, 3) from fluxo.tarefas where id = :'kb1')
+  and (select user_id = :'analista' and gatilho = 'botao' from fluxo.automacao_execucoes where automacao_id = :'abt' and tarefa_id = :'kb1'),
+  'apertar o botão faz as ações no cartão e registra quem apertou');
+select pg_temp.falha(format($$select fluxo.apertar_botao(%L, %L)$$, :'abt', :'kb2'), 'botão que não vale para o cartão não roda');
+select pg_temp.como(:'leitor');
+select pg_temp.ok(not exists (select 1 from fluxo.botoes_cartao(:'kb1')), 'leitura não vê botões no cartão');
+select pg_temp.falha(format($$select fluxo.apertar_botao(%L, %L)$$, :'abt', :'kb1'), 'leitura não aperta botão');
+select pg_temp.como(:'analista');
+update fluxo.automacoes set ativa = false where id = :'abt';
+select pg_temp.ok(not exists (select 1 from fluxo.botoes_cartao(:'kb1')), 'botão desligado some do cartão');
+-- agendamentos
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, agenda_freq, acoes) values (%L, %L, 'X', 'agenda', 'diaria', '[{"tipo":"arquivar"}]')$$, :'emp', :'qm'),
+  'regra agendada precisa de condição');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, agenda_freq, condicoes, acoes) values (%L, %L, 'X', 'agenda', 'semanal', '[{"tipo":"situacao","valores":["aberta"]}]', '[{"tipo":"arquivar"}]')$$, :'emp', :'qm'),
+  'agendamento semanal precisa dos dias');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, agenda_freq, agenda_dias, condicoes, acoes) values (%L, %L, 'X', 'agenda', 'mensal', '{32}', '[{"tipo":"situacao","valores":["aberta"]}]', '[{"tipo":"arquivar"}]')$$, :'emp', :'qm'),
+  'dia do mês de 1 a 31');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, condicoes, acoes) values (%L, %L, 'X', 'botao', '[{"tipo":"situacao","valores":["parada"]}]', '[{"tipo":"arquivar"}]')$$, :'emp', :'qm'),
+  'situação aberta, atrasada ou concluída');
+select pg_temp.ok(fluxo.agenda_hoje('mensal', '{31}', '2027-02-28') and not fluxo.agenda_hoje('mensal', '{31}', '2027-02-27')
+  and fluxo.agenda_hoje('semanal', '{1}', '2026-11-02') and not fluxo.agenda_hoje('semanal', '{1}', '2026-11-03'),
+  'mensal no dia 31 roda no último dia do mês curto; semanal no dia da semana marcado');
+insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, agenda_freq, agenda_dias, condicoes, acoes)
+values (:'emp', :'qm', 'Segunda: atrasadas sobem a prioridade', 'agenda', 'semanal', array[extract(dow from current_date + 3)::int, extract(dow from current_date + 3)::int],
+        '[{"tipo":"situacao","valores":["atrasada"]}]', '[{"tipo":"prioridade","valor":"alta"}]') returning id as aag \gset
+select pg_temp.ok((select cardinality(agenda_dias) = 1 from fluxo.automacoes where id = :'aag'), 'dias repetidos viram um só');
+select pg_temp.tarefa(:'tm', 'Atrasada do agendamento', current_date - 1, :'analista') as kb3 \gset
+select pg_temp.tarefa(:'tm', 'No prazo do agendamento', current_date + 10, :'analista') as kb4 \gset
+select pg_temp.falha('select fluxo.automacoes_agenda()', 'só a rotina roda as regras agendadas');
+reset role;
+select fluxo.automacoes_agenda(current_date + 2) as nag \gset
+select pg_temp.ok(not exists (select 1 from fluxo.automacao_execucoes where automacao_id = :'aag'), 'fora do dia marcado, a regra agendada não roda');
+select app.rotina_diaria(current_date + 3) \gset
+select pg_temp.ok((select prioridade = 'alta' from fluxo.tarefas where id = :'kb3') and (select prioridade = 'media' from fluxo.tarefas where id = :'kb4')
+  and (select referencia = current_date + 3 from fluxo.automacao_execucoes where automacao_id = :'aag' and tarefa_id = :'kb3'),
+  'no dia marcado, a rotina roda a regra nos cartões que passam nas condições');
+select pg_temp.ok(fluxo.automacoes_agenda(current_date + 3) = 0, 'rodar de novo no mesmo dia não repete');
+update fluxo.automacoes set ativa = false where id = :'aag';
 \echo '# automações do cartão e subtarefas (30/out)'
 select pg_temp.como(:'analista');
 select pg_temp.tarefa(:'tm', 'Cartão com regra própria', current_date + 10, :'analista') as kq1 \gset

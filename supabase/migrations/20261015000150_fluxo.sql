@@ -2114,6 +2114,14 @@ grant execute on function fluxo.copiar_tarefa(uuid, uuid, text, text[]) to authe
 -- cada execução fica registrada; regra que falha registra o erro e não
 -- desfaz o que a pessoa fez. Modelo de cartão e cartão arquivado não
 -- disparam. Regra com execuções não se apaga: desliga.
+-- Bloco 5b (30/out/2026): gatilho "botao" (a regra vira um botão nos
+-- cartões que passam nas condições; quem edita o cartão aperta, por
+-- fluxo.apertar_botao) e "agenda" (diária, semanal nos dias marcados ou
+-- mensal no dia, com o último dia quando o mês não tem; a rotina diária
+-- roda a regra em cada cartão do escopo que passa nas condições, uma vez
+-- por dia, e a regra agendada precisa de pelo menos uma condição).
+-- Condição "situacao": aberta, atrasada (aberta, prazo vencido e fora da
+-- pausa) ou concluída.
 -- =====================================================================
 create table fluxo.automacoes (
   id                  uuid primary key default gen_random_uuid(),
@@ -2121,12 +2129,14 @@ create table fluxo.automacoes (
   quadro_id           uuid references fluxo.quadros(id) on delete cascade,   -- vazio = empresa toda
   tarefa_id           uuid references fluxo.tarefas(id) on delete cascade,   -- regra só deste cartão (30/out); o quadro vem dele
   nome                text not null check (length(trim(nome)) > 0),
-  gatilho             text not null check (gatilho in ('criada','entrou_lista','concluida','etiqueta','campo','checklist_completo','prazo_antes','prazo_venceu')),
+  gatilho             text not null check (gatilho in ('criada','entrou_lista','concluida','etiqueta','campo','checklist_completo','prazo_antes','prazo_venceu','botao','agenda')),
   gatilho_lista_id    uuid references fluxo.listas(id),      -- entrou_lista, regra do quadro (vazio = qualquer lista)
   gatilho_lista_nome  text,                                  -- entrou_lista, regra da empresa
   gatilho_etiqueta_id uuid references fluxo.etiquetas(id),   -- etiqueta (vazio = qualquer)
   gatilho_campo_id    uuid references fluxo.campos(id),      -- campo (vazio = qualquer)
   gatilho_dias        int check (gatilho_dias between 0 and 60),  -- prazo_antes
+  agenda_freq         text check (agenda_freq in ('diaria','semanal','mensal')),   -- agenda
+  agenda_dias         int[],                                  -- agenda: dias da semana (0 = domingo) ou do mês (1 a 31)
   condicoes           jsonb not null default '[]' check (jsonb_typeof(condicoes) = 'array'),
   acoes               jsonb not null check (jsonb_typeof(acoes) = 'array' and jsonb_array_length(acoes) > 0),
   ativa               boolean not null default true,
@@ -2191,6 +2201,20 @@ begin
   if new.gatilho <> 'campo' then new.gatilho_campo_id := null; end if;
   if new.gatilho = 'prazo_antes' and new.gatilho_dias is null then raise exception 'Diga quantos dias antes do prazo' using errcode = '23514'; end if;
   if new.gatilho <> 'prazo_antes' then new.gatilho_dias := null; end if;
+  if new.gatilho = 'agenda' then
+    if new.agenda_freq is null then raise exception 'Diga quando a regra roda: todo dia, na semana ou no mês' using errcode = '23514'; end if;
+    if new.agenda_freq = 'diaria' then new.agenda_dias := null;
+    elsif coalesce(cardinality(new.agenda_dias), 0) = 0 then raise exception 'Marque os dias em que a regra roda' using errcode = '23514';
+    elsif new.agenda_freq = 'semanal' and exists (select 1 from unnest(new.agenda_dias) d where d not between 0 and 6) then
+      raise exception 'Dia da semana de 0 (domingo) a 6 (sábado)' using errcode = '23514';
+    elsif new.agenda_freq = 'mensal' and exists (select 1 from unnest(new.agenda_dias) d where d not between 1 and 31) then
+      raise exception 'Dia do mês de 1 a 31' using errcode = '23514';
+    end if;
+    -- sem condição, a regra agendada tocaria todos os cartões do escopo
+    if jsonb_array_length(new.condicoes) = 0 then raise exception 'Regra agendada precisa de pelo menos uma condição' using errcode = '23514'; end if;
+    select array_agg(distinct d order by d) into new.agenda_dias from unnest(new.agenda_dias) d;
+  else new.agenda_freq := null; new.agenda_dias := null;
+  end if;
   if v_q is null and new.gatilho_lista_id is not null then
     raise exception 'Regra da empresa escolhe a lista pelo nome' using errcode = '23514';
   end if;
@@ -2218,6 +2242,11 @@ begin
     elsif t = 'prioridade' then
       if jsonb_typeof(c->'valores') is distinct from 'array' or exists (select 1 from jsonb_array_elements_text(c->'valores') x where x not in ('baixa','media','alta')) then
         raise exception 'Prioridade inválida na condição' using errcode = '23514';
+      end if;
+    elsif t = 'situacao' then
+      if jsonb_typeof(c->'valores') is distinct from 'array' or jsonb_array_length(c->'valores') = 0
+         or exists (select 1 from jsonb_array_elements_text(c->'valores') x where x not in ('aberta','atrasada','concluida')) then
+        raise exception 'Situação: aberta, atrasada ou concluída' using errcode = '23514';
       end if;
     elsif t = 'campo' then
       if not exists (select 1 from fluxo.campos where id = (c->>'campo')::uuid and empresa_id = new.empresa_id) then raise exception 'Campo de outra empresa' using errcode = '42501'; end if;
@@ -2303,6 +2332,11 @@ begin
       if exists (select 1 from fluxo.tarefa_etiquetas where tarefa_id = k.id and etiqueta_id = (c->>'etiqueta')::uuid) <> coalesce((c->>'tem')::boolean, true) then return false; end if;
     elsif t = 'prioridade' then
       if not (c->'valores') ? k.prioridade then return false; end if;
+    elsif t = 'situacao' then
+      if not ((k.concluida_em is null and (c->'valores') ? 'aberta')
+              or (k.concluida_em is not null and (c->'valores') ? 'concluida')
+              or ((c->'valores') ? 'atrasada' and k.concluida_em is null and k.prazo < current_date
+                  and not exists (select 1 from fluxo.listas l where l.id = k.lista_id and l.tipo = 'pausa'))) then return false; end if;
     elsif t = 'campo' then
       select * into f from fluxo.campos where id = (c->>'campo')::uuid;
       select * into v from fluxo.tarefa_campos where tarefa_id = k.id and campo_id = f.id;
@@ -2508,6 +2542,78 @@ begin
   return n;
 end $$;
 
+-- A regra agendada roda hoje? Mensal no dia 31 roda no último dia dos meses mais curtos.
+create or replace function fluxo.agenda_hoje(p_freq text, p_dias int[], p_hoje date)
+returns boolean language sql immutable set search_path = '' as $$
+  select case p_freq
+    when 'diaria' then true
+    when 'semanal' then extract(dow from p_hoje)::int = any (p_dias)
+    when 'mensal' then extract(day from p_hoje)::int = any (p_dias)
+                       or (p_hoje = (date_trunc('month', p_hoje) + interval '1 month - 1 day')::date
+                           and exists (select 1 from unnest(p_dias) d where d > extract(day from p_hoje)))
+    else false end $$;
+
+-- Rotina diária: regras agendadas para hoje, em cada cartão do escopo que passa nas condições, uma vez por dia.
+create or replace function fluxo.automacoes_agenda(p_hoje date default current_date)
+returns int language plpgsql security definer set search_path = '' as $$
+declare a fluxo.automacoes; k fluxo.tarefas; n int := 0;
+begin
+  for a in select * from fluxo.automacoes x where x.ativa and x.gatilho = 'agenda' and fluxo.agenda_hoje(x.agenda_freq, x.agenda_dias, p_hoje)
+           order by x.quadro_id is not null, x.tarefa_id is not null, x.criada_em loop
+    continue when not fluxo._dono_vale(a);
+    for k in select * from fluxo.tarefas t
+             where t.empresa_id = a.empresa_id and (a.quadro_id is null or t.quadro_id = a.quadro_id) and (a.tarefa_id is null or t.id = a.tarefa_id)
+               and not t.modelo and t.arquivada_em is null
+               and not exists (select 1 from fluxo.automacao_execucoes e where e.automacao_id = a.id and e.tarefa_id = t.id and e.referencia = p_hoje)
+             order by t.criado_em loop
+      -- uma regra anterior pode ter arquivado ou mudado o cartão
+      select * into k from fluxo.tarefas where id = k.id;
+      continue when k.arquivada_em is not null;
+      continue when a.quadro_id is not null and fluxo.papel_tarefa(k.id, a.dono_id) is null;
+      continue when not fluxo._condicoes_ok(a, k);
+      perform fluxo._executar_automacao(a, k.id, p_hoje);
+      n := n + 1;
+    end loop;
+  end loop;
+  return n;
+end $$;
+
+-- Botões do cartão: os que valem para ele (escopo, ligado, dono com direito e condições). Quem não edita o cartão não vê botão.
+create or replace function fluxo.botoes_cartao(p_tarefa uuid)
+returns table (id uuid, nome text, escopo text) language plpgsql stable security definer set search_path = '' as $$
+declare k fluxo.tarefas;
+begin
+  select * into k from fluxo.tarefas where tarefas.id = p_tarefa;
+  if k.id is null or k.modelo or k.arquivada_em is not null or fluxo.nivel_cartao(fluxo.papel_tarefa(k.id)) < 3 then return; end if;
+  return query
+    select a.id, a.nome, case when a.tarefa_id is not null then 'cartao' when a.quadro_id is not null then 'quadro' else 'empresa' end
+    from fluxo.automacoes a
+    where a.empresa_id = k.empresa_id and a.ativa and a.gatilho = 'botao'
+      and (a.quadro_id is null or a.quadro_id = k.quadro_id) and (a.tarefa_id is null or a.tarefa_id = k.id)
+      and fluxo._dono_vale(a) and (a.quadro_id is null or fluxo.papel_tarefa(k.id, a.dono_id) is not null)
+      and fluxo._condicoes_ok(a, k)
+    order by a.quadro_id is not null, a.tarefa_id is not null, a.nome;
+end $$;
+
+-- Aperta um botão no cartão: quem aperta edita o cartão; as ações rodam como numa regra (sem disparar outras) e ficam registradas.
+create or replace function fluxo.apertar_botao(p_botao uuid, p_tarefa uuid)
+returns fluxo.automacao_execucoes language plpgsql security definer set search_path = '' as $$
+declare a fluxo.automacoes; k fluxo.tarefas; e fluxo.automacao_execucoes;
+begin
+  select * into a from fluxo.automacoes where id = p_botao;
+  select * into k from fluxo.tarefas where id = p_tarefa;
+  if a.id is null or a.gatilho <> 'botao' or k.id is null or a.empresa_id <> k.empresa_id then
+    raise exception 'Botão não encontrado' using errcode = 'P0002';
+  end if;
+  if fluxo.nivel_cartao(fluxo.papel_tarefa(k.id)) < 3 then raise exception 'Só quem edita o cartão aperta o botão' using errcode = '42501'; end if;
+  if not exists (select 1 from fluxo.botoes_cartao(k.id) x where x.id = p_botao) then
+    raise exception 'Este botão não vale para este cartão' using errcode = 'P0001';
+  end if;
+  perform fluxo._executar_automacao(a, k.id);
+  select * into e from fluxo.automacao_execucoes where automacao_id = a.id and tarefa_id = k.id order by em desc limit 1;
+  return e;
+end $$;
+
 alter table fluxo.automacoes enable row level security;
 alter table fluxo.automacao_execucoes enable row level security;
 create policy ver on fluxo.automacoes for select to authenticated
@@ -2532,6 +2638,8 @@ create policy ver on fluxo.automacao_execucoes for select to authenticated
 create trigger t_aud after insert or update or delete on fluxo.automacoes for each row execute function app.tg_auditoria();
 grant select, insert, update, delete on fluxo.automacoes to authenticated;
 grant select on fluxo.automacao_execucoes to authenticated;
+revoke execute on function fluxo.automacoes_agenda(date) from public;
+grant execute on function fluxo.botoes_cartao(uuid), fluxo.apertar_botao(uuid, uuid) to authenticated;
 revoke execute on function fluxo.disparar_automacoes(uuid, text, uuid, uuid, uuid, date), fluxo.automacoes_prazo(date),
   fluxo._executar_automacao(fluxo.automacoes, uuid, date), fluxo._acoes_automacao(fluxo.automacoes, uuid, uuid),
   fluxo._avisar(uuid, uuid, text, uuid, uuid) from public;
@@ -2575,9 +2683,9 @@ begin
     end loop;
     continue when not ok;
     insert into fluxo.automacoes (empresa_id, tarefa_id, nome, gatilho, gatilho_lista_id, gatilho_etiqueta_id, gatilho_campo_id, gatilho_dias,
-                                  condicoes, acoes, ativa, dono_id)
+                                  agenda_freq, agenda_dias, condicoes, acoes, ativa, dono_id)
     values (kp.empresa_id, p_para, a.nome, a.gatilho, v_lista, a.gatilho_etiqueta_id, a.gatilho_campo_id, a.gatilho_dias,
-            cs, ac, a.ativa, coalesce(p_dono, a.dono_id));
+            a.agenda_freq, a.agenda_dias, cs, ac, a.ativa, coalesce(p_dono, a.dono_id));
     n := n + 1;
   end loop;
   return n;

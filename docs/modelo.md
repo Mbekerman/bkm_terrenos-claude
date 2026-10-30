@@ -925,7 +925,7 @@ erDiagram
 
 - `app.v_tarefas_funil` (em `…000400_negociacao.sql`, porque junta `fluxo` com `app.processos`): cada tarefa de quadro de terreno com a fase aberta do terreno (ativa ou em stand by, sem as partes), a etapa e a subetapa; uma linha por fase aberta. Base da vista Funil da página Tarefas, só leitura (formato Monday: uma tabela por fase, etapa ou subetapa, uma linha por terreno; o andamento e a próxima tarefa saem das tarefas do terreno).
 
-- **Fica para os próximos blocos:** botões no cartão e agendamentos (5b), WhatsApp e a tela de horas.
+- **Fica para os próximos blocos:** WhatsApp e a tela de horas (botões e agendamentos vieram no 5b).
 
 ### Automações (bloco 5a)
 
@@ -943,6 +943,14 @@ erDiagram
 - `automacao_execucoes`: regra, cartão, gatilho, `referencia` (o prazo, nos gatilhos de prazo: único por regra e cartão), quem disparou (vazio = rotina), resultado `ok` ou `erro` e o resumo do que fez.
 - Disparo: gatilhos `t_auto` no cartão, nas etiquetas, nos campos e nos itens de checklist chamam `fluxo.disparar_automacoes`; "criada" é um gatilho adiado para o fim da transação, e o cartão criado na mesma transação não dispara os outros (cópia, ocorrência e modelo nascem com tudo). Prazo: `fluxo.automacoes_prazo` na rotina diária.
 - Regras de execução: a regra roda só se o dono ainda tem o direito (administrador ou editor) e, no quadro, vê o cartão; as ações rodam com `fluxo.automacao = '1'`, e nenhum gatilho dispara nesse estado (sem cadeia); erro numa ação desfaz só a regra e fica registrado; avisos só para quem vê o cartão.
+
+### Botões e agendamentos (bloco 5b)
+
+Dois gatilhos a mais em `fluxo.automacoes` (30/out/2026), com as mesmas condições, ações, escopos (empresa, quadro, cartão), dono e registro:
+
+- `botao`: a regra vira um botão nos cartões que passam nas condições. `fluxo.botoes_cartao(tarefa)` lista os que valem para o cartão (ligados, do escopo, dono com direito e, no quadro, dono que vê o cartão); quem não edita o cartão recebe a lista vazia. `fluxo.apertar_botao(botao, tarefa)` confere de novo, roda as ações como numa regra (sem disparar outras) e devolve a execução, com quem apertou em `user_id`.
+- `agenda`: `agenda_freq` (`diaria`, `semanal`, `mensal`) e `agenda_dias` (dias da semana, 0 = domingo, ou do mês, 1 a 31, sem repetição). `fluxo.agenda_hoje(freq, dias, dia)` diz se roda no dia; o dia do mês que o mês não tem roda no último dia. `fluxo.automacoes_agenda(dia)`, na rotina diária, roda cada regra do dia em cada cartão do escopo (fora modelo e arquivado) que passa nas condições, uma vez por dia (`referencia` = o dia). Regra agendada sem condição é recusada, para não tocar todos os cartões.
+- Condição `situacao` (qualquer gatilho): `aberta`, `atrasada` (aberta, prazo antes de hoje e fora da lista de pausa) ou `concluida`; os valores marcados somam.
 
 ## Setores censitários e renda familiar estimada
 
