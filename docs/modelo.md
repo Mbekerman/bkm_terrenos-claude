@@ -806,7 +806,39 @@ erDiagram
 - **Pausar:** `fluxo.pausar(tarefa, motivo)`; entrar na lista Pausadas só por ela (o `t_lista` recusa o arraste direto). Quem tem o nível de `regras.pausa_aprova` (o próprio nível, ou administrador) pausa na hora; os demais deixam o pedido pendente, com o cartão na lista em que está, e o primeiro superior com o nível recebe `aprovacao_pendente` (origem `tarefa_pausas`). `fluxo.decidir_pausa(pausa, aprovar, motivo)`: aprovar move para Pausadas guardando a lista de antes; recusar exige motivo; quem pediu pode desistir. `fluxo.salvar_regra_pausa` pelo administrador.
 - **Retomar:** `fluxo.retomar(tarefa)` encerra a pausa, volta à lista de antes (se ainda aberta) e empurra o prazo pelos dias pausados (corridos, ou úteis quando a empresa conta dias úteis); as sucessoras do cronograma andam em cascata. Concluir a tarefa direto da pausa encerra a pausa sem empurrar.
 - **Tempo:** `fluxo.v_tarefa_sla` dá dias aberta, dias pausada, dias líquidos, número de pausas e se há pausa ativa ou pedida.
-- **Fica para os próximos blocos:** visibilidade por cartão (empresa, grupo, envolvidos, com exceções e papel por pessoa), campos personalizados, recorrência, automações e WhatsApp.
+### Visibilidade por cartão (bloco 3)
+
+Decisões do Moisés de 29/out/2026. Mesma migration.
+
+```mermaid
+erDiagram
+  tarefas ||--o{ tarefa_acessos : "liberações"
+  grupos ||--o{ grupo_membros : "pessoas"
+  grupos ||--o{ tarefa_acessos : "liberado"
+  objeto_tipos ||--o{ quadros : "teto do objeto"
+  tarefas {
+    text visibilidade "publico | individual | restrito"
+  }
+  tarefa_acessos {
+    uuid user_id "ou grupo_id"
+    uuid grupo_id
+    text papel "leitor | comentarista | editor | administrador"
+    bool excluido "exceção: tira a pessoa do grupo"
+  }
+  objeto_tipos {
+    text tipo "terreno"
+    regproc funcao "app.ve_terreno"
+  }
+```
+
+- **Teto do objeto:** `fluxo.ve_objeto` chama a função registrada para o tipo do quadro (no BKM, `app.ve_terreno`, hoje a empresa; os perfis de acesso a terrenos entram nela). Sem objeto ou tipo sem registro, o teto é a empresa. O administrador do sistema vê tudo.
+- **Papel no cartão** (`fluxo.papel_cartao`, nulo = não vê): quem criou é administrador do cartão. Público: o papel do sistema (diretor, gestor e analista editam; leitura e básico leem), que um acesso dado no cartão pode subir. Individual: só quem criou. Restrito: o acesso dado (o da pessoa vale sobre o dos grupos; exceção anula o do grupo), senão editor para quem está no cartão e para o diretor.
+- **RLS:** cartão e filhas (pessoas, etiquetas, checklists e itens, comentários e reações, anexos, vínculos, aprovações, pausas, linha de base) leem por `fluxo.papel_tarefa` e escrevem por `fluxo.edita_tarefa` (comentar: `fluxo.comenta_tarefa`); as funções da tarefa conferem `fluxo.exigir_edicao_tarefa`. O histórico (`app.auditoria`) esconde o que é de cartão que a pessoa não vê.
+- **Regras:** a visibilidade só muda por quem gerencia (`fluxo.gerencia_tarefa`: administrador do cartão ou do sistema, ou diretor que vê o cartão); pôr outra pessoa num individual o torna restrito (gatilhos `t_visibilidade` e `t_restringe`); item que vira cartão herda a visibilidade e os acessos; modelo de tarefas guarda a visibilidade (restrito no modelo = só os envolvidos); salvar o quadro como modelo leva só o que quem salva vê.
+- **@ no cartão:** `fluxo.papel_cartao` e `fluxo.papel_tarefa` aceitam a pessoa (padrão: quem lê), e a função do teto recebe (objeto, pessoa); `app.tg_mencoes` só avisa quem vê o cartão. A tela só oferece no @ quem vê o cartão.
+- O banco tem `publico` como padrão para quem insere direto; a tela sempre pergunta.
+
+- **Fica para os próximos blocos:** campos personalizados, recorrência, automações e WhatsApp.
 
 ## Setores censitários e renda familiar estimada
 

@@ -12,9 +12,14 @@ function escM(tx){const eq=new Set(mnEquipe().map(u=>u.arroba));
 /* vai por e-mail? a escolha da pessoa vence o padrão do tipo */
 function mnEmail(para,tipo){const p=S.prefsNotif?.[para]?.[tipo];return p!=null?p:!!cfg().notif[tipo]?.email}
 /* avisa só quem entrou agora no texto, e nunca quem escreveu */
-function mencionar(t,antes,depois,onde,ir){const ja=mnPessoas(antes);
-  mnPessoas(depois).filter(u=>!ja.includes(u)&&u!==me()).forEach(u=>notificar(u,'mencao',`${me()} mencionou você ${onde}`,t,null,ir))}
-function mencionarTarefa(t,k,antes){mencionar(t,antes,(k.desc||'')+'\n'+(k.resultado||''),`na tarefa: ${k.titulo}`,{b:'tarefas',alvo:k.id})}
+function mencionar(t,antes,depois,onde,ir,pode){const ja=mnPessoas(antes);
+  mnPessoas(depois).filter(u=>!ja.includes(u)&&u!==me()&&(!pode||pode(u))).forEach(u=>notificar(u,'mencao',`${me()} mencionou você ${onde}`,t,null,ir))}
+function mencionarTarefa(t,k,antes){mencionar(t,antes,(k.desc||'')+'\n'+(k.resultado||''),`na tarefa: ${k.titulo}`,{b:'tarefas',alvo:k.id},u=>!!vzPapel(t,k,u))}
+/* num cartão, a lista do @ só traz quem vê o cartão; na tarefa nova, pela visibilidade marcada no formulário */
+function mnPodeSer(el,u){const f=el.closest('#f-tk');
+  if(f){const v=f.querySelector('input[name=vis]:checked')?.value,resp=f.querySelector('[name=resp]')?.value;if(ehAdmin(u))return true;if(v==='individual')return false;
+    if(v==='restrito'){const lib=[...f.querySelectorAll('input[name=lib]:checked')].map(x=>x.value);return u===resp||membro(u).papel==='diretor'||lib.includes(u)||lib.some(x=>x.startsWith('g:')&&(vzGrupo(x.slice(2))?.membros||[]).includes(u))}return true}
+  if(UI.modal==='tarefa'&&UI.tkSel?.kid&&el.closest('#modal')){const {t,k}=tkAtual();return !k||!!vzPapel(t,k,u)}return true}
 /* do sino ao item: abre o bloco da ficha, rola até o item e acende */
 function mnIr(ir){blocoAbre(ir.b);render();setTimeout(()=>{const el=document.querySelector(`[data-mid="${ir.alvo}"]`)||document.getElementById('bl-'+ir.b);if(!el)return;
   el.scrollIntoView({behavior:'smooth',block:'center'});document.querySelectorAll('.pisca').forEach(x=>x.classList.remove('pisca'));
@@ -27,7 +32,7 @@ function mnPop(){let el=document.getElementById('mn-pop');if(!el){el=document.cr
 function mnFechar(){MN=null;const el=document.getElementById('mn-pop');if(el)el.hidden=true}
 function mnAbrir(el){const pos=el.selectionStart??el.value.length,m=/(?:^|[^A-Za-z0-9._@-])@([A-Za-z0-9._-]{0,40})$/.exec(el.value.slice(0,pos));
   if(!m){mnFechar();return}
-  const q=arrobaDe(m[1]),lista=mnEquipe().filter(u=>u.nome!==me()&&(!q||u.arroba.startsWith(q)||u.arroba.split('.').some(w=>w.startsWith(q)))).slice(0,6);
+  const q=arrobaDe(m[1]),lista=mnEquipe().filter(u=>u.nome!==me()&&mnPodeSer(el,u.nome)&&(!q||u.arroba.startsWith(q)||u.arroba.split('.').some(w=>w.startsWith(q)))).slice(0,6);
   if(!lista.length){mnFechar();return}
   MN={el,ini:pos-m[1].length-1,fim:pos,lista,i:MN&&MN.el===el?Math.min(MN.i,lista.length-1):0};mnDesenhar()}
 function mnDesenhar(){const p=mnPop(),r=MN.el.getBoundingClientRect();

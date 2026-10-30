@@ -185,7 +185,9 @@ begin
     else 'na reunião de ' || to_char((to_jsonb(new)->>'inicio')::timestamptz, 'DD/MM') end;
   for r in select distinct u.user_id from app.usuarios u
            join app.membros m on m.user_id = u.user_id and m.empresa_id = new.empresa_id
-           where u.arroba = any(novos) and not (u.arroba = any(antigos)) and u.user_id is distinct from auth.uid() loop
+           where u.arroba = any(novos) and not (u.arroba = any(antigos)) and u.user_id is distinct from auth.uid()
+             -- num cartão, só avisa quem vê o cartão (visibilidade por cartão)
+             and (v_tarefa is null or fluxo.papel_tarefa(v_tarefa, u.user_id) is not null) loop
     insert into app.mencoes (empresa_id, terreno_id, origem_tabela, origem_id, user_id)
     values (new.empresa_id, v_ter, tg_table_name, new.id, r.user_id)
     on conflict do nothing;
