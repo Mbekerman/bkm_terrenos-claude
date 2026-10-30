@@ -42,7 +42,7 @@ await p.goto(B+'/fases/novos_negocios');await espera();await p.evaluate(()=>docu
 ok(/^\/prototipo\/fases\/novos_negocios\/[a-z_]+$/.test(url()),'descer para a etapa entra no endereço ('+url()+')');
 await p.goBack();await espera();ok(url()==='/prototipo/fases/novos_negocios','voltar sobe um nível');
 await p.goto(B+'/configuracoes/parametros');await espera();ok(await rota()==='config'&&/true Parâmetros/.test(await p.evaluate(()=>''+document.querySelector('#main [data-a=cfg-aba][data-v=zonas]')?.getAttribute('aria-selected')+' '+document.querySelector('#main [data-a=cfg-aba][data-v=zonas]')?.textContent)),'link de Configurações › Parâmetros urbanísticos');
-await p.goto(B+'/tarefas/tabela');await espera();ok(await rota()==='tarefas'&&await p.evaluate(()=>document.querySelector('[data-a=tk-vista][data-v=tabela]')?.getAttribute('aria-pressed')==='true'||!!document.querySelector('#main table')),'link das tarefas em tabela');
+await p.goto(B+'/tarefas/tabela');await espera();ok(await rota()==='tarefas'&&await p.evaluate(()=>document.querySelector('[data-a=tk-vista][data-v=lista]')?.getAttribute('aria-pressed')==='true'),'link antigo das tarefas em tabela abre a Lista');
 await p.goto(B+'/terrenos/TER-000123/viabilidade/1');await p.waitForTimeout(700);const pop=await p.$('.vb-pop');
 ok(!!pop||/não encontrado/.test(await p.textContent('#toast')),'link do estudo de viabilidade abre o popup ('+(pop?'aberto':'terreno sem estudo')+')');
 if(pop){await p.screenshot({path:OUT+'4_viab.png'});await p.keyboard.press('Escape');await espera();ok(url()==='/prototipo/terrenos/TER-000123','fechar o estudo volta ao endereço da ficha')}

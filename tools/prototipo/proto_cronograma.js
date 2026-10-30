@@ -99,17 +99,29 @@ function crGantt(grupos,opts={}){const its=grupos.flatMap(g=>g.itens);const data
   const cab=`<div class="cr-tlh"><div class="cr-mes">${meses.map(m=>`<span style="left:${m.i*W}px;width:${m.n*W}px">${MES[Number(m.m.slice(5))-1]} ${m.m.slice(0,4)}</span>`).join('')}</div>
     <div class="cr-dias">${dias.map((d,i)=>`<span class="${!crUtil(d)?'folga':''} ${d===HOJE?'hoje':''}" style="left:${i*W}px;width:${W}px">${Number(d.slice(8))}</span>`).join('')}</div></div>`;
   const fundo=`<div class="cr-fundo">${dias.map((d,i)=>!crUtil(d)?`<i style="left:${i*W}px;width:${W}px"></i>`:'').join('')}<b class="cr-hoje" style="left:${x(HOJE)+W/2}px"></b></div>`;
-  let linhas='',esq='';
-  grupos.forEach(g=>{if(g.titulo){esq+=`<div class="cr-gr">${g.titulo}</div>`;linhas+=`<div class="cr-row cr-grr"></div>`}
+  let linhas='',esq='',yy=0;const H=36;const pos=new Map(),setas=[];
+  grupos.forEach(g=>{if(g.titulo){esq+=`<div class="cr-gr">${g.titulo}</div>`;linhas+=`<div class="cr-row cr-grr"></div>`;yy+=32}
     g.itens.forEach(({t,k})=>{const b=crBase(t,k),dv=b&&k.prazo?crDias(b.pz,k.prazo):0,pr=crPreds(k).map(v=>{const p=t.tarefas.find(x=>x.id===v.id);return p?p.codigo.replace('TAR-','').replace(/^0+/,'')+v.tipo+(v.def?(v.def>0?'+':'')+v.def:''):''}).filter(Boolean).join(', ');
       esq+=`<div class="cr-l" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}" tabindex="0" role="button"><span class="cr-cod num">${k.codigo.replace('TAR-','')}</span><span class="cr-tit">${escT(k.titulo)}</span>
         <span class="cr-c num">${k.inicio?fd(k.inicio):'—'}</span><span class="cr-c num">${k.prazo?fd(k.prazo):'—'}</span><span class="cr-c num">${k.dur||'—'}</span><span class="cr-c cr-pred" title="Predecessoras">${pr||''}</span></div>`;
+      const ry=yy+H/2-3;yy+=H;const pg=crProg(t,k),xb=k.inicio&&k.prazo?x(k.inicio):k.prazo?x(k.prazo)+W/2-7:null,wb=k.inicio&&k.prazo?(crDias(k.inicio,k.prazo)+1)*W:14;
+      if(xb!=null)pos.set(k.id,{y:ry,x0:xb,x1:xb+wb});
       linhas+=`<div class="cr-row">${b?`<i class="cr-base" style="left:${x(b.ini)}px;width:${(crDias(b.ini,b.pz)+1)*W}px" title="Linha de base: ${fd(b.ini)} – ${fd(b.pz)}"></i>`:''}
-        ${k.inicio&&k.prazo?`<span class="cr-bar ${k.feita?'feita':tkAtras(k)?'atras':''} ${dv>0?'desvio':''}" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}" style="left:${x(k.inicio)}px;width:${(crDias(k.inicio,k.prazo)+1)*W}px" title="${esc(k.titulo)}: ${fd(k.inicio)} – ${fd(k.prazo)}${dv?` · ${dv>0?'+':''}${dv} d da base`:''}"><span>${esc(k.titulo)}</span></span>`
-          :k.prazo?`<span class="cr-marco" style="left:${x(k.prazo)+W/2-7}px" title="${esc(k.titulo)}: prazo ${fd(k.prazo)}"></span>`:''}</div>`})});
+        ${k.inicio&&k.prazo?`<span class="cr-bar ${k.feita?'feita':tkAtras(k)?'atras':''} ${dv>0?'desvio':''}" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}" style="left:${xb}px;width:${wb}px" title="${esc(k.titulo)}: ${fd(k.inicio)} – ${fd(k.prazo)} · ${pg}% feito${dv?` · ${dv>0?'+':''}${dv} d da base`:''}"><i style="width:${pg}%"></i></span>`
+          :k.prazo?`<span class="cr-marco ${k.feita?'feita':tkAtras(k)?'atras':''}" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}" style="left:${xb}px" title="${esc(k.titulo)}: prazo ${fd(k.prazo)}"></span>`:''}
+        ${xb!=null?`<span class="cr-rot" style="left:${xb+wb+6}px">${escT(k.titulo)}${tkAtras(k)?`<b class="cr-atr">${crDias(k.prazo,HOJE)} d de atraso</b>`:''}${dv>0?`<b class="cr-atr base" title="Depois da linha de base">+${dv} d da base</b>`:''}</span>`:''}</div>`;
+      crPreds(k).forEach(v=>setas.push({de:v.id,para:k.id,tipo:v.tipo}))})});
+  /* setas das predecessoras: sai do fim (ou do início, em II/IT) da predecessora e entra no início (ou no fim, em TT/IT) da tarefa */
+  const svg=setas.map(({de,para,tipo})=>{const a=pos.get(de),c=pos.get(para);if(!a||!c)return '';
+    const sx=tipo==='II'||tipo==='IT'?a.x0:a.x1,fim=tipo==='TT'||tipo==='IT',ex=fim?c.x1:c.x0,sy=a.y,ey=c.y,bs=ex+(fim?6:-6);
+    /* sai 4 px da ponta (antes do nome), desce até a linha da tarefa e entra pela ponta certa; quando a tarefa começa antes, volta pela divisa entre as linhas */
+    const mx=fim?Math.max(sx+4,ex+10):sx+4,dir=fim||ex-6>=mx,dd=dir?`M${sx} ${sy} H${mx} V${ey} H${bs}`:`M${sx} ${sy} H${mx} V${ey>sy?ey-15:ey+21} H${ex-12} V${ey} H${bs}`;
+    return `<path d="${dd}"/><path class="cr-pt" d="M${ex} ${ey} L${bs} ${ey-4} L${bs} ${ey+4} Z"/>`}).join('');
   return `<div class="cr-g"><div class="cr-esq"><div class="cr-eh"><span class="cr-cod">Nº</span><span class="cr-tit">Tarefa</span><span class="cr-c">Início</span><span class="cr-c">Prazo</span><span class="cr-c">Dur.</span><span class="cr-c cr-pred">Pred.</span></div>${esq}</div>
-    <div class="cr-tl" data-hoje="${Math.max(0,x(HOJE)-6*W)}"><div class="cr-tlin" style="width:${nd*W}px">${cab}<div class="cr-corpo">${fundo}${linhas}</div></div></div></div>
-    <div class="cr-leg"><span><i class="cr-lb1"></i>Atual</span><span><i class="cr-lb2"></i>Linha de base</span><span><i class="cr-lb3"></i>Atrasada</span><span class="faint">${crUteis()?'Dias úteis':'Dias corridos'} · TI término-início, II início-início, TT término-término, IT início-término</span></div>`}
+    <div class="cr-tl" data-hoje="${Math.max(0,x(HOJE)-6*W)}"><div class="cr-tlin" style="width:${nd*W}px">${cab}<div class="cr-corpo">${fundo}<svg class="cr-setas" width="${nd*W}" height="${yy}" aria-hidden="true">${svg}</svg>${linhas}</div></div></div></div>
+    <div class="cr-leg"><span><i class="cr-lb1"></i>Atual, com o feito</span><span><i class="cr-lb2"></i>Linha de base</span><span><i class="cr-lb3"></i>Atrasada</span><span><b class="cr-atr base">+3 d da base</b>Depois da linha de base</span><span class="faint">${crUteis()?'Dias úteis':'Dias corridos'} · TI término-início, II início-início, TT término-término, IT início-término</span></div>`}
+/* andamento da barra: concluída 100%; senão, o que já foi feito do checklist e das subtarefas */
+function crProg(t,k){if(k.feita)return 100;const its=(k.checklists||[]).flatMap(c=>c.itens),ss=(t.tarefas||[]).filter(x=>x.mae===k.id&&!x.arq),n=its.length+ss.length;return n?Math.round(100*(its.filter(i=>i.feito).length+ss.filter(x=>x.feita).length)/n):0}
 const crOrdem=(a,b)=>String(a.k.inicio||a.k.prazo||'9').localeCompare(String(b.k.inicio||b.k.prazo||'9'))||String(a.k.codigo).localeCompare(b.k.codigo);
 /* faixa da linha de base no cronograma do terreno */
 function crBaseBarra(t){const a=crLbAprov(t),p=crLbPend(t),eu=me(),ed=tkEd(),pode=p&&crAprova(eu,p.por)&&ed;

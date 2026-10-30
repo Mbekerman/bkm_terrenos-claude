@@ -677,6 +677,7 @@ erDiagram
     text prioridade
     text capa
     uuid processo_id "FK posta pelo app"
+    uuid mae_id "subtarefa: a tarefa mãe"
     timestamptz concluida_em
     timestamptz arquivada_em
   }
@@ -694,6 +695,7 @@ erDiagram
 - **Concluir:** a tarefa não tem status. Entrar numa lista do tipo `conclui` preenche `concluida_em` e `concluida_por`; sair dela reabre; marcar `concluida_em` à mão leva o cartão para a primeira lista que conclui, e limpar leva para a primeira aberta (`fluxo.tg_tarefa_lista`). A lista `pausa` é a que vai pausar o SLA (bloco 3).
 - **Nunca apagada:** sem `delete` em `tarefas`, `listas` e `etiquetas`; a tarefa arquiva (`arquivada_em`, `arquivada_por`) e restaura. Comentário: só o autor edita (`editado_em`) e apaga (`apagado_em`, o texto some da tela e fica na auditoria). Anexo sai com `removido_em`.
 - **Pessoas:** solicitante (quem criou, por padrão) e responsável principal ficam no cartão; executores, aprovadores e quem acompanha em `tarefa_pessoas`.
+- **Subtarefas** (30/out/2026): `mae_id` liga a subtarefa à mãe, no mesmo quadro e com um nível só (a mãe não é subtarefa, quem tem subtarefas não vira subtarefa, modelo só com modelo; `fluxo.tg_subtarefa`). Com a regra do checklist ligada, a mãe não conclui com subtarefa aberta e não arquivada (`pendencias_conclusao` devolve `subtarefas`; `tg_tarefa_lista` recusa).
 - **Checklist:** vários por cartão, item com responsável e prazo; `fluxo.item_para_tarefa(item)` cria o cartão no mesmo quadro, ligado ao de origem por anexo, e marca o item como feito.
 - **Escrita direta** de quem edita (diretor, gestor, analista), pela RLS por `empresa_id`; Leitura só vê. Todas as tabelas vão para `app.auditoria` (o vínculo sem id próprio registra a tarefa).
 ### Cronograma (bloco 2) e modelos de tarefas
@@ -915,12 +917,12 @@ erDiagram
 
 ### Copiar cartão e modelo de cartão (bloco 4)
 
-- `fluxo.copiar_tarefa(tarefa, lista, título, itens)` roda com os direitos de quem copia (RLS de cada tabela): só copia o que a pessoa vê, para uma lista aberta de um quadro que ela vê e edita. `itens` escolhe o que vai: `checklists` (itens em aberto, sem prazo), `etiquetas`, `pessoas` (responsável, executores, aprovadores, quem acompanha e responsáveis dos itens), `campos` (só ativos e opções ativas) e `anexos`. Vão sempre a visibilidade, os acessos, a prioridade, a capa e a estimativa; nunca datas, comentários, horas, aprovações nem a série.
+- `fluxo.copiar_tarefa(tarefa, lista, título, itens)` roda com os direitos de quem copia (RLS de cada tabela): só copia o que a pessoa vê, para uma lista aberta de um quadro que ela vê e edita. `itens` escolhe o que vai: `checklists` (itens em aberto, sem prazo), `etiquetas`, `pessoas` (responsável, executores, aprovadores, quem acompanha e responsáveis dos itens), `campos` (só ativos e opções ativas), `anexos` e `automacoes` (as regras do cartão, por `fluxo._copiar_automacoes`, com quem copia como dono). Vão sempre a visibilidade, os acessos, a prioridade, a capa e a estimativa; nunca datas, comentários, horas, aprovações nem a série.
 - `tarefas.modelo`: o cartão fica no quadro como base. Não conclui (`tg_tarefa_lista`), não atrasa (`v_tarefas`, rotina diária), não tem recorrência nem vem de uma (`t_modelo`). Criar a partir do modelo é copiar.
 
 ### Tarefas pelo funil (bloco 4)
 
-- `app.v_tarefas_funil` (em `…000400_negociacao.sql`, porque junta `fluxo` com `app.processos`): cada tarefa de quadro de terreno com a fase aberta do terreno (ativa ou em stand by, sem as partes), a etapa e a subetapa; uma linha por fase aberta. Base da vista Funil da página Tarefas, só leitura.
+- `app.v_tarefas_funil` (em `…000400_negociacao.sql`, porque junta `fluxo` com `app.processos`): cada tarefa de quadro de terreno com a fase aberta do terreno (ativa ou em stand by, sem as partes), a etapa e a subetapa; uma linha por fase aberta. Base da vista Funil da página Tarefas, só leitura (formato Monday: uma tabela por fase, etapa ou subetapa, uma linha por terreno; o andamento e a próxima tarefa saem das tarefas do terreno).
 
 - **Fica para os próximos blocos:** botões no cartão e agendamentos (5b), WhatsApp e a tela de horas.
 
@@ -936,6 +938,7 @@ erDiagram
 ```
 
 - `automacoes`: nome, escopo (`quadro_id` vazio = empresa toda, só administrador, listas pelo nome; com quadro, de quem edita o terreno, listas pelo id), `gatilho` (`criada`, `entrou_lista`, `concluida`, `etiqueta`, `campo`, `checklist_completo`, `prazo_antes` com `gatilho_dias`, `prazo_venceu`) e o parâmetro dele (lista, etiqueta ou campo; vazio = qualquer), `condicoes` e `acoes` em JSON (conferidos por `tg_automacao`), `ativa`, `dono_id`. Só o dono ou o administrador muda; com execuções não se apaga.
+- **Regra do cartão** (30/out/2026): `automacoes.tarefa_id` prende a regra a um cartão (o `quadro_id` vem dele). Cria quem edita o cartão (`papel_tarefa` de Editor para cima); não usa o gatilho `criada`; o cartão não muda depois. Dispara só nele (`disparar_automacoes` e `automacoes_prazo` filtram por `tarefa_id`) e, na mesma ordem, roda depois das da empresa e das do quadro. `fluxo._copiar_automacoes(de, para, dono)` (definer) leva as regras na cópia do cartão e em cada ocorrência da recorrência, trocando as listas pelo nome quando o quadro muda e pulando a que não tem a lista lá; o dono que não edita o cartão novo fica de fora.
 - `automacao_execucoes`: regra, cartão, gatilho, `referencia` (o prazo, nos gatilhos de prazo: único por regra e cartão), quem disparou (vazio = rotina), resultado `ok` ou `erro` e o resumo do que fez.
 - Disparo: gatilhos `t_auto` no cartão, nas etiquetas, nos campos e nos itens de checklist chamam `fluxo.disparar_automacoes`; "criada" é um gatilho adiado para o fim da transação, e o cartão criado na mesma transação não dispara os outros (cópia, ocorrência e modelo nascem com tudo). Prazo: `fluxo.automacoes_prazo` na rotina diária.
 - Regras de execução: a regra roda só se o dono ainda tem o direito (administrador ou editor) e, no quadro, vê o cartão; as ações rodam com `fluxo.automacao = '1'`, e nenhum gatilho dispara nesse estado (sem cadeia); erro numa ação desfaz só a regra e fica registrado; avisos só para quem vê o cartão.
