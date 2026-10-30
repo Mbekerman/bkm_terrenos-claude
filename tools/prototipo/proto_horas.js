@@ -12,7 +12,7 @@ function hrMin(v){const s=String(v||'').trim().toLowerCase().replace(/\s/g,'');i
   if((m=/^(\d+):(\d{2})$/.exec(s)))return +m[1]*60+ +m[2];
   if((m=/^(\d+)(min|m)$/.exec(s)))return +m[1];
   if((m=/^(\d+(?:[.,]\d+)?)h?$/.exec(s)))return Math.round(parseFloat(m[1].replace(',','.'))*60);return NaN}
-function hrTxt(min){if(min==null)return '—';const h=Math.floor(min/60),m=min%60;return h?`${h}h${m?String(m).padStart(2,'0'):''}`:`${m} min`}
+function hrTxt(min){if(min==null)return '—';if(!min)return '0h';const h=Math.floor(min/60),m=min%60;return h?`${h}h${m?String(m).padStart(2,'0'):''}`:`${m} min`}
 const hrAps=k=>k.horas||(k.horas=[]);
 const hrTotal=k=>(k.horas||[]).reduce((s,a)=>s+a.min,0);
 const hrPode=(a)=>a.por===me()||ehAdmin(me());
@@ -26,7 +26,7 @@ function hrBlocoHtml(t,k,ro){const L=hrAps(k);if(!L.length&&!k.estim&&!UI.hrNovo
     <span class="hr-lt"><b>${hrTxt(a.min)}</b> <span class="faint">· ${esc(a.por)} · ${fd(a.data)}</span>${a.nota?`<span class="hr-n">${esc(a.nota)}</span>`:''}</span>
     ${!ro&&hrPode(a)?`<button class="tkm-btn sm" data-a="hr-x" data-v="${a.id}" aria-label="Apagar o apontamento de ${hrTxt(a.min)} de ${fd(a.data)}">Apagar</button>`:''}</div>`).join('');
   const pct=est?Math.min(100,Math.round(tot/est*100)):0;
-  return `<div class="tkm-bloco">${tkSecH('clock','Horas',ro||UI.hrNovo?'':`<button class="tkm-btn" data-a="hr-novo">Apontar</button>`)}<div class="tkm-in">
+  return `<div class="tkm-bloco">${tkSecH('clock','Horas',ro||UI.hrNovo||k.modelo?'':`<button class="tkm-btn" data-a="hr-novo">Apontar</button>`)}<div class="tkm-in">
     <div class="hr-res"><span><b>${hrTxt(tot)}</b> apontadas</span>
       <label class="hr-est">Estimativa <input class="tkm-pill" data-hr="estim" value="${est?hrTxt(est):''}" placeholder="—" aria-label="Estimativa de horas" ${ro?'disabled':''}></label>
       ${est?`<span class="${tot>est?'hr-acima':'faint'}">${tot>est?`${hrTxt(tot-est)} acima`:`faltam ${hrTxt(est-tot)}`}</span>`:''}</div>

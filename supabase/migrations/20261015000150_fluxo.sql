@@ -100,6 +100,7 @@ create table fluxo.tarefas (
   capa           text check (capa is null or capa in ('cinza','azul','verde','amarelo','laranja','vermelho','roxo','rosa')),
   aprovacao_modo text not null default 'paralelo' check (aprovacao_modo in ('paralelo','sequencia')),  -- bloco 3
   visibilidade   text not null default 'publico' check (visibilidade in ('publico','individual','restrito')),  -- bloco 3; o front sempre pergunta
+  modelo         boolean not null default false,  -- modelo de cartão (bloco 4): fica no quadro para copiar, não conclui nem atrasa
   processo_id    uuid,
   etapa          text,
   subetapa       text,
@@ -264,6 +265,7 @@ begin
     end if;
   end if;
   if v_tipo = 'conclui' and (new.concluida_em is null or tg_op = 'INSERT' or old.concluida_em is null) then
+    if new.modelo then raise exception 'Modelo de cartão não se conclui' using errcode = '23514'; end if;
     -- bloqueio de conclusão (bloco 3): aprovação e checklist; a aprovação conclui por conta própria
     if tg_op = 'UPDATE' and coalesce(current_setting('fluxo.aprovando', true), '') <> '1' then
       v_pend := fluxo.pendencias_conclusao(new.id);
@@ -386,7 +388,7 @@ end $$;
 -- Cartão com o atraso calculado e o andamento do checklist (base das telas).
 create view fluxo.v_tarefas with (security_invoker = true) as
 select k.*, l.nome as lista_nome, l.tipo as lista_tipo, q.objeto_tipo, q.objeto_id,
-       (k.concluida_em is null and k.arquivada_em is null and k.prazo < current_date and l.tipo <> 'pausa') as atrasada,  -- pausada não atrasa
+       (k.concluida_em is null and k.arquivada_em is null and k.prazo < current_date and l.tipo <> 'pausa' and not k.modelo) as atrasada,  -- pausada e modelo não atrasam
        coalesce(ci.total, 0) as checklist_total, coalesce(ci.feitos, 0) as checklist_feitos
 from fluxo.tarefas k
 join fluxo.listas l on l.id = k.lista_id
@@ -1844,6 +1846,7 @@ begin
   if k.recorrencia_id is not null then
     raise exception 'Este cartão é uma ocorrência: mude a recorrência no cartão de origem' using errcode = '23514';
   end if;
+  if k.modelo then raise exception 'Modelo de cartão não tem recorrência' using errcode = '23514'; end if;
   if new.lista_id is not null and not exists (select 1 from fluxo.listas where id = new.lista_id and quadro_id = k.quadro_id and tipo = 'aberta') then
     raise exception 'A ocorrência nasce numa lista aberta do mesmo quadro' using errcode = '23514';
   end if;
@@ -1985,3 +1988,73 @@ from fluxo.tarefas k
 left join (select tarefa_id, user_id, sum(minutos)::int as minutos from fluxo.apontamentos group by tarefa_id, user_id) a on a.tarefa_id = k.id
 group by k.id, k.estimativa_min;
 grant select on fluxo.v_tarefa_horas to authenticated;
+
+-- =====================================================================
+-- Copiar cartão e modelo de cartão (bloco 4; 30/out/2026)
+-- Copiar leva o cartão para qualquer lista aberta de um quadro em que a
+-- pessoa edita, com título novo e escolha do que vai junto (checklists em
+-- aberto, etiquetas, pessoas, campos, anexos). Quem copia passa a ser quem
+-- criou e quem pediu; a visibilidade e os acessos vão juntos. Datas,
+-- comentários, horas e aprovações não vão. O modelo de cartão é um cartão
+-- marcado como modelo: fica no quadro para servir de base, não conclui e
+-- não atrasa; "Criar a partir de modelo" é copiar.
+-- =====================================================================
+create or replace function fluxo.tg_modelo()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if new.modelo and new.recorrencia_id is not null then raise exception 'Uma ocorrência de série não vira modelo' using errcode = '23514'; end if;
+  if new.modelo and exists (select 1 from fluxo.recorrencias where tarefa_id = new.id) then
+    raise exception 'Cartão com recorrência não vira modelo' using errcode = '23514';
+  end if;
+  return new;
+end $$;
+create trigger t_modelo before insert or update on fluxo.tarefas for each row execute function fluxo.tg_modelo();
+
+-- Roda com os direitos de quem copia: só copia o que vê e só grava onde edita (RLS de cada tabela).
+create or replace function fluxo.copiar_tarefa(p_tarefa uuid, p_lista uuid, p_titulo text default null,
+  p_itens text[] default array['checklists','etiquetas','pessoas','campos','anexos'])
+returns uuid language plpgsql set search_path = '' as $$
+declare k fluxo.tarefas; l fluxo.listas; v uuid; c record; nc uuid;
+begin
+  select * into k from fluxo.tarefas where id = p_tarefa;
+  if k.id is null then raise exception 'Tarefa não encontrada' using errcode = 'P0002'; end if;
+  select * into l from fluxo.listas where id = p_lista;
+  if l.id is null or l.tipo <> 'aberta' then raise exception 'A cópia vai para uma lista aberta' using errcode = '23514'; end if;
+  if not fluxo.ve_objeto((select objeto_tipo from fluxo.quadros where id = l.quadro_id), (select objeto_id from fluxo.quadros where id = l.quadro_id)) then
+    raise exception 'Sem acesso a esse quadro' using errcode = '42501';
+  end if;
+  insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, descricao, prioridade, capa, aprovacao_modo, visibilidade,
+                             responsavel_id, estimativa_min)
+  values (l.empresa_id, l.quadro_id, l.id, coalesce(nullif(trim(p_titulo), ''), k.titulo), k.descricao, k.prioridade, k.capa, k.aprovacao_modo,
+          k.visibilidade, case when 'pessoas' = any (p_itens) then k.responsavel_id end, k.estimativa_min)
+  returning id into v;
+  insert into fluxo.tarefa_acessos (empresa_id, tarefa_id, user_id, grupo_id, papel, excluido)
+  select l.empresa_id, v, user_id, grupo_id, papel, excluido from fluxo.tarefa_acessos where tarefa_id = k.id;
+  if 'pessoas' = any (p_itens) then
+    insert into fluxo.tarefa_pessoas (empresa_id, tarefa_id, user_id, papel, ordem)
+    select l.empresa_id, v, user_id, papel, ordem from fluxo.tarefa_pessoas where tarefa_id = k.id;
+  end if;
+  if 'etiquetas' = any (p_itens) then
+    insert into fluxo.tarefa_etiquetas (empresa_id, tarefa_id, etiqueta_id) select l.empresa_id, v, etiqueta_id from fluxo.tarefa_etiquetas where tarefa_id = k.id;
+  end if;
+  if 'checklists' = any (p_itens) then
+    for c in select * from fluxo.checklists where tarefa_id = k.id order by posicao loop
+      insert into fluxo.checklists (empresa_id, tarefa_id, nome, posicao, esconder_feitos) values (l.empresa_id, v, c.nome, c.posicao, c.esconder_feitos) returning id into nc;
+      insert into fluxo.checklist_itens (empresa_id, checklist_id, texto, responsavel_id, posicao)
+      select l.empresa_id, nc, texto, case when 'pessoas' = any (p_itens) then responsavel_id end, posicao
+      from fluxo.checklist_itens where checklist_id = c.id and virou_tarefa_id is null;
+    end loop;
+  end if;
+  if 'campos' = any (p_itens) then
+    insert into fluxo.tarefa_campos (empresa_id, tarefa_id, campo_id, texto, numero, data, opcao_id, caixa)
+    select l.empresa_id, v, x.campo_id, x.texto, x.numero, x.data, x.opcao_id, x.caixa
+    from fluxo.tarefa_campos x join fluxo.campos f on f.id = x.campo_id
+    where x.tarefa_id = k.id and f.ativo and (x.opcao_id is null or exists (select 1 from fluxo.campo_opcoes o where o.id = x.opcao_id and o.ativo));
+  end if;
+  if 'anexos' = any (p_itens) then
+    insert into fluxo.anexos (empresa_id, tarefa_id, tipo, nome, url, drive_file_id, tarefa_ref_id)
+    select l.empresa_id, v, tipo, nome, url, drive_file_id, tarefa_ref_id from fluxo.anexos where tarefa_id = k.id and removido_em is null;
+  end if;
+  return v;
+end $$;
+grant execute on function fluxo.copiar_tarefa(uuid, uuid, text, text[]) to authenticated;

@@ -2226,4 +2226,26 @@ select pg_temp.falha(format($$insert into fluxo.apontamentos (empresa_id, tarefa
 select pg_temp.como(:'analista');
 delete from fluxo.apontamentos where id = :'ah';
 select pg_temp.ok(not exists (select 1 from fluxo.apontamentos where id = :'ah'), 'o autor apaga o próprio apontamento');
+\echo '# copiar cartão e modelo de cartão (fluxo, bloco 4)'
+select pg_temp.como(:'analista');
+select fluxo.copiar_tarefa(:'kr', pg_temp.lista(:'t1', 'Fazer'), 'Relatório semanal (cópia)') as kcp \gset
+select pg_temp.ok((select titulo = 'Relatório semanal (cópia)' and criado_por = :'analista' and solicitante_id = :'analista' and inicio is null and prazo is null
+                     and recorrencia_id is null and quadro_id = (select quadro_id from fluxo.listas where id = pg_temp.lista(:'t1', 'Fazer'))
+                   from fluxo.tarefas where id = :'kcp'), 'a cópia vai para outro quadro, de quem copiou, sem datas nem série');
+select pg_temp.ok(exists (select 1 from fluxo.tarefa_pessoas where tarefa_id = :'kcp' and user_id = :'diretor' and papel = 'acompanha')
+  and (select count(*) = 1 and bool_and(i.concluido_em is null) from fluxo.checklists c join fluxo.checklist_itens i on i.checklist_id = c.id where c.tarefa_id = :'kcp'),
+  'por padrão vão pessoas e checklists em aberto');
+select fluxo.copiar_tarefa(:'kr', pg_temp.lista(:'tm', 'Fazer'), null, array['etiquetas']) as kcp2 \gset
+select pg_temp.ok((select titulo = 'Relatório semanal da obra' and responsavel_id is null from fluxo.tarefas where id = :'kcp2')
+  and not exists (select 1 from fluxo.tarefa_pessoas where tarefa_id = :'kcp2') and not exists (select 1 from fluxo.checklists where tarefa_id = :'kcp2'),
+  'só vai o que foi marcado; sem título novo, fica o mesmo');
+select pg_temp.falha(format($$select fluxo.copiar_tarefa(%L, %L)$$, :'kr', pg_temp.lista(:'tm', 'Feito')), 'a cópia não vai para a lista que conclui');
+update fluxo.tarefas set modelo = true, prazo = current_date - 1 where id = :'kh';
+select pg_temp.ok((select not atrasada from fluxo.v_tarefas where id = :'kh'), 'modelo de cartão não atrasa');
+select pg_temp.falha(format($$update fluxo.tarefas set concluida_em = now() where id = %L$$, :'kh'), 'modelo de cartão não se conclui');
+select pg_temp.falha(format($$update fluxo.tarefas set modelo = true where id = %L$$, :'kr'), 'cartão com recorrência não vira modelo');
+select fluxo.copiar_tarefa(:'kh', pg_temp.lista(:'tm', 'Fazer')) as kcp3 \gset
+select pg_temp.ok((select not modelo and estimativa_min = 480 from fluxo.tarefas where id = :'kcp3'), 'criar a partir do modelo: a cópia é um cartão comum, com a estimativa');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$select fluxo.copiar_tarefa(%L, %L)$$, :'kr', pg_temp.lista(:'tm', 'Fazer')), 'leitura não copia cartão');
 \echo 'TODOS OS TESTES PASSARAM'

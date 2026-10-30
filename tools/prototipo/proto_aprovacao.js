@@ -20,7 +20,7 @@ const apPrecisa=k=>(k.aprov||[]).length>0&&!apAps(k).some(a=>a.sit==='aprovada')
 const apRegraCk=()=>S.tkRegras?.checklist!==false;
 const apCkAberto=k=>(k.checklists||[]).some(c=>c.itens.some(i=>!i.feito&&!i.virou));
 /* o que impede concluir agora (null = nada) */
-function apBloqueio(t,k){if(apPrecisa(k))return apPend(k)?'A tarefa está aguardando aprovação.':'A tarefa precisa ser aprovada antes de concluir. Use "Pedir aprovação".';
+function apBloqueio(t,k){if(k.modelo)return 'Modelo de cartão não se conclui.';if(apPrecisa(k))return apPend(k)?'A tarefa está aguardando aprovação.':'A tarefa precisa ser aprovada antes de concluir. Use "Pedir aprovação".';
   if(apRegraCk()&&apCkAberto(k))return 'Conclua os itens do checklist antes de concluir a tarefa.';
   const f=cpoFaltam(k);if(f.length)return `Preencha ${f.length>1?'os campos obrigatórios':'o campo obrigatório'} antes de concluir: ${f.join(', ')}.`;return null}
 /* votos que esperam decisão agora (em sequência, só o da vez) */

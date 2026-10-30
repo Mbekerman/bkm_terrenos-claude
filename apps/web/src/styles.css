@@ -4056,6 +4056,13 @@ html[data-tema="escuro"] .rc-dia { border-color: rgba(124,140,255,.35) } html[da
 .hr-lt { flex: 1; min-width: 0; font-size: 13px; line-height: 1.4 } .hr-n { display: block; color: var(--tk-sub) }
 html[data-tema="escuro"] .hr-bar { background: #1a2240 } html[data-tema="escuro"] .hr-bar span { background: #7c8cff } html[data-tema="escuro"] .hr-l { border-color: #1a2240 }
 html[data-tema="escuro"] .hr-acima { color: #ffb4ab !important } html[data-tema="escuro"] .hr-bar.acima span { background: #ffb4ab }
+/* copiar cartão e modelo de cartão (bloco 4) */
+.cx-pop .cx-l { font-size: 12px; font-weight: 600; color: var(--tk-sub); margin-top: 6px } .cx-pop textarea { resize: vertical; font: inherit; padding: 6px 8px; border-radius: 4px }
+.cx-faixa { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 16px 44px; padding: 10px 12px; border-radius: 8px; background: #d3e3fd; color: #041e49; font-size: 14px } .cx-faixa span { flex: 1; min-width: 200px }
+.tk-b.cx-selo { background: #d3e3fd; color: #041e49; border-radius: 4px; padding: 0 6px; font-weight: 500 }
+html[data-tema="escuro"] .cx-faixa, html[data-tema="escuro"] .tk-b.cx-selo { background: rgba(99,112,255,.18); color: #c9d6ff }
+@media (max-width: 640px) { .cx-faixa { margin-left: 0 } }
+:root:not(#_) .tkm .cx-pop select.tkm-pill, .cx-pop textarea { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box } .cx-pop { max-width: 100%; box-sizing: border-box } .cx-pop form { min-width: 0 }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

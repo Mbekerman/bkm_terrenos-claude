@@ -26,7 +26,7 @@ await ev('.kcard.arrastando','dragend');c=await classes();ok(!c.dnd&&!c.sobre.le
 // tarefas
 await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=tarefas]').click());await p.waitForTimeout(300);
 const tem=await p.$('.tk[draggable=true]');
-if(tem){await ev('.tk[draggable=true]','dragstart');const n=await p.$$eval('.tk-col',x=>x.length);await ev('.tk-col','dragover',null,n-1);c=await classes();
+if(tem){const i0=await p.$$eval('.tk[draggable=true]',xs=>xs.findIndex(x=>!x.querySelector('.cx-selo')));await ev('.tk[draggable=true]','dragstart',null,i0);const n=await p.$$eval('.tk-col',x=>x.length);await ev('.tk-col','dragover',null,n-1);c=await classes();
   ok(c.dnd&&c.sobre.length===1,`${tema}: tarefas, a coluna sob o card acende (${c.sobre[0]})`);
   await p.evaluate(()=>document.querySelector('.tk-col.sobre').scrollIntoView({block:'center'}));await p.screenshot({path:O+tema+'_tarefas.png'});
   await ev('.tk-col','drop',null,n-1);c=await classes();ok(!c.dnd&&!c.sobre.length,`${tema}: tarefas, ao soltar tudo limpo`)}

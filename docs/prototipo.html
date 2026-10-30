@@ -4731,6 +4731,13 @@ html[data-tema="escuro"] .rc-dia { border-color: rgba(124,140,255,.35) } html[da
 .hr-lt { flex: 1; min-width: 0; font-size: 13px; line-height: 1.4 } .hr-n { display: block; color: var(--tk-sub) }
 html[data-tema="escuro"] .hr-bar { background: #1a2240 } html[data-tema="escuro"] .hr-bar span { background: #7c8cff } html[data-tema="escuro"] .hr-l { border-color: #1a2240 }
 html[data-tema="escuro"] .hr-acima { color: #ffb4ab !important } html[data-tema="escuro"] .hr-bar.acima span { background: #ffb4ab }
+/* copiar cartão e modelo de cartão (bloco 4) */
+.cx-pop .cx-l { font-size: 12px; font-weight: 600; color: var(--tk-sub); margin-top: 6px } .cx-pop textarea { resize: vertical; font: inherit; padding: 6px 8px; border-radius: 4px }
+.cx-faixa { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 16px 44px; padding: 10px 12px; border-radius: 8px; background: #d3e3fd; color: #041e49; font-size: 14px } .cx-faixa span { flex: 1; min-width: 200px }
+.tk-b.cx-selo { background: #d3e3fd; color: #041e49; border-radius: 4px; padding: 0 6px; font-weight: 500 }
+html[data-tema="escuro"] .cx-faixa, html[data-tema="escuro"] .tk-b.cx-selo { background: rgba(99,112,255,.18); color: #c9d6ff }
+@media (max-width: 640px) { .cx-faixa { margin-left: 0 } }
+:root:not(#_) .tkm .cx-pop select.tkm-pill, .cx-pop textarea { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box } .cx-pop { max-width: 100%; box-sizing: border-box } .cx-pop form { min-width: 0 }
 </style>
 <header class="top">
   <div class="top-in">
@@ -6393,7 +6400,7 @@ function tkPrep(){if(!S.listasModelo)S.listasModelo=LISTAS_PADRAO();if(!S.etique
 const tkLista=(t,k)=>tkL(t).find(l=>l.id===k.lista)||tkL(t)[0];
 const tkPrim=(t,tipo)=>tkL(t).filter(l=>!l.oculta).find(l=>l.tipo===tipo)||tkL(t).find(l=>l.tipo===tipo)||tkL(t)[0];
 const tkAberta=k=>!k.feita&&!k.arq;
-const tkAtras=k=>tkAberta(k)&&!!k.prazo&&k.prazo<HOJE&&!(k.pausas||[]).some(z=>z.sit==='ativa');  // pausada não atrasa
+const tkAtras=k=>tkAberta(k)&&!k.modelo&&!!k.prazo&&k.prazo<HOJE&&!(k.pausas||[]).some(z=>z.sit==='ativa');  // pausada não atrasa
 const tkPessoas=k=>[...new Set([k.resp,...(k.exec||[])].filter(Boolean))];
 const tkEd=()=>UI.role!=='Leitura';
 const tkAcha=(tid,kid)=>{const t=T(tid);return {t,k:t?.tarefas.find(x=>x.id===kid)}};
@@ -6417,7 +6424,7 @@ const etqChip=(e,cls='')=>`<span class="etq etq-${e.cor} ${cls}" title="${esc(e.
 function cardTk({k,t},geral){const at=tkAtras(k),ets=(k.etq||[]).map(id=>S.etiquetas.find(e=>e.id===id)).filter(Boolean);
   const its=(k.checklists||[]).flatMap(c=>c.itens),fe=its.filter(i=>i.feito).length,nc=(k.coments||[]).filter(c=>!c.apagado).length,na=(k.anexos||[]).filter(a=>!a.removido).length;
   const pz=k.prazo?`<span class="tk-b tk-prazo ${k.feita?'feito':at?'atras':''}" title="${k.feita?'Concluída':at?'Atrasada':'Prazo'}">${ic(k.feita?'check':'clock',14)}${fd(k.prazo)}</span>`:'';
-  const ind=[apSelo(k),pzSelo(k),vzSelo(k),pz,rcSelo(k),hrSelo(k),k.desc?`<span class="tk-b" title="Tem descrição">${ic('notas',14)}</span>`:'',
+  const ind=[cxSelo(k),apSelo(k),pzSelo(k),vzSelo(k),pz,rcSelo(k),hrSelo(k),k.desc?`<span class="tk-b" title="Tem descrição">${ic('notas',14)}</span>`:'',
     nc?`<span class="tk-b" title="Comentários">${ic('chat',14)}${nc}</span>`:'',na?`<span class="tk-b" title="Anexos">${ic('clip',14)}${na}</span>`:'',
     its.length?`<span class="tk-b ${fe===its.length?'ok':''}" title="Checklist">${ic('check',14)}${fe}/${its.length}</span>`:'',
     k.prio==='alta'?'<span class="tk-b tk-pr alta" title="Prioridade alta">Alta</span>':k.prio==='baixa'?'<span class="tk-b tk-pr" title="Prioridade baixa">Baixa</span>':''].join(''),avs=tkPessoas(k).slice(0,3);
@@ -6506,7 +6513,7 @@ function tkNovaHtml(fechar){const sel=UI.tkSel,t=sel.tid?T(sel.tid):null,opt=(o,
   const listas=t?tkL(t).filter(l=>!l.oculta).map(l=>l.nome):(S.listasModelo||[]).filter(l=>l.ativo).map(l=>l.nome),lv=sel.lista&&listas.includes(sel.lista)?sel.lista:listas.includes('Fazer')?'Fazer':listas[0];
   return `<div class="dh"><div><h2>Nova tarefa</h2>${t?`<div class="muted" style="margin-top:4px">${t.codigo} · ${esc(t.nome)}</div>`:''}</div>${fechar}</div>
   <form data-form="tarefa-m" id="f-tk"><div class="fields">
-  <div class="field full"><label for="tm-t">Tarefa</label><input id="tm-t" name="titulo" required placeholder="Ex.: cobrar a contraproposta do proprietário"></div>
+  ${cxNovaHtml()}<div class="field full"><label for="tm-t">Tarefa</label><input id="tm-t" name="titulo" required placeholder="Ex.: cobrar a contraproposta do proprietário"></div>
   ${t?'':`<div class="field full"><label for="tm-ter">Terreno</label><select id="tm-ter" name="ter" required><option value="">Escolha o terreno</option>${opt(Object.fromEntries(ativosBanco().map(x=>[x.id,x.codigo+' · '+x.nome])),UI.tk.ter)}</select></div>`}
   <div class="field"><label for="tm-l">Lista</label><select id="tm-l" name="lista">${listas.map(n=>`<option ${n===lv?'selected':''}>${esc(n)}</option>`).join('')}</select></div>
   <div class="field"><label for="tm-r">Responsável</label>${tkSelU('resp',me(),'Sem responsável','id="tm-r"')}</div>
@@ -6565,12 +6572,12 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
       <form class="tkm-nf vert" data-form="tkc-anexo"><input name="url" type="url" required placeholder="Cole um link (https://…)" aria-label="Endereço do link"><input name="nome" required placeholder="Texto a exibir" aria-label="Nome do link"><button class="tkm-ok" type="submit">Anexar link</button></form>
       ${outros.length?`<select data-tkc="ligar" class="tkm-pill tkm-full" aria-label="Ligar a outro cartão"><option value="">Ligar a outro cartão…</option>${outros.map(x=>`<option value="${x.id}">${x.codigo} · ${esc(x.titulo)}</option>`).join('')}</select>`:''}</div>`:'';
   return `<div class="tkm${k.capa?' com-capa':''}">${k.capa?`<div class="tkm-capa-g etq-${k.capa}"></div>`:''}<div class="tkm-x">${fechar}</div>
-  <div class="tkm-cab"><span class="tkm-gi">${ro||k.arq?(k.feita?`<span class="tkm-done on" title="Concluída em ${fd(k.feita)}">${ic('check',16)}</span>`:`<span class="tkm-done"></span>`):`<button class="tkm-done ${k.feita?'on':''}" data-a="tkc-concluir" title="${apRotulo(k)||(k.feita?'Reabrir':'Marcar como concluída')}" aria-label="${apRotulo(k)||(k.feita?'Reabrir a tarefa':'Marcar como concluída')}" aria-pressed="${!!k.feita}">${ic('check',16)}</button>`}</span>
+  <div class="tkm-cab"><span class="tkm-gi">${ro||k.arq||k.modelo?(k.feita?`<span class="tkm-done on" title="Concluída em ${fd(k.feita)}">${ic('check',16)}</span>`:`<span class="tkm-done"></span>`):`<button class="tkm-done ${k.feita?'on':''}" data-a="tkc-concluir" title="${apRotulo(k)||(k.feita?'Reabrir':'Marcar como concluída')}" aria-label="${apRotulo(k)||(k.feita?'Reabrir a tarefa':'Marcar como concluída')}" aria-pressed="${!!k.feita}">${ic('check',16)}</button>`}</span>
     <div class="tkm-hd"><input class="tkm-tit" value="${esc(k.titulo)}" data-tkc="titulo" aria-label="Título da tarefa" ${dis} required>
     <div class="tkm-cod"><span>na lista</span><select class="tkm-lsel" data-tkc="lista" ${dis||(k.arq?'disabled':'')} aria-label="Lista">${tkL(t).map(x=>`<option value="${x.id}" ${x.id===l.id?'selected':''}>${esc(x.nome)}${x.oculta?' (oculta)':''}</option>`).join('')}</select>
       <span class="faint">·</span><span class="num">${k.codigo}</span><span class="faint">·</span><button class="linkbtn" data-a="abrir" data-id="${t.id}" data-tab="tarefas" data-from="tarefas">${t.codigo} · ${esc(t.nome)}</button>
       ${k.feita?`<span class="faint">· concluída em ${fd(k.feita)}${k.feitaPor?' por '+esc(k.feitaPor):''}</span>`:''}</div></div></div>
-  ${k.arq?`<div class="tkm-arqb">${ic('arq',18)}<span>Este cartão está arquivado e fica fora dos quadros.</span></div>`:''}
+  ${cxFaixa(t,k,ro||!!k.arq)}${k.arq?`<div class="tkm-arqb">${ic('arq',18)}<span>Este cartão está arquivado e fica fora dos quadros.</span></div>`:''}
   <div class="tkm-g"><div class="tkm-main">
     <div class="tkm-dets">${pessoa('resp',k.resp,'Sem responsável','tkc-resp')}${pessoa('solic',k.solic,'—','tkc-sol')}${grupos}${etqs}${datas}${prio}${vzDetHtml(t,k)}</div>
     ${vzBlocoHtml(t,k)}${cpoBlocoHtml(t,k,ro||!!k.arq)}${apBlocoHtml(t,k,ro||!!k.arq)}${pzBlocoHtml(t,k,ro||!!k.arq)}${rcBlocoHtml(t,k,ro||!!k.arq)}${hrBlocoHtml(t,k,ro||!!k.arq)}
@@ -6589,12 +6596,13 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
       ${b('tkc-ck-novo','check','Checklist')}
       ${b('tkc-pop','clip','Anexo',`data-v="anexo" aria-expanded="${pop==='anexo'}"`)}${popAnexo}
       ${b('tkc-pop','capa','Capa',`data-v="capa" aria-expanded="${pop==='capa'}"`)}${popCapa}
-      ${k.rec||k.serie||k.arq?'':b('rc-nova','repete','Recorrência')}
-      ${k.arq?'':b('hr-novo','clock','Apontar horas')}</div>`}
+      ${k.rec||k.serie||k.arq||k.modelo?'':b('rc-nova','repete','Recorrência')}
+      ${k.arq||k.modelo?'':b('hr-novo','clock','Apontar horas')}</div>`}
     <div class="tkm-sg"><span class="tkm-sgt">Ações</span>
-      ${ro||k.arq?'':b('tkc-concluir','check',apRotulo(k)?.replace('Aguardando aprovação','Em aprovação')||(k.feita?'Reabrir':'Concluir'),'data-dup="1"')}
-      ${pzBotao(k,ro)}
+      ${ro||k.arq||k.modelo?'':b('tkc-concluir','check',apRotulo(k)?.replace('Aguardando aprovação','Em aprovação')||(k.feita?'Reabrir':'Concluir'),'data-dup="1"')}
+      ${k.modelo?'':pzBotao(k,ro)}
       ${ro?'':b('tkc-acomp','olho',acompanho?'Seguindo ✓':'Acompanhar',`aria-pressed="${acompanho}"`)}
+      ${cxBotoes(t,k,ro,b)}
       ${b('tkc-link','link','Copiar link')}
       ${ro?'':b('tkc-arq','arq',k.arq?'Restaurar':'Arquivar')}</div>
   </aside></div>${crAvisoHtml()}</div>`}
@@ -6613,7 +6621,7 @@ function tkRe(){const d=document.querySelector('#modal .dialog'),st=d?d.scrollTo
 function tkAtual(){return tkAcha(UI.tkSel?.tid,UI.tkSel?.kid)}
 const tkItem=(k,cid,iid)=>{const c=k.checklists.find(x=>x.id===cid);return {c,i:c?.itens.find(x=>x.id===iid)}};
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="tkc-"],[data-a^="tkl-"],[data-a="tk-listas"],[data-a="tk-arqficha"],[data-a="tk-cheia"],[data-a="tk-nova"],[data-a="tk-abrir"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const A=a.dataset.a;
-  if(A==='tk-abrir'){UI.tkSel={tid:a.dataset.id,kid:a.dataset.tk};UI.tkEdCom=null;UI.tkCkNovo=false;UI.tkEtqNova=false;UI.tkPop=null;UI.hrNovo=false;UI.tkItemNovo=null;UI.modal='tarefa';renderModal();return}
+  if(A==='tk-abrir'){UI.tkSel={tid:a.dataset.id,kid:a.dataset.tk};UI.tkEdCom=null;UI.tkCkNovo=false;UI.tkEtqNova=false;UI.tkPop=null;UI.hrNovo=false;UI.cx=null;UI.tkItemNovo=null;UI.modal='tarefa';renderModal();return}
   if(A==='tk-nova'){UI.tkSel={tid:a.dataset.id||(UI.route==='terreno'?UI.id:null),lista:a.dataset.v||null};UI.modal='tarefa';renderModal();return}
   if(A==='tk-listas'){UI.tkSel={tid:a.dataset.id};UI.modal='tk-listas';renderModal();return}
   if(A==='tk-cheia'){tkTelaCheia();return}
@@ -6991,7 +6999,7 @@ const apPrecisa=k=>(k.aprov||[]).length>0&&!apAps(k).some(a=>a.sit==='aprovada')
 const apRegraCk=()=>S.tkRegras?.checklist!==false;
 const apCkAberto=k=>(k.checklists||[]).some(c=>c.itens.some(i=>!i.feito&&!i.virou));
 /* o que impede concluir agora (null = nada) */
-function apBloqueio(t,k){if(apPrecisa(k))return apPend(k)?'A tarefa está aguardando aprovação.':'A tarefa precisa ser aprovada antes de concluir. Use "Pedir aprovação".';
+function apBloqueio(t,k){if(k.modelo)return 'Modelo de cartão não se conclui.';if(apPrecisa(k))return apPend(k)?'A tarefa está aguardando aprovação.':'A tarefa precisa ser aprovada antes de concluir. Use "Pedir aprovação".';
   if(apRegraCk()&&apCkAberto(k))return 'Conclua os itens do checklist antes de concluir a tarefa.';
   const f=cpoFaltam(k);if(f.length)return `Preencha ${f.length>1?'os campos obrigatórios':'o campo obrigatório'} antes de concluir: ${f.join(', ')}.`;return null}
 /* votos que esperam decisão agora (em sequência, só o da vez) */
@@ -7467,7 +7475,7 @@ function hrMin(v){const s=String(v||'').trim().toLowerCase().replace(/\s/g,'');i
   if((m=/^(\d+):(\d{2})$/.exec(s)))return +m[1]*60+ +m[2];
   if((m=/^(\d+)(min|m)$/.exec(s)))return +m[1];
   if((m=/^(\d+(?:[.,]\d+)?)h?$/.exec(s)))return Math.round(parseFloat(m[1].replace(',','.'))*60);return NaN}
-function hrTxt(min){if(min==null)return '—';const h=Math.floor(min/60),m=min%60;return h?`${h}h${m?String(m).padStart(2,'0'):''}`:`${m} min`}
+function hrTxt(min){if(min==null)return '—';if(!min)return '0h';const h=Math.floor(min/60),m=min%60;return h?`${h}h${m?String(m).padStart(2,'0'):''}`:`${m} min`}
 const hrAps=k=>k.horas||(k.horas=[]);
 const hrTotal=k=>(k.horas||[]).reduce((s,a)=>s+a.min,0);
 const hrPode=(a)=>a.por===me()||ehAdmin(me());
@@ -7481,7 +7489,7 @@ function hrBlocoHtml(t,k,ro){const L=hrAps(k);if(!L.length&&!k.estim&&!UI.hrNovo
     <span class="hr-lt"><b>${hrTxt(a.min)}</b> <span class="faint">· ${esc(a.por)} · ${fd(a.data)}</span>${a.nota?`<span class="hr-n">${esc(a.nota)}</span>`:''}</span>
     ${!ro&&hrPode(a)?`<button class="tkm-btn sm" data-a="hr-x" data-v="${a.id}" aria-label="Apagar o apontamento de ${hrTxt(a.min)} de ${fd(a.data)}">Apagar</button>`:''}</div>`).join('');
   const pct=est?Math.min(100,Math.round(tot/est*100)):0;
-  return `<div class="tkm-bloco">${tkSecH('clock','Horas',ro||UI.hrNovo?'':`<button class="tkm-btn" data-a="hr-novo">Apontar</button>`)}<div class="tkm-in">
+  return `<div class="tkm-bloco">${tkSecH('clock','Horas',ro||UI.hrNovo||k.modelo?'':`<button class="tkm-btn" data-a="hr-novo">Apontar</button>`)}<div class="tkm-in">
     <div class="hr-res"><span><b>${hrTxt(tot)}</b> apontadas</span>
       <label class="hr-est">Estimativa <input class="tkm-pill" data-hr="estim" value="${est?hrTxt(est):''}" placeholder="—" aria-label="Estimativa de horas" ${ro?'disabled':''}></label>
       ${est?`<span class="${tot>est?'hr-acima':'faint'}">${tot>est?`${hrTxt(tot-est)} acima`:`faltam ${hrTxt(est-tot)}`}</span>`:''}</div>
@@ -7511,6 +7519,65 @@ document.addEventListener('submit',e=>{const f=e.target;if(f.dataset?.form!=='hr
 (()=>{if(S.hrExemplo)return;S.hrExemplo=true;const t=S.terrenos?.[0];const k=t?.tarefas?.find(x=>x.titulo==='Estudo de massa');if(!k)return;
   k.estim=12*60;k.horas=[{id:uid(),por:'Ana Prado',data:addD(HOJE,-3),min:240,nota:'Implantação e cálculo de áreas',em:addD(HOJE,-3)+'T18:00'},
     {id:uid(),por:'Rafael Souza',data:addD(HOJE,-2),min:150,nota:'Conferência com o zoneamento',em:addD(HOJE,-2)+'T17:00'},{id:uid(),por:'Ana Prado',data:addD(HOJE,-1),min:90,nota:null,em:addD(HOJE,-1)+'T12:00'}]})();
+
+/* =====================================================================
+   Copiar cartão e modelo de cartão (bloco 4; 30/out/2026). Espelha
+   fluxo.copiar_tarefa e tarefas.modelo.
+   - Copiar (Ações do cartão): título, terreno e lista aberta de destino e
+     o que vai junto (checklists em aberto, etiquetas, pessoas, campos,
+     anexos). Quem copia passa a ser quem criou e quem pediu; visibilidade
+     e acessos vão juntos; datas, comentários, horas e aprovações não.
+   - Modelo de cartão: "Tornar modelo" deixa o cartão no quadro como base,
+     com o selo Modelo; não conclui nem atrasa; "Usar este modelo" copia.
+     Na Nova tarefa, "Usar um modelo" lista os modelos que a pessoa vê.
+   Injetado no mesmo escopo.
+   ===================================================================== */
+const CX_ITENS={checklists:'Checklists',etiquetas:'Etiquetas',pessoas:'Pessoas',campos:'Campos personalizados',anexos:'Anexos'};
+function cxModelos(){return todasTarefas().filter(({k})=>k.modelo&&!k.arq)}
+function cxCopiar(t,k,dest,lid,titulo,itens){const l=tkL(dest).find(x=>x.id===lid&&x.tipo==='aberta');if(!l){toast('A cópia vai para uma lista aberta.',true);return null}
+  const tem=x=>itens.includes(x),eu=me();
+  const n=tkNorm(dest,{id:uid(),titulo:(titulo||'').trim()||k.titulo,desc:k.desc||'',resultado:'',resp:tem('pessoas')?k.resp:null,solic:eu,criadoPor:eu,vis:k.vis||'publico',acessos:JSON.parse(JSON.stringify(k.acessos||[])),
+    prazo:null,prio:k.prio,capa:k.capa||null,apModo:k.apModo,lista:l.id,pos:Date.now(),estim:k.estim||null,
+    exec:tem('pessoas')?[...(k.exec||[])]:[],aprov:tem('pessoas')?[...(k.aprov||[])]:[],acomp:tem('pessoas')?[...(k.acomp||[])]:[],etq:tem('etiquetas')?[...(k.etq||[])]:[],
+    checklists:tem('checklists')?(k.checklists||[]).map(c=>({id:uid(),nome:c.nome,esconder:c.esconder,itens:c.itens.filter(i=>!i.virou).map(i=>({id:uid(),texto:i.texto,resp:tem('pessoas')?i.resp:null,prazo:null,feito:null}))})):[],
+    campos:tem('campos')?Object.fromEntries(Object.entries(k.campos||{}).filter(([cid,v])=>{const c=cpoCampos().find(x=>x.id===cid);return c&&c.ativo!==false&&(c.tipo!=='lista'||(c.opcoes||[]).some(o=>o.id===v&&o.ativo!==false))})):{},
+    anexos:tem('anexos')?(k.anexos||[]).filter(a=>!a.removido).map(a=>({...a,id:uid()})):[]});
+  vzAjustar(dest,n);dest.tarefas.push(n);notifTarefa(dest,n,null);log(dest,`Tarefa criada como cópia de ${k.codigo}${k.modelo?' (modelo)':''}: ${n.titulo}`);return n}
+/* quadro de copiar (popover da coluna de ações) */
+function cxPopHtml(t,k){const f=UI.cx||(UI.cx={ter:t.id,lista:null,itens:Object.keys(CX_ITENS)}),dest=T(f.ter)||t,abertas=tkL(dest).filter(l=>l.tipo==='aberta'&&!l.oculta);
+  const lv=abertas.some(l=>l.id===f.lista)?f.lista:(abertas.find(l=>l.id===k.lista)||abertas[0])?.id;
+  return `<div class="tkm-pop cx-pop" role="group" aria-label="${k.modelo?'Usar este modelo':'Copiar cartão'}"><div class="tkm-poph">${k.modelo?'Usar este modelo':'Copiar cartão'}<button class="iconbtn sm" data-a="tkc-pop" data-v="copiar" aria-label="Fechar">${ic('close',16)}</button></div>
+    <form class="tkm-nf vert" data-form="cx-copiar"><label class="cx-l" for="cx-t">Título</label><textarea id="cx-t" name="titulo" rows="2" required>${esc(f.titulo??k.titulo)}</textarea>
+      <span class="cx-l">Manter</span>${Object.entries(CX_ITENS).map(([x,n])=>`<label class="chk"><input type="checkbox" name="it" value="${x}" ${f.itens.includes(x)?'checked':''}>${n}</label>`).join('')}
+      <label class="cx-l" for="cx-ter">Terreno</label><select id="cx-ter" class="tkm-pill" data-cx="ter">${ativosBanco().filter(x=>x.tarefas).map(x=>`<option value="${x.id}" ${x.id===dest.id?'selected':''}>${x.codigo} · ${esc(x.nome)}</option>`).join('')}</select>
+      <label class="cx-l" for="cx-l">Lista</label><select id="cx-l" name="lista" class="tkm-pill">${abertas.map(l=>`<option value="${l.id}" ${l.id===lv?'selected':''}>${esc(l.nome)}</option>`).join('')}</select>
+      <button class="tkm-ok" type="submit">Criar cartão</button></form></div>`}
+/* faixa do modelo dentro do cartão */
+function cxFaixa(t,k,ro){return k.modelo?`<div class="cx-faixa">${ic('doc',18)}<span>Este cartão é um <b>modelo</b>: fica no quadro como base e não se conclui.</span>${ro?'':`<button class="tkm-ok" data-a="tkc-pop" data-v="copiar">Usar este modelo</button>`}</div>`:''}
+function cxSelo(k){return k.modelo?`<span class="tk-b cx-selo" title="Modelo de cartão">${ic('doc',14)}Modelo</span>`:''}
+function cxBotoes(t,k,ro,b){if(ro||k.arq)return '';return b('tkc-pop','doc',k.modelo?'Usar este modelo':'Copiar',`data-v="copiar" aria-expanded="${UI.tkPop==='copiar'}"`)+(UI.tkPop==='copiar'?cxPopHtml(t,k):'')+
+  (k.rec||k.serie?'':b('cx-modelo','board',k.modelo?'Desfazer modelo':'Tornar modelo'))}
+/* Nova tarefa: começar de um modelo */
+function cxNovaHtml(){const M=cxModelos();if(!M.length)return '';
+  return `<div class="field full"><label for="tm-mod">Usar um modelo</label><select id="tm-mod" data-cx="modelo"><option value="">Sem modelo</option>${M.map(({k,t})=>`<option value="${t.id}|${k.id}">${esc(k.titulo)} · ${t.codigo}</option>`).join('')}</select></div>`}
+
+document.addEventListener('change',e=>{const el=e.target;if(!el.dataset?.cx)return;e.stopImmediatePropagation();
+  if(el.dataset.cx==='ter'){UI.cx.ter=el.value;UI.cx.lista=null;const f=el.closest('form');UI.cx.itens=[...f.querySelectorAll('[name=it]:checked')].map(x=>x.value);UI.cx.titulo=f.querySelector('[name=titulo]').value;tkRe();
+    const tt=document.querySelector('#cx-t');if(tt&&UI.cx.titulo!=null)tt.value=UI.cx.titulo;return}
+  if(el.dataset.cx==='modelo'&&el.value){const [tid,kid]=el.value.split('|'),dest=UI.tkSel?.tid||document.querySelector('#tm-ter')?.value||tid;
+    UI.tkSel={tid,kid};UI.tkPop='copiar';UI.cx={ter:dest,lista:null,itens:Object.keys(CX_ITENS)};UI.modal='tarefa';renderModal()}},true);
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a="cx-modelo"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!vzEdita(t,k))return;
+  if(!k.modelo&&k.feita){toast('Reabra a tarefa antes de torná-la modelo.',true);return}
+  k.modelo=!k.modelo;log(t,`Tarefa "${k.titulo}": ${k.modelo?'virou modelo de cartão':'deixou de ser modelo'}`);toast(k.modelo?'Agora é um modelo: use "Usar este modelo" para criar cartões a partir dele.':'Voltou a ser um cartão comum.');tkRe()},true);
+document.addEventListener('submit',e=>{const f=e.target;if(f.dataset?.form!=='cx-copiar')return;e.preventDefault();e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k)return;
+  const dest=T(UI.cx?.ter)||t;if(!tkEd()){toast('Você não cria tarefas.',true);return}
+  const n=cxCopiar(t,k,dest,f.querySelector('[name=lista]').value,f.querySelector('[name=titulo]').value,[...f.querySelectorAll('[name=it]:checked')].map(x=>x.value));if(!n)return;
+  UI.cx=null;UI.tkPop=null;UI.tkSel={tid:dest.id,kid:n.id};save();render();toast(`Cartão ${n.codigo} criado${dest.id!==t.id?` em ${dest.codigo}`:''}.`)},true);
+
+/* exemplo: um modelo de cartão no primeiro terreno */
+(()=>{if(S.cxExemplo)return;S.cxExemplo=true;const t=S.terrenos?.[0];if(!t?.tarefas)return;const etq=S.etiquetas?.find(e=>e.nome==='Jurídico');
+  t.tarefas.push(tkNorm(t,{id:uid(),titulo:'Pedir certidões do imóvel',desc:'Certidões da matrícula e do proprietário para a diligência.',resultado:'',resp:null,solic:'Ana Prado',criadoPor:'Ana Prado',vis:'publico',acessos:[],prazo:null,prio:'media',
+    lista:tkPrim(t,'aberta').id,pos:1,modelo:true,etq:etq?[etq.id]:[],estim:180,checklists:[{id:uid(),nome:'Certidões',esconder:false,itens:['Matrícula atualizada','Ônus reais','Ações reais e pessoais','Débitos de IPTU'].map(x=>({id:uid(),texto:x,resp:null,prazo:null,feito:null}))}]}))})();
 
 
 /* =====================================================================

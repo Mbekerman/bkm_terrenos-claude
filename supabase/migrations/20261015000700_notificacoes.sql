@@ -342,7 +342,7 @@ begin
   total := total + fluxo.gerar_recorrencias(p_hoje);
 
   -- tarefa atrasada: uma vez, no primeiro dia de atraso (ou quando a rotina vir)
-  for r in select * from fluxo.tarefas k where k.concluida_em is null and k.arquivada_em is null and k.prazo < p_hoje and k.responsavel_id is not null
+  for r in select * from fluxo.tarefas k where k.concluida_em is null and k.arquivada_em is null and k.prazo < p_hoje and k.responsavel_id is not null and not k.modelo
              and not exists (select 1 from fluxo.listas l where l.id = k.lista_id and l.tipo = 'pausa') loop
     perform app._notificar(r.empresa_id, r.responsavel_id, 'tarefa_atrasada', 'Tarefa atrasada: ' || r.titulo, app.terreno_da_tarefa(r.id), 'tarefas', r.id, r.prazo, null);
     get diagnostics n = row_count; total := total + n;
