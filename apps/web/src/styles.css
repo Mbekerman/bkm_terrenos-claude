@@ -3865,6 +3865,7 @@ html[data-tema="escuro"] .tk-full.on { background: #081028 !important }
 :root:not(#_) .tkb .etq-rosa { background: #e774bb; color: #50253f } :root:not(#_) .tkb .etq-cinza { background: #8590a2; color: #fff }
 /* arrastando: lista de destino tracejada e a que está sob o cartão acesa (mesma regra das outras telas) */
 :root:not(#_) body.dnd-tk .tkb .tk-col { outline: 2px dashed rgba(11,87,208,.35); outline-offset: -2px }
+:root:not(#_) body.dnd-tk .tkb .tk-col.nao { outline: none; opacity: .45; cursor: not-allowed }
 :root:not(#_) .tkb .tk-col.sobre { background: #e9f2ff !important; outline: 2px solid #388bff !important }
 /* seção da ficha: o quadro encosta nas bordas do quadro da seção */
 :root:not(#_) .tk-sb { padding: 12px 16px 4px }
