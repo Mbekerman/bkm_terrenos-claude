@@ -62,10 +62,22 @@ s=await est(p);const fl=campo(s,'Fase do laudo');ok(fl&&fl.tipo==='lista','o adm
 await preenche(p,`[data-form=cpo-op][data-v="${fl.id}"] input`,'Pedido');await envia(p,`[data-form=cpo-op][data-v="${fl.id}"]`);await p.waitForTimeout(200);
 s=await est(p);ok(campo(s,'Fase do laudo').opcoes.some(o=>o.nome==='Pedido'),'e as opções dele');
 await clica(p,`[data-a=cpo-ativo][data-v="${cid}"]`);await p.waitForTimeout(200);s=await est(p);ok(campo(s,'Cartório').ativo===false,'desativar o campo');
+s=await est(p);const vid=campo(s,'Valor do laudo').id;await p.$eval(`[data-cpoc=obrig][data-v="${vid}"]`,x=>{x.checked=true;x.dispatchEvent(new Event('change',{bubbles:true}))});await p.waitForTimeout(200);
+s=await est(p);ok(campo(s,'Valor do laudo').obrig===true,'o administrador marca o campo como obrigatório para concluir');
 await p.evaluate(()=>document.querySelector('[data-form=cpo-novo]').closest('.sec').scrollIntoView({block:'center'}));await p.screenshot({path:O+'4_config.png'});
 await p.evaluate(()=>history.replaceState(null,'','#/terrenos'));await p.reload();await p.waitForTimeout(300);await ficha(p,t0.id);await p.waitForTimeout(400);
 ok(!(await chips(p,'Análise jurídica da matrícula')).some(x=>x.includes('Cartório')),'campo desativado sai da frente do cartão (o valor fica guardado)');
 s=await est(p);ok(!!tar(s,0,'Análise jurídica da matrícula').campos[cid],'o valor do campo desativado continua guardado');
+// obrigatório para concluir
+{const kk=s.terrenos[0].tarefas.find(k=>!k.feita&&!k.arq&&!(k.aprov||[]).length&&!(k.checklists||[]).some(c=>c.itens.some(i=>!i.feito))&&!(k.campos||{})[vid]&&(!k.vis||k.vis==='publico'));
+ ok(!!kk,'há um cartão sem o campo obrigatório');await abreCartao(p,kk.titulo);
+ ok(await p.$eval(`[data-cpo="${vid}"]`,x=>x.closest('.cpo-c').classList.contains('falta')),'o cartão marca o campo que falta');
+ await clica(p,'#modal [data-a=tkc-concluir]');await p.waitForTimeout(200);let s2=await est(p);
+ ok(!tar(s2,0,kk.titulo).feita&&(await toast(p)).includes('Valor do laudo'),'sem o campo obrigatório, não conclui e diz qual falta');
+ await p.evaluate(()=>document.querySelector('.cpo-g').scrollIntoView({block:'center'}));await p.screenshot({path:O+'7_obrigatorio.png'});
+ await preenche(p,`[data-cpo="${vid}"]`,'90 mil');await muda(p,`[data-cpo="${vid}"]`,'90 mil');await p.waitForTimeout(150);
+ await clica(p,'#modal [data-a=tkc-concluir]');await p.waitForTimeout(200);s2=await est(p);
+ ok(!!tar(s2,0,kk.titulo).feita,'preenchido, conclui')}
 await ctx.close()}
 {const {ctx,p}=await abre(1440,900,'escuro');const s=await est(p);await ficha(p,s.terrenos[0].id);await p.waitForTimeout(400);
 await abreCartao(p,'Análise jurídica da matrícula');await p.evaluate(()=>document.querySelector('.cpo-g').scrollIntoView({block:'center'}));await p.screenshot({path:O+'5_escuro.png'});await ctx.close()}

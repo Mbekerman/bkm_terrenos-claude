@@ -2146,4 +2146,12 @@ select pg_temp.como(:'analista');
 select pg_temp.falha(format($$update fluxo.tarefa_campos set caixa = true where tarefa_id = %L and campo_id = %L$$, :'kc', :'ccx'), 'campo desativado não recebe valor novo');
 delete from fluxo.tarefa_campos where tarefa_id = :'kc' and campo_id = :'cnum';
 select pg_temp.ok(not exists (select 1 from fluxo.tarefa_campos where tarefa_id = :'kc' and campo_id = :'cnum'), 'apagar o valor volta o campo a não informado');
+select pg_temp.como(:'diretor');
+update fluxo.campos set obrigatorio = true where id in (:'cnum', :'ccx');
+select pg_temp.como(:'analista');
+select pg_temp.ok(fluxo.pendencias_conclusao(:'kc') = array['campos'], 'campo obrigatório sem valor fica pendente (o desativado não conta)');
+select pg_temp.falha(format($$update fluxo.tarefas set concluida_em = now() where id = %L$$, :'kc'), 'com campo obrigatório sem valor, não conclui');
+insert into fluxo.tarefa_campos (empresa_id, tarefa_id, campo_id, numero) values (:'emp', :'kc', :'cnum', 98000);
+update fluxo.tarefas set concluida_em = now() where id = :'kc';
+select pg_temp.ok((select concluida_em is not null from fluxo.tarefas where id = :'kc'), 'preenchido o campo obrigatório, conclui');
 \echo 'TODOS OS TESTES PASSARAM'

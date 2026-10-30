@@ -3,13 +3,16 @@
    Espelha fluxo.campos, fluxo.campo_opcoes e fluxo.tarefa_campos.
    Os campos são da empresa (Configurações › Tarefas, só administrador) e
    valem para todos os quadros: texto, número, data, lista de opções e
-   sim/não. Cada campo diz se aparece na frente do cartão. Sem valor, o
+   sim/não. Cada campo diz se aparece na frente do cartão e se é
+   obrigatório para concluir (sim/não preenchido com "Não" conta). Sem valor, o
    campo fica "não informado" (nunca zero nem "não"). Campo com valor não
    muda de tipo e não se apaga: desativa. Injetado no mesmo escopo.
    ===================================================================== */
 const CPO_TIPOS={texto:'Texto',numero:'Número',data:'Data',lista:'Lista de opções',caixa:'Sim / não'};
 function cpoCampos(){return S.campos||(S.campos=[])}
 function cpoAtivos(){return cpoCampos().filter(c=>c.ativo!==false).sort((a,b)=>(a.ordem||0)-(b.ordem||0))}
+/* campos obrigatórios ativos sem valor: impedem concluir (fluxo.pendencias_conclusao, 'campos') */
+function cpoFaltam(k){return cpoAtivos().filter(c=>c.obrig&&k.campos?.[c.id]==null).map(c=>c.nome)}
 function cpoUsado(c){return S.terrenos.some(t=>(t.tarefas||[]).some(k=>k.campos&&k.campos[c.id]!=null))}
 function cpoNum(v){const s=String(v).trim().toLowerCase().replace(/\s/g,'');if(!s)return null;const m=/^(-?[\d.,]+)(mil|mi)?$/.exec(s);if(!m)return NaN;
   let n=m[1];if(n.includes(','))n=n.replace(/\./g,'').replace(',','.');else if((n.match(/\./g)||[]).length>1||/\.\d{3}$/.test(n))n=n.replace(/\./g,'');
@@ -28,7 +31,8 @@ function cpoBlocoHtml(t,k,ro){const cs=cpoCampos().filter(c=>c.ativo!==false||(k
     else if(c.tipo==='caixa')inp=`<select id="${id}" class="tkm-pill cpo-in" data-cpo="${c.id}" ${dis(c)}><option value="">Não informado</option><option value="1" ${x===true?'selected':''}>Sim</option><option value="0" ${x===false?'selected':''}>Não</option></select>`;
     else if(c.tipo==='data')inp=`<input id="${id}" type="date" class="tkm-pill cpo-in" data-cpo="${c.id}" value="${x||''}" ${dis(c)}>`;
     else inp=`<input id="${id}" class="tkm-pill cpo-in" data-cpo="${c.id}" value="${x==null?'':esc(c.tipo==='numero'?cpoTxt(c,x):x)}" ${c.tipo==='numero'?'inputmode="decimal"':''} placeholder="Não informado" ${dis(c)}>`;
-    return `<div class="cpo-c"><label for="${id}">${esc(c.nome)}${c.ativo===false?' <span class="faint">(desativado)</span>':''}</label>${inp}</div>`};
+    const falta=c.obrig&&c.ativo!==false&&x==null;
+    return `<div class="cpo-c ${falta?'falta':''}"><label for="${id}">${esc(c.nome)}${c.obrig&&c.ativo!==false?' <span class="cpo-ob" title="Obrigatório para concluir">*</span>':''}${c.ativo===false?' <span class="faint">(desativado)</span>':''}</label>${inp}${falta?'<span class="cpo-av">Obrigatório para concluir</span>':''}</div>`};
   return `<div class="tkm-bloco">${tkSecH('layers','Campos personalizados')}<div class="tkm-in cpo-g">${cs.map(campo).join('')}</div></div>`}
 function cpoGravar(t,k,c,raw){const antes=k.campos?.[c.id];let v;
   if(raw===''||raw==null)v=null;
@@ -49,6 +53,7 @@ function cpoCfgHtml(){const C=cpoCampos().slice().sort((a,b)=>(a.ordem||0)-(b.or
     ${C.map((c,i)=>{const usado=cpoUsado(c);return `<div class="cpo-cfg ${c.ativo===false?'oculta':''}"><div class="tkl-r"><input value="${esc(c.nome)}" data-cpoc="nome" data-v="${c.id}" aria-label="Nome do campo ${i+1}">
       <select data-cpoc="tipo" data-v="${c.id}" aria-label="Tipo de ${esc(c.nome)}" ${usado?'disabled title="Já tem valores: o tipo não muda"':''}>${Object.entries(CPO_TIPOS).map(([x,n])=>`<option value="${x}" ${x===c.tipo?'selected':''}>${n}</option>`).join('')}</select>
       <label class="chk"><input type="checkbox" data-cpoc="frente" data-v="${c.id}" ${c.frente?'checked':''}>Na frente do cartão</label>
+      <label class="chk"><input type="checkbox" data-cpoc="obrig" data-v="${c.id}" ${c.obrig?'checked':''}>Obrigatório para concluir</label>
       <button class="iconbtn sm" data-a="cpo-sobe" data-v="${c.id}" ${i?'':'disabled'} aria-label="Subir ${esc(c.nome)}" title="Subir">${ic('chev',18)}</button>
       ${usado?`<button class="btn text sm" data-a="cpo-ativo" data-v="${c.id}">${c.ativo===false?'Ativar':'Desativar'}</button>`:`<button class="btn text sm" data-a="cpo-apaga" data-v="${c.id}">Apagar</button>`}</div>
       ${c.tipo==='lista'?`<div class="cpo-ops">${(c.opcoes||[]).map(o=>`<span class="cpo-op ${o.ativo===false?'oculta':''}"><span class="etq etq-${o.cor}">${esc(o.nome)}</span><button class="iconbtn sm" data-a="cpo-op-x" data-v="${c.id}" data-o="${o.id}" aria-label="${o.ativo===false?'Reativar':'Tirar'} ${esc(o.nome)}" title="${o.ativo===false?'Reativar':'Tirar'}">${ic(o.ativo===false?'undo':'close',14)}</button></span>`).join('')}
@@ -62,6 +67,7 @@ document.addEventListener('change',e=>{const el=e.target;
     if(p==='nome'){const v=el.value.trim();if(!v||cpoCampos().some(x=>x!==c&&x.nome===v)){toast(v?'Já existe um campo com esse nome.':'O campo precisa de nome.',true);el.value=c.nome;return}c.nome=v}
     else if(p==='tipo'){if(cpoUsado(c)){toast('O campo já tem valores: o tipo não muda.',true);return}c.tipo=el.value;if(c.tipo==='lista'&&!c.opcoes)c.opcoes=[]}
     else if(p==='frente')c.frente=el.checked;
+    else if(p==='obrig')c.obrig=el.checked;
     save();render();toast('Campo atualizado.')}},true);
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="cpo-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();if(!ehAdmin(me()))return;
   const C=cpoCampos(),c=C.find(x=>x.id===a.dataset.v);if(!c)return;

@@ -852,6 +852,7 @@ erDiagram
     text nome
     text tipo "texto | numero | data | lista | caixa"
     bool na_frente
+    bool obrigatorio "sem valor, não conclui"
     bool ativo
   }
   tarefa_campos {
@@ -865,6 +866,7 @@ erDiagram
 
 - Campos da empresa, para todos os quadros; o administrador cria e muda (RLS `app.eh_administrador`, com auditoria). Sem linha em `tarefa_campos`, o campo está "não informado"; sim/não guarda `false` para "não".
 - `t_valor` confere o valor no tipo do campo, a opção do próprio campo e campo ativo; `t_guarda` impede mudar o tipo ou apagar campo e opção com valor (desativar). Valores seguem a visibilidade do cartão (`fluxo.papel_tarefa` / `fluxo.edita_tarefa`), e o histórico os esconde de quem não vê o cartão.
+- Campo ativo com `obrigatorio` e sem valor entra em `fluxo.pendencias_conclusao` como `'campos'`: a tarefa não conclui (nem arrastando para a lista que conclui) nem pede aprovação. A função é redefinida no fim da migration, depois da tabela `campos`.
 
 - **Fica para os próximos blocos:** recorrência, apontamento de horas, modelo de cartão, automações e WhatsApp.
 

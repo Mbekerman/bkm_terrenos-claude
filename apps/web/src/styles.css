@@ -4028,6 +4028,7 @@ html[data-tema="escuro"]:not(#_) .tkb .tk-b.ap-selo, html[data-tema="escuro"] .a
 .cpo-ch[class*="etq-"] .cpo-chn { color: inherit; opacity: .8 }
 .cpo-g { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px 16px }
 .cpo-c { display: flex; flex-direction: column; gap: 4px; min-width: 0 } .cpo-c label { font-size: 12px; font-weight: 600; color: var(--tk-sub) }
+.cpo-ob { color: #b3261e } .cpo-c.falta .cpo-in { border-color: #b3261e } .cpo-av { font-size: 11px; color: #b3261e }
 :root:not(#_) .tkm .cpo-in { width: 100% }
 .cpo-cfg { border-bottom: 1px solid var(--m-outline-var, #c4c7c5); padding: 4px 0 } .cpo-cfg.oculta { opacity: .55 }
 .cpo-cfg .tkl-r .chk { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; white-space: nowrap }

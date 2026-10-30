@@ -271,6 +271,8 @@ begin
         raise exception 'A tarefa precisa ser aprovada antes de concluir' using errcode = '23514';
       elsif 'checklist' = any (v_pend) then
         raise exception 'Conclua os itens do checklist antes de concluir a tarefa' using errcode = '23514';
+      elsif 'campos' = any (v_pend) then
+        raise exception 'Preencha os campos obrigatórios antes de concluir a tarefa' using errcode = '23514';
       end if;
     end if;
     new.concluida_em := coalesce(new.concluida_em, now()); new.concluida_por := auth.uid();
@@ -1078,7 +1080,7 @@ create table fluxo.aprovacao_votos (
   check (decisao is distinct from 'recusou' or length(trim(coalesce(justificativa, ''))) > 0)
 );
 
--- O que impede concluir: 'aprovacao' e/ou 'checklist'
+-- O que impede concluir: 'aprovacao' e/ou 'checklist' (e 'campos', redefinida com os campos personalizados)
 create or replace function fluxo.pendencias_conclusao(p_tarefa uuid)
 returns text[] language sql stable security definer set search_path = '' as $$
   select array_remove(array[
@@ -1124,6 +1126,8 @@ begin
   end if;
   if 'checklist' = any (fluxo.pendencias_conclusao(p_tarefa)) then
     raise exception 'Conclua os itens do checklist antes de pedir a aprovação' using errcode = '23514';
+  elsif 'campos' = any (fluxo.pendencias_conclusao(p_tarefa)) then
+    raise exception 'Preencha os campos obrigatórios antes de pedir a aprovação' using errcode = '23514';
   end if;
   update fluxo.aprovacoes set situacao = 'cancelada', decidida_em = clock_timestamp() where tarefa_id = p_tarefa and situacao = 'pendente';
   insert into fluxo.aprovacoes (empresa_id, tarefa_id, modo, motivo) values (k.empresa_id, p_tarefa, k.aprovacao_modo, nullif(trim(p_motivo), ''))
@@ -1660,7 +1664,8 @@ grant execute on function fluxo.ve_objeto(text, uuid, uuid), fluxo.papel_cartao(
 -- Os campos são da empresa, criados pelo administrador (Configurações ›
 -- Tarefas), e valem para todos os quadros: texto, número, data, lista de
 -- opções (uma escolha) e sim/não. Cada campo diz se aparece na frente do
--- cartão. O valor de cada cartão fica em tarefa_campos; sem linha, o campo
+-- cartão e se é obrigatório para concluir a tarefa (só os ativos contam;
+-- sim/não vale como preenchido com "Não"). O valor de cada cartão fica em tarefa_campos; sem linha, o campo
 -- está "não informado" (nunca zero nem "não"). Campo ou opção com valor
 -- não se apaga (desativa), e o tipo não muda depois de ter valor.
 -- =====================================================================
@@ -1671,6 +1676,7 @@ create table fluxo.campos (
   tipo        text not null check (tipo in ('texto','numero','data','lista','caixa')),
   ordem       int  not null default 0,
   na_frente   boolean not null default false,   -- aparece na frente do cartão
+  obrigatorio boolean not null default false,   -- sem valor, a tarefa não conclui
   ativo       boolean not null default true,
   unique (empresa_id, nome)
 );
@@ -1758,3 +1764,17 @@ create trigger t_aud after insert or update or delete on fluxo.campos for each r
 create trigger t_aud after insert or update or delete on fluxo.campo_opcoes for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on fluxo.tarefa_campos for each row execute function app.tg_auditoria();
 grant select, insert, update, delete on fluxo.campos, fluxo.campo_opcoes, fluxo.tarefa_campos to authenticated;
+
+-- O que impede concluir, agora com os campos obrigatórios ativos sem valor.
+create or replace function fluxo.pendencias_conclusao(p_tarefa uuid)
+returns text[] language sql stable security definer set search_path = '' as $$
+  select array_remove(array[
+    case when exists (select 1 from fluxo.tarefa_pessoas where tarefa_id = p_tarefa and papel = 'aprovador')
+          and not exists (select 1 from fluxo.aprovacoes where tarefa_id = p_tarefa and situacao = 'aprovada') then 'aprovacao' end,
+    case when coalesce((select r.conclui_exige_checklist from fluxo.regras r join fluxo.tarefas k on k.empresa_id = r.empresa_id where k.id = p_tarefa), true)
+          and exists (select 1 from fluxo.checklist_itens i join fluxo.checklists c on c.id = i.checklist_id
+                      where c.tarefa_id = p_tarefa and i.concluido_em is null and i.virou_tarefa_id is null) then 'checklist' end,
+    case when exists (select 1 from fluxo.campos c join fluxo.tarefas k on k.empresa_id = c.empresa_id
+                      where k.id = p_tarefa and c.ativo and c.obrigatorio
+                        and not exists (select 1 from fluxo.tarefa_campos v where v.tarefa_id = k.id and v.campo_id = c.id)) then 'campos' end
+  ], null) $$;
