@@ -2204,4 +2204,26 @@ select pg_temp.ok((select proxima = current_date + 1 from fluxo.recorrencias whe
 update fluxo.recorrencias set ativa = false where id in (:'rr', :'rv');
 reset role;
 select pg_temp.ok(fluxo.gerar_recorrencias(:'fim') = 0, 'série parada não gera');
+\echo '# apontamento de horas (fluxo, bloco 4)'
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tm', 'Levantar certidões', current_date + 5, :'analista') as kh \gset
+update fluxo.tarefas set estimativa_min = 480 where id = :'kh';
+insert into fluxo.apontamentos (empresa_id, tarefa_id, minutos, nota) values (:'emp', :'kh', 90, 'Cartório');
+insert into fluxo.apontamentos (empresa_id, tarefa_id, data, minutos) values (:'emp', :'kh', current_date - 1, 60) returning id as ah \gset
+select pg_temp.ok((select user_id = :'analista' from fluxo.apontamentos where id = :'ah'), 'o apontamento é de quem apontou, sem aprovação');
+select pg_temp.falha(format($$insert into fluxo.apontamentos (empresa_id, tarefa_id, data, minutos) values (%L, %L, current_date + 1, 30)$$, :'emp', :'kh'), 'não aponta no futuro');
+select pg_temp.falha(format($$insert into fluxo.apontamentos (empresa_id, tarefa_id, minutos) values (%L, %L, 1400)$$, :'emp', :'kh'), 'mais de 24 horas no mesmo dia é recusado');
+select pg_temp.falha(format($$insert into fluxo.apontamentos (empresa_id, tarefa_id, user_id, minutos) values (%L, %L, %L, 30)$$, :'emp', :'kh', :'gestor'), 'ninguém aponta horas no nome de outro');
+select pg_temp.como(:'gestor');
+insert into fluxo.apontamentos (empresa_id, tarefa_id, minutos) values (:'emp', :'kh', 30);
+update fluxo.apontamentos set minutos = 1 where id = :'ah';
+delete from fluxo.apontamentos where id = :'ah';
+select pg_temp.ok((select minutos = 60 from fluxo.apontamentos where id = :'ah'), 'só o autor (ou o administrador) muda e apaga o apontamento');
+select pg_temp.ok((select apontado_min = 180 and estimativa_min = 480 and (por_pessoa->>:'analista')::int = 150 from fluxo.v_tarefa_horas where tarefa_id = :'kh'),
+  'a tarefa soma o apontado, por pessoa, ao lado da estimativa');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$insert into fluxo.apontamentos (empresa_id, tarefa_id, minutos) values (%L, %L, 30)$$, :'emp', :'kh'), 'leitura não aponta horas');
+select pg_temp.como(:'analista');
+delete from fluxo.apontamentos where id = :'ah';
+select pg_temp.ok(not exists (select 1 from fluxo.apontamentos where id = :'ah'), 'o autor apaga o próprio apontamento');
 \echo 'TODOS OS TESTES PASSARAM'

@@ -4045,6 +4045,17 @@ html[data-tema="escuro"]:not(#_) .tkb .tk-b.ap-selo, html[data-tema="escuro"] .a
 .rc-dia.on { background: #0b57d0; border-color: #0b57d0; color: #fff } .rc-dia:disabled { cursor: default; opacity: .7 }
 .rc-res { font-size: 13px; color: var(--tk-sub) } .rc-res .ic { vertical-align: -2px; margin-right: 2px }
 html[data-tema="escuro"] .rc-dia { border-color: rgba(124,140,255,.35) } html[data-tema="escuro"] .rc-dia.on { background: rgba(99,112,255,.25); border-color: rgba(124,140,255,.6); color: #c9d6ff }
+/* apontamento de horas (bloco 4) */
+.hr-res { display: flex; align-items: center; gap: 8px 16px; flex-wrap: wrap; font-size: 14px }
+.hr-est { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--tk-sub) } :root:not(#_) .tkm .hr-est .tkm-pill { width: 84px; flex: none }
+.hr-acima { color: #b3261e !important } .tk-b.hr-acima { font-weight: 500 }
+.hr-bar { height: 6px; border-radius: 3px; background: #e3e8ef; overflow: hidden; margin: 10px 0 4px } .hr-bar span { display: block; height: 100%; background: #0b57d0 } .hr-bar.acima span { background: #b3261e }
+.hr-pp { display: flex; gap: 12px; flex-wrap: wrap; margin: 8px 0 0; font-size: 13px } .hr-pp span { display: inline-flex; align-items: center; gap: 6px }
+.hr-f { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px } .hr-f input { min-width: 0; flex: 1 1 120px } .hr-f input[name=nota] { flex: 3 1 200px }
+.hr-l { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-top: 1px solid #e3e8ef } .hr-l:first-of-type { margin-top: 8px }
+.hr-lt { flex: 1; min-width: 0; font-size: 13px; line-height: 1.4 } .hr-n { display: block; color: var(--tk-sub) }
+html[data-tema="escuro"] .hr-bar { background: #1a2240 } html[data-tema="escuro"] .hr-bar span { background: #7c8cff } html[data-tema="escuro"] .hr-l { border-color: #1a2240 }
+html[data-tema="escuro"] .hr-acima { color: #ffb4ab !important } html[data-tema="escuro"] .hr-bar.acima span { background: #ffb4ab }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

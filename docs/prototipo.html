@@ -4720,6 +4720,17 @@ html[data-tema="escuro"]:not(#_) .tkb .tk-b.ap-selo, html[data-tema="escuro"] .a
 .rc-dia.on { background: #0b57d0; border-color: #0b57d0; color: #fff } .rc-dia:disabled { cursor: default; opacity: .7 }
 .rc-res { font-size: 13px; color: var(--tk-sub) } .rc-res .ic { vertical-align: -2px; margin-right: 2px }
 html[data-tema="escuro"] .rc-dia { border-color: rgba(124,140,255,.35) } html[data-tema="escuro"] .rc-dia.on { background: rgba(99,112,255,.25); border-color: rgba(124,140,255,.6); color: #c9d6ff }
+/* apontamento de horas (bloco 4) */
+.hr-res { display: flex; align-items: center; gap: 8px 16px; flex-wrap: wrap; font-size: 14px }
+.hr-est { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--tk-sub) } :root:not(#_) .tkm .hr-est .tkm-pill { width: 84px; flex: none }
+.hr-acima { color: #b3261e !important } .tk-b.hr-acima { font-weight: 500 }
+.hr-bar { height: 6px; border-radius: 3px; background: #e3e8ef; overflow: hidden; margin: 10px 0 4px } .hr-bar span { display: block; height: 100%; background: #0b57d0 } .hr-bar.acima span { background: #b3261e }
+.hr-pp { display: flex; gap: 12px; flex-wrap: wrap; margin: 8px 0 0; font-size: 13px } .hr-pp span { display: inline-flex; align-items: center; gap: 6px }
+.hr-f { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px } .hr-f input { min-width: 0; flex: 1 1 120px } .hr-f input[name=nota] { flex: 3 1 200px }
+.hr-l { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-top: 1px solid #e3e8ef } .hr-l:first-of-type { margin-top: 8px }
+.hr-lt { flex: 1; min-width: 0; font-size: 13px; line-height: 1.4 } .hr-n { display: block; color: var(--tk-sub) }
+html[data-tema="escuro"] .hr-bar { background: #1a2240 } html[data-tema="escuro"] .hr-bar span { background: #7c8cff } html[data-tema="escuro"] .hr-l { border-color: #1a2240 }
+html[data-tema="escuro"] .hr-acima { color: #ffb4ab !important } html[data-tema="escuro"] .hr-bar.acima span { background: #ffb4ab }
 </style>
 <header class="top">
   <div class="top-in">
@@ -6406,7 +6417,7 @@ const etqChip=(e,cls='')=>`<span class="etq etq-${e.cor} ${cls}" title="${esc(e.
 function cardTk({k,t},geral){const at=tkAtras(k),ets=(k.etq||[]).map(id=>S.etiquetas.find(e=>e.id===id)).filter(Boolean);
   const its=(k.checklists||[]).flatMap(c=>c.itens),fe=its.filter(i=>i.feito).length,nc=(k.coments||[]).filter(c=>!c.apagado).length,na=(k.anexos||[]).filter(a=>!a.removido).length;
   const pz=k.prazo?`<span class="tk-b tk-prazo ${k.feita?'feito':at?'atras':''}" title="${k.feita?'Concluída':at?'Atrasada':'Prazo'}">${ic(k.feita?'check':'clock',14)}${fd(k.prazo)}</span>`:'';
-  const ind=[apSelo(k),pzSelo(k),vzSelo(k),pz,rcSelo(k),k.desc?`<span class="tk-b" title="Tem descrição">${ic('notas',14)}</span>`:'',
+  const ind=[apSelo(k),pzSelo(k),vzSelo(k),pz,rcSelo(k),hrSelo(k),k.desc?`<span class="tk-b" title="Tem descrição">${ic('notas',14)}</span>`:'',
     nc?`<span class="tk-b" title="Comentários">${ic('chat',14)}${nc}</span>`:'',na?`<span class="tk-b" title="Anexos">${ic('clip',14)}${na}</span>`:'',
     its.length?`<span class="tk-b ${fe===its.length?'ok':''}" title="Checklist">${ic('check',14)}${fe}/${its.length}</span>`:'',
     k.prio==='alta'?'<span class="tk-b tk-pr alta" title="Prioridade alta">Alta</span>':k.prio==='baixa'?'<span class="tk-b tk-pr" title="Prioridade baixa">Baixa</span>':''].join(''),avs=tkPessoas(k).slice(0,3);
@@ -6562,7 +6573,7 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
   ${k.arq?`<div class="tkm-arqb">${ic('arq',18)}<span>Este cartão está arquivado e fica fora dos quadros.</span></div>`:''}
   <div class="tkm-g"><div class="tkm-main">
     <div class="tkm-dets">${pessoa('resp',k.resp,'Sem responsável','tkc-resp')}${pessoa('solic',k.solic,'—','tkc-sol')}${grupos}${etqs}${datas}${prio}${vzDetHtml(t,k)}</div>
-    ${vzBlocoHtml(t,k)}${cpoBlocoHtml(t,k,ro||!!k.arq)}${apBlocoHtml(t,k,ro||!!k.arq)}${pzBlocoHtml(t,k,ro||!!k.arq)}${rcBlocoHtml(t,k,ro||!!k.arq)}
+    ${vzBlocoHtml(t,k)}${cpoBlocoHtml(t,k,ro||!!k.arq)}${apBlocoHtml(t,k,ro||!!k.arq)}${pzBlocoHtml(t,k,ro||!!k.arq)}${rcBlocoHtml(t,k,ro||!!k.arq)}${hrBlocoHtml(t,k,ro||!!k.arq)}
     <div class="tkm-bloco">${tkSecH('notas','Descrição')}<div class="tkm-in"><textarea id="tkc-d" class="tkm-txt" data-tkc="desc" data-mencao placeholder="Adicione uma descrição mais detalhada: objetivo, instruções e critério de pronto (@ avisa um colega)" ${dis}>${esc(k.desc||'')}</textarea></div></div>
     ${k.feita||k.resultado?`<div class="tkm-bloco">${tkSecH('check','Resultado')}<div class="tkm-in"><textarea id="tkc-r" class="tkm-txt" data-tkc="resultado" data-mencao placeholder="O que foi feito ou decidido" ${dis}>${esc(k.resultado||'')}</textarea></div></div>`:''}
     ${anexos.length?`<div class="tkm-bloco">${tkSecH('clip','Anexos',ro?'':`<button class="tkm-btn" data-a="tkc-pop" data-v="anexo">Adicionar</button>`)}<div class="tkm-in">${anexosH}</div></div>`:''}
@@ -6578,7 +6589,8 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
       ${b('tkc-ck-novo','check','Checklist')}
       ${b('tkc-pop','clip','Anexo',`data-v="anexo" aria-expanded="${pop==='anexo'}"`)}${popAnexo}
       ${b('tkc-pop','capa','Capa',`data-v="capa" aria-expanded="${pop==='capa'}"`)}${popCapa}
-      ${k.rec||k.serie||k.arq?'':b('rc-nova','repete','Recorrência')}</div>`}
+      ${k.rec||k.serie||k.arq?'':b('rc-nova','repete','Recorrência')}
+      ${k.arq?'':b('hr-novo','clock','Apontar horas')}</div>`}
     <div class="tkm-sg"><span class="tkm-sgt">Ações</span>
       ${ro||k.arq?'':b('tkc-concluir','check',apRotulo(k)?.replace('Aguardando aprovação','Em aprovação')||(k.feita?'Reabrir':'Concluir'),'data-dup="1"')}
       ${pzBotao(k,ro)}
@@ -6601,7 +6613,7 @@ function tkRe(){const d=document.querySelector('#modal .dialog'),st=d?d.scrollTo
 function tkAtual(){return tkAcha(UI.tkSel?.tid,UI.tkSel?.kid)}
 const tkItem=(k,cid,iid)=>{const c=k.checklists.find(x=>x.id===cid);return {c,i:c?.itens.find(x=>x.id===iid)}};
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="tkc-"],[data-a^="tkl-"],[data-a="tk-listas"],[data-a="tk-arqficha"],[data-a="tk-cheia"],[data-a="tk-nova"],[data-a="tk-abrir"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const A=a.dataset.a;
-  if(A==='tk-abrir'){UI.tkSel={tid:a.dataset.id,kid:a.dataset.tk};UI.tkEdCom=null;UI.tkCkNovo=false;UI.tkEtqNova=false;UI.tkPop=null;UI.tkItemNovo=null;UI.modal='tarefa';renderModal();return}
+  if(A==='tk-abrir'){UI.tkSel={tid:a.dataset.id,kid:a.dataset.tk};UI.tkEdCom=null;UI.tkCkNovo=false;UI.tkEtqNova=false;UI.tkPop=null;UI.hrNovo=false;UI.tkItemNovo=null;UI.modal='tarefa';renderModal();return}
   if(A==='tk-nova'){UI.tkSel={tid:a.dataset.id||(UI.route==='terreno'?UI.id:null),lista:a.dataset.v||null};UI.modal='tarefa';renderModal();return}
   if(A==='tk-listas'){UI.tkSel={tid:a.dataset.id};UI.modal='tk-listas';renderModal();return}
   if(A==='tk-cheia'){tkTelaCheia();return}
@@ -7440,6 +7452,65 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="rc-"]'
   k.feita=addD(ini,2);k.feitaPor='Rafael Souza';k.lista=tkPrim(t,'conclui').id;k.checklists[0].itens[0].feitoPor='Rafael Souza';
   k.rec={freq:'semanal',int:1,dias:[1],diaMes:+ini.slice(8),prox:addD(ini,7),fim:null,max:null,vezes:1,prazoDias:2,lista:tkPrim(t,'aberta').id,ativa:true,por:'Ana Prado',em:ini};t.tarefas.push(k)}
   rcGerar()})();
+
+/* =====================================================================
+   Apontamento de horas (bloco 4; decisão do Moisés, 30/out/2026: sem
+   aprovação). Espelha fluxo.apontamentos, tarefas.estimativa_min e
+   fluxo.v_tarefa_horas. Cada pessoa aponta o próprio tempo (data, tempo,
+   nota); quem edita o cartão aponta; só o autor ou o administrador mudam
+   e apagam; nada no futuro nem mais de 24 h por pessoa no mesmo dia.
+   Tempo aceita "1h30", "1:30", "1,5", "90 min" ou "45m". Injetado no
+   mesmo escopo.
+   ===================================================================== */
+function hrMin(v){const s=String(v||'').trim().toLowerCase().replace(/\s/g,'');if(!s)return null;let m;
+  if((m=/^(\d+)h(\d{1,2})?(min|m)?$/.exec(s)))return +m[1]*60+(+m[2]||0);
+  if((m=/^(\d+):(\d{2})$/.exec(s)))return +m[1]*60+ +m[2];
+  if((m=/^(\d+)(min|m)$/.exec(s)))return +m[1];
+  if((m=/^(\d+(?:[.,]\d+)?)h?$/.exec(s)))return Math.round(parseFloat(m[1].replace(',','.'))*60);return NaN}
+function hrTxt(min){if(min==null)return '—';const h=Math.floor(min/60),m=min%60;return h?`${h}h${m?String(m).padStart(2,'0'):''}`:`${m} min`}
+const hrAps=k=>k.horas||(k.horas=[]);
+const hrTotal=k=>(k.horas||[]).reduce((s,a)=>s+a.min,0);
+const hrPode=(a)=>a.por===me()||ehAdmin(me());
+/* frente do cartão: apontado / estimado */
+function hrSelo(k){const tot=hrTotal(k);if(!tot&&!k.estim)return '';const est=k.estim,ac=est&&tot>est;
+  return `<span class="tk-b ${ac?'hr-acima':''}" title="Horas apontadas${est?' / estimadas':''}">${ic('clock',14)}${hrTxt(tot)}${est?'/'+hrTxt(est):''}</span>`}
+/* bloco do cartão */
+function hrBlocoHtml(t,k,ro){const L=hrAps(k);if(!L.length&&!k.estim&&!UI.hrNovo)return '';const tot=hrTotal(k),est=k.estim,eu=me();
+  const porP={};L.forEach(a=>porP[a.por]=(porP[a.por]||0)+a.min);
+  const lin=L.slice().sort((a,b)=>b.data.localeCompare(a.data)||b.em.localeCompare(a.em)).map(a=>`<div class="hr-l"><span class="tkm-coa">${av(a.por,'sm')}</span>
+    <span class="hr-lt"><b>${hrTxt(a.min)}</b> <span class="faint">· ${esc(a.por)} · ${fd(a.data)}</span>${a.nota?`<span class="hr-n">${esc(a.nota)}</span>`:''}</span>
+    ${!ro&&hrPode(a)?`<button class="tkm-btn sm" data-a="hr-x" data-v="${a.id}" aria-label="Apagar o apontamento de ${hrTxt(a.min)} de ${fd(a.data)}">Apagar</button>`:''}</div>`).join('');
+  const pct=est?Math.min(100,Math.round(tot/est*100)):0;
+  return `<div class="tkm-bloco">${tkSecH('clock','Horas',ro||UI.hrNovo?'':`<button class="tkm-btn" data-a="hr-novo">Apontar</button>`)}<div class="tkm-in">
+    <div class="hr-res"><span><b>${hrTxt(tot)}</b> apontadas</span>
+      <label class="hr-est">Estimativa <input class="tkm-pill" data-hr="estim" value="${est?hrTxt(est):''}" placeholder="—" aria-label="Estimativa de horas" ${ro?'disabled':''}></label>
+      ${est?`<span class="${tot>est?'hr-acima':'faint'}">${tot>est?`${hrTxt(tot-est)} acima`:`faltam ${hrTxt(est-tot)}`}</span>`:''}</div>
+    ${est?`<div class="hr-bar ${tot>est?'acima':''}" role="img" aria-label="${pct}% da estimativa"><span style="width:${pct}%"></span></div>`:''}
+    ${Object.keys(porP).length>1?`<div class="hr-pp">${Object.entries(porP).map(([u,m])=>`<span>${av(u,'sm')} ${hrTxt(m)}</span>`).join('')}</div>`:''}
+    ${UI.hrNovo&&!ro?`<form class="hr-f" data-form="hr-novo"><input name="tempo" required placeholder="Tempo (1h30)" aria-label="Tempo" autocomplete="off"><input name="data" type="date" value="${HOJE}" max="${HOJE}" required aria-label="Data"><input name="nota" placeholder="O que foi feito (opcional)" aria-label="Nota"><button class="tkm-ok" type="submit">Apontar</button><button class="tkm-btn" type="button" data-a="hr-cancela">Cancelar</button></form>`:''}
+    ${lin}</div></div>`}
+
+document.addEventListener('change',e=>{const el=e.target;if(el.dataset?.hr!=='estim')return;e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!vzEdita(t,k))return;
+  const v=hrMin(el.value);if(Number.isNaN(v)||v===0){toast('Estimativa inválida. Use, por exemplo, 8h ou 1h30.',true);el.value=k.estim?hrTxt(k.estim):'';return}
+  if((v||null)===(k.estim||null))return;log(t,`Tarefa "${k.titulo}": estimativa de ${hrTxt(k.estim)} para ${hrTxt(v)}`);k.estim=v||null;tkRe()},true);
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="hr-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!vzEdita(t,k))return;
+  if(a.dataset.a==='hr-novo'){UI.hrNovo=true;tkRe();setTimeout(()=>document.querySelector('[data-form=hr-novo] [name=tempo]')?.focus(),0);return}
+  if(a.dataset.a==='hr-cancela'){UI.hrNovo=false;tkRe();return}
+  if(a.dataset.a==='hr-x'){const x=hrAps(k).find(y=>y.id===a.dataset.v);if(!x||!hrPode(x))return;if(!confirm(`Apagar o apontamento de ${hrTxt(x.min)} de ${fd(x.data)}?`))return;
+    k.horas=hrAps(k).filter(y=>y!==x);log(t,`Tarefa "${k.titulo}": apontamento de ${hrTxt(x.min)} (${fd(x.data)}) apagado`);tkRe()}},true);
+document.addEventListener('submit',e=>{const f=e.target;if(f.dataset?.form!=='hr-novo')return;e.preventDefault();e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!vzEdita(t,k))return;
+  const F=Object.fromEntries(new FormData(f)),m=hrMin(F.tempo),eu=me();
+  if(!m||Number.isNaN(m)){toast('Tempo inválido. Use, por exemplo, 1h30, 45 min ou 1,5.',true);return}
+  if(F.data>HOJE){toast('Não se apontam horas no futuro.',true);return}
+  const dia=S.terrenos.flatMap(x=>x.tarefas||[]).flatMap(x=>x.horas||[]).filter(a=>a.por===eu&&a.data===F.data).reduce((s,a)=>s+a.min,0);
+  if(dia+m>1440){toast('Mais de 24 horas apontadas no mesmo dia.',true);return}
+  hrAps(k).push({id:uid(),por:eu,data:F.data,min:m,nota:F.nota.trim()||null,em:agora()});UI.hrNovo=false;
+  log(t,`Tarefa "${k.titulo}": ${hrTxt(m)} apontadas por ${eu} (${fd(F.data)})`);toast(`${hrTxt(m)} apontadas.`);tkRe()},true);
+
+/* exemplo: estimativa e horas apontadas em "Estudo de massa" */
+(()=>{if(S.hrExemplo)return;S.hrExemplo=true;const t=S.terrenos?.[0];const k=t?.tarefas?.find(x=>x.titulo==='Estudo de massa');if(!k)return;
+  k.estim=12*60;k.horas=[{id:uid(),por:'Ana Prado',data:addD(HOJE,-3),min:240,nota:'Implantação e cálculo de áreas',em:addD(HOJE,-3)+'T18:00'},
+    {id:uid(),por:'Rafael Souza',data:addD(HOJE,-2),min:150,nota:'Conferência com o zoneamento',em:addD(HOJE,-2)+'T17:00'},{id:uid(),por:'Ana Prado',data:addD(HOJE,-1),min:90,nota:null,em:addD(HOJE,-1)+'T12:00'}]})();
 
 
 /* =====================================================================

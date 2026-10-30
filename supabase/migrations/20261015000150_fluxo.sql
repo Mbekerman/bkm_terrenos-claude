@@ -1643,7 +1643,7 @@ returns uuid language sql stable security definer set search_path = '' as $$
                  when 'comentario_reacoes' then fluxo.tarefa_do_comentario((coalesce(p_depois, p_antes)->>'comentario_id')::uuid)
                  else (coalesce(p_depois, p_antes)->>'tarefa_id')::uuid end
     and p_tabela in ('tarefas','tarefa_pessoas','tarefa_etiquetas','checklists','checklist_itens','comentarios','comentario_reacoes',
-                     'anexos','pausas','tarefa_acessos','tarefa_campos','recorrencias') $$;
+                     'anexos','pausas','tarefa_acessos','tarefa_campos','recorrencias','apontamentos') $$;
 drop policy auditoria_gestor_ve on app.auditoria;
 create policy auditoria_gestor_ve on app.auditoria for select to authenticated
   using (app.eh_gestor(empresa_id)
@@ -1932,3 +1932,56 @@ create trigger t_aud after insert or update or delete on fluxo.recorrencias for 
 grant select, insert, update, delete on fluxo.recorrencias to authenticated;
 grant execute on function fluxo.proxima_ocorrencia(fluxo.recorrencias, date) to authenticated;
 revoke execute on function fluxo.gerar_recorrencias(date), fluxo._criar_ocorrencia(fluxo.recorrencias, date) from public;
+
+-- =====================================================================
+-- Apontamento de horas (bloco 4; decisão do Moisés, 30/out/2026: sem
+-- aprovação). Cada pessoa aponta o próprio tempo na tarefa (data, minutos,
+-- nota); quem edita o cartão aponta, e só o autor ou o administrador do
+-- sistema mudam e apagam. A tarefa pode ter uma estimativa para comparar.
+-- =====================================================================
+alter table fluxo.tarefas add column estimativa_min int check (estimativa_min > 0);
+create table fluxo.apontamentos (
+  id          uuid primary key default gen_random_uuid(),
+  empresa_id  uuid not null references app.empresas(id),
+  tarefa_id   uuid not null references fluxo.tarefas(id) on delete cascade,
+  user_id     uuid not null default auth.uid() references auth.users(id),
+  data        date not null default current_date,
+  minutos     int  not null check (minutos between 1 and 1440),
+  nota        text,
+  criado_em   timestamptz not null default now()
+);
+create index on fluxo.apontamentos (tarefa_id);
+create index on fluxo.apontamentos (user_id, data);
+
+create or replace function fluxo.tg_apontamento()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if new.data > current_date then raise exception 'Não se apontam horas no futuro' using errcode = '23514'; end if;
+  if (select sum(minutos) from fluxo.apontamentos where user_id = new.user_id and data = new.data and id <> new.id) + new.minutos > 1440 then
+    raise exception 'Mais de 24 horas apontadas no mesmo dia' using errcode = '23514';
+  end if;
+  if tg_op = 'UPDATE' and new.user_id <> old.user_id then raise exception 'O apontamento não muda de pessoa' using errcode = '23514'; end if;
+  return new;
+end $$;
+create trigger t_valida before insert or update on fluxo.apontamentos for each row execute function fluxo.tg_apontamento();
+
+alter table fluxo.apontamentos enable row level security;
+create policy ver on fluxo.apontamentos for select to authenticated using (fluxo.papel_tarefa(tarefa_id) is not null);
+create policy inserir on fluxo.apontamentos for insert to authenticated with check (user_id = auth.uid() and fluxo.edita_tarefa(tarefa_id));
+create policy alterar on fluxo.apontamentos for update to authenticated
+  using (fluxo.edita_tarefa(tarefa_id) and (user_id = auth.uid() or app.eh_administrador(empresa_id)))
+  with check (fluxo.edita_tarefa(tarefa_id) and (user_id = auth.uid() or app.eh_administrador(empresa_id)));
+create policy remover on fluxo.apontamentos for delete to authenticated
+  using (fluxo.edita_tarefa(tarefa_id) and (user_id = auth.uid() or app.eh_administrador(empresa_id)));
+create trigger t_emp before insert or update on fluxo.apontamentos for each row execute function fluxo.tg_mesma_empresa();
+create trigger t_aud after insert or update or delete on fluxo.apontamentos for each row execute function app.tg_auditoria();
+grant select, insert, update, delete on fluxo.apontamentos to authenticated;
+
+-- Horas por tarefa: apontado (total e por pessoa) e estimativa.
+create view fluxo.v_tarefa_horas with (security_invoker = true) as
+select k.id as tarefa_id, k.estimativa_min, coalesce(sum(a.minutos), 0)::int as apontado_min,
+       coalesce(jsonb_object_agg(a.user_id, a.minutos) filter (where a.user_id is not null), '{}') as por_pessoa
+from fluxo.tarefas k
+left join (select tarefa_id, user_id, sum(minutos)::int as minutos from fluxo.apontamentos group by tarefa_id, user_id) a on a.tarefa_id = k.id
+group by k.id, k.estimativa_min;
+grant select on fluxo.v_tarefa_horas to authenticated;

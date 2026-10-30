@@ -895,7 +895,25 @@ erDiagram
 - `t_valida` recusa série numa ocorrência, lista de outro quadro ou que não seja aberta; calcula o dia do mês e a próxima data (`fluxo.proxima_ocorrencia`: mês sem o dia usa o último; semanal a cada N semanas com os dias marcados). Na criação, ao retomar e ao mudar a regra (a partir da última ocorrência), data de hoje ou passada pula para amanhã em diante: nada nasce atrasado. A série encerra em `termina_em`, em `max_vezes` ou com o cartão de origem arquivado.
 - RLS pelo cartão de origem (`fluxo.papel_tarefa` / `fluxo.edita_tarefa`); só a rotina executa a geração.
 
-- **Fica para os próximos blocos:** apontamento de horas, modelo de cartão, automações e WhatsApp.
+### Apontamento de horas (bloco 4)
+
+Decisão do Moisés de 30/out/2026: sem aprovação. Mesma migration.
+
+```mermaid
+erDiagram
+  tarefas ||--o{ apontamentos : "horas"
+  apontamentos {
+    uuid user_id "quem apontou (sempre o próprio)"
+    date data "nunca no futuro"
+    int minutos "1 a 1440"
+    text nota
+  }
+```
+
+- `tarefas.estimativa_min` guarda a estimativa; `fluxo.v_tarefa_horas` soma o apontado, por pessoa (`por_pessoa`, jsonb) e no total.
+- `t_valida` recusa data futura, mais de 24 h da mesma pessoa no mesmo dia e troca de pessoa. RLS: vê quem vê o cartão; aponta quem edita o cartão, só em nome próprio; muda e apaga o autor ou o administrador do sistema. Auditoria ligada, escondida de quem não vê o cartão.
+
+- **Fica para os próximos blocos:** modelo de cartão (copiar cartão), visão por fase › etapa › subetapa, automações e WhatsApp.
 
 ## Setores censitários e renda familiar estimada
 
