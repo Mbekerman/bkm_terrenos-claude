@@ -2261,4 +2261,126 @@ select pg_temp.ok((select count(*) from app.v_tarefas_funil where tarefa_id = :'
 select pg_temp.ok(not exists (select 1 from app.v_tarefas_funil where tarefa_id = :'kcp'), 'terreno sem fase aberta fica fora da visão do funil');
 select pg_temp.como(:'intruso');
 select pg_temp.ok(not exists (select 1 from app.v_tarefas_funil where tarefa_id = :'kfu'), 'outra empresa não vê a visão do funil');
+\echo '# automações de tarefas (fluxo, bloco 5a)'
+select pg_temp.como(:'diretor');
+insert into fluxo.etiquetas (empresa_id, nome, cor) values (:'emp', 'Em andamento', 'azul') returning id as ean \gset
+update fluxo.campos set obrigatorio = false where empresa_id = :'emp';
+select quadro_id as qm from fluxo.listas where id = pg_temp.lista(:'tm', 'Fazer') \gset
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, acoes) values (%L, %L, 'X', 'criada', '[{"tipo":"arquivar"}]')$$, :'emp', :'qm'),
+  'leitura não cria regra');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, nome, gatilho, acoes) values (%L, 'X', 'criada', '[{"tipo":"arquivar"}]')$$, :'emp'),
+  'regra da empresa toda é só do administrador');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, gatilho_lista_id, acoes) values (%L, %L, 'X', 'entrou_lista', %L, '[{"tipo":"arquivar"}]')$$,
+  :'emp', :'qm', pg_temp.lista(:'t1', 'Fazendo')), 'a lista do gatilho tem que ser do quadro da regra');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, acoes) values (%L, %L, 'X', 'criada', %L)$$,
+  :'emp', :'qm', jsonb_build_array(jsonb_build_object('tipo', 'mover', 'lista', pg_temp.lista(:'tm', 'Pausadas')))), 'regra não pausa tarefa (a pausa pede motivo)');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, acoes) values (%L, %L, 'X', 'criada', '[{"tipo":"avisar","para":[]}]')$$, :'emp', :'qm'),
+  'aviso sem destinatário é recusado');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, acoes) values (%L, %L, 'X', 'prazo_antes', '[{"tipo":"arquivar"}]')$$, :'emp', :'qm'),
+  'prazo vencendo pede os dias de antecedência');
+insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, gatilho_lista_id, acoes)
+values (:'emp', :'qm', 'Começou a fazer', 'entrou_lista', pg_temp.lista(:'tm', 'Fazendo'),
+        jsonb_build_array(jsonb_build_object('tipo', 'avisar', 'para', array['responsavel','gestor'], 'texto', 'Começou'),
+                          jsonb_build_object('tipo', 'etiqueta', 'etiqueta', :'ean', 'por', true))) returning id as au1 \gset
+insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, gatilho_etiqueta_id, acoes)
+values (:'emp', :'qm', 'Em andamento é prioridade', 'etiqueta', :'ean', '[{"tipo":"prioridade","valor":"alta"}]') returning id as au2 \gset
+select pg_temp.ok((select dono_id = :'analista' from fluxo.automacoes where id = :'au1'), 'quem edita o terreno cria regra para o quadro dele e é o dono');
+select pg_temp.tarefa(:'tm', 'Pedir matrícula', current_date + 10, :'analista') as ka1 \gset
+select pg_temp.como(:'diretor');
+update fluxo.tarefas set lista_id = pg_temp.lista(:'tm', 'Fazendo') where id = :'ka1';
+reset role;
+select pg_temp.ok((select count(*) = 2 from app.notificacoes where tipo = 'automacao' and texto = 'Começou: Pedir matrícula' and destinatario_id in (:'analista', :'gestor')),
+  'entrou na lista: avisa o responsável e o gestor dele');
+select pg_temp.ok(exists (select 1 from fluxo.tarefa_etiquetas where tarefa_id = :'ka1' and etiqueta_id = :'ean')
+  and (select resultado = 'ok' and detalhe like 'avisou 2 pessoas; pôs a etiqueta Em andamento' and user_id = :'diretor' from fluxo.automacao_execucoes where automacao_id = :'au1' and tarefa_id = :'ka1'),
+  'a regra põe a etiqueta e a execução fica registrada com quem disparou');
+select pg_temp.ok((select prioridade = 'media' from fluxo.tarefas where id = :'ka1') and not exists (select 1 from fluxo.automacao_execucoes where automacao_id = :'au2'),
+  'o que uma regra faz não dispara outra regra');
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tm', 'Pedir IPTU', current_date + 10) as ka2 \gset
+insert into fluxo.tarefa_etiquetas (empresa_id, tarefa_id, etiqueta_id) values (:'emp', :'ka2', :'ean');
+select pg_temp.ok((select prioridade = 'alta' from fluxo.tarefas where id = :'ka2'), 'a etiqueta posta por uma pessoa dispara a regra');
+update fluxo.automacoes set ativa = false where id = :'au2';
+select pg_temp.tarefa(:'tm', 'Pedir certidão', current_date + 10) as ka3 \gset
+insert into fluxo.tarefa_etiquetas (empresa_id, tarefa_id, etiqueta_id) values (:'emp', :'ka3', :'ean');
+select pg_temp.ok((select prioridade = 'media' from fluxo.tarefas where id = :'ka3'), 'regra desligada não roda');
+select pg_temp.falha(format($$delete from fluxo.automacoes where id = %L$$, :'au2'), 'regra que já rodou não se apaga');
+select pg_temp.como(:'gestor');
+update fluxo.automacoes set nome = 'Outro nome' where id = :'au1';
+select pg_temp.ok((select nome = 'Começou a fazer' from fluxo.automacoes where id = :'au1'), 'só o dono (ou o administrador) muda a regra');
+-- regra da empresa: listas pelo nome, em qualquer quadro
+select pg_temp.como(:'diretor');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, nome, gatilho, gatilho_lista_id, acoes) values (%L, 'X', 'entrou_lista', %L, '[{"tipo":"arquivar"}]')$$,
+  :'emp', pg_temp.lista(:'tm', 'Fazendo')), 'regra da empresa escolhe a lista pelo nome');
+insert into fluxo.automacoes (empresa_id, nome, gatilho, gatilho_lista_nome, condicoes, acoes)
+values (:'emp', 'Esperando retorno urgente', 'entrou_lista', 'aguardando retorno', '[{"tipo":"prioridade","valores":["alta"]}]',
+        '[{"tipo":"adiar","dias":5},{"tipo":"mover","lista_nome":"Lista que não existe"}]') returning id as au3 \gset
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'t1', 'Ligar para o corretor', current_date + 3) as ka4 \gset
+select pg_temp.tarefa(:'t1', 'Ligar para o dono', current_date + 3) as ka5 \gset
+update fluxo.tarefas set prioridade = 'alta' where id = :'ka4';
+update fluxo.tarefas set lista_id = pg_temp.lista(:'t1', 'Aguardando retorno') where id in (:'ka4', :'ka5');
+select pg_temp.ok((select lista_id = pg_temp.lista(:'t1', 'Aguardando retorno') and prazo = current_date + 3 from fluxo.tarefas where id = :'ka4')
+  and (select resultado = 'erro' and detalhe like '%Lista que não existe%' from fluxo.automacao_execucoes where automacao_id = :'au3' and tarefa_id = :'ka4'),
+  'regra que falha registra o erro e não desfaz nada (nem o que a própria regra fez antes)');
+select pg_temp.ok(not exists (select 1 from fluxo.automacao_execucoes where automacao_id = :'au3' and tarefa_id = :'ka5'), 'fora da condição, a regra não roda');
+select pg_temp.como(:'diretor');
+update fluxo.automacoes set acoes = '[{"tipo":"adiar","dias":5}]' where id = :'au3';
+select pg_temp.como(:'analista');
+update fluxo.tarefas set lista_id = pg_temp.lista(:'t1', 'Fazer') where id = :'ka4';
+update fluxo.tarefas set lista_id = pg_temp.lista(:'t1', 'Aguardando retorno') where id = :'ka4';
+select pg_temp.ok((select prazo = fluxo.somar_dias(:'emp', current_date + 3, 5) from fluxo.tarefas where id = :'ka4'), 'regra da empresa vale em outro quadro, pela lista com o mesmo nome');
+-- cartão criado: no fim da transação, com as etiquetas já gravadas
+insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, condicoes, acoes)
+values (:'emp', :'qm', 'Checklist do jurídico', 'criada', jsonb_build_array(jsonb_build_object('tipo', 'etiqueta', 'etiqueta', :'et', 'tem', true)),
+        '[{"tipo":"checklist","nome":"Jurídico","itens":["Matrícula","Ônus"]}]') returning id as au4 \gset
+begin;
+select pg_temp.tarefa(:'tm', 'Diligência', current_date + 20) as ka6 \gset
+insert into fluxo.tarefa_etiquetas (empresa_id, tarefa_id, etiqueta_id) values (:'emp', :'ka6', :'et');
+commit;
+select pg_temp.tarefa(:'tm', 'Sem etiqueta', current_date + 20) as ka7 \gset
+select pg_temp.ok((select count(*) = 2 from fluxo.checklists c join fluxo.checklist_itens i on i.checklist_id = c.id where c.tarefa_id = :'ka6' and c.nome = 'Jurídico')
+  and not exists (select 1 from fluxo.checklists where tarefa_id = :'ka7'), 'cartão criado com a etiqueta ganha o checklist; sem ela, não');
+select pg_temp.ok(not exists (select 1 from fluxo.automacao_execucoes e join fluxo.automacoes a on a.id = e.automacao_id where e.tarefa_id = :'ka6' and a.gatilho = 'etiqueta'),
+  'a etiqueta do cartão que acabou de nascer não conta como etiqueta adicionada');
+-- checklist completo leva para Feito; a conclusão pela regra não dispara as regras de concluída
+insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, acoes)
+values (:'emp', :'qm', 'Checklist pronto vai para Feito', 'checklist_completo', jsonb_build_array(jsonb_build_object('tipo', 'mover', 'lista', pg_temp.lista(:'tm', 'Feito')))) returning id as au5 \gset
+insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, acoes)
+values (:'emp', :'qm', 'Concluiu, arquiva', 'concluida', '[{"tipo":"arquivar"}]') returning id as au6 \gset
+update fluxo.checklist_itens i set concluido_em = now() from fluxo.checklists c where c.id = i.checklist_id and c.tarefa_id = :'ka6' and i.texto = 'Matrícula';
+select pg_temp.ok((select concluida_em is null from fluxo.tarefas where id = :'ka6'), 'com item em aberto, nada acontece');
+update fluxo.checklist_itens i set concluido_em = now() from fluxo.checklists c where c.id = i.checklist_id and c.tarefa_id = :'ka6' and i.texto = 'Ônus';
+select pg_temp.ok((select concluida_em is not null and arquivada_em is null from fluxo.tarefas where id = :'ka6'), 'checklist completo: a regra conclui, e a regra de concluída não roda em cadeia');
+-- prazo: vence em N dias e venceu, pela rotina diária, uma vez por prazo
+insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, gatilho_dias, acoes)
+values (:'emp', :'qm', 'Vence em 2 dias', 'prazo_antes', 2, '[{"tipo":"avisar","para":["responsavel"]}]') returning id as au7 \gset
+insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, acoes)
+values (:'emp', :'qm', 'Venceu', 'prazo_venceu', '[{"tipo":"prioridade","valor":"alta"}]') returning id as au8 \gset
+select pg_temp.tarefa(:'tm', 'Entregar laudo', current_date + 2, :'gestor') as ka8 \gset
+select pg_temp.tarefa(:'tm', 'Responder o cartório', current_date - 1) as ka9 \gset
+select pg_temp.falha('select fluxo.automacoes_prazo()', 'só a rotina roda as regras de prazo');
+reset role;
+select fluxo.automacoes_prazo() as nprazo \gset
+select pg_temp.ok((select count(*) = 1 from app.notificacoes n join fluxo.automacao_execucoes e on e.id = n.origem_id
+                   where e.automacao_id = :'au7' and e.tarefa_id = :'ka8' and n.destinatario_id = :'gestor' and e.referencia = current_date + 2),
+  'prazo em 2 dias: a rotina avisa o responsável');
+select pg_temp.ok((select prioridade = 'alta' from fluxo.tarefas where id = :'ka9'), 'prazo vencido: a regra roda');
+select pg_temp.ok(fluxo.automacoes_prazo() = 0, 'rodar de novo no mesmo dia não repete');
+update fluxo.tarefas set prazo = current_date + 1 where id = :'ka8';
+select pg_temp.ok(fluxo.automacoes_prazo() = 1, 'prazo mudou: a regra vale para o prazo novo');
+-- quem vê
+select pg_temp.como(:'intruso');
+select pg_temp.ok(not exists (select 1 from fluxo.automacoes) and not exists (select 1 from fluxo.automacao_execucoes), 'outra empresa não vê regras nem execuções');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$delete from fluxo.automacoes where id = %L$$, :'au8'), 'o dono também não apaga regra que rodou: o histórico fica');
+insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, acoes) values (:'emp', :'qm', 'Rascunho', 'criada', '[{"tipo":"arquivar"}]') returning id as au9 \gset
+update fluxo.automacoes set ativa = false where id = :'au9';
+delete from fluxo.automacoes where id = :'au9';
+select pg_temp.ok(not exists (select 1 from fluxo.automacoes where id = :'au9'), 'regra que nunca rodou o dono apaga');
+update fluxo.automacoes set ativa = false where quadro_id = :'qm';
+select pg_temp.como(:'diretor');
+update fluxo.automacoes set ativa = false where quadro_id is null;
 \echo 'TODOS OS TESTES PASSARAM'

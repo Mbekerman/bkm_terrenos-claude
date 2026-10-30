@@ -2058,3 +2058,423 @@ begin
   return v;
 end $$;
 grant execute on function fluxo.copiar_tarefa(uuid, uuid, text, text[]) to authenticated;
+
+-- =====================================================================
+-- Automações (bloco 5a; 30/out/2026): "quando acontecer X, se Y, faça Z",
+-- no modelo do Butler do Trello. Cada regra tem dono e se desliga. As da
+-- empresa (quadro vazio) são do administrador e valem em todos os quadros,
+-- com as listas pelo nome; as de um quadro são de quem edita aquele quadro,
+-- com as listas pelo id, e só tocam cartões que o dono vê.
+-- Gatilhos: criada (no fim da transação, com etiquetas e pessoas já
+-- gravadas), entrou_lista, concluida, etiqueta, campo, checklist_completo,
+-- prazo_antes (N dias antes; 0 = no dia) e prazo_venceu (rotina diária,
+-- uma vez por prazo). Condições: lista, etiqueta (tem ou não tem),
+-- prioridade, campo (igual, vazio ou preenchido). Ações: avisar, mover,
+-- etiqueta (pôr ou tirar), responsavel, prioridade, adiar (prazo + N dias,
+-- corridos ou úteis como o calendário da empresa), checklist e arquivar.
+-- O que uma regra faz não dispara outra regra (fluxo.automacao = '1'), e
+-- cada execução fica registrada; regra que falha registra o erro e não
+-- desfaz o que a pessoa fez. Modelo de cartão e cartão arquivado não
+-- disparam. Regra com execuções não se apaga: desliga.
+-- =====================================================================
+create table fluxo.automacoes (
+  id                  uuid primary key default gen_random_uuid(),
+  empresa_id          uuid not null references app.empresas(id) on delete cascade,
+  quadro_id           uuid references fluxo.quadros(id) on delete cascade,   -- vazio = empresa toda
+  nome                text not null check (length(trim(nome)) > 0),
+  gatilho             text not null check (gatilho in ('criada','entrou_lista','concluida','etiqueta','campo','checklist_completo','prazo_antes','prazo_venceu')),
+  gatilho_lista_id    uuid references fluxo.listas(id),      -- entrou_lista, regra do quadro (vazio = qualquer lista)
+  gatilho_lista_nome  text,                                  -- entrou_lista, regra da empresa
+  gatilho_etiqueta_id uuid references fluxo.etiquetas(id),   -- etiqueta (vazio = qualquer)
+  gatilho_campo_id    uuid references fluxo.campos(id),      -- campo (vazio = qualquer)
+  gatilho_dias        int check (gatilho_dias between 0 and 60),  -- prazo_antes
+  condicoes           jsonb not null default '[]' check (jsonb_typeof(condicoes) = 'array'),
+  acoes               jsonb not null check (jsonb_typeof(acoes) = 'array' and jsonb_array_length(acoes) > 0),
+  ativa               boolean not null default true,
+  dono_id             uuid not null default auth.uid() references auth.users(id),
+  criada_em           timestamptz not null default now(),
+  alterada_em         timestamptz not null default now()
+);
+create index on fluxo.automacoes (empresa_id, gatilho) where ativa;
+
+create table fluxo.automacao_execucoes (
+  id            uuid primary key default gen_random_uuid(),
+  empresa_id    uuid not null references app.empresas(id) on delete cascade,
+  automacao_id  uuid not null references fluxo.automacoes(id),
+  tarefa_id     uuid not null references fluxo.tarefas(id) on delete cascade,
+  gatilho       text not null,
+  referencia    date,                -- prazo que disparou (gatilhos de prazo: uma vez por prazo)
+  user_id       uuid default auth.uid(),  -- quem fez o que disparou (vazio = rotina diária)
+  em            timestamptz not null default clock_timestamp(),
+  resultado     text not null check (resultado in ('ok','erro')),
+  detalhe       text
+);
+create index on fluxo.automacao_execucoes (automacao_id, em desc);
+create index on fluxo.automacao_execucoes (tarefa_id, em desc);
+create unique index on fluxo.automacao_execucoes (automacao_id, tarefa_id, referencia) where referencia is not null;
+
+-- Lista de uma regra no quadro do cartão: pelo id (regra do quadro) ou pelo nome (regra da empresa).
+create or replace function fluxo._lista_auto(p_quadro uuid, p_id uuid, p_nome text)
+returns uuid language sql stable security definer set search_path = '' as $$
+  select id from fluxo.listas
+  where quadro_id = p_quadro and ((p_id is not null and id = p_id) or (p_id is null and lower(trim(nome)) = lower(trim(p_nome))))
+  order by oculta, posicao limit 1 $$;
+
+-- Confere a regra: escopo, gatilho, condições e ações.
+create or replace function fluxo.tg_automacao()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare c jsonb; t text; v_q uuid := new.quadro_id;
+begin
+  if v_q is not null and not exists (select 1 from fluxo.quadros where id = v_q and empresa_id = new.empresa_id) then
+    raise exception 'Quadro de outra empresa' using errcode = '42501';
+  end if;
+  if tg_op = 'INSERT' then new.dono_id := coalesce(auth.uid(), new.dono_id); new.criada_em := now();
+  elsif new.dono_id <> old.dono_id or new.quadro_id is distinct from old.quadro_id or new.empresa_id <> old.empresa_id then
+    raise exception 'A regra não muda de dono nem de quadro' using errcode = '23514';
+  end if;
+  new.alterada_em := now();
+  -- parâmetros do gatilho
+  if new.gatilho <> 'entrou_lista' then new.gatilho_lista_id := null; new.gatilho_lista_nome := null; end if;
+  if new.gatilho <> 'etiqueta' then new.gatilho_etiqueta_id := null; end if;
+  if new.gatilho <> 'campo' then new.gatilho_campo_id := null; end if;
+  if new.gatilho = 'prazo_antes' and new.gatilho_dias is null then raise exception 'Diga quantos dias antes do prazo' using errcode = '23514'; end if;
+  if new.gatilho <> 'prazo_antes' then new.gatilho_dias := null; end if;
+  if v_q is null and new.gatilho_lista_id is not null then
+    raise exception 'Regra da empresa escolhe a lista pelo nome' using errcode = '23514';
+  end if;
+  if v_q is not null then new.gatilho_lista_nome := null; end if;
+  if new.gatilho_lista_id is not null and not exists (select 1 from fluxo.listas where id = new.gatilho_lista_id and quadro_id = v_q) then
+    raise exception 'A lista não é deste quadro' using errcode = '23514';
+  end if;
+  if new.gatilho_etiqueta_id is not null and not exists (select 1 from fluxo.etiquetas where id = new.gatilho_etiqueta_id and empresa_id = new.empresa_id) then
+    raise exception 'Etiqueta de outra empresa' using errcode = '42501';
+  end if;
+  if new.gatilho_campo_id is not null and not exists (select 1 from fluxo.campos where id = new.gatilho_campo_id and empresa_id = new.empresa_id) then
+    raise exception 'Campo de outra empresa' using errcode = '42501';
+  end if;
+  -- condições
+  for c in select * from jsonb_array_elements(new.condicoes) loop
+    t := c->>'tipo';
+    if t = 'lista' then
+      if v_q is null and jsonb_typeof(c->'nomes') is distinct from 'array' then raise exception 'Regra da empresa escolhe a lista pelo nome' using errcode = '23514'; end if;
+      if v_q is not null and (jsonb_typeof(c->'listas') is distinct from 'array'
+         or exists (select 1 from jsonb_array_elements_text(c->'listas') x where not exists (select 1 from fluxo.listas where id = x::uuid and quadro_id = v_q))) then
+        raise exception 'A lista não é deste quadro' using errcode = '23514';
+      end if;
+    elsif t = 'etiqueta' then
+      if not exists (select 1 from fluxo.etiquetas where id = (c->>'etiqueta')::uuid and empresa_id = new.empresa_id) then raise exception 'Etiqueta de outra empresa' using errcode = '42501'; end if;
+    elsif t = 'prioridade' then
+      if jsonb_typeof(c->'valores') is distinct from 'array' or exists (select 1 from jsonb_array_elements_text(c->'valores') x where x not in ('baixa','media','alta')) then
+        raise exception 'Prioridade inválida na condição' using errcode = '23514';
+      end if;
+    elsif t = 'campo' then
+      if not exists (select 1 from fluxo.campos where id = (c->>'campo')::uuid and empresa_id = new.empresa_id) then raise exception 'Campo de outra empresa' using errcode = '42501'; end if;
+      if coalesce(c->>'op', 'igual') not in ('igual','vazio','preenchido') or (coalesce(c->>'op', 'igual') = 'igual' and not c ? 'valor') then
+        raise exception 'Condição de campo: igual (com o valor), vazio ou preenchido' using errcode = '23514';
+      end if;
+    else raise exception 'Condição desconhecida: %', coalesce(t, '(sem tipo)') using errcode = '23514';
+    end if;
+  end loop;
+  -- ações
+  for c in select * from jsonb_array_elements(new.acoes) loop
+    t := c->>'tipo';
+    if t = 'avisar' then
+      if coalesce(jsonb_array_length(case when jsonb_typeof(c->'para') = 'array' then c->'para' end), 0) + coalesce(jsonb_array_length(case when jsonb_typeof(c->'pessoas') = 'array' then c->'pessoas' end), 0) = 0 then
+        raise exception 'Diga quem a regra avisa' using errcode = '23514';
+      end if;
+      if exists (select 1 from jsonb_array_elements_text(coalesce(c->'para', '[]')) x where x not in ('responsavel','executores','aprovadores','acompanham','solicitante','gestor')) then
+        raise exception 'Destinatário inválido no aviso' using errcode = '23514';
+      end if;
+      if exists (select 1 from jsonb_array_elements_text(coalesce(c->'pessoas', '[]')) x where not exists (select 1 from app.membros where empresa_id = new.empresa_id and user_id = x::uuid)) then
+        raise exception 'Quem a regra avisa tem que ser da empresa' using errcode = '23514';
+      end if;
+    elsif t = 'mover' then
+      if v_q is null and coalesce(trim(c->>'lista_nome'), '') = '' then raise exception 'Regra da empresa escolhe a lista pelo nome' using errcode = '23514'; end if;
+      if v_q is not null and not exists (select 1 from fluxo.listas where id = (c->>'lista')::uuid and quadro_id = v_q) then
+        raise exception 'A lista não é deste quadro' using errcode = '23514';
+      end if;
+      if v_q is not null and (select tipo from fluxo.listas where id = (c->>'lista')::uuid) = 'pausa' then
+        raise exception 'Regra não pausa tarefa: a pausa pede motivo' using errcode = '23514';
+      end if;
+    elsif t = 'etiqueta' then
+      if not exists (select 1 from fluxo.etiquetas where id = (c->>'etiqueta')::uuid and empresa_id = new.empresa_id) then raise exception 'Etiqueta de outra empresa' using errcode = '42501'; end if;
+    elsif t = 'responsavel' then
+      if not exists (select 1 from app.membros where empresa_id = new.empresa_id and user_id = (c->>'pessoa')::uuid) then
+        raise exception 'O responsável tem que ser da empresa' using errcode = '23514';
+      end if;
+    elsif t = 'prioridade' then
+      if coalesce(c->>'valor', '') not in ('baixa','media','alta') then raise exception 'Prioridade inválida na ação' using errcode = '23514'; end if;
+    elsif t = 'adiar' then
+      if coalesce((c->>'dias')::int, 0) not between 1 and 365 then raise exception 'Adiar de 1 a 365 dias' using errcode = '23514'; end if;
+    elsif t = 'checklist' then
+      if coalesce(trim(c->>'nome'), '') = '' or jsonb_typeof(c->'itens') is distinct from 'array' or jsonb_array_length(c->'itens') = 0 then
+        raise exception 'Checklist da regra precisa de nome e itens' using errcode = '23514';
+      end if;
+    elsif t <> 'arquivar' or t is null then raise exception 'Ação desconhecida: %', coalesce(t, '(sem tipo)') using errcode = '23514';
+    end if;
+  end loop;
+  return new;
+end $$;
+create trigger t_valida before insert or update on fluxo.automacoes for each row execute function fluxo.tg_automacao();
+
+-- Regra com execuções não se apaga (o histórico fica): desliga.
+create or replace function fluxo.tg_automacao_apagar()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if exists (select 1 from fluxo.automacao_execucoes where automacao_id = old.id) then
+    raise exception 'A regra já rodou: desligue em vez de apagar' using errcode = 'P0001';
+  end if;
+  return old;
+end $$;
+create trigger t_apagar before delete on fluxo.automacoes for each row execute function fluxo.tg_automacao_apagar();
+
+-- O dono ainda pode ter a regra: administrador (regra da empresa) ou quem edita (regra do quadro).
+create or replace function fluxo._dono_vale(a fluxo.automacoes)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select exists (select 1 from app.membros m where m.empresa_id = a.empresa_id and m.user_id = a.dono_id
+                 and case when a.quadro_id is null then m.administrador else m.papel in ('diretor','gestor','analista') end) $$;
+
+-- Condições da regra no cartão.
+create or replace function fluxo._condicoes_ok(a fluxo.automacoes, k fluxo.tarefas)
+returns boolean language plpgsql stable security definer set search_path = '' as $$
+declare c jsonb; v fluxo.tarefa_campos; f fluxo.campos; t text; igual boolean;
+begin
+  for c in select * from jsonb_array_elements(a.condicoes) loop
+    t := c->>'tipo';
+    if t = 'lista' then
+      if a.quadro_id is null then
+        if not exists (select 1 from fluxo.listas l, jsonb_array_elements_text(c->'nomes') x where l.id = k.lista_id and lower(trim(l.nome)) = lower(trim(x))) then return false; end if;
+      elsif not (c->'listas') ? k.lista_id::text then return false;
+      end if;
+    elsif t = 'etiqueta' then
+      if exists (select 1 from fluxo.tarefa_etiquetas where tarefa_id = k.id and etiqueta_id = (c->>'etiqueta')::uuid) <> coalesce((c->>'tem')::boolean, true) then return false; end if;
+    elsif t = 'prioridade' then
+      if not (c->'valores') ? k.prioridade then return false; end if;
+    elsif t = 'campo' then
+      select * into f from fluxo.campos where id = (c->>'campo')::uuid;
+      select * into v from fluxo.tarefa_campos where tarefa_id = k.id and campo_id = f.id;
+      if coalesce(c->>'op', 'igual') = 'vazio' then if v.tarefa_id is not null then return false; end if;
+      elsif c->>'op' = 'preenchido' then if v.tarefa_id is null then return false; end if;
+      elsif v.tarefa_id is null then return false;
+      else
+        igual := case f.tipo when 'texto' then lower(trim(v.texto)) = lower(trim(c->>'valor'))
+                             when 'numero' then v.numero = (c->>'valor')::numeric
+                             when 'data' then v.data = (c->>'valor')::date
+                             when 'lista' then v.opcao_id = (c->>'valor')::uuid
+                             else v.caixa = (c->>'valor')::boolean end;
+        if not coalesce(igual, false) then return false; end if;
+      end if;
+    end if;
+  end loop;
+  return true;
+end $$;
+
+-- Gancho do aviso: fluxo não sabe como o app notifica; o app troca esta função (no BKM, app._notificar).
+create or replace function fluxo._avisar(p_empresa uuid, p_para uuid, p_texto text, p_tarefa uuid, p_execucao uuid)
+returns void language plpgsql security definer set search_path = '' as $$ begin null; end $$;
+
+-- Faz as ações de uma regra num cartão e devolve o resumo.
+create or replace function fluxo._acoes_automacao(a fluxo.automacoes, p_tarefa uuid, p_execucao uuid)
+returns text language plpgsql security definer set search_path = '' as $$
+declare c jsonb; k fluxo.tarefas; t text; feito text[] := '{}'; v_lista uuid; nc uuid; u uuid; n int;
+begin
+  for c in select * from jsonb_array_elements(a.acoes) loop
+    select * into k from fluxo.tarefas where id = p_tarefa;
+    t := c->>'tipo';
+    if t = 'avisar' then
+      n := 0;
+      for u in
+        select distinct x from (
+          select k.responsavel_id as x where (c->'para') ? 'responsavel'
+          union all select k.solicitante_id where (c->'para') ? 'solicitante'
+          union all select user_id from fluxo.tarefa_pessoas where tarefa_id = k.id and (
+              (papel = 'executor' and (c->'para') ? 'executores') or (papel = 'aprovador' and (c->'para') ? 'aprovadores')
+           or (papel = 'acompanha' and (c->'para') ? 'acompanham'))
+          union all select m.superior_id from app.membros m where m.empresa_id = k.empresa_id and m.user_id = k.responsavel_id and (c->'para') ? 'gestor'
+          union all select x::uuid from jsonb_array_elements_text(coalesce(c->'pessoas', '[]')) x
+        ) d where x is not null and fluxo.papel_tarefa(k.id, x) is not null   -- só avisa quem vê o cartão
+      loop
+        perform fluxo._avisar(k.empresa_id, u, coalesce(nullif(trim(c->>'texto'), ''), a.nome) || ': ' || k.titulo, k.id, p_execucao);
+        n := n + 1;
+      end loop;
+      feito := feito || ('avisou ' || n || case when n = 1 then ' pessoa' else ' pessoas' end);
+    elsif t = 'mover' then
+      v_lista := fluxo._lista_auto(k.quadro_id, (c->>'lista')::uuid, c->>'lista_nome');
+      if v_lista is null then raise exception 'O quadro não tem a lista %', c->>'lista_nome' using errcode = 'P0002'; end if;
+      if v_lista <> k.lista_id then
+        update fluxo.tarefas set lista_id = v_lista, posicao = extract(epoch from clock_timestamp()) where id = k.id;
+        feito := feito || ('moveu para ' || (select nome from fluxo.listas where id = v_lista));
+      end if;
+    elsif t = 'etiqueta' then
+      if coalesce((c->>'por')::boolean, true) then
+        insert into fluxo.tarefa_etiquetas (empresa_id, tarefa_id, etiqueta_id) values (k.empresa_id, k.id, (c->>'etiqueta')::uuid) on conflict do nothing;
+        get diagnostics n = row_count;
+        if n > 0 then feito := feito || ('pôs a etiqueta ' || (select nome from fluxo.etiquetas where id = (c->>'etiqueta')::uuid)); end if;
+      else
+        delete from fluxo.tarefa_etiquetas where tarefa_id = k.id and etiqueta_id = (c->>'etiqueta')::uuid;
+        get diagnostics n = row_count;
+        if n > 0 then feito := feito || ('tirou a etiqueta ' || (select nome from fluxo.etiquetas where id = (c->>'etiqueta')::uuid)); end if;
+      end if;
+    elsif t = 'responsavel' then
+      if k.responsavel_id is distinct from (c->>'pessoa')::uuid then
+        update fluxo.tarefas set responsavel_id = (c->>'pessoa')::uuid where id = k.id;
+        feito := feito || ('trocou o responsável');
+      end if;
+    elsif t = 'prioridade' then
+      if k.prioridade <> c->>'valor' then
+        update fluxo.tarefas set prioridade = c->>'valor' where id = k.id;
+        feito := feito || ('prioridade ' || (c->>'valor'));
+      end if;
+    elsif t = 'adiar' then
+      if k.concluida_em is null then
+        update fluxo.tarefas set prazo = fluxo.somar_dias(k.empresa_id, coalesce(k.prazo, current_date), (c->>'dias')::int) where id = k.id;
+        feito := feito || ('adiou o prazo em ' || (c->>'dias') || ' dias');
+      end if;
+    elsif t = 'checklist' then
+      insert into fluxo.checklists (empresa_id, tarefa_id, nome) values (k.empresa_id, k.id, trim(c->>'nome')) returning id into nc;
+      insert into fluxo.checklist_itens (empresa_id, checklist_id, texto, posicao)
+      select k.empresa_id, nc, trim(x), o from jsonb_array_elements_text(c->'itens') with ordinality as i(x, o) where trim(x) <> '';
+      feito := feito || ('adicionou o checklist ' || trim(c->>'nome'));
+    elsif t = 'arquivar' then
+      if k.arquivada_em is null then
+        update fluxo.tarefas set arquivada_em = now() where id = k.id;
+        feito := feito || 'arquivou';
+      end if;
+    end if;
+  end loop;
+  return coalesce(nullif(array_to_string(feito, '; '), ''), 'nada a mudar');
+end $$;
+
+-- Roda uma regra num cartão: as ações não disparam outras regras; erro vira registro, sem desfazer o que a pessoa fez.
+create or replace function fluxo._executar_automacao(a fluxo.automacoes, p_tarefa uuid, p_referencia date default null)
+returns void language plpgsql security definer set search_path = '' as $$
+declare v_exec uuid := gen_random_uuid(); v_det text; v_ant text := coalesce(current_setting('fluxo.automacao', true), '');
+begin
+  begin
+    perform set_config('fluxo.automacao', '1', true);
+    v_det := fluxo._acoes_automacao(a, p_tarefa, v_exec);
+    perform set_config('fluxo.automacao', v_ant, true);
+    insert into fluxo.automacao_execucoes (id, empresa_id, automacao_id, tarefa_id, gatilho, referencia, resultado, detalhe)
+    values (v_exec, a.empresa_id, a.id, p_tarefa, a.gatilho, p_referencia, 'ok', v_det);
+  exception when others then
+    perform set_config('fluxo.automacao', v_ant, true);
+    insert into fluxo.automacao_execucoes (empresa_id, automacao_id, tarefa_id, gatilho, referencia, resultado, detalhe)
+    values (a.empresa_id, a.id, p_tarefa, a.gatilho, p_referencia, 'erro', sqlerrm);
+  end;
+end $$;
+
+-- Procura as regras ligadas para o que aconteceu no cartão e roda as que passam nas condições.
+-- p_lista, p_etiqueta, p_campo: o que o gatilho diz (lista em que entrou, etiqueta posta, campo mudado).
+create or replace function fluxo.disparar_automacoes(p_tarefa uuid, p_gatilho text, p_lista uuid default null, p_etiqueta uuid default null,
+  p_campo uuid default null, p_referencia date default null)
+returns int language plpgsql security definer set search_path = '' as $$
+declare k fluxo.tarefas; a fluxo.automacoes; n int := 0;
+begin
+  if coalesce(current_setting('fluxo.automacao', true), '') = '1' then return 0; end if;
+  select * into k from fluxo.tarefas where id = p_tarefa;
+  if k.id is null or k.modelo or k.arquivada_em is not null then return 0; end if;
+  for a in select * from fluxo.automacoes x
+           where x.empresa_id = k.empresa_id and x.ativa and x.gatilho = p_gatilho and (x.quadro_id is null or x.quadro_id = k.quadro_id)
+             and (p_gatilho <> 'entrou_lista' or (x.gatilho_lista_id is null and x.gatilho_lista_nome is null) or x.gatilho_lista_id = p_lista
+                  or lower(trim(x.gatilho_lista_nome)) = (select lower(trim(nome)) from fluxo.listas where id = p_lista))
+             and (p_gatilho <> 'etiqueta' or x.gatilho_etiqueta_id is null or x.gatilho_etiqueta_id = p_etiqueta)
+             and (p_gatilho <> 'campo' or x.gatilho_campo_id is null or x.gatilho_campo_id = p_campo)
+             and (p_referencia is null or not exists (select 1 from fluxo.automacao_execucoes e where e.automacao_id = x.id and e.tarefa_id = k.id and e.referencia = p_referencia))
+           order by x.quadro_id nulls first, x.criada_em loop
+    -- dono que perdeu o direito não roda a regra; regra do quadro só toca o cartão que o dono vê
+    continue when not fluxo._dono_vale(a) or (a.quadro_id is not null and fluxo.papel_tarefa(k.id, a.dono_id) is null);
+    -- uma regra anterior pode ter arquivado o cartão ou mudado o que a condição olha
+    select * into k from fluxo.tarefas where id = p_tarefa;
+    exit when k.arquivada_em is not null;
+    continue when not fluxo._condicoes_ok(a, k);
+    perform fluxo._executar_automacao(a, p_tarefa, p_referencia);
+    n := n + 1;
+  end loop;
+  return n;
+end $$;
+
+-- Gatilhos no cartão. Cartão criado nesta transação (criado_em = now()) só dispara "criada", no fim dela,
+-- com tudo gravado: etiquetas, pessoas e campos de uma cópia ou de um modelo não contam como acréscimo.
+create or replace function fluxo.tg_auto_tarefa()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if coalesce(current_setting('fluxo.automacao', true), '') = '1' then return null; end if;
+  if tg_op = 'INSERT' then perform fluxo.disparar_automacoes(new.id, 'criada'); return null; end if;
+  if new.criado_em = now() then return null; end if;
+  if new.lista_id is distinct from old.lista_id then perform fluxo.disparar_automacoes(new.id, 'entrou_lista', new.lista_id); end if;
+  if new.concluida_em is not null and old.concluida_em is null then perform fluxo.disparar_automacoes(new.id, 'concluida'); end if;
+  return null;
+end $$;
+create constraint trigger t_auto_criada after insert on fluxo.tarefas deferrable initially deferred
+  for each row execute function fluxo.tg_auto_tarefa();
+create trigger t_auto after update of lista_id, concluida_em on fluxo.tarefas for each row execute function fluxo.tg_auto_tarefa();
+
+create or replace function fluxo.tg_auto_filho()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare v_tarefa uuid;
+begin
+  if coalesce(current_setting('fluxo.automacao', true), '') = '1' then return null; end if;
+  if tg_table_name = 'checklist_itens' then v_tarefa := fluxo.tarefa_do_checklist(new.checklist_id);
+  elsif tg_op = 'DELETE' then v_tarefa := old.tarefa_id;
+  else v_tarefa := new.tarefa_id;
+  end if;
+  if (select criado_em from fluxo.tarefas where id = v_tarefa) = now() then return null; end if;
+  if tg_table_name = 'tarefa_etiquetas' then
+    perform fluxo.disparar_automacoes(v_tarefa, 'etiqueta', p_etiqueta => new.etiqueta_id);
+  elsif tg_table_name = 'tarefa_campos' then
+    if tg_op = 'DELETE' then perform fluxo.disparar_automacoes(v_tarefa, 'campo', p_campo => old.campo_id);
+    elsif tg_op = 'INSERT' or new is distinct from old then perform fluxo.disparar_automacoes(v_tarefa, 'campo', p_campo => new.campo_id);
+    end if;
+  elsif new.concluido_em is not null and old.concluido_em is null
+        and not exists (select 1 from fluxo.checklist_itens i join fluxo.checklists c on c.id = i.checklist_id
+                        where c.tarefa_id = v_tarefa and i.concluido_em is null and i.virou_tarefa_id is null) then
+    perform fluxo.disparar_automacoes(v_tarefa, 'checklist_completo');
+  end if;
+  return null;
+end $$;
+create trigger t_auto after insert on fluxo.tarefa_etiquetas for each row execute function fluxo.tg_auto_filho();
+create trigger t_auto after insert or update or delete on fluxo.tarefa_campos for each row execute function fluxo.tg_auto_filho();
+create trigger t_auto after update of concluido_em on fluxo.checklist_itens for each row execute function fluxo.tg_auto_filho();
+
+-- Rotina diária: prazo vencendo em N dias (ou hoje) e prazo vencido, uma vez por prazo; pausada não conta.
+create or replace function fluxo.automacoes_prazo(p_hoje date default current_date)
+returns int language plpgsql security definer set search_path = '' as $$
+declare r record; n int := 0;
+begin
+  for r in select a.gatilho, k.id, k.prazo from fluxo.automacoes a
+           join fluxo.tarefas k on k.empresa_id = a.empresa_id and (a.quadro_id is null or k.quadro_id = a.quadro_id)
+           where a.ativa and a.gatilho in ('prazo_antes','prazo_venceu') and k.prazo is not null
+             and k.concluida_em is null and k.arquivada_em is null and not k.modelo
+             and not exists (select 1 from fluxo.listas l where l.id = k.lista_id and l.tipo = 'pausa')
+             and case a.gatilho when 'prazo_antes' then k.prazo >= p_hoje and k.prazo - a.gatilho_dias <= p_hoje else k.prazo < p_hoje end
+           group by a.gatilho, k.id, k.prazo loop
+    n := n + fluxo.disparar_automacoes(r.id, r.gatilho, p_referencia => r.prazo);
+  end loop;
+  return n;
+end $$;
+
+alter table fluxo.automacoes enable row level security;
+alter table fluxo.automacao_execucoes enable row level security;
+create policy ver on fluxo.automacoes for select to authenticated
+  using (empresa_id in (select app.minhas_empresas())
+         and (quadro_id is null or fluxo.ve_objeto((select objeto_tipo from fluxo.quadros q where q.id = quadro_id), (select objeto_id from fluxo.quadros q where q.id = quadro_id))));
+create policy inserir on fluxo.automacoes for insert to authenticated
+  with check (dono_id = auth.uid() and case when quadro_id is null then app.eh_administrador(empresa_id)
+              else empresa_id in (select app.empresas_edicao())
+                   and fluxo.ve_objeto((select objeto_tipo from fluxo.quadros q where q.id = quadro_id), (select objeto_id from fluxo.quadros q where q.id = quadro_id)) end);
+create policy alterar on fluxo.automacoes for update to authenticated
+  using ((dono_id = auth.uid() and (quadro_id is not null or app.eh_administrador(empresa_id)) and empresa_id in (select app.empresas_edicao()))
+         or app.eh_administrador(empresa_id))
+  with check ((dono_id = auth.uid() and (quadro_id is not null or app.eh_administrador(empresa_id)) and empresa_id in (select app.empresas_edicao()))
+         or app.eh_administrador(empresa_id));
+create policy remover on fluxo.automacoes for delete to authenticated
+  using ((dono_id = auth.uid() and empresa_id in (select app.empresas_edicao())) or app.eh_administrador(empresa_id));
+create policy ver on fluxo.automacao_execucoes for select to authenticated
+  using (fluxo.papel_tarefa(tarefa_id) is not null or app.eh_administrador(empresa_id)
+         or exists (select 1 from fluxo.automacoes a where a.id = automacao_id and a.dono_id = auth.uid()));
+create trigger t_aud after insert or update or delete on fluxo.automacoes for each row execute function app.tg_auditoria();
+grant select, insert, update, delete on fluxo.automacoes to authenticated;
+grant select on fluxo.automacao_execucoes to authenticated;
+revoke execute on function fluxo.disparar_automacoes(uuid, text, uuid, uuid, uuid, date), fluxo.automacoes_prazo(date),
+  fluxo._executar_automacao(fluxo.automacoes, uuid, date), fluxo._acoes_automacao(fluxo.automacoes, uuid, uuid),
+  fluxo._avisar(uuid, uuid, text, uuid, uuid) from public;
