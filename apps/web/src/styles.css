@@ -4196,7 +4196,8 @@ button.tk-anel { cursor: pointer } button.tk-anel:hover { background: rgba(11,87
 .tl-gh { display: flex; align-items: center; gap: 8px; min-height: 52px } .tl-gn { font-weight: 500 } .tl-gh .tl-add { margin-left: auto; align-self: center; color: #0b57d0 } html[data-tema="escuro"] .tl-gh .tl-add { color: #c9d6ff }
 .tl-tab { display: flex; flex-direction: column }
 .tl-r { display: grid; grid-template-columns: minmax(220px, 2.4fr) minmax(140px, 1.4fr) 130px 100px 96px minmax(120px, 1fr); align-items: center; gap: 8px; min-height: 48px; border-top: 1px solid #e3e3e3; padding: 0 4px; cursor: pointer }
-.tl.ficha .tl-r { grid-template-columns: minmax(220px, 2.6fr) 130px 100px 96px minmax(120px, 1fr) }
+.tl.ficha .tl-r { grid-template-columns: minmax(180px, 2.6fr) 130px 100px 96px minmax(0, 1fr) }
+.tl-etq { overflow: hidden }
 .tl-r:hover:not(.tl-h) { background: #f0f4f9 } .tl-h { cursor: default; min-height: 36px; font-size: 13px; color: var(--texto-suave, #444746); border-top: 0 }
 .tl-c { display: flex; align-items: center; gap: 8px; min-width: 0 } .tl-tit .tl-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .tl-r.sub .tl-tit { padding-left: 28px } .tl-r.feito .tl-t { text-decoration: line-through; color: var(--texto-suave, #444746) }
