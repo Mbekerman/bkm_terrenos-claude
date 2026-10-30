@@ -53,7 +53,7 @@ for(const [w,h,tema,nome] of [[1440,900,null,'desk'],[390,844,'escuro','cel']]){
   ok((await txt(p,'.sino-i')).includes('e-mail'),nome+': o sino mostra que foi por e-mail');
   await p.evaluate(()=>[...document.querySelectorAll('.sino-i')].find(x=>x.textContent.includes('mencionou')).click());await p.waitForTimeout(1300);
   await p.screenshot({path:O+nome+'_4_item.png'});
-  ok(await p.evaluate(t=>{const el=document.querySelector('.tk.pisca');return !!el&&el.textContent.includes(t)},tituloT),nome+': o aviso abre a ficha no cartão da tarefa e acende');
+  ok(await p.evaluate(t=>{const el=document.querySelector('.pisca[data-mid]');return !!el&&el.textContent.includes(t)},tituloT),nome+': o aviso abre a ficha no cartão da tarefa e acende');
   // Rafael menciona Ana numa reunião: só no sino
   await papel(p,'Analista');
   await p.evaluate(()=>{const S=JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-v9')),t=S.terrenos.find(x=>x.neg&&x.neg.status==='ativo');

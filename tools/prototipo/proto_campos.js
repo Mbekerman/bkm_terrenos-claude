@@ -24,16 +24,15 @@ function cpoFrente(k){const cs=cpoAtivos().filter(c=>c.frente&&k.campos&&k.campo
   return `<div class="cpo-fr">${cs.map(c=>{const v=k.campos[c.id],o=c.tipo==='lista'?(c.opcoes||[]).find(x=>x.id===v):null;
     return `<span class="cpo-ch ${o?'etq-'+o.cor:''}" title="${esc(c.nome)}"><span class="cpo-chn">${esc(c.nome)}:</span> ${esc(cpoTxt(c,v))}</span>`}).join('')}</div>`}
 /* janela do cartão: um bloco com todos os campos ativos (e os desativados que têm valor, só para ler) */
-function cpoBlocoHtml(t,k,ro){const cs=cpoCampos().filter(c=>c.ativo!==false||(k.campos&&k.campos[c.id]!=null)).sort((a,b)=>(a.ordem||0)-(b.ordem||0));if(!cs.length)return '';
-  const v=c=>k.campos?.[c.id],dis=c=>ro||c.ativo===false?'disabled':'';
-  const campo=c=>{const x=v(c),id='cpo-'+c.id;let inp;
-    if(c.tipo==='lista')inp=`<select id="${id}" class="tkm-pill cpo-in" data-cpo="${c.id}" ${dis(c)}><option value="">Não informado</option>${(c.opcoes||[]).filter(o=>o.ativo!==false||o.id===x).map(o=>`<option value="${o.id}" ${o.id===x?'selected':''}>${esc(o.nome)}</option>`).join('')}</select>`;
-    else if(c.tipo==='caixa')inp=`<select id="${id}" class="tkm-pill cpo-in" data-cpo="${c.id}" ${dis(c)}><option value="">Não informado</option><option value="1" ${x===true?'selected':''}>Sim</option><option value="0" ${x===false?'selected':''}>Não</option></select>`;
-    else if(c.tipo==='data')inp=`<input id="${id}" type="date" class="tkm-pill cpo-in" data-cpo="${c.id}" value="${x||''}" ${dis(c)}>`;
-    else inp=`<input id="${id}" class="tkm-pill cpo-in" data-cpo="${c.id}" value="${x==null?'':esc(c.tipo==='numero'?cpoTxt(c,x):x)}" ${c.tipo==='numero'?'inputmode="decimal"':''} placeholder="Não informado" ${dis(c)}>`;
-    const falta=c.obrig&&c.ativo!==false&&x==null;
-    return `<div class="cpo-c ${falta?'falta':''}"><label for="${id}">${esc(c.nome)}${c.obrig&&c.ativo!==false?' <span class="cpo-ob" title="Obrigatório para concluir">*</span>':''}${c.ativo===false?' <span class="faint">(desativado)</span>':''}</label>${inp}${falta?'<span class="cpo-av">Obrigatório para concluir</span>':''}</div>`};
-  return `<div class="tkm-bloco">${tkSecH('layers','Campos personalizados')}<div class="tkm-in cpo-g">${cs.map(campo).join('')}</div></div>`}
+/* campos personalizados como linhas da grade de propriedades do cartão (simulação G_CartaoVisao): rótulo à esquerda, valor sem caixa */
+function cpoInput(c,k,ro){const x=k.campos?.[c.id],id='cpo-'+c.id,dis=ro||c.ativo===false?'disabled':'';
+  if(c.tipo==='lista')return `<select id="${id}" class="tkm-pill cpo-in" data-cpo="${c.id}" ${dis}><option value="">Não informado</option>${(c.opcoes||[]).filter(o=>o.ativo!==false||o.id===x).map(o=>`<option value="${o.id}" ${o.id===x?'selected':''}>${esc(o.nome)}</option>`).join('')}</select>`;
+  if(c.tipo==='caixa')return `<select id="${id}" class="tkm-pill cpo-in" data-cpo="${c.id}" ${dis}><option value="">Não informado</option><option value="1" ${x===true?'selected':''}>Sim</option><option value="0" ${x===false?'selected':''}>Não</option></select>`;
+  if(c.tipo==='data')return `<input id="${id}" type="date" class="tkm-pill cpo-in" data-cpo="${c.id}" value="${x||''}" ${dis}>`;
+  return `<input id="${id}" class="tkm-pill cpo-in" data-cpo="${c.id}" value="${x==null?'':esc(c.tipo==='numero'?cpoTxt(c,x):x)}" ${c.tipo==='numero'?'inputmode="decimal"':''} placeholder="Não informado" ${dis}>`}
+function cpoLinhas(t,k,ro,linha){const cs=cpoCampos().filter(c=>c.ativo!==false||(k.campos&&k.campos[c.id]!=null)).sort((a,b)=>(a.ordem||0)-(b.ordem||0));
+  return cs.map(c=>{const falta=c.obrig&&c.ativo!==false&&k.campos?.[c.id]==null;
+    return linha('notas',`${esc(c.nome)}${c.obrig&&c.ativo!==false?' <span class="cpo-ob" title="Obrigatório para concluir">*</span>':''}`,`<span class="cpo-c ${falta?'falta':''}">${cpoInput(c,k,ro)}${falta?'<span class="cpo-av">Obrigatório para concluir</span>':''}</span>`,'cpo-'+c.id)}).join('')}
 function cpoGravar(t,k,c,raw){const antes=k.campos?.[c.id];let v;
   if(raw===''||raw==null)v=null;
   else if(c.tipo==='numero'){v=cpoNum(raw);if(Number.isNaN(v)){toast(`Número inválido em ${c.nome}.`,true);return false}}

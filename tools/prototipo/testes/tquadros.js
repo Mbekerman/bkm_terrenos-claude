@@ -64,6 +64,8 @@ ok(await p.$eval('.tkm-trilha',x=>x.textContent).then(t=>t.includes(cod)).catch(
 await clica(p,'[data-a=close]');
 // ficha: quadro do terreno, listas próprias e arrastar
 await p.evaluate(id=>{const a=document.createElement('button');a.dataset.a='abrir';a.dataset.id=id;a.dataset.tab='tarefas';document.body.appendChild(a);a.click()},tid);await p.waitForTimeout(400);
+ok(!!(await p.$('#bl-tarefas .tl-g'))&&!!(await p.$('#bl-tarefas .bl-tr [data-a=cr-vista][data-v=lista][aria-pressed=true]')),'a seção Tarefas da ficha abre na Lista, com o seletor no título');
+await clica(p,'#bl-tarefas [data-a=cr-vista][data-v=quadro]');await p.waitForTimeout(250);
 ok(await p.$$eval('#bl-tarefas .tk-col',x=>x.length)===6,'a ficha mostra o quadro do terreno com as 6 listas');
 await clica(p,'[data-a=tk-listas]');await p.waitForTimeout(150);await muda(p,'[data-tkl=nome]','Entrada');await p.waitForTimeout(150);
 s=await est(p);ok(s.terrenos[0].listas[0].nome==='Entrada'&&s.terrenos[1].listas[0].nome==='Backlog','renomear a lista vale só para o terreno');

@@ -10,7 +10,7 @@ const muda=(p,sel,v)=>p.evaluate(([s,v])=>{let el=document.querySelector(s);if(!
 const preenche=(p,sel,v)=>p.evaluate(([s,v])=>{let el=document.querySelector(s);if(!el&&window.__tkAcha)el=window.__tkAcha(s);if(!el)throw new Error('não achei '+s);el.value=v},[sel,v]);
 const envia=(p,sel)=>p.evaluate(s=>{let f=document.querySelector(s);if(!f&&window.__tkAcha)f=window.__tkAcha(s);if(!f)throw new Error('não achei '+s);f.requestSubmit()},sel);
 const papel=(p,v)=>p.evaluate(v=>{const a=document.createElement('button');a.dataset.a='role';a.dataset.v=v;document.body.appendChild(a);a.click();a.remove()},v);
-const ficha=(p,id)=>p.evaluate(id=>{const a=document.createElement('button');a.dataset.a='abrir';a.dataset.id=id;a.dataset.tab='tarefas';document.body.appendChild(a);a.click();a.remove()},id);
+const ficha=(p,id)=>p.evaluate(id=>{const a=document.createElement('button');a.dataset.a='abrir';a.dataset.id=id;a.dataset.tab='tarefas';document.body.appendChild(a);a.click();a.remove();document.querySelector('#bl-tarefas [data-a=cr-vista][data-v=quadro][aria-pressed=false]')?.click()},id);  // roteiro escrito sobre o quadro; a ficha abre na Lista
 const toast=p=>p.evaluate(()=>document.querySelector('.toast')?.textContent||'');
 const tar=(s,i,tit)=>s.terrenos[i].tarefas.find(k=>k.titulo===tit);
 const addD=(d,n)=>{const x=new Date(d+'T12:00:00');x.setDate(x.getDate()+n);return x.toISOString().slice(0,10)};
@@ -28,23 +28,23 @@ await p.evaluate(()=>document.querySelector('.tk[aria-label="Estudo de viabilida
 await abreCartao(p,'Estudo de viabilidade');
 ok(await p.$eval('.ap-bloco',x=>x.textContent.includes('Aguardando aprovação')&&x.textContent.includes('Aprovou')&&x.textContent.includes('Na vez')&&x.textContent.includes('Premissas conferidas')),
   'bloco Aprovação mostra quem aprovou, a justificativa e quem está na vez');
-ok(await p.$eval('[data-a=tkc-concluir].tkm-done',x=>x.title==='Aguardando aprovação'),'o círculo de concluir diz "Aguardando aprovação"');
+ok(await p.$eval('#modal .tkm-cabb [data-a=tkc-aba][data-v=aprov]',x=>x.textContent.includes('Ver aprovação')),'com o pedido aberto, a ação principal é "Ver aprovação"');
 await p.evaluate(()=>document.querySelector('.ap-bloco').scrollIntoView({block:'center'}));await p.screenshot({path:O+'2_cartao_na_vez.png'});
 await clica(p,'[data-a=ap-aprovar]');await p.waitForTimeout(250);
 s=await est(p);let k=tar(s,0,'Estudo de viabilidade');
 ok(k.aps.at(-1).sit==='aprovada'&&k.feita&&s.terrenos[0].listas.find(l=>l.id===k.lista).tipo==='conclui','o último aprovou: aprovada e a tarefa vai sozinha para Feito');
 ok(s.notifs.some(n=>n.para==='Rafael Souza'&&n.tipo==='aprovacao_decidida'&&n.txt.includes('aprovada')),'quem pediu é avisado da aprovação');
-await clica(p,'[data-a=tkc-concluir].tkm-done');await p.waitForTimeout(200);
+await clica(p,'#modal [data-a=tkc-concluir][data-dup]');await p.waitForTimeout(200);
 s=await est(p);k=tar(s,0,'Estudo de viabilidade');ok(!k.feita&&k.aps.at(-1).sit==='invalidada','reabrir invalida a aprovação');
-ok(await p.$eval('[data-a=tkc-concluir].tkm-done',x=>x.title==='Pedir aprovação'),'reaberta, o concluir volta a ser "Pedir aprovação"');
+ok(await p.$eval('#modal [data-a=tkc-concluir][data-dup]',x=>x.textContent.includes('Pedir aprovação')),'reaberta, a ação volta a ser "Pedir aprovação"');
 await fecha(p);
 // analista: checklist em aberto bloqueia; pede a aprovação; arrastar para Feito não conclui
 await papel(p,'Analista');await p.waitForTimeout(200);
 await abreCartao(p,'Levar ao comitê');
-await clica(p,'[data-a=tkc-concluir].tkm-done');await p.waitForTimeout(200);
+await clica(p,'#modal [data-a=tkc-concluir][data-dup]');await p.waitForTimeout(200);
 s=await est(p);ok(!(tar(s,0,'Levar ao comitê').aps||[]).length&&(await toast(p)).includes('checklist'),'com item do checklist em aberto, não pede aprovação');
 await p.evaluate(()=>document.querySelector('#modal [data-a=tkc-aba][data-v=geral]').click());await p.evaluate(()=>document.querySelectorAll('[data-tkc=item-feito]').forEach(x=>{if(!x.checked)x.click()}));await p.waitForTimeout(250);
-await clica(p,'[data-a=tkc-concluir].tkm-done');await p.waitForTimeout(250);
+await clica(p,'#modal [data-a=tkc-concluir][data-dup]');await p.waitForTimeout(250);
 s=await est(p);k=tar(s,0,'Levar ao comitê');ok(k.aps?.at(-1)?.sit==='pendente'&&!k.feita,'"Pedir aprovação" cria o pedido e a tarefa segue aberta');
 ok(s.notifs.some(n=>n.para==='Moisés'&&n.tipo==='aprovacao_pendente'&&n.txt.includes('Levar ao comitê')),'o aprovador é avisado do pedido');
 await muda(p,'.tkm-lsel','Feito');await p.waitForTimeout(200);
