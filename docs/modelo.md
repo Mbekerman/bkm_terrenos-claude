@@ -838,7 +838,35 @@ erDiagram
 - **@ no cartão:** `fluxo.papel_cartao` e `fluxo.papel_tarefa` aceitam a pessoa (padrão: quem lê), e a função do teto recebe (objeto, pessoa); `app.tg_mencoes` só avisa quem vê o cartão. A tela só oferece no @ quem vê o cartão.
 - O banco tem `publico` como padrão para quem insere direto; a tela sempre pergunta.
 
-- **Fica para os próximos blocos:** campos personalizados, recorrência, automações e WhatsApp.
+### Campos personalizados (bloco 4)
+
+Decisões do Moisés de 30/out/2026. Mesma migration.
+
+```mermaid
+erDiagram
+  empresas ||--o{ campos : "da empresa"
+  campos ||--o{ campo_opcoes : "lista"
+  tarefas ||--o{ tarefa_campos : "valores"
+  campos ||--o{ tarefa_campos : ""
+  campos {
+    text nome
+    text tipo "texto | numero | data | lista | caixa"
+    bool na_frente
+    bool ativo
+  }
+  tarefa_campos {
+    text texto "um só preenchido, o do tipo"
+    numeric numero
+    date data
+    uuid opcao_id
+    bool caixa
+  }
+```
+
+- Campos da empresa, para todos os quadros; o administrador cria e muda (RLS `app.eh_administrador`, com auditoria). Sem linha em `tarefa_campos`, o campo está "não informado"; sim/não guarda `false` para "não".
+- `t_valor` confere o valor no tipo do campo, a opção do próprio campo e campo ativo; `t_guarda` impede mudar o tipo ou apagar campo e opção com valor (desativar). Valores seguem a visibilidade do cartão (`fluxo.papel_tarefa` / `fluxo.edita_tarefa`), e o histórico os esconde de quem não vê o cartão.
+
+- **Fica para os próximos blocos:** recorrência, apontamento de horas, modelo de cartão, automações e WhatsApp.
 
 ## Setores censitários e renda familiar estimada
 

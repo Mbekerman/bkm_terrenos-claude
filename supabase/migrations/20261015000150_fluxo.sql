@@ -220,6 +220,7 @@ begin
   elsif j ? 'checklist_id' then select empresa_id into v from fluxo.checklists where id = (j->>'checklist_id')::uuid;
   elsif j ? 'comentario_id' then select empresa_id into v from fluxo.comentarios where id = (j->>'comentario_id')::uuid;
   elsif j ? 'tarefa_id' then select empresa_id into v from fluxo.tarefas where id = (j->>'tarefa_id')::uuid;
+  elsif j ? 'campo_id' then select empresa_id into v from fluxo.campos where id = (j->>'campo_id')::uuid;
   else return new;
   end if;
   if v is distinct from new.empresa_id then
@@ -1638,7 +1639,7 @@ returns uuid language sql stable security definer set search_path = '' as $$
                  when 'comentario_reacoes' then fluxo.tarefa_do_comentario((coalesce(p_depois, p_antes)->>'comentario_id')::uuid)
                  else (coalesce(p_depois, p_antes)->>'tarefa_id')::uuid end
     and p_tabela in ('tarefas','tarefa_pessoas','tarefa_etiquetas','checklists','checklist_itens','comentarios','comentario_reacoes',
-                     'anexos','pausas','tarefa_acessos') $$;
+                     'anexos','pausas','tarefa_acessos','tarefa_campos') $$;
 drop policy auditoria_gestor_ve on app.auditoria;
 create policy auditoria_gestor_ve on app.auditoria for select to authenticated
   using (app.eh_gestor(empresa_id)
@@ -1652,3 +1653,108 @@ grant execute on function fluxo.ve_objeto(text, uuid, uuid), fluxo.papel_cartao(
                           fluxo.edita_tarefa(uuid), fluxo.comenta_tarefa(uuid), fluxo.gerencia_tarefa(uuid), fluxo.exigir_edicao_tarefa(uuid),
                           fluxo.tarefa_do_checklist(uuid), fluxo.tarefa_do_comentario(uuid), fluxo.tarefa_do_log(text, uuid, jsonb, jsonb),
                           fluxo.nivel_cartao(text) to authenticated;
+
+-- =====================================================================
+-- Bloco 4: campos personalizados (decisões do Moisés, 30/out/2026)
+--
+-- Os campos são da empresa, criados pelo administrador (Configurações ›
+-- Tarefas), e valem para todos os quadros: texto, número, data, lista de
+-- opções (uma escolha) e sim/não. Cada campo diz se aparece na frente do
+-- cartão. O valor de cada cartão fica em tarefa_campos; sem linha, o campo
+-- está "não informado" (nunca zero nem "não"). Campo ou opção com valor
+-- não se apaga (desativa), e o tipo não muda depois de ter valor.
+-- =====================================================================
+create table fluxo.campos (
+  id          uuid primary key default gen_random_uuid(),
+  empresa_id  uuid not null references app.empresas(id) on delete cascade,
+  nome        text not null check (length(trim(nome)) > 0),
+  tipo        text not null check (tipo in ('texto','numero','data','lista','caixa')),
+  ordem       int  not null default 0,
+  na_frente   boolean not null default false,   -- aparece na frente do cartão
+  ativo       boolean not null default true,
+  unique (empresa_id, nome)
+);
+create table fluxo.campo_opcoes (
+  id          uuid primary key default gen_random_uuid(),
+  empresa_id  uuid not null references app.empresas(id) on delete cascade,
+  campo_id    uuid not null references fluxo.campos(id) on delete cascade,
+  nome        text not null check (length(trim(nome)) > 0),
+  cor         text not null default 'cinza' check (cor in ('cinza','azul','verde','amarelo','laranja','vermelho','roxo','rosa')),
+  ordem       int  not null default 0,
+  ativo       boolean not null default true,
+  unique (campo_id, nome)
+);
+create table fluxo.tarefa_campos (
+  empresa_id  uuid not null references app.empresas(id),
+  tarefa_id   uuid not null references fluxo.tarefas(id) on delete cascade,
+  campo_id    uuid not null references fluxo.campos(id),
+  texto       text,
+  numero      numeric,
+  data        date,
+  opcao_id    uuid references fluxo.campo_opcoes(id),
+  caixa       boolean,
+  primary key (tarefa_id, campo_id),
+  check (num_nonnulls(texto, numero, data, opcao_id, caixa) = 1)
+);
+create index on fluxo.tarefa_campos (campo_id);
+
+-- O valor vai na coluna do tipo do campo, e a opção é do próprio campo; campo desativado não recebe valor novo.
+create or replace function fluxo.tg_tarefa_campo()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare c fluxo.campos;
+begin
+  select * into c from fluxo.campos where id = new.campo_id;
+  if c.empresa_id is distinct from new.empresa_id then raise exception 'Campo de outra empresa' using errcode = '42501'; end if;
+  if not c.ativo and (tg_op = 'INSERT' or new is distinct from old) then
+    raise exception 'O campo % está desativado', c.nome using errcode = 'P0001';
+  end if;
+  if (c.tipo = 'texto' and new.texto is null) or (c.tipo = 'numero' and new.numero is null) or (c.tipo = 'data' and new.data is null)
+     or (c.tipo = 'lista' and new.opcao_id is null) or (c.tipo = 'caixa' and new.caixa is null) then
+    raise exception 'O valor não combina com o tipo do campo %', c.nome using errcode = 'P0001';
+  end if;
+  if c.tipo = 'texto' and length(trim(new.texto)) = 0 then
+    raise exception 'Texto vazio: apague o valor para deixar o campo % não informado', c.nome using errcode = 'P0001';
+  end if;
+  if c.tipo = 'lista' and not exists (select 1 from fluxo.campo_opcoes o where o.id = new.opcao_id and o.campo_id = c.id and o.ativo) then
+    raise exception 'Opção que não é do campo % (ou desativada)', c.nome using errcode = 'P0001';
+  end if;
+  return new;
+end $$;
+create trigger t_valor before insert or update on fluxo.tarefa_campos for each row execute function fluxo.tg_tarefa_campo();
+
+-- Tipo não muda depois de ter valor; campo e opção com valor não se apagam (desativam).
+create or replace function fluxo.tg_campo_guarda()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if tg_table_name = 'campos' then
+    if tg_op = 'UPDATE' and new.tipo <> old.tipo and exists (select 1 from fluxo.tarefa_campos where campo_id = old.id) then
+      raise exception 'O campo % já tem valores: o tipo não muda (crie outro campo)', old.nome using errcode = 'P0001';
+    end if;
+    if tg_op = 'DELETE' and exists (select 1 from fluxo.tarefa_campos where campo_id = old.id) then
+      raise exception 'O campo % já tem valores: desative em vez de apagar', old.nome using errcode = 'P0001';
+    end if;
+  elsif tg_op = 'DELETE' and exists (select 1 from fluxo.tarefa_campos where opcao_id = old.id) then
+    raise exception 'A opção % já foi usada: desative em vez de apagar', old.nome using errcode = 'P0001';
+  end if;
+  return coalesce(new, old);
+end $$;
+create trigger t_guarda before update or delete on fluxo.campos for each row execute function fluxo.tg_campo_guarda();
+create trigger t_guarda before delete on fluxo.campo_opcoes for each row execute function fluxo.tg_campo_guarda();
+
+alter table fluxo.campos enable row level security;
+alter table fluxo.campo_opcoes enable row level security;
+alter table fluxo.tarefa_campos enable row level security;
+create policy ver on fluxo.campos for select to authenticated using (empresa_id in (select app.minhas_empresas()));
+create policy mexer on fluxo.campos for all to authenticated using (app.eh_administrador(empresa_id)) with check (app.eh_administrador(empresa_id));
+create policy ver on fluxo.campo_opcoes for select to authenticated using (empresa_id in (select app.minhas_empresas()));
+create policy mexer on fluxo.campo_opcoes for all to authenticated using (app.eh_administrador(empresa_id)) with check (app.eh_administrador(empresa_id));
+create policy ver on fluxo.tarefa_campos for select to authenticated using (fluxo.papel_tarefa(tarefa_id) is not null);
+create policy inserir on fluxo.tarefa_campos for insert to authenticated with check (fluxo.edita_tarefa(tarefa_id));
+create policy alterar on fluxo.tarefa_campos for update to authenticated using (fluxo.edita_tarefa(tarefa_id)) with check (fluxo.edita_tarefa(tarefa_id));
+create policy remover on fluxo.tarefa_campos for delete to authenticated using (fluxo.edita_tarefa(tarefa_id));
+create trigger t_emp before insert or update on fluxo.campo_opcoes for each row execute function fluxo.tg_mesma_empresa();
+create trigger t_emp before insert or update on fluxo.tarefa_campos for each row execute function fluxo.tg_mesma_empresa();
+create trigger t_aud after insert or update or delete on fluxo.campos for each row execute function app.tg_auditoria();
+create trigger t_aud after insert or update or delete on fluxo.campo_opcoes for each row execute function app.tg_auditoria();
+create trigger t_aud after insert or update or delete on fluxo.tarefa_campos for each row execute function app.tg_auditoria();
+grant select, insert, update, delete on fluxo.campos, fluxo.campo_opcoes, fluxo.tarefa_campos to authenticated;

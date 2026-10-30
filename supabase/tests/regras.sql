@@ -2107,4 +2107,43 @@ select pg_temp.como(:'diretor');
 select pg_temp.ok(exists (select 1 from fluxo.tarefas where id = :'vp'), 'o administrador do sistema continua vendo');
 reset role;
 update fluxo.objeto_tipos set funcao = 'app.ve_terreno' where tipo = 'terreno';
+-- ---------------------------------------------------------------------
+\echo '# campos personalizados (fluxo, bloco 4)'
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$insert into fluxo.campos (empresa_id, nome, tipo) values (%L, 'Valor do laudo', 'numero')$$, :'emp'), 'só o administrador cria campo');
+select pg_temp.como(:'diretor');
+insert into fluxo.campos (empresa_id, nome, tipo, na_frente) values (:'emp', 'Valor do laudo', 'numero', true) returning id as cnum \gset
+insert into fluxo.campos (empresa_id, nome, tipo) values (:'emp', 'Cartório', 'lista') returning id as clis \gset
+insert into fluxo.campos (empresa_id, nome, tipo) values (:'emp', 'Exige vistoria', 'caixa') returning id as ccx \gset
+insert into fluxo.campo_opcoes (empresa_id, campo_id, nome) values (:'emp', :'clis', '1º RI') returning id as o1 \gset
+insert into fluxo.campo_opcoes (empresa_id, campo_id, nome) values (:'emp', :'clis', '2º RI') returning id as o2 \gset
+insert into fluxo.campos (empresa_id, nome, tipo) values (:'emp', 'Outro', 'lista') returning id as clis2 \gset
+insert into fluxo.campo_opcoes (empresa_id, campo_id, nome) values (:'emp', :'clis2', 'X') returning id as ox \gset
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tm', 'Pedir laudo', current_date + 5) as kc \gset
+insert into fluxo.tarefa_campos (empresa_id, tarefa_id, campo_id, numero) values (:'emp', :'kc', :'cnum', 125000);
+insert into fluxo.tarefa_campos (empresa_id, tarefa_id, campo_id, opcao_id) values (:'emp', :'kc', :'clis', :'o2');
+insert into fluxo.tarefa_campos (empresa_id, tarefa_id, campo_id, caixa) values (:'emp', :'kc', :'ccx', false);
+select pg_temp.ok((select count(*) = 3 from fluxo.tarefa_campos where tarefa_id = :'kc'), 'quem edita o cartão preenche número, lista e sim/não');
+select pg_temp.ok((select caixa = false from fluxo.tarefa_campos where tarefa_id = :'kc' and campo_id = :'ccx')
+  and not exists (select 1 from fluxo.tarefa_campos where tarefa_id = :'kc' and campo_id not in (:'cnum', :'clis', :'ccx')),
+  '"não" é um valor; o que não foi preenchido fica sem linha (não informado)');
+select pg_temp.falha(format($$insert into fluxo.tarefa_campos (empresa_id, tarefa_id, campo_id, texto) values (%L, %L, %L, 'cem mil')$$, :'emp', :'kc', :'cnum'),
+  'valor fora do tipo do campo é recusado');
+select pg_temp.falha(format($$update fluxo.tarefa_campos set opcao_id = %L where tarefa_id = %L and campo_id = %L$$, :'ox', :'kc', :'clis'),
+  'opção de outro campo é recusada');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$insert into fluxo.tarefa_campos (empresa_id, tarefa_id, campo_id, opcao_id) values (%L, %L, %L, %L)$$, :'emp', :'kc', :'clis2', :'ox'),
+  'leitura não preenche campo');
+select pg_temp.ok(exists (select 1 from fluxo.tarefa_campos where tarefa_id = :'kc' and campo_id = :'cnum'), 'leitura vê os valores do cartão público');
+select pg_temp.como(:'diretor');
+select pg_temp.falha(format($$update fluxo.campos set tipo = 'texto' where id = %L$$, :'cnum'), 'campo com valor não muda de tipo');
+select pg_temp.falha(format($$delete from fluxo.campos where id = %L$$, :'cnum'), 'campo com valor não se apaga');
+select pg_temp.falha(format($$delete from fluxo.campo_opcoes where id = %L$$, :'o2'), 'opção usada não se apaga');
+delete from fluxo.campo_opcoes where id = :'o1';
+update fluxo.campos set ativo = false where id = :'ccx';
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$update fluxo.tarefa_campos set caixa = true where tarefa_id = %L and campo_id = %L$$, :'kc', :'ccx'), 'campo desativado não recebe valor novo');
+delete from fluxo.tarefa_campos where tarefa_id = :'kc' and campo_id = :'cnum';
+select pg_temp.ok(not exists (select 1 from fluxo.tarefa_campos where tarefa_id = :'kc' and campo_id = :'cnum'), 'apagar o valor volta o campo a não informado');
 \echo 'TODOS OS TESTES PASSARAM'
