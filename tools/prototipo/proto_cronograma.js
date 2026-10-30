@@ -128,8 +128,8 @@ function crGantt(grupos,opts={}){const its=grupos.flatMap(g=>g.itens);const data
       if(xb!=null)pos.set(k.id,{y:ry,x0:xb,x1:xb+wb});
       const atrD=tkAtras(k)?crDias(k.prazo,HOJE):0,chip=dv>0?`<b class="cr-atr" style="left:${xb+wb+8}px" title="Prazo ${dv} dia${dv>1?'s':''} depois da linha de base">+${dv} d</b>`:atrD>0?`<b class="cr-atr" style="left:${xb+wb+8}px" title="Prazo vencido há ${atrD} dia${atrD>1?'s':''}">${atrD} d de atraso</b>`:'';
       linhas+=`<div class="cr-row">${b?`<i class="cr-base" style="left:${x(b.ini)}px;width:${(crDias(b.ini,b.pz)+1)*W}px" title="Linha de base: ${fd(b.ini)} – ${fd(b.pz)}"></i>`:''}
-        ${xb==null?'':marco?`<span class="cr-marco st-${st} ${k.feita?'feita':atrD?'atras':''}" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}" style="left:${xb}px" title="${esc(k.titulo)}: ${fd(k.prazo)}"></span>`
-          :`<span class="cr-bar st-${st} ${k.feita?'feita':atrD?'atras':''} ${dv>0?'desvio':''}" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}" style="left:${xb}px;width:${wb}px" title="${esc(k.titulo)}: ${fd(k.inicio)} – ${fd(k.prazo)} · ${pg}% feito${dv?` · ${dv>0?'+':''}${dv} d da base`:''}"><i style="width:${pg}%"></i></span>`}${chip}</div>`;
+        ${xb==null?'':marco?`<span class="cr-marco st-${st} ${k.feita?'feita':atrD?'atras':''}" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}" data-crw="${W}" style="left:${xb}px" title="${esc(k.titulo)}: ${fd(k.prazo)}"></span>`
+          :`<span class="cr-bar st-${st} ${k.feita?'feita':atrD?'atras':''} ${dv>0?'desvio':''}" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}" data-crw="${W}" style="left:${xb}px;width:${wb}px" title="${esc(k.titulo)}: ${fd(k.inicio)} – ${fd(k.prazo)} · ${pg}% feito${dv?` · ${dv>0?'+':''}${dv} d da base`:''}${!k.feita&&vzEdita(t,k)?' · arraste para mudar as datas':''}"><i style="width:${pg}%"></i>${!k.feita&&vzEdita(t,k)?'<b class="cr-puxa" title="Arraste para mudar o prazo"></b>':''}</span>`}${chip}</div>`;
       crPreds(k).forEach(v=>setas.push({de:v.id,para:k.id,tipo:v.tipo}))})});
   /* setas: saem da ponta da predecessora (o fim; o início em II/IT), descem e entram pela ponta certa da tarefa (o início; o fim em TT/IT) */
   const svg=setas.map(({de,para,tipo})=>{const a=pos.get(de),c=pos.get(para);if(!a||!c)return '';
@@ -298,3 +298,25 @@ document.addEventListener('submit',e=>{const f=e.target,n=f.dataset?.form;if(!n|
   if(n==='cr-mt-novo'){const m=crModelos().find(x=>x.id===UI.crModEd);m.tarefas.push({id:uid(),titulo:F.titulo.trim(),lista:'Fazer',prio:'media',iniD:0,dur:1,resp:RESP_OBJ,pessoas:[],etq:[],cks:[],preds:[]});save();renderModal();return}
 },true);
 crPrep();
+
+/* arrastar a barra (30/out): a barra inteira anda (muda o início e mantém a duração, como mudar só o início no cartão);
+   a ponta direita estica ou encolhe (muda o prazo); o marco anda pelo prazo. Sucessoras andam em cascata; concluída não se move.
+   Só com mouse: no toque, a barra abre o cartão e o arraste fica para a rolagem. */
+let crArr=null;
+document.addEventListener('pointerdown',e=>{if(e.button!==0||e.pointerType==='touch')return;const el=e.target.closest?.('.cr-bar,.cr-marco');if(!el)return;
+  const {t,k}=tkAcha(el.dataset.id,el.dataset.tk);if(!k||k.feita||!vzEdita(t,k))return;
+  crArr={el,t,k,x0:e.clientX,w:+el.dataset.crw||26,modo:e.target.closest('.cr-puxa')||!k.inicio?'prazo':'mover',l0:el.offsetLeft,wd0:el.offsetWidth,dias:0,andou:false};
+  el.setPointerCapture?.(e.pointerId)});
+document.addEventListener('pointermove',e=>{const a=crArr;if(!a)return;const dx=e.clientX-a.x0;if(!a.andou&&Math.abs(dx)<4)return;
+  if(!a.andou){a.andou=true;a.el.classList.add('arrastando');document.body.classList.add('cr-arrastando')}
+  a.dias=Math.round(dx/a.w);
+  if(a.modo==='prazo'&&!a.el.classList.contains('cr-marco')){const n=Math.max(a.w,a.wd0+a.dias*a.w);a.dias=Math.round((n-a.wd0)/a.w);a.el.style.width=n+'px'}else a.el.style.left=(a.l0+a.dias*a.w)+'px';
+  const d=a.modo==='mover'?addD(a.k.inicio,a.dias):addD(a.k.prazo,a.dias);a.el.dataset.dica=(a.modo==='mover'?'início ':'prazo ')+fd(d)});
+document.addEventListener('pointerup',()=>{const a=crArr;crArr=null;if(!a||!a.andou)return;
+  a.el.classList.remove('arrastando');document.body.classList.remove('cr-arrastando');
+  /* o clique que vem depois do arraste não abre o cartão */
+  document.addEventListener('click',ev=>{ev.stopImmediatePropagation();ev.preventDefault()},{capture:true,once:true});
+  if(!a.dias){render();return}
+  const {t,k}=a,r=a.modo==='mover'?crEditar(t,k,'inicio',addD(k.inicio,a.dias)):crEditar(t,k,'prazo',addD(k.prazo,a.dias));
+  if(r===false){render();return}
+  toast(`${k.titulo}: ${k.inicio&&k.inicio!==k.prazo?fd(k.inicio)+' – ':''}${fd(k.prazo)}.`);save();render()});
