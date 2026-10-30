@@ -101,6 +101,7 @@ create table fluxo.tarefas (
   aprovacao_modo text not null default 'paralelo' check (aprovacao_modo in ('paralelo','sequencia')),  -- bloco 3
   visibilidade   text not null default 'publico' check (visibilidade in ('publico','individual','restrito')),  -- bloco 3; o front sempre pergunta
   modelo         boolean not null default false,  -- modelo de cartão (bloco 4): fica no quadro para copiar, não conclui nem atrasa
+  mae_id         uuid references fluxo.tarefas(id),  -- subtarefa (30/out): a tarefa mãe, no mesmo quadro, um nível só
   processo_id    uuid,
   etapa          text,
   subetapa       text,
@@ -273,6 +274,8 @@ begin
         raise exception 'A tarefa precisa ser aprovada antes de concluir' using errcode = '23514';
       elsif 'checklist' = any (v_pend) then
         raise exception 'Conclua os itens do checklist antes de concluir a tarefa' using errcode = '23514';
+      elsif 'subtarefas' = any (v_pend) then
+        raise exception 'Conclua as subtarefas antes de concluir a tarefa' using errcode = '23514';
       elsif 'campos' = any (v_pend) then
         raise exception 'Preencha os campos obrigatórios antes de concluir a tarefa' using errcode = '23514';
       end if;
@@ -1776,6 +1779,8 @@ returns text[] language sql stable security definer set search_path = '' as $$
     case when coalesce((select r.conclui_exige_checklist from fluxo.regras r join fluxo.tarefas k on k.empresa_id = r.empresa_id where k.id = p_tarefa), true)
           and exists (select 1 from fluxo.checklist_itens i join fluxo.checklists c on c.id = i.checklist_id
                       where c.tarefa_id = p_tarefa and i.concluido_em is null and i.virou_tarefa_id is null) then 'checklist' end,
+    case when coalesce((select r.conclui_exige_checklist from fluxo.regras r join fluxo.tarefas k on k.empresa_id = r.empresa_id where k.id = p_tarefa), true)
+          and exists (select 1 from fluxo.tarefas s where s.mae_id = p_tarefa and s.concluida_em is null and s.arquivada_em is null) then 'subtarefas' end,
     case when exists (select 1 from fluxo.campos c join fluxo.tarefas k on k.empresa_id = c.empresa_id
                       where k.id = p_tarefa and c.ativo and c.obrigatorio
                         and not exists (select 1 from fluxo.tarefa_campos v where v.tarefa_id = k.id and v.campo_id = c.id)) then 'campos' end
@@ -1900,6 +1905,7 @@ begin
     insert into fluxo.checklist_itens (empresa_id, checklist_id, texto, responsavel_id, prazo, posicao)
     select empresa_id, nc, texto, responsavel_id, prazo + desloc, posicao from fluxo.checklist_itens where checklist_id = c.id;
   end loop;
+  perform fluxo._copiar_automacoes(k.id, v, null);   -- regras do cartão de origem, com o mesmo dono
   return v;
 end $$;
 
@@ -2012,7 +2018,7 @@ create trigger t_modelo before insert or update on fluxo.tarefas for each row ex
 
 -- Roda com os direitos de quem copia: só copia o que vê e só grava onde edita (RLS de cada tabela).
 create or replace function fluxo.copiar_tarefa(p_tarefa uuid, p_lista uuid, p_titulo text default null,
-  p_itens text[] default array['checklists','etiquetas','pessoas','campos','anexos'])
+  p_itens text[] default array['checklists','etiquetas','pessoas','campos','anexos','automacoes'])
 returns uuid language plpgsql set search_path = '' as $$
 declare k fluxo.tarefas; l fluxo.listas; v uuid; c record; nc uuid;
 begin
@@ -2055,6 +2061,7 @@ begin
     insert into fluxo.anexos (empresa_id, tarefa_id, tipo, nome, url, drive_file_id, tarefa_ref_id)
     select l.empresa_id, v, tipo, nome, url, drive_file_id, tarefa_ref_id from fluxo.anexos where tarefa_id = k.id and removido_em is null;
   end if;
+  if 'automacoes' = any (p_itens) then perform fluxo._copiar_automacoes(k.id, v, auth.uid()); end if;
   return v;
 end $$;
 grant execute on function fluxo.copiar_tarefa(uuid, uuid, text, text[]) to authenticated;
@@ -2081,6 +2088,7 @@ create table fluxo.automacoes (
   id                  uuid primary key default gen_random_uuid(),
   empresa_id          uuid not null references app.empresas(id) on delete cascade,
   quadro_id           uuid references fluxo.quadros(id) on delete cascade,   -- vazio = empresa toda
+  tarefa_id           uuid references fluxo.tarefas(id) on delete cascade,   -- regra só deste cartão (30/out); o quadro vem dele
   nome                text not null check (length(trim(nome)) > 0),
   gatilho             text not null check (gatilho in ('criada','entrou_lista','concluida','etiqueta','campo','checklist_completo','prazo_antes','prazo_venceu')),
   gatilho_lista_id    uuid references fluxo.listas(id),      -- entrou_lista, regra do quadro (vazio = qualquer lista)
@@ -2096,6 +2104,7 @@ create table fluxo.automacoes (
   alterada_em         timestamptz not null default now()
 );
 create index on fluxo.automacoes (empresa_id, gatilho) where ativa;
+create index on fluxo.automacoes (tarefa_id) where tarefa_id is not null;
 
 create table fluxo.automacao_execucoes (
   id            uuid primary key default gen_random_uuid(),
@@ -2125,12 +2134,24 @@ create or replace function fluxo.tg_automacao()
 returns trigger language plpgsql security definer set search_path = '' as $$
 declare c jsonb; t text; v_q uuid := new.quadro_id;
 begin
+  -- regra do cartão: o quadro é o do cartão, as listas são as dele e "cartão criado" não serve (o cartão já existe)
+  if new.tarefa_id is not null then
+    select quadro_id into v_q from fluxo.tarefas where id = new.tarefa_id and empresa_id = new.empresa_id;
+    if v_q is null then raise exception 'Tarefa de outra empresa' using errcode = '42501'; end if;
+    new.quadro_id := v_q;
+    if new.gatilho = 'criada' then raise exception 'Regra do cartão não usa "cartão criado": o cartão já existe' using errcode = '23514'; end if;
+  end if;
   if v_q is not null and not exists (select 1 from fluxo.quadros where id = v_q and empresa_id = new.empresa_id) then
     raise exception 'Quadro de outra empresa' using errcode = '42501';
   end if;
-  if tg_op = 'INSERT' then new.dono_id := coalesce(auth.uid(), new.dono_id); new.criada_em := now();
-  elsif new.dono_id <> old.dono_id or new.quadro_id is distinct from old.quadro_id or new.empresa_id <> old.empresa_id then
-    raise exception 'A regra não muda de dono nem de quadro' using errcode = '23514';
+  if tg_op = 'INSERT' then
+    new.dono_id := coalesce(auth.uid(), new.dono_id); new.criada_em := now();
+    if new.tarefa_id is not null and fluxo.nivel_cartao(fluxo.papel_tarefa(new.tarefa_id, new.dono_id)) < 3 then
+      raise exception 'Só quem edita o cartão cria regra nele' using errcode = '42501';
+    end if;
+  elsif new.dono_id <> old.dono_id or new.quadro_id is distinct from old.quadro_id or new.empresa_id <> old.empresa_id
+        or new.tarefa_id is distinct from old.tarefa_id then
+    raise exception 'A regra não muda de dono, de quadro nem de cartão' using errcode = '23514';
   end if;
   new.alterada_em := now();
   -- parâmetros do gatilho
@@ -2228,11 +2249,12 @@ begin
 end $$;
 create trigger t_apagar before delete on fluxo.automacoes for each row execute function fluxo.tg_automacao_apagar();
 
--- O dono ainda pode ter a regra: administrador (regra da empresa) ou quem edita (regra do quadro).
+-- O dono ainda pode ter a regra: administrador (regra da empresa), quem edita (regra do quadro) ou quem edita o cartão (regra do cartão).
 create or replace function fluxo._dono_vale(a fluxo.automacoes)
 returns boolean language sql stable security definer set search_path = '' as $$
   select exists (select 1 from app.membros m where m.empresa_id = a.empresa_id and m.user_id = a.dono_id
-                 and case when a.quadro_id is null then m.administrador else m.papel in ('diretor','gestor','analista') end) $$;
+                 and case when a.quadro_id is null then m.administrador else m.papel in ('diretor','gestor','analista') end)
+     and (a.tarefa_id is null or fluxo.nivel_cartao(fluxo.papel_tarefa(a.tarefa_id, a.dono_id)) >= 3) $$;
 
 -- Condições da regra no cartão.
 create or replace function fluxo._condicoes_ok(a fluxo.automacoes, k fluxo.tarefas)
@@ -2375,12 +2397,13 @@ begin
   if k.id is null or k.modelo or k.arquivada_em is not null then return 0; end if;
   for a in select * from fluxo.automacoes x
            where x.empresa_id = k.empresa_id and x.ativa and x.gatilho = p_gatilho and (x.quadro_id is null or x.quadro_id = k.quadro_id)
+             and (x.tarefa_id is null or x.tarefa_id = k.id)
              and (p_gatilho <> 'entrou_lista' or (x.gatilho_lista_id is null and x.gatilho_lista_nome is null) or x.gatilho_lista_id = p_lista
                   or lower(trim(x.gatilho_lista_nome)) = (select lower(trim(nome)) from fluxo.listas where id = p_lista))
              and (p_gatilho <> 'etiqueta' or x.gatilho_etiqueta_id is null or x.gatilho_etiqueta_id = p_etiqueta)
              and (p_gatilho <> 'campo' or x.gatilho_campo_id is null or x.gatilho_campo_id = p_campo)
              and (p_referencia is null or not exists (select 1 from fluxo.automacao_execucoes e where e.automacao_id = x.id and e.tarefa_id = k.id and e.referencia = p_referencia))
-           order by x.quadro_id nulls first, x.criada_em loop
+           order by x.quadro_id is not null, x.tarefa_id is not null, x.criada_em loop   -- empresa, quadro, cartão
     -- dono que perdeu o direito não roda a regra; regra do quadro só toca o cartão que o dono vê
     continue when not fluxo._dono_vale(a) or (a.quadro_id is not null and fluxo.papel_tarefa(k.id, a.dono_id) is null);
     -- uma regra anterior pode ter arquivado o cartão ou mudado o que a condição olha
@@ -2443,6 +2466,7 @@ declare r record; n int := 0;
 begin
   for r in select a.gatilho, k.id, k.prazo from fluxo.automacoes a
            join fluxo.tarefas k on k.empresa_id = a.empresa_id and (a.quadro_id is null or k.quadro_id = a.quadro_id)
+                                and (a.tarefa_id is null or a.tarefa_id = k.id)
            where a.ativa and a.gatilho in ('prazo_antes','prazo_venceu') and k.prazo is not null
              and k.concluida_em is null and k.arquivada_em is null and not k.modelo
              and not exists (select 1 from fluxo.listas l where l.id = k.lista_id and l.tipo = 'pausa')
@@ -2457,11 +2481,13 @@ alter table fluxo.automacoes enable row level security;
 alter table fluxo.automacao_execucoes enable row level security;
 create policy ver on fluxo.automacoes for select to authenticated
   using (empresa_id in (select app.minhas_empresas())
-         and (quadro_id is null or fluxo.ve_objeto((select objeto_tipo from fluxo.quadros q where q.id = quadro_id), (select objeto_id from fluxo.quadros q where q.id = quadro_id))));
+         and (quadro_id is null or fluxo.ve_objeto((select objeto_tipo from fluxo.quadros q where q.id = quadro_id), (select objeto_id from fluxo.quadros q where q.id = quadro_id)))
+         and (tarefa_id is null or fluxo.papel_tarefa(tarefa_id) is not null));
 create policy inserir on fluxo.automacoes for insert to authenticated
   with check (dono_id = auth.uid() and case when quadro_id is null then app.eh_administrador(empresa_id)
               else empresa_id in (select app.empresas_edicao())
-                   and fluxo.ve_objeto((select objeto_tipo from fluxo.quadros q where q.id = quadro_id), (select objeto_id from fluxo.quadros q where q.id = quadro_id)) end);
+                   and fluxo.ve_objeto((select objeto_tipo from fluxo.quadros q where q.id = quadro_id), (select objeto_id from fluxo.quadros q where q.id = quadro_id))
+                   and (tarefa_id is null or fluxo.edita_tarefa(tarefa_id)) end);
 create policy alterar on fluxo.automacoes for update to authenticated
   using ((dono_id = auth.uid() and (quadro_id is not null or app.eh_administrador(empresa_id)) and empresa_id in (select app.empresas_edicao()))
          or app.eh_administrador(empresa_id))
@@ -2478,3 +2504,75 @@ grant select on fluxo.automacao_execucoes to authenticated;
 revoke execute on function fluxo.disparar_automacoes(uuid, text, uuid, uuid, uuid, date), fluxo.automacoes_prazo(date),
   fluxo._executar_automacao(fluxo.automacoes, uuid, date), fluxo._acoes_automacao(fluxo.automacoes, uuid, uuid),
   fluxo._avisar(uuid, uuid, text, uuid, uuid) from public;
+
+-- Regras de um cartão vão para outro (cópia e ocorrência de série). No mesmo
+-- quadro, as listas são as mesmas; em outro, pelo nome, e a regra cuja lista
+-- não existe lá fica de fora. p_dono vazio = mantém o dono de cada regra, que
+-- precisa editar o cartão novo.
+create or replace function fluxo._copiar_automacoes(p_de uuid, p_para uuid, p_dono uuid)
+returns int language plpgsql security definer set search_path = '' as $$
+declare kd fluxo.tarefas; kp fluxo.tarefas; a fluxo.automacoes; m jsonb; c jsonb; cs jsonb; ac jsonb; v_lista uuid; ok boolean; n int := 0;
+begin
+  -- chamada por uma pessoa (Copiar): ela é a dona das regras novas e precisa ver o cartão de origem
+  if auth.uid() is not null then
+    p_dono := auth.uid();
+    if fluxo.papel_tarefa(p_de) is null then raise exception 'Sem acesso ao cartão de origem' using errcode = '42501'; end if;
+  end if;
+  select * into kd from fluxo.tarefas where id = p_de;
+  select * into kp from fluxo.tarefas where id = p_para;
+  select coalesce(jsonb_object_agg(o.id, case when kd.quadro_id = kp.quadro_id then o.id else fluxo._lista_auto(kp.quadro_id, null, o.nome) end), '{}')
+  into m from fluxo.listas o where o.quadro_id = kd.quadro_id;
+  for a in select * from fluxo.automacoes where tarefa_id = p_de order by criada_em loop
+    continue when fluxo.nivel_cartao(fluxo.papel_tarefa(p_para, coalesce(p_dono, a.dono_id))) < 3;
+    ok := true;
+    v_lista := (m->>a.gatilho_lista_id::text)::uuid;
+    if a.gatilho_lista_id is not null and v_lista is null then ok := false; end if;
+    cs := '[]';
+    for c in select * from jsonb_array_elements(a.condicoes) loop
+      if c->>'tipo' = 'lista' then
+        if exists (select 1 from jsonb_array_elements_text(c->'listas') x where m->>x is null) then ok := false; end if;
+        c := jsonb_set(c, '{listas}', coalesce((select jsonb_agg(m->x) from jsonb_array_elements_text(c->'listas') x), '[]'));
+      end if;
+      cs := cs || jsonb_build_array(c);
+    end loop;
+    ac := '[]';
+    for c in select * from jsonb_array_elements(a.acoes) loop
+      if c->>'tipo' = 'mover' then
+        if m->>(c->>'lista') is null then ok := false; else c := jsonb_set(c, '{lista}', m->(c->>'lista')); end if;
+      end if;
+      ac := ac || jsonb_build_array(c);
+    end loop;
+    continue when not ok;
+    insert into fluxo.automacoes (empresa_id, tarefa_id, nome, gatilho, gatilho_lista_id, gatilho_etiqueta_id, gatilho_campo_id, gatilho_dias,
+                                  condicoes, acoes, ativa, dono_id)
+    values (kp.empresa_id, p_para, a.nome, a.gatilho, v_lista, a.gatilho_etiqueta_id, a.gatilho_campo_id, a.gatilho_dias,
+            cs, ac, a.ativa, coalesce(p_dono, a.dono_id));
+    n := n + 1;
+  end loop;
+  return n;
+end $$;
+revoke execute on function fluxo._copiar_automacoes(uuid, uuid, uuid) from public;
+grant execute on function fluxo._copiar_automacoes(uuid, uuid, uuid) to authenticated;   -- Copiar roda com os direitos de quem copia
+
+-- =====================================================================
+-- Subtarefas (30/out/2026): a tarefa mãe fica no mesmo quadro e tem um
+-- nível só (subtarefa não tem subtarefa). Com a regra do checklist ligada,
+-- a mãe não conclui com subtarefa em aberto (fluxo.pendencias_conclusao).
+-- =====================================================================
+create or replace function fluxo.tg_subtarefa()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare m fluxo.tarefas;
+begin
+  if new.mae_id is null or (tg_op = 'UPDATE' and new.mae_id is not distinct from old.mae_id) then return new; end if;
+  select * into m from fluxo.tarefas where id = new.mae_id;
+  if m.id is null or m.quadro_id <> new.quadro_id then raise exception 'A tarefa mãe tem que ser do mesmo quadro' using errcode = '23514'; end if;
+  if m.id = new.id then raise exception 'A tarefa não é mãe de si mesma' using errcode = '23514'; end if;
+  if m.mae_id is not null then raise exception 'Subtarefa não tem subtarefa: um nível só' using errcode = '23514'; end if;
+  if tg_op = 'UPDATE' and exists (select 1 from fluxo.tarefas where mae_id = new.id) then
+    raise exception 'Tarefa com subtarefas não vira subtarefa' using errcode = '23514';
+  end if;
+  if m.modelo <> new.modelo then raise exception 'Modelo de cartão e tarefa não se misturam como mãe e subtarefa' using errcode = '23514'; end if;
+  return new;
+end $$;
+create trigger t_subtarefa before insert or update of mae_id, quadro_id on fluxo.tarefas for each row execute function fluxo.tg_subtarefa();
+create index on fluxo.tarefas (mae_id) where mae_id is not null;

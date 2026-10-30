@@ -2383,4 +2383,46 @@ select pg_temp.ok(not exists (select 1 from fluxo.automacoes where id = :'au9'),
 update fluxo.automacoes set ativa = false where quadro_id = :'qm';
 select pg_temp.como(:'diretor');
 update fluxo.automacoes set ativa = false where quadro_id is null;
+\echo '# automações do cartão e subtarefas (30/out)'
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tm', 'Cartão com regra própria', current_date + 10, :'analista') as kq1 \gset
+select pg_temp.tarefa(:'tm', 'Cartão sem regra', current_date + 10, :'analista') as kq2 \gset
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, tarefa_id, nome, gatilho, acoes) values (%L, %L, 'X', 'criada', '[{"tipo":"arquivar"}]')$$, :'emp', :'kq1'),
+  'regra do cartão não usa "cartão criado"');
+insert into fluxo.automacoes (empresa_id, tarefa_id, nome, gatilho, gatilho_lista_id, acoes)
+values (:'emp', :'kq1', 'Só neste cartão', 'entrou_lista', pg_temp.lista(:'tm', 'Fazendo'), '[{"tipo":"prioridade","valor":"alta"}]') returning id as auc \gset
+select pg_temp.ok((select quadro_id = :'qm' from fluxo.automacoes where id = :'auc'), 'a regra do cartão fica no quadro do cartão');
+select pg_temp.falha(format($$update fluxo.automacoes set tarefa_id = %L where id = %L$$, :'kq2', :'auc'), 'a regra não muda de cartão');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, tarefa_id, nome, gatilho, gatilho_lista_id, acoes) values (%L, %L, 'X', 'entrou_lista', %L, '[{"tipo":"arquivar"}]')$$,
+  :'emp', :'kq1', pg_temp.lista(:'t1', 'Fazendo')), 'a lista da regra do cartão é do quadro dele');
+update fluxo.tarefas set lista_id = pg_temp.lista(:'tm', 'Fazendo') where id in (:'kq1', :'kq2');
+select pg_temp.ok((select prioridade = 'alta' from fluxo.tarefas where id = :'kq1') and (select prioridade = 'media' from fluxo.tarefas where id = :'kq2'),
+  'a regra do cartão só roda nele');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, tarefa_id, nome, gatilho, acoes) values (%L, %L, 'X', 'concluida', '[{"tipo":"arquivar"}]')$$, :'emp', :'kq2'),
+  'leitura não cria regra no cartão');
+select pg_temp.como(:'analista');
+select fluxo.copiar_tarefa(:'kq1', pg_temp.lista(:'tm', 'Fazer')) as kq3 \gset
+select fluxo.copiar_tarefa(:'kq1', pg_temp.lista(:'t1', 'Fazer')) as kq4 \gset
+select fluxo.copiar_tarefa(:'kq1', pg_temp.lista(:'tm', 'Fazer'), null, array['etiquetas']) as kq5 \gset
+select pg_temp.ok((select gatilho_lista_id = pg_temp.lista(:'tm', 'Fazendo') and dono_id = :'analista' from fluxo.automacoes where tarefa_id = :'kq3')
+  and (select gatilho_lista_id = pg_temp.lista(:'t1', 'Fazendo') from fluxo.automacoes where tarefa_id = :'kq4')
+  and not exists (select 1 from fluxo.automacoes where tarefa_id = :'kq5'),
+  'a cópia leva as regras do cartão; em outro quadro, a lista pelo nome; sem marcar, não vão');
+-- subtarefas
+select pg_temp.tarefa(:'tm', 'Levantar a matrícula', current_date + 5, :'analista') as ks1 \gset
+update fluxo.tarefas set mae_id = :'kq2' where id = :'ks1';
+select pg_temp.falha(format($$update fluxo.tarefas set mae_id = %L where id = %L$$, :'ks1', :'kq3'), 'subtarefa não tem subtarefa');
+select pg_temp.falha(format($$update fluxo.tarefas set mae_id = %L where id = %L$$, :'kq3', :'kq2'), 'tarefa com subtarefas não vira subtarefa');
+select pg_temp.falha(format($$update fluxo.tarefas set mae_id = %L where id = %L$$, :'kq4', :'kq3'), 'a mãe é do mesmo quadro');
+select pg_temp.como(:'diretor');
+select fluxo.salvar_regras(:'emp', true);
+select pg_temp.como(:'analista');
+select pg_temp.ok(fluxo.pendencias_conclusao(:'kq2') = array['subtarefas'], 'subtarefa em aberto é pendência da mãe');
+select pg_temp.falha(format($$update fluxo.tarefas set concluida_em = now() where id = %L$$, :'kq2'), 'a mãe não conclui com subtarefa em aberto');
+update fluxo.tarefas set concluida_em = now() where id = :'ks1';
+update fluxo.tarefas set concluida_em = now() where id = :'kq2';
+select pg_temp.ok((select concluida_em is not null from fluxo.tarefas where id = :'kq2'), 'com as subtarefas concluídas, a mãe conclui');
+select pg_temp.como(:'diretor');
+select fluxo.salvar_regras(:'emp', false);
 \echo 'TODOS OS TESTES PASSARAM'
