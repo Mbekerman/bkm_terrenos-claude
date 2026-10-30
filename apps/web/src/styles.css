@@ -4037,6 +4037,14 @@ html[data-tema="escuro"]:not(#_) .tkb .tk-b.ap-selo, html[data-tema="escuro"] .a
 .cpo-op { display: inline-flex; align-items: center; gap: 2px } .cpo-op.oculta { opacity: .5 }
 .cpo-opf { margin: 0 }
 :root:not(#_) .cpo-cfg input[type=checkbox] { width: 18px; height: 18px; min-height: 0; padding: 0; margin: 0; flex: none; accent-color: var(--m-primary, #0b57d0) }
+/* recorrência (bloco 4) */
+.rc-in p { margin: 0 0 6px } .rc-g { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px 12px; margin-bottom: 10px }
+.rc-un { display: flex; align-items: center; gap: 8px } .rc-un input { width: 72px } .rc-un span { font-size: 13px; color: var(--tk-sub) }
+.rc-dias { display: flex; gap: 6px; margin-bottom: 10px }
+.rc-dia { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #c4c7c5; background: transparent; color: inherit; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer }
+.rc-dia.on { background: #0b57d0; border-color: #0b57d0; color: #fff } .rc-dia:disabled { cursor: default; opacity: .7 }
+.rc-res { font-size: 13px; color: var(--tk-sub) } .rc-res .ic { vertical-align: -2px; margin-right: 2px }
+html[data-tema="escuro"] .rc-dia { border-color: rgba(124,140,255,.35) } html[data-tema="escuro"] .rc-dia.on { background: rgba(99,112,255,.25); border-color: rgba(124,140,255,.6); color: #c9d6ff }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

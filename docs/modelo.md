@@ -868,7 +868,34 @@ erDiagram
 - `t_valor` confere o valor no tipo do campo, a opção do próprio campo e campo ativo; `t_guarda` impede mudar o tipo ou apagar campo e opção com valor (desativar). Valores seguem a visibilidade do cartão (`fluxo.papel_tarefa` / `fluxo.edita_tarefa`), e o histórico os esconde de quem não vê o cartão.
 - Campo ativo com `obrigatorio` e sem valor entra em `fluxo.pendencias_conclusao` como `'campos'`: a tarefa não conclui (nem arrastando para a lista que conclui) nem pede aprovação. A função é redefinida no fim da migration, depois da tabela `campos`.
 
-- **Fica para os próximos blocos:** recorrência, apontamento de horas, modelo de cartão, automações e WhatsApp.
+### Recorrência (bloco 4)
+
+Decisões do Moisés de 30/out/2026. Mesma migration.
+
+```mermaid
+erDiagram
+  tarefas ||--o| recorrencias : "origem"
+  recorrencias ||--o{ tarefas : "ocorrências (recorrencia_id)"
+  recorrencias {
+    text frequencia "diaria | semanal | mensal | anual"
+    int intervalo "a cada N"
+    int_array dias_semana "0 = domingo"
+    int dia_mes
+    date proxima
+    date termina_em
+    int max_vezes "com a de origem"
+    int vezes
+    int prazo_dias
+    uuid lista_id
+    bool ativa
+  }
+```
+
+- O cartão de origem é o modelo e a primeira ocorrência. `fluxo.gerar_recorrencias(data)`, chamada por `app.rotina_diaria`, cria cada ocorrência na data agendada, mesmo com a anterior aberta: cópia do cartão de origem como ele está (pessoas, etiquetas, prioridade, visibilidade, acessos e checklists em aberto, com o prazo do item deslocado), início na data e prazo `prazo_dias` depois; campos personalizados não vão. Se a rotina falhar um dia, a data perdida nasce na volta.
+- `t_valida` recusa série numa ocorrência, lista de outro quadro ou que não seja aberta; calcula o dia do mês e a próxima data (`fluxo.proxima_ocorrencia`: mês sem o dia usa o último; semanal a cada N semanas com os dias marcados). Na criação, ao retomar e ao mudar a regra (a partir da última ocorrência), data de hoje ou passada pula para amanhã em diante: nada nasce atrasado. A série encerra em `termina_em`, em `max_vezes` ou com o cartão de origem arquivado.
+- RLS pelo cartão de origem (`fluxo.papel_tarefa` / `fluxo.edita_tarefa`); só a rotina executa a geração.
+
+- **Fica para os próximos blocos:** apontamento de horas, modelo de cartão, automações e WhatsApp.
 
 ## Setores censitários e renda familiar estimada
 
