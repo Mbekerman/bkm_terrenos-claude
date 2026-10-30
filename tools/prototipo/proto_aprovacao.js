@@ -20,8 +20,9 @@ const apPrecisa=k=>(k.aprov||[]).length>0&&!apAps(k).some(a=>a.sit==='aprovada')
 const apRegraCk=()=>S.tkRegras?.checklist!==false;
 const apCkAberto=k=>(k.checklists||[]).some(c=>c.itens.some(i=>!i.feito&&!i.virou));
 /* o que impede concluir agora (null = nada) */
-function apBloqueio(t,k){if(apPrecisa(k))return apPend(k)?'A tarefa está aguardando aprovação.':'A tarefa precisa ser aprovada antes de concluir. Use "Pedir aprovação".';
-  if(apRegraCk()&&apCkAberto(k))return 'Conclua os itens do checklist antes de concluir a tarefa.';return null}
+function apBloqueio(t,k){if(k.modelo)return 'Modelo de cartão não se conclui.';if(apPrecisa(k))return apPend(k)?'A tarefa está aguardando aprovação.':'A tarefa precisa ser aprovada antes de concluir. Use "Pedir aprovação".';
+  if(apRegraCk()&&apCkAberto(k))return 'Conclua os itens do checklist antes de concluir a tarefa.';
+  const f=cpoFaltam(k);if(f.length)return `Preencha ${f.length>1?'os campos obrigatórios':'o campo obrigatório'} antes de concluir: ${f.join(', ')}.`;return null}
 /* votos que esperam decisão agora (em sequência, só o da vez) */
 function apDaVez(a){if(!a||a.sit!=='pendente')return [];const ab=a.votos.filter(v=>!v.dec);if(a.modo==='paralelo')return ab;const m=Math.min(...ab.map(v=>v.ordem));return ab.filter(v=>v.ordem===m)}
 /* o voto que essa pessoa decide: o dela ou, como superior, o de um aprovador abaixo */
@@ -29,6 +30,7 @@ function apMeuVoto(a,u){const vz=apDaVez(a);return vz.find(v=>v.user===u)||vz.fi
 function apAvisarVez(t,k,a){apDaVez(a).forEach(v=>notificar(v.user,'aprovacao_pendente',`Aprovar a tarefa: ${k.titulo}`,t,a.id+':'+v.user,tkIr(k)))}
 function apPedir(t,k,motivo){if(!(k.aprov||[]).length){toast('A tarefa não tem aprovador.',true);return}
   if(apRegraCk()&&apCkAberto(k)){toast('Conclua os itens do checklist antes de pedir a aprovação.',true);return}
+  const f=cpoFaltam(k);if(f.length){toast(`Preencha antes de pedir a aprovação: ${f.join(', ')}.`,true);return}
   const p=apPend(k);if(p){p.sit='cancelada';p.decEm=agora()}const eu=me();
   const a={id:uid(),modo:k.apModo||'paralelo',sit:'pendente',motivo:motivo||null,por:eu,em:agora(),votos:k.aprov.map((u,i)=>({user:u,ordem:i+1,dec:null,por:null,em:null,just:null}))};
   apAps(k).push(a);const v=a.votos.find(x=>x.user===eu);if(v){v.dec='aprovou';v.por=eu;v.em=agora()}

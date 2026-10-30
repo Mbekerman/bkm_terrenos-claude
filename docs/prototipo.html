@@ -4519,7 +4519,7 @@ html[data-tema="escuro"] .tk-full.on { background: #081028 !important }
 :root:not(#_) .tkb .tk-etqs .etq { height: 16px; line-height: 16px; min-width: 40px; padding: 0 8px; border-radius: 4px; font-size: 12px; font-weight: 500 }
 :root:not(#_) .tkb .tk-t { font-size: 14px; font-weight: 400; line-height: 20px; color: #172b4d; overflow-wrap: anywhere }
 :root:not(#_) .tkb .tk.concluida .tk-t { text-decoration: none; color: #172b4d }
-:root:not(#_) .tkb .tk-ter { font-size: 12px; line-height: 16px; color: #626f86 }
+:root:not(#_) .tkb .tk-ter { font-size: 12px; line-height: 16px; color: #626f86; font-weight: 500; margin-bottom: 2px }
 :root:not(#_) .tkb .tk-p { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-top: 2px; min-height: 24px }
 :root:not(#_) .tkb .tk-b { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 4px; border-radius: 3px; font-size: 12px; line-height: 16px; color: #44546f; white-space: nowrap }
 :root:not(#_) .tkb .tk-b .ic { flex: none }
@@ -4540,6 +4540,7 @@ html[data-tema="escuro"] .tk-full.on { background: #081028 !important }
 :root:not(#_) .tkb .etq-rosa { background: #e774bb; color: #50253f } :root:not(#_) .tkb .etq-cinza { background: #8590a2; color: #fff }
 /* arrastando: lista de destino tracejada e a que está sob o cartão acesa (mesma regra das outras telas) */
 :root:not(#_) body.dnd-tk .tkb .tk-col { outline: 2px dashed rgba(11,87,208,.35); outline-offset: -2px }
+:root:not(#_) body.dnd-tk .tkb .tk-col.nao { outline: none; opacity: .45; cursor: not-allowed }
 :root:not(#_) .tkb .tk-col.sobre { background: #e9f2ff !important; outline: 2px solid #388bff !important }
 /* seção da ficha: o quadro encosta nas bordas do quadro da seção */
 :root:not(#_) .tk-sb { padding: 12px 16px 4px }
@@ -4696,6 +4697,42 @@ html[data-tema="escuro"]:not(#_) .tkb .tk-b.ap-selo, html[data-tema="escuro"] .a
 .vz-gh { display: flex; align-items: center; gap: 12px; margin-bottom: 8px } .vz-gh .linkbtn { margin-left: auto }
 @media (max-width: 600px) { .vz-ops { grid-template-columns: 1fr } }
 :root:not(#_) .vz-libl input[type=checkbox] { width: 18px; height: 18px; min-height: 0; padding: 0; margin: 0; flex: none; accent-color: var(--m-primary, #0b57d0) }
+/* Campos personalizados (proto_campos.js) */
+.cpo-fr { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px }
+.cpo-ch { display: inline-flex; align-items: center; gap: 2px; min-height: 20px; padding: 0 6px; border-radius: 3px; font-size: 12px; background: var(--tk-btn, #e9eef6); color: var(--tk-tx, #1f1f1f); max-width: 100% }
+.cpo-chn { color: var(--tk-sub, #44546f) }
+.cpo-ch[class*="etq-"] .cpo-chn { color: inherit; opacity: .8 }
+.cpo-g { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px 16px }
+.cpo-c { display: flex; flex-direction: column; gap: 4px; min-width: 0 } .cpo-c label { font-size: 12px; font-weight: 600; color: var(--tk-sub) }
+.cpo-ob { color: #b3261e } .cpo-c.falta .cpo-in { border-color: #b3261e } .cpo-av { font-size: 11px; color: #b3261e }
+:root:not(#_) .tkm .cpo-in { width: 100% }
+.cpo-cfg { border-bottom: 1px solid var(--m-outline-var, #c4c7c5); padding: 4px 0 } .cpo-cfg.oculta { opacity: .55 }
+.cpo-cfg .tkl-r .chk { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; white-space: nowrap }
+.cpo-ops { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 0 0 10px 12px }
+.cpo-op { display: inline-flex; align-items: center; gap: 2px } .cpo-op.oculta { opacity: .5 }
+.cpo-opf { margin: 0 }
+:root:not(#_) .cpo-cfg input[type=checkbox] { width: 18px; height: 18px; min-height: 0; padding: 0; margin: 0; flex: none; accent-color: var(--m-primary, #0b57d0) }
+/* recorrência (bloco 4) */
+.rc-in p { margin: 0 0 6px } .rc-g { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px 12px; margin-bottom: 10px }
+.rc-un { display: flex; align-items: center; gap: 8px } .rc-un input { width: 72px } .rc-un span { font-size: 13px; color: var(--tk-sub) }
+.rc-dias { display: flex; gap: 6px; margin-bottom: 10px }
+.rc-dia { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #c4c7c5; background: transparent; color: inherit; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer }
+.rc-dia.on { background: #0b57d0; border-color: #0b57d0; color: #fff } .rc-dia:disabled { cursor: default; opacity: .7 }
+.rc-res { font-size: 13px; color: var(--tk-sub) } .rc-res .ic { vertical-align: -2px; margin-right: 2px }
+html[data-tema="escuro"] .rc-dia { border-color: rgba(124,140,255,.35) } html[data-tema="escuro"] .rc-dia.on { background: rgba(99,112,255,.25); border-color: rgba(124,140,255,.6); color: #c9d6ff }
+/* copiar cartão e modelo de cartão (bloco 4) */
+.cx-pop .cx-l { font-size: 12px; font-weight: 600; color: var(--tk-sub); margin-top: 6px } .cx-pop textarea { resize: vertical; font: inherit; padding: 6px 8px; border-radius: 4px }
+.cx-faixa { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 16px 44px; padding: 10px 12px; border-radius: 8px; background: #d3e3fd; color: #041e49; font-size: 14px } .cx-faixa span { flex: 1; min-width: 200px }
+.tk-b.cx-selo { background: #d3e3fd; color: #041e49; border-radius: 4px; padding: 0 6px; font-weight: 500 }
+html[data-tema="escuro"] .cx-faixa, html[data-tema="escuro"] .tk-b.cx-selo { background: rgba(99,112,255,.18); color: #c9d6ff }
+@media (max-width: 640px) { .cx-faixa { margin-left: 0 } }
+:root:not(#_) .tkm .cx-pop select.tkm-pill, .cx-pop textarea { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box } .cx-pop { max-width: 100%; box-sizing: border-box } .cx-pop form { min-width: 0 }
+/* tarefas pelo funil (bloco 4): só leitura, agrupadas por terreno */
+.tf-trilha { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 12px } .tf-trilha .drill-t { margin: 0 } .tf-dica { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-size: 12px }
+.tf-ter { display: flex; flex-direction: column; gap: 8px } .tf-ter + .tf-ter { margin-top: 6px; padding-top: 8px; border-top: 1px dashed #c4c7c5 }
+.tf-th { all: unset; cursor: pointer; font-size: 12px; font-weight: 500; color: var(--tk-sub, #444746); padding: 0 2px; line-height: 1.35 } .tf-th:hover { text-decoration: underline } .tf-th:focus-visible { outline: 2px solid #0b57d0; border-radius: 4px }
+.tf-vazio { font-size: 13px; padding: 4px 2px 8px } .tf-col .col-ab { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-weight: 600 } .tf-col .col-ab:hover span { text-decoration: underline }
+html[data-tema="escuro"] .tf-ter + .tf-ter { border-color: #1a2240 }
 </style>
 <header class="top">
   <div class="top-in">
@@ -6358,7 +6395,7 @@ function tkPrep(){if(!S.listasModelo)S.listasModelo=LISTAS_PADRAO();if(!S.etique
 const tkLista=(t,k)=>tkL(t).find(l=>l.id===k.lista)||tkL(t)[0];
 const tkPrim=(t,tipo)=>tkL(t).filter(l=>!l.oculta).find(l=>l.tipo===tipo)||tkL(t).find(l=>l.tipo===tipo)||tkL(t)[0];
 const tkAberta=k=>!k.feita&&!k.arq;
-const tkAtras=k=>tkAberta(k)&&!!k.prazo&&k.prazo<HOJE&&!(k.pausas||[]).some(z=>z.sit==='ativa');  // pausada não atrasa
+const tkAtras=k=>tkAberta(k)&&!k.modelo&&!!k.prazo&&k.prazo<HOJE&&!(k.pausas||[]).some(z=>z.sit==='ativa');  // pausada não atrasa
 const tkPessoas=k=>[...new Set([k.resp,...(k.exec||[])].filter(Boolean))];
 const tkEd=()=>UI.role!=='Leitura';
 const tkAcha=(tid,kid)=>{const t=T(tid);return {t,k:t?.tarefas.find(x=>x.id===kid)}};
@@ -6382,21 +6419,21 @@ const etqChip=(e,cls='')=>`<span class="etq etq-${e.cor} ${cls}" title="${esc(e.
 function cardTk({k,t},geral){const at=tkAtras(k),ets=(k.etq||[]).map(id=>S.etiquetas.find(e=>e.id===id)).filter(Boolean);
   const its=(k.checklists||[]).flatMap(c=>c.itens),fe=its.filter(i=>i.feito).length,nc=(k.coments||[]).filter(c=>!c.apagado).length,na=(k.anexos||[]).filter(a=>!a.removido).length;
   const pz=k.prazo?`<span class="tk-b tk-prazo ${k.feita?'feito':at?'atras':''}" title="${k.feita?'Concluída':at?'Atrasada':'Prazo'}">${ic(k.feita?'check':'clock',14)}${fd(k.prazo)}</span>`:'';
-  const ind=[apSelo(k),pzSelo(k),vzSelo(k),pz,k.desc?`<span class="tk-b" title="Tem descrição">${ic('notas',14)}</span>`:'',
+  const ind=[cxSelo(k),apSelo(k),pzSelo(k),vzSelo(k),pz,rcSelo(k),k.desc?`<span class="tk-b" title="Tem descrição">${ic('notas',14)}</span>`:'',
     nc?`<span class="tk-b" title="Comentários">${ic('chat',14)}${nc}</span>`:'',na?`<span class="tk-b" title="Anexos">${ic('clip',14)}${na}</span>`:'',
     its.length?`<span class="tk-b ${fe===its.length?'ok':''}" title="Checklist">${ic('check',14)}${fe}/${its.length}</span>`:'',
     k.prio==='alta'?'<span class="tk-b tk-pr alta" title="Prioridade alta">Alta</span>':k.prio==='baixa'?'<span class="tk-b tk-pr" title="Prioridade baixa">Baixa</span>':''].join(''),avs=tkPessoas(k).slice(0,3);
   return `<article class="tk ${k.feita?'concluida':''} ${k.arq?'arq':''}" draggable="${tkEd()&&!k.arq}" data-tk="${k.id}" data-a="tk-abrir" data-id="${t.id}" data-mid="${k.id}" tabindex="0" aria-label="${escT(k.titulo)}">
   ${k.capa?`<div class="tk-capa etq-${k.capa}"></div>`:''}<div class="tk-c">${ets.length?`<div class="tk-etqs">${ets.map(e=>etqChip(e)).join('')}</div>`:''}
-  <div class="tk-t">${escT(k.titulo)}</div>
   ${geral?`<div class="tk-ter"><span class="num">${t.codigo}</span> · ${esc(t.nome).replace(/\b[A-Z]{3}-\d+/g,m=>`<span class="end-p">${m}</span>`)}</div>`:''}
+  <div class="tk-t">${escT(k.titulo)}</div>${cpoFrente(k)}
   ${ind||avs.length?`<div class="tk-p">${ind}<span class="tk-avs">${avs.map(u=>av(u,'sm')).join('')}</span></div>`:''}</div></article>`}
 
 /* ---------- quadro (da ficha ou de todos os terrenos) ---------- */
 const ordemTk=(a,b)=>(a.k.pos??9e15)-(b.k.pos??9e15)||String(a.k.prazo||'9').localeCompare(String(b.k.prazo||'9'));
 function todasTarefas(){return ativosBanco().flatMap(t=>vzTarefas(t).map(k=>({k,t})))}  // só o que a pessoa vê (visibilidade por cartão)
 function tkFiltradas(){const f=UI.tk,q=f.q.trim().toLowerCase();
-  return todasTarefas().filter(({k,t})=>(f.arq?!!k.arq:!k.arq)&&(!f.resp||k.resp===f.resp||(k.exec||[]).includes(f.resp))&&(!f.ter||t.id===f.ter)&&(!f.prio||k.prio===f.prio)&&(!f.etq||(k.etq||[]).includes(f.etq))&&(!f.atras||tkAtras(k))
+  return todasTarefas().filter(({k,t})=>(f.arq?!!k.arq:!k.arq)&&(!f.resp||k.resp===f.resp||(k.exec||[]).includes(f.resp))&&(!f.ter||t.id===f.ter)&&(!f.prio||k.prio===f.prio)&&(!f.etq||(k.etq||[]).includes(f.etq))&&(!f.atras||tkAtras(k))&&(!f.cp||cpoFiltra(k,f.cp))
     &&(!q||[k.codigo,k.titulo,k.desc,t.nome,t.codigo,...(k.etq||[]).map(id=>S.etiquetas.find(e=>e.id===id)?.nome)].join(' ').toLowerCase().includes(q)))}
 /* colunas do quadro geral: pelo nome da lista (a ordem do modelo da empresa e, depois, as criadas nos terrenos) */
 function tkColunas(lista){const nomes=[...(S.listasModelo||[]).filter(l=>l.ativo).map(l=>l.nome)];
@@ -6423,6 +6460,7 @@ function pgTarefas(){const f=UI.tk,l=tkFiltradas();
     <label class="sr-only" for="tk-ter">Terreno</label><select id="tk-ter" class="fsel-chip${f.ter?' on':''}" data-ch="tk-f" data-k="ter"><option value="">Terreno</option>${opt(Object.fromEntries(ativosBanco().map(t=>[t.id,t.codigo+' · '+t.nome])),f.ter)}</select>
     <label class="sr-only" for="tk-etq">Etiqueta</label><select id="tk-etq" class="fsel-chip${f.etq?' on':''}" data-ch="tk-f" data-k="etq"><option value="">Etiqueta</option>${opt(Object.fromEntries(S.etiquetas.map(e=>[e.id,e.nome])),f.etq)}</select>
     <label class="sr-only" for="tk-prio">Prioridade</label><select id="tk-prio" class="fsel-chip${f.prio?' on':''}" data-ch="tk-f" data-k="prio"><option value="">Prioridade</option>${opt(OPT.prioTar,f.prio)}</select>
+    ${cpoFiltroOpts(f.cp)?`<label class="sr-only" for="tk-cp">Campo</label><select id="tk-cp" class="fsel-chip${f.cp?' on':''}" data-ch="tk-f" data-k="cp"><option value="">Campo</option>${cpoFiltroOpts(f.cp)}</select>`:''}
     <label class="fchk"><input type="checkbox" data-ch="tk-f" data-k="atras" ${f.atras?'checked':''}>${ic('check',16)}Só atrasadas</label>
     <label class="fchk"><input type="checkbox" data-ch="tk-f" data-k="arq" ${f.arq?'checked':''}>${ic('check',16)}Arquivadas</label></div></div>`;
   const t1=f.ter?T(f.ter):null,cols=t1?tkL(t1).filter(x=>!x.oculta):tkColunas(l).map(nome=>({nome}));
@@ -6434,9 +6472,9 @@ function pgTarefas(){const f=UI.tk,l=tkFiltradas();
     {k:'lista',l:'Lista',v:({k,t})=>`<span class="chip tkst ${k.feita?'concluida':''}">${esc(tkLista(t,k).nome)}</span>`,s:({k,t})=>tkL(t).indexOf(tkLista(t,k))}];
   const ab=todasTarefas().filter(({k})=>tkAberta(k)),atras=ab.filter(({k})=>tkAtras(k)).length;
   return `<div class="page-h"><div><h1>Tarefas</h1><div class="sub">${ab.length+(ab.length===1?' aberta':' abertas')} · ${atras+(atras===1?' atrasada':' atrasadas')} · quadros de ${ativosBanco().length} terrenos</div></div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="seg" role="group" aria-label="Visualização">${[['quadro','Quadro'],['tabela','Tabela'],['cronograma','Cronograma']].map(([k,x])=>`<button data-a="tk-vista" data-v="${k}" aria-pressed="${f.vista===k}">${x}</button>`).join('')}</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="seg" role="group" aria-label="Visualização">${[['quadro','Quadro'],['tabela','Tabela'],['cronograma','Cronograma'],['funil','Funil']].map(([k,x])=>`<button data-a="tk-vista" data-v="${k}" aria-pressed="${f.vista===k}">${x}</button>`).join('')}</div>
     ${f.vista==='quadro'?tkCheiaBtn():''}${tkEd()?`<button class="btn ed" data-a="tk-nova" data-v="">${ic('add',18)}Nova tarefa</button>`:''}</div></div>
-  <div class="tk-full${tkCheiaOn()?' on':''}">${tkCheiaOn()?`<div class="tk-full-h"><h2>Tarefas</h2>${tkCheiaBtn()}</div>`:''}${filtros}${f.vista==='cronograma'?`<section class="sec cr-sec"><div class="sec-b">${crPaginaHtml(l.filter(({k})=>!k.arq))}</div></section>`:f.vista==='tabela'?`<section class="sec"><div class="sec-b">${tabela('tarefas',l,colsT,{attr:({k,t})=>`data-a="tk-abrir" data-tk="${k.id}" data-id="${t.id}" tabindex="0"`,padrao:{k:'prazo',dir:'asc'},vazio:'Nenhuma tarefa com esses filtros.'})}</div></section>`:tkQuadro(l,cols,true,t1?.id,!f.arq)}</div>`}
+  <div class="tk-full${tkCheiaOn()?' on':''}">${tkCheiaOn()?`<div class="tk-full-h"><h2>Tarefas</h2>${tkCheiaBtn()}</div>`:''}${filtros}${f.vista==='funil'?tfHtml(l):f.vista==='cronograma'?`<section class="sec cr-sec"><div class="sec-b">${crPaginaHtml(l.filter(({k})=>!k.arq))}</div></section>`:f.vista==='tabela'?`<section class="sec"><div class="sec-b">${tabela('tarefas',l,colsT,{attr:({k,t})=>`data-a="tk-abrir" data-tk="${k.id}" data-id="${t.id}" tabindex="0"`,padrao:{k:'prazo',dir:'asc'},vazio:'Nenhuma tarefa com esses filtros.'})}</div></section>`:tkQuadro(l,cols,true,t1?.id,!f.arq)}</div>`}
 /* seção Tarefas da ficha: o quadro do terreno */
 function abaTarefas(t){const vc=UI.crVista[t.id]==='crono',arq=!!UI.tkArqFicha&&!vc,vt=vzTarefas(t),its=vt.filter(k=>arq?k.arq:!k.arq).map(k=>({k,t})),ab=vt.filter(tkAberta),at=ab.filter(tkAtras).length,na=vt.filter(k=>k.arq).length;
   const q=vc?crFichaHtml(t):tkQuadro(its,tkL(t).filter(l=>!l.oculta),false,t.id,!arq);
@@ -6452,10 +6490,14 @@ function moverTk(tid,kid,colNome,antesDe){const {t,k}=tkAcha(tid,kid);if(!k)retu
   const np=i<0?(irmas.length?pos(irmas.at(-1)):0)+1000:i===0?pos(irmas[0])-1000:(pos(irmas[i-1])+pos(irmas[i]))/2;
   const mudou=k.lista!==l.id;if(tkMover(t,k,l.id,np)===false){render();return}if(mudou)toast(`${k.titulo}: ${l.nome}.`);save();render()}
 let tkArr=null;
-document.addEventListener('dragstart',e=>{const c=e.target.closest?.('.tk[draggable="true"]');if(!c)return;tkArr={kid:c.dataset.tk,tid:c.dataset.id};e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',c.dataset.tk);c.classList.add('arrastando');document.body.classList.add('dnd-tk')});
-document.addEventListener('dragend',()=>{tkArr=null;document.body.classList.remove('dnd-tk');document.querySelectorAll('.tk.arrastando,.tk-col.sobre,.tk-marca').forEach(x=>x.classList.contains('tk-marca')?x.remove():x.classList.remove('arrastando','sobre'))});
+/* com pendência para concluir (aprovação, checklist, campo obrigatório), a lista que conclui nem aceita o cartão: fica apagada e, se soltar ali, o aviso diz o que falta */
+document.addEventListener('dragstart',e=>{const c=e.target.closest?.('.tk[draggable="true"]');if(!c)return;tkArr={kid:c.dataset.tk,tid:c.dataset.id};
+  const {t,k}=tkAcha(c.dataset.id,c.dataset.tk);const m=k&&!k.feita?apBloqueio(t,k):null;
+  if(m){tkArr.msg=m;tkArr.bloq=new Set(tkL(t).filter(l=>l.tipo==='conclui').map(l=>l.nome));document.querySelectorAll('.tk-col').forEach(x=>tkArr.bloq.has(x.dataset.tkcol)&&x.classList.add('nao'))}
+  e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',c.dataset.tk);c.classList.add('arrastando');document.body.classList.add('dnd-tk')});
+document.addEventListener('dragend',()=>{if(tkArr?.naBloq)toast(tkArr.msg,true);tkArr=null;document.body.classList.remove('dnd-tk');document.querySelectorAll('.tk.arrastando,.tk-col.sobre,.tk-col.nao,.tk-marca').forEach(x=>x.classList.contains('tk-marca')?x.remove():x.classList.remove('arrastando','sobre','nao'))});
 const tkAntes=(col,y)=>[...col.querySelectorAll('.tk:not(.arrastando)')].find(c=>{const r=c.getBoundingClientRect();return y<r.top+r.height/2});
-document.addEventListener('dragover',e=>{if(!tkArr)return;const col=e.target.closest?.('.tk-col');if(!col){document.querySelectorAll('.tk-col.sobre').forEach(x=>x.classList.remove('sobre'));document.querySelector('.tk-marca')?.remove();return}e.preventDefault();e.dataTransfer.dropEffect='move';
+document.addEventListener('dragover',e=>{if(!tkArr)return;const col=e.target.closest?.('.tk-col');tkArr.naBloq=!!(col&&tkArr.bloq?.has(col.dataset.tkcol));if(!col||tkArr.naBloq){if(tkArr.naBloq)e.dataTransfer.dropEffect='none';document.querySelectorAll('.tk-col.sobre').forEach(x=>x.classList.remove('sobre'));document.querySelector('.tk-marca')?.remove();return}e.preventDefault();e.dataTransfer.dropEffect='move';
   document.querySelectorAll('.tk-col.sobre').forEach(x=>x!==col&&x.classList.remove('sobre'));col.classList.add('sobre');
   let m=document.querySelector('.tk-marca');if(!m){m=document.createElement('div');m.className='tk-marca'}const a=tkAntes(col,e.clientY),lista=col.querySelector('.tk-lista');if(a)lista.insertBefore(m,a);else lista.appendChild(m)});
 document.addEventListener('drop',e=>{const col=e.target.closest?.('.tk-col');if(!col||!tkArr)return;e.preventDefault();const a=tkAntes(col,e.clientY),x=tkArr;tkArr=null;document.body.classList.remove('dnd-tk');document.querySelectorAll('.tk-col.sobre').forEach(x=>x.classList.remove('sobre'));document.querySelector('.tk-marca')?.remove();moverTk(x.tid,x.kid,col.dataset.tkcol,a?.dataset.tk)});
@@ -6466,7 +6508,7 @@ function tkNovaHtml(fechar){const sel=UI.tkSel,t=sel.tid?T(sel.tid):null,opt=(o,
   const listas=t?tkL(t).filter(l=>!l.oculta).map(l=>l.nome):(S.listasModelo||[]).filter(l=>l.ativo).map(l=>l.nome),lv=sel.lista&&listas.includes(sel.lista)?sel.lista:listas.includes('Fazer')?'Fazer':listas[0];
   return `<div class="dh"><div><h2>Nova tarefa</h2>${t?`<div class="muted" style="margin-top:4px">${t.codigo} · ${esc(t.nome)}</div>`:''}</div>${fechar}</div>
   <form data-form="tarefa-m" id="f-tk"><div class="fields">
-  <div class="field full"><label for="tm-t">Tarefa</label><input id="tm-t" name="titulo" required placeholder="Ex.: cobrar a contraproposta do proprietário"></div>
+  ${cxNovaHtml()}<div class="field full"><label for="tm-t">Tarefa</label><input id="tm-t" name="titulo" required placeholder="Ex.: cobrar a contraproposta do proprietário"></div>
   ${t?'':`<div class="field full"><label for="tm-ter">Terreno</label><select id="tm-ter" name="ter" required><option value="">Escolha o terreno</option>${opt(Object.fromEntries(ativosBanco().map(x=>[x.id,x.codigo+' · '+x.nome])),UI.tk.ter)}</select></div>`}
   <div class="field"><label for="tm-l">Lista</label><select id="tm-l" name="lista">${listas.map(n=>`<option ${n===lv?'selected':''}>${esc(n)}</option>`).join('')}</select></div>
   <div class="field"><label for="tm-r">Responsável</label>${tkSelU('resp',me(),'Sem responsável','id="tm-r"')}</div>
@@ -6525,15 +6567,15 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
       <form class="tkm-nf vert" data-form="tkc-anexo"><input name="url" type="url" required placeholder="Cole um link (https://…)" aria-label="Endereço do link"><input name="nome" required placeholder="Texto a exibir" aria-label="Nome do link"><button class="tkm-ok" type="submit">Anexar link</button></form>
       ${outros.length?`<select data-tkc="ligar" class="tkm-pill tkm-full" aria-label="Ligar a outro cartão"><option value="">Ligar a outro cartão…</option>${outros.map(x=>`<option value="${x.id}">${x.codigo} · ${esc(x.titulo)}</option>`).join('')}</select>`:''}</div>`:'';
   return `<div class="tkm${k.capa?' com-capa':''}">${k.capa?`<div class="tkm-capa-g etq-${k.capa}"></div>`:''}<div class="tkm-x">${fechar}</div>
-  <div class="tkm-cab"><span class="tkm-gi">${ro||k.arq?(k.feita?`<span class="tkm-done on" title="Concluída em ${fd(k.feita)}">${ic('check',16)}</span>`:`<span class="tkm-done"></span>`):`<button class="tkm-done ${k.feita?'on':''}" data-a="tkc-concluir" title="${apRotulo(k)||(k.feita?'Reabrir':'Marcar como concluída')}" aria-label="${apRotulo(k)||(k.feita?'Reabrir a tarefa':'Marcar como concluída')}" aria-pressed="${!!k.feita}">${ic('check',16)}</button>`}</span>
+  <div class="tkm-cab"><span class="tkm-gi">${ro||k.arq||k.modelo?(k.feita?`<span class="tkm-done on" title="Concluída em ${fd(k.feita)}">${ic('check',16)}</span>`:`<span class="tkm-done"></span>`):`<button class="tkm-done ${k.feita?'on':''}" data-a="tkc-concluir" title="${apRotulo(k)||(k.feita?'Reabrir':'Marcar como concluída')}" aria-label="${apRotulo(k)||(k.feita?'Reabrir a tarefa':'Marcar como concluída')}" aria-pressed="${!!k.feita}">${ic('check',16)}</button>`}</span>
     <div class="tkm-hd"><input class="tkm-tit" value="${esc(k.titulo)}" data-tkc="titulo" aria-label="Título da tarefa" ${dis} required>
     <div class="tkm-cod"><span>na lista</span><select class="tkm-lsel" data-tkc="lista" ${dis||(k.arq?'disabled':'')} aria-label="Lista">${tkL(t).map(x=>`<option value="${x.id}" ${x.id===l.id?'selected':''}>${esc(x.nome)}${x.oculta?' (oculta)':''}</option>`).join('')}</select>
       <span class="faint">·</span><span class="num">${k.codigo}</span><span class="faint">·</span><button class="linkbtn" data-a="abrir" data-id="${t.id}" data-tab="tarefas" data-from="tarefas">${t.codigo} · ${esc(t.nome)}</button>
       ${k.feita?`<span class="faint">· concluída em ${fd(k.feita)}${k.feitaPor?' por '+esc(k.feitaPor):''}</span>`:''}</div></div></div>
-  ${k.arq?`<div class="tkm-arqb">${ic('arq',18)}<span>Este cartão está arquivado e fica fora dos quadros.</span></div>`:''}
+  ${cxFaixa(t,k,ro||!!k.arq)}${k.arq?`<div class="tkm-arqb">${ic('arq',18)}<span>Este cartão está arquivado e fica fora dos quadros.</span></div>`:''}
   <div class="tkm-g"><div class="tkm-main">
     <div class="tkm-dets">${pessoa('resp',k.resp,'Sem responsável','tkc-resp')}${pessoa('solic',k.solic,'—','tkc-sol')}${grupos}${etqs}${datas}${prio}${vzDetHtml(t,k)}</div>
-    ${vzBlocoHtml(t,k)}${apBlocoHtml(t,k,ro||!!k.arq)}${pzBlocoHtml(t,k,ro||!!k.arq)}
+    ${vzBlocoHtml(t,k)}${cpoBlocoHtml(t,k,ro||!!k.arq)}${apBlocoHtml(t,k,ro||!!k.arq)}${pzBlocoHtml(t,k,ro||!!k.arq)}${rcBlocoHtml(t,k,ro||!!k.arq)}
     <div class="tkm-bloco">${tkSecH('notas','Descrição')}<div class="tkm-in"><textarea id="tkc-d" class="tkm-txt" data-tkc="desc" data-mencao placeholder="Adicione uma descrição mais detalhada: objetivo, instruções e critério de pronto (@ avisa um colega)" ${dis}>${esc(k.desc||'')}</textarea></div></div>
     ${k.feita||k.resultado?`<div class="tkm-bloco">${tkSecH('check','Resultado')}<div class="tkm-in"><textarea id="tkc-r" class="tkm-txt" data-tkc="resultado" data-mencao placeholder="O que foi feito ou decidido" ${dis}>${esc(k.resultado||'')}</textarea></div></div>`:''}
     ${anexos.length?`<div class="tkm-bloco">${tkSecH('clip','Anexos',ro?'':`<button class="tkm-btn" data-a="tkc-pop" data-v="anexo">Adicionar</button>`)}<div class="tkm-in">${anexosH}</div></div>`:''}
@@ -6548,11 +6590,13 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
       ${b('tkc-pop','etq','Etiquetas',`data-v="etq" aria-expanded="${pop==='etq'}"`)}${popEtq}
       ${b('tkc-ck-novo','check','Checklist')}
       ${b('tkc-pop','clip','Anexo',`data-v="anexo" aria-expanded="${pop==='anexo'}"`)}${popAnexo}
-      ${b('tkc-pop','capa','Capa',`data-v="capa" aria-expanded="${pop==='capa'}"`)}${popCapa}</div>`}
+      ${b('tkc-pop','capa','Capa',`data-v="capa" aria-expanded="${pop==='capa'}"`)}${popCapa}
+      ${k.rec||k.serie||k.arq||k.modelo?'':b('rc-nova','repete','Recorrência')}</div>`}
     <div class="tkm-sg"><span class="tkm-sgt">Ações</span>
-      ${ro||k.arq?'':b('tkc-concluir','check',apRotulo(k)?.replace('Aguardando aprovação','Em aprovação')||(k.feita?'Reabrir':'Concluir'),'data-dup="1"')}
-      ${pzBotao(k,ro)}
+      ${ro||k.arq||k.modelo?'':b('tkc-concluir','check',apRotulo(k)?.replace('Aguardando aprovação','Em aprovação')||(k.feita?'Reabrir':'Concluir'),'data-dup="1"')}
+      ${k.modelo?'':pzBotao(k,ro)}
       ${ro?'':b('tkc-acomp','olho',acompanho?'Seguindo ✓':'Acompanhar',`aria-pressed="${acompanho}"`)}
+      ${cxBotoes(t,k,ro,b)}
       ${b('tkc-link','link','Copiar link')}
       ${ro?'':b('tkc-arq','arq',k.arq?'Restaurar':'Arquivar')}</div>
   </aside></div>${crAvisoHtml()}</div>`}
@@ -6571,7 +6615,7 @@ function tkRe(){const d=document.querySelector('#modal .dialog'),st=d?d.scrollTo
 function tkAtual(){return tkAcha(UI.tkSel?.tid,UI.tkSel?.kid)}
 const tkItem=(k,cid,iid)=>{const c=k.checklists.find(x=>x.id===cid);return {c,i:c?.itens.find(x=>x.id===iid)}};
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="tkc-"],[data-a^="tkl-"],[data-a="tk-listas"],[data-a="tk-arqficha"],[data-a="tk-cheia"],[data-a="tk-nova"],[data-a="tk-abrir"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const A=a.dataset.a;
-  if(A==='tk-abrir'){UI.tkSel={tid:a.dataset.id,kid:a.dataset.tk};UI.tkEdCom=null;UI.tkCkNovo=false;UI.tkEtqNova=false;UI.tkPop=null;UI.tkItemNovo=null;UI.modal='tarefa';renderModal();return}
+  if(A==='tk-abrir'){UI.tkSel={tid:a.dataset.id,kid:a.dataset.tk};UI.tkEdCom=null;UI.tkCkNovo=false;UI.tkEtqNova=false;UI.tkPop=null;UI.cx=null;UI.tkItemNovo=null;UI.modal='tarefa';renderModal();return}
   if(A==='tk-nova'){UI.tkSel={tid:a.dataset.id||(UI.route==='terreno'?UI.id:null),lista:a.dataset.v||null};UI.modal='tarefa';renderModal();return}
   if(A==='tk-listas'){UI.tkSel={tid:a.dataset.id};UI.modal='tk-listas';renderModal();return}
   if(A==='tk-cheia'){tkTelaCheia();return}
@@ -6651,7 +6695,7 @@ function cfgTarefasHtml(){const L=S.listasModelo,E=S.etiquetas;
     <form class="tkm-nf" data-form="tkcfg-lista"><input name="nome" required placeholder="Nova lista" aria-label="Nome da nova lista padrão"><select name="tipo" aria-label="Tipo">${Object.entries(TIPO_LISTA).map(([x,n])=>`<option value="${x}">${n}</option>`).join('')}</select><button class="btn tonal sm" type="submit">Adicionar lista</button></form></div></section>
   <section class="sec"><div class="sec-h"><h2>Etiquetas da empresa</h2></div><div class="sec-b">
     ${E.map(e=>`<div class="tkl-r">${etqChip(e)}<input value="${esc(e.nome)}" data-tkcfg="etq-nome" data-v="${e.id}" aria-label="Nome da etiqueta"><select data-tkcfg="etq-cor" data-v="${e.id}" aria-label="Cor de ${esc(e.nome)}">${Object.entries(ETQ_CORES).map(([c,n])=>`<option value="${c}" ${c===e.cor?'selected':''}>${n}</option>`).join('')}</select></div>`).join('')}
-    <form class="tkm-nf" data-form="tkcfg-etq"><input name="nome" required placeholder="Nova etiqueta" aria-label="Nome da nova etiqueta"><select name="cor" aria-label="Cor">${Object.entries(ETQ_CORES).map(([c,n])=>`<option value="${c}">${n}</option>`).join('')}</select><button class="btn tonal sm" type="submit">Adicionar etiqueta</button></form></div></section>${apCfgHtml()}${crCfgHtml()}`}
+    <form class="tkm-nf" data-form="tkcfg-etq"><input name="nome" required placeholder="Nova etiqueta" aria-label="Nome da nova etiqueta"><select name="cor" aria-label="Cor">${Object.entries(ETQ_CORES).map(([c,n])=>`<option value="${c}">${n}</option>`).join('')}</select><button class="btn tonal sm" type="submit">Adicionar etiqueta</button></form></div></section>${cpoCfgHtml()}${apCfgHtml()}${crCfgHtml()}`}
 const tkCfgOk=L=>L.some(l=>l.ativo&&l.tipo==='conclui');
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="tkcfg-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const L=S.listasModelo,l=L.find(x=>x.id===a.dataset.v);if(!l)return;
   if(a.dataset.a==='tkcfg-sobe'){const i=L.indexOf(l);L.splice(i,1);L.splice(i-1,0,l)}
@@ -6949,8 +6993,9 @@ const apPrecisa=k=>(k.aprov||[]).length>0&&!apAps(k).some(a=>a.sit==='aprovada')
 const apRegraCk=()=>S.tkRegras?.checklist!==false;
 const apCkAberto=k=>(k.checklists||[]).some(c=>c.itens.some(i=>!i.feito&&!i.virou));
 /* o que impede concluir agora (null = nada) */
-function apBloqueio(t,k){if(apPrecisa(k))return apPend(k)?'A tarefa está aguardando aprovação.':'A tarefa precisa ser aprovada antes de concluir. Use "Pedir aprovação".';
-  if(apRegraCk()&&apCkAberto(k))return 'Conclua os itens do checklist antes de concluir a tarefa.';return null}
+function apBloqueio(t,k){if(k.modelo)return 'Modelo de cartão não se conclui.';if(apPrecisa(k))return apPend(k)?'A tarefa está aguardando aprovação.':'A tarefa precisa ser aprovada antes de concluir. Use "Pedir aprovação".';
+  if(apRegraCk()&&apCkAberto(k))return 'Conclua os itens do checklist antes de concluir a tarefa.';
+  const f=cpoFaltam(k);if(f.length)return `Preencha ${f.length>1?'os campos obrigatórios':'o campo obrigatório'} antes de concluir: ${f.join(', ')}.`;return null}
 /* votos que esperam decisão agora (em sequência, só o da vez) */
 function apDaVez(a){if(!a||a.sit!=='pendente')return [];const ab=a.votos.filter(v=>!v.dec);if(a.modo==='paralelo')return ab;const m=Math.min(...ab.map(v=>v.ordem));return ab.filter(v=>v.ordem===m)}
 /* o voto que essa pessoa decide: o dela ou, como superior, o de um aprovador abaixo */
@@ -6958,6 +7003,7 @@ function apMeuVoto(a,u){const vz=apDaVez(a);return vz.find(v=>v.user===u)||vz.fi
 function apAvisarVez(t,k,a){apDaVez(a).forEach(v=>notificar(v.user,'aprovacao_pendente',`Aprovar a tarefa: ${k.titulo}`,t,a.id+':'+v.user,tkIr(k)))}
 function apPedir(t,k,motivo){if(!(k.aprov||[]).length){toast('A tarefa não tem aprovador.',true);return}
   if(apRegraCk()&&apCkAberto(k)){toast('Conclua os itens do checklist antes de pedir a aprovação.',true);return}
+  const f=cpoFaltam(k);if(f.length){toast(`Preencha antes de pedir a aprovação: ${f.join(', ')}.`,true);return}
   const p=apPend(k);if(p){p.sit='cancelada';p.decEm=agora()}const eu=me();
   const a={id:uid(),modo:k.apModo||'paralelo',sit:'pendente',motivo:motivo||null,por:eu,em:agora(),votos:k.aprov.map((u,i)=>({user:u,ordem:i+1,dec:null,por:null,em:null,just:null}))};
   apAps(k).push(a);const v=a.votos.find(x=>x.user===eu);if(v){v.dec='aprovou';v.por=eu;v.em=agora()}
@@ -7217,6 +7263,285 @@ document.addEventListener('submit',e=>{const f=e.target,n=f.dataset?.form;if(n!=
   const ind=tkCriar(t,{titulo:'Rascunho da contraproposta',prazo:addD(HOJE,4)});Object.assign(ind,{criadoPor:'Rafael Souza',solic:'Rafael Souza',resp:'Rafael Souza',vis:'individual'});
   const r=t.tarefas.find(x=>x.titulo==='Pedir certidão de uso do solo');
   if(r){r.vis='restrito';r.criadoPor='Ana Prado';r.acessos=[{id:uid(),g:S.grupos[0].id,papel:'editor'}]}})();
+
+/* =====================================================================
+   Campos personalizados (bloco 4; decisões do Moisés, 30/out/2026).
+   Espelha fluxo.campos, fluxo.campo_opcoes e fluxo.tarefa_campos.
+   Os campos são da empresa (Configurações › Tarefas, só administrador) e
+   valem para todos os quadros: texto, número, data, lista de opções e
+   sim/não. Cada campo diz se aparece na frente do cartão e se é
+   obrigatório para concluir (sim/não preenchido com "Não" conta). Sem valor, o
+   campo fica "não informado" (nunca zero nem "não"). Campo com valor não
+   muda de tipo e não se apaga: desativa. Injetado no mesmo escopo.
+   ===================================================================== */
+const CPO_TIPOS={texto:'Texto',numero:'Número',data:'Data',lista:'Lista de opções',caixa:'Sim / não'};
+function cpoCampos(){return S.campos||(S.campos=[])}
+function cpoAtivos(){return cpoCampos().filter(c=>c.ativo!==false).sort((a,b)=>(a.ordem||0)-(b.ordem||0))}
+/* campos obrigatórios ativos sem valor: impedem concluir (fluxo.pendencias_conclusao, 'campos') */
+function cpoFaltam(k){return cpoAtivos().filter(c=>c.obrig&&k.campos?.[c.id]==null).map(c=>c.nome)}
+function cpoUsado(c){return S.terrenos.some(t=>(t.tarefas||[]).some(k=>k.campos&&k.campos[c.id]!=null))}
+function cpoNum(v){const s=String(v).trim().toLowerCase().replace(/\s/g,'');if(!s)return null;const m=/^(-?[\d.,]+)(mil|mi)?$/.exec(s);if(!m)return NaN;
+  let n=m[1];if(n.includes(','))n=n.replace(/\./g,'').replace(',','.');else if((n.match(/\./g)||[]).length>1||/\.\d{3}$/.test(n))n=n.replace(/\./g,'');
+  const x=Number(n);return m[2]==='mil'?x*1e3:m[2]==='mi'?x*1e6:x}
+function cpoTxt(c,v){if(v==null)return 'Não informado';if(c.tipo==='numero')return Number(v).toLocaleString('pt-BR',{maximumFractionDigits:2});if(c.tipo==='data')return fd(v);
+  if(c.tipo==='caixa')return v?'Sim':'Não';if(c.tipo==='lista')return (c.opcoes||[]).find(o=>o.id===v)?.nome||'—';return String(v)}
+/* frente do cartão: só os campos marcados, e só com valor */
+function cpoFrente(k){const cs=cpoAtivos().filter(c=>c.frente&&k.campos&&k.campos[c.id]!=null);if(!cs.length)return '';
+  return `<div class="cpo-fr">${cs.map(c=>{const v=k.campos[c.id],o=c.tipo==='lista'?(c.opcoes||[]).find(x=>x.id===v):null;
+    return `<span class="cpo-ch ${o?'etq-'+o.cor:''}" title="${esc(c.nome)}"><span class="cpo-chn">${esc(c.nome)}:</span> ${esc(cpoTxt(c,v))}</span>`}).join('')}</div>`}
+/* janela do cartão: um bloco com todos os campos ativos (e os desativados que têm valor, só para ler) */
+function cpoBlocoHtml(t,k,ro){const cs=cpoCampos().filter(c=>c.ativo!==false||(k.campos&&k.campos[c.id]!=null)).sort((a,b)=>(a.ordem||0)-(b.ordem||0));if(!cs.length)return '';
+  const v=c=>k.campos?.[c.id],dis=c=>ro||c.ativo===false?'disabled':'';
+  const campo=c=>{const x=v(c),id='cpo-'+c.id;let inp;
+    if(c.tipo==='lista')inp=`<select id="${id}" class="tkm-pill cpo-in" data-cpo="${c.id}" ${dis(c)}><option value="">Não informado</option>${(c.opcoes||[]).filter(o=>o.ativo!==false||o.id===x).map(o=>`<option value="${o.id}" ${o.id===x?'selected':''}>${esc(o.nome)}</option>`).join('')}</select>`;
+    else if(c.tipo==='caixa')inp=`<select id="${id}" class="tkm-pill cpo-in" data-cpo="${c.id}" ${dis(c)}><option value="">Não informado</option><option value="1" ${x===true?'selected':''}>Sim</option><option value="0" ${x===false?'selected':''}>Não</option></select>`;
+    else if(c.tipo==='data')inp=`<input id="${id}" type="date" class="tkm-pill cpo-in" data-cpo="${c.id}" value="${x||''}" ${dis(c)}>`;
+    else inp=`<input id="${id}" class="tkm-pill cpo-in" data-cpo="${c.id}" value="${x==null?'':esc(c.tipo==='numero'?cpoTxt(c,x):x)}" ${c.tipo==='numero'?'inputmode="decimal"':''} placeholder="Não informado" ${dis(c)}>`;
+    const falta=c.obrig&&c.ativo!==false&&x==null;
+    return `<div class="cpo-c ${falta?'falta':''}"><label for="${id}">${esc(c.nome)}${c.obrig&&c.ativo!==false?' <span class="cpo-ob" title="Obrigatório para concluir">*</span>':''}${c.ativo===false?' <span class="faint">(desativado)</span>':''}</label>${inp}${falta?'<span class="cpo-av">Obrigatório para concluir</span>':''}</div>`};
+  return `<div class="tkm-bloco">${tkSecH('layers','Campos personalizados')}<div class="tkm-in cpo-g">${cs.map(campo).join('')}</div></div>`}
+function cpoGravar(t,k,c,raw){const antes=k.campos?.[c.id];let v;
+  if(raw===''||raw==null)v=null;
+  else if(c.tipo==='numero'){v=cpoNum(raw);if(Number.isNaN(v)){toast(`Número inválido em ${c.nome}.`,true);return false}}
+  else if(c.tipo==='caixa')v=raw==='1';else if(c.tipo==='texto'){v=String(raw).trim()||null}else v=raw;
+  if(v===antes||(v==null&&antes==null))return false;k.campos=k.campos||{};if(v==null)delete k.campos[c.id];else k.campos[c.id]=v;
+  log(t,`Tarefa "${k.titulo}": ${c.nome} de ${cpoTxt(c,antes)} para ${cpoTxt(c,v)}`);return true}
+/* filtro da página Tarefas: campos de lista e sim/não */
+function cpoFiltroOpts(sel){const cs=cpoAtivos().filter(c=>c.tipo==='lista'||c.tipo==='caixa');if(!cs.length)return '';
+  return cs.map(c=>`<optgroup label="${esc(c.nome)}">${(c.tipo==='caixa'?[['1','Sim'],['0','Não'],['-','Não informado']]:[...(c.opcoes||[]).filter(o=>o.ativo!==false).map(o=>[o.id,o.nome]),['-','Não informado']]).map(([v,n])=>`<option value="${c.id}:${v}" ${sel===c.id+':'+v?'selected':''}>${esc(c.nome)}: ${esc(n)}</option>`).join('')}</optgroup>`).join('')}
+function cpoFiltra(k,f){const [cid,v]=f.split(':'),x=k.campos?.[cid],c=cpoCampos().find(y=>y.id===cid);if(!c)return true;
+  if(v==='-')return x==null;if(c.tipo==='caixa')return x===(v==='1');return x===v}
+
+/* ---------- Configurações › Tarefas ---------- */
+function cpoCfgHtml(){const C=cpoCampos().slice().sort((a,b)=>(a.ordem||0)-(b.ordem||0));
+  return `<section class="sec"><div class="sec-h"><h2>Campos personalizados</h2></div><div class="sec-b">
+    <p class="muted" style="margin-top:0">Valem para todos os quadros. Campo com valor não muda de tipo nem se apaga: desative.</p>
+    ${C.map((c,i)=>{const usado=cpoUsado(c);return `<div class="cpo-cfg ${c.ativo===false?'oculta':''}"><div class="tkl-r"><input value="${esc(c.nome)}" data-cpoc="nome" data-v="${c.id}" aria-label="Nome do campo ${i+1}">
+      <select data-cpoc="tipo" data-v="${c.id}" aria-label="Tipo de ${esc(c.nome)}" ${usado?'disabled title="Já tem valores: o tipo não muda"':''}>${Object.entries(CPO_TIPOS).map(([x,n])=>`<option value="${x}" ${x===c.tipo?'selected':''}>${n}</option>`).join('')}</select>
+      <label class="chk"><input type="checkbox" data-cpoc="frente" data-v="${c.id}" ${c.frente?'checked':''}>Na frente do cartão</label>
+      <label class="chk"><input type="checkbox" data-cpoc="obrig" data-v="${c.id}" ${c.obrig?'checked':''}>Obrigatório para concluir</label>
+      <button class="iconbtn sm" data-a="cpo-sobe" data-v="${c.id}" ${i?'':'disabled'} aria-label="Subir ${esc(c.nome)}" title="Subir">${ic('chev',18)}</button>
+      ${usado?`<button class="btn text sm" data-a="cpo-ativo" data-v="${c.id}">${c.ativo===false?'Ativar':'Desativar'}</button>`:`<button class="btn text sm" data-a="cpo-apaga" data-v="${c.id}">Apagar</button>`}</div>
+      ${c.tipo==='lista'?`<div class="cpo-ops">${(c.opcoes||[]).map(o=>`<span class="cpo-op ${o.ativo===false?'oculta':''}"><span class="etq etq-${o.cor}">${esc(o.nome)}</span><button class="iconbtn sm" data-a="cpo-op-x" data-v="${c.id}" data-o="${o.id}" aria-label="${o.ativo===false?'Reativar':'Tirar'} ${esc(o.nome)}" title="${o.ativo===false?'Reativar':'Tirar'}">${ic(o.ativo===false?'undo':'close',14)}</button></span>`).join('')}
+        <form class="tkm-nf cpo-opf" data-form="cpo-op" data-v="${c.id}"><input name="nome" required placeholder="Nova opção" aria-label="Nova opção de ${esc(c.nome)}"><select name="cor" aria-label="Cor">${Object.entries(ETQ_CORES).map(([x,n])=>`<option value="${x}">${n}</option>`).join('')}</select><button class="btn tonal sm" type="submit">Adicionar</button></form></div>`:''}</div>`}).join('')}
+    <form class="tkm-nf" data-form="cpo-novo" style="margin-top:12px"><input name="nome" required placeholder="Novo campo (ex.: Valor do laudo)" aria-label="Nome do novo campo"><select name="tipo" aria-label="Tipo">${Object.entries(CPO_TIPOS).map(([x,n])=>`<option value="${x}">${n}</option>`).join('')}</select><button class="btn tonal sm" type="submit">Criar campo</button></form></div></section>`}
+
+document.addEventListener('change',e=>{const el=e.target;
+  if(el.dataset?.cpo){e.stopImmediatePropagation();const {t,k}=tkAtual(),c=cpoCampos().find(x=>x.id===el.dataset.cpo);if(!k||!c||!vzEdita(t,k)||c.ativo===false)return;
+    if(cpoGravar(t,k,c,el.value))tkRe();else if(c.tipo==='numero'&&el.value)el.value=k.campos?.[c.id]!=null?cpoTxt(c,k.campos[c.id]):'';return}
+  if(el.dataset?.cpoc){e.stopImmediatePropagation();if(!ehAdmin(me()))return;const c=cpoCampos().find(x=>x.id===el.dataset.v);if(!c)return;const p=el.dataset.cpoc;
+    if(p==='nome'){const v=el.value.trim();if(!v||cpoCampos().some(x=>x!==c&&x.nome===v)){toast(v?'Já existe um campo com esse nome.':'O campo precisa de nome.',true);el.value=c.nome;return}c.nome=v}
+    else if(p==='tipo'){if(cpoUsado(c)){toast('O campo já tem valores: o tipo não muda.',true);return}c.tipo=el.value;if(c.tipo==='lista'&&!c.opcoes)c.opcoes=[]}
+    else if(p==='frente')c.frente=el.checked;
+    else if(p==='obrig')c.obrig=el.checked;
+    save();render();toast('Campo atualizado.')}},true);
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="cpo-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();if(!ehAdmin(me()))return;
+  const C=cpoCampos(),c=C.find(x=>x.id===a.dataset.v);if(!c)return;
+  switch(a.dataset.a){
+    case 'cpo-sobe':{const L=C.slice().sort((x,y)=>(x.ordem||0)-(y.ordem||0)),i=L.indexOf(c);if(i>0){L.splice(i,1);L.splice(i-1,0,c);L.forEach((x,j)=>x.ordem=j)}break}
+    case 'cpo-ativo':c.ativo=c.ativo===false;toast(c.ativo?'Campo ativado.':'Campo desativado: some dos cartões, e os valores ficam guardados.');break;
+    case 'cpo-apaga':if(cpoUsado(c)){toast('O campo já tem valores: desative em vez de apagar.',true);return}S.campos=C.filter(x=>x!==c);toast('Campo apagado.');break;
+    case 'cpo-op-x':{const o=(c.opcoes||[]).find(x=>x.id===a.dataset.o);if(!o)return;const usada=S.terrenos.some(t=>(t.tarefas||[]).some(k=>k.campos?.[c.id]===o.id));
+      if(o.ativo===false)o.ativo=true;else if(usada){o.ativo=false;toast('A opção já foi usada: fica desativada.')}else c.opcoes=c.opcoes.filter(x=>x!==o);break}
+  }save();render()},true);
+document.addEventListener('submit',e=>{const f=e.target,n=f.dataset?.form;if(n!=='cpo-novo'&&n!=='cpo-op')return;e.preventDefault();e.stopImmediatePropagation();if(!ehAdmin(me()))return;const F=Object.fromEntries(new FormData(f)),nm=F.nome.trim();
+  if(n==='cpo-novo'){if(cpoCampos().some(x=>x.nome===nm)){toast('Já existe um campo com esse nome.',true);return}cpoCampos().push({id:uid(),nome:nm,tipo:F.tipo,ordem:cpoCampos().length,frente:false,ativo:true,opcoes:F.tipo==='lista'?[]:undefined});toast(`Campo ${nm} criado.`)}
+  else{const c=cpoCampos().find(x=>x.id===f.dataset.v);if((c.opcoes||[]).some(o=>o.nome===nm)){toast('Essa opção já existe.',true);return}(c.opcoes=c.opcoes||[]).push({id:uid(),nome:nm,cor:F.cor,ativo:true})}
+  save();render()},true);
+
+/* exemplo: três campos da empresa e valores em dois cartões do primeiro terreno */
+(()=>{if(S.cpoExemplo)return;S.cpoExemplo=true;
+  const lis={id:uid(),nome:'Cartório',tipo:'lista',ordem:1,frente:true,ativo:true,opcoes:[{id:uid(),nome:'1º RI',cor:'azul',ativo:true},{id:uid(),nome:'2º RI',cor:'roxo',ativo:true},{id:uid(),nome:'3º RI',cor:'verde',ativo:true}]};
+  S.campos=[{id:uid(),nome:'Valor do laudo',tipo:'numero',ordem:0,frente:true,ativo:true},lis,{id:uid(),nome:'Exige vistoria',tipo:'caixa',ordem:2,frente:false,ativo:true}];
+  const t=S.terrenos[0];if(!t||!t.tarefas)return;const a=t.tarefas.find(x=>x.titulo==='Análise jurídica da matrícula');if(a)a.campos={[lis.id]:lis.opcoes[1].id,[S.campos[2].id]:false};
+  const b=t.tarefas.find(x=>x.titulo==='Estudo de massa');if(b)b.campos={[S.campos[0].id]:185000}})();
+
+/* =====================================================================
+   Recorrência (bloco 4; decisões do Moisés, 30/out/2026).
+   Espelha fluxo.recorrencias, fluxo.proxima_ocorrencia e
+   fluxo.gerar_recorrencias. O cartão de origem é o modelo e a primeira
+   ocorrência; cada ocorrência nasce na data agendada, mesmo com a anterior
+   aberta, copiando o cartão de origem como ele está (pessoas, etiquetas,
+   prioridade, visibilidade e checklists em aberto), com início na data e
+   prazo N dias depois. Campos personalizados não vão. Termina numa data,
+   depois de N ocorrências (com a de origem) ou quando alguém para a série.
+   Data de hoje ou que já passou não gera atrasados (segue de amanhã). Injetado no mesmo escopo.
+   ===================================================================== */
+P.repete='M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3';
+const RC_FREQ={diaria:'Diária',semanal:'Semanal',mensal:'Mensal',anual:'Anual'};
+const RC_UN={diaria:['dia','dias'],semanal:['semana','semanas'],mensal:['mês','meses'],anual:['ano','anos']};
+const RC_DIAS=['D','S','T','Q','Q','S','S'],RC_DIAS_N=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+const rcDow=d=>new Date(d+'T12:00:00').getDay();
+function rcAddM(d,m,dia){const x=new Date(d+'T12:00:00');x.setDate(1);x.setMonth(x.getMonth()+m);const ult=new Date(x.getFullYear(),x.getMonth()+1,0).getDate();x.setDate(Math.min(dia,ult));return x.toISOString().slice(0,10)}
+/* próxima data depois de "de" (no banco: fluxo.proxima_ocorrencia) */
+function rcProx(r,de){if(r.freq==='diaria')return addD(de,r.int);
+  if(r.freq==='anual')return rcAddM(de,12*r.int,+de.slice(8));
+  if(r.freq==='mensal')return rcAddM(de,r.int,r.diaMes||+de.slice(8));
+  if(!r.dias?.length)return addD(de,7*r.int);
+  const ini=addD(de,-rcDow(de));for(let i=1;i<=7*r.int+7;i++){const d=addD(de,i),sem=Math.round((new Date(addD(d,-rcDow(d))+'T12:00:00')-new Date(ini+'T12:00:00'))/864e5/7);
+    if(sem%r.int===0&&r.dias.includes(rcDow(d)))return d}return null}
+const rcBase=k=>k.inicio||k.prazo||HOJE;
+function rcAjustar(r){if(r.ativa)while(r.prox<=HOJE)r.prox=rcProx(r,r.prox)}  // hoje ou antes: segue de amanhã, sem atrasados
+function rcOrigem(t,k){return k.serie?t.tarefas.find(x=>x.id===k.serie):null}
+function rcResumo(r){const un=RC_UN[r.freq][r.int>1?1:0],cada=r.int>1?`a cada ${r.int} ${un}`:{diaria:'todo dia',semanal:'toda semana',mensal:'todo mês',anual:'todo ano'}[r.freq];
+  const det=r.freq==='semanal'&&r.dias?.length?`, ${r.dias.slice().sort().map(d=>RC_DIAS_N[d]).join(', ')}`:r.freq==='mensal'?`, dia ${r.diaMes}`:'';return cada+det}
+/* cria as ocorrências com data até hoje (no banco: a rotina diária) */
+function rcCopiar(t,k,r,data){const desloc=crDias(rcBase(k),data),l=tkL(t).find(x=>x.id===r.lista&&x.tipo==='aberta')||tkPrim(t,'aberta');
+  const n=tkNorm(t,{id:uid(),titulo:k.titulo,desc:k.desc||'',resultado:'',resp:k.resp,solic:k.solic,criadoPor:k.criadoPor||k.solic,criadoEm:data,vis:k.vis||'publico',acessos:JSON.parse(JSON.stringify(k.acessos||[])),
+    inicio:data,prazo:r.prazoDias!=null?addD(data,r.prazoDias):null,prio:k.prio,capa:k.capa||null,apModo:k.apModo,lista:l.id,pos:Date.now()+Math.random(),
+    exec:[...(k.exec||[])],aprov:[...(k.aprov||[])],acomp:[...(k.acomp||[])],etq:[...(k.etq||[])],serie:k.id,
+    checklists:(k.checklists||[]).map(c=>({id:uid(),nome:c.nome,esconder:c.esconder,itens:c.itens.filter(i=>!i.virou).map(i=>({id:uid(),texto:i.texto,resp:i.resp,prazo:i.prazo?addD(i.prazo,desloc):null,feito:null}))}))});
+  if(n.prazo){n.dur=crDias(n.inicio,n.prazo)+1}t.tarefas.push(n);notifTarefa(t,n,null);log(t,`Tarefa criada pela recorrência de ${k.codigo}: ${n.titulo} (${fd(data)})`);return n}
+function rcGerar(){let n=0;(S.terrenos||[]).forEach(t=>(t.tarefas||[]).forEach(k=>{const r=k.rec;if(!r?.ativa)return;
+  while(r.ativa&&r.prox<=HOJE){if((r.fim&&r.prox>r.fim)||(r.max&&r.vezes>=r.max)||k.arq){r.ativa=false;break}
+    rcCopiar(t,k,r,r.prox);n++;r.vezes++;r.prox=rcProx(r,r.prox);if(r.max&&r.vezes>=r.max)r.ativa=false}}));return n}
+
+/* frente do cartão: ícone de série */
+function rcSelo(k){return k.rec?.ativa||k.serie?`<span class="tk-b" title="${k.serie?'Criada por uma recorrência':'Cartão recorrente'}">${ic('repete',14)}</span>`:''}
+/* janela do cartão */
+function rcBlocoHtml(t,k,ro){
+  if(k.serie){const o=rcOrigem(t,k);return `<div class="tkm-bloco">${tkSecH('repete','Recorrência')}<div class="tkm-in rc-in">
+    <p>Criada em ${fd(k.criadoEm||k.inicio)} pela série ${o?`<button class="linkbtn" data-a="rc-origem" data-v="${o.id}">${o.codigo} · ${esc(o.titulo)}</button>`:'(cartão de origem não disponível)'}${o?.rec?`, ${esc(rcResumo(o.rec))}`:''}.</p>
+    <p class="faint">A recorrência se muda no cartão de origem.</p></div></div>`}
+  const r=k.rec;if(!r)return '';const d=ro?'disabled':'',un=RC_UN[r.freq];
+  const abertas=tkL(t).filter(l=>l.tipo==='aberta'&&!l.oculta),fimTipo=r.fim?'data':r.max?'vezes':'nunca';
+  const criadas=t.tarefas.filter(x=>x.serie===k.id).length;
+  return `<div class="tkm-bloco">${tkSecH('repete','Recorrência',ro?'':`<button class="tkm-btn" data-a="rc-ativa">${r.ativa?'Parar':'Retomar'}</button>`)}<div class="tkm-in rc-in">
+    <div class="rc-g">
+      <div class="cpo-c"><label for="rc-freq">Repete</label><select id="rc-freq" class="tkm-pill" data-rc="freq" ${d}>${Object.entries(RC_FREQ).map(([x,n])=>`<option value="${x}" ${x===r.freq?'selected':''}>${n}</option>`).join('')}</select></div>
+      <div class="cpo-c"><label for="rc-int">A cada</label><span class="rc-un"><input id="rc-int" class="tkm-pill" data-rc="int" type="number" min="1" max="99" value="${r.int}" ${d}><span>${un[r.int>1?1:0]}</span></span></div>
+      ${r.freq==='mensal'?`<div class="cpo-c"><label for="rc-dm">No dia</label><input id="rc-dm" class="tkm-pill" data-rc="diaMes" type="number" min="1" max="31" value="${r.diaMes}" ${d}></div>`:''}
+      <div class="cpo-c"><label for="rc-pz">Prazo</label><span class="rc-un"><input id="rc-pz" class="tkm-pill" data-rc="prazoDias" type="number" min="0" max="365" value="${r.prazoDias??''}" placeholder="Sem prazo" ${d}><span>dias depois</span></span></div>
+    </div>
+    ${r.freq==='semanal'?`<div class="rc-dias" role="group" aria-label="Dias da semana">${RC_DIAS.map((x,i)=>`<button class="rc-dia ${r.dias?.includes(i)?'on':''}" data-a="rc-dia" data-v="${i}" aria-pressed="${!!r.dias?.includes(i)}" aria-label="${RC_DIAS_N[i]}" title="${RC_DIAS_N[i]}" ${d}>${x}</button>`).join('')}</div>`:''}
+    <div class="rc-g">
+      <div class="cpo-c"><label for="rc-l">Nasce na lista</label><select id="rc-l" class="tkm-pill" data-rc="lista" ${d}>${abertas.map(l=>`<option value="${l.id}" ${l.id===r.lista?'selected':''}>${esc(l.nome)}</option>`).join('')}</select></div>
+      <div class="cpo-c"><label for="rc-ft">Termina</label><select id="rc-ft" class="tkm-pill" data-rc="fimTipo" ${d}><option value="nunca" ${fimTipo==='nunca'?'selected':''}>Nunca</option><option value="data" ${fimTipo==='data'?'selected':''}>Em uma data</option><option value="vezes" ${fimTipo==='vezes'?'selected':''}>Depois de N vezes</option></select></div>
+      ${fimTipo==='data'?`<div class="cpo-c"><label for="rc-fim">Até</label><input id="rc-fim" class="tkm-pill" type="date" data-rc="fim" value="${r.fim}" ${d}></div>`:''}
+      ${fimTipo==='vezes'?`<div class="cpo-c"><label for="rc-max">Vezes (com esta)</label><input id="rc-max" class="tkm-pill" type="number" min="2" data-rc="max" value="${r.max}" ${d}></div>`:''}
+    </div>
+    <p class="rc-res">${r.ativa?`${ic('repete',14)} ${esc(rcResumo(r))}. Próxima: <b>${fd(r.prox)}</b>, mesmo que esta não esteja concluída.`:'<b>Série parada.</b>'} ${criadas?`· ${criadas} ${criadas>1?'criadas':'criada'}`:''}</p>
+  </div></div>`}
+function rcNova(t,k){const b=rcBase(k),l=tkLista(t,k);
+  const r={freq:'semanal',int:1,dias:[rcDow(b)],diaMes:+b.slice(8),prox:null,fim:null,max:null,vezes:1,prazoDias:k.inicio&&k.prazo?crDias(k.inicio,k.prazo):null,lista:l.tipo==='aberta'?l.id:tkPrim(t,'aberta').id,ativa:true,por:me(),em:agora()};
+  r.prox=rcProx(r,b);rcAjustar(r);k.rec=r;log(t,`Tarefa "${k.titulo}": recorrência ${rcResumo(r)}`)}
+/* mudou a regra: recalcula a próxima a partir da última ocorrência */
+function rcRecalc(t,k){const r=k.rec,ult=t.tarefas.filter(x=>x.serie===k.id).map(x=>x.inicio).filter(Boolean).sort().at(-1);r.prox=rcProx(r,ult||rcBase(k));rcAjustar(r)}
+
+document.addEventListener('change',e=>{const el=e.target;if(!el.dataset?.rc)return;e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k?.rec||!vzEdita(t,k))return;const r=k.rec,c=el.dataset.rc,v=el.value;
+  if(c==='freq'){r.freq=v;if(v==='semanal'&&!r.dias?.length)r.dias=[rcDow(rcBase(k))];rcRecalc(t,k)}
+  else if(c==='int'){r.int=Math.min(99,Math.max(1,parseInt(v)||1));rcRecalc(t,k)}
+  else if(c==='diaMes'){r.diaMes=Math.min(31,Math.max(1,parseInt(v)||1));rcRecalc(t,k)}
+  else if(c==='prazoDias')r.prazoDias=v===''?null:Math.min(365,Math.max(0,parseInt(v)||0));
+  else if(c==='lista')r.lista=v;
+  else if(c==='fimTipo'){r.fim=v==='data'?addD(r.prox,28):null;r.max=v==='vezes'?Math.max(r.vezes+1,4):null}
+  else if(c==='fim'){if(v&&v<r.prox){toast('A série terminaria antes da próxima ocorrência.',true);el.value=r.fim;return}r.fim=v||null}
+  else if(c==='max'){r.max=Math.max(2,parseInt(v)||2);if(r.vezes>=r.max)r.ativa=false}
+  log(t,`Tarefa "${k.titulo}": recorrência ${r.ativa?rcResumo(r):'parada'}`);tkRe()},true);
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="rc-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k)return;
+  if(a.dataset.a==='rc-origem'){UI.tkSel={...UI.tkSel,kid:a.dataset.v};render();return}
+  if(!vzEdita(t,k))return;
+  if(a.dataset.a==='rc-nova'){if(k.serie){toast('Esta tarefa é uma ocorrência: mude a recorrência no cartão de origem.',true);return}rcNova(t,k);toast(`Recorrente: a próxima nasce em ${fd(k.rec.prox)}.`)}
+  else if(a.dataset.a==='rc-dia'){const r=k.rec,i=+a.dataset.v,ds=new Set(r.dias||[]);if(ds.has(i)){if(ds.size===1){toast('Marque pelo menos um dia.',true);return}ds.delete(i)}else ds.add(i);r.dias=[...ds].sort();rcRecalc(t,k)}
+  else if(a.dataset.a==='rc-ativa'){const r=k.rec;r.ativa=!r.ativa;if(r.ativa){if(r.max&&r.vezes>=r.max)r.max=null;if(r.fim&&r.fim<HOJE)r.fim=null;rcAjustar(r)}
+    log(t,`Tarefa "${k.titulo}": recorrência ${r.ativa?'retomada':'parada'}`);toast(r.ativa?`Série retomada: próxima em ${fd(r.prox)}.`:'Série parada: nenhuma tarefa nova nasce.')}
+  tkRe()},true);
+
+/* exemplo: relatório semanal com duas ocorrências já criadas (a primeira ainda aberta) */
+(()=>{const t=S.terrenos?.[0];if(!t?.tarefas)return;if(!S.rcExemplo){S.rcExemplo=true;
+  const ini=addD(HOJE,-14-((rcDow(HOJE)+6)%7)),k=tkNorm(t,{id:uid(),titulo:'Relatório semanal ao comitê',desc:'Andamento da negociação, pendências e próximos passos.',resultado:'',resp:'Rafael Souza',solic:'Ana Prado',criadoPor:'Ana Prado',criadoEm:ini,vis:'publico',acessos:[],
+    inicio:ini,prazo:addD(ini,2),dur:3,prio:'media',lista:tkPrim(t,'aberta').id,pos:Date.now(),acomp:['Ana Prado'],checklists:[{id:uid(),nome:'Conferir',esconder:false,itens:[{id:uid(),texto:'Atualizar a linha do tempo',resp:'Rafael Souza',prazo:addD(ini,1),feito:ini}]}]});
+  k.feita=addD(ini,2);k.feitaPor='Rafael Souza';k.lista=tkPrim(t,'conclui').id;k.checklists[0].itens[0].feitoPor='Rafael Souza';
+  k.rec={freq:'semanal',int:1,dias:[1],diaMes:+ini.slice(8),prox:addD(ini,7),fim:null,max:null,vezes:1,prazoDias:2,lista:tkPrim(t,'aberta').id,ativa:true,por:'Ana Prado',em:ini};t.tarefas.push(k)}
+  rcGerar()})();
+
+/* =====================================================================
+   Copiar cartão e modelo de cartão (bloco 4; 30/out/2026). Espelha
+   fluxo.copiar_tarefa e tarefas.modelo.
+   - Copiar (Ações do cartão): título, terreno e lista aberta de destino e
+     o que vai junto (checklists em aberto, etiquetas, pessoas, campos,
+     anexos). Quem copia passa a ser quem criou e quem pediu; visibilidade
+     e acessos vão juntos; datas, comentários, horas e aprovações não.
+   - Modelo de cartão: "Tornar modelo" deixa o cartão no quadro como base,
+     com o selo Modelo; não conclui nem atrasa; "Usar este modelo" copia.
+     Na Nova tarefa, "Usar um modelo" lista os modelos que a pessoa vê.
+   Injetado no mesmo escopo.
+   ===================================================================== */
+const CX_ITENS={checklists:'Checklists',etiquetas:'Etiquetas',pessoas:'Pessoas',campos:'Campos personalizados',anexos:'Anexos'};
+function cxModelos(){return todasTarefas().filter(({k})=>k.modelo&&!k.arq)}
+function cxCopiar(t,k,dest,lid,titulo,itens){const l=tkL(dest).find(x=>x.id===lid&&x.tipo==='aberta');if(!l){toast('A cópia vai para uma lista aberta.',true);return null}
+  const tem=x=>itens.includes(x),eu=me();
+  const n=tkNorm(dest,{id:uid(),titulo:(titulo||'').trim()||k.titulo,desc:k.desc||'',resultado:'',resp:tem('pessoas')?k.resp:null,solic:eu,criadoPor:eu,vis:k.vis||'publico',acessos:JSON.parse(JSON.stringify(k.acessos||[])),
+    prazo:null,prio:k.prio,capa:k.capa||null,apModo:k.apModo,lista:l.id,pos:Date.now(),estim:k.estim||null,
+    exec:tem('pessoas')?[...(k.exec||[])]:[],aprov:tem('pessoas')?[...(k.aprov||[])]:[],acomp:tem('pessoas')?[...(k.acomp||[])]:[],etq:tem('etiquetas')?[...(k.etq||[])]:[],
+    checklists:tem('checklists')?(k.checklists||[]).map(c=>({id:uid(),nome:c.nome,esconder:c.esconder,itens:c.itens.filter(i=>!i.virou).map(i=>({id:uid(),texto:i.texto,resp:tem('pessoas')?i.resp:null,prazo:null,feito:null}))})):[],
+    campos:tem('campos')?Object.fromEntries(Object.entries(k.campos||{}).filter(([cid,v])=>{const c=cpoCampos().find(x=>x.id===cid);return c&&c.ativo!==false&&(c.tipo!=='lista'||(c.opcoes||[]).some(o=>o.id===v&&o.ativo!==false))})):{},
+    anexos:tem('anexos')?(k.anexos||[]).filter(a=>!a.removido).map(a=>({...a,id:uid()})):[]});
+  vzAjustar(dest,n);dest.tarefas.push(n);notifTarefa(dest,n,null);log(dest,`Tarefa criada como cópia de ${k.codigo}${k.modelo?' (modelo)':''}: ${n.titulo}`);return n}
+/* quadro de copiar (popover da coluna de ações) */
+function cxPopHtml(t,k){const f=UI.cx||(UI.cx={ter:t.id,lista:null,itens:Object.keys(CX_ITENS)}),dest=T(f.ter)||t,abertas=tkL(dest).filter(l=>l.tipo==='aberta'&&!l.oculta);
+  const lv=abertas.some(l=>l.id===f.lista)?f.lista:(abertas.find(l=>l.id===k.lista)||abertas[0])?.id;
+  return `<div class="tkm-pop cx-pop" role="group" aria-label="${k.modelo?'Usar este modelo':'Copiar cartão'}"><div class="tkm-poph">${k.modelo?'Usar este modelo':'Copiar cartão'}<button class="iconbtn sm" data-a="tkc-pop" data-v="copiar" aria-label="Fechar">${ic('close',16)}</button></div>
+    <form class="tkm-nf vert" data-form="cx-copiar"><label class="cx-l" for="cx-t">Título</label><textarea id="cx-t" name="titulo" rows="2" required>${esc(f.titulo??k.titulo)}</textarea>
+      <span class="cx-l">Manter</span>${Object.entries(CX_ITENS).map(([x,n])=>`<label class="chk"><input type="checkbox" name="it" value="${x}" ${f.itens.includes(x)?'checked':''}>${n}</label>`).join('')}
+      <label class="cx-l" for="cx-ter">Terreno</label><select id="cx-ter" class="tkm-pill" data-cx="ter">${ativosBanco().filter(x=>x.tarefas).map(x=>`<option value="${x.id}" ${x.id===dest.id?'selected':''}>${x.codigo} · ${esc(x.nome)}</option>`).join('')}</select>
+      <label class="cx-l" for="cx-l">Lista</label><select id="cx-l" name="lista" class="tkm-pill">${abertas.map(l=>`<option value="${l.id}" ${l.id===lv?'selected':''}>${esc(l.nome)}</option>`).join('')}</select>
+      <button class="tkm-ok" type="submit">Criar cartão</button></form></div>`}
+/* faixa do modelo dentro do cartão */
+function cxFaixa(t,k,ro){return k.modelo?`<div class="cx-faixa">${ic('doc',18)}<span>Este cartão é um <b>modelo</b>: fica no quadro como base e não se conclui.</span>${ro?'':`<button class="tkm-ok" data-a="tkc-pop" data-v="copiar">Usar este modelo</button>`}</div>`:''}
+function cxSelo(k){return k.modelo?`<span class="tk-b cx-selo" title="Modelo de cartão">${ic('doc',14)}Modelo</span>`:''}
+function cxBotoes(t,k,ro,b){if(ro||k.arq)return '';return b('tkc-pop','doc',k.modelo?'Usar este modelo':'Copiar',`data-v="copiar" aria-expanded="${UI.tkPop==='copiar'}"`)+(UI.tkPop==='copiar'?cxPopHtml(t,k):'')+
+  (k.rec||k.serie?'':b('cx-modelo','board',k.modelo?'Desfazer modelo':'Tornar modelo'))}
+/* Nova tarefa: começar de um modelo */
+function cxNovaHtml(){const M=cxModelos();if(!M.length)return '';
+  return `<div class="field full"><label for="tm-mod">Usar um modelo</label><select id="tm-mod" data-cx="modelo"><option value="">Sem modelo</option>${M.map(({k,t})=>`<option value="${t.id}|${k.id}">${esc(k.titulo)} · ${t.codigo}</option>`).join('')}</select></div>`}
+
+document.addEventListener('change',e=>{const el=e.target;if(!el.dataset?.cx)return;e.stopImmediatePropagation();
+  if(el.dataset.cx==='ter'){UI.cx.ter=el.value;UI.cx.lista=null;const f=el.closest('form');UI.cx.itens=[...f.querySelectorAll('[name=it]:checked')].map(x=>x.value);UI.cx.titulo=f.querySelector('[name=titulo]').value;tkRe();
+    const tt=document.querySelector('#cx-t');if(tt&&UI.cx.titulo!=null)tt.value=UI.cx.titulo;return}
+  if(el.dataset.cx==='modelo'&&el.value){const [tid,kid]=el.value.split('|'),dest=UI.tkSel?.tid||document.querySelector('#tm-ter')?.value||tid;
+    UI.tkSel={tid,kid};UI.tkPop='copiar';UI.cx={ter:dest,lista:null,itens:Object.keys(CX_ITENS)};UI.modal='tarefa';renderModal()}},true);
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a="cx-modelo"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!vzEdita(t,k))return;
+  if(!k.modelo&&k.feita){toast('Reabra a tarefa antes de torná-la modelo.',true);return}
+  k.modelo=!k.modelo;log(t,`Tarefa "${k.titulo}": ${k.modelo?'virou modelo de cartão':'deixou de ser modelo'}`);toast(k.modelo?'Agora é um modelo: use "Usar este modelo" para criar cartões a partir dele.':'Voltou a ser um cartão comum.');tkRe()},true);
+document.addEventListener('submit',e=>{const f=e.target;if(f.dataset?.form!=='cx-copiar')return;e.preventDefault();e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k)return;
+  const dest=T(UI.cx?.ter)||t;if(!tkEd()){toast('Você não cria tarefas.',true);return}
+  const n=cxCopiar(t,k,dest,f.querySelector('[name=lista]').value,f.querySelector('[name=titulo]').value,[...f.querySelectorAll('[name=it]:checked')].map(x=>x.value));if(!n)return;
+  UI.cx=null;UI.tkPop=null;UI.tkSel={tid:dest.id,kid:n.id};save();render();toast(`Cartão ${n.codigo} criado${dest.id!==t.id?` em ${dest.codigo}`:''}.`)},true);
+
+/* exemplo: um modelo de cartão no primeiro terreno */
+(()=>{if(S.cxExemplo)return;S.cxExemplo=true;const t=S.terrenos?.[0];if(!t?.tarefas)return;const etq=S.etiquetas?.find(e=>e.nome==='Jurídico');
+  t.tarefas.push(tkNorm(t,{id:uid(),titulo:'Pedir certidões do imóvel',desc:'Certidões da matrícula e do proprietário para a diligência.',resultado:'',resp:null,solic:'Ana Prado',criadoPor:'Ana Prado',vis:'publico',acessos:[],prazo:null,prio:'media',
+    lista:tkPrim(t,'aberta').id,pos:1,modelo:true,etq:etq?[etq.id]:[],estim:180,checklists:[{id:uid(),nome:'Certidões',esconder:false,itens:['Matrícula atualizada','Ônus reais','Ações reais e pessoais','Débitos de IPTU'].map(x=>({id:uid(),texto:x,resp:null,prazo:null,feito:null}))}]}))})();
+
+/* =====================================================================
+   Tarefas pelo funil (bloco 4; OBS 3 do modelo de quadros): vista Funil
+   da página Tarefas, só de leitura (nada se arrasta: mover cartão nunca
+   move o terreno). Espelha app.v_tarefas_funil. Colunas pelas fases
+   ativas; o nome da coluna desce para as etapas daquela fase e depois para
+   as subetapas da etapa, com trilha e seta para subir, como o quadro das
+   Fases. Em cada coluna, as tarefas agrupadas pelo terreno que está ali;
+   o terreno em duas fases aparece nas duas. Valem os filtros da página.
+   Modelos de cartão e tarefas concluídas ficam de fora. Injetado no mesmo escopo.
+   ===================================================================== */
+function tfNivel(){const z=UI.tf||(UI.tf={f:null,e:null});if(z.f&&!faseCfg(z.f))z.f=z.e=null;if(z.e&&!etapaF(z.f,z.e))z.e=null;return z}
+function tfColunas(){const z=tfNivel();
+  if(!z.f)return fasesL().filter(f=>f.ativo!==false).map(f=>({k:f.k,nome:f.nome,desce:etapasF(f.k).length?f.k:null,em:(t)=>!!procDaFase(t,f.k)}));
+  if(!z.e)return etapasF(z.f).map(e=>({k:e.k,nome:e.nome,desce:e.subs.length?z.f+'|'+e.k:null,em:(t)=>procDaFase(t,z.f)?.etapa===e.k}));
+  return (etapaF(z.f,z.e)?.subs||[]).map(s=>({k:s.k,nome:s.nome,desce:null,em:(t)=>{const p=procDaFase(t,z.f);return p?.etapa===z.e&&p.sub===s.k}}))}
+function tfTrilha(){const z=tfNivel(),it=[{l:'Fases',v:''}];if(z.f)it.push({l:faseN(z.f),v:z.f});if(z.f&&z.e)it.push({l:etapaF(z.f,z.e)?.nome||z.e,v:z.f+'|'+z.e});
+  const volta=it[it.length-2];
+  return `<div class="tf-trilha">${volta?`<button class="iconbtn sm" data-a="tf-nivel" data-v="${esc(volta.v)}" aria-label="Voltar para ${esc(volta.l)}" title="Voltar para ${esc(volta.l)}">${ic('back',18)}</button>`:''}
+    <ol class="drill-t" aria-label="Nível do funil">${it.map((x,i)=>i===it.length-1?`<li aria-current="page"><b>${esc(x.l)}</b></li>`:`<li><button class="linkbtn" data-a="tf-nivel" data-v="${esc(x.v)}">${esc(x.l)}</button></li>`).join('')}</ol>
+    <span class="faint tf-dica">${ic('lock',14)} Só leitura: mover a tarefa não move o terreno.</span></div>`}
+function tfHtml(itens){const L=itens.filter(({k})=>!k.modelo&&(UI.tk.arq||!k.feita)),cols=tfColunas();
+  return `${tfTrilha()}<div class="tkb tk-board tf-board">${cols.map(c=>{const ks=L.filter(({t})=>c.em(t)).sort(ordemTk),porT=new Map();ks.forEach(x=>{if(!porT.has(x.t.id))porT.set(x.t.id,[]);porT.get(x.t.id).push(x)});
+    return `<section class="tk-col tf-col" aria-label="${esc(c.nome)}"><div class="tkl-h">${c.desce?`<button class="col-ab" data-a="tf-nivel" data-v="${esc(c.desce)}" title="Ver por ${tfNivel().f?'subetapa':'etapa'}"><span>${esc(c.nome)}</span>${ic('chev',16)}</button>`:`<span>${esc(c.nome)}</span>`}<span class="n">${ks.length}</span></div>
+      <div class="tk-lista">${[...porT.values()].map(g=>{const t=g[0].t,p=procDaFase(t,tfNivel().f||c.k);
+        return `<div class="tf-ter"><button class="tf-th" data-a="abrir" data-id="${t.id}" data-tab="tarefas" data-from="tarefas"><span class="num">${t.codigo}</span> ${esc(t.nome)}${p?.status==='stand_by'?' <span class="chip st-standby">Stand By</span>':''}</button>
+          ${g.map(x=>cardTk(x,false).replace('draggable="true"','draggable="false"')).join('')}</div>`}).join('')||'<div class="tf-vazio faint">Sem tarefas</div>'}</div></section>`}).join('')}</div>`}
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a="tf-nivel"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();
+  const [f,et]=(a.dataset.v||'').split('|');UI.tf={f:f||null,e:et||null};render()},true);
 
 
 /* =====================================================================
@@ -11720,7 +12045,7 @@ document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legen
      /terrenos/TER-000123/viabilidade/2 segundo estudo de viabilidade do terreno, no popup
      /mapa  /mapa/TER-000123 (selecionado)  /mapa/TER-000123/ficha (com a ficha no painel)
      /fases  /fases/aprovacao  /fases/aprovacao/projeto   (os três níveis do quadro)
-     /tarefas  /tarefas/tabela  /tarefas/TAR-000123 (a janela do cartão)   /dashboard   /configuracoes/etapas ...
+     /tarefas  /tarefas/tabela  /tarefas/funil  /tarefas/TAR-000123 (a janela do cartão)   /dashboard   /configuracoes/etapas ...
    No Railway vai no caminho (/prototipo/terrenos/...; o Caddy devolve a página para qualquer caminho);
    aberto como arquivo ou no artifact, depois do # (#/terrenos/...). Os filtros seguem em f=.
    Troca de tela entra no histórico (voltar e avançar do navegador); seção aberta, terreno
@@ -11768,7 +12093,7 @@ function rtAplicar(s){const [a,b,c,d]=s,limpo={vbPop:null,vbNova:false,fichaShee
   if(a==='terrenos'){go('terrenos',limpo);if(b){UI.modal='novo';renderModal()}return}
   if(a==='mapa'){const id=rtId(b);go('mapa',{...limpo,mpSel:id,mpFoco:id});if(id&&c==='ficha'){UI.fichaSheet=id;fichaSheet()}return}
   if(a==='fases'){const f=b&&fIdx(b)>=0?b:null,e=f&&c&&etapaF(f,c)?c:null;go('negociacoes',{...limpo,negFase:f,negEtapa:e});return}
-  if(a==='tarefas'){if(UI.tk)UI.tk.vista=['tabela','cronograma'].includes(b)?b:'quadro';go('tarefas',limpo);
+  if(a==='tarefas'){if(UI.tk)UI.tk.vista=['tabela','cronograma','funil'].includes(b)?b:'quadro';go('tarefas',limpo);
     // link de um cartão: /tarefas/TAR-000123 abre a janela dele
     if(/^TAR-\d+$/i.test(b||'')){const x=todasTarefas().find(y=>y.k.codigo===b.toUpperCase());if(x){UI.tkSel={tid:x.t.id,kid:x.k.id};UI.modal='tarefa';renderModal()}else toast('Tarefa não encontrada.',true)}return}
   if(a==='dashboard'){go('dashboard',limpo);return}

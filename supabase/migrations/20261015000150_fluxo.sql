@@ -100,6 +100,7 @@ create table fluxo.tarefas (
   capa           text check (capa is null or capa in ('cinza','azul','verde','amarelo','laranja','vermelho','roxo','rosa')),
   aprovacao_modo text not null default 'paralelo' check (aprovacao_modo in ('paralelo','sequencia')),  -- bloco 3
   visibilidade   text not null default 'publico' check (visibilidade in ('publico','individual','restrito')),  -- bloco 3; o front sempre pergunta
+  modelo         boolean not null default false,  -- modelo de cartão (bloco 4): fica no quadro para copiar, não conclui nem atrasa
   processo_id    uuid,
   etapa          text,
   subetapa       text,
@@ -220,6 +221,7 @@ begin
   elsif j ? 'checklist_id' then select empresa_id into v from fluxo.checklists where id = (j->>'checklist_id')::uuid;
   elsif j ? 'comentario_id' then select empresa_id into v from fluxo.comentarios where id = (j->>'comentario_id')::uuid;
   elsif j ? 'tarefa_id' then select empresa_id into v from fluxo.tarefas where id = (j->>'tarefa_id')::uuid;
+  elsif j ? 'campo_id' then select empresa_id into v from fluxo.campos where id = (j->>'campo_id')::uuid;
   else return new;
   end if;
   if v is distinct from new.empresa_id then
@@ -263,6 +265,7 @@ begin
     end if;
   end if;
   if v_tipo = 'conclui' and (new.concluida_em is null or tg_op = 'INSERT' or old.concluida_em is null) then
+    if new.modelo then raise exception 'Modelo de cartão não se conclui' using errcode = '23514'; end if;
     -- bloqueio de conclusão (bloco 3): aprovação e checklist; a aprovação conclui por conta própria
     if tg_op = 'UPDATE' and coalesce(current_setting('fluxo.aprovando', true), '') <> '1' then
       v_pend := fluxo.pendencias_conclusao(new.id);
@@ -270,6 +273,8 @@ begin
         raise exception 'A tarefa precisa ser aprovada antes de concluir' using errcode = '23514';
       elsif 'checklist' = any (v_pend) then
         raise exception 'Conclua os itens do checklist antes de concluir a tarefa' using errcode = '23514';
+      elsif 'campos' = any (v_pend) then
+        raise exception 'Preencha os campos obrigatórios antes de concluir a tarefa' using errcode = '23514';
       end if;
     end if;
     new.concluida_em := coalesce(new.concluida_em, now()); new.concluida_por := auth.uid();
@@ -383,7 +388,7 @@ end $$;
 -- Cartão com o atraso calculado e o andamento do checklist (base das telas).
 create view fluxo.v_tarefas with (security_invoker = true) as
 select k.*, l.nome as lista_nome, l.tipo as lista_tipo, q.objeto_tipo, q.objeto_id,
-       (k.concluida_em is null and k.arquivada_em is null and k.prazo < current_date and l.tipo <> 'pausa') as atrasada,  -- pausada não atrasa
+       (k.concluida_em is null and k.arquivada_em is null and k.prazo < current_date and l.tipo <> 'pausa' and not k.modelo) as atrasada,  -- pausada e modelo não atrasam
        coalesce(ci.total, 0) as checklist_total, coalesce(ci.feitos, 0) as checklist_feitos
 from fluxo.tarefas k
 join fluxo.listas l on l.id = k.lista_id
@@ -1077,7 +1082,7 @@ create table fluxo.aprovacao_votos (
   check (decisao is distinct from 'recusou' or length(trim(coalesce(justificativa, ''))) > 0)
 );
 
--- O que impede concluir: 'aprovacao' e/ou 'checklist'
+-- O que impede concluir: 'aprovacao' e/ou 'checklist' (e 'campos', redefinida com os campos personalizados)
 create or replace function fluxo.pendencias_conclusao(p_tarefa uuid)
 returns text[] language sql stable security definer set search_path = '' as $$
   select array_remove(array[
@@ -1123,6 +1128,8 @@ begin
   end if;
   if 'checklist' = any (fluxo.pendencias_conclusao(p_tarefa)) then
     raise exception 'Conclua os itens do checklist antes de pedir a aprovação' using errcode = '23514';
+  elsif 'campos' = any (fluxo.pendencias_conclusao(p_tarefa)) then
+    raise exception 'Preencha os campos obrigatórios antes de pedir a aprovação' using errcode = '23514';
   end if;
   update fluxo.aprovacoes set situacao = 'cancelada', decidida_em = clock_timestamp() where tarefa_id = p_tarefa and situacao = 'pendente';
   insert into fluxo.aprovacoes (empresa_id, tarefa_id, modo, motivo) values (k.empresa_id, p_tarefa, k.aprovacao_modo, nullif(trim(p_motivo), ''))
@@ -1638,7 +1645,7 @@ returns uuid language sql stable security definer set search_path = '' as $$
                  when 'comentario_reacoes' then fluxo.tarefa_do_comentario((coalesce(p_depois, p_antes)->>'comentario_id')::uuid)
                  else (coalesce(p_depois, p_antes)->>'tarefa_id')::uuid end
     and p_tabela in ('tarefas','tarefa_pessoas','tarefa_etiquetas','checklists','checklist_itens','comentarios','comentario_reacoes',
-                     'anexos','pausas','tarefa_acessos') $$;
+                     'anexos','pausas','tarefa_acessos','tarefa_campos','recorrencias','apontamentos') $$;
 drop policy auditoria_gestor_ve on app.auditoria;
 create policy auditoria_gestor_ve on app.auditoria for select to authenticated
   using (app.eh_gestor(empresa_id)
@@ -1652,3 +1659,402 @@ grant execute on function fluxo.ve_objeto(text, uuid, uuid), fluxo.papel_cartao(
                           fluxo.edita_tarefa(uuid), fluxo.comenta_tarefa(uuid), fluxo.gerencia_tarefa(uuid), fluxo.exigir_edicao_tarefa(uuid),
                           fluxo.tarefa_do_checklist(uuid), fluxo.tarefa_do_comentario(uuid), fluxo.tarefa_do_log(text, uuid, jsonb, jsonb),
                           fluxo.nivel_cartao(text) to authenticated;
+
+-- =====================================================================
+-- Bloco 4: campos personalizados (decisões do Moisés, 30/out/2026)
+--
+-- Os campos são da empresa, criados pelo administrador (Configurações ›
+-- Tarefas), e valem para todos os quadros: texto, número, data, lista de
+-- opções (uma escolha) e sim/não. Cada campo diz se aparece na frente do
+-- cartão e se é obrigatório para concluir a tarefa (só os ativos contam;
+-- sim/não vale como preenchido com "Não"). O valor de cada cartão fica em tarefa_campos; sem linha, o campo
+-- está "não informado" (nunca zero nem "não"). Campo ou opção com valor
+-- não se apaga (desativa), e o tipo não muda depois de ter valor.
+-- =====================================================================
+create table fluxo.campos (
+  id          uuid primary key default gen_random_uuid(),
+  empresa_id  uuid not null references app.empresas(id) on delete cascade,
+  nome        text not null check (length(trim(nome)) > 0),
+  tipo        text not null check (tipo in ('texto','numero','data','lista','caixa')),
+  ordem       int  not null default 0,
+  na_frente   boolean not null default false,   -- aparece na frente do cartão
+  obrigatorio boolean not null default false,   -- sem valor, a tarefa não conclui
+  ativo       boolean not null default true,
+  unique (empresa_id, nome)
+);
+create table fluxo.campo_opcoes (
+  id          uuid primary key default gen_random_uuid(),
+  empresa_id  uuid not null references app.empresas(id) on delete cascade,
+  campo_id    uuid not null references fluxo.campos(id) on delete cascade,
+  nome        text not null check (length(trim(nome)) > 0),
+  cor         text not null default 'cinza' check (cor in ('cinza','azul','verde','amarelo','laranja','vermelho','roxo','rosa')),
+  ordem       int  not null default 0,
+  ativo       boolean not null default true,
+  unique (campo_id, nome)
+);
+create table fluxo.tarefa_campos (
+  empresa_id  uuid not null references app.empresas(id),
+  tarefa_id   uuid not null references fluxo.tarefas(id) on delete cascade,
+  campo_id    uuid not null references fluxo.campos(id),
+  texto       text,
+  numero      numeric,
+  data        date,
+  opcao_id    uuid references fluxo.campo_opcoes(id),
+  caixa       boolean,
+  primary key (tarefa_id, campo_id),
+  check (num_nonnulls(texto, numero, data, opcao_id, caixa) = 1)
+);
+create index on fluxo.tarefa_campos (campo_id);
+
+-- O valor vai na coluna do tipo do campo, e a opção é do próprio campo; campo desativado não recebe valor novo.
+create or replace function fluxo.tg_tarefa_campo()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare c fluxo.campos;
+begin
+  select * into c from fluxo.campos where id = new.campo_id;
+  if c.empresa_id is distinct from new.empresa_id then raise exception 'Campo de outra empresa' using errcode = '42501'; end if;
+  if not c.ativo and (tg_op = 'INSERT' or new is distinct from old) then
+    raise exception 'O campo % está desativado', c.nome using errcode = 'P0001';
+  end if;
+  if (c.tipo = 'texto' and new.texto is null) or (c.tipo = 'numero' and new.numero is null) or (c.tipo = 'data' and new.data is null)
+     or (c.tipo = 'lista' and new.opcao_id is null) or (c.tipo = 'caixa' and new.caixa is null) then
+    raise exception 'O valor não combina com o tipo do campo %', c.nome using errcode = 'P0001';
+  end if;
+  if c.tipo = 'texto' and length(trim(new.texto)) = 0 then
+    raise exception 'Texto vazio: apague o valor para deixar o campo % não informado', c.nome using errcode = 'P0001';
+  end if;
+  if c.tipo = 'lista' and not exists (select 1 from fluxo.campo_opcoes o where o.id = new.opcao_id and o.campo_id = c.id and o.ativo) then
+    raise exception 'Opção que não é do campo % (ou desativada)', c.nome using errcode = 'P0001';
+  end if;
+  return new;
+end $$;
+create trigger t_valor before insert or update on fluxo.tarefa_campos for each row execute function fluxo.tg_tarefa_campo();
+
+-- Tipo não muda depois de ter valor; campo e opção com valor não se apagam (desativam).
+create or replace function fluxo.tg_campo_guarda()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if tg_table_name = 'campos' then
+    if tg_op = 'UPDATE' and new.tipo <> old.tipo and exists (select 1 from fluxo.tarefa_campos where campo_id = old.id) then
+      raise exception 'O campo % já tem valores: o tipo não muda (crie outro campo)', old.nome using errcode = 'P0001';
+    end if;
+    if tg_op = 'DELETE' and exists (select 1 from fluxo.tarefa_campos where campo_id = old.id) then
+      raise exception 'O campo % já tem valores: desative em vez de apagar', old.nome using errcode = 'P0001';
+    end if;
+  elsif tg_op = 'DELETE' and exists (select 1 from fluxo.tarefa_campos where opcao_id = old.id) then
+    raise exception 'A opção % já foi usada: desative em vez de apagar', old.nome using errcode = 'P0001';
+  end if;
+  return coalesce(new, old);
+end $$;
+create trigger t_guarda before update or delete on fluxo.campos for each row execute function fluxo.tg_campo_guarda();
+create trigger t_guarda before delete on fluxo.campo_opcoes for each row execute function fluxo.tg_campo_guarda();
+
+alter table fluxo.campos enable row level security;
+alter table fluxo.campo_opcoes enable row level security;
+alter table fluxo.tarefa_campos enable row level security;
+create policy ver on fluxo.campos for select to authenticated using (empresa_id in (select app.minhas_empresas()));
+create policy mexer on fluxo.campos for all to authenticated using (app.eh_administrador(empresa_id)) with check (app.eh_administrador(empresa_id));
+create policy ver on fluxo.campo_opcoes for select to authenticated using (empresa_id in (select app.minhas_empresas()));
+create policy mexer on fluxo.campo_opcoes for all to authenticated using (app.eh_administrador(empresa_id)) with check (app.eh_administrador(empresa_id));
+create policy ver on fluxo.tarefa_campos for select to authenticated using (fluxo.papel_tarefa(tarefa_id) is not null);
+create policy inserir on fluxo.tarefa_campos for insert to authenticated with check (fluxo.edita_tarefa(tarefa_id));
+create policy alterar on fluxo.tarefa_campos for update to authenticated using (fluxo.edita_tarefa(tarefa_id)) with check (fluxo.edita_tarefa(tarefa_id));
+create policy remover on fluxo.tarefa_campos for delete to authenticated using (fluxo.edita_tarefa(tarefa_id));
+create trigger t_emp before insert or update on fluxo.campo_opcoes for each row execute function fluxo.tg_mesma_empresa();
+create trigger t_emp before insert or update on fluxo.tarefa_campos for each row execute function fluxo.tg_mesma_empresa();
+create trigger t_aud after insert or update or delete on fluxo.campos for each row execute function app.tg_auditoria();
+create trigger t_aud after insert or update or delete on fluxo.campo_opcoes for each row execute function app.tg_auditoria();
+create trigger t_aud after insert or update or delete on fluxo.tarefa_campos for each row execute function app.tg_auditoria();
+grant select, insert, update, delete on fluxo.campos, fluxo.campo_opcoes, fluxo.tarefa_campos to authenticated;
+
+-- O que impede concluir, agora com os campos obrigatórios ativos sem valor.
+create or replace function fluxo.pendencias_conclusao(p_tarefa uuid)
+returns text[] language sql stable security definer set search_path = '' as $$
+  select array_remove(array[
+    case when exists (select 1 from fluxo.tarefa_pessoas where tarefa_id = p_tarefa and papel = 'aprovador')
+          and not exists (select 1 from fluxo.aprovacoes where tarefa_id = p_tarefa and situacao = 'aprovada') then 'aprovacao' end,
+    case when coalesce((select r.conclui_exige_checklist from fluxo.regras r join fluxo.tarefas k on k.empresa_id = r.empresa_id where k.id = p_tarefa), true)
+          and exists (select 1 from fluxo.checklist_itens i join fluxo.checklists c on c.id = i.checklist_id
+                      where c.tarefa_id = p_tarefa and i.concluido_em is null and i.virou_tarefa_id is null) then 'checklist' end,
+    case when exists (select 1 from fluxo.campos c join fluxo.tarefas k on k.empresa_id = c.empresa_id
+                      where k.id = p_tarefa and c.ativo and c.obrigatorio
+                        and not exists (select 1 from fluxo.tarefa_campos v where v.tarefa_id = k.id and v.campo_id = c.id)) then 'campos' end
+  ], null) $$;
+
+-- =====================================================================
+-- Recorrência (bloco 4; decisões do Moisés, 30/out/2026)
+-- O cartão de origem é o modelo e a primeira ocorrência da série. Cada
+-- ocorrência nova nasce na data agendada (rotina diária), mesmo que a
+-- anterior não tenha sido concluída: cópia do cartão de origem como ele
+-- está naquele dia (título, descrição, pessoas, etiquetas, prioridade,
+-- visibilidade, acessos e checklists em aberto), com início na data e
+-- prazo N dias depois. Os valores dos campos personalizados não vão:
+-- cada ocorrência preenche os seus. Termina numa data, depois de N
+-- ocorrências (contando a de origem) ou quando alguém para a série.
+-- =====================================================================
+create table fluxo.recorrencias (
+  id          uuid primary key default gen_random_uuid(),
+  empresa_id  uuid not null references app.empresas(id) on delete cascade,
+  tarefa_id   uuid not null unique references fluxo.tarefas(id) on delete cascade,  -- cartão de origem
+  frequencia  text not null check (frequencia in ('diaria','semanal','mensal','anual')),
+  intervalo   int  not null default 1 check (intervalo between 1 and 99),           -- a cada N dias, semanas, meses ou anos
+  dias_semana int[] check (dias_semana is null or (cardinality(dias_semana) > 0 and dias_semana <@ array[0,1,2,3,4,5,6])),  -- 0 = domingo; só semanal
+  dia_mes     int  check (dia_mes between 1 and 31),     -- mensal; mês sem esse dia usa o último
+  proxima     date not null,                             -- data da próxima ocorrência
+  termina_em  date,
+  max_vezes   int  check (max_vezes >= 2),
+  vezes       int  not null default 1,                   -- ocorrências já criadas, com a de origem
+  prazo_dias  int  check (prazo_dias between 0 and 365), -- prazo = data + N (vazio = sem prazo)
+  lista_id    uuid references fluxo.listas(id),          -- onde nasce (vazio = primeira lista aberta)
+  ativa       boolean not null default true,
+  criada_por  uuid default auth.uid(),
+  criada_em   timestamptz not null default now()
+);
+create index on fluxo.recorrencias (proxima) where ativa;
+alter table fluxo.tarefas add column recorrencia_id uuid references fluxo.recorrencias(id) on delete set null;  -- ocorrência criada pela série
+
+-- Próxima data depois de p_de (p_de é sempre uma data da série).
+create or replace function fluxo.proxima_ocorrencia(r fluxo.recorrencias, p_de date)
+returns date language plpgsql immutable set search_path = '' as $$
+declare d date; ini date; m date;
+begin
+  if r.frequencia = 'diaria' then return p_de + r.intervalo;
+  elsif r.frequencia = 'anual' then return (p_de + make_interval(years => r.intervalo))::date;
+  elsif r.frequencia = 'mensal' then
+    m := (date_trunc('month', p_de) + make_interval(months => r.intervalo))::date;
+    return m + least(coalesce(r.dia_mes, extract(day from p_de)::int), extract(day from (m + interval '1 month' - interval '1 day'))::int) - 1;
+  end if;
+  if r.dias_semana is null then return p_de + 7 * r.intervalo; end if;
+  -- semanal com dias marcados: a semana de p_de e depois uma a cada N
+  ini := p_de - extract(dow from p_de)::int;
+  d := p_de + 1;
+  while d <= p_de + 7 * r.intervalo + 7 loop
+    if ((d - extract(dow from d)::int) - ini) / 7 % r.intervalo = 0 and extract(dow from d)::int = any (r.dias_semana) then return d; end if;
+    d := d + 1;
+  end loop;
+  return null;
+end $$;
+
+-- Confere a regra: cartão de origem (não uma ocorrência), lista do quadro e aberta, e preenche dia do mês e próxima data.
+create or replace function fluxo.tg_recorrencia()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare k fluxo.tarefas;
+begin
+  select * into k from fluxo.tarefas where id = new.tarefa_id;
+  if k.empresa_id is distinct from new.empresa_id then raise exception 'Tarefa de outra empresa' using errcode = '42501'; end if;
+  if tg_op = 'UPDATE' and new.tarefa_id <> old.tarefa_id then raise exception 'A série não muda de cartão' using errcode = '23514'; end if;
+  if k.recorrencia_id is not null then
+    raise exception 'Este cartão é uma ocorrência: mude a recorrência no cartão de origem' using errcode = '23514';
+  end if;
+  if k.modelo then raise exception 'Modelo de cartão não tem recorrência' using errcode = '23514'; end if;
+  if new.lista_id is not null and not exists (select 1 from fluxo.listas where id = new.lista_id and quadro_id = k.quadro_id and tipo = 'aberta') then
+    raise exception 'A ocorrência nasce numa lista aberta do mesmo quadro' using errcode = '23514';
+  end if;
+  if new.frequencia <> 'semanal' then new.dias_semana := null; end if;
+  if new.frequencia = 'mensal' and new.dia_mes is null then
+    new.dia_mes := extract(day from coalesce(new.proxima, k.inicio, k.prazo, current_date))::int;
+  elsif new.frequencia <> 'mensal' then new.dia_mes := null;
+  end if;
+  -- próxima data: na criação, depois do início do cartão; mudando a regra, depois da última ocorrência
+  if new.proxima is null or (tg_op = 'UPDATE' and new.proxima = old.proxima
+      and (new.frequencia, new.intervalo, new.dias_semana, new.dia_mes) is distinct from (old.frequencia, old.intervalo, old.dias_semana, old.dia_mes)) then
+    new.proxima := fluxo.proxima_ocorrencia(new, coalesce((select max(inicio) from fluxo.tarefas where recorrencia_id = new.id), k.inicio, k.prazo, current_date));
+  end if;
+  -- data de hoje ou que já passou (cartão antigo, série retomada) não gera atrasados: a próxima é de amanhã em diante
+  if new.ativa and (tg_op = 'INSERT' or new.proxima is distinct from old.proxima or not old.ativa) then
+    while new.proxima <= current_date loop new.proxima := fluxo.proxima_ocorrencia(new, new.proxima); end loop;
+  end if;
+  if new.termina_em is not null and new.termina_em < new.proxima and new.ativa and (tg_op = 'INSERT' or old.ativa is false) then
+    raise exception 'A série termina antes da próxima ocorrência' using errcode = '23514';
+  end if;
+  if tg_op = 'INSERT' then new.vezes := 1; new.criada_por := auth.uid(); end if;
+  return new;
+end $$;
+create trigger t_valida before insert or update on fluxo.recorrencias for each row execute function fluxo.tg_recorrencia();
+
+-- Cria uma ocorrência na data, copiando o cartão de origem.
+create or replace function fluxo._criar_ocorrencia(r fluxo.recorrencias, p_data date)
+returns uuid language plpgsql security definer set search_path = '' as $$
+declare k fluxo.tarefas; v uuid; c record; nc uuid; desloc int;
+begin
+  select * into k from fluxo.tarefas where id = r.tarefa_id;
+  desloc := p_data - coalesce(k.inicio, k.prazo, p_data);
+  insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, descricao, solicitante_id, inicio, prazo, prazo_hora, prioridade, capa,
+                             aprovacao_modo, visibilidade, processo_id, etapa, subetapa, criado_por, recorrencia_id)
+  values (k.empresa_id, k.quadro_id,
+          coalesce((select id from fluxo.listas where id = r.lista_id and tipo = 'aberta'),
+                   (select id from fluxo.listas where quadro_id = k.quadro_id and tipo = 'aberta' and not oculta order by posicao limit 1)),
+          k.titulo, k.descricao, k.solicitante_id, p_data, p_data + r.prazo_dias, case when r.prazo_dias is not null then k.prazo_hora end,
+          k.prioridade, k.capa, k.aprovacao_modo, k.visibilidade, k.processo_id, k.etapa, k.subetapa, k.criado_por, r.id)
+  returning id into v;
+  insert into fluxo.tarefa_acessos (empresa_id, tarefa_id, user_id, grupo_id, papel, excluido)
+  select empresa_id, v, user_id, grupo_id, papel, excluido from fluxo.tarefa_acessos where tarefa_id = k.id;
+  if k.responsavel_id is not null then update fluxo.tarefas set responsavel_id = k.responsavel_id where id = v; end if;
+  insert into fluxo.tarefa_pessoas (empresa_id, tarefa_id, user_id, papel, ordem)
+  select empresa_id, v, user_id, papel, ordem from fluxo.tarefa_pessoas where tarefa_id = k.id;
+  insert into fluxo.tarefa_etiquetas (empresa_id, tarefa_id, etiqueta_id)
+  select empresa_id, v, etiqueta_id from fluxo.tarefa_etiquetas where tarefa_id = k.id;
+  for c in select * from fluxo.checklists where tarefa_id = k.id order by posicao loop
+    insert into fluxo.checklists (empresa_id, tarefa_id, nome, posicao, esconder_feitos)
+    values (c.empresa_id, v, c.nome, c.posicao, c.esconder_feitos) returning id into nc;
+    insert into fluxo.checklist_itens (empresa_id, checklist_id, texto, responsavel_id, prazo, posicao)
+    select empresa_id, nc, texto, responsavel_id, prazo + desloc, posicao from fluxo.checklist_itens where checklist_id = c.id;
+  end loop;
+  return v;
+end $$;
+
+-- Rotina diária: cria as ocorrências com data até hoje (se a rotina
+-- falhou um dia, a data perdida também nasce, na ordem) e encerra as
+-- séries que chegaram ao fim.
+create or replace function fluxo.gerar_recorrencias(p_hoje date default current_date)
+returns int language plpgsql security definer set search_path = '' as $$
+declare r fluxo.recorrencias; n int := 0;
+begin
+  for r in select * from fluxo.recorrencias where ativa and proxima <= p_hoje order by proxima for update loop
+    while r.ativa and r.proxima <= p_hoje loop
+      if (r.termina_em is not null and r.proxima > r.termina_em) or (r.max_vezes is not null and r.vezes >= r.max_vezes)
+         or (select arquivada_em is not null from fluxo.tarefas where id = r.tarefa_id) then
+        r.ativa := false;
+      else
+        perform fluxo._criar_ocorrencia(r, r.proxima);
+        n := n + 1; r.vezes := r.vezes + 1; r.proxima := fluxo.proxima_ocorrencia(r, r.proxima);
+        if r.max_vezes is not null and r.vezes >= r.max_vezes then r.ativa := false; end if;
+      end if;
+    end loop;
+    update fluxo.recorrencias set proxima = r.proxima, vezes = r.vezes, ativa = r.ativa where id = r.id;
+  end loop;
+  return n;
+end $$;
+
+alter table fluxo.recorrencias enable row level security;
+create policy ver on fluxo.recorrencias for select to authenticated using (fluxo.papel_tarefa(tarefa_id) is not null);
+create policy inserir on fluxo.recorrencias for insert to authenticated with check (fluxo.edita_tarefa(tarefa_id));
+create policy alterar on fluxo.recorrencias for update to authenticated using (fluxo.edita_tarefa(tarefa_id)) with check (fluxo.edita_tarefa(tarefa_id));
+create policy remover on fluxo.recorrencias for delete to authenticated using (fluxo.edita_tarefa(tarefa_id));
+create trigger t_aud after insert or update or delete on fluxo.recorrencias for each row execute function app.tg_auditoria();
+grant select, insert, update, delete on fluxo.recorrencias to authenticated;
+grant execute on function fluxo.proxima_ocorrencia(fluxo.recorrencias, date) to authenticated;
+revoke execute on function fluxo.gerar_recorrencias(date), fluxo._criar_ocorrencia(fluxo.recorrencias, date) from public;
+
+-- =====================================================================
+-- Apontamento de horas (bloco 4; decisão do Moisés, 30/out/2026: sem
+-- aprovação). Cada pessoa aponta o próprio tempo na tarefa (data, minutos,
+-- nota); quem edita o cartão aponta, e só o autor ou o administrador do
+-- sistema mudam e apagam. A tarefa pode ter uma estimativa para comparar.
+-- =====================================================================
+alter table fluxo.tarefas add column estimativa_min int check (estimativa_min > 0);
+create table fluxo.apontamentos (
+  id          uuid primary key default gen_random_uuid(),
+  empresa_id  uuid not null references app.empresas(id),
+  tarefa_id   uuid not null references fluxo.tarefas(id) on delete cascade,
+  user_id     uuid not null default auth.uid() references auth.users(id),
+  data        date not null default current_date,
+  minutos     int  not null check (minutos between 1 and 1440),
+  nota        text,
+  criado_em   timestamptz not null default now()
+);
+create index on fluxo.apontamentos (tarefa_id);
+create index on fluxo.apontamentos (user_id, data);
+
+create or replace function fluxo.tg_apontamento()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if new.data > current_date then raise exception 'Não se apontam horas no futuro' using errcode = '23514'; end if;
+  if (select sum(minutos) from fluxo.apontamentos where user_id = new.user_id and data = new.data and id <> new.id) + new.minutos > 1440 then
+    raise exception 'Mais de 24 horas apontadas no mesmo dia' using errcode = '23514';
+  end if;
+  if tg_op = 'UPDATE' and new.user_id <> old.user_id then raise exception 'O apontamento não muda de pessoa' using errcode = '23514'; end if;
+  return new;
+end $$;
+create trigger t_valida before insert or update on fluxo.apontamentos for each row execute function fluxo.tg_apontamento();
+
+alter table fluxo.apontamentos enable row level security;
+create policy ver on fluxo.apontamentos for select to authenticated using (fluxo.papel_tarefa(tarefa_id) is not null);
+create policy inserir on fluxo.apontamentos for insert to authenticated with check (user_id = auth.uid() and fluxo.edita_tarefa(tarefa_id));
+create policy alterar on fluxo.apontamentos for update to authenticated
+  using (fluxo.edita_tarefa(tarefa_id) and (user_id = auth.uid() or app.eh_administrador(empresa_id)))
+  with check (fluxo.edita_tarefa(tarefa_id) and (user_id = auth.uid() or app.eh_administrador(empresa_id)));
+create policy remover on fluxo.apontamentos for delete to authenticated
+  using (fluxo.edita_tarefa(tarefa_id) and (user_id = auth.uid() or app.eh_administrador(empresa_id)));
+create trigger t_emp before insert or update on fluxo.apontamentos for each row execute function fluxo.tg_mesma_empresa();
+create trigger t_aud after insert or update or delete on fluxo.apontamentos for each row execute function app.tg_auditoria();
+grant select, insert, update, delete on fluxo.apontamentos to authenticated;
+
+-- Horas por tarefa: apontado (total e por pessoa) e estimativa.
+create view fluxo.v_tarefa_horas with (security_invoker = true) as
+select k.id as tarefa_id, k.estimativa_min, coalesce(sum(a.minutos), 0)::int as apontado_min,
+       coalesce(jsonb_object_agg(a.user_id, a.minutos) filter (where a.user_id is not null), '{}') as por_pessoa
+from fluxo.tarefas k
+left join (select tarefa_id, user_id, sum(minutos)::int as minutos from fluxo.apontamentos group by tarefa_id, user_id) a on a.tarefa_id = k.id
+group by k.id, k.estimativa_min;
+grant select on fluxo.v_tarefa_horas to authenticated;
+
+-- =====================================================================
+-- Copiar cartão e modelo de cartão (bloco 4; 30/out/2026)
+-- Copiar leva o cartão para qualquer lista aberta de um quadro em que a
+-- pessoa edita, com título novo e escolha do que vai junto (checklists em
+-- aberto, etiquetas, pessoas, campos, anexos). Quem copia passa a ser quem
+-- criou e quem pediu; a visibilidade e os acessos vão juntos. Datas,
+-- comentários, horas e aprovações não vão. O modelo de cartão é um cartão
+-- marcado como modelo: fica no quadro para servir de base, não conclui e
+-- não atrasa; "Criar a partir de modelo" é copiar.
+-- =====================================================================
+create or replace function fluxo.tg_modelo()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if new.modelo and new.recorrencia_id is not null then raise exception 'Uma ocorrência de série não vira modelo' using errcode = '23514'; end if;
+  if new.modelo and exists (select 1 from fluxo.recorrencias where tarefa_id = new.id) then
+    raise exception 'Cartão com recorrência não vira modelo' using errcode = '23514';
+  end if;
+  return new;
+end $$;
+create trigger t_modelo before insert or update on fluxo.tarefas for each row execute function fluxo.tg_modelo();
+
+-- Roda com os direitos de quem copia: só copia o que vê e só grava onde edita (RLS de cada tabela).
+create or replace function fluxo.copiar_tarefa(p_tarefa uuid, p_lista uuid, p_titulo text default null,
+  p_itens text[] default array['checklists','etiquetas','pessoas','campos','anexos'])
+returns uuid language plpgsql set search_path = '' as $$
+declare k fluxo.tarefas; l fluxo.listas; v uuid; c record; nc uuid;
+begin
+  select * into k from fluxo.tarefas where id = p_tarefa;
+  if k.id is null then raise exception 'Tarefa não encontrada' using errcode = 'P0002'; end if;
+  select * into l from fluxo.listas where id = p_lista;
+  if l.id is null or l.tipo <> 'aberta' then raise exception 'A cópia vai para uma lista aberta' using errcode = '23514'; end if;
+  if not fluxo.ve_objeto((select objeto_tipo from fluxo.quadros where id = l.quadro_id), (select objeto_id from fluxo.quadros where id = l.quadro_id)) then
+    raise exception 'Sem acesso a esse quadro' using errcode = '42501';
+  end if;
+  insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, descricao, prioridade, capa, aprovacao_modo, visibilidade,
+                             responsavel_id, estimativa_min)
+  values (l.empresa_id, l.quadro_id, l.id, coalesce(nullif(trim(p_titulo), ''), k.titulo), k.descricao, k.prioridade, k.capa, k.aprovacao_modo,
+          k.visibilidade, case when 'pessoas' = any (p_itens) then k.responsavel_id end, k.estimativa_min)
+  returning id into v;
+  insert into fluxo.tarefa_acessos (empresa_id, tarefa_id, user_id, grupo_id, papel, excluido)
+  select l.empresa_id, v, user_id, grupo_id, papel, excluido from fluxo.tarefa_acessos where tarefa_id = k.id;
+  if 'pessoas' = any (p_itens) then
+    insert into fluxo.tarefa_pessoas (empresa_id, tarefa_id, user_id, papel, ordem)
+    select l.empresa_id, v, user_id, papel, ordem from fluxo.tarefa_pessoas where tarefa_id = k.id;
+  end if;
+  if 'etiquetas' = any (p_itens) then
+    insert into fluxo.tarefa_etiquetas (empresa_id, tarefa_id, etiqueta_id) select l.empresa_id, v, etiqueta_id from fluxo.tarefa_etiquetas where tarefa_id = k.id;
+  end if;
+  if 'checklists' = any (p_itens) then
+    for c in select * from fluxo.checklists where tarefa_id = k.id order by posicao loop
+      insert into fluxo.checklists (empresa_id, tarefa_id, nome, posicao, esconder_feitos) values (l.empresa_id, v, c.nome, c.posicao, c.esconder_feitos) returning id into nc;
+      insert into fluxo.checklist_itens (empresa_id, checklist_id, texto, responsavel_id, posicao)
+      select l.empresa_id, nc, texto, case when 'pessoas' = any (p_itens) then responsavel_id end, posicao
+      from fluxo.checklist_itens where checklist_id = c.id and virou_tarefa_id is null;
+    end loop;
+  end if;
+  if 'campos' = any (p_itens) then
+    insert into fluxo.tarefa_campos (empresa_id, tarefa_id, campo_id, texto, numero, data, opcao_id, caixa)
+    select l.empresa_id, v, x.campo_id, x.texto, x.numero, x.data, x.opcao_id, x.caixa
+    from fluxo.tarefa_campos x join fluxo.campos f on f.id = x.campo_id
+    where x.tarefa_id = k.id and f.ativo and (x.opcao_id is null or exists (select 1 from fluxo.campo_opcoes o where o.id = x.opcao_id and o.ativo));
+  end if;
+  if 'anexos' = any (p_itens) then
+    insert into fluxo.anexos (empresa_id, tarefa_id, tipo, nome, url, drive_file_id, tarefa_ref_id)
+    select l.empresa_id, v, tipo, nome, url, drive_file_id, tarefa_ref_id from fluxo.anexos where tarefa_id = k.id and removido_em is null;
+  end if;
+  return v;
+end $$;
+grant execute on function fluxo.copiar_tarefa(uuid, uuid, text, text[]) to authenticated;

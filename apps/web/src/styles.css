@@ -3844,7 +3844,7 @@ html[data-tema="escuro"] .tk-full.on { background: #081028 !important }
 :root:not(#_) .tkb .tk-etqs .etq { height: 16px; line-height: 16px; min-width: 40px; padding: 0 8px; border-radius: 4px; font-size: 12px; font-weight: 500 }
 :root:not(#_) .tkb .tk-t { font-size: 14px; font-weight: 400; line-height: 20px; color: #172b4d; overflow-wrap: anywhere }
 :root:not(#_) .tkb .tk.concluida .tk-t { text-decoration: none; color: #172b4d }
-:root:not(#_) .tkb .tk-ter { font-size: 12px; line-height: 16px; color: #626f86 }
+:root:not(#_) .tkb .tk-ter { font-size: 12px; line-height: 16px; color: #626f86; font-weight: 500; margin-bottom: 2px }
 :root:not(#_) .tkb .tk-p { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-top: 2px; min-height: 24px }
 :root:not(#_) .tkb .tk-b { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 4px; border-radius: 3px; font-size: 12px; line-height: 16px; color: #44546f; white-space: nowrap }
 :root:not(#_) .tkb .tk-b .ic { flex: none }
@@ -3865,6 +3865,7 @@ html[data-tema="escuro"] .tk-full.on { background: #081028 !important }
 :root:not(#_) .tkb .etq-rosa { background: #e774bb; color: #50253f } :root:not(#_) .tkb .etq-cinza { background: #8590a2; color: #fff }
 /* arrastando: lista de destino tracejada e a que está sob o cartão acesa (mesma regra das outras telas) */
 :root:not(#_) body.dnd-tk .tkb .tk-col { outline: 2px dashed rgba(11,87,208,.35); outline-offset: -2px }
+:root:not(#_) body.dnd-tk .tkb .tk-col.nao { outline: none; opacity: .45; cursor: not-allowed }
 :root:not(#_) .tkb .tk-col.sobre { background: #e9f2ff !important; outline: 2px solid #388bff !important }
 /* seção da ficha: o quadro encosta nas bordas do quadro da seção */
 :root:not(#_) .tk-sb { padding: 12px 16px 4px }
@@ -4021,6 +4022,42 @@ html[data-tema="escuro"]:not(#_) .tkb .tk-b.ap-selo, html[data-tema="escuro"] .a
 .vz-gh { display: flex; align-items: center; gap: 12px; margin-bottom: 8px } .vz-gh .linkbtn { margin-left: auto }
 @media (max-width: 600px) { .vz-ops { grid-template-columns: 1fr } }
 :root:not(#_) .vz-libl input[type=checkbox] { width: 18px; height: 18px; min-height: 0; padding: 0; margin: 0; flex: none; accent-color: var(--m-primary, #0b57d0) }
+/* Campos personalizados (proto_campos.js) */
+.cpo-fr { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px }
+.cpo-ch { display: inline-flex; align-items: center; gap: 2px; min-height: 20px; padding: 0 6px; border-radius: 3px; font-size: 12px; background: var(--tk-btn, #e9eef6); color: var(--tk-tx, #1f1f1f); max-width: 100% }
+.cpo-chn { color: var(--tk-sub, #44546f) }
+.cpo-ch[class*="etq-"] .cpo-chn { color: inherit; opacity: .8 }
+.cpo-g { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px 16px }
+.cpo-c { display: flex; flex-direction: column; gap: 4px; min-width: 0 } .cpo-c label { font-size: 12px; font-weight: 600; color: var(--tk-sub) }
+.cpo-ob { color: #b3261e } .cpo-c.falta .cpo-in { border-color: #b3261e } .cpo-av { font-size: 11px; color: #b3261e }
+:root:not(#_) .tkm .cpo-in { width: 100% }
+.cpo-cfg { border-bottom: 1px solid var(--m-outline-var, #c4c7c5); padding: 4px 0 } .cpo-cfg.oculta { opacity: .55 }
+.cpo-cfg .tkl-r .chk { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; white-space: nowrap }
+.cpo-ops { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 0 0 10px 12px }
+.cpo-op { display: inline-flex; align-items: center; gap: 2px } .cpo-op.oculta { opacity: .5 }
+.cpo-opf { margin: 0 }
+:root:not(#_) .cpo-cfg input[type=checkbox] { width: 18px; height: 18px; min-height: 0; padding: 0; margin: 0; flex: none; accent-color: var(--m-primary, #0b57d0) }
+/* recorrência (bloco 4) */
+.rc-in p { margin: 0 0 6px } .rc-g { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px 12px; margin-bottom: 10px }
+.rc-un { display: flex; align-items: center; gap: 8px } .rc-un input { width: 72px } .rc-un span { font-size: 13px; color: var(--tk-sub) }
+.rc-dias { display: flex; gap: 6px; margin-bottom: 10px }
+.rc-dia { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #c4c7c5; background: transparent; color: inherit; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer }
+.rc-dia.on { background: #0b57d0; border-color: #0b57d0; color: #fff } .rc-dia:disabled { cursor: default; opacity: .7 }
+.rc-res { font-size: 13px; color: var(--tk-sub) } .rc-res .ic { vertical-align: -2px; margin-right: 2px }
+html[data-tema="escuro"] .rc-dia { border-color: rgba(124,140,255,.35) } html[data-tema="escuro"] .rc-dia.on { background: rgba(99,112,255,.25); border-color: rgba(124,140,255,.6); color: #c9d6ff }
+/* copiar cartão e modelo de cartão (bloco 4) */
+.cx-pop .cx-l { font-size: 12px; font-weight: 600; color: var(--tk-sub); margin-top: 6px } .cx-pop textarea { resize: vertical; font: inherit; padding: 6px 8px; border-radius: 4px }
+.cx-faixa { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 16px 44px; padding: 10px 12px; border-radius: 8px; background: #d3e3fd; color: #041e49; font-size: 14px } .cx-faixa span { flex: 1; min-width: 200px }
+.tk-b.cx-selo { background: #d3e3fd; color: #041e49; border-radius: 4px; padding: 0 6px; font-weight: 500 }
+html[data-tema="escuro"] .cx-faixa, html[data-tema="escuro"] .tk-b.cx-selo { background: rgba(99,112,255,.18); color: #c9d6ff }
+@media (max-width: 640px) { .cx-faixa { margin-left: 0 } }
+:root:not(#_) .tkm .cx-pop select.tkm-pill, .cx-pop textarea { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box } .cx-pop { max-width: 100%; box-sizing: border-box } .cx-pop form { min-width: 0 }
+/* tarefas pelo funil (bloco 4): só leitura, agrupadas por terreno */
+.tf-trilha { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 12px } .tf-trilha .drill-t { margin: 0 } .tf-dica { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-size: 12px }
+.tf-ter { display: flex; flex-direction: column; gap: 8px } .tf-ter + .tf-ter { margin-top: 6px; padding-top: 8px; border-top: 1px dashed #c4c7c5 }
+.tf-th { all: unset; cursor: pointer; font-size: 12px; font-weight: 500; color: var(--tk-sub, #444746); padding: 0 2px; line-height: 1.35 } .tf-th:hover { text-decoration: underline } .tf-th:focus-visible { outline: 2px solid #0b57d0; border-radius: 4px }
+.tf-vazio { font-size: 13px; padding: 4px 2px 8px } .tf-col .col-ab { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-weight: 600 } .tf-col .col-ab:hover span { text-decoration: underline }
+html[data-tema="escuro"] .tf-ter + .tf-ter { border-color: #1a2240 }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

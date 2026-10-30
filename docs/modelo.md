@@ -838,7 +838,91 @@ erDiagram
 - **@ no cartão:** `fluxo.papel_cartao` e `fluxo.papel_tarefa` aceitam a pessoa (padrão: quem lê), e a função do teto recebe (objeto, pessoa); `app.tg_mencoes` só avisa quem vê o cartão. A tela só oferece no @ quem vê o cartão.
 - O banco tem `publico` como padrão para quem insere direto; a tela sempre pergunta.
 
-- **Fica para os próximos blocos:** campos personalizados, recorrência, automações e WhatsApp.
+### Campos personalizados (bloco 4)
+
+Decisões do Moisés de 30/out/2026. Mesma migration.
+
+```mermaid
+erDiagram
+  empresas ||--o{ campos : "da empresa"
+  campos ||--o{ campo_opcoes : "lista"
+  tarefas ||--o{ tarefa_campos : "valores"
+  campos ||--o{ tarefa_campos : ""
+  campos {
+    text nome
+    text tipo "texto | numero | data | lista | caixa"
+    bool na_frente
+    bool obrigatorio "sem valor, não conclui"
+    bool ativo
+  }
+  tarefa_campos {
+    text texto "um só preenchido, o do tipo"
+    numeric numero
+    date data
+    uuid opcao_id
+    bool caixa
+  }
+```
+
+- Campos da empresa, para todos os quadros; o administrador cria e muda (RLS `app.eh_administrador`, com auditoria). Sem linha em `tarefa_campos`, o campo está "não informado"; sim/não guarda `false` para "não".
+- `t_valor` confere o valor no tipo do campo, a opção do próprio campo e campo ativo; `t_guarda` impede mudar o tipo ou apagar campo e opção com valor (desativar). Valores seguem a visibilidade do cartão (`fluxo.papel_tarefa` / `fluxo.edita_tarefa`), e o histórico os esconde de quem não vê o cartão.
+- Campo ativo com `obrigatorio` e sem valor entra em `fluxo.pendencias_conclusao` como `'campos'`: a tarefa não conclui (nem arrastando para a lista que conclui) nem pede aprovação. A função é redefinida no fim da migration, depois da tabela `campos`.
+
+### Recorrência (bloco 4)
+
+Decisões do Moisés de 30/out/2026. Mesma migration.
+
+```mermaid
+erDiagram
+  tarefas ||--o| recorrencias : "origem"
+  recorrencias ||--o{ tarefas : "ocorrências (recorrencia_id)"
+  recorrencias {
+    text frequencia "diaria | semanal | mensal | anual"
+    int intervalo "a cada N"
+    int_array dias_semana "0 = domingo"
+    int dia_mes
+    date proxima
+    date termina_em
+    int max_vezes "com a de origem"
+    int vezes
+    int prazo_dias
+    uuid lista_id
+    bool ativa
+  }
+```
+
+- O cartão de origem é o modelo e a primeira ocorrência. `fluxo.gerar_recorrencias(data)`, chamada por `app.rotina_diaria`, cria cada ocorrência na data agendada, mesmo com a anterior aberta: cópia do cartão de origem como ele está (pessoas, etiquetas, prioridade, visibilidade, acessos e checklists em aberto, com o prazo do item deslocado), início na data e prazo `prazo_dias` depois; campos personalizados não vão. Se a rotina falhar um dia, a data perdida nasce na volta.
+- `t_valida` recusa série numa ocorrência, lista de outro quadro ou que não seja aberta; calcula o dia do mês e a próxima data (`fluxo.proxima_ocorrencia`: mês sem o dia usa o último; semanal a cada N semanas com os dias marcados). Na criação, ao retomar e ao mudar a regra (a partir da última ocorrência), data de hoje ou passada pula para amanhã em diante: nada nasce atrasado. A série encerra em `termina_em`, em `max_vezes` ou com o cartão de origem arquivado.
+- RLS pelo cartão de origem (`fluxo.papel_tarefa` / `fluxo.edita_tarefa`); só a rotina executa a geração.
+
+### Apontamento de horas (bloco 4)
+
+Decisões do Moisés de 30/out/2026: sem aprovação, e por ora só no banco (o app ainda não tem a tela). Mesma migration.
+
+```mermaid
+erDiagram
+  tarefas ||--o{ apontamentos : "horas"
+  apontamentos {
+    uuid user_id "quem apontou (sempre o próprio)"
+    date data "nunca no futuro"
+    int minutos "1 a 1440"
+    text nota
+  }
+```
+
+- `tarefas.estimativa_min` guarda a estimativa; `fluxo.v_tarefa_horas` soma o apontado, por pessoa (`por_pessoa`, jsonb) e no total.
+- `t_valida` recusa data futura, mais de 24 h da mesma pessoa no mesmo dia e troca de pessoa. RLS: vê quem vê o cartão; aponta quem edita o cartão, só em nome próprio; muda e apaga o autor ou o administrador do sistema. Auditoria ligada, escondida de quem não vê o cartão.
+
+### Copiar cartão e modelo de cartão (bloco 4)
+
+- `fluxo.copiar_tarefa(tarefa, lista, título, itens)` roda com os direitos de quem copia (RLS de cada tabela): só copia o que a pessoa vê, para uma lista aberta de um quadro que ela vê e edita. `itens` escolhe o que vai: `checklists` (itens em aberto, sem prazo), `etiquetas`, `pessoas` (responsável, executores, aprovadores, quem acompanha e responsáveis dos itens), `campos` (só ativos e opções ativas) e `anexos`. Vão sempre a visibilidade, os acessos, a prioridade, a capa e a estimativa; nunca datas, comentários, horas, aprovações nem a série.
+- `tarefas.modelo`: o cartão fica no quadro como base. Não conclui (`tg_tarefa_lista`), não atrasa (`v_tarefas`, rotina diária), não tem recorrência nem vem de uma (`t_modelo`). Criar a partir do modelo é copiar.
+
+### Tarefas pelo funil (bloco 4)
+
+- `app.v_tarefas_funil` (em `…000400_negociacao.sql`, porque junta `fluxo` com `app.processos`): cada tarefa de quadro de terreno com a fase aberta do terreno (ativa ou em stand by, sem as partes), a etapa e a subetapa; uma linha por fase aberta. Base da vista Funil da página Tarefas, só leitura.
+
+- **Fica para os próximos blocos:** automações (inclusive avisos além do @), WhatsApp e a tela de horas.
 
 ## Setores censitários e renda familiar estimada
 

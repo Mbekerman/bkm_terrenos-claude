@@ -32,7 +32,7 @@ function tkPrep(){if(!S.listasModelo)S.listasModelo=LISTAS_PADRAO();if(!S.etique
 const tkLista=(t,k)=>tkL(t).find(l=>l.id===k.lista)||tkL(t)[0];
 const tkPrim=(t,tipo)=>tkL(t).filter(l=>!l.oculta).find(l=>l.tipo===tipo)||tkL(t).find(l=>l.tipo===tipo)||tkL(t)[0];
 const tkAberta=k=>!k.feita&&!k.arq;
-const tkAtras=k=>tkAberta(k)&&!!k.prazo&&k.prazo<HOJE&&!(k.pausas||[]).some(z=>z.sit==='ativa');  // pausada não atrasa
+const tkAtras=k=>tkAberta(k)&&!k.modelo&&!!k.prazo&&k.prazo<HOJE&&!(k.pausas||[]).some(z=>z.sit==='ativa');  // pausada não atrasa
 const tkPessoas=k=>[...new Set([k.resp,...(k.exec||[])].filter(Boolean))];
 const tkEd=()=>UI.role!=='Leitura';
 const tkAcha=(tid,kid)=>{const t=T(tid);return {t,k:t?.tarefas.find(x=>x.id===kid)}};
@@ -56,21 +56,21 @@ const etqChip=(e,cls='')=>`<span class="etq etq-${e.cor} ${cls}" title="${esc(e.
 function cardTk({k,t},geral){const at=tkAtras(k),ets=(k.etq||[]).map(id=>S.etiquetas.find(e=>e.id===id)).filter(Boolean);
   const its=(k.checklists||[]).flatMap(c=>c.itens),fe=its.filter(i=>i.feito).length,nc=(k.coments||[]).filter(c=>!c.apagado).length,na=(k.anexos||[]).filter(a=>!a.removido).length;
   const pz=k.prazo?`<span class="tk-b tk-prazo ${k.feita?'feito':at?'atras':''}" title="${k.feita?'Concluída':at?'Atrasada':'Prazo'}">${ic(k.feita?'check':'clock',14)}${fd(k.prazo)}</span>`:'';
-  const ind=[apSelo(k),pzSelo(k),vzSelo(k),pz,k.desc?`<span class="tk-b" title="Tem descrição">${ic('notas',14)}</span>`:'',
+  const ind=[cxSelo(k),apSelo(k),pzSelo(k),vzSelo(k),pz,rcSelo(k),k.desc?`<span class="tk-b" title="Tem descrição">${ic('notas',14)}</span>`:'',
     nc?`<span class="tk-b" title="Comentários">${ic('chat',14)}${nc}</span>`:'',na?`<span class="tk-b" title="Anexos">${ic('clip',14)}${na}</span>`:'',
     its.length?`<span class="tk-b ${fe===its.length?'ok':''}" title="Checklist">${ic('check',14)}${fe}/${its.length}</span>`:'',
     k.prio==='alta'?'<span class="tk-b tk-pr alta" title="Prioridade alta">Alta</span>':k.prio==='baixa'?'<span class="tk-b tk-pr" title="Prioridade baixa">Baixa</span>':''].join(''),avs=tkPessoas(k).slice(0,3);
   return `<article class="tk ${k.feita?'concluida':''} ${k.arq?'arq':''}" draggable="${tkEd()&&!k.arq}" data-tk="${k.id}" data-a="tk-abrir" data-id="${t.id}" data-mid="${k.id}" tabindex="0" aria-label="${escT(k.titulo)}">
   ${k.capa?`<div class="tk-capa etq-${k.capa}"></div>`:''}<div class="tk-c">${ets.length?`<div class="tk-etqs">${ets.map(e=>etqChip(e)).join('')}</div>`:''}
-  <div class="tk-t">${escT(k.titulo)}</div>
   ${geral?`<div class="tk-ter"><span class="num">${t.codigo}</span> · ${esc(t.nome).replace(/\b[A-Z]{3}-\d+/g,m=>`<span class="end-p">${m}</span>`)}</div>`:''}
+  <div class="tk-t">${escT(k.titulo)}</div>${cpoFrente(k)}
   ${ind||avs.length?`<div class="tk-p">${ind}<span class="tk-avs">${avs.map(u=>av(u,'sm')).join('')}</span></div>`:''}</div></article>`}
 
 /* ---------- quadro (da ficha ou de todos os terrenos) ---------- */
 const ordemTk=(a,b)=>(a.k.pos??9e15)-(b.k.pos??9e15)||String(a.k.prazo||'9').localeCompare(String(b.k.prazo||'9'));
 function todasTarefas(){return ativosBanco().flatMap(t=>vzTarefas(t).map(k=>({k,t})))}  // só o que a pessoa vê (visibilidade por cartão)
 function tkFiltradas(){const f=UI.tk,q=f.q.trim().toLowerCase();
-  return todasTarefas().filter(({k,t})=>(f.arq?!!k.arq:!k.arq)&&(!f.resp||k.resp===f.resp||(k.exec||[]).includes(f.resp))&&(!f.ter||t.id===f.ter)&&(!f.prio||k.prio===f.prio)&&(!f.etq||(k.etq||[]).includes(f.etq))&&(!f.atras||tkAtras(k))
+  return todasTarefas().filter(({k,t})=>(f.arq?!!k.arq:!k.arq)&&(!f.resp||k.resp===f.resp||(k.exec||[]).includes(f.resp))&&(!f.ter||t.id===f.ter)&&(!f.prio||k.prio===f.prio)&&(!f.etq||(k.etq||[]).includes(f.etq))&&(!f.atras||tkAtras(k))&&(!f.cp||cpoFiltra(k,f.cp))
     &&(!q||[k.codigo,k.titulo,k.desc,t.nome,t.codigo,...(k.etq||[]).map(id=>S.etiquetas.find(e=>e.id===id)?.nome)].join(' ').toLowerCase().includes(q)))}
 /* colunas do quadro geral: pelo nome da lista (a ordem do modelo da empresa e, depois, as criadas nos terrenos) */
 function tkColunas(lista){const nomes=[...(S.listasModelo||[]).filter(l=>l.ativo).map(l=>l.nome)];
@@ -97,6 +97,7 @@ function pgTarefas(){const f=UI.tk,l=tkFiltradas();
     <label class="sr-only" for="tk-ter">Terreno</label><select id="tk-ter" class="fsel-chip${f.ter?' on':''}" data-ch="tk-f" data-k="ter"><option value="">Terreno</option>${opt(Object.fromEntries(ativosBanco().map(t=>[t.id,t.codigo+' · '+t.nome])),f.ter)}</select>
     <label class="sr-only" for="tk-etq">Etiqueta</label><select id="tk-etq" class="fsel-chip${f.etq?' on':''}" data-ch="tk-f" data-k="etq"><option value="">Etiqueta</option>${opt(Object.fromEntries(S.etiquetas.map(e=>[e.id,e.nome])),f.etq)}</select>
     <label class="sr-only" for="tk-prio">Prioridade</label><select id="tk-prio" class="fsel-chip${f.prio?' on':''}" data-ch="tk-f" data-k="prio"><option value="">Prioridade</option>${opt(OPT.prioTar,f.prio)}</select>
+    ${cpoFiltroOpts(f.cp)?`<label class="sr-only" for="tk-cp">Campo</label><select id="tk-cp" class="fsel-chip${f.cp?' on':''}" data-ch="tk-f" data-k="cp"><option value="">Campo</option>${cpoFiltroOpts(f.cp)}</select>`:''}
     <label class="fchk"><input type="checkbox" data-ch="tk-f" data-k="atras" ${f.atras?'checked':''}>${ic('check',16)}Só atrasadas</label>
     <label class="fchk"><input type="checkbox" data-ch="tk-f" data-k="arq" ${f.arq?'checked':''}>${ic('check',16)}Arquivadas</label></div></div>`;
   const t1=f.ter?T(f.ter):null,cols=t1?tkL(t1).filter(x=>!x.oculta):tkColunas(l).map(nome=>({nome}));
@@ -108,9 +109,9 @@ function pgTarefas(){const f=UI.tk,l=tkFiltradas();
     {k:'lista',l:'Lista',v:({k,t})=>`<span class="chip tkst ${k.feita?'concluida':''}">${esc(tkLista(t,k).nome)}</span>`,s:({k,t})=>tkL(t).indexOf(tkLista(t,k))}];
   const ab=todasTarefas().filter(({k})=>tkAberta(k)),atras=ab.filter(({k})=>tkAtras(k)).length;
   return `<div class="page-h"><div><h1>Tarefas</h1><div class="sub">${ab.length+(ab.length===1?' aberta':' abertas')} · ${atras+(atras===1?' atrasada':' atrasadas')} · quadros de ${ativosBanco().length} terrenos</div></div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="seg" role="group" aria-label="Visualização">${[['quadro','Quadro'],['tabela','Tabela'],['cronograma','Cronograma']].map(([k,x])=>`<button data-a="tk-vista" data-v="${k}" aria-pressed="${f.vista===k}">${x}</button>`).join('')}</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="seg" role="group" aria-label="Visualização">${[['quadro','Quadro'],['tabela','Tabela'],['cronograma','Cronograma'],['funil','Funil']].map(([k,x])=>`<button data-a="tk-vista" data-v="${k}" aria-pressed="${f.vista===k}">${x}</button>`).join('')}</div>
     ${f.vista==='quadro'?tkCheiaBtn():''}${tkEd()?`<button class="btn ed" data-a="tk-nova" data-v="">${ic('add',18)}Nova tarefa</button>`:''}</div></div>
-  <div class="tk-full${tkCheiaOn()?' on':''}">${tkCheiaOn()?`<div class="tk-full-h"><h2>Tarefas</h2>${tkCheiaBtn()}</div>`:''}${filtros}${f.vista==='cronograma'?`<section class="sec cr-sec"><div class="sec-b">${crPaginaHtml(l.filter(({k})=>!k.arq))}</div></section>`:f.vista==='tabela'?`<section class="sec"><div class="sec-b">${tabela('tarefas',l,colsT,{attr:({k,t})=>`data-a="tk-abrir" data-tk="${k.id}" data-id="${t.id}" tabindex="0"`,padrao:{k:'prazo',dir:'asc'},vazio:'Nenhuma tarefa com esses filtros.'})}</div></section>`:tkQuadro(l,cols,true,t1?.id,!f.arq)}</div>`}
+  <div class="tk-full${tkCheiaOn()?' on':''}">${tkCheiaOn()?`<div class="tk-full-h"><h2>Tarefas</h2>${tkCheiaBtn()}</div>`:''}${filtros}${f.vista==='funil'?tfHtml(l):f.vista==='cronograma'?`<section class="sec cr-sec"><div class="sec-b">${crPaginaHtml(l.filter(({k})=>!k.arq))}</div></section>`:f.vista==='tabela'?`<section class="sec"><div class="sec-b">${tabela('tarefas',l,colsT,{attr:({k,t})=>`data-a="tk-abrir" data-tk="${k.id}" data-id="${t.id}" tabindex="0"`,padrao:{k:'prazo',dir:'asc'},vazio:'Nenhuma tarefa com esses filtros.'})}</div></section>`:tkQuadro(l,cols,true,t1?.id,!f.arq)}</div>`}
 /* seção Tarefas da ficha: o quadro do terreno */
 function abaTarefas(t){const vc=UI.crVista[t.id]==='crono',arq=!!UI.tkArqFicha&&!vc,vt=vzTarefas(t),its=vt.filter(k=>arq?k.arq:!k.arq).map(k=>({k,t})),ab=vt.filter(tkAberta),at=ab.filter(tkAtras).length,na=vt.filter(k=>k.arq).length;
   const q=vc?crFichaHtml(t):tkQuadro(its,tkL(t).filter(l=>!l.oculta),false,t.id,!arq);
@@ -126,10 +127,14 @@ function moverTk(tid,kid,colNome,antesDe){const {t,k}=tkAcha(tid,kid);if(!k)retu
   const np=i<0?(irmas.length?pos(irmas.at(-1)):0)+1000:i===0?pos(irmas[0])-1000:(pos(irmas[i-1])+pos(irmas[i]))/2;
   const mudou=k.lista!==l.id;if(tkMover(t,k,l.id,np)===false){render();return}if(mudou)toast(`${k.titulo}: ${l.nome}.`);save();render()}
 let tkArr=null;
-document.addEventListener('dragstart',e=>{const c=e.target.closest?.('.tk[draggable="true"]');if(!c)return;tkArr={kid:c.dataset.tk,tid:c.dataset.id};e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',c.dataset.tk);c.classList.add('arrastando');document.body.classList.add('dnd-tk')});
-document.addEventListener('dragend',()=>{tkArr=null;document.body.classList.remove('dnd-tk');document.querySelectorAll('.tk.arrastando,.tk-col.sobre,.tk-marca').forEach(x=>x.classList.contains('tk-marca')?x.remove():x.classList.remove('arrastando','sobre'))});
+/* com pendência para concluir (aprovação, checklist, campo obrigatório), a lista que conclui nem aceita o cartão: fica apagada e, se soltar ali, o aviso diz o que falta */
+document.addEventListener('dragstart',e=>{const c=e.target.closest?.('.tk[draggable="true"]');if(!c)return;tkArr={kid:c.dataset.tk,tid:c.dataset.id};
+  const {t,k}=tkAcha(c.dataset.id,c.dataset.tk);const m=k&&!k.feita?apBloqueio(t,k):null;
+  if(m){tkArr.msg=m;tkArr.bloq=new Set(tkL(t).filter(l=>l.tipo==='conclui').map(l=>l.nome));document.querySelectorAll('.tk-col').forEach(x=>tkArr.bloq.has(x.dataset.tkcol)&&x.classList.add('nao'))}
+  e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',c.dataset.tk);c.classList.add('arrastando');document.body.classList.add('dnd-tk')});
+document.addEventListener('dragend',()=>{if(tkArr?.naBloq)toast(tkArr.msg,true);tkArr=null;document.body.classList.remove('dnd-tk');document.querySelectorAll('.tk.arrastando,.tk-col.sobre,.tk-col.nao,.tk-marca').forEach(x=>x.classList.contains('tk-marca')?x.remove():x.classList.remove('arrastando','sobre','nao'))});
 const tkAntes=(col,y)=>[...col.querySelectorAll('.tk:not(.arrastando)')].find(c=>{const r=c.getBoundingClientRect();return y<r.top+r.height/2});
-document.addEventListener('dragover',e=>{if(!tkArr)return;const col=e.target.closest?.('.tk-col');if(!col){document.querySelectorAll('.tk-col.sobre').forEach(x=>x.classList.remove('sobre'));document.querySelector('.tk-marca')?.remove();return}e.preventDefault();e.dataTransfer.dropEffect='move';
+document.addEventListener('dragover',e=>{if(!tkArr)return;const col=e.target.closest?.('.tk-col');tkArr.naBloq=!!(col&&tkArr.bloq?.has(col.dataset.tkcol));if(!col||tkArr.naBloq){if(tkArr.naBloq)e.dataTransfer.dropEffect='none';document.querySelectorAll('.tk-col.sobre').forEach(x=>x.classList.remove('sobre'));document.querySelector('.tk-marca')?.remove();return}e.preventDefault();e.dataTransfer.dropEffect='move';
   document.querySelectorAll('.tk-col.sobre').forEach(x=>x!==col&&x.classList.remove('sobre'));col.classList.add('sobre');
   let m=document.querySelector('.tk-marca');if(!m){m=document.createElement('div');m.className='tk-marca'}const a=tkAntes(col,e.clientY),lista=col.querySelector('.tk-lista');if(a)lista.insertBefore(m,a);else lista.appendChild(m)});
 document.addEventListener('drop',e=>{const col=e.target.closest?.('.tk-col');if(!col||!tkArr)return;e.preventDefault();const a=tkAntes(col,e.clientY),x=tkArr;tkArr=null;document.body.classList.remove('dnd-tk');document.querySelectorAll('.tk-col.sobre').forEach(x=>x.classList.remove('sobre'));document.querySelector('.tk-marca')?.remove();moverTk(x.tid,x.kid,col.dataset.tkcol,a?.dataset.tk)});
@@ -140,7 +145,7 @@ function tkNovaHtml(fechar){const sel=UI.tkSel,t=sel.tid?T(sel.tid):null,opt=(o,
   const listas=t?tkL(t).filter(l=>!l.oculta).map(l=>l.nome):(S.listasModelo||[]).filter(l=>l.ativo).map(l=>l.nome),lv=sel.lista&&listas.includes(sel.lista)?sel.lista:listas.includes('Fazer')?'Fazer':listas[0];
   return `<div class="dh"><div><h2>Nova tarefa</h2>${t?`<div class="muted" style="margin-top:4px">${t.codigo} · ${esc(t.nome)}</div>`:''}</div>${fechar}</div>
   <form data-form="tarefa-m" id="f-tk"><div class="fields">
-  <div class="field full"><label for="tm-t">Tarefa</label><input id="tm-t" name="titulo" required placeholder="Ex.: cobrar a contraproposta do proprietário"></div>
+  ${cxNovaHtml()}<div class="field full"><label for="tm-t">Tarefa</label><input id="tm-t" name="titulo" required placeholder="Ex.: cobrar a contraproposta do proprietário"></div>
   ${t?'':`<div class="field full"><label for="tm-ter">Terreno</label><select id="tm-ter" name="ter" required><option value="">Escolha o terreno</option>${opt(Object.fromEntries(ativosBanco().map(x=>[x.id,x.codigo+' · '+x.nome])),UI.tk.ter)}</select></div>`}
   <div class="field"><label for="tm-l">Lista</label><select id="tm-l" name="lista">${listas.map(n=>`<option ${n===lv?'selected':''}>${esc(n)}</option>`).join('')}</select></div>
   <div class="field"><label for="tm-r">Responsável</label>${tkSelU('resp',me(),'Sem responsável','id="tm-r"')}</div>
@@ -199,15 +204,15 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
       <form class="tkm-nf vert" data-form="tkc-anexo"><input name="url" type="url" required placeholder="Cole um link (https://…)" aria-label="Endereço do link"><input name="nome" required placeholder="Texto a exibir" aria-label="Nome do link"><button class="tkm-ok" type="submit">Anexar link</button></form>
       ${outros.length?`<select data-tkc="ligar" class="tkm-pill tkm-full" aria-label="Ligar a outro cartão"><option value="">Ligar a outro cartão…</option>${outros.map(x=>`<option value="${x.id}">${x.codigo} · ${esc(x.titulo)}</option>`).join('')}</select>`:''}</div>`:'';
   return `<div class="tkm${k.capa?' com-capa':''}">${k.capa?`<div class="tkm-capa-g etq-${k.capa}"></div>`:''}<div class="tkm-x">${fechar}</div>
-  <div class="tkm-cab"><span class="tkm-gi">${ro||k.arq?(k.feita?`<span class="tkm-done on" title="Concluída em ${fd(k.feita)}">${ic('check',16)}</span>`:`<span class="tkm-done"></span>`):`<button class="tkm-done ${k.feita?'on':''}" data-a="tkc-concluir" title="${apRotulo(k)||(k.feita?'Reabrir':'Marcar como concluída')}" aria-label="${apRotulo(k)||(k.feita?'Reabrir a tarefa':'Marcar como concluída')}" aria-pressed="${!!k.feita}">${ic('check',16)}</button>`}</span>
+  <div class="tkm-cab"><span class="tkm-gi">${ro||k.arq||k.modelo?(k.feita?`<span class="tkm-done on" title="Concluída em ${fd(k.feita)}">${ic('check',16)}</span>`:`<span class="tkm-done"></span>`):`<button class="tkm-done ${k.feita?'on':''}" data-a="tkc-concluir" title="${apRotulo(k)||(k.feita?'Reabrir':'Marcar como concluída')}" aria-label="${apRotulo(k)||(k.feita?'Reabrir a tarefa':'Marcar como concluída')}" aria-pressed="${!!k.feita}">${ic('check',16)}</button>`}</span>
     <div class="tkm-hd"><input class="tkm-tit" value="${esc(k.titulo)}" data-tkc="titulo" aria-label="Título da tarefa" ${dis} required>
     <div class="tkm-cod"><span>na lista</span><select class="tkm-lsel" data-tkc="lista" ${dis||(k.arq?'disabled':'')} aria-label="Lista">${tkL(t).map(x=>`<option value="${x.id}" ${x.id===l.id?'selected':''}>${esc(x.nome)}${x.oculta?' (oculta)':''}</option>`).join('')}</select>
       <span class="faint">·</span><span class="num">${k.codigo}</span><span class="faint">·</span><button class="linkbtn" data-a="abrir" data-id="${t.id}" data-tab="tarefas" data-from="tarefas">${t.codigo} · ${esc(t.nome)}</button>
       ${k.feita?`<span class="faint">· concluída em ${fd(k.feita)}${k.feitaPor?' por '+esc(k.feitaPor):''}</span>`:''}</div></div></div>
-  ${k.arq?`<div class="tkm-arqb">${ic('arq',18)}<span>Este cartão está arquivado e fica fora dos quadros.</span></div>`:''}
+  ${cxFaixa(t,k,ro||!!k.arq)}${k.arq?`<div class="tkm-arqb">${ic('arq',18)}<span>Este cartão está arquivado e fica fora dos quadros.</span></div>`:''}
   <div class="tkm-g"><div class="tkm-main">
     <div class="tkm-dets">${pessoa('resp',k.resp,'Sem responsável','tkc-resp')}${pessoa('solic',k.solic,'—','tkc-sol')}${grupos}${etqs}${datas}${prio}${vzDetHtml(t,k)}</div>
-    ${vzBlocoHtml(t,k)}${apBlocoHtml(t,k,ro||!!k.arq)}${pzBlocoHtml(t,k,ro||!!k.arq)}
+    ${vzBlocoHtml(t,k)}${cpoBlocoHtml(t,k,ro||!!k.arq)}${apBlocoHtml(t,k,ro||!!k.arq)}${pzBlocoHtml(t,k,ro||!!k.arq)}${rcBlocoHtml(t,k,ro||!!k.arq)}
     <div class="tkm-bloco">${tkSecH('notas','Descrição')}<div class="tkm-in"><textarea id="tkc-d" class="tkm-txt" data-tkc="desc" data-mencao placeholder="Adicione uma descrição mais detalhada: objetivo, instruções e critério de pronto (@ avisa um colega)" ${dis}>${esc(k.desc||'')}</textarea></div></div>
     ${k.feita||k.resultado?`<div class="tkm-bloco">${tkSecH('check','Resultado')}<div class="tkm-in"><textarea id="tkc-r" class="tkm-txt" data-tkc="resultado" data-mencao placeholder="O que foi feito ou decidido" ${dis}>${esc(k.resultado||'')}</textarea></div></div>`:''}
     ${anexos.length?`<div class="tkm-bloco">${tkSecH('clip','Anexos',ro?'':`<button class="tkm-btn" data-a="tkc-pop" data-v="anexo">Adicionar</button>`)}<div class="tkm-in">${anexosH}</div></div>`:''}
@@ -222,11 +227,13 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
       ${b('tkc-pop','etq','Etiquetas',`data-v="etq" aria-expanded="${pop==='etq'}"`)}${popEtq}
       ${b('tkc-ck-novo','check','Checklist')}
       ${b('tkc-pop','clip','Anexo',`data-v="anexo" aria-expanded="${pop==='anexo'}"`)}${popAnexo}
-      ${b('tkc-pop','capa','Capa',`data-v="capa" aria-expanded="${pop==='capa'}"`)}${popCapa}</div>`}
+      ${b('tkc-pop','capa','Capa',`data-v="capa" aria-expanded="${pop==='capa'}"`)}${popCapa}
+      ${k.rec||k.serie||k.arq||k.modelo?'':b('rc-nova','repete','Recorrência')}</div>`}
     <div class="tkm-sg"><span class="tkm-sgt">Ações</span>
-      ${ro||k.arq?'':b('tkc-concluir','check',apRotulo(k)?.replace('Aguardando aprovação','Em aprovação')||(k.feita?'Reabrir':'Concluir'),'data-dup="1"')}
-      ${pzBotao(k,ro)}
+      ${ro||k.arq||k.modelo?'':b('tkc-concluir','check',apRotulo(k)?.replace('Aguardando aprovação','Em aprovação')||(k.feita?'Reabrir':'Concluir'),'data-dup="1"')}
+      ${k.modelo?'':pzBotao(k,ro)}
       ${ro?'':b('tkc-acomp','olho',acompanho?'Seguindo ✓':'Acompanhar',`aria-pressed="${acompanho}"`)}
+      ${cxBotoes(t,k,ro,b)}
       ${b('tkc-link','link','Copiar link')}
       ${ro?'':b('tkc-arq','arq',k.arq?'Restaurar':'Arquivar')}</div>
   </aside></div>${crAvisoHtml()}</div>`}
@@ -245,7 +252,7 @@ function tkRe(){const d=document.querySelector('#modal .dialog'),st=d?d.scrollTo
 function tkAtual(){return tkAcha(UI.tkSel?.tid,UI.tkSel?.kid)}
 const tkItem=(k,cid,iid)=>{const c=k.checklists.find(x=>x.id===cid);return {c,i:c?.itens.find(x=>x.id===iid)}};
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="tkc-"],[data-a^="tkl-"],[data-a="tk-listas"],[data-a="tk-arqficha"],[data-a="tk-cheia"],[data-a="tk-nova"],[data-a="tk-abrir"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const A=a.dataset.a;
-  if(A==='tk-abrir'){UI.tkSel={tid:a.dataset.id,kid:a.dataset.tk};UI.tkEdCom=null;UI.tkCkNovo=false;UI.tkEtqNova=false;UI.tkPop=null;UI.tkItemNovo=null;UI.modal='tarefa';renderModal();return}
+  if(A==='tk-abrir'){UI.tkSel={tid:a.dataset.id,kid:a.dataset.tk};UI.tkEdCom=null;UI.tkCkNovo=false;UI.tkEtqNova=false;UI.tkPop=null;UI.cx=null;UI.tkItemNovo=null;UI.modal='tarefa';renderModal();return}
   if(A==='tk-nova'){UI.tkSel={tid:a.dataset.id||(UI.route==='terreno'?UI.id:null),lista:a.dataset.v||null};UI.modal='tarefa';renderModal();return}
   if(A==='tk-listas'){UI.tkSel={tid:a.dataset.id};UI.modal='tk-listas';renderModal();return}
   if(A==='tk-cheia'){tkTelaCheia();return}
@@ -325,7 +332,7 @@ function cfgTarefasHtml(){const L=S.listasModelo,E=S.etiquetas;
     <form class="tkm-nf" data-form="tkcfg-lista"><input name="nome" required placeholder="Nova lista" aria-label="Nome da nova lista padrão"><select name="tipo" aria-label="Tipo">${Object.entries(TIPO_LISTA).map(([x,n])=>`<option value="${x}">${n}</option>`).join('')}</select><button class="btn tonal sm" type="submit">Adicionar lista</button></form></div></section>
   <section class="sec"><div class="sec-h"><h2>Etiquetas da empresa</h2></div><div class="sec-b">
     ${E.map(e=>`<div class="tkl-r">${etqChip(e)}<input value="${esc(e.nome)}" data-tkcfg="etq-nome" data-v="${e.id}" aria-label="Nome da etiqueta"><select data-tkcfg="etq-cor" data-v="${e.id}" aria-label="Cor de ${esc(e.nome)}">${Object.entries(ETQ_CORES).map(([c,n])=>`<option value="${c}" ${c===e.cor?'selected':''}>${n}</option>`).join('')}</select></div>`).join('')}
-    <form class="tkm-nf" data-form="tkcfg-etq"><input name="nome" required placeholder="Nova etiqueta" aria-label="Nome da nova etiqueta"><select name="cor" aria-label="Cor">${Object.entries(ETQ_CORES).map(([c,n])=>`<option value="${c}">${n}</option>`).join('')}</select><button class="btn tonal sm" type="submit">Adicionar etiqueta</button></form></div></section>${apCfgHtml()}${crCfgHtml()}`}
+    <form class="tkm-nf" data-form="tkcfg-etq"><input name="nome" required placeholder="Nova etiqueta" aria-label="Nome da nova etiqueta"><select name="cor" aria-label="Cor">${Object.entries(ETQ_CORES).map(([c,n])=>`<option value="${c}">${n}</option>`).join('')}</select><button class="btn tonal sm" type="submit">Adicionar etiqueta</button></form></div></section>${cpoCfgHtml()}${apCfgHtml()}${crCfgHtml()}`}
 const tkCfgOk=L=>L.some(l=>l.ativo&&l.tipo==='conclui');
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="tkcfg-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const L=S.listasModelo,l=L.find(x=>x.id===a.dataset.v);if(!l)return;
   if(a.dataset.a==='tkcfg-sobe'){const i=L.indexOf(l);L.splice(i,1);L.splice(i-1,0,l)}
