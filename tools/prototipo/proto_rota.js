@@ -6,7 +6,7 @@
      /terrenos/TER-000123/viabilidade/2 segundo estudo de viabilidade do terreno, no popup
      /mapa  /mapa/TER-000123 (selecionado)  /mapa/TER-000123/ficha (com a ficha no painel)
      /fases  /fases/aprovacao  /fases/aprovacao/projeto   (os três níveis do quadro)
-     /tarefas  /tarefas/tabela  /tarefas/funil  /tarefas/TAR-000123 (a janela do cartão)   /dashboard   /configuracoes/etapas ...
+     /tarefas  /tarefas/lista  /tarefas/calendario  /tarefas/cronograma  /tarefas/funil  /tarefas/TAR-000123 (a janela do cartão)   /dashboard   /configuracoes/etapas ...
    No Railway vai no caminho (/prototipo/terrenos/...; o Caddy devolve a página para qualquer caminho);
    aberto como arquivo ou no artifact, depois do # (#/terrenos/...). Os filtros seguem em f=.
    Troca de tela entra no histórico (voltar e avançar do navegador); seção aberta, terreno
@@ -48,13 +48,13 @@ function rtAplicar(s){const [a,b,c,d]=s,limpo={vbPop:null,vbNova:false,fichaShee
     if(!id){go('terrenos',limpo);toast(`Terreno ${b} não encontrado.`,true);return}
     const from=history.state?.from||(UI.route==='terreno'&&UI.id===id?UI.from:'terrenos');
     /* link com seção: só ela vem aberta (a Visão geral cresce depois de carregar o mapa e o entorno e empurraria a seção para baixo) */
-    const sec=RT_SEC.includes(c)?c:'geral';if(UI.route!=='terreno'||UI.id!==id||sec!=='geral'){BLA={[sec]:true};blId=id}
+    const sec=RT_SEC.includes(c)?c:'geral';if(UI.route!=='terreno'||UI.id!==id||sec!=='geral'){BLA={[sec]:true};blId=id;tkRecolhePainel(sec)}
     if(c==='viabilidade'){go('terreno',{...limpo,id,tab:'geral',from});const v=rtViabs(id)[(parseInt(d,10)||1)-1];if(v)vbAbrir(v.id);else toast('Estudo de viabilidade não encontrado.',true);return}
     go('terreno',{...limpo,id,tab:sec,from});if(sec!=='geral')rolarBloco(sec);return}
   if(a==='terrenos'){go('terrenos',limpo);if(b){UI.modal='novo';renderModal()}return}
   if(a==='mapa'){const id=rtId(b);go('mapa',{...limpo,mpSel:id,mpFoco:id});if(id&&c==='ficha'){UI.fichaSheet=id;fichaSheet()}return}
   if(a==='fases'){const f=b&&fIdx(b)>=0?b:null,e=f&&c&&etapaF(f,c)?c:null;go('negociacoes',{...limpo,negFase:f,negEtapa:e});return}
-  if(a==='tarefas'){if(UI.tk)UI.tk.vista=['tabela','cronograma','funil'].includes(b)?b:'quadro';go('tarefas',limpo);
+  if(a==='tarefas'){if(UI.tk)UI.tk.vista=b==='tabela'?'lista':['lista','cronograma','calendario','funil'].includes(b)?b:'quadro';go('tarefas',limpo);
     // link de um cartão: /tarefas/TAR-000123 abre a janela dele
     if(/^TAR-\d+$/i.test(b||'')){const x=todasTarefas().find(y=>y.k.codigo===b.toUpperCase());if(x){UI.tkSel={tid:x.t.id,kid:x.k.id};UI.modal='tarefa';renderModal()}else toast('Tarefa não encontrada.',true)}return}
   if(a==='dashboard'){go('dashboard',limpo);return}

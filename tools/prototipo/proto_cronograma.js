@@ -90,41 +90,75 @@ function crAvisoHtml(){const a=UI.crAviso;if(!a)return '';const {t,k}=tkAcha(a.t
     <div class="cr-av-b"><button class="tkm-ok" data-a="cr-av-esticar">Esticar para ${p.dur} dias</button><button class="tkm-btn" data-a="cr-av-adiar">Manter ${k.dur} dias e adiar o início</button></div></div></div>`}
 
 /* ---------- Gantt ---------- */
+/* Gantt no desenho aprovado (G_Gantt, 30/out/2026): barra de ferramentas (Agrupar, escala Dia · Semana · Mês, Hoje, legenda e, na ficha, a linha de base);
+   à esquerda Tarefa (círculo de concluir, subtarefa recuada embaixo da mãe), responsável e duração; grupos que abrem e fecham;
+   barra fina na cor do status (lista) com o feito por dentro, a linha de base em cinza embaixo, marco em losango, "+N d" depois da barra
+   quando o prazo passou da base, setas das predecessoras e hoje em azul. */
+P.baixo='M6 9l6 6 6-6';P.escudo='M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z';
+UI.crEsc=UI.crEsc||'dia';UI.crAgr=UI.crAgr||'terreno';UI.crFech=UI.crFech||{};
+const CR_ESC={dia:26,semana:10,mes:4},CR_SEM=['dom','seg','ter','qua','qui','sex','sáb'],CR_MES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+/* a subtarefa vem logo depois da mãe, quando a mãe está no mesmo grupo */
+function crArvore(itens){const ids=new Set(itens.map(x=>x.k.id)),r=[];itens.filter(x=>!x.k.mae||!ids.has(x.k.mae)).forEach(x=>{r.push({...x,sub:false});itens.filter(y=>y.k.mae===x.k.id).forEach(y=>r.push({...y,sub:true}))});return r}
 function crGantt(grupos,opts={}){const its=grupos.flatMap(g=>g.itens);const datas=[];its.forEach(({t,k})=>{const b=crBase(t,k);[k.inicio,k.prazo,b?.ini,b?.pz].forEach(d=>d&&datas.push(d))});
-  if(!its.length)return `<div class="cr-vazio">Nenhuma tarefa com início e prazo. Abra um cartão e preencha as datas.</div>`;
+  const ficha=opts.ficha,esc0=UI.crEsc in CR_ESC?UI.crEsc:'dia',W=CR_ESC[esc0];
+  const barra=`<div class="cr-tb">${ficha?'':`<label class="cr-agr"><span>Agrupar:</span><select data-crg="agr" aria-label="Agrupar por">${[['terreno','Terreno'],['resp','Responsável'],['nenhum','Nada']].map(([v,n])=>`<option value="${v}" ${UI.crAgr===v?'selected':''}>${n}</option>`).join('')}</select></label>`}
+    <label class="cr-esc"><select data-crg="esc" aria-label="Escala">${[['dia','Dia'],['semana','Semana'],['mes','Mês']].map(([v,n])=>`<option value="${v}" ${esc0===v?'selected':''}>${n}</option>`).join('')}</select></label>
+    <button class="btn sm cr-hojeb" data-a="cr-hoje">Hoje</button>
+    <span class="cr-tbd"><span class="cr-lg"><i class="cr-lg-b"></i>Linha de base aprovada</span><span class="cr-lg"><i class="cr-lg-m"></i>Marco</span>${ficha?crBaseBarra(ficha):''}</span></div>`;
+  if(!its.length)return barra+`<div class="cr-vazio">Nenhuma tarefa com início e prazo. Abra um cartão e preencha as datas.</div>`;
   if(!datas.length)datas.push(HOJE);datas.push(HOJE);
-  const ini=addD(datas.reduce((a,b)=>a<b?a:b),-2),fim=addD(datas.reduce((a,b)=>a>b?a:b),5),nd=crDias(ini,fim)+1,W=opts.w||26,x=d=>crDias(ini,d)*W;
-  const dias=[];for(let i=0;i<nd;i++)dias.push(addD(ini,i));
-  const meses=[];dias.forEach((d,i)=>{const m=d.slice(0,7);if(!meses.length||meses.at(-1).m!==m)meses.push({m,i,n:1});else meses.at(-1).n++});
-  const cab=`<div class="cr-tlh"><div class="cr-mes">${meses.map(m=>`<span style="left:${m.i*W}px;width:${m.n*W}px">${MES[Number(m.m.slice(5))-1]} ${m.m.slice(0,4)}</span>`).join('')}</div>
-    <div class="cr-dias">${dias.map((d,i)=>`<span class="${!crUtil(d)?'folga':''} ${d===HOJE?'hoje':''}" style="left:${i*W}px;width:${W}px">${Number(d.slice(8))}</span>`).join('')}</div></div>`;
-  const fundo=`<div class="cr-fundo">${dias.map((d,i)=>!crUtil(d)?`<i style="left:${i*W}px;width:${W}px"></i>`:'').join('')}<b class="cr-hoje" style="left:${x(HOJE)+W/2}px"></b></div>`;
-  let linhas='',esq='';
-  grupos.forEach(g=>{if(g.titulo){esq+=`<div class="cr-gr">${g.titulo}</div>`;linhas+=`<div class="cr-row cr-grr"></div>`}
-    g.itens.forEach(({t,k})=>{const b=crBase(t,k),dv=b&&k.prazo?crDias(b.pz,k.prazo):0,pr=crPreds(k).map(v=>{const p=t.tarefas.find(x=>x.id===v.id);return p?p.codigo.replace('TAR-','').replace(/^0+/,'')+v.tipo+(v.def?(v.def>0?'+':'')+v.def:''):''}).filter(Boolean).join(', ');
-      esq+=`<div class="cr-l" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}" tabindex="0" role="button"><span class="cr-cod num">${k.codigo.replace('TAR-','')}</span><span class="cr-tit">${escT(k.titulo)}</span>
-        <span class="cr-c num">${k.inicio?fd(k.inicio):'—'}</span><span class="cr-c num">${k.prazo?fd(k.prazo):'—'}</span><span class="cr-c num">${k.dur||'—'}</span><span class="cr-c cr-pred" title="Predecessoras">${pr||''}</span></div>`;
+  let ini=addD(datas.reduce((a,b)=>a<b?a:b),-3),fim=addD(datas.reduce((a,b)=>a>b?a:b),esc0==='dia'?8:21);
+  if(esc0==='mes'){ini=ini.slice(0,8)+'01'}
+  const nd=crDias(ini,fim)+1,x=d=>crDias(ini,d)*W,dias=[];for(let i=0;i<nd;i++)dias.push(addD(ini,i));
+  const fds=d=>{const w=pd(d).getDay();return w===0||w===6};
+  let cab='';
+  if(esc0==='dia')cab=dias.map((d,i)=>`<span class="cr-d ${fds(d)?'fds':''} ${d===HOJE?'hoje':''}" style="left:${i*W}px;width:${W}px"><b>${Number(d.slice(8))}</b><small>${CR_SEM[pd(d).getDay()]}</small></span>`).join('');
+  else if(esc0==='semana')cab=dias.map((d,i)=>pd(d).getDay()===1?`<span class="cr-d cr-dw ${d<=HOJE&&HOJE<addD(d,7)?'hoje':''}" style="left:${i*W}px;width:${7*W}px"><b>${Number(d.slice(8))} ${CR_MES[Number(d.slice(5,7))-1]}</b><small>semana</small></span>`:'').join('');
+  else{const ms=[];dias.forEach((d,i)=>{const m=d.slice(0,7);if(!ms.length||ms.at(-1).m!==m)ms.push({m,i,n:1});else ms.at(-1).n++});
+    cab=ms.map(m=>`<span class="cr-d cr-dw ${HOJE.startsWith(m.m)?'hoje':''}" style="left:${m.i*W}px;width:${m.n*W}px"><b>${CR_MES[Number(m.m.slice(5))-1]}</b><small>${m.m.slice(0,4)}</small></span>`).join('')}
+  const fundo=`<div class="cr-fundo">${esc0==='mes'?'':dias.map((d,i)=>fds(d)?`<i style="left:${i*W}px;width:${W}px"></i>`:'').join('')}<b class="cr-hoje" style="left:${x(HOJE)+W/2}px"></b></div>`;
+  let linhas='',esq='',yy=0;const H=40;const pos=new Map(),setas=[];
+  grupos.forEach(g=>{const fe=g.chave&&UI.crFech[g.chave];
+    if(g.titulo){esq+=`<button class="cr-gr" data-a="cr-gr" data-v="${esc(g.chave)}" aria-expanded="${!fe}">${ic(fe?'chev':'baixo',18)}<span>${g.titulo}</span></button>`;linhas+=`<div class="cr-row cr-grr"></div>`;yy+=H}
+    if(fe)return;
+    crArvore(g.itens).forEach(({t,k,sub})=>{const b=crBase(t,k),dv=b&&k.prazo?crDias(b.pz,k.prazo):0,st=k.feita?'feito':tkStCls(tkLista(t,k)),marco=!k.inicio||k.dur===0;
+      esq+=`<div class="cr-l ${sub?'sub':''} ${k.feita?'feito':''}" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}" tabindex="0" role="button" title="${esc(k.codigo)}">${tkAnel(t,k)}<span class="cr-tit">${escT(k.titulo)}</span>
+        <span class="cr-av">${k.resp?av(k.resp,'sm'):''}</span><span class="cr-c">${k.prazo?(marco?'marco':(k.dur||crDur(k.inicio,k.prazo))+' d'):'—'}</span></div>`;
+      const ry=yy+17;yy+=H;const pg=crProg(t,k),xb=k.prazo?(marco?x(k.prazo)+W/2-7:x(k.inicio)):null,wb=marco?14:k.prazo?(crDias(k.inicio,k.prazo)+1)*W:0;
+      if(xb!=null)pos.set(k.id,{y:ry,x0:xb,x1:xb+wb});
+      const atrD=tkAtras(k)?crDias(k.prazo,HOJE):0,chip=dv>0?`<b class="cr-atr" style="left:${xb+wb+8}px" title="Prazo ${dv} dia${dv>1?'s':''} depois da linha de base">+${dv} d</b>`:atrD>0?`<b class="cr-atr" style="left:${xb+wb+8}px" title="Prazo vencido há ${atrD} dia${atrD>1?'s':''}">${atrD} d de atraso</b>`:'';
       linhas+=`<div class="cr-row">${b?`<i class="cr-base" style="left:${x(b.ini)}px;width:${(crDias(b.ini,b.pz)+1)*W}px" title="Linha de base: ${fd(b.ini)} – ${fd(b.pz)}"></i>`:''}
-        ${k.inicio&&k.prazo?`<span class="cr-bar ${k.feita?'feita':tkAtras(k)?'atras':''} ${dv>0?'desvio':''}" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}" style="left:${x(k.inicio)}px;width:${(crDias(k.inicio,k.prazo)+1)*W}px" title="${esc(k.titulo)}: ${fd(k.inicio)} – ${fd(k.prazo)}${dv?` · ${dv>0?'+':''}${dv} d da base`:''}"><span>${esc(k.titulo)}</span></span>`
-          :k.prazo?`<span class="cr-marco" style="left:${x(k.prazo)+W/2-7}px" title="${esc(k.titulo)}: prazo ${fd(k.prazo)}"></span>`:''}</div>`})});
-  return `<div class="cr-g"><div class="cr-esq"><div class="cr-eh"><span class="cr-cod">Nº</span><span class="cr-tit">Tarefa</span><span class="cr-c">Início</span><span class="cr-c">Prazo</span><span class="cr-c">Dur.</span><span class="cr-c cr-pred">Pred.</span></div>${esq}</div>
-    <div class="cr-tl" data-hoje="${Math.max(0,x(HOJE)-6*W)}"><div class="cr-tlin" style="width:${nd*W}px">${cab}<div class="cr-corpo">${fundo}${linhas}</div></div></div></div>
-    <div class="cr-leg"><span><i class="cr-lb1"></i>Atual</span><span><i class="cr-lb2"></i>Linha de base</span><span><i class="cr-lb3"></i>Atrasada</span><span class="faint">${crUteis()?'Dias úteis':'Dias corridos'} · TI término-início, II início-início, TT término-término, IT início-término</span></div>`}
+        ${xb==null?'':marco?`<span class="cr-marco st-${st} ${k.feita?'feita':atrD?'atras':''}" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}" style="left:${xb}px" title="${esc(k.titulo)}: ${fd(k.prazo)}"></span>`
+          :`<span class="cr-bar st-${st} ${k.feita?'feita':atrD?'atras':''} ${dv>0?'desvio':''}" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}" style="left:${xb}px;width:${wb}px" title="${esc(k.titulo)}: ${fd(k.inicio)} – ${fd(k.prazo)} · ${pg}% feito${dv?` · ${dv>0?'+':''}${dv} d da base`:''}"><i style="width:${pg}%"></i></span>`}${chip}</div>`;
+      crPreds(k).forEach(v=>setas.push({de:v.id,para:k.id,tipo:v.tipo}))})});
+  /* setas: saem da ponta da predecessora (o fim; o início em II/IT), descem e entram pela ponta certa da tarefa (o início; o fim em TT/IT) */
+  const svg=setas.map(({de,para,tipo})=>{const a=pos.get(de),c=pos.get(para);if(!a||!c)return '';
+    const sx=tipo==='II'||tipo==='IT'?a.x0:a.x1,fim=tipo==='TT'||tipo==='IT',ex=fim?c.x1:c.x0,sy=a.y,ey=c.y,bs=ex+(fim?7:-7);
+    const mx=fim?Math.max(sx+8,ex+12):sx+8,dir=fim||ex-8>=mx,dd=dir?`M${sx} ${sy} H${mx} V${ey} H${bs}`:`M${sx} ${sy} H${mx} V${ey>sy?ey-20:ey+20} H${ex-14} V${ey} H${bs}`;
+    return `<path d="${dd}"/><path class="cr-pt" d="M${ex} ${ey} L${bs} ${ey-4} L${bs} ${ey+4} Z"/>`}).join('');
+  return barra+`<div class="cr-g"><div class="cr-esq"><div class="cr-eh"><span class="cr-tit">Tarefa</span><span class="cr-av"></span><span class="cr-c">Duração</span></div>${esq}</div>
+    <div class="cr-tl" data-hoje="${Math.max(0,x(HOJE)-({dia:10,semana:28,mes:60})[esc0]*W)}"><div class="cr-tlin" style="width:${nd*W}px"><div class="cr-tlh">${cab}</div><div class="cr-corpo">${fundo}<svg class="cr-setas" width="${nd*W}" height="${yy}" aria-hidden="true">${svg}</svg>${linhas}</div></div></div></div>
+    <div class="cr-leg faint">${crUteis()?'Dias úteis':'Dias corridos'} · predecessoras TI término-início, II início-início, TT término-término, IT início-término</div>`}
+function crProg(t,k){if(k.feita)return 100;const its=(k.checklists||[]).flatMap(c=>c.itens),ss=(t.tarefas||[]).filter(x=>x.mae===k.id&&!x.arq),n=its.length+ss.length;return n?Math.round(100*(its.filter(i=>i.feito).length+ss.filter(x=>x.feita).length)/n):0}
 const crOrdem=(a,b)=>String(a.k.inicio||a.k.prazo||'9').localeCompare(String(b.k.inicio||b.k.prazo||'9'))||String(a.k.codigo).localeCompare(b.k.codigo);
 /* faixa da linha de base no cronograma do terreno */
 function crBaseBarra(t){const a=crLbAprov(t),p=crLbPend(t),eu=me(),ed=tkEd(),pode=p&&crAprova(eu,p.por)&&ed;
   const atr=(t.tarefas||[]).filter(k=>!k.arq&&crBase(t,k)&&k.prazo&&k.prazo>crBase(t,k).pz).length;
-  return `<div class="cr-lbb">${a?`<span class="chip ${atr?'warn':'good'}">Linha de base ${a.n}</span><span class="faint">aprovada por ${esc(a.decPor)} em ${fd(a.decEm.slice(0,10))}${atr?` · ${atr} tarefa${atr>1?'s':''} depois da base`:' · em dia com a base'}</span>`:'<span class="faint">Sem linha de base: o cronograma ainda não foi aprovado.</span>'}
-    ${p?`<span class="chip warn">Aguardando aprovação</span><span class="faint">pedido por ${esc(p.por)}${p.motivo?`: ${esc(p.motivo)}`:''}</span>`:''}
-    <span class="cr-lbs">${pode?`<button class="btn sm" data-a="cr-lb-aprovar" data-id="${t.id}">${ic('check',16)}Aprovar</button><button class="btn sm text" data-a="cr-lb-recusar" data-id="${t.id}">Recusar</button>`:''}
+  const quando=a?`Aprovada por ${a.decPor} em ${fd(a.decEm.slice(0,10))}`:'';
+  return `<span class="cr-lbb">${a?`<span class="chip ${atr?'warn':'good'}" title="${esc(quando)}">Linha de base ${a.n}</span><span class="faint">${atr?`${atr} tarefa${atr>1?'s':''} depois da base`:'em dia com a base'}</span>`:'<span class="faint">Sem linha de base</span>'}
+    ${p?`<span class="chip warn" title="Pedido por ${esc(p.por)}${p.motivo?`: ${esc(p.motivo)}`:''}">Aguardando aprovação</span>`:''}
+    ${pode?`<button class="btn sm" data-a="cr-lb-aprovar" data-id="${t.id}">${ic('check',16)}Aprovar</button><button class="btn sm text" data-a="cr-lb-recusar" data-id="${t.id}">Recusar</button>`:''}
     ${p&&p.por===eu&&!pode?`<button class="btn sm text" data-a="cr-lb-desistir" data-id="${t.id}">Cancelar pedido</button>`:''}
-    ${ed&&!p?`<button class="btn sm ${a?'text':''}" data-a="cr-lb-enviar" data-id="${t.id}">${a?(crAprova(eu,eu)?'Nova linha de base':'Pedir nova linha de base'):(crAprova(eu,eu)?'Aprovar cronograma':'Enviar para aprovação')}</button>`:''}
-    ${crLbs(t).length?`<button class="btn sm text" data-a="cr-lb-hist" data-id="${t.id}">Histórico (${crLbs(t).length})</button>`:''}</span></div>`}
+    ${crLbs(t).length?`<button class="btn sm text" data-a="cr-lb-hist" data-id="${t.id}">Histórico (${crLbs(t).length})</button>`:''}
+    ${ed&&!p?`<button class="btn sm cr-lbenv" data-a="cr-lb-enviar" data-id="${t.id}">${ic('escudo',18)}${a?(crAprova(eu,eu)?'Nova linha de base':'Pedir nova linha de base'):(crAprova(eu,eu)?'Aprovar linha de base':'Enviar linha de base')}</button>`:''}</span>`}
 /* a linha do tempo abre perto de hoje */
 const crRolar=()=>setTimeout(()=>document.querySelectorAll('.cr-tl[data-hoje]:not([data-rolou])').forEach(el=>{el.scrollLeft=Number(el.dataset.hoje);el.dataset.rolou=1}),0);
-function crFichaHtml(t){crRolar();const its=vzTarefas(t).filter(k=>!k.arq).map(k=>({k,t})).sort(crOrdem);return crBaseBarra(t)+crGantt([{itens:its}])}
-function crPaginaHtml(lista){crRolar();const por={};lista.forEach(x=>{(por[x.t.id]=por[x.t.id]||[]).push(x)});
-  return crGantt(Object.values(por).map(its=>({titulo:`${its[0].t.codigo} · ${esc(its[0].t.nome)}`,itens:its.sort(crOrdem)})))}
+function crFichaHtml(t){crRolar();const its=vzTarefas(t).filter(k=>!k.arq).map(k=>({k,t})).sort(crOrdem);return crGantt([{itens:its}],{ficha:t})}
+function crPaginaHtml(lista){crRolar();const agr=UI.crAgr,por=new Map();
+  lista.forEach(x=>{const ch=agr==='resp'?'r:'+(x.k.resp||''):agr==='nenhum'?'':'t:'+x.t.id;if(!por.has(ch))por.set(ch,[]);por.get(ch).push(x)});
+  const gs=[...por.entries()].map(([ch,its])=>({chave:ch,titulo:agr==='nenhum'?null:agr==='resp'?esc(its[0].k.resp||'Sem responsável'):`${its[0].t.codigo} · ${esc(its[0].t.nome)}`,itens:its.sort(crOrdem)}));
+  if(agr==='resp')gs.sort((a,b)=>a.chave.localeCompare(b.chave));
+  return crGantt(gs)}
 
 /* ---------- modelos de tarefas ---------- */
 const crModelos=()=>S.modelos||(S.modelos=[]);
@@ -144,7 +178,9 @@ function crPrep(){if(!S.modelos){S.modelos=[crModeloPadrao()]}S.terrenos.forEach
   const t=S.terrenos[0];if(t&&!S.crExemplo){S.crExemplo=true;crAplicar(t,crModelos()[0],addD(HOJE,-7));const b={id:uid(),n:null,sit:'pendente',motivo:null,por:t.resp||'Rafael Souza',em:addD(HOJE,-12)+'T09:00:00',itens:{}};
     t.tarefas.filter(k=>!k.arq&&k.inicio&&k.prazo).forEach(k=>b.itens[k.id]={ini:k.inicio,pz:k.prazo,dur:k.dur});crLbs(t).push(b);crAprovar(t,b);b.decPor='Ana Prado';b.decEm=addD(HOJE,-11)+'T15:20:00';
     ['Pedir matrícula atualizada','Consultar zoneamento e parâmetros'].forEach(n=>{const k=t.tarefas.find(x=>x.titulo===n);if(k){k.lista=tkPrim(t,'conclui').id;k.feita=k.prazo;k.feitaPor=k.resp}});
-    const k=t.tarefas.find(x=>x.titulo==='Análise jurídica da matrícula');if(k)crEditar(t,k,'dur',8)}}
+    const k=t.tarefas.find(x=>x.titulo==='Análise jurídica da matrícula');if(k)crEditar(t,k,'dur',8);
+    // em andamento e esperando terceiro, para o cronograma mostrar as cores das listas
+    [['Estudo de massa','Fazendo'],['Análise jurídica da matrícula','Aguardando retorno']].forEach(([n,ln])=>{const x=t.tarefas.find(y=>y.titulo===n),l=tkL(t).find(y=>y.nome===ln);if(x&&l)x.lista=l.id})}}
 /* aplica o modelo no quadro do terreno, a partir da data */
 function crAplicar(t,m,data){const mapa={},resp=u=>u===RESP_OBJ?t.resp||null:u||null;
   m.tarefas.forEach(x=>{const l=tkL(t).find(y=>y.nome===x.lista&&!y.oculta)||tkPrim(t,'aberta');
@@ -212,6 +248,8 @@ function crCfgHtml(){const ms=crModelos().filter(m=>!m.dono);
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="cr-"]');if(!a)return;const A=a.dataset.a;if(A==='cr-padrao'&&a.type==='radio'){}else e.preventDefault();e.stopImmediatePropagation();
   const id=a.dataset.id,t=id?T(id):null;
   switch(A){
+    case 'cr-gr':UI.crFech[a.dataset.v]=!UI.crFech[a.dataset.v];render();return;
+    case 'cr-hoje':{const tl=a.closest('.tk-sec,.cr-sec,.sec,main')?.querySelector('.cr-tl')||document.querySelector('.cr-tl');if(tl){tl.dataset.rolou='';tl.scrollTo({left:Number(tl.dataset.hoje),behavior:'smooth'})}return}
     case 'cr-vista':{const tt=T(a.dataset.id);UI.crVista[tt.id]=a.dataset.v;render();return}
     case 'cr-pred-novo':UI.crPredNovo=true;tkRe();return;
     case 'cr-pred-cancela':UI.crPredNovo=false;tkRe();return;
@@ -234,6 +272,7 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="cr-"]'
     case 'cr-cal':S.calUteis=a.dataset.v==='true';S.terrenos.forEach(tt=>{(tt.tarefas||[]).forEach(k=>{if(k.inicio&&k.prazo)k.prazo=crSomar(k.inicio,(k.dur||1)-1)});crCascata(tt)});toast(S.calUteis?'Prazos em dias úteis.':'Prazos em dias corridos.');break;
   }save();render()},true);
 document.addEventListener('change',e=>{const el=e.target;
+  if(el.dataset?.crg){e.stopImmediatePropagation();if(el.dataset.crg==='esc')UI.crEsc=el.value;else UI.crAgr=el.value;render();return}
   if(el.dataset?.crm){e.stopImmediatePropagation();const m=crModelos().find(x=>x.id===UI.crModEd);if(!crEditaModelo(m))return;const c=el.dataset.crm,v=el.value;
     if(c==='nome'){m.nome=v.trim()||m.nome}else{const x=m.tarefas.find(y=>y.id===el.closest('[data-mt]').dataset.mt);
       if(c==='titulo')x.titulo=v.trim()||x.titulo;else if(c==='lista')x.lista=v;else if(c==='iniD')x.iniD=v===''?null:Math.max(0,parseInt(v,10)||0);else if(c==='dur')x.dur=v===''?null:Math.max(1,parseInt(v,10)||1);

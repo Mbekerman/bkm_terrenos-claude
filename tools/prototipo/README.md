@@ -57,6 +57,7 @@ Rodar só o que a mudança toca; a varredura completa (`tvaza` e `tscroll`) ao f
 | `tend2.js`, `tgmock.js` | endereço pela busca do Google (simulado) |
 | `tfunil.js` | novo funil: quadro por etapa e subetapa, quadro de avanço, aprovações por hierarquia, Comprado/Perdido/Descartado/Stand By, sino e Configurações › Funil |
 | `tquadros.js` | quadros e tarefas: listas do modelo, nova tarefa com código TAR, checklist com responsável avisado, comentário com @ e quem acompanha avisado, concluir leva para Feito, arquivar e filtro Arquivadas, link do cartão, quadro da ficha com lista renomeada só no terreno e arrastar, Configurações › Tarefas, Leitura só vê, celular escuro |
+| `tclickup.js` | tarefas no estilo ClickUp: Lista com círculo que conclui e agrupamento, subtarefas (a mãe não conclui com subtarefa aberta), automação do cartão (só nele, vai na cópia), Calendário com arrastar e celular, Funil em tabela, Cronograma com andamento e setas |
 | `tmencao.js` | menção com @: lista ao digitar, Enter e Esc só na lista, aviso no sino com e-mail, salvar de novo não repete, preferência de e-mail por pessoa, aviso leva à tarefa e acende, menção na reunião, coluna E-mail em Configurações (desktop e celular escuro) |
 | `ted2.js` | edição da poligonal (desktop e celular) |
 | `tctx.js` | menu do clique direito no mapa (toque longo no celular), concorrência, barra do mapa |

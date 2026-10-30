@@ -10,7 +10,7 @@
      Na Nova tarefa, "Usar um modelo" lista os modelos que a pessoa vê.
    Injetado no mesmo escopo.
    ===================================================================== */
-const CX_ITENS={checklists:'Checklists',etiquetas:'Etiquetas',pessoas:'Pessoas',campos:'Campos personalizados',anexos:'Anexos'};
+const CX_ITENS={checklists:'Checklists',etiquetas:'Etiquetas',pessoas:'Pessoas',campos:'Campos personalizados',anexos:'Anexos',automacoes:'Automações do cartão'};
 function cxModelos(){return todasTarefas().filter(({k})=>k.modelo&&!k.arq)}
 function cxCopiar(t,k,dest,lid,titulo,itens){const l=tkL(dest).find(x=>x.id===lid&&x.tipo==='aberta');if(!l){toast('A cópia vai para uma lista aberta.',true);return null}
   const tem=x=>itens.includes(x),eu=me();
@@ -46,7 +46,7 @@ document.addEventListener('change',e=>{const el=e.target;if(!el.dataset?.cx)retu
     UI.tkSel={tid,kid};UI.tkPop='copiar';UI.cx={ter:dest,lista:null,itens:Object.keys(CX_ITENS)};UI.modal='tarefa';renderModal()}},true);
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a="cx-modelo"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!vzEdita(t,k))return;
   if(!k.modelo&&k.feita){toast('Reabra a tarefa antes de torná-la modelo.',true);return}
-  k.modelo=!k.modelo;log(t,`Tarefa "${k.titulo}": ${k.modelo?'virou modelo de cartão':'deixou de ser modelo'}`);toast(k.modelo?'Agora é um modelo: use "Usar este modelo" para criar cartões a partir dele.':'Voltou a ser um cartão comum.');tkRe()},true);
+  UI.tkPop=null;k.modelo=!k.modelo;log(t,`Tarefa "${k.titulo}": ${k.modelo?'virou modelo de cartão':'deixou de ser modelo'}`);toast(k.modelo?'Agora é um modelo: use "Usar este modelo" para criar cartões a partir dele.':'Voltou a ser um cartão comum.');tkRe()},true);
 document.addEventListener('submit',e=>{const f=e.target;if(f.dataset?.form!=='cx-copiar')return;e.preventDefault();e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k)return;
   const dest=T(UI.cx?.ter)||t;if(!tkEd()){toast('Você não cria tarefas.',true);return}
   const n=cxCopiar(t,k,dest,f.querySelector('[name=lista]').value,f.querySelector('[name=titulo]').value,[...f.querySelectorAll('[name=it]:checked')].map(x=>x.value));if(!n)return;

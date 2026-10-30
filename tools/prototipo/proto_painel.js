@@ -331,5 +331,5 @@ document.addEventListener('click',e=>{
   else if(A==='pn-cal-cancel'){pnCal=null;pnPerRefresh();document.querySelector('[data-a="pn-per-custom"]')?.focus()}
   else if(A==='pn-cal-ok'){if(!pnCal||!pnCal.ini)return;PN.per={k:'custom',ini:pnCal.ini,fim:pnCal.fim||pnCal.ini};pnSalva();pnCal=null;pnMenu=null;pnFoco='.pn-dd[data-dd="per"] .pn-dd-b';render()}
   else if(A==='pn-aba'){PN.aba=a.dataset.v;PN.aberto=true;pnSalva();render()}
-  else if(A==='pn-concluir'){const t=T(UI.id),k=t?.tarefas.find(x=>x.id===a.dataset.k);if(!k)return;tkConcluir(t,k,true);save();render();toast('Tarefa concluída.')}
+  else if(A==='pn-concluir'){const t=T(UI.id),k=t?.tarefas.find(x=>x.id===a.dataset.k);if(!k)return;if(tkConcluir(t,k,true)===false){render();return}save();render();toast('Tarefa concluída.')}
 });

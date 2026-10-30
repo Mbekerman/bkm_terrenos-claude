@@ -6,20 +6,21 @@ const path=require('path'),fs=require('fs'),{chromium}=require('playwright');
 const F=path.join(__dirname,'..','saida','bkm-terrenos.html'),L=path.join(__dirname,'..','libs','l')+'/',O=path.join(__dirname,'..','saida','t_cronograma')+'/';fs.mkdirSync(O,{recursive:true});
 const falhas=[];const ok=(c,m)=>{console.log((c?'ok   ':'FALHA ')+m);if(!c)falhas.push(m)};
 const est=p=>p.evaluate(()=>JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-v9')));
-const clica=(p,sel,txt)=>p.evaluate(([s,t])=>{const el=[...document.querySelectorAll(s)].find(x=>!t||x.textContent.includes(t));if(!el)throw new Error('não achei '+s+' '+(t||''));el.click()},[sel,txt||null]);
-const muda=(p,sel,v)=>p.evaluate(([s,v])=>{const el=document.querySelector(s);if(!el)throw new Error('não achei '+s);if(el.tagName==='SELECT'&&![...el.options].some(o=>o.value===v)){const o=[...el.options].find(o=>o.textContent.includes(v));if(o)v=o.value}el.value=v;el.dispatchEvent(new Event('change',{bubbles:true}))},[sel,v]);
-const preenche=(p,sel,v)=>p.evaluate(([s,v])=>{const el=document.querySelector(s);if(!el)throw new Error('não achei '+s);el.value=v},[sel,v]);
-const envia=(p,sel)=>p.evaluate(s=>{const f=document.querySelector(s);if(!f)throw new Error('não achei '+s);f.requestSubmit()},sel);
+const clica=(p,sel,txt)=>p.evaluate(([s,t])=>{let el=[...document.querySelectorAll(s)].find(x=>!t||x.textContent.includes(t));if(!el&&window.__tkAcha)el=window.__tkAcha(s,t);if(!el)throw new Error('não achei '+s+' '+(t||''));el.click()},[sel,txt||null]);
+const muda=(p,sel,v)=>p.evaluate(([s,v])=>{let el=document.querySelector(s);if(!el&&window.__tkAcha)el=window.__tkAcha(s);if(!el)throw new Error('não achei '+s);if(el.tagName==='SELECT'&&![...el.options].some(o=>o.value===v)){const o=[...el.options].find(o=>o.textContent.includes(v));if(o)v=o.value}el.value=v;el.dispatchEvent(new Event('change',{bubbles:true}))},[sel,v]);
+const preenche=(p,sel,v)=>p.evaluate(([s,v])=>{let el=document.querySelector(s);if(!el&&window.__tkAcha)el=window.__tkAcha(s);if(!el)throw new Error('não achei '+s);el.value=v},[sel,v]);
+const envia=(p,sel)=>p.evaluate(s=>{let f=document.querySelector(s);if(!f&&window.__tkAcha)f=window.__tkAcha(s);if(!f)throw new Error('não achei '+s);f.requestSubmit()},sel);
 const papel=(p,v)=>p.evaluate(v=>{const a=document.createElement('button');a.dataset.a='role';a.dataset.v=v;document.body.appendChild(a);a.click();a.remove()},v);
 const ficha=(p,id)=>p.evaluate(id=>{const a=document.createElement('button');a.dataset.a='abrir';a.dataset.id=id;a.dataset.tab='tarefas';document.body.appendChild(a);a.click();a.remove()},id);
 const toast=p=>p.evaluate(()=>document.querySelector('.toast')?.textContent||'');
 const tar=(s,i,tit)=>s.terrenos[i].tarefas.find(k=>k.titulo===tit);
 const addD=(d,n)=>{const x=new Date(d+'T12:00:00');x.setDate(x.getDate()+n);return x.toISOString().slice(0,10)};
 const KML=Buffer.from('<?xml version="1.0"?><kml xmlns="http://www.opengis.net/kml/2.2"><Placemark><name>Quadra</name><Polygon><outerBoundaryIs><LinearRing><coordinates>-46.6304,-23.6096 -46.6296,-23.6096 -46.6296,-23.6104 -46.6304,-23.6104 -46.6304,-23.6096</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark></kml>');
+const TK_ACHA=()=>{window.__tkAcha=(s,t)=>{for(const v of [...document.querySelectorAll('#modal [data-a=tkc-aba]')].map(x=>x.dataset.v)){document.querySelector(`#modal [data-a=tkc-aba][data-v=${v}]`)?.click();const el=[...document.querySelectorAll(s)].find(x=>!t||x.textContent.includes(t));if(el)return el}return null}};  // cartão com abas: procura o elemento nas abas
 (async()=>{const b=await chromium.launch(),erros=[];
 const abre=async(w,h,tema)=>{const ctx=await b.newContext({viewport:{width:w,height:h},deviceScaleFactor:1});
   await ctx.route('**/*',r=>{const u=r.request().url();if(u.startsWith('file://'))return r.fulfill({path:F,contentType:'text/html; charset=utf-8'});if(/leaflet.js|jszip/.test(u))return r.fulfill({path:L+(u.includes('leaflet')?'leaflet.js':'jszip.min.js'),contentType:'application/javascript'});return r.abort()});
-  const p=await ctx.newPage();p.on('pageerror',e=>erros.push(e.message));await p.goto('file:///x/a.html');await p.evaluate(t=>{localStorage.clear();localStorage.setItem('bkm-terrenos-tema',t)},tema);await p.reload();await p.waitForTimeout(400);return {ctx,p}};
+  const p=await ctx.newPage();await p.addInitScript(TK_ACHA);p.on('pageerror',e=>erros.push(e.message));await p.goto('file:///x/a.html');await p.evaluate(t=>{localStorage.clear();localStorage.setItem('bkm-terrenos-tema',t)},tema);await p.reload();await p.waitForTimeout(400);return {ctx,p}};
 // ---------- desktop claro ----------
 {const {ctx,p}=await abre(1440,900,'claro');
 let s=await est(p);const t0=s.terrenos[0],HOJE=await p.evaluate(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')});
@@ -36,7 +37,7 @@ ok((await p.$$('.cr-base')).length>=6&&(await p.$$('.cr-bar.desvio')).length>=1,
 ok(await p.$eval('.cr-lbb',x=>x.textContent.includes('Linha de base 1')&&x.textContent.includes('depois da base')),'faixa diz a linha de base e quantas tarefas passaram dela');
 await p.evaluate(()=>document.querySelector('.cr-g').scrollIntoView({block:'center'}));await p.screenshot({path:O+'1_cronograma_ficha.png'});
 // cartão: duração e predecessoras
-await clica(p,'.cr-l','Estudo de massa');await p.waitForTimeout(250);
+await clica(p,'.cr-l','Estudo de massa');await p.waitForTimeout(250);await p.evaluate(()=>document.querySelector('#modal [data-a=tkc-aba][data-v=prazos]').click());await p.waitForTimeout(100);
 ok(await p.$('#tkc-dur')!==null&&await p.$eval('.tkm',x=>x.textContent.includes('Predecessoras')&&x.textContent.includes('Consultar zoneamento')),'cartão mostra duração e predecessoras');
 ok(await p.$eval('.tkm-lb',x=>x.textContent.startsWith('Base:')),'cartão mostra as datas da linha de base');
 const antesCom=com.inicio;await muda(p,'#tkc-dur','8');await p.waitForTimeout(250);
@@ -81,7 +82,7 @@ await clica(p,'[data-a=cr-lb-hist]');await p.waitForTimeout(150);ok((await p.$$(
 // Leitura só vê
 await papel(p,'Leitura');await p.waitForTimeout(200);
 ok(!(await p.$('[data-a=cr-lb-enviar]'))&&!(await p.$('[data-a=cr-modelos]')),'Leitura não pede linha de base nem aplica modelo');
-await clica(p,'.cr-l','Estudo de massa');await p.waitForTimeout(200);ok(await p.$eval('#tkc-dur',x=>x.disabled)&&!(await p.$('[data-a=cr-pred-novo]')),'Leitura vê duração e predecessoras sem editar');
+await clica(p,'.cr-l','Estudo de massa');await p.waitForTimeout(200);await p.evaluate(()=>document.querySelector('#modal [data-a=tkc-aba][data-v=prazos]').click());await p.waitForTimeout(100);ok(await p.$eval('#tkc-dur',x=>x.disabled)&&!(await p.$('[data-a=cr-pred-novo]')),'Leitura vê duração e predecessoras sem editar');
 await clica(p,'[data-a=close]');await p.waitForTimeout(100);
 // modelos: aplicar no segundo terreno e salvar o quadro
 await papel(p,'Analista');await p.waitForTimeout(150);

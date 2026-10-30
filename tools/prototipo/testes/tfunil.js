@@ -1,5 +1,5 @@
-// Tarefas pelo funil (bloco 4): vista Funil da página Tarefas, só leitura; colunas por fase, descida para etapas e subetapas,
-// trilha para subir, tarefas agrupadas pelo terreno, nada arrastável, modelos fora, filtros valem; prints.
+// Tarefas pelo funil (bloco 4, formato Monday em 30/out): vista Funil da página Tarefas, só leitura; uma tabela por fase, descida para etapas e subetapas,
+// trilha para subir, uma linha por terreno com as tarefas na seta, nada arrastável, modelos fora, filtros valem; prints.
 const path=require('path'),fs=require('fs'),{chromium}=require('playwright');
 const F=path.join(__dirname,'..','saida','bkm-terrenos.html'),L=path.join(__dirname,'..','libs','l')+'/',O=path.join(__dirname,'..','saida','t_funil')+'/';fs.mkdirSync(O,{recursive:true});
 const falhas=[];const ok=(c,m)=>{console.log((c?'ok   ':'FALHA ')+m);if(!c)falhas.push(m)};
@@ -9,7 +9,7 @@ const muda=(p,sel,v)=>p.evaluate(([s,v])=>{const el=document.querySelector(s);if
 const preenche=(p,sel,v)=>p.evaluate(([s,v])=>{const el=document.querySelector(s);if(!el)throw new Error('não achei '+s);el.value=v},[sel,v]);
 const envia=(p,sel)=>p.evaluate(s=>{const f=document.querySelector(s);if(!f)throw new Error('não achei '+s);f.requestSubmit()},sel);
 const papel=(p,v)=>p.evaluate(v=>{const a=document.createElement('button');a.dataset.a='role';a.dataset.v=v;document.body.appendChild(a);a.click();a.remove()},v);
-const ficha=(p,id)=>p.evaluate(id=>{const a=document.createElement('button');a.dataset.a='abrir';a.dataset.id=id;a.dataset.tab='tarefas';document.body.appendChild(a);a.click();a.remove()},id);
+const ficha=(p,id)=>p.evaluate(id=>{const a=document.createElement('button');a.dataset.a='abrir';a.dataset.id=id;a.dataset.tab='tarefas';document.body.appendChild(a);a.click();a.remove();document.querySelector('#bl-tarefas [data-a=cr-vista][data-v=quadro][aria-pressed=false]')?.click()},id);  // roteiro escrito sobre o quadro; a ficha abre na Lista
 const toast=p=>p.evaluate(()=>document.querySelector('.toast')?.textContent||'');
 const tar=(s,i,tit)=>s.terrenos[i].tarefas.find(k=>k.titulo===tit);
 const addD=(d,n)=>{const x=new Date(d+'T12:00:00');x.setDate(x.getDate()+n);return x.toISOString().slice(0,10)};
@@ -20,34 +20,39 @@ const abre=async(w,h,tema)=>{const ctx=await b.newContext({viewport:{width:w,hei
 const abreCartao=async(p,tit)=>{await clica(p,'.tk',tit);await p.waitForTimeout(250)};
 const fecha=async p=>{await clica(p,'#modal [data-a=close]');await p.waitForTimeout(150)};
 const lista=(s,i,k)=>s.terrenos[i].listas.find(l=>l.id===k.lista);
-const cols=p=>p.$$eval('.tf-col',xs=>xs.map(x=>({nome:x.querySelector('.tkl-h span')?.textContent.trim(),n:+x.querySelector('.tkl-h .n').textContent,ters:[...x.querySelectorAll('.tf-th .num')].map(y=>y.textContent)})));
+const cols=p=>p.$$eval('.tf2-g',xs=>xs.map(x=>({nome:x.querySelector('.tf2-gh .tf2-chip')?.textContent.trim(),n:x.querySelectorAll('.tf2-r:not(.tf2-h)').length,ters:[...x.querySelectorAll('.tf2-r:not(.tf2-h) .tf2-ter .num')].map(y=>y.textContent),desce:!!x.querySelector('.tf2-gh [data-a=tf-nivel]')})));
 {const {ctx,p}=await abre(1440,900,'claro');
 await p.evaluate(()=>history.replaceState(null,'','#/tarefas/funil'));await p.reload();await p.waitForTimeout(500);
 ok(await p.$eval('[data-a=tk-vista][data-v=funil]',x=>x.getAttribute('aria-pressed'))==='true','o endereço /tarefas/funil abre a vista Funil');
-let c=await cols(p);ok(c.length>=3&&c[0].nome==='Novos Negócios','colunas pelas fases: '+c.map(x=>x.nome+'('+x.n+')').join(', '));
-ok(c.some(x=>x.n>0),'há tarefas nas fases');
-ok(await p.$$eval('.tf-board .tk',xs=>xs.length>0&&xs.every(x=>x.getAttribute('draggable')==='false')),'nenhum cartão se arrasta');
-ok(!(await p.$$eval('.tf-board .tk',xs=>xs.some(x=>x.querySelector('.cx-selo')))),'modelos de cartão ficam de fora');
+let c=await cols(p);ok(c.length>=3&&c[0].nome==='Novos Negócios','uma tabela por fase: '+c.map(x=>x.nome+'('+x.n+')').join(', '));
+ok(c.some(x=>x.n>0),'há terrenos com tarefas nas fases');
+ok(!(await p.$$('.tf2 [draggable=true]')).length,'nada se arrasta');
+ok((await p.$eval('.tf2-h',x=>x.textContent)).includes('Próxima tarefa')&&!!(await p.$('.tf2-bar')),'colunas do Monday: próxima tarefa e andamento');
 await p.screenshot({path:O+'1_fases.png'});
-await clica(p,'.tf-col .col-ab');await p.waitForTimeout(300);c=await cols(p);
+await clica(p,'.tf2-gh [data-a=tf-nivel]');await p.waitForTimeout(300);c=await cols(p);
 ok(await p.$eval('.tf-trilha',x=>x.textContent.includes('Fases')&&x.textContent.includes('Novos Negócios')),'desce para as etapas, com a trilha');
-const tot0=c.reduce((s,x)=>s+x.n,0);ok(c.length>=3,'colunas pelas etapas: '+c.map(x=>x.nome+'('+x.n+')').join(', '));
+ok(c.length>=3,'uma tabela por etapa: '+c.map(x=>x.nome+'('+x.n+')').join(', '));
 await p.screenshot({path:O+'2_etapas.png'});
-const comSub=await p.$$eval('.tf-col',xs=>xs.findIndex(x=>x.querySelector('.col-ab')&&+x.querySelector('.n').textContent>0));
-if(comSub>=0){await p.evaluate(i=>document.querySelectorAll('.tf-col')[i].querySelector('.col-ab').click(),comSub);await p.waitForTimeout(300);
+const comSub=c.findIndex(x=>x.desce&&x.n>0);
+if(comSub>=0){await p.evaluate(i=>document.querySelectorAll('.tf2-g')[i].querySelector('.tf2-gh [data-a=tf-nivel]').click(),comSub);await p.waitForTimeout(300);
   c=await cols(p);ok(c.length>=1&&await p.$$eval('.tf-trilha li',x=>x.length)===3,'desce para as subetapas: '+c.map(x=>x.nome+'('+x.n+')').join(', '));
   await p.screenshot({path:O+'3_subetapas.png'});
   await clica(p,'.tf-trilha [data-a=tf-nivel]');await p.waitForTimeout(300);ok((await p.$$eval('.tf-trilha li',x=>x.length))===2,'a seta sobe um nível')}
 await clica(p,'.tf-trilha .linkbtn','Fases');await p.waitForTimeout(300);c=await cols(p);ok(c[0].nome==='Novos Negócios'&&!(await p.$('.tf-trilha [data-a=tf-nivel].iconbtn')),'a trilha volta às fases');
+// fechar uma tabela
+await clica(p,'.tf2-gh [data-a=tf-grupo]');await p.waitForTimeout(200);ok((await cols(p))[0].n===0,'a seta do título fecha a tabela');
+await clica(p,'.tf2-gh [data-a=tf-grupo]');await p.waitForTimeout(200);
 // filtro de terreno vale
 const ter=c.find(x=>x.ters.length)?.ters[0];const s=await est(p);const tid=s.terrenos.find(t=>t.codigo===ter).id;
-await muda(p,'#tk-ter',tid);await p.waitForTimeout(300);c=await cols(p);ok(c.every(x=>x.ters.every(y=>y===ter)),'o filtro de terreno vale na vista Funil');
+await muda(p,'#tk-ter',tid);await p.waitForTimeout(300);c=await cols(p);ok(c.every(x=>x.ters.every(y=>y===ter))&&c.some(x=>x.n),'o filtro de terreno vale na vista Funil');
 await muda(p,'#tk-ter','');await p.waitForTimeout(200);
-// abrir o cartão pela vista
-await clica(p,'.tf-board .tk');await p.waitForTimeout(250);ok(!!(await p.$('#modal .tkm-tit')),'o cartão abre pela vista Funil');
+// a linha abre as tarefas; a tarefa abre o cartão
+await clica(p,'.tf2-r [data-a=tf-linha]');await p.waitForTimeout(250);ok(await p.$$eval('.tf2-tk',x=>x.length)>0,'a seta da linha mostra as tarefas do terreno');
+ok(!(await p.$$eval('.tf2-tk',xs=>xs.some(x=>x.querySelector('.cx-selo')))),'modelos de cartão ficam de fora');
+await clica(p,'.tf2-tk');await p.waitForTimeout(250);ok(!!(await p.$('#modal .tkm-tit')),'o cartão abre pela vista Funil');
 await ctx.close()}
 {const {ctx,p}=await abre(1440,900,'escuro');await p.evaluate(()=>history.replaceState(null,'','#/tarefas/funil'));await p.reload();await p.waitForTimeout(500);await p.screenshot({path:O+'4_escuro.png'});await ctx.close()}
 {const {ctx,p}=await abre(390,844,'claro');await p.evaluate(()=>history.replaceState(null,'','#/tarefas/funil'));await p.reload();await p.waitForTimeout(500);
-ok(await p.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),'celular: a página não rola de lado');await p.screenshot({path:O+'5_celular.png'});await ctx.close()}
+ok(await p.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'celular: a página não rola de lado');await p.screenshot({path:O+'5_celular.png'});await ctx.close()}
 ok(!erros.length,'sem erro de JavaScript '+erros.join(' | '));
 await b.close();console.log(falhas.length?`\n${falhas.length} FALHA(S)`:'\nTUDO OK');process.exit(falhas.length?1:0)})();

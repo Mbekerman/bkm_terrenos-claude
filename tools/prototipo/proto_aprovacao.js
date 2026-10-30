@@ -18,11 +18,26 @@ const apPend=k=>apAps(k).find(a=>a.sit==='pendente');
 const apUltima=k=>apAps(k).at(-1);
 const apPrecisa=k=>(k.aprov||[]).length>0&&!apAps(k).some(a=>a.sit==='aprovada');
 const apRegraCk=()=>S.tkRegras?.checklist!==false;
+/* predecessora pendente (decisão do Moisés, 30/out/2026): por padrão avisa e deixa concluir; com a regra, bloqueia.
+   TI e TT pedem a predecessora concluída; II e IT, começada (concluída ou com o início já chegado). Espelha fluxo.predecessoras_pendentes */
+const apRegraPred=()=>S.tkRegras?.predecessoras===true;
+function apPredPend(t,k){return [...new Set(crPreds(k).map(v=>{const p=(t?.tarefas||[]).find(x=>x.id===v.id);return p&&!p.arq&&!p.feita&&(v.tipo==='TI'||v.tipo==='TT'||!p.inicio||p.inicio>HOJE)?p:null}).filter(Boolean))]}
+/* o aviso: quadro por cima de tudo, com Concluir mesmo assim; quem confirma fica no histórico */
+function apPredAviso(t,k,fn){const ps=apPredPend(t,k);document.querySelector('.pred-aviso-f')?.remove();
+  const f=document.createElement('div');f.className='cr-aviso-f pred-aviso-f';f.innerHTML=`<div class="cr-aviso" role="alertdialog" aria-modal="true" aria-labelledby="pred-av-t"><h3 id="pred-av-t">Predecessora ainda pendente</h3>
+    <p><b>${esc(k.titulo)}</b> depende de ${ps.map(p=>`<b>${p.codigo}</b> ${esc(p.titulo)}`).join(', ')}, que ainda não ${ps.length>1?'permitem':'permite'} concluir pelo cronograma. Concluir mesmo assim fica registrado no histórico.</p>
+    <div class="cr-av-b"><button class="btn" data-pred="nao">Cancelar</button><button class="btn primary" data-pred="sim">Concluir mesmo assim</button></div></div>`;
+  const fecha=()=>{f.remove();document.removeEventListener('keydown',esc_,true)},esc_=e=>{if(e.key==='Escape'){e.stopImmediatePropagation();fecha();render()}};
+  f.addEventListener('click',e=>{const b=e.target.closest('[data-pred]');if(!b&&e.target!==f)return;e.stopPropagation();fecha();
+    if(b?.dataset.pred==='sim'){UI.predOk=k.id;try{fn()}finally{UI.predOk=null}log(t,`Tarefa "${k.titulo}": concluída com predecessora pendente (${ps.map(p=>p.codigo).join(', ')})`);save()}render()});
+  document.addEventListener('keydown',esc_,true);document.body.appendChild(f);f.querySelector('[data-pred=sim]').focus()}
 const apCkAberto=k=>(k.checklists||[]).some(c=>c.itens.some(i=>!i.feito&&!i.virou));
 /* o que impede concluir agora (null = nada) */
 function apBloqueio(t,k){if(k.modelo)return 'Modelo de cartão não se conclui.';if(apPrecisa(k))return apPend(k)?'A tarefa está aguardando aprovação.':'A tarefa precisa ser aprovada antes de concluir. Use "Pedir aprovação".';
   if(apRegraCk()&&apCkAberto(k))return 'Conclua os itens do checklist antes de concluir a tarefa.';
-  const f=cpoFaltam(k);if(f.length)return `Preencha ${f.length>1?'os campos obrigatórios':'o campo obrigatório'} antes de concluir: ${f.join(', ')}.`;return null}
+  if(apRegraCk()&&(t?.tarefas||[]).some(x=>x.mae===k.id&&!x.feita&&!x.arq))return 'Conclua as subtarefas antes de concluir a tarefa.';   // subtarefa em aberto (30/out)
+  const f=cpoFaltam(k);if(f.length)return `Preencha ${f.length>1?'os campos obrigatórios':'o campo obrigatório'} antes de concluir: ${f.join(', ')}.`;
+  if(apRegraPred()){const ps=apPredPend(t,k);if(ps.length)return `As predecessoras ainda não permitem concluir: ${ps.map(p=>p.codigo).join(', ')}.`}return null}
 /* votos que esperam decisão agora (em sequência, só o da vez) */
 function apDaVez(a){if(!a||a.sit!=='pendente')return [];const ab=a.votos.filter(v=>!v.dec);if(a.modo==='paralelo')return ab;const m=Math.min(...ab.map(v=>v.ordem));return ab.filter(v=>v.ordem===m)}
 /* o voto que essa pessoa decide: o dela ou, como superior, o de um aprovador abaixo */
@@ -30,7 +45,9 @@ function apMeuVoto(a,u){const vz=apDaVez(a);return vz.find(v=>v.user===u)||vz.fi
 function apAvisarVez(t,k,a){apDaVez(a).forEach(v=>notificar(v.user,'aprovacao_pendente',`Aprovar a tarefa: ${k.titulo}`,t,a.id+':'+v.user,tkIr(k)))}
 function apPedir(t,k,motivo){if(!(k.aprov||[]).length){toast('A tarefa não tem aprovador.',true);return}
   if(apRegraCk()&&apCkAberto(k)){toast('Conclua os itens do checklist antes de pedir a aprovação.',true);return}
+  if(apRegraCk()&&(t.tarefas||[]).some(x=>x.mae===k.id&&!x.feita&&!x.arq)){toast('Conclua as subtarefas antes de pedir a aprovação.',true);return}
   const f=cpoFaltam(k);if(f.length){toast(`Preencha antes de pedir a aprovação: ${f.join(', ')}.`,true);return}
+  if(apRegraPred()&&apPredPend(t,k).length){toast('As predecessoras ainda não permitem concluir esta tarefa.',true);return}
   const p=apPend(k);if(p){p.sit='cancelada';p.decEm=agora()}const eu=me();
   const a={id:uid(),modo:k.apModo||'paralelo',sit:'pendente',motivo:motivo||null,por:eu,em:agora(),votos:k.aprov.map((u,i)=>({user:u,ordem:i+1,dec:null,por:null,em:null,just:null}))};
   apAps(k).push(a);const v=a.votos.find(x=>x.user===eu);if(v){v.dec='aprovou';v.por=eu;v.em=agora()}
@@ -72,9 +89,11 @@ const apRotulo=k=>!k.feita&&apPrecisa(k)?(apPend(k)?'Aguardando aprovação':'Pe
 /* Configurações › Tarefas: regra de conclusão */
 const apCfgHtml=()=>`<section class="sec"><div class="sec-h"><h2>Conclusão da tarefa</h2></div><div class="sec-b">
   <label class="fchk"><input type="checkbox" data-a="ap-regra" ${apRegraCk()?'checked':''}>${ic('check',16)}Concluir exige o checklist completo</label>
-  <p class="faint" style="margin:8px 0 0">Tarefa com aprovador só conclui depois de aprovada, sempre.</p>${pzCfgHtml()}</div></section>`;
+  <label class="fchk"><input type="checkbox" data-a="ap-regra-pred" ${apRegraPred()?'checked':''}>${ic('check',16)}Predecessora pendente bloqueia a conclusão</label>
+  <p class="faint" style="margin:8px 0 0">Desligado, concluir com predecessora pendente só avisa e fica no histórico. Tarefa com aprovador só conclui depois de aprovada, sempre.</p>${pzCfgHtml()}</div></section>`;
 
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="ap-"]');if(!a)return;const A=a.dataset.a;
+  if(A==='ap-regra-pred'){e.stopImmediatePropagation();S.tkRegras={...(S.tkRegras||{}),predecessoras:a.checked};toast(a.checked?'Predecessora pendente bloqueia a conclusão.':'Predecessora pendente só avisa.');save();render();return}
   if(A==='ap-regra'){e.stopImmediatePropagation();S.tkRegras={...(S.tkRegras||{}),checklist:a.checked};toast(a.checked?'Concluir exige o checklist completo.':'Concluir não exige mais o checklist completo.');save();render();return}
   e.preventDefault();e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k)return;
   switch(A){
