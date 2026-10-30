@@ -31,5 +31,16 @@ if(tem){await ev('.tk[draggable=true]','dragstart');const n=await p.$$eval('.tk-
   await p.evaluate(()=>document.querySelector('.tk-col.sobre').scrollIntoView({block:'center'}));await p.screenshot({path:O+tema+'_tarefas.png'});
   await ev('.tk-col','drop',null,n-1);c=await classes();ok(!c.dnd&&!c.sobre.length,`${tema}: tarefas, ao soltar tudo limpo`)}
 else ok(false,'sem tarefa arrastável');
+// com pendência (checklist em aberto), Feito fica apagada, não acende e não recebe o cartão
+{const i=await p.$$eval('.tk[draggable=true]',xs=>xs.findIndex(x=>x.getAttribute('aria-label')==='Levar ao comitê'));const f=await p.$$eval('.tk-col',xs=>xs.findIndex(x=>x.dataset.tkcol==='Feito'));
+ ok(i>=0&&f>=0,`${tema}: cartão com checklist em aberto e lista Feito na tela`);
+ await p.evaluate(()=>{window.__dt=new DataTransfer()});await ev('.tk[draggable=true]','dragstart',null,i);await ev('.tk-col','dragover',null,f);
+ const st=await p.evaluate(()=>({nao:[...document.querySelectorAll('.tk-col.nao')].map(x=>x.dataset.tkcol),sobre:[...document.querySelectorAll('.tk-col.sobre')].map(x=>x.dataset.tkcol)}));
+ ok(st.nao.includes('Feito')&&!st.sobre.includes('Feito'),`${tema}: com pendência, Feito fica apagada e não acende`);
+ await p.evaluate(()=>document.querySelector('.tk-col.nao').scrollIntoView({block:'center'}));await p.screenshot({path:O+tema+'_pendencia.png'});
+ await ev('.tk.arrastando','dragend');const t=await p.evaluate(()=>document.querySelector('.toast')?.textContent||'');
+ const col=await p.$$eval('.tk[draggable=true]',xs=>xs.find(x=>x.getAttribute('aria-label')==='Levar ao comitê')?.closest('.tk-col').dataset.tkcol);
+ ok(t.includes('antes de concluir')&&col!=='Feito',`${tema}: soltando em Feito, o cartão fica e o aviso diz o que falta (${t})`);
+ ok(!(await p.$('.tk-col.nao')),`${tema}: ao soltar, a marca some`)}
 await ctx.close()}
 console.log('ERROS',erros,falhas);await b.close()})();
