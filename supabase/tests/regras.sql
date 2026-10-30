@@ -2248,4 +2248,17 @@ select fluxo.copiar_tarefa(:'kh', pg_temp.lista(:'tm', 'Fazer')) as kcp3 \gset
 select pg_temp.ok((select not modelo and estimativa_min = 480 from fluxo.tarefas where id = :'kcp3'), 'criar a partir do modelo: a cópia é um cartão comum, com a estimativa');
 select pg_temp.como(:'leitor');
 select pg_temp.falha(format($$select fluxo.copiar_tarefa(%L, %L)$$, :'kr', pg_temp.lista(:'tm', 'Fazer')), 'leitura não copia cartão');
+\echo '# tarefas pelo funil (bloco 4)'
+reset role;
+select p.terreno_id as tf from app.processos p where p.status = 'ativo' and p.parte_id is null and p.empresa_id = :'emp'
+  and exists (select 1 from fluxo.quadros q where q.objeto_tipo = 'terreno' and q.objeto_id = p.terreno_id) limit 1 \gset
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tf', 'Conferir a minuta', current_date + 2) as kfu \gset
+select pg_temp.ok((select count(*) from app.v_tarefas_funil where tarefa_id = :'kfu')
+  = (select count(*) from app.processos where terreno_id = :'tf' and parte_id is null and status in ('ativo','stand_by'))
+  and (select bool_and(etapa is not null and subetapa is not null) from app.v_tarefas_funil where tarefa_id = :'kfu'),
+  'a tarefa aparece em cada fase aberta do terreno, com a etapa e a subetapa dele');
+select pg_temp.ok(not exists (select 1 from app.v_tarefas_funil where tarefa_id = :'kcp'), 'terreno sem fase aberta fica fora da visão do funil');
+select pg_temp.como(:'intruso');
+select pg_temp.ok(not exists (select 1 from app.v_tarefas_funil where tarefa_id = :'kfu'), 'outra empresa não vê a visão do funil');
 \echo 'TODOS OS TESTES PASSARAM'

@@ -897,7 +897,7 @@ erDiagram
 
 ### Apontamento de horas (bloco 4)
 
-Decisão do Moisés de 30/out/2026: sem aprovação. Mesma migration.
+Decisões do Moisés de 30/out/2026: sem aprovação, e por ora só no banco (o app ainda não tem a tela). Mesma migration.
 
 ```mermaid
 erDiagram
@@ -918,7 +918,11 @@ erDiagram
 - `fluxo.copiar_tarefa(tarefa, lista, título, itens)` roda com os direitos de quem copia (RLS de cada tabela): só copia o que a pessoa vê, para uma lista aberta de um quadro que ela vê e edita. `itens` escolhe o que vai: `checklists` (itens em aberto, sem prazo), `etiquetas`, `pessoas` (responsável, executores, aprovadores, quem acompanha e responsáveis dos itens), `campos` (só ativos e opções ativas) e `anexos`. Vão sempre a visibilidade, os acessos, a prioridade, a capa e a estimativa; nunca datas, comentários, horas, aprovações nem a série.
 - `tarefas.modelo`: o cartão fica no quadro como base. Não conclui (`tg_tarefa_lista`), não atrasa (`v_tarefas`, rotina diária), não tem recorrência nem vem de uma (`t_modelo`). Criar a partir do modelo é copiar.
 
-- **Fica para os próximos blocos:** visão por fase › etapa › subetapa, automações e WhatsApp.
+### Tarefas pelo funil (bloco 4)
+
+- `app.v_tarefas_funil` (em `…000400_negociacao.sql`, porque junta `fluxo` com `app.processos`): cada tarefa de quadro de terreno com a fase aberta do terreno (ativa ou em stand by, sem as partes), a etapa e a subetapa; uma linha por fase aberta. Base da vista Funil da página Tarefas, só leitura.
+
+- **Fica para os próximos blocos:** automações (inclusive avisos além do @), WhatsApp e a tela de horas.
 
 ## Setores censitários e renda familiar estimada
 

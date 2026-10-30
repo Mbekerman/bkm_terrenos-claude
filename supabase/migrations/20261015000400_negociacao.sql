@@ -413,3 +413,15 @@ create policy remover on app.reuniao_participantes for delete to authenticated u
 create policy remover on app.oferta_partes for delete to authenticated using (empresa_id in (select app.empresas_edicao()));
 grant delete on app.reuniao_participantes, app.oferta_partes to authenticated;
 grant usage on sequence app.processo_seq to authenticated;
+
+-- Tarefas pelo funil (bloco 4; visão só de leitura da página Tarefas): cada
+-- tarefa de quadro de terreno com a fase aberta do terreno, a etapa e a
+-- subetapa em que ele está. Uma linha por fase aberta (o terreno em duas
+-- fases aparece nas duas); partes ficam de fora (vale a negociação do terreno).
+create view app.v_tarefas_funil with (security_invoker = true) as
+select k.id as tarefa_id, k.codigo, k.titulo, k.lista_nome, k.lista_tipo, k.responsavel_id, k.prazo, k.atrasada, k.concluida_em, k.arquivada_em, k.modelo,
+       q.objeto_id as terreno_id, p.id as processo_id, p.fase, p.etapa_atual as etapa, p.subetapa_atual as subetapa, p.status as processo_status
+from fluxo.v_tarefas k
+join fluxo.quadros q on q.id = k.quadro_id and q.objeto_tipo = 'terreno'
+join app.processos p on p.terreno_id = q.objeto_id and p.parte_id is null and p.status in ('ativo','stand_by');
+grant select on app.v_tarefas_funil to authenticated;
