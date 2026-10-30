@@ -7242,7 +7242,9 @@ function crPrep(){if(!S.modelos){S.modelos=[crModeloPadrao()]}S.terrenos.forEach
   const t=S.terrenos[0];if(t&&!S.crExemplo){S.crExemplo=true;crAplicar(t,crModelos()[0],addD(HOJE,-7));const b={id:uid(),n:null,sit:'pendente',motivo:null,por:t.resp||'Rafael Souza',em:addD(HOJE,-12)+'T09:00:00',itens:{}};
     t.tarefas.filter(k=>!k.arq&&k.inicio&&k.prazo).forEach(k=>b.itens[k.id]={ini:k.inicio,pz:k.prazo,dur:k.dur});crLbs(t).push(b);crAprovar(t,b);b.decPor='Ana Prado';b.decEm=addD(HOJE,-11)+'T15:20:00';
     ['Pedir matrícula atualizada','Consultar zoneamento e parâmetros'].forEach(n=>{const k=t.tarefas.find(x=>x.titulo===n);if(k){k.lista=tkPrim(t,'conclui').id;k.feita=k.prazo;k.feitaPor=k.resp}});
-    const k=t.tarefas.find(x=>x.titulo==='Análise jurídica da matrícula');if(k)crEditar(t,k,'dur',8)}}
+    const k=t.tarefas.find(x=>x.titulo==='Análise jurídica da matrícula');if(k)crEditar(t,k,'dur',8);
+    // em andamento e esperando terceiro, para o cronograma mostrar as cores das listas
+    [['Estudo de massa','Fazendo'],['Análise jurídica da matrícula','Aguardando retorno']].forEach(([n,ln])=>{const x=t.tarefas.find(y=>y.titulo===n),l=tkL(t).find(y=>y.nome===ln);if(x&&l)x.lista=l.id})}}
 /* aplica o modelo no quadro do terreno, a partir da data */
 function crAplicar(t,m,data){const mapa={},resp=u=>u===RESP_OBJ?t.resp||null:u||null;
   m.tarefas.forEach(x=>{const l=tkL(t).find(y=>y.nome===x.lista&&!y.oculta)||tkPrim(t,'aberta');
