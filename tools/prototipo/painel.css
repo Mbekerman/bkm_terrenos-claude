@@ -3249,3 +3249,8 @@ html[data-tema="escuro"] .tc-dial { background: #060c20; border-color: #1a2240 }
   .tc-dial { display: flex } .tc-sem { min-height: 0 }
   .tc-ev { background: currentColor !important; opacity: .75; width: auto; align-self: stretch } .tc-ev.feito { opacity: .45 }
 }
+/* aviso de predecessora pendente ao concluir (30/out): por cima de tudo, também fora do cartão */
+.pred-aviso-f { position: fixed; z-index: 1000; padding-top: 120px }
+.pred-aviso-f .cr-aviso { background: var(--superficie, #fff); color: var(--texto, #1f1f1f); border-radius: 28px; padding: 24px }
+.pred-aviso-f .cr-av-b { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end }
+html[data-tema="escuro"] .pred-aviso-f .cr-aviso { background: #0c1433; color: #e3e8ff }

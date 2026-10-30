@@ -2425,4 +2425,27 @@ update fluxo.tarefas set concluida_em = now() where id = :'kq2';
 select pg_temp.ok((select concluida_em is not null from fluxo.tarefas where id = :'kq2'), 'com as subtarefas concluídas, a mãe conclui');
 select pg_temp.como(:'diretor');
 select fluxo.salvar_regras(:'emp', false);
+-- predecessora pendente: por padrão só aviso; com a regra, bloqueia (decisão do Moisés, 30/out/2026)
+select pg_temp.tarefa(:'tm', 'Pedir a certidão', current_date + 3, :'analista') as kp1 \gset
+select pg_temp.tarefa(:'tm', 'Analisar a certidão', current_date + 6, :'analista') as kp2 \gset
+select pg_temp.tarefa(:'tm', 'Começar o estudo', current_date + 8, :'analista') as kp3 \gset
+select pg_temp.tarefa(:'tm', 'Revisar o estudo', current_date + 9, :'analista') as kp4 \gset
+insert into fluxo.vinculos (empresa_id, predecessora_id, sucessora_id, tipo) values (:'emp', :'kp1', :'kp2', 'TI'), (:'emp', :'kp3', :'kp4', 'II');
+select pg_temp.ok(fluxo.predecessoras_pendentes(:'kp2') = array[(select codigo from fluxo.tarefas where id = :'kp1')], 'TI: predecessora em aberto fica pendente');
+select pg_temp.ok(cardinality(fluxo.predecessoras_pendentes(:'kp4')) = 1, 'II: predecessora sem começar fica pendente');
+select pg_temp.ok(not ('predecessoras' = any (fluxo.pendencias_conclusao(:'kp2'))), 'sem a regra, predecessora pendente não bloqueia');
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format($$select fluxo.salvar_regra_predecessoras(%L, true)$$, :'emp'), 'só o administrador liga o bloqueio das predecessoras');
+select pg_temp.como(:'diretor');
+select fluxo.salvar_regra_predecessoras(:'emp', true);
+select pg_temp.como(:'analista');
+select pg_temp.ok('predecessoras' = any (fluxo.pendencias_conclusao(:'kp2')), 'com a regra, vira pendência');
+select pg_temp.falha(format($$update fluxo.tarefas set concluida_em = now() where id = %L$$, :'kp2'), 'com a regra, não conclui antes da predecessora TI');
+update fluxo.tarefas set inicio = current_date where id = :'kp3';
+select pg_temp.ok(cardinality(fluxo.predecessoras_pendentes(:'kp4')) = 0, 'II: com o início da predecessora chegado, libera');
+update fluxo.tarefas set concluida_em = now() where id = :'kp1';
+update fluxo.tarefas set concluida_em = now() where id = :'kp2';
+select pg_temp.ok((select concluida_em is not null from fluxo.tarefas where id = :'kp2'), 'com a predecessora concluída, a sucessora conclui');
+select pg_temp.como(:'diretor');
+select fluxo.salvar_regra_predecessoras(:'emp', false);
 \echo 'TODOS OS TESTES PASSARAM'

@@ -42,13 +42,15 @@ function tkAvisarAcomp(t,k,txt){(k.acomp||[]).forEach(u=>notificar(u,'tarefa_aco
 
 /* mudanças (no banco: tg_tarefa_lista, notificações e auditoria) */
 function tkMover(t,k,lid,pos){const de=tkLista(t,k),l=tkL(t).find(x=>x.id===lid);if(!l)return;
-  if(l.tipo==='conclui'&&!k.feita&&!UI.apAprovando){const m=apBloqueio(t,k);if(m){toast(m,true);return false}}
+  if(l.tipo==='conclui'&&!k.feita&&!UI.apAprovando){const m=apBloqueio(t,k);if(m){toast(m,true);return false}
+    /* predecessora pendente sem a regra: avisa e só conclui se a pessoa confirmar */
+    if(UI.predOk!==k.id&&apPredPend(t,k).length){apPredAviso(t,k,()=>tkMover(t,k,lid,pos));return false}}
   if(de.id!==l.id&&pzGuarda(t,k,de,l)===false)return false;
   if(l.tipo!=='conclui'&&k.feita)apInvalidar(t,k);
   if(pos!=null)k.pos=pos;if(de.id===l.id)return;k.lista=l.id;
   if(l.tipo==='conclui'&&!k.feita){k.feita=HOJE;k.feitaPor=me();tkAvisarAcomp(t,k,`Tarefa concluída: ${k.titulo}`)}else if(l.tipo!=='conclui'){k.feita=null;k.feitaPor=null}
   log(t,`Tarefa "${k.titulo}": ${de.nome} → ${l.nome}`)}
-function tkConcluir(t,k,sim){const l=sim?tkPrim(t,'conclui'):tkPrim(t,'aberta');k.pos=Date.now();tkMover(t,k,l.id)}
+function tkConcluir(t,k,sim){const l=sim?tkPrim(t,'conclui'):tkPrim(t,'aberta');k.pos=Date.now();return tkMover(t,k,l.id)}
 function tkCriar(t,d){const k=tkNorm(t,{id:uid(),titulo:d.titulo.trim(),desc:d.desc||'',resultado:'',resp:d.resp||null,solic:me(),criadoPor:me(),vis:d.vis||'publico',acessos:vzAcessosNovos(d),prazo:d.prazo||null,prio:d.prio||'media',lista:d.lista||tkPrim(t,'aberta').id,pos:Date.now(),mae:d.mae||null});vzAjustar(t,k);
   t.tarefas.push(k);if(tkLista(t,k).tipo==='conclui'){k.feita=HOJE;k.feitaPor=me()}notifTarefa(t,k,null);mencionarTarefa(t,k,'');log(t,`Tarefa criada: ${k.titulo}`);return k}
 

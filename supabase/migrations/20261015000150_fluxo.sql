@@ -278,6 +278,8 @@ begin
         raise exception 'Conclua as subtarefas antes de concluir a tarefa' using errcode = '23514';
       elsif 'campos' = any (v_pend) then
         raise exception 'Preencha os campos obrigatórios antes de concluir a tarefa' using errcode = '23514';
+      elsif 'predecessoras' = any (v_pend) then
+        raise exception 'As predecessoras ainda não permitem concluir esta tarefa' using errcode = '23514';
       end if;
     end if;
     new.concluida_em := coalesce(new.concluida_em, now()); new.concluida_por := auth.uid();
@@ -1055,7 +1057,9 @@ grant execute on function fluxo.aplicar_modelo(uuid, uuid, date, uuid), fluxo.sa
 create table fluxo.regras (
   empresa_id              uuid primary key references app.empresas(id) on delete cascade,
   conclui_exige_checklist boolean not null default true,
-  pausa_aprova            text not null default 'gestor' check (pausa_aprova in ('ninguem','gestor','diretor'))  -- SLA (abaixo)
+  pausa_aprova            text not null default 'gestor' check (pausa_aprova in ('ninguem','gestor','diretor')),  -- SLA (abaixo)
+  -- predecessora pendente (decisão do Moisés, 30/out/2026): por padrão o app só avisa e deixa concluir; ligada, bloqueia
+  conclui_exige_predecessoras boolean not null default false
 );
 
 create table fluxo.aprovacoes (
@@ -1131,8 +1135,12 @@ begin
   end if;
   if 'checklist' = any (fluxo.pendencias_conclusao(p_tarefa)) then
     raise exception 'Conclua os itens do checklist antes de pedir a aprovação' using errcode = '23514';
+  elsif 'subtarefas' = any (fluxo.pendencias_conclusao(p_tarefa)) then
+    raise exception 'Conclua as subtarefas antes de pedir a aprovação' using errcode = '23514';
   elsif 'campos' = any (fluxo.pendencias_conclusao(p_tarefa)) then
     raise exception 'Preencha os campos obrigatórios antes de pedir a aprovação' using errcode = '23514';
+  elsif 'predecessoras' = any (fluxo.pendencias_conclusao(p_tarefa)) then
+    raise exception 'As predecessoras ainda não permitem concluir esta tarefa' using errcode = '23514';
   end if;
   update fluxo.aprovacoes set situacao = 'cancelada', decidida_em = clock_timestamp() where tarefa_id = p_tarefa and situacao = 'pendente';
   insert into fluxo.aprovacoes (empresa_id, tarefa_id, modo, motivo) values (k.empresa_id, p_tarefa, k.aprovacao_modo, nullif(trim(p_motivo), ''))
@@ -1770,6 +1778,27 @@ create trigger t_aud after insert or update or delete on fluxo.campo_opcoes for 
 create trigger t_aud after insert or update or delete on fluxo.tarefa_campos for each row execute function app.tg_auditoria();
 grant select, insert, update, delete on fluxo.campos, fluxo.campo_opcoes, fluxo.tarefa_campos to authenticated;
 
+-- Predecessoras que ainda não deixam concluir (decisão do Moisés, 30/out/2026): em TI e TT a
+-- predecessora precisa estar concluída; em II e IT, ter começado (concluída ou com o início já
+-- chegado, porque o início real não é guardado). Arquivada não conta. Devolve os códigos.
+create or replace function fluxo.predecessoras_pendentes(p_tarefa uuid)
+returns text[] language sql stable set search_path = '' as $$
+  select coalesce(array_agg(distinct p.codigo order by p.codigo), '{}')
+  from fluxo.vinculos v join fluxo.tarefas p on p.id = v.predecessora_id
+  where v.sucessora_id = p_tarefa and p.arquivada_em is null and p.concluida_em is null
+    and (v.tipo in ('TI','TT') or p.inicio is null or p.inicio > current_date) $$;
+
+-- Administrador: predecessora pendente bloqueia a conclusão? (desligado = o app só avisa)
+create or replace function fluxo.salvar_regra_predecessoras(p_empresa uuid, p_bloqueia boolean)
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  perform app.exigir_administrador(p_empresa);
+  insert into fluxo.regras (empresa_id, conclui_exige_predecessoras) values (p_empresa, coalesce(p_bloqueia, false))
+  on conflict (empresa_id) do update set conclui_exige_predecessoras = excluded.conclui_exige_predecessoras;
+end $$;
+revoke all on function fluxo.predecessoras_pendentes(uuid), fluxo.salvar_regra_predecessoras(uuid, boolean) from public;
+grant execute on function fluxo.predecessoras_pendentes(uuid), fluxo.salvar_regra_predecessoras(uuid, boolean) to authenticated;
+
 -- O que impede concluir, agora com os campos obrigatórios ativos sem valor.
 create or replace function fluxo.pendencias_conclusao(p_tarefa uuid)
 returns text[] language sql stable security definer set search_path = '' as $$
@@ -1783,7 +1812,9 @@ returns text[] language sql stable security definer set search_path = '' as $$
           and exists (select 1 from fluxo.tarefas s where s.mae_id = p_tarefa and s.concluida_em is null and s.arquivada_em is null) then 'subtarefas' end,
     case when exists (select 1 from fluxo.campos c join fluxo.tarefas k on k.empresa_id = c.empresa_id
                       where k.id = p_tarefa and c.ativo and c.obrigatorio
-                        and not exists (select 1 from fluxo.tarefa_campos v where v.tarefa_id = k.id and v.campo_id = c.id)) then 'campos' end
+                        and not exists (select 1 from fluxo.tarefa_campos v where v.tarefa_id = k.id and v.campo_id = c.id)) then 'campos' end,
+    case when coalesce((select r.conclui_exige_predecessoras from fluxo.regras r join fluxo.tarefas k on k.empresa_id = r.empresa_id where k.id = p_tarefa), false)
+          and cardinality(fluxo.predecessoras_pendentes(p_tarefa)) > 0 then 'predecessoras' end
   ], null) $$;
 
 -- =====================================================================

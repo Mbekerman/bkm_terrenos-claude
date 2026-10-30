@@ -101,6 +101,28 @@ await p.screenshot({path:O+'3_funil.png'});
 await vista(p,'cronograma');
 ok(await p.$$eval('.cr-bar > i',x=>x.length)>0&&await p.$$eval('.cr-setas path',x=>x.length)>0,'Cronograma com barras de andamento e setas das predecessoras');
 await p.screenshot({path:O+'4_cronograma.png'});
+// ---------- Predecessora pendente ----------
+await nav(p,'tarefas');await vista(p,'lista');s=await est(p);
+const livre=(t,k)=>!k.feita&&!k.arq&&!k.modelo&&!k.mae&&!(k.aprov||[]).length&&!(k.checklists||[]).some(c=>c.itens.some(i=>!i.feito))&&!t.tarefas.some(x=>x.mae===k.id&&!x.feita)&&!(k.preds||[]).length;
+const tp=s.terrenos[0],kpc=tp.tarefas.find(k=>livre(tp,k)),kpr=tp.tarefas.find(k=>k!==kpc&&!k.feita&&!k.arq&&!k.modelo);
+// predecessora TI em aberto, posta direto nos dados (o vínculo pela tela já é coberto no tcronograma)
+await p.evaluate(([tid,kid,pid])=>{const st=JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-v9'));const k=st.terrenos.find(t=>t.id===tid).tarefas.find(x=>x.id===kid);k.preds=[{id:pid,tipo:'TI',def:0}];localStorage.setItem('bkm-terrenos-prototipo-v9',JSON.stringify(st))},[tp.id,kpc.id,kpr.id]);
+await p.reload();await p.waitForTimeout(500);await nav(p,'tarefas');await vista(p,'lista');
+const linha=`.tl-r[data-id="${tp.id}"][data-tk="${kpc.id}"] [data-a=tl-feito]`;
+await p.evaluate(sel=>document.querySelector(sel).click(),linha);await p.waitForTimeout(200);
+ok(!!(await p.$('.pred-aviso-f'))&&(await p.$eval('.pred-aviso-f',x=>x.textContent)).includes('Concluir mesmo assim'),'concluir com predecessora pendente abre o aviso');
+await p.screenshot({path:O+'6_aviso_pred.png'});
+await p.click('.pred-aviso-f [data-pred=nao]');await p.waitForTimeout(200);s=await est(p);
+ok(!kOf(s,kpc.id).k.feita&&!(await p.$('.pred-aviso-f')),'Cancelar não conclui');
+await p.evaluate(sel=>document.querySelector(sel).click(),linha);await p.waitForTimeout(200);
+await p.click('.pred-aviso-f [data-pred=sim]');await p.waitForTimeout(200);s=await est(p);
+ok(!!kOf(s,kpc.id).k.feita&&JSON.stringify(s.terrenos[0].log||s.terrenos[0].hist||'').includes('concluída com predecessora pendente'),'Concluir mesmo assim conclui e fica no histórico');
+await p.evaluate(sel=>document.querySelector(sel).click(),linha);await p.waitForTimeout(200);
+await p.evaluate(()=>history.replaceState(null,'','#/configuracoes/tarefas'));await p.reload();await p.waitForTimeout(500);
+await clica(p,'[data-a=ap-regra-pred]');await p.waitForTimeout(200);s=await est(p);ok(s.tkRegras?.predecessoras===true,'Configurações › Tarefas liga o bloqueio');
+await nav(p,'tarefas');await vista(p,'lista');
+await p.evaluate(sel=>document.querySelector(sel).click(),linha);await p.waitForTimeout(200);s=await est(p);
+ok(!kOf(s,kpc.id).k.feita&&!(await p.$('.pred-aviso-f'))&&(await toast(p)).includes('predecessoras'),'com o bloqueio, não conclui e diz o que falta');
 await ctx.close()}
 {const {ctx,p}=await abre(390,844,'claro');
 await nav(p,'tarefas');
