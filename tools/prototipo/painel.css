@@ -3035,3 +3035,20 @@ html[data-tema="escuro"] .cx-faixa, html[data-tema="escuro"] .tk-b.cx-selo { bac
 .tf-th { all: unset; cursor: pointer; font-size: 12px; font-weight: 500; color: var(--tk-sub, #444746); padding: 0 2px; line-height: 1.35 } .tf-th:hover { text-decoration: underline } .tf-th:focus-visible { outline: 2px solid #0b57d0; border-radius: 4px }
 .tf-vazio { font-size: 13px; padding: 4px 2px 8px } .tf-col .col-ab { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-weight: 600 } .tf-col .col-ab:hover span { text-decoration: underline }
 html[data-tema="escuro"] .tf-ter + .tf-ter { border-color: #1a2240 }
+/* automações (bloco 5a) */
+.au-gh { display: flex; align-items: center; gap: 12px; margin: 16px 0 8px } .au-gh h3 { margin: 0; font-size: 16px; font-weight: 500 } .au-gh > :last-child { margin-left: auto }
+.au-r { border: 1px solid #c4c7c5; border-radius: 12px; padding: 12px 16px; margin-bottom: 8px } .au-r.off { opacity: .7 } .au-r.off .au-f { color: #444746 }
+.au-rt { font-size: 14px } .au-f { font-size: 14px; margin: 4px 0; line-height: 1.45 } .au-rm { font-size: 12px } .au-err { color: #b3261e }
+.au-ra { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px } .au-ra .au-liga { margin-right: auto }
+.au-ed .au-bl { border-top: 1px solid #e3e3e3; padding-top: 12px; margin-top: 12px } .au-ed h3 { margin: 0 0 8px; font-size: 14px; font-weight: 500 } .au-ed h3 .faint { font-weight: 400 }
+.au-it { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 0 } .au-it + .au-it { border-top: 1px dashed #e3e3e3 } .au-it > .iconbtn { margin-left: auto }
+.au-lbl { font-size: 13px; font-weight: 500; min-width: 120px } .au-chks { display: inline-flex; gap: 4px 12px; flex-wrap: wrap; align-items: center }
+.au-n { width: 72px } .au-tx { flex: 1 1 100%; min-width: 0; box-sizing: border-box } .au-add { margin-top: 4px }
+.au-prev { margin-top: 14px; padding: 10px 12px; border-radius: 8px; background: #f0f4f9; font-size: 13px; line-height: 1.45 }
+.au-ex { display: flex; flex-direction: column } .au-exr { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid #e3e3e3 } .au-exr .faint { font-size: 12px; margin-top: 2px }
+@media (max-width: 600px) { .au-lbl { min-width: 0; flex: 1 1 100% } .au-it select, .au-it input:not([type=checkbox]) { max-width: 100% } }
+html[data-tema="escuro"] .au-r { border-color: #1a2240 } html[data-tema="escuro"] .au-prev { background: #0c1433 } html[data-tema="escuro"] .au-ed .au-bl, html[data-tema="escuro"] .au-exr { border-color: #1a2240 }
+.au-ed .tkm-pill { height: 36px; box-sizing: border-box; border: 1px solid #747775; border-radius: 8px; padding: 0 10px; background: transparent; color: inherit; font: inherit; font-size: 14px; max-width: 100% }
+.au-ed textarea.tkm-pill { height: auto; padding: 8px 10px } .au-ed select.tkm-pill { padding-right: 28px }
+.au-it { position: relative; padding-right: 40px } .au-it > .iconbtn { position: absolute; right: 0; top: 6px; margin: 0 }
+html[data-tema="escuro"] .au-ed .tkm-pill { border-color: #3a4670; background: #060c20 }

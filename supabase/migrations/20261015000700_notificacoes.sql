@@ -35,7 +35,8 @@ insert into app.tipos_notificacao (codigo, nome, dias_antes_padrao, email_padrao
   ('documento_vencendo', 'Documento vencendo',               '{30,7}', false),
   ('reuniao_agendada',   'Reunião agendada',                 '{1}',   false),
   ('aprovacao_pendente', 'Aprovação pendente',               '{}',    true),
-  ('aprovacao_decidida', 'Seu pedido de aprovação foi decidido', '{}', true);
+  ('aprovacao_decidida', 'Seu pedido de aprovação foi decidido', '{}', true),
+  ('automacao',          'Aviso de automação de tarefas',    '{}',    false);
 
 -- O que cada pessoa quer receber por e-mail, por tipo. Sem linha = o padrão do tipo.
 -- No app a notificação sempre aparece (o administrador desliga o tipo inteiro).
@@ -277,6 +278,15 @@ begin
 end $$;
 create trigger t_notificar after insert or update of situacao on fluxo.pausas for each row execute function app.tg_pausa_notificar();
 
+-- Aviso das automações de tarefas (bloco 5a): o app ocupa o gancho do fluxo. A origem é a execução
+-- da regra (uma por disparo), para dois avisos da mesma regra no mesmo dia não se juntarem.
+create or replace function fluxo._avisar(p_empresa uuid, p_para uuid, p_texto text, p_tarefa uuid, p_execucao uuid)
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  perform app._notificar(p_empresa, p_para, 'automacao', p_texto, app.terreno_da_tarefa(p_tarefa), 'automacao_execucoes', p_execucao, current_date, auth.uid());
+end $$;
+revoke execute on function fluxo._avisar(uuid, uuid, text, uuid, uuid) from public;
+
 create or replace function app.tg_reuniao_lembretes()
 returns trigger language plpgsql security definer set search_path = ''
 as $$
@@ -340,6 +350,9 @@ begin
 
   -- cartões recorrentes: as ocorrências com data até hoje nascem antes dos avisos
   total := total + fluxo.gerar_recorrencias(p_hoje);
+
+  -- automações de prazo (bloco 5a): vence em N dias e venceu
+  total := total + fluxo.automacoes_prazo(p_hoje);
 
   -- tarefa atrasada: uma vez, no primeiro dia de atraso (ou quando a rotina vir)
   for r in select * from fluxo.tarefas k where k.concluida_em is null and k.arquivada_em is null and k.prazo < p_hoje and k.responsavel_id is not null and not k.modelo

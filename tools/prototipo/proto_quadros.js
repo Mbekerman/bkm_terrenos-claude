@@ -117,7 +117,7 @@ function abaTarefas(t){const vc=UI.crVista[t.id]==='crono',arq=!!UI.tkArqFicha&&
   const q=vc?crFichaHtml(t):tkQuadro(its,tkL(t).filter(l=>!l.oculta),false,t.id,!arq);
   const seg=`<div class="seg sm" role="group" aria-label="Visualização do quadro">${[['quadro','Quadro'],['crono','Cronograma']].map(([v,n])=>`<button data-a="cr-vista" data-id="${t.id}" data-v="${v}" aria-pressed="${(vc?'crono':'quadro')===v}">${n}</button>`).join('')}</div>`;
   return `<div class="stack"><section class="sec tk-sec tk-full${tkCheiaOn()?' on':''}${vc?' cr-on':''}"><div class="sec-h"><h2>${vc?'Cronograma':'Quadro'} do terreno${tkCheiaOn()?` · ${t.codigo} ${esc(t.nome)}`:''}</h2><span class="faint tk-sub">${ab.length+(ab.length===1?' aberta':' abertas')} · ${at+(at===1?' atrasada':' atrasadas')}</span>
-    <span class="tk-sh">${seg}${!vc&&(na||arq)?`<button class="btn text sm" data-a="tk-arqficha">${arq?'Voltar ao quadro':`Arquivadas (${na})`}</button>`:''}${tkEd()?`<button class="btn text sm" data-a="cr-modelos" data-id="${t.id}">Modelos</button>`:''}${tkEd()&&!vc?`<button class="btn text sm" data-a="tk-listas" data-id="${t.id}">Listas</button>`:''}${tkCheiaBtn()}</span></div>
+    <span class="tk-sh">${seg}${!vc&&(na||arq)?`<button class="btn text sm" data-a="tk-arqficha">${arq?'Voltar ao quadro':`Arquivadas (${na})`}</button>`:''}${tkEd()?`<button class="btn text sm" data-a="cr-modelos" data-id="${t.id}">Modelos</button>`:''}${tkEd()&&!vc?`<button class="btn text sm" data-a="tk-listas" data-id="${t.id}">Listas</button>`:''}${!vc?`<button class="btn text sm" data-a="au-abrir" data-v="${t.id}">Automações</button>`:''}${tkCheiaBtn()}</span></div>
   <div class="sec-b tk-sb">${q}</div></section></div>`}
 
 /* ---------- arrastar (lista e posição) ---------- */
@@ -245,7 +245,7 @@ function tkListasHtml(fechar){const t=T(UI.tkSel.tid),n=k=>t.tarefas.filter(x=>x
     <button class="btn text sm" data-a="tkl-oculta" data-v="${l.id}">${l.oculta?'Mostrar':'Ocultar'}</button></div>`).join('')}</div>
   <form class="tkm-nf" data-form="tkl-nova"><input name="nome" required placeholder="Nova lista" aria-label="Nome da nova lista"><select name="tipo" aria-label="Tipo da lista">${Object.entries(TIPO_LISTA).map(([x,n])=>`<option value="${x}">${n}</option>`).join('')}</select><button class="btn tonal sm" type="submit">Criar lista</button></form>
   <div class="df"><button class="btn primary" data-a="close">Pronto</button></div>`}
-function quadrosModal(M,fechar){if(M==='tarefa')return UI.tkSel?.kid?tkCartaoHtml(fechar):tkNovaHtml(fechar);if(M==='tk-listas')return tkListasHtml(fechar);return ''}
+function quadrosModal(M,fechar){if(M==='tarefa')return UI.tkSel?.kid?tkCartaoHtml(fechar):tkNovaHtml(fechar);if(M==='tk-listas')return tkListasHtml(fechar);return auModal(M,fechar)}
 
 /* refaz a tela mantendo a rolagem da janela */
 function tkRe(){const d=document.querySelector('#modal .dialog'),st=d?d.scrollTop:0;save();render();const n=document.querySelector('#modal .dialog');if(n)n.scrollTop=st}
@@ -269,7 +269,7 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="tkc-"]
     case 'tkc-acomp':{const on=k.acomp.includes(eu);k.acomp=on?k.acomp.filter(u=>u!==eu):[...k.acomp,eu];toast(on?'Você deixou de acompanhar.':'Você vai ser avisado dos comentários e da conclusão.');break}
     case 'tkc-link':{const u=RT_BASE?location.origin+RT_BASE+'/tarefas/'+k.codigo:location.href.split('#')[0]+'#/tarefas/'+k.codigo;try{navigator.clipboard?.writeText(u)}catch(_){}toast(`Link de ${k.codigo} copiado.`);return}
     case 'tkc-tira':{const p=a.dataset.p;k[p]=k[p].filter(u=>u!==a.dataset.v);log(t,`Tarefa "${k.titulo}": ${a.dataset.v} saiu de ${PAPEIS_TK.find(x=>x[0]===p)[1].toLowerCase()}`);break}
-    case 'tkc-etq':{const v=a.dataset.v,on=k.etq.includes(v);k.etq=on?k.etq.filter(x=>x!==v):[...k.etq,v];log(t,`Tarefa "${k.titulo}": etiqueta ${S.etiquetas.find(x=>x.id===v)?.nome} ${on?'tirada':'posta'}`);break}
+    case 'tkc-etq':{const v=a.dataset.v,on=k.etq.includes(v);k.etq=on?k.etq.filter(x=>x!==v):[...k.etq,v];log(t,`Tarefa "${k.titulo}": etiqueta ${S.etiquetas.find(x=>x.id===v)?.nome} ${on?'tirada':'posta'}`);;if(!on)auEvento(t,k,'etiqueta',{etq:v});break}
     case 'tkc-etq-nova':UI.tkEtqNova=true;break;
     case 'tkc-pop':UI.tkPop=UI.tkPop===a.dataset.v?null:a.dataset.v;UI.tkEtqNova=false;break;
     case 'tkc-item-novo':UI.tkItemNovo=a.dataset.c;setTimeout(()=>document.querySelector(`[data-form="tkc-item"][data-c="${a.dataset.c}"] input[name=texto]`)?.focus(),0);break;
@@ -301,7 +301,7 @@ document.addEventListener('change',e=>{const el=e.target;
   else if(c==='inicio'||c==='prazo'){if(crEditar(t,k,c,v)===false){el.value=k[c]||'';return}}
   else if(c.startsWith('add-')){const p=c.slice(4);if(!v)return;k[p]=[...new Set([...(k[p]||[]),v])];log(t,`Tarefa "${k.titulo}": ${v} em ${PAPEIS_TK.find(x=>x[0]===p)[1].toLowerCase()}`);
     if(p==='exec')notificar(v,'tarefa_atribuida',`${me()} incluiu você como executor: ${k.titulo}`,t,null,tkIr(k))}
-  else if(c==='item-feito'){const {i}=tkItem(k,el.dataset.c,el.dataset.i);i.feito=v?HOJE:null;i.feitoPor=v?me():null}
+  else if(c==='item-feito'){const {i}=tkItem(k,el.dataset.c,el.dataset.i);i.feito=v?HOJE:null;i.feitoPor=v?me():null;if(v)auItemFeito(t,k)}
   else if(c==='item-resp'){const {i}=tkItem(k,el.dataset.c,el.dataset.i);i.resp=v||null;if(v)notificar(v,'tarefa_atribuida',`Item para você em ${k.titulo}: ${i.texto}`,t,null,tkIr(k))}
   else if(c==='item-prazo'){const {i}=tkItem(k,el.dataset.c,el.dataset.i);i.prazo=v||null}
   else if(c==='ligar'){const o=t.tarefas.find(x=>x.id===v);if(!o)return;k.anexos.push({id:uid(),tipo:'tarefa',nome:`${o.codigo} · ${o.titulo}`,ref:o.id});UI.tkPop=null}
@@ -332,7 +332,7 @@ function cfgTarefasHtml(){const L=S.listasModelo,E=S.etiquetas;
     <form class="tkm-nf" data-form="tkcfg-lista"><input name="nome" required placeholder="Nova lista" aria-label="Nome da nova lista padrão"><select name="tipo" aria-label="Tipo">${Object.entries(TIPO_LISTA).map(([x,n])=>`<option value="${x}">${n}</option>`).join('')}</select><button class="btn tonal sm" type="submit">Adicionar lista</button></form></div></section>
   <section class="sec"><div class="sec-h"><h2>Etiquetas da empresa</h2></div><div class="sec-b">
     ${E.map(e=>`<div class="tkl-r">${etqChip(e)}<input value="${esc(e.nome)}" data-tkcfg="etq-nome" data-v="${e.id}" aria-label="Nome da etiqueta"><select data-tkcfg="etq-cor" data-v="${e.id}" aria-label="Cor de ${esc(e.nome)}">${Object.entries(ETQ_CORES).map(([c,n])=>`<option value="${c}" ${c===e.cor?'selected':''}>${n}</option>`).join('')}</select></div>`).join('')}
-    <form class="tkm-nf" data-form="tkcfg-etq"><input name="nome" required placeholder="Nova etiqueta" aria-label="Nome da nova etiqueta"><select name="cor" aria-label="Cor">${Object.entries(ETQ_CORES).map(([c,n])=>`<option value="${c}">${n}</option>`).join('')}</select><button class="btn tonal sm" type="submit">Adicionar etiqueta</button></form></div></section>${cpoCfgHtml()}${apCfgHtml()}${crCfgHtml()}`}
+    <form class="tkm-nf" data-form="tkcfg-etq"><input name="nome" required placeholder="Nova etiqueta" aria-label="Nome da nova etiqueta"><select name="cor" aria-label="Cor">${Object.entries(ETQ_CORES).map(([c,n])=>`<option value="${c}">${n}</option>`).join('')}</select><button class="btn tonal sm" type="submit">Adicionar etiqueta</button></form></div></section>${cpoCfgHtml()}${apCfgHtml()}${crCfgHtml()}${auCfgHtml()}`}
 const tkCfgOk=L=>L.some(l=>l.ativo&&l.tipo==='conclui');
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="tkcfg-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const L=S.listasModelo,l=L.find(x=>x.id===a.dataset.v);if(!l)return;
   if(a.dataset.a==='tkcfg-sobe'){const i=L.indexOf(l);L.splice(i,1);L.splice(i-1,0,l)}
