@@ -22,7 +22,8 @@ const AU_ACAO={avisar:'Avisar',mover:'Mover para a lista',etiqueta:'Pôr ou tira
 const AU_PARA={responsavel:'Responsável',executores:'Executores',aprovadores:'Aprovadores',acompanham:'Quem acompanha',solicitante:'Quem pediu',gestor:'Gestor do responsável'};
 const auRegras=()=>S.automacoes||(S.automacoes=[]);
 const auExecs=()=>S.autoExec||(S.autoExec=[]);
-const auDoQuadro=t=>auRegras().filter(r=>r.tid===t.id);
+const auDoQuadro=t=>auRegras().filter(r=>r.tid===t.id&&!r.kid);
+const auDoCartao=k=>auRegras().filter(r=>r.kid===k.id);   // regra só de um cartão (30/out): o quadro é o do cartão
 const auDaEmpresa=()=>auRegras().filter(r=>!r.tid);
 const auPodeMudar=r=>tkEd()&&(ehAdmin(me())||(r.dono===me()&&!!r.tid));
 const auRodou=r=>auExecs().some(x=>x.aid===r.id);
@@ -30,7 +31,7 @@ const auNomeL=n=>(n||'').trim().toLowerCase();
 /* lista da regra no quadro do cartão: pelo id (regra do quadro) ou pelo nome (regra da empresa) */
 function auLista(t,r,v){const L=tkL(t);return r.tid?L.find(l=>l.id===v):L.filter(l=>auNomeL(l.nome)===auNomeL(v)).sort((a,b)=>(a.oculta?1:0)-(b.oculta?1:0))[0]}
 function auNomeLista(r,v){if(!r.tid)return v||'';const l=tkL(T(r.tid)).find(x=>x.id===v);return l?l.nome:'(lista removida)'}
-function auDonoVale(r){const m=membro(r.dono);return r.tid?m.papel!=='leitura':!!m.admin}
+function auDonoVale(r){const m=membro(r.dono);if(r.kid){const {t,k}=tkAcha(r.tid,r.kid);if(!k||vzNiv(vzPapel(t,k,r.dono))<3)return false}return r.tid?m.papel!=='leitura':!!m.admin}
 
 /* ---------- motor ---------- */
 function auCondOk(t,r,k){return (r.conds||[]).every(c=>{
@@ -64,7 +65,7 @@ function auExecutar(t,r,k,ref){const id=uid();let res='ok',det;UI.auRodando=true
   log(t,`Automação "${r.nome}" em ${k.codigo}: ${res==='ok'?det:'erro: '+det}`)}
 /* o que aconteceu no cartão: roda as regras ligadas que passam nas condições */
 function auEvento(t,k,gat,x={}){if(UI.auRodando||!k||k.modelo||k.arq)return 0;let n=0;
-  const rs=auRegras().filter(r=>r.ativa&&r.gat===gat&&(!r.tid||r.tid===t.id)).sort((a,b)=>(a.tid?1:0)-(b.tid?1:0));
+  const rs=auRegras().filter(r=>r.ativa&&r.gat===gat&&(!r.tid||r.tid===t.id)&&(!r.kid||r.kid===k.id)).sort((a,b)=>(a.tid?1:0)-(b.tid?1:0)||(a.kid?1:0)-(b.kid?1:0));
   for(const r of rs){if(k.arq)break;
     if(gat==='entrou_lista'&&r.gLista&&auLista(t,r,r.gLista)?.id!==x.lista)continue;
     if(gat==='etiqueta'&&r.gEtq&&r.gEtq!==x.etq)continue;
@@ -76,7 +77,7 @@ function auEvento(t,k,gat,x={}){if(UI.auRodando||!k||k.modelo||k.arq)return 0;le
 /* rotina diária: prazo vencendo e vencido, uma vez por prazo */
 function auRotina(){let n=0;(S.terrenos||[]).forEach(t=>(t.tarefas||[]).forEach(k=>{if(!k.prazo||k.feita||k.arq||k.modelo||(k.pausas||[]).some(z=>z.sit==='ativa'))return;
   const venc=k.prazo<HOJE;if(venc)n+=auEvento(t,k,'prazo_venceu',{ref:k.prazo});
-  else auRegras().filter(r=>r.ativa&&r.gat==='prazo_antes'&&(!r.tid||r.tid===t.id)&&addD(k.prazo,-r.gDias)<=HOJE).forEach(r=>{
+  else auRegras().filter(r=>r.ativa&&r.gat==='prazo_antes'&&(!r.tid||r.tid===t.id)&&(!r.kid||r.kid===k.id)&&addD(k.prazo,-r.gDias)<=HOJE).forEach(r=>{
     if(auExecs().some(e=>e.aid===r.id&&e.kid===k.id&&e.ref===k.prazo)||!auDonoVale(r)||(r.tid&&!vzPapel(t,k,r.dono))||!auCondOk(t,r,k))return;auExecutar(t,r,k,k.prazo);n++})}));
   S.auDia=HOJE;return n}
 
@@ -84,7 +85,16 @@ function auRotina(){let n=0;(S.terrenos||[]).forEach(t=>(t.tarefas||[]).forEach(
 {const mover=tkMover;tkMover=function(t,k,lid,pos){const de=k.lista,fe=k.feita,r=mover(t,k,lid,pos);
   if(r!==false&&k.lista!==de){auEvento(t,k,'entrou_lista',{lista:k.lista});if(k.feita&&!fe)auEvento(t,k,'concluida')}return r}}
 {const criar=tkCriar;tkCriar=function(t,d){const k=criar(t,d);auEvento(t,k,'criada');return k}}
-{const copiar=cxCopiar;cxCopiar=function(...a){const n=copiar(...a);if(n)auEvento(a[2],n,'criada');return n}}
+/* regras do cartão vão junto na cópia e nas ocorrências da série (no banco: fluxo._copiar_automacoes); em outro quadro, a lista
+   pelo nome, e a regra cuja lista não existe lá fica de fora; quem copia vira o dono, a série mantém o dono */
+function auCopiarCartao(t,k,dest,n,dono){const ml=id=>{if(!id)return '';if(dest.id===t.id)return id;const l=tkL(t).find(x=>x.id===id);return l?tkL(dest).find(x=>auNomeL(x.nome)===auNomeL(l.nome))?.id||null:null};
+  auDoCartao(k).forEach(r=>{const c=JSON.parse(JSON.stringify(r));c.id=uid();c.tid=dest.id;c.kid=n.id;c.dono=dono||r.dono;c.em=agora();
+    if(c.gLista&&!(c.gLista=ml(c.gLista)))return;let ok=true;
+    c.conds.forEach(x=>{if(x.tipo==='lista'){x.v=(x.v||[]).map(ml);if(x.v.some(v=>!v))ok=false}});
+    c.acoes.forEach(x=>{if(x.tipo==='mover'&&!(x.lista=ml(x.lista)))ok=false});
+    if(ok&&vzNiv(vzPapel(dest,n,c.dono))>=3)auRegras().push(c)})}
+{const copiar=cxCopiar;cxCopiar=function(...a){const n=copiar(...a);if(n){if(a[5].includes('automacoes'))auCopiarCartao(a[0],a[1],a[2],n,me());auEvento(a[2],n,'criada')}return n}}
+{const ocorr=rcCopiar;rcCopiar=function(t,k,r,data){const n=ocorr(t,k,r,data);if(n)auCopiarCartao(t,k,t,n,null);return n}}
 {const gravar=cpoGravar;cpoGravar=function(t,k,c,raw){const r=gravar(t,k,c,raw);if(r)auEvento(t,k,'campo',{campo:c.id});return r}}
 function auItemFeito(t,k){const its=(k.checklists||[]).flatMap(c=>c.itens).filter(i=>!i.virou);if(its.length&&its.every(i=>i.feito))auEvento(t,k,'checklist_completo')}
 
@@ -110,8 +120,8 @@ function auFaca(r){return r.acoes.map(a=>{
 const auFrase=r=>`${auQuando(r)}${r.conds?.length?', se '+auSe(r):''}: ${auFaca(r)}.`;
 
 /* ---------- telas ---------- */
-function auLinha(r){const pode=auPodeMudar(r),ex=auExecs().filter(x=>x.aid===r.id),err=ex.filter(x=>x.res==='erro').length;
-  return `<div class="au-r ${r.ativa?'':'off'}"><div class="au-rt"><b>${esc(r.nome)}</b>${r.ativa?'':' <span class="chip">Desligada</span>'}</div>
+function auLinha(r,origem=''){const pode=auPodeMudar(r),ex=auExecs().filter(x=>x.aid===r.id),err=ex.filter(x=>x.res==='erro').length;
+  return `<div class="au-r ${r.ativa?'':'off'}"><div class="au-rt"><b>${esc(r.nome)}</b>${origem}${r.ativa?'':' <span class="chip">Desligada</span>'}</div>
     <div class="au-f">${esc(auFrase(r))}</div>
     <div class="au-rm faint">${esc(r.dono)}${!auDonoVale(r)?' · <span class="au-err">o dono não pode mais ter a regra: ela não roda</span>':''} · ${ex.length?`<button class="linkbtn" data-a="au-exec" data-v="${r.id}">rodou ${ex.length} ${ex.length===1?'vez':'vezes'}${err?`, ${err} com erro`:''}</button>`:'ainda não rodou'}</div>
     ${pode?`<div class="au-ra"><label class="chk au-liga"><input type="checkbox" data-au-liga="${r.id}" ${r.ativa?'checked':''}><span>Ligada</span></label>
@@ -131,10 +141,10 @@ function auExecHtml(fechar){const r=auRegras().find(x=>x.id===UI.auExec);if(!r)r
   <div class="au-ex">${ex.map(x=>{const {t,k}=tkAcha(x.tid,x.kid);return `<div class="au-exr"><span class="chip ${x.res==='ok'?'st-ok':'st-crit'}">${x.res==='ok'?'Ok':'Erro'}</span>
     <div><div>${k?`<button class="linkbtn" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}">${k.codigo} · ${esc(k.titulo)}</button>`:'(cartão indisponível)'}</div>
     <div class="faint">${esc(x.det)} · ${fdh(x.em)} · ${x.por?esc(x.por):'rotina diária'}</div></div></div>`}).join('')||'<p class="faint">Ainda não rodou.</p>'}</div>
-  <div class="df"><button class="btn text" data-a="${UI.auQ?'au-voltar':'close'}">${UI.auQ?'Voltar':'Fechar'}</button></div>`}
+  <div class="df"><button class="btn text" data-a="${UI.auQ||UI.auK?'au-voltar':'close'}">${UI.auQ||UI.auK?'Voltar':'Fechar'}</button></div>`}
 
 /* editor: rascunho em UI.auEd */
-function auNovaRegra(tid){return {id:null,nome:'',tid:tid||null,gat:'entrou_lista',gLista:'',gEtq:'',gCampo:'',gDias:2,conds:[],acoes:[{tipo:'avisar',para:['responsavel'],pessoas:[],texto:''}],ativa:true,dono:me()}}
+function auNovaRegra(tid,kid){return {id:null,nome:'',tid:tid||null,kid:kid||null,gat:'entrou_lista',gLista:'',gEtq:'',gCampo:'',gDias:2,conds:[],acoes:[{tipo:'avisar',para:['responsavel'],pessoas:[],texto:''}],ativa:true,dono:me()}}
 function auSelLista(r,sel,attr,multi){const t=r.tid?T(r.tid):null,L=t?tkL(t).filter(l=>l.tipo!=='pausa'||attr.includes('cond')):(S.listasModelo||[]).filter(l=>l.ativo);
   const val=l=>r.tid?l.id:l.nome;const has=v=>multi?(sel||[]).includes(v):sel===v;
   return multi?`<span class="au-chks">${L.map(l=>`<label class="chk"><input type="checkbox" ${attr} value="${esc(val(l))}" ${has(val(l))?'checked':''}>${esc(l.nome)}</label>`).join('')}</span>`
@@ -171,19 +181,19 @@ function auAcaoHtml(r,a,i){const x=`data-aua="${i}"`;let h='';
   else if(a.tipo==='checklist')h=`<input class="tkm-pill" ${x} data-k="nome" value="${esc(a.nome||'')}" placeholder="Nome do checklist" aria-label="Nome do checklist"><textarea class="tkm-pill au-tx" ${x} data-k="itens" rows="2" placeholder="Um item por linha" aria-label="Itens">${esc((a.itens||[]).join('\n'))}</textarea>`;
   return `<div class="au-it"><span class="au-lbl">${AU_ACAO[a.tipo]}</span>${h}<button class="iconbtn sm" data-a="au-tira" data-k="acoes" data-v="${i}" aria-label="Tirar ação" title="Tirar">${ic('close',16)}</button></div>`}
 function auEdHtml(fechar){const r=UI.auEd;if(!r)return '';
-  return `<div class="dh"><div><h2>${r.id?'Editar regra':'Nova regra'}</h2><div class="muted" style="margin-top:4px">${r.tid?`Quadro de ${esc(T(r.tid).codigo)}`:'Empresa toda'} · dono: ${esc(r.dono)}</div></div>${fechar}</div>
+  return `<div class="dh"><div><h2>${r.id?'Editar regra':'Nova regra'}</h2><div class="muted" style="margin-top:4px">${r.kid?`Só no cartão ${esc(tkAcha(r.tid,r.kid).k?.codigo||'')}`:r.tid?`Quadro de ${esc(T(r.tid).codigo)}`:'Empresa toda'} · dono: ${esc(r.dono)}</div></div>${fechar}</div>
   <form class="au-ed" data-form="au-salvar">
     <div class="field full"><label for="au-nome">Nome</label><input id="au-nome" data-au="nome" value="${esc(r.nome)}" required placeholder="Ex.: Avisar o gestor quando entrar em Aguardando retorno"></div>
-    <div class="au-bl"><h3>Quando</h3><div class="au-it"><select class="tkm-pill" data-au="gat" aria-label="Quando">${auOpts(AU_GAT,r.gat)}</select>${auGatParam(r)}</div></div>
+    <div class="au-bl"><h3>Quando</h3><div class="au-it"><select class="tkm-pill" data-au="gat" aria-label="Quando">${auOpts(r.kid?Object.fromEntries(Object.entries(AU_GAT).filter(([g])=>g!=='criada')):AU_GAT,r.gat)}</select>${auGatParam(r)}</div></div>
     <div class="au-bl"><h3>Se <span class="faint">(opcional; todas valem juntas)</span></h3>${r.conds.map((c,i)=>auCondHtml(r,c,i)).join('')}
       <select class="tkm-pill au-add" data-au-add="conds" aria-label="Adicionar condição">${auOpts(AU_COND,'','Adicionar condição…')}</select></div>
     <div class="au-bl"><h3>Faça</h3>${r.acoes.map((a,i)=>auAcaoHtml(r,a,i)).join('')}
       <select class="tkm-pill au-add" data-au-add="acoes" aria-label="Adicionar ação">${auOpts(AU_ACAO,'','Adicionar ação…')}</select></div>
     <div class="au-prev"><span class="faint">Resumo:</span> ${esc(auFrase(r))}</div>
-    <div class="df"><button class="btn text" type="button" data-a="${UI.auQ?'au-voltar':'close'}">Cancelar</button><button class="btn primary" type="submit">Salvar regra</button></div></form>`}
+    <div class="df"><button class="btn text" type="button" data-a="${UI.auQ||UI.auK?'au-voltar':'close'}">Cancelar</button><button class="btn primary" type="submit">Salvar regra</button></div></form>`}
 function auModal(M,fechar){if(M==='au-regras')return auRegrasHtml(fechar);if(M==='au-ed')return auEdHtml(fechar);if(M==='au-exec')return auExecHtml(fechar);return ''}
 /* o que falta na regra (no banco: fluxo.tg_automacao) */
-function auValida(r){if(!r.nome.trim())return 'Dê um nome à regra.';if(!r.acoes.length)return 'A regra precisa de pelo menos uma ação.';
+function auValida(r){if(!r.nome.trim())return 'Dê um nome à regra.';if(r.kid&&r.gat==='criada')return 'Regra do cartão não usa "cartão criado": o cartão já existe.';if(!r.acoes.length)return 'A regra precisa de pelo menos uma ação.';
   if(r.gat==='prazo_antes'&&(r.gDias==null||r.gDias<0||r.gDias>60))return 'Dias antes do prazo: de 0 a 60.';
   for(const c of r.conds){if(c.tipo==='lista'&&!(c.v||[]).length)return 'Marque a lista da condição.';if(c.tipo==='prioridade'&&!(c.v||[]).length)return 'Marque a prioridade da condição.';
     if(c.tipo==='campo'&&(!c.campo||((c.op||'igual')==='igual'&&(c.valor==null||c.valor==='')))) return 'Complete a condição do campo.'}
@@ -197,11 +207,11 @@ function auNovaAcao(r,tipo){const L=r.tid?tkL(T(r.tid)).filter(l=>l.tipo!=='paus
     responsavel:{tipo,v:Object.keys(auPessoas())[0]},prioridade:{tipo,v:'alta'},adiar:{tipo,dias:3},checklist:{tipo,nome:'',itens:[]},arquivar:{tipo}}[tipo]}
 
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="au-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const A=a.dataset.a,v=a.dataset.v;
-  if(A==='au-abrir'){UI.auQ={tid:v};UI.modal='au-regras';renderModal();return}
-  if(A==='au-nova'){UI.auEd=auNovaRegra(v||null);UI.modal='au-ed';renderModal();return}
-  if(A==='au-editar'){const r=auRegras().find(x=>x.id===v);if(!r||!auPodeMudar(r))return;UI.auEd=JSON.parse(JSON.stringify(r));UI.modal='au-ed';renderModal();return}
-  if(A==='au-exec'){UI.auExec=v;UI.modal='au-exec';renderModal();return}
-  if(A==='au-voltar'){UI.auEd=null;UI.auExec=null;UI.modal=UI.auQ?'au-regras':null;renderModal();return}
+  if(A==='au-abrir'){UI.auK=null;UI.auQ={tid:v};UI.modal='au-regras';renderModal();return}
+  if(A==='au-nova'){if(a.dataset.k){UI.auK={tid:v,kid:a.dataset.k};UI.auQ=null}else if(!UI.auQ)UI.auK=null;UI.auEd=auNovaRegra(v||null,a.dataset.k);if(a.dataset.k)UI.auEd.gat='concluida';UI.modal='au-ed';renderModal();return}
+  if(A==='au-editar'){const r=auRegras().find(x=>x.id===v);if(!r||!auPodeMudar(r))return;if(UI.modal==='tarefa'){UI.auK={...UI.tkSel};UI.auQ=null}UI.auEd=JSON.parse(JSON.stringify(r));UI.modal='au-ed';renderModal();return}
+  if(A==='au-exec'){if(UI.modal==='tarefa'){UI.auK={...UI.tkSel};UI.auQ=null}UI.auExec=v;UI.modal='au-exec';renderModal();return}
+  if(A==='au-voltar'){UI.auEd=null;UI.auExec=null;if(UI.auK){UI.tkSel=UI.auK;UI.auK=null;UI.modal='tarefa'}else UI.modal=UI.auQ?'au-regras':null;renderModal();return}
   if(A==='au-apagar'){const r=auRegras().find(x=>x.id===v);if(!r||!auPodeMudar(r))return;if(auRodou(r)){toast('A regra já rodou: desligue em vez de apagar.',true);return}
     if(!confirm(`Apagar a regra "${r.nome}"?`))return;S.automacoes=auRegras().filter(x=>x!==r);save();if(UI.modal)renderModal();else render();return}
   const r=UI.auEd;if(!r)return;
@@ -230,8 +240,8 @@ document.addEventListener('submit',e=>{const f=e.target;if(f.dataset?.form!=='au
   const m=auValida(r);if(m){toast(m,true);return}
   if(r.gat!=='entrou_lista')r.gLista='';if(r.gat!=='etiqueta')r.gEtq='';if(r.gat!=='campo')r.gCampo='';if(r.gat!=='prazo_antes')r.gDias=null;
   if(r.id){const i=auRegras().findIndex(x=>x.id===r.id);if(i>=0)auRegras()[i]=r}else{r.id=uid();r.em=agora();auRegras().push(r)}
-  if(r.tid)log(T(r.tid),`Automação "${r.nome}" salva`);UI.auEd=null;save();toast('Regra salva.');
-  if(UI.auQ){UI.modal='au-regras';renderModal()}else{UI.modal=null;renderModal();render()}},true);
+  if(r.tid)log(T(r.tid),`Automação "${r.nome}"${r.kid?` em ${tkAcha(r.tid,r.kid).k?.codigo}`:''} salva`);UI.auEd=null;save();toast('Regra salva.');
+  if(UI.auK){UI.tkSel=UI.auK;UI.auK=null;UI.modal='tarefa';renderModal();render()}else if(UI.auQ){UI.modal='au-regras';renderModal()}else{UI.modal=null;renderModal();render()}},true);
 
 /* exemplos: uma regra no primeiro terreno e uma da empresa */
 (()=>{if(S.auExemplo)return;S.auExemplo=true;const t=S.terrenos?.[0];if(!t)return;const L=tkL(t),ag=L.find(l=>l.nome==='Aguardando retorno');

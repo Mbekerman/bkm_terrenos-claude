@@ -22,6 +22,7 @@ const apCkAberto=k=>(k.checklists||[]).some(c=>c.itens.some(i=>!i.feito&&!i.viro
 /* o que impede concluir agora (null = nada) */
 function apBloqueio(t,k){if(k.modelo)return 'Modelo de cartão não se conclui.';if(apPrecisa(k))return apPend(k)?'A tarefa está aguardando aprovação.':'A tarefa precisa ser aprovada antes de concluir. Use "Pedir aprovação".';
   if(apRegraCk()&&apCkAberto(k))return 'Conclua os itens do checklist antes de concluir a tarefa.';
+  if(apRegraCk()&&(t?.tarefas||[]).some(x=>x.mae===k.id&&!x.feita&&!x.arq))return 'Conclua as subtarefas antes de concluir a tarefa.';   // subtarefa em aberto (30/out)
   const f=cpoFaltam(k);if(f.length)return `Preencha ${f.length>1?'os campos obrigatórios':'o campo obrigatório'} antes de concluir: ${f.join(', ')}.`;return null}
 /* votos que esperam decisão agora (em sequência, só o da vez) */
 function apDaVez(a){if(!a||a.sit!=='pendente')return [];const ab=a.votos.filter(v=>!v.dec);if(a.modo==='paralelo')return ab;const m=Math.min(...ab.map(v=>v.ordem));return ab.filter(v=>v.ordem===m)}
