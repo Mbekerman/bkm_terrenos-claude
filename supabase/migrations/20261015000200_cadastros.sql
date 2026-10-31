@@ -159,6 +159,7 @@ create table app.prerequisitos_modelo (
   alvo_tipo       text not null check (alvo_tipo in ('etapa','subetapa')),
   alvo            text not null,
   requisito       text not null,   -- sempre uma subetapa
+  condicao        jsonb,           -- "Vale quando" (31/out/2026): sem condição, vale sempre
   unique nulls not distinct (empresa_id, fase, alvo_tipo, alvo, requisito),
   foreign key (empresa_id, fase, requisito) references app.subetapas_modelo(empresa_id, fase, codigo) on delete cascade
 );
@@ -170,6 +171,7 @@ create table app.checklist_modelo (
   tipo_documento text not null references app.tipos_documento(codigo),
   obrigatorio    boolean not null default true,
   ordem          int not null default 0,
+  condicao       jsonb,          -- "Vale quando" (31/out/2026): obrigatório só quando a condição vale
   unique nulls not distinct (empresa_id, fase, etapa, tipo_documento),
   foreign key (empresa_id, fase, etapa) references app.etapas_modelo(empresa_id, fase, codigo) on delete cascade
 );
@@ -395,10 +397,10 @@ begin
   select new.id, fase, codigo, etapa, nome, ordem, prazo_dias, aprova_gestor, aprova_diretor, aprovacao_modo, ativo from app.subetapas_modelo where empresa_id is null;
   insert into app.status_modelo (empresa_id, fase, status, nome, aprova_gestor, aprova_diretor, aprovacao_modo)
   select new.id, fase, status, nome, aprova_gestor, aprova_diretor, aprovacao_modo from app.status_modelo where empresa_id is null;
-  insert into app.prerequisitos_modelo (empresa_id, fase, alvo_tipo, alvo, requisito)
-  select new.id, fase, alvo_tipo, alvo, requisito from app.prerequisitos_modelo where empresa_id is null;
-  insert into app.checklist_modelo (empresa_id, fase, etapa, tipo_documento, obrigatorio, ordem)
-  select new.id, fase, etapa, tipo_documento, obrigatorio, ordem from app.checklist_modelo where empresa_id is null;
+  insert into app.prerequisitos_modelo (empresa_id, fase, alvo_tipo, alvo, requisito, condicao)
+  select new.id, fase, alvo_tipo, alvo, requisito, condicao from app.prerequisitos_modelo where empresa_id is null;
+  insert into app.checklist_modelo (empresa_id, fase, etapa, tipo_documento, obrigatorio, ordem, condicao)
+  select new.id, fase, etapa, tipo_documento, obrigatorio, ordem, condicao from app.checklist_modelo where empresa_id is null;
   insert into app.motivos_encerramento (empresa_id, status, codigo, nome, ordem, exige_texto, ativo)
   select new.id, status, codigo, nome, ordem, exige_texto, ativo from app.motivos_encerramento where empresa_id is null;
   insert into app.zona_parametros (empresa_id, zoneamento_id, tipo, uso, macrozona, lote_area_min_m2, lote_area_max_m2, permitido,
