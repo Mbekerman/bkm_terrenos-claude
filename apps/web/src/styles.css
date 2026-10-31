@@ -3867,15 +3867,6 @@ html[data-tema="escuro"] .tkm-selo.crit, html[data-tema="escuro"] .tkm-chp.atras
   .tkm-cab .tkm-done + .tkm-tit + .tkm-st { margin-left: 34px }
   .tkm-cabb { width: 100% } .tkm-cabb .btn { flex: 1 } .tkm-log { grid-template-columns: 90px 28px minmax(0, 1fr) }
 }
-}
-@media (max-width: 599px) {
-  .tkm { padding: 16px 12px 24px 4px } .tkm-capa-g { margin: -16px -12px 12px -4px; height: 64px }
-  :root:not(#_) .tkm input.tkm-tit { font-size: 18px }
-  .tkm-dets, .tkm-in, .tkm-novo, .tkm-bloco > form.tkm-in.tkm-novo { padding-left: 12px } .tkm-additem { margin-left: 12px }
-  .tkm-hov, .tkm-mresp:not(.tem), :root:not(#_) .tkm input.tkm-mdata:not(.tem) { opacity: 1 }
-  .tkm-it { flex-wrap: wrap } .tkm-im { padding-left: 40px }
-  .tkm-sg:last-child { display: grid; grid-template-columns: 1fr 1fr; gap: 8px } .tkm-sg:last-child .tkm-sgt { grid-column: 1 / -1 }
-}
 .tkm-nf { display: flex; gap: 8px; align-items: center; flex-wrap: wrap } .tkm-nf > input:first-child { flex: 1 1 200px; width: auto }
 .tkm-nf > select, .tkm-nf > input[type=date] { width: auto; flex: 0 1 auto }
 .tkm-nf.vert { flex-direction: column; align-items: stretch } .tkm-nf.vert .btn { align-self: flex-start }
