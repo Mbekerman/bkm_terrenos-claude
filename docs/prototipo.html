@@ -4542,15 +4542,6 @@ html[data-tema="escuro"] .tkm-selo.crit, html[data-tema="escuro"] .tkm-chp.atras
   .tkm-cab .tkm-done + .tkm-tit + .tkm-st { margin-left: 34px }
   .tkm-cabb { width: 100% } .tkm-cabb .btn { flex: 1 } .tkm-log { grid-template-columns: 90px 28px minmax(0, 1fr) }
 }
-}
-@media (max-width: 599px) {
-  .tkm { padding: 16px 12px 24px 4px } .tkm-capa-g { margin: -16px -12px 12px -4px; height: 64px }
-  :root:not(#_) .tkm input.tkm-tit { font-size: 18px }
-  .tkm-dets, .tkm-in, .tkm-novo, .tkm-bloco > form.tkm-in.tkm-novo { padding-left: 12px } .tkm-additem { margin-left: 12px }
-  .tkm-hov, .tkm-mresp:not(.tem), :root:not(#_) .tkm input.tkm-mdata:not(.tem) { opacity: 1 }
-  .tkm-it { flex-wrap: wrap } .tkm-im { padding-left: 40px }
-  .tkm-sg:last-child { display: grid; grid-template-columns: 1fr 1fr; gap: 8px } .tkm-sg:last-child .tkm-sgt { grid-column: 1 / -1 }
-}
 .tkm-nf { display: flex; gap: 8px; align-items: center; flex-wrap: wrap } .tkm-nf > input:first-child { flex: 1 1 200px; width: auto }
 .tkm-nf > select, .tkm-nf > input[type=date] { width: auto; flex: 0 1 auto }
 .tkm-nf.vert { flex-direction: column; align-items: stretch } .tkm-nf.vert .btn { align-self: flex-start }
@@ -5030,6 +5021,77 @@ html[data-tema="escuro"]:not(#_) .tkm .tkm-ch input[type=checkbox]:not(:checked)
 .tkm-resp { text-decoration: none !important } .tkm-resp:hover { text-decoration: underline !important }
 html[data-tema="escuro"] :is(.cr-d.fds, .cr-fundo i) { background: rgba(124,140,255,.045) }
 
+/* ---------- Campos do terreno no cartão, regra em branco e condições (31/out/2026; proto_itens.js) ---------- */
+.it-c { flex-direction: row !important; align-items: center; flex-wrap: wrap; gap: 6px !important }
+.it-c.falta .tkm-pill { box-shadow: inset 0 0 0 1px #b3261e }
+.it-ro { font-size: 14px; color: var(--tk-tx) }
+.it-selo { font-size: 11px !important; min-height: 20px !important; padding: 0 6px !important }
+.it-tira { opacity: 0; transition: opacity .15s } .tkm-p:hover .it-tira, .it-tira:focus-visible { opacity: 1 }
+@media (hover: none) { .it-tira { opacity: .7 } }
+.it-maisw .tkm-pv { position: relative }
+.it-pop { position: absolute; left: 0; top: 40px; z-index: 6; width: 320px; max-width: calc(100vw - 48px) }
+.it-popl { max-height: 300px; overflow: auto; display: flex; flex-direction: column; margin: 0 -12px }
+.it-popg { display: block; padding: 8px 12px 2px; font-size: 12px; font-weight: 500; color: var(--tk-sub) }
+.it-popi { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; width: 100%; padding: 6px 12px; border: 0; background: none; font: inherit; font-size: 14px; color: var(--tk-tx); text-align: left; cursor: pointer }
+.it-popi:hover, .it-popi:focus-visible { background: var(--tk-btn) } .it-popi .faint { font-size: 12px; white-space: nowrap }
+:root:not(#_) .it-busca { width: 100%; height: 36px; border: 1px solid #c4c7c5; border-radius: 8px; padding: 0 12px; font: inherit; font-size: 14px; background: var(--tk-campo, #fff); color: var(--tk-tx, #1f1f1f) }
+.it-ct { display: flex; flex-direction: column; border: 1px solid #c4c7c5; border-radius: 12px; overflow: hidden }
+.it-cr { display: grid; grid-template-columns: minmax(0, 1.2fr) 220px minmax(0, 1.4fr); gap: 12px; align-items: center; padding: 10px 16px; border-top: 1px solid #e1e3e1; font-size: 14px }
+.it-cr:first-child { border-top: 0 } .it-cr > span:first-child { display: flex; flex-direction: column; min-width: 0 } .it-cr > span:first-child .faint { font-size: 12px }
+.it-ch { background: #f0f4f9; font-size: 12px; font-weight: 500; color: var(--tk-sub); padding-top: 8px; padding-bottom: 8px }
+.it-vq { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; min-width: 0 } .it-vq .linkbtn { font-size: 13px }
+.it-vq-box { border: 1px solid #c4c7c5; border-radius: 12px; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; margin: 8px 0 12px }
+.it-vqh { display: flex; align-items: center; gap: 10px; flex-wrap: wrap }
+.it-grp { border: 1px dashed #8590a2; border-radius: 10px; padding: 8px 12px; display: flex; flex-direction: column; gap: 8px; background: #f8fafd }
+.it-cd { display: flex; flex-wrap: wrap; align-items: center; gap: 8px }
+.it-cb { min-width: 180px; text-align: left }
+.it-cbw { position: relative; display: inline-flex; flex-direction: column; width: 280px; max-width: 100% }
+.it-cpop { display: flex; flex-direction: column; max-height: 240px; overflow: auto; border: 1px solid #c4c7c5; border-radius: 8px; margin-top: 4px; background: var(--tk-campo, #fff) }
+.it-vals { display: flex; flex-wrap: wrap; gap: 6px }
+.it-vch { height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #c4c7c5; background: none; font: inherit; font-size: 13px; color: var(--tk-tx); cursor: pointer }
+.it-vch.on { background: #c2e7ff; border-color: #c2e7ff; color: #001d35 }
+.it-num { width: 110px !important }
+.it-seg { display: inline-flex; border: 1px solid #c4c7c5; border-radius: 16px; overflow: hidden; flex-wrap: wrap }
+.it-seg button { height: 32px; padding: 0 14px; border: 0; border-left: 1px solid #c4c7c5; background: none; font: inherit; font-size: 13px; font-weight: 500; color: var(--tk-tx, #1f1f1f); cursor: pointer }
+.it-seg button:first-child { border-left: 0 } .it-seg button.on { background: #c2e7ff; color: #001d35 }
+.it-adds { display: flex; gap: 8px; flex-wrap: wrap }
+.it-frase { margin: 4px 0 8px; font-size: 14px }
+.it-cfgbar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px } .it-cfgbar .it-busca { max-width: 260px }
+.it-tab { border: 1px solid #c4c7c5; border-radius: 12px; overflow: hidden }
+.it-tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) 110px 120px; gap: 12px; align-items: center; padding: 8px 16px; border-top: 1px solid #e1e3e1; font-size: 14px }
+.it-tr:first-child { border-top: 0 } .it-th { background: #f0f4f9; font-size: 12px; font-weight: 500; color: #444746 }
+.it-tr .ce { display: flex; justify-content: center; align-items: center; gap: 6px; text-align: center } .it-tr .ce em, .it-tr .ce small { display: none }
+.it-db { display: flex; flex-direction: column; min-width: 0 } .it-db code { font-size: 13px; overflow-wrap: anywhere } .it-db small { font-size: 12px; color: #444746 }
+:root:not(#_) .it-tit { width: 100%; height: 36px; border: 1px solid #c4c7c5; border-radius: 8px; padding: 0 10px; font: inherit; font-size: 14px; background: #fff; color: #1f1f1f }
+:root:not(#_) .it-tit:focus { outline: 2px solid #0b57d0; outline-offset: -1px; border-color: transparent }
+.it-just-f { position: fixed !important; z-index: 60 !important }
+.it-just-l { margin: 0 0 12px; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px }
+.it-just-r { display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px }
+:root:not(#_) .it-just-f textarea { width: 100%; min-height: 80px; border: 1px solid #c4c7c5; border-radius: 8px; padding: 8px 12px; font: inherit; font-size: 14px; background: var(--tk-campo, #fff); color: var(--tk-tx, #1f1f1f); margin-bottom: 16px }
+@media (max-width: 760px) {
+  .it-cr { grid-template-columns: 1fr; gap: 6px } .it-ch { display: none }
+  .it-tr { grid-template-columns: 1fr 1fr; } .it-tr > span:nth-child(2) { grid-column: 1 / -1; order: 3 } .it-th { display: none }
+  .it-tr .ce { justify-content: flex-start } .it-tr .ce em { display: inline; font-style: normal; font-size: 13px }
+}
+html[data-tema="escuro"] .it-ch, html[data-tema="escuro"] .it-th { background: #0c1433; color: #8e9ac4 }
+html[data-tema="escuro"] .it-cr, html[data-tema="escuro"] .it-tr { border-color: #1a2240 }
+html[data-tema="escuro"] .it-ct, html[data-tema="escuro"] .it-tab, html[data-tema="escuro"] .it-vq-box, html[data-tema="escuro"] .it-seg, html[data-tema="escuro"] .it-seg button, html[data-tema="escuro"] .it-vch, html[data-tema="escuro"] .it-cpop { border-color: #2a3460 }
+html[data-tema="escuro"] .it-grp { background: #060c20; border-color: #2a3460 }
+html[data-tema="escuro"] .it-seg button.on, html[data-tema="escuro"] .it-vch.on { background: rgba(99,112,255,.10); color: #c9d6ff; border-color: rgba(124,140,255,.5) }
+:root[data-tema="escuro"]:not(#_) .it-tit, :root[data-tema="escuro"]:not(#_) .it-busca { background: #060c20; color: #e3e3e3; border-color: #2a3460 }
+html[data-tema="escuro"] .it-db small { color: #8e9ac4 }
+.it-c > .tkm-pill, .it-c > input, .it-c > select { flex: 0 1 200px; min-width: 0; width: auto !important }
+:root:not(#_) .it-vq-box .tkm-pill, :root:not(#_) .it-vq-box .it-cb { height: 36px; border: 1px solid #c4c7c5; border-radius: 8px; padding: 0 10px; font: inherit; font-size: 14px; background: #fff; color: #1f1f1f; width: auto; min-width: 0; box-shadow: none }
+:root:not(#_) .it-vq-box select.tkm-pill { padding-right: 28px; max-width: 200px }
+:root:not(#_) .it-vq-box .it-cb { min-width: 200px; cursor: pointer; text-align: left }
+.it-cd .it-vals { flex: 1 1 100% } .it-cd .it-cx { margin-left: auto }
+:root[data-tema="escuro"]:not(#_) .it-vq-box .tkm-pill, :root[data-tema="escuro"]:not(#_) .it-vq-box .it-cb { background: #060c20; color: #e3e3e3; border-color: #2a3460 }
+.tkm-pv > .it-c { flex-wrap: nowrap !important; width: 100% } .it-c > .tkm-pill, .it-c > input, .it-c > select, .it-c > .it-ro { flex: 1 1 auto !important; min-width: 48px } .it-c .it-selo, .it-c .it-tira { flex: none }
+@media (hover: hover) { .it-c .it-tira { display: none; opacity: 1 } .tkm-p:hover .it-c .it-tira, .it-c:focus-within .it-tira { display: inline-flex } }
+.it-just-f { --tk-campo: #fff; --tk-tx: #1f1f1f; --tk-sub: #444746; inset: 0 !important; font-family: inherit }
+.it-just-f .cr-aviso { width: 100%; max-width: 480px } .it-just-f .cr-av-b { display: flex; justify-content: flex-end; gap: 8px }
+html[data-tema="escuro"] .it-just-f { --tk-campo: #16204a; --tk-tx: #dfe5ff; --tk-sub: #9fadd6 }
+@media (max-width: 760px) { .it-cfgbar .it-seg { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; scrollbar-width: none } .it-cfgbar .it-seg button { flex: none } .it-cfgbar .it-busca { max-width: none } }
 /* arrastar a barra do cronograma (30/out) */
 .cr-bar .cr-puxa { position: absolute; top: 0; right: 0; bottom: 0; width: 8px; cursor: ew-resize; z-index: 2 }
 @media (pointer: fine) { .cr-bar:has(.cr-puxa), .cr-marco { cursor: grab } }
@@ -6721,7 +6783,7 @@ function tkAvisarAcomp(t,k,txt){(k.acomp||[]).forEach(u=>notificar(u,'tarefa_aco
 
 /* mudanças (no banco: tg_tarefa_lista, notificações e auditoria) */
 function tkMover(t,k,lid,pos){const de=tkLista(t,k),l=tkL(t).find(x=>x.id===lid);if(!l)return;
-  if(l.tipo==='conclui'&&!k.feita&&!UI.apAprovando){const m=apBloqueio(t,k);if(m){toast(m,true);return false}
+  if(l.tipo==='conclui'&&!k.feita&&!UI.apAprovando){const m=apBloqueio(t,k);if(m){if(itJustPode(t,k)){itJustAviso(t,k,()=>tkMover(t,k,lid,pos));return false}toast(m,true);return false}
     /* predecessora pendente sem a regra: avisa e só conclui se a pessoa confirmar */
     if(UI.predOk!==k.id&&apPredPend(t,k).length){apPredAviso(t,k,()=>tkMover(t,k,lid,pos));return false}}
   if(de.id!==l.id&&pzGuarda(t,k,de,l)===false)return false;
@@ -6851,7 +6913,7 @@ const tkMais=(extra,rot)=>`<label class="tkm-mais" title="${rot}">${ic('add',16)
    no topo a trilha (terreno › código), Acompanhar, Copiar link e o menu ⋮; o título com o círculo de concluir, o status (a lista)
    em chip tonal e os selos; à direita Pausar e a ação principal (Concluir, Pedir aprovação, Ver aprovação ou Reabrir).
    Abas: Visão geral, Pessoas, Prazos e vínculos, Aprovação, Automações, Arquivos e Histórico. Comentários fixos à direita. */
-const TK_ABAS=[['geral','Visão geral'],['pessoas','Pessoas'],['prazos','Prazos e vínculos'],['aprov','Aprovação'],['auto','Automações'],['arq','Arquivos'],['hist','Histórico']];
+const TK_ABAS=[['geral','Visão geral'],['pessoas','Pessoas'],['prazos','Prazos e vínculos'],['aprov','Aprovação'],['auto','Automações'],['arq','Arquivos'],['hist','Histórico'],['config','Configuração']];
 /* cor do status pela lista: fazer (azul), fazendo (roxo), aguardando (âmbar), pausa (cinza), feito (verde) */
 function tkStCls(l){if(!l)return 'fazer';if(l.tipo==='conclui')return 'feito';if(l.tipo==='pausa')return 'pausa';const n=auNomeL(l.nome);
   return /fazendo|andamento|execu/.test(n)?'fazendo':/aguard|retorno|espera/.test(n)?'aguardando':'fazer'}
@@ -6859,7 +6921,7 @@ const tkSubs=(t,k)=>(t.tarefas||[]).filter(x=>x.mae===k.id&&!x.arq);
 const tkLogs=(t,k)=>(t.hist||[]).filter(h=>h.txt.includes(k.codigo)||h.txt.includes(`"${k.titulo}"`)||h.txt.endsWith(': '+k.titulo)).slice().reverse();
 function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!k)return `<div class="dh"><h2>Tarefa não encontrada</h2>${fechar}</div>`;
   vzAjustar(t,k);const ro=!vzEdita(t,k),bloq=ro||!!k.arq,dis=ro?'disabled':'',l=tkLista(t,k),eu=me(),acompanho=(k.acomp||[]).includes(eu),pop=UI.tkPop,at=tkAtras(k);
-  const aba=TK_ABAS.some(x=>x[0]===UI.tkAba)?UI.tkAba:'geral',ets=(k.etq||[]).map(id=>S.etiquetas.find(e=>e.id===id)).filter(Boolean),mae=k.mae?t.tarefas.find(x=>x.id===k.mae):null;
+  const abas=TK_ABAS.filter(x=>x[0]!=='config'||itConfigura(t,k)),aba=abas.some(x=>x[0]===UI.tkAba)?UI.tkAba:'geral',ets=(k.etq||[]).map(id=>S.etiquetas.find(e=>e.id===id)).filter(Boolean),mae=k.mae?t.tarefas.find(x=>x.id===k.mae):null;
   const linha=(icone,rot,val,id)=>`<div class="tkm-p"><${id?`label for="${id}"`:'span'} class="tkm-pl">${ic(icone,18)}${rot}</${id?'label':'span'}><div class="tkm-pv">${val}</div></div>`;
   const selU=(campo,v,vazio,id)=>`<span class="tkm-us">${v?av(v,'sm'):''}<select id="${id}" class="tkm-pill" data-tkc="${campo}" ${dis}>${vazio!=null?`<option value="">${vazio}</option>`:''}${USERS.map(u=>`<option ${u===v?'selected':''}>${esc(u)}</option>`).join('')}</select></span>`;
   const prio=`<select id="tkc-pr" class="tkm-pill prio-${k.prio}" data-tkc="prio" ${dis}>${Object.entries(OPT.prioTar).map(([x,n])=>`<option value="${x}" ${x===k.prio?'selected':''}>${n}</option>`).join('')}</select>`;
@@ -6873,7 +6935,7 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
   const checks=(k.checklists||[]).map(c=>{const it=c.itens,fe=it.filter(i=>i.feito).length,pc=it.length?Math.round(100*fe/it.length):0;
     return `<div class="tkm-bloco tkm-ck" data-ck="${c.id}"><div class="tkm-sh tkm-ckh"><h3>Checklist · ${esc(c.nome)}</h3><span class="faint tkm-ckn">${fe} de ${it.length}</span>
       <span class="tkm-shd">${ro||UI.tkItemNovo===c.id?'':`<button class="tkm-add tkm-addh" data-a="tkc-item-novo" data-c="${c.id}">${ic('add',16)}Adicionar item</button>`}${fe?`<button class="tkm-btn" data-a="tkc-esconder" data-c="${c.id}">${c.esconder?`Mostrar marcados (${fe})`:'Ocultar marcados'}</button>`:''}${ro?'':`<button class="tkm-btn" data-a="tkc-ck-x" data-c="${c.id}">Excluir</button>`}</span></div>
-      ${it.filter(i=>!(c.esconder&&i.feito)).map(i=>`<div class="tkm-it ${i.feito?'feito':''}"><label class="tkm-ch"><input type="checkbox" data-tkc="item-feito" data-c="${c.id}" data-i="${i.id}" ${i.feito?'checked':''} ${dis}><span>${esc(i.texto)}</span></label>
+      ${it.filter(i=>!(c.esconder&&i.feito)).map(i=>`<div class="tkm-it ${i.feito?'feito':''}"><label class="tkm-ch"><input type="checkbox" data-tkc="item-feito" data-c="${c.id}" data-i="${i.id}" ${i.feito?'checked':''} ${dis}><span>${esc(i.texto)}</span></label>${itSeloCk(t,i)}
         <span class="tkm-im">${i.virou?`<button class="linkbtn" data-a="tk-abrir" data-id="${t.id}" data-tk="${i.virou}">Virou cartão</button>`:''}
         ${ro?`${i.resp?`<span class="tkm-mini">${av(i.resp,'sm')}</span>`:''}${i.prazo?`<span class="tkm-mini ${!i.feito&&i.prazo<HOJE?'atras':''}">${ic('clock',14)}${fd(i.prazo)}</span>`:''}`
           :`<label class="tkm-mini tkm-mresp ${i.resp?'tem':''}" title="${i.resp?esc(i.resp):'Atribuir'}">${i.resp?av(i.resp,'sm'):ic('pessoa',16)}${tkSelU('',i.resp,'Sem responsável',`data-tkc="item-resp" data-c="${c.id}" data-i="${i.id}" aria-label="Responsável do item"`)}</label>
@@ -6909,7 +6971,7 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
   const auC=auDoCartao(k),auQ=auDoQuadro(t),auE=auDaEmpresa(),auX=auExecs().filter(x=>x.kid===k.id).slice(0,20),origem=n=>`<span class="chip au-orig">${n}</span>`;
   const conteudo={
     geral:()=>`<div class="tkm-props">${linha('pessoa','Responsável',selU('resp',k.resp,'Sem responsável','tkc-resp'),'tkc-resp')}${linha('cal','Prazo',`<button class="tkm-pzb" data-a="tkc-aba" data-v="prazos" title="Mudar as datas">${k.prazo?`<span class="tkm-chp ${k.feita?'ok':at?'atras':''}">${ic(k.feita?'check':'clock',14)}${fd(k.prazo)}</span>`:'<span class="faint">Sem prazo</span>'}${k.inicio?`<span class="faint">início ${fd(k.inicio)}${k.dur?` · ${k.dur} d`:''}</span>`:''}</button>`)}
-      ${linha('flag','Prioridade',prio,'tkc-pr')}${linha('etq','Etiquetas',etqs)}${cpoLinhas(t,k,bloq,linha)}</div>${popEtq}
+      ${linha('flag','Prioridade',prio,'tkc-pr')}${linha('etq','Etiquetas',etqs)}${itLinhas(t,k,bloq,linha)}</div>${popEtq}
       <div class="tkm-bloco"><div class="tkm-sh"><h3><label for="tkc-d">Descrição</label></h3></div><textarea id="tkc-d" class="tkm-txt" data-tkc="desc" data-mencao placeholder="Objetivo, instruções e critério de pronto (@ avisa um colega)" ${dis}>${esc(k.desc||'')}</textarea></div>
       ${k.feita||k.resultado?`<div class="tkm-bloco"><div class="tkm-sh"><h3><label for="tkc-r">Resultado</label></h3></div><textarea id="tkc-r" class="tkm-txt" data-tkc="resultado" data-mencao placeholder="O que foi feito ou decidido" ${dis}>${esc(k.resultado||'')}</textarea></div>`:''}
       ${subsH}${checks}
@@ -6937,6 +6999,7 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
         ${outros.length?`<select data-tkc="ligar" class="tkm-pill" aria-label="Ligar a outro cartão"><option value="">Ligar a outro cartão…</option>${outros.map(x=>`<option value="${x.id}">${x.codigo} · ${esc(x.titulo)}</option>`).join('')}</select>`:''}`}</div>
       <div class="tkm-bloco"><div class="tkm-sh"><h3>Capa</h3></div>${bloq?(k.capa?`<div class="tkm-capa etq-${k.capa}" style="width:120px"></div>`:'<div class="faint">Sem capa.</div>'):`<div class="tkm-capas">${Object.keys(ETQ_CORES).map(c=>`<button class="tkm-capa etq-${c} ${(k.capa||'')===c?'on':''}" data-a="tkc-capa" data-v="${c}" aria-label="${ETQ_CORES[c]}" title="${ETQ_CORES[c]}" aria-pressed="${(k.capa||'')===c}"></button>`).join('')}</div>
         ${k.capa?`<button class="tkm-btn" data-a="tkc-capa" data-v="">Remover capa</button>`:''}`}</div>`,
+    config:()=>itCfgAba(t,k,bloq),
     hist:()=>{const L=tkLogs(t,k);return `<div class="tkm-bloco"><div class="tkm-sh"><h3>Histórico</h3><span class="faint tkm-ckn">do mais recente ao mais antigo</span></div>
       ${L.map(h=>`<div class="tkm-log"><span class="faint num">${fdh(h.em)}</span>${av(h.user||'—','sm')}<span><b>${esc(h.user||'')}</b> ${esc(h.txt)}</span></div>`).join('')||'<div class="faint">Nada registrado ainda.</div>'}</div>`}};
   /* cabeçalho */
@@ -6948,7 +7011,7 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
     :`<button class="btn tonal" data-a="tkc-concluir" data-dup="1">${ic('check',18)}${rot||(k.feita?'Reabrir':'Concluir')}</button>`;
   const pausar=pzBotao(k,ro).replace('class="tkm-sb"','class="btn"');
   const nP=new Set([k.resp,k.solic,...PAPEIS_TK.flatMap(([p])=>k[p]||[])].filter(Boolean)).size,nA=auC.length+auQ.length+auE.length;
-  const cont={pessoas:nP,auto:nA,arq:anexos.length};
+  const cont={pessoas:nP,auto:nA,arq:anexos.length,config:itNRegras(k)};
   const menu=(pop==='mais'||pop==='copiar')&&!ro?`<div class="tkm-pop tkm-menu" role="menu">${cxBotoes(t,k,ro,(acao,icone,rotulo,extra='')=>`<button class="tkm-sb" data-a="${acao}" ${extra}>${ic(icone,16)}<span>${rotulo}</span></button>`)}
     <button class="tkm-sb" data-a="tkc-arq">${ic('arq',16)}<span>${k.arq?'Restaurar':'Arquivar'}</span></button></div>`:'';
   return `<div class="tkm${k.capa?' com-capa':''}">${k.capa?`<div class="tkm-capa-g etq-${k.capa}"></div>`:''}
@@ -6963,7 +7026,7 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
   ${auBotoesHtml(t,k,ro)}
   ${k.feita?`<div class="tkm-feita faint">Concluída em ${fd(k.feita)}${k.feitaPor?' por '+esc(k.feitaPor):''}</div>`:''}
   ${cxFaixa(t,k,bloq)}${k.arq?`<div class="tkm-arqb">${ic('arq',18)}<span>Este cartão está arquivado e fica fora dos quadros.</span></div>`:''}
-  <div class="tkm-abas" role="tablist" aria-label="Seções do cartão">${TK_ABAS.map(([v,n])=>`<button role="tab" data-a="tkc-aba" data-v="${v}" aria-selected="${v===aba}">${n}${cont[v]?`<span class="tkm-n">${cont[v]}</span>`:''}${v==='aprov'&&apPend(k)?'<span class="tkm-dot" title="Aguardando aprovação"></span>':''}</button>`).join('')}</div>
+  <div class="tkm-abas" role="tablist" aria-label="Seções do cartão">${abas.map(([v,n])=>`<button role="tab" data-a="tkc-aba" data-v="${v}" aria-selected="${v===aba}">${n}${cont[v]?`<span class="tkm-n">${cont[v]}</span>`:''}${v==='aprov'&&apPend(k)?'<span class="tkm-dot" title="Aguardando aprovação"></span>':''}</button>`).join('')}</div>
   <div class="tkm-g"><div class="tkm-main" role="tabpanel">${conteudo[aba]()}</div>${comH}</div>${crAvisoHtml()}</div>`}
 /* gerenciar as listas do quadro do terreno */
 function tkListasHtml(fechar){const t=T(UI.tkSel.tid),n=k=>t.tarefas.filter(x=>x.lista===k&&!x.arq).length;
@@ -6973,7 +7036,7 @@ function tkListasHtml(fechar){const t=T(UI.tkSel.tid),n=k=>t.tarefas.filter(x=>x
     <button class="btn text sm" data-a="tkl-oculta" data-v="${l.id}">${l.oculta?'Mostrar':'Ocultar'}</button></div>`).join('')}</div>
   <form class="tkm-nf" data-form="tkl-nova"><input name="nome" required placeholder="Nova lista" aria-label="Nome da nova lista"><select name="tipo" aria-label="Tipo da lista">${Object.entries(TIPO_LISTA).map(([x,n])=>`<option value="${x}">${n}</option>`).join('')}</select><button class="btn tonal sm" type="submit">Criar lista</button></form>
   <div class="df"><button class="btn primary" data-a="close">Pronto</button></div>`}
-function quadrosModal(M,fechar){if(M==='tarefa')return UI.tkSel?.kid?tkCartaoHtml(fechar):tkNovaHtml(fechar);if(M==='tk-listas')return tkListasHtml(fechar);return auModal(M,fechar)}
+function quadrosModal(M,fechar){if(M==='tarefa')return UI.tkSel?.kid?tkCartaoHtml(fechar):tkNovaHtml(fechar);if(M==='tk-listas')return tkListasHtml(fechar);if(M==='it-cond')return itCondHtml(fechar);return auModal(M,fechar)}
 
 /* refaz a tela mantendo a rolagem da janela */
 function tkRe(){const q=['#modal .dialog','#modal .tkm-main','#modal .tkm-coms'],st=q.map(x=>document.querySelector(x)?.scrollTop||0);save();render();q.forEach((x,i)=>{const n=document.querySelector(x);if(n)n.scrollTop=st[i]})}
@@ -7008,9 +7071,9 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="tkc-"]
     case 'tkc-capa':k.capa=a.dataset.v||null;UI.tkPop=null;break;
     case 'tkc-ck-novo':UI.tkCkNovo=true;break;
     case 'tkc-ck-cancela':UI.tkCkNovo=false;break;
-    case 'tkc-ck-x':{const c=k.checklists.find(x=>x.id===a.dataset.c);k.checklists=k.checklists.filter(x=>x!==c);log(t,`Tarefa "${k.titulo}": checklist ${c.nome} excluído`);break}
+    case 'tkc-ck-x':{const c=k.checklists.find(x=>x.id===a.dataset.c);if(c.itens.some(x=>x.regra&&x.regra!=='livre')&&!itConfigura(t,k)){toast('Este checklist tem item com regra para concluir: só o diretor, o administrador e quem criou a tarefa o excluem.',true);break}k.checklists=k.checklists.filter(x=>x!==c);log(t,`Tarefa "${k.titulo}": checklist ${c.nome} excluído`);break}
     case 'tkc-esconder':{const c=k.checklists.find(x=>x.id===a.dataset.c);c.esconder=!c.esconder;break}
-    case 'tkc-item-x':{const {c,i}=tkItem(k,a.dataset.c,a.dataset.i);c.itens=c.itens.filter(x=>x!==i);break}
+    case 'tkc-item-x':{const {c,i}=tkItem(k,a.dataset.c,a.dataset.i);if(i.regra&&i.regra!=='livre'&&!itConfigura(t,k)){toast('Este item tem regra para concluir: só o diretor, o administrador e quem criou a tarefa o excluem.',true);break}c.itens=c.itens.filter(x=>x!==i);break}
     case 'tkc-item-cartao':{const {i}=tkItem(k,a.dataset.c,a.dataset.i);const n=tkCriar(t,{titulo:i.texto,resp:i.resp,prazo:i.prazo,desc:`Veio do checklist de ${k.codigo} · ${k.titulo}`,vis:vzVis(k),acessos:k.acessos});  // herda a visibilidade
       n.anexos.push({id:uid(),tipo:'tarefa',nome:`${k.codigo} · ${k.titulo}`,ref:k.id});i.virou=n.id;if(!i.feito){i.feito=HOJE;i.feitoPor=eu}toast(`${n.codigo} criada a partir do item.`);break}
     case 'tkc-com-edita':UI.tkEdCom=a.dataset.v;break;
@@ -7269,7 +7332,7 @@ function crAplicar(t,m,data){const mapa={},resp=u=>u===RESP_OBJ?t.resp||null:u||
     const k=tkCriar(t,{titulo:x.titulo,resp:resp(x.resp),prio:x.prio,lista:l.id,vis:x.vis||'publico'});
     if(x.iniD!=null){k.inicio=k.iniMin=crSomar(data,x.iniD);k.dur=x.dur||1;k.prazo=crSomar(k.inicio,k.dur-1)}
     (x.pessoas||[]).forEach(p=>{const u=resp(p.user);if(u&&!(k[p.papel]||[]).includes(u))k[p.papel]=[...(k[p.papel]||[]),u]});
-    k.apModo=x.apModo||'paralelo';k.etq=(x.etq||[]).filter(id=>S.etiquetas.some(e=>e.id===id));k.checklists=(x.cks||[]).map(c=>({id:uid(),nome:c.nome,esconder:false,itens:c.itens.map(s=>({id:uid(),texto:s,resp:null,prazo:null,feito:null}))}));
+    k.apModo=x.apModo||'paralelo';k.etq=(x.etq||[]).filter(id=>S.etiquetas.some(e=>e.id===id));k.checklists=(x.cks||[]).map(c=>({id:uid(),nome:c.nome,esconder:false,itens:c.itens.map(s=>typeof s==='string'?{id:uid(),texto:s,resp:null,prazo:null,feito:null}:{id:uid(),texto:s.texto,resp:null,prazo:null,feito:null,regra:s.regra,cond:s.cond?JSON.parse(JSON.stringify(s.cond)):null})}));k.itens=(x.itens||[]).filter(i=>!i.campo||cpoCampos().some(c=>c.id===i.campo&&c.ativo!==false)).map(i=>({...JSON.parse(JSON.stringify(i)),id:uid()}));
     mapa[x.id]=k});
   m.tarefas.forEach(x=>{mapa[x.id].preds=(x.preds||[]).filter(v=>mapa[v.id]).map(v=>({id:mapa[v.id].id,tipo:v.tipo,def:v.def||0}))});
   crCascata(t);log(t,`Modelo "${m.nome}" aplicado: ${m.tarefas.length} tarefas`);return m.tarefas.length}
@@ -7278,7 +7341,7 @@ function crSalvarQuadro(t,nome,daEmpresa){const ks=vzTarefas(t).filter(k=>!k.arq
   const m={id:uid(),nome,dono:daEmpresa?null:me(),padrao:false,ativo:true,tarefas:[]};
   ks.forEach(k=>{const x={id:uid(),titulo:k.titulo,lista:tkLista(t,k).nome,prio:k.prio,iniD:k.inicio&&base?crDias(base,k.inicio):null,dur:k.dur||null,
     resp:k.resp&&k.resp===t.resp?RESP_OBJ:k.resp,pessoas:PAPEIS_TK.flatMap(([p])=>(k[p]||[]).map(u=>({papel:p,user:u===t.resp?RESP_OBJ:u}))),etq:[...(k.etq||[])],
-    cks:(k.checklists||[]).map(c=>({nome:c.nome,itens:c.itens.map(i=>i.texto)})),apModo:k.apModo||'paralelo',vis:vzVis(k),preds:[]};mapa[k.id]=x;m.tarefas.push(x)});
+    cks:(k.checklists||[]).map(c=>({nome:c.nome,itens:c.itens.map(i=>i.regra||i.cond?{texto:i.texto,regra:i.regra,cond:i.cond}:i.texto)})),itens:itCopiaItens(k).map(({id,...r})=>r),apModo:k.apModo||'paralelo',vis:vzVis(k),preds:[]};mapa[k.id]=x;m.tarefas.push(x)});
   ks.forEach(k=>{mapa[k.id].preds=crPreds(k).filter(v=>mapa[v.id]).map(v=>({id:mapa[v.id].id,tipo:v.tipo,def:v.def||0}))});
   crModelos().push(m);return m}
 const crPessoaOpts=(v,vazio)=>`<option value="">${vazio}</option><option value="${RESP_OBJ}" ${v===RESP_OBJ?'selected':''}>Responsável do terreno</option>${USERS.map(u=>`<option ${u===v?'selected':''}>${esc(u)}</option>`).join('')}`;
@@ -7439,9 +7502,9 @@ function apPredAviso(t,k,fn){const ps=apPredPend(t,k);document.querySelector('.p
 const apCkAberto=k=>(k.checklists||[]).some(c=>c.itens.some(i=>!i.feito&&!i.virou));
 /* o que impede concluir agora (null = nada) */
 function apBloqueio(t,k){if(k.modelo)return 'Modelo de cartão não se conclui.';if(apPrecisa(k))return apPend(k)?'A tarefa está aguardando aprovação.':'A tarefa precisa ser aprovada antes de concluir. Use "Pedir aprovação".';
-  if(apRegraCk()&&apCkAberto(k))return 'Conclua os itens do checklist antes de concluir a tarefa.';
+  /* itens em branco pela regra de cada item (31/out): "não conclui" barra; "com justificativa" pede o texto (itJustAviso) */
+  if(UI.justOk!==k.id){const b=itBranco(t,k),bl=b.filter(x=>x.regra==='bloqueia');if(bl.length)return itMsgBloq(bl);if(b.length)return 'Há itens em branco: conclua com justificativa.'}
   if(apRegraCk()&&(t?.tarefas||[]).some(x=>x.mae===k.id&&!x.feita&&!x.arq))return 'Conclua as subtarefas antes de concluir a tarefa.';   // subtarefa em aberto (30/out)
-  const f=cpoFaltam(k);if(f.length)return `Preencha ${f.length>1?'os campos obrigatórios':'o campo obrigatório'} antes de concluir: ${f.join(', ')}.`;
   if(apRegraPred()){const ps=apPredPend(t,k);if(ps.length)return `As predecessoras ainda não permitem concluir: ${ps.map(p=>p.codigo).join(', ')}.`}return null}
 /* votos que esperam decisão agora (em sequência, só o da vez) */
 function apDaVez(a){if(!a||a.sit!=='pendente')return [];const ab=a.votos.filter(v=>!v.dec);if(a.modo==='paralelo')return ab;const m=Math.min(...ab.map(v=>v.ordem));return ab.filter(v=>v.ordem===m)}
@@ -7449,9 +7512,9 @@ function apDaVez(a){if(!a||a.sit!=='pendente')return [];const ab=a.votos.filter(
 function apMeuVoto(a,u){const vz=apDaVez(a);return vz.find(v=>v.user===u)||vz.find(v=>ehSuperior(u,v.user))||null}
 function apAvisarVez(t,k,a){apDaVez(a).forEach(v=>notificar(v.user,'aprovacao_pendente',`Aprovar a tarefa: ${k.titulo}`,t,a.id+':'+v.user,tkIr(k)))}
 function apPedir(t,k,motivo){if(!(k.aprov||[]).length){toast('A tarefa não tem aprovador.',true);return}
-  if(apRegraCk()&&apCkAberto(k)){toast('Conclua os itens do checklist antes de pedir a aprovação.',true);return}
+  if(UI.justOk!==k.id){const b=itBranco(t,k);if(b.length){if(itJustPode(t,k)){itJustAviso(t,k,()=>apPedir(t,k,motivo));return}
+    const bl=b.filter(x=>x.regra==='bloqueia');toast(bl.length?itMsgBloq(bl).replace('antes de concluir','antes de pedir a aprovação'):'Há itens em branco: conclua com justificativa.',true);return}}
   if(apRegraCk()&&(t.tarefas||[]).some(x=>x.mae===k.id&&!x.feita&&!x.arq)){toast('Conclua as subtarefas antes de pedir a aprovação.',true);return}
-  const f=cpoFaltam(k);if(f.length){toast(`Preencha antes de pedir a aprovação: ${f.join(', ')}.`,true);return}
   if(apRegraPred()&&apPredPend(t,k).length){toast('As predecessoras ainda não permitem concluir esta tarefa.',true);return}
   const p=apPend(k);if(p){p.sit='cancelada';p.decEm=agora()}const eu=me();
   const a={id:uid(),modo:k.apModo||'paralelo',sit:'pendente',motivo:motivo||null,por:eu,em:agora(),votos:k.aprov.map((u,i)=>({user:u,ordem:i+1,dec:null,por:null,em:null,just:null}))};
@@ -7720,16 +7783,15 @@ document.addEventListener('submit',e=>{const f=e.target,n=f.dataset?.form;if(n!=
    Espelha fluxo.campos, fluxo.campo_opcoes e fluxo.tarefa_campos.
    Os campos são da empresa (Configurações › Tarefas, só administrador) e
    valem para todos os quadros: texto, número, data, lista de opções e
-   sim/não. Cada campo diz se aparece na frente do cartão e se é
-   obrigatório para concluir (sim/não preenchido com "Não" conta). Sem valor, o
+   sim/não. Cada campo diz se aparece na frente do cartão; entra no cartão
+   pelo + Campo e a regra em branco é do cartão (proto_itens.js). Sem valor, o
    campo fica "não informado" (nunca zero nem "não"). Campo com valor não
    muda de tipo e não se apaga: desativa. Injetado no mesmo escopo.
    ===================================================================== */
 const CPO_TIPOS={texto:'Texto',numero:'Número',data:'Data',lista:'Lista de opções',caixa:'Sim / não'};
 function cpoCampos(){return S.campos||(S.campos=[])}
 function cpoAtivos(){return cpoCampos().filter(c=>c.ativo!==false).sort((a,b)=>(a.ordem||0)-(b.ordem||0))}
-/* campos obrigatórios ativos sem valor: impedem concluir (fluxo.pendencias_conclusao, 'campos') */
-function cpoFaltam(k){return cpoAtivos().filter(c=>c.obrig&&k.campos?.[c.id]==null).map(c=>c.nome)}
+/* "obrigatório" saiu do campo (31/out): a regra se em branco é de cada cartão (proto_itens.js, fluxo.tarefa_itens) */
 function cpoUsado(c){return S.terrenos.some(t=>(t.tarefas||[]).some(k=>k.campos&&k.campos[c.id]!=null))}
 function cpoNum(v){const s=String(v).trim().toLowerCase().replace(/\s/g,'');if(!s)return null;const m=/^(-?[\d.,]+)(mil|mi)?$/.exec(s);if(!m)return NaN;
   let n=m[1];if(n.includes(','))n=n.replace(/\./g,'').replace(',','.');else if((n.match(/\./g)||[]).length>1||/\.\d{3}$/.test(n))n=n.replace(/\./g,'');
@@ -7747,9 +7809,6 @@ function cpoInput(c,k,ro){const x=k.campos?.[c.id],id='cpo-'+c.id,dis=ro||c.ativ
   if(c.tipo==='caixa')return `<select id="${id}" class="tkm-pill cpo-in" data-cpo="${c.id}" ${dis}><option value="">Não informado</option><option value="1" ${x===true?'selected':''}>Sim</option><option value="0" ${x===false?'selected':''}>Não</option></select>`;
   if(c.tipo==='data')return `<input id="${id}" type="date" class="tkm-pill cpo-in" data-cpo="${c.id}" value="${x||''}" ${dis}>`;
   return `<input id="${id}" class="tkm-pill cpo-in" data-cpo="${c.id}" value="${x==null?'':esc(c.tipo==='numero'?cpoTxt(c,x):x)}" ${c.tipo==='numero'?'inputmode="decimal"':''} placeholder="Não informado" ${dis}>`}
-function cpoLinhas(t,k,ro,linha){const cs=cpoCampos().filter(c=>c.ativo!==false||(k.campos&&k.campos[c.id]!=null)).sort((a,b)=>(a.ordem||0)-(b.ordem||0));
-  return cs.map(c=>{const falta=c.obrig&&c.ativo!==false&&k.campos?.[c.id]==null;
-    return linha('notas',`${esc(c.nome)}${c.obrig&&c.ativo!==false?' <span class="cpo-ob" title="Obrigatório para concluir">*</span>':''}`,`<span class="cpo-c ${falta?'falta':''}">${cpoInput(c,k,ro)}${falta?'<span class="cpo-av">Obrigatório para concluir</span>':''}</span>`,'cpo-'+c.id)}).join('')}
 function cpoGravar(t,k,c,raw){const antes=k.campos?.[c.id];let v;
   if(raw===''||raw==null)v=null;
   else if(c.tipo==='numero'){v=cpoNum(raw);if(Number.isNaN(v)){toast(`Número inválido em ${c.nome}.`,true);return false}}
@@ -7765,11 +7824,10 @@ function cpoFiltra(k,f){const [cid,v]=f.split(':'),x=k.campos?.[cid],c=cpoCampos
 /* ---------- Configurações › Tarefas ---------- */
 function cpoCfgHtml(){const C=cpoCampos().slice().sort((a,b)=>(a.ordem||0)-(b.ordem||0));
   return `<section class="sec"><div class="sec-h"><h2>Campos personalizados</h2></div><div class="sec-b">
-    <p class="muted" style="margin-top:0">Valem para todos os quadros. Campo com valor não muda de tipo nem se apaga: desative.</p>
+    <p class="muted" style="margin-top:0">Quem cria a tarefa inclui o campo no cartão; a regra para concluir com ele em branco fica na aba Configuração do cartão. Campo com valor não muda de tipo nem se apaga: desative.</p>
     ${C.map((c,i)=>{const usado=cpoUsado(c);return `<div class="cpo-cfg ${c.ativo===false?'oculta':''}"><div class="tkl-r"><input value="${esc(c.nome)}" data-cpoc="nome" data-v="${c.id}" aria-label="Nome do campo ${i+1}">
       <select data-cpoc="tipo" data-v="${c.id}" aria-label="Tipo de ${esc(c.nome)}" ${usado?'disabled title="Já tem valores: o tipo não muda"':''}>${Object.entries(CPO_TIPOS).map(([x,n])=>`<option value="${x}" ${x===c.tipo?'selected':''}>${n}</option>`).join('')}</select>
       <label class="chk"><input type="checkbox" data-cpoc="frente" data-v="${c.id}" ${c.frente?'checked':''}>Na frente do cartão</label>
-      <label class="chk"><input type="checkbox" data-cpoc="obrig" data-v="${c.id}" ${c.obrig?'checked':''}>Obrigatório para concluir</label>
       <button class="iconbtn sm" data-a="cpo-sobe" data-v="${c.id}" ${i?'':'disabled'} aria-label="Subir ${esc(c.nome)}" title="Subir">${ic('chev',18)}</button>
       ${usado?`<button class="btn text sm" data-a="cpo-ativo" data-v="${c.id}">${c.ativo===false?'Ativar':'Desativar'}</button>`:`<button class="btn text sm" data-a="cpo-apaga" data-v="${c.id}">Apagar</button>`}</div>
       ${c.tipo==='lista'?`<div class="cpo-ops">${(c.opcoes||[]).map(o=>`<span class="cpo-op ${o.ativo===false?'oculta':''}"><span class="etq etq-${o.cor}">${esc(o.nome)}</span><button class="iconbtn sm" data-a="cpo-op-x" data-v="${c.id}" data-o="${o.id}" aria-label="${o.ativo===false?'Reativar':'Tirar'} ${esc(o.nome)}" title="${o.ativo===false?'Reativar':'Tirar'}">${ic(o.ativo===false?'undo':'close',14)}</button></span>`).join('')}
@@ -7807,6 +7865,296 @@ document.addEventListener('submit',e=>{const f=e.target,n=f.dataset?.form;if(n!=
   const b=t.tarefas.find(x=>x.titulo==='Estudo de massa');if(b)b.campos={[S.campos[0].id]:185000}})();
 
 /* =====================================================================
+   Campos do terreno e da negociação, itens do cartão e regra de campo em
+   branco (decisões do Moisés, 31/out/2026; simulação "Funil e quadros").
+   Espelha app.campos_catalogo, app.campos_empresa, fluxo.tarefa_itens,
+   checklist_itens.regra_branco/condicao e fluxo.conclusao_justificativas.
+   - Configurações › Campos (só administrador): uma linha por campo, com o
+     nome no banco, o Título (o nome que o usuário vê) e as marcas Condição
+     e No cartão.
+   - Na frente do cartão, quem cria inclui o que a tarefa precisa (+ Campo):
+     campos do terreno e da negociação, que gravam no próprio terreno, e
+     campos personalizados; os checklists já ficam no cartão.
+   - Aba Configuração do cartão (diretor, administrador e quem criou): para
+     cada item, a regra se estiver em branco ao concluir (pode concluir,
+     com justificativa, não conclui) e a condição "Vale quando...".
+   - "Não conclui" trava analista e gestor; o diretor conclui com
+     justificativa. Toda justificativa fica no histórico.
+   - Condição: + Condição (busca entre os campos marcados para condição),
+     operador pelo tipo, valor (vários na lista), "todas" ou "qualquer uma",
+     e um nível de grupo (+ Grupo). Em branco nunca satisfaz nada além de
+     "não informado".
+   Injetado no mesmo escopo do protótipo, depois de proto_campos.js.
+   ===================================================================== */
+const IT_ORIG={terreno:'Terreno',negociacao:'Negociação',oferta:'Oferta de referência',proposta:'Proposta vigente',calculado:'Calculado'};
+const IT_TIPO={texto:'texto',numero:'número',data:'data',lista:'lista',lista_multi:'lista (várias)',pessoa:'pessoa',sim_nao:'sim/não'};
+const IT_REGRA={livre:'Pode concluir',justificativa:'Conclui com justificativa',bloqueia:'Não conclui'};
+const IT_OP={em:'é',fora:'não é',preenchido:'está preenchido',vazio:'não informado',igual:'igual a',maior:'maior que',menor:'menor que',entre:'entre',
+  antes:'antes de',depois:'depois de',ultimos_dias:'nos últimos',sim:'é sim',nao:'é não'};
+const IT_OPS={texto:['em','fora','preenchido','vazio'],lista:['em','fora','preenchido','vazio'],lista_multi:['em','fora','preenchido','vazio'],pessoa:['em','fora','preenchido','vazio'],
+  numero:['igual','maior','menor','entre','preenchido','vazio'],data:['antes','depois','ultimos_dias','preenchido','vazio'],sim_nao:['sim','nao','vazio']};
+const itPropVig=t=>[...(t.propostas||[])].reverse().find(p=>['apresentada','em_analise','aceita'].includes(p.status))||null;
+const itOpc=o=>()=>o;
+const itSemVazio=(o,v)=>itOpc(Object.fromEntries(Object.entries(o).filter(([k])=>k!==v)));
+/* catálogo: [chave, título padrão, tipo, unidade, opções, vazio, editável, condição, cartão, ler(t), gravar(t,v)] */
+const IT_CAT=(()=>{const tr=(c)=>[t=>t[c],(t,v)=>{t[c]=v}],of=c=>[t=>ofertaRef(t)?.[c],(t,v)=>{const o=ofertaRef(t);if(!o)throw new Error('O terreno não tem oferta.');o[c]=v}],
+  ng=c=>[t=>t.neg?.[c],null],pr=c=>[t=>itPropVig(t)?.[c],null],ro=f=>[f,null];
+  const opMun=()=>Object.fromEntries([...new Set(['São Paulo · SP','São José dos Campos · SP',...S.terrenos.map(t=>t.municipio).filter(Boolean)])].map(x=>[x,x]));
+  const opEixo=()=>Object.fromEntries((S.eixos||[]).map(e=>[e.id,e.nome])),opCorr=()=>Object.fromEntries((S.corretores||[]).map(c=>[c.id,c.nome]));
+  const opEt=()=>Object.fromEntries(STAGES),opSub=()=>Object.fromEntries(cfg().subs.filter(s=>s.ativo).map(s=>[s.k,s.nome])),opUs=()=>Object.fromEntries(USERS.map(u=>[u,u]));
+  const opZonas=()=>Object.fromEntries([...new Set(S.terrenos.flatMap(t=>(analiseVig(t)?.zonas||[]).map(z=>z.sigla)))].sort().map(z=>[z,z]));
+  const L=[
+  ['terreno.nome','Nome do terreno','texto',null,null,null,1,0,1,...tr('nome')],['terreno.descricao','Descrição','texto',null,null,null,1,0,0,...tr('descricao')],
+  ['terreno.situacao_cadastral','Situação do cadastro','lista',null,itOpc({ativo:'Ativo',arquivado:'Arquivado'}),null,0,1,0,...ro(t=>t.situacao)],
+  ['terreno.prioridade','Prioridade','lista',null,itOpc(OPT.prioridade),null,1,1,1,...tr('prioridade')],['terreno.responsavel_id','Responsável do terreno','pessoa',null,opUs,null,1,1,1,...tr('resp')],
+  ['terreno.origem_cadastro','Origem do terreno','lista',null,itOpc(OPT.origem),null,1,1,0,...tr('origem')],['terreno.url_origem','Link do anúncio','texto',null,null,null,1,0,1,...tr('url')],
+  ['terreno.data_identificacao','Identificado em','data',null,null,null,1,0,0,...tr('dataIdent')],['terreno.observacoes','Observações','texto',null,null,null,1,0,0,...tr('obs')],
+  ['terreno.cep','CEP','texto',null,null,null,1,0,0,...tr('cep')],['terreno.logradouro','Rua','texto',null,null,null,1,0,0,...tr('logradouro')],['terreno.numero','Número','texto',null,null,null,1,0,0,...tr('numero')],
+  ['terreno.complemento','Complemento','texto',null,null,null,1,0,0,...tr('complemento')],['terreno.bairro','Bairro','texto',null,null,null,1,1,0,...tr('bairro')],
+  ['terreno.municipio_id','Município','lista',null,opMun,null,0,1,1,...ro(t=>t.municipio)],['terreno.zona','Zona da cidade','lista',null,itOpc(OPT.zona),null,1,1,0,...tr('zona')],
+  ['terreno.eixo_comercial_id','Eixo comercial','lista',null,opEixo,null,1,1,0,...tr('eixo')],['terreno.referencia_localizacao','Ponto de referência','texto',null,null,null,1,0,0,...tr('referencia')],
+  ['terreno.precisao_localizacao','Precisão da localização','lista',null,itSemVazio(OPT.precisao,'nao_informada'),'nao_informada',1,0,0,...tr('precisao')],
+  ['terreno.area_documental_m2','Área documental','numero','m²',null,null,1,1,1,...tr('aDoc')],['terreno.area_cadastral_m2','Área cadastral','numero','m²',null,null,1,1,1,...tr('aCad')],
+  ['terreno.area_levantamento_m2','Área do levantamento','numero','m²',null,null,1,1,1,...tr('aLev')],['terreno.area_poligonal_m2','Área da poligonal','numero','m²',null,null,0,1,1,...ro(t=>areaPolT(t))],
+  ['terreno.area_adotada_m2','Área adotada','numero','m²',null,null,0,1,1,...ro(t=>areaAdotada(t))],['terreno.fonte_area_adotada','Fonte da área adotada','lista',null,itOpc(OPT.fonteArea),null,0,0,0,...ro(t=>t.fonteArea)],
+  ['terreno.testada_principal_m','Testada principal','numero','m',null,null,1,1,1,...tr('testada')],['terreno.topografia','Topografia','lista',null,itSemVazio(OPT.topografia,'nao_informado'),'nao_informado',1,1,1,...tr('topografia')],
+  ['terreno.desnivel_estimado_m','Desnível estimado','numero','m',null,null,1,1,1,...tr('desnivel')],['terreno.posicao_quadra','Posição na quadra','lista',null,itSemVazio(OPT.posicao,'nao_informado'),'nao_informado',1,0,0,...tr('posicao')],
+  ['terreno.formato','Formato do lote','lista',null,itSemVazio(OPT.formato,'nao_informado'),'nao_informado',1,0,0,...tr('formato')],['terreno.situacao_ocupacao','Ocupação','lista',null,itSemVazio(OPT.ocupacao,'nao_informado'),'nao_informado',1,1,1,...tr('ocupacao')],
+  ['terreno.uso_atual','Uso atual','texto',null,null,null,1,0,1,...tr('uso')],['terreno.area_construida_existente_m2','Área construída existente','numero','m²',null,null,1,0,1,...tr('aConst')],
+  ['terreno.area_construida_demolir_m2','Área a demolir','numero','m²',null,null,1,0,1,...tr('aDemolir')],['terreno.necessidade_demolicao','Precisa demolir','lista',null,itSemVazio(OPT.demolicao,'nao_avaliada'),'nao_avaliada',1,1,1,...tr('demolicao')],
+  ['terreno.observacoes_fisicas','Observações físicas','texto',null,null,null,1,0,0,...tr('obsFis')],['terreno.tipo_empreendimento','Tipo de empreendimento','lista',null,itOpc({mercado:'Mercado',his:'HIS',hmp:'HMP'}),'nao_informado',1,1,1,...tr('tipoEmp')],
+  ['negociacao.etapa','Etapa','lista',null,opEt,null,0,1,0,...ng('etapa')],['negociacao.subetapa','Subetapa','lista',null,opSub,null,0,1,0,...ng('sub')],
+  ['negociacao.status','Situação da negociação','lista',null,itOpc(STATUS_N),null,0,1,0,...ng('status')],['negociacao.responsavel_id','Responsável da negociação','pessoa',null,opUs,null,0,1,1,...ro(t=>t.neg?.resp||(t.neg?t.resp:null))],
+  ['negociacao.temperatura','Temperatura','lista',null,itOpc({1:'1',2:'2',3:'3',4:'4',5:'5'}),null,1,1,1,t=>t.neg?.temp==null?null:String(t.neg.temp),(t,v)=>{if(!t.neg)throw new Error('O terreno não tem negociação.');t.neg.temp=v==null?null:Number(v)}],
+  ['negociacao.data_inicio','Início da negociação','data',null,null,null,0,0,0,...ng('desde')],['negociacao.retomar_em','Retomar em (Stand By)','data',null,null,null,0,0,0,...ng('retomar')],
+  ['negociacao.motivo_encerramento','Motivo do encerramento','lista',null,null,null,0,0,0,...ng('motivo')],
+  ['oferta.valor_pedido','Preço pedido','numero','R$',null,null,1,1,1,...of('valor')],['oferta.forma_pagamento_pedida','Forma de pagamento pedida','lista',null,itOpc(OPT.forma),null,1,0,1,...of('forma')],
+  ['oferta.observacao_pagamento','Observação do pagamento','texto',null,null,null,1,0,0,...of('obsPag')],['oferta.aceita_permuta','Aceita permuta','texto',null,null,null,1,0,1,...of('aceita')],
+  ['oferta.comissao_pct','Comissão (%)','numero','%',null,null,1,1,0,...of('comPct')],['oferta.comissao_valor','Comissão (R$)','numero','R$',null,null,1,0,0,...of('comVal')],
+  ['oferta.corretor_id','Corretor','lista',null,opCorr,null,0,1,1,...ro(t=>ofertaRef(t)?.cid)],['oferta.ofertante_id','Quem ofereceu','lista',null,null,null,0,0,0,...ro(t=>ofertaRef(t)?.ofertante)],
+  ['oferta.data_oferta','Data da oferta','data',null,null,null,1,0,0,...of('data')],['oferta.validade','Validade da oferta','data',null,null,null,1,0,0,...of('validade')],
+  ['proposta.valor_total','Valor da proposta vigente','numero','R$',null,null,0,1,1,...pr('valor')],['proposta.forma_pagamento','Forma de pagamento proposta','lista',null,itOpc(OPT.forma),null,0,0,0,...pr('forma')],
+  ['proposta.condicoes_pagamento','Condições de pagamento','texto',null,null,null,0,0,0,...pr('cond')],['proposta.origem','Quem propôs','lista',null,itOpc({bkm:'BKM',vendedor:'Vendedor'}),null,0,1,0,...pr('origem')],
+  ['proposta.status','Situação da proposta','lista',null,itOpc({apresentada:'Apresentada',em_analise:'Em análise',aceita:'Aceita'}),null,0,1,0,...pr('status')],
+  ['proposta.data_apresentacao','Proposta apresentada em','data',null,null,null,0,0,0,...pr('data')],['proposta.validade','Validade da proposta','data',null,null,null,0,0,0,...pr('validade')],
+  ['calculado.forma_pagamento_vigente','Forma de pagamento vigente','lista',null,itOpc(OPT.forma),null,0,1,1,...ro(t=>itPropVig(t)?.forma??ofertaRef(t)?.forma)],
+  ['calculado.margem_liquida','Margem líquida do estudo válido','numero','%',null,null,0,1,1,...ro(t=>t.neg?.viab?.margem)],['calculado.vgv','VGV do estudo válido','numero','R$',null,null,0,1,1,...ro(t=>t.neg?.viab?.vgv)],
+  ['calculado.preco_m2','Preço pedido por m²','numero','R$',null,null,0,1,1,...ro(t=>{const o=ofertaRef(t),a=areaAdotada(t);return o?.valor&&a?Math.round(100*o.valor/a)/100:null})],
+  ['calculado.zonas','Zonas da área','lista_multi',null,opZonas,null,0,1,1,...ro(t=>[...new Set((analiseVig(t)?.zonas||[]).map(z=>z.sigla))])],
+  ['calculado.tem_partes','Vários donos','sim_nao',null,null,null,0,1,0,...ro(t=>(t.partes||[]).length>0)],
+  ['calculado.corretores','Corretores do terreno ou das partes','lista_multi',null,opCorr,null,0,1,0,...ro(t=>(t.corretores||[]).map(c=>c.cid))]];
+  return L.map(([chave,titulo,tipo,un,opcoes,vazio,ed,cd,cp,ler,gravar])=>({chave,origem:chave.split('.')[0],coluna:chave.split('.')[1],titulo,tipo,un,opcoes,vazio,editavel:!!ed&&!!gravar,condicao:!!cd,cartao:!!cp,ler,gravar}))})();
+const itEmp=()=>S.camposEmp||(S.camposEmp={});
+function itDef(chave){const c=IT_CAT.find(x=>x.chave===chave);if(!c)return null;const e=itEmp()[chave]||{};
+  return {...c,titulo:e.titulo||c.titulo,condicao:e.condicao??c.condicao,cartao:e.cartao??c.cartao}}
+const itTit=chave=>itDef(chave)?.titulo||chave;
+/* valor do campo no terreno (null = em branco: nulo, vazio, "não informado" ou lista vazia) */
+function itVal(t,chave){const c=IT_CAT.find(x=>x.chave===chave);if(!c||!t)return null;let v;try{v=c.ler(t)}catch(e){v=null}
+  if(v==null||v===''||v===c.vazio||(Array.isArray(v)&&!v.length))return null;return v}
+function itTxtVal(d,v){if(v==null)return 'Não informado';const o=d.opcoes?d.opcoes():null;
+  if(Array.isArray(v))return v.map(x=>o?.[x]??x).join(', ');if(d.tipo==='sim_nao')return v?'Sim':'Não';if(d.tipo==='data')return fd(v);
+  if(d.tipo==='numero')return (d.un==='R$'?'R$ ':'')+Number(v).toLocaleString('pt-BR',{maximumFractionDigits:2})+(d.un&&d.un!=='R$'?' '+d.un:'');
+  return o?.[v]??String(v)}
+
+/* ---------- condição ---------- */
+function itCondItem(t,it){const d=IT_CAT.find(x=>x.chave===it.campo);if(!d)return false;const v=itVal(t,it.campo),vs=it.valores||[];
+  if(it.op==='vazio')return v==null;if(it.op==='preenchido')return v!=null;if(v==null)return false;
+  if(it.op==='em'||it.op==='fora'){const tem=Array.isArray(v)?v.some(x=>vs.map(String).includes(String(x))):vs.map(String).includes(String(v));return it.op==='em'?tem:!tem}
+  if(['igual','maior','menor','entre'].includes(it.op)){const x=Number(v),a=Number(vs[0]),b=Number(vs[1]);return it.op==='igual'?x===a:it.op==='maior'?x>a:it.op==='menor'?x<a:x>=a&&x<=b}
+  if(it.op==='antes')return v<vs[0];if(it.op==='depois')return v>vs[0];if(it.op==='ultimos_dias')return v<=HOJE&&v>=addD(HOJE,-Number(vs[0]));
+  if(it.op==='sim'||it.op==='nao')return !!v===(it.op==='sim');return false}
+function itCondVale(t,c){if(!c||!(c.itens||[]).length)return true;const r=c.itens.map(it=>it.grupo?itCondVale(t,it.grupo):itCondItem(t,it));return c.modo==='qualquer'?r.some(Boolean):r.every(Boolean)}
+function itCondFrase(c,dentro){if(!c||!(c.itens||[]).length)return 'sempre';const j=c.modo==='qualquer'?' ou ':' e ';
+  const fr=c.itens.map(it=>{if(it.grupo)return '('+itCondFrase(it.grupo,true)+')';const d=itDef(it.campo);if(!d)return '?';const o=d.opcoes?d.opcoes():null,vs=(it.valores||[]).map(v=>d.tipo==='data'?fd(v):d.tipo==='numero'?itTxtVal(d,v):o?.[v]??v);
+    const vt=it.op==='entre'?`${vs[0]} e ${vs[1]}`:it.op==='ultimos_dias'?`${vs[0]} dias`:['em','fora'].includes(it.op)?vs.join(' ou '):vs.join('');
+    return `${d.titulo.charAt(0).toLowerCase()+d.titulo.slice(1)} ${IT_OP[it.op]}${vt?' '+vt:''}`}).join(j);
+  return dentro?fr:fr}
+/* confere como app.validar_condicao: campo liberado, operador do tipo, valores, um nível de grupo */
+function itCondErro(c,nivel=0){if(!c)return null;if(!(c.itens||[]).length)return nivel?'Grupo vazio: ponha ao menos uma condição ou tire o grupo.':null;
+  for(const it of c.itens){if(it.grupo){if(nivel)return 'A condição aceita só um nível de grupo.';const e=itCondErro(it.grupo,1);if(e)return e;continue}
+    const d=itDef(it.campo);if(!d)return 'Escolha o campo de cada condição.';if(!d.condicao)return `O campo ${d.titulo} não está liberado para condição.`;
+    if(!IT_OPS[d.tipo].includes(it.op))return `Escolha o operador de ${d.titulo}.`;const n=(it.valores||[]).filter(v=>v!==''&&v!=null).length;
+    if(['em','fora'].includes(it.op)&&!n)return `Escolha ao menos um valor para ${d.titulo}.`;
+    if(['igual','maior','menor','antes','depois','ultimos_dias'].includes(it.op)&&n!==1)return `Informe o valor de ${d.titulo}.`;
+    if(it.op==='entre'&&n!==2)return `Informe o mínimo e o máximo de ${d.titulo}.`}return null}
+
+/* ---------- itens do cartão ---------- */
+const itDir=()=>membro(me()).papel==='diretor';
+const itConfigura=(t,k)=>UI.role!=='Leitura'&&(itDir()||ehAdmin(me())||k.criadoPor===me());
+function itNorm(k){k.itens=k.itens||[];Object.keys(k.campos||{}).forEach(cid=>{if(k.campos[cid]!=null&&!k.itens.some(i=>i.campo===cid))k.itens.push({id:uid(),campo:cid,regra:'livre',cond:null})});return k.itens}
+const itCampo=i=>i.campo?cpoCampos().find(c=>c.id===i.campo):null;
+const itNome=i=>i.chave?itTit(i.chave):itCampo(i)?.nome||'Campo';
+function itEmBranco(t,k,i){if(i.chave)return itVal(t,i.chave)==null;const c=itCampo(i);return !c||c.ativo===false?false:k.campos?.[i.campo]==null}
+/* o que está em branco e pede algo para concluir agora (regra justificativa ou bloqueia, com a condição valendo); espelha fluxo.itens_em_branco */
+function itBranco(t,k){const r=[];itNorm(k).forEach(i=>{if(i.regra==='livre'||!i.regra)return;const c=itCampo(i);if(i.campo&&(!c||c.ativo===false))return;
+    if(itEmBranco(t,k,i)&&itCondVale(t,i.cond))r.push({tipo:i.chave?'objeto':'campo',ref:i.chave||i.campo,nome:itNome(i),regra:i.regra})});
+  (k.checklists||[]).forEach(c=>c.itens.forEach(x=>{const rg=x.regra||(apRegraCk()?'bloqueia':'livre');if(rg!=='livre'&&!x.feito&&!x.virou&&itCondVale(t,x.cond))r.push({tipo:'checklist',ref:x.id,nome:x.texto,regra:rg})}));return r}
+function itMsgBloq(bl){const ck=bl.filter(x=>x.tipo==='checklist'),cp=bl.filter(x=>x.tipo!=='checklist');
+  if(!cp.length)return 'Conclua os itens do checklist antes de concluir a tarefa.';
+  const p=`Preencha ${cp.length>1?'os campos obrigatórios':'o campo obrigatório'} antes de concluir: ${cp.map(x=>x.nome).join(', ')}.`;return ck.length?p+' E conclua os itens do checklist.':p}
+/* pode concluir com justificativa? (há item em branco e nada que só o diretor passe, ou é o diretor; nada além dos itens impede) */
+function itJustPode(t,k){if(UI.justOk===k.id)return false;const b=itBranco(t,k);if(!b.length)return false;if(b.some(x=>x.regra==='bloqueia')&&!itDir())return false;
+  UI.justOk=k.id;try{return !apBloqueio(t,k)}finally{UI.justOk=null}}
+function itJustAviso(t,k,fn){const b=itBranco(t,k),dir=b.some(x=>x.regra==='bloqueia');document.querySelector('.it-just-f')?.remove();
+  const f=document.createElement('div');f.className='cr-aviso-f it-just-f';f.innerHTML=`<form class="cr-aviso" role="alertdialog" aria-modal="true" aria-labelledby="it-just-t"><h3 id="it-just-t">Concluir com ${b.length>1?'itens':'item'} em branco</h3>
+    <ul class="it-just-l">${b.map(x=>`<li>${esc(x.nome)} <span class="chip ${x.regra==='bloqueia'?'st-crit':'st-warn'}">${x.regra==='bloqueia'?'não conclui':'pede justificativa'}</span></li>`).join('')}</ul>
+    ${dir?'<p class="faint">Como diretor, você pode concluir mesmo com o que bloqueia. Fica no histórico.</p>':''}
+    <label for="it-just-x" class="it-just-r">Justificativa</label><textarea id="it-just-x" name="just" required placeholder="Por que concluir assim? (obrigatório)"></textarea>
+    <div class="cr-av-b"><button type="button" class="btn" data-just="nao">Cancelar</button><button type="submit" class="btn primary">Concluir</button></div></form>`;
+  const fecha=()=>{f.remove();document.removeEventListener('keydown',esc_,true)},esc_=e=>{if(e.key==='Escape'){e.stopImmediatePropagation();fecha();render()}};
+  f.addEventListener('click',e=>{if(e.target.closest('[data-just=nao]')||e.target===f){e.stopPropagation();fecha();render()}});
+  f.querySelector('form').addEventListener('submit',e=>{e.preventDefault();e.stopPropagation();const tx=f.querySelector('textarea').value.trim();if(!tx){toast('Escreva a justificativa.',true);return}fecha();
+    (k.justs=k.justs||[]).push({em:agora(),por:me(),texto:tx,itens:b,libera:dir&&itDir()});
+    log(t,`Tarefa "${k.titulo}": concluída com ${b.length>1?'itens':'item'} em branco (${b.map(x=>x.nome).join(', ')}). Justificativa: ${tx}`);
+    UI.justOk=k.id;try{fn()}finally{UI.justOk=null}save();render()});
+  document.addEventListener('keydown',esc_,true);document.body.appendChild(f);f.querySelector('textarea').focus()}
+
+/* controle do campo do terreno no cartão (grava no próprio terreno) */
+function itInput(t,d,i,ro){const v=itVal(t,d.chave),id='it-'+i.id,dis=ro||!d.editavel?'disabled':'',o=d.opcoes?d.opcoes():null;
+  if(!d.editavel||ro)return `<span class="it-ro ${v==null?'faint':''}">${esc(itTxtVal(d,v))}${!d.editavel&&!ro?' <span class="faint">· só leitura</span>':''}</span>`;
+  if(o&&d.tipo!=='lista_multi')return `<select id="${id}" class="tkm-pill" data-itv="${i.id}" ${dis}><option value="">Não informado</option>${Object.entries(o).map(([x,n])=>`<option value="${esc(x)}" ${String(v)===x?'selected':''}>${esc(n)}</option>`).join('')}</select>`;
+  if(d.tipo==='data')return `<input id="${id}" type="date" class="tkm-pill" data-itv="${i.id}" value="${v||''}" ${dis}>`;
+  return `<input id="${id}" class="tkm-pill" data-itv="${i.id}" value="${v==null?'':esc(d.tipo==='numero'?Number(v).toLocaleString('pt-BR',{maximumFractionDigits:2}):v)}" ${d.tipo==='numero'?'inputmode="decimal"':''} placeholder="Não informado" ${dis}>`}
+function itSelo(t,k,i){if(!i.regra||i.regra==='livre'||!itCondVale(t,i.cond))return '';
+  return i.regra==='bloqueia'?'<span class="chip crit it-selo">necessário</span>':'<span class="chip warn it-selo">pede justificativa</span>'}
+/* linhas da grade de propriedades: os itens incluídos no cartão (campos do terreno e personalizados) e o + Campo */
+function itLinhas(t,k,ro,linha){itNorm(k);const conf=itConfigura(t,k);
+  const rows=k.itens.map(i=>{const tira=ro?'':`<button class="iconbtn sm it-tira" data-a="it-tira" data-v="${i.id}" title="Tirar do cartão" aria-label="Tirar ${esc(itNome(i))} do cartão" ${i.regra&&i.regra!=='livre'&&!conf?'disabled':''}>${ic('close',14)}</button>`;
+    if(i.chave){const d=itDef(i.chave);if(!d)return '';const falta=itEmBranco(t,k,i)&&itSelo(t,k,i);
+      return linha('notas',`${esc(d.titulo)}`,`<span class="cpo-c it-c ${falta?'falta':''}">${itInput(t,d,i,ro)}${itSelo(t,k,i)}${tira}</span>`,d.editavel&&!ro?'it-'+i.id:null)}
+    const c=itCampo(i);if(!c||(c.ativo===false&&k.campos?.[c.id]==null))return '';const falta=itEmBranco(t,k,i)&&itSelo(t,k,i);
+    return linha('notas',esc(c.nome),`<span class="cpo-c it-c ${falta?'falta':''}">${cpoInput(c,k,ro)}${itSelo(t,k,i)}${tira}</span>`,'cpo-'+c.id)}).join('');
+  if(ro)return rows;
+  const q=(UI.itBusca||'').toLowerCase(),usados=new Set(k.itens.map(i=>i.chave||i.campo));
+  const ob=IT_CAT.map(c=>itDef(c.chave)).filter(d=>d.cartao&&!usados.has(d.chave)&&(!q||d.titulo.toLowerCase().includes(q))),cp=cpoAtivos().filter(c=>!usados.has(c.id)&&(!q||c.nome.toLowerCase().includes(q)));
+  const pop=UI.tkPop==='it-campo'?`<div class="tkm-pop it-pop" role="group" aria-label="Incluir campo"><div class="tkm-poph">Incluir campo no cartão<button class="iconbtn sm" data-a="tkc-pop" data-v="it-campo" aria-label="Fechar">${ic('close',16)}</button></div>
+    <input class="it-busca" data-itb="1" value="${esc(UI.itBusca||'')}" placeholder="Buscar campo" aria-label="Buscar campo">
+    <div class="it-popl">${Object.keys(IT_ORIG).map(o=>{const l=ob.filter(d=>d.origem===o);return l.length?`<div class="it-popg">${IT_ORIG[o]}</div>${l.map(d=>`<button class="it-popi" data-a="it-inclui" data-v="${d.chave}">${esc(d.titulo)}<span class="faint">${IT_TIPO[d.tipo]}${d.editavel?'':' · só leitura'}</span></button>`).join('')}`:''}).join('')}
+      ${cp.length?`<div class="it-popg">Campos personalizados</div>${cp.map(c=>`<button class="it-popi" data-a="it-inclui" data-c="${c.id}">${esc(c.nome)}<span class="faint">${CPO_TIPOS[c.tipo].toLowerCase()}</span></button>`).join('')}`:''}
+      ${!ob.length&&!cp.length?'<div class="faint" style="padding:8px 12px">Nenhum campo com esse nome.</div>':''}</div></div>`:'';
+  return rows+`<div class="tkm-p it-maisw"><span class="tkm-pl"></span><div class="tkm-pv"><button class="tkm-add" data-a="tkc-pop" data-v="it-campo" aria-expanded="${UI.tkPop==='it-campo'}">${ic('add',16)}Campo</button>${pop}</div></div>`}
+
+/* aba Configuração do cartão: só diretor, administrador e quem criou */
+function itCfgAba(t,k,bloq){itNorm(k);const ed=!bloq;
+  const sel=(attrs,v,padrao)=>`<select class="tkm-pill" ${attrs} ${ed?'':'disabled'}>${padrao?`<option value="" ${!v?'selected':''}>${padrao}</option>`:''}${Object.entries(IT_REGRA).map(([x,n])=>`<option value="${x}" ${v===x?'selected':''}>${n}</option>`).join('')}</select>`;
+  const cond=(alvo,c)=>`<span class="it-vq">${c?esc(itCondFrase(c)):'<span class="faint">sempre</span>'}${ed?`<button class="linkbtn" data-a="it-cond" data-v="${alvo}">${c?'Editar':'+ Condição'}</button>${c?`<button class="linkbtn" data-a="it-cond-tira" data-v="${alvo}">Tirar</button>`:''}`:''}</span>`;
+  const rows=k.itens.map(i=>{const nm=itNome(i),tp=i.chave?IT_ORIG[itDef(i.chave)?.origem]||'':'Campo personalizado';
+      return `<div class="it-cr"><span><b>${esc(nm)}</b><span class="faint">${esc(tp)}</span></span>${sel(`data-itr="${i.id}" aria-label="Se ${esc(nm)} estiver em branco"`,i.regra||'livre')}${cond('i:'+i.id,i.cond)}</div>`}).join('');
+  const padrao=apRegraCk()?'Padrão da empresa (não conclui)':'Padrão da empresa (pode concluir)';
+  const cks=(k.checklists||[]).flatMap(c=>c.itens.map(x=>`<div class="it-cr"><span><b>${esc(x.texto)}</b><span class="faint">Checklist ${esc(c.nome)}</span></span>${sel(`data-itck="${c.id}:${x.id}" aria-label="Se ${esc(x.texto)} estiver em aberto"`,x.regra,padrao)}${cond('c:'+c.id+':'+x.id,x.cond)}</div>`)).join('');
+  return `<div class="tkm-bloco"><div class="tkm-sh"><h3>Regras dos itens</h3></div>
+    <p class="faint" style="margin:0 0 10px">Só o diretor, o administrador e quem criou a tarefa veem esta aba. "Não conclui" trava analista e gestor; o diretor conclui com justificativa.</p>
+    ${rows||cks?`<div class="it-ct"><div class="it-cr it-ch"><span>Item incluído no cartão</span><span>Se em branco ao concluir</span><span>Vale quando</span></div>${rows}${cks}</div>`
+      :`<div class="faint">Nenhum item no cartão. Inclua campos (+ Campo) ou checklists na Visão geral.</div>`}</div>
+    ${(k.justs||[]).length?`<div class="tkm-bloco"><div class="tkm-sh"><h3>Justificativas</h3></div>${k.justs.slice().reverse().map(j=>`<div class="tkm-log"><span class="faint num">${fdh(j.em)}</span>${av(j.por,'sm')}<span><b>${esc(j.por)}</b> ${esc(j.texto)} <span class="faint">(${esc(j.itens.map(x=>x.nome).join(', '))}${j.libera?'; passou pelo que bloqueia':''})</span></span></div>`).join('')}</div>`:''}`}
+/* itens que vão na cópia e na recorrência (as regras e as condições vão junto; os valores do terreno são do terreno) */
+const itCopiaItens=k=>(k.itens||[]).filter(i=>!i.campo||cpoCampos().some(c=>c.id===i.campo&&c.ativo!==false)).map(i=>({...JSON.parse(JSON.stringify(i)),id:uid()}));
+function itSeloCk(t,x){if(!x.regra||x.regra==='livre'||x.feito||!itCondVale(t,x.cond))return '';
+  return x.regra==='bloqueia'?'<span class="chip crit it-selo">necessário</span>':'<span class="chip warn it-selo">pede justificativa</span>'}
+const itNRegras=k=>itNorm(k).filter(i=>i.regra&&i.regra!=='livre').length+(k.checklists||[]).reduce((s,c)=>s+c.itens.filter(x=>x.regra&&x.regra!=='livre').length,0);
+
+/* ---------- editor de condição (janela) ---------- */
+const itNovaCond=()=>({modo:'todas',itens:[{campo:null,op:null,valores:[]}]});
+function itAlvo(t,k,alvo){const [tp,a,b]=alvo.split(':');if(tp==='i')return k.itens.find(i=>i.id===a);const c=(k.checklists||[]).find(x=>x.id===a);return c?.itens.find(x=>x.id===b)}
+function itCondNome(t,k,alvo){const x=itAlvo(t,k,alvo);return x?(alvo[0]==='i'?itNome(x):x.texto):''}
+function itRowHtml(it,p){const d=it.campo?itDef(it.campo):null,busca=UI.itCond.busca===p;
+  const q=(UI.itCond.q||'').toLowerCase(),lista=IT_CAT.map(c=>itDef(c.chave)).filter(x=>x.condicao&&(!q||x.titulo.toLowerCase().includes(q)));
+  const campo=busca?`<span class="it-cbw"><input class="it-busca" data-itcq="${p}" value="${esc(UI.itCond.q||'')}" placeholder="Buscar campo" aria-label="Buscar campo"><span class="it-cpop">${Object.keys(IT_ORIG).map(o=>{const l=lista.filter(x=>x.origem===o);
+      return l.length?`<span class="it-popg">${IT_ORIG[o]}</span>${l.map(x=>`<button class="it-popi" data-a="it-c-campo" data-p="${p}" data-v="${x.chave}">${esc(x.titulo)}<span class="faint">${IT_TIPO[x.tipo]}</span></button>`).join('')}`:''}).join('')||'<span class="faint" style="padding:8px 12px">Nenhum campo com esse nome.</span>'}</span></span>`
+    :`<button class="tkm-pill it-cb" data-a="it-c-busca" data-p="${p}">${d?esc(d.titulo):'Escolher campo'}</button>`;
+  let val='';if(d&&it.op){const o=d.opcoes?d.opcoes():null,vs=it.valores||[];
+    if(['em','fora'].includes(it.op))val=o?`<span class="it-vals">${Object.entries(o).map(([x,n])=>`<button class="it-vch ${vs.map(String).includes(x)?'on':''}" data-a="it-c-val" data-p="${p}" data-v="${esc(x)}" aria-pressed="${vs.map(String).includes(x)}">${esc(n)}</button>`).join('')}</span>`
+      :`<input class="tkm-pill" data-itcv="${p}" data-n="0" value="${esc(vs.join('; '))}" placeholder="Valores separados por ;" aria-label="Valores">`;
+    else if(['igual','maior','menor'].includes(it.op))val=`<input class="tkm-pill it-num" data-itcv="${p}" data-n="0" inputmode="decimal" value="${vs[0]??''}" aria-label="Valor">${d.un?`<span class="faint">${d.un}</span>`:''}`;
+    else if(it.op==='entre')val=`<input class="tkm-pill it-num" data-itcv="${p}" data-n="0" inputmode="decimal" value="${vs[0]??''}" aria-label="Mínimo"><span class="faint">e</span><input class="tkm-pill it-num" data-itcv="${p}" data-n="1" inputmode="decimal" value="${vs[1]??''}" aria-label="Máximo">`;
+    else if(['antes','depois'].includes(it.op))val=`<input type="date" class="tkm-pill" data-itcv="${p}" data-n="0" value="${vs[0]||''}" aria-label="Data">`;
+    else if(it.op==='ultimos_dias')val=`<input class="tkm-pill it-num" data-itcv="${p}" data-n="0" inputmode="numeric" value="${vs[0]??''}" aria-label="Dias"><span class="faint">dias</span>`}
+  return `<div class="it-cd">${campo}${d?`<select class="tkm-pill" data-itco="${p}" aria-label="Operador"><option value="">Operador</option>${IT_OPS[d.tipo].map(o=>`<option value="${o}" ${it.op===o?'selected':''}>${IT_OP[o]}</option>`).join('')}</select>`:''}${val.startsWith('<span class="it-vals"')?'':val}
+    <button class="iconbtn sm it-cx" data-a="it-c-tira" data-p="${p}" aria-label="Tirar condição" title="Tirar">${ic('close',16)}</button>${val.startsWith('<span class="it-vals"')?val:''}</div>`}
+function itModoHtml(c,p){return `<span class="it-seg" role="group" aria-label="Como as condições se juntam"><button class="${c.modo!=='qualquer'?'on':''}" data-a="it-c-modo" data-p="${p}" data-v="todas" aria-pressed="${c.modo!=='qualquer'}">todas</button><button class="${c.modo==='qualquer'?'on':''}" data-a="it-c-modo" data-p="${p}" data-v="qualquer" aria-pressed="${c.modo==='qualquer'}">qualquer uma</button></span>`}
+function itCondHtml(fechar){const E=UI.itCond,{t,k}=tkAtual();if(!E||!k)return `<div class="dh"><h2>Condição</h2>${fechar}</div>`;const c=E.cond;
+  const rows=c.itens.map((it,i)=>it.grupo?`<div class="it-grp"><div class="it-vqh"><span class="faint">Grupo</span>${itModoHtml(it.grupo,i+'')}<button class="iconbtn sm" data-a="it-c-tira" data-p="${i}" aria-label="Tirar grupo" title="Tirar grupo">${ic('close',16)}</button></div>
+      ${it.grupo.itens.map((x,j)=>itRowHtml(x,i+'.'+j)).join('')}<button class="tkm-add" data-a="it-c-mais" data-p="${i}">${ic('add',16)}Condição no grupo</button></div>`:itRowHtml(it,i+'')).join('');
+  const e=itCondErro(c);
+  return `<div class="dh"><div><h2>Vale quando</h2><div class="muted" style="margin-top:4px">${esc(k.codigo)} · ${esc(itCondNome(t,k,E.alvo))}</div></div>${fechar}</div>
+  <div class="it-vq-box"><div class="it-vqh"><b>Valem</b>${itModoHtml(c,'')}</div>${rows}
+    <div class="it-adds"><button class="tkm-add" data-a="it-c-mais" data-p="">${ic('add',16)}Condição</button><button class="tkm-add" data-a="it-c-grupo">${ic('add',16)}Grupo</button></div></div>
+  <p class="it-frase">Em palavras: <b>${e?esc(e):'a regra vale quando '+esc(itCondFrase(c))+'.'}</b></p>
+  <p class="faint" style="margin:0">A forma de pagamento vigente é a da proposta vigente; sem proposta, a da oferta de referência. Campo em branco só satisfaz "não informado".</p>
+  <div class="df"><button class="btn text" data-a="it-c-cancela">Cancelar</button><button class="btn primary" data-a="it-c-salva" ${e?'disabled':''}>Salvar condição</button></div>`}
+/* o item da condição pelo caminho: "" (a lista), "2" (item 2), "1.0" (item 0 do grupo 1) */
+function itCondNo(c,p){if(p==='')return c;const [a,b]=p.split('.').map(Number);return b==null?c.itens[a]:c.itens[a].grupo.itens[b]}
+function itCondPai(c,p){const [a,b]=p.split('.').map(Number);return b==null?[c.itens,a]:[c.itens[a].grupo.itens,b]}
+
+/* ---------- Configurações › Campos ---------- */
+function itCfgCamposHtml(){const f=UI.itCfgF||'todos',q=(UI.itCfgQ||'').toLowerCase();
+  const L=IT_CAT.map(c=>itDef(c.chave)).filter(d=>(f==='todos'||(f==='marcados'?(d.condicao||d.cartao):d.origem===f))&&(!q||(d.titulo+' '+d.chave).toLowerCase().includes(q)));
+  const nC=IT_CAT.filter(c=>itDef(c.chave).condicao).length,nK=IT_CAT.filter(c=>itDef(c.chave).cartao).length;
+  return `<section class="sec"><div class="sec-h"><h2>Campos do terreno e da negociação</h2><span class="faint">${nC} para condição · ${nK} no cartão</span></div><div class="sec-b">
+    <p class="muted" style="margin-top:0">O Título é o nome que o usuário vê em todo o sistema. Condição: o campo aparece no "Vale quando". No cartão: o campo pode ser incluído num cartão de tarefa e editado ali, gravando no próprio terreno (os calculados só para ler).</p>
+    <div class="it-cfgbar"><input class="it-busca" data-itcfgq="1" value="${esc(UI.itCfgQ||'')}" placeholder="Buscar campo" aria-label="Buscar campo">
+      <span class="it-seg">${[['todos','Todos'],...Object.entries(IT_ORIG).map(([k,v])=>[k,v.replace(' de referência','').replace(' vigente','')]),['marcados','Marcados']].map(([k,v])=>`<button class="${f===k?'on':''}" data-a="it-cfgf" data-v="${k}" aria-pressed="${f===k}">${v}</button>`).join('')}</span></div>
+    <div class="it-tab"><div class="it-tr it-th"><span>Nome no banco</span><span>Título (o nome que o usuário vê)</span><span class="ce">Condição</span><span class="ce">No cartão</span></div>
+    ${L.map(d=>`<div class="it-tr"><span class="it-db"><code>${d.coluna}</code><small>${IT_ORIG[d.origem]} · ${IT_TIPO[d.tipo]}</small></span>
+      <span><input class="it-tit" value="${esc(d.titulo)}" data-itcfg="titulo" data-v="${d.chave}" aria-label="Título de ${d.coluna}" placeholder="${esc(IT_CAT.find(c=>c.chave===d.chave).titulo)}"></span>
+      <label class="ce"><input type="checkbox" data-itcfg="condicao" data-v="${d.chave}" ${d.condicao?'checked':''}><em>Condição</em></label>
+      <label class="ce"><input type="checkbox" data-itcfg="cartao" data-v="${d.chave}" ${d.cartao?'checked':''}><em>No cartão${d.editavel?'':' (só ler)'}</em>${d.editavel?'':'<small>só ler</small>'}</label></div>`).join('')||'<p class="faint" style="padding:12px">Nenhum campo com esse filtro.</p>'}</div>
+    <p class="cfg-nota">Título vazio volta ao padrão; dois campos não podem ter o mesmo título. Colunas de sistema (código, empresa, datas de criação, versão, poligonal) ficam de fora.</p></div></section>`}
+
+/* ---------- eventos ---------- */
+document.addEventListener('input',e=>{const el=e.target;
+  if(el.dataset?.itb){e.stopImmediatePropagation();UI.itBusca=el.value;const p=el.selectionStart;renderModal();const n=document.querySelector('[data-itb]');if(n){n.focus();n.setSelectionRange(p,p)}return}
+  if(el.dataset?.itcq!=null){e.stopImmediatePropagation();UI.itCond.q=el.value;const p=el.selectionStart;renderModal();const n=document.querySelector('[data-itcq]');if(n){n.focus();n.setSelectionRange(p,p)}return}
+  if(el.dataset?.itcfgq){e.stopImmediatePropagation();UI.itCfgQ=el.value;const p=el.selectionStart;render();const n=document.querySelector('[data-itcfgq]');if(n){n.focus();n.setSelectionRange(p,p)}return}},true);
+document.addEventListener('change',e=>{const el=e.target;
+  if(el.dataset?.itv){e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!vzEdita(t,k))return;const i=itNorm(k).find(x=>x.id===el.dataset.itv),d=i&&itDef(i.chave);if(!d||!d.editavel)return;
+    let v=el.value;if(v==='')v=null;else if(d.tipo==='numero'){v=cpoNum(v);if(Number.isNaN(v)){toast(`Número inválido em ${d.titulo}.`,true);el.value='';return}}
+    const antes=itVal(t,d.chave);if(String(antes??'')===String(v??''))return;try{d.gravar(t,v??d.vazio??null)}catch(err){toast(err.message,true);return}
+    log(t,`${d.titulo} de ${itTxtVal(d,antes)} para ${itTxtVal(d,v)} (pelo cartão ${k.codigo})`);tkRe();return}
+  if(el.dataset?.itr||el.dataset?.itck){e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!itConfigura(t,k))return;
+    if(el.dataset.itr){const i=k.itens.find(x=>x.id===el.dataset.itr);if(!i)return;i.regra=el.value;log(t,`Tarefa "${k.titulo}": ${itNome(i)} em branco · ${IT_REGRA[i.regra]}`)}
+    else{const [cid,xid]=el.dataset.itck.split(':'),x=(k.checklists||[]).find(c=>c.id===cid)?.itens.find(y=>y.id===xid);if(!x)return;x.regra=el.value||undefined;log(t,`Tarefa "${k.titulo}": item ${x.texto} em aberto · ${x.regra?IT_REGRA[x.regra]:'padrão da empresa'}`)}
+    tkRe();return}
+  if(el.dataset?.itco!=null){e.stopImmediatePropagation();const n=itCondNo(UI.itCond.cond,el.dataset.itco);n.op=el.value||null;n.valores=[];renderModal();return}
+  if(el.dataset?.itcv!=null){e.stopImmediatePropagation();const n=itCondNo(UI.itCond.cond,el.dataset.itcv),d=itDef(n.campo);let v=el.value.trim();
+    if(['em','fora'].includes(n.op)){n.valores=v.split(';').map(x=>x.trim()).filter(Boolean)}
+    else{if(d.tipo==='numero'||n.op==='ultimos_dias'){const x=cpoNum(v);v=v===''||Number.isNaN(x)?'':x}n.valores=n.valores||[];n.valores[Number(el.dataset.n)]=v}renderModal();return}
+  if(el.dataset?.itcfg){e.stopImmediatePropagation();if(!ehAdmin(me()))return;const ch=el.dataset.v,c=IT_CAT.find(x=>x.chave===ch),E=itEmp(),cur=E[ch]||{};
+    if(el.dataset.itcfg==='titulo'){let v=el.value.trim();if(v===c.titulo)v='';const tit=(v||c.titulo).toLowerCase();
+      if(IT_CAT.some(x=>x.chave!==ch&&itDef(x.chave).titulo.toLowerCase()===tit)){toast('Já existe um campo com esse título.',true);el.value=itDef(ch).titulo;return}
+      E[ch]={...cur,titulo:v||undefined}}
+    else E[ch]={...cur,[el.dataset.itcfg]:el.checked};save();render();toast('Campo atualizado.');return}},true);
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="it-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const A=a.dataset.a;
+  if(A==='it-cfgf'){UI.itCfgF=a.dataset.v;render();return}
+  const {t,k}=tkAtual();if(!k)return;
+  switch(A){
+    case 'it-inclui':{if(!vzEdita(t,k))return;itNorm(k).push({id:uid(),chave:a.dataset.v||undefined,campo:a.dataset.c||undefined,regra:'livre',cond:null});UI.tkPop=null;UI.itBusca='';
+      log(t,`Tarefa "${k.titulo}": campo ${itNome(k.itens.at(-1))} incluído no cartão`);tkRe();return}
+    case 'it-tira':{const i=k.itens.find(x=>x.id===a.dataset.v);if(!i||!vzEdita(t,k))return;if(i.regra&&i.regra!=='livre'&&!itConfigura(t,k)){toast('Este item tem regra para concluir: só o diretor, o administrador e quem criou a tarefa o tiram.',true);return}
+      k.itens=k.itens.filter(x=>x!==i);log(t,`Tarefa "${k.titulo}": campo ${itNome(i)} tirado do cartão`);tkRe();return}
+    case 'it-cond':{if(!itConfigura(t,k))return;const x=itAlvo(t,k,a.dataset.v);if(!x)return;UI.itCond={alvo:a.dataset.v,cond:x.cond?JSON.parse(JSON.stringify(x.cond)):itNovaCond(),busca:x.cond?null:'0',q:''};UI.modal='it-cond';renderModal();return}
+    case 'it-cond-tira':{if(!itConfigura(t,k))return;const x=itAlvo(t,k,a.dataset.v);if(!x)return;x.cond=null;log(t,`Tarefa "${k.titulo}": condição tirada (a regra vale sempre)`);tkRe();return}
+    case 'it-c-cancela':UI.itCond=null;UI.modal='tarefa';UI.tkAba='config';renderModal();return;
+    case 'it-c-salva':{const E=UI.itCond,er=itCondErro(E.cond);if(er){toast(er,true);return}const x=itAlvo(t,k,E.alvo);if(!x)return;
+      x.cond=E.cond.itens.length?E.cond:null;log(t,`Tarefa "${k.titulo}": ${itCondNome(t,k,E.alvo)} vale quando ${itCondFrase(x.cond)}`);UI.itCond=null;UI.modal='tarefa';UI.tkAba='config';save();renderModal();return}
+  }
+  const E=UI.itCond;if(!E)return;const c=E.cond,p=a.dataset.p;
+  switch(A){
+    case 'it-c-busca':E.busca=p;E.q='';break;
+    case 'it-c-campo':{const n=itCondNo(c,p);n.campo=a.dataset.v;n.op=null;n.valores=[];E.busca=null;const d=itDef(n.campo);if(d)n.op=IT_OPS[d.tipo][0];break}
+    case 'it-c-val':{const n=itCondNo(c,p),v=a.dataset.v,vs=(n.valores||[]).map(String);n.valores=vs.includes(v)?vs.filter(x=>x!==v):[...vs,v];break}
+    case 'it-c-tira':{const [arr,i]=itCondPai(c,p);arr.splice(i,1);E.busca=null;break}
+    case 'it-c-mais':{const alvo=p===''?c:c.itens[Number(p)].grupo;alvo.itens.push({campo:null,op:null,valores:[]});E.busca=p===''?String(c.itens.length-1):p+'.'+(alvo.itens.length-1);E.q='';break}
+    case 'it-c-grupo':c.itens.push({grupo:{modo:'qualquer',itens:[{campo:null,op:null,valores:[]}]}});E.busca=(c.itens.length-1)+'.0';E.q='';break;
+    case 'it-c-modo':itCondNo(c,p).modo=a.dataset.v;break;
+  }renderModal()},true);
+
+/* exemplo: no primeiro terreno, campos do terreno e um campo personalizado no cartão da análise jurídica, com regras */
+(()=>{if(S.itExemplo)return;S.itExemplo=true;const t=S.terrenos[0];if(!t||!t.tarefas)return;const a=t.tarefas.find(x=>x.titulo==='Análise jurídica da matrícula');if(!a)return;itNorm(a);
+  a.itens.unshift({id:uid(),chave:'terreno.area_documental_m2',regra:'bloqueia',cond:null},{id:uid(),chave:'terreno.necessidade_demolicao',regra:'justificativa',cond:{modo:'todas',itens:[{campo:'terreno.tipo_empreendimento',op:'fora',valores:['mercado']}]}},
+    {id:uid(),chave:'calculado.forma_pagamento_vigente',regra:'livre',cond:null})})();
+
+/* =====================================================================
    Recorrência (bloco 4; decisões do Moisés, 30/out/2026).
    Espelha fluxo.recorrencias, fluxo.proxima_ocorrencia e
    fluxo.gerar_recorrencias. O cartão de origem é o modelo e a primeira
@@ -7840,7 +8188,7 @@ function rcCopiar(t,k,r,data){const desloc=crDias(rcBase(k),data),l=tkL(t).find(
   const n=tkNorm(t,{id:uid(),titulo:k.titulo,desc:k.desc||'',resultado:'',resp:k.resp,solic:k.solic,criadoPor:k.criadoPor||k.solic,criadoEm:data,vis:k.vis||'publico',acessos:JSON.parse(JSON.stringify(k.acessos||[])),
     inicio:data,prazo:r.prazoDias!=null?addD(data,r.prazoDias):null,prio:k.prio,capa:k.capa||null,apModo:k.apModo,lista:l.id,pos:Date.now()+Math.random(),
     exec:[...(k.exec||[])],aprov:[...(k.aprov||[])],acomp:[...(k.acomp||[])],etq:[...(k.etq||[])],serie:k.id,
-    checklists:(k.checklists||[]).map(c=>({id:uid(),nome:c.nome,esconder:c.esconder,itens:c.itens.filter(i=>!i.virou).map(i=>({id:uid(),texto:i.texto,resp:i.resp,prazo:i.prazo?addD(i.prazo,desloc):null,feito:null}))}))});
+    checklists:(k.checklists||[]).map(c=>({id:uid(),nome:c.nome,esconder:c.esconder,itens:c.itens.filter(i=>!i.virou).map(i=>({id:uid(),texto:i.texto,resp:i.resp,prazo:i.prazo?addD(i.prazo,desloc):null,feito:null,regra:i.regra,cond:i.cond?JSON.parse(JSON.stringify(i.cond)):null}))})),itens:itCopiaItens(k)});
   if(n.prazo){n.dur=crDias(n.inicio,n.prazo)+1}t.tarefas.push(n);notifTarefa(t,n,null);log(t,`Tarefa criada pela recorrência de ${k.codigo}: ${n.titulo} (${fd(data)})`);return n}
 function rcGerar(){let n=0;(S.terrenos||[]).forEach(t=>(t.tarefas||[]).forEach(k=>{const r=k.rec;if(!r?.ativa)return;
   while(r.ativa&&r.prox<=HOJE){if((r.fim&&r.prox>r.fim)||(r.max&&r.vezes>=r.max)||k.arq){r.ativa=false;break}
@@ -7924,7 +8272,8 @@ function cxCopiar(t,k,dest,lid,titulo,itens){const l=tkL(dest).find(x=>x.id===li
   const n=tkNorm(dest,{id:uid(),titulo:(titulo||'').trim()||k.titulo,desc:k.desc||'',resultado:'',resp:tem('pessoas')?k.resp:null,solic:eu,criadoPor:eu,vis:k.vis||'publico',acessos:JSON.parse(JSON.stringify(k.acessos||[])),
     prazo:null,prio:k.prio,capa:k.capa||null,apModo:k.apModo,lista:l.id,pos:Date.now(),estim:k.estim||null,
     exec:tem('pessoas')?[...(k.exec||[])]:[],aprov:tem('pessoas')?[...(k.aprov||[])]:[],acomp:tem('pessoas')?[...(k.acomp||[])]:[],etq:tem('etiquetas')?[...(k.etq||[])]:[],
-    checklists:tem('checklists')?(k.checklists||[]).map(c=>({id:uid(),nome:c.nome,esconder:c.esconder,itens:c.itens.filter(i=>!i.virou).map(i=>({id:uid(),texto:i.texto,resp:tem('pessoas')?i.resp:null,prazo:null,feito:null}))})):[],
+    checklists:tem('checklists')?(k.checklists||[]).map(c=>({id:uid(),nome:c.nome,esconder:c.esconder,itens:c.itens.filter(i=>!i.virou).map(i=>({id:uid(),texto:i.texto,resp:tem('pessoas')?i.resp:null,prazo:null,feito:null,regra:i.regra,cond:i.cond?JSON.parse(JSON.stringify(i.cond)):null}))})):[],
+    itens:tem('campos')?itCopiaItens(k):[],
     campos:tem('campos')?Object.fromEntries(Object.entries(k.campos||{}).filter(([cid,v])=>{const c=cpoCampos().find(x=>x.id===cid);return c&&c.ativo!==false&&(c.tipo!=='lista'||(c.opcoes||[]).some(o=>o.id===v&&o.ativo!==false))})):{},
     anexos:tem('anexos')?(k.anexos||[]).filter(a=>!a.removido).map(a=>({...a,id:uid()})):[]});
   vzAjustar(dest,n);dest.tarefas.push(n);notifTarefa(dest,n,null);log(dest,`Tarefa criada como cópia de ${k.codigo}${k.modelo?' (modelo)':''}: ${n.titulo}`);return n}
@@ -9241,12 +9590,13 @@ const usada=k=>S.terrenos.some(t=>t.neg&&(t.neg.sub===k||(t.neg.trilha||[]).some
 function pgConfig(){
   if(!ehAdmin(me()))return `<div class="page-h"><div><h1>Configurações</h1></div></div><section class="sec"><div class="sec-b"><div class="empty">Só administradores alteram a configuração do funil. Teste como Diretor (Moisés é administrador).</div></div></section>`;
   const C=cfg(),aba=UI.cfgAba||'fases';
-  const abas=[['fases','Fases'],['funil','Etapas de '+faseN(faseEnt())],['prereq','Pré-requisitos'],['status','Status e motivos'],['checklist','Checklist'],['notif','Notificações'],['equipe','Equipe'],['viab','Viabilidade'],['zonas','Parâmetros urbanísticos'],['tarefas','Tarefas']];
+  const abas=[['fases','Fases'],['funil','Etapas de '+faseN(faseEnt())],['prereq','Pré-requisitos'],['status','Status e motivos'],['checklist','Checklist'],['notif','Notificações'],['equipe','Equipe'],['viab','Viabilidade'],['zonas','Parâmetros urbanísticos'],['campos','Campos'],['tarefas','Tarefas']];
   let corpo='';
   if(aba==='fases')corpo=cfgFasesHtml();
   if(aba==='viab')corpo=cfgViabHtml();
   if(aba==='zonas')corpo=cfgZonasHtml();
   if(aba==='tarefas')corpo=cfgTarefasHtml();
+  if(aba==='campos')corpo=itCfgCamposHtml();
   if(aba==='funil')corpo=`<section class="sec"><div class="sec-h"><h2>Etapas de ${esc(faseN(faseEnt()))}</h2></div><div class="sec-b"><div class="cfg-t">
     <div class="cfg-r cfg-hd"><span>Etapa</span><span>SLA (dias)</span><span>Aprovação para entrar</span></div>
     ${C.etapas.map((e,i)=>`<div class="cfg-r"><input data-ch="cfg" data-p="etapas.${i}.nome" value="${esc(e.nome)}" aria-label="Nome da etapa"><input type="number" min="0" data-ch="cfg" data-p="etapas.${i}.sla" value="${e.sla??''}" aria-label="SLA de ${esc(e.nome)}"><span class="cfg-ap">${apCells('etapas.'+i,e)}</span></div>`).join('')}</div><p class="cfg-nota">Criar, ordenar e desativar etapas fica em <button type="button" class="linkbtn" data-a="cfg-aba" data-v="fases">Fases</button>.</p></div></section>
@@ -12931,7 +13281,7 @@ document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legen
    selecionado no mapa e vista das tarefas só atualizam o endereço. O terreno vai pelo código. */
 const RT_BASE=location.pathname.startsWith('/prototipo')?'/prototipo':null;
 const RT_SEC=['cadastro','comercial','negociacao','fases','tarefas','urbanismo','documentos','historico'];
-const RT_CFG={fases:'fases',funil:'etapas',prereq:'pre-requisitos',status:'status',checklist:'checklist',notif:'notificacoes',equipe:'equipe',viab:'viabilidade',zonas:'parametros',tarefas:'tarefas'};
+const RT_CFG={fases:'fases',funil:'etapas',prereq:'pre-requisitos',status:'status',checklist:'checklist',notif:'notificacoes',equipe:'equipe',viab:'viabilidade',zonas:'parametros',campos:'campos',tarefas:'tarefas'};
 const rtCod=id=>T(id)?.codigo||null;
 const rtId=c=>c&&S.terrenos.find(t=>(t.codigo||'').toUpperCase()===c.toUpperCase())?.id||null;
 const rtViabs=id=>(S.viabs||[]).filter(v=>v.tid===id);

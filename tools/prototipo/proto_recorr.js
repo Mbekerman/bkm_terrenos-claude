@@ -32,7 +32,7 @@ function rcCopiar(t,k,r,data){const desloc=crDias(rcBase(k),data),l=tkL(t).find(
   const n=tkNorm(t,{id:uid(),titulo:k.titulo,desc:k.desc||'',resultado:'',resp:k.resp,solic:k.solic,criadoPor:k.criadoPor||k.solic,criadoEm:data,vis:k.vis||'publico',acessos:JSON.parse(JSON.stringify(k.acessos||[])),
     inicio:data,prazo:r.prazoDias!=null?addD(data,r.prazoDias):null,prio:k.prio,capa:k.capa||null,apModo:k.apModo,lista:l.id,pos:Date.now()+Math.random(),
     exec:[...(k.exec||[])],aprov:[...(k.aprov||[])],acomp:[...(k.acomp||[])],etq:[...(k.etq||[])],serie:k.id,
-    checklists:(k.checklists||[]).map(c=>({id:uid(),nome:c.nome,esconder:c.esconder,itens:c.itens.filter(i=>!i.virou).map(i=>({id:uid(),texto:i.texto,resp:i.resp,prazo:i.prazo?addD(i.prazo,desloc):null,feito:null}))}))});
+    checklists:(k.checklists||[]).map(c=>({id:uid(),nome:c.nome,esconder:c.esconder,itens:c.itens.filter(i=>!i.virou).map(i=>({id:uid(),texto:i.texto,resp:i.resp,prazo:i.prazo?addD(i.prazo,desloc):null,feito:null,regra:i.regra,cond:i.cond?JSON.parse(JSON.stringify(i.cond)):null}))})),itens:itCopiaItens(k)});
   if(n.prazo){n.dur=crDias(n.inicio,n.prazo)+1}t.tarefas.push(n);notifTarefa(t,n,null);log(t,`Tarefa criada pela recorrência de ${k.codigo}: ${n.titulo} (${fd(data)})`);return n}
 function rcGerar(){let n=0;(S.terrenos||[]).forEach(t=>(t.tarefas||[]).forEach(k=>{const r=k.rec;if(!r?.ativa)return;
   while(r.ativa&&r.prox<=HOJE){if((r.fim&&r.prox>r.fim)||(r.max&&r.vezes>=r.max)||k.arq){r.ativa=false;break}

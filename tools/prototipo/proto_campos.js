@@ -3,16 +3,15 @@
    Espelha fluxo.campos, fluxo.campo_opcoes e fluxo.tarefa_campos.
    Os campos são da empresa (Configurações › Tarefas, só administrador) e
    valem para todos os quadros: texto, número, data, lista de opções e
-   sim/não. Cada campo diz se aparece na frente do cartão e se é
-   obrigatório para concluir (sim/não preenchido com "Não" conta). Sem valor, o
+   sim/não. Cada campo diz se aparece na frente do cartão; entra no cartão
+   pelo + Campo e a regra em branco é do cartão (proto_itens.js). Sem valor, o
    campo fica "não informado" (nunca zero nem "não"). Campo com valor não
    muda de tipo e não se apaga: desativa. Injetado no mesmo escopo.
    ===================================================================== */
 const CPO_TIPOS={texto:'Texto',numero:'Número',data:'Data',lista:'Lista de opções',caixa:'Sim / não'};
 function cpoCampos(){return S.campos||(S.campos=[])}
 function cpoAtivos(){return cpoCampos().filter(c=>c.ativo!==false).sort((a,b)=>(a.ordem||0)-(b.ordem||0))}
-/* campos obrigatórios ativos sem valor: impedem concluir (fluxo.pendencias_conclusao, 'campos') */
-function cpoFaltam(k){return cpoAtivos().filter(c=>c.obrig&&k.campos?.[c.id]==null).map(c=>c.nome)}
+/* "obrigatório" saiu do campo (31/out): a regra se em branco é de cada cartão (proto_itens.js, fluxo.tarefa_itens) */
 function cpoUsado(c){return S.terrenos.some(t=>(t.tarefas||[]).some(k=>k.campos&&k.campos[c.id]!=null))}
 function cpoNum(v){const s=String(v).trim().toLowerCase().replace(/\s/g,'');if(!s)return null;const m=/^(-?[\d.,]+)(mil|mi)?$/.exec(s);if(!m)return NaN;
   let n=m[1];if(n.includes(','))n=n.replace(/\./g,'').replace(',','.');else if((n.match(/\./g)||[]).length>1||/\.\d{3}$/.test(n))n=n.replace(/\./g,'');
@@ -30,9 +29,6 @@ function cpoInput(c,k,ro){const x=k.campos?.[c.id],id='cpo-'+c.id,dis=ro||c.ativ
   if(c.tipo==='caixa')return `<select id="${id}" class="tkm-pill cpo-in" data-cpo="${c.id}" ${dis}><option value="">Não informado</option><option value="1" ${x===true?'selected':''}>Sim</option><option value="0" ${x===false?'selected':''}>Não</option></select>`;
   if(c.tipo==='data')return `<input id="${id}" type="date" class="tkm-pill cpo-in" data-cpo="${c.id}" value="${x||''}" ${dis}>`;
   return `<input id="${id}" class="tkm-pill cpo-in" data-cpo="${c.id}" value="${x==null?'':esc(c.tipo==='numero'?cpoTxt(c,x):x)}" ${c.tipo==='numero'?'inputmode="decimal"':''} placeholder="Não informado" ${dis}>`}
-function cpoLinhas(t,k,ro,linha){const cs=cpoCampos().filter(c=>c.ativo!==false||(k.campos&&k.campos[c.id]!=null)).sort((a,b)=>(a.ordem||0)-(b.ordem||0));
-  return cs.map(c=>{const falta=c.obrig&&c.ativo!==false&&k.campos?.[c.id]==null;
-    return linha('notas',`${esc(c.nome)}${c.obrig&&c.ativo!==false?' <span class="cpo-ob" title="Obrigatório para concluir">*</span>':''}`,`<span class="cpo-c ${falta?'falta':''}">${cpoInput(c,k,ro)}${falta?'<span class="cpo-av">Obrigatório para concluir</span>':''}</span>`,'cpo-'+c.id)}).join('')}
 function cpoGravar(t,k,c,raw){const antes=k.campos?.[c.id];let v;
   if(raw===''||raw==null)v=null;
   else if(c.tipo==='numero'){v=cpoNum(raw);if(Number.isNaN(v)){toast(`Número inválido em ${c.nome}.`,true);return false}}
@@ -48,11 +44,10 @@ function cpoFiltra(k,f){const [cid,v]=f.split(':'),x=k.campos?.[cid],c=cpoCampos
 /* ---------- Configurações › Tarefas ---------- */
 function cpoCfgHtml(){const C=cpoCampos().slice().sort((a,b)=>(a.ordem||0)-(b.ordem||0));
   return `<section class="sec"><div class="sec-h"><h2>Campos personalizados</h2></div><div class="sec-b">
-    <p class="muted" style="margin-top:0">Valem para todos os quadros. Campo com valor não muda de tipo nem se apaga: desative.</p>
+    <p class="muted" style="margin-top:0">Quem cria a tarefa inclui o campo no cartão; a regra para concluir com ele em branco fica na aba Configuração do cartão. Campo com valor não muda de tipo nem se apaga: desative.</p>
     ${C.map((c,i)=>{const usado=cpoUsado(c);return `<div class="cpo-cfg ${c.ativo===false?'oculta':''}"><div class="tkl-r"><input value="${esc(c.nome)}" data-cpoc="nome" data-v="${c.id}" aria-label="Nome do campo ${i+1}">
       <select data-cpoc="tipo" data-v="${c.id}" aria-label="Tipo de ${esc(c.nome)}" ${usado?'disabled title="Já tem valores: o tipo não muda"':''}>${Object.entries(CPO_TIPOS).map(([x,n])=>`<option value="${x}" ${x===c.tipo?'selected':''}>${n}</option>`).join('')}</select>
       <label class="chk"><input type="checkbox" data-cpoc="frente" data-v="${c.id}" ${c.frente?'checked':''}>Na frente do cartão</label>
-      <label class="chk"><input type="checkbox" data-cpoc="obrig" data-v="${c.id}" ${c.obrig?'checked':''}>Obrigatório para concluir</label>
       <button class="iconbtn sm" data-a="cpo-sobe" data-v="${c.id}" ${i?'':'disabled'} aria-label="Subir ${esc(c.nome)}" title="Subir">${ic('chev',18)}</button>
       ${usado?`<button class="btn text sm" data-a="cpo-ativo" data-v="${c.id}">${c.ativo===false?'Ativar':'Desativar'}</button>`:`<button class="btn text sm" data-a="cpo-apaga" data-v="${c.id}">Apagar</button>`}</div>
       ${c.tipo==='lista'?`<div class="cpo-ops">${(c.opcoes||[]).map(o=>`<span class="cpo-op ${o.ativo===false?'oculta':''}"><span class="etq etq-${o.cor}">${esc(o.nome)}</span><button class="iconbtn sm" data-a="cpo-op-x" data-v="${c.id}" data-o="${o.id}" aria-label="${o.ativo===false?'Reativar':'Tirar'} ${esc(o.nome)}" title="${o.ativo===false?'Reativar':'Tirar'}">${ic(o.ativo===false?'undo':'close',14)}</button></span>`).join('')}

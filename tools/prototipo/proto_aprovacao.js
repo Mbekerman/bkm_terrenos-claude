@@ -34,9 +34,9 @@ function apPredAviso(t,k,fn){const ps=apPredPend(t,k);document.querySelector('.p
 const apCkAberto=k=>(k.checklists||[]).some(c=>c.itens.some(i=>!i.feito&&!i.virou));
 /* o que impede concluir agora (null = nada) */
 function apBloqueio(t,k){if(k.modelo)return 'Modelo de cartão não se conclui.';if(apPrecisa(k))return apPend(k)?'A tarefa está aguardando aprovação.':'A tarefa precisa ser aprovada antes de concluir. Use "Pedir aprovação".';
-  if(apRegraCk()&&apCkAberto(k))return 'Conclua os itens do checklist antes de concluir a tarefa.';
+  /* itens em branco pela regra de cada item (31/out): "não conclui" barra; "com justificativa" pede o texto (itJustAviso) */
+  if(UI.justOk!==k.id){const b=itBranco(t,k),bl=b.filter(x=>x.regra==='bloqueia');if(bl.length)return itMsgBloq(bl);if(b.length)return 'Há itens em branco: conclua com justificativa.'}
   if(apRegraCk()&&(t?.tarefas||[]).some(x=>x.mae===k.id&&!x.feita&&!x.arq))return 'Conclua as subtarefas antes de concluir a tarefa.';   // subtarefa em aberto (30/out)
-  const f=cpoFaltam(k);if(f.length)return `Preencha ${f.length>1?'os campos obrigatórios':'o campo obrigatório'} antes de concluir: ${f.join(', ')}.`;
   if(apRegraPred()){const ps=apPredPend(t,k);if(ps.length)return `As predecessoras ainda não permitem concluir: ${ps.map(p=>p.codigo).join(', ')}.`}return null}
 /* votos que esperam decisão agora (em sequência, só o da vez) */
 function apDaVez(a){if(!a||a.sit!=='pendente')return [];const ab=a.votos.filter(v=>!v.dec);if(a.modo==='paralelo')return ab;const m=Math.min(...ab.map(v=>v.ordem));return ab.filter(v=>v.ordem===m)}
@@ -44,9 +44,9 @@ function apDaVez(a){if(!a||a.sit!=='pendente')return [];const ab=a.votos.filter(
 function apMeuVoto(a,u){const vz=apDaVez(a);return vz.find(v=>v.user===u)||vz.find(v=>ehSuperior(u,v.user))||null}
 function apAvisarVez(t,k,a){apDaVez(a).forEach(v=>notificar(v.user,'aprovacao_pendente',`Aprovar a tarefa: ${k.titulo}`,t,a.id+':'+v.user,tkIr(k)))}
 function apPedir(t,k,motivo){if(!(k.aprov||[]).length){toast('A tarefa não tem aprovador.',true);return}
-  if(apRegraCk()&&apCkAberto(k)){toast('Conclua os itens do checklist antes de pedir a aprovação.',true);return}
+  if(UI.justOk!==k.id){const b=itBranco(t,k);if(b.length){if(itJustPode(t,k)){itJustAviso(t,k,()=>apPedir(t,k,motivo));return}
+    const bl=b.filter(x=>x.regra==='bloqueia');toast(bl.length?itMsgBloq(bl).replace('antes de concluir','antes de pedir a aprovação'):'Há itens em branco: conclua com justificativa.',true);return}}
   if(apRegraCk()&&(t.tarefas||[]).some(x=>x.mae===k.id&&!x.feita&&!x.arq)){toast('Conclua as subtarefas antes de pedir a aprovação.',true);return}
-  const f=cpoFaltam(k);if(f.length){toast(`Preencha antes de pedir a aprovação: ${f.join(', ')}.`,true);return}
   if(apRegraPred()&&apPredPend(t,k).length){toast('As predecessoras ainda não permitem concluir esta tarefa.',true);return}
   const p=apPend(k);if(p){p.sit='cancelada';p.decEm=agora()}const eu=me();
   const a={id:uid(),modo:k.apModo||'paralelo',sit:'pendente',motivo:motivo||null,por:eu,em:agora(),votos:k.aprov.map((u,i)=>({user:u,ordem:i+1,dec:null,por:null,em:null,just:null}))};

@@ -30,8 +30,10 @@ ok((await chips(p,'Estudo de massa')).some(x=>x.includes('Valor do laudo')&&x.in
 ok(!(await chips(p,'Análise jurídica da matrícula')).some(x=>x.includes('vistoria')),'campo fora da frente não aparece no cartão');
 await p.evaluate(()=>document.querySelector('.tk-board').scrollIntoView({block:'center'}));await p.screenshot({path:O+'1_frente.png'});
 await abreCartao(p,'Estudo de massa');
-ok(await p.$eval('.tkm-props',x=>x.textContent.includes('Cartório')&&x.textContent.includes('Exige vistoria')),'o cartão mostra o bloco de campos');
 s=await est(p);const cc=campo(s,'Cartório'),cv=campo(s,'Valor do laudo'),cx=campo(s,'Exige vistoria');
+ok(await p.$eval('.tkm-props',x=>x.textContent.includes('Valor do laudo')&&!x.textContent.includes('Exige vistoria')),'o cartão mostra o campo com valor; os outros entram pelo + Campo (31/out)');
+for(const c of [cc,cx]){await clica(p,'#modal [data-a=tkc-pop][data-v=it-campo]');await p.waitForTimeout(100);await clica(p,`#modal [data-a=it-inclui][data-c="${c.id}"]`);await p.waitForTimeout(150)}
+ok(await p.$eval('.tkm-props',x=>x.textContent.includes('Cartório')&&x.textContent.includes('Exige vistoria')),'+ Campo inclui os campos personalizados no cartão');
 await muda(p,`[data-cpo="${cc.id}"]`,cc.opcoes[0].id);await p.waitForTimeout(150);
 await preenche(p,`[data-cpo="${cv.id}"]`,'270 mil');await muda(p,`[data-cpo="${cv.id}"]`,'270 mil');await p.waitForTimeout(150);
 await muda(p,`[data-cpo="${cx.id}"]`,'0');await p.waitForTimeout(150);
@@ -63,16 +65,19 @@ s=await est(p);const fl=campo(s,'Fase do laudo');ok(fl&&fl.tipo==='lista','o adm
 await preenche(p,`[data-form=cpo-op][data-v="${fl.id}"] input`,'Pedido');await envia(p,`[data-form=cpo-op][data-v="${fl.id}"]`);await p.waitForTimeout(200);
 s=await est(p);ok(campo(s,'Fase do laudo').opcoes.some(o=>o.nome==='Pedido'),'e as opções dele');
 await clica(p,`[data-a=cpo-ativo][data-v="${cid}"]`);await p.waitForTimeout(200);s=await est(p);ok(campo(s,'Cartório').ativo===false,'desativar o campo');
-s=await est(p);const vid=campo(s,'Valor do laudo').id;await p.$eval(`[data-cpoc=obrig][data-v="${vid}"]`,x=>{x.checked=true;x.dispatchEvent(new Event('change',{bubbles:true}))});await p.waitForTimeout(200);
-s=await est(p);ok(campo(s,'Valor do laudo').obrig===true,'o administrador marca o campo como obrigatório para concluir');
+s=await est(p);const vid=campo(s,'Valor do laudo').id;ok(!(await p.$('[data-cpoc=obrig]')),'"Obrigatório para concluir" saiu da configuração: a regra é do cartão (31/out)');
 await p.evaluate(()=>document.querySelector('[data-form=cpo-novo]').closest('.sec').scrollIntoView({block:'center'}));await p.screenshot({path:O+'4_config.png'});
 await p.evaluate(()=>history.replaceState(null,'','#/terrenos'));await p.reload();await p.waitForTimeout(300);await ficha(p,t0.id);await p.waitForTimeout(400);
 ok(!(await chips(p,'Análise jurídica da matrícula')).some(x=>x.includes('Cartório')),'campo desativado sai da frente do cartão (o valor fica guardado)');
 s=await est(p);ok(!!tar(s,0,'Análise jurídica da matrícula').campos[cid],'o valor do campo desativado continua guardado');
 // obrigatório para concluir
 {const kk=s.terrenos[0].tarefas.find(k=>!k.feita&&!k.arq&&!(k.aprov||[]).length&&!(k.checklists||[]).some(c=>c.itens.some(i=>!i.feito))&&!(k.campos||{})[vid]&&(!k.vis||k.vis==='publico'));
- ok(!!kk,'há um cartão sem o campo obrigatório');await abreCartao(p,kk.titulo);
- ok(await p.$eval(`[data-cpo="${vid}"]`,x=>x.closest('.cpo-c').classList.contains('falta')),'o cartão marca o campo que falta');
+ ok(!!kk,'há um cartão sem o campo');await abreCartao(p,kk.titulo);
+ await clica(p,'#modal [data-a=tkc-pop][data-v=it-campo]');await p.waitForTimeout(100);await clica(p,`#modal [data-a=it-inclui][data-c="${vid}"]`);await p.waitForTimeout(150);
+ await clica(p,'#modal [data-a=tkc-aba][data-v=config]');await p.waitForTimeout(150);
+ s=await est(p);const it=tar(s,0,kk.titulo).itens.find(i=>i.campo===vid);await muda(p,`[data-itr="${it.id}"]`,'bloqueia');await p.waitForTimeout(150);
+ await fecha(p);await papel(p,'Analista');await p.waitForTimeout(200);await abreCartao(p,kk.titulo);
+ ok(await p.$eval(`[data-cpo="${vid}"]`,x=>x.closest('.cpo-c').classList.contains('falta')),'o cartão marca o campo que falta (regra "não conclui" no cartão)');
  await clica(p,'#modal [data-a=tkc-concluir]');await p.waitForTimeout(200);let s2=await est(p);
  ok(!tar(s2,0,kk.titulo).feita&&(await toast(p)).includes('Valor do laudo'),'sem o campo obrigatório, não conclui e diz qual falta');
  await p.evaluate(()=>document.querySelector('.tkm-props').scrollIntoView({block:'center'}));await p.screenshot({path:O+'7_obrigatorio.png'});

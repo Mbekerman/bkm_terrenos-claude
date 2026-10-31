@@ -2147,13 +2147,100 @@ select pg_temp.falha(format($$update fluxo.tarefa_campos set caixa = true where 
 delete from fluxo.tarefa_campos where tarefa_id = :'kc' and campo_id = :'cnum';
 select pg_temp.ok(not exists (select 1 from fluxo.tarefa_campos where tarefa_id = :'kc' and campo_id = :'cnum'), 'apagar o valor volta o campo a não informado');
 select pg_temp.como(:'diretor');
-update fluxo.campos set obrigatorio = true where id in (:'cnum', :'ccx');
+update fluxo.tarefa_itens set regra_branco = 'bloqueia' where tarefa_id = :'kc' and campo_id in (:'cnum', :'ccx');
 select pg_temp.como(:'analista');
-select pg_temp.ok(fluxo.pendencias_conclusao(:'kc') = array['campos'], 'campo obrigatório sem valor fica pendente (o desativado não conta)');
+select pg_temp.ok(fluxo.pendencias_conclusao(:'kc') = array['campos'], 'campo que bloqueia no cartão, sem valor, fica pendente (o desativado não conta)');
 select pg_temp.falha(format($$update fluxo.tarefas set concluida_em = now() where id = %L$$, :'kc'), 'com campo obrigatório sem valor, não conclui');
 insert into fluxo.tarefa_campos (empresa_id, tarefa_id, campo_id, numero) values (:'emp', :'kc', :'cnum', 98000);
 update fluxo.tarefas set concluida_em = now() where id = :'kc';
 select pg_temp.ok((select concluida_em is not null from fluxo.tarefas where id = :'kc'), 'preenchido o campo obrigatório, conclui');
+\echo '# campos do terreno e da negociação, itens do cartão e regra em branco (31/out)'
+select pg_temp.como(:'diretor');
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude, poligono_geojson)
+  values (:'emp', 'Terreno das condições', :'analista', 'corretor', :'sp', -23.61, -46.61, pg_temp.quadra(-46.61, -23.61)) returning id as tcd \gset
+select app.registrar_oferta(:'tcd', 5000000, 'permuta_fisica') as rcd \gset
+select (:'rcd'::jsonb->>'processo_id') as pcd \gset
+select pg_temp.ok((select titulo from app.v_campos where empresa_id = :'emp' and chave = 'calculado.forma_pagamento_vigente') = 'Forma de pagamento vigente',
+  'o catálogo de campos traz o título padrão');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$select app.salvar_campo(%L, 'terreno.topografia', 'Relevo', true, true)$$, :'emp'), 'só o administrador muda o título do campo');
+select pg_temp.falha(format($$insert into app.campos_empresa values (%L, 'terreno.topografia', 'Relevo', true, true)$$, :'emp'), 'a escolha da empresa só muda pela função');
+select pg_temp.como(:'diretor');
+select app.salvar_campo(:'emp', 'terreno.topografia', 'Relevo do terreno', true, true);
+select pg_temp.ok((select titulo from app.v_campos where empresa_id = :'emp' and chave = 'terreno.topografia') = 'Relevo do terreno', 'o administrador dá o título que o usuário vê');
+select pg_temp.falha(format($$select app.salvar_campo(%L, 'terreno.bairro', 'relevo do terreno', true, false)$$, :'emp'), 'dois campos não têm o mesmo título');
+select app.salvar_campo(:'emp', 'terreno.topografia', '  ', true, true);
+select pg_temp.ok((select titulo from app.v_campos where empresa_id = :'emp' and chave = 'terreno.topografia') = 'Topografia', 'título vazio volta ao padrão');
+select pg_temp.ok(app.campo_cartao(:'tcd', 'terreno.topografia')->'valor' = 'null'::jsonb, 'topografia não informada é campo em branco, nunca um valor');
+select pg_temp.ok(app.campo_cartao(:'tcd', 'calculado.forma_pagamento_vigente')->>'valor' = 'permuta_fisica', 'sem proposta, a forma de pagamento vigente é a pedida na oferta');
+select pg_temp.como(:'intruso');
+select pg_temp.ok(app.campo_cartao(:'tcd', 'oferta.valor_pedido') is null, 'outra empresa não lê o campo do terreno');
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tcd', 'Minuta de permuta', null, :'analista') as kp \gset
+\set permuta '{"modo":"todas","itens":[{"campo":"calculado.forma_pagamento_vigente","op":"em","valores":["permuta_fisica","permuta_financeira","permuta_com_torna"]}]}'
+select pg_temp.ok(fluxo.condicao_vale(:'kp', :'permuta'), 'condição: forma de pagamento vigente é permuta');
+select app.registrar_proposta(:'pcd', 'bkm', 4500000, 'dinheiro') \gset
+select pg_temp.ok(app.campo_cartao(:'tcd', 'calculado.forma_pagamento_vigente')->>'valor' = 'dinheiro', 'com proposta vigente, vale a forma de pagamento da proposta');
+select pg_temp.ok(not fluxo.condicao_vale(:'kp', :'permuta'), 'a proposta em dinheiro desliga a condição de permuta');
+select pg_temp.ok(fluxo.condicao_vale(:'kp', '{"modo":"todas","itens":[{"grupo":{"modo":"qualquer","itens":[{"campo":"calculado.forma_pagamento_vigente","op":"em","valores":["permuta_fisica"]},{"campo":"oferta.valor_pedido","op":"maior","valores":[4000000]}]}},{"campo":"terreno.tipo_empreendimento","op":"vazio"}]}'),
+  'grupo: (permuta ou preço pedido acima de 4 mi) e tipo de empreendimento não informado');
+select pg_temp.ok(not fluxo.condicao_vale(:'kp', '{"modo":"qualquer","itens":[{"campo":"terreno.topografia","op":"fora","valores":["plano"]}]}'),
+  'campo em branco não satisfaz "não é" (não informado nunca vira valor)');
+select pg_temp.falha(format($$insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave) values (%L, %L, 'terreno.descricao')$$, :'emp', :'kp'),
+  'campo que não está liberado para o cartão não entra');
+select pg_temp.falha(format($$insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, condicao) values (%L, %L, 'terreno.area_documental_m2', '{"modo":"todas","itens":[{"campo":"terreno.descricao","op":"preenchido"}]}')$$, :'emp', :'kp'),
+  'condição só com campo liberado para condição');
+select pg_temp.falha(format($$insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, condicao) values (%L, %L, 'terreno.area_documental_m2', '{"modo":"todas","itens":[{"campo":"oferta.valor_pedido","op":"em","valores":["1"]}]}')$$, :'emp', :'kp'),
+  'operador tem que servir ao tipo do campo');
+select pg_temp.falha(format($$insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, condicao) values (%L, %L, 'terreno.area_documental_m2', '{"modo":"todas","itens":[{"campo":"terreno.topografia","op":"em","valores":["montanha"]}]}')$$, :'emp', :'kp'),
+  'valor da lista tem que ser opção do campo');
+select pg_temp.falha(format($$insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, condicao) values (%L, %L, 'terreno.area_documental_m2', '{"modo":"todas","itens":[{"grupo":{"modo":"todas","itens":[{"grupo":{"modo":"todas","itens":[{"campo":"terreno.topografia","op":"vazio"}]}}]}}]}')$$, :'emp', :'kp'),
+  'a condição aceita um nível de grupo só');
+insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, regra_branco) values (:'emp', :'kp', 'terreno.area_documental_m2', 'bloqueia');
+select pg_temp.ok(fluxo.pendencias_conclusao(:'kp') = array['campos'], 'campo do terreno em branco com regra "bloqueia" impede concluir');
+select pg_temp.falha(format($$update fluxo.tarefas set concluida_em = now() where id = %L$$, :'kp'), 'com o campo em branco que bloqueia, não conclui');
+select pg_temp.falha(format($$select fluxo.concluir_justificando(%L, 'Vou ver depois')$$, :'kp'), 'item que bloqueia: o analista não conclui nem com justificativa');
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format($$select fluxo.concluir_justificando(%L, 'Pode ir')$$, :'kp'), 'item que bloqueia trava também o gestor');
+select pg_temp.falha(format($$update fluxo.tarefa_itens set regra_branco = 'livre' where tarefa_id = %L$$, :'kp'), 'só diretor, administrador e quem criou mudam a regra do item');
+select pg_temp.falha(format($$delete from fluxo.tarefa_itens where tarefa_id = %L$$, :'kp'), 'item com regra não sai pela mão de quem não configura o cartão');
+insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave) values (:'emp', :'kp', 'oferta.forma_pagamento_pedida');
+select pg_temp.ok(exists (select 1 from fluxo.tarefa_itens where tarefa_id = :'kp' and chave = 'oferta.forma_pagamento_pedida' and regra_branco = 'livre'),
+  'quem edita o cartão inclui campo sem regra (livre)');
+select pg_temp.como(:'analista');
+select app.gravar_campo(:'tcd', 'terreno.area_documental_m2', '1500');
+select pg_temp.ok((select area_documental_m2 from app.terrenos where id = :'tcd') = 1500, 'o cartão grava no próprio terreno');
+select pg_temp.ok(fluxo.pendencias_conclusao(:'kp') = '{}', 'preenchido o campo, nada impede concluir');
+select pg_temp.falha(format($$select app.gravar_campo(%L, 'terreno.area_adotada_m2', '1500')$$, :'tcd'), 'campo que não se edita pelo cartão é recusado');
+select app.gravar_campo(:'tcd', 'oferta.validade', to_jsonb((current_date + 30)::text));
+select pg_temp.ok((select validade from app.ofertas where terreno_id = :'tcd') = current_date + 30, 'o cartão grava na oferta de referência');
+insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, regra_branco) values (:'emp', :'kp', 'terreno.topografia', 'justificativa');
+insert into fluxo.checklists (empresa_id, tarefa_id, nome) values (:'emp', :'kp', 'Permuta') returning id as ckp \gset
+insert into fluxo.checklist_itens (empresa_id, checklist_id, texto, regra_branco, condicao) values (:'emp', :'ckp', 'Minuta aprovada pelo jurídico', 'bloqueia', :'permuta');
+select pg_temp.ok(fluxo.pendencias_conclusao(:'kp') = array['justificar'], 'em branco com regra "justificativa" pede justificativa; o item de permuta não vale com proposta em dinheiro');
+select pg_temp.falha(format($$update fluxo.tarefas set concluida_em = now() where id = %L$$, :'kp'), 'sem justificativa, não conclui');
+select pg_temp.falha(format($$select fluxo.concluir_justificando(%L, '  ')$$, :'kp'), 'justificativa vazia não vale');
+select pg_temp.ok(fluxo.concluir_justificando(:'kp', 'Vendedor não tem levantamento') = 'concluida', 'com justificativa, conclui');
+select pg_temp.ok((select concluida_em is not null from fluxo.tarefas where id = :'kp')
+  and (select itens->0->>'ref' = 'terreno.topografia' and not libera_bloqueio from fluxo.conclusao_justificativas where tarefa_id = :'kp'),
+  'a justificativa fica registrada com os itens em branco');
+select pg_temp.tarefa(:'tcd', 'Contrato com o vendedor', null, :'analista') as kd \gset
+insert into fluxo.checklists (empresa_id, tarefa_id, nome) values (:'emp', :'kd', 'Documentos') returning id as ckd \gset
+insert into fluxo.checklist_itens (empresa_id, checklist_id, texto, regra_branco) values (:'emp', :'ckd', 'Certidão de ônus', 'bloqueia');
+insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, regra_branco, condicao) values (:'emp', :'kd', 'oferta.corretor_id', 'bloqueia', :'permuta');
+select pg_temp.ok(fluxo.pendencias_conclusao(:'kd') = array['checklist'], 'item de checklist com regra própria bloqueia; o campo com condição que não vale, não');
+select pg_temp.ok((select count(*) from fluxo.itens_em_branco(:'kd')) = 1, 'a lista do que falta traz só o que vale agora');
+select pg_temp.como(:'diretor');
+select pg_temp.ok(fluxo.concluir_justificando(:'kd', 'Certidão chega amanhã; contrato assinado') = 'concluida', 'o diretor passa pelo item que bloqueia, com justificativa');
+select pg_temp.ok((select libera_bloqueio from fluxo.conclusao_justificativas where tarefa_id = :'kd'), 'o registro diz que o diretor passou pelo bloqueio');
+select pg_temp.como(:'analista');
+update fluxo.tarefas set concluida_em = null where id = :'kd';
+select fluxo.copiar_tarefa(:'kd', pg_temp.lista(:'tcd', 'Fazer'), 'Contrato (cópia)') as kdc \gset
+select pg_temp.ok((select regra_branco = 'bloqueia' and condicao is not null from fluxo.tarefa_itens where tarefa_id = :'kdc' and chave = 'oferta.corretor_id')
+  and (select regra_branco = 'bloqueia' from fluxo.checklist_itens i join fluxo.checklists c on c.id = i.checklist_id where c.tarefa_id = :'kdc'),
+  'a cópia leva os itens e a regra de cada um');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$select app.gravar_campo(%L, 'terreno.area_documental_m2', '1600')$$, :'tcd'), 'leitura não grava campo pelo cartão');
 \echo '# recorrência (fluxo, bloco 4)'
 select pg_temp.ok(fluxo.proxima_ocorrencia(row(null,null,null,'mensal',1,null,31,current_date,null,null,1,null,null,true,null,null)::fluxo.recorrencias, '2026-01-31') = '2026-02-28',
   'mensal no dia 31: mês sem o dia usa o último');
@@ -2264,7 +2351,7 @@ select pg_temp.ok(not exists (select 1 from app.v_tarefas_funil where tarefa_id 
 \echo '# automações de tarefas (fluxo, bloco 5a)'
 select pg_temp.como(:'diretor');
 insert into fluxo.etiquetas (empresa_id, nome, cor) values (:'emp', 'Em andamento', 'azul') returning id as ean \gset
-update fluxo.campos set obrigatorio = false where empresa_id = :'emp';
+
 select quadro_id as qm from fluxo.listas where id = pg_temp.lista(:'tm', 'Fazer') \gset
 select pg_temp.como(:'leitor');
 select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, acoes) values (%L, %L, 'X', 'criada', '[{"tipo":"arquivar"}]')$$, :'emp', :'qm'),
