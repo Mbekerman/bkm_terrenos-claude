@@ -42,7 +42,7 @@ function tkAvisarAcomp(t,k,txt){(k.acomp||[]).forEach(u=>notificar(u,'tarefa_aco
 
 /* mudanças (no banco: tg_tarefa_lista, notificações e auditoria) */
 function tkMover(t,k,lid,pos){const de=tkLista(t,k),l=tkL(t).find(x=>x.id===lid);if(!l)return;
-  if(l.tipo==='conclui'&&!k.feita&&!UI.apAprovando){const m=apBloqueio(t,k);if(m){toast(m,true);return false}
+  if(l.tipo==='conclui'&&!k.feita&&!UI.apAprovando){const m=apBloqueio(t,k);if(m){if(itJustPode(t,k)){itJustAviso(t,k,()=>tkMover(t,k,lid,pos));return false}toast(m,true);return false}
     /* predecessora pendente sem a regra: avisa e só conclui se a pessoa confirmar */
     if(UI.predOk!==k.id&&apPredPend(t,k).length){apPredAviso(t,k,()=>tkMover(t,k,lid,pos));return false}}
   if(de.id!==l.id&&pzGuarda(t,k,de,l)===false)return false;
@@ -172,7 +172,7 @@ const tkMais=(extra,rot)=>`<label class="tkm-mais" title="${rot}">${ic('add',16)
    no topo a trilha (terreno › código), Acompanhar, Copiar link e o menu ⋮; o título com o círculo de concluir, o status (a lista)
    em chip tonal e os selos; à direita Pausar e a ação principal (Concluir, Pedir aprovação, Ver aprovação ou Reabrir).
    Abas: Visão geral, Pessoas, Prazos e vínculos, Aprovação, Automações, Arquivos e Histórico. Comentários fixos à direita. */
-const TK_ABAS=[['geral','Visão geral'],['pessoas','Pessoas'],['prazos','Prazos e vínculos'],['aprov','Aprovação'],['auto','Automações'],['arq','Arquivos'],['hist','Histórico']];
+const TK_ABAS=[['geral','Visão geral'],['pessoas','Pessoas'],['prazos','Prazos e vínculos'],['aprov','Aprovação'],['auto','Automações'],['arq','Arquivos'],['hist','Histórico'],['config','Configuração']];
 /* cor do status pela lista: fazer (azul), fazendo (roxo), aguardando (âmbar), pausa (cinza), feito (verde) */
 function tkStCls(l){if(!l)return 'fazer';if(l.tipo==='conclui')return 'feito';if(l.tipo==='pausa')return 'pausa';const n=auNomeL(l.nome);
   return /fazendo|andamento|execu/.test(n)?'fazendo':/aguard|retorno|espera/.test(n)?'aguardando':'fazer'}
@@ -180,7 +180,7 @@ const tkSubs=(t,k)=>(t.tarefas||[]).filter(x=>x.mae===k.id&&!x.arq);
 const tkLogs=(t,k)=>(t.hist||[]).filter(h=>h.txt.includes(k.codigo)||h.txt.includes(`"${k.titulo}"`)||h.txt.endsWith(': '+k.titulo)).slice().reverse();
 function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!k)return `<div class="dh"><h2>Tarefa não encontrada</h2>${fechar}</div>`;
   vzAjustar(t,k);const ro=!vzEdita(t,k),bloq=ro||!!k.arq,dis=ro?'disabled':'',l=tkLista(t,k),eu=me(),acompanho=(k.acomp||[]).includes(eu),pop=UI.tkPop,at=tkAtras(k);
-  const aba=TK_ABAS.some(x=>x[0]===UI.tkAba)?UI.tkAba:'geral',ets=(k.etq||[]).map(id=>S.etiquetas.find(e=>e.id===id)).filter(Boolean),mae=k.mae?t.tarefas.find(x=>x.id===k.mae):null;
+  const abas=TK_ABAS.filter(x=>x[0]!=='config'||itConfigura(t,k)),aba=abas.some(x=>x[0]===UI.tkAba)?UI.tkAba:'geral',ets=(k.etq||[]).map(id=>S.etiquetas.find(e=>e.id===id)).filter(Boolean),mae=k.mae?t.tarefas.find(x=>x.id===k.mae):null;
   const linha=(icone,rot,val,id)=>`<div class="tkm-p"><${id?`label for="${id}"`:'span'} class="tkm-pl">${ic(icone,18)}${rot}</${id?'label':'span'}><div class="tkm-pv">${val}</div></div>`;
   const selU=(campo,v,vazio,id)=>`<span class="tkm-us">${v?av(v,'sm'):''}<select id="${id}" class="tkm-pill" data-tkc="${campo}" ${dis}>${vazio!=null?`<option value="">${vazio}</option>`:''}${USERS.map(u=>`<option ${u===v?'selected':''}>${esc(u)}</option>`).join('')}</select></span>`;
   const prio=`<select id="tkc-pr" class="tkm-pill prio-${k.prio}" data-tkc="prio" ${dis}>${Object.entries(OPT.prioTar).map(([x,n])=>`<option value="${x}" ${x===k.prio?'selected':''}>${n}</option>`).join('')}</select>`;
@@ -194,7 +194,7 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
   const checks=(k.checklists||[]).map(c=>{const it=c.itens,fe=it.filter(i=>i.feito).length,pc=it.length?Math.round(100*fe/it.length):0;
     return `<div class="tkm-bloco tkm-ck" data-ck="${c.id}"><div class="tkm-sh tkm-ckh"><h3>Checklist · ${esc(c.nome)}</h3><span class="faint tkm-ckn">${fe} de ${it.length}</span>
       <span class="tkm-shd">${ro||UI.tkItemNovo===c.id?'':`<button class="tkm-add tkm-addh" data-a="tkc-item-novo" data-c="${c.id}">${ic('add',16)}Adicionar item</button>`}${fe?`<button class="tkm-btn" data-a="tkc-esconder" data-c="${c.id}">${c.esconder?`Mostrar marcados (${fe})`:'Ocultar marcados'}</button>`:''}${ro?'':`<button class="tkm-btn" data-a="tkc-ck-x" data-c="${c.id}">Excluir</button>`}</span></div>
-      ${it.filter(i=>!(c.esconder&&i.feito)).map(i=>`<div class="tkm-it ${i.feito?'feito':''}"><label class="tkm-ch"><input type="checkbox" data-tkc="item-feito" data-c="${c.id}" data-i="${i.id}" ${i.feito?'checked':''} ${dis}><span>${esc(i.texto)}</span></label>
+      ${it.filter(i=>!(c.esconder&&i.feito)).map(i=>`<div class="tkm-it ${i.feito?'feito':''}"><label class="tkm-ch"><input type="checkbox" data-tkc="item-feito" data-c="${c.id}" data-i="${i.id}" ${i.feito?'checked':''} ${dis}><span>${esc(i.texto)}</span></label>${itSeloCk(t,i)}
         <span class="tkm-im">${i.virou?`<button class="linkbtn" data-a="tk-abrir" data-id="${t.id}" data-tk="${i.virou}">Virou cartão</button>`:''}
         ${ro?`${i.resp?`<span class="tkm-mini">${av(i.resp,'sm')}</span>`:''}${i.prazo?`<span class="tkm-mini ${!i.feito&&i.prazo<HOJE?'atras':''}">${ic('clock',14)}${fd(i.prazo)}</span>`:''}`
           :`<label class="tkm-mini tkm-mresp ${i.resp?'tem':''}" title="${i.resp?esc(i.resp):'Atribuir'}">${i.resp?av(i.resp,'sm'):ic('pessoa',16)}${tkSelU('',i.resp,'Sem responsável',`data-tkc="item-resp" data-c="${c.id}" data-i="${i.id}" aria-label="Responsável do item"`)}</label>
@@ -230,7 +230,7 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
   const auC=auDoCartao(k),auQ=auDoQuadro(t),auE=auDaEmpresa(),auX=auExecs().filter(x=>x.kid===k.id).slice(0,20),origem=n=>`<span class="chip au-orig">${n}</span>`;
   const conteudo={
     geral:()=>`<div class="tkm-props">${linha('pessoa','Responsável',selU('resp',k.resp,'Sem responsável','tkc-resp'),'tkc-resp')}${linha('cal','Prazo',`<button class="tkm-pzb" data-a="tkc-aba" data-v="prazos" title="Mudar as datas">${k.prazo?`<span class="tkm-chp ${k.feita?'ok':at?'atras':''}">${ic(k.feita?'check':'clock',14)}${fd(k.prazo)}</span>`:'<span class="faint">Sem prazo</span>'}${k.inicio?`<span class="faint">início ${fd(k.inicio)}${k.dur?` · ${k.dur} d`:''}</span>`:''}</button>`)}
-      ${linha('flag','Prioridade',prio,'tkc-pr')}${linha('etq','Etiquetas',etqs)}${cpoLinhas(t,k,bloq,linha)}</div>${popEtq}
+      ${linha('flag','Prioridade',prio,'tkc-pr')}${linha('etq','Etiquetas',etqs)}${itLinhas(t,k,bloq,linha)}</div>${popEtq}
       <div class="tkm-bloco"><div class="tkm-sh"><h3><label for="tkc-d">Descrição</label></h3></div><textarea id="tkc-d" class="tkm-txt" data-tkc="desc" data-mencao placeholder="Objetivo, instruções e critério de pronto (@ avisa um colega)" ${dis}>${esc(k.desc||'')}</textarea></div>
       ${k.feita||k.resultado?`<div class="tkm-bloco"><div class="tkm-sh"><h3><label for="tkc-r">Resultado</label></h3></div><textarea id="tkc-r" class="tkm-txt" data-tkc="resultado" data-mencao placeholder="O que foi feito ou decidido" ${dis}>${esc(k.resultado||'')}</textarea></div>`:''}
       ${subsH}${checks}
@@ -258,6 +258,7 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
         ${outros.length?`<select data-tkc="ligar" class="tkm-pill" aria-label="Ligar a outro cartão"><option value="">Ligar a outro cartão…</option>${outros.map(x=>`<option value="${x.id}">${x.codigo} · ${esc(x.titulo)}</option>`).join('')}</select>`:''}`}</div>
       <div class="tkm-bloco"><div class="tkm-sh"><h3>Capa</h3></div>${bloq?(k.capa?`<div class="tkm-capa etq-${k.capa}" style="width:120px"></div>`:'<div class="faint">Sem capa.</div>'):`<div class="tkm-capas">${Object.keys(ETQ_CORES).map(c=>`<button class="tkm-capa etq-${c} ${(k.capa||'')===c?'on':''}" data-a="tkc-capa" data-v="${c}" aria-label="${ETQ_CORES[c]}" title="${ETQ_CORES[c]}" aria-pressed="${(k.capa||'')===c}"></button>`).join('')}</div>
         ${k.capa?`<button class="tkm-btn" data-a="tkc-capa" data-v="">Remover capa</button>`:''}`}</div>`,
+    config:()=>itCfgAba(t,k,bloq),
     hist:()=>{const L=tkLogs(t,k);return `<div class="tkm-bloco"><div class="tkm-sh"><h3>Histórico</h3><span class="faint tkm-ckn">do mais recente ao mais antigo</span></div>
       ${L.map(h=>`<div class="tkm-log"><span class="faint num">${fdh(h.em)}</span>${av(h.user||'—','sm')}<span><b>${esc(h.user||'')}</b> ${esc(h.txt)}</span></div>`).join('')||'<div class="faint">Nada registrado ainda.</div>'}</div>`}};
   /* cabeçalho */
@@ -269,7 +270,7 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
     :`<button class="btn tonal" data-a="tkc-concluir" data-dup="1">${ic('check',18)}${rot||(k.feita?'Reabrir':'Concluir')}</button>`;
   const pausar=pzBotao(k,ro).replace('class="tkm-sb"','class="btn"');
   const nP=new Set([k.resp,k.solic,...PAPEIS_TK.flatMap(([p])=>k[p]||[])].filter(Boolean)).size,nA=auC.length+auQ.length+auE.length;
-  const cont={pessoas:nP,auto:nA,arq:anexos.length};
+  const cont={pessoas:nP,auto:nA,arq:anexos.length,config:itNRegras(k)};
   const menu=(pop==='mais'||pop==='copiar')&&!ro?`<div class="tkm-pop tkm-menu" role="menu">${cxBotoes(t,k,ro,(acao,icone,rotulo,extra='')=>`<button class="tkm-sb" data-a="${acao}" ${extra}>${ic(icone,16)}<span>${rotulo}</span></button>`)}
     <button class="tkm-sb" data-a="tkc-arq">${ic('arq',16)}<span>${k.arq?'Restaurar':'Arquivar'}</span></button></div>`:'';
   return `<div class="tkm${k.capa?' com-capa':''}">${k.capa?`<div class="tkm-capa-g etq-${k.capa}"></div>`:''}
@@ -283,7 +284,7 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
     ${selos}<span class="tkm-sp"></span><span class="tkm-cabb">${k.modelo?'':pausar}${principal}</span></div>
   ${k.feita?`<div class="tkm-feita faint">Concluída em ${fd(k.feita)}${k.feitaPor?' por '+esc(k.feitaPor):''}</div>`:''}
   ${cxFaixa(t,k,bloq)}${k.arq?`<div class="tkm-arqb">${ic('arq',18)}<span>Este cartão está arquivado e fica fora dos quadros.</span></div>`:''}
-  <div class="tkm-abas" role="tablist" aria-label="Seções do cartão">${TK_ABAS.map(([v,n])=>`<button role="tab" data-a="tkc-aba" data-v="${v}" aria-selected="${v===aba}">${n}${cont[v]?`<span class="tkm-n">${cont[v]}</span>`:''}${v==='aprov'&&apPend(k)?'<span class="tkm-dot" title="Aguardando aprovação"></span>':''}</button>`).join('')}</div>
+  <div class="tkm-abas" role="tablist" aria-label="Seções do cartão">${abas.map(([v,n])=>`<button role="tab" data-a="tkc-aba" data-v="${v}" aria-selected="${v===aba}">${n}${cont[v]?`<span class="tkm-n">${cont[v]}</span>`:''}${v==='aprov'&&apPend(k)?'<span class="tkm-dot" title="Aguardando aprovação"></span>':''}</button>`).join('')}</div>
   <div class="tkm-g"><div class="tkm-main" role="tabpanel">${conteudo[aba]()}</div>${comH}</div>${crAvisoHtml()}</div>`}
 /* gerenciar as listas do quadro do terreno */
 function tkListasHtml(fechar){const t=T(UI.tkSel.tid),n=k=>t.tarefas.filter(x=>x.lista===k&&!x.arq).length;
@@ -293,7 +294,7 @@ function tkListasHtml(fechar){const t=T(UI.tkSel.tid),n=k=>t.tarefas.filter(x=>x
     <button class="btn text sm" data-a="tkl-oculta" data-v="${l.id}">${l.oculta?'Mostrar':'Ocultar'}</button></div>`).join('')}</div>
   <form class="tkm-nf" data-form="tkl-nova"><input name="nome" required placeholder="Nova lista" aria-label="Nome da nova lista"><select name="tipo" aria-label="Tipo da lista">${Object.entries(TIPO_LISTA).map(([x,n])=>`<option value="${x}">${n}</option>`).join('')}</select><button class="btn tonal sm" type="submit">Criar lista</button></form>
   <div class="df"><button class="btn primary" data-a="close">Pronto</button></div>`}
-function quadrosModal(M,fechar){if(M==='tarefa')return UI.tkSel?.kid?tkCartaoHtml(fechar):tkNovaHtml(fechar);if(M==='tk-listas')return tkListasHtml(fechar);return auModal(M,fechar)}
+function quadrosModal(M,fechar){if(M==='tarefa')return UI.tkSel?.kid?tkCartaoHtml(fechar):tkNovaHtml(fechar);if(M==='tk-listas')return tkListasHtml(fechar);if(M==='it-cond')return itCondHtml(fechar);return auModal(M,fechar)}
 
 /* refaz a tela mantendo a rolagem da janela */
 function tkRe(){const q=['#modal .dialog','#modal .tkm-main','#modal .tkm-coms'],st=q.map(x=>document.querySelector(x)?.scrollTop||0);save();render();q.forEach((x,i)=>{const n=document.querySelector(x);if(n)n.scrollTop=st[i]})}
@@ -328,9 +329,9 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="tkc-"]
     case 'tkc-capa':k.capa=a.dataset.v||null;UI.tkPop=null;break;
     case 'tkc-ck-novo':UI.tkCkNovo=true;break;
     case 'tkc-ck-cancela':UI.tkCkNovo=false;break;
-    case 'tkc-ck-x':{const c=k.checklists.find(x=>x.id===a.dataset.c);k.checklists=k.checklists.filter(x=>x!==c);log(t,`Tarefa "${k.titulo}": checklist ${c.nome} excluído`);break}
+    case 'tkc-ck-x':{const c=k.checklists.find(x=>x.id===a.dataset.c);if(c.itens.some(x=>x.regra&&x.regra!=='livre')&&!itConfigura(t,k)){toast('Este checklist tem item com regra para concluir: só o diretor, o administrador e quem criou a tarefa o excluem.',true);break}k.checklists=k.checklists.filter(x=>x!==c);log(t,`Tarefa "${k.titulo}": checklist ${c.nome} excluído`);break}
     case 'tkc-esconder':{const c=k.checklists.find(x=>x.id===a.dataset.c);c.esconder=!c.esconder;break}
-    case 'tkc-item-x':{const {c,i}=tkItem(k,a.dataset.c,a.dataset.i);c.itens=c.itens.filter(x=>x!==i);break}
+    case 'tkc-item-x':{const {c,i}=tkItem(k,a.dataset.c,a.dataset.i);if(i.regra&&i.regra!=='livre'&&!itConfigura(t,k)){toast('Este item tem regra para concluir: só o diretor, o administrador e quem criou a tarefa o excluem.',true);break}c.itens=c.itens.filter(x=>x!==i);break}
     case 'tkc-item-cartao':{const {i}=tkItem(k,a.dataset.c,a.dataset.i);const n=tkCriar(t,{titulo:i.texto,resp:i.resp,prazo:i.prazo,desc:`Veio do checklist de ${k.codigo} · ${k.titulo}`,vis:vzVis(k),acessos:k.acessos});  // herda a visibilidade
       n.anexos.push({id:uid(),tipo:'tarefa',nome:`${k.codigo} · ${k.titulo}`,ref:k.id});i.virou=n.id;if(!i.feito){i.feito=HOJE;i.feitoPor=eu}toast(`${n.codigo} criada a partir do item.`);break}
     case 'tkc-com-edita':UI.tkEdCom=a.dataset.v;break;
