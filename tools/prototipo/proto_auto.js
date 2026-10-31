@@ -79,6 +79,7 @@ function auEvento(t,k,gat,x={}){if(UI.auRodando||!k||k.modelo||k.arq)return 0;le
     if(gat==='entrou_lista'&&r.gLista&&auLista(t,r,r.gLista)?.id!==x.lista)continue;
     if(gat==='etiqueta'&&r.gEtq&&r.gEtq!==x.etq)continue;
     if(gat==='campo'&&r.gCampo&&r.gCampo!==x.campo)continue;
+    if(gat==='etapa'&&r.gEtapa&&r.gEtapa!==x.etapa)continue;
     if(x.ref&&auExecs().some(e=>e.aid===r.id&&e.kid===k.id&&e.ref===x.ref))continue;
     if(!auDonoVale(r)||(r.tid&&!vzPapel(t,k,r.dono))||!auCondOk(t,r,k))continue;
     auExecutar(t,r,k,x.ref);n++}
@@ -285,7 +286,7 @@ document.addEventListener('submit',e=>{const f=e.target;if(f.dataset?.form!=='au
   r.nome=(f.querySelector('#au-nome')?.value||r.nome).trim();r.acoes.forEach(a=>{if(a.tipo==='checklist')a.itens=(a.itens||[]).map(x=>x.trim()).filter(Boolean)});
   const m=auValida(r);if(m){toast(m,true);return}
   if(r.gat!=='agenda'){r.aFreq=null;r.aDias=null}else if(r.aFreq==='diaria')r.aDias=null;else r.aDias=[...new Set(r.aDias)].sort((a,b)=>a-b);
-  if(r.gat!=='entrou_lista')r.gLista='';if(r.gat!=='etiqueta')r.gEtq='';if(r.gat!=='campo')r.gCampo='';if(r.gat!=='prazo_antes')r.gDias=null;
+  if(r.gat!=='entrou_lista')r.gLista='';if(r.gat!=='etiqueta')r.gEtq='';if(r.gat!=='campo')r.gCampo='';if(r.gat!=='prazo_antes')r.gDias=null;if(r.gat!=='etapa')r.gEtapa='';
   if(r.id){const i=auRegras().findIndex(x=>x.id===r.id);if(i>=0)auRegras()[i]=r}else{r.id=uid();r.em=agora();auRegras().push(r)}
   if(r.tid)log(T(r.tid),`Automação "${r.nome}"${r.kid?` em ${tkAcha(r.tid,r.kid).k?.codigo}`:''} salva`);UI.auEd=null;save();toast('Regra salva.');
   if(UI.auK){UI.tkSel=UI.auK;UI.auK=null;UI.modal='tarefa';renderModal();render()}else if(UI.auQ){UI.modal='au-regras';renderModal()}else{UI.modal=null;renderModal();render()}},true);

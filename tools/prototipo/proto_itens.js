@@ -206,11 +206,11 @@ function itRowHtml(it,p){const d=it.campo?itDef(it.campo):null,busca=UI.itCond.b
   return `<div class="it-cd">${campo}${d?`<select class="tkm-pill" data-itco="${p}" aria-label="Operador"><option value="">Operador</option>${IT_OPS[d.tipo].map(o=>`<option value="${o}" ${it.op===o?'selected':''}>${IT_OP[o]}</option>`).join('')}</select>`:''}${val.startsWith('<span class="it-vals"')?'':val}
     <button class="iconbtn sm it-cx" data-a="it-c-tira" data-p="${p}" aria-label="Tirar condição" title="Tirar">${ic('close',16)}</button>${val.startsWith('<span class="it-vals"')?val:''}</div>`}
 function itModoHtml(c,p){return `<span class="it-seg" role="group" aria-label="Como as condições se juntam"><button class="${c.modo!=='qualquer'?'on':''}" data-a="it-c-modo" data-p="${p}" data-v="todas" aria-pressed="${c.modo!=='qualquer'}">todas</button><button class="${c.modo==='qualquer'?'on':''}" data-a="it-c-modo" data-p="${p}" data-v="qualquer" aria-pressed="${c.modo==='qualquer'}">qualquer uma</button></span>`}
-function itCondHtml(fechar){const E=UI.itCond,{t,k}=tkAtual();if(!E||!k)return `<div class="dh"><h2>Condição</h2>${fechar}</div>`;const c=E.cond;
+function itCondHtml(fechar){const E=UI.itCond,{t,k}=tkAtual();if(!E||(!k&&!E.ext))return `<div class="dh"><h2>Condição</h2>${fechar}</div>`;const c=E.cond;
   const rows=c.itens.map((it,i)=>it.grupo?`<div class="it-grp"><div class="it-vqh"><span class="faint">Grupo</span>${itModoHtml(it.grupo,i+'')}<button class="iconbtn sm" data-a="it-c-tira" data-p="${i}" aria-label="Tirar grupo" title="Tirar grupo">${ic('close',16)}</button></div>
       ${it.grupo.itens.map((x,j)=>itRowHtml(x,i+'.'+j)).join('')}<button class="tkm-add" data-a="it-c-mais" data-p="${i}">${ic('add',16)}Condição no grupo</button></div>`:itRowHtml(it,i+'')).join('');
   const e=itCondErro(c);
-  return `<div class="dh"><div><h2>Vale quando</h2><div class="muted" style="margin-top:4px">${esc(k.codigo)} · ${esc(itCondNome(t,k,E.alvo))}</div></div>${fechar}</div>
+  return `<div class="dh"><div><h2>Vale quando</h2><div class="muted" style="margin-top:4px">${E.ext?esc(E.ext.titulo):`${esc(k.codigo)} · ${esc(itCondNome(t,k,E.alvo))}`}</div></div>${fechar}</div>
   <div class="it-vq-box"><div class="it-vqh"><b>Valem</b>${itModoHtml(c,'')}</div>${rows}
     <div class="it-adds"><button class="tkm-add" data-a="it-c-mais" data-p="">${ic('add',16)}Condição</button><button class="tkm-add" data-a="it-c-grupo">${ic('add',16)}Grupo</button></div></div>
   <p class="it-frase">Em palavras: <b>${e?esc(e):'a regra vale quando '+esc(itCondFrase(c))+'.'}</b></p>
@@ -260,7 +260,9 @@ document.addEventListener('change',e=>{const el=e.target;
     else E[ch]={...cur,[el.dataset.itcfg]:el.checked};save();render();toast('Campo atualizado.');return}},true);
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="it-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const A=a.dataset.a;
   if(A==='it-cfgf'){UI.itCfgF=a.dataset.v;render();return}
-  const {t,k}=tkAtual();if(!k)return;
+  /* condição de fora do cartão (regra da etapa, checklist, pré-requisito, tarefa do modelo; proto_etapa.js) */
+  if(UI.itCond?.ext&&(A==='it-c-salva'||A==='it-c-cancela')){const E=UI.itCond;if(A==='it-c-salva'){const er=itCondErro(E.cond);if(er){toast(er,true);return}E.ext.salvar(E.cond.itens.length?E.cond:null)}UI.itCond=null;E.ext.voltar();return}
+  const {t,k}=tkAtual();if(!k&&!UI.itCond?.ext)return;
   switch(A){
     case 'it-inclui':{if(!vzEdita(t,k))return;itNorm(k).push({id:uid(),chave:a.dataset.v||undefined,campo:a.dataset.c||undefined,regra:'livre',cond:null});UI.tkPop=null;UI.itBusca='';
       log(t,`Tarefa "${k.titulo}": campo ${itNome(k.itens.at(-1))} incluído no cartão`);tkRe();return}

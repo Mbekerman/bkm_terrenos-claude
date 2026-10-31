@@ -95,7 +95,7 @@ const CFG_PADRAO=()=>({
   checklist:{contrato:[['matricula',1],['onus',1],['iptu',1],['vend',1],['topo',1],['sond',0],['amb',0],['minuta',1]].map(([doc,o])=>({doc,obrig:!!o}))},
   motivos:{descartado:[['tecnica','Inviabilidade Técnica'],['financeira','Inviabilidade Financeira'],['contratual','Inviabilidade Contratual'],['formato_negocio','Inviabilidade Formato de Negócio'],['garantias','Inviabilidade Garantias'],['urbanistica','Inviabilidade Urbanística'],['documental','Inviabilidade Documental'],['outros','Outros',1]].map(([k,nome,tx])=>({k,nome,texto:!!tx,ativo:true})),
     perdido:[['vendido_terceiro','Vendido para terceiro'],['desistiu_vender','Proprietário desistiu de vender'],['preco_pagamento','Vendedor não aceitou preço ou pagamento'],['formato','Vendedor não aceitou o formato (permuta etc.)'],['garantias','Vendedor não aceitou as garantias'],['sem_retorno','Sem retorno do proprietário'],['outros','Outros',1]].map(([k,nome,tx])=>({k,nome,texto:!!tx,ativo:true}))},
-  notif:{tarefa_atribuida:{ativo:true,dias:null,email:true},mencao:{ativo:true,dias:null,email:true},tarefa_prazo:{ativo:true,dias:[0],email:false},tarefa_atrasada:{ativo:true,dias:null,email:false},tarefa_acompanhada:{ativo:true,dias:null,email:false},automacao:{ativo:true,dias:null,email:false},subetapa_prazo:{ativo:true,dias:null,email:false},
+  notif:{tarefa_atribuida:{ativo:true,dias:null,email:true},mencao:{ativo:true,dias:null,email:true},tarefa_prazo:{ativo:true,dias:[0],email:false},tarefa_atrasada:{ativo:true,dias:null,email:false},tarefa_acompanhada:{ativo:true,dias:null,email:false},automacao:{ativo:true,dias:null,email:false},pode_avancar:{ativo:true,dias:null,email:false},etapa_deixada:{ativo:true,dias:null,email:false},subetapa_prazo:{ativo:true,dias:null,email:false},
     stand_by_retomar:{ativo:true,dias:[7,0],email:false},documento_vencendo:{ativo:true,dias:[30,7],email:false},reuniao_agendada:{ativo:true,dias:[1],email:false},aprovacao_pendente:{ativo:true,dias:null,email:true},aprovacao_decidida:{ativo:true,dias:null,email:true}}
 });
 const CFG0=CFG_PADRAO();
@@ -925,12 +925,12 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       const val=lerNum(F.valor);
       if(val||F.cid){const o={id:uid(),cid:F.cid||null,data:HOJE,valor:val,forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,status:'ativa'};alvo.ofertas.push(o);
         if(o.cid&&!alvo.corretores.some(x=>x.cid===o.cid))alvo.corretores.push({cid:o.cid,principal:!alvo.corretores.some(x=>x.principal)});
-        if(!alvo.neg||!['ativo','stand_by'].includes(alvo.neg.status)){alvo.neg=novaNeg(o.id,Number(F.temp)||null);log(alvo,'Negociação aberta')}
+        if(!alvo.neg||!['ativo','stand_by'].includes(alvo.neg.status)){alvo.neg=novaNeg(o.id,Number(F.temp)||null);log(alvo,'Negociação aberta');etAbriu(alvo)}
         else log(alvo,'Nova oferta registrada')}
       UI.modal=null;UI.nv=null;save();go('terreno',{id:alvo.id,tab:dup?'comercial':'cadastro',from:'terrenos'});toast(dup?'Oferta registrada no terreno existente.':`${alvo.codigo} cadastrado. Complete a ficha quando puder.`);if(!dup&&alvo.insc[0]&&loteBuscavel(alvo.insc[0]))loteBuscar(alvo,0);break}
     case 'oferta':{const o={id:uid(),cid:F.cid||null,data:HOJE,valor:lerNum(F.valor),forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,validade:F.validade||null,status:'ativa'};if(UI.ofPoly)o.poly=UI.ofPoly;t.ofertas.push(o);
       if(o.cid&&!t.corretores.some(x=>x.cid===o.cid))t.corretores.push({cid:o.cid,principal:!t.corretores.some(x=>x.principal)});
-      if(!t.neg||!['ativo','stand_by'].includes(t.neg.status)){t.neg=novaNeg(o.id,null);log(t,'Negociação aberta')}else log(t,`Nova oferta: ${mi(o.valor)}${o.poly?` (parte do terreno, ${m2(Math.round(areaPoly(o.poly)))})`:''}`);
+      if(!t.neg||!['ativo','stand_by'].includes(t.neg.status)){t.neg=novaNeg(o.id,null);log(t,'Negociação aberta');etAbriu(t)}else log(t,`Nova oferta: ${mi(o.valor)}${o.poly?` (parte do terreno, ${m2(Math.round(areaPoly(o.poly)))})`:''}`);
       UI.modal=null;save();render();toast('Oferta registrada.');break}
   }
 });

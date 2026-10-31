@@ -59,7 +59,7 @@ const etqChip=(e,cls='')=>`<span class="etq etq-${e.cor} ${cls}" title="${esc(e.
 function cardTk({k,t},geral){const at=tkAtras(k),ets=(k.etq||[]).map(id=>S.etiquetas.find(e=>e.id===id)).filter(Boolean);
   const its=(k.checklists||[]).flatMap(c=>c.itens),fe=its.filter(i=>i.feito).length,nc=(k.coments||[]).filter(c=>!c.apagado).length,na=(k.anexos||[]).filter(a=>!a.removido).length;
   const pz=k.prazo?`<span class="tk-b tk-prazo ${k.feita?'feito':at?'atras':''}" title="${k.feita?'Concluída':at?'Atrasada':'Prazo'}">${ic(k.feita?'check':'clock',14)}${fd(k.prazo)}</span>`:'';
-  const ind=[cxSelo(k),apSelo(k),pzSelo(k),vzSelo(k),pz,rcSelo(k),k.desc?`<span class="tk-b" title="Tem descrição">${ic('notas',14)}</span>`:'',
+  const ind=[cxSelo(k),apSelo(k),pzSelo(k),vzSelo(k),etSelo(t,k,true),pz,rcSelo(k),k.desc?`<span class="tk-b" title="Tem descrição">${ic('notas',14)}</span>`:'',
     nc?`<span class="tk-b" title="Comentários">${ic('chat',14)}${nc}</span>`:'',na?`<span class="tk-b" title="Anexos">${ic('clip',14)}${na}</span>`:'',
     its.length?`<span class="tk-b ${fe===its.length?'ok':''}" title="Checklist">${ic('check',14)}${fe}/${its.length}</span>`:'',
     (ns=>ns.length?`<span class="tk-b ${ns.every(x=>x.feita)?'ok':''}" title="Subtarefas">${ic('subt',14)}${ns.filter(x=>x.feita).length}/${ns.length}</span>`:'')(tkSubs(t,k)),
@@ -102,7 +102,7 @@ function pgTarefas(){const f=UI.tk;if(f.vista==='tabela')f.vista='lista';const l
     <label class="sr-only" for="tk-ter">Terreno</label><select id="tk-ter" class="fsel-chip${f.ter?' on':''}" data-ch="tk-f" data-k="ter"><option value="">Terreno</option>${opt(Object.fromEntries(ativosBanco().map(t=>[t.id,t.codigo+' · '+t.nome])),f.ter)}</select>
     <label class="sr-only" for="tk-etq">Etiqueta</label><select id="tk-etq" class="fsel-chip${f.etq?' on':''}" data-ch="tk-f" data-k="etq"><option value="">Etiqueta</option>${opt(Object.fromEntries(S.etiquetas.map(e=>[e.id,e.nome])),f.etq)}</select>
     <label class="sr-only" for="tk-prio">Prioridade</label><select id="tk-prio" class="fsel-chip${f.prio?' on':''}" data-ch="tk-f" data-k="prio"><option value="">Prioridade</option>${opt(OPT.prioTar,f.prio)}</select>
-    ${cpoFiltroOpts(f.cp)?`<label class="sr-only" for="tk-cp">Campo</label><select id="tk-cp" class="fsel-chip${f.cp?' on':''}" data-ch="tk-f" data-k="cp"><option value="">Campo</option>${cpoFiltroOpts(f.cp)}</select>`:''}
+    ${etFiltroHtml(f)}${cpoFiltroOpts(f.cp)?`<label class="sr-only" for="tk-cp">Campo</label><select id="tk-cp" class="fsel-chip${f.cp?' on':''}" data-ch="tk-f" data-k="cp"><option value="">Campo</option>${cpoFiltroOpts(f.cp)}</select>`:''}
     <label class="fchk"><input type="checkbox" data-ch="tk-f" data-k="atras" ${f.atras?'checked':''}>${ic('check',16)}Só atrasadas</label>
     <label class="fchk"><input type="checkbox" data-ch="tk-f" data-k="arq" ${f.arq?'checked':''}>${ic('check',16)}Arquivadas</label></div></div>`;
   const t1=f.ter?T(f.ter):null,cols=t1?tkL(t1).filter(x=>!x.oculta):tkColunas(l).map(nome=>({nome}));
@@ -122,7 +122,8 @@ function pgTarefas(){const f=UI.tk;if(f.vista==='tabela')f.vista='lista';const l
 const tkVistaFicha=t=>({quadro:1,lista:1,crono:1})[UI.crVista[t.id]]?UI.crVista[t.id]:'lista';
 function tkFichaCab(t){const vf=tkVistaFicha(t),arq=!!UI.tkArqFicha&&vf==='quadro',na=vzTarefas(t).filter(k=>k.arq).length;
   const seg=`<div class="seg sm" role="group" aria-label="Visualização das tarefas">${[['lista','Lista'],['quadro','Quadro'],['crono','Cronograma']].map(([v,n])=>`<button data-a="cr-vista" data-id="${t.id}" data-v="${v}" aria-pressed="${vf===v}">${n}</button>`).join('')}</div>`;
-  return `<span class="tk-sh">${seg}${vf==='quadro'&&(na||arq)?`<button class="btn text sm" data-a="tk-arqficha">${arq?'Voltar ao quadro':`Arquivadas (${na})`}</button>`:''}${tkEd()&&vf==='quadro'?`<button class="btn text sm" data-a="tk-listas" data-id="${t.id}">Listas</button>`:''}${tkEd()?`<button class="btn text sm" data-a="cr-modelos" data-id="${t.id}">Modelos</button>`:''}<button class="btn text sm" data-a="au-abrir" data-v="${t.id}">Automações</button>${vf!=='lista'?tkCheiaBtn():''}${tkEd()?`<button class="btn sm ed" data-a="tk-nova" data-v="" data-id="${t.id}">${ic('add',18)}Nova tarefa</button>`:''}</span>`}
+  const agrF=vf==='lista'?`<label class="sr-only" for="tl-agrf">Agrupar</label><select id="tl-agrf" class="fsel-chip on" data-tl="agrF">${[['status','Agrupar: Status'],['etapa','Agrupar: Etapa']].map(([v,n])=>`<option value="${v}" ${(UI.tl.agrF||'status')===v?'selected':''}>${n}</option>`).join('')}</select>`:'';
+  return `<span class="tk-sh">${seg}${agrF}${vf==='quadro'&&(na||arq)?`<button class="btn text sm" data-a="tk-arqficha">${arq?'Voltar ao quadro':`Arquivadas (${na})`}</button>`:''}${tkEd()&&vf==='quadro'?`<button class="btn text sm" data-a="tk-listas" data-id="${t.id}">Listas</button>`:''}${tkEd()?`<button class="btn text sm" data-a="cr-modelos" data-id="${t.id}">Modelos</button>`:''}<button class="btn text sm" data-a="au-abrir" data-v="${t.id}">Automações</button>${vf!=='lista'?tkCheiaBtn():''}${tkEd()?`<button class="btn sm ed" data-a="tk-nova" data-v="" data-id="${t.id}">${ic('add',18)}Nova tarefa</button>`:''}</span>`}
 const tkFichaSub=t=>{const ab=vzTarefas(t).filter(tkAberta),at=ab.filter(tkAtras).length;return `${ab.length+(ab.length===1?' aberta':' abertas')} · ${at+(at===1?' atrasada':' atrasadas')}`};
 function abaTarefas(t){const vf=tkVistaFicha(t),vc=vf==='crono',arq=!!UI.tkArqFicha&&vf==='quadro',vt=vzTarefas(t),its=vt.filter(k=>arq?k.arq:!k.arq).map(k=>({k,t}));
   const q=vc?crFichaHtml(t):vf==='lista'?tkListaHtml(its,t):tkQuadro(its,tkL(t).filter(l=>!l.oculta),false,t.id,!arq),ch=tkCheiaOn();
@@ -230,7 +231,7 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
   const auC=auDoCartao(k),auQ=auDoQuadro(t),auE=auDaEmpresa(),auX=auExecs().filter(x=>x.kid===k.id).slice(0,20),origem=n=>`<span class="chip au-orig">${n}</span>`;
   const conteudo={
     geral:()=>`<div class="tkm-props">${linha('pessoa','Responsável',selU('resp',k.resp,'Sem responsável','tkc-resp'),'tkc-resp')}${linha('cal','Prazo',`<button class="tkm-pzb" data-a="tkc-aba" data-v="prazos" title="Mudar as datas">${k.prazo?`<span class="tkm-chp ${k.feita?'ok':at?'atras':''}">${ic(k.feita?'check':'clock',14)}${fd(k.prazo)}</span>`:'<span class="faint">Sem prazo</span>'}${k.inicio?`<span class="faint">início ${fd(k.inicio)}${k.dur?` · ${k.dur} d`:''}</span>`:''}</button>`)}
-      ${linha('flag','Prioridade',prio,'tkc-pr')}${linha('etq','Etiquetas',etqs)}${itLinhas(t,k,bloq,linha)}</div>${popEtq}
+      ${linha('flag','Prioridade',prio,'tkc-pr')}${linha('etq','Etiquetas',etqs)}${etLinha(t,k,bloq,linha)}${itLinhas(t,k,bloq,linha)}</div>${popEtq}
       <div class="tkm-bloco"><div class="tkm-sh"><h3><label for="tkc-d">Descrição</label></h3></div><textarea id="tkc-d" class="tkm-txt" data-tkc="desc" data-mencao placeholder="Objetivo, instruções e critério de pronto (@ avisa um colega)" ${dis}>${esc(k.desc||'')}</textarea></div>
       ${k.feita||k.resultado?`<div class="tkm-bloco"><div class="tkm-sh"><h3><label for="tkc-r">Resultado</label></h3></div><textarea id="tkc-r" class="tkm-txt" data-tkc="resultado" data-mencao placeholder="O que foi feito ou decidido" ${dis}>${esc(k.resultado||'')}</textarea></div>`:''}
       ${subsH}${checks}
@@ -265,7 +266,7 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
   const pz=k.pausas?.some(z=>z.sit==='ativa'),pp=k.pausas?.some(z=>z.sit==='pendente'),dAt=at?crDias(k.prazo,HOJE):0;
   const selos=[at?`<span class="tkm-selo crit">${ic('clock',14)}Atrasada ${dAt} ${dAt===1?'dia':'dias'}</span>`:'',apPend(k)?'<span class="tkm-selo warn">Aguardando aprovação</span>':'',
     pz?'<span class="tkm-selo">Pausada</span>':pp?'<span class="tkm-selo">Pausa pedida</span>':'',k.modelo?'<span class="tkm-selo">Modelo</span>':'',k.rec?.ativa?`<span class="tkm-selo">${ic('repete',14)}Recorrente</span>`:'',
-    vzVis(k)!=='publico'?`<span class="tkm-selo">${ic('lock',14)}${VZ_N[vzVis(k)]}</span>`:''].join('');
+    vzVis(k)!=='publico'?`<span class="tkm-selo">${ic('lock',14)}${VZ_N[vzVis(k)]}</span>`:'',etSelo(t,k)].join('');
   const rot=apRotulo(k),principal=ro||k.arq||k.modelo?'':rot==='Aguardando aprovação'?`<button class="btn tonal" data-a="tkc-aba" data-v="aprov">${ic('escudo',18)}Ver aprovação</button>`
     :`<button class="btn tonal" data-a="tkc-concluir" data-dup="1">${ic('check',18)}${rot||(k.feita?'Reabrir':'Concluir')}</button>`;
   const pausar=pzBotao(k,ro).replace('class="tkm-sb"','class="btn"');

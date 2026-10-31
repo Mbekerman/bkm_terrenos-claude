@@ -5108,6 +5108,41 @@ body.cr-arrastando { cursor: grabbing; user-select: none }
 html[data-tema="escuro"] .tkm-bt svg { color: #a8c7fa }
 .au-dm { width: 120px }
 @media (max-width: 720px) { .tkm-bts { padding: 10px 16px 4px } }
+
+/* ---------- Tarefas da etapa (lote B da ligação funil × quadros, 31/out/2026) ---------- */
+.tkm-selo.et-trava { background: #ffdf99; color: #7a5900 }
+.tkm-selo.et-sit, .tk-b.et-sit { background: #e9eef6; color: #444746 }
+:root:not(#_) .tkb .tk-b.et-trava { background: #ffdf99; color: #7a5900; padding: 0 6px }
+:root:not(#_) .tkb .tk-b.et-sit { background: #e9eef6; color: #444746; padding: 0 6px }
+html[data-tema="escuro"] .tkm-selo.et-trava, html[data-tema="escuro"]:not(#_) .tkb .tk-b.et-trava { background: rgba(255,200,80,.18); color: #ffdf99 }
+html[data-tema="escuro"] .tkm-selo.et-sit, html[data-tema="escuro"]:not(#_) .tkb .tk-b.et-sit { background: rgba(124,140,255,.14); color: #c9d6ff }
+.et-reg { margin-left: 8px; font-size: 12px }
+.et-fases { display: inline-flex; max-width: 100%; overflow-x: auto; margin-top: 4px }
+.et-fases button { white-space: nowrap }
+.et-regi { display: inline-flex; color: #444746; margin-left: 4px }
+.et-sec .sec-b { display: flex; flex-direction: column; gap: 8px }
+.et-r { display: grid; grid-template-columns: minmax(150px, 200px) 1fr auto auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 8px; background: var(--m-sc-low) }
+.et-r.inativa { opacity: .6 }
+.et-ro { display: flex; flex-direction: column; gap: 2px; min-width: 0 }
+.et-ro .faint { font-size: 13px }
+.et-ra { display: inline-flex; align-items: center; gap: 4px }
+.et-rt .chip { display: inline-flex; align-items: center; gap: 4px }
+.et-form .et-tipo, .et-form .et-arq { border: 0; padding: 0; margin: 0 }
+.et-form legend, .et-arq legend { font-size: 13px; font-weight: 500; color: #444746; margin-bottom: 6px; padding: 0 }
+.et-tipo, .et-arq { display: flex; flex-wrap: wrap; gap: 8px }
+.et-tipo legend, .et-arq legend { width: 100% }
+.et-arq { border: 0; padding: 0; margin: 0 }
+.et-trv { align-items: flex-start }
+.et-cks { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px }
+.et-cks li { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 6px 12px; border-radius: 8px; background: var(--m-sc-low) }
+.et-cks li > span:first-child { font-weight: 500; min-width: 160px }
+.et-vq { font-size: 13px }
+.cfg-pre .et-vq { display: block; margin-top: 2px }
+.cr-mvq { margin-top: 6px }
+html[data-tema="escuro"] .et-form legend, html[data-tema="escuro"] .et-arq legend { color: #a9b4dc }
+@media (max-width: 720px) { .et-r { grid-template-columns: 1fr auto; } .et-rq { grid-column: 1 / -1 } .et-ro { grid-column: 1 / -1 } }
+.et-tipo .fchk, .et-arq .fchk { display: inline-flex; width: auto; flex: 0 0 auto }
+.et-trv.fchk { height: auto; min-height: 40px; white-space: normal; padding: 8px 14px; line-height: 20px; width: 100% }
 </style>
 <header class="top">
   <div class="top-in">
@@ -5236,7 +5271,7 @@ const CFG_PADRAO=()=>({
   checklist:{contrato:[['matricula',1],['onus',1],['iptu',1],['vend',1],['topo',1],['sond',0],['amb',0],['minuta',1]].map(([doc,o])=>({doc,obrig:!!o}))},
   motivos:{descartado:[['tecnica','Inviabilidade Técnica'],['financeira','Inviabilidade Financeira'],['contratual','Inviabilidade Contratual'],['formato_negocio','Inviabilidade Formato de Negócio'],['garantias','Inviabilidade Garantias'],['urbanistica','Inviabilidade Urbanística'],['documental','Inviabilidade Documental'],['outros','Outros',1]].map(([k,nome,tx])=>({k,nome,texto:!!tx,ativo:true})),
     perdido:[['vendido_terceiro','Vendido para terceiro'],['desistiu_vender','Proprietário desistiu de vender'],['preco_pagamento','Vendedor não aceitou preço ou pagamento'],['formato','Vendedor não aceitou o formato (permuta etc.)'],['garantias','Vendedor não aceitou as garantias'],['sem_retorno','Sem retorno do proprietário'],['outros','Outros',1]].map(([k,nome,tx])=>({k,nome,texto:!!tx,ativo:true}))},
-  notif:{tarefa_atribuida:{ativo:true,dias:null,email:true},mencao:{ativo:true,dias:null,email:true},tarefa_prazo:{ativo:true,dias:[0],email:false},tarefa_atrasada:{ativo:true,dias:null,email:false},tarefa_acompanhada:{ativo:true,dias:null,email:false},automacao:{ativo:true,dias:null,email:false},subetapa_prazo:{ativo:true,dias:null,email:false},
+  notif:{tarefa_atribuida:{ativo:true,dias:null,email:true},mencao:{ativo:true,dias:null,email:true},tarefa_prazo:{ativo:true,dias:[0],email:false},tarefa_atrasada:{ativo:true,dias:null,email:false},tarefa_acompanhada:{ativo:true,dias:null,email:false},automacao:{ativo:true,dias:null,email:false},pode_avancar:{ativo:true,dias:null,email:false},etapa_deixada:{ativo:true,dias:null,email:false},subetapa_prazo:{ativo:true,dias:null,email:false},
     stand_by_retomar:{ativo:true,dias:[7,0],email:false},documento_vencendo:{ativo:true,dias:[30,7],email:false},reuniao_agendada:{ativo:true,dias:[1],email:false},aprovacao_pendente:{ativo:true,dias:null,email:true},aprovacao_decidida:{ativo:true,dias:null,email:true}}
 });
 const CFG0=CFG_PADRAO();
@@ -6066,12 +6101,12 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       const val=lerNum(F.valor);
       if(val||F.cid){const o={id:uid(),cid:F.cid||null,data:HOJE,valor:val,forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,status:'ativa'};alvo.ofertas.push(o);
         if(o.cid&&!alvo.corretores.some(x=>x.cid===o.cid))alvo.corretores.push({cid:o.cid,principal:!alvo.corretores.some(x=>x.principal)});
-        if(!alvo.neg||!['ativo','stand_by'].includes(alvo.neg.status)){alvo.neg=novaNeg(o.id,Number(F.temp)||null);log(alvo,'Negociação aberta')}
+        if(!alvo.neg||!['ativo','stand_by'].includes(alvo.neg.status)){alvo.neg=novaNeg(o.id,Number(F.temp)||null);log(alvo,'Negociação aberta');etAbriu(alvo)}
         else log(alvo,'Nova oferta registrada')}
       UI.modal=null;UI.nv=null;save();go('terreno',{id:alvo.id,tab:dup?'comercial':'cadastro',from:'terrenos'});toast(dup?'Oferta registrada no terreno existente.':`${alvo.codigo} cadastrado. Complete a ficha quando puder.`);if(!dup&&alvo.insc[0]&&loteBuscavel(alvo.insc[0]))loteBuscar(alvo,0);break}
     case 'oferta':{const o={id:uid(),cid:F.cid||null,data:HOJE,valor:lerNum(F.valor),forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,validade:F.validade||null,status:'ativa'};if(UI.ofPoly)o.poly=UI.ofPoly;t.ofertas.push(o);
       if(o.cid&&!t.corretores.some(x=>x.cid===o.cid))t.corretores.push({cid:o.cid,principal:!t.corretores.some(x=>x.principal)});
-      if(!t.neg||!['ativo','stand_by'].includes(t.neg.status)){t.neg=novaNeg(o.id,null);log(t,'Negociação aberta')}else log(t,`Nova oferta: ${mi(o.valor)}${o.poly?` (parte do terreno, ${m2(Math.round(areaPoly(o.poly)))})`:''}`);
+      if(!t.neg||!['ativo','stand_by'].includes(t.neg.status)){t.neg=novaNeg(o.id,null);log(t,'Negociação aberta');etAbriu(t)}else log(t,`Nova oferta: ${mi(o.valor)}${o.poly?` (parte do terreno, ${m2(Math.round(areaPoly(o.poly)))})`:''}`);
       UI.modal=null;save();render();toast('Oferta registrada.');break}
   }
 });
@@ -6800,7 +6835,7 @@ const etqChip=(e,cls='')=>`<span class="etq etq-${e.cor} ${cls}" title="${esc(e.
 function cardTk({k,t},geral){const at=tkAtras(k),ets=(k.etq||[]).map(id=>S.etiquetas.find(e=>e.id===id)).filter(Boolean);
   const its=(k.checklists||[]).flatMap(c=>c.itens),fe=its.filter(i=>i.feito).length,nc=(k.coments||[]).filter(c=>!c.apagado).length,na=(k.anexos||[]).filter(a=>!a.removido).length;
   const pz=k.prazo?`<span class="tk-b tk-prazo ${k.feita?'feito':at?'atras':''}" title="${k.feita?'Concluída':at?'Atrasada':'Prazo'}">${ic(k.feita?'check':'clock',14)}${fd(k.prazo)}</span>`:'';
-  const ind=[cxSelo(k),apSelo(k),pzSelo(k),vzSelo(k),pz,rcSelo(k),k.desc?`<span class="tk-b" title="Tem descrição">${ic('notas',14)}</span>`:'',
+  const ind=[cxSelo(k),apSelo(k),pzSelo(k),vzSelo(k),etSelo(t,k,true),pz,rcSelo(k),k.desc?`<span class="tk-b" title="Tem descrição">${ic('notas',14)}</span>`:'',
     nc?`<span class="tk-b" title="Comentários">${ic('chat',14)}${nc}</span>`:'',na?`<span class="tk-b" title="Anexos">${ic('clip',14)}${na}</span>`:'',
     its.length?`<span class="tk-b ${fe===its.length?'ok':''}" title="Checklist">${ic('check',14)}${fe}/${its.length}</span>`:'',
     (ns=>ns.length?`<span class="tk-b ${ns.every(x=>x.feita)?'ok':''}" title="Subtarefas">${ic('subt',14)}${ns.filter(x=>x.feita).length}/${ns.length}</span>`:'')(tkSubs(t,k)),
@@ -6843,7 +6878,7 @@ function pgTarefas(){const f=UI.tk;if(f.vista==='tabela')f.vista='lista';const l
     <label class="sr-only" for="tk-ter">Terreno</label><select id="tk-ter" class="fsel-chip${f.ter?' on':''}" data-ch="tk-f" data-k="ter"><option value="">Terreno</option>${opt(Object.fromEntries(ativosBanco().map(t=>[t.id,t.codigo+' · '+t.nome])),f.ter)}</select>
     <label class="sr-only" for="tk-etq">Etiqueta</label><select id="tk-etq" class="fsel-chip${f.etq?' on':''}" data-ch="tk-f" data-k="etq"><option value="">Etiqueta</option>${opt(Object.fromEntries(S.etiquetas.map(e=>[e.id,e.nome])),f.etq)}</select>
     <label class="sr-only" for="tk-prio">Prioridade</label><select id="tk-prio" class="fsel-chip${f.prio?' on':''}" data-ch="tk-f" data-k="prio"><option value="">Prioridade</option>${opt(OPT.prioTar,f.prio)}</select>
-    ${cpoFiltroOpts(f.cp)?`<label class="sr-only" for="tk-cp">Campo</label><select id="tk-cp" class="fsel-chip${f.cp?' on':''}" data-ch="tk-f" data-k="cp"><option value="">Campo</option>${cpoFiltroOpts(f.cp)}</select>`:''}
+    ${etFiltroHtml(f)}${cpoFiltroOpts(f.cp)?`<label class="sr-only" for="tk-cp">Campo</label><select id="tk-cp" class="fsel-chip${f.cp?' on':''}" data-ch="tk-f" data-k="cp"><option value="">Campo</option>${cpoFiltroOpts(f.cp)}</select>`:''}
     <label class="fchk"><input type="checkbox" data-ch="tk-f" data-k="atras" ${f.atras?'checked':''}>${ic('check',16)}Só atrasadas</label>
     <label class="fchk"><input type="checkbox" data-ch="tk-f" data-k="arq" ${f.arq?'checked':''}>${ic('check',16)}Arquivadas</label></div></div>`;
   const t1=f.ter?T(f.ter):null,cols=t1?tkL(t1).filter(x=>!x.oculta):tkColunas(l).map(nome=>({nome}));
@@ -6863,7 +6898,8 @@ function pgTarefas(){const f=UI.tk;if(f.vista==='tabela')f.vista='lista';const l
 const tkVistaFicha=t=>({quadro:1,lista:1,crono:1})[UI.crVista[t.id]]?UI.crVista[t.id]:'lista';
 function tkFichaCab(t){const vf=tkVistaFicha(t),arq=!!UI.tkArqFicha&&vf==='quadro',na=vzTarefas(t).filter(k=>k.arq).length;
   const seg=`<div class="seg sm" role="group" aria-label="Visualização das tarefas">${[['lista','Lista'],['quadro','Quadro'],['crono','Cronograma']].map(([v,n])=>`<button data-a="cr-vista" data-id="${t.id}" data-v="${v}" aria-pressed="${vf===v}">${n}</button>`).join('')}</div>`;
-  return `<span class="tk-sh">${seg}${vf==='quadro'&&(na||arq)?`<button class="btn text sm" data-a="tk-arqficha">${arq?'Voltar ao quadro':`Arquivadas (${na})`}</button>`:''}${tkEd()&&vf==='quadro'?`<button class="btn text sm" data-a="tk-listas" data-id="${t.id}">Listas</button>`:''}${tkEd()?`<button class="btn text sm" data-a="cr-modelos" data-id="${t.id}">Modelos</button>`:''}<button class="btn text sm" data-a="au-abrir" data-v="${t.id}">Automações</button>${vf!=='lista'?tkCheiaBtn():''}${tkEd()?`<button class="btn sm ed" data-a="tk-nova" data-v="" data-id="${t.id}">${ic('add',18)}Nova tarefa</button>`:''}</span>`}
+  const agrF=vf==='lista'?`<label class="sr-only" for="tl-agrf">Agrupar</label><select id="tl-agrf" class="fsel-chip on" data-tl="agrF">${[['status','Agrupar: Status'],['etapa','Agrupar: Etapa']].map(([v,n])=>`<option value="${v}" ${(UI.tl.agrF||'status')===v?'selected':''}>${n}</option>`).join('')}</select>`:'';
+  return `<span class="tk-sh">${seg}${agrF}${vf==='quadro'&&(na||arq)?`<button class="btn text sm" data-a="tk-arqficha">${arq?'Voltar ao quadro':`Arquivadas (${na})`}</button>`:''}${tkEd()&&vf==='quadro'?`<button class="btn text sm" data-a="tk-listas" data-id="${t.id}">Listas</button>`:''}${tkEd()?`<button class="btn text sm" data-a="cr-modelos" data-id="${t.id}">Modelos</button>`:''}<button class="btn text sm" data-a="au-abrir" data-v="${t.id}">Automações</button>${vf!=='lista'?tkCheiaBtn():''}${tkEd()?`<button class="btn sm ed" data-a="tk-nova" data-v="" data-id="${t.id}">${ic('add',18)}Nova tarefa</button>`:''}</span>`}
 const tkFichaSub=t=>{const ab=vzTarefas(t).filter(tkAberta),at=ab.filter(tkAtras).length;return `${ab.length+(ab.length===1?' aberta':' abertas')} · ${at+(at===1?' atrasada':' atrasadas')}`};
 function abaTarefas(t){const vf=tkVistaFicha(t),vc=vf==='crono',arq=!!UI.tkArqFicha&&vf==='quadro',vt=vzTarefas(t),its=vt.filter(k=>arq?k.arq:!k.arq).map(k=>({k,t}));
   const q=vc?crFichaHtml(t):vf==='lista'?tkListaHtml(its,t):tkQuadro(its,tkL(t).filter(l=>!l.oculta),false,t.id,!arq),ch=tkCheiaOn();
@@ -6971,7 +7007,7 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
   const auC=auDoCartao(k),auQ=auDoQuadro(t),auE=auDaEmpresa(),auX=auExecs().filter(x=>x.kid===k.id).slice(0,20),origem=n=>`<span class="chip au-orig">${n}</span>`;
   const conteudo={
     geral:()=>`<div class="tkm-props">${linha('pessoa','Responsável',selU('resp',k.resp,'Sem responsável','tkc-resp'),'tkc-resp')}${linha('cal','Prazo',`<button class="tkm-pzb" data-a="tkc-aba" data-v="prazos" title="Mudar as datas">${k.prazo?`<span class="tkm-chp ${k.feita?'ok':at?'atras':''}">${ic(k.feita?'check':'clock',14)}${fd(k.prazo)}</span>`:'<span class="faint">Sem prazo</span>'}${k.inicio?`<span class="faint">início ${fd(k.inicio)}${k.dur?` · ${k.dur} d`:''}</span>`:''}</button>`)}
-      ${linha('flag','Prioridade',prio,'tkc-pr')}${linha('etq','Etiquetas',etqs)}${itLinhas(t,k,bloq,linha)}</div>${popEtq}
+      ${linha('flag','Prioridade',prio,'tkc-pr')}${linha('etq','Etiquetas',etqs)}${etLinha(t,k,bloq,linha)}${itLinhas(t,k,bloq,linha)}</div>${popEtq}
       <div class="tkm-bloco"><div class="tkm-sh"><h3><label for="tkc-d">Descrição</label></h3></div><textarea id="tkc-d" class="tkm-txt" data-tkc="desc" data-mencao placeholder="Objetivo, instruções e critério de pronto (@ avisa um colega)" ${dis}>${esc(k.desc||'')}</textarea></div>
       ${k.feita||k.resultado?`<div class="tkm-bloco"><div class="tkm-sh"><h3><label for="tkc-r">Resultado</label></h3></div><textarea id="tkc-r" class="tkm-txt" data-tkc="resultado" data-mencao placeholder="O que foi feito ou decidido" ${dis}>${esc(k.resultado||'')}</textarea></div>`:''}
       ${subsH}${checks}
@@ -7006,7 +7042,7 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
   const pz=k.pausas?.some(z=>z.sit==='ativa'),pp=k.pausas?.some(z=>z.sit==='pendente'),dAt=at?crDias(k.prazo,HOJE):0;
   const selos=[at?`<span class="tkm-selo crit">${ic('clock',14)}Atrasada ${dAt} ${dAt===1?'dia':'dias'}</span>`:'',apPend(k)?'<span class="tkm-selo warn">Aguardando aprovação</span>':'',
     pz?'<span class="tkm-selo">Pausada</span>':pp?'<span class="tkm-selo">Pausa pedida</span>':'',k.modelo?'<span class="tkm-selo">Modelo</span>':'',k.rec?.ativa?`<span class="tkm-selo">${ic('repete',14)}Recorrente</span>`:'',
-    vzVis(k)!=='publico'?`<span class="tkm-selo">${ic('lock',14)}${VZ_N[vzVis(k)]}</span>`:''].join('');
+    vzVis(k)!=='publico'?`<span class="tkm-selo">${ic('lock',14)}${VZ_N[vzVis(k)]}</span>`:'',etSelo(t,k)].join('');
   const rot=apRotulo(k),principal=ro||k.arq||k.modelo?'':rot==='Aguardando aprovação'?`<button class="btn tonal" data-a="tkc-aba" data-v="aprov">${ic('escudo',18)}Ver aprovação</button>`
     :`<button class="btn tonal" data-a="tkc-concluir" data-dup="1">${ic('check',18)}${rot||(k.feita?'Reabrir':'Concluir')}</button>`;
   const pausar=pzBotao(k,ro).replace('class="tkm-sb"','class="btn"');
@@ -7327,15 +7363,17 @@ function crPrep(){if(!S.modelos){S.modelos=[crModeloPadrao()]}S.terrenos.forEach
     // em andamento e esperando terceiro, para o cronograma mostrar as cores das listas
     [['Estudo de massa','Fazendo'],['Análise jurídica da matrícula','Aguardando retorno']].forEach(([n,ln])=>{const x=t.tarefas.find(y=>y.titulo===n),l=tkL(t).find(y=>y.nome===ln);if(x&&l)x.lista=l.id})}}
 /* aplica o modelo no quadro do terreno, a partir da data */
-function crAplicar(t,m,data){const mapa={},resp=u=>u===RESP_OBJ?t.resp||null:u||null;
-  m.tarefas.forEach(x=>{const l=tkL(t).find(y=>y.nome===x.lista&&!y.oculta)||tkPrim(t,'aberta');
+function crAplicar(t,m,data,o={}){const mapa={},resp=u=>u===RESP_OBJ?t.resp||null:u||null,novos=[];
+  /* o.pular: tarefas do modelo que já nasceram (não duplica); o.existentes: o cartão delas, para as predecessoras; o.cond: tarefa com condição só nasce se vale (no banco: fluxo.aplicar_modelo_mapa) */
+  m.tarefas.forEach(x=>{if(o.pular?.has(x.id)||(o.cond&&x.cond&&!itCondVale(t,x.cond)))return;novos.push(x);const l=tkL(t).find(y=>y.nome===x.lista&&!y.oculta)||tkPrim(t,'aberta');
     const k=tkCriar(t,{titulo:x.titulo,resp:resp(x.resp),prio:x.prio,lista:l.id,vis:x.vis||'publico'});
     if(x.iniD!=null){k.inicio=k.iniMin=crSomar(data,x.iniD);k.dur=x.dur||1;k.prazo=crSomar(k.inicio,k.dur-1)}
     (x.pessoas||[]).forEach(p=>{const u=resp(p.user);if(u&&!(k[p.papel]||[]).includes(u))k[p.papel]=[...(k[p.papel]||[]),u]});
     k.apModo=x.apModo||'paralelo';k.etq=(x.etq||[]).filter(id=>S.etiquetas.some(e=>e.id===id));k.checklists=(x.cks||[]).map(c=>({id:uid(),nome:c.nome,esconder:false,itens:c.itens.map(s=>typeof s==='string'?{id:uid(),texto:s,resp:null,prazo:null,feito:null}:{id:uid(),texto:s.texto,resp:null,prazo:null,feito:null,regra:s.regra,cond:s.cond?JSON.parse(JSON.stringify(s.cond)):null})}));k.itens=(x.itens||[]).filter(i=>!i.campo||cpoCampos().some(c=>c.id===i.campo&&c.ativo!==false)).map(i=>({...JSON.parse(JSON.stringify(i)),id:uid()}));
     mapa[x.id]=k});
-  m.tarefas.forEach(x=>{mapa[x.id].preds=(x.preds||[]).filter(v=>mapa[v.id]).map(v=>({id:mapa[v.id].id,tipo:v.tipo,def:v.def||0}))});
-  crCascata(t);log(t,`Modelo "${m.nome}" aplicado: ${m.tarefas.length} tarefas`);return m.tarefas.length}
+  const id=v=>mapa[v.id]?.id||o.existentes?.[v.id];
+  novos.forEach(x=>{mapa[x.id].preds=(x.preds||[]).filter(v=>id(v)).map(v=>({id:id(v),tipo:v.tipo,def:v.def||0}))});
+  crCascata(t);if(novos.length&&!o.silencio)log(t,`Modelo "${m.nome}" aplicado: ${novos.length} tarefas`);return o.mapa?mapa:novos.length}
 function crAplicarPadrao(t){const m=crModelos().find(x=>x.padrao&&x.ativo!==false&&!x.dono);if(m&&m.tarefas.length)crAplicar(t,m,HOJE)}
 function crSalvarQuadro(t,nome,daEmpresa){const ks=vzTarefas(t).filter(k=>!k.arq&&!k.feita),base=ks.map(k=>k.inicio).filter(Boolean).sort()[0],mapa={};
   const m={id:uid(),nome,dono:daEmpresa?null:me(),padrao:false,ativo:true,tarefas:[]};
@@ -7368,7 +7406,7 @@ function crModEdHtml(fechar){const m=crModelos().find(x=>x.id===UI.crModEd);if(!
       <label>Aprovador<select data-crm="aprov" ${dis}>${crPessoaOpts((x.pessoas||[]).find(p=>p.papel==='aprov')?.user,'Nenhum')}</select></label>
       <label>Depois de<select data-crm="pred" ${dis}><option value="">Nenhuma</option>${m.tarefas.filter(y=>y.id!==x.id).map(y=>`<option value="${y.id}" ${(x.preds||[])[0]?.id===y.id?'selected':''}>${esc(y.titulo)}</option>`).join('')}</select></label>
       <label>Vínculo<select data-crm="tipo" ${dis||((x.preds||[]).length?'':'disabled')}>${Object.keys(CR_TIPOS).map(k=>`<option ${(x.preds||[])[0]?.tipo===k?'selected':''}>${k}</option>`).join('')}</select></label>
-    </div>${(x.preds||[]).length>1?`<div class="faint">Também depois de: ${x.preds.slice(1).map(v=>esc(nomeT(v.id))).join(', ')}</div>`:''}</div>`).join('')}</div>
+    </div>${(x.preds||[]).length>1?`<div class="faint">Também depois de: ${x.preds.slice(1).map(v=>esc(nomeT(v.id))).join(', ')}</div>`:''}${!m.dono||x.cond?`<div class="cr-mvq">${etVq(`mt:${m.id}:${x.id}`,x.cond,ed&&!m.dono&&ehAdmin(me()))}</div>`:''}</div>`).join('')}</div>
   ${ed?`<form class="tkm-nf" data-form="cr-mt-novo" style="margin-top:12px"><input name="titulo" required placeholder="Nova tarefa do modelo" aria-label="Nova tarefa do modelo"><button class="btn tonal sm" type="submit">Adicionar</button></form>`:''}
   <div class="df"><button class="btn text" data-a="close">Fechar</button>${ed?`<button class="btn text" data-a="cr-mod-desativar" data-v="${m.id}">${m.padrao?'':'Desativar modelo'}</button>`:''}</div>`}
 function crHistHtml(fechar){const t=T(UI.crHist);if(!t)return '';const SIT={pendente:'Aguardando aprovação',aprovada:'Aprovada (vale agora)',recusada:'Recusada',substituida:'Substituída',cancelada:'Cancelada'};
@@ -8072,11 +8110,11 @@ function itRowHtml(it,p){const d=it.campo?itDef(it.campo):null,busca=UI.itCond.b
   return `<div class="it-cd">${campo}${d?`<select class="tkm-pill" data-itco="${p}" aria-label="Operador"><option value="">Operador</option>${IT_OPS[d.tipo].map(o=>`<option value="${o}" ${it.op===o?'selected':''}>${IT_OP[o]}</option>`).join('')}</select>`:''}${val.startsWith('<span class="it-vals"')?'':val}
     <button class="iconbtn sm it-cx" data-a="it-c-tira" data-p="${p}" aria-label="Tirar condição" title="Tirar">${ic('close',16)}</button>${val.startsWith('<span class="it-vals"')?val:''}</div>`}
 function itModoHtml(c,p){return `<span class="it-seg" role="group" aria-label="Como as condições se juntam"><button class="${c.modo!=='qualquer'?'on':''}" data-a="it-c-modo" data-p="${p}" data-v="todas" aria-pressed="${c.modo!=='qualquer'}">todas</button><button class="${c.modo==='qualquer'?'on':''}" data-a="it-c-modo" data-p="${p}" data-v="qualquer" aria-pressed="${c.modo==='qualquer'}">qualquer uma</button></span>`}
-function itCondHtml(fechar){const E=UI.itCond,{t,k}=tkAtual();if(!E||!k)return `<div class="dh"><h2>Condição</h2>${fechar}</div>`;const c=E.cond;
+function itCondHtml(fechar){const E=UI.itCond,{t,k}=tkAtual();if(!E||(!k&&!E.ext))return `<div class="dh"><h2>Condição</h2>${fechar}</div>`;const c=E.cond;
   const rows=c.itens.map((it,i)=>it.grupo?`<div class="it-grp"><div class="it-vqh"><span class="faint">Grupo</span>${itModoHtml(it.grupo,i+'')}<button class="iconbtn sm" data-a="it-c-tira" data-p="${i}" aria-label="Tirar grupo" title="Tirar grupo">${ic('close',16)}</button></div>
       ${it.grupo.itens.map((x,j)=>itRowHtml(x,i+'.'+j)).join('')}<button class="tkm-add" data-a="it-c-mais" data-p="${i}">${ic('add',16)}Condição no grupo</button></div>`:itRowHtml(it,i+'')).join('');
   const e=itCondErro(c);
-  return `<div class="dh"><div><h2>Vale quando</h2><div class="muted" style="margin-top:4px">${esc(k.codigo)} · ${esc(itCondNome(t,k,E.alvo))}</div></div>${fechar}</div>
+  return `<div class="dh"><div><h2>Vale quando</h2><div class="muted" style="margin-top:4px">${E.ext?esc(E.ext.titulo):`${esc(k.codigo)} · ${esc(itCondNome(t,k,E.alvo))}`}</div></div>${fechar}</div>
   <div class="it-vq-box"><div class="it-vqh"><b>Valem</b>${itModoHtml(c,'')}</div>${rows}
     <div class="it-adds"><button class="tkm-add" data-a="it-c-mais" data-p="">${ic('add',16)}Condição</button><button class="tkm-add" data-a="it-c-grupo">${ic('add',16)}Grupo</button></div></div>
   <p class="it-frase">Em palavras: <b>${e?esc(e):'a regra vale quando '+esc(itCondFrase(c))+'.'}</b></p>
@@ -8126,7 +8164,9 @@ document.addEventListener('change',e=>{const el=e.target;
     else E[ch]={...cur,[el.dataset.itcfg]:el.checked};save();render();toast('Campo atualizado.');return}},true);
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="it-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const A=a.dataset.a;
   if(A==='it-cfgf'){UI.itCfgF=a.dataset.v;render();return}
-  const {t,k}=tkAtual();if(!k)return;
+  /* condição de fora do cartão (regra da etapa, checklist, pré-requisito, tarefa do modelo; proto_etapa.js) */
+  if(UI.itCond?.ext&&(A==='it-c-salva'||A==='it-c-cancela')){const E=UI.itCond;if(A==='it-c-salva'){const er=itCondErro(E.cond);if(er){toast(er,true);return}E.ext.salvar(E.cond.itens.length?E.cond:null)}UI.itCond=null;E.ext.voltar();return}
+  const {t,k}=tkAtual();if(!k&&!UI.itCond?.ext)return;
   switch(A){
     case 'it-inclui':{if(!vzEdita(t,k))return;itNorm(k).push({id:uid(),chave:a.dataset.v||undefined,campo:a.dataset.c||undefined,regra:'livre',cond:null});UI.tkPop=null;UI.itBusca='';
       log(t,`Tarefa "${k.titulo}": campo ${itNome(k.itens.at(-1))} incluído no cartão`);tkRe();return}
@@ -8391,13 +8431,15 @@ const tkPrioChip=k=>`<span class="tl-pr ${k.prio}">${OPT.prioTar[k.prio]||'—'}
 
 /* ---------- Lista ---------- */
 function tlGrupos(itens,ficha){const g=new Map(),add=(key,nome,cls,x)=>{if(!g.has(key))g.set(key,{key,nome,cls,itens:[]});g.get(key).itens.push(x)};
-  const agr=ficha?'status':UI.tl.agr;
+  const agr=ficha?(UI.tl.agrF||'status'):UI.tl.agr;
   itens.forEach(x=>{const {t,k}=x;
     if(agr==='terreno')add('t:'+t.id,`${t.codigo} · ${t.nome}`,'',x);
     else if(agr==='resp')add('r:'+(k.resp||''),k.resp||'Sem responsável','',x);
+    else if(agr==='etapa')add('e:'+(k.etapa?k.fase+'|'+k.etapa:''),k.etapa?`${faseN(k.fase)} › ${etNomeE(k.fase,k.etapa)}`:'Sem etapa','',x);
     else{const l=tkLista(t,k),c=tkStCls(l);add('s:'+(ficha?l.id:l.nome),l.nome,c,x)}});
   const ordemSt=['fazendo','aguardando','fazer','pausa','feito'];
-  return [...g.values()].sort((a,b)=>agr==='status'?(ordemSt.indexOf(a.cls)-ordemSt.indexOf(b.cls))||(a.nome==='Backlog')-(b.nome==='Backlog'):a.nome.localeCompare(b.nome))}
+  const ordemE=x=>{if(x.key==='e:')return 9e9;const [f,e]=x.key.slice(2).split('|');return fIdx(f)*1000+etIx(f,e)};
+  return [...g.values()].sort((a,b)=>agr==='status'?(ordemSt.indexOf(a.cls)-ordemSt.indexOf(b.cls))||(a.nome==='Backlog')-(b.nome==='Backlog'):agr==='etapa'?ordemE(a)-ordemE(b):a.nome.localeCompare(b.nome))}
 function tlLinha({k,t},geral,sub){const ets=(k.etq||[]).map(id=>S.etiquetas.find(e=>e.id===id)).filter(Boolean),ns=tkSubs(t,k),nf=ns.filter(x=>x.feita).length;
   return `<div class="tl-r ${sub?'sub':''} ${k.feita?'feito':''}" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}" data-mid="${k.id}" tabindex="0" role="button" aria-label="${escT(k.titulo)}">
     <span class="tl-c tl-tit">${tkAnel(t,k)}<span class="tl-t">${escT(k.titulo)}</span>${ns.length?`<span class="tl-ns faint" title="Subtarefas concluídas">${ic('subt',14)}${nf}/${ns.length}</span>`:''}${vzSelo(k)}</span>
@@ -8413,10 +8455,10 @@ function tkListaHtml(itens,ficha){const tid=ficha?ficha.id:null,ids=new Set(iten
   return `<div class="tl ${geral?'':'ficha'}">${G.map(g=>{const fe=!!UI.tl.fech[g.key],n=g.itens.length;
     const cab=`<div class="tl-gh"><button class="iconbtn sm" data-a="tl-grupo" data-v="${esc(g.key)}" aria-expanded="${!fe}" aria-label="${fe?'Abrir':'Fechar'} ${esc(g.nome)}">${ic(fe?'chev':'chevD',18)}</button>
       ${g.cls?`<span class="tl-st st-${g.cls}">${esc(g.nome)}</span>`:`<b class="tl-gn">${esc(g.nome)}</b>`}<span class="faint">${n}</span>
-      ${tkEd()&&(UI.tl.agr==='status'||ficha)&&g.cls!=='feito'&&g.cls!=='pausa'?`<button class="tkm-add tl-add" data-a="tk-nova" data-v="${esc(g.nome)}"${tid?` data-id="${tid}"`:''} aria-label="Adicionar tarefa em ${esc(g.nome)}">${ic('add',16)}Adicionar tarefa</button>`:''}</div>`;
+      ${tkEd()&&(ficha?(UI.tl.agrF||'status'):UI.tl.agr)==='status'&&g.cls!=='feito'&&g.cls!=='pausa'?`<button class="tkm-add tl-add" data-a="tk-nova" data-v="${esc(g.nome)}"${tid?` data-id="${tid}"`:''} aria-label="Adicionar tarefa em ${esc(g.nome)}">${ic('add',16)}Adicionar tarefa</button>`:''}</div>`;
     return `<section class="tl-g">${cab}${fe?'':`<div class="tl-tab" role="table"><div class="tl-r tl-h" role="row"><span class="tl-c">Tarefa</span>${geral?'<span class="tl-c">Terreno</span>':''}<span class="tl-c">Responsável</span><span class="tl-c">Prazo</span><span class="tl-c">Prioridade</span><span class="tl-c">Etiquetas</span></div>
       ${g.itens.sort(ordemTk).map(x=>tlLinha(x,geral,false)+filhas(x.k.id).map(y=>tlLinha(y,geral,true)).join('')).join('')}</div>`}</section>`}).join('')}</div>`}
-const tlAgrHtml=()=>`<label class="sr-only" for="tl-agr">Agrupar</label><select id="tl-agr" class="fsel-chip on" data-tl="agr">${[['status','Agrupar: Status'],['terreno','Agrupar: Terreno'],['resp','Agrupar: Responsável']].map(([v,n])=>`<option value="${v}" ${UI.tl.agr===v?'selected':''}>${n}</option>`).join('')}</select>`;
+const tlAgrHtml=()=>`<label class="sr-only" for="tl-agr">Agrupar</label><select id="tl-agr" class="fsel-chip on" data-tl="agr">${[['status','Agrupar: Status'],['terreno','Agrupar: Terreno'],['resp','Agrupar: Responsável'],['etapa','Agrupar: Etapa']].map(([v,n])=>`<option value="${v}" ${UI.tl.agr===v?'selected':''}>${n}</option>`).join('')}</select>`;
 
 /* ---------- Calendário ---------- */
 const DIAS_SEM=['dom','seg','ter','qua','qui','sex','sáb'];
@@ -8451,7 +8493,7 @@ window.addEventListener('click',e=>{const a=e.target.closest?.('[data-a="tl-feit
   /* concluir pelo círculo: com aprovador, abre o cartão na aba Aprovação */
   if(!k.feita&&apPrecisa(k)){UI.tkSel={tid:t.id,kid:k.id};UI.tkAba='aprov';UI.tkPop=null;UI.modal='tarefa';renderModal();return}
   tkConcluir(t,k,!k.feita);save();render()},true);
-document.addEventListener('change',e=>{const el=e.target;if(el.dataset?.tl!=='agr')return;e.stopImmediatePropagation();UI.tl.agr=el.value;render()},true);
+document.addEventListener('change',e=>{const el=e.target;if(el.dataset?.tl!=='agr'&&el.dataset?.tl!=='agrF')return;e.stopImmediatePropagation();UI.tl[el.dataset.tl]=el.value;render()},true);
 /* arrastar no calendário: muda o prazo (no banco, o mesmo update de prazo, com a cascata do cronograma) */
 let tcArr=null;
 document.addEventListener('dragstart',e=>{const c=e.target.closest?.('[data-tcarr]');if(!c)return;tcArr=c.dataset.tcarr;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',tcArr);c.classList.add('arrastando');document.body.classList.add('dnd-tc')});
@@ -9251,12 +9293,12 @@ function pgFaseBoard(f){const fc=faseCfg(f),es=etapasF(f),L=fxLista('kanban').ma
   return `<section class="col ${c.cls||''}" data-col="${c.k}" aria-label="${esc(c.l)}"><div class="col-h">${c.abre?colDesce('neg-etapa',c.abre,c.l,'Ver subetapas de '+c.l):`<span>${esc(c.l)}</span>`}<span class="n">${ts.length}</span></div>${c.sla?`<div class="col-s faint">SLA ${c.sla} d</div>`:''}${ts.map(([t,p])=>kcardProc(t,p)).join('')||'<div class="col-empty">Nenhuma</div>'}</section>`}).join('')}</div>`}
 function soltarProc(id,col){const t=T(id),f=UI.negFase,p=t&&procAberto(t,f);if(!p||UI.role==='Leitura')return;
   if(col==='stand_by'){if(p.status==='ativo'){UI.alvo=id;UI.alvoProc=p.id;UI.modal='p-suspender';renderModal()}return}
-  if(col.startsWith('sub:')){const k=col.slice(4);if(p.status!=='ativo'||p.etapa!==UI.negEtapa||p.sub===k)return;procIr(t,p,'subetapa',k);save();render();toast(`${t.nome}: ${subF(f,k)?.nome}.`);return}
+  if(col.startsWith('sub:')){const k=col.slice(4);if(p.status!=='ativo'||p.etapa!==UI.negEtapa||p.sub===k)return;if(procIr(t,p,'subetapa',k)===false)return;save();render();toast(`${t.nome}: ${subF(f,k)?.nome}.`);return}
   if(p.status==='stand_by'){procRetomar(t,p);if(p.etapa===col){save();render();toast('Retomada.');return}}
   if(p.etapa===col){save();render();return}
   const es=etapasF(f),ix=k=>es.findIndex(e=>e.k===k);
   if(ix(col)<ix(p.etapa)){save();render();UI.alvo=id;UI.alvoProc=p.id;UI.alvoEtapa=col;UI.modal='p-retornar';renderModal();return}
-  procIr(t,p,'etapa',col);save();render();toast(`${t.nome}: ${etapaF(f,col).nome}.`)}
+  if(procIr(t,p,'etapa',col)===false)return;save();render();toast(`${t.nome}: ${etapaF(f,col).nome}.`)}
 
 /* ---------- Configurações › Fases ---------- */
 const slug=(nome,usados)=>{let k=nome.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')||'x';while(usados.includes(k))k+='_';return k};
@@ -9300,7 +9342,7 @@ function fasesClick(A,a,t){const P=()=>t&&procsDe(t).find(p=>p.id===a.dataset.p)
       if(!falta.length){abrirFase(t,f);abrirLiberadas(t);save();render();toast(`${faseN(f)} aberta.`);return true}
       UI.acao={fase:f,pend:falta.map(x=>x.txt)};UI.modal=nivelDe(me())>=2?'f-forcar':'f-bloq';renderModal();return true}
     case 'p-ir':{const p=P();if(!p)return true;const es=etapasF(p.fase),ix=es.findIndex(e=>e.k===p.etapa);
-      if(es[ix+1]){procIr(t,p,'etapa',es[ix+1].k);save();render();toast(`${t.nome}: ${es[ix+1].nome}.`)}else{UI.alvoProc=p.id;UI.modal='p-concluir';renderModal()}return true}
+      if(es[ix+1]){if(procIr(t,p,'etapa',es[ix+1].k)===false)return true;save();render();toast(`${t.nome}: ${es[ix+1].nome}.`)}else{if(etBloqProc(t,p,'status','concluido'))return true;UI.etJust=null;UI.alvoProc=p.id;UI.modal='p-concluir';renderModal()}return true}
     case 'p-suspender':UI.alvoProc=a.dataset.p;UI.modal='p-suspender';renderModal();return true;
     case 'p-descartar':UI.alvoProc=a.dataset.p;UI.modal='p-descartar';renderModal();return true;
     case 'p-retomar':{const p=P();if(p){procRetomar(t,p);save();render();toast('Retomada. O tempo parado não conta no prazo.')}return true}
@@ -9317,7 +9359,7 @@ function fasesClick(A,a,t){const P=()=>t&&procsDe(t).find(p=>p.id===a.dataset.p)
   }
   return false}
 function fasesChange(el){
-  if(el.dataset.ch==='psub'){const t=T(UI.id),p=t&&procsDe(t).find(x=>x.id===el.dataset.p);if(p&&el.value!==p.sub){procIr(t,p,'subetapa',el.value);save();render()}return true}
+  if(el.dataset.ch==='psub'){const t=T(UI.id),p=t&&procsDe(t).find(x=>x.id===el.dataset.p);if(p&&el.value!==p.sub){if(procIr(t,p,'subetapa',el.value)===false){render();return true}save();render()}return true}
   if(el.dataset.ch==='cfg-prefixo'){const F=fasesL(),i=+el.dataset.i,v=el.value.trim().toUpperCase();
     if(!/^[A-Z]{2,5}$/.test(v))toast('Prefixo: de 2 a 5 letras.',true);else if(F.some((f,j)=>j!==i&&f.prefixo===v))toast(`O prefixo ${v} já é de outra fase.`,true);else{F[i].prefixo=v;save();toast('Prefixo salvo.')}render();return true}
   if(el.dataset.ch==='cfg-fase-ativa'){const f=fasesL()[+el.dataset.i];
@@ -9342,11 +9384,11 @@ function fasesSubmit(form,F,t,f){const C=cfg();
       e.subs.push({k:slug(nome,fs.etapas.flatMap(x=>[x.k,...x.subs.map(s=>s.k)])),nome});save();render();return true}
     case 'f-forcar':{const a=UI.acao;if(!F.j.trim()){toast('Justifique a abertura antes da hora.',true);return true}abrirFase(t,a.fase,F.j.trim());abrirLiberadas(t);UI.modal=null;UI.acao=null;save();render();toast(`${faseN(a.fase)} aberta.`);return true}
     case 'p-concluir':{const p=procsDe(t).find(x=>x.id===UI.alvoProc);if(!F.relato.trim()){toast('Escreva o relato da conclusão.',true);return true}
-      UI.modal=null;procIr(t,p,'status','concluido',{relato:F.relato.trim()});save();render();toast(`${faseN(p.fase)}: ${faseCfg(p.fase).conc}.`);return true}
+      UI.modal=null;if(procIr(t,p,'status','concluido',{relato:F.relato.trim(),forcado:UI.etJust||null})===false)return true;UI.etJust=null;save();render();toast(`${faseN(p.fase)}: ${faseCfg(p.fase).conc}.`);return true}
     case 'p-suspender':{const p=procsDe(t).find(x=>x.id===UI.alvoProc);UI.modal=null;procIr(t,p,'status','stand_by',{retomar:F.retomar,detalhe:F.detalhe.trim()});save();render();toast('Em Stand By.');return true}
     case 'p-descartar':{const p=procsDe(t).find(x=>x.id===UI.alvoProc),m=(C.motivos.descartado||[]).find(x=>x.k===F.motivo);
       if(m?.texto&&!F.detalhe.trim()){toast('Esse motivo pede uma explicação no texto.',true);return true}
-      UI.modal=null;procIr(t,p,'status','descartado',{motivo:F.motivo,detalhe:F.detalhe.trim()});save();render();toast(`${faseN(p.fase)}: descartada.`);return true}
+      UI.modal=null;procIr(t,p,'status','descartado',{motivo:F.motivo,detalhe:F.detalhe.trim(),tarefas:F.tarefas||'arquivar'});save();render();toast(`${faseN(p.fase)}: descartada.`);return true}
     case 'p-retornar':{const p=procsDe(t).find(x=>x.id===UI.alvoProc);UI.modal=null;procIr(t,p,'etapa',UI.alvoEtapa,{motivo:F.motivo});save();render();toast(`Voltou para ${etapaF(p.fase,p.etapa).nome}.`);return true}
   }
   return false}
@@ -9396,10 +9438,10 @@ const subAtrasada=n=>{const c=subCfg(n.sub);return !!(n.status==='ativo'&&c&&c.p
 const etapaAtrasada=n=>{const c=etapaCfg(n.etapa);return !!(n.status==='ativo'&&c&&c.sla&&diff(n.desde,HOJE)>c.sla)};
 /* pendências para chegar ao destino: pré-requisitos configurados; ao sair de uma etapa, o checklist dela; na compra, diligência impeditiva */
 function pendencias(t,tipo,dest){const n=t.neg,L=[];
-  cfg().prereq.filter(p=>p.alvoTipo===tipo&&p.alvo===dest).forEach(p=>{const ok=passouPor(n,p.req);
+  cfg().prereq.filter(p=>p.alvoTipo===tipo&&p.alvo===dest&&itCondVale(t,p.cond)).forEach(p=>{const ok=passouPor(n,p.req);
     L.push({ok,txt:ok?`Passou por ${subN(p.req)}`:`Passar antes por ${subN(p.req)} (${SN(subCfg(p.req)?.etapa)})`,fix:null})});
   const saindo=((tipo==='etapa'&&SIDX(dest)>SIDX(n.etapa))||(tipo==='status'&&dest==='comprado'))&&!(!t._parte&&dividida(t));
-  if(saindo){(cfg().checklist[n.etapa]||[]).filter(c=>c.obrig).forEach(({doc})=>{const st=docSt(t.docs.find(d=>d.tipo===doc));
+  if(saindo){(cfg().checklist[n.etapa]||[]).filter(c=>c.obrig&&itCondVale(t,c.cond)).forEach(({doc})=>{const st=docSt(t.docs.find(d=>d.tipo===doc));
       L.push({ok:st==='validado',txt:TIPOS_DOC[doc][0]+(st==='validado'?' validado':st==='pendente'?': não enviado':st==='recebido'?': aguardando validação':': '+st),fix:st==='validado'?null:['tab:documentos','Ver documentos']})})}
   if(tipo==='status'&&dest==='comprado'&&!t._parte)t.dilig.filter(d=>d.sit==='impeditiva').forEach(d=>L.push({ok:false,txt:'Diligência impeditiva: '+d.titulo,fix:['tab:documentos','Ver diligências']}));
   return L.concat(pendPartes(t,tipo,dest))}
@@ -9584,19 +9626,20 @@ function tentar(t,tipo,dest,dados){const r=moverPara(t,tipo,dest,{dados});save()
   toast(r.erro,true);return r}
 
 /* ---------- Configurações › Funil (só administrador) ---------- */
-const TIPOS_NOTIF_N={tarefa_atribuida:'Tarefa atribuída a você',mencao:'Mencionado com @',tarefa_prazo:'Prazo de tarefa chegando',tarefa_atrasada:'Tarefa atrasada',tarefa_acompanhada:'Tarefa que você acompanha (comentário ou conclusão)',automacao:'Aviso de automação de tarefas',subetapa_prazo:'Subetapa passou do prazo',stand_by_retomar:'Data de retomar um Stand By',documento_vencendo:'Documento vencendo',reuniao_agendada:'Reunião agendada',aprovacao_pendente:'Pedido de aprovação para você',aprovacao_decidida:'Seu pedido foi aprovado ou recusado'};
+const TIPOS_NOTIF_N={pode_avancar:'Tarefas da etapa concluídas (pode avançar)',etapa_deixada:'Tarefa de etapa deixada',tarefa_atribuida:'Tarefa atribuída a você',mencao:'Mencionado com @',tarefa_prazo:'Prazo de tarefa chegando',tarefa_atrasada:'Tarefa atrasada',tarefa_acompanhada:'Tarefa que você acompanha (comentário ou conclusão)',automacao:'Aviso de automação de tarefas',subetapa_prazo:'Subetapa passou do prazo',stand_by_retomar:'Data de retomar um Stand By',documento_vencendo:'Documento vencendo',reuniao_agendada:'Reunião agendada',aprovacao_pendente:'Pedido de aprovação para você',aprovacao_decidida:'Seu pedido foi aprovado ou recusado'};
 const apCells=(p,c)=>`<label class="chk"><input type="checkbox" data-ch="cfg" data-p="${p}.g" ${c.g?'checked':''}>Gestor</label><label class="chk"><input type="checkbox" data-ch="cfg" data-p="${p}.d" ${c.d?'checked':''}>Diretor</label>${c.g&&c.d?`<select data-ch="cfg" data-p="${p}.modo" aria-label="Ordem das aprovações"><option value="sequencia" ${c.modo!=='paralelo'?'selected':''}>Em sequência</option><option value="paralelo" ${c.modo==='paralelo'?'selected':''}>Em paralelo</option></select>`:''}`;
 const usada=k=>S.terrenos.some(t=>t.neg&&(t.neg.sub===k||(t.neg.trilha||[]).some(x=>x.paraSub===k||x.deSub===k)));
 function pgConfig(){
   if(!ehAdmin(me()))return `<div class="page-h"><div><h1>Configurações</h1></div></div><section class="sec"><div class="sec-b"><div class="empty">Só administradores alteram a configuração do funil. Teste como Diretor (Moisés é administrador).</div></div></section>`;
   const C=cfg(),aba=UI.cfgAba||'fases';
-  const abas=[['fases','Fases'],['funil','Etapas de '+faseN(faseEnt())],['prereq','Pré-requisitos'],['status','Status e motivos'],['checklist','Checklist'],['notif','Notificações'],['equipe','Equipe'],['viab','Viabilidade'],['zonas','Parâmetros urbanísticos'],['campos','Campos'],['tarefas','Tarefas']];
+  const abas=[['fases','Fases'],['funil','Etapas de '+faseN(faseEnt())],['prereq','Pré-requisitos'],['status','Status e motivos'],['checklist','Checklist'],['etapaTar','Tarefas da etapa'],['notif','Notificações'],['equipe','Equipe'],['viab','Viabilidade'],['zonas','Parâmetros urbanísticos'],['campos','Campos'],['tarefas','Tarefas']];
   let corpo='';
   if(aba==='fases')corpo=cfgFasesHtml();
   if(aba==='viab')corpo=cfgViabHtml();
   if(aba==='zonas')corpo=cfgZonasHtml();
   if(aba==='tarefas')corpo=cfgTarefasHtml();
   if(aba==='campos')corpo=itCfgCamposHtml();
+  if(aba==='etapaTar')corpo=etCfgHtml();
   if(aba==='funil')corpo=`<section class="sec"><div class="sec-h"><h2>Etapas de ${esc(faseN(faseEnt()))}</h2></div><div class="sec-b"><div class="cfg-t">
     <div class="cfg-r cfg-hd"><span>Etapa</span><span>SLA (dias)</span><span>Aprovação para entrar</span></div>
     ${C.etapas.map((e,i)=>`<div class="cfg-r"><input data-ch="cfg" data-p="etapas.${i}.nome" value="${esc(e.nome)}" aria-label="Nome da etapa"><input type="number" min="0" data-ch="cfg" data-p="etapas.${i}.sla" value="${e.sla??''}" aria-label="SLA de ${esc(e.nome)}"><span class="cfg-ap">${apCells('etapas.'+i,e)}</span></div>`).join('')}</div><p class="cfg-nota">Criar, ordenar e desativar etapas fica em <button type="button" class="linkbtn" data-a="cfg-aba" data-v="fases">Fases</button>.</p></div></section>
@@ -9612,7 +9655,7 @@ function pgConfig(){
   if(aba==='prereq'){const opAlvo=`<optgroup label="Etapas">${C.etapas.map(e=>`<option value="etapa:${e.k}">${esc(e.nome)}</option>`).join('')}</optgroup>${C.etapas.map(e=>`<optgroup label="Subetapas de ${esc(e.nome)}">${subsDe(e.k).map(s=>`<option value="subetapa:${s.k}">${esc(s.nome)}</option>`).join('')}</optgroup>`).join('')}`;
     const opReq=C.etapas.map(e=>`<optgroup label="${esc(e.nome)}">${subsDe(e.k).map(s=>`<option value="${s.k}">${esc(s.nome)}</option>`).join('')}</optgroup>`).join('');
     corpo=`<section class="sec"><div class="sec-h"><h2>Pré-requisitos</h2></div><div class="sec-b">
-    <ul class="cfg-pre">${C.prereq.map(p=>`<li><span>Para entrar em <b>${esc(destinoNome(p.alvoTipo,p.alvo))}</b>${p.alvoTipo==='etapa'?' (etapa)':''}, precisa ter passado por <b>${esc(subN(p.req))}</b></span><button class="iconbtn sm lixo" data-a="cfg-pre-del" data-v="${p.id}" aria-label="Remover" title="Remover">${ic('lixo',18)}</button></li>`).join('')||'<li class="faint">Nenhuma regra. Todas as passagens são livres.</li>'}</ul>
+    <ul class="cfg-pre">${C.prereq.map(p=>`<li><span>Para entrar em <b>${esc(destinoNome(p.alvoTipo,p.alvo))}</b>${p.alvoTipo==='etapa'?' (etapa)':''}, precisa ter passado por <b>${esc(subN(p.req))}</b>${etVq('pr:'+p.id,p.cond)}</span><button class="iconbtn sm lixo" data-a="cfg-pre-del" data-v="${p.id}" aria-label="Remover" title="Remover">${ic('lixo',18)}</button></li>`).join('')||'<li class="faint">Nenhuma regra. Todas as passagens são livres.</li>'}</ul>
     <form class="inline-form" data-form="cfg-pre"><div class="field grow"><label for="pr-a">Para entrar em</label><select id="pr-a" name="alvo" required>${opAlvo}</select></div><div class="field grow"><label for="pr-r">Precisa ter passado por</label><select id="pr-r" name="req" required>${opReq}</select></div><button class="btn sm">${ic('add',16)}Adicionar regra</button></form></div></section>`}
   if(aba==='status')corpo=`<section class="sec"><div class="sec-h"><h2>Status</h2></div><div class="sec-b"><div class="cfg-t"><div class="cfg-r cfg-hd cfg-st"><span>Status</span><span>Aprovação</span></div>
     ${Object.entries(C.status).map(([k,s])=>`<div class="cfg-r cfg-st"><span>${STATUS_N[k]}</span><span class="cfg-ap">${apCells('status.'+k,s)}</span></div>`).join('')}</div>
@@ -9621,7 +9664,7 @@ function pgConfig(){
     ${C.motivos[st].map((m,i)=>`<div class="cfg-r cfg-mot ${m.ativo?'':'inativa'}"><input data-ch="cfg" data-p="motivos.${st}.${i}.nome" value="${esc(m.nome)}" aria-label="Motivo"><label class="chk"><input type="checkbox" data-ch="cfg" data-p="motivos.${st}.${i}.texto" ${m.texto?'checked':''} aria-label="Exige texto"></label><label class="chk"><input type="checkbox" data-ch="cfg" data-p="motivos.${st}.${i}.ativo" ${m.ativo?'checked':''} aria-label="Ativo"></label></div>`).join('')}</div>
     <form class="inline-form" data-form="cfg-mot" data-s="${st}"><div class="field grow"><label for="mt-${st}">Novo motivo</label><input id="mt-${st}" name="nome" required></div><button class="btn sm">${ic('add',16)}Adicionar</button></form></div></section>`).join('')}`;
   if(aba==='checklist')corpo=C.etapas.map(e=>{const L=C.checklist[e.k]||[];return `<section class="sec"><div class="sec-h"><h2>Para sair de ${esc(e.nome)}</h2></div><div class="sec-b"><div class="cfg-docs">${Object.entries(TIPOS_DOC).filter(([k])=>!['foto','planta','ata'].includes(k)).map(([k,[l]])=>{const c=L.find(x=>x.doc===k);
-      return `<button class="fchip" data-a="cfg-doc" data-e="${e.k}" data-v="${k}" aria-pressed="${!!c}" title="${c?(c.obrig?'Obrigatório: clique para tornar opcional':'Opcional: clique para tirar'):'Fora do checklist: clique para exigir'}">${c?ic(c.obrig?'check':'clock',16):''}${esc(l)}${c&&!c.obrig?' <span class="faint">(opcional)</span>':''}</button>`}).join('')}</div></div></section>`}).join('')+'<div class="hint" style="margin:0 4px">Clique para alternar: obrigatório, opcional, fora do checklist. O obrigatório trava a saída da etapa (gestor e diretor passam com justificativa).</div>';
+      return `<button class="fchip" data-a="cfg-doc" data-e="${e.k}" data-v="${k}" aria-pressed="${!!c}" title="${c?(c.obrig?'Obrigatório: clique para tornar opcional':'Opcional: clique para tirar'):'Fora do checklist: clique para exigir'}">${c?ic(c.obrig?'check':'clock',16):''}${esc(l)}${c&&!c.obrig?' <span class="faint">(opcional)</span>':''}</button>`}).join('')}</div>${etCkCondHtml(e.k)}</div></section>`}).join('')+'<div class="hint" style="margin:0 4px">Clique para alternar: obrigatório, opcional, fora do checklist. O obrigatório trava a saída da etapa (gestor e diretor passam com justificativa); com "Vale quando", só quando a condição vale.</div>';
   if(aba==='notif')corpo=`<section class="sec"><div class="sec-h"><h2>Notificações</h2></div><div class="sec-b"><div class="cfg-t"><div class="cfg-r cfg-hd cfg-nt"><span>Tipo</span><span>Ativa</span><span>E-mail</span><span>Lembretes (dias antes)</span></div>
     ${Object.entries(C.notif).map(([k,c])=>`<div class="cfg-r cfg-nt"><span>${TIPOS_NOTIF_N[k]||k}</span><label class="chk"><input type="checkbox" data-ch="cfg" data-p="notif.${k}.ativo" ${c.ativo?'checked':''} aria-label="Ativa"></label><label class="chk"><input type="checkbox" data-ch="cfg" data-p="notif.${k}.email" ${c.email?'checked':''} aria-label="Também por e-mail, para quem não escolheu"></label>${c.dias?`<input data-ch="cfg-dias" data-k="${k}" value="${c.dias.join(', ')}" placeholder="Ex.: 7, 1, 0" aria-label="Lembretes de ${TIPOS_NOTIF_N[k]}">`:'<span class="faint">Na hora</span>'}</div>`).join('')}</div>
     </div></section>`;
@@ -9694,7 +9737,7 @@ function funilSubmit(form,F,t,f){
   switch(form){
     case 'perder':case 'descartar':{const st=form==='perder'?'perdido':'descartado',m=(cfg().motivos[st]||[]).find(x=>x.k===F.motivo);
       if(m?.texto&&!F.detalhe.trim()){toast('Esse motivo pede uma explicação no texto.',true);return true}
-      UI.modal=null;tentar(t,'status',st,{motivo:F.motivo,detalhe:F.detalhe.trim()});return true}
+      UI.modal=null;tentar(t,'status',st,{motivo:F.motivo,detalhe:F.detalhe.trim(),tarefas:F.tarefas||'arquivar'});return true}
     case 'suspender':UI.modal=null;tentar(t,'status','stand_by',{retomar:F.retomar,detalhe:F.detalhe.trim()});return true;
     case 'comprar':{const rel=limpaHtml($('#cp-rel')?.innerHTML||'');if(!textoDe(rel)){toast('Escreva o relato da compra.',true);return true}
       const pend=UI.acao?.pend||[];if(pend.length&&!F.j?.trim()){toast('Justifique a compra sem os requisitos.',true);return true}
@@ -12955,6 +12998,7 @@ function auEvento(t,k,gat,x={}){if(UI.auRodando||!k||k.modelo||k.arq)return 0;le
     if(gat==='entrou_lista'&&r.gLista&&auLista(t,r,r.gLista)?.id!==x.lista)continue;
     if(gat==='etiqueta'&&r.gEtq&&r.gEtq!==x.etq)continue;
     if(gat==='campo'&&r.gCampo&&r.gCampo!==x.campo)continue;
+    if(gat==='etapa'&&r.gEtapa&&r.gEtapa!==x.etapa)continue;
     if(x.ref&&auExecs().some(e=>e.aid===r.id&&e.kid===k.id&&e.ref===x.ref))continue;
     if(!auDonoVale(r)||(r.tid&&!vzPapel(t,k,r.dono))||!auCondOk(t,r,k))continue;
     auExecutar(t,r,k,x.ref);n++}
@@ -13161,7 +13205,7 @@ document.addEventListener('submit',e=>{const f=e.target;if(f.dataset?.form!=='au
   r.nome=(f.querySelector('#au-nome')?.value||r.nome).trim();r.acoes.forEach(a=>{if(a.tipo==='checklist')a.itens=(a.itens||[]).map(x=>x.trim()).filter(Boolean)});
   const m=auValida(r);if(m){toast(m,true);return}
   if(r.gat!=='agenda'){r.aFreq=null;r.aDias=null}else if(r.aFreq==='diaria')r.aDias=null;else r.aDias=[...new Set(r.aDias)].sort((a,b)=>a-b);
-  if(r.gat!=='entrou_lista')r.gLista='';if(r.gat!=='etiqueta')r.gEtq='';if(r.gat!=='campo')r.gCampo='';if(r.gat!=='prazo_antes')r.gDias=null;
+  if(r.gat!=='entrou_lista')r.gLista='';if(r.gat!=='etiqueta')r.gEtq='';if(r.gat!=='campo')r.gCampo='';if(r.gat!=='prazo_antes')r.gDias=null;if(r.gat!=='etapa')r.gEtapa='';
   if(r.id){const i=auRegras().findIndex(x=>x.id===r.id);if(i>=0)auRegras()[i]=r}else{r.id=uid();r.em=agora();auRegras().push(r)}
   if(r.tid)log(T(r.tid),`Automação "${r.nome}"${r.kid?` em ${tkAcha(r.tid,r.kid).k?.codigo}`:''} salva`);UI.auEd=null;save();toast('Regra salva.');
   if(UI.auK){UI.tkSel=UI.auK;UI.auK=null;UI.modal='tarefa';renderModal();render()}else if(UI.auQ){UI.modal='au-regras';renderModal()}else{UI.modal=null;renderModal();render()}},true);
@@ -13180,6 +13224,253 @@ document.addEventListener('submit',e=>{const f=e.target;if(f.dataset?.form!=='au
   auRegras().push({id:uid(),nome:'Atrasadas toda segunda',tid:null,gat:'agenda',aFreq:'semanal',aDias:[1],gLista:'',gEtq:'',gCampo:'',gDias:null,conds:[{tipo:'situacao',v:['atrasada']}],
     acoes:[{tipo:'avisar',para:['responsavel','gestor'],pessoas:[],texto:'Tarefa atrasada'}],ativa:true,dono:'Moisés',em:agora()})})();
 if(S.auDia!==HOJE){auRotina();save()}
+
+/* =====================================================================
+   Tarefas da etapa (ligação funil × quadros, lote B; decisões do Moisés,
+   31/out/2026; simulação "Funil e quadros"). Espelha app.etapa_regras,
+   app.tarefas_etapa, app._trava_tarefa, app._tarefas_travando,
+   app._tarefas_ao_entrar / _ao_voltar / _ao_encerrar / _ao_retomar e o
+   aviso "pode avançar" (app.tg_tarefa_pode_avancar).
+   - Configurações › Funil › Tarefas da etapa (só administrador): regras por
+     fase e etapa; cada uma diz quando (ao entrar na etapa ou numa subetapa
+     dela), o quê (modelo de tarefas da empresa ou uma tarefa só), a
+     condição "Vale quando" e se trava o avanço (desligado por padrão).
+   - Ao entrar, as tarefas nascem com prazo contado do dia da entrada; o
+     "responsável do terreno" é o do terreno naquele dia. Nada duplica: a
+     regra que já criou a tarefa neste processo não cria de novo.
+   - Trava: as abertas de uma regra que trava viram pendência do avanço
+     (analista vê a lista; gestor e diretor passam com justificativa).
+     Regra da subetapa trava sair da subetapa; da etapa, sair da etapa.
+     Tarefa à mão trava quando a etapa dela tem regra da etapa que trava.
+   - Cartão: "Etapa do funil" (nasce na etapa atual; "Nenhuma" tira).
+   - Stand By pausa as tarefas abertas da fase sem pedido; retomar devolve
+     e empurra o prazo pelos dias parados. Perdido e Descartado perguntam:
+     arquivar as tarefas (padrão) ou manter abertas. Concluir não mexe.
+   - Voltar etapa: sem trabalho, arquiva sozinha; com trabalho, fica com o
+     selo "Etapa deixada", não trava e o responsável é avisado. Ao entrar
+     de novo, as arquivadas sozinhas voltam (mesmo código, prazos refeitos).
+   - Condição que deixa de valer: "Não se aplica mais" (fica, não trava).
+   - A última tarefa que trava concluída avisa o responsável do terreno:
+     "TER-x pode avançar". O sistema nunca avança sozinho.
+   Injetado no mesmo escopo, depois de proto_auto.js.
+   ===================================================================== */
+AU_GAT.etapa='Terreno entrou na etapa';
+const etRegras=()=>cfg().regrasEtapa||(cfg().regrasEtapa=[]);
+const etRegraDe=k=>k.regra?etRegras().find(r=>r.id===k.regra):null;
+/* o processo da fase: na entrada, a negociação (t.neg); nas outras, o aberto (ou o último) */
+const etProc=(t,f)=>f===faseEnt()?t.neg:(procAberto(t,f)||ultimoProc(t,f));
+const etPid=(t,f,p)=>{p=p||etProc(t,f);return p?(f===faseEnt()?p.codigo:p.id):null};
+const etIx=(f,e)=>etapasF(f).findIndex(x=>x.k===e);
+const etSubIx=(f,e,s)=>(etapaF(f,e)?.subs||[]).findIndex(x=>x.k===s);
+const etNomeE=(f,e)=>etapaF(f,e)?.nome||e||'';
+const etNomeS=(f,s)=>subF(f,s)?.nome||s||'';
+const etDoProc=(t,f,pid)=>(t.tarefas||[]).filter(k=>k.fase===f&&k.etProc===pid&&!k.modelo);
+
+/* situação da tarefa na etapa: nivel (o que trava), sit (ativa, deixada, arqAuto, nao_se_aplica) e trava (no banco: app._trava_tarefa) */
+function etTrava(t,k){if(!k||!k.etapa||!k.fase)return null;const r=etRegraDe(k);let nivel=null,sit='ativa';
+  if(r&&r.ativo!==false&&r.fase===k.fase&&r.etapa===k.etapa&&(r.sub||null)===(k.sub||null)){if(r.trava)nivel=r.sub?'subetapa':'etapa';
+    if(!itCondVale(t,r.cond)||!itCondVale(t,k.etCond))sit='nao_se_aplica'}
+  else if(etRegras().some(g=>g.ativo!==false&&g.fase===k.fase&&g.etapa===k.etapa&&!g.sub&&g.trava))nivel='etapa';  // à mão: trava se a etapa trava
+  if(k.etSit==='deixada'||k.etSit==='arqAuto')sit=k.etSit;
+  return {nivel,sit,trava:!!nivel&&sit==='ativa'}}
+/* abertas que travam a saída (saida: etapa ou subetapa) do processo da fase */
+function etTravando(t,f,p,saida){const pid=etPid(t,f,p);if(!p||!pid)return [];
+  return etDoProc(t,f,pid).filter(k=>tkAberta(k)&&k.etapa===p.etapa).filter(k=>{const j=etTrava(t,k);if(!j?.trava)return false;
+    return saida==='subetapa'?j.nivel==='subetapa'&&k.sub===p.sub:j.nivel==='etapa'||(j.nivel==='subetapa'&&k.sub===p.sub)})
+    .sort((a,b)=>String(a.prazo||'9').localeCompare(String(b.prazo||'9'))||a.codigo.localeCompare(b.codigo))}
+const etItem=(t,k)=>({ok:false,tipo:'tarefa',tarefa:k.id,txt:`Tarefa ${k.codigo}: ${vzPapel(t,k)?k.titulo:'restrita'}${tkAtras(k)?' (atrasada)':''}`,fix:['tab:tarefas','Ver tarefas']});
+/* a saída da passagem: etapa (para frente ou concluir), subetapa (para frente) ou nada */
+function etSaida(f,p,tipo,dest){if(tipo==='etapa')return etIx(f,dest)>etIx(f,p.etapa)?'etapa':null;
+  if(tipo==='subetapa')return etSubIx(f,p.etapa,dest)>etSubIx(f,p.etapa,p.sub)?'subetapa':null;
+  return (dest==='comprado'||dest==='concluido')?'etapa':null}
+
+/* ---------- entrar, voltar, parar e retomar ---------- */
+const etTrabalho=(t,k)=>(k.coments||[]).some(c=>!c.apagado)||(k.anexos||[]).some(a=>!a.removido)||(k.checklists||[]).some(c=>c.itens.some(i=>i.feito))
+  ||(t.tarefas||[]).some(x=>x.mae===k.id)||Object.values(k.campos||{}).some(v=>v!=null&&v!=='')||!!k.mudouLista;
+/* tarefa à mão nasce na etapa atual: o processo aberto da fase mais adiante (ativo antes do stand by) */
+function etAtual(t){const L=fasesL().map(f=>({f:f.k,p:f.entrada?t.neg:procAberto(t,f.k)})).filter(x=>x.p&&['ativo','stand_by'].includes(x.p.status));
+  return L.filter(x=>x.p.status==='ativo').pop()||L.pop()||null}
+function etPor(t,k,f,e,s){if(!f||!e){k.fase=null;k.etapa=null;k.sub=null;k.etProc=null;return}const p=etProc(t,f);k.fase=f;k.etapa=e;k.sub=s||null;k.etProc=etPid(t,f,p)}
+function etEntrar(t,f,p,tipo,cod){if(!p||t._parte)return;const pid=etPid(t,f,p),etapa=p.etapa,sub=tipo==='etapa'?p.sub:cod;let nv=0,volt=0;
+  /* reentrada: arquivadas sozinhas voltam com as datas refeitas; deixadas voltam a travar */
+  etDoProc(t,f,pid).filter(k=>(k.etSit==='arqAuto'||k.etSit==='deixada')&&!k.feita&&k.etapa===etapa&&(tipo==='etapa'?(!k.sub||k.sub===sub):k.sub===cod)).forEach(k=>{
+    if(k.etSit==='arqAuto'){if(k.etIni!=null){k.inicio=k.iniMin=crSomar(HOJE,k.etIni);k.prazo=crSomar(k.inicio,(k.etDur||1)-1)}
+      else{const d=Math.max(0,diff((k.etSitEm||HOJE).slice(0,10),HOJE));if(k.inicio)k.inicio=addD(k.inicio,d);if(k.prazo)k.prazo=addD(k.prazo,d)}k.arq=null;volt++}
+    k.etSit=null;k.etSitEm=null});
+  /* regras da etapa (e da subetapa inicial) ou da subetapa */
+  etRegras().filter(r=>r.ativo!==false&&r.fase===f&&r.etapa===etapa&&(tipo==='etapa'?(!r.sub||r.sub===sub):r.sub===cod))
+    .sort((a,b)=>(a.sub?1:0)-(b.sub?1:0)||(a.ordem||0)-(b.ordem||0)).forEach(r=>{if(!itCondVale(t,r.cond))return;
+    const ja=etDoProc(t,f,pid).filter(k=>k.regra===r.id);
+    if(r.modelo){const m=crModelos().find(x=>x.id===r.modelo&&x.ativo!==false);if(!m)return;
+      const mapa=crAplicar(t,m,HOJE,{pular:new Set(ja.map(k=>k.mt)),existentes:Object.fromEntries(ja.map(k=>[k.mt,k.id])),cond:true,mapa:true,silencio:true});
+      Object.entries(mapa).forEach(([mt,k])=>{const x=m.tarefas.find(y=>y.id===mt);Object.assign(k,{fase:f,etapa:r.etapa,sub:r.sub||null,etProc:pid,regra:r.id,mt,etCond:x?.cond?JSON.parse(JSON.stringify(x.cond)):null,etIni:x?.iniD??null,etDur:x?.dur??null});nv++})}
+    else{if(ja.length)return;const l=tkL(t).find(y=>y.nome===r.lista&&!y.oculta&&y.tipo==='aberta')||tkPrim(t,'aberta');
+      const k=tkCriar(t,{titulo:r.titulo,desc:r.desc||'',prio:r.prio||'media',lista:l.id,resp:!r.resp||r.resp===RESP_OBJ?t.resp||null:r.resp});
+      if(r.prazo!=null){k.inicio=k.iniMin=HOJE;k.prazo=crSomar(HOJE,r.prazo);k.dur=r.prazo+1}Object.assign(k,{fase:f,etapa:r.etapa,sub:r.sub||null,etProc:pid,regra:r.id,etIni:r.prazo!=null?0:null,etDur:r.prazo!=null?r.prazo+1:null});nv++}});
+  if(nv||volt)log(t,`Tarefas de ${tipo==='etapa'?etNomeE(f,etapa):etNomeS(f,cod)}: ${[nv?`${nv} criada${nv>1?'s':''}`:'',volt?`${volt} voltou${volt>1?'aram':''} do arquivo`:''].filter(Boolean).join(', ')}`);
+  /* gatilho "Terreno entrou na etapa", nos cartões abertos da etapa */
+  if(tipo==='etapa')etDoProc(t,f,pid).filter(k=>tkAberta(k)&&k.etapa===etapa).forEach(k=>auEvento(t,k,'etapa',{etapa:f+':'+etapa}))}
+function etVoltar(t,f,p,ixDest){const pid=etPid(t,f,p);let arq=0,dx=0;
+  etDoProc(t,f,pid).filter(k=>tkAberta(k)&&k.etapa&&etIx(f,k.etapa)>ixDest&&k.etSit!=='deixada').forEach(k=>{
+    if(etTrabalho(t,k)){k.etSit='deixada';k.etSitEm=agora();dx++;
+      notificar(k.resp,'etapa_deixada',`Etapa deixada: "${k.titulo}" é de ${etNomeE(f,k.etapa)}, e ${t.codigo} voltou para ${etNomeE(f,p.etapa)}. A tarefa não trava mais.`,t,'ed:'+k.id+':'+k.etSitEm,tkIr(k))}
+    else{k.etSit='arqAuto';k.etSitEm=agora();k.arq=HOJE;arq++}});
+  if(arq||dx)log(t,`Volta de etapa: ${[arq?`${arq} tarefa${arq>1?'s':''} sem trabalho arquivada${arq>1?'s':''}`:'',dx?`${dx} com trabalho ficou como "Etapa deixada"`:''].filter(Boolean).join(', ')}`)}
+function etEncerrar(t,f,p,st,d={}){const pid=etPid(t,f,p),L=etDoProc(t,f,pid).filter(k=>tkAberta(k));if(!L.length)return;
+  if(st==='stand_by'){let n=0;L.forEach(k=>{if(pzAtiva(k))return;const z={id:uid(),sit:'pendente',motivo:'Stand By da fase'+(d.detalhe?': '+d.detalhe:''),por:me(),em:agora(),origem:'stand_by'};
+      const pp=pzPend(k);if(pp){pp.sit='cancelada';pp.decEm=agora()}pzPausas(k).push(z);pzIniciar(t,k,z);n++});if(n)log(t,`Stand By: ${n} tarefa${n>1?'s':''} pausada${n>1?'s':''}`)}
+  else if(['perdido','descartado'].includes(st)){if((d.tarefas||'arquivar')!=='arquivar'){log(t,`${STATUS_N[st]}: ${L.length} tarefa${L.length>1?'s':''} mantida${L.length>1?'s':''} aberta${L.length>1?'s':''}`);return}
+    L.forEach(k=>{const z=pzAtiva(k);if(z){z.sit='encerrada';z.fim=agora();z.dias=0}k.arq=HOJE});log(t,`${STATUS_N[st]}: ${L.length} tarefa${L.length>1?'s':''} arquivada${L.length>1?'s':''}`)}}
+function etRetomar(t,f,p){const pid=etPid(t,f,p);UI.etRet=true;try{etDoProc(t,f,pid).forEach(k=>{if(pzAtiva(k)?.origem==='stand_by')pzRetomar(t,k)})}finally{UI.etRet=false}}
+/* concluída a última que trava: avisa o responsável do terreno (no banco: t_pode_avancar) */
+function etPodeAvancar(t,k){const j=etTrava(t,k);if(!j?.nivel||j.sit!=='ativa')return;const p=etProc(t,k.fase);
+  if(!p||p.status!=='ativo'||etPid(t,k.fase,p)!==k.etProc||p.etapa!==k.etapa||(j.nivel==='subetapa'&&p.sub!==k.sub))return;
+  if(etTravando(t,k.fase,p,j.nivel).length)return;const nome=j.nivel==='subetapa'?etNomeS(k.fase,k.sub):etNomeE(k.fase,k.etapa);
+  notificar(t.resp,'pode_avancar',`${t.codigo} pode avançar. As tarefas de ${nome} estão concluídas.`,t,'pa:'+k.id+':'+k.feita,tkIr(k))}
+
+/* ---------- ganchos no funil, nas fases e nas tarefas ---------- */
+{const pend=pendencias;pendencias=function(t,tipo,dest){const L=pend(t,tipo,dest);if(t._parte||!t.neg)return L;const f=faseEnt(),s=etSaida(f,t.neg,tipo,dest);
+  if(s)etTravando(t,f,t.neg,s).forEach(k=>L.push(etItem(t,k)));return L}}
+{const ex=executar;executar=function(t,tipo,dest,d={}){const n=t.neg,f=faseEnt(),de=n?.etapa;ex(t,tipo,dest,d);if(t._parte||!n)return;
+  if(tipo==='etapa'){if(etIx(f,dest)<etIx(f,de))etVoltar(t,f,n,etIx(f,dest));etEntrar(t,f,n,'etapa',dest)}
+  else if(tipo==='subetapa')etEntrar(t,f,n,'subetapa',dest);else etEncerrar(t,f,n,dest,d||{})}}
+{const rt=retomar;retomar=function(t){rt(t);if(!t._parte)etRetomar(t,faseEnt(),t.neg)}}
+{const pr=procRetomar;procRetomar=function(t,p){pr(t,p);etRetomar(t,p.fase,p)}}
+{const af=abrirFase;abrirFase=function(t,f,just){const p=af(t,f,just);if(p)etEntrar(t,f,p,'etapa',p.etapa);return p}}
+function etAbriu(t){if(t?.neg)etEntrar(t,faseEnt(),t.neg,'etapa',t.neg.etapa)}
+/* fases depois da entrada: a trava vale também (analista vê a lista; gestor e diretor passam com justificativa) */
+function etBloqProc(t,p,tipo,dest){const s=etSaida(p.fase,p,tipo,dest);if(!s)return false;const L=etTravando(t,p.fase,p,s);if(!L.length)return false;
+  UI.etFz={tid:t.id,pid:p.id,tipo,dest,itens:L.map(k=>etItem(t,k))};UI.alvo=t.id;UI.modal=nivelDe(me())>=2?'et-forcar':'et-bloq';setTimeout(renderModal,0);return true}
+{const pi=procIr;procIr=function(t,p,tipo,dest,d={}){const f=p.fase,de=p.etapa;if(!d.forcado&&etBloqProc(t,p,tipo,dest))return false;
+  pi(t,p,tipo,dest,d);if(d.forcado)log(t,`${faseN(f)}: passou sem as tarefas da etapa · ${d.forcado}`);
+  if(tipo==='etapa'){if(etIx(f,dest)<etIx(f,de))etVoltar(t,f,p,etIx(f,dest));etEntrar(t,f,p,'etapa',dest)}else if(tipo==='subetapa')etEntrar(t,f,p,'subetapa',dest);else etEncerrar(t,f,p,dest,d)}}
+{const cr=tkCriar;tkCriar=function(t,d){const k=cr(t,d);if(k&&k.etapa===undefined&&!k.modelo){if(d.etapa==='nenhuma')etPor(t,k);else{const a=etAtual(t);a?etPor(t,k,a.f,a.p.etapa):etPor(t,k)}}return k}}
+{const mv=tkMover;tkMover=function(t,k,lid,pos){const antes=k.lista,feita=k.feita,r=mv(t,k,lid,pos);if(k.lista!==antes)k.mudouLista=true;if(!feita&&k.feita&&k.etapa)etPodeAvancar(t,k);return r}}
+{const ret=pzRetomar;pzRetomar=function(t,k){const z=pzAtiva(k);if(z?.origem==='stand_by'&&!UI.etRet){toast('Esta pausa é do Stand By da fase: a tarefa volta quando a fase for retomada.',true);return}return ret(t,k)}}
+{const tf=tkFiltradas;tkFiltradas=function(){const L=tf(),e=UI.tk.etapa;return e?L.filter(({k})=>e==='-'?!k.etapa:`${k.fase}|${k.etapa}`===e):L}}
+/* automações: o parâmetro e a frase do gatilho novo */
+{const gp=auGatParam;auGatParam=function(r){if(r.gat!=='etapa')return gp(r);
+  return `<span class="au-lbl">Etapa</span><select class="tkm-pill" data-au="gEtapa"><option value="">Qualquer etapa</option>${fasesL().filter(f=>f.ativo).map(f=>`<optgroup label="${esc(f.nome)}">${etapasF(f.k).map(e=>{const v=f.k+':'+e.k;return `<option value="${esc(v)}" ${v===r.gEtapa?'selected':''}>${esc(e.nome)}</option>`}).join('')}</optgroup>`).join('')}</select>`}}
+{const aq=auQuando;auQuando=function(r){if(r.gat!=='etapa')return aq(r);if(!r.gEtapa)return 'Quando o terreno entrar numa etapa';const [f,e]=r.gEtapa.split(':');return `Quando o terreno entrar em ${etNomeE(f,e)} (${faseN(f)})`}}
+
+/* ---------- desenho: cartão, lista e filtros ---------- */
+const ET_SIT={deixada:'Etapa deixada',arqAuto:'Arquivada na volta de etapa',nao_se_aplica:'Não se aplica mais'};
+function etSelo(t,k,frente){const j=etTrava(t,k);if(!j)return '';const cls=frente?'tk-b':'tkm-selo';
+  if(j.sit!=='ativa')return `<span class="${cls} et-sit" title="${j.sit==='deixada'?'O terreno voltou de etapa: a tarefa não trava mais':j.sit==='nao_se_aplica'?'A condição da regra deixou de valer: a tarefa não trava':'Arquivada sozinha na volta de etapa; volta se o terreno entrar de novo'}">${ET_SIT[j.sit]}</span>`;
+  return j.trava&&tkAberta(k)?`<span class="${cls} et-trava" title="Aberta, trava ${j.nivel==='subetapa'?'sair da subetapa':'sair da etapa'}">${ic('lock',14)}Trava ${j.nivel==='subetapa'?'a subetapa':'a etapa'}</span>`:''}
+function etLinha(t,k,bloq,linha){if(k.modelo)return '';const ab=fasesL().filter(f=>f.entrada?aberto(t.neg):procAberto(t,f.k)).map(f=>f.k);if(k.fase&&!ab.includes(k.fase))ab.push(k.fase);
+  const v=k.etapa?`${k.fase}|${k.etapa}`:'',r=etRegraDe(k),txt=k.etapa?`${etNomeE(k.fase,k.etapa)}${k.sub?' · '+etNomeS(k.fase,k.sub):''}`:'Nenhuma';
+  const sel=bloq?`<span>${esc(txt)}</span>`:`<select id="tkc-et" class="tkm-pill" data-etk="etapa" aria-label="Etapa do funil" title="${esc(txt)}"><option value="">Nenhuma</option>${ab.map(f=>`<optgroup label="${esc(faseN(f))}">${etapasF(f).map(e=>`<option value="${f}|${e.k}" ${v===f+'|'+e.k?'selected':''}>${esc(e.nome)}</option>`).join('')}</optgroup>`).join('')}</select>`;
+  return linha('flow','Etapa do funil',`${sel}${k.sub?`<span class="faint et-reg">${esc(etNomeS(k.fase,k.sub))}</span>`:''}${r?`<span class="et-regi" title="Nasceu da regra da etapa: ${escT(etRegraNome(r))}">${ic('raio',14)}</span>`:''}`,bloq?null:'tkc-et')}
+const etRegraNome=r=>r.modelo?(crModelos().find(m=>m.id===r.modelo)?.nome||'modelo'):r.titulo;
+const etOpcoesFiltro=()=>{const s=new Map();todasTarefas().forEach(({k})=>{if(k.etapa)s.set(`${k.fase}|${k.etapa}`,`${faseN(k.fase)} › ${etNomeE(k.fase,k.etapa)}`)});return [...s.entries()].sort((a,b)=>a[1].localeCompare(b[1]))};
+const etFiltroHtml=f=>`<label class="sr-only" for="tk-etapa">Etapa</label><select id="tk-etapa" class="fsel-chip${f.etapa?' on':''}" data-ch="tk-f" data-k="etapa"><option value="">Etapa</option><option value="-" ${f.etapa==='-'?'selected':''}>Sem etapa</option>${etOpcoesFiltro().map(([v,n])=>`<option value="${esc(v)}" ${f.etapa===v?'selected':''}>${esc(n)}</option>`).join('')}</select>`;
+P.flow='M4 6h6v4H4zM14 14h6v4h-6zM7 10v4h7';
+
+/* ---------- formulários do funil: Stand By, Perdido e Descartado ---------- */
+function etAbertasFase(t,f){const pid=etPid(t,f);return pid?etDoProc(t,f,pid).filter(k=>tkAberta(k)):[]}
+function etStandByInfo(t,f){const n=etAbertasFase(t,f).length;return n?`<div class="banner blue" style="margin-top:12px">${ic('clock')}<div>As ${n===1?'uma tarefa aberta':n+' tarefas abertas'} da fase ${n===1?'fica pausada':'ficam pausadas'} sem pedido de aprovação. Ao retomar, ${n===1?'volta':'voltam'} e o prazo anda os dias parados.</div></div>`:''}
+function etArquivarHtml(t,f){const n=etAbertasFase(t,f).length;if(!n)return '';
+  return `<fieldset class="field full et-arq"><legend>Tarefas abertas da fase</legend><label class="fchk"><input type="radio" name="tarefas" value="arquivar" checked>${ic('check',16)}Arquivar ${n===1?'a tarefa':'as '+n+' tarefas'}</label><label class="fchk"><input type="radio" name="tarefas" value="manter">${ic('check',16)}Manter ${n===1?'aberta':'abertas'}</label></fieldset>`}
+{const fm=funilModal;funilModal=function(M,fechar){const t=UI.alvo?T(UI.alvo):T(UI.id);
+  if(M==='et-regra')return etRegraHtml(fechar);
+  if(M==='et-bloq'||M==='et-forcar'){const a=UI.etFz||{},x=T(a.tid),p=x&&procsDe(x).find(y=>y.id===a.pid),nm=p?(a.tipo==='status'?faseCfg(p.fase)?.conc:a.tipo==='etapa'?etNomeE(p.fase,a.dest):etNomeS(p.fase,a.dest)):'';
+    if(M==='et-bloq')return `<div class="dh"><div><h2>Ainda não dá para ir para ${esc(nm)}</h2><p class="muted" style="margin:6px 0 0">Conclua as tarefas que travam. Gestor e diretor podem passar sem elas, com justificativa.</p></div>${fechar}</div><ul class="adv-lista adv-modal">${advItens(a.itens||[])}</ul><div class="df"><button class="btn primary" data-a="close">Entendi</button></div>`;
+    return `<div class="dh"><div><h2>Ir para ${esc(nm)} sem as tarefas?</h2><ul class="pend">${(a.itens||[]).map(i=>`<li>${ic('close',16)}${esc(i.txt)}</li>`).join('')}</ul></div>${fechar}</div><form data-form="et-forcar" id="f-ef"><div class="field"><label for="ef-j">Justificativa (vai para o histórico)</label><textarea id="ef-j" name="j" required></textarea></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-ef">Avançar</button></div>`}
+  let h=fm(M,fechar);if(!h||!t)return h;const f=faseEnt();
+  if(M==='suspender')h=h.replace('</form>',etStandByInfo(t,f)+'</form>');
+  if(M==='perder'||M==='descartar')h=h.replace(/(<\/div><\/div>)(<div class="banner blue"|<\/form>)/,(m0,a,b)=>a.replace(/<\/div>$/,etArquivarHtml(t,f)+'</div>')+b);
+  return h}}
+{const fz=fasesModal;fasesModal=function(M,fechar){let h=fz(M,fechar);if(!h)return h;const t=UI.alvo?T(UI.alvo):T(UI.id),p=t&&procsDe(t).find(x=>x.id===UI.alvoProc);if(!p)return h;
+  if(M==='p-suspender')h=h.replace('</form>',etStandByInfo(t,p.fase)+'</form>');
+  if(M==='p-descartar')h=h.replace('</div></div></form>','</div>'+etArquivarHtml(t,p.fase)+'</div></form>');
+  return h}}
+
+/* ---------- Configurações › Tarefas da etapa ---------- */
+function etCfgHtml(){const fs=fasesL().filter(f=>f.ativo!==false),f=fs.some(x=>x.k===UI.etCfgFase)?UI.etCfgFase:faseEnt(),R=etRegras().filter(r=>r.fase===f);
+  const linha=r=>{const nt=(S.terrenos||[]).reduce((s,t)=>s+(t.tarefas||[]).filter(k=>k.regra===r.id).length,0),m=r.modelo?crModelos().find(x=>x.id===r.modelo):null;
+    return `<div class="et-r ${r.ativo===false?'inativa':''}"><div class="et-rq"><span class="chip">${r.sub?'Ao entrar em '+esc(etNomeS(f,r.sub)):'Ao entrar na etapa'}</span></div>
+      <div class="et-ro"><b>${r.modelo?`Modelo ${esc(m?.nome||'(removido)')}`:esc(r.titulo)}</b><span class="faint">${r.modelo?`${m?.tarefas.length||0} tarefa${m?.tarefas.length===1?'':'s'}`:`${r.prazo!=null?`prazo ${r.prazo} dia${r.prazo===1?'':'s'}`:'sem prazo'} · ${r.resp&&r.resp!==RESP_OBJ?esc(r.resp):'responsável do terreno'}`}${r.cond?' · vale quando '+esc(itCondFrase(r.cond)):''}${nt?` · ${nt} tarefa${nt>1?'s':''} criada${nt>1?'s':''}`:''}${r.ativo===false?' · desativada':''}</span></div>
+      <span class="et-rt">${r.trava?`<span class="chip warn">${ic('lock',14)}Trava ${r.sub?'a subetapa':'a etapa'}</span>`:'<span class="faint">não trava</span>'}</span>
+      <span class="et-ra"><button class="btn sm text" data-a="et-regra-ed" data-v="${r.id}">Editar</button><button class="iconbtn sm lixo" data-a="et-regra-x" data-v="${r.id}" aria-label="${nt?'Desativar':'Apagar'} regra" title="${nt?'Desativar (já criou tarefas)':'Apagar'}">${ic('lixo',18)}</button></span></div>`};
+  return `<section class="sec"><div class="sec-h"><h2>Tarefas da etapa</h2></div><div class="sec-b">
+    <p class="muted" style="margin-top:0">Ao entrar na etapa (ou numa subetapa dela), as tarefas nascem no quadro do terreno, com prazo contado do dia da entrada. A regra que trava faz das abertas pendência do avanço: o analista vê a lista; gestor e diretor passam com justificativa.</p>
+    <div class="seg sm et-fases" role="group" aria-label="Fase">${fs.map(x=>`<button data-a="et-cfg-fase" data-v="${x.k}" aria-pressed="${x.k===f}">${esc(x.nome)}</button>`).join('')}</div></div></section>
+  ${etapasF(f).map(e=>{const rs=R.filter(r=>r.etapa===e.k).sort((a,b)=>(a.sub?etSubIx(f,e.k,a.sub)+1:0)-(b.sub?etSubIx(f,e.k,b.sub)+1:0)||(a.ordem||0)-(b.ordem||0));
+    return `<section class="sec et-sec"><div class="sec-h"><h2>${esc(e.nome)}</h2><button class="btn text sm" data-a="et-regra-nova" data-f="${f}" data-e="${e.k}">${ic('add',16)}Adicionar regra</button></div><div class="sec-b">${rs.map(linha).join('')||'<p class="faint" style="margin:0">Nenhuma tarefa nasce nesta etapa.</p>'}</div></section>`}).join('')}`}
+const etNovaRegra=(f,e)=>({id:null,fase:f,etapa:e,sub:null,modelo:'',titulo:'',desc:'',prazo:null,lista:'Fazer',prio:'media',resp:RESP_OBJ,cond:null,trava:false,ativo:true,tipo:'modelo'});
+function etRegraHtml(fechar){const r=UI.etRegra;if(!r)return '';const f=r.fase,e=etapaF(f,r.etapa),ms=crModelos().filter(m=>!m.dono&&m.ativo!==false),L=(S.listasModelo||[]).filter(l=>l.ativo&&l.tipo==='aberta');
+  const o=(obj,v)=>Object.entries(obj).map(([k,n])=>`<option value="${esc(k)}" ${k===v?'selected':''}>${esc(n)}</option>`).join('');
+  return `<div class="dh"><div><h2>${r.id?'Editar regra':'Nova regra'}</h2><div class="muted" style="margin-top:4px">${esc(faseN(f))} › ${esc(e?.nome||'')}</div></div>${fechar}</div>
+  <div class="fields et-form">
+    <div class="field"><label for="etr-q">Quando</label><select id="etr-q" data-etr="sub"><option value="">Ao entrar na etapa</option>${(e?.subs||[]).map(s=>`<option value="${s.k}" ${s.k===r.sub?'selected':''}>Ao entrar em ${esc(s.nome)}</option>`).join('')}</select></div>
+    <fieldset class="field full et-tipo"><legend>O que nasce</legend><label class="fchk"><input type="radio" name="etr-tipo" data-etr="tipo" value="modelo" ${r.tipo==='modelo'?'checked':''}>${ic('check',16)}Um modelo de tarefas da empresa</label><label class="fchk"><input type="radio" name="etr-tipo" data-etr="tipo" value="tarefa" ${r.tipo==='tarefa'?'checked':''}>${ic('check',16)}Uma tarefa</label></fieldset>
+    ${r.tipo==='modelo'?`<div class="field full"><label for="etr-m">Modelo</label><select id="etr-m" data-etr="modelo"><option value="">Escolha</option>${ms.map(m=>`<option value="${m.id}" ${m.id===r.modelo?'selected':''}>${esc(m.nome)} · ${m.tarefas.length} tarefa${m.tarefas.length===1?'':'s'}</option>`).join('')}</select>
+      <p class="faint" style="margin:4px 0 0">Cada tarefa do modelo começa em N dias e tem a duração do modelo, contados do dia da entrada. Tarefa do modelo com condição só nasce quando ela vale.</p></div>`
+    :`<div class="field full"><label for="etr-t">Título</label><input id="etr-t" data-etr="titulo" value="${esc(r.titulo||'')}" placeholder="Ex.: Cobrar retorno da proposta"></div>
+      <div class="field"><label for="etr-p">Prazo (dias depois da entrada)</label><input id="etr-p" type="number" min="0" data-etr="prazo" value="${r.prazo??''}" placeholder="Sem prazo"></div>
+      <div class="field"><label for="etr-l">Lista</label><select id="etr-l" data-etr="lista">${L.map(l=>`<option ${l.nome===r.lista?'selected':''}>${esc(l.nome)}</option>`).join('')}</select></div>
+      <div class="field"><label for="etr-pr">Prioridade</label><select id="etr-pr" data-etr="prio">${o(OPT.prioTar,r.prio)}</select></div>
+      <div class="field"><label for="etr-r">Responsável</label><select id="etr-r" data-etr="resp"><option value="${RESP_OBJ}" ${!r.resp||r.resp===RESP_OBJ?'selected':''}>Responsável do terreno</option>${USERS.map(u=>`<option ${u===r.resp?'selected':''}>${esc(u)}</option>`).join('')}</select></div>`}
+    <div class="field full"><span class="lbl-f">Vale quando</span><span class="it-vq">${r.cond?esc(itCondFrase(r.cond)):'<span class="faint">sempre</span>'}<button class="linkbtn" data-a="et-cond" data-v="regra">${r.cond?'Editar':'+ Condição'}</button>${r.cond?'<button class="linkbtn" data-a="et-cond-tira" data-v="regra">Tirar</button>':''}</span></div>
+    <label class="fchk full et-trv"><input type="checkbox" data-etr="trava" ${r.trava?'checked':''}>${ic('check',16)}Trava o avanço: as tarefas abertas desta regra viram pendência para sair ${r.sub?'da subetapa':'da etapa'}</label>
+    ${r.id?`<label class="fchk full"><input type="checkbox" data-etr="ativo" ${r.ativo!==false?'checked':''}>${ic('check',16)}Ativa</label>`:''}</div>
+  <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" data-a="et-regra-salva">Salvar regra</button></div>`}
+function etRegraErro(r){if(r.tipo==='modelo'&&!crModelos().some(m=>m.id===r.modelo))return 'Escolha o modelo de tarefas.';if(r.tipo==='tarefa'&&!(r.titulo||'').trim())return 'Dê um título à tarefa.';
+  if(r.prazo!=null&&(r.prazo<0||r.prazo>365))return 'Prazo: de 0 a 365 dias.';return r.cond?itCondErro(r.cond):null}
+/* condição fora do cartão: regra, documento do checklist, pré-requisito e tarefa do modelo (o mesmo painel "Vale quando") */
+function etCondAlvo(v){const [tp,a,b]=v.split(':');
+  if(tp==='regra')return {nome:`Regra: ${UI.etRegra?.titulo||etRegraNome(UI.etRegra)||'nova'}`,ler:()=>UI.etRegra.cond,gravar:c=>{UI.etRegra.cond=c},voltar:()=>{UI.modal='et-regra';renderModal()}};
+  if(tp==='ck'){const it=(cfg().checklist[a]||[]).find(x=>x.doc===b);return it&&{nome:`Checklist de ${SN(a)}: ${TIPOS_DOC[b]?.[0]||b}`,ler:()=>it.cond,gravar:c=>{it.cond=c;save()},voltar:()=>{UI.modal=null;renderModal();render()}}}
+  if(tp==='pr'){const it=cfg().prereq.find(x=>x.id===a);return it&&{nome:`Pré-requisito: ${destinoNome(it.alvoTipo,it.alvo)}`,ler:()=>it.cond,gravar:c=>{it.cond=c;save()},voltar:()=>{UI.modal=null;renderModal();render()}}}
+  if(tp==='mt'){const m=crModelos().find(x=>x.id===a),x=m?.tarefas.find(y=>y.id===b);return x&&{nome:`${m.nome}: ${x.titulo}`,ler:()=>x.cond,gravar:c=>{x.cond=c;save()},voltar:()=>{UI.modal='cr-modelo-ed';renderModal()}}}
+  return null}
+const etVq=(alvo,c,ed=true)=>`<span class="it-vq et-vq">${c?'vale quando '+esc(itCondFrase(c)):'<span class="faint">vale sempre</span>'}${ed?`<button class="linkbtn" data-a="et-cond" data-v="${esc(alvo)}">${c?'Editar':'+ Condição'}</button>${c?`<button class="linkbtn" data-a="et-cond-tira" data-v="${esc(alvo)}">Tirar</button>`:''}`:''}</span>`;
+function etCkCondHtml(e){const L=(cfg().checklist[e]||[]).filter(c=>c.obrig);if(!L.length)return '';
+  return `<ul class="et-cks">${L.map(c=>`<li><span>${esc(TIPOS_DOC[c.doc]?.[0]||c.doc)}</span>${etVq(`ck:${e}:${c.doc}`,c.cond)}</li>`).join('')}</ul>`}
+
+document.addEventListener('click',e=>{const a=e.target.closest?.('[data-a^="et-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const A=a.dataset.a;
+  switch(A){
+    case 'et-cfg-fase':UI.etCfgFase=a.dataset.v;render();return;
+    case 'et-regra-nova':if(!ehAdmin(me()))return;UI.etRegra=etNovaRegra(a.dataset.f,a.dataset.e);UI.modal='et-regra';renderModal();return;
+    case 'et-regra-ed':{if(!ehAdmin(me()))return;const r=etRegras().find(x=>x.id===a.dataset.v);if(!r)return;UI.etRegra={...JSON.parse(JSON.stringify(r)),tipo:r.modelo?'modelo':'tarefa'};UI.modal='et-regra';renderModal();return}
+    case 'et-regra-x':{if(!ehAdmin(me()))return;const r=etRegras().find(x=>x.id===a.dataset.v);if(!r)return;
+      const usada=(S.terrenos||[]).some(t=>(t.tarefas||[]).some(k=>k.regra===r.id));if(usada){r.ativo=false;toast('A regra já criou tarefas: ficou desativada.')}else{cfg().regrasEtapa=etRegras().filter(x=>x!==r);toast('Regra apagada.')}save();render();return}
+    case 'et-regra-salva':{const r=UI.etRegra,er=etRegraErro(r);if(er){toast(er,true);return}
+      const x={id:r.id||uid(),fase:r.fase,etapa:r.etapa,sub:r.sub||null,modelo:r.tipo==='modelo'?r.modelo:null,titulo:r.tipo==='tarefa'?r.titulo.trim():null,desc:r.desc||'',prazo:r.tipo==='tarefa'?r.prazo:null,
+        lista:r.lista,prio:r.prio,resp:r.resp||RESP_OBJ,cond:r.cond||null,trava:!!r.trava,ativo:r.ativo!==false,ordem:r.ordem??etRegras().filter(y=>y.fase===r.fase&&y.etapa===r.etapa).length};
+      const i=etRegras().findIndex(y=>y.id===x.id);if(i>=0)etRegras()[i]=x;else etRegras().push(x);UI.etRegra=null;UI.modal=null;save();renderModal();render();toast('Regra salva. Vale para as próximas entradas na etapa.');return}
+    case 'et-cond':{const v=a.dataset.v,x=etCondAlvo(v);if(!x||!ehAdmin(me()))return;const c=x.ler();
+      UI.itCond={alvo:v,cond:c?JSON.parse(JSON.stringify(c)):itNovaCond(),busca:c?null:'0',q:'',ext:{titulo:x.nome,salvar:x.gravar,voltar:x.voltar}};UI.modal='it-cond';renderModal();return}
+    case 'et-cond-tira':{const x=etCondAlvo(a.dataset.v);if(!x||!ehAdmin(me()))return;x.gravar(null);if(a.dataset.v==='regra')renderModal();else{save();render();renderModal()}return}
+  }},true);
+document.addEventListener('change',e=>{const el=e.target;
+  if(el.dataset?.etr){e.stopImmediatePropagation();const r=UI.etRegra;if(!r)return;const c=el.dataset.etr;
+    if(c==='trava'||c==='ativo')r[c]=el.checked;else if(c==='prazo')r.prazo=el.value===''?null:Math.max(0,parseInt(el.value,10)||0);else if(c==='sub')r.sub=el.value||null;else r[c]=el.value;
+    if(['tipo','sub'].includes(c))renderModal();return}
+  if(el.dataset?.etk==='etapa'){e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!vzEdita(t,k))return;const [f,et]=(el.value||'').split('|');
+    const antes=k.etapa?etNomeE(k.fase,k.etapa):'nenhuma';etPor(t,k,f||null,et||null);k.etSit=null;k.etSitEm=null;k.regra=k.etapa&&etRegraDe(k)?.etapa===k.etapa?k.regra:k.regra;
+    log(t,`Tarefa "${k.titulo}": etapa do funil ${antes} → ${k.etapa?etNomeE(k.fase,k.etapa):'nenhuma'}`);tkRe();return}},true);
+document.addEventListener('submit',e=>{const f=e.target;if(f.dataset?.form!=='et-forcar')return;e.preventDefault();e.stopImmediatePropagation();const a=UI.etFz,t=T(a?.tid),p=t&&procsDe(t).find(x=>x.id===a.pid),j=new FormData(f).get('j')?.trim();
+  if(!p)return;if(!j){toast('Justifique a passagem sem as tarefas.',true);return}UI.etFz=null;
+  if(a.tipo==='status'){UI.etJust=j;UI.alvoProc=p.id;UI.modal='p-concluir';renderModal();return}
+  UI.modal=null;renderModal();procIr(t,p,a.tipo,a.dest,{forcado:j});save();render();toast(`${t.nome}: ${a.tipo==='etapa'?etNomeE(p.fase,a.dest):etNomeS(p.fase,a.dest)}.`)},true);
+
+/* ---------- dados: regras de exemplo e a etapa das tarefas já existentes ---------- */
+(()=>{if(!S.etExemplo){S.etExemplo=true;const ent=faseEnt();
+    if(!crModelos().some(m=>m.id==='mod-estudos')){const a=uid(),b=uid(),c=uid();crModelos().push({id:'mod-estudos',nome:'Estudos preliminares',dono:null,padrao:false,ativo:true,tarefas:[
+      {id:a,titulo:'Estudo de massa',lista:'Fazer',prio:'alta',iniD:0,dur:5,resp:RESP_OBJ,pessoas:[],etq:['et5'],cks:[],preds:[]},
+      {id:b,titulo:'Estudo de viabilidade',lista:'Backlog',prio:'alta',iniD:0,dur:3,resp:RESP_OBJ,pessoas:[{papel:'aprov',user:'Moisés'}],etq:['et4'],cks:[],preds:[{id:a,tipo:'TI',def:0}]},
+      {id:c,titulo:'Minuta de permuta',lista:'Backlog',prio:'media',iniD:0,dur:3,resp:'Camila Torres',pessoas:[],etq:['et2'],cks:[],preds:[],cond:{modo:'todas',itens:[{campo:'calculado.forma_pagamento_vigente',op:'em',valores:['permuta_fisica','permuta_financeira','permuta_geral','permuta_com_torna']}]}}]})}
+    etRegras().push({id:'re-estudos',fase:ent,etapa:'estudos',sub:null,modelo:'mod-estudos',titulo:null,desc:'',prazo:null,lista:'Fazer',prio:'media',resp:RESP_OBJ,cond:null,trava:false,ativo:true,ordem:0},
+      {id:'re-proposta',fase:ent,etapa:'negociacao',sub:'proposta_enviada',modelo:null,titulo:'Cobrar retorno da proposta',desc:'Ligar para o vendedor ou o corretor e registrar a resposta.',prazo:5,lista:'Fazer',prio:'alta',resp:RESP_OBJ,cond:null,trava:true,ativo:true,ordem:0},
+      {id:'re-contrato',fase:ent,etapa:'contrato',sub:null,modelo:null,titulo:'Revisar a minuta com o jurídico',desc:'',prazo:7,lista:'Fazer',prio:'alta',resp:'Camila Torres',cond:null,trava:false,ativo:true,ordem:0})}
+  /* tarefas de antes do lote B: na etapa atual do terreno (no banco, a tarefa nova já nasce assim) */
+  (S.terrenos||[]).forEach(t=>(t.tarefas||[]).forEach(k=>{if(k.etapa!==undefined||k.modelo)return;const a=etAtual(t);a?etPor(t,k,a.f,a.p.etapa):etPor(t,k)}));
+  /* exemplo: o terreno em Estudos Preliminares recebe as tarefas da regra da etapa */
+  if(!S.etExemplo2){S.etExemplo2=true;const t=(S.terrenos||[]).find(x=>x.neg?.status==='ativo'&&x.neg.etapa==='estudos');if(t)etEntrar(t,faseEnt(),t.neg,'etapa','estudos')}})();
+/* roteiros de teste (testes/tetapa.js): rodar uma função no escopo do protótipo */
+window.BKM_TESTE=Object.assign(window.BKM_TESTE||{},{escopo:(f,a)=>eval('('+f+')')(a)});
 
 /* ===================== máscaras de número ao digitar ===================== */
 /* Todo campo de número (inputmode decimal, ou data-fmt) se formata enquanto se digita:
@@ -13281,7 +13572,7 @@ document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legen
    selecionado no mapa e vista das tarefas só atualizam o endereço. O terreno vai pelo código. */
 const RT_BASE=location.pathname.startsWith('/prototipo')?'/prototipo':null;
 const RT_SEC=['cadastro','comercial','negociacao','fases','tarefas','urbanismo','documentos','historico'];
-const RT_CFG={fases:'fases',funil:'etapas',prereq:'pre-requisitos',status:'status',checklist:'checklist',notif:'notificacoes',equipe:'equipe',viab:'viabilidade',zonas:'parametros',campos:'campos',tarefas:'tarefas'};
+const RT_CFG={fases:'fases',funil:'etapas',prereq:'pre-requisitos',status:'status',checklist:'checklist',etapaTar:'tarefas-da-etapa',notif:'notificacoes',equipe:'equipe',viab:'viabilidade',zonas:'parametros',campos:'campos',tarefas:'tarefas'};
 const rtCod=id=>T(id)?.codigo||null;
 const rtId=c=>c&&S.terrenos.find(t=>(t.codigo||'').toUpperCase()===c.toUpperCase())?.id||null;
 const rtViabs=id=>(S.viabs||[]).filter(v=>v.tid===id);
