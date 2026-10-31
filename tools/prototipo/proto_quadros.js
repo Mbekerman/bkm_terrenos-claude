@@ -282,6 +282,7 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
     <input class="tkm-tit" value="${esc(k.titulo)}" data-tkc="titulo" aria-label="Título da tarefa" ${dis} required>
     <label class="tkm-st st-${tkStCls(l)}"><span class="sr-only">Lista</span><select class="tkm-lsel" data-tkc="lista" ${dis||(k.arq?'disabled':'')} aria-label="Lista (status)">${tkL(t).map(x=>`<option value="${x.id}" ${x.id===l.id?'selected':''}>${esc(x.nome)}${x.oculta?' (oculta)':''}</option>`).join('')}</select></label>
     ${selos}<span class="tkm-sp"></span><span class="tkm-cabb">${k.modelo?'':pausar}${principal}</span></div>
+  ${auBotoesHtml(t,k,ro)}
   ${k.feita?`<div class="tkm-feita faint">Concluída em ${fd(k.feita)}${k.feitaPor?' por '+esc(k.feitaPor):''}</div>`:''}
   ${cxFaixa(t,k,bloq)}${k.arq?`<div class="tkm-arqb">${ic('arq',18)}<span>Este cartão está arquivado e fica fora dos quadros.</span></div>`:''}
   <div class="tkm-abas" role="tablist" aria-label="Seções do cartão">${abas.map(([v,n])=>`<button role="tab" data-a="tkc-aba" data-v="${v}" aria-selected="${v===aba}">${n}${cont[v]?`<span class="tkm-n">${cont[v]}</span>`:''}${v==='aprov'&&apPend(k)?'<span class="tkm-dot" title="Aguardando aprovação"></span>':''}</button>`).join('')}</div>

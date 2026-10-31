@@ -4426,6 +4426,22 @@ html[data-tema="escuro"] .it-db small { color: #8e9ac4 }
 .it-just-f .cr-aviso { width: 100%; max-width: 480px } .it-just-f .cr-av-b { display: flex; justify-content: flex-end; gap: 8px }
 html[data-tema="escuro"] .it-just-f { --tk-campo: #16204a; --tk-tx: #dfe5ff; --tk-sub: #9fadd6 }
 @media (max-width: 760px) { .it-cfgbar .it-seg { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; scrollbar-width: none } .it-cfgbar .it-seg button { flex: none } .it-cfgbar .it-busca { max-width: none } }
+/* arrastar a barra do cronograma (30/out) */
+.cr-bar .cr-puxa { position: absolute; top: 0; right: 0; bottom: 0; width: 8px; cursor: ew-resize; z-index: 2 }
+@media (pointer: fine) { .cr-bar:has(.cr-puxa), .cr-marco { cursor: grab } }
+.cr-bar.arrastando, .cr-marco.arrastando { cursor: grabbing; box-shadow: 0 2px 8px rgba(0,0,0,.25); z-index: 5; opacity: .9 }
+.cr-bar.arrastando { overflow: visible }
+:is(.cr-bar, .cr-marco).arrastando::after { content: attr(data-dica); position: absolute; top: -26px; left: 0; white-space: nowrap; font-size: 12px; background: #1f1f1f; color: #fff; padding: 2px 8px; border-radius: 4px; pointer-events: none }
+.cr-marco.arrastando::after { transform: rotate(-45deg); transform-origin: left bottom }
+body.cr-arrastando { cursor: grabbing; user-select: none }
+
+/* botões do cartão e agendamentos (bloco 5b, 30/out) */
+.tkm-bts { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 28px 4px }
+.tkm-bt { height: 32px; padding: 0 14px 0 10px; gap: 6px; border-radius: 16px }
+.tkm-bt svg { color: #0b57d0 }
+html[data-tema="escuro"] .tkm-bt svg { color: #a8c7fa }
+.au-dm { width: 120px }
+@media (max-width: 720px) { .tkm-bts { padding: 10px 16px 4px } }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

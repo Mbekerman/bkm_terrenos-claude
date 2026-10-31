@@ -353,6 +353,7 @@ begin
 
   -- automações de prazo (bloco 5a): vence em N dias e venceu
   total := total + fluxo.automacoes_prazo(p_hoje);
+  total := total + fluxo.automacoes_agenda(p_hoje);
 
   -- tarefa atrasada: uma vez, no primeiro dia de atraso (ou quando a rotina vir)
   for r in select * from fluxo.tarefas k where k.concluida_em is null and k.arquivada_em is null and k.prazo < p_hoje and k.responsavel_id is not null and not k.modelo
