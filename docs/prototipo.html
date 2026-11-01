@@ -8521,11 +8521,12 @@ document.addEventListener('click',e=>{if(UI.fmMenu&&!e.target.closest?.('.fm-mw'
   <form data-form="tarefa-r" id="f-tkr" class="tkr"><div class="fields">
     <div class="field full"><label for="tr-t">Tarefa</label><input id="tr-t" name="titulo" required value="${esc(sel.rasc?.titulo||'')}" placeholder="Ex.: cobrar a contraproposta do proprietário" autocomplete="off"></div>
     ${t?'':`<div class="field full"><label for="tr-ter">Terreno</label><select id="tr-ter" name="ter" required><option value="">Escolha o terreno</option>${ativosBanco().map(x=>`<option value="${x.id}" ${(sel.rasc?.ter||UI.tk?.ter)===x.id?'selected':''}>${x.codigo} · ${esc(x.nome)}</option>`).join('')}</select></div>`}
+    <div class="field full"><label for="tr-r">Responsável</label>${tkSelU('resp',sel.rasc?.resp!=null?sel.rasc.resp:me(),'Sem responsável','id="tr-r"')}</div>
     <div class="field full"><label for="tr-p">Prazo</label><span class="tkr-prz"><input id="tr-p" name="prazo" type="date" value="${esc(sel.rasc?.prazo||'')}" aria-label="Prazo">${[[1,'Amanhã'],[7,'1 semana'],['m1','1 mês']].map(([n,r])=>`<button type="button" class="tkr-pz" data-a="fm-prz" data-v="${n}">${r}</button>`).join('')}</span></div>
     ${fmEtCampos(t||T(sel.rasc?.ter||UI.tk?.ter),'tr',sel.rasc)}
     ${sel.desc?`<div class="field full"><label for="tr-d">Descrição</label><textarea id="tr-d" name="desc" data-mencao placeholder="Use @ para avisar um colega">${esc(sel.rasc?.desc||'')}</textarea></div>`:`<div class="field full tkr-dl"><button type="button" class="btn text sm" data-a="fm-desc">${ic('add',16)}Adicionar descrição</button></div>`}
     <fieldset class="field full tkr-vis"><legend>Visibilidade</legend><span class="tkr-seg">${Object.keys(VZ_N).map(v=>`<label title="${esc(VZ_D[v])}"><input type="radio" name="vis" value="${v}" required ${(sel.rasc?.vis||ult)===v?'checked':''}><span>${ic(VZ_IC[v],16)}${VZ_N[v]}</span></label>`).join('')}</span></fieldset>
-    <p class="faint tkr-pad">Vai para ${l?esc(l):'a primeira lista'}, com você como responsável.</p></div></form>
+    <p class="faint tkr-pad">Vai para ${l?esc(l):'a primeira lista'}.</p></div></form>
   <div class="df"><button class="btn text" data-a="fm-mais">Mais opções</button><span class="tkm-sp"></span><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-tkr">Criar</button></div>`}}
 function fmListaPadrao(t,pedida){const L=t?tkL(t).filter(l=>!l.oculta&&l.tipo!=='conclui'&&l.tipo!=='pausa').map(l=>l.nome):(S.listasModelo||[]).filter(l=>l.ativo).map(l=>l.nome);
   if(pedida&&(t?tkL(t).some(l=>l.nome===pedida&&!l.oculta):true))return pedida;return L.includes('Fazer')?'Fazer':L[0]}
@@ -8533,12 +8534,12 @@ function fmRasc(){const f=document.querySelector('#f-tkr');if(!f)return UI.tkSel
 function fmRapidaAcao(A){if(!UI.tkSel)return;const r=fmRasc();UI.tkSel.rasc=r;
   if(A==='fm-desc'){UI.tkSel.desc=true;renderModal();setTimeout(()=>document.querySelector('#tr-d')?.focus(),0);return}
   UI.tkSel.mais=true;renderModal();
-  setTimeout(()=>{const set=(s,v)=>{const el=document.querySelector(s);if(el&&v!=null)el.value=v};set('#tm-t',r.titulo);set('#tm-ter',r.ter);set('#tm-d',r.desc);if(r.prazo!=null)set('#tm-p',r.prazo);if(r.ter&&!UI.tkSel.tid)fmEtRefaz('tm',T(r.ter));if(r.et!=null){set('#tm-et',r.et);fmEtRefaz('tm',T(UI.tkSel.tid||r.ter),true)}if(r.sub!=null)set('#tm-sub',r.sub);
+  setTimeout(()=>{const set=(s,v)=>{const el=document.querySelector(s);if(el&&v!=null)el.value=v};set('#tm-t',r.titulo);set('#tm-ter',r.ter);set('#tm-d',r.desc);if(r.prazo!=null)set('#tm-p',r.prazo);if(r.resp!=null)set('#tm-r',r.resp);if(r.ter&&!UI.tkSel.tid)fmEtRefaz('tm',T(r.ter));if(r.et!=null){set('#tm-et',r.et);fmEtRefaz('tm',T(UI.tkSel.tid||r.ter),true)}if(r.sub!=null)set('#tm-sub',r.sub);
     if(r.vis){const x=document.querySelector(`#f-tk input[name=vis][value="${r.vis}"]`);if(x){x.checked=true;x.dispatchEvent(new Event('change',{bubbles:true}))}}document.querySelector('#tm-t')?.focus()},0)}
 document.addEventListener('submit',e=>{const f=e.target;if(f.dataset?.form!=='tarefa-r')return;e.preventDefault();e.stopImmediatePropagation();const F=Object.fromEntries(new FormData(f)),sel=UI.tkSel;
   const t=T(sel.tid||F.ter);if(!t){toast('Escolha o terreno da tarefa.',true);return}if(!(F.titulo||'').trim())return;if(!F.vis){toast('Escolha a visibilidade.',true);return}
   const nome=fmListaPadrao(t,sel.lista),l=tkL(t).find(x=>x.nome===nome&&!x.oculta)||tkPrim(t,'aberta');
-  const k=tkCriar(t,{titulo:F.titulo,desc:F.desc||'',resp:me(),prio:'media',lista:l.id,vis:F.vis,lib:[],prazo:F.prazo||null,et:F.et,sub:F.sub});vzLembrar(F.vis);
+  const k=tkCriar(t,{titulo:F.titulo,desc:F.desc||'',resp:F.resp||null,prio:'media',lista:l.id,vis:F.vis,lib:[],prazo:F.prazo||null,et:F.et,sub:F.sub});vzLembrar(F.vis);
   UI.modal=null;renderModal();tkRe();fmSnack(`${k.codigo} criada em ${l.nome}`,'Abrir',()=>{UI.tkSel={tid:t.id,kid:k.id};UI.modal='tarefa';renderModal()})},true);
 /* aviso com ação (o toast comum é só texto) */
 function fmSnack(m,rot,fn){const el=$('#toast');el.innerHTML=`<span>${esc(m)}</span><button class="toast-ac">${esc(rot)}</button>`;el.className='toast show tem-ac';clearTimeout(tmr);

@@ -121,11 +121,12 @@ ok(await p.$eval('#tr-p',x=>x.value)===await X(p,()=>addD(HOJE,1)),'"Amanhã" p�
 await clica(p,'[data-a=fm-prz][data-v=m1]');ok(await p.$eval('#tr-p',x=>x.value)===await X(p,()=>fmMaisMes(HOJE))&&await X(p,()=>fmMaisMes('2026-01-31')==='2026-02-28'&&fmMaisMes('2026-12-15')==='2027-01-15'),'"1 mês" põe o mesmo dia do mês seguinte (ou o último)');
 ok(!(await p.$('[data-a=fm-prz][data-v="0"]')),'sem o atalho Hoje');
 await clica(p,'[data-a=fm-prz][data-v="1"]');
+ok(await p.$eval('#tr-r',x=>x.value)==='Moisés','o responsável vem com você');await muda(p,'#tr-r','Rafael Souza');
 await p.fill('#tr-t','Pedir planta do vizinho');await p.fill('#tr-d','Para conferir a divisa do fundo');await muda(p,'#f-tkr input[name=vis][value=publico]',true);
 await p.screenshot({path:O+'6_rapida.png'});
 await p.press('#tr-t','Enter');await p.waitForTimeout(250);
 const nk=await X(p,()=>{const k=S.terrenos[0].tarefas.find(x=>x.titulo==='Pedir planta do vizinho');return k&&{resp:k.resp,prazo:k.prazo,desc:k.desc,lista:tkLista(S.terrenos[0],k).nome,codigo:k.codigo,et:k.fase+'|'+k.etapa,sub:k.sub}});
-ok(nk&&nk.resp==='Moisés'&&nk.prazo===await X(p,()=>addD(HOJE,1))&&nk.desc==='Para conferir a divisa do fundo'&&nk.lista==='Fazer','Enter cria com você como responsável, o prazo, na lista pedida e com a descrição');
+ok(nk&&nk.resp==='Rafael Souza'&&nk.prazo===await X(p,()=>addD(HOJE,1))&&nk.desc==='Para conferir a divisa do fundo'&&nk.lista==='Fazer','Enter cria com o responsável escolhido, o prazo, na lista pedida e com a descrição');
 ok(nk.et===outra&&nk.sub===sub2,'a tarefa fica na etapa e na subetapa escolhidas');
 ok(!(await p.$('#modal .dialog'))&&(await toast(p)).includes(nk.codigo+' criada'),'a janela fecha e o aviso traz o código com Abrir');
 await clica(p,'.toast-ac');await p.waitForTimeout(200);ok(await p.$eval('.tkm-trilha',(x,c)=>x.textContent.includes(c),nk.codigo),'Abrir abre o cartão criado');
@@ -136,10 +137,11 @@ ok(await p.$('#tr-ter')!==null&&await p.$eval('#tr-et',x=>x.disabled),'fora da f
 const t1=await X(p,()=>{const t=S.terrenos.find(x=>etAtual(x));const a=etAtual(t);return {id:t.id,et:a.f+'|'+a.p.etapa,sub:a.p.sub||''}});
 await muda(p,'#tr-ter',t1.id);await p.waitForTimeout(80);
 ok(await p.$eval('#tr-et',(x,v)=>!x.disabled&&x.value===v,t1.et)&&await p.$eval('#tr-sub',x=>x.value)===t1.sub,'escolhido o terreno, vêm a etapa e a subetapa atuais dele');
-await clica(p,'[data-a=fm-prz][data-v="7"]');
+await clica(p,'[data-a=fm-prz][data-v="7"]');await muda(p,'#tr-r','');
 await p.fill('#tr-t','Revisar contrato');await clica(p,'[data-a=fm-mais]');await p.waitForTimeout(200);
 ok(await p.$eval('#tm-t',x=>x.value)==='Revisar contrato'&&await p.$('#tm-l')!==null,'Mais opções abre a janela completa com o que já foi digitado');
 ok(await p.$eval('#tm-p',x=>x.value)===await X(p,()=>addD(HOJE,7))&&await p.$eval('#tm-et',(x,v)=>x.value===v,t1.et)&&await p.$eval('#tm-sub',(x,v)=>x.value===v,t1.sub),'e leva o prazo, a etapa e a subetapa');
+ok(await p.$eval('#tm-r',x=>x.value)==='','e o responsável (aqui, sem responsável)');
 await ctx.close()}
 // celular e escuro
 {const {ctx,p}=await abre(390,844,'claro');await cartao(p);await p.waitForTimeout(300);await p.evaluate(()=>document.querySelector('#modal .fm').scrollIntoView());await p.screenshot({path:O+'7_celular.png'});
