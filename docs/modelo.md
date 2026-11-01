@@ -206,10 +206,11 @@ erDiagram
 
 | Tipo | Gatilho | Quem recebe |
 | --- | --- | --- |
-| `tarefa_atribuida` | na hora (trigger em `tarefas`) | responsável |
-| `mencao` | na hora, @arroba no texto (trigger em `tarefas`, `atividades`, `reunioes`) | pessoa mencionada |
+| `tarefa_atribuida` | na hora (trigger em `fluxo.tarefas`, `fluxo.tarefa_pessoas` e `fluxo.checklist_itens`) | responsável, executor incluído, responsável do item do checklist |
+| `mencao` | na hora, @arroba no texto (trigger em `fluxo.tarefas`, `fluxo.comentarios`, `atividades`, `reunioes`) | pessoa mencionada |
 | `tarefa_prazo` | lembrete (padrão: no dia) | responsável |
 | `tarefa_atrasada` | rotina diária, uma vez por prazo | responsável |
+| `tarefa_acompanhada` | na hora: comentário novo e tarefa concluída (no máximo um aviso por tarefa por dia) | quem acompanha a tarefa |
 | `stand_by_retomar` | lembrete (padrão: 7 dias antes e no dia) | responsável da tratativa |
 | `subetapa_prazo` | rotina diária, uma vez por entrada na subetapa | responsável da tratativa |
 | `documento_vencendo` | lembrete (padrão: 30 e 7 dias antes) | responsável da tratativa ou do terreno |
@@ -217,7 +218,7 @@ erDiagram
 | `aprovacao_pendente` | na hora, quando é a vez | aprovador previsto (ou todos do nível) |
 | `aprovacao_decidida` | na hora | quem pediu |
 
-**Menções com @** (decisão do Moisés, 28/out/2026): quem escreve `@arroba` (o @ de `usuarios`) na descrição ou no resultado da tarefa, no resumo ou no resultado da atividade, ou na pauta, no resumo ou nos encaminhamentos da reunião avisa a pessoa (`app.tg_mencoes`, que lê os @ por `app.arrobas_no_texto`). Só conta o @ de quem é da empresa; o autor não avisa a si mesmo, e-mail escrito no texto não é menção, e editar o texto só avisa quem entrou agora. Cada menção fica em `mencoes` (origem e pessoa, uma vez). Só o @ avisa: não há lista de marcados na tarefa (decisão do Moisés, 29/out/2026, para não virar spam).
+**Menções com @** (decisão do Moisés, 28/out/2026): quem escreve `@arroba` (o @ de `usuarios`) na descrição, no resultado ou num comentário da tarefa, no resumo ou no resultado da atividade, ou na pauta, no resumo ou nos encaminhamentos da reunião avisa a pessoa (`app.tg_mencoes`, que lê os @ por `app.arrobas_no_texto`). Só conta o @ de quem é da empresa; o autor não avisa a si mesmo, e-mail escrito no texto não é menção, e editar o texto só avisa quem entrou agora. Cada menção fica em `mencoes` (origem e pessoa, uma vez). Só o @ avisa: não há lista de marcados na tarefa (decisão do Moisés, 29/out/2026, para não virar spam).
 
 **E-mail:** cada tipo tem o padrão da empresa (`tipos_notificacao.email_padrao`; nascem ligados os de atribuição, menção e aprovação) e cada pessoa escolhe por tipo em `preferencias_notificacao` (`app.salvar_preferencia_notificacao(empresa, tipo, email)`; nulo volta ao padrão). A notificação que vai por e-mail nasce com `email_status = 'pendente'`; uma função do servidor (a fazer) envia pela conta do sistema (bkm@) e marca `enviado` ou `falhou`. No app a notificação sempre aparece; o administrador desliga o tipo inteiro. WhatsApp fica para depois (decisão do Moisés, 28/out/2026).
 
@@ -470,8 +471,6 @@ erDiagram
   processos ||--o{ processo_transicoes : historico
   processos ||--o{ propostas : recebe
   propostas |o--o| propostas : "responde a"
-  terrenos ||--o{ tarefas : tem
-  processos |o--o{ tarefas : contextualiza
   terrenos ||--o{ atividades : registra
   processos |o--o{ viabilidades : usa
   terrenos ||--o{ diligencias : investiga
@@ -608,19 +607,9 @@ erDiagram
     uuid pessoa_id FK
     text nome
   }
-  tarefas {
-    uuid id PK
-    uuid terreno_id FK
-    uuid processo_id FK
-    text titulo
-    uuid responsavel_id FK
-    date prazo
-    text status "pendente | em_andamento | aguardando_terceiro | concluida | cancelada"
-    text prioridade
-    text resultado
-    float posicao "ordem no quadro de tarefas"
-  }
 ```
+
+As tarefas moram no esquema `fluxo` (ver "Quadros e tarefas", abaixo): cada terreno tem o seu quadro e a tarefa pode apontar a negociação (`processo_id`, do mesmo terreno do quadro).
 
 ## Mapa, dashboard e quadro de tarefas
 
@@ -637,11 +626,480 @@ erDiagram
 | `excluir_lugar_entorno(terreno, google_place_id)` | exclui um lugar do Google do entorno deste terreno (`excluido_em`/`excluido_por`); `salvar_entorno` mantém a exclusão quando a busca é refeita |
 | `restaurar_lugar_entorno(terreno, google_place_id)` | desfaz a exclusão; o lugar volta à ficha sem nova busca |
 | `v_entorno_buscas` | por terreno localizado: quando foi buscado, se a rota a pé respondeu e `precisa_buscar` (nunca buscado ou desatualizado) |
-| `v_tarefas` | tarefa com código e nome do terreno e o atraso calculado; o quadro ordena por `status` e `posicao` |
+| `v_tarefas` | cartão dos quadros dos terrenos (`fluxo.v_tarefas`: lista, atraso e andamento do checklist) com o código e o nome do terreno; o quadro ordena por lista e `posicao` |
 
 Entorno do terreno: as categorias são configuração (`entorno_categorias`: tipos do Google e raio a pé; ligar outra categoria é migration de dados). O front busca sozinho quando o terreno é localizado ou muda de lugar (`precisa_buscar`), e só então, e grava por `salvar_entorno`. `pontos_interesse` é a lista cadastrada pela própria empresa (sede, polos, pontos marcados à mão): todos aparecem na ficha de cada terreno, com a distância a pé quando está a até 1,5 km a pé e de carro quando está mais longe (`terreno_ponto_distancias`). Excluir: lugar do Google é marcado no próprio terreno por `excluir_lugar_entorno` (só aquele terreno; continua fora se a busca for refeita porque o terreno mudou de lugar) e volta por `restaurar_lugar_entorno`; ponto da empresa é desligado direto (`ativo = false`, auditado), some de todos os terrenos e do mapa e pode ser religado. A busca no Google é feita uma vez por localização: não há "buscar de novo" manual.
 
 O dashboard agrega `v_terrenos` no front (filtro cruzado por clique). A poligonal continua em `terrenos.poligono_geojson`; importar KMZ/KML é feito no front e gravado por `salvar_terreno`.
+
+## Quadros e tarefas (esquema `fluxo`)
+
+Módulo de quadros e tarefas, o "Trello da BKM" (decisões do Moisés, 29/out/2026; modelo em https://claude.ai/artifact/EdJyXjystX3uEGo4sNQob4). Mora no esquema próprio `fluxo` (migration `00150`), que só conhece empresas, membros e usuários, para servir também a outros apps do mesmo Supabase: o quadro aponta para o que acompanha por `objeto_tipo` e `objeto_id`, sem chave estrangeira. O BKM Terrenos cria um quadro por terreno (trigger `t_quadro` em `terrenos`, por `fluxo.quadro_de`) e liga a tarefa ao processo (chave estrangeira e `app.tg_tarefa_processo`, em `negociacao`). No Supabase, `fluxo` entra em **Settings → API → Exposed schemas** junto com `app`.
+
+```mermaid
+erDiagram
+  quadros ||--o{ listas : tem
+  quadros ||--o{ tarefas : tem
+  listas ||--o{ tarefas : "está em"
+  tarefas ||--o{ tarefa_pessoas : "executores, aprovadores, acompanham"
+  tarefas ||--o{ tarefa_etiquetas : classifica
+  etiquetas ||--o{ tarefa_etiquetas : marca
+  tarefas ||--o{ checklists : tem
+  checklists ||--o{ checklist_itens : tem
+  tarefas ||--o{ comentarios : tem
+  comentarios ||--o{ comentario_reacoes : tem
+  tarefas ||--o{ anexos : tem
+  quadros {
+    uuid id PK
+    text objeto_tipo "terreno, empreendimento, area..."
+    uuid objeto_id "sem FK"
+  }
+  listas {
+    uuid quadro_id FK
+    text nome
+    float posicao
+    text tipo "aberta | pausa | conclui"
+    bool oculta
+  }
+  tarefas {
+    uuid id PK
+    text codigo "TAR-000123"
+    uuid quadro_id FK
+    uuid lista_id FK
+    float posicao
+    text titulo
+    text descricao
+    text resultado
+    uuid solicitante_id
+    uuid responsavel_id "o principal, um só"
+    date inicio
+    date prazo "nulo = backlog"
+    text prioridade
+    text capa
+    uuid processo_id "FK posta pelo app"
+    uuid mae_id "subtarefa: a tarefa mãe"
+    timestamptz concluida_em
+    timestamptz arquivada_em
+  }
+  checklist_itens {
+    uuid checklist_id FK
+    text texto
+    uuid responsavel_id
+    date prazo
+    timestamptz concluido_em
+    uuid virou_tarefa_id
+  }
+```
+
+- **Listas:** `listas_modelo` traz o padrão da empresa (nulo = modelo de fábrica: Backlog, Fazer, Fazendo, Aguardando retorno, Pausadas, Feito), copiado para cada quadro novo; os quadros existentes mantêm as suas, e cada terreno cria, renomeia, ordena e oculta as dele. Só o administrador muda o padrão (`fluxo.salvar_lista_modelo`, que copia o padrão para a empresa na primeira mudança e recusa ficar sem lista que conclui).
+- **Concluir:** a tarefa não tem status. Entrar numa lista do tipo `conclui` preenche `concluida_em` e `concluida_por`; sair dela reabre; marcar `concluida_em` à mão leva o cartão para a primeira lista que conclui, e limpar leva para a primeira aberta (`fluxo.tg_tarefa_lista`). A lista `pausa` é a que vai pausar o SLA (bloco 3).
+- **Nunca apagada:** sem `delete` em `tarefas`, `listas` e `etiquetas`; a tarefa arquiva (`arquivada_em`, `arquivada_por`) e restaura. Comentário: só o autor edita (`editado_em`) e apaga (`apagado_em`, o texto some da tela e fica na auditoria). Anexo sai com `removido_em`.
+- **Pessoas:** solicitante (quem criou, por padrão) e responsável principal ficam no cartão; executores, aprovadores e quem acompanha em `tarefa_pessoas`.
+- **Predecessora pendente** (30/out/2026): `fluxo.predecessoras_pendentes(tarefa)` devolve os códigos das predecessoras que ainda não deixam concluir (TI e TT: em aberto; II e IT: em aberto e com o início nulo ou no futuro, porque o início real não é guardado; arquivada não conta). Por padrão o app só avisa ("Concluir mesmo assim", registrado no histórico); com `regras.conclui_exige_predecessoras` (`fluxo.salvar_regra_predecessoras`, só administrador), vira a pendência `predecessoras` e `tg_tarefa_lista` e `pedir_aprovacao` recusam.
+- **Subtarefas** (30/out/2026): `mae_id` liga a subtarefa à mãe, no mesmo quadro e com um nível só (a mãe não é subtarefa, quem tem subtarefas não vira subtarefa, modelo só com modelo; `fluxo.tg_subtarefa`). Com a regra do checklist ligada, a mãe não conclui com subtarefa aberta e não arquivada (`pendencias_conclusao` devolve `subtarefas`; `tg_tarefa_lista` recusa).
+- **Checklist:** vários por cartão, item com responsável e prazo; `fluxo.item_para_tarefa(item)` cria o cartão no mesmo quadro, ligado ao de origem por anexo, e marca o item como feito.
+- **Escrita direta** de quem edita (diretor, gestor, analista), pela RLS por `empresa_id`; Leitura só vê. Todas as tabelas vão para `app.auditoria` (o vínculo sem id próprio registra a tarefa).
+### Cronograma (bloco 2) e modelos de tarefas
+
+Decisões do Moisés de 29/out/2026. Mesmo esquema `fluxo`, mesma migration.
+
+```mermaid
+erDiagram
+  tarefas ||--o{ vinculos : "predecessora"
+  tarefas ||--o{ vinculos : "sucessora"
+  quadros ||--o{ linhas_base : tem
+  linhas_base ||--o{ linha_base_itens : "retrato das datas"
+  modelos_quadro ||--o{ modelo_tarefas : tem
+  modelo_tarefas ||--o{ modelo_vinculos : liga
+  vinculos {
+    uuid predecessora_id FK
+    uuid sucessora_id FK
+    text tipo "TI | II | TT | IT"
+    int defasagem "dias; negativa adianta"
+  }
+  linhas_base {
+    uuid quadro_id FK
+    int numero "1, 2... das aprovadas"
+    text situacao "pendente | aprovada | recusada | substituida | cancelada"
+    text motivo
+    uuid pedida_por
+    uuid decidida_por
+  }
+  modelos_quadro {
+    uuid dono_id "nulo = da empresa"
+    text objeto_tipo
+    bool padrao "entra sozinho no quadro novo"
+  }
+  modelo_tarefas {
+    int inicio_dias "depois da data de aplicação"
+    int duracao
+    bool responsavel_objeto "o responsável do terreno"
+    jsonb pessoas
+    uuid_arr etiquetas
+    jsonb checklists
+  }
+```
+
+- **Datas como no Project ("o mais cedo possível"):** a tarefa ganha `duracao` (dias no calendário da empresa) e `inicio_min` (o início que a pessoa digitou, a restrição "não começar antes de"). `fluxo.tg_cronograma` põe a tarefa no maior entre `inicio_min` e o que os vínculos pedem (`fluxo.inicio_cedo`): TI começa no dia seguinte ao fim da predecessora, II no início dela, TT termina no fim dela e IT termina no início dela, sempre mais a defasagem; a duração se mantém. Mudar só o início move a tarefa inteira; mudar o prazo ou a `duracao` muda a duração. Mudou uma tarefa, as sucessoras se reposicionam em cascata (`fluxo.reprogramar_sucessoras`, com `fluxo.cascata = 1` para não tomar a data empurrada como digitada); tarefa concluída não se move. Vínculo em círculo é recusado. II e TT juntos com durações diferentes seguem o Project (a sucessora termina junto e começa depois); o front pergunta se estica a duração da sucessora (grava `duracao`) ou adia o início.
+- **Calendário:** dias corridos por padrão; o administrador passa a empresa para dias úteis (`fluxo.salvar_calendario`), que pulam sábado, domingo e `feriados` (nacionais de 2026 a 2030, com Carnaval e Corpus Christi; a empresa pode ter os seus). `fluxo.somar_dias` e `fluxo.duracao_dias` fazem a conta nos dois modos.
+- **Linha de base:** `fluxo.enviar_cronograma(quadro, motivo)` tira o retrato das tarefas não arquivadas com início e prazo; quem edita manda, e fica `pendente` até o gestor de quem mandou (ou alguém acima, um diretor ou o administrador) decidir (`fluxo.decidir_linha_base`, que também deixa quem pediu desistir). Quem já aprova tem a sua aprovada na hora. Depois da primeira, trocar pede motivo; a anterior vira `substituida` e fica guardada. As datas seguem livres depois da aprovação: `fluxo.v_cronograma` mostra a linha de base aprovada, o desvio de início e de prazo em dias e `atrasada_base`; quem mudou cada data está em `app.auditoria` (as empurradas pela cascata ficam com quem fez a mudança que as empurrou).
+- **Modelos de tarefas:** o modelo da empresa (`dono_id` nulo) só o administrador mexe e pode ser o padrão do tipo de quadro (`fluxo.definir_modelo_padrao`): entra sozinho no quadro novo (no terreno, pelo `t_quadro`, com o responsável do terreno onde o modelo pede). Cada pessoa cria os seus (só ela vê) e aplica à mão (`fluxo.aplicar_modelo(modelo, quadro, data)`). O modelo guarda lista, prioridade, prazos relativos (`inicio_dias`, `duracao`), responsável fixo ou o do objeto, aprovadores, executores e quem acompanha, etiquetas, checklists e as predecessoras (`modelo_vinculos`), que ao aplicar já empurram as datas. `fluxo.salvar_quadro_como_modelo` transforma os cartões abertos de um quadro em modelo, com os prazos relativos ao primeiro início.
+
+### Aprovação formal da tarefa (bloco 3)
+
+Decisões do Moisés de 29/out/2026. Mesmo esquema `fluxo`, mesma migration.
+
+```mermaid
+erDiagram
+  tarefas ||--o{ aprovacoes : "pedidos"
+  aprovacoes ||--|{ aprovacao_votos : "um por aprovador"
+  empresas ||--o| regras : "regra de conclusão"
+  tarefas {
+    text aprovacao_modo "paralelo | sequencia"
+  }
+  aprovacoes {
+    text modo
+    text situacao "pendente | aprovada | recusada | cancelada | invalidada"
+    text motivo
+    uuid pedida_por
+  }
+  aprovacao_votos {
+    uuid aprovador_id
+    int ordem
+    text decisao "aprovou | recusou"
+    uuid decidido_por "o aprovador ou um superior dele"
+    text justificativa "obrigatória ao recusar"
+  }
+  regras {
+    bool conclui_exige_checklist "padrão: sim"
+  }
+```
+
+- **Quem aprova:** os aprovadores do cartão (`tarefa_pessoas`, papel `aprovador`, com `ordem` para a sequência). Um superior de um aprovador decide no lugar dele, como no funil; o voto guarda `decidido_por`.
+- **Pedido:** `fluxo.pedir_aprovacao(tarefa, motivo)` tira o retrato dos aprovadores; o pedido aberto anterior é cancelado e o aprovador que pede tem o próprio voto dado. Em paralelo (padrão) todos aprovam, em qualquer ordem; em sequência, só o da vez decide (`fluxo.votos_da_vez`). `fluxo.decidir_aprovacao(aprovacao, aprovar, justificativa)`: recusar exige justificativa e encerra o pedido; aprovado por todos, a tarefa conclui sozinha (vai para a lista que conclui). `fluxo.cancelar_aprovacao` desiste. Pedido e votos só mudam pelas funções.
+- **Bloqueio de conclusão** (`fluxo.pendencias_conclusao`, conferido no `t_lista`): tarefa com aprovador só conclui aprovada; com `regras.conclui_exige_checklist` (padrão ligado, `fluxo.salvar_regras` pelo administrador), só com os itens do checklist concluídos (item que virou cartão não conta). Reabrir uma tarefa aprovada invalida a aprovação.
+- **Avisos:** o aprovador na vez recebe `aprovacao_pendente` (em sequência, o próximo quando o anterior aprova); quem pediu e o responsável recebem `aprovacao_decidida`, com a justificativa na recusa (origem `tarefa_aprovacoes`).
+- O modelo de tarefas guarda o modo de aprovação e a ordem dos aprovadores.
+
+### SLA com pausa aprovada (bloco 3)
+
+Decisões do Moisés de 29/out/2026. Mesma migration.
+
+```mermaid
+erDiagram
+  tarefas ||--o{ pausas : "pausas"
+  empresas ||--o| regras : "quem aprova pausa"
+  pausas {
+    text situacao "pendente | ativa | encerrada | recusada | cancelada"
+    text motivo "obrigatório"
+    uuid pedida_por
+    uuid decidida_por
+    text motivo_decisao "obrigatório ao recusar"
+    uuid lista_anterior_id
+    timestamptz inicio
+    timestamptz fim
+    int dias "dias pausada, ao retomar"
+  }
+  regras {
+    text pausa_aprova "ninguem | gestor | diretor (padrão gestor)"
+  }
+```
+
+- **O prazo é o do cartão** e pausada não atrasa (`v_tarefas.atrasada`, `app.tarefas_atrasadas` e a rotina diária deixam de fora a lista de tipo `pausa`).
+- **Pausar:** `fluxo.pausar(tarefa, motivo)`; entrar na lista Pausadas só por ela (o `t_lista` recusa o arraste direto). Quem tem o nível de `regras.pausa_aprova` (o próprio nível, ou administrador) pausa na hora; os demais deixam o pedido pendente, com o cartão na lista em que está, e o primeiro superior com o nível recebe `aprovacao_pendente` (origem `tarefa_pausas`). `fluxo.decidir_pausa(pausa, aprovar, motivo)`: aprovar move para Pausadas guardando a lista de antes; recusar exige motivo; quem pediu pode desistir. `fluxo.salvar_regra_pausa` pelo administrador.
+- **Retomar:** `fluxo.retomar(tarefa)` encerra a pausa, volta à lista de antes (se ainda aberta) e empurra o prazo pelos dias pausados (corridos, ou úteis quando a empresa conta dias úteis); as sucessoras do cronograma andam em cascata. Concluir a tarefa direto da pausa encerra a pausa sem empurrar.
+- **Tempo:** `fluxo.v_tarefa_sla` dá dias aberta, dias pausada, dias líquidos, número de pausas e se há pausa ativa ou pedida.
+### Visibilidade por cartão (bloco 3)
+
+Decisões do Moisés de 29/out/2026. Mesma migration.
+
+```mermaid
+erDiagram
+  tarefas ||--o{ tarefa_acessos : "liberações"
+  grupos ||--o{ grupo_membros : "pessoas"
+  grupos ||--o{ tarefa_acessos : "liberado"
+  objeto_tipos ||--o{ quadros : "teto do objeto"
+  tarefas {
+    text visibilidade "publico | individual | restrito"
+  }
+  tarefa_acessos {
+    uuid user_id "ou grupo_id"
+    uuid grupo_id
+    text papel "leitor | comentarista | editor | administrador"
+    bool excluido "exceção: tira a pessoa do grupo"
+  }
+  objeto_tipos {
+    text tipo "terreno"
+    regproc funcao "app.ve_terreno"
+  }
+```
+
+- **Teto do objeto:** `fluxo.ve_objeto` chama a função registrada para o tipo do quadro (no BKM, `app.ve_terreno`, hoje a empresa; os perfis de acesso a terrenos entram nela). Sem objeto ou tipo sem registro, o teto é a empresa. O administrador do sistema vê tudo.
+- **Papel no cartão** (`fluxo.papel_cartao`, nulo = não vê): quem criou é administrador do cartão. Público: o papel do sistema (diretor, gestor e analista editam; leitura e básico leem), que um acesso dado no cartão pode subir. Individual: só quem criou. Restrito: o acesso dado (o da pessoa vale sobre o dos grupos; exceção anula o do grupo), senão editor para quem está no cartão e para o diretor.
+- **RLS:** cartão e filhas (pessoas, etiquetas, checklists e itens, comentários e reações, anexos, vínculos, aprovações, pausas, linha de base) leem por `fluxo.papel_tarefa` e escrevem por `fluxo.edita_tarefa` (comentar: `fluxo.comenta_tarefa`); as funções da tarefa conferem `fluxo.exigir_edicao_tarefa`. O histórico (`app.auditoria`) esconde o que é de cartão que a pessoa não vê.
+- **Regras:** a visibilidade só muda por quem gerencia (`fluxo.gerencia_tarefa`: administrador do cartão ou do sistema, ou diretor que vê o cartão); pôr outra pessoa num individual o torna restrito (gatilhos `t_visibilidade` e `t_restringe`); item que vira cartão herda a visibilidade e os acessos; modelo de tarefas guarda a visibilidade (restrito no modelo = só os envolvidos); salvar o quadro como modelo leva só o que quem salva vê.
+- **@ no cartão:** `fluxo.papel_cartao` e `fluxo.papel_tarefa` aceitam a pessoa (padrão: quem lê), e a função do teto recebe (objeto, pessoa); `app.tg_mencoes` só avisa quem vê o cartão. A tela só oferece no @ quem vê o cartão.
+- O banco tem `publico` como padrão para quem insere direto; a tela sempre pergunta.
+
+### Campos personalizados (bloco 4)
+
+Decisões do Moisés de 30/out/2026. Mesma migration.
+
+```mermaid
+erDiagram
+  empresas ||--o{ campos : "da empresa"
+  campos ||--o{ campo_opcoes : "lista"
+  tarefas ||--o{ tarefa_campos : "valores"
+  campos ||--o{ tarefa_campos : ""
+  campos {
+    text nome
+    text tipo "texto | numero | data | lista | caixa"
+    bool na_frente
+    bool ativo
+  }
+  tarefa_campos {
+    text texto "um só preenchido, o do tipo"
+    numeric numero
+    date data
+    uuid opcao_id
+    bool caixa
+  }
+```
+
+- Campos da empresa, para todos os quadros; o administrador cria e muda (RLS `app.eh_administrador`, com auditoria). Sem linha em `tarefa_campos`, o campo está "não informado"; sim/não guarda `false` para "não".
+- `t_valor` confere o valor no tipo do campo, a opção do próprio campo e campo ativo; `t_guarda` impede mudar o tipo ou apagar campo e opção com valor (desativar). Valores seguem a visibilidade do cartão (`fluxo.papel_tarefa` / `fluxo.edita_tarefa`), e o histórico os esconde de quem não vê o cartão.
+- "Obrigatório para concluir" saiu do campo (31/out/2026): o campo entra no cartão como item (`tarefa_itens`), e a regra em branco é de cada cartão (ver "Campos do terreno no cartão, regra em branco e condições" abaixo). Gravar valor inclui o campo no cartão sozinho (`tg_campo_incluido`).
+
+### Recorrência (bloco 4)
+
+Decisões do Moisés de 30/out/2026. Mesma migration.
+
+```mermaid
+erDiagram
+  tarefas ||--o| recorrencias : "origem"
+  recorrencias ||--o{ tarefas : "ocorrências (recorrencia_id)"
+  recorrencias {
+    text frequencia "diaria | semanal | mensal | anual"
+    int intervalo "a cada N"
+    int_array dias_semana "0 = domingo"
+    int dia_mes
+    date proxima
+    date termina_em
+    int max_vezes "com a de origem"
+    int vezes
+    int prazo_dias
+    uuid lista_id
+    bool ativa
+  }
+```
+
+- O cartão de origem é o modelo e a primeira ocorrência. `fluxo.gerar_recorrencias(data)`, chamada por `app.rotina_diaria`, cria cada ocorrência na data agendada, mesmo com a anterior aberta: cópia do cartão de origem como ele está (pessoas, etiquetas, prioridade, visibilidade, acessos e checklists em aberto, com o prazo do item deslocado), início na data e prazo `prazo_dias` depois; campos personalizados não vão. Se a rotina falhar um dia, a data perdida nasce na volta.
+- `t_valida` recusa série numa ocorrência, lista de outro quadro ou que não seja aberta; calcula o dia do mês e a próxima data (`fluxo.proxima_ocorrencia`: mês sem o dia usa o último; semanal a cada N semanas com os dias marcados). Na criação, ao retomar e ao mudar a regra (a partir da última ocorrência), data de hoje ou passada pula para amanhã em diante: nada nasce atrasado. A série encerra em `termina_em`, em `max_vezes` ou com o cartão de origem arquivado.
+- RLS pelo cartão de origem (`fluxo.papel_tarefa` / `fluxo.edita_tarefa`); só a rotina executa a geração.
+
+### Apontamento de horas (bloco 4)
+
+Decisões do Moisés de 30/out/2026: sem aprovação, e por ora só no banco (o app ainda não tem a tela). Mesma migration.
+
+```mermaid
+erDiagram
+  tarefas ||--o{ apontamentos : "horas"
+  apontamentos {
+    uuid user_id "quem apontou (sempre o próprio)"
+    date data "nunca no futuro"
+    int minutos "1 a 1440"
+    text nota
+  }
+```
+
+- `tarefas.estimativa_min` guarda a estimativa; `fluxo.v_tarefa_horas` soma o apontado, por pessoa (`por_pessoa`, jsonb) e no total.
+- `t_valida` recusa data futura, mais de 24 h da mesma pessoa no mesmo dia e troca de pessoa. RLS: vê quem vê o cartão; aponta quem edita o cartão, só em nome próprio; muda e apaga o autor ou o administrador do sistema. Auditoria ligada, escondida de quem não vê o cartão.
+
+### Copiar cartão e modelo de cartão (bloco 4)
+
+- `fluxo.copiar_tarefa(tarefa, lista, título, itens)` roda com os direitos de quem copia (RLS de cada tabela): só copia o que a pessoa vê, para uma lista aberta de um quadro que ela vê e edita. `itens` escolhe o que vai: `checklists` (itens em aberto, sem prazo), `etiquetas`, `pessoas` (responsável, executores, aprovadores, quem acompanha e responsáveis dos itens), `campos` (só ativos e opções ativas), `anexos` e `automacoes` (as regras do cartão, por `fluxo._copiar_automacoes`, com quem copia como dono). Vão sempre a visibilidade, os acessos, a prioridade, a capa e a estimativa; nunca datas, comentários, horas, aprovações nem a série.
+- `tarefas.modelo`: o cartão fica no quadro como base. Não conclui (`tg_tarefa_lista`), não atrasa (`v_tarefas`, rotina diária), não tem recorrência nem vem de uma (`t_modelo`). Criar a partir do modelo é copiar.
+
+### Tarefas pelo funil (bloco 4)
+
+- `app.v_tarefas_funil` (em `…000400_negociacao.sql`, porque junta `fluxo` com `app.processos`): cada tarefa de quadro de terreno com a fase aberta do terreno (ativa ou em stand by, sem as partes), a etapa e a subetapa; uma linha por fase aberta. Base da vista Funil da página Tarefas, só leitura (formato Monday: uma tabela por fase, etapa ou subetapa, uma linha por terreno; o andamento e a próxima tarefa saem das tarefas do terreno).
+
+- **Fica para os próximos blocos:** WhatsApp e a tela de horas (botões e agendamentos vieram no 5b).
+
+### Automações (bloco 5a)
+
+Regras "quando acontecer X, se Y, faça Z" (decisão de 30/out/2026), no modelo do Butler do Trello. O esquema `fluxo` guarda a regra e o registro; o aviso sai por um gancho (`fluxo._avisar`) que o app troca pela notificação dele (`app._notificar`, tipo `automacao`, origem `automacao_execucoes`).
+
+```mermaid
+erDiagram
+  quadros ||--o{ automacoes : "regra do quadro (vazio = empresa)"
+  automacoes ||--o{ automacao_execucoes : registra
+  tarefas ||--o{ automacao_execucoes : "em que cartão"
+```
+
+- `automacoes`: nome, escopo (`quadro_id` vazio = empresa toda, só administrador, listas pelo nome; com quadro, de quem edita o terreno, listas pelo id), `gatilho` (`criada`, `entrou_lista`, `concluida`, `etiqueta`, `campo`, `checklist_completo`, `prazo_antes` com `gatilho_dias`, `prazo_venceu`) e o parâmetro dele (lista, etiqueta ou campo; vazio = qualquer), `condicoes` e `acoes` em JSON (conferidos por `tg_automacao`), `ativa`, `dono_id`. Só o dono ou o administrador muda; com execuções não se apaga.
+- **Regra do cartão** (30/out/2026): `automacoes.tarefa_id` prende a regra a um cartão (o `quadro_id` vem dele). Cria quem edita o cartão (`papel_tarefa` de Editor para cima); não usa o gatilho `criada`; o cartão não muda depois. Dispara só nele (`disparar_automacoes` e `automacoes_prazo` filtram por `tarefa_id`) e, na mesma ordem, roda depois das da empresa e das do quadro. `fluxo._copiar_automacoes(de, para, dono)` (definer) leva as regras na cópia do cartão e em cada ocorrência da recorrência, trocando as listas pelo nome quando o quadro muda e pulando a que não tem a lista lá; o dono que não edita o cartão novo fica de fora.
+- `automacao_execucoes`: regra, cartão, gatilho, `referencia` (o prazo, nos gatilhos de prazo: único por regra e cartão), quem disparou (vazio = rotina), resultado `ok` ou `erro` e o resumo do que fez.
+- Disparo: gatilhos `t_auto` no cartão, nas etiquetas, nos campos e nos itens de checklist chamam `fluxo.disparar_automacoes`; "criada" é um gatilho adiado para o fim da transação, e o cartão criado na mesma transação não dispara os outros (cópia, ocorrência e modelo nascem com tudo). Prazo: `fluxo.automacoes_prazo` na rotina diária.
+- Regras de execução: a regra roda só se o dono ainda tem o direito (administrador ou editor) e, no quadro, vê o cartão; as ações rodam com `fluxo.automacao = '1'`, e nenhum gatilho dispara nesse estado (sem cadeia); erro numa ação desfaz só a regra e fica registrado; avisos só para quem vê o cartão.
+
+### Botões e agendamentos (bloco 5b)
+
+Dois gatilhos a mais em `fluxo.automacoes` (30/out/2026), com as mesmas condições, ações, escopos (empresa, quadro, cartão), dono e registro:
+
+- `botao`: a regra vira um botão nos cartões que passam nas condições. `fluxo.botoes_cartao(tarefa)` lista os que valem para o cartão (ligados, do escopo, dono com direito e, no quadro, dono que vê o cartão); quem não edita o cartão recebe a lista vazia. `fluxo.apertar_botao(botao, tarefa)` confere de novo, roda as ações como numa regra (sem disparar outras) e devolve a execução, com quem apertou em `user_id`.
+- `agenda`: `agenda_freq` (`diaria`, `semanal`, `mensal`) e `agenda_dias` (dias da semana, 0 = domingo, ou do mês, 1 a 31, sem repetição). `fluxo.agenda_hoje(freq, dias, dia)` diz se roda no dia; o dia do mês que o mês não tem roda no último dia. `fluxo.automacoes_agenda(dia)`, na rotina diária, roda cada regra do dia em cada cartão do escopo (fora modelo e arquivado) que passa nas condições, uma vez por dia (`referencia` = o dia). Regra agendada sem condição é recusada, para não tocar todos os cartões.
+- Condição `situacao` (qualquer gatilho): `aberta`, `atrasada` (aberta, prazo antes de hoje e fora da lista de pausa) ou `concluida`; os valores marcados somam.
+
+### Campos do terreno no cartão, regra em branco e condições (ligação funil × quadros, lote A)
+
+Decisões do Moisés de 31/out/2026 (simulação "Funil e quadros"). Banco em `…000150_fluxo.sql` (itens, justificativas, pendências) e `…001200_campos.sql` (catálogo e funções do app).
+
+```mermaid
+erDiagram
+  campos_catalogo ||--o{ campos_empresa : "título e marcas da empresa"
+  tarefas ||--o{ tarefa_itens : "itens incluídos"
+  campos ||--o{ tarefa_itens : "campo personalizado"
+  checklist_itens }o--|| tarefas : ""
+  tarefas ||--o{ conclusao_justificativas : ""
+  campos_catalogo {
+    text chave "origem.coluna"
+    text titulo "padrão"
+    text tipo "texto | numero | data | lista | lista_multi | pessoa | sim_nao"
+    bool editavel "calculado = falso"
+    bool condicao
+    bool cartao
+  }
+  campos_empresa {
+    text titulo "vazio = padrão; único na empresa"
+    bool condicao
+    bool cartao
+  }
+  tarefa_itens {
+    text chave "campo do terreno (ou campo_id)"
+    text regra_branco "livre | justificativa | bloqueia"
+    jsonb condicao "vale quando"
+  }
+  conclusao_justificativas {
+    text texto
+    jsonb itens
+    bool libera_bloqueio "o diretor passou pelo que bloqueia"
+  }
+```
+
+- `app.campos_catalogo`: um campo por linha, de Terreno, Negociação, Oferta de referência, Proposta vigente e Calculado (forma de pagamento vigente = a da proposta vigente, senão a da oferta; margem e VGV do estudo válido; preço por m²; zonas; vários donos; corretores). `app.campos_empresa` guarda o que o administrador muda (Configurações › Campos, `app.salvar_campo`): o **título** (o nome que o usuário vê, editável a qualquer hora, sem repetir na empresa) e as marcas **Condição** (aparece no "Vale quando") e **No cartão** (pode entrar no cartão). `app.v_campos` junta os dois.
+- O esquema `fluxo` não conhece terreno: lê os campos pelas funções registradas em `fluxo.objeto_tipos` (`campo_objeto` = `app.campo_cartao`, `avalia_condicao` = `app.avaliar_condicao`, `valida_condicao` = `app.validar_condicao`). Em branco é nulo, vazio, lista vazia ou o "não informado" da coluna; em branco só satisfaz "não informado".
+- **No cartão:** quem edita o cartão inclui itens pelo bloco Formulário (antes "+ Campo"; ver "Formulário da tarefa e máscaras") (`tarefa_itens`): campos do terreno ou da negociação marcados "No cartão" e campos personalizados; o checklist já é item. O campo do terreno aparece com o controle do tipo e grava no próprio terreno (`app.gravar_campo`: ficha por `app.salvar_terreno` com a versão atual, oferta direto, temperatura por `app.definir_temperatura`); calculados só leem.
+- **Regra se em branco**, de cada item e local da tarefa: pode concluir (padrão), conclui com justificativa, não conclui. Vale para campos do terreno, campos personalizados e cada item de checklist (`checklist_itens.regra_branco`; vazio = regra da empresa para checklist). "Não conclui" trava analista e gestor; o diretor conclui com justificativa (`libera_bloqueio`). A justificativa é pedida na hora (`fluxo.concluir_justificando`, que conclui ou pede a aprovação) e fica no histórico.
+- **Vale quando** (`condicao` jsonb): `{"modo": "todas" | "qualquer", "itens": [{"campo", "op", "valores"} | {"grupo": {...}}]}`, com um nível de grupo ("(A ou B) e C"). Operadores pelo tipo (é / não é, igual, maior, menor, entre, antes, depois, nos últimos N dias, sim, não, preenchido, não informado). Condição que deixa de valer tira a pendência ("não se aplica mais"); a tarefa fica.
+- **Aba Configuração** do cartão: só diretor, administrador e quem criou a tarefa (`fluxo.configura_tarefa`) veem e mudam regra e condição (o trigger `fluxo.tg_tarefa_item` recusa os demais e também tirar do cartão um item com regra); os outros veem só o selo ("necessário", "pede justificativa").
+- `fluxo.itens_em_branco(tarefa)` lista o que está em branco com regra e condição valendo; `fluxo.pendencias_conclusao` devolve `'checklist'` e `'campos'` (bloqueiam, salvo justificativa do diretor) e `'justificar'` (conclui com justificativa).
+- Itens, regras e condições vão na cópia do cartão (escolha "Campos"), na recorrência e no modelo de tarefas (`modelo_tarefas.itens`; item de checklist do modelo pode ser `{texto, regra, condicao}`).
+
+### Formulário da tarefa e máscaras (1/nov/2026)
+
+Decisões do Moisés de 1/nov/2026 (simulação "Formulário da tarefa"). Banco em `…000150_fluxo.sql` e `…001200_campos.sql`.
+
+- **Formulário:** os itens de `fluxo.tarefa_itens` viram perguntas. Cada uma tem `pergunta` (vazia usa o título do campo), `ajuda` opcional e grava num de três destinos: campo do terreno marcado No cartão (`chave`), campo personalizado (`campo_id`) ou **Só no cartão** (`tipo`, com a resposta em `resposta jsonb`; `num_nonnulls(chave, campo_id, tipo) = 1`). Tipos do "só no cartão": texto, parágrafo, número, moeda, percentual, data, sim/não, lista (`opcoes text[]`, ao menos 2), e-mail, telefone, CPF e CNPJ. Pergunta "só no cartão" exige o texto da pergunta; com resposta, o tipo não muda.
+- **Forma de responder** (`forma`; nula = a primeira da lista): `fluxo.formas(tipo, n_opcoes)` diz as permitidas. Lista: menu, radio, chips; segmentado até 4 opções; chave só com 2; mais de 6 opções, só menu. Sim/não: botões ou chave. Texto: linha ou parágrafo. Os demais têm uma só. O trigger recusa forma fora da lista.
+- A **chave** tem três estados: começa no meio (não informado), os toques alternam Sim e Não, e "Limpar resposta" (menu ⋮) volta ao meio. Vazio nunca vira "não".
+- Quem edita o cartão monta as perguntas (modo Montar: incluir, editar, subir, arrastar, tirar; tirar item com regra segue a aba Configuração); Leitura só vê. Sem seções nem saltos por ora: pergunta condicional usa o "Vale quando".
+- `fluxo.itens_em_branco` conta a pergunta só no cartão sem resposta (tipo `pergunta`). Pergunta, ajuda, forma, tipo, opções e regra vão na cópia (a resposta só quando se copiam os campos), na recorrência, no modelo de tarefas e nas tarefas da etapa.
+- **Máscaras** (`formato`): e-mail, telefone, CPF e CNPJ em texto; moeda e percentual em número; CEP no catálogo. Gravadas só com os dígitos (e-mail em minúsculas) por `fluxo.validar_formato(formato, valor)`, que confere DDD, dígitos verificadores de CPF e CNPJ e o formato do e-mail; `fluxo._formato_ok` faz a mesma conta sem erro. No campo do terreno, a máscara vem do catálogo (`app.campos_catalogo.formato`, fixa) ou, nos campos de texto sem máscara fixa, do administrador em Configurações › Campos (`app.campos_empresa.formato`, `app.salvar_campo(..., p_formato)`: nulo mantém, vazio tira; recusa se algum terreno tem valor fora da máscara); `app.gravar_campo` normaliza. No campo personalizado, `fluxo.campos.formato` (não muda com valor fora da máscara). Na pergunta só no cartão, o tipo já é a máscara.
+- **Criação rápida:** Nova tarefa abre curta (título, terreno, que vem marcado quando se cria dentro da ficha, responsável (digitado com @, com busca aproximada pelo nome e pelo @; vem quem cria), prazo com atalhos 1 dia, 1 semana e 1 mês ou a data digitada (mesmo dia do mês seguinte, ou o último dia), etapa e subetapa, descrição atrás de "Adicionar descrição" e visibilidade); "Mais opções" abre a janela completa com o que já foi digitado. A tarefa nasce na lista Fazer (ou na primeira), com prioridade média. Etapa e subetapa vêm com as atuais do terreno (`app.tg_tarefa_processo` grava `etapa` e `subetapa` do processo aberto da fase mais adiante quando a tarefa chega sem elas) e trocam no seletor, entre as fases abertas; "Nenhuma" deixa sem etapa. No cartão, a subetapa também tem seletor (menos na tarefa que nasceu de regra da etapa). A subetapa da tarefa à mão é informação: a trava continua pela regra da etapa.
+
+### Tarefas da etapa, trava e volta de etapa (ligação funil × quadros, lote B)
+
+Decisões do Moisés de 31/out/2026 (simulação "Funil e quadros"). Banco em `…001300_funil_tarefas.sql`, com os ganchos em `…000500_regras.sql` (passagem, encerrar, retomar, pendências), `…000400_negociacao.sql` (etapa do cartão), `…000150_fluxo.sql` (condição na tarefa do modelo, pausa de fora, gatilho) e `…000200_cadastros.sql` (condição no checklist e no pré-requisito).
+
+```mermaid
+erDiagram
+  etapas_modelo ||--o{ etapa_regras : "ao entrar"
+  subetapas_modelo ||--o{ etapa_regras : "ao entrar na subetapa"
+  modelos_quadro ||--o{ etapa_regras : "modelo da regra"
+  etapa_regras ||--o{ tarefas_etapa : "o que criou"
+  processos ||--o{ tarefas_etapa : ""
+  tarefas ||--o| tarefas_etapa : ""
+  etapa_regras {
+    text fase
+    text etapa
+    text subetapa "nulo = ao entrar na etapa"
+    uuid modelo_id "ou titulo (um dos dois)"
+    int prazo_dias "da tarefa só"
+    bool responsavel_objeto "responsável do terreno"
+    jsonb condicao "vale quando"
+    bool trava "padrão falso"
+    bool ativo
+  }
+  tarefas_etapa {
+    uuid regra_id
+    uuid modelo_tarefa_id "não nasce de novo"
+    jsonb condicao "a da tarefa do modelo"
+    int inicio_dias "para refazer as datas"
+    int duracao
+    text situacao "ativa | deixada | arquivada_auto"
+  }
+```
+
+- **Etapa do cartão:** `fluxo.tarefas.processo_id`, `etapa` e `subetapa`. A tarefa nova sem etapa nasce na etapa atual do terreno (o processo aberto da fase mais adiante, ativo antes do stand by; `app.tg_tarefa_processo`); `etapa = 'nenhuma'` tira. Mudar a etapa à mão limpa a subetapa de outra etapa.
+- **Regras** (`app.etapa_regras`, Configurações › Funil › Tarefas da etapa, só administrador): `app.salvar_regra_etapa` valida etapa, subetapa da etapa, modelo da empresa ou título e condição; `app.apagar_regra_etapa` apaga a que não criou tarefa e desativa a que criou.
+- **Entrar** (`app._tarefas_ao_entrar`, ao abrir o processo, ao mudar de etapa e de subetapa): primeiro devolve as `arquivada_auto` daquela etapa (mesmo código; datas refeitas por `inicio_dias` e `duracao` a partir de hoje, ou deslocadas pelos dias arquivadas) e reativa as `deixada`; depois aplica as regras cuja condição vale. Modelo por `fluxo.aplicar_modelo_mapa`, pulando as tarefas do modelo já criadas neste processo (as predecessoras se ligam às existentes) e as tarefas do modelo cuja condição não vale; tarefa só uma vez por processo. Ao entrar na etapa, dispara o gatilho `etapa` (`'fase:etapa'`) nos cartões abertos dela.
+- **Trava** (`app._trava_tarefa`): a tarefa da regra que ainda bate com a etapa e a subetapa dela trava no nível da regra (`etapa` ou `subetapa`) se a regra trava; condição da regra ou da tarefa do modelo que não vale = `nao_se_aplica` (não trava). Tarefa à mão, ou que mudou de etapa, trava no nível `etapa` quando a etapa tem regra da etapa que trava. `deixada` e `arquivada_auto` não travam. `app._tarefas_travando(processo, saida)` vira item de pendência (`tipo 'tarefa'`, código, lista, atrasada; título "restrita" para quem não vê o cartão), somado em `app._pendencias` ao sair da etapa para frente ou concluir a fase (nível etapa e a subetapa atual) e ao sair da subetapa para frente (nível subetapa). Gestor e diretor passam com justificativa, como nas outras pendências.
+- **Pode avançar** (`t_pode_avancar`): concluída a tarefa que travava, se nada mais trava naquele nível, `pode_avancar` vai para o responsável do terreno ("TER-x pode avançar. As tarefas de … estão concluídas."). Nunca move o processo.
+- **Voltar** (`app._tarefas_ao_voltar`): abertas das etapas depois do destino; sem trabalho (`app._tarefa_tem_trabalho`: comentário, anexo, item marcado, subtarefa, campo personalizado, troca de lista na auditoria) arquivam (`arquivada_auto`); com trabalho ficam `deixada` e o responsável recebe `etapa_deixada`.
+- **Encerrar e retomar** (`app._tarefas_ao_encerrar`, `app._tarefas_ao_retomar`): Stand By pausa as abertas do processo sem pedido (`fluxo._pausar_de_fora`, `pausas.origem = 'stand_by'`, que só a retomada da fase encerra, empurrando o prazo); Perdido e Descartado arquivam (fechando a pausa ativa), salvo `dados.tarefas = 'manter'`; concluir não mexe.
+- **Condição** no checklist (`checklist_modelo.condicao`, `app.condicao_checklist`) e no pré-requisito (`prerequisitos_modelo.condicao`, `app.condicao_prerequisito`): o documento ou a passagem só é exigido quando a condição vale (`app.condicao_aplica` em `v_checklist` e em `app._pendencias`).
+- `app.v_tarefas_etapa`: cartão, fase, etapa, subetapa, regra, nível da trava e situação, para a tela.
+
+### Jornada do terreno (1/nov/2026)
+
+Decisões do Moisés de 1/nov/2026 (simulação https://claude.ai/artifact/9eocQHsh2rDz8BtDak6d8D). Banco em `…001400_jornada.sql`, com os campos novos do terreno em `…001200_campos.sql` e a regra do checklist e do pré-requisito em `…000200_cadastros.sql` e `…000500_regras.sql`. A tela (Configurações › Funil › Jornada) junta num lugar o que antes eram três abas; no banco, documentos, pré-requisitos e tarefas da etapa continuam nas tabelas deles, cada um com a sua regra.
+
+```mermaid
+erDiagram
+  etapas_modelo ||--o{ jornada_itens : "sair da etapa"
+  subetapas_modelo ||--o{ jornada_itens : "sair da subetapa"
+  etapas_modelo ||--o{ jornada_regras : ""
+  campos_terreno ||--o{ terreno_valores : ""
+  terrenos ||--o{ terreno_valores : ""
+  jornada_itens {
+    text fase
+    text etapa
+    text subetapa "nulo = a etapa inteira"
+    text campo "chave do catálogo (terreno.x, personalizado.x...)"
+    text pergunta "nulo = o título do campo"
+    text ajuda
+    text forma "a do formulário do cartão"
+    text regra "bloqueia | justifica | livre"
+    jsonb regra_cond "condicional: a primeira que vale decide"
+    jsonb condicao "vale quando"
+    int ordem
+    bool ativo
+  }
+  jornada_regras {
+    text fase
+    text etapa
+    text subetapa
+    jsonb condicao "obrigatória"
+    text acao "bloqueia | gestor | diretor | avisa"
+    text mensagem
+  }
+  campos_terreno {
+    text codigo "personalizado.<codigo>"
+    text titulo "único com o catálogo"
+    text tipo "texto | numero | data | lista | sim_nao"
+    text unidade
+    text_arr opcoes
+    text formato "máscara"
+  }
+```
+
+- **Fonte única:** a pergunta grava no campo que escolhe (`campo`), o mesmo que a ficha e o cartão gravam (`app.gravar_campo`, com o controle do tipo e a auditoria). O que não existe na ficha vira **campo novo do terreno** (`app.campos_terreno`, valor em `app.terreno_valores`), que entra no catálogo como `personalizado.<codigo>` (`app.campo_def`, `app.v_campos`, `app._valor_campo`) e por isso vale nas condições, no cartão e em Configurações › Campos. `app.salvar_campo_terreno` (administrador; título único com o catálogo; tipo não muda com valor gravado; opção em uso não sai) e `app.apagar_campo_terreno` (com valor ou na jornada, desativa).
+- **Regra em branco** (as 3 opções em todo item): `jornada_itens.regra`, `checklist_modelo.regra` (`obrigatorio` virou coluna gerada `regra <> 'livre' or regra_cond is not null`), `prerequisitos_modelo.regra` (`app.regra_prerequisito`) e `etapa_regras.regra` (tarefa aberta ao sair; `trava` passou a ser "pode travar" = `regra <> 'livre'` ou com condicional, mantido por `app.salvar_regra_etapa`; só `trava` vira bloqueia ou livre), todos com bloqueia, justifica ou livre. **Comportamento condicional** (`regra_cond`, `[{condicao, regra}]`, validado por `app._regra_cond_config`): `app._regra_branco(terreno, regra, regra_cond)` devolve a regra da primeira condição que vale, ou a única; livre não entra nas pendências, justifica entra com `justifica`. Na tarefa à mão vale a regra mais forte das regras da etapa. Em `salvar_checklist` e `regra_prerequisito`, `p_regra_cond` nulo mantém e `'[]'` tira. Em `app._passagem`, se todo item que falta é `justifica`, qualquer editor passa com `p_forcar` e comentário; senão só gestor e diretor forçam, como antes. `app.checar_passagem` devolve `pode_justificar`.
+- **Onde vale** (`app._jornada_na_saida`): item da etapa ao sair dela para frente ou concluir a fase; item da subetapa ao sair dela para frente (também pulando) e ao sair da etapa; voltar não pede nada. `app._jornada_pendencias` entra em `app._pendencias` (item com condição que não vale fica de fora; o item conta como feito quando o campo tem valor). A jornada é do terreno: a negociação de uma parte não a tem.
+- **Regras pelo valor** (`app.jornada_regras`): condição que vale na saída → `bloqueia` vira pendência (gestor e diretor passam com justificativa, como nas outras), `gestor` e `diretor` entram nas aprovações exigidas (`app._jornada_pede` em `app._aprovacoes_exigidas`), `avisa` só mostra a mensagem.
+- `app.jornada_processo(processo)`: os itens com `aplica` e `valor` e as regras que valem, para o quadro de avanço. Configuração: `app.salvar_item_jornada` (lugar válido, forma do tipo do campo, condição), `app.apagar_item_jornada`, `app.salvar_regra_jornada`, `app.apagar_regra_jornada`, todas só do administrador e com auditoria.
+- Atualização em tempo real entre usuários fica para o porte do front (Supabase realtime); o banco já tem uma fonte só.
 
 ## Setores censitários e renda familiar estimada
 

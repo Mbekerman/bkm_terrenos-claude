@@ -23,7 +23,7 @@ const destinoCfg=(tipo,k)=>tipo==='etapa'?etapaCfg(k):tipo==='subetapa'?subCfg(k
 const destinoNome=(tipo,k)=>tipo==='etapa'?SN(k):tipo==='subetapa'?subN(k):STATUS_N[k]||k;
 function syncCfg(){STAGES.splice(0,STAGES.length,...cfg().etapas.map(e=>[e.k,e.nome]))}
 /* dados carregados ou restaurados: garante configuração, equipe e avisos dos pedidos de exemplo */
-function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.cfg.fases)S.cfg.fases=FASES_PADRAO();if(!S.cfg.deps)S.cfg.deps=DEPS_PADRAO();if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];{const N0=CFG_PADRAO().notif;delete S.cfg.notif.tarefa_marcado;Object.entries(N0).forEach(([k,v])=>{const c=S.cfg.notif[k];if(!c)S.cfg.notif[k]=v;else if(c.email==null)c.email=v.email})}if(!S.prefsNotif)S.prefsNotif={};syncCfg();partesPreparar();
+function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.cfg.fases)S.cfg.fases=FASES_PADRAO();if(!S.cfg.deps)S.cfg.deps=DEPS_PADRAO();if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];{const N0=CFG_PADRAO().notif;delete S.cfg.notif.tarefa_marcado;Object.entries(N0).forEach(([k,v])=>{const c=S.cfg.notif[k];if(!c)S.cfg.notif[k]=v;else if(c.email==null)c.email=v.email})}if(!S.prefsNotif)S.prefsNotif={};syncCfg();partesPreparar();tkPrep();
   if(!S.pedidosAvisados){S.terrenos.forEach(t=>{if(t.neg?.pedido)avisarAprovadores(t)});S.pedidosAvisados=true}}
 
 /* ---------- regras da passagem ---------- */
@@ -33,21 +33,22 @@ const subAtrasada=n=>{const c=subCfg(n.sub);return !!(n.status==='ativo'&&c&&c.p
 const etapaAtrasada=n=>{const c=etapaCfg(n.etapa);return !!(n.status==='ativo'&&c&&c.sla&&diff(n.desde,HOJE)>c.sla)};
 /* pendências para chegar ao destino: pré-requisitos configurados; ao sair de uma etapa, o checklist dela; na compra, diligência impeditiva */
 function pendencias(t,tipo,dest){const n=t.neg,L=[];
-  cfg().prereq.filter(p=>p.alvoTipo===tipo&&p.alvo===dest).forEach(p=>{const ok=passouPor(n,p.req);
-    L.push({ok,txt:ok?`Passou por ${subN(p.req)}`:`Passar antes por ${subN(p.req)} (${SN(subCfg(p.req)?.etapa)})`,fix:null})});
+  cfg().prereq.filter(p=>p.alvoTipo===tipo&&p.alvo===dest&&itCondVale(t,p.cond)).forEach(p=>{const rg=jnRegraEf(t,jnBasePr(p),p.rc);if(rg==='livre')return;const ok=passouPor(n,p.req);
+    L.push({ok,txt:ok?`Passou por ${subN(p.req)}`:`Passar antes por ${subN(p.req)} (${SN(subCfg(p.req)?.etapa)})`,fix:null,just:rg==='justifica'})});
   const saindo=((tipo==='etapa'&&SIDX(dest)>SIDX(n.etapa))||(tipo==='status'&&dest==='comprado'))&&!(!t._parte&&dividida(t));
-  if(saindo){(cfg().checklist[n.etapa]||[]).filter(c=>c.obrig).forEach(({doc})=>{const st=docSt(t.docs.find(d=>d.tipo===doc));
-      L.push({ok:st==='validado',txt:TIPOS_DOC[doc][0]+(st==='validado'?' validado':st==='pendente'?': não enviado':st==='recebido'?': aguardando validação':': '+st),fix:st==='validado'?null:['tab:documentos','Ver documentos']})})}
+  if(saindo){(cfg().checklist[n.etapa]||[]).filter(c=>itCondVale(t,c.cond)&&jnRegraEf(t,jnBaseCk(c),c.rc)!=='livre').forEach(c=>{const doc=c.doc,st=docSt(t.docs.find(d=>d.tipo===doc));
+      L.push({ok:st==='validado',just:jnRegraEf(t,jnBaseCk(c),c.rc)==='justifica',txt:TIPOS_DOC[doc][0]+(st==='validado'?' validado':st==='pendente'?': não enviado':st==='recebido'?': aguardando validação':': '+st),fix:st==='validado'?null:['tab:documentos','Ver documentos']})})}
   if(tipo==='status'&&dest==='comprado'&&!t._parte)t.dilig.filter(d=>d.sit==='impeditiva').forEach(d=>L.push({ok:false,txt:'Diligência impeditiva: '+d.titulo,fix:['tab:documentos','Ver diligências']}));
   return L.concat(pendPartes(t,tipo,dest))}
 /* aprovações exigidas, menos os níveis que quem move já tem */
-function aprovExig(tipo,dest,ator){const c=destinoCfg(tipo,dest)||{},nv=[];if(c.g)nv.push(2);if(c.d)nv.push(3);
+/* t: o terreno, para as regras da jornada pelo valor da resposta que pedem gestor ou diretor */
+function aprovExig(tipo,dest,ator,t){const c=destinoCfg(tipo,dest)||{},nv=[];if(c.g||(t&&jnPede(t,tipo,dest,'gestor')))nv.push(2);if(c.d||(t&&jnPede(t,tipo,dest,'diretor')))nv.push(3);
   const q=nivelDe(ator);return {niveis:nv.filter(x=>x>q),modo:c.modo||'sequencia'}}
 const proxDestino=n=>{const i=SIDX(n.etapa);return STAGES[i+1]?['etapa',STAGES[i+1][0]]:['status','comprado']};
 /* quadro de avanço: próximo destino, pendências e aprovações (mesmo formato usado nas Ações do painel) */
 function checkAdv(t){const n=t.neg;if(!n||n.status!=='ativo')return null;
   const [tipo,dest]=proxDestino(n),items=pendencias(t,tipo,dest),b=items.filter(x=>!x.ok);
-  return {next:[dest,destinoNome(tipo,dest)],tipo,dest,items,ok:!b.length,forcar:!!b.length&&!b.some(x=>x.trava)&&nivelDe(me())>=2,aprov:aprovExig(tipo,dest,me()),compra:tipo==='status'}}
+  return {next:[dest,destinoNome(tipo,dest)],tipo,dest,items,ok:!b.length,forcar:!!b.length&&!b.some(x=>x.trava)&&(nivelDe(me())>=2||b.every(x=>x.just)),aprov:aprovExig(tipo,dest,me(),t),compra:tipo==='status'}}
 const naVez=p=>{const pend=p.niveis.filter(r=>r.status==='pendente');if(!pend.length)return [];const o=Math.min(...pend.map(r=>r.ordem));return pend.filter(r=>r.ordem===o)};
 const podeDecidir=(r,u)=>nivelDe(u)>=r.nivel&&(!r.previsto||r.previsto===u||ehSuperior(u,r.previsto));
 const possoDecidir=t=>{const p=t.neg?.pedido;return !!p&&naVez(p).some(r=>podeDecidir(r,me()))};
@@ -59,9 +60,11 @@ function moverPara(t,tipo,dest,o={}){const n=t.neg,eu=me(),mp=movePartes(t,tipo,
   if(n.pedido)return {erro:`Há um pedido de aprovação aberto para ${destinoNome(n.pedido.tipo,n.pedido.dest)}. Decida ou cancele antes.`};
   const pend=pendencias(t,tipo,dest).filter(x=>!x.ok);
   if(pend.some(x=>x.trava))return {bloq:true,pend,podeForcar:false};
-  if(pend.length&&!o.forcar)return {bloq:true,pend,podeForcar:nivelDe(eu)>=2};
+  /* só faltam itens "avança com justificativa": qualquer um passa justificando; os demais, só gestor e diretor */
+  const podeF=nivelDe(eu)>=2||pend.every(x=>x.just);
+  if(pend.length&&(!o.forcar||!podeF))return {bloq:true,pend,podeForcar:podeF};
   const dados={...(o.dados||{}),forcado:pend.length?o.just:null};
-  const ap=aprovExig(tipo,dest,eu);
+  const ap=aprovExig(tipo,dest,eu,t);
   if(ap.niveis.length){
     n.pedido={id:uid(),tipo,dest,modo:ap.modo,por:eu,em:agora(),dados,niveis:ap.niveis.map((nv,i)=>({nivel:nv,ordem:ap.modo==='sequencia'?i+1:1,previsto:aprovadorPrevisto(eu,nv),status:'pendente'}))};
     log(t,`Pedido de aprovação: ${destinoNome(tipo,dest)} (${ap.niveis.map(x=>NIV_N[x]).join(ap.modo==='sequencia'?', depois ':' e ')})${dados.forcado?' · sem requisitos: '+dados.forcado:''}`);
@@ -100,7 +103,7 @@ function retomar(t){const n=t.neg,parado=n.encerradoEm?diff(n.encerradoEm,HOJE):
 function levarAte(t,alvo,o={}){const snap=JSON.stringify(t.neg),h=t.hist.length,nt=S.notifs.length;
   const desfaz=()=>{t.neg=JSON.parse(snap);t.hist.length=h;S.notifs.splice(0,S.notifs.length-nt)};
   while(SIDX(t.neg.etapa)<SIDX(alvo)){const prox=STAGES[SIDX(t.neg.etapa)+1][0],ult=prox===alvo;
-    if(!ult&&aprovExig('etapa',prox,me()).niveis.length){desfaz();return {erro:`${SN(prox)} pede aprovação. Leve uma etapa por vez.`}}
+    if(!ult&&aprovExig('etapa',prox,me(),t).niveis.length){desfaz();return {erro:`${SN(prox)} pede aprovação. Leve uma etapa por vez.`}}
     const r=moverPara(t,'etapa',prox,o);
     if(r.bloq||r.erro){desfaz();return {...r,etapa:prox}}
     if(r.pedido)return r}
@@ -221,17 +224,23 @@ function tentar(t,tipo,dest,dados){const r=moverPara(t,tipo,dest,{dados});save()
   toast(r.erro,true);return r}
 
 /* ---------- Configurações › Funil (só administrador) ---------- */
-const TIPOS_NOTIF_N={tarefa_atribuida:'Tarefa atribuída a você',mencao:'Mencionado com @',tarefa_prazo:'Prazo de tarefa chegando',tarefa_atrasada:'Tarefa atrasada',subetapa_prazo:'Subetapa passou do prazo',stand_by_retomar:'Data de retomar um Stand By',documento_vencendo:'Documento vencendo',reuniao_agendada:'Reunião agendada',aprovacao_pendente:'Pedido de aprovação para você',aprovacao_decidida:'Seu pedido foi aprovado ou recusado'};
+const TIPOS_NOTIF_N={pode_avancar:'Tarefas da etapa concluídas (pode avançar)',etapa_deixada:'Tarefa de etapa deixada',tarefa_atribuida:'Tarefa atribuída a você',mencao:'Mencionado com @',tarefa_prazo:'Prazo de tarefa chegando',tarefa_atrasada:'Tarefa atrasada',tarefa_acompanhada:'Tarefa que você acompanha (comentário ou conclusão)',automacao:'Aviso de automação de tarefas',subetapa_prazo:'Subetapa passou do prazo',stand_by_retomar:'Data de retomar um Stand By',documento_vencendo:'Documento vencendo',reuniao_agendada:'Reunião agendada',aprovacao_pendente:'Pedido de aprovação para você',aprovacao_decidida:'Seu pedido foi aprovado ou recusado'};
 const apCells=(p,c)=>`<label class="chk"><input type="checkbox" data-ch="cfg" data-p="${p}.g" ${c.g?'checked':''}>Gestor</label><label class="chk"><input type="checkbox" data-ch="cfg" data-p="${p}.d" ${c.d?'checked':''}>Diretor</label>${c.g&&c.d?`<select data-ch="cfg" data-p="${p}.modo" aria-label="Ordem das aprovações"><option value="sequencia" ${c.modo!=='paralelo'?'selected':''}>Em sequência</option><option value="paralelo" ${c.modo==='paralelo'?'selected':''}>Em paralelo</option></select>`:''}`;
 const usada=k=>S.terrenos.some(t=>t.neg&&(t.neg.sub===k||(t.neg.trilha||[]).some(x=>x.paraSub===k||x.deSub===k)));
 function pgConfig(){
   if(!ehAdmin(me()))return `<div class="page-h"><div><h1>Configurações</h1></div></div><section class="sec"><div class="sec-b"><div class="empty">Só administradores alteram a configuração do funil. Teste como Diretor (Moisés é administrador).</div></div></section>`;
+  /* Pré-requisitos, Checklist e Tarefas da etapa ficam dentro da Jornada (1/nov/2026) */
+  if(['prereq','checklist','etapaTar'].includes(UI.cfgAba))UI.cfgAba='jornada';
   const C=cfg(),aba=UI.cfgAba||'fases';
-  const abas=[['fases','Fases'],['funil','Etapas de '+faseN(faseEnt())],['prereq','Pré-requisitos'],['status','Status e motivos'],['checklist','Checklist'],['notif','Notificações'],['equipe','Equipe'],['viab','Viabilidade'],['zonas','Parâmetros urbanísticos']];
+  const abas=[['fases','Fases'],['funil','Etapas de '+faseN(faseEnt())],['jornada','Jornada'],['status','Status e motivos'],['notif','Notificações'],['equipe','Equipe'],['viab','Viabilidade'],['zonas','Parâmetros urbanísticos'],['campos','Campos'],['tarefas','Tarefas']];
   let corpo='';
   if(aba==='fases')corpo=cfgFasesHtml();
   if(aba==='viab')corpo=cfgViabHtml();
   if(aba==='zonas')corpo=cfgZonasHtml();
+  if(aba==='tarefas')corpo=cfgTarefasHtml();
+  if(aba==='campos')corpo=itCfgCamposHtml();
+  if(aba==='etapaTar')corpo=etCfgHtml();
+  if(aba==='jornada')corpo=jnCfgHtml();
   if(aba==='funil')corpo=`<section class="sec"><div class="sec-h"><h2>Etapas de ${esc(faseN(faseEnt()))}</h2></div><div class="sec-b"><div class="cfg-t">
     <div class="cfg-r cfg-hd"><span>Etapa</span><span>SLA (dias)</span><span>Aprovação para entrar</span></div>
     ${C.etapas.map((e,i)=>`<div class="cfg-r"><input data-ch="cfg" data-p="etapas.${i}.nome" value="${esc(e.nome)}" aria-label="Nome da etapa"><input type="number" min="0" data-ch="cfg" data-p="etapas.${i}.sla" value="${e.sla??''}" aria-label="SLA de ${esc(e.nome)}"><span class="cfg-ap">${apCells('etapas.'+i,e)}</span></div>`).join('')}</div><p class="cfg-nota">Criar, ordenar e desativar etapas fica em <button type="button" class="linkbtn" data-a="cfg-aba" data-v="fases">Fases</button>.</p></div></section>
@@ -247,7 +256,7 @@ function pgConfig(){
   if(aba==='prereq'){const opAlvo=`<optgroup label="Etapas">${C.etapas.map(e=>`<option value="etapa:${e.k}">${esc(e.nome)}</option>`).join('')}</optgroup>${C.etapas.map(e=>`<optgroup label="Subetapas de ${esc(e.nome)}">${subsDe(e.k).map(s=>`<option value="subetapa:${s.k}">${esc(s.nome)}</option>`).join('')}</optgroup>`).join('')}`;
     const opReq=C.etapas.map(e=>`<optgroup label="${esc(e.nome)}">${subsDe(e.k).map(s=>`<option value="${s.k}">${esc(s.nome)}</option>`).join('')}</optgroup>`).join('');
     corpo=`<section class="sec"><div class="sec-h"><h2>Pré-requisitos</h2></div><div class="sec-b">
-    <ul class="cfg-pre">${C.prereq.map(p=>`<li><span>Para entrar em <b>${esc(destinoNome(p.alvoTipo,p.alvo))}</b>${p.alvoTipo==='etapa'?' (etapa)':''}, precisa ter passado por <b>${esc(subN(p.req))}</b></span><button class="iconbtn sm lixo" data-a="cfg-pre-del" data-v="${p.id}" aria-label="Remover" title="Remover">${ic('lixo',18)}</button></li>`).join('')||'<li class="faint">Nenhuma regra. Todas as passagens são livres.</li>'}</ul>
+    <ul class="cfg-pre">${C.prereq.map(p=>`<li><span>Para entrar em <b>${esc(destinoNome(p.alvoTipo,p.alvo))}</b>${p.alvoTipo==='etapa'?' (etapa)':''}, precisa ter passado por <b>${esc(subN(p.req))}</b>${etVq('pr:'+p.id,p.cond)}</span><button class="iconbtn sm lixo" data-a="cfg-pre-del" data-v="${p.id}" aria-label="Remover" title="Remover">${ic('lixo',18)}</button></li>`).join('')||'<li class="faint">Nenhuma regra. Todas as passagens são livres.</li>'}</ul>
     <form class="inline-form" data-form="cfg-pre"><div class="field grow"><label for="pr-a">Para entrar em</label><select id="pr-a" name="alvo" required>${opAlvo}</select></div><div class="field grow"><label for="pr-r">Precisa ter passado por</label><select id="pr-r" name="req" required>${opReq}</select></div><button class="btn sm">${ic('add',16)}Adicionar regra</button></form></div></section>`}
   if(aba==='status')corpo=`<section class="sec"><div class="sec-h"><h2>Status</h2></div><div class="sec-b"><div class="cfg-t"><div class="cfg-r cfg-hd cfg-st"><span>Status</span><span>Aprovação</span></div>
     ${Object.entries(C.status).map(([k,s])=>`<div class="cfg-r cfg-st"><span>${STATUS_N[k]}</span><span class="cfg-ap">${apCells('status.'+k,s)}</span></div>`).join('')}</div>
@@ -256,7 +265,7 @@ function pgConfig(){
     ${C.motivos[st].map((m,i)=>`<div class="cfg-r cfg-mot ${m.ativo?'':'inativa'}"><input data-ch="cfg" data-p="motivos.${st}.${i}.nome" value="${esc(m.nome)}" aria-label="Motivo"><label class="chk"><input type="checkbox" data-ch="cfg" data-p="motivos.${st}.${i}.texto" ${m.texto?'checked':''} aria-label="Exige texto"></label><label class="chk"><input type="checkbox" data-ch="cfg" data-p="motivos.${st}.${i}.ativo" ${m.ativo?'checked':''} aria-label="Ativo"></label></div>`).join('')}</div>
     <form class="inline-form" data-form="cfg-mot" data-s="${st}"><div class="field grow"><label for="mt-${st}">Novo motivo</label><input id="mt-${st}" name="nome" required></div><button class="btn sm">${ic('add',16)}Adicionar</button></form></div></section>`).join('')}`;
   if(aba==='checklist')corpo=C.etapas.map(e=>{const L=C.checklist[e.k]||[];return `<section class="sec"><div class="sec-h"><h2>Para sair de ${esc(e.nome)}</h2></div><div class="sec-b"><div class="cfg-docs">${Object.entries(TIPOS_DOC).filter(([k])=>!['foto','planta','ata'].includes(k)).map(([k,[l]])=>{const c=L.find(x=>x.doc===k);
-      return `<button class="fchip" data-a="cfg-doc" data-e="${e.k}" data-v="${k}" aria-pressed="${!!c}" title="${c?(c.obrig?'Obrigatório: clique para tornar opcional':'Opcional: clique para tirar'):'Fora do checklist: clique para exigir'}">${c?ic(c.obrig?'check':'clock',16):''}${esc(l)}${c&&!c.obrig?' <span class="faint">(opcional)</span>':''}</button>`}).join('')}</div></div></section>`}).join('')+'<div class="hint" style="margin:0 4px">Clique para alternar: obrigatório, opcional, fora do checklist. O obrigatório trava a saída da etapa (gestor e diretor passam com justificativa).</div>';
+      return `<button class="fchip" data-a="cfg-doc" data-e="${e.k}" data-v="${k}" aria-pressed="${!!c}" title="${c?(c.obrig?'Obrigatório: clique para tornar opcional':'Opcional: clique para tirar'):'Fora do checklist: clique para exigir'}">${c?ic(c.obrig?'check':'clock',16):''}${esc(l)}${c&&!c.obrig?' <span class="faint">(opcional)</span>':''}</button>`}).join('')}</div>${etCkCondHtml(e.k)}</div></section>`}).join('')+'<div class="hint" style="margin:0 4px">Clique para alternar: obrigatório, opcional, fora do checklist. O obrigatório trava a saída da etapa (gestor e diretor passam com justificativa); com "Vale quando", só quando a condição vale.</div>';
   if(aba==='notif')corpo=`<section class="sec"><div class="sec-h"><h2>Notificações</h2></div><div class="sec-b"><div class="cfg-t"><div class="cfg-r cfg-hd cfg-nt"><span>Tipo</span><span>Ativa</span><span>E-mail</span><span>Lembretes (dias antes)</span></div>
     ${Object.entries(C.notif).map(([k,c])=>`<div class="cfg-r cfg-nt"><span>${TIPOS_NOTIF_N[k]||k}</span><label class="chk"><input type="checkbox" data-ch="cfg" data-p="notif.${k}.ativo" ${c.ativo?'checked':''} aria-label="Ativa"></label><label class="chk"><input type="checkbox" data-ch="cfg" data-p="notif.${k}.email" ${c.email?'checked':''} aria-label="Também por e-mail, para quem não escolheu"></label>${c.dias?`<input data-ch="cfg-dias" data-k="${k}" value="${c.dias.join(', ')}" placeholder="Ex.: 7, 1, 0" aria-label="Lembretes de ${TIPOS_NOTIF_N[k]}">`:'<span class="faint">Na hora</span>'}</div>`).join('')}</div>
     </div></section>`;
@@ -265,6 +274,7 @@ function pgConfig(){
       <select data-ch="cfg-eq" data-i="${i}" data-k="sup" aria-label="Superior de ${esc(m.nome)}" ${m.papel==='diretor'||m.papel==='leitura'?'disabled':''}><option value="">—</option>${sups.map(x=>`<option ${m.sup===x.nome?'selected':''}>${esc(x.nome)}</option>`).join('')}</select>
       <label class="chk"><input type="checkbox" data-ch="cfg-eq" data-i="${i}" data-k="admin" ${m.admin?'checked':''} aria-label="Administrador"></label></div>`}).join('')}</div>
     </div></section>`;
+  if(aba==='equipe')corpo+=vzGruposCfgHtml();  // grupos para liberar cartões restritos (proto_visib.js)
   const rot=(abas.find(x=>x[0]===aba)||abas[0])[1];
   return `<div class="page-h"><div><h1>Configurações</h1></div></div>
   <div class="cfg-lay"><nav class="cfg-nav" role="tablist" aria-label="Configurações">${abas.map(([k,l])=>`<button class="cfg-tab" role="tab" data-a="cfg-aba" data-v="${k}" aria-pressed="${aba===k}" aria-selected="${aba===k}">${l}</button>`).join('')}${['viab','zonas','equipe'].includes(aba)?'':'<button class="btn text cfg-padrao" data-a="cfg-padrao">Restaurar padrão do funil</button>'}</nav><div class="stack cfg-corpo" aria-label="${esc(rot)}">${corpo}${['viab','zonas','equipe'].includes(aba)?'':`<div class="cfg-padrao-w"><button class="btn text cfg-padrao-m" data-a="cfg-padrao">${ic('undo',18)}Restaurar padrão do funil</button></div>`}</div></div>`}
@@ -328,7 +338,7 @@ function funilSubmit(form,F,t,f){
   switch(form){
     case 'perder':case 'descartar':{const st=form==='perder'?'perdido':'descartado',m=(cfg().motivos[st]||[]).find(x=>x.k===F.motivo);
       if(m?.texto&&!F.detalhe.trim()){toast('Esse motivo pede uma explicação no texto.',true);return true}
-      UI.modal=null;tentar(t,'status',st,{motivo:F.motivo,detalhe:F.detalhe.trim()});return true}
+      UI.modal=null;tentar(t,'status',st,{motivo:F.motivo,detalhe:F.detalhe.trim(),tarefas:F.tarefas||'arquivar'});return true}
     case 'suspender':UI.modal=null;tentar(t,'status','stand_by',{retomar:F.retomar,detalhe:F.detalhe.trim()});return true;
     case 'comprar':{const rel=limpaHtml($('#cp-rel')?.innerHTML||'');if(!textoDe(rel)){toast('Escreva o relato da compra.',true);return true}
       const pend=UI.acao?.pend||[];if(pend.length&&!F.j?.trim()){toast('Justifique a compra sem os requisitos.',true);return true}
@@ -351,7 +361,7 @@ function funilSubmit(form,F,t,f){
 function funilModal(M,fechar){const t=UI.alvo?T(UI.alvo):T(UI.id);
   const motivos=st=>`<select id="mo-m" name="motivo" required><option value="">Escolha</option>${cfg().motivos[st].filter(m=>m.ativo).map(m=>`<option value="${m.k}">${esc(m.nome)}</option>`).join('')}</select>`;
   const df=(id,l)=>`<div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="${id}">${l}</button></div>`;
-  const apInfo=st=>{const ap=aprovExig('status',st,me());return ap.niveis.length?`<div class="banner blue" style="margin-top:12px">${ic('check')}<div>Vai como pedido de aprovação: ${ap.niveis.map(x=>NIV_N[x]).join(ap.modo==='sequencia'?', depois ':' e ')}.</div></div>`:''};
+  const apInfo=st=>{const ap=aprovExig('status',st,me(),t);return ap.niveis.length?`<div class="banner blue" style="margin-top:12px">${ic('check')}<div>Vai como pedido de aprovação: ${ap.niveis.map(x=>NIV_N[x]).join(ap.modo==='sequencia'?', depois ':' e ')}.</div></div>`:''};
   if(M==='perder')return `<div class="dh"><div><h2>Marcar como Perdido</h2><div class="muted" style="margin-top:4px">O vendedor não quis seguir com a BKM.</div></div>${fechar}</div><form data-form="perder" id="f-p"><div class="fields"><div class="field full"><label for="mo-m">Motivo</label>${motivos('perdido')}</div><div class="field full"><label for="pd-d">Relato</label><textarea id="pd-d" name="detalhe" required placeholder="O que aconteceu, com quem e quando"></textarea></div></div>${apInfo('perdido')}</form>${df('f-p','Marcar como Perdido')}`;
   if(M==='descartar')return `<div class="dh"><div><h2>Descartar</h2><div class="muted" style="margin-top:4px">A BKM decidiu não seguir.</div></div>${fechar}</div><form data-form="descartar" id="f-ds"><div class="fields"><div class="field full"><label for="mo-m">Motivo</label>${motivos('descartado')}</div><div class="field full"><label for="ds-d">Detalhe</label><textarea id="ds-d" name="detalhe" placeholder="Obrigatório quando o motivo é Outros"></textarea></div></div>${apInfo('descartado')}</form>${df('f-ds','Descartar')}`;
   if(M==='suspender')return `<div class="dh"><h2>Colocar em Stand By</h2>${fechar}</div><form data-form="suspender" id="f-s"><div class="fields"><div class="field"><label for="sp-d">Retomar em</label><input id="sp-d" name="retomar" type="date" min="${addD(HOJE,1)}" value="${addD(HOJE,30)}" required></div><div class="field full"><label for="sp-t">Justificativa</label><textarea id="sp-t" name="detalhe" required></textarea></div></div>${apInfo('stand_by')}</form>${df('f-s','Colocar em Stand By')}`;

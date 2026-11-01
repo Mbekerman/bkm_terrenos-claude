@@ -589,6 +589,32 @@ begin
 end $$;
 create trigger t_norm before insert or update on app.terrenos for each row execute function app.tg_normalizar_terreno();
 
+-- Cada terreno nasce com o seu quadro de tarefas (fluxo), com as listas do modelo da empresa.
+create or replace function app.tg_terreno_quadro()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  -- o quadro nasce com as listas da empresa e, se houver, as tarefas do modelo padrão (responsável do terreno onde o modelo pede)
+  perform fluxo.aplicar_padrao(fluxo.quadro_de(new.empresa_id, 'terreno', new.id), new.responsavel_id);
+  return new;
+end $$;
+create trigger t_quadro after insert on app.terrenos for each row execute function app.tg_terreno_quadro();
+
+-- Teto dos cartões (fluxo, visibilidade por cartão): quem não vê o terreno não
+-- vê os cartões do quadro dele. Hoje vê quem é da empresa; os perfis de acesso
+-- à seção Terrenos e a cada terreno entram aqui quando existirem.
+create or replace function app.ve_terreno(p_terreno uuid, p_user uuid default auth.uid())
+returns boolean language sql stable security definer set search_path = '' as $$
+  select exists (select 1 from app.terrenos t join app.membros m on m.empresa_id = t.empresa_id and m.user_id = p_user
+                 where t.id = p_terreno) $$;
+grant execute on function app.ve_terreno(uuid, uuid) to authenticated;
+insert into fluxo.objeto_tipos (tipo, funcao) values ('terreno', 'app.ve_terreno');
+
+-- Quadro do terreno de uma tarefa (nulo se a tarefa é de outro tipo de quadro).
+create or replace function app.terreno_da_tarefa(p_tarefa uuid)
+returns uuid language sql stable security definer set search_path = '' as $$
+  select q.objeto_id from fluxo.tarefas k join fluxo.quadros q on q.id = k.quadro_id
+  where k.id = p_tarefa and q.objeto_tipo = 'terreno' $$;
+
 -- Poligonal que ocupa parte de outro terreno da empresa só entra se o usuário
 -- confirmou que é outro terreno (sobreposicoes_aceitas). A tela pergunta antes,
 -- com app.terrenos_sobrepostos; aqui é a garantia para qualquer caminho (importação, API).

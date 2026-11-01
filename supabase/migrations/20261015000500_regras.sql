@@ -137,8 +137,37 @@ left join lateral (
   where x.documento_id = d.id order by versao desc limit 1
 ) v on true;
 
+-- A condição "Vale quando" vale para o terreno? (31/out/2026; as regras moram em
+-- app.avaliar_condicao, 001200). Sem condição, vale. Quem não vê o terreno não pergunta.
+create or replace function app.condicao_aplica(p_terreno uuid, p_cond jsonb)
+returns boolean language plpgsql stable security definer set search_path = '' as $$
+begin
+  if p_cond is null then return true; end if;
+  if auth.uid() is not null and not app.ve_terreno(p_terreno) then return null; end if;
+  return app.avaliar_condicao(p_terreno, p_cond);
+end $$;
+grant execute on function app.condicao_aplica(uuid, jsonb) to authenticated;
+
+-- Regra em branco de um item (jornada, 1/nov/2026): a primeira regra condicional
+-- cuja condição vale para o terreno decide; nenhuma vale (ou não há) = a regra única.
+create or replace function app._regra_branco(p_terreno uuid, p_regra text, p_cond jsonb)
+returns text language plpgsql stable security definer set search_path = '' as $$
+declare e jsonb;
+begin
+  if p_cond is not null and jsonb_typeof(p_cond) = 'array' then
+    for e in select * from jsonb_array_elements(p_cond) loop
+      if app.avaliar_condicao(p_terreno, e->'condicao') then return e->>'regra'; end if;
+    end loop;
+  end if;
+  return p_regra;
+end $$;
+revoke all on function app._regra_branco(uuid, text, jsonb) from public;
+
+-- aplica: a condição do documento vale para o terreno agora (sem condição, sempre)
 create view app.v_checklist with (security_invoker = true) as
-select p.id as processo_id, p.empresa_id, c.etapa, c.tipo_documento, c.obrigatorio, c.ordem,
+select p.id as processo_id, p.empresa_id, c.etapa, c.tipo_documento, c.obrigatorio, c.regra, c.ordem, c.condicao, c.regra_cond,
+       app._regra_branco(p.terreno_id, c.regra, c.regra_cond) as regra_efetiva,
+       coalesce(app.condicao_aplica(p.terreno_id, c.condicao), false) as aplica,
        td.nome as tipo_nome, td.validade_dias,
        em.ordem <= ea.ordem as ativo,
        d.id as documento_id, d.emitido_em, d.valido_ate, d.versao_atual, d.nome_arquivo, d.storage_path,
@@ -195,7 +224,9 @@ select t.id, t.empresa_id, t.codigo, t.nome, t.situacao_cadastral, t.prioridade,
        coalesce(vb.margem_pct < vc.margem_minima_pct, false) as abaixo_margem_min,
        u.zoneamentos, u.ca_maximo,
        nt.titulo as proxima_tarefa, nt.prazo as proxima_tarefa_prazo,
-       (select count(*) from app.tarefas k where k.terreno_id = t.id and k.status not in ('concluida','cancelada') and k.prazo < current_date) as tarefas_atrasadas,
+       (select count(*) from fluxo.tarefas k join fluxo.quadros q on q.id = k.quadro_id where q.objeto_tipo = 'terreno' and q.objeto_id = t.id
+          and k.concluida_em is null and k.arquivada_em is null and k.prazo < current_date
+          and not exists (select 1 from fluxo.listas l where l.id = k.lista_id and l.tipo = 'pausa')) as tarefas_atrasadas,
        (select count(*) from app.v_documentos d where d.terreno_id = t.id and d.processo_id = p.id and d.situacao_efetiva = 'vencido') as docs_vencidos,
        (select count(*) from app.diligencias g where g.terreno_id = t.id and g.situacao not in ('resolvida')) as diligencias_abertas,
        (select count(*) from app.diligencias g where g.terreno_id = t.id and g.situacao = 'impeditiva') as diligencias_impeditivas,
@@ -258,8 +289,9 @@ left join app.viabilidades vb on vb.id = pn.viabilidade_id
 left join app.viabilidade_config vc on vc.empresa_id = t.empresa_id
 left join app.v_urbanismo_vigente u on u.terreno_id = t.id
 left join lateral (
-  select titulo, prazo from app.tarefas k where k.terreno_id = t.id and k.status not in ('concluida','cancelada')
-  order by prazo, prazo_hora nulls last limit 1
+  select k.titulo, k.prazo from fluxo.tarefas k join fluxo.quadros q on q.id = k.quadro_id
+  where q.objeto_tipo = 'terreno' and q.objeto_id = t.id and k.concluida_em is null and k.arquivada_em is null and k.prazo is not null
+  order by k.prazo, k.prazo_hora nulls last limit 1
 ) nt on true;
 
 -- Distância em linha reta (haversine). Rota de verdade é com o serviço de mapas.
@@ -322,12 +354,13 @@ from app.terrenos t
 left join app.terreno_entorno_buscas b on b.terreno_id = t.id
 where t.latitude is not null;
 
--- Quadro de tarefas: tarefa com o terreno e o atraso calculado.
+-- Tarefas dos quadros dos terrenos: o cartão (fluxo.v_tarefas, com lista,
+-- atraso e checklist) com o código e o nome do terreno.
 create view app.v_tarefas with (security_invoker = true) as
-select k.*, t.codigo as terreno_codigo, t.nome as terreno_nome,
-       (k.status not in ('concluida','cancelada') and k.prazo < current_date) as atrasada
-from app.tarefas k
-join app.terrenos t on t.id = k.terreno_id;
+select k.*, t.id as terreno_id, t.codigo as terreno_codigo, t.nome as terreno_nome
+from fluxo.v_tarefas k
+join app.terrenos t on t.id = k.objeto_id
+where k.objeto_tipo = 'terreno';
 
 -- Períodos do processo, lidos só do histórico: cada transição que muda a
 -- posição ou o status abre um período que dura até a seguinte. Stand by
@@ -492,6 +525,7 @@ begin
   end if;
   insert into app.processo_transicoes (empresa_id, processo_id, evento, para_etapa, para_subetapa, comentario)
   values (t.empresa_id, v_id, 'abertura', v_etapa, v_sub, p_comentario);
+  perform app._tarefas_ao_entrar(v_id, 'etapa', v_etapa);
   return v_id;
 end $$;
 
@@ -770,9 +804,10 @@ begin
   -- (negociação do terreno dividida em partes: o checklist é de cada parte)
   if ((p_destino_tipo = 'etapa' and ordem_destino > ordem_atual) or (p_destino_tipo = 'status' and p_destino = 'concluido'))
      and not app._tem_partes(p.id) then
-    for r in select c.tipo_nome, c.situacao from app.v_checklist c
-             where c.processo_id = p.id and c.etapa = p.etapa_atual and c.obrigatorio order by c.ordem loop
-      itens := itens || jsonb_build_object('ok', r.situacao = 'validado', 'tipo', 'documento', 'bloqueio_gestor', false,
+    for r in select c.tipo_nome, c.situacao, c.condicao, c.regra_efetiva from app.v_checklist c
+             where c.processo_id = p.id and c.etapa = p.etapa_atual and c.regra_efetiva <> 'livre' and c.aplica order by c.ordem loop
+      itens := itens || jsonb_build_object('ok', r.situacao = 'validado', 'tipo', 'documento', 'bloqueio_gestor', false, 'condicao', r.condicao,
+        'justifica', r.regra_efetiva = 'justifica',
         'texto', r.tipo_nome || case r.situacao when 'validado' then ' validado' when 'pendente' then ': não enviado'
                                                 when 'recebido' then ': aguardando validação' when 'vencido' then ': vencido' else ': rejeitado' end);
     end loop;
@@ -802,21 +837,37 @@ begin
   -- pré-requisitos (só para frente: voltar de etapa não exige nada)
   if p_destino_tipo = 'etapa' and ordem_destino > ordem_atual then
     v_sub_inicial := app._subetapa_inicial(p.empresa_id, p.fase, p_destino);
-    for r in select distinct pr.requisito, s.nome from app.prerequisitos_modelo pr
+    -- pré-requisito com condição só conta quando ela vale para o terreno
+    for r in select pr.requisito, s.nome, (array_agg(pr.condicao))[1] as condicao, bool_and(app._regra_branco(p.terreno_id, pr.regra, pr.regra_cond) = 'justifica') as justifica from app.prerequisitos_modelo pr
              join app.subetapas_modelo s on s.empresa_id = pr.empresa_id and s.fase = pr.fase and s.codigo = pr.requisito
              where pr.empresa_id = p.empresa_id and pr.fase = p.fase
-               and ((pr.alvo_tipo = 'etapa' and pr.alvo = p_destino) or (pr.alvo_tipo = 'subetapa' and pr.alvo = v_sub_inicial)) loop
+               and ((pr.alvo_tipo = 'etapa' and pr.alvo = p_destino) or (pr.alvo_tipo = 'subetapa' and pr.alvo = v_sub_inicial))
+               and app.avaliar_condicao(p.terreno_id, pr.condicao) and app._regra_branco(p.terreno_id, pr.regra, pr.regra_cond) <> 'livre'
+             group by pr.requisito, s.nome, s.ordem order by s.ordem loop
       itens := itens || jsonb_build_object('ok', app._passou_por(p.id, r.requisito), 'tipo', 'prerequisito', 'bloqueio_gestor', false,
-        'requisito', r.requisito, 'texto', 'Passar por ' || r.nome);
+        'requisito', r.requisito, 'texto', 'Passar por ' || r.nome, 'condicao', r.condicao, 'justifica', r.justifica);
     end loop;
   elsif p_destino_tipo = 'subetapa' then
-    for r in select pr.requisito, s.nome from app.prerequisitos_modelo pr
+    for r in select pr.requisito, s.nome, pr.condicao, app._regra_branco(p.terreno_id, pr.regra, pr.regra_cond) = 'justifica' as justifica from app.prerequisitos_modelo pr
              join app.subetapas_modelo s on s.empresa_id = pr.empresa_id and s.fase = pr.fase and s.codigo = pr.requisito
-             where pr.empresa_id = p.empresa_id and pr.fase = p.fase and pr.alvo_tipo = 'subetapa' and pr.alvo = p_destino loop
+             where pr.empresa_id = p.empresa_id and pr.fase = p.fase and pr.alvo_tipo = 'subetapa' and pr.alvo = p_destino
+               and app.avaliar_condicao(p.terreno_id, pr.condicao) and app._regra_branco(p.terreno_id, pr.regra, pr.regra_cond) <> 'livre' loop
       itens := itens || jsonb_build_object('ok', app._passou_por(p.id, r.requisito), 'tipo', 'prerequisito', 'bloqueio_gestor', false,
-        'requisito', r.requisito, 'texto', 'Passar por ' || r.nome);
+        'requisito', r.requisito, 'texto', 'Passar por ' || r.nome, 'condicao', r.condicao, 'justifica', r.justifica);
     end loop;
   end if;
+
+  -- tarefas da etapa que travam a saída (lote B, 31/out/2026; ver app._tarefas_travando, 001300):
+  -- sair da etapa para frente ou concluir a fase, ou sair da subetapa para frente
+  if (p_destino_tipo = 'etapa' and ordem_destino > ordem_atual) or (p_destino_tipo = 'status' and p_destino = 'concluido') then
+    itens := itens || app._tarefas_travando(p, 'etapa');
+  elsif p_destino_tipo = 'subetapa' and app._ordem_subetapa(p.empresa_id, p.fase, p_destino) > app._ordem_subetapa(p.empresa_id, p.fase, p.subetapa_atual) then
+    itens := itens || app._tarefas_travando(p, 'subetapa');
+  end if;
+
+  -- jornada (1/nov/2026; ver 001400): perguntas e campos da etapa ou das subetapas deixadas,
+  -- e as regras pelo valor que travam (bloqueia) ou só avisam (avisa)
+  itens := itens || app._jornada_pendencias(p, p_destino_tipo, p_destino);
   return itens;
 end $$;
 
@@ -847,6 +898,9 @@ begin
     g := coalesce(r.aprova_gestor, false); d := coalesce(r.aprova_diretor, false); modo := coalesce(r.aprovacao_modo, 'sequencia');
   end if;
 
+  -- regra da jornada pelo valor da resposta que pede aprovação (1/nov/2026)
+  g := g or app._jornada_pede(p, p_destino_tipo, p_destino, 'gestor');
+  d := d or app._jornada_pede(p, p_destino_tipo, p_destino, 'diretor');
   select app.nivel_papel(papel) into nivel_ator from app.membros where empresa_id = p.empresa_id and user_id = p_ator;
   if g and coalesce(nivel_ator, 0) < 2 then niveis := niveis || '"gestor"'::jsonb; end if;
   if d and coalesce(nivel_ator, 0) < 3 then niveis := niveis || '"diretor"'::jsonb; end if;
@@ -901,15 +955,20 @@ begin
     select ordem into ordem_atual from app.etapas_modelo where empresa_id = p.empresa_id and fase = p.fase and codigo = p.etapa_atual;
     select ordem into ordem_destino from app.etapas_modelo where empresa_id = p.empresa_id and fase = p.fase and codigo = p_destino;
     v_sub := app._subetapa_inicial(p.empresa_id, p.fase, p_destino);
+    -- voltar de etapa: as tarefas das etapas deixadas para trás (lote B)
+    if ordem_destino < ordem_atual then perform app._tarefas_ao_voltar(p.id, ordem_destino); end if;
     update app.processos set etapa_atual = p_destino, etapa_desde = now(), subetapa_atual = v_sub, subetapa_desde = now() where id = p.id;
     insert into app.processo_transicoes (empresa_id, processo_id, evento, de_etapa, para_etapa, de_subetapa, para_subetapa, forcado, comentario, aprovacao_id, user_id)
     values (p.empresa_id, p.id, case when ordem_destino > ordem_atual then 'avanco' else 'retorno' end,
             p.etapa_atual, p_destino, p.subetapa_atual, v_sub, coalesce(p_forcado, false), p_comentario, p_aprovacao, coalesce(p_por, auth.uid()));
+    -- entrar na etapa (e na subetapa inicial): tarefas da etapa e gatilho das automações
+    perform app._tarefas_ao_entrar(p.id, 'etapa', p_destino);
   elsif p_destino_tipo = 'subetapa' then
     update app.processos set subetapa_atual = p_destino, subetapa_desde = now() where id = p.id;
     insert into app.processo_transicoes (empresa_id, processo_id, evento, de_etapa, para_etapa, de_subetapa, para_subetapa, forcado, comentario, aprovacao_id, user_id)
     values (p.empresa_id, p.id, 'subetapa', p.etapa_atual, p.etapa_atual, p.subetapa_atual, p_destino,
             coalesce(p_forcado, false), p_comentario, p_aprovacao, coalesce(p_por, auth.uid()));
+    perform app._tarefas_ao_entrar(p.id, 'subetapa', p_destino);
   else
     update app.processos set status = p_destino,
            motivo_encerramento  = p_dados->>'motivo',
@@ -927,6 +986,8 @@ begin
               p_comentario), ''),
             p_aprovacao, coalesce(p_por, auth.uid()));
     if p_destino = 'stand_by' then perform app._lembretes_padrao(p.empresa_id, 'processos', p.id, 'stand_by_retomar'); end if;
+    -- Stand By pausa as tarefas da fase; Perdido e Descartado arquivam, se pedido (lote B)
+    perform app._tarefas_ao_encerrar(p.id, p_destino, p_dados);
     if p.parte_id is null and p_destino in ('perdido','descartado','stand_by') then perform app._encerrar_partes(p, p_destino, p_dados); end if;
   end if;
   if p.parte_id is not null then
@@ -991,8 +1052,11 @@ begin
     if not coalesce(p_forcar, false) then
       raise exception 'Ainda há pendências para avançar' using errcode = '22023', detail = pend::text;
     end if;
-    if not app.eh_gestor(p.empresa_id)
-       or exists (select 1 from jsonb_array_elements(pend) i where not (i->>'ok')::boolean and (i->>'bloqueio_gestor')::boolean) then
+    -- só pendências "avança com justificativa" (jornada): qualquer editor passa justificando;
+    -- as demais, só gestor e diretor (e nem eles com bloqueio_gestor)
+    if exists (select 1 from jsonb_array_elements(pend) i where not (i->>'ok')::boolean and not coalesce((i->>'justifica')::boolean, false))
+       and (not app.eh_gestor(p.empresa_id)
+            or exists (select 1 from jsonb_array_elements(pend) i where not (i->>'ok')::boolean and (i->>'bloqueio_gestor')::boolean)) then
       raise exception 'Você não pode forçar este avanço' using errcode = '42501';
     end if;
     if coalesce(trim(p_comentario), '') = '' then raise exception 'Justifique o avanço forçado' using errcode = '22023'; end if;
@@ -1073,6 +1137,9 @@ begin
     'pode_forcar', gestor
       and exists (select 1 from jsonb_array_elements(itens) i where not (i->>'ok')::boolean)
       and not exists (select 1 from jsonb_array_elements(itens) i where not (i->>'ok')::boolean and (i->>'bloqueio_gestor')::boolean),
+    -- só faltam itens "avança com justificativa": qualquer editor passa justificando
+    'pode_justificar', exists (select 1 from jsonb_array_elements(itens) i where not (i->>'ok')::boolean)
+      and not exists (select 1 from jsonb_array_elements(itens) i where not (i->>'ok')::boolean and not coalesce((i->>'justifica')::boolean, false)),
     'itens', itens,
     'aprovacoes', aprov->'niveis', 'aprovacao_modo', aprov->>'modo',
     'pedido', ped);
@@ -1157,9 +1224,10 @@ end $$;
 -- descartado ou stand by, se o status existe na fase (status_modelo). O
 -- processo guarda a etapa e a subetapa em que estava. Concluir só na última
 -- etapa e conforme a aprovação configurada em status_modelo.
+-- p_tarefas (Perdido e Descartado): 'arquivar' (padrão) as tarefas abertas da fase ou 'manter'.
 create or replace function app.encerrar_processo(
   p_processo uuid, p_status text, p_motivo text default null, p_detalhe text default null, p_retomar_em date default null,
-  p_pontos_sucesso text default null, p_forcar boolean default false, p_comentario text default null)
+  p_pontos_sucesso text default null, p_forcar boolean default false, p_comentario text default null, p_tarefas text default null)
 returns jsonb
 language plpgsql security definer set search_path = ''
 as $$
@@ -1196,9 +1264,13 @@ begin
   elsif p_retomar_em is not null then
     raise exception 'Data de retomada só para Stand By' using errcode = '22023';
   end if;
+  if p_tarefas is not null and (p_status not in ('perdido','descartado') or p_tarefas not in ('arquivar','manter')) then
+    raise exception 'Arquivar ou manter as tarefas só em Perdido e Descartado' using errcode = '22023';
+  end if;
   return app._passagem(p.id, 'status', p_status, p_forcar, p_comentario,
     jsonb_strip_nulls(jsonb_build_object('motivo', p_motivo, 'detalhe', nullif(trim(p_detalhe), ''),
-                                         'pontos_sucesso', nullif(trim(p_pontos_sucesso), ''), 'retomar_em', p_retomar_em)));
+                                         'pontos_sucesso', nullif(trim(p_pontos_sucesso), ''), 'retomar_em', p_retomar_em,
+                                         'tarefas', p_tarefas)));
 end $$;
 
 -- Volta para Ativo na mesma etapa e subetapa. O tempo parado não conta na
@@ -1222,6 +1294,8 @@ begin
          etapa_desde = etapa_desde + parado, subetapa_desde = subetapa_desde + parado where id = p.id;
   insert into app.processo_transicoes (empresa_id, processo_id, evento, de_etapa, para_etapa, de_subetapa, para_subetapa)
   values (p.empresa_id, p.id, 'retomada', p.etapa_atual, p.etapa_atual, p.subetapa_atual, p.subetapa_atual);
+  -- as tarefas que o Stand By pausou voltam, com os prazos andando os dias parados (lote B)
+  perform app._tarefas_ao_retomar(p.id);
   -- retomar o terreno retoma as partes paradas; retomar uma parte acerta o terreno
   if p.parte_id is null then
     perform app.retomar_processo(c.id) from app.processos c where c.principal_id = p.id and c.status = 'stand_by';
@@ -1513,6 +1587,7 @@ begin
     insert into app.processo_transicoes (empresa_id, processo_id, evento, de_etapa, para_etapa, de_subetapa, para_subetapa, comentario)
     values (c.empresa_id, c.id, case p_status when 'perdido' then 'perda' when 'descartado' then 'descarte' else 'stand_by' end,
             c.etapa_atual, c.etapa_atual, c.subetapa_atual, c.subetapa_atual, 'Com a negociação do terreno (' || p.codigo || ')');
+    perform app._tarefas_ao_encerrar(c.id, p_status, p_dados);
   end loop;
 end $$;
 
@@ -2340,17 +2415,23 @@ begin
 end $$;
 
 -- Checklist de documentos para sair da etapa: incluir, marcar obrigatório, tirar.
-create or replace function app.salvar_checklist(p_empresa uuid, p_fase text, p_etapa text, p_tipo_documento text, p_obrigatorio boolean default true, p_ordem int default null)
+-- p_regra (jornada, 1/nov/2026): bloqueia, justifica ou livre; nulo = pelo p_obrigatorio.
+-- p_regra_cond: regra condicional [{condicao, regra}]; nulo mantém, '[]' tira.
+create or replace function app.salvar_checklist(p_empresa uuid, p_fase text, p_etapa text, p_tipo_documento text, p_obrigatorio boolean default true, p_ordem int default null,
+  p_regra text default null, p_regra_cond jsonb default null)
 returns void
 language plpgsql security definer set search_path = ''
 as $$
+declare v_regra text := coalesce(p_regra, case when coalesce(p_obrigatorio, true) then 'bloqueia' else 'livre' end);
 begin
   perform app.exigir_administrador(p_empresa);
-  insert into app.checklist_modelo (empresa_id, fase, etapa, tipo_documento, obrigatorio, ordem)
-  values (p_empresa, p_fase, p_etapa, p_tipo_documento, coalesce(p_obrigatorio, true),
-          coalesce(p_ordem, (select coalesce(max(ordem), 0) + 1 from app.checklist_modelo where empresa_id = p_empresa and fase = p_fase and etapa = p_etapa)))
+  insert into app.checklist_modelo (empresa_id, fase, etapa, tipo_documento, regra, ordem, regra_cond)
+  values (p_empresa, p_fase, p_etapa, p_tipo_documento, v_regra,
+          coalesce(p_ordem, (select coalesce(max(ordem), 0) + 1 from app.checklist_modelo where empresa_id = p_empresa and fase = p_fase and etapa = p_etapa)),
+          app._regra_cond_config(p_empresa, p_regra_cond))
   on conflict (empresa_id, fase, etapa, tipo_documento)
-  do update set obrigatorio = excluded.obrigatorio, ordem = coalesce(p_ordem, app.checklist_modelo.ordem);
+  do update set regra = excluded.regra, ordem = coalesce(p_ordem, app.checklist_modelo.ordem),
+                regra_cond = case when p_regra_cond is null then app.checklist_modelo.regra_cond else excluded.regra_cond end;
 end $$;
 
 create or replace function app.remover_checklist(p_empresa uuid, p_fase text, p_etapa text, p_tipo_documento text)
@@ -2558,7 +2639,7 @@ grant execute on function
   app.definir_temperatura(uuid, int), app.definir_oferta_referencia(uuid, uuid),
   app.checar_avanco(uuid), app.checar_passagem(uuid, text, text),
   app.mover_etapa(uuid, boolean, text), app.mover_para_etapa(uuid, text, boolean, text), app.mover_subetapa(uuid, text, boolean, text),
-  app.encerrar_processo(uuid, text, text, text, date, text, boolean, text), app.retomar_processo(uuid),
+  app.encerrar_processo(uuid, text, text, text, date, text, boolean, text, text), app.retomar_processo(uuid),
   app.decidir_aprovacao(uuid, boolean, text), app.cancelar_aprovacao(uuid),
   app.abrir_fase(uuid, text, boolean, text), app.fases_do_terreno(uuid),
   app.salvar_fase(uuid, text, jsonb), app.apagar_fase(uuid, text),
@@ -2567,7 +2648,7 @@ grant execute on function
   app.salvar_subetapa(uuid, text, text, jsonb), app.apagar_subetapa(uuid, text, text),
   app.adicionar_prerequisito(uuid, text, text, text, text), app.remover_prerequisito(uuid),
   app.salvar_motivo(uuid, text, text, jsonb), app.apagar_motivo(uuid, text, text),
-  app.salvar_checklist(uuid, text, text, text, boolean, int), app.remover_checklist(uuid, text, text, text),
+  app.salvar_checklist(uuid, text, text, text, boolean, int, text, jsonb), app.remover_checklist(uuid, text, text, text),
   app.registrar_proposta(uuid, text, numeric, text, text, date, date, text), app.atualizar_status_proposta(uuid, text),
   app.vincular_viabilidade(uuid, text, numeric, numeric, uuid),
   app.registrar_documento(uuid, text, text, text, uuid, uuid, uuid, text, bigint, date, uuid), app.revisar_documento(uuid, boolean),

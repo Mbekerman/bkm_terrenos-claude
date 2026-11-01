@@ -26,6 +26,16 @@ create function pg_temp.quadra(lon float8, lat float8, lado_m float8 default 30)
     jsonb_build_array(lon - dx, lat - dy), jsonb_build_array(lon + dx, lat - dy), jsonb_build_array(lon + dx, lat + dy),
     jsonb_build_array(lon - dx, lat + dy), jsonb_build_array(lon - dx, lat - dy))))
   from (select lado_m / 2 / (111320 * cos(radians(lat))) as dx, lado_m / 2 / 110574.0 as dy) d $$;
+-- tarefa no quadro do terreno, na lista dada (padrão Fazer)
+create function pg_temp.lista(p_ter uuid, p_nome text) returns uuid language sql as $$
+  select l.id from fluxo.listas l join fluxo.quadros q on q.id = l.quadro_id
+  where q.objeto_tipo = 'terreno' and q.objeto_id = p_ter and l.nome = p_nome $$;
+create function pg_temp.tarefa(p_ter uuid, p_titulo text, p_prazo date, p_resp uuid default null, p_proc uuid default null, p_lista text default 'Fazer')
+returns uuid language sql as $$
+  insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, prazo, responsavel_id, processo_id)
+  select q.empresa_id, q.id, pg_temp.lista(p_ter, p_lista), p_titulo, p_prazo, p_resp, p_proc
+  from fluxo.quadros q where q.objeto_tipo = 'terreno' and q.objeto_id = p_ter
+  returning id $$;
 set client_min_messages = notice;
 
 \set diretor  '00000000-0000-0000-0000-00000000000a'
@@ -287,13 +297,12 @@ select pg_temp.como(:'diretor');
 
 -- ---------------------------------------------------------------------
 \echo '# tarefas'
-insert into app.tarefas (empresa_id, terreno_id, processo_id, titulo, responsavel_id, prazo) values
-  (:'emp', :'t1', :'neg', 'Cobrar contraproposta', :'analista', current_date - 2),
-  (:'emp', :'t1', null,  'Agendar visita técnica', :'diretor', current_date + 3);
+select pg_temp.tarefa(:'t1', 'Cobrar contraproposta', current_date - 2, :'analista', :'neg');
+select pg_temp.tarefa(:'t1', 'Agendar visita técnica', current_date + 3, :'diretor');
 select pg_temp.ok((select tarefas_atrasadas from app.v_terrenos where id = :'t1') = 1, 'tarefa vencida e aberta conta como atrasada');
 select pg_temp.ok((select proxima_tarefa from app.v_terrenos where id = :'t1') = 'Cobrar contraproposta', 'próxima tarefa = prazo mais cedo');
-update app.tarefas set status = 'concluida', resultado = 'Recebida por e-mail' where titulo = 'Cobrar contraproposta';
-select pg_temp.ok((select concluida_em is not null from app.tarefas where titulo = 'Cobrar contraproposta'), 'concluir preenche a data');
+update fluxo.tarefas set lista_id = pg_temp.lista(:'t1', 'Feito'), resultado = 'Recebida por e-mail' where titulo = 'Cobrar contraproposta';
+select pg_temp.ok((select concluida_em is not null and concluida_por = :'diretor' from fluxo.tarefas where titulo = 'Cobrar contraproposta'), 'levar para Feito conclui e preenche a data');
 select pg_temp.ok((select tarefas_atrasadas from app.v_terrenos where id = :'t1') = 0, 'concluída deixa de contar como atrasada');
 
 -- ---------------------------------------------------------------------
@@ -675,19 +684,20 @@ delete from app.terrenos where id = :'tsj';
 delete from app.inscricoes_municipais where id in (:'gi', :'gi2', :'gdup');
 select pg_temp.como(:'diretor');
 select pg_temp.ok(not exists (select 1 from app.v_mapa where id = :'t1'), 'terreno arquivado sai do mapa');
-insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (:'emp', :'tm', 'Visitar o lote', current_date - 1) returning id as k1 \gset
-insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (:'emp', :'tm', 'Pedir matrícula', current_date + 5) returning id as k2 \gset
-select pg_temp.ok((select posicao from app.tarefas where id = :'k2') > (select posicao from app.tarefas where id = :'k1'), 'tarefa nova entra no fim da coluna');
-select pg_temp.ok((select atrasada and terreno_nome = 'Pin no mapa' from app.v_tarefas where id = :'k1'), 'quadro de tarefas mostra atraso e terreno');
-update app.tarefas set status = 'em_andamento', posicao = (select posicao from app.tarefas where id = :'k1') - 1 where id = :'k2';
-select pg_temp.ok((select status from app.tarefas where id = :'k2') = 'em_andamento', 'arrastar a tarefa muda o status');
+select pg_temp.tarefa(:'tm', 'Visitar o lote', current_date - 1) as k1 \gset
+select pg_temp.tarefa(:'tm', 'Pedir matrícula', current_date + 5) as k2 \gset
+select pg_temp.ok((select posicao from fluxo.tarefas where id = :'k2') > (select posicao from fluxo.tarefas where id = :'k1'), 'tarefa nova entra no fim da lista');
+select pg_temp.ok((select atrasada and terreno_nome = 'Pin no mapa' and lista_nome = 'Fazer' from app.v_tarefas where id = :'k1'), 'quadro de tarefas mostra lista, atraso e terreno');
+update fluxo.tarefas set lista_id = pg_temp.lista(:'tm', 'Fazendo'), posicao = (select posicao from fluxo.tarefas where id = :'k1') - 1 where id = :'k2';
+select pg_temp.ok((select lista_nome = 'Fazendo' and concluida_em is null from app.v_tarefas where id = :'k2'), 'arrastar a tarefa muda a lista');
 
 -- ---------------------------------------------------------------------
 \echo '# somente leitura'
 select pg_temp.como(:'leitor');
 select pg_temp.ok((select count(*) from app.v_terrenos) = 4, 'leitura vê os terrenos');
 select pg_temp.ok((select count(*) from app.v_inscricoes) = 1, 'leitura vê valor venal e IPTU');
-select pg_temp.falha(format($$insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (%L, %L, 'x', current_date)$$, :'emp', :'t2'), 'leitura não cria tarefa');
+select pg_temp.falha(format($$select pg_temp.tarefa(%L, 'x', current_date)$$, :'t2'), 'leitura não cria tarefa');
+select q.id as q2, pg_temp.lista(:'t2', 'Fazer') as l2 from fluxo.quadros q where q.objeto_tipo = 'terreno' and q.objeto_id = :'t2' \gset
 select pg_temp.falha(format($$select app.salvar_terreno(%L, 1, '{"nome":"x"}')$$, :'t2'), 'leitura não edita terreno');
 select pg_temp.falha(format('select app.registrar_oferta(%L, 100)', :'t2'), 'leitura não registra oferta');
 select pg_temp.falha(format($$insert into app.reunioes (empresa_id, terreno_id, inicio, modalidade) values (%L, %L, now(), 'online')$$, :'emp', :'t2'), 'leitura não registra reunião');
@@ -700,31 +710,32 @@ select pg_temp.ok((select count(*) from app.v_inscricoes) = 0, 'outra pessoa nã
 select pg_temp.ok((select count(*) from app.v_reunioes) = 0, 'outra pessoa não vê reuniões');
 select pg_temp.ok((select count(*) from app.pontos_interesse) = 0 and (select count(*) from app.v_mapa) = 0, 'outra pessoa não vê mapa nem pontos de interesse');
 select pg_temp.falha(format('select app.checar_avanco(%L)', :'neg'), 'outra pessoa não acessa RPC');
-select pg_temp.falha(format($$insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (%L, %L, 'x', current_date)$$, :'emp', :'t2'), 'outra pessoa não grava tarefa');
+select pg_temp.falha(format($$insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo) values (%L, %L, %L, 'x')$$, :'emp', :'q2', :'l2'), 'outra pessoa não grava tarefa');
+select pg_temp.ok((select count(*) from fluxo.tarefas) = 0 and (select count(*) from fluxo.quadros) = 0, 'outra pessoa não vê quadros nem tarefas');
 select pg_temp.ok((select count(*) from app.municipios) = 5571, 'cadastros comuns continuam visíveis');
 
 select pg_temp.como(:'diretor');
 select pg_temp.ok((select count(*) from app.auditoria where tabela = 'terrenos') >= 3, 'auditoria registra alterações do terreno');
 begin;
-insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (:'emp', :'t2', 'Log A', current_date);
-insert into app.tarefas (empresa_id, terreno_id, titulo, prazo) values (:'emp', :'t2', 'Log B', current_date);
+select pg_temp.tarefa(:'t2', 'Log A', current_date);
+select pg_temp.tarefa(:'t2', 'Log B', current_date);
 commit;
 select pg_temp.ok((select bool_and(em > ant) from (select em, lag(em) over (order by id) ant from (select id, em from app.auditoria where tabela = 'tarefas' order by id desc limit 2) u) x where ant is not null),
   'alterações na mesma transação ficam em instantes distintos, na ordem em que aconteceram');
-select id as tlog from app.tarefas where titulo = 'Log A' \gset
-update app.tarefas set prioridade = 'alta' where id = :'tlog';
-update app.tarefas set prioridade = 'baixa' where id = :'tlog';
+select id as tlog from fluxo.tarefas where titulo = 'Log A' \gset
+update fluxo.tarefas set prioridade = 'alta' where id = :'tlog';
+update fluxo.tarefas set prioridade = 'baixa' where id = :'tlog';
 select pg_temp.ok((select count(*) = 1 and min(antes->>'prioridade') = 'media' and min(depois->>'prioridade') = 'baixa' from app.auditoria where registro_id = :'tlog' and acao = 'update'),
   'mudanças seguidas no mesmo campo viram um log só, do valor de antes ao final');
-update app.tarefas set prioridade = 'media' where id = :'tlog';
+update fluxo.tarefas set prioridade = 'media' where id = :'tlog';
 select pg_temp.ok((select count(*) from app.auditoria where registro_id = :'tlog' and acao = 'update') = 0, 'se voltou ao valor de antes, o log some');
-update app.tarefas set prioridade = 'alta' where id = :'tlog';
-update app.tarefas set titulo = 'Log A1' where id = :'tlog';
+update fluxo.tarefas set prioridade = 'alta' where id = :'tlog';
+update fluxo.tarefas set titulo = 'Log A1' where id = :'tlog';
 select pg_temp.ok((select count(*) from app.auditoria where registro_id = :'tlog' and acao = 'update') = 2, 'campo diferente é outro log');
 reset role;
 update app.auditoria set em = em - interval '8 seconds' where registro_id = :'tlog';
 select pg_temp.como(:'diretor');
-update app.tarefas set titulo = 'Log A2' where id = :'tlog';
+update fluxo.tarefas set titulo = 'Log A2' where id = :'tlog';
 select pg_temp.ok((select count(*) from app.auditoria where registro_id = :'tlog' and acao = 'update') = 3, 'passados 7 segundos, a mesma mudança é outro log');
 -- ajuste na poligonal: salvamentos seguidos juntam por 2 minutos
 select versao as vp from app.terrenos where id = :'tx' \gset
@@ -953,7 +964,7 @@ select pg_temp.como(:'diretor');
 
 \echo '# notificações e lembretes'
 select pg_temp.como(:'analista');
-insert into app.tarefas (empresa_id, terreno_id, titulo, responsavel_id, prazo) values (:'emp', :'tm', 'Pedir certidões', :'gestor', current_date + 2) returning id as kn \gset
+select pg_temp.tarefa(:'tm', 'Pedir certidões', current_date + 2, :'gestor') as kn \gset
 select pg_temp.ok(to_regclass('app.tarefa_marcados') is null, 'tarefa não tem lista de marcados: só o @ avisa');
 select pg_temp.ok((select array_agg(dias_antes) from app.lembretes where origem_id = :'kn') = '{0}', 'tarefa nasce com lembrete no dia do prazo');
 insert into app.lembretes (empresa_id, origem_tabela, origem_id, dias_antes) values (:'emp', 'tarefas', :'kn', 1);
@@ -971,7 +982,7 @@ select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'tarefa_at
 select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'tarefa_prazo') = 2, 'lembretes de 1 dia antes e do dia do prazo');
 select pg_temp.ok((select texto from app.notificacoes where tipo = 'tarefa_prazo' order by referencia desc limit 1) like '%: hoje', 'no dia: "vence hoje"');
 select pg_temp.como(:'analista');
-update app.tarefas set prazo = current_date + 6 where id = :'kn';
+update fluxo.tarefas set prazo = current_date + 6 where id = :'kn';
 reset role;
 select app.rotina_diaria(current_date + 6) \gset
 select app.rotina_diaria(current_date + 8) \gset
@@ -1551,11 +1562,12 @@ select pg_temp.ok(app.mudar_arroba('00000000-0000-0000-0000-0000000000f2', '@Joa
 select pg_temp.ok(app.arrobas_no_texto('Fala @Gestor e @joao.silva. Copiar x@bkm.test e @@ ninguém') = array['gestor','joao.silva'],
   'acha os @ do texto, sem e-mail e sem o ponto final');
 select pg_temp.como(:'analista');
-insert into app.tarefas (empresa_id, terreno_id, titulo, descricao, prazo)
-  values (:'emp', :'tm', 'Conferir matrícula', 'Ver com @gestor e @joao.silva; @analista e @intruso não contam', current_date + 5) returning id as km \gset
+insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, descricao, prazo)
+  select :'emp', l.quadro_id, l.id, 'Conferir matrícula', 'Ver com @gestor e @joao.silva; @analista e @intruso não contam', current_date + 5
+  from fluxo.listas l where l.id = pg_temp.lista(:'tm', 'Fazer') returning id as km \gset
 select pg_temp.ok((select array_agg(user_id order by user_id) from app.mencoes where origem_id = :'km')
   = array[:'gestor', '00000000-0000-0000-0000-0000000000f1']::uuid[], 'o @ de quem é da empresa vira menção; o próprio autor e quem é de fora, não');
-update app.tarefas set descricao = 'Ver com @gestor, @joao.silva e @diretor' where id = :'km';
+update fluxo.tarefas set descricao = 'Ver com @gestor, @joao.silva e @diretor' where id = :'km';
 select pg_temp.ok((select count(*) from app.mencoes where origem_id = :'km') = 3, 'editar o texto só acrescenta quem entrou agora');
 select pg_temp.como(:'gestor');
 select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'mencao' and origem_id = :'km') = 1
@@ -1582,4 +1594,1336 @@ select pg_temp.ok(not exists (select 1 from app.mencoes), 'quem é de fora não 
 select pg_temp.como(:'diretor');
 select app.configurar_notificacao(:'emp', 'tarefa_prazo', p_email_padrao => true);
 select pg_temp.ok((select email_padrao from app.tipos_notificacao where empresa_id = :'emp' and codigo = 'tarefa_prazo'), 'administrador liga o e-mail padrão de um tipo');
+
+-- ---------------------------------------------------------------------
+\echo '# quadros e tarefas (fluxo, bloco 1)'
+select pg_temp.como(:'analista');
+select q.id as qm from fluxo.quadros q where q.objeto_tipo = 'terreno' and q.objeto_id = :'tm' \gset
+select pg_temp.ok((select string_agg(nome || ':' || tipo, ',' order by posicao) from fluxo.listas where quadro_id = :'qm')
+  = 'Backlog:aberta,Fazer:aberta,Fazendo:aberta,Aguardando retorno:aberta,Pausadas:pausa,Feito:conclui',
+  'terreno nasce com o seu quadro e as listas padrão');
+select pg_temp.ok(fluxo.quadro_de(:'emp', 'terreno', :'tm') = :'qm', 'pedir o quadro de novo devolve o mesmo');
+select pg_temp.tarefa(:'tm', 'Levantar matrícula', current_date + 3, :'gestor', null, 'Backlog') as kf \gset
+select pg_temp.ok((select codigo ~ '^TAR-\d{6}$' and solicitante_id = :'analista' from fluxo.tarefas where id = :'kf'), 'tarefa ganha código TAR e quem criou é o solicitante');
+select pg_temp.ok((select lista_nome = 'Backlog' and objeto_tipo = 'terreno' and objeto_id = :'tm' from fluxo.v_tarefas where id = :'kf'), 'o cartão sabe o quadro e o objeto que ele acompanha');
+update fluxo.tarefas set concluida_em = now() where id = :'kf';
+select pg_temp.ok((select lista_nome = 'Feito' and concluida_por = :'analista' from fluxo.v_tarefas where id = :'kf'), 'marcar concluída leva o cartão para a lista que conclui');
+update fluxo.tarefas set concluida_em = null where id = :'kf';
+select pg_temp.ok((select lista_nome = 'Backlog' and concluida_em is null from fluxo.v_tarefas where id = :'kf'), 'reabrir leva para a primeira lista aberta');
+select pg_temp.falha(format($$update fluxo.tarefas set lista_id = %L where id = %L$$, pg_temp.lista(:'tm', 'Pausadas'), :'kf'), 'Pausadas é lista de pausa: só se entra por Pausar');
+select pg_temp.falha(format($$update fluxo.tarefas set lista_id = %L where id = %L$$, pg_temp.lista(:'t2', 'Fazer'), :'kf'), 'lista de outro quadro é recusada');
+select pg_temp.falha(format($$update fluxo.tarefas set quadro_id = %L, lista_id = %L where id = %L$$, :'q2', :'l2', :'kf'), 'cartão não muda de quadro');
+select pg_temp.falha(format($$delete from fluxo.tarefas where id = %L$$, :'kf'), 'tarefa não se apaga, só se arquiva');
+select pg_temp.falha(format($$update fluxo.tarefas set inicio = current_date + 9 where id = %L$$, :'kf'), 'início depois do prazo é recusado');
+select pg_temp.falha(format($$update fluxo.tarefas set processo_id = %L where id = %L$$, :'neg', :'kf'), 'negociação de outro terreno é recusada');
+update fluxo.tarefas set prazo = current_date - 1 where id = :'kf';
+select pg_temp.ok((select atrasada from fluxo.v_tarefas where id = :'kf'), 'prazo vencido e aberta: atrasada');
+update fluxo.tarefas set arquivada_em = now() where id = :'kf';
+select pg_temp.ok((select not atrasada and arquivada_por = :'analista' from fluxo.v_tarefas where id = :'kf'), 'arquivada não conta como atrasada e guarda quem arquivou');
+update fluxo.tarefas set arquivada_em = null where id = :'kf';
+select pg_temp.ok((select arquivada_por is null from fluxo.tarefas where id = :'kf'), 'restaurar tira o arquivamento');
+-- papéis: executor é avisado; quem acompanha recebe comentário e conclusão
+insert into fluxo.tarefa_pessoas (empresa_id, tarefa_id, user_id, papel) values
+  (:'emp', :'kf', :'diretor', 'executor'), (:'emp', :'kf', :'gestor', 'acompanha');
+select pg_temp.falha(format($$insert into fluxo.tarefa_pessoas (empresa_id, tarefa_id, user_id, papel) values (%L, %L, %L, 'dono')$$, :'emp', :'kf', :'leitor'), 'papel desconhecido é recusado');
+insert into fluxo.comentarios (empresa_id, tarefa_id, texto) values (:'emp', :'kf', 'Cartório pediu mais 5 dias, @diretor') returning id as cm \gset
+update fluxo.tarefas set lista_id = pg_temp.lista(:'tm', 'Feito') where id = :'kf';
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.notificacoes where origem_id = :'kf' and tipo = 'tarefa_atribuida') = 1, 'executor é avisado da tarefa');
+select pg_temp.ok((select count(*) from app.notificacoes where origem_tabela = 'tarefas' and origem_id = :'kf' and tipo = 'mencao') = 1
+  and (select texto from app.notificacoes where origem_id = :'kf' and tipo = 'mencao') like '%num comentário da tarefa: Levantar matrícula',
+  '@ no comentário avisa e leva à tarefa');
+select pg_temp.como(:'gestor');
+select pg_temp.ok((select count(*) from app.notificacoes where origem_id = :'kf' and tipo = 'tarefa_acompanhada') >= 1
+  and exists (select 1 from app.notificacoes where origem_id = :'kf' and tipo = 'tarefa_acompanhada' and terreno_id = :'tm'),
+  'quem acompanha é avisado, com o terreno do quadro');
+-- comentários: só o autor edita e apaga
+update fluxo.comentarios set texto = 'mudei' where id = :'cm';
+select pg_temp.ok((select texto from fluxo.comentarios where id = :'cm') like 'Cartório%', 'outro usuário não edita o comentário');
+insert into fluxo.comentario_reacoes (empresa_id, comentario_id, emoji) values (:'emp', :'cm', '👍');
+select pg_temp.falha(format($$insert into fluxo.comentario_reacoes (empresa_id, comentario_id, user_id, emoji) values (%L, %L, %L, '👍')$$, :'emp', :'cm', :'diretor'), 'ninguém reage em nome de outro');
+select pg_temp.como(:'analista');
+update fluxo.comentarios set texto = 'Cartório pediu mais 5 dias úteis' where id = :'cm';
+select pg_temp.ok((select editado_em is not null from fluxo.comentarios where id = :'cm'), 'o autor edita e fica marcado como editado');
+update fluxo.comentarios set apagado_em = now() where id = :'cm';
+select pg_temp.falha(format($$update fluxo.comentarios set texto = 'volta' where id = %L$$, :'cm'), 'comentário apagado não se edita');
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'comentarios' and registro_id = :'cm') >= 2, 'o histórico guarda o que o comentário dizia');
+select pg_temp.como(:'analista');
+-- checklist com responsável e prazo por item
+insert into fluxo.checklists (empresa_id, tarefa_id, nome) values (:'emp', :'k1', 'Documentos') returning id as ch \gset
+insert into fluxo.checklist_itens (empresa_id, checklist_id, texto, responsavel_id, prazo) values
+  (:'emp', :'ch', 'Matrícula atualizada', :'gestor', current_date + 2) returning id as ci1 \gset
+insert into fluxo.checklist_itens (empresa_id, checklist_id, texto) values (:'emp', :'ch', 'Certidão de ônus') returning id as ci2 \gset
+update fluxo.checklist_itens set concluido_em = now() where id = :'ci2';
+select pg_temp.ok((select checklist_total = 2 and checklist_feitos = 1 from fluxo.v_tarefas where id = :'k1'), 'cartão mostra o andamento do checklist');
+select pg_temp.ok((select concluido_por = :'analista' from fluxo.checklist_itens where id = :'ci2'), 'item feito guarda quem marcou');
+select fluxo.item_para_tarefa(:'ci1') as kc \gset
+select pg_temp.ok((select titulo = 'Matrícula atualizada' and responsavel_id = :'gestor' and quadro_id = :'qm' from fluxo.tarefas where id = :'kc')
+  and (select virou_tarefa_id = :'kc' and concluido_em is not null from fluxo.checklist_itens where id = :'ci1')
+  and exists (select 1 from fluxo.anexos where tarefa_id = :'kc' and tarefa_ref_id = :'k1'),
+  'item vira cartão no mesmo quadro, ligado ao cartão de origem');
+select pg_temp.ok(fluxo.item_para_tarefa(:'ci1') = :'kc', 'converter de novo devolve o mesmo cartão');
+select pg_temp.como(:'gestor');
+select pg_temp.ok(exists (select 1 from app.notificacoes where tipo = 'tarefa_atribuida' and texto like 'Item para você em %Matrícula atualizada'), 'responsável do item é avisado');
+-- etiquetas e anexos
+select pg_temp.como(:'analista');
+insert into fluxo.etiquetas (empresa_id, nome, cor) values (:'emp', 'Jurídico', 'roxo') returning id as et \gset
+insert into fluxo.tarefa_etiquetas (empresa_id, tarefa_id, etiqueta_id) values (:'emp', :'k1', :'et');
+select pg_temp.falha(format($$insert into fluxo.etiquetas (empresa_id, nome, cor) values (%L, 'X', 'dourado')$$, :'emp'), 'cor fora da paleta é recusada');
+select pg_temp.como(:'intruso');
+insert into fluxo.etiquetas (empresa_id, nome) values (:'emp2', 'Deles') returning id as et2 \gset
+select pg_temp.falha(format($$select fluxo.quadro_de(%L, 'terreno', %L)$$, :'emp', :'tm'), 'quem é de fora não abre o quadro');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$insert into fluxo.tarefa_etiquetas (empresa_id, tarefa_id, etiqueta_id) values (%L, %L, %L)$$, :'emp', :'k1', :'et2'), 'etiqueta de outra empresa é recusada');
+insert into fluxo.anexos (empresa_id, tarefa_id, tipo, nome, url) values (:'emp', :'k1', 'link', 'Matrícula no Drive', 'https://drive.google.com/x');
+select pg_temp.falha(format($$insert into fluxo.anexos (empresa_id, tarefa_id, tipo, nome) values (%L, %L, 'link', 'sem endereço')$$, :'emp', :'k1'), 'link sem endereço é recusado');
+select pg_temp.ok((select count(*) from fluxo.anexos where tarefa_id = :'k1') = 1, 'anexo fica no cartão');
+-- leitura só vê
+select pg_temp.como(:'leitor');
+select pg_temp.ok((select count(*) from fluxo.v_tarefas where quadro_id = :'qm') >= 3, 'leitura vê o quadro');
+select pg_temp.falha(format($$insert into fluxo.comentarios (empresa_id, tarefa_id, texto) values (%L, %L, 'x')$$, :'emp', :'k1'), 'leitura não comenta');
+select pg_temp.falha(format($$select fluxo.item_para_tarefa(%L)$$, :'ci2'), 'leitura não converte item');
+-- listas padrão: só o administrador; vale para quadros novos
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$select fluxo.salvar_lista_modelo(%L, null, 'Nova', 9, 'aberta')$$, :'emp'), 'só o administrador muda as listas padrão');
+select pg_temp.como(:'diretor');
+select id as lb from fluxo.listas_modelo where empresa_id is null and nome = 'Backlog' \gset
+select fluxo.salvar_lista_modelo(:'emp', :'lb', 'Entrada', 1, 'aberta') as lbe \gset
+select pg_temp.ok((select count(*) from fluxo.listas_modelo where empresa_id = :'emp') = 6 and (select nome from fluxo.listas_modelo where id = :'lbe') = 'Entrada'
+  and (select nome from fluxo.listas_modelo where id = :'lb') = 'Backlog', 'a primeira mudança copia o padrão para a empresa');
+select id as lfeito from fluxo.listas_modelo where empresa_id = :'emp' and nome = 'Feito' \gset
+select pg_temp.falha(format($$select fluxo.salvar_lista_modelo(%L, %L, 'Feito', 6, 'aberta')$$, :'emp', :'lfeito'), 'o modelo não fica sem lista que conclui');
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude, poligono_geojson)
+  values (:'emp', 'Quadro novo', :'diretor', 'prospeccao', :'sp', -23.70, -46.70, pg_temp.quadra(-46.70, -23.70)) returning id as tq \gset
+select pg_temp.ok(pg_temp.lista(:'tq', 'Entrada') is not null and pg_temp.lista(:'tm', 'Backlog') is not null, 'quadro novo usa as listas da empresa; os existentes mantêm as suas');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'listas_modelo') >= 7, 'listas padrão vão para a auditoria');
+-- ---------------------------------------------------------------------
+\echo '# cronograma (fluxo, bloco 2)'
+select pg_temp.como(:'analista');
+-- datas de 2030 sem feriado; 05/08/2030 é segunda
+select pg_temp.tarefa(:'tm', 'Cr A', '2030-08-09') as ca \gset
+update fluxo.tarefas set inicio = '2030-08-05' where id = :'ca';
+select pg_temp.ok((select duracao = 5 and inicio_min = '2030-08-05' from fluxo.tarefas where id = :'ca'), 'duração sai do início e do prazo (dias corridos)');
+select pg_temp.tarefa(:'tm', 'Cr B', '2030-08-03') as cb \gset
+update fluxo.tarefas set inicio = '2030-08-01' where id = :'cb';
+insert into fluxo.vinculos (empresa_id, predecessora_id, sucessora_id) values (:'emp', :'ca', :'cb') returning id as vab \gset
+select pg_temp.ok((select inicio = '2030-08-10' and prazo = '2030-08-12' and duracao = 3 and inicio_min = '2030-08-01' from fluxo.tarefas where id = :'cb'),
+  'término-início: a sucessora começa no dia seguinte ao fim da predecessora, com a mesma duração');
+update fluxo.tarefas set prazo = '2030-08-12' where id = :'ca';
+select pg_temp.ok((select inicio = '2030-08-13' and prazo = '2030-08-15' from fluxo.tarefas where id = :'cb'), 'esticar a predecessora empurra a sucessora');
+select pg_temp.tarefa(:'tm', 'Cr C', '2030-08-01') as cc \gset
+update fluxo.tarefas set inicio = '2030-08-01' where id = :'cc';
+insert into fluxo.vinculos (empresa_id, predecessora_id, sucessora_id, defasagem) values (:'emp', :'cb', :'cc', 2);
+select pg_temp.ok((select inicio = '2030-08-18' and prazo = '2030-08-18' from fluxo.tarefas where id = :'cc'), 'defasagem de 2 dias depois do fim');
+update fluxo.tarefas set prazo = '2030-08-09' where id = :'ca';
+select pg_temp.ok((select inicio from fluxo.tarefas where id = :'cb') = '2030-08-10' and (select inicio from fluxo.tarefas where id = :'cc') = '2030-08-15',
+  'encurtar a predecessora puxa a cadeia de volta (o mais cedo possível)');
+select pg_temp.tarefa(:'tm', 'Cr D', '2030-08-01') as cd \gset
+update fluxo.tarefas set inicio = '2030-08-01' where id = :'cd';
+insert into fluxo.vinculos (empresa_id, predecessora_id, sucessora_id, tipo, defasagem) values (:'emp', :'ca', :'cd', 'II', 1);
+select pg_temp.ok((select inicio = '2030-08-06' from fluxo.tarefas where id = :'cd'), 'início-início com defasagem de 1 dia');
+select pg_temp.tarefa(:'tm', 'Cr E', '2030-08-02') as ce \gset
+update fluxo.tarefas set inicio = '2030-08-01' where id = :'ce';
+insert into fluxo.vinculos (empresa_id, predecessora_id, sucessora_id, tipo) values (:'emp', :'ca', :'ce', 'II'), (:'emp', :'ca', :'ce', 'TT');
+select pg_temp.ok((select inicio = '2030-08-08' and prazo = '2030-08-09' from fluxo.tarefas where id = :'ce'),
+  'II e TT com durações diferentes: como no Project, a sucessora termina junto e começa depois');
+update fluxo.tarefas set duracao = 5 where id = :'ce';
+select pg_temp.ok((select inicio = '2030-08-05' and prazo = '2030-08-09' and duracao = 5 from fluxo.tarefas where id = :'ce'), 'esticar a sucessora para a duração da predecessora (a opção do aviso): começam e terminam juntas');
+select pg_temp.tarefa(:'tm', 'Cr F', '2030-08-01') as cf \gset
+update fluxo.tarefas set inicio = '2030-08-01' where id = :'cf';
+insert into fluxo.vinculos (empresa_id, predecessora_id, sucessora_id, tipo) values (:'emp', :'ca', :'cf', 'IT');
+select pg_temp.ok((select prazo = '2030-08-05' from fluxo.tarefas where id = :'cf'), 'início-término: a sucessora termina quando a predecessora começa');
+select pg_temp.falha(format($$insert into fluxo.vinculos (empresa_id, predecessora_id, sucessora_id) values (%L, %L, %L)$$, :'emp', :'cc', :'ca'), 'vínculo em círculo é recusado');
+select pg_temp.falha(format($$insert into fluxo.vinculos (empresa_id, predecessora_id, sucessora_id) values (%L, %L, %L)$$, :'emp', :'ca', :'ca'), 'tarefa não depende dela mesma');
+update fluxo.tarefas set inicio = '2030-08-20' where id = :'cb';
+select pg_temp.ok((select inicio = '2030-08-20' and inicio_min = '2030-08-20' from fluxo.tarefas where id = :'cb'), 'início digitado depois do que o vínculo pede vale (não começar antes de)');
+update fluxo.tarefas set inicio = '2030-08-01' where id = :'cb';
+select pg_temp.ok((select inicio = '2030-08-10' from fluxo.tarefas where id = :'cb'), 'início antes do que o vínculo deixa volta para o mais cedo possível');
+update fluxo.tarefas set concluida_em = now() where id = :'cc';
+select inicio as cc_ini from fluxo.tarefas where id = :'cc' \gset
+update fluxo.tarefas set prazo = '2030-08-11' where id = :'ca';
+select pg_temp.ok((select inicio from fluxo.tarefas where id = :'cc') = :'cc_ini' and (select inicio from fluxo.tarefas where id = :'cb') = '2030-08-12',
+  'tarefa concluída não se move; a aberta acompanha');
+update fluxo.tarefas set concluida_em = null where id = :'cc';
+delete from fluxo.vinculos where id = :'vab';
+select pg_temp.ok((select count(*) from fluxo.vinculos where sucessora_id = :'cb') = 0, 'quem edita tira o vínculo');
+insert into fluxo.vinculos (empresa_id, predecessora_id, sucessora_id) values (:'emp', :'ca', :'cb');
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'tarefas' and registro_id = :'cb' and user_id = :'analista'
+  and antes->>'inicio' is distinct from depois->>'inicio') >= 1, 'a auditoria guarda quem mudou as datas, inclusive as empurradas');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$insert into fluxo.vinculos (empresa_id, predecessora_id, sucessora_id) values (%L, %L, %L)$$, :'emp', :'cd', :'cf'), 'leitura não cria vínculo');
+-- dias úteis
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$select fluxo.salvar_calendario(%L, true)$$, :'emp'), 'só o administrador muda o calendário');
+select pg_temp.como(:'diretor');
+select fluxo.salvar_calendario(:'emp', true);
+select pg_temp.ok(fluxo.somar_dias(:'emp', '2030-08-09', 1) = '2030-08-12' and fluxo.somar_dias(:'emp', '2030-11-14', 1) = '2030-11-18'
+  and fluxo.duracao_dias(:'emp', '2030-08-09', '2030-08-12') = 2 and fluxo.somar_dias(:'emp', '2030-08-12', -1) = '2030-08-09',
+  'dias úteis pulam fim de semana e feriado');
+select fluxo.salvar_calendario(:'emp', false);
+select pg_temp.ok(fluxo.somar_dias(:'emp', '2030-08-09', 1) = '2030-08-10', 'padrão volta a dias corridos');
+-- linha de base
+select pg_temp.como(:'analista');
+select fluxo.enviar_cronograma(:'qm') as lb1 \gset
+select pg_temp.ok((select situacao = 'pendente' and numero is null from fluxo.linhas_base where id = :'lb1')
+  and (select count(*) from fluxo.linha_base_itens where linha_base_id = :'lb1') >= 6, 'quem edita manda o cronograma; fica pendente com o retrato das datas');
+select pg_temp.falha(format($$select fluxo.decidir_linha_base(%L, true)$$, :'lb1'), 'analista não aprova a própria linha de base');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$select fluxo.enviar_cronograma(%L)$$, :'qm'), 'leitura não manda cronograma');
+select pg_temp.como(:'gestor');
+select fluxo.decidir_linha_base(:'lb1', true);
+select pg_temp.ok((select situacao = 'aprovada' and numero = 1 and decidida_por = :'gestor' from fluxo.linhas_base where id = :'lb1'), 'o gestor de quem mandou aprova: linha de base 1');
+select pg_temp.como(:'analista');
+select prazo as a_pz from fluxo.tarefas where id = :'ca' \gset
+update fluxo.tarefas set prazo = prazo + 2 where id = :'ca';
+select pg_temp.ok((select desvio_prazo = 2 and atrasada_base and base_prazo = :'a_pz' from fluxo.v_cronograma where tarefa_id = :'ca')
+  and (select desvio_prazo = 2 from fluxo.v_cronograma where tarefa_id = :'cb'), 'depois de aprovada, as datas seguem livres e o desvio aparece (inclusive na sucessora)');
+select pg_temp.falha(format($$select fluxo.enviar_cronograma(%L)$$, :'qm'), 'mudar a linha de base pede o motivo');
+select fluxo.enviar_cronograma(:'qm', 'Cartório atrasou') as lb2 \gset
+select pg_temp.ok((select situacao from fluxo.linhas_base where id = :'lb2') = 'pendente' and (select situacao from fluxo.linhas_base where id = :'lb1') = 'aprovada',
+  'o analista só pede a troca; a aprovada continua valendo');
+select pg_temp.como(:'gestor');
+select fluxo.decidir_linha_base(:'lb2', false, 'Segura até o retorno do cartório');
+select pg_temp.ok((select situacao = 'recusada' and motivo_decisao is not null from fluxo.linhas_base where id = :'lb2'), 'o gestor recusa com motivo');
+select fluxo.enviar_cronograma(:'qm', 'Replanejado com o cartório') as lb3 \gset
+select pg_temp.ok((select situacao = 'aprovada' and numero = 2 from fluxo.linhas_base where id = :'lb3')
+  and (select situacao from fluxo.linhas_base where id = :'lb1') = 'substituida'
+  and (select desvio_prazo = 0 from fluxo.v_cronograma where tarefa_id = :'ca'), 'gestor troca a linha de base direto; a antiga fica guardada');
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'linhas_base') >= 4, 'linha de base vai para a auditoria');
+select pg_temp.como(:'intruso');
+select pg_temp.ok((select count(*) from fluxo.linhas_base) = 0 and (select count(*) from fluxo.vinculos) = 0, 'outra empresa não vê cronograma');
+-- ---------------------------------------------------------------------
+\echo '# modelos de tarefas (fluxo)'
+select pg_temp.como(:'diretor');
+insert into fluxo.modelos_quadro (empresa_id, nome) values (:'emp', 'Aquisição padrão') returning id as mp \gset
+insert into fluxo.modelo_tarefas (empresa_id, modelo_id, ordem, titulo, lista_nome, inicio_dias, duracao, responsavel_objeto, pessoas, etiquetas, checklists)
+  values (:'emp', :'mp', 1, 'Pedir matrícula atualizada', 'Fazer', 0, 3, true,
+          jsonb_build_array(jsonb_build_object('papel', 'aprovador', 'user_id', :'gestor'), jsonb_build_object('papel', 'acompanha', 'objeto', true)),
+          array[:'et']::uuid[], '[{"nome": "Cartório", "itens": ["Pedir certidão", "Conferir ônus"]}]') returning id as mt1 \gset
+insert into fluxo.modelo_tarefas (empresa_id, modelo_id, ordem, titulo, inicio_dias, duracao, responsavel_id)
+  values (:'emp', :'mp', 2, 'Análise jurídica', 0, 5, :'analista') returning id as mt2 \gset
+insert into fluxo.modelo_vinculos (empresa_id, modelo_id, predecessora_id, sucessora_id) values (:'emp', :'mp', :'mt1', :'mt2');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$select fluxo.definir_modelo_padrao(%L, %L)$$, :'emp', :'mp'), 'só o administrador escolhe o modelo padrão');
+select pg_temp.falha(format($$insert into fluxo.modelos_quadro (empresa_id, nome) values (%L, 'Meu da empresa')$$, :'emp'), 'analista não cria modelo da empresa');
+select pg_temp.falha(format($$update fluxo.modelo_tarefas set titulo = 'x' where id = %L returning 1/0$$, :'mt1'), 'analista não mexe no modelo da empresa');
+select pg_temp.como(:'diretor');
+select fluxo.definir_modelo_padrao(:'emp', :'mp');
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude, poligono_geojson)
+  values (:'emp', 'Terreno com modelo', :'gestor', 'prospeccao', :'sp', -23.72, -46.72, pg_temp.quadra(-46.72, -23.72)) returning id as tmod \gset
+select q.id as qmod from fluxo.quadros q where q.objeto_tipo = 'terreno' and q.objeto_id = :'tmod' \gset
+select id as km1 from fluxo.tarefas where quadro_id = :'qmod' and titulo = 'Pedir matrícula atualizada' \gset
+select id as km2 from fluxo.tarefas where quadro_id = :'qmod' and titulo = 'Análise jurídica' \gset
+select pg_temp.ok((select inicio = current_date and prazo = current_date + 2 and responsavel_id = :'gestor' and lista_nome = 'Fazer' from fluxo.v_tarefas where id = :'km1'),
+  'terreno novo já nasce com as tarefas do modelo padrão: datas relativas e o responsável do terreno');
+select pg_temp.ok((select count(*) from fluxo.tarefa_pessoas where tarefa_id = :'km1' and ((papel = 'aprovador' and user_id = :'gestor') or (papel = 'acompanha' and user_id = :'gestor'))) = 2
+  and exists (select 1 from fluxo.tarefa_etiquetas where tarefa_id = :'km1' and etiqueta_id = :'et')
+  and (select count(*) from fluxo.checklist_itens i join fluxo.checklists c on c.id = i.checklist_id where c.tarefa_id = :'km1' and c.nome = 'Cartório') = 2,
+  'aprovador, quem acompanha, etiqueta e checklist vêm do modelo');
+select pg_temp.ok((select inicio = current_date + 3 and prazo = current_date + 7 and responsavel_id = :'analista' and lista_nome = 'Entrada' from fluxo.v_tarefas where id = :'km2')
+  and exists (select 1 from fluxo.vinculos where predecessora_id = :'km1' and sucessora_id = :'km2'),
+  'a predecessora já vem ligada e empurra a sucessora; lista desconhecida cai na primeira aberta');
+-- modelo próprio: o analista salva o quadro e aplica em outro
+select pg_temp.como(:'analista');
+update fluxo.tarefas set responsavel_id = :'analista' where id = :'km1';
+select fluxo.salvar_quadro_como_modelo(:'qmod', 'Meu roteiro') as mm \gset
+select pg_temp.ok((select dono_id = :'analista' and not padrao from fluxo.modelos_quadro where id = :'mm')
+  and (select count(*) from fluxo.modelo_tarefas where modelo_id = :'mm') = 2
+  and (select count(*) from fluxo.modelo_vinculos where modelo_id = :'mm') = 1
+  and (select inicio_dias from fluxo.modelo_tarefas where modelo_id = :'mm' and titulo = 'Análise jurídica') = 3,
+  'salvar o quadro como modelo próprio guarda tarefas, prazos relativos e predecessoras');
+select pg_temp.falha(format($$select fluxo.salvar_quadro_como_modelo(%L, 'Da empresa', true)$$, :'qmod'), 'analista não salva modelo da empresa');
+select count(*) as antes_k from fluxo.tarefas where quadro_id = :'qm' \gset
+select fluxo.aplicar_modelo(:'mm', :'qm', '2030-09-02') as napl \gset
+select pg_temp.ok(:napl = 2 and (select count(*) from fluxo.tarefas where quadro_id = :'qm') = :antes_k + 2
+  and exists (select 1 from fluxo.tarefas where quadro_id = :'qm' and titulo = 'Análise jurídica' and inicio = '2030-09-05'),
+  'aplicar o modelo à mão cria as tarefas a partir da data escolhida');
+select pg_temp.como(:'gestor');
+select pg_temp.ok((select count(*) from fluxo.modelos_quadro where id = :'mm') = 0, 'o modelo de um não aparece para os outros');
+select pg_temp.falha(format($$select fluxo.aplicar_modelo(%L, %L)$$, :'mm', :'qm'), 'ninguém aplica o modelo de outra pessoa');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$select fluxo.aplicar_modelo(%L, %L)$$, :'mp', :'qm'), 'leitura não aplica modelo');
+select pg_temp.como(:'diretor');
+select fluxo.definir_modelo_padrao(:'emp', null);
+select pg_temp.ok(not exists (select 1 from fluxo.modelos_quadro where empresa_id = :'emp' and padrao), 'o administrador tira o padrão');
+\echo '# aprovação formal da tarefa (fluxo, bloco 3)'
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tm', 'Minuta do compromisso', current_date + 5, :'analista', null, 'Fazendo') as ka \gset
+insert into fluxo.checklists (empresa_id, tarefa_id, nome) values (:'emp', :'ka', 'Conferir') returning id as cka \gset
+insert into fluxo.checklist_itens (empresa_id, checklist_id, texto) values (:'emp', :'cka', 'Cláusula de permuta') returning id as ika \gset
+select pg_temp.falha(format($$update fluxo.tarefas set concluida_em = now() where id = %L$$, :'ka'), 'com item do checklist em aberto, não conclui');
+update fluxo.checklist_itens set concluido_em = now() where id = :'ika';
+insert into fluxo.tarefa_pessoas (empresa_id, tarefa_id, user_id, papel, ordem) values (:'emp', :'ka', :'gestor', 'aprovador', 1), (:'emp', :'ka', :'diretor', 'aprovador', 2);
+select pg_temp.falha(format($$update fluxo.tarefas set lista_id = %L where id = %L$$, pg_temp.lista(:'tm', 'Feito'), :'ka'), 'com aprovador, arrastar para Feito sem aprovação é recusado');
+select fluxo.pedir_aprovacao(:'ka', 'Minuta pronta') as apa \gset
+select pg_temp.ok((select situacao = 'pendente' and modo = 'paralelo' from fluxo.aprovacoes where id = :'apa')
+  and (select count(*) from fluxo.aprovacao_votos where aprovacao_id = :'apa' and decisao is null) = 2,
+  'o pedido tira a foto dos dois aprovadores, em paralelo');
+select pg_temp.falha(format($$select fluxo.decidir_aprovacao(%L, true)$$, :'apa'), 'quem não é aprovador não decide');
+select pg_temp.como(:'gestor');
+select pg_temp.ok(exists (select 1 from app.notificacoes where tipo = 'aprovacao_pendente' and origem_tabela = 'tarefa_aprovacoes' and origem_id = :'apa' and terreno_id = :'tm'),
+  'em paralelo, os aprovadores são avisados do pedido');
+select pg_temp.falha(format($$select fluxo.decidir_aprovacao(%L, false)$$, :'apa'), 'recusar sem justificativa é recusado');
+select fluxo.decidir_aprovacao(:'apa', true, 'Ok do jurídico');
+select pg_temp.ok((select situacao = 'pendente' from fluxo.aprovacoes where id = :'apa') and (select concluida_em is null from fluxo.tarefas where id = :'ka'),
+  'um aprovou: segue pendente e a tarefa não conclui');
+select pg_temp.falha(format($$select fluxo.decidir_aprovacao(%L, true)$$, :'apa'), 'o mesmo aprovador não vota duas vezes');
+select pg_temp.como(:'diretor');
+select fluxo.decidir_aprovacao(:'apa', true);
+select pg_temp.ok((select situacao = 'aprovada' from fluxo.aprovacoes where id = :'apa')
+  and (select lista_nome = 'Feito' and concluida_em is not null from fluxo.v_tarefas where id = :'ka'),
+  'todos aprovaram: o pedido fica aprovado e a tarefa conclui sozinha');
+select pg_temp.como(:'analista');
+select pg_temp.ok(exists (select 1 from app.notificacoes where tipo = 'aprovacao_decidida' and origem_id = :'apa' and texto like 'Tarefa aprovada:%'),
+  'quem pediu é avisado da aprovação');
+update fluxo.tarefas set concluida_em = null where id = :'ka';
+select pg_temp.ok((select situacao = 'invalidada' from fluxo.aprovacoes where id = :'apa'), 'reabrir a tarefa aprovada invalida a aprovação');
+select pg_temp.falha(format($$update fluxo.tarefas set concluida_em = now() where id = %L$$, :'ka'), 'reaberta, só conclui com aprovação nova');
+-- em sequência: cada um na sua vez; o superior decide pelo aprovador abaixo dele
+update fluxo.tarefas set aprovacao_modo = 'sequencia' where id = :'ka';
+delete from fluxo.tarefa_pessoas where tarefa_id = :'ka' and papel = 'aprovador';
+insert into fluxo.tarefa_pessoas (empresa_id, tarefa_id, user_id, papel, ordem) values (:'emp', :'ka', :'diretor', 'aprovador', 1), (:'emp', :'ka', :'gestor', 'aprovador', 2);
+select fluxo.pedir_aprovacao(:'ka') as aps \gset
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format($$select fluxo.decidir_aprovacao(%L, true)$$, :'aps'), 'em sequência, o segundo não decide antes do primeiro');
+select pg_temp.como(:'diretor');
+select fluxo.decidir_aprovacao(:'aps', true);
+select pg_temp.como(:'gestor');
+select pg_temp.ok(exists (select 1 from app.notificacoes where tipo = 'aprovacao_pendente' and origem_id = :'aps' and destinatario_id = :'gestor'),
+  'em sequência, o próximo é avisado quando o anterior aprova');
+select fluxo.decidir_aprovacao(:'aps', false, 'Falta a cláusula de multa');
+select pg_temp.ok((select situacao = 'recusada' from fluxo.aprovacoes where id = :'aps') and (select concluida_em is null from fluxo.tarefas where id = :'ka')
+  and (select justificativa = 'Falta a cláusula de multa' and decidido_por = :'gestor' from fluxo.aprovacao_votos where aprovacao_id = :'aps' and aprovador_id = :'gestor'),
+  'recusa com justificativa encerra o pedido e a tarefa segue aberta');
+select pg_temp.como(:'analista');
+select pg_temp.ok(exists (select 1 from app.notificacoes where tipo = 'aprovacao_decidida' and origem_id = :'aps' and texto like '%Falta a cláusula de multa%'),
+  'quem pediu recebe a recusa com a justificativa');
+-- superior decide por quem está abaixo: o diretor aprova pelo gestor
+update fluxo.tarefas set aprovacao_modo = 'paralelo' where id = :'ka';
+delete from fluxo.tarefa_pessoas where tarefa_id = :'ka' and papel = 'aprovador' and user_id = :'diretor';
+select fluxo.pedir_aprovacao(:'ka') as apd \gset
+select pg_temp.como(:'diretor');
+select fluxo.decidir_aprovacao(:'apd', true, 'Aprovo pela Paula');
+select pg_temp.ok((select decidido_por = :'diretor' and aprovador_id = :'gestor' from fluxo.aprovacao_votos where aprovacao_id = :'apd')
+  and (select situacao = 'aprovada' from fluxo.aprovacoes where id = :'apd'),
+  'o superior decide no lugar do aprovador e o voto guarda quem decidiu');
+-- aprovador que pede tem o próprio voto dado; pedido novo cancela o anterior; quem pede desiste
+select pg_temp.como(:'gestor');
+select pg_temp.tarefa(:'tm', 'Parecer do jurídico', current_date + 5, :'gestor', null, 'Fazer') as kb \gset
+insert into fluxo.tarefa_pessoas (empresa_id, tarefa_id, user_id, papel) values (:'emp', :'kb', :'gestor', 'aprovador'), (:'emp', :'kb', :'diretor', 'aprovador');
+select fluxo.pedir_aprovacao(:'kb') as apb1 \gset
+select pg_temp.ok((select decisao = 'aprovou' from fluxo.aprovacao_votos where aprovacao_id = :'apb1' and aprovador_id = :'gestor'),
+  'o aprovador que pede tem o próprio voto dado');
+select fluxo.pedir_aprovacao(:'kb') as apb2 \gset
+select pg_temp.ok((select situacao = 'cancelada' from fluxo.aprovacoes where id = :'apb1'), 'pedido novo cancela o que estava aberto');
+select fluxo.cancelar_aprovacao(:'apb2');
+select pg_temp.ok((select situacao = 'cancelada' from fluxo.aprovacoes where id = :'apb2'), 'quem edita desiste do pedido');
+select pg_temp.falha(format($$insert into fluxo.aprovacoes (empresa_id, tarefa_id, modo, situacao) values (%L, %L, 'paralelo', 'aprovada')$$, :'emp', :'kb'), 'aprovação não se escreve direto, só pelas funções');
+select pg_temp.falha(format($$select fluxo.pedir_aprovacao(%L)$$, :'kf'), 'tarefa sem aprovador não pede aprovação');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$select fluxo.pedir_aprovacao(%L)$$, :'kb'), 'leitura não pede aprovação');
+-- a regra do checklist é da empresa e só o administrador muda
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format($$select fluxo.salvar_regras(%L, false)$$, :'emp'), 'só o administrador muda a regra do checklist');
+select pg_temp.como(:'diretor');
+select fluxo.salvar_regras(:'emp', false);
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tm', 'Pedir certidões', current_date + 5, :'analista', null, 'Fazer') as kc \gset
+insert into fluxo.checklists (empresa_id, tarefa_id, nome) values (:'emp', :'kc', 'Certidões') returning id as ckc \gset
+insert into fluxo.checklist_itens (empresa_id, checklist_id, texto) values (:'emp', :'ckc', 'Ônus reais');
+update fluxo.tarefas set concluida_em = now() where id = :'kc';
+select pg_temp.ok((select concluida_em is not null from fluxo.tarefas where id = :'kc'), 'com a regra desligada, conclui com item em aberto');
+-- o modo de aprovação e a ordem dos aprovadores passam pelo modelo
+select pg_temp.como(:'analista');
+update fluxo.tarefas set aprovacao_modo = 'sequencia' where id = :'kb';
+select fluxo.salvar_quadro_como_modelo(:'qm', 'Com aprovação') as mapr \gset
+select pg_temp.ok((select aprovacao_modo = 'sequencia' and pessoas->0->>'papel' = 'aprovador' from fluxo.modelo_tarefas where modelo_id = :'mapr' and titulo = 'Parecer do jurídico'),
+  'o modelo guarda o modo de aprovação do cartão');
+\echo '# SLA com pausa aprovada (fluxo, bloco 3)'
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tm', 'Aguardar cartório', current_date + 2, :'analista', null, 'Fazendo') as kp \gset
+select pg_temp.falha(format($$select fluxo.pausar(%L, '')$$, :'kp'), 'pausar sem motivo é recusado');
+select fluxo.pausar(:'kp', 'Cartório em greve') as zp \gset
+select pg_temp.ok((select situacao = 'pendente' from fluxo.pausas where id = :'zp') and (select lista_nome = 'Fazendo' from fluxo.v_tarefas where id = :'kp'),
+  'analista pede a pausa: fica pendente e o cartão não sai da lista');
+select pg_temp.falha(format($$select fluxo.decidir_pausa(%L, true)$$, :'zp'), 'quem pediu não aprova a própria pausa');
+select pg_temp.como(:'gestor');
+select pg_temp.ok(exists (select 1 from app.notificacoes where tipo = 'aprovacao_pendente' and origem_tabela = 'tarefa_pausas' and origem_id = :'zp'),
+  'o gestor de quem pediu é avisado do pedido de pausa');
+select pg_temp.falha(format($$select fluxo.decidir_pausa(%L, false)$$, :'zp'), 'recusar a pausa exige motivo');
+select fluxo.decidir_pausa(:'zp', true);
+select pg_temp.ok((select situacao = 'ativa' and inicio is not null from fluxo.pausas where id = :'zp')
+  and (select lista_tipo = 'pausa' from fluxo.v_tarefas where id = :'kp'), 'aprovada, a pausa começa e o cartão vai para Pausadas');
+select pg_temp.como(:'analista');
+select pg_temp.ok(exists (select 1 from app.notificacoes where tipo = 'aprovacao_decidida' and origem_id = :'zp' and texto like 'Pausa aprovada:%'), 'quem pediu é avisado da aprovação da pausa');
+-- pausada não atrasa; sair de Pausadas só por Retomar; retomar empurra o prazo pelos dias pausados
+reset role;
+update fluxo.pausas set inicio = inicio - interval '5 days' where id = :'zp';  -- simula 5 dias de pausa (como dono do banco)
+select pg_temp.como(:'analista');
+update fluxo.tarefas set prazo = current_date - 1 where id = :'kp';
+select pg_temp.ok((select not atrasada from fluxo.v_tarefas where id = :'kp'), 'pausada, a tarefa não fica atrasada');
+select pg_temp.ok((select dias_pausada = 5 and pausada from fluxo.v_tarefa_sla where tarefa_id = :'kp'), 'o tempo pausado conta enquanto a pausa dura');
+select pg_temp.falha(format($$update fluxo.tarefas set lista_id = %L where id = %L$$, pg_temp.lista(:'tm', 'Fazer'), :'kp'), 'tirar de Pausadas arrastando é recusado: use Retomar');
+select fluxo.retomar(:'kp') as dret \gset
+select pg_temp.ok(:dret = 5 and (select prazo = current_date + 4 and lista_nome = 'Fazendo' from fluxo.v_tarefas where id = :'kp')
+  and (select situacao = 'encerrada' and dias = 5 and retomada_por = :'analista' from fluxo.pausas where id = :'zp'),
+  'retomar volta para a lista de antes e empurra o prazo pelos 5 dias pausados');
+select pg_temp.ok((select dias_pausada = 5 and pausas = 1 and not pausada from fluxo.v_tarefa_sla where tarefa_id = :'kp'), 'o tempo líquido desconta a pausa encerrada');
+-- quem já tem o nível pausa direto; concluir uma pausada encerra a pausa
+select pg_temp.como(:'gestor');
+select fluxo.pausar(:'kp', 'Esperando o vendedor') as zg \gset
+select pg_temp.ok((select situacao = 'ativa' from fluxo.pausas where id = :'zg'), 'gestor pausa direto, sem pedido');
+update fluxo.tarefas set concluida_em = now() where id = :'kp';
+select pg_temp.ok((select situacao = 'encerrada' from fluxo.pausas where id = :'zg') and (select lista_nome = 'Feito' from fluxo.v_tarefas where id = :'kp'),
+  'concluir a tarefa pausada encerra a pausa');
+-- recusa e regra da empresa
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tm', 'Esperar topografia', current_date + 2, :'analista', null, 'Fazer') as kq \gset
+select fluxo.pausar(:'kq', 'Topógrafo sem agenda') as zq \gset
+select pg_temp.como(:'diretor');
+select fluxo.decidir_pausa(:'zq', false, 'Contrate outro topógrafo');
+select pg_temp.ok((select situacao = 'recusada' and motivo_decisao = 'Contrate outro topógrafo' from fluxo.pausas where id = :'zq')
+  and (select lista_nome = 'Fazer' from fluxo.v_tarefas where id = :'kq'), 'o diretor (acima do gestor) recusa com motivo e o cartão fica onde está');
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format($$select fluxo.salvar_regra_pausa(%L, 'ninguem')$$, :'emp'), 'só o administrador escolhe quem aprova a pausa');
+select pg_temp.como(:'diretor');
+select fluxo.salvar_regra_pausa(:'emp', 'diretor');
+select pg_temp.como(:'analista');
+select fluxo.pausar(:'kq', 'Topógrafo sem agenda de novo') as zq2 \gset
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format($$select fluxo.decidir_pausa(%L, true)$$, :'zq2'), 'com a regra "diretor", o gestor não aprova a pausa');
+select pg_temp.como(:'diretor');
+select fluxo.decidir_pausa(:'zq2', true);
+select pg_temp.ok((select situacao = 'ativa' from fluxo.pausas where id = :'zq2'), 'o diretor aprova a pausa');
+select fluxo.salvar_regra_pausa(:'emp', 'ninguem');
+select pg_temp.como(:'analista');
+select fluxo.retomar(:'kq');
+select fluxo.pausar(:'kq', 'Chuva') as zq3 \gset
+select pg_temp.ok((select situacao = 'ativa' from fluxo.pausas where id = :'zq3'), 'com a regra "ninguém", a pausa vale na hora');
+select pg_temp.falha(format($$select fluxo.pausar(%L, 'De novo')$$, :'kq'), 'tarefa já pausada não pausa de novo');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$select fluxo.retomar(%L)$$, :'kq'), 'leitura não retoma');
+select pg_temp.como(:'diretor');
+select fluxo.salvar_regra_pausa(:'emp', 'gestor');
+-- ---------------------------------------------------------------------
+\echo '# visibilidade por cartão (fluxo, bloco 3)'
+reset role;
+insert into auth.users values ('00000000-0000-0000-0000-0000000000f3', 'diretora2@bkm.test');
+update app.membros set papel = 'diretor', nome = 'Diretora sem admin' where user_id = '00000000-0000-0000-0000-0000000000f3' and empresa_id = :'emp';  -- entrou pelo domínio como básico
+\set dir2 '00000000-0000-0000-0000-0000000000f3'
+\set basico '00000000-0000-0000-0000-0000000000f1'
+select pg_temp.como(:'analista');
+insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, visibilidade)
+select q.empresa_id, q.id, pg_temp.lista(:'tm', 'Fazer'), 'Anotação pessoal', 'individual'
+from fluxo.quadros q where q.objeto_tipo = 'terreno' and q.objeto_id = :'tm' returning id as vi \gset
+select pg_temp.ok((select visibilidade = 'individual' from fluxo.tarefas where id = :'vi'), 'quem cria escolhe Individual e vê o próprio cartão');
+select pg_temp.como(:'gestor');
+select pg_temp.ok(not exists (select 1 from fluxo.tarefas where id = :'vi') and not exists (select 1 from fluxo.v_tarefas where id = :'vi'),
+  'individual: o gestor de quem criou não vê');
+select pg_temp.ok(not exists (select 1 from app.auditoria where tabela = 'tarefas' and registro_id = :'vi'), 'nem o histórico do cartão individual');
+select pg_temp.como(:'dir2');
+select pg_temp.ok(not exists (select 1 from fluxo.tarefas where id = :'vi'), 'individual: o diretor também não vê');
+select pg_temp.como(:'diretor');
+select pg_temp.ok(exists (select 1 from fluxo.tarefas where id = :'vi'), 'individual: o administrador do sistema vê os de todos');
+-- pôr outra pessoa no cartão o torna restrito
+select pg_temp.como(:'analista');
+insert into fluxo.tarefa_pessoas (empresa_id, tarefa_id, user_id, papel) values (:'emp', :'vi', :'gestor', 'acompanha');
+select pg_temp.ok((select visibilidade = 'restrito' from fluxo.tarefas where id = :'vi'), 'pôr outra pessoa no individual o torna restrito');
+select pg_temp.como(:'gestor');
+select pg_temp.ok(exists (select 1 from fluxo.tarefas where id = :'vi'), 'restrito: quem está no cartão vê');
+select pg_temp.falha(format($$update fluxo.tarefas set visibilidade = 'publico' where id = %L$$, :'vi'), 'quem só está no cartão não muda a visibilidade');
+select pg_temp.como(:'leitor');
+select pg_temp.ok(not exists (select 1 from fluxo.tarefas where id = :'vi'), 'restrito: quem não foi liberado não vê');
+select pg_temp.como(:'dir2');
+select pg_temp.ok(exists (select 1 from fluxo.tarefas where id = :'vi'), 'restrito: o diretor vê');
+-- grupos e papéis no cartão
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$insert into fluxo.grupos (empresa_id, nome) values (%L, 'Jurídico')$$, :'emp'), 'só o administrador cria grupo');
+select pg_temp.como(:'diretor');
+insert into fluxo.grupos (empresa_id, nome) values (:'emp', 'Jurídico') returning id as gj \gset
+insert into fluxo.grupo_membros (empresa_id, grupo_id, user_id) values (:'emp', :'gj', :'leitor'), (:'emp', :'gj', :'basico');
+select pg_temp.como(:'analista');
+insert into fluxo.tarefa_acessos (empresa_id, tarefa_id, grupo_id, papel) values (:'emp', :'vi', :'gj', 'comentarista');
+select pg_temp.como(:'leitor');
+select pg_temp.ok(fluxo.papel_tarefa(:'vi') = 'comentarista', 'grupo liberado: quem é do grupo vê com o papel dado');
+insert into fluxo.comentarios (empresa_id, tarefa_id, autor_id, texto) values (:'emp', :'vi', :'leitor', 'Vi a matrícula');
+select pg_temp.ok(exists (select 1 from fluxo.comentarios where tarefa_id = :'vi' and autor_id = :'leitor'), 'comentarista comenta, mesmo sendo leitura no sistema');
+update fluxo.tarefas set titulo = 'Mudado' where id = :'vi';
+select pg_temp.ok((select titulo = 'Anotação pessoal' from fluxo.tarefas where id = :'vi'), 'comentarista não edita o cartão');
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format($$insert into fluxo.tarefa_acessos (empresa_id, tarefa_id, user_id, excluido) values (%L, %L, %L, true)$$, :'emp', :'vi', :'basico'),
+  'quem não administra o cartão não dá nem tira acesso');
+select pg_temp.como(:'analista');
+insert into fluxo.tarefa_acessos (empresa_id, tarefa_id, user_id, excluido) values (:'emp', :'vi', :'basico', true);
+select pg_temp.como(:'basico');
+select pg_temp.ok(not exists (select 1 from fluxo.tarefas where id = :'vi'), 'exceção: a pessoa tirada do grupo liberado não vê');
+-- público: papel do sistema, que o cartão pode subir
+select pg_temp.como(:'dir2');
+update fluxo.tarefas set visibilidade = 'publico' where id = :'vi';
+select pg_temp.ok((select visibilidade = 'publico' from fluxo.tarefas where id = :'vi'), 'o diretor muda a visibilidade');
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tm', 'Conferir certidões', current_date + 5) as vp \gset
+select pg_temp.como(:'basico');
+select pg_temp.ok(fluxo.papel_tarefa(:'vp') = 'leitor', 'público: o básico vê e só lê');
+update fluxo.tarefas set titulo = 'Mudado' where id = :'vp';
+select pg_temp.ok((select titulo = 'Conferir certidões' from fluxo.tarefas where id = :'vp'), 'leitor não edita');
+select pg_temp.como(:'analista');
+insert into fluxo.tarefa_acessos (empresa_id, tarefa_id, user_id, papel) values (:'emp', :'vp', :'basico', 'editor');
+select pg_temp.como(:'basico');
+update fluxo.tarefas set titulo = 'Conferir certidões e IPTU' where id = :'vp';
+insert into fluxo.checklists (empresa_id, tarefa_id, nome) values (:'emp', :'vp', 'Certidões');
+select pg_temp.ok((select titulo = 'Conferir certidões e IPTU' from fluxo.tarefas where id = :'vp') and exists (select 1 from fluxo.checklists where tarefa_id = :'vp'),
+  'o papel no cartão passa o do sistema: o básico liberado como editor edita');
+-- item que vira cartão herda a visibilidade
+select pg_temp.como(:'analista');
+insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, visibilidade)
+select q.empresa_id, q.id, pg_temp.lista(:'tm', 'Fazer'), 'Diligência sigilosa', 'restrito'
+from fluxo.quadros q where q.objeto_tipo = 'terreno' and q.objeto_id = :'tm' returning id as vr \gset
+insert into fluxo.checklists (empresa_id, tarefa_id, nome) values (:'emp', :'vr', 'Passos') returning id as vrc \gset
+insert into fluxo.checklist_itens (empresa_id, checklist_id, texto) values (:'emp', :'vrc', 'Pedir certidão de ônus') returning id as vri \gset
+select fluxo.item_para_tarefa(:'vri') as vrk \gset
+select pg_temp.ok((select visibilidade = 'restrito' from fluxo.tarefas where id = :'vrk'), 'item que vira cartão herda a visibilidade do cartão de origem');
+select pg_temp.como(:'gestor');
+select pg_temp.ok(not exists (select 1 from fluxo.tarefas where id in (:'vr', :'vrk')) and not exists (select 1 from fluxo.checklist_itens where id = :'vri'),
+  'restrito: nem o cartão nem o checklist aparecem para quem não está nele');
+select pg_temp.falha(format($$select fluxo.pausar(%L, 'x')$$, :'vr'), 'quem não vê o cartão não o pausa');
+-- @ só avisa quem vê o cartão
+select pg_temp.como(:'analista');
+update fluxo.tarefas set descricao = 'Ver com @joao.silva' where id = :'vr';
+update fluxo.tarefas set descricao = 'Ver com @joao.silva' where id = :'vp';
+select pg_temp.ok(not exists (select 1 from app.mencoes where origem_id = :'vr' and user_id = :'basico')
+  and exists (select 1 from app.mencoes where origem_id = :'vp' and user_id = :'basico'),
+  'o @ num cartão restrito não avisa quem não vê o cartão; no público, avisa');
+-- teto do objeto: quem não vê o terreno não vê os cartões dele
+reset role;
+create function pg_temp.nao_ve(uuid, uuid) returns boolean language sql as $$ select false $$;
+update fluxo.objeto_tipos set funcao = 'pg_temp.nao_ve' where tipo = 'terreno';
+select pg_temp.como(:'basico');
+select pg_temp.ok(not exists (select 1 from fluxo.tarefas where id = :'vp'), 'teto: sem ver o terreno, nem o cartão liberado aparece');
+select pg_temp.como(:'diretor');
+select pg_temp.ok(exists (select 1 from fluxo.tarefas where id = :'vp'), 'o administrador do sistema continua vendo');
+reset role;
+update fluxo.objeto_tipos set funcao = 'app.ve_terreno' where tipo = 'terreno';
+-- ---------------------------------------------------------------------
+\echo '# campos personalizados (fluxo, bloco 4)'
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$insert into fluxo.campos (empresa_id, nome, tipo) values (%L, 'Valor do laudo', 'numero')$$, :'emp'), 'só o administrador cria campo');
+select pg_temp.como(:'diretor');
+insert into fluxo.campos (empresa_id, nome, tipo, na_frente) values (:'emp', 'Valor do laudo', 'numero', true) returning id as cnum \gset
+insert into fluxo.campos (empresa_id, nome, tipo) values (:'emp', 'Cartório', 'lista') returning id as clis \gset
+insert into fluxo.campos (empresa_id, nome, tipo) values (:'emp', 'Exige vistoria', 'caixa') returning id as ccx \gset
+insert into fluxo.campo_opcoes (empresa_id, campo_id, nome) values (:'emp', :'clis', '1º RI') returning id as o1 \gset
+insert into fluxo.campo_opcoes (empresa_id, campo_id, nome) values (:'emp', :'clis', '2º RI') returning id as o2 \gset
+insert into fluxo.campos (empresa_id, nome, tipo) values (:'emp', 'Outro', 'lista') returning id as clis2 \gset
+insert into fluxo.campo_opcoes (empresa_id, campo_id, nome) values (:'emp', :'clis2', 'X') returning id as ox \gset
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tm', 'Pedir laudo', current_date + 5) as kc \gset
+insert into fluxo.tarefa_campos (empresa_id, tarefa_id, campo_id, numero) values (:'emp', :'kc', :'cnum', 125000);
+insert into fluxo.tarefa_campos (empresa_id, tarefa_id, campo_id, opcao_id) values (:'emp', :'kc', :'clis', :'o2');
+insert into fluxo.tarefa_campos (empresa_id, tarefa_id, campo_id, caixa) values (:'emp', :'kc', :'ccx', false);
+select pg_temp.ok((select count(*) = 3 from fluxo.tarefa_campos where tarefa_id = :'kc'), 'quem edita o cartão preenche número, lista e sim/não');
+select pg_temp.ok((select caixa = false from fluxo.tarefa_campos where tarefa_id = :'kc' and campo_id = :'ccx')
+  and not exists (select 1 from fluxo.tarefa_campos where tarefa_id = :'kc' and campo_id not in (:'cnum', :'clis', :'ccx')),
+  '"não" é um valor; o que não foi preenchido fica sem linha (não informado)');
+select pg_temp.falha(format($$insert into fluxo.tarefa_campos (empresa_id, tarefa_id, campo_id, texto) values (%L, %L, %L, 'cem mil')$$, :'emp', :'kc', :'cnum'),
+  'valor fora do tipo do campo é recusado');
+select pg_temp.falha(format($$update fluxo.tarefa_campos set opcao_id = %L where tarefa_id = %L and campo_id = %L$$, :'ox', :'kc', :'clis'),
+  'opção de outro campo é recusada');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$insert into fluxo.tarefa_campos (empresa_id, tarefa_id, campo_id, opcao_id) values (%L, %L, %L, %L)$$, :'emp', :'kc', :'clis2', :'ox'),
+  'leitura não preenche campo');
+select pg_temp.ok(exists (select 1 from fluxo.tarefa_campos where tarefa_id = :'kc' and campo_id = :'cnum'), 'leitura vê os valores do cartão público');
+select pg_temp.como(:'diretor');
+select pg_temp.falha(format($$update fluxo.campos set tipo = 'texto' where id = %L$$, :'cnum'), 'campo com valor não muda de tipo');
+select pg_temp.falha(format($$delete from fluxo.campos where id = %L$$, :'cnum'), 'campo com valor não se apaga');
+select pg_temp.falha(format($$delete from fluxo.campo_opcoes where id = %L$$, :'o2'), 'opção usada não se apaga');
+delete from fluxo.campo_opcoes where id = :'o1';
+update fluxo.campos set ativo = false where id = :'ccx';
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$update fluxo.tarefa_campos set caixa = true where tarefa_id = %L and campo_id = %L$$, :'kc', :'ccx'), 'campo desativado não recebe valor novo');
+delete from fluxo.tarefa_campos where tarefa_id = :'kc' and campo_id = :'cnum';
+select pg_temp.ok(not exists (select 1 from fluxo.tarefa_campos where tarefa_id = :'kc' and campo_id = :'cnum'), 'apagar o valor volta o campo a não informado');
+select pg_temp.como(:'diretor');
+update fluxo.tarefa_itens set regra_branco = 'bloqueia' where tarefa_id = :'kc' and campo_id in (:'cnum', :'ccx');
+select pg_temp.como(:'analista');
+select pg_temp.ok(fluxo.pendencias_conclusao(:'kc') = array['campos'], 'campo que bloqueia no cartão, sem valor, fica pendente (o desativado não conta)');
+select pg_temp.falha(format($$update fluxo.tarefas set concluida_em = now() where id = %L$$, :'kc'), 'com campo obrigatório sem valor, não conclui');
+insert into fluxo.tarefa_campos (empresa_id, tarefa_id, campo_id, numero) values (:'emp', :'kc', :'cnum', 98000);
+update fluxo.tarefas set concluida_em = now() where id = :'kc';
+select pg_temp.ok((select concluida_em is not null from fluxo.tarefas where id = :'kc'), 'preenchido o campo obrigatório, conclui');
+\echo '# campos do terreno e da negociação, itens do cartão e regra em branco (31/out)'
+select pg_temp.como(:'diretor');
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude, poligono_geojson)
+  values (:'emp', 'Terreno das condições', :'analista', 'corretor', :'sp', -23.61, -46.61, pg_temp.quadra(-46.61, -23.61)) returning id as tcd \gset
+select app.registrar_oferta(:'tcd', 5000000, 'permuta_fisica') as rcd \gset
+select (:'rcd'::jsonb->>'processo_id') as pcd \gset
+select pg_temp.ok((select titulo from app.v_campos where empresa_id = :'emp' and chave = 'calculado.forma_pagamento_vigente') = 'Forma de pagamento vigente',
+  'o catálogo de campos traz o título padrão');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$select app.salvar_campo(%L, 'terreno.topografia', 'Relevo', true, true)$$, :'emp'), 'só o administrador muda o título do campo');
+select pg_temp.falha(format($$insert into app.campos_empresa values (%L, 'terreno.topografia', 'Relevo', true, true)$$, :'emp'), 'a escolha da empresa só muda pela função');
+select pg_temp.como(:'diretor');
+select app.salvar_campo(:'emp', 'terreno.topografia', 'Relevo do terreno', true, true);
+select pg_temp.ok((select titulo from app.v_campos where empresa_id = :'emp' and chave = 'terreno.topografia') = 'Relevo do terreno', 'o administrador dá o título que o usuário vê');
+select pg_temp.falha(format($$select app.salvar_campo(%L, 'terreno.bairro', 'relevo do terreno', true, false)$$, :'emp'), 'dois campos não têm o mesmo título');
+select app.salvar_campo(:'emp', 'terreno.topografia', '  ', true, true);
+select pg_temp.ok((select titulo from app.v_campos where empresa_id = :'emp' and chave = 'terreno.topografia') = 'Topografia', 'título vazio volta ao padrão');
+select pg_temp.ok(app.campo_cartao(:'tcd', 'terreno.topografia')->'valor' = 'null'::jsonb, 'topografia não informada é campo em branco, nunca um valor');
+select pg_temp.ok(app.campo_cartao(:'tcd', 'calculado.forma_pagamento_vigente')->>'valor' = 'permuta_fisica', 'sem proposta, a forma de pagamento vigente é a pedida na oferta');
+select pg_temp.como(:'intruso');
+select pg_temp.ok(app.campo_cartao(:'tcd', 'oferta.valor_pedido') is null, 'outra empresa não lê o campo do terreno');
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tcd', 'Minuta de permuta', null, :'analista') as kp \gset
+\set permuta '{"modo":"todas","itens":[{"campo":"calculado.forma_pagamento_vigente","op":"em","valores":["permuta_fisica","permuta_financeira","permuta_com_torna"]}]}'
+select pg_temp.ok(fluxo.condicao_vale(:'kp', :'permuta'), 'condição: forma de pagamento vigente é permuta');
+select app.registrar_proposta(:'pcd', 'bkm', 4500000, 'dinheiro') \gset
+select pg_temp.ok(app.campo_cartao(:'tcd', 'calculado.forma_pagamento_vigente')->>'valor' = 'dinheiro', 'com proposta vigente, vale a forma de pagamento da proposta');
+select pg_temp.ok(not fluxo.condicao_vale(:'kp', :'permuta'), 'a proposta em dinheiro desliga a condição de permuta');
+select pg_temp.ok(fluxo.condicao_vale(:'kp', '{"modo":"todas","itens":[{"grupo":{"modo":"qualquer","itens":[{"campo":"calculado.forma_pagamento_vigente","op":"em","valores":["permuta_fisica"]},{"campo":"oferta.valor_pedido","op":"maior","valores":[4000000]}]}},{"campo":"terreno.tipo_empreendimento","op":"vazio"}]}'),
+  'grupo: (permuta ou preço pedido acima de 4 mi) e tipo de empreendimento não informado');
+select pg_temp.ok(not fluxo.condicao_vale(:'kp', '{"modo":"qualquer","itens":[{"campo":"terreno.topografia","op":"fora","valores":["plano"]}]}'),
+  'campo em branco não satisfaz "não é" (não informado nunca vira valor)');
+select pg_temp.falha(format($$insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave) values (%L, %L, 'terreno.descricao')$$, :'emp', :'kp'),
+  'campo que não está liberado para o cartão não entra');
+select pg_temp.falha(format($$insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, condicao) values (%L, %L, 'terreno.area_documental_m2', '{"modo":"todas","itens":[{"campo":"terreno.descricao","op":"preenchido"}]}')$$, :'emp', :'kp'),
+  'condição só com campo liberado para condição');
+select pg_temp.falha(format($$insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, condicao) values (%L, %L, 'terreno.area_documental_m2', '{"modo":"todas","itens":[{"campo":"oferta.valor_pedido","op":"em","valores":["1"]}]}')$$, :'emp', :'kp'),
+  'operador tem que servir ao tipo do campo');
+select pg_temp.falha(format($$insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, condicao) values (%L, %L, 'terreno.area_documental_m2', '{"modo":"todas","itens":[{"campo":"terreno.topografia","op":"em","valores":["montanha"]}]}')$$, :'emp', :'kp'),
+  'valor da lista tem que ser opção do campo');
+select pg_temp.falha(format($$insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, condicao) values (%L, %L, 'terreno.area_documental_m2', '{"modo":"todas","itens":[{"grupo":{"modo":"todas","itens":[{"grupo":{"modo":"todas","itens":[{"campo":"terreno.topografia","op":"vazio"}]}}]}}]}')$$, :'emp', :'kp'),
+  'a condição aceita um nível de grupo só');
+insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, regra_branco) values (:'emp', :'kp', 'terreno.area_documental_m2', 'bloqueia');
+select pg_temp.ok(fluxo.pendencias_conclusao(:'kp') = array['campos'], 'campo do terreno em branco com regra "bloqueia" impede concluir');
+select pg_temp.falha(format($$update fluxo.tarefas set concluida_em = now() where id = %L$$, :'kp'), 'com o campo em branco que bloqueia, não conclui');
+select pg_temp.falha(format($$select fluxo.concluir_justificando(%L, 'Vou ver depois')$$, :'kp'), 'item que bloqueia: o analista não conclui nem com justificativa');
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format($$select fluxo.concluir_justificando(%L, 'Pode ir')$$, :'kp'), 'item que bloqueia trava também o gestor');
+select pg_temp.falha(format($$update fluxo.tarefa_itens set regra_branco = 'livre' where tarefa_id = %L$$, :'kp'), 'só diretor, administrador e quem criou mudam a regra do item');
+select pg_temp.falha(format($$delete from fluxo.tarefa_itens where tarefa_id = %L$$, :'kp'), 'item com regra não sai pela mão de quem não configura o cartão');
+insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave) values (:'emp', :'kp', 'oferta.forma_pagamento_pedida');
+select pg_temp.ok(exists (select 1 from fluxo.tarefa_itens where tarefa_id = :'kp' and chave = 'oferta.forma_pagamento_pedida' and regra_branco = 'livre'),
+  'quem edita o cartão inclui campo sem regra (livre)');
+select pg_temp.como(:'analista');
+select app.gravar_campo(:'tcd', 'terreno.area_documental_m2', '1500');
+select pg_temp.ok((select area_documental_m2 from app.terrenos where id = :'tcd') = 1500, 'o cartão grava no próprio terreno');
+select pg_temp.ok(fluxo.pendencias_conclusao(:'kp') = '{}', 'preenchido o campo, nada impede concluir');
+select pg_temp.falha(format($$select app.gravar_campo(%L, 'terreno.area_adotada_m2', '1500')$$, :'tcd'), 'campo que não se edita pelo cartão é recusado');
+select app.gravar_campo(:'tcd', 'oferta.validade', to_jsonb((current_date + 30)::text));
+select pg_temp.ok((select validade from app.ofertas where terreno_id = :'tcd') = current_date + 30, 'o cartão grava na oferta de referência');
+insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, regra_branco) values (:'emp', :'kp', 'terreno.topografia', 'justificativa');
+insert into fluxo.checklists (empresa_id, tarefa_id, nome) values (:'emp', :'kp', 'Permuta') returning id as ckp \gset
+insert into fluxo.checklist_itens (empresa_id, checklist_id, texto, regra_branco, condicao) values (:'emp', :'ckp', 'Minuta aprovada pelo jurídico', 'bloqueia', :'permuta');
+select pg_temp.ok(fluxo.pendencias_conclusao(:'kp') = array['justificar'], 'em branco com regra "justificativa" pede justificativa; o item de permuta não vale com proposta em dinheiro');
+select pg_temp.falha(format($$update fluxo.tarefas set concluida_em = now() where id = %L$$, :'kp'), 'sem justificativa, não conclui');
+select pg_temp.falha(format($$select fluxo.concluir_justificando(%L, '  ')$$, :'kp'), 'justificativa vazia não vale');
+select pg_temp.ok(fluxo.concluir_justificando(:'kp', 'Vendedor não tem levantamento') = 'concluida', 'com justificativa, conclui');
+select pg_temp.ok((select concluida_em is not null from fluxo.tarefas where id = :'kp')
+  and (select itens->0->>'ref' = 'terreno.topografia' and not libera_bloqueio from fluxo.conclusao_justificativas where tarefa_id = :'kp'),
+  'a justificativa fica registrada com os itens em branco');
+select pg_temp.tarefa(:'tcd', 'Contrato com o vendedor', null, :'analista') as kd \gset
+insert into fluxo.checklists (empresa_id, tarefa_id, nome) values (:'emp', :'kd', 'Documentos') returning id as ckd \gset
+insert into fluxo.checklist_itens (empresa_id, checklist_id, texto, regra_branco) values (:'emp', :'ckd', 'Certidão de ônus', 'bloqueia');
+insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, regra_branco, condicao) values (:'emp', :'kd', 'oferta.corretor_id', 'bloqueia', :'permuta');
+select pg_temp.ok(fluxo.pendencias_conclusao(:'kd') = array['checklist'], 'item de checklist com regra própria bloqueia; o campo com condição que não vale, não');
+select pg_temp.ok((select count(*) from fluxo.itens_em_branco(:'kd')) = 1, 'a lista do que falta traz só o que vale agora');
+select pg_temp.como(:'diretor');
+select pg_temp.ok(fluxo.concluir_justificando(:'kd', 'Certidão chega amanhã; contrato assinado') = 'concluida', 'o diretor passa pelo item que bloqueia, com justificativa');
+select pg_temp.ok((select libera_bloqueio from fluxo.conclusao_justificativas where tarefa_id = :'kd'), 'o registro diz que o diretor passou pelo bloqueio');
+select pg_temp.como(:'analista');
+update fluxo.tarefas set concluida_em = null where id = :'kd';
+select fluxo.copiar_tarefa(:'kd', pg_temp.lista(:'tcd', 'Fazer'), 'Contrato (cópia)') as kdc \gset
+select pg_temp.ok((select regra_branco = 'bloqueia' and condicao is not null from fluxo.tarefa_itens where tarefa_id = :'kdc' and chave = 'oferta.corretor_id')
+  and (select regra_branco = 'bloqueia' from fluxo.checklist_itens i join fluxo.checklists c on c.id = i.checklist_id where c.tarefa_id = :'kdc'),
+  'a cópia leva os itens e a regra de cada um');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$select app.gravar_campo(%L, 'terreno.area_documental_m2', '1600')$$, :'tcd'), 'leitura não grava campo pelo cartão');
+\echo '# recorrência (fluxo, bloco 4)'
+select pg_temp.ok(fluxo.proxima_ocorrencia(row(null,null,null,'mensal',1,null,31,current_date,null,null,1,null,null,true,null,null)::fluxo.recorrencias, '2026-01-31') = '2026-02-28',
+  'mensal no dia 31: mês sem o dia usa o último');
+select pg_temp.ok(fluxo.proxima_ocorrencia(row(null,null,null,'semanal',2,array[1,3],null,current_date,null,null,1,null,null,true,null,null)::fluxo.recorrencias, '2026-11-02') = '2026-11-04'
+  and fluxo.proxima_ocorrencia(row(null,null,null,'semanal',2,array[1,3],null,current_date,null,null,1,null,null,true,null,null)::fluxo.recorrencias, '2026-11-04') = '2026-11-16',
+  'a cada 2 semanas, segunda e quarta: quarta da mesma semana, depois segunda de duas semanas adiante');
+select pg_temp.ok(fluxo.proxima_ocorrencia(row(null,null,null,'diaria',3,null,null,current_date,null,null,1,null,null,true,null,null)::fluxo.recorrencias, '2026-11-02') = '2026-11-05', 'a cada 3 dias');
+-- datas a partir de hoje: a série não cria cartões para datas que já passaram
+select d as seg, d + 2 as seg_qua, d + 7 as seg1, d + 9 as seg1p, d + 14 as seg2, d + 16 as seg2p, d + 6 as dom, d + 21 as seg3, d + 70 as fim
+from (select current_date + 7 + (8 - extract(dow from current_date)::int) % 7 as d) x \gset
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tm', 'Relatório semanal da obra', :'seg_qua', :'analista') as kr \gset
+update fluxo.tarefas set inicio = :'seg' where id = :'kr';
+insert into fluxo.tarefa_pessoas (empresa_id, tarefa_id, user_id, papel) values (:'emp', :'kr', :'diretor', 'acompanha');
+insert into fluxo.checklists (empresa_id, tarefa_id, nome) values (:'emp', :'kr', 'Conferir') returning id as chr \gset
+insert into fluxo.checklist_itens (empresa_id, checklist_id, texto, prazo) values (:'emp', :'chr', 'Fotos', :'seg'::date + 1);
+insert into fluxo.recorrencias (empresa_id, tarefa_id, frequencia, dias_semana, prazo_dias, max_vezes)
+values (:'emp', :'kr', 'semanal', array[1], 2, 3) returning id as rr \gset
+select pg_temp.ok((select proxima = :'seg1' and vezes = 1 from fluxo.recorrencias where id = :'rr'), 'a próxima data sai do início do cartão de origem');
+select pg_temp.falha(format($$select fluxo.gerar_recorrencias(%L)$$, :'fim'), 'só a rotina gera as ocorrências');
+select pg_temp.como(:'leitor');
+update fluxo.recorrencias set intervalo = 2 where id = :'rr';
+reset role;
+select pg_temp.ok((select intervalo = 1 from fluxo.recorrencias where id = :'rr'), 'leitura não muda a recorrência');
+select pg_temp.ok(fluxo.gerar_recorrencias(:'dom') = 0, 'antes da data, nada nasce');
+select pg_temp.ok(fluxo.gerar_recorrencias(:'fim') = 2, 'na data, nasce mesmo com a anterior aberta; a de origem conta como a primeira das 3');
+select pg_temp.ok((select not ativa and vezes = 3 from fluxo.recorrencias where id = :'rr'), 'chegou ao número de vezes: a série encerra');
+select pg_temp.ok((select string_agg(inicio || '/' || prazo, ',' order by inicio) from fluxo.tarefas where recorrencia_id = :'rr')
+  = :'seg1' || '/' || :'seg1p' || ',' || :'seg2' || '/' || :'seg2p', 'cada ocorrência começa na data e o prazo vem N dias depois');
+select pg_temp.ok((select bool_and(k.criado_por = :'analista' and k.responsavel_id = :'analista'
+                    and exists (select 1 from fluxo.tarefa_pessoas p where p.tarefa_id = k.id and p.user_id = :'diretor' and p.papel = 'acompanha'))
+                   from fluxo.tarefas k where k.recorrencia_id = :'rr'), 'a ocorrência copia quem criou, o responsável e quem acompanha');
+select pg_temp.ok((select bool_and(i.concluido_em is null) and min(i.prazo) = :'seg1'::date + 1
+                   from fluxo.tarefas k join fluxo.checklists c on c.tarefa_id = k.id join fluxo.checklist_itens i on i.checklist_id = c.id
+                   where k.recorrencia_id = :'rr'), 'o checklist vem em aberto, com o prazo do item andando junto');
+select id as kr2 from fluxo.tarefas where recorrencia_id = :'rr' order by inicio limit 1 \gset
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$insert into fluxo.recorrencias (empresa_id, tarefa_id, frequencia) values (%L, %L, 'diaria')$$, :'emp', :'kr2'),
+  'uma ocorrência não vira outra série');
+update fluxo.recorrencias set ativa = true, max_vezes = null where id = :'rr';
+select pg_temp.ok((select proxima = :'seg3' from fluxo.recorrencias where id = :'rr'), 'retomada, a série segue da próxima data');
+update fluxo.recorrencias set dias_semana = array[1,3] where id = :'rr';
+select pg_temp.ok((select proxima = :'seg2'::date + 2 from fluxo.recorrencias where id = :'rr'), 'mudar a regra recalcula a próxima a partir da última ocorrência');
+insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, inicio)
+select empresa_id, quadro_id, lista_id, 'Vistoria mensal', current_date - 60 from fluxo.tarefas where id = :'kr' returning id as kv \gset
+insert into fluxo.recorrencias (empresa_id, tarefa_id, frequencia) values (:'emp', :'kv', 'diaria') returning id as rv \gset
+select pg_temp.ok((select proxima = current_date + 1 from fluxo.recorrencias where id = :'rv'), 'cartão antigo: a série segue de amanhã, sem criar os dias que passaram');
+update fluxo.recorrencias set ativa = false where id in (:'rr', :'rv');
+reset role;
+select pg_temp.ok(fluxo.gerar_recorrencias(:'fim') = 0, 'série parada não gera');
+\echo '# apontamento de horas (fluxo, bloco 4)'
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tm', 'Levantar certidões', current_date + 5, :'analista') as kh \gset
+update fluxo.tarefas set estimativa_min = 480 where id = :'kh';
+insert into fluxo.apontamentos (empresa_id, tarefa_id, minutos, nota) values (:'emp', :'kh', 90, 'Cartório');
+insert into fluxo.apontamentos (empresa_id, tarefa_id, data, minutos) values (:'emp', :'kh', current_date - 1, 60) returning id as ah \gset
+select pg_temp.ok((select user_id = :'analista' from fluxo.apontamentos where id = :'ah'), 'o apontamento é de quem apontou, sem aprovação');
+select pg_temp.falha(format($$insert into fluxo.apontamentos (empresa_id, tarefa_id, data, minutos) values (%L, %L, current_date + 1, 30)$$, :'emp', :'kh'), 'não aponta no futuro');
+select pg_temp.falha(format($$insert into fluxo.apontamentos (empresa_id, tarefa_id, minutos) values (%L, %L, 1400)$$, :'emp', :'kh'), 'mais de 24 horas no mesmo dia é recusado');
+select pg_temp.falha(format($$insert into fluxo.apontamentos (empresa_id, tarefa_id, user_id, minutos) values (%L, %L, %L, 30)$$, :'emp', :'kh', :'gestor'), 'ninguém aponta horas no nome de outro');
+select pg_temp.como(:'gestor');
+insert into fluxo.apontamentos (empresa_id, tarefa_id, minutos) values (:'emp', :'kh', 30);
+update fluxo.apontamentos set minutos = 1 where id = :'ah';
+delete from fluxo.apontamentos where id = :'ah';
+select pg_temp.ok((select minutos = 60 from fluxo.apontamentos where id = :'ah'), 'só o autor (ou o administrador) muda e apaga o apontamento');
+select pg_temp.ok((select apontado_min = 180 and estimativa_min = 480 and (por_pessoa->>:'analista')::int = 150 from fluxo.v_tarefa_horas where tarefa_id = :'kh'),
+  'a tarefa soma o apontado, por pessoa, ao lado da estimativa');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$insert into fluxo.apontamentos (empresa_id, tarefa_id, minutos) values (%L, %L, 30)$$, :'emp', :'kh'), 'leitura não aponta horas');
+select pg_temp.como(:'analista');
+delete from fluxo.apontamentos where id = :'ah';
+select pg_temp.ok(not exists (select 1 from fluxo.apontamentos where id = :'ah'), 'o autor apaga o próprio apontamento');
+\echo '# copiar cartão e modelo de cartão (fluxo, bloco 4)'
+select pg_temp.como(:'analista');
+select fluxo.copiar_tarefa(:'kr', pg_temp.lista(:'t1', 'Fazer'), 'Relatório semanal (cópia)') as kcp \gset
+select pg_temp.ok((select titulo = 'Relatório semanal (cópia)' and criado_por = :'analista' and solicitante_id = :'analista' and inicio is null and prazo is null
+                     and recorrencia_id is null and quadro_id = (select quadro_id from fluxo.listas where id = pg_temp.lista(:'t1', 'Fazer'))
+                   from fluxo.tarefas where id = :'kcp'), 'a cópia vai para outro quadro, de quem copiou, sem datas nem série');
+select pg_temp.ok(exists (select 1 from fluxo.tarefa_pessoas where tarefa_id = :'kcp' and user_id = :'diretor' and papel = 'acompanha')
+  and (select count(*) = 1 and bool_and(i.concluido_em is null) from fluxo.checklists c join fluxo.checklist_itens i on i.checklist_id = c.id where c.tarefa_id = :'kcp'),
+  'por padrão vão pessoas e checklists em aberto');
+select fluxo.copiar_tarefa(:'kr', pg_temp.lista(:'tm', 'Fazer'), null, array['etiquetas']) as kcp2 \gset
+select pg_temp.ok((select titulo = 'Relatório semanal da obra' and responsavel_id is null from fluxo.tarefas where id = :'kcp2')
+  and not exists (select 1 from fluxo.tarefa_pessoas where tarefa_id = :'kcp2') and not exists (select 1 from fluxo.checklists where tarefa_id = :'kcp2'),
+  'só vai o que foi marcado; sem título novo, fica o mesmo');
+select pg_temp.falha(format($$select fluxo.copiar_tarefa(%L, %L)$$, :'kr', pg_temp.lista(:'tm', 'Feito')), 'a cópia não vai para a lista que conclui');
+update fluxo.tarefas set modelo = true, prazo = current_date - 1 where id = :'kh';
+select pg_temp.ok((select not atrasada from fluxo.v_tarefas where id = :'kh'), 'modelo de cartão não atrasa');
+select pg_temp.falha(format($$update fluxo.tarefas set concluida_em = now() where id = %L$$, :'kh'), 'modelo de cartão não se conclui');
+select pg_temp.falha(format($$update fluxo.tarefas set modelo = true where id = %L$$, :'kr'), 'cartão com recorrência não vira modelo');
+select fluxo.copiar_tarefa(:'kh', pg_temp.lista(:'tm', 'Fazer')) as kcp3 \gset
+select pg_temp.ok((select not modelo and estimativa_min = 480 from fluxo.tarefas where id = :'kcp3'), 'criar a partir do modelo: a cópia é um cartão comum, com a estimativa');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$select fluxo.copiar_tarefa(%L, %L)$$, :'kr', pg_temp.lista(:'tm', 'Fazer')), 'leitura não copia cartão');
+\echo '# tarefas pelo funil (bloco 4)'
+reset role;
+select p.terreno_id as tf from app.processos p where p.status = 'ativo' and p.parte_id is null and p.empresa_id = :'emp'
+  and exists (select 1 from fluxo.quadros q where q.objeto_tipo = 'terreno' and q.objeto_id = p.terreno_id) limit 1 \gset
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tf', 'Conferir a minuta', current_date + 2) as kfu \gset
+select pg_temp.ok((select count(*) from app.v_tarefas_funil where tarefa_id = :'kfu')
+  = (select count(*) from app.processos where terreno_id = :'tf' and parte_id is null and status in ('ativo','stand_by'))
+  and (select bool_and(etapa is not null and subetapa is not null) from app.v_tarefas_funil where tarefa_id = :'kfu'),
+  'a tarefa aparece em cada fase aberta do terreno, com a etapa e a subetapa dele');
+select pg_temp.ok(not exists (select 1 from app.v_tarefas_funil where tarefa_id = :'kcp'), 'terreno sem fase aberta fica fora da visão do funil');
+select pg_temp.como(:'intruso');
+select pg_temp.ok(not exists (select 1 from app.v_tarefas_funil where tarefa_id = :'kfu'), 'outra empresa não vê a visão do funil');
+\echo '# automações de tarefas (fluxo, bloco 5a)'
+select pg_temp.como(:'diretor');
+insert into fluxo.etiquetas (empresa_id, nome, cor) values (:'emp', 'Em andamento', 'azul') returning id as ean \gset
+
+select quadro_id as qm from fluxo.listas where id = pg_temp.lista(:'tm', 'Fazer') \gset
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, acoes) values (%L, %L, 'X', 'criada', '[{"tipo":"arquivar"}]')$$, :'emp', :'qm'),
+  'leitura não cria regra');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, nome, gatilho, acoes) values (%L, 'X', 'criada', '[{"tipo":"arquivar"}]')$$, :'emp'),
+  'regra da empresa toda é só do administrador');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, gatilho_lista_id, acoes) values (%L, %L, 'X', 'entrou_lista', %L, '[{"tipo":"arquivar"}]')$$,
+  :'emp', :'qm', pg_temp.lista(:'t1', 'Fazendo')), 'a lista do gatilho tem que ser do quadro da regra');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, acoes) values (%L, %L, 'X', 'criada', %L)$$,
+  :'emp', :'qm', jsonb_build_array(jsonb_build_object('tipo', 'mover', 'lista', pg_temp.lista(:'tm', 'Pausadas')))), 'regra não pausa tarefa (a pausa pede motivo)');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, acoes) values (%L, %L, 'X', 'criada', '[{"tipo":"avisar","para":[]}]')$$, :'emp', :'qm'),
+  'aviso sem destinatário é recusado');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, acoes) values (%L, %L, 'X', 'prazo_antes', '[{"tipo":"arquivar"}]')$$, :'emp', :'qm'),
+  'prazo vencendo pede os dias de antecedência');
+insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, gatilho_lista_id, acoes)
+values (:'emp', :'qm', 'Começou a fazer', 'entrou_lista', pg_temp.lista(:'tm', 'Fazendo'),
+        jsonb_build_array(jsonb_build_object('tipo', 'avisar', 'para', array['responsavel','gestor'], 'texto', 'Começou'),
+                          jsonb_build_object('tipo', 'etiqueta', 'etiqueta', :'ean', 'por', true))) returning id as au1 \gset
+insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, gatilho_etiqueta_id, acoes)
+values (:'emp', :'qm', 'Em andamento é prioridade', 'etiqueta', :'ean', '[{"tipo":"prioridade","valor":"alta"}]') returning id as au2 \gset
+select pg_temp.ok((select dono_id = :'analista' from fluxo.automacoes where id = :'au1'), 'quem edita o terreno cria regra para o quadro dele e é o dono');
+select pg_temp.tarefa(:'tm', 'Pedir matrícula', current_date + 10, :'analista') as ka1 \gset
+select pg_temp.como(:'diretor');
+update fluxo.tarefas set lista_id = pg_temp.lista(:'tm', 'Fazendo') where id = :'ka1';
+reset role;
+select pg_temp.ok((select count(*) = 2 from app.notificacoes where tipo = 'automacao' and texto = 'Começou: Pedir matrícula' and destinatario_id in (:'analista', :'gestor')),
+  'entrou na lista: avisa o responsável e o gestor dele');
+select pg_temp.ok(exists (select 1 from fluxo.tarefa_etiquetas where tarefa_id = :'ka1' and etiqueta_id = :'ean')
+  and (select resultado = 'ok' and detalhe like 'avisou 2 pessoas; pôs a etiqueta Em andamento' and user_id = :'diretor' from fluxo.automacao_execucoes where automacao_id = :'au1' and tarefa_id = :'ka1'),
+  'a regra põe a etiqueta e a execução fica registrada com quem disparou');
+select pg_temp.ok((select prioridade = 'media' from fluxo.tarefas where id = :'ka1') and not exists (select 1 from fluxo.automacao_execucoes where automacao_id = :'au2'),
+  'o que uma regra faz não dispara outra regra');
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tm', 'Pedir IPTU', current_date + 10) as ka2 \gset
+insert into fluxo.tarefa_etiquetas (empresa_id, tarefa_id, etiqueta_id) values (:'emp', :'ka2', :'ean');
+select pg_temp.ok((select prioridade = 'alta' from fluxo.tarefas where id = :'ka2'), 'a etiqueta posta por uma pessoa dispara a regra');
+update fluxo.automacoes set ativa = false where id = :'au2';
+select pg_temp.tarefa(:'tm', 'Pedir certidão', current_date + 10) as ka3 \gset
+insert into fluxo.tarefa_etiquetas (empresa_id, tarefa_id, etiqueta_id) values (:'emp', :'ka3', :'ean');
+select pg_temp.ok((select prioridade = 'media' from fluxo.tarefas where id = :'ka3'), 'regra desligada não roda');
+select pg_temp.falha(format($$delete from fluxo.automacoes where id = %L$$, :'au2'), 'regra que já rodou não se apaga');
+select pg_temp.como(:'gestor');
+update fluxo.automacoes set nome = 'Outro nome' where id = :'au1';
+select pg_temp.ok((select nome = 'Começou a fazer' from fluxo.automacoes where id = :'au1'), 'só o dono (ou o administrador) muda a regra');
+-- regra da empresa: listas pelo nome, em qualquer quadro
+select pg_temp.como(:'diretor');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, nome, gatilho, gatilho_lista_id, acoes) values (%L, 'X', 'entrou_lista', %L, '[{"tipo":"arquivar"}]')$$,
+  :'emp', pg_temp.lista(:'tm', 'Fazendo')), 'regra da empresa escolhe a lista pelo nome');
+insert into fluxo.automacoes (empresa_id, nome, gatilho, gatilho_lista_nome, condicoes, acoes)
+values (:'emp', 'Esperando retorno urgente', 'entrou_lista', 'aguardando retorno', '[{"tipo":"prioridade","valores":["alta"]}]',
+        '[{"tipo":"adiar","dias":5},{"tipo":"mover","lista_nome":"Lista que não existe"}]') returning id as au3 \gset
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'t1', 'Ligar para o corretor', current_date + 3) as ka4 \gset
+select pg_temp.tarefa(:'t1', 'Ligar para o dono', current_date + 3) as ka5 \gset
+update fluxo.tarefas set prioridade = 'alta' where id = :'ka4';
+update fluxo.tarefas set lista_id = pg_temp.lista(:'t1', 'Aguardando retorno') where id in (:'ka4', :'ka5');
+select pg_temp.ok((select lista_id = pg_temp.lista(:'t1', 'Aguardando retorno') and prazo = current_date + 3 from fluxo.tarefas where id = :'ka4')
+  and (select resultado = 'erro' and detalhe like '%Lista que não existe%' from fluxo.automacao_execucoes where automacao_id = :'au3' and tarefa_id = :'ka4'),
+  'regra que falha registra o erro e não desfaz nada (nem o que a própria regra fez antes)');
+select pg_temp.ok(not exists (select 1 from fluxo.automacao_execucoes where automacao_id = :'au3' and tarefa_id = :'ka5'), 'fora da condição, a regra não roda');
+select pg_temp.como(:'diretor');
+update fluxo.automacoes set acoes = '[{"tipo":"adiar","dias":5}]' where id = :'au3';
+select pg_temp.como(:'analista');
+update fluxo.tarefas set lista_id = pg_temp.lista(:'t1', 'Fazer') where id = :'ka4';
+update fluxo.tarefas set lista_id = pg_temp.lista(:'t1', 'Aguardando retorno') where id = :'ka4';
+select pg_temp.ok((select prazo = fluxo.somar_dias(:'emp', current_date + 3, 5) from fluxo.tarefas where id = :'ka4'), 'regra da empresa vale em outro quadro, pela lista com o mesmo nome');
+-- cartão criado: no fim da transação, com as etiquetas já gravadas
+insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, condicoes, acoes)
+values (:'emp', :'qm', 'Checklist do jurídico', 'criada', jsonb_build_array(jsonb_build_object('tipo', 'etiqueta', 'etiqueta', :'et', 'tem', true)),
+        '[{"tipo":"checklist","nome":"Jurídico","itens":["Matrícula","Ônus"]}]') returning id as au4 \gset
+begin;
+select pg_temp.tarefa(:'tm', 'Diligência', current_date + 20) as ka6 \gset
+insert into fluxo.tarefa_etiquetas (empresa_id, tarefa_id, etiqueta_id) values (:'emp', :'ka6', :'et');
+commit;
+select pg_temp.tarefa(:'tm', 'Sem etiqueta', current_date + 20) as ka7 \gset
+select pg_temp.ok((select count(*) = 2 from fluxo.checklists c join fluxo.checklist_itens i on i.checklist_id = c.id where c.tarefa_id = :'ka6' and c.nome = 'Jurídico')
+  and not exists (select 1 from fluxo.checklists where tarefa_id = :'ka7'), 'cartão criado com a etiqueta ganha o checklist; sem ela, não');
+select pg_temp.ok(not exists (select 1 from fluxo.automacao_execucoes e join fluxo.automacoes a on a.id = e.automacao_id where e.tarefa_id = :'ka6' and a.gatilho = 'etiqueta'),
+  'a etiqueta do cartão que acabou de nascer não conta como etiqueta adicionada');
+-- checklist completo leva para Feito; a conclusão pela regra não dispara as regras de concluída
+insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, acoes)
+values (:'emp', :'qm', 'Checklist pronto vai para Feito', 'checklist_completo', jsonb_build_array(jsonb_build_object('tipo', 'mover', 'lista', pg_temp.lista(:'tm', 'Feito')))) returning id as au5 \gset
+insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, acoes)
+values (:'emp', :'qm', 'Concluiu, arquiva', 'concluida', '[{"tipo":"arquivar"}]') returning id as au6 \gset
+update fluxo.checklist_itens i set concluido_em = now() from fluxo.checklists c where c.id = i.checklist_id and c.tarefa_id = :'ka6' and i.texto = 'Matrícula';
+select pg_temp.ok((select concluida_em is null from fluxo.tarefas where id = :'ka6'), 'com item em aberto, nada acontece');
+update fluxo.checklist_itens i set concluido_em = now() from fluxo.checklists c where c.id = i.checklist_id and c.tarefa_id = :'ka6' and i.texto = 'Ônus';
+select pg_temp.ok((select concluida_em is not null and arquivada_em is null from fluxo.tarefas where id = :'ka6'), 'checklist completo: a regra conclui, e a regra de concluída não roda em cadeia');
+-- prazo: vence em N dias e venceu, pela rotina diária, uma vez por prazo
+insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, gatilho_dias, acoes)
+values (:'emp', :'qm', 'Vence em 2 dias', 'prazo_antes', 2, '[{"tipo":"avisar","para":["responsavel"]}]') returning id as au7 \gset
+insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, acoes)
+values (:'emp', :'qm', 'Venceu', 'prazo_venceu', '[{"tipo":"prioridade","valor":"alta"}]') returning id as au8 \gset
+select pg_temp.tarefa(:'tm', 'Entregar laudo', current_date + 2, :'gestor') as ka8 \gset
+select pg_temp.tarefa(:'tm', 'Responder o cartório', current_date - 1) as ka9 \gset
+select pg_temp.falha('select fluxo.automacoes_prazo()', 'só a rotina roda as regras de prazo');
+reset role;
+select fluxo.automacoes_prazo() as nprazo \gset
+select pg_temp.ok((select count(*) = 1 from app.notificacoes n join fluxo.automacao_execucoes e on e.id = n.origem_id
+                   where e.automacao_id = :'au7' and e.tarefa_id = :'ka8' and n.destinatario_id = :'gestor' and e.referencia = current_date + 2),
+  'prazo em 2 dias: a rotina avisa o responsável');
+select pg_temp.ok((select prioridade = 'alta' from fluxo.tarefas where id = :'ka9'), 'prazo vencido: a regra roda');
+select pg_temp.ok(fluxo.automacoes_prazo() = 0, 'rodar de novo no mesmo dia não repete');
+update fluxo.tarefas set prazo = current_date + 1 where id = :'ka8';
+select pg_temp.ok(fluxo.automacoes_prazo() = 1, 'prazo mudou: a regra vale para o prazo novo');
+-- quem vê
+select pg_temp.como(:'intruso');
+select pg_temp.ok(not exists (select 1 from fluxo.automacoes) and not exists (select 1 from fluxo.automacao_execucoes), 'outra empresa não vê regras nem execuções');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$delete from fluxo.automacoes where id = %L$$, :'au8'), 'o dono também não apaga regra que rodou: o histórico fica');
+insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, acoes) values (:'emp', :'qm', 'Rascunho', 'criada', '[{"tipo":"arquivar"}]') returning id as au9 \gset
+update fluxo.automacoes set ativa = false where id = :'au9';
+delete from fluxo.automacoes where id = :'au9';
+select pg_temp.ok(not exists (select 1 from fluxo.automacoes where id = :'au9'), 'regra que nunca rodou o dono apaga');
+update fluxo.automacoes set ativa = false where quadro_id = :'qm';
+select pg_temp.como(:'diretor');
+update fluxo.automacoes set ativa = false where quadro_id is null;
+\echo '# botões e agendamentos (bloco 5b)'
+select pg_temp.como(:'analista');
+insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, condicoes, acoes)
+values (:'emp', :'qm', 'Cobrar retorno', 'botao', '[{"tipo":"situacao","valores":["aberta"]}]',
+        jsonb_build_array(jsonb_build_object('tipo', 'mover', 'lista', pg_temp.lista(:'tm', 'Aguardando retorno')), '{"tipo":"adiar","dias":3}'::jsonb)) returning id as abt \gset
+select pg_temp.tarefa(:'tm', 'Pedir certidão de ônus', current_date + 5, :'analista') as kb1 \gset
+select pg_temp.tarefa(:'tm', 'Certidão já recebida', current_date + 5, :'analista') as kb2 \gset
+update fluxo.tarefas set lista_id = pg_temp.lista(:'tm', 'Feito') where id = :'kb2';
+select pg_temp.ok(exists (select 1 from fluxo.botoes_cartao(:'kb1') where id = :'abt' and escopo = 'quadro')
+  and not exists (select 1 from fluxo.botoes_cartao(:'kb2') where id = :'abt'), 'o botão aparece só nos cartões que passam nas condições');
+select resultado as rbt from fluxo.apertar_botao(:'abt', :'kb1') \gset
+select pg_temp.ok(:'rbt' = 'ok' and (select lista_id = pg_temp.lista(:'tm', 'Aguardando retorno') and prazo = fluxo.somar_dias(:'emp', current_date + 5, 3) from fluxo.tarefas where id = :'kb1')
+  and (select user_id = :'analista' and gatilho = 'botao' from fluxo.automacao_execucoes where automacao_id = :'abt' and tarefa_id = :'kb1'),
+  'apertar o botão faz as ações no cartão e registra quem apertou');
+select pg_temp.falha(format($$select fluxo.apertar_botao(%L, %L)$$, :'abt', :'kb2'), 'botão que não vale para o cartão não roda');
+select pg_temp.como(:'leitor');
+select pg_temp.ok(not exists (select 1 from fluxo.botoes_cartao(:'kb1')), 'leitura não vê botões no cartão');
+select pg_temp.falha(format($$select fluxo.apertar_botao(%L, %L)$$, :'abt', :'kb1'), 'leitura não aperta botão');
+select pg_temp.como(:'analista');
+update fluxo.automacoes set ativa = false where id = :'abt';
+select pg_temp.ok(not exists (select 1 from fluxo.botoes_cartao(:'kb1')), 'botão desligado some do cartão');
+-- agendamentos
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, agenda_freq, acoes) values (%L, %L, 'X', 'agenda', 'diaria', '[{"tipo":"arquivar"}]')$$, :'emp', :'qm'),
+  'regra agendada precisa de condição');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, agenda_freq, condicoes, acoes) values (%L, %L, 'X', 'agenda', 'semanal', '[{"tipo":"situacao","valores":["aberta"]}]', '[{"tipo":"arquivar"}]')$$, :'emp', :'qm'),
+  'agendamento semanal precisa dos dias');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, agenda_freq, agenda_dias, condicoes, acoes) values (%L, %L, 'X', 'agenda', 'mensal', '{32}', '[{"tipo":"situacao","valores":["aberta"]}]', '[{"tipo":"arquivar"}]')$$, :'emp', :'qm'),
+  'dia do mês de 1 a 31');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, condicoes, acoes) values (%L, %L, 'X', 'botao', '[{"tipo":"situacao","valores":["parada"]}]', '[{"tipo":"arquivar"}]')$$, :'emp', :'qm'),
+  'situação aberta, atrasada ou concluída');
+select pg_temp.ok(fluxo.agenda_hoje('mensal', '{31}', '2027-02-28') and not fluxo.agenda_hoje('mensal', '{31}', '2027-02-27')
+  and fluxo.agenda_hoje('semanal', '{1}', '2026-11-02') and not fluxo.agenda_hoje('semanal', '{1}', '2026-11-03'),
+  'mensal no dia 31 roda no último dia do mês curto; semanal no dia da semana marcado');
+insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, agenda_freq, agenda_dias, condicoes, acoes)
+values (:'emp', :'qm', 'Segunda: atrasadas sobem a prioridade', 'agenda', 'semanal', array[extract(dow from current_date + 3)::int, extract(dow from current_date + 3)::int],
+        '[{"tipo":"situacao","valores":["atrasada"]}]', '[{"tipo":"prioridade","valor":"alta"}]') returning id as aag \gset
+select pg_temp.ok((select cardinality(agenda_dias) = 1 from fluxo.automacoes where id = :'aag'), 'dias repetidos viram um só');
+select pg_temp.tarefa(:'tm', 'Atrasada do agendamento', current_date - 1, :'analista') as kb3 \gset
+select pg_temp.tarefa(:'tm', 'No prazo do agendamento', current_date + 10, :'analista') as kb4 \gset
+select pg_temp.falha('select fluxo.automacoes_agenda()', 'só a rotina roda as regras agendadas');
+reset role;
+select fluxo.automacoes_agenda(current_date + 2) as nag \gset
+select pg_temp.ok(not exists (select 1 from fluxo.automacao_execucoes where automacao_id = :'aag'), 'fora do dia marcado, a regra agendada não roda');
+select app.rotina_diaria(current_date + 3) \gset
+select pg_temp.ok((select prioridade = 'alta' from fluxo.tarefas where id = :'kb3') and (select prioridade = 'media' from fluxo.tarefas where id = :'kb4')
+  and (select referencia = current_date + 3 from fluxo.automacao_execucoes where automacao_id = :'aag' and tarefa_id = :'kb3'),
+  'no dia marcado, a rotina roda a regra nos cartões que passam nas condições');
+select pg_temp.ok(fluxo.automacoes_agenda(current_date + 3) = 0, 'rodar de novo no mesmo dia não repete');
+update fluxo.automacoes set ativa = false where id = :'aag';
+\echo '# automações do cartão e subtarefas (30/out)'
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tm', 'Cartão com regra própria', current_date + 10, :'analista') as kq1 \gset
+select pg_temp.tarefa(:'tm', 'Cartão sem regra', current_date + 10, :'analista') as kq2 \gset
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, tarefa_id, nome, gatilho, acoes) values (%L, %L, 'X', 'criada', '[{"tipo":"arquivar"}]')$$, :'emp', :'kq1'),
+  'regra do cartão não usa "cartão criado"');
+insert into fluxo.automacoes (empresa_id, tarefa_id, nome, gatilho, gatilho_lista_id, acoes)
+values (:'emp', :'kq1', 'Só neste cartão', 'entrou_lista', pg_temp.lista(:'tm', 'Fazendo'), '[{"tipo":"prioridade","valor":"alta"}]') returning id as auc \gset
+select pg_temp.ok((select quadro_id = :'qm' from fluxo.automacoes where id = :'auc'), 'a regra do cartão fica no quadro do cartão');
+select pg_temp.falha(format($$update fluxo.automacoes set tarefa_id = %L where id = %L$$, :'kq2', :'auc'), 'a regra não muda de cartão');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, tarefa_id, nome, gatilho, gatilho_lista_id, acoes) values (%L, %L, 'X', 'entrou_lista', %L, '[{"tipo":"arquivar"}]')$$,
+  :'emp', :'kq1', pg_temp.lista(:'t1', 'Fazendo')), 'a lista da regra do cartão é do quadro dele');
+update fluxo.tarefas set lista_id = pg_temp.lista(:'tm', 'Fazendo') where id in (:'kq1', :'kq2');
+select pg_temp.ok((select prioridade = 'alta' from fluxo.tarefas where id = :'kq1') and (select prioridade = 'media' from fluxo.tarefas where id = :'kq2'),
+  'a regra do cartão só roda nele');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$insert into fluxo.automacoes (empresa_id, tarefa_id, nome, gatilho, acoes) values (%L, %L, 'X', 'concluida', '[{"tipo":"arquivar"}]')$$, :'emp', :'kq2'),
+  'leitura não cria regra no cartão');
+select pg_temp.como(:'analista');
+select fluxo.copiar_tarefa(:'kq1', pg_temp.lista(:'tm', 'Fazer')) as kq3 \gset
+select fluxo.copiar_tarefa(:'kq1', pg_temp.lista(:'t1', 'Fazer')) as kq4 \gset
+select fluxo.copiar_tarefa(:'kq1', pg_temp.lista(:'tm', 'Fazer'), null, array['etiquetas']) as kq5 \gset
+select pg_temp.ok((select gatilho_lista_id = pg_temp.lista(:'tm', 'Fazendo') and dono_id = :'analista' from fluxo.automacoes where tarefa_id = :'kq3')
+  and (select gatilho_lista_id = pg_temp.lista(:'t1', 'Fazendo') from fluxo.automacoes where tarefa_id = :'kq4')
+  and not exists (select 1 from fluxo.automacoes where tarefa_id = :'kq5'),
+  'a cópia leva as regras do cartão; em outro quadro, a lista pelo nome; sem marcar, não vão');
+-- subtarefas
+select pg_temp.tarefa(:'tm', 'Levantar a matrícula', current_date + 5, :'analista') as ks1 \gset
+update fluxo.tarefas set mae_id = :'kq2' where id = :'ks1';
+select pg_temp.falha(format($$update fluxo.tarefas set mae_id = %L where id = %L$$, :'ks1', :'kq3'), 'subtarefa não tem subtarefa');
+select pg_temp.falha(format($$update fluxo.tarefas set mae_id = %L where id = %L$$, :'kq3', :'kq2'), 'tarefa com subtarefas não vira subtarefa');
+select pg_temp.falha(format($$update fluxo.tarefas set mae_id = %L where id = %L$$, :'kq4', :'kq3'), 'a mãe é do mesmo quadro');
+select pg_temp.como(:'diretor');
+select fluxo.salvar_regras(:'emp', true);
+select pg_temp.como(:'analista');
+select pg_temp.ok(fluxo.pendencias_conclusao(:'kq2') = array['subtarefas'], 'subtarefa em aberto é pendência da mãe');
+select pg_temp.falha(format($$update fluxo.tarefas set concluida_em = now() where id = %L$$, :'kq2'), 'a mãe não conclui com subtarefa em aberto');
+update fluxo.tarefas set concluida_em = now() where id = :'ks1';
+update fluxo.tarefas set concluida_em = now() where id = :'kq2';
+select pg_temp.ok((select concluida_em is not null from fluxo.tarefas where id = :'kq2'), 'com as subtarefas concluídas, a mãe conclui');
+select pg_temp.como(:'diretor');
+select fluxo.salvar_regras(:'emp', false);
+-- predecessora pendente: por padrão só aviso; com a regra, bloqueia (decisão do Moisés, 30/out/2026)
+select pg_temp.tarefa(:'tm', 'Pedir a certidão', current_date + 3, :'analista') as kp1 \gset
+select pg_temp.tarefa(:'tm', 'Analisar a certidão', current_date + 6, :'analista') as kp2 \gset
+select pg_temp.tarefa(:'tm', 'Começar o estudo', current_date + 8, :'analista') as kp3 \gset
+select pg_temp.tarefa(:'tm', 'Revisar o estudo', current_date + 9, :'analista') as kp4 \gset
+insert into fluxo.vinculos (empresa_id, predecessora_id, sucessora_id, tipo) values (:'emp', :'kp1', :'kp2', 'TI'), (:'emp', :'kp3', :'kp4', 'II');
+select pg_temp.ok(fluxo.predecessoras_pendentes(:'kp2') = array[(select codigo from fluxo.tarefas where id = :'kp1')], 'TI: predecessora em aberto fica pendente');
+select pg_temp.ok(cardinality(fluxo.predecessoras_pendentes(:'kp4')) = 1, 'II: predecessora sem começar fica pendente');
+select pg_temp.ok(not ('predecessoras' = any (fluxo.pendencias_conclusao(:'kp2'))), 'sem a regra, predecessora pendente não bloqueia');
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format($$select fluxo.salvar_regra_predecessoras(%L, true)$$, :'emp'), 'só o administrador liga o bloqueio das predecessoras');
+select pg_temp.como(:'diretor');
+select fluxo.salvar_regra_predecessoras(:'emp', true);
+select pg_temp.como(:'analista');
+select pg_temp.ok('predecessoras' = any (fluxo.pendencias_conclusao(:'kp2')), 'com a regra, vira pendência');
+select pg_temp.falha(format($$update fluxo.tarefas set concluida_em = now() where id = %L$$, :'kp2'), 'com a regra, não conclui antes da predecessora TI');
+update fluxo.tarefas set inicio = current_date where id = :'kp3';
+select pg_temp.ok(cardinality(fluxo.predecessoras_pendentes(:'kp4')) = 0, 'II: com o início da predecessora chegado, libera');
+update fluxo.tarefas set concluida_em = now() where id = :'kp1';
+update fluxo.tarefas set concluida_em = now() where id = :'kp2';
+select pg_temp.ok((select concluida_em is not null from fluxo.tarefas where id = :'kp2'), 'com a predecessora concluída, a sucessora conclui');
+select pg_temp.como(:'diretor');
+select fluxo.salvar_regra_predecessoras(:'emp', false);
+\echo '# tarefas da etapa, trava, condições e volta de etapa (lote B, 31/out)'
+select pg_temp.como(:'diretor');
+insert into fluxo.modelos_quadro (empresa_id, nome) values (:'emp', 'Estudos preliminares') returning id as mest \gset
+insert into fluxo.modelo_tarefas (empresa_id, modelo_id, ordem, titulo, lista_nome, inicio_dias, duracao) values (:'emp', :'mest', 1, 'Estudo de massa', 'Fazer', 0, 5) returning id as mte1 \gset
+insert into fluxo.modelo_tarefas (empresa_id, modelo_id, ordem, titulo, inicio_dias, duracao) values (:'emp', :'mest', 2, 'Estudo de viabilidade', 0, 10) returning id as mte2 \gset
+insert into fluxo.modelo_tarefas (empresa_id, modelo_id, ordem, titulo, condicao) values (:'emp', :'mest', 3, 'Minuta de permuta', :'permuta') returning id as mte3 \gset
+insert into fluxo.modelo_vinculos (empresa_id, modelo_id, predecessora_id, sucessora_id) values (:'emp', :'mest', :'mte1', :'mte2');
+select pg_temp.falha(format($$insert into fluxo.modelo_tarefas (empresa_id, modelo_id, titulo, condicao) values (%L, %L, 'X', '{"modo":"todas","itens":[{"campo":"terreno.descricao","op":"preenchido"}]}')$$, :'emp', :'mest'),
+  'a condição da tarefa do modelo só usa campo liberado para condição');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$select app.salvar_regra_etapa(%L, null, '{"fase":"novos_negocios","etapa":"estudos","titulo":"X"}')$$, :'emp'), 'só o administrador cria regra de tarefas da etapa');
+insert into fluxo.modelos_quadro (empresa_id, dono_id, nome) values (:'emp', :'analista', 'Meu modelo') returning id as mmeu \gset
+select pg_temp.como(:'diretor');
+select pg_temp.falha(format($$select app.salvar_regra_etapa(%L, null, '{"fase":"novos_negocios","etapa":"estudos","modelo_id":"%s","titulo":"X"}')$$, :'emp', :'mest'), 'a regra cria um modelo ou uma tarefa, não os dois');
+select pg_temp.falha(format($$select app.salvar_regra_etapa(%L, null, '{"fase":"novos_negocios","etapa":"estudos","modelo_id":"%s"}')$$, :'emp', :'mmeu'), 'a regra usa modelo da empresa, não de uma pessoa');
+select pg_temp.falha(format($$select app.salvar_regra_etapa(%L, null, '{"fase":"novos_negocios","etapa":"estudos","subetapa":"proposta_enviada","titulo":"X"}')$$, :'emp'), 'a subetapa da regra é da etapa');
+select app.salvar_regra_etapa(:'emp', null, jsonb_build_object('fase','novos_negocios','etapa','estudos','modelo_id',:'mest','trava',true)) as re1 \gset
+select app.salvar_regra_etapa(:'emp', null, '{"fase":"novos_negocios","etapa":"estudos","subetapa":"estudo_viabilidade","titulo":"Cobrar o estudo do arquiteto","prazo_dias":5,"trava":true}') as re2 \gset
+select app.salvar_regra_etapa(:'emp', null, jsonb_build_object('fase','novos_negocios','etapa','estudos','titulo','Conferir a permuta','condicao',:'permuta'::jsonb,'trava',true)) as re3 \gset
+select app.salvar_regra_etapa(:'emp', null, '{"fase":"novos_negocios","etapa":"estudos","titulo":"Conferir o preço pedido","trava":true,"condicao":{"modo":"todas","itens":[{"campo":"oferta.valor_pedido","op":"maior","valores":[2000000]}]}}') as re4 \gset
+select app.salvar_regra_etapa(:'emp', null, '{"fase":"novos_negocios","etapa":"negociacao","titulo":"Cobrar retorno da proposta","prazo_dias":5}') as re5 \gset
+select pg_temp.ok((select not trava from app.etapa_regras where id = :'re5') and (select responsavel_objeto from app.etapa_regras where id = :'re5'),
+  'a trava começa desligada e o responsável padrão é o do terreno');
+-- condição no checklist de documentos e no pré-requisito
+select app.salvar_checklist(:'emp', 'novos_negocios', 'estudos', 'matricula', true);
+select pg_temp.falha(format($$select app.condicao_checklist(%L, 'novos_negocios', 'estudos', 'matricula', '{"modo":"todas","itens":[{"campo":"terreno.descricao","op":"preenchido"}]}')$$, :'emp'),
+  'a condição do documento só usa campo liberado');
+select app.condicao_checklist(:'emp', 'novos_negocios', 'estudos', 'matricula', :'permuta');
+select app.condicao_prerequisito(:'pr1', :'permuta');
+insert into fluxo.automacoes (empresa_id, nome, gatilho, gatilho_etapa, acoes)
+values (:'emp', 'Negociação é prioridade', 'etapa', 'novos_negocios:negociacao', '[{"tipo":"prioridade","valor":"alta"}]') returning id as aue \gset
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude, poligono_geojson)
+  values (:'emp', 'Terreno do funil', :'gestor', 'corretor', :'sp', -23.63, -46.63, pg_temp.quadra(-46.63, -23.63)) returning id as tfn \gset
+select pg_temp.como(:'analista');
+select (app.registrar_oferta(:'tfn', 3000000, 'dinheiro')->>'processo_id') as pfn \gset
+select app.mover_etapa(:'pfn') \gset
+select id as kms from fluxo.tarefas where processo_id = :'pfn' and titulo = 'Estudo de massa' \gset
+select id as kvb from fluxo.tarefas where processo_id = :'pfn' and titulo = 'Estudo de viabilidade' \gset
+select id as kpr from fluxo.tarefas where processo_id = :'pfn' and titulo = 'Conferir o preço pedido' \gset
+select pg_temp.ok((select count(*) from fluxo.tarefas where processo_id = :'pfn') = 3
+  and not exists (select 1 from fluxo.tarefas where processo_id = :'pfn' and titulo in ('Minuta de permuta','Conferir a permuta')),
+  'ao entrar na etapa nascem o modelo e a tarefa da regra; o que tem condição que não vale (permuta, com oferta em dinheiro) não nasce');
+select pg_temp.ok((select etapa = 'estudos' and subetapa is null and inicio = current_date and prazo = current_date + 4 and responsavel_id is null from fluxo.tarefas where id = :'kms')
+  and (select inicio = current_date + 5 from fluxo.tarefas where id = :'kvb') and exists (select 1 from fluxo.vinculos where predecessora_id = :'kms' and sucessora_id = :'kvb'),
+  'prazos contam do dia da entrada, com as predecessoras do modelo; a tarefa fica marcada com a etapa');
+select pg_temp.ok((select responsavel_id = :'gestor' from fluxo.tarefas where id = :'kpr'), 'o responsável do terreno vira a pessoa do terreno na hora');
+select pg_temp.tarefa(:'tfn', 'Visitar o terreno', null, :'gestor') as kvi \gset
+select pg_temp.ok((select k.processo_id = :'pfn' and k.etapa = 'estudos' and k.subetapa = p.subetapa_atual from fluxo.tarefas k join app.processos p on p.id = k.processo_id where k.id = :'kvi')
+  and (select trava and trava_nivel = 'etapa' from app.v_tarefas_etapa where tarefa_id = :'kvi'),
+  'a tarefa criada à mão nasce na etapa atual e trava, porque a etapa trava');
+insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, etapa) select empresa_id, id, pg_temp.lista(:'tfn', 'Fazer'), 'Sem etapa', 'nenhuma'
+  from fluxo.quadros where objeto_tipo = 'terreno' and objeto_id = :'tfn' returning id as kne \gset
+select pg_temp.ok((select processo_id is null and etapa is null from fluxo.tarefas where id = :'kne'), '"Nenhuma" deixa a tarefa sem etapa');
+insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, processo_id, etapa, subetapa, prazo)
+  select q.empresa_id, q.id, pg_temp.lista(:'tfn', 'Fazer'), 'Etapa escolhida', :'pfn', s.etapa, s.codigo, current_date + 2
+  from fluxo.quadros q, app.subetapas_modelo s join app.processos p on p.empresa_id = s.empresa_id and p.fase = s.fase
+  where q.objeto_tipo = 'terreno' and q.objeto_id = :'tfn' and p.id = :'pfn' and s.etapa <> p.etapa_atual order by s.etapa, s.ordem limit 1 returning id as kes \gset
+select pg_temp.ok((select k.etapa <> p.etapa_atual and k.subetapa is not null and k.prazo = current_date + 2 from fluxo.tarefas k join app.processos p on p.id = k.processo_id where k.id = :'kes'),
+  'quem cria escolhe outra etapa e subetapa da fase, com prazo');
+select pg_temp.falha(format($$insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, processo_id, etapa, subetapa)
+  select empresa_id, id, pg_temp.lista(%L, 'Fazer'), 'Sub errada', %L, 'estudos', 'nao_existe' from fluxo.quadros where objeto_tipo = 'terreno' and objeto_id = %L$$, :'tfn', :'pfn', :'tfn'),
+  'subetapa de outra etapa é recusada');
+select pg_temp.falha(format($$update fluxo.tarefas set etapa = 'projeto' where id = %L$$, :'kvi'), 'a etapa da tarefa é da fase da negociação');
+select pg_temp.ok(not exists (select 1 from jsonb_array_elements(app.checar_passagem(:'pfn')->'itens') i where i->>'tipo' in ('documento','prerequisito')),
+  'documento e pré-requisito com condição que não vale não entram nas pendências');
+select pg_temp.ok((select not aplica from app.v_checklist where processo_id = :'pfn' and etapa = 'estudos' and tipo_documento = 'matricula'), 'o checklist diz que o documento não se aplica');
+select pg_temp.ok((select count(*) from jsonb_array_elements(app.checar_passagem(:'pfn')->'itens') i where i->>'tipo' = 'tarefa') = 4,
+  'as tarefas abertas que travam entram nas pendências do avanço');
+select pg_temp.falha(format('select app.mover_etapa(%L)', :'pfn'), 'com tarefa aberta que trava, o analista não avança');
+-- subetapa: a regra dela nasce e trava a saída da subetapa
+select app.mover_subetapa(:'pfn', 'estudo_viabilidade') \gset
+select id as kca from fluxo.tarefas where processo_id = :'pfn' and titulo = 'Cobrar o estudo do arquiteto' \gset
+select pg_temp.ok((select subetapa = 'estudo_viabilidade' and prazo = current_date + 5 from fluxo.tarefas where id = :'kca'), 'a regra da subetapa nasce ao entrar nela');
+select pg_temp.falha(format('select app.mover_subetapa(%L, %L)', :'pfn', 'analise_tecnica'), 'a tarefa da subetapa trava a saída da subetapa');
+update fluxo.tarefas set concluida_em = now() where id = :'kca';
+select pg_temp.como(:'gestor');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'pode_avancar' and destinatario_id = :'gestor' and texto like '%pode avançar. As tarefas de Estudo de Viabilidade%') = 1,
+  'concluída a última tarefa que trava, o responsável do terreno recebe "pode avançar"');
+select pg_temp.como(:'analista');
+select pg_temp.ok((select subetapa_atual = 'estudo_viabilidade' from app.processos where id = :'pfn'), 'o sistema não avança sozinho');
+-- a condição deixa de valer: não se aplica mais
+select app.gravar_campo(:'tfn', 'oferta.valor_pedido', '1500000');
+select pg_temp.ok((select situacao = 'nao_se_aplica' and not trava from app.v_tarefas_etapa where tarefa_id = :'kpr'), 'condição que deixou de valer: a tarefa fica, não trava e não se aplica mais');
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format('select app.mover_etapa(%L, true, %L)', :'pfn', ' '), 'o gestor força só com justificativa');
+select app.mover_etapa(:'pfn', true, 'Seguimos com o estudo em paralelo') \gset
+select pg_temp.ok((select etapa_atual = 'negociacao' from app.processos where id = :'pfn')
+  and (select forcado from app.processo_transicoes where processo_id = :'pfn' order by em desc limit 1), 'o gestor avança com justificativa, que fica no histórico');
+select id as kcr from fluxo.tarefas where processo_id = :'pfn' and titulo = 'Cobrar retorno da proposta' \gset
+select pg_temp.ok((select prioridade = 'alta' and etapa = 'negociacao' from fluxo.tarefas where id = :'kcr'), 'gatilho "Terreno entrou na etapa" roda nos cartões da etapa');
+select pg_temp.ok((select prioridade = 'media' from fluxo.tarefas where id = :'kvb'), 'o gatilho não toca cartão de outra etapa');
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tfn', 'Minuta da proposta', null, :'gestor') as kmp \gset
+insert into fluxo.comentarios (empresa_id, tarefa_id, autor_id, texto) values (:'emp', :'kmp', :'analista', 'Primeira versão no Drive');
+-- voltar de etapa
+select app.mover_para_etapa(:'pfn', 'estudos', false, 'O vendedor pediu outro estudo') \gset
+select pg_temp.ok((select arquivada_em is not null from fluxo.tarefas where id = :'kcr') and (select situacao = 'arquivada_auto' from app.tarefas_etapa where tarefa_id = :'kcr'),
+  'voltar de etapa: tarefa sem trabalho da etapa deixada é arquivada sozinha');
+select pg_temp.ok((select arquivada_em is null from fluxo.tarefas where id = :'kmp') and (select situacao = 'deixada' and not trava from app.v_tarefas_etapa where tarefa_id = :'kmp'),
+  'com trabalho, a tarefa fica aberta como "Etapa deixada" e não trava');
+select pg_temp.como(:'gestor');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'etapa_deixada' and destinatario_id = :'gestor') = 1, 'o responsável da tarefa deixada é avisado');
+select pg_temp.como(:'analista');
+select pg_temp.ok((select arquivada_em is null and concluida_em is null from fluxo.tarefas where id = :'kvb'), 'as tarefas da etapa de destino ficam como estavam');
+select pg_temp.ok((select count(*) from fluxo.tarefas where processo_id = :'pfn' and titulo = 'Estudo de massa') = 1, 'voltar à etapa não cria de novo o que já existe');
+-- concluir o que trava a etapa avisa que pode avançar
+update fluxo.tarefas set concluida_em = now() where id in (:'kms', :'kvi');
+select pg_temp.como(:'gestor');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'pode_avancar' and texto like '%tarefas de Estudos estão%') = 0, 'ainda com tarefa que trava, nada de aviso');
+select pg_temp.como(:'analista');
+update fluxo.tarefas set concluida_em = now() where id = :'kvb';
+select pg_temp.como(:'gestor');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'pode_avancar' and destinatario_id = :'gestor' and texto like '%tarefas de Estudos estão%') = 1, 'concluídas as tarefas da etapa, vem o aviso');
+select pg_temp.como(:'analista');
+select app.mover_etapa(:'pfn') \gset
+select pg_temp.ok((select arquivada_em is null and prazo = current_date + 5 from fluxo.tarefas where id = :'kcr')
+  and (select count(*) from fluxo.tarefas where processo_id = :'pfn' and titulo = 'Cobrar retorno da proposta') = 1,
+  'de volta à etapa, a arquivada sozinha volta com o mesmo código e o prazo refeito, sem duplicar');
+select pg_temp.ok((select situacao = 'ativa' from app.v_tarefas_etapa where tarefa_id = :'kmp'), 'a deixada volta a valer na etapa');
+select pg_temp.ok((select concluida_em is not null from fluxo.tarefas where id = :'kms'), 'concluída continua concluída');
+-- Stand By pausa as tarefas da fase; a retomada devolve
+select app.tarefas_abertas_fase(:'pfn') as nab \gset
+select pg_temp.falha(format($$select app.encerrar_processo(%L, 'stand_by', p_detalhe => 'x', p_retomar_em => current_date + 30, p_tarefas => 'manter')$$, :'pfn'),
+  'arquivar ou manter as tarefas é só de Perdido e Descartado');
+select app.encerrar_processo(:'pfn', 'stand_by', p_detalhe => 'Proprietário em inventário', p_retomar_em => current_date + 30) \gset
+select pg_temp.ok((select count(*) from fluxo.pausas z join fluxo.tarefas k on k.id = z.tarefa_id where k.processo_id = :'pfn' and z.situacao = 'ativa' and z.origem = 'stand_by') = :nab
+  and (select lista_nome = 'Pausadas' from fluxo.v_tarefas where id = :'kcr'), 'Stand By pausa as tarefas abertas da fase, sem pedido');
+select pg_temp.ok(not exists (select 1 from fluxo.pausas where tarefa_id = :'kne'), 'tarefa sem etapa não é pausada');
+select pg_temp.falha(format('select fluxo.retomar(%L)', :'kcr'), 'tarefa pausada pelo Stand By só volta com a negociação');
+select app.retomar_processo(:'pfn');
+select pg_temp.ok((select lista_nome <> 'Pausadas' from fluxo.v_tarefas where id = :'kcr')
+  and not exists (select 1 from fluxo.pausas z join fluxo.tarefas k on k.id = z.tarefa_id where k.processo_id = :'pfn' and z.situacao = 'ativa'),
+  'retomada a negociação, as tarefas voltam para a lista de antes');
+-- Perdido arquiva as tarefas abertas da fase (padrão)
+select app.encerrar_processo(:'pfn', 'perdido', 'sem_retorno', 'O proprietário parou de responder') \gset
+select pg_temp.ok(not exists (select 1 from fluxo.tarefas where processo_id = :'pfn' and concluida_em is null and arquivada_em is null)
+  and (select arquivada_em is null from fluxo.tarefas where id = :'kne'), 'Perdido arquiva as tarefas abertas da fase; as sem etapa ficam');
+select pg_temp.como(:'diretor');
+select pg_temp.ok(app.apagar_regra_etapa(:'re5') = 'desativada' and app.apagar_regra_etapa(:'re3') = 'apagada', 'regra que já criou tarefa só se desliga');
+select app.condicao_prerequisito(:'pr1', null);
+update fluxo.automacoes set ativa = false where id = :'aue';
+-- =====================================================================
+-- Formulário da tarefa e máscaras (decisões do Moisés, 1/nov/2026)
+-- =====================================================================
+select pg_temp.ok(fluxo.validar_formato('cpf', '529.982.247-25') = '52998224725', 'CPF válido fica só com os dígitos');
+select pg_temp.falha($$select fluxo.validar_formato('cpf', '529.982.247-24')$$, 'CPF com dígito verificador errado é recusado');
+select pg_temp.falha($$select fluxo.validar_formato('cpf', '111.111.111-11')$$, 'CPF de dígitos repetidos é recusado');
+select pg_temp.ok(fluxo.validar_formato('cnpj', '11.222.333/0001-81') = '11222333000181', 'CNPJ válido fica só com os dígitos');
+select pg_temp.falha($$select fluxo.validar_formato('cnpj', '11.222.333/0001-82')$$, 'CNPJ com dígito verificador errado é recusado');
+select pg_temp.ok(fluxo.validar_formato('email', ' Ana.Souza@BKM.com.br ') = 'ana.souza@bkm.com.br', 'e-mail fica em minúsculas');
+select pg_temp.falha($$select fluxo.validar_formato('email', 'ana@bkm')$$, 'e-mail sem domínio completo é recusado');
+select pg_temp.ok(fluxo.validar_formato('telefone', '(11) 98765-4321') = '11987654321' and fluxo.validar_formato('telefone', '(12) 3456-7890') = '1234567890',
+  'telefone com DDD, fixo ou celular, fica só com os dígitos');
+select pg_temp.falha($$select fluxo.validar_formato('telefone', '(11) 88765-4321')$$, 'celular de 11 dígitos começa com 9');
+select pg_temp.falha($$select fluxo.validar_formato('telefone', '98765-4321')$$, 'telefone sem DDD é recusado');
+select pg_temp.ok(fluxo.formas('lista', 3) = array['menu','radio','chips','segmentado'] and fluxo.formas('lista', 2) @> array['chave']
+  and fluxo.formas('lista', 7) = array['menu'] and fluxo.formas('sim_nao') = array['botoes','chave'] and fluxo.formas('numero') = array['campo'],
+  'formas por tipo: segmentado até 4 opções, chave com 2, acima de 6 só o menu');
+select pg_temp.ok((select formato from app.v_campos where empresa_id = :'emp' and chave = 'oferta.valor_pedido') = 'moeda'
+  and (select formato from app.v_campos where empresa_id = :'emp' and chave = 'terreno.cep') = 'cep', 'o catálogo traz a máscara fixa (moeda, CEP)');
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tcd', 'Visita técnica ao terreno', null, :'analista') as kf \gset
+insert into fluxo.tarefa_itens (empresa_id, tarefa_id, tipo, pergunta, resposta) values (:'emp', :'kf', 'telefone', 'Telefone do zelador', '"(12) 3456-7890"');
+select pg_temp.ok((select resposta #>> '{}' from fluxo.tarefa_itens where tarefa_id = :'kf' and tipo = 'telefone') = '1234567890',
+  'pergunta só no cartão: a resposta com máscara fica guardada só com os dígitos');
+select pg_temp.falha(format($$update fluxo.tarefa_itens set resposta = '"3456"' where tarefa_id = %L and tipo = 'telefone'$$, :'kf'), 'resposta fora da máscara é recusada');
+select pg_temp.falha(format($$update fluxo.tarefa_itens set tipo = 'texto' where tarefa_id = %L and tipo = 'telefone'$$, :'kf'), 'pergunta com resposta não muda de tipo');
+select pg_temp.falha(format($$insert into fluxo.tarefa_itens (empresa_id, tarefa_id, tipo) values (%L, %L, 'texto')$$, :'emp', :'kf'), 'pergunta só no cartão precisa do texto da pergunta');
+insert into fluxo.tarefa_itens (empresa_id, tarefa_id, tipo, pergunta, opcoes, forma) values (:'emp', :'kf', 'lista', 'Muro de divisa', '{Bom,Ruim}', 'chave') returning id as imuro \gset
+select pg_temp.falha(format($$update fluxo.tarefa_itens set forma = 'caixas' where id = %L$$, :'imuro'), 'forma que não serve ao tipo é recusada');
+select pg_temp.falha(format($$update fluxo.tarefa_itens set resposta = '"Caído"' where id = %L$$, :'imuro'), 'resposta de lista só entre as opções');
+update fluxo.tarefa_itens set resposta = '"Ruim"' where id = :'imuro';
+insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, pergunta, ajuda, forma) values (:'emp', :'kf', 'terreno.situacao_ocupacao', 'Como está a ocupação hoje?', 'Veja se há inquilino', 'chips');
+select pg_temp.ok((select pergunta = 'Como está a ocupação hoje?' and forma = 'chips' from fluxo.tarefa_itens where tarefa_id = :'kf' and chave = 'terreno.situacao_ocupacao'),
+  'pergunta ligada a campo do terreno guarda o texto, a ajuda e a forma');
+select pg_temp.falha(format($$update fluxo.tarefa_itens set forma = 'chave' where tarefa_id = %L and chave = 'terreno.situacao_ocupacao'$$, :'kf'),
+  'chave só em lista de duas opções');
+insert into fluxo.tarefa_itens (empresa_id, tarefa_id, tipo, pergunta, regra_branco) values (:'emp', :'kf', 'paragrafo', 'Observações da visita', 'justificativa') returning id as iobs \gset
+select pg_temp.ok((select tipo = 'pergunta' and nome = 'Observações da visita' and regra = 'justificativa' from fluxo.itens_em_branco(:'kf')),
+  'pergunta em branco com regra entra no que falta para concluir, pelo texto da pergunta');
+update fluxo.tarefa_itens set resposta = '"Muro caído no fundo"' where id = :'iobs';
+select pg_temp.ok(not exists (select 1 from fluxo.itens_em_branco(:'kf')), 'respondida, a pergunta sai do que falta');
+select fluxo.copiar_tarefa(:'kf', pg_temp.lista(:'tcd', 'Fazer'), 'Visita técnica (cópia)', array['campos']) as kfc \gset
+select pg_temp.ok((select count(*) from fluxo.tarefa_itens where tarefa_id = :'kfc') = 4
+  and (select resposta #>> '{}' from fluxo.tarefa_itens where tarefa_id = :'kfc' and pergunta = 'Muro de divisa') = 'Ruim',
+  'copiar o cartão com os campos leva as perguntas e as respostas');
+select pg_temp.como(:'diretor');
+insert into fluxo.campos (empresa_id, nome, tipo, formato) values (:'emp', 'CPF do vendedor', 'texto', 'cpf') returning id as ccpf \gset
+select pg_temp.falha(format($$insert into fluxo.campos (empresa_id, nome, tipo, formato) values (%L, 'Valor X', 'numero', 'email')$$, :'emp'), 'número não leva máscara de texto');
+select pg_temp.como(:'analista');
+insert into fluxo.tarefa_campos (empresa_id, tarefa_id, campo_id, texto) values (:'emp', :'kf', :'ccpf', '529.982.247-25');
+select pg_temp.ok((select texto from fluxo.tarefa_campos where tarefa_id = :'kf' and campo_id = :'ccpf') = '52998224725', 'campo personalizado com máscara guarda só os dígitos');
+select pg_temp.falha(format($$update fluxo.tarefa_campos set texto = '123' where tarefa_id = %L and campo_id = %L$$, :'kf', :'ccpf'), 'campo personalizado recusa valor fora da máscara');
+select pg_temp.como(:'diretor');
+select pg_temp.falha(format($$select app.salvar_campo(%L, 'terreno.area_documental_m2', null, true, true, 'cpf')$$, :'emp'), 'máscara de texto só em campo de texto');
+select pg_temp.falha(format($$select app.salvar_campo(%L, 'terreno.cep', null, false, false, 'telefone')$$, :'emp'), 'campo com máscara fixa não troca de máscara');
+select app.salvar_campo(:'emp', 'terreno.referencia_localizacao', null, false, true, 'telefone');
+select pg_temp.ok((select formato from app.v_campos where empresa_id = :'emp' and chave = 'terreno.referencia_localizacao') = 'telefone', 'o administrador dá máscara ao campo de texto');
+select pg_temp.como(:'analista');
+select app.gravar_campo(:'tcd', 'terreno.referencia_localizacao', '"(11) 3333-4444"');
+select pg_temp.ok((select referencia_localizacao from app.terrenos where id = :'tcd') = '1133334444', 'o cartão grava o campo do terreno com a máscara, só os dígitos');
+select pg_temp.falha(format($$select app.gravar_campo(%L, 'terreno.referencia_localizacao', '"perto da padaria"')$$, :'tcd'), 'o terreno recusa valor fora da máscara do campo');
+select pg_temp.como(:'diretor');
+select app.salvar_campo(:'emp', 'terreno.referencia_localizacao', null, false, false, '');
+
+-- ---------------------------------------------------------------------
+-- Jornada do terreno (1/nov/2026): perguntas e campos por etapa e subetapa,
+-- campos novos do terreno, regra de cada item e regras pelo valor
+-- ---------------------------------------------------------------------
+select pg_temp.como(:'diretor');
+select pg_temp.falha(format($$select app.salvar_campo_terreno(%L, null, '{"titulo":"Topografia","tipo":"texto"}')$$, :'emp'), 'o campo novo não repete o título de um campo do catálogo');
+select pg_temp.falha(format($$select app.salvar_campo_terreno(%L, null, '{"titulo":"Uma opção","tipo":"lista","opcoes":["Só"]}')$$, :'emp'), 'campo de lista precisa de ao menos duas opções');
+select app.salvar_campo_terreno(:'emp', null, '{"titulo":"Recuo frontal atende","tipo":"lista","opcoes":["Sim","Não","A verificar"]}') as cjr \gset
+select app.salvar_campo_terreno(:'emp', null, '{"titulo":"Área demolir estimada","tipo":"numero","unidade":"m²"}') as cjd \gset
+select 'personalizado.' || codigo as kjr from app.campos_terreno where id = :'cjr' \gset
+select 'personalizado.' || codigo as kjd from app.campos_terreno where id = :'cjd' \gset
+select pg_temp.ok((select tipo = 'lista' and condicao and cartao from app.v_campos where empresa_id = :'emp' and chave = :'kjr'),
+  'o campo novo do terreno entra no catálogo da empresa, liberado para condição e cartão');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$select app.salvar_item_jornada(%L, null, '{"fase":"novos_negocios","etapa":"triagem","campo":"terreno.topografia"}')$$, :'emp'), 'só o administrador monta a jornada');
+select pg_temp.como(:'diretor');
+select pg_temp.falha(format($$select app.salvar_item_jornada(%L, null, '{"fase":"novos_negocios","etapa":"triagem","campo":"terreno.topografia","forma":"chave"}')$$, :'emp'),
+  'a forma de responder segue o tipo do campo (chave só com duas opções)');
+select pg_temp.falha(format($$select app.salvar_item_jornada(%L, null, '{"fase":"novos_negocios","etapa":"triagem","subetapa":"estudo_massa","campo":"terreno.topografia"}')$$, :'emp'),
+  'a subetapa do item é da etapa');
+select app.salvar_item_jornada(:'emp', null, '{"fase":"novos_negocios","etapa":"triagem","campo":"terreno.topografia","pergunta":"Como é o terreno?","forma":"chips"}') as ij1 \gset
+select pg_temp.falha(format($$select app.salvar_item_jornada(%L, null, '{"fase":"novos_negocios","etapa":"triagem","campo":"terreno.topografia"}')$$, :'emp'), 'o mesmo campo não entra duas vezes no mesmo lugar');
+select app.salvar_item_jornada(:'emp', null, jsonb_build_object('fase','novos_negocios','etapa','triagem','subetapa','aguardando_informacoes','campo',:'kjr','regra','justifica')) as ij2 \gset
+select app.salvar_item_jornada(:'emp', null, jsonb_build_object('fase','novos_negocios','etapa','triagem','subetapa','aguardando_informacoes','campo',:'kjd',
+  'condicao', '{"modo":"todas","itens":[{"campo":"terreno.necessidade_demolicao","op":"em","valores":["confirmada"]}]}'::jsonb)) as ij3 \gset
+select app.salvar_item_jornada(:'emp', null, '{"fase":"novos_negocios","etapa":"triagem","campo":"terreno.uso_atual","regra":"livre"}') as ij4 \gset
+select pg_temp.falha(format($$select app.salvar_regra_jornada(%L, null, '{"fase":"novos_negocios","etapa":"triagem","acao":"bloqueia","mensagem":"X"}')$$, :'emp'), 'a regra pelo valor precisa de condição');
+select app.salvar_regra_jornada(:'emp', null, '{"fase":"novos_negocios","etapa":"triagem","acao":"bloqueia","mensagem":"Terreno irregular: refazer a análise",
+  "condicao":{"modo":"todas","itens":[{"campo":"terreno.topografia","op":"em","valores":["irregular"]}]}}') as rj1 \gset
+select app.salvar_regra_jornada(:'emp', null, '{"fase":"novos_negocios","etapa":"triagem","acao":"diretor","mensagem":"Declive: o diretor aprova",
+  "condicao":{"modo":"todas","itens":[{"campo":"terreno.topografia","op":"em","valores":["declive"]}]}}') as rj2 \gset
+select app.salvar_regra_jornada(:'emp', null, jsonb_build_object('fase','novos_negocios','etapa','triagem','acao','avisa','mensagem','Recuo a verificar com o arquiteto',
+  'condicao', jsonb_build_object('modo','todas','itens', jsonb_build_array(jsonb_build_object('campo', :'kjr', 'op', 'em', 'valores', jsonb_build_array('A verificar')))))) as rj3 \gset
+select app.salvar_checklist(:'emp', 'novos_negocios', 'triagem', 'iptu', null, null, 'justifica');
+select pg_temp.ok((select regra = 'justifica' and obrigatorio from app.checklist_modelo where empresa_id = :'emp' and fase = 'novos_negocios' and etapa = 'triagem' and tipo_documento = 'iptu'),
+  'o documento da jornada ganha a regra (avança com justificativa conta como exigido)');
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude, poligono_geojson)
+  values (:'emp', 'Terreno da jornada', :'gestor', 'corretor', :'sp', -23.64, -46.64, pg_temp.quadra(-46.64, -23.64)) returning id as tjn \gset
+select pg_temp.como(:'analista');
+select (app.registrar_oferta(:'tjn', 2500000, 'dinheiro')->>'processo_id') as pjn \gset
+select app.checar_passagem(:'pjn') as cj1 \gset
+select pg_temp.ok((select count(*) from jsonb_array_elements(:'cj1'::jsonb->'itens') i where i->>'tipo' = 'jornada') = 2
+  and exists (select 1 from jsonb_array_elements(:'cj1'::jsonb->'itens') i where i->>'texto' = 'Como é o terreno?: não informado' and not (i->>'justifica')::boolean)
+  and exists (select 1 from jsonb_array_elements(:'cj1'::jsonb->'itens') i where i->>'campo' = :'kjr' and (i->>'justifica')::boolean)
+  and not exists (select 1 from jsonb_array_elements(:'cj1'::jsonb->'itens') i where i->>'campo' in (:'kjd', 'terreno.uso_atual')),
+  'sair da etapa pede os itens da etapa e das subetapas; condição que não vale e item livre não travam');
+select pg_temp.ok(not (:'cj1'::jsonb->>'pode_justificar')::boolean and not (:'cj1'::jsonb->>'pode_forcar')::boolean,
+  'com item que bloqueia, o analista não passa nem justificando');
+select pg_temp.ok((select count(*) = 4 and count(*) filter (where (x->>'aplica')::boolean) = 3 from jsonb_array_elements(app.jornada_processo(:'pjn')->'itens') x),
+  'a jornada da etapa mostra todos os itens e diz quais valem agora');
+select pg_temp.falha(format($$select app.mover_subetapa(%L, 'aguardando_documentos')$$, :'pjn'), 'sair da subetapa sem a resposta trava');
+select pg_temp.falha(format($$select app.mover_subetapa(%L, 'aguardando_documentos', true, '')$$, :'pjn'), 'passar sem a resposta pede justificativa');
+select app.mover_subetapa(:'pjn', 'aguardando_documentos', true, 'O arquiteto responde na visita') \gset
+select pg_temp.ok((select subetapa_atual = 'aguardando_documentos' from app.processos where id = :'pjn')
+  and (select forcado and comentario = 'O arquiteto responde na visita' from app.processo_transicoes where processo_id = :'pjn' order by em desc, id desc limit 1),
+  'item que pede justificativa: o analista passa justificando, e fica no histórico');
+select pg_temp.falha(format($$select app.gravar_campo(%L, %L, '"Talvez"')$$, :'tjn', :'kjr'), 'o campo novo de lista só aceita as opções');
+select pg_temp.falha(format($$select app.gravar_campo(%L, %L, '"muito"')$$, :'tjn', :'kjd'), 'o campo novo de número recusa texto');
+select app.gravar_campo(:'tjn', :'kjr', '"A verificar"');
+select app.gravar_campo(:'tjn', 'terreno.necessidade_demolicao', '"confirmada"');
+select app.gravar_campo(:'tjn', 'terreno.topografia', '"irregular"');
+select pg_temp.ok((select valor #>> '{}' = 'A verificar' from app.terreno_valores where terreno_id = :'tjn' and campo_id = :'cjr')
+  and (app.campo_cartao(:'tjn', :'kjr')->>'valor') = 'A verificar',
+  'a resposta grava no próprio terreno (fonte única: ficha, cartão e jornada leem o mesmo valor)');
+select app.checar_passagem(:'pjn') as cj2 \gset
+select pg_temp.ok(exists (select 1 from jsonb_array_elements(:'cj2'::jsonb->'itens') i where i->>'tipo' = 'regra_valor' and not (i->>'ok')::boolean and i->>'texto' = 'Terreno irregular: refazer a análise')
+  and exists (select 1 from jsonb_array_elements(:'cj2'::jsonb->'itens') i where i->>'tipo' = 'regra_valor' and (i->>'aviso')::boolean and (i->>'ok')::boolean)
+  and exists (select 1 from jsonb_array_elements(:'cj2'::jsonb->'itens') i where i->>'campo' = :'kjd' and not (i->>'ok')::boolean),
+  'regra pelo valor trava ou só avisa; o item condicional entra quando a condição passa a valer');
+select app.gravar_campo(:'tjn', :'kjd', '"350"');
+select app.gravar_campo(:'tjn', 'terreno.topografia', '"declive"');
+select pg_temp.falha(format($$select app.mover_etapa(%L)$$, :'pjn'), 'o documento que pede justificativa ainda trava sem ela');
+select app.checar_passagem(:'pjn') as cj3 \gset
+select pg_temp.ok((:'cj3'::jsonb->>'pode_justificar')::boolean and (:'cj3'::jsonb->'aprovacoes') ? 'diretor',
+  'só falta o que pede justificativa; o declive pede o diretor');
+select app.mover_etapa(:'pjn', true, 'O vendedor manda o IPTU esta semana') as mj \gset
+select pg_temp.ok(:'mj'::jsonb->>'resultado' = 'aguardando_aprovacao'
+  and exists (select 1 from app.aprovacoes where processo_id = :'pjn' and status = 'pendente' and nivel = 'diretor'),
+  'a regra pelo valor vira pedido de aprovação do diretor');
+select pg_temp.como(:'diretor');
+select app.decidir_aprovacao((select pedido_id from app.aprovacoes where processo_id = :'pjn' and status = 'pendente' limit 1), true, 'Declive suave, ok');
+select pg_temp.ok((select etapa_atual = 'estudos' from app.processos where id = :'pjn'), 'aprovado, o terreno avança');
+select app.apagar_campo_terreno(:'cjd') as aj \gset
+select pg_temp.ok(:'aj' = 'desativado' and (select not ativo from app.campos_terreno where id = :'cjd'), 'campo novo com valor não se apaga: desativa');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$select app.gravar_campo(%L, %L, '"10"')$$, :'tjn', :'kjd'), 'campo desativado não grava');
+select pg_temp.como(:'diretor');
+select app.apagar_item_jornada(:'ij4');
+select pg_temp.ok(not exists (select 1 from app.jornada_itens where id = :'ij4'), 'tirar da jornada apaga o item; o valor fica no terreno');
+-- Regra em branco com 3 opções em todo item e comportamento condicional (1/nov/2026)
+select pg_temp.falha(format($$select app.salvar_item_jornada(%L, %L, '{"regra_cond":[{"regra":"livre"}]}')$$, :'emp', :'ij1'), 'comportamento condicional precisa de condição');
+select pg_temp.falha(format($$select app.salvar_item_jornada(%L, %L, '{"regra_cond":[{"regra":"talvez","condicao":{"modo":"todas","itens":[{"campo":"terreno.topografia","op":"em","valores":["plano"]}]}}]}')$$, :'emp', :'ij1'),
+  'comportamento condicional só com Pode avançar, Avança com justificativa ou Não avança');
+select app.salvar_item_jornada(:'emp', :'ij1', '{"regra_cond":[
+  {"regra":"justifica","condicao":{"modo":"todas","itens":[{"campo":"terreno.necessidade_demolicao","op":"em","valores":["confirmada"]}]}},
+  {"regra":"livre","condicao":{"modo":"todas","itens":[{"campo":"terreno.necessidade_demolicao","op":"em","valores":["dispensada"]}]}}]}');
+select app.salvar_checklist(:'emp', 'novos_negocios', 'triagem', 'iptu', null, null, 'justifica',
+  '[{"regra":"livre","condicao":{"modo":"todas","itens":[{"campo":"terreno.necessidade_demolicao","op":"em","valores":["dispensada"]}]}}]');
+select pg_temp.ok((select regra = 'bloqueia' and jsonb_array_length(regra_cond) = 2 from app.jornada_itens where id = :'ij1')
+  and (select regra = 'justifica' and jsonb_array_length(regra_cond) = 1 from app.checklist_modelo where empresa_id = :'emp' and fase = 'novos_negocios' and etapa = 'triagem' and tipo_documento = 'iptu'),
+  'a pergunta e o documento guardam o comportamento único e o condicional');
+select app.salvar_checklist(:'emp', 'novos_negocios', 'triagem', 'iptu', null, null, 'justifica');
+select pg_temp.ok((select jsonb_array_length(regra_cond) = 1 from app.checklist_modelo where empresa_id = :'emp' and fase = 'novos_negocios' and etapa = 'triagem' and tipo_documento = 'iptu'),
+  'salvar o documento sem a regra condicional a mantém');
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude, poligono_geojson)
+  values (:'emp', 'Terreno da regra condicional', :'gestor', 'corretor', :'sp', -23.66, -46.66, pg_temp.quadra(-46.66, -23.66)) returning id as tjc \gset
+select pg_temp.como(:'analista');
+select (app.registrar_oferta(:'tjc', 1800000, 'dinheiro')->>'processo_id') as pjc \gset
+select app.checar_passagem(:'pjc') as cc1 \gset
+select pg_temp.ok(exists (select 1 from jsonb_array_elements(:'cc1'::jsonb->'itens') i where i->>'campo' = 'terreno.topografia' and not (i->>'justifica')::boolean),
+  'nenhuma condição vale: vale o comportamento único (não avança)');
+select app.gravar_campo(:'tjc', 'terreno.necessidade_demolicao', '"confirmada"');
+select app.checar_passagem(:'pjc') as cc2 \gset
+select pg_temp.ok(exists (select 1 from jsonb_array_elements(:'cc2'::jsonb->'itens') i where i->>'campo' = 'terreno.topografia' and (i->>'justifica')::boolean)
+  and (select regra_efetiva = 'justifica' from jsonb_to_recordset(app.jornada_processo(:'pjc')->'itens') x(id uuid, regra_efetiva text) where x.id = :'ij1'),
+  'a condição que vale decide: avança com justificativa');
+select app.gravar_campo(:'tjc', 'terreno.necessidade_demolicao', '"dispensada"');
+select app.checar_passagem(:'pjc') as cc3 \gset
+select pg_temp.ok(not exists (select 1 from jsonb_array_elements(:'cc3'::jsonb->'itens') i where i->>'campo' = 'terreno.topografia')
+  and not exists (select 1 from jsonb_array_elements(:'cc3'::jsonb->'itens') i where i->>'tipo' = 'documento' and i->>'texto' like 'IPTU%'),
+  'com "pode avançar" pela condição, a pergunta e o documento não travam');
+select pg_temp.como(:'diretor');
+select id as prj from app.prerequisitos_modelo where empresa_id = :'emp' limit 1 \gset
+select app.regra_prerequisito(:'prj', 'livre');
+select pg_temp.ok((select regra = 'livre' from app.prerequisitos_modelo where id = :'prj'), 'o pré-requisito também pode ser "pode avançar"');
+select app.regra_prerequisito(:'prj', 'bloqueia', '[]');
+select app.salvar_regra_etapa(:'emp', null, '{"fase":"novos_negocios","etapa":"contrato","titulo":"Conferir a minuta","regra":"justifica"}') as rej \gset
+select app.salvar_regra_etapa(:'emp', null, '{"fase":"novos_negocios","etapa":"contrato","titulo":"Conferir o registro","trava":false,
+  "regra_cond":[{"regra":"bloqueia","condicao":{"modo":"todas","itens":[{"campo":"terreno.topografia","op":"em","valores":["irregular"]}]}}]}') as rek \gset
+select pg_temp.ok((select regra = 'justifica' and trava from app.etapa_regras where id = :'rej')
+  and (select regra = 'livre' and trava and jsonb_array_length(regra_cond) = 1 from app.etapa_regras where id = :'rek'),
+  'a tarefa da etapa ganha as 3 opções e o comportamento condicional');
+select count(*) as nte from jsonb_array_elements(app.checar_passagem(:'pjn')->'itens') i where i->>'tipo' = 'tarefa' \gset
+select count(app.salvar_regra_etapa(:'emp', id, '{"regra":"justifica"}')) from app.etapa_regras where empresa_id = :'emp' and fase = 'novos_negocios' and etapa = 'estudos' and trava and ativo;
+select pg_temp.ok(:nte > 0 and (select bool_and((i->>'justifica')::boolean) from jsonb_array_elements(app.checar_passagem(:'pjn')->'itens') i where i->>'tipo' = 'tarefa'),
+  'tarefa aberta de regra "avança com justificativa" entra como pendência que se justifica');
+select count(app.salvar_regra_etapa(:'emp', id, '{"regra":"bloqueia"}')) from app.etapa_regras where empresa_id = :'emp' and fase = 'novos_negocios' and etapa = 'estudos' and trava and ativo;
 \echo 'TODOS OS TESTES PASSARAM'

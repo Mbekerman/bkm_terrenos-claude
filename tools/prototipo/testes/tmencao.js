@@ -4,10 +4,11 @@ const TMP=require('path').join(__dirname,'..','saida')+'/';require('fs').mkdirSy
 const {chromium}=require('playwright');
 const L=require('path').join(__dirname,'..','libs','l')+'/';const F=require('path').join(__dirname,'..','saida','bkm-terrenos.html');const O=TMP+'t_mencao/';
 const falhas=[];const ok=(c,m)=>{console.log((c?'ok   ':'FALHA ')+m);if(!c)falhas.push(m)};
+const TK_ACHA=()=>{window.__tkAcha=(s,t)=>{for(const v of [...document.querySelectorAll('#modal [data-a=tkc-aba]')].map(x=>x.dataset.v)){document.querySelector(`#modal [data-a=tkc-aba][data-v=${v}]`)?.click();const el=[...document.querySelectorAll(s)].find(x=>!t||x.textContent.includes(t));if(el)return el}return null}};  // cartão com abas: procura o elemento nas abas
 (async()=>{const b=await chromium.launch();const erros=[];
 async function abre(w,h,tema){const ctx=await b.newContext({viewport:{width:w,height:h},deviceScaleFactor:1.5,hasTouch:w<700,isMobile:w<700});
   await ctx.route('**/*',r=>{const u=r.request().url();if(u.startsWith('file://'))return r.fulfill({path:F,contentType:'text/html; charset=utf-8'});if(/leaflet.js|jszip/.test(u))return r.fulfill({path:L+(u.includes('leaflet')?'leaflet.js':'jszip.min.js'),contentType:'application/javascript'});if(/cartocdn|openstreetmap|arcgisonline/.test(u))return r.fulfill({path:require('path').join(__dirname,'tile.png'),contentType:'image/png'});return r.abort()});
-  const p=await ctx.newPage();p.on('pageerror',e=>erros.push(e.message));await p.goto('file:///x/a.html');await p.evaluate(t=>{localStorage.clear();if(t)localStorage.setItem('bkm-terrenos-tema',t)},tema);await p.reload();await p.waitForTimeout(300);return {p,ctx}}
+  const p=await ctx.newPage();await p.addInitScript(TK_ACHA);p.on('pageerror',e=>erros.push(e.message));await p.goto('file:///x/a.html');await p.evaluate(t=>{localStorage.clear();if(t)localStorage.setItem('bkm-terrenos-tema',t)},tema);await p.reload();await p.waitForTimeout(300);return {p,ctx}}
 const papel=async(p,r)=>{await p.evaluate(r=>{document.querySelector('[data-a=perfil-menu]').click();document.querySelector(`[data-a=role][data-v=${r}]`).click()},r);await p.waitForTimeout(150)};
 const nav=async(p,r)=>{await p.evaluate(r=>document.querySelector(`[data-a=nav][data-r=${r}]`).click(),r);await p.waitForTimeout(200)};
 const txt=(p,s)=>p.evaluate(s=>[...document.querySelectorAll(s)].filter(x=>x.offsetParent).map(x=>x.textContent.trim().replace(/\s+/g,' ')).join(' | '),s);
@@ -17,26 +18,27 @@ for(const [w,h,tema,nome] of [[1440,900,null,'desk'],[390,844,'escuro','cel']]){
   // Moisés (diretor) abre uma tarefa e escreve @ana na descrição
   await nav(p,'tarefas');await p.evaluate(()=>document.querySelector('[data-a=tk-abrir]').click());await p.waitForTimeout(250);
   ok(!(await p.$('[name=marc]'))&&!(await txt(p,'.dialog')).includes('Marcar colegas'),nome+': a tarefa não tem mais Marcar colegas; só o @ avisa');
-  await p.click('#tm-d');await p.keyboard.press('End');await p.keyboard.type(' Fala com @an');await p.waitForTimeout(150);
+  await p.click('#tkc-d');await p.keyboard.press('End');await p.keyboard.type(' Fala com @an');await p.waitForTimeout(150);
   await p.screenshot({path:O+nome+'_1_lista.png'});
   ok(await p.evaluate(()=>!document.getElementById('mn-pop').hidden),nome+': digitar @ abre a lista dos colegas');
   ok((await txt(p,'.mn-i')).includes('Ana Prado'),nome+': a lista filtra pelo que foi digitado');
   await p.keyboard.press('Enter');await p.waitForTimeout(100);
-  ok((await p.inputValue('#tm-d')).includes('@ana.prado '),nome+': Enter põe o @ no texto');
-  ok(await p.evaluate(()=>document.querySelector('.dialog')!==null),nome+': Enter na lista não grava o formulário');
+  ok((await p.inputValue('#tkc-d')).includes('@ana.prado '),nome+': Enter põe o @ no texto');
+  ok(await p.evaluate(()=>document.querySelector('.dialog')!==null&&document.activeElement?.id==='tkc-d'),nome+': Enter na lista não sai do campo');
   await p.keyboard.type('e @');await p.waitForTimeout(100);
   ok(!(await txt(p,'.mn-i')).includes('Moisés')&&(await txt(p,'.mn-i')).includes('Rafael'),nome+': quem escreve não aparece na lista');
   await p.keyboard.press('Escape');await p.waitForTimeout(100);
   ok(await p.evaluate(()=>document.querySelector('.dialog')!==null&&document.getElementById('mn-pop').hidden),nome+': Esc fecha só a lista');
-  const tituloT=await p.inputValue('#tm-t');
-  await p.evaluate(()=>document.querySelector('button[form=f-tk]').click());await p.waitForTimeout(250);
+  const tituloT=await p.inputValue('.tkm-tit');
+  // o cartão grava ao sair do campo
+  await p.evaluate(()=>document.getElementById('tkc-d').dispatchEvent(new Event('change',{bubbles:true})));await p.waitForTimeout(250);
   let S=await st(p);const n=S.notifs.find(x=>x.tipo==='mencao');
   ok(n&&n.para==='Ana Prado'&&n.txt.includes('mencionou você na tarefa'),nome+': Ana é avisada da menção');
   ok(n&&n.email===true,nome+': menção vai também por e-mail pelo padrão');
   ok(!S.notifs.some(x=>x.tipo==='mencao'&&x.para==='Moisés'),nome+': quem escreve não se avisa');
   // salvar de novo não repete o aviso
-  await p.evaluate(()=>document.querySelector('[data-a=tk-abrir]').click());await p.waitForTimeout(200);
-  await p.evaluate(()=>document.querySelector('button[form=f-tk]').click());await p.waitForTimeout(200);
+  await p.evaluate(()=>document.getElementById('tkc-d').dispatchEvent(new Event('change',{bubbles:true})));await p.waitForTimeout(200);
+  await p.evaluate(()=>document.querySelector('#modal [data-a=close]').click());await p.waitForTimeout(150);
   S=await st(p);ok(S.notifs.filter(x=>x.tipo==='mencao').length===1,nome+': salvar sem @ novo não avisa de novo');
   // Ana desliga o e-mail de menção
   await papel(p,'Gestor');
@@ -51,8 +53,7 @@ for(const [w,h,tema,nome] of [[1440,900,null,'desk'],[390,844,'escuro','cel']]){
   ok((await txt(p,'.sino-i')).includes('e-mail'),nome+': o sino mostra que foi por e-mail');
   await p.evaluate(()=>[...document.querySelectorAll('.sino-i')].find(x=>x.textContent.includes('mencionou')).click());await p.waitForTimeout(1300);
   await p.screenshot({path:O+nome+'_4_item.png'});
-  ok(await p.evaluate(t=>{const el=document.querySelector('.task.pisca');return !!el&&el.textContent.includes(t)},tituloT),nome+': o aviso abre a ficha na tarefa e acende');
-  ok((await txt(p,'.task .mencao')).includes('@ana.prado'),nome+': o @ aparece destacado na tarefa');
+  ok(await p.evaluate(t=>{const el=document.querySelector('.pisca[data-mid]');return !!el&&el.textContent.includes(t)},tituloT),nome+': o aviso abre a ficha no cartão da tarefa e acende');
   // Rafael menciona Ana numa reunião: só no sino
   await papel(p,'Analista');
   await p.evaluate(()=>{const S=JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-v9')),t=S.terrenos.find(x=>x.neg&&x.neg.status==='ativo');
