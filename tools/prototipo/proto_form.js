@@ -169,7 +169,7 @@ document.addEventListener('change',e=>{const el=e.target;
     if(!fmGravar(t,k,i,el.value)){const f=fmInfo(t,k,i);if(el.tagName!=='SELECT'&&el.type!=='radio')el.value=f.tipo==='numero'&&f.valor!=null?Number(f.valor).toLocaleString('pt-BR',{maximumFractionDigits:4}):fmMostra(f.formato,f.valor)}return}},true);
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="fm-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const A=a.dataset.a;
   if(A==='fm-mais'||A==='fm-desc'){fmRapidaAcao(A);return}
-  if(A==='fm-prz'){const el=document.querySelector('#tr-p');if(el)el.value=addD(HOJE,+a.dataset.v);return}
+  if(A==='fm-prz'){const el=document.querySelector('#tr-p');if(el)el.value=a.dataset.v==='m1'?fmMaisMes(HOJE):addD(HOJE,+a.dataset.v);return}
   const {t,k}=tkAtual();if(!k)return;const ed=vzEdita(t,k)&&!k.arq&&UI.role!=='Leitura';
   if(A==='fm-menu'){UI.fmMenu=UI.fmMenu===a.dataset.v?null:a.dataset.v;tkRe();return}
   if(!ed)return;itNorm(k);const i=k.itens.find(x=>x.id===a.dataset.v||x.id===a.dataset.i);
@@ -220,7 +220,7 @@ document.addEventListener('click',e=>{if(UI.fmMenu&&!e.target.closest?.('.fm-mw'
   <form data-form="tarefa-r" id="f-tkr" class="tkr"><div class="fields">
     <div class="field full"><label for="tr-t">Tarefa</label><input id="tr-t" name="titulo" required value="${esc(sel.rasc?.titulo||'')}" placeholder="Ex.: cobrar a contraproposta do proprietário" autocomplete="off"></div>
     ${t?'':`<div class="field full"><label for="tr-ter">Terreno</label><select id="tr-ter" name="ter" required><option value="">Escolha o terreno</option>${ativosBanco().map(x=>`<option value="${x.id}" ${(sel.rasc?.ter||UI.tk?.ter)===x.id?'selected':''}>${x.codigo} · ${esc(x.nome)}</option>`).join('')}</select></div>`}
-    <div class="field full"><label for="tr-p">Prazo</label><span class="tkr-prz"><input id="tr-p" name="prazo" type="date" value="${esc(sel.rasc?.prazo||'')}" aria-label="Prazo">${[[0,'Hoje'],[1,'Amanhã'],[7,'Em 7 dias']].map(([n,r])=>`<button type="button" class="tkr-pz" data-a="fm-prz" data-v="${n}">${r}</button>`).join('')}</span></div>
+    <div class="field full"><label for="tr-p">Prazo</label><span class="tkr-prz"><input id="tr-p" name="prazo" type="date" value="${esc(sel.rasc?.prazo||'')}" aria-label="Prazo">${[[1,'Amanhã'],[7,'Em 7 dias'],['m1','Em 1 mês']].map(([n,r])=>`<button type="button" class="tkr-pz" data-a="fm-prz" data-v="${n}">${r}</button>`).join('')}</span></div>
     ${fmEtCampos(t||T(sel.rasc?.ter||UI.tk?.ter),'tr',sel.rasc)}
     ${sel.desc?`<div class="field full"><label for="tr-d">Descrição</label><textarea id="tr-d" name="desc" data-mencao placeholder="Use @ para avisar um colega">${esc(sel.rasc?.desc||'')}</textarea></div>`:`<div class="field full tkr-dl"><button type="button" class="btn text sm" data-a="fm-desc">${ic('add',16)}Adicionar descrição</button></div>`}
     <fieldset class="field full tkr-vis"><legend>Visibilidade</legend><span class="tkr-seg">${Object.keys(VZ_N).map(v=>`<label title="${esc(VZ_D[v])}"><input type="radio" name="vis" value="${v}" required ${(sel.rasc?.vis||ult)===v?'checked':''}><span>${ic(VZ_IC[v],16)}${VZ_N[v]}</span></label>`).join('')}</span></fieldset>
@@ -279,3 +279,5 @@ document.addEventListener('change',e=>{const el=e.target;
 {const cr=tkCriar;tkCriar=function(t,d){const k=cr(t,d);if(!k||k.modelo)return k;
   if(d.et!==undefined){const [f,e]=(d.et||'').split('|');if(f&&e){const L=etapasF(f).find(x=>x.k===e)?.subs||[];etPor(t,k,f,e,L.some(x=>x.k===d.sub)?d.sub:null)}else etPor(t,k)}
   return k}}
+/* mesmo dia do mês seguinte; sem esse dia (31 de janeiro), o último do mês */
+function fmMaisMes(d){const [y,m,dia]=d.split('-').map(Number),ult=new Date(Date.UTC(y,m+1,0)).getUTCDate();return `${m===12?y+1:y}-${String(m===12?1:m+1).padStart(2,'0')}-${String(Math.min(dia,ult)).padStart(2,'0')}`}
