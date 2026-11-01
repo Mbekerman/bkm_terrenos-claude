@@ -40,18 +40,20 @@ const etNomeS=(f,s)=>subF(f,s)?.nome||s||'';
 const etDoProc=(t,f,pid)=>(t.tarefas||[]).filter(k=>k.fase===f&&k.etProc===pid&&!k.modelo);
 
 /* situação da tarefa na etapa: nivel (o que trava), sit (ativa, deixada, arqAuto, nao_se_aplica) e trava (no banco: app._trava_tarefa) */
-function etTrava(t,k){if(!k||!k.etapa||!k.fase)return null;const r=etRegraDe(k);let nivel=null,sit='ativa';
-  if(r&&r.ativo!==false&&r.fase===k.fase&&r.etapa===k.etapa&&(r.sub||null)===(k.sub||null)){if(r.trava)nivel=r.sub?'subetapa':'etapa';
+function etTrava(t,k){if(!k||!k.etapa||!k.fase)return null;const r=etRegraDe(k);let nivel=null,sit='ativa',regra=null;
+  if(r&&r.ativo!==false&&r.fase===k.fase&&r.etapa===k.etapa&&(r.sub||null)===(k.sub||null)){regra=jnRegraEf(t,jnBaseTar(r),r.rc);if(regra!=='livre')nivel=r.sub?'subetapa':'etapa';
     if(!itCondVale(t,r.cond)||!itCondVale(t,k.etCond))sit='nao_se_aplica'}
-  else if(etRegras().some(g=>g.ativo!==false&&g.fase===k.fase&&g.etapa===k.etapa&&!g.sub&&g.trava))nivel='etapa';  // à mão: trava se a etapa trava
+  else{  // à mão: trava se a etapa trava, pela regra mais forte das regras da etapa
+    const rs=etRegras().filter(g=>g.ativo!==false&&g.fase===k.fase&&g.etapa===k.etapa&&!g.sub&&g.trava).map(g=>jnRegraEf(t,jnBaseTar(g),g.rc)).filter(x=>x!=='livre');
+    if(rs.length){nivel='etapa';regra=rs.includes('bloqueia')?'bloqueia':'justifica'}}
   if(k.etSit==='deixada'||k.etSit==='arqAuto')sit=k.etSit;
-  return {nivel,sit,trava:!!nivel&&sit==='ativa'}}
+  return {nivel,sit,trava:!!nivel&&sit==='ativa',regra:nivel?regra:null}}
 /* abertas que travam a saída (saida: etapa ou subetapa) do processo da fase */
 function etTravando(t,f,p,saida){const pid=etPid(t,f,p);if(!p||!pid)return [];
   return etDoProc(t,f,pid).filter(k=>tkAberta(k)&&k.etapa===p.etapa).filter(k=>{const j=etTrava(t,k);if(!j?.trava)return false;
     return saida==='subetapa'?j.nivel==='subetapa'&&k.sub===p.sub:j.nivel==='etapa'||(j.nivel==='subetapa'&&k.sub===p.sub)})
     .sort((a,b)=>String(a.prazo||'9').localeCompare(String(b.prazo||'9'))||a.codigo.localeCompare(b.codigo))}
-const etItem=(t,k)=>({ok:false,tipo:'tarefa',tarefa:k.id,txt:`Tarefa ${k.codigo}: ${vzPapel(t,k)?k.titulo:'restrita'}${tkAtras(k)?' (atrasada)':''}`,fix:['tab:tarefas','Ver tarefas']});
+const etItem=(t,k)=>({ok:false,tipo:'tarefa',tarefa:k.id,just:etTrava(t,k)?.regra==='justifica',txt:`Tarefa ${k.codigo}: ${vzPapel(t,k)?k.titulo:'restrita'}${tkAtras(k)?' (atrasada)':''}`,fix:['tab:tarefas','Ver tarefas']});
 /* a saída da passagem: etapa (para frente ou concluir), subetapa (para frente) ou nada */
 function etSaida(f,p,tipo,dest){if(tipo==='etapa')return etIx(f,dest)>etIx(f,p.etapa)?'etapa':null;
   if(tipo==='subetapa')return etSubIx(f,p.etapa,dest)>etSubIx(f,p.etapa,p.sub)?'subetapa':null;
@@ -113,7 +115,7 @@ function etPodeAvancar(t,k){const j=etTrava(t,k);if(!j?.nivel||j.sit!=='ativa')r
 function etAbriu(t){if(t?.neg)etEntrar(t,faseEnt(),t.neg,'etapa',t.neg.etapa)}
 /* fases depois da entrada: a trava vale também (analista vê a lista; gestor e diretor passam com justificativa) */
 function etBloqProc(t,p,tipo,dest){const s=etSaida(p.fase,p,tipo,dest);if(!s)return false;const L=etTravando(t,p.fase,p,s);if(!L.length)return false;
-  UI.etFz={tid:t.id,pid:p.id,tipo,dest,itens:L.map(k=>etItem(t,k))};UI.alvo=t.id;UI.modal=nivelDe(me())>=2?'et-forcar':'et-bloq';setTimeout(renderModal,0);return true}
+  UI.etFz={tid:t.id,pid:p.id,tipo,dest,itens:L.map(k=>etItem(t,k))};UI.alvo=t.id;UI.modal=nivelDe(me())>=2||UI.etFz.itens.every(x=>x.just)?'et-forcar':'et-bloq';setTimeout(renderModal,0);return true}
 {const pi=procIr;procIr=function(t,p,tipo,dest,d={}){const f=p.fase,de=p.etapa;if(!d.forcado&&etBloqProc(t,p,tipo,dest))return false;
   pi(t,p,tipo,dest,d);if(d.forcado)log(t,`${faseN(f)}: passou sem as tarefas da etapa · ${d.forcado}`);
   if(tipo==='etapa'){if(etIx(f,dest)<etIx(f,de))etVoltar(t,f,p,etIx(f,dest));etEntrar(t,f,p,'etapa',dest)}else if(tipo==='subetapa')etEntrar(t,f,p,'subetapa',dest);else etEncerrar(t,f,p,dest,d)}}
@@ -188,7 +190,7 @@ function etRegraHtml(fechar){const r=UI.etRegra;if(!r)return '';const f=r.fase,e
       <div class="field"><label for="etr-pr">Prioridade</label><select id="etr-pr" data-etr="prio">${o(OPT.prioTar,r.prio)}</select></div>
       <div class="field"><label for="etr-r">Responsável</label><select id="etr-r" data-etr="resp"><option value="${RESP_OBJ}" ${!r.resp||r.resp===RESP_OBJ?'selected':''}>Responsável do terreno</option>${USERS.map(u=>`<option ${u===r.resp?'selected':''}>${esc(u)}</option>`).join('')}</select></div>`}
     <div class="field full"><span class="lbl-f">Vale quando</span><span class="it-vq">${r.cond?esc(itCondFrase(r.cond)):'<span class="faint">sempre</span>'}<button class="linkbtn" data-a="et-cond" data-v="regra">${r.cond?'Editar':'+ Condição'}</button>${r.cond?'<button class="linkbtn" data-a="et-cond-tira" data-v="regra">Tirar</button>':''}</span></div>
-    <label class="fchk full et-trv"><input type="checkbox" data-etr="trava" ${r.trava?'checked':''}>${ic('check',16)}Trava o avanço: as tarefas abertas desta regra viram pendência para sair ${r.sub?'da subetapa':'da etapa'}</label>
+    ${jnRegraCampo(jnBaseTar(r),r.rc,'et-regra-br').replace('<legend>Se estiver em branco</legend>',`<legend>Tarefas abertas ao sair ${r.sub?'da subetapa':'da etapa'}</legend>`)}
     ${r.id?`<label class="fchk full"><input type="checkbox" data-etr="ativo" ${r.ativo!==false?'checked':''}>${ic('check',16)}Ativa</label>`:''}</div>
   <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" data-a="et-regra-salva">Salvar regra</button></div>`}
 function etRegraErro(r){if(r.tipo==='modelo'&&!crModelos().some(m=>m.id===r.modelo))return 'Escolha o modelo de tarefas.';if(r.tipo==='tarefa'&&!(r.titulo||'').trim())return 'Dê um título à tarefa.';
@@ -206,6 +208,7 @@ function etCkCondHtml(e){const L=(cfg().checklist[e]||[]).filter(c=>c.obrig);if(
 
 document.addEventListener('click',e=>{const a=e.target.closest?.('[data-a^="et-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const A=a.dataset.a;
   switch(A){
+    case 'et-regra-br':{const r=UI.etRegra;if(!r||!ehAdmin(me()))return;if(a.dataset.v==='cond'){jnRcAbrir('__et');return}r.regra=a.dataset.v;r.rc=null;r.trava=r.regra!=='livre';renderModal();return}
     case 'et-cfg-fase':UI.etCfgFase=a.dataset.v;render();return;
     case 'et-regra-nova':if(!ehAdmin(me()))return;UI.etRegra=etNovaRegra(a.dataset.f,a.dataset.e);UI.modal='et-regra';renderModal();return;
     case 'et-regra-ed':{if(!ehAdmin(me()))return;const r=etRegras().find(x=>x.id===a.dataset.v);if(!r)return;UI.etRegra={...JSON.parse(JSON.stringify(r)),tipo:r.modelo?'modelo':'tarefa'};UI.modal='et-regra';renderModal();return}
@@ -213,7 +216,7 @@ document.addEventListener('click',e=>{const a=e.target.closest?.('[data-a^="et-"
       const usada=(S.terrenos||[]).some(t=>(t.tarefas||[]).some(k=>k.regra===r.id));if(usada){r.ativo=false;toast('A regra já criou tarefas: ficou desativada.')}else{cfg().regrasEtapa=etRegras().filter(x=>x!==r);toast('Regra apagada.')}save();render();return}
     case 'et-regra-salva':{const r=UI.etRegra,er=etRegraErro(r);if(er){toast(er,true);return}
       const x={id:r.id||uid(),fase:r.fase,etapa:r.etapa,sub:r.sub||null,modelo:r.tipo==='modelo'?r.modelo:null,titulo:r.tipo==='tarefa'?r.titulo.trim():null,desc:r.desc||'',prazo:r.tipo==='tarefa'?r.prazo:null,
-        lista:r.lista,prio:r.prio,resp:r.resp||RESP_OBJ,cond:r.cond||null,trava:!!r.trava,ativo:r.ativo!==false,ordem:r.ordem??etRegras().filter(y=>y.fase===r.fase&&y.etapa===r.etapa).length};
+        lista:r.lista,prio:r.prio,resp:r.resp||RESP_OBJ,cond:r.cond||null,regra:jnBaseTar(r),rc:r.rc&&r.rc.length?r.rc:null,trava:jnBaseTar(r)!=='livre'||!!(r.rc&&r.rc.length),ativo:r.ativo!==false,ordem:r.ordem??etRegras().filter(y=>y.fase===r.fase&&y.etapa===r.etapa).length};
       const i=etRegras().findIndex(y=>y.id===x.id);if(i>=0)etRegras()[i]=x;else etRegras().push(x);UI.etRegra=null;UI.modal=null;save();renderModal();render();toast('Regra salva. Vale para as próximas entradas na etapa.');return}
     case 'et-cond':{const v=a.dataset.v,x=etCondAlvo(v);if(!x||!ehAdmin(me()))return;const c=x.ler();
       UI.itCond={alvo:v,cond:c?JSON.parse(JSON.stringify(c)):itNovaCond(),busca:c?null:'0',q:'',ext:{titulo:x.nome,salvar:x.gravar,voltar:x.voltar}};UI.modal='it-cond';renderModal();return}

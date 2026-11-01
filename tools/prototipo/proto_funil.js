@@ -33,11 +33,11 @@ const subAtrasada=n=>{const c=subCfg(n.sub);return !!(n.status==='ativo'&&c&&c.p
 const etapaAtrasada=n=>{const c=etapaCfg(n.etapa);return !!(n.status==='ativo'&&c&&c.sla&&diff(n.desde,HOJE)>c.sla)};
 /* pendências para chegar ao destino: pré-requisitos configurados; ao sair de uma etapa, o checklist dela; na compra, diligência impeditiva */
 function pendencias(t,tipo,dest){const n=t.neg,L=[];
-  cfg().prereq.filter(p=>p.alvoTipo===tipo&&p.alvo===dest&&itCondVale(t,p.cond)).forEach(p=>{const ok=passouPor(n,p.req);
-    L.push({ok,txt:ok?`Passou por ${subN(p.req)}`:`Passar antes por ${subN(p.req)} (${SN(subCfg(p.req)?.etapa)})`,fix:null,just:!!p.just})});
+  cfg().prereq.filter(p=>p.alvoTipo===tipo&&p.alvo===dest&&itCondVale(t,p.cond)).forEach(p=>{const rg=jnRegraEf(t,jnBasePr(p),p.rc);if(rg==='livre')return;const ok=passouPor(n,p.req);
+    L.push({ok,txt:ok?`Passou por ${subN(p.req)}`:`Passar antes por ${subN(p.req)} (${SN(subCfg(p.req)?.etapa)})`,fix:null,just:rg==='justifica'})});
   const saindo=((tipo==='etapa'&&SIDX(dest)>SIDX(n.etapa))||(tipo==='status'&&dest==='comprado'))&&!(!t._parte&&dividida(t));
-  if(saindo){(cfg().checklist[n.etapa]||[]).filter(c=>c.obrig&&itCondVale(t,c.cond)).forEach(({doc,just})=>{const st=docSt(t.docs.find(d=>d.tipo===doc));
-      L.push({ok:st==='validado',just:!!just,txt:TIPOS_DOC[doc][0]+(st==='validado'?' validado':st==='pendente'?': não enviado':st==='recebido'?': aguardando validação':': '+st),fix:st==='validado'?null:['tab:documentos','Ver documentos']})})}
+  if(saindo){(cfg().checklist[n.etapa]||[]).filter(c=>itCondVale(t,c.cond)&&jnRegraEf(t,jnBaseCk(c),c.rc)!=='livre').forEach(c=>{const doc=c.doc,st=docSt(t.docs.find(d=>d.tipo===doc));
+      L.push({ok:st==='validado',just:jnRegraEf(t,jnBaseCk(c),c.rc)==='justifica',txt:TIPOS_DOC[doc][0]+(st==='validado'?' validado':st==='pendente'?': não enviado':st==='recebido'?': aguardando validação':': '+st),fix:st==='validado'?null:['tab:documentos','Ver documentos']})})}
   if(tipo==='status'&&dest==='comprado'&&!t._parte)t.dilig.filter(d=>d.sit==='impeditiva').forEach(d=>L.push({ok:false,txt:'Diligência impeditiva: '+d.titulo,fix:['tab:documentos','Ver diligências']}));
   return L.concat(pendPartes(t,tipo,dest))}
 /* aprovações exigidas, menos os níveis que quem move já tem */

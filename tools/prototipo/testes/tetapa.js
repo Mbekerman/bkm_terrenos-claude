@@ -25,7 +25,7 @@ await clica(p,'[data-a=jn-etapa][data-v=negociacao]');await p.waitForTimeout(150
 ok(await p.$eval('.jn-corpo',x=>x.textContent.includes('Cobrar retorno da proposta')),'e a tarefa só da Negociação');
 await clica(p,'[data-a=jn-tar][data-e=negociacao][data-s=""]');await p.waitForTimeout(150);
 await muda(p,'[data-etr=tipo][value=tarefa]',true);await p.waitForTimeout(100);
-await p.fill('#etr-t','Conferir a matrícula atualizada');await muda(p,'#etr-t','Conferir a matrícula atualizada');await muda(p,'#etr-p','3');await muda(p,'[data-etr=trava]',true);
+await p.fill('#etr-t','Conferir a matrícula atualizada');await muda(p,'#etr-t','Conferir a matrícula atualizada');await muda(p,'#etr-p','3');await clica(p,'#modal [data-a=et-regra-br][data-v=bloqueia]');
 await p.screenshot({path:O+'2_regra_nova.png'});
 // condição da regra pelo painel "Vale quando" (o mesmo do cartão) e volta para a regra
 await clica(p,'#modal [data-a=et-cond][data-v=regra]');await p.waitForTimeout(150);

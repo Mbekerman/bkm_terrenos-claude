@@ -27,6 +27,14 @@ const jnItens=()=>cfg().jornada||(cfg().jornada=[]);
 const jnRegrasV=()=>cfg().jornadaRegras||(cfg().jornadaRegras=[]);
 const jnCampos=()=>S.camposTer||(S.camposTer=[]);
 const JN_REGRA={bloqueia:'Não avança sem',justifica:'Avança com justificativa',livre:'Pode avançar'};
+const JN_REGRA_F={bloqueia:'não avança',justifica:'avança com justificativa',livre:'pode avançar'};
+/* regra em branco: única ou condicional (rc = [{cond, regra}], a primeira que vale decide; como app._regra_branco) */
+const jnRegraEf=(t,base,rc)=>{for(const x of rc||[])if(x.cond&&itCondVale(t,x.cond))return x.regra;return base};
+const jnRcFrase=(rc,base)=>rc&&rc.length?rc.map(x=>`${JN_REGRA_F[x.regra]} quando ${itCondFrase(x.cond)}`).join('; ')+`; nos demais casos, ${JN_REGRA_F[base]}`:'';
+/* base de cada tipo de item (pergunta, documento, pré-requisito, tarefa) */
+const jnBaseCk=c=>c.regra||(!c.obrig?'livre':c.just?'justifica':'bloqueia');
+const jnBasePr=p=>p.regra||(p.just?'justifica':'bloqueia');
+const jnBaseTar=r=>r.regra||(r.trava?'bloqueia':'livre');
 const JN_SELO={bloqueia:'necessário',justifica:'pede justificativa'};
 const JN_ACAO={bloqueia:'Não avança',diretor:'Pede aprovação do diretor',gestor:'Pede aprovação do gestor',avisa:'Só avisa'};
 const JN_TIPO={texto:'Texto',numero:'Número',data:'Data',lista:'Lista de opções',sim_nao:'Sim ou não'};
@@ -49,8 +57,8 @@ function jnNaSaida(f,p,tipo,dest,x){if(!p||x.etapa!==p.etapa)return false;
 const jnTxt=i=>i.pergunta||itTit(i.campo);
 const jnVale=(t,x)=>itCondVale(t,x.cond);
 function jnPend(t,f,p,tipo,dest){const L=[];
-  jnItens().filter(i=>i.fase===f&&i.ativo!==false&&i.regra!=='livre'&&itDef(i.campo)&&jnNaSaida(f,p,tipo,dest,i)&&jnVale(t,i)).forEach(i=>{const ok=itVal(t,i.campo)!=null;
-    L.push({ok,txt:jnTxt(i)+(ok?'':': não informado'),just:i.regra==='justifica',jn:i.id,fix:ok||f!==faseEnt()?null:['jn-ir','Responder']})});
+  jnItens().filter(i=>i.fase===f&&i.ativo!==false&&itDef(i.campo)&&jnNaSaida(f,p,tipo,dest,i)&&jnVale(t,i)).forEach(i=>{const rg=jnRegraEf(t,i.regra,i.rc);if(rg==='livre')return;const ok=itVal(t,i.campo)!=null;
+    L.push({ok,txt:jnTxt(i)+(ok?'':': não informado'),just:rg==='justifica',jn:i.id,fix:ok||f!==faseEnt()?null:['jn-ir','Responder']})});
   jnRegrasV().filter(r=>r.fase===f&&r.ativo!==false&&(r.acao==='bloqueia'||r.acao==='avisa')&&jnNaSaida(f,p,tipo,dest,r)&&jnVale(t,r))
     .forEach(r=>L.push({ok:r.acao==='avisa',aviso:r.acao==='avisa',txt:r.msg}));
   return L}
@@ -70,14 +78,14 @@ function jnInfo(t,i){const d=itDef(i.campo);if(!d)return null;const o=d.opcoes?d
   return {tipo:d.tipo,formato:d.formato,opcoes:o&&d.tipo!=='pessoa'?Object.entries(o):null,pessoas:d.tipo==='pessoa'?Object.keys(o||{}):null,titulo:d.titulo,editavel:d.editavel,valor:itVal(t,i.campo),un:d.un}}
 function jnControle(t,i,ro){const f=jnInfo(t,i);if(!f)return '';
   return fmControle(t,null,{id:i.id,forma:i.forma},f,ro).replaceAll('data-a="fm-v"','data-a="jn-v"').replaceAll('data-fm=','data-jn=').replaceAll('id="fm-','id="jn-').replaceAll('name="fm-','name="jn-')}
-function jnSelo(i,ok){if(i.regra==='livre'||ok)return '';return `<span class="jn-selo ${i.regra}">${JN_SELO[i.regra]}</span>`}
+function jnSelo(i,ok,t){const rg=jnRegraEf(t,i.regra,i.rc);if(rg==='livre'||ok)return '';return `<span class="jn-selo ${rg}">${JN_SELO[rg]}</span>`}
 function jnBloco(t,f,p){if(!p||p.status!=='ativo')return '';const L=jnItens().filter(i=>i.fase===f&&i.ativo!==false&&i.etapa===p.etapa&&itDef(i.campo))
     .sort((a,b)=>(a.sub?etSubIx(f,p.etapa,a.sub)+1:0)-(b.sub?etSubIx(f,p.etapa,b.sub)+1:0)||(a.ordem||0)-(b.ordem||0));
   const R=jnRegrasV().filter(r=>r.fase===f&&r.ativo!==false&&r.etapa===p.etapa&&jnVale(t,r));if(!L.length&&!R.length)return '';
   const ro=UI.role==='Leitura',vale=L.filter(i=>jnVale(t,i)),fora=L.filter(i=>!jnVale(t,i)),resp=vale.filter(i=>itVal(t,i.campo)!=null).length;
   const grupos=[];vale.forEach(i=>{const k=i.sub||'';let g=grupos.find(x=>x.k===k);if(!g)grupos.push(g={k,itens:[]});g.itens.push(i)});
   const nomeG=k=>k?(k===p.sub?`${etNomeS(f,k)} (subetapa atual)`:etNomeS(f,k)):'Para sair da etapa';
-  const linha=i=>{const ok=itVal(t,i.campo)!=null,d=itDef(i.campo);return `<div class="jn-q ${ok?'ok':''}" data-mid="jn-${i.id}" id="jnq-${i.id}"><div class="jn-ql"><label class="jn-qt" for="jn-${i.id}">${esc(jnTxt(i))}</label>${jnSelo(i,ok)}</div>
+  const linha=i=>{const ok=itVal(t,i.campo)!=null,d=itDef(i.campo);return `<div class="jn-q ${ok?'ok':''}" data-mid="jn-${i.id}" id="jnq-${i.id}"><div class="jn-ql"><label class="jn-qt" for="jn-${i.id}">${esc(jnTxt(i))}</label>${jnSelo(i,ok,t)}</div>
     ${i.ajuda?`<div class="jn-aj faint">${esc(i.ajuda)}</div>`:''}<div class="jn-qc">${jnControle(t,i,ro)}</div>${d.origem==='personalizado'?'':`<div class="jn-dest faint">grava em ${esc(IT_ORIG[d.origem])} › ${esc(d.titulo)}</div>`}</div>`};
   const regras=R.map(r=>`<div class="jn-rv ${r.acao}">${ic(r.acao==='avisa'?'warn':r.acao==='bloqueia'?'block':'check',16)}<span>${esc(r.msg)}${r.acao==='gestor'||r.acao==='diretor'?` <span class="faint">· pede aprovação do ${r.acao}</span>`:r.acao==='bloqueia'?' <span class="faint">· não avança</span>':''}</span></div>`).join('');
   return `<div class="jn-bloco" id="jn-bloco"><div class="jn-h"><b>O que esta etapa pede</b>${vale.length?`<span class="faint">${resp} de ${vale.length}</span><span class="fm-prog" aria-hidden="true"><i style="width:${Math.round(100*resp/vale.length)}%"></i></span>`:''}</div>
@@ -100,22 +108,26 @@ function jnGravar(t,i,raw){const d=itDef(i.campo);if(!t||!d||!d.editavel||UI.rol
 /* ---------- Configurações › Funil › Jornada ---------- */
 const jnCk=e=>cfg().checklist[e]||(cfg().checklist[e]=[]);
 const jnCkRegra=c=>!c.obrig?'livre':c.just?'justifica':'bloqueia';
+const JN_REGRA_SEL={...JN_REGRA,cond:'Condicional…'};
+/* seletor da regra em branco (única ou condicional) e a frase da condicional, pela chave do item */
+const jnRegraSel=(k,base,rc,rot)=>jnSel(`data-jnr="${k}"`,rc&&rc.length?'cond':base,JN_REGRA_SEL,rot);
+const jnRcLinha=(k,base,rc)=>rc&&rc.length?`<span class="it-vq et-vq jn-rcf">${esc(jnRcFrase(rc,base).replace(/^./,c=>c.toUpperCase()))}. <button class="linkbtn" data-a="jn-rc" data-v="${esc(k)}">Editar</button></span>`:'';
 const jnSel=(attr,v,opc,rot)=>`<select class="jn-rs" ${attr} aria-label="${esc(rot)}">${Object.entries(opc).map(([k,n])=>`<option value="${k}" ${k===v?'selected':''}>${esc(n)}</option>`).join('')}</select>`;
 function jnLinha(icone,nome,meta,regra,vq,acoes,cls=''){return `<div class="jn-r ${cls}"><span class="jn-ri">${ic(icone,18)}</span><div class="jn-rn"><b>${nome}</b>${meta?`<span class="faint">${meta}</span>`:''}${vq||''}</div><div class="jn-rr">${regra||''}</div><div class="jn-ra">${acoes||''}</div></div>`}
 const jnVq=(c,a,v)=>`<span class="it-vq et-vq">${c?'vale quando '+esc(itCondFrase(c)):'<span class="faint">vale sempre</span>'}<button class="linkbtn" data-a="${a}" data-v="${esc(v)}">${c?'Editar':'+ Condição'}</button></span>`;
 function jnItemLinha(i){const d=itDef(i.campo),f=d?{tipo:d.tipo,opcoes:d.opcoes?Object.entries(d.opcoes()):null}:null,fs=f?fmFormas(f.tipo,f.opcoes?.length):[];
   const meta=d?`${d.origem==='personalizado'?'Campo novo do terreno':'Grava em '+esc(IT_ORIG[d.origem])+' › '+esc(d.titulo)} · ${esc(IT_TIPO[d.tipo]||d.tipo)}${fs.length>1?' · '+esc(FM_FORMA[fs.includes(i.forma)?i.forma:fs[0]]):''}${d.editavel?'':' · só leitura'}`:'campo removido';
-  return jnLinha('edit',esc(jnTxt(i)),meta,jnSel(`data-jnr="it:${i.id}"`,i.regra,JN_REGRA,'Se estiver em branco'),jnVq(i.cond,'jn-cond',i.id),
+  return jnLinha('edit',esc(jnTxt(i)),meta,jnRegraSel('it:'+i.id,i.regra,i.rc,'Se estiver em branco'),jnVq(i.cond,'jn-cond',i.id)+jnRcLinha('it:'+i.id,i.regra,i.rc),
     `<button class="btn sm text" data-a="jn-ed" data-v="${i.id}">Editar</button><button class="iconbtn sm lixo" data-a="jn-x" data-v="${i.id}" aria-label="Tirar da jornada" title="Tirar da jornada">${ic('lixo',18)}</button>`)}
 function jnTarLinha(f,r){const m=r.modelo?crModelos().find(x=>x.id===r.modelo):null;
   return jnLinha('task',r.modelo?`Modelo ${esc(m?.nome||'(removido)')}`:esc(r.titulo),`Tarefa${r.modelo?'s':''} ao entrar${r.sub?' em '+esc(etNomeS(f,r.sub)):' na etapa'}${r.ativo===false?' · desativada':''}`,
-    jnSel(`data-jnr="tar:${r.id}"`,r.trava?'bloqueia':'livre',{bloqueia:'Não avança sem',livre:'Pode avançar'},'Tarefas abertas'),
-    `<span class="it-vq et-vq">${r.cond?'vale quando '+esc(itCondFrase(r.cond)):'<span class="faint">vale sempre</span>'}</span>`,
+    jnRegraSel('tar:'+r.id,jnBaseTar(r),r.rc,'Tarefas abertas'),
+    `<span class="it-vq et-vq">${r.cond?'vale quando '+esc(itCondFrase(r.cond)):'<span class="faint">vale sempre</span>'}</span>`+jnRcLinha('tar:'+r.id,jnBaseTar(r),r.rc),
     `<button class="btn sm text" data-a="et-regra-ed" data-v="${r.id}">Editar</button><button class="iconbtn sm lixo" data-a="et-regra-x" data-v="${r.id}" aria-label="Apagar regra" title="Apagar regra">${ic('lixo',18)}</button>`,r.ativo===false?'inativa':'')}
-function jnDocLinha(e,c){return jnLinha('doc',esc(TIPOS_DOC[c.doc]?.[0]||c.doc),'Documento validado',jnSel(`data-jnr="doc:${e}:${c.doc}"`,jnCkRegra(c),JN_REGRA,'Se faltar'),etVq(`ck:${e}:${c.doc}`,c.cond),
+function jnDocLinha(e,c){return jnLinha('doc',esc(TIPOS_DOC[c.doc]?.[0]||c.doc),'Documento validado',jnRegraSel(`doc:${e}:${c.doc}`,jnBaseCk(c),c.rc,'Se faltar'),etVq(`ck:${e}:${c.doc}`,c.cond)+jnRcLinha(`doc:${e}:${c.doc}`,jnBaseCk(c),c.rc),
   `<button class="iconbtn sm lixo" data-a="jn-doc-x" data-e="${e}" data-v="${c.doc}" aria-label="Tirar documento" title="Tirar da jornada">${ic('lixo',18)}</button>`)}
-function jnPreLinha(p){return jnLinha('flow',`Ter passado por ${esc(subN(p.req))}`,`Para entrar em ${esc(destinoNome(p.alvoTipo,p.alvo))}`,jnSel(`data-jnr="pr:${p.id}"`,p.just?'justifica':'bloqueia',{bloqueia:'Não avança sem',justifica:'Avança com justificativa'},'Sem ter passado'),
-  etVq('pr:'+p.id,p.cond),`<button class="iconbtn sm lixo" data-a="cfg-pre-del" data-v="${p.id}" aria-label="Tirar pré-requisito" title="Tirar da jornada">${ic('lixo',18)}</button>`)}
+function jnPreLinha(p){return jnLinha('flow',`Ter passado por ${esc(subN(p.req))}`,`Para entrar em ${esc(destinoNome(p.alvoTipo,p.alvo))}`,jnRegraSel('pr:'+p.id,jnBasePr(p),p.rc,'Sem ter passado'),
+  etVq('pr:'+p.id,p.cond)+jnRcLinha('pr:'+p.id,jnBasePr(p),p.rc),`<button class="iconbtn sm lixo" data-a="cfg-pre-del" data-v="${p.id}" aria-label="Tirar pré-requisito" title="Tirar da jornada">${ic('lixo',18)}</button>`)}
 function jnAdd(f,e,s,tipos){return `<div class="jn-adds">${tipos.map(([a,l])=>`<button class="tkm-add" data-a="${a}" data-f="${f}" data-e="${e}" data-s="${s||''}">${ic('add',16)}${l}</button>`).join('')}</div>`}
 function jnCfgHtml(){const fs=fasesL().filter(f=>f.ativo!==false),f=fs.some(x=>x.k===UI.jnFase)?UI.jnFase:faseEnt(),ent=f===faseEnt(),es=etapasF(f),e=es.some(x=>x.k===UI.jnEtapa)?UI.jnEtapa:es[0]?.k,E=es.find(x=>x.k===e);
   const its=jnItens().filter(i=>i.fase===f),tars=etRegras().filter(r=>r.fase===f),C=cfg();
@@ -159,7 +171,7 @@ function jnItemHtml(fechar){const E=UI.jnEd;if(!E)return '';const d=E.campo&&E.c
     <div class="field full"><label for="jne-a">Ajuda (opcional)</label><input id="jne-a" data-jne="ajuda" value="${esc(E.ajuda||'')}" placeholder="Uma linha para orientar quem responde"></div>
     ${formas.length>1?`<div class="field"><label for="jne-f">Forma de responder</label><select id="jne-f" data-jne="forma">${formas.map(x=>`<option value="${x}" ${x===(formas.includes(E.forma)?E.forma:formas[0])?'selected':''}>${FM_FORMA[x]}</option>`).join('')}</select></div>`:''}
     ${d&&!d.editavel?'<p class="field full faint" style="margin:0">Campo só de leitura: a pergunta mostra o valor e vale como requisito.</p>':''}`:''}
-    <fieldset class="field full"><legend>Se estiver em branco</legend><span class="fm-seg jn-rg" role="radiogroup">${Object.entries(JN_REGRA).map(([k,n])=>`<button type="button" role="radio" class="${E.regra===k?'on':''}" aria-checked="${E.regra===k}" data-a="jn-e-regra" data-v="${k}">${n}</button>`).join('')}</span></fieldset>
+    ${jnRegraCampo(E.regra||'bloqueia',E.rc,'jn-e-regra')}
     <div class="field full"><span class="lbl-f">Vale quando</span><span class="it-vq">${E.cond?esc(itCondFrase(E.cond)):'<span class="faint">sempre</span>'}<button class="linkbtn" data-a="jn-cond" data-v="__ed">${E.cond?'Editar':'+ Condição'}</button>${E.cond?'<button class="linkbtn" data-a="jn-cond-tira" data-v="__ed">Tirar</button>':''}</span></div></div>
   <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" data-a="jn-salva">Salvar</button></div>`}
 function jnSalvar(){const E=UI.jnEd;let campo=E.campo;if(!campo){toast('Escolha onde a resposta grava.',true);return false}
@@ -170,7 +182,7 @@ function jnSalvar(){const E=UI.jnEd;let campo=E.campo;if(!campo){toast('Escolha 
     const c={id:uid(),codigo:'c'+uid().replace(/[^a-z0-9]/gi,'').toLowerCase().slice(0,10),titulo:tit,tipo,opcoes:tipo==='lista'?ops:null,unidade:tipo==='numero'?N.unidade||null:null,ativo:true};
     jnCampos().push(c);jnRegistra(c);campo='personalizado.'+c.codigo}
   if(jnItens().some(i=>i.id!==E.id&&i.fase===E.fase&&i.etapa===E.etapa&&(i.sub||null)===(E.sub||null)&&i.campo===campo)){toast(`${itTit(campo)} já está neste lugar da jornada.`,true);return false}
-  const x={id:E.id||uid(),fase:E.fase,etapa:E.etapa,sub:E.sub||null,campo,pergunta:(E.pergunta||'').trim()||null,ajuda:(E.ajuda||'').trim()||null,forma:E.forma||null,regra:E.regra||'bloqueia',cond:E.cond||null,ativo:true,
+  const x={id:E.id||uid(),fase:E.fase,etapa:E.etapa,sub:E.sub||null,campo,pergunta:(E.pergunta||'').trim()||null,ajuda:(E.ajuda||'').trim()||null,forma:E.forma||null,regra:E.regra||'bloqueia',rc:E.rc&&E.rc.length?E.rc:null,cond:E.cond||null,ativo:true,
     ordem:E.ordem??jnItens().filter(i=>i.fase===E.fase&&i.etapa===E.etapa).length};
   const i=jnItens().findIndex(y=>y.id===x.id);if(i>=0)jnItens()[i]=x;else jnItens().push(x);return true}
 function jnRvHtml(fechar){const R=UI.jnRv;if(!R)return '';
@@ -191,11 +203,38 @@ function jnDocHtml(fechar){const e=UI.jnDoc,L=jnCk(e),livres=Object.entries(TIPO
   <div class="jn-docs">${livres.map(([k,[l,g]])=>`<button class="fchip" data-a="jn-doc-add" data-e="${e}" data-v="${k}">${esc(l)} <span class="faint">${esc(g)}</span></button>`).join('')||'<p class="faint">Todos os documentos já estão na etapa.</p>'}</div>
   <div class="df"><button class="btn text" data-a="close">Fechar</button></div>`}
 {const fm=funilModal;funilModal=function(M,fechar){
-  if(M==='jn-item')return jnItemHtml(fechar);if(M==='jn-rv')return jnRvHtml(fechar);if(M==='jn-pre')return jnPreHtml(fechar);if(M==='jn-doc')return jnDocHtml(fechar);
+  if(M==='jn-rc')return jnRcHtml(fechar);if(M==='jn-item')return jnItemHtml(fechar);if(M==='jn-rv')return jnRvHtml(fechar);if(M==='jn-pre')return jnPreHtml(fechar);if(M==='jn-doc')return jnDocHtml(fechar);
   if(M==='jn-bloq'||M==='jn-forcar'){const a=UI.jnFz||{},x=T(a.tid),p=x&&procsDe(x).find(y=>y.id===a.pid),nm=p?(a.tipo==='status'?faseCfg(p.fase)?.conc:a.tipo==='etapa'?etNomeE(p.fase,a.dest):etNomeS(p.fase,a.dest)):'';
     if(M==='jn-bloq')return `<div class="dh"><div><h2>Ainda não dá para ir para ${esc(nm)}</h2><p class="muted" style="margin:6px 0 0">Responda o que falta. Gestor e diretor podem passar sem, com justificativa.</p></div>${fechar}</div><ul class="adv-lista adv-modal">${advItens(a.itens||[])}</ul><div class="df"><button class="btn primary" data-a="close">Entendi</button></div>`;
     return `<div class="dh"><div><h2>Ir para ${esc(nm)} sem os requisitos?</h2><ul class="pend">${(a.itens||[]).map(i=>`<li>${ic('close',16)}${esc(i.txt)}</li>`).join('')}</ul></div>${fechar}</div><form data-form="jn-forcar" id="f-jf"><div class="field"><label for="jf-j">Justificativa (vai para o histórico)</label><textarea id="jf-j" name="j" required></textarea></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-jf">Avançar</button></div>`}
   return fm(M,fechar)}}
+/* onde mora a regra em branco de cada item: base, condicional e gravar */
+function jnRegraAlvo(k){const [tp,a,b]=k.split(':');
+  if(tp==='__ed'){const E=UI.jnEd;return E&&{nome:E.pergunta||itTit(E.campo)||'Pergunta nova',base:()=>E.regra||'bloqueia',rc:()=>E.rc,set:(v,rc)=>{E.regra=v;E.rc=rc&&rc.length?rc:null},voltar:'jn-item'}}
+  if(tp==='__et'){const r=UI.etRegra;return r&&{nome:r.titulo||'Tarefa da etapa',base:()=>jnBaseTar(r),rc:()=>r.rc,set:(v,rc)=>{r.regra=v;r.rc=rc&&rc.length?rc:null;r.trava=v!=='livre'||!!r.rc},voltar:'et-regra'}}
+  if(tp==='it'){const i=jnItens().find(x=>x.id===a);return i&&{nome:jnTxt(i),base:()=>i.regra,rc:()=>i.rc,set:(v,rc)=>{i.regra=v;i.rc=rc&&rc.length?rc:null}}}
+  if(tp==='doc'){const c=jnCk(a).find(x=>x.doc===b);return c&&{nome:TIPOS_DOC[c.doc]?.[0]||c.doc,base:()=>jnBaseCk(c),rc:()=>c.rc,set:(v,rc)=>{c.regra=v;c.rc=rc&&rc.length?rc:null;c.just=v==='justifica';c.obrig=v!=='livre'||!!c.rc}}}
+  if(tp==='pr'){const p=cfg().prereq.find(x=>x.id===a);return p&&{nome:`Ter passado por ${subN(p.req)}`,base:()=>jnBasePr(p),rc:()=>p.rc,set:(v,rc)=>{p.regra=v;p.rc=rc&&rc.length?rc:null;p.just=v==='justifica'}}}
+  if(tp==='tar'){const r=etRegras().find(x=>x.id===a);return r&&{nome:r.titulo||'Modelo de tarefas',base:()=>jnBaseTar(r),rc:()=>r.rc,set:(v,rc)=>{r.regra=v;r.rc=rc&&rc.length?rc:null;r.trava=v!=='livre'||!!r.rc}}}
+  return null}
+/* o campo "Se estiver em branco" dos formulários: as 3 opções e Condicional, com a frase */
+function jnRegraCampo(base,rc,acao){const on=k=>rc&&rc.length?k==='cond':k===base;
+  return `<fieldset class="field full"><legend>Se estiver em branco</legend><span class="fm-seg jn-rg" role="radiogroup">${Object.entries(JN_REGRA_SEL).map(([k,n])=>`<button type="button" role="radio" class="${on(k)?'on':''}" aria-checked="${on(k)}" data-a="${acao}" data-v="${k}">${n.replace('…','')}</button>`).join('')}</span>
+    ${rc&&rc.length?`<span class="it-vq jn-rcf">${esc(jnRcFrase(rc,base).replace(/^./,c=>c.toUpperCase()))}. <button type="button" class="linkbtn" data-a="${acao}" data-v="cond">Editar</button></span>`:''}</fieldset>`}
+function jnRcAbrir(k){const x=jnRegraAlvo(k);if(!x)return;const rc=JSON.parse(JSON.stringify(x.rc()||[]));
+  UI.jnRc={k,nome:x.nome,base:x.base(),linhas:rc.length?rc:[{cond:null,regra:x.base()==='bloqueia'?'justifica':'bloqueia'}],voltar:x.voltar||null};UI.modal='jn-rc';renderModal();
+  if(!rc.length)setTimeout(()=>jnRcCond(0),0)}
+function jnRcCond(n){const R=UI.jnRc;if(!R)return;const c=R.linhas[n]?.cond;
+  UI.itCond={alvo:'__rc',cond:c?JSON.parse(JSON.stringify(c)):itNovaCond(),busca:c?null:'0',q:'',ext:{titulo:`${R.nome}: quando`,salvar:cc=>{R.linhas[n].cond=cc},voltar:()=>{UI.modal='jn-rc';renderModal()}}};UI.modal='it-cond';renderModal()}
+function jnRcHtml(fechar){const R=UI.jnRc;if(!R)return '';const sel=(attr,v)=>`<select ${attr}>${Object.entries(JN_REGRA).map(([k,n])=>`<option value="${k}" ${k===v?'selected':''}>${esc(n)}</option>`).join('')}</select>`;
+  return `<div class="dh"><div><h2>Se estiver em branco</h2><div class="muted" style="margin-top:4px">${esc(R.nome)}</div></div>${fechar}</div>
+  <p class="muted jn-rc-aj">A primeira condição que vale decide. Se nenhuma vale, vale o comportamento de "Nos demais casos".</p>
+  <div class="jn-rc">${R.linhas.map((x,n)=>`<div class="jn-rcl"><span class="jn-rcq"><span class="lbl-f">Quando</span><span class="it-vq">${x.cond?esc(itCondFrase(x.cond)):'<span class="faint">escolha a condição</span>'}<button class="linkbtn" data-a="jn-rc-cond" data-v="${n}">${x.cond?'Editar':'+ Condição'}</button></span></span>
+      <span class="jn-rcr">${sel(`data-jnrc="${n}" aria-label="Comportamento ${n+1}"`,x.regra)}<button class="iconbtn sm lixo" data-a="jn-rc-x" data-v="${n}" aria-label="Tirar este comportamento" title="Tirar">${ic('lixo',18)}</button></span></div>`).join('')}
+    <button class="tkm-add" data-a="jn-rc-mais">${ic('add',16)}Comportamento condicional</button>
+    <div class="jn-rcl jn-rcd"><span class="jn-rcq"><span class="lbl-f">Nos demais casos</span></span><span class="jn-rcr">${sel('data-jnrc="base" aria-label="Nos demais casos"',R.base)}</span></div></div>
+  <div class="df"><button class="btn text" data-a="${R.voltar?'jn-rc-volta':'close'}">Cancelar</button><button class="btn primary" data-a="jn-rc-salva">Salvar</button></div>`}
+
 /* condição dos itens e das regras (o mesmo painel "Vale quando") */
 function jnCondAlvo(v){
   if(v==='__ed')return {nome:`Pergunta: ${UI.jnEd?.pergunta||itTit(UI.jnEd?.campo)||'nova'}`,ler:()=>UI.jnEd.cond,gravar:c=>{UI.jnEd.cond=c},voltar:()=>{UI.modal='jn-item';renderModal()}};
@@ -213,7 +252,15 @@ document.addEventListener('click',e=>{const a=e.target.closest?.('[data-a^="jn-"
     case 'jn-nova':UI.jnEd={id:null,fase:a.dataset.f,etapa:a.dataset.e,sub:a.dataset.s||null,campo:'',regra:'bloqueia',cond:null};UI.modal='jn-item';renderModal();return;
     case 'jn-ed':{const i=jnItens().find(x=>x.id===a.dataset.v);if(!i)return;UI.jnEd=JSON.parse(JSON.stringify(i));UI.modal='jn-item';renderModal();return}
     case 'jn-x':{const i=jnItens().find(x=>x.id===a.dataset.v);if(!i)return;cfg().jornada=jnItens().filter(x=>x!==i);save();render();toast(`${jnTxt(i)} saiu da jornada. As respostas ficam no terreno.`);return}
-    case 'jn-e-regra':UI.jnEd.regra=a.dataset.v;renderModal();return;
+    case 'jn-e-regra':if(a.dataset.v==='cond'){jnRcAbrir('__ed');return}UI.jnEd.regra=a.dataset.v;UI.jnEd.rc=null;renderModal();return;
+    case 'jn-rc':jnRcAbrir(a.dataset.v);return;
+    case 'jn-rc-cond':jnRcCond(+a.dataset.v);return;
+    case 'jn-rc-mais':UI.jnRc.linhas.push({cond:null,regra:'bloqueia'});jnRcCond(UI.jnRc.linhas.length-1);return;
+    case 'jn-rc-x':UI.jnRc.linhas.splice(+a.dataset.v,1);renderModal();return;
+    case 'jn-rc-volta':{const R=UI.jnRc;UI.jnRc=null;UI.modal=R?.voltar||null;renderModal();return}
+    case 'jn-rc-salva':{const R=UI.jnRc,x=R&&jnRegraAlvo(R.k);if(!x)return;const L=R.linhas.filter(y=>y.cond);
+      if(R.linhas.some(y=>!y.cond)){toast('Cada comportamento condicional precisa de uma condição.',true);return}
+      x.set(R.base,L);UI.jnRc=null;if(R.voltar){UI.modal=R.voltar;renderModal();return}UI.modal=null;save();renderModal();render();toast('Regra da jornada salva.');return}
     case 'jn-salva':if(jnSalvar()){UI.jnEd=null;UI.modal=null;save();renderModal();render();toast('Pergunta salva na jornada.')}return;
     case 'jn-cond':{const x=jnCondAlvo(a.dataset.v);if(!x)return;const c=x.ler();
       UI.itCond={alvo:a.dataset.v,cond:c?JSON.parse(JSON.stringify(c)):itNovaCond(),busca:c?null:'0',q:'',ext:{titulo:x.nome,salvar:x.gravar,voltar:x.voltar}};UI.modal='it-cond';renderModal();return}
@@ -235,14 +282,13 @@ document.addEventListener('change',e=>{const el=e.target;
   if(el.dataset?.jne){e.stopImmediatePropagation();const E=UI.jnEd;if(!E)return;const k=el.dataset.jne;
     if(k.startsWith('n.')){E.novo=E.novo||{tipo:'texto'};E.novo[k.slice(2)]=el.value;if(k==='n.tipo'||k==='n.opcoes')renderModal();return}
     if(k==='sub')E.sub=el.value||null;else E[k]=el.value;if(k==='campo'){E.forma=null;if(el.value==='__novo')E.novo=E.novo||{tipo:'texto'}}if(k==='campo'||k==='sub')renderModal();return}
+  if(el.dataset?.jnrc&&UI.jnRc){e.stopImmediatePropagation();const k=el.dataset.jnrc;if(k==='base')UI.jnRc.base=el.value;else UI.jnRc.linhas[+k].regra=el.value;return}
   if(el.dataset?.jnrv){e.stopImmediatePropagation();const R=UI.jnRv;if(!R)return;const k=el.dataset.jnrv;if(k==='sub')R.sub=el.value||null;else R[k]=el.value;return}
-  if(el.dataset?.jnr){e.stopImmediatePropagation();if(!ehAdmin(me()))return;const [tp,a,b]=el.dataset.jnr.split(':'),v=el.value;
-    if(tp==='it'){const i=jnItens().find(x=>x.id===a);if(i)i.regra=v}
-    else if(tp==='doc'){const c=jnCk(a).find(x=>x.doc===b);if(c){c.obrig=v!=='livre';c.just=v==='justifica'}}
-    else if(tp==='pr'){const p=cfg().prereq.find(x=>x.id===a);if(p)p.just=v==='justifica'}
-    else if(tp==='tar'){const r=etRegras().find(x=>x.id===a);if(r)r.trava=v==='bloqueia'}
-    else if(tp==='rv'){const r=jnRegrasV().find(x=>x.id===a);if(r)r.acao=v}
-    save();render();toast('Regra da jornada salva.');return}},true);
+  if(el.dataset?.jnr){e.stopImmediatePropagation();if(!ehAdmin(me()))return;const k=el.dataset.jnr,v=el.value;
+    if(k.startsWith('rv:')){const r=jnRegrasV().find(x=>x.id===k.slice(3));if(r)r.acao=v;save();render();toast('Regra da jornada salva.');return}
+    const x=jnRegraAlvo(k);if(!x)return;
+    if(v==='cond'){jnRcAbrir(k);return}
+    x.set(v,null);save();render();toast('Regra da jornada salva.');return}},true);
 document.addEventListener('input',e=>{const el=e.target;if(el.dataset?.jne&&UI.jnEd&&el.tagName!=='SELECT'){const k=el.dataset.jne;if(k.startsWith('n.')){UI.jnEd.novo=UI.jnEd.novo||{tipo:'texto'};UI.jnEd.novo[k.slice(2)]=el.value}else UI.jnEd[k]=el.value}
   if(el.dataset?.jnrv==='msg'&&UI.jnRv)UI.jnRv.msg=el.value},true);
 document.addEventListener('submit',e=>{const f=e.target;

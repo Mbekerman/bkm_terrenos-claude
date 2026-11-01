@@ -108,6 +108,50 @@ await clica(p,'#modal [data-a=close]');
 let S1=await X(p,id=>{const t=T(id),s=subsDe('estudos');return pendencias(t,'subetapa',s[1].k).filter(x=>x.jn).map(x=>x.txt)},tid);
 ok(S1.length===1&&S1[0].startsWith('O recuo frontal atende ao estudo de massa?'),'sair da subetapa pede só o que é dela');
 await ctx.close()}
+// regra em branco com as 3 opções em todo item e comportamento condicional (1/nov/2026)
+{const {ctx,p}=await abre(1440,1000,'claro');
+await vai(p,'/configuracoes/jornada');await clica(p,'[data-a=jn-etapa][data-v=estudos]');await p.waitForTimeout(150);
+ok(await p.$$eval('.jn-corpo select.jn-rs',L=>L.filter(x=>!x.dataset.jnr.startsWith('rv:')).every(x=>['bloqueia','justifica','livre','cond'].every(v=>[...x.options].some(o=>o.value===v)))),
+  'todo item (pergunta, documento, pré-requisito e tarefa) tem as 3 opções e Condicional');
+const iT=await X(p,()=>jnItens().find(x=>x.campo==='terreno.topografia').id);
+await muda(p,`[data-jnr="it:${iT}"]`,'cond');await p.waitForTimeout(200);
+ok(await X(p,()=>UI.modal)==='it-cond','escolher Condicional abre o painel da condição do primeiro comportamento');
+await X(p,()=>{UI.itCond.ext.salvar({modo:'todas',itens:[{campo:'terreno.situacao_ocupacao',op:'em',valores:['ocupado']}]});UI.itCond.ext.voltar()});await p.waitForTimeout(150);
+ok(await X(p,()=>UI.modal)==='jn-rc'&&await p.$eval('#modal',x=>x.textContent.includes('Nos demais casos')&&x.textContent.includes('ocupação é Ocupado')),'a janela mostra o comportamento com a condição e "Nos demais casos"');
+await muda(p,'#modal [data-jnrc="0"]','livre');await muda(p,'#modal [data-jnrc="base"]','bloqueia');
+await clica(p,'#modal [data-a=jn-rc-mais]');await p.waitForTimeout(150);
+await X(p,()=>{UI.itCond.ext.salvar({modo:'todas',itens:[{campo:'terreno.necessidade_demolicao',op:'em',valores:['confirmada']}]});UI.itCond.ext.voltar()});await p.waitForTimeout(150);
+await muda(p,'#modal [data-jnrc="1"]','justifica');
+await p.screenshot({path:O+'7_condicional.png'});
+await clica(p,'#modal [data-a=jn-rc-salva]');await p.waitForTimeout(150);
+let RC=await X(p,id=>jnItens().find(x=>x.id===id),iT);
+ok(RC.regra==='bloqueia'&&RC.rc.length===2&&RC.rc[0].regra==='livre'&&RC.rc[1].regra==='justifica','o item guarda o comportamento único e os condicionais');
+ok(await p.$eval(`[data-jnr="it:${iT}"]`,x=>x.value==='cond')&&await p.$eval('.jn-corpo',x=>x.textContent.includes('Pode avançar quando ocupação é Ocupado')&&x.textContent.includes('nos demais casos, não avança')),
+  'a linha mostra "Condicional" e a frase do comportamento');
+await p.screenshot({path:O+'8_condicional_linha.png'});
+// o comportamento muda com o terreno
+const tid=await prepara(p);
+const ef=()=>X(p,id=>{const p=pendencias(T(id),'etapa','negociacao').find(x=>x.txt.startsWith('Como é o relevo'));return p?(p.just?'justifica':'bloqueia'):'livre'},tid);
+ok(await ef()==='bloqueia','nenhuma condição vale: não avança');
+await X(p,id=>{const t=T(id);t.demolicao='confirmada';save()},tid);ok(await ef()==='justifica','a condição que vale decide: avança com justificativa');
+await X(p,id=>{const t=T(id);t.ocupacao='ocupado';save()},tid);ok(await ef()==='livre','a primeira condição que vale ganha: pode avançar');
+await X(p,id=>{const t=T(id);t.ocupacao='vazio';t.demolicao='confirmada';save()},tid);await papel(p,'Analista');await ficha(p,tid);await p.waitForTimeout(300);
+ok(await X(p,id=>{const b=[...document.querySelectorAll('.jn-bloco')].find(x=>x.offsetParent);const q=[...b.querySelectorAll('.jn-q')].find(x=>x.textContent.includes('Como é o relevo'));return q&&q.querySelector('.jn-selo.justifica')},tid),
+  'na ficha, o selo segue o comportamento que vale para o terreno');
+// voltar para único limpa a condicional
+await papel(p,'Diretor');await vai(p,'/configuracoes/jornada');await clica(p,'[data-a=jn-etapa][data-v=estudos]');await p.waitForTimeout(150);
+await muda(p,`[data-jnr="it:${iT}"]`,'justifica');await p.waitForTimeout(100);
+ok(await X(p,id=>{const i=jnItens().find(x=>x.id===id);return i.regra==='justifica'&&!i.rc},iT),'escolher uma das 3 opções volta ao comportamento único');
+// tarefa da etapa com "avança com justificativa": a tarefa aberta pede justificativa
+const iR=await X(p,()=>etRegras().find(r=>r.etapa==='estudos'&&!r.sub)?.id);
+if(iR){await muda(p,`[data-jnr="tar:${iR}"]`,'justifica');await p.waitForTimeout(100);
+  ok(await X(p,id=>{const r=etRegras().find(x=>x.id===id);return r.regra==='justifica'&&r.trava},iR),'a tarefa da etapa pode ser "avança com justificativa"');}
+// pré-requisito "pode avançar"
+const iP=await X(p,()=>{const c=cfg();if(!c.prereq.length)c.prereq.push({id:uid(),alvoTipo:'etapa',alvo:'negociacao',req:subsDe('estudos')[0].k});save();return c.prereq[0].id});
+await vai(p,'/configuracoes/jornada');await X(p,id=>{const pr=cfg().prereq.find(x=>x.id===id);UI.jnEtapa=pr.alvoTipo==='etapa'?pr.alvo:subCfg(pr.alvo).etapa;render()},iP);await p.waitForTimeout(150);
+await muda(p,`[data-jnr="pr:${iP}"]`,'livre');await p.waitForTimeout(100);
+ok(await X(p,id=>cfg().prereq.find(x=>x.id===id).regra==='livre',iP),'o pré-requisito pode ser "pode avançar"');
+await ctx.close()}
 {const {ctx,p}=await abre(390,844,'escuro');const tid=await prepara(p);await papel(p,'Analista');await ficha(p,tid);await p.waitForTimeout(400);
   const el=await p.$('#jn-bloco');await el.scrollIntoViewIfNeeded();await p.screenshot({path:O+'5_celular_escuro.png'});
   ok(await p.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),'celular: sem rolagem lateral');

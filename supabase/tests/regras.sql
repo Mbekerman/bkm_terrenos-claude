@@ -2878,4 +2878,52 @@ select pg_temp.falha(format($$select app.gravar_campo(%L, %L, '"10"')$$, :'tjn',
 select pg_temp.como(:'diretor');
 select app.apagar_item_jornada(:'ij4');
 select pg_temp.ok(not exists (select 1 from app.jornada_itens where id = :'ij4'), 'tirar da jornada apaga o item; o valor fica no terreno');
+-- Regra em branco com 3 opções em todo item e comportamento condicional (1/nov/2026)
+select pg_temp.falha(format($$select app.salvar_item_jornada(%L, %L, '{"regra_cond":[{"regra":"livre"}]}')$$, :'emp', :'ij1'), 'comportamento condicional precisa de condição');
+select pg_temp.falha(format($$select app.salvar_item_jornada(%L, %L, '{"regra_cond":[{"regra":"talvez","condicao":{"modo":"todas","itens":[{"campo":"terreno.topografia","op":"em","valores":["plano"]}]}}]}')$$, :'emp', :'ij1'),
+  'comportamento condicional só com Pode avançar, Avança com justificativa ou Não avança');
+select app.salvar_item_jornada(:'emp', :'ij1', '{"regra_cond":[
+  {"regra":"justifica","condicao":{"modo":"todas","itens":[{"campo":"terreno.necessidade_demolicao","op":"em","valores":["confirmada"]}]}},
+  {"regra":"livre","condicao":{"modo":"todas","itens":[{"campo":"terreno.necessidade_demolicao","op":"em","valores":["dispensada"]}]}}]}');
+select app.salvar_checklist(:'emp', 'novos_negocios', 'triagem', 'iptu', null, null, 'justifica',
+  '[{"regra":"livre","condicao":{"modo":"todas","itens":[{"campo":"terreno.necessidade_demolicao","op":"em","valores":["dispensada"]}]}}]');
+select pg_temp.ok((select regra = 'bloqueia' and jsonb_array_length(regra_cond) = 2 from app.jornada_itens where id = :'ij1')
+  and (select regra = 'justifica' and jsonb_array_length(regra_cond) = 1 from app.checklist_modelo where empresa_id = :'emp' and fase = 'novos_negocios' and etapa = 'triagem' and tipo_documento = 'iptu'),
+  'a pergunta e o documento guardam o comportamento único e o condicional');
+select app.salvar_checklist(:'emp', 'novos_negocios', 'triagem', 'iptu', null, null, 'justifica');
+select pg_temp.ok((select jsonb_array_length(regra_cond) = 1 from app.checklist_modelo where empresa_id = :'emp' and fase = 'novos_negocios' and etapa = 'triagem' and tipo_documento = 'iptu'),
+  'salvar o documento sem a regra condicional a mantém');
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude, poligono_geojson)
+  values (:'emp', 'Terreno da regra condicional', :'gestor', 'corretor', :'sp', -23.66, -46.66, pg_temp.quadra(-46.66, -23.66)) returning id as tjc \gset
+select pg_temp.como(:'analista');
+select (app.registrar_oferta(:'tjc', 1800000, 'dinheiro')->>'processo_id') as pjc \gset
+select app.checar_passagem(:'pjc') as cc1 \gset
+select pg_temp.ok(exists (select 1 from jsonb_array_elements(:'cc1'::jsonb->'itens') i where i->>'campo' = 'terreno.topografia' and not (i->>'justifica')::boolean),
+  'nenhuma condição vale: vale o comportamento único (não avança)');
+select app.gravar_campo(:'tjc', 'terreno.necessidade_demolicao', '"confirmada"');
+select app.checar_passagem(:'pjc') as cc2 \gset
+select pg_temp.ok(exists (select 1 from jsonb_array_elements(:'cc2'::jsonb->'itens') i where i->>'campo' = 'terreno.topografia' and (i->>'justifica')::boolean)
+  and (select regra_efetiva = 'justifica' from jsonb_to_recordset(app.jornada_processo(:'pjc')->'itens') x(id uuid, regra_efetiva text) where x.id = :'ij1'),
+  'a condição que vale decide: avança com justificativa');
+select app.gravar_campo(:'tjc', 'terreno.necessidade_demolicao', '"dispensada"');
+select app.checar_passagem(:'pjc') as cc3 \gset
+select pg_temp.ok(not exists (select 1 from jsonb_array_elements(:'cc3'::jsonb->'itens') i where i->>'campo' = 'terreno.topografia')
+  and not exists (select 1 from jsonb_array_elements(:'cc3'::jsonb->'itens') i where i->>'tipo' = 'documento' and i->>'texto' like 'IPTU%'),
+  'com "pode avançar" pela condição, a pergunta e o documento não travam');
+select pg_temp.como(:'diretor');
+select id as prj from app.prerequisitos_modelo where empresa_id = :'emp' limit 1 \gset
+select app.regra_prerequisito(:'prj', 'livre');
+select pg_temp.ok((select regra = 'livre' from app.prerequisitos_modelo where id = :'prj'), 'o pré-requisito também pode ser "pode avançar"');
+select app.regra_prerequisito(:'prj', 'bloqueia', '[]');
+select app.salvar_regra_etapa(:'emp', null, '{"fase":"novos_negocios","etapa":"contrato","titulo":"Conferir a minuta","regra":"justifica"}') as rej \gset
+select app.salvar_regra_etapa(:'emp', null, '{"fase":"novos_negocios","etapa":"contrato","titulo":"Conferir o registro","trava":false,
+  "regra_cond":[{"regra":"bloqueia","condicao":{"modo":"todas","itens":[{"campo":"terreno.topografia","op":"em","valores":["irregular"]}]}}]}') as rek \gset
+select pg_temp.ok((select regra = 'justifica' and trava from app.etapa_regras where id = :'rej')
+  and (select regra = 'livre' and trava and jsonb_array_length(regra_cond) = 1 from app.etapa_regras where id = :'rek'),
+  'a tarefa da etapa ganha as 3 opções e o comportamento condicional');
+select count(*) as nte from jsonb_array_elements(app.checar_passagem(:'pjn')->'itens') i where i->>'tipo' = 'tarefa' \gset
+select count(app.salvar_regra_etapa(:'emp', id, '{"regra":"justifica"}')) from app.etapa_regras where empresa_id = :'emp' and fase = 'novos_negocios' and etapa = 'estudos' and trava and ativo;
+select pg_temp.ok(:nte > 0 and (select bool_and((i->>'justifica')::boolean) from jsonb_array_elements(app.checar_passagem(:'pjn')->'itens') i where i->>'tipo' = 'tarefa'),
+  'tarefa aberta de regra "avança com justificativa" entra como pendência que se justifica');
+select count(app.salvar_regra_etapa(:'emp', id, '{"regra":"bloqueia"}')) from app.etapa_regras where empresa_id = :'emp' and fase = 'novos_negocios' and etapa = 'estudos' and trava and ativo;
 \echo 'TODOS OS TESTES PASSARAM'

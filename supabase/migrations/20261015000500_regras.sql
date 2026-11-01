@@ -148,9 +148,25 @@ begin
 end $$;
 grant execute on function app.condicao_aplica(uuid, jsonb) to authenticated;
 
+-- Regra em branco de um item (jornada, 1/nov/2026): a primeira regra condicional
+-- cuja condição vale para o terreno decide; nenhuma vale (ou não há) = a regra única.
+create or replace function app._regra_branco(p_terreno uuid, p_regra text, p_cond jsonb)
+returns text language plpgsql stable security definer set search_path = '' as $$
+declare e jsonb;
+begin
+  if p_cond is not null and jsonb_typeof(p_cond) = 'array' then
+    for e in select * from jsonb_array_elements(p_cond) loop
+      if app.avaliar_condicao(p_terreno, e->'condicao') then return e->>'regra'; end if;
+    end loop;
+  end if;
+  return p_regra;
+end $$;
+revoke all on function app._regra_branco(uuid, text, jsonb) from public;
+
 -- aplica: a condição do documento vale para o terreno agora (sem condição, sempre)
 create view app.v_checklist with (security_invoker = true) as
-select p.id as processo_id, p.empresa_id, c.etapa, c.tipo_documento, c.obrigatorio, c.regra, c.ordem, c.condicao,
+select p.id as processo_id, p.empresa_id, c.etapa, c.tipo_documento, c.obrigatorio, c.regra, c.ordem, c.condicao, c.regra_cond,
+       app._regra_branco(p.terreno_id, c.regra, c.regra_cond) as regra_efetiva,
        coalesce(app.condicao_aplica(p.terreno_id, c.condicao), false) as aplica,
        td.nome as tipo_nome, td.validade_dias,
        em.ordem <= ea.ordem as ativo,
@@ -788,10 +804,10 @@ begin
   -- (negociação do terreno dividida em partes: o checklist é de cada parte)
   if ((p_destino_tipo = 'etapa' and ordem_destino > ordem_atual) or (p_destino_tipo = 'status' and p_destino = 'concluido'))
      and not app._tem_partes(p.id) then
-    for r in select c.tipo_nome, c.situacao, c.condicao, c.regra from app.v_checklist c
-             where c.processo_id = p.id and c.etapa = p.etapa_atual and c.obrigatorio and c.aplica order by c.ordem loop
+    for r in select c.tipo_nome, c.situacao, c.condicao, c.regra_efetiva from app.v_checklist c
+             where c.processo_id = p.id and c.etapa = p.etapa_atual and c.regra_efetiva <> 'livre' and c.aplica order by c.ordem loop
       itens := itens || jsonb_build_object('ok', r.situacao = 'validado', 'tipo', 'documento', 'bloqueio_gestor', false, 'condicao', r.condicao,
-        'justifica', r.regra = 'justifica',
+        'justifica', r.regra_efetiva = 'justifica',
         'texto', r.tipo_nome || case r.situacao when 'validado' then ' validado' when 'pendente' then ': não enviado'
                                                 when 'recebido' then ': aguardando validação' when 'vencido' then ': vencido' else ': rejeitado' end);
     end loop;
@@ -822,20 +838,20 @@ begin
   if p_destino_tipo = 'etapa' and ordem_destino > ordem_atual then
     v_sub_inicial := app._subetapa_inicial(p.empresa_id, p.fase, p_destino);
     -- pré-requisito com condição só conta quando ela vale para o terreno
-    for r in select pr.requisito, s.nome, (array_agg(pr.condicao))[1] as condicao, bool_and(pr.regra = 'justifica') as justifica from app.prerequisitos_modelo pr
+    for r in select pr.requisito, s.nome, (array_agg(pr.condicao))[1] as condicao, bool_and(app._regra_branco(p.terreno_id, pr.regra, pr.regra_cond) = 'justifica') as justifica from app.prerequisitos_modelo pr
              join app.subetapas_modelo s on s.empresa_id = pr.empresa_id and s.fase = pr.fase and s.codigo = pr.requisito
              where pr.empresa_id = p.empresa_id and pr.fase = p.fase
                and ((pr.alvo_tipo = 'etapa' and pr.alvo = p_destino) or (pr.alvo_tipo = 'subetapa' and pr.alvo = v_sub_inicial))
-               and app.avaliar_condicao(p.terreno_id, pr.condicao)
+               and app.avaliar_condicao(p.terreno_id, pr.condicao) and app._regra_branco(p.terreno_id, pr.regra, pr.regra_cond) <> 'livre'
              group by pr.requisito, s.nome, s.ordem order by s.ordem loop
       itens := itens || jsonb_build_object('ok', app._passou_por(p.id, r.requisito), 'tipo', 'prerequisito', 'bloqueio_gestor', false,
         'requisito', r.requisito, 'texto', 'Passar por ' || r.nome, 'condicao', r.condicao, 'justifica', r.justifica);
     end loop;
   elsif p_destino_tipo = 'subetapa' then
-    for r in select pr.requisito, s.nome, pr.condicao, pr.regra = 'justifica' as justifica from app.prerequisitos_modelo pr
+    for r in select pr.requisito, s.nome, pr.condicao, app._regra_branco(p.terreno_id, pr.regra, pr.regra_cond) = 'justifica' as justifica from app.prerequisitos_modelo pr
              join app.subetapas_modelo s on s.empresa_id = pr.empresa_id and s.fase = pr.fase and s.codigo = pr.requisito
              where pr.empresa_id = p.empresa_id and pr.fase = p.fase and pr.alvo_tipo = 'subetapa' and pr.alvo = p_destino
-               and app.avaliar_condicao(p.terreno_id, pr.condicao) loop
+               and app.avaliar_condicao(p.terreno_id, pr.condicao) and app._regra_branco(p.terreno_id, pr.regra, pr.regra_cond) <> 'livre' loop
       itens := itens || jsonb_build_object('ok', app._passou_por(p.id, r.requisito), 'tipo', 'prerequisito', 'bloqueio_gestor', false,
         'requisito', r.requisito, 'texto', 'Passar por ' || r.nome, 'condicao', r.condicao, 'justifica', r.justifica);
     end loop;
@@ -2399,20 +2415,23 @@ begin
 end $$;
 
 -- Checklist de documentos para sair da etapa: incluir, marcar obrigatório, tirar.
--- p_regra (jornada, 1/nov/2026): bloqueia, justifica ou livre; nulo = pelo p_obrigatorio
+-- p_regra (jornada, 1/nov/2026): bloqueia, justifica ou livre; nulo = pelo p_obrigatorio.
+-- p_regra_cond: regra condicional [{condicao, regra}]; nulo mantém, '[]' tira.
 create or replace function app.salvar_checklist(p_empresa uuid, p_fase text, p_etapa text, p_tipo_documento text, p_obrigatorio boolean default true, p_ordem int default null,
-  p_regra text default null)
+  p_regra text default null, p_regra_cond jsonb default null)
 returns void
 language plpgsql security definer set search_path = ''
 as $$
 declare v_regra text := coalesce(p_regra, case when coalesce(p_obrigatorio, true) then 'bloqueia' else 'livre' end);
 begin
   perform app.exigir_administrador(p_empresa);
-  insert into app.checklist_modelo (empresa_id, fase, etapa, tipo_documento, regra, ordem)
+  insert into app.checklist_modelo (empresa_id, fase, etapa, tipo_documento, regra, ordem, regra_cond)
   values (p_empresa, p_fase, p_etapa, p_tipo_documento, v_regra,
-          coalesce(p_ordem, (select coalesce(max(ordem), 0) + 1 from app.checklist_modelo where empresa_id = p_empresa and fase = p_fase and etapa = p_etapa)))
+          coalesce(p_ordem, (select coalesce(max(ordem), 0) + 1 from app.checklist_modelo where empresa_id = p_empresa and fase = p_fase and etapa = p_etapa)),
+          app._regra_cond_config(p_empresa, p_regra_cond))
   on conflict (empresa_id, fase, etapa, tipo_documento)
-  do update set regra = excluded.regra, ordem = coalesce(p_ordem, app.checklist_modelo.ordem);
+  do update set regra = excluded.regra, ordem = coalesce(p_ordem, app.checklist_modelo.ordem),
+                regra_cond = case when p_regra_cond is null then app.checklist_modelo.regra_cond else excluded.regra_cond end;
 end $$;
 
 create or replace function app.remover_checklist(p_empresa uuid, p_fase text, p_etapa text, p_tipo_documento text)
@@ -2629,7 +2648,7 @@ grant execute on function
   app.salvar_subetapa(uuid, text, text, jsonb), app.apagar_subetapa(uuid, text, text),
   app.adicionar_prerequisito(uuid, text, text, text, text), app.remover_prerequisito(uuid),
   app.salvar_motivo(uuid, text, text, jsonb), app.apagar_motivo(uuid, text, text),
-  app.salvar_checklist(uuid, text, text, text, boolean, int, text), app.remover_checklist(uuid, text, text, text),
+  app.salvar_checklist(uuid, text, text, text, boolean, int, text, jsonb), app.remover_checklist(uuid, text, text, text),
   app.registrar_proposta(uuid, text, numeric, text, text, date, date, text), app.atualizar_status_proposta(uuid, text),
   app.vincular_viabilidade(uuid, text, numeric, numeric, uuid),
   app.registrar_documento(uuid, text, text, text, uuid, uuid, uuid, text, bigint, date, uuid), app.revisar_documento(uuid, boolean),

@@ -4612,6 +4612,17 @@ html[data-tema="escuro"] .jn-et button { color: #c9d6ff } html[data-tema="escuro
 html[data-tema="escuro"] .jn-r { background: #0c1433 } html[data-tema="escuro"] .jn-ri { color: #7c8cff } html[data-tema="escuro"] .jn-rs { background: #060c20; color: #f2f5ff; border-color: rgba(124,140,255,.28); color-scheme: dark }
 html[data-tema="escuro"] .jn-fora li { border-color: rgba(124,140,255,.28) } html[data-tema="escuro"] .adv-lista li .av { color: #ffdf99 }
 .jn-form fieldset.field { border: 0; padding: 0; margin: 0; min-width: 0 } .jn-form fieldset.field legend { padding: 0; margin-bottom: 6px; font-size: 13px; color: var(--texto-suave) }
+/* regra em branco condicional (jornada) */
+.jn-rc { display: flex; flex-direction: column; gap: 8px } .jn-rc-aj { margin: 0 0 12px }
+.jn-rcl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid #c4c7c5; border-radius: 12px }
+.jn-rcl.jn-rcd { background: #f0f4f9; border-color: transparent } .jn-rcq { display: flex; flex-direction: column; gap: 2px; min-width: 0 }
+.jn-rcr { display: flex; align-items: center; gap: 4px } .jn-rcr select { height: 36px; border: 1px solid #c4c7c5; border-radius: 8px; padding: 0 8px; font: inherit; background: #fff; color: #1f1f1f }
+.jn-rc .tkm-add { align-self: flex-start } .jn-rcf { display: block; margin-top: 4px }
+.jn-rg button { flex: 1 1 auto }
+@media (max-width: 720px) { .jn-rcl { grid-template-columns: 1fr } .jn-rcr select { flex: 1 } }
+html[data-tema="escuro"] .jn-rcl { border-color: #2a3358 } html[data-tema="escuro"] .jn-rcl.jn-rcd { background: #0c1433 }
+html[data-tema="escuro"] .jn-rcr select { background: #060c20; border-color: #2a3358; color: #f2f5ff }
+.jn-rcf .linkbtn { margin-left: 4px }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

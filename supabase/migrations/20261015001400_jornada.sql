@@ -33,6 +33,7 @@ create table app.jornada_itens (
   ajuda       text,
   forma       text check (forma in ('menu','radio','chips','segmentado','chave','botoes','caixas','linha','paragrafo','campo')),
   regra       text not null default 'bloqueia' check (regra in ('bloqueia','justifica','livre')),
+  regra_cond  jsonb,          -- regra condicional [{condicao, regra}]: a primeira que vale decide
   condicao    jsonb,
   ordem       int not null default 0,
   ativo       boolean not null default true,
@@ -87,16 +88,18 @@ returns boolean language sql stable security definer set search_path = '' as $$
 -- Pendências da jornada para a passagem (entram em app._pendencias)
 create or replace function app._jornada_pendencias(p app.processos, p_destino_tipo text, p_destino text)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
-declare itens jsonb := '[]'::jsonb; r record; ok boolean;
+declare itens jsonb := '[]'::jsonb; r record; ok boolean; v_regra text;
 begin
   if p.parte_id is not null then return itens; end if;   -- a jornada é do terreno; a parte anda pela negociação dela
   for r in select i.*, d.titulo from app.jornada_itens i cross join lateral app.campo_def(i.empresa_id, i.campo) d
-           where i.empresa_id = p.empresa_id and i.fase = p.fase and i.ativo and i.regra <> 'livre'
+           where i.empresa_id = p.empresa_id and i.fase = p.fase and i.ativo
              and app._jornada_na_saida(p, p_destino_tipo, p_destino, i.etapa, i.subetapa)
              and app.avaliar_condicao(p.terreno_id, i.condicao)
            order by app._ordem_subetapa(p.empresa_id, p.fase, i.subetapa) nulls last, i.ordem loop
+    v_regra := app._regra_branco(p.terreno_id, r.regra, r.regra_cond);
+    continue when v_regra = 'livre';
     ok := app._valor_campo(p.terreno_id, r.campo) is not null;
-    itens := itens || jsonb_build_object('ok', ok, 'tipo', 'jornada', 'bloqueio_gestor', false, 'justifica', r.regra = 'justifica',
+    itens := itens || jsonb_build_object('ok', ok, 'tipo', 'jornada', 'bloqueio_gestor', false, 'justifica', v_regra = 'justifica',
       'item_id', r.id, 'campo', r.campo, 'condicao', r.condicao,
       'texto', coalesce(r.pergunta, r.titulo) || case when ok then '' else ': não informado' end);
   end loop;
@@ -132,7 +135,7 @@ begin
     'fase', p.fase, 'etapa', p.etapa_atual, 'subetapa', p.subetapa_atual,
     'itens', coalesce((select jsonb_agg(jsonb_build_object(
         'id', i.id, 'subetapa', i.subetapa, 'campo', i.campo, 'pergunta', coalesce(i.pergunta, d.titulo), 'ajuda', i.ajuda,
-        'forma', i.forma, 'regra', i.regra, 'condicao', i.condicao, 'tipo', d.tipo, 'unidade', d.unidade, 'opcoes', to_jsonb(d.opcoes),
+        'forma', i.forma, 'regra', i.regra, 'regra_cond', i.regra_cond, 'regra_efetiva', app._regra_branco(p.terreno_id, i.regra, i.regra_cond), 'condicao', i.condicao, 'tipo', d.tipo, 'unidade', d.unidade, 'opcoes', to_jsonb(d.opcoes),
         'formato', d.formato, 'editavel', d.editavel, 'aplica', app.avaliar_condicao(p.terreno_id, i.condicao),
         'valor', app._valor_campo(p.terreno_id, i.campo))
         order by app._ordem_subetapa(p.empresa_id, p.fase, i.subetapa) nulls first, i.ordem)
@@ -157,7 +160,7 @@ begin
   end if;
 end $$;
 
--- p_dados: fase, etapa, subetapa, campo, pergunta, ajuda, forma, regra, condicao, ordem, ativo
+-- p_dados: fase, etapa, subetapa, campo, pergunta, ajuda, forma, regra, regra_cond, condicao, ordem, ativo
 create or replace function app.salvar_item_jornada(p_empresa uuid, p_id uuid, p_dados jsonb)
 returns uuid language plpgsql security definer set search_path = '' as $$
 declare i app.jornada_itens; d record; v_id uuid := coalesce(p_id, gen_random_uuid()); v_forma text;
@@ -177,17 +180,21 @@ begin
   if v_forma is not null and not (v_forma = any (fluxo.formas(d.tipo, cardinality(d.opcoes)))) then
     raise exception 'A forma % não serve para o campo %', v_forma, d.titulo using errcode = '22023';
   end if;
-  insert into app.jornada_itens (id, empresa_id, fase, etapa, subetapa, campo, pergunta, ajuda, forma, regra, condicao, ordem, ativo)
+  if coalesce(p_dados->>'regra', i.regra, 'bloqueia') not in ('bloqueia','justifica','livre') then
+    raise exception 'Regra inválida: %', p_dados->>'regra' using errcode = '22023';
+  end if;
+  insert into app.jornada_itens (id, empresa_id, fase, etapa, subetapa, campo, pergunta, ajuda, forma, regra, regra_cond, condicao, ordem, ativo)
   values (v_id, p_empresa, i.fase, i.etapa, i.subetapa, i.campo,
           case when p_dados ? 'pergunta' then nullif(trim(p_dados->>'pergunta'), '') else i.pergunta end,
           case when p_dados ? 'ajuda' then nullif(trim(p_dados->>'ajuda'), '') else i.ajuda end,
           v_forma, coalesce(p_dados->>'regra', i.regra, 'bloqueia'),
+          case when p_dados ? 'regra_cond' then app._regra_cond_config(p_empresa, p_dados->'regra_cond') else i.regra_cond end,
           case when p_dados ? 'condicao' then app._condicao_config(p_empresa, p_dados->'condicao') else i.condicao end,
           coalesce((p_dados->>'ordem')::int, i.ordem,
                    (select coalesce(max(ordem), 0) + 1 from app.jornada_itens where empresa_id = p_empresa and fase = i.fase and etapa = i.etapa)),
           coalesce((p_dados->>'ativo')::boolean, i.ativo, true))
   on conflict (id) do update set fase = excluded.fase, etapa = excluded.etapa, subetapa = excluded.subetapa, campo = excluded.campo,
-    pergunta = excluded.pergunta, ajuda = excluded.ajuda, forma = excluded.forma, regra = excluded.regra, condicao = excluded.condicao,
+    pergunta = excluded.pergunta, ajuda = excluded.ajuda, forma = excluded.forma, regra = excluded.regra, regra_cond = excluded.regra_cond, condicao = excluded.condicao,
     ordem = excluded.ordem, ativo = excluded.ativo;
   return v_id;
 exception when unique_violation then
@@ -241,19 +248,22 @@ begin
 end $$;
 
 -- Regra do pré-requisito na jornada: bloqueia ou justifica
-create or replace function app.regra_prerequisito(p_id uuid, p_regra text)
+-- p_regra_cond: regra condicional [{condicao, regra}]; nulo mantém, '[]' tira.
+create or replace function app.regra_prerequisito(p_id uuid, p_regra text, p_regra_cond jsonb default null)
 returns void language plpgsql security definer set search_path = '' as $$
 declare v_emp uuid;
 begin
   select empresa_id into v_emp from app.prerequisitos_modelo where id = p_id;
   if v_emp is null then raise exception 'Pré-requisito não encontrado' using errcode = 'P0002'; end if;
   perform app.exigir_administrador(v_emp);
-  update app.prerequisitos_modelo set regra = p_regra where id = p_id;
+  update app.prerequisitos_modelo set regra = coalesce(p_regra, regra),
+         regra_cond = case when p_regra_cond is null then regra_cond else app._regra_cond_config(v_emp, p_regra_cond) end
+   where id = p_id;
 end $$;
 
 revoke all on function app._jornada_na_saida(app.processos, text, text, text, text), app._jornada_pendencias(app.processos, text, text),
   app._jornada_pede(app.processos, text, text, text), app._jornada_lugar(uuid, text, text, text) from public;
 revoke all on function app.jornada_processo(uuid), app.salvar_item_jornada(uuid, uuid, jsonb), app.apagar_item_jornada(uuid),
-  app.salvar_regra_jornada(uuid, uuid, jsonb), app.apagar_regra_jornada(uuid), app.regra_prerequisito(uuid, text) from public;
+  app.salvar_regra_jornada(uuid, uuid, jsonb), app.apagar_regra_jornada(uuid), app.regra_prerequisito(uuid, text, jsonb) from public;
 grant execute on function app.jornada_processo(uuid), app.salvar_item_jornada(uuid, uuid, jsonb), app.apagar_item_jornada(uuid),
-  app.salvar_regra_jornada(uuid, uuid, jsonb), app.apagar_regra_jornada(uuid), app.regra_prerequisito(uuid, text) to authenticated;
+  app.salvar_regra_jornada(uuid, uuid, jsonb), app.apagar_regra_jornada(uuid), app.regra_prerequisito(uuid, text, jsonb) to authenticated;
