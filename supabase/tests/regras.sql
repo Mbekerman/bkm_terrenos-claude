@@ -2788,4 +2788,94 @@ select pg_temp.ok((select referencia_localizacao from app.terrenos where id = :'
 select pg_temp.falha(format($$select app.gravar_campo(%L, 'terreno.referencia_localizacao', '"perto da padaria"')$$, :'tcd'), 'o terreno recusa valor fora da máscara do campo');
 select pg_temp.como(:'diretor');
 select app.salvar_campo(:'emp', 'terreno.referencia_localizacao', null, false, false, '');
+
+-- ---------------------------------------------------------------------
+-- Jornada do terreno (1/nov/2026): perguntas e campos por etapa e subetapa,
+-- campos novos do terreno, regra de cada item e regras pelo valor
+-- ---------------------------------------------------------------------
+select pg_temp.como(:'diretor');
+select pg_temp.falha(format($$select app.salvar_campo_terreno(%L, null, '{"titulo":"Topografia","tipo":"texto"}')$$, :'emp'), 'o campo novo não repete o título de um campo do catálogo');
+select pg_temp.falha(format($$select app.salvar_campo_terreno(%L, null, '{"titulo":"Uma opção","tipo":"lista","opcoes":["Só"]}')$$, :'emp'), 'campo de lista precisa de ao menos duas opções');
+select app.salvar_campo_terreno(:'emp', null, '{"titulo":"Recuo frontal atende","tipo":"lista","opcoes":["Sim","Não","A verificar"]}') as cjr \gset
+select app.salvar_campo_terreno(:'emp', null, '{"titulo":"Área demolir estimada","tipo":"numero","unidade":"m²"}') as cjd \gset
+select 'personalizado.' || codigo as kjr from app.campos_terreno where id = :'cjr' \gset
+select 'personalizado.' || codigo as kjd from app.campos_terreno where id = :'cjd' \gset
+select pg_temp.ok((select tipo = 'lista' and condicao and cartao from app.v_campos where empresa_id = :'emp' and chave = :'kjr'),
+  'o campo novo do terreno entra no catálogo da empresa, liberado para condição e cartão');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$select app.salvar_item_jornada(%L, null, '{"fase":"novos_negocios","etapa":"triagem","campo":"terreno.topografia"}')$$, :'emp'), 'só o administrador monta a jornada');
+select pg_temp.como(:'diretor');
+select pg_temp.falha(format($$select app.salvar_item_jornada(%L, null, '{"fase":"novos_negocios","etapa":"triagem","campo":"terreno.topografia","forma":"chave"}')$$, :'emp'),
+  'a forma de responder segue o tipo do campo (chave só com duas opções)');
+select pg_temp.falha(format($$select app.salvar_item_jornada(%L, null, '{"fase":"novos_negocios","etapa":"triagem","subetapa":"estudo_massa","campo":"terreno.topografia"}')$$, :'emp'),
+  'a subetapa do item é da etapa');
+select app.salvar_item_jornada(:'emp', null, '{"fase":"novos_negocios","etapa":"triagem","campo":"terreno.topografia","pergunta":"Como é o terreno?","forma":"chips"}') as ij1 \gset
+select pg_temp.falha(format($$select app.salvar_item_jornada(%L, null, '{"fase":"novos_negocios","etapa":"triagem","campo":"terreno.topografia"}')$$, :'emp'), 'o mesmo campo não entra duas vezes no mesmo lugar');
+select app.salvar_item_jornada(:'emp', null, jsonb_build_object('fase','novos_negocios','etapa','triagem','subetapa','aguardando_informacoes','campo',:'kjr','regra','justifica')) as ij2 \gset
+select app.salvar_item_jornada(:'emp', null, jsonb_build_object('fase','novos_negocios','etapa','triagem','subetapa','aguardando_informacoes','campo',:'kjd',
+  'condicao', '{"modo":"todas","itens":[{"campo":"terreno.necessidade_demolicao","op":"em","valores":["confirmada"]}]}'::jsonb)) as ij3 \gset
+select app.salvar_item_jornada(:'emp', null, '{"fase":"novos_negocios","etapa":"triagem","campo":"terreno.uso_atual","regra":"livre"}') as ij4 \gset
+select pg_temp.falha(format($$select app.salvar_regra_jornada(%L, null, '{"fase":"novos_negocios","etapa":"triagem","acao":"bloqueia","mensagem":"X"}')$$, :'emp'), 'a regra pelo valor precisa de condição');
+select app.salvar_regra_jornada(:'emp', null, '{"fase":"novos_negocios","etapa":"triagem","acao":"bloqueia","mensagem":"Terreno irregular: refazer a análise",
+  "condicao":{"modo":"todas","itens":[{"campo":"terreno.topografia","op":"em","valores":["irregular"]}]}}') as rj1 \gset
+select app.salvar_regra_jornada(:'emp', null, '{"fase":"novos_negocios","etapa":"triagem","acao":"diretor","mensagem":"Declive: o diretor aprova",
+  "condicao":{"modo":"todas","itens":[{"campo":"terreno.topografia","op":"em","valores":["declive"]}]}}') as rj2 \gset
+select app.salvar_regra_jornada(:'emp', null, jsonb_build_object('fase','novos_negocios','etapa','triagem','acao','avisa','mensagem','Recuo a verificar com o arquiteto',
+  'condicao', jsonb_build_object('modo','todas','itens', jsonb_build_array(jsonb_build_object('campo', :'kjr', 'op', 'em', 'valores', jsonb_build_array('A verificar')))))) as rj3 \gset
+select app.salvar_checklist(:'emp', 'novos_negocios', 'triagem', 'iptu', null, null, 'justifica');
+select pg_temp.ok((select regra = 'justifica' and obrigatorio from app.checklist_modelo where empresa_id = :'emp' and fase = 'novos_negocios' and etapa = 'triagem' and tipo_documento = 'iptu'),
+  'o documento da jornada ganha a regra (avança com justificativa conta como exigido)');
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude, poligono_geojson)
+  values (:'emp', 'Terreno da jornada', :'gestor', 'corretor', :'sp', -23.64, -46.64, pg_temp.quadra(-46.64, -23.64)) returning id as tjn \gset
+select pg_temp.como(:'analista');
+select (app.registrar_oferta(:'tjn', 2500000, 'dinheiro')->>'processo_id') as pjn \gset
+select app.checar_passagem(:'pjn') as cj1 \gset
+select pg_temp.ok((select count(*) from jsonb_array_elements(:'cj1'::jsonb->'itens') i where i->>'tipo' = 'jornada') = 2
+  and exists (select 1 from jsonb_array_elements(:'cj1'::jsonb->'itens') i where i->>'texto' = 'Como é o terreno?: não informado' and not (i->>'justifica')::boolean)
+  and exists (select 1 from jsonb_array_elements(:'cj1'::jsonb->'itens') i where i->>'campo' = :'kjr' and (i->>'justifica')::boolean)
+  and not exists (select 1 from jsonb_array_elements(:'cj1'::jsonb->'itens') i where i->>'campo' in (:'kjd', 'terreno.uso_atual')),
+  'sair da etapa pede os itens da etapa e das subetapas; condição que não vale e item livre não travam');
+select pg_temp.ok(not (:'cj1'::jsonb->>'pode_justificar')::boolean and not (:'cj1'::jsonb->>'pode_forcar')::boolean,
+  'com item que bloqueia, o analista não passa nem justificando');
+select pg_temp.ok((select count(*) = 4 and count(*) filter (where (x->>'aplica')::boolean) = 3 from jsonb_array_elements(app.jornada_processo(:'pjn')->'itens') x),
+  'a jornada da etapa mostra todos os itens e diz quais valem agora');
+select pg_temp.falha(format($$select app.mover_subetapa(%L, 'aguardando_documentos')$$, :'pjn'), 'sair da subetapa sem a resposta trava');
+select pg_temp.falha(format($$select app.mover_subetapa(%L, 'aguardando_documentos', true, '')$$, :'pjn'), 'passar sem a resposta pede justificativa');
+select app.mover_subetapa(:'pjn', 'aguardando_documentos', true, 'O arquiteto responde na visita') \gset
+select pg_temp.ok((select subetapa_atual = 'aguardando_documentos' from app.processos where id = :'pjn')
+  and (select forcado and comentario = 'O arquiteto responde na visita' from app.processo_transicoes where processo_id = :'pjn' order by em desc, id desc limit 1),
+  'item que pede justificativa: o analista passa justificando, e fica no histórico');
+select pg_temp.falha(format($$select app.gravar_campo(%L, %L, '"Talvez"')$$, :'tjn', :'kjr'), 'o campo novo de lista só aceita as opções');
+select pg_temp.falha(format($$select app.gravar_campo(%L, %L, '"muito"')$$, :'tjn', :'kjd'), 'o campo novo de número recusa texto');
+select app.gravar_campo(:'tjn', :'kjr', '"A verificar"');
+select app.gravar_campo(:'tjn', 'terreno.necessidade_demolicao', '"confirmada"');
+select app.gravar_campo(:'tjn', 'terreno.topografia', '"irregular"');
+select pg_temp.ok((select valor #>> '{}' = 'A verificar' from app.terreno_valores where terreno_id = :'tjn' and campo_id = :'cjr')
+  and (app.campo_cartao(:'tjn', :'kjr')->>'valor') = 'A verificar',
+  'a resposta grava no próprio terreno (fonte única: ficha, cartão e jornada leem o mesmo valor)');
+select app.checar_passagem(:'pjn') as cj2 \gset
+select pg_temp.ok(exists (select 1 from jsonb_array_elements(:'cj2'::jsonb->'itens') i where i->>'tipo' = 'regra_valor' and not (i->>'ok')::boolean and i->>'texto' = 'Terreno irregular: refazer a análise')
+  and exists (select 1 from jsonb_array_elements(:'cj2'::jsonb->'itens') i where i->>'tipo' = 'regra_valor' and (i->>'aviso')::boolean and (i->>'ok')::boolean)
+  and exists (select 1 from jsonb_array_elements(:'cj2'::jsonb->'itens') i where i->>'campo' = :'kjd' and not (i->>'ok')::boolean),
+  'regra pelo valor trava ou só avisa; o item condicional entra quando a condição passa a valer');
+select app.gravar_campo(:'tjn', :'kjd', '"350"');
+select app.gravar_campo(:'tjn', 'terreno.topografia', '"declive"');
+select pg_temp.falha(format($$select app.mover_etapa(%L)$$, :'pjn'), 'o documento que pede justificativa ainda trava sem ela');
+select app.checar_passagem(:'pjn') as cj3 \gset
+select pg_temp.ok((:'cj3'::jsonb->>'pode_justificar')::boolean and (:'cj3'::jsonb->'aprovacoes') ? 'diretor',
+  'só falta o que pede justificativa; o declive pede o diretor');
+select app.mover_etapa(:'pjn', true, 'O vendedor manda o IPTU esta semana') as mj \gset
+select pg_temp.ok(:'mj'::jsonb->>'resultado' = 'aguardando_aprovacao'
+  and exists (select 1 from app.aprovacoes where processo_id = :'pjn' and status = 'pendente' and nivel = 'diretor'),
+  'a regra pelo valor vira pedido de aprovação do diretor');
+select pg_temp.como(:'diretor');
+select app.decidir_aprovacao((select pedido_id from app.aprovacoes where processo_id = :'pjn' and status = 'pendente' limit 1), true, 'Declive suave, ok');
+select pg_temp.ok((select etapa_atual = 'estudos' from app.processos where id = :'pjn'), 'aprovado, o terreno avança');
+select app.apagar_campo_terreno(:'cjd') as aj \gset
+select pg_temp.ok(:'aj' = 'desativado' and (select not ativo from app.campos_terreno where id = :'cjd'), 'campo novo com valor não se apaga: desativa');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$select app.gravar_campo(%L, %L, '"10"')$$, :'tjn', :'kjd'), 'campo desativado não grava');
+select pg_temp.como(:'diretor');
+select app.apagar_item_jornada(:'ij4');
+select pg_temp.ok(not exists (select 1 from app.jornada_itens where id = :'ij4'), 'tirar da jornada apaga o item; o valor fica no terreno');
 \echo 'TODOS OS TESTES PASSARAM'

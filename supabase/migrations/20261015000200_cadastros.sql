@@ -160,6 +160,9 @@ create table app.prerequisitos_modelo (
   alvo            text not null,
   requisito       text not null,   -- sempre uma subetapa
   condicao        jsonb,           -- "Vale quando" (31/out/2026): sem condição, vale sempre
+  -- regra da jornada (1/nov/2026): bloqueia (gestor e diretor passam com justificativa)
+  -- ou justifica (qualquer editor passa com justificativa)
+  regra           text not null default 'bloqueia' check (regra in ('bloqueia','justifica')),
   unique nulls not distinct (empresa_id, fase, alvo_tipo, alvo, requisito),
   foreign key (empresa_id, fase, requisito) references app.subetapas_modelo(empresa_id, fase, codigo) on delete cascade
 );
@@ -169,7 +172,10 @@ create table app.checklist_modelo (
   fase            text not null,
   etapa          text not null,  -- documentos exigidos para SAIR desta etapa
   tipo_documento text not null references app.tipos_documento(codigo),
-  obrigatorio    boolean not null default true,
+  -- regra da jornada (1/nov/2026): bloqueia (gestor e diretor passam com justificativa),
+  -- justifica (qualquer editor passa com justificativa) ou livre (opcional, não trava)
+  regra          text not null default 'bloqueia' check (regra in ('bloqueia','justifica','livre')),
+  obrigatorio    boolean generated always as (regra <> 'livre') stored,
   ordem          int not null default 0,
   condicao       jsonb,          -- "Vale quando" (31/out/2026): obrigatório só quando a condição vale
   unique nulls not distinct (empresa_id, fase, etapa, tipo_documento),
@@ -355,15 +361,15 @@ where f <> 'entregue' or s = 'stand_by';
 
 -- Documentos exigidos para SAIR da etapa. A diligência do imóvel corre no
 -- Contrato: só é comprado com certidões validadas e minuta.
-insert into app.checklist_modelo (fase, etapa, tipo_documento, obrigatorio, ordem) values
-  ('novos_negocios','contrato','matricula',          true,  1),
-  ('novos_negocios','contrato','onus_reais',         true,  2),
-  ('novos_negocios','contrato','iptu',               true,  3),
-  ('novos_negocios','contrato','certidoes_vendedor', true,  4),
-  ('novos_negocios','contrato','planialtimetrico',   true,  5),
-  ('novos_negocios','contrato','sondagem_spt',       false, 6),
-  ('novos_negocios','contrato','ambiental',          false, 7),
-  ('novos_negocios','contrato','minuta_promessa',    true,  8);
+insert into app.checklist_modelo (fase, etapa, tipo_documento, regra, ordem) values
+  ('novos_negocios','contrato','matricula',          'bloqueia',  1),
+  ('novos_negocios','contrato','onus_reais',         'bloqueia',  2),
+  ('novos_negocios','contrato','iptu',               'bloqueia',  3),
+  ('novos_negocios','contrato','certidoes_vendedor', 'bloqueia',  4),
+  ('novos_negocios','contrato','planialtimetrico',   'bloqueia',  5),
+  ('novos_negocios','contrato','sondagem_spt',       'livre', 6),
+  ('novos_negocios','contrato','ambiental',          'livre', 7),
+  ('novos_negocios','contrato','minuta_promessa',    'bloqueia',  8);
 
 insert into app.motivos_encerramento (status, codigo, nome, ordem, exige_texto) values
   ('descartado','tecnica',         'Inviabilidade Técnica',            1, false),
@@ -397,10 +403,10 @@ begin
   select new.id, fase, codigo, etapa, nome, ordem, prazo_dias, aprova_gestor, aprova_diretor, aprovacao_modo, ativo from app.subetapas_modelo where empresa_id is null;
   insert into app.status_modelo (empresa_id, fase, status, nome, aprova_gestor, aprova_diretor, aprovacao_modo)
   select new.id, fase, status, nome, aprova_gestor, aprova_diretor, aprovacao_modo from app.status_modelo where empresa_id is null;
-  insert into app.prerequisitos_modelo (empresa_id, fase, alvo_tipo, alvo, requisito, condicao)
-  select new.id, fase, alvo_tipo, alvo, requisito, condicao from app.prerequisitos_modelo where empresa_id is null;
-  insert into app.checklist_modelo (empresa_id, fase, etapa, tipo_documento, obrigatorio, ordem, condicao)
-  select new.id, fase, etapa, tipo_documento, obrigatorio, ordem, condicao from app.checklist_modelo where empresa_id is null;
+  insert into app.prerequisitos_modelo (empresa_id, fase, alvo_tipo, alvo, requisito, condicao, regra)
+  select new.id, fase, alvo_tipo, alvo, requisito, condicao, regra from app.prerequisitos_modelo where empresa_id is null;
+  insert into app.checklist_modelo (empresa_id, fase, etapa, tipo_documento, regra, ordem, condicao)
+  select new.id, fase, etapa, tipo_documento, regra, ordem, condicao from app.checklist_modelo where empresa_id is null;
   insert into app.motivos_encerramento (empresa_id, status, codigo, nome, ordem, exige_texto, ativo)
   select new.id, status, codigo, nome, ordem, exige_texto, ativo from app.motivos_encerramento where empresa_id is null;
   insert into app.zona_parametros (empresa_id, zoneamento_id, tipo, uso, macrozona, lote_area_min_m2, lote_area_max_m2, permitido,

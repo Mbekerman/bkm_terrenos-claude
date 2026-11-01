@@ -125,6 +125,48 @@ create policy ver on app.campos_empresa for select to authenticated using (empre
 grant select on app.campos_empresa to authenticated;
 create trigger t_aud after insert or update or delete on app.campos_empresa for each row execute function app.tg_auditoria();
 
+-- Campos novos do terreno (jornada, 1/nov/2026): o administrador cria, numa pergunta
+-- da jornada ou em Configurações › Campos, o campo que o terreno ainda não tem. A
+-- chave é personalizado.<codigo> e o campo entra em tudo que usa o catálogo:
+-- condição, cartão da tarefa, jornada. O valor mora em app.terreno_valores, um por
+-- terreno (fonte única: a ficha, o cartão e a jornada leem e gravam o mesmo valor).
+-- Com valor, o tipo não muda e o campo não se apaga (desativa).
+create table app.campos_terreno (
+  id          uuid primary key default gen_random_uuid(),
+  empresa_id  uuid not null references app.empresas(id) on delete cascade,
+  codigo      text not null check (codigo ~ '^[a-z0-9_]+$'),
+  titulo      text not null check (length(trim(titulo)) > 0),
+  tipo        text not null check (tipo in ('texto','numero','data','lista','sim_nao')),
+  unidade     text,
+  opcoes      text[],
+  formato     text check (formato in ('moeda','percentual','email','telefone','cpf','cnpj')),
+  condicao    boolean not null default true,
+  cartao      boolean not null default true,
+  ativo       boolean not null default true,
+  criado_por  uuid default auth.uid(),
+  criado_em   timestamptz not null default now(),
+  unique (empresa_id, codigo),
+  check ((tipo = 'lista') = (opcoes is not null and cardinality(opcoes) >= 2)),
+  check (formato is null or (tipo = 'texto' and formato in ('email','telefone','cpf','cnpj')) or (tipo = 'numero' and formato in ('moeda','percentual')))
+);
+create unique index campos_terreno_titulo on app.campos_terreno (empresa_id, lower(titulo));
+create table app.terreno_valores (
+  empresa_id    uuid not null references app.empresas(id) on delete cascade,
+  terreno_id    uuid not null references app.terrenos(id) on delete cascade,
+  campo_id      uuid not null references app.campos_terreno(id),
+  valor         jsonb not null,
+  alterado_por  uuid default auth.uid(),
+  alterado_em   timestamptz not null default clock_timestamp(),
+  primary key (terreno_id, campo_id)
+);
+alter table app.campos_terreno enable row level security;
+alter table app.terreno_valores enable row level security;
+create policy ver on app.campos_terreno for select to authenticated using (empresa_id in (select app.minhas_empresas()));
+create policy ver on app.terreno_valores for select to authenticated using (empresa_id in (select app.minhas_empresas()) and app.ve_terreno(terreno_id));
+grant select on app.campos_terreno, app.terreno_valores to authenticated;
+create trigger t_aud after insert or update or delete on app.campos_terreno for each row execute function app.tg_auditoria();
+create trigger t_aud after insert or update or delete on app.terreno_valores for each row execute function app.tg_auditoria();
+
 -- Definição do campo para a empresa (título, condição e cartão já com a escolha dela)
 create or replace function app.campo_def(p_empresa uuid, p_chave text)
 returns table (chave text, origem text, coluna text, titulo text, tipo text, unidade text, opcoes text[], vazio text, editavel boolean, condicao boolean, cartao boolean, formato text)
@@ -132,14 +174,23 @@ language sql stable security definer set search_path = '' as $$
   select c.chave, c.origem, c.coluna, coalesce(x.titulo, c.titulo), c.tipo, c.unidade, c.opcoes, c.vazio, c.editavel,
          coalesce(x.condicao, c.condicao), coalesce(x.cartao, c.cartao), coalesce(c.formato, x.formato)
   from app.campos_catalogo c left join app.campos_empresa x on x.empresa_id = p_empresa and x.chave = c.chave
-  where c.chave = p_chave $$;
+  where c.chave = p_chave
+  union all
+  -- campo novo do terreno: desativado, só leitura e fora das condições e do cartão
+  select 'personalizado.' || k.codigo, 'personalizado', null, k.titulo, k.tipo, k.unidade, k.opcoes, null, k.ativo,
+         k.condicao and k.ativo, k.cartao and k.ativo, k.formato
+  from app.campos_terreno k where k.empresa_id = p_empresa and 'personalizado.' || k.codigo = p_chave $$;
 
 create view app.v_campos with (security_invoker = true) as
 select e.empresa_id, c.chave, c.origem, c.coluna, c.titulo as titulo_padrao, coalesce(x.titulo, c.titulo) as titulo, c.tipo, c.unidade, c.opcoes,
        c.editavel, coalesce(x.condicao, c.condicao) as condicao, coalesce(x.cartao, c.cartao) as cartao, coalesce(c.formato, x.formato) as formato, c.ordem
 from app.campos_catalogo c
 cross join lateral app.minhas_empresas() e(empresa_id)
-left join app.campos_empresa x on x.empresa_id = e.empresa_id and x.chave = c.chave;
+left join app.campos_empresa x on x.empresa_id = e.empresa_id and x.chave = c.chave
+union all
+select k.empresa_id, 'personalizado.' || k.codigo, 'personalizado', null, k.titulo, k.titulo, k.tipo, k.unidade, k.opcoes,
+       k.ativo, k.condicao and k.ativo, k.cartao and k.ativo, k.formato, 1000
+from app.campos_terreno k where k.empresa_id in (select app.minhas_empresas());
 grant select on app.v_campos to authenticated;
 
 -- Administrador: título (vazio volta ao padrão; dois campos não têm o mesmo título), condição, cartão e,
@@ -154,7 +205,8 @@ begin
   v_tit := nullif(trim(p_titulo), '');
   if v_tit = c.titulo then v_tit := null; end if;
   if exists (select 1 from app.campos_catalogo o left join app.campos_empresa x on x.empresa_id = p_empresa and x.chave = o.chave
-             where o.chave <> p_chave and lower(coalesce(x.titulo, o.titulo)) = lower(coalesce(v_tit, c.titulo))) then
+             where o.chave <> p_chave and lower(coalesce(x.titulo, o.titulo)) = lower(coalesce(v_tit, c.titulo)))
+     or exists (select 1 from app.campos_terreno k where k.empresa_id = p_empresa and lower(k.titulo) = lower(coalesce(v_tit, c.titulo))) then
     raise exception 'Já existe um campo com o título %', coalesce(v_tit, c.titulo) using errcode = '23505';
   end if;
   v_fmt := case when p_formato is null then (select formato from app.campos_empresa where empresa_id = p_empresa and chave = p_chave) else nullif(p_formato, '') end;
@@ -197,6 +249,11 @@ create or replace function app._valor_campo(p_terreno uuid, p_chave text)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
 declare c app.campos_catalogo; v jsonb; v_proc uuid; v_of uuid; v_prop uuid;
 begin
+  if p_chave like 'personalizado.%' then
+    select x.valor into v from app.terreno_valores x join app.campos_terreno k on k.id = x.campo_id
+    where x.terreno_id = p_terreno and 'personalizado.' || k.codigo = p_chave;
+    return case when v is null or v = 'null'::jsonb or (jsonb_typeof(v) = 'string' and v #>> '{}' = '') then null else v end;
+  end if;
   select * into c from app.campos_catalogo where chave = p_chave;
   if c.chave is null then return null; end if;
   if c.origem = 'terreno' then
@@ -346,10 +403,41 @@ end $$;
 create or replace function app.gravar_campo(p_terreno uuid, p_chave text, p_valor jsonb)
 returns void language plpgsql security definer set search_path = '' as $$
 declare c app.campos_catalogo; t app.terrenos; v_of uuid; v_fmt text; v_val jsonb := case when p_valor = 'null'::jsonb then null else p_valor end;
+  k app.campos_terreno;
 begin
   select * into t from app.terrenos where id = p_terreno;
   if t.id is null or not app.ve_terreno(p_terreno) then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
   perform app.exigir_editor(t.empresa_id);
+  -- campo novo do terreno: confere o tipo e a máscara; em branco apaga o valor
+  if p_chave like 'personalizado.%' then
+    select * into k from app.campos_terreno where empresa_id = t.empresa_id and 'personalizado.' || codigo = p_chave;
+    if k.id is null then raise exception 'Campo desconhecido: %', p_chave using errcode = 'P0002'; end if;
+    if not k.ativo then raise exception 'O campo % está desativado', k.titulo using errcode = '22023'; end if;
+    if v_val is not null and jsonb_typeof(v_val) = 'string' and trim(v_val #>> '{}') = '' then v_val := null; end if;
+    if v_val is not null then
+      begin
+        v_val := case k.tipo
+          when 'numero' then to_jsonb((v_val #>> '{}')::numeric)
+          when 'data' then to_jsonb((v_val #>> '{}')::date)
+          when 'sim_nao' then to_jsonb((v_val #>> '{}')::boolean)
+          else to_jsonb(v_val #>> '{}') end;
+      exception when others then
+        raise exception 'Valor inválido para %', k.titulo using errcode = '22023';
+      end;
+      if k.tipo = 'lista' and not (v_val #>> '{}' = any (k.opcoes)) then
+        raise exception 'Valor % não é opção de %', v_val #>> '{}', k.titulo using errcode = '22023';
+      end if;
+      if k.tipo = 'texto' and k.formato is not null then v_val := to_jsonb(fluxo.validar_formato(k.formato, v_val #>> '{}')); end if;
+    end if;
+    if v_val is null then
+      delete from app.terreno_valores where terreno_id = t.id and campo_id = k.id;
+    else
+      insert into app.terreno_valores (empresa_id, terreno_id, campo_id, valor) values (t.empresa_id, t.id, k.id, v_val)
+      on conflict (terreno_id, campo_id) do update set valor = excluded.valor, alterado_por = auth.uid(), alterado_em = clock_timestamp()
+      where app.terreno_valores.valor is distinct from excluded.valor;
+    end if;
+    return;
+  end if;
   select * into c from app.campos_catalogo where chave = p_chave;
   if c.chave is null or not c.editavel then raise exception 'Este campo não se altera pelo cartão' using errcode = '22023'; end if;
   -- texto com máscara grava como fica guardado (dígitos, e-mail em minúsculas)
@@ -369,9 +457,68 @@ begin
   end if;
 end $$;
 
+-- Administrador cria ou altera um campo novo do terreno. p_dados: titulo, tipo, unidade,
+-- opcoes, formato, condicao, cartao, ativo. Com valor guardado, o tipo não muda e
+-- nenhuma opção em uso sai. Devolve o id.
+create or replace function app.salvar_campo_terreno(p_empresa uuid, p_id uuid, p_dados jsonb)
+returns uuid language plpgsql security definer set search_path = '' as $$
+declare k app.campos_terreno; v_tit text := nullif(trim(p_dados->>'titulo'), ''); v_tipo text; v_op text[]; v_id uuid := coalesce(p_id, gen_random_uuid());
+begin
+  perform app.exigir_administrador(p_empresa);
+  if p_id is not null then
+    select * into k from app.campos_terreno where id = p_id and empresa_id = p_empresa;
+    if k.id is null then raise exception 'Campo não encontrado' using errcode = 'P0002'; end if;
+  end if;
+  v_tit := coalesce(v_tit, k.titulo);
+  if v_tit is null then raise exception 'Dê um título ao campo' using errcode = '22023'; end if;
+  if exists (select 1 from app.campos_catalogo o left join app.campos_empresa x on x.empresa_id = p_empresa and x.chave = o.chave
+             where lower(coalesce(x.titulo, o.titulo)) = lower(v_tit))
+     or exists (select 1 from app.campos_terreno o where o.empresa_id = p_empresa and o.id <> v_id and lower(o.titulo) = lower(v_tit)) then
+    raise exception 'Já existe um campo com o título %', v_tit using errcode = '23505';
+  end if;
+  v_tipo := coalesce(p_dados->>'tipo', k.tipo);
+  v_op := case when p_dados ? 'opcoes' then (select array_agg(distinct trim(x)) filter (where trim(x) <> '') from jsonb_array_elements_text(p_dados->'opcoes') x) else k.opcoes end;
+  if v_tipo <> 'lista' then v_op := null; end if;
+  if k.id is not null and exists (select 1 from app.terreno_valores where campo_id = k.id) then
+    if v_tipo <> k.tipo then raise exception 'O campo % já tem valores: o tipo não muda (crie outro campo)', k.titulo using errcode = 'P0001'; end if;
+    if v_tipo = 'lista' and exists (select 1 from app.terreno_valores x where x.campo_id = k.id and not (x.valor #>> '{}' = any (v_op))) then
+      raise exception 'Há terrenos com uma opção que você tirou: corrija antes' using errcode = 'P0001';
+    end if;
+  end if;
+  insert into app.campos_terreno (id, empresa_id, codigo, titulo, tipo, unidade, opcoes, formato, condicao, cartao, ativo)
+  values (v_id, p_empresa, 'c' || substr(replace(v_id::text, '-', ''), 1, 10), v_tit, v_tipo,
+          nullif(trim(p_dados->>'unidade'), ''), v_op, nullif(p_dados->>'formato', ''),
+          coalesce((p_dados->>'condicao')::boolean, true), coalesce((p_dados->>'cartao')::boolean, true), coalesce((p_dados->>'ativo')::boolean, true))
+  on conflict (id) do update set titulo = excluded.titulo, tipo = excluded.tipo,
+    unidade = case when p_dados ? 'unidade' then excluded.unidade else app.campos_terreno.unidade end, opcoes = excluded.opcoes,
+    formato = case when p_dados ? 'formato' then excluded.formato else app.campos_terreno.formato end,
+    condicao = coalesce((p_dados->>'condicao')::boolean, app.campos_terreno.condicao), cartao = coalesce((p_dados->>'cartao')::boolean, app.campos_terreno.cartao),
+    ativo = coalesce((p_dados->>'ativo')::boolean, app.campos_terreno.ativo);
+  return v_id;
+end $$;
+
+-- Apaga o campo novo só sem valor e sem uso na jornada; senão, desativa.
+create or replace function app.apagar_campo_terreno(p_id uuid)
+returns text language plpgsql security definer set search_path = '' as $$
+declare k app.campos_terreno;
+begin
+  select * into k from app.campos_terreno where id = p_id;
+  if k.id is null then raise exception 'Campo não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_administrador(k.empresa_id);
+  if exists (select 1 from app.terreno_valores where campo_id = k.id)
+     or exists (select 1 from app.jornada_itens where empresa_id = k.empresa_id and campo = 'personalizado.' || k.codigo) then
+    update app.campos_terreno set ativo = false where id = k.id;
+    return 'desativado';
+  end if;
+  delete from app.campos_terreno where id = k.id;
+  return 'apagado';
+end $$;
+
 revoke all on function app.campo_def(uuid, text), app.salvar_campo(uuid, text, text, boolean, boolean, text), app.negociacao_do_terreno(uuid),
   app.oferta_do_terreno(uuid), app.proposta_vigente(uuid), app._valor_campo(uuid, text), app.campo_cartao(uuid, text),
   app.validar_condicao(uuid, jsonb, int), app._condicao_item(uuid, jsonb), app.avaliar_condicao(uuid, jsonb), app.gravar_campo(uuid, text, jsonb) from public;
+revoke all on function app.salvar_campo_terreno(uuid, uuid, jsonb), app.apagar_campo_terreno(uuid) from public;
+grant execute on function app.salvar_campo_terreno(uuid, uuid, jsonb), app.apagar_campo_terreno(uuid) to authenticated;
 grant execute on function app.campo_def(uuid, text), app.salvar_campo(uuid, text, text, boolean, boolean, text), app.campo_cartao(uuid, text),
   app.validar_condicao(uuid, jsonb, int), app.gravar_campo(uuid, text, jsonb) to authenticated;
 
