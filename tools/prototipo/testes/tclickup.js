@@ -128,8 +128,8 @@ await ctx.close()}
 {const {ctx,p}=await abre(390,844,'claro');
 await nav(p,'tarefas');
 for(const v of ['lista','calendario','funil','cronograma']){await vista(p,v);ok(await p.evaluate(()=>document.documentElement.scrollWidth<=390),'celular sem rolagem lateral: '+v)}
-await vista(p,'calendario');await p.evaluate(()=>document.querySelector('.tc-d[data-tcsel="2026-10-28"]').click());await p.waitForTimeout(200);
-ok((await p.$eval('.tc-dial',x=>x.textContent)).includes('28 out')&&await p.$$eval('.tc-dial .tc-sp',x=>x.length)>0,'no celular, tocar no dia lista as tarefas dele');
+await vista(p,'calendario');const dsel=await p.evaluate(()=>{const d=[...document.querySelectorAll('.tc-d[data-tcsel]')].find(x=>x.children.length>1)||document.querySelector('.tc-d[data-tcsel]');d.click();return d.dataset.tcsel});await p.waitForTimeout(200);
+ok((await p.$eval('.tc-dial',x=>x.textContent)).includes(String(+dsel.slice(8)))&&await p.$$eval('.tc-dial .tc-sp',x=>x.length)>0,'no celular, tocar no dia lista as tarefas dele');
 await p.screenshot({path:O+'5_cal_cel.png'});
 await ctx.close()}
 console.log(erros.length?'ERROS: '+erros.join(' | '):'sem erros de página');

@@ -56,7 +56,7 @@ await envia(p,'#f-tk');await p.waitForTimeout(300);
 s=await est(p);let k=tar(s,0,'Negociar comissão do corretor');
 ok(k&&k.vis==='restrito'&&k.acessos.some(a=>a.u==='Camila Torres'),'cria restrito, liberado para quem foi marcado');await fecha(p);
 await clica(p,'[data-a=tk-nova]');await p.waitForTimeout(200);
-ok(await p.$eval('#f-tk input[name=vis][value=restrito]',x=>x.checked),'na próxima, vem marcada a última escolha da pessoa');await fecha(p);
+ok(await p.$eval('#f-tkr input[name=vis][value=restrito]',x=>x.checked),'na próxima, vem marcada a última escolha da pessoa');await fecha(p);
 // pôr outra pessoa no individual o torna restrito
 await abreCartao(p,'Rascunho da contraproposta');await muda(p,'#tkc-sol','Ana Prado');await p.waitForTimeout(250);
 s=await est(p);ok(tar(s,0,'Rascunho da contraproposta').vis==='restrito'&&(await toast(p)).includes('Restrito'),'pôr outra pessoa no individual o torna restrito, com aviso');

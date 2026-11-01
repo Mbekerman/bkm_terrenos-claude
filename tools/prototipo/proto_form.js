@@ -220,7 +220,7 @@ document.addEventListener('click',e=>{if(UI.fmMenu&&!e.target.closest?.('.fm-mw'
   <form data-form="tarefa-r" id="f-tkr" class="tkr"><div class="fields">
     <div class="field full"><label for="tr-t">Tarefa</label><input id="tr-t" name="titulo" required value="${esc(sel.rasc?.titulo||'')}" placeholder="Ex.: cobrar a contraproposta do proprietário" autocomplete="off"></div>
     ${t?'':`<div class="field full"><label for="tr-ter">Terreno</label><select id="tr-ter" name="ter" required><option value="">Escolha o terreno</option>${ativosBanco().map(x=>`<option value="${x.id}" ${(sel.rasc?.ter||UI.tk?.ter)===x.id?'selected':''}>${x.codigo} · ${esc(x.nome)}</option>`).join('')}</select></div>`}
-    ${rpCampo('tr',sel.rasc?.resp!=null?sel.rasc.resp:me())}
+    <div class="field full"><label for="tr-r">Responsável</label>${tkSelU('resp',sel.rasc?.resp!=null?sel.rasc.resp:me(),'Sem responsável','id="tr-r"')}</div>
     <div class="field full"><label for="tr-p">Prazo</label><span class="tkr-prz"><input id="tr-p" name="prazo" type="date" value="${esc(sel.rasc?.prazo||'')}" aria-label="Prazo">${[[1,'1 dia'],[7,'1 semana'],['m1','1 mês']].map(([n,r])=>`<button type="button" class="tkr-pz" data-a="fm-prz" data-v="${n}">${r}</button>`).join('')}</span></div>
     ${fmEtCampos(t||T(sel.rasc?.ter||UI.tk?.ter),'tr',sel.rasc)}
     ${sel.desc?`<div class="field full"><label for="tr-d">Descrição</label><textarea id="tr-d" name="desc" data-mencao placeholder="Use @ para avisar um colega">${esc(sel.rasc?.desc||'')}</textarea></div>`:`<div class="field full tkr-dl"><button type="button" class="btn text sm" data-a="fm-desc">${ic('add',16)}Adicionar descrição</button></div>`}
@@ -283,38 +283,3 @@ document.addEventListener('change',e=>{const el=e.target;
 /* mesmo dia do mês seguinte; sem esse dia (31 de janeiro), o último do mês */
 function fmMaisMes(d){const [y,m,dia]=d.split('-').map(Number),ult=new Date(Date.UTC(y,m+1,0)).getUTCDate();return `${m===12?y+1:y}-${String(m===12?1:m+1).padStart(2,'0')}-${String(Math.min(dia,ult)).padStart(2,'0')}`}
 
-/* ---------- Responsável por @ com busca aproximada (decisão do Moisés, 1/nov/2026) ----------
-   Digita @ e o nome; a lista mostra os colegas cujo nome ou @ contém as letras na ordem (sem acento, sem caixa),
-   os que começam com o digitado primeiro. Setas, Enter ou Tab escolhem; Esc fecha; vazio = sem responsável. */
-const rpNorm=x=>String(x||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
-function rpNota(u,q){if(!q)return 1;const n=rpNorm(u),a=arrobaDe(u),ws=n.split(/\s+/);
-  if(a.startsWith(q)||n.startsWith(q))return 0;if(ws.some(w=>w.startsWith(q))||a.split('.').some(w=>w.startsWith(q)))return 1;
-  if(n.includes(q)||a.includes(q))return 2;let i=0;for(const c of n.replace(/\s+/g,''))if(c===q[i])i++;return i===q.length?3:null}
-function rpBusca(txt){const q=rpNorm(txt).replace(/^@/,'').replace(/\s+/g,' ').trim();
-  return USERS.map(u=>({u,n:rpNota(u,q.replace(/ /g,''))??(q.includes(' ')?rpNota(u,q):null)})).filter(x=>x.n!=null).sort((a,b)=>a.n-b.n||a.u.localeCompare(b.u)).slice(0,6).map(x=>x.u)}
-const rpTxt=u=>u?'@'+arrobaDe(u):'';
-function rpCampo(pre,v){return `<div class="field full rp"><label for="${pre}-rq">Responsável</label><span class="rp-w"><input id="${pre}-rq" class="rp-q" data-rp="${pre}" value="${esc(rpTxt(v))}" placeholder="Digite @ e o nome" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="${pre}-rl">
-  <input type="hidden" id="${pre}-r" name="resp" value="${esc(v||'')}"><div id="${pre}-rl" class="mn-pop rp-pop" role="listbox" aria-label="Colegas" hidden></div></span><span class="faint rp-nome" id="${pre}-rn">${v?esc(v):'Sem responsável'}</span></div>`}
-let RP=null;
-function rpAbrir(el){const pre=el.dataset.rp,l=rpBusca(el.value),p=document.getElementById(pre+'-rl');RP={el,pre,l,i:0};
-  if(!l.length){p.innerHTML='<div class="mn-i faint">Ninguém com esse nome</div>';p.hidden=false;el.setAttribute('aria-expanded','true');return}
-  p.innerHTML=l.map((u,i)=>`<div class="mn-i" role="option" id="${pre}-ro${i}" aria-selected="${i===0}" data-rpo="${i}">${av(u,'sm')}<span class="mn-n">${esc(u)}</span><span class="mn-a">@${esc(arrobaDe(u))}</span></div>`).join('');
-  p.hidden=false;el.setAttribute('aria-expanded','true');el.setAttribute('aria-activedescendant',pre+'-ro0')}
-function rpMarca(i){if(!RP||!RP.l.length)return;RP.i=(i+RP.l.length)%RP.l.length;document.querySelectorAll(`#${RP.pre}-rl [data-rpo]`).forEach((x,j)=>x.setAttribute('aria-selected',j===RP.i));
-  RP.el.setAttribute('aria-activedescendant',`${RP.pre}-ro${RP.i}`);document.getElementById(`${RP.pre}-ro${RP.i}`)?.scrollIntoView({block:'nearest'})}
-function rpFecha(){if(!RP)return;const p=document.getElementById(RP.pre+'-rl');if(p)p.hidden=true;RP.el.setAttribute('aria-expanded','false');RP.el.removeAttribute('aria-activedescendant');RP=null}
-function rpPoe(pre,u){const q=document.getElementById(pre+'-rq'),h=document.getElementById(pre+'-r'),n=document.getElementById(pre+'-rn');if(!q||!h)return;
-  h.value=u||'';q.value=rpTxt(u);if(n)n.textContent=u||'Sem responsável'}
-function rpEscolhe(i){if(!RP)return;const u=RP.l[i],pre=RP.pre;rpFecha();if(u)rpPoe(pre,u)}
-document.addEventListener('input',e=>{const el=e.target;if(!el.dataset?.rp)return;e.stopImmediatePropagation();
-  if(!el.value.trim()){rpPoe(el.dataset.rp,null);rpFecha();return}if(!el.value.startsWith('@')){const c=el.selectionStart;el.value='@'+el.value.trimStart();el.setSelectionRange(c+1,c+1)}rpAbrir(el)},true);
-document.addEventListener('focusin',e=>{const el=e.target;if(el.dataset?.rp)setTimeout(()=>{if(document.activeElement===el)el.select()},0)});
-document.addEventListener('keydown',e=>{const el=e.target;if(!el.dataset?.rp||!RP||RP.el!==el)return;
-  if(e.key==='ArrowDown'){e.preventDefault();rpMarca(RP.i+1)}else if(e.key==='ArrowUp'){e.preventDefault();rpMarca(RP.i-1)}
-  else if(e.key==='Enter'||(e.key==='Tab'&&RP.l.length)){if(RP.l.length){e.preventDefault();e.stopImmediatePropagation();rpEscolhe(RP.i)}}
-  else if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();rpFecha()}},true);
-document.addEventListener('mousedown',e=>{const o=e.target.closest?.('[data-rpo]');if(o&&RP){e.preventDefault();rpEscolhe(+o.dataset.rpo)}},true);
-/* ao sair do campo sem escolher, volta o que estava escolhido (o @ digitado igual a um colega vale) */
-document.addEventListener('focusout',e=>{const el=e.target;if(!el.dataset?.rp)return;const pre=el.dataset.rp;setTimeout(()=>{if(RP&&RP.el===el)rpFecha();
-  const h=document.getElementById(pre+'-r');if(!h||!el.isConnected)return;if(!el.value.trim()){rpPoe(pre,null);return}
-  const ex=USERS.find(u=>rpTxt(u)===rpNorm(el.value.trim()).replace(/^@?/,'@'));rpPoe(pre,ex||h.value||null)},0)});

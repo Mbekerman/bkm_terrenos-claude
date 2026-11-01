@@ -3513,8 +3513,13 @@ html[data-tema="escuro"] .et-form legend, html[data-tema="escuro"] .et-arq legen
 .tkr-pz { height: 32px; padding: 0 12px; border: 1px solid #c4c7c5; border-radius: 8px; background: transparent; color: #444746; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer }
 .tkr-pz:hover { background: rgba(11,87,208,.06) } .tkr-pz:focus-visible { outline: 2px solid #0b57d0; outline-offset: 2px }
 html[data-tema="escuro"] .tkr-pz { border-color: #2a3358; color: #c9d6ff }
-.rp-w { position: relative; display: block } .rp-w > input { width: 100% } .rp .rp-pop { position: absolute; left: 0; right: 0; top: calc(100% + 4px); width: auto; z-index: 30 }
-.rp-nome { font-size: 12px; margin-top: 4px }
+.rp-hid { display: none !important }
+.rp-w { display: contents } .field .rp-w > input, .fields .rp-w > input { width: 100% }
+:root:not(#_) .tkm .rp-q.tkm-pill { cursor: text; min-width: 140px }
+.rp-pop { z-index: 1002 } .rp-ic { width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; color: #444746 }
+input.rp-flut { height: 36px; padding: 0 10px; border: 1px solid #0b57d0; border-radius: 8px; background: #fff; color: #1f1f1f; font: inherit; font-size: 14px; box-shadow: 0 4px 16px rgba(0,0,0,.14) }
+html[data-tema="escuro"] input.rp-flut { background: #0c1433; color: #f2f5ff; border-color: #7c8cff }
+html[data-tema="escuro"] .rp-ic { color: #8e9ac4 }
 @media (max-width: 600px) { .tkr .fields { grid-template-columns: 1fr } .tkr-prz input { flex-basis: 100% } }
 .tkr-dl { margin-top: -6px } .tkr-pad { margin: 0; font-size: 13px }
 .tkr-vis { border: 0; padding: 0; margin: 0 } .tkr-vis legend { font-size: 12px; color: #444746; padding: 0; margin-bottom: 6px }
