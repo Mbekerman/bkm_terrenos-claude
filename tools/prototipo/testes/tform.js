@@ -121,7 +121,15 @@ ok(await p.$eval('#tr-p',x=>x.value)===await X(p,()=>addD(HOJE,1)),'"1 dia" põe
 await clica(p,'[data-a=fm-prz][data-v=m1]');ok(await p.$eval('#tr-p',x=>x.value)===await X(p,()=>fmMaisMes(HOJE))&&await X(p,()=>fmMaisMes('2026-01-31')==='2026-02-28'&&fmMaisMes('2026-12-15')==='2027-01-15'),'"1 mês" põe o mesmo dia do mês seguinte (ou o último)');
 ok(!(await p.$('[data-a=fm-prz][data-v="0"]')),'sem o atalho Hoje');
 await clica(p,'[data-a=fm-prz][data-v="1"]');
-ok(await p.$eval('#tr-r',x=>x.value)==='Moisés','o responsável vem com você');await muda(p,'#tr-r','Rafael Souza');
+ok(await p.$eval('#tr-r',x=>x.value)==='Moisés'&&await p.$eval('#tr-rq',x=>x.value)==='@moises','o responsável vem com você, como @');
+await p.click('#tr-rq');await p.keyboard.press('Control+A');await p.keyboard.type('@rfsz');await p.waitForTimeout(80);
+ok(await p.$$eval('#tr-rl [data-rpo]',xs=>xs.length>=1&&xs[0].textContent.includes('Rafael Souza')),'busca aproximada: "@rfsz" acha Rafael Souza');ok(await p.$eval('#tr-rq',x=>x.value.startsWith('@')),'o campo começa sempre com @');
+await (await p.$('#modal .dialog')).screenshot({path:O+'6b_responsavel.png'});
+await p.keyboard.type('XYZ');await p.waitForTimeout(60);ok(await p.$eval('#tr-rl',x=>!x.hidden&&x.textContent.includes('Ninguém')),'sem ninguém, a lista diz');
+for(let i=0;i<3;i++)await p.keyboard.press('Backspace');await p.keyboard.press('ArrowDown');await p.keyboard.press('ArrowUp');await p.keyboard.press('Enter');await p.waitForTimeout(80);
+ok(await p.$eval('#tr-r',x=>x.value)==='Rafael Souza'&&await p.$eval('#tr-rq',x=>x.value)==='@rafael.souza'&&!!(await p.$('#f-tkr')),'Enter escolhe na lista sem criar a tarefa');
+await p.click('#tr-rq');await p.keyboard.press('Control+A');await p.keyboard.type('@ana');await p.waitForTimeout(60);await p.click('#tr-t');await p.waitForTimeout(80);
+ok(await p.$eval('#tr-r',x=>x.value)==='Rafael Souza'&&await p.$eval('#tr-rq',x=>x.value)==='@rafael.souza','sair sem escolher volta o que estava');
 await p.fill('#tr-t','Pedir planta do vizinho');await p.fill('#tr-d','Para conferir a divisa do fundo');await muda(p,'#f-tkr input[name=vis][value=publico]',true);
 await p.screenshot({path:O+'6_rapida.png'});
 await p.press('#tr-t','Enter');await p.waitForTimeout(250);
@@ -137,7 +145,7 @@ ok(await p.$('#tr-ter')!==null&&await p.$eval('#tr-et',x=>x.disabled),'fora da f
 const t1=await X(p,()=>{const t=S.terrenos.find(x=>etAtual(x));const a=etAtual(t);return {id:t.id,et:a.f+'|'+a.p.etapa,sub:a.p.sub||''}});
 await muda(p,'#tr-ter',t1.id);await p.waitForTimeout(80);
 ok(await p.$eval('#tr-et',(x,v)=>!x.disabled&&x.value===v,t1.et)&&await p.$eval('#tr-sub',x=>x.value)===t1.sub,'escolhido o terreno, vêm a etapa e a subetapa atuais dele');
-await clica(p,'[data-a=fm-prz][data-v="7"]');await muda(p,'#tr-r','');
+await clica(p,'[data-a=fm-prz][data-v="7"]');await p.fill('#tr-rq','');await p.click('#tr-t');await p.waitForTimeout(60);
 await p.fill('#tr-t','Revisar contrato');await clica(p,'[data-a=fm-mais]');await p.waitForTimeout(200);
 ok(await p.$eval('#tm-t',x=>x.value)==='Revisar contrato'&&await p.$('#tm-l')!==null,'Mais opções abre a janela completa com o que já foi digitado');
 ok(await p.$eval('#tm-p',x=>x.value)===await X(p,()=>addD(HOJE,7))&&await p.$eval('#tm-et',(x,v)=>x.value===v,t1.et)&&await p.$eval('#tm-sub',(x,v)=>x.value===v,t1.sub),'e leva o prazo, a etapa e a subetapa');
