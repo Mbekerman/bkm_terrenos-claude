@@ -989,12 +989,24 @@ erDiagram
 
 - `app.campos_catalogo`: um campo por linha, de Terreno, Negociação, Oferta de referência, Proposta vigente e Calculado (forma de pagamento vigente = a da proposta vigente, senão a da oferta; margem e VGV do estudo válido; preço por m²; zonas; vários donos; corretores). `app.campos_empresa` guarda o que o administrador muda (Configurações › Campos, `app.salvar_campo`): o **título** (o nome que o usuário vê, editável a qualquer hora, sem repetir na empresa) e as marcas **Condição** (aparece no "Vale quando") e **No cartão** (pode entrar no cartão). `app.v_campos` junta os dois.
 - O esquema `fluxo` não conhece terreno: lê os campos pelas funções registradas em `fluxo.objeto_tipos` (`campo_objeto` = `app.campo_cartao`, `avalia_condicao` = `app.avaliar_condicao`, `valida_condicao` = `app.validar_condicao`). Em branco é nulo, vazio, lista vazia ou o "não informado" da coluna; em branco só satisfaz "não informado".
-- **No cartão:** quem edita o cartão inclui itens pelo "+ Campo" (`tarefa_itens`): campos do terreno ou da negociação marcados "No cartão" e campos personalizados; o checklist já é item. O campo do terreno aparece com o controle do tipo e grava no próprio terreno (`app.gravar_campo`: ficha por `app.salvar_terreno` com a versão atual, oferta direto, temperatura por `app.definir_temperatura`); calculados só leem.
+- **No cartão:** quem edita o cartão inclui itens pelo bloco Formulário (antes "+ Campo"; ver "Formulário da tarefa e máscaras") (`tarefa_itens`): campos do terreno ou da negociação marcados "No cartão" e campos personalizados; o checklist já é item. O campo do terreno aparece com o controle do tipo e grava no próprio terreno (`app.gravar_campo`: ficha por `app.salvar_terreno` com a versão atual, oferta direto, temperatura por `app.definir_temperatura`); calculados só leem.
 - **Regra se em branco**, de cada item e local da tarefa: pode concluir (padrão), conclui com justificativa, não conclui. Vale para campos do terreno, campos personalizados e cada item de checklist (`checklist_itens.regra_branco`; vazio = regra da empresa para checklist). "Não conclui" trava analista e gestor; o diretor conclui com justificativa (`libera_bloqueio`). A justificativa é pedida na hora (`fluxo.concluir_justificando`, que conclui ou pede a aprovação) e fica no histórico.
 - **Vale quando** (`condicao` jsonb): `{"modo": "todas" | "qualquer", "itens": [{"campo", "op", "valores"} | {"grupo": {...}}]}`, com um nível de grupo ("(A ou B) e C"). Operadores pelo tipo (é / não é, igual, maior, menor, entre, antes, depois, nos últimos N dias, sim, não, preenchido, não informado). Condição que deixa de valer tira a pendência ("não se aplica mais"); a tarefa fica.
 - **Aba Configuração** do cartão: só diretor, administrador e quem criou a tarefa (`fluxo.configura_tarefa`) veem e mudam regra e condição (o trigger `fluxo.tg_tarefa_item` recusa os demais e também tirar do cartão um item com regra); os outros veem só o selo ("necessário", "pede justificativa").
 - `fluxo.itens_em_branco(tarefa)` lista o que está em branco com regra e condição valendo; `fluxo.pendencias_conclusao` devolve `'checklist'` e `'campos'` (bloqueiam, salvo justificativa do diretor) e `'justificar'` (conclui com justificativa).
 - Itens, regras e condições vão na cópia do cartão (escolha "Campos"), na recorrência e no modelo de tarefas (`modelo_tarefas.itens`; item de checklist do modelo pode ser `{texto, regra, condicao}`).
+
+### Formulário da tarefa e máscaras (1/nov/2026)
+
+Decisões do Moisés de 1/nov/2026 (simulação "Formulário da tarefa"). Banco em `…000150_fluxo.sql` e `…001200_campos.sql`.
+
+- **Formulário:** os itens de `fluxo.tarefa_itens` viram perguntas. Cada uma tem `pergunta` (vazia usa o título do campo), `ajuda` opcional e grava num de três destinos: campo do terreno marcado No cartão (`chave`), campo personalizado (`campo_id`) ou **Só no cartão** (`tipo`, com a resposta em `resposta jsonb`; `num_nonnulls(chave, campo_id, tipo) = 1`). Tipos do "só no cartão": texto, parágrafo, número, moeda, percentual, data, sim/não, lista (`opcoes text[]`, ao menos 2), e-mail, telefone, CPF e CNPJ. Pergunta "só no cartão" exige o texto da pergunta; com resposta, o tipo não muda.
+- **Forma de responder** (`forma`; nula = a primeira da lista): `fluxo.formas(tipo, n_opcoes)` diz as permitidas. Lista: menu, radio, chips; segmentado até 4 opções; chave só com 2; mais de 6 opções, só menu. Sim/não: botões ou chave. Texto: linha ou parágrafo. Os demais têm uma só. O trigger recusa forma fora da lista.
+- A **chave** tem três estados: começa no meio (não informado), os toques alternam Sim e Não, e "Limpar resposta" (menu ⋮) volta ao meio. Vazio nunca vira "não".
+- Quem edita o cartão monta as perguntas (modo Montar: incluir, editar, subir, arrastar, tirar; tirar item com regra segue a aba Configuração); Leitura só vê. Sem seções nem saltos por ora: pergunta condicional usa o "Vale quando".
+- `fluxo.itens_em_branco` conta a pergunta só no cartão sem resposta (tipo `pergunta`). Pergunta, ajuda, forma, tipo, opções e regra vão na cópia (a resposta só quando se copiam os campos), na recorrência, no modelo de tarefas e nas tarefas da etapa.
+- **Máscaras** (`formato`): e-mail, telefone, CPF e CNPJ em texto; moeda e percentual em número; CEP no catálogo. Gravadas só com os dígitos (e-mail em minúsculas) por `fluxo.validar_formato(formato, valor)`, que confere DDD, dígitos verificadores de CPF e CNPJ e o formato do e-mail; `fluxo._formato_ok` faz a mesma conta sem erro. No campo do terreno, a máscara vem do catálogo (`app.campos_catalogo.formato`, fixa) ou, nos campos de texto sem máscara fixa, do administrador em Configurações › Campos (`app.campos_empresa.formato`, `app.salvar_campo(..., p_formato)`: nulo mantém, vazio tira; recusa se algum terreno tem valor fora da máscara); `app.gravar_campo` normaliza. No campo personalizado, `fluxo.campos.formato` (não muda com valor fora da máscara). Na pergunta só no cartão, o tipo já é a máscara.
+- **Criação rápida:** Nova tarefa abre curta (título, terreno, que vem marcado quando se cria dentro da ficha, responsável (digitado com @, com busca aproximada pelo nome e pelo @; vem quem cria), prazo com atalhos 1 dia, 1 semana e 1 mês ou a data digitada (mesmo dia do mês seguinte, ou o último dia), etapa e subetapa, descrição atrás de "Adicionar descrição" e visibilidade); "Mais opções" abre a janela completa com o que já foi digitado. A tarefa nasce na lista Fazer (ou na primeira), com prioridade média. Etapa e subetapa vêm com as atuais do terreno (`app.tg_tarefa_processo` grava `etapa` e `subetapa` do processo aberto da fase mais adiante quando a tarefa chega sem elas) e trocam no seletor, entre as fases abertas; "Nenhuma" deixa sem etapa. No cartão, a subetapa também tem seletor (menos na tarefa que nasceu de regra da etapa). A subetapa da tarefa à mão é informação: a trava continua pela regra da etapa.
 
 ### Tarefas da etapa, trava e volta de etapa (ligação funil × quadros, lote B)
 
@@ -1038,6 +1050,56 @@ erDiagram
 - **Encerrar e retomar** (`app._tarefas_ao_encerrar`, `app._tarefas_ao_retomar`): Stand By pausa as abertas do processo sem pedido (`fluxo._pausar_de_fora`, `pausas.origem = 'stand_by'`, que só a retomada da fase encerra, empurrando o prazo); Perdido e Descartado arquivam (fechando a pausa ativa), salvo `dados.tarefas = 'manter'`; concluir não mexe.
 - **Condição** no checklist (`checklist_modelo.condicao`, `app.condicao_checklist`) e no pré-requisito (`prerequisitos_modelo.condicao`, `app.condicao_prerequisito`): o documento ou a passagem só é exigido quando a condição vale (`app.condicao_aplica` em `v_checklist` e em `app._pendencias`).
 - `app.v_tarefas_etapa`: cartão, fase, etapa, subetapa, regra, nível da trava e situação, para a tela.
+
+### Jornada do terreno (1/nov/2026)
+
+Decisões do Moisés de 1/nov/2026 (simulação https://claude.ai/artifact/9eocQHsh2rDz8BtDak6d8D). Banco em `…001400_jornada.sql`, com os campos novos do terreno em `…001200_campos.sql` e a regra do checklist e do pré-requisito em `…000200_cadastros.sql` e `…000500_regras.sql`. A tela (Configurações › Funil › Jornada) junta num lugar o que antes eram três abas; no banco, documentos, pré-requisitos e tarefas da etapa continuam nas tabelas deles, cada um com a sua regra.
+
+```mermaid
+erDiagram
+  etapas_modelo ||--o{ jornada_itens : "sair da etapa"
+  subetapas_modelo ||--o{ jornada_itens : "sair da subetapa"
+  etapas_modelo ||--o{ jornada_regras : ""
+  campos_terreno ||--o{ terreno_valores : ""
+  terrenos ||--o{ terreno_valores : ""
+  jornada_itens {
+    text fase
+    text etapa
+    text subetapa "nulo = a etapa inteira"
+    text campo "chave do catálogo (terreno.x, personalizado.x...)"
+    text pergunta "nulo = o título do campo"
+    text ajuda
+    text forma "a do formulário do cartão"
+    text regra "bloqueia | justifica | livre"
+    jsonb regra_cond "condicional: a primeira que vale decide"
+    jsonb condicao "vale quando"
+    int ordem
+    bool ativo
+  }
+  jornada_regras {
+    text fase
+    text etapa
+    text subetapa
+    jsonb condicao "obrigatória"
+    text acao "bloqueia | gestor | diretor | avisa"
+    text mensagem
+  }
+  campos_terreno {
+    text codigo "personalizado.<codigo>"
+    text titulo "único com o catálogo"
+    text tipo "texto | numero | data | lista | sim_nao"
+    text unidade
+    text_arr opcoes
+    text formato "máscara"
+  }
+```
+
+- **Fonte única:** a pergunta grava no campo que escolhe (`campo`), o mesmo que a ficha e o cartão gravam (`app.gravar_campo`, com o controle do tipo e a auditoria). O que não existe na ficha vira **campo novo do terreno** (`app.campos_terreno`, valor em `app.terreno_valores`), que entra no catálogo como `personalizado.<codigo>` (`app.campo_def`, `app.v_campos`, `app._valor_campo`) e por isso vale nas condições, no cartão e em Configurações › Campos. `app.salvar_campo_terreno` (administrador; título único com o catálogo; tipo não muda com valor gravado; opção em uso não sai) e `app.apagar_campo_terreno` (com valor ou na jornada, desativa).
+- **Regra em branco** (as 3 opções em todo item): `jornada_itens.regra`, `checklist_modelo.regra` (`obrigatorio` virou coluna gerada `regra <> 'livre' or regra_cond is not null`), `prerequisitos_modelo.regra` (`app.regra_prerequisito`) e `etapa_regras.regra` (tarefa aberta ao sair; `trava` passou a ser "pode travar" = `regra <> 'livre'` ou com condicional, mantido por `app.salvar_regra_etapa`; só `trava` vira bloqueia ou livre), todos com bloqueia, justifica ou livre. **Comportamento condicional** (`regra_cond`, `[{condicao, regra}]`, validado por `app._regra_cond_config`): `app._regra_branco(terreno, regra, regra_cond)` devolve a regra da primeira condição que vale, ou a única; livre não entra nas pendências, justifica entra com `justifica`. Na tarefa à mão vale a regra mais forte das regras da etapa. Em `salvar_checklist` e `regra_prerequisito`, `p_regra_cond` nulo mantém e `'[]'` tira. Em `app._passagem`, se todo item que falta é `justifica`, qualquer editor passa com `p_forcar` e comentário; senão só gestor e diretor forçam, como antes. `app.checar_passagem` devolve `pode_justificar`.
+- **Onde vale** (`app._jornada_na_saida`): item da etapa ao sair dela para frente ou concluir a fase; item da subetapa ao sair dela para frente (também pulando) e ao sair da etapa; voltar não pede nada. `app._jornada_pendencias` entra em `app._pendencias` (item com condição que não vale fica de fora; o item conta como feito quando o campo tem valor). A jornada é do terreno: a negociação de uma parte não a tem.
+- **Regras pelo valor** (`app.jornada_regras`): condição que vale na saída → `bloqueia` vira pendência (gestor e diretor passam com justificativa, como nas outras), `gestor` e `diretor` entram nas aprovações exigidas (`app._jornada_pede` em `app._aprovacoes_exigidas`), `avisa` só mostra a mensagem.
+- `app.jornada_processo(processo)`: os itens com `aplica` e `valor` e as regras que valem, para o quadro de avanço. Configuração: `app.salvar_item_jornada` (lugar válido, forma do tipo do campo, condição), `app.apagar_item_jornada`, `app.salvar_regra_jornada`, `app.apagar_regra_jornada`, todas só do administrador e com auditoria.
+- Atualização em tempo real entre usuários fica para o porte do front (Supabase realtime); o banco já tem uma fonte só.
 
 ## Setores censitários e renda familiar estimada
 

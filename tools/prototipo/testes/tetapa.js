@@ -16,11 +16,16 @@ const abre=async(w,h,tema)=>{const ctx=await b.newContext({viewport:{width:w,hei
 const vai=async(p,h)=>{await p.evaluate(h=>history.replaceState(null,'','#'+h),h);await p.reload();await p.waitForTimeout(400)};
 {const {ctx,p}=await abre(1440,900,'claro');
 // 1. Configurações › Funil › Tarefas da etapa
+// (1/nov/2026: as Tarefas da etapa ficam na Jornada, junto das perguntas, documentos e pré-requisitos)
 await vai(p,'/configuracoes/tarefas-da-etapa');
-ok(await p.$eval('.cfg-corpo',x=>x.textContent.includes('Estudos preliminares')&&x.textContent.includes('Cobrar retorno da proposta')&&x.textContent.includes('Trava a subetapa')),'a aba lista as regras de exemplo, com o modelo, a tarefa só e a trava');
-await clica(p,'[data-a=et-regra-nova][data-e=negociacao]');await p.waitForTimeout(150);
+ok(await p.$eval('.cfg-corpo',x=>x.textContent.includes('Jornada')),'o endereço antigo das Tarefas da etapa abre a Jornada');
+await clica(p,'[data-a=jn-etapa][data-v=estudos]');await p.waitForTimeout(150);
+ok(await p.$eval('.jn-corpo',x=>x.textContent.includes('Modelo Estudos preliminares')),'a Jornada lista a tarefa da etapa de exemplo');
+await clica(p,'[data-a=jn-etapa][data-v=negociacao]');await p.waitForTimeout(150);
+ok(await p.$eval('.jn-corpo',x=>x.textContent.includes('Cobrar retorno da proposta')),'e a tarefa só da Negociação');
+await clica(p,'[data-a=jn-tar][data-e=negociacao][data-s=""]');await p.waitForTimeout(150);
 await muda(p,'[data-etr=tipo][value=tarefa]',true);await p.waitForTimeout(100);
-await p.fill('#etr-t','Conferir a matrícula atualizada');await muda(p,'#etr-t','Conferir a matrícula atualizada');await muda(p,'#etr-p','3');await muda(p,'[data-etr=trava]',true);
+await p.fill('#etr-t','Conferir a matrícula atualizada');await muda(p,'#etr-t','Conferir a matrícula atualizada');await muda(p,'#etr-p','3');await clica(p,'#modal [data-a=et-regra-br][data-v=bloqueia]');
 await p.screenshot({path:O+'2_regra_nova.png'});
 // condição da regra pelo painel "Vale quando" (o mesmo do cartão) e volta para a regra
 await clica(p,'#modal [data-a=et-cond][data-v=regra]');await p.waitForTimeout(150);
@@ -31,6 +36,8 @@ await clica(p,'#modal [data-a=et-regra-salva]');await p.waitForTimeout(150);
 let R=await X(p,()=>cfg().regrasEtapa.find(r=>r.titulo==='Conferir a matrícula atualizada'));
 ok(R&&R.etapa==='negociacao'&&!R.sub&&R.trava&&R.prazo===3&&R.resp==='@terreno','regra salva: etapa Negociação, trava, prazo 3, responsável do terreno');
 await p.screenshot({path:O+'1_config.png',fullPage:false});
+// as perguntas da jornada de exemplo (Estudos) ficam fora deste roteiro, que é das tarefas (tjornada.js cobre a jornada)
+await X(p,()=>{cfg().jornada=[];cfg().jornadaRegras=[];save()});
 // 2. o terreno de exemplo em Estudos recebeu as tarefas do modelo
 let E=await X(p,()=>{const t=S.terrenos.find(x=>x.neg?.etapa==='estudos'&&x.neg.status==='ativo');return {id:t.id,cod:t.codigo,resp:t.resp,ks:t.tarefas.filter(k=>k.regra==='re-estudos').map(k=>({tit:k.titulo,etapa:k.etapa,fase:k.fase,prazo:k.prazo,preds:(k.preds||[]).length}))}});
 ok(E.ks.some(k=>k.tit==='Estudo de massa')&&E.ks.some(k=>k.tit==='Estudo de viabilidade'&&k.preds===1)&&E.ks.every(k=>k.etapa==='estudos'&&k.fase==='novos_negocios'),'entrar em Estudos aplicou o modelo da regra, com as predecessoras e a etapa');
@@ -123,13 +130,14 @@ let PR=await X(p,()=>{const t=S.terrenos.find(x=>x.neg?.status==='ativo'&&x.neg.
   const p1=cfg().prereq.find(x=>x.id==='pr1'),a=pendencias(t,'etapa','negociacao').filter(x=>x.txt.includes('Estudo de Viabilidade')).length;p1.cond={modo:'todas',itens:[{campo:'terreno.prioridade',op:'em',valores:['estrategica']}]};
   const pr=t.prioridade;t.prioridade='baixa';const b=pendencias(t,'etapa','negociacao').filter(x=>x.txt.includes('Estudo de Viabilidade')).length;t.prioridade=pr;save();return {a,b}});
 ok(PR.a===1&&PR.b===0,'pré-requisito com condição que não vale não é exigido');
-await vai(p,'/configuracoes/checklist');
-ok(await p.$eval('.cfg-corpo',x=>x.textContent.includes('vale quando')),'Configurações › Checklist mostra a condição do documento');
+await vai(p,'/configuracoes/checklist');await clica(p,'[data-a=jn-etapa][data-v=contrato]');await p.waitForTimeout(150);
+ok(await p.$eval('.jn-corpo',x=>x.textContent.includes('vale quando')),'a Jornada mostra a condição do documento');
 await clica(p,'[data-a=et-cond][data-v="ck:contrato:onus"]');await p.waitForTimeout(150);
 ok(await p.$eval('#modal .muted',x=>x.textContent.includes('Checklist de Contrato')),'"+ Condição" do documento abre o mesmo painel');
 await p.screenshot({path:O+'8_checklist_cond.png'});
 await clica(p,'#modal [data-a=it-c-cancela]');await p.waitForTimeout(150);
-await vai(p,'/configuracoes/pre-requisitos');ok(await p.$eval('.cfg-pre',x=>x.textContent.includes('vale quando')),'Pré-requisitos mostram a condição');
+await vai(p,'/configuracoes/pre-requisitos');await clica(p,'[data-a=jn-etapa][data-v=negociacao]');await p.waitForTimeout(150);
+ok(await p.$eval('.jn-corpo',x=>x.textContent.includes('Ter passado por')&&x.textContent.includes('vale quando')),'os pré-requisitos ficam na Jornada, com a condição');
 await p.screenshot({path:O+'9_prereq_cond.png'});
 // 14. gatilho "Terreno entrou na etapa"
 let G=await X(p,()=>{const t=S.terrenos.find(x=>x.neg?.status==='ativo'&&x.neg.etapa==='triagem');const f=faseEnt();
@@ -155,7 +163,7 @@ ok(!erros.length,'sem erro de JavaScript '+erros.join(' | '));
 await ctx.close()}
 // celular e escuro: a regra e o cartão
 {const {ctx,p}=await abre(390,844,'escuro');await vai(p,'/configuracoes/tarefas-da-etapa');await p.screenshot({path:O+'12_config_celular_escuro.png',fullPage:false});
-  await clica(p,'[data-a=et-regra-ed][data-v=re-proposta]');await p.waitForTimeout(200);ok(await p.$eval('#etr-t',x=>x.value==='Cobrar retorno da proposta'),'celular: editar a regra');
+  await clica(p,'[data-a=jn-etapa][data-v=negociacao]');await p.waitForTimeout(150);await clica(p,'[data-a=et-regra-ed][data-v=re-proposta]');await p.waitForTimeout(200);ok(await p.$eval('#etr-t',x=>x.value==='Cobrar retorno da proposta'),'celular: editar a regra');
   await p.screenshot({path:O+'13_regra_celular_escuro.png'});
   ok(await p.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),'celular: sem rolagem lateral');
   ok(!erros.length,'celular: sem erro de JavaScript '+erros.join(' | '));await ctx.close()}

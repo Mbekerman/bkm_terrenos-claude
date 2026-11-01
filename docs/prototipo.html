@@ -5058,7 +5058,7 @@ html[data-tema="escuro"] :is(.cr-d.fds, .cr-fundo i) { background: rgba(124,140,
 .it-frase { margin: 4px 0 8px; font-size: 14px }
 .it-cfgbar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px } .it-cfgbar .it-busca { max-width: 260px }
 .it-tab { border: 1px solid #c4c7c5; border-radius: 12px; overflow: hidden }
-.it-tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) 110px 120px; gap: 12px; align-items: center; padding: 8px 16px; border-top: 1px solid #e1e3e1; font-size: 14px }
+.it-tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) 130px 110px 120px; gap: 12px; align-items: center; padding: 8px 16px; border-top: 1px solid #e1e3e1; font-size: 14px }
 .it-tr:first-child { border-top: 0 } .it-th { background: #f0f4f9; font-size: 12px; font-weight: 500; color: #444746 }
 .it-tr .ce { display: flex; justify-content: center; align-items: center; gap: 6px; text-align: center } .it-tr .ce em, .it-tr .ce small { display: none }
 .it-db { display: flex; flex-direction: column; min-width: 0 } .it-db code { font-size: 13px; overflow-wrap: anywhere } .it-db small { font-size: 12px; color: #444746 }
@@ -5143,6 +5143,161 @@ html[data-tema="escuro"] .et-form legend, html[data-tema="escuro"] .et-arq legen
 @media (max-width: 720px) { .et-r { grid-template-columns: 1fr auto; } .et-rq { grid-column: 1 / -1 } .et-ro { grid-column: 1 / -1 } }
 .et-tipo .fchk, .et-arq .fchk { display: inline-flex; width: auto; flex: 0 0 auto }
 .et-trv.fchk { height: auto; min-height: 40px; white-space: normal; padding: 8px 14px; line-height: 20px; width: 100% }
+
+/* ===== Formulário da tarefa e criação rápida (1/nov/2026) ===== */
+.fm .fm-h { align-items: center }
+.fm-prog { width: 96px; height: 4px; border-radius: 2px; background: #e9eef6; overflow: hidden; margin-left: 8px } .fm-prog i { display: block; height: 100%; background: #0b57d0 }
+.fm-modo { display: inline-flex; border: 1px solid #c4c7c5; border-radius: 16px; overflow: hidden; height: 32px }
+.fm-modo button { border: 0; background: transparent; padding: 0 14px; font: inherit; font-size: 13px; font-weight: 500; color: #1f1f1f; cursor: pointer } .fm-modo button + button { border-left: 1px solid #c4c7c5 }
+.fm-modo button.on { background: #c2e7ff; color: #001d35 }
+.fm-lista { border: 1px solid #c4c7c5; border-radius: 12px; overflow: visible }
+.fm-lista:empty { display: none }
+.fm-row { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 10px 12px 10px 8px; border-top: 1px solid #e1e3e1; background: #fff }
+.fm-row:first-child { border-top: 0; border-radius: 12px 12px 0 0 } .fm-row:last-child { border-radius: 0 0 12px 12px } .fm-row:only-child { border-radius: 12px }
+.fm-row.sobre { box-shadow: inset 0 2px 0 #0b57d0 } .fm-row.arrasta { opacity: .5 }
+.fm-drag { color: #747775; cursor: grab; display: flex } .fm-rt { font-weight: 500 } .fm-rm { font-size: 12px; color: #444746; margin-top: 2px }
+.fm-ra { display: flex; gap: 2px } .fm-ra [data-a=fm-sobe] svg { transform: rotate(-90deg) }
+.fm-ans { padding: 14px 16px; border-top: 1px solid #e1e3e1 } .fm-ans:first-child { border-top: 0 }
+.fm-ans.falta { box-shadow: inset 3px 0 0 #7a5900 }
+.fm-q { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 28px } .fm-qt { font-weight: 500 }
+.fm-aj { font-size: 12px; color: #444746; margin: 2px 0 0 } .fm-c { margin-top: 8px } .fm-dest { font-size: 11px; color: #444746; margin-top: 6px } .fm-dest b { font-weight: 500 }
+.fm-mw { position: relative; margin-left: auto }
+.fm-menu { position: absolute; right: 0; top: 100%; z-index: 20; background: #fff; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,.18); padding: 4px 0; min-width: 180px }
+.fm-menu button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 10px 16px; font: inherit; cursor: pointer } .fm-menu button:hover { background: #f0f4f9 }
+.fm-in { height: 40px; padding: 0 12px; border: 1px solid #c4c7c5; border-radius: 8px; background: #fff; font: inherit; color: #1f1f1f; max-width: 360px; width: 100% }
+.fm-in:focus { outline: 2px solid #0b57d0; outline-offset: -1px }
+.fm-area { height: auto; min-height: 76px; padding: 10px 12px; max-width: none; resize: vertical }
+.fm-numw { display: inline-flex; align-items: center; gap: 6px; width: 100%; max-width: 360px } .fm-numw .adorno { width: 100% } .fm-un { color: #444746 }
+.fm-ro { display: inline-block; padding: 4px 0 }
+.fm-rd { display: flex; flex-direction: column; gap: 6px } .fm-rd label { display: flex; align-items: center; gap: 8px; cursor: pointer } .fm-rd input { width: 18px; height: 18px; accent-color: #0b57d0; margin: 0 }
+.fm-chips { display: flex; flex-wrap: wrap; gap: 6px }
+.fm-chips button { height: 32px; padding: 0 12px; border: 1px solid #c4c7c5; border-radius: 8px; background: #fff; font: inherit; font-size: 13px; font-weight: 500; color: #1f1f1f; cursor: pointer }
+.fm-chips button.on { background: #c2e7ff; border-color: transparent; color: #001d35 }
+.fm-seg { display: inline-flex; border: 1px solid #c4c7c5; border-radius: 20px; overflow: hidden; max-width: 100% }
+.fm-seg button { border: 0; background: #fff; padding: 0 16px; height: 36px; font: inherit; font-size: 13px; font-weight: 500; color: #1f1f1f; cursor: pointer; white-space: nowrap } .fm-seg button + button { border-left: 1px solid #c4c7c5 }
+.fm-seg button.on { background: #c2e7ff; color: #001d35 }
+.fm-tgw { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap } .fm-dica { font-size: 12px }
+.fm-tg { position: relative; width: 48px; height: 28px; border-radius: 14px; border: 2px solid #747775; background: #e1e3e1; padding: 0; cursor: pointer; flex: none; display: inline-flex }
+.fm-tg::after { content: ""; position: absolute; top: 4px; left: 4px; width: 16px; height: 16px; border-radius: 50%; background: #747775; transition: left .15s, width .15s }
+.fm-tg.on { background: #0b57d0; border-color: #0b57d0 } .fm-tg.on::after { left: 22px; top: 2px; width: 20px; height: 20px; background: #fff }
+.fm-tg.mid { border-style: dashed; background: #f0f4f9 } .fm-tg.mid::after { left: 14px }
+.fm-tg.mid button { flex: 1; border: 0; background: transparent; cursor: pointer; padding: 0; position: relative; z-index: 1 }
+.fm-tg.mid.sm { width: 34px; height: 20px } .fm-tg.mid.sm::after { width: 10px; height: 10px; top: 3px; left: 10px }
+/* editor */
+.fm-ed { border: 1px solid #c4c7c5; border-radius: 12px; background: #f0f4f9; padding: 16px; margin-top: 12px }
+.fm-edt { font-weight: 500; margin-bottom: 12px }
+.fm-g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
+.fm-f { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; min-width: 0 } .fm-f label, .fm-lbl { font-size: 12px; color: #444746 }
+.fm-f input, .fm-f select, .fm-f textarea { height: 40px; padding: 0 12px; border: 1px solid #c4c7c5; border-radius: 8px; background: #fff; font: inherit; color: #1f1f1f }
+.fm-f textarea { height: auto; padding: 8px 12px; resize: vertical }
+.fm-destw { position: relative; max-width: 440px }
+.fm-destb { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 40px; padding: 0 8px 0 12px; border: 1px solid #c4c7c5; border-radius: 8px; background: #fff; font: inherit; color: #1f1f1f; cursor: pointer; text-align: left }
+.fm-q-in { margin-top: 6px }
+.fm-pop { border: 1px solid #c4c7c5; border-radius: 8px; background: #fff; margin-top: 4px; max-height: 280px; overflow-y: auto; box-shadow: 0 3px 10px rgba(0,0,0,.10) }
+.fm-fix { display: inline-flex; align-items: center; min-height: 40px; color: #1f1f1f }
+.fm-formas { display: flex; flex-wrap: wrap; gap: 8px }
+.fm-fo { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; width: 156px; padding: 10px 12px; border: 1px solid #c4c7c5; border-radius: 12px; background: #fff; font: inherit; text-align: left; cursor: pointer; color: #1f1f1f }
+.fm-fo b { font-weight: 500; font-size: 13px } .fm-fo.on { border: 2px solid #0b57d0; padding: 9px 11px; background: #d3e3fd }
+.fm-pv { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #444746; flex-wrap: wrap }
+.fm-pvs { border: 1px solid #c4c7c5; border-radius: 4px; padding: 2px 8px; background: #fff } .fm-pva { padding-bottom: 10px }
+.fm-pvr { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #444746 } .fm-pvr.on { border-color: #0b57d0; box-shadow: inset 0 0 0 2px #fff; background: #0b57d0 }
+.fm-pvc { border: 1px solid #c4c7c5; border-radius: 4px; padding: 1px 6px } .fm-pvc.on { background: #c2e7ff; border-color: transparent }
+.fm-pvg { border: 1px solid #c4c7c5; border-radius: 10px; overflow: hidden; gap: 0; flex-wrap: nowrap; max-width: 100% } .fm-pvg span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0 } .fm-pvg span { padding: 1px 8px } .fm-pvg span + span { border-left: 1px solid #c4c7c5 } .fm-pvg .on { background: #c2e7ff }
+.fm-n1 { margin: 0 0 12px; font-size: 13px }
+.fm-edb { display: flex; align-items: center; gap: 8px; flex-wrap: wrap } .fm-edb .faint { font-size: 12px; flex: 1 1 260px }
+/* criação rápida */
+.tkr .fields { grid-template-columns: 1fr 1fr } .tkr .fields > .full, .tkr .tkr-pad { grid-column: 1 / -1 }
+.tkr-prz { display: flex; flex-wrap: wrap; gap: 8px; align-items: center } .tkr-prz input { flex: 0 1 170px; min-width: 0 }
+.tkr-pz { height: 32px; padding: 0 12px; border: 1px solid #c4c7c5; border-radius: 8px; background: transparent; color: #444746; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer }
+.tkr-pz:hover { background: rgba(11,87,208,.06) } .tkr-pz:focus-visible { outline: 2px solid #0b57d0; outline-offset: 2px }
+html[data-tema="escuro"] .tkr-pz { border-color: #2a3358; color: #c9d6ff }
+.rp-hid { display: none !important }
+.rp-w { display: contents } .field .rp-w > input, .fields .rp-w > input { width: 100% }
+:root:not(#_) .tkm .rp-q.tkm-pill { cursor: text; min-width: 140px }
+.rp-pop { z-index: 1002 } .rp-ic { width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; color: #444746 }
+input.rp-flut { height: 36px; padding: 0 10px; border: 1px solid #0b57d0; border-radius: 8px; background: #fff; color: #1f1f1f; font: inherit; font-size: 14px; box-shadow: 0 4px 16px rgba(0,0,0,.14) }
+html[data-tema="escuro"] input.rp-flut { background: #0c1433; color: #f2f5ff; border-color: #7c8cff }
+html[data-tema="escuro"] .rp-ic { color: #8e9ac4 }
+@media (max-width: 600px) { .tkr .fields { grid-template-columns: 1fr } .tkr-prz input { flex-basis: 100% } }
+.tkr-dl { margin-top: -6px } .tkr-pad { margin: 0; font-size: 13px }
+.tkr-vis { border: 0; padding: 0; margin: 0 } .tkr-vis legend { font-size: 12px; color: #444746; padding: 0; margin-bottom: 6px }
+.tkr-seg { display: inline-flex; border: 1px solid #c4c7c5; border-radius: 20px; overflow: hidden; flex-wrap: wrap }
+.tkr-seg label { position: relative; cursor: pointer } .tkr-seg label + label { border-left: 1px solid #c4c7c5 }
+.tkr-seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer }
+.tkr-seg span { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; font-size: 13px; font-weight: 500 }
+.tkr-seg input:checked + span { background: #c2e7ff; color: #001d35 } .tkr-seg input:focus-visible + span { outline: 2px solid #0b57d0; outline-offset: -2px }
+.toast.tem-ac { display: flex; align-items: center; gap: 16px } .toast-ac { border: 0; background: none; color: #a8c7fa; font: inherit; font-weight: 500; cursor: pointer; padding: 4px 0; margin-left: auto }
+.it-msk select { height: 36px; border: 1px solid #c4c7c5; border-radius: 8px; padding: 0 8px; font: inherit; background: #fff; max-width: 100% }
+@media (max-width: 760px) {
+  .fm-g2 { grid-template-columns: 1fr } .fm-fo { width: calc(50% - 4px) } .fm-in, .fm-numw { max-width: none }
+  .fm-row { grid-template-columns: 20px minmax(0, 1fr) auto; padding: 10px 8px 10px 4px } .fm-seg { display: flex; width: 100% } .fm-seg button { flex: 1; padding: 0 8px }
+  .tkr-seg { display: flex; width: 100% } .tkr-seg label { flex: 1 } .tkr-seg span { justify-content: center; width: 100%; padding: 0 6px }
+}
+html[data-tema="escuro"] .fm-row, html[data-tema="escuro"] .fm-in, html[data-tema="escuro"] .fm-chips button, html[data-tema="escuro"] .fm-seg button, html[data-tema="escuro"] .fm-fo,
+html[data-tema="escuro"] .fm-f input, html[data-tema="escuro"] .fm-f select, html[data-tema="escuro"] .fm-f textarea, html[data-tema="escuro"] .fm-destb, html[data-tema="escuro"] .fm-pop, html[data-tema="escuro"] .fm-menu,
+html[data-tema="escuro"] .it-msk select { background: #060c20; color: #f2f5ff; border-color: #2a3358 }
+html[data-tema="escuro"] .fm-lista, html[data-tema="escuro"] .fm-ans, html[data-tema="escuro"] .fm-modo, html[data-tema="escuro"] .fm-seg, html[data-tema="escuro"] .tkr-seg { border-color: #2a3358 }
+html[data-tema="escuro"] .fm-ed { background: #0c1433; border-color: #2a3358 }
+html[data-tema="escuro"] .fm-modo button, html[data-tema="escuro"] .fm-rm, html[data-tema="escuro"] .fm-dest, html[data-tema="escuro"] .fm-aj { color: #c9d6ff }
+html[data-tema="escuro"] .fm-modo button.on, html[data-tema="escuro"] .fm-chips button.on, html[data-tema="escuro"] .fm-seg button.on, html[data-tema="escuro"] .tkr-seg input:checked + span, html[data-tema="escuro"] .fm-fo.on { background: rgba(99,112,255,.18); color: #c9d6ff; border-color: rgba(124,140,255,.5) }
+html[data-tema="escuro"] .fm-tg.on { background: #7c8cff; border-color: #7c8cff } html[data-tema="escuro"] .fm-tg.mid { background: #0c1433 } html[data-tema="escuro"] .fm-prog { background: #1a2240 } html[data-tema="escuro"] .fm-prog i { background: #7c8cff }
+.fm-h h3 { white-space: nowrap } .fm-h { flex-wrap: wrap; row-gap: 8px }
+html[data-tema="escuro"] .fm-rd input, html[data-tema="escuro"] .fm-in { color-scheme: dark; accent-color: #7c8cff }
+
+/* ---------- Jornada do terreno (1/nov/2026) ---------- */
+.adv-lista li .av { color: #7a5900 }
+.jn-bloco { border-top: 1px solid #dde3ea; margin-top: 12px; padding-top: 12px; display: flex; flex-direction: column; gap: 10px }
+.jn-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap } .jn-h b { font-size: 14px; font-weight: 500 } .jn-h .fm-prog { flex: 1 1 60px; min-width: 60px }
+.jn-g { display: flex; flex-direction: column; gap: 10px } .jn-gt { font-size: 12px; font-weight: 500; color: #444746 }
+.jn-q { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid #c4c7c5; border-radius: 12px; background: #fff; min-width: 0 }
+.jn-q.ok { border-color: #dde3ea }
+.jn-q.aceso { box-shadow: 0 0 0 2px #0b57d0 }
+.jn-ql { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap } .jn-qt { font-size: 14px; font-weight: 500; color: #1f1f1f }
+.jn-selo { font-size: 12px; line-height: 20px; padding: 0 8px; border-radius: 8px; background: #ffdad6; color: #b3261e; white-space: nowrap } .jn-selo.justifica { background: #ffdf99; color: #7a5900 }
+.jn-aj, .jn-dest { font-size: 12px; line-height: 16px }
+.jn-qc { min-width: 0; max-width: 100% } .jn-qc .fm-chips, .jn-qc .fm-seg { flex-wrap: wrap } .jn-qc .fm-seg { display: flex; flex-wrap: nowrap; width: 100% } .jn-qc .fm-seg button { flex: 1 1 0; min-width: 0; padding: 4px 6px; height: auto; min-height: 36px; white-space: normal; line-height: 1.2; overflow-wrap: anywhere } .jn-qc .fm-in { width: 100%; max-width: 100% }
+.jn-rv { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; line-height: 18px; padding: 8px 10px; border-radius: 8px; background: #c2e7ff; color: #001d35 }
+.jn-rv.avisa { background: #ffdf99; color: #3d2c00 } .jn-rv.bloqueia { background: #ffdad6; color: #410e0b } .jn-rv .ic { flex: none; margin-top: 1px }
+.jn-fora-b { align-self: flex-start; font-size: 13px }
+.jn-fora { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px } .jn-fora li { display: flex; flex-direction: column; font-size: 13px; padding: 6px 10px; border: 1px dashed #c4c7c5; border-radius: 8px }
+/* Configurações › Funil › Jornada */
+.jn-lay { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 16px; align-items: start }
+.jn-et { display: flex; flex-direction: column; gap: 4px; position: sticky; top: 8px }
+.jn-et button { display: flex; justify-content: space-between; gap: 8px; align-items: center; border: 0; background: transparent; border-radius: 20px; padding: 0 16px; min-height: 40px; font: inherit; font-size: 14px; font-weight: 500; color: #444746; cursor: pointer; text-align: left }
+.jn-et button[aria-pressed="true"] { background: #c2e7ff; color: #001d35 }
+.jn-corpo { min-width: 0 }
+.jn-sec .sec-b { display: flex; flex-direction: column; gap: 8px }
+.jn-r { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 8px; background: var(--m-sc-low, #f1f4f9) }
+.jn-r.inativa { opacity: .6 } .jn-ri { color: #0b57d0; display: flex } .jn-rn { display: flex; flex-direction: column; gap: 2px; min-width: 0 } .jn-rn b { font-weight: 500 } .jn-rn > .faint { font-size: 12px }
+.jn-rn .it-vq { font-size: 12px }
+.jn-rs { height: 36px; border: 1px solid #c4c7c5; border-radius: 8px; background: #fff; font: inherit; font-size: 13px; padding: 0 8px; max-width: 220px }
+.jn-ra { display: flex; gap: 4px; align-items: center }
+.jn-adds { display: flex; gap: 8px; flex-wrap: wrap } .jn-vazio { margin: 0 }
+.jn-form .fm-seg { flex-wrap: wrap } .jn-rg button { white-space: normal }
+.jn-docs { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 24px 16px }
+@media (max-width: 720px) {
+  .jn-lay { grid-template-columns: 1fr } .jn-et { flex-direction: row; overflow-x: auto; position: static; padding-bottom: 4px } .jn-et button { flex: none }
+  .jn-r { grid-template-columns: 24px minmax(0, 1fr) auto } .jn-rr { grid-column: 2 / -1 } .jn-rs { max-width: 100%; width: 100% }
+}
+html[data-tema="escuro"] .jn-q { background: #060c20; border-color: rgba(124,140,255,.28) } html[data-tema="escuro"] .jn-q.ok { border-color: rgba(124,140,255,.14) }
+html[data-tema="escuro"] .jn-qt { color: #f2f5ff } html[data-tema="escuro"] .jn-gt { color: #8e9ac4 } html[data-tema="escuro"] .jn-bloco { border-color: #1a2240 }
+html[data-tema="escuro"] .jn-selo { background: rgba(179,38,30,.25); color: #ffb4ab } html[data-tema="escuro"] .jn-selo.justifica { background: rgba(122,89,0,.35); color: #ffdf99 }
+html[data-tema="escuro"] .jn-rv { background: rgba(99,112,255,.10); color: #c9d6ff; border: 1px solid rgba(124,140,255,.5) } html[data-tema="escuro"] .jn-rv.avisa { background: rgba(122,89,0,.25); color: #ffdf99; border-color: rgba(255,223,153,.3) } html[data-tema="escuro"] .jn-rv.bloqueia { background: rgba(179,38,30,.2); color: #ffb4ab; border-color: rgba(255,180,171,.3) }
+html[data-tema="escuro"] .jn-et button { color: #c9d6ff } html[data-tema="escuro"] .jn-et button[aria-pressed="true"] { background: rgba(99,112,255,.10); box-shadow: inset 0 0 0 1px rgba(124,140,255,.5) }
+html[data-tema="escuro"] .jn-r { background: #0c1433 } html[data-tema="escuro"] .jn-ri { color: #7c8cff } html[data-tema="escuro"] .jn-rs { background: #060c20; color: #f2f5ff; border-color: rgba(124,140,255,.28); color-scheme: dark }
+html[data-tema="escuro"] .jn-fora li { border-color: rgba(124,140,255,.28) } html[data-tema="escuro"] .adv-lista li .av { color: #ffdf99 }
+.jn-form fieldset.field { border: 0; padding: 0; margin: 0; min-width: 0 } .jn-form fieldset.field legend { padding: 0; margin-bottom: 6px; font-size: 13px; color: var(--texto-suave) }
+/* regra em branco condicional (jornada) */
+.jn-rc { display: flex; flex-direction: column; gap: 8px } .jn-rc-aj { margin: 0 0 12px }
+.jn-rcl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid #c4c7c5; border-radius: 12px }
+.jn-rcl.jn-rcd { background: #f0f4f9; border-color: transparent } .jn-rcq { display: flex; flex-direction: column; gap: 2px; min-width: 0 }
+.jn-rcr { display: flex; align-items: center; gap: 4px } .jn-rcr select { height: 36px; border: 1px solid #c4c7c5; border-radius: 8px; padding: 0 8px; font: inherit; background: #fff; color: #1f1f1f }
+.jn-rc .tkm-add { align-self: flex-start } .jn-rcf { display: block; margin-top: 4px }
+.jn-rg button { flex: 1 1 auto }
+@media (max-width: 720px) { .jn-rcl { grid-template-columns: 1fr } .jn-rcr select { flex: 1 } }
+html[data-tema="escuro"] .jn-rcl { border-color: #2a3358 } html[data-tema="escuro"] .jn-rcl.jn-rcd { background: #0c1433 }
+html[data-tema="escuro"] .jn-rcr select { background: #060c20; border-color: #2a3358; color: #f2f5ff }
+.jn-rcf .linkbtn { margin-left: 4px }
 </style>
 <header class="top">
   <div class="top-in">
@@ -5786,7 +5941,7 @@ function abaHist(t){
 
 /* ===================== avanço ===================== */
 let ADV_REQ=false;
-const advItens=items=>items.map(x=>`<li><span class="${x.ok?'ok':'no'}">${ic(x.ok?'check':'close',16)}</span><span>${esc(x.txt)}${x.fix?` · <button class="linkbtn" data-a="${x.fix[0].startsWith('tab:')?'tab':x.fix[0]}" ${x.fix[0].startsWith('tab:')?`data-t="${x.fix[0].slice(4)}"`:''}>${x.fix[1]}</button>`:''}</span></li>`).join('');
+const advItens=items=>items.map(x=>`<li><span class="${x.aviso?'av':x.ok?'ok':'no'}">${ic(x.aviso?'warn':x.ok?'check':'close',16)}</span><span>${esc(x.txt)}${!x.ok&&x.just?' <span class="faint">· pede justificativa</span>':''}${x.fix?` · <button class="linkbtn" data-a="${x.fix[0].startsWith('tab:')?'tab':x.fix[0]}" ${x.fix[0].startsWith('tab:')?`data-t="${x.fix[0].slice(4)}"`:''}>${x.fix[1]}</button>`:''}</span></li>`).join('');
 /* ===================== páginas ===================== */
 /* ficha em página única: cada seção é um bloco com seta; ao abrir um terreno, só a Visão geral nasce aberta (nada é guardado) */
 let BLA={},blId=null;
@@ -7009,6 +7164,7 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
     geral:()=>`<div class="tkm-props">${linha('pessoa','Responsável',selU('resp',k.resp,'Sem responsável','tkc-resp'),'tkc-resp')}${linha('cal','Prazo',`<button class="tkm-pzb" data-a="tkc-aba" data-v="prazos" title="Mudar as datas">${k.prazo?`<span class="tkm-chp ${k.feita?'ok':at?'atras':''}">${ic(k.feita?'check':'clock',14)}${fd(k.prazo)}</span>`:'<span class="faint">Sem prazo</span>'}${k.inicio?`<span class="faint">início ${fd(k.inicio)}${k.dur?` · ${k.dur} d`:''}</span>`:''}</button>`)}
       ${linha('flag','Prioridade',prio,'tkc-pr')}${linha('etq','Etiquetas',etqs)}${etLinha(t,k,bloq,linha)}${itLinhas(t,k,bloq,linha)}</div>${popEtq}
       <div class="tkm-bloco"><div class="tkm-sh"><h3><label for="tkc-d">Descrição</label></h3></div><textarea id="tkc-d" class="tkm-txt" data-tkc="desc" data-mencao placeholder="Objetivo, instruções e critério de pronto (@ avisa um colega)" ${dis}>${esc(k.desc||'')}</textarea></div>
+      ${fmBloco(t,k,bloq)}
       ${k.feita||k.resultado?`<div class="tkm-bloco"><div class="tkm-sh"><h3><label for="tkc-r">Resultado</label></h3></div><textarea id="tkc-r" class="tkm-txt" data-tkc="resultado" data-mencao placeholder="O que foi feito ou decidido" ${dis}>${esc(k.resultado||'')}</textarea></div>`:''}
       ${subsH}${checks}
       ${UI.tkCkNovo&&!ro?`<div class="tkm-bloco"><div class="tkm-sh"><h3>Novo checklist</h3></div><form class="tkm-novo" data-form="tkc-ck"><input name="nome" required placeholder="Título" aria-label="Nome do checklist" value="Checklist"><div class="tkm-novob"><button class="tkm-ok" type="submit">Adicionar</button><button class="tkm-btn" type="button" data-a="tkc-ck-cancela">Cancelar</button></div></form></div>`
@@ -7865,6 +8021,7 @@ function cpoCfgHtml(){const C=cpoCampos().slice().sort((a,b)=>(a.ordem||0)-(b.or
     <p class="muted" style="margin-top:0">Quem cria a tarefa inclui o campo no cartão; a regra para concluir com ele em branco fica na aba Configuração do cartão. Campo com valor não muda de tipo nem se apaga: desative.</p>
     ${C.map((c,i)=>{const usado=cpoUsado(c);return `<div class="cpo-cfg ${c.ativo===false?'oculta':''}"><div class="tkl-r"><input value="${esc(c.nome)}" data-cpoc="nome" data-v="${c.id}" aria-label="Nome do campo ${i+1}">
       <select data-cpoc="tipo" data-v="${c.id}" aria-label="Tipo de ${esc(c.nome)}" ${usado?'disabled title="Já tem valores: o tipo não muda"':''}>${Object.entries(CPO_TIPOS).map(([x,n])=>`<option value="${x}" ${x===c.tipo?'selected':''}>${n}</option>`).join('')}</select>
+      ${c.tipo==='texto'||c.tipo==='numero'?`<select data-cpoc="formato" data-v="${c.id}" aria-label="Máscara de ${esc(c.nome)}">${Object.entries(c.tipo==='texto'?{'':'Sem máscara',email:'E-mail',telefone:'Telefone',cpf:'CPF',cnpj:'CNPJ'}:{'':'Número',moeda:'Moeda (R$)',percentual:'Percentual (%)'}).map(([x,n])=>`<option value="${x}" ${(c.formato||'')===x?'selected':''}>${n}</option>`).join('')}</select>`:''}
       <label class="chk"><input type="checkbox" data-cpoc="frente" data-v="${c.id}" ${c.frente?'checked':''}>Na frente do cartão</label>
       <button class="iconbtn sm" data-a="cpo-sobe" data-v="${c.id}" ${i?'':'disabled'} aria-label="Subir ${esc(c.nome)}" title="Subir">${ic('chev',18)}</button>
       ${usado?`<button class="btn text sm" data-a="cpo-ativo" data-v="${c.id}">${c.ativo===false?'Ativar':'Desativar'}</button>`:`<button class="btn text sm" data-a="cpo-apaga" data-v="${c.id}">Apagar</button>`}</div>
@@ -7877,7 +8034,10 @@ document.addEventListener('change',e=>{const el=e.target;
     if(cpoGravar(t,k,c,el.value))tkRe();else if(c.tipo==='numero'&&el.value)el.value=k.campos?.[c.id]!=null?cpoTxt(c,k.campos[c.id]):'';return}
   if(el.dataset?.cpoc){e.stopImmediatePropagation();if(!ehAdmin(me()))return;const c=cpoCampos().find(x=>x.id===el.dataset.v);if(!c)return;const p=el.dataset.cpoc;
     if(p==='nome'){const v=el.value.trim();if(!v||cpoCampos().some(x=>x!==c&&x.nome===v)){toast(v?'Já existe um campo com esse nome.':'O campo precisa de nome.',true);el.value=c.nome;return}c.nome=v}
-    else if(p==='tipo'){if(cpoUsado(c)){toast('O campo já tem valores: o tipo não muda.',true);return}c.tipo=el.value;if(c.tipo==='lista'&&!c.opcoes)c.opcoes=[]}
+    else if(p==='tipo'){if(cpoUsado(c)){toast('O campo já tem valores: o tipo não muda.',true);return}c.tipo=el.value;c.formato=undefined;if(c.tipo==='lista'&&!c.opcoes)c.opcoes=[]}
+    else if(p==='formato'){const v=el.value||null;if(v&&c.tipo==='texto'){const ruim=S.terrenos.some(t=>(t.tarefas||[]).some(k=>{const x=k.campos?.[c.id];if(x==null)return false;try{fmValida(v,x);return false}catch(er){return true}}));
+        if(ruim){toast('Há cartões com valores fora dessa máscara: corrija antes de ligar.',true);el.value=c.formato||'';return}
+        S.terrenos.forEach(t=>(t.tarefas||[]).forEach(k=>{if(k.campos?.[c.id]!=null)k.campos[c.id]=fmValida(v,k.campos[c.id])}))}c.formato=v||undefined}
     else if(p==='frente')c.frente=el.checked;
     else if(p==='obrig')c.obrig=el.checked;
     save();render();toast('Campo atualizado.')}},true);
@@ -7981,10 +8141,12 @@ const IT_CAT=(()=>{const tr=(c)=>[t=>t[c],(t,v)=>{t[c]=v}],of=c=>[t=>ofertaRef(t
   ['calculado.zonas','Zonas da área','lista_multi',null,opZonas,null,0,1,1,...ro(t=>[...new Set((analiseVig(t)?.zonas||[]).map(z=>z.sigla))])],
   ['calculado.tem_partes','Vários donos','sim_nao',null,null,null,0,1,0,...ro(t=>(t.partes||[]).length>0)],
   ['calculado.corretores','Corretores do terreno ou das partes','lista_multi',null,opCorr,null,0,1,0,...ro(t=>(t.corretores||[]).map(c=>c.cid))]];
-  return L.map(([chave,titulo,tipo,un,opcoes,vazio,ed,cd,cp,ler,gravar])=>({chave,origem:chave.split('.')[0],coluna:chave.split('.')[1],titulo,tipo,un,opcoes,vazio,editavel:!!ed&&!!gravar,condicao:!!cd,cartao:!!cp,ler,gravar}))})();
+  /* máscara fixa (1/nov/2026): moeda (R$), percentual (%), CEP; texto sem máscara fixa pode ganhar uma do administrador */
+  return L.map(([chave,titulo,tipo,un,opcoes,vazio,ed,cd,cp,ler,gravar])=>({chave,origem:chave.split('.')[0],coluna:chave.split('.')[1],titulo,tipo,un,opcoes,vazio,editavel:!!ed&&!!gravar,condicao:!!cd,cartao:!!cp,ler,gravar,
+    formato:chave==='terreno.cep'?'cep':un==='R$'?'moeda':un==='%'?'percentual':null}))})();
 const itEmp=()=>S.camposEmp||(S.camposEmp={});
 function itDef(chave){const c=IT_CAT.find(x=>x.chave===chave);if(!c)return null;const e=itEmp()[chave]||{};
-  return {...c,titulo:e.titulo||c.titulo,condicao:e.condicao??c.condicao,cartao:e.cartao??c.cartao}}
+  return {...c,titulo:e.titulo||c.titulo,condicao:e.condicao??c.condicao,cartao:e.cartao??c.cartao,formato:c.formato||(c.tipo==='texto'?e.formato||null:null)}}
 const itTit=chave=>itDef(chave)?.titulo||chave;
 /* valor do campo no terreno (null = em branco: nulo, vazio, "não informado" ou lista vazia) */
 function itVal(t,chave){const c=IT_CAT.find(x=>x.chave===chave);if(!c||!t)return null;let v;try{v=c.ler(t)}catch(e){v=null}
@@ -8021,11 +8183,11 @@ const itDir=()=>membro(me()).papel==='diretor';
 const itConfigura=(t,k)=>UI.role!=='Leitura'&&(itDir()||ehAdmin(me())||k.criadoPor===me());
 function itNorm(k){k.itens=k.itens||[];Object.keys(k.campos||{}).forEach(cid=>{if(k.campos[cid]!=null&&!k.itens.some(i=>i.campo===cid))k.itens.push({id:uid(),campo:cid,regra:'livre',cond:null})});return k.itens}
 const itCampo=i=>i.campo?cpoCampos().find(c=>c.id===i.campo):null;
-const itNome=i=>i.chave?itTit(i.chave):itCampo(i)?.nome||'Campo';
-function itEmBranco(t,k,i){if(i.chave)return itVal(t,i.chave)==null;const c=itCampo(i);return !c||c.ativo===false?false:k.campos?.[i.campo]==null}
+const itNome=i=>i.pergunta||(i.tipo?'Pergunta':i.chave?itTit(i.chave):itCampo(i)?.nome||'Campo');
+function itEmBranco(t,k,i){if(i.tipo)return i.resposta==null;if(i.chave)return itVal(t,i.chave)==null;const c=itCampo(i);return !c||c.ativo===false?false:k.campos?.[i.campo]==null}
 /* o que está em branco e pede algo para concluir agora (regra justificativa ou bloqueia, com a condição valendo); espelha fluxo.itens_em_branco */
 function itBranco(t,k){const r=[];itNorm(k).forEach(i=>{if(i.regra==='livre'||!i.regra)return;const c=itCampo(i);if(i.campo&&(!c||c.ativo===false))return;
-    if(itEmBranco(t,k,i)&&itCondVale(t,i.cond))r.push({tipo:i.chave?'objeto':'campo',ref:i.chave||i.campo,nome:itNome(i),regra:i.regra})});
+    if(itEmBranco(t,k,i)&&itCondVale(t,i.cond))r.push({tipo:i.tipo?'pergunta':i.chave?'objeto':'campo',ref:i.chave||i.campo||i.id,nome:itNome(i),regra:i.regra})});
   (k.checklists||[]).forEach(c=>c.itens.forEach(x=>{const rg=x.regra||(apRegraCk()?'bloqueia':'livre');if(rg!=='livre'&&!x.feito&&!x.virou&&itCondVale(t,x.cond))r.push({tipo:'checklist',ref:x.id,nome:x.texto,regra:rg})}));return r}
 function itMsgBloq(bl){const ck=bl.filter(x=>x.tipo==='checklist'),cp=bl.filter(x=>x.tipo!=='checklist');
   if(!cp.length)return 'Conclua os itens do checklist antes de concluir a tarefa.';
@@ -8056,7 +8218,7 @@ function itInput(t,d,i,ro){const v=itVal(t,d.chave),id='it-'+i.id,dis=ro||!d.edi
 function itSelo(t,k,i){if(!i.regra||i.regra==='livre'||!itCondVale(t,i.cond))return '';
   return i.regra==='bloqueia'?'<span class="chip crit it-selo">necessário</span>':'<span class="chip warn it-selo">pede justificativa</span>'}
 /* linhas da grade de propriedades: os itens incluídos no cartão (campos do terreno e personalizados) e o + Campo */
-function itLinhas(t,k,ro,linha){itNorm(k);const conf=itConfigura(t,k);
+function itLinhas(t,k,ro,linha){itNorm(k);return '';const conf=itConfigura(t,k);
   const rows=k.itens.map(i=>{const tira=ro?'':`<button class="iconbtn sm it-tira" data-a="it-tira" data-v="${i.id}" title="Tirar do cartão" aria-label="Tirar ${esc(itNome(i))} do cartão" ${i.regra&&i.regra!=='livre'&&!conf?'disabled':''}>${ic('close',14)}</button>`;
     if(i.chave){const d=itDef(i.chave);if(!d)return '';const falta=itEmBranco(t,k,i)&&itSelo(t,k,i);
       return linha('notas',`${esc(d.titulo)}`,`<span class="cpo-c it-c ${falta?'falta':''}">${itInput(t,d,i,ro)}${itSelo(t,k,i)}${tira}</span>`,d.editavel&&!ro?'it-'+i.id:null)}
@@ -8076,7 +8238,7 @@ function itLinhas(t,k,ro,linha){itNorm(k);const conf=itConfigura(t,k);
 function itCfgAba(t,k,bloq){itNorm(k);const ed=!bloq;
   const sel=(attrs,v,padrao)=>`<select class="tkm-pill" ${attrs} ${ed?'':'disabled'}>${padrao?`<option value="" ${!v?'selected':''}>${padrao}</option>`:''}${Object.entries(IT_REGRA).map(([x,n])=>`<option value="${x}" ${v===x?'selected':''}>${n}</option>`).join('')}</select>`;
   const cond=(alvo,c)=>`<span class="it-vq">${c?esc(itCondFrase(c)):'<span class="faint">sempre</span>'}${ed?`<button class="linkbtn" data-a="it-cond" data-v="${alvo}">${c?'Editar':'+ Condição'}</button>${c?`<button class="linkbtn" data-a="it-cond-tira" data-v="${alvo}">Tirar</button>`:''}`:''}</span>`;
-  const rows=k.itens.map(i=>{const nm=itNome(i),tp=i.chave?IT_ORIG[itDef(i.chave)?.origem]||'':'Campo personalizado';
+  const rows=k.itens.map(i=>{const nm=itNome(i),tp=i.tipo?'Só no cartão':i.chave?IT_ORIG[itDef(i.chave)?.origem]||'':'Campo personalizado';
       return `<div class="it-cr"><span><b>${esc(nm)}</b><span class="faint">${esc(tp)}</span></span>${sel(`data-itr="${i.id}" aria-label="Se ${esc(nm)} estiver em branco"`,i.regra||'livre')}${cond('i:'+i.id,i.cond)}</div>`}).join('');
   const padrao=apRegraCk()?'Padrão da empresa (não conclui)':'Padrão da empresa (pode concluir)';
   const cks=(k.checklists||[]).flatMap(c=>c.itens.map(x=>`<div class="it-cr"><span><b>${esc(x.texto)}</b><span class="faint">Checklist ${esc(c.nome)}</span></span>${sel(`data-itck="${c.id}:${x.id}" aria-label="Se ${esc(x.texto)} estiver em aberto"`,x.regra,padrao)}${cond('c:'+c.id+':'+x.id,x.cond)}</div>`)).join('');
@@ -8086,7 +8248,8 @@ function itCfgAba(t,k,bloq){itNorm(k);const ed=!bloq;
       :`<div class="faint">Nenhum item no cartão. Inclua campos (+ Campo) ou checklists na Visão geral.</div>`}</div>
     ${(k.justs||[]).length?`<div class="tkm-bloco"><div class="tkm-sh"><h3>Justificativas</h3></div>${k.justs.slice().reverse().map(j=>`<div class="tkm-log"><span class="faint num">${fdh(j.em)}</span>${av(j.por,'sm')}<span><b>${esc(j.por)}</b> ${esc(j.texto)} <span class="faint">(${esc(j.itens.map(x=>x.nome).join(', '))}${j.libera?'; passou pelo que bloqueia':''})</span></span></div>`).join('')}</div>`:''}`}
 /* itens que vão na cópia e na recorrência (as regras e as condições vão junto; os valores do terreno são do terreno) */
-const itCopiaItens=k=>(k.itens||[]).filter(i=>!i.campo||cpoCampos().some(c=>c.id===i.campo&&c.ativo!==false)).map(i=>({...JSON.parse(JSON.stringify(i)),id:uid()}));
+/* as perguntas vão junto; a resposta "só no cartão" só na cópia (comResp), nunca no modelo nem na recorrência */
+const itCopiaItens=(k,comResp)=>(k.itens||[]).filter(i=>!i.campo||cpoCampos().some(c=>c.id===i.campo&&c.ativo!==false)).map(i=>{const x={...JSON.parse(JSON.stringify(i)),id:uid()};if(!comResp)delete x.resposta;return x});
 function itSeloCk(t,x){if(!x.regra||x.regra==='livre'||x.feito||!itCondVale(t,x.cond))return '';
   return x.regra==='bloqueia'?'<span class="chip crit it-selo">necessário</span>':'<span class="chip warn it-selo">pede justificativa</span>'}
 const itNRegras=k=>itNorm(k).filter(i=>i.regra&&i.regra!=='livre').length+(k.checklists||[]).reduce((s,c)=>s+c.itens.filter(x=>x.regra&&x.regra!=='livre').length,0);
@@ -8132,9 +8295,10 @@ function itCfgCamposHtml(){const f=UI.itCfgF||'todos',q=(UI.itCfgQ||'').toLowerC
     <p class="muted" style="margin-top:0">O Título é o nome que o usuário vê em todo o sistema. Condição: o campo aparece no "Vale quando". No cartão: o campo pode ser incluído num cartão de tarefa e editado ali, gravando no próprio terreno (os calculados só para ler).</p>
     <div class="it-cfgbar"><input class="it-busca" data-itcfgq="1" value="${esc(UI.itCfgQ||'')}" placeholder="Buscar campo" aria-label="Buscar campo">
       <span class="it-seg">${[['todos','Todos'],...Object.entries(IT_ORIG).map(([k,v])=>[k,v.replace(' de referência','').replace(' vigente','')]),['marcados','Marcados']].map(([k,v])=>`<button class="${f===k?'on':''}" data-a="it-cfgf" data-v="${k}" aria-pressed="${f===k}">${v}</button>`).join('')}</span></div>
-    <div class="it-tab"><div class="it-tr it-th"><span>Nome no banco</span><span>Título (o nome que o usuário vê)</span><span class="ce">Condição</span><span class="ce">No cartão</span></div>
+    <div class="it-tab"><div class="it-tr it-th"><span>Nome no banco</span><span>Título (o nome que o usuário vê)</span><span>Máscara</span><span class="ce">Condição</span><span class="ce">No cartão</span></div>
     ${L.map(d=>`<div class="it-tr"><span class="it-db"><code>${d.coluna}</code><small>${IT_ORIG[d.origem]} · ${IT_TIPO[d.tipo]}</small></span>
       <span><input class="it-tit" value="${esc(d.titulo)}" data-itcfg="titulo" data-v="${d.chave}" aria-label="Título de ${d.coluna}" placeholder="${esc(IT_CAT.find(c=>c.chave===d.chave).titulo)}"></span>
+      <span class="it-msk">${fmMascaraCfg(d)}</span>
       <label class="ce"><input type="checkbox" data-itcfg="condicao" data-v="${d.chave}" ${d.condicao?'checked':''}><em>Condição</em></label>
       <label class="ce"><input type="checkbox" data-itcfg="cartao" data-v="${d.chave}" ${d.cartao?'checked':''}><em>No cartão${d.editavel?'':' (só ler)'}</em>${d.editavel?'':'<small>só ler</small>'}</label></div>`).join('')||'<p class="faint" style="padding:12px">Nenhum campo com esse filtro.</p>'}</div>
     <p class="cfg-nota">Título vazio volta ao padrão; dois campos não podem ter o mesmo título. Colunas de sistema (código, empresa, datas de criação, versão, poligonal) ficam de fora.</p></div></section>`}
@@ -8147,6 +8311,7 @@ document.addEventListener('input',e=>{const el=e.target;
 document.addEventListener('change',e=>{const el=e.target;
   if(el.dataset?.itv){e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!vzEdita(t,k))return;const i=itNorm(k).find(x=>x.id===el.dataset.itv),d=i&&itDef(i.chave);if(!d||!d.editavel)return;
     let v=el.value;if(v==='')v=null;else if(d.tipo==='numero'){v=cpoNum(v);if(Number.isNaN(v)){toast(`Número inválido em ${d.titulo}.`,true);el.value='';return}}
+    else if(d.tipo==='texto'&&d.formato){try{v=fmValida(d.formato,v)}catch(er){toast(er.message,true);return}}
     const antes=itVal(t,d.chave);if(String(antes??'')===String(v??''))return;try{d.gravar(t,v??d.vazio??null)}catch(err){toast(err.message,true);return}
     log(t,`${d.titulo} de ${itTxtVal(d,antes)} para ${itTxtVal(d,v)} (pelo cartão ${k.codigo})`);tkRe();return}
   if(el.dataset?.itr||el.dataset?.itck){e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!itConfigura(t,k))return;
@@ -8161,6 +8326,8 @@ document.addEventListener('change',e=>{const el=e.target;
     if(el.dataset.itcfg==='titulo'){let v=el.value.trim();if(v===c.titulo)v='';const tit=(v||c.titulo).toLowerCase();
       if(IT_CAT.some(x=>x.chave!==ch&&itDef(x.chave).titulo.toLowerCase()===tit)){toast('Já existe um campo com esse título.',true);el.value=itDef(ch).titulo;return}
       E[ch]={...cur,titulo:v||undefined}}
+    else if(el.dataset.itcfg==='formato'){const v=el.value||null;if(v){const ruim=S.terrenos.find(x=>{const y=itVal(x,ch);if(y==null)return false;try{fmValida(v,y);return false}catch(er){return true}});
+        if(ruim){toast(`${ruim.codigo} tem ${itDef(ch).titulo} fora dessa máscara: corrija antes de ligar.`,true);el.value=cur.formato||'';return}}E[ch]={...cur,formato:v||undefined}}
     else E[ch]={...cur,[el.dataset.itcfg]:el.checked};save();render();toast('Campo atualizado.');return}},true);
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="it-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const A=a.dataset.a;
   if(A==='it-cfgf'){UI.itCfgF=a.dataset.v;render();return}
@@ -8193,6 +8360,367 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="it-"]'
 (()=>{if(S.itExemplo)return;S.itExemplo=true;const t=S.terrenos[0];if(!t||!t.tarefas)return;const a=t.tarefas.find(x=>x.titulo==='Análise jurídica da matrícula');if(!a)return;itNorm(a);
   a.itens.unshift({id:uid(),chave:'terreno.area_documental_m2',regra:'bloqueia',cond:null},{id:uid(),chave:'terreno.necessidade_demolicao',regra:'justificativa',cond:{modo:'todas',itens:[{campo:'terreno.tipo_empreendimento',op:'fora',valores:['mercado']}]}},
     {id:uid(),chave:'calculado.forma_pagamento_vigente',regra:'livre',cond:null})})();
+
+/* =====================================================================
+   Formulário da tarefa, máscaras e criação rápida (decisões do Moisés,
+   1/nov/2026; simulação "Formulário da tarefa").
+   Espelha fluxo.tarefa_itens (pergunta, ajuda, forma, tipo, opcoes,
+   resposta), fluxo.formas, fluxo.validar_formato, fluxo.campos.formato e
+   app.campos_catalogo/campos_empresa.formato.
+   - Bloco Formulário na Visão geral do cartão, no lugar do antigo "+ Campo":
+     cada item é uma pergunta com o texto e a ajuda de quem montou, o campo
+     onde a resposta grava (campo do terreno marcado "No cartão", campo
+     personalizado ou "Só no cartão") e a forma de responder. Montar é de
+     quem edita o cartão; os demais veem as respostas.
+   - A forma muda a aparência, nunca o dado: cada tipo oferece só as formas
+     que guardam o valor certo (fmFormas). A chave liga/desliga começa no
+     meio ("não informado"), vira Sim ou Não no primeiro toque e só volta ao
+     meio por "Limpar resposta" no menu da pergunta.
+   - Máscaras: moeda e percentual nos números; e-mail, telefone, CPF, CNPJ e
+     CEP nos textos, com formatação ao digitar e conferência (CPF e CNPJ pelo
+     dígito verificador). Guardado só com os dígitos (e-mail em minúsculas).
+   - Criação rápida: título, terreno (dentro da ficha já vem), descrição
+     opcional e visibilidade; o resto no padrão. "Mais opções" abre a
+     janela completa com o que já foi digitado.
+   Injetado no mesmo escopo, depois de proto_itens.js.
+   ===================================================================== */
+Object.assign(P,{drag:'M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01'});
+const FM_FORMA={menu:'Lista suspensa',radio:'Botões de opção',chips:'Chips',segmentado:'Segmentado',chave:'Chave liga/desliga',caixas:'Caixas de seleção',botoes:'Botões Sim · Não',linha:'Linha curta',paragrafo:'Parágrafo',campo:'Campo'};
+const FM_TIPOS={texto:'Texto curto',paragrafo:'Parágrafo',numero:'Número',moeda:'Moeda (R$)',percentual:'Percentual (%)',data:'Data',sim_nao:'Sim / não',lista:'Lista de opções',email:'E-mail',telefone:'Telefone',cpf:'CPF',cnpj:'CNPJ'};
+const FM_MASK={email:'E-mail',telefone:'Telefone',cpf:'CPF',cnpj:'CNPJ'};
+/* formas de cada tipo (a primeira é o padrão), como fluxo.formas */
+function fmFormas(tipo,n){if(tipo==='lista')return (n||0)>6?['menu']:['menu','radio','chips',...(n>=2&&n<=4?['segmentado']:[]),...(n===2?['chave']:[])];
+  if(tipo==='lista_multi')return ['caixas','chips'];if(tipo==='sim_nao'||tipo==='caixa')return ['botoes','chave'];if(tipo==='texto'||tipo==='paragrafo')return ['linha','paragrafo'];return ['campo']}
+
+/* ---------- máscaras ---------- */
+const fmDig=v=>String(v??'').replace(/\D/g,'');
+/* confere e devolve como fica guardado (como fluxo.validar_formato); erro com a mensagem para o usuário */
+function fmValida(f,v){const s=String(v??'').trim();if(!s)return null;const d=fmDig(s);
+  if(f==='email'){const x=s.toLowerCase();if(!/^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/.test(x))throw new Error('E-mail inválido.');return x}
+  if(f==='telefone'){if(![10,11].includes(d.length)||d[0]==='0'||d[1]==='0'||(d.length===11&&d[2]!=='9'))throw new Error('Telefone inválido: use DDD e número (10 ou 11 dígitos).');return d}
+  if(f==='cep'){if(d.length!==8)throw new Error('CEP inválido: são 8 dígitos.');return d}
+  if(f==='cpf'){if(d.length!==11||/^(\d)\1{10}$/.test(d))throw new Error('CPF inválido.');
+    for(const r of [9,10]){let x=0;for(let i=0;i<r;i++)x+=+d[i]*(r+1-i);if((x*10%11)%10!==+d[r])throw new Error('CPF inválido.')}return d}
+  if(f==='cnpj'){if(d.length!==14||/^(\d)\1{13}$/.test(d))throw new Error('CNPJ inválido.');
+    for(const r of [12,13]){let x=0;for(let i=0;i<r;i++)x+=+d[i]*((r-1-i)%8+2);x=x%11<2?0:11-x%11;if(x!==+d[r])throw new Error('CNPJ inválido.')}return d}
+  return s}
+const FM_PAD={cpf:'000.000.000-00',cnpj:'00.000.000/0000-00',cep:'00000-000'};
+/* formata os dígitos que já existem (enquanto digita e para mostrar) */
+function fmParcial(f,v){if(f==='email'||!f)return String(v??'');const d=fmDig(v);if(!d)return '';
+  const pad=f==='telefone'?(d.length>10?'(00) 00000-0000':'(00) 0000-0000'):FM_PAD[f];if(!pad)return String(v);let o='',j=0;
+  for(const c of pad){if(j>=d.length)break;if(c==='0')o+=d[j++];else o+=c}return o+(j<d.length&&f!=='telefone'?'':d.slice(j))}
+const fmMostra=(f,v)=>v==null||v===''?'':f&&f!=='email'&&FM_PAD[f]||f==='telefone'?fmParcial(f,v):String(v);
+document.addEventListener('input',e=>{const el=e.target;if(el.tagName!=='INPUT'||!el.dataset.mask||el.dataset.mask==='email')return;const n=fmParcial(el.dataset.mask,el.value);if(n!==el.value)el.value=n},true);
+/* campo personalizado com máscara: confere antes de gravar (como o gatilho de fluxo.tarefa_campos) */
+{const ex=cpoGravar;cpoGravar=function(t,k,c,raw){if(c.tipo==='texto'&&c.formato&&raw!==''&&raw!=null){try{raw=fmValida(c.formato,raw)}catch(er){toast(`${c.nome}: ${er.message}`,true);return false}}return ex(t,k,c,raw)}}
+{const ex=cpoTxt;cpoTxt=function(c,v){if(v!=null&&c.tipo==='texto'&&c.formato)return fmMostra(c.formato,v);if(v!=null&&c.tipo==='numero'&&c.formato==='moeda')return 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(v!=null&&c.tipo==='numero'&&c.formato==='percentual')return Number(v).toLocaleString('pt-BR',{maximumFractionDigits:4})+'%';return ex(c,v)}}
+/* Configurações › Campos: máscara do campo de texto (as fixas só aparecem) */
+function fmMascaraCfg(d){if(d.formato&&(d.tipo!=='texto'||IT_CAT.find(c=>c.chave===d.chave)?.formato))return `<span class="faint">${{moeda:'Moeda',percentual:'Percentual',cep:'CEP'}[d.formato]||FM_MASK[d.formato]}</span>`;
+  if(d.tipo!=='texto')return '<span class="faint">—</span>';
+  return `<select data-itcfg="formato" data-v="${d.chave}" aria-label="Máscara de ${esc(d.titulo)}"><option value="">Sem máscara</option>${Object.entries(FM_MASK).map(([x,n])=>`<option value="${x}" ${d.formato===x?'selected':''}>${n}</option>`).join('')}</select>`}
+
+/* ---------- o que cada pergunta é ---------- */
+/* {tipo, formato, opcoes:[[valor, nome]], titulo, dest, editavel, valor} */
+function fmInfo(t,k,i){
+  if(i.tipo){const base={texto:'texto',paragrafo:'paragrafo',numero:'numero',moeda:'numero',percentual:'numero',data:'data',sim_nao:'sim_nao',lista:'lista',email:'texto',telefone:'texto',cpf:'texto',cnpj:'texto'}[i.tipo];
+    return {tipo:base,formato:{moeda:'moeda',percentual:'percentual',email:'email',telefone:'telefone',cpf:'cpf',cnpj:'cnpj'}[i.tipo]||null,opcoes:i.tipo==='lista'?(i.opcoes||[]).map(o=>[o,o]):null,
+      titulo:i.pergunta,dest:'Só no cartão',editavel:true,valor:i.resposta??null}}
+  if(i.chave){const d=itDef(i.chave);if(!d)return null;const o=d.opcoes?d.opcoes():null;
+    return {tipo:d.tipo,formato:d.formato,opcoes:o&&d.tipo!=='pessoa'?Object.entries(o):null,pessoas:d.tipo==='pessoa'?Object.keys(o||{}):null,titulo:d.titulo,dest:`${IT_ORIG[d.origem]} › ${d.titulo}`,editavel:d.editavel,valor:itVal(t,i.chave),un:d.un}}
+  const c=itCampo(i);if(!c)return null;
+  return {tipo:c.tipo==='caixa'?'sim_nao':c.tipo,formato:c.formato||null,opcoes:c.tipo==='lista'?(c.opcoes||[]).filter(o=>o.ativo!==false||o.id===k.campos?.[c.id]).map(o=>[o.id,o.nome]):null,
+    titulo:c.nome,dest:`Campo personalizado › ${c.nome}`,editavel:c.ativo!==false,valor:k.campos?.[c.id]??null}}
+/* formas que a pergunta aceita: texto com máscara é sempre uma linha; máscara "só no cartão" é campo */
+function fmFormasDe(i,f){if(!f)return ['campo'];if(i.tipo&&FM_MASK[i.tipo])return ['campo'];if(f.tipo==='texto'&&f.formato)return ['linha'];return fmFormas(f.tipo,f.opcoes?.length)}
+const fmForma=(i,f)=>{const L=fmFormasDe(i,f);return L.includes(i.forma)?i.forma:i.tipo==='paragrafo'?'paragrafo':L[0]};
+function fmTxt(f,v){if(v==null)return 'Não informado';if(f.tipo==='sim_nao')return v?'Sim':'Não';if(f.tipo==='data')return fd(v);
+  if(f.tipo==='numero'){const n=Number(v);return f.formato==='moeda'||f.un==='R$'?'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):n.toLocaleString('pt-BR',{maximumFractionDigits:4})+(f.formato==='percentual'||f.un==='%'?'%':f.un?' '+f.un:'')}
+  if(Array.isArray(v))return v.map(x=>(f.opcoes||[]).find(o=>String(o[0])===String(x))?.[1]??x).join(', ');
+  if(f.opcoes)return (f.opcoes.find(o=>String(o[0])===String(v))||[])[1]??String(v);if(f.formato)return fmMostra(f.formato,v);return String(v)}
+
+/* ---------- gravar a resposta ---------- */
+function fmGravar(t,k,i,raw){const f=fmInfo(t,k,i);if(!f||!f.editavel)return false;
+  if(i.campo){const c=itCampo(i);let r=raw;if(f.tipo==='sim_nao')r=raw===true?'1':raw===false?'0':'';if(cpoGravar(t,k,c,r==null?'':r)){tkRe();return true}return false}
+  let v=raw;if(v===''||v==null)v=null;
+  else if(f.tipo==='numero'){v=typeof v==='number'?v:cpoNum(v);if(Number.isNaN(v)){toast(`Número inválido em ${f.titulo}.`,true);return false}}
+  else if(f.tipo==='texto'&&f.formato){try{v=fmValida(f.formato,v)}catch(er){toast(er.message,true);return false}}
+  else if(typeof v==='string'&&f.tipo!=='data')v=v.trim()||null;
+  if(i.chave){const d=itDef(i.chave),antes=itVal(t,d.chave);if(String(antes??'')===String(v??''))return false;try{d.gravar(t,v??d.vazio??null)}catch(err){toast(err.message,true);return false}
+    log(t,`${d.titulo} de ${itTxtVal(d,antes)} para ${itTxtVal(d,v)} (pelo cartão ${k.codigo})`);tkRe();return true}
+  const antes=i.resposta??null;if(antes===v)return false;if(v==null)delete i.resposta;else i.resposta=v;
+  log(t,`Tarefa "${k.titulo}": ${i.pergunta} de ${fmTxt(f,antes)} para ${fmTxt(f,v)}`);tkRe();return true}
+
+/* ---------- responder ---------- */
+function fmControle(t,k,i,f,ro){const v=f.valor,id='fm-'+i.id,forma=fmForma(i,f),dis=ro||!f.editavel;
+  if(dis)return `<span class="fm-ro ${v==null?'faint':''}">${esc(fmTxt(f,v))}${!f.editavel&&!ro?' <span class="faint">· só leitura</span>':''}</span>`;
+  const opc=f.opcoes||[],sel=x=>String(v??'')===String(x);
+  if(f.tipo==='sim_nao'){if(forma==='chave')return fmChave(i,v===true?'on':v===false?'off':null,v===true?'Sim':v===false?'Não':null,'s','n');
+    return `<span class="fm-seg" role="group" aria-label="${esc(f.titulo)}">${[[true,'Sim'],[false,'Não']].map(([x,n])=>`<button class="${v===x?'on':''}" data-a="fm-v" data-i="${i.id}" data-v="${x?'s':'n'}" aria-pressed="${v===x}">${n}</button>`).join('')}</span>`}
+  if(f.opcoes&&f.tipo==='lista'){
+    if(forma==='radio')return `<span class="fm-rd" role="radiogroup" aria-label="${esc(f.titulo)}">${opc.map(([x,n])=>`<label><input type="radio" name="${id}" value="${esc(x)}" data-fm="${i.id}" ${sel(x)?'checked':''}>${esc(n)}</label>`).join('')}</span>`;
+    if(forma==='chips'||forma==='segmentado')return `<span class="${forma==='chips'?'fm-chips':'fm-seg'}" role="group" aria-label="${esc(f.titulo)}">${opc.map(([x,n])=>`<button class="${sel(x)?'on':''}" data-a="fm-v" data-i="${i.id}" data-v="${esc(x)}" aria-pressed="${sel(x)}">${esc(n)}</button>`).join('')}</span>`;
+    if(forma==='chave'&&opc.length===2)return fmChave(i,sel(opc[1][0])?'on':sel(opc[0][0])?'off':null,v==null?null:fmTxt(f,v),opc[1][0],opc[0][0]);
+    return `<select id="${id}" class="fm-in" data-fm="${i.id}"><option value="">Não informado</option>${opc.map(([x,n])=>`<option value="${esc(x)}" ${sel(x)?'selected':''}>${esc(n)}</option>`).join('')}</select>`}
+  if(f.pessoas)return `<select id="${id}" class="fm-in" data-fm="${i.id}"><option value="">Não informado</option>${f.pessoas.map(u=>`<option ${u===v?'selected':''}>${esc(u)}</option>`).join('')}</select>`;
+  if(f.tipo==='data')return `<input id="${id}" type="date" class="fm-in" data-fm="${i.id}" value="${v||''}">`;
+  if(f.tipo==='numero'){const fmt=f.formato==='moeda'||f.un==='R$'?'moeda':f.formato==='percentual'||f.un==='%'?'pct':'num';
+    return `<span class="fm-numw"><input id="${id}" class="fm-in" data-fm="${i.id}" inputmode="decimal" data-fmt="${fmt}" value="${v==null?'':esc(Number(v).toLocaleString('pt-BR',{maximumFractionDigits:fmt==='pct'?4:2}))}" placeholder="Não informado">${f.un&&f.un!=='R$'&&f.un!=='%'?`<span class="fm-un">${esc(f.un)}</span>`:''}</span>`}
+  if(forma==='paragrafo')return `<textarea id="${id}" class="fm-in fm-area" data-fm="${i.id}" placeholder="Não informado">${esc(v??'')}</textarea>`;
+  const ph={email:'nome@empresa.com.br',telefone:'(11) 98765-4321',cpf:'000.000.000-00',cnpj:'00.000.000/0000-00',cep:'00000-000'}[f.formato]||'Não informado';
+  return `<input id="${id}" class="fm-in" data-fm="${i.id}" ${f.formato?`data-mask="${f.formato}" inputmode="${f.formato==='email'?'email':'numeric'}"`:''} value="${esc(fmMostra(f.formato,v))}" placeholder="${ph}">`}
+/* chave de três estados: no meio (não informado) cada metade escolhe; depois, o toque alterna */
+function fmChave(i,est,rot,vOn,vOff){
+  return `<span class="fm-tgw">${est?`<button class="fm-tg ${est}" role="switch" aria-checked="${est==='on'}" data-a="fm-v" data-i="${i.id}" data-v="${esc(est==='on'?vOff:vOn)}" aria-label="${esc(rot)}: tocar para trocar"></button>`
+      :`<span class="fm-tg mid" role="group" aria-label="Não informado"><button data-a="fm-v" data-i="${i.id}" data-v="${esc(vOff)}" aria-label="Responder ${vOff==='n'?'Não':esc(String(vOff))}"></button><button data-a="fm-v" data-i="${i.id}" data-v="${esc(vOn)}" aria-label="Responder ${vOn==='s'?'Sim':esc(String(vOn))}"></button></span>`}
+    <span class="${est?'':'faint'}">${est?esc(rot):'Não informado'}</span>${est?'':'<span class="faint fm-dica">toque num lado para responder</span>'}</span>`}
+
+/* ---------- bloco Formulário ---------- */
+function fmBloco(t,k,bloq){itNorm(k);const ed=!bloq&&vzEdita(t,k)&&UI.role!=='Leitura',its=k.itens;
+  if(!its.length&&!ed)return '';const modo=ed&&(UI.fmModo?.[k.id]||(its.length?'responder':'montar'));
+  const resp=its.filter(i=>!itEmBranco(t,k,i)).length;
+  const cab=`<div class="tkm-sh fm-h"><h3>Formulário</h3>${its.length?`<span class="faint tkm-ckn">${modo==='montar'?`${its.length} ${its.length>1?'perguntas':'pergunta'}`:`${resp} de ${its.length}`}</span>${modo!=='montar'?`<span class="fm-prog" aria-hidden="true"><i style="width:${Math.round(100*resp/its.length)}%"></i></span>`:''}`:''}
+    ${ed&&its.length?`<span class="tkm-shd"><span class="fm-modo" role="group" aria-label="Modo do formulário"><button class="${modo==='montar'?'on':''}" data-a="fm-modo" data-v="montar" aria-pressed="${modo==='montar'}">Montar</button><button class="${modo!=='montar'?'on':''}" data-a="fm-modo" data-v="responder" aria-pressed="${modo!=='montar'}">Responder</button></span></span>`:''}</div>`;
+  if(modo==='montar')return `<div class="tkm-bloco fm" data-fmk="${k.id}">${cab}<div class="fm-lista">${its.map(i=>fmLinhaMontar(t,k,i)).join('')}</div>${fmEditor(t,k)}</div>`;
+  return `<div class="tkm-bloco fm" data-fmk="${k.id}">${cab}<div class="fm-lista">${its.map(i=>{const f=fmInfo(t,k,i);if(!f)return '';const v=!itEmBranco(t,k,i),lab=f.opcoes&&!['menu'].includes(fmForma(i,f))||f.tipo==='sim_nao';
+    return `<div class="fm-ans ${itEmBranco(t,k,i)&&itSelo(t,k,i)?'falta':''}" id="fma-${i.id}"><div class="fm-q">${lab?`<span class="fm-qt">${esc(i.pergunta||f.titulo)}</span>`:`<label class="fm-qt" for="fm-${i.id}">${esc(i.pergunta||f.titulo)}</label>`}${itSelo(t,k,i)}
+      ${ed&&v&&f.editavel?`<span class="fm-mw"><button class="iconbtn sm" data-a="fm-menu" data-v="${i.id}" aria-expanded="${UI.fmMenu===i.id}" aria-label="Mais ações de ${esc(i.pergunta||f.titulo)}" title="Mais ações">${ic('mais',18)}</button>${UI.fmMenu===i.id?`<span class="fm-menu" role="menu"><button role="menuitem" data-a="fm-limpa" data-v="${i.id}">Limpar resposta</button></span>`:''}</span>`:''}</div>
+      ${i.ajuda?`<div class="fm-aj">${esc(i.ajuda)}</div>`:''}<div class="fm-c">${fmControle(t,k,i,f,!ed)}</div><div class="fm-dest">${i.tipo?'Só no cartão':`Grava em <b>${esc(f.dest)}</b>`}</div></div>`}).join('')}</div></div>`}
+function fmLinhaMontar(t,k,i){const f=fmInfo(t,k,i);if(!f)return '';const trava=i.regra&&i.regra!=='livre'&&!itConfigura(t,k);
+  if(UI.fmEd?.id===i.id)return '';
+  return `<div class="fm-row" draggable="true" data-fmrow="${i.id}"><span class="fm-drag" title="Arraste para mudar a ordem" aria-hidden="true">${ic('drag',18)}</span>
+    <div class="fm-rb"><div class="fm-rt">${esc(i.pergunta||f.titulo)}</div><div class="fm-rm">${i.tipo?`Só no cartão · ${FM_TIPOS[i.tipo]}`:`Grava em ${esc(f.dest)}`}${fmFormasDe(i,f).length>1?' · '+FM_FORMA[fmForma(i,f)]:''}</div></div>
+    <span class="fm-ra"><button class="iconbtn sm" data-a="fm-sobe" data-v="${i.id}" title="Subir" aria-label="Subir ${esc(i.pergunta||f.titulo)}" ${k.itens[0]===i?'disabled':''}>${ic('chev',18)}</button>
+      <button class="iconbtn sm" data-a="fm-edita" data-v="${i.id}" title="Editar" aria-label="Editar ${esc(i.pergunta||f.titulo)}">${ic('edit',18)}</button>
+      <button class="iconbtn sm" data-a="fm-tira" data-v="${i.id}" title="${trava?'Tem regra para concluir':'Tirar do formulário'}" aria-label="Tirar ${esc(i.pergunta||f.titulo)}" ${trava?'disabled':''}>${ic('close',18)}</button></span></div>`}
+/* editor de pergunta (nova ou existente) */
+function fmEditor(t,k){const E=UI.fmEd;if(!E||E.kid!==k.id)return `<button class="tkm-add" data-a="fm-nova">${ic('add',16)}Pergunta</button>`;
+  const ex=E.id?k.itens.find(x=>x.id===E.id):null,usados=new Set(k.itens.filter(x=>x!==ex).map(x=>x.chave||x.campo).filter(Boolean));
+  const q=(E.q||'').toLowerCase(),ob=IT_CAT.map(c=>itDef(c.chave)).filter(d=>d.cartao&&!usados.has(d.chave)&&(!q||d.titulo.toLowerCase().includes(q))),cp=cpoAtivos().filter(c=>!usados.has(c.id)&&(!q||c.nome.toLowerCase().includes(q)));
+  const dnome=E.dest==='cartao'?'Só no cartão':E.dest?.startsWith('c:')?cpoCampos().find(c=>c.id===E.dest.slice(2))?.nome:E.dest?itDef(E.dest)?.titulo:'';
+  const pop=E.busca&&!ex?`<div class="fm-pop" role="listbox" aria-label="Onde a resposta grava">${Object.keys(IT_ORIG).map(o=>{const l=ob.filter(d=>d.origem===o);return l.length?`<div class="it-popg">${IT_ORIG[o]}</div>${l.map(d=>`<button class="it-popi" role="option" data-a="fm-dest" data-v="${d.chave}">${esc(d.titulo)}<span class="faint">${IT_TIPO[d.tipo]}${d.formato?' · '+({moeda:'moeda',percentual:'percentual',cep:'CEP'}[d.formato]||FM_MASK[d.formato].toLowerCase()):''}${d.editavel?'':' · só leitura'}</span></button>`).join('')}`:''}).join('')}
+      ${cp.length?`<div class="it-popg">Campos personalizados</div>${cp.map(c=>`<button class="it-popi" role="option" data-a="fm-dest" data-v="c:${c.id}">${esc(c.nome)}<span class="faint">${CPO_TIPOS[c.tipo].toLowerCase()}${c.formato?' · '+(FM_MASK[c.formato]||c.formato).toLowerCase():''}</span></button>`).join('')}`:''}
+      <div class="it-popg">Sem gravar</div><button class="it-popi" role="option" data-a="fm-dest" data-v="cartao">Só no cartão<span class="faint">a resposta fica na tarefa</span></button></div>`:'';
+  /* tipo e formas */
+  const tmp=E.dest?{id:'x',tipo:E.dest==='cartao'?E.tipo:undefined,opcoes:E.dest==='cartao'&&E.tipo==='lista'?fmOpcoes(E.opcoes):undefined,chave:E.dest&&E.dest!=='cartao'&&!E.dest.startsWith('c:')?E.dest:undefined,campo:E.dest?.startsWith('c:')?E.dest.slice(2):undefined,pergunta:E.pergunta||'?'}:null;
+  const fi=tmp?fmInfo(t,k,tmp):null,formas=tmp&&fi?fmFormasDe(tmp,fi):[],fsel=formas.includes(E.forma)?E.forma:(tmp?fmForma(tmp,fi):null);
+  const tem=!!(ex?.resposta!=null);
+  return `<div class="fm-ed" role="group" aria-label="${ex?'Editar pergunta':'Nova pergunta'}"><div class="fm-edt">${ex?'Editar pergunta':'Nova pergunta'}</div>
+    <div class="fm-g2"><div class="fm-f"><label for="fme-p">Pergunta${E.dest&&E.dest!=='cartao'?' <span class="faint">(vazia usa o título do campo)</span>':''}</label><input id="fme-p" data-fme="pergunta" value="${esc(E.pergunta||'')}" placeholder="${E.dest&&E.dest!=='cartao'?esc(dnome||''):'Ex.: Como está a ocupação hoje?'}"></div>
+      <div class="fm-f"><label for="fme-a">Ajuda (opcional)</label><input id="fme-a" data-fme="ajuda" value="${esc(E.ajuda||'')}" placeholder="Ex.: veja se há inquilino ou invasão"></div></div>
+    <div class="fm-f fm-destw"><label for="fme-d">Grava em</label>${ex?`<span class="fm-fix">${esc(fi?.dest||dnome)}</span>`
+      :`<button id="fme-d" class="fm-destb" data-a="fm-busca" aria-expanded="${!!E.busca}">${E.dest?esc(dnome):'<span class="faint">Escolher campo</span>'}${ic('chevD',18)}</button>${E.busca?`<input class="it-busca fm-q-in" data-fmq="1" value="${esc(E.q||'')}" placeholder="Buscar campo" aria-label="Buscar campo">`:''}${pop}`}</div>
+    ${E.dest==='cartao'?`<div class="fm-g2"><div class="fm-f"><label for="fme-t">Tipo de resposta</label><select id="fme-t" data-fme="tipo" ${tem?'disabled title="Já tem resposta: o tipo não muda"':''}>${Object.entries(FM_TIPOS).map(([x,n])=>`<option value="${x}" ${E.tipo===x?'selected':''}>${n}</option>`).join('')}</select></div>
+      ${E.tipo==='lista'?`<div class="fm-f"><label for="fme-o">Opções (uma por linha)</label><textarea id="fme-o" data-fme="opcoes" rows="3" placeholder="Bom&#10;Ruim">${esc(E.opcoes||'')}</textarea></div>`:'<div></div>'}</div>`:''}
+    ${formas.length>1?`<div class="fm-f"><span class="fm-lbl">Forma de responder</span><div class="fm-formas" role="radiogroup" aria-label="Forma de responder">${formas.map(x=>`<button class="fm-fo ${x===fsel?'on':''}" role="radio" aria-checked="${x===fsel}" data-a="fm-forma" data-v="${x}"><b>${FM_FORMA[x]}</b>${fmPrevia(x,fi)}</button>`).join('')}</div></div>`
+      :fi?`<p class="faint fm-n1">${fi.tipo==='texto'&&fi.formato?`Máscara ${({cep:'CEP'}[fi.formato]||FM_MASK[fi.formato]||fi.formato)}: uma linha, formatada ao digitar.`:'Este tipo tem uma forma só.'}</p>`:''}
+    <div class="fm-edb"><span class="faint">${E.dest&&E.dest!=='cartao'?'A resposta grava no próprio registro. ':''}Regra em branco e "Vale quando" ficam na aba Configuração.</span><span class="tkm-sp"></span>
+      <button class="btn text sm" data-a="fm-cancela">Cancelar</button><button class="btn primary sm" data-a="fm-salva">${ex?'Salvar':'Incluir pergunta'}</button></div></div>`}
+const fmOpcoes=s=>[...new Set(String(s||'').split(/\n|;/).map(x=>x.trim()).filter(Boolean))];
+function fmPrevia(x,f){const o=(f?.opcoes||[]).slice(0,2).map(y=>esc(String(y[1]))),a=o[0]||'Opção 1',b=o[1]||'Opção 2';
+  return {menu:`<span class="fm-pv"><span class="fm-pvs">${a} ▾</span></span>`,radio:`<span class="fm-pv"><span class="fm-pvr on"></span>${a}<span class="fm-pvr"></span>${b}</span>`,chips:`<span class="fm-pv"><span class="fm-pvc on">${a}</span><span class="fm-pvc">${b}</span></span>`,
+    segmentado:`<span class="fm-pv fm-pvg"><span class="on">${a}</span><span>${b}</span></span>`,chave:`<span class="fm-pv"><span class="fm-tg mid sm"></span>Não informado</span>`,botoes:`<span class="fm-pv fm-pvg"><span class="on">Sim</span><span>Não</span></span>`,
+    caixas:`<span class="fm-pv">☑ ${a}</span>`,linha:`<span class="fm-pv"><span class="fm-pvs">Texto</span></span>`,paragrafo:`<span class="fm-pv"><span class="fm-pvs fm-pva">Texto longo</span></span>`,campo:''}[x]||''}
+
+/* ---------- eventos ---------- */
+document.addEventListener('input',e=>{const el=e.target;
+  if(el.dataset?.fme){e.stopImmediatePropagation();UI.fmEd[el.dataset.fme]=el.value;if(el.dataset.fme==='opcoes'){const p=el.selectionStart;tkRe();const n=document.querySelector('[data-fme=opcoes]');if(n){n.focus();n.setSelectionRange(p,p)}}return}
+  if(el.dataset?.fmq){e.stopImmediatePropagation();UI.fmEd.q=el.value;const p=el.selectionStart;tkRe();const n=document.querySelector('[data-fmq]');if(n){n.focus();n.setSelectionRange(p,p)}return}},true);
+document.addEventListener('change',e=>{const el=e.target;
+  if(el.dataset?.fme){e.stopImmediatePropagation();UI.fmEd[el.dataset.fme]=el.value;if(el.dataset.fme==='tipo'){UI.fmEd.forma=null;tkRe()}return}
+  if(el.dataset?.fm){e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!vzEdita(t,k))return;const i=itNorm(k).find(x=>x.id===el.dataset.fm);if(!i)return;
+    if(!fmGravar(t,k,i,el.value)){const f=fmInfo(t,k,i);if(el.tagName!=='SELECT'&&el.type!=='radio')el.value=f.tipo==='numero'&&f.valor!=null?Number(f.valor).toLocaleString('pt-BR',{maximumFractionDigits:4}):fmMostra(f.formato,f.valor)}return}},true);
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="fm-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const A=a.dataset.a;
+  if(A==='fm-mais'||A==='fm-desc'){fmRapidaAcao(A);return}
+  if(A==='fm-prz'){const el=document.querySelector('#tr-p');if(el)el.value=a.dataset.v==='m1'?fmMaisMes(HOJE):addD(HOJE,+a.dataset.v);return}
+  const {t,k}=tkAtual();if(!k)return;const ed=vzEdita(t,k)&&!k.arq&&UI.role!=='Leitura';
+  if(A==='fm-menu'){UI.fmMenu=UI.fmMenu===a.dataset.v?null:a.dataset.v;tkRe();return}
+  if(!ed)return;itNorm(k);const i=k.itens.find(x=>x.id===a.dataset.v||x.id===a.dataset.i);
+  switch(A){
+    case 'fm-modo':UI.fmModo={...(UI.fmModo||{}),[k.id]:a.dataset.v};UI.fmEd=null;break;
+    case 'fm-v':{if(!i)return;const f=fmInfo(t,k,i);let v=a.dataset.v;if(f.tipo==='sim_nao')v=v==='s';fmGravar(t,k,i,v);return}
+    case 'fm-limpa':{UI.fmMenu=null;if(!i)return;fmGravar(t,k,i,null);return}
+    case 'fm-nova':UI.fmEd={kid:k.id,id:null,pergunta:'',ajuda:'',dest:'',tipo:'texto',opcoes:'',forma:null,q:'',busca:true};break;
+    case 'fm-edita':if(!i)return;UI.fmEd={kid:k.id,id:i.id,pergunta:i.pergunta||'',ajuda:i.ajuda||'',dest:i.tipo?'cartao':i.chave||('c:'+i.campo),tipo:i.tipo||'texto',opcoes:(i.opcoes||[]).join('\n'),forma:i.forma||null,q:'',busca:false};break;
+    case 'fm-cancela':UI.fmEd=null;break;
+    case 'fm-busca':UI.fmEd.busca=!UI.fmEd.busca;UI.fmEd.q='';tkRe();setTimeout(()=>document.querySelector('[data-fmq]')?.focus(),0);return;
+    case 'fm-dest':Object.assign(UI.fmEd,{dest:a.dataset.v,busca:false,forma:null,q:''});tkRe();setTimeout(()=>document.querySelector(UI.fmEd.dest==='cartao'?'#fme-p':'#fme-p')?.focus(),0);return;
+    case 'fm-forma':UI.fmEd.forma=a.dataset.v;break;
+    case 'fm-salva':{if(!fmSalvar(t,k))return;break}
+    case 'fm-sobe':{if(!i)return;const j=k.itens.indexOf(i);if(j>0){k.itens.splice(j,1);k.itens.splice(j-1,0,i);log(t,`Tarefa "${k.titulo}": ordem do formulário mudada`)}break}
+    case 'fm-tira':{if(!i)return;if(i.regra&&i.regra!=='livre'&&!itConfigura(t,k)){toast('Esta pergunta tem regra para concluir: só o diretor, o administrador e quem criou a tarefa a tiram.',true);return}
+      k.itens=k.itens.filter(x=>x!==i);log(t,`Tarefa "${k.titulo}": pergunta ${itNome(i)} tirada do formulário`);break}
+  }tkRe()},true);
+function fmSalvar(t,k){const E=UI.fmEd;if(!E.dest){toast('Escolha onde a resposta grava.',true);return false}
+  const pergunta=(E.pergunta||'').trim()||null,ajuda=(E.ajuda||'').trim()||null;
+  if(E.dest==='cartao'&&!pergunta){toast('Escreva a pergunta.',true);return false}
+  let opcoes;if(E.dest==='cartao'&&E.tipo==='lista'){opcoes=fmOpcoes(E.opcoes);if(opcoes.length<2){toast('A lista precisa de pelo menos duas opções.',true);return false}}
+  const ex=E.id?k.itens.find(x=>x.id===E.id):null;
+  if(ex&&E.dest==='cartao'&&ex.resposta!=null&&ex.tipo!==E.tipo){toast('A pergunta já tem resposta: o tipo não muda.',true);return false}
+  if(ex&&ex.tipo==='lista'&&ex.resposta!=null&&opcoes&&!opcoes.includes(ex.resposta)){toast(`A resposta "${ex.resposta}" precisa continuar entre as opções.`,true);return false}
+  const base=ex||{id:uid(),regra:'livre',cond:null};
+  const novo={...base,pergunta,ajuda,forma:null};
+  if(E.dest==='cartao'){novo.tipo=E.tipo;novo.opcoes=opcoes;delete novo.chave;delete novo.campo}else if(E.dest.startsWith('c:')){novo.campo=E.dest.slice(2)}else novo.chave=E.dest;
+  const fi=fmInfo(t,k,novo),L=fmFormasDe(novo,fi);novo.forma=E.forma&&L.includes(E.forma)&&E.forma!==L[0]?E.forma:null;
+  if(novo.tipo==='paragrafo'&&E.forma==='linha')novo.forma='linha';
+  if(ex)Object.assign(ex,novo);else k.itens.push(novo);
+  log(t,`Tarefa "${k.titulo}": pergunta ${itNome(novo)} ${ex?'alterada':'incluída'} no formulário`);UI.fmEd=null;return true}
+/* arrastar para mudar a ordem */
+let fmArr=null;
+document.addEventListener('dragstart',e=>{const r=e.target.closest?.('[data-fmrow]');if(!r)return;fmArr=r.dataset.fmrow;e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',fmArr)}catch(er){}r.classList.add('arrasta')},true);
+document.addEventListener('dragover',e=>{if(!fmArr)return;const r=e.target.closest?.('[data-fmrow]');if(!r)return;e.preventDefault();document.querySelectorAll('.fm-row.sobre').forEach(x=>x!==r&&x.classList.remove('sobre'));r.classList.add('sobre')},true);
+document.addEventListener('dragend',()=>{fmArr=null;document.querySelectorAll('.fm-row.sobre,.fm-row.arrasta').forEach(x=>x.classList.remove('sobre','arrasta'))},true);
+document.addEventListener('drop',e=>{if(!fmArr)return;const r=e.target.closest?.('[data-fmrow]');if(!r)return;e.preventDefault();e.stopImmediatePropagation();const {t,k}=tkAtual();const id=fmArr;fmArr=null;if(!k||!vzEdita(t,k))return;
+  const i=k.itens.find(x=>x.id===id),alvo=k.itens.find(x=>x.id===r.dataset.fmrow);if(!i||!alvo||i===alvo)return;const de=k.itens.indexOf(i);k.itens.splice(de,1);const para=k.itens.indexOf(alvo)+(de<=k.itens.indexOf(alvo)?1:0);k.itens.splice(para,0,i);
+  log(t,`Tarefa "${k.titulo}": ordem do formulário mudada`);tkRe()},true);
+/* fora do cartão o menu ⋮ fecha */
+document.addEventListener('click',e=>{if(UI.fmMenu&&!e.target.closest?.('.fm-mw')){UI.fmMenu=null;if(document.querySelector('.fm-menu'))tkRe()}});
+
+/* ---------- criação rápida ---------- */
+{const exNova=tkNovaHtml;tkNovaHtml=function(fechar){const sel=UI.tkSel||{};if(sel.mais)return exNova(fechar);
+  const t=sel.tid?T(sel.tid):null,ult=(S.vzUlt||{})[me()],l=fmListaPadrao(t,sel.lista);
+  return `<div class="dh"><div><h2>Nova tarefa</h2>${t?`<div class="muted" style="margin-top:4px">${t.codigo} · ${esc(t.nome)}</div>`:''}</div>${fechar}</div>
+  <form data-form="tarefa-r" id="f-tkr" class="tkr"><div class="fields">
+    <div class="field full"><label for="tr-t">Tarefa</label><input id="tr-t" name="titulo" required value="${esc(sel.rasc?.titulo||'')}" placeholder="Ex.: cobrar a contraproposta do proprietário" autocomplete="off"></div>
+    ${t?'':`<div class="field full"><label for="tr-ter">Terreno</label><select id="tr-ter" name="ter" required><option value="">Escolha o terreno</option>${ativosBanco().map(x=>`<option value="${x.id}" ${(sel.rasc?.ter||UI.tk?.ter)===x.id?'selected':''}>${x.codigo} · ${esc(x.nome)}</option>`).join('')}</select></div>`}
+    <div class="field full"><label for="tr-r">Responsável</label>${tkSelU('resp',sel.rasc?.resp!=null?sel.rasc.resp:me(),'Sem responsável','id="tr-r"')}</div>
+    <div class="field full"><label for="tr-p">Prazo</label><span class="tkr-prz"><input id="tr-p" name="prazo" type="date" value="${esc(sel.rasc?.prazo||'')}" aria-label="Prazo">${[[1,'1 dia'],[7,'1 semana'],['m1','1 mês']].map(([n,r])=>`<button type="button" class="tkr-pz" data-a="fm-prz" data-v="${n}">${r}</button>`).join('')}</span></div>
+    ${fmEtCampos(t||T(sel.rasc?.ter||UI.tk?.ter),'tr',sel.rasc)}
+    ${sel.desc?`<div class="field full"><label for="tr-d">Descrição</label><textarea id="tr-d" name="desc" data-mencao placeholder="Use @ para avisar um colega">${esc(sel.rasc?.desc||'')}</textarea></div>`:`<div class="field full tkr-dl"><button type="button" class="btn text sm" data-a="fm-desc">${ic('add',16)}Adicionar descrição</button></div>`}
+    <fieldset class="field full tkr-vis"><legend>Visibilidade</legend><span class="tkr-seg">${Object.keys(VZ_N).map(v=>`<label title="${esc(VZ_D[v])}"><input type="radio" name="vis" value="${v}" required ${(sel.rasc?.vis||ult)===v?'checked':''}><span>${ic(VZ_IC[v],16)}${VZ_N[v]}</span></label>`).join('')}</span></fieldset>
+    <p class="faint tkr-pad">Vai para ${l?esc(l):'a primeira lista'}.</p></div></form>
+  <div class="df"><button class="btn text" data-a="fm-mais">Mais opções</button><span class="tkm-sp"></span><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-tkr">Criar</button></div>`}}
+function fmListaPadrao(t,pedida){const L=t?tkL(t).filter(l=>!l.oculta&&l.tipo!=='conclui'&&l.tipo!=='pausa').map(l=>l.nome):(S.listasModelo||[]).filter(l=>l.ativo).map(l=>l.nome);
+  if(pedida&&(t?tkL(t).some(l=>l.nome===pedida&&!l.oculta):true))return pedida;return L.includes('Fazer')?'Fazer':L[0]}
+function fmRasc(){const f=document.querySelector('#f-tkr');if(!f)return UI.tkSel.rasc||{};const F=Object.fromEntries(new FormData(f));return {...(UI.tkSel.rasc||{}),...F}}
+function fmRapidaAcao(A){if(!UI.tkSel)return;const r=fmRasc();UI.tkSel.rasc=r;
+  if(A==='fm-desc'){UI.tkSel.desc=true;renderModal();setTimeout(()=>document.querySelector('#tr-d')?.focus(),0);return}
+  UI.tkSel.mais=true;renderModal();
+  setTimeout(()=>{const set=(s,v)=>{const el=document.querySelector(s);if(el&&v!=null)el.value=v};set('#tm-t',r.titulo);set('#tm-ter',r.ter);set('#tm-d',r.desc);if(r.prazo!=null)set('#tm-p',r.prazo);if(r.resp!=null)set('#tm-r',r.resp);if(r.ter&&!UI.tkSel.tid)fmEtRefaz('tm',T(r.ter));if(r.et!=null){set('#tm-et',r.et);fmEtRefaz('tm',T(UI.tkSel.tid||r.ter),true)}if(r.sub!=null)set('#tm-sub',r.sub);
+    if(r.vis){const x=document.querySelector(`#f-tk input[name=vis][value="${r.vis}"]`);if(x){x.checked=true;x.dispatchEvent(new Event('change',{bubbles:true}))}}document.querySelector('#tm-t')?.focus()},0)}
+document.addEventListener('submit',e=>{const f=e.target;if(f.dataset?.form!=='tarefa-r')return;e.preventDefault();e.stopImmediatePropagation();const F=Object.fromEntries(new FormData(f)),sel=UI.tkSel;
+  const t=T(sel.tid||F.ter);if(!t){toast('Escolha o terreno da tarefa.',true);return}if(!(F.titulo||'').trim())return;if(!F.vis){toast('Escolha a visibilidade.',true);return}
+  const nome=fmListaPadrao(t,sel.lista),l=tkL(t).find(x=>x.nome===nome&&!x.oculta)||tkPrim(t,'aberta');
+  const k=tkCriar(t,{titulo:F.titulo,desc:F.desc||'',resp:F.resp||null,prio:'media',lista:l.id,vis:F.vis,lib:[],prazo:F.prazo||null,et:F.et,sub:F.sub});vzLembrar(F.vis);
+  UI.modal=null;renderModal();tkRe();fmSnack(`${k.codigo} criada em ${l.nome}`,'Abrir',()=>{UI.tkSel={tid:t.id,kid:k.id};UI.modal='tarefa';renderModal()})},true);
+/* aviso com ação (o toast comum é só texto) */
+function fmSnack(m,rot,fn){const el=$('#toast');el.innerHTML=`<span>${esc(m)}</span><button class="toast-ac">${esc(rot)}</button>`;el.className='toast show tem-ac';clearTimeout(tmr);
+  el.querySelector('.toast-ac').onclick=()=>{el.className='toast';fn()};tmr=setTimeout(()=>el.className='toast',6000)}
+
+/* exemplo: formulário da visita técnica no primeiro terreno (só uma vez) */
+(()=>{if(S.fmExemplo)return;S.fmExemplo=true;const t=S.terrenos[0];if(!t||!t.tarefas)return;const l=tkL(t).find(x=>x.nome==='Fazendo'&&!x.oculta)||tkPrim(t,'aberta');
+  const k=tkCriar(t,{titulo:'Visita técnica ao terreno',resp:t.resp||'Rafael Souza',prio:'media',lista:l.id,vis:'publico',prazo:addD(HOJE,4),desc:'Conferir divisas, ocupação e acesso.'});
+  k.itens=[{id:uid(),chave:'terreno.topografia',pergunta:'Qual a topografia do terreno?',forma:'radio',regra:'livre',cond:null},
+    {id:uid(),chave:'terreno.area_levantamento_m2',pergunta:'Área medida na visita',ajuda:'Medida com trena laser nas divisas.',regra:'justificativa',cond:null},
+    {id:uid(),chave:'terreno.situacao_ocupacao',pergunta:'Como está a ocupação hoje?',forma:'chips',regra:'livre',cond:null},
+    {id:uid(),tipo:'sim_nao',pergunta:'O proprietário aceita receber a equipe de novo?',forma:'chave',regra:'livre',cond:null},
+    {id:uid(),tipo:'telefone',pergunta:'Telefone do zelador',regra:'livre',cond:null},
+    {id:uid(),tipo:'paragrafo',pergunta:'Observações da visita',regra:'livre',cond:null}];
+  S.fmExemploK=k.id})();
+
+/* ---------- etapa e subetapa na Nova tarefa (decisão do Moisés, 1/nov/2026) ----------
+   As duas vêm com a etapa e a subetapa atuais do terreno (a do processo aberto da fase mais adiante) e trocam no seletor;
+   "Nenhuma" deixa a tarefa sem etapa. Valem na Nova tarefa curta e na completa. */
+function fmEtAbertas(t){return t?fasesL().filter(f=>f.entrada?aberto(t.neg):procAberto(t,f.k)).map(f=>f.k):[]}
+function fmEtPadrao(t){const a=t&&etAtual(t);return a?{et:`${a.f}|${a.p.etapa}`,sub:a.p.sub||''}:{et:'',sub:''}}
+function fmEtOpts(t,v){return `<option value="">Nenhuma</option>${fmEtAbertas(t).map(f=>`<optgroup label="${esc(faseN(f))}">${etapasF(f).map(e=>`<option value="${f}|${e.k}" ${v===f+'|'+e.k?'selected':''}>${esc(e.nome)}</option>`).join('')}</optgroup>`).join('')}`}
+function fmSubOpts(v,s){const [f,e]=(v||'').split('|'),L=f&&e?(etapasF(f).find(x=>x.k===e)?.subs||[]):[];
+  return `<option value="">${L.length?'Sem subetapa':'—'}</option>${L.map(x=>`<option value="${x.k}" ${s===x.k?'selected':''}>${esc(x.nome)}</option>`).join('')}`}
+function fmEtCampos(t,pre,r){const d=fmEtPadrao(t),v=r&&r.et!=null&&(!r.ter||!t||r.ter===t.id)?r.et:d.et,s=r&&r.sub!=null&&v===r.et?r.sub:(v===d.et?d.sub:'');
+  return `<div class="field"><label for="${pre}-et">Etapa</label><select id="${pre}-et" name="et" data-fmet="${pre}" ${t?'':'disabled'}>${t?fmEtOpts(t,v):'<option value="">Escolha o terreno</option>'}</select></div>
+    <div class="field"><label for="${pre}-sub">Subetapa</label><select id="${pre}-sub" name="sub" ${t&&v?'':'disabled'}>${fmSubOpts(t?v:'',s)}</select></div>`}
+/* troca de terreno refaz a etapa (com a atual do novo terreno); troca de etapa refaz a subetapa */
+function fmEtRefaz(pre,t,soSub){const e=document.querySelector(`#${pre}-et`),s=document.querySelector(`#${pre}-sub`);if(!e||!s)return;
+  if(!soSub){const d=fmEtPadrao(t);e.innerHTML=t?fmEtOpts(t,d.et):'<option value="">Escolha o terreno</option>';e.disabled=!t;s.innerHTML=fmSubOpts(t?d.et:'',d.sub);s.disabled=!t||!d.et;return}
+  const d=fmEtPadrao(t);s.innerHTML=fmSubOpts(e.value,e.value===d.et?d.sub:'');s.disabled=!e.value}
+document.addEventListener('change',e=>{const el=e.target;
+  if(el.id==='tr-ter'||el.id==='tm-ter'){fmEtRefaz(el.id.slice(0,2),T(el.value));return}
+  if(el.dataset?.fmet){const pre=el.dataset.fmet,sel=UI.tkSel||{};fmEtRefaz(pre,T(sel.tid||document.querySelector(`#${pre}-ter`)?.value),true)}});
+/* a janela completa ganha os mesmos dois campos, logo antes da descrição */
+{const ex=tkNovaHtml;tkNovaHtml=function(fechar){const h=ex(fechar),sel=UI.tkSel||{};if(!sel.mais)return h;
+  return h.replace('<div class="field full"><label for="tm-d">',fmEtCampos(sel.tid?T(sel.tid):null,'tm',null)+'<div class="field full"><label for="tm-d">')}}
+/* criar: et "fase|etapa" (vazio = Nenhuma) e sub; sem et, o padrão de sempre (etapa e subetapa atuais) */
+{const cr=tkCriar;tkCriar=function(t,d){const k=cr(t,d);if(!k||k.modelo)return k;
+  if(d.et!==undefined){const [f,e]=(d.et||'').split('|');if(f&&e){const L=etapasF(f).find(x=>x.k===e)?.subs||[];etPor(t,k,f,e,L.some(x=>x.k===d.sub)?d.sub:null)}else etPor(t,k)}
+  return k}}
+/* mesmo dia do mês seguinte; sem esse dia (31 de janeiro), o último do mês */
+function fmMaisMes(d){const [y,m,dia]=d.split('-').map(Number),ult=new Date(Date.UTC(y,m+1,0)).getUTCDate();return `${m===12?y+1:y}-${String(m===12?1:m+1).padStart(2,'0')}-${String(Math.min(dia,ult)).padStart(2,'0')}`}
+
+
+/* =====================================================================
+   Pessoa por @ em todo o sistema (decisões do Moisés, 1/nov/2026: "Quero @ em tudo")
+   Todo seletor de pessoa (responsável, solicitante, executores, aprovadores, quem acompanha, responsável do item,
+   do modelo, da regra da etapa, do Novo terreno...) vira um campo onde se digita @ e o nome: a lista mostra os
+   colegas cujo nome ou @ tem as letras na ordem, sem acento nem caixa, os que começam com o digitado primeiro;
+   as opções que não são pessoa ("Responsável do terreno", "Sem responsável") entram na mesma busca.
+   Setas, Enter ou Tab escolhem; Esc fecha; sair sem escolher volta o que estava; vazio = a opção vazia.
+   O <select> continua na página, escondido: a escolha muda o valor dele e dispara o change de sempre.
+   Ficam de fora os filtros (chips de filtro e a gaveta), que filtram em vez de atribuir.
+   ===================================================================== */
+const rpNorm=x=>String(x||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+function rpNota(rot,arr,q){if(!q)return 1;const n=rpNorm(rot),a=arr||'',ws=n.split(/\s+/);
+  if((a&&a.startsWith(q))||n.startsWith(q))return 0;if(ws.some(w=>w.startsWith(q))||(a&&a.split('.').some(w=>w.startsWith(q))))return 1;
+  if(n.includes(q)||(a&&a.includes(q)))return 2;let i=0;for(const c of n.replace(/\s+/g,''))if(c===q[i])i++;return i===q.length?3:null}
+/* itens do seletor: {v, rot, user} */
+function rpItens(sel){return [...sel.options].filter(o=>o.value!==''&&!o.disabled).map(o=>({v:o.value,rot:o.textContent.trim(),user:USERS.includes(o.value)}))}
+function rpBusca(itens,txt){const q=rpNorm(txt).replace(/^@/,'').trim(),qs=q.replace(/\s+/g,'');
+  return itens.map(x=>({x,n:rpNota(x.rot,x.user?arrobaDe(x.v):'',qs)??(q.includes(' ')?rpNota(x.rot,x.user?arrobaDe(x.v):'',q):null)}))
+    .filter(r=>r.n!=null).sort((a,b)=>a.n-b.n||(b.x.user?0:1)-(a.x.user?0:1)||a.x.rot.localeCompare(b.x.rot)).slice(0,7).map(r=>r.x)}
+function rpTexto(sel){const o=sel.selectedOptions[0];if(!o||o.value==='')return '';return USERS.includes(o.value)?'@'+arrobaDe(o.value):o.textContent.trim()}
+function rpVazio(sel){const o=[...sel.options].find(x=>x.value==='');return o&&o.textContent.trim()?o.textContent.trim():'Digite @ e o nome'}
+/* o seletor é de pessoa quando quase todas as opções são da equipe */
+function rpEhPessoa(sel){if(sel.multiple||sel.dataset.rp==='nao'||sel.classList.contains('fsel-chip')||sel.closest('[data-ch],.flt,.fgav,.fl-gav,#filtros'))return false;
+  const it=rpItens(sel),us=it.filter(x=>x.user).length;return us>=Math.min(3,USERS.length)&&it.length-us<=2}
+let rpSeq=0;
+function rpLiga(sel){sel.dataset.rpOk='1';const sobre=getComputedStyle(sel).opacity==='0';const id=(sel.id||'rp'+(++rpSeq))+'-q';
+  const inp=document.createElement('input');inp.id=id;inp.className='rp-q '+(sobre?'rp-flut':[...sel.classList].filter(c=>c!=='rp-hid').join(' '));
+  inp.autocomplete='off';inp.setAttribute('role','combobox');inp.setAttribute('aria-autocomplete','list');inp.setAttribute('aria-expanded','false');inp.setAttribute('aria-controls',id.replace(/-q$/,'-l'));
+  inp.setAttribute('aria-label',sel.getAttribute('aria-label')||(sel.id&&document.querySelector(`label[for="${sel.id}"]`)?.textContent.trim())||'Pessoa');
+  inp.disabled=sel.disabled;inp.value=rpTexto(sel);inp.placeholder=rpVazio(sel);inp.title=sel.selectedOptions[0]?.value?sel.selectedOptions[0].textContent.trim():'';
+  inp._rpSel=sel;sel._rpInp=inp;
+  if(sobre){/* seletor invisível sobre um botão (+ de pessoas, avatar do item): o toque abre um campo flutuante */
+    const alvo=sel.parentElement;sel.style.pointerEvents='none';sel.tabIndex=-1;alvo.classList.add('rp-alvo');alvo.setAttribute('tabindex','0');alvo.setAttribute('role','button');
+    alvo.setAttribute('aria-label',inp.getAttribute('aria-label'));inp.hidden=true;document.body.appendChild(inp);alvo._rpInp=inp;inp._rpAlvo=alvo;return}
+  const w=document.createElement('span');w.className='rp-w';sel.classList.add('rp-hid');sel.tabIndex=-1;sel.setAttribute('aria-hidden','true');sel.after(w);w.appendChild(inp)}
+function rpVarre(raiz){(raiz||document).querySelectorAll?.('select:not([data-rp-ok])').forEach(s=>{if(USERS&&rpEhPessoa(s))rpLiga(s);else s.dataset.rpOk='0'})}
+/* campos flutuantes órfãos (o botão saiu da página) saem junto */
+function rpLimpa(){document.querySelectorAll('body > input.rp-flut').forEach(i=>{if(!i._rpAlvo?.isConnected)i.remove()})}
+new MutationObserver(ms=>{let t=false;for(const m of ms)if(m.addedNodes.length){t=true;break}if(t){rpVarre(document);rpLimpa()}}).observe(document.documentElement,{childList:true,subtree:true});
+let RP=null;
+function rpPop(){let p=document.getElementById('rp-pop');if(!p){p=document.createElement('div');p.id='rp-pop';p.className='mn-pop rp-pop';p.setAttribute('role','listbox');p.setAttribute('aria-label','Pessoas');document.body.appendChild(p)}return p}
+function rpAbrir(inp){const sel=inp._rpSel,l=rpBusca(rpItens(sel),inp.value),p=rpPop();RP={inp,sel,l,i:0};p.dataset.para=inp.id;
+  p.innerHTML=l.length?l.map((x,i)=>`<div class="mn-i" role="option" id="rp-o${i}" aria-selected="${i===0}" data-rpo="${i}">${x.user?av(x.v,'sm'):`<span class="rp-ic">${ic(x.v===RESP_OBJ?'flow':'pessoa',16)}</span>`}<span class="mn-n">${esc(x.rot)}</span>${x.user?`<span class="mn-a">@${esc(arrobaDe(x.v))}</span>`:''}</div>`).join('')
+    :'<div class="mn-i faint">Ninguém com esse nome</div>';
+  p.hidden=false;const r=inp.getBoundingClientRect(),w=Math.max(Math.min(320,window.innerWidth-16),Math.min(r.width,window.innerWidth-16)),h=p.offsetHeight,cima=r.bottom+4+h>window.innerHeight&&r.top-4-h>0;
+  Object.assign(p.style,{width:w+'px',left:Math.max(8,Math.min(r.left,window.innerWidth-w-8))+'px',top:(cima?r.top-4-h:r.bottom+4)+'px'});
+  inp.setAttribute('aria-expanded','true');if(l.length)inp.setAttribute('aria-activedescendant','rp-o0');else inp.removeAttribute('aria-activedescendant')}
+function rpMarca(i){if(!RP||!RP.l.length)return;RP.i=(i+RP.l.length)%RP.l.length;document.querySelectorAll('#rp-pop [data-rpo]').forEach((x,j)=>x.setAttribute('aria-selected',j===RP.i));
+  RP.inp.setAttribute('aria-activedescendant','rp-o'+RP.i);document.getElementById('rp-o'+RP.i)?.scrollIntoView({block:'nearest'})}
+function rpFecha(){const p=document.getElementById('rp-pop');if(p)p.hidden=true;if(RP){RP.inp.setAttribute('aria-expanded','false');RP.inp.removeAttribute('aria-activedescendant')}RP=null}
+function rpPoe(sel,v){const inp=sel._rpInp;if(sel.value!==v){sel.value=v;sel.dispatchEvent(new Event('change',{bubbles:true}))}
+  if(inp&&inp.isConnected){inp.value=rpTexto(sel);inp.title=sel.selectedOptions[0]?.value?sel.selectedOptions[0].textContent.trim():''}}
+function rpEscolhe(i){if(!RP)return;const x=RP.l[i],{inp,sel}=RP;rpFecha();if(!x)return;const fl=inp.classList.contains('rp-flut');rpPoe(sel,x.v);if(fl){inp.hidden=true;inp._rpAlvo?.focus?.()}}
+function rpFlutAbre(alvo){const inp=alvo._rpInp;if(!inp||inp.disabled)return;const r=alvo.getBoundingClientRect(),w=Math.min(240,window.innerWidth-16);
+  Object.assign(inp.style,{position:'fixed',zIndex:1001,width:w+'px',left:Math.max(8,Math.min(r.left,window.innerWidth-w-8))+'px',top:r.top+'px'});inp.hidden=false;inp.value='@';inp.focus();inp.setSelectionRange(1,1);rpAbrir(inp)}
+document.addEventListener('click',e=>{const a=e.target.closest?.('.rp-alvo');if(a&&a._rpInp){e.preventDefault();e.stopPropagation();rpFlutAbre(a)}},true);
+document.addEventListener('keydown',e=>{const a=e.target.closest?.('.rp-alvo');if(a&&a===e.target&&(e.key==='Enter'||e.key===' ')){e.preventDefault();rpFlutAbre(a)}},true);
+document.addEventListener('input',e=>{const inp=e.target;if(!inp._rpSel)return;e.stopImmediatePropagation();
+  if(!inp.value.trim()&&!inp.classList.contains('rp-flut')){rpPoe(inp._rpSel,[...inp._rpSel.options].some(o=>o.value==='')?'':inp._rpSel.value);rpFecha();return}
+  if(!inp.value.startsWith('@')){const c=inp.selectionStart;inp.value='@'+inp.value.trimStart();inp.setSelectionRange(c+1,c+1)}rpAbrir(inp)},true);
+document.addEventListener('focusin',e=>{const inp=e.target;if(inp._rpSel&&!inp.classList.contains('rp-flut'))setTimeout(()=>{if(document.activeElement===inp)inp.select()},0)});
+document.addEventListener('keydown',e=>{const inp=e.target;if(!inp._rpSel)return;
+  if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();const ab=!!RP;rpFecha();if(inp.classList.contains('rp-flut')){inp.hidden=true;inp._rpAlvo?.focus?.()}else if(!ab)inp.blur();return}
+  if(!RP||RP.inp!==inp){if(e.key==='ArrowDown'){e.preventDefault();rpAbrir(inp)}return}
+  if(e.key==='ArrowDown'){e.preventDefault();rpMarca(RP.i+1)}else if(e.key==='ArrowUp'){e.preventDefault();rpMarca(RP.i-1)}
+  else if((e.key==='Enter'||e.key==='Tab')&&RP.l.length){e.preventDefault();e.stopImmediatePropagation();rpEscolhe(RP.i)}
+  else if(e.key==='Enter'){e.preventDefault();e.stopImmediatePropagation()}},true);
+document.addEventListener('mousedown',e=>{const o=e.target.closest?.('[data-rpo]');if(o&&RP){e.preventDefault();e.stopPropagation();rpEscolhe(+o.dataset.rpo)}},true);
+/* sair sem escolher: o @ digitado igual a um colega vale; senão volta o que estava */
+document.addEventListener('focusout',e=>{const inp=e.target;if(!inp._rpSel)return;setTimeout(()=>{if(RP&&RP.inp===inp)rpFecha();const sel=inp._rpSel;
+  if(inp.classList.contains('rp-flut')){inp.hidden=true;return}if(!inp.isConnected)return;
+  const t=rpNorm(inp.value.trim()),ex=rpItens(sel).find(x=>(x.user&&'@'+arrobaDe(x.v)===t.replace(/^@?/,'@'))||rpNorm(x.rot)===t);
+  if(!t){rpPoe(sel,[...sel.options].some(o=>o.value==='')?'':sel.value);return}rpPoe(sel,ex?ex.v:sel.value)},0)});
+window.addEventListener('scroll',()=>{if(RP)rpAbrir(RP.inp)},true);
 
 /* =====================================================================
    Recorrência (bloco 4; decisões do Moisés, 30/out/2026).
@@ -8313,7 +8841,7 @@ function cxCopiar(t,k,dest,lid,titulo,itens){const l=tkL(dest).find(x=>x.id===li
     prazo:null,prio:k.prio,capa:k.capa||null,apModo:k.apModo,lista:l.id,pos:Date.now(),estim:k.estim||null,
     exec:tem('pessoas')?[...(k.exec||[])]:[],aprov:tem('pessoas')?[...(k.aprov||[])]:[],acomp:tem('pessoas')?[...(k.acomp||[])]:[],etq:tem('etiquetas')?[...(k.etq||[])]:[],
     checklists:tem('checklists')?(k.checklists||[]).map(c=>({id:uid(),nome:c.nome,esconder:c.esconder,itens:c.itens.filter(i=>!i.virou).map(i=>({id:uid(),texto:i.texto,resp:tem('pessoas')?i.resp:null,prazo:null,feito:null,regra:i.regra,cond:i.cond?JSON.parse(JSON.stringify(i.cond)):null}))})):[],
-    itens:tem('campos')?itCopiaItens(k):[],
+    itens:tem('campos')?itCopiaItens(k,true):[],
     campos:tem('campos')?Object.fromEntries(Object.entries(k.campos||{}).filter(([cid,v])=>{const c=cpoCampos().find(x=>x.id===cid);return c&&c.ativo!==false&&(c.tipo!=='lista'||(c.opcoes||[]).some(o=>o.id===v&&o.ativo!==false))})):{},
     anexos:tem('anexos')?(k.anexos||[]).filter(a=>!a.removido).map(a=>({...a,id:uid()})):[]});
   vzAjustar(dest,n);dest.tarefas.push(n);notifTarefa(dest,n,null);log(dest,`Tarefa criada como cópia de ${k.codigo}${k.modelo?' (modelo)':''}: ${n.titulo}`);return n}
@@ -9438,21 +9966,22 @@ const subAtrasada=n=>{const c=subCfg(n.sub);return !!(n.status==='ativo'&&c&&c.p
 const etapaAtrasada=n=>{const c=etapaCfg(n.etapa);return !!(n.status==='ativo'&&c&&c.sla&&diff(n.desde,HOJE)>c.sla)};
 /* pendências para chegar ao destino: pré-requisitos configurados; ao sair de uma etapa, o checklist dela; na compra, diligência impeditiva */
 function pendencias(t,tipo,dest){const n=t.neg,L=[];
-  cfg().prereq.filter(p=>p.alvoTipo===tipo&&p.alvo===dest&&itCondVale(t,p.cond)).forEach(p=>{const ok=passouPor(n,p.req);
-    L.push({ok,txt:ok?`Passou por ${subN(p.req)}`:`Passar antes por ${subN(p.req)} (${SN(subCfg(p.req)?.etapa)})`,fix:null})});
+  cfg().prereq.filter(p=>p.alvoTipo===tipo&&p.alvo===dest&&itCondVale(t,p.cond)).forEach(p=>{const rg=jnRegraEf(t,jnBasePr(p),p.rc);if(rg==='livre')return;const ok=passouPor(n,p.req);
+    L.push({ok,txt:ok?`Passou por ${subN(p.req)}`:`Passar antes por ${subN(p.req)} (${SN(subCfg(p.req)?.etapa)})`,fix:null,just:rg==='justifica'})});
   const saindo=((tipo==='etapa'&&SIDX(dest)>SIDX(n.etapa))||(tipo==='status'&&dest==='comprado'))&&!(!t._parte&&dividida(t));
-  if(saindo){(cfg().checklist[n.etapa]||[]).filter(c=>c.obrig&&itCondVale(t,c.cond)).forEach(({doc})=>{const st=docSt(t.docs.find(d=>d.tipo===doc));
-      L.push({ok:st==='validado',txt:TIPOS_DOC[doc][0]+(st==='validado'?' validado':st==='pendente'?': não enviado':st==='recebido'?': aguardando validação':': '+st),fix:st==='validado'?null:['tab:documentos','Ver documentos']})})}
+  if(saindo){(cfg().checklist[n.etapa]||[]).filter(c=>itCondVale(t,c.cond)&&jnRegraEf(t,jnBaseCk(c),c.rc)!=='livre').forEach(c=>{const doc=c.doc,st=docSt(t.docs.find(d=>d.tipo===doc));
+      L.push({ok:st==='validado',just:jnRegraEf(t,jnBaseCk(c),c.rc)==='justifica',txt:TIPOS_DOC[doc][0]+(st==='validado'?' validado':st==='pendente'?': não enviado':st==='recebido'?': aguardando validação':': '+st),fix:st==='validado'?null:['tab:documentos','Ver documentos']})})}
   if(tipo==='status'&&dest==='comprado'&&!t._parte)t.dilig.filter(d=>d.sit==='impeditiva').forEach(d=>L.push({ok:false,txt:'Diligência impeditiva: '+d.titulo,fix:['tab:documentos','Ver diligências']}));
   return L.concat(pendPartes(t,tipo,dest))}
 /* aprovações exigidas, menos os níveis que quem move já tem */
-function aprovExig(tipo,dest,ator){const c=destinoCfg(tipo,dest)||{},nv=[];if(c.g)nv.push(2);if(c.d)nv.push(3);
+/* t: o terreno, para as regras da jornada pelo valor da resposta que pedem gestor ou diretor */
+function aprovExig(tipo,dest,ator,t){const c=destinoCfg(tipo,dest)||{},nv=[];if(c.g||(t&&jnPede(t,tipo,dest,'gestor')))nv.push(2);if(c.d||(t&&jnPede(t,tipo,dest,'diretor')))nv.push(3);
   const q=nivelDe(ator);return {niveis:nv.filter(x=>x>q),modo:c.modo||'sequencia'}}
 const proxDestino=n=>{const i=SIDX(n.etapa);return STAGES[i+1]?['etapa',STAGES[i+1][0]]:['status','comprado']};
 /* quadro de avanço: próximo destino, pendências e aprovações (mesmo formato usado nas Ações do painel) */
 function checkAdv(t){const n=t.neg;if(!n||n.status!=='ativo')return null;
   const [tipo,dest]=proxDestino(n),items=pendencias(t,tipo,dest),b=items.filter(x=>!x.ok);
-  return {next:[dest,destinoNome(tipo,dest)],tipo,dest,items,ok:!b.length,forcar:!!b.length&&!b.some(x=>x.trava)&&nivelDe(me())>=2,aprov:aprovExig(tipo,dest,me()),compra:tipo==='status'}}
+  return {next:[dest,destinoNome(tipo,dest)],tipo,dest,items,ok:!b.length,forcar:!!b.length&&!b.some(x=>x.trava)&&(nivelDe(me())>=2||b.every(x=>x.just)),aprov:aprovExig(tipo,dest,me(),t),compra:tipo==='status'}}
 const naVez=p=>{const pend=p.niveis.filter(r=>r.status==='pendente');if(!pend.length)return [];const o=Math.min(...pend.map(r=>r.ordem));return pend.filter(r=>r.ordem===o)};
 const podeDecidir=(r,u)=>nivelDe(u)>=r.nivel&&(!r.previsto||r.previsto===u||ehSuperior(u,r.previsto));
 const possoDecidir=t=>{const p=t.neg?.pedido;return !!p&&naVez(p).some(r=>podeDecidir(r,me()))};
@@ -9464,9 +9993,11 @@ function moverPara(t,tipo,dest,o={}){const n=t.neg,eu=me(),mp=movePartes(t,tipo,
   if(n.pedido)return {erro:`Há um pedido de aprovação aberto para ${destinoNome(n.pedido.tipo,n.pedido.dest)}. Decida ou cancele antes.`};
   const pend=pendencias(t,tipo,dest).filter(x=>!x.ok);
   if(pend.some(x=>x.trava))return {bloq:true,pend,podeForcar:false};
-  if(pend.length&&!o.forcar)return {bloq:true,pend,podeForcar:nivelDe(eu)>=2};
+  /* só faltam itens "avança com justificativa": qualquer um passa justificando; os demais, só gestor e diretor */
+  const podeF=nivelDe(eu)>=2||pend.every(x=>x.just);
+  if(pend.length&&(!o.forcar||!podeF))return {bloq:true,pend,podeForcar:podeF};
   const dados={...(o.dados||{}),forcado:pend.length?o.just:null};
-  const ap=aprovExig(tipo,dest,eu);
+  const ap=aprovExig(tipo,dest,eu,t);
   if(ap.niveis.length){
     n.pedido={id:uid(),tipo,dest,modo:ap.modo,por:eu,em:agora(),dados,niveis:ap.niveis.map((nv,i)=>({nivel:nv,ordem:ap.modo==='sequencia'?i+1:1,previsto:aprovadorPrevisto(eu,nv),status:'pendente'}))};
     log(t,`Pedido de aprovação: ${destinoNome(tipo,dest)} (${ap.niveis.map(x=>NIV_N[x]).join(ap.modo==='sequencia'?', depois ':' e ')})${dados.forcado?' · sem requisitos: '+dados.forcado:''}`);
@@ -9505,7 +10036,7 @@ function retomar(t){const n=t.neg,parado=n.encerradoEm?diff(n.encerradoEm,HOJE):
 function levarAte(t,alvo,o={}){const snap=JSON.stringify(t.neg),h=t.hist.length,nt=S.notifs.length;
   const desfaz=()=>{t.neg=JSON.parse(snap);t.hist.length=h;S.notifs.splice(0,S.notifs.length-nt)};
   while(SIDX(t.neg.etapa)<SIDX(alvo)){const prox=STAGES[SIDX(t.neg.etapa)+1][0],ult=prox===alvo;
-    if(!ult&&aprovExig('etapa',prox,me()).niveis.length){desfaz();return {erro:`${SN(prox)} pede aprovação. Leve uma etapa por vez.`}}
+    if(!ult&&aprovExig('etapa',prox,me(),t).niveis.length){desfaz();return {erro:`${SN(prox)} pede aprovação. Leve uma etapa por vez.`}}
     const r=moverPara(t,'etapa',prox,o);
     if(r.bloq||r.erro){desfaz();return {...r,etapa:prox}}
     if(r.pedido)return r}
@@ -9631,8 +10162,10 @@ const apCells=(p,c)=>`<label class="chk"><input type="checkbox" data-ch="cfg" da
 const usada=k=>S.terrenos.some(t=>t.neg&&(t.neg.sub===k||(t.neg.trilha||[]).some(x=>x.paraSub===k||x.deSub===k)));
 function pgConfig(){
   if(!ehAdmin(me()))return `<div class="page-h"><div><h1>Configurações</h1></div></div><section class="sec"><div class="sec-b"><div class="empty">Só administradores alteram a configuração do funil. Teste como Diretor (Moisés é administrador).</div></div></section>`;
+  /* Pré-requisitos, Checklist e Tarefas da etapa ficam dentro da Jornada (1/nov/2026) */
+  if(['prereq','checklist','etapaTar'].includes(UI.cfgAba))UI.cfgAba='jornada';
   const C=cfg(),aba=UI.cfgAba||'fases';
-  const abas=[['fases','Fases'],['funil','Etapas de '+faseN(faseEnt())],['prereq','Pré-requisitos'],['status','Status e motivos'],['checklist','Checklist'],['etapaTar','Tarefas da etapa'],['notif','Notificações'],['equipe','Equipe'],['viab','Viabilidade'],['zonas','Parâmetros urbanísticos'],['campos','Campos'],['tarefas','Tarefas']];
+  const abas=[['fases','Fases'],['funil','Etapas de '+faseN(faseEnt())],['jornada','Jornada'],['status','Status e motivos'],['notif','Notificações'],['equipe','Equipe'],['viab','Viabilidade'],['zonas','Parâmetros urbanísticos'],['campos','Campos'],['tarefas','Tarefas']];
   let corpo='';
   if(aba==='fases')corpo=cfgFasesHtml();
   if(aba==='viab')corpo=cfgViabHtml();
@@ -9640,6 +10173,7 @@ function pgConfig(){
   if(aba==='tarefas')corpo=cfgTarefasHtml();
   if(aba==='campos')corpo=itCfgCamposHtml();
   if(aba==='etapaTar')corpo=etCfgHtml();
+  if(aba==='jornada')corpo=jnCfgHtml();
   if(aba==='funil')corpo=`<section class="sec"><div class="sec-h"><h2>Etapas de ${esc(faseN(faseEnt()))}</h2></div><div class="sec-b"><div class="cfg-t">
     <div class="cfg-r cfg-hd"><span>Etapa</span><span>SLA (dias)</span><span>Aprovação para entrar</span></div>
     ${C.etapas.map((e,i)=>`<div class="cfg-r"><input data-ch="cfg" data-p="etapas.${i}.nome" value="${esc(e.nome)}" aria-label="Nome da etapa"><input type="number" min="0" data-ch="cfg" data-p="etapas.${i}.sla" value="${e.sla??''}" aria-label="SLA de ${esc(e.nome)}"><span class="cfg-ap">${apCells('etapas.'+i,e)}</span></div>`).join('')}</div><p class="cfg-nota">Criar, ordenar e desativar etapas fica em <button type="button" class="linkbtn" data-a="cfg-aba" data-v="fases">Fases</button>.</p></div></section>
@@ -9760,7 +10294,7 @@ function funilSubmit(form,F,t,f){
 function funilModal(M,fechar){const t=UI.alvo?T(UI.alvo):T(UI.id);
   const motivos=st=>`<select id="mo-m" name="motivo" required><option value="">Escolha</option>${cfg().motivos[st].filter(m=>m.ativo).map(m=>`<option value="${m.k}">${esc(m.nome)}</option>`).join('')}</select>`;
   const df=(id,l)=>`<div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="${id}">${l}</button></div>`;
-  const apInfo=st=>{const ap=aprovExig('status',st,me());return ap.niveis.length?`<div class="banner blue" style="margin-top:12px">${ic('check')}<div>Vai como pedido de aprovação: ${ap.niveis.map(x=>NIV_N[x]).join(ap.modo==='sequencia'?', depois ':' e ')}.</div></div>`:''};
+  const apInfo=st=>{const ap=aprovExig('status',st,me(),t);return ap.niveis.length?`<div class="banner blue" style="margin-top:12px">${ic('check')}<div>Vai como pedido de aprovação: ${ap.niveis.map(x=>NIV_N[x]).join(ap.modo==='sequencia'?', depois ':' e ')}.</div></div>`:''};
   if(M==='perder')return `<div class="dh"><div><h2>Marcar como Perdido</h2><div class="muted" style="margin-top:4px">O vendedor não quis seguir com a BKM.</div></div>${fechar}</div><form data-form="perder" id="f-p"><div class="fields"><div class="field full"><label for="mo-m">Motivo</label>${motivos('perdido')}</div><div class="field full"><label for="pd-d">Relato</label><textarea id="pd-d" name="detalhe" required placeholder="O que aconteceu, com quem e quando"></textarea></div></div>${apInfo('perdido')}</form>${df('f-p','Marcar como Perdido')}`;
   if(M==='descartar')return `<div class="dh"><div><h2>Descartar</h2><div class="muted" style="margin-top:4px">A BKM decidiu não seguir.</div></div>${fechar}</div><form data-form="descartar" id="f-ds"><div class="fields"><div class="field full"><label for="mo-m">Motivo</label>${motivos('descartado')}</div><div class="field full"><label for="ds-d">Detalhe</label><textarea id="ds-d" name="detalhe" placeholder="Obrigatório quando o motivo é Outros"></textarea></div></div>${apInfo('descartado')}</form>${df('f-ds','Descartar')}`;
   if(M==='suspender')return `<div class="dh"><h2>Colocar em Stand By</h2>${fechar}</div><form data-form="suspender" id="f-s"><div class="fields"><div class="field"><label for="sp-d">Retomar em</label><input id="sp-d" name="retomar" type="date" min="${addD(HOJE,1)}" value="${addD(HOJE,30)}" required></div><div class="field full"><label for="sp-t">Justificativa</label><textarea id="sp-t" name="detalhe" required></textarea></div></div>${apInfo('stand_by')}</form>${df('f-s','Colocar em Stand By')}`;
@@ -13267,18 +13801,20 @@ const etNomeS=(f,s)=>subF(f,s)?.nome||s||'';
 const etDoProc=(t,f,pid)=>(t.tarefas||[]).filter(k=>k.fase===f&&k.etProc===pid&&!k.modelo);
 
 /* situação da tarefa na etapa: nivel (o que trava), sit (ativa, deixada, arqAuto, nao_se_aplica) e trava (no banco: app._trava_tarefa) */
-function etTrava(t,k){if(!k||!k.etapa||!k.fase)return null;const r=etRegraDe(k);let nivel=null,sit='ativa';
-  if(r&&r.ativo!==false&&r.fase===k.fase&&r.etapa===k.etapa&&(r.sub||null)===(k.sub||null)){if(r.trava)nivel=r.sub?'subetapa':'etapa';
+function etTrava(t,k){if(!k||!k.etapa||!k.fase)return null;const r=etRegraDe(k);let nivel=null,sit='ativa',regra=null;
+  if(r&&r.ativo!==false&&r.fase===k.fase&&r.etapa===k.etapa&&(r.sub||null)===(k.sub||null)){regra=jnRegraEf(t,jnBaseTar(r),r.rc);if(regra!=='livre')nivel=r.sub?'subetapa':'etapa';
     if(!itCondVale(t,r.cond)||!itCondVale(t,k.etCond))sit='nao_se_aplica'}
-  else if(etRegras().some(g=>g.ativo!==false&&g.fase===k.fase&&g.etapa===k.etapa&&!g.sub&&g.trava))nivel='etapa';  // à mão: trava se a etapa trava
+  else{  // à mão: trava se a etapa trava, pela regra mais forte das regras da etapa
+    const rs=etRegras().filter(g=>g.ativo!==false&&g.fase===k.fase&&g.etapa===k.etapa&&!g.sub&&g.trava).map(g=>jnRegraEf(t,jnBaseTar(g),g.rc)).filter(x=>x!=='livre');
+    if(rs.length){nivel='etapa';regra=rs.includes('bloqueia')?'bloqueia':'justifica'}}
   if(k.etSit==='deixada'||k.etSit==='arqAuto')sit=k.etSit;
-  return {nivel,sit,trava:!!nivel&&sit==='ativa'}}
+  return {nivel,sit,trava:!!nivel&&sit==='ativa',regra:nivel?regra:null}}
 /* abertas que travam a saída (saida: etapa ou subetapa) do processo da fase */
 function etTravando(t,f,p,saida){const pid=etPid(t,f,p);if(!p||!pid)return [];
   return etDoProc(t,f,pid).filter(k=>tkAberta(k)&&k.etapa===p.etapa).filter(k=>{const j=etTrava(t,k);if(!j?.trava)return false;
     return saida==='subetapa'?j.nivel==='subetapa'&&k.sub===p.sub:j.nivel==='etapa'||(j.nivel==='subetapa'&&k.sub===p.sub)})
     .sort((a,b)=>String(a.prazo||'9').localeCompare(String(b.prazo||'9'))||a.codigo.localeCompare(b.codigo))}
-const etItem=(t,k)=>({ok:false,tipo:'tarefa',tarefa:k.id,txt:`Tarefa ${k.codigo}: ${vzPapel(t,k)?k.titulo:'restrita'}${tkAtras(k)?' (atrasada)':''}`,fix:['tab:tarefas','Ver tarefas']});
+const etItem=(t,k)=>({ok:false,tipo:'tarefa',tarefa:k.id,just:etTrava(t,k)?.regra==='justifica',txt:`Tarefa ${k.codigo}: ${vzPapel(t,k)?k.titulo:'restrita'}${tkAtras(k)?' (atrasada)':''}`,fix:['tab:tarefas','Ver tarefas']});
 /* a saída da passagem: etapa (para frente ou concluir), subetapa (para frente) ou nada */
 function etSaida(f,p,tipo,dest){if(tipo==='etapa')return etIx(f,dest)>etIx(f,p.etapa)?'etapa':null;
   if(tipo==='subetapa')return etSubIx(f,p.etapa,dest)>etSubIx(f,p.etapa,p.sub)?'subetapa':null;
@@ -13340,11 +13876,11 @@ function etPodeAvancar(t,k){const j=etTrava(t,k);if(!j?.nivel||j.sit!=='ativa')r
 function etAbriu(t){if(t?.neg)etEntrar(t,faseEnt(),t.neg,'etapa',t.neg.etapa)}
 /* fases depois da entrada: a trava vale também (analista vê a lista; gestor e diretor passam com justificativa) */
 function etBloqProc(t,p,tipo,dest){const s=etSaida(p.fase,p,tipo,dest);if(!s)return false;const L=etTravando(t,p.fase,p,s);if(!L.length)return false;
-  UI.etFz={tid:t.id,pid:p.id,tipo,dest,itens:L.map(k=>etItem(t,k))};UI.alvo=t.id;UI.modal=nivelDe(me())>=2?'et-forcar':'et-bloq';setTimeout(renderModal,0);return true}
+  UI.etFz={tid:t.id,pid:p.id,tipo,dest,itens:L.map(k=>etItem(t,k))};UI.alvo=t.id;UI.modal=nivelDe(me())>=2||UI.etFz.itens.every(x=>x.just)?'et-forcar':'et-bloq';setTimeout(renderModal,0);return true}
 {const pi=procIr;procIr=function(t,p,tipo,dest,d={}){const f=p.fase,de=p.etapa;if(!d.forcado&&etBloqProc(t,p,tipo,dest))return false;
   pi(t,p,tipo,dest,d);if(d.forcado)log(t,`${faseN(f)}: passou sem as tarefas da etapa · ${d.forcado}`);
   if(tipo==='etapa'){if(etIx(f,dest)<etIx(f,de))etVoltar(t,f,p,etIx(f,dest));etEntrar(t,f,p,'etapa',dest)}else if(tipo==='subetapa')etEntrar(t,f,p,'subetapa',dest);else etEncerrar(t,f,p,dest,d)}}
-{const cr=tkCriar;tkCriar=function(t,d){const k=cr(t,d);if(k&&k.etapa===undefined&&!k.modelo){if(d.etapa==='nenhuma')etPor(t,k);else{const a=etAtual(t);a?etPor(t,k,a.f,a.p.etapa):etPor(t,k)}}return k}}
+{const cr=tkCriar;tkCriar=function(t,d){const k=cr(t,d);if(k&&k.etapa===undefined&&!k.modelo){if(d.etapa==='nenhuma')etPor(t,k);else{const a=etAtual(t);a?etPor(t,k,a.f,a.p.etapa,a.p.sub):etPor(t,k)}}return k}}
 {const mv=tkMover;tkMover=function(t,k,lid,pos){const antes=k.lista,feita=k.feita,r=mv(t,k,lid,pos);if(k.lista!==antes)k.mudouLista=true;if(!feita&&k.feita&&k.etapa)etPodeAvancar(t,k);return r}}
 {const ret=pzRetomar;pzRetomar=function(t,k){const z=pzAtiva(k);if(z?.origem==='stand_by'&&!UI.etRet){toast('Esta pausa é do Stand By da fase: a tarefa volta quando a fase for retomada.',true);return}return ret(t,k)}}
 {const tf=tkFiltradas;tkFiltradas=function(){const L=tf(),e=UI.tk.etapa;return e?L.filter(({k})=>e==='-'?!k.etapa:`${k.fase}|${k.etapa}`===e):L}}
@@ -13361,7 +13897,9 @@ function etSelo(t,k,frente){const j=etTrava(t,k);if(!j)return '';const cls=frent
 function etLinha(t,k,bloq,linha){if(k.modelo)return '';const ab=fasesL().filter(f=>f.entrada?aberto(t.neg):procAberto(t,f.k)).map(f=>f.k);if(k.fase&&!ab.includes(k.fase))ab.push(k.fase);
   const v=k.etapa?`${k.fase}|${k.etapa}`:'',r=etRegraDe(k),txt=k.etapa?`${etNomeE(k.fase,k.etapa)}${k.sub?' · '+etNomeS(k.fase,k.sub):''}`:'Nenhuma';
   const sel=bloq?`<span>${esc(txt)}</span>`:`<select id="tkc-et" class="tkm-pill" data-etk="etapa" aria-label="Etapa do funil" title="${esc(txt)}"><option value="">Nenhuma</option>${ab.map(f=>`<optgroup label="${esc(faseN(f))}">${etapasF(f).map(e=>`<option value="${f}|${e.k}" ${v===f+'|'+e.k?'selected':''}>${esc(e.nome)}</option>`).join('')}</optgroup>`).join('')}</select>`;
-  return linha('flow','Etapa do funil',`${sel}${k.sub?`<span class="faint et-reg">${esc(etNomeS(k.fase,k.sub))}</span>`:''}${r?`<span class="et-regi" title="Nasceu da regra da etapa: ${escT(etRegraNome(r))}">${ic('raio',14)}</span>`:''}`,bloq?null:'tkc-et')}
+  const subs=k.etapa?(etapasF(k.fase).find(e=>e.k===k.etapa)?.subs||[]):[];
+  const ss=!k.etapa?'':bloq||r?(k.sub?`<span class="faint et-reg">${esc(etNomeS(k.fase,k.sub))}</span>`:''):subs.length?`<select id="tkc-sub" class="tkm-pill" data-etk="sub" aria-label="Subetapa do funil"><option value="">Sem subetapa</option>${subs.map(x=>`<option value="${x.k}" ${k.sub===x.k?'selected':''}>${esc(x.nome)}</option>`).join('')}</select>`:'';
+  return linha('flow','Etapa do funil',`${sel}${ss}${r?`<span class="et-regi" title="Nasceu da regra da etapa: ${escT(etRegraNome(r))}">${ic('raio',14)}</span>`:''}`,bloq?null:'tkc-et')}
 const etRegraNome=r=>r.modelo?(crModelos().find(m=>m.id===r.modelo)?.nome||'modelo'):r.titulo;
 const etOpcoesFiltro=()=>{const s=new Map();todasTarefas().forEach(({k})=>{if(k.etapa)s.set(`${k.fase}|${k.etapa}`,`${faseN(k.fase)} › ${etNomeE(k.fase,k.etapa)}`)});return [...s.entries()].sort((a,b)=>a[1].localeCompare(b[1]))};
 const etFiltroHtml=f=>`<label class="sr-only" for="tk-etapa">Etapa</label><select id="tk-etapa" class="fsel-chip${f.etapa?' on':''}" data-ch="tk-f" data-k="etapa"><option value="">Etapa</option><option value="-" ${f.etapa==='-'?'selected':''}>Sem etapa</option>${etOpcoesFiltro().map(([v,n])=>`<option value="${esc(v)}" ${f.etapa===v?'selected':''}>${esc(n)}</option>`).join('')}</select>`;
@@ -13413,7 +13951,7 @@ function etRegraHtml(fechar){const r=UI.etRegra;if(!r)return '';const f=r.fase,e
       <div class="field"><label for="etr-pr">Prioridade</label><select id="etr-pr" data-etr="prio">${o(OPT.prioTar,r.prio)}</select></div>
       <div class="field"><label for="etr-r">Responsável</label><select id="etr-r" data-etr="resp"><option value="${RESP_OBJ}" ${!r.resp||r.resp===RESP_OBJ?'selected':''}>Responsável do terreno</option>${USERS.map(u=>`<option ${u===r.resp?'selected':''}>${esc(u)}</option>`).join('')}</select></div>`}
     <div class="field full"><span class="lbl-f">Vale quando</span><span class="it-vq">${r.cond?esc(itCondFrase(r.cond)):'<span class="faint">sempre</span>'}<button class="linkbtn" data-a="et-cond" data-v="regra">${r.cond?'Editar':'+ Condição'}</button>${r.cond?'<button class="linkbtn" data-a="et-cond-tira" data-v="regra">Tirar</button>':''}</span></div>
-    <label class="fchk full et-trv"><input type="checkbox" data-etr="trava" ${r.trava?'checked':''}>${ic('check',16)}Trava o avanço: as tarefas abertas desta regra viram pendência para sair ${r.sub?'da subetapa':'da etapa'}</label>
+    ${jnRegraCampo(jnBaseTar(r),r.rc,'et-regra-br').replace('<legend>Se estiver em branco</legend>',`<legend>Tarefas abertas ao sair ${r.sub?'da subetapa':'da etapa'}</legend>`)}
     ${r.id?`<label class="fchk full"><input type="checkbox" data-etr="ativo" ${r.ativo!==false?'checked':''}>${ic('check',16)}Ativa</label>`:''}</div>
   <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" data-a="et-regra-salva">Salvar regra</button></div>`}
 function etRegraErro(r){if(r.tipo==='modelo'&&!crModelos().some(m=>m.id===r.modelo))return 'Escolha o modelo de tarefas.';if(r.tipo==='tarefa'&&!(r.titulo||'').trim())return 'Dê um título à tarefa.';
@@ -13431,6 +13969,7 @@ function etCkCondHtml(e){const L=(cfg().checklist[e]||[]).filter(c=>c.obrig);if(
 
 document.addEventListener('click',e=>{const a=e.target.closest?.('[data-a^="et-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const A=a.dataset.a;
   switch(A){
+    case 'et-regra-br':{const r=UI.etRegra;if(!r||!ehAdmin(me()))return;if(a.dataset.v==='cond'){jnRcAbrir('__et');return}r.regra=a.dataset.v;r.rc=null;r.trava=r.regra!=='livre';renderModal();return}
     case 'et-cfg-fase':UI.etCfgFase=a.dataset.v;render();return;
     case 'et-regra-nova':if(!ehAdmin(me()))return;UI.etRegra=etNovaRegra(a.dataset.f,a.dataset.e);UI.modal='et-regra';renderModal();return;
     case 'et-regra-ed':{if(!ehAdmin(me()))return;const r=etRegras().find(x=>x.id===a.dataset.v);if(!r)return;UI.etRegra={...JSON.parse(JSON.stringify(r)),tipo:r.modelo?'modelo':'tarefa'};UI.modal='et-regra';renderModal();return}
@@ -13438,7 +13977,7 @@ document.addEventListener('click',e=>{const a=e.target.closest?.('[data-a^="et-"
       const usada=(S.terrenos||[]).some(t=>(t.tarefas||[]).some(k=>k.regra===r.id));if(usada){r.ativo=false;toast('A regra já criou tarefas: ficou desativada.')}else{cfg().regrasEtapa=etRegras().filter(x=>x!==r);toast('Regra apagada.')}save();render();return}
     case 'et-regra-salva':{const r=UI.etRegra,er=etRegraErro(r);if(er){toast(er,true);return}
       const x={id:r.id||uid(),fase:r.fase,etapa:r.etapa,sub:r.sub||null,modelo:r.tipo==='modelo'?r.modelo:null,titulo:r.tipo==='tarefa'?r.titulo.trim():null,desc:r.desc||'',prazo:r.tipo==='tarefa'?r.prazo:null,
-        lista:r.lista,prio:r.prio,resp:r.resp||RESP_OBJ,cond:r.cond||null,trava:!!r.trava,ativo:r.ativo!==false,ordem:r.ordem??etRegras().filter(y=>y.fase===r.fase&&y.etapa===r.etapa).length};
+        lista:r.lista,prio:r.prio,resp:r.resp||RESP_OBJ,cond:r.cond||null,regra:jnBaseTar(r),rc:r.rc&&r.rc.length?r.rc:null,trava:jnBaseTar(r)!=='livre'||!!(r.rc&&r.rc.length),ativo:r.ativo!==false,ordem:r.ordem??etRegras().filter(y=>y.fase===r.fase&&y.etapa===r.etapa).length};
       const i=etRegras().findIndex(y=>y.id===x.id);if(i>=0)etRegras()[i]=x;else etRegras().push(x);UI.etRegra=null;UI.modal=null;save();renderModal();render();toast('Regra salva. Vale para as próximas entradas na etapa.');return}
     case 'et-cond':{const v=a.dataset.v,x=etCondAlvo(v);if(!x||!ehAdmin(me()))return;const c=x.ler();
       UI.itCond={alvo:v,cond:c?JSON.parse(JSON.stringify(c)):itNovaCond(),busca:c?null:'0',q:'',ext:{titulo:x.nome,salvar:x.gravar,voltar:x.voltar}};UI.modal='it-cond';renderModal();return}
@@ -13448,6 +13987,8 @@ document.addEventListener('change',e=>{const el=e.target;
   if(el.dataset?.etr){e.stopImmediatePropagation();const r=UI.etRegra;if(!r)return;const c=el.dataset.etr;
     if(c==='trava'||c==='ativo')r[c]=el.checked;else if(c==='prazo')r.prazo=el.value===''?null:Math.max(0,parseInt(el.value,10)||0);else if(c==='sub')r.sub=el.value||null;else r[c]=el.value;
     if(['tipo','sub'].includes(c))renderModal();return}
+  if(el.dataset?.etk==='sub'){e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!vzEdita(t,k)||!k.etapa)return;const antes=k.sub?etNomeS(k.fase,k.sub):'nenhuma';k.sub=el.value||null;
+    log(t,`Tarefa "${k.titulo}": subetapa do funil ${antes} → ${k.sub?etNomeS(k.fase,k.sub):'nenhuma'}`);tkRe();return}
   if(el.dataset?.etk==='etapa'){e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!vzEdita(t,k))return;const [f,et]=(el.value||'').split('|');
     const antes=k.etapa?etNomeE(k.fase,k.etapa):'nenhuma';etPor(t,k,f||null,et||null);k.etSit=null;k.etSitEm=null;k.regra=k.etapa&&etRegraDe(k)?.etapa===k.etapa?k.regra:k.regra;
     log(t,`Tarefa "${k.titulo}": etapa do funil ${antes} → ${k.etapa?etNomeE(k.fase,k.etapa):'nenhuma'}`);tkRe();return}},true);
@@ -13471,6 +14012,327 @@ document.addEventListener('submit',e=>{const f=e.target;if(f.dataset?.form!=='et
   if(!S.etExemplo2){S.etExemplo2=true;const t=(S.terrenos||[]).find(x=>x.neg?.status==='ativo'&&x.neg.etapa==='estudos');if(t)etEntrar(t,faseEnt(),t.neg,'etapa','estudos')}})();
 /* roteiros de teste (testes/tetapa.js): rodar uma função no escopo do protótipo */
 window.BKM_TESTE=Object.assign(window.BKM_TESTE||{},{escopo:(f,a)=>eval('('+f+')')(a)});
+
+/* =====================================================================
+   Jornada do terreno (decisões do Moisés, 1/nov/2026; simulação "Jornada do
+   terreno"). Espelha app.jornada_itens, app.jornada_regras,
+   app.campos_terreno / terreno_valores, a regra do checklist e do
+   pré-requisito e app._jornada_pendencias / _jornada_pede.
+   - Configurações › Funil › Jornada (só administrador): por fase e etapa,
+     num lugar só, o que a etapa e cada subetapa pedem para avançar:
+     perguntas e campos, documentos, pré-requisitos e tarefas (as Tarefas da
+     etapa, o Checklist e os Pré-requisitos deixaram de ser abas próprias).
+   - Cada pergunta diz onde grava: um campo do terreno (catálogo) ou um campo
+     novo do terreno, criado ali. Fonte única: a resposta é o próprio campo,
+     que a ficha, o cartão da tarefa e a jornada leem e gravam.
+   - Cada item tem a regra se estiver em branco (não avança sem, avança com
+     justificativa, pode avançar) e o "Vale quando": fora da condição, não
+     aparece nem trava.
+   - Regras pelo valor da resposta: quando a condição vale, não avança, pede
+     aprovação do gestor ou do diretor, ou só avisa.
+   - No quadro de avanço da ficha, o bloco "O que esta etapa pede" com as
+     perguntas para responder ali mesmo; "avança com justificativa" deixa o
+     analista passar justificando; "não avança sem", só gestor e diretor.
+   - Item da etapa vale para sair da etapa; item de uma subetapa, para sair
+     dela (e da etapa). Voltar não exige nada.
+   Injetado no mesmo escopo, depois de proto_etapa.js.
+   ===================================================================== */
+IT_ORIG.personalizado='Campo novo do terreno';
+const jnItens=()=>cfg().jornada||(cfg().jornada=[]);
+const jnRegrasV=()=>cfg().jornadaRegras||(cfg().jornadaRegras=[]);
+const jnCampos=()=>S.camposTer||(S.camposTer=[]);
+const JN_REGRA={bloqueia:'Não avança sem',justifica:'Avança com justificativa',livre:'Pode avançar'};
+const JN_REGRA_F={bloqueia:'não avança',justifica:'avança com justificativa',livre:'pode avançar'};
+/* regra em branco: única ou condicional (rc = [{cond, regra}], a primeira que vale decide; como app._regra_branco) */
+const jnRegraEf=(t,base,rc)=>{for(const x of rc||[])if(x.cond&&itCondVale(t,x.cond))return x.regra;return base};
+const jnRcFrase=(rc,base)=>rc&&rc.length?rc.map(x=>`${JN_REGRA_F[x.regra]} quando ${itCondFrase(x.cond)}`).join('; ')+`; nos demais casos, ${JN_REGRA_F[base]}`:'';
+/* base de cada tipo de item (pergunta, documento, pré-requisito, tarefa) */
+const jnBaseCk=c=>c.regra||(!c.obrig?'livre':c.just?'justifica':'bloqueia');
+const jnBasePr=p=>p.regra||(p.just?'justifica':'bloqueia');
+const jnBaseTar=r=>r.regra||(r.trava?'bloqueia':'livre');
+const JN_SELO={bloqueia:'necessário',justifica:'pede justificativa'};
+const JN_ACAO={bloqueia:'Não avança',diretor:'Pede aprovação do diretor',gestor:'Pede aprovação do gestor',avisa:'Só avisa'};
+const JN_TIPO={texto:'Texto',numero:'Número',data:'Data',lista:'Lista de opções',sim_nao:'Sim ou não'};
+const JN_UN={'':'Sem unidade','m²':'m²',m:'m','R$':'R$ (moeda)','%':'% (percentual)'};
+
+/* campo novo do terreno vira um campo do catálogo (condição, cartão, jornada, Configurações › Campos) */
+function jnRegistra(c){const ch='personalizado.'+c.codigo,i=IT_CAT.findIndex(x=>x.chave===ch),on=c.ativo!==false;
+  const d={chave:ch,origem:'personalizado',coluna:c.codigo,titulo:c.titulo,tipo:c.tipo,un:c.unidade||null,
+    opcoes:c.tipo==='lista'?()=>Object.fromEntries((c.opcoes||[]).map(o=>[o,o])):null,vazio:null,editavel:on,condicao:on,cartao:on,
+    ler:t=>(t.cpers||{})[c.codigo],gravar:(t,v)=>{t.cpers=t.cpers||{};if(v==null||v==='')delete t.cpers[c.codigo];else t.cpers[c.codigo]=v},
+    formato:c.unidade==='R$'?'moeda':c.unidade==='%'?'percentual':null};
+  if(i>=0)IT_CAT[i]=d;else IT_CAT.push(d)}
+
+/* ---------- regras: o que vale na passagem (como app._jornada_na_saida) ---------- */
+function jnNaSaida(f,p,tipo,dest,x){if(!p||x.etapa!==p.etapa)return false;
+  if(tipo==='status')return dest==='comprado'||dest==='concluido';
+  if(tipo==='etapa')return etIx(f,dest)>etIx(f,p.etapa);
+  if(tipo==='subetapa'){if(!x.sub)return false;const a=etSubIx(f,p.etapa,x.sub);return a>=etSubIx(f,p.etapa,p.sub)&&a<etSubIx(f,p.etapa,dest)}
+  return false}
+const jnTxt=i=>i.pergunta||itTit(i.campo);
+const jnVale=(t,x)=>itCondVale(t,x.cond);
+function jnPend(t,f,p,tipo,dest){const L=[];
+  jnItens().filter(i=>i.fase===f&&i.ativo!==false&&itDef(i.campo)&&jnNaSaida(f,p,tipo,dest,i)&&jnVale(t,i)).forEach(i=>{const rg=jnRegraEf(t,i.regra,i.rc);if(rg==='livre')return;const ok=itVal(t,i.campo)!=null;
+    L.push({ok,txt:jnTxt(i)+(ok?'':': não informado'),just:rg==='justifica',jn:i.id,fix:ok||f!==faseEnt()?null:['jn-ir','Responder']})});
+  jnRegrasV().filter(r=>r.fase===f&&r.ativo!==false&&(r.acao==='bloqueia'||r.acao==='avisa')&&jnNaSaida(f,p,tipo,dest,r)&&jnVale(t,r))
+    .forEach(r=>L.push({ok:r.acao==='avisa',aviso:r.acao==='avisa',txt:r.msg}));
+  return L}
+/* regra pelo valor que pede aprovação (entra em aprovExig) */
+function jnPede(t,tipo,dest,nivel){if(!t||t._parte||!t.neg)return false;const f=faseEnt();
+  return jnRegrasV().some(r=>r.fase===f&&r.ativo!==false&&r.acao===nivel&&jnNaSaida(f,t.neg,tipo,dest,r)&&jnVale(t,r))}
+
+/* ---------- ganchos ---------- */
+{const pd=pendencias;pendencias=function(t,tipo,dest){const L=pd(t,tipo,dest);if(t._parte||!t.neg)return L;return L.concat(jnPend(t,faseEnt(),t.neg,tipo,dest))}}
+/* fases depois da entrada: a jornada trava também (analista justifica só o que pede justificativa) */
+{const pi=procIr;procIr=function(t,p,tipo,dest,d={}){if(!d.forcado){const L=jnPend(t,p.fase,p,tipo,dest).filter(x=>!x.ok);
+    if(L.length){UI.jnFz={tid:t.id,pid:p.id,tipo,dest,itens:L};UI.alvo=t.id;UI.modal=nivelDe(me())>=2||L.every(x=>x.just)?'jn-forcar':'jn-bloq';setTimeout(renderModal,0);return false}}
+  return pi(t,p,tipo,dest,d)}}
+
+/* ---------- quadro de avanço: o que esta etapa pede ---------- */
+function jnInfo(t,i){const d=itDef(i.campo);if(!d)return null;const o=d.opcoes?d.opcoes():null;
+  return {tipo:d.tipo,formato:d.formato,opcoes:o&&d.tipo!=='pessoa'?Object.entries(o):null,pessoas:d.tipo==='pessoa'?Object.keys(o||{}):null,titulo:d.titulo,editavel:d.editavel,valor:itVal(t,i.campo),un:d.un}}
+function jnControle(t,i,ro){const f=jnInfo(t,i);if(!f)return '';
+  return fmControle(t,null,{id:i.id,forma:i.forma},f,ro).replaceAll('data-a="fm-v"','data-a="jn-v"').replaceAll('data-fm=','data-jn=').replaceAll('id="fm-','id="jn-').replaceAll('name="fm-','name="jn-')}
+function jnSelo(i,ok,t){const rg=jnRegraEf(t,i.regra,i.rc);if(rg==='livre'||ok)return '';return `<span class="jn-selo ${rg}">${JN_SELO[rg]}</span>`}
+function jnBloco(t,f,p){if(!p||p.status!=='ativo')return '';const L=jnItens().filter(i=>i.fase===f&&i.ativo!==false&&i.etapa===p.etapa&&itDef(i.campo))
+    .sort((a,b)=>(a.sub?etSubIx(f,p.etapa,a.sub)+1:0)-(b.sub?etSubIx(f,p.etapa,b.sub)+1:0)||(a.ordem||0)-(b.ordem||0));
+  const R=jnRegrasV().filter(r=>r.fase===f&&r.ativo!==false&&r.etapa===p.etapa&&jnVale(t,r));if(!L.length&&!R.length)return '';
+  const ro=UI.role==='Leitura',vale=L.filter(i=>jnVale(t,i)),fora=L.filter(i=>!jnVale(t,i)),resp=vale.filter(i=>itVal(t,i.campo)!=null).length;
+  const grupos=[];vale.forEach(i=>{const k=i.sub||'';let g=grupos.find(x=>x.k===k);if(!g)grupos.push(g={k,itens:[]});g.itens.push(i)});
+  const nomeG=k=>k?(k===p.sub?`${etNomeS(f,k)} (subetapa atual)`:etNomeS(f,k)):'Para sair da etapa';
+  const linha=i=>{const ok=itVal(t,i.campo)!=null,d=itDef(i.campo);return `<div class="jn-q ${ok?'ok':''}" data-mid="jn-${i.id}" id="jnq-${i.id}"><div class="jn-ql"><label class="jn-qt" for="jn-${i.id}">${esc(jnTxt(i))}</label>${jnSelo(i,ok,t)}</div>
+    ${i.ajuda?`<div class="jn-aj faint">${esc(i.ajuda)}</div>`:''}<div class="jn-qc">${jnControle(t,i,ro)}</div>${d.origem==='personalizado'?'':`<div class="jn-dest faint">grava em ${esc(IT_ORIG[d.origem])} › ${esc(d.titulo)}</div>`}</div>`};
+  const regras=R.map(r=>`<div class="jn-rv ${r.acao}">${ic(r.acao==='avisa'?'warn':r.acao==='bloqueia'?'block':'check',16)}<span>${esc(r.msg)}${r.acao==='gestor'||r.acao==='diretor'?` <span class="faint">· pede aprovação do ${r.acao}</span>`:r.acao==='bloqueia'?' <span class="faint">· não avança</span>':''}</span></div>`).join('');
+  return `<div class="jn-bloco" id="jn-bloco"><div class="jn-h"><b>O que esta etapa pede</b>${vale.length?`<span class="faint">${resp} de ${vale.length}</span><span class="fm-prog" aria-hidden="true"><i style="width:${Math.round(100*resp/vale.length)}%"></i></span>`:''}</div>
+    ${regras}${grupos.map(g=>`<div class="jn-g"><div class="jn-gt">${esc(nomeG(g.k))}</div>${g.itens.map(linha).join('')}</div>`).join('')}
+    ${fora.length?`<button class="linkbtn jn-fora-b" data-a="jn-fora" aria-expanded="${!!UI.jnFora}">${UI.jnFora?'Ocultar':'Ver'} o que não se aplica agora (${fora.length})</button>${UI.jnFora?`<ul class="jn-fora">${fora.map(i=>`<li><span>${esc(jnTxt(i))}</span><span class="faint">vale quando ${esc(itCondFrase(i.cond))}</span></li>`).join('')}</ul>`:''}`:''}</div>`}
+{const pn=painelNeg;painelNeg=function(t){const h=pn(t);const n=t.neg;if(!n||n.status!=='ativo'||dividida(t))return h;const b=jnBloco(t,faseEnt(),n);return b?h.replace(/<\/div><\/section>$/,b+'</div></section>'):h}}
+{const pp=painelProc;painelProc=function(t,p){const h=pp(t,p);const b=jnBloco(t,p.fase,p);return b?h.replace(/<\/div><\/section>$/,b+'</div></section>'):h}}
+
+/* gravar a resposta: no próprio campo do terreno, com log */
+function jnGravar(t,i,raw){const d=itDef(i.campo);if(!t||!d||!d.editavel||UI.role==='Leitura')return;let v=raw;
+  if(v===''||v==null)v=null;
+  else if(d.tipo==='sim_nao')v=v===true||v==='s'||v==='1'?true:v===false||v==='n'||v==='0'?false:null;
+  else if(d.tipo==='numero'){v=typeof v==='number'?v:cpoNum(v);if(Number.isNaN(v)){toast(`Número inválido em ${jnTxt(i)}.`,true);render();return}}
+  else if(d.tipo==='texto'&&d.formato){try{v=fmValida(d.formato,v)}catch(er){toast(er.message,true);render();return}}
+  else if(typeof v==='string'&&d.tipo!=='data')v=v.trim()||null;
+  const antes=itVal(t,d.chave);if(String(antes??'')===String(v??''))return;
+  try{d.gravar(t,v??d.vazio??null)}catch(er){toast(er.message,true);return}
+  log(t,`${d.titulo} de ${itTxtVal(d,antes)} para ${itTxtVal(d,v)} (pela jornada)`);save();render()}
+
+/* ---------- Configurações › Funil › Jornada ---------- */
+const jnCk=e=>cfg().checklist[e]||(cfg().checklist[e]=[]);
+const jnCkRegra=c=>!c.obrig?'livre':c.just?'justifica':'bloqueia';
+const JN_REGRA_SEL={...JN_REGRA,cond:'Condicional…'};
+/* seletor da regra em branco (única ou condicional) e a frase da condicional, pela chave do item */
+const jnRegraSel=(k,base,rc,rot)=>jnSel(`data-jnr="${k}"`,rc&&rc.length?'cond':base,JN_REGRA_SEL,rot);
+const jnRcLinha=(k,base,rc)=>rc&&rc.length?`<span class="it-vq et-vq jn-rcf">${esc(jnRcFrase(rc,base).replace(/^./,c=>c.toUpperCase()))}. <button class="linkbtn" data-a="jn-rc" data-v="${esc(k)}">Editar</button></span>`:'';
+const jnSel=(attr,v,opc,rot)=>`<select class="jn-rs" ${attr} aria-label="${esc(rot)}">${Object.entries(opc).map(([k,n])=>`<option value="${k}" ${k===v?'selected':''}>${esc(n)}</option>`).join('')}</select>`;
+function jnLinha(icone,nome,meta,regra,vq,acoes,cls=''){return `<div class="jn-r ${cls}"><span class="jn-ri">${ic(icone,18)}</span><div class="jn-rn"><b>${nome}</b>${meta?`<span class="faint">${meta}</span>`:''}${vq||''}</div><div class="jn-rr">${regra||''}</div><div class="jn-ra">${acoes||''}</div></div>`}
+const jnVq=(c,a,v)=>`<span class="it-vq et-vq">${c?'vale quando '+esc(itCondFrase(c)):'<span class="faint">vale sempre</span>'}<button class="linkbtn" data-a="${a}" data-v="${esc(v)}">${c?'Editar':'+ Condição'}</button></span>`;
+function jnItemLinha(i){const d=itDef(i.campo),f=d?{tipo:d.tipo,opcoes:d.opcoes?Object.entries(d.opcoes()):null}:null,fs=f?fmFormas(f.tipo,f.opcoes?.length):[];
+  const meta=d?`${d.origem==='personalizado'?'Campo novo do terreno':'Grava em '+esc(IT_ORIG[d.origem])+' › '+esc(d.titulo)} · ${esc(IT_TIPO[d.tipo]||d.tipo)}${fs.length>1?' · '+esc(FM_FORMA[fs.includes(i.forma)?i.forma:fs[0]]):''}${d.editavel?'':' · só leitura'}`:'campo removido';
+  return jnLinha('edit',esc(jnTxt(i)),meta,jnRegraSel('it:'+i.id,i.regra,i.rc,'Se estiver em branco'),jnVq(i.cond,'jn-cond',i.id)+jnRcLinha('it:'+i.id,i.regra,i.rc),
+    `<button class="btn sm text" data-a="jn-ed" data-v="${i.id}">Editar</button><button class="iconbtn sm lixo" data-a="jn-x" data-v="${i.id}" aria-label="Tirar da jornada" title="Tirar da jornada">${ic('lixo',18)}</button>`)}
+function jnTarLinha(f,r){const m=r.modelo?crModelos().find(x=>x.id===r.modelo):null;
+  return jnLinha('task',r.modelo?`Modelo ${esc(m?.nome||'(removido)')}`:esc(r.titulo),`Tarefa${r.modelo?'s':''} ao entrar${r.sub?' em '+esc(etNomeS(f,r.sub)):' na etapa'}${r.ativo===false?' · desativada':''}`,
+    jnRegraSel('tar:'+r.id,jnBaseTar(r),r.rc,'Tarefas abertas'),
+    `<span class="it-vq et-vq">${r.cond?'vale quando '+esc(itCondFrase(r.cond)):'<span class="faint">vale sempre</span>'}</span>`+jnRcLinha('tar:'+r.id,jnBaseTar(r),r.rc),
+    `<button class="btn sm text" data-a="et-regra-ed" data-v="${r.id}">Editar</button><button class="iconbtn sm lixo" data-a="et-regra-x" data-v="${r.id}" aria-label="Apagar regra" title="Apagar regra">${ic('lixo',18)}</button>`,r.ativo===false?'inativa':'')}
+function jnDocLinha(e,c){return jnLinha('doc',esc(TIPOS_DOC[c.doc]?.[0]||c.doc),'Documento validado',jnRegraSel(`doc:${e}:${c.doc}`,jnBaseCk(c),c.rc,'Se faltar'),etVq(`ck:${e}:${c.doc}`,c.cond)+jnRcLinha(`doc:${e}:${c.doc}`,jnBaseCk(c),c.rc),
+  `<button class="iconbtn sm lixo" data-a="jn-doc-x" data-e="${e}" data-v="${c.doc}" aria-label="Tirar documento" title="Tirar da jornada">${ic('lixo',18)}</button>`)}
+function jnPreLinha(p){return jnLinha('flow',`Ter passado por ${esc(subN(p.req))}`,`Para entrar em ${esc(destinoNome(p.alvoTipo,p.alvo))}`,jnRegraSel('pr:'+p.id,jnBasePr(p),p.rc,'Sem ter passado'),
+  etVq('pr:'+p.id,p.cond)+jnRcLinha('pr:'+p.id,jnBasePr(p),p.rc),`<button class="iconbtn sm lixo" data-a="cfg-pre-del" data-v="${p.id}" aria-label="Tirar pré-requisito" title="Tirar da jornada">${ic('lixo',18)}</button>`)}
+function jnAdd(f,e,s,tipos){return `<div class="jn-adds">${tipos.map(([a,l])=>`<button class="tkm-add" data-a="${a}" data-f="${f}" data-e="${e}" data-s="${s||''}">${ic('add',16)}${l}</button>`).join('')}</div>`}
+function jnCfgHtml(){const fs=fasesL().filter(f=>f.ativo!==false),f=fs.some(x=>x.k===UI.jnFase)?UI.jnFase:faseEnt(),ent=f===faseEnt(),es=etapasF(f),e=es.some(x=>x.k===UI.jnEtapa)?UI.jnEtapa:es[0]?.k,E=es.find(x=>x.k===e);
+  const its=jnItens().filter(i=>i.fase===f),tars=etRegras().filter(r=>r.fase===f),C=cfg();
+  const conta=k=>its.filter(i=>i.etapa===k).length+tars.filter(r=>r.etapa===k).length+(ent?jnCk(k).length+C.prereq.filter(p=>p.alvoTipo==='etapa'?p.alvo===k:subCfg(p.alvo)?.etapa===k).length:0)+jnRegrasV().filter(r=>r.fase===f&&r.etapa===k).length;
+  const ord=(a,b)=>(a.ordem||0)-(b.ordem||0);
+  const docAdd=ent?[['jn-doc','Documento']]:[];
+  const corpo=!E?'<p class="faint">Esta fase não tem etapas.</p>':`
+    ${ent?`<section class="sec jn-sec"><div class="sec-h"><h2>Para entrar em ${esc(E.nome)}</h2></div><div class="sec-b">${C.prereq.filter(p=>p.alvoTipo==='etapa'?p.alvo===e:subCfg(p.alvo)?.etapa===e).map(jnPreLinha).join('')||'<p class="faint jn-vazio">Entrada livre.</p>'}${jnAdd(f,e,'',[['jn-pre','Pré-requisito']])}</div></section>`:''}
+    <section class="sec jn-sec"><div class="sec-h"><h2>Para sair de ${esc(E.nome)}</h2></div><div class="sec-b">
+      ${its.filter(i=>i.etapa===e&&!i.sub).sort(ord).map(jnItemLinha).join('')}${ent?jnCk(e).map(c=>jnDocLinha(e,c)).join(''):''}${tars.filter(r=>r.etapa===e&&!r.sub).map(r=>jnTarLinha(f,r)).join('')}
+      ${its.some(i=>i.etapa===e&&!i.sub)||(ent&&jnCk(e).length)||tars.some(r=>r.etapa===e&&!r.sub)?'':'<p class="faint jn-vazio">Nada exigido para sair da etapa.</p>'}
+      ${jnAdd(f,e,'',[['jn-nova','Pergunta'],...docAdd,['jn-tar','Tarefa']])}</div></section>
+    ${E.subs.map(s=>{const a=its.filter(i=>i.etapa===e&&i.sub===s.k).sort(ord),b=tars.filter(r=>r.etapa===e&&r.sub===s.k);
+      return `<section class="sec jn-sec"><div class="sec-h"><h2>Para sair de ${esc(s.nome)}</h2><span class="faint">subetapa</span></div><div class="sec-b">${a.map(jnItemLinha).join('')}${b.map(r=>jnTarLinha(f,r)).join('')}${a.length||b.length?'':'<p class="faint jn-vazio">Nada exigido.</p>'}${jnAdd(f,e,s.k,[['jn-nova','Pergunta'],['jn-tar','Tarefa']])}</div></section>`}).join('')}
+    <section class="sec jn-sec"><div class="sec-h"><h2>Regras pelo valor da resposta</h2></div><div class="sec-b">
+      ${jnRegrasV().filter(r=>r.fase===f&&r.etapa===e).sort(ord).map(r=>jnLinha('raio',esc(r.msg),`${r.sub?'Para sair de '+esc(etNomeS(f,r.sub)):'Para sair da etapa'} · quando ${esc(itCondFrase(r.cond))}`,
+        jnSel(`data-jnr="rv:${r.id}"`,r.acao,JN_ACAO,'O que acontece'),'',`<button class="btn sm text" data-a="jn-rv-ed" data-v="${r.id}">Editar</button><button class="iconbtn sm lixo" data-a="jn-rv-x" data-v="${r.id}" aria-label="Apagar regra" title="Apagar regra">${ic('lixo',18)}</button>`)).join('')||'<p class="faint jn-vazio">Nenhuma regra. Exemplo: topografia irregular pede aprovação do diretor.</p>'}
+      ${jnAdd(f,e,'',[['jn-rv-nova','Regra']])}</div></section>`;
+  return `<section class="sec"><div class="sec-h"><h2>Jornada</h2></div><div class="sec-b">
+    <p class="muted" style="margin-top:0">O que cada etapa e subetapa pede para avançar: perguntas e campos (a resposta grava no próprio campo do terreno), documentos, pré-requisitos e tarefas. Cada item pode ter condição. Não avança sem: gestor e diretor passam com justificativa. Avança com justificativa: qualquer um passa justificando.</p>
+    <div class="seg sm et-fases" role="group" aria-label="Fase">${fs.map(x=>`<button data-a="jn-fase" data-v="${x.k}" aria-pressed="${x.k===f}">${esc(x.nome)}</button>`).join('')}</div></div></section>
+  <div class="jn-lay"><nav class="jn-et" aria-label="Etapas">${es.map(x=>`<button data-a="jn-etapa" data-v="${x.k}" aria-pressed="${x.k===e}"><span>${esc(x.nome)}</span><span class="faint">${conta(x.k)||''}</span></button>`).join('')}</nav><div class="stack jn-corpo">${corpo}</div></div>`}
+
+/* ---------- editores ---------- */
+function jnLugarSel(id,f,e,s){const E=etapaF(f,e);return `<select id="${id}" data-jne="sub"><option value="">${esc(E?.nome||'')} (a etapa toda)</option>${(E?.subs||[]).map(x=>`<option value="${x.k}" ${x.k===s?'selected':''}>${esc(x.nome)}</option>`).join('')}</select>`}
+function jnItemHtml(fechar){const E=UI.jnEd;if(!E)return '';const d=E.campo&&E.campo!=='__novo'?itDef(E.campo):null;
+  const usados=jnItens().filter(i=>i.id!==E.id&&i.fase===E.fase&&i.etapa===E.etapa&&(i.sub||null)===(E.sub||null)).map(i=>i.campo);
+  const grupos=Object.entries(IT_ORIG).map(([o,n])=>{const L=IT_CAT.filter(c=>c.origem===o&&(c.chave===E.campo||!usados.includes(c.chave))&&(itDef(c.chave).editavel||c.chave===E.campo||o!=='personalizado')).map(c=>itDef(c.chave));
+    return L.length?`<optgroup label="${esc(n)}">${L.map(c=>`<option value="${c.chave}" ${c.chave===E.campo?'selected':''}>${esc(c.titulo)}${c.editavel?'':' (só leitura)'}</option>`).join('')}</optgroup>`:''}).join('');
+  const N=E.novo||{},tipo=d?d.tipo:N.tipo||'texto',nop=d?(d.opcoes?Object.keys(d.opcoes()).length:0):(N.opcoes||'').split('\n').filter(x=>x.trim()).length,formas=fmFormas(tipo,nop);
+  return `<div class="dh"><div><h2>${E.id?'Editar pergunta':'Nova pergunta'}</h2><div class="muted" style="margin-top:4px">${esc(faseN(E.fase))} › ${esc(etNomeE(E.fase,E.etapa))}</div></div>${fechar}</div>
+  <div class="fields jn-form">
+    <div class="field"><label for="jne-s">Vale para sair de</label>${jnLugarSel('jne-s',E.fase,E.etapa,E.sub)}</div>
+    <div class="field"><label for="jne-c">Onde grava a resposta</label><select id="jne-c" data-jne="campo"><option value="">Escolha o campo</option>${grupos}<option value="__novo" ${E.campo==='__novo'?'selected':''}>Criar campo novo do terreno…</option></select></div>
+    ${E.campo==='__novo'?`<div class="field"><label for="jne-nt">Nome do campo novo</label><input id="jne-nt" data-jne="n.titulo" value="${esc(N.titulo||'')}" placeholder="Ex.: Recuo frontal atende"></div>
+      <div class="field"><label for="jne-ny">Tipo</label><select id="jne-ny" data-jne="n.tipo">${Object.entries(JN_TIPO).map(([k,n])=>`<option value="${k}" ${k===(N.tipo||'texto')?'selected':''}>${n}</option>`).join('')}</select></div>
+      ${(N.tipo||'texto')==='lista'?`<div class="field full"><label for="jne-no">Opções (uma por linha)</label><textarea id="jne-no" data-jne="n.opcoes" placeholder="Sim&#10;Não&#10;A verificar">${esc(N.opcoes||'')}</textarea></div>`:''}
+      ${(N.tipo||'texto')==='numero'?`<div class="field"><label for="jne-nu">Unidade</label><select id="jne-nu" data-jne="n.unidade">${Object.entries(JN_UN).map(([k,n])=>`<option value="${k}" ${k===(N.unidade||'')?'selected':''}>${n}</option>`).join('')}</select></div>`:''}
+      <p class="field full faint" style="margin:0">O campo novo entra no terreno: aparece em Configurações › Campos, nas condições e no cartão da tarefa.</p>`:''}
+    ${d||E.campo==='__novo'?`<div class="field full"><label for="jne-p">Pergunta</label><input id="jne-p" data-jne="pergunta" value="${esc(E.pergunta||'')}" placeholder="${esc(d?.titulo||N.titulo||'Texto da pergunta')}"></div>
+    <div class="field full"><label for="jne-a">Ajuda (opcional)</label><input id="jne-a" data-jne="ajuda" value="${esc(E.ajuda||'')}" placeholder="Uma linha para orientar quem responde"></div>
+    ${formas.length>1?`<div class="field"><label for="jne-f">Forma de responder</label><select id="jne-f" data-jne="forma">${formas.map(x=>`<option value="${x}" ${x===(formas.includes(E.forma)?E.forma:formas[0])?'selected':''}>${FM_FORMA[x]}</option>`).join('')}</select></div>`:''}
+    ${d&&!d.editavel?'<p class="field full faint" style="margin:0">Campo só de leitura: a pergunta mostra o valor e vale como requisito.</p>':''}`:''}
+    ${jnRegraCampo(E.regra||'bloqueia',E.rc,'jn-e-regra')}
+    <div class="field full"><span class="lbl-f">Vale quando</span><span class="it-vq">${E.cond?esc(itCondFrase(E.cond)):'<span class="faint">sempre</span>'}<button class="linkbtn" data-a="jn-cond" data-v="__ed">${E.cond?'Editar':'+ Condição'}</button>${E.cond?'<button class="linkbtn" data-a="jn-cond-tira" data-v="__ed">Tirar</button>':''}</span></div></div>
+  <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" data-a="jn-salva">Salvar</button></div>`}
+function jnSalvar(){const E=UI.jnEd;let campo=E.campo;if(!campo){toast('Escolha onde a resposta grava.',true);return false}
+  if(campo==='__novo'){const N=E.novo||{},tit=(N.titulo||'').trim(),tipo=N.tipo||'texto',ops=[...new Set((N.opcoes||'').split('\n').map(x=>x.trim()).filter(Boolean))];
+    if(!tit){toast('Dê um nome ao campo novo.',true);return false}
+    if(IT_CAT.some(c=>itDef(c.chave).titulo.toLowerCase()===tit.toLowerCase())){toast(`Já existe um campo com o título ${tit}.`,true);return false}
+    if(tipo==='lista'&&ops.length<2){toast('A lista precisa de ao menos duas opções.',true);return false}
+    const c={id:uid(),codigo:'c'+uid().replace(/[^a-z0-9]/gi,'').toLowerCase().slice(0,10),titulo:tit,tipo,opcoes:tipo==='lista'?ops:null,unidade:tipo==='numero'?N.unidade||null:null,ativo:true};
+    jnCampos().push(c);jnRegistra(c);campo='personalizado.'+c.codigo}
+  if(jnItens().some(i=>i.id!==E.id&&i.fase===E.fase&&i.etapa===E.etapa&&(i.sub||null)===(E.sub||null)&&i.campo===campo)){toast(`${itTit(campo)} já está neste lugar da jornada.`,true);return false}
+  const x={id:E.id||uid(),fase:E.fase,etapa:E.etapa,sub:E.sub||null,campo,pergunta:(E.pergunta||'').trim()||null,ajuda:(E.ajuda||'').trim()||null,forma:E.forma||null,regra:E.regra||'bloqueia',rc:E.rc&&E.rc.length?E.rc:null,cond:E.cond||null,ativo:true,
+    ordem:E.ordem??jnItens().filter(i=>i.fase===E.fase&&i.etapa===E.etapa).length};
+  const i=jnItens().findIndex(y=>y.id===x.id);if(i>=0)jnItens()[i]=x;else jnItens().push(x);return true}
+function jnRvHtml(fechar){const R=UI.jnRv;if(!R)return '';
+  return `<div class="dh"><div><h2>${R.id?'Editar regra':'Nova regra pelo valor'}</h2><div class="muted" style="margin-top:4px">${esc(faseN(R.fase))} › ${esc(etNomeE(R.fase,R.etapa))}</div></div>${fechar}</div>
+  <div class="fields jn-form">
+    <div class="field"><label for="jnr-s">Vale para sair de</label>${jnLugarSel('jnr-s',R.fase,R.etapa,R.sub).replace('data-jne="sub"','data-jnrv="sub"')}</div>
+    <div class="field"><label for="jnr-a">O que acontece</label><select id="jnr-a" data-jnrv="acao">${Object.entries(JN_ACAO).map(([k,n])=>`<option value="${k}" ${k===R.acao?'selected':''}>${n}</option>`).join('')}</select></div>
+    <div class="field full"><span class="lbl-f">Quando</span><span class="it-vq">${R.cond?esc(itCondFrase(R.cond)):'<span class="faint">escolha a condição</span>'}<button class="linkbtn" data-a="jn-cond" data-v="__rv">${R.cond?'Editar':'+ Condição'}</button></span></div>
+    <div class="field full"><label for="jnr-m">Mensagem para quem negocia</label><input id="jnr-m" data-jnrv="msg" value="${esc(R.msg||'')}" placeholder="Ex.: Declive acentuado: o diretor aprova a passagem"></div></div>
+  <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" data-a="jn-rv-salva">Salvar regra</button></div>`}
+function jnPreHtml(fechar){const P=UI.jnPre;if(!P)return '';const E=etapaF(P.fase,P.etapa),opReq=cfg().etapas.map(e=>`<optgroup label="${esc(e.nome)}">${subsDe(e.k).map(s=>`<option value="${s.k}">${esc(s.nome)}</option>`).join('')}</optgroup>`).join('');
+  return `<div class="dh"><div><h2>Novo pré-requisito</h2><div class="muted" style="margin-top:4px">${esc(E?.nome||'')}</div></div>${fechar}</div>
+  <form data-form="jn-pre" id="f-jnp"><div class="fields"><div class="field full"><label for="jnp-a">Para entrar em</label><select id="jnp-a" name="alvo"><option value="etapa:${E.k}">${esc(E.nome)} (a etapa)</option>${E.subs.map(s=>`<option value="subetapa:${s.k}">${esc(s.nome)}</option>`).join('')}</select></div>
+  <div class="field full"><label for="jnp-r">Precisa ter passado por</label><select id="jnp-r" name="req">${opReq}</select></div></div></form>
+  <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-jnp">Adicionar</button></div>`}
+function jnDocHtml(fechar){const e=UI.jnDoc,L=jnCk(e),livres=Object.entries(TIPOS_DOC).filter(([k])=>!['foto','planta','ata'].includes(k)&&!L.some(c=>c.doc===k));
+  return `<div class="dh"><div><h2>Documento para sair de ${esc(SN(e))}</h2></div>${fechar}</div>
+  <div class="jn-docs">${livres.map(([k,[l,g]])=>`<button class="fchip" data-a="jn-doc-add" data-e="${e}" data-v="${k}">${esc(l)} <span class="faint">${esc(g)}</span></button>`).join('')||'<p class="faint">Todos os documentos já estão na etapa.</p>'}</div>
+  <div class="df"><button class="btn text" data-a="close">Fechar</button></div>`}
+{const fm=funilModal;funilModal=function(M,fechar){
+  if(M==='jn-rc')return jnRcHtml(fechar);if(M==='jn-item')return jnItemHtml(fechar);if(M==='jn-rv')return jnRvHtml(fechar);if(M==='jn-pre')return jnPreHtml(fechar);if(M==='jn-doc')return jnDocHtml(fechar);
+  if(M==='jn-bloq'||M==='jn-forcar'){const a=UI.jnFz||{},x=T(a.tid),p=x&&procsDe(x).find(y=>y.id===a.pid),nm=p?(a.tipo==='status'?faseCfg(p.fase)?.conc:a.tipo==='etapa'?etNomeE(p.fase,a.dest):etNomeS(p.fase,a.dest)):'';
+    if(M==='jn-bloq')return `<div class="dh"><div><h2>Ainda não dá para ir para ${esc(nm)}</h2><p class="muted" style="margin:6px 0 0">Responda o que falta. Gestor e diretor podem passar sem, com justificativa.</p></div>${fechar}</div><ul class="adv-lista adv-modal">${advItens(a.itens||[])}</ul><div class="df"><button class="btn primary" data-a="close">Entendi</button></div>`;
+    return `<div class="dh"><div><h2>Ir para ${esc(nm)} sem os requisitos?</h2><ul class="pend">${(a.itens||[]).map(i=>`<li>${ic('close',16)}${esc(i.txt)}</li>`).join('')}</ul></div>${fechar}</div><form data-form="jn-forcar" id="f-jf"><div class="field"><label for="jf-j">Justificativa (vai para o histórico)</label><textarea id="jf-j" name="j" required></textarea></div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-jf">Avançar</button></div>`}
+  return fm(M,fechar)}}
+/* onde mora a regra em branco de cada item: base, condicional e gravar */
+function jnRegraAlvo(k){const [tp,a,b]=k.split(':');
+  if(tp==='__ed'){const E=UI.jnEd;return E&&{nome:E.pergunta||itTit(E.campo)||'Pergunta nova',base:()=>E.regra||'bloqueia',rc:()=>E.rc,set:(v,rc)=>{E.regra=v;E.rc=rc&&rc.length?rc:null},voltar:'jn-item'}}
+  if(tp==='__et'){const r=UI.etRegra;return r&&{nome:r.titulo||'Tarefa da etapa',base:()=>jnBaseTar(r),rc:()=>r.rc,set:(v,rc)=>{r.regra=v;r.rc=rc&&rc.length?rc:null;r.trava=v!=='livre'||!!r.rc},voltar:'et-regra'}}
+  if(tp==='it'){const i=jnItens().find(x=>x.id===a);return i&&{nome:jnTxt(i),base:()=>i.regra,rc:()=>i.rc,set:(v,rc)=>{i.regra=v;i.rc=rc&&rc.length?rc:null}}}
+  if(tp==='doc'){const c=jnCk(a).find(x=>x.doc===b);return c&&{nome:TIPOS_DOC[c.doc]?.[0]||c.doc,base:()=>jnBaseCk(c),rc:()=>c.rc,set:(v,rc)=>{c.regra=v;c.rc=rc&&rc.length?rc:null;c.just=v==='justifica';c.obrig=v!=='livre'||!!c.rc}}}
+  if(tp==='pr'){const p=cfg().prereq.find(x=>x.id===a);return p&&{nome:`Ter passado por ${subN(p.req)}`,base:()=>jnBasePr(p),rc:()=>p.rc,set:(v,rc)=>{p.regra=v;p.rc=rc&&rc.length?rc:null;p.just=v==='justifica'}}}
+  if(tp==='tar'){const r=etRegras().find(x=>x.id===a);return r&&{nome:r.titulo||'Modelo de tarefas',base:()=>jnBaseTar(r),rc:()=>r.rc,set:(v,rc)=>{r.regra=v;r.rc=rc&&rc.length?rc:null;r.trava=v!=='livre'||!!r.rc}}}
+  return null}
+/* o campo "Se estiver em branco" dos formulários: as 3 opções e Condicional, com a frase */
+function jnRegraCampo(base,rc,acao){const on=k=>rc&&rc.length?k==='cond':k===base;
+  return `<fieldset class="field full"><legend>Se estiver em branco</legend><span class="fm-seg jn-rg" role="radiogroup">${Object.entries(JN_REGRA_SEL).map(([k,n])=>`<button type="button" role="radio" class="${on(k)?'on':''}" aria-checked="${on(k)}" data-a="${acao}" data-v="${k}">${n.replace('…','')}</button>`).join('')}</span>
+    ${rc&&rc.length?`<span class="it-vq jn-rcf">${esc(jnRcFrase(rc,base).replace(/^./,c=>c.toUpperCase()))}. <button type="button" class="linkbtn" data-a="${acao}" data-v="cond">Editar</button></span>`:''}</fieldset>`}
+function jnRcAbrir(k){const x=jnRegraAlvo(k);if(!x)return;const rc=JSON.parse(JSON.stringify(x.rc()||[]));
+  UI.jnRc={k,nome:x.nome,base:x.base(),linhas:rc.length?rc:[{cond:null,regra:x.base()==='bloqueia'?'justifica':'bloqueia'}],voltar:x.voltar||null};UI.modal='jn-rc';renderModal();
+  if(!rc.length)setTimeout(()=>jnRcCond(0),0)}
+function jnRcCond(n){const R=UI.jnRc;if(!R)return;const c=R.linhas[n]?.cond;
+  UI.itCond={alvo:'__rc',cond:c?JSON.parse(JSON.stringify(c)):itNovaCond(),busca:c?null:'0',q:'',ext:{titulo:`${R.nome}: quando`,salvar:cc=>{R.linhas[n].cond=cc},voltar:()=>{UI.modal='jn-rc';renderModal()}}};UI.modal='it-cond';renderModal()}
+function jnRcHtml(fechar){const R=UI.jnRc;if(!R)return '';const sel=(attr,v)=>`<select ${attr}>${Object.entries(JN_REGRA).map(([k,n])=>`<option value="${k}" ${k===v?'selected':''}>${esc(n)}</option>`).join('')}</select>`;
+  return `<div class="dh"><div><h2>Se estiver em branco</h2><div class="muted" style="margin-top:4px">${esc(R.nome)}</div></div>${fechar}</div>
+  <p class="muted jn-rc-aj">A primeira condição que vale decide. Se nenhuma vale, vale o comportamento de "Nos demais casos".</p>
+  <div class="jn-rc">${R.linhas.map((x,n)=>`<div class="jn-rcl"><span class="jn-rcq"><span class="lbl-f">Quando</span><span class="it-vq">${x.cond?esc(itCondFrase(x.cond)):'<span class="faint">escolha a condição</span>'}<button class="linkbtn" data-a="jn-rc-cond" data-v="${n}">${x.cond?'Editar':'+ Condição'}</button></span></span>
+      <span class="jn-rcr">${sel(`data-jnrc="${n}" aria-label="Comportamento ${n+1}"`,x.regra)}<button class="iconbtn sm lixo" data-a="jn-rc-x" data-v="${n}" aria-label="Tirar este comportamento" title="Tirar">${ic('lixo',18)}</button></span></div>`).join('')}
+    <button class="tkm-add" data-a="jn-rc-mais">${ic('add',16)}Comportamento condicional</button>
+    <div class="jn-rcl jn-rcd"><span class="jn-rcq"><span class="lbl-f">Nos demais casos</span></span><span class="jn-rcr">${sel('data-jnrc="base" aria-label="Nos demais casos"',R.base)}</span></div></div>
+  <div class="df"><button class="btn text" data-a="${R.voltar?'jn-rc-volta':'close'}">Cancelar</button><button class="btn primary" data-a="jn-rc-salva">Salvar</button></div>`}
+
+/* condição dos itens e das regras (o mesmo painel "Vale quando") */
+function jnCondAlvo(v){
+  if(v==='__ed')return {nome:`Pergunta: ${UI.jnEd?.pergunta||itTit(UI.jnEd?.campo)||'nova'}`,ler:()=>UI.jnEd.cond,gravar:c=>{UI.jnEd.cond=c},voltar:()=>{UI.modal='jn-item';renderModal()}};
+  if(v==='__rv')return {nome:'Regra pelo valor',ler:()=>UI.jnRv.cond,gravar:c=>{UI.jnRv.cond=c},voltar:()=>{UI.modal='jn-rv';renderModal()}};
+  const i=jnItens().find(x=>x.id===v);return i&&{nome:`Pergunta: ${jnTxt(i)}`,ler:()=>i.cond,gravar:c=>{i.cond=c;save()},voltar:()=>{UI.modal=null;renderModal();render()}}}
+
+document.addEventListener('click',e=>{const a=e.target.closest?.('[data-a^="jn-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const A=a.dataset.a,t=T(UI.id);
+  if(A==='jn-v'){const i=jnItens().find(x=>x.id===a.dataset.i);if(i)jnGravar(t,i,a.dataset.v);return}
+  if(A==='jn-fora'){UI.jnFora=!UI.jnFora;render();return}
+  if(A==='jn-ir'){UI.modal=null;renderModal();ADV_REQ=false;render();setTimeout(()=>{const el=document.querySelector('#jn-bloco .jn-q:not(.ok)');el?.scrollIntoView({block:'center'});el?.querySelector('input,select,textarea,button')?.focus()},0);return}
+  if(!ehAdmin(me()))return;
+  switch(A){
+    case 'jn-fase':UI.jnFase=a.dataset.v;UI.jnEtapa=null;render();return;
+    case 'jn-etapa':UI.jnEtapa=a.dataset.v;render();return;
+    case 'jn-nova':UI.jnEd={id:null,fase:a.dataset.f,etapa:a.dataset.e,sub:a.dataset.s||null,campo:'',regra:'bloqueia',cond:null};UI.modal='jn-item';renderModal();return;
+    case 'jn-ed':{const i=jnItens().find(x=>x.id===a.dataset.v);if(!i)return;UI.jnEd=JSON.parse(JSON.stringify(i));UI.modal='jn-item';renderModal();return}
+    case 'jn-x':{const i=jnItens().find(x=>x.id===a.dataset.v);if(!i)return;cfg().jornada=jnItens().filter(x=>x!==i);save();render();toast(`${jnTxt(i)} saiu da jornada. As respostas ficam no terreno.`);return}
+    case 'jn-e-regra':if(a.dataset.v==='cond'){jnRcAbrir('__ed');return}UI.jnEd.regra=a.dataset.v;UI.jnEd.rc=null;renderModal();return;
+    case 'jn-rc':jnRcAbrir(a.dataset.v);return;
+    case 'jn-rc-cond':jnRcCond(+a.dataset.v);return;
+    case 'jn-rc-mais':UI.jnRc.linhas.push({cond:null,regra:'bloqueia'});jnRcCond(UI.jnRc.linhas.length-1);return;
+    case 'jn-rc-x':UI.jnRc.linhas.splice(+a.dataset.v,1);renderModal();return;
+    case 'jn-rc-volta':{const R=UI.jnRc;UI.jnRc=null;UI.modal=R?.voltar||null;renderModal();return}
+    case 'jn-rc-salva':{const R=UI.jnRc,x=R&&jnRegraAlvo(R.k);if(!x)return;const L=R.linhas.filter(y=>y.cond);
+      if(R.linhas.some(y=>!y.cond)){toast('Cada comportamento condicional precisa de uma condição.',true);return}
+      x.set(R.base,L);UI.jnRc=null;if(R.voltar){UI.modal=R.voltar;renderModal();return}UI.modal=null;save();renderModal();render();toast('Regra da jornada salva.');return}
+    case 'jn-salva':if(jnSalvar()){UI.jnEd=null;UI.modal=null;save();renderModal();render();toast('Pergunta salva na jornada.')}return;
+    case 'jn-cond':{const x=jnCondAlvo(a.dataset.v);if(!x)return;const c=x.ler();
+      UI.itCond={alvo:a.dataset.v,cond:c?JSON.parse(JSON.stringify(c)):itNovaCond(),busca:c?null:'0',q:'',ext:{titulo:x.nome,salvar:x.gravar,voltar:x.voltar}};UI.modal='it-cond';renderModal();return}
+    case 'jn-cond-tira':{const x=jnCondAlvo(a.dataset.v);if(!x)return;x.gravar(null);renderModal();return}
+    case 'jn-tar':{UI.etRegra=etNovaRegra(a.dataset.f,a.dataset.e);UI.etRegra.sub=a.dataset.s||null;UI.etRegra.tipo='tarefa';UI.modal='et-regra';renderModal();return}
+    case 'jn-pre':UI.jnPre={fase:a.dataset.f,etapa:a.dataset.e};UI.modal='jn-pre';renderModal();return;
+    case 'jn-doc':UI.jnDoc=a.dataset.e;UI.modal='jn-doc';renderModal();return;
+    case 'jn-doc-add':jnCk(a.dataset.e).push({doc:a.dataset.v,obrig:true});save();UI.modal=null;renderModal();render();toast(`${TIPOS_DOC[a.dataset.v][0]} entrou na jornada.`);return;
+    case 'jn-doc-x':{const e=a.dataset.e;cfg().checklist[e]=jnCk(e).filter(c=>c.doc!==a.dataset.v);save();render();return}
+    case 'jn-rv-nova':UI.jnRv={id:null,fase:a.dataset.f,etapa:a.dataset.e,sub:null,cond:null,acao:'diretor',msg:''};UI.modal='jn-rv';renderModal();return;
+    case 'jn-rv-ed':{const r=jnRegrasV().find(x=>x.id===a.dataset.v);if(!r)return;UI.jnRv=JSON.parse(JSON.stringify(r));UI.modal='jn-rv';renderModal();return}
+    case 'jn-rv-x':cfg().jornadaRegras=jnRegrasV().filter(x=>x.id!==a.dataset.v);save();render();toast('Regra apagada.');return;
+    case 'jn-rv-salva':{const R=UI.jnRv;if(!R.cond){toast('Escolha quando a regra vale.',true);return}if(!(R.msg||'').trim()){toast('Escreva a mensagem.',true);return}
+      const x={...R,id:R.id||uid(),msg:R.msg.trim(),ativo:true,ordem:R.ordem??jnRegrasV().length};const i=jnRegrasV().findIndex(y=>y.id===x.id);if(i>=0)jnRegrasV()[i]=x;else jnRegrasV().push(x);
+      UI.jnRv=null;UI.modal=null;save();renderModal();render();toast('Regra salva.');return}
+  }},true);
+document.addEventListener('change',e=>{const el=e.target;
+  if(el.dataset?.jn){e.stopImmediatePropagation();const i=jnItens().find(x=>x.id===el.dataset.jn);if(i)jnGravar(T(UI.id),i,el.value);return}
+  if(el.dataset?.jne){e.stopImmediatePropagation();const E=UI.jnEd;if(!E)return;const k=el.dataset.jne;
+    if(k.startsWith('n.')){E.novo=E.novo||{tipo:'texto'};E.novo[k.slice(2)]=el.value;if(k==='n.tipo'||k==='n.opcoes')renderModal();return}
+    if(k==='sub')E.sub=el.value||null;else E[k]=el.value;if(k==='campo'){E.forma=null;if(el.value==='__novo')E.novo=E.novo||{tipo:'texto'}}if(k==='campo'||k==='sub')renderModal();return}
+  if(el.dataset?.jnrc&&UI.jnRc){e.stopImmediatePropagation();const k=el.dataset.jnrc;if(k==='base')UI.jnRc.base=el.value;else UI.jnRc.linhas[+k].regra=el.value;return}
+  if(el.dataset?.jnrv){e.stopImmediatePropagation();const R=UI.jnRv;if(!R)return;const k=el.dataset.jnrv;if(k==='sub')R.sub=el.value||null;else R[k]=el.value;return}
+  if(el.dataset?.jnr){e.stopImmediatePropagation();if(!ehAdmin(me()))return;const k=el.dataset.jnr,v=el.value;
+    if(k.startsWith('rv:')){const r=jnRegrasV().find(x=>x.id===k.slice(3));if(r)r.acao=v;save();render();toast('Regra da jornada salva.');return}
+    const x=jnRegraAlvo(k);if(!x)return;
+    if(v==='cond'){jnRcAbrir(k);return}
+    x.set(v,null);save();render();toast('Regra da jornada salva.');return}},true);
+document.addEventListener('input',e=>{const el=e.target;if(el.dataset?.jne&&UI.jnEd&&el.tagName!=='SELECT'){const k=el.dataset.jne;if(k.startsWith('n.')){UI.jnEd.novo=UI.jnEd.novo||{tipo:'texto'};UI.jnEd.novo[k.slice(2)]=el.value}else UI.jnEd[k]=el.value}
+  if(el.dataset?.jnrv==='msg'&&UI.jnRv)UI.jnRv.msg=el.value},true);
+document.addEventListener('submit',e=>{const f=e.target;
+  if(f.dataset?.form==='jn-pre'){e.preventDefault();e.stopImmediatePropagation();const F=Object.fromEntries(new FormData(f)),[at,al]=F.alvo.split(':'),er=validaPre(at,al,F.req);if(er){toast(er,true);return}
+    cfg().prereq.push({id:uid(),alvoTipo:at,alvo:al,req:F.req});UI.modal=null;save();renderModal();render();toast('Pré-requisito adicionado.');return}
+  if(f.dataset?.form==='jn-forcar'){e.preventDefault();e.stopImmediatePropagation();const a=UI.jnFz,t=T(a?.tid),p=t&&procsDe(t).find(x=>x.id===a.pid),j=new FormData(f).get('j')?.trim();
+    if(!p)return;if(!j){toast('Justifique a passagem.',true);return}UI.jnFz=null;
+    if(a.tipo==='status'){UI.etJust=j;UI.alvoProc=p.id;UI.modal='p-concluir';renderModal();return}
+    UI.modal=null;renderModal();procIr(t,p,a.tipo,a.dest,{forcado:j});log(t,`${faseN(p.fase)}: passou sem os requisitos da jornada · ${j}`);save();render();toast(`${t.nome}: ${a.tipo==='etapa'?etNomeE(p.fase,a.dest):etNomeS(p.fase,a.dest)}.`)}},true);
+
+/* ---------- dados: campos novos e jornada de exemplo ---------- */
+jnCampos().forEach(jnRegistra);
+(()=>{if(S.jnExemplo)return;S.jnExemplo=true;const f=faseEnt();
+  const rec={id:uid(),codigo:'recuo_frontal',titulo:'Recuo frontal atende',tipo:'lista',opcoes:['Sim','Não','A verificar'],ativo:true};
+  const des={id:uid(),codigo:'custo_desocupacao',titulo:'Custo estimado de desocupação',tipo:'numero',unidade:'R$',ativo:true};
+  [rec,des].forEach(c=>{if(!jnCampos().some(x=>x.codigo===c.codigo)){jnCampos().push(c);jnRegistra(c)}});
+  const ch=c=>'personalizado.'+c.codigo,demol={modo:'todas',itens:[{campo:'terreno.necessidade_demolicao',op:'em',valores:['provavel','confirmada']}]};
+  const ocup={modo:'todas',itens:[{campo:'terreno.situacao_ocupacao',op:'em',valores:['ocupado','parcialmente_ocupado']}]};
+  const subE=k=>(etapaF(f,'estudos')?.subs||[]).some(s=>s.k===k)?k:null;
+  if(!jnItens().length&&etapaF(f,'estudos'))cfg().jornada=[
+    {id:uid(),fase:f,etapa:'estudos',sub:null,campo:'terreno.topografia',pergunta:'Como é o relevo do terreno?',forma:'chips',regra:'bloqueia',cond:null,ordem:0},
+    {id:uid(),fase:f,etapa:'estudos',sub:null,campo:'terreno.necessidade_demolicao',pergunta:'Precisa demolir?',forma:'segmentado',regra:'justifica',cond:null,ordem:1},
+    {id:uid(),fase:f,etapa:'estudos',sub:null,campo:'terreno.area_construida_demolir_m2',pergunta:'Quanto vai ser demolido?',ajuda:'Área construída a demolir, pela visita ou pela planta.',regra:'justifica',cond:demol,ordem:2},
+    {id:uid(),fase:f,etapa:'estudos',sub:subE('estudo_massa'),campo:ch(rec),pergunta:'O recuo frontal atende ao estudo de massa?',forma:'segmentado',regra:'justifica',cond:null,ordem:3},
+    {id:uid(),fase:f,etapa:'estudos',sub:subE('estudo_viabilidade'),campo:ch(des),regra:'justifica',cond:ocup,ordem:4}];
+  if(!jnRegrasV().length&&etapaF(f,'estudos'))cfg().jornadaRegras=[
+    {id:uid(),fase:f,etapa:'estudos',sub:null,cond:{modo:'todas',itens:[{campo:'terreno.topografia',op:'em',valores:['irregular']}]},acao:'diretor',msg:'Relevo irregular: o diretor aprova a passagem',ativo:true,ordem:0},
+    {id:uid(),fase:f,etapa:'estudos',sub:null,cond:{modo:'todas',itens:[{campo:'terreno.area_construida_demolir_m2',op:'maior',valores:[1000]}]},acao:'avisa',msg:'Demolição acima de 1.000 m²: confira o custo no estudo',ativo:true,ordem:1}];
+  save()})();
 
 /* ===================== máscaras de número ao digitar ===================== */
 /* Todo campo de número (inputmode decimal, ou data-fmt) se formata enquanto se digita:
@@ -13572,7 +14434,7 @@ document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legen
    selecionado no mapa e vista das tarefas só atualizam o endereço. O terreno vai pelo código. */
 const RT_BASE=location.pathname.startsWith('/prototipo')?'/prototipo':null;
 const RT_SEC=['cadastro','comercial','negociacao','fases','tarefas','urbanismo','documentos','historico'];
-const RT_CFG={fases:'fases',funil:'etapas',prereq:'pre-requisitos',status:'status',checklist:'checklist',etapaTar:'tarefas-da-etapa',notif:'notificacoes',equipe:'equipe',viab:'viabilidade',zonas:'parametros',campos:'campos',tarefas:'tarefas'};
+const RT_CFG={fases:'fases',funil:'etapas',prereq:'pre-requisitos',status:'status',checklist:'checklist',etapaTar:'tarefas-da-etapa',jornada:'jornada',notif:'notificacoes',equipe:'equipe',viab:'viabilidade',zonas:'parametros',campos:'campos',tarefas:'tarefas'};
 const rtCod=id=>T(id)?.codigo||null;
 const rtId=c=>c&&S.terrenos.find(t=>(t.codigo||'').toUpperCase()===c.toUpperCase())?.id||null;
 const rtViabs=id=>(S.viabs||[]).filter(v=>v.tid===id);

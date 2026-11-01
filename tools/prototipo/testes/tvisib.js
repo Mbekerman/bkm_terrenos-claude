@@ -44,7 +44,7 @@ ok(await p.$eval('.tkm-tit',x=>!x.disabled),'liberada como editora, a pessoa de 
 await papel(p,'Analista');await p.waitForTimeout(250);
 ok(!(await noQuadro(p,'Pedir certidão de uso do solo'))&&await noQuadro(p,'Rascunho da contraproposta'),'o analista vê o próprio individual e não vê o restrito de que não faz parte');
 // nova tarefa: a escolha é obrigatória
-await clica(p,'[data-a=tk-nova]');await p.waitForTimeout(200);
+await clica(p,'[data-a=tk-nova]');await p.waitForTimeout(200);await clica(p,'[data-a=fm-mais]');await p.waitForTimeout(200);
 ok(await p.evaluate(()=>![...document.querySelectorAll('#f-tk input[name=vis]')].some(x=>x.checked)&&document.querySelector('#f-tk input[name=vis]').required),'na primeira vez, nenhuma visibilidade vem marcada e a escolha é obrigatória');
 await preenche(p,'#tm-t','Negociar comissão do corretor');await envia(p,'#f-tk');await p.waitForTimeout(200);
 s=await est(p);ok(!s.terrenos[0].tarefas.some(k=>k.titulo==='Negociar comissão do corretor'),'sem escolher a visibilidade, não cria');
@@ -56,7 +56,7 @@ await envia(p,'#f-tk');await p.waitForTimeout(300);
 s=await est(p);let k=tar(s,0,'Negociar comissão do corretor');
 ok(k&&k.vis==='restrito'&&k.acessos.some(a=>a.u==='Camila Torres'),'cria restrito, liberado para quem foi marcado');await fecha(p);
 await clica(p,'[data-a=tk-nova]');await p.waitForTimeout(200);
-ok(await p.$eval('#f-tk input[name=vis][value=restrito]',x=>x.checked),'na próxima, vem marcada a última escolha da pessoa');await fecha(p);
+ok(await p.$eval('#f-tkr input[name=vis][value=restrito]',x=>x.checked),'na próxima, vem marcada a última escolha da pessoa');await fecha(p);
 // pôr outra pessoa no individual o torna restrito
 await abreCartao(p,'Rascunho da contraproposta');await muda(p,'#tkc-sol','Ana Prado');await p.waitForTimeout(250);
 s=await est(p);ok(tar(s,0,'Rascunho da contraproposta').vis==='restrito'&&(await toast(p)).includes('Restrito'),'pôr outra pessoa no individual o torna restrito, com aviso');

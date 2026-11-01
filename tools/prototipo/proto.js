@@ -610,7 +610,7 @@ function abaHist(t){
 
 /* ===================== avanço ===================== */
 let ADV_REQ=false;
-const advItens=items=>items.map(x=>`<li><span class="${x.ok?'ok':'no'}">${ic(x.ok?'check':'close',16)}</span><span>${esc(x.txt)}${x.fix?` · <button class="linkbtn" data-a="${x.fix[0].startsWith('tab:')?'tab':x.fix[0]}" ${x.fix[0].startsWith('tab:')?`data-t="${x.fix[0].slice(4)}"`:''}>${x.fix[1]}</button>`:''}</span></li>`).join('');
+const advItens=items=>items.map(x=>`<li><span class="${x.aviso?'av':x.ok?'ok':'no'}">${ic(x.aviso?'warn':x.ok?'check':'close',16)}</span><span>${esc(x.txt)}${!x.ok&&x.just?' <span class="faint">· pede justificativa</span>':''}${x.fix?` · <button class="linkbtn" data-a="${x.fix[0].startsWith('tab:')?'tab':x.fix[0]}" ${x.fix[0].startsWith('tab:')?`data-t="${x.fix[0].slice(4)}"`:''}>${x.fix[1]}</button>`:''}</span></li>`).join('');
 /* ===================== páginas ===================== */
 /* ficha em página única: cada seção é um bloco com seta; ao abrir um terreno, só a Visão geral nasce aberta (nada é guardado) */
 let BLA={},blId=null;

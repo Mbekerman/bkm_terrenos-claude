@@ -51,7 +51,9 @@ create table app.etapa_regras (
   responsavel_objeto  boolean not null default true,          -- o responsável do terreno
   responsavel_id      uuid references auth.users(id),
   condicao            jsonb,                                  -- "Vale quando"; vazio = sempre
-  trava               boolean not null default false,         -- para sair: tarefas concluídas (começa desligada)
+  trava               boolean not null default false,         -- pode travar a saída (= regra <> livre ou com regra condicional)
+  regra               text not null default 'livre' check (regra in ('bloqueia','justifica','livre')),  -- tarefa aberta ao sair (jornada, 1/nov/2026)
+  regra_cond          jsonb,                                  -- regra condicional [{condicao, regra}]
   ordem               int not null default 0,
   ativo               boolean not null default true,
   criado_por          uuid default auth.uid(),
@@ -90,7 +92,7 @@ returns int language sql stable security definer set search_path = '' as $$
 -- se estiver aberta).
 create or replace function app._trava_tarefa(p_tarefa uuid)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
-declare k fluxo.tarefas; x app.tarefas_etapa; r app.etapa_regras; p app.processos; v_nivel text; v_sit text := 'ativa';
+declare k fluxo.tarefas; x app.tarefas_etapa; r app.etapa_regras; p app.processos; v_nivel text; v_sit text := 'ativa'; v_regra text;
 begin
   select * into k from fluxo.tarefas where id = p_tarefa;
   if k.processo_id is null or k.etapa is null then return null; end if;
@@ -100,14 +102,19 @@ begin
     select * into r from app.etapa_regras g where g.id = x.regra_id and g.ativo and g.etapa = k.etapa and g.subetapa is not distinct from k.subetapa;
   end if;
   if r.id is not null then
-    if r.trava then v_nivel := case when r.subetapa is null then 'etapa' else 'subetapa' end; end if;
+    v_regra := app._regra_branco(p.terreno_id, r.regra, r.regra_cond);
+    if v_regra <> 'livre' then v_nivel := case when r.subetapa is null then 'etapa' else 'subetapa' end; end if;
     if not (app.avaliar_condicao(p.terreno_id, r.condicao) and app.avaliar_condicao(p.terreno_id, x.condicao)) then v_sit := 'nao_se_aplica'; end if;
-  elsif exists (select 1 from app.etapa_regras g where g.empresa_id = p.empresa_id and g.fase = p.fase and g.etapa = k.etapa
-                  and g.subetapa is null and g.trava and g.ativo) then
-    v_nivel := 'etapa';   -- tarefa à mão (ou que mudou de etapa): trava se a etapa trava
+  else
+    -- tarefa à mão (ou que mudou de etapa): trava se a etapa trava, pela regra mais forte das regras da etapa
+    select g.regra into v_regra from (select app._regra_branco(p.terreno_id, g.regra, g.regra_cond) as regra from app.etapa_regras g
+      where g.empresa_id = p.empresa_id and g.fase = p.fase and g.etapa = k.etapa and g.subetapa is null and g.trava and g.ativo) g
+      where g.regra <> 'livre' order by g.regra = 'justifica' limit 1;
+    if v_regra is not null then v_nivel := 'etapa'; end if;
   end if;
   if x.situacao in ('deixada','arquivada_auto') then v_sit := x.situacao; end if;
-  return jsonb_build_object('nivel', v_nivel, 'situacao', v_sit, 'trava', v_nivel is not null and v_sit = 'ativa');
+  return jsonb_build_object('nivel', v_nivel, 'situacao', v_sit, 'trava', v_nivel is not null and v_sit = 'ativa',
+                            'regra', case when v_nivel is not null then v_regra end);
 end $$;
 
 -- Para a tela: quem vê o cartão vê a situação dele na etapa.
@@ -119,7 +126,7 @@ returns jsonb language sql stable security definer set search_path = '' as $$
 create or replace function app._tarefas_travando(p app.processos, p_saida text)
 returns jsonb language sql stable security definer set search_path = '' as $$
   select coalesce(jsonb_agg(jsonb_build_object(
-           'ok', false, 'tipo', 'tarefa', 'bloqueio_gestor', false, 'tarefa_id', k.id, 'codigo', k.codigo, 'lista', l.nome,
+           'ok', false, 'tipo', 'tarefa', 'bloqueio_gestor', false, 'justifica', t.j->>'regra' = 'justifica', 'tarefa_id', k.id, 'codigo', k.codigo, 'lista', l.nome,
            'nivel', t.j->>'nivel', 'atrasada', k.prazo < current_date and l.tipo <> 'pausa',
            'texto', 'Tarefa ' || k.codigo || ': ' || case when auth.uid() is null or fluxo.papel_tarefa(k.id) is not null then k.titulo else 'restrita' end)
            order by k.prazo nulls last, k.codigo), '[]'::jsonb)
@@ -334,7 +341,7 @@ declare g app.etapa_regras; v_cond jsonb;
 begin
   perform app.exigir_administrador(p_empresa);
   perform app._chaves_permitidas(p_dados, array['fase','etapa','subetapa','modelo_id','titulo','descricao','lista_nome','prioridade','prazo_dias',
-                                                'responsavel_objeto','responsavel_id','condicao','trava','ordem','ativo']);
+                                                'responsavel_objeto','responsavel_id','condicao','trava','regra','regra_cond','ordem','ativo']);
   if p_id is not null then
     select * into g from app.etapa_regras where id = p_id and empresa_id = p_empresa for update;
     if g.id is null then raise exception 'Regra não encontrada' using errcode = 'P0002'; end if;
@@ -362,7 +369,15 @@ begin
   else
     perform app.validar_condicao(p_empresa, v_cond);
   end if;
-  g.prioridade := coalesce(g.prioridade, 'media'); g.trava := coalesce(g.trava, false); g.ativo := coalesce(g.ativo, true);
+  -- regra em branco (jornada): 'trava' sozinho vira bloqueia/livre; com regra, trava = pode travar
+  if not (p_dados ? 'regra') and (p_dados ? 'trava') then
+    g.regra := case when coalesce((p_dados->>'trava')::boolean, false) then 'bloqueia' else 'livre' end;
+  end if;
+  g.regra := coalesce(g.regra, 'livre');
+  if g.regra not in ('bloqueia','justifica','livre') then raise exception 'Regra inválida: %', g.regra using errcode = '22023'; end if;
+  g.regra_cond := case when p_dados ? 'regra_cond' then app._regra_cond_config(p_empresa, p_dados->'regra_cond') else g.regra_cond end;
+  g.trava := g.regra <> 'livre' or g.regra_cond is not null;
+  g.prioridade := coalesce(g.prioridade, 'media'); g.ativo := coalesce(g.ativo, true);
   g.responsavel_objeto := coalesce(g.responsavel_objeto, g.responsavel_id is null);
   if p_id is null then
     g.id := gen_random_uuid(); g.criado_por := auth.uid(); g.criado_em := now();
@@ -371,7 +386,7 @@ begin
   else
     update app.etapa_regras set fase = g.fase, etapa = g.etapa, subetapa = g.subetapa, modelo_id = g.modelo_id, titulo = g.titulo, descricao = g.descricao,
            lista_nome = g.lista_nome, prioridade = g.prioridade, prazo_dias = g.prazo_dias, responsavel_objeto = g.responsavel_objeto,
-           responsavel_id = g.responsavel_id, condicao = g.condicao, trava = g.trava, ordem = coalesce(g.ordem, 0), ativo = g.ativo
+           responsavel_id = g.responsavel_id, condicao = g.condicao, trava = g.trava, regra = g.regra, regra_cond = g.regra_cond, ordem = coalesce(g.ordem, 0), ativo = g.ativo
      where id = p_id;
   end if;
   return g.id;
@@ -402,6 +417,26 @@ begin
   end if;
   perform app.validar_condicao(p_empresa, p_cond);
   return p_cond;
+end $$;
+
+-- Regra condicional (jornada, 1/nov/2026): [{condicao, regra}], cada uma com
+-- condição; nulo ou '[]' = sem regra condicional.
+create or replace function app._regra_cond_config(p_empresa uuid, p_cond jsonb)
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare e jsonb; v jsonb := '[]'::jsonb;
+begin
+  if p_cond is null or p_cond = 'null'::jsonb then return null; end if;
+  if jsonb_typeof(p_cond) <> 'array' then raise exception 'Regra condicional inválida' using errcode = '22023'; end if;
+  for e in select * from jsonb_array_elements(p_cond) loop
+    if coalesce(e->>'regra', '') not in ('bloqueia','justifica','livre') then
+      raise exception 'Regra inválida: %', coalesce(e->>'regra', 'vazia') using errcode = '22023';
+    end if;
+    if app._condicao_config(p_empresa, e->'condicao') is null then
+      raise exception 'Cada comportamento condicional precisa de uma condição' using errcode = '22023';
+    end if;
+    v := v || jsonb_build_array(jsonb_build_object('condicao', e->'condicao', 'regra', e->>'regra'));
+  end loop;
+  return nullif(v, '[]'::jsonb);
 end $$;
 
 create or replace function app.condicao_checklist(p_empresa uuid, p_fase text, p_etapa text, p_tipo_documento text, p_condicao jsonb)
@@ -436,7 +471,7 @@ create trigger t_aud after insert or update or delete on app.tarefas_etapa for e
 
 revoke all on function app._ordem_subetapa(uuid, text, text), app._trava_tarefa(uuid), app._tarefas_travando(app.processos, text),
   app._tarefas_ao_entrar(uuid, text, text), app._tarefa_tem_trabalho(uuid), app._tarefas_ao_voltar(uuid, int),
-  app._tarefas_ao_encerrar(uuid, text, jsonb), app._tarefas_ao_retomar(uuid), app._condicao_config(uuid, jsonb),
+  app._tarefas_ao_encerrar(uuid, text, jsonb), app._tarefas_ao_retomar(uuid), app._condicao_config(uuid, jsonb), app._regra_cond_config(uuid, jsonb),
   app.trava_tarefa(uuid), app.tarefas_abertas_fase(uuid), app.salvar_regra_etapa(uuid, uuid, jsonb), app.apagar_regra_etapa(uuid),
   app.condicao_checklist(uuid, text, text, text, jsonb), app.condicao_prerequisito(uuid, jsonb) from public;
 grant execute on function app.trava_tarefa(uuid), app.tarefas_abertas_fase(uuid), app.salvar_regra_etapa(uuid, uuid, jsonb),

@@ -2631,12 +2631,21 @@ select pg_temp.ok((select etapa = 'estudos' and subetapa is null and inicio = cu
   'prazos contam do dia da entrada, com as predecessoras do modelo; a tarefa fica marcada com a etapa');
 select pg_temp.ok((select responsavel_id = :'gestor' from fluxo.tarefas where id = :'kpr'), 'o responsável do terreno vira a pessoa do terreno na hora');
 select pg_temp.tarefa(:'tfn', 'Visitar o terreno', null, :'gestor') as kvi \gset
-select pg_temp.ok((select processo_id = :'pfn' and etapa = 'estudos' from fluxo.tarefas where id = :'kvi')
+select pg_temp.ok((select k.processo_id = :'pfn' and k.etapa = 'estudos' and k.subetapa = p.subetapa_atual from fluxo.tarefas k join app.processos p on p.id = k.processo_id where k.id = :'kvi')
   and (select trava and trava_nivel = 'etapa' from app.v_tarefas_etapa where tarefa_id = :'kvi'),
   'a tarefa criada à mão nasce na etapa atual e trava, porque a etapa trava');
 insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, etapa) select empresa_id, id, pg_temp.lista(:'tfn', 'Fazer'), 'Sem etapa', 'nenhuma'
   from fluxo.quadros where objeto_tipo = 'terreno' and objeto_id = :'tfn' returning id as kne \gset
 select pg_temp.ok((select processo_id is null and etapa is null from fluxo.tarefas where id = :'kne'), '"Nenhuma" deixa a tarefa sem etapa');
+insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, processo_id, etapa, subetapa, prazo)
+  select q.empresa_id, q.id, pg_temp.lista(:'tfn', 'Fazer'), 'Etapa escolhida', :'pfn', s.etapa, s.codigo, current_date + 2
+  from fluxo.quadros q, app.subetapas_modelo s join app.processos p on p.empresa_id = s.empresa_id and p.fase = s.fase
+  where q.objeto_tipo = 'terreno' and q.objeto_id = :'tfn' and p.id = :'pfn' and s.etapa <> p.etapa_atual order by s.etapa, s.ordem limit 1 returning id as kes \gset
+select pg_temp.ok((select k.etapa <> p.etapa_atual and k.subetapa is not null and k.prazo = current_date + 2 from fluxo.tarefas k join app.processos p on p.id = k.processo_id where k.id = :'kes'),
+  'quem cria escolhe outra etapa e subetapa da fase, com prazo');
+select pg_temp.falha(format($$insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, processo_id, etapa, subetapa)
+  select empresa_id, id, pg_temp.lista(%L, 'Fazer'), 'Sub errada', %L, 'estudos', 'nao_existe' from fluxo.quadros where objeto_tipo = 'terreno' and objeto_id = %L$$, :'tfn', :'pfn', :'tfn'),
+  'subetapa de outra etapa é recusada');
 select pg_temp.falha(format($$update fluxo.tarefas set etapa = 'projeto' where id = %L$$, :'kvi'), 'a etapa da tarefa é da fase da negociação');
 select pg_temp.ok(not exists (select 1 from jsonb_array_elements(app.checar_passagem(:'pfn')->'itens') i where i->>'tipo' in ('documento','prerequisito')),
   'documento e pré-requisito com condição que não vale não entram nas pendências');
@@ -2716,4 +2725,205 @@ select pg_temp.como(:'diretor');
 select pg_temp.ok(app.apagar_regra_etapa(:'re5') = 'desativada' and app.apagar_regra_etapa(:'re3') = 'apagada', 'regra que já criou tarefa só se desliga');
 select app.condicao_prerequisito(:'pr1', null);
 update fluxo.automacoes set ativa = false where id = :'aue';
+-- =====================================================================
+-- Formulário da tarefa e máscaras (decisões do Moisés, 1/nov/2026)
+-- =====================================================================
+select pg_temp.ok(fluxo.validar_formato('cpf', '529.982.247-25') = '52998224725', 'CPF válido fica só com os dígitos');
+select pg_temp.falha($$select fluxo.validar_formato('cpf', '529.982.247-24')$$, 'CPF com dígito verificador errado é recusado');
+select pg_temp.falha($$select fluxo.validar_formato('cpf', '111.111.111-11')$$, 'CPF de dígitos repetidos é recusado');
+select pg_temp.ok(fluxo.validar_formato('cnpj', '11.222.333/0001-81') = '11222333000181', 'CNPJ válido fica só com os dígitos');
+select pg_temp.falha($$select fluxo.validar_formato('cnpj', '11.222.333/0001-82')$$, 'CNPJ com dígito verificador errado é recusado');
+select pg_temp.ok(fluxo.validar_formato('email', ' Ana.Souza@BKM.com.br ') = 'ana.souza@bkm.com.br', 'e-mail fica em minúsculas');
+select pg_temp.falha($$select fluxo.validar_formato('email', 'ana@bkm')$$, 'e-mail sem domínio completo é recusado');
+select pg_temp.ok(fluxo.validar_formato('telefone', '(11) 98765-4321') = '11987654321' and fluxo.validar_formato('telefone', '(12) 3456-7890') = '1234567890',
+  'telefone com DDD, fixo ou celular, fica só com os dígitos');
+select pg_temp.falha($$select fluxo.validar_formato('telefone', '(11) 88765-4321')$$, 'celular de 11 dígitos começa com 9');
+select pg_temp.falha($$select fluxo.validar_formato('telefone', '98765-4321')$$, 'telefone sem DDD é recusado');
+select pg_temp.ok(fluxo.formas('lista', 3) = array['menu','radio','chips','segmentado'] and fluxo.formas('lista', 2) @> array['chave']
+  and fluxo.formas('lista', 7) = array['menu'] and fluxo.formas('sim_nao') = array['botoes','chave'] and fluxo.formas('numero') = array['campo'],
+  'formas por tipo: segmentado até 4 opções, chave com 2, acima de 6 só o menu');
+select pg_temp.ok((select formato from app.v_campos where empresa_id = :'emp' and chave = 'oferta.valor_pedido') = 'moeda'
+  and (select formato from app.v_campos where empresa_id = :'emp' and chave = 'terreno.cep') = 'cep', 'o catálogo traz a máscara fixa (moeda, CEP)');
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tcd', 'Visita técnica ao terreno', null, :'analista') as kf \gset
+insert into fluxo.tarefa_itens (empresa_id, tarefa_id, tipo, pergunta, resposta) values (:'emp', :'kf', 'telefone', 'Telefone do zelador', '"(12) 3456-7890"');
+select pg_temp.ok((select resposta #>> '{}' from fluxo.tarefa_itens where tarefa_id = :'kf' and tipo = 'telefone') = '1234567890',
+  'pergunta só no cartão: a resposta com máscara fica guardada só com os dígitos');
+select pg_temp.falha(format($$update fluxo.tarefa_itens set resposta = '"3456"' where tarefa_id = %L and tipo = 'telefone'$$, :'kf'), 'resposta fora da máscara é recusada');
+select pg_temp.falha(format($$update fluxo.tarefa_itens set tipo = 'texto' where tarefa_id = %L and tipo = 'telefone'$$, :'kf'), 'pergunta com resposta não muda de tipo');
+select pg_temp.falha(format($$insert into fluxo.tarefa_itens (empresa_id, tarefa_id, tipo) values (%L, %L, 'texto')$$, :'emp', :'kf'), 'pergunta só no cartão precisa do texto da pergunta');
+insert into fluxo.tarefa_itens (empresa_id, tarefa_id, tipo, pergunta, opcoes, forma) values (:'emp', :'kf', 'lista', 'Muro de divisa', '{Bom,Ruim}', 'chave') returning id as imuro \gset
+select pg_temp.falha(format($$update fluxo.tarefa_itens set forma = 'caixas' where id = %L$$, :'imuro'), 'forma que não serve ao tipo é recusada');
+select pg_temp.falha(format($$update fluxo.tarefa_itens set resposta = '"Caído"' where id = %L$$, :'imuro'), 'resposta de lista só entre as opções');
+update fluxo.tarefa_itens set resposta = '"Ruim"' where id = :'imuro';
+insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, pergunta, ajuda, forma) values (:'emp', :'kf', 'terreno.situacao_ocupacao', 'Como está a ocupação hoje?', 'Veja se há inquilino', 'chips');
+select pg_temp.ok((select pergunta = 'Como está a ocupação hoje?' and forma = 'chips' from fluxo.tarefa_itens where tarefa_id = :'kf' and chave = 'terreno.situacao_ocupacao'),
+  'pergunta ligada a campo do terreno guarda o texto, a ajuda e a forma');
+select pg_temp.falha(format($$update fluxo.tarefa_itens set forma = 'chave' where tarefa_id = %L and chave = 'terreno.situacao_ocupacao'$$, :'kf'),
+  'chave só em lista de duas opções');
+insert into fluxo.tarefa_itens (empresa_id, tarefa_id, tipo, pergunta, regra_branco) values (:'emp', :'kf', 'paragrafo', 'Observações da visita', 'justificativa') returning id as iobs \gset
+select pg_temp.ok((select tipo = 'pergunta' and nome = 'Observações da visita' and regra = 'justificativa' from fluxo.itens_em_branco(:'kf')),
+  'pergunta em branco com regra entra no que falta para concluir, pelo texto da pergunta');
+update fluxo.tarefa_itens set resposta = '"Muro caído no fundo"' where id = :'iobs';
+select pg_temp.ok(not exists (select 1 from fluxo.itens_em_branco(:'kf')), 'respondida, a pergunta sai do que falta');
+select fluxo.copiar_tarefa(:'kf', pg_temp.lista(:'tcd', 'Fazer'), 'Visita técnica (cópia)', array['campos']) as kfc \gset
+select pg_temp.ok((select count(*) from fluxo.tarefa_itens where tarefa_id = :'kfc') = 4
+  and (select resposta #>> '{}' from fluxo.tarefa_itens where tarefa_id = :'kfc' and pergunta = 'Muro de divisa') = 'Ruim',
+  'copiar o cartão com os campos leva as perguntas e as respostas');
+select pg_temp.como(:'diretor');
+insert into fluxo.campos (empresa_id, nome, tipo, formato) values (:'emp', 'CPF do vendedor', 'texto', 'cpf') returning id as ccpf \gset
+select pg_temp.falha(format($$insert into fluxo.campos (empresa_id, nome, tipo, formato) values (%L, 'Valor X', 'numero', 'email')$$, :'emp'), 'número não leva máscara de texto');
+select pg_temp.como(:'analista');
+insert into fluxo.tarefa_campos (empresa_id, tarefa_id, campo_id, texto) values (:'emp', :'kf', :'ccpf', '529.982.247-25');
+select pg_temp.ok((select texto from fluxo.tarefa_campos where tarefa_id = :'kf' and campo_id = :'ccpf') = '52998224725', 'campo personalizado com máscara guarda só os dígitos');
+select pg_temp.falha(format($$update fluxo.tarefa_campos set texto = '123' where tarefa_id = %L and campo_id = %L$$, :'kf', :'ccpf'), 'campo personalizado recusa valor fora da máscara');
+select pg_temp.como(:'diretor');
+select pg_temp.falha(format($$select app.salvar_campo(%L, 'terreno.area_documental_m2', null, true, true, 'cpf')$$, :'emp'), 'máscara de texto só em campo de texto');
+select pg_temp.falha(format($$select app.salvar_campo(%L, 'terreno.cep', null, false, false, 'telefone')$$, :'emp'), 'campo com máscara fixa não troca de máscara');
+select app.salvar_campo(:'emp', 'terreno.referencia_localizacao', null, false, true, 'telefone');
+select pg_temp.ok((select formato from app.v_campos where empresa_id = :'emp' and chave = 'terreno.referencia_localizacao') = 'telefone', 'o administrador dá máscara ao campo de texto');
+select pg_temp.como(:'analista');
+select app.gravar_campo(:'tcd', 'terreno.referencia_localizacao', '"(11) 3333-4444"');
+select pg_temp.ok((select referencia_localizacao from app.terrenos where id = :'tcd') = '1133334444', 'o cartão grava o campo do terreno com a máscara, só os dígitos');
+select pg_temp.falha(format($$select app.gravar_campo(%L, 'terreno.referencia_localizacao', '"perto da padaria"')$$, :'tcd'), 'o terreno recusa valor fora da máscara do campo');
+select pg_temp.como(:'diretor');
+select app.salvar_campo(:'emp', 'terreno.referencia_localizacao', null, false, false, '');
+
+-- ---------------------------------------------------------------------
+-- Jornada do terreno (1/nov/2026): perguntas e campos por etapa e subetapa,
+-- campos novos do terreno, regra de cada item e regras pelo valor
+-- ---------------------------------------------------------------------
+select pg_temp.como(:'diretor');
+select pg_temp.falha(format($$select app.salvar_campo_terreno(%L, null, '{"titulo":"Topografia","tipo":"texto"}')$$, :'emp'), 'o campo novo não repete o título de um campo do catálogo');
+select pg_temp.falha(format($$select app.salvar_campo_terreno(%L, null, '{"titulo":"Uma opção","tipo":"lista","opcoes":["Só"]}')$$, :'emp'), 'campo de lista precisa de ao menos duas opções');
+select app.salvar_campo_terreno(:'emp', null, '{"titulo":"Recuo frontal atende","tipo":"lista","opcoes":["Sim","Não","A verificar"]}') as cjr \gset
+select app.salvar_campo_terreno(:'emp', null, '{"titulo":"Área demolir estimada","tipo":"numero","unidade":"m²"}') as cjd \gset
+select 'personalizado.' || codigo as kjr from app.campos_terreno where id = :'cjr' \gset
+select 'personalizado.' || codigo as kjd from app.campos_terreno where id = :'cjd' \gset
+select pg_temp.ok((select tipo = 'lista' and condicao and cartao from app.v_campos where empresa_id = :'emp' and chave = :'kjr'),
+  'o campo novo do terreno entra no catálogo da empresa, liberado para condição e cartão');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$select app.salvar_item_jornada(%L, null, '{"fase":"novos_negocios","etapa":"triagem","campo":"terreno.topografia"}')$$, :'emp'), 'só o administrador monta a jornada');
+select pg_temp.como(:'diretor');
+select pg_temp.falha(format($$select app.salvar_item_jornada(%L, null, '{"fase":"novos_negocios","etapa":"triagem","campo":"terreno.topografia","forma":"chave"}')$$, :'emp'),
+  'a forma de responder segue o tipo do campo (chave só com duas opções)');
+select pg_temp.falha(format($$select app.salvar_item_jornada(%L, null, '{"fase":"novos_negocios","etapa":"triagem","subetapa":"estudo_massa","campo":"terreno.topografia"}')$$, :'emp'),
+  'a subetapa do item é da etapa');
+select app.salvar_item_jornada(:'emp', null, '{"fase":"novos_negocios","etapa":"triagem","campo":"terreno.topografia","pergunta":"Como é o terreno?","forma":"chips"}') as ij1 \gset
+select pg_temp.falha(format($$select app.salvar_item_jornada(%L, null, '{"fase":"novos_negocios","etapa":"triagem","campo":"terreno.topografia"}')$$, :'emp'), 'o mesmo campo não entra duas vezes no mesmo lugar');
+select app.salvar_item_jornada(:'emp', null, jsonb_build_object('fase','novos_negocios','etapa','triagem','subetapa','aguardando_informacoes','campo',:'kjr','regra','justifica')) as ij2 \gset
+select app.salvar_item_jornada(:'emp', null, jsonb_build_object('fase','novos_negocios','etapa','triagem','subetapa','aguardando_informacoes','campo',:'kjd',
+  'condicao', '{"modo":"todas","itens":[{"campo":"terreno.necessidade_demolicao","op":"em","valores":["confirmada"]}]}'::jsonb)) as ij3 \gset
+select app.salvar_item_jornada(:'emp', null, '{"fase":"novos_negocios","etapa":"triagem","campo":"terreno.uso_atual","regra":"livre"}') as ij4 \gset
+select pg_temp.falha(format($$select app.salvar_regra_jornada(%L, null, '{"fase":"novos_negocios","etapa":"triagem","acao":"bloqueia","mensagem":"X"}')$$, :'emp'), 'a regra pelo valor precisa de condição');
+select app.salvar_regra_jornada(:'emp', null, '{"fase":"novos_negocios","etapa":"triagem","acao":"bloqueia","mensagem":"Terreno irregular: refazer a análise",
+  "condicao":{"modo":"todas","itens":[{"campo":"terreno.topografia","op":"em","valores":["irregular"]}]}}') as rj1 \gset
+select app.salvar_regra_jornada(:'emp', null, '{"fase":"novos_negocios","etapa":"triagem","acao":"diretor","mensagem":"Declive: o diretor aprova",
+  "condicao":{"modo":"todas","itens":[{"campo":"terreno.topografia","op":"em","valores":["declive"]}]}}') as rj2 \gset
+select app.salvar_regra_jornada(:'emp', null, jsonb_build_object('fase','novos_negocios','etapa','triagem','acao','avisa','mensagem','Recuo a verificar com o arquiteto',
+  'condicao', jsonb_build_object('modo','todas','itens', jsonb_build_array(jsonb_build_object('campo', :'kjr', 'op', 'em', 'valores', jsonb_build_array('A verificar')))))) as rj3 \gset
+select app.salvar_checklist(:'emp', 'novos_negocios', 'triagem', 'iptu', null, null, 'justifica');
+select pg_temp.ok((select regra = 'justifica' and obrigatorio from app.checklist_modelo where empresa_id = :'emp' and fase = 'novos_negocios' and etapa = 'triagem' and tipo_documento = 'iptu'),
+  'o documento da jornada ganha a regra (avança com justificativa conta como exigido)');
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude, poligono_geojson)
+  values (:'emp', 'Terreno da jornada', :'gestor', 'corretor', :'sp', -23.64, -46.64, pg_temp.quadra(-46.64, -23.64)) returning id as tjn \gset
+select pg_temp.como(:'analista');
+select (app.registrar_oferta(:'tjn', 2500000, 'dinheiro')->>'processo_id') as pjn \gset
+select app.checar_passagem(:'pjn') as cj1 \gset
+select pg_temp.ok((select count(*) from jsonb_array_elements(:'cj1'::jsonb->'itens') i where i->>'tipo' = 'jornada') = 2
+  and exists (select 1 from jsonb_array_elements(:'cj1'::jsonb->'itens') i where i->>'texto' = 'Como é o terreno?: não informado' and not (i->>'justifica')::boolean)
+  and exists (select 1 from jsonb_array_elements(:'cj1'::jsonb->'itens') i where i->>'campo' = :'kjr' and (i->>'justifica')::boolean)
+  and not exists (select 1 from jsonb_array_elements(:'cj1'::jsonb->'itens') i where i->>'campo' in (:'kjd', 'terreno.uso_atual')),
+  'sair da etapa pede os itens da etapa e das subetapas; condição que não vale e item livre não travam');
+select pg_temp.ok(not (:'cj1'::jsonb->>'pode_justificar')::boolean and not (:'cj1'::jsonb->>'pode_forcar')::boolean,
+  'com item que bloqueia, o analista não passa nem justificando');
+select pg_temp.ok((select count(*) = 4 and count(*) filter (where (x->>'aplica')::boolean) = 3 from jsonb_array_elements(app.jornada_processo(:'pjn')->'itens') x),
+  'a jornada da etapa mostra todos os itens e diz quais valem agora');
+select pg_temp.falha(format($$select app.mover_subetapa(%L, 'aguardando_documentos')$$, :'pjn'), 'sair da subetapa sem a resposta trava');
+select pg_temp.falha(format($$select app.mover_subetapa(%L, 'aguardando_documentos', true, '')$$, :'pjn'), 'passar sem a resposta pede justificativa');
+select app.mover_subetapa(:'pjn', 'aguardando_documentos', true, 'O arquiteto responde na visita') \gset
+select pg_temp.ok((select subetapa_atual = 'aguardando_documentos' from app.processos where id = :'pjn')
+  and (select forcado and comentario = 'O arquiteto responde na visita' from app.processo_transicoes where processo_id = :'pjn' order by em desc, id desc limit 1),
+  'item que pede justificativa: o analista passa justificando, e fica no histórico');
+select pg_temp.falha(format($$select app.gravar_campo(%L, %L, '"Talvez"')$$, :'tjn', :'kjr'), 'o campo novo de lista só aceita as opções');
+select pg_temp.falha(format($$select app.gravar_campo(%L, %L, '"muito"')$$, :'tjn', :'kjd'), 'o campo novo de número recusa texto');
+select app.gravar_campo(:'tjn', :'kjr', '"A verificar"');
+select app.gravar_campo(:'tjn', 'terreno.necessidade_demolicao', '"confirmada"');
+select app.gravar_campo(:'tjn', 'terreno.topografia', '"irregular"');
+select pg_temp.ok((select valor #>> '{}' = 'A verificar' from app.terreno_valores where terreno_id = :'tjn' and campo_id = :'cjr')
+  and (app.campo_cartao(:'tjn', :'kjr')->>'valor') = 'A verificar',
+  'a resposta grava no próprio terreno (fonte única: ficha, cartão e jornada leem o mesmo valor)');
+select app.checar_passagem(:'pjn') as cj2 \gset
+select pg_temp.ok(exists (select 1 from jsonb_array_elements(:'cj2'::jsonb->'itens') i where i->>'tipo' = 'regra_valor' and not (i->>'ok')::boolean and i->>'texto' = 'Terreno irregular: refazer a análise')
+  and exists (select 1 from jsonb_array_elements(:'cj2'::jsonb->'itens') i where i->>'tipo' = 'regra_valor' and (i->>'aviso')::boolean and (i->>'ok')::boolean)
+  and exists (select 1 from jsonb_array_elements(:'cj2'::jsonb->'itens') i where i->>'campo' = :'kjd' and not (i->>'ok')::boolean),
+  'regra pelo valor trava ou só avisa; o item condicional entra quando a condição passa a valer');
+select app.gravar_campo(:'tjn', :'kjd', '"350"');
+select app.gravar_campo(:'tjn', 'terreno.topografia', '"declive"');
+select pg_temp.falha(format($$select app.mover_etapa(%L)$$, :'pjn'), 'o documento que pede justificativa ainda trava sem ela');
+select app.checar_passagem(:'pjn') as cj3 \gset
+select pg_temp.ok((:'cj3'::jsonb->>'pode_justificar')::boolean and (:'cj3'::jsonb->'aprovacoes') ? 'diretor',
+  'só falta o que pede justificativa; o declive pede o diretor');
+select app.mover_etapa(:'pjn', true, 'O vendedor manda o IPTU esta semana') as mj \gset
+select pg_temp.ok(:'mj'::jsonb->>'resultado' = 'aguardando_aprovacao'
+  and exists (select 1 from app.aprovacoes where processo_id = :'pjn' and status = 'pendente' and nivel = 'diretor'),
+  'a regra pelo valor vira pedido de aprovação do diretor');
+select pg_temp.como(:'diretor');
+select app.decidir_aprovacao((select pedido_id from app.aprovacoes where processo_id = :'pjn' and status = 'pendente' limit 1), true, 'Declive suave, ok');
+select pg_temp.ok((select etapa_atual = 'estudos' from app.processos where id = :'pjn'), 'aprovado, o terreno avança');
+select app.apagar_campo_terreno(:'cjd') as aj \gset
+select pg_temp.ok(:'aj' = 'desativado' and (select not ativo from app.campos_terreno where id = :'cjd'), 'campo novo com valor não se apaga: desativa');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$select app.gravar_campo(%L, %L, '"10"')$$, :'tjn', :'kjd'), 'campo desativado não grava');
+select pg_temp.como(:'diretor');
+select app.apagar_item_jornada(:'ij4');
+select pg_temp.ok(not exists (select 1 from app.jornada_itens where id = :'ij4'), 'tirar da jornada apaga o item; o valor fica no terreno');
+-- Regra em branco com 3 opções em todo item e comportamento condicional (1/nov/2026)
+select pg_temp.falha(format($$select app.salvar_item_jornada(%L, %L, '{"regra_cond":[{"regra":"livre"}]}')$$, :'emp', :'ij1'), 'comportamento condicional precisa de condição');
+select pg_temp.falha(format($$select app.salvar_item_jornada(%L, %L, '{"regra_cond":[{"regra":"talvez","condicao":{"modo":"todas","itens":[{"campo":"terreno.topografia","op":"em","valores":["plano"]}]}}]}')$$, :'emp', :'ij1'),
+  'comportamento condicional só com Pode avançar, Avança com justificativa ou Não avança');
+select app.salvar_item_jornada(:'emp', :'ij1', '{"regra_cond":[
+  {"regra":"justifica","condicao":{"modo":"todas","itens":[{"campo":"terreno.necessidade_demolicao","op":"em","valores":["confirmada"]}]}},
+  {"regra":"livre","condicao":{"modo":"todas","itens":[{"campo":"terreno.necessidade_demolicao","op":"em","valores":["dispensada"]}]}}]}');
+select app.salvar_checklist(:'emp', 'novos_negocios', 'triagem', 'iptu', null, null, 'justifica',
+  '[{"regra":"livre","condicao":{"modo":"todas","itens":[{"campo":"terreno.necessidade_demolicao","op":"em","valores":["dispensada"]}]}}]');
+select pg_temp.ok((select regra = 'bloqueia' and jsonb_array_length(regra_cond) = 2 from app.jornada_itens where id = :'ij1')
+  and (select regra = 'justifica' and jsonb_array_length(regra_cond) = 1 from app.checklist_modelo where empresa_id = :'emp' and fase = 'novos_negocios' and etapa = 'triagem' and tipo_documento = 'iptu'),
+  'a pergunta e o documento guardam o comportamento único e o condicional');
+select app.salvar_checklist(:'emp', 'novos_negocios', 'triagem', 'iptu', null, null, 'justifica');
+select pg_temp.ok((select jsonb_array_length(regra_cond) = 1 from app.checklist_modelo where empresa_id = :'emp' and fase = 'novos_negocios' and etapa = 'triagem' and tipo_documento = 'iptu'),
+  'salvar o documento sem a regra condicional a mantém');
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude, poligono_geojson)
+  values (:'emp', 'Terreno da regra condicional', :'gestor', 'corretor', :'sp', -23.66, -46.66, pg_temp.quadra(-46.66, -23.66)) returning id as tjc \gset
+select pg_temp.como(:'analista');
+select (app.registrar_oferta(:'tjc', 1800000, 'dinheiro')->>'processo_id') as pjc \gset
+select app.checar_passagem(:'pjc') as cc1 \gset
+select pg_temp.ok(exists (select 1 from jsonb_array_elements(:'cc1'::jsonb->'itens') i where i->>'campo' = 'terreno.topografia' and not (i->>'justifica')::boolean),
+  'nenhuma condição vale: vale o comportamento único (não avança)');
+select app.gravar_campo(:'tjc', 'terreno.necessidade_demolicao', '"confirmada"');
+select app.checar_passagem(:'pjc') as cc2 \gset
+select pg_temp.ok(exists (select 1 from jsonb_array_elements(:'cc2'::jsonb->'itens') i where i->>'campo' = 'terreno.topografia' and (i->>'justifica')::boolean)
+  and (select regra_efetiva = 'justifica' from jsonb_to_recordset(app.jornada_processo(:'pjc')->'itens') x(id uuid, regra_efetiva text) where x.id = :'ij1'),
+  'a condição que vale decide: avança com justificativa');
+select app.gravar_campo(:'tjc', 'terreno.necessidade_demolicao', '"dispensada"');
+select app.checar_passagem(:'pjc') as cc3 \gset
+select pg_temp.ok(not exists (select 1 from jsonb_array_elements(:'cc3'::jsonb->'itens') i where i->>'campo' = 'terreno.topografia')
+  and not exists (select 1 from jsonb_array_elements(:'cc3'::jsonb->'itens') i where i->>'tipo' = 'documento' and i->>'texto' like 'IPTU%'),
+  'com "pode avançar" pela condição, a pergunta e o documento não travam');
+select pg_temp.como(:'diretor');
+select id as prj from app.prerequisitos_modelo where empresa_id = :'emp' limit 1 \gset
+select app.regra_prerequisito(:'prj', 'livre');
+select pg_temp.ok((select regra = 'livre' from app.prerequisitos_modelo where id = :'prj'), 'o pré-requisito também pode ser "pode avançar"');
+select app.regra_prerequisito(:'prj', 'bloqueia', '[]');
+select app.salvar_regra_etapa(:'emp', null, '{"fase":"novos_negocios","etapa":"contrato","titulo":"Conferir a minuta","regra":"justifica"}') as rej \gset
+select app.salvar_regra_etapa(:'emp', null, '{"fase":"novos_negocios","etapa":"contrato","titulo":"Conferir o registro","trava":false,
+  "regra_cond":[{"regra":"bloqueia","condicao":{"modo":"todas","itens":[{"campo":"terreno.topografia","op":"em","valores":["irregular"]}]}}]}') as rek \gset
+select pg_temp.ok((select regra = 'justifica' and trava from app.etapa_regras where id = :'rej')
+  and (select regra = 'livre' and trava and jsonb_array_length(regra_cond) = 1 from app.etapa_regras where id = :'rek'),
+  'a tarefa da etapa ganha as 3 opções e o comportamento condicional');
+select count(*) as nte from jsonb_array_elements(app.checar_passagem(:'pjn')->'itens') i where i->>'tipo' = 'tarefa' \gset
+select count(app.salvar_regra_etapa(:'emp', id, '{"regra":"justifica"}')) from app.etapa_regras where empresa_id = :'emp' and fase = 'novos_negocios' and etapa = 'estudos' and trava and ativo;
+select pg_temp.ok(:nte > 0 and (select bool_and((i->>'justifica')::boolean) from jsonb_array_elements(app.checar_passagem(:'pjn')->'itens') i where i->>'tipo' = 'tarefa'),
+  'tarefa aberta de regra "avança com justificativa" entra como pendência que se justifica');
+select count(app.salvar_regra_etapa(:'emp', id, '{"regra":"bloqueia"}')) from app.etapa_regras where empresa_id = :'emp' and fase = 'novos_negocios' and etapa = 'estudos' and trava and ativo;
 \echo 'TODOS OS TESTES PASSARAM'

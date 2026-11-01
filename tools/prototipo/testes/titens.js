@@ -6,6 +6,7 @@ const est=p=>p.evaluate(()=>JSON.parse(localStorage.getItem('bkm-terrenos-protot
 const clica=(p,sel,txt)=>p.evaluate(([s,t])=>{let el=[...document.querySelectorAll(s)].find(x=>!t||x.textContent.includes(t));if(!el&&window.__tkAcha)el=window.__tkAcha(s,t);if(!el)throw new Error('não achei '+s+' '+(t||''));el.click()},[sel,txt||null]);
 const muda=(p,sel,v)=>p.evaluate(([s,v])=>{let el=document.querySelector(s);if(!el&&window.__tkAcha)el=window.__tkAcha(s);if(!el)throw new Error('não achei '+s);if(el.tagName==='SELECT'&&![...el.options].some(o=>o.value===v)){const o=[...el.options].find(o=>o.textContent.includes(v));if(o)v=o.value}el.value=v;el.dispatchEvent(new Event('change',{bubbles:true}))},[sel,v]);
 const preenche=(p,sel,v)=>p.evaluate(([s,v])=>{let el=document.querySelector(s);if(!el&&window.__tkAcha)el=window.__tkAcha(s);if(!el)throw new Error('não achei '+s);el.value=v},[sel,v]);
+const incluir=async(p,dest)=>{if(!(await p.$('#modal [data-a=fm-nova]'))){await clica(p,'#modal [data-a=fm-modo][data-v=montar]');await p.waitForTimeout(100)}await clica(p,'#modal [data-a=fm-nova]');await p.waitForTimeout(100);await clica(p,`#modal [data-a=fm-dest][data-v="${dest}"]`);await p.waitForTimeout(100);await clica(p,'#modal [data-a=fm-salva]');await p.waitForTimeout(120);await clica(p,'#modal [data-a=fm-modo][data-v=responder]');await p.waitForTimeout(120)};
 const envia=(p,sel)=>p.evaluate(s=>{let f=document.querySelector(s);if(!f&&window.__tkAcha)f=window.__tkAcha(s);if(!f)throw new Error('não achei '+s);f.requestSubmit()},sel);
 const papel=(p,v)=>p.evaluate(v=>{const a=document.createElement('button');a.dataset.a='role';a.dataset.v=v;document.body.appendChild(a);a.click();a.remove()},v);
 const ficha=(p,id)=>p.evaluate(id=>{const a=document.createElement('button');a.dataset.a='abrir';a.dataset.id=id;a.dataset.tab='tarefas';document.body.appendChild(a);a.click();a.remove();document.querySelector('#bl-tarefas [data-a=cr-vista][data-v=quadro][aria-pressed=false]')?.click()},id);  // roteiro escrito sobre o quadro; a ficha abre na Lista
@@ -40,20 +41,20 @@ ok(!(await p.$('[data-itcfg=titulo]:not([disabled])'))||!(await p.$('.it-tab')),
 await papel(p,'Diretor');await vai(p,'/terrenos');
 // 2. cartão com campos do terreno (exemplo semeado)
 s=await est(p);const t0=s.terrenos[0];await ficha(p,t0.id);await p.waitForTimeout(400);await abreCartao(p,AJ);
-ok(await p.$eval('.tkm-props',x=>x.textContent.includes('Área da matrícula')&&x.textContent.includes('Forma de pagamento vigente')),'o cartão mostra os campos do terreno incluídos, com o título da empresa');
-ok(await p.$eval('.tkm-props',x=>x.textContent.includes('só leitura')),'campo calculado é só leitura');
+ok(await p.$eval('#modal .fm',x=>x.textContent.includes('Área da matrícula')&&x.textContent.includes('Forma de pagamento vigente')),'o cartão mostra os campos do terreno incluídos, com o título da empresa');
+ok(await p.$eval('#modal .fm',x=>x.textContent.includes('só leitura')),'campo calculado é só leitura');
 const ia=it(s,AJ,'terreno.area_documental_m2');
-await preenche(p,`[data-itv="${ia.id}"]`,'2.150');await muda(p,`[data-itv="${ia.id}"]`,'2.150');await p.waitForTimeout(150);s=await est(p);
+await preenche(p,`[data-fm="${ia.id}"]`,'2.150');await muda(p,`[data-fm="${ia.id}"]`,'2.150');await p.waitForTimeout(150);s=await est(p);
 ok(s.terrenos[0].aDoc===2150,'editar no cartão grava no terreno');ok(s.terrenos[0].hist.some(h=>h.txt.includes('Área da matrícula')&&h.txt.includes('pelo cartão')),'e vai para o histórico do terreno');
-await muda(p,`[data-itv="${ia.id}"]`,'');await p.waitForTimeout(150);s=await est(p);ok(s.terrenos[0].aDoc==null,'apagar deixa o campo em branco (nunca zero)');
-ok(await p.$eval(`[data-itv="${ia.id}"]`,x=>!!x.closest('.it-c.falta')&&x.closest('.it-c').textContent.includes('necessário')),'em branco com "não conclui": selo necessário');
-await clica(p,'#modal [data-a=tkc-pop][data-v=it-campo]');await p.waitForTimeout(100);
-ok(await p.$eval('.it-pop',x=>x.textContent.includes('Terreno')&&x.textContent.includes('Campos personalizados')&&!x.textContent.includes('Uso atual')),'+ Campo lista por origem e respeita "No cartão"');
-await preenche(p,'[data-itb]','testada');await p.$eval('[data-itb]',x=>x.dispatchEvent(new Event('input',{bubbles:true})));await p.waitForTimeout(150);
-ok(await p.$$eval('.it-popi',xs=>xs.length===1&&xs[0].textContent.includes('Testada')),'a busca acha o campo');
-await clica(p,'#modal [data-a=it-inclui][data-v="terreno.testada_principal_m"]');await p.waitForTimeout(150);s=await est(p);
+await muda(p,`[data-fm="${ia.id}"]`,'');await p.waitForTimeout(150);s=await est(p);ok(s.terrenos[0].aDoc==null,'apagar deixa o campo em branco (nunca zero)');
+ok(await p.$eval(`[data-fm="${ia.id}"]`,x=>!!x.closest('.fm-ans.falta')&&x.closest('.fm-ans').textContent.includes('necessário')),'em branco com "não conclui": selo necessário');
+await clica(p,'#modal [data-a=fm-modo][data-v=montar]');await p.waitForTimeout(100);await clica(p,'#modal [data-a=fm-nova]');await p.waitForTimeout(100);
+ok(await p.$eval('.fm-pop',x=>x.textContent.includes('Terreno')&&x.textContent.includes('Campos personalizados')&&!x.textContent.includes('Uso atual')),'+ Pergunta lista os campos por origem e respeita "No cartão"');
+await preenche(p,'[data-fmq]','testada');await p.$eval('[data-fmq]',x=>x.dispatchEvent(new Event('input',{bubbles:true})));await p.waitForTimeout(150);
+{const a=await p.$$eval('.fm-pop .it-popi:not([data-v=cartao])',xs=>xs.map(x=>x.textContent));ok(a.length>=1&&a.every(x=>/testada/i.test(x))&&a.some(x=>x.includes('Testada')),'a busca acha o campo: '+a.join(' | '))}
+await clica(p,'#modal [data-a=fm-dest][data-v="terreno.testada_principal_m"]');await p.waitForTimeout(100);await clica(p,'#modal [data-a=fm-salva]');await p.waitForTimeout(150);await clica(p,'#modal [data-a=fm-modo][data-v=responder]');await p.waitForTimeout(100);s=await est(p);
 ok(!!it(s,AJ,'terreno.testada_principal_m'),'campo incluído no cartão');
-await p.evaluate(()=>document.querySelector('.tkm-props').scrollIntoView({block:'center'}));await p.screenshot({path:O+'2_cartao.png'});
+await p.evaluate(()=>document.querySelector('#modal .fm').scrollIntoView({block:'center'}));await p.screenshot({path:O+'2_cartao.png'});
 // 3. aba Configuração
 ok((await abas(p)).includes('config'),'o diretor vê a aba Configuração');
 await clica(p,'#modal [data-a=tkc-aba][data-v=config]');await p.waitForTimeout(150);
@@ -81,21 +82,22 @@ await fecha(p);
 // 4. Analista: sem a aba, com os selos; regra só pelo criador
 await papel(p,'Analista');await p.waitForTimeout(200);await abreCartao(p,AJ);
 ok(!(await abas(p)).includes('config'),'o analista que não criou a tarefa não vê a aba Configuração');
-ok(await p.$eval('.tkm-props',x=>x.textContent.includes('necessário')),'mas vê o selo');
-ok(await p.$eval(`[data-a=it-tira][data-v="${ia.id}"]`,x=>x.disabled),'e não tira do cartão o item com regra');
+ok(await p.$eval('#modal .fm',x=>x.textContent.includes('necessário')),'mas vê o selo');
+await clica(p,'#modal [data-a=fm-modo][data-v=montar]');await p.waitForTimeout(100);
+ok(await p.$eval(`[data-a=fm-tira][data-v="${ia.id}"]`,x=>x.disabled),'e não tira do cartão o item com regra');
 await fecha(p);
 // 5. conclusão: um cartão sem aprovador, com item "pede justificativa" e outro "não conclui"
 await papel(p,'Diretor');await p.waitForTimeout(150);s=await est(p);
 const kk=s.terrenos[0].tarefas.find(k=>!k.feita&&!k.arq&&!k.mae&&!k.modelo&&!(k.aprov||[]).length&&!(k.checklists||[]).some(c=>c.itens.some(i=>!i.feito))&&!s.terrenos[0].tarefas.some(x=>x.mae===k.id&&!x.feita)&&(!k.vis||k.vis==='publico')&&!(k.preds||[]).length&&k.titulo!==AJ);
 ok(!!kk,'há um cartão para concluir: '+(kk&&kk.titulo));
 await abreCartao(p,kk.titulo);
-for(const ch of ['terreno.area_levantamento_m2','terreno.desnivel_estimado_m']){await clica(p,'#modal [data-a=tkc-pop][data-v=it-campo]');await p.waitForTimeout(80);await clica(p,`#modal [data-a=it-inclui][data-v="${ch}"]`);await p.waitForTimeout(100)}
+for(const ch of ['terreno.area_levantamento_m2','terreno.desnivel_estimado_m'])await incluir(p,ch);
 await clica(p,'#modal [data-a=tkc-aba][data-v=config]');await p.waitForTimeout(100);s=await est(p);
 const ka=tar(s,0,kk.titulo).itens.find(i=>i.chave==='terreno.area_levantamento_m2'),kd=tar(s,0,kk.titulo).itens.find(i=>i.chave==='terreno.desnivel_estimado_m');
 await muda(p,`[data-itr="${kd.id}"]`,'justificativa');await p.waitForTimeout(100);
 // apaga o valor do terreno para os dois ficarem em branco
 await clica(p,'#modal [data-a=tkc-aba][data-v=geral]');await p.waitForTimeout(100);
-for(const x of [ka,kd]){if(await p.$(`[data-itv="${x.id}"]`)){await muda(p,`[data-itv="${x.id}"]`,'');await p.waitForTimeout(80)}}
+for(const x of [ka,kd]){if(await p.$(`[data-fm="${x.id}"]`)){await muda(p,`[data-fm="${x.id}"]`,'');await p.waitForTimeout(80)}}
 s=await est(p);ok(s.terrenos[0].aLev==null&&s.terrenos[0].desnivel==null,'campos do terreno em branco');
 await fecha(p);await papel(p,'Analista');await p.waitForTimeout(150);await abreCartao(p,kk.titulo);
 await clica(p,'#modal [data-a=tkc-concluir]');await p.waitForTimeout(200);
@@ -124,9 +126,9 @@ ok(!!tar(s,0,kk.titulo).feita&&tar(s,0,kk.titulo).justs.at(-1).libera===true,'co
 // 6. condição que não vale não pede nada
 await fecha(p);s=await est(p);
 ok(s.terrenos[0].tipoEmp!=='his'&&s.terrenos[0].tipoEmp!=='hmp','o terreno não é HIS nem HMP');
-await abreCartao(p,AJ);const tst=it(s,AJ,'terreno.testada_principal_m');
-if(await p.$(`[data-itv="${tst.id}"]`)){await muda(p,`[data-itv="${tst.id}"]`,'');await p.waitForTimeout(100)}
-ok(await p.$eval(`[data-itv="${tst.id}"]`,x=>!x.closest('.it-c').textContent.includes('pede justificativa')),'com a condição sem valer, a testada em branco não pede justificativa');
+await abreCartao(p,AJ);if(await p.$('#modal [data-a=fm-modo][data-v=responder]:not(.on)')){await clica(p,'#modal [data-a=fm-modo][data-v=responder]');await p.waitForTimeout(100)}const tst=it(s,AJ,'terreno.testada_principal_m');
+if(await p.$(`[data-fm="${tst.id}"]`)){await muda(p,`[data-fm="${tst.id}"]`,'');await p.waitForTimeout(100)}
+ok(await p.$eval(`[data-fm="${tst.id}"]`,x=>!x.closest('.fm-ans').textContent.includes('pede justificativa')),'com a condição sem valer, a testada em branco não pede justificativa');
 await ctx.close()}
 {const {ctx,p}=await abre(1440,900,'escuro');await vai(p,'/configuracoes/campos');await p.screenshot({path:O+'6_escuro_campos.png'});
 const s=await est(p);await vai(p,'/terrenos');await ficha(p,s.terrenos[0].id);await p.waitForTimeout(400);await abreCartao(p,AJ);await clica(p,'#modal [data-a=tkc-aba][data-v=config]');await p.waitForTimeout(150);await p.screenshot({path:O+'7_escuro_config.png'});await ctx.close()}
