@@ -228,7 +228,8 @@ create table app.propostas (
 alter table fluxo.tarefas add foreign key (processo_id) references app.processos(id);
 
 -- Etapa do funil do cartão (lote B, 31/out/2026): a tarefa nova nasce na etapa
--- atual do terreno (o processo aberto da fase mais adiantada); etapa 'nenhuma'
+-- e na subetapa atuais do terreno (o processo aberto da fase mais adiantada;
+-- subetapa desde 1/nov/2026); quem cria pode escolher outra etapa e subetapa; etapa 'nenhuma'
 -- deixa a tarefa sem etapa (nunca trava). A etapa é da fase do processo e a
 -- subetapa, da etapa.
 create or replace function app.tg_tarefa_processo()
@@ -238,7 +239,7 @@ begin
   if new.etapa = 'nenhuma' then
     new.processo_id := null; new.etapa := null; new.subetapa := null;
   elsif tg_op = 'INSERT' and new.processo_id is null and new.etapa is null and not new.modelo then
-    select p.id, p.etapa_atual into new.processo_id, new.etapa
+    select p.id, p.etapa_atual, p.subetapa_atual into new.processo_id, new.etapa, new.subetapa
     from app.processos p join fluxo.quadros q on q.objeto_tipo = 'terreno' and q.objeto_id = p.terreno_id
     join app.fases_modelo f on f.empresa_id = p.empresa_id and f.codigo = p.fase
     where q.id = new.quadro_id and p.parte_id is null and p.status in ('ativo','stand_by')

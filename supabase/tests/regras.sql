@@ -2631,12 +2631,21 @@ select pg_temp.ok((select etapa = 'estudos' and subetapa is null and inicio = cu
   'prazos contam do dia da entrada, com as predecessoras do modelo; a tarefa fica marcada com a etapa');
 select pg_temp.ok((select responsavel_id = :'gestor' from fluxo.tarefas where id = :'kpr'), 'o responsável do terreno vira a pessoa do terreno na hora');
 select pg_temp.tarefa(:'tfn', 'Visitar o terreno', null, :'gestor') as kvi \gset
-select pg_temp.ok((select processo_id = :'pfn' and etapa = 'estudos' from fluxo.tarefas where id = :'kvi')
+select pg_temp.ok((select k.processo_id = :'pfn' and k.etapa = 'estudos' and k.subetapa = p.subetapa_atual from fluxo.tarefas k join app.processos p on p.id = k.processo_id where k.id = :'kvi')
   and (select trava and trava_nivel = 'etapa' from app.v_tarefas_etapa where tarefa_id = :'kvi'),
   'a tarefa criada à mão nasce na etapa atual e trava, porque a etapa trava');
 insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, etapa) select empresa_id, id, pg_temp.lista(:'tfn', 'Fazer'), 'Sem etapa', 'nenhuma'
   from fluxo.quadros where objeto_tipo = 'terreno' and objeto_id = :'tfn' returning id as kne \gset
 select pg_temp.ok((select processo_id is null and etapa is null from fluxo.tarefas where id = :'kne'), '"Nenhuma" deixa a tarefa sem etapa');
+insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, processo_id, etapa, subetapa, prazo)
+  select q.empresa_id, q.id, pg_temp.lista(:'tfn', 'Fazer'), 'Etapa escolhida', :'pfn', s.etapa, s.codigo, current_date + 2
+  from fluxo.quadros q, app.subetapas_modelo s join app.processos p on p.empresa_id = s.empresa_id and p.fase = s.fase
+  where q.objeto_tipo = 'terreno' and q.objeto_id = :'tfn' and p.id = :'pfn' and s.etapa <> p.etapa_atual order by s.etapa, s.ordem limit 1 returning id as kes \gset
+select pg_temp.ok((select k.etapa <> p.etapa_atual and k.subetapa is not null and k.prazo = current_date + 2 from fluxo.tarefas k join app.processos p on p.id = k.processo_id where k.id = :'kes'),
+  'quem cria escolhe outra etapa e subetapa da fase, com prazo');
+select pg_temp.falha(format($$insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, processo_id, etapa, subetapa)
+  select empresa_id, id, pg_temp.lista(%L, 'Fazer'), 'Sub errada', %L, 'estudos', 'nao_existe' from fluxo.quadros where objeto_tipo = 'terreno' and objeto_id = %L$$, :'tfn', :'pfn', :'tfn'),
+  'subetapa de outra etapa é recusada');
 select pg_temp.falha(format($$update fluxo.tarefas set etapa = 'projeto' where id = %L$$, :'kvi'), 'a etapa da tarefa é da fase da negociação');
 select pg_temp.ok(not exists (select 1 from jsonb_array_elements(app.checar_passagem(:'pfn')->'itens') i where i->>'tipo' in ('documento','prerequisito')),
   'documento e pré-requisito com condição que não vale não entram nas pendências');

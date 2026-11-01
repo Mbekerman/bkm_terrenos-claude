@@ -5206,7 +5206,12 @@ html[data-tema="escuro"] .et-form legend, html[data-tema="escuro"] .et-arq legen
 .fm-n1 { margin: 0 0 12px; font-size: 13px }
 .fm-edb { display: flex; align-items: center; gap: 8px; flex-wrap: wrap } .fm-edb .faint { font-size: 12px; flex: 1 1 260px }
 /* criação rápida */
-.tkr .fields { grid-template-columns: 1fr }
+.tkr .fields { grid-template-columns: 1fr 1fr } .tkr .fields > .full, .tkr .tkr-pad { grid-column: 1 / -1 }
+.tkr-prz { display: flex; flex-wrap: wrap; gap: 8px; align-items: center } .tkr-prz input { flex: 0 1 170px; min-width: 0 }
+.tkr-pz { height: 32px; padding: 0 12px; border: 1px solid #c4c7c5; border-radius: 8px; background: transparent; color: #444746; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer }
+.tkr-pz:hover { background: rgba(11,87,208,.06) } .tkr-pz:focus-visible { outline: 2px solid #0b57d0; outline-offset: 2px }
+html[data-tema="escuro"] .tkr-pz { border-color: #2a3358; color: #c9d6ff }
+@media (max-width: 600px) { .tkr .fields { grid-template-columns: 1fr } .tkr-prz input { flex-basis: 100% } }
 .tkr-dl { margin-top: -6px } .tkr-pad { margin: 0; font-size: 13px }
 .tkr-vis { border: 0; padding: 0; margin: 0 } .tkr-vis legend { font-size: 12px; color: #444746; padding: 0; margin-bottom: 6px }
 .tkr-seg { display: inline-flex; border: 1px solid #c4c7c5; border-radius: 20px; overflow: hidden; flex-wrap: wrap }
@@ -8465,6 +8470,7 @@ document.addEventListener('change',e=>{const el=e.target;
     if(!fmGravar(t,k,i,el.value)){const f=fmInfo(t,k,i);if(el.tagName!=='SELECT'&&el.type!=='radio')el.value=f.tipo==='numero'&&f.valor!=null?Number(f.valor).toLocaleString('pt-BR',{maximumFractionDigits:4}):fmMostra(f.formato,f.valor)}return}},true);
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="fm-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const A=a.dataset.a;
   if(A==='fm-mais'||A==='fm-desc'){fmRapidaAcao(A);return}
+  if(A==='fm-prz'){const el=document.querySelector('#tr-p');if(el)el.value=addD(HOJE,+a.dataset.v);return}
   const {t,k}=tkAtual();if(!k)return;const ed=vzEdita(t,k)&&!k.arq&&UI.role!=='Leitura';
   if(A==='fm-menu'){UI.fmMenu=UI.fmMenu===a.dataset.v?null:a.dataset.v;tkRe();return}
   if(!ed)return;itNorm(k);const i=k.itens.find(x=>x.id===a.dataset.v||x.id===a.dataset.i);
@@ -8515,9 +8521,11 @@ document.addEventListener('click',e=>{if(UI.fmMenu&&!e.target.closest?.('.fm-mw'
   <form data-form="tarefa-r" id="f-tkr" class="tkr"><div class="fields">
     <div class="field full"><label for="tr-t">Tarefa</label><input id="tr-t" name="titulo" required value="${esc(sel.rasc?.titulo||'')}" placeholder="Ex.: cobrar a contraproposta do proprietário" autocomplete="off"></div>
     ${t?'':`<div class="field full"><label for="tr-ter">Terreno</label><select id="tr-ter" name="ter" required><option value="">Escolha o terreno</option>${ativosBanco().map(x=>`<option value="${x.id}" ${(sel.rasc?.ter||UI.tk?.ter)===x.id?'selected':''}>${x.codigo} · ${esc(x.nome)}</option>`).join('')}</select></div>`}
+    <div class="field full"><label for="tr-p">Prazo</label><span class="tkr-prz"><input id="tr-p" name="prazo" type="date" value="${esc(sel.rasc?.prazo||'')}" aria-label="Prazo">${[[0,'Hoje'],[1,'Amanhã'],[7,'Em 7 dias']].map(([n,r])=>`<button type="button" class="tkr-pz" data-a="fm-prz" data-v="${n}">${r}</button>`).join('')}</span></div>
+    ${fmEtCampos(t||T(sel.rasc?.ter||UI.tk?.ter),'tr',sel.rasc)}
     ${sel.desc?`<div class="field full"><label for="tr-d">Descrição</label><textarea id="tr-d" name="desc" data-mencao placeholder="Use @ para avisar um colega">${esc(sel.rasc?.desc||'')}</textarea></div>`:`<div class="field full tkr-dl"><button type="button" class="btn text sm" data-a="fm-desc">${ic('add',16)}Adicionar descrição</button></div>`}
     <fieldset class="field full tkr-vis"><legend>Visibilidade</legend><span class="tkr-seg">${Object.keys(VZ_N).map(v=>`<label title="${esc(VZ_D[v])}"><input type="radio" name="vis" value="${v}" required ${(sel.rasc?.vis||ult)===v?'checked':''}><span>${ic(VZ_IC[v],16)}${VZ_N[v]}</span></label>`).join('')}</span></fieldset>
-    <p class="faint tkr-pad">Vai para ${l?esc(l):'a primeira lista'}, com você como responsável e sem prazo.</p></div></form>
+    <p class="faint tkr-pad">Vai para ${l?esc(l):'a primeira lista'}, com você como responsável.</p></div></form>
   <div class="df"><button class="btn text" data-a="fm-mais">Mais opções</button><span class="tkm-sp"></span><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-tkr">Criar</button></div>`}}
 function fmListaPadrao(t,pedida){const L=t?tkL(t).filter(l=>!l.oculta&&l.tipo!=='conclui'&&l.tipo!=='pausa').map(l=>l.nome):(S.listasModelo||[]).filter(l=>l.ativo).map(l=>l.nome);
   if(pedida&&(t?tkL(t).some(l=>l.nome===pedida&&!l.oculta):true))return pedida;return L.includes('Fazer')?'Fazer':L[0]}
@@ -8525,12 +8533,12 @@ function fmRasc(){const f=document.querySelector('#f-tkr');if(!f)return UI.tkSel
 function fmRapidaAcao(A){if(!UI.tkSel)return;const r=fmRasc();UI.tkSel.rasc=r;
   if(A==='fm-desc'){UI.tkSel.desc=true;renderModal();setTimeout(()=>document.querySelector('#tr-d')?.focus(),0);return}
   UI.tkSel.mais=true;renderModal();
-  setTimeout(()=>{const set=(s,v)=>{const el=document.querySelector(s);if(el&&v!=null)el.value=v};set('#tm-t',r.titulo);set('#tm-ter',r.ter);set('#tm-d',r.desc);
+  setTimeout(()=>{const set=(s,v)=>{const el=document.querySelector(s);if(el&&v!=null)el.value=v};set('#tm-t',r.titulo);set('#tm-ter',r.ter);set('#tm-d',r.desc);if(r.prazo!=null)set('#tm-p',r.prazo);if(r.ter&&!UI.tkSel.tid)fmEtRefaz('tm',T(r.ter));if(r.et!=null){set('#tm-et',r.et);fmEtRefaz('tm',T(UI.tkSel.tid||r.ter),true)}if(r.sub!=null)set('#tm-sub',r.sub);
     if(r.vis){const x=document.querySelector(`#f-tk input[name=vis][value="${r.vis}"]`);if(x){x.checked=true;x.dispatchEvent(new Event('change',{bubbles:true}))}}document.querySelector('#tm-t')?.focus()},0)}
 document.addEventListener('submit',e=>{const f=e.target;if(f.dataset?.form!=='tarefa-r')return;e.preventDefault();e.stopImmediatePropagation();const F=Object.fromEntries(new FormData(f)),sel=UI.tkSel;
   const t=T(sel.tid||F.ter);if(!t){toast('Escolha o terreno da tarefa.',true);return}if(!(F.titulo||'').trim())return;if(!F.vis){toast('Escolha a visibilidade.',true);return}
   const nome=fmListaPadrao(t,sel.lista),l=tkL(t).find(x=>x.nome===nome&&!x.oculta)||tkPrim(t,'aberta');
-  const k=tkCriar(t,{titulo:F.titulo,desc:F.desc||'',resp:me(),prio:'media',lista:l.id,vis:F.vis,lib:[]});vzLembrar(F.vis);
+  const k=tkCriar(t,{titulo:F.titulo,desc:F.desc||'',resp:me(),prio:'media',lista:l.id,vis:F.vis,lib:[],prazo:F.prazo||null,et:F.et,sub:F.sub});vzLembrar(F.vis);
   UI.modal=null;renderModal();tkRe();fmSnack(`${k.codigo} criada em ${l.nome}`,'Abrir',()=>{UI.tkSel={tid:t.id,kid:k.id};UI.modal='tarefa';renderModal()})},true);
 /* aviso com ação (o toast comum é só texto) */
 function fmSnack(m,rot,fn){const el=$('#toast');el.innerHTML=`<span>${esc(m)}</span><button class="toast-ac">${esc(rot)}</button>`;el.className='toast show tem-ac';clearTimeout(tmr);
@@ -8546,6 +8554,32 @@ function fmSnack(m,rot,fn){const el=$('#toast');el.innerHTML=`<span>${esc(m)}</s
     {id:uid(),tipo:'telefone',pergunta:'Telefone do zelador',regra:'livre',cond:null},
     {id:uid(),tipo:'paragrafo',pergunta:'Observações da visita',regra:'livre',cond:null}];
   S.fmExemploK=k.id})();
+
+/* ---------- etapa e subetapa na Nova tarefa (decisão do Moisés, 1/nov/2026) ----------
+   As duas vêm com a etapa e a subetapa atuais do terreno (a do processo aberto da fase mais adiante) e trocam no seletor;
+   "Nenhuma" deixa a tarefa sem etapa. Valem na Nova tarefa curta e na completa. */
+function fmEtAbertas(t){return t?fasesL().filter(f=>f.entrada?aberto(t.neg):procAberto(t,f.k)).map(f=>f.k):[]}
+function fmEtPadrao(t){const a=t&&etAtual(t);return a?{et:`${a.f}|${a.p.etapa}`,sub:a.p.sub||''}:{et:'',sub:''}}
+function fmEtOpts(t,v){return `<option value="">Nenhuma</option>${fmEtAbertas(t).map(f=>`<optgroup label="${esc(faseN(f))}">${etapasF(f).map(e=>`<option value="${f}|${e.k}" ${v===f+'|'+e.k?'selected':''}>${esc(e.nome)}</option>`).join('')}</optgroup>`).join('')}`}
+function fmSubOpts(v,s){const [f,e]=(v||'').split('|'),L=f&&e?(etapasF(f).find(x=>x.k===e)?.subs||[]):[];
+  return `<option value="">${L.length?'Sem subetapa':'—'}</option>${L.map(x=>`<option value="${x.k}" ${s===x.k?'selected':''}>${esc(x.nome)}</option>`).join('')}`}
+function fmEtCampos(t,pre,r){const d=fmEtPadrao(t),v=r&&r.et!=null&&(!r.ter||!t||r.ter===t.id)?r.et:d.et,s=r&&r.sub!=null&&v===r.et?r.sub:(v===d.et?d.sub:'');
+  return `<div class="field"><label for="${pre}-et">Etapa</label><select id="${pre}-et" name="et" data-fmet="${pre}" ${t?'':'disabled'}>${t?fmEtOpts(t,v):'<option value="">Escolha o terreno</option>'}</select></div>
+    <div class="field"><label for="${pre}-sub">Subetapa</label><select id="${pre}-sub" name="sub" ${t&&v?'':'disabled'}>${fmSubOpts(t?v:'',s)}</select></div>`}
+/* troca de terreno refaz a etapa (com a atual do novo terreno); troca de etapa refaz a subetapa */
+function fmEtRefaz(pre,t,soSub){const e=document.querySelector(`#${pre}-et`),s=document.querySelector(`#${pre}-sub`);if(!e||!s)return;
+  if(!soSub){const d=fmEtPadrao(t);e.innerHTML=t?fmEtOpts(t,d.et):'<option value="">Escolha o terreno</option>';e.disabled=!t;s.innerHTML=fmSubOpts(t?d.et:'',d.sub);s.disabled=!t||!d.et;return}
+  const d=fmEtPadrao(t);s.innerHTML=fmSubOpts(e.value,e.value===d.et?d.sub:'');s.disabled=!e.value}
+document.addEventListener('change',e=>{const el=e.target;
+  if(el.id==='tr-ter'||el.id==='tm-ter'){fmEtRefaz(el.id.slice(0,2),T(el.value));return}
+  if(el.dataset?.fmet){const pre=el.dataset.fmet,sel=UI.tkSel||{};fmEtRefaz(pre,T(sel.tid||document.querySelector(`#${pre}-ter`)?.value),true)}});
+/* a janela completa ganha os mesmos dois campos, logo antes da descrição */
+{const ex=tkNovaHtml;tkNovaHtml=function(fechar){const h=ex(fechar),sel=UI.tkSel||{};if(!sel.mais)return h;
+  return h.replace('<div class="field full"><label for="tm-d">',fmEtCampos(sel.tid?T(sel.tid):null,'tm',null)+'<div class="field full"><label for="tm-d">')}}
+/* criar: et "fase|etapa" (vazio = Nenhuma) e sub; sem et, o padrão de sempre (etapa e subetapa atuais) */
+{const cr=tkCriar;tkCriar=function(t,d){const k=cr(t,d);if(!k||k.modelo)return k;
+  if(d.et!==undefined){const [f,e]=(d.et||'').split('|');if(f&&e){const L=etapasF(f).find(x=>x.k===e)?.subs||[];etPor(t,k,f,e,L.some(x=>x.k===d.sub)?d.sub:null)}else etPor(t,k)}
+  return k}}
 
 /* =====================================================================
    Recorrência (bloco 4; decisões do Moisés, 30/out/2026).
@@ -13697,7 +13731,7 @@ function etBloqProc(t,p,tipo,dest){const s=etSaida(p.fase,p,tipo,dest);if(!s)ret
 {const pi=procIr;procIr=function(t,p,tipo,dest,d={}){const f=p.fase,de=p.etapa;if(!d.forcado&&etBloqProc(t,p,tipo,dest))return false;
   pi(t,p,tipo,dest,d);if(d.forcado)log(t,`${faseN(f)}: passou sem as tarefas da etapa · ${d.forcado}`);
   if(tipo==='etapa'){if(etIx(f,dest)<etIx(f,de))etVoltar(t,f,p,etIx(f,dest));etEntrar(t,f,p,'etapa',dest)}else if(tipo==='subetapa')etEntrar(t,f,p,'subetapa',dest);else etEncerrar(t,f,p,dest,d)}}
-{const cr=tkCriar;tkCriar=function(t,d){const k=cr(t,d);if(k&&k.etapa===undefined&&!k.modelo){if(d.etapa==='nenhuma')etPor(t,k);else{const a=etAtual(t);a?etPor(t,k,a.f,a.p.etapa):etPor(t,k)}}return k}}
+{const cr=tkCriar;tkCriar=function(t,d){const k=cr(t,d);if(k&&k.etapa===undefined&&!k.modelo){if(d.etapa==='nenhuma')etPor(t,k);else{const a=etAtual(t);a?etPor(t,k,a.f,a.p.etapa,a.p.sub):etPor(t,k)}}return k}}
 {const mv=tkMover;tkMover=function(t,k,lid,pos){const antes=k.lista,feita=k.feita,r=mv(t,k,lid,pos);if(k.lista!==antes)k.mudouLista=true;if(!feita&&k.feita&&k.etapa)etPodeAvancar(t,k);return r}}
 {const ret=pzRetomar;pzRetomar=function(t,k){const z=pzAtiva(k);if(z?.origem==='stand_by'&&!UI.etRet){toast('Esta pausa é do Stand By da fase: a tarefa volta quando a fase for retomada.',true);return}return ret(t,k)}}
 {const tf=tkFiltradas;tkFiltradas=function(){const L=tf(),e=UI.tk.etapa;return e?L.filter(({k})=>e==='-'?!k.etapa:`${k.fase}|${k.etapa}`===e):L}}
@@ -13714,7 +13748,9 @@ function etSelo(t,k,frente){const j=etTrava(t,k);if(!j)return '';const cls=frent
 function etLinha(t,k,bloq,linha){if(k.modelo)return '';const ab=fasesL().filter(f=>f.entrada?aberto(t.neg):procAberto(t,f.k)).map(f=>f.k);if(k.fase&&!ab.includes(k.fase))ab.push(k.fase);
   const v=k.etapa?`${k.fase}|${k.etapa}`:'',r=etRegraDe(k),txt=k.etapa?`${etNomeE(k.fase,k.etapa)}${k.sub?' · '+etNomeS(k.fase,k.sub):''}`:'Nenhuma';
   const sel=bloq?`<span>${esc(txt)}</span>`:`<select id="tkc-et" class="tkm-pill" data-etk="etapa" aria-label="Etapa do funil" title="${esc(txt)}"><option value="">Nenhuma</option>${ab.map(f=>`<optgroup label="${esc(faseN(f))}">${etapasF(f).map(e=>`<option value="${f}|${e.k}" ${v===f+'|'+e.k?'selected':''}>${esc(e.nome)}</option>`).join('')}</optgroup>`).join('')}</select>`;
-  return linha('flow','Etapa do funil',`${sel}${k.sub?`<span class="faint et-reg">${esc(etNomeS(k.fase,k.sub))}</span>`:''}${r?`<span class="et-regi" title="Nasceu da regra da etapa: ${escT(etRegraNome(r))}">${ic('raio',14)}</span>`:''}`,bloq?null:'tkc-et')}
+  const subs=k.etapa?(etapasF(k.fase).find(e=>e.k===k.etapa)?.subs||[]):[];
+  const ss=!k.etapa?'':bloq||r?(k.sub?`<span class="faint et-reg">${esc(etNomeS(k.fase,k.sub))}</span>`:''):subs.length?`<select id="tkc-sub" class="tkm-pill" data-etk="sub" aria-label="Subetapa do funil"><option value="">Sem subetapa</option>${subs.map(x=>`<option value="${x.k}" ${k.sub===x.k?'selected':''}>${esc(x.nome)}</option>`).join('')}</select>`:'';
+  return linha('flow','Etapa do funil',`${sel}${ss}${r?`<span class="et-regi" title="Nasceu da regra da etapa: ${escT(etRegraNome(r))}">${ic('raio',14)}</span>`:''}`,bloq?null:'tkc-et')}
 const etRegraNome=r=>r.modelo?(crModelos().find(m=>m.id===r.modelo)?.nome||'modelo'):r.titulo;
 const etOpcoesFiltro=()=>{const s=new Map();todasTarefas().forEach(({k})=>{if(k.etapa)s.set(`${k.fase}|${k.etapa}`,`${faseN(k.fase)} › ${etNomeE(k.fase,k.etapa)}`)});return [...s.entries()].sort((a,b)=>a[1].localeCompare(b[1]))};
 const etFiltroHtml=f=>`<label class="sr-only" for="tk-etapa">Etapa</label><select id="tk-etapa" class="fsel-chip${f.etapa?' on':''}" data-ch="tk-f" data-k="etapa"><option value="">Etapa</option><option value="-" ${f.etapa==='-'?'selected':''}>Sem etapa</option>${etOpcoesFiltro().map(([v,n])=>`<option value="${esc(v)}" ${f.etapa===v?'selected':''}>${esc(n)}</option>`).join('')}</select>`;
@@ -13801,6 +13837,8 @@ document.addEventListener('change',e=>{const el=e.target;
   if(el.dataset?.etr){e.stopImmediatePropagation();const r=UI.etRegra;if(!r)return;const c=el.dataset.etr;
     if(c==='trava'||c==='ativo')r[c]=el.checked;else if(c==='prazo')r.prazo=el.value===''?null:Math.max(0,parseInt(el.value,10)||0);else if(c==='sub')r.sub=el.value||null;else r[c]=el.value;
     if(['tipo','sub'].includes(c))renderModal();return}
+  if(el.dataset?.etk==='sub'){e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!vzEdita(t,k)||!k.etapa)return;const antes=k.sub?etNomeS(k.fase,k.sub):'nenhuma';k.sub=el.value||null;
+    log(t,`Tarefa "${k.titulo}": subetapa do funil ${antes} → ${k.sub?etNomeS(k.fase,k.sub):'nenhuma'}`);tkRe();return}
   if(el.dataset?.etk==='etapa'){e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!vzEdita(t,k))return;const [f,et]=(el.value||'').split('|');
     const antes=k.etapa?etNomeE(k.fase,k.etapa):'nenhuma';etPor(t,k,f||null,et||null);k.etSit=null;k.etSitEm=null;k.regra=k.etapa&&etRegraDe(k)?.etapa===k.etapa?k.regra:k.regra;
     log(t,`Tarefa "${k.titulo}": etapa do funil ${antes} → ${k.etapa?etNomeE(k.fase,k.etapa):'nenhuma'}`);tkRe();return}},true);

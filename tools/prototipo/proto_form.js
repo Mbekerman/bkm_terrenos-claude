@@ -169,6 +169,7 @@ document.addEventListener('change',e=>{const el=e.target;
     if(!fmGravar(t,k,i,el.value)){const f=fmInfo(t,k,i);if(el.tagName!=='SELECT'&&el.type!=='radio')el.value=f.tipo==='numero'&&f.valor!=null?Number(f.valor).toLocaleString('pt-BR',{maximumFractionDigits:4}):fmMostra(f.formato,f.valor)}return}},true);
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="fm-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const A=a.dataset.a;
   if(A==='fm-mais'||A==='fm-desc'){fmRapidaAcao(A);return}
+  if(A==='fm-prz'){const el=document.querySelector('#tr-p');if(el)el.value=addD(HOJE,+a.dataset.v);return}
   const {t,k}=tkAtual();if(!k)return;const ed=vzEdita(t,k)&&!k.arq&&UI.role!=='Leitura';
   if(A==='fm-menu'){UI.fmMenu=UI.fmMenu===a.dataset.v?null:a.dataset.v;tkRe();return}
   if(!ed)return;itNorm(k);const i=k.itens.find(x=>x.id===a.dataset.v||x.id===a.dataset.i);
@@ -219,9 +220,11 @@ document.addEventListener('click',e=>{if(UI.fmMenu&&!e.target.closest?.('.fm-mw'
   <form data-form="tarefa-r" id="f-tkr" class="tkr"><div class="fields">
     <div class="field full"><label for="tr-t">Tarefa</label><input id="tr-t" name="titulo" required value="${esc(sel.rasc?.titulo||'')}" placeholder="Ex.: cobrar a contraproposta do proprietário" autocomplete="off"></div>
     ${t?'':`<div class="field full"><label for="tr-ter">Terreno</label><select id="tr-ter" name="ter" required><option value="">Escolha o terreno</option>${ativosBanco().map(x=>`<option value="${x.id}" ${(sel.rasc?.ter||UI.tk?.ter)===x.id?'selected':''}>${x.codigo} · ${esc(x.nome)}</option>`).join('')}</select></div>`}
+    <div class="field full"><label for="tr-p">Prazo</label><span class="tkr-prz"><input id="tr-p" name="prazo" type="date" value="${esc(sel.rasc?.prazo||'')}" aria-label="Prazo">${[[0,'Hoje'],[1,'Amanhã'],[7,'Em 7 dias']].map(([n,r])=>`<button type="button" class="tkr-pz" data-a="fm-prz" data-v="${n}">${r}</button>`).join('')}</span></div>
+    ${fmEtCampos(t||T(sel.rasc?.ter||UI.tk?.ter),'tr',sel.rasc)}
     ${sel.desc?`<div class="field full"><label for="tr-d">Descrição</label><textarea id="tr-d" name="desc" data-mencao placeholder="Use @ para avisar um colega">${esc(sel.rasc?.desc||'')}</textarea></div>`:`<div class="field full tkr-dl"><button type="button" class="btn text sm" data-a="fm-desc">${ic('add',16)}Adicionar descrição</button></div>`}
     <fieldset class="field full tkr-vis"><legend>Visibilidade</legend><span class="tkr-seg">${Object.keys(VZ_N).map(v=>`<label title="${esc(VZ_D[v])}"><input type="radio" name="vis" value="${v}" required ${(sel.rasc?.vis||ult)===v?'checked':''}><span>${ic(VZ_IC[v],16)}${VZ_N[v]}</span></label>`).join('')}</span></fieldset>
-    <p class="faint tkr-pad">Vai para ${l?esc(l):'a primeira lista'}, com você como responsável e sem prazo.</p></div></form>
+    <p class="faint tkr-pad">Vai para ${l?esc(l):'a primeira lista'}, com você como responsável.</p></div></form>
   <div class="df"><button class="btn text" data-a="fm-mais">Mais opções</button><span class="tkm-sp"></span><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-tkr">Criar</button></div>`}}
 function fmListaPadrao(t,pedida){const L=t?tkL(t).filter(l=>!l.oculta&&l.tipo!=='conclui'&&l.tipo!=='pausa').map(l=>l.nome):(S.listasModelo||[]).filter(l=>l.ativo).map(l=>l.nome);
   if(pedida&&(t?tkL(t).some(l=>l.nome===pedida&&!l.oculta):true))return pedida;return L.includes('Fazer')?'Fazer':L[0]}
@@ -229,12 +232,12 @@ function fmRasc(){const f=document.querySelector('#f-tkr');if(!f)return UI.tkSel
 function fmRapidaAcao(A){if(!UI.tkSel)return;const r=fmRasc();UI.tkSel.rasc=r;
   if(A==='fm-desc'){UI.tkSel.desc=true;renderModal();setTimeout(()=>document.querySelector('#tr-d')?.focus(),0);return}
   UI.tkSel.mais=true;renderModal();
-  setTimeout(()=>{const set=(s,v)=>{const el=document.querySelector(s);if(el&&v!=null)el.value=v};set('#tm-t',r.titulo);set('#tm-ter',r.ter);set('#tm-d',r.desc);
+  setTimeout(()=>{const set=(s,v)=>{const el=document.querySelector(s);if(el&&v!=null)el.value=v};set('#tm-t',r.titulo);set('#tm-ter',r.ter);set('#tm-d',r.desc);if(r.prazo!=null)set('#tm-p',r.prazo);if(r.ter&&!UI.tkSel.tid)fmEtRefaz('tm',T(r.ter));if(r.et!=null){set('#tm-et',r.et);fmEtRefaz('tm',T(UI.tkSel.tid||r.ter),true)}if(r.sub!=null)set('#tm-sub',r.sub);
     if(r.vis){const x=document.querySelector(`#f-tk input[name=vis][value="${r.vis}"]`);if(x){x.checked=true;x.dispatchEvent(new Event('change',{bubbles:true}))}}document.querySelector('#tm-t')?.focus()},0)}
 document.addEventListener('submit',e=>{const f=e.target;if(f.dataset?.form!=='tarefa-r')return;e.preventDefault();e.stopImmediatePropagation();const F=Object.fromEntries(new FormData(f)),sel=UI.tkSel;
   const t=T(sel.tid||F.ter);if(!t){toast('Escolha o terreno da tarefa.',true);return}if(!(F.titulo||'').trim())return;if(!F.vis){toast('Escolha a visibilidade.',true);return}
   const nome=fmListaPadrao(t,sel.lista),l=tkL(t).find(x=>x.nome===nome&&!x.oculta)||tkPrim(t,'aberta');
-  const k=tkCriar(t,{titulo:F.titulo,desc:F.desc||'',resp:me(),prio:'media',lista:l.id,vis:F.vis,lib:[]});vzLembrar(F.vis);
+  const k=tkCriar(t,{titulo:F.titulo,desc:F.desc||'',resp:me(),prio:'media',lista:l.id,vis:F.vis,lib:[],prazo:F.prazo||null,et:F.et,sub:F.sub});vzLembrar(F.vis);
   UI.modal=null;renderModal();tkRe();fmSnack(`${k.codigo} criada em ${l.nome}`,'Abrir',()=>{UI.tkSel={tid:t.id,kid:k.id};UI.modal='tarefa';renderModal()})},true);
 /* aviso com ação (o toast comum é só texto) */
 function fmSnack(m,rot,fn){const el=$('#toast');el.innerHTML=`<span>${esc(m)}</span><button class="toast-ac">${esc(rot)}</button>`;el.className='toast show tem-ac';clearTimeout(tmr);
@@ -250,3 +253,29 @@ function fmSnack(m,rot,fn){const el=$('#toast');el.innerHTML=`<span>${esc(m)}</s
     {id:uid(),tipo:'telefone',pergunta:'Telefone do zelador',regra:'livre',cond:null},
     {id:uid(),tipo:'paragrafo',pergunta:'Observações da visita',regra:'livre',cond:null}];
   S.fmExemploK=k.id})();
+
+/* ---------- etapa e subetapa na Nova tarefa (decisão do Moisés, 1/nov/2026) ----------
+   As duas vêm com a etapa e a subetapa atuais do terreno (a do processo aberto da fase mais adiante) e trocam no seletor;
+   "Nenhuma" deixa a tarefa sem etapa. Valem na Nova tarefa curta e na completa. */
+function fmEtAbertas(t){return t?fasesL().filter(f=>f.entrada?aberto(t.neg):procAberto(t,f.k)).map(f=>f.k):[]}
+function fmEtPadrao(t){const a=t&&etAtual(t);return a?{et:`${a.f}|${a.p.etapa}`,sub:a.p.sub||''}:{et:'',sub:''}}
+function fmEtOpts(t,v){return `<option value="">Nenhuma</option>${fmEtAbertas(t).map(f=>`<optgroup label="${esc(faseN(f))}">${etapasF(f).map(e=>`<option value="${f}|${e.k}" ${v===f+'|'+e.k?'selected':''}>${esc(e.nome)}</option>`).join('')}</optgroup>`).join('')}`}
+function fmSubOpts(v,s){const [f,e]=(v||'').split('|'),L=f&&e?(etapasF(f).find(x=>x.k===e)?.subs||[]):[];
+  return `<option value="">${L.length?'Sem subetapa':'—'}</option>${L.map(x=>`<option value="${x.k}" ${s===x.k?'selected':''}>${esc(x.nome)}</option>`).join('')}`}
+function fmEtCampos(t,pre,r){const d=fmEtPadrao(t),v=r&&r.et!=null&&(!r.ter||!t||r.ter===t.id)?r.et:d.et,s=r&&r.sub!=null&&v===r.et?r.sub:(v===d.et?d.sub:'');
+  return `<div class="field"><label for="${pre}-et">Etapa</label><select id="${pre}-et" name="et" data-fmet="${pre}" ${t?'':'disabled'}>${t?fmEtOpts(t,v):'<option value="">Escolha o terreno</option>'}</select></div>
+    <div class="field"><label for="${pre}-sub">Subetapa</label><select id="${pre}-sub" name="sub" ${t&&v?'':'disabled'}>${fmSubOpts(t?v:'',s)}</select></div>`}
+/* troca de terreno refaz a etapa (com a atual do novo terreno); troca de etapa refaz a subetapa */
+function fmEtRefaz(pre,t,soSub){const e=document.querySelector(`#${pre}-et`),s=document.querySelector(`#${pre}-sub`);if(!e||!s)return;
+  if(!soSub){const d=fmEtPadrao(t);e.innerHTML=t?fmEtOpts(t,d.et):'<option value="">Escolha o terreno</option>';e.disabled=!t;s.innerHTML=fmSubOpts(t?d.et:'',d.sub);s.disabled=!t||!d.et;return}
+  const d=fmEtPadrao(t);s.innerHTML=fmSubOpts(e.value,e.value===d.et?d.sub:'');s.disabled=!e.value}
+document.addEventListener('change',e=>{const el=e.target;
+  if(el.id==='tr-ter'||el.id==='tm-ter'){fmEtRefaz(el.id.slice(0,2),T(el.value));return}
+  if(el.dataset?.fmet){const pre=el.dataset.fmet,sel=UI.tkSel||{};fmEtRefaz(pre,T(sel.tid||document.querySelector(`#${pre}-ter`)?.value),true)}});
+/* a janela completa ganha os mesmos dois campos, logo antes da descrição */
+{const ex=tkNovaHtml;tkNovaHtml=function(fechar){const h=ex(fechar),sel=UI.tkSel||{};if(!sel.mais)return h;
+  return h.replace('<div class="field full"><label for="tm-d">',fmEtCampos(sel.tid?T(sel.tid):null,'tm',null)+'<div class="field full"><label for="tm-d">')}}
+/* criar: et "fase|etapa" (vazio = Nenhuma) e sub; sem et, o padrão de sempre (etapa e subetapa atuais) */
+{const cr=tkCriar;tkCriar=function(t,d){const k=cr(t,d);if(!k||k.modelo)return k;
+  if(d.et!==undefined){const [f,e]=(d.et||'').split('|');if(f&&e){const L=etapasF(f).find(x=>x.k===e)?.subs||[];etPor(t,k,f,e,L.some(x=>x.k===d.sub)?d.sub:null)}else etPor(t,k)}
+  return k}}

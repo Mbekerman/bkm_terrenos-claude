@@ -117,7 +117,7 @@ function etBloqProc(t,p,tipo,dest){const s=etSaida(p.fase,p,tipo,dest);if(!s)ret
 {const pi=procIr;procIr=function(t,p,tipo,dest,d={}){const f=p.fase,de=p.etapa;if(!d.forcado&&etBloqProc(t,p,tipo,dest))return false;
   pi(t,p,tipo,dest,d);if(d.forcado)log(t,`${faseN(f)}: passou sem as tarefas da etapa · ${d.forcado}`);
   if(tipo==='etapa'){if(etIx(f,dest)<etIx(f,de))etVoltar(t,f,p,etIx(f,dest));etEntrar(t,f,p,'etapa',dest)}else if(tipo==='subetapa')etEntrar(t,f,p,'subetapa',dest);else etEncerrar(t,f,p,dest,d)}}
-{const cr=tkCriar;tkCriar=function(t,d){const k=cr(t,d);if(k&&k.etapa===undefined&&!k.modelo){if(d.etapa==='nenhuma')etPor(t,k);else{const a=etAtual(t);a?etPor(t,k,a.f,a.p.etapa):etPor(t,k)}}return k}}
+{const cr=tkCriar;tkCriar=function(t,d){const k=cr(t,d);if(k&&k.etapa===undefined&&!k.modelo){if(d.etapa==='nenhuma')etPor(t,k);else{const a=etAtual(t);a?etPor(t,k,a.f,a.p.etapa,a.p.sub):etPor(t,k)}}return k}}
 {const mv=tkMover;tkMover=function(t,k,lid,pos){const antes=k.lista,feita=k.feita,r=mv(t,k,lid,pos);if(k.lista!==antes)k.mudouLista=true;if(!feita&&k.feita&&k.etapa)etPodeAvancar(t,k);return r}}
 {const ret=pzRetomar;pzRetomar=function(t,k){const z=pzAtiva(k);if(z?.origem==='stand_by'&&!UI.etRet){toast('Esta pausa é do Stand By da fase: a tarefa volta quando a fase for retomada.',true);return}return ret(t,k)}}
 {const tf=tkFiltradas;tkFiltradas=function(){const L=tf(),e=UI.tk.etapa;return e?L.filter(({k})=>e==='-'?!k.etapa:`${k.fase}|${k.etapa}`===e):L}}
@@ -134,7 +134,9 @@ function etSelo(t,k,frente){const j=etTrava(t,k);if(!j)return '';const cls=frent
 function etLinha(t,k,bloq,linha){if(k.modelo)return '';const ab=fasesL().filter(f=>f.entrada?aberto(t.neg):procAberto(t,f.k)).map(f=>f.k);if(k.fase&&!ab.includes(k.fase))ab.push(k.fase);
   const v=k.etapa?`${k.fase}|${k.etapa}`:'',r=etRegraDe(k),txt=k.etapa?`${etNomeE(k.fase,k.etapa)}${k.sub?' · '+etNomeS(k.fase,k.sub):''}`:'Nenhuma';
   const sel=bloq?`<span>${esc(txt)}</span>`:`<select id="tkc-et" class="tkm-pill" data-etk="etapa" aria-label="Etapa do funil" title="${esc(txt)}"><option value="">Nenhuma</option>${ab.map(f=>`<optgroup label="${esc(faseN(f))}">${etapasF(f).map(e=>`<option value="${f}|${e.k}" ${v===f+'|'+e.k?'selected':''}>${esc(e.nome)}</option>`).join('')}</optgroup>`).join('')}</select>`;
-  return linha('flow','Etapa do funil',`${sel}${k.sub?`<span class="faint et-reg">${esc(etNomeS(k.fase,k.sub))}</span>`:''}${r?`<span class="et-regi" title="Nasceu da regra da etapa: ${escT(etRegraNome(r))}">${ic('raio',14)}</span>`:''}`,bloq?null:'tkc-et')}
+  const subs=k.etapa?(etapasF(k.fase).find(e=>e.k===k.etapa)?.subs||[]):[];
+  const ss=!k.etapa?'':bloq||r?(k.sub?`<span class="faint et-reg">${esc(etNomeS(k.fase,k.sub))}</span>`:''):subs.length?`<select id="tkc-sub" class="tkm-pill" data-etk="sub" aria-label="Subetapa do funil"><option value="">Sem subetapa</option>${subs.map(x=>`<option value="${x.k}" ${k.sub===x.k?'selected':''}>${esc(x.nome)}</option>`).join('')}</select>`:'';
+  return linha('flow','Etapa do funil',`${sel}${ss}${r?`<span class="et-regi" title="Nasceu da regra da etapa: ${escT(etRegraNome(r))}">${ic('raio',14)}</span>`:''}`,bloq?null:'tkc-et')}
 const etRegraNome=r=>r.modelo?(crModelos().find(m=>m.id===r.modelo)?.nome||'modelo'):r.titulo;
 const etOpcoesFiltro=()=>{const s=new Map();todasTarefas().forEach(({k})=>{if(k.etapa)s.set(`${k.fase}|${k.etapa}`,`${faseN(k.fase)} › ${etNomeE(k.fase,k.etapa)}`)});return [...s.entries()].sort((a,b)=>a[1].localeCompare(b[1]))};
 const etFiltroHtml=f=>`<label class="sr-only" for="tk-etapa">Etapa</label><select id="tk-etapa" class="fsel-chip${f.etapa?' on':''}" data-ch="tk-f" data-k="etapa"><option value="">Etapa</option><option value="-" ${f.etapa==='-'?'selected':''}>Sem etapa</option>${etOpcoesFiltro().map(([v,n])=>`<option value="${esc(v)}" ${f.etapa===v?'selected':''}>${esc(n)}</option>`).join('')}</select>`;
@@ -221,6 +223,8 @@ document.addEventListener('change',e=>{const el=e.target;
   if(el.dataset?.etr){e.stopImmediatePropagation();const r=UI.etRegra;if(!r)return;const c=el.dataset.etr;
     if(c==='trava'||c==='ativo')r[c]=el.checked;else if(c==='prazo')r.prazo=el.value===''?null:Math.max(0,parseInt(el.value,10)||0);else if(c==='sub')r.sub=el.value||null;else r[c]=el.value;
     if(['tipo','sub'].includes(c))renderModal();return}
+  if(el.dataset?.etk==='sub'){e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!vzEdita(t,k)||!k.etapa)return;const antes=k.sub?etNomeS(k.fase,k.sub):'nenhuma';k.sub=el.value||null;
+    log(t,`Tarefa "${k.titulo}": subetapa do funil ${antes} → ${k.sub?etNomeS(k.fase,k.sub):'nenhuma'}`);tkRe();return}
   if(el.dataset?.etk==='etapa'){e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!vzEdita(t,k))return;const [f,et]=(el.value||'').split('|');
     const antes=k.etapa?etNomeE(k.fase,k.etapa):'nenhuma';etPor(t,k,f||null,et||null);k.etSit=null;k.etSitEm=null;k.regra=k.etapa&&etRegraDe(k)?.etapa===k.etapa?k.regra:k.regra;
     log(t,`Tarefa "${k.titulo}": etapa do funil ${antes} → ${k.etapa?etNomeE(k.fase,k.etapa):'nenhuma'}`);tkRe();return}},true);
