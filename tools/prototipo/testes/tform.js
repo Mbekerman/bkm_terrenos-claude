@@ -117,7 +117,7 @@ await muda(p,'#tr-et',outra);await p.waitForTimeout(80);
 const subs=await p.$$eval('#tr-sub option',xs=>xs.map(o=>o.value));const sub2=subs.find(Boolean);
 ok(await p.$eval('#tr-sub',x=>x.value)===''&&!!sub2,'trocar a etapa refaz a lista das subetapas');
 await muda(p,'#tr-sub',sub2);await clica(p,'[data-a=fm-prz][data-v="1"]');
-ok(await p.$eval('#tr-p',x=>x.value)===await X(p,()=>addD(HOJE,1)),'"Amanhã" põe o prazo');
+ok(await p.$eval('#tr-p',x=>x.value)===await X(p,()=>addD(HOJE,1)),'"1 dia" põe o prazo');
 await clica(p,'[data-a=fm-prz][data-v=m1]');ok(await p.$eval('#tr-p',x=>x.value)===await X(p,()=>fmMaisMes(HOJE))&&await X(p,()=>fmMaisMes('2026-01-31')==='2026-02-28'&&fmMaisMes('2026-12-15')==='2027-01-15'),'"1 mês" põe o mesmo dia do mês seguinte (ou o último)');
 ok(!(await p.$('[data-a=fm-prz][data-v="0"]')),'sem o atalho Hoje');
 await clica(p,'[data-a=fm-prz][data-v="1"]');
