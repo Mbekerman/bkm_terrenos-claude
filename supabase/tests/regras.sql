@@ -2716,4 +2716,67 @@ select pg_temp.como(:'diretor');
 select pg_temp.ok(app.apagar_regra_etapa(:'re5') = 'desativada' and app.apagar_regra_etapa(:'re3') = 'apagada', 'regra que já criou tarefa só se desliga');
 select app.condicao_prerequisito(:'pr1', null);
 update fluxo.automacoes set ativa = false where id = :'aue';
+-- =====================================================================
+-- Formulário da tarefa e máscaras (decisões do Moisés, 1/nov/2026)
+-- =====================================================================
+select pg_temp.ok(fluxo.validar_formato('cpf', '529.982.247-25') = '52998224725', 'CPF válido fica só com os dígitos');
+select pg_temp.falha($$select fluxo.validar_formato('cpf', '529.982.247-24')$$, 'CPF com dígito verificador errado é recusado');
+select pg_temp.falha($$select fluxo.validar_formato('cpf', '111.111.111-11')$$, 'CPF de dígitos repetidos é recusado');
+select pg_temp.ok(fluxo.validar_formato('cnpj', '11.222.333/0001-81') = '11222333000181', 'CNPJ válido fica só com os dígitos');
+select pg_temp.falha($$select fluxo.validar_formato('cnpj', '11.222.333/0001-82')$$, 'CNPJ com dígito verificador errado é recusado');
+select pg_temp.ok(fluxo.validar_formato('email', ' Ana.Souza@BKM.com.br ') = 'ana.souza@bkm.com.br', 'e-mail fica em minúsculas');
+select pg_temp.falha($$select fluxo.validar_formato('email', 'ana@bkm')$$, 'e-mail sem domínio completo é recusado');
+select pg_temp.ok(fluxo.validar_formato('telefone', '(11) 98765-4321') = '11987654321' and fluxo.validar_formato('telefone', '(12) 3456-7890') = '1234567890',
+  'telefone com DDD, fixo ou celular, fica só com os dígitos');
+select pg_temp.falha($$select fluxo.validar_formato('telefone', '(11) 88765-4321')$$, 'celular de 11 dígitos começa com 9');
+select pg_temp.falha($$select fluxo.validar_formato('telefone', '98765-4321')$$, 'telefone sem DDD é recusado');
+select pg_temp.ok(fluxo.formas('lista', 3) = array['menu','radio','chips','segmentado'] and fluxo.formas('lista', 2) @> array['chave']
+  and fluxo.formas('lista', 7) = array['menu'] and fluxo.formas('sim_nao') = array['botoes','chave'] and fluxo.formas('numero') = array['campo'],
+  'formas por tipo: segmentado até 4 opções, chave com 2, acima de 6 só o menu');
+select pg_temp.ok((select formato from app.v_campos where empresa_id = :'emp' and chave = 'oferta.valor_pedido') = 'moeda'
+  and (select formato from app.v_campos where empresa_id = :'emp' and chave = 'terreno.cep') = 'cep', 'o catálogo traz a máscara fixa (moeda, CEP)');
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tcd', 'Visita técnica ao terreno', null, :'analista') as kf \gset
+insert into fluxo.tarefa_itens (empresa_id, tarefa_id, tipo, pergunta, resposta) values (:'emp', :'kf', 'telefone', 'Telefone do zelador', '"(12) 3456-7890"');
+select pg_temp.ok((select resposta #>> '{}' from fluxo.tarefa_itens where tarefa_id = :'kf' and tipo = 'telefone') = '1234567890',
+  'pergunta só no cartão: a resposta com máscara fica guardada só com os dígitos');
+select pg_temp.falha(format($$update fluxo.tarefa_itens set resposta = '"3456"' where tarefa_id = %L and tipo = 'telefone'$$, :'kf'), 'resposta fora da máscara é recusada');
+select pg_temp.falha(format($$update fluxo.tarefa_itens set tipo = 'texto' where tarefa_id = %L and tipo = 'telefone'$$, :'kf'), 'pergunta com resposta não muda de tipo');
+select pg_temp.falha(format($$insert into fluxo.tarefa_itens (empresa_id, tarefa_id, tipo) values (%L, %L, 'texto')$$, :'emp', :'kf'), 'pergunta só no cartão precisa do texto da pergunta');
+insert into fluxo.tarefa_itens (empresa_id, tarefa_id, tipo, pergunta, opcoes, forma) values (:'emp', :'kf', 'lista', 'Muro de divisa', '{Bom,Ruim}', 'chave') returning id as imuro \gset
+select pg_temp.falha(format($$update fluxo.tarefa_itens set forma = 'caixas' where id = %L$$, :'imuro'), 'forma que não serve ao tipo é recusada');
+select pg_temp.falha(format($$update fluxo.tarefa_itens set resposta = '"Caído"' where id = %L$$, :'imuro'), 'resposta de lista só entre as opções');
+update fluxo.tarefa_itens set resposta = '"Ruim"' where id = :'imuro';
+insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, pergunta, ajuda, forma) values (:'emp', :'kf', 'terreno.situacao_ocupacao', 'Como está a ocupação hoje?', 'Veja se há inquilino', 'chips');
+select pg_temp.ok((select pergunta = 'Como está a ocupação hoje?' and forma = 'chips' from fluxo.tarefa_itens where tarefa_id = :'kf' and chave = 'terreno.situacao_ocupacao'),
+  'pergunta ligada a campo do terreno guarda o texto, a ajuda e a forma');
+select pg_temp.falha(format($$update fluxo.tarefa_itens set forma = 'chave' where tarefa_id = %L and chave = 'terreno.situacao_ocupacao'$$, :'kf'),
+  'chave só em lista de duas opções');
+insert into fluxo.tarefa_itens (empresa_id, tarefa_id, tipo, pergunta, regra_branco) values (:'emp', :'kf', 'paragrafo', 'Observações da visita', 'justificativa') returning id as iobs \gset
+select pg_temp.ok((select tipo = 'pergunta' and nome = 'Observações da visita' and regra = 'justificativa' from fluxo.itens_em_branco(:'kf')),
+  'pergunta em branco com regra entra no que falta para concluir, pelo texto da pergunta');
+update fluxo.tarefa_itens set resposta = '"Muro caído no fundo"' where id = :'iobs';
+select pg_temp.ok(not exists (select 1 from fluxo.itens_em_branco(:'kf')), 'respondida, a pergunta sai do que falta');
+select fluxo.copiar_tarefa(:'kf', pg_temp.lista(:'tcd', 'Fazer'), 'Visita técnica (cópia)', array['campos']) as kfc \gset
+select pg_temp.ok((select count(*) from fluxo.tarefa_itens where tarefa_id = :'kfc') = 4
+  and (select resposta #>> '{}' from fluxo.tarefa_itens where tarefa_id = :'kfc' and pergunta = 'Muro de divisa') = 'Ruim',
+  'copiar o cartão com os campos leva as perguntas e as respostas');
+select pg_temp.como(:'diretor');
+insert into fluxo.campos (empresa_id, nome, tipo, formato) values (:'emp', 'CPF do vendedor', 'texto', 'cpf') returning id as ccpf \gset
+select pg_temp.falha(format($$insert into fluxo.campos (empresa_id, nome, tipo, formato) values (%L, 'Valor X', 'numero', 'email')$$, :'emp'), 'número não leva máscara de texto');
+select pg_temp.como(:'analista');
+insert into fluxo.tarefa_campos (empresa_id, tarefa_id, campo_id, texto) values (:'emp', :'kf', :'ccpf', '529.982.247-25');
+select pg_temp.ok((select texto from fluxo.tarefa_campos where tarefa_id = :'kf' and campo_id = :'ccpf') = '52998224725', 'campo personalizado com máscara guarda só os dígitos');
+select pg_temp.falha(format($$update fluxo.tarefa_campos set texto = '123' where tarefa_id = %L and campo_id = %L$$, :'kf', :'ccpf'), 'campo personalizado recusa valor fora da máscara');
+select pg_temp.como(:'diretor');
+select pg_temp.falha(format($$select app.salvar_campo(%L, 'terreno.area_documental_m2', null, true, true, 'cpf')$$, :'emp'), 'máscara de texto só em campo de texto');
+select pg_temp.falha(format($$select app.salvar_campo(%L, 'terreno.cep', null, false, false, 'telefone')$$, :'emp'), 'campo com máscara fixa não troca de máscara');
+select app.salvar_campo(:'emp', 'terreno.referencia_localizacao', null, false, true, 'telefone');
+select pg_temp.ok((select formato from app.v_campos where empresa_id = :'emp' and chave = 'terreno.referencia_localizacao') = 'telefone', 'o administrador dá máscara ao campo de texto');
+select pg_temp.como(:'analista');
+select app.gravar_campo(:'tcd', 'terreno.referencia_localizacao', '"(11) 3333-4444"');
+select pg_temp.ok((select referencia_localizacao from app.terrenos where id = :'tcd') = '1133334444', 'o cartão grava o campo do terreno com a máscara, só os dígitos');
+select pg_temp.falha(format($$select app.gravar_campo(%L, 'terreno.referencia_localizacao', '"perto da padaria"')$$, :'tcd'), 'o terreno recusa valor fora da máscara do campo');
+select pg_temp.como(:'diretor');
+select app.salvar_campo(:'emp', 'terreno.referencia_localizacao', null, false, false, '');
 \echo 'TODOS OS TESTES PASSARAM'

@@ -970,8 +970,9 @@ begin
     end loop;
     for x in select jsonb_array_elements(t.itens) loop
       if (x->>'campo_id') is null or exists (select 1 from fluxo.campos where id = (x->>'campo_id')::uuid and empresa_id = v_emp and ativo) then
-        insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, campo_id, regra_branco, condicao)
-        values (v_emp, v_id, x->>'chave', (x->>'campo_id')::uuid, coalesce(x->>'regra', 'livre'), x->'condicao') on conflict do nothing;
+        insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, campo_id, regra_branco, condicao, pergunta, ajuda, forma, tipo, opcoes)
+        values (v_emp, v_id, x->>'chave', (x->>'campo_id')::uuid, coalesce(x->>'regra', 'livre'), x->'condicao', x->>'pergunta', x->>'ajuda', x->>'forma', x->>'tipo',
+                case when jsonb_typeof(x->'opcoes') = 'array' then array(select jsonb_array_elements_text(x->'opcoes')) end) on conflict do nothing;
       end if;
     end loop;
   end loop;
@@ -1046,7 +1047,8 @@ begin
                                                         else jsonb_build_object('texto', i.texto, 'regra', i.regra_branco, 'condicao', i.condicao) end order by i.posicao)
                                   from fluxo.checklist_itens i where i.checklist_id = c.id), '[]')) order by c.posicao)
                       from fluxo.checklists c where c.tarefa_id = k.id), '[]'),
-            coalesce((select jsonb_agg(jsonb_strip_nulls(jsonb_build_object('chave', i.chave, 'campo_id', i.campo_id, 'regra', i.regra_branco, 'condicao', i.condicao)) order by i.posicao)
+            coalesce((select jsonb_agg(jsonb_strip_nulls(jsonb_build_object('chave', i.chave, 'campo_id', i.campo_id, 'regra', i.regra_branco, 'condicao', i.condicao,
+                        'pergunta', i.pergunta, 'ajuda', i.ajuda, 'forma', i.forma, 'tipo', i.tipo, 'opcoes', to_jsonb(i.opcoes))) order by i.posicao)
                       from fluxo.tarefa_itens i where i.tarefa_id = k.id), '[]'), k.aprovacao_modo, k.visibilidade)
     returning id into v_mt;
     mapa := mapa || jsonb_build_object(k.id::text, v_mt);
@@ -1784,6 +1786,9 @@ create table fluxo.campos (
   empresa_id  uuid not null references app.empresas(id) on delete cascade,
   nome        text not null check (length(trim(nome)) > 0),
   tipo        text not null check (tipo in ('texto','numero','data','lista','caixa')),
+  -- máscara (1/nov/2026): texto em e-mail, telefone, CPF ou CNPJ; número em moeda ou percentual; nulo = livre
+  formato     text check (formato is null or (tipo = 'texto' and formato in ('email','telefone','cpf','cnpj'))
+                                          or (tipo = 'numero' and formato in ('moeda','percentual'))),
   ordem       int  not null default 0,
   na_frente   boolean not null default false,   -- aparece na frente do cartão
   ativo       boolean not null default true,
@@ -1813,6 +1818,48 @@ create table fluxo.tarefa_campos (
 );
 create index on fluxo.tarefa_campos (campo_id);
 
+-- Máscara de texto (1/nov/2026): confere e devolve o valor como fica guardado.
+-- E-mail em minúsculas; telefone, CPF e CNPJ só com os dígitos (CPF e CNPJ
+-- com os dígitos verificadores; telefone com DDD, 10 ou 11 dígitos); CEP com
+-- 8 dígitos. Formato desconhecido ou nulo devolve o texto aparado.
+create or replace function fluxo.validar_formato(p_formato text, p_valor text)
+returns text language plpgsql immutable set search_path = '' as $$
+declare d text := regexp_replace(coalesce(p_valor, ''), '[^0-9]', '', 'g'); v text := trim(coalesce(p_valor, '')); s int; r int; i int; n int[];
+begin
+  if v = '' then return null; end if;
+  if p_formato = 'email' then
+    v := lower(v);
+    if v !~ '^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$' then raise exception 'E-mail inválido: %', p_valor using errcode = '22023'; end if;
+    return v;
+  elsif p_formato = 'telefone' then
+    if length(d) not in (10, 11) or left(d, 1) = '0' or substr(d, 2, 1) = '0' or (length(d) = 11 and substr(d, 3, 1) <> '9') then
+      raise exception 'Telefone inválido: use DDD e número (10 ou 11 dígitos)' using errcode = '22023';
+    end if;
+    return d;
+  elsif p_formato = 'cep' then
+    if length(d) <> 8 then raise exception 'CEP inválido: são 8 dígitos' using errcode = '22023'; end if;
+    return d;
+  elsif p_formato = 'cpf' then
+    if length(d) <> 11 or d ~ '^(\d)\1{10}$' then raise exception 'CPF inválido' using errcode = '22023'; end if;
+    n := (select array_agg(substr(d, x, 1)::int order by x) from generate_series(1, 11) x);
+    for r in 9..10 loop
+      s := 0; for i in 1..r loop s := s + n[i] * (r + 2 - i); end loop;
+      if (s * 10 % 11) % 10 <> n[r + 1] then raise exception 'CPF inválido' using errcode = '22023'; end if;
+    end loop;
+    return d;
+  elsif p_formato = 'cnpj' then
+    if length(d) <> 14 or d ~ '^(\d)\1{13}$' then raise exception 'CNPJ inválido' using errcode = '22023'; end if;
+    n := (select array_agg(substr(d, x, 1)::int order by x) from generate_series(1, 14) x);
+    for r in 12..13 loop
+      s := 0; for i in 1..r loop s := s + n[i] * (case when (r - i) % 8 + 2 > 9 then 2 else (r - i) % 8 + 2 end); end loop;
+      s := case when s % 11 < 2 then 0 else 11 - s % 11 end;
+      if s <> n[r + 1] then raise exception 'CNPJ inválido' using errcode = '22023'; end if;
+    end loop;
+    return d;
+  end if;
+  return v;
+end $$;
+
 -- O valor vai na coluna do tipo do campo, e a opção é do próprio campo; campo desativado não recebe valor novo.
 create or replace function fluxo.tg_tarefa_campo()
 returns trigger language plpgsql security definer set search_path = '' as $$
@@ -1830,12 +1877,18 @@ begin
   if c.tipo = 'texto' and length(trim(new.texto)) = 0 then
     raise exception 'Texto vazio: apague o valor para deixar o campo % não informado', c.nome using errcode = 'P0001';
   end if;
+  if c.tipo = 'texto' and c.formato is not null then new.texto := fluxo.validar_formato(c.formato, new.texto); end if;
   if c.tipo = 'lista' and not exists (select 1 from fluxo.campo_opcoes o where o.id = new.opcao_id and o.campo_id = c.id and o.ativo) then
     raise exception 'Opção que não é do campo % (ou desativada)', c.nome using errcode = 'P0001';
   end if;
   return new;
 end $$;
 create trigger t_valor before insert or update on fluxo.tarefa_campos for each row execute function fluxo.tg_tarefa_campo();
+
+-- O texto segue o formato? (sem levantar erro)
+create or replace function fluxo._formato_ok(p_formato text, p_valor text)
+returns boolean language plpgsql immutable set search_path = '' as $$
+begin perform fluxo.validar_formato(p_formato, p_valor); return true; exception when others then return false; end $$;
 
 -- Tipo não muda depois de ter valor; campo e opção com valor não se apagam (desativam).
 create or replace function fluxo.tg_campo_guarda()
@@ -1844,6 +1897,11 @@ begin
   if tg_table_name = 'campos' then
     if tg_op = 'UPDATE' and new.tipo <> old.tipo and exists (select 1 from fluxo.tarefa_campos where campo_id = old.id) then
       raise exception 'O campo % já tem valores: o tipo não muda (crie outro campo)', old.nome using errcode = 'P0001';
+    end if;
+    if tg_op = 'UPDATE' and new.formato is distinct from old.formato and new.formato is not null and old.tipo = 'texto'
+       and exists (select 1 from fluxo.tarefa_campos v where v.campo_id = old.id
+                   and not fluxo._formato_ok(new.formato, v.texto)) then
+      raise exception 'O campo % tem valores que não seguem esse formato', old.nome using errcode = 'P0001';
     end if;
     if tg_op = 'DELETE' and exists (select 1 from fluxo.tarefa_campos where campo_id = old.id) then
       raise exception 'O campo % já tem valores: desative em vez de apagar', old.nome using errcode = 'P0001';
@@ -1901,9 +1959,19 @@ create table fluxo.tarefa_itens (
   posicao       double precision not null default extract(epoch from clock_timestamp()),
   regra_branco  text not null default 'livre' check (regra_branco in ('livre','justificativa','bloqueia')),
   condicao      jsonb,
+  -- formulário (1/nov/2026): o item é uma pergunta, com o texto e a ajuda de quem montou e a forma de responder
+  pergunta      text check (pergunta is null or length(trim(pergunta)) > 0),
+  ajuda         text,
+  forma         text,                                  -- nulo = a primeira forma do tipo (fluxo.formas)
+  -- pergunta "só no cartão": sem campo, a resposta fica na própria tarefa
+  tipo          text check (tipo in ('texto','paragrafo','numero','moeda','percentual','data','sim_nao','lista','email','telefone','cpf','cnpj')),
+  opcoes        text[] check (opcoes is null or (tipo = 'lista' and cardinality(opcoes) >= 2)),
+  resposta      jsonb check (resposta is null or tipo is not null),
   incluido_por  uuid default auth.uid(),
   incluido_em   timestamptz not null default now(),
-  check (num_nonnulls(chave, campo_id) = 1),
+  check (num_nonnulls(chave, campo_id, tipo) = 1),
+  check (tipo is distinct from 'lista' or opcoes is not null),
+  check (tipo is null or pergunta is not null),
   unique (tarefa_id, chave),
   unique (tarefa_id, campo_id)
 );
@@ -1973,6 +2041,63 @@ begin
   return p_cond;
 end $$;
 
+-- Formas de responder de cada tipo de dado (a primeira é o padrão). A forma
+-- muda a aparência, nunca o dado: lista de uma escolha em menu, botões de
+-- opção ou chips (segmentado até 4 opções, chave só com 2, acima de 6 só o
+-- menu); várias escolhas em caixas ou chips; sim/não em botões ou chave (a
+-- chave começa em "não informado"); texto em linha ou parágrafo; os demais
+-- têm uma forma só.
+create or replace function fluxo.formas(p_tipo text, p_opcoes int default null)
+returns text[] language sql immutable set search_path = '' as $$
+  select case
+    when p_tipo = 'lista' and coalesce(p_opcoes, 0) > 6 then array['menu']
+    when p_tipo = 'lista' then array['menu','radio','chips']
+         || case when p_opcoes between 2 and 4 then array['segmentado'] else '{}' end
+         || case when p_opcoes = 2 then array['chave'] else '{}' end
+    when p_tipo = 'lista_multi' then array['caixas','chips']
+    when p_tipo in ('sim_nao','caixa') then array['botoes','chave']
+    when p_tipo in ('texto','paragrafo') then array['linha','paragrafo']
+    else array['campo'] end $$;
+
+-- Tipo e número de opções do item, para conferir a forma
+create or replace function fluxo._tipo_item(p_tarefa uuid, p_chave text, p_campo uuid, p_tipo text, p_opcoes text[], out tipo text, out n int)
+language plpgsql stable security definer set search_path = '' as $$
+declare j jsonb;
+begin
+  if p_tipo is not null then tipo := p_tipo; n := cardinality(p_opcoes); return; end if;
+  if p_campo is not null then
+    select c.tipo, (select count(*) from fluxo.campo_opcoes o where o.campo_id = c.id and o.ativo) into tipo, n from fluxo.campos c where c.id = p_campo;
+    return;
+  end if;
+  j := fluxo.campo_do_objeto(p_tarefa, p_chave);
+  tipo := j->>'tipo';
+  n := case when jsonb_typeof(j->'opcoes') = 'array' then jsonb_array_length(j->'opcoes') end;
+end $$;
+
+-- Resposta da pergunta "só no cartão" no tipo dela (e-mail, telefone, CPF e CNPJ como ficam guardados)
+create or replace function fluxo._resposta(p_tipo text, p_opcoes text[], p_valor jsonb)
+returns jsonb language plpgsql immutable set search_path = '' as $$
+declare t text := jsonb_typeof(p_valor);
+begin
+  if p_valor is null or t = 'null' or (t = 'string' and trim(p_valor #>> '{}') = '') then return null; end if;
+  if p_tipo in ('numero','moeda','percentual') then
+    if t <> 'number' then raise exception 'A resposta precisa ser um número' using errcode = '22023'; end if;
+  elsif p_tipo = 'sim_nao' then
+    if t <> 'boolean' then raise exception 'A resposta é sim ou não' using errcode = '22023'; end if;
+  elsif p_tipo = 'data' then
+    perform (p_valor #>> '{}')::date;
+  elsif p_tipo = 'lista' then
+    if t <> 'string' or not (p_valor #>> '{}') = any (p_opcoes) then raise exception 'Resposta fora das opções' using errcode = '22023'; end if;
+  elsif t <> 'string' then
+    raise exception 'A resposta precisa ser um texto' using errcode = '22023';
+  elsif p_tipo in ('email','telefone','cpf','cnpj') then
+    return to_jsonb(fluxo.validar_formato(p_tipo, p_valor #>> '{}'));
+  else
+    return to_jsonb(trim(p_valor #>> '{}'));
+  end if;
+  return p_valor;
+end $$;
+
 create or replace function fluxo.tg_tarefa_item()
 returns trigger language plpgsql security definer set search_path = '' as $$
 declare v_tarefa uuid; j jsonb; v_regra_mudou boolean; r jsonb := to_jsonb(coalesce(new, old)); v_chave text; v_campo uuid;
@@ -2000,6 +2125,24 @@ begin
   if v_campo is not null and tg_op = 'INSERT' and not exists (select 1 from fluxo.campos where id = v_campo and ativo) then
     raise exception 'Campo personalizado desativado' using errcode = 'P0001';
   end if;
+  if tg_table_name = 'tarefa_itens' then
+    new.pergunta := nullif(trim(new.pergunta), ''); new.ajuda := nullif(trim(new.ajuda), '');
+    if new.tipo is not null and new.opcoes is not null then
+      new.opcoes := (select array_agg(distinct trim(o)) from unnest(new.opcoes) o where trim(o) <> '');
+    end if;
+    if new.forma is not null and (tg_op = 'INSERT' or new.forma is distinct from old.forma or new.opcoes is distinct from old.opcoes) then
+      declare ti record; begin
+        select * into ti from fluxo._tipo_item(v_tarefa, new.chave, new.campo_id, new.tipo, new.opcoes);
+        if not new.forma = any (fluxo.formas(ti.tipo, ti.n)) then
+          raise exception 'Forma % não serve para este tipo de pergunta', new.forma using errcode = '22023';
+        end if;
+      end;
+    end if;
+    if tg_op = 'UPDATE' and new.tipo is distinct from old.tipo and old.resposta is not null then
+      raise exception 'A pergunta já tem resposta: o tipo não muda' using errcode = 'P0001';
+    end if;
+    new.resposta := fluxo._resposta(new.tipo, new.opcoes, new.resposta);
+  end if;
   return new;
 end $$;
 create trigger t_item before insert or update or delete on fluxo.tarefa_itens for each row execute function fluxo.tg_tarefa_item();
@@ -2024,13 +2167,16 @@ begin
   v_padrao := case when coalesce((select conclui_exige_checklist from fluxo.regras where empresa_id = k.empresa_id), true) then 'bloqueia' else 'livre' end;
   for r in select i.*, c.nome as cnome, c.ativo as cativo from fluxo.tarefa_itens i left join fluxo.campos c on c.id = i.campo_id
            where i.tarefa_id = k.id and i.regra_branco <> 'livre' order by i.posicao loop
-    if r.campo_id is not null then
+    if r.tipo is not null then
+      if r.resposta is not null then continue; end if;
+      tipo := 'pergunta'; ref := r.id::text; nome := r.pergunta;
+    elsif r.campo_id is not null then
       if not r.cativo or exists (select 1 from fluxo.tarefa_campos v where v.tarefa_id = k.id and v.campo_id = r.campo_id) then continue; end if;
-      tipo := 'campo'; ref := r.campo_id::text; nome := r.cnome;
+      tipo := 'campo'; ref := r.campo_id::text; nome := coalesce(r.pergunta, r.cnome);
     else
       j := fluxo.campo_do_objeto(k.id, r.chave);
       if j is null or coalesce(j->'valor', 'null'::jsonb) <> 'null'::jsonb then continue; end if;
-      tipo := 'objeto'; ref := r.chave; nome := j->>'titulo';
+      tipo := 'objeto'; ref := r.chave; nome := coalesce(r.pergunta, j->>'titulo');
     end if;
     if not fluxo.condicao_vale(k.id, r.condicao) then continue; end if;
     regra := r.regra_branco; return next;
@@ -2091,9 +2237,10 @@ grant select, insert, update, delete on fluxo.tarefa_itens to authenticated;
 grant select on fluxo.conclusao_justificativas to authenticated;
 revoke all on function fluxo.configura_tarefa(uuid, uuid), fluxo.condicao_vale(uuid, jsonb), fluxo.campo_do_objeto(uuid, text),
   fluxo.itens_em_branco(uuid), fluxo.concluir_justificando(uuid, text), fluxo._objeto_da_tarefa(uuid), fluxo._regra_item(uuid, uuid, jsonb),
-  fluxo._justificada(uuid, boolean) from public;
+  fluxo._justificada(uuid, boolean), fluxo._tipo_item(uuid, text, uuid, text, text[]), fluxo._resposta(text, text[], jsonb),
+  fluxo.validar_formato(text, text), fluxo._formato_ok(text, text), fluxo.formas(text, int) from public;
 grant execute on function fluxo.configura_tarefa(uuid, uuid), fluxo.condicao_vale(uuid, jsonb), fluxo.campo_do_objeto(uuid, text),
-  fluxo.itens_em_branco(uuid), fluxo.concluir_justificando(uuid, text) to authenticated;
+  fluxo.itens_em_branco(uuid), fluxo.concluir_justificando(uuid, text), fluxo.validar_formato(text, text), fluxo.formas(text, int) to authenticated;
 
 -- Predecessoras que ainda não deixam concluir (decisão do Moisés, 30/out/2026): em TI e TT a
 -- predecessora precisa estar concluída; em II e IT, ter começado (concluída ou com o início já
@@ -2253,8 +2400,8 @@ begin
     insert into fluxo.checklist_itens (empresa_id, checklist_id, texto, responsavel_id, prazo, posicao, regra_branco, condicao)
     select empresa_id, nc, texto, responsavel_id, prazo + desloc, posicao, regra_branco, condicao from fluxo.checklist_itens where checklist_id = c.id;
   end loop;
-  insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, campo_id, posicao, regra_branco, condicao)
-  select empresa_id, v, chave, campo_id, posicao, regra_branco, condicao from fluxo.tarefa_itens where tarefa_id = k.id;
+  insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, campo_id, posicao, regra_branco, condicao, pergunta, ajuda, forma, tipo, opcoes)
+  select empresa_id, v, chave, campo_id, posicao, regra_branco, condicao, pergunta, ajuda, forma, tipo, opcoes from fluxo.tarefa_itens where tarefa_id = k.id;
   perform fluxo._copiar_automacoes(k.id, v, null);   -- regras do cartão de origem, com o mesmo dono
   return v;
 end $$;
@@ -2403,8 +2550,8 @@ begin
   end if;
   if 'campos' = any (p_itens) then
     -- os itens incluídos no cartão, com a regra de cada um (31/out/2026); campo do objeto que o quadro de destino não aceita fica de fora
-    insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, campo_id, posicao, regra_branco, condicao)
-    select l.empresa_id, v, i.chave, i.campo_id, i.posicao, i.regra_branco, i.condicao
+    insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave, campo_id, posicao, regra_branco, condicao, pergunta, ajuda, forma, tipo, opcoes, resposta)
+    select l.empresa_id, v, i.chave, i.campo_id, i.posicao, i.regra_branco, i.condicao, i.pergunta, i.ajuda, i.forma, i.tipo, i.opcoes, i.resposta
     from fluxo.tarefa_itens i left join fluxo.campos f on f.id = i.campo_id
     where i.tarefa_id = k.id and (i.campo_id is null or f.ativo)
       and (i.chave is null or coalesce((fluxo.campo_do_objeto(v, i.chave)->>'cartao')::boolean, false));

@@ -30,6 +30,8 @@ create table app.campos_catalogo (
   editavel  boolean not null default false,  -- pode ser alterado pelo cartão
   condicao  boolean not null default false,  -- padrão: serve para condição
   cartao    boolean not null default false,  -- padrão: pode ir para o cartão
+  -- máscara fixa do campo (1/nov/2026): moeda (R$), percentual (%), cep; nulo = o administrador pode dar uma ao texto
+  formato   text check (formato in ('moeda','percentual','cep','email','telefone','cpf','cnpj')),
   ordem     int not null
 );
 create unique index campos_catalogo_titulo on app.campos_catalogo (lower(titulo));
@@ -106,6 +108,8 @@ insert into app.campos_catalogo (chave, origem, coluna, titulo, tipo, unidade, o
   ('calculado.tem_partes','calculado',null,'Vários donos','sim_nao',null,null,null,false,true,false,75),
   ('calculado.corretores','calculado',null,'Corretores do terreno ou das partes','lista_multi',null,null,null,false,true,false,76);
 
+update app.campos_catalogo set formato = case when chave = 'terreno.cep' then 'cep' when unidade = 'R$' then 'moeda' when unidade = '%' then 'percentual' end;
+
 -- O que cada empresa escolheu (sem linha, vale o catálogo)
 create table app.campos_empresa (
   empresa_id  uuid not null references app.empresas(id) on delete cascade,
@@ -113,6 +117,7 @@ create table app.campos_empresa (
   titulo      text check (titulo is null or length(trim(titulo)) > 0),   -- nulo = título padrão
   condicao    boolean not null,
   cartao      boolean not null,
+  formato     text check (formato in ('email','telefone','cpf','cnpj')),   -- máscara do texto dada pelo administrador (só campo de texto sem máscara fixa)
   primary key (empresa_id, chave)
 );
 alter table app.campos_empresa enable row level security;
@@ -122,25 +127,26 @@ create trigger t_aud after insert or update or delete on app.campos_empresa for 
 
 -- Definição do campo para a empresa (título, condição e cartão já com a escolha dela)
 create or replace function app.campo_def(p_empresa uuid, p_chave text)
-returns table (chave text, origem text, coluna text, titulo text, tipo text, unidade text, opcoes text[], vazio text, editavel boolean, condicao boolean, cartao boolean)
+returns table (chave text, origem text, coluna text, titulo text, tipo text, unidade text, opcoes text[], vazio text, editavel boolean, condicao boolean, cartao boolean, formato text)
 language sql stable security definer set search_path = '' as $$
   select c.chave, c.origem, c.coluna, coalesce(x.titulo, c.titulo), c.tipo, c.unidade, c.opcoes, c.vazio, c.editavel,
-         coalesce(x.condicao, c.condicao), coalesce(x.cartao, c.cartao)
+         coalesce(x.condicao, c.condicao), coalesce(x.cartao, c.cartao), coalesce(c.formato, x.formato)
   from app.campos_catalogo c left join app.campos_empresa x on x.empresa_id = p_empresa and x.chave = c.chave
   where c.chave = p_chave $$;
 
 create view app.v_campos with (security_invoker = true) as
 select e.empresa_id, c.chave, c.origem, c.coluna, c.titulo as titulo_padrao, coalesce(x.titulo, c.titulo) as titulo, c.tipo, c.unidade, c.opcoes,
-       c.editavel, coalesce(x.condicao, c.condicao) as condicao, coalesce(x.cartao, c.cartao) as cartao, c.ordem
+       c.editavel, coalesce(x.condicao, c.condicao) as condicao, coalesce(x.cartao, c.cartao) as cartao, coalesce(c.formato, x.formato) as formato, c.ordem
 from app.campos_catalogo c
 cross join lateral app.minhas_empresas() e(empresa_id)
 left join app.campos_empresa x on x.empresa_id = e.empresa_id and x.chave = c.chave;
 grant select on app.v_campos to authenticated;
 
--- Administrador: título (vazio volta ao padrão; dois campos não têm o mesmo título), condição e cartão
-create or replace function app.salvar_campo(p_empresa uuid, p_chave text, p_titulo text, p_condicao boolean, p_cartao boolean)
+-- Administrador: título (vazio volta ao padrão; dois campos não têm o mesmo título), condição, cartão e,
+-- no campo de texto sem máscara fixa, a máscara (nulo mantém; '' tira; o valor que já está no registro precisa seguir a nova)
+create or replace function app.salvar_campo(p_empresa uuid, p_chave text, p_titulo text, p_condicao boolean, p_cartao boolean, p_formato text default null)
 returns void language plpgsql security definer set search_path = '' as $$
-declare c app.campos_catalogo; v_tit text;
+declare c app.campos_catalogo; v_tit text; v_fmt text; v_ter uuid;
 begin
   perform app.exigir_administrador(p_empresa);
   select * into c from app.campos_catalogo where chave = p_chave;
@@ -151,9 +157,19 @@ begin
              where o.chave <> p_chave and lower(coalesce(x.titulo, o.titulo)) = lower(coalesce(v_tit, c.titulo))) then
     raise exception 'Já existe um campo com o título %', coalesce(v_tit, c.titulo) using errcode = '23505';
   end if;
-  insert into app.campos_empresa (empresa_id, chave, titulo, condicao, cartao)
-  values (p_empresa, p_chave, v_tit, coalesce(p_condicao, c.condicao), coalesce(p_cartao, c.cartao))
-  on conflict (empresa_id, chave) do update set titulo = excluded.titulo, condicao = excluded.condicao, cartao = excluded.cartao;
+  v_fmt := case when p_formato is null then (select formato from app.campos_empresa where empresa_id = p_empresa and chave = p_chave) else nullif(p_formato, '') end;
+  if v_fmt is not null then
+    if c.tipo <> 'texto' or c.formato is not null then raise exception 'O campo % não aceita máscara', c.titulo using errcode = '22023'; end if;
+    if v_fmt not in ('email','telefone','cpf','cnpj') then raise exception 'Máscara desconhecida: %', v_fmt using errcode = '22023'; end if;
+    for v_ter in select id from app.terrenos where empresa_id = p_empresa loop
+      if not fluxo._formato_ok(v_fmt, app._valor_campo(v_ter, p_chave) #>> '{}') and app._valor_campo(v_ter, p_chave) is not null then
+        raise exception 'Há terrenos com % fora dessa máscara: corrija antes de ligar', c.titulo using errcode = '23514';
+      end if;
+    end loop;
+  end if;
+  insert into app.campos_empresa (empresa_id, chave, titulo, condicao, cartao, formato)
+  values (p_empresa, p_chave, v_tit, coalesce(p_condicao, c.condicao), coalesce(p_cartao, c.cartao), v_fmt)
+  on conflict (empresa_id, chave) do update set titulo = excluded.titulo, condicao = excluded.condicao, cartao = excluded.cartao, formato = excluded.formato;
 end $$;
 
 -- A negociação do terreno: o processo da fase de entrada sem parte (o aberto; senão, o mais recente)
@@ -233,7 +249,7 @@ begin
   if v_emp is null or (auth.uid() is not null and not app.ve_terreno(p_terreno)) then return null; end if;
   select * into d from app.campo_def(v_emp, p_chave);
   if d.chave is null then return null; end if;
-  return jsonb_build_object('titulo', d.titulo, 'tipo', d.tipo, 'unidade', d.unidade, 'opcoes', to_jsonb(d.opcoes), 'editavel', d.editavel,
+  return jsonb_build_object('titulo', d.titulo, 'tipo', d.tipo, 'unidade', d.unidade, 'opcoes', to_jsonb(d.opcoes), 'formato', d.formato, 'editavel', d.editavel,
                             'cartao', d.cartao, 'valor', app._valor_campo(p_terreno, p_chave));
 end $$;
 
@@ -329,13 +345,16 @@ end $$;
 -- Gravar pelo cartão no próprio registro: terreno pela salvar_terreno, oferta de referência direto, temperatura pela regra dela.
 create or replace function app.gravar_campo(p_terreno uuid, p_chave text, p_valor jsonb)
 returns void language plpgsql security definer set search_path = '' as $$
-declare c app.campos_catalogo; t app.terrenos; v_of uuid; v_val jsonb := case when p_valor = 'null'::jsonb then null else p_valor end;
+declare c app.campos_catalogo; t app.terrenos; v_of uuid; v_fmt text; v_val jsonb := case when p_valor = 'null'::jsonb then null else p_valor end;
 begin
   select * into t from app.terrenos where id = p_terreno;
   if t.id is null or not app.ve_terreno(p_terreno) then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
   perform app.exigir_editor(t.empresa_id);
   select * into c from app.campos_catalogo where chave = p_chave;
   if c.chave is null or not c.editavel then raise exception 'Este campo não se altera pelo cartão' using errcode = '22023'; end if;
+  -- texto com máscara grava como fica guardado (dígitos, e-mail em minúsculas)
+  select formato into v_fmt from app.campo_def(t.empresa_id, p_chave);
+  if c.tipo = 'texto' and v_fmt is not null and v_val is not null then v_val := to_jsonb(fluxo.validar_formato(v_fmt, v_val #>> '{}')); end if;
   if v_val is null and c.vazio is not null then v_val := to_jsonb(c.vazio); end if;
   if c.origem = 'terreno' then
     perform app.salvar_terreno(t.id, t.versao, jsonb_build_object(c.coluna, v_val));
@@ -350,10 +369,10 @@ begin
   end if;
 end $$;
 
-revoke all on function app.campo_def(uuid, text), app.salvar_campo(uuid, text, text, boolean, boolean), app.negociacao_do_terreno(uuid),
+revoke all on function app.campo_def(uuid, text), app.salvar_campo(uuid, text, text, boolean, boolean, text), app.negociacao_do_terreno(uuid),
   app.oferta_do_terreno(uuid), app.proposta_vigente(uuid), app._valor_campo(uuid, text), app.campo_cartao(uuid, text),
   app.validar_condicao(uuid, jsonb, int), app._condicao_item(uuid, jsonb), app.avaliar_condicao(uuid, jsonb), app.gravar_campo(uuid, text, jsonb) from public;
-grant execute on function app.campo_def(uuid, text), app.salvar_campo(uuid, text, text, boolean, boolean), app.campo_cartao(uuid, text),
+grant execute on function app.campo_def(uuid, text), app.salvar_campo(uuid, text, text, boolean, boolean, text), app.campo_cartao(uuid, text),
   app.validar_condicao(uuid, jsonb, int), app.gravar_campo(uuid, text, jsonb) to authenticated;
 
 update fluxo.objeto_tipos set avalia_condicao = 'app.avaliar_condicao', valida_condicao = 'app.validar_condicao', campo_objeto = 'app.campo_cartao'
