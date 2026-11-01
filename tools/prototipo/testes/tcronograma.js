@@ -25,7 +25,7 @@ const abre=async(w,h,tema)=>{const ctx=await b.newContext({viewport:{width:w,hei
 {const {ctx,p}=await abre(1440,900,'claro');
 let s=await est(p);const t0=s.terrenos[0],HOJE=await p.evaluate(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')});
 const jur=tar(s,0,'Análise jurídica da matrícula'),mat=tar(s,0,'Pedir matrícula atualizada'),com=tar(s,0,'Levar ao comitê'),via=tar(s,0,'Estudo de viabilidade');
-ok(s.modelos?.length===1&&s.modelos[0].padrao&&!s.modelos[0].dono,'há um modelo da empresa marcado como padrão');
+ok(s.modelos?.filter(m=>m.padrao&&!m.dono).length===1,'há um modelo da empresa marcado como padrão');
 ok(jur&&jur.inicio===addD(mat.prazo,1),'TI: a análise jurídica começa no dia seguinte ao fim da matrícula');
 ok(com.inicio===addD([jur.prazo,via.prazo].sort().at(-1),1),'com duas predecessoras, começa depois da que termina por último');
 ok(com.resp===t0.resp&&(com.acomp||[]).includes(t0.resp),'"responsável do terreno" do modelo vira o responsável do terreno');
@@ -100,7 +100,7 @@ ok(!(await p.$$eval('.cr-m b',x=>x.map(y=>y.textContent))).includes('Meu modelo 
 await clica(p,'[data-a=close]');await p.waitForTimeout(100);
 // Configurações › Tarefas: calendário e modelos da empresa
 await papel(p,'Diretor');await p.evaluate(()=>history.replaceState(null,'','#/configuracoes/tarefas'));await p.reload();await p.waitForTimeout(400);
-ok(await p.$('[data-a=cr-cal]')!==null&&(await p.$$('[name=cr-padrao]')).length===1,'Configurações › Tarefas tem o calendário e os modelos da empresa');
+ok(await p.$('[data-a=cr-cal]')!==null&&(await p.$$('[name=cr-padrao]')).length>=1,'Configurações › Tarefas tem o calendário e os modelos da empresa');
 await p.evaluate(()=>[...document.querySelectorAll('[data-a=cr-cal]')].find(x=>x.dataset.v==='true').click());await p.waitForTimeout(200);
 s=await est(p);ok(s.calUteis===true&&s.terrenos[1].tarefas.filter(k=>k.inicio&&k.prazo&&!k.arq).every(k=>![0,6].includes(new Date(k.prazo+'T12:00:00').getDay())),'com dias úteis, nenhum prazo cai em fim de semana');
 await p.evaluate(()=>[...document.querySelectorAll('[data-a=cr-cal]')].find(x=>x.dataset.v==='false').click());await p.waitForTimeout(150);

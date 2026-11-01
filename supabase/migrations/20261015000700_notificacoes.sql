@@ -36,7 +36,9 @@ insert into app.tipos_notificacao (codigo, nome, dias_antes_padrao, email_padrao
   ('reuniao_agendada',   'Reunião agendada',                 '{1}',   false),
   ('aprovacao_pendente', 'Aprovação pendente',               '{}',    true),
   ('aprovacao_decidida', 'Seu pedido de aprovação foi decidido', '{}', true),
-  ('automacao',          'Aviso de automação de tarefas',    '{}',    false);
+  ('automacao',          'Aviso de automação de tarefas',    '{}',    false),
+  ('pode_avancar',       'Terreno pode avançar (tarefas da etapa concluídas)', '{}', false),
+  ('etapa_deixada',      'Tarefa de etapa deixada para trás', '{}',   false);
 
 -- O que cada pessoa quer receber por e-mail, por tipo. Sem linha = o padrão do tipo.
 -- No app a notificação sempre aparece (o administrador desliga o tipo inteiro).

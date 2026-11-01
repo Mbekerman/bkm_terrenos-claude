@@ -25,13 +25,15 @@ const tkPrioChip=k=>`<span class="tl-pr ${k.prio}">${OPT.prioTar[k.prio]||'—'}
 
 /* ---------- Lista ---------- */
 function tlGrupos(itens,ficha){const g=new Map(),add=(key,nome,cls,x)=>{if(!g.has(key))g.set(key,{key,nome,cls,itens:[]});g.get(key).itens.push(x)};
-  const agr=ficha?'status':UI.tl.agr;
+  const agr=ficha?(UI.tl.agrF||'status'):UI.tl.agr;
   itens.forEach(x=>{const {t,k}=x;
     if(agr==='terreno')add('t:'+t.id,`${t.codigo} · ${t.nome}`,'',x);
     else if(agr==='resp')add('r:'+(k.resp||''),k.resp||'Sem responsável','',x);
+    else if(agr==='etapa')add('e:'+(k.etapa?k.fase+'|'+k.etapa:''),k.etapa?`${faseN(k.fase)} › ${etNomeE(k.fase,k.etapa)}`:'Sem etapa','',x);
     else{const l=tkLista(t,k),c=tkStCls(l);add('s:'+(ficha?l.id:l.nome),l.nome,c,x)}});
   const ordemSt=['fazendo','aguardando','fazer','pausa','feito'];
-  return [...g.values()].sort((a,b)=>agr==='status'?(ordemSt.indexOf(a.cls)-ordemSt.indexOf(b.cls))||(a.nome==='Backlog')-(b.nome==='Backlog'):a.nome.localeCompare(b.nome))}
+  const ordemE=x=>{if(x.key==='e:')return 9e9;const [f,e]=x.key.slice(2).split('|');return fIdx(f)*1000+etIx(f,e)};
+  return [...g.values()].sort((a,b)=>agr==='status'?(ordemSt.indexOf(a.cls)-ordemSt.indexOf(b.cls))||(a.nome==='Backlog')-(b.nome==='Backlog'):agr==='etapa'?ordemE(a)-ordemE(b):a.nome.localeCompare(b.nome))}
 function tlLinha({k,t},geral,sub){const ets=(k.etq||[]).map(id=>S.etiquetas.find(e=>e.id===id)).filter(Boolean),ns=tkSubs(t,k),nf=ns.filter(x=>x.feita).length;
   return `<div class="tl-r ${sub?'sub':''} ${k.feita?'feito':''}" data-a="tk-abrir" data-id="${t.id}" data-tk="${k.id}" data-mid="${k.id}" tabindex="0" role="button" aria-label="${escT(k.titulo)}">
     <span class="tl-c tl-tit">${tkAnel(t,k)}<span class="tl-t">${escT(k.titulo)}</span>${ns.length?`<span class="tl-ns faint" title="Subtarefas concluídas">${ic('subt',14)}${nf}/${ns.length}</span>`:''}${vzSelo(k)}</span>
@@ -47,10 +49,10 @@ function tkListaHtml(itens,ficha){const tid=ficha?ficha.id:null,ids=new Set(iten
   return `<div class="tl ${geral?'':'ficha'}">${G.map(g=>{const fe=!!UI.tl.fech[g.key],n=g.itens.length;
     const cab=`<div class="tl-gh"><button class="iconbtn sm" data-a="tl-grupo" data-v="${esc(g.key)}" aria-expanded="${!fe}" aria-label="${fe?'Abrir':'Fechar'} ${esc(g.nome)}">${ic(fe?'chev':'chevD',18)}</button>
       ${g.cls?`<span class="tl-st st-${g.cls}">${esc(g.nome)}</span>`:`<b class="tl-gn">${esc(g.nome)}</b>`}<span class="faint">${n}</span>
-      ${tkEd()&&(UI.tl.agr==='status'||ficha)&&g.cls!=='feito'&&g.cls!=='pausa'?`<button class="tkm-add tl-add" data-a="tk-nova" data-v="${esc(g.nome)}"${tid?` data-id="${tid}"`:''} aria-label="Adicionar tarefa em ${esc(g.nome)}">${ic('add',16)}Adicionar tarefa</button>`:''}</div>`;
+      ${tkEd()&&(ficha?(UI.tl.agrF||'status'):UI.tl.agr)==='status'&&g.cls!=='feito'&&g.cls!=='pausa'?`<button class="tkm-add tl-add" data-a="tk-nova" data-v="${esc(g.nome)}"${tid?` data-id="${tid}"`:''} aria-label="Adicionar tarefa em ${esc(g.nome)}">${ic('add',16)}Adicionar tarefa</button>`:''}</div>`;
     return `<section class="tl-g">${cab}${fe?'':`<div class="tl-tab" role="table"><div class="tl-r tl-h" role="row"><span class="tl-c">Tarefa</span>${geral?'<span class="tl-c">Terreno</span>':''}<span class="tl-c">Responsável</span><span class="tl-c">Prazo</span><span class="tl-c">Prioridade</span><span class="tl-c">Etiquetas</span></div>
       ${g.itens.sort(ordemTk).map(x=>tlLinha(x,geral,false)+filhas(x.k.id).map(y=>tlLinha(y,geral,true)).join('')).join('')}</div>`}</section>`}).join('')}</div>`}
-const tlAgrHtml=()=>`<label class="sr-only" for="tl-agr">Agrupar</label><select id="tl-agr" class="fsel-chip on" data-tl="agr">${[['status','Agrupar: Status'],['terreno','Agrupar: Terreno'],['resp','Agrupar: Responsável']].map(([v,n])=>`<option value="${v}" ${UI.tl.agr===v?'selected':''}>${n}</option>`).join('')}</select>`;
+const tlAgrHtml=()=>`<label class="sr-only" for="tl-agr">Agrupar</label><select id="tl-agr" class="fsel-chip on" data-tl="agr">${[['status','Agrupar: Status'],['terreno','Agrupar: Terreno'],['resp','Agrupar: Responsável'],['etapa','Agrupar: Etapa']].map(([v,n])=>`<option value="${v}" ${UI.tl.agr===v?'selected':''}>${n}</option>`).join('')}</select>`;
 
 /* ---------- Calendário ---------- */
 const DIAS_SEM=['dom','seg','ter','qua','qui','sex','sáb'];
@@ -85,7 +87,7 @@ window.addEventListener('click',e=>{const a=e.target.closest?.('[data-a="tl-feit
   /* concluir pelo círculo: com aprovador, abre o cartão na aba Aprovação */
   if(!k.feita&&apPrecisa(k)){UI.tkSel={tid:t.id,kid:k.id};UI.tkAba='aprov';UI.tkPop=null;UI.modal='tarefa';renderModal();return}
   tkConcluir(t,k,!k.feita);save();render()},true);
-document.addEventListener('change',e=>{const el=e.target;if(el.dataset?.tl!=='agr')return;e.stopImmediatePropagation();UI.tl.agr=el.value;render()},true);
+document.addEventListener('change',e=>{const el=e.target;if(el.dataset?.tl!=='agr'&&el.dataset?.tl!=='agrF')return;e.stopImmediatePropagation();UI.tl[el.dataset.tl]=el.value;render()},true);
 /* arrastar no calendário: muda o prazo (no banco, o mesmo update de prazo, com a cascata do cronograma) */
 let tcArr=null;
 document.addEventListener('dragstart',e=>{const c=e.target.closest?.('[data-tcarr]');if(!c)return;tcArr=c.dataset.tcarr;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',tcArr);c.classList.add('arrastando');document.body.classList.add('dnd-tc')});

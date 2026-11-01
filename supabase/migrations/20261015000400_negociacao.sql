@@ -227,17 +227,44 @@ create table app.propostas (
 -- ---------------------------------------------------------------------
 alter table fluxo.tarefas add foreign key (processo_id) references app.processos(id);
 
+-- Etapa do funil do cartão (lote B, 31/out/2026): a tarefa nova nasce na etapa
+-- atual do terreno (o processo aberto da fase mais adiantada); etapa 'nenhuma'
+-- deixa a tarefa sem etapa (nunca trava). A etapa é da fase do processo e a
+-- subetapa, da etapa.
 create or replace function app.tg_tarefa_processo()
 returns trigger language plpgsql security definer set search_path = '' as $$
+declare v_fase text;
 begin
-  if new.processo_id is not null and not exists (
-       select 1 from app.processos p join fluxo.quadros q on q.objeto_tipo = 'terreno' and q.objeto_id = p.terreno_id
-       where p.id = new.processo_id and q.id = new.quadro_id) then
-    raise exception 'A negociação informada é de outro terreno' using errcode = '23514';
+  if new.etapa = 'nenhuma' then
+    new.processo_id := null; new.etapa := null; new.subetapa := null;
+  elsif tg_op = 'INSERT' and new.processo_id is null and new.etapa is null and not new.modelo then
+    select p.id, p.etapa_atual into new.processo_id, new.etapa
+    from app.processos p join fluxo.quadros q on q.objeto_tipo = 'terreno' and q.objeto_id = p.terreno_id
+    join app.fases_modelo f on f.empresa_id = p.empresa_id and f.codigo = p.fase
+    where q.id = new.quadro_id and p.parte_id is null and p.status in ('ativo','stand_by')
+    order by p.status = 'ativo' desc, f.ordem desc limit 1;
+  end if;
+  if new.processo_id is null then
+    new.etapa := null; new.subetapa := null;
+    return new;
+  end if;
+  select p.fase into v_fase from app.processos p join fluxo.quadros q on q.objeto_tipo = 'terreno' and q.objeto_id = p.terreno_id
+   where p.id = new.processo_id and q.id = new.quadro_id;
+  if v_fase is null then raise exception 'A negociação informada é de outro terreno' using errcode = '23514'; end if;
+  if new.etapa is null then
+    new.etapa := (select etapa_atual from app.processos where id = new.processo_id);
+  elsif not exists (select 1 from app.etapas_modelo e join app.processos p on p.empresa_id = e.empresa_id and p.fase = e.fase
+                    where p.id = new.processo_id and e.codigo = new.etapa) then
+    raise exception 'Etapa de outra fase' using errcode = '23514';
+  end if;
+  if new.subetapa is not null and not exists (select 1 from app.subetapas_modelo s join app.processos p on p.empresa_id = s.empresa_id and p.fase = s.fase
+                    where p.id = new.processo_id and s.codigo = new.subetapa and s.etapa = new.etapa) then
+    if tg_op = 'UPDATE' and new.etapa is distinct from old.etapa then new.subetapa := null;   -- mudou a etapa: a subetapa de antes não vale
+    else raise exception 'Subetapa de outra etapa' using errcode = '23514'; end if;
   end if;
   return new;
 end $$;
-create trigger t_processo before insert or update of processo_id on fluxo.tarefas for each row execute function app.tg_tarefa_processo();
+create trigger t_processo before insert or update of processo_id, etapa, subetapa on fluxo.tarefas for each row execute function app.tg_tarefa_processo();
 
 create table app.atividades (
   id          uuid primary key default gen_random_uuid(),

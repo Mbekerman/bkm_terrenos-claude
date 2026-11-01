@@ -2584,4 +2584,136 @@ update fluxo.tarefas set concluida_em = now() where id = :'kp2';
 select pg_temp.ok((select concluida_em is not null from fluxo.tarefas where id = :'kp2'), 'com a predecessora concluída, a sucessora conclui');
 select pg_temp.como(:'diretor');
 select fluxo.salvar_regra_predecessoras(:'emp', false);
+\echo '# tarefas da etapa, trava, condições e volta de etapa (lote B, 31/out)'
+select pg_temp.como(:'diretor');
+insert into fluxo.modelos_quadro (empresa_id, nome) values (:'emp', 'Estudos preliminares') returning id as mest \gset
+insert into fluxo.modelo_tarefas (empresa_id, modelo_id, ordem, titulo, lista_nome, inicio_dias, duracao) values (:'emp', :'mest', 1, 'Estudo de massa', 'Fazer', 0, 5) returning id as mte1 \gset
+insert into fluxo.modelo_tarefas (empresa_id, modelo_id, ordem, titulo, inicio_dias, duracao) values (:'emp', :'mest', 2, 'Estudo de viabilidade', 0, 10) returning id as mte2 \gset
+insert into fluxo.modelo_tarefas (empresa_id, modelo_id, ordem, titulo, condicao) values (:'emp', :'mest', 3, 'Minuta de permuta', :'permuta') returning id as mte3 \gset
+insert into fluxo.modelo_vinculos (empresa_id, modelo_id, predecessora_id, sucessora_id) values (:'emp', :'mest', :'mte1', :'mte2');
+select pg_temp.falha(format($$insert into fluxo.modelo_tarefas (empresa_id, modelo_id, titulo, condicao) values (%L, %L, 'X', '{"modo":"todas","itens":[{"campo":"terreno.descricao","op":"preenchido"}]}')$$, :'emp', :'mest'),
+  'a condição da tarefa do modelo só usa campo liberado para condição');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$select app.salvar_regra_etapa(%L, null, '{"fase":"novos_negocios","etapa":"estudos","titulo":"X"}')$$, :'emp'), 'só o administrador cria regra de tarefas da etapa');
+insert into fluxo.modelos_quadro (empresa_id, dono_id, nome) values (:'emp', :'analista', 'Meu modelo') returning id as mmeu \gset
+select pg_temp.como(:'diretor');
+select pg_temp.falha(format($$select app.salvar_regra_etapa(%L, null, '{"fase":"novos_negocios","etapa":"estudos","modelo_id":"%s","titulo":"X"}')$$, :'emp', :'mest'), 'a regra cria um modelo ou uma tarefa, não os dois');
+select pg_temp.falha(format($$select app.salvar_regra_etapa(%L, null, '{"fase":"novos_negocios","etapa":"estudos","modelo_id":"%s"}')$$, :'emp', :'mmeu'), 'a regra usa modelo da empresa, não de uma pessoa');
+select pg_temp.falha(format($$select app.salvar_regra_etapa(%L, null, '{"fase":"novos_negocios","etapa":"estudos","subetapa":"proposta_enviada","titulo":"X"}')$$, :'emp'), 'a subetapa da regra é da etapa');
+select app.salvar_regra_etapa(:'emp', null, jsonb_build_object('fase','novos_negocios','etapa','estudos','modelo_id',:'mest','trava',true)) as re1 \gset
+select app.salvar_regra_etapa(:'emp', null, '{"fase":"novos_negocios","etapa":"estudos","subetapa":"estudo_viabilidade","titulo":"Cobrar o estudo do arquiteto","prazo_dias":5,"trava":true}') as re2 \gset
+select app.salvar_regra_etapa(:'emp', null, jsonb_build_object('fase','novos_negocios','etapa','estudos','titulo','Conferir a permuta','condicao',:'permuta'::jsonb,'trava',true)) as re3 \gset
+select app.salvar_regra_etapa(:'emp', null, '{"fase":"novos_negocios","etapa":"estudos","titulo":"Conferir o preço pedido","trava":true,"condicao":{"modo":"todas","itens":[{"campo":"oferta.valor_pedido","op":"maior","valores":[2000000]}]}}') as re4 \gset
+select app.salvar_regra_etapa(:'emp', null, '{"fase":"novos_negocios","etapa":"negociacao","titulo":"Cobrar retorno da proposta","prazo_dias":5}') as re5 \gset
+select pg_temp.ok((select not trava from app.etapa_regras where id = :'re5') and (select responsavel_objeto from app.etapa_regras where id = :'re5'),
+  'a trava começa desligada e o responsável padrão é o do terreno');
+-- condição no checklist de documentos e no pré-requisito
+select app.salvar_checklist(:'emp', 'novos_negocios', 'estudos', 'matricula', true);
+select pg_temp.falha(format($$select app.condicao_checklist(%L, 'novos_negocios', 'estudos', 'matricula', '{"modo":"todas","itens":[{"campo":"terreno.descricao","op":"preenchido"}]}')$$, :'emp'),
+  'a condição do documento só usa campo liberado');
+select app.condicao_checklist(:'emp', 'novos_negocios', 'estudos', 'matricula', :'permuta');
+select app.condicao_prerequisito(:'pr1', :'permuta');
+insert into fluxo.automacoes (empresa_id, nome, gatilho, gatilho_etapa, acoes)
+values (:'emp', 'Negociação é prioridade', 'etapa', 'novos_negocios:negociacao', '[{"tipo":"prioridade","valor":"alta"}]') returning id as aue \gset
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude, poligono_geojson)
+  values (:'emp', 'Terreno do funil', :'gestor', 'corretor', :'sp', -23.63, -46.63, pg_temp.quadra(-46.63, -23.63)) returning id as tfn \gset
+select pg_temp.como(:'analista');
+select (app.registrar_oferta(:'tfn', 3000000, 'dinheiro')->>'processo_id') as pfn \gset
+select app.mover_etapa(:'pfn') \gset
+select id as kms from fluxo.tarefas where processo_id = :'pfn' and titulo = 'Estudo de massa' \gset
+select id as kvb from fluxo.tarefas where processo_id = :'pfn' and titulo = 'Estudo de viabilidade' \gset
+select id as kpr from fluxo.tarefas where processo_id = :'pfn' and titulo = 'Conferir o preço pedido' \gset
+select pg_temp.ok((select count(*) from fluxo.tarefas where processo_id = :'pfn') = 3
+  and not exists (select 1 from fluxo.tarefas where processo_id = :'pfn' and titulo in ('Minuta de permuta','Conferir a permuta')),
+  'ao entrar na etapa nascem o modelo e a tarefa da regra; o que tem condição que não vale (permuta, com oferta em dinheiro) não nasce');
+select pg_temp.ok((select etapa = 'estudos' and subetapa is null and inicio = current_date and prazo = current_date + 4 and responsavel_id is null from fluxo.tarefas where id = :'kms')
+  and (select inicio = current_date + 5 from fluxo.tarefas where id = :'kvb') and exists (select 1 from fluxo.vinculos where predecessora_id = :'kms' and sucessora_id = :'kvb'),
+  'prazos contam do dia da entrada, com as predecessoras do modelo; a tarefa fica marcada com a etapa');
+select pg_temp.ok((select responsavel_id = :'gestor' from fluxo.tarefas where id = :'kpr'), 'o responsável do terreno vira a pessoa do terreno na hora');
+select pg_temp.tarefa(:'tfn', 'Visitar o terreno', null, :'gestor') as kvi \gset
+select pg_temp.ok((select processo_id = :'pfn' and etapa = 'estudos' from fluxo.tarefas where id = :'kvi')
+  and (select trava and trava_nivel = 'etapa' from app.v_tarefas_etapa where tarefa_id = :'kvi'),
+  'a tarefa criada à mão nasce na etapa atual e trava, porque a etapa trava');
+insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, etapa) select empresa_id, id, pg_temp.lista(:'tfn', 'Fazer'), 'Sem etapa', 'nenhuma'
+  from fluxo.quadros where objeto_tipo = 'terreno' and objeto_id = :'tfn' returning id as kne \gset
+select pg_temp.ok((select processo_id is null and etapa is null from fluxo.tarefas where id = :'kne'), '"Nenhuma" deixa a tarefa sem etapa');
+select pg_temp.falha(format($$update fluxo.tarefas set etapa = 'projeto' where id = %L$$, :'kvi'), 'a etapa da tarefa é da fase da negociação');
+select pg_temp.ok(not exists (select 1 from jsonb_array_elements(app.checar_passagem(:'pfn')->'itens') i where i->>'tipo' in ('documento','prerequisito')),
+  'documento e pré-requisito com condição que não vale não entram nas pendências');
+select pg_temp.ok((select not aplica from app.v_checklist where processo_id = :'pfn' and etapa = 'estudos' and tipo_documento = 'matricula'), 'o checklist diz que o documento não se aplica');
+select pg_temp.ok((select count(*) from jsonb_array_elements(app.checar_passagem(:'pfn')->'itens') i where i->>'tipo' = 'tarefa') = 4,
+  'as tarefas abertas que travam entram nas pendências do avanço');
+select pg_temp.falha(format('select app.mover_etapa(%L)', :'pfn'), 'com tarefa aberta que trava, o analista não avança');
+-- subetapa: a regra dela nasce e trava a saída da subetapa
+select app.mover_subetapa(:'pfn', 'estudo_viabilidade') \gset
+select id as kca from fluxo.tarefas where processo_id = :'pfn' and titulo = 'Cobrar o estudo do arquiteto' \gset
+select pg_temp.ok((select subetapa = 'estudo_viabilidade' and prazo = current_date + 5 from fluxo.tarefas where id = :'kca'), 'a regra da subetapa nasce ao entrar nela');
+select pg_temp.falha(format('select app.mover_subetapa(%L, %L)', :'pfn', 'analise_tecnica'), 'a tarefa da subetapa trava a saída da subetapa');
+update fluxo.tarefas set concluida_em = now() where id = :'kca';
+select pg_temp.como(:'gestor');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'pode_avancar' and destinatario_id = :'gestor' and texto like '%pode avançar. As tarefas de Estudo de Viabilidade%') = 1,
+  'concluída a última tarefa que trava, o responsável do terreno recebe "pode avançar"');
+select pg_temp.como(:'analista');
+select pg_temp.ok((select subetapa_atual = 'estudo_viabilidade' from app.processos where id = :'pfn'), 'o sistema não avança sozinho');
+-- a condição deixa de valer: não se aplica mais
+select app.gravar_campo(:'tfn', 'oferta.valor_pedido', '1500000');
+select pg_temp.ok((select situacao = 'nao_se_aplica' and not trava from app.v_tarefas_etapa where tarefa_id = :'kpr'), 'condição que deixou de valer: a tarefa fica, não trava e não se aplica mais');
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format('select app.mover_etapa(%L, true, %L)', :'pfn', ' '), 'o gestor força só com justificativa');
+select app.mover_etapa(:'pfn', true, 'Seguimos com o estudo em paralelo') \gset
+select pg_temp.ok((select etapa_atual = 'negociacao' from app.processos where id = :'pfn')
+  and (select forcado from app.processo_transicoes where processo_id = :'pfn' order by em desc limit 1), 'o gestor avança com justificativa, que fica no histórico');
+select id as kcr from fluxo.tarefas where processo_id = :'pfn' and titulo = 'Cobrar retorno da proposta' \gset
+select pg_temp.ok((select prioridade = 'alta' and etapa = 'negociacao' from fluxo.tarefas where id = :'kcr'), 'gatilho "Terreno entrou na etapa" roda nos cartões da etapa');
+select pg_temp.ok((select prioridade = 'media' from fluxo.tarefas where id = :'kvb'), 'o gatilho não toca cartão de outra etapa');
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tfn', 'Minuta da proposta', null, :'gestor') as kmp \gset
+insert into fluxo.comentarios (empresa_id, tarefa_id, autor_id, texto) values (:'emp', :'kmp', :'analista', 'Primeira versão no Drive');
+-- voltar de etapa
+select app.mover_para_etapa(:'pfn', 'estudos', false, 'O vendedor pediu outro estudo') \gset
+select pg_temp.ok((select arquivada_em is not null from fluxo.tarefas where id = :'kcr') and (select situacao = 'arquivada_auto' from app.tarefas_etapa where tarefa_id = :'kcr'),
+  'voltar de etapa: tarefa sem trabalho da etapa deixada é arquivada sozinha');
+select pg_temp.ok((select arquivada_em is null from fluxo.tarefas where id = :'kmp') and (select situacao = 'deixada' and not trava from app.v_tarefas_etapa where tarefa_id = :'kmp'),
+  'com trabalho, a tarefa fica aberta como "Etapa deixada" e não trava');
+select pg_temp.como(:'gestor');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'etapa_deixada' and destinatario_id = :'gestor') = 1, 'o responsável da tarefa deixada é avisado');
+select pg_temp.como(:'analista');
+select pg_temp.ok((select arquivada_em is null and concluida_em is null from fluxo.tarefas where id = :'kvb'), 'as tarefas da etapa de destino ficam como estavam');
+select pg_temp.ok((select count(*) from fluxo.tarefas where processo_id = :'pfn' and titulo = 'Estudo de massa') = 1, 'voltar à etapa não cria de novo o que já existe');
+-- concluir o que trava a etapa avisa que pode avançar
+update fluxo.tarefas set concluida_em = now() where id in (:'kms', :'kvi');
+select pg_temp.como(:'gestor');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'pode_avancar' and texto like '%tarefas de Estudos estão%') = 0, 'ainda com tarefa que trava, nada de aviso');
+select pg_temp.como(:'analista');
+update fluxo.tarefas set concluida_em = now() where id = :'kvb';
+select pg_temp.como(:'gestor');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'pode_avancar' and destinatario_id = :'gestor' and texto like '%tarefas de Estudos estão%') = 1, 'concluídas as tarefas da etapa, vem o aviso');
+select pg_temp.como(:'analista');
+select app.mover_etapa(:'pfn') \gset
+select pg_temp.ok((select arquivada_em is null and prazo = current_date + 5 from fluxo.tarefas where id = :'kcr')
+  and (select count(*) from fluxo.tarefas where processo_id = :'pfn' and titulo = 'Cobrar retorno da proposta') = 1,
+  'de volta à etapa, a arquivada sozinha volta com o mesmo código e o prazo refeito, sem duplicar');
+select pg_temp.ok((select situacao = 'ativa' from app.v_tarefas_etapa where tarefa_id = :'kmp'), 'a deixada volta a valer na etapa');
+select pg_temp.ok((select concluida_em is not null from fluxo.tarefas where id = :'kms'), 'concluída continua concluída');
+-- Stand By pausa as tarefas da fase; a retomada devolve
+select app.tarefas_abertas_fase(:'pfn') as nab \gset
+select pg_temp.falha(format($$select app.encerrar_processo(%L, 'stand_by', p_detalhe => 'x', p_retomar_em => current_date + 30, p_tarefas => 'manter')$$, :'pfn'),
+  'arquivar ou manter as tarefas é só de Perdido e Descartado');
+select app.encerrar_processo(:'pfn', 'stand_by', p_detalhe => 'Proprietário em inventário', p_retomar_em => current_date + 30) \gset
+select pg_temp.ok((select count(*) from fluxo.pausas z join fluxo.tarefas k on k.id = z.tarefa_id where k.processo_id = :'pfn' and z.situacao = 'ativa' and z.origem = 'stand_by') = :nab
+  and (select lista_nome = 'Pausadas' from fluxo.v_tarefas where id = :'kcr'), 'Stand By pausa as tarefas abertas da fase, sem pedido');
+select pg_temp.ok(not exists (select 1 from fluxo.pausas where tarefa_id = :'kne'), 'tarefa sem etapa não é pausada');
+select pg_temp.falha(format('select fluxo.retomar(%L)', :'kcr'), 'tarefa pausada pelo Stand By só volta com a negociação');
+select app.retomar_processo(:'pfn');
+select pg_temp.ok((select lista_nome <> 'Pausadas' from fluxo.v_tarefas where id = :'kcr')
+  and not exists (select 1 from fluxo.pausas z join fluxo.tarefas k on k.id = z.tarefa_id where k.processo_id = :'pfn' and z.situacao = 'ativa'),
+  'retomada a negociação, as tarefas voltam para a lista de antes');
+-- Perdido arquiva as tarefas abertas da fase (padrão)
+select app.encerrar_processo(:'pfn', 'perdido', 'sem_retorno', 'O proprietário parou de responder') \gset
+select pg_temp.ok(not exists (select 1 from fluxo.tarefas where processo_id = :'pfn' and concluida_em is null and arquivada_em is null)
+  and (select arquivada_em is null from fluxo.tarefas where id = :'kne'), 'Perdido arquiva as tarefas abertas da fase; as sem etapa ficam');
+select pg_temp.como(:'diretor');
+select pg_temp.ok(app.apagar_regra_etapa(:'re5') = 'desativada' and app.apagar_regra_etapa(:'re3') = 'apagada', 'regra que já criou tarefa só se desliga');
+select app.condicao_prerequisito(:'pr1', null);
+update fluxo.automacoes set ativa = false where id = :'aue';
 \echo 'TODOS OS TESTES PASSARAM'

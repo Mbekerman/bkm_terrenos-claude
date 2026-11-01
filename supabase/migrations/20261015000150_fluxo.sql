@@ -858,6 +858,7 @@ create table fluxo.modelo_tarefas (
   itens               jsonb not null default '[]',      -- itens do cartão (31/out/2026): [{chave ou campo_id, regra, condicao}]
   aprovacao_modo      text not null default 'paralelo' check (aprovacao_modo in ('paralelo','sequencia')),
   visibilidade        text not null default 'publico' check (visibilidade in ('publico','individual','restrito')),  -- restrito: só os envolvidos
+  condicao            jsonb,                      -- "Vale quando" (31/out/2026): a tarefa só nasce se a condição vale para o objeto
   check (not (responsavel_objeto and responsavel_id is not null)),
   check (jsonb_typeof(pessoas) = 'array' and jsonb_typeof(checklists) = 'array' and jsonb_typeof(itens) = 'array')
 );
@@ -885,7 +886,7 @@ returns boolean language sql stable security definer set search_path = '' as $$
 -- Tarefas do modelo e as do modelo ligadas entre si ficam no mesmo modelo.
 create or replace function fluxo.tg_modelo_filho()
 returns trigger language plpgsql security definer set search_path = '' as $$
-declare j jsonb := to_jsonb(new);
+declare j jsonb := to_jsonb(new); v_valida regproc;
 begin
   if (select empresa_id from fluxo.modelos_quadro where id = new.modelo_id) is distinct from new.empresa_id then
     raise exception 'Registro não pertence à mesma empresa do modelo' using errcode = '42501';
@@ -893,20 +894,49 @@ begin
   if j ? 'predecessora_id' and (select count(*) from fluxo.modelo_tarefas where id in ((j->>'predecessora_id')::uuid, (j->>'sucessora_id')::uuid) and modelo_id = new.modelo_id) <> 2 then
     raise exception 'Vínculo entre tarefas de outro modelo' using errcode = '23514';
   end if;
+  -- condição da tarefa do modelo: o app do tipo do modelo confere (vazia vira nula)
+  if tg_table_name = 'modelo_tarefas' then
+    if new.condicao is null or new.condicao = 'null'::jsonb
+       or coalesce(jsonb_array_length(case when jsonb_typeof(new.condicao->'itens') = 'array' then new.condicao->'itens' end), 0) = 0 then
+      new.condicao := null;
+    else
+      select o.valida_condicao into v_valida from fluxo.modelos_quadro m join fluxo.objeto_tipos o on o.tipo = m.objeto_tipo where m.id = new.modelo_id;
+      if v_valida is null then raise exception 'Este tipo de quadro não aceita condição' using errcode = '22023'; end if;
+      execute format('select %s($1, $2)', v_valida) using new.empresa_id, new.condicao;
+    end if;
+  end if;
   return new;
 end $$;
 create trigger t_modelo before insert or update on fluxo.modelo_tarefas for each row execute function fluxo.tg_modelo_filho();
 create trigger t_modelo before insert or update on fluxo.modelo_vinculos for each row execute function fluxo.tg_modelo_filho();
 
+-- A condição vale para o objeto do quadro? Sem condição (ou sem quem confira), vale.
+create or replace function fluxo.condicao_objeto(p_quadro uuid, p_cond jsonb)
+returns boolean language plpgsql stable security definer set search_path = '' as $$
+declare v_fn regproc; v_obj uuid; v boolean;
+begin
+  if p_cond is null then return true; end if;
+  select o.avalia_condicao, q.objeto_id into v_fn, v_obj from fluxo.quadros q left join fluxo.objeto_tipos o on o.tipo = q.objeto_tipo where q.id = p_quadro;
+  if v_fn is null or v_obj is null then return true; end if;
+  execute format('select %s($1, $2)', v_fn) into v using v_obj, p_cond;
+  return coalesce(v, false);
+end $$;
+
 -- Cria os cartões do modelo no quadro (sem conferir permissão: uso interno).
-create or replace function fluxo.aplicar_modelo_interno(p_modelo uuid, p_quadro uuid, p_data date, p_resp_objeto uuid)
-returns int language plpgsql security definer set search_path = '' as $$
-declare m fluxo.modelos_quadro; t fluxo.modelo_tarefas; v_emp uuid; v_lista uuid; v_ini date; v_id uuid; v_n int := 0; mapa jsonb := '{}'; p jsonb; c jsonb; v_ck uuid; x jsonb; v_user uuid; v_ord int;
+-- Tarefa do modelo com condição que não vale para o objeto não nasce. Devolve
+-- {tarefa do modelo: cartão criado}. p_pular: tarefas do modelo que não nascem
+-- (o app já as criou antes); p_existentes: {tarefa do modelo: cartão} já no
+-- quadro, para ligar as predecessoras às que nascem agora.
+create or replace function fluxo.aplicar_modelo_mapa(p_modelo uuid, p_quadro uuid, p_data date, p_resp_objeto uuid,
+  p_pular uuid[] default '{}', p_existentes jsonb default '{}')
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare m fluxo.modelos_quadro; t fluxo.modelo_tarefas; v_emp uuid; v_lista uuid; v_ini date; v_id uuid; mapa jsonb := '{}'; p jsonb; c jsonb; v_ck uuid; x jsonb; v_user uuid; v_ord int; todos jsonb;
 begin
   select * into m from fluxo.modelos_quadro where id = p_modelo and ativo;
   select empresa_id into v_emp from fluxo.quadros where id = p_quadro;
   if m.id is null or v_emp is distinct from m.empresa_id then raise exception 'Modelo não encontrado nesta empresa' using errcode = 'P0002'; end if;
-  for t in select * from fluxo.modelo_tarefas where modelo_id = p_modelo order by ordem, titulo loop
+  for t in select * from fluxo.modelo_tarefas where modelo_id = p_modelo and not (id = any (coalesce(p_pular, '{}'))) order by ordem, titulo loop
+    continue when not fluxo.condicao_objeto(p_quadro, t.condicao);
     select id into v_lista from fluxo.listas where quadro_id = p_quadro and nome = t.lista_nome and not oculta;
     if v_lista is null then
       select id into v_lista from fluxo.listas where quadro_id = p_quadro and tipo = 'aberta' and not oculta order by posicao limit 1;
@@ -944,13 +974,21 @@ begin
         values (v_emp, v_id, x->>'chave', (x->>'campo_id')::uuid, coalesce(x->>'regra', 'livre'), x->'condicao') on conflict do nothing;
       end if;
     end loop;
-    v_n := v_n + 1;
   end loop;
+  todos := coalesce(p_existentes, '{}') || mapa;
   insert into fluxo.vinculos (empresa_id, predecessora_id, sucessora_id, tipo, defasagem)
-  select v_emp, (mapa->>v.predecessora_id::text)::uuid, (mapa->>v.sucessora_id::text)::uuid, v.tipo, v.defasagem
-  from fluxo.modelo_vinculos v where v.modelo_id = p_modelo;
-  return v_n;
+  select v_emp, (todos->>v.predecessora_id::text)::uuid, (todos->>v.sucessora_id::text)::uuid, v.tipo, v.defasagem
+  from fluxo.modelo_vinculos v
+  where v.modelo_id = p_modelo and todos ? v.predecessora_id::text and todos ? v.sucessora_id::text
+    and (mapa ? v.predecessora_id::text or mapa ? v.sucessora_id::text)
+  on conflict do nothing;
+  return mapa;
 end $$;
+
+create or replace function fluxo.aplicar_modelo_interno(p_modelo uuid, p_quadro uuid, p_data date, p_resp_objeto uuid)
+returns int language sql security definer set search_path = '' as $$
+  select count(*)::int from jsonb_object_keys(fluxo.aplicar_modelo_mapa(p_modelo, p_quadro, p_data, p_resp_objeto)) $$;
+
 
 -- Aplicar à mão: quem edita, com um modelo da empresa ou dele mesmo.
 create or replace function fluxo.aplicar_modelo(p_modelo uuid, p_quadro uuid, p_data date default current_date, p_resp_objeto uuid default null)
@@ -1054,7 +1092,8 @@ create policy ver on fluxo.modelo_vinculos for select to authenticated using (ex
 create policy mexer on fluxo.modelo_vinculos for all to authenticated using (fluxo.edita_modelo(modelo_id)) with check (fluxo.edita_modelo(modelo_id));
 -- o padrão só muda pela função (que confere o administrador)
 revoke update (padrao) on fluxo.modelos_quadro from authenticated;
-revoke all on function fluxo.aplicar_modelo_interno(uuid, uuid, date, uuid), fluxo.aplicar_padrao(uuid, uuid) from public;
+revoke all on function fluxo.aplicar_modelo_interno(uuid, uuid, date, uuid), fluxo.aplicar_padrao(uuid, uuid),
+  fluxo.aplicar_modelo_mapa(uuid, uuid, date, uuid, uuid[], jsonb), fluxo.condicao_objeto(uuid, jsonb) from public;
 revoke all on function fluxo.aplicar_modelo(uuid, uuid, date, uuid), fluxo.salvar_quadro_como_modelo(uuid, text, boolean, uuid),
                        fluxo.definir_modelo_padrao(uuid, uuid, text) from public;
 grant execute on function fluxo.aplicar_modelo(uuid, uuid, date, uuid), fluxo.salvar_quadro_como_modelo(uuid, text, boolean, uuid),
@@ -1264,7 +1303,8 @@ create table fluxo.pausas (
   inicio            timestamptz,                    -- quando a pausa começou a valer
   fim               timestamptz,
   retomada_por      uuid references auth.users(id),
-  dias              int                             -- dias que empurraram o prazo
+  dias              int,                            -- dias que empurraram o prazo
+  origem            text                            -- vazio = pausa da tarefa; senão quem pausou de fora (o BKM: 'stand_by' da fase), e só ele retoma
 );
 create unique index on fluxo.pausas (tarefa_id) where situacao in ('pendente','ativa');
 create index on fluxo.pausas (tarefa_id, pedida_em);
@@ -1336,14 +1376,45 @@ begin
   end if;
 end $$;
 
--- Retomar: volta para a lista de antes e empurra o prazo pelos dias pausados
+-- Pausa vinda de fora (o app pausa as tarefas de um objeto parado; sem pedido nem
+-- conferência de permissão: uso interno). Tarefa já pausada fica como está; pedido
+-- de pausa em aberto é cancelado; quadro sem lista de pausa não pausa. Devolve se pausou.
+create or replace function fluxo._pausar_de_fora(p_tarefa uuid, p_motivo text, p_origem text)
+returns boolean language plpgsql security definer set search_path = '' as $$
+declare k fluxo.tarefas; v uuid;
+begin
+  select * into k from fluxo.tarefas where id = p_tarefa for update;
+  if k.id is null or k.concluida_em is not null or k.arquivada_em is not null or k.modelo then return false; end if;
+  if exists (select 1 from fluxo.pausas where tarefa_id = p_tarefa and situacao = 'ativa') then return false; end if;
+  if not exists (select 1 from fluxo.listas where quadro_id = k.quadro_id and tipo = 'pausa') then return false; end if;
+  update fluxo.pausas set situacao = 'cancelada', decidida_em = clock_timestamp(), motivo_decisao = p_motivo where tarefa_id = p_tarefa and situacao = 'pendente';
+  insert into fluxo.pausas (empresa_id, tarefa_id, motivo, origem) values (k.empresa_id, p_tarefa, p_motivo, p_origem) returning id into v;
+  perform fluxo._iniciar_pausa(v);
+  return true;
+end $$;
+
+-- Retomar: volta para a lista de antes e empurra o prazo pelos dias pausados.
+-- A pausa vinda de fora só o próprio objeto retoma (fluxo._retomar).
 create or replace function fluxo.retomar(p_tarefa uuid)
+returns int language plpgsql security definer set search_path = '' as $$
+declare k fluxo.tarefas; v_origem text;
+begin
+  select * into k from fluxo.tarefas where id = p_tarefa;
+  if k.id is null then raise exception 'Tarefa não encontrada' using errcode = 'P0002'; end if;
+  perform fluxo.exigir_edicao_tarefa(k.id);
+  select origem into v_origem from fluxo.pausas where tarefa_id = p_tarefa and situacao = 'ativa';
+  if v_origem = 'stand_by' then raise exception 'A tarefa está pausada pelo Stand By da fase: ela volta quando a negociação for retomada' using errcode = '23514';
+  elsif v_origem is not null then raise exception 'A tarefa foi pausada de fora e só volta com o que a pausou' using errcode = '23514';
+  end if;
+  return fluxo._retomar(p_tarefa);
+end $$;
+
+create or replace function fluxo._retomar(p_tarefa uuid)
 returns int language plpgsql security definer set search_path = '' as $$
 declare z fluxo.pausas; k fluxo.tarefas; v_lista uuid; v_dias int;
 begin
   select * into k from fluxo.tarefas where id = p_tarefa for update;
   if k.id is null then raise exception 'Tarefa não encontrada' using errcode = 'P0002'; end if;
-  perform fluxo.exigir_edicao_tarefa(k.id);
   select * into z from fluxo.pausas where tarefa_id = p_tarefa and situacao = 'ativa' for update;
   if z.id is null then raise exception 'A tarefa não está pausada' using errcode = '23514'; end if;
   v_dias := case when fluxo.usa_dias_uteis(k.empresa_id)
@@ -1388,7 +1459,7 @@ alter table fluxo.pausas enable row level security;
 create policy ver on fluxo.pausas for select to authenticated using (empresa_id in (select app.minhas_empresas()));
 grant select on fluxo.pausas, fluxo.v_tarefa_sla to authenticated;
 create trigger t_aud after insert or update or delete on fluxo.pausas for each row execute function app.tg_auditoria();
-revoke all on function fluxo._iniciar_pausa(uuid), fluxo.pausar(uuid, text), fluxo.decidir_pausa(uuid, boolean, text), fluxo.retomar(uuid),
+revoke all on function fluxo._iniciar_pausa(uuid), fluxo._pausar_de_fora(uuid, text, text), fluxo._retomar(uuid), fluxo.pausar(uuid, text), fluxo.decidir_pausa(uuid, boolean, text), fluxo.retomar(uuid),
                        fluxo.salvar_regra_pausa(uuid, text) from public;
 grant execute on function fluxo.pausar(uuid, text), fluxo.decidir_pausa(uuid, boolean, text), fluxo.retomar(uuid),
                           fluxo.salvar_regra_pausa(uuid, text), fluxo.aprova_pausa(uuid, uuid) to authenticated;
@@ -2383,7 +2454,8 @@ create table fluxo.automacoes (
   quadro_id           uuid references fluxo.quadros(id) on delete cascade,   -- vazio = empresa toda
   tarefa_id           uuid references fluxo.tarefas(id) on delete cascade,   -- regra só deste cartão (30/out); o quadro vem dele
   nome                text not null check (length(trim(nome)) > 0),
-  gatilho             text not null check (gatilho in ('criada','entrou_lista','concluida','etiqueta','campo','checklist_completo','prazo_antes','prazo_venceu','botao','agenda')),
+  gatilho             text not null check (gatilho in ('criada','entrou_lista','concluida','etiqueta','campo','checklist_completo','prazo_antes','prazo_venceu','botao','agenda','etapa')),
+  gatilho_etapa       text,                                  -- etapa (31/out): o código que o app dá à etapa do objeto (no BKM, 'fase:etapa'); vazio = qualquer
   gatilho_lista_id    uuid references fluxo.listas(id),      -- entrou_lista, regra do quadro (vazio = qualquer lista)
   gatilho_lista_nome  text,                                  -- entrou_lista, regra da empresa
   gatilho_etiqueta_id uuid references fluxo.etiquetas(id),   -- etiqueta (vazio = qualquer)
@@ -2453,6 +2525,7 @@ begin
   if new.gatilho <> 'entrou_lista' then new.gatilho_lista_id := null; new.gatilho_lista_nome := null; end if;
   if new.gatilho <> 'etiqueta' then new.gatilho_etiqueta_id := null; end if;
   if new.gatilho <> 'campo' then new.gatilho_campo_id := null; end if;
+  if new.gatilho <> 'etapa' then new.gatilho_etapa := null; end if;
   if new.gatilho = 'prazo_antes' and new.gatilho_dias is null then raise exception 'Diga quantos dias antes do prazo' using errcode = '23514'; end if;
   if new.gatilho <> 'prazo_antes' then new.gatilho_dias := null; end if;
   if new.gatilho = 'agenda' then
@@ -2707,7 +2780,7 @@ end $$;
 -- Procura as regras ligadas para o que aconteceu no cartão e roda as que passam nas condições.
 -- p_lista, p_etiqueta, p_campo: o que o gatilho diz (lista em que entrou, etiqueta posta, campo mudado).
 create or replace function fluxo.disparar_automacoes(p_tarefa uuid, p_gatilho text, p_lista uuid default null, p_etiqueta uuid default null,
-  p_campo uuid default null, p_referencia date default null)
+  p_campo uuid default null, p_referencia date default null, p_etapa text default null)
 returns int language plpgsql security definer set search_path = '' as $$
 declare k fluxo.tarefas; a fluxo.automacoes; n int := 0;
 begin
@@ -2721,6 +2794,7 @@ begin
                   or lower(trim(x.gatilho_lista_nome)) = (select lower(trim(nome)) from fluxo.listas where id = p_lista))
              and (p_gatilho <> 'etiqueta' or x.gatilho_etiqueta_id is null or x.gatilho_etiqueta_id = p_etiqueta)
              and (p_gatilho <> 'campo' or x.gatilho_campo_id is null or x.gatilho_campo_id = p_campo)
+             and (p_gatilho <> 'etapa' or x.gatilho_etapa is null or x.gatilho_etapa = p_etapa)
              and (p_referencia is null or not exists (select 1 from fluxo.automacao_execucoes e where e.automacao_id = x.id and e.tarefa_id = k.id and e.referencia = p_referencia))
            order by x.quadro_id is not null, x.tarefa_id is not null, x.criada_em loop   -- empresa, quadro, cartão
     -- dono que perdeu o direito não roda a regra; regra do quadro só toca o cartão que o dono vê
@@ -2894,7 +2968,7 @@ grant select, insert, update, delete on fluxo.automacoes to authenticated;
 grant select on fluxo.automacao_execucoes to authenticated;
 revoke execute on function fluxo.automacoes_agenda(date) from public;
 grant execute on function fluxo.botoes_cartao(uuid), fluxo.apertar_botao(uuid, uuid) to authenticated;
-revoke execute on function fluxo.disparar_automacoes(uuid, text, uuid, uuid, uuid, date), fluxo.automacoes_prazo(date),
+revoke execute on function fluxo.disparar_automacoes(uuid, text, uuid, uuid, uuid, date, text), fluxo.automacoes_prazo(date),
   fluxo._executar_automacao(fluxo.automacoes, uuid, date), fluxo._acoes_automacao(fluxo.automacoes, uuid, uuid),
   fluxo._avisar(uuid, uuid, text, uuid, uuid) from public;
 

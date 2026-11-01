@@ -996,6 +996,49 @@ erDiagram
 - `fluxo.itens_em_branco(tarefa)` lista o que está em branco com regra e condição valendo; `fluxo.pendencias_conclusao` devolve `'checklist'` e `'campos'` (bloqueiam, salvo justificativa do diretor) e `'justificar'` (conclui com justificativa).
 - Itens, regras e condições vão na cópia do cartão (escolha "Campos"), na recorrência e no modelo de tarefas (`modelo_tarefas.itens`; item de checklist do modelo pode ser `{texto, regra, condicao}`).
 
+### Tarefas da etapa, trava e volta de etapa (ligação funil × quadros, lote B)
+
+Decisões do Moisés de 31/out/2026 (simulação "Funil e quadros"). Banco em `…001300_funil_tarefas.sql`, com os ganchos em `…000500_regras.sql` (passagem, encerrar, retomar, pendências), `…000400_negociacao.sql` (etapa do cartão), `…000150_fluxo.sql` (condição na tarefa do modelo, pausa de fora, gatilho) e `…000200_cadastros.sql` (condição no checklist e no pré-requisito).
+
+```mermaid
+erDiagram
+  etapas_modelo ||--o{ etapa_regras : "ao entrar"
+  subetapas_modelo ||--o{ etapa_regras : "ao entrar na subetapa"
+  modelos_quadro ||--o{ etapa_regras : "modelo da regra"
+  etapa_regras ||--o{ tarefas_etapa : "o que criou"
+  processos ||--o{ tarefas_etapa : ""
+  tarefas ||--o| tarefas_etapa : ""
+  etapa_regras {
+    text fase
+    text etapa
+    text subetapa "nulo = ao entrar na etapa"
+    uuid modelo_id "ou titulo (um dos dois)"
+    int prazo_dias "da tarefa só"
+    bool responsavel_objeto "responsável do terreno"
+    jsonb condicao "vale quando"
+    bool trava "padrão falso"
+    bool ativo
+  }
+  tarefas_etapa {
+    uuid regra_id
+    uuid modelo_tarefa_id "não nasce de novo"
+    jsonb condicao "a da tarefa do modelo"
+    int inicio_dias "para refazer as datas"
+    int duracao
+    text situacao "ativa | deixada | arquivada_auto"
+  }
+```
+
+- **Etapa do cartão:** `fluxo.tarefas.processo_id`, `etapa` e `subetapa`. A tarefa nova sem etapa nasce na etapa atual do terreno (o processo aberto da fase mais adiante, ativo antes do stand by; `app.tg_tarefa_processo`); `etapa = 'nenhuma'` tira. Mudar a etapa à mão limpa a subetapa de outra etapa.
+- **Regras** (`app.etapa_regras`, Configurações › Funil › Tarefas da etapa, só administrador): `app.salvar_regra_etapa` valida etapa, subetapa da etapa, modelo da empresa ou título e condição; `app.apagar_regra_etapa` apaga a que não criou tarefa e desativa a que criou.
+- **Entrar** (`app._tarefas_ao_entrar`, ao abrir o processo, ao mudar de etapa e de subetapa): primeiro devolve as `arquivada_auto` daquela etapa (mesmo código; datas refeitas por `inicio_dias` e `duracao` a partir de hoje, ou deslocadas pelos dias arquivadas) e reativa as `deixada`; depois aplica as regras cuja condição vale. Modelo por `fluxo.aplicar_modelo_mapa`, pulando as tarefas do modelo já criadas neste processo (as predecessoras se ligam às existentes) e as tarefas do modelo cuja condição não vale; tarefa só uma vez por processo. Ao entrar na etapa, dispara o gatilho `etapa` (`'fase:etapa'`) nos cartões abertos dela.
+- **Trava** (`app._trava_tarefa`): a tarefa da regra que ainda bate com a etapa e a subetapa dela trava no nível da regra (`etapa` ou `subetapa`) se a regra trava; condição da regra ou da tarefa do modelo que não vale = `nao_se_aplica` (não trava). Tarefa à mão, ou que mudou de etapa, trava no nível `etapa` quando a etapa tem regra da etapa que trava. `deixada` e `arquivada_auto` não travam. `app._tarefas_travando(processo, saida)` vira item de pendência (`tipo 'tarefa'`, código, lista, atrasada; título "restrita" para quem não vê o cartão), somado em `app._pendencias` ao sair da etapa para frente ou concluir a fase (nível etapa e a subetapa atual) e ao sair da subetapa para frente (nível subetapa). Gestor e diretor passam com justificativa, como nas outras pendências.
+- **Pode avançar** (`t_pode_avancar`): concluída a tarefa que travava, se nada mais trava naquele nível, `pode_avancar` vai para o responsável do terreno ("TER-x pode avançar. As tarefas de … estão concluídas."). Nunca move o processo.
+- **Voltar** (`app._tarefas_ao_voltar`): abertas das etapas depois do destino; sem trabalho (`app._tarefa_tem_trabalho`: comentário, anexo, item marcado, subtarefa, campo personalizado, troca de lista na auditoria) arquivam (`arquivada_auto`); com trabalho ficam `deixada` e o responsável recebe `etapa_deixada`.
+- **Encerrar e retomar** (`app._tarefas_ao_encerrar`, `app._tarefas_ao_retomar`): Stand By pausa as abertas do processo sem pedido (`fluxo._pausar_de_fora`, `pausas.origem = 'stand_by'`, que só a retomada da fase encerra, empurrando o prazo); Perdido e Descartado arquivam (fechando a pausa ativa), salvo `dados.tarefas = 'manter'`; concluir não mexe.
+- **Condição** no checklist (`checklist_modelo.condicao`, `app.condicao_checklist`) e no pré-requisito (`prerequisitos_modelo.condicao`, `app.condicao_prerequisito`): o documento ou a passagem só é exigido quando a condição vale (`app.condicao_aplica` em `v_checklist` e em `app._pendencias`).
+- `app.v_tarefas_etapa`: cartão, fase, etapa, subetapa, regra, nível da trava e situação, para a tela.
+
 ## Setores censitários e renda familiar estimada
 
 Camadas do mapa (renda familiar estimada e densidade demográfica bruta, uma de cada vez) e quadro "Renda e população do entorno" da ficha (decisão do Moisés, 24/out/2026). Dados do IBGE, Censo 2022, hoje de São Paulo e São José dos Campos (uma carga por município, mesma metodologia, faixas e cores), carregados por `tools/setores/gerar.py` (malha oficial, agregados de renda do responsável e composição oficial setor → área de ponderação); nada é estimado na carga. Tabelas comuns a todas as empresas, só leitura para o front.

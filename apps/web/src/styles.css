@@ -4434,5 +4434,40 @@ html[data-tema="escuro"] .tkm-bt svg { color: #a8c7fa }
 .au-dm { width: 120px }
 @media (max-width: 720px) { .tkm-bts { padding: 10px 16px 4px } }
 
+/* ---------- Tarefas da etapa (lote B da ligação funil × quadros, 31/out/2026) ---------- */
+.tkm-selo.et-trava { background: #ffdf99; color: #7a5900 }
+.tkm-selo.et-sit, .tk-b.et-sit { background: #e9eef6; color: #444746 }
+:root:not(#_) .tkb .tk-b.et-trava { background: #ffdf99; color: #7a5900; padding: 0 6px }
+:root:not(#_) .tkb .tk-b.et-sit { background: #e9eef6; color: #444746; padding: 0 6px }
+html[data-tema="escuro"] .tkm-selo.et-trava, html[data-tema="escuro"]:not(#_) .tkb .tk-b.et-trava { background: rgba(255,200,80,.18); color: #ffdf99 }
+html[data-tema="escuro"] .tkm-selo.et-sit, html[data-tema="escuro"]:not(#_) .tkb .tk-b.et-sit { background: rgba(124,140,255,.14); color: #c9d6ff }
+.et-reg { margin-left: 8px; font-size: 12px }
+.et-fases { display: inline-flex; max-width: 100%; overflow-x: auto; margin-top: 4px }
+.et-fases button { white-space: nowrap }
+.et-regi { display: inline-flex; color: #444746; margin-left: 4px }
+.et-sec .sec-b { display: flex; flex-direction: column; gap: 8px }
+.et-r { display: grid; grid-template-columns: minmax(150px, 200px) 1fr auto auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 8px; background: var(--m-sc-low) }
+.et-r.inativa { opacity: .6 }
+.et-ro { display: flex; flex-direction: column; gap: 2px; min-width: 0 }
+.et-ro .faint { font-size: 13px }
+.et-ra { display: inline-flex; align-items: center; gap: 4px }
+.et-rt .chip { display: inline-flex; align-items: center; gap: 4px }
+.et-form .et-tipo, .et-form .et-arq { border: 0; padding: 0; margin: 0 }
+.et-form legend, .et-arq legend { font-size: 13px; font-weight: 500; color: #444746; margin-bottom: 6px; padding: 0 }
+.et-tipo, .et-arq { display: flex; flex-wrap: wrap; gap: 8px }
+.et-tipo legend, .et-arq legend { width: 100% }
+.et-arq { border: 0; padding: 0; margin: 0 }
+.et-trv { align-items: flex-start }
+.et-cks { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px }
+.et-cks li { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 6px 12px; border-radius: 8px; background: var(--m-sc-low) }
+.et-cks li > span:first-child { font-weight: 500; min-width: 160px }
+.et-vq { font-size: 13px }
+.cfg-pre .et-vq { display: block; margin-top: 2px }
+.cr-mvq { margin-top: 6px }
+html[data-tema="escuro"] .et-form legend, html[data-tema="escuro"] .et-arq legend { color: #a9b4dc }
+@media (max-width: 720px) { .et-r { grid-template-columns: 1fr auto; } .et-rq { grid-column: 1 / -1 } .et-ro { grid-column: 1 / -1 } }
+.et-tipo .fchk, .et-arq .fchk { display: inline-flex; width: auto; flex: 0 0 auto }
+.et-trv.fchk { height: auto; min-height: 40px; white-space: normal; padding: 8px 14px; line-height: 20px; width: 100% }
+
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

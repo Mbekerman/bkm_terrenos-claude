@@ -182,15 +182,17 @@ function crPrep(){if(!S.modelos){S.modelos=[crModeloPadrao()]}S.terrenos.forEach
     // em andamento e esperando terceiro, para o cronograma mostrar as cores das listas
     [['Estudo de massa','Fazendo'],['Análise jurídica da matrícula','Aguardando retorno']].forEach(([n,ln])=>{const x=t.tarefas.find(y=>y.titulo===n),l=tkL(t).find(y=>y.nome===ln);if(x&&l)x.lista=l.id})}}
 /* aplica o modelo no quadro do terreno, a partir da data */
-function crAplicar(t,m,data){const mapa={},resp=u=>u===RESP_OBJ?t.resp||null:u||null;
-  m.tarefas.forEach(x=>{const l=tkL(t).find(y=>y.nome===x.lista&&!y.oculta)||tkPrim(t,'aberta');
+function crAplicar(t,m,data,o={}){const mapa={},resp=u=>u===RESP_OBJ?t.resp||null:u||null,novos=[];
+  /* o.pular: tarefas do modelo que já nasceram (não duplica); o.existentes: o cartão delas, para as predecessoras; o.cond: tarefa com condição só nasce se vale (no banco: fluxo.aplicar_modelo_mapa) */
+  m.tarefas.forEach(x=>{if(o.pular?.has(x.id)||(o.cond&&x.cond&&!itCondVale(t,x.cond)))return;novos.push(x);const l=tkL(t).find(y=>y.nome===x.lista&&!y.oculta)||tkPrim(t,'aberta');
     const k=tkCriar(t,{titulo:x.titulo,resp:resp(x.resp),prio:x.prio,lista:l.id,vis:x.vis||'publico'});
     if(x.iniD!=null){k.inicio=k.iniMin=crSomar(data,x.iniD);k.dur=x.dur||1;k.prazo=crSomar(k.inicio,k.dur-1)}
     (x.pessoas||[]).forEach(p=>{const u=resp(p.user);if(u&&!(k[p.papel]||[]).includes(u))k[p.papel]=[...(k[p.papel]||[]),u]});
     k.apModo=x.apModo||'paralelo';k.etq=(x.etq||[]).filter(id=>S.etiquetas.some(e=>e.id===id));k.checklists=(x.cks||[]).map(c=>({id:uid(),nome:c.nome,esconder:false,itens:c.itens.map(s=>typeof s==='string'?{id:uid(),texto:s,resp:null,prazo:null,feito:null}:{id:uid(),texto:s.texto,resp:null,prazo:null,feito:null,regra:s.regra,cond:s.cond?JSON.parse(JSON.stringify(s.cond)):null})}));k.itens=(x.itens||[]).filter(i=>!i.campo||cpoCampos().some(c=>c.id===i.campo&&c.ativo!==false)).map(i=>({...JSON.parse(JSON.stringify(i)),id:uid()}));
     mapa[x.id]=k});
-  m.tarefas.forEach(x=>{mapa[x.id].preds=(x.preds||[]).filter(v=>mapa[v.id]).map(v=>({id:mapa[v.id].id,tipo:v.tipo,def:v.def||0}))});
-  crCascata(t);log(t,`Modelo "${m.nome}" aplicado: ${m.tarefas.length} tarefas`);return m.tarefas.length}
+  const id=v=>mapa[v.id]?.id||o.existentes?.[v.id];
+  novos.forEach(x=>{mapa[x.id].preds=(x.preds||[]).filter(v=>id(v)).map(v=>({id:id(v),tipo:v.tipo,def:v.def||0}))});
+  crCascata(t);if(novos.length&&!o.silencio)log(t,`Modelo "${m.nome}" aplicado: ${novos.length} tarefas`);return o.mapa?mapa:novos.length}
 function crAplicarPadrao(t){const m=crModelos().find(x=>x.padrao&&x.ativo!==false&&!x.dono);if(m&&m.tarefas.length)crAplicar(t,m,HOJE)}
 function crSalvarQuadro(t,nome,daEmpresa){const ks=vzTarefas(t).filter(k=>!k.arq&&!k.feita),base=ks.map(k=>k.inicio).filter(Boolean).sort()[0],mapa={};
   const m={id:uid(),nome,dono:daEmpresa?null:me(),padrao:false,ativo:true,tarefas:[]};
@@ -223,7 +225,7 @@ function crModEdHtml(fechar){const m=crModelos().find(x=>x.id===UI.crModEd);if(!
       <label>Aprovador<select data-crm="aprov" ${dis}>${crPessoaOpts((x.pessoas||[]).find(p=>p.papel==='aprov')?.user,'Nenhum')}</select></label>
       <label>Depois de<select data-crm="pred" ${dis}><option value="">Nenhuma</option>${m.tarefas.filter(y=>y.id!==x.id).map(y=>`<option value="${y.id}" ${(x.preds||[])[0]?.id===y.id?'selected':''}>${esc(y.titulo)}</option>`).join('')}</select></label>
       <label>Vínculo<select data-crm="tipo" ${dis||((x.preds||[]).length?'':'disabled')}>${Object.keys(CR_TIPOS).map(k=>`<option ${(x.preds||[])[0]?.tipo===k?'selected':''}>${k}</option>`).join('')}</select></label>
-    </div>${(x.preds||[]).length>1?`<div class="faint">Também depois de: ${x.preds.slice(1).map(v=>esc(nomeT(v.id))).join(', ')}</div>`:''}</div>`).join('')}</div>
+    </div>${(x.preds||[]).length>1?`<div class="faint">Também depois de: ${x.preds.slice(1).map(v=>esc(nomeT(v.id))).join(', ')}</div>`:''}${!m.dono||x.cond?`<div class="cr-mvq">${etVq(`mt:${m.id}:${x.id}`,x.cond,ed&&!m.dono&&ehAdmin(me()))}</div>`:''}</div>`).join('')}</div>
   ${ed?`<form class="tkm-nf" data-form="cr-mt-novo" style="margin-top:12px"><input name="titulo" required placeholder="Nova tarefa do modelo" aria-label="Nova tarefa do modelo"><button class="btn tonal sm" type="submit">Adicionar</button></form>`:''}
   <div class="df"><button class="btn text" data-a="close">Fechar</button>${ed?`<button class="btn text" data-a="cr-mod-desativar" data-v="${m.id}">${m.padrao?'':'Desativar modelo'}</button>`:''}</div>`}
 function crHistHtml(fechar){const t=T(UI.crHist);if(!t)return '';const SIT={pendente:'Aguardando aprovação',aprovada:'Aprovada (vale agora)',recusada:'Recusada',substituida:'Substituída',cancelada:'Cancelada'};
