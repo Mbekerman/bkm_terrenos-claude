@@ -22,6 +22,7 @@ const abreCartao=async(p,tit)=>{await clica(p,'.tk',tit);await p.waitForTimeout(
 const fecha=async p=>{await clica(p,'#modal [data-a=close]');await p.waitForTimeout(150)};
 const lista=(s,i,k)=>s.terrenos[i].listas.find(l=>l.id===k.lista);
 const chips=(p,tit)=>p.evaluate(t=>{const c=[...document.querySelectorAll('.tk')].find(x=>x.getAttribute('aria-label')===t);return c?[...c.querySelectorAll('.cpo-ch')].map(x=>x.textContent.replace(/\s+/g,' ').trim()):null},tit);
+const incluir=async(p,dest)=>{if(!(await p.$('#modal [data-a=fm-nova]'))){await clica(p,'#modal [data-a=fm-modo][data-v=montar]');await p.waitForTimeout(100)}await clica(p,'#modal [data-a=fm-nova]');await p.waitForTimeout(100);await clica(p,`#modal [data-a=fm-dest][data-v="${dest}"]`);await p.waitForTimeout(100);await clica(p,'#modal [data-a=fm-salva]');await p.waitForTimeout(120);await clica(p,'#modal [data-a=fm-modo][data-v=responder]');await p.waitForTimeout(120)};
 const campo=(s,nome)=>s.campos.find(c=>c.nome===nome);
 {const {ctx,p}=await abre(1440,900,'claro');
 let s=await est(p);const t0=s.terrenos[0];await ficha(p,t0.id);await p.waitForTimeout(400);
@@ -31,23 +32,24 @@ ok(!(await chips(p,'Análise jurídica da matrícula')).some(x=>x.includes('vist
 await p.evaluate(()=>document.querySelector('.tk-board').scrollIntoView({block:'center'}));await p.screenshot({path:O+'1_frente.png'});
 await abreCartao(p,'Estudo de massa');
 s=await est(p);const cc=campo(s,'Cartório'),cv=campo(s,'Valor do laudo'),cx=campo(s,'Exige vistoria');
-ok(await p.$eval('.tkm-props',x=>x.textContent.includes('Valor do laudo')&&!x.textContent.includes('Exige vistoria')),'o cartão mostra o campo com valor; os outros entram pelo + Campo (31/out)');
-for(const c of [cc,cx]){await clica(p,'#modal [data-a=tkc-pop][data-v=it-campo]');await p.waitForTimeout(100);await clica(p,`#modal [data-a=it-inclui][data-c="${c.id}"]`);await p.waitForTimeout(150)}
-ok(await p.$eval('.tkm-props',x=>x.textContent.includes('Cartório')&&x.textContent.includes('Exige vistoria')),'+ Campo inclui os campos personalizados no cartão');
-await muda(p,`[data-cpo="${cc.id}"]`,cc.opcoes[0].id);await p.waitForTimeout(150);
-await preenche(p,`[data-cpo="${cv.id}"]`,'270 mil');await muda(p,`[data-cpo="${cv.id}"]`,'270 mil');await p.waitForTimeout(150);
-await muda(p,`[data-cpo="${cx.id}"]`,'0');await p.waitForTimeout(150);
+ok(await p.$eval('#modal .fm',x=>x.textContent.includes('Valor do laudo')&&!x.textContent.includes('Exige vistoria')),'o cartão mostra o campo com valor; os outros entram pelo + Campo (31/out)');
+for(const c of [cc,cx])await incluir(p,'c:'+c.id);
+s=await est(p);const ii=c=>tar(s,0,'Estudo de massa').itens.find(i=>i.campo===c.id).id;const icc=ii(cc),icv=ii(cv),icx=ii(cx);
+ok(await p.$eval('#modal .fm',x=>x.textContent.includes('Cartório')&&x.textContent.includes('Exige vistoria')),'+ Pergunta inclui os campos personalizados no formulário');
+await muda(p,`[data-fm="${icc}"]`,cc.opcoes[0].id);await p.waitForTimeout(150);
+await preenche(p,`[data-fm="${icv}"]`,'270 mil');await muda(p,`[data-fm="${icv}"]`,'270 mil');await p.waitForTimeout(150);
+await clica(p,`#modal [data-a=fm-v][data-i="${icx}"][data-v=n]`);await p.waitForTimeout(150);
 s=await est(p);let k=tar(s,0,'Estudo de massa');
 ok(k.campos[cc.id]===cc.opcoes[0].id&&k.campos[cv.id]===270000,'lista e número gravam; "270 mil" vira 270.000');
 ok(k.campos[cx.id]===false,'"Não" é gravado como não (diferente de não informado)');
-await muda(p,`[data-cpo="${cx.id}"]`,'');await p.waitForTimeout(150);s=await est(p);k=tar(s,0,'Estudo de massa');
+await clica(p,`#modal [data-a=fm-menu][data-v="${icx}"]`);await clica(p,`#modal [data-a=fm-limpa][data-v="${icx}"]`);await p.waitForTimeout(150);s=await est(p);k=tar(s,0,'Estudo de massa');
 ok(!(cx.id in k.campos),'voltar a "Não informado" apaga o valor');
-await muda(p,`[data-cpo="${cv.id}"]`,'abc');await p.waitForTimeout(150);s=await est(p);
+await muda(p,`[data-fm="${icv}"]`,'abc');await p.waitForTimeout(150);s=await est(p);
 ok(tar(s,0,'Estudo de massa').campos[cv.id]===270000&&(await toast(p)).includes('inválido'),'número inválido é recusado e o valor fica');
 ok(s.terrenos[0].hist.some(h=>h.txt.includes('Valor do laudo de 185.000 para 270.000')),'a mudança vai para o histórico');
-await p.evaluate(()=>document.querySelector('.tkm-props').scrollIntoView({block:'center'}));await p.screenshot({path:O+'2_cartao.png'});await fecha(p);
+await p.evaluate(()=>document.querySelector('#modal .fm').scrollIntoView({block:'center'}));await p.screenshot({path:O+'2_cartao.png'});await fecha(p);
 await papel(p,'Leitura');await p.waitForTimeout(200);await abreCartao(p,'Estudo de massa');
-ok(await p.$$eval('.cpo-in',xs=>xs.length>0&&xs.every(x=>x.disabled)),'Leitura só vê os campos');await fecha(p);
+ok(await p.$$eval('#modal .fm .fm-ro',xs=>xs.length>0)&&!(await p.$('#modal [data-fm]'))&&!(await p.$('#modal [data-a=fm-v]')),'Leitura só vê os campos');await fecha(p);
 // filtro na página Tarefas
 await papel(p,'Diretor');await p.evaluate(()=>history.replaceState(null,'','#/tarefas'));await p.reload();await p.waitForTimeout(400);
 s=await est(p);await muda(p,'#tk-cp',`${campo(s,'Cartório').id}:${campo(s,'Cartório').opcoes[1].id}`);await p.waitForTimeout(250);
@@ -73,22 +75,22 @@ s=await est(p);ok(!!tar(s,0,'Análise jurídica da matrícula').campos[cid],'o v
 // obrigatório para concluir
 {const kk=s.terrenos[0].tarefas.find(k=>!k.feita&&!k.arq&&!(k.aprov||[]).length&&!(k.checklists||[]).some(c=>c.itens.some(i=>!i.feito))&&!(k.campos||{})[vid]&&(!k.vis||k.vis==='publico'));
  ok(!!kk,'há um cartão sem o campo');await abreCartao(p,kk.titulo);
- await clica(p,'#modal [data-a=tkc-pop][data-v=it-campo]');await p.waitForTimeout(100);await clica(p,`#modal [data-a=it-inclui][data-c="${vid}"]`);await p.waitForTimeout(150);
+ await incluir(p,'c:'+vid);
  await clica(p,'#modal [data-a=tkc-aba][data-v=config]');await p.waitForTimeout(150);
  s=await est(p);const it=tar(s,0,kk.titulo).itens.find(i=>i.campo===vid);await muda(p,`[data-itr="${it.id}"]`,'bloqueia');await p.waitForTimeout(150);
  await fecha(p);await papel(p,'Analista');await p.waitForTimeout(200);await abreCartao(p,kk.titulo);
- ok(await p.$eval(`[data-cpo="${vid}"]`,x=>x.closest('.cpo-c').classList.contains('falta')),'o cartão marca o campo que falta (regra "não conclui" no cartão)');
+ ok(await p.$eval(`[data-fm="${it.id}"]`,x=>x.closest('.fm-ans').classList.contains('falta')),'o cartão marca o campo que falta (regra "não conclui" no cartão)');
  await clica(p,'#modal [data-a=tkc-concluir]');await p.waitForTimeout(200);let s2=await est(p);
  ok(!tar(s2,0,kk.titulo).feita&&(await toast(p)).includes('Valor do laudo'),'sem o campo obrigatório, não conclui e diz qual falta');
- await p.evaluate(()=>document.querySelector('.tkm-props').scrollIntoView({block:'center'}));await p.screenshot({path:O+'7_obrigatorio.png'});
- await preenche(p,`[data-cpo="${vid}"]`,'90 mil');await muda(p,`[data-cpo="${vid}"]`,'90 mil');await p.waitForTimeout(150);
+ await p.evaluate(()=>document.querySelector('#modal .fm').scrollIntoView({block:'center'}));await p.screenshot({path:O+'7_obrigatorio.png'});
+ await preenche(p,`[data-fm="${it.id}"]`,'90 mil');await muda(p,`[data-fm="${it.id}"]`,'90 mil');await p.waitForTimeout(150);
  await clica(p,'#modal [data-a=tkc-concluir]');await p.waitForTimeout(200);s2=await est(p);
  ok(!!tar(s2,0,kk.titulo).feita,'preenchido, conclui')}
 await ctx.close()}
 {const {ctx,p}=await abre(1440,900,'escuro');const s=await est(p);await ficha(p,s.terrenos[0].id);await p.waitForTimeout(400);
-await abreCartao(p,'Análise jurídica da matrícula');await p.evaluate(()=>document.querySelector('.tkm-props').scrollIntoView({block:'center'}));await p.screenshot({path:O+'5_escuro.png'});await ctx.close()}
+await abreCartao(p,'Análise jurídica da matrícula');await p.evaluate(()=>document.querySelector('#modal .fm').scrollIntoView({block:'center'}));await p.screenshot({path:O+'5_escuro.png'});await ctx.close()}
 {const {ctx,p}=await abre(390,844,'claro');const s=await est(p);await ficha(p,s.terrenos[0].id);await p.waitForTimeout(400);
-await abreCartao(p,'Análise jurídica da matrícula');await p.evaluate(()=>document.querySelector('.tkm-props').scrollIntoView({block:'start'}));
+await abreCartao(p,'Análise jurídica da matrícula');await p.evaluate(()=>document.querySelector('#modal .fm').scrollIntoView({block:'start'}));
 ok(await p.evaluate(()=>{const d=document.querySelector('#modal .dialog');return d.scrollWidth<=d.clientWidth+1}),'celular: o cartão não rola de lado');
 await p.screenshot({path:O+'6_celular.png'});await ctx.close()}
 ok(!erros.length,'sem erro de JavaScript '+erros.join(' | '));

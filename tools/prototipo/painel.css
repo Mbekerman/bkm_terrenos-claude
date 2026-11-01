@@ -3360,7 +3360,7 @@ html[data-tema="escuro"] :is(.cr-d.fds, .cr-fundo i) { background: rgba(124,140,
 .it-frase { margin: 4px 0 8px; font-size: 14px }
 .it-cfgbar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px } .it-cfgbar .it-busca { max-width: 260px }
 .it-tab { border: 1px solid #c4c7c5; border-radius: 12px; overflow: hidden }
-.it-tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) 110px 120px; gap: 12px; align-items: center; padding: 8px 16px; border-top: 1px solid #e1e3e1; font-size: 14px }
+.it-tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) 130px 110px 120px; gap: 12px; align-items: center; padding: 8px 16px; border-top: 1px solid #e1e3e1; font-size: 14px }
 .it-tr:first-child { border-top: 0 } .it-th { background: #f0f4f9; font-size: 12px; font-weight: 500; color: #444746 }
 .it-tr .ce { display: flex; justify-content: center; align-items: center; gap: 6px; text-align: center } .it-tr .ce em, .it-tr .ce small { display: none }
 .it-db { display: flex; flex-direction: column; min-width: 0 } .it-db code { font-size: 13px; overflow-wrap: anywhere } .it-db small { font-size: 12px; color: #444746 }
@@ -3445,3 +3445,91 @@ html[data-tema="escuro"] .et-form legend, html[data-tema="escuro"] .et-arq legen
 @media (max-width: 720px) { .et-r { grid-template-columns: 1fr auto; } .et-rq { grid-column: 1 / -1 } .et-ro { grid-column: 1 / -1 } }
 .et-tipo .fchk, .et-arq .fchk { display: inline-flex; width: auto; flex: 0 0 auto }
 .et-trv.fchk { height: auto; min-height: 40px; white-space: normal; padding: 8px 14px; line-height: 20px; width: 100% }
+
+/* ===== Formulário da tarefa e criação rápida (1/nov/2026) ===== */
+.fm .fm-h { align-items: center }
+.fm-prog { width: 96px; height: 4px; border-radius: 2px; background: #e9eef6; overflow: hidden; margin-left: 8px } .fm-prog i { display: block; height: 100%; background: #0b57d0 }
+.fm-modo { display: inline-flex; border: 1px solid #c4c7c5; border-radius: 16px; overflow: hidden; height: 32px }
+.fm-modo button { border: 0; background: transparent; padding: 0 14px; font: inherit; font-size: 13px; font-weight: 500; color: #1f1f1f; cursor: pointer } .fm-modo button + button { border-left: 1px solid #c4c7c5 }
+.fm-modo button.on { background: #c2e7ff; color: #001d35 }
+.fm-lista { border: 1px solid #c4c7c5; border-radius: 12px; overflow: visible }
+.fm-lista:empty { display: none }
+.fm-row { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 10px 12px 10px 8px; border-top: 1px solid #e1e3e1; background: #fff }
+.fm-row:first-child { border-top: 0; border-radius: 12px 12px 0 0 } .fm-row:last-child { border-radius: 0 0 12px 12px } .fm-row:only-child { border-radius: 12px }
+.fm-row.sobre { box-shadow: inset 0 2px 0 #0b57d0 } .fm-row.arrasta { opacity: .5 }
+.fm-drag { color: #747775; cursor: grab; display: flex } .fm-rt { font-weight: 500 } .fm-rm { font-size: 12px; color: #444746; margin-top: 2px }
+.fm-ra { display: flex; gap: 2px } .fm-ra [data-a=fm-sobe] svg { transform: rotate(-90deg) }
+.fm-ans { padding: 14px 16px; border-top: 1px solid #e1e3e1 } .fm-ans:first-child { border-top: 0 }
+.fm-ans.falta { box-shadow: inset 3px 0 0 #7a5900 }
+.fm-q { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 28px } .fm-qt { font-weight: 500 }
+.fm-aj { font-size: 12px; color: #444746; margin: 2px 0 0 } .fm-c { margin-top: 8px } .fm-dest { font-size: 11px; color: #444746; margin-top: 6px } .fm-dest b { font-weight: 500 }
+.fm-mw { position: relative; margin-left: auto }
+.fm-menu { position: absolute; right: 0; top: 100%; z-index: 20; background: #fff; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,.18); padding: 4px 0; min-width: 180px }
+.fm-menu button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 10px 16px; font: inherit; cursor: pointer } .fm-menu button:hover { background: #f0f4f9 }
+.fm-in { height: 40px; padding: 0 12px; border: 1px solid #c4c7c5; border-radius: 8px; background: #fff; font: inherit; color: #1f1f1f; max-width: 360px; width: 100% }
+.fm-in:focus { outline: 2px solid #0b57d0; outline-offset: -1px }
+.fm-area { height: auto; min-height: 76px; padding: 10px 12px; max-width: none; resize: vertical }
+.fm-numw { display: inline-flex; align-items: center; gap: 6px; width: 100%; max-width: 360px } .fm-numw .adorno { width: 100% } .fm-un { color: #444746 }
+.fm-ro { display: inline-block; padding: 4px 0 }
+.fm-rd { display: flex; flex-direction: column; gap: 6px } .fm-rd label { display: flex; align-items: center; gap: 8px; cursor: pointer } .fm-rd input { width: 18px; height: 18px; accent-color: #0b57d0; margin: 0 }
+.fm-chips { display: flex; flex-wrap: wrap; gap: 6px }
+.fm-chips button { height: 32px; padding: 0 12px; border: 1px solid #c4c7c5; border-radius: 8px; background: #fff; font: inherit; font-size: 13px; font-weight: 500; color: #1f1f1f; cursor: pointer }
+.fm-chips button.on { background: #c2e7ff; border-color: transparent; color: #001d35 }
+.fm-seg { display: inline-flex; border: 1px solid #c4c7c5; border-radius: 20px; overflow: hidden; max-width: 100% }
+.fm-seg button { border: 0; background: #fff; padding: 0 16px; height: 36px; font: inherit; font-size: 13px; font-weight: 500; color: #1f1f1f; cursor: pointer; white-space: nowrap } .fm-seg button + button { border-left: 1px solid #c4c7c5 }
+.fm-seg button.on { background: #c2e7ff; color: #001d35 }
+.fm-tgw { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap } .fm-dica { font-size: 12px }
+.fm-tg { position: relative; width: 48px; height: 28px; border-radius: 14px; border: 2px solid #747775; background: #e1e3e1; padding: 0; cursor: pointer; flex: none; display: inline-flex }
+.fm-tg::after { content: ""; position: absolute; top: 4px; left: 4px; width: 16px; height: 16px; border-radius: 50%; background: #747775; transition: left .15s, width .15s }
+.fm-tg.on { background: #0b57d0; border-color: #0b57d0 } .fm-tg.on::after { left: 22px; top: 2px; width: 20px; height: 20px; background: #fff }
+.fm-tg.mid { border-style: dashed; background: #f0f4f9 } .fm-tg.mid::after { left: 14px }
+.fm-tg.mid button { flex: 1; border: 0; background: transparent; cursor: pointer; padding: 0; position: relative; z-index: 1 }
+.fm-tg.mid.sm { width: 34px; height: 20px } .fm-tg.mid.sm::after { width: 10px; height: 10px; top: 3px; left: 10px }
+/* editor */
+.fm-ed { border: 1px solid #c4c7c5; border-radius: 12px; background: #f0f4f9; padding: 16px; margin-top: 12px }
+.fm-edt { font-weight: 500; margin-bottom: 12px }
+.fm-g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
+.fm-f { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; min-width: 0 } .fm-f label, .fm-lbl { font-size: 12px; color: #444746 }
+.fm-f input, .fm-f select, .fm-f textarea { height: 40px; padding: 0 12px; border: 1px solid #c4c7c5; border-radius: 8px; background: #fff; font: inherit; color: #1f1f1f }
+.fm-f textarea { height: auto; padding: 8px 12px; resize: vertical }
+.fm-destw { position: relative; max-width: 440px }
+.fm-destb { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 40px; padding: 0 8px 0 12px; border: 1px solid #c4c7c5; border-radius: 8px; background: #fff; font: inherit; color: #1f1f1f; cursor: pointer; text-align: left }
+.fm-q-in { margin-top: 6px }
+.fm-pop { border: 1px solid #c4c7c5; border-radius: 8px; background: #fff; margin-top: 4px; max-height: 280px; overflow-y: auto; box-shadow: 0 3px 10px rgba(0,0,0,.10) }
+.fm-fix { display: inline-flex; align-items: center; min-height: 40px; color: #1f1f1f }
+.fm-formas { display: flex; flex-wrap: wrap; gap: 8px }
+.fm-fo { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; width: 156px; padding: 10px 12px; border: 1px solid #c4c7c5; border-radius: 12px; background: #fff; font: inherit; text-align: left; cursor: pointer; color: #1f1f1f }
+.fm-fo b { font-weight: 500; font-size: 13px } .fm-fo.on { border: 2px solid #0b57d0; padding: 9px 11px; background: #d3e3fd }
+.fm-pv { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #444746; flex-wrap: wrap }
+.fm-pvs { border: 1px solid #c4c7c5; border-radius: 4px; padding: 2px 8px; background: #fff } .fm-pva { padding-bottom: 10px }
+.fm-pvr { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #444746 } .fm-pvr.on { border-color: #0b57d0; box-shadow: inset 0 0 0 2px #fff; background: #0b57d0 }
+.fm-pvc { border: 1px solid #c4c7c5; border-radius: 4px; padding: 1px 6px } .fm-pvc.on { background: #c2e7ff; border-color: transparent }
+.fm-pvg { border: 1px solid #c4c7c5; border-radius: 10px; overflow: hidden; gap: 0; flex-wrap: nowrap; max-width: 100% } .fm-pvg span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0 } .fm-pvg span { padding: 1px 8px } .fm-pvg span + span { border-left: 1px solid #c4c7c5 } .fm-pvg .on { background: #c2e7ff }
+.fm-n1 { margin: 0 0 12px; font-size: 13px }
+.fm-edb { display: flex; align-items: center; gap: 8px; flex-wrap: wrap } .fm-edb .faint { font-size: 12px; flex: 1 1 260px }
+/* criação rápida */
+.tkr .fields { grid-template-columns: 1fr }
+.tkr-dl { margin-top: -6px } .tkr-pad { margin: 0; font-size: 13px }
+.tkr-vis { border: 0; padding: 0; margin: 0 } .tkr-vis legend { font-size: 12px; color: #444746; padding: 0; margin-bottom: 6px }
+.tkr-seg { display: inline-flex; border: 1px solid #c4c7c5; border-radius: 20px; overflow: hidden; flex-wrap: wrap }
+.tkr-seg label { position: relative; cursor: pointer } .tkr-seg label + label { border-left: 1px solid #c4c7c5 }
+.tkr-seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer }
+.tkr-seg span { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; font-size: 13px; font-weight: 500 }
+.tkr-seg input:checked + span { background: #c2e7ff; color: #001d35 } .tkr-seg input:focus-visible + span { outline: 2px solid #0b57d0; outline-offset: -2px }
+.toast.tem-ac { display: flex; align-items: center; gap: 16px } .toast-ac { border: 0; background: none; color: #a8c7fa; font: inherit; font-weight: 500; cursor: pointer; padding: 4px 0; margin-left: auto }
+.it-msk select { height: 36px; border: 1px solid #c4c7c5; border-radius: 8px; padding: 0 8px; font: inherit; background: #fff; max-width: 100% }
+@media (max-width: 760px) {
+  .fm-g2 { grid-template-columns: 1fr } .fm-fo { width: calc(50% - 4px) } .fm-in, .fm-numw { max-width: none }
+  .fm-row { grid-template-columns: 20px minmax(0, 1fr) auto; padding: 10px 8px 10px 4px } .fm-seg { display: flex; width: 100% } .fm-seg button { flex: 1; padding: 0 8px }
+  .tkr-seg { display: flex; width: 100% } .tkr-seg label { flex: 1 } .tkr-seg span { justify-content: center; width: 100%; padding: 0 6px }
+}
+html[data-tema="escuro"] .fm-row, html[data-tema="escuro"] .fm-in, html[data-tema="escuro"] .fm-chips button, html[data-tema="escuro"] .fm-seg button, html[data-tema="escuro"] .fm-fo,
+html[data-tema="escuro"] .fm-f input, html[data-tema="escuro"] .fm-f select, html[data-tema="escuro"] .fm-f textarea, html[data-tema="escuro"] .fm-destb, html[data-tema="escuro"] .fm-pop, html[data-tema="escuro"] .fm-menu,
+html[data-tema="escuro"] .it-msk select { background: #060c20; color: #f2f5ff; border-color: #2a3358 }
+html[data-tema="escuro"] .fm-lista, html[data-tema="escuro"] .fm-ans, html[data-tema="escuro"] .fm-modo, html[data-tema="escuro"] .fm-seg, html[data-tema="escuro"] .tkr-seg { border-color: #2a3358 }
+html[data-tema="escuro"] .fm-ed { background: #0c1433; border-color: #2a3358 }
+html[data-tema="escuro"] .fm-modo button, html[data-tema="escuro"] .fm-rm, html[data-tema="escuro"] .fm-dest, html[data-tema="escuro"] .fm-aj { color: #c9d6ff }
+html[data-tema="escuro"] .fm-modo button.on, html[data-tema="escuro"] .fm-chips button.on, html[data-tema="escuro"] .fm-seg button.on, html[data-tema="escuro"] .tkr-seg input:checked + span, html[data-tema="escuro"] .fm-fo.on { background: rgba(99,112,255,.18); color: #c9d6ff; border-color: rgba(124,140,255,.5) }
+html[data-tema="escuro"] .fm-tg.on { background: #7c8cff; border-color: #7c8cff } html[data-tema="escuro"] .fm-tg.mid { background: #0c1433 } html[data-tema="escuro"] .fm-prog { background: #1a2240 } html[data-tema="escuro"] .fm-prog i { background: #7c8cff }
+.fm-h h3 { white-space: nowrap } .fm-h { flex-wrap: wrap; row-gap: 8px }
+html[data-tema="escuro"] .fm-rd input, html[data-tema="escuro"] .fm-in { color-scheme: dark; accent-color: #7c8cff }

@@ -5058,7 +5058,7 @@ html[data-tema="escuro"] :is(.cr-d.fds, .cr-fundo i) { background: rgba(124,140,
 .it-frase { margin: 4px 0 8px; font-size: 14px }
 .it-cfgbar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px } .it-cfgbar .it-busca { max-width: 260px }
 .it-tab { border: 1px solid #c4c7c5; border-radius: 12px; overflow: hidden }
-.it-tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) 110px 120px; gap: 12px; align-items: center; padding: 8px 16px; border-top: 1px solid #e1e3e1; font-size: 14px }
+.it-tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) 130px 110px 120px; gap: 12px; align-items: center; padding: 8px 16px; border-top: 1px solid #e1e3e1; font-size: 14px }
 .it-tr:first-child { border-top: 0 } .it-th { background: #f0f4f9; font-size: 12px; font-weight: 500; color: #444746 }
 .it-tr .ce { display: flex; justify-content: center; align-items: center; gap: 6px; text-align: center } .it-tr .ce em, .it-tr .ce small { display: none }
 .it-db { display: flex; flex-direction: column; min-width: 0 } .it-db code { font-size: 13px; overflow-wrap: anywhere } .it-db small { font-size: 12px; color: #444746 }
@@ -5143,6 +5143,94 @@ html[data-tema="escuro"] .et-form legend, html[data-tema="escuro"] .et-arq legen
 @media (max-width: 720px) { .et-r { grid-template-columns: 1fr auto; } .et-rq { grid-column: 1 / -1 } .et-ro { grid-column: 1 / -1 } }
 .et-tipo .fchk, .et-arq .fchk { display: inline-flex; width: auto; flex: 0 0 auto }
 .et-trv.fchk { height: auto; min-height: 40px; white-space: normal; padding: 8px 14px; line-height: 20px; width: 100% }
+
+/* ===== Formulário da tarefa e criação rápida (1/nov/2026) ===== */
+.fm .fm-h { align-items: center }
+.fm-prog { width: 96px; height: 4px; border-radius: 2px; background: #e9eef6; overflow: hidden; margin-left: 8px } .fm-prog i { display: block; height: 100%; background: #0b57d0 }
+.fm-modo { display: inline-flex; border: 1px solid #c4c7c5; border-radius: 16px; overflow: hidden; height: 32px }
+.fm-modo button { border: 0; background: transparent; padding: 0 14px; font: inherit; font-size: 13px; font-weight: 500; color: #1f1f1f; cursor: pointer } .fm-modo button + button { border-left: 1px solid #c4c7c5 }
+.fm-modo button.on { background: #c2e7ff; color: #001d35 }
+.fm-lista { border: 1px solid #c4c7c5; border-radius: 12px; overflow: visible }
+.fm-lista:empty { display: none }
+.fm-row { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 10px 12px 10px 8px; border-top: 1px solid #e1e3e1; background: #fff }
+.fm-row:first-child { border-top: 0; border-radius: 12px 12px 0 0 } .fm-row:last-child { border-radius: 0 0 12px 12px } .fm-row:only-child { border-radius: 12px }
+.fm-row.sobre { box-shadow: inset 0 2px 0 #0b57d0 } .fm-row.arrasta { opacity: .5 }
+.fm-drag { color: #747775; cursor: grab; display: flex } .fm-rt { font-weight: 500 } .fm-rm { font-size: 12px; color: #444746; margin-top: 2px }
+.fm-ra { display: flex; gap: 2px } .fm-ra [data-a=fm-sobe] svg { transform: rotate(-90deg) }
+.fm-ans { padding: 14px 16px; border-top: 1px solid #e1e3e1 } .fm-ans:first-child { border-top: 0 }
+.fm-ans.falta { box-shadow: inset 3px 0 0 #7a5900 }
+.fm-q { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 28px } .fm-qt { font-weight: 500 }
+.fm-aj { font-size: 12px; color: #444746; margin: 2px 0 0 } .fm-c { margin-top: 8px } .fm-dest { font-size: 11px; color: #444746; margin-top: 6px } .fm-dest b { font-weight: 500 }
+.fm-mw { position: relative; margin-left: auto }
+.fm-menu { position: absolute; right: 0; top: 100%; z-index: 20; background: #fff; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,.18); padding: 4px 0; min-width: 180px }
+.fm-menu button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 10px 16px; font: inherit; cursor: pointer } .fm-menu button:hover { background: #f0f4f9 }
+.fm-in { height: 40px; padding: 0 12px; border: 1px solid #c4c7c5; border-radius: 8px; background: #fff; font: inherit; color: #1f1f1f; max-width: 360px; width: 100% }
+.fm-in:focus { outline: 2px solid #0b57d0; outline-offset: -1px }
+.fm-area { height: auto; min-height: 76px; padding: 10px 12px; max-width: none; resize: vertical }
+.fm-numw { display: inline-flex; align-items: center; gap: 6px; width: 100%; max-width: 360px } .fm-numw .adorno { width: 100% } .fm-un { color: #444746 }
+.fm-ro { display: inline-block; padding: 4px 0 }
+.fm-rd { display: flex; flex-direction: column; gap: 6px } .fm-rd label { display: flex; align-items: center; gap: 8px; cursor: pointer } .fm-rd input { width: 18px; height: 18px; accent-color: #0b57d0; margin: 0 }
+.fm-chips { display: flex; flex-wrap: wrap; gap: 6px }
+.fm-chips button { height: 32px; padding: 0 12px; border: 1px solid #c4c7c5; border-radius: 8px; background: #fff; font: inherit; font-size: 13px; font-weight: 500; color: #1f1f1f; cursor: pointer }
+.fm-chips button.on { background: #c2e7ff; border-color: transparent; color: #001d35 }
+.fm-seg { display: inline-flex; border: 1px solid #c4c7c5; border-radius: 20px; overflow: hidden; max-width: 100% }
+.fm-seg button { border: 0; background: #fff; padding: 0 16px; height: 36px; font: inherit; font-size: 13px; font-weight: 500; color: #1f1f1f; cursor: pointer; white-space: nowrap } .fm-seg button + button { border-left: 1px solid #c4c7c5 }
+.fm-seg button.on { background: #c2e7ff; color: #001d35 }
+.fm-tgw { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap } .fm-dica { font-size: 12px }
+.fm-tg { position: relative; width: 48px; height: 28px; border-radius: 14px; border: 2px solid #747775; background: #e1e3e1; padding: 0; cursor: pointer; flex: none; display: inline-flex }
+.fm-tg::after { content: ""; position: absolute; top: 4px; left: 4px; width: 16px; height: 16px; border-radius: 50%; background: #747775; transition: left .15s, width .15s }
+.fm-tg.on { background: #0b57d0; border-color: #0b57d0 } .fm-tg.on::after { left: 22px; top: 2px; width: 20px; height: 20px; background: #fff }
+.fm-tg.mid { border-style: dashed; background: #f0f4f9 } .fm-tg.mid::after { left: 14px }
+.fm-tg.mid button { flex: 1; border: 0; background: transparent; cursor: pointer; padding: 0; position: relative; z-index: 1 }
+.fm-tg.mid.sm { width: 34px; height: 20px } .fm-tg.mid.sm::after { width: 10px; height: 10px; top: 3px; left: 10px }
+/* editor */
+.fm-ed { border: 1px solid #c4c7c5; border-radius: 12px; background: #f0f4f9; padding: 16px; margin-top: 12px }
+.fm-edt { font-weight: 500; margin-bottom: 12px }
+.fm-g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
+.fm-f { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; min-width: 0 } .fm-f label, .fm-lbl { font-size: 12px; color: #444746 }
+.fm-f input, .fm-f select, .fm-f textarea { height: 40px; padding: 0 12px; border: 1px solid #c4c7c5; border-radius: 8px; background: #fff; font: inherit; color: #1f1f1f }
+.fm-f textarea { height: auto; padding: 8px 12px; resize: vertical }
+.fm-destw { position: relative; max-width: 440px }
+.fm-destb { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 40px; padding: 0 8px 0 12px; border: 1px solid #c4c7c5; border-radius: 8px; background: #fff; font: inherit; color: #1f1f1f; cursor: pointer; text-align: left }
+.fm-q-in { margin-top: 6px }
+.fm-pop { border: 1px solid #c4c7c5; border-radius: 8px; background: #fff; margin-top: 4px; max-height: 280px; overflow-y: auto; box-shadow: 0 3px 10px rgba(0,0,0,.10) }
+.fm-fix { display: inline-flex; align-items: center; min-height: 40px; color: #1f1f1f }
+.fm-formas { display: flex; flex-wrap: wrap; gap: 8px }
+.fm-fo { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; width: 156px; padding: 10px 12px; border: 1px solid #c4c7c5; border-radius: 12px; background: #fff; font: inherit; text-align: left; cursor: pointer; color: #1f1f1f }
+.fm-fo b { font-weight: 500; font-size: 13px } .fm-fo.on { border: 2px solid #0b57d0; padding: 9px 11px; background: #d3e3fd }
+.fm-pv { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #444746; flex-wrap: wrap }
+.fm-pvs { border: 1px solid #c4c7c5; border-radius: 4px; padding: 2px 8px; background: #fff } .fm-pva { padding-bottom: 10px }
+.fm-pvr { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #444746 } .fm-pvr.on { border-color: #0b57d0; box-shadow: inset 0 0 0 2px #fff; background: #0b57d0 }
+.fm-pvc { border: 1px solid #c4c7c5; border-radius: 4px; padding: 1px 6px } .fm-pvc.on { background: #c2e7ff; border-color: transparent }
+.fm-pvg { border: 1px solid #c4c7c5; border-radius: 10px; overflow: hidden; gap: 0; flex-wrap: nowrap; max-width: 100% } .fm-pvg span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0 } .fm-pvg span { padding: 1px 8px } .fm-pvg span + span { border-left: 1px solid #c4c7c5 } .fm-pvg .on { background: #c2e7ff }
+.fm-n1 { margin: 0 0 12px; font-size: 13px }
+.fm-edb { display: flex; align-items: center; gap: 8px; flex-wrap: wrap } .fm-edb .faint { font-size: 12px; flex: 1 1 260px }
+/* criação rápida */
+.tkr .fields { grid-template-columns: 1fr }
+.tkr-dl { margin-top: -6px } .tkr-pad { margin: 0; font-size: 13px }
+.tkr-vis { border: 0; padding: 0; margin: 0 } .tkr-vis legend { font-size: 12px; color: #444746; padding: 0; margin-bottom: 6px }
+.tkr-seg { display: inline-flex; border: 1px solid #c4c7c5; border-radius: 20px; overflow: hidden; flex-wrap: wrap }
+.tkr-seg label { position: relative; cursor: pointer } .tkr-seg label + label { border-left: 1px solid #c4c7c5 }
+.tkr-seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer }
+.tkr-seg span { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; font-size: 13px; font-weight: 500 }
+.tkr-seg input:checked + span { background: #c2e7ff; color: #001d35 } .tkr-seg input:focus-visible + span { outline: 2px solid #0b57d0; outline-offset: -2px }
+.toast.tem-ac { display: flex; align-items: center; gap: 16px } .toast-ac { border: 0; background: none; color: #a8c7fa; font: inherit; font-weight: 500; cursor: pointer; padding: 4px 0; margin-left: auto }
+.it-msk select { height: 36px; border: 1px solid #c4c7c5; border-radius: 8px; padding: 0 8px; font: inherit; background: #fff; max-width: 100% }
+@media (max-width: 760px) {
+  .fm-g2 { grid-template-columns: 1fr } .fm-fo { width: calc(50% - 4px) } .fm-in, .fm-numw { max-width: none }
+  .fm-row { grid-template-columns: 20px minmax(0, 1fr) auto; padding: 10px 8px 10px 4px } .fm-seg { display: flex; width: 100% } .fm-seg button { flex: 1; padding: 0 8px }
+  .tkr-seg { display: flex; width: 100% } .tkr-seg label { flex: 1 } .tkr-seg span { justify-content: center; width: 100%; padding: 0 6px }
+}
+html[data-tema="escuro"] .fm-row, html[data-tema="escuro"] .fm-in, html[data-tema="escuro"] .fm-chips button, html[data-tema="escuro"] .fm-seg button, html[data-tema="escuro"] .fm-fo,
+html[data-tema="escuro"] .fm-f input, html[data-tema="escuro"] .fm-f select, html[data-tema="escuro"] .fm-f textarea, html[data-tema="escuro"] .fm-destb, html[data-tema="escuro"] .fm-pop, html[data-tema="escuro"] .fm-menu,
+html[data-tema="escuro"] .it-msk select { background: #060c20; color: #f2f5ff; border-color: #2a3358 }
+html[data-tema="escuro"] .fm-lista, html[data-tema="escuro"] .fm-ans, html[data-tema="escuro"] .fm-modo, html[data-tema="escuro"] .fm-seg, html[data-tema="escuro"] .tkr-seg { border-color: #2a3358 }
+html[data-tema="escuro"] .fm-ed { background: #0c1433; border-color: #2a3358 }
+html[data-tema="escuro"] .fm-modo button, html[data-tema="escuro"] .fm-rm, html[data-tema="escuro"] .fm-dest, html[data-tema="escuro"] .fm-aj { color: #c9d6ff }
+html[data-tema="escuro"] .fm-modo button.on, html[data-tema="escuro"] .fm-chips button.on, html[data-tema="escuro"] .fm-seg button.on, html[data-tema="escuro"] .tkr-seg input:checked + span, html[data-tema="escuro"] .fm-fo.on { background: rgba(99,112,255,.18); color: #c9d6ff; border-color: rgba(124,140,255,.5) }
+html[data-tema="escuro"] .fm-tg.on { background: #7c8cff; border-color: #7c8cff } html[data-tema="escuro"] .fm-tg.mid { background: #0c1433 } html[data-tema="escuro"] .fm-prog { background: #1a2240 } html[data-tema="escuro"] .fm-prog i { background: #7c8cff }
+.fm-h h3 { white-space: nowrap } .fm-h { flex-wrap: wrap; row-gap: 8px }
+html[data-tema="escuro"] .fm-rd input, html[data-tema="escuro"] .fm-in { color-scheme: dark; accent-color: #7c8cff }
 </style>
 <header class="top">
   <div class="top-in">
@@ -7009,6 +7097,7 @@ function tkCartaoHtml(fechar){const {t,k}=tkAcha(UI.tkSel.tid,UI.tkSel.kid);if(!
     geral:()=>`<div class="tkm-props">${linha('pessoa','Responsável',selU('resp',k.resp,'Sem responsável','tkc-resp'),'tkc-resp')}${linha('cal','Prazo',`<button class="tkm-pzb" data-a="tkc-aba" data-v="prazos" title="Mudar as datas">${k.prazo?`<span class="tkm-chp ${k.feita?'ok':at?'atras':''}">${ic(k.feita?'check':'clock',14)}${fd(k.prazo)}</span>`:'<span class="faint">Sem prazo</span>'}${k.inicio?`<span class="faint">início ${fd(k.inicio)}${k.dur?` · ${k.dur} d`:''}</span>`:''}</button>`)}
       ${linha('flag','Prioridade',prio,'tkc-pr')}${linha('etq','Etiquetas',etqs)}${etLinha(t,k,bloq,linha)}${itLinhas(t,k,bloq,linha)}</div>${popEtq}
       <div class="tkm-bloco"><div class="tkm-sh"><h3><label for="tkc-d">Descrição</label></h3></div><textarea id="tkc-d" class="tkm-txt" data-tkc="desc" data-mencao placeholder="Objetivo, instruções e critério de pronto (@ avisa um colega)" ${dis}>${esc(k.desc||'')}</textarea></div>
+      ${fmBloco(t,k,bloq)}
       ${k.feita||k.resultado?`<div class="tkm-bloco"><div class="tkm-sh"><h3><label for="tkc-r">Resultado</label></h3></div><textarea id="tkc-r" class="tkm-txt" data-tkc="resultado" data-mencao placeholder="O que foi feito ou decidido" ${dis}>${esc(k.resultado||'')}</textarea></div>`:''}
       ${subsH}${checks}
       ${UI.tkCkNovo&&!ro?`<div class="tkm-bloco"><div class="tkm-sh"><h3>Novo checklist</h3></div><form class="tkm-novo" data-form="tkc-ck"><input name="nome" required placeholder="Título" aria-label="Nome do checklist" value="Checklist"><div class="tkm-novob"><button class="tkm-ok" type="submit">Adicionar</button><button class="tkm-btn" type="button" data-a="tkc-ck-cancela">Cancelar</button></div></form></div>`
@@ -7865,6 +7954,7 @@ function cpoCfgHtml(){const C=cpoCampos().slice().sort((a,b)=>(a.ordem||0)-(b.or
     <p class="muted" style="margin-top:0">Quem cria a tarefa inclui o campo no cartão; a regra para concluir com ele em branco fica na aba Configuração do cartão. Campo com valor não muda de tipo nem se apaga: desative.</p>
     ${C.map((c,i)=>{const usado=cpoUsado(c);return `<div class="cpo-cfg ${c.ativo===false?'oculta':''}"><div class="tkl-r"><input value="${esc(c.nome)}" data-cpoc="nome" data-v="${c.id}" aria-label="Nome do campo ${i+1}">
       <select data-cpoc="tipo" data-v="${c.id}" aria-label="Tipo de ${esc(c.nome)}" ${usado?'disabled title="Já tem valores: o tipo não muda"':''}>${Object.entries(CPO_TIPOS).map(([x,n])=>`<option value="${x}" ${x===c.tipo?'selected':''}>${n}</option>`).join('')}</select>
+      ${c.tipo==='texto'||c.tipo==='numero'?`<select data-cpoc="formato" data-v="${c.id}" aria-label="Máscara de ${esc(c.nome)}">${Object.entries(c.tipo==='texto'?{'':'Sem máscara',email:'E-mail',telefone:'Telefone',cpf:'CPF',cnpj:'CNPJ'}:{'':'Número',moeda:'Moeda (R$)',percentual:'Percentual (%)'}).map(([x,n])=>`<option value="${x}" ${(c.formato||'')===x?'selected':''}>${n}</option>`).join('')}</select>`:''}
       <label class="chk"><input type="checkbox" data-cpoc="frente" data-v="${c.id}" ${c.frente?'checked':''}>Na frente do cartão</label>
       <button class="iconbtn sm" data-a="cpo-sobe" data-v="${c.id}" ${i?'':'disabled'} aria-label="Subir ${esc(c.nome)}" title="Subir">${ic('chev',18)}</button>
       ${usado?`<button class="btn text sm" data-a="cpo-ativo" data-v="${c.id}">${c.ativo===false?'Ativar':'Desativar'}</button>`:`<button class="btn text sm" data-a="cpo-apaga" data-v="${c.id}">Apagar</button>`}</div>
@@ -7877,7 +7967,10 @@ document.addEventListener('change',e=>{const el=e.target;
     if(cpoGravar(t,k,c,el.value))tkRe();else if(c.tipo==='numero'&&el.value)el.value=k.campos?.[c.id]!=null?cpoTxt(c,k.campos[c.id]):'';return}
   if(el.dataset?.cpoc){e.stopImmediatePropagation();if(!ehAdmin(me()))return;const c=cpoCampos().find(x=>x.id===el.dataset.v);if(!c)return;const p=el.dataset.cpoc;
     if(p==='nome'){const v=el.value.trim();if(!v||cpoCampos().some(x=>x!==c&&x.nome===v)){toast(v?'Já existe um campo com esse nome.':'O campo precisa de nome.',true);el.value=c.nome;return}c.nome=v}
-    else if(p==='tipo'){if(cpoUsado(c)){toast('O campo já tem valores: o tipo não muda.',true);return}c.tipo=el.value;if(c.tipo==='lista'&&!c.opcoes)c.opcoes=[]}
+    else if(p==='tipo'){if(cpoUsado(c)){toast('O campo já tem valores: o tipo não muda.',true);return}c.tipo=el.value;c.formato=undefined;if(c.tipo==='lista'&&!c.opcoes)c.opcoes=[]}
+    else if(p==='formato'){const v=el.value||null;if(v&&c.tipo==='texto'){const ruim=S.terrenos.some(t=>(t.tarefas||[]).some(k=>{const x=k.campos?.[c.id];if(x==null)return false;try{fmValida(v,x);return false}catch(er){return true}}));
+        if(ruim){toast('Há cartões com valores fora dessa máscara: corrija antes de ligar.',true);el.value=c.formato||'';return}
+        S.terrenos.forEach(t=>(t.tarefas||[]).forEach(k=>{if(k.campos?.[c.id]!=null)k.campos[c.id]=fmValida(v,k.campos[c.id])}))}c.formato=v||undefined}
     else if(p==='frente')c.frente=el.checked;
     else if(p==='obrig')c.obrig=el.checked;
     save();render();toast('Campo atualizado.')}},true);
@@ -7981,10 +8074,12 @@ const IT_CAT=(()=>{const tr=(c)=>[t=>t[c],(t,v)=>{t[c]=v}],of=c=>[t=>ofertaRef(t
   ['calculado.zonas','Zonas da área','lista_multi',null,opZonas,null,0,1,1,...ro(t=>[...new Set((analiseVig(t)?.zonas||[]).map(z=>z.sigla))])],
   ['calculado.tem_partes','Vários donos','sim_nao',null,null,null,0,1,0,...ro(t=>(t.partes||[]).length>0)],
   ['calculado.corretores','Corretores do terreno ou das partes','lista_multi',null,opCorr,null,0,1,0,...ro(t=>(t.corretores||[]).map(c=>c.cid))]];
-  return L.map(([chave,titulo,tipo,un,opcoes,vazio,ed,cd,cp,ler,gravar])=>({chave,origem:chave.split('.')[0],coluna:chave.split('.')[1],titulo,tipo,un,opcoes,vazio,editavel:!!ed&&!!gravar,condicao:!!cd,cartao:!!cp,ler,gravar}))})();
+  /* máscara fixa (1/nov/2026): moeda (R$), percentual (%), CEP; texto sem máscara fixa pode ganhar uma do administrador */
+  return L.map(([chave,titulo,tipo,un,opcoes,vazio,ed,cd,cp,ler,gravar])=>({chave,origem:chave.split('.')[0],coluna:chave.split('.')[1],titulo,tipo,un,opcoes,vazio,editavel:!!ed&&!!gravar,condicao:!!cd,cartao:!!cp,ler,gravar,
+    formato:chave==='terreno.cep'?'cep':un==='R$'?'moeda':un==='%'?'percentual':null}))})();
 const itEmp=()=>S.camposEmp||(S.camposEmp={});
 function itDef(chave){const c=IT_CAT.find(x=>x.chave===chave);if(!c)return null;const e=itEmp()[chave]||{};
-  return {...c,titulo:e.titulo||c.titulo,condicao:e.condicao??c.condicao,cartao:e.cartao??c.cartao}}
+  return {...c,titulo:e.titulo||c.titulo,condicao:e.condicao??c.condicao,cartao:e.cartao??c.cartao,formato:c.formato||(c.tipo==='texto'?e.formato||null:null)}}
 const itTit=chave=>itDef(chave)?.titulo||chave;
 /* valor do campo no terreno (null = em branco: nulo, vazio, "não informado" ou lista vazia) */
 function itVal(t,chave){const c=IT_CAT.find(x=>x.chave===chave);if(!c||!t)return null;let v;try{v=c.ler(t)}catch(e){v=null}
@@ -8021,11 +8116,11 @@ const itDir=()=>membro(me()).papel==='diretor';
 const itConfigura=(t,k)=>UI.role!=='Leitura'&&(itDir()||ehAdmin(me())||k.criadoPor===me());
 function itNorm(k){k.itens=k.itens||[];Object.keys(k.campos||{}).forEach(cid=>{if(k.campos[cid]!=null&&!k.itens.some(i=>i.campo===cid))k.itens.push({id:uid(),campo:cid,regra:'livre',cond:null})});return k.itens}
 const itCampo=i=>i.campo?cpoCampos().find(c=>c.id===i.campo):null;
-const itNome=i=>i.chave?itTit(i.chave):itCampo(i)?.nome||'Campo';
-function itEmBranco(t,k,i){if(i.chave)return itVal(t,i.chave)==null;const c=itCampo(i);return !c||c.ativo===false?false:k.campos?.[i.campo]==null}
+const itNome=i=>i.pergunta||(i.tipo?'Pergunta':i.chave?itTit(i.chave):itCampo(i)?.nome||'Campo');
+function itEmBranco(t,k,i){if(i.tipo)return i.resposta==null;if(i.chave)return itVal(t,i.chave)==null;const c=itCampo(i);return !c||c.ativo===false?false:k.campos?.[i.campo]==null}
 /* o que está em branco e pede algo para concluir agora (regra justificativa ou bloqueia, com a condição valendo); espelha fluxo.itens_em_branco */
 function itBranco(t,k){const r=[];itNorm(k).forEach(i=>{if(i.regra==='livre'||!i.regra)return;const c=itCampo(i);if(i.campo&&(!c||c.ativo===false))return;
-    if(itEmBranco(t,k,i)&&itCondVale(t,i.cond))r.push({tipo:i.chave?'objeto':'campo',ref:i.chave||i.campo,nome:itNome(i),regra:i.regra})});
+    if(itEmBranco(t,k,i)&&itCondVale(t,i.cond))r.push({tipo:i.tipo?'pergunta':i.chave?'objeto':'campo',ref:i.chave||i.campo||i.id,nome:itNome(i),regra:i.regra})});
   (k.checklists||[]).forEach(c=>c.itens.forEach(x=>{const rg=x.regra||(apRegraCk()?'bloqueia':'livre');if(rg!=='livre'&&!x.feito&&!x.virou&&itCondVale(t,x.cond))r.push({tipo:'checklist',ref:x.id,nome:x.texto,regra:rg})}));return r}
 function itMsgBloq(bl){const ck=bl.filter(x=>x.tipo==='checklist'),cp=bl.filter(x=>x.tipo!=='checklist');
   if(!cp.length)return 'Conclua os itens do checklist antes de concluir a tarefa.';
@@ -8056,7 +8151,7 @@ function itInput(t,d,i,ro){const v=itVal(t,d.chave),id='it-'+i.id,dis=ro||!d.edi
 function itSelo(t,k,i){if(!i.regra||i.regra==='livre'||!itCondVale(t,i.cond))return '';
   return i.regra==='bloqueia'?'<span class="chip crit it-selo">necessário</span>':'<span class="chip warn it-selo">pede justificativa</span>'}
 /* linhas da grade de propriedades: os itens incluídos no cartão (campos do terreno e personalizados) e o + Campo */
-function itLinhas(t,k,ro,linha){itNorm(k);const conf=itConfigura(t,k);
+function itLinhas(t,k,ro,linha){itNorm(k);return '';const conf=itConfigura(t,k);
   const rows=k.itens.map(i=>{const tira=ro?'':`<button class="iconbtn sm it-tira" data-a="it-tira" data-v="${i.id}" title="Tirar do cartão" aria-label="Tirar ${esc(itNome(i))} do cartão" ${i.regra&&i.regra!=='livre'&&!conf?'disabled':''}>${ic('close',14)}</button>`;
     if(i.chave){const d=itDef(i.chave);if(!d)return '';const falta=itEmBranco(t,k,i)&&itSelo(t,k,i);
       return linha('notas',`${esc(d.titulo)}`,`<span class="cpo-c it-c ${falta?'falta':''}">${itInput(t,d,i,ro)}${itSelo(t,k,i)}${tira}</span>`,d.editavel&&!ro?'it-'+i.id:null)}
@@ -8076,7 +8171,7 @@ function itLinhas(t,k,ro,linha){itNorm(k);const conf=itConfigura(t,k);
 function itCfgAba(t,k,bloq){itNorm(k);const ed=!bloq;
   const sel=(attrs,v,padrao)=>`<select class="tkm-pill" ${attrs} ${ed?'':'disabled'}>${padrao?`<option value="" ${!v?'selected':''}>${padrao}</option>`:''}${Object.entries(IT_REGRA).map(([x,n])=>`<option value="${x}" ${v===x?'selected':''}>${n}</option>`).join('')}</select>`;
   const cond=(alvo,c)=>`<span class="it-vq">${c?esc(itCondFrase(c)):'<span class="faint">sempre</span>'}${ed?`<button class="linkbtn" data-a="it-cond" data-v="${alvo}">${c?'Editar':'+ Condição'}</button>${c?`<button class="linkbtn" data-a="it-cond-tira" data-v="${alvo}">Tirar</button>`:''}`:''}</span>`;
-  const rows=k.itens.map(i=>{const nm=itNome(i),tp=i.chave?IT_ORIG[itDef(i.chave)?.origem]||'':'Campo personalizado';
+  const rows=k.itens.map(i=>{const nm=itNome(i),tp=i.tipo?'Só no cartão':i.chave?IT_ORIG[itDef(i.chave)?.origem]||'':'Campo personalizado';
       return `<div class="it-cr"><span><b>${esc(nm)}</b><span class="faint">${esc(tp)}</span></span>${sel(`data-itr="${i.id}" aria-label="Se ${esc(nm)} estiver em branco"`,i.regra||'livre')}${cond('i:'+i.id,i.cond)}</div>`}).join('');
   const padrao=apRegraCk()?'Padrão da empresa (não conclui)':'Padrão da empresa (pode concluir)';
   const cks=(k.checklists||[]).flatMap(c=>c.itens.map(x=>`<div class="it-cr"><span><b>${esc(x.texto)}</b><span class="faint">Checklist ${esc(c.nome)}</span></span>${sel(`data-itck="${c.id}:${x.id}" aria-label="Se ${esc(x.texto)} estiver em aberto"`,x.regra,padrao)}${cond('c:'+c.id+':'+x.id,x.cond)}</div>`)).join('');
@@ -8086,7 +8181,8 @@ function itCfgAba(t,k,bloq){itNorm(k);const ed=!bloq;
       :`<div class="faint">Nenhum item no cartão. Inclua campos (+ Campo) ou checklists na Visão geral.</div>`}</div>
     ${(k.justs||[]).length?`<div class="tkm-bloco"><div class="tkm-sh"><h3>Justificativas</h3></div>${k.justs.slice().reverse().map(j=>`<div class="tkm-log"><span class="faint num">${fdh(j.em)}</span>${av(j.por,'sm')}<span><b>${esc(j.por)}</b> ${esc(j.texto)} <span class="faint">(${esc(j.itens.map(x=>x.nome).join(', '))}${j.libera?'; passou pelo que bloqueia':''})</span></span></div>`).join('')}</div>`:''}`}
 /* itens que vão na cópia e na recorrência (as regras e as condições vão junto; os valores do terreno são do terreno) */
-const itCopiaItens=k=>(k.itens||[]).filter(i=>!i.campo||cpoCampos().some(c=>c.id===i.campo&&c.ativo!==false)).map(i=>({...JSON.parse(JSON.stringify(i)),id:uid()}));
+/* as perguntas vão junto; a resposta "só no cartão" só na cópia (comResp), nunca no modelo nem na recorrência */
+const itCopiaItens=(k,comResp)=>(k.itens||[]).filter(i=>!i.campo||cpoCampos().some(c=>c.id===i.campo&&c.ativo!==false)).map(i=>{const x={...JSON.parse(JSON.stringify(i)),id:uid()};if(!comResp)delete x.resposta;return x});
 function itSeloCk(t,x){if(!x.regra||x.regra==='livre'||x.feito||!itCondVale(t,x.cond))return '';
   return x.regra==='bloqueia'?'<span class="chip crit it-selo">necessário</span>':'<span class="chip warn it-selo">pede justificativa</span>'}
 const itNRegras=k=>itNorm(k).filter(i=>i.regra&&i.regra!=='livre').length+(k.checklists||[]).reduce((s,c)=>s+c.itens.filter(x=>x.regra&&x.regra!=='livre').length,0);
@@ -8132,9 +8228,10 @@ function itCfgCamposHtml(){const f=UI.itCfgF||'todos',q=(UI.itCfgQ||'').toLowerC
     <p class="muted" style="margin-top:0">O Título é o nome que o usuário vê em todo o sistema. Condição: o campo aparece no "Vale quando". No cartão: o campo pode ser incluído num cartão de tarefa e editado ali, gravando no próprio terreno (os calculados só para ler).</p>
     <div class="it-cfgbar"><input class="it-busca" data-itcfgq="1" value="${esc(UI.itCfgQ||'')}" placeholder="Buscar campo" aria-label="Buscar campo">
       <span class="it-seg">${[['todos','Todos'],...Object.entries(IT_ORIG).map(([k,v])=>[k,v.replace(' de referência','').replace(' vigente','')]),['marcados','Marcados']].map(([k,v])=>`<button class="${f===k?'on':''}" data-a="it-cfgf" data-v="${k}" aria-pressed="${f===k}">${v}</button>`).join('')}</span></div>
-    <div class="it-tab"><div class="it-tr it-th"><span>Nome no banco</span><span>Título (o nome que o usuário vê)</span><span class="ce">Condição</span><span class="ce">No cartão</span></div>
+    <div class="it-tab"><div class="it-tr it-th"><span>Nome no banco</span><span>Título (o nome que o usuário vê)</span><span>Máscara</span><span class="ce">Condição</span><span class="ce">No cartão</span></div>
     ${L.map(d=>`<div class="it-tr"><span class="it-db"><code>${d.coluna}</code><small>${IT_ORIG[d.origem]} · ${IT_TIPO[d.tipo]}</small></span>
       <span><input class="it-tit" value="${esc(d.titulo)}" data-itcfg="titulo" data-v="${d.chave}" aria-label="Título de ${d.coluna}" placeholder="${esc(IT_CAT.find(c=>c.chave===d.chave).titulo)}"></span>
+      <span class="it-msk">${fmMascaraCfg(d)}</span>
       <label class="ce"><input type="checkbox" data-itcfg="condicao" data-v="${d.chave}" ${d.condicao?'checked':''}><em>Condição</em></label>
       <label class="ce"><input type="checkbox" data-itcfg="cartao" data-v="${d.chave}" ${d.cartao?'checked':''}><em>No cartão${d.editavel?'':' (só ler)'}</em>${d.editavel?'':'<small>só ler</small>'}</label></div>`).join('')||'<p class="faint" style="padding:12px">Nenhum campo com esse filtro.</p>'}</div>
     <p class="cfg-nota">Título vazio volta ao padrão; dois campos não podem ter o mesmo título. Colunas de sistema (código, empresa, datas de criação, versão, poligonal) ficam de fora.</p></div></section>`}
@@ -8147,6 +8244,7 @@ document.addEventListener('input',e=>{const el=e.target;
 document.addEventListener('change',e=>{const el=e.target;
   if(el.dataset?.itv){e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!vzEdita(t,k))return;const i=itNorm(k).find(x=>x.id===el.dataset.itv),d=i&&itDef(i.chave);if(!d||!d.editavel)return;
     let v=el.value;if(v==='')v=null;else if(d.tipo==='numero'){v=cpoNum(v);if(Number.isNaN(v)){toast(`Número inválido em ${d.titulo}.`,true);el.value='';return}}
+    else if(d.tipo==='texto'&&d.formato){try{v=fmValida(d.formato,v)}catch(er){toast(er.message,true);return}}
     const antes=itVal(t,d.chave);if(String(antes??'')===String(v??''))return;try{d.gravar(t,v??d.vazio??null)}catch(err){toast(err.message,true);return}
     log(t,`${d.titulo} de ${itTxtVal(d,antes)} para ${itTxtVal(d,v)} (pelo cartão ${k.codigo})`);tkRe();return}
   if(el.dataset?.itr||el.dataset?.itck){e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!itConfigura(t,k))return;
@@ -8161,6 +8259,8 @@ document.addEventListener('change',e=>{const el=e.target;
     if(el.dataset.itcfg==='titulo'){let v=el.value.trim();if(v===c.titulo)v='';const tit=(v||c.titulo).toLowerCase();
       if(IT_CAT.some(x=>x.chave!==ch&&itDef(x.chave).titulo.toLowerCase()===tit)){toast('Já existe um campo com esse título.',true);el.value=itDef(ch).titulo;return}
       E[ch]={...cur,titulo:v||undefined}}
+    else if(el.dataset.itcfg==='formato'){const v=el.value||null;if(v){const ruim=S.terrenos.find(x=>{const y=itVal(x,ch);if(y==null)return false;try{fmValida(v,y);return false}catch(er){return true}});
+        if(ruim){toast(`${ruim.codigo} tem ${itDef(ch).titulo} fora dessa máscara: corrija antes de ligar.`,true);el.value=cur.formato||'';return}}E[ch]={...cur,formato:v||undefined}}
     else E[ch]={...cur,[el.dataset.itcfg]:el.checked};save();render();toast('Campo atualizado.');return}},true);
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="it-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const A=a.dataset.a;
   if(A==='it-cfgf'){UI.itCfgF=a.dataset.v;render();return}
@@ -8193,6 +8293,259 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="it-"]'
 (()=>{if(S.itExemplo)return;S.itExemplo=true;const t=S.terrenos[0];if(!t||!t.tarefas)return;const a=t.tarefas.find(x=>x.titulo==='Análise jurídica da matrícula');if(!a)return;itNorm(a);
   a.itens.unshift({id:uid(),chave:'terreno.area_documental_m2',regra:'bloqueia',cond:null},{id:uid(),chave:'terreno.necessidade_demolicao',regra:'justificativa',cond:{modo:'todas',itens:[{campo:'terreno.tipo_empreendimento',op:'fora',valores:['mercado']}]}},
     {id:uid(),chave:'calculado.forma_pagamento_vigente',regra:'livre',cond:null})})();
+
+/* =====================================================================
+   Formulário da tarefa, máscaras e criação rápida (decisões do Moisés,
+   1/nov/2026; simulação "Formulário da tarefa").
+   Espelha fluxo.tarefa_itens (pergunta, ajuda, forma, tipo, opcoes,
+   resposta), fluxo.formas, fluxo.validar_formato, fluxo.campos.formato e
+   app.campos_catalogo/campos_empresa.formato.
+   - Bloco Formulário na Visão geral do cartão, no lugar do antigo "+ Campo":
+     cada item é uma pergunta com o texto e a ajuda de quem montou, o campo
+     onde a resposta grava (campo do terreno marcado "No cartão", campo
+     personalizado ou "Só no cartão") e a forma de responder. Montar é de
+     quem edita o cartão; os demais veem as respostas.
+   - A forma muda a aparência, nunca o dado: cada tipo oferece só as formas
+     que guardam o valor certo (fmFormas). A chave liga/desliga começa no
+     meio ("não informado"), vira Sim ou Não no primeiro toque e só volta ao
+     meio por "Limpar resposta" no menu da pergunta.
+   - Máscaras: moeda e percentual nos números; e-mail, telefone, CPF, CNPJ e
+     CEP nos textos, com formatação ao digitar e conferência (CPF e CNPJ pelo
+     dígito verificador). Guardado só com os dígitos (e-mail em minúsculas).
+   - Criação rápida: título, terreno (dentro da ficha já vem), descrição
+     opcional e visibilidade; o resto no padrão. "Mais opções" abre a
+     janela completa com o que já foi digitado.
+   Injetado no mesmo escopo, depois de proto_itens.js.
+   ===================================================================== */
+Object.assign(P,{drag:'M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01'});
+const FM_FORMA={menu:'Lista suspensa',radio:'Botões de opção',chips:'Chips',segmentado:'Segmentado',chave:'Chave liga/desliga',caixas:'Caixas de seleção',botoes:'Botões Sim · Não',linha:'Linha curta',paragrafo:'Parágrafo',campo:'Campo'};
+const FM_TIPOS={texto:'Texto curto',paragrafo:'Parágrafo',numero:'Número',moeda:'Moeda (R$)',percentual:'Percentual (%)',data:'Data',sim_nao:'Sim / não',lista:'Lista de opções',email:'E-mail',telefone:'Telefone',cpf:'CPF',cnpj:'CNPJ'};
+const FM_MASK={email:'E-mail',telefone:'Telefone',cpf:'CPF',cnpj:'CNPJ'};
+/* formas de cada tipo (a primeira é o padrão), como fluxo.formas */
+function fmFormas(tipo,n){if(tipo==='lista')return (n||0)>6?['menu']:['menu','radio','chips',...(n>=2&&n<=4?['segmentado']:[]),...(n===2?['chave']:[])];
+  if(tipo==='lista_multi')return ['caixas','chips'];if(tipo==='sim_nao'||tipo==='caixa')return ['botoes','chave'];if(tipo==='texto'||tipo==='paragrafo')return ['linha','paragrafo'];return ['campo']}
+
+/* ---------- máscaras ---------- */
+const fmDig=v=>String(v??'').replace(/\D/g,'');
+/* confere e devolve como fica guardado (como fluxo.validar_formato); erro com a mensagem para o usuário */
+function fmValida(f,v){const s=String(v??'').trim();if(!s)return null;const d=fmDig(s);
+  if(f==='email'){const x=s.toLowerCase();if(!/^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/.test(x))throw new Error('E-mail inválido.');return x}
+  if(f==='telefone'){if(![10,11].includes(d.length)||d[0]==='0'||d[1]==='0'||(d.length===11&&d[2]!=='9'))throw new Error('Telefone inválido: use DDD e número (10 ou 11 dígitos).');return d}
+  if(f==='cep'){if(d.length!==8)throw new Error('CEP inválido: são 8 dígitos.');return d}
+  if(f==='cpf'){if(d.length!==11||/^(\d)\1{10}$/.test(d))throw new Error('CPF inválido.');
+    for(const r of [9,10]){let x=0;for(let i=0;i<r;i++)x+=+d[i]*(r+1-i);if((x*10%11)%10!==+d[r])throw new Error('CPF inválido.')}return d}
+  if(f==='cnpj'){if(d.length!==14||/^(\d)\1{13}$/.test(d))throw new Error('CNPJ inválido.');
+    for(const r of [12,13]){let x=0;for(let i=0;i<r;i++)x+=+d[i]*((r-1-i)%8+2);x=x%11<2?0:11-x%11;if(x!==+d[r])throw new Error('CNPJ inválido.')}return d}
+  return s}
+const FM_PAD={cpf:'000.000.000-00',cnpj:'00.000.000/0000-00',cep:'00000-000'};
+/* formata os dígitos que já existem (enquanto digita e para mostrar) */
+function fmParcial(f,v){if(f==='email'||!f)return String(v??'');const d=fmDig(v);if(!d)return '';
+  const pad=f==='telefone'?(d.length>10?'(00) 00000-0000':'(00) 0000-0000'):FM_PAD[f];if(!pad)return String(v);let o='',j=0;
+  for(const c of pad){if(j>=d.length)break;if(c==='0')o+=d[j++];else o+=c}return o+(j<d.length&&f!=='telefone'?'':d.slice(j))}
+const fmMostra=(f,v)=>v==null||v===''?'':f&&f!=='email'&&FM_PAD[f]||f==='telefone'?fmParcial(f,v):String(v);
+document.addEventListener('input',e=>{const el=e.target;if(el.tagName!=='INPUT'||!el.dataset.mask||el.dataset.mask==='email')return;const n=fmParcial(el.dataset.mask,el.value);if(n!==el.value)el.value=n},true);
+/* campo personalizado com máscara: confere antes de gravar (como o gatilho de fluxo.tarefa_campos) */
+{const ex=cpoGravar;cpoGravar=function(t,k,c,raw){if(c.tipo==='texto'&&c.formato&&raw!==''&&raw!=null){try{raw=fmValida(c.formato,raw)}catch(er){toast(`${c.nome}: ${er.message}`,true);return false}}return ex(t,k,c,raw)}}
+{const ex=cpoTxt;cpoTxt=function(c,v){if(v!=null&&c.tipo==='texto'&&c.formato)return fmMostra(c.formato,v);if(v!=null&&c.tipo==='numero'&&c.formato==='moeda')return 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(v!=null&&c.tipo==='numero'&&c.formato==='percentual')return Number(v).toLocaleString('pt-BR',{maximumFractionDigits:4})+'%';return ex(c,v)}}
+/* Configurações › Campos: máscara do campo de texto (as fixas só aparecem) */
+function fmMascaraCfg(d){if(d.formato&&(d.tipo!=='texto'||IT_CAT.find(c=>c.chave===d.chave)?.formato))return `<span class="faint">${{moeda:'Moeda',percentual:'Percentual',cep:'CEP'}[d.formato]||FM_MASK[d.formato]}</span>`;
+  if(d.tipo!=='texto')return '<span class="faint">—</span>';
+  return `<select data-itcfg="formato" data-v="${d.chave}" aria-label="Máscara de ${esc(d.titulo)}"><option value="">Sem máscara</option>${Object.entries(FM_MASK).map(([x,n])=>`<option value="${x}" ${d.formato===x?'selected':''}>${n}</option>`).join('')}</select>`}
+
+/* ---------- o que cada pergunta é ---------- */
+/* {tipo, formato, opcoes:[[valor, nome]], titulo, dest, editavel, valor} */
+function fmInfo(t,k,i){
+  if(i.tipo){const base={texto:'texto',paragrafo:'paragrafo',numero:'numero',moeda:'numero',percentual:'numero',data:'data',sim_nao:'sim_nao',lista:'lista',email:'texto',telefone:'texto',cpf:'texto',cnpj:'texto'}[i.tipo];
+    return {tipo:base,formato:{moeda:'moeda',percentual:'percentual',email:'email',telefone:'telefone',cpf:'cpf',cnpj:'cnpj'}[i.tipo]||null,opcoes:i.tipo==='lista'?(i.opcoes||[]).map(o=>[o,o]):null,
+      titulo:i.pergunta,dest:'Só no cartão',editavel:true,valor:i.resposta??null}}
+  if(i.chave){const d=itDef(i.chave);if(!d)return null;const o=d.opcoes?d.opcoes():null;
+    return {tipo:d.tipo,formato:d.formato,opcoes:o&&d.tipo!=='pessoa'?Object.entries(o):null,pessoas:d.tipo==='pessoa'?Object.keys(o||{}):null,titulo:d.titulo,dest:`${IT_ORIG[d.origem]} › ${d.titulo}`,editavel:d.editavel,valor:itVal(t,i.chave),un:d.un}}
+  const c=itCampo(i);if(!c)return null;
+  return {tipo:c.tipo==='caixa'?'sim_nao':c.tipo,formato:c.formato||null,opcoes:c.tipo==='lista'?(c.opcoes||[]).filter(o=>o.ativo!==false||o.id===k.campos?.[c.id]).map(o=>[o.id,o.nome]):null,
+    titulo:c.nome,dest:`Campo personalizado › ${c.nome}`,editavel:c.ativo!==false,valor:k.campos?.[c.id]??null}}
+/* formas que a pergunta aceita: texto com máscara é sempre uma linha; máscara "só no cartão" é campo */
+function fmFormasDe(i,f){if(!f)return ['campo'];if(i.tipo&&FM_MASK[i.tipo])return ['campo'];if(f.tipo==='texto'&&f.formato)return ['linha'];return fmFormas(f.tipo,f.opcoes?.length)}
+const fmForma=(i,f)=>{const L=fmFormasDe(i,f);return L.includes(i.forma)?i.forma:i.tipo==='paragrafo'?'paragrafo':L[0]};
+function fmTxt(f,v){if(v==null)return 'Não informado';if(f.tipo==='sim_nao')return v?'Sim':'Não';if(f.tipo==='data')return fd(v);
+  if(f.tipo==='numero'){const n=Number(v);return f.formato==='moeda'||f.un==='R$'?'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):n.toLocaleString('pt-BR',{maximumFractionDigits:4})+(f.formato==='percentual'||f.un==='%'?'%':f.un?' '+f.un:'')}
+  if(Array.isArray(v))return v.map(x=>(f.opcoes||[]).find(o=>String(o[0])===String(x))?.[1]??x).join(', ');
+  if(f.opcoes)return (f.opcoes.find(o=>String(o[0])===String(v))||[])[1]??String(v);if(f.formato)return fmMostra(f.formato,v);return String(v)}
+
+/* ---------- gravar a resposta ---------- */
+function fmGravar(t,k,i,raw){const f=fmInfo(t,k,i);if(!f||!f.editavel)return false;
+  if(i.campo){const c=itCampo(i);let r=raw;if(f.tipo==='sim_nao')r=raw===true?'1':raw===false?'0':'';if(cpoGravar(t,k,c,r==null?'':r)){tkRe();return true}return false}
+  let v=raw;if(v===''||v==null)v=null;
+  else if(f.tipo==='numero'){v=typeof v==='number'?v:cpoNum(v);if(Number.isNaN(v)){toast(`Número inválido em ${f.titulo}.`,true);return false}}
+  else if(f.tipo==='texto'&&f.formato){try{v=fmValida(f.formato,v)}catch(er){toast(er.message,true);return false}}
+  else if(typeof v==='string'&&f.tipo!=='data')v=v.trim()||null;
+  if(i.chave){const d=itDef(i.chave),antes=itVal(t,d.chave);if(String(antes??'')===String(v??''))return false;try{d.gravar(t,v??d.vazio??null)}catch(err){toast(err.message,true);return false}
+    log(t,`${d.titulo} de ${itTxtVal(d,antes)} para ${itTxtVal(d,v)} (pelo cartão ${k.codigo})`);tkRe();return true}
+  const antes=i.resposta??null;if(antes===v)return false;if(v==null)delete i.resposta;else i.resposta=v;
+  log(t,`Tarefa "${k.titulo}": ${i.pergunta} de ${fmTxt(f,antes)} para ${fmTxt(f,v)}`);tkRe();return true}
+
+/* ---------- responder ---------- */
+function fmControle(t,k,i,f,ro){const v=f.valor,id='fm-'+i.id,forma=fmForma(i,f),dis=ro||!f.editavel;
+  if(dis)return `<span class="fm-ro ${v==null?'faint':''}">${esc(fmTxt(f,v))}${!f.editavel&&!ro?' <span class="faint">· só leitura</span>':''}</span>`;
+  const opc=f.opcoes||[],sel=x=>String(v??'')===String(x);
+  if(f.tipo==='sim_nao'){if(forma==='chave')return fmChave(i,v===true?'on':v===false?'off':null,v===true?'Sim':v===false?'Não':null,'s','n');
+    return `<span class="fm-seg" role="group" aria-label="${esc(f.titulo)}">${[[true,'Sim'],[false,'Não']].map(([x,n])=>`<button class="${v===x?'on':''}" data-a="fm-v" data-i="${i.id}" data-v="${x?'s':'n'}" aria-pressed="${v===x}">${n}</button>`).join('')}</span>`}
+  if(f.opcoes&&f.tipo==='lista'){
+    if(forma==='radio')return `<span class="fm-rd" role="radiogroup" aria-label="${esc(f.titulo)}">${opc.map(([x,n])=>`<label><input type="radio" name="${id}" value="${esc(x)}" data-fm="${i.id}" ${sel(x)?'checked':''}>${esc(n)}</label>`).join('')}</span>`;
+    if(forma==='chips'||forma==='segmentado')return `<span class="${forma==='chips'?'fm-chips':'fm-seg'}" role="group" aria-label="${esc(f.titulo)}">${opc.map(([x,n])=>`<button class="${sel(x)?'on':''}" data-a="fm-v" data-i="${i.id}" data-v="${esc(x)}" aria-pressed="${sel(x)}">${esc(n)}</button>`).join('')}</span>`;
+    if(forma==='chave'&&opc.length===2)return fmChave(i,sel(opc[1][0])?'on':sel(opc[0][0])?'off':null,v==null?null:fmTxt(f,v),opc[1][0],opc[0][0]);
+    return `<select id="${id}" class="fm-in" data-fm="${i.id}"><option value="">Não informado</option>${opc.map(([x,n])=>`<option value="${esc(x)}" ${sel(x)?'selected':''}>${esc(n)}</option>`).join('')}</select>`}
+  if(f.pessoas)return `<select id="${id}" class="fm-in" data-fm="${i.id}"><option value="">Não informado</option>${f.pessoas.map(u=>`<option ${u===v?'selected':''}>${esc(u)}</option>`).join('')}</select>`;
+  if(f.tipo==='data')return `<input id="${id}" type="date" class="fm-in" data-fm="${i.id}" value="${v||''}">`;
+  if(f.tipo==='numero'){const fmt=f.formato==='moeda'||f.un==='R$'?'moeda':f.formato==='percentual'||f.un==='%'?'pct':'num';
+    return `<span class="fm-numw"><input id="${id}" class="fm-in" data-fm="${i.id}" inputmode="decimal" data-fmt="${fmt}" value="${v==null?'':esc(Number(v).toLocaleString('pt-BR',{maximumFractionDigits:fmt==='pct'?4:2}))}" placeholder="Não informado">${f.un&&f.un!=='R$'&&f.un!=='%'?`<span class="fm-un">${esc(f.un)}</span>`:''}</span>`}
+  if(forma==='paragrafo')return `<textarea id="${id}" class="fm-in fm-area" data-fm="${i.id}" placeholder="Não informado">${esc(v??'')}</textarea>`;
+  const ph={email:'nome@empresa.com.br',telefone:'(11) 98765-4321',cpf:'000.000.000-00',cnpj:'00.000.000/0000-00',cep:'00000-000'}[f.formato]||'Não informado';
+  return `<input id="${id}" class="fm-in" data-fm="${i.id}" ${f.formato?`data-mask="${f.formato}" inputmode="${f.formato==='email'?'email':'numeric'}"`:''} value="${esc(fmMostra(f.formato,v))}" placeholder="${ph}">`}
+/* chave de três estados: no meio (não informado) cada metade escolhe; depois, o toque alterna */
+function fmChave(i,est,rot,vOn,vOff){
+  return `<span class="fm-tgw">${est?`<button class="fm-tg ${est}" role="switch" aria-checked="${est==='on'}" data-a="fm-v" data-i="${i.id}" data-v="${esc(est==='on'?vOff:vOn)}" aria-label="${esc(rot)}: tocar para trocar"></button>`
+      :`<span class="fm-tg mid" role="group" aria-label="Não informado"><button data-a="fm-v" data-i="${i.id}" data-v="${esc(vOff)}" aria-label="Responder ${vOff==='n'?'Não':esc(String(vOff))}"></button><button data-a="fm-v" data-i="${i.id}" data-v="${esc(vOn)}" aria-label="Responder ${vOn==='s'?'Sim':esc(String(vOn))}"></button></span>`}
+    <span class="${est?'':'faint'}">${est?esc(rot):'Não informado'}</span>${est?'':'<span class="faint fm-dica">toque num lado para responder</span>'}</span>`}
+
+/* ---------- bloco Formulário ---------- */
+function fmBloco(t,k,bloq){itNorm(k);const ed=!bloq&&vzEdita(t,k)&&UI.role!=='Leitura',its=k.itens;
+  if(!its.length&&!ed)return '';const modo=ed&&(UI.fmModo?.[k.id]||(its.length?'responder':'montar'));
+  const resp=its.filter(i=>!itEmBranco(t,k,i)).length;
+  const cab=`<div class="tkm-sh fm-h"><h3>Formulário</h3>${its.length?`<span class="faint tkm-ckn">${modo==='montar'?`${its.length} ${its.length>1?'perguntas':'pergunta'}`:`${resp} de ${its.length}`}</span>${modo!=='montar'?`<span class="fm-prog" aria-hidden="true"><i style="width:${Math.round(100*resp/its.length)}%"></i></span>`:''}`:''}
+    ${ed&&its.length?`<span class="tkm-shd"><span class="fm-modo" role="group" aria-label="Modo do formulário"><button class="${modo==='montar'?'on':''}" data-a="fm-modo" data-v="montar" aria-pressed="${modo==='montar'}">Montar</button><button class="${modo!=='montar'?'on':''}" data-a="fm-modo" data-v="responder" aria-pressed="${modo!=='montar'}">Responder</button></span></span>`:''}</div>`;
+  if(modo==='montar')return `<div class="tkm-bloco fm" data-fmk="${k.id}">${cab}<div class="fm-lista">${its.map(i=>fmLinhaMontar(t,k,i)).join('')}</div>${fmEditor(t,k)}</div>`;
+  return `<div class="tkm-bloco fm" data-fmk="${k.id}">${cab}<div class="fm-lista">${its.map(i=>{const f=fmInfo(t,k,i);if(!f)return '';const v=!itEmBranco(t,k,i),lab=f.opcoes&&!['menu'].includes(fmForma(i,f))||f.tipo==='sim_nao';
+    return `<div class="fm-ans ${itEmBranco(t,k,i)&&itSelo(t,k,i)?'falta':''}" id="fma-${i.id}"><div class="fm-q">${lab?`<span class="fm-qt">${esc(i.pergunta||f.titulo)}</span>`:`<label class="fm-qt" for="fm-${i.id}">${esc(i.pergunta||f.titulo)}</label>`}${itSelo(t,k,i)}
+      ${ed&&v&&f.editavel?`<span class="fm-mw"><button class="iconbtn sm" data-a="fm-menu" data-v="${i.id}" aria-expanded="${UI.fmMenu===i.id}" aria-label="Mais ações de ${esc(i.pergunta||f.titulo)}" title="Mais ações">${ic('mais',18)}</button>${UI.fmMenu===i.id?`<span class="fm-menu" role="menu"><button role="menuitem" data-a="fm-limpa" data-v="${i.id}">Limpar resposta</button></span>`:''}</span>`:''}</div>
+      ${i.ajuda?`<div class="fm-aj">${esc(i.ajuda)}</div>`:''}<div class="fm-c">${fmControle(t,k,i,f,!ed)}</div><div class="fm-dest">${i.tipo?'Só no cartão':`Grava em <b>${esc(f.dest)}</b>`}</div></div>`}).join('')}</div></div>`}
+function fmLinhaMontar(t,k,i){const f=fmInfo(t,k,i);if(!f)return '';const trava=i.regra&&i.regra!=='livre'&&!itConfigura(t,k);
+  if(UI.fmEd?.id===i.id)return '';
+  return `<div class="fm-row" draggable="true" data-fmrow="${i.id}"><span class="fm-drag" title="Arraste para mudar a ordem" aria-hidden="true">${ic('drag',18)}</span>
+    <div class="fm-rb"><div class="fm-rt">${esc(i.pergunta||f.titulo)}</div><div class="fm-rm">${i.tipo?`Só no cartão · ${FM_TIPOS[i.tipo]}`:`Grava em ${esc(f.dest)}`}${fmFormasDe(i,f).length>1?' · '+FM_FORMA[fmForma(i,f)]:''}</div></div>
+    <span class="fm-ra"><button class="iconbtn sm" data-a="fm-sobe" data-v="${i.id}" title="Subir" aria-label="Subir ${esc(i.pergunta||f.titulo)}" ${k.itens[0]===i?'disabled':''}>${ic('chev',18)}</button>
+      <button class="iconbtn sm" data-a="fm-edita" data-v="${i.id}" title="Editar" aria-label="Editar ${esc(i.pergunta||f.titulo)}">${ic('edit',18)}</button>
+      <button class="iconbtn sm" data-a="fm-tira" data-v="${i.id}" title="${trava?'Tem regra para concluir':'Tirar do formulário'}" aria-label="Tirar ${esc(i.pergunta||f.titulo)}" ${trava?'disabled':''}>${ic('close',18)}</button></span></div>`}
+/* editor de pergunta (nova ou existente) */
+function fmEditor(t,k){const E=UI.fmEd;if(!E||E.kid!==k.id)return `<button class="tkm-add" data-a="fm-nova">${ic('add',16)}Pergunta</button>`;
+  const ex=E.id?k.itens.find(x=>x.id===E.id):null,usados=new Set(k.itens.filter(x=>x!==ex).map(x=>x.chave||x.campo).filter(Boolean));
+  const q=(E.q||'').toLowerCase(),ob=IT_CAT.map(c=>itDef(c.chave)).filter(d=>d.cartao&&!usados.has(d.chave)&&(!q||d.titulo.toLowerCase().includes(q))),cp=cpoAtivos().filter(c=>!usados.has(c.id)&&(!q||c.nome.toLowerCase().includes(q)));
+  const dnome=E.dest==='cartao'?'Só no cartão':E.dest?.startsWith('c:')?cpoCampos().find(c=>c.id===E.dest.slice(2))?.nome:E.dest?itDef(E.dest)?.titulo:'';
+  const pop=E.busca&&!ex?`<div class="fm-pop" role="listbox" aria-label="Onde a resposta grava">${Object.keys(IT_ORIG).map(o=>{const l=ob.filter(d=>d.origem===o);return l.length?`<div class="it-popg">${IT_ORIG[o]}</div>${l.map(d=>`<button class="it-popi" role="option" data-a="fm-dest" data-v="${d.chave}">${esc(d.titulo)}<span class="faint">${IT_TIPO[d.tipo]}${d.formato?' · '+({moeda:'moeda',percentual:'percentual',cep:'CEP'}[d.formato]||FM_MASK[d.formato].toLowerCase()):''}${d.editavel?'':' · só leitura'}</span></button>`).join('')}`:''}).join('')}
+      ${cp.length?`<div class="it-popg">Campos personalizados</div>${cp.map(c=>`<button class="it-popi" role="option" data-a="fm-dest" data-v="c:${c.id}">${esc(c.nome)}<span class="faint">${CPO_TIPOS[c.tipo].toLowerCase()}${c.formato?' · '+(FM_MASK[c.formato]||c.formato).toLowerCase():''}</span></button>`).join('')}`:''}
+      <div class="it-popg">Sem gravar</div><button class="it-popi" role="option" data-a="fm-dest" data-v="cartao">Só no cartão<span class="faint">a resposta fica na tarefa</span></button></div>`:'';
+  /* tipo e formas */
+  const tmp=E.dest?{id:'x',tipo:E.dest==='cartao'?E.tipo:undefined,opcoes:E.dest==='cartao'&&E.tipo==='lista'?fmOpcoes(E.opcoes):undefined,chave:E.dest&&E.dest!=='cartao'&&!E.dest.startsWith('c:')?E.dest:undefined,campo:E.dest?.startsWith('c:')?E.dest.slice(2):undefined,pergunta:E.pergunta||'?'}:null;
+  const fi=tmp?fmInfo(t,k,tmp):null,formas=tmp&&fi?fmFormasDe(tmp,fi):[],fsel=formas.includes(E.forma)?E.forma:(tmp?fmForma(tmp,fi):null);
+  const tem=!!(ex?.resposta!=null);
+  return `<div class="fm-ed" role="group" aria-label="${ex?'Editar pergunta':'Nova pergunta'}"><div class="fm-edt">${ex?'Editar pergunta':'Nova pergunta'}</div>
+    <div class="fm-g2"><div class="fm-f"><label for="fme-p">Pergunta${E.dest&&E.dest!=='cartao'?' <span class="faint">(vazia usa o título do campo)</span>':''}</label><input id="fme-p" data-fme="pergunta" value="${esc(E.pergunta||'')}" placeholder="${E.dest&&E.dest!=='cartao'?esc(dnome||''):'Ex.: Como está a ocupação hoje?'}"></div>
+      <div class="fm-f"><label for="fme-a">Ajuda (opcional)</label><input id="fme-a" data-fme="ajuda" value="${esc(E.ajuda||'')}" placeholder="Ex.: veja se há inquilino ou invasão"></div></div>
+    <div class="fm-f fm-destw"><label for="fme-d">Grava em</label>${ex?`<span class="fm-fix">${esc(fi?.dest||dnome)}</span>`
+      :`<button id="fme-d" class="fm-destb" data-a="fm-busca" aria-expanded="${!!E.busca}">${E.dest?esc(dnome):'<span class="faint">Escolher campo</span>'}${ic('chevD',18)}</button>${E.busca?`<input class="it-busca fm-q-in" data-fmq="1" value="${esc(E.q||'')}" placeholder="Buscar campo" aria-label="Buscar campo">`:''}${pop}`}</div>
+    ${E.dest==='cartao'?`<div class="fm-g2"><div class="fm-f"><label for="fme-t">Tipo de resposta</label><select id="fme-t" data-fme="tipo" ${tem?'disabled title="Já tem resposta: o tipo não muda"':''}>${Object.entries(FM_TIPOS).map(([x,n])=>`<option value="${x}" ${E.tipo===x?'selected':''}>${n}</option>`).join('')}</select></div>
+      ${E.tipo==='lista'?`<div class="fm-f"><label for="fme-o">Opções (uma por linha)</label><textarea id="fme-o" data-fme="opcoes" rows="3" placeholder="Bom&#10;Ruim">${esc(E.opcoes||'')}</textarea></div>`:'<div></div>'}</div>`:''}
+    ${formas.length>1?`<div class="fm-f"><span class="fm-lbl">Forma de responder</span><div class="fm-formas" role="radiogroup" aria-label="Forma de responder">${formas.map(x=>`<button class="fm-fo ${x===fsel?'on':''}" role="radio" aria-checked="${x===fsel}" data-a="fm-forma" data-v="${x}"><b>${FM_FORMA[x]}</b>${fmPrevia(x,fi)}</button>`).join('')}</div></div>`
+      :fi?`<p class="faint fm-n1">${fi.tipo==='texto'&&fi.formato?`Máscara ${({cep:'CEP'}[fi.formato]||FM_MASK[fi.formato]||fi.formato)}: uma linha, formatada ao digitar.`:'Este tipo tem uma forma só.'}</p>`:''}
+    <div class="fm-edb"><span class="faint">${E.dest&&E.dest!=='cartao'?'A resposta grava no próprio registro. ':''}Regra em branco e "Vale quando" ficam na aba Configuração.</span><span class="tkm-sp"></span>
+      <button class="btn text sm" data-a="fm-cancela">Cancelar</button><button class="btn primary sm" data-a="fm-salva">${ex?'Salvar':'Incluir pergunta'}</button></div></div>`}
+const fmOpcoes=s=>[...new Set(String(s||'').split(/\n|;/).map(x=>x.trim()).filter(Boolean))];
+function fmPrevia(x,f){const o=(f?.opcoes||[]).slice(0,2).map(y=>esc(String(y[1]))),a=o[0]||'Opção 1',b=o[1]||'Opção 2';
+  return {menu:`<span class="fm-pv"><span class="fm-pvs">${a} ▾</span></span>`,radio:`<span class="fm-pv"><span class="fm-pvr on"></span>${a}<span class="fm-pvr"></span>${b}</span>`,chips:`<span class="fm-pv"><span class="fm-pvc on">${a}</span><span class="fm-pvc">${b}</span></span>`,
+    segmentado:`<span class="fm-pv fm-pvg"><span class="on">${a}</span><span>${b}</span></span>`,chave:`<span class="fm-pv"><span class="fm-tg mid sm"></span>Não informado</span>`,botoes:`<span class="fm-pv fm-pvg"><span class="on">Sim</span><span>Não</span></span>`,
+    caixas:`<span class="fm-pv">☑ ${a}</span>`,linha:`<span class="fm-pv"><span class="fm-pvs">Texto</span></span>`,paragrafo:`<span class="fm-pv"><span class="fm-pvs fm-pva">Texto longo</span></span>`,campo:''}[x]||''}
+
+/* ---------- eventos ---------- */
+document.addEventListener('input',e=>{const el=e.target;
+  if(el.dataset?.fme){e.stopImmediatePropagation();UI.fmEd[el.dataset.fme]=el.value;if(el.dataset.fme==='opcoes'){const p=el.selectionStart;tkRe();const n=document.querySelector('[data-fme=opcoes]');if(n){n.focus();n.setSelectionRange(p,p)}}return}
+  if(el.dataset?.fmq){e.stopImmediatePropagation();UI.fmEd.q=el.value;const p=el.selectionStart;tkRe();const n=document.querySelector('[data-fmq]');if(n){n.focus();n.setSelectionRange(p,p)}return}},true);
+document.addEventListener('change',e=>{const el=e.target;
+  if(el.dataset?.fme){e.stopImmediatePropagation();UI.fmEd[el.dataset.fme]=el.value;if(el.dataset.fme==='tipo'){UI.fmEd.forma=null;tkRe()}return}
+  if(el.dataset?.fm){e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!vzEdita(t,k))return;const i=itNorm(k).find(x=>x.id===el.dataset.fm);if(!i)return;
+    if(!fmGravar(t,k,i,el.value)){const f=fmInfo(t,k,i);if(el.tagName!=='SELECT'&&el.type!=='radio')el.value=f.tipo==='numero'&&f.valor!=null?Number(f.valor).toLocaleString('pt-BR',{maximumFractionDigits:4}):fmMostra(f.formato,f.valor)}return}},true);
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="fm-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const A=a.dataset.a;
+  if(A==='fm-mais'||A==='fm-desc'){fmRapidaAcao(A);return}
+  const {t,k}=tkAtual();if(!k)return;const ed=vzEdita(t,k)&&!k.arq&&UI.role!=='Leitura';
+  if(A==='fm-menu'){UI.fmMenu=UI.fmMenu===a.dataset.v?null:a.dataset.v;tkRe();return}
+  if(!ed)return;itNorm(k);const i=k.itens.find(x=>x.id===a.dataset.v||x.id===a.dataset.i);
+  switch(A){
+    case 'fm-modo':UI.fmModo={...(UI.fmModo||{}),[k.id]:a.dataset.v};UI.fmEd=null;break;
+    case 'fm-v':{if(!i)return;const f=fmInfo(t,k,i);let v=a.dataset.v;if(f.tipo==='sim_nao')v=v==='s';fmGravar(t,k,i,v);return}
+    case 'fm-limpa':{UI.fmMenu=null;if(!i)return;fmGravar(t,k,i,null);return}
+    case 'fm-nova':UI.fmEd={kid:k.id,id:null,pergunta:'',ajuda:'',dest:'',tipo:'texto',opcoes:'',forma:null,q:'',busca:true};break;
+    case 'fm-edita':if(!i)return;UI.fmEd={kid:k.id,id:i.id,pergunta:i.pergunta||'',ajuda:i.ajuda||'',dest:i.tipo?'cartao':i.chave||('c:'+i.campo),tipo:i.tipo||'texto',opcoes:(i.opcoes||[]).join('\n'),forma:i.forma||null,q:'',busca:false};break;
+    case 'fm-cancela':UI.fmEd=null;break;
+    case 'fm-busca':UI.fmEd.busca=!UI.fmEd.busca;UI.fmEd.q='';tkRe();setTimeout(()=>document.querySelector('[data-fmq]')?.focus(),0);return;
+    case 'fm-dest':Object.assign(UI.fmEd,{dest:a.dataset.v,busca:false,forma:null,q:''});tkRe();setTimeout(()=>document.querySelector(UI.fmEd.dest==='cartao'?'#fme-p':'#fme-p')?.focus(),0);return;
+    case 'fm-forma':UI.fmEd.forma=a.dataset.v;break;
+    case 'fm-salva':{if(!fmSalvar(t,k))return;break}
+    case 'fm-sobe':{if(!i)return;const j=k.itens.indexOf(i);if(j>0){k.itens.splice(j,1);k.itens.splice(j-1,0,i);log(t,`Tarefa "${k.titulo}": ordem do formulário mudada`)}break}
+    case 'fm-tira':{if(!i)return;if(i.regra&&i.regra!=='livre'&&!itConfigura(t,k)){toast('Esta pergunta tem regra para concluir: só o diretor, o administrador e quem criou a tarefa a tiram.',true);return}
+      k.itens=k.itens.filter(x=>x!==i);log(t,`Tarefa "${k.titulo}": pergunta ${itNome(i)} tirada do formulário`);break}
+  }tkRe()},true);
+function fmSalvar(t,k){const E=UI.fmEd;if(!E.dest){toast('Escolha onde a resposta grava.',true);return false}
+  const pergunta=(E.pergunta||'').trim()||null,ajuda=(E.ajuda||'').trim()||null;
+  if(E.dest==='cartao'&&!pergunta){toast('Escreva a pergunta.',true);return false}
+  let opcoes;if(E.dest==='cartao'&&E.tipo==='lista'){opcoes=fmOpcoes(E.opcoes);if(opcoes.length<2){toast('A lista precisa de pelo menos duas opções.',true);return false}}
+  const ex=E.id?k.itens.find(x=>x.id===E.id):null;
+  if(ex&&E.dest==='cartao'&&ex.resposta!=null&&ex.tipo!==E.tipo){toast('A pergunta já tem resposta: o tipo não muda.',true);return false}
+  if(ex&&ex.tipo==='lista'&&ex.resposta!=null&&opcoes&&!opcoes.includes(ex.resposta)){toast(`A resposta "${ex.resposta}" precisa continuar entre as opções.`,true);return false}
+  const base=ex||{id:uid(),regra:'livre',cond:null};
+  const novo={...base,pergunta,ajuda,forma:null};
+  if(E.dest==='cartao'){novo.tipo=E.tipo;novo.opcoes=opcoes;delete novo.chave;delete novo.campo}else if(E.dest.startsWith('c:')){novo.campo=E.dest.slice(2)}else novo.chave=E.dest;
+  const fi=fmInfo(t,k,novo),L=fmFormasDe(novo,fi);novo.forma=E.forma&&L.includes(E.forma)&&E.forma!==L[0]?E.forma:null;
+  if(novo.tipo==='paragrafo'&&E.forma==='linha')novo.forma='linha';
+  if(ex)Object.assign(ex,novo);else k.itens.push(novo);
+  log(t,`Tarefa "${k.titulo}": pergunta ${itNome(novo)} ${ex?'alterada':'incluída'} no formulário`);UI.fmEd=null;return true}
+/* arrastar para mudar a ordem */
+let fmArr=null;
+document.addEventListener('dragstart',e=>{const r=e.target.closest?.('[data-fmrow]');if(!r)return;fmArr=r.dataset.fmrow;e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',fmArr)}catch(er){}r.classList.add('arrasta')},true);
+document.addEventListener('dragover',e=>{if(!fmArr)return;const r=e.target.closest?.('[data-fmrow]');if(!r)return;e.preventDefault();document.querySelectorAll('.fm-row.sobre').forEach(x=>x!==r&&x.classList.remove('sobre'));r.classList.add('sobre')},true);
+document.addEventListener('dragend',()=>{fmArr=null;document.querySelectorAll('.fm-row.sobre,.fm-row.arrasta').forEach(x=>x.classList.remove('sobre','arrasta'))},true);
+document.addEventListener('drop',e=>{if(!fmArr)return;const r=e.target.closest?.('[data-fmrow]');if(!r)return;e.preventDefault();e.stopImmediatePropagation();const {t,k}=tkAtual();const id=fmArr;fmArr=null;if(!k||!vzEdita(t,k))return;
+  const i=k.itens.find(x=>x.id===id),alvo=k.itens.find(x=>x.id===r.dataset.fmrow);if(!i||!alvo||i===alvo)return;const de=k.itens.indexOf(i);k.itens.splice(de,1);const para=k.itens.indexOf(alvo)+(de<=k.itens.indexOf(alvo)?1:0);k.itens.splice(para,0,i);
+  log(t,`Tarefa "${k.titulo}": ordem do formulário mudada`);tkRe()},true);
+/* fora do cartão o menu ⋮ fecha */
+document.addEventListener('click',e=>{if(UI.fmMenu&&!e.target.closest?.('.fm-mw')){UI.fmMenu=null;if(document.querySelector('.fm-menu'))tkRe()}});
+
+/* ---------- criação rápida ---------- */
+{const exNova=tkNovaHtml;tkNovaHtml=function(fechar){const sel=UI.tkSel||{};if(sel.mais)return exNova(fechar);
+  const t=sel.tid?T(sel.tid):null,ult=(S.vzUlt||{})[me()],l=fmListaPadrao(t,sel.lista);
+  return `<div class="dh"><div><h2>Nova tarefa</h2>${t?`<div class="muted" style="margin-top:4px">${t.codigo} · ${esc(t.nome)}</div>`:''}</div>${fechar}</div>
+  <form data-form="tarefa-r" id="f-tkr" class="tkr"><div class="fields">
+    <div class="field full"><label for="tr-t">Tarefa</label><input id="tr-t" name="titulo" required value="${esc(sel.rasc?.titulo||'')}" placeholder="Ex.: cobrar a contraproposta do proprietário" autocomplete="off"></div>
+    ${t?'':`<div class="field full"><label for="tr-ter">Terreno</label><select id="tr-ter" name="ter" required><option value="">Escolha o terreno</option>${ativosBanco().map(x=>`<option value="${x.id}" ${(sel.rasc?.ter||UI.tk?.ter)===x.id?'selected':''}>${x.codigo} · ${esc(x.nome)}</option>`).join('')}</select></div>`}
+    ${sel.desc?`<div class="field full"><label for="tr-d">Descrição</label><textarea id="tr-d" name="desc" data-mencao placeholder="Use @ para avisar um colega">${esc(sel.rasc?.desc||'')}</textarea></div>`:`<div class="field full tkr-dl"><button type="button" class="btn text sm" data-a="fm-desc">${ic('add',16)}Adicionar descrição</button></div>`}
+    <fieldset class="field full tkr-vis"><legend>Visibilidade</legend><span class="tkr-seg">${Object.keys(VZ_N).map(v=>`<label title="${esc(VZ_D[v])}"><input type="radio" name="vis" value="${v}" required ${(sel.rasc?.vis||ult)===v?'checked':''}><span>${ic(VZ_IC[v],16)}${VZ_N[v]}</span></label>`).join('')}</span></fieldset>
+    <p class="faint tkr-pad">Vai para ${l?esc(l):'a primeira lista'}, com você como responsável e sem prazo.</p></div></form>
+  <div class="df"><button class="btn text" data-a="fm-mais">Mais opções</button><span class="tkm-sp"></span><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-tkr">Criar</button></div>`}}
+function fmListaPadrao(t,pedida){const L=t?tkL(t).filter(l=>!l.oculta&&l.tipo!=='conclui'&&l.tipo!=='pausa').map(l=>l.nome):(S.listasModelo||[]).filter(l=>l.ativo).map(l=>l.nome);
+  if(pedida&&(t?tkL(t).some(l=>l.nome===pedida&&!l.oculta):true))return pedida;return L.includes('Fazer')?'Fazer':L[0]}
+function fmRasc(){const f=document.querySelector('#f-tkr');if(!f)return UI.tkSel.rasc||{};const F=Object.fromEntries(new FormData(f));return {...(UI.tkSel.rasc||{}),...F}}
+function fmRapidaAcao(A){if(!UI.tkSel)return;const r=fmRasc();UI.tkSel.rasc=r;
+  if(A==='fm-desc'){UI.tkSel.desc=true;renderModal();setTimeout(()=>document.querySelector('#tr-d')?.focus(),0);return}
+  UI.tkSel.mais=true;renderModal();
+  setTimeout(()=>{const set=(s,v)=>{const el=document.querySelector(s);if(el&&v!=null)el.value=v};set('#tm-t',r.titulo);set('#tm-ter',r.ter);set('#tm-d',r.desc);
+    if(r.vis){const x=document.querySelector(`#f-tk input[name=vis][value="${r.vis}"]`);if(x){x.checked=true;x.dispatchEvent(new Event('change',{bubbles:true}))}}document.querySelector('#tm-t')?.focus()},0)}
+document.addEventListener('submit',e=>{const f=e.target;if(f.dataset?.form!=='tarefa-r')return;e.preventDefault();e.stopImmediatePropagation();const F=Object.fromEntries(new FormData(f)),sel=UI.tkSel;
+  const t=T(sel.tid||F.ter);if(!t){toast('Escolha o terreno da tarefa.',true);return}if(!(F.titulo||'').trim())return;if(!F.vis){toast('Escolha a visibilidade.',true);return}
+  const nome=fmListaPadrao(t,sel.lista),l=tkL(t).find(x=>x.nome===nome&&!x.oculta)||tkPrim(t,'aberta');
+  const k=tkCriar(t,{titulo:F.titulo,desc:F.desc||'',resp:me(),prio:'media',lista:l.id,vis:F.vis,lib:[]});vzLembrar(F.vis);
+  UI.modal=null;renderModal();tkRe();fmSnack(`${k.codigo} criada em ${l.nome}`,'Abrir',()=>{UI.tkSel={tid:t.id,kid:k.id};UI.modal='tarefa';renderModal()})},true);
+/* aviso com ação (o toast comum é só texto) */
+function fmSnack(m,rot,fn){const el=$('#toast');el.innerHTML=`<span>${esc(m)}</span><button class="toast-ac">${esc(rot)}</button>`;el.className='toast show tem-ac';clearTimeout(tmr);
+  el.querySelector('.toast-ac').onclick=()=>{el.className='toast';fn()};tmr=setTimeout(()=>el.className='toast',6000)}
+
+/* exemplo: formulário da visita técnica no primeiro terreno (só uma vez) */
+(()=>{if(S.fmExemplo)return;S.fmExemplo=true;const t=S.terrenos[0];if(!t||!t.tarefas)return;const l=tkL(t).find(x=>x.nome==='Fazendo'&&!x.oculta)||tkPrim(t,'aberta');
+  const k=tkCriar(t,{titulo:'Visita técnica ao terreno',resp:t.resp||'Rafael Souza',prio:'media',lista:l.id,vis:'publico',prazo:addD(HOJE,4),desc:'Conferir divisas, ocupação e acesso.'});
+  k.itens=[{id:uid(),chave:'terreno.topografia',pergunta:'Qual a topografia do terreno?',forma:'radio',regra:'livre',cond:null},
+    {id:uid(),chave:'terreno.area_levantamento_m2',pergunta:'Área medida na visita',ajuda:'Medida com trena laser nas divisas.',regra:'justificativa',cond:null},
+    {id:uid(),chave:'terreno.situacao_ocupacao',pergunta:'Como está a ocupação hoje?',forma:'chips',regra:'livre',cond:null},
+    {id:uid(),tipo:'sim_nao',pergunta:'O proprietário aceita receber a equipe de novo?',forma:'chave',regra:'livre',cond:null},
+    {id:uid(),tipo:'telefone',pergunta:'Telefone do zelador',regra:'livre',cond:null},
+    {id:uid(),tipo:'paragrafo',pergunta:'Observações da visita',regra:'livre',cond:null}];
+  S.fmExemploK=k.id})();
 
 /* =====================================================================
    Recorrência (bloco 4; decisões do Moisés, 30/out/2026).
@@ -8313,7 +8666,7 @@ function cxCopiar(t,k,dest,lid,titulo,itens){const l=tkL(dest).find(x=>x.id===li
     prazo:null,prio:k.prio,capa:k.capa||null,apModo:k.apModo,lista:l.id,pos:Date.now(),estim:k.estim||null,
     exec:tem('pessoas')?[...(k.exec||[])]:[],aprov:tem('pessoas')?[...(k.aprov||[])]:[],acomp:tem('pessoas')?[...(k.acomp||[])]:[],etq:tem('etiquetas')?[...(k.etq||[])]:[],
     checklists:tem('checklists')?(k.checklists||[]).map(c=>({id:uid(),nome:c.nome,esconder:c.esconder,itens:c.itens.filter(i=>!i.virou).map(i=>({id:uid(),texto:i.texto,resp:tem('pessoas')?i.resp:null,prazo:null,feito:null,regra:i.regra,cond:i.cond?JSON.parse(JSON.stringify(i.cond)):null}))})):[],
-    itens:tem('campos')?itCopiaItens(k):[],
+    itens:tem('campos')?itCopiaItens(k,true):[],
     campos:tem('campos')?Object.fromEntries(Object.entries(k.campos||{}).filter(([cid,v])=>{const c=cpoCampos().find(x=>x.id===cid);return c&&c.ativo!==false&&(c.tipo!=='lista'||(c.opcoes||[]).some(o=>o.id===v&&o.ativo!==false))})):{},
     anexos:tem('anexos')?(k.anexos||[]).filter(a=>!a.removido).map(a=>({...a,id:uid()})):[]});
   vzAjustar(dest,n);dest.tarefas.push(n);notifTarefa(dest,n,null);log(dest,`Tarefa criada como cópia de ${k.codigo}${k.modelo?' (modelo)':''}: ${n.titulo}`);return n}

@@ -51,7 +51,7 @@ await abreCartao(p,'Levar ao comitê');await clica(p,'#modal [data-a=tkc-pop][da
 ok(kOf(s,kc.id).k.modelo&&!(await p.$('#modal [data-a=tkc-concluir]')),'Tornar modelo: vira modelo e perde o Concluir');
 await clica(p,'#modal [data-a=tkc-pop][data-v=mais]');await p.waitForTimeout(100);await clica(p,'#modal [data-a=cx-modelo]');await p.waitForTimeout(200);s=await est(p);ok(!kOf(s,kc.id).k.modelo,'Deixar de ser modelo');await fecha(p);
 // nova tarefa a partir de modelo
-await p.evaluate(id=>{const a=document.createElement('button');a.dataset.a='tk-nova';a.dataset.id=id;document.body.appendChild(a);a.click();a.remove()},t0.id);await p.waitForTimeout(250);
+await p.evaluate(id=>{const a=document.createElement('button');a.dataset.a='tk-nova';a.dataset.id=id;document.body.appendChild(a);a.click();a.remove()},t0.id);await p.waitForTimeout(250);await clica(p,'[data-a=fm-mais]');await p.waitForTimeout(200);
 ok(!!(await p.$('#tm-mod')),'a Nova tarefa oferece "Usar um modelo"');
 await p.screenshot({path:O+'3_nova.png'});
 await muda(p,'#tm-mod',`${t0.id}|${m.id}`);await p.waitForTimeout(250);

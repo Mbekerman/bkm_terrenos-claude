@@ -24,7 +24,7 @@ ok(cols.join(',')==='Backlog,Fazer,Fazendo,Aguardando retorno,Pausadas,Feito',`q
 let s=await est(p);ok(s.terrenos.every(t=>t.tarefas.every(k=>/^TAR-\d{6}$/.test(k.codigo)&&k.lista&&!('status' in k))),'tarefas antigas ganham código TAR e lista no lugar do status');
 await p.screenshot({path:O+'1_quadro_geral.png'});
 // nova tarefa no Backlog
-await clica(p,'[data-a=tk-nova][data-v=Backlog]');await p.waitForTimeout(200);
+await clica(p,'[data-a=tk-nova][data-v=Backlog]');await p.waitForTimeout(200);await clica(p,'[data-a=fm-mais]');await p.waitForTimeout(200);
 const tid=s.terrenos[0].id;await preenche(p,'#tm-t','Pedir certidões do vendedor');await muda(p,'#tm-ter',tid);await p.evaluate(()=>{document.querySelector('#f-tk input[name=vis][value=publico]').checked=true});await envia(p,'#f-tk');await p.waitForTimeout(250);
 s=await est(p);let k=s.terrenos[0].tarefas.find(x=>x.titulo==='Pedir certidões do vendedor');
 ok(k&&s.terrenos[0].listas.find(l=>l.id===k.lista).nome==='Backlog'&&k.solic==='Moisés','nova tarefa entra na lista escolhida e quem criou é o solicitante');

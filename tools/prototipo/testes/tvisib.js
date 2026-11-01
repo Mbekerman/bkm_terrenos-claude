@@ -44,7 +44,7 @@ ok(await p.$eval('.tkm-tit',x=>!x.disabled),'liberada como editora, a pessoa de 
 await papel(p,'Analista');await p.waitForTimeout(250);
 ok(!(await noQuadro(p,'Pedir certidão de uso do solo'))&&await noQuadro(p,'Rascunho da contraproposta'),'o analista vê o próprio individual e não vê o restrito de que não faz parte');
 // nova tarefa: a escolha é obrigatória
-await clica(p,'[data-a=tk-nova]');await p.waitForTimeout(200);
+await clica(p,'[data-a=tk-nova]');await p.waitForTimeout(200);await clica(p,'[data-a=fm-mais]');await p.waitForTimeout(200);
 ok(await p.evaluate(()=>![...document.querySelectorAll('#f-tk input[name=vis]')].some(x=>x.checked)&&document.querySelector('#f-tk input[name=vis]').required),'na primeira vez, nenhuma visibilidade vem marcada e a escolha é obrigatória');
 await preenche(p,'#tm-t','Negociar comissão do corretor');await envia(p,'#f-tk');await p.waitForTimeout(200);
 s=await est(p);ok(!s.terrenos[0].tarefas.some(k=>k.titulo==='Negociar comissão do corretor'),'sem escolher a visibilidade, não cria');

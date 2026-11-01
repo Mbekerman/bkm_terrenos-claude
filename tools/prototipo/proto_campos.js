@@ -47,6 +47,7 @@ function cpoCfgHtml(){const C=cpoCampos().slice().sort((a,b)=>(a.ordem||0)-(b.or
     <p class="muted" style="margin-top:0">Quem cria a tarefa inclui o campo no cartão; a regra para concluir com ele em branco fica na aba Configuração do cartão. Campo com valor não muda de tipo nem se apaga: desative.</p>
     ${C.map((c,i)=>{const usado=cpoUsado(c);return `<div class="cpo-cfg ${c.ativo===false?'oculta':''}"><div class="tkl-r"><input value="${esc(c.nome)}" data-cpoc="nome" data-v="${c.id}" aria-label="Nome do campo ${i+1}">
       <select data-cpoc="tipo" data-v="${c.id}" aria-label="Tipo de ${esc(c.nome)}" ${usado?'disabled title="Já tem valores: o tipo não muda"':''}>${Object.entries(CPO_TIPOS).map(([x,n])=>`<option value="${x}" ${x===c.tipo?'selected':''}>${n}</option>`).join('')}</select>
+      ${c.tipo==='texto'||c.tipo==='numero'?`<select data-cpoc="formato" data-v="${c.id}" aria-label="Máscara de ${esc(c.nome)}">${Object.entries(c.tipo==='texto'?{'':'Sem máscara',email:'E-mail',telefone:'Telefone',cpf:'CPF',cnpj:'CNPJ'}:{'':'Número',moeda:'Moeda (R$)',percentual:'Percentual (%)'}).map(([x,n])=>`<option value="${x}" ${(c.formato||'')===x?'selected':''}>${n}</option>`).join('')}</select>`:''}
       <label class="chk"><input type="checkbox" data-cpoc="frente" data-v="${c.id}" ${c.frente?'checked':''}>Na frente do cartão</label>
       <button class="iconbtn sm" data-a="cpo-sobe" data-v="${c.id}" ${i?'':'disabled'} aria-label="Subir ${esc(c.nome)}" title="Subir">${ic('chev',18)}</button>
       ${usado?`<button class="btn text sm" data-a="cpo-ativo" data-v="${c.id}">${c.ativo===false?'Ativar':'Desativar'}</button>`:`<button class="btn text sm" data-a="cpo-apaga" data-v="${c.id}">Apagar</button>`}</div>
@@ -59,7 +60,10 @@ document.addEventListener('change',e=>{const el=e.target;
     if(cpoGravar(t,k,c,el.value))tkRe();else if(c.tipo==='numero'&&el.value)el.value=k.campos?.[c.id]!=null?cpoTxt(c,k.campos[c.id]):'';return}
   if(el.dataset?.cpoc){e.stopImmediatePropagation();if(!ehAdmin(me()))return;const c=cpoCampos().find(x=>x.id===el.dataset.v);if(!c)return;const p=el.dataset.cpoc;
     if(p==='nome'){const v=el.value.trim();if(!v||cpoCampos().some(x=>x!==c&&x.nome===v)){toast(v?'Já existe um campo com esse nome.':'O campo precisa de nome.',true);el.value=c.nome;return}c.nome=v}
-    else if(p==='tipo'){if(cpoUsado(c)){toast('O campo já tem valores: o tipo não muda.',true);return}c.tipo=el.value;if(c.tipo==='lista'&&!c.opcoes)c.opcoes=[]}
+    else if(p==='tipo'){if(cpoUsado(c)){toast('O campo já tem valores: o tipo não muda.',true);return}c.tipo=el.value;c.formato=undefined;if(c.tipo==='lista'&&!c.opcoes)c.opcoes=[]}
+    else if(p==='formato'){const v=el.value||null;if(v&&c.tipo==='texto'){const ruim=S.terrenos.some(t=>(t.tarefas||[]).some(k=>{const x=k.campos?.[c.id];if(x==null)return false;try{fmValida(v,x);return false}catch(er){return true}}));
+        if(ruim){toast('Há cartões com valores fora dessa máscara: corrija antes de ligar.',true);el.value=c.formato||'';return}
+        S.terrenos.forEach(t=>(t.tarefas||[]).forEach(k=>{if(k.campos?.[c.id]!=null)k.campos[c.id]=fmValida(v,k.campos[c.id])}))}c.formato=v||undefined}
     else if(p==='frente')c.frente=el.checked;
     else if(p==='obrig')c.obrig=el.checked;
     save();render();toast('Campo atualizado.')}},true);

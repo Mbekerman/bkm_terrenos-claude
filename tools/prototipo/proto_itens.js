@@ -77,10 +77,12 @@ const IT_CAT=(()=>{const tr=(c)=>[t=>t[c],(t,v)=>{t[c]=v}],of=c=>[t=>ofertaRef(t
   ['calculado.zonas','Zonas da área','lista_multi',null,opZonas,null,0,1,1,...ro(t=>[...new Set((analiseVig(t)?.zonas||[]).map(z=>z.sigla))])],
   ['calculado.tem_partes','Vários donos','sim_nao',null,null,null,0,1,0,...ro(t=>(t.partes||[]).length>0)],
   ['calculado.corretores','Corretores do terreno ou das partes','lista_multi',null,opCorr,null,0,1,0,...ro(t=>(t.corretores||[]).map(c=>c.cid))]];
-  return L.map(([chave,titulo,tipo,un,opcoes,vazio,ed,cd,cp,ler,gravar])=>({chave,origem:chave.split('.')[0],coluna:chave.split('.')[1],titulo,tipo,un,opcoes,vazio,editavel:!!ed&&!!gravar,condicao:!!cd,cartao:!!cp,ler,gravar}))})();
+  /* máscara fixa (1/nov/2026): moeda (R$), percentual (%), CEP; texto sem máscara fixa pode ganhar uma do administrador */
+  return L.map(([chave,titulo,tipo,un,opcoes,vazio,ed,cd,cp,ler,gravar])=>({chave,origem:chave.split('.')[0],coluna:chave.split('.')[1],titulo,tipo,un,opcoes,vazio,editavel:!!ed&&!!gravar,condicao:!!cd,cartao:!!cp,ler,gravar,
+    formato:chave==='terreno.cep'?'cep':un==='R$'?'moeda':un==='%'?'percentual':null}))})();
 const itEmp=()=>S.camposEmp||(S.camposEmp={});
 function itDef(chave){const c=IT_CAT.find(x=>x.chave===chave);if(!c)return null;const e=itEmp()[chave]||{};
-  return {...c,titulo:e.titulo||c.titulo,condicao:e.condicao??c.condicao,cartao:e.cartao??c.cartao}}
+  return {...c,titulo:e.titulo||c.titulo,condicao:e.condicao??c.condicao,cartao:e.cartao??c.cartao,formato:c.formato||(c.tipo==='texto'?e.formato||null:null)}}
 const itTit=chave=>itDef(chave)?.titulo||chave;
 /* valor do campo no terreno (null = em branco: nulo, vazio, "não informado" ou lista vazia) */
 function itVal(t,chave){const c=IT_CAT.find(x=>x.chave===chave);if(!c||!t)return null;let v;try{v=c.ler(t)}catch(e){v=null}
@@ -117,11 +119,11 @@ const itDir=()=>membro(me()).papel==='diretor';
 const itConfigura=(t,k)=>UI.role!=='Leitura'&&(itDir()||ehAdmin(me())||k.criadoPor===me());
 function itNorm(k){k.itens=k.itens||[];Object.keys(k.campos||{}).forEach(cid=>{if(k.campos[cid]!=null&&!k.itens.some(i=>i.campo===cid))k.itens.push({id:uid(),campo:cid,regra:'livre',cond:null})});return k.itens}
 const itCampo=i=>i.campo?cpoCampos().find(c=>c.id===i.campo):null;
-const itNome=i=>i.chave?itTit(i.chave):itCampo(i)?.nome||'Campo';
-function itEmBranco(t,k,i){if(i.chave)return itVal(t,i.chave)==null;const c=itCampo(i);return !c||c.ativo===false?false:k.campos?.[i.campo]==null}
+const itNome=i=>i.pergunta||(i.tipo?'Pergunta':i.chave?itTit(i.chave):itCampo(i)?.nome||'Campo');
+function itEmBranco(t,k,i){if(i.tipo)return i.resposta==null;if(i.chave)return itVal(t,i.chave)==null;const c=itCampo(i);return !c||c.ativo===false?false:k.campos?.[i.campo]==null}
 /* o que está em branco e pede algo para concluir agora (regra justificativa ou bloqueia, com a condição valendo); espelha fluxo.itens_em_branco */
 function itBranco(t,k){const r=[];itNorm(k).forEach(i=>{if(i.regra==='livre'||!i.regra)return;const c=itCampo(i);if(i.campo&&(!c||c.ativo===false))return;
-    if(itEmBranco(t,k,i)&&itCondVale(t,i.cond))r.push({tipo:i.chave?'objeto':'campo',ref:i.chave||i.campo,nome:itNome(i),regra:i.regra})});
+    if(itEmBranco(t,k,i)&&itCondVale(t,i.cond))r.push({tipo:i.tipo?'pergunta':i.chave?'objeto':'campo',ref:i.chave||i.campo||i.id,nome:itNome(i),regra:i.regra})});
   (k.checklists||[]).forEach(c=>c.itens.forEach(x=>{const rg=x.regra||(apRegraCk()?'bloqueia':'livre');if(rg!=='livre'&&!x.feito&&!x.virou&&itCondVale(t,x.cond))r.push({tipo:'checklist',ref:x.id,nome:x.texto,regra:rg})}));return r}
 function itMsgBloq(bl){const ck=bl.filter(x=>x.tipo==='checklist'),cp=bl.filter(x=>x.tipo!=='checklist');
   if(!cp.length)return 'Conclua os itens do checklist antes de concluir a tarefa.';
@@ -152,7 +154,7 @@ function itInput(t,d,i,ro){const v=itVal(t,d.chave),id='it-'+i.id,dis=ro||!d.edi
 function itSelo(t,k,i){if(!i.regra||i.regra==='livre'||!itCondVale(t,i.cond))return '';
   return i.regra==='bloqueia'?'<span class="chip crit it-selo">necessário</span>':'<span class="chip warn it-selo">pede justificativa</span>'}
 /* linhas da grade de propriedades: os itens incluídos no cartão (campos do terreno e personalizados) e o + Campo */
-function itLinhas(t,k,ro,linha){itNorm(k);const conf=itConfigura(t,k);
+function itLinhas(t,k,ro,linha){itNorm(k);return '';const conf=itConfigura(t,k);
   const rows=k.itens.map(i=>{const tira=ro?'':`<button class="iconbtn sm it-tira" data-a="it-tira" data-v="${i.id}" title="Tirar do cartão" aria-label="Tirar ${esc(itNome(i))} do cartão" ${i.regra&&i.regra!=='livre'&&!conf?'disabled':''}>${ic('close',14)}</button>`;
     if(i.chave){const d=itDef(i.chave);if(!d)return '';const falta=itEmBranco(t,k,i)&&itSelo(t,k,i);
       return linha('notas',`${esc(d.titulo)}`,`<span class="cpo-c it-c ${falta?'falta':''}">${itInput(t,d,i,ro)}${itSelo(t,k,i)}${tira}</span>`,d.editavel&&!ro?'it-'+i.id:null)}
@@ -172,7 +174,7 @@ function itLinhas(t,k,ro,linha){itNorm(k);const conf=itConfigura(t,k);
 function itCfgAba(t,k,bloq){itNorm(k);const ed=!bloq;
   const sel=(attrs,v,padrao)=>`<select class="tkm-pill" ${attrs} ${ed?'':'disabled'}>${padrao?`<option value="" ${!v?'selected':''}>${padrao}</option>`:''}${Object.entries(IT_REGRA).map(([x,n])=>`<option value="${x}" ${v===x?'selected':''}>${n}</option>`).join('')}</select>`;
   const cond=(alvo,c)=>`<span class="it-vq">${c?esc(itCondFrase(c)):'<span class="faint">sempre</span>'}${ed?`<button class="linkbtn" data-a="it-cond" data-v="${alvo}">${c?'Editar':'+ Condição'}</button>${c?`<button class="linkbtn" data-a="it-cond-tira" data-v="${alvo}">Tirar</button>`:''}`:''}</span>`;
-  const rows=k.itens.map(i=>{const nm=itNome(i),tp=i.chave?IT_ORIG[itDef(i.chave)?.origem]||'':'Campo personalizado';
+  const rows=k.itens.map(i=>{const nm=itNome(i),tp=i.tipo?'Só no cartão':i.chave?IT_ORIG[itDef(i.chave)?.origem]||'':'Campo personalizado';
       return `<div class="it-cr"><span><b>${esc(nm)}</b><span class="faint">${esc(tp)}</span></span>${sel(`data-itr="${i.id}" aria-label="Se ${esc(nm)} estiver em branco"`,i.regra||'livre')}${cond('i:'+i.id,i.cond)}</div>`}).join('');
   const padrao=apRegraCk()?'Padrão da empresa (não conclui)':'Padrão da empresa (pode concluir)';
   const cks=(k.checklists||[]).flatMap(c=>c.itens.map(x=>`<div class="it-cr"><span><b>${esc(x.texto)}</b><span class="faint">Checklist ${esc(c.nome)}</span></span>${sel(`data-itck="${c.id}:${x.id}" aria-label="Se ${esc(x.texto)} estiver em aberto"`,x.regra,padrao)}${cond('c:'+c.id+':'+x.id,x.cond)}</div>`)).join('');
@@ -182,7 +184,8 @@ function itCfgAba(t,k,bloq){itNorm(k);const ed=!bloq;
       :`<div class="faint">Nenhum item no cartão. Inclua campos (+ Campo) ou checklists na Visão geral.</div>`}</div>
     ${(k.justs||[]).length?`<div class="tkm-bloco"><div class="tkm-sh"><h3>Justificativas</h3></div>${k.justs.slice().reverse().map(j=>`<div class="tkm-log"><span class="faint num">${fdh(j.em)}</span>${av(j.por,'sm')}<span><b>${esc(j.por)}</b> ${esc(j.texto)} <span class="faint">(${esc(j.itens.map(x=>x.nome).join(', '))}${j.libera?'; passou pelo que bloqueia':''})</span></span></div>`).join('')}</div>`:''}`}
 /* itens que vão na cópia e na recorrência (as regras e as condições vão junto; os valores do terreno são do terreno) */
-const itCopiaItens=k=>(k.itens||[]).filter(i=>!i.campo||cpoCampos().some(c=>c.id===i.campo&&c.ativo!==false)).map(i=>({...JSON.parse(JSON.stringify(i)),id:uid()}));
+/* as perguntas vão junto; a resposta "só no cartão" só na cópia (comResp), nunca no modelo nem na recorrência */
+const itCopiaItens=(k,comResp)=>(k.itens||[]).filter(i=>!i.campo||cpoCampos().some(c=>c.id===i.campo&&c.ativo!==false)).map(i=>{const x={...JSON.parse(JSON.stringify(i)),id:uid()};if(!comResp)delete x.resposta;return x});
 function itSeloCk(t,x){if(!x.regra||x.regra==='livre'||x.feito||!itCondVale(t,x.cond))return '';
   return x.regra==='bloqueia'?'<span class="chip crit it-selo">necessário</span>':'<span class="chip warn it-selo">pede justificativa</span>'}
 const itNRegras=k=>itNorm(k).filter(i=>i.regra&&i.regra!=='livre').length+(k.checklists||[]).reduce((s,c)=>s+c.itens.filter(x=>x.regra&&x.regra!=='livre').length,0);
@@ -228,9 +231,10 @@ function itCfgCamposHtml(){const f=UI.itCfgF||'todos',q=(UI.itCfgQ||'').toLowerC
     <p class="muted" style="margin-top:0">O Título é o nome que o usuário vê em todo o sistema. Condição: o campo aparece no "Vale quando". No cartão: o campo pode ser incluído num cartão de tarefa e editado ali, gravando no próprio terreno (os calculados só para ler).</p>
     <div class="it-cfgbar"><input class="it-busca" data-itcfgq="1" value="${esc(UI.itCfgQ||'')}" placeholder="Buscar campo" aria-label="Buscar campo">
       <span class="it-seg">${[['todos','Todos'],...Object.entries(IT_ORIG).map(([k,v])=>[k,v.replace(' de referência','').replace(' vigente','')]),['marcados','Marcados']].map(([k,v])=>`<button class="${f===k?'on':''}" data-a="it-cfgf" data-v="${k}" aria-pressed="${f===k}">${v}</button>`).join('')}</span></div>
-    <div class="it-tab"><div class="it-tr it-th"><span>Nome no banco</span><span>Título (o nome que o usuário vê)</span><span class="ce">Condição</span><span class="ce">No cartão</span></div>
+    <div class="it-tab"><div class="it-tr it-th"><span>Nome no banco</span><span>Título (o nome que o usuário vê)</span><span>Máscara</span><span class="ce">Condição</span><span class="ce">No cartão</span></div>
     ${L.map(d=>`<div class="it-tr"><span class="it-db"><code>${d.coluna}</code><small>${IT_ORIG[d.origem]} · ${IT_TIPO[d.tipo]}</small></span>
       <span><input class="it-tit" value="${esc(d.titulo)}" data-itcfg="titulo" data-v="${d.chave}" aria-label="Título de ${d.coluna}" placeholder="${esc(IT_CAT.find(c=>c.chave===d.chave).titulo)}"></span>
+      <span class="it-msk">${fmMascaraCfg(d)}</span>
       <label class="ce"><input type="checkbox" data-itcfg="condicao" data-v="${d.chave}" ${d.condicao?'checked':''}><em>Condição</em></label>
       <label class="ce"><input type="checkbox" data-itcfg="cartao" data-v="${d.chave}" ${d.cartao?'checked':''}><em>No cartão${d.editavel?'':' (só ler)'}</em>${d.editavel?'':'<small>só ler</small>'}</label></div>`).join('')||'<p class="faint" style="padding:12px">Nenhum campo com esse filtro.</p>'}</div>
     <p class="cfg-nota">Título vazio volta ao padrão; dois campos não podem ter o mesmo título. Colunas de sistema (código, empresa, datas de criação, versão, poligonal) ficam de fora.</p></div></section>`}
@@ -243,6 +247,7 @@ document.addEventListener('input',e=>{const el=e.target;
 document.addEventListener('change',e=>{const el=e.target;
   if(el.dataset?.itv){e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!vzEdita(t,k))return;const i=itNorm(k).find(x=>x.id===el.dataset.itv),d=i&&itDef(i.chave);if(!d||!d.editavel)return;
     let v=el.value;if(v==='')v=null;else if(d.tipo==='numero'){v=cpoNum(v);if(Number.isNaN(v)){toast(`Número inválido em ${d.titulo}.`,true);el.value='';return}}
+    else if(d.tipo==='texto'&&d.formato){try{v=fmValida(d.formato,v)}catch(er){toast(er.message,true);return}}
     const antes=itVal(t,d.chave);if(String(antes??'')===String(v??''))return;try{d.gravar(t,v??d.vazio??null)}catch(err){toast(err.message,true);return}
     log(t,`${d.titulo} de ${itTxtVal(d,antes)} para ${itTxtVal(d,v)} (pelo cartão ${k.codigo})`);tkRe();return}
   if(el.dataset?.itr||el.dataset?.itck){e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!itConfigura(t,k))return;
@@ -257,6 +262,8 @@ document.addEventListener('change',e=>{const el=e.target;
     if(el.dataset.itcfg==='titulo'){let v=el.value.trim();if(v===c.titulo)v='';const tit=(v||c.titulo).toLowerCase();
       if(IT_CAT.some(x=>x.chave!==ch&&itDef(x.chave).titulo.toLowerCase()===tit)){toast('Já existe um campo com esse título.',true);el.value=itDef(ch).titulo;return}
       E[ch]={...cur,titulo:v||undefined}}
+    else if(el.dataset.itcfg==='formato'){const v=el.value||null;if(v){const ruim=S.terrenos.find(x=>{const y=itVal(x,ch);if(y==null)return false;try{fmValida(v,y);return false}catch(er){return true}});
+        if(ruim){toast(`${ruim.codigo} tem ${itDef(ch).titulo} fora dessa máscara: corrija antes de ligar.`,true);el.value=cur.formato||'';return}}E[ch]={...cur,formato:v||undefined}}
     else E[ch]={...cur,[el.dataset.itcfg]:el.checked};save();render();toast('Campo atualizado.');return}},true);
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="it-"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const A=a.dataset.a;
   if(A==='it-cfgf'){UI.itCfgF=a.dataset.v;render();return}
