@@ -3545,3 +3545,47 @@ html[data-tema="escuro"] .fm-modo button.on, html[data-tema="escuro"] .fm-chips 
 html[data-tema="escuro"] .fm-tg.on { background: #7c8cff; border-color: #7c8cff } html[data-tema="escuro"] .fm-tg.mid { background: #0c1433 } html[data-tema="escuro"] .fm-prog { background: #1a2240 } html[data-tema="escuro"] .fm-prog i { background: #7c8cff }
 .fm-h h3 { white-space: nowrap } .fm-h { flex-wrap: wrap; row-gap: 8px }
 html[data-tema="escuro"] .fm-rd input, html[data-tema="escuro"] .fm-in { color-scheme: dark; accent-color: #7c8cff }
+
+/* ---------- Jornada do terreno (1/nov/2026) ---------- */
+.adv-lista li .av { color: #7a5900 }
+.jn-bloco { border-top: 1px solid #dde3ea; margin-top: 12px; padding-top: 12px; display: flex; flex-direction: column; gap: 10px }
+.jn-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap } .jn-h b { font-size: 14px; font-weight: 500 } .jn-h .fm-prog { flex: 1 1 60px; min-width: 60px }
+.jn-g { display: flex; flex-direction: column; gap: 10px } .jn-gt { font-size: 12px; font-weight: 500; color: #444746 }
+.jn-q { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid #c4c7c5; border-radius: 12px; background: #fff; min-width: 0 }
+.jn-q.ok { border-color: #dde3ea }
+.jn-q.aceso { box-shadow: 0 0 0 2px #0b57d0 }
+.jn-ql { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap } .jn-qt { font-size: 14px; font-weight: 500; color: #1f1f1f }
+.jn-selo { font-size: 12px; line-height: 20px; padding: 0 8px; border-radius: 8px; background: #ffdad6; color: #b3261e; white-space: nowrap } .jn-selo.justifica { background: #ffdf99; color: #7a5900 }
+.jn-aj, .jn-dest { font-size: 12px; line-height: 16px }
+.jn-qc { min-width: 0; max-width: 100% } .jn-qc .fm-chips, .jn-qc .fm-seg { flex-wrap: wrap } .jn-qc .fm-seg { display: flex; flex-wrap: nowrap; width: 100% } .jn-qc .fm-seg button { flex: 1 1 0; min-width: 0; padding: 4px 6px; height: auto; min-height: 36px; white-space: normal; line-height: 1.2; overflow-wrap: anywhere } .jn-qc .fm-in { width: 100%; max-width: 100% }
+.jn-rv { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; line-height: 18px; padding: 8px 10px; border-radius: 8px; background: #c2e7ff; color: #001d35 }
+.jn-rv.avisa { background: #ffdf99; color: #3d2c00 } .jn-rv.bloqueia { background: #ffdad6; color: #410e0b } .jn-rv .ic { flex: none; margin-top: 1px }
+.jn-fora-b { align-self: flex-start; font-size: 13px }
+.jn-fora { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px } .jn-fora li { display: flex; flex-direction: column; font-size: 13px; padding: 6px 10px; border: 1px dashed #c4c7c5; border-radius: 8px }
+/* Configurações › Funil › Jornada */
+.jn-lay { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 16px; align-items: start }
+.jn-et { display: flex; flex-direction: column; gap: 4px; position: sticky; top: 8px }
+.jn-et button { display: flex; justify-content: space-between; gap: 8px; align-items: center; border: 0; background: transparent; border-radius: 20px; padding: 0 16px; min-height: 40px; font: inherit; font-size: 14px; font-weight: 500; color: #444746; cursor: pointer; text-align: left }
+.jn-et button[aria-pressed="true"] { background: #c2e7ff; color: #001d35 }
+.jn-corpo { min-width: 0 }
+.jn-sec .sec-b { display: flex; flex-direction: column; gap: 8px }
+.jn-r { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 8px; background: var(--m-sc-low, #f1f4f9) }
+.jn-r.inativa { opacity: .6 } .jn-ri { color: #0b57d0; display: flex } .jn-rn { display: flex; flex-direction: column; gap: 2px; min-width: 0 } .jn-rn b { font-weight: 500 } .jn-rn > .faint { font-size: 12px }
+.jn-rn .it-vq { font-size: 12px }
+.jn-rs { height: 36px; border: 1px solid #c4c7c5; border-radius: 8px; background: #fff; font: inherit; font-size: 13px; padding: 0 8px; max-width: 220px }
+.jn-ra { display: flex; gap: 4px; align-items: center }
+.jn-adds { display: flex; gap: 8px; flex-wrap: wrap } .jn-vazio { margin: 0 }
+.jn-form .fm-seg { flex-wrap: wrap } .jn-rg button { white-space: normal }
+.jn-docs { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 24px 16px }
+@media (max-width: 720px) {
+  .jn-lay { grid-template-columns: 1fr } .jn-et { flex-direction: row; overflow-x: auto; position: static; padding-bottom: 4px } .jn-et button { flex: none }
+  .jn-r { grid-template-columns: 24px minmax(0, 1fr) auto } .jn-rr { grid-column: 2 / -1 } .jn-rs { max-width: 100%; width: 100% }
+}
+html[data-tema="escuro"] .jn-q { background: #060c20; border-color: rgba(124,140,255,.28) } html[data-tema="escuro"] .jn-q.ok { border-color: rgba(124,140,255,.14) }
+html[data-tema="escuro"] .jn-qt { color: #f2f5ff } html[data-tema="escuro"] .jn-gt { color: #8e9ac4 } html[data-tema="escuro"] .jn-bloco { border-color: #1a2240 }
+html[data-tema="escuro"] .jn-selo { background: rgba(179,38,30,.25); color: #ffb4ab } html[data-tema="escuro"] .jn-selo.justifica { background: rgba(122,89,0,.35); color: #ffdf99 }
+html[data-tema="escuro"] .jn-rv { background: rgba(99,112,255,.10); color: #c9d6ff; border: 1px solid rgba(124,140,255,.5) } html[data-tema="escuro"] .jn-rv.avisa { background: rgba(122,89,0,.25); color: #ffdf99; border-color: rgba(255,223,153,.3) } html[data-tema="escuro"] .jn-rv.bloqueia { background: rgba(179,38,30,.2); color: #ffb4ab; border-color: rgba(255,180,171,.3) }
+html[data-tema="escuro"] .jn-et button { color: #c9d6ff } html[data-tema="escuro"] .jn-et button[aria-pressed="true"] { background: rgba(99,112,255,.10); box-shadow: inset 0 0 0 1px rgba(124,140,255,.5) }
+html[data-tema="escuro"] .jn-r { background: #0c1433 } html[data-tema="escuro"] .jn-ri { color: #7c8cff } html[data-tema="escuro"] .jn-rs { background: #060c20; color: #f2f5ff; border-color: rgba(124,140,255,.28); color-scheme: dark }
+html[data-tema="escuro"] .jn-fora li { border-color: rgba(124,140,255,.28) } html[data-tema="escuro"] .adv-lista li .av { color: #ffdf99 }
+.jn-form fieldset.field { border: 0; padding: 0; margin: 0; min-width: 0 } .jn-form fieldset.field legend { padding: 0; margin-bottom: 6px; font-size: 13px; color: var(--texto-suave) }

@@ -1051,6 +1051,55 @@ erDiagram
 - **Condição** no checklist (`checklist_modelo.condicao`, `app.condicao_checklist`) e no pré-requisito (`prerequisitos_modelo.condicao`, `app.condicao_prerequisito`): o documento ou a passagem só é exigido quando a condição vale (`app.condicao_aplica` em `v_checklist` e em `app._pendencias`).
 - `app.v_tarefas_etapa`: cartão, fase, etapa, subetapa, regra, nível da trava e situação, para a tela.
 
+### Jornada do terreno (1/nov/2026)
+
+Decisões do Moisés de 1/nov/2026 (simulação https://claude.ai/artifact/9eocQHsh2rDz8BtDak6d8D). Banco em `…001400_jornada.sql`, com os campos novos do terreno em `…001200_campos.sql` e a regra do checklist e do pré-requisito em `…000200_cadastros.sql` e `…000500_regras.sql`. A tela (Configurações › Funil › Jornada) junta num lugar o que antes eram três abas; no banco, documentos, pré-requisitos e tarefas da etapa continuam nas tabelas deles, cada um com a sua regra.
+
+```mermaid
+erDiagram
+  etapas_modelo ||--o{ jornada_itens : "sair da etapa"
+  subetapas_modelo ||--o{ jornada_itens : "sair da subetapa"
+  etapas_modelo ||--o{ jornada_regras : ""
+  campos_terreno ||--o{ terreno_valores : ""
+  terrenos ||--o{ terreno_valores : ""
+  jornada_itens {
+    text fase
+    text etapa
+    text subetapa "nulo = a etapa inteira"
+    text campo "chave do catálogo (terreno.x, personalizado.x...)"
+    text pergunta "nulo = o título do campo"
+    text ajuda
+    text forma "a do formulário do cartão"
+    text regra "bloqueia | justifica | livre"
+    jsonb condicao "vale quando"
+    int ordem
+    bool ativo
+  }
+  jornada_regras {
+    text fase
+    text etapa
+    text subetapa
+    jsonb condicao "obrigatória"
+    text acao "bloqueia | gestor | diretor | avisa"
+    text mensagem
+  }
+  campos_terreno {
+    text codigo "personalizado.<codigo>"
+    text titulo "único com o catálogo"
+    text tipo "texto | numero | data | lista | sim_nao"
+    text unidade
+    text_arr opcoes
+    text formato "máscara"
+  }
+```
+
+- **Fonte única:** a pergunta grava no campo que escolhe (`campo`), o mesmo que a ficha e o cartão gravam (`app.gravar_campo`, com o controle do tipo e a auditoria). O que não existe na ficha vira **campo novo do terreno** (`app.campos_terreno`, valor em `app.terreno_valores`), que entra no catálogo como `personalizado.<codigo>` (`app.campo_def`, `app.v_campos`, `app._valor_campo`) e por isso vale nas condições, no cartão e em Configurações › Campos. `app.salvar_campo_terreno` (administrador; título único com o catálogo; tipo não muda com valor gravado; opção em uso não sai) e `app.apagar_campo_terreno` (com valor ou na jornada, desativa).
+- **Regra em branco:** `jornada_itens.regra`, `checklist_modelo.regra` (bloqueia, justifica, livre; `obrigatorio` virou coluna gerada `regra <> 'livre'`) e `prerequisitos_modelo.regra` (bloqueia, justifica; `app.regra_prerequisito`). Em `app._passagem`, se todo item que falta é `justifica`, qualquer editor passa com `p_forcar` e comentário; senão só gestor e diretor forçam, como antes. `app.checar_passagem` devolve `pode_justificar`.
+- **Onde vale** (`app._jornada_na_saida`): item da etapa ao sair dela para frente ou concluir a fase; item da subetapa ao sair dela para frente (também pulando) e ao sair da etapa; voltar não pede nada. `app._jornada_pendencias` entra em `app._pendencias` (item com condição que não vale fica de fora; o item conta como feito quando o campo tem valor). A jornada é do terreno: a negociação de uma parte não a tem.
+- **Regras pelo valor** (`app.jornada_regras`): condição que vale na saída → `bloqueia` vira pendência (gestor e diretor passam com justificativa, como nas outras), `gestor` e `diretor` entram nas aprovações exigidas (`app._jornada_pede` em `app._aprovacoes_exigidas`), `avisa` só mostra a mensagem.
+- `app.jornada_processo(processo)`: os itens com `aplica` e `valor` e as regras que valem, para o quadro de avanço. Configuração: `app.salvar_item_jornada` (lugar válido, forma do tipo do campo, condição), `app.apagar_item_jornada`, `app.salvar_regra_jornada`, `app.apagar_regra_jornada`, todas só do administrador e com auditoria.
+- Atualização em tempo real entre usuários fica para o porte do front (Supabase realtime); o banco já tem uma fonte só.
+
 ## Setores censitários e renda familiar estimada
 
 Camadas do mapa (renda familiar estimada e densidade demográfica bruta, uma de cada vez) e quadro "Renda e população do entorno" da ficha (decisão do Moisés, 24/out/2026). Dados do IBGE, Censo 2022, hoje de São Paulo e São José dos Campos (uma carga por município, mesma metodologia, faixas e cores), carregados por `tools/setores/gerar.py` (malha oficial, agregados de renda do responsável e composição oficial setor → área de ponderação); nada é estimado na carga. Tabelas comuns a todas as empresas, só leitura para o front.
