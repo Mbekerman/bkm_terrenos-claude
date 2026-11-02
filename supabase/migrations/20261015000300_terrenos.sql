@@ -44,7 +44,7 @@ grant execute on function app.sobreposicao(extensions.geometry, extensions.geome
 create table app.terrenos (
   id                    uuid primary key default gen_random_uuid(),
   empresa_id            uuid not null references app.empresas(id),
-  codigo                text not null default ('TER-' || lpad(nextval('app.terreno_seq')::text, 6, '0')),
+  codigo                text not null,   -- TER-000123, posto pelo banco (app.tg_terreno_controle)
 
   -- 1. Identificação e gestão
   nome                  text not null check (length(trim(nome)) > 0),
@@ -253,6 +253,25 @@ begin
 end $$;
 create trigger t_revisao before insert or update on app.inscricao_valores for each row execute function app.tg_inscricao_valor();
 
+-- Histórico não se apaga (regra 8; revisão de 2/nov/2026): a inscrição com
+-- IPTU ou valor venal lançado, ou que está numa análise já substituída, não
+-- sai do terreno; a análise substituída e as zonas dela não mudam mais.
+-- Valem para quem usa o sistema (auth.uid); a manutenção pelo banco passa.
+create or replace function app.tg_inscricao_historico()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if auth.uid() is null then return old; end if;
+  if exists (select 1 from app.inscricao_valores where inscricao_id = old.id) then
+    raise exception 'A inscrição tem histórico de IPTU e valor venal: não se apaga' using errcode = '23514';
+  end if;
+  if exists (select 1 from app.analise_zoneamentos z join app.analises_urbanisticas a on a.id = z.analise_id
+              where z.inscricao_id = old.id and a.status = 'substituida') then
+    raise exception 'A inscrição está numa análise urbanística anterior: não se apaga' using errcode = '23514';
+  end if;
+  return old;
+end $$;
+create trigger t_historico before delete on app.inscricoes_municipais for each row execute function app.tg_inscricao_historico();
+
 -- Medidas de terrenos irregulares: um segmento por linha.
 create table app.confrontacoes (
   id            uuid primary key default gen_random_uuid(),
@@ -436,6 +455,27 @@ begin
   return new;
 end $$;
 create trigger t_vigente before insert on app.analises_urbanisticas for each row execute function app.tg_analise_vigente();
+
+create or replace function app.tg_analise_substituida()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare v_status text;
+begin
+  if auth.uid() is null then return coalesce(new, old); end if;
+  if tg_table_name = 'analises_urbanisticas' then
+    if old.status = 'substituida' then
+      raise exception 'Análise substituída é histórico: não muda' using errcode = '23514';
+    end if;
+    return coalesce(new, old);
+  end if;
+  select status into v_status from app.analises_urbanisticas where id = coalesce(new.analise_id, old.analise_id);
+  if v_status = 'substituida' or (tg_op = 'UPDATE' and (select status from app.analises_urbanisticas where id = old.analise_id) = 'substituida') then
+    raise exception 'Análise substituída é histórico: não muda' using errcode = '23514';
+  end if;
+  return coalesce(new, old);
+end $$;
+create trigger t_historico before update or delete on app.analises_urbanisticas for each row execute function app.tg_analise_substituida();
+create trigger t_historico before insert or update or delete on app.analise_zoneamentos for each row execute function app.tg_analise_substituida();
+create trigger t_aud after insert or update or delete on app.analises_urbanisticas for each row execute function app.tg_auditoria();
 
 -- Entorno do terreno: lugares do Google a até o raio a pé da categoria, com a
 -- distância e o tempo pela rota a pé. Buscado uma vez quando o terreno é localizado e

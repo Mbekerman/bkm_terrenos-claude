@@ -105,7 +105,14 @@ begin
   if p_destinatario is null or p_destinatario is not distinct from p_autor then return; end if;
   if not exists (select 1 from app.membros where empresa_id = p_empresa and user_id = p_destinatario) then return; end if;
   -- aviso de cartão só para quem vê o cartão (revisão de 2/nov/2026: o título de um Restrito chegava a quem não o vê)
-  if p_origem_tabela = 'tarefas' and fluxo.papel_tarefa(p_origem_id, p_destinatario) is null then return; end if;
+  -- (e o mesmo para o pedido e a decisão de aprovação e de pausa, que levam o título; o aviso de
+  -- automação já sai só para quem vê o cartão, em fluxo._acoes_automacao)
+  if p_origem_tabela in ('tarefas','tarefa_aprovacoes','tarefa_pausas')
+     and fluxo.papel_tarefa(case p_origem_tabela
+                              when 'tarefas' then p_origem_id
+                              when 'tarefa_aprovacoes' then (select tarefa_id from fluxo.aprovacoes where id = p_origem_id)
+                              else (select tarefa_id from fluxo.pausas where id = p_origem_id) end,
+                            p_destinatario) is null then return; end if;
   if not coalesce((select ativo from app.tipos_notificacao where empresa_id = p_empresa and codigo = p_fase), false) then return; end if;
   insert into app.notificacoes (empresa_id, destinatario_id, tipo, texto, autor_id, terreno_id, origem_tabela, origem_id, referencia, email_status)
   values (p_empresa, p_destinatario, p_fase, p_texto, p_autor, p_terreno, p_origem_tabela, p_origem_id, coalesce(p_referencia, current_date),
@@ -230,7 +237,7 @@ begin
   select * into a from fluxo.aprovacoes where id = new.aprovacao_id;
   if a.situacao <> 'pendente' then return new; end if;
   v_tit := (select titulo from fluxo.tarefas where id = a.tarefa_id);
-  for r in select aprovador_id from fluxo.votos_da_vez(a.id) loop
+  for r in select aprovador_id from fluxo._votos_da_vez(a.id) loop
     perform app._notificar(a.empresa_id, r.aprovador_id, 'aprovacao_pendente', 'Aprovar a tarefa: ' || v_tit,
                            app.terreno_da_tarefa(a.tarefa_id), 'tarefa_aprovacoes', a.id);
   end loop;

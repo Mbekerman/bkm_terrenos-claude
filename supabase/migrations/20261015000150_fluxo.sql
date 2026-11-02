@@ -272,7 +272,7 @@ begin
     if new.modelo then raise exception 'Modelo de cartão não se conclui' using errcode = '23514'; end if;
     -- bloqueio de conclusão (bloco 3): aprovação e checklist; a aprovação conclui por conta própria
     if tg_op = 'UPDATE' and coalesce(current_setting('fluxo.aprovando', true), '') <> '1' then
-      v_pend := fluxo.pendencias_conclusao(new.id);
+      v_pend := fluxo._pendencias_conclusao(new.id);
       if 'aprovacao' = any (v_pend) then
         raise exception 'A tarefa precisa ser aprovada antes de concluir' using errcode = '23514';
       elsif 'checklist' = any (v_pend) then
@@ -297,6 +297,12 @@ begin
   end if;
   if tg_op = 'UPDATE' and (new.arquivada_em is null) <> (old.arquivada_em is null) then
     new.arquivada_por := case when new.arquivada_em is null then null else auth.uid() end;
+  end if;
+  -- concluída ou arquivada, o pedido de pausa em aberto perde o sentido (aprová-lo reabriria a tarefa)
+  if tg_op = 'UPDATE' and ((new.concluida_em is not null and old.concluida_em is null)
+                           or (new.arquivada_em is not null and old.arquivada_em is null)) then
+    update fluxo.pausas set situacao = 'cancelada', decidida_em = clock_timestamp()
+    where tarefa_id = new.id and situacao = 'pendente';
   end if;
   return new;
 end $$;
@@ -336,9 +342,11 @@ begin
   if v is not null then return v; end if;
   insert into fluxo.quadros (empresa_id, objeto_tipo, objeto_id, nome) values (p_empresa, p_tipo, p_objeto, p_nome) returning id into v;
   v_modelo := case when exists (select 1 from fluxo.listas_modelo where empresa_id = p_empresa and ativo) then p_empresa end;
+  perform set_config('fluxo.criando_quadro', '1', true);
   insert into fluxo.listas (empresa_id, quadro_id, nome, posicao, tipo)
   select p_empresa, v, nome, ordem * 1000, tipo from fluxo.listas_modelo
   where empresa_id is not distinct from v_modelo and ativo;
+  perform set_config('fluxo.criando_quadro', '', true);
   return v;
 end $$;
 
@@ -448,6 +456,21 @@ create policy inserir on fluxo.comentario_reacoes for insert to authenticated
 create policy remover on fluxo.comentario_reacoes for delete to authenticated using (user_id = auth.uid());
 grant insert, update on fluxo.comentarios to authenticated;
 grant insert, delete on fluxo.comentario_reacoes to authenticated;
+
+-- O tipo da lista (aberta, pausa, conclui) decide se o cartão atrasa e se
+-- conclui: lista nova de quem edita nasce aberta, e só gestor, diretor ou o
+-- administrador criam lista de outro tipo ou mudam o tipo.
+create or replace function fluxo.tg_lista_tipo()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if auth.uid() is not null and (tg_op = 'INSERT' and new.tipo <> 'aberta' or tg_op = 'UPDATE' and new.tipo <> old.tipo)
+     and not (app.eh_gestor(new.empresa_id) or app.eh_administrador(new.empresa_id))
+     and coalesce(current_setting('fluxo.criando_quadro', true), '') <> '1' then
+    raise exception 'Só gestor, diretor ou o administrador mudam o tipo da lista' using errcode = '42501';
+  end if;
+  return new;
+end $$;
+create trigger t_tipo before insert or update of tipo on fluxo.listas for each row execute function fluxo.tg_lista_tipo();
 
 alter table fluxo.listas_modelo enable row level security;
 create policy ver on fluxo.listas_modelo for select to authenticated
@@ -1149,7 +1172,7 @@ create table fluxo.aprovacao_votos (
 );
 
 -- O que impede concluir: 'aprovacao' e/ou 'checklist' (e 'campos', redefinida com os campos personalizados)
-create or replace function fluxo.pendencias_conclusao(p_tarefa uuid)
+create or replace function fluxo._pendencias_conclusao(p_tarefa uuid)
 returns text[] language sql stable security definer set search_path = '' as $$
   select array_remove(array[
     case when exists (select 1 from fluxo.tarefa_pessoas where tarefa_id = p_tarefa and papel = 'aprovador')
@@ -1160,7 +1183,7 @@ returns text[] language sql stable security definer set search_path = '' as $$
   ], null) $$;
 
 -- Votos que esperam decisão agora (em sequência, só o da vez)
-create or replace function fluxo.votos_da_vez(p_aprovacao uuid)
+create or replace function fluxo._votos_da_vez(p_aprovacao uuid)
 returns setof fluxo.aprovacao_votos language sql stable security definer set search_path = '' as $$
   select v.* from fluxo.aprovacao_votos v join fluxo.aprovacoes a on a.id = v.aprovacao_id
   where v.aprovacao_id = p_aprovacao and a.situacao = 'pendente' and v.decisao is null
@@ -1192,15 +1215,15 @@ begin
   if not exists (select 1 from fluxo.tarefa_pessoas where tarefa_id = p_tarefa and papel = 'aprovador') then
     raise exception 'A tarefa não tem aprovador' using errcode = '23514';
   end if;
-  if 'checklist' = any (fluxo.pendencias_conclusao(p_tarefa)) then
+  if 'checklist' = any (fluxo._pendencias_conclusao(p_tarefa)) then
     raise exception 'Conclua os itens do checklist antes de pedir a aprovação' using errcode = '23514';
-  elsif 'subtarefas' = any (fluxo.pendencias_conclusao(p_tarefa)) then
+  elsif 'subtarefas' = any (fluxo._pendencias_conclusao(p_tarefa)) then
     raise exception 'Conclua as subtarefas antes de pedir a aprovação' using errcode = '23514';
-  elsif 'campos' = any (fluxo.pendencias_conclusao(p_tarefa)) then
+  elsif 'campos' = any (fluxo._pendencias_conclusao(p_tarefa)) then
     raise exception 'Preencha os campos obrigatórios antes de pedir a aprovação' using errcode = '23514';
-  elsif 'justificar' = any (fluxo.pendencias_conclusao(p_tarefa)) then
+  elsif 'justificar' = any (fluxo._pendencias_conclusao(p_tarefa)) then
     raise exception 'Há itens em branco: peça a aprovação com justificativa' using errcode = '23514';
-  elsif 'predecessoras' = any (fluxo.pendencias_conclusao(p_tarefa)) then
+  elsif 'predecessoras' = any (fluxo._pendencias_conclusao(p_tarefa)) then
     raise exception 'As predecessoras ainda não permitem concluir esta tarefa' using errcode = '23514';
   end if;
   update fluxo.aprovacoes set situacao = 'cancelada', decidida_em = clock_timestamp() where tarefa_id = p_tarefa and situacao = 'pendente';
@@ -1225,7 +1248,7 @@ begin
   if a.id is null then raise exception 'Pedido não encontrado' using errcode = 'P0002'; end if;
   if a.empresa_id not in (select app.minhas_empresas()) then raise exception 'Pedido não encontrado' using errcode = 'P0002'; end if;
   if a.situacao <> 'pendente' then raise exception 'Este pedido já foi decidido' using errcode = '23514'; end if;
-  select aprovador_id into v_voto from fluxo.votos_da_vez(p_aprovacao)
+  select aprovador_id into v_voto from fluxo._votos_da_vez(p_aprovacao)
   where aprovador_id = auth.uid() or app.eh_superior(a.empresa_id, auth.uid(), aprovador_id)
   order by (aprovador_id = auth.uid()) desc, ordem limit 1;
   if v_voto is null then
@@ -1275,9 +1298,9 @@ end $$;
 -- o pedido e os votos já são o registro (quem, quando, justificativa); só a regra vai para a auditoria
 create trigger t_aud after insert or update or delete on fluxo.regras for each row execute function app.tg_auditoria();
 revoke all on function fluxo._fechar_aprovacao(uuid), fluxo.pedir_aprovacao(uuid, text), fluxo.decidir_aprovacao(uuid, boolean, text),
-                       fluxo.cancelar_aprovacao(uuid), fluxo.salvar_regras(uuid, boolean), fluxo.votos_da_vez(uuid) from public;
+                       fluxo.cancelar_aprovacao(uuid), fluxo.salvar_regras(uuid, boolean), fluxo._votos_da_vez(uuid) from public;
 grant execute on function fluxo.pedir_aprovacao(uuid, text), fluxo.decidir_aprovacao(uuid, boolean, text), fluxo.cancelar_aprovacao(uuid),
-                          fluxo.salvar_regras(uuid, boolean), fluxo.pendencias_conclusao(uuid), fluxo.votos_da_vez(uuid) to authenticated;
+                          fluxo.salvar_regras(uuid, boolean) to authenticated;
 
 -- =====================================================================
 -- SLA com pausa aprovada (bloco 3; decisões do Moisés, 29/out/2026).
@@ -1329,6 +1352,9 @@ declare z fluxo.pausas; k fluxo.tarefas; v_lista uuid;
 begin
   select * into z from fluxo.pausas where id = p_id;
   select * into k from fluxo.tarefas where id = z.tarefa_id;
+  if k.concluida_em is not null or k.arquivada_em is not null then
+    raise exception 'A tarefa já está concluída ou arquivada' using errcode = '23514';
+  end if;
   select id into v_lista from fluxo.listas where quadro_id = k.quadro_id and tipo = 'pausa' order by oculta, posicao limit 1;
   if v_lista is null then raise exception 'O quadro não tem lista de pausa' using errcode = '23514'; end if;
   update fluxo.pausas set situacao = 'ativa', inicio = clock_timestamp(), lista_anterior_id = k.lista_id,
@@ -2048,7 +2074,7 @@ language sql stable security definer set search_path = '' as $$
   where k.id = p_tarefa $$;
 
 -- A condição vale para a tarefa? Sem condição (ou sem quem confira), vale.
-create or replace function fluxo.condicao_vale(p_tarefa uuid, p_cond jsonb)
+create or replace function fluxo._condicao_vale(p_tarefa uuid, p_cond jsonb)
 returns boolean language plpgsql stable security definer set search_path = '' as $$
 declare o record; v boolean;
 begin
@@ -2060,7 +2086,7 @@ begin
 end $$;
 
 -- Campo do objeto como o cartão mostra: {titulo, tipo, valor, editavel, cartao}
-create or replace function fluxo.campo_do_objeto(p_tarefa uuid, p_chave text)
+create or replace function fluxo._campo_do_objeto(p_tarefa uuid, p_chave text)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
 declare o record; v jsonb;
 begin
@@ -2112,7 +2138,7 @@ begin
     select c.tipo, (select count(*) from fluxo.campo_opcoes o where o.campo_id = c.id and o.ativo) into tipo, n from fluxo.campos c where c.id = p_campo;
     return;
   end if;
-  j := fluxo.campo_do_objeto(p_tarefa, p_chave);
+  j := fluxo._campo_do_objeto(p_tarefa, p_chave);
   tipo := j->>'tipo';
   n := case when jsonb_typeof(j->'opcoes') = 'array' then jsonb_array_length(j->'opcoes') end;
 end $$;
@@ -2161,7 +2187,7 @@ begin
     raise exception 'Só o diretor, o administrador e quem criou a tarefa mudam a regra deste item' using errcode = '42501';
   end if;
   if v_chave is not null and (tg_op = 'INSERT' or v_chave is distinct from to_jsonb(old)->>'chave') then
-    j := fluxo.campo_do_objeto(v_tarefa, v_chave);
+    j := fluxo._campo_do_objeto(v_tarefa, v_chave);
     if j is null then raise exception 'Campo desconhecido: %', new.chave using errcode = '22023'; end if;
     if not coalesce((j->>'cartao')::boolean, false) then raise exception 'O campo % não pode ir para o cartão', j->>'titulo' using errcode = '22023'; end if;
   end if;
@@ -2217,17 +2243,17 @@ begin
       if not r.cativo or exists (select 1 from fluxo.tarefa_campos v where v.tarefa_id = k.id and v.campo_id = r.campo_id) then continue; end if;
       tipo := 'campo'; ref := r.campo_id::text; nome := coalesce(r.pergunta, r.cnome);
     else
-      j := fluxo.campo_do_objeto(k.id, r.chave);
+      j := fluxo._campo_do_objeto(k.id, r.chave);
       if j is null or coalesce(j->'valor', 'null'::jsonb) <> 'null'::jsonb then continue; end if;
       tipo := 'objeto'; ref := r.chave; nome := coalesce(r.pergunta, j->>'titulo');
     end if;
-    if not fluxo.condicao_vale(k.id, r.condicao) then continue; end if;
+    if not fluxo._condicao_vale(k.id, r.condicao) then continue; end if;
     regra := r.regra_branco; return next;
   end loop;
   for r in select i.id, i.texto, coalesce(i.regra_branco, v_padrao) as rg, i.condicao
            from fluxo.checklist_itens i join fluxo.checklists c on c.id = i.checklist_id
            where c.tarefa_id = k.id and i.concluido_em is null and i.virou_tarefa_id is null order by c.posicao, i.posicao loop
-    if r.rg = 'livre' or not fluxo.condicao_vale(k.id, r.condicao) then continue; end if;
+    if r.rg = 'livre' or not fluxo._condicao_vale(k.id, r.condicao) then continue; end if;
     tipo := 'checklist'; ref := r.id::text; nome := r.texto; regra := r.rg; return next;
   end loop;
 end $$;
@@ -2278,11 +2304,11 @@ create trigger t_aud after insert or update or delete on fluxo.tarefa_itens for 
 create trigger t_aud after insert on fluxo.conclusao_justificativas for each row execute function app.tg_auditoria();
 grant select, insert, update, delete on fluxo.tarefa_itens to authenticated;
 grant select on fluxo.conclusao_justificativas to authenticated;
-revoke all on function fluxo.configura_tarefa(uuid, uuid), fluxo.condicao_vale(uuid, jsonb), fluxo.campo_do_objeto(uuid, text),
+revoke all on function fluxo.configura_tarefa(uuid, uuid), fluxo._condicao_vale(uuid, jsonb), fluxo._campo_do_objeto(uuid, text),
   fluxo.itens_em_branco(uuid), fluxo.concluir_justificando(uuid, text), fluxo._objeto_da_tarefa(uuid), fluxo._regra_item(uuid, uuid, jsonb),
   fluxo._justificada(uuid, boolean), fluxo._tipo_item(uuid, text, uuid, text, text[]), fluxo._resposta(text, text[], jsonb),
   fluxo.validar_formato(text, text), fluxo._formato_ok(text, text), fluxo.formas(text, int) from public;
-grant execute on function fluxo.configura_tarefa(uuid, uuid), fluxo.condicao_vale(uuid, jsonb), fluxo.campo_do_objeto(uuid, text),
+grant execute on function fluxo.configura_tarefa(uuid, uuid),
   fluxo.itens_em_branco(uuid), fluxo.concluir_justificando(uuid, text), fluxo.validar_formato(text, text), fluxo.formas(text, int) to authenticated;
 
 -- Predecessoras que ainda não deixam concluir (decisão do Moisés, 30/out/2026): em TI e TT a
@@ -2309,7 +2335,7 @@ grant execute on function fluxo.predecessoras_pendentes(uuid), fluxo.salvar_regr
 -- O que impede concluir. Itens em branco (31/out/2026): checklist e campos
 -- com regra "bloqueia" (o diretor passa com justificativa) e, com regra
 -- "justificativa", 'justificar' até alguém justificar nesta gravação.
-create or replace function fluxo.pendencias_conclusao(p_tarefa uuid)
+create or replace function fluxo._pendencias_conclusao(p_tarefa uuid)
 returns text[] language sql stable security definer set search_path = '' as $$
   with b as (select * from fluxo.itens_em_branco(p_tarefa))
   select array_remove(array[
@@ -2323,6 +2349,40 @@ returns text[] language sql stable security definer set search_path = '' as $$
     case when coalesce((select r.conclui_exige_predecessoras from fluxo.regras r join fluxo.tarefas k on k.empresa_id = r.empresa_id where k.id = p_tarefa), false)
           and cardinality(fluxo.predecessoras_pendentes(p_tarefa)) > 0 then 'predecessoras' end
   ], null) $$;
+
+-- Portas para a tela das funções internas acima (condição, campo, pendências e
+-- votos): só respondem sobre o cartão que quem pergunta vê. Por dentro, o banco
+-- chama as internas, que olham também cartões que quem age não vê (revisão de
+-- 2/nov/2026: as internas respondiam sobre terrenos de outra empresa).
+create or replace function fluxo.condicao_vale(p_tarefa uuid, p_cond jsonb)
+returns boolean language plpgsql stable security definer set search_path = '' as $$
+begin
+  if auth.uid() is not null and fluxo.papel_tarefa(p_tarefa) is null then raise exception 'Tarefa não encontrada' using errcode = 'P0002'; end if;
+  return fluxo._condicao_vale(p_tarefa, p_cond);
+end $$;
+create or replace function fluxo.campo_do_objeto(p_tarefa uuid, p_chave text)
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+begin
+  if auth.uid() is not null and fluxo.papel_tarefa(p_tarefa) is null then raise exception 'Tarefa não encontrada' using errcode = 'P0002'; end if;
+  return fluxo._campo_do_objeto(p_tarefa, p_chave);
+end $$;
+create or replace function fluxo.pendencias_conclusao(p_tarefa uuid)
+returns text[] language plpgsql stable security definer set search_path = '' as $$
+begin
+  if auth.uid() is not null and fluxo.papel_tarefa(p_tarefa) is null then raise exception 'Tarefa não encontrada' using errcode = 'P0002'; end if;
+  return fluxo._pendencias_conclusao(p_tarefa);
+end $$;
+create or replace function fluxo.votos_da_vez(p_aprovacao uuid)
+returns setof fluxo.aprovacao_votos language plpgsql stable security definer set search_path = '' as $$
+begin
+  if auth.uid() is not null and fluxo.papel_tarefa((select tarefa_id from fluxo.aprovacoes where id = p_aprovacao)) is null then
+    raise exception 'Pedido não encontrado' using errcode = 'P0002';
+  end if;
+  return query select * from fluxo._votos_da_vez(p_aprovacao);
+end $$;
+revoke all on function fluxo._condicao_vale(uuid, jsonb), fluxo._campo_do_objeto(uuid, text), fluxo._pendencias_conclusao(uuid), fluxo._votos_da_vez(uuid),
+  fluxo.condicao_vale(uuid, jsonb), fluxo.campo_do_objeto(uuid, text), fluxo.pendencias_conclusao(uuid), fluxo.votos_da_vez(uuid) from public;
+grant execute on function fluxo.condicao_vale(uuid, jsonb), fluxo.campo_do_objeto(uuid, text), fluxo.pendencias_conclusao(uuid), fluxo.votos_da_vez(uuid) to authenticated;
 
 -- =====================================================================
 -- Recorrência (bloco 4; decisões do Moisés, 30/out/2026)
@@ -2617,7 +2677,7 @@ grant execute on function fluxo.copiar_tarefa(uuid, uuid, text, text[]) to authe
 -- no modelo do Butler do Trello. Cada regra tem dono e se desliga. As da
 -- empresa (quadro vazio) são do administrador e valem em todos os quadros,
 -- com as listas pelo nome; as de um quadro são de quem edita aquele quadro,
--- com as listas pelo id, e só tocam cartões que o dono vê.
+-- com as listas pelo id, e só tocam cartões que o dono edita.
 -- Gatilhos: criada (no fim da transação, com etiquetas e pessoas já
 -- gravadas), entrou_lista, concluida, etiqueta, campo, checklist_completo,
 -- prazo_antes (N dias antes; 0 = no dia) e prazo_venceu (rotina diária,
@@ -2987,8 +3047,8 @@ begin
              and (p_gatilho <> 'etapa' or x.gatilho_etapa is null or x.gatilho_etapa = p_etapa)
              and (p_referencia is null or not exists (select 1 from fluxo.automacao_execucoes e where e.automacao_id = x.id and e.tarefa_id = k.id and e.referencia = p_referencia))
            order by x.quadro_id is not null, x.tarefa_id is not null, x.criada_em loop   -- empresa, quadro, cartão
-    -- dono que perdeu o direito não roda a regra; regra do quadro só toca o cartão que o dono vê
-    continue when not fluxo._dono_vale(a) or (a.quadro_id is not null and fluxo.papel_tarefa(k.id, a.dono_id) is null);
+    -- dono que perdeu o direito não roda a regra; regra do quadro só toca o cartão que o dono edita
+    continue when not fluxo._dono_vale(a) or (a.quadro_id is not null and fluxo.nivel_cartao(fluxo.papel_tarefa(k.id, a.dono_id)) < 3);
     -- uma regra anterior pode ter arquivado o cartão ou mudado o que a condição olha
     select * into k from fluxo.tarefas where id = p_tarefa;
     exit when k.arquivada_em is not null;
@@ -3087,7 +3147,7 @@ begin
       -- uma regra anterior pode ter arquivado ou mudado o cartão
       select * into k from fluxo.tarefas where id = k.id;
       continue when k.arquivada_em is not null;
-      continue when a.quadro_id is not null and fluxo.papel_tarefa(k.id, a.dono_id) is null;
+      continue when a.quadro_id is not null and fluxo.nivel_cartao(fluxo.papel_tarefa(k.id, a.dono_id)) < 3;
       continue when not fluxo._condicoes_ok(a, k);
       perform fluxo._executar_automacao(a, k.id, p_hoje);
       n := n + 1;
@@ -3108,7 +3168,7 @@ begin
     from fluxo.automacoes a
     where a.empresa_id = k.empresa_id and a.ativa and a.gatilho = 'botao'
       and (a.quadro_id is null or a.quadro_id = k.quadro_id) and (a.tarefa_id is null or a.tarefa_id = k.id)
-      and fluxo._dono_vale(a) and (a.quadro_id is null or fluxo.papel_tarefa(k.id, a.dono_id) is not null)
+      and fluxo._dono_vale(a) and (a.quadro_id is null or fluxo.nivel_cartao(fluxo.papel_tarefa(k.id, a.dono_id)) >= 3)
       and fluxo._condicoes_ok(a, k)
     order by a.quadro_id is not null, a.tarefa_id is not null, a.nome;
 end $$;
