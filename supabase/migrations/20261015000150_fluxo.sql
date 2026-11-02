@@ -2012,8 +2012,8 @@ grant select, insert, update, delete on fluxo.campos, fluxo.campo_opcoes, fluxo.
 -- justificativa ou bloqueia, e uma condição opcional ("Vale quando...")
 -- sobre os campos do objeto; sem condição, vale sempre. A regra é de cada
 -- cartão, não global, e só o diretor, o administrador e quem criou a
--- tarefa a mudam (aba Configuração do cartão). "Bloqueia" trava analista e
--- gestor; o diretor conclui com justificativa. Item de checklist sem regra
+-- tarefa a mudam (aba Configuração do cartão). "Bloqueia" trava o analista;
+-- gestor e diretor concluem com justificativa, como no funil (2/nov/2026). Item de checklist sem regra
 -- própria segue a regra da empresa (conclui_exige_checklist ligada:
 -- bloqueia; desligada: livre). Toda justificativa fica registrada.
 -- Condição: {"modo": "todas"|"qualquer", "itens": [{"campo", "op", "valores"},
@@ -2053,7 +2053,7 @@ create table fluxo.conclusao_justificativas (
   tarefa_id       uuid not null references fluxo.tarefas(id) on delete cascade,
   texto           text not null check (length(trim(texto)) > 0),
   itens           jsonb not null,                       -- [{tipo, ref, nome, regra}] em branco naquela hora
-  libera_bloqueio boolean not null default false,       -- o diretor passou por item que bloqueia
+  libera_bloqueio boolean not null default false,       -- gestor ou diretor passou por item que bloqueia
   por             uuid default auth.uid(),
   em              timestamptz not null default now()
 );
@@ -2264,10 +2264,10 @@ returns boolean language sql stable security definer set search_path = '' as $$
   select exists (select 1 from fluxo.conclusao_justificativas where tarefa_id = p_tarefa and em = now() and (libera_bloqueio or not p_bloqueio)) $$;
 
 -- Concluir com item em branco: grava a justificativa e conclui (ou, com
--- aprovador, pede a aprovação). Item que bloqueia só o diretor passa.
+-- aprovador, pede a aprovação). Item que bloqueia: gestor e diretor passam.
 create or replace function fluxo.concluir_justificando(p_tarefa uuid, p_texto text)
 returns text language plpgsql security definer set search_path = '' as $$
-declare k fluxo.tarefas; v_itens jsonb; v_bloq boolean; v_dir boolean;
+declare k fluxo.tarefas; v_itens jsonb; v_bloq boolean; v_sup boolean;
 begin
   select * into k from fluxo.tarefas where id = p_tarefa for update;
   if k.id is null then raise exception 'Tarefa não encontrada' using errcode = 'P0002'; end if;
@@ -2277,12 +2277,12 @@ begin
   select coalesce(jsonb_agg(jsonb_build_object('tipo', b.tipo, 'ref', b.ref, 'nome', b.nome, 'regra', b.regra)), '[]'), coalesce(bool_or(b.regra = 'bloqueia'), false)
   into v_itens, v_bloq from fluxo.itens_em_branco(k.id) b;
   if jsonb_array_length(v_itens) = 0 then raise exception 'Nenhum item em branco pede justificativa' using errcode = '23514'; end if;
-  v_dir := coalesce(app.papel(k.empresa_id) = 'diretor', false);
-  if v_bloq and not v_dir then
-    raise exception 'Há item em branco que impede concluir; só o diretor conclui assim' using errcode = '42501';
+  v_sup := coalesce(app.papel(k.empresa_id) in ('gestor','diretor'), false);
+  if v_bloq and not v_sup then
+    raise exception 'Há item em branco que impede concluir; só gestor ou diretor conclui assim' using errcode = '42501';
   end if;
   insert into fluxo.conclusao_justificativas (empresa_id, tarefa_id, texto, itens, libera_bloqueio)
-  values (k.empresa_id, k.id, trim(p_texto), v_itens, v_dir);
+  values (k.empresa_id, k.id, trim(p_texto), v_itens, v_sup);
   if exists (select 1 from fluxo.tarefa_pessoas where tarefa_id = k.id and papel = 'aprovador')
      and not exists (select 1 from fluxo.aprovacoes where tarefa_id = k.id and situacao = 'aprovada') then
     perform fluxo.pedir_aprovacao(k.id);
@@ -2333,7 +2333,7 @@ revoke all on function fluxo.predecessoras_pendentes(uuid), fluxo.salvar_regra_p
 grant execute on function fluxo.predecessoras_pendentes(uuid), fluxo.salvar_regra_predecessoras(uuid, boolean) to authenticated;
 
 -- O que impede concluir. Itens em branco (31/out/2026): checklist e campos
--- com regra "bloqueia" (o diretor passa com justificativa) e, com regra
+-- com regra "bloqueia" (gestor e diretor passam com justificativa) e, com regra
 -- "justificativa", 'justificar' até alguém justificar nesta gravação.
 create or replace function fluxo._pendencias_conclusao(p_tarefa uuid)
 returns text[] language sql stable security definer set search_path = '' as $$

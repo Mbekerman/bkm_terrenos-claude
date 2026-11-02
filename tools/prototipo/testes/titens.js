@@ -109,7 +109,7 @@ ok(!tar(s,0,kk.titulo).feita&&!!(await p.$('.it-just-f')),'sem texto, não concl
 await preenche(p,'.it-just-f textarea','Desnível só sai com o topográfico.');await clica(p,'.it-just-f [type=submit]');await p.waitForTimeout(250);s=await est(p);
 ok(!!tar(s,0,kk.titulo).feita,'com a justificativa, conclui');
 ok(s.terrenos[0].hist.some(h=>h.txt.includes('Justificativa: Desnível só sai com o topográfico')),'a justificativa fica no histórico');
-// reabre e põe "não conclui" em outro: analista não passa, diretor passa
+// reabre e põe "não conclui" em outro: analista não passa, gestor e diretor passam
 await fecha(p);await papel(p,'Diretor');await p.waitForTimeout(150);await abreCartao(p,kk.titulo);await clica(p,'#modal [data-a=tkc-concluir]');await p.waitForTimeout(200);
 await clica(p,'#modal [data-a=tkc-aba][data-v=config]');await p.waitForTimeout(100);await muda(p,`[data-itr="${ka.id}"]`,'bloqueia');await p.waitForTimeout(100);
 await fecha(p);await papel(p,'Analista');await p.waitForTimeout(150);await abreCartao(p,kk.titulo);
@@ -117,7 +117,8 @@ await clica(p,'#modal [data-a=tkc-concluir]');await p.waitForTimeout(200);s=awai
 ok(!tar(s,0,kk.titulo).feita&&!(await p.$('.it-just-f'))&&(await toast(p)).includes('Área do levantamento'),'"não conclui" trava o analista e diz o que falta');
 await fecha(p);await papel(p,'Gestor');await p.waitForTimeout(150);await abreCartao(p,kk.titulo);
 await clica(p,'#modal [data-a=tkc-concluir]');await p.waitForTimeout(200);s=await est(p);
-ok(!tar(s,0,kk.titulo).feita&&!(await p.$('.it-just-f')),'e o gestor');
+ok(!tar(s,0,kk.titulo).feita&&await p.$eval('.it-just-f',x=>x.textContent.includes('Como gestor')),'o gestor também conclui com justificativa');
+await clica(p,'.it-just-f [data-just=nao]');await p.waitForTimeout(150);
 await fecha(p);await papel(p,'Diretor');await p.waitForTimeout(150);await abreCartao(p,kk.titulo);
 await clica(p,'#modal [data-a=tkc-concluir]');await p.waitForTimeout(200);
 ok(await p.$eval('.it-just-f',x=>x.textContent.includes('Como diretor')),'o diretor conclui com justificativa');
