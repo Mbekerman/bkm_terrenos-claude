@@ -82,3 +82,10 @@ addEventListener('resize',()=>uiRolaFim());
 const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel();uiCfgAba();uiBoardPontos();uiHdIc();uiDicas();uiRolaFim()};
 /* Legenda do mapa: lembra se ficou aberta ou fechada */
 document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legenda'))UI.mpLeg=e.target.open},true);
+
+/* ===================== botão flutuante do celular ===================== */
+/* Padrão Material: o "Novo terreno" estendido vira só o + ao rolar para baixo (cobre menos
+   linhas da lista) e volta a mostrar o texto ao rolar para cima ou no topo da página. */
+(()=>{let ult=0;const ver=()=>{const y=window.scrollY||document.documentElement.scrollTop||0;
+  const min=y>48&&y>ult;if(y<=48||y<ult-4||min)document.body.classList.toggle('fab-min',min);ult=y};
+  window.addEventListener('scroll',ver,{passive:true})})();
