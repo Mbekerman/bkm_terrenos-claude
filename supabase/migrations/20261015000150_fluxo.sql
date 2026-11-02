@@ -1646,6 +1646,49 @@ begin
 end $$;
 create trigger t_restringe after insert on fluxo.tarefa_pessoas for each row execute function fluxo.tg_pessoa_restringe();
 
+-- Colunas de controle não mudam pela tela (revisão de 2/nov/2026): quem criou
+-- (gravá-lo dava o papel de administrador do cartão a qualquer editor),
+-- código, série, quem concluiu e quem arquivou ficam como o sistema deixou.
+create or replace function fluxo.tg_controle_tarefa()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if auth.uid() is null then return new; end if;
+  new.criado_por := old.criado_por;
+  new.codigo := old.codigo;
+  new.recorrencia_id := old.recorrencia_id;
+  if new.concluida_em is not null and old.concluida_em is not null then
+    new.concluida_em := old.concluida_em; new.concluida_por := old.concluida_por;
+  end if;
+  if new.arquivada_em is not null and old.arquivada_em is not null then
+    new.arquivada_em := old.arquivada_em; new.arquivada_por := old.arquivada_por;
+  end if;
+  return new;
+end $$;
+create trigger t_controle before update on fluxo.tarefas for each row execute function fluxo.tg_controle_tarefa();
+
+-- Aprovadores (revisão de 2/nov/2026): só quem gerencia o cartão (quem criou,
+-- o administrador do sistema ou o diretor) os põe, troca ou tira, e nunca com
+-- um pedido de aprovação em aberto. Antes, qualquer editor tirava o aprovador
+-- e concluía, ou se punha no lugar dele e se aprovava.
+create or replace function fluxo.tg_aprovadores()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare v_tarefa uuid := coalesce(new.tarefa_id, old.tarefa_id);
+begin
+  if auth.uid() is null then return coalesce(new, old); end if;
+  if not ((tg_op <> 'INSERT' and old.papel = 'aprovador') or (tg_op <> 'DELETE' and new.papel = 'aprovador')) then
+    return coalesce(new, old);
+  end if;
+  if tg_op = 'DELETE' and not exists (select 1 from fluxo.tarefas where id = v_tarefa) then return old; end if;
+  if exists (select 1 from fluxo.aprovacoes where tarefa_id = v_tarefa and situacao = 'pendente') then
+    raise exception 'Há um pedido de aprovação em aberto: os aprovadores não mudam até a decisão' using errcode = '23514';
+  end if;
+  if not fluxo.gerencia_tarefa(v_tarefa) then
+    raise exception 'Só quem criou o cartão, o administrador do sistema ou o diretor mudam os aprovadores' using errcode = '42501';
+  end if;
+  return coalesce(new, old);
+end $$;
+create trigger t_aprovadores before insert or update or delete on fluxo.tarefa_pessoas for each row execute function fluxo.tg_aprovadores();
+
 -- Leitura e escrita pelos papéis do cartão. A escrita de quem edita o
 -- cartão vale mesmo para quem é leitura no sistema (o papel do cartão passa).
 drop policy ver on fluxo.tarefas;
@@ -2879,7 +2922,7 @@ begin
     elsif t = 'responsavel' then
       if k.responsavel_id is distinct from (c->>'pessoa')::uuid then
         update fluxo.tarefas set responsavel_id = (c->>'pessoa')::uuid where id = k.id;
-        feito := feito || ('trocou o responsável');
+        feito := feito || 'trocou o responsável'::text;
       end if;
     elsif t = 'prioridade' then
       if k.prioridade <> c->>'valor' then
@@ -2899,7 +2942,7 @@ begin
     elsif t = 'arquivar' then
       if k.arquivada_em is null then
         update fluxo.tarefas set arquivada_em = now() where id = k.id;
-        feito := feito || 'arquivou';
+        feito := feito || 'arquivou'::text;
       end if;
     end if;
   end loop;
