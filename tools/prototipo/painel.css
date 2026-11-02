@@ -117,7 +117,7 @@ body[data-rota="terreno"] .main { container: pagina / inline-size }
 :root[data-tema="escuro"] .pn-menu { background: #1a1a1b; box-shadow: 0 0 0 1px rgba(149,153,160,0.2), 0 10px 28px rgba(0,0,0,.55) }
 :root[data-tema="escuro"] .pn-ck { border-color: rgba(213,215,220,0.6) }
 :root[data-tema="escuro"] .pn-menu [aria-checked="true"] .pn-ck { background: rgba(128,132,139,0.35); border-color: #7899d1 }
-:root[data-tema="escuro"] .pn-menu [aria-checked="true"] .pn-ck::after { border-color: #e6ecff }
+:root[data-tema="escuro"] .pn-menu [aria-checked="true"] .pn-ck::after { border-color: #e3e3e3 }
 :root[data-tema="escuro"] .pn-menu [role="menuitemradio"][aria-checked="true"]::after { border-color: #94b7f1 }
 :root[data-tema="escuro"] :is(.pn-msep) { background: rgba(149,153,160,0.15) }
 :root[data-tema="escuro"] .pn-cr { border-color: rgba(149,153,160,0.15) }
@@ -301,7 +301,7 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 :root[data-tema="escuro"] :is(.v-menu, .mp-ctx) hr { border-top-color: #2a2a2c }
 :root[data-tema="escuro"] :is(.v-menu, .mp-ctx) button:disabled { color: rgba(230,236,255,.38) }
 :root[data-tema="escuro"] :is(.v-menu, .mp-ctx) { background: #1a1a1b; box-shadow: 0 0 0 1px rgba(149,153,160,0.25), 0 10px 28px rgba(0,0,0,.55) }
-:root[data-tema="escuro"] :is(.v-menu, .mp-ctx) button { color: #e6ecff }
+:root[data-tema="escuro"] :is(.v-menu, .mp-ctx) button { color: #e3e3e3 }
 :root[data-tema="escuro"] :is(.v-menu, .mp-ctx) button.crit { color: #ffb4ab }
 /* aviso do modo de edição no mapa: barra no padrão "snackbar" do Material, legível e sem cobrir a poligonal */
 .mp-modo { background: #313033 !important; color: #f4eff4 !important; border-radius: 8px !important; padding: 8px 8px 8px 16px !important; gap: 4px 8px !important; font-size: 14px; line-height: 20px; max-width: min(720px, calc(100% - 24px)); box-shadow: 0 3px 10px rgba(0,0,0,.3) }
@@ -426,7 +426,7 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .mp-lupa .bkm-ico { width: 22px; height: 22px }
 .mp-it-a { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 4px 0 2px; font-size: 13px }
 .mp-it-a .linkbtn { color: #0b57d0; font-weight: 500 }
-:root[data-tema="escuro"] .mp-it { color: #e6ecff }
+:root[data-tema="escuro"] .mp-it { color: #e3e3e3 }
 :root[data-tema="escuro"] .mp-it:hover { background: rgba(149,153,160,0.08) }
 :root[data-tema="escuro"] .mp-it.sel { background: rgba(128,132,139,0.1); box-shadow: inset 0 0 0 1px rgba(149,153,160,0.5) }
 :root[data-tema="escuro"] .mp-it .t2, :root[data-tema="escuro"] .mp-lupa { color: #a3b6d6 }
@@ -949,13 +949,13 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
   .fx-visw { margin-left: 0; flex: 1 1 100% } .fx-vis { flex: 1 } .fx-vis select { flex: 1; max-width: none; min-width: 0 }
   .fx-h { padding-left: 16px } .fx-sh { padding-left: 16px; padding-right: 12px } .fx-sb { padding: 0 16px 20px } .fx-f { padding-left: 16px }
 }
-:root[data-tema="escuro"] .fx-dr { background: #19191a; color: #e6ecff; box-shadow: 0 0 0 1px rgba(149,153,160,0.2), 0 10px 28px rgba(0,0,0,.55) }
+:root[data-tema="escuro"] .fx-dr { background: #19191a; color: #e3e3e3; box-shadow: 0 0 0 1px rgba(149,153,160,0.2), 0 10px 28px rgba(0,0,0,.55) }
 :root[data-tema="escuro"] .fx-scrim { background: rgba(0,0,0,.4) }
 :root[data-tema="escuro"] :is(.fx-h, .fx-s, .fx-f) { border-color: #2a2a2c }
-:root[data-tema="escuro"] :is(.fx-btn, .fx-chip, .fx-op, .fx-in, .fx-vis select) { border-color: rgba(149,153,160,0.25); color: #e6ecff }
+:root[data-tema="escuro"] :is(.fx-btn, .fx-chip, .fx-op, .fx-in, .fx-vis select) { border-color: rgba(149,153,160,0.25); color: #e3e3e3 }
 :root[data-tema="escuro"] :is(.fx-btn, .fx-op)[aria-pressed="true"], :root[data-tema="escuro"] .fx-sn { background: rgba(128,132,139,0.1); border-color: rgba(149,153,160,0.5); color: #c1d9ff }
 :root[data-tema="escuro"] .fx-n { background: #7899d1; color: #131314 }
-:root[data-tema="escuro"] :is(.fx-l, .fx-hint, .fx-tot, .fx-sub, .fx-vis, .fx-op .q, .fx-r > span, .fx-r1 > span, .fx-cx, .fx-sh .ic) { color: #859dc4 }
+:root[data-tema="escuro"] :is(.fx-l, .fx-hint, .fx-tot, .fx-sub, .fx-vis, .fx-op .q, .fx-r > span, .fx-r1 > span, .fx-cx, .fx-sh .ic) { color: #c4c7c5 }
 :root[data-tema="escuro"] .fx-op[aria-pressed="true"] .q { color: #c1d9ff }
 :root[data-tema="escuro"] .fx-op[data-zero] { color: #556b8f }
 :root[data-tema="escuro"] .fx-vis select { background: #131314 }
@@ -989,9 +989,9 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
   .mapa-area:has(.cc-box) .mp-legenda { display: none }
   .cc-dr .cc-f { padding: 8px 16px 24px }
 }
-:root[data-tema="escuro"] .cc-box { background: #1a1a1b; color: #e6ecff; box-shadow: 0 0 0 1px rgba(149,153,160,0.35), 0 10px 28px rgba(0,0,0,.55) }
+:root[data-tema="escuro"] .cc-box { background: #1a1a1b; color: #e3e3e3; box-shadow: 0 0 0 1px rgba(149,153,160,0.35), 0 10px 28px rgba(0,0,0,.55) }
 :root[data-tema="escuro"] .cc-k { background: rgba(168,85,247,.10); border-left-color: #a855f7 }
-:root[data-tema="escuro"] .cc-t th { color: #859dc4; border-color: #2a2a2c } :root[data-tema="escuro"] .cc-t td { border-color: #2a2a2c }
+:root[data-tema="escuro"] .cc-t th { color: #c4c7c5; border-color: #2a2a2c } :root[data-tema="escuro"] .cc-t td { border-color: #2a2a2c }
 :root[data-tema="escuro"] .cc-tr.cc-tem:hover, :root[data-tema="escuro"] .cc-h-r td { background: rgba(128,132,139,0.08) }
 :root[data-tema="escuro"] :is(.cc-sec) { border-color: #2a2a2c } :root[data-tema="escuro"] .cc-tp { border-color: rgba(149,153,160,0.25) }
 .cc-tn { white-space: nowrap }
@@ -1013,7 +1013,7 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .log-previa { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; padding: 8px 8px 8px 16px; margin-bottom: 12px; border-radius: 12px; background: #ffdf99; color: #3f2e00; font-size: 14px; line-height: 20px }
 .log-previa > span { flex: 1 1 220px }
 .log-previa .btn.text { color: #3f2e00 !important; font-weight: 500 }
-:root[data-tema="escuro"] .pn-lb { color: #859dc4 }
+:root[data-tema="escuro"] .pn-lb { color: #c4c7c5 }
 :root[data-tema="escuro"] .pn-lb.on { color: #ffb4ab; background: rgba(255,180,171,.12) }
 :root[data-tema="escuro"] .pn-log.off, :root[data-tema="escuro"] .pn-log.desf { background: rgba(149,153,160,0.05) }
 :root[data-tema="escuro"] .pn-log.off .pn-lt, :root[data-tema="escuro"] .pn-log.off .pn-det, :root[data-tema="escuro"] .pn-log.off .pn-lm, :root[data-tema="escuro"] .pn-log.desf .pn-lt, :root[data-tema="escuro"] .pn-log.desf .pn-det { color: #556988 }
@@ -1050,12 +1050,12 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .mp-cam-m button:hover { background: rgba(31,31,31,.06) } .mp-cam-m button[aria-checked="true"] { background: #c2e7ff; color: #001d35; font-weight: 500 }
 .mp-cam-m :is(.rd-ic, .ds-ic, .cam-off) { display: block; flex: none; width: 16px; height: 16px; border-radius: 4px; box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
 .mp-cam-m .rd-ic { background: conic-gradient(#feb600 0 25%, #c04c07 0 50%, #97d6ff 0 75%, #296baf 0) } .mp-cam-m .ds-ic { background: conic-gradient(#a8dfcb 0 25%, #54b997 0 50%, #1f8668 0 75%, #0a5140 0) } .mp-cam-m .cam-off { box-shadow: inset 0 0 0 1px #747775 }
-:root[data-tema="escuro"] .mp-cam-m { background: #1a1a1b; color: #e6ecff; box-shadow: 0 0 0 1px rgba(149,153,160,0.35), 0 10px 28px rgba(0,0,0,.55) }
+:root[data-tema="escuro"] .mp-cam-m { background: #1a1a1b; color: #e3e3e3; box-shadow: 0 0 0 1px rgba(149,153,160,0.35), 0 10px 28px rgba(0,0,0,.55) }
 :root[data-tema="escuro"] .mp-cam-m button:hover { background: rgba(149,153,160,0.12) } :root[data-tema="escuro"] .mp-cam-m button[aria-checked="true"] { background: rgba(128,132,139,0.22); color: #c1d9ff }
 .mp-renda-b .rd-ic { display: block; width: 16px; height: 16px; border-radius: 4px; background: conic-gradient(#feb600 0 25%, #c04c07 0 50%, #97d6ff 0 75%, #296baf 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
-:root[data-tema="escuro"] .mp-renda-b { background: rgba(25,25,26,0.72); color: #e6ecff; box-shadow: 0 0 0 1px rgba(149,153,160,0.35) }
+:root[data-tema="escuro"] .mp-renda-b { background: rgba(25,25,26,0.72); color: #e3e3e3; box-shadow: 0 0 0 1px rgba(149,153,160,0.35) }
 :root[data-tema="escuro"] .mp-renda-b[aria-pressed="true"] { background: rgba(128,132,139,0.22); color: #c1d9ff; box-shadow: 0 0 0 1px rgba(149,153,160,0.5) }
-:root[data-tema="escuro"] :is(.rd-esc-m, .rd-esc-u) { color: #859dc4 }
+:root[data-tema="escuro"] :is(.rd-esc-m, .rd-esc-u) { color: #c4c7c5 }
 .mapa-area:has(.rd-box, .cc-box) .rd-leg { display: none }
 .rd-li { display: flex; align-items: center; gap: 8px; padding: 1px 0; white-space: nowrap }
 .rd-q { flex: none; width: 14px; height: 12px; border-radius: 2px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.12) }
@@ -1098,7 +1098,7 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 :root[data-tema="escuro"] .pf-hm .pf-h, :root[data-tema="escuro"] .pf-leg i.pf-h, :root[data-tema="escuro"] .pf-b.pf-h span { color: #91b4ee; background: #91b4ee }
 :root[data-tema="escuro"] .pf-hm .pf-m, :root[data-tema="escuro"] .pf-leg i.pf-m, :root[data-tema="escuro"] .pf-b.pf-m span { color: #d7aefb; background: #d7aefb }
 :root[data-tema="escuro"] .pf-hm :is(.pf-h, .pf-m) { background: none }
-:root[data-tema="escuro"] :is(.pf-leg, .pf-g span, .pf-p, .pf-dist li.pf-nd) { color: #859dc4 }
+:root[data-tema="escuro"] :is(.pf-leg, .pf-g span, .pf-p, .pf-dist li.pf-nd) { color: #c4c7c5 }
 .rd-dist .num { text-align: right; font-weight: 500; font-variant-numeric: tabular-nums }
 .rd-pe { margin-top: 12px }
 .rd-mt { padding: 0 24px 8px; font-size: 14px; line-height: 20px } .rd-mt h3 { font-size: 14px; font-weight: 500; margin: 16px 0 4px } .rd-mt p { margin: 0 0 8px } .rd-mt ul { margin: 0; padding-left: 18px }
@@ -1110,9 +1110,9 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
   .rd-met { grid-template-columns: repeat(2, minmax(0, 1fr)) }
   .rd-dist li { grid-template-columns: 14px minmax(96px, auto) 1fr 40px }
 }
-:root[data-tema="escuro"] .rd-leg { background: #1a1a1b; color: #e6ecff; box-shadow: 0 0 0 1px rgba(149,153,160,0.35), 0 10px 28px rgba(0,0,0,.55) }
-:root[data-tema="escuro"] :is(.rd-leg-p, .rd-kv dt, .rd-nota, .rd-m .k, .rd-m .s) { color: #859dc4 }
-:root[data-tema="escuro"] .rd-q.rd-sem { border-color: #859dc4 }
+:root[data-tema="escuro"] .rd-leg { background: #1a1a1b; color: #e3e3e3; box-shadow: 0 0 0 1px rgba(149,153,160,0.35), 0 10px 28px rgba(0,0,0,.55) }
+:root[data-tema="escuro"] :is(.rd-leg-p, .rd-kv dt, .rd-nota, .rd-m .k, .rd-m .s) { color: #c4c7c5 }
+:root[data-tema="escuro"] .rd-q.rd-sem { border-color: #c4c7c5 }
 :root[data-tema="escuro"] .rd-box .rd-k { background: rgba(128,132,139,0.08) }
 :root[data-tema="escuro"] :is(.rd-m, .rd-f) { background: #1a1a1b; border: 1px solid rgba(149,153,160,0.2) }
 :root[data-tema="escuro"] .rd-m1 { border-left: 3px solid #7899d1 }
@@ -1132,7 +1132,7 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .mk-nota { font-size: 12px; line-height: 16px; margin-top: 8px }
 @media (max-width: 599px) { .mk-t { font-size: 12px } .cc-t.mk-t :is(th, td) { padding: 8px 4px } .cc-t.mk-t :is(th, td):first-child { padding-left: 16px } .cc-t.mk-t :is(th, td):last-child { padding-right: 16px } .mk-grid { margin: 12px 16px 4px } }
 :root[data-tema="escuro"] .mk-box .mk-k { background: rgba(131,135,142,0.1); border-left-color: #6788be }
-:root[data-tema="escuro"] .mk-kv .num { color: #e6ecff }
+:root[data-tema="escuro"] .mk-kv .num { color: #e3e3e3 }
 .mk-ctl { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px }
 .mk-cat td .faint { font-size: 12px; line-height: 16px }
 .mk-cat td.r, .mk-cat th.r { white-space: nowrap; font-variant-numeric: tabular-nums }
@@ -1147,7 +1147,7 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
   .mk-cat td[data-l]::before { content: attr(data-l); display: block; font-size: 12px; line-height: 16px; color: #5f6368 }
   .mk-cat td[data-l="R$/m² mediano"] { grid-column: span 2 }
 }
-:root[data-tema="escuro"] .mk-cat td[data-l]::before { color: #859dc4 }
+:root[data-tema="escuro"] .mk-cat td[data-l]::before { color: #c4c7c5 }
 
 /* ---------- Estudo de viabilidade estática (página do estudo, seção da negociação, Configurações › Viabilidade) ---------- */
 .vb-h { align-items: flex-end; margin-bottom: 24px }
@@ -1316,16 +1316,16 @@ body.vb-aberto { overflow: hidden }
   .vb-acoes { width: 100% }
   .vb-cfg { overflow-x: auto }
 }
-:root[data-tema="escuro"] .vb-c input:not(:disabled), :root[data-tema="escuro"] .vb-c select:not(:disabled) { background: #161618; border-color: #444446; color: #e6ecff }
+:root[data-tema="escuro"] .vb-c input:not(:disabled), :root[data-tema="escuro"] .vb-c select:not(:disabled) { background: #161618; border-color: #444446; color: #e3e3e3 }
 :root[data-tema="escuro"] .vb-pop-d, :root[data-tema="escuro"] .vb-fixo { background: #131314 }
-:root[data-tema="escuro"] .vb-aba { border-color: #2a2a2c; color: #e6ecff }
-:root[data-tema="escuro"] .vb-aba small { color: #859dc4 }
+:root[data-tema="escuro"] .vb-aba { border-color: #2a2a2c; color: #e3e3e3 }
+:root[data-tema="escuro"] .vb-aba small { color: #c4c7c5 }
 :root[data-tema="escuro"] .vb-aba:hover { background: rgba(128,132,139,0.06) }
 :root[data-tema="escuro"] .vb-aba[aria-current] { background: rgba(128,132,139,0.1); border-color: rgba(149,153,160,0.5); color: #c1d9ff }
 :root[data-tema="escuro"] .vb-aba[aria-current] small { color: #c1d9ff }
 :root[data-tema="escuro"] .vb-dre .vb-tt td { background: rgba(128,132,139,0.08) }
 :root[data-tema="escuro"] .vb-pop-d { box-shadow: 0 0 0 1px #2a2a2c, 0 8px 32px rgba(0,0,0,.6) }
-:root[data-tema="escuro"] .vb-escolha select { background: #161618; border-color: #444446; color: #e6ecff }
+:root[data-tema="escuro"] .vb-escolha select { background: #161618; border-color: #444446; color: #e3e3e3 }
 :root[data-tema="escuro"] .vb-r.vb-marco { background: rgba(128,132,139,0.08) }
 :root[data-tema="escuro"] .vb-dd { background: #1a1a1b; box-shadow: 0 0 0 1px rgba(149,153,160,0.28), 0 8px 24px rgba(0,0,0,.5) }
 :root[data-tema="escuro"] .vb-dd-i:hover, :root[data-tema="escuro"] .vb-dd-i[aria-selected="true"] { background: rgba(128,132,139,0.14) }
@@ -1388,7 +1388,7 @@ body.vb-aberto { overflow: hidden }
 .adorno.moeda > .adorno-t { left: 12px }
 .adorno.pct > .adorno-t { right: 12px }
 input[data-fmt]:not([data-fmt="none"]) { font-variant-numeric: tabular-nums }
-:root[data-tema="escuro"] .adorno-t { color: #859dc4 }
+:root[data-tema="escuro"] .adorno-t { color: #c4c7c5 }
 
 /* Lista chave/valor: valor logo depois do rótulo, alinhado à esquerda (nada de texto em degrau) */
 .kv dd { text-align: left !important; justify-content: flex-start !important }
@@ -1414,7 +1414,7 @@ input[data-fmt]:not([data-fmt="none"]) { font-variant-numeric: tabular-nums }
 select:not([multiple]) { -webkit-appearance: none; appearance: none; padding-right: 36px !important; background-repeat: no-repeat; background-position: right 10px center; background-size: 18px 18px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23444746' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important }
 :root[data-tema="escuro"] select:not([multiple]) { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23c4c7f0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important }
-:root[data-tema="escuro"] :is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not(.auto-v):not(.vb-pop-nome), select, textarea) { border-color: rgba(153,156,161,0.5) !important; background-color: transparent !important; color: #e6ecff }
+:root[data-tema="escuro"] :is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not(.auto-v):not(.vb-pop-nome), select, textarea) { border-color: rgba(153,156,161,0.5) !important; background-color: transparent !important; color: #e3e3e3 }
 :root[data-tema="escuro"] { color-scheme: dark }
 input[type=date] { font-variant-numeric: tabular-nums }
 input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
@@ -1438,7 +1438,7 @@ input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
 .cfg-tab { border: 0; background: transparent; text-align: left; height: 40px; padding: 0 16px; border-radius: 20px; font-size: 14px; font-weight: 500; color: var(--m-on-var, #444746); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
 .cfg-tab:hover { background: rgba(68,71,70,.08) }
 .cfg-tab[aria-selected="true"] { background: #c2e7ff; color: #001d35 }
-:root[data-tema="escuro"] .cfg-tab { color: #b2c6e6 }
+:root[data-tema="escuro"] .cfg-tab { color: #c4c7c5 }
 :root[data-tema="escuro"] .cfg-tab:hover { background: rgba(149,153,160,0.08) }
 :root[data-tema="escuro"] .cfg-tab[aria-selected="true"] { background: rgba(128,132,139,0.1); box-shadow: inset 0 0 0 1px rgba(149,153,160,0.5); color: #c1d9ff }
 .cfg-corpo { min-width: 0 }
@@ -1476,10 +1476,10 @@ input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
 .dt .c-etapa .chip.sub.warn { color: #7a5900 !important }
 .dt .c-etapa .chip.sub.warn::after { content: " · acima do prazo"; font-size: 12px }
 .dt .c-etapa .chip.blue { border: 0 !important; background: none !important; padding: 0 !important; height: auto; min-height: 0; font-size: 12px; line-height: 16px; color: var(--m-primary, #0b57d0) !important }
-:root[data-tema="escuro"] .dt .c-etapa .chip.sub { color: #e6ecff !important }
+:root[data-tema="escuro"] .dt .c-etapa .chip.sub { color: #e3e3e3 !important }
 :root[data-tema="escuro"] .dt .c-etapa .chip.sub.warn { color: #ffd479 !important }
 :root[data-tema="escuro"] .dt .c-etapa .chip.blue { color: #98bbf5 !important }
-:root[data-tema="escuro"] .dt .c-etapa :is(.chip.fase, .chip.fase-n) { color: #859dc4 !important }
+:root[data-tema="escuro"] .dt .c-etapa :is(.chip.fase, .chip.fase-n) { color: #c4c7c5 !important }
 .dt td.col-tarefa .t2:first-child { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 260px }
 /* Terrenos no celular: linha de lista (nome, bairro; valor à direita; etapa embaixo), sem rótulos */
 .empilha .dt.lista-t tr { display: grid !important; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; row-gap: 4px; padding: 12px 16px !important }
@@ -1503,12 +1503,12 @@ input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
 .poil .poi-d { font-size: 13px; color: var(--m-on-var, #444746); white-space: nowrap; font-weight: 400 }
 .poil .poi-rota { color: var(--m-primary, #0b57d0); text-decoration: none }
 :root[data-tema="escuro"] .poil .poi-rota { color: #98bbf5 }
-:root[data-tema="escuro"] .poil .poi-d { color: #859dc4 }
+:root[data-tema="escuro"] .poil .poi-d { color: #c4c7c5 }
 .ent-pe { font-size: 12px }
 /* Lixeira de linha (Confrontações, Matrículas, Configurações...) */
 .iconbtn.lixo { color: var(--m-on-var, #444746) }
 .iconbtn.lixo:hover { color: #b3261e; background: rgba(179,38,30,.08) }
-:root[data-tema="escuro"] .iconbtn.lixo { color: #859dc4 }
+:root[data-tema="escuro"] .iconbtn.lixo { color: #c4c7c5 }
 /* Seções da ficha: título um nível abaixo do nome do terreno; Recolher discreto à direita */
 .bl-h { font-size: 20px !important; line-height: 28px !important; min-height: 56px !important }
 .bl-fim { justify-content: flex-end !important; padding-top: 8px !important }
@@ -1536,7 +1536,7 @@ input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
 .mp-legenda summary::after { content: "" !important; width: 18px; height: 18px; margin-left: auto; transition: transform .15s;
   background: no-repeat center/18px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23444746' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") }
 .mp-legenda[open] summary::after { transform: rotate(180deg) }
-:root[data-tema="escuro"] .mp-legenda summary { color: #e6ecff !important }
+:root[data-tema="escuro"] .mp-legenda summary { color: #e3e3e3 !important }
 :root[data-tema="escuro"] .mp-legenda summary::after { filter: invert(.85) }
 .lg-r { display: grid !important; grid-template-columns: minmax(0, 1fr) 32px }
 .lg-r .lg-d { width: 32px; height: 32px }
@@ -1556,7 +1556,7 @@ input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
 .fchk:has(input:checked) .ic { display: block }
 .fchk:has(input:focus-visible) { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: 2px }
 :root[data-tema="escuro"] :is(.fchk, .tk-filtros select.fsel-chip) { border-color: rgba(149,153,160,0.35) !important; color: #c1d9ff }
-:root[data-tema="escuro"] :is(.fchk:has(input:checked), .tk-filtros select.fsel-chip.on) { background-color: rgba(128,132,139,0.18) !important; border-color: rgba(149,153,160,0.5) !important; color: #e6ecff }
+:root[data-tema="escuro"] :is(.fchk:has(input:checked), .tk-filtros select.fsel-chip.on) { background-color: rgba(128,132,139,0.18) !important; border-color: rgba(149,153,160,0.5) !important; color: #e3e3e3 }
 @media (max-width: 599px) {
   .tk-filtros .search { flex-basis: 100%; max-width: none }
   .tk-fl { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; width: calc(100% + 32px) }
@@ -1591,7 +1591,7 @@ select:not([multiple]) { background-repeat: no-repeat !important; background-pos
 .kv:has(.kv-ed), .kvl:has(> .kv > .kv-ed) > .kv:not(.editando) { grid-template-columns: clamp(104px, 34%, 150px) minmax(0, 1fr) 32px !important }
 .kvl:not(:has(.kv-ed)) > .kv, .ro .kv:has(.kv-ed[data-a="edit"]), .fs-ro .kv:has(.kv-ed) { grid-template-columns: clamp(104px, 34%, 150px) minmax(0, 1fr) !important }
 .kv dd .chip.sub { border: 0 !important; background: none !important; padding: 0 !important; height: auto; min-height: 0; color: var(--m-on-var, #444746) !important; font-weight: 400; display: block; margin-top: 2px }
-:root[data-tema="escuro"] .kv dd .chip.sub { color: #859dc4 !important }
+:root[data-tema="escuro"] .kv dd .chip.sub { color: #c4c7c5 !important }
 /* Faixa lateral reta (a sombra interna dobrava no raio do quadro) */
 .kpis .kpi, .rd-m1, .cc-k { position: relative; overflow: hidden }
 :root:not(#_) .kpis .kpi { box-shadow: none !important }
@@ -1611,7 +1611,7 @@ select:not([multiple]) { background-repeat: no-repeat !important; background-pos
 /* Tabela dentro de quadro: sem contorno duplo; cabeçalho sem faixa cinza */
 .sec .dt-wrap > .dt { border: 0 !important; border-radius: 0 !important }
 .dt th, .tr.th { background: var(--m-card, #fff) !important; font-size: 12px !important; color: var(--m-on-var, #444746) !important }
-:root[data-tema="escuro"] .dt th, :root[data-tema="escuro"] .tr.th { background: #19191a !important; color: #859dc4 !important }
+:root[data-tema="escuro"] .dt th, :root[data-tema="escuro"] .tr.th { background: #19191a !important; color: #c4c7c5 !important }
 .page .dt-wrap > .dt th { background: var(--m-surface, #f8fafd) !important }
 /* Tabela que não cabe: no celular vira linha de lista (título; os demais dados numa linha corrida, rótulo discreto) */
 .empilha .dt:not(.lista-t) tr, .empilha .mini-tbl tr { display: flex !important; flex-wrap: wrap; align-items: baseline; gap: 2px 16px; padding: 12px 16px !important; position: relative }
@@ -1625,7 +1625,7 @@ select:not([multiple]) { background-repeat: no-repeat !important; background-pos
 .empilha .dt:not(.lista-t) td.hm { display: none !important }
 .empilha .dt:not(.lista-t) td .chip { height: 24px; min-height: 24px; font-size: 12px }
 .empilha .dt:not(.lista-t) td:empty { display: none !important }
-:root[data-tema="escuro"] .empilha .dt:not(.lista-t) td:first-child { color: #e6ecff }
+:root[data-tema="escuro"] .empilha .dt:not(.lista-t) td:first-child { color: #e3e3e3 }
 /* Quadro (kanban) no celular: uma coluna por vez, com a próxima aparecendo; colunas só da altura dos cartões */
 @media (max-width: 599px) {
   .board { scroll-snap-type: x mandatory; align-items: flex-start !important; margin: 0 -16px; padding: 0 16px 12px; scroll-padding: 0 16px; scrollbar-width: none }
@@ -1652,8 +1652,8 @@ select:not([multiple]) { background-repeat: no-repeat !important; background-pos
 .vb-aba[aria-current] small { color: var(--m-primary, #0b57d0) !important }
 .vb-aba[aria-current]::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: currentColor }
 .vb-aba:focus-visible { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: -2px }
-:root[data-tema="escuro"] .vb-aba { color: #b2c6e6 !important }
-:root[data-tema="escuro"] .vb-aba small { color: #859dc4 !important }
+:root[data-tema="escuro"] .vb-aba { color: #c4c7c5 !important }
+:root[data-tema="escuro"] .vb-aba small { color: #c4c7c5 !important }
 :root[data-tema="escuro"] .vb-aba[aria-current], :root[data-tema="escuro"] .vb-aba[aria-current] small { color: #c1d9ff !important; background: transparent !important; border: 0 !important }
 @media (max-width: 599px) {
   .vb-pop .vb-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 6px !important }
@@ -1694,7 +1694,7 @@ form.inline-form.if-fechado { display: none !important }
 .cfg-cel { display: flex; flex-direction: column; gap: 4px; min-width: 0 }
 .cfg-cel > :is(input, select) { width: 100% }
 .cfg-cl { font-size: 12px; color: var(--m-on-var, #444746) }
-:root[data-tema="escuro"] .cfg-cl { color: #859dc4 }
+:root[data-tema="escuro"] .cfg-cl { color: #c4c7c5 }
 @media (min-width: 900px) { .cfg-cl { display: none } .cfg-cel { display: contents } }
 .cfg-nav .cfg-padrao { margin-top: 16px; align-self: flex-start; font-size: 13px; color: var(--m-on-var, #444746) !important; padding: 0 16px !important }
 @media (max-width: 899px) { .cfg-nav .cfg-padrao { display: none } }
@@ -1710,7 +1710,7 @@ form.inline-form.if-fechado { display: none !important }
 :root[data-tema="escuro"] :is(.chip.good, .chip.tkst.concluida) { background: rgba(109,213,140,.16) !important; color: #a6f0bb !important }
 :root[data-tema="escuro"] :is(.chip.warn, .chip.tkst.aguardando_terceiro) { background: rgba(245,196,81,.16) !important; color: #ffd479 !important }
 :root[data-tema="escuro"] .chip.crit { background: rgba(242,184,181,.16) !important; color: #f2b8b5 !important }
-:root[data-tema="escuro"] :is(.chip.tkst.pendente, .chip.tkst.cancelada) { background: rgba(153,156,161,0.14) !important; color: #b2c6e6 !important }
+:root[data-tema="escuro"] :is(.chip.tkst.pendente, .chip.tkst.cancelada) { background: rgba(153,156,161,0.14) !important; color: #c4c7c5 !important }
 /* Faixas laterais só nos indicadores do Início e do Dashboard; os demais blocos ficam tonais */
 .rd-m1::after, .cc-k::after, .vb-pop .vb-kpis .kpi::after { content: none !important }
 .banner { border-left: 0 !important }
@@ -1746,13 +1746,13 @@ form.inline-form.if-fechado { display: none !important }
 .infra-f { border: 0; border-bottom: 1px solid transparent; background: transparent; font: inherit; font-size: 12px; color: var(--m-on-var, #444746); width: 60%; padding: 0; height: 20px }
 .infra-f:hover { border-bottom-color: var(--m-outline, #747775) }
 .infra-f:focus { outline: 0; border-bottom: 2px solid var(--m-primary, #0b57d0) }
-:root[data-tema="escuro"] .infra-f { color: #859dc4 }
+:root[data-tema="escuro"] .infra-f { color: #c4c7c5 }
 /* Tabelas pequenas empilhadas (valor venal, IPTU...): grade com rótulo pequeno em cima do valor */
 .empilha .mini-tbl tr { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px 16px }
 .empilha .mini-tbl td:first-child { grid-column: 1 / -1 }
 .empilha .mini-tbl td:not(:first-child) { display: flex !important; flex-direction: column; align-items: flex-start; gap: 0; font-size: 14px; color: var(--m-on-surface, #1f1f1f) }
 .empilha .mini-tbl td:not(:first-child)::before { font-size: 12px !important; line-height: 16px }
-:root[data-tema="escuro"] .empilha .mini-tbl td:not(:first-child) { color: #e6ecff }
+:root[data-tema="escuro"] .empilha .mini-tbl td:not(:first-child) { color: #e3e3e3 }
 .board .col { width: 280px; max-width: 280px } @media (max-width: 599px) { .board .col { width: auto; max-width: none } }
 .sec .dt-wrap > .dt, .sec .tblwrap > table { background: transparent !important }
 @media (max-width: 899px) {
@@ -1769,7 +1769,7 @@ form.inline-form.if-fechado { display: none !important }
 .kcard .ksub { height: auto !important; align-items: flex-start }
 /* Status neutro (Pendente, Não aberta, Descartado...) também tonal, nunca contornado como botão */
 :is(.dt td, .doc, .fs-lst, .chk-group, .docs) .chip:not(.warn):not(.crit):not(.good):not(.blue):not(.sub):not(.fase):not(.fase-n):not(.num):not(.tkst) { background: #e9eef6 !important; border-color: transparent !important; color: #444746 !important }
-:root[data-tema="escuro"] :is(.dt td, .doc, .fs-lst, .chk-group, .docs) .chip:not(.warn):not(.crit):not(.good):not(.blue):not(.sub):not(.fase):not(.fase-n):not(.num):not(.tkst) { background: rgba(153,156,161,0.14) !important; color: #b2c6e6 !important }
+:root[data-tema="escuro"] :is(.dt td, .doc, .fs-lst, .chk-group, .docs) .chip:not(.warn):not(.crit):not(.good):not(.blue):not(.sub):not(.fase):not(.fase-n):not(.num):not(.tkst) { background: rgba(153,156,161,0.14) !important; color: #c4c7c5 !important }
 /* Lixeira de linha: no desktop aparece ao passar o mouse ou com o foco na linha */
 @media (hover: hover) and (min-width: 900px) {
   :is(tr, li, .cfg-r, .kv, .doc) .iconbtn.lixo { opacity: 0; transition: opacity .12s }
@@ -1782,7 +1782,7 @@ form.inline-form.if-fechado { display: none !important }
 .dt .c-etapa .chip.sub.warn { color: var(--m-on-surface, #1f1f1f) !important }
 .dt .c-etapa .chip.sub.warn::after { content: "acima do prazo"; display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 6px; background: #ffdf99; color: #3d2c00; font-size: 11px; line-height: 18px; font-weight: 500 }
 .dt .c-etapa .chip.blue { display: inline-block !important; margin-top: 4px; padding: 0 6px !important; border-radius: 6px !important; background: #d3e3fd !important; color: #041e49 !important; font-size: 11px; line-height: 18px; font-weight: 500 }
-:root[data-tema="escuro"] .dt .c-etapa .chip.sub.warn { color: #e6ecff !important }
+:root[data-tema="escuro"] .dt .c-etapa .chip.sub.warn { color: #e3e3e3 !important }
 :root[data-tema="escuro"] .dt .c-etapa .chip.sub.warn::after { background: rgba(245,196,81,.16); color: #ffd479 }
 :root[data-tema="escuro"] .dt .c-etapa .chip.blue { background: rgba(149,153,160,0.18) !important; color: #c1d9ff !important }
 /* Tabela dentro do quadro de Terrenos e Tarefas: um contêiner só */
@@ -1802,7 +1802,7 @@ form.inline-form.if-fechado { display: none !important }
   .zp-tbl td input:not([type=checkbox]), .zp-tbl td select { width: 100% !important; text-align: left }
   .zp-tbl td input[data-k=fonte_norma] { width: 100% !important }
   .zp-tbl td:has(input[data-k=fonte_norma]) { grid-column: 1 / -1 }
-  :root[data-tema="escuro"] .zp-tbl td::before { color: #859dc4 }
+  :root[data-tema="escuro"] .zp-tbl td::before { color: #c4c7c5 }
 }
 /* Botão tonal (ação da página que não é a principal do app) */
 .btn.tonal { background: #c2e7ff !important; color: #001d35 !important; border: 0 !important }
@@ -1880,7 +1880,7 @@ input[type=checkbox]:not(.fchk input):checked { background-color: var(--m-primar
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5 10 17 19 7' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") }
 input[type=checkbox]:not(.fchk input):disabled { opacity: .38; cursor: default }
 input[type=checkbox]:not(.fchk input):focus-visible { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: 2px }
-:root[data-tema="escuro"] input[type=checkbox]:not(.fchk input) { border-color: #859dc4; background-color: transparent }
+:root[data-tema="escuro"] input[type=checkbox]:not(.fchk input) { border-color: #c4c7c5; background-color: transparent }
 :root[data-tema="escuro"] input[type=checkbox]:not(.fchk input):checked { background-color: #7899d1; border-color: #7899d1;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5 10 17 19 7' fill='none' stroke='%23081028' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") }
 /* Aviso de atenção no escuro: tonal, não mostarda cheia */
@@ -1942,8 +1942,8 @@ input[type=checkbox]:not(.fchk input):focus-visible { outline: 2px solid var(--m
 .zp-chk .chk { font-size: 14px; min-height: 40px }
 .zp-b .chk { display: inline-flex; align-items: center; gap: 8px }
 :root[data-tema="escuro"] :is(.zp-lista, .zp-z) { border-color: #2a2a2c }
-:root[data-tema="escuro"] :is(.zp-cond, .zp-res, .zp-l) { color: #859dc4 }
-:root[data-tema="escuro"] .zp-z > summary::after { color: #859dc4 }
+:root[data-tema="escuro"] :is(.zp-cond, .zp-res, .zp-l) { color: #c4c7c5 }
+:root[data-tema="escuro"] .zp-z > summary::after { color: #c4c7c5 }
 :root[data-tema="escuro"] .zp-z > summary:hover { background: rgba(149,153,160,0.06); box-shadow: -16px 0 0 rgba(149,153,160,0.06), 16px 0 0 rgba(149,153,160,0.06) }
 @media (max-width: 599px) {
   .zp-z > summary { grid-template-columns: minmax(0, 1fr) auto 24px; grid-template-areas: "n c s" "r r s" }
@@ -1988,7 +1988,7 @@ input[type=checkbox]:not(.fchk input):focus-visible { outline: 2px solid var(--m
 .chip.sub:not(.dt .chip):not(.kv .chip) { background: #e9eef6 !important; border-color: transparent !important; color: #1f1f1f !important }
 .dchips .chip:not(.warn):not(.crit):not(.good):not(.blue):not(.fase):not(.sub) { background: #e9eef6 !important; border-color: transparent !important }
 :root[data-tema="escuro"] .chip.fase:not(.dt .chip) { background: rgba(149,153,160,0.18) !important; color: #c1d9ff !important }
-:root[data-tema="escuro"] .chip.sub:not(.dt .chip):not(.kv .chip), :root[data-tema="escuro"] .dchips .chip:not(.warn):not(.crit):not(.good):not(.blue):not(.fase):not(.sub) { background: rgba(153,156,161,0.14) !important; color: #e6ecff !important }
+:root[data-tema="escuro"] .chip.sub:not(.dt .chip):not(.kv .chip), :root[data-tema="escuro"] .dchips .chip:not(.warn):not(.crit):not(.good):not(.blue):not(.fase):not(.sub) { background: rgba(153,156,161,0.14) !important; color: #e3e3e3 !important }
 :root[data-tema="escuro"] .chip.crit { background: rgba(255,107,107,.16) !important; border-color: transparent !important; color: #ffb4ab !important }
 /* Chip de status com a largura do texto (Diligências no celular) */
 .empilha .dt td .chip, .dt td > .chip { width: auto !important; max-width: max-content; justify-self: start; align-self: flex-start }
@@ -2016,7 +2016,7 @@ input[type=checkbox]:not(.fchk input):focus-visible { outline: 2px solid var(--m
 /* ===================== Revisão de design, rodada 8 ===================== */
 /* Cartão do quadro das fases: etapa em texto, chip só com a subetapa, numa linha */
 .kcard .kfe { font-size: 12px; line-height: 16px; color: var(--m-on-var, #444746); margin-top: 2px }
-:root[data-tema="escuro"] .kcard .kfe { color: #859dc4 }
+:root[data-tema="escuro"] .kcard .kfe { color: #c4c7c5 }
 :root:not(#_) .kcard .ksub { display: inline-flex !important; max-width: 100%; flex-wrap: nowrap !important; align-items: center !important; height: 24px !important; white-space: nowrap }
 :root:not(#_) .kcard .ksub > span:first-child { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; min-width: 0 }
 :root:not(#_) .kcard .ksub > span + span { flex: none }
@@ -2050,7 +2050,7 @@ input[type=checkbox]:not(.fchk input):focus-visible { outline: 2px solid var(--m
 .vb-sel select, select#vb-valido { text-overflow: ellipsis }
 /* Campo desabilitado nas grades de edição: mesmo formato preenchido, esmaecido */
 :is(.cfg-r, .zp-b, .adv-sub, .lz-tbl, .vb-c) :is(input:not([type=checkbox]):not([type=radio]), select):disabled { border: 0 !important; border-bottom: 1px solid rgba(31,31,31,.38) !important; border-radius: 4px 4px 0 0 !important; background-color: rgba(31,31,31,.04) !important; color: rgba(31,31,31,.6) !important }
-:root[data-tema="escuro"] :is(.cfg-r, .zp-b, .adv-sub, .lz-tbl, .vb-c) :is(input:not([type=checkbox]):not([type=radio]), select):disabled { border-bottom-color: rgba(153,156,161,0.3) !important; background-color: rgba(149,153,160,0.03) !important; color: #859dc4 !important }
+:root[data-tema="escuro"] :is(.cfg-r, .zp-b, .adv-sub, .lz-tbl, .vb-c) :is(input:not([type=checkbox]):not([type=radio]), select):disabled { border-bottom-color: rgba(153,156,161,0.3) !important; background-color: rgba(149,153,160,0.03) !important; color: #c4c7c5 !important }
 
 /* ===================== Revisão de design, rodada 9 ===================== */
 /* Situação que se muda no próprio chip (diligência, tarefa da ficha): largura do texto e setinha */
@@ -2059,9 +2059,9 @@ select.chip-sel, :root:not(#_) select.chip.chip-sel { -webkit-appearance: none; 
 select.chip-sel:focus-visible { outline: 2px solid var(--m-primary, #0b57d0) !important; outline-offset: 2px }
 select.chip-sel:not(.warn):not(.good):not(.crit):not(.blue):not(.tkst) { background-color: #e9eef6 !important; color: #444746 !important }
 :root:not(#_)[data-tema="escuro"] select.chip.chip-sel { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23b9c3e6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important }
-:root[data-tema="escuro"] select.chip-sel:not(.warn):not(.good):not(.crit):not(.blue):not(.tkst) { background-color: rgba(153,156,161,0.14) !important; color: #b2c6e6 !important }
+:root[data-tema="escuro"] select.chip-sel:not(.warn):not(.good):not(.crit):not(.blue):not(.tkst) { background-color: rgba(153,156,161,0.14) !important; color: #c4c7c5 !important }
 select.chip-sel option { background: #fff; color: #1f1f1f }
-:root[data-tema="escuro"] select.chip-sel option { background: #1a1a1b; color: #e6ecff }
+:root[data-tema="escuro"] select.chip-sel option { background: #1a1a1b; color: #e3e3e3 }
 /* Valor venal: valores em quatro colunas e a fonte numa linha só no fim */
 .empilha .mini-tbl.vv tr { grid-template-columns: repeat(4, minmax(0, 1fr)) !important }
 .empilha .mini-tbl.vv td:last-child { grid-column: 1 / -1 }
@@ -2101,7 +2101,7 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 /* Área adotada: a fonte acompanha o valor, menor */
 .kv-2 { display: inline !important; font-size: 12px !important; color: var(--m-on-var, #444746) !important; margin: 0 0 0 4px !important }
 .kv-2::before { content: "· " }
-:root[data-tema="escuro"] .kv-2 { color: #859dc4 !important }
+:root[data-tema="escuro"] .kv-2 { color: #c4c7c5 !important }
 /* Listas que viram linhas dentro de um quadro: texto no mesmo recuo do fio */
 .sec .empilha .dt:not(.lista-t) tr, .sec .empilha .mini-tbl tr, .sec-b .empilha .dt:not(.lista-t) tr { padding-left: 0 !important; padding-right: 0 !important }
 .sec .empilha .dt:not(.lista-t) td:has(> .iconbtn), .sec .empilha .mini-tbl td:has(> .iconbtn) { right: -8px !important }
@@ -2109,7 +2109,7 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 @media (max-width: 599px) { .vb-lista.empilha .dt tr { gap: 2px 12px !important } .vb-lista.empilha .dt td[data-l="Válido"] { position: absolute !important; right: 0; top: 10px } .vb-lista.empilha .dt td:first-child { padding-right: 48px !important } }
 /* Categoria da diligência: chip neutro (cores só para situação) */
 .task .chip.cat { background: transparent !important; border: 1px solid var(--m-outline-var, #c4c7c5) !important; color: var(--m-on-var, #444746) !important }
-:root[data-tema="escuro"] .task .chip.cat { border-color: rgba(153,156,161,0.35) !important; color: #b2c6e6 !important }
+:root[data-tema="escuro"] .task .chip.cat { border-color: rgba(153,156,161,0.35) !important; color: #c4c7c5 !important }
 /* Rótulo e valor no desktop: coluna de rótulo mais curta para o valor caber numa linha */
 @media (min-width: 600px) { :root:not(#_) .kvl > .kv { grid-template-columns: clamp(104px, 32%, 150px) minmax(0, 1fr) auto !important } :root:not(#_) .kvl:not(:has(.kv-ed)) > .kv { grid-template-columns: clamp(104px, 32%, 150px) minmax(0, 1fr) !important } }
 /* Indicadores do estudo: blocos tonais, raio 16, sem contorno */
@@ -2139,7 +2139,7 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 }
 /* Contador nos quadros: o mesmo selo das seções */
 .sec-h h2 .h-n { display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 8px; background: var(--m-sc-low, #f0f4f9); font-size: 12px !important; font-weight: 500 !important; vertical-align: 2px; margin-left: 6px !important }
-:root[data-tema="escuro"] .sec-h h2 .h-n { background: rgba(153,156,161,0.14); color: #b2c6e6 }
+:root[data-tema="escuro"] .sec-h h2 .h-n { background: rgba(153,156,161,0.14); color: #c4c7c5 }
 /* Valor venal: anotação sem quebrar e fonte alinhada à primeira coluna */
 .mini-tbl.vv .faint { white-space: nowrap }
 :root:not(#_) .mini-tbl.vv td.vv-f { padding-left: 0 !important }
@@ -2191,7 +2191,7 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 /* Situação nas listas de Terrenos: chips sem bolinha, todos no mesmo formato */
 .dt .chip > .d, .empilha .chip > .d { display: none !important }
 /* Notas de regras no escuro: texto secundário neutro */
-:root[data-tema="escuro"] .lz-lote :is(.muted, .faint, .lz-regra, .lz-r) { color: #859dc4 !important; border-color: #2a2a2c !important }
+:root[data-tema="escuro"] .lz-lote :is(.muted, .faint, .lz-regra, .lz-r) { color: #c4c7c5 !important; border-color: #2a2a2c !important }
 /* Quadro que rola de lado (kanban, abas do estudo): borda direita esmaecida mais visível */
 @media (min-width: 600px) { .board { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 64px), transparent) !important; mask-image: linear-gradient(to right, #000 calc(100% - 64px), transparent) !important } }
 @media (max-width: 599px) { .vb-nav { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent) } }
@@ -2223,7 +2223,7 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 :root:not(#_) .infra .seg3 button[aria-pressed="true"].nao { background: #ffdad6 !important; color: #410e0b }
 :root[data-tema="escuro"]:not(#_) .infra .seg3, :root[data-tema="escuro"]:not(#_) .infra .seg3 button + button { border-color: rgba(149,153,160,0.35) }
 :root[data-tema="escuro"]:not(#_) .infra .seg3 button { color: #c1d9ff }
-:root[data-tema="escuro"]:not(#_) .infra .seg3 button[aria-pressed="true"].nv { background: rgba(128,132,139,0.18) !important; color: #e6ecff }
+:root[data-tema="escuro"]:not(#_) .infra .seg3 button[aria-pressed="true"].nv { background: rgba(128,132,139,0.18) !important; color: #e3e3e3 }
 /* Zoom do mapa no escuro: fundo e contorno dos outros botões redondos */
 :root[data-tema="escuro"] .leaflet-control-zoom { box-shadow: 0 0 0 1px rgba(149,153,160,0.35), 0 6px 16px rgba(0,0,0,.5) !important }
 :root[data-tema="escuro"] .leaflet-control-zoom a { background: #1a1a1b !important }
@@ -2243,10 +2243,10 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
   :root:not(#_) .empilha .mini-tbl.lst2 td.l2 { flex: 1 1 100% !important; color: var(--m-on-var, #444746) }
   :root:not(#_) .empilha .mini-tbl.lst2 td.l0 { display: none !important }
   :root:not(#_) .empilha .mini-tbl.lst2 td:last-child { position: absolute; right: 0; top: 50%; transform: translateY(-50%) }
-  :root[data-tema="escuro"]:not(#_) .empilha .mini-tbl.lst2 td.l2 { color: #859dc4 }
+  :root[data-tema="escuro"]:not(#_) .empilha .mini-tbl.lst2 td.l2 { color: #c4c7c5 }
 }
 /* Estrela do corretor que não é o principal: visível no escuro */
-:root[data-tema="escuro"] .star:not(.on):not([aria-pressed="true"]) { color: #859dc4 !important }
+:root[data-tema="escuro"] .star:not(.on):not([aria-pressed="true"]) { color: #c4c7c5 !important }
 /* Abas do estudo no celular: esmaecido maior na borda */
 @media (max-width: 599px) { :root:not(#_) .vb-nav { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 72px), transparent) !important; mask-image: linear-gradient(to right, #000 calc(100% - 72px), transparent) !important } }
 :root[data-tema="escuro"]:not(#_) .infra .seg3 button[aria-pressed="true"].sim { background: rgba(109,213,140,.16) !important; color: #a6f0bb }
@@ -2261,7 +2261,7 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 .tk-res { display: block; margin-top: 4px; width: 100%; field-sizing: content; min-height: 24px; resize: none; border: 0; border-bottom: 1px solid transparent; border-radius: 0; padding: 2px 0; background: transparent; font: inherit; font-size: 13px; line-height: 20px; color: var(--m-on-var, #444746) }
 .tk-res:hover { border-bottom-color: var(--m-outline, #747775) }
 .tk-res:focus { outline: 0; border-bottom: 2px solid var(--m-primary, #0b57d0) }
-:root[data-tema="escuro"] .tk-res { color: #859dc4; background: transparent !important }
+:root[data-tema="escuro"] .tk-res { color: #c4c7c5; background: transparent !important }
 /* Configurações no celular: setas e lixeira no canto de cima do item; caixas de marcar centradas na altura do campo */
 @media (max-width: 899px) {
   :root:not(#_) :is(.cfg-r.cfg-fase, .cfg-r.cfg-fe, .cfg-r.cfg-sub, .vb-cfg-r):not(.cfg-hd) { position: relative; padding-top: 12px !important }
@@ -2334,14 +2334,14 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 @media (max-width: 599px) { :root:not(#_) .lz-par > .lz-c { justify-content: flex-start !important } }
 /* Fase de entrada: "Sempre ativa" no lugar da caixa */
 .cfg-sempre { font-size: 12px; color: var(--m-on-var, #444746); align-self: center }
-:root[data-tema="escuro"] .cfg-sempre { color: #859dc4 }
+:root[data-tema="escuro"] .cfg-sempre { color: #c4c7c5 }
 /* Configurações › Viabilidade: mais largura para o nome do item; texto do seletor antes da seta */
 @media (min-width: 900px) { :root:not(#_) .vb-cfg-r { grid-template-columns: 40px minmax(240px, 1fr) 150px 138px 64px 72px 48px 40px !important } }
 :root:not(#_) .vb-cfg-r select { padding-right: 30px !important; text-overflow: ellipsis }
 /* Lista de Terrenos no celular: nome mais forte que a subetapa */
 @media (max-width: 599px) { :root:not(#_) .dt.lista-t .t1, :root:not(#_) .empilha .dt .t1 { font-weight: 500 } :root:not(#_) .dt .c-etapa .chip.sub { font-weight: 400 !important } }
 .cfg-nota { margin: 12px 0 0; font-size: 13px; color: var(--m-on-var, #444746) }
-:root[data-tema="escuro"] .cfg-nota { color: #859dc4 }
+:root[data-tema="escuro"] .cfg-nota { color: #c4c7c5 }
 /* Temperatura nas listas: barras maiores e o número ao lado */
 .temp-mini { display: inline-flex; align-items: flex-end; gap: 2px }
 .temp-mini .temp-n { margin-left: 6px; font-size: 13px; font-weight: 500; line-height: 1; color: var(--m-on-var, #444746) }
@@ -2384,7 +2384,7 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 }
 .reus > .reu:last-child { padding-bottom: 0 !important }
 :root:not(#_) .chip.of-1a { background: var(--m-sc-high, #e9eef6) !important; border: 0 !important; color: var(--m-on-var, #444746) !important; height: 24px }
-:root:not(#_)[data-tema="escuro"] .chip.of-1a { background: rgba(153,156,161,0.14) !important; color: #b2c6e6 !important }
+:root:not(#_)[data-tema="escuro"] .chip.of-1a { background: rgba(153,156,161,0.14) !important; color: #c4c7c5 !important }
 :root:not(#_) .board .tk-ter { white-space: normal !important; overflow: hidden; text-overflow: clip; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical }
 :root:not(#_) .kr.kr-fl { justify-content: flex-start; gap: 8px; flex-wrap: wrap }
 :root:not(#_) .iconbtn.lixo:disabled { opacity: .3; cursor: default; background: none !important }
@@ -2447,7 +2447,7 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 .cfg-padrao-w { border-top: 1px solid var(--m-outline-var, #c4c7c5); padding-top: 12px; margin-top: 8px }
 :root[data-tema="escuro"] .cfg-padrao-w { border-top-color: #2a2a2c }
 :root:not(#_) .cfg-padrao-w .cfg-padrao-m { margin-left: -12px; color: var(--m-on-var, #444746) !important; gap: 8px }
-:root[data-tema="escuro"]:not(#_) .cfg-padrao-w .cfg-padrao-m { color: #b2c6e6 !important }
+:root[data-tema="escuro"]:not(#_) .cfg-padrao-w .cfg-padrao-m { color: #c4c7c5 !important }
 :root[data-tema="escuro"]:not(#_) .kcard.aprov { outline: 1px solid rgba(255,223,153,.45) !important; outline-offset: -1px }
 :root:not(#_) .ficha-sheet .fs-b .sec > .sec-h { min-height: 40px !important; padding-top: 4px; padding-bottom: 0 }
 :root:not(#_) .ficha-sheet .fs-b { padding-left: 0 !important; padding-right: 0 !important }
@@ -2500,7 +2500,7 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
   :root:not(#_) .doc > .da > .btn.text { font-size: 0 !important; gap: 0 !important; width: 40px; height: 40px; min-width: 40px; padding: 0 !important; justify-content: center; margin: 0 !important }
   :root:not(#_) .doc > .da > .btn.text svg { width: 20px; height: 20px }
   :root:not(#_) .empilha .mini-tbl.lst2 td:not(.l1) { color: var(--m-on-var, #444746) }
-  :root[data-tema="escuro"]:not(#_) .empilha .mini-tbl.lst2 td:not(.l1) { color: #859dc4 !important }
+  :root[data-tema="escuro"]:not(#_) .empilha .mini-tbl.lst2 td:not(.l1) { color: #c4c7c5 !important }
 }
 @media (max-width: 599px) { :root:not(#_) .doc .ds { white-space: normal !important; overflow: visible !important; text-overflow: clip !important } }
 
@@ -2532,8 +2532,8 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 .c-fe .fe-fls { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px }
 .c-fe .fe-fl { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border-radius: 8px; font-size: 12px; font-weight: 500; white-space: nowrap; background: #e9eef6; color: #444746 }
 .c-fe .fe-warn { background: #ffdf99; color: #3d2c00 } .c-fe .fe-ap { background: #d3e3fd; color: #041e49 }
-:root[data-tema="escuro"] .c-fe .fe-f { color: #859dc4 } :root[data-tema="escuro"] .c-fe .fe-e { color: #e6ecff }
-:root[data-tema="escuro"] .c-fe .fe-fl { background: rgba(153,156,161,0.14); color: #b2c6e6 } :root[data-tema="escuro"] .c-fe .fe-warn { background: rgba(245,196,81,.16); color: #ffd479 } :root[data-tema="escuro"] .c-fe .fe-ap { background: rgba(149,153,160,0.18); color: #c1d9ff }
+:root[data-tema="escuro"] .c-fe .fe-f { color: #c4c7c5 } :root[data-tema="escuro"] .c-fe .fe-e { color: #e3e3e3 }
+:root[data-tema="escuro"] .c-fe .fe-fl { background: rgba(153,156,161,0.14); color: #c4c7c5 } :root[data-tema="escuro"] .c-fe .fe-warn { background: rgba(245,196,81,.16); color: #ffd479 } :root[data-tema="escuro"] .c-fe .fe-ap { background: rgba(149,153,160,0.18); color: #c1d9ff }
 :root[data-tema="escuro"] .c-fe .fe-st.perdido { color: #ffb4ab } :root[data-tema="escuro"] .c-fe .fe-st.comprado, :root[data-tema="escuro"] .c-fe .fe-st.concluido { color: #6dd58c } :root[data-tema="escuro"] .c-fe .fe-st.stand_by { color: #ffd479 }
 :root:not(#_) .empilha .dt.lista-t .c-etapa.c-fe { flex-direction: column !important }
 
@@ -2869,7 +2869,7 @@ body.menu-min .compose { margin-bottom: 12px }
 :root[data-tema="escuro"] body.menu-min .nav-item[aria-current="page"] { background: transparent !important; box-shadow: none !important }
 :root[data-tema="escuro"] body.menu-min .nav-item:hover .ri { background: rgba(255,255,255,.08) }
 :root[data-tema="escuro"] body.menu-min .nav-item[aria-current="page"] .ri { background: rgba(128,132,139,0.1); box-shadow: inset 0 0 0 1px rgba(149,153,160,0.5) }
-:root[data-tema="escuro"] body.menu-min .nav-item .rot { color: #859dc4 }
+:root[data-tema="escuro"] body.menu-min .nav-item .rot { color: #c4c7c5 }
 :root[data-tema="escuro"] body.menu-min .nav-item[aria-current="page"] .rot { color: #c1d9ff }
 /* Quadro em tela cheia (botão Tela cheia na seção Tarefas da ficha e na página Tarefas; pedido do Moisés, 29/out/2026): cobre a página acima do menu e abaixo das janelas */
 .tk-full.on { position: fixed; inset: 0; z-index: 25; margin: 0 !important; border-radius: 0 !important; border: 0 !important; background: var(--bg, #f8fafd) !important; overflow: auto; padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px) }
@@ -2933,10 +2933,10 @@ html[data-tema="escuro"] .tk-full.on { background: #131314 !important }
 }
 /* escuro */
 html[data-tema="escuro"]:not(#_) .tkb .tk-col { background: #1a1a1b; box-shadow: inset 0 0 0 1px rgba(149,153,160,0.12) }
-html[data-tema="escuro"]:not(#_) .tkb .tkl-h { color: #d9e7ff } html[data-tema="escuro"]:not(#_) .tkb .tkl-h .n { color: #859dc4 }
+html[data-tema="escuro"]:not(#_) .tkb .tkl-h { color: #d9e7ff } html[data-tema="escuro"]:not(#_) .tkb .tkl-h .n { color: #c4c7c5 }
 html[data-tema="escuro"]:not(#_) .tkb .tk { background: #2a2a2c; box-shadow: 0 1px 1px rgba(0,0,0,.4) }
 html[data-tema="escuro"]:not(#_) .tkb .tk:hover { box-shadow: inset 0 0 0 2px #7899d1 }
-html[data-tema="escuro"]:not(#_) .tkb :is(.tk-t, .tk.concluida .tk-t) { color: #e3e8ff } html[data-tema="escuro"]:not(#_) .tkb .tk-ter { color: #859dc4 }
+html[data-tema="escuro"]:not(#_) .tkb :is(.tk-t, .tk.concluida .tk-t) { color: #e3e8ff } html[data-tema="escuro"]:not(#_) .tkb .tk-ter { color: #c4c7c5 }
 html[data-tema="escuro"]:not(#_) .tkb .tk-b { color: #a0b7dc } html[data-tema="escuro"]:not(#_) .tkb .tk-pr { background: rgba(196,199,197,.16); color: #c1d9ff }
 html[data-tema="escuro"]:not(#_) .tkb .tk-pr.alta { background: rgba(255,120,110,.22); color: #ffdad6 }
 html[data-tema="escuro"]:not(#_) .tkb .tk-avs .avatar + .avatar { box-shadow: 0 0 0 2px #2a2a2c }
@@ -3014,10 +3014,10 @@ html[data-tema="escuro"] .cr-agr { background: rgba(128,132,139,0.1); border-col
 html[data-tema="escuro"] :is(.cr-d.hoje, .cr-d.hoje b) { color: #7899d1 } html[data-tema="escuro"] .cr-hoje { background: #7899d1 }
 html[data-tema="escuro"] .cr-bar, html[data-tema="escuro"] .cr-marco { --c: #7899d1; --f: rgba(149,153,160,0.18) }
 html[data-tema="escuro"] :is(.cr-bar, .cr-marco).st-fazendo { --c: #d59be0; --f: rgba(213,155,224,.18) } html[data-tema="escuro"] :is(.cr-bar, .cr-marco).st-aguardando { --c: #fdd663; --f: rgba(253,214,99,.16) }
-html[data-tema="escuro"] :is(.cr-bar, .cr-marco).st-feito { --c: #6dd58c; --f: rgba(109,213,140,.18) } html[data-tema="escuro"] :is(.cr-bar, .cr-marco).st-pausa { --c: #859dc4; --f: rgba(153,156,161,0.15) }
+html[data-tema="escuro"] :is(.cr-bar, .cr-marco).st-feito { --c: #6dd58c; --f: rgba(109,213,140,.18) } html[data-tema="escuro"] :is(.cr-bar, .cr-marco).st-pausa { --c: #c4c7c5; --f: rgba(153,156,161,0.15) }
 html[data-tema="escuro"] .cr-base, html[data-tema="escuro"] .cr-lg-b { background: #565657 } html[data-tema="escuro"] .cr-lg-m { background: #7899d1 }
 html[data-tema="escuro"] .cr-atr { background: rgba(255,120,110,.2); color: #ffdad6 } html[data-tema="escuro"] .cr-lbenv { color: #c1d9ff }
-html[data-tema="escuro"] .cr-setas path { stroke: #859dc4 } html[data-tema="escuro"] .cr-setas path.cr-pt { fill: #859dc4 }
+html[data-tema="escuro"] .cr-setas path { stroke: #c4c7c5 } html[data-tema="escuro"] .cr-setas path.cr-pt { fill: #c4c7c5 }
 .tk-sec.cr-on .tk-sb { padding-bottom: 16px }
 /* modelos */
 .cr-ms { display: flex; flex-direction: column; gap: 8px } .cr-m { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 12px; border: 1px solid var(--borda, #c4c7c5); border-radius: 12px }
@@ -3375,13 +3375,13 @@ html[data-tema="escuro"] :is(.cr-d.fds, .cr-fundo i) { background: rgba(149,153,
   .it-tr { grid-template-columns: 1fr 1fr; } .it-tr > span:nth-child(2) { grid-column: 1 / -1; order: 3 } .it-th { display: none }
   .it-tr .ce { justify-content: flex-start } .it-tr .ce em { display: inline; font-style: normal; font-size: 13px }
 }
-html[data-tema="escuro"] .it-ch, html[data-tema="escuro"] .it-th { background: #1a1a1b; color: #859dc4 }
+html[data-tema="escuro"] .it-ch, html[data-tema="escuro"] .it-th { background: #1a1a1b; color: #c4c7c5 }
 html[data-tema="escuro"] .it-cr, html[data-tema="escuro"] .it-tr { border-color: #2a2a2c }
 html[data-tema="escuro"] .it-ct, html[data-tema="escuro"] .it-tab, html[data-tema="escuro"] .it-vq-box, html[data-tema="escuro"] .it-seg, html[data-tema="escuro"] .it-seg button, html[data-tema="escuro"] .it-vch, html[data-tema="escuro"] .it-cpop { border-color: #434345 }
 html[data-tema="escuro"] .it-grp { background: #19191a; border-color: #434345 }
 html[data-tema="escuro"] .it-seg button.on, html[data-tema="escuro"] .it-vch.on { background: rgba(128,132,139,0.1); color: #c1d9ff; border-color: rgba(149,153,160,0.5) }
 :root[data-tema="escuro"]:not(#_) .it-tit, :root[data-tema="escuro"]:not(#_) .it-busca { background: #19191a; color: #e3e3e3; border-color: #434345 }
-html[data-tema="escuro"] .it-db small { color: #859dc4 }
+html[data-tema="escuro"] .it-db small { color: #c4c7c5 }
 .it-c > .tkm-pill, .it-c > input, .it-c > select { flex: 0 1 200px; min-width: 0; width: auto !important }
 :root:not(#_) .it-vq-box .tkm-pill, :root:not(#_) .it-vq-box .it-cb { height: 36px; border: 1px solid #c4c7c5; border-radius: 8px; padding: 0 10px; font: inherit; font-size: 14px; background: #fff; color: #1f1f1f; width: auto; min-width: 0; box-shadow: none }
 :root:not(#_) .it-vq-box select.tkm-pill { padding-right: 28px; max-width: 200px }
@@ -3519,7 +3519,7 @@ html[data-tema="escuro"] .tkr-pz { border-color: #414143; color: #c1d9ff }
 .rp-pop { z-index: 1002 } .rp-ic { width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; color: #444746 }
 input.rp-flut { height: 36px; padding: 0 10px; border: 1px solid #0b57d0; border-radius: 8px; background: #fff; color: #1f1f1f; font: inherit; font-size: 14px; box-shadow: 0 4px 16px rgba(0,0,0,.14) }
 html[data-tema="escuro"] input.rp-flut { background: #1a1a1b; color: #f2f5ff; border-color: #7899d1 }
-html[data-tema="escuro"] .rp-ic { color: #859dc4 }
+html[data-tema="escuro"] .rp-ic { color: #c4c7c5 }
 @media (max-width: 600px) { .tkr .fields { grid-template-columns: 1fr } .tkr-prz input { flex-basis: 100% } }
 .tkr-dl { margin-top: -6px } .tkr-pad { margin: 0; font-size: 13px }
 .tkr-vis { border: 0; padding: 0; margin: 0 } .tkr-vis legend { font-size: 12px; color: #444746; padding: 0; margin-bottom: 6px }
@@ -3582,7 +3582,7 @@ html[data-tema="escuro"] .fm-rd input, html[data-tema="escuro"] .fm-in { color-s
   .jn-r { grid-template-columns: 24px minmax(0, 1fr) auto } .jn-rr { grid-column: 2 / -1 } .jn-rs { max-width: 100%; width: 100% }
 }
 html[data-tema="escuro"] .jn-q { background: #19191a; border-color: rgba(149,153,160,0.28) } html[data-tema="escuro"] .jn-q.ok { border-color: rgba(149,153,160,0.14) }
-html[data-tema="escuro"] .jn-qt { color: #f2f5ff } html[data-tema="escuro"] .jn-gt { color: #859dc4 } html[data-tema="escuro"] .jn-bloco { border-color: #2a2a2c }
+html[data-tema="escuro"] .jn-qt { color: #f2f5ff } html[data-tema="escuro"] .jn-gt { color: #c4c7c5 } html[data-tema="escuro"] .jn-bloco { border-color: #2a2a2c }
 html[data-tema="escuro"] .jn-selo { background: rgba(179,38,30,.25); color: #ffb4ab } html[data-tema="escuro"] .jn-selo.justifica { background: rgba(122,89,0,.35); color: #ffdf99 }
 html[data-tema="escuro"] .jn-rv { background: rgba(128,132,139,0.1); color: #c1d9ff; border: 1px solid rgba(149,153,160,0.5) } html[data-tema="escuro"] .jn-rv.avisa { background: rgba(122,89,0,.25); color: #ffdf99; border-color: rgba(255,223,153,.3) } html[data-tema="escuro"] .jn-rv.bloqueia { background: rgba(179,38,30,.2); color: #ffb4ab; border-color: rgba(255,180,171,.3) }
 html[data-tema="escuro"] .jn-et button { color: #c1d9ff } html[data-tema="escuro"] .jn-et button[aria-pressed="true"] { background: rgba(128,132,139,0.1); box-shadow: inset 0 0 0 1px rgba(149,153,160,0.5) }
@@ -3606,9 +3606,9 @@ html[data-tema="escuro"] .jn-rcr select { background: #19191a; border-color: #41
 :root[data-tema="escuro"]{
  --m-primary:#a8c7fa; --m-on-primary:#062e6f; --m-pc:#004a77; --m-on-pc:#c2e7ff; --m-sc:#004a77; --m-on-sc:#c2e7ff;
  --m-surface:#131314; --m-sc-low:#1e1f20; --m-sc-high:#282a2c; --m-card:#1e1f20;
- --m-on-surface:#e3e3e3; --m-on-var:#c4c7c5; --m-outline:#8e918f; --m-outline-var:0.12;
- --t-mapa:#131314; --t-hover:rgba(227,227,227,.08); --rolagem:0.12; --rolagem-h:#8e918f;
- --branco:#1e1f20; --azul-gelo:#282a2c; --cinza-claro:0.12; --cinza-escuro:#c4c7c5; --marinho:#e3e3e3;
+ --m-on-surface:#e3e3e3; --m-on-var:#c4c7c5; --m-outline:#8e918f; --m-outline-var:#444746;
+ --t-mapa:#131314; --t-hover:rgba(227,227,227,.08); --rolagem:#444746; --rolagem-h:#8e918f;
+ --branco:#1e1f20; --azul-gelo:#282a2c; --cinza-claro:#444746; --cinza-escuro:#c4c7c5; --marinho:#e3e3e3;
  --info-fundo:#004a77; --info-marca:#a8c7fa; --azul-bkm:#a8c7fa; --fase-enviada:#a8c7fa;
 }
 :root[data-tema="escuro"] body{background:#131314!important;color:#e3e3e3}
@@ -3617,6 +3617,8 @@ html[data-tema="escuro"] .jn-rcr select { background: #19191a; border-color: #41
 :root[data-tema="escuro"] .top{border-bottom:0!important}
 :root[data-tema="escuro"] .bnav{border-top:1px solid transparent!important;backdrop-filter:none}
 :root[data-tema="escuro"] :is(.card,.sec,.tbl,.dt,.kcard){background:#1e1f20!important;border:1px solid #2d2f31!important}
+/* tabela dentro de quadro não ganha uma segunda moldura (o texto parecia colado na borda) */
+:root[data-tema="escuro"] :is(.sec,.card,.pn,.sec-b) .dt{border:0!important;background:transparent!important}
 :root[data-tema="escuro"] .pn{--pn-bg:#1e1f20; border-color:#2d2f31}
 :root[data-tema="escuro"] .col{background:#1b1b1c!important;border-color:transparent!important}
 :root[data-tema="escuro"] .kcard{box-shadow:none!important}
@@ -3646,7 +3648,7 @@ html[data-tema="escuro"] .jn-rcr select { background: #19191a; border-color: #41
 :root[data-tema="escuro"] .kpi .v{color:#e3e3e3!important;text-shadow:none!important}
 :root[data-tema="escuro"] .avatar{background:#7cacf8!important;color:#062e6f!important}
 :root[data-tema="escuro"] .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.82) contrast(.92) saturate(.35)!important}
-:root[data-tema="escuro"] .leaflet-bar a{background:#282a2c!important;color:#e3e3e3!important;border-color:0.12!important}
+:root[data-tema="escuro"] .leaflet-bar a{background:#282a2c!important;color:#e3e3e3!important;border-color:#444746!important}
 :root[data-tema="escuro"] .mp-barra{background:#1e1f20!important}
 :root[data-tema="escuro"] .bar{background:#333537!important}
 :root[data-tema="escuro"] .bar span{background:#a8c7fa!important;box-shadow:none!important}
@@ -3659,3 +3661,42 @@ html[data-tema="escuro"] .jn-rcr select { background: #19191a; border-color: #41
 /* fundo atrás de janelas e do popup da viabilidade */
 :root[data-tema="escuro"] :is(.scrim,.vb-pop-fundo){background:rgba(0,0,0,.6)!important}
 :root[data-tema="escuro"] .vb-pop-d{background:#1e1f20!important}
+
+/* ==== Respiro (2/nov/2026): margens e espaçamentos no padrão Material 3 ==== */
+/* Botão flutuante: estendido no topo, só o + ao rolar para baixo */
+.fab { transition: padding .2s, min-width .2s, gap .2s; min-height: 56px }
+.fab .fab-t { overflow: hidden; white-space: nowrap; max-width: 200px; transition: max-width .2s, opacity .2s }
+body.fab-min .fab { padding: 0 !important; min-width: 56px; justify-content: center; gap: 0 }
+body.fab-min .fab .fab-t { max-width: 0; opacity: 0 }
+/* Lista de terrenos no celular: a linha ocupa o quadro de borda a borda, com 16 px de texto
+   para dentro (o destaque da linha não encosta no texto) */
+@media (max-width: 599px) {
+  .sec.lista { padding-left: 0 !important; padding-right: 0 !important; overflow: hidden }
+  .sec.lista .empilha .dt tbody tr { padding: 14px 16px !important }
+  .sec.lista .empilha .dt.lista-t td.col-valor { padding-left: 8px !important }
+}
+/* Título de gráfico do Dashboard quebra em linhas em vez de ser cortado no celular */
+.graf .card-h > h2 { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; min-width: 0 }
+.graf .card-h { align-items: flex-start }
+/* Linhas de edição (listas, etiquetas, campos) no celular: o nome nunca encolhe até sumir; a linha quebra (nome em cima, o resto embaixo) em vez de vazar da tela */
+@media (max-width: 599px) {
+  .tkl-r { flex-wrap: wrap; row-gap: 8px }
+  .tkl-r > input:not([type=checkbox]) { flex: 1 1 180px }
+  .tkl-r + :is(form, .tkm-nf) { margin-top: 16px !important }
+  .tkl-r + .tkl-r { margin-top: 12px !important; padding-top: 12px; border-top: 1px solid var(--m-outline-var, #c4c7c5) }
+  .cpo-cfg .tkl-r { padding: 8px 0 }
+  .cpo-cfg .tkl-r > input:first-child { flex: 1 1 100% }
+  .cpo-cfg .tkl-r > select { flex: 1 1 120px; min-width: 0 }
+  .cpo-ops { padding-left: 0 }
+}
+/* Aviso (snackbar) no celular aparece acima do botão flutuante, nunca por cima dele */
+@media (max-width: 899px) {
+  body:not([data-rota="mapa"]):not(.ro) .toast { bottom: calc(160px + env(safe-area-inset-bottom, 0px)) }
+}
+/* Cartão da tarefa: título alinhado à trilha e ao "Concluída em"; rótulo da propriedade na altura da
+   primeira linha do valor (Etapa do funil com subetapa embaixo não fica com o rótulo no meio) */
+:root:not(#_) .tkm input.tkm-tit { margin-left: -8px }
+.tkm-feita { padding-left: 28px }
+@media (max-width: 899px) { .tkm-feita { padding-left: 16px } }
+.tkm-p { align-items: start }
+.tkm-pl, .tkm-pv { min-height: 44px }
