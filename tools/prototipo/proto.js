@@ -285,7 +285,7 @@ const save=()=>{try{if(typeof audit==='function')audit()}catch(e){console.error(
 /* menu lateral começa encolhido (só ícone e rótulo curto); aberto só se a pessoa abriu */
 let menuMin=true;try{menuMin=localStorage.getItem('bkm-terrenos-menu')!=='aberto'}catch(e){}
 // Tema: claro, escuro ou auto (segue o sistema). Preferência por navegador.
-const TEMAS=[['claro','Claro','#f8fafd'],['escuro','Escuro','linear-gradient(135deg,#3b82f6,#7c5cff)'],['auto','Automático (segue o sistema)','linear-gradient(135deg,#f8fafd 50%,#0d1436 50%)']];
+const TEMAS=[['claro','Claro','#f8fafd'],['escuro','Escuro','#131314'],['auto','Automático (segue o sistema)','linear-gradient(135deg,#f8fafd 50%,#131314 50%)']];
 let TEMA='claro';try{TEMA=localStorage.getItem('bkm-terrenos-tema')||'claro'}catch(e){}
 if(!['claro','escuro','auto'].includes(TEMA))TEMA='escuro'; // 'marinho' (versão anterior) virou o escuro
 const mqEscuro=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
