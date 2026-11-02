@@ -15,6 +15,47 @@ create table app.empresa_dominios (
 );
 create index on app.empresa_dominios (empresa_id);
 
+-- Revisão de 2/nov/2026: o administrador de outra empresa incluía um usuário
+-- da BKM na equipe dele (e daí mudava o @ dele) e cadastrava gmail.com como
+-- domínio, abrindo o login a qualquer conta. Agora a equipe só recebe quem tem
+-- e-mail de um domínio da empresa (ou do mesmo domínio de quem inclui), e o
+-- domínio cadastrado é o do e-mail de quem cadastra, nunca um e-mail gratuito.
+create or replace function app.dominio_do_usuario(p_user uuid)
+returns text language sql stable security definer set search_path = '' as $$
+  select lower(split_part(email, '@', 2)) from auth.users where id = p_user $$;
+revoke all on function app.dominio_do_usuario(uuid) from public;
+
+create or replace function app.tg_membro_dominio()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare v text;
+begin
+  if auth.uid() is null or new.user_id = auth.uid() then return new; end if;
+  if tg_op = 'UPDATE' and new.user_id = old.user_id and new.empresa_id = old.empresa_id then return new; end if;
+  v := app.dominio_do_usuario(new.user_id);
+  if v is null or not (v = app.dominio_do_usuario(auth.uid())
+                       or exists (select 1 from app.empresa_dominios d where d.empresa_id = new.empresa_id and d.dominio = v)) then
+    raise exception 'Só entra na equipe quem tem e-mail de um domínio da empresa' using errcode = '42501';
+  end if;
+  return new;
+end $$;
+create trigger t_dominio before insert or update on app.membros for each row execute function app.tg_membro_dominio();
+
+create or replace function app.tg_dominio_empresa()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if auth.uid() is null then return new; end if;
+  if new.dominio in ('gmail.com','googlemail.com','hotmail.com','hotmail.com.br','outlook.com','outlook.com.br','live.com','msn.com',
+                     'yahoo.com','yahoo.com.br','icloud.com','me.com','mac.com','aol.com','proton.me','protonmail.com',
+                     'bol.com.br','uol.com.br','terra.com.br','ig.com.br','globo.com','globomail.com','zipmail.com.br','r7.com') then
+    raise exception 'Domínio de e-mail gratuito não é domínio de empresa' using errcode = '22023';
+  end if;
+  if new.dominio is distinct from app.dominio_do_usuario(auth.uid()) then
+    raise exception 'Cadastre o domínio do seu próprio e-mail' using errcode = '42501';
+  end if;
+  return new;
+end $$;
+create trigger t_dominio before insert or update on app.empresa_dominios for each row execute function app.tg_dominio_empresa();
+
 -- Perfil do usuário, um só para todas as empresas. Nome e foto vêm do Google e
 -- se atualizam a cada login; o @ nasce do e-mail e só o administrador muda.
 create table app.usuarios (
@@ -114,7 +155,9 @@ language plpgsql security definer set search_path = ''
 as $$
 declare v text := lower(trim(both '@ ' from coalesce(p_arroba, '')));
 begin
-  if not exists (select 1 from app.membros m where m.user_id = p_user and app.eh_administrador(m.empresa_id)) then
+  -- o @ é um só para todas as empresas: muda só o administrador da empresa do domínio do e-mail da pessoa
+  if not exists (select 1 from app.membros m join app.empresa_dominios d on d.empresa_id = m.empresa_id and d.dominio = app.dominio_do_usuario(p_user)
+                  where m.user_id = p_user and app.eh_administrador(m.empresa_id)) then
     raise exception 'Só o administrador muda o @ de alguém da equipe' using errcode = '42501';
   end if;
   if v !~ '^[a-z0-9][a-z0-9._-]{0,39}$' then
@@ -126,7 +169,8 @@ begin
   update app.usuarios set arroba = v where user_id = p_user;
   insert into app.auditoria (empresa_id, tabela, registro_id, acao, antes, depois)
   select m.empresa_id, 'usuarios', p_user, 'update', null, jsonb_build_object('arroba', v)
-  from app.membros m where m.user_id = p_user and app.eh_administrador(m.empresa_id);
+  from app.membros m join app.empresa_dominios d on d.empresa_id = m.empresa_id and d.dominio = app.dominio_do_usuario(p_user)
+  where m.user_id = p_user and app.eh_administrador(m.empresa_id);
   return v;
 end $$;
 

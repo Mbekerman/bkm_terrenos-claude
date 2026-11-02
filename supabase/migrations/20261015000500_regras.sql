@@ -1776,6 +1776,11 @@ begin
   select * into d from app.documentos where id = p_documento for update;
   if not found then raise exception 'Documento não encontrado' using errcode = 'P0002'; end if;
   perform app.exigir_editor(d.empresa_id);
+  -- quem enviou a versão atual não a valida sozinho; o diretor pode (decisão do Moisés, 2/nov/2026)
+  if p_aprovado and auth.uid() = (select enviado_por from app.documento_versoes where documento_id = d.id order by versao desc limit 1)
+     and app.papel(d.empresa_id) is distinct from 'diretor' then
+    raise exception 'Quem enviou o documento não o valida: peça a outra pessoa' using errcode = '42501';
+  end if;
   update app.documentos set situacao = case when p_aprovado then 'validado' else 'rejeitado' end,
          revisado_por = auth.uid(), revisado_em = now() where id = d.id;
 end $$;
@@ -1989,6 +1994,24 @@ begin
     raise exception 'Encerre os processos abertos antes de arquivar o terreno' using errcode = '22023';
   end if;
   update app.terrenos set situacao_cadastral = 'arquivado', arquivado_em = now(), motivo_arquivamento = p_motivo where id = t.id;
+end $$;
+
+-- Desarquivar (revisão de 2/nov/2026: o terreno arquivado não tinha volta):
+-- gestor, diretor ou o administrador. O arquivamento fica no histórico.
+create or replace function app.reativar_terreno(p_terreno uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos;
+begin
+  select * into t from app.terrenos where id = p_terreno for update;
+  if not found or t.empresa_id not in (select app.minhas_empresas()) then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  if not (app.eh_gestor(t.empresa_id) or app.eh_administrador(t.empresa_id)) then
+    raise exception 'Só gestor, diretor ou o administrador desarquivam o terreno' using errcode = '42501';
+  end if;
+  if t.situacao_cadastral <> 'arquivado' then raise exception 'O terreno não está arquivado' using errcode = '22023'; end if;
+  update app.terrenos set situacao_cadastral = 'ativo', arquivado_em = null, motivo_arquivamento = null where id = t.id;
 end $$;
 
 -- ---------------------------------------------------------------------
@@ -2660,5 +2683,5 @@ grant execute on function
   app.registrar_proposta(uuid, text, numeric, text, text, date, date, text), app.atualizar_status_proposta(uuid, text),
   app.vincular_viabilidade(uuid, text, numeric, numeric, uuid),
   app.registrar_documento(uuid, text, text, text, uuid, uuid, uuid, text, bigint, date, uuid), app.revisar_documento(uuid, boolean),
-  app.arquivar_terreno(uuid, text)
+  app.arquivar_terreno(uuid, text), app.reativar_terreno(uuid)
 to authenticated;
