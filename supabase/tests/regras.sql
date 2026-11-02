@@ -2242,7 +2242,6 @@ select pg_temp.ok(fluxo.pendencias_conclusao(:'kp') = array['campos'], 'campo do
 select pg_temp.falha(format($$update fluxo.tarefas set concluida_em = now() where id = %L$$, :'kp'), 'com o campo em branco que bloqueia, não conclui');
 select pg_temp.falha(format($$select fluxo.concluir_justificando(%L, 'Vou ver depois')$$, :'kp'), 'item que bloqueia: o analista não conclui nem com justificativa');
 select pg_temp.como(:'gestor');
-select pg_temp.falha(format($$select fluxo.concluir_justificando(%L, 'Pode ir')$$, :'kp'), 'item que bloqueia trava também o gestor');
 select pg_temp.falha(format($$update fluxo.tarefa_itens set regra_branco = 'livre' where tarefa_id = %L$$, :'kp'), 'só diretor, administrador e quem criou mudam a regra do item');
 select pg_temp.falha(format($$delete from fluxo.tarefa_itens where tarefa_id = %L$$, :'kp'), 'item com regra não sai pela mão de quem não configura o cartão');
 insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave) values (:'emp', :'kp', 'oferta.forma_pagamento_pedida');
@@ -2280,6 +2279,9 @@ select fluxo.copiar_tarefa(:'kd', pg_temp.lista(:'tcd', 'Fazer'), 'Contrato (có
 select pg_temp.ok((select regra_branco = 'bloqueia' and condicao is not null from fluxo.tarefa_itens where tarefa_id = :'kdc' and chave = 'oferta.corretor_id')
   and (select regra_branco = 'bloqueia' from fluxo.checklist_itens i join fluxo.checklists c on c.id = i.checklist_id where c.tarefa_id = :'kdc'),
   'a cópia leva os itens e a regra de cada um');
+select pg_temp.como(:'gestor');
+select pg_temp.ok(fluxo.concluir_justificando(:'kdc', 'Certidão pedida ao cartório') = 'concluida', 'o gestor também passa pelo item que bloqueia, com justificativa (como no funil)');
+select pg_temp.ok((select libera_bloqueio from fluxo.conclusao_justificativas where tarefa_id = :'kdc'), 'o registro diz que o gestor passou pelo bloqueio');
 select pg_temp.como(:'leitor');
 select pg_temp.falha(format($$select app.gravar_campo(%L, 'terreno.area_documental_m2', '1600')$$, :'tcd'), 'leitura não grava campo pelo cartão');
 \echo '# recorrência (fluxo, bloco 4)'

@@ -7832,8 +7832,8 @@ document.addEventListener('submit',e=>{const f=e.target,n=f.dataset?.form;if(n!=
    - Aba Configuração do cartão (diretor, administrador e quem criou): para
      cada item, a regra se estiver em branco ao concluir (pode concluir,
      com justificativa, não conclui) e a condição "Vale quando...".
-   - "Não conclui" trava analista e gestor; o diretor conclui com
-     justificativa. Toda justificativa fica no histórico.
+   - "Não conclui" trava o analista; gestor e diretor concluem com
+     justificativa (2/nov/2026, como no funil). Toda justificativa fica no histórico.
    - Condição: + Condição (busca entre os campos marcados para condição),
      operador pelo tipo, valor (vários na lista), "todas" ou "qualquer uma",
      e um nível de grupo (+ Grupo). Em branco nunca satisfaz nada além de
@@ -7936,6 +7936,7 @@ function itCondErro(c,nivel=0){if(!c)return null;if(!(c.itens||[]).length)return
 
 /* ---------- itens do cartão ---------- */
 const itDir=()=>membro(me()).papel==='diretor';
+const itSup=()=>['gestor','diretor'].includes(membro(me()).papel);
 const itConfigura=(t,k)=>UI.role!=='Leitura'&&(itDir()||ehAdmin(me())||k.criadoPor===me());
 function itNorm(k){k.itens=k.itens||[];Object.keys(k.campos||{}).forEach(cid=>{if(k.campos[cid]!=null&&!k.itens.some(i=>i.campo===cid))k.itens.push({id:uid(),campo:cid,regra:'livre',cond:null})});return k.itens}
 const itCampo=i=>i.campo?cpoCampos().find(c=>c.id===i.campo):null;
@@ -7948,19 +7949,19 @@ function itBranco(t,k){const r=[];itNorm(k).forEach(i=>{if(i.regra==='livre'||!i
 function itMsgBloq(bl){const ck=bl.filter(x=>x.tipo==='checklist'),cp=bl.filter(x=>x.tipo!=='checklist');
   if(!cp.length)return 'Conclua os itens do checklist antes de concluir a tarefa.';
   const p=`Preencha ${cp.length>1?'os campos obrigatórios':'o campo obrigatório'} antes de concluir: ${cp.map(x=>x.nome).join(', ')}.`;return ck.length?p+' E conclua os itens do checklist.':p}
-/* pode concluir com justificativa? (há item em branco e nada que só o diretor passe, ou é o diretor; nada além dos itens impede) */
-function itJustPode(t,k){if(UI.justOk===k.id)return false;const b=itBranco(t,k);if(!b.length)return false;if(b.some(x=>x.regra==='bloqueia')&&!itDir())return false;
+/* pode concluir com justificativa? (há item em branco e nada que só gestor ou diretor passe, ou é um deles; nada além dos itens impede) */
+function itJustPode(t,k){if(UI.justOk===k.id)return false;const b=itBranco(t,k);if(!b.length)return false;if(b.some(x=>x.regra==='bloqueia')&&!itSup())return false;
   UI.justOk=k.id;try{return !apBloqueio(t,k)}finally{UI.justOk=null}}
 function itJustAviso(t,k,fn){const b=itBranco(t,k),dir=b.some(x=>x.regra==='bloqueia');document.querySelector('.it-just-f')?.remove();
   const f=document.createElement('div');f.className='cr-aviso-f it-just-f';f.innerHTML=`<form class="cr-aviso" role="alertdialog" aria-modal="true" aria-labelledby="it-just-t"><h3 id="it-just-t">Concluir com ${b.length>1?'itens':'item'} em branco</h3>
     <ul class="it-just-l">${b.map(x=>`<li>${esc(x.nome)} <span class="chip ${x.regra==='bloqueia'?'st-crit':'st-warn'}">${x.regra==='bloqueia'?'não conclui':'pede justificativa'}</span></li>`).join('')}</ul>
-    ${dir?'<p class="faint">Como diretor, você pode concluir mesmo com o que bloqueia. Fica no histórico.</p>':''}
+    ${dir?`<p class="faint">Como ${itDir()?'diretor':'gestor'}, você pode concluir mesmo com o que bloqueia. Fica no histórico.</p>`:''}
     <label for="it-just-x" class="it-just-r">Justificativa</label><textarea id="it-just-x" name="just" required placeholder="Por que concluir assim? (obrigatório)"></textarea>
     <div class="cr-av-b"><button type="button" class="btn" data-just="nao">Cancelar</button><button type="submit" class="btn primary">Concluir</button></div></form>`;
   const fecha=()=>{f.remove();document.removeEventListener('keydown',esc_,true)},esc_=e=>{if(e.key==='Escape'){e.stopImmediatePropagation();fecha();render()}};
   f.addEventListener('click',e=>{if(e.target.closest('[data-just=nao]')||e.target===f){e.stopPropagation();fecha();render()}});
   f.querySelector('form').addEventListener('submit',e=>{e.preventDefault();e.stopPropagation();const tx=f.querySelector('textarea').value.trim();if(!tx){toast('Escreva a justificativa.',true);return}fecha();
-    (k.justs=k.justs||[]).push({em:agora(),por:me(),texto:tx,itens:b,libera:dir&&itDir()});
+    (k.justs=k.justs||[]).push({em:agora(),por:me(),texto:tx,itens:b,libera:dir&&itSup()});
     log(t,`Tarefa "${k.titulo}": concluída com ${b.length>1?'itens':'item'} em branco (${b.map(x=>x.nome).join(', ')}). Justificativa: ${tx}`);
     UI.justOk=k.id;try{fn()}finally{UI.justOk=null}save();render()});
   document.addEventListener('keydown',esc_,true);document.body.appendChild(f);f.querySelector('textarea').focus()}
@@ -7999,7 +8000,7 @@ function itCfgAba(t,k,bloq){itNorm(k);const ed=!bloq;
   const padrao=apRegraCk()?'Padrão da empresa (não conclui)':'Padrão da empresa (pode concluir)';
   const cks=(k.checklists||[]).flatMap(c=>c.itens.map(x=>`<div class="it-cr"><span><b>${esc(x.texto)}</b><span class="faint">Checklist ${esc(c.nome)}</span></span>${sel(`data-itck="${c.id}:${x.id}" aria-label="Se ${esc(x.texto)} estiver em aberto"`,x.regra,padrao)}${cond('c:'+c.id+':'+x.id,x.cond)}</div>`)).join('');
   return `<div class="tkm-bloco"><div class="tkm-sh"><h3>Regras dos itens</h3></div>
-    <p class="faint" style="margin:0 0 10px">Só o diretor, o administrador e quem criou a tarefa veem esta aba. "Não conclui" trava analista e gestor; o diretor conclui com justificativa.</p>
+    <p class="faint" style="margin:0 0 10px">Só o diretor, o administrador e quem criou a tarefa veem esta aba. "Não conclui" trava o analista; gestor e diretor concluem com justificativa.</p>
     ${rows||cks?`<div class="it-ct"><div class="it-cr it-ch"><span>Item incluído no cartão</span><span>Se em branco ao concluir</span><span>Vale quando</span></div>${rows}${cks}</div>`
       :`<div class="faint">Nenhum item no cartão. Inclua campos (+ Campo) ou checklists na Visão geral.</div>`}</div>
     ${(k.justs||[]).length?`<div class="tkm-bloco"><div class="tkm-sh"><h3>Justificativas</h3></div>${k.justs.slice().reverse().map(j=>`<div class="tkm-log"><span class="faint num">${fdh(j.em)}</span>${av(j.por,'sm')}<span><b>${esc(j.por)}</b> ${esc(j.texto)} <span class="faint">(${esc(j.itens.map(x=>x.nome).join(', '))}${j.libera?'; passou pelo que bloqueia':''})</span></span></div>`).join('')}</div>`:''}`}
