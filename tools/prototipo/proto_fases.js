@@ -82,7 +82,6 @@ function procRetomar(t,p){const parado=p.encerradoEm?diff(p.encerradoEm,HOJE):0;
   p.trilha.push({em:agora(),user:me(),ev:'retomada',paraEtapa:p.etapa,paraSub:p.sub,status:'ativo'});log(t,`${faseN(p.fase)}: retomada`)}
 const procStatusN=p=>p.status==='concluido'?faseCfg(p.fase)?.conc||'Concluído':STATUS_N[p.status]||p.status;
 const procAtrasada=p=>{const e=etapaF(p.fase,p.etapa);return !!(p.status==='ativo'&&e?.sla&&diff(p.desde,HOJE)>e.sla)};
-const ultimaEtapa=p=>{const es=etapasF(p.fase);return es[es.length-1]?.k===p.etapa};
 
 /* ---------- desenho ---------- */
 /* chip da situação: na entrada, o de sempre; depois, a fase com a etapa e a subetapa */
