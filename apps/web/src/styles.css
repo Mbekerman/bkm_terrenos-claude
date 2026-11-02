@@ -845,27 +845,6 @@ h2{font-size:16px;line-height:24px;font-weight:500;letter-spacing:.01em}
 .mapa-area,.mini-mapa{border-radius:16px!important;overflow:hidden}
 .mp-barra{background:#fff!important;border-radius:28px!important;box-shadow:0 1px 3px rgba(0,0,0,.2)!important}
 
-  /* azul-noite com acentos neon (azul, índigo, violeta, rosa, ciano) */
-  --m-primary:#8ab4ff; --m-on-primary:#0b1030; --m-pc:#2a2f7a; --m-on-pc:#e6e9ff; --m-sc:#2a2f7a; --m-on-sc:#e6e9ff;
-  --m-surface:#0d1436; --m-sc-low:#141c48; --m-sc-high:#1b2458; --m-card:#141c48;
-  --m-on-surface:#eef1ff; --m-on-var:#a7b0dd; --m-outline:#6f79b8; --m-outline-var:#252f6e;
-  --t-btn:linear-gradient(90deg,#3b82f6,#7c5cff); --t-btn-h:linear-gradient(90deg,#4f8ff8,#8d70ff); --t-btn-txt:#fff;
-  --t-nav:linear-gradient(90deg,rgba(91,108,255,.38),rgba(155,92,255,.22)); --t-nav-txt:#fff;
-  --t-sel:rgba(99,102,241,.38); --t-sel-txt:#fff;
-  --t-ico:brightness(0) invert(.86) sepia(.2) hue-rotate(195deg); --t-ico-ativo:brightness(0) invert(1);
-  --t-mapa:#0d1436; --t-hover:rgba(124,92,255,.10);
-  --neon-1:#3b82f6; --neon-2:#6366f1; --neon-3:#a855f7; --neon-4:#ec4899; --neon-c:#22d3ee;
-  --fase-enviada:#60a5fa; --fase-contra:#c084fc; --fase-finais:#34d399; --azul-bkm:#60a5fa;
-}
-  color-scheme:dark;
-  --branco:var(--m-card); --azul-gelo:var(--m-sc-high); --cinza-claro:var(--m-outline-var); --cinza-escuro:var(--m-on-var); --marinho:var(--m-on-surface);
-  --sobre-acao:var(--t-btn-txt);
-  --ok-fundo:#0f5223; --ok-marca:#6dd58c; --atencao-fundo:#5c4300; --atencao-marca:#ffd36e;
-  --critico-fundo:#8c1d18; --critico-marca:#f2b8b5; --info-fundo:var(--m-pc); --info-marca:var(--m-primary);
-  --fase-enviada:#7cacf8; --fase-contra:#d7aefb; --fase-finais:#6dd58c;
-  --terracota:#f2b8b5; --pessego:#ffb68e; --roxo:#d7aefb; --verde-claro:#0f5223; --azul-bkm:#7cacf8;
-}
-
 /* ==== Tema escuro: Material 3 neutro (o escuro do Gmail e do Drive; decisão do Moisés, 2/nov/2026) ====
    Ativado por <html data-tema="escuro">, escolhido no menu de tema da barra superior
    (Claro, Escuro ou Automático, que segue o sistema). Par do tema claro: mesmos papéis de cor,
