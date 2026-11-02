@@ -104,6 +104,8 @@ as $$
 begin
   if p_destinatario is null or p_destinatario is not distinct from p_autor then return; end if;
   if not exists (select 1 from app.membros where empresa_id = p_empresa and user_id = p_destinatario) then return; end if;
+  -- aviso de cartão só para quem vê o cartão (revisão de 2/nov/2026: o título de um Restrito chegava a quem não o vê)
+  if p_origem_tabela = 'tarefas' and fluxo.papel_tarefa(p_origem_id, p_destinatario) is null then return; end if;
   if not coalesce((select ativo from app.tipos_notificacao where empresa_id = p_empresa and codigo = p_fase), false) then return; end if;
   insert into app.notificacoes (empresa_id, destinatario_id, tipo, texto, autor_id, terreno_id, origem_tabela, origem_id, referencia, email_status)
   values (p_empresa, p_destinatario, p_fase, p_texto, p_autor, p_terreno, p_origem_tabela, p_origem_id, coalesce(p_referencia, current_date),
@@ -321,6 +323,9 @@ begin
   if new.destinatario_id is not null and not exists (select 1 from app.membros where empresa_id = new.empresa_id and user_id = new.destinatario_id) then
     raise exception 'O destinatário tem que ser da empresa' using errcode = '23514';
   end if;
+  if new.origem_tabela = 'tarefas' and new.destinatario_id is not null and fluxo.papel_tarefa(new.origem_id, new.destinatario_id) is null then
+    raise exception 'O destinatário não vê esta tarefa' using errcode = '42501';
+  end if;
   if tg_op = 'UPDATE' and (new.origem_tabela, new.origem_id) is distinct from (old.origem_tabela, old.origem_id) then
     raise exception 'Um lembrete não muda de item' using errcode = '23514';
   end if;
@@ -454,12 +459,18 @@ grant select on app.preferencias_notificacao to authenticated;
 do $$
 declare t text;
 begin
+  -- lembrete de tarefa: só quem vê a tarefa (revisão de 2/nov/2026)
   foreach t in array array['lembretes'] loop
     execute format('alter table app.%I enable row level security', t);
-    execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
-    execute format('create policy inserir on app.%I for insert to authenticated with check (empresa_id in (select app.empresas_edicao()))', t);
-    execute format('create policy alterar on app.%I for update to authenticated using (empresa_id in (select app.empresas_edicao())) with check (empresa_id in (select app.empresas_edicao()))', t);
-    execute format('create policy remover on app.%I for delete to authenticated using (empresa_id in (select app.empresas_edicao()))', t);
+    execute format($p$create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas())
+      and (origem_tabela <> 'tarefas' or fluxo.papel_tarefa(origem_id) is not null))$p$, t);
+    execute format($p$create policy inserir on app.%I for insert to authenticated with check (empresa_id in (select app.empresas_edicao())
+      and (origem_tabela <> 'tarefas' or fluxo.papel_tarefa(origem_id) is not null))$p$, t);
+    execute format($p$create policy alterar on app.%I for update to authenticated
+      using (empresa_id in (select app.empresas_edicao()) and (origem_tabela <> 'tarefas' or fluxo.papel_tarefa(origem_id) is not null))
+      with check (empresa_id in (select app.empresas_edicao()) and (origem_tabela <> 'tarefas' or fluxo.papel_tarefa(origem_id) is not null))$p$, t);
+    execute format($p$create policy remover on app.%I for delete to authenticated using (empresa_id in (select app.empresas_edicao())
+      and (origem_tabela <> 'tarefas' or fluxo.papel_tarefa(origem_id) is not null))$p$, t);
     execute format('grant select, insert, update, delete on app.%I to authenticated', t);
     execute format('create trigger t_aud after insert or update or delete on app.%I for each row execute function app.tg_auditoria()', t);
   end loop;
