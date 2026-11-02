@@ -473,13 +473,7 @@ grant execute on function app.viab_linha_visivel(uuid, text) to authenticated;
 drop policy ver on app.viabilidade_linhas;
 create policy ver on app.viabilidade_linhas for select to authenticated
   using (empresa_id in (select app.minhas_empresas()) and app.viab_linha_visivel(empresa_id, despesa));
-drop policy auditoria_gestor_ve on app.auditoria;
-create policy auditoria_gestor_ve on app.auditoria for select to authenticated
-  using (app.eh_gestor(empresa_id)
-         and (fluxo.tarefa_do_log(tabela, registro_id, antes, depois) is null
-              or fluxo.papel_tarefa(fluxo.tarefa_do_log(tabela, registro_id, antes, depois)) is not null)
-         and (tabela <> 'viabilidade_linhas'
-              or (app.viab_linha_visivel(empresa_id, antes->>'despesa') and app.viab_linha_visivel(empresa_id, depois->>'despesa'))));
+-- (o log de cada linha segue a mesma regra: ver a política da auditoria depois dos modelos)
 
 -- ---------------------------------------------------------------------
 -- Modelos de estudo (decisão do Moisés, 26/out/2026): valores e bases de
@@ -512,8 +506,35 @@ create trigger t_upd before update on app.viabilidade_modelos for each row execu
 alter table app.viabilidade_modelos enable row level security;
 create policy ver on app.viabilidade_modelos for select to authenticated
   using (empresa_id in (select app.minhas_empresas()) and (user_id is null or user_id = auth.uid()));
-grant select on app.viabilidade_modelos to authenticated;
 create trigger t_aud after insert or update or delete on app.viabilidade_modelos for each row execute function app.tg_auditoria();
+
+-- Leitura dos modelos só por esta função (revisão de 2/nov/2026): o modelo da
+-- empresa salvo pela diretoria guarda Taxas e Despesas financeiras, e fora da
+-- diretoria essas linhas saem de `dados`, como no estudo.
+create or replace function app.modelos_viabilidade(p_empresa uuid)
+returns table (id uuid, empresa_id uuid, user_id uuid, nome text, padrao boolean, dados jsonb,
+               criado_por uuid, criado_em timestamptz, atualizado_em timestamptz)
+language sql stable security definer set search_path = '' as $$
+  select m.id, m.empresa_id, m.user_id, m.nome, m.padrao,
+         jsonb_set(m.dados, '{linhas}', coalesce((select jsonb_agg(l order by n) from jsonb_array_elements(m.dados->'linhas') with ordinality x(l, n)
+                                                  where app.viab_linha_visivel(m.empresa_id, l->>'despesa')), '[]'::jsonb)),
+         m.criado_por, m.criado_em, m.atualizado_em
+  from app.viabilidade_modelos m
+  where m.empresa_id = p_empresa and p_empresa in (select app.minhas_empresas())
+    and (m.user_id is null or m.user_id = auth.uid())
+  order by m.user_id is not null, m.nome $$;
+revoke all on function app.modelos_viabilidade(uuid) from public;
+grant execute on function app.modelos_viabilidade(uuid) to authenticated;
+-- e o log do modelo, que leva os mesmos dados, só a diretoria vê
+grant execute on function app.eh_diretoria(uuid) to authenticated;
+drop policy auditoria_gestor_ve on app.auditoria;
+create policy auditoria_gestor_ve on app.auditoria for select to authenticated
+  using (app.eh_gestor(empresa_id)
+         and (fluxo.tarefa_do_log(tabela, registro_id, antes, depois) is null
+              or fluxo.papel_tarefa(fluxo.tarefa_do_log(tabela, registro_id, antes, depois)) is not null)
+         and (tabela <> 'viabilidade_linhas'
+              or (app.viab_linha_visivel(empresa_id, antes->>'despesa') and app.viab_linha_visivel(empresa_id, depois->>'despesa')))
+         and (tabela <> 'viabilidade_modelos' or app.eh_diretoria(empresa_id)));
 
 -- Grava o estudo como modelo: novo (p_modelo nulo) ou por cima de um modelo
 -- existente (o dono, ou o administrador no da empresa).

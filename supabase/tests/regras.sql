@@ -1513,7 +1513,7 @@ select app.salvar_modelo_viabilidade(:'vb1', 'Meu modelo') as mdu \gset
 select pg_temp.ok((select user_id = :'analista' and not padrao and (dados->>'custo_m2')::numeric = 3000
                      and not exists (select 1 from jsonb_array_elements(dados->'linhas') l where l->>'despesa' in ('impostos','taxa_desenvolvimento'))
                      and exists (select 1 from jsonb_array_elements(dados->'linhas') l where l->>'despesa' = 'comissao')
-                   from app.viabilidade_modelos where id = :'mdu'),
+                   from app.modelos_viabilidade(:'emp') where id = :'mdu'),
   'modelo do analista guarda o valor da obra e as linhas, sem Taxas e Despesas financeiras');
 select pg_temp.falha(format($$select app.salvar_modelo_viabilidade(%L, 'Meu modelo')$$, :'vb1'), 'nome de modelo repetido é recusado');
 select pg_temp.falha(format($$select app.salvar_modelo_viabilidade(%L, 'Da empresa', true)$$, :'vb1'), 'analista não grava modelo da empresa');
@@ -1529,12 +1529,20 @@ select pg_temp.ok((select custo_m2 = 3000 and deduz_vgv = '{itbi_vendas}'
 select pg_temp.como(:'analista');
 select app.apagar_viabilidade(:'vbm');
 select pg_temp.como(:'gestor');
-select pg_temp.ok(not exists (select 1 from app.viabilidade_modelos where id = :'mdu'), 'modelo do usuário só ele vê');
+select pg_temp.ok(not exists (select 1 from app.modelos_viabilidade(:'emp') where id = :'mdu'), 'modelo do usuário só ele vê');
 select pg_temp.falha(format($$select app.criar_viabilidade(%L, 'X', null, %L)$$, :'t1', :'mdu'), 'ninguém usa o modelo de outro usuário');
 select pg_temp.falha(format($$select app.apagar_modelo_viabilidade(%L)$$, :'mdu'), 'ninguém apaga o modelo de outro usuário');
 select pg_temp.como(:'diretor');
 select app.salvar_modelo_viabilidade(:'vb1', 'Padrão BKM', true) as mde \gset
 select app.marcar_modelo_padrao(:'emp', :'mde');
+select pg_temp.ok(exists (select 1 from app.modelos_viabilidade(:'emp') m, jsonb_array_elements(m.dados->'linhas') l where m.id = :'mde' and l->>'despesa' = 'impostos'),
+  'o modelo da empresa salvo pela diretoria guarda as taxas e despesas financeiras');
+select pg_temp.como(:'gestor');
+select pg_temp.ok(not exists (select 1 from app.modelos_viabilidade(:'emp') m, jsonb_array_elements(m.dados->'linhas') l where m.id = :'mde' and l->>'despesa' in ('impostos','taxa_desenvolvimento'))
+  and exists (select 1 from app.modelos_viabilidade(:'emp') m, jsonb_array_elements(m.dados->'linhas') l where m.id = :'mde' and l->>'despesa' = 'comissao'),
+  'fora da diretoria, o modelo aparece sem as linhas de taxas e despesas financeiras');
+select pg_temp.ok(not exists (select 1 from app.auditoria where tabela = 'viabilidade_modelos'), 'nem o log do modelo, que leva os mesmos valores');
+select pg_temp.falha('select dados from app.viabilidade_modelos', 'a tabela dos modelos não se lê direto');
 select pg_temp.como(:'analista');
 select pg_temp.falha(format($$select app.marcar_modelo_padrao(%L, null)$$, :'emp'), 'só o administrador escolhe o modelo padrão');
 select pg_temp.falha(format($$select app.apagar_modelo_viabilidade(%L)$$, :'mde'), 'analista não apaga modelo da empresa');
@@ -1554,10 +1562,10 @@ select pg_temp.como(:'analista');
 select app.apagar_viabilidade(:'vbp');
 select app.apagar_viabilidade(:'vbs');
 select app.apagar_modelo_viabilidade(:'mdu');
-select pg_temp.ok(not exists (select 1 from app.viabilidade_modelos where id = :'mdu'), 'o usuário apaga o próprio modelo');
+select pg_temp.ok(not exists (select 1 from app.modelos_viabilidade(:'emp') where id = :'mdu'), 'o usuário apaga o próprio modelo');
 select pg_temp.como(:'diretor');
 select app.marcar_modelo_padrao(:'emp', null);
-select pg_temp.ok(not exists (select 1 from app.viabilidade_modelos where padrao), 'o administrador tira o padrão');
+select pg_temp.ok(not exists (select 1 from app.modelos_viabilidade(:'emp') where padrao), 'o administrador tira o padrão');
 select app.apagar_modelo_viabilidade(:'mde');
 
 -- ---------------------------------------------------------------------
