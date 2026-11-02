@@ -31,7 +31,6 @@ function apPredAviso(t,k,fn){const ps=apPredPend(t,k);document.querySelector('.p
   f.addEventListener('click',e=>{const b=e.target.closest('[data-pred]');if(!b&&e.target!==f)return;e.stopPropagation();fecha();
     if(b?.dataset.pred==='sim'){UI.predOk=k.id;try{fn()}finally{UI.predOk=null}log(t,`Tarefa "${k.titulo}": concluída com predecessora pendente (${ps.map(p=>p.codigo).join(', ')})`);save()}render()});
   document.addEventListener('keydown',esc_,true);document.body.appendChild(f);f.querySelector('[data-pred=sim]').focus()}
-const apCkAberto=k=>(k.checklists||[]).some(c=>c.itens.some(i=>!i.feito&&!i.virou));
 /* o que impede concluir agora (null = nada) */
 function apBloqueio(t,k){if(k.modelo)return 'Modelo de cartão não se conclui.';if(apPrecisa(k))return apPend(k)?'A tarefa está aguardando aprovação.':'A tarefa precisa ser aprovada antes de concluir. Use "Pedir aprovação".';
   /* itens em branco pela regra de cada item (31/out): "não conclui" barra; "com justificativa" pede o texto (itJustAviso) */

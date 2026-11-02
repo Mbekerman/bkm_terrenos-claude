@@ -90,7 +90,8 @@ create or replace function app._jornada_pendencias(p app.processos, p_destino_ti
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
 declare itens jsonb := '[]'::jsonb; r record; ok boolean; v_regra text;
 begin
-  if p.parte_id is not null then return itens; end if;   -- a jornada é do terreno; a parte anda pela negociação dela
+  -- a jornada é do terreno: a parte que sai da etapa responde por ela (as respostas são campos do
+  -- terreno, uma vez só); antes a parte pulava a jornada e o terreno andava sem ela (revisão de 2/nov/2026)
   for r in select i.*, d.titulo from app.jornada_itens i cross join lateral app.campo_def(i.empresa_id, i.campo) d
            where i.empresa_id = p.empresa_id and i.fase = p.fase and i.ativo
              and app._jornada_na_saida(p, p_destino_tipo, p_destino, i.etapa, i.subetapa)
@@ -117,7 +118,7 @@ end $$;
 -- Alguma regra pelo valor pede este nível de aprovação nesta passagem?
 create or replace function app._jornada_pede(p app.processos, p_destino_tipo text, p_destino text, p_nivel text)
 returns boolean language sql stable security definer set search_path = '' as $$
-  select p.parte_id is null and exists (select 1 from app.jornada_regras x
+  select exists (select 1 from app.jornada_regras x
     where x.empresa_id = p.empresa_id and x.fase = p.fase and x.ativo and x.acao = p_nivel
       and app._jornada_na_saida(p, p_destino_tipo, p_destino, x.etapa, x.subetapa)
       and app.avaliar_condicao(p.terreno_id, x.condicao)) $$;

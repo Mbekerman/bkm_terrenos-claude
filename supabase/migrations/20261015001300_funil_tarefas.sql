@@ -133,10 +133,35 @@ returns jsonb language sql stable security definer set search_path = '' as $$
   from fluxo.tarefas k
   join fluxo.listas l on l.id = k.lista_id
   cross join lateral (select app._trava_tarefa(k.id) as j) t
-  where k.processo_id = p.id and k.etapa = p.etapa_atual and k.concluida_em is null and k.arquivada_em is null and not k.modelo
+  -- a parte responde pelas tarefas do terreno na etapa dela (as tarefas ficam no processo do terreno)
+  where k.processo_id = coalesce(p.principal_id, p.id) and k.etapa = p.etapa_atual and k.concluida_em is null and k.arquivada_em is null and not k.modelo
     and (t.j->>'trava')::boolean
     and case when p_saida = 'subetapa' then t.j->>'nivel' = 'subetapa' and k.subetapa = p.subetapa_atual
              else t.j->>'nivel' = 'etapa' or (t.j->>'nivel' = 'subetapa' and k.subetapa = p.subetapa_atual) end $$;
+
+-- Tarefa que trava (revisão de 2/nov/2026): sair da etapa, mudar de processo,
+-- arquivar ou virar modelo tiraria a trava sem justificativa; só gestor e
+-- diretor fazem isso à mão. O próprio funil (voltar, encerrar, entrar) marca
+-- app.tarefas_funil e passa.
+create or replace function app.tg_tarefa_trava()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare p app.processos;
+begin
+  if auth.uid() is null or coalesce(current_setting('app.tarefas_funil', true), '') = '1' then return new; end if;
+  if old.processo_id is null or old.concluida_em is not null or old.arquivada_em is not null then return new; end if;
+  if new.processo_id is not distinct from old.processo_id and new.etapa is not distinct from old.etapa
+     and new.subetapa is not distinct from old.subetapa and new.arquivada_em is null and not new.modelo then
+    return new;
+  end if;
+  if coalesce(app.papel(old.empresa_id) in ('gestor','diretor'), false) then return new; end if;
+  select * into p from app.processos where id = old.processo_id;
+  if p.status = 'ativo' and exists (select 1 from jsonb_array_elements(app._tarefas_travando(p, 'etapa')) i where (i->>'tarefa_id')::uuid = old.id) then
+    raise exception 'Esta tarefa trava o avanço do terreno: só gestor ou diretor tira a etapa dela, arquiva ou a torna modelo' using errcode = '42501';
+  end if;
+  return new;
+end $$;
+create trigger t_trava before update of processo_id, etapa, subetapa, arquivada_em, modelo on fluxo.tarefas
+  for each row execute function app.tg_tarefa_trava();
 
 -- Cartões dos terrenos com a etapa do funil: fase, etapa e subetapa em que
 -- nasceu, o que trava e a situação (ativa, deixada, arquivada_auto, nao_se_aplica).
@@ -210,8 +235,10 @@ begin
         into v_existentes, v_pular
         from app.tarefas_etapa e where e.processo_id = p.id and e.regra_id = r.id and e.modelo_tarefa_id is not null;
       v_mapa := fluxo.aplicar_modelo_mapa(r.modelo_id, v_quadro, v_hoje, t.responsavel_id, v_pular, v_existentes);
+      perform set_config('app.tarefas_funil', '1', true);
       update fluxo.tarefas set processo_id = p.id, etapa = r.etapa, subetapa = r.subetapa
        where id in (select (value #>> '{}')::uuid from jsonb_each(v_mapa));
+      perform set_config('app.tarefas_funil', '', true);
       insert into app.tarefas_etapa (tarefa_id, empresa_id, processo_id, regra_id, modelo_tarefa_id, condicao, inicio_dias, duracao)
       select (m.value #>> '{}')::uuid, p.empresa_id, p.id, r.id, mt.id, mt.condicao, mt.inicio_dias, mt.duracao
       from jsonb_each(v_mapa) m join fluxo.modelo_tarefas mt on mt.id = m.key::uuid;
@@ -275,7 +302,9 @@ begin
     else
       insert into app.tarefas_etapa (tarefa_id, empresa_id, processo_id, situacao) values (k.id, p.empresa_id, p.id, 'arquivada_auto')
       on conflict (tarefa_id) do update set situacao = 'arquivada_auto', situacao_em = now();
+      perform set_config('app.tarefas_funil', '1', true);
       update fluxo.tarefas set arquivada_em = now() where id = k.id;
+      perform set_config('app.tarefas_funil', '', true);
     end if;
   end loop;
 end $$;

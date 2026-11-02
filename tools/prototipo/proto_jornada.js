@@ -107,7 +107,6 @@ function jnGravar(t,i,raw){const d=itDef(i.campo);if(!t||!d||!d.editavel||UI.rol
 
 /* ---------- Configurações › Funil › Jornada ---------- */
 const jnCk=e=>cfg().checklist[e]||(cfg().checklist[e]=[]);
-const jnCkRegra=c=>!c.obrig?'livre':c.just?'justifica':'bloqueia';
 const JN_REGRA_SEL={...JN_REGRA,cond:'Condicional…'};
 /* seletor da regra em branco (única ou condicional) e a frase da condicional, pela chave do item */
 const jnRegraSel=(k,base,rc,rot)=>jnSel(`data-jnr="${k}"`,rc&&rc.length?'cond':base,JN_REGRA_SEL,rot);

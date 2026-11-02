@@ -278,10 +278,15 @@ begin
                                             and l.despesa = j->>'despesa' and l.id <> (j->>'id')::uuid) then
       raise exception 'Item fixo já está no estudo' using errcode = '23505';
     end if;
-    -- criar_viabilidade (padrão da empresa ou cópia de outro estudo) liga app.viab_criando
-    if app.viab_restrito(d.grupo) and coalesce(current_setting('app.viab_criando', true), '') <> 'on'
+    -- criar_viabilidade (padrão da empresa ou cópia de outro estudo) liga app.viab_criando.
+    -- Vale também para a linha que era restrita e mudaria de item (trocar a taxa
+    -- por outra despesa e zerar o valor).
+    if (app.viab_restrito(d.grupo)
+        or (tg_op = 'UPDATE' and exists (select 1 from app.viabilidade_despesas o where o.empresa_id = old.empresa_id
+                                           and o.codigo = old.despesa and app.viab_restrito(o.grupo))))
+       and coalesce(current_setting('app.viab_criando', true), '') <> 'on'
        and not app.eh_diretoria(new.empresa_id)
-       and (tg_op = 'INSERT' or (new.tipo, new.valor, new.quantidade) is distinct from (old.tipo, old.valor, old.quantidade)) then
+       and (tg_op = 'INSERT' or (new.despesa, new.tipo, new.valor, new.quantidade) is distinct from (old.despesa, old.tipo, old.valor, old.quantidade)) then
       raise exception 'Taxas e despesas financeiras: só a diretoria ou o administrador muda' using errcode = '42501';
     end if;
   end if;
@@ -319,9 +324,11 @@ returns numeric language sql stable set search_path = '' as $$
 $$;
 
 -- Cálculo (o mesmo do protótipo, vbCalc). Cada linha arredondada em centavos.
+-- Roda com todas as linhas (Taxas e Financeiras entram no total de quem não é
+-- da diretoria), mas só devolve o detalhe das linhas que quem pergunta vê.
 create or replace function app.calcular_viabilidade(p_id uuid)
 returns jsonb
-language plpgsql stable set search_path = ''
+language plpgsql stable security definer set search_path = ''
 as $$
 declare
   v app.viabilidades; b jsonb;
@@ -334,6 +341,9 @@ declare
   DT constant text[] := array['terreno','incorporacao','cef','adm_financeiro','taxas','financeiro','capital_permuta','capital_pagamento'];
 begin
   select * into v from app.viabilidades where id = p_id;
+  if auth.uid() is not null and v.id is not null and v.empresa_id not in (select app.minhas_empresas()) then
+    raise exception 'Estudo não encontrado' using errcode = 'P0002';
+  end if;
   select coalesce(sum(quantidade * area_privativa), 0), coalesce(sum(quantidade), 0), coalesce(sum(quantidade_permuta), 0), coalesce(sum(quantidade_comissao), 0),
          coalesce(sum(quantidade_permuta * area_privativa), 0), coalesce(sum(quantidade_comissao * area_privativa), 0),
          coalesce(sum(quantidade * preco_unitario), 0), coalesce(sum(quantidade_permuta * preco_unitario), 0), coalesce(sum(quantidade_comissao * preco_unitario), 0)
@@ -369,7 +379,8 @@ begin
   v_l0 := v_liq - v_terr - v_obras - (v_com - v_dedc) - app._viab_soma(p_id, DT, b, true);
   v_lb := case when v_l0 > 0 then round(v_l0 / (1 + v_pl / 100), 2) else 0 end;
   b := b || jsonb_build_object('pct_lucro', v_lb);
-  select coalesce(jsonb_agg(jsonb_build_object('id', y.id, 'grupo', y.grupo, 'secao', y.secao, 'base', y.base, 'valor', y.valor) order by y.ordem, y.criado_em), '[]'::jsonb),
+  select coalesce(jsonb_agg(jsonb_build_object('id', y.id, 'grupo', y.grupo, 'secao', y.secao, 'base', y.base, 'valor', y.valor) order by y.ordem, y.criado_em)
+                    filter (where auth.uid() is null or not app.viab_restrito(y.grupo) or app.eh_diretoria(v.empresa_id)), '[]'::jsonb),
          jsonb_build_object('obra', v_obras, 'terreno', v_terr,
                             'despesas', coalesce(sum(y.valor) filter (where y.secao = 'despesas'), 0),
                             'taxas', coalesce(sum(y.valor) filter (where y.secao = 'taxas'), 0),
@@ -449,6 +460,21 @@ begin
   end loop;
 end $$;
 
+-- Taxas e Despesas financeiras: fora da diretoria, só o total (que fica em
+-- app.viabilidades); cada linha, o valor e o log dela, só a diretoria vê.
+create or replace function app.viab_linha_visivel(p_empresa uuid, p_despesa text)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select app.eh_diretoria(p_empresa)
+      or not exists (select 1 from app.viabilidade_despesas d
+                      where d.empresa_id = p_empresa and d.codigo = p_despesa and app.viab_restrito(d.grupo))
+$$;
+revoke all on function app.viab_linha_visivel(uuid, text) from public;
+grant execute on function app.viab_linha_visivel(uuid, text) to authenticated;
+drop policy ver on app.viabilidade_linhas;
+create policy ver on app.viabilidade_linhas for select to authenticated
+  using (empresa_id in (select app.minhas_empresas()) and app.viab_linha_visivel(empresa_id, despesa));
+-- (o log de cada linha segue a mesma regra: ver a política da auditoria depois dos modelos)
+
 -- ---------------------------------------------------------------------
 -- Modelos de estudo (decisão do Moisés, 26/out/2026): valores e bases de
 -- cálculo guardados para o estudo novo já nascer com eles. Modelo da
@@ -480,8 +506,35 @@ create trigger t_upd before update on app.viabilidade_modelos for each row execu
 alter table app.viabilidade_modelos enable row level security;
 create policy ver on app.viabilidade_modelos for select to authenticated
   using (empresa_id in (select app.minhas_empresas()) and (user_id is null or user_id = auth.uid()));
-grant select on app.viabilidade_modelos to authenticated;
 create trigger t_aud after insert or update or delete on app.viabilidade_modelos for each row execute function app.tg_auditoria();
+
+-- Leitura dos modelos só por esta função (revisão de 2/nov/2026): o modelo da
+-- empresa salvo pela diretoria guarda Taxas e Despesas financeiras, e fora da
+-- diretoria essas linhas saem de `dados`, como no estudo.
+create or replace function app.modelos_viabilidade(p_empresa uuid)
+returns table (id uuid, empresa_id uuid, user_id uuid, nome text, padrao boolean, dados jsonb,
+               criado_por uuid, criado_em timestamptz, atualizado_em timestamptz)
+language sql stable security definer set search_path = '' as $$
+  select m.id, m.empresa_id, m.user_id, m.nome, m.padrao,
+         jsonb_set(m.dados, '{linhas}', coalesce((select jsonb_agg(l order by n) from jsonb_array_elements(m.dados->'linhas') with ordinality x(l, n)
+                                                  where app.viab_linha_visivel(m.empresa_id, l->>'despesa')), '[]'::jsonb)),
+         m.criado_por, m.criado_em, m.atualizado_em
+  from app.viabilidade_modelos m
+  where m.empresa_id = p_empresa and p_empresa in (select app.minhas_empresas())
+    and (m.user_id is null or m.user_id = auth.uid())
+  order by m.user_id is not null, m.nome $$;
+revoke all on function app.modelos_viabilidade(uuid) from public;
+grant execute on function app.modelos_viabilidade(uuid) to authenticated;
+-- e o log do modelo, que leva os mesmos dados, só a diretoria vê
+grant execute on function app.eh_diretoria(uuid) to authenticated;
+drop policy auditoria_gestor_ve on app.auditoria;
+create policy auditoria_gestor_ve on app.auditoria for select to authenticated
+  using (app.eh_gestor(empresa_id)
+         and (fluxo.tarefa_do_log(tabela, registro_id, antes, depois) is null
+              or fluxo.papel_tarefa(fluxo.tarefa_do_log(tabela, registro_id, antes, depois)) is not null)
+         and (tabela <> 'viabilidade_linhas'
+              or (app.viab_linha_visivel(empresa_id, antes->>'despesa') and app.viab_linha_visivel(empresa_id, depois->>'despesa')))
+         and (tabela <> 'viabilidade_modelos' or app.eh_diretoria(empresa_id)));
 
 -- Grava o estudo como modelo: novo (p_modelo nulo) ou por cima de um modelo
 -- existente (o dono, ou o administrador no da empresa).

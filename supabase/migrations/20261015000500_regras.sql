@@ -576,7 +576,7 @@ begin
                and exists (select 1 from app.fase_dependencias d where d.empresa_id = fm.empresa_id and d.fase = fm.codigo)
                and not exists (select 1 from app.processos p where p.terreno_id = t.id and p.fase = fm.codigo and p.parte_id is null)
              order by fm.ordem loop
-      if not exists (select 1 from jsonb_array_elements(app._dependencias_fase(t.id, f.codigo)) i where not (i->>'ok')::boolean) then
+      if not exists (select 1 from jsonb_array_elements(app._dependencias_fase(t.id, f.codigo)) i where (i->>'ok')::boolean is not true) then
         perform app._abrir_processo(t, f.codigo, 'Fase aberta: dependências cumpridas');
         abriu := true;
       end if;
@@ -601,7 +601,7 @@ begin
   end if;
   if p_fase = app._fase_entrada(t.empresa_id) then return app.abrir_negociacao(t.id); end if;
   pend := app._dependencias_fase(t.id, p_fase);
-  if exists (select 1 from jsonb_array_elements(pend) i where not (i->>'ok')::boolean) then
+  if exists (select 1 from jsonb_array_elements(pend) i where (i->>'ok')::boolean is not true) then
     if not coalesce(p_forcar, false) then
       raise exception 'Ainda há dependências para abrir esta fase' using errcode = '22023', detail = pend::text;
     end if;
@@ -823,7 +823,7 @@ begin
       for r in select tp.nome, c.status from app.terreno_partes tp
                left join app.processos c on c.parte_id = tp.id and c.principal_id = p.id
                where tp.terreno_id = p.terreno_id and tp.ativa order by tp.criado_em, tp.nome loop
-        itens := itens || jsonb_build_object('ok', r.status = 'concluido', 'tipo', 'parte', 'bloqueio_gestor', true,
+        itens := itens || jsonb_build_object('ok', coalesce(r.status = 'concluido', false), 'tipo', 'parte', 'bloqueio_gestor', true,
           'texto', 'Parte ' || r.nome || case r.status when 'concluido' then ': comprada'
                                                        when 'perdido' then ': perdida (tire a parte do terreno ou encerre a negociação)'
                                                        when 'descartado' then ': descartada (tire a parte do terreno ou encerre a negociação)'
@@ -1048,15 +1048,15 @@ begin
   perform app._conferir_movimento(p, p_destino_tipo, p_destino);
 
   pend := app._pendencias(p, p_destino_tipo, p_destino);
-  if exists (select 1 from jsonb_array_elements(pend) i where not (i->>'ok')::boolean) then
+  if exists (select 1 from jsonb_array_elements(pend) i where (i->>'ok')::boolean is not true) then
     if not coalesce(p_forcar, false) then
       raise exception 'Ainda há pendências para avançar' using errcode = '22023', detail = pend::text;
     end if;
     -- só pendências "avança com justificativa" (jornada): qualquer editor passa justificando;
     -- as demais, só gestor e diretor (e nem eles com bloqueio_gestor)
-    if exists (select 1 from jsonb_array_elements(pend) i where not (i->>'ok')::boolean and not coalesce((i->>'justifica')::boolean, false))
+    if exists (select 1 from jsonb_array_elements(pend) i where (i->>'ok')::boolean is not true and not coalesce((i->>'justifica')::boolean, false))
        and (not app.eh_gestor(p.empresa_id)
-            or exists (select 1 from jsonb_array_elements(pend) i where not (i->>'ok')::boolean and (i->>'bloqueio_gestor')::boolean)) then
+            or exists (select 1 from jsonb_array_elements(pend) i where (i->>'ok')::boolean is not true and (i->>'bloqueio_gestor')::boolean)) then
       raise exception 'Você não pode forçar este avanço' using errcode = '42501';
     end if;
     if coalesce(trim(p_comentario), '') = '' then raise exception 'Justifique o avanço forçado' using errcode = '22023'; end if;
@@ -1133,13 +1133,13 @@ begin
 
   return jsonb_build_object(
     'proxima', v_destino, 'proxima_tipo', v_tipo, 'proxima_nome', v_nome,
-    'ok', not exists (select 1 from jsonb_array_elements(itens) i where not (i->>'ok')::boolean),
+    'ok', not exists (select 1 from jsonb_array_elements(itens) i where (i->>'ok')::boolean is not true),
     'pode_forcar', gestor
-      and exists (select 1 from jsonb_array_elements(itens) i where not (i->>'ok')::boolean)
-      and not exists (select 1 from jsonb_array_elements(itens) i where not (i->>'ok')::boolean and (i->>'bloqueio_gestor')::boolean),
+      and exists (select 1 from jsonb_array_elements(itens) i where (i->>'ok')::boolean is not true)
+      and not exists (select 1 from jsonb_array_elements(itens) i where (i->>'ok')::boolean is not true and (i->>'bloqueio_gestor')::boolean),
     -- só faltam itens "avança com justificativa": qualquer editor passa justificando
-    'pode_justificar', exists (select 1 from jsonb_array_elements(itens) i where not (i->>'ok')::boolean)
-      and not exists (select 1 from jsonb_array_elements(itens) i where not (i->>'ok')::boolean and not coalesce((i->>'justifica')::boolean, false)),
+    'pode_justificar', exists (select 1 from jsonb_array_elements(itens) i where (i->>'ok')::boolean is not true)
+      and not exists (select 1 from jsonb_array_elements(itens) i where (i->>'ok')::boolean is not true and not coalesce((i->>'justifica')::boolean, false)),
     'itens', itens,
     'aprovacoes', aprov->'niveis', 'aprovacao_modo', aprov->>'modo',
     'pedido', ped);
@@ -1299,6 +1299,8 @@ begin
   -- retomar o terreno retoma as partes paradas; retomar uma parte acerta o terreno
   if p.parte_id is null then
     perform app.retomar_processo(c.id) from app.processos c where c.principal_id = p.id and c.status = 'stand_by';
+    -- parte cadastrada durante o Stand By ganha a negociação dela agora (revisão de 2/nov/2026)
+    perform app._abrir_negociacoes_partes(p.id);
   else
     perform app._sincronizar_principal(p.principal_id);
   end if;
@@ -1354,7 +1356,7 @@ begin
   if p.status <> 'ativo' then raise exception 'O processo desta fase não está mais ativo' using errcode = '22023'; end if;
   if not coalesce((a.dados->>'forcado')::boolean, false) then
     pend := app._pendencias(p, a.destino_tipo, a.destino);
-    if exists (select 1 from jsonb_array_elements(pend) i where not (i->>'ok')::boolean) then
+    if exists (select 1 from jsonb_array_elements(pend) i where (i->>'ok')::boolean is not true) then
       raise exception 'Surgiram pendências desde o pedido: recuse e peça de novo' using errcode = '22023', detail = pend::text;
     end if;
   end if;
@@ -1445,6 +1447,12 @@ begin
   values (p.empresa_id, p.id,
           case when ordem_nova > ordem_atual then 'avanco' when ordem_nova < ordem_atual then 'retorno' else 'subetapa' end,
           p.etapa_atual, v_etapa, p.subetapa_atual, v_sub, 'Pelas negociações das partes');
+  -- as tarefas da etapa acompanham, como numa passagem à mão (revisão de 2/nov/2026)
+  if ordem_nova > ordem_atual then perform app._tarefas_ao_entrar(p.id, 'etapa', v_etapa);
+  elsif ordem_nova < ordem_atual then perform app._tarefas_ao_voltar(p.id, ordem_nova);
+  elsif app._ordem_subetapa(p.empresa_id, p.fase, v_sub) > app._ordem_subetapa(p.empresa_id, p.fase, p.subetapa_atual) then
+    perform app._tarefas_ao_entrar(p.id, 'subetapa', v_sub);
+  end if;
   perform app._abrir_fases_liberadas(p.terreno_id);
 end $$;
 
@@ -1768,6 +1776,11 @@ begin
   select * into d from app.documentos where id = p_documento for update;
   if not found then raise exception 'Documento não encontrado' using errcode = 'P0002'; end if;
   perform app.exigir_editor(d.empresa_id);
+  -- quem enviou a versão atual não a valida sozinho; o diretor pode (decisão do Moisés, 2/nov/2026)
+  if p_aprovado and auth.uid() = (select enviado_por from app.documento_versoes where documento_id = d.id order by versao desc limit 1)
+     and app.papel(d.empresa_id) is distinct from 'diretor' then
+    raise exception 'Quem enviou o documento não o valida: peça a outra pessoa' using errcode = '42501';
+  end if;
   update app.documentos set situacao = case when p_aprovado then 'validado' else 'rejeitado' end,
          revisado_por = auth.uid(), revisado_em = now() where id = d.id;
 end $$;
@@ -1981,6 +1994,24 @@ begin
     raise exception 'Encerre os processos abertos antes de arquivar o terreno' using errcode = '22023';
   end if;
   update app.terrenos set situacao_cadastral = 'arquivado', arquivado_em = now(), motivo_arquivamento = p_motivo where id = t.id;
+end $$;
+
+-- Desarquivar (revisão de 2/nov/2026: o terreno arquivado não tinha volta):
+-- gestor, diretor ou o administrador. O arquivamento fica no histórico.
+create or replace function app.reativar_terreno(p_terreno uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos;
+begin
+  select * into t from app.terrenos where id = p_terreno for update;
+  if not found or t.empresa_id not in (select app.minhas_empresas()) then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  if not (app.eh_gestor(t.empresa_id) or app.eh_administrador(t.empresa_id)) then
+    raise exception 'Só gestor, diretor ou o administrador desarquivam o terreno' using errcode = '42501';
+  end if;
+  if t.situacao_cadastral <> 'arquivado' then raise exception 'O terreno não está arquivado' using errcode = '22023'; end if;
+  update app.terrenos set situacao_cadastral = 'ativo', arquivado_em = null, motivo_arquivamento = null where id = t.id;
 end $$;
 
 -- ---------------------------------------------------------------------
@@ -2652,5 +2683,5 @@ grant execute on function
   app.registrar_proposta(uuid, text, numeric, text, text, date, date, text), app.atualizar_status_proposta(uuid, text),
   app.vincular_viabilidade(uuid, text, numeric, numeric, uuid),
   app.registrar_documento(uuid, text, text, text, uuid, uuid, uuid, text, bigint, date, uuid), app.revisar_documento(uuid, boolean),
-  app.arquivar_terreno(uuid, text)
+  app.arquivar_terreno(uuid, text), app.reativar_terreno(uuid)
 to authenticated;

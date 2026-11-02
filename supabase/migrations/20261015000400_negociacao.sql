@@ -453,3 +453,55 @@ from fluxo.v_tarefas k
 join fluxo.quadros q on q.id = k.quadro_id and q.objeto_tipo = 'terreno'
 join app.processos p on p.terreno_id = q.objeto_id and p.parte_id is null and p.status in ('ativo','stand_by');
 grant select on app.v_tarefas_funil to authenticated;
+
+-- ---------------------------------------------------------------------
+-- Vínculos dentro da empresa (revisão de 2/nov/2026): pessoa, corretor e
+-- ofertante são cadastros da mesma empresa do registro; responsável do
+-- terreno e participante da BKM numa reunião são membros dela (fora dela,
+-- os avisos se perdiam sem ninguém saber).
+-- ---------------------------------------------------------------------
+create or replace function app.tg_vinculos_empresa()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare j jsonb := to_jsonb(new); o jsonb := case when tg_op = 'UPDATE' then to_jsonb(old) end; k text;
+begin
+  foreach k in array array['pessoa_id','ofertante_id'] loop
+    if j->>k is not null and j->k is distinct from o->k
+       and not exists (select 1 from app.pessoas where id = (j->>k)::uuid and empresa_id = new.empresa_id) then
+      raise exception 'A pessoa não é desta empresa' using errcode = '42501';
+    end if;
+  end loop;
+  if j->>'corretor_id' is not null and j->'corretor_id' is distinct from o->'corretor_id'
+     and not exists (select 1 from app.corretores where id = (j->>'corretor_id')::uuid and empresa_id = new.empresa_id) then
+    raise exception 'O corretor não é desta empresa' using errcode = '42501';
+  end if;
+  foreach k in array array['responsavel_id','user_id'] loop
+    if j->>k is not null and j->k is distinct from o->k
+       and not exists (select 1 from app.membros where user_id = (j->>k)::uuid and empresa_id = new.empresa_id) then
+      raise exception 'A pessoa escolhida não é da equipe desta empresa' using errcode = '42501';
+    end if;
+  end loop;
+  return new;
+end $$;
+do $$
+declare t text;
+begin
+  foreach t in array array['terrenos','corretores','terreno_pessoas','terreno_corretores','parte_corretores','ofertas','reuniao_participantes'] loop
+    execute format('create trigger t_vinculos before insert or update on app.%I for each row execute function app.tg_vinculos_empresa()', t);
+  end loop;
+end $$;
+
+-- Terreno cadastrado direto: o código e quem criou são do banco, não do usuário.
+create or replace function app.tg_terreno_controle()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if tg_op = 'INSERT' then
+    if auth.uid() is not null or new.codigo is null then
+      new.codigo := 'TER-' || lpad(nextval('app.terreno_seq')::text, 6, '0');
+    end if;
+    if auth.uid() is not null then new.criado_por := auth.uid(); new.criado_em := now(); end if;
+  elsif auth.uid() is not null then
+    new.codigo := old.codigo; new.criado_por := old.criado_por; new.criado_em := old.criado_em;
+  end if;
+  return new;
+end $$;
+create trigger t_controle before insert or update on app.terrenos for each row execute function app.tg_terreno_controle();

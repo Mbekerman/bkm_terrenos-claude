@@ -983,14 +983,14 @@ erDiagram
   conclusao_justificativas {
     text texto
     jsonb itens
-    bool libera_bloqueio "o diretor passou pelo que bloqueia"
+    bool libera_bloqueio "gestor ou diretor passou pelo que bloqueia"
   }
 ```
 
 - `app.campos_catalogo`: um campo por linha, de Terreno, Negociação, Oferta de referência, Proposta vigente e Calculado (forma de pagamento vigente = a da proposta vigente, senão a da oferta; margem e VGV do estudo válido; preço por m²; zonas; vários donos; corretores). `app.campos_empresa` guarda o que o administrador muda (Configurações › Campos, `app.salvar_campo`): o **título** (o nome que o usuário vê, editável a qualquer hora, sem repetir na empresa) e as marcas **Condição** (aparece no "Vale quando") e **No cartão** (pode entrar no cartão). `app.v_campos` junta os dois.
 - O esquema `fluxo` não conhece terreno: lê os campos pelas funções registradas em `fluxo.objeto_tipos` (`campo_objeto` = `app.campo_cartao`, `avalia_condicao` = `app.avaliar_condicao`, `valida_condicao` = `app.validar_condicao`). Em branco é nulo, vazio, lista vazia ou o "não informado" da coluna; em branco só satisfaz "não informado".
 - **No cartão:** quem edita o cartão inclui itens pelo bloco Formulário (antes "+ Campo"; ver "Formulário da tarefa e máscaras") (`tarefa_itens`): campos do terreno ou da negociação marcados "No cartão" e campos personalizados; o checklist já é item. O campo do terreno aparece com o controle do tipo e grava no próprio terreno (`app.gravar_campo`: ficha por `app.salvar_terreno` com a versão atual, oferta direto, temperatura por `app.definir_temperatura`); calculados só leem.
-- **Regra se em branco**, de cada item e local da tarefa: pode concluir (padrão), conclui com justificativa, não conclui. Vale para campos do terreno, campos personalizados e cada item de checklist (`checklist_itens.regra_branco`; vazio = regra da empresa para checklist). "Não conclui" trava analista e gestor; o diretor conclui com justificativa (`libera_bloqueio`). A justificativa é pedida na hora (`fluxo.concluir_justificando`, que conclui ou pede a aprovação) e fica no histórico.
+- **Regra se em branco**, de cada item e local da tarefa: pode concluir (padrão), conclui com justificativa, não conclui. Vale para campos do terreno, campos personalizados e cada item de checklist (`checklist_itens.regra_branco`; vazio = regra da empresa para checklist). "Não conclui" trava o analista; gestor e diretor concluem com justificativa, como no funil (`libera_bloqueio`). A justificativa é pedida na hora (`fluxo.concluir_justificando`, que conclui ou pede a aprovação) e fica no histórico.
 - **Vale quando** (`condicao` jsonb): `{"modo": "todas" | "qualquer", "itens": [{"campo", "op", "valores"} | {"grupo": {...}}]}`, com um nível de grupo ("(A ou B) e C"). Operadores pelo tipo (é / não é, igual, maior, menor, entre, antes, depois, nos últimos N dias, sim, não, preenchido, não informado). Condição que deixa de valer tira a pendência ("não se aplica mais"); a tarefa fica.
 - **Aba Configuração** do cartão: só diretor, administrador e quem criou a tarefa (`fluxo.configura_tarefa`) veem e mudam regra e condição (o trigger `fluxo.tg_tarefa_item` recusa os demais e também tirar do cartão um item com regra); os outros veem só o selo ("necessário", "pede justificativa").
 - `fluxo.itens_em_branco(tarefa)` lista o que está em branco com regra e condição valendo; `fluxo.pendencias_conclusao` devolve `'checklist'` e `'campos'` (bloqueiam, salvo justificativa do diretor) e `'justificar'` (conclui com justificativa).
@@ -1309,6 +1309,21 @@ erDiagram
 | Participações dos proprietários somam no máximo 100% (em cada parte) | trigger em `terreno_pessoas` |
 | Matrícula, inscrição, pessoa e oferta só se ligam a parte ativa do mesmo terreno | triggers `tg_parte_do_terreno`, `tg_oferta_parte` |
 | Terreno de vários donos só fica Comprado com todas as partes ativas compradas; negociação dividida não se move à mão | `_pendencias`, `_conferir_movimento`, `_sincronizar_principal` |
+| Parte ativa sem negociação conta como pendência (nunca como ok); retomar o terreno abre a negociação da parte cadastrada no Stand By (2/nov/2026) | `_pendencias`, `retomar_processo` |
+| A parte que sai da etapa responde pela Jornada do terreno (perguntas, regras pelo valor e tarefas que travam, que ficam no processo do terreno); quando as partes movem o terreno, as tarefas da etapa nascem e se arquivam como numa passagem à mão (2/nov/2026) | `_jornada_pendencias`, `_jornada_pede`, `_tarefas_travando`, `_sincronizar_principal` |
+| Tarefa que trava o avanço: tirar a etapa (Nenhuma ou outro processo), arquivar ou virar modelo só com gestor ou diretor (2/nov/2026) | trigger `t_trava` em `fluxo.tarefas` |
+| Aprovadores do cartão só mudam por quem gerencia o cartão e nunca com pedido aberto; quem criou, código, série, quem concluiu e quem arquivou não mudam pela tela (2/nov/2026) | triggers `t_aprovadores` em `fluxo.tarefa_pessoas` e `t_controle` em `fluxo.tarefas` |
+| Lembrete e aviso de cartão (também o de pedido e decisão de aprovação e de pausa) só para quem vê o cartão (2/nov/2026) | RLS de `lembretes`, `tg_lembrete_valido`, `_notificar` |
+| Fora da diretoria, as linhas de Taxas e Despesas financeiras não aparecem (nem o log delas): só o total do estudo; o cálculo conta todas. Trocar a linha de item também é mudá-la. Os modelos de estudo só se leem por `modelos_viabilidade`, sem essas linhas fora da diretoria, e o log do modelo é só da diretoria (2/nov/2026) | RLS de `viabilidade_linhas` e `auditoria`, `viab_linha_visivel`, `calcular_viabilidade`, `tg_viabilidade_filha`, `modelos_viabilidade` |
+| Regra de automação do quadro só mexe no cartão que o dono edita (2/nov/2026) | `disparar_automacoes`, `automacoes_agenda`, `botoes_cartao` |
+| Concluir ou arquivar cancela o pedido de pausa em aberto; pausa não começa em tarefa concluída (2/nov/2026) | `tg_tarefa_lista`, `_iniciar_pausa` |
+| Tipo da lista (aberta, pausa, conclui) só muda por gestor, diretor ou o administrador; lista nova de quem edita nasce aberta (2/nov/2026) | trigger `t_tipo` em `fluxo.listas` |
+| Condição, campo, pendências e votos do cartão só respondem sobre o cartão que quem pergunta vê; por dentro o banco usa as versões internas (`_condicao_vale` etc.) (2/nov/2026) | `condicao_vale`, `campo_do_objeto`, `pendencias_conclusao`, `votos_da_vez` |
+| Quem enviou a versão atual do documento não a valida; o diretor pode (2/nov/2026) | `revisar_documento` |
+| Terreno arquivado volta por gestor, diretor ou o administrador; o arquivamento fica no histórico (2/nov/2026) | `reativar_terreno` |
+| Código do terreno e quem criou são do banco; responsável do terreno e participante da BKM em reunião são da equipe; pessoa, corretor e ofertante são da mesma empresa (2/nov/2026) | triggers `t_controle` em `terrenos` e `t_vinculos` (`tg_vinculos_empresa`) |
+| Inscrição com IPTU ou valor venal, ou numa análise substituída, não se apaga; análise substituída e as zonas dela não mudam; a análise tem log (2/nov/2026) | `tg_inscricao_historico`, `tg_analise_substituida` |
+| Equipe só recebe quem tem e-mail de um domínio da empresa (ou do mesmo domínio de quem inclui); o @ só muda pelo administrador da empresa do domínio da pessoa; domínio cadastrado é o do e-mail de quem cadastra e nunca de e-mail gratuito (2/nov/2026) | `tg_membro_dominio`, `mudar_arroba`, `tg_dominio_empresa` |
 | Parte sai com motivo, só com a negociação dela encerrada e nunca depois de comprada; essencial só com gestor ou diretor | `remover_parte`, `salvar_parte` |
 | Registro não muda de terreno depois de criado | `tg_mesma_empresa` |
 | Diligência impeditiva em aberto impede a compra; checklist da etapa para sair dela; pré-requisitos para entrar | `_pendencias` |

@@ -16,7 +16,6 @@ UI.tl=Object.assign({agr:'status',fech:{}},UI.tl||{});
 UI.tc=UI.tc||{};
 /* o calendário começa na semana de hoje (simulação G_Calendario aprovada): Mês mostra 5 semanas, Semana uma; as setas andam 4 semanas ou 1 */
 const tcDom=d=>addD(d,-pd(d).getDay());
-const TK_ST_N={fazer:'Fazer',fazendo:'Fazendo',aguardando:'Aguardando retorno',pausa:'Pausada',feito:'Feito'};
 const tkAnel=(t,k)=>{const c=tkStCls(tkLista(t,k)),pode=vzEdita(t,k)&&!k.arq&&!k.modelo;
   return pode?`<button class="tk-anel st-${c}" data-a="tl-feito" data-id="${t.id}" data-tk="${k.id}" aria-label="${k.feita?'Reabrir':'Concluir'} ${escT(k.titulo)}" title="${esc(tkLista(t,k).nome)} · ${k.feita?'reabrir':'concluir'}">${k.feita?ic('check',12):''}</button>`
     :`<span class="tk-anel st-${c}" title="${esc(tkLista(t,k).nome)}">${k.feita?ic('check',12):''}</span>`};

@@ -680,6 +680,7 @@ select pg_temp.ok((select count(*) from app.buscar_duplicados(:'emp', p_inscrica
 select pg_temp.ok((select count(*) from app.auditoria where tabela = 'consultas_lote') = 6, 'consultas do lote vão para os logs');
 -- limpa o que os testes seguintes contam (como superusuário)
 reset role;
+select set_config('request.jwt.claim.sub', '', false);
 delete from app.terrenos where id = :'tsj';
 delete from app.inscricoes_municipais where id in (:'gi', :'gi2', :'gdup');
 select pg_temp.como(:'diretor');
@@ -1338,8 +1339,13 @@ select pg_temp.ok((select bool_and(app.viab_tipos(g.key) = array(select jsonb_ar
 select pg_temp.como(:'analista');
 select app.criar_viabilidade(:'t1', 'Estudo estático') as vb1 \gset
 select pg_temp.ok((select count(*) from app.viabilidade_linhas where viabilidade_id = :'vb1')
+                  = (select count(*) from app.viabilidade_despesas where empresa_id = :'emp' and app.viab_fixo(grupo) and not app.viab_restrito(grupo)),
+  'fora da diretoria, as linhas de Taxas e Despesas financeiras não aparecem (só o total do estudo)');
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.viabilidade_linhas where viabilidade_id = :'vb1')
                   = (select count(*) from app.viabilidade_despesas where empresa_id = :'emp' and app.viab_fixo(grupo)),
   'estudo novo já vem com os itens fixos de Taxas, Despesas financeiras (com os dois custos de capital) e Despesas comerciais');
+select pg_temp.como(:'analista');
 insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, ordem, nome, area_privativa, quantidade, quantidade_permuta, quantidade_comissao, preco_unitario)
 values (:'emp', :'vb1', 1, '2 dormitórios', 40, 100, 10, 2, 280000) returning id as tp1 \gset
 insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, ordem, nome, area_privativa, quantidade, preco_m2)
@@ -1365,9 +1371,21 @@ update app.viabilidade_linhas set valor = 2 where viabilidade_id = :'vb1' and de
 update app.viabilidade_linhas set tipo = 'verba', valor = 300000 where viabilidade_id = :'vb1' and despesa = 'registro_vendas';
 update app.viabilidade_linhas set valor = 50000, quantidade = 24 where viabilidade_id = :'vb1' and despesa = 'custo_fixo_comercial';
 -- taxas e despesas financeiras (fixas): só a diretoria ou o administrador mexe
-select pg_temp.falha(format($$update app.viabilidade_linhas set valor = 4 where viabilidade_id = %L and despesa = 'impostos'$$, :'vb1'), 'analista não muda despesa financeira do estudo');
-select pg_temp.falha(format($$update app.viabilidade_linhas set tipo = 'verba' where viabilidade_id = %L and despesa = 'taxa_gestao_obra'$$, :'vb1'), 'analista não muda taxa do estudo');
-select pg_temp.falha(format($$delete from app.viabilidade_linhas where viabilidade_id = %L and despesa = 'taxa_desenvolvimento'$$, :'vb1'), 'analista não tira taxa do estudo');
+-- (fora da diretoria a linha nem aparece; o gatilho barra quem chegasse a ela)
+update app.viabilidade_linhas set valor = 4 where viabilidade_id = :'vb1' and despesa = 'impostos';
+update app.viabilidade_linhas set tipo = 'verba' where viabilidade_id = :'vb1' and despesa = 'taxa_gestao_obra';
+update app.viabilidade_linhas set despesa = 'marketing', valor = 0 where viabilidade_id = :'vb1' and despesa = 'taxa_gestao_obra';
+delete from app.viabilidade_linhas where viabilidade_id = :'vb1' and despesa = 'taxa_desenvolvimento';
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) = 1 from app.viabilidade_linhas where viabilidade_id = :'vb1' and despesa = 'taxa_desenvolvimento')
+  and (select tipo <> 'verba' from app.viabilidade_linhas where viabilidade_id = :'vb1' and despesa = 'taxa_gestao_obra')
+  and (select valor is distinct from 4 from app.viabilidade_linhas where viabilidade_id = :'vb1' and despesa = 'impostos'),
+  'analista não muda, não troca de item nem tira taxa ou despesa financeira do estudo');
+select id as vb1_taxa from app.viabilidade_linhas where viabilidade_id = :'vb1' and despesa = 'taxa_gestao_obra' \gset
+reset role;
+select set_config('request.jwt.claim.sub', :'analista', false);
+select pg_temp.falha(format($$update app.viabilidade_linhas set despesa = 'marketing', valor = 0 where id = %L$$, :'vb1_taxa'),
+  'trocar uma taxa por outra despesa (e zerar) também é mudar a taxa');
 select pg_temp.como(:'diretor');
 update app.viabilidade_linhas set valor = 4 where viabilidade_id = :'vb1' and despesa = 'impostos';
 update app.viabilidade_linhas set valor = 2 where viabilidade_id = :'vb1' and despesa = 'taxa_gestao_obra';
@@ -1397,9 +1415,14 @@ select pg_temp.ok((select despesas_gerais = 676400 and taxas = 964858.91 and cus
   and ebitda = 7969968 and despesas_financeiras = 1705600 and lucro_sem_taxas = 6264368
   and lucro_liquido = 5299509.09 and margem_pct = 13.47 from app.viabilidades where id = :'vb1'),
   'gerais 676,4 mil, comerciais 4,698 mi: EBITDA 7,97 mi − financeiras (impostos 4%: 1,7056 mi) = sem taxas 6,264 mi − taxas 964,9 mil (com 10% do lucro) = lucro 5,299 mi, margem 13,47%');
+select pg_temp.ok((app.calcular_viabilidade(:'vb1')->>'lucro_liquido')::numeric = 5299509.09
+  and not exists (select 1 from jsonb_array_elements(app.calcular_viabilidade(:'vb1')->'linhas') x where app.viab_restrito(x->>'grupo')),
+  'fora da diretoria, o cálculo conta Taxas e Financeiras no lucro, mas não devolve o detalhe dessas linhas');
+select pg_temp.como(:'diretor');
 select pg_temp.ok((select (x->>'base')::numeric = 5299509.09 and (x->>'valor')::numeric = 529950.91 from jsonb_array_elements(app.calcular_viabilidade(:'vb1')->'linhas') x
                     where x->>'id' = (select id::text from app.viabilidade_linhas where viabilidade_id = :'vb1' and despesa = 'taxa_desenvolvimento')),
   'taxa de desenvolvimento: 10% do lucro líquido, já descontada ela mesma');
+select pg_temp.como(:'analista');
 update app.viabilidade_linhas set tipo = 'verba_unidade', valor = 500 where viabilidade_id = :'vb1' and despesa = 'contratos_cef';
 select pg_temp.ok((select custos_comerciais from app.viabilidades where id = :'vb1') = 4767000, 'verba por unidade: 500 × 138 unidades líquidas (150 − 10 em permuta − 2 da comissão)');
 update app.viabilidade_linhas set tipo = 'verba', valor = null where viabilidade_id = :'vb1' and despesa = 'contratos_cef';
@@ -1432,16 +1455,20 @@ select pg_temp.ok((select (x->>'valor')::numeric = 70000 from jsonb_array_elemen
   'com o mínimo garantido, o aporte da permuta é o mínimo (2% de 3,5 mi)');
 select app.salvar_viabilidade(:'vb1', '{"minimo_garantido":3000000}');
 select pg_temp.como(:'analista');
-select pg_temp.falha(format($$update app.viabilidade_linhas set valor = 5 where viabilidade_id = %L and despesa = 'capital_pagamento'$$, :'vb1'), 'analista não muda o custo de capital');
+update app.viabilidade_linhas set valor = 5 where viabilidade_id = :'vb1' and despesa = 'capital_pagamento';
 select pg_temp.como(:'diretor');
+select pg_temp.ok((select valor is distinct from 5 from app.viabilidade_linhas where viabilidade_id = :'vb1' and despesa = 'capital_pagamento'),
+  'analista não muda o custo de capital');
 update app.viabilidade_linhas set valor = null where viabilidade_id = :'vb1' and despesa in ('capital_permuta','capital_pagamento');
 select app.salvar_despesa_viabilidade(:'emp', 'juros_pj', '{"valor_padrao":1.5}');
 select pg_temp.como(:'analista');
 select app.criar_viabilidade(:'t1', 'Com juros padrão') as vbj \gset
+select app.criar_viabilidade(:'t1', 'Cópia', :'vb1') as vbc \gset
+select pg_temp.como(:'diretor');
 select pg_temp.ok((select valor = 1.5 and tipo = 'pct_obra_total' from app.viabilidade_linhas where viabilidade_id = :'vbj' and despesa = 'juros_pj'),
   'estudo novo (criado pelo analista) vem com o juros PJ padrão da empresa');
-select app.criar_viabilidade(:'t1', 'Cópia', :'vb1') as vbc \gset
 select pg_temp.ok((select valor = 4 from app.viabilidade_linhas where viabilidade_id = :'vbc' and despesa = 'impostos'), 'duplicar copia as taxas e despesas financeiras do estudo');
+select pg_temp.como(:'analista');
 select app.apagar_viabilidade(:'vbj');
 select app.apagar_viabilidade(:'vbc');
 select pg_temp.falha(format($$update app.viabilidade_linhas set tipo = 'pct_lucro' where viabilidade_id = %L and despesa = 'comissao'$$, :'vb1'), 'base que o grupo não aceita é recusada (comercial em % do lucro)');
@@ -1486,11 +1513,12 @@ select app.salvar_modelo_viabilidade(:'vb1', 'Meu modelo') as mdu \gset
 select pg_temp.ok((select user_id = :'analista' and not padrao and (dados->>'custo_m2')::numeric = 3000
                      and not exists (select 1 from jsonb_array_elements(dados->'linhas') l where l->>'despesa' in ('impostos','taxa_desenvolvimento'))
                      and exists (select 1 from jsonb_array_elements(dados->'linhas') l where l->>'despesa' = 'comissao')
-                   from app.viabilidade_modelos where id = :'mdu'),
+                   from app.modelos_viabilidade(:'emp') where id = :'mdu'),
   'modelo do analista guarda o valor da obra e as linhas, sem Taxas e Despesas financeiras');
 select pg_temp.falha(format($$select app.salvar_modelo_viabilidade(%L, 'Meu modelo')$$, :'vb1'), 'nome de modelo repetido é recusado');
 select pg_temp.falha(format($$select app.salvar_modelo_viabilidade(%L, 'Da empresa', true)$$, :'vb1'), 'analista não grava modelo da empresa');
 select app.criar_viabilidade(:'t1', 'Pelo meu modelo', null, :'mdu') as vbm \gset
+select pg_temp.como(:'diretor');
 select pg_temp.ok((select custo_m2 = 3000 and deduz_vgv = '{itbi_vendas}'
                      and not exists (select 1 from app.viabilidade_tipologias where viabilidade_id = :'vbm') from app.viabilidades where id = :'vbm')
   and (select count(*) from app.viabilidade_linhas where viabilidade_id = :'vbm') = (select count(*) from app.viabilidade_linhas where viabilidade_id = :'vb1')
@@ -1498,33 +1526,46 @@ select pg_temp.ok((select custo_m2 = 3000 and deduz_vgv = '{itbi_vendas}'
   and exists (select 1 from app.viabilidade_linhas a join app.viabilidade_linhas b on b.despesa = a.despesa and b.viabilidade_id = :'vb1'
                where a.viabilidade_id = :'vbm' and a.despesa = 'comissao' and a.tipo = b.tipo and a.valor is not distinct from b.valor),
   'estudo pelo modelo do usuário: valores e bases do modelo (sem o que deixou de ser dedutível), sem tipologias; Taxas e Despesas financeiras com o padrão da lista');
+select pg_temp.como(:'analista');
 select app.apagar_viabilidade(:'vbm');
 select pg_temp.como(:'gestor');
-select pg_temp.ok(not exists (select 1 from app.viabilidade_modelos where id = :'mdu'), 'modelo do usuário só ele vê');
+select pg_temp.ok(not exists (select 1 from app.modelos_viabilidade(:'emp') where id = :'mdu'), 'modelo do usuário só ele vê');
 select pg_temp.falha(format($$select app.criar_viabilidade(%L, 'X', null, %L)$$, :'t1', :'mdu'), 'ninguém usa o modelo de outro usuário');
 select pg_temp.falha(format($$select app.apagar_modelo_viabilidade(%L)$$, :'mdu'), 'ninguém apaga o modelo de outro usuário');
 select pg_temp.como(:'diretor');
 select app.salvar_modelo_viabilidade(:'vb1', 'Padrão BKM', true) as mde \gset
 select app.marcar_modelo_padrao(:'emp', :'mde');
+select pg_temp.ok(exists (select 1 from app.modelos_viabilidade(:'emp') m, jsonb_array_elements(m.dados->'linhas') l where m.id = :'mde' and l->>'despesa' = 'impostos'),
+  'o modelo da empresa salvo pela diretoria guarda as taxas e despesas financeiras');
+select pg_temp.como(:'gestor');
+select pg_temp.ok(not exists (select 1 from app.modelos_viabilidade(:'emp') m, jsonb_array_elements(m.dados->'linhas') l where m.id = :'mde' and l->>'despesa' in ('impostos','taxa_desenvolvimento'))
+  and exists (select 1 from app.modelos_viabilidade(:'emp') m, jsonb_array_elements(m.dados->'linhas') l where m.id = :'mde' and l->>'despesa' = 'comissao'),
+  'fora da diretoria, o modelo aparece sem as linhas de taxas e despesas financeiras');
+select pg_temp.ok(not exists (select 1 from app.auditoria where tabela = 'viabilidade_modelos'), 'nem o log do modelo, que leva os mesmos valores');
+select pg_temp.falha('select dados from app.viabilidade_modelos', 'a tabela dos modelos não se lê direto');
 select pg_temp.como(:'analista');
 select pg_temp.falha(format($$select app.marcar_modelo_padrao(%L, null)$$, :'emp'), 'só o administrador escolhe o modelo padrão');
 select pg_temp.falha(format($$select app.apagar_modelo_viabilidade(%L)$$, :'mde'), 'analista não apaga modelo da empresa');
 select pg_temp.falha(format($$select app.marcar_modelo_padrao(%L, %L)$$, :'emp', :'mdu'), 'modelo do usuário não vira padrão');
 select app.criar_viabilidade(:'t1', 'Novo') as vbp \gset
+select pg_temp.como(:'diretor');
 select pg_temp.ok((select custo_m2 = 3000 from app.viabilidades where id = :'vbp')
   and (select valor = 4 from app.viabilidade_linhas where viabilidade_id = :'vbp' and despesa = 'impostos'),
   'estudo novo nasce com o modelo padrão da empresa, com as Taxas e Despesas financeiras dele (gravado pela diretoria)');
+select pg_temp.como(:'analista');
 select app.criar_viabilidade(:'t1', 'Só a lista', null, null, true) as vbs \gset
+select pg_temp.como(:'diretor');
 select pg_temp.ok((select custo_m2 is null from app.viabilidades where id = :'vbs')
   and (select valor is null from app.viabilidade_linhas where viabilidade_id = :'vbs' and despesa = 'impostos'),
   'sem modelo, o estudo nasce só com a lista da empresa');
+select pg_temp.como(:'analista');
 select app.apagar_viabilidade(:'vbp');
 select app.apagar_viabilidade(:'vbs');
 select app.apagar_modelo_viabilidade(:'mdu');
-select pg_temp.ok(not exists (select 1 from app.viabilidade_modelos where id = :'mdu'), 'o usuário apaga o próprio modelo');
+select pg_temp.ok(not exists (select 1 from app.modelos_viabilidade(:'emp') where id = :'mdu'), 'o usuário apaga o próprio modelo');
 select pg_temp.como(:'diretor');
 select app.marcar_modelo_padrao(:'emp', null);
-select pg_temp.ok(not exists (select 1 from app.viabilidade_modelos where padrao), 'o administrador tira o padrão');
+select pg_temp.ok(not exists (select 1 from app.modelos_viabilidade(:'emp') where padrao), 'o administrador tira o padrão');
 select app.apagar_modelo_viabilidade(:'mde');
 
 -- ---------------------------------------------------------------------
@@ -2201,7 +2242,6 @@ select pg_temp.ok(fluxo.pendencias_conclusao(:'kp') = array['campos'], 'campo do
 select pg_temp.falha(format($$update fluxo.tarefas set concluida_em = now() where id = %L$$, :'kp'), 'com o campo em branco que bloqueia, não conclui');
 select pg_temp.falha(format($$select fluxo.concluir_justificando(%L, 'Vou ver depois')$$, :'kp'), 'item que bloqueia: o analista não conclui nem com justificativa');
 select pg_temp.como(:'gestor');
-select pg_temp.falha(format($$select fluxo.concluir_justificando(%L, 'Pode ir')$$, :'kp'), 'item que bloqueia trava também o gestor');
 select pg_temp.falha(format($$update fluxo.tarefa_itens set regra_branco = 'livre' where tarefa_id = %L$$, :'kp'), 'só diretor, administrador e quem criou mudam a regra do item');
 select pg_temp.falha(format($$delete from fluxo.tarefa_itens where tarefa_id = %L$$, :'kp'), 'item com regra não sai pela mão de quem não configura o cartão');
 insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave) values (:'emp', :'kp', 'oferta.forma_pagamento_pedida');
@@ -2239,6 +2279,9 @@ select fluxo.copiar_tarefa(:'kd', pg_temp.lista(:'tcd', 'Fazer'), 'Contrato (có
 select pg_temp.ok((select regra_branco = 'bloqueia' and condicao is not null from fluxo.tarefa_itens where tarefa_id = :'kdc' and chave = 'oferta.corretor_id')
   and (select regra_branco = 'bloqueia' from fluxo.checklist_itens i join fluxo.checklists c on c.id = i.checklist_id where c.tarefa_id = :'kdc'),
   'a cópia leva os itens e a regra de cada um');
+select pg_temp.como(:'gestor');
+select pg_temp.ok(fluxo.concluir_justificando(:'kdc', 'Certidão pedida ao cartório') = 'concluida', 'o gestor também passa pelo item que bloqueia, com justificativa (como no funil)');
+select pg_temp.ok((select libera_bloqueio from fluxo.conclusao_justificativas where tarefa_id = :'kdc'), 'o registro diz que o gestor passou pelo bloqueio');
 select pg_temp.como(:'leitor');
 select pg_temp.falha(format($$select app.gravar_campo(%L, 'terreno.area_documental_m2', '1600')$$, :'tcd'), 'leitura não grava campo pelo cartão');
 \echo '# recorrência (fluxo, bloco 4)'
@@ -2926,4 +2969,260 @@ select count(app.salvar_regra_etapa(:'emp', id, '{"regra":"justifica"}')) from a
 select pg_temp.ok(:nte > 0 and (select bool_and((i->>'justifica')::boolean) from jsonb_array_elements(app.checar_passagem(:'pjn')->'itens') i where i->>'tipo' = 'tarefa'),
   'tarefa aberta de regra "avança com justificativa" entra como pendência que se justifica');
 select count(app.salvar_regra_etapa(:'emp', id, '{"regra":"bloqueia"}')) from app.etapa_regras where empresa_id = :'emp' and fase = 'novos_negocios' and etapa = 'estudos' and trava and ativo;
+
+-- ---------------------------------------------------------------------
+\echo '# brechas fechadas na revisão de 2/nov/2026'
+-- 1. aprovadores: só quem gerencia o cartão, e nunca com pedido aberto
+select pg_temp.como(:'gestor');
+select pg_temp.tarefa(:'tm', 'Aprovar a minuta', current_date + 5) as kap \gset
+insert into fluxo.tarefa_pessoas (empresa_id, tarefa_id, user_id, papel) values (:'emp', :'kap', :'diretor', 'aprovador');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$delete from fluxo.tarefa_pessoas where tarefa_id = %L and papel = 'aprovador'$$, :'kap'), 'o editor não tira o aprovador para concluir sem aprovação');
+select pg_temp.falha(format($$update fluxo.tarefa_pessoas set user_id = %L where tarefa_id = %L and papel = 'aprovador'$$, :'analista', :'kap'), 'o editor não se põe no lugar do aprovador');
+select pg_temp.falha(format($$insert into fluxo.tarefa_pessoas (empresa_id, tarefa_id, user_id, papel) values (%L, %L, %L, 'aprovador')$$, :'emp', :'kap', :'analista'), 'o editor não se inclui como aprovador');
+select pg_temp.falha(format($$update fluxo.tarefas set concluida_em = now() where id = %L$$, :'kap'), 'e o cartão continua sem concluir sem a aprovação');
+insert into fluxo.tarefa_pessoas (empresa_id, tarefa_id, user_id, papel) values (:'emp', :'kap', :'gestor', 'acompanha');
+select pg_temp.ok(exists (select 1 from fluxo.tarefa_pessoas where tarefa_id = :'kap' and user_id = :'gestor' and papel = 'acompanha'), 'as outras pessoas do cartão o editor continua pondo');
+select pg_temp.como(:'gestor');
+select fluxo.pedir_aprovacao(:'kap') is not null as ped \gset
+select pg_temp.falha(format($$delete from fluxo.tarefa_pessoas where tarefa_id = %L and papel = 'aprovador'$$, :'kap'), 'com o pedido aberto, nem quem criou muda os aprovadores');
+select pg_temp.como(:'diretor');
+select fluxo.decidir_aprovacao((select id from fluxo.aprovacoes where tarefa_id = :'kap' and situacao = 'pendente'), false, 'Falta a cláusula de permuta');
+select pg_temp.como(:'gestor');
+delete from fluxo.tarefa_pessoas where tarefa_id = :'kap' and papel = 'aprovador';
+select pg_temp.ok(not exists (select 1 from fluxo.tarefa_pessoas where tarefa_id = :'kap' and papel = 'aprovador'), 'sem pedido aberto, quem criou o cartão muda os aprovadores');
+
+-- 2. quem criou, código e quem concluiu não mudam pela tela
+select pg_temp.tarefa(:'tm', 'Cartão do gestor', current_date + 5) as kcg \gset
+select codigo as kcg_cod from fluxo.tarefas where id = :'kcg' \gset
+select pg_temp.como(:'analista');
+update fluxo.tarefas set criado_por = :'analista', codigo = 'TAR-999999' where id = :'kcg';
+select pg_temp.ok((select criado_por = :'gestor' and codigo = :'kcg_cod' from fluxo.tarefas where id = :'kcg'), 'o editor não vira quem criou o cartão nem troca o código');
+select pg_temp.ok(fluxo.papel_tarefa(:'kcg') = 'editor', 'e continua só editor do cartão');
+select pg_temp.falha(format($$update fluxo.tarefas set visibilidade = 'individual' where id = %L$$, :'kcg'), 'por isso não esconde o cartão de quem o criou');
+update fluxo.tarefas set concluida_em = now() where id = :'kcg';
+update fluxo.tarefas set concluida_por = :'gestor', concluida_em = now() - interval '3 days' where id = :'kcg';
+select pg_temp.ok((select concluida_por = :'analista' and concluida_em > now() - interval '1 hour' from fluxo.tarefas where id = :'kcg'), 'quem concluiu e quando ficam como o sistema gravou');
+
+-- 7. automações: arquivar e trocar o responsável funcionam
+insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, gatilho_lista_id, acoes)
+values (:'emp', :'qm', 'Retorno passa ao gestor', 'entrou_lista', pg_temp.lista(:'tm', 'Aguardando retorno'),
+        jsonb_build_array(jsonb_build_object('tipo', 'responsavel', 'pessoa', :'gestor'), jsonb_build_object('tipo', 'arquivar'))) returning id as aur \gset
+select pg_temp.tarefa(:'tm', 'Esperar o cartório', current_date + 5, :'analista') as kar \gset
+update fluxo.tarefas set lista_id = pg_temp.lista(:'tm', 'Aguardando retorno') where id = :'kar';
+reset role;
+select pg_temp.ok((select responsavel_id = :'gestor' and arquivada_em is not null from fluxo.tarefas where id = :'kar')
+  and (select resultado = 'ok' and detalhe = 'trocou o responsável; arquivou' from fluxo.automacao_execucoes where automacao_id = :'aur' and tarefa_id = :'kar'),
+  'a automação troca o responsável e arquiva (antes as duas ações davam erro)');
+
+-- 6. lembrete de cartão Restrito: só quem vê o cartão
+select pg_temp.como(:'gestor');
+insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, visibilidade, prazo)
+values (:'emp', :'qm', pg_temp.lista(:'tm', 'Fazer'), 'Proposta sigilosa', 'restrito', current_date + 5) returning id as krs \gset
+select pg_temp.como(:'analista');
+select pg_temp.ok(not exists (select 1 from app.lembretes where origem_id = :'krs'), 'quem não vê o cartão não vê os lembretes dele');
+select pg_temp.falha(format($$insert into app.lembretes (empresa_id, origem_tabela, origem_id, dias_antes) values (%L, 'tarefas', %L, 10)$$, :'emp', :'krs'),
+  'nem grava lembrete para um cartão que não vê');
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format($$insert into app.lembretes (empresa_id, origem_tabela, origem_id, dias_antes, destinatario_id) values (%L, 'tarefas', %L, 10, %L)$$, :'emp', :'krs', :'analista'),
+  'o lembrete não vai para quem não vê o cartão');
+reset role;
+select app._notificar(:'emp', :'analista', 'tarefa_atribuida', 'Tarefa para você: Proposta sigilosa', :'tm', 'tarefas', :'krs', current_date, :'gestor');
+select pg_temp.ok(not exists (select 1 from app.notificacoes where origem_id = :'krs' and destinatario_id = :'analista'),
+  'e nenhum aviso de cartão chega a quem não o vê');
+
+-- 3. tarefa que trava: tirar a etapa, arquivar ou virar modelo só com gestor ou diretor
+select pg_temp.como(:'diretor');
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude, poligono_geojson)
+  values (:'emp', 'Terreno da trava', :'analista', 'corretor', :'sp', -23.71, -46.71, pg_temp.quadra(-46.71, -23.71)) returning id as ttv \gset
+select (app.registrar_oferta(:'ttv', 3000000, 'dinheiro')->>'processo_id') as ptv \gset
+select app.mover_etapa(:'ptv', true, 'teste') as r \gset
+select pg_temp.como(:'analista');
+select (i->>'tarefa_id') as ktv from jsonb_array_elements(app.checar_passagem(:'ptv')->'itens') i where i->>'tipo' = 'tarefa' limit 1 \gset
+select pg_temp.ok(:'ktv' <> '', 'o terreno tem tarefa que trava a saída da etapa');
+select pg_temp.falha(format($$update fluxo.tarefas set etapa = 'nenhuma' where id = %L$$, :'ktv'), 'o analista não tira a etapa da tarefa que trava (Nenhuma)');
+select pg_temp.falha(format($$update fluxo.tarefas set arquivada_em = now() where id = %L$$, :'ktv'), 'nem arquiva a tarefa que trava');
+select pg_temp.falha(format($$update fluxo.tarefas set modelo = true where id = %L$$, :'ktv'), 'nem a torna modelo');
+select pg_temp.falha(format($$select app.mover_etapa(%L)$$, :'ptv'), 'e o avanço continua travado');
+update fluxo.tarefas set titulo = titulo || ' (revisado)' where id = :'ktv';
+select pg_temp.ok((select titulo like '% (revisado)' from fluxo.tarefas where id = :'ktv'), 'o resto da tarefa o analista continua editando');
+select pg_temp.como(:'gestor');
+update fluxo.tarefas set arquivada_em = now() where id = :'ktv';
+select pg_temp.ok((select arquivada_em is not null from fluxo.tarefas where id = :'ktv'), 'o gestor arquiva a tarefa que trava');
+
+-- 5. parte sem negociação não deixa o terreno virar Comprado
+select pg_temp.como(:'diretor');
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude, poligono_geojson)
+  values (:'emp', 'Terreno de três donos', :'diretor', 'corretor', :'sp', -23.73, -46.73, pg_temp.quadra(-46.73, -23.73)) returning id as tpd \gset
+select app.abrir_negociacao(:'tpd') as ppd \gset
+select app.salvar_parte(:'tpd', null, '{"nome":"Dono A"}') as pa_a \gset
+select app.salvar_parte(:'tpd', null, '{"nome":"Dono B"}') as pa_b \gset
+select (app.mover_para_etapa(:'ppd', 'negociacao', true, 'teste'))->>'resultado' as r \gset
+select app.encerrar_processo(:'ppd', 'stand_by', null, 'pausa', current_date + 10) as r \gset
+select app.salvar_parte(:'tpd', null, '{"nome":"Dono C"}') as pa_c \gset
+select app.retomar_processo(:'ppd');
+select pg_temp.ok((select count(*) = 3 from app.processos where principal_id = :'ppd'), 'parte cadastrada no Stand By ganha a negociação ao retomar');
+select (app.mover_para_etapa(c.id, 'contrato', true, 'teste'))->>'resultado' from app.processos c join app.terreno_partes tp on tp.id = c.parte_id
+ where c.principal_id = :'ppd' \g /dev/null
+select app.encerrar_processo(c.id, 'concluido', null, 'ok', null, null, true, 'teste') from app.processos c join app.terreno_partes tp on tp.id = c.parte_id
+ where c.principal_id = :'ppd' \g /dev/null
+-- parte que ficou sem negociação (gravada por fora) conta como pendência, não como ok
+reset role;
+insert into app.terreno_partes (empresa_id, terreno_id, nome) values (:'emp', :'tpd', 'Dono D');
+select pg_temp.como(:'diretor');
+select pg_temp.ok(exists (select 1 from jsonb_array_elements(app.checar_passagem(:'ppd', 'status', 'concluido')->'itens') i where i->>'tipo' = 'parte' and (i->>'ok')::boolean is false and i->>'texto' like '%Dono D: sem negociação'),
+  'parte sem negociação aparece como pendência, não como ok');
+select pg_temp.falha(format($$select app.encerrar_processo(%L, 'concluido', null, 'compra', null, 'ok', true, 'forçando')$$, :'ppd'), 'e o terreno não vira Comprado, nem forçando');
+
+-- 4. terreno em partes não passa por cima da Jornada
+select app.salvar_item_jornada(:'emp', null, '{"fase":"novos_negocios","etapa":"negociacao","campo":"terreno.descricao","regra":"bloqueia"}') as ijp \gset
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude, poligono_geojson)
+  values (:'emp', 'Terreno de dois donos', :'diretor', 'corretor', :'sp', -23.75, -46.75, pg_temp.quadra(-46.75, -23.75)) returning id as tjp \gset
+select app.abrir_negociacao(:'tjp') as pjp \gset
+select app.salvar_parte(:'tjp', null, '{"nome":"Dono A"}') as r \gset
+select app.salvar_parte(:'tjp', null, '{"nome":"Dono B"}') as r \gset
+select (app.mover_para_etapa(:'pjp', 'negociacao', true, 'teste'))->>'resultado' as r \gset
+select pg_temp.como(:'analista');
+select id as cjp from app.processos where principal_id = :'pjp' order by codigo limit 1 \gset
+select pg_temp.ok(exists (select 1 from jsonb_array_elements(app.checar_passagem(:'cjp', 'etapa', 'contrato')->'itens') i where i->>'tipo' = 'jornada' and (i->>'ok')::boolean is false),
+  'a parte que sai de Negociação vê a pergunta da Jornada sem resposta');
+select pg_temp.falha(format($$select app.mover_para_etapa(%L, 'contrato')$$, :'cjp'), 'e não sai sem a resposta');
+select pg_temp.como(:'diretor');
+select app.gravar_campo(:'tjp', 'terreno.descricao', '"Dois lotes de esquina"');
+select pg_temp.como(:'analista');
+select pg_temp.ok(not exists (select 1 from jsonb_array_elements(app.checar_passagem(:'cjp', 'etapa', 'contrato')->'itens') i where i->>'tipo' = 'jornada' and (i->>'ok')::boolean is false),
+  'respondida no terreno, vale para todas as partes');
+select pg_temp.como(:'diretor');
+select app.salvar_item_jornada(:'emp', :'ijp', '{"ativo":false}') as r \gset
+
+-- ---------------------------------------------------------------------
+\echo '# médios e baixos da revisão de 2/nov/2026'
+-- Taxas e Financeiras: o gestor também não vê o log de cada linha
+select pg_temp.como(:'gestor');
+select pg_temp.ok(not exists (select 1 from app.auditoria where tabela = 'viabilidade_linhas' and depois->>'despesa' in ('impostos','taxa_desenvolvimento'))
+  and exists (select 1 from app.auditoria where tabela = 'viabilidade_linhas' and depois->>'despesa' = 'comissao'),
+  'o gestor vê o log das linhas comuns, não o das taxas e despesas financeiras');
+select pg_temp.como(:'diretor');
+select pg_temp.ok(exists (select 1 from app.auditoria where tabela = 'viabilidade_linhas' and depois->>'despesa' = 'impostos'), 'a diretoria vê');
+-- regra do quadro só mexe no cartão que o dono edita (não basta ver)
+select pg_temp.como(:'diretor');
+insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, visibilidade)
+select q.empresa_id, q.id, pg_temp.lista(:'tm', 'Fazer'), 'Cartão que o gestor só lê', 'restrito'
+from fluxo.quadros q where q.objeto_tipo = 'terreno' and q.objeto_id = :'tm' returning id as kle \gset
+insert into fluxo.tarefa_acessos (empresa_id, tarefa_id, user_id, papel) values (:'emp', :'kle', :'gestor', 'leitor');
+select pg_temp.como(:'gestor');
+insert into fluxo.automacoes (empresa_id, quadro_id, nome, gatilho, gatilho_lista_id, acoes)
+values (:'emp', :'qm', 'Fazendo é alta', 'entrou_lista', pg_temp.lista(:'tm', 'Fazendo'), '[{"tipo":"prioridade","valor":"alta"}]') returning id as aul \gset
+select pg_temp.ok(fluxo.papel_tarefa(:'kle') = 'leitor', 'o gestor só lê este cartão');
+select pg_temp.como(:'diretor');
+update fluxo.tarefas set lista_id = pg_temp.lista(:'tm', 'Fazendo') where id = :'kle';
+select pg_temp.ok((select prioridade = 'media' from fluxo.tarefas where id = :'kle') and not exists (select 1 from fluxo.automacao_execucoes where automacao_id = :'aul'),
+  'a regra de quem só lê o cartão não mexe nele');
+update fluxo.automacoes set ativa = false where id = :'aul';
+
+-- pausa pedida perde o sentido quando a tarefa é concluída
+select pg_temp.como(:'analista');
+select pg_temp.tarefa(:'tm', 'Conferir a certidão de ônus', current_date + 3) as kpz \gset
+select fluxo.pausar(:'kpz', 'Cartório fechado') as zpz \gset
+select pg_temp.ok((select situacao = 'pendente' from fluxo.pausas where id = :'zpz'), 'a pausa do analista fica pedida');
+update fluxo.tarefas set concluida_em = now() where id = :'kpz';
+select pg_temp.ok((select situacao = 'cancelada' from fluxo.pausas where id = :'zpz'), 'concluída a tarefa, o pedido de pausa é cancelado');
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format($$select fluxo.decidir_pausa(%L, true)$$, :'zpz'), 'e aprovar o pedido não reabre a tarefa');
+select pg_temp.ok((select concluida_em is not null from fluxo.tarefas where id = :'kpz'), 'a tarefa continua concluída');
+
+-- aviso de pausa não leva o título a quem não vê o cartão
+select pg_temp.como(:'analista');
+insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, visibilidade)
+select q.empresa_id, q.id, pg_temp.lista(:'tm', 'Fazer'), 'Assunto reservado', 'individual'
+from fluxo.quadros q where q.objeto_tipo = 'terreno' and q.objeto_id = :'tm' returning id as kre \gset
+select fluxo.pausar(:'kre', 'Aguardando') as zre \gset
+reset role;
+select pg_temp.ok(not exists (select 1 from app.notificacoes where texto like '%Assunto reservado%' and destinatario_id = :'gestor'),
+  'o pedido de pausa de um cartão Individual não chega ao gestor que não o vê');
+
+-- portas das funções internas: só sobre o cartão que quem pergunta vê
+select pg_temp.como(:'intruso');
+select pg_temp.falha(format($$select fluxo.condicao_vale(%L, '{"modo":"todas","itens":[{"campo":"terreno.topografia","op":"vazio"}]}')$$, :'kpz'),
+  'quem é de outra empresa não pergunta sobre os campos do terreno pelo cartão');
+select pg_temp.falha(format($$select fluxo.campo_do_objeto(%L, 'terreno.topografia')$$, :'kpz'), 'nem lê o campo');
+select pg_temp.falha(format($$select fluxo.pendencias_conclusao(%L)$$, :'kpz'), 'nem as pendências do cartão');
+select pg_temp.como(:'analista');
+select pg_temp.ok(fluxo.condicao_vale(:'kpz', null) and fluxo.pendencias_conclusao(:'kpz') = '{}', 'quem vê o cartão continua perguntando');
+
+-- quem enviou o documento não o valida sozinho; o diretor pode
+select app.registrar_documento(:'tm', 'foto', :'emp' || '/' || :'tm' || '/foto/rev.jpg', 'rev.jpg') as drv \gset
+select pg_temp.falha(format($$select app.revisar_documento(%L, true)$$, :'drv'), 'quem enviou não valida o próprio documento');
+select app.revisar_documento(:'drv', false);
+select pg_temp.ok((select situacao = 'rejeitado' from app.documentos where id = :'drv'), 'mas pode recusar o que enviou');
+select pg_temp.como(:'gestor');
+select app.revisar_documento(:'drv', true);
+select pg_temp.ok((select situacao = 'validado' and revisado_por = :'gestor' from app.documentos where id = :'drv'), 'outra pessoa valida');
+select pg_temp.como(:'diretor');
+select app.registrar_documento(:'tm', 'foto', :'emp' || '/' || :'tm' || '/foto/rev2.jpg', 'rev2.jpg') as drd \gset
+select app.revisar_documento(:'drd', true);
+select pg_temp.ok((select situacao = 'validado' from app.documentos where id = :'drd'), 'o diretor valida o que ele mesmo enviou');
+
+-- desarquivar terreno
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, poligono_geojson)
+  values (:'emp', 'Para arquivar', :'analista', 'corretor', :'sp', pg_temp.quadra(-46.80, -23.80)) returning id as tar \gset
+select app.arquivar_terreno(:'tar', 'Proprietário desistiu');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$select app.reativar_terreno(%L)$$, :'tar'), 'analista não desarquiva');
+select pg_temp.como(:'gestor');
+select app.reativar_terreno(:'tar');
+select pg_temp.ok((select situacao_cadastral = 'ativo' and arquivado_em is null and motivo_arquivamento is null from app.terrenos where id = :'tar'),
+  'gestor desarquiva o terreno');
+select pg_temp.ok(exists (select 1 from app.auditoria where tabela = 'terrenos' and registro_id = :'tar' and depois->>'motivo_arquivamento' = 'Proprietário desistiu'),
+  'o arquivamento fica no histórico');
+select pg_temp.falha(format($$select app.reativar_terreno(%L)$$, :'tar'), 'terreno ativo não se desarquiva');
+
+-- terreno: código e quem criou são do banco; responsável e vínculos dentro da empresa
+select pg_temp.como(:'analista');
+insert into app.terrenos (empresa_id, codigo, criado_por, nome, responsavel_id, origem_cadastro, municipio_id, poligono_geojson)
+  values (:'emp', 'TER-999999', :'gestor', 'Código escolhido', :'analista', 'corretor', :'sp', pg_temp.quadra(-46.81, -23.81)) returning id as tce \gset
+select pg_temp.ok((select codigo <> 'TER-999999' and codigo ~ '^TER-\d{6}$' and criado_por = :'analista' from app.terrenos where id = :'tce'),
+  'cadastro direto não escolhe o código nem quem criou');
+select pg_temp.falha(format($$insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, poligono_geojson) values (%L, 'X', %L, 'corretor', %L, %L)$$,
+  :'emp', :'intruso', :'sp', pg_temp.quadra(-46.82, -23.82)), 'o responsável do terreno é da equipe da empresa');
+select pg_temp.falha(format($$select app.salvar_terreno(%L, (select versao from app.terrenos where id = %L), '{"responsavel_id":"%s"}')$$, :'tce', :'tce', :'intruso'),
+  'nem depois, ao editar a ficha');
+
+-- histórico: inscrição com IPTU e análise substituída
+select pg_temp.falha(format($$delete from app.inscricoes_municipais where id = %L$$, :'ins'), 'inscrição com IPTU e valor venal não se apaga');
+select pg_temp.falha(format($$update app.analises_urbanisticas set fonte = 'Reescrita' where id = %L$$, :'a1'), 'análise substituída não muda');
+select pg_temp.falha(format($$update app.analise_zoneamentos set area_abrangida_m2 = 1 where analise_id = %L$$, :'a1'), 'nem as zonas dela');
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao) values (:'emp', :'tce', '077.111.0001-1') returning id as ilv \gset
+delete from app.inscricoes_municipais where id = :'ilv';
+select pg_temp.ok(not exists (select 1 from app.inscricoes_municipais where id = :'ilv'), 'inscrição sem histórico continua saindo');
+
+-- tipo da lista: só gestor, diretor ou o administrador
+select pg_temp.falha(format($$update fluxo.listas set tipo = 'pausa' where id = %L$$, pg_temp.lista(:'tm', 'Fazer')), 'analista não muda o tipo da lista');
+select pg_temp.falha(format($$insert into fluxo.listas (empresa_id, quadro_id, nome, tipo) values (%L, %L, 'Pronto', 'conclui')$$, :'emp', :'qm'),
+  'nem cria lista que conclui');
+insert into fluxo.listas (empresa_id, quadro_id, nome) values (:'emp', :'qm', 'Na prefeitura') returning id as lnp \gset
+select pg_temp.ok((select tipo = 'aberta' from fluxo.listas where id = :'lnp'), 'lista nova aberta, quem edita cria');
+select pg_temp.como(:'gestor');
+update fluxo.listas set tipo = 'conclui' where id = :'lnp';
+select pg_temp.ok((select tipo = 'conclui' from fluxo.listas where id = :'lnp'), 'o gestor muda o tipo');
+update fluxo.listas set tipo = 'aberta', oculta = true where id = :'lnp';
+
+-- outra empresa: equipe, @, domínio e cadastros
+select pg_temp.como(:'intruso');
+select app.criar_empresa('Outra SA', 'Intruso') as emp_x \gset
+select pg_temp.falha(format($$insert into app.membros (empresa_id, user_id, papel, nome) values (%L, %L, 'analista', 'Pego')$$, :'emp_x', :'analista'),
+  'o administrador de outra empresa não põe alguém da BKM na equipe dele');
+select pg_temp.falha(format($$select app.mudar_arroba(%L, 'pego')$$, :'analista'), 'nem muda o @ dele');
+select pg_temp.falha(format($$insert into app.empresa_dominios (dominio, empresa_id) values ('gmail.com', %L)$$, :'emp_x'), 'e-mail gratuito não vira domínio de empresa');
+select pg_temp.falha(format($$insert into app.empresa_dominios (dominio, empresa_id) values ('bkm2.test', %L)$$, :'emp_x'), 'só o domínio do próprio e-mail');
+insert into app.empresa_dominios (dominio, empresa_id) values ('outra.test', :'emp_x');
+select pg_temp.ok(exists (select 1 from app.empresa_dominios where dominio = 'outra.test'), 'o domínio do próprio e-mail entra');
+insert into app.pessoas (empresa_id, tipo_pessoa, nome_razao_social) values (:'emp_x', 'PF', 'Corretor de fora') returning id as pfx \gset
+insert into app.corretores (empresa_id, pessoa_id) values (:'emp_x', :'pfx') returning id as cfx \gset
+select pg_temp.como(:'diretor');
+select pg_temp.falha(format($$insert into app.terreno_corretores (terreno_id, corretor_id, empresa_id) values (%L, %L, %L)$$, :'tce', :'cfx', :'emp'),
+  'corretor de outra empresa não entra no terreno');
+select pg_temp.falha(format($$insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel) values (%L, %L, %L, 'proprietario')$$, :'emp', :'tce', :'pfx'),
+  'nem pessoa de outra empresa');
+
 \echo 'TODOS OS TESTES PASSARAM'
