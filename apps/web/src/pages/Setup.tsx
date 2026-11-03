@@ -8,7 +8,7 @@ export default function Setup() {
       <h1>Falta configurar o Supabase</h1>
       <p>Crie <code>apps/web/.env.local</code> a partir de <code>apps/web/.env.example</code> com a URL e a chave anon do projeto
         (Supabase → Project Settings → API) e reinicie o <code>npm run dev</code>.</p>
-      <p className="muted">No Railway, as mesmas variáveis vão em Variables do serviço, antes do build.</p>
+      <p className="muted">No Cloud Run, as mesmas variáveis vão como argumentos de build do Cloud Build.</p>
     </div>
   );
 }

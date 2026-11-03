@@ -1,4 +1,4 @@
-// Endereço de cada tela: no caminho (servido em http://bkm.test/prototipo/..., como no Railway) e depois do # (arquivo e artifact).
+// Endereço de cada tela: no caminho (servido em http://bkm.test/prototipo/..., como na versão publicada) e depois do # (arquivo e artifact).
 // Navegar muda o endereço, voltar e avançar do navegador trocam a tela, link recebido abre direto. Prints em saida/t_rota.
 const path=require('path'),fs=require('fs');const OUT=path.join(__dirname,'..','saida','t_rota')+'/';fs.mkdirSync(OUT,{recursive:true});
 const {chromium,devices}=require('playwright');
@@ -55,10 +55,10 @@ await p.click('#side [data-a=nav][data-r=mapa]');await espera();ok(url().startsW
 // arquivo / artifact: depois do #
 const q=await ctx.newPage();q.on('pageerror',e=>errs.push('hash: '+e.message));
 await q.goto('http://bkm.test/a.html#/terrenos/TER-000123/comercial');await q.waitForTimeout(600);
-ok(await q.evaluate(()=>document.body.dataset.rota)==='terreno'&&await q.evaluate(()=>document.querySelector('#bl-comercial .bl-h').getAttribute('aria-expanded'))==='true','fora do Railway: #/terrenos/código/comercial abre a seção');
-await q.click('#side [data-a=nav][data-r=mapa]');await q.waitForTimeout(500);ok(q.url().endsWith('/a.html#/mapa'),'fora do Railway: Mapa vira #/mapa');
-await q.goBack();await q.waitForTimeout(500);ok(await q.evaluate(()=>document.body.dataset.rota)==='terreno','fora do Railway: voltar funciona');
-await q.click('#side [data-a=nav][data-r=inicio]');await q.waitForTimeout(500);ok(q.url().endsWith('/a.html'),'fora do Railway: Início sem #');
+ok(await q.evaluate(()=>document.body.dataset.rota)==='terreno'&&await q.evaluate(()=>document.querySelector('#bl-comercial .bl-h').getAttribute('aria-expanded'))==='true','fora da versão publicada: #/terrenos/código/comercial abre a seção');
+await q.click('#side [data-a=nav][data-r=mapa]');await q.waitForTimeout(500);ok(q.url().endsWith('/a.html#/mapa'),'fora da versão publicada: Mapa vira #/mapa');
+await q.goBack();await q.waitForTimeout(500);ok(await q.evaluate(()=>document.body.dataset.rota)==='terreno','fora da versão publicada: voltar funciona');
+await q.click('#side [data-a=nav][data-r=inicio]');await q.waitForTimeout(500);ok(q.url().endsWith('/a.html'),'fora da versão publicada: Início sem #');
 await ctx.close();
 // celular
 const c2=await ctxDe({...devices['Pixel 7']});const m=await c2.newPage();m.on('pageerror',e=>errs.push('celular: '+e.message));

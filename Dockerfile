@@ -1,6 +1,6 @@
-# Front em React servido por Caddy. Railway: o build usa este Dockerfile.
+# Front em React servido por Caddy. Cloud Run: o Cloud Build usa este Dockerfile.
 # As variáveis VITE_* entram no bundle no momento do build; defina-as em
-# Railway → Variables antes de fazer o deploy.
+# argumentos de build do gatilho do Cloud Build antes do deploy.
 FROM node:22-alpine AS build
 WORKDIR /app
 ARG VITE_SUPABASE_URL

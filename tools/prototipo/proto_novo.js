@@ -242,7 +242,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&e.target.id==='mp-e
 const lotesInsc=t=>t.insc.map((ins,i)=>({ins,i,cid:insCid(ins)})).filter(x=>LOTE_ADAPT[x.cid]?.poligono);
 let LOTES_BUSCANDO=false;
 async function lotesPolyCalcular(t){if(LOTES_BUSCANDO)return;const L=lotesInsc(t);if(!L.length)return;
-  if(L.some(x=>!(x.ins.geo||[])[0]?.poly&&!LOTE_ADAPT[x.cid].url())){toast('A busca na prefeitura funciona na versão publicada no Railway.',true);return}
+  if(L.some(x=>!(x.ins.geo||[])[0]?.poly&&!LOTE_ADAPT[x.cid].url())){toast('A busca na prefeitura funciona na versão publicada.',true);return}
   LOTES_BUSCANDO=true;render();const polys=[],falhas=[];
   try{for(const x of L){const c=CIDADES_INSC[x.cid];let p=(x.ins.geo||[])[0]?.poly||null;
       if(!p)try{p=await LOTE_ADAPT[x.cid].poligono(x.ins.sql)}catch(e){console.warn(e);falhas.push(`${c.rotulo} ${x.ins.sql}: ${typeof e==='string'?e:'a prefeitura não respondeu'}`);continue}

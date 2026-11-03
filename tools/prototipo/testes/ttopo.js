@@ -1,6 +1,6 @@
 // Topográfico preliminar: gera e baixa o PDF e o ZIP (DXF + imagem) com dados reais.
 // Roda contra os servidores de verdade (GeoSampa, GeoSanja e Google), por isso a página
-// é servida no endereço do Railway: o Google só aceita a chave vinda de lá, e o /geosanja
+// é servida no endereço publicado (Cloud Run): o Google só aceita a chave vinda de lá, e o /geosanja
 // e o /geosampa do Caddy de produção fazem o repasse. O que ainda não está em produção
 // (download do laser em /geosampa/Download) vai direto ao Novo GeoSampa.
 // Casos: TER-000118 (São Paulo sem SQL: quadra inteira, laser 2020), Paulista 1500 pelo SQL (contorno do lote da
@@ -12,7 +12,7 @@ const path=require('path'),fs=require('fs'),{chromium}=require('playwright');
 const RAIZ=path.join(__dirname,'..','..','..'),OUT=path.join(__dirname,'..','saida','t_topo')+'/',L=path.join(__dirname,'..','libs','l')+'/';
 const LAZ=process.env.LAZPERF||path.join(require('child_process').execSync('npm root -g').toString().trim(),'laz-perf','lib','web')+'/';
 fs.mkdirSync(OUT,{recursive:true});
-const PROD='https://terrenos-web-production.up.railway.app',PAG=PROD+'/prototipo/__teste_topo';
+const PROD='https://terrenos-web-469931692112.southamerica-east1.run.app',PAG=PROD+'/prototipo/__teste_topo';
 let FALHA=false,falhas=0,google=0;
 const SJC=[[-23.227157,-45.848835],[-23.226302,-45.84839],[-23.226398,-45.847316],[-23.227346,-45.847419]];
 (async()=>{const b=await chromium.launch(),errs=[];

@@ -9,7 +9,7 @@
 	}
 }
 
-# Railway define $PORT.
+# O Cloud Run define $PORT (8080).
 :{$PORT:8080} {
 	encode zstd gzip
 
