@@ -199,7 +199,8 @@ function mkSecaoHtml(t){if(t.lat==null)return '';const raio=UI.mkRaio||2,vaga=UI
     ${corpo}
     ${r.emps.length?`<div class="hint mk-emps">Empreendimentos no raio: ${r.emps.map(x=>`${esc(x.e.nome)} (${num(x.d,1)} km)`).join(' · ')}</div>`:''}
     ${notas.length?`<div class="hint">${notas.join('; ')}.</div>`:''}</div></section>`}
-const _abaComercialMk=abaComercial;abaComercial=function(t){const h=_abaComercialMk.apply(this,arguments),i=h.lastIndexOf('</div>');return h.slice(0,i)+mkSecaoHtml(t)+h.slice(i)};
+/* na aba Entorno da ficha, depois da renda e da população */
+const _abaEntornoMk=abaEntorno;abaEntorno=function(t){const h=_abaEntornoMk.apply(this,arguments),i=h.lastIndexOf('</div>');return h.slice(0,i)+mkSecaoHtml(t)+h.slice(i)};
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a="mk-raio"],[data-a="mk-vaga"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();
   if(a.dataset.a==='mk-raio')UI.mkRaio=+a.dataset.v;else UI.mkVaga=a.dataset.v;const sec=a.closest('.mk-sec'),t=T(UI.id);
   if(sec&&t){const d=document.createElement('div');d.innerHTML=mkSecaoHtml(t);sec.replaceWith(d.firstElementChild);document.querySelector(`.mk-sec [data-a="${a.dataset.a}"][data-v="${a.dataset.v}"]`)?.focus()}else render()},true);

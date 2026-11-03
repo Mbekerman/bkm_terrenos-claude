@@ -30,7 +30,7 @@ const KEY='bkm-terrenos-prototipo-v9',ter=()=>p.evaluate(k=>JSON.parse(localStor
 const abrir=async()=>{await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=terrenos]').click());await p.waitForTimeout(150);
   await p.waitForTimeout(150);
   await p.evaluate(()=>[...document.querySelectorAll('[data-a=abrir]')].find(x=>x.textContent.includes('Paulista 1500')).click());await p.waitForTimeout(300);
-  await p.evaluate(()=>{if(!document.getElementById('geo-0'))document.querySelector('[data-a=bloco][data-t=cadastro]').click()});await p.waitForTimeout(300)};
+  await p.evaluate(()=>{if(!document.getElementById('geo-0'))document.querySelector('.fi-abas [data-t=terreno]').click()});await p.waitForTimeout(300)};
 const mudar=async fn=>{await p.evaluate(([k,f])=>{const s=JSON.parse(localStorage.getItem(k));const t=s.terrenos.find(x=>x.nome==='Paulista 1500');(new Function('t',f))(t);localStorage.setItem(k,JSON.stringify(s))},[KEY,fn]);await p.reload();await p.waitForTimeout(500);await abrir()};
 // 1. novo terreno com SQL: busca sozinho
 const kmlQuadra=(lat,lng,m=20)=>{const dy=m/2/111320,dx=m/2/(111320*Math.cos(lat*Math.PI/180)),c=[[lng-dx,lat-dy],[lng+dx,lat-dy],[lng+dx,lat+dy],[lng-dx,lat+dy],[lng-dx,lat-dy]].map(p=>p.join(',')).join(' ');
@@ -48,7 +48,7 @@ await p.waitForFunction(()=>/Planta e desenho/.test(document.querySelector('#toa
 const st=await ter().then(t=>{const i=t.insc[0];return {sqlFmt:i.sql,area:i.area,cib:i.cib,zf:i.zf,aCad:t.aCad,aConst:t.aConst,poly:t.poly&&t.poly.length,lat:t.lat,
   analise:t.analises.find(a=>a.status==='vigente'),docs:t.docs.map(d=>d.tipo+':v'+d.versoes+':'+d.nome),consultas:i.geo.length,erros:i.geo[0].erros,zonas:i.geo[0].zonas,hist:t.hist.map(h=>h.txt)}});
 console.log('estado:',JSON.stringify(st));
-await p.evaluate(()=>{if(!document.getElementById('geo-0'))document.querySelector('[data-a=bloco][data-t=cadastro]').click()});await p.waitForTimeout(300);
+await p.evaluate(()=>{if(!document.getElementById('geo-0'))document.querySelector('.fi-abas [data-t=terreno]').click()});await p.waitForTimeout(300);
 console.log('quadro:',await p.$eval('#geo-0',x=>x.innerText.replace(/\s+/g,' ')));
 await p.evaluate(()=>document.getElementById('geo-0').scrollIntoView({block:'start'}));await p.evaluate(()=>scrollBy(0,-80));await p.waitForTimeout(200);
 await p.screenshot({path:OUT+'1_quadro_claro.png'});

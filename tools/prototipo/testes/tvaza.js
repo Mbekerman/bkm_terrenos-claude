@@ -8,7 +8,8 @@ await ctx.route('**/*',r=>{const u=r.request().url();if(u.startsWith('file://'))
 const p=await ctx.newPage();await p.goto('file:///x/a.html');await p.evaluate(mm=>{localStorage.clear();localStorage.setItem('bkm-terrenos-menu',mm?'min':'aberto')},mm);await p.reload();await p.waitForTimeout(250);
 await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=terrenos]').click());await p.waitForTimeout(100);
 await p.evaluate(n=>[...document.querySelectorAll('[data-a=abrir]')].find(x=>x.textContent.includes(n)).click(),nome);await p.waitForTimeout(250);
-for(const k of ['cadastro','comercial','negociacao','tarefas','urbanismo','documentos','historico']){const h=await p.$(`#bl-${k} .bl-h[aria-expanded=false]`);if(h&&await h.isVisible()){await h.click();await p.waitForTimeout(40)}}
+/* ficha em abas: confere cada aba */
+for(const k of ['geral','comercial','terreno','parametros','massa','viabilidade','infra','entorno','jornada','documentos','historico']){await p.evaluate(k=>document.querySelector('.fi-abas [data-t='+k+']')?.click(),k);await p.waitForTimeout(120);
 await p.waitForTimeout(250);
 const r=await p.evaluate(()=>{const out=[];
   document.querySelectorAll('#main .sec, #main .pn, #main .kv').forEach(box=>{if(!box.offsetParent)return;const B=box.getBoundingClientRect();
@@ -17,5 +18,6 @@ const r=await p.evaluate(()=>{const out=[];
   return {itens:[...new Set(out)],pagina:document.documentElement.scrollWidth>innerWidth}});
 r.itens.forEach(x=>{const k=x.replace(/ \+\d+$/,'');if(!ach.has(k))ach.set(k,[]);ach.get(k).push(w+(mm?'m':'')+' '+nome+' '+x.match(/\+\d+$/)[0])});
 if(r.pagina){if(!ach.has('PÁGINA'))ach.set('PÁGINA',[]);ach.get('PÁGINA').push(w+(mm?'m':''))}
+}
 await ctx.close()}
 for(const [k,v] of ach)console.log(k,'→',v.length,'| ex:',v.slice(0,5).join(', '));console.log('total',ach.size);await b.close()})();

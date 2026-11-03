@@ -17,7 +17,7 @@ const d0=await D();ok(d0.viabs.length>=4&&d0.viabDesp.length===39,tag+' estudos 
 const tid=d0.viabs[0].tid;
 const ficha=async()=>{await p.evaluate(id=>{document.querySelector('[data-a=nav][data-r=terrenos]').click()},tid);await p.waitForTimeout(200);
   await p.evaluate(id=>document.querySelector(`[data-a=abrir][data-id="${id}"]`).click(),tid);await p.waitForTimeout(400);
-  await p.evaluate(()=>{const b=[...document.querySelectorAll('[data-a=bloco]')].find(x=>/Negociação/.test(x.textContent));b&&b.getAttribute('aria-expanded')!=='true'&&b.click()});await p.waitForTimeout(300)};
+  await p.evaluate(()=>{const b=document.querySelector('.fi-abas [data-t=viabilidade]');b&&b.getAttribute('aria-selected')!=='true'&&b.click()});await p.waitForTimeout(300)};
 await ficha();
 const sec=await p.$eval('#sec-viab',e=>e.innerText.replace(/\s+/g,' '));
 ok(/Estudo válido/.test(sec)&&/Margem líquida/.test(sec)&&await p.$('#sec-viab .vb-radio input:checked'),tag+' seção Viabilidade da negociação lista os estudos com o válido marcado');
@@ -162,9 +162,9 @@ ok(await p.locator('[data-ch=cfg-vd][data-c=comissao][data-k=grupo]').isDisabled
 await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));await p.fill('#vd-n','Prêmio de vendas');await p.selectOption('#vd-g','comercial');await p.evaluate(()=>document.querySelector('[data-form=vb-cfg-nova]').requestSubmit());await p.waitForTimeout(200);
 ok((await D()).viabDesp.some(d=>d.nome==='Prêmio de vendas'&&d.grupo==='comercial'&&d.tipo==='pct_vgv'),tag+' item novo entra no grupo, com a primeira base aceita');
 }
-// volta para a ficha: Visão geral com o resumo do estudo
+// volta para a ficha: aba Estudos de viabilidade com o resumo do estudo (saiu da Visão geral em 3/nov/2026)
 await ficha();
-await p.evaluate(()=>{const b=[...document.querySelectorAll('[data-a=bloco]')].find(x=>/Visão geral/.test(x.textContent));b&&b.getAttribute('aria-expanded')!=='true'&&b.click()});await p.waitForTimeout(300);
+await p.evaluate(()=>{const b=document.querySelector('.fi-abas [data-t=viabilidade]');b&&b.getAttribute('aria-selected')!=='true'&&b.click()});await p.waitForTimeout(300);
 const rv=await p.evaluate(()=>[...document.querySelectorAll('.sec')].find(s=>/Resumo da viabilidade/.test(s.innerText))?.innerText.replace(/\s+/g,' '));
 ok(/VGV líquido/.test(rv)&&/Lucro líquido/.test(rv)&&/Margem líquida/.test(rv),tag+' Visão geral mostra VGV líquido, lucro e margem do estudo vinculado');
 ok(/Rentabilidade abaixo da mínima/.test(rv)&&!/Preço máximo/.test(rv),tag+' estudo válido abaixo da margem mínima acende o aviso na Visão geral (sem preço máximo)');

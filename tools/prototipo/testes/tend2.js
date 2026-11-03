@@ -12,7 +12,7 @@ await ctx.route('**/*',r=>{const u=r.request().url();if(u.startsWith('file://'))
   if(/leaflet.js|jszip/.test(u))return r.fulfill({path:L+(u.includes('leaflet')?'leaflet.js':'jszip.min.js'),contentType:'application/javascript'});return r.abort()});
 const p=await ctx.newPage();p.on('pageerror',e=>errs.push(e.message));await p.goto('file:///x/demo.html');await p.evaluate(t=>{localStorage.clear();localStorage.setItem('bkm-terrenos-tema',t)},tema);await p.reload();await p.waitForTimeout(800);
 // Visão geral
-await p.click('#bl-geral .bl-h');await p.waitForTimeout(200);await p.click('[data-a=edit][data-s=g-end]');await p.waitForTimeout(300);
+await p.click('.fi-abas [data-t=geral]');await p.waitForTimeout(200);await p.click('[data-a=edit][data-s=g-end]');await p.waitForTimeout(300);
 await p.evaluate(()=>document.getElementById('sec-g-end').scrollIntoView({block:'center'}));await p.waitForTimeout(100);
 await p.screenshot({path:OUT+tema+'_resumo_antes.png'});
 console.log(tema,'zona opções:',await p.$$eval('#sec-g-end #f-zona option',e=>e.map(x=>x.textContent).join(',')));
@@ -23,7 +23,7 @@ await p.screenshot({path:OUT+tema+'_resumo_preenchido.png'});
 await p.click('#sec-g-end .btn.primary');await p.waitForTimeout(250);
 console.log(tema,'salvo:',JSON.stringify(await p.evaluate(()=>{const t=JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-v9')).terrenos.find(t=>t.nome.includes('Barão'));return {cep:t.cep,log:t.logradouro,num:t.numero,comp:t.complemento,bairro:t.bairro,mun:t.municipio,zona:t.zona,lat:t.lat}})));
 // Cadastro: Google sem número destrava o campo número; corrigir à mão destrava todos
-await p.click('#bl-cadastro .bl-h');await p.click('#sec-loc [data-a=edit]');await p.waitForTimeout(200);
+await p.click('.fi-abas [data-t=terreno]');await p.click('#sec-loc [data-a=edit]');await p.waitForTimeout(200);
 await escolher(p,'#sec-loc','');await p.waitForTimeout(300);
 console.log(tema,'sem número → editável:',await p.$eval('#sec-loc #f-numero',x=>!x.readOnly),'foco',await p.evaluate(()=>document.activeElement.id));
 await p.evaluate(()=>document.getElementById('sec-loc').scrollIntoView());await p.waitForTimeout(100);await p.screenshot({path:OUT+tema+'_cadastro.png'});

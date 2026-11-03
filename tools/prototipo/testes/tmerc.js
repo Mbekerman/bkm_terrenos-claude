@@ -44,7 +44,7 @@ else ok(true,tag+' legenda escondida com a janela aberta (celular)');
 const ficha=async lat=>{await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=terrenos]').click());await p.waitForTimeout(400);
   await p.evaluate(la=>{const k=Object.keys(localStorage).find(k=>{try{return !!JSON.parse(localStorage.getItem(k)).terrenos}catch(e){return false}});
     const t=JSON.parse(localStorage.getItem(k)).terrenos.find(x=>x.lat===la);document.querySelector(`[data-a=abrir][data-id="${t.id}"]`).click()},lat);await p.waitForTimeout(500);
-  await p.evaluate(()=>{const b=document.querySelector('[data-a=bloco][data-t=comercial]');if(b.getAttribute('aria-expanded')!=='true')b.click()});await p.waitForTimeout(400)};
+  await p.evaluate(()=>{const b=document.querySelector('.fi-abas [data-t=entorno]');if(b.getAttribute('aria-selected')!=='true')b.click()});await p.waitForTimeout(400)};
 const sec=async()=>p.$eval('.mk-sec',x=>x.textContent.replace(/\s+/g,' ')).catch(()=>'');
 await ficha(-23.5868);let tx=await sec();
 ok(/Mercado na redondeza/.test(tx)&&/Vista Prudente Residencial/.test(tx)&&/Vila Ema Garden/.test(tx)&&/2 dorms de 34 a 39 m²/.test(tx),tag+' ficha com categorias no raio de 2 km: '+tx.slice(0,220));

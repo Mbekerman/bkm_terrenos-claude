@@ -16,12 +16,12 @@ const abrir=async()=>{await p.evaluate(()=>document.querySelector('[data-a=nav][
 await abrir();
 const ter=()=>p.evaluate(k=>JSON.parse(localStorage.getItem(k)).terrenos.find(t=>t.nome.includes('Barão')),KEY);
 const t0=await ter();const v0=t0.testada,v1=(v0||10)+7;
-await p.evaluate(()=>{const b=document.querySelector('[data-a=bloco][data-b=cadastro]')||[...document.querySelectorAll('[data-a=bloco]')].find(x=>/Cadastro/.test(x.textContent));b&&b.click()});await p.waitForTimeout(300);
+await p.evaluate(()=>{const b=document.querySelector('.fi-abas [data-t=terreno]')||document.querySelector('.fi-abas [data-t=terreno]');b&&b.click()});await p.waitForTimeout(300);
 await p.evaluate(()=>document.querySelector('[data-a=edit][data-s=areas]').click());await p.waitForTimeout(200);
 await p.fill('#sec-areas [name=testada]',String(v1).replace('.',','));await p.evaluate(()=>document.querySelector('#sec-areas form').requestSubmit());await p.waitForTimeout(400);
 ok((await ter()).testada===v1,tag+' testada gravada '+v0+' → '+v1);
 const vis=modo==='celular'?'.bl-hist ':'.pn ';const logSel=vis+'.pn-log:has([data-a=log-olho])';
-const hist=async()=>{if(modo!=='celular')return;await p.evaluate(()=>{const b=document.querySelector('[data-a=bloco][data-t=historico]');if(b&&b.getAttribute('aria-expanded')!=='true')b.click()});await p.waitForTimeout(300)};
+const hist=async()=>{if(modo!=='celular')return;await p.evaluate(()=>{const b=document.querySelector('.fi-abas [data-t=historico]');if(b&&b.getAttribute('aria-selected')!=='true')b.click()});await p.waitForTimeout(300)};
 await hist();
 // no celular o histórico vira a última seção da página
 const temBtn=await p.$$eval(logSel,e=>e.map(x=>x.querySelector('.pn-lt').textContent));
@@ -30,6 +30,8 @@ ok(!!(await p.$(logSel+' [data-a=log-apagar]')),tag+' diretor tem a lixeira');
 // olhinho: prévia
 await p.click(logSel+' [data-a=log-olho] >> nth=0');await p.waitForTimeout(300);
 const prev=await p.evaluate(sel=>({bar:!!document.querySelector('.log-previa'),off:document.querySelectorAll(sel+'.pn-log.off').length,sec:document.querySelector('#sec-areas')?.innerText.replace(/\s+/g,' ')}),vis);
+/* no celular o histórico é uma aba: a testada aparece na aba Terreno */
+if(modo==='celular'){await p.click('.fi-abas [data-t=terreno]');await p.waitForTimeout(300);prev.sec=await p.evaluate(()=>document.querySelector('#sec-areas')?.innerText.replace(/\s+/g,' '));prev.bar=prev.bar&&!!(await p.$('.log-previa'));await hist()}
 const fmt=v=>v==null?'':v.toLocaleString('pt-BR');
 ok(prev.bar&&prev.off===1,tag+' olhinho: faixa de prévia e log riscado');
 ok(!prev.sec.includes(fmt(v1)+' m')&&(v0==null||prev.sec.includes(fmt(v0))),tag+' a ficha mostra a testada de antes: '+prev.sec.slice(0,120));
@@ -48,12 +50,13 @@ ok(await p.$$eval(vis+'.pn-log.desf',e=>e.length===1&&/Desfeito por/.test(e[0].i
 ok(!(await p.$('.pn-log.desf [data-a=log-olho]'))&&!(await p.$$eval('.pn-log',e=>e.some(x=>/^Desfeito: /.test(x.querySelector('.pn-lt')?.textContent)&&x.querySelector('[data-a=log-olho]')))),tag+' sem botões no desfeito e no desfazer');
 await p.evaluate(()=>document.querySelector('.pn-log.desf')?.scrollIntoView({block:'center'}));await p.screenshot({path:OUT+tag+'_3desfeito.png'});
 // analista: só olhinho
+if(modo==='celular'){await p.click('.fi-abas [data-t=terreno]');await p.waitForTimeout(300)}
 await p.fill('#sec-areas [name=testada]',String(v1)).catch(async()=>{await p.evaluate(()=>document.querySelector('[data-a=edit][data-s=areas]').click());await p.waitForTimeout(200);await p.fill('#sec-areas [name=testada]',String(v1))});
 await p.evaluate(()=>document.querySelector('#sec-areas form').requestSubmit());await p.waitForTimeout(300);
 await p.evaluate(()=>{const x=document.createElement('button');x.dataset.a='role';x.dataset.v='Analista';document.body.appendChild(x);x.click();x.remove()});await p.waitForTimeout(400);
 await abrir();await hist();ok(!!(await p.$(logSel))&&!(await p.$(vis+'[data-a=log-apagar]')),tag+' analista vê o olhinho e não a lixeira na ação do diretor');
 // a própria ação: o analista tem a lixeira; o gestor dele também
-await p.evaluate(()=>{const b=document.querySelector('[data-a=bloco][data-t=cadastro]');if(b&&b.getAttribute('aria-expanded')!=='true')b.click()});await p.waitForTimeout(200);
+await p.evaluate(()=>{const b=document.querySelector('.fi-abas [data-t=terreno]');if(b&&b.getAttribute('aria-selected')!=='true')b.click()});await p.waitForTimeout(200);
 await p.evaluate(()=>document.querySelector('[data-a=edit][data-s=areas]').click());await p.waitForTimeout(200);
 await p.fill('#sec-areas [name=testada]',String(v1+3));await p.evaluate(()=>document.querySelector('#sec-areas form').requestSubmit());await p.waitForTimeout(400);await hist();
 ok(!!(await p.$(vis+'[data-a=log-apagar]')),tag+' analista tem a lixeira na própria ação');

@@ -26,7 +26,7 @@ const escolher=async(p,sc,tipo,nomes)=>{const b=await abreMs(p,sc,tipo);for(cons
 const incluir=async(p,sc,tipo,a,bv,shot)=>{const b=await abreMs(p,sc,tipo);await p.click(`${b} [data-a=ms-novo]`);await p.waitForSelector('#ms-dlg');await p.fill('#ms-a',a);if(bv){if(await p.$eval('#ms-b',x=>x.tagName==='SELECT'))await p.selectOption('#ms-b',bv);else await p.fill('#ms-b',bv)}if(shot)await p.screenshot({path:O+shot});
   await p.evaluate(()=>document.getElementById('ms-f').requestSubmit());await p.waitForTimeout(150)};
 const R=i=>`#nv-pt-lista .nv-pt:nth-child(${i})`;
-const bloco=async(p,k)=>{await p.evaluate(k=>{const b=document.querySelector(`[data-a=bloco][data-t=${k}]`);if(b.getAttribute('aria-expanded')!=='true')b.click()},k);await p.waitForTimeout(250)};
+const bloco=async(p,k)=>{await p.evaluate(k=>{const b=document.querySelector('.fi-abas [data-t='+({cadastro:'terreno',negociacao:'comercial',urbanismo:'parametros',fases:'jornada'}[k]||k)+']');if(b.getAttribute('aria-selected')!=='true')b.click()},k);await p.waitForTimeout(250)};
 const enviar=async(p,id)=>{await p.evaluate(id=>{if(id==='f-novo')document.querySelector('#f-novo [name=tipoEmp][value=mercado]')?.click();document.getElementById(id).requestSubmit()},id);await p.waitForTimeout(300)};
 
 let {p,ctx}=await abre(1440,900);

@@ -18,7 +18,7 @@ const d0=await D();ok(Array.isArray(d0.viabModelos)&&d0.viabModelos.length===0,t
 const v0=d0.viabs[0],tid=v0.tid;
 const ficha=async()=>{await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=terrenos]').click());await p.waitForTimeout(200);
   await p.evaluate(id=>document.querySelector(`[data-a=abrir][data-id="${id}"]`).click(),tid);await p.waitForTimeout(400);
-  await p.evaluate(()=>{const b=[...document.querySelectorAll('[data-a=bloco]')].find(x=>/Negociação/.test(x.textContent));b&&b.getAttribute('aria-expanded')!=='true'&&b.click()});await p.waitForTimeout(300)};
+  await p.evaluate(()=>{const b=document.querySelector('.fi-abas [data-t=viabilidade]');b&&b.getAttribute('aria-selected')!=='true'&&b.click()});await p.waitForTimeout(300)};
 const novo=async()=>{await p.evaluate(()=>document.querySelector('#sec-viab [data-a=vb-novo]').click());await p.waitForTimeout(300)};
 const marca=async q=>{await p.evaluate(q=>document.querySelector(q).closest('label').click(),q);await p.waitForTimeout(80)};
 const fechaPop=async()=>{await p.keyboard.press('Escape');await p.waitForTimeout(200)};
