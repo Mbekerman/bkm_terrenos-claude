@@ -6,7 +6,7 @@
 // restrições vêm das camadas liberadas ao visitante (GetFeatureInfo com raio
 // cobrindo o lote, conferido aqui contra a poligonal). Planta (PDF montado
 // aqui com ortofoto, curvas e zoneamento) e desenho (DXF) entram como
-// documentos com versão. Sem CORS: no Railway passa pelo Caddy em /geosanja.
+// documentos com versão. Sem CORS: na versão publicada passa pelo Caddy em /geosanja.
 // No banco: app.registrar_consulta_lote + app.registrar_documento.
 // ---------------------------------------------------------------------
 const GSJ_BASE=(()=>{const m=document.querySelector('meta[name="geosanja-url"]');if(m&&m.content)return m.content;

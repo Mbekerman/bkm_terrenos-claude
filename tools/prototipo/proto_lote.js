@@ -32,7 +32,7 @@ document.addEventListener('change',e=>{const r=e.target.closest('[data-insc]');i
 const loteBuscavel=ins=>{const c=CIDADES_INSC[insCid(ins)];return !!(c.base&&LOTE_ADAPT[insCid(ins)]?.url()&&digits(ins.sql).length===digitosMasc(c.mascara))};
 let LOTE_BUSCANDO=null;
 async function loteBuscar(t,i){const ins=t.insc[i];if(!ins||LOTE_BUSCANDO)return;const cid=insCid(ins),c=CIDADES_INSC[cid],ad=LOTE_ADAPT[cid];if(!ad)return;
-  if(!ad.url()){toast(`A busca no ${c.base} funciona na versão publicada no Railway.`,true);return}
+  if(!ad.url()){toast(`A busca no ${c.base} funciona na versão publicada.`,true);return}
   if(digits(ins.sql).length!==digitosMasc(c.mascara)){toast(`${c.rotulo} incompleto: são ${digitosMasc(c.mascara)} dígitos.`,true);return}
   if(cidDoTerreno(t)!==cid){toast(`O terreno está em ${(t.municipio||'').split(' · ')[0]}; o ${c.base} só cobre ${c.cidade}.`,true);return}
   LOTE_BUSCANDO=t.id+':'+i;render();
@@ -43,7 +43,7 @@ function loteQuadro(t,ins,i){const ad=LOTE_ADAPT[insCid(ins)];return ad?ad.quadr
 function loteBotao(t,ins,i){const c=CIDADES_INSC[insCid(ins)],busc=LOTE_BUSCANDO===t.id+':'+i,g=(ins.geo||[])[0];
   return UI.role!=='Leitura'?`<button class="btn sm ${g?'text':''}" data-a="geo-buscar" data-i="${i}" ${busc?'disabled':''}>${ic('search',16)}${busc?'Consultando...':g?'Buscar de novo':'Buscar no '+c.base}</button>`:''}
 function loteVazio(t,ins,i,txt){const c=CIDADES_INSC[insCid(ins)],ad=LOTE_ADAPT[insCid(ins)];
-  return `<div class="geo-vazio">${loteBotao(t,ins,i)}<span class="hint">${ad.url()?txt:`A busca no ${c.base} funciona na versão publicada no Railway.`}</span></div>`}
+  return `<div class="geo-vazio">${loteBotao(t,ins,i)}<span class="hint">${ad.url()?txt:`A busca no ${c.base} funciona na versão publicada.`}</span></div>`}
 function loteCab(t,ins,i){const c=CIDADES_INSC[insCid(ins)],g=ins.geo[0],n=ins.geo.length-1;
   return `<div class="geo-h"><span>${bi('mapa',20)}<b>${c.base}</b> <span class="muted">consultado em ${fdh(g.em)} por ${esc(g.user)}${n?` · ${n} consulta${n>1?'s':''} anterior${n>1?'es':''} guardada${n>1?'s':''}`:''}</span></span>${loteBotao(t,ins,i)}</div>`}
 // Grava a consulta e completa só o que está vazio; troca as zonas DESTE lote na análise (os outros lotes ficam).

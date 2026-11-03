@@ -7,7 +7,7 @@
      /mapa  /mapa/TER-000123 (selecionado)  /mapa/TER-000123/ficha (com a ficha no painel)
      /fases  /fases/aprovacao  /fases/aprovacao/projeto   (os três níveis do quadro)
      /tarefas  /tarefas/lista  /tarefas/calendario  /tarefas/cronograma  /tarefas/funil  /tarefas/TAR-000123 (a janela do cartão)   /dashboard   /configuracoes/etapas ...
-   No Railway vai no caminho (/prototipo/terrenos/...; o Caddy devolve a página para qualquer caminho);
+   Na versão publicada vai no caminho (/prototipo/terrenos/...; o Caddy devolve a página para qualquer caminho);
    aberto como arquivo ou no artifact, depois do # (#/terrenos/...). Os filtros seguem em f=.
    Troca de tela entra no histórico (voltar e avançar do navegador); seção aberta, terreno
    selecionado no mapa e vista das tarefas só atualizam o endereço. O terreno vai pelo código. */
