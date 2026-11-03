@@ -4408,7 +4408,9 @@ html[data-tema="escuro"] .fi-abas .tkm-n { background: rgba(149,153,160,0.14); c
 
 /* Quadros das abas da ficha abrem e fecham pela seta do título (3/nov/2026); nascem fechados, menos o primeiro da aba */
 .qd-tg { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; padding: 0; margin: -8px 0; font: inherit; color: inherit; cursor: pointer; text-align: left }
-.qd-tg > span { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap }
+.qd-tg { max-width: 100%; min-width: 0 }
+.qd-tg > span { display: block; min-width: 0; overflow-wrap: anywhere }
+.qd-tg > span .h-n { margin-left: 6px }
 .qd-tg .bl-seta { margin-left: -10px }
 .qd-tg:hover .bl-seta { background: rgba(127,127,127,.12) }
 .qd-tg[aria-expanded="true"] .bl-seta { transform: rotate(90deg) }
