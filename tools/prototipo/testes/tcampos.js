@@ -22,7 +22,7 @@ const abreCartao=async(p,tit)=>{await clica(p,'.tk',tit);await p.waitForTimeout(
 const fecha=async p=>{await clica(p,'#modal [data-a=close]');await p.waitForTimeout(150)};
 const lista=(s,i,k)=>s.terrenos[i].listas.find(l=>l.id===k.lista);
 const chips=(p,tit)=>p.evaluate(t=>{const c=[...document.querySelectorAll('.tk')].find(x=>x.getAttribute('aria-label')===t);return c?[...c.querySelectorAll('.cpo-ch')].map(x=>x.textContent.replace(/\s+/g,' ').trim()):null},tit);
-const incluir=async(p,dest)=>{if(!(await p.$('#modal [data-a=fm-nova]'))){await clica(p,'#modal [data-a=fm-modo][data-v=montar]');await p.waitForTimeout(100)}await clica(p,'#modal [data-a=fm-nova]');await p.waitForTimeout(100);await clica(p,`#modal [data-a=fm-dest][data-v="${dest}"]`);await p.waitForTimeout(100);await clica(p,'#modal [data-a=fm-salva]');await p.waitForTimeout(120);await clica(p,'#modal [data-a=fm-modo][data-v=responder]');await p.waitForTimeout(120)};
+const incluir=async(p,dest)=>{if(!(await p.$('#modal [data-a=fm-nova]'))){await clica(p,'#modal [data-a=fm-modo][data-v=montar]');await p.waitForTimeout(100)}await clica(p,'#modal [data-a=fm-nova]');await p.waitForTimeout(100);await p.click('#fme-d');await p.waitForTimeout(80);await p.click(`#modal [data-gvv="${dest}"]`);await p.waitForTimeout(100);await clica(p,'#modal [data-a=fm-salva]');await p.waitForTimeout(120);await clica(p,'#modal [data-a=fm-modo][data-v=responder]');await p.waitForTimeout(120)};
 const campo=(s,nome)=>s.campos.find(c=>c.nome===nome);
 {const {ctx,p}=await abre(1440,900,'claro');
 let s=await est(p);const t0=s.terrenos[0];await ficha(p,t0.id);await p.waitForTimeout(400);

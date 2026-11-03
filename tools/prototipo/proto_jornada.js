@@ -154,13 +154,17 @@ function jnCfgHtml(){const fs=fasesL().filter(f=>f.ativo!==false),f=fs.some(x=>x
 function jnLugarSel(id,f,e,s){const E=etapaF(f,e);return `<select id="${id}" data-jne="sub"><option value="">${esc(E?.nome||'')} (a etapa toda)</option>${(E?.subs||[]).map(x=>`<option value="${x.k}" ${x.k===s?'selected':''}>${esc(x.nome)}</option>`).join('')}</select>`}
 function jnItemHtml(fechar){const E=UI.jnEd;if(!E)return '';const d=E.campo&&E.campo!=='__novo'?itDef(E.campo):null;
   const usados=jnItens().filter(i=>i.id!==E.id&&i.fase===E.fase&&i.etapa===E.etapa&&(i.sub||null)===(E.sub||null)).map(i=>i.campo);
-  const grupos=Object.entries(IT_ORIG).map(([o,n])=>{const L=IT_CAT.filter(c=>c.origem===o&&(c.chave===E.campo||!usados.includes(c.chave))&&(itDef(c.chave).editavel||c.chave===E.campo||o!=='personalizado')).map(c=>itDef(c.chave));
-    return L.length?`<optgroup label="${esc(n)}">${L.map(c=>`<option value="${c.chave}" ${c.chave===E.campo?'selected':''}>${esc(c.titulo)}${c.editavel?'':' (só leitura)'}</option>`).join('')}</optgroup>`:''}).join('');
+  gvReg('jn',{E:()=>UI.jnEd,valor:()=>UI.jnEd?.campo||'',
+    itens:()=>[...IT_CAT.filter(c=>GV_TAB[gvTabDe(c.origem)]&&(c.chave===E.campo||!usados.includes(c.chave))&&(itDef(c.chave).editavel||c.chave===E.campo||c.origem!=='personalizado')).map(c=>itDef(c.chave))
+        .map(c=>({v:c.chave,tab:gvTabDe(c.origem),titulo:c.titulo,meta:`${c.origem==='personalizado'?'campo novo · ':''}${IT_TIPO[c.tipo]||c.tipo}${c.editavel?'':' · só leitura'}`})),
+      {v:'__novo',tab:'terreno',titulo:'Criar campo novo do terreno…',meta:'entra em Configurações › Campos',sempre:true}],
+    escolher:v=>{const E=UI.jnEd;E.campo=v;E.forma=null;if(v==='__novo')E.novo=E.novo||{tipo:'texto'};renderModal();setTimeout(()=>document.querySelector(v==='__novo'?'#jne-nt':'#jne-p')?.focus(),0)},
+    tabela:(tab,tira)=>{if(tira){UI.jnEd.campo='';UI.jnEd.forma=null}renderModal()}});
   const N=E.novo||{},tipo=d?d.tipo:N.tipo||'texto',nop=d?(d.opcoes?Object.keys(d.opcoes()).length:0):(N.opcoes||'').split('\n').filter(x=>x.trim()).length,formas=fmFormas(tipo,nop);
   return `<div class="dh"><div><h2>${E.id?'Editar pergunta':'Nova pergunta'}</h2><div class="muted" style="margin-top:4px">${esc(faseN(E.fase))} › ${esc(etNomeE(E.fase,E.etapa))}</div></div>${fechar}</div>
   <div class="fields jn-form">
     <div class="field"><label for="jne-s">Vale para sair de</label>${jnLugarSel('jne-s',E.fase,E.etapa,E.sub)}</div>
-    <div class="field"><label for="jne-c">Onde grava a resposta</label><select id="jne-c" data-jne="campo"><option value="">Escolha o campo</option>${grupos}<option value="__novo" ${E.campo==='__novo'?'selected':''}>Criar campo novo do terreno…</option></select></div>
+    <div class="field full" role="group" aria-labelledby="jne-cl"><span class="lbl-f" id="jne-cl">Onde grava a resposta</span>${gvHtml('jn','jne-c')}</div>
     ${E.campo==='__novo'?`<div class="field"><label for="jne-nt">Nome do campo novo</label><input id="jne-nt" data-jne="n.titulo" value="${esc(N.titulo||'')}" placeholder="Ex.: Recuo frontal atende"></div>
       <div class="field"><label for="jne-ny">Tipo</label><select id="jne-ny" data-jne="n.tipo">${Object.entries(JN_TIPO).map(([k,n])=>`<option value="${k}" ${k===(N.tipo||'texto')?'selected':''}>${n}</option>`).join('')}</select></div>
       ${(N.tipo||'texto')==='lista'?`<div class="field full"><label for="jne-no">Opções (uma por linha)</label><textarea id="jne-no" data-jne="n.opcoes" placeholder="Sim&#10;Não&#10;A verificar">${esc(N.opcoes||'')}</textarea></div>`:''}
@@ -248,7 +252,7 @@ document.addEventListener('click',e=>{const a=e.target.closest?.('[data-a^="jn-"
   switch(A){
     case 'jn-fase':UI.jnFase=a.dataset.v;UI.jnEtapa=null;render();return;
     case 'jn-etapa':UI.jnEtapa=a.dataset.v;render();return;
-    case 'jn-nova':UI.jnEd={id:null,fase:a.dataset.f,etapa:a.dataset.e,sub:a.dataset.s||null,campo:'',regra:'bloqueia',cond:null};UI.modal='jn-item';renderModal();return;
+    case 'jn-nova':UI.jnEd={id:null,fase:a.dataset.f,etapa:a.dataset.e,sub:a.dataset.s||null,campo:'',regra:'bloqueia',cond:null};UI.modal='jn-item';renderModal();setTimeout(()=>document.querySelector('#jne-c')?.focus(),60);return;
     case 'jn-ed':{const i=jnItens().find(x=>x.id===a.dataset.v);if(!i)return;UI.jnEd=JSON.parse(JSON.stringify(i));UI.modal='jn-item';renderModal();return}
     case 'jn-x':{const i=jnItens().find(x=>x.id===a.dataset.v);if(!i)return;cfg().jornada=jnItens().filter(x=>x!==i);save();render();toast(`${jnTxt(i)} saiu da jornada. As respostas ficam no terreno.`);return}
     case 'jn-e-regra':if(a.dataset.v==='cond'){jnRcAbrir('__ed');return}UI.jnEd.regra=a.dataset.v;UI.jnEd.rc=null;renderModal();return;
