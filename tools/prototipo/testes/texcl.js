@@ -10,9 +10,9 @@ await ctx.route('**/*',r=>{const u=r.request().url();if(u.startsWith('file://'))
 const p=await ctx.newPage();p.on('pageerror',e=>errs.push(e.message));await p.goto('file:///x/a.html');
 await p.evaluate(t=>{localStorage.clear();localStorage.setItem('bkm-terrenos-tema',t)},tema);await p.reload();await p.waitForTimeout(300);
 await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=terrenos]').click());await p.waitForTimeout(100);
-await p.evaluate(()=>[...document.querySelectorAll('[data-a=abrir]')].find(x=>x.textContent.includes('Barão')).click());await p.waitForTimeout(500);
+await p.evaluate(()=>[...document.querySelectorAll('[data-a=abrir]')].find(x=>x.textContent.includes('Barão')).click());await p.waitForTimeout(500);await p.evaluate(()=>document.querySelector('.fi-abas [data-t="entorno"]').click());await p.waitForTimeout(300);
 const tag=`${w}${tema}`;
-const nomes=()=>p.$$eval('#ent-card .ent-l li .t1',l=>l.filter(x=>!x.closest('.ent-exc')).map(x=>(x.closest('.ent-emp')?'e:':'g:')+x.textContent));
+const nomes=()=>p.$$eval('#ent-card .ent-l li .t1',l=>l.filter(x=>!x.closest('.ent-exc')).map(x=>((x.closest('li').querySelector('.poi-x')?.dataset.tp||'g')+':')+x.textContent));
 const antes=await nomes();
 const nx=await p.$$eval('#ent-card .ent-l li:not(.ent-vazio)',l=>l.filter(x=>!x.closest('.ent-exc')).every(x=>x.querySelector('.poi-x')));
 ok(nx,'toda linha tem o botão de excluir');
@@ -26,9 +26,9 @@ await p.screenshot({path:TMP+`t_excl/${tag}_2_confirmar.png`});
 await p.click('#modal [data-a=poi-excl-ok]');await p.waitForTimeout(300);
 ok(!(await nomes()).includes('g:'+gn),`Google "${gn}" saiu da lista`);
 // empresa
-const e=await p.$('#ent-card .ent-emp .poi-x[data-tp=e]');const en=await e.evaluate(x=>x.closest('li').querySelector('.t1').textContent);
+const e=await p.$('#ent-card .poi-x[data-tp=e]');const en=await e.evaluate(x=>x.closest('li').querySelector('.t1').textContent);
 await e.click();await p.waitForTimeout(200);await p.click('#modal [data-a=poi-excl-ok]');await p.waitForTimeout(300);
-ok(!(await p.$eval('#ent-card .ent-emp',x=>x.innerText)).includes(en),`da empresa "${en}" saiu da lista`);
+ok(!(await p.$eval('#ent-card .ent-l',x=>x.innerText)).includes(en),`da empresa "${en}" saiu da lista`);
 const st=await p.evaluate(()=>{for(let i=0;i<localStorage.length;i++){const v=localStorage.getItem(localStorage.key(i));if(v&&v.includes('"pontos"'))return JSON.parse(v)}});
 ok(!st.pontos.some(x=>x.nome===en)&&st.pontosExcl.length===1&&JSON.stringify(st).split('"excl":').length===2,'gravado: ponto fora de S.pontos (sai do mapa) e Google marcado só neste terreno');
 ok(JSON.stringify(st).includes('Ponto de interesse excluído: '+gn+' (Google)'),'exclusão vai para os logs');

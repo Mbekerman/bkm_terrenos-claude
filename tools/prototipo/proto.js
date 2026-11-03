@@ -375,7 +375,7 @@ const optSel=(name,map,val,extra='')=>`<select id="f-${name}" name="${name}" ${e
 /* seções editáveis genéricas */
 const SECOES={
   ident:{titulo:'Identificação',campos:[['nome','Nome de referência','txt',null,'full'],['descricao','Descrição','area',null,'full'],['prioridade','Prioridade','sel','prioridade'],['resp','Responsável','user'],['origem','Origem do cadastro','sel','origem'],['dataIdent','Identificado em','date'],['url','Link da origem','url',null,'full'],['obs','Observações gerais','area',null,'full']]},
-  loc:{titulo:'Endereço e localização',campos:[['cep','CEP','txt'],['logradouro','Logradouro','txt'],['numero','Número','txt'],['complemento','Complemento','txt'],['bairro','Bairro','txt'],['municipio','Município','mun'],['zona','Zona','sel','zona'],['eixo','Eixo comercial','eixo'],['referencia','Referência','txt',null,'full'],['lat','Latitude','dec'],['lng','Longitude','dec'],['precisao','Precisão da localização','sel','precisao']]},
+  loc:{titulo:'Endereço e localização',campos:[['cep','CEP','txt'],['logradouro','Logradouro','txt'],['numero','Número','txt'],['complemento','Complemento','txt'],['bairro','Bairro','txt'],['municipio','Município','mun'],['zona','Zona','sel','zona'],['eixo','Eixo comercial','eixo'],['cri','Cartório de registro de imóveis','cri'],['referencia','Referência','txt',null,'full'],['lat','Latitude','dec'],['lng','Longitude','dec'],['precisao','Precisão da localização','sel','precisao']]},
   fis:{titulo:'Características físicas',campos:[['topografia','Topografia','sel','topografia'],['desnivel','Desnível estimado','m'],['posicao','Posição na quadra','sel','posicao'],['formato','Formato','sel','formato'],['ocupacao','Ocupação','sel','ocupacao'],['uso','Uso atual','txt'],['aConst','Área construída existente','m2'],['aDemolir','Área construída a demolir','m2'],['demolicao','Necessidade de demolição','sel','demolicao'],['obsFis','Observações físicas','area',null,'full']]}
 };
 const NI_OPT=new Set(['nao_informado','nao_informada','nao_avaliada']);
@@ -383,7 +383,7 @@ function fmtCampo(t,[k,,tipo,opt]){
   const v=k==='municipio'?(t.municipio||'São Paulo · SP'):t[k];
   if(v==null||v===''||(tipo==='sel'&&NI_OPT.has(v)))return null;
   switch(tipo){case 'sel':return esc(OPT[opt][v]||v);case 'date':return fd(v);case 'm2':return m2(v);case 'm':return num(v,2)+' m';case 'dec':return num(v,6);
-    case 'url':return `<a href="${esc(v)}" target="_blank" rel="noopener">${esc(v.replace(/^https?:\/\//,'').slice(0,48))}</a>`;case 'eixo':return esc(eixo(v)||'—');default:return esc(v)}
+    case 'url':return `<a href="${esc(v)}" target="_blank" rel="noopener">${esc(v.replace(/^https?:\/\//,'').slice(0,48))}</a>`;case 'eixo':return esc(eixo(v)||'—');case 'cri':return esc(v)+(t.criFonte==='prefeitura'?' <span class="faint" style="font-size:12px">· do GeoSampa</span>':'');default:return esc(v)}
 }
 /* campo de edição de uma seção da ficha; usado nos formulários das seções e na edição direta da Visão geral */
 function campoInp(t,[k,l,tipo,opt,full]){
@@ -394,6 +394,8 @@ function campoInp(t,[k,l,tipo,opt,full]){
     else if(tipo==='area')h=`<textarea id="${idf}" name="${k}">${esc(v)}</textarea>`;
     else if(tipo==='date')h=`<input id="${idf}" name="${k}" type="date" value="${esc(v)}">`;
     else if(tipo==='fixo')h=`<input id="${idf}" value="São Paulo · SP" disabled>`;
+    /* cartório da circunscrição: vem do GeoSampa (pelo lote ou pelo pino) e o usuário pode trocar (3/nov/2026) */
+    else if(tipo==='cri')h=/^São Paulo/.test(t.municipio||'São Paulo')?`<select id="${idf}" name="cri"><option value="">Não informado</option>${Array.from({length:18},(_,i)=>`${i+1}º CRI`).map(c=>`<option ${c===v?'selected':''}>${c}</option>`).join('')}</select>`:`<input id="${idf}" name="cri" value="${esc(v||'')}" placeholder="1º CRI">`;
     else if(tipo==='mun')h=`<input id="${idf}" name="municipio" value="${esc(t.municipio||'São Paulo · SP')}" readonly title="Preenchido pela busca de endereço">`;
     else if(['m2','m','dec'].includes(tipo))h=`<input id="${idf}" name="${k}" inputmode="decimal" value="${v==null?'':String(v).replace('.',',')}" placeholder="${tipo==='m2'?'m²':tipo==='m'?'metros':''}">`;
     else h=`<input id="${idf}" name="${k}" ${tipo==='url'?'type="url"':''} value="${esc(v)}" ${k==='nome'?'required':''}>`;
@@ -446,7 +448,7 @@ function secaoMats(t){
   return `<section class="sec" id="sec-mats"><div class="sec-h"><h2>Matrículas${t.mats.length?` <span class="h-n">${t.mats.length}</span>`:''}</h2></div><div class="sec-b">
     ${t.mats.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Número</th><th>Cartório</th><th class="r">Área registrada</th><th>Data da certidão</th>${partesAtivas(t).length?'<th>Parte</th>':''}<th></th></tr></thead><tbody>${t.mats.map((m,i)=>`<tr><td class="num">${esc(m.num)}</td><td>${esc(m.cri)}</td><td class="r">${m2(m.area)}</td><td>${fd(m.data)}</td>${partesAtivas(t).length?`<td>${selParte(t,'mat-parte',i,m.parte)}</td>`:''}<td class="r"><button class="iconbtn sm lixo" data-a="del-mat" data-i="${i}" aria-label="Remover" title="Remover">${ic('lixo',18)}</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Nenhuma matrícula. Um terreno pode somar várias.</div>'}
     <form class="inline-form" data-form="mat"><div class="field"><label for="m-n">Número</label><input id="m-n" name="num" required placeholder="184.552"></div>
-    <div class="field"><label for="m-c">Cartório</label><select id="m-c" name="cri">${Array.from({length:18},(_,i)=>`<option>${i+1}º CRI</option>`).join('')}</select></div>
+    <div class="field"><label for="m-c">Cartório</label><select id="m-c" name="cri">${Array.from({length:18},(_,i)=>`<option ${t.cri===`${i+1}º CRI`?'selected':''}>${i+1}º CRI</option>`).join('')}</select></div>
     <div class="field"><label for="m-a">Área (m²)</label><input id="m-a" name="area" inputmode="decimal"></div>
     <div class="field"><label for="m-d">Certidão de</label><input id="m-d" name="data" type="date"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form></div></section>`;
 }
@@ -622,7 +624,7 @@ let BLA={},blId=null; /* mantido para quem ainda zera o estado ao abrir um terre
 const blocoFechado=k=>abaN(UI.tab)!==abaN(k);
 const tkRecolhePainel=k=>{};
 const blocoAbre=k=>{UI.tab=abaN(k)};
-function rolarBloco(k,s){setTimeout(()=>{const el=s&&document.getElementById('sec-'+s);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});else{const b=document.querySelector('.fi-abas');if(b&&b.getBoundingClientRect().top<0)b.scrollIntoView({block:'start'})}},30)}
+function rolarBloco(k,s){setTimeout(()=>{const el=s&&document.getElementById('sec-'+s);if(el)qdAbrirEl(el);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});else{const b=document.querySelector('.fi-abas');if(b&&b.getBoundingClientRect().top<0)b.scrollIntoView({block:'start'})}},30)}
 /* fase, etapa e subetapa do topo: a fase mais adiante entre as abertas; fora de andamento, a situação no lugar da etapa */
 function fichaFaseTxt(t){const a=faseAtual(t);if(!a)return [];const p=a.p;if(!p)return [esc(faseN(a.k))];
   const ent=a.k===faseEnt(),et=ent?SN(p.etapa):(etapaF(p.fase,p.etapa)?.nome||p.etapa),sb=p.sub?(ent?subN(p.sub):(subF(p.fase,p.sub)?.nome||'')):'';
@@ -889,7 +891,7 @@ document.addEventListener('input',e=>{const el=e.target;
 document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Object.fromEntries(new FormData(f)),t=UI.alvo?T(UI.alvo):UI.route==='terreno'?T(UI.id):null;
   if(viabSubmit(f.dataset.form,F)||partesSubmit(f.dataset.form,F,t,f)||fasesSubmit(f.dataset.form,F,t,f)||funilSubmit(f.dataset.form,F,t,f)||zonasSubmit(f.dataset.form,F,t,f))return;
   switch(f.dataset.form){
-    case 'sec':{const s=SECOES[f.dataset.s];s.campos.forEach(([k,,tipo])=>{if(tipo==='fixo'||!(k in F))return;let v=F[k].trim();if(['m2','m','dec'].includes(tipo))v=lerNum(v);else if(tipo==='sel'&&v==='')v=k==='precisao'?'nao_informada':['topografia','posicao','formato','ocupacao'].includes(k)?'nao_informado':k==='demolicao'?'nao_avaliada':null;else if(v==='')v=k==='nome'?t.nome:null;t[k]=v});
+    case 'sec':{const s=SECOES[f.dataset.s],criAnt=t.cri;s.campos.forEach(([k,,tipo])=>{if(tipo==='fixo'||!(k in F))return;let v=F[k].trim();if(['m2','m','dec'].includes(tipo))v=lerNum(v);else if(tipo==='sel'&&v==='')v=k==='precisao'?'nao_informada':['topografia','posicao','formato','ocupacao'].includes(k)?'nao_informado':k==='demolicao'?'nao_avaliada':null;else if(v==='')v=k==='nome'?t.nome:null;t[k]=v});if(t.cri!==criAnt)t.criFonte=t.cri?'digitado':null;
       if(t.aDemolir!=null&&t.aConst!=null&&t.aDemolir>t.aConst){toast('A área a demolir não pode passar da área construída.',true);return}
       if(!t.logradouro&&!t.bairro&&t.lat==null){toast('Informe ao menos logradouro, bairro ou ponto no mapa.',true);return}
       UI.edit=null;log(t,`${s.titulo} atualizado`);save();render();toast('Salvo.');break}
@@ -911,7 +913,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
     case 'dilig':t.dilig.push({id:uid(),cat:F.cat,titulo:F.titulo,sit:F.sit,resp:F.resp,prov:F.prov});log(t,`Diligência: ${F.titulo}`);save();render();toast('Diligência registrada.');break;
     case 'pessoa':if(F.papel==='proprietario'&&lerNum(F.pct)!=null&&!partesAtivas(t).length){const tot=t.pessoas.filter(p=>p.papel==='proprietario').reduce((a,p)=>a+(p.pct||0),0);if(tot+lerNum(F.pct)>100){toast(`A soma passaria de 100% (já há ${num(tot,2)}% informado).`,true);return}}
       t.pessoas.push({nome:F.nome,tipo:F.tipo,papel:F.papel,pct:F.papel==='proprietario'?lerNum(F.pct):null,tel:F.tel});save();render();break;
-    case 'poi':{S.pontos=S.pontos||[];S.pontos.push({id:uid(),nome:F.nome.trim(),cat:F.cat,lat:UI.novoPoi.lat,lng:UI.novoPoi.lng});UI.modal=null;save();const volta=UI.poiVolta;UI.poiVolta=null;if(volta&&T(volta))go('terreno',{id:volta,tab:'geral'});else render();toast('Ponto de interesse salvo.');break}
+    case 'poi':{S.pontos=S.pontos||[];S.pontos.push({id:uid(),nome:F.nome.trim(),cat:F.cat,lat:UI.novoPoi.lat,lng:UI.novoPoi.lng});UI.modal=null;save();const volta=UI.poiVolta;UI.poiVolta=null;if(volta&&T(volta))go('terreno',{id:volta,tab:'entorno'});else render();toast('Ponto de interesse salvo.');break}
     case 'reuniao':{if(F.status==='realizada'&&F.data>HOJE){toast('Reunião realizada não pode ter data futura.',true);return}
       if(F.status==='agendada'&&F.data<HOJE){toast('Para registrar uma reunião passada, escolha Realizada.',true);return}
       const pres=F.modalidade==='presencial';
@@ -950,7 +952,7 @@ function seedVazio(){return {id:uid(),situacao:'ativo',prioridade:null,descricao
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&GG&&(svFechar()||lugarFechar())){e.preventDefault();return}if(e.key==='Escape'&&temaMenu){temaMenu=false;renderTema();return}if(e.key==='Escape'&&perfilMenu){perfilMenu=false;renderPerfil();return}if(e.key==='Escape'&&UI.modal){UI.modal=null;renderModal()}});
 /* ===================== kanban: arrastar e soltar (regras em proto_funil.js: levarAte, soltar) ===================== */
 function posRender(){try{if(MAPA){MAPA.remove()}}catch(e){}MAPA=null;PINS=POIS=DES=BASE=null;try{if(MINI)MINI.remove()}catch(e){}MINI=null;
-  if(UI.route==='mapa')initMapa();if(UI.route==='terreno'){fiAbaVisivel();if(!blocoFechado('geral'))initMini()}fichaSheet()}
+  if(UI.route==='mapa')initMapa();if(UI.route==='terreno'){fiAbaVisivel();if(!blocoFechado('geral'))initMini();if(typeof geoCartorio==='function')geoCartorio(T(UI.id))}fichaSheet()}
 document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const el=e.target;if(!(el instanceof HTMLElement)||el.matches('button,a,input,select,textarea'))return;if(el.matches('[data-a][tabindex]')){e.preventDefault();el.click()}});
 let arrastando=null;
 document.addEventListener('dragstart',e=>{const c=e.target.closest?.('.kcard[draggable="true"]');if(!c)return;arrastando=c.dataset.id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',arrastando);c.classList.add('arrastando');c.closest('.col')?.classList.add('origem');document.body.classList.add('dnd')});

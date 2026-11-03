@@ -69,6 +69,10 @@ create table app.terrenos (
   zona                  text check (zona in ('leste','oeste','norte','sul','centro','sudeste','sudoeste','nordeste','noroeste')),  -- mesma lista para qualquer cidade
   eixo_comercial_id     uuid references app.eixos_comerciais(id),
   referencia_localizacao text,
+  -- cartório de registro de imóveis da circunscrição (3/nov/2026): vem da prefeitura (em São Paulo, a camada
+  -- cartorio_registro_imovel do GeoSampa, pelo lote ou pelo pino) e o usuário pode trocar; aí vira 'digitado'
+  cartorio              text,
+  cartorio_origem       text check (cartorio_origem in ('prefeitura','digitado')),
   latitude              double precision check (latitude between -90 and 90),
   longitude             double precision check (longitude between -180 and 180),
   poligono_geojson      jsonb check (poligono_geojson is null or app.geojson_poligono_valido(poligono_geojson)),

@@ -54,34 +54,31 @@ const ENT_CAT=[['metro_trem','Estação de metrô ou trem','estações de metrô
   ['hospital','Hospital','hospitais',['hospital']]];
 const ENT_BUSCA={},ENT_TENT=new Set();let ENT_TODOS=false;
 const rotaPeUrl=(t,p)=>`https://www.google.com/maps/dir/?api=1&origin=${t.lat},${t.lng}&destination=${p.lat},${p.lng}${p.gid&&!String(p.gid).startsWith('ex')?'&destination_place_id='+encodeURIComponent(p.gid):''}&travelmode=walking`;
-function entornoCard(t){if(t.lat==null)return '';
-  const e=t.entorno,busc=ENT_BUSCA[t.id],mudou=e&&!(e.lat===t.lat&&e.lng===t.lng),raio=fKm(RAIO_PE/1000);
-  let corpo;
-  if(!e)corpo=busc?`<div class="muted">Buscando no Google lugares a até ${raio} a pé…</div>`
-    :`<div class="muted">${GG?'Os pontos de interesse ainda não foram buscados.':'Os pontos são buscados no Google quando o terreno é localizado pela busca de endereço ou no mapa. O Google não carrega neste link de visualização.'}</div>${GG?`<button class="btn sm ed" style="margin-top:12px" data-a="ent-buscar" data-id="${t.id}">Buscar agora</button>`:''}`;
-  else{const lim=ENT_TODOS?99:3;let sobra=0;
-    corpo=`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${ENT_CAT.map(([k,l,pl])=>{const its=e.itens.filter(x=>x.cat===k&&!x.excl).sort((a,b)=>a.pe-b.pe);
-      if(!its.length)return `<li class="ent-vazio"><span><span class="t2">Sem ${pl}</span></span></li>`;
-      sobra+=Math.max(0,its.length-lim);
-      return its.slice(0,lim).map(p=>`<li><span><span class="t1">${esc(p.nome)}</span><span class="t2">${l}${p.min!=null?` · ${p.min} min a pé`:''}<span class="so-m"> · ${p.pe<1000?Math.round(p.pe/10)*10+'\u00a0m':num(p.pe/1000,2)+'\u00a0km'}</span></span></span><span class="num poi-d">${p.pe<1000?Math.round(p.pe/10)*10+'\u00a0m':num(p.pe/1000,2)+'\u00a0km'}</span><a class="iconbtn sm poi-rota" href="${rotaPeUrl(t,p)}" target="_blank" rel="noopener" aria-label="Rota até ${esc(p.nome)}" title="Rota">${ic('rota',18)}</a>${poiX('g',p.gid,p.nome,t)}</li>`).join('')}).join('')}</ul>
-    ${sobra||ENT_TODOS?`<button class="linkbtn" data-a="ent-todos" style="margin-top:6px">${ENT_TODOS?'Mostrar menos':`Mostrar mais ${sobra}`}</button>`:''}
-    ${busc||e.semPe||mudou?`<div class="hint ent-pe">${busc?'Atualizando no Google… · ':''}${e.semPe?'Em linha reta (sem rota a pé) · ':''}${fd(e.em)}${mudou?' · <b>a localização mudou depois da busca</b>':''}</div>`:''}`}
-  corpo+=pontosEmpresa(t)+poiExcluidos(t);
-  return `<section class="sec" id="ent-card"><div class="sec-h"><h2>Pontos de interesse</h2><span class="faint" style="font-size:12px">a pé · até ${raio}</span></div><div class="sec-b">${corpo}</div></section>`}
-/* pontos cadastrados pela empresa: todos aparecem; a pé se está a até RAIO_PE a pé, senão de carro; sem rota medida, linha reta */
+/* Pontos de interesse numa lista só (pedido do Moisés, 3/nov/2026): os lugares do Google (por categoria, a até RAIO_PE a pé)
+   e os pontos cadastrados pela empresa (todos: a pé até RAIO_PE, senão de carro; sem rota medida, linha reta), juntos, pela distância.
+   Cada linha diz a categoria; a exclusão continua com a regra de cada origem (poiX). */
 let EMP_TODOS=false;
 const kmTxt=m=>m<1000?Math.round(m/10)*10+'\u00a0m':num(m/1000,m<10000?2:1)+'\u00a0km';
 function pontosEmpresa(t){const pts=S.pontos||[];const d=t.dist&&t.dist.lat===t.lat&&t.dist.lng===t.lng?t.dist.m:{};
-  const its=pts.map(p=>{const x=d[p.id]||{},reta=distKm(t.lat,t.lng,p.lat,p.lng)*1000;
-    if(x.pe!=null&&x.pe<=RAIO_PE)return {p,ord:x.pe,dist:kmTxt(x.pe),modo:`${x.pm} min a pé`,url:rotaPeUrl(t,p)};
-    if(x.cm!=null)return {p,ord:x.cm,dist:kmTxt(x.cm),modo:`${x.cmin} min de carro`,url:rotaUrl(t,p)};
-    return {p,ord:reta,dist:kmTxt(reta),modo:'em linha reta',url:reta<=RAIO_PE?rotaPeUrl(t,p):rotaUrl(t,p)}}).sort((a,b)=>a.ord-b.ord);
-  const lim=EMP_TODOS?999:5;
-  return `<div class="ent-emp"><div class="ent-emp-h"><span>Cadastrados pela empresa</span>${UI.role!=='Leitura'?`<button class="linkbtn ed" data-a="ent-add-ponto" data-id="${t.id}">${ic('add',16)}Adicionar ponto</button>`:''}</div>
-    ${its.length?`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${its.slice(0,lim).map(x=>`<li><span><span class="t1">${esc(x.p.nome)}</span><span class="t2">${CAT_POI[x.p.cat]||'Outro'} · ${x.modo}<span class="so-m"> · ${x.dist}</span></span></span><span class="num poi-d">${x.dist}</span><a class="iconbtn sm poi-rota" href="${x.url}" target="_blank" rel="noopener" aria-label="Rota até ${esc(x.p.nome)}" title="Rota">${ic('rota',18)}</a>${poiX('e',x.p.id,x.p.nome,t)}</li>`).join('')}</ul>
-    ${its.length>5?`<button class="linkbtn" data-a="emp-todos" style="margin-top:6px">${EMP_TODOS?'Mostrar menos':`Mostrar mais ${its.length-5}`}</button>`:''}`
-    :'<div class="muted" style="font-size:14px">Nenhum ponto cadastrado pela empresa.</div>'}
-    ${DIST_BUSCA_ON(t)?'<div class="hint">Medindo as rotas no Google…</div>':''}</div>`}
+  return pts.map(p=>{const x=d[p.id]||{},reta=distKm(t.lat,t.lng,p.lat,p.lng)*1000,c={nome:p.nome,cat:CAT_POI[p.cat]||'Outro',x:poiX('e',p.id,p.nome,t)};
+    if(x.pe!=null&&x.pe<=RAIO_PE)return {...c,ord:x.pe,dist:kmTxt(x.pe),modo:`${x.pm} min a pé`,url:rotaPeUrl(t,p)};
+    if(x.cm!=null)return {...c,ord:x.cm,dist:kmTxt(x.cm),modo:`${x.cmin} min de carro`,url:rotaUrl(t,p)};
+    return {...c,ord:reta,dist:kmTxt(reta),modo:'em linha reta',url:reta<=RAIO_PE?rotaPeUrl(t,p):rotaUrl(t,p)}})}
+function entornoCard(t){if(t.lat==null)return '';
+  const e=t.entorno,busc=ENT_BUSCA[t.id],mudou=e&&!(e.lat===t.lat&&e.lng===t.lng),raio=fKm(RAIO_PE/1000);
+  const g=(e?.itens||[]).filter(x=>!x.excl).map(p=>({nome:p.nome,cat:ENT_CAT.find(c=>c[0]===p.cat)?.[1]||'Lugar',ord:p.pe,dist:kmTxt(p.pe),modo:p.min!=null?`${p.min} min a pé`:(e.semPe?'em linha reta':'a pé'),url:rotaPeUrl(t,p),x:poiX('g',p.gid,p.nome,t)}));
+  const its=[...g,...pontosEmpresa(t)].sort((a,b)=>a.ord-b.ord),lim=ENT_TODOS?999:8;
+  const vaz=e?ENT_CAT.filter(([k])=>!e.itens.some(x=>x.cat===k&&!x.excl)).map(c=>c[2]):[];
+  const jun=l=>l.length>1?l.slice(0,-1).join(', ')+' e '+l[l.length-1]:l[0];
+  const aviso=!e?(busc?`Buscando no Google lugares a até ${raio} a pé…`:GG?'Os lugares do Google ainda não foram buscados.':'Os lugares do Google são buscados quando o terreno é localizado; o Google não carrega neste link de visualização.'):'';
+  let corpo=`${its.length?`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${its.slice(0,lim).map(x=>`<li><span><span class="t1">${esc(x.nome)}</span><span class="t2">${esc(x.cat)} · ${x.modo}<span class="so-m"> · ${x.dist}</span></span></span><span class="num poi-d">${x.dist}</span><a class="iconbtn sm poi-rota" href="${x.url}" target="_blank" rel="noopener" aria-label="Rota até ${esc(x.nome)}" title="Rota">${ic('rota',18)}</a>${x.x}</li>`).join('')}</ul>
+    ${its.length>8?`<button class="linkbtn" data-a="ent-todos" style="margin-top:6px">${ENT_TODOS?'Mostrar menos':`Mostrar mais ${its.length-8}`}</button>`:''}`:(aviso?'':'<div class="muted">Nenhum ponto de interesse.</div>')}
+    ${aviso?`<div class="muted"${its.length?' style="margin-top:8px"':''}>${aviso}</div>${!busc&&GG?`<button class="btn sm ed" style="margin-top:12px" data-a="ent-buscar" data-id="${t.id}">Buscar agora</button>`:''}`:''}
+    ${vaz.length?`<div class="hint ent-sem">Sem ${jun(vaz)} a até ${raio} a pé.</div>`:''}
+    ${e&&(busc||e.semPe||mudou)?`<div class="hint ent-pe">${busc?'Atualizando no Google… · ':''}${e.semPe?'Lugares do Google em linha reta (sem rota a pé) · ':''}${fd(e.em)}${mudou?' · <b>a localização mudou depois da busca</b>':''}</div>`:''}
+    ${DIST_BUSCA_ON(t)?'<div class="hint">Medindo as rotas no Google…</div>':''}`;
+  corpo+=poiExcluidos(t);
+  return `<section class="sec" id="ent-card"><div class="sec-h"><h2>Pontos de interesse</h2><span class="faint" style="font-size:12px">a pé até ${raio}; mais longe, de carro</span>${UI.role!=='Leitura'?`<button class="btn sm text ed" data-a="ent-add-ponto" data-id="${t.id}">${ic('add',16)}Adicionar ponto</button>`:''}</div><div class="sec-b">${corpo}</div></section>`}
 /* excluir ponto de interesse. Do Google: marcado no próprio terreno (no banco: terreno_entorno.excluido_em);
    some só deste terreno e continua fora se a busca for refeita (o terreno mudou de lugar). Da empresa:
    desligado (ativo = false), some de todos os terrenos e do mapa. Os dois voltam por "Restaurar". */
@@ -616,7 +613,7 @@ function abaGeral(t,parte){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.v
     ${linLink('Valor pedido na entrada',of1?.valor?`<span>${mi(of1.valor)}<span class="kv-2">oferta de ${fd(of1.data)}</span></span>`:'',`<button class="kv-ed kv-ir" data-a="tab" data-t="comercial" title="Ver as ofertas" aria-label="Ver as ofertas">${ic('fwd',16)}</button>`)}
     ${linLink('Perfil topográfico',esc(topo),`<button class="kv-ed kv-ir" data-a="tab" data-t="infra" title="Ver a infraestrutura" aria-label="Ver a infraestrutura">${ic('fwd',16)}</button>`)}
     ${linLink('Corretor',cp?`<span>${esc(cp.nome)}<span class="kv-2">${esc(cp.imob)}</span></span>`:'',`<button class="kv-ed kv-ir" data-a="tab" data-t="comercial" title="Ver os corretores" aria-label="Ver os corretores">${ic('fwd',16)}</button>`)}</dl></div></section>`;
-  return `<div class="geral"><div class="geral-c">${resumo}</div><div class="geral-c">${loc}</div></div>`}
+  return `<div class="geral"><div class="geral-c">${loc}</div><div class="geral-c">${resumo}</div></div>`}
 function L_initMini(){const el=$('#mini-mapa'),t=T(UI.id);if(!el||!t||t.lat==null)return;if(!window.L){el.innerHTML='<div class="mapa-erro">Mapa indisponível.</div>';return}
   MINI=L.map(el,{zoomControl:true,attributionControl:true,scrollWheelZoom:false,doubleClickZoom:false,dragging:!L.Browser.mobile});
   const mini0=MINI;miniGestos(el,d=>mini0.setZoom(mini0.getZoom()+d));

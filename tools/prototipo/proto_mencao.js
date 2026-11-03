@@ -24,7 +24,7 @@ function mnPodeSer(el,u){const f=el.closest('#f-tk');
 function mnIr(ir){
   /* tarefa: a seção Tarefas saiu da ficha (3/nov/2026); o aviso abre o cartão */
   if(ir.b==='tarefas'){const x=todasTarefas().find(y=>y.k.id===ir.alvo);if(x){UI.tkSel={tid:x.t.id,kid:x.k.id};UI.tkAba='geral';UI.modal='tarefa';renderModal();return}}
-  blocoAbre(ir.b);render();setTimeout(()=>{const el=document.querySelector(`[data-mid="${ir.alvo}"]`)||document.getElementById('bl-'+ir.b);if(!el)return;
+  blocoAbre(ir.b);render();setTimeout(()=>{const el=document.querySelector(`[data-mid="${ir.alvo}"]`)||document.getElementById('bl-'+ir.b);if(!el)return;qdAbrirEl(el);
   el.scrollIntoView({behavior:'smooth',block:'center'});document.querySelectorAll('.pisca').forEach(x=>x.classList.remove('pisca'));
   let feito=false;const acende=()=>{if(feito)return;feito=true;void el.offsetWidth;el.classList.add('pisca');setTimeout(()=>el.classList.remove('pisca'),4200)};
   if('onscrollend' in window){window.addEventListener('scrollend',acende,{once:true});setTimeout(acende,900)}else setTimeout(acende,500)},60)}

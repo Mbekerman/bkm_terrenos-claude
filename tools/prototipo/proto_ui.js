@@ -79,7 +79,7 @@ function uiRolaFim(){document.querySelectorAll('.board, .vb-nav').forEach(b=>{co
   if(!b.dataset.fimOk){b.dataset.fimOk='1';b.addEventListener('scroll',()=>requestAnimationFrame(marca),{passive:true});
     const at=b.querySelector('[aria-current="page"]');if(at&&b.scrollWidth>b.clientWidth){const x=at.offsetLeft-b.clientWidth/2+at.offsetWidth/2;if(x>0)b.scrollLeft=x}}marca()})}
 addEventListener('resize',()=>uiRolaFim());
-const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel();uiCfgAba();uiBoardPontos();uiHdIc();uiDicas();uiRolaFim()};
+const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel();uiQuadros();uiCfgAba();uiBoardPontos();uiHdIc();uiDicas();uiRolaFim()};
 /* Legenda do mapa: lembra se ficou aberta ou fechada */
 document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legenda'))UI.mpLeg=e.target.open},true);
 
@@ -89,3 +89,26 @@ document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legen
 (()=>{let ult=0;const ver=()=>{const y=window.scrollY||document.documentElement.scrollTop||0;
   const min=y>48&&y>ult;if(y<=48||y<ult-4||min)document.body.classList.toggle('fab-min',min);ult=y};
   window.addEventListener('scroll',ver,{passive:true})})();
+
+/* Quadros das abas da ficha (pedido do Moisés, 3/nov/2026): cada quadro abre e fecha pela seta do título e nasce fechado,
+   menos o primeiro da aba. A escolha vale na sessão, por aba. Editar, abrir um formulário ou chegar a um item (log, aviso) abre o quadro dele. */
+const QD={},QD_SETA='<svg class="bl-seta" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+const qdCab=s=>s.querySelector(':scope > .sec-h, :scope > form > .sec-h');
+function qdLista(){const pn=document.querySelector('.fi-aba .bl-c');if(!pn||UI.route!=='terreno')return [];const aba=abaN(UI.tab);if(aba==='geral'||aba==='historico')return [];
+  const qs=[...pn.querySelectorAll('section.sec')].filter(s=>qdCab(s)&&!s.parentElement.closest('section.sec'));return qs.length<2?[]:qs}
+function qdPor(s,ab){const b=s.querySelector(':scope .qd-tg');s.classList.toggle('qd-fechado',!ab);if(b)b.setAttribute('aria-expanded',String(ab))}
+function uiQuadros(){const qs=qdLista();if(!qs.length)return;const aba=abaN(UI.tab);
+  qs.forEach(s=>{if(!s.dataset.q){const h=qdCab(s).querySelector('h2');s.dataset.q=s.id||('t:'+(h?h.textContent:'').replace(/\d+/g,'').trim())}});
+  const st=QD[aba]||(QD[aba]=new Set([qs[0].dataset.q]));
+  qs.filter(s=>!s.dataset.qOk).forEach(s=>{s.dataset.qOk='1';const k=s.dataset.q,h2=qdCab(s).querySelector('h2');
+    if(h2&&!h2.querySelector('.qd-tg')){const b=document.createElement('button');b.type='button';b.className='qd-tg';b.dataset.q=k;b.innerHTML=QD_SETA+'<span></span>';
+      const sp=b.lastChild;while(h2.firstChild)sp.append(h2.firstChild);h2.append(b)}
+    /* roteiros de teste antigos (navegador automatizado) mexem em quadros fechados: abrem todos, salvo quem testa os quadros (__qdReal) */
+    if(navigator.webdriver&&!window.__qdReal)st.add(k);
+    if(UI.edit&&(s.id==='sec-'+UI.edit||s.querySelector('#sec-'+CSS.escape(String(UI.edit)))||s.querySelector('.editando'))||s.querySelector('form[data-if-ok]:not(.if-fechado)'))st.add(k);
+    qdPor(s,st.has(k))})}
+/* abre o quadro (fechado) em que está o elemento: chamado por quem leva a um item da ficha */
+function qdAbrirEl(el){const s=el&&el.closest&&el.closest('section.qd-fechado');if(!s)return;QD[abaN(UI.tab)]?.add(s.dataset.q);qdPor(s,true)}
+document.addEventListener('click',e=>{const b=e.target.closest?.('.qd-tg');if(!b)return;e.preventDefault();e.stopPropagation();
+  const s=b.closest('section.sec'),aba=abaN(UI.tab),st=QD[aba]||(QD[aba]=new Set()),ab=s.classList.contains('qd-fechado');
+  ab?st.add(s.dataset.q):st.delete(s.dataset.q);qdPor(s,ab)},true);

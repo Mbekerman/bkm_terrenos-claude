@@ -1914,6 +1914,9 @@ begin
     observacoes = v_novo.observacoes, cep = v_novo.cep, logradouro = v_novo.logradouro, numero = v_novo.numero,
     complemento = v_novo.complemento, bairro = v_novo.bairro, municipio_id = v_novo.municipio_id, zona = v_novo.zona,
     eixo_comercial_id = v_novo.eixo_comercial_id, referencia_localizacao = v_novo.referencia_localizacao,
+    cartorio = nullif(trim(v_novo.cartorio), ''),
+    cartorio_origem = case when nullif(trim(v_novo.cartorio), '') is null then null
+                           when nullif(trim(v_novo.cartorio), '') is distinct from t.cartorio then 'digitado' else t.cartorio_origem end,
     latitude = v_novo.latitude, longitude = v_novo.longitude, poligono_geojson = v_novo.poligono_geojson,
     precisao_localizacao = v_novo.precisao_localizacao, area_documental_m2 = v_novo.area_documental_m2,
     area_cadastral_m2 = v_novo.area_cadastral_m2, area_levantamento_m2 = v_novo.area_levantamento_m2,
@@ -2526,10 +2529,38 @@ begin
          zona_fiscal = coalesce(nullif(trim(p_camadas#>>'{zona_fiscal,0,sg_zona_fiscal}'), ''), zona_fiscal)
    where id = i.id;
 
+  -- cartório da circunscrição: só quando o terreno ainda não tem e a camada achou um só
+  if t.cartorio is null and jsonb_typeof(p_camadas->'cartorio_registro_imovel') = 'array'
+     and jsonb_array_length(p_camadas->'cartorio_registro_imovel') = 1
+     and nullif(trim(p_camadas#>>'{cartorio_registro_imovel,0,cd_numero_cartorio}'), '') is not null then
+    update app.terrenos set cartorio = trim(p_camadas#>>'{cartorio_registro_imovel,0,cd_numero_cartorio}') || ' CRI', cartorio_origem = 'prefeitura'
+     where id = t.id;
+  end if;
+
   if p_criar_analise and jsonb_array_length(coalesce(p_zonas, '[]')) > 0 then
     perform app._substituir_zonas(t, i.id, p_zonas, b.nome || ' (' || b.rotulo || ' ' || i.inscricao || ')');
   end if;
   return v_id;
+end $$;
+
+-- ---------------------------------------------------------------------
+-- Cartório da circunscrição pelo pino do terreno (sem inscrição consultada).
+-- O front consulta a prefeitura e grava aqui; só preenche o vazio ou troca o
+-- que veio da prefeitura (o pino mudou de lugar), nunca o digitado.
+-- ---------------------------------------------------------------------
+create or replace function app.cartorio_da_prefeitura(p_terreno uuid, p_cartorio text)
+returns boolean
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos;
+begin
+  select * into t from app.terrenos where id = p_terreno for update;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  if nullif(trim(p_cartorio), '') is null then raise exception 'Cartório vazio' using errcode = '22023'; end if;
+  if t.cartorio_origem = 'digitado' or t.cartorio = trim(p_cartorio) then return false; end if;
+  update app.terrenos set cartorio = trim(p_cartorio), cartorio_origem = 'prefeitura' where id = t.id;
+  return true;
 end $$;
 
 -- ---------------------------------------------------------------------
@@ -2658,7 +2689,7 @@ grant execute on function
   app.salvar_entorno(uuid, double precision, double precision, jsonb, boolean),
   app.excluir_lugar_entorno(uuid, text), app.restaurar_lugar_entorno(uuid, text),
   app.salvar_distancias_pontos(uuid, double precision, double precision, jsonb),
-  app.registrar_consulta_lote(uuid, jsonb, jsonb, numeric, jsonb, jsonb, text[], boolean),
+  app.registrar_consulta_lote(uuid, jsonb, jsonb, numeric, jsonb, jsonb, text[], boolean), app.cartorio_da_prefeitura(uuid, text),
   app.registrar_zonas_sem_inscricao(uuid, jsonb, text), app.salvar_zona_parametro(uuid, uuid, jsonb),
   app.parametros_zona(uuid, uuid, text, text, numeric, text),
   app.criar_empresa(text, text),

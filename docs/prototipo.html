@@ -5080,6 +5080,17 @@ html[data-tema="escuro"] .fi-abas { background: #131314; border-color: #2d2f31 }
 html[data-tema="escuro"] .fi-abas button { color: #c4c7c5 } html[data-tema="escuro"] .fi-abas button:hover { background: rgba(227,227,227,.08) }
 html[data-tema="escuro"] .fi-abas button[aria-selected="true"] { color: #a8c7fa; border-bottom-color: #a8c7fa }
 html[data-tema="escuro"] .fi-abas .tkm-n { background: rgba(149,153,160,0.14); color: #c1d9ff }
+
+/* Quadros das abas da ficha abrem e fecham pela seta do título (3/nov/2026); nascem fechados, menos o primeiro da aba */
+.qd-tg { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; padding: 0; margin: -8px 0; font: inherit; color: inherit; cursor: pointer; text-align: left }
+.qd-tg > span { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap }
+.qd-tg .bl-seta { margin-left: -10px }
+.qd-tg:hover .bl-seta { background: rgba(127,127,127,.12) }
+.qd-tg[aria-expanded="true"] .bl-seta { transform: rotate(90deg) }
+.qd-tg:focus-visible { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: 2px; border-radius: 8px }
+section.sec.qd-fechado > :not(.sec-h):not(form), section.sec.qd-fechado > form > :not(.sec-h) { display: none }
+section.sec.qd-fechado > .sec-h > :not(h2), section.sec.qd-fechado > form > .sec-h > :not(h2) { display: none }
+section.sec.qd-fechado > .sec-h, section.sec.qd-fechado > form > .sec-h { border-bottom: 0 !important }
 </style>
 <header class="top">
   <div class="top-in">
@@ -5488,7 +5499,7 @@ const optSel=(name,map,val,extra='')=>`<select id="f-${name}" name="${name}" ${e
 /* seções editáveis genéricas */
 const SECOES={
   ident:{titulo:'Identificação',campos:[['nome','Nome de referência','txt',null,'full'],['descricao','Descrição','area',null,'full'],['prioridade','Prioridade','sel','prioridade'],['resp','Responsável','user'],['origem','Origem do cadastro','sel','origem'],['dataIdent','Identificado em','date'],['url','Link da origem','url',null,'full'],['obs','Observações gerais','area',null,'full']]},
-  loc:{titulo:'Endereço e localização',campos:[['cep','CEP','txt'],['logradouro','Logradouro','txt'],['numero','Número','txt'],['complemento','Complemento','txt'],['bairro','Bairro','txt'],['municipio','Município','mun'],['zona','Zona','sel','zona'],['eixo','Eixo comercial','eixo'],['referencia','Referência','txt',null,'full'],['lat','Latitude','dec'],['lng','Longitude','dec'],['precisao','Precisão da localização','sel','precisao']]},
+  loc:{titulo:'Endereço e localização',campos:[['cep','CEP','txt'],['logradouro','Logradouro','txt'],['numero','Número','txt'],['complemento','Complemento','txt'],['bairro','Bairro','txt'],['municipio','Município','mun'],['zona','Zona','sel','zona'],['eixo','Eixo comercial','eixo'],['cri','Cartório de registro de imóveis','cri'],['referencia','Referência','txt',null,'full'],['lat','Latitude','dec'],['lng','Longitude','dec'],['precisao','Precisão da localização','sel','precisao']]},
   fis:{titulo:'Características físicas',campos:[['topografia','Topografia','sel','topografia'],['desnivel','Desnível estimado','m'],['posicao','Posição na quadra','sel','posicao'],['formato','Formato','sel','formato'],['ocupacao','Ocupação','sel','ocupacao'],['uso','Uso atual','txt'],['aConst','Área construída existente','m2'],['aDemolir','Área construída a demolir','m2'],['demolicao','Necessidade de demolição','sel','demolicao'],['obsFis','Observações físicas','area',null,'full']]}
 };
 const NI_OPT=new Set(['nao_informado','nao_informada','nao_avaliada']);
@@ -5496,7 +5507,7 @@ function fmtCampo(t,[k,,tipo,opt]){
   const v=k==='municipio'?(t.municipio||'São Paulo · SP'):t[k];
   if(v==null||v===''||(tipo==='sel'&&NI_OPT.has(v)))return null;
   switch(tipo){case 'sel':return esc(OPT[opt][v]||v);case 'date':return fd(v);case 'm2':return m2(v);case 'm':return num(v,2)+' m';case 'dec':return num(v,6);
-    case 'url':return `<a href="${esc(v)}" target="_blank" rel="noopener">${esc(v.replace(/^https?:\/\//,'').slice(0,48))}</a>`;case 'eixo':return esc(eixo(v)||'—');default:return esc(v)}
+    case 'url':return `<a href="${esc(v)}" target="_blank" rel="noopener">${esc(v.replace(/^https?:\/\//,'').slice(0,48))}</a>`;case 'eixo':return esc(eixo(v)||'—');case 'cri':return esc(v)+(t.criFonte==='prefeitura'?' <span class="faint" style="font-size:12px">· do GeoSampa</span>':'');default:return esc(v)}
 }
 /* campo de edição de uma seção da ficha; usado nos formulários das seções e na edição direta da Visão geral */
 function campoInp(t,[k,l,tipo,opt,full]){
@@ -5507,6 +5518,8 @@ function campoInp(t,[k,l,tipo,opt,full]){
     else if(tipo==='area')h=`<textarea id="${idf}" name="${k}">${esc(v)}</textarea>`;
     else if(tipo==='date')h=`<input id="${idf}" name="${k}" type="date" value="${esc(v)}">`;
     else if(tipo==='fixo')h=`<input id="${idf}" value="São Paulo · SP" disabled>`;
+    /* cartório da circunscrição: vem do GeoSampa (pelo lote ou pelo pino) e o usuário pode trocar (3/nov/2026) */
+    else if(tipo==='cri')h=/^São Paulo/.test(t.municipio||'São Paulo')?`<select id="${idf}" name="cri"><option value="">Não informado</option>${Array.from({length:18},(_,i)=>`${i+1}º CRI`).map(c=>`<option ${c===v?'selected':''}>${c}</option>`).join('')}</select>`:`<input id="${idf}" name="cri" value="${esc(v||'')}" placeholder="1º CRI">`;
     else if(tipo==='mun')h=`<input id="${idf}" name="municipio" value="${esc(t.municipio||'São Paulo · SP')}" readonly title="Preenchido pela busca de endereço">`;
     else if(['m2','m','dec'].includes(tipo))h=`<input id="${idf}" name="${k}" inputmode="decimal" value="${v==null?'':String(v).replace('.',',')}" placeholder="${tipo==='m2'?'m²':tipo==='m'?'metros':''}">`;
     else h=`<input id="${idf}" name="${k}" ${tipo==='url'?'type="url"':''} value="${esc(v)}" ${k==='nome'?'required':''}>`;
@@ -5559,7 +5572,7 @@ function secaoMats(t){
   return `<section class="sec" id="sec-mats"><div class="sec-h"><h2>Matrículas${t.mats.length?` <span class="h-n">${t.mats.length}</span>`:''}</h2></div><div class="sec-b">
     ${t.mats.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Número</th><th>Cartório</th><th class="r">Área registrada</th><th>Data da certidão</th>${partesAtivas(t).length?'<th>Parte</th>':''}<th></th></tr></thead><tbody>${t.mats.map((m,i)=>`<tr><td class="num">${esc(m.num)}</td><td>${esc(m.cri)}</td><td class="r">${m2(m.area)}</td><td>${fd(m.data)}</td>${partesAtivas(t).length?`<td>${selParte(t,'mat-parte',i,m.parte)}</td>`:''}<td class="r"><button class="iconbtn sm lixo" data-a="del-mat" data-i="${i}" aria-label="Remover" title="Remover">${ic('lixo',18)}</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Nenhuma matrícula. Um terreno pode somar várias.</div>'}
     <form class="inline-form" data-form="mat"><div class="field"><label for="m-n">Número</label><input id="m-n" name="num" required placeholder="184.552"></div>
-    <div class="field"><label for="m-c">Cartório</label><select id="m-c" name="cri">${Array.from({length:18},(_,i)=>`<option>${i+1}º CRI</option>`).join('')}</select></div>
+    <div class="field"><label for="m-c">Cartório</label><select id="m-c" name="cri">${Array.from({length:18},(_,i)=>`<option ${t.cri===`${i+1}º CRI`?'selected':''}>${i+1}º CRI</option>`).join('')}</select></div>
     <div class="field"><label for="m-a">Área (m²)</label><input id="m-a" name="area" inputmode="decimal"></div>
     <div class="field"><label for="m-d">Certidão de</label><input id="m-d" name="data" type="date"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form></div></section>`;
 }
@@ -5735,7 +5748,7 @@ let BLA={},blId=null; /* mantido para quem ainda zera o estado ao abrir um terre
 const blocoFechado=k=>abaN(UI.tab)!==abaN(k);
 const tkRecolhePainel=k=>{};
 const blocoAbre=k=>{UI.tab=abaN(k)};
-function rolarBloco(k,s){setTimeout(()=>{const el=s&&document.getElementById('sec-'+s);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});else{const b=document.querySelector('.fi-abas');if(b&&b.getBoundingClientRect().top<0)b.scrollIntoView({block:'start'})}},30)}
+function rolarBloco(k,s){setTimeout(()=>{const el=s&&document.getElementById('sec-'+s);if(el)qdAbrirEl(el);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});else{const b=document.querySelector('.fi-abas');if(b&&b.getBoundingClientRect().top<0)b.scrollIntoView({block:'start'})}},30)}
 /* fase, etapa e subetapa do topo: a fase mais adiante entre as abertas; fora de andamento, a situação no lugar da etapa */
 function fichaFaseTxt(t){const a=faseAtual(t);if(!a)return [];const p=a.p;if(!p)return [esc(faseN(a.k))];
   const ent=a.k===faseEnt(),et=ent?SN(p.etapa):(etapaF(p.fase,p.etapa)?.nome||p.etapa),sb=p.sub?(ent?subN(p.sub):(subF(p.fase,p.sub)?.nome||'')):'';
@@ -6002,7 +6015,7 @@ document.addEventListener('input',e=>{const el=e.target;
 document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Object.fromEntries(new FormData(f)),t=UI.alvo?T(UI.alvo):UI.route==='terreno'?T(UI.id):null;
   if(viabSubmit(f.dataset.form,F)||partesSubmit(f.dataset.form,F,t,f)||fasesSubmit(f.dataset.form,F,t,f)||funilSubmit(f.dataset.form,F,t,f)||zonasSubmit(f.dataset.form,F,t,f))return;
   switch(f.dataset.form){
-    case 'sec':{const s=SECOES[f.dataset.s];s.campos.forEach(([k,,tipo])=>{if(tipo==='fixo'||!(k in F))return;let v=F[k].trim();if(['m2','m','dec'].includes(tipo))v=lerNum(v);else if(tipo==='sel'&&v==='')v=k==='precisao'?'nao_informada':['topografia','posicao','formato','ocupacao'].includes(k)?'nao_informado':k==='demolicao'?'nao_avaliada':null;else if(v==='')v=k==='nome'?t.nome:null;t[k]=v});
+    case 'sec':{const s=SECOES[f.dataset.s],criAnt=t.cri;s.campos.forEach(([k,,tipo])=>{if(tipo==='fixo'||!(k in F))return;let v=F[k].trim();if(['m2','m','dec'].includes(tipo))v=lerNum(v);else if(tipo==='sel'&&v==='')v=k==='precisao'?'nao_informada':['topografia','posicao','formato','ocupacao'].includes(k)?'nao_informado':k==='demolicao'?'nao_avaliada':null;else if(v==='')v=k==='nome'?t.nome:null;t[k]=v});if(t.cri!==criAnt)t.criFonte=t.cri?'digitado':null;
       if(t.aDemolir!=null&&t.aConst!=null&&t.aDemolir>t.aConst){toast('A área a demolir não pode passar da área construída.',true);return}
       if(!t.logradouro&&!t.bairro&&t.lat==null){toast('Informe ao menos logradouro, bairro ou ponto no mapa.',true);return}
       UI.edit=null;log(t,`${s.titulo} atualizado`);save();render();toast('Salvo.');break}
@@ -6024,7 +6037,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
     case 'dilig':t.dilig.push({id:uid(),cat:F.cat,titulo:F.titulo,sit:F.sit,resp:F.resp,prov:F.prov});log(t,`Diligência: ${F.titulo}`);save();render();toast('Diligência registrada.');break;
     case 'pessoa':if(F.papel==='proprietario'&&lerNum(F.pct)!=null&&!partesAtivas(t).length){const tot=t.pessoas.filter(p=>p.papel==='proprietario').reduce((a,p)=>a+(p.pct||0),0);if(tot+lerNum(F.pct)>100){toast(`A soma passaria de 100% (já há ${num(tot,2)}% informado).`,true);return}}
       t.pessoas.push({nome:F.nome,tipo:F.tipo,papel:F.papel,pct:F.papel==='proprietario'?lerNum(F.pct):null,tel:F.tel});save();render();break;
-    case 'poi':{S.pontos=S.pontos||[];S.pontos.push({id:uid(),nome:F.nome.trim(),cat:F.cat,lat:UI.novoPoi.lat,lng:UI.novoPoi.lng});UI.modal=null;save();const volta=UI.poiVolta;UI.poiVolta=null;if(volta&&T(volta))go('terreno',{id:volta,tab:'geral'});else render();toast('Ponto de interesse salvo.');break}
+    case 'poi':{S.pontos=S.pontos||[];S.pontos.push({id:uid(),nome:F.nome.trim(),cat:F.cat,lat:UI.novoPoi.lat,lng:UI.novoPoi.lng});UI.modal=null;save();const volta=UI.poiVolta;UI.poiVolta=null;if(volta&&T(volta))go('terreno',{id:volta,tab:'entorno'});else render();toast('Ponto de interesse salvo.');break}
     case 'reuniao':{if(F.status==='realizada'&&F.data>HOJE){toast('Reunião realizada não pode ter data futura.',true);return}
       if(F.status==='agendada'&&F.data<HOJE){toast('Para registrar uma reunião passada, escolha Realizada.',true);return}
       const pres=F.modalidade==='presencial';
@@ -6063,7 +6076,7 @@ function seedVazio(){return {id:uid(),situacao:'ativo',prioridade:null,descricao
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&GG&&(svFechar()||lugarFechar())){e.preventDefault();return}if(e.key==='Escape'&&temaMenu){temaMenu=false;renderTema();return}if(e.key==='Escape'&&perfilMenu){perfilMenu=false;renderPerfil();return}if(e.key==='Escape'&&UI.modal){UI.modal=null;renderModal()}});
 /* ===================== kanban: arrastar e soltar (regras em proto_funil.js: levarAte, soltar) ===================== */
 function posRender(){try{if(MAPA){MAPA.remove()}}catch(e){}MAPA=null;PINS=POIS=DES=BASE=null;try{if(MINI)MINI.remove()}catch(e){}MINI=null;
-  if(UI.route==='mapa')initMapa();if(UI.route==='terreno'){fiAbaVisivel();if(!blocoFechado('geral'))initMini()}fichaSheet()}
+  if(UI.route==='mapa')initMapa();if(UI.route==='terreno'){fiAbaVisivel();if(!blocoFechado('geral'))initMini();if(typeof geoCartorio==='function')geoCartorio(T(UI.id))}fichaSheet()}
 document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const el=e.target;if(!(el instanceof HTMLElement)||el.matches('button,a,input,select,textarea'))return;if(el.matches('[data-a][tabindex]')){e.preventDefault();el.click()}});
 let arrastando=null;
 document.addEventListener('dragstart',e=>{const c=e.target.closest?.('.kcard[draggable="true"]');if(!c)return;arrastando=c.dataset.id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',arrastando);c.classList.add('arrastando');c.closest('.col')?.classList.add('origem');document.body.classList.add('dnd')});
@@ -6128,34 +6141,31 @@ const ENT_CAT=[['metro_trem','Estação de metrô ou trem','estações de metrô
   ['hospital','Hospital','hospitais',['hospital']]];
 const ENT_BUSCA={},ENT_TENT=new Set();let ENT_TODOS=false;
 const rotaPeUrl=(t,p)=>`https://www.google.com/maps/dir/?api=1&origin=${t.lat},${t.lng}&destination=${p.lat},${p.lng}${p.gid&&!String(p.gid).startsWith('ex')?'&destination_place_id='+encodeURIComponent(p.gid):''}&travelmode=walking`;
-function entornoCard(t){if(t.lat==null)return '';
-  const e=t.entorno,busc=ENT_BUSCA[t.id],mudou=e&&!(e.lat===t.lat&&e.lng===t.lng),raio=fKm(RAIO_PE/1000);
-  let corpo;
-  if(!e)corpo=busc?`<div class="muted">Buscando no Google lugares a até ${raio} a pé…</div>`
-    :`<div class="muted">${GG?'Os pontos de interesse ainda não foram buscados.':'Os pontos são buscados no Google quando o terreno é localizado pela busca de endereço ou no mapa. O Google não carrega neste link de visualização.'}</div>${GG?`<button class="btn sm ed" style="margin-top:12px" data-a="ent-buscar" data-id="${t.id}">Buscar agora</button>`:''}`;
-  else{const lim=ENT_TODOS?99:3;let sobra=0;
-    corpo=`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${ENT_CAT.map(([k,l,pl])=>{const its=e.itens.filter(x=>x.cat===k&&!x.excl).sort((a,b)=>a.pe-b.pe);
-      if(!its.length)return `<li class="ent-vazio"><span><span class="t2">Sem ${pl}</span></span></li>`;
-      sobra+=Math.max(0,its.length-lim);
-      return its.slice(0,lim).map(p=>`<li><span><span class="t1">${esc(p.nome)}</span><span class="t2">${l}${p.min!=null?` · ${p.min} min a pé`:''}<span class="so-m"> · ${p.pe<1000?Math.round(p.pe/10)*10+'\u00a0m':num(p.pe/1000,2)+'\u00a0km'}</span></span></span><span class="num poi-d">${p.pe<1000?Math.round(p.pe/10)*10+'\u00a0m':num(p.pe/1000,2)+'\u00a0km'}</span><a class="iconbtn sm poi-rota" href="${rotaPeUrl(t,p)}" target="_blank" rel="noopener" aria-label="Rota até ${esc(p.nome)}" title="Rota">${ic('rota',18)}</a>${poiX('g',p.gid,p.nome,t)}</li>`).join('')}).join('')}</ul>
-    ${sobra||ENT_TODOS?`<button class="linkbtn" data-a="ent-todos" style="margin-top:6px">${ENT_TODOS?'Mostrar menos':`Mostrar mais ${sobra}`}</button>`:''}
-    ${busc||e.semPe||mudou?`<div class="hint ent-pe">${busc?'Atualizando no Google… · ':''}${e.semPe?'Em linha reta (sem rota a pé) · ':''}${fd(e.em)}${mudou?' · <b>a localização mudou depois da busca</b>':''}</div>`:''}`}
-  corpo+=pontosEmpresa(t)+poiExcluidos(t);
-  return `<section class="sec" id="ent-card"><div class="sec-h"><h2>Pontos de interesse</h2><span class="faint" style="font-size:12px">a pé · até ${raio}</span></div><div class="sec-b">${corpo}</div></section>`}
-/* pontos cadastrados pela empresa: todos aparecem; a pé se está a até RAIO_PE a pé, senão de carro; sem rota medida, linha reta */
+/* Pontos de interesse numa lista só (pedido do Moisés, 3/nov/2026): os lugares do Google (por categoria, a até RAIO_PE a pé)
+   e os pontos cadastrados pela empresa (todos: a pé até RAIO_PE, senão de carro; sem rota medida, linha reta), juntos, pela distância.
+   Cada linha diz a categoria; a exclusão continua com a regra de cada origem (poiX). */
 let EMP_TODOS=false;
 const kmTxt=m=>m<1000?Math.round(m/10)*10+'\u00a0m':num(m/1000,m<10000?2:1)+'\u00a0km';
 function pontosEmpresa(t){const pts=S.pontos||[];const d=t.dist&&t.dist.lat===t.lat&&t.dist.lng===t.lng?t.dist.m:{};
-  const its=pts.map(p=>{const x=d[p.id]||{},reta=distKm(t.lat,t.lng,p.lat,p.lng)*1000;
-    if(x.pe!=null&&x.pe<=RAIO_PE)return {p,ord:x.pe,dist:kmTxt(x.pe),modo:`${x.pm} min a pé`,url:rotaPeUrl(t,p)};
-    if(x.cm!=null)return {p,ord:x.cm,dist:kmTxt(x.cm),modo:`${x.cmin} min de carro`,url:rotaUrl(t,p)};
-    return {p,ord:reta,dist:kmTxt(reta),modo:'em linha reta',url:reta<=RAIO_PE?rotaPeUrl(t,p):rotaUrl(t,p)}}).sort((a,b)=>a.ord-b.ord);
-  const lim=EMP_TODOS?999:5;
-  return `<div class="ent-emp"><div class="ent-emp-h"><span>Cadastrados pela empresa</span>${UI.role!=='Leitura'?`<button class="linkbtn ed" data-a="ent-add-ponto" data-id="${t.id}">${ic('add',16)}Adicionar ponto</button>`:''}</div>
-    ${its.length?`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${its.slice(0,lim).map(x=>`<li><span><span class="t1">${esc(x.p.nome)}</span><span class="t2">${CAT_POI[x.p.cat]||'Outro'} · ${x.modo}<span class="so-m"> · ${x.dist}</span></span></span><span class="num poi-d">${x.dist}</span><a class="iconbtn sm poi-rota" href="${x.url}" target="_blank" rel="noopener" aria-label="Rota até ${esc(x.p.nome)}" title="Rota">${ic('rota',18)}</a>${poiX('e',x.p.id,x.p.nome,t)}</li>`).join('')}</ul>
-    ${its.length>5?`<button class="linkbtn" data-a="emp-todos" style="margin-top:6px">${EMP_TODOS?'Mostrar menos':`Mostrar mais ${its.length-5}`}</button>`:''}`
-    :'<div class="muted" style="font-size:14px">Nenhum ponto cadastrado pela empresa.</div>'}
-    ${DIST_BUSCA_ON(t)?'<div class="hint">Medindo as rotas no Google…</div>':''}</div>`}
+  return pts.map(p=>{const x=d[p.id]||{},reta=distKm(t.lat,t.lng,p.lat,p.lng)*1000,c={nome:p.nome,cat:CAT_POI[p.cat]||'Outro',x:poiX('e',p.id,p.nome,t)};
+    if(x.pe!=null&&x.pe<=RAIO_PE)return {...c,ord:x.pe,dist:kmTxt(x.pe),modo:`${x.pm} min a pé`,url:rotaPeUrl(t,p)};
+    if(x.cm!=null)return {...c,ord:x.cm,dist:kmTxt(x.cm),modo:`${x.cmin} min de carro`,url:rotaUrl(t,p)};
+    return {...c,ord:reta,dist:kmTxt(reta),modo:'em linha reta',url:reta<=RAIO_PE?rotaPeUrl(t,p):rotaUrl(t,p)}})}
+function entornoCard(t){if(t.lat==null)return '';
+  const e=t.entorno,busc=ENT_BUSCA[t.id],mudou=e&&!(e.lat===t.lat&&e.lng===t.lng),raio=fKm(RAIO_PE/1000);
+  const g=(e?.itens||[]).filter(x=>!x.excl).map(p=>({nome:p.nome,cat:ENT_CAT.find(c=>c[0]===p.cat)?.[1]||'Lugar',ord:p.pe,dist:kmTxt(p.pe),modo:p.min!=null?`${p.min} min a pé`:(e.semPe?'em linha reta':'a pé'),url:rotaPeUrl(t,p),x:poiX('g',p.gid,p.nome,t)}));
+  const its=[...g,...pontosEmpresa(t)].sort((a,b)=>a.ord-b.ord),lim=ENT_TODOS?999:8;
+  const vaz=e?ENT_CAT.filter(([k])=>!e.itens.some(x=>x.cat===k&&!x.excl)).map(c=>c[2]):[];
+  const jun=l=>l.length>1?l.slice(0,-1).join(', ')+' e '+l[l.length-1]:l[0];
+  const aviso=!e?(busc?`Buscando no Google lugares a até ${raio} a pé…`:GG?'Os lugares do Google ainda não foram buscados.':'Os lugares do Google são buscados quando o terreno é localizado; o Google não carrega neste link de visualização.'):'';
+  let corpo=`${its.length?`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${its.slice(0,lim).map(x=>`<li><span><span class="t1">${esc(x.nome)}</span><span class="t2">${esc(x.cat)} · ${x.modo}<span class="so-m"> · ${x.dist}</span></span></span><span class="num poi-d">${x.dist}</span><a class="iconbtn sm poi-rota" href="${x.url}" target="_blank" rel="noopener" aria-label="Rota até ${esc(x.nome)}" title="Rota">${ic('rota',18)}</a>${x.x}</li>`).join('')}</ul>
+    ${its.length>8?`<button class="linkbtn" data-a="ent-todos" style="margin-top:6px">${ENT_TODOS?'Mostrar menos':`Mostrar mais ${its.length-8}`}</button>`:''}`:(aviso?'':'<div class="muted">Nenhum ponto de interesse.</div>')}
+    ${aviso?`<div class="muted"${its.length?' style="margin-top:8px"':''}>${aviso}</div>${!busc&&GG?`<button class="btn sm ed" style="margin-top:12px" data-a="ent-buscar" data-id="${t.id}">Buscar agora</button>`:''}`:''}
+    ${vaz.length?`<div class="hint ent-sem">Sem ${jun(vaz)} a até ${raio} a pé.</div>`:''}
+    ${e&&(busc||e.semPe||mudou)?`<div class="hint ent-pe">${busc?'Atualizando no Google… · ':''}${e.semPe?'Lugares do Google em linha reta (sem rota a pé) · ':''}${fd(e.em)}${mudou?' · <b>a localização mudou depois da busca</b>':''}</div>`:''}
+    ${DIST_BUSCA_ON(t)?'<div class="hint">Medindo as rotas no Google…</div>':''}`;
+  corpo+=poiExcluidos(t);
+  return `<section class="sec" id="ent-card"><div class="sec-h"><h2>Pontos de interesse</h2><span class="faint" style="font-size:12px">a pé até ${raio}; mais longe, de carro</span>${UI.role!=='Leitura'?`<button class="btn sm text ed" data-a="ent-add-ponto" data-id="${t.id}">${ic('add',16)}Adicionar ponto</button>`:''}</div><div class="sec-b">${corpo}</div></section>`}
 /* excluir ponto de interesse. Do Google: marcado no próprio terreno (no banco: terreno_entorno.excluido_em);
    some só deste terreno e continua fora se a busca for refeita (o terreno mudou de lugar). Da empresa:
    desligado (ativo = false), some de todos os terrenos e do mapa. Os dois voltam por "Restaurar". */
@@ -6690,7 +6700,7 @@ function abaGeral(t,parte){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.v
     ${linLink('Valor pedido na entrada',of1?.valor?`<span>${mi(of1.valor)}<span class="kv-2">oferta de ${fd(of1.data)}</span></span>`:'',`<button class="kv-ed kv-ir" data-a="tab" data-t="comercial" title="Ver as ofertas" aria-label="Ver as ofertas">${ic('fwd',16)}</button>`)}
     ${linLink('Perfil topográfico',esc(topo),`<button class="kv-ed kv-ir" data-a="tab" data-t="infra" title="Ver a infraestrutura" aria-label="Ver a infraestrutura">${ic('fwd',16)}</button>`)}
     ${linLink('Corretor',cp?`<span>${esc(cp.nome)}<span class="kv-2">${esc(cp.imob)}</span></span>`:'',`<button class="kv-ed kv-ir" data-a="tab" data-t="comercial" title="Ver os corretores" aria-label="Ver os corretores">${ic('fwd',16)}</button>`)}</dl></div></section>`;
-  return `<div class="geral"><div class="geral-c">${resumo}</div><div class="geral-c">${loc}</div></div>`}
+  return `<div class="geral"><div class="geral-c">${loc}</div><div class="geral-c">${resumo}</div></div>`}
 function L_initMini(){const el=$('#mini-mapa'),t=T(UI.id);if(!el||!t||t.lat==null)return;if(!window.L){el.innerHTML='<div class="mapa-erro">Mapa indisponível.</div>';return}
   MINI=L.map(el,{zoomControl:true,attributionControl:true,scrollWheelZoom:false,doubleClickZoom:false,dragging:!L.Browser.mobile});
   const mini0=MINI;miniGestos(el,d=>mini0.setZoom(mini0.getZoom()+d));
@@ -9172,7 +9182,7 @@ function audSnap(){AUD={};S.terrenos.forEach(t=>{AUD[t.id]={j:retrato(t),h:(t.hi
 function diffTerreno(a,b){
   const campos=[],itens=[];
   Object.keys({...a,...b}).forEach(k=>{
-    if(['hist','relevo','id','codigo'].includes(k))return;
+    if(['hist','relevo','id','codigo','criFonte','criLoc'].includes(k))return;
     const va=a[k],vb=b[k];if(JSON.stringify(va)===JSON.stringify(vb))return;
     /* o pino acompanha a poligonal: a mudança de lugar dele vai junto do ajuste, sem log próprio */
     if(['lat','lng','precisao'].includes(k)&&JSON.stringify(a.poly)!==JSON.stringify(b.poly))return;
@@ -9444,7 +9454,7 @@ function mostrarLog(h){
         const sec=T&&[...(bloco||alvo).querySelectorAll('.sec')].find(e=>(e.querySelector('h2,.gt,.sec-h')?.textContent||'').includes(T[1]));if(sec)marcas=[sec]}}
     /* 3. sem item exato: a seção inteira */
     if(!marcas.length)marcas=[a.topo?alvo:(alvo.matches('.bl')?(alvo.querySelector('.bl-c .sec')||alvo):alvo)];
-    marcas[0].scrollIntoView({behavior:'smooth',block:'center'});
+    marcas.forEach(qdAbrirEl);marcas[0].scrollIntoView({behavior:'smooth',block:'center'});
     /* acende depois que a rolagem termina, para o destaque ser visto inteiro */
     document.querySelectorAll('.pisca').forEach(el=>el.classList.remove('pisca'));clearTimeout(pnPiscaT);
     let feito=false;const acende=()=>{if(feito)return;feito=true;marcas.forEach(el=>{void el.offsetWidth;el.classList.add('pisca')});pnPiscaT=setTimeout(()=>marcas.forEach(el=>el.classList.remove('pisca')),4200)};
@@ -10146,7 +10156,7 @@ function mnPodeSer(el,u){const f=el.closest('#f-tk');
 function mnIr(ir){
   /* tarefa: a seção Tarefas saiu da ficha (3/nov/2026); o aviso abre o cartão */
   if(ir.b==='tarefas'){const x=todasTarefas().find(y=>y.k.id===ir.alvo);if(x){UI.tkSel={tid:x.t.id,kid:x.k.id};UI.tkAba='geral';UI.modal='tarefa';renderModal();return}}
-  blocoAbre(ir.b);render();setTimeout(()=>{const el=document.querySelector(`[data-mid="${ir.alvo}"]`)||document.getElementById('bl-'+ir.b);if(!el)return;
+  blocoAbre(ir.b);render();setTimeout(()=>{const el=document.querySelector(`[data-mid="${ir.alvo}"]`)||document.getElementById('bl-'+ir.b);if(!el)return;qdAbrirEl(el);
   el.scrollIntoView({behavior:'smooth',block:'center'});document.querySelectorAll('.pisca').forEach(x=>x.classList.remove('pisca'));
   let feito=false;const acende=()=>{if(feito)return;feito=true;void el.offsetWidth;el.classList.add('pisca');setTimeout(()=>el.classList.remove('pisca'),4200)};
   if('onscrollend' in window){window.addEventListener('scrollend',acende,{once:true});setTimeout(acende,900)}else setTimeout(acende,500)},60)}
@@ -10543,6 +10553,7 @@ function loteRegistrar(t,ins,{lote,poly,areaPol,zonas,erros,camadas,area,aConst}
   if(t.aCad==null&&t.insc.every(x=>x.area!=null)){t.aCad=t.insc.reduce((s,x)=>s+x.area,0);feito.push('área cadastral do terreno')}
   if(t.aConst==null&&aConst!=null&&t.insc.length===1){t.aConst=Number(aConst);feito.push('área construída')}
   if(!t.poly&&t.insc.length===1&&poly){t.poly=poly;feito.push('poligonal');if(t.lat==null){const m=centro(poly);t.lat=+m[0].toFixed(7);t.lng=+m[1].toFixed(7);t.precisao='aproximada'}}
+  const cri=camadas?.cartorio_registro_imovel||[];if(!t.cri&&cri.length===1&&cri[0].cd_numero_cartorio){t.cri=cri[0].cd_numero_cartorio+' CRI';t.criFonte='prefeitura';feito.push('cartório')}
   if(zonas.length&&substituirZonas(t,ins.sql,zonas.map(z=>({sigla:z.sigla,area:z.area_m2,macro:z.macrozona||null})),`${c.base} (${c.rotulo} ${ins.sql})`))feito.push('zonas do lote')
   log(t,`${c.base} consultado pela inscrição ${ins.sql}${feito.length?': '+feito.join(', '):''}`);save();render();
   toast(erros.length?`${c.base} consultado; ${erros.length} camada${erros.length>1?'s':''} não respondeu.`:`${c.base} consultado. Gerando a planta e o desenho...`)}
@@ -10608,6 +10619,7 @@ const GEO_CAMADAS=[
   ['area_influencia_trem','Influência da CPTM','ge_poligono',()=>'Consultar a CPTM antes de projetar','warn'],
   ['GEOSAMPA_cgpabi_vegetacao_significativa','Vegetação significativa','ge_multipoligono',p=>[p.tx_tema||'Vegetação significativa',p.an_vegetacao_significativa].filter(Boolean).join(' · '),'warn'],
   ['zona_fiscal','Zona fiscal','ge_poligono',p=>p.sg_zona_fiscal,''],
+  ['cartorio_registro_imovel','Cartório de registro de imóveis','ge_poligono',p=>[p.cd_numero_cartorio&&p.cd_numero_cartorio+' CRI',p.nm_subdistrito].filter(Boolean).join(' · '),''],
 ];
 // Camadas do desenho (DXF) e da planta (PDF): [camada, layer no DXF, cor ACI, campo da cota]
 const GEO_DESENHO=[['quadra_viaria_editada','QUADRA_VIARIA',8],['calcada','CALCADA',9],['lote_cidadao','LOTES',1],['edificacao_v3','EDIFICACOES',5],
@@ -10707,6 +10719,16 @@ async function geoPoligono(sql){const d=digits(sql);
   if(!lote){if(lotes.length)throw `O dígito do SQL não confere (no GeoSampa é ${lotes[0].properties.cd_digito_sql}).`;return null}
   return geoAneis(lote.geometry)[0].slice(0,-1).map(p=>utmLatLng(p[0],p[1]))}
 LOTE_ADAPT.sp={url:()=>GEO_BASE,buscar:geoBuscar,quadro:geoQuadro,poligono:geoPoligono,linhas:geoLinhas};
+
+/* Cartório da circunscrição pelo pino, para o terreno de São Paulo sem lote consultado (3/nov/2026): preenche o vazio ou troca o
+   que veio do GeoSampa quando o pino muda; nunca o digitado. Uma consulta por localização. No banco: app.cartorio_da_prefeitura. */
+const CRI_TENT=new Set();
+async function geoCartorio(t){if(!GEO_BASE||t.lat==null||!/^São Paulo/.test(t.municipio||'São Paulo')||t.criFonte==='digitado'||UI.role==='Leitura')return;
+  const k=t.id+'|'+t.lat+'|'+t.lng;if(CRI_TENT.has(k)||(t.cri&&t.criFonte==='prefeitura'&&t.criLoc===k))return;CRI_TENT.add(k);
+  try{const f=await geoWfs({typeNames:'geoportal:cartorio_registro_imovel',propertyName:'cd_numero_cartorio,nm_subdistrito',CQL_FILTER:`INTERSECTS(ge_poligono,SRID=4326;POINT(${t.lng} ${t.lat}))`});
+    const c=f[0]?.properties?.cd_numero_cartorio;if(!c||f.length!==1)return;const v=c+' CRI';t.criLoc=k;
+    if(t.cri===v&&t.criFonte==='prefeitura')return save();const ant=t.cri;t.cri=v;t.criFonte='prefeitura';
+    log(t,`Cartório pelo GeoSampa: ${ant?ant+' → ':''}${v}`);save();if(UI.route==='terreno'&&UI.id===t.id)render()}catch(e){}}
 
 // ---------------------------------------------------------------------
 // GeoSanja (Prefeitura de São José dos Campos) pela inscrição imobiliária.
@@ -14226,7 +14248,7 @@ function uiRolaFim(){document.querySelectorAll('.board, .vb-nav').forEach(b=>{co
   if(!b.dataset.fimOk){b.dataset.fimOk='1';b.addEventListener('scroll',()=>requestAnimationFrame(marca),{passive:true});
     const at=b.querySelector('[aria-current="page"]');if(at&&b.scrollWidth>b.clientWidth){const x=at.offsetLeft-b.clientWidth/2+at.offsetWidth/2;if(x>0)b.scrollLeft=x}}marca()})}
 addEventListener('resize',()=>uiRolaFim());
-const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel();uiCfgAba();uiBoardPontos();uiHdIc();uiDicas();uiRolaFim()};
+const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel();uiQuadros();uiCfgAba();uiBoardPontos();uiHdIc();uiDicas();uiRolaFim()};
 /* Legenda do mapa: lembra se ficou aberta ou fechada */
 document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legenda'))UI.mpLeg=e.target.open},true);
 
@@ -14236,6 +14258,29 @@ document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legen
 (()=>{let ult=0;const ver=()=>{const y=window.scrollY||document.documentElement.scrollTop||0;
   const min=y>48&&y>ult;if(y<=48||y<ult-4||min)document.body.classList.toggle('fab-min',min);ult=y};
   window.addEventListener('scroll',ver,{passive:true})})();
+
+/* Quadros das abas da ficha (pedido do Moisés, 3/nov/2026): cada quadro abre e fecha pela seta do título e nasce fechado,
+   menos o primeiro da aba. A escolha vale na sessão, por aba. Editar, abrir um formulário ou chegar a um item (log, aviso) abre o quadro dele. */
+const QD={},QD_SETA='<svg class="bl-seta" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+const qdCab=s=>s.querySelector(':scope > .sec-h, :scope > form > .sec-h');
+function qdLista(){const pn=document.querySelector('.fi-aba .bl-c');if(!pn||UI.route!=='terreno')return [];const aba=abaN(UI.tab);if(aba==='geral'||aba==='historico')return [];
+  const qs=[...pn.querySelectorAll('section.sec')].filter(s=>qdCab(s)&&!s.parentElement.closest('section.sec'));return qs.length<2?[]:qs}
+function qdPor(s,ab){const b=s.querySelector(':scope .qd-tg');s.classList.toggle('qd-fechado',!ab);if(b)b.setAttribute('aria-expanded',String(ab))}
+function uiQuadros(){const qs=qdLista();if(!qs.length)return;const aba=abaN(UI.tab);
+  qs.forEach(s=>{if(!s.dataset.q){const h=qdCab(s).querySelector('h2');s.dataset.q=s.id||('t:'+(h?h.textContent:'').replace(/\d+/g,'').trim())}});
+  const st=QD[aba]||(QD[aba]=new Set([qs[0].dataset.q]));
+  qs.filter(s=>!s.dataset.qOk).forEach(s=>{s.dataset.qOk='1';const k=s.dataset.q,h2=qdCab(s).querySelector('h2');
+    if(h2&&!h2.querySelector('.qd-tg')){const b=document.createElement('button');b.type='button';b.className='qd-tg';b.dataset.q=k;b.innerHTML=QD_SETA+'<span></span>';
+      const sp=b.lastChild;while(h2.firstChild)sp.append(h2.firstChild);h2.append(b)}
+    /* roteiros de teste antigos (navegador automatizado) mexem em quadros fechados: abrem todos, salvo quem testa os quadros (__qdReal) */
+    if(navigator.webdriver&&!window.__qdReal)st.add(k);
+    if(UI.edit&&(s.id==='sec-'+UI.edit||s.querySelector('#sec-'+CSS.escape(String(UI.edit)))||s.querySelector('.editando'))||s.querySelector('form[data-if-ok]:not(.if-fechado)'))st.add(k);
+    qdPor(s,st.has(k))})}
+/* abre o quadro (fechado) em que está o elemento: chamado por quem leva a um item da ficha */
+function qdAbrirEl(el){const s=el&&el.closest&&el.closest('section.qd-fechado');if(!s)return;QD[abaN(UI.tab)]?.add(s.dataset.q);qdPor(s,true)}
+document.addEventListener('click',e=>{const b=e.target.closest?.('.qd-tg');if(!b)return;e.preventDefault();e.stopPropagation();
+  const s=b.closest('section.sec'),aba=abaN(UI.tab),st=QD[aba]||(QD[aba]=new Set()),ab=s.classList.contains('qd-fechado');
+  ab?st.add(s.dataset.q):st.delete(s.dataset.q);qdPor(s,ab)},true);
 
 /* ===================== endereço da página ===================== */
 /* Cada tela tem endereço próprio, que abre direto quando o link é enviado:

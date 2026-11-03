@@ -44,6 +44,7 @@ const GEO_CAMADAS=[
   ['area_influencia_trem','Influência da CPTM','ge_poligono',()=>'Consultar a CPTM antes de projetar','warn'],
   ['GEOSAMPA_cgpabi_vegetacao_significativa','Vegetação significativa','ge_multipoligono',p=>[p.tx_tema||'Vegetação significativa',p.an_vegetacao_significativa].filter(Boolean).join(' · '),'warn'],
   ['zona_fiscal','Zona fiscal','ge_poligono',p=>p.sg_zona_fiscal,''],
+  ['cartorio_registro_imovel','Cartório de registro de imóveis','ge_poligono',p=>[p.cd_numero_cartorio&&p.cd_numero_cartorio+' CRI',p.nm_subdistrito].filter(Boolean).join(' · '),''],
 ];
 // Camadas do desenho (DXF) e da planta (PDF): [camada, layer no DXF, cor ACI, campo da cota]
 const GEO_DESENHO=[['quadra_viaria_editada','QUADRA_VIARIA',8],['calcada','CALCADA',9],['lote_cidadao','LOTES',1],['edificacao_v3','EDIFICACOES',5],
@@ -143,3 +144,13 @@ async function geoPoligono(sql){const d=digits(sql);
   if(!lote){if(lotes.length)throw `O dígito do SQL não confere (no GeoSampa é ${lotes[0].properties.cd_digito_sql}).`;return null}
   return geoAneis(lote.geometry)[0].slice(0,-1).map(p=>utmLatLng(p[0],p[1]))}
 LOTE_ADAPT.sp={url:()=>GEO_BASE,buscar:geoBuscar,quadro:geoQuadro,poligono:geoPoligono,linhas:geoLinhas};
+
+/* Cartório da circunscrição pelo pino, para o terreno de São Paulo sem lote consultado (3/nov/2026): preenche o vazio ou troca o
+   que veio do GeoSampa quando o pino muda; nunca o digitado. Uma consulta por localização. No banco: app.cartorio_da_prefeitura. */
+const CRI_TENT=new Set();
+async function geoCartorio(t){if(!GEO_BASE||t.lat==null||!/^São Paulo/.test(t.municipio||'São Paulo')||t.criFonte==='digitado'||UI.role==='Leitura')return;
+  const k=t.id+'|'+t.lat+'|'+t.lng;if(CRI_TENT.has(k)||(t.cri&&t.criFonte==='prefeitura'&&t.criLoc===k))return;CRI_TENT.add(k);
+  try{const f=await geoWfs({typeNames:'geoportal:cartorio_registro_imovel',propertyName:'cd_numero_cartorio,nm_subdistrito',CQL_FILTER:`INTERSECTS(ge_poligono,SRID=4326;POINT(${t.lng} ${t.lat}))`});
+    const c=f[0]?.properties?.cd_numero_cartorio;if(!c||f.length!==1)return;const v=c+' CRI';t.criLoc=k;
+    if(t.cri===v&&t.criFonte==='prefeitura')return save();const ant=t.cri;t.cri=v;t.criFonte='prefeitura';
+    log(t,`Cartório pelo GeoSampa: ${ant?ant+' → ':''}${v}`);save();if(UI.route==='terreno'&&UI.id===t.id)render()}catch(e){}}
