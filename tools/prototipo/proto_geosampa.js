@@ -5,7 +5,7 @@
 // análise urbanística (fonte GeoSampa) e gera a planta (PDF, feita pelo
 // servidor) e o desenho (DXF, montado aqui), que entram como documentos com
 // versão. O servidor só aceita chamada de navegador vinda do próprio
-// GeoSampa: no Railway passa pelo Caddy em /geosampa.
+// GeoSampa: na versão publicada passa pelo Caddy em /geosampa.
 // No banco: app.registrar_consulta_lote + app.registrar_documento.
 // ---------------------------------------------------------------------
 const GEO_BASE=(()=>{const m=document.querySelector('meta[name="geosampa-url"]');if(m&&m.content)return m.content;

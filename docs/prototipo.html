@@ -10464,7 +10464,7 @@ document.addEventListener('change',e=>{const r=e.target.closest('[data-insc]');i
 const loteBuscavel=ins=>{const c=CIDADES_INSC[insCid(ins)];return !!(c.base&&LOTE_ADAPT[insCid(ins)]?.url()&&digits(ins.sql).length===digitosMasc(c.mascara))};
 let LOTE_BUSCANDO=null;
 async function loteBuscar(t,i){const ins=t.insc[i];if(!ins||LOTE_BUSCANDO)return;const cid=insCid(ins),c=CIDADES_INSC[cid],ad=LOTE_ADAPT[cid];if(!ad)return;
-  if(!ad.url()){toast(`A busca no ${c.base} funciona na versão publicada no Railway.`,true);return}
+  if(!ad.url()){toast(`A busca no ${c.base} funciona na versão publicada.`,true);return}
   if(digits(ins.sql).length!==digitosMasc(c.mascara)){toast(`${c.rotulo} incompleto: são ${digitosMasc(c.mascara)} dígitos.`,true);return}
   if(cidDoTerreno(t)!==cid){toast(`O terreno está em ${(t.municipio||'').split(' · ')[0]}; o ${c.base} só cobre ${c.cidade}.`,true);return}
   LOTE_BUSCANDO=t.id+':'+i;render();
@@ -10475,7 +10475,7 @@ function loteQuadro(t,ins,i){const ad=LOTE_ADAPT[insCid(ins)];return ad?ad.quadr
 function loteBotao(t,ins,i){const c=CIDADES_INSC[insCid(ins)],busc=LOTE_BUSCANDO===t.id+':'+i,g=(ins.geo||[])[0];
   return UI.role!=='Leitura'?`<button class="btn sm ${g?'text':''}" data-a="geo-buscar" data-i="${i}" ${busc?'disabled':''}>${ic('search',16)}${busc?'Consultando...':g?'Buscar de novo':'Buscar no '+c.base}</button>`:''}
 function loteVazio(t,ins,i,txt){const c=CIDADES_INSC[insCid(ins)],ad=LOTE_ADAPT[insCid(ins)];
-  return `<div class="geo-vazio">${loteBotao(t,ins,i)}<span class="hint">${ad.url()?txt:`A busca no ${c.base} funciona na versão publicada no Railway.`}</span></div>`}
+  return `<div class="geo-vazio">${loteBotao(t,ins,i)}<span class="hint">${ad.url()?txt:`A busca no ${c.base} funciona na versão publicada.`}</span></div>`}
 function loteCab(t,ins,i){const c=CIDADES_INSC[insCid(ins)],g=ins.geo[0],n=ins.geo.length-1;
   return `<div class="geo-h"><span>${bi('mapa',20)}<b>${c.base}</b> <span class="muted">consultado em ${fdh(g.em)} por ${esc(g.user)}${n?` · ${n} consulta${n>1?'s':''} anterior${n>1?'es':''} guardada${n>1?'s':''}`:''}</span></span>${loteBotao(t,ins,i)}</div>`}
 // Grava a consulta e completa só o que está vazio; troca as zonas DESTE lote na análise (os outros lotes ficam).
@@ -10512,7 +10512,7 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="geo-"]
 // análise urbanística (fonte GeoSampa) e gera a planta (PDF, feita pelo
 // servidor) e o desenho (DXF, montado aqui), que entram como documentos com
 // versão. O servidor só aceita chamada de navegador vinda do próprio
-// GeoSampa: no Railway passa pelo Caddy em /geosampa.
+// GeoSampa: na versão publicada passa pelo Caddy em /geosampa.
 // No banco: app.registrar_consulta_lote + app.registrar_documento.
 // ---------------------------------------------------------------------
 const GEO_BASE=(()=>{const m=document.querySelector('meta[name="geosampa-url"]');if(m&&m.content)return m.content;
@@ -10659,7 +10659,7 @@ LOTE_ADAPT.sp={url:()=>GEO_BASE,buscar:geoBuscar,quadro:geoQuadro,poligono:geoPo
 // restrições vêm das camadas liberadas ao visitante (GetFeatureInfo com raio
 // cobrindo o lote, conferido aqui contra a poligonal). Planta (PDF montado
 // aqui com ortofoto, curvas e zoneamento) e desenho (DXF) entram como
-// documentos com versão. Sem CORS: no Railway passa pelo Caddy em /geosanja.
+// documentos com versão. Sem CORS: na versão publicada passa pelo Caddy em /geosanja.
 // No banco: app.registrar_consulta_lote + app.registrar_documento.
 // ---------------------------------------------------------------------
 const GSJ_BASE=(()=>{const m=document.querySelector('meta[name="geosanja-url"]');if(m&&m.content)return m.content;
@@ -11040,7 +11040,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&e.target.id==='mp-e
 const lotesInsc=t=>t.insc.map((ins,i)=>({ins,i,cid:insCid(ins)})).filter(x=>LOTE_ADAPT[x.cid]?.poligono);
 let LOTES_BUSCANDO=false;
 async function lotesPolyCalcular(t){if(LOTES_BUSCANDO)return;const L=lotesInsc(t);if(!L.length)return;
-  if(L.some(x=>!(x.ins.geo||[])[0]?.poly&&!LOTE_ADAPT[x.cid].url())){toast('A busca na prefeitura funciona na versão publicada no Railway.',true);return}
+  if(L.some(x=>!(x.ins.geo||[])[0]?.poly&&!LOTE_ADAPT[x.cid].url())){toast('A busca na prefeitura funciona na versão publicada.',true);return}
   LOTES_BUSCANDO=true;render();const polys=[],falhas=[];
   try{for(const x of L){const c=CIDADES_INSC[x.cid];let p=(x.ins.geo||[])[0]?.poly||null;
       if(!p)try{p=await LOTE_ADAPT[x.cid].poligono(x.ins.sql)}catch(e){console.warn(e);falhas.push(`${c.rotulo} ${x.ins.sql}: ${typeof e==='string'?e:'a prefeitura não respondeu'}`);continue}
@@ -11852,7 +11852,7 @@ function topoGrade(P,bb,passo){const nx=Math.ceil((bb[2]-bb[0])/passo)+1,ny=Math
   return {nx,ny,x0:bb[0],y0:bb[1],s:passo,D,Z:new Float32Array(nx*ny).fill(NaN)}}
 
 // --- cotas pelo Google: grade de 5 m (até 512 pontos por pedido) e interpolação bicúbica para 1 m
-async function topoGoogle(G,l0,av){if(!GG||!window.google?.maps?.ElevationService)throw new Error('as cotas fora de São Paulo vêm do Google, que só funciona na versão publicada no Railway.');
+async function topoGoogle(G,l0,av){if(!GG||!window.google?.maps?.ElevationService)throw new Error('as cotas fora de São Paulo vêm do Google, que só funciona na versão publicada.');
   const k=Math.round(TOPO_PASSO_G/G.s),cx=Math.ceil((G.nx-1)/k)+3,cy=Math.ceil((G.ny-1)/k)+3,C=new Float32Array(cx*cy).fill(NaN),pts=[];
   for(let j=0;j<cy;j++)for(let i=0;i<cx;i++){const x=G.x0+(i-1)*TOPO_PASSO_G,y=G.y0+(j-1)*TOPO_PASSO_G,gi=Math.min(G.nx-1,Math.max(0,Math.round((x-G.x0)/G.s))),gj=Math.min(G.ny-1,Math.max(0,Math.round((y-G.y0)/G.s)));
     if(G.D[gj*G.nx+gi]<=TOPO_FOLGA+3*TOPO_PASSO_G)pts.push([j*cx+i,utmLatLng(x,y,l0)])}
@@ -11989,7 +11989,7 @@ async function topoGerar(t){if(TOPO_EM)return;const passos=[];TOPO_EM={tid:t.id,
   try{passo('Contorno do terreno');const ct=await topoContorno(t);if(!ct)throw new Error('O terreno não tem poligonal nem lote da prefeitura.');
     const c0=centro(ct.polys[0]),zona=Math.floor((c0[1]+180)/6)+1,l0=-183+6*zona,epsg=31960+zona;
     const P=ct.polys.map(r=>r.map(([la,lo])=>latLngUtm(la,lo,l0)));const sp=cid==='sp'&&epsg===31983;
-    if(cid==='sp'&&!GEO_BASE)throw new Error('em São Paulo as cotas vêm do laser da prefeitura, e o GeoSampa só responde na versão publicada no Railway.');
+    if(cid==='sp'&&!GEO_BASE)throw new Error('em São Paulo as cotas vêm do laser da prefeitura, e o GeoSampa só responde na versão publicada.');
     // São Paulo sem SQL: o levantamento cobre as quadras fiscais inteiras que a poligonal toca
     let qd=null;if(sp){passo('Quadra e lotes da prefeitura');try{qd=await topoQuadras(P)}catch(e){throw new Error(`o GeoSampa não respondeu ao buscar os lotes da quadra (${e.message}).`)}
       if(qd)av(`${qd.n} quadra${qd.n>1?'s':''} · ${qd.lotes.length} lotes`)}
@@ -12199,7 +12199,7 @@ function topoModal(M,fechar){if(M!=='topo')return '';const t=T(UI.id);if(!t)retu
   const plano=`<ul class="topo-plano"><li>${lotesInsc(t).length?'Contorno pelos lotes da prefeitura (soma das inscrições); sem eles, a poligonal desenhada.':'Contorno pela poligonal desenhada (o terreno não tem inscrição com base da prefeitura).'}</li>
     <li>${cid==='sp'&&!lotesInsc(t).length?`Sem SQL: levantamento da quadra inteira (o quarteirão entre as ruas) que a poligonal ocupa, até ${TOPO_FOLGA} m em volta, com todos os lotes numerados pelo SQL.`:`Levantamento até ${TOPO_FOLGA} m em volta do contorno.`}</li>
     <li>${cid==='sp'?'Cotas do laser de 2020 da Prefeitura de São Paulo (erro típico de 0,1 a 0,2 m na forma do terreno). Se a prefeitura não responder, tente de novo: em São Paulo o Google não é usado.':`Cotas do Google, um ponto a cada ${TOPO_PASSO_G} m (a origem do Google tem 9,5 m; erro típico de 3 a 4 m).`}</li>
-    <li>${cid==='sp'?'Ortofoto 2023/2024, calçadas com largura, eixos, quadras, lotes, córregos e melhoramentos do GeoSampa.':cid==='sjc'?'Ortofoto 8 cm de nov/2025, arruamentos, faixas de curso d’água e curvas do IGC do GeoSanja.':'Imagem de satélite do Google (ou Esri).'}</li></ul>${!GEO_BASE&&!GG?'<div class="hint">As bases da prefeitura e o Google só respondem na versão publicada no Railway.</div>':''}`;
+    <li>${cid==='sp'?'Ortofoto 2023/2024, calçadas com largura, eixos, quadras, lotes, córregos e melhoramentos do GeoSampa.':cid==='sjc'?'Ortofoto 8 cm de nov/2025, arruamentos, faixas de curso d’água e curvas do IGC do GeoSanja.':'Imagem de satélite do Google (ou Esri).'}</li></ul>${!GEO_BASE&&!GG?'<div class="hint">As bases da prefeitura e o Google só respondem na versão publicada.</div>':''}`;
   const andamento=em?`<ol class="topo-passos">${em.passos.map(([p,st,det])=>`<li class="${st}">${st==='andando'?'<span class="spin" aria-hidden="true"></span>':st==='erro'?ic('warn',16):ic('check',16)}<span>${esc(p)}${det?` <span class="faint">· ${esc(det)}</span>`:''}</span></li>`).join('')}</ol>`:'';
   const S=R&&R.resumo,res=S?`<img class="topo-previa" src="${R.previa}" alt="Prévia do topográfico">
     <dl class="kvl topo-kv"><div class="kv"><dt>Contorno</dt><dd>${esc(S.contorno)}</dd></div><div class="kv"><dt>Cotas no terreno</dt><dd>${num(S.min,1)} a ${num(S.max,1)} m · desnível ${num(S.max-S.min,1)} m${S.dec!=null?` · declividade média ${num(S.dec,1)}%`:''}</dd></div>
@@ -14188,7 +14188,7 @@ document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legen
      /mapa  /mapa/TER-000123 (selecionado)  /mapa/TER-000123/ficha (com a ficha no painel)
      /fases  /fases/aprovacao  /fases/aprovacao/projeto   (os três níveis do quadro)
      /tarefas  /tarefas/lista  /tarefas/calendario  /tarefas/cronograma  /tarefas/funil  /tarefas/TAR-000123 (a janela do cartão)   /dashboard   /configuracoes/etapas ...
-   No Railway vai no caminho (/prototipo/terrenos/...; o Caddy devolve a página para qualquer caminho);
+   Na versão publicada vai no caminho (/prototipo/terrenos/...; o Caddy devolve a página para qualquer caminho);
    aberto como arquivo ou no artifact, depois do # (#/terrenos/...). Os filtros seguem em f=.
    Troca de tela entra no histórico (voltar e avançar do navegador); seção aberta, terreno
    selecionado no mapa e vista das tarefas só atualizam o endereço. O terreno vai pelo código. */

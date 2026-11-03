@@ -1,7 +1,7 @@
 """Gera o protótipo a partir das fontes desta pasta.
 
 Saídas:
-  docs/prototipo.html                  versão do Railway (documento completo, chave do Google injetada pelo Caddy)
+  docs/prototipo.html                  versão publicada (documento completo, chave do Google injetada pelo Caddy)
   tools/prototipo/saida/bkm-terrenos.html  versão para o artifact do claude.ai e para os testes
 """
 import json, os, re, shutil
@@ -30,7 +30,7 @@ if '{%' in html or '%}' in html:
     raise SystemExit('O protótipo contém "{%" ou "%}", que o Caddy lê como template; quebre a sequência (ex.: \'{\'+\'%\').')
 os.makedirs(os.path.join(AQUI, 'saida'), exist_ok=True)
 open(os.path.join(AQUI, 'saida', 'bkm-terrenos.html'), 'w', encoding='utf-8').write(html)
-# setores do IBGE (tools/setores/gerar.py): ao lado da página, como no Railway e no artifact
+# setores do IBGE (tools/setores/gerar.py): ao lado da página, como na versão publicada e no artifact
 shutil.copytree(os.path.join(RAIZ, 'docs', 'dados'), os.path.join(AQUI, 'saida', 'dados'), dirs_exist_ok=True)
 doc = ('<!doctype html>\n<html lang="pt-BR">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
        '<meta name="gmaps-key" content="{% env "GOOGLE_MAPS_KEY" %}">\n<meta name="bkm-ambiente" content="{% env "AMBIENTE" %}">\n'
