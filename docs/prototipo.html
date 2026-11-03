@@ -8070,7 +8070,7 @@ function itCfgCamposHtml(){const f=UI.itCfgF||'todos',q=(UI.itCfgQ||'').toLowerC
     <div class="it-cfgbar"><input class="it-busca" data-itcfgq="1" value="${esc(UI.itCfgQ||'')}" placeholder="Buscar campo" aria-label="Buscar campo">
       <span class="it-seg">${[['todos','Todos'],...Object.entries(IT_ORIG).map(([k,v])=>[k,v.replace(' de referência','').replace(' vigente','')]),['marcados','Marcados']].map(([k,v])=>`<button class="${f===k?'on':''}" data-a="it-cfgf" data-v="${k}" aria-pressed="${f===k}">${v}</button>`).join('')}</span></div>
     <div class="it-tab"><div class="it-tr it-th"><span>Nome no banco</span><span>Título (o nome que o usuário vê)</span><span>Máscara</span><span class="ce">Condição</span><span class="ce">No cartão</span></div>
-    ${L.map(d=>`<div class="it-tr"><span class="it-db"><code>${d.coluna}</code><small>${IT_ORIG[d.origem]} · ${IT_TIPO[d.tipo]}</small></span>
+    ${L.map(d=>`<div class="it-tr"><span class="it-db"><code>${d.coluna}</code><small>${IT_ORIG[d.origem]||"Campo novo do terreno"} · ${IT_TIPO[d.tipo]||d.tipo}</small></span>
       <span><input class="it-tit" value="${esc(d.titulo)}" data-itcfg="titulo" data-v="${d.chave}" aria-label="Título de ${d.coluna}" placeholder="${esc(IT_CAT.find(c=>c.chave===d.chave).titulo)}"></span>
       <span class="it-msk">${fmMascaraCfg(d)}</span>
       <label class="ce"><input type="checkbox" data-itcfg="condicao" data-v="${d.chave}" ${d.condicao?'checked':''}><em>Condição</em></label>
