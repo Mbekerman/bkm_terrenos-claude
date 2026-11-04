@@ -81,6 +81,12 @@ await p.click('#sec-lotes [data-a=lg-abrir]');await p.waitForSelector('#lg-svg',
 console.log('reaberto:',JSON.stringify((await info()).botao),(await info()).marcados,'marcados');
 await p.evaluate(()=>{document.documentElement.dataset.tema='escuro'});await shot('6_escuro');await p.evaluate(()=>{document.documentElement.dataset.tema='claro'});
 await p.click('[data-a=close]');await p.waitForTimeout(150);
+// 6b. incluir e ajustar a poligonal: comparação com a soma dos lotes marcados, substitui e guarda a desenhada
+await p.click('#sec-lotes [data-a=lg-abrir]');await p.waitForSelector('#lg-svg',{timeout:10000});await p.waitForTimeout(200);
+await p.click('[data-a=lg-ajustar]');await p.waitForTimeout(800);console.log('modal:',await p.$eval('#modal',x=>x.innerText.slice(0,400)),errs);await p.waitForSelector('[data-a=lotes-usar]',{timeout:5000});await p.waitForTimeout(200);
+console.log('ajustar:',await p.$eval('#modal .dialog',x=>x.innerText.replace(/\s+/g,' ')));await shot('6b_ajustar');
+const a0=(await ter()).poly.length;await p.click('[data-a=lotes-usar]');await p.waitForTimeout(300);const tp=await ter();
+console.log('poligonal trocada:',a0,'→',tp.poly.length,'pontos | guardadas:',(tp.polyAnt||[]).length,'|',tp.hist[tp.hist.length-1].txt);
 // 7. celular
 await p.setViewportSize({width:390,height:844});await p.waitForTimeout(300);
 await p.click('#sec-lotes [data-a=lg-abrir]');await p.waitForSelector('#lg-svg',{timeout:10000});await p.waitForTimeout(300);
