@@ -11,8 +11,8 @@
 --    subetapa) e com a regra que a criou (app.tarefas_etapa).
 -- 2. Trava: tarefa aberta de regra com a trava ligada entra nas pendências da
 --    passagem (app._pendencias): a de etapa trava a saída da etapa e a de
---    subetapa, a saída da subetapa. A tarefa criada à mão na etapa trava a
---    etapa quando alguma regra da etapa (sem subetapa) tem a trava ligada.
+--    subetapa, a saída da subetapa. Tarefa criada à mão nunca trava (decisão
+--    do Moisés, 4/nov/2026: por padrão nada trava; travar é uma escolha).
 --    O gestor e o diretor forçam com justificativa, como nas outras pendências.
 -- 3. A tarefa criada à mão nasce na etapa atual do terreno (app.tg_tarefa_processo);
 --    quem edita troca a etapa ou põe "Nenhuma" (nunca trava).
@@ -105,13 +105,9 @@ begin
     v_regra := app._regra_branco(p.terreno_id, r.regra, r.regra_cond);
     if v_regra <> 'livre' then v_nivel := case when r.subetapa is null then 'etapa' else 'subetapa' end; end if;
     if not (app.avaliar_condicao(p.terreno_id, r.condicao) and app.avaliar_condicao(p.terreno_id, x.condicao)) then v_sit := 'nao_se_aplica'; end if;
-  else
-    -- tarefa à mão (ou que mudou de etapa): trava se a etapa trava, pela regra mais forte das regras da etapa
-    select g.regra into v_regra from (select app._regra_branco(p.terreno_id, g.regra, g.regra_cond) as regra from app.etapa_regras g
-      where g.empresa_id = p.empresa_id and g.fase = p.fase and g.etapa = k.etapa and g.subetapa is null and g.trava and g.ativo) g
-      where g.regra <> 'livre' order by g.regra = 'justifica' limit 1;
-    if v_regra is not null then v_nivel := 'etapa'; end if;
   end if;
+  -- tarefa à mão (ou que saiu da etapa da regra) nunca trava: travar é escolha
+  -- do administrador na regra da Jornada (decisão do Moisés, 4/nov/2026)
   if x.situacao in ('deixada','arquivada_auto') then v_sit := x.situacao; end if;
   return jsonb_build_object('nivel', v_nivel, 'situacao', v_sit, 'trava', v_nivel is not null and v_sit = 'ativa',
                             'regra', case when v_nivel is not null then v_regra end);
