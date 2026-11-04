@@ -84,7 +84,10 @@ select pg_temp.falha(format($$insert into app.terrenos (empresa_id, nome, respon
 insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, logradouro, numero, bairro, zona, poligono_geojson)
 values (:'emp', 'Terreno Av. Cupecê — esquina', :'diretor', 'corretor', :'sp', 'Av. Cupecê', '1500', 'Cidade Ademar', 'sul', pg_temp.quadra(-46.6450, -23.6650))
 returning id as t1 \gset
-select pg_temp.ok((select codigo from app.terrenos where id = :'t1') ~ '^TER-\d{6}$', 'código TER-000001 gerado');
+select pg_temp.ok((select codigo from app.terrenos where id = :'t1') ~ '^[A-Z]\d{3}$', 'código curto (letra e 3 dígitos) gerado');
+select pg_temp.ok(app.codigo_terreno(1) = 'A001' and app.codigo_terreno(999) = 'A999' and app.codigo_terreno(1000) = 'B001'
+              and app.codigo_terreno(25974) = 'Z999', 'código: A001 a A999, depois B001, até Z999');
+select pg_temp.falha('select app.codigo_terreno(25975)', 'depois do Z999 não há código');
 select pg_temp.ok((select situacao_ocupacao from app.terrenos where id = :'t1') = 'nao_informado', 'campo não preenchido fica "não informado"');
 select versao as v from app.terrenos where id = :'t1' \gset
 select pg_temp.falha(format($$update app.terrenos set zona = 'leste' where id = %L$$, :'t1'), 'terreno não é alterado direto na tabela');
@@ -3263,7 +3266,7 @@ select pg_temp.falha(format($$select app.reativar_terreno(%L)$$, :'tar'), 'terre
 select pg_temp.como(:'analista');
 insert into app.terrenos (empresa_id, codigo, criado_por, nome, responsavel_id, origem_cadastro, municipio_id, poligono_geojson)
   values (:'emp', 'TER-999999', :'gestor', 'Código escolhido', :'analista', 'corretor', :'sp', pg_temp.quadra(-46.81, -23.81)) returning id as tce \gset
-select pg_temp.ok((select codigo <> 'TER-999999' and codigo ~ '^TER-\d{6}$' and criado_por = :'analista' from app.terrenos where id = :'tce'),
+select pg_temp.ok((select codigo <> 'TER-999999' and codigo ~ '^[A-Z]\d{3}$' and criado_por = :'analista' from app.terrenos where id = :'tce'),
   'cadastro direto não escolhe o código nem quem criou');
 select pg_temp.falha(format($$insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, poligono_geojson) values (%L, 'X', %L, 'corretor', %L, %L)$$,
   :'emp', :'intruso', :'sp', pg_temp.quadra(-46.82, -23.82)), 'o responsável do terreno é da equipe da empresa');
@@ -3337,7 +3340,7 @@ do $$ begin
   perform app.salvar_lote(current_setting('t.tx')::uuid, null, jsonb_build_object('matricula', jsonb_build_object('numero', '301.001', 'cartorio', (select cartorio from app.matriculas where numero = '301.001'))));
   raise exception 'FALHOU: matrícula de outro terreno entrou';
 exception when unique_violation then
-  if sqlerrm not like '%já está no terreno TER-%registre uma nova oferta%' then raise exception 'FALHOU: mensagem %', sqlerrm; end if;
+  if sqlerrm not like '%já está no terreno %registre uma nova oferta%' then raise exception 'FALHOU: mensagem %', sqlerrm; end if;
   raise notice 'ok  matrícula de outro terreno: lote recusado, com o código do terreno e a nova oferta (%)', sqlerrm;
 end $$;
 select pg_temp.falha(format($$select app.salvar_lote(%L, %L, '{"titulo":"lote 1"}')$$, :'tl', :'lt2'), 'título de lote não se repete no terreno');

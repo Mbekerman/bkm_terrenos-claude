@@ -28,7 +28,7 @@ const tpAtual=t=>t.topoClass&&t.topoClass.key===tpKey(t)?t.topoClass:null;
 const tpNome=r=>r.perfil==='inclinado'?`Inclinado · ${num(r.incl,1)}%`:TP_N[r.perfil];
 const TP_EM={},TP_ERRO={};
 /* exemplos do protótipo, usados só onde não dá para medir (arquivo local ou artifact: sem GeoSampa e sem Google) */
-const TP_EXEMPLO={'TER-000118':[1.8,.12,'laser'],'TER-000112':[6.2,.18,'laser'],'TER-000123':[4.1,null,'google'],'TER-000127':[14.5,.38,'laser'],'TER-000105':[9.8,.72,'laser'],'TER-000101':[22,1.35,'laser']};
+const TP_EXEMPLO={'A118':[1.8,.12,'laser'],'A112':[6.2,.18,'laser'],'A123':[4.1,null,'google'],'A127':[14.5,.38,'laser'],'A105':[9.8,.72,'laser'],'A101':[22,1.35,'laser']};
 function tpPodeMedir(t){const sp=cidDoTerreno(t)==='sp';return sp?!!GEO_BASE:!!GG}
 function tpAuto(t){if(!t||!tpKey(t)||UI.role==='Leitura'||tpAtual(t))return;const k=tpKey(t);
   if(TP_EM[t.id]||TP_ERRO[t.id]?.key===k)return;

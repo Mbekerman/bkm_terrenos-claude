@@ -2,9 +2,9 @@
 /* Cada tela tem endereço próprio, que abre direto quando o link é enviado:
      /                                  Início
      /terrenos                          Terrenos          /terrenos/novo        Novo terreno
-     /terrenos/TER-000123               ficha             /terrenos/TER-000123/comercial  ficha na aba
-     /terrenos/TER-000123/viabilidade/2 segundo estudo de viabilidade do terreno, no popup
-     /mapa  /mapa/TER-000123 (selecionado)  /mapa/TER-000123/ficha (com a ficha no painel)
+     /terrenos/A123               ficha             /terrenos/A123/comercial  ficha na aba
+     /terrenos/A123/viabilidade/2 segundo estudo de viabilidade do terreno, no popup
+     /mapa  /mapa/A123 (selecionado)  /mapa/A123/ficha (com a ficha no painel)
      /fases  /fases/aprovacao  /fases/aprovacao/projeto   (os três níveis do quadro)
      /tarefas  /tarefas/lista  /tarefas/calendario  /tarefas/cronograma  /tarefas/funil  /tarefas/TAR-000123 (a janela do cartão)   /dashboard   /configuracoes/etapas ...
    Na versão publicada vai no caminho (/prototipo/terrenos/...; o Caddy devolve a página para qualquer caminho);

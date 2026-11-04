@@ -272,7 +272,7 @@ erDiagram
 
   terrenos {
     uuid id PK
-    text codigo "TER-000123"
+    text codigo "A123, de A001 a Z999"
     text nome
     text situacao_cadastral "ativo | arquivado"
     text prioridade "baixa | media | alta | estrategica"

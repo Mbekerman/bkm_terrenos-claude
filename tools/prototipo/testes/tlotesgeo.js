@@ -31,12 +31,11 @@ const shot=async n=>{await p.waitForTimeout(150);await p.screenshot({path:OUT+n+
 await p.evaluate(()=>document.querySelector('[data-a=novo]').click());await p.waitForTimeout(200);
 const [fc]=await Promise.all([p.waitForEvent('filechooser'),p.click('[data-a=nv-kmz]')]);await fc.setFiles({name:'t.kml',mimeType:'application/vnd.google-earth.kml+xml',buffer:Buffer.from(kml)});
 await p.waitForSelector('#f-novo',{timeout:10000});await p.waitForTimeout(300);
-await p.fill('#n-mun','São Paulo · SP');await p.fill('#f-novo [name=nome]','Francisco Amaro');await p.fill('#f-novo [name=logradouro]','R. Cel. Francisco Amaro');await p.fill('#f-novo [name=numero]','161');
-await p.evaluate(()=>{document.querySelector('#f-novo [name=tipoEmp][value=mercado]')?.click();document.querySelector('#f-novo').requestSubmit()});
-await p.waitForSelector('[data-a=lg-sim]',{timeout:5000});
-console.log('pergunta:',await p.$eval('#modal .dialog',x=>x.innerText.replace(/\s+/g,' ')));await shot('1_pergunta');
-// 2. Sim: mapa das quadras
-await p.click('[data-a=lg-sim]');await p.waitForSelector('#lg-svg',{timeout:10000});await p.waitForTimeout(300);
+if(await p.$('#n-mun'))await p.fill('#n-mun','São Paulo · SP');await p.fill('#f-novo [name=nome]','Francisco Amaro');
+console.log('campos visíveis no cadastro:',await p.$$eval('#f-novo input:not([type=hidden]),#f-novo select,#f-novo textarea',x=>x.filter(e=>e.offsetParent).map(e=>e.name)));
+await p.evaluate(()=>{const m=document.querySelector('#f-novo [name=municipio]');if(m&&!m.value)m.value='São Paulo · SP';document.querySelector('#f-novo').requestSubmit()});
+// 2. cadastrado, o mapa das quadras abre direto
+await p.waitForSelector('#lg-svg',{timeout:10000});await p.waitForTimeout(300);await shot('1_cadastrado');
 const info=()=>p.evaluate(()=>({lotes:document.querySelectorAll('#lg-svg [data-lg]').length,marcados:document.querySelectorAll('#lg-svg .lg-l.sel').length,travados:document.querySelectorAll('#lg-svg .lg-l.x').length,
   rotulos:[...document.querySelectorAll('.lg-rots text')].filter(x=>x.style.display!=='none').length,vias:[...document.querySelectorAll('.lg-vias text')].map(x=>x.textContent),
   titulo:document.querySelector('#modal .dh .faint').textContent,botao:document.querySelector('[data-a=lg-incluir]').textContent,lista:[...document.querySelectorAll('.lg-lista .num')].map(x=>x.textContent)}));
@@ -61,7 +60,12 @@ const x=await p.$('#lg-svg .lg-l.x');if(x){await x.click({force:true});await p.w
 // 4. incluir
 const antes=await info();await p.click('[data-a=lg-incluir]');await p.waitForTimeout(300);
 const t1=await ter();console.log('incluídos:',t1.insc.length,'de',antes.lista.length,'| soltos:',t1.insc.filter(i=>i.solto).length,'| origem:',[...new Set(t1.insc.map(i=>i.origem))].join(),'| lotes:',(t1.lotes||[]).length,'| log:',t1.hist[0].txt);
-// 5. aba Terreno: SQLs sem lote e a lista no lote
+console.log('gaveta aberta:',!!(await p.$('#ficha-sheet')),'| lotes com SQL:',(t1.lotes||[]).map(l=>l.titulo+':'+l.ins.length).join());await shot('4a_gaveta');
+await p.evaluate(c=>{location.hash='#/terrenos/'+c},t1.codigo);await p.waitForTimeout(500);
+// 5. aba Terreno: SQLs sem lote e a lista no lote (o 1º lote volta a solto para testar a lista)
+await p.evaluate(()=>{document.querySelector('.fi-abas [data-t=terreno]')?.click()});await p.waitForTimeout(300);
+await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click())});await p.waitForTimeout(150);
+await p.click('#sec-lotes [data-a=lt-sql-tira]');await p.waitForTimeout(250);
 await p.evaluate(()=>{document.querySelector('.fi-abas [data-t=terreno]')?.click()});await p.waitForTimeout(300);
 await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click())});await p.waitForTimeout(150);
 console.log('soltos na seção:',await p.$eval('#lg-soltos',x=>x.innerText.replace(/\s+/g,' ')));

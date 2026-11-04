@@ -38,12 +38,16 @@ const importarKml=async kml=>{const [fc]=await Promise.all([p.waitForEvent('file
 await p.evaluate(()=>document.querySelector('[data-a=novo]').click());await p.waitForTimeout(200);
 const campo=(pre='n')=>p.evaluate(pre=>({rot:document.querySelector('#'+pre+'-sql-l').textContent,ph:document.querySelector('#'+pre+'-sql').placeholder,v:document.querySelector('#'+pre+'-sql').value}),pre);
 console.log('passo 1: opções',JSON.stringify(await p.$$eval('.nv-op b',x=>x.map(b=>b.textContent))),'| campo de inscrição?',await p.$$eval('#modal [name=sql]',x=>x.length));
-await importarKml(kmlQuadra(-23.204989,-45.9));await p.evaluate(()=>document.querySelector('#f-novo details').open=true);
-await p.fill('#n-mun','São Paulo · SP');await p.fill('#n-sql','0890000000000');console.log('SP:',JSON.stringify(await campo()));
-await p.fill('#n-sql','');await p.fill('#n-mun','São José dos Campos · SP');await p.fill('#n-sql','41002400110000');console.log('SJC:',JSON.stringify(await campo()));
-await p.screenshot({path:OUT+'1_novo_sjc.png'});
-await p.fill('#n-mun','São José dos Campos · SP');await p.fill('#f-novo [name=nome]','Lote SJC');await p.fill('#f-novo [name=bairro]','Vila Adyanna');
-await p.evaluate(()=>document.querySelector('#f-novo').requestSubmit());
+await importarKml(kmlQuadra(-23.204989,-45.9));
+if(await p.$('#n-mun'))await p.fill('#n-mun','São José dos Campos · SP');await p.fill('#f-novo [name=nome]','Lote SJC');
+await p.evaluate(()=>{const m=document.querySelector('#f-novo [name=municipio]');if(m&&!m.value)m.value='São José dos Campos · SP';document.querySelector('#f-novo').requestSubmit()});await p.waitForTimeout(600);
+await p.evaluate(()=>document.querySelector('#modal [data-a=close]')?.click());await p.waitForTimeout(300);
+await p.evaluate(c=>{location.hash='#/terrenos/'+c+'/terreno'},(await ter('Lote SJC')).codigo);await p.waitForTimeout(500);
+await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click())});await p.waitForTimeout(150);
+await p.click('#sec-lotes [data-a=lt-novo]');await p.waitForTimeout(300);
+const LF0='#sec-lotes form[data-form=lt-sql]';console.log('SJC na ficha:',await p.$eval(LF0+' label[id$=-sql-l]',x=>x.textContent),'|',await p.$eval(LF0+' [name=sql]',x=>x.placeholder));
+await p.fill(LF0+' [name=sql]','41002400110000');await p.screenshot({path:OUT+'1_novo_sjc.png'});
+await p.evaluate(f=>document.querySelector(f).requestSubmit(),LF0);
 await p.waitForFunction(()=>/Planta e desenho/.test(document.querySelector('#toast').textContent),null,{timeout:20000}).catch(async e=>{console.log('toast:',await toast(),'erros:',errs,'pedidos:',pedidos);throw e});
 const st=await ter('Lote SJC').then(t=>{const i=t.insc[0],g=i.geo[0];return {mun:i.mun,sql:i.sql,municipio:t.municipio,poly:t.poly&&t.poly.length,lat:t.lat,area:i.area,areaPol:g.areaPol,zonas:g.zonas,erros:g.erros,
   analise:(t.analises.find(a=>a.status==='vigente')||{}).fonte,docs:t.docs.map(d=>d.tipo+':v'+d.versoes+':'+d.nome),hist:t.hist.map(h=>h.txt)}});
@@ -59,17 +63,6 @@ for(const k of ['pdf','dxf']){const [d]=await Promise.all([p.waitForEvent('downl
 const LF='#sec-lotes form[data-form=lt-sql]';console.log('ficha: seletor?',await p.$$eval(LF+' .insc-cid',x=>x.length),'| cidade:',await p.$eval(LF+' [name=mun]:checked',x=>x.value),'|',await p.$eval(LF+' label[id$=-sql-l]',x=>x.textContent),'|',await p.$eval(LF+' [name=sql]',x=>x.placeholder));
 await p.fill(LF+' [name=sql]','41002400120000');await p.evaluate(f=>document.querySelector(f).requestSubmit(),LF);await p.waitForTimeout(400);
 console.log('inscrições:',JSON.stringify((await ter('Lote SJC')).insc.map(i=>i.mun+':'+i.sql)));
-// 3. passo 2 (área de outro lugar de SJC importada de KML): a inscrição acompanha o município digitado
-const kml=`<?xml version="1.0"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><Placemark><name>Outro lote</name><Polygon><outerBoundaryIs><LinearRing><coordinates>-45.90,-23.20 -45.8997,-23.20 -45.8997,-23.2003 -45.90,-23.2003 -45.90,-23.20</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark></Document></kml>`;
-await p.evaluate(()=>document.querySelector('[data-a=novo]').click());await p.waitForTimeout(200);
-const [fc]=await Promise.all([p.waitForEvent('filechooser'),p.click('[data-a=nv-kmz]')]);await fc.setFiles({name:'l.kml',mimeType:'application/vnd.google-earth.kml+xml',buffer:Buffer.from(kml)});await p.waitForSelector('#f-novo');await p.waitForTimeout(200);
-await p.evaluate(()=>document.querySelector('#f-novo details').open=true);
-console.log('passo 2: seletor?',await p.$$eval('#f-novo .insc-cid',x=>x.length));
-await p.fill('#n-mun','Taubaté · SP');await p.fill('#n-sql','abc-123/9');console.log('Taubaté:',JSON.stringify(await campo('n')));
-await p.fill('#n-sql','');await p.fill('#n-mun','São José dos Campos · SP');await p.fill('#n-sql','41002400110000');await p.waitForTimeout(150);console.log('SJC:',JSON.stringify(await campo('n')),'| foco:',await p.evaluate(()=>document.activeElement.id));console.log('mesma inscrição:',await p.$eval('#dedupe',x=>x.innerText.replace(/\s*\n\s*/g,' / ').slice(0,160)));
-await p.fill('#n-sql','41002400990000');await p.waitForTimeout(150);console.log('mesma quadra:',await p.$eval('#dedupe',x=>x.innerText.replace(/\s*\n\s*/g,' / ').slice(0,160)));
-await p.focus('#n-mun');await p.fill('#n-mun','São Paulo · SP');await p.waitForTimeout(150);console.log('trocou para SP:',JSON.stringify(await campo('n')),'| foco:',await p.evaluate(()=>document.activeElement.id),'|',await p.$eval('#dedupe',x=>x.innerText.replace(/\s*\n\s*/g,' / ').slice(0,160)));
-await p.fill('#n-mun','São José dos Campos · SP');await p.waitForTimeout(150);
 // 4. celular e escuro
 await p.setViewportSize({width:390,height:844});await p.waitForTimeout(400);
 console.log('celular (novo): rolagem horizontal?',await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth));await p.screenshot({path:OUT+'3_novo_celular.png'});

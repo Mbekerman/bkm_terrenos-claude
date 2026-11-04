@@ -2,7 +2,7 @@
 const path=require('path'),fs=require('fs'),{chromium,devices}=require('playwright');
 const TMP=path.join(__dirname,'..','saida')+'/',OUT=TMP+'t_obrig/',L=path.join(__dirname,'..','libs','l')+'/';fs.mkdirSync(OUT,{recursive:true});
 const html=fs.readFileSync(TMP+'bkm-terrenos.html','utf8').replace('<title>','<meta name="viewport" content="width=device-width, initial-scale=1"><title>'),KEY='bkm-terrenos-prototipo-v9';
-// lugar vazio para o terreno novo e o TER-000123 dos exemplos
+// lugar vazio para o terreno novo e o A123 dos exemplos
 const LUGAR={vazio:[-23.60000,-46.62000],cupece:[-23.668125,-46.6513]};
 const errs=[],ok=(c,m)=>{console.log((c?'ok  ':'FALHA ')+m);if(!c)errs.push(m)};
 // OpenStreetMap: a busca devolve o lugar; o inverso devolve rua conforme o lado do terreno novo
@@ -33,7 +33,7 @@ const titulo=p=>p.$eval('#modal h2',x=>x.textContent).catch(()=>'');
 
 {const {p}=await pagina(false);
   await desenhar(p,'Rua Teste 15',[-15,-25,15,25]);
-  await p.waitForFunction(()=>document.querySelector('#nv-frentes [name=frente]'),null,{timeout:12000}).catch(()=>{});
+  await p.waitForFunction(()=>{const b=document.querySelector('#btn-novo');return b&&!b.disabled},null,{timeout:12000}).catch(()=>{});
   // apaga o nome, rola até o fim e clica em Cadastrar
   await p.fill('#n-nome','');
   await p.evaluate(()=>{const m=document.querySelector('#modal .modal')||document.querySelector('#modal');m.querySelectorAll('*').forEach(x=>{if(x.scrollHeight>x.clientHeight+5)x.scrollTop=x.scrollHeight})});
@@ -44,22 +44,22 @@ const titulo=p=>p.$eval('#modal h2',x=>x.textContent).catch(()=>'');
   ok(/Nome de referência/.test(r.toast),'o aviso diz qual campo falta: '+r.toast);
   ok(r.visivel,'a página rola até o campo');
   await p.screenshot({path:OUT+'1_nome_em_branco.png'});
-  await p.fill('#n-nome','Avenida Leste, 900');await p.waitForTimeout(150);
+  await p.fill('#n-nome','Leste');await p.waitForTimeout(150);
   ok(!(await p.$('#f-novo .campo-erro')),'preenchendo o nome, o destaque some');
   // campo obrigatório dentro da seção recolhida: a seção abre e o nome aparece
-  await p.evaluate(()=>{const d=document.querySelector('#f-novo details:not(#nv-pl)');d.open=false;const v=document.querySelector('#n-ace');v.required=true});
+  await p.evaluate(()=>{const d=document.createElement('details');d.id='t-sec';d.innerHTML='<summary>Mais dados</summary><div class="field"><label for="t-ace">Aceita permuta</label><input id="t-ace" name="t_ace" required></div>';document.querySelector('#f-novo').append(d)});
   await p.click('#btn-novo');await p.waitForTimeout(900);
-  const q=await p.evaluate(()=>({aberta:document.querySelector('#f-novo details:not(#nv-pl)').open,erro:!!document.querySelector('#n-ace').closest('.campo-erro'),toast:document.querySelector('#toast').textContent}));
+  const q=await p.evaluate(()=>({aberta:document.querySelector('#t-sec').open,erro:!!document.querySelector('#t-ace').closest('.campo-erro'),toast:document.querySelector('#toast').textContent}));
   ok(q.aberta&&q.erro&&/Aceita permuta/.test(q.toast),'campo em seção recolhida: a seção abre e o aviso diz o campo: '+q.toast);
   await p.screenshot({path:OUT+'2_secao_recolhida.png'});
-  await p.evaluate(()=>{document.querySelector('#n-ace').required=false});
+  await p.evaluate(()=>{document.querySelector('#t-sec').remove()});
   await p.click('#btn-novo');await p.waitForTimeout(900);
-  ok((await est(p)).terrenos.some(x=>x.nome==='Avenida Leste, 900'),'preenchido, o terreno é cadastrado');
+  ok((await est(p)).terrenos.some(x=>x.nome==='Leste'),'preenchido, o terreno é cadastrado');
 }
 // celular
 {const {p}=await pagina(true);
   await desenhar(p,'Rua Teste 15',[-15,-25,15,25]);
-  await p.waitForFunction(()=>document.querySelector('#nv-frentes [name=frente]'),null,{timeout:12000}).catch(()=>{});
+  await p.waitForFunction(()=>{const b=document.querySelector('#btn-novo');return b&&!b.disabled},null,{timeout:12000}).catch(()=>{});
   await p.fill('#n-nome','');await p.click('#btn-novo');await p.waitForTimeout(900);
   ok(await p.$('#f-novo .campo-erro #n-nome'),'celular: nome destacado');await p.screenshot({path:OUT+'3_celular.png'});
 }
