@@ -592,7 +592,7 @@ const advItens=items=>items.map(x=>`<li><span class="${x.aviso?'av':x.ok?'ok':'n
 /* ===================== páginas ===================== */
 /* ficha em abas, como a janela do cartão de tarefa (decisão do Moisés, 3/nov/2026): uma aba de cada vez, botões sempre visíveis no topo.
    As chaves antigas (cadastro, negociacao, urbanismo, fases, tarefas) continuam valendo nos links e nos logs e caem na aba nova. */
-const FICHA_ABAS=[['geral','Visão geral'],['terreno','Terreno'],['comercial','Comercial'],['parametros','Parâmetros urbanísticos'],['massa','Estudos de massa'],['viabilidade','Estudos de viabilidade'],['infra','Infraestrutura'],['entorno','Entorno'],['jornada','Jornada do Terreno'],['documentos','Documentos'],['historico','Histórico']];
+const FICHA_ABAS=[['geral','Visão geral'],['terreno','Terreno'],['comercial','Comercial'],['parametros','Parâmetros'],['massa','Estudos de massa'],['viabilidade','Viabilidades'],['infra','Infraestrutura'],['entorno','Entorno'],['jornada','Jornada'],['documentos','Documentos'],['historico','Histórico']];
 const ABA_DE={cadastro:'terreno',negociacao:'comercial',urbanismo:'parametros',fases:'jornada',tarefas:'geral',viab:'viabilidade'};
 const abaN=k=>{k=ABA_DE[k]||k;return FICHA_ABAS.some(x=>x[0]===k)?k:'geral'};
 let BLA={},blId=null; /* mantido para quem ainda zera o estado ao abrir um terreno */
@@ -613,13 +613,26 @@ function abaJornada(t){return `<div class="stack">${trilhaHtml(t)}${abaFases(t)}
 function abaViabilidade(t){return `<div class="stack">${abaGeral(t,'viab')}${viabSecao(t)}</div>`}
 function abaInfra(t){return `<div class="stack">${abaGeral(t,'relevo')}${abaUrbanismo(t,'infra')}</div>`}
 function abaEntorno(t){return `<div class="stack">${abaGeral(t,'entorno')}</div>`}
-/* a aba ativa sempre visível na barra (no celular a barra rola de lado) */
-function fiAbaVisivel(){const b=document.querySelector('.fi-abas'),a=b&&b.querySelector('[aria-selected="true"]');if(!a)return;
-  const l=a.offsetLeft-b.offsetLeft,r=l+a.offsetWidth;if(l<b.scrollLeft||r>b.scrollLeft+b.clientWidth)b.scrollLeft=Math.max(0,l-(b.clientWidth-a.offsetWidth)/2)}
+/* barra das abas sem rolagem lateral (pedido do Moisés, 4/nov/2026): aparecem as abas que cabem; as demais vão para o
+   menu "Mais ações" (⋮) no fim, ao lado das setas de aba anterior e próxima. A aba ativa nunca vai para o menu. */
+const SVG_DOTS='<svg class="ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" d="M12 5.5h.01M12 12h.01M12 18.5h.01"/></svg>';
+const fiSeta=d=>`<svg class="ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="${d<0?'M15 6l-6 6 6 6':'M9 6l6 6-6 6'}"/></svg>`;
+let fiRO=null;
+function fiAbasCaber(){const w=document.querySelector('.fi-abas-w');if(!w)return;const bar=w.querySelector('.fi-abas'),mn=w.querySelector('.fi-mais'),menu=mn.querySelector('.adv-menu');
+  const bs=[...bar.querySelectorAll('button[role=tab]')];bs.forEach(b=>b.hidden=false);
+  const vis=bs.filter(b=>getComputedStyle(b).display!=='none'),act=vis.findIndex(b=>b.getAttribute('aria-selected')==='true');
+  const fora=[];mn.hidden=true;
+  if(bar.scrollWidth>bar.clientWidth+1){mn.hidden=false;
+    for(let i=vis.length-1;i>=0&&bar.scrollWidth>bar.clientWidth+1;i--){if(i===act)continue;vis[i].hidden=true;fora.unshift(vis[i])}}
+  menu.innerHTML=fora.map(b=>`<button role="menuitem" data-a="tab" data-t="${b.dataset.t}">${b.innerHTML}</button>`).join('');
+  [[-1,'.fi-ant'],[1,'.fi-prox']].forEach(([d,sel])=>{const b=w.querySelector(sel),alvo=vis[act+d];b.disabled=!alvo;if(alvo){b.dataset.t=alvo.dataset.t;b.title=(d<0?'Anterior: ':'Próxima: ')+alvo.firstChild.textContent}else b.title=d<0?'Primeira seção':'Última seção'});
+  if(window.ResizeObserver&&w.__ro!==true){fiRO?.disconnect();let lw=w.clientWidth;fiRO=new ResizeObserver(()=>{if(Math.abs(w.clientWidth-lw)<1)return;lw=w.clientWidth;fiAbasCaber()});fiRO.observe(w);w.__ro=true}}
 function pgFicha(){
   const t=T(UI.id);{const k=t&&JSON.stringify([t.lotes,t.partes,t.mats,t.insc]);lotesNorm(t);if(t&&k!==JSON.stringify([t.lotes,t.partes,t.mats,t.insc]))save()}const c=completude(t),n=t.neg,aba=abaN(UI.tab);
   const FN={geral:abaGeral,comercial:abaComercialFicha,terreno:abaCadastro,parametros:t=>abaUrbanismo(t,'param'),massa:abaMassa,viabilidade:abaViabilidade,infra:abaInfra,entorno:abaEntorno,jornada:abaJornada,documentos:abaDocs,historico:abaHist};
-  const abas=`<div class="fi-abas" role="tablist" aria-label="Seções do terreno">${FICHA_ABAS.map(([k,l])=>{const q=abaContagem(t,k);return `<button role="tab" class="${k==='historico'?'tab-hist':''}" data-a="tab" data-t="${k}" aria-selected="${k===aba}" aria-controls="bl-${k}">${l}${q?`<span class="tkm-n">${q}</span>`:''}</button>`}).join('')}</div>`;
+  const abas=`<div class="fi-abas-w"><div class="fi-abas" role="tablist" aria-label="Seções do terreno">${FICHA_ABAS.map(([k,l])=>{const q=abaContagem(t,k);return `<button role="tab" class="${k==='historico'?'tab-hist':''}" data-a="tab" data-t="${k}" aria-selected="${k===aba}" aria-controls="bl-${k}">${l}${q?`<span class="tkm-n">${q}</span>`:''}</button>`}).join('')}</div>
+    <div class="fi-fim"><div class="adv-mais fi-mais" hidden><button class="iconbtn adv-mb" data-a="adv-mais" aria-haspopup="menu" aria-expanded="false" aria-label="Mais ações" title="Mais ações">${SVG_DOTS}</button><div class="adv-menu" role="menu"></div></div>
+    <button class="iconbtn fi-ant" data-a="tab" aria-label="Seção anterior">${fiSeta(-1)}</button><button class="iconbtn fi-prox" data-a="tab" aria-label="Próxima seção">${fiSeta(1)}</button></div></div>`;
   const meta=[...fichaFaseTxt(t),`Cadastrado em ${fd(t.dataIdent)}`];
   return `${linhaTopo(t)}<button class="back" data-a="nav" data-r="${UI.from}">${ic('back',20)}${UI.from==='negociacoes'?'Funil':UI.from==='inicio'?'Início':'Terrenos'}</button>
   <div class="dhead fi-head"><div style="min-width:0"><div class="eyebrow"><span class="num">${t.codigo}</span>${t.situacao==='arquivado'?'<span class="chip">Arquivado</span>':''}</div>
@@ -899,7 +912,7 @@ function seedVazio(){return {id:uid(),situacao:'ativo',prioridade:null,descricao
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&GG&&(svFechar()||lugarFechar())){e.preventDefault();return}if(e.key==='Escape'&&temaMenu){temaMenu=false;renderTema();return}if(e.key==='Escape'&&perfilMenu){perfilMenu=false;renderPerfil();return}if(e.key==='Escape'&&UI.modal){UI.modal=null;renderModal()}});
 /* ===================== kanban: arrastar e soltar (regras em proto_funil.js: levarAte, soltar) ===================== */
 function posRender(){try{if(MAPA){MAPA.remove()}}catch(e){}MAPA=null;PINS=POIS=DES=BASE=null;try{if(MINI)MINI.remove()}catch(e){}MINI=null;
-  if(UI.route==='mapa')initMapa();if(UI.route==='terreno'){fiAbaVisivel();if(!blocoFechado('geral'))initMini();if(typeof geoCartorio==='function')geoCartorio(T(UI.id));tpAuto(T(UI.id))}fichaSheet()}
+  if(UI.route==='mapa')initMapa();if(UI.route==='terreno'){fiAbasCaber();if(!blocoFechado('geral'))initMini();if(typeof geoCartorio==='function')geoCartorio(T(UI.id));tpAuto(T(UI.id))}fichaSheet()}
 document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const el=e.target;if(!(el instanceof HTMLElement)||el.matches('button,a,input,select,textarea'))return;if(el.matches('[data-a][tabindex]')){e.preventDefault();el.click()}});
 let arrastando=null;
 document.addEventListener('dragstart',e=>{const c=e.target.closest?.('.kcard[draggable="true"]');if(!c)return;arrastando=c.dataset.id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',arrastando);c.classList.add('arrastando');c.closest('.col')?.classList.add('origem');document.body.classList.add('dnd')});
