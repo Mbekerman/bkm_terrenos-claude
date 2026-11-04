@@ -5703,8 +5703,10 @@ const KEY='bkm-terrenos-prototipo-v9';
 let S;try{const r=localStorage.getItem(KEY);S=r?JSON.parse(r):null}catch(e){S=null}
 if(!S||!S.terrenos)S=seed();
 S.terrenos.forEach(t=>(t.docs||[]).forEach(d=>{if(/^geosampa_/.test(d.tipo))d.tipo=d.tipo.replace('geosampa_','lote_')}));
-// código curto do terreno (decisão do Moisés, 4/nov/2026): letra + 3 dígitos, A001 a A999, depois B001... até Z999 (25.974)
-function codTer(n){if(n<1||n>26*999)throw new Error('Acabaram os códigos de terreno (Z999).');return String.fromCharCode(65+Math.floor((n-1)/999))+String((n-1)%999+1).padStart(3,'0')}
+// código curto do terreno (decisão do Moisés, 4/nov/2026): letra + 3 dígitos, A001 a A999, depois B001... até Z999,
+// sem I e O, que se confundem com 1 e 0 (24 letras, 23.976 terrenos); espelha app.codigo_terreno
+const COD_LETRAS='ABCDEFGHJKLMNPQRSTUVWXYZ';
+function codTer(n){if(n<1||n>COD_LETRAS.length*999)throw new Error('Acabaram os códigos de terreno (Z999).');return COD_LETRAS[Math.floor((n-1)/999)]+String((n-1)%999+1).padStart(3,'0')}
 S.terrenos.forEach(t=>{const m=/^TER-0*(\d+)$/.exec(t.codigo||'');if(m)t.codigo=codTer(+m[1])});
 (S.areasInteresse||[]).forEach(a=>{a.terrenos=(a.terrenos||[]).map(c=>{const m=/^TER-0*(\d+)$/.exec(c);return m?codTer(+m[1]):c})});
 const save=()=>{try{if(typeof audit==='function')audit()}catch(e){console.error(e)}try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
