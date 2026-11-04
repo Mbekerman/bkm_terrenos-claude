@@ -184,12 +184,18 @@ async function gMatriz(lat,lng,dest,modo){const out=dest.map(()=>null);const ll=
       (res?.rows?.[0]?.elements||[]).forEach((e,j)=>{if(e&&e.status==='OK')out[i+j]={m:e.distance.value,min:Math.max(1,Math.round(e.duration.value/60))}})}
     if(!out.some(Boolean))throw new Error('sem rotas')}
   return out}
+/* filtro do ruído por categoria (ENT_CAT, 5º item): excluir pelo nome, mínimo de avaliações (salvo nome isento) e,
+   no shopping, um lugar por local (as lojas de dentro que o Google marca como shopping ficam fora) */
+const entTem=(nome,lista)=>{if(!lista)return false;const n=' '+normNome(nome).replace(/[^a-z0-9]+/g,' ')+' ';return lista.split('|').some(x=>n.includes(' '+x))};
+function entFiltro(ps,rg){let l=ps.filter(p=>!entTem(p.nome,rg.excluir)&&(rg.min==null||p.av>=rg.min||entTem(p.nome,rg.isento)));
+  if(rg.local){const fica=[];[...l].sort((a,b)=>b.av-a.av).forEach(p=>{if(!fica.some(q=>distKm(p.lat,p.lng,q.lat,q.lng)*1000<=rg.local))fica.push(p)});l=l.filter(p=>fica.includes(p))}
+  return l}
 async function gEntornoTerreno(t){if(!GG||!gLib.places||t.lat==null||ENT_BUSCA[t.id])return;
   ENT_BUSCA[t.id]=true;const lat=t.lat,lng=t.lng;entRefresh(t);
   try{const {Place,SearchNearbyRankPreference}=gLib.places;
-    const res=await Promise.all(ENT_CAT.map(([k,,,tipos])=>Place.searchNearby({fields:['id','displayName','location'],locationRestriction:{center:gLL(lat,lng),radius:RAIO_PE},
+    const res=await Promise.all(ENT_CAT.map(([k,,,tipos,rg])=>Place.searchNearby({fields:['id','displayName','location','userRatingCount'],locationRestriction:{center:gLL(lat,lng),radius:RAIO_PE},
       includedPrimaryTypes:tipos,maxResultCount:20,rankPreference:SearchNearbyRankPreference.DISTANCE,language:'pt-BR',region:'br'})
-      .then(r=>(r.places||[]).map(p=>({gid:p.id,nome:p.displayName,cat:k,lat:p.location.lat(),lng:p.location.lng()})))));
+      .then(r=>entFiltro((r.places||[]).map(p=>({gid:p.id,nome:p.displayName,cat:k,av:p.userRatingCount||0,lat:p.location.lat(),lng:p.location.lng()})),rg||{}))));
     /* só pelo tipo principal do lugar: com includedTypes vinham autoescola e curso livre (que também têm "school"), restaurante como parque etc. (4/nov/2026) */
     /* um lugar entra uma vez (na primeira categoria); mesmo nome na mesma categoria = mesma estação/hospital, fica o mais perto */
     const ids=new Set(),nomes=new Set();let itens=[];
