@@ -36,11 +36,14 @@ create table app.bases_cadastrais (
   ordem        int  not null
 );
 
+-- Itens da visita técnica (aba Infraestrutura); os marcados em viabilidade_tecnica também
+-- pedem a viabilidade da concessionária (Energia, Água, Esgoto e Gás; decisão do Moisés, 3/nov/2026).
 create table app.itens_infraestrutura (
   codigo text primary key,
   nome   text not null,
   ordem  int  not null,
-  ativo  boolean not null default true
+  ativo  boolean not null default true,
+  viabilidade_tecnica boolean not null default false
 );
 
 create table app.tipos_documento (
@@ -58,7 +61,7 @@ create table app.tipos_documento (
 -- etapas, subetapas, status, dependências, pré-requisitos e checklist.
 -- ---------------------------------------------------------------------
 -- Fase: o grande momento do terreno (Novos Negócios, Aprovação de Projetos,
--- Registro de Incorporação, Contratação Caixa, Lançamento, Obras). Cada fase
+-- Registro de Incorporação, Funding, Contratação Caixa, Lançamento, Obras). Cada fase
 -- é um processo próprio do terreno, com etapas, status e histórico; a fase de
 -- entrada (uma por empresa) é a que a oferta abre e a que tem negociação
 -- (temperatura, propostas). As demais abrem quando as dependências se cumprem.
@@ -159,6 +162,12 @@ create table app.prerequisitos_modelo (
   alvo_tipo       text not null check (alvo_tipo in ('etapa','subetapa')),
   alvo            text not null,
   requisito       text not null,   -- sempre uma subetapa
+  condicao        jsonb,           -- "Vale quando" (31/out/2026): sem condição, vale sempre
+  -- regra da jornada (1/nov/2026): bloqueia (gestor e diretor passam com justificativa),
+  -- justifica (qualquer editor passa com justificativa) ou livre (não trava)
+  regra           text not null default 'bloqueia' check (regra in ('bloqueia','justifica','livre')),
+  -- regra condicional: [{condicao, regra}], a primeira que vale decide; nenhuma vale = regra
+  regra_cond      jsonb,
   unique nulls not distinct (empresa_id, fase, alvo_tipo, alvo, requisito),
   foreign key (empresa_id, fase, requisito) references app.subetapas_modelo(empresa_id, fase, codigo) on delete cascade
 );
@@ -168,8 +177,13 @@ create table app.checklist_modelo (
   fase            text not null,
   etapa          text not null,  -- documentos exigidos para SAIR desta etapa
   tipo_documento text not null references app.tipos_documento(codigo),
-  obrigatorio    boolean not null default true,
+  -- regra da jornada (1/nov/2026): bloqueia (gestor e diretor passam com justificativa),
+  -- justifica (qualquer editor passa com justificativa) ou livre (opcional, não trava)
+  regra          text not null default 'bloqueia' check (regra in ('bloqueia','justifica','livre')),
+  regra_cond     jsonb,          -- regra condicional: [{condicao, regra}], a primeira que vale decide
+  obrigatorio    boolean generated always as (regra <> 'livre' or regra_cond is not null) stored,
   ordem          int not null default 0,
+  condicao       jsonb,          -- "Vale quando" (31/out/2026): obrigatório só quando a condição vale
   unique nulls not distinct (empresa_id, fase, etapa, tipo_documento),
   foreign key (empresa_id, fase, etapa) references app.etapas_modelo(empresa_id, fase, codigo) on delete cascade
 );
@@ -213,18 +227,22 @@ where m.codigo_ibge = '3550308';
 insert into app.entorno_categorias (codigo, nome, tipos_google, raio_pe_m, ordem) values
   ('metro_trem', 'Estação de metrô ou trem', array['subway_station','train_station','light_rail_station'], 1500, 1),
   ('shopping',   'Shopping center',          array['shopping_mall'],                                       1500, 2),
-  ('hospital',   'Hospital',                 array['hospital'],                                            1500, 3);
+  ('hospital',   'Hospital',                 array['hospital'],                                            1500, 3),
+  ('escola',     'Escola ou creche',         array['school','preschool','primary_school','secondary_school'], 1500, 4),
+  ('supermercado','Supermercado',            array['supermarket'],                                         1500, 5),
+  ('parque',     'Parque',                   array['park'],                                                1500, 6);
 
-insert into app.itens_infraestrutura (codigo, nome, ordem) values
-  ('energia',     'Rede de energia na porta',  1),
-  ('agua',        'Rede de água na porta',     2),
-  ('esgoto',      'Rede de esgoto na porta',   3),
-  ('gas',         'Gás canalizado na porta',   4),
-  ('asfalto',     'Asfalto na porta',          5),
-  ('drenagem',    'Drenagem pluvial',          6),
-  ('iluminacao',  'Iluminação pública',        7),
-  ('calcada',     'Calçada',                   8),
-  ('fibra',       'Telefonia / fibra óptica',  9);
+insert into app.itens_infraestrutura (codigo, nome, ordem, ativo, viabilidade_tecnica) values
+  ('energia',     'Energia',                   1, true,  true),
+  ('agua',        'Água',                      2, true,  true),
+  ('esgoto',      'Esgoto',                    3, true,  true),
+  ('drenagem',    'Drenagem',                  4, true,  false),
+  ('gas',         'Gás canalizado',            5, true,  true),
+  ('asfalto',     'Asfalto',                   6, true,  false),
+  ('iluminacao',  'Iluminação pública',        7, true,  false),
+  ('calcada',     'Calçada',                   8, true,  false),
+  -- fora da visita técnica desde 4/nov/2026 (a lista do Moisés tem 8 itens)
+  ('fibra',       'Telefonia / fibra óptica',  9, false, false);
 
 insert into app.tipos_documento (codigo, nome, categoria, validade_dias, unico_por_processo) values
   ('matricula',          'Matrícula atualizada',                 'Imóvel',    30,   true),
@@ -254,12 +272,14 @@ insert into app.fases_modelo (codigo, nome, ordem, prefixo, entrada) values
   ('novos_negocios', 'Novos Negócios',           1, 'NEG', true),
   ('aprovacao',      'Aprovação de Projetos',    2, 'APR', false),
   ('incorporacao',   'Registro de Incorporação', 3, 'INC', false),
-  ('caixa',          'Contratação Caixa',        4, 'CEF', false),
-  ('lancamento',     'Lançamento',               5, 'LAN', false),
-  ('obras',          'Obras',                    6, 'OBR', false),
-  ('entregue',       'Entregue',                 7, 'ENT', false);
+  ('funding',        'Funding',                  4, 'FUN', false),
+  ('caixa',          'Contratação Caixa',        5, 'CEF', false),
+  ('lancamento',     'Lançamento',               6, 'LAN', false),
+  ('obras',          'Obras',                    7, 'OBR', false),
+  ('entregue',       'Entregue',                 8, 'ENT', false);
 
--- Cada fase abre quando a anterior é concluída.
+-- Cada fase abre quando a anterior é concluída. Funding não tem dependência
+-- nem trava outra fase (decisão do Moisés, 4/nov/2026): abre à mão, quando for.
 insert into app.fase_dependencias (fase, requisito_fase, requisito_tipo) values
   ('aprovacao',    'novos_negocios', 'conclusao'),
   ('incorporacao', 'aprovacao',      'conclusao'),
@@ -278,6 +298,11 @@ insert into app.etapas_modelo (fase, codigo, nome, ordem, sla_dias, aprova_gesto
   ('aprovacao',     'alvaras',     'Alvarás',               3, 30,  false),
   ('incorporacao',  'memorial',    'Memorial e Certidões',  1, 30,  false),
   ('incorporacao',  'cartorio',    'Cartório',              2, 45,  false),
+  ('funding',       'fun_dossie',  'Dossiê',                1, null, false),
+  ('funding',       'fun_viabilidade', 'Viabilidade',           2, null, false),
+  ('funding',       'fun_comite',  'Comitê',                3, null, false),
+  ('funding',       'fun_contratacao', 'Contratação',           4, null, false),
+  ('funding',       'fun_legalizacao', 'Legalização',           5, null, false),
   ('caixa',         'analise',     'Análise Caixa',         1, 60,  false),
   ('caixa',         'contratacao', 'Contratação',           2, 30,  true),
   ('lancamento',    'preparacao',  'Preparação',            1, 60,  false),
@@ -311,6 +336,11 @@ insert into app.subetapas_modelo (fase, etapa, codigo, nome, ordem) values
   ('incorporacao',  'memorial',    'certidoes',              'Certidões',                   2),
   ('incorporacao',  'cartorio',    'prenotado',              'Prenotado',                   1),
   ('incorporacao',  'cartorio',    'exigencias',             'Exigências do Cartório',      2),
+  ('funding',       'fun_dossie', 'fun_dossie', 'Dossiê', 1),
+  ('funding',       'fun_viabilidade', 'fun_viabilidade', 'Viabilidade', 1),
+  ('funding',       'fun_comite', 'fun_comite', 'Comitê', 1),
+  ('funding',       'fun_contratacao', 'fun_contratacao', 'Contratação', 1),
+  ('funding',       'fun_legalizacao', 'fun_legalizacao', 'Legalização', 1),
   ('caixa',         'analise',     'engenharia',             'Engenharia',                  1),
   ('caixa',         'analise',     'juridico',               'Jurídico',                    2),
   ('caixa',         'analise',     'risco',                  'Risco',                       3),
@@ -342,26 +372,27 @@ insert into app.status_modelo (fase, status, nome, aprova_gestor, aprova_diretor
   ('novos_negocios','stand_by',   'Stand By',             false, false, 'sequencia'),
   ('aprovacao',     'concluido',  'Aprovado',             false, false, 'sequencia'),
   ('incorporacao',  'concluido',  'Incorporação registrada', false, false, 'sequencia'),
+  ('funding',       'concluido',  'Funding captado',      false, false, 'sequencia'),
   ('caixa',         'concluido',  'Contratado',           false, false, 'sequencia'),
   ('lancamento',    'concluido',  'Lançado',              false, false, 'sequencia'),
   ('obras',         'concluido',  'Obra entregue',        false, false, 'sequencia'),
   ('entregue',      'concluido',  'Garantia encerrada',   false, false, 'sequencia');
 insert into app.status_modelo (fase, status, nome)
-select f, s, n from unnest(array['aprovacao','incorporacao','caixa','lancamento','obras','entregue']) f,
+select f, s, n from unnest(array['aprovacao','incorporacao','funding','caixa','lancamento','obras','entregue']) f,
   (values ('descartado','Descartado'), ('stand_by','Stand By')) v(s, n)
 where f <> 'entregue' or s = 'stand_by';
 
 -- Documentos exigidos para SAIR da etapa. A diligência do imóvel corre no
 -- Contrato: só é comprado com certidões validadas e minuta.
-insert into app.checklist_modelo (fase, etapa, tipo_documento, obrigatorio, ordem) values
-  ('novos_negocios','contrato','matricula',          true,  1),
-  ('novos_negocios','contrato','onus_reais',         true,  2),
-  ('novos_negocios','contrato','iptu',               true,  3),
-  ('novos_negocios','contrato','certidoes_vendedor', true,  4),
-  ('novos_negocios','contrato','planialtimetrico',   true,  5),
-  ('novos_negocios','contrato','sondagem_spt',       false, 6),
-  ('novos_negocios','contrato','ambiental',          false, 7),
-  ('novos_negocios','contrato','minuta_promessa',    true,  8);
+insert into app.checklist_modelo (fase, etapa, tipo_documento, regra, ordem) values
+  ('novos_negocios','contrato','matricula',          'bloqueia',  1),
+  ('novos_negocios','contrato','onus_reais',         'bloqueia',  2),
+  ('novos_negocios','contrato','iptu',               'bloqueia',  3),
+  ('novos_negocios','contrato','certidoes_vendedor', 'bloqueia',  4),
+  ('novos_negocios','contrato','planialtimetrico',   'bloqueia',  5),
+  ('novos_negocios','contrato','sondagem_spt',       'livre', 6),
+  ('novos_negocios','contrato','ambiental',          'livre', 7),
+  ('novos_negocios','contrato','minuta_promessa',    'bloqueia',  8);
 
 insert into app.motivos_encerramento (status, codigo, nome, ordem, exige_texto) values
   ('descartado','tecnica',         'Inviabilidade Técnica',            1, false),
@@ -395,10 +426,10 @@ begin
   select new.id, fase, codigo, etapa, nome, ordem, prazo_dias, aprova_gestor, aprova_diretor, aprovacao_modo, ativo from app.subetapas_modelo where empresa_id is null;
   insert into app.status_modelo (empresa_id, fase, status, nome, aprova_gestor, aprova_diretor, aprovacao_modo)
   select new.id, fase, status, nome, aprova_gestor, aprova_diretor, aprovacao_modo from app.status_modelo where empresa_id is null;
-  insert into app.prerequisitos_modelo (empresa_id, fase, alvo_tipo, alvo, requisito)
-  select new.id, fase, alvo_tipo, alvo, requisito from app.prerequisitos_modelo where empresa_id is null;
-  insert into app.checklist_modelo (empresa_id, fase, etapa, tipo_documento, obrigatorio, ordem)
-  select new.id, fase, etapa, tipo_documento, obrigatorio, ordem from app.checklist_modelo where empresa_id is null;
+  insert into app.prerequisitos_modelo (empresa_id, fase, alvo_tipo, alvo, requisito, condicao, regra, regra_cond)
+  select new.id, fase, alvo_tipo, alvo, requisito, condicao, regra, regra_cond from app.prerequisitos_modelo where empresa_id is null;
+  insert into app.checklist_modelo (empresa_id, fase, etapa, tipo_documento, regra, ordem, condicao, regra_cond)
+  select new.id, fase, etapa, tipo_documento, regra, ordem, condicao, regra_cond from app.checklist_modelo where empresa_id is null;
   insert into app.motivos_encerramento (empresa_id, status, codigo, nome, ordem, exige_texto, ativo)
   select new.id, status, codigo, nome, ordem, exige_texto, ativo from app.motivos_encerramento where empresa_id is null;
   insert into app.zona_parametros (empresa_id, zoneamento_id, tipo, uso, macrozona, lote_area_min_m2, lote_area_max_m2, permitido,
@@ -412,8 +443,8 @@ begin
   from app.zona_parametros where empresa_id is null and ativo;
   -- tipos de notificação: ver notificacoes
   if to_regclass('app.tipos_notificacao') is not null then
-    execute 'insert into app.tipos_notificacao (empresa_id, codigo, nome, ativo, dias_antes_padrao)
-             select $1, codigo, nome, ativo, dias_antes_padrao from app.tipos_notificacao where empresa_id is null' using new.id;
+    execute 'insert into app.tipos_notificacao (empresa_id, codigo, nome, ativo, dias_antes_padrao, email_padrao)
+             select $1, codigo, nome, ativo, dias_antes_padrao, email_padrao from app.tipos_notificacao where empresa_id is null' using new.id;
   end if;
   -- lista de despesas do estudo de viabilidade: ver viabilidade
   if to_regclass('app.viabilidade_despesas') is not null then

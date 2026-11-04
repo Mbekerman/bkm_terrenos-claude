@@ -16,7 +16,7 @@ const clica=async(p,s)=>{await p.evaluate(s=>{const e=document.querySelector(s);
 const ficha=async(p,txt)=>{await nav(p,'terrenos');await p.evaluate(()=>{const b=document.querySelector('[data-a=fT][data-v=todos]');b&&b.click()});await p.waitForTimeout(100);await p.evaluate(t=>[...document.querySelectorAll('[data-a=abrir]')].find(x=>x.textContent.includes(t)).click(),txt);await p.waitForTimeout(400)};
 const txt=(p,s)=>p.evaluate(s=>[...document.querySelectorAll(s)].filter(x=>x.offsetParent).map(x=>x.textContent.trim().replace(/\s+/g,' ')).join(' | '),s);
 const ter=(p,nome)=>p.evaluate(n=>{const S=JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-v9'));return S.terrenos.find(t=>t.nome.includes(n))},nome);
-const bloco=async(p,k)=>{await p.evaluate(k=>{const b=document.querySelector(`[data-a=bloco][data-t=${k}]`);if(b.getAttribute('aria-expanded')!=='true')b.click()},k);await p.waitForTimeout(250)};
+const bloco=async(p,k)=>{await p.evaluate(k=>{const b=document.querySelector('.fi-abas [data-t='+({cadastro:'terreno',negociacao:'comercial',urbanismo:'parametros',fases:'jornada'}[k]||k)+']');if(b.getAttribute('aria-selected')!=='true')b.click()},k);await p.waitForTimeout(250)};
 const parte=(t,n)=>t.partes.find(x=>x.nome===n);
 const enviar=async(p,form)=>{await p.evaluate(f=>document.querySelector(`#modal form[data-form=${f}]`).requestSubmit(),form);await p.waitForTimeout(250)};
 const toast=p=>p.evaluate(()=>document.querySelector('#toast').textContent);
@@ -82,11 +82,14 @@ ok((t.procs||[]).some(x=>x.fase==='aprovacao'&&x.status==='ativo'),'a compra do 
 
 // parte nova divide a negociação; cadastro com coluna Parte
 await ficha(p,'Terreno Rua Itapura');await bloco(p,'negociacao');
-ok((await txt(p,'#sec-partes')).includes('Um só dono'),'sem partes: texto diz que é um dono só');
-for(const n of ['Espólio Ferraz','Dona Rosa']){await clica(p,'[data-a=pt-nova]');await p.fill('#pt-n',n);await enviar(p,'pt-parte')}
+ok(!(await p.$('#sec-partes')),'um dono só: sem o quadro de partes na negociação');
+await bloco(p,'cadastro');await clica(p,'[data-a=pt2-mais]');
+for(const [i,n] of [[0,'Espólio Ferraz'],[1,'Dona Rosa']]){await p.fill(`#sec-partes-cad .pt2 >> nth=${i} >> [data-k=nome]`,n);await p.press(`#sec-partes-cad .pt2 >> nth=${i} >> [data-k=nome]`,'Tab');await p.waitForTimeout(200)}
 t=await ter(p,'Rua Itapura');ok(t.partes.length===2&&t.partes.every(x=>x.neg&&x.neg.etapa==='negociacao'),'duas partes na Negociação: cada uma ganha a sua negociação');
+ok(t.partes.map(x=>x.nome).join()==='Espólio Ferraz,Dona Rosa','títulos das partes editados no cadastro');
 ok(t.partes[0].neg.codigo===t.neg.codigo+'-1','código da parte com o do terreno');
-await bloco(p,'cadastro');ok((await txt(p,'#sec-mats th, #sec-pessoas th')).includes('Parte'),'coluna Parte nas matrículas e nos donos');
+await bloco(p,'negociacao');ok(!!(await p.$('#sec-partes')),'com duas partes, a negociação mostra o quadro Partes');
+await bloco(p,'cadastro');ok((await txt(p,'#sec-pessoas th')).includes('Parte'),'coluna Parte nos donos');
 await p.selectOption('#sec-pessoas select[data-ch=pes-parte] >> nth=0',t.partes[0].id);await p.waitForTimeout(150);
 ok((await ter(p,'Rua Itapura')).pessoas[0].parte===t.partes[0].id,'dono ligado à parte');
 await nav(p,'negociacoes');ok((await txt(p,'.kcard')).includes('2 partes · 0 compradas'),'kanban mostra o resumo das partes');

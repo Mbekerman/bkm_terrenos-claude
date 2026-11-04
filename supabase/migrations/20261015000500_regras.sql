@@ -16,6 +16,17 @@ cross join app.itens_infraestrutura i
 left join app.terreno_infraestrutura ti on ti.terreno_id = t.id and ti.item = i.codigo
 where i.ativo;
 
+-- Viabilidades técnicas: todo serviço do catálogo para todo terreno; o que não foi registrado é "não solicitada".
+-- Vencida: retorno viável ou condicionado com a validade já passada.
+create view app.v_terreno_viabilidades_tecnicas with (security_invoker = true) as
+select t.id as terreno_id, t.empresa_id, i.codigo as servico, i.nome, i.ordem,
+       coalesce(v.situacao, 'nao_solicitada') as situacao, v.concessionaria, v.solicitada_em, v.emitida_em, v.validade, v.condicoes,
+       coalesce(v.situacao in ('viavel','condicionada') and v.validade < current_date, false) as vencida
+from app.terrenos t
+cross join app.itens_infraestrutura i
+left join app.terreno_viabilidades_tecnicas v on v.terreno_id = t.id and v.servico = i.codigo
+where i.ativo and i.viabilidade_tecnica;
+
 -- Inscrição com a revisão vigente do exercício mais recente.
 create view app.v_inscricoes with (security_invoker = true) as
 select ins.*, v.id as valor_id, v.exercicio, v.revisao, v.valor_venal_terreno, v.valor_venal_construcao, v.valor_venal_imovel,
@@ -86,11 +97,8 @@ where a.status = 'vigente';
 -- zonas da área (da maior para a menor), o maior CA de mercado e o potencial
 -- construtivo por tipo de empreendimento (nulo se algum pedaço não tem CA ou
 -- não admite o tipo).
--- Resumo da análise vigente; o potencial do tipo escolhido no terreno (tipo_empreendimento) vem à parte.
 create view app.v_urbanismo_vigente with (security_invoker = true) as
-select u.*, te.tipo_empreendimento,
-       case te.tipo_empreendimento when 'mercado' then u.potencial_mercado_m2 when 'his' then u.potencial_his_m2
-            when 'hmp' then u.potencial_hmp_m2 end as potencial_tipo_m2
+select u.*
 from (
 select l.terreno_id, l.empresa_id, l.analise_id, a.data_verificacao, a.fonte,
        (select string_agg(x.sigla, ' / ' order by x.area desc nulls last, x.sigla)
@@ -117,8 +125,7 @@ select l.terreno_id, l.empresa_id, l.analise_id, a.data_verificacao, a.fonte,
 from app.v_lote_zonas l
 join app.analises_urbanisticas a on a.id = l.analise_id
 group by l.terreno_id, l.empresa_id, l.analise_id, a.data_verificacao, a.fonte
-) u
-join app.terrenos te on te.id = u.terreno_id;
+) u;
 
 create view app.v_documentos with (security_invoker = true) as
 select d.*,
@@ -137,8 +144,37 @@ left join lateral (
   where x.documento_id = d.id order by versao desc limit 1
 ) v on true;
 
+-- A condição "Vale quando" vale para o terreno? (31/out/2026; as regras moram em
+-- app.avaliar_condicao, 001200). Sem condição, vale. Quem não vê o terreno não pergunta.
+create or replace function app.condicao_aplica(p_terreno uuid, p_cond jsonb)
+returns boolean language plpgsql stable security definer set search_path = '' as $$
+begin
+  if p_cond is null then return true; end if;
+  if auth.uid() is not null and not app.ve_terreno(p_terreno) then return null; end if;
+  return app.avaliar_condicao(p_terreno, p_cond);
+end $$;
+grant execute on function app.condicao_aplica(uuid, jsonb) to authenticated;
+
+-- Regra em branco de um item (jornada, 1/nov/2026): a primeira regra condicional
+-- cuja condição vale para o terreno decide; nenhuma vale (ou não há) = a regra única.
+create or replace function app._regra_branco(p_terreno uuid, p_regra text, p_cond jsonb)
+returns text language plpgsql stable security definer set search_path = '' as $$
+declare e jsonb;
+begin
+  if p_cond is not null and jsonb_typeof(p_cond) = 'array' then
+    for e in select * from jsonb_array_elements(p_cond) loop
+      if app.avaliar_condicao(p_terreno, e->'condicao') then return e->>'regra'; end if;
+    end loop;
+  end if;
+  return p_regra;
+end $$;
+revoke all on function app._regra_branco(uuid, text, jsonb) from public;
+
+-- aplica: a condição do documento vale para o terreno agora (sem condição, sempre)
 create view app.v_checklist with (security_invoker = true) as
-select p.id as processo_id, p.empresa_id, c.etapa, c.tipo_documento, c.obrigatorio, c.ordem,
+select p.id as processo_id, p.empresa_id, c.etapa, c.tipo_documento, c.obrigatorio, c.regra, c.ordem, c.condicao, c.regra_cond,
+       app._regra_branco(p.terreno_id, c.regra, c.regra_cond) as regra_efetiva,
+       coalesce(app.condicao_aplica(p.terreno_id, c.condicao), false) as aplica,
        td.nome as tipo_nome, td.validade_dias,
        em.ordem <= ea.ordem as ativo,
        d.id as documento_id, d.emitido_em, d.valido_ate, d.versao_atual, d.nome_arquivo, d.storage_path,
@@ -195,7 +231,9 @@ select t.id, t.empresa_id, t.codigo, t.nome, t.situacao_cadastral, t.prioridade,
        coalesce(vb.margem_pct < vc.margem_minima_pct, false) as abaixo_margem_min,
        u.zoneamentos, u.ca_maximo,
        nt.titulo as proxima_tarefa, nt.prazo as proxima_tarefa_prazo,
-       (select count(*) from app.tarefas k where k.terreno_id = t.id and k.status not in ('concluida','cancelada') and k.prazo < current_date) as tarefas_atrasadas,
+       (select count(*) from fluxo.tarefas k join fluxo.quadros q on q.id = k.quadro_id where q.objeto_tipo = 'terreno' and q.objeto_id = t.id
+          and k.concluida_em is null and k.arquivada_em is null and k.prazo < current_date
+          and not exists (select 1 from fluxo.listas l where l.id = k.lista_id and l.tipo = 'pausa')) as tarefas_atrasadas,
        (select count(*) from app.v_documentos d where d.terreno_id = t.id and d.processo_id = p.id and d.situacao_efetiva = 'vencido') as docs_vencidos,
        (select count(*) from app.diligencias g where g.terreno_id = t.id and g.situacao not in ('resolvida')) as diligencias_abertas,
        (select count(*) from app.diligencias g where g.terreno_id = t.id and g.situacao = 'impeditiva') as diligencias_impeditivas,
@@ -258,8 +296,9 @@ left join app.viabilidades vb on vb.id = pn.viabilidade_id
 left join app.viabilidade_config vc on vc.empresa_id = t.empresa_id
 left join app.v_urbanismo_vigente u on u.terreno_id = t.id
 left join lateral (
-  select titulo, prazo from app.tarefas k where k.terreno_id = t.id and k.status not in ('concluida','cancelada')
-  order by prazo, prazo_hora nulls last limit 1
+  select k.titulo, k.prazo from fluxo.tarefas k join fluxo.quadros q on q.id = k.quadro_id
+  where q.objeto_tipo = 'terreno' and q.objeto_id = t.id and k.concluida_em is null and k.arquivada_em is null and k.prazo is not null
+  order by k.prazo, k.prazo_hora nulls last limit 1
 ) nt on true;
 
 -- Distância em linha reta (haversine). Rota de verdade é com o serviço de mapas.
@@ -284,8 +323,9 @@ from app.v_terrenos v
 join app.terrenos t on t.id = v.id
 where v.situacao_cadastral = 'ativo';
 
--- Todos os pontos de interesse da empresa para cada terreno localizado: linha reta
--- sempre; a pé e de carro quando medidos para a coordenada atual do terreno.
+-- Todos os pontos de interesse da empresa para cada terreno localizado, menos os
+-- excluídos daquele terreno: linha reta sempre; a pé (a ficha mostra só a pé, decisão
+-- do Moisés de 4/nov/2026) e de carro quando medidos para a coordenada atual do terreno.
 create view app.v_terreno_pontos with (security_invoker = true) as
 select t.id as terreno_id, t.empresa_id, p.id as ponto_id, p.nome, p.categoria, p.latitude, p.longitude,
        app.distancia_km(t.latitude, t.longitude, p.latitude, p.longitude) as distancia_km,
@@ -298,7 +338,8 @@ from app.terrenos t
 join app.pontos_interesse p on p.empresa_id = t.empresa_id and p.ativo
 left join app.terreno_ponto_distancias d on d.terreno_id = t.id and d.ponto_id = p.id
 cross join lateral (select d.terreno_id is not null and d.latitude = t.latitude and d.longitude = t.longitude as em_dia) x
-where t.latitude is not null;
+where t.latitude is not null
+  and not exists (select 1 from app.terreno_pontos_excluidos e where e.terreno_id = t.id and e.ponto_id = p.id);
 
 -- Entorno do terreno (Google), com o aviso de busca feita para outra coordenada.
 -- Lugares excluídos neste terreno não aparecem (a lista deles sai de terreno_entorno.excluido_em).
@@ -322,12 +363,13 @@ from app.terrenos t
 left join app.terreno_entorno_buscas b on b.terreno_id = t.id
 where t.latitude is not null;
 
--- Quadro de tarefas: tarefa com o terreno e o atraso calculado.
+-- Tarefas dos quadros dos terrenos: o cartão (fluxo.v_tarefas, com lista,
+-- atraso e checklist) com o código e o nome do terreno.
 create view app.v_tarefas with (security_invoker = true) as
-select k.*, t.codigo as terreno_codigo, t.nome as terreno_nome,
-       (k.status not in ('concluida','cancelada') and k.prazo < current_date) as atrasada
-from app.tarefas k
-join app.terrenos t on t.id = k.terreno_id;
+select k.*, t.id as terreno_id, t.codigo as terreno_codigo, t.nome as terreno_nome
+from fluxo.v_tarefas k
+join app.terrenos t on t.id = k.objeto_id
+where k.objeto_tipo = 'terreno';
 
 -- Períodos do processo, lidos só do histórico: cada transição que muda a
 -- posição ou o status abre um período que dura até a seguinte. Stand by
@@ -382,6 +424,7 @@ left join app.membros mp on mp.empresa_id = a.empresa_id and mp.user_id = a.pedi
 left join app.membros mv on mv.empresa_id = a.empresa_id and mv.user_id = a.aprovador_previsto
 left join app.membros md on md.empresa_id = a.empresa_id and md.user_id = a.decidido_por;
 
+grant select on app.v_terreno_viabilidades_tecnicas to authenticated;
 grant select on app.v_terreno_infraestrutura, app.v_inscricoes, app.v_urbanismo_vigente, app.v_lote_zonas,
                 app.v_documentos, app.v_checklist, app.v_reunioes, app.v_terrenos,
                 app.v_mapa, app.v_terreno_pontos, app.v_tarefas, app.v_terreno_entorno, app.v_entorno_buscas,
@@ -492,6 +535,7 @@ begin
   end if;
   insert into app.processo_transicoes (empresa_id, processo_id, evento, para_etapa, para_subetapa, comentario)
   values (t.empresa_id, v_id, 'abertura', v_etapa, v_sub, p_comentario);
+  perform app._tarefas_ao_entrar(v_id, 'etapa', v_etapa);
   return v_id;
 end $$;
 
@@ -542,7 +586,7 @@ begin
                and exists (select 1 from app.fase_dependencias d where d.empresa_id = fm.empresa_id and d.fase = fm.codigo)
                and not exists (select 1 from app.processos p where p.terreno_id = t.id and p.fase = fm.codigo and p.parte_id is null)
              order by fm.ordem loop
-      if not exists (select 1 from jsonb_array_elements(app._dependencias_fase(t.id, f.codigo)) i where not (i->>'ok')::boolean) then
+      if not exists (select 1 from jsonb_array_elements(app._dependencias_fase(t.id, f.codigo)) i where (i->>'ok')::boolean is not true) then
         perform app._abrir_processo(t, f.codigo, 'Fase aberta: dependências cumpridas');
         abriu := true;
       end if;
@@ -567,7 +611,7 @@ begin
   end if;
   if p_fase = app._fase_entrada(t.empresa_id) then return app.abrir_negociacao(t.id); end if;
   pend := app._dependencias_fase(t.id, p_fase);
-  if exists (select 1 from jsonb_array_elements(pend) i where not (i->>'ok')::boolean) then
+  if exists (select 1 from jsonb_array_elements(pend) i where (i->>'ok')::boolean is not true) then
     if not coalesce(p_forcar, false) then
       raise exception 'Ainda há dependências para abrir esta fase' using errcode = '22023', detail = pend::text;
     end if;
@@ -770,9 +814,10 @@ begin
   -- (negociação do terreno dividida em partes: o checklist é de cada parte)
   if ((p_destino_tipo = 'etapa' and ordem_destino > ordem_atual) or (p_destino_tipo = 'status' and p_destino = 'concluido'))
      and not app._tem_partes(p.id) then
-    for r in select c.tipo_nome, c.situacao from app.v_checklist c
-             where c.processo_id = p.id and c.etapa = p.etapa_atual and c.obrigatorio order by c.ordem loop
-      itens := itens || jsonb_build_object('ok', r.situacao = 'validado', 'tipo', 'documento', 'bloqueio_gestor', false,
+    for r in select c.tipo_nome, c.situacao, c.condicao, c.regra_efetiva from app.v_checklist c
+             where c.processo_id = p.id and c.etapa = p.etapa_atual and c.regra_efetiva <> 'livre' and c.aplica order by c.ordem loop
+      itens := itens || jsonb_build_object('ok', r.situacao = 'validado', 'tipo', 'documento', 'bloqueio_gestor', false, 'condicao', r.condicao,
+        'justifica', r.regra_efetiva = 'justifica',
         'texto', r.tipo_nome || case r.situacao when 'validado' then ' validado' when 'pendente' then ': não enviado'
                                                 when 'recebido' then ': aguardando validação' when 'vencido' then ': vencido' else ': rejeitado' end);
     end loop;
@@ -788,7 +833,7 @@ begin
       for r in select tp.nome, c.status from app.terreno_partes tp
                left join app.processos c on c.parte_id = tp.id and c.principal_id = p.id
                where tp.terreno_id = p.terreno_id and tp.ativa order by tp.criado_em, tp.nome loop
-        itens := itens || jsonb_build_object('ok', r.status = 'concluido', 'tipo', 'parte', 'bloqueio_gestor', true,
+        itens := itens || jsonb_build_object('ok', coalesce(r.status = 'concluido', false), 'tipo', 'parte', 'bloqueio_gestor', true,
           'texto', 'Parte ' || r.nome || case r.status when 'concluido' then ': comprada'
                                                        when 'perdido' then ': perdida (tire a parte do terreno ou encerre a negociação)'
                                                        when 'descartado' then ': descartada (tire a parte do terreno ou encerre a negociação)'
@@ -802,21 +847,37 @@ begin
   -- pré-requisitos (só para frente: voltar de etapa não exige nada)
   if p_destino_tipo = 'etapa' and ordem_destino > ordem_atual then
     v_sub_inicial := app._subetapa_inicial(p.empresa_id, p.fase, p_destino);
-    for r in select distinct pr.requisito, s.nome from app.prerequisitos_modelo pr
+    -- pré-requisito com condição só conta quando ela vale para o terreno
+    for r in select pr.requisito, s.nome, (array_agg(pr.condicao))[1] as condicao, bool_and(app._regra_branco(p.terreno_id, pr.regra, pr.regra_cond) = 'justifica') as justifica from app.prerequisitos_modelo pr
              join app.subetapas_modelo s on s.empresa_id = pr.empresa_id and s.fase = pr.fase and s.codigo = pr.requisito
              where pr.empresa_id = p.empresa_id and pr.fase = p.fase
-               and ((pr.alvo_tipo = 'etapa' and pr.alvo = p_destino) or (pr.alvo_tipo = 'subetapa' and pr.alvo = v_sub_inicial)) loop
+               and ((pr.alvo_tipo = 'etapa' and pr.alvo = p_destino) or (pr.alvo_tipo = 'subetapa' and pr.alvo = v_sub_inicial))
+               and app.avaliar_condicao(p.terreno_id, pr.condicao) and app._regra_branco(p.terreno_id, pr.regra, pr.regra_cond) <> 'livre'
+             group by pr.requisito, s.nome, s.ordem order by s.ordem loop
       itens := itens || jsonb_build_object('ok', app._passou_por(p.id, r.requisito), 'tipo', 'prerequisito', 'bloqueio_gestor', false,
-        'requisito', r.requisito, 'texto', 'Passar por ' || r.nome);
+        'requisito', r.requisito, 'texto', 'Passar por ' || r.nome, 'condicao', r.condicao, 'justifica', r.justifica);
     end loop;
   elsif p_destino_tipo = 'subetapa' then
-    for r in select pr.requisito, s.nome from app.prerequisitos_modelo pr
+    for r in select pr.requisito, s.nome, pr.condicao, app._regra_branco(p.terreno_id, pr.regra, pr.regra_cond) = 'justifica' as justifica from app.prerequisitos_modelo pr
              join app.subetapas_modelo s on s.empresa_id = pr.empresa_id and s.fase = pr.fase and s.codigo = pr.requisito
-             where pr.empresa_id = p.empresa_id and pr.fase = p.fase and pr.alvo_tipo = 'subetapa' and pr.alvo = p_destino loop
+             where pr.empresa_id = p.empresa_id and pr.fase = p.fase and pr.alvo_tipo = 'subetapa' and pr.alvo = p_destino
+               and app.avaliar_condicao(p.terreno_id, pr.condicao) and app._regra_branco(p.terreno_id, pr.regra, pr.regra_cond) <> 'livre' loop
       itens := itens || jsonb_build_object('ok', app._passou_por(p.id, r.requisito), 'tipo', 'prerequisito', 'bloqueio_gestor', false,
-        'requisito', r.requisito, 'texto', 'Passar por ' || r.nome);
+        'requisito', r.requisito, 'texto', 'Passar por ' || r.nome, 'condicao', r.condicao, 'justifica', r.justifica);
     end loop;
   end if;
+
+  -- tarefas da etapa que travam a saída (lote B, 31/out/2026; ver app._tarefas_travando, 001300):
+  -- sair da etapa para frente ou concluir a fase, ou sair da subetapa para frente
+  if (p_destino_tipo = 'etapa' and ordem_destino > ordem_atual) or (p_destino_tipo = 'status' and p_destino = 'concluido') then
+    itens := itens || app._tarefas_travando(p, 'etapa');
+  elsif p_destino_tipo = 'subetapa' and app._ordem_subetapa(p.empresa_id, p.fase, p_destino) > app._ordem_subetapa(p.empresa_id, p.fase, p.subetapa_atual) then
+    itens := itens || app._tarefas_travando(p, 'subetapa');
+  end if;
+
+  -- jornada (1/nov/2026; ver 001400): perguntas e campos da etapa ou das subetapas deixadas,
+  -- e as regras pelo valor que travam (bloqueia) ou só avisam (avisa)
+  itens := itens || app._jornada_pendencias(p, p_destino_tipo, p_destino);
   return itens;
 end $$;
 
@@ -847,6 +908,9 @@ begin
     g := coalesce(r.aprova_gestor, false); d := coalesce(r.aprova_diretor, false); modo := coalesce(r.aprovacao_modo, 'sequencia');
   end if;
 
+  -- regra da jornada pelo valor da resposta que pede aprovação (1/nov/2026)
+  g := g or app._jornada_pede(p, p_destino_tipo, p_destino, 'gestor');
+  d := d or app._jornada_pede(p, p_destino_tipo, p_destino, 'diretor');
   select app.nivel_papel(papel) into nivel_ator from app.membros where empresa_id = p.empresa_id and user_id = p_ator;
   if g and coalesce(nivel_ator, 0) < 2 then niveis := niveis || '"gestor"'::jsonb; end if;
   if d and coalesce(nivel_ator, 0) < 3 then niveis := niveis || '"diretor"'::jsonb; end if;
@@ -901,15 +965,20 @@ begin
     select ordem into ordem_atual from app.etapas_modelo where empresa_id = p.empresa_id and fase = p.fase and codigo = p.etapa_atual;
     select ordem into ordem_destino from app.etapas_modelo where empresa_id = p.empresa_id and fase = p.fase and codigo = p_destino;
     v_sub := app._subetapa_inicial(p.empresa_id, p.fase, p_destino);
+    -- voltar de etapa: as tarefas das etapas deixadas para trás (lote B)
+    if ordem_destino < ordem_atual then perform app._tarefas_ao_voltar(p.id, ordem_destino); end if;
     update app.processos set etapa_atual = p_destino, etapa_desde = now(), subetapa_atual = v_sub, subetapa_desde = now() where id = p.id;
     insert into app.processo_transicoes (empresa_id, processo_id, evento, de_etapa, para_etapa, de_subetapa, para_subetapa, forcado, comentario, aprovacao_id, user_id)
     values (p.empresa_id, p.id, case when ordem_destino > ordem_atual then 'avanco' else 'retorno' end,
             p.etapa_atual, p_destino, p.subetapa_atual, v_sub, coalesce(p_forcado, false), p_comentario, p_aprovacao, coalesce(p_por, auth.uid()));
+    -- entrar na etapa (e na subetapa inicial): tarefas da etapa e gatilho das automações
+    perform app._tarefas_ao_entrar(p.id, 'etapa', p_destino);
   elsif p_destino_tipo = 'subetapa' then
     update app.processos set subetapa_atual = p_destino, subetapa_desde = now() where id = p.id;
     insert into app.processo_transicoes (empresa_id, processo_id, evento, de_etapa, para_etapa, de_subetapa, para_subetapa, forcado, comentario, aprovacao_id, user_id)
     values (p.empresa_id, p.id, 'subetapa', p.etapa_atual, p.etapa_atual, p.subetapa_atual, p_destino,
             coalesce(p_forcado, false), p_comentario, p_aprovacao, coalesce(p_por, auth.uid()));
+    perform app._tarefas_ao_entrar(p.id, 'subetapa', p_destino);
   else
     update app.processos set status = p_destino,
            motivo_encerramento  = p_dados->>'motivo',
@@ -927,6 +996,8 @@ begin
               p_comentario), ''),
             p_aprovacao, coalesce(p_por, auth.uid()));
     if p_destino = 'stand_by' then perform app._lembretes_padrao(p.empresa_id, 'processos', p.id, 'stand_by_retomar'); end if;
+    -- Stand By pausa as tarefas da fase; Perdido e Descartado arquivam, se pedido (lote B)
+    perform app._tarefas_ao_encerrar(p.id, p_destino, p_dados);
     if p.parte_id is null and p_destino in ('perdido','descartado','stand_by') then perform app._encerrar_partes(p, p_destino, p_dados); end if;
   end if;
   if p.parte_id is not null then
@@ -987,12 +1058,15 @@ begin
   perform app._conferir_movimento(p, p_destino_tipo, p_destino);
 
   pend := app._pendencias(p, p_destino_tipo, p_destino);
-  if exists (select 1 from jsonb_array_elements(pend) i where not (i->>'ok')::boolean) then
+  if exists (select 1 from jsonb_array_elements(pend) i where (i->>'ok')::boolean is not true) then
     if not coalesce(p_forcar, false) then
       raise exception 'Ainda há pendências para avançar' using errcode = '22023', detail = pend::text;
     end if;
-    if not app.eh_gestor(p.empresa_id)
-       or exists (select 1 from jsonb_array_elements(pend) i where not (i->>'ok')::boolean and (i->>'bloqueio_gestor')::boolean) then
+    -- só pendências "avança com justificativa" (jornada): qualquer editor passa justificando;
+    -- as demais, só gestor e diretor (e nem eles com bloqueio_gestor)
+    if exists (select 1 from jsonb_array_elements(pend) i where (i->>'ok')::boolean is not true and not coalesce((i->>'justifica')::boolean, false))
+       and (not app.eh_gestor(p.empresa_id)
+            or exists (select 1 from jsonb_array_elements(pend) i where (i->>'ok')::boolean is not true and (i->>'bloqueio_gestor')::boolean)) then
       raise exception 'Você não pode forçar este avanço' using errcode = '42501';
     end if;
     if coalesce(trim(p_comentario), '') = '' then raise exception 'Justifique o avanço forçado' using errcode = '22023'; end if;
@@ -1069,10 +1143,13 @@ begin
 
   return jsonb_build_object(
     'proxima', v_destino, 'proxima_tipo', v_tipo, 'proxima_nome', v_nome,
-    'ok', not exists (select 1 from jsonb_array_elements(itens) i where not (i->>'ok')::boolean),
+    'ok', not exists (select 1 from jsonb_array_elements(itens) i where (i->>'ok')::boolean is not true),
     'pode_forcar', gestor
-      and exists (select 1 from jsonb_array_elements(itens) i where not (i->>'ok')::boolean)
-      and not exists (select 1 from jsonb_array_elements(itens) i where not (i->>'ok')::boolean and (i->>'bloqueio_gestor')::boolean),
+      and exists (select 1 from jsonb_array_elements(itens) i where (i->>'ok')::boolean is not true)
+      and not exists (select 1 from jsonb_array_elements(itens) i where (i->>'ok')::boolean is not true and (i->>'bloqueio_gestor')::boolean),
+    -- só faltam itens "avança com justificativa": qualquer editor passa justificando
+    'pode_justificar', exists (select 1 from jsonb_array_elements(itens) i where (i->>'ok')::boolean is not true)
+      and not exists (select 1 from jsonb_array_elements(itens) i where (i->>'ok')::boolean is not true and not coalesce((i->>'justifica')::boolean, false)),
     'itens', itens,
     'aprovacoes', aprov->'niveis', 'aprovacao_modo', aprov->>'modo',
     'pedido', ped);
@@ -1157,9 +1234,10 @@ end $$;
 -- descartado ou stand by, se o status existe na fase (status_modelo). O
 -- processo guarda a etapa e a subetapa em que estava. Concluir só na última
 -- etapa e conforme a aprovação configurada em status_modelo.
+-- p_tarefas (Perdido e Descartado): 'arquivar' (padrão) as tarefas abertas da fase ou 'manter'.
 create or replace function app.encerrar_processo(
   p_processo uuid, p_status text, p_motivo text default null, p_detalhe text default null, p_retomar_em date default null,
-  p_pontos_sucesso text default null, p_forcar boolean default false, p_comentario text default null)
+  p_pontos_sucesso text default null, p_forcar boolean default false, p_comentario text default null, p_tarefas text default null)
 returns jsonb
 language plpgsql security definer set search_path = ''
 as $$
@@ -1196,9 +1274,13 @@ begin
   elsif p_retomar_em is not null then
     raise exception 'Data de retomada só para Stand By' using errcode = '22023';
   end if;
+  if p_tarefas is not null and (p_status not in ('perdido','descartado') or p_tarefas not in ('arquivar','manter')) then
+    raise exception 'Arquivar ou manter as tarefas só em Perdido e Descartado' using errcode = '22023';
+  end if;
   return app._passagem(p.id, 'status', p_status, p_forcar, p_comentario,
     jsonb_strip_nulls(jsonb_build_object('motivo', p_motivo, 'detalhe', nullif(trim(p_detalhe), ''),
-                                         'pontos_sucesso', nullif(trim(p_pontos_sucesso), ''), 'retomar_em', p_retomar_em)));
+                                         'pontos_sucesso', nullif(trim(p_pontos_sucesso), ''), 'retomar_em', p_retomar_em,
+                                         'tarefas', p_tarefas)));
 end $$;
 
 -- Volta para Ativo na mesma etapa e subetapa. O tempo parado não conta na
@@ -1222,9 +1304,13 @@ begin
          etapa_desde = etapa_desde + parado, subetapa_desde = subetapa_desde + parado where id = p.id;
   insert into app.processo_transicoes (empresa_id, processo_id, evento, de_etapa, para_etapa, de_subetapa, para_subetapa)
   values (p.empresa_id, p.id, 'retomada', p.etapa_atual, p.etapa_atual, p.subetapa_atual, p.subetapa_atual);
+  -- as tarefas que o Stand By pausou voltam, com os prazos andando os dias parados (lote B)
+  perform app._tarefas_ao_retomar(p.id);
   -- retomar o terreno retoma as partes paradas; retomar uma parte acerta o terreno
   if p.parte_id is null then
     perform app.retomar_processo(c.id) from app.processos c where c.principal_id = p.id and c.status = 'stand_by';
+    -- parte cadastrada durante o Stand By ganha a negociação dela agora (revisão de 2/nov/2026)
+    perform app._abrir_negociacoes_partes(p.id);
   else
     perform app._sincronizar_principal(p.principal_id);
   end if;
@@ -1280,7 +1366,7 @@ begin
   if p.status <> 'ativo' then raise exception 'O processo desta fase não está mais ativo' using errcode = '22023'; end if;
   if not coalesce((a.dados->>'forcado')::boolean, false) then
     pend := app._pendencias(p, a.destino_tipo, a.destino);
-    if exists (select 1 from jsonb_array_elements(pend) i where not (i->>'ok')::boolean) then
+    if exists (select 1 from jsonb_array_elements(pend) i where (i->>'ok')::boolean is not true) then
       raise exception 'Surgiram pendências desde o pedido: recuse e peça de novo' using errcode = '22023', detail = pend::text;
     end if;
   end if;
@@ -1371,6 +1457,12 @@ begin
   values (p.empresa_id, p.id,
           case when ordem_nova > ordem_atual then 'avanco' when ordem_nova < ordem_atual then 'retorno' else 'subetapa' end,
           p.etapa_atual, v_etapa, p.subetapa_atual, v_sub, 'Pelas negociações das partes');
+  -- as tarefas da etapa acompanham, como numa passagem à mão (revisão de 2/nov/2026)
+  if ordem_nova > ordem_atual then perform app._tarefas_ao_entrar(p.id, 'etapa', v_etapa);
+  elsif ordem_nova < ordem_atual then perform app._tarefas_ao_voltar(p.id, ordem_nova);
+  elsif app._ordem_subetapa(p.empresa_id, p.fase, v_sub) > app._ordem_subetapa(p.empresa_id, p.fase, p.subetapa_atual) then
+    perform app._tarefas_ao_entrar(p.id, 'subetapa', v_sub);
+  end if;
   perform app._abrir_fases_liberadas(p.terreno_id);
 end $$;
 
@@ -1421,7 +1513,14 @@ begin
   select * into t from app.terrenos where id = p_terreno for update;
   if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
   perform app.exigir_editor(t.empresa_id);
-  perform app._chaves_permitidas(p_dados, array['nome','essencial','poligono','area_m2','observacoes']);
+  perform app._chaves_permitidas(p_dados, array['nome','essencial','poligono','area_m2','observacoes','pessoa_nome','telefone','email','documento']);
+  -- contato da parte: confere e normaliza antes de gravar (vazio apaga)
+  if p_dados ? 'telefone' then p_dados := jsonb_set(p_dados, '{telefone}', coalesce(to_jsonb(fluxo.validar_formato('telefone', p_dados->>'telefone')), 'null')); end if;
+  if p_dados ? 'email' then p_dados := jsonb_set(p_dados, '{email}', coalesce(to_jsonb(fluxo.validar_formato('email', p_dados->>'email')), 'null')); end if;
+  if p_dados ? 'documento' then
+    p_dados := jsonb_set(p_dados, '{documento}', coalesce(to_jsonb(fluxo.validar_formato(
+      case when length(regexp_replace(coalesce(p_dados->>'documento', ''), '\D', '', 'g')) > 11 then 'cnpj' else 'cpf' end, p_dados->>'documento')), 'null'));
+  end if;
   v_poli := case when jsonb_typeof(p_dados->'poligono') = 'object' then p_dados->'poligono' end;
   if v_poli is not null then
     if not app.geojson_poligono_valido(v_poli) then raise exception 'Poligonal da parte inválida' using errcode = '22023'; end if;
@@ -1435,9 +1534,11 @@ begin
     if (p_dados->>'essencial')::boolean is false and not app.eh_gestor(t.empresa_id) then
       raise exception 'Só gestor ou diretor marca uma parte como dispensável' using errcode = '42501';
     end if;
-    insert into app.terreno_partes (empresa_id, terreno_id, nome, essencial, poligono_geojson, area_m2, observacoes)
+    insert into app.terreno_partes (empresa_id, terreno_id, nome, essencial, poligono_geojson, area_m2, observacoes,
+                                    pessoa_nome, telefone, email, documento)
     values (t.empresa_id, t.id, trim(p_dados->>'nome'), coalesce((p_dados->>'essencial')::boolean, true), v_poli,
-            (p_dados->>'area_m2')::numeric, nullif(trim(p_dados->>'observacoes'), ''))
+            (p_dados->>'area_m2')::numeric, nullif(trim(p_dados->>'observacoes'), ''),
+            nullif(trim(p_dados->>'pessoa_nome'), ''), p_dados->>'telefone', p_dados->>'email', p_dados->>'documento')
     returning id into v_id;
     -- negociação do terreno já na etapa da divisão: a parte nova ganha a sua
     select id into v_principal from app.processos
@@ -1456,7 +1557,11 @@ begin
     essencial        = coalesce((p_dados->>'essencial')::boolean, essencial),
     poligono_geojson = case when p_dados ? 'poligono' then v_poli else poligono_geojson end,
     area_m2          = case when p_dados ? 'area_m2' then (p_dados->>'area_m2')::numeric else area_m2 end,
-    observacoes      = case when p_dados ? 'observacoes' then nullif(trim(p_dados->>'observacoes'), '') else observacoes end
+    observacoes      = case when p_dados ? 'observacoes' then nullif(trim(p_dados->>'observacoes'), '') else observacoes end,
+    pessoa_nome      = case when p_dados ? 'pessoa_nome' then nullif(trim(p_dados->>'pessoa_nome'), '') else pessoa_nome end,
+    telefone         = case when p_dados ? 'telefone' then p_dados->>'telefone' else telefone end,
+    email            = case when p_dados ? 'email' then p_dados->>'email' else email end,
+    documento        = case when p_dados ? 'documento' then p_dados->>'documento' else documento end
   where id = tp.id;
   return tp.id;
 end $$;
@@ -1485,10 +1590,194 @@ begin
   if exists (select 1 from app.processos where parte_id = tp.id and status = 'concluido') then
     raise exception 'Esta parte já foi comprada' using errcode = '22023';
   end if;
+  perform app._parte_pode_sair(tp);
   update app.terreno_partes set ativa = false, removida_em = now(), motivo_remocao = trim(p_motivo) where id = tp.id;
   for v_principal in select distinct principal_id from app.processos where parte_id = tp.id and principal_id is not null loop
     perform app._sincronizar_principal(v_principal);
   end loop;
+end $$;
+
+-- A parte sai do terreno sem deixar lote sem dono, e o terreno fica sempre com uma parte.
+create or replace function app._parte_pode_sair(tp app.terreno_partes)
+returns void
+language plpgsql stable security definer set search_path = ''
+as $$
+begin
+  if exists (select 1 from app.terreno_lotes where parte_id = tp.id) then
+    raise exception 'A parte % tem lotes: passe os lotes para outra parte antes', tp.nome using errcode = '22023';
+  end if;
+  if not exists (select 1 from app.terreno_partes where terreno_id = tp.terreno_id and ativa and id <> tp.id) then
+    raise exception 'O terreno precisa de pelo menos uma parte' using errcode = '22023';
+  end if;
+end $$;
+
+-- Exclui a parte cadastrada por engano: só a que não tem nada ligado a ela (lote, matrícula,
+-- inscrição, pessoa, corretor, oferta ou negociação). A que tem história sai por remover_parte.
+create or replace function app.excluir_parte(p_parte uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare tp app.terreno_partes;
+begin
+  select * into tp from app.terreno_partes where id = p_parte for update;
+  if not found then raise exception 'Parte não encontrada' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(tp.empresa_id);
+  perform app._parte_pode_sair(tp);
+  if exists (select 1 from app.matriculas where parte_id = tp.id) or exists (select 1 from app.inscricoes_municipais where parte_id = tp.id)
+     or exists (select 1 from app.terreno_pessoas where parte_id = tp.id) or exists (select 1 from app.parte_corretores where parte_id = tp.id)
+     or exists (select 1 from app.oferta_partes where parte_id = tp.id) or exists (select 1 from app.processos where parte_id = tp.id) then
+    raise exception 'A parte % já tem histórico: tire-a do terreno com um motivo', tp.nome using errcode = '22023';
+  end if;
+  delete from app.terreno_partes where id = tp.id;
+end $$;
+
+-- A parte da matrícula e das inscrições vem do lote. O SQL que está em lotes de partes
+-- diferentes fica sem parte (é dividido).
+create or replace function app._sincronizar_partes_lote(p_terreno uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  update app.matriculas m set parte_id = l.parte_id
+    from app.terreno_lotes l where l.matricula_id = m.id and l.terreno_id = p_terreno and m.parte_id is distinct from l.parte_id;
+  update app.inscricoes_municipais i set parte_id = x.parte_id
+    from (select li.inscricao_id, case when count(distinct l.parte_id) = 1 then (array_agg(l.parte_id))[1] end as parte_id
+            from app.lote_inscricoes li join app.terreno_lotes l on l.id = li.lote_id
+           where l.terreno_id = p_terreno group by li.inscricao_id) x
+   where i.id = x.inscricao_id and i.parte_id is distinct from x.parte_id;
+  -- SQL do mapa da prefeitura que ficou sem lote volta a ficar solto, sem parte
+  update app.inscricoes_municipais i set parte_id = null
+   where i.terreno_id = p_terreno and i.origem = 'mapa_prefeitura' and i.parte_id is not null
+     and not exists (select 1 from app.lote_inscricoes li where li.inscricao_id = i.id);
+end $$;
+
+-- Cadastra ou altera um lote. p_dados: titulo, parte_id, matricula {numero, cartorio,
+-- area_registrada_m2, data_certidao} (null tira a matrícula), inscricoes [ids das inscrições do
+-- terreno, na ordem], area_fonte, area_informada_m2. Lote novo: título "Lote N", a primeira
+-- parte e o cartório do terreno na matrícula, quando não informados.
+create or replace function app.salvar_lote(p_terreno uuid, p_lote uuid, p_dados jsonb)
+returns uuid
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos; l app.terreno_lotes; v_id uuid; v_parte uuid; v_mat uuid; v_mat_velha uuid; m jsonb; v_cri text; v_num text;
+        v_tit text; v_n int; v_ins text; v_ord int := 0; v_outro uuid;
+begin
+  select * into t from app.terrenos where id = p_terreno for update;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  perform app._chaves_permitidas(p_dados, array['titulo','parte_id','matricula','inscricoes','area_fonte','area_informada_m2']);
+  if p_lote is not null then
+    select * into l from app.terreno_lotes where id = p_lote and terreno_id = t.id for update;
+    if not found then raise exception 'Lote não encontrado' using errcode = 'P0002'; end if;
+  end if;
+  v_parte := coalesce(nullif(p_dados->>'parte_id', '')::uuid, l.parte_id,
+                      (select id from app.terreno_partes where terreno_id = t.id and ativa order by criado_em, id limit 1));
+  if not exists (select 1 from app.terreno_partes where id = v_parte and terreno_id = t.id and ativa) then
+    raise exception 'A parte não é deste terreno ou já saiu dele' using errcode = '23514';
+  end if;
+  -- título: o digitado, sem repetir no terreno; lote novo sem título vira o próximo "Lote N"
+  v_tit := nullif(trim(p_dados->>'titulo'), '');
+  if v_tit is null and p_lote is null then
+    v_n := (select count(*) from app.terreno_lotes where terreno_id = t.id) + 1;
+    while exists (select 1 from app.terreno_lotes where terreno_id = t.id and lower(titulo) = lower('Lote ' || v_n)) loop v_n := v_n + 1; end loop;
+    v_tit := 'Lote ' || v_n;
+  end if;
+  if v_tit is not null and exists (select 1 from app.terreno_lotes where terreno_id = t.id and lower(trim(titulo)) = lower(v_tit) and id is distinct from p_lote) then
+    raise exception 'Já existe um lote chamado % neste terreno', v_tit using errcode = '23505';
+  end if;
+  -- matrícula: uma por lote
+  v_mat := l.matricula_id;
+  if p_dados ? 'matricula' then
+    m := p_dados->'matricula';
+    v_num := nullif(trim(m->>'numero'), '');
+    if jsonb_typeof(m) is distinct from 'object' or v_num is null then
+      v_mat_velha := v_mat; v_mat := null;
+    else
+      v_cri := coalesce(nullif(trim(m->>'cartorio'), ''), (select cartorio from app.matriculas where id = v_mat), t.cartorio);
+      if v_cri is null then raise exception 'Informe o cartório da matrícula' using errcode = '22023'; end if;
+      select id into v_outro from app.matriculas
+       where empresa_id = t.empresa_id and cartorio = v_cri and numero_norm = regexp_replace(v_num, '\D', '', 'g') and id is distinct from v_mat;
+      if v_outro is not null then
+        -- de outro terreno: não cadastra o lote; o caminho é registrar uma nova oferta naquele terreno (decisão do Moisés, 4/nov/2026)
+        if (select terreno_id from app.matriculas where id = v_outro) <> t.id then
+          raise exception 'A matrícula % do % já está no terreno %: registre uma nova oferta nele', v_num, v_cri,
+            (select x.codigo from app.terrenos x join app.matriculas mm on mm.terreno_id = x.id where mm.id = v_outro)
+            using errcode = '23505', hint = 'nova_oferta';
+        end if;
+        if exists (select 1 from app.terreno_lotes where matricula_id = v_outro) then
+          raise exception 'A matrícula % do % já está em outro lote', v_num, v_cri using errcode = '23505';
+        end if;
+        -- matrícula do terreno ainda sem lote: passa a ser a deste
+        v_mat_velha := v_mat; v_mat := v_outro;
+      end if;
+      if v_mat is null then
+        insert into app.matriculas (empresa_id, terreno_id, numero, cartorio, area_registrada_m2, data_certidao)
+        values (t.empresa_id, t.id, v_num, v_cri, (m->>'area_registrada_m2')::numeric, (m->>'data_certidao')::date)
+        returning id into v_mat;
+      else
+        update app.matriculas set numero = v_num, cartorio = v_cri,
+               area_registrada_m2 = case when m ? 'area_registrada_m2' then (m->>'area_registrada_m2')::numeric else area_registrada_m2 end,
+               data_certidao      = case when m ? 'data_certidao' then (m->>'data_certidao')::date else data_certidao end
+         where id = v_mat;
+      end if;
+    end if;
+  end if;
+  if p_lote is null then
+    insert into app.terreno_lotes (empresa_id, terreno_id, parte_id, titulo, matricula_id, area_fonte, area_informada_m2, ordem)
+    values (t.empresa_id, t.id, v_parte, v_tit, v_mat, coalesce(p_dados->>'area_fonte', 'documental'), (p_dados->>'area_informada_m2')::numeric,
+            (select coalesce(max(ordem), 0) + 1 from app.terreno_lotes where terreno_id = t.id))
+    returning id into v_id;
+  else
+    v_id := l.id;
+    update app.terreno_lotes set parte_id = v_parte, titulo = coalesce(v_tit, titulo), matricula_id = v_mat,
+           area_fonte = coalesce(p_dados->>'area_fonte', area_fonte),
+           area_informada_m2 = case when p_dados ? 'area_informada_m2' then (p_dados->>'area_informada_m2')::numeric else area_informada_m2 end
+     where id = v_id;
+  end if;
+  -- a matrícula que saiu do lote era dele: sai do terreno
+  if v_mat_velha is not null and v_mat_velha is distinct from v_mat then delete from app.matriculas where id = v_mat_velha; end if;
+  -- SQLs do lote, na ordem
+  if p_dados ? 'inscricoes' then
+    if jsonb_typeof(p_dados->'inscricoes') <> 'array' then raise exception 'inscricoes deve ser uma lista' using errcode = '22023'; end if;
+    delete from app.lote_inscricoes where lote_id = v_id;
+    for v_ins in select x from jsonb_array_elements_text(p_dados->'inscricoes') x loop
+      if not exists (select 1 from app.inscricoes_municipais where id = v_ins::uuid and terreno_id = t.id) then
+        raise exception 'A inscrição não é deste terreno' using errcode = '23514';
+      end if;
+      v_ord := v_ord + 1;
+      insert into app.lote_inscricoes (lote_id, inscricao_id, empresa_id, ordem) values (v_id, v_ins::uuid, t.empresa_id, v_ord)
+      on conflict (lote_id, inscricao_id) do nothing;
+    end loop;
+  end if;
+  perform app._sincronizar_partes_lote(t.id);
+  return v_id;
+end $$;
+
+-- Exclui o lote com a sua matrícula. Os SQLs que só estavam nele saem do terreno, menos os que
+-- têm IPTU lançado ou estão numa análise anterior (o histórico fica) e os marcados no mapa de
+-- lotes da prefeitura, que voltam a ficar soltos (sem lote) para entrar em outro lote.
+create or replace function app.excluir_lote(p_lote uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare l app.terreno_lotes; v_ins uuid; v_sos uuid[];
+begin
+  select * into l from app.terreno_lotes where id = p_lote for update;
+  if not found then raise exception 'Lote não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(l.empresa_id);
+  select coalesce(array_agg(li.inscricao_id), '{}') into v_sos from app.lote_inscricoes li
+   where li.lote_id = l.id and not exists (select 1 from app.lote_inscricoes x where x.inscricao_id = li.inscricao_id and x.lote_id <> l.id);
+  delete from app.terreno_lotes where id = l.id;
+  if l.matricula_id is not null then delete from app.matriculas where id = l.matricula_id; end if;
+  for v_ins in select i.id from app.inscricoes_municipais i
+                where i.id = any(v_sos) and i.origem <> 'mapa_prefeitura'
+                  and not exists (select 1 from app.inscricao_valores v where v.inscricao_id = i.id) loop
+    begin
+      delete from app.inscricoes_municipais where id = v_ins;
+    exception when others then null;
+    end;
+  end loop;
+  perform app._sincronizar_partes_lote(l.terreno_id);
 end $$;
 
 -- Encerrar a negociação do terreno leva junto as partes em aberto: perdido
@@ -1513,13 +1802,67 @@ begin
     insert into app.processo_transicoes (empresa_id, processo_id, evento, de_etapa, para_etapa, de_subetapa, para_subetapa, comentario)
     values (c.empresa_id, c.id, case p_status when 'perdido' then 'perda' when 'descartado' then 'descarte' else 'stand_by' end,
             c.etapa_atual, c.etapa_atual, c.subetapa_atual, c.subetapa_atual, 'Com a negociação do terreno (' || p.codigo || ')');
+    perform app._tarefas_ao_encerrar(c.id, p_status, p_dados);
   end loop;
 end $$;
+
+-- Lotes do terreno com a matrícula, os SQLs, a área adotada e as zonas (da última consulta de
+-- cada SQL). Lotes que dividem um SQL formam um grupo, e a divergência entre a área das
+-- matrículas e a cadastral é conferida no grupo (decisão do Moisés, 4/nov/2026).
+create view app.v_lotes with (security_invoker = true) as
+with recursive arestas as (
+  select a.lote_id as l1, b.lote_id as l2 from app.lote_inscricoes a join app.lote_inscricoes b on b.inscricao_id = a.inscricao_id
+), comp(lote_id, raiz) as (
+  select l1, l2 from arestas
+  union
+  select c.lote_id, a.l2 from comp c join arestas a on a.l1 = c.raiz
+), grupos as (
+  select lote_id, min(raiz::text)::uuid as grupo_id from comp group by lote_id
+), ins as (
+  select li.lote_id, li.ordem, i.id, i.inscricao, i.area_cadastral_m2,
+         (select count(*) from app.lote_inscricoes y where y.inscricao_id = i.id) > 1 as compartilhada
+  from app.lote_inscricoes li join app.inscricoes_municipais i on i.id = li.inscricao_id
+), base as (
+  select l.*, coalesce(g.grupo_id, l.id) as grupo_id, tp.nome as parte_nome,
+         m.numero as matricula, m.cartorio, m.area_registrada_m2, m.data_certidao,
+         (select coalesce(jsonb_agg(jsonb_build_object('id', x.id, 'inscricao', x.inscricao, 'area_cadastral_m2', x.area_cadastral_m2,
+                                                       'compartilhada', x.compartilhada) order by x.ordem), '[]') from ins x where x.lote_id = l.id) as inscricoes,
+         coalesce((select bool_or(x.compartilhada) from ins x where x.lote_id = l.id), false) as sql_compartilhado,
+         (select sum(x.area_cadastral_m2) from ins x where x.lote_id = l.id) as soma_cadastral_m2,
+         (select coalesce(array_agg(distinct z->>'sigla' order by z->>'sigla'), '{}') from ins x
+            cross join lateral (select c.zonas from app.consultas_lote c where c.inscricao_id = x.id order by c.consultado_em desc limit 1) c
+            cross join jsonb_array_elements(c.zonas) z where x.lote_id = l.id and z->>'sigla' is not null) as zonas
+  from app.terreno_lotes l
+  join app.terreno_partes tp on tp.id = l.parte_id
+  left join grupos g on g.lote_id = l.id
+  left join app.matriculas m on m.id = l.matricula_id
+)
+select b.id, b.empresa_id, b.terreno_id, b.parte_id, b.parte_nome, b.titulo, b.ordem, b.matricula_id, b.matricula, b.cartorio,
+       b.area_registrada_m2, b.data_certidao, b.inscricoes, b.sql_compartilhado, b.zonas, b.area_fonte, b.area_informada_m2,
+       case when not b.sql_compartilhado then b.soma_cadastral_m2 end as area_cadastral_m2,
+       case b.area_fonte when 'documental' then b.area_registrada_m2
+                         when 'cadastral' then case when not b.sql_compartilhado then b.soma_cadastral_m2 end
+                         else b.area_informada_m2 end as area_adotada_m2,
+       b.grupo_id,
+       (select array_agg(y.titulo order by y.ordem) from base y where y.grupo_id = b.grupo_id) as grupo_lotes,
+       gr.area_matriculas_m2 as grupo_area_matriculas_m2, gr.area_cadastral_m2 as grupo_area_cadastral_m2,
+       round((gr.area_cadastral_m2 - gr.area_matriculas_m2) / nullif(gr.area_matriculas_m2, 0) * 100, 1) as divergencia_cadastral_pct
+from base b
+cross join lateral (
+  select (select sum(y.area_registrada_m2) from base y where y.grupo_id = b.grupo_id) as area_matriculas_m2,
+         (select sum(i.area_cadastral_m2) from app.inscricoes_municipais i
+           where i.id in (select li.inscricao_id from app.lote_inscricoes li join base y on y.id = li.lote_id where y.grupo_id = b.grupo_id)) as area_cadastral_m2
+) gr;
+grant select on app.v_lotes to authenticated;
 
 -- Cada parte com a sua negociação, para a ficha e o quadro.
 create view app.v_partes with (security_invoker = true) as
 select tp.id, tp.empresa_id, tp.terreno_id, tp.nome, tp.essencial, tp.area_m2, tp.poligono_geojson, tp.observacoes,
-       tp.ativa, tp.removida_em, tp.motivo_remocao,
+       tp.ativa, tp.removida_em, tp.motivo_remocao, tp.pessoa_nome, tp.telefone, tp.email, tp.documento,
+       (select count(*) from app.terreno_lotes l where l.parte_id = tp.id) as qtd_lotes,
+       -- área e zonas dos lotes da parte (o que o Comercial mostra ao lado do valor pedido)
+       (select sum(l.area_adotada_m2) from app.v_lotes l where l.parte_id = tp.id) as area_lotes_m2,
+       (select array_agg(distinct z order by z) from app.v_lotes l cross join unnest(l.zonas) z where l.parte_id = tp.id) as zonas,
        (select count(*) from app.matriculas m where m.parte_id = tp.id) as qtd_matriculas,
        (select count(*) from app.inscricoes_municipais i where i.parte_id = tp.id) as qtd_inscricoes,
        (select string_agg(pe.nome_razao_social, ', ' order by pe.nome_razao_social) from app.terreno_pessoas x
@@ -1534,6 +1877,7 @@ select tp.id, tp.empresa_id, tp.terreno_id, tp.nome, tp.essencial, tp.area_m2, t
        -- preço pedido da parte: o informado na oferta, ou o da oferta inteira quando ela cobre só esta parte
        case when op.parte_id is not null then
          coalesce(op.valor_pedido, case when (select count(*) from app.oferta_partes y where y.oferta_id = o.id) = 1 then o.valor_pedido end) end as valor_pedido,
+       case when op.parte_id is not null then coalesce(op.forma_pagamento, o.forma_pagamento_pedida) end as forma_pagamento,
        lp.valor_total as ultima_proposta_valor, lp.origem as ultima_proposta_origem, lp.status as ultima_proposta_status,
        ap.nivel as aprovacao_aguardando
 from app.terreno_partes tp
@@ -1693,6 +2037,11 @@ begin
   select * into d from app.documentos where id = p_documento for update;
   if not found then raise exception 'Documento não encontrado' using errcode = 'P0002'; end if;
   perform app.exigir_editor(d.empresa_id);
+  -- quem enviou a versão atual não a valida sozinho; o diretor pode (decisão do Moisés, 2/nov/2026)
+  if p_aprovado and auth.uid() = (select enviado_por from app.documento_versoes where documento_id = d.id order by versao desc limit 1)
+     and app.papel(d.empresa_id) is distinct from 'diretor' then
+    raise exception 'Quem enviou o documento não o valida: peça a outra pessoa' using errcode = '42501';
+  end if;
   update app.documentos set situacao = case when p_aprovado then 'validado' else 'rejeitado' end,
          revisado_por = auth.uid(), revisado_em = now() where id = d.id;
 end $$;
@@ -1774,6 +2123,37 @@ begin
   where terreno_id = p_terreno and google_place_id = p_google_place_id and excluido_em is not null;
 end $$;
 
+-- Exclui um ponto da empresa só da ficha deste terreno (continua nos outros e no mapa).
+create or replace function app.excluir_ponto_terreno(p_terreno uuid, p_ponto uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos;
+begin
+  select * into t from app.terrenos where id = p_terreno;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  if not exists (select 1 from app.pontos_interesse where id = p_ponto and empresa_id = t.empresa_id) then
+    raise exception 'Ponto não é desta empresa' using errcode = 'P0002';
+  end if;
+  insert into app.terreno_pontos_excluidos (terreno_id, ponto_id, empresa_id, excluido_por)
+  values (p_terreno, p_ponto, t.empresa_id, auth.uid())
+  on conflict (terreno_id, ponto_id) do nothing;
+end $$;
+
+-- Desfaz: o ponto volta à ficha deste terreno.
+create or replace function app.restaurar_ponto_terreno(p_terreno uuid, p_ponto uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos;
+begin
+  select * into t from app.terrenos where id = p_terreno;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  delete from app.terreno_pontos_excluidos where terreno_id = p_terreno and ponto_id = p_ponto;
+end $$;
+
 -- Grava as distâncias (a pé e de carro, pela rota) do terreno aos pontos da empresa.
 -- Recusa coordenada diferente da atual; ignora ponto de outra empresa ou inativo.
 -- p_itens: [{ponto_id, distancia_pe_m, duracao_pe_s, distancia_carro_m, duracao_carro_s}]
@@ -1826,15 +2206,20 @@ begin
     observacoes = v_novo.observacoes, cep = v_novo.cep, logradouro = v_novo.logradouro, numero = v_novo.numero,
     complemento = v_novo.complemento, bairro = v_novo.bairro, municipio_id = v_novo.municipio_id, zona = v_novo.zona,
     eixo_comercial_id = v_novo.eixo_comercial_id, referencia_localizacao = v_novo.referencia_localizacao,
+    cartorio = nullif(trim(v_novo.cartorio), ''),
+    cartorio_origem = case when nullif(trim(v_novo.cartorio), '') is null then null
+                           when nullif(trim(v_novo.cartorio), '') is distinct from t.cartorio then 'digitado' else t.cartorio_origem end,
+    historico_uso = nullif(trim(v_novo.historico_uso), ''),
+    visita_tecnica_em = v_novo.visita_tecnica_em,
     latitude = v_novo.latitude, longitude = v_novo.longitude, poligono_geojson = v_novo.poligono_geojson,
     precisao_localizacao = v_novo.precisao_localizacao, area_documental_m2 = v_novo.area_documental_m2,
     area_cadastral_m2 = v_novo.area_cadastral_m2, area_levantamento_m2 = v_novo.area_levantamento_m2,
     area_adotada_m2 = v_novo.area_adotada_m2, fonte_area_adotada = v_novo.fonte_area_adotada,
-    testada_principal_m = v_novo.testada_principal_m, topografia = v_novo.topografia, desnivel_estimado_m = v_novo.desnivel_estimado_m,
+    testada_principal_m = v_novo.testada_principal_m, desnivel_estimado_m = v_novo.desnivel_estimado_m,
     posicao_quadra = v_novo.posicao_quadra, formato = v_novo.formato, situacao_ocupacao = v_novo.situacao_ocupacao,
     uso_atual = v_novo.uso_atual, area_construida_existente_m2 = v_novo.area_construida_existente_m2,
     area_construida_demolir_m2 = v_novo.area_construida_demolir_m2, necessidade_demolicao = v_novo.necessidade_demolicao,
-    observacoes_fisicas = v_novo.observacoes_fisicas, tipo_empreendimento = v_novo.tipo_empreendimento, sobreposicoes_aceitas = v_novo.sobreposicoes_aceitas
+    observacoes_fisicas = v_novo.observacoes_fisicas, sobreposicoes_aceitas = v_novo.sobreposicoes_aceitas
   where id = t.id
   returning versao into t.versao;
   return t.versao;
@@ -1906,6 +2291,24 @@ begin
     raise exception 'Encerre os processos abertos antes de arquivar o terreno' using errcode = '22023';
   end if;
   update app.terrenos set situacao_cadastral = 'arquivado', arquivado_em = now(), motivo_arquivamento = p_motivo where id = t.id;
+end $$;
+
+-- Desarquivar (revisão de 2/nov/2026: o terreno arquivado não tinha volta):
+-- gestor, diretor ou o administrador. O arquivamento fica no histórico.
+create or replace function app.reativar_terreno(p_terreno uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos;
+begin
+  select * into t from app.terrenos where id = p_terreno for update;
+  if not found or t.empresa_id not in (select app.minhas_empresas()) then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  if not (app.eh_gestor(t.empresa_id) or app.eh_administrador(t.empresa_id)) then
+    raise exception 'Só gestor, diretor ou o administrador desarquivam o terreno' using errcode = '42501';
+  end if;
+  if t.situacao_cadastral <> 'arquivado' then raise exception 'O terreno não está arquivado' using errcode = '22023'; end if;
+  update app.terrenos set situacao_cadastral = 'ativo', arquivado_em = null, motivo_arquivamento = null where id = t.id;
 end $$;
 
 -- ---------------------------------------------------------------------
@@ -2340,17 +2743,23 @@ begin
 end $$;
 
 -- Checklist de documentos para sair da etapa: incluir, marcar obrigatório, tirar.
-create or replace function app.salvar_checklist(p_empresa uuid, p_fase text, p_etapa text, p_tipo_documento text, p_obrigatorio boolean default true, p_ordem int default null)
+-- p_regra (jornada, 1/nov/2026): bloqueia, justifica ou livre; nulo = pelo p_obrigatorio.
+-- p_regra_cond: regra condicional [{condicao, regra}]; nulo mantém, '[]' tira.
+create or replace function app.salvar_checklist(p_empresa uuid, p_fase text, p_etapa text, p_tipo_documento text, p_obrigatorio boolean default true, p_ordem int default null,
+  p_regra text default null, p_regra_cond jsonb default null)
 returns void
 language plpgsql security definer set search_path = ''
 as $$
+declare v_regra text := coalesce(p_regra, case when coalesce(p_obrigatorio, true) then 'bloqueia' else 'livre' end);
 begin
   perform app.exigir_administrador(p_empresa);
-  insert into app.checklist_modelo (empresa_id, fase, etapa, tipo_documento, obrigatorio, ordem)
-  values (p_empresa, p_fase, p_etapa, p_tipo_documento, coalesce(p_obrigatorio, true),
-          coalesce(p_ordem, (select coalesce(max(ordem), 0) + 1 from app.checklist_modelo where empresa_id = p_empresa and fase = p_fase and etapa = p_etapa)))
+  insert into app.checklist_modelo (empresa_id, fase, etapa, tipo_documento, regra, ordem, regra_cond)
+  values (p_empresa, p_fase, p_etapa, p_tipo_documento, v_regra,
+          coalesce(p_ordem, (select coalesce(max(ordem), 0) + 1 from app.checklist_modelo where empresa_id = p_empresa and fase = p_fase and etapa = p_etapa)),
+          app._regra_cond_config(p_empresa, p_regra_cond))
   on conflict (empresa_id, fase, etapa, tipo_documento)
-  do update set obrigatorio = excluded.obrigatorio, ordem = coalesce(p_ordem, app.checklist_modelo.ordem);
+  do update set regra = excluded.regra, ordem = coalesce(p_ordem, app.checklist_modelo.ordem),
+                regra_cond = case when p_regra_cond is null then app.checklist_modelo.regra_cond else excluded.regra_cond end;
 end $$;
 
 create or replace function app.remover_checklist(p_empresa uuid, p_fase text, p_etapa text, p_tipo_documento text)
@@ -2414,10 +2823,128 @@ begin
          zona_fiscal = coalesce(nullif(trim(p_camadas#>>'{zona_fiscal,0,sg_zona_fiscal}'), ''), zona_fiscal)
    where id = i.id;
 
+  -- cartório da circunscrição: só quando o terreno ainda não tem e a camada achou um só
+  if t.cartorio is null and jsonb_typeof(p_camadas->'cartorio_registro_imovel') = 'array'
+     and jsonb_array_length(p_camadas->'cartorio_registro_imovel') = 1
+     and nullif(trim(p_camadas#>>'{cartorio_registro_imovel,0,cd_numero_cartorio}'), '') is not null then
+    update app.terrenos set cartorio = trim(p_camadas#>>'{cartorio_registro_imovel,0,cd_numero_cartorio}') || ' CRI', cartorio_origem = 'prefeitura'
+     where id = t.id;
+  end if;
+
   if p_criar_analise and jsonb_array_length(coalesce(p_zonas, '[]')) > 0 then
     perform app._substituir_zonas(t, i.id, p_zonas, b.nome || ' (' || b.rotulo || ' ' || i.inscricao || ')');
   end if;
   return v_id;
+end $$;
+
+-- ---------------------------------------------------------------------
+-- Consulta pela poligonal do terreno (restrições e entorno da área inteira).
+-- A base é a da cidade do terreno; grava a poligonal de hoje do terreno junto.
+-- ---------------------------------------------------------------------
+create or replace function app.registrar_consulta_area(p_terreno uuid, p_camadas jsonb, p_camadas_com_erro text[] default '{}')
+returns uuid
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos; b app.bases_cadastrais; v_id uuid;
+begin
+  select * into t from app.terrenos where id = p_terreno;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  if t.poligono_geojson is null then raise exception 'O terreno não tem poligonal para consultar' using errcode = '22023'; end if;
+  select * into b from app.bases_cadastrais where municipio_id = t.municipio_id;
+  if not found then raise exception 'A cidade do terreno não tem base da prefeitura para consultar' using errcode = '22023'; end if;
+  if jsonb_typeof(coalesce(p_camadas, '{}')) <> 'object' then raise exception 'Camadas inválidas' using errcode = '22023'; end if;
+  insert into app.consultas_area (empresa_id, terreno_id, base, poligono_geojson, camadas, camadas_com_erro)
+  values (t.empresa_id, t.id, b.codigo, t.poligono_geojson, coalesce(p_camadas, '{}'), coalesce(p_camadas_com_erro, '{}'))
+  returning id into v_id;
+  return v_id;
+end $$;
+
+-- ---------------------------------------------------------------------
+-- Classificação topográfica (decisões do Moisés, 3 e 4/nov/2026): sete níveis pela
+-- declividade média (a média da inclinação em cada ponto do terreno), com os cortes
+-- do Moisés depois de medir 8 terrenos de São Paulo. A inclinação do plano que melhor se ajusta às cotas só é
+-- mostrada; a terra mexida até esse plano (corte + aterro ÷ área, m³/m²) só pesa no
+-- crítico (um morro, não uma rampa). Sem a terra mexida (cotas do Google, que erram
+-- 1 a 4 m) a declividade só separa Plano, Inclinado ou, acima do agudo, crítico.
+-- ---------------------------------------------------------------------
+create or replace function app.classificar_topografia(p_empresa uuid, p_declividade numeric, p_terra numeric)
+returns text
+language sql stable security definer set search_path = ''
+as $$
+  with c as (
+    select coalesce(x.plano_ate_pct, 5) as pl, coalesce(x.inclinado_ate_pct, 10) as inc, coalesce(x.leve_ate_pct, 13) as le,
+           coalesce(x.mediano_ate_pct, 19) as me, coalesce(x.intenso_ate_pct, 24) as it, coalesce(x.agudo_ate_pct, 30) as ag,
+           coalesce(x.critico_terra_m3m2, 1.5) as ct
+    from (select 1) u left join app.topografia_config x on x.empresa_id = p_empresa)
+  select case when p_declividade is null then null
+              when p_declividade > ag or p_terra > ct then 'acidentado_critico'
+              when p_declividade <= pl then 'plano'
+              when p_terra is null or p_declividade <= inc then 'inclinado'
+              when p_declividade <= le then 'acidentado_leve'
+              when p_declividade <= me then 'acidentado_mediano'
+              when p_declividade <= it then 'acidentado_intenso'
+              else 'acidentado_agudo' end
+  from c $$;
+
+-- O front mede (laser em São Paulo, Google fora) e grava aqui; o perfil sai do banco.
+create or replace function app.registrar_topografia(p_terreno uuid, p_declividade numeric, p_inclinacao numeric, p_terra numeric, p_desnivel numeric, p_fonte text)
+returns text
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos; v_perfil text; v_terra numeric;
+begin
+  select * into t from app.terrenos where id = p_terreno for update;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  if p_fonte is null or p_fonte not in ('laser','google') then raise exception 'Fonte das cotas inválida' using errcode = '22023'; end if;
+  if p_declividade is null or p_declividade < 0 then raise exception 'Declividade inválida' using errcode = '22023'; end if;
+  if p_inclinacao is null or p_inclinacao < 0 then raise exception 'Inclinação inválida' using errcode = '22023'; end if;
+  -- com o Google a terra mexida não tem precisão: não é guardada
+  v_terra := case when p_fonte = 'laser' then p_terra end;
+  if p_fonte = 'laser' and (v_terra is null or v_terra < 0) then raise exception 'Com o laser, a terra mexida é obrigatória' using errcode = '22023'; end if;
+  v_perfil := app.classificar_topografia(t.empresa_id, p_declividade, v_terra);
+  update app.terrenos set topo_perfil = v_perfil, topo_declividade_pct = round(p_declividade, 2), topo_inclinacao_pct = round(p_inclinacao, 2),
+    topo_terra_m3m2 = round(v_terra, 3), topo_desnivel_m = round(p_desnivel, 2), topo_fonte = p_fonte, topo_calculado_em = now(), topo_calculado_por = auth.uid()
+  where id = t.id;
+  return v_perfil;
+end $$;
+
+-- Limites da classificação: só o administrador; vale para as próximas medições
+-- e para reclassificar as já feitas (o perfil gravado é recalculado aqui).
+create or replace function app.salvar_topografia_config(p_empresa uuid, p_plano numeric, p_inclinado numeric, p_leve numeric, p_mediano numeric, p_intenso numeric, p_agudo numeric, p_critico_terra numeric)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  perform app.exigir_administrador(p_empresa);
+  insert into app.topografia_config (empresa_id, plano_ate_pct, inclinado_ate_pct, leve_ate_pct, mediano_ate_pct, intenso_ate_pct, agudo_ate_pct, critico_terra_m3m2)
+  values (p_empresa, p_plano, p_inclinado, p_leve, p_mediano, p_intenso, p_agudo, p_critico_terra)
+  on conflict (empresa_id) do update set plano_ate_pct = excluded.plano_ate_pct, inclinado_ate_pct = excluded.inclinado_ate_pct,
+    leve_ate_pct = excluded.leve_ate_pct, mediano_ate_pct = excluded.mediano_ate_pct, intenso_ate_pct = excluded.intenso_ate_pct, agudo_ate_pct = excluded.agudo_ate_pct,
+    critico_terra_m3m2 = excluded.critico_terra_m3m2;
+  update app.terrenos set topo_perfil = app.classificar_topografia(empresa_id, topo_declividade_pct, topo_terra_m3m2)
+  where empresa_id = p_empresa and topo_perfil is not null;
+end $$;
+
+-- ---------------------------------------------------------------------
+-- Cartório da circunscrição pelo pino do terreno (sem inscrição consultada).
+-- O front consulta a prefeitura e grava aqui; só preenche o vazio ou troca o
+-- que veio da prefeitura (o pino mudou de lugar), nunca o digitado.
+-- ---------------------------------------------------------------------
+create or replace function app.cartorio_da_prefeitura(p_terreno uuid, p_cartorio text)
+returns boolean
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos;
+begin
+  select * into t from app.terrenos where id = p_terreno for update;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  if nullif(trim(p_cartorio), '') is null then raise exception 'Cartório vazio' using errcode = '22023'; end if;
+  if t.cartorio_origem = 'digitado' or t.cartorio = trim(p_cartorio) then return false; end if;
+  update app.terrenos set cartorio = trim(p_cartorio), cartorio_origem = 'prefeitura' where id = t.id;
+  return true;
 end $$;
 
 -- ---------------------------------------------------------------------
@@ -2545,8 +3072,10 @@ grant execute on function
   app.salvar_terreno(uuid, int, jsonb), app.desfazer_alteracao(bigint),
   app.salvar_entorno(uuid, double precision, double precision, jsonb, boolean),
   app.excluir_lugar_entorno(uuid, text), app.restaurar_lugar_entorno(uuid, text),
+  app.excluir_ponto_terreno(uuid, uuid), app.restaurar_ponto_terreno(uuid, uuid),
   app.salvar_distancias_pontos(uuid, double precision, double precision, jsonb),
-  app.registrar_consulta_lote(uuid, jsonb, jsonb, numeric, jsonb, jsonb, text[], boolean),
+  app.registrar_consulta_lote(uuid, jsonb, jsonb, numeric, jsonb, jsonb, text[], boolean), app.registrar_consulta_area(uuid, jsonb, text[]), app.cartorio_da_prefeitura(uuid, text),
+  app.classificar_topografia(uuid, numeric, numeric), app.registrar_topografia(uuid, numeric, numeric, numeric, numeric, text), app.salvar_topografia_config(uuid, numeric, numeric, numeric, numeric, numeric, numeric, numeric),
   app.registrar_zonas_sem_inscricao(uuid, jsonb, text), app.salvar_zona_parametro(uuid, uuid, jsonb),
   app.parametros_zona(uuid, uuid, text, text, numeric, text),
   app.criar_empresa(text, text),
@@ -2554,11 +3083,12 @@ grant execute on function
   app.terrenos_sobrepostos(uuid, jsonb, uuid),
   app.abrir_negociacao(uuid, uuid),
   app.registrar_oferta(uuid, numeric, text, uuid, text, text, date, date, numeric, uuid, numeric, jsonb, jsonb),
-  app.salvar_parte(uuid, uuid, jsonb), app.remover_parte(uuid, text),
+  app.salvar_parte(uuid, uuid, jsonb), app.remover_parte(uuid, text), app.excluir_parte(uuid),
+  app.salvar_lote(uuid, uuid, jsonb), app.excluir_lote(uuid),
   app.definir_temperatura(uuid, int), app.definir_oferta_referencia(uuid, uuid),
   app.checar_avanco(uuid), app.checar_passagem(uuid, text, text),
   app.mover_etapa(uuid, boolean, text), app.mover_para_etapa(uuid, text, boolean, text), app.mover_subetapa(uuid, text, boolean, text),
-  app.encerrar_processo(uuid, text, text, text, date, text, boolean, text), app.retomar_processo(uuid),
+  app.encerrar_processo(uuid, text, text, text, date, text, boolean, text, text), app.retomar_processo(uuid),
   app.decidir_aprovacao(uuid, boolean, text), app.cancelar_aprovacao(uuid),
   app.abrir_fase(uuid, text, boolean, text), app.fases_do_terreno(uuid),
   app.salvar_fase(uuid, text, jsonb), app.apagar_fase(uuid, text),
@@ -2567,9 +3097,9 @@ grant execute on function
   app.salvar_subetapa(uuid, text, text, jsonb), app.apagar_subetapa(uuid, text, text),
   app.adicionar_prerequisito(uuid, text, text, text, text), app.remover_prerequisito(uuid),
   app.salvar_motivo(uuid, text, text, jsonb), app.apagar_motivo(uuid, text, text),
-  app.salvar_checklist(uuid, text, text, text, boolean, int), app.remover_checklist(uuid, text, text, text),
+  app.salvar_checklist(uuid, text, text, text, boolean, int, text, jsonb), app.remover_checklist(uuid, text, text, text),
   app.registrar_proposta(uuid, text, numeric, text, text, date, date, text), app.atualizar_status_proposta(uuid, text),
   app.vincular_viabilidade(uuid, text, numeric, numeric, uuid),
   app.registrar_documento(uuid, text, text, text, uuid, uuid, uuid, text, bigint, date, uuid), app.revisar_documento(uuid, boolean),
-  app.arquivar_terreno(uuid, text)
+  app.arquivar_terreno(uuid, text), app.reativar_terreno(uuid)
 to authenticated;

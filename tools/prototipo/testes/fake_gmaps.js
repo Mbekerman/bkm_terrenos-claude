@@ -1,4 +1,3 @@
-const TMP=require('path').join(__dirname,'..','saida')+'/';
 (function(){
   const P=new Proxy(function(){},{get(t,k){if(k===Symbol.toPrimitive)return()=>0;if(k==='then')return undefined;if(k==='prototype')return{};return P},apply(){return P},construct(){return P}});
   class PAC extends HTMLElement{connectedCallback(){if(this.shadowRoot)return;const r=this.attachShadow({mode:'open'});

@@ -8,7 +8,7 @@ await ctx.route('**/*',r=>{const u=r.request().url();if(u.startsWith('file://'))
   if(u.includes('maps.googleapis.com/maps/api/js'))return r.fulfill({path:require('path').join(__dirname,'fake_gmaps.js'),contentType:'application/javascript'});
   if(/leaflet.js|jszip/.test(u))return r.fulfill({path:L+(u.includes('leaflet')?'leaflet.js':'jszip.min.js'),contentType:'application/javascript'});return r.abort()});
 const p=await ctx.newPage();p.on('pageerror',e=>errs.push(e.message));await p.goto('file:///x/demo.html');await p.evaluate(t=>{localStorage.clear();localStorage.setItem('bkm-terrenos-tema',t)},tema);await p.reload();await p.waitForTimeout(800);
-await p.click('#bl-geral .bl-h');await p.waitForTimeout(200);await p.click('[data-a=edit][data-s=g-end]');await p.waitForTimeout(300);
+await p.click('.fi-abas [data-t=geral]');await p.waitForTimeout(200);await p.click('[data-a=edit][data-s=g-end]');await p.waitForTimeout(300);
 console.log(tema,'busca no resumo:',await p.$$eval('#sec-g-end gmp-place-autocomplete',e=>e.length),await p.$eval('#sec-g-end .gbusca',x=>x.innerText.replace(/\s+/g,' ')));
 await p.evaluate(()=>document.getElementById('sec-g-end').scrollIntoView({block:'center'}));await p.waitForTimeout(100);
 await p.screenshot({path:OUT+tema+'_resumo_busca.png'});
@@ -24,6 +24,6 @@ await p.screenshot({path:OUT+tema+'_resumo_escolhido.png'});
 await p.click('#sec-g-end .btn.primary');await p.waitForTimeout(250);
 console.log(tema,'resumo:',await p.evaluate(()=>[...document.querySelectorAll('#bl-geral .kv')].slice(0,2).map(k=>k.innerText.replace(/\s+/g,' ')).join(' / ')),'| log:',await p.$eval('.pn-log',x=>x.innerText.replace(/\s+/g,' ')));
 // também no Cadastro
-await p.click('#bl-cadastro .bl-h');await p.click('#sec-loc [data-a=edit]');await p.waitForTimeout(200);console.log(tema,'busca no cadastro:',await p.$$eval('#sec-loc gmp-place-autocomplete',e=>e.length));
+await p.click('.fi-abas [data-t=terreno]');await p.click('#sec-loc [data-a=edit]');await p.waitForTimeout(200);console.log(tema,'busca no cadastro:',await p.$$eval('#sec-loc gmp-place-autocomplete',e=>e.length));
 await ctx.close()}
 console.log('ERROS',errs);await b.close()})();

@@ -15,7 +15,7 @@ const clica=async(p,s)=>{await p.evaluate(s=>document.querySelector(s).click(),s
 const ficha=async(p,txt)=>{await nav(p,'terrenos');await p.evaluate(()=>{const b=document.querySelector('[data-a=fT][data-v=todos]');b&&b.click()});await p.waitForTimeout(100);await p.evaluate(t=>[...document.querySelectorAll('[data-a=abrir]')].find(x=>x.textContent.includes(t)).click(),txt);await p.waitForTimeout(400)};
 const txt=(p,s)=>p.evaluate(s=>[...document.querySelectorAll(s)].filter(x=>x.offsetParent).map(x=>x.textContent.trim().replace(/\s+/g,' ')).join(' | '),s);
 const ter=(p,nome)=>p.evaluate(n=>{const S=JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-v9'));return S.terrenos.find(t=>t.nome.includes(n))},nome);
-const bloco=async(p,k)=>{await p.evaluate(k=>{const b=document.querySelector(`[data-a=bloco][data-t=${k}]`);if(b.getAttribute('aria-expanded')!=='true')b.click()},k);await p.waitForTimeout(250)};
+const bloco=async(p,k)=>{await p.evaluate(k=>{const b=document.querySelector('.fi-abas [data-t='+({cadastro:'terreno',negociacao:'comercial',urbanismo:'parametros',fases:'jornada'}[k]||k)+']');if(b.getAttribute('aria-selected')!=='true')b.click()},k);await p.waitForTimeout(250)};
 let {p,ctx}=await abre(1440,900);
 
 // kanban em três níveis: fases › etapas › subetapas, com seta para voltar
@@ -49,25 +49,33 @@ ok((await txt(p,'#rows tbody tr')).includes('Raimundo')&&!(await txt(p,'#rows tb
 ok((await txt(p,'#rows .c-etapa')).includes('Obras'),'coluna mostra a fase e a etapa');
 await clica(p,'#fx-barra [data-a=fx-limpar]');
 
-// mapa em três níveis pela legenda
+// mapa em três níveis pela legenda em árvore: Terrenos › fase › etapa › subetapa
 await nav(p,'mapa');await p.waitForTimeout(400);
-ok((await txt(p,'#mp-leg .lg-i')).includes('Obras'),'legenda do mapa começa pelas fases');
+await p.evaluate(()=>{const l=document.querySelector('.mp-legenda');if(l)l.open=true});await p.waitForTimeout(200);
+ok(!(await txt(p,'#mp-leg .lg-i')).includes('Obras'),'legenda começa com Terrenos fechado');
+await clica(p,'[data-a=mp-arv]');await p.waitForTimeout(300);
+ok((await txt(p,'#mp-leg .lg-i')).includes('Obras'),'Terrenos abre as fases');
 ok((await txt(p,'#mp-lista .mp-it')).includes('Entregue'),'linha do mapa mostra a fase');
-await clica(p,'[data-a=mp-desce][data-v=aprovacao]');await p.waitForTimeout(300);await p.screenshot({path:O+'4_mapa_aprovacao.png'});
-const lm=await txt(p,'#mp-lista .mp-it');ok(lm.includes("M'Boi")&&!lm.includes('Cupecê'),'mapa desce para a Aprovação e mostra só os terrenos dela');
-ok((await txt(p,'#mp-leg .lg-i')).includes('Análise na Prefeitura'),'legenda com as etapas da Aprovação');
-await clica(p,'[data-a=mp-desce][data-v=prefeitura]');await p.waitForTimeout(300);
-ok((await txt(p,'#mp-leg .lg-i')).includes('Comunique-se')&&(await txt(p,'#mp-lista .mp-it')).includes("M'Boi"),'legenda com as subetapas da etapa');
+await clica(p,'[data-a=mp-abre][data-f=aprovacao]');await p.waitForTimeout(300);await p.screenshot({path:O+'4_mapa_aprovacao.png'});
+const lm=await txt(p,'#mp-lista .mp-it');ok(lm.includes("M'Boi")&&!lm.includes('Cupecê'),'clicar na Aprovação mostra só os terrenos dela');
+ok((await txt(p,'#mp-leg .lg-i')).includes('Análise na Prefeitura')&&(await txt(p,'#mp-leg .lg-i')).includes('Obras'),'etapas da Aprovação abaixo dela, com as outras fases na árvore');
+await clica(p,'[data-a=mp-abre][data-e=prefeitura]');await p.waitForTimeout(300);
+ok((await txt(p,'#mp-leg .lg-i')).includes('Comunique-se')&&(await txt(p,'#mp-lista .mp-it')).includes("M'Boi"),'etapa abre as subetapas');
 await p.screenshot({path:O+'4b_mapa_sub.png'});
-await clica(p,'.lg-v');ok((await txt(p,'#mp-leg .lg-i')).includes('Alvarás'),'seta da legenda volta para as etapas');
-await clica(p,'.lg-v');ok((await txt(p,'#mp-leg .lg-i')).includes('Lançamento')&&!(await p.evaluate(()=>!!document.querySelector('.lg-v'))),'e depois para as fases');
+await clica(p,'[data-a=mp-abre][aria-expanded=true][style*="--p:1"]');await p.waitForTimeout(300);
+ok(!(await txt(p,'#mp-leg .lg-i')).includes('Análise na Prefeitura')&&(await txt(p,'#mp-lista .mp-it')).includes('Cupecê'),'clicar de novo na fase fecha e volta para as fases');
+await clica(p,'[data-a=mp-abre][data-f=aprovacao]');await p.waitForTimeout(300);
+await p.evaluate(()=>{const l=document.querySelector('.mp-legenda');l.open=false});await p.waitForTimeout(300);
+await p.evaluate(()=>{const l=document.querySelector('.mp-legenda');l.open=true});await p.waitForTimeout(300);
+ok(!(await txt(p,'#mp-leg .lg-i')).includes('Obras')&&(await txt(p,'#mp-lista .mp-it')).includes('Cupecê'),'fechar e abrir a legenda deixa a árvore fechada e volta para as fases');
 
 // ficha: linha do tempo das fases, quadro da fase, seção Fases
 await ficha(p,"M'Boi Mirim");await bloco(p,'fases');await p.screenshot({path:O+'5_ficha_aprovacao.png',fullPage:true});
 ok((await txt(p,'.tl-topo')).includes('Registro de Incorporação'),'linha do tempo do topo com as fases');
 ok((await txt(p,'.adv-sub')).includes('Análise na Prefeitura'),'quadro de avanço da fase atual');
 ok((await txt(p,'.fs-lst')).includes('Aprovado em Aprovação de Projetos'),'seção Fases mostra a dependência da próxima');
-ok((await p.evaluate(()=>document.querySelectorAll('[data-a=f-abrir]').length))===1,'só a próxima fase tem o botão de abrir antes da hora');
+ok((await p.evaluate(()=>[...document.querySelectorAll('[data-a=f-abrir]')].filter(b=>b.textContent.includes('antes da hora')).length))===1,'só a próxima fase tem o botão de abrir antes da hora');
+ok((await p.evaluate(()=>[...document.querySelectorAll('[data-a=f-abrir]')].some(b=>b.dataset.v==='funding'&&!b.textContent.includes('antes da hora')))),'Funding, sem dependência, abre à mão sem justificativa');
 await clica(p,'[data-a=p-ir]');
 ok((await ter(p,"M'Boi")).procs[0].etapa==='alvaras','Avançar leva à próxima etapa da fase');
 await clica(p,'[data-a=p-ir]');ok(await p.evaluate(()=>!!document.querySelector('#f-pc')),'na última etapa, Avançar vira Concluir como Aprovado');
@@ -83,22 +91,22 @@ ok(await p.evaluate(()=>!!document.querySelector('#f-ff')),'abrir antes da hora 
 await p.fill('#ff-j','Projeto já em andamento com o vendedor');await clica(p,'.df .btn.primary');
 const t123=await ter(p,'Cupecê — esquina');ok(t123.procs.some(x=>x.fase==='aprovacao'&&x.trilha[0].forcado),'abriu a Aprovação antes da hora, com a justificativa');
 await p.screenshot({path:O+'6_ficha_paralelo.png'});
-ok((await txt(p,'.dchips')).includes('Aprovação de Projetos'),'chip da ficha mostra a fase mais adiante');
+ok((await txt(p,'.fi-meta')).includes('Aprovação de Projetos'),'chip da ficha mostra a fase mais adiante');
 await papel(p,'Analista');await ficha(p,'Pico Alto');await bloco(p,'fases');await clica(p,'[data-a=f-abrir][data-v=aprovacao]');
 ok(await p.evaluate(()=>!!document.querySelector('.adv-modal')),'analista vê o que falta, sem forçar');
 await clica(p,'[data-a=close]');await papel(p,'Diretor');
 
 // Configurações › Fases
 await nav(p,'config');await p.screenshot({path:O+'7_config_fases.png',fullPage:true});
-ok((await txt(p,'.cfg-fase input')).length>=0&&(await p.evaluate(()=>document.querySelectorAll('.cfg-r.cfg-fase:not(.cfg-hd)').length))===7,'7 fases na configuração');
+ok((await txt(p,'.cfg-fase input')).length>=0&&(await p.evaluate(()=>document.querySelectorAll('.cfg-r.cfg-fase:not(.cfg-hd)').length))===8,'8 fases na configuração');
 await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));await p.fill('#nf-n','Regularização');await p.fill('#nf-p','neg');await clica(p,'form[data-form=cfg-fase] .btn');
 ok((await p.evaluate(()=>document.querySelector('#toast').textContent)).includes('já é de outra fase'),'prefixo repetido é recusado');
 await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));await p.fill('#nf-p','REG');await clica(p,'form[data-form=cfg-fase] .btn');
-ok((await p.evaluate(()=>document.querySelectorAll('.cfg-r.cfg-fase:not(.cfg-hd)').length))===8,'fase nova criada');
+ok((await p.evaluate(()=>document.querySelectorAll('.cfg-r.cfg-fase:not(.cfg-hd)').length))===9,'fase nova criada');
 await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));await p.selectOption('#dp-f','aprovacao');await p.selectOption('#dp-r','regularizacao|conclusao|');await clica(p,'form[data-form=cfg-dep] .btn');
 await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));await p.selectOption('#dp-f','regularizacao');await p.selectOption('#dp-r','aprovacao|conclusao|');await clica(p,'form[data-form=cfg-dep] .btn');
 ok((await p.evaluate(()=>document.querySelector('#toast').textContent)).includes('ciclo'),'dependência em ciclo é recusada');
-await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));await p.fill('#fe-regularizacao','Levantamento');await clica(p,'form[data-form=cfg-fe][data-f="7"] .btn');
+await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));await p.fill('#fe-regularizacao','Levantamento');await clica(p,'form[data-form=cfg-fe][data-f="8"] .btn');
 ok((await txt(p,'.cfg-fe input')).length>=0&&(await p.evaluate(()=>[...document.querySelectorAll('.cfg-fe input')].some(i=>i.value==='Levantamento'))),'etapa nova na fase nova');
 await p.screenshot({path:O+'8_config_nova.png',fullPage:true});
 
