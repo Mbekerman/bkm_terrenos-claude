@@ -37,3 +37,34 @@ jobs:
         with: { node-version: 22 }
       - run: |
           node -e "const s=require('fs').readFileSync('docs/prototipo.html','utf8');const i=s.lastIndexOf('<script>');new Function(s.slice(i+8,s.lastIndexOf('</script>')));console.log('ok')"
+
+  roteiros:
+    name: Protótipo (build e roteiros Playwright)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Bibliotecas do protótipo (Leaflet e JSZip do branch libs-prototipo)
+        run: |
+          git fetch -q origin libs-prototipo:refs/remotes/origin/libs-prototipo
+          mkdir -p tools/prototipo/libs/l && git archive origin/libs-prototipo | tar -x -C tools/prototipo/libs/l
+      - name: Gerar o protótipo e conferir que o HTML gerado está no repositório
+        run: |
+          python3 tools/prototipo/build.py
+          python3 tools/prototipo/mkdemo.py
+          git diff --exit-code -- docs/prototipo.html apps/web/src/styles.css || { echo "::error::docs/prototipo.html ou styles.css não batem com as fontes: rode python3 tools/prototipo/build.py e faça commit"; exit 1; }
+      - name: Playwright
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.63.0
+          npx playwright install --with-deps chromium
+      - name: Roteiros (tools/prototipo/testes/ci.txt)
+        run: bash tools/prototipo/testes/ci.sh
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: roteiros-logs
+          path: tools/prototipo/saida/ci/

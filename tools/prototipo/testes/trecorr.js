@@ -9,7 +9,10 @@ const muda=(p,sel,v)=>p.evaluate(([s,v])=>{let el=document.querySelector(s);if(!
 const preenche=(p,sel,v)=>p.evaluate(([s,v])=>{let el=document.querySelector(s);if(!el&&window.__tkAcha)el=window.__tkAcha(s);if(!el)throw new Error('não achei '+s);el.value=v},[sel,v]);
 const envia=(p,sel)=>p.evaluate(s=>{let f=document.querySelector(s);if(!f&&window.__tkAcha)f=window.__tkAcha(s);if(!f)throw new Error('não achei '+s);f.requestSubmit()},sel);
 const papel=(p,v)=>p.evaluate(v=>{const a=document.createElement('button');a.dataset.a='role';a.dataset.v=v;document.body.appendChild(a);a.click();a.remove()},v);
-const ficha=(p,id)=>p.evaluate(id=>{const a=document.createElement('button');a.dataset.a='abrir';a.dataset.id=id;a.dataset.tab='tarefas';document.body.appendChild(a);a.click();a.remove();document.querySelector('#bl-tarefas [data-a=cr-vista][data-v=quadro][aria-pressed=false]')?.click()},id);  // roteiro escrito sobre o quadro; a ficha abre na Lista
+// a seção Tarefas saiu da ficha (4/nov/2026): o quadro do terreno é a página Tarefas filtrada por ele, na vista Quadro
+const filtraTer=(p,id)=>p.evaluate(id=>{const e=document.querySelector('#tk-ter');if(e&&e.value!==id){e.value=id;e.dispatchEvent(new Event('change',{bubbles:true}))}},id);
+const ficha=async(p,id)=>{await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=tarefas]').click());await p.waitForTimeout(200);
+  await p.evaluate(()=>document.querySelector('[data-a=tk-vista][data-v=quadro][aria-pressed=false]')?.click());await p.waitForTimeout(150);await filtraTer(p,id);await p.waitForTimeout(200)};
 const toast=p=>p.evaluate(()=>document.querySelector('.toast')?.textContent||'');
 const tar=(s,i,tit)=>s.terrenos[i].tarefas.find(k=>k.titulo===tit);
 const addD=(d,n)=>{const x=new Date(d+'T12:00:00');x.setDate(x.getDate()+n);return x.toISOString().slice(0,10)};

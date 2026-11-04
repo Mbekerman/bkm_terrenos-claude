@@ -48,6 +48,10 @@ python3 tools/prototipo/mkdemo.py      # só se for rodar os testes que usam a d
 
 Rodar só o que a mudança toca; a varredura completa (`tvaza` e `tscroll`) ao fechar um lote.
 
+**No CI** (job "Protótipo (build e roteiros Playwright)" em `.github/workflows/ci.yml`, em todo push e PR): gera o protótipo, confere que o `docs/prototipo.html` do repositório é o que as fontes geram e roda os roteiros de `testes/ci.txt` com `testes/ci.sh` (o mesmo comando roda aqui: `bash tools/prototipo/testes/ci.sh`, logs em `saida/ci/`). Roteiro consertado entra no `ci.txt`; roteiro novo também. Ficam fora os lentos (`tvaza`, `tscroll`), os que usam dados reais da internet (`ttopo`), os de prints (`tshots`, `tvshots`, `tentshot`) e os quebrados abaixo.
+
+Quebrados em 4/nov/2026 (fora do CI até consertar): `tauto`, `tcronograma` e `tquadros` testam a seção Tarefas da ficha (quadro do terreno com Listas, Modelos, Automações do quadro e Cronograma), que saiu da ficha e ainda não tem lugar; `tarrasto`, `tconc` (concorrência à mão desligada), `tctrl`, `tctx`, `tent`, `tent2`, `tent3`, `tetapa`, `tfases`, `tfiltros`, `tgeosjc`, `tinfra`, `tloc`, `tmasc`, `tnovo`, `tobrig`, `trenda`, `trest`, `trota` e `tzonas` não foram olhados ainda.
+
 | Roteiro | Cobre |
 | --- | --- |
 | `tvaza.js` | nada vazando de quadros em 14 larguras, menu aberto e recolhido (lento) |
@@ -72,7 +76,8 @@ Rodar só o que a mudança toca; a varredura completa (`tvaza` e `tscroll`) ao f
 | `tconc.js` | concorrência: quadro ao tocar no ícone (preço por m² ponderado e média simples, período, histórico da tipologia), Atualizar preços cria registro novo, cadastro na gaveta com Incluir empresa e endereço pelo ponto, Esc e clique no mapa fecham, desativar, Leitura sem botões, escuro e celular |
 | `trenda.js` | perfil da população na ficha (idade e sexo, domicílios, mesmo raio da renda) e camadas de renda e densidade: liga pelo botão Camadas, troca de uma para a outra, Nenhuma desliga, pinta, clique abre o setor, quadro da ficha com raios e poligonal, metodologia (servido em http://bkm.test porque o fetch não lê file://) |
 | `tmerc.js` | mercado (retrato real, servido em `http://bkm.test/prototipo`): todos os empreendimentos no mapa, sem concorrência manual, card com o resumo, filtro do mercado (mesma unidade, R$/m², programa social, incorporadora, entrega com "Incluir sem informação"), Esc, legenda, e a ficha (1, 2 e 3 km com e sem programa social, lista dos não entregues com o resumo) |
-| `tlista.js` | página Mapa sem balão: clicar no pino destaca a linha, cartão no celular, lupa abre a ficha |
+| `tlista.js` | página Mapa sem balão: clicar no pino destaca a linha, cartão no celular, lupa abre a ficha completa na gaveta (X, Esc, Abrir página) |
+| `tleaflet.js` | o mapa Leaflet abre de verdade, servido como no ar (`/prototipo/mapa`): Leaflet carregado, CSS dele aplicado, ladrilhos dentro do mapa, pinos e nenhum erro no console (claro, escuro, celular; `OFFLINE=1` usa a cópia de `libs/l`) |
 | `tmini.js` | mini-mapa da Visão geral: Shift + roda, dois cliques fora da poligonal abrem o Mapa, Ver no mapa só no celular |
 | `ttopo.js` | topográfico com dados reais (GeoSampa, GeoSanja e Google; a página é servida no endereço publicado para a chave valer): laser em São Paulo sem SQL (quadra inteira), contorno pelo SQL, São José pelo Google e, com o argumento `falha`, o GeoSampa fora do ar (não pode cair no Google); baixa PDF e ZIP em `saida/t_topo/` (`CELULAR=1` na largura de celular; `LAZPERF=` aponta para o `lib/web` do pacote `laz-perf@0.0.7`) |
 | `tminied.js` | mini-mapa da Visão geral: dois cliques (dois toques no celular) na poligonal editam ali mesmo, menu do ponto, Ctrl+Z, Esc, clique fora salva, Leitura abre o Mapa (claro, escuro, celular) |

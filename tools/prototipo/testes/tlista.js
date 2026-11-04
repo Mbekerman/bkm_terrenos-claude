@@ -1,5 +1,5 @@
 // Mapa sem balão; linha com etapa; sem pontos de interesse da empresa no mapa (4/nov/2026); clicar no pino destaca o terreno na lista lateral (número do pino, nome, área, lupa);
-// no celular aparece o cartão sobre o mapa; a lupa abre a ficha. Prints em saida/t_lista.
+// no celular aparece o cartão sobre o mapa; a lupa abre a ficha completa na gaveta da direita (4/nov/2026; tela cheia no celular). Prints em saida/t_lista.
 const TMP=require('path').join(__dirname,'..','saida')+'/';const OUT=TMP+'t_lista/';require('fs').mkdirSync(OUT,{recursive:true});
 const {chromium,devices}=require('playwright');
 const L=require('path').join(__dirname,'..','libs','l')+'/';const F=require('path').join(__dirname,'..','..','..','docs','prototipo.html');
@@ -28,15 +28,19 @@ if(modo==='desktop'){ok(await p.evaluate(()=>{const l=document.querySelector('.m
   await p.screenshot({path:OUT+tag+'_sel.png'})}
 else{const c=await p.$eval('#mp-cartao',x=>x.innerText.replace(/\s+/g,' ').trim()).catch(()=>'');ok(c.includes(alvo.t),tag+' cartão sobre o mapa: '+c);await p.screenshot({path:OUT+tag+'_sel.png'})}
 if(modo==='celular')ok(await p.$eval('.fab',x=>getComputedStyle(x).display==='none'),tag+' sem o botão + Novo terreno no Mapa');
-// lupa abre a ficha num painel sobre o mapa, sem o mapa dentro
+// no desktop o clique no pino já abre a gaveta (4/nov/2026): fecha para testar a lupa
+if(modo==='desktop'&&await p.$('#tgav')){await p.click('#tgav [data-a=tb-gav-x]');await p.waitForTimeout(300)}
+// lupa abre a ficha completa na gaveta da direita, com o mapa atrás
 await p.click((modo==='desktop'?'#mp-lista':'#mp-cartao')+' .mp-it.sel .mp-lupa');await p.waitForTimeout(800);
-const fs=await p.evaluate(()=>{const e=document.querySelector('#ficha-sheet');if(!e)return null;return {h:e.querySelector('h2').textContent,mapaDentro:!!e.querySelector('#mini-mapa,.g-loc'),lapis:[...e.querySelectorAll('.kv-ed')].filter(x=>x.offsetParent).length,mapa:!!document.querySelector('#mapa .leaflet-pane'),secoes:[...e.querySelectorAll('.sec-h h2')].map(x=>x.textContent.trim()).join(' | ')}});
-console.log('   painel:',JSON.stringify(fs));ok(fs&&fs.h===alvo.t&&!fs.mapaDentro&&fs.lapis===0&&fs.mapa,tag+' lupa abre a ficha em painel, sem mapa, mapa continua atrás');
+const fs=await p.evaluate(()=>{const e=document.querySelector('#tgav.tgav-mapa');if(!e)return null;return {n:e.querySelector('.tgav-n').textContent,mapa:!!document.querySelector('#mapa .leaflet-pane'),r:document.body.dataset.rota,w:Math.round(e.getBoundingClientRect().width)}});
+console.log('   gaveta:',JSON.stringify(fs));ok(fs&&fs.n===alvo.t&&fs.mapa,tag+' lupa abre a ficha completa na gaveta, mapa continua atrás');
+if(modo==='celular')ok(fs&&fs.w>=380,tag+' gaveta em tela cheia no celular');
 await p.screenshot({path:OUT+tag+'_ficha.png'});
-await p.click('#ficha-sheet [data-a=fs-fechar]');await p.waitForTimeout(300);ok(!(await p.$('#ficha-sheet')),tag+' fechar tira o painel');
+await p.click('#tgav [data-a=tb-gav-x]');await p.waitForTimeout(300);ok(!(await p.$('#tgav')),tag+' X fecha a gaveta');
+if(modo==='desktop'){await p.click('#mp-lista .mp-it.sel .mp-lupa');await p.waitForTimeout(500);await p.keyboard.press('Escape');await p.waitForTimeout(300);ok(!(await p.$('#tgav')),tag+' Esc fecha a gaveta')}
+if(modo==='celular'&&!(await p.$('#mp-cartao .mp-it.sel .mp-lupa'))){const a3=await p.evaluate(t=>{const e=[...document.querySelectorAll('#mapa .leaflet-marker-icon.pin')].find(x=>x.title===t);const r=e.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}},alvo.t);await p.touchscreen.tap(a3.x,a3.y);await p.waitForTimeout(600)}
 await p.click((modo==='desktop'?'#mp-lista':'#mp-cartao')+' .mp-it.sel .mp-lupa');await p.waitForTimeout(500);
-if(modo==='desktop'){await p.keyboard.press('Escape');await p.waitForTimeout(300);ok(!(await p.$('#ficha-sheet')),tag+' Esc fecha o painel');await p.click('#mp-lista .mp-it.sel .mp-lupa');await p.waitForTimeout(500)}
-await p.click('#ficha-sheet [data-a=abrir]');await p.waitForTimeout(800);
-ok(await p.evaluate(t=>document.querySelector('h1')?.textContent.includes(t),alvo.t)&&!(await p.$('#ficha-sheet')),tag+' Abrir ficha completa vai para a ficha e fecha o painel');
+await p.click('#tgav [data-a=tb-pagina]');await p.waitForTimeout(800);
+ok(await p.evaluate(t=>document.querySelector('h1')?.textContent.includes(t),alvo.t)&&!(await p.$('#tgav')),tag+' Abrir página vai para a ficha e fecha a gaveta');
 await ctx.close()}
-console.log('ERROS',JSON.stringify(errs));await b.close()})();
+console.log(errs.length?'ERROS '+JSON.stringify(errs):'TUDO OK');await b.close();process.exit(errs.length?1:0)})();
