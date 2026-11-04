@@ -493,14 +493,15 @@ begin
 end $$;
 
 -- Código curto do terreno (decisão do Moisés, 4/nov/2026): letra + 3 dígitos pela ordem de cadastro,
--- A001 a A999, depois B001... até Z999 (25.974 terrenos).
+-- A001 a A999, depois B001... até Z999, sem as letras I e O, que se confundem com 1 e 0
+-- (decisão do Moisés, 4/nov/2026): 24 letras, 23.976 terrenos.
 create or replace function app.codigo_terreno(p_n bigint)
 returns text language plpgsql immutable set search_path = '' as $$
 begin
-  if p_n is null or p_n < 1 or p_n > 26 * 999 then
+  if p_n is null or p_n < 1 or p_n > 24 * 999 then
     raise exception 'Acabaram os códigos de terreno (Z999).';
   end if;
-  return chr(65 + ((p_n - 1) / 999)::int) || lpad((((p_n - 1) % 999) + 1)::text, 3, '0');
+  return substr('ABCDEFGHJKLMNPQRSTUVWXYZ', ((p_n - 1) / 999)::int + 1, 1) || lpad((((p_n - 1) % 999) + 1)::text, 3, '0');
 end $$;
 grant execute on function app.codigo_terreno(bigint) to authenticated;
 

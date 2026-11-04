@@ -86,8 +86,14 @@ values (:'emp', 'Terreno Av. Cupecê — esquina', :'diretor', 'corretor', :'sp'
 returning id as t1 \gset
 select pg_temp.ok((select codigo from app.terrenos where id = :'t1') ~ '^[A-Z]\d{3}$', 'código curto (letra e 3 dígitos) gerado');
 select pg_temp.ok(app.codigo_terreno(1) = 'A001' and app.codigo_terreno(999) = 'A999' and app.codigo_terreno(1000) = 'B001'
-              and app.codigo_terreno(25974) = 'Z999', 'código: A001 a A999, depois B001, até Z999');
-select pg_temp.falha('select app.codigo_terreno(25975)', 'depois do Z999 não há código');
+              and app.codigo_terreno(23976) = 'Z999', 'código: A001 a A999, depois B001, até Z999');
+select pg_temp.ok(app.codigo_terreno(8 * 999) = 'H999' and app.codigo_terreno(8 * 999 + 1) = 'J001'
+              and app.codigo_terreno(13 * 999) = 'N999' and app.codigo_terreno(13 * 999 + 1) = 'P001',
+              'código pula as letras I e O: H999 → J001, N999 → P001');
+select pg_temp.ok((select count(*) from generate_series(1, 23976) n where app.codigo_terreno(n) ~ '^[IO]') = 0
+              and (select count(distinct app.codigo_terreno(n)) from generate_series(1, 23976) n) = 23976,
+              'nenhum código com I ou O, e nenhum repetido');
+select pg_temp.falha('select app.codigo_terreno(23977)', 'depois do Z999 não há código');
 select pg_temp.ok((select situacao_ocupacao from app.terrenos where id = :'t1') = 'nao_informado', 'campo não preenchido fica "não informado"');
 select versao as v from app.terrenos where id = :'t1' \gset
 select pg_temp.falha(format($$update app.terrenos set zona = 'leste' where id = %L$$, :'t1'), 'terreno não é alterado direto na tabela');
