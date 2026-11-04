@@ -232,11 +232,12 @@ function pgConfig(){
   /* Pré-requisitos, Checklist e Tarefas da etapa ficam dentro da Jornada (1/nov/2026) */
   if(['prereq','checklist','etapaTar'].includes(UI.cfgAba))UI.cfgAba='jornada';
   const C=cfg(),aba=UI.cfgAba||'fases';
-  const abas=[['fases','Fases'],['funil','Etapas de '+faseN(faseEnt())],['jornada','Jornada'],['status','Status e motivos'],['notif','Notificações'],['equipe','Equipe'],['viab','Viabilidade'],['zonas','Parâmetros urbanísticos'],['campos','Campos'],['tarefas','Tarefas']];
+  const abas=[['fases','Fases'],['funil','Etapas de '+faseN(faseEnt())],['jornada','Jornada'],['status','Status e motivos'],['notif','Notificações'],['equipe','Equipe'],['viab','Viabilidade'],['zonas','Parâmetros urbanísticos'],['topo','Topografia'],['campos','Campos'],['tarefas','Tarefas']];
   let corpo='';
   if(aba==='fases')corpo=cfgFasesHtml();
   if(aba==='viab')corpo=cfgViabHtml();
   if(aba==='zonas')corpo=cfgZonasHtml();
+  if(aba==='topo')corpo=cfgTopoHtml();
   if(aba==='tarefas')corpo=cfgTarefasHtml();
   if(aba==='campos')corpo=itCfgCamposHtml();
   if(aba==='etapaTar')corpo=etCfgHtml();

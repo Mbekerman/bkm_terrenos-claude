@@ -108,7 +108,8 @@ const subN=k=>(cfg().subs.find(s=>s.k===k)||{}).nome||k||'';
 const STATUS_N={ativo:'Ativo',comprado:'Comprado',perdido:'Perdido',descartado:'Descartado',stand_by:'Stand By'};
 const motivoN=(st,k)=>((cfg().motivos[st]||[]).find(m=>m.k===k)||{}).nome||k||'';
 const SIDX=k=>STAGES.findIndex(s=>s[0]===k);const SN=k=>(STAGES.find(s=>s[0]===k)||[,k])[1];
-const INFRA=[['energia','Energia'],['agua','Água'],['esgoto','Esgoto'],['gas','Gás canalizado'],['asfalto','Asfalto'],['drenagem','Drenagem pluvial'],['iluminacao','Iluminação pública'],['calcada','Calçada'],['fibra','Telefonia / fibra óptica']];
+/* itens da visita técnica (decisão do Moisés, 3/nov/2026); os quatro primeiros com viabilidade técnica também pedem a da concessionária */
+const INFRA=[['energia','Energia'],['agua','Água'],['esgoto','Esgoto'],['drenagem','Drenagem'],['gas','Gás canalizado'],['asfalto','Asfalto'],['iluminacao','Iluminação pública'],['calcada','Calçada']];
 const ZONEAMENTOS=['ZEU','ZEUa','ZEUP','ZEUPa','ZEM','ZEMP','ZC','ZCa','ZC-ZEIS','ZCOR-1','ZCOR-2','ZCOR-3','ZM','ZMa','ZMIS','ZMISa','ZEIS-1','ZEIS-2','ZEIS-3','ZEIS-4','ZEIS-5','ZDE-1','ZDE-2','ZPI-1','ZPI-2','ZER-1','ZER-2','ZERa','ZPR','ZEP','ZEPAM','ZPDS','ZOE'];
 const TIPOS_DOC={ata:['Ata de reunião','Reuniões',null],matricula:['Matrícula atualizada','Imóvel',30],onus:['Certidão de ônus reais','Imóvel',30],iptu:['Certidão negativa de IPTU','Imóvel',90],vend:['Certidões pessoais do vendedor','Vendedor',30],topo:['Levantamento planialtimétrico','Técnico',null],sond:['Sondagem SPT','Técnico',null],amb:['Avaliação ambiental preliminar','Técnico',null],minuta:['Minuta de promessa de compra e venda','Contratos',null],foto:['Foto','Mídia',null],planta:['Planta ou croqui','Técnico',null],lote_pdf:['Planta do lote da prefeitura (PDF)','Técnico',null],lote_dxf:['Desenho do lote da prefeitura (DXF)','Técnico',null],topo_pdf:['Topográfico preliminar (PDF)','Técnico',null],topo_dxf:['Topográfico preliminar (DXF + imagem)','Técnico',null]};
 const CHECK_DIL=[['matricula',1],['onus',1],['iptu',1],['vend',1],['topo',1],['sond',0],['amb',0],['minuta',1]];
@@ -354,7 +355,7 @@ function completude(t){
     ['Inscrição e IPTU',t.insc.length>0,'cadastro','insc'],
     ['Proprietário',t.pessoas.some(p=>p.papel==='proprietario'),'cadastro','pessoas'],
     ['Zoneamento',!!analiseVig(t),'urbanismo',null],
-    ['Infraestrutura',infraNV(t)===0,'urbanismo',null],
+    ['Visita técnica',infraNV(t)===0,'infra','visita'],
     ['Valor pedido',!!ofertaRef(t)?.valor,'comercial',null],
     ['Temperatura',!!t.neg?.temp,'comercial',null]];
   const ok=c.filter(x=>x[1]).length;
@@ -553,10 +554,7 @@ function abaNegociacao(t){
 function abaUrbanismo(t,parte){
   if(parte==='param')return `<div class="stack">${secAnaliseUrb(t)}${secRestricoes(t)}${secHistUso(t)}</div>`;
   return `<div class="stack">${parte==='infra'?'':secAnaliseUrb(t)}
-  <section class="sec" id="sec-infra"><div class="sec-h"><h2>Infraestrutura na porta</h2>${infraNV(t)?`<span class="faint" style="font-size:13px">${infraNV(t)} não verificado${infraNV(t)>1?"s":""}</span>`:""}</div><div style="padding-bottom:6px">
-  ${INFRA.map(([k,l])=>{const r=t.infra[k]||{d:'nao_verificado'};return `<div class="infra"><span>${l}</span><span class="seg3" role="group" aria-label="${l}">${[['nao_verificado','Não verificado','nv'],['sim','Sim','sim'],['nao','Não','nao']].map(([v,lb,c])=>`<button type="button" class="${c}" aria-pressed="${r.d===v}" data-a="infra" data-k="${k}" data-v="${v}">${lb}</button>`).join('')}</span>
-  <span class="meta">${r.d!=='nao_verificado'?`${fd(r.data)} ·<input aria-label="Fonte da verificação de ${l}" data-ch="infra-fonte" data-k="${k}" value="${esc(r.fonte)}" class="infra-f">`:''}</span></div>`}).join('')}</div>
-  </section></div>`;
+  ${vtSecao(t)}${vtecSecao(t)}</div>`;
 }
 const OPT_REU={modalidade:{presencial:'Presencial',online:'Online'},local:{bkm:'Na BKM',externo:'Externa'},status:{realizada:'Realizada',agendada:'Agendada',cancelada:'Cancelada'}};
 const proxReuniao=t=>(t.reunioes||[]).filter(m=>m.status==='agendada'&&m.data>=HOJE).sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora))[0];
@@ -789,7 +787,6 @@ document.addEventListener('click',e=>{
     case 'del-mat':t.mats.splice(Number(a.dataset.i),1);save();render();break;
     case 'del-pes':t.pessoas.splice(Number(a.dataset.i),1);save();render();break;
     case 'del-confr':t.confr.splice(Number(a.dataset.i),1);save();render();break;
-    case 'infra':{const k=a.dataset.k,v=a.dataset.v;t.infra[k]=v==='nao_verificado'?{d:v}:{d:v,data:HOJE,fonte:t.infra[k]?.fonte||'Visita ao local'};save();render();break}
     case 'prop-form':UI.propForm=!UI.propForm;render();break;
     case 'forcar':UI.modal='forcar';renderModal();break;
     case 'ent-buscar':{const x=T(a.dataset.id);if(x)gEntornoTerreno(x);break}
@@ -875,7 +872,6 @@ document.addEventListener('change',e=>{const el=e.target;
   if(el.id==='kmz-in'){const f=el.files?.[0];if(!f||!UI.kmzNovo)return;UI.kmzNovo=false;lerKmz(f).then(nvKmzLido).catch(err=>toast(err.message,true));return}
   const t=UI.route==='terreno'?T(UI.id):null;if(!t)return;
   if(el.dataset.ch==='dil-sit'){const d=t.dilig.find(x=>x.id===el.dataset.k);d.sit=el.value;log(t,`Diligência "${d.titulo}": ${OPT.sitDil[el.value]}`);save();render()}
-  if(el.dataset.ch==='infra-fonte'){t.infra[el.dataset.k].fonte=el.value;save()}
   if(el.dataset.ch==='prop-status'){const lp=lastProp(t);lp.status=el.value;log(t,`Proposta v${lp.v}: ${OPT.statusProp[el.value]}`);save();render()}
 });
 document.addEventListener('input',e=>{const el=e.target;
@@ -952,7 +948,7 @@ function seedVazio(){return {id:uid(),situacao:'ativo',prioridade:null,descricao
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&GG&&(svFechar()||lugarFechar())){e.preventDefault();return}if(e.key==='Escape'&&temaMenu){temaMenu=false;renderTema();return}if(e.key==='Escape'&&perfilMenu){perfilMenu=false;renderPerfil();return}if(e.key==='Escape'&&UI.modal){UI.modal=null;renderModal()}});
 /* ===================== kanban: arrastar e soltar (regras em proto_funil.js: levarAte, soltar) ===================== */
 function posRender(){try{if(MAPA){MAPA.remove()}}catch(e){}MAPA=null;PINS=POIS=DES=BASE=null;try{if(MINI)MINI.remove()}catch(e){}MINI=null;
-  if(UI.route==='mapa')initMapa();if(UI.route==='terreno'){fiAbaVisivel();if(!blocoFechado('geral'))initMini();if(typeof geoCartorio==='function')geoCartorio(T(UI.id))}fichaSheet()}
+  if(UI.route==='mapa')initMapa();if(UI.route==='terreno'){fiAbaVisivel();if(!blocoFechado('geral'))initMini();if(typeof geoCartorio==='function')geoCartorio(T(UI.id));tpAuto(T(UI.id))}fichaSheet()}
 document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const el=e.target;if(!(el instanceof HTMLElement)||el.matches('button,a,input,select,textarea'))return;if(el.matches('[data-a][tabindex]')){e.preventDefault();el.click()}});
 let arrastando=null;
 document.addEventListener('dragstart',e=>{const c=e.target.closest?.('.kcard[draggable="true"]');if(!c)return;arrastando=c.dataset.id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',arrastando);c.classList.add('arrastando');c.closest('.col')?.classList.add('origem');document.body.classList.add('dnd')});

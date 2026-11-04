@@ -13,7 +13,7 @@
    selecionado no mapa e vista das tarefas só atualizam o endereço. O terreno vai pelo código. */
 const RT_BASE=location.pathname.startsWith('/prototipo')?'/prototipo':null;
 const RT_SEC=['comercial','terreno','parametros','massa','viabilidade','infra','entorno','jornada','documentos','historico'];
-const RT_CFG={fases:'fases',funil:'etapas',prereq:'pre-requisitos',status:'status',checklist:'checklist',etapaTar:'tarefas-da-etapa',jornada:'jornada',notif:'notificacoes',equipe:'equipe',viab:'viabilidade',zonas:'parametros',campos:'campos',tarefas:'tarefas'};
+const RT_CFG={fases:'fases',funil:'etapas',prereq:'pre-requisitos',status:'status',checklist:'checklist',etapaTar:'tarefas-da-etapa',jornada:'jornada',notif:'notificacoes',equipe:'equipe',viab:'viabilidade',zonas:'parametros',topo:'topografia',campos:'campos',tarefas:'tarefas'};
 const rtCod=id=>T(id)?.codigo||null;
 const rtId=c=>c&&S.terrenos.find(t=>(t.codigo||'').toUpperCase()===c.toUpperCase())?.id||null;
 const rtViabs=id=>(S.viabs||[]).filter(v=>v.tid===id);

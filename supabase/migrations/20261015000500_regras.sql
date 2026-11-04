@@ -16,6 +16,17 @@ cross join app.itens_infraestrutura i
 left join app.terreno_infraestrutura ti on ti.terreno_id = t.id and ti.item = i.codigo
 where i.ativo;
 
+-- Viabilidades técnicas: todo serviço do catálogo para todo terreno; o que não foi registrado é "não solicitada".
+-- Vencida: retorno viável ou condicionado com a validade já passada.
+create view app.v_terreno_viabilidades_tecnicas with (security_invoker = true) as
+select t.id as terreno_id, t.empresa_id, i.codigo as servico, i.nome, i.ordem,
+       coalesce(v.situacao, 'nao_solicitada') as situacao, v.concessionaria, v.solicitada_em, v.emitida_em, v.validade, v.condicoes,
+       coalesce(v.situacao in ('viavel','condicionada') and v.validade < current_date, false) as vencida
+from app.terrenos t
+cross join app.itens_infraestrutura i
+left join app.terreno_viabilidades_tecnicas v on v.terreno_id = t.id and v.servico = i.codigo
+where i.ativo and i.viabilidade_tecnica;
+
 -- Inscrição com a revisão vigente do exercício mais recente.
 create view app.v_inscricoes with (security_invoker = true) as
 select ins.*, v.id as valor_id, v.exercicio, v.revisao, v.valor_venal_terreno, v.valor_venal_construcao, v.valor_venal_imovel,
@@ -417,6 +428,7 @@ left join app.membros mp on mp.empresa_id = a.empresa_id and mp.user_id = a.pedi
 left join app.membros mv on mv.empresa_id = a.empresa_id and mv.user_id = a.aprovador_previsto
 left join app.membros md on md.empresa_id = a.empresa_id and md.user_id = a.decidido_por;
 
+grant select on app.v_terreno_viabilidades_tecnicas to authenticated;
 grant select on app.v_terreno_infraestrutura, app.v_inscricoes, app.v_urbanismo_vigente, app.v_lote_zonas,
                 app.v_documentos, app.v_checklist, app.v_reunioes, app.v_terrenos,
                 app.v_mapa, app.v_terreno_pontos, app.v_tarefas, app.v_terreno_entorno, app.v_entorno_buscas,
@@ -1951,6 +1963,7 @@ begin
     cartorio_origem = case when nullif(trim(v_novo.cartorio), '') is null then null
                            when nullif(trim(v_novo.cartorio), '') is distinct from t.cartorio then 'digitado' else t.cartorio_origem end,
     historico_uso = nullif(trim(v_novo.historico_uso), ''),
+    visita_tecnica_em = v_novo.visita_tecnica_em,
     latitude = v_novo.latitude, longitude = v_novo.longitude, poligono_geojson = v_novo.poligono_geojson,
     precisao_localizacao = v_novo.precisao_localizacao, area_documental_m2 = v_novo.area_documental_m2,
     area_cadastral_m2 = v_novo.area_cadastral_m2, area_levantamento_m2 = v_novo.area_levantamento_m2,
@@ -2601,6 +2614,67 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
+-- Classificação topográfica (decisão do Moisés, 3/nov/2026): mede-se a inclinação
+-- do plano que melhor se ajusta às cotas e a terra mexida para deixar o terreno
+-- nesse plano (corte + aterro ÷ área, em m³/m²); vale o pior dos dois. Acima do
+-- limite de inclinação é crítico mesmo numa rampa regular. Sem a terra mexida
+-- (cotas do Google, que erram 1 a 2 m), só Plano, Inclinado ou, acima do limite, crítico.
+-- ---------------------------------------------------------------------
+create or replace function app.classificar_topografia(p_empresa uuid, p_inclinacao numeric, p_terra numeric)
+returns text
+language sql stable security definer set search_path = ''
+as $$
+  with c as (
+    select coalesce(x.plano_ate_pct, 3) as pl, coalesce(x.inclinado_ate_pct, 30) as inc,
+           coalesce(x.leve_de_m3m2, 0.25) as le, coalesce(x.regular_de_m3m2, 0.5) as re, coalesce(x.critico_de_m3m2, 1.0) as cr
+    from (select 1) u left join app.topografia_config x on x.empresa_id = p_empresa)
+  select case when p_inclinacao is null then null
+              when p_inclinacao > inc or p_terra > cr then 'acidentado_critico'
+              when p_terra > re then 'acidentado_regular'
+              when p_terra > le then 'acidentado_leve'
+              when p_inclinacao <= pl then 'plano'
+              else 'inclinado' end
+  from c $$;
+
+-- O front mede (laser em São Paulo, Google fora) e grava aqui; o perfil sai do banco.
+create or replace function app.registrar_topografia(p_terreno uuid, p_inclinacao numeric, p_terra numeric, p_desnivel numeric, p_fonte text)
+returns text
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos; v_perfil text; v_terra numeric;
+begin
+  select * into t from app.terrenos where id = p_terreno for update;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  if p_fonte is null or p_fonte not in ('laser','google') then raise exception 'Fonte das cotas inválida' using errcode = '22023'; end if;
+  if p_inclinacao is null or p_inclinacao < 0 then raise exception 'Inclinação inválida' using errcode = '22023'; end if;
+  -- com o Google a terra mexida não tem precisão: não é guardada
+  v_terra := case when p_fonte = 'laser' then p_terra end;
+  if p_fonte = 'laser' and (v_terra is null or v_terra < 0) then raise exception 'Com o laser, a terra mexida é obrigatória' using errcode = '22023'; end if;
+  v_perfil := app.classificar_topografia(t.empresa_id, p_inclinacao, v_terra);
+  update app.terrenos set topo_perfil = v_perfil, topo_inclinacao_pct = round(p_inclinacao, 2), topo_terra_m3m2 = round(v_terra, 3),
+    topo_desnivel_m = round(p_desnivel, 2), topo_fonte = p_fonte, topo_calculado_em = now(), topo_calculado_por = auth.uid()
+  where id = t.id;
+  return v_perfil;
+end $$;
+
+-- Limites da classificação: só o administrador; vale para as próximas medições
+-- e para reclassificar as já feitas (o perfil gravado é recalculado aqui).
+create or replace function app.salvar_topografia_config(p_empresa uuid, p_plano numeric, p_inclinado numeric, p_leve numeric, p_regular numeric, p_critico numeric)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  perform app.exigir_administrador(p_empresa);
+  insert into app.topografia_config (empresa_id, plano_ate_pct, inclinado_ate_pct, leve_de_m3m2, regular_de_m3m2, critico_de_m3m2)
+  values (p_empresa, p_plano, p_inclinado, p_leve, p_regular, p_critico)
+  on conflict (empresa_id) do update set plano_ate_pct = excluded.plano_ate_pct, inclinado_ate_pct = excluded.inclinado_ate_pct,
+    leve_de_m3m2 = excluded.leve_de_m3m2, regular_de_m3m2 = excluded.regular_de_m3m2, critico_de_m3m2 = excluded.critico_de_m3m2;
+  update app.terrenos set topo_perfil = app.classificar_topografia(empresa_id, topo_inclinacao_pct, topo_terra_m3m2)
+  where empresa_id = p_empresa and topo_perfil is not null;
+end $$;
+
+-- ---------------------------------------------------------------------
 -- Cartório da circunscrição pelo pino do terreno (sem inscrição consultada).
 -- O front consulta a prefeitura e grava aqui; só preenche o vazio ou troca o
 -- que veio da prefeitura (o pino mudou de lugar), nunca o digitado.
@@ -2748,6 +2822,7 @@ grant execute on function
   app.excluir_ponto_terreno(uuid, uuid), app.restaurar_ponto_terreno(uuid, uuid),
   app.salvar_distancias_pontos(uuid, double precision, double precision, jsonb),
   app.registrar_consulta_lote(uuid, jsonb, jsonb, numeric, jsonb, jsonb, text[], boolean), app.registrar_consulta_area(uuid, jsonb, text[]), app.cartorio_da_prefeitura(uuid, text),
+  app.classificar_topografia(uuid, numeric, numeric), app.registrar_topografia(uuid, numeric, numeric, numeric, text), app.salvar_topografia_config(uuid, numeric, numeric, numeric, numeric, numeric),
   app.registrar_zonas_sem_inscricao(uuid, jsonb, text), app.salvar_zona_parametro(uuid, uuid, jsonb),
   app.parametros_zona(uuid, uuid, text, text, numeric, text),
   app.criar_empresa(text, text),

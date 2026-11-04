@@ -30,7 +30,7 @@ function audSnap(){AUD={};S.terrenos.forEach(t=>{AUD[t.id]={j:retrato(t),h:(t.hi
 function diffTerreno(a,b){
   const campos=[],itens=[];
   Object.keys({...a,...b}).forEach(k=>{
-    if(['hist','relevo','id','codigo','criFonte','criLoc','pontosExcl','geoArea'].includes(k))return;
+    if(['hist','relevo','id','codigo','criFonte','criLoc','pontosExcl','geoArea','topoClass'].includes(k))return;
     const va=a[k],vb=b[k];if(JSON.stringify(va)===JSON.stringify(vb))return;
     /* o pino acompanha a poligonal: a mudança de lugar dele vai junto do ajuste, sem log próprio */
     if(['lat','lng','precisao'].includes(k)&&JSON.stringify(a.poly)!==JSON.stringify(b.poly))return;
@@ -40,7 +40,12 @@ function diffTerreno(a,b){
         if(x==='viab'){if(na.viab?.id&&na.viab.id===nb.viab?.id)return;campos.push({k:'neg.viab',txt:nb.viab?`Estudo de viabilidade vinculado: ${nb.viab.nome||''}`:'Estudo de viabilidade desvinculado'});return}
         const f=v=>v==null||v===''?'não informado':x==='etapa'?SN(v):x==='sub'?subN(v):x==='status'?STATUS_N[v]||v:x==='motivo'?motivoN(nb.status,v):x==='retomar'?fd(v):x==='temp'?v+'/5':String(v);
         campos.push({k:'neg.'+x,txt:`${NEG_LAB[x]||x}: ${f(na[x])} → ${f(nb[x])}`})});return}
-    if(k==='infra'){Object.keys({...va,...vb}).forEach(x=>{const da=va?.[x]?.d,db=vb?.[x]?.d;if(da!==db)campos.push({k:'infra.'+x,txt:`Infraestrutura · ${x}: ${da||'não verificado'} → ${db||'não verificado'}`})});return}
+    if(k==='infra'){Object.keys({...va,...vb}).forEach(x=>{const ra=va?.[x]||{},rb=vb?.[x]||{},n=(INFRA.find(i=>i[0]===x)||[,x])[1];
+      if((ra.d||'nao_verificado')!==(rb.d||'nao_verificado'))campos.push({k:'infra.'+x,txt:`Visita técnica · ${n}: ${VT_N[ra.d||'nao_verificado']} → ${VT_N[rb.d||'nao_verificado']}`});
+      if((ra.obs||'')!==(rb.obs||''))campos.push({k:'infra.'+x+'.obs',txt:`Visita técnica · ${n}, observação: ${ra.obs||'vazia'} → ${rb.obs||'vazia'}`})});return}
+    if(k==='vtec'){Object.keys({...va,...vb}).forEach(x=>{const ra=va?.[x]||{},rb=vb?.[x]||{},n=(VTEC.find(i=>i[0]===x)||[,x])[1],L={conc:'concessionária',sol:'pedida em',emi:'emitida em',val:'validade',cond:'condições'};
+      if((ra.s||'nao_solicitada')!==(rb.s||'nao_solicitada'))campos.push({k:'vtec.'+x,txt:`Viabilidade técnica · ${n}: ${VTEC_N[ra.s||'nao_solicitada']} → ${VTEC_N[rb.s||'nao_solicitada']}`});
+      Object.keys(L).forEach(c=>{if((ra[c]||'')===(rb[c]||''))return;const f=v=>!v?'vazio':['sol','emi','val'].includes(c)?fd(v):v;campos.push({k:'vtec.'+x+'.'+c,txt:`Viabilidade técnica · ${n}, ${L[c]}: ${f(ra[c])} → ${f(rb[c])}`})})});return}
     if(Array.isArray(va)||Array.isArray(vb)){const [lab,desc]=ARR_LAB[k]||[k,()=>''];const A=va||[],B=vb||[];
       const chave=(x,i)=>x&&x.id!=null?'id:'+x.id:x&&x.v!=null?'v:'+x.v:'i:'+i;
       const mA=new Map(A.map((x,i)=>[chave(x,i),x])),mB=new Map(B.map((x,i)=>[chave(x,i),x]));
@@ -88,7 +93,9 @@ function audit(){
     if(!campos.length&&!itens.length){const vaz=novos.filter(e=>/atualizad[oa]s?$/.test(e.txt)&&!(e.det&&e.det.length));if(vaz.length)t.hist=t.hist.filter(e=>!vaz.includes(e));return}
     if(novos.length){const e=novos[novos.length-1];const det=campos.map(c=>c.txt).filter(x=>x!==e.txt);if(det.length)e.det=(e.det||[]).concat(det)}
     else{const secs=new Set(campos.map(c=>SEC_DE[c.k]).filter(Boolean));
-      const txt=itens.length&&!campos.length?itens[0]:secs.size===1&&!itens.length?`${SECOES[[...secs][0]].titulo} editado`:'Ficha editada';
+      /* aba Infraestrutura: visita técnica e viabilidades técnicas não são seções da ficha antiga */
+      const so=re=>campos.length&&!itens.length&&campos.every(c=>re.test(c.k));
+      const txt=so(/^(infra\.|visita$)/)?(campos.length===1?campos[0].txt:'Visita técnica editada'):so(/^vtec\./)?(campos.length===1?campos[0].txt:'Viabilidades técnicas editadas'):itens.length&&!campos.length?itens[0]:secs.size===1&&!itens.length?`${SECOES[[...secs][0]].titulo} editado`:'Ficha editada';
       const det=campos.map(c=>c.txt).concat(itens.length&&!(itens.length===1&&!campos.length)?itens:[]);
       t.hist.push({em:agora(),user:me(),txt,det:det.length?det:undefined})}
     juntarLog(t,s,campos,itens,novos.length);

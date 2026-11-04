@@ -248,6 +248,8 @@ erDiagram
   pessoas ||--o{ terreno_pessoas : participa
   terrenos ||--o{ terreno_infraestrutura : verifica
   itens_infraestrutura ||--o{ terreno_infraestrutura : item
+  terrenos ||--o{ terreno_viabilidades_tecnicas : "viabilidade da concessionária"
+  itens_infraestrutura ||--o{ terreno_viabilidades_tecnicas : servico
   terrenos ||--o{ analises_urbanisticas : analisa
   analises_urbanisticas ||--o{ analise_zoneamentos : "uma porcao por lote e zona"
   inscricoes_municipais |o--o{ analise_zoneamentos : "lote (nulo = parte sem inscricao)"
@@ -397,9 +399,19 @@ erDiagram
   terreno_infraestrutura {
     uuid terreno_id PK
     text item PK
-    text disponibilidade "nao_verificado | sim | nao"
+    text disponibilidade "nao_verificado | sim | parcial | nao | nao_se_aplica"
     date data_verificacao
-    text fonte
+    text observacoes
+  }
+  terreno_viabilidades_tecnicas {
+    uuid terreno_id PK
+    text servico PK "energia | agua | esgoto | gas"
+    text situacao "nao_solicitada | solicitada | viavel | condicionada | nao_viavel"
+    text concessionaria
+    date solicitada_em
+    date emitida_em
+    date validade
+    text condicoes
   }
   analises_urbanisticas {
     uuid id PK
@@ -462,6 +474,12 @@ erDiagram
 **GeoSampa pelo SQL (São Paulo).** Na inscrição, "Buscar no GeoSampa" (automático ao cadastrar o SQL) consulta o servidor de camadas do Novo GeoSampa (`geoserver.geosampa.prefeitura.sp.gov.br`, WFS/WMS) pelo repasse do Caddy em `/geosampa`, porque o servidor só aceita chamadas de navegador vindas do próprio GeoSampa. Traz o lote fiscal (`lote_cidadao`: poligonal em UTM 23S SIRGAS 2000, áreas, uso, CIB, condomínio) e os atributos de cada camada que toca a poligonal (zoneamento das Leis 18.081 e 18.177, ZEIS, eixos, macroárea e fator de planejamento, operação urbana, mananciais, tombamento e áreas envoltórias, áreas contaminadas, melhoramento viário, faixa não edificável, córrego a até 50 m, risco, inundação, influência de Metrô e CPTM, vegetação significativa, zona fiscal). `app.registrar_consulta_lote` confere que o lote é o da inscrição, grava a consulta inteira (nunca alterada), completa só o que está vazio na inscrição (área cadastral) e o cadastro fiscal (CIB, zona fiscal) e, se pedido, troca as zonas desse lote (com a área de cada uma) na análise urbanística, sem mexer nos outros lotes. Poligonal e áreas do terreno continuam passando por `app.salvar_terreno`. A planta (PDF, gerada pelo próprio servidor) e o desenho (DXF R12 com lotes, calçada, quadra, edificações, curvas de nível com cota e pontos cotados, montado no navegador) entram como documentos `lote_pdf` e `lote_dxf`, com versão. Testada, valor do m² e valor venal não estão no GeoSampa novo; continuam digitados por exercício em `inscricao_valores`.
 
 **Cartório da circunscrição** (3/nov/2026). `terrenos.cartorio` guarda o cartório de registro de imóveis da área do terreno ("13º CRI") e `cartorio_origem` diz de onde veio: `prefeitura` (em São Paulo, a camada `cartorio_registro_imovel` do GeoSampa) ou `digitado`. A consulta do lote (`registrar_consulta_lote`) preenche só o vazio, e só quando a camada acha um cartório; sem lote consultado, o front consulta pelo pino e grava por `app.cartorio_da_prefeitura`, que preenche o vazio ou troca o que veio da prefeitura (o pino mudou), nunca o digitado. Mudar pelo `salvar_terreno` marca `digitado`; apagar volta a vazio, sem origem. O cartório de cada matrícula continua em `matriculas.cartorio`.
+
+**Infraestrutura** (lote 3 da ficha em abas, 4/nov/2026; decisões do Moisés de 3/nov). Três quadros na aba:
+
+- **Relevo, classificação topográfica.** O front mede as cotas dentro da poligonal (laser 2020 da prefeitura em São Paulo, grade de 1 m, ou 2 m acima de 4 ha; Google em grade de 5 m fora) e ajusta um plano por mínimos quadrados. A inclinação é a do plano; a terra mexida é a média de |cota − plano|, ou seja, corte + aterro até o plano ÷ área. `app.registrar_topografia` grava os números em `terrenos.topo_*` e o perfil sai de `app.classificar_topografia`, que pega o pior dos dois pelos limites de `app.topografia_config` (sem linha, os padrões: Plano até 3%, Inclinado até 30%, acima crítico; terra mexida acima de 0,25 leve, 0,5 regular e 1 m³/m² crítico). Com o Google a terra mexida não é guardada (erro de 1 a 2 m): o perfil fica entre Plano, Inclinado e crítico. Poligonal nova apaga a medição (`t_norm`), e o front mede de novo. `app.salvar_topografia_config` (administrador) reclassifica o que já foi medido.
+- **Visita técnica.** `terreno_infraestrutura`, com os 8 itens ativos de `itens_infraestrutura` (telefonia desativada), cada um Sim, Parcial, Não ou Não se aplica, com observação; `terrenos.visita_tecnica_em` guarda a data da visita.
+- **Viabilidades técnicas.** `terreno_viabilidades_tecnicas`, uma por serviço marcado `viabilidade_tecnica` no catálogo (Energia, Água, Esgoto, Gás). Retorno exige a data de emissão, e a validade nunca é anterior a ela. A view `v_terreno_viabilidades_tecnicas` traz todos os serviços, com `vencida` quando o retorno é viável ou condicionado e a validade já passou.
 
 **Restrições e entorno** (lote 2 da ficha em abas, 4/nov/2026). A aba Parâmetros urbanísticos tem uma lista fixa por tema (ambiental, patrimônio, vias e redes, riscos) com a resposta para o terreno inteiro. Os dados vêm da consulta pela poligonal do terreno (`app.registrar_consulta_area` em `consultas_area`, só em cidade com base; a poligonal do dia vai junto) ou, sem ela, da soma das consultas dos lotes. A consulta, do lote ou da poligonal, traz também as camadas consultadas por raio, com a distância de cada feição até a área (`_dist_m`):
 - córrego até 30 m;

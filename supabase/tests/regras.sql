@@ -151,11 +151,55 @@ select pg_temp.ok((select sum(percentual_participacao) from app.terreno_pessoas 
 
 -- ---------------------------------------------------------------------
 \echo '# infraestrutura'
-select pg_temp.ok((select count(*) from app.v_terreno_infraestrutura where terreno_id = :'t1' and disponibilidade = 'nao_verificado') = 9, 'os 9 itens começam como não verificados');
+select pg_temp.ok((select count(*) from app.v_terreno_infraestrutura where terreno_id = :'t1' and disponibilidade = 'nao_verificado') = 8, 'os 8 itens da visita técnica começam como não verificados');
 select pg_temp.falha(format($$insert into app.terreno_infraestrutura (terreno_id, item, empresa_id, disponibilidade) values (%L, 'agua', %L, 'sim')$$, :'t1', :'emp'),
   'sim/não exige data de verificação');
 insert into app.terreno_infraestrutura (terreno_id, item, empresa_id, disponibilidade, data_verificacao, fonte) values (:'t1', 'agua', :'emp', 'sim', current_date, 'Visita');
 select pg_temp.ok((select disponibilidade from app.v_terreno_infraestrutura where terreno_id = :'t1' and item = 'agua') = 'sim', 'água registrada como sim');
+insert into app.terreno_infraestrutura (terreno_id, item, empresa_id, disponibilidade, data_verificacao, observacoes) values (:'t1', 'calcada', :'emp', 'parcial', current_date, 'Só na frente da Cupecê');
+select pg_temp.ok((select disponibilidade from app.v_terreno_infraestrutura where terreno_id = :'t1' and item = 'calcada') = 'parcial', 'visita técnica aceita Parcial (e Não se aplica)');
+select pg_temp.ok(not exists (select 1 from app.v_terreno_infraestrutura where item = 'fibra'), 'telefonia saiu da visita técnica');
+\echo '# viabilidades técnicas'
+select pg_temp.ok((select string_agg(servico, ',' order by ordem) from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1') = 'energia,agua,esgoto,gas'
+  and not exists (select 1 from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1' and situacao <> 'nao_solicitada'), 'energia, água, esgoto e gás, todas não solicitadas');
+select pg_temp.falha(format($$insert into app.terreno_viabilidades_tecnicas (terreno_id, servico, empresa_id, situacao) values (%L, 'asfalto', %L, 'solicitada')$$, :'t1', :'emp'),
+  'asfalto não tem viabilidade técnica');
+select pg_temp.falha(format($$insert into app.terreno_viabilidades_tecnicas (terreno_id, servico, empresa_id, situacao) values (%L, 'agua', %L, 'viavel')$$, :'t1', :'emp'),
+  'retorno da concessionária exige a data de emissão');
+select pg_temp.falha(format($$insert into app.terreno_viabilidades_tecnicas (terreno_id, servico, empresa_id, situacao, emitida_em, validade) values (%L, 'agua', %L, 'viavel', current_date, current_date - 1)$$, :'t1', :'emp'),
+  'validade não pode ser antes da emissão');
+insert into app.terreno_viabilidades_tecnicas (terreno_id, servico, empresa_id, situacao, concessionaria, emitida_em, validade) values (:'t1', 'agua', :'emp', 'viavel', ' Sabesp ', current_date - 400, current_date - 35);
+insert into app.terreno_viabilidades_tecnicas (terreno_id, servico, empresa_id, situacao, emitida_em, validade, condicoes) values (:'t1', 'energia', :'emp', 'condicionada', current_date - 10, current_date + 170, 'Reforço da rede pela incorporadora');
+select pg_temp.ok((select vencida and concessionaria = 'Sabesp' from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1' and servico = 'agua')
+  and not (select vencida from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1' and servico = 'energia'), 'viabilidade com a validade passada sai como vencida');
+\echo '# classificação topográfica'
+select pg_temp.ok(app.classificar_topografia(:'emp', 2, 0.1) = 'plano' and app.classificar_topografia(:'emp', 12, 0.2) = 'inclinado'
+  and app.classificar_topografia(:'emp', 3, 0.25) = 'plano' and app.classificar_topografia(:'emp', 12, 0.3) = 'acidentado_leve'
+  and app.classificar_topografia(:'emp', 2, 0.8) = 'acidentado_regular' and app.classificar_topografia(:'emp', 5, 1.2) = 'acidentado_critico'
+  and app.classificar_topografia(:'emp', 31, 0.1) = 'acidentado_critico', 'cinco perfis pelo pior entre a inclinação e a terra mexida (o limite entra)');
+select pg_temp.ok(app.classificar_topografia(:'emp', 12, null) = 'inclinado' and app.classificar_topografia(:'emp', 35, null) = 'acidentado_critico',
+  'sem a terra mexida (Google): plano, inclinado ou crítico pela inclinação');
+select app.registrar_topografia(:'t1', 8.4, 0.31, 4.2, 'laser') as tperf \gset
+select pg_temp.ok(:'tperf' = 'acidentado_leve' and (select topo_perfil = 'acidentado_leve' and topo_terra_m3m2 = 0.31 and topo_fonte = 'laser' and topo_calculado_por = :'diretor'
+  from app.terrenos where id = :'t1'), 'medição do laser gravada com o perfil calculado no banco');
+select app.registrar_topografia(:'t1', 8.4, 0.9, 4.2, 'google') as tperf \gset
+select pg_temp.ok(:'tperf' = 'inclinado' and (select topo_terra_m3m2 is null from app.terrenos where id = :'t1'), 'com o Google a terra mexida não é guardada');
+select pg_temp.falha(format('select app.registrar_topografia(%L, 5, null, 1, %L)', :'t1', 'laser'), 'com o laser a terra mexida é obrigatória');
+select pg_temp.falha(format('select app.salvar_topografia_config(%L, 3, 2, 0.25, 0.5, 1)', :'emp'), 'limite do inclinado acima do plano');
+select app.salvar_topografia_config(:'emp', 10, 30, 0.25, 0.5, 1);
+select pg_temp.ok((select topo_perfil from app.terrenos where id = :'t1') = 'plano', 'limites novos reclassificam o que já foi medido');
+select app.salvar_topografia_config(:'emp', 3, 30, 0.25, 0.5, 1);
+select pg_temp.como(:'analista');
+select pg_temp.falha(format('select app.salvar_topografia_config(%L, 3, 30, 0.25, 0.5, 1)', :'emp'), 'só o administrador muda os limites');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format('select app.registrar_topografia(%L, 5, 0.1, 1, %L)', :'t1', 'laser'), 'leitura não grava a classificação');
+select pg_temp.como(:'diretor');
+select versao as tv from app.terrenos where id = :'t1' \gset
+select app.salvar_terreno(:'t1', :tv, '{"visita_tecnica_em":"2026-11-03"}') \gset
+select pg_temp.ok((select visita_tecnica_em = '2026-11-03' and topo_perfil is not null from app.terrenos where id = :'t1'), 'data da visita técnica pela ficha; sem mexer na poligonal, a classificação fica');
+select versao as tv from app.terrenos where id = :'t1' \gset
+select app.salvar_terreno(:'t1', :tv, '{"poligono_geojson":{"type":"Polygon","coordinates":[[[-46.65,-23.66],[-46.64,-23.66],[-46.64,-23.672],[-46.65,-23.66]]]}}') \gset
+select pg_temp.ok((select topo_perfil is null and topo_fonte is null and topo_calculado_em is null from app.terrenos where id = :'t1'), 'poligonal nova apaga a classificação para medir de novo');
 
 -- ---------------------------------------------------------------------
 \echo '# parâmetros urbanísticos por zona e tipo de empreendimento'

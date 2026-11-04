@@ -447,7 +447,7 @@ function concluirDesenho(){const t=T(UI.mpAlvo),p=UI.desenho||[];if(p.length<3)r
   t.poly=p.map(x=>[+x[0].toFixed(7),+x[1].toFixed(7)]);
   /* o pino acompanha a poligonal (pedido do Moisés, 24/out/2026): vai para o centro dela, senão fica para trás ou até fora */
   {const c=centroPoly(t.poly);t.lat=+c[0].toFixed(7);t.lng=+c[1].toFixed(7);if(!t.precisao||t.precisao==='nao_informada')t.precisao='aproximada'}
-  const a=areaPoly(t.poly),a0=areaPoly(JSON.parse(UI.desOrig||'null')||[]);log(t,UI.desEditando?polyLogTxt(a0,a):`Poligonal desenhada no mapa: ${m2(a)}`);UI.mpModo=null;UI.desenho=null;UI.desHist=null;UI.vSel=null;UI.vMenu=false;UI.vMover=false;save();mpRefresh();toast(`Poligonal salva: ${m2(a)}.`)}
+  const a=areaPoly(t.poly),a0=areaPoly(JSON.parse(UI.desOrig||'null')||[]);log(t,UI.desEditando?polyLogTxt(a0,a):`Poligonal desenhada no mapa: ${m2(a)}`);UI.mpModo=null;UI.desenho=null;UI.desHist=null;UI.vSel=null;UI.vMenu=false;UI.vMover=false;save();mpRefresh();toast(`Poligonal salva: ${m2(a)}.`);tpAuto(t)}
 
 /* KMZ / KML */
 async function lerKmz(file){let txt;
@@ -596,12 +596,11 @@ function abaGeral(t,parte){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.v
 </tbody></table></div>
     ${abaixoMin(t)?`<div class="banner warn" style="margin-top:12px">${ic('warn')}<div>${abaixoMinTxt(t)}.</div></div>`:''}`
     :`<div class="muted">${vs.length?'Nenhum estudo marcado como válido.':`Sem estudo.${UI.role!=='Leitura'?' <button class="linkbtn ed" data-a="vb-novo">Montar estudo</button>':''}`}</div>`}</div></section>`;
-  const rel=relevoHtml(t)||topoBotao(t)?`<section class="sec"><div class="sec-h"><h2>Relevo</h2>${t.relevo?`<span class="faint" style="font-size:12px">estimado em ${fd(t.relevo.em)}</span>`:''}${topoBotao(t)}</div>${relevoHtml(t)?`<div class="sec-b">${relevoHtml(t)}</div>`:''}</section>`:'';
+  const rel=tpSecao(t);
   if(parte==='neg')return neg;if(parte==='viab')return viab;if(parte==='relevo')return rel;if(parte==='entorno')return poi+setoresCard(t)+perfilCard(t);
   const vx=v&&viabsDe(t.id).find(x=>x.id===v.id),vc=vx?vbCalc(vx):null;
   const est=(t.entorno?.itens||[]).filter(x=>x.cat==='metro_trem'&&!x.excl).sort((a,b)=>a.pe-b.pe)[0];
   const of1=t.ofertas.slice().sort((a,b)=>a.data.localeCompare(b.data))[0],cp=corrPrincipal(t);
-  const topo=[t.topografia&&t.topografia!=='nao_informado'&&OPT.topografia[t.topografia],t.relevo?`desnível ${num(t.relevo.desnivel,1)} m`:''].filter(Boolean).join(' · ');
   const resumo=`<section class="sec g-res"><div class="sec-h"><h2>Resumo</h2></div><div class="sec-b"><dl class="kvl">
     ${linE('Endereço',esc([t.logradouro&&(t.logradouro+(t.numero?', '+t.numero:'')),t.bairro].filter(Boolean).join(' · ')),'end',['cep','logradouro','numero','complemento','bairro','municipio'])}
     ${linE('Município e região',esc([t.municipio||'São Paulo · SP',t.zona&&'Zona '+OPT.zona[t.zona]].filter(Boolean).join(' · ')),'reg',['zona'])}
@@ -611,7 +610,7 @@ function abaGeral(t,parte){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.v
     ${linLink('VGV do estudo válido',v?mi(v.vgv):'',`<span class="kv-ed" aria-hidden="true"></span>`)}
     ${linLink('Distância do metrô ou trem',est?`<span>${est.pe<1000?Math.round(est.pe/10)*10+' m':num(est.pe/1000,2)+' km'} a pé${est.min!=null?` · ${est.min} min`:''}<span class="kv-2">${esc(est.nome)}</span></span>`:(t.entorno?'Nenhuma estação a até 1,5 km a pé':''),`<button class="kv-ed kv-ir" data-a="tab" data-t="entorno" title="Ver o entorno" aria-label="Ver o entorno">${ic('fwd',16)}</button>`)}
     ${linLink('Valor pedido na entrada',of1?.valor?`<span>${mi(of1.valor)}<span class="kv-2">oferta de ${fd(of1.data)}</span></span>`:'',`<button class="kv-ed kv-ir" data-a="tab" data-t="comercial" title="Ver as ofertas" aria-label="Ver as ofertas">${ic('fwd',16)}</button>`)}
-    ${linLink('Perfil topográfico',esc(topo),`<button class="kv-ed kv-ir" data-a="tab" data-t="infra" title="Ver a infraestrutura" aria-label="Ver a infraestrutura">${ic('fwd',16)}</button>`)}
+    ${linLink('Perfil topográfico',tpResumo(t),`<button class="kv-ed kv-ir" data-a="tab" data-t="infra" title="Ver a infraestrutura" aria-label="Ver a infraestrutura">${ic('fwd',16)}</button>`)}
     ${linLink('Corretor',cp?`<span>${esc(cp.nome)}<span class="kv-2">${esc(cp.imob)}</span></span>`:'',`<button class="kv-ed kv-ir" data-a="tab" data-t="comercial" title="Ver os corretores" aria-label="Ver os corretores">${ic('fwd',16)}</button>`)}</dl></div></section>`;
   return `<div class="geral"><div class="geral-c">${loc}</div><div class="geral-c">${resumo}</div></div>`}
 function L_initMini(){const el=$('#mini-mapa'),t=T(UI.id);if(!el||!t||t.lat==null)return;if(!window.L){el.innerHTML='<div class="mapa-erro">Mapa indisponível.</div>';return}
