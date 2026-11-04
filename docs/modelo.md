@@ -235,6 +235,7 @@ erDiagram
   terrenos ||--o{ matriculas : possui
   terrenos ||--o{ inscricoes_municipais : possui
   inscricoes_municipais ||--o{ consultas_lote : "lote na base da prefeitura"
+  terrenos ||--o{ consultas_area : "poligonal na base da prefeitura"
   municipios ||--o| bases_cadastrais : "GeoSampa, GeoSanja"
   municipios ||--o{ inscricoes_municipais : "cidade da inscricao"
   inscricoes_municipais ||--o{ inscricao_valores : "valor venal e IPTU por exercicio e revisao"
@@ -281,6 +282,7 @@ erDiagram
     uuid eixo_comercial_id FK
     text cartorio "CRI da circunscricao"
     text cartorio_origem "prefeitura | digitado"
+    text historico_uso "pesquisado, digitado"
     float latitude
     float longitude
     jsonb poligono_geojson "obrigatoria"
@@ -349,6 +351,15 @@ erDiagram
     jsonb poligono_geojson
     jsonb camadas "atributos de tudo que toca o lote"
     jsonb zonas "porcao de cada zona"
+    text_arr camadas_com_erro
+  }
+  consultas_area {
+    uuid id PK
+    uuid terreno_id FK
+    text base FK
+    timestamptz consultado_em
+    jsonb poligono_geojson "a poligonal consultada"
+    jsonb camadas "com _dist_m e quota_ambiental"
     text_arr camadas_com_erro
   }
   inscricao_valores {
@@ -451,6 +462,17 @@ erDiagram
 **GeoSampa pelo SQL (São Paulo).** Na inscrição, "Buscar no GeoSampa" (automático ao cadastrar o SQL) consulta o servidor de camadas do Novo GeoSampa (`geoserver.geosampa.prefeitura.sp.gov.br`, WFS/WMS) pelo repasse do Caddy em `/geosampa`, porque o servidor só aceita chamadas de navegador vindas do próprio GeoSampa. Traz o lote fiscal (`lote_cidadao`: poligonal em UTM 23S SIRGAS 2000, áreas, uso, CIB, condomínio) e os atributos de cada camada que toca a poligonal (zoneamento das Leis 18.081 e 18.177, ZEIS, eixos, macroárea e fator de planejamento, operação urbana, mananciais, tombamento e áreas envoltórias, áreas contaminadas, melhoramento viário, faixa não edificável, córrego a até 50 m, risco, inundação, influência de Metrô e CPTM, vegetação significativa, zona fiscal). `app.registrar_consulta_lote` confere que o lote é o da inscrição, grava a consulta inteira (nunca alterada), completa só o que está vazio na inscrição (área cadastral) e o cadastro fiscal (CIB, zona fiscal) e, se pedido, troca as zonas desse lote (com a área de cada uma) na análise urbanística, sem mexer nos outros lotes. Poligonal e áreas do terreno continuam passando por `app.salvar_terreno`. A planta (PDF, gerada pelo próprio servidor) e o desenho (DXF R12 com lotes, calçada, quadra, edificações, curvas de nível com cota e pontos cotados, montado no navegador) entram como documentos `lote_pdf` e `lote_dxf`, com versão. Testada, valor do m² e valor venal não estão no GeoSampa novo; continuam digitados por exercício em `inscricao_valores`.
 
 **Cartório da circunscrição** (3/nov/2026). `terrenos.cartorio` guarda o cartório de registro de imóveis da área do terreno ("13º CRI") e `cartorio_origem` diz de onde veio: `prefeitura` (em São Paulo, a camada `cartorio_registro_imovel` do GeoSampa) ou `digitado`. A consulta do lote (`registrar_consulta_lote`) preenche só o vazio, e só quando a camada acha um cartório; sem lote consultado, o front consulta pelo pino e grava por `app.cartorio_da_prefeitura`, que preenche o vazio ou troca o que veio da prefeitura (o pino mudou), nunca o digitado. Mudar pelo `salvar_terreno` marca `digitado`; apagar volta a vazio, sem origem. O cartório de cada matrícula continua em `matriculas.cartorio`.
+
+**Restrições e entorno** (lote 2 da ficha em abas, 4/nov/2026). A aba Parâmetros urbanísticos tem uma lista fixa por tema (ambiental, patrimônio, vias e redes, riscos) com a resposta para o terreno inteiro. Os dados vêm da consulta pela poligonal do terreno (`app.registrar_consulta_area` em `consultas_area`, só em cidade com base; a poligonal do dia vai junto) ou, sem ela, da soma das consultas dos lotes. A consulta, do lote ou da poligonal, traz também as camadas consultadas por raio, com a distância de cada feição até a área (`_dist_m`):
+- córrego até 30 m;
+- árvores da calçada até 30 m;
+- classificação viária da CET até 30 m;
+- vila até 20 m;
+- linhas de alta tensão (aérea e subterrânea) e ferrovia até 30 m;
+- rede da Comgás até 100 m, da qual se mostra a mais perto;
+- áreas contaminadas até 30 m.
+
+Também entram as manchas de inundação de 5, 25 e 100 anos (sim ou não, porque o GeoSampa não tem cota de inundação) e as unidades de conservação. O perímetro de qualificação ambiental da Quota Ambiental (PA 1 a PA 13) não está no GeoSampa: vem do Mapa 3 da Lei 16.402/2016 (SHP da SMUL), juntado por PA em `docs/dados/quota-ambiental-3550308.json` por `tools/parametros/gerar_quota_ambiental.py`. O front acha o PA pela poligonal e o grava na consulta, na chave `quota_ambiental`. Largura de via e rodovias ficaram de fora (decisão do Moisés). `terrenos.historico_uso` guarda o histórico de uso pesquisado, editado pelo `salvar_terreno`; o automático são as áreas contaminadas da consulta. O DXF do lote leva cada tema numa layer (inundação, contaminação, vilas, unidade de conservação, vegetação, árvores, Comgás, alta tensão, ferrovia, classificação viária com o nome da via, melhoramento e faixa não edificável), e a Quota Ambiental vai no título.
 
 **GeoSanja pela inscrição imobiliária (São José dos Campos).** Não há serviço público de camadas: a ficha usa a API do próprio site (`geo.sjc.sp.gov.br/v1`) com o token de visitante (`autenticar?token=VISITANTE`, vale um ano), pelo repasse do Caddy em `/geosanja` (o site não libera CORS). A busca pela inscrição (`localizar`, ferramenta `SearchICTool`) devolve só a poligonal do lote, sem área cadastral, uso nem endereço. As camadas liberadas ao visitante são lidas por `GetFeatureInfo` com raio cobrindo o lote e conferidas no navegador contra a poligonal: zona da LC 623 com a área no lote e o link da ficha da zona, macrozona, área de desenvolvimento estratégico, centralidade com o CA máximo, região, setor e subsetor, corredores, recarga de aquífero, parques e unidades de conservação, núcleos informais, risco de escorregamento e PMRR, linha de transmissão e ferrovia. A planta é montada no navegador (ortofoto de 8 cm, curvas e zoneamento, com o lote em vermelho, num PDF de uma página) e o DXF leva lote, arruamentos, curvas do IGC (1:10.000, cota como elevação) e zonas, em UTM 23S SIRGAS 2000. Fechadas ao visitante: atributos do lote, inundação, APAs estaduais e federais, bens tombados, loteamentos e circunscrição imobiliária. É uma API interna da prefeitura, que pode mudar sem aviso.
 

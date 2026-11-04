@@ -4,7 +4,7 @@
 
 const hhmm=s=>s&&s.length>10?s.slice(11,16):'';
 const emCompleto=s=>s?(fd(s.slice(0,10))+(s.length>10?' · '+s.slice(11).replace('.',','):'')):'';
-const LAB_CAMPO={situacao:'Situação',aDoc:'Área documental',aCad:'Área cadastral',aLev:'Área de levantamento',aEst:'Área estimada',fonteArea:'Fonte da área adotada',testada:'Testada'};
+const LAB_CAMPO={situacao:'Situação',aDoc:'Área documental',aCad:'Área cadastral',aLev:'Área de levantamento',aEst:'Área estimada',fonteArea:'Fonte da área adotada',testada:'Testada',histUso:'Histórico de uso'};
 Object.values(SECOES).forEach(s=>s.campos.forEach(([k,l])=>{LAB_CAMPO[k]=l}));
 const SEC_DE={};Object.entries(SECOES).forEach(([id,s])=>s.campos.forEach(([k])=>{SEC_DE[k]=id}));
 const TIPO_CAMPO={};Object.values(SECOES).forEach(s=>s.campos.forEach(([k,,tipo,opt])=>{TIPO_CAMPO[k]=[tipo,opt]}));
@@ -30,7 +30,7 @@ function audSnap(){AUD={};S.terrenos.forEach(t=>{AUD[t.id]={j:retrato(t),h:(t.hi
 function diffTerreno(a,b){
   const campos=[],itens=[];
   Object.keys({...a,...b}).forEach(k=>{
-    if(['hist','relevo','id','codigo','criFonte','criLoc','pontosExcl'].includes(k))return;
+    if(['hist','relevo','id','codigo','criFonte','criLoc','pontosExcl','geoArea'].includes(k))return;
     const va=a[k],vb=b[k];if(JSON.stringify(va)===JSON.stringify(vb))return;
     /* o pino acompanha a poligonal: a mudança de lugar dele vai junto do ajuste, sem log próprio */
     if(['lat','lng','precisao'].includes(k)&&JSON.stringify(a.poly)!==JSON.stringify(b.poly))return;
@@ -245,9 +245,10 @@ function ajustaDash(){const g=document.querySelector('.dash-g'),s=g&&g.querySele
   const cabe=()=>t.scrollWidth<=w.clientWidth+1;g.classList.remove('tab-larga');s.classList.remove('enxuta');w.classList.remove('empilha');
   if(cabe())return;s.classList.add('enxuta');if(cabe())return;s.classList.remove('enxuta');g.classList.add('tab-larga');if(cabe())return;s.classList.add('enxuta');if(cabe())return;
   s.classList.remove('enxuta');g.classList.remove('tab-larga')}  // nem assim: ajustaTabelas empilha como nas outras listas
-function ajustaTabelas(){ajustaDash();document.querySelectorAll('.tblwrap,.dt-wrap').forEach(w=>{const t=w.querySelector('table');if(!t)return;
+function ajustaTabelas(raiz){if(!(raiz instanceof Element)){raiz=null;ajustaDash()}(raiz||document).querySelectorAll('.tblwrap,.dt-wrap').forEach(w=>{const t=w.querySelector('table');if(!t)return;
   const cab=[...t.querySelectorAll('thead th')].map(th=>{const c=th.cloneNode(true);c.querySelectorAll('.dt-ar').forEach(x=>x.remove());return c.textContent.trim()});
   t.querySelectorAll('tbody tr').forEach(tr=>{let i=0;[...tr.children].forEach(td=>{if(!td.hasAttribute('data-l'))td.setAttribute('data-l',cab[i]||'');i+=td.colSpan||1})});
+  if(!w.offsetParent)return;  // escondida (quadro fechado): mede quando o quadro abrir (qdPor)
   w.classList.remove('empilha');if(!w.classList.contains('rola')&&t.scrollWidth>w.clientWidth+1)w.classList.add('empilha')})}
 let tbRz;window.addEventListener('resize',()=>{cancelAnimationFrame(tbRz);tbRz=requestAnimationFrame(ajustaTabelas)});
 const _posRender=posRender;posRender=function(){_posRender.apply(this,arguments);ajustaTabelas();if(typeof gBuscasEndereco==='function')gBuscasEndereco();if(typeof gEntornoAuto==='function')gEntornoAuto();

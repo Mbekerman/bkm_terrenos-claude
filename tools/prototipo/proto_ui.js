@@ -96,7 +96,8 @@ const QD={},QD_SETA='<svg class="bl-seta" width="24" height="24" viewBox="0 0 24
 const qdCab=s=>s.querySelector(':scope > .sec-h, :scope > form > .sec-h');
 function qdLista(){const pn=document.querySelector('.fi-aba .bl-c');if(!pn||UI.route!=='terreno')return [];const aba=abaN(UI.tab);if(aba==='geral'||aba==='historico')return [];
   const qs=[...pn.querySelectorAll('section.sec')].filter(s=>qdCab(s)&&!s.parentElement.closest('section.sec'));return qs.length<2?[]:qs}
-function qdPor(s,ab){const b=s.querySelector(':scope .qd-tg');s.classList.toggle('qd-fechado',!ab);if(b)b.setAttribute('aria-expanded',String(ab))}
+function qdPor(s,ab){const b=s.querySelector(':scope .qd-tg');s.classList.toggle('qd-fechado',!ab);if(b)b.setAttribute('aria-expanded',String(ab));
+  if(ab&&typeof ajustaTabelas==='function')ajustaTabelas(s)}  // a tabela só se mede aberta: a que não cabe vira lista
 function uiQuadros(){const qs=qdLista();if(!qs.length)return;const aba=abaN(UI.tab);
   qs.forEach(s=>{if(!s.dataset.q){const h=qdCab(s).querySelector('h2');s.dataset.q=s.id||('t:'+(h?h.textContent:'').replace(/\d+/g,'').trim())}});
   const st=QD[aba]||(QD[aba]=new Set([qs[0].dataset.q]));

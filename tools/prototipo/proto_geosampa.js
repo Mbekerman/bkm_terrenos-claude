@@ -36,19 +36,42 @@ const GEO_CAMADAS=[
   ['GEOSAMPA_area_contaminada_sigac','Suspeita de contaminação','ge_poligono',p=>[p.dc_tipo_situacao,p.dc_atividade].filter(Boolean).join(' · '),'crit'],
   ['geoconvias_lei_melhoramento_vigente','Melhoramento viário','ge_poligono',p=>`Lei ${p.cd_numero_lei_vigente}/${p.an_lei_melhoramento_vigente} · ${p.tx_descricao_tipo_melhoramento||''}`,'warn'],
   ['geoconvias_faixa_nao_edificavel','Faixa não edificável','ge_poligono',p=>`${num(p.qt_metro_largura_faixa,2)} m · Lei ${p.cd_numero_lei_vigente}`,'warn'],
-  ['drenagem','Córrego a até 50 m','ge_linha',p=>[p.nm_acidente||p.nm_descritivo,p.nm_tipo_trecho].filter(Boolean).join(' · '),'warn',50],
+  ['drenagem','Córrego a até 30 m','ge_linha',p=>[p.nm_acidente||p.nm_descritivo,p.nm_tipo_trecho].filter(Boolean).join(' · ')||'Córrego','warn',30],
   ['area_risco_geologico_v2','Risco geológico','ge_poligono',p=>[p.tx_grau_de_risco_geologico,p.tx_tipo_processo_geologico].filter(Boolean).join(' · '),'crit'],
   ['restricao_geotecnica','Restrição geotécnica','ge_poligono',p=>p.nm_perimetro,'warn'],
-  ['mancha_inundacao_100','Mancha de inundação (100 anos)','ge_poligono',p=>p.nm_bacia_hidrografica,'warn'],
+  ['mancha_inundacao_5','Mancha de inundação (5 anos)','ge_poligono',p=>p.nm_bacia_hidrografica,'crit',0,['nm_bacia_hidrografica','qt_profundidade_maxima']],
+  ['mancha_inundacao_25','Mancha de inundação (25 anos)','ge_poligono',p=>p.nm_bacia_hidrografica,'warn',0,['nm_bacia_hidrografica','qt_profundidade_maxima']],
+  ['mancha_inundacao_100','Mancha de inundação (100 anos)','ge_poligono',p=>p.nm_bacia_hidrografica,'warn',0,['nm_bacia_hidrografica','qt_profundidade_maxima']],
   ['area_influencia_metro','Influência do Metrô','ge_poligono',()=>'Consultar o Metrô antes de projetar','warn'],
   ['area_influencia_trem','Influência da CPTM','ge_poligono',()=>'Consultar a CPTM antes de projetar','warn'],
   ['GEOSAMPA_cgpabi_vegetacao_significativa','Vegetação significativa','ge_multipoligono',p=>[p.tx_tema||'Vegetação significativa',p.an_vegetacao_significativa].filter(Boolean).join(' · '),'warn'],
+  // lote 2 da ficha em abas (4/nov/2026): entorno do lote, com a distância medida em _dist_m
+  ['area_contaminada_reabilitada_svma@30','Área contaminada ou reabilitada a até 30 m','ge_multipoligono',p=>[p.dc_classificacao_area_contaminada,p.tx_contaminante].filter(Boolean).join(' · ')||'Área contaminada','warn',30],
+  ['GEOSAMPA_area_contaminada_sigac@30','Suspeita de contaminação a até 30 m','ge_poligono',p=>[p.dc_tipo_situacao,p.dc_atividade].filter(Boolean).join(' · ')||'Suspeita de contaminação','warn',30],
+  ['GEOSAMPA_cadparcs_parque_unidade_conservacao','Parque ou unidade de conservação','ge_multipoligono',p=>[p.nm_area,p.tx_tipo_categoria].filter(Boolean).join(' · '),'warn'],
+  ['pde_outra_unidade_conservacao','Unidade de conservação (PDE)','ge_multipoligono',p=>[p.nm_unidade_conservacao,p.tx_tipo_categoria_parque_unidade_conservacao].filter(Boolean).join(' · '),'warn'],
+  ['arvore_v2','Árvores na calçada a até 30 m','ge_ponto',()=>'Árvore','',30,['cd_identificador']],
+  ['classificacao_viaria_cet','Classificação viária (CET)','ge_linha',p=>`${geoTit(p.nm_logradouro_completo)}: ${p.dc_tipo_classificacao_viaria}`,'',30,['nm_logradouro_completo','dc_tipo_classificacao_viaria']],
+  ['enquadramento_vila','Vila a até 20 m','ge_poligono',p=>p.tx_indicador_enquadramento_vila||'Vila','warn',20,['tx_indicador_enquadramento_vila','tx_link_despacho_diario_oficial']],
+  ['linha_alta_tensao_v2','Linha aérea de alta tensão a até 30 m','ge_linha',()=>'Linha aérea','warn',30,['cd_identificador_alta_tensao']],
+  ['linha_subterranea_alta_tensao','Linha subterrânea de alta tensão a até 30 m','ge_linha',p=>p.nm_linha_subterranea_alta_tensao||'Linha subterrânea','warn',30,['nm_linha_subterranea_alta_tensao']],
+  ['ferrovia_mdc_v2','Ferrovia a até 30 m','ge_linha',()=>'Ferrovia','warn',30,['cd_identificador_ferrovia_mdc']],
+  ['rede_comgas','Rede da Comgás a até 100 m','ge_linha',p=>'a '+num(p._dist_m,0)+' m','',100,['cd_identificador_comgas']],
   ['zona_fiscal','Zona fiscal','ge_poligono',p=>p.sg_zona_fiscal,''],
   ['cartorio_registro_imovel','Cartório de registro de imóveis','ge_poligono',p=>[p.cd_numero_cartorio&&p.cd_numero_cartorio+' CRI',p.nm_subdistrito].filter(Boolean).join(' · '),''],
 ];
 // Camadas do desenho (DXF) e da planta (PDF): [camada, layer no DXF, cor ACI, campo da cota]
 const GEO_DESENHO=[['quadra_viaria_editada','QUADRA_VIARIA',8],['calcada','CALCADA',9],['lote_cidadao','LOTES',1],['edificacao_v3','EDIFICACOES',5],
   ['curva_mestra_v2','CURVA_MESTRA',30,'cd_numero_isovalor'],['curva_intermediaria_v2','CURVA_INTERMEDIARIA',40,'cd_numero_isovalor'],['ponto_cotado_v2','PONTO_COTADO',6,'cd_altitude'],['drenagem','CORREGOS',4]];
+// Só no DXF (a planta em PDF fica com as camadas de base): uma layer por tema das restrições e do entorno.
+// [camada, layer, cor ACI, campo da cota, raio do círculo (pontos)]
+const GEO_DESENHO_DXF=[...GEO_DESENHO,['mancha_inundacao_5','INUNDACAO_5_ANOS',150],['mancha_inundacao_25','INUNDACAO_25_ANOS',140],['mancha_inundacao_100','INUNDACAO_100_ANOS',130],
+  ['area_contaminada_reabilitada_svma','AREA_CONTAMINADA',10],['GEOSAMPA_area_contaminada_sigac','SUSPEITA_CONTAMINACAO',12],['enquadramento_vila','VILAS',211],
+  ['GEOSAMPA_cadparcs_parque_unidade_conservacao','UNIDADE_CONSERVACAO',94],['GEOSAMPA_cgpabi_vegetacao_significativa','VEGETACAO_SIGNIFICATIVA',84],
+  ['arvore_v2','ARVORES',3,null,1.5],['rede_comgas','REDE_COMGAS',2],['linha_alta_tensao_v2','ALTA_TENSAO',1],['torre_alta_tensao_v2','ALTA_TENSAO_TORRES',1,null,1],
+  ['linha_subterranea_alta_tensao','ALTA_TENSAO_SUBTERRANEA',6],['ferrovia_mdc_v2','FERROVIA',250],['classificacao_viaria_cet','CLASSIF_VIARIA_CET',7],
+  ['geoconvias_lei_melhoramento_vigente','MELHORAMENTO_VIARIO',30],['geoconvias_faixa_nao_edificavel','FAIXA_NAO_EDIFICAVEL',20]];
+const geoRotulo=(k,p)=>k==='lote_cidadao'?p.nr_contribuinte:k==='classificacao_viaria_cet'?`${geoTit(p.nm_logradouro_completo)} - ${p.dc_tipo_classificacao_viaria}`:null;
 const GEO_ARQ={};   // arquivos gerados nesta sessão, por terreno: {pdf:Blob, dxf:Blob}
 
 // --- coordenadas: UTM SIRGAS 2000 (padrão fuso 23S, EPSG:31983) -> latitude/longitude
@@ -75,15 +98,45 @@ async function geoWfs(params){const u=new URL(GEO_BASE+'ows');Object.entries({se
   const r=await fetch(u);if(!r.ok)throw new Error('GeoSampa respondeu '+r.status);const j=await r.json();if(!j||!Array.isArray(j.features))throw new Error('Resposta inesperada do GeoSampa');return j.features}
 const geoWkt=g=>'POLYGON('+geoAneis(g).map(r=>'('+r.map(p=>p[0]+' '+p[1]).join(',')+')').join(',')+')';
 
+const geoTit=s=>String(s||'').toLowerCase().replace(/\s+/g,' ').trim().replace(/(^|\s)(\S)/g,(m,a,b)=>a+b.toUpperCase()).replace(/\b(De|Da|Do|Das|Dos|E)\b/g,x=>x.toLowerCase());
+// Distância em metros (UTM) entre a área e uma feição: 0 quando se tocam.
+function geoDist(area,g){const A=geoAneis(area),G=g.type==='Point'?[[g.coordinates]]:g.type==='MultiPoint'?g.coordinates.map(c=>[c]):geoAneis(g);if(!A.length||!G.length)return null;
+  const dentro=pt=>geoDentro(pt,area),pol=/Polygon/.test(g.type);
+  if(G.some(r=>r.some(dentro))||pol&&A.some(r=>r.some(pt=>geoDentro(pt,g))))return 0;
+  const dps=(p,a,b)=>{const dx=b[0]-a[0],dy=b[1]-a[1],l=dx*dx+dy*dy,u=l?Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/l)):0;return Math.hypot(p[0]-a[0]-u*dx,p[1]-a[1]-u*dy)};
+  const cruza=(a,b,c,d)=>{const o=(p,q,r)=>Math.sign((q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]));return o(a,b,c)!==o(a,b,d)&&o(c,d,a)!==o(c,d,b)};
+  let m=Infinity;for(const r of A)for(let i=0;i<r.length-1;i++)for(const q of G){if(q.length===1){m=Math.min(m,dps(q[0],r[i],r[i+1]));continue}
+    for(let j=0;j<q.length-1;j++){if(cruza(r[i],r[i+1],q[j],q[j+1]))return 0;m=Math.min(m,dps(q[j],r[i],r[i+1]),dps(q[j+1],r[i],r[i+1]),dps(r[i],q[j],q[j+1]),dps(r[i+1],q[j],q[j+1]))}}
+  return m===Infinity?null:Math.round(m*10)/10}
+// Todas as camadas de GEO_CAMADAS em volta de uma área (lote ou poligonal do terreno), em UTM 23S.
+// "camada@x" é a mesma camada consultada de novo com outro raio; campos: só esses atributos ficam (mais _dist_m).
+async function geoConsultar(area){const wkt=geoWkt(area),camadas={},erros=[];
+  await Promise.all(GEO_CAMADAS.map(async([k,,geom,,,dist,campos])=>{const cam=k.split('@')[0];
+    try{const fs=await geoWfs({typeNames:'geoportal:'+cam,count:'300',CQL_FILTER:dist?`DWITHIN(${geom},${wkt},${dist},meters)`:`INTERSECTS(${geom},${wkt})`});
+      camadas[k]=fs.map(f=>{const p=campos?Object.fromEntries(campos.map(c=>[c,f.properties[c]])):{...f.properties};if(dist&&f.geometry)p._dist_m=geoDist(area,f.geometry);return {...f,properties:p}})
+        .sort((a,b)=>(a.properties._dist_m??0)-(b.properties._dist_m??0))}catch(e){erros.push(k)}}));
+  return {camadas,erros}}
+// Perímetro de qualificação ambiental (Quota Ambiental, Lei 16.402/2016, Mapa 3): a qual PA o terreno pertence.
+// Não há camada no GeoSampa: vem de docs/dados/quota-ambiental-3550308.json (tools/parametros/gerar_quota_ambiental.py).
+// poly: [[lat,lng]]; o PA é o que tem mais pontos de uma grade dentro da poligonal (o centro, se pequena).
+const QA={d:null,p:null};
+function qaCarregar(){if(QA.d)return Promise.resolve(QA.d);if(QA.p)return QA.p;
+  QA.p=fetch((location.pathname.startsWith('/prototipo')?'/prototipo/':'')+'dados/quota-ambiental-3550308.json').then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(j=>QA.d=j).catch(e=>{QA.p=null;throw e});return QA.p}
+async function geoPA(poly){if(!poly||poly.length<3)return null;const d=await qaCarregar();
+  const anel=poly.map(([la,ln])=>[ln,la]),xs=anel.map(p=>p[0]),ys=anel.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),pts=[];
+  for(let i=0;i<=8;i++)for(let j=0;j<=8;j++){const pt=[x0+(x1-x0)*i/8,y0+(y1-y0)*j/8];if(geoNoAnel(pt,anel))pts.push(pt)}
+  if(!pts.length)pts.push([(x0+x1)/2,(y0+y1)/2]);
+  const cont={};for(const f of d.features)for(const pt of pts)if(geoDentro(pt,f.geometry))cont[f.properties.pa]=(cont[f.properties.pa]||0)+1;
+  const r=Object.entries(cont).sort((a,b)=>b[1]-a[1]);return r.length?r.map(([k])=>k.replace('-',' ')).join(' / '):null}
 async function geoBuscar(t,ins){const d=digits(ins.sql);
   const lotes=await geoWfs({typeNames:'geoportal:lote_cidadao',CQL_FILTER:`cd_setor_fiscal='${d.slice(0,3)}' AND cd_quadra_fiscal='${d.slice(3,6)}' AND cd_lote='${d.slice(6,10)}'`});
   const lote=lotes.find(f=>String(f.properties.cd_digito_sql)===d[10]&&f.properties.tx_situ_lote!=='INATIVO')||null;
   if(!lote){toast(lotes.length?`O dígito do SQL não confere (no GeoSampa é ${lotes[0].properties.cd_digito_sql}).`:'SQL não encontrado no GeoSampa.',true);return}
-  const wkt=geoWkt(lote.geometry),camadas={},erros=[];
-  await Promise.all(GEO_CAMADAS.map(async([k,,geom,,,dist])=>{try{camadas[k]=await geoWfs({typeNames:'geoportal:'+k,count:'50',CQL_FILTER:dist?`DWITHIN(${geom},${wkt},${dist},meters)`:`INTERSECTS(${geom},${wkt})`})}catch(e){erros.push(k)}}));
+  const {camadas,erros}=await geoConsultar(lote.geometry);
   const zf=camadas.perimetro_zona_lei_18081_24||[],zonas=zf.length?geoAreaZonas(lote.geometry,zf,p=>p.cd_zoneamento_perimetro):[];
   const anel=geoAneis(lote.geometry)[0],areaPol=Math.round(geoAreaAnel(anel)*100)/100,poly=anel.slice(0,-1).map(p=>utmLatLng(p[0],p[1]).map(v=>+v.toFixed(7)));
   const props=c=>(camadas[c]||[]).map(f=>f.properties),p=lote.properties;
+  const pa=await geoPA(poly).catch(()=>null);if(pa)camadas.quota_ambiental=[{properties:{pa}}];
   if(p.cd_cib)ins.cib=p.cd_cib;const zfis=props('zona_fiscal')[0];if(zfis)ins.zf=zfis.sg_zona_fiscal;
   loteRegistrar(t,ins,{lote:p,poly,areaPol,zonas,erros,camadas:Object.fromEntries(Object.keys(camadas).map(k=>[k,props(k)])),area:p.qt_area_terreno,aConst:p.qt_area_construida});
   geoArquivos(t,ins,lote.geometry)}
@@ -94,8 +147,9 @@ async function geoArquivos(t,ins,geom){const r=geoAneis(geom)[0],m=40,xs=r.map(p
   try{const w=1600,h=Math.round(w*(bb[3]-bb[1])/(bb[2]-bb[0])),u=new URL(GEO_BASE+'wms');
     Object.entries({service:'WMS',version:'1.1.1',request:'GetMap',layers:GEO_DESENHO.map(c=>'geoportal:'+c[0]).join(','),styles:'',srs:'EPSG:31983',bbox:bb.join(','),width:w,height:h,format:'application/pdf'}).forEach(([k,v])=>u.searchParams.set(k,v));
     const rp=await fetch(u);if(!rp.ok)throw 0;arq.pdf=await rp.blob();loteDoc(t,ins,'lote_pdf',nomeBase+'.pdf')}catch(e){toast('A planta em PDF não saiu agora; o desenho segue.',true)}
-  try{const feic=await Promise.all(GEO_DESENHO.map(([k])=>geoWfs({typeNames:'geoportal:'+k,bbox:bb.join(',')+',EPSG:31983'}).catch(()=>[])));
-    arq.dxf=new Blob([geoDxf(GEO_DESENHO,feic,bb,`GeoSampa - SQL ${ins.sql}`,(k,p)=>k==='lote_cidadao'?p.nr_contribuinte:null)],{type:'application/dxf'});loteDoc(t,ins,'lote_dxf',nomeBase+'.dxf')}catch(e){console.error(e);toast('O desenho em DXF não saiu agora.',true)}
+  try{const feic=await Promise.all(GEO_DESENHO_DXF.map(([k])=>geoWfs({typeNames:'geoportal:'+k,bbox:bb.join(',')+',EPSG:31983'}).catch(()=>[])));
+    const pa=(ins.geo?.[0]?.camadas?.quota_ambiental||[])[0]?.pa;
+    arq.dxf=new Blob([geoDxf(GEO_DESENHO_DXF,feic,bb,`GeoSampa - SQL ${ins.sql}${pa?' - Quota Ambiental '+pa:''}`,geoRotulo)],{type:'application/dxf'});loteDoc(t,ins,'lote_dxf',nomeBase+'.dxf')}catch(e){console.error(e);toast('O desenho em DXF não saiu agora.',true)}
   save();render();toast('Planta e desenho do lote guardados nos documentos.')}
 
 // DXF R12 (AutoCAD abre e salva como DWG). Coordenadas UTM 23S SIRGAS 2000 em metros; curvas com a cota como elevação.
@@ -105,20 +159,26 @@ function geoDxf(desenho,feic,bb,titulo,rotulo){const L=[],out=(...a)=>{for(let i
   out(0,'SECTION',2,'TABLES',0,'TABLE',2,'LTYPE',70,1,0,'LTYPE',2,'CONTINUOUS',70,0,3,'Solid line',72,65,73,0,40,0,0,'ENDTAB',0,'TABLE',2,'LAYER',70,desenho.length+1);
   [...desenho.map(c=>[c[1],c[2]]),['TEXTOS',7]].forEach(([n,c])=>out(0,'LAYER',2,n,70,0,62,c,6,'CONTINUOUS'));out(0,'ENDTAB',0,'ENDSEC',0,'SECTION',2,'ENTITIES');
   const f2=v=>Number(v).toFixed(3);
-  desenho.forEach(([k,lay,,zc],i)=>(feic[i]||[]).forEach(f=>{const g=f.geometry;if(!g)return;const z=zc&&f.properties[zc]!=null?Number(f.properties[zc]):0;
-    if(g.type==='Point'){const [x,y]=g.coordinates;out(0,'POINT',8,lay,10,f2(x),20,f2(y),30,f2(z));if(zc)out(0,'TEXT',8,lay,10,f2(x+.4),20,f2(y+.4),30,f2(z),40,'0.8',1,num(z,2));return}
+  desenho.forEach(([k,lay,,zc,raio],i)=>(feic[i]||[]).forEach(f=>{const g=f.geometry;if(!g)return;const z=zc&&f.properties[zc]!=null?Number(f.properties[zc]):0;
+    if(g.type==='Point'){const [x,y]=g.coordinates;out(0,'POINT',8,lay,10,f2(x),20,f2(y),30,f2(z));if(raio)out(0,'CIRCLE',8,lay,10,f2(x),20,f2(y),30,f2(z),40,f2(raio));if(zc)out(0,'TEXT',8,lay,10,f2(x+.4),20,f2(y+.4),30,f2(z),40,'0.8',1,num(z,2));return}
     geoAneis(g).forEach(r=>{const fechado=g.type.includes('Polygon');const pts=fechado&&r.length>1?r.slice(0,-1):r;
       out(0,'POLYLINE',8,lay,66,1,10,'0',20,'0',30,f2(z),70,fechado?1:0);pts.forEach(p=>out(0,'VERTEX',8,lay,10,f2(p[0]),20,f2(p[1]),30,f2(z)));out(0,'SEQEND',8,lay)});
-    const txt=rotulo&&rotulo(k,f.properties);if(txt&&/Polygon/.test(g.type)){const r=geoAneis(g)[0],cx=r.reduce((s,p)=>s+p[0],0)/r.length,cy=r.reduce((s,p)=>s+p[1],0)/r.length;out(0,'TEXT',8,'TEXTOS',10,f2(cx),20,f2(cy),30,'0',40,'1.2',1,asc(txt))}}));
+    const txt=rotulo&&rotulo(k,f.properties);if(txt&&/Polygon/.test(g.type)){const r=geoAneis(g)[0],cx=r.reduce((s,p)=>s+p[0],0)/r.length,cy=r.reduce((s,p)=>s+p[1],0)/r.length;out(0,'TEXT',8,'TEXTOS',10,f2(cx),20,f2(cy),30,'0',40,'1.2',1,asc(txt))}
+    else if(txt&&/LineString/.test(g.type)){const r=geoAneis(g)[0],m=r[Math.floor((r.length-1)/2)];if(m)out(0,'TEXT',8,lay,10,f2(m[0]),20,f2(m[1]),30,'0',40,'1.5',1,asc(txt))}}));
   out(0,'TEXT',8,'TEXTOS',10,f2(bb[0]+2),20,f2(bb[1]+2),30,'0',40,'1.5',1,asc(`${titulo} - ${new Date().toLocaleDateString('pt-BR')} - UTM 23S SIRGAS 2000`));
   out(0,'ENDSEC',0,'EOF');return L.join('\r\n')+'\r\n'}
 function geoBaixar(t,k){const a=GEO_ARQ[t.id]?.[k];if(!a){toast('Arquivo gerado em outra sessão: busque de novo para baixar.',true);return}
   const d=t.docs.find(x=>x.tipo==='lote_'+k),url=URL.createObjectURL(a),el=document.createElement('a');el.href=url;el.download=d?.nome||'lote.'+k;document.body.appendChild(el);el.click();el.remove();setTimeout(()=>URL.revokeObjectURL(url),4000)}
 
 // O que toca o lote, camada a camada (também na seção de parâmetros urbanísticos)
-const geoLinhas=g=>GEO_CAMADAS.filter(c=>!/^zona_fiscal$|^perimetro_zona/.test(c[0])).map(([k,tema,,fmt,grav])=>{const fs=g.camadas[k],erro=g.erros.includes(k);
-  const vals=fs?[...new Set(fs.map(x=>{try{return fmt(x)}catch(e){return null}}).filter(Boolean))]:[];
-  return {tema,grav,erro,vals}});
+// árvores: a contagem; Comgás: só a mais perto; o que é "a até N m" não repete o que já toca o lote
+const geoVals=(k,fs,fmt)=>{if(!fs||!fs.length)return [];
+  if(k==='arvore_v2')return [fs.length+(fs.length>1?' árvores':' árvore')];
+  if(k==='rede_comgas')return [fs[0]._dist_m===0?'passa no lote':'a '+num(fs[0]._dist_m,0)+' m'];
+  if(/@/.test(k)){fs=fs.filter(x=>x._dist_m>0);if(!fs.length)return []}
+  return [...new Set(fs.map(x=>{try{return fmt(x)}catch(e){return null}}).filter(Boolean))]};
+const geoLinhas=g=>[...(g.camadas.quota_ambiental?[{tema:'Perímetro de qualificação ambiental (Quota Ambiental)',grav:'',erro:false,vals:g.camadas.quota_ambiental.map(x=>x.pa)}]:[]),
+  ...GEO_CAMADAS.filter(c=>!/^zona_fiscal$|^perimetro_zona/.test(c[0])).map(([k,tema,,fmt,grav])=>({tema,grav,erro:g.erros.includes(k),vals:geoVals(k,g.camadas[k],fmt)}))];
 // Quadro na inscrição: última consulta e o que toca o lote.
 function geoQuadro(t,ins,i){const g=(ins.geo||[])[0];
   if(!g)return loteVazio(t,ins,i,'Lote, zoneamento, restrições, planta e DXF.');

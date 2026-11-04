@@ -56,5 +56,11 @@ ok(await p.$eval('.fi-abas [aria-selected="true"]',x=>x.dataset.t)==='comercial'
 const com=await p.$eval('#bl-comercial',x=>x.textContent);for(const r of ['Ofertas recebidas','Propostas','Reuniões','Corretores'])ok(com.includes(r),'comercial sem '+r);
 ok(!/Tarefas/.test(await p.$eval('.fi-abas',x=>x.textContent)),'sem aba Tarefas');
 ok(!erros.length,'erros: '+erros.join(' | '));
+// celular: a tabela de um quadro fechado não perde o "vira lista" quando a barra do navegador redimensiona a tela (resize com o quadro fechado)
+if(cel){await p.evaluate(()=>document.querySelector('.fi-abas [data-t="comercial"]').click());await p.waitForTimeout(300);
+  await p.evaluate(()=>dispatchEvent(new Event('resize')));await p.waitForTimeout(100);
+  await p.evaluate(()=>document.querySelector('section.sec:has(.mini-tbl) .qd-tg').click());await p.waitForTimeout(200);
+  const r=await p.evaluate(()=>{const w=document.querySelector('section.sec:has(.mini-tbl) .tblwrap');return [w.classList.contains('empilha'),w.querySelector('table').scrollWidth-w.clientWidth]});
+  ok(r[0]&&r[1]<=1,'ofertas no celular viram lista depois de redimensionar '+r);await p.evaluate(()=>document.querySelector('section.sec:has(.mini-tbl)').scrollIntoView({block:'center'}));await p.waitForTimeout(200);await p.screenshot({path:`${TMP}t_abas/cel_ofertas.png`})}
 await ctx.close()}
 await b.close();console.log(falhas?falhas+' falha(s)':'ok')})();

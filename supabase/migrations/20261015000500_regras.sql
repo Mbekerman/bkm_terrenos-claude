@@ -1950,6 +1950,7 @@ begin
     cartorio = nullif(trim(v_novo.cartorio), ''),
     cartorio_origem = case when nullif(trim(v_novo.cartorio), '') is null then null
                            when nullif(trim(v_novo.cartorio), '') is distinct from t.cartorio then 'digitado' else t.cartorio_origem end,
+    historico_uso = nullif(trim(v_novo.historico_uso), ''),
     latitude = v_novo.latitude, longitude = v_novo.longitude, poligono_geojson = v_novo.poligono_geojson,
     precisao_localizacao = v_novo.precisao_localizacao, area_documental_m2 = v_novo.area_documental_m2,
     area_cadastral_m2 = v_novo.area_cadastral_m2, area_levantamento_m2 = v_novo.area_levantamento_m2,
@@ -2577,6 +2578,29 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
+-- Consulta pela poligonal do terreno (restrições e entorno da área inteira).
+-- A base é a da cidade do terreno; grava a poligonal de hoje do terreno junto.
+-- ---------------------------------------------------------------------
+create or replace function app.registrar_consulta_area(p_terreno uuid, p_camadas jsonb, p_camadas_com_erro text[] default '{}')
+returns uuid
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos; b app.bases_cadastrais; v_id uuid;
+begin
+  select * into t from app.terrenos where id = p_terreno;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  if t.poligono_geojson is null then raise exception 'O terreno não tem poligonal para consultar' using errcode = '22023'; end if;
+  select * into b from app.bases_cadastrais where municipio_id = t.municipio_id;
+  if not found then raise exception 'A cidade do terreno não tem base da prefeitura para consultar' using errcode = '22023'; end if;
+  if jsonb_typeof(coalesce(p_camadas, '{}')) <> 'object' then raise exception 'Camadas inválidas' using errcode = '22023'; end if;
+  insert into app.consultas_area (empresa_id, terreno_id, base, poligono_geojson, camadas, camadas_com_erro)
+  values (t.empresa_id, t.id, b.codigo, t.poligono_geojson, coalesce(p_camadas, '{}'), coalesce(p_camadas_com_erro, '{}'))
+  returning id into v_id;
+  return v_id;
+end $$;
+
+-- ---------------------------------------------------------------------
 -- Cartório da circunscrição pelo pino do terreno (sem inscrição consultada).
 -- O front consulta a prefeitura e grava aqui; só preenche o vazio ou troca o
 -- que veio da prefeitura (o pino mudou de lugar), nunca o digitado.
@@ -2723,7 +2747,7 @@ grant execute on function
   app.excluir_lugar_entorno(uuid, text), app.restaurar_lugar_entorno(uuid, text),
   app.excluir_ponto_terreno(uuid, uuid), app.restaurar_ponto_terreno(uuid, uuid),
   app.salvar_distancias_pontos(uuid, double precision, double precision, jsonb),
-  app.registrar_consulta_lote(uuid, jsonb, jsonb, numeric, jsonb, jsonb, text[], boolean), app.cartorio_da_prefeitura(uuid, text),
+  app.registrar_consulta_lote(uuid, jsonb, jsonb, numeric, jsonb, jsonb, text[], boolean), app.registrar_consulta_area(uuid, jsonb, text[]), app.cartorio_da_prefeitura(uuid, text),
   app.registrar_zonas_sem_inscricao(uuid, jsonb, text), app.salvar_zona_parametro(uuid, uuid, jsonb),
   app.parametros_zona(uuid, uuid, text, text, numeric, text),
   app.criar_empresa(text, text),

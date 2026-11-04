@@ -73,6 +73,9 @@ create table app.terrenos (
   -- cartorio_registro_imovel do GeoSampa, pelo lote ou pelo pino) e o usuário pode trocar; aí vira 'digitado'
   cartorio              text,
   cartorio_origem       text check (cartorio_origem in ('prefeitura','digitado')),
+  -- histórico de uso do terreno e dos vizinhos, pesquisado (fotos aéreas, matrícula, Cetesb); o automático
+  -- são as áreas contaminadas da consulta à prefeitura (lote 2 da ficha em abas, 4/nov/2026)
+  historico_uso         text,
   latitude              double precision check (latitude between -90 and 90),
   longitude             double precision check (longitude between -180 and 180),
   poligono_geojson      jsonb check (poligono_geojson is null or app.geojson_poligono_valido(poligono_geojson)),
@@ -205,6 +208,25 @@ create table app.consultas_lote (
   camadas_com_erro text[] not null default '{}'  -- camadas que não responderam nesta consulta
 );
 create index on app.consultas_lote (terreno_id, consultado_em desc);
+
+-- Consulta da base da prefeitura pela poligonal do terreno (sem inscrição): as
+-- mesmas camadas da consulta do lote, para a área estudada inteira, mais o
+-- perímetro de qualificação ambiental da Quota Ambiental (chave quota_ambiental,
+-- calculada pelo Mapa 3 da Lei 16.402). Atributos de cada feição com _dist_m (distância
+-- até a poligonal, nas camadas consultadas por raio). Linha nova a cada consulta;
+-- gravada só por app.registrar_consulta_area.
+create table app.consultas_area (
+  id               uuid primary key default gen_random_uuid(),
+  empresa_id       uuid not null references app.empresas(id),
+  terreno_id       uuid not null references app.terrenos(id) on delete cascade,
+  base             text not null references app.bases_cadastrais(codigo),
+  consultado_em    timestamptz not null default clock_timestamp(),
+  consultado_por   uuid references auth.users(id) default auth.uid(),
+  poligono_geojson jsonb not null check (app.geojson_poligono_valido(poligono_geojson)), -- a poligonal consultada
+  camadas          jsonb not null default '{}' check (jsonb_typeof(camadas) = 'object'),
+  camadas_com_erro text[] not null default '{}'
+);
+create index on app.consultas_area (terreno_id, consultado_em desc);
 
 -- Valor venal e IPTU: por inscrição e exercício. Corrigir um valor cria
 -- uma nova revisão; a anterior fica preservada e deixa de ser a vigente.
@@ -598,7 +620,7 @@ declare t text;
 begin
   foreach t in array array['terrenos','matriculas','inscricoes_municipais','inscricao_valores','confrontacoes','terreno_pessoas','terreno_corretores','parte_corretores',
                            'terreno_infraestrutura','analises_urbanisticas','analise_zoneamentos','areas_interesse','area_interesse_terrenos',
-                           'terreno_entorno','terreno_entorno_buscas','terreno_ponto_distancias','terreno_pontos_excluidos','consultas_lote'] loop
+                           'terreno_entorno','terreno_entorno_buscas','terreno_ponto_distancias','terreno_pontos_excluidos','consultas_lote','consultas_area'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
     execute format('create policy inserir on app.%I for insert to authenticated with check (empresa_id in (select app.empresas_edicao()))', t);
@@ -625,6 +647,8 @@ revoke insert, update on app.terreno_entorno, app.terreno_entorno_buscas, app.te
 -- Consulta do lote na prefeitura: só pela RPC, e nunca alterada.
 drop policy inserir on app.consultas_lote; drop policy alterar on app.consultas_lote;
 revoke insert, update on app.consultas_lote from authenticated;
+drop policy inserir on app.consultas_area; drop policy alterar on app.consultas_area;
+revoke insert, update on app.consultas_area from authenticated;
 
 -- Terreno é alterado só por app.salvar_terreno (confere a versão); inserir continua direto.
 drop policy alterar on app.terrenos;
@@ -717,6 +741,7 @@ create trigger t_aud after insert or update or delete on app.terreno_pessoas    
 create trigger t_aud after insert or update or delete on app.confrontacoes        for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.terreno_entorno_buscas for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.consultas_lote for each row execute function app.tg_auditoria();
+create trigger t_aud after insert or update or delete on app.consultas_area for each row execute function app.tg_auditoria();
 
 -- Partes: leitura para a empresa; escrita só pelas RPCs (salvar_parte, remover_parte).
 alter table app.terreno_partes enable row level security;
