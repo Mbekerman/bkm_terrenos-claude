@@ -3821,11 +3821,24 @@ html[data-tema="escuro"] .ag-ia{background:#1e1f20;border-color:#444746}
 .lt-solto { flex: 1 1 260px }
 html[data-tema="escuro"] .lg-mapa { border-color: #444746 }
 html[data-tema="escuro"] .lg-soltos, html[data-tema="escuro"] .lg-it, html[data-tema="escuro"] .lg-lista { border-color: #444746 }
+/* celular: só a lista para marcar, sem o mapa (pedido do Moisés, 4/nov/2026) */
+.lg-todos, .lg-cel { display: none }
+.lg-todos-h, .lg-fora > summary { font-size: 13px; font-weight: 500; color: var(--m-on-surface-variant, #444746); padding: 12px 0 4px }
+.lg-fora > summary { cursor: pointer; border-top: 1px solid var(--m-outline-variant, #c4c7c5); margin-top: 8px }
+.lg-op { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 0; border: 0; border-bottom: 1px solid var(--m-outline-variant, #c4c7c5); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer }
+.lg-op[aria-disabled="true"] { opacity: .55; cursor: not-allowed }
+.lg-op .chip { margin-left: auto; flex: none }
+.lg-op-t { flex: 1; min-width: 0 } .lg-op-t .num { font-weight: 500 } .lg-op-s { display: block; font-size: 12px }
+.lg-cx { flex: none; width: 20px; height: 20px; border: 2px solid #444746; border-radius: 3px; display: grid; place-items: center; color: #fff }
+.lg-op.on .lg-cx { background: #0b57d0; border-color: #0b57d0 }
+html[data-tema="escuro"] .lg-op, html[data-tema="escuro"] .lg-fora > summary { border-color: #444746 }
+html[data-tema="escuro"] .lg-cx { border-color: #c4c7c5 } html[data-tema="escuro"] .lg-op.on .lg-cx { background: #a8c7fa; border-color: #a8c7fa; color: #062e6f }
 @media (max-width: 760px) {
-  .lg-corpo { grid-template-columns: 1fr }
-  .lg-mapa { height: 58dvh }
+  .lg-corpo, .lg-lado { display: block; min-height: auto }
+  .lg-mapa, .lg-lista, .lg-pc, .lg-lado > .hint { display: none !important }
+  .lg-todos { display: block }
+  .lg-cel { display: inline }
   .lg-lado { max-height: none }
-  .lg-lista { max-height: 30dvh }
 }
 .lg-toque { display: none } @media (hover: none) { .lg-mouse { display: none } .lg-toque { display: inline } }
 .lg-soltos .lg-it { padding: 2px 0 }
