@@ -12,7 +12,6 @@
    ===================================================================== */
 P.filtro='M4 6h16M7 12h10M10 18h4';
 const FX_KEY='bkm-terrenos-filtros';
-const FX_VAZIO=()=>({});
 UI.fx=UI.fx||(()=>{try{const h=location.hash.match(/[#&?]f=([^&]+)/);if(h)return JSON.parse(decodeURIComponent(h[1]))}catch(e){}try{return JSON.parse(sessionStorage.getItem(FX_KEY)||'{}')}catch(e){return {}}})();
 UI.fxAb=UI.fxAb||['funil','comercial','local'];
 let FX_ABERTO=false,FX_SO_RESULTADO=false;

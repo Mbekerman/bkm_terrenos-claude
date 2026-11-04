@@ -14,6 +14,12 @@ const FASES_PADRAO=()=>[
   {k:'incorporacao',nome:'Registro de Incorporação',prefixo:'INC',ativo:true,conc:'Incorporação registrada',descarta:true,etapas:etx([
     ['memorial','Memorial e Certidões',30,[['memorial_incorporacao','Memorial de Incorporação'],['certidoes','Certidões']]],
     ['cartorio','Cartório',45,[['prenotado','Prenotado'],['exigencias','Exigências do Cartório']]]])},
+  {k:'funding',nome:'Funding',prefixo:'FUN',ativo:true,conc:'Funding captado',descarta:true,etapas:etx([
+    ['fun_dossie','Dossiê',null,[['fun_dossie','Dossiê']]],
+    ['fun_viabilidade','Viabilidade',null,[['fun_viabilidade','Viabilidade']]],
+    ['fun_comite','Comitê',null,[['fun_comite','Comitê']]],
+    ['fun_contratacao','Contratação',null,[['fun_contratacao','Contratação']]],
+    ['fun_legalizacao','Legalização',null,[['fun_legalizacao','Legalização']]]])},
   {k:'caixa',nome:'Contratação Caixa',prefixo:'CEF',ativo:true,conc:'Contratado',descarta:true,etapas:etx([
     ['analise','Análise Caixa',60,[['engenharia','Engenharia'],['juridico','Jurídico'],['risco','Risco']]],
     ['contratacao','Contratação',30,[['demanda_minima','Demanda Mínima'],['assinatura','Assinatura']]]])},
@@ -26,7 +32,7 @@ const FASES_PADRAO=()=>[
     ['entrega','Entrega',60,[['habite_se','Vistoria e Habite-se'],['entrega_chaves','Entrega das Chaves']]]])},
   {k:'entregue',nome:'Entregue',prefixo:'ENT',ativo:true,conc:'Garantia encerrada',descarta:false,etapas:etx([
     ['pos_entrega','Pós-entrega',null,[['assistencia_tecnica','Assistência Técnica'],['garantia','Em Garantia']]]])}];
-/* cada fase abre quando a anterior é concluída */
+/* cada fase abre quando a anterior é concluída; Funding sem dependência, abre à mão (decisão do Moisés, 4/nov/2026) */
 const DEPS_PADRAO=()=>[['aprovacao','novos_negocios'],['incorporacao','aprovacao'],['caixa','incorporacao'],['lancamento','caixa'],['obras','lancamento'],['entregue','obras']]
   .map(([fase,reqFase],i)=>({id:'fd'+i,fase,reqFase,tipo:'conclusao',req:null}));
 
@@ -82,7 +88,6 @@ function procRetomar(t,p){const parado=p.encerradoEm?diff(p.encerradoEm,HOJE):0;
   p.trilha.push({em:agora(),user:me(),ev:'retomada',paraEtapa:p.etapa,paraSub:p.sub,status:'ativo'});log(t,`${faseN(p.fase)}: retomada`)}
 const procStatusN=p=>p.status==='concluido'?faseCfg(p.fase)?.conc||'Concluído':STATUS_N[p.status]||p.status;
 const procAtrasada=p=>{const e=etapaF(p.fase,p.etapa);return !!(p.status==='ativo'&&e?.sla&&diff(p.desde,HOJE)>e.sla)};
-const ultimaEtapa=p=>{const es=etapasF(p.fase);return es[es.length-1]?.k===p.etapa};
 
 /* ---------- desenho ---------- */
 /* chip da situação: na entrada, o de sempre; depois, a fase com a etapa e a subetapa */
@@ -153,12 +158,12 @@ function pgFaseBoard(f){const fc=faseCfg(f),es=etapasF(f),L=fxLista('kanban').ma
   return `<section class="col ${c.cls||''}" data-col="${c.k}" aria-label="${esc(c.l)}"><div class="col-h">${c.abre?colDesce('neg-etapa',c.abre,c.l,'Ver subetapas de '+c.l):`<span>${esc(c.l)}</span>`}<span class="n">${ts.length}</span></div>${c.sla?`<div class="col-s faint">SLA ${c.sla} d</div>`:''}${ts.map(([t,p])=>kcardProc(t,p)).join('')||'<div class="col-empty">Nenhuma</div>'}</section>`}).join('')}</div>`}
 function soltarProc(id,col){const t=T(id),f=UI.negFase,p=t&&procAberto(t,f);if(!p||UI.role==='Leitura')return;
   if(col==='stand_by'){if(p.status==='ativo'){UI.alvo=id;UI.alvoProc=p.id;UI.modal='p-suspender';renderModal()}return}
-  if(col.startsWith('sub:')){const k=col.slice(4);if(p.status!=='ativo'||p.etapa!==UI.negEtapa||p.sub===k)return;procIr(t,p,'subetapa',k);save();render();toast(`${t.nome}: ${subF(f,k)?.nome}.`);return}
+  if(col.startsWith('sub:')){const k=col.slice(4);if(p.status!=='ativo'||p.etapa!==UI.negEtapa||p.sub===k)return;if(procIr(t,p,'subetapa',k)===false)return;save();render();toast(`${t.nome}: ${subF(f,k)?.nome}.`);return}
   if(p.status==='stand_by'){procRetomar(t,p);if(p.etapa===col){save();render();toast('Retomada.');return}}
   if(p.etapa===col){save();render();return}
   const es=etapasF(f),ix=k=>es.findIndex(e=>e.k===k);
   if(ix(col)<ix(p.etapa)){save();render();UI.alvo=id;UI.alvoProc=p.id;UI.alvoEtapa=col;UI.modal='p-retornar';renderModal();return}
-  procIr(t,p,'etapa',col);save();render();toast(`${t.nome}: ${etapaF(f,col).nome}.`)}
+  if(procIr(t,p,'etapa',col)===false)return;save();render();toast(`${t.nome}: ${etapaF(f,col).nome}.`)}
 
 /* ---------- Configurações › Fases ---------- */
 const slug=(nome,usados)=>{let k=nome.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')||'x';while(usados.includes(k))k+='_';return k};
@@ -202,7 +207,7 @@ function fasesClick(A,a,t){const P=()=>t&&procsDe(t).find(p=>p.id===a.dataset.p)
       if(!falta.length){abrirFase(t,f);abrirLiberadas(t);save();render();toast(`${faseN(f)} aberta.`);return true}
       UI.acao={fase:f,pend:falta.map(x=>x.txt)};UI.modal=nivelDe(me())>=2?'f-forcar':'f-bloq';renderModal();return true}
     case 'p-ir':{const p=P();if(!p)return true;const es=etapasF(p.fase),ix=es.findIndex(e=>e.k===p.etapa);
-      if(es[ix+1]){procIr(t,p,'etapa',es[ix+1].k);save();render();toast(`${t.nome}: ${es[ix+1].nome}.`)}else{UI.alvoProc=p.id;UI.modal='p-concluir';renderModal()}return true}
+      if(es[ix+1]){if(procIr(t,p,'etapa',es[ix+1].k)===false)return true;save();render();toast(`${t.nome}: ${es[ix+1].nome}.`)}else{if(etBloqProc(t,p,'status','concluido'))return true;UI.etJust=null;UI.alvoProc=p.id;UI.modal='p-concluir';renderModal()}return true}
     case 'p-suspender':UI.alvoProc=a.dataset.p;UI.modal='p-suspender';renderModal();return true;
     case 'p-descartar':UI.alvoProc=a.dataset.p;UI.modal='p-descartar';renderModal();return true;
     case 'p-retomar':{const p=P();if(p){procRetomar(t,p);save();render();toast('Retomada. O tempo parado não conta no prazo.')}return true}
@@ -219,7 +224,7 @@ function fasesClick(A,a,t){const P=()=>t&&procsDe(t).find(p=>p.id===a.dataset.p)
   }
   return false}
 function fasesChange(el){
-  if(el.dataset.ch==='psub'){const t=T(UI.id),p=t&&procsDe(t).find(x=>x.id===el.dataset.p);if(p&&el.value!==p.sub){procIr(t,p,'subetapa',el.value);save();render()}return true}
+  if(el.dataset.ch==='psub'){const t=T(UI.id),p=t&&procsDe(t).find(x=>x.id===el.dataset.p);if(p&&el.value!==p.sub){if(procIr(t,p,'subetapa',el.value)===false){render();return true}save();render()}return true}
   if(el.dataset.ch==='cfg-prefixo'){const F=fasesL(),i=+el.dataset.i,v=el.value.trim().toUpperCase();
     if(!/^[A-Z]{2,5}$/.test(v))toast('Prefixo: de 2 a 5 letras.',true);else if(F.some((f,j)=>j!==i&&f.prefixo===v))toast(`O prefixo ${v} já é de outra fase.`,true);else{F[i].prefixo=v;save();toast('Prefixo salvo.')}render();return true}
   if(el.dataset.ch==='cfg-fase-ativa'){const f=fasesL()[+el.dataset.i];
@@ -244,11 +249,11 @@ function fasesSubmit(form,F,t,f){const C=cfg();
       e.subs.push({k:slug(nome,fs.etapas.flatMap(x=>[x.k,...x.subs.map(s=>s.k)])),nome});save();render();return true}
     case 'f-forcar':{const a=UI.acao;if(!F.j.trim()){toast('Justifique a abertura antes da hora.',true);return true}abrirFase(t,a.fase,F.j.trim());abrirLiberadas(t);UI.modal=null;UI.acao=null;save();render();toast(`${faseN(a.fase)} aberta.`);return true}
     case 'p-concluir':{const p=procsDe(t).find(x=>x.id===UI.alvoProc);if(!F.relato.trim()){toast('Escreva o relato da conclusão.',true);return true}
-      UI.modal=null;procIr(t,p,'status','concluido',{relato:F.relato.trim()});save();render();toast(`${faseN(p.fase)}: ${faseCfg(p.fase).conc}.`);return true}
+      UI.modal=null;if(procIr(t,p,'status','concluido',{relato:F.relato.trim(),forcado:UI.etJust||null})===false)return true;UI.etJust=null;save();render();toast(`${faseN(p.fase)}: ${faseCfg(p.fase).conc}.`);return true}
     case 'p-suspender':{const p=procsDe(t).find(x=>x.id===UI.alvoProc);UI.modal=null;procIr(t,p,'status','stand_by',{retomar:F.retomar,detalhe:F.detalhe.trim()});save();render();toast('Em Stand By.');return true}
     case 'p-descartar':{const p=procsDe(t).find(x=>x.id===UI.alvoProc),m=(C.motivos.descartado||[]).find(x=>x.k===F.motivo);
       if(m?.texto&&!F.detalhe.trim()){toast('Esse motivo pede uma explicação no texto.',true);return true}
-      UI.modal=null;procIr(t,p,'status','descartado',{motivo:F.motivo,detalhe:F.detalhe.trim()});save();render();toast(`${faseN(p.fase)}: descartada.`);return true}
+      UI.modal=null;procIr(t,p,'status','descartado',{motivo:F.motivo,detalhe:F.detalhe.trim(),tarefas:F.tarefas||'arquivar'});save();render();toast(`${faseN(p.fase)}: descartada.`);return true}
     case 'p-retornar':{const p=procsDe(t).find(x=>x.id===UI.alvoProc);UI.modal=null;procIr(t,p,'etapa',UI.alvoEtapa,{motivo:F.motivo});save();render();toast(`Voltou para ${etapaF(p.fase,p.etapa).nome}.`);return true}
   }
   return false}
