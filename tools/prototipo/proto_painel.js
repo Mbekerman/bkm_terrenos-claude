@@ -17,11 +17,11 @@ function valTxt(k,v){
   if(typeof v==='boolean')return v?'sim':'não';
   const s=String(v);return s.length>60?s.slice(0,57)+'…':s;
 }
-const ARR_LAB={mats:['Matrícula',x=>x.num],insc:['Inscrição imobiliária',x=>x.sql],confr:['Confrontação',x=>x.tipo],dilig:['Diligência',x=>x.titulo],pessoas:['Pessoa',x=>x.nome],
+const ARR_LAB={lotes:['Lote',x=>x.titulo,'o'],partes:['Parte',x=>x.nome],mats:['Matrícula',x=>x.num],insc:['Inscrição imobiliária',x=>x.sql],confr:['Confrontação',x=>x.tipo],dilig:['Diligência',x=>x.titulo],pessoas:['Pessoa',x=>x.nome],
   corretores:['Corretor',x=>(typeof corretor==='function'&&corretor(x.cid)?.nome)||''],ofertas:['Oferta',x=>x.valor!=null?mi(x.valor):''],propostas:['Proposta',x=>'v'+x.v+(x.valor!=null?' · '+mi(x.valor):'')],
   reunioes:['Reunião',x=>fd(x.data)+(x.hora?' '+x.hora:'')],tarefas:['Tarefa',x=>x.titulo],docs:['Documento',x=>(TIPOS_DOC[x.tipo]||[x.nome||x.tipo])[0]],analises:['Análise urbanística',x=>x.fonte||fd(x.data)]};
 const ITEM_LAB={titulo:'título',prazo:'prazo',resp:'responsável',status:'status',prio:'prioridade',desc:'descrição',valor:'valor',data:'data',hora:'hora',sit:'situação',area:'área',
-  cond:'condições',forma:'forma de pagamento',validade:'validade',emitido:'emissão',versoes:'versão',resultado:'resultado',pauta:'pauta',resumo:'resumo',nome:'nome',papel:'papel',principal:'principal'};
+  cond:'condições',forma:'forma de pagamento',pessoa:'pessoa principal',tel:'telefone',email:'e-mail',doc:'CPF/CNPJ',obs:'observação',num:'matrícula',cri:'cartório',ins:'SQLs',parte:'parte',fonte:'fonte da área adotada',areaInf:'área informada',criDig:'cartório digitado',partes:'valores por parte',partesForma:'condição por parte',validade:'validade',emitido:'emissão',versoes:'versão',resultado:'resultado',pauta:'pauta',resumo:'resumo',nome:'nome',papel:'papel',principal:'principal'};
 const NEG_LAB={etapa:'Etapa',sub:'Subetapa',status:'Status',temp:'Temperatura',retomar:'Retomar em',motivo:'Motivo',detalhe:'Relato',pontos:'Pontos de sucesso',ofRef:'Oferta de referência'};
 const NEG_SEM_LOG=['desde','subDesde','encerradoEm','relato'];
 let AUD={};
@@ -30,7 +30,7 @@ function audSnap(){AUD={};S.terrenos.forEach(t=>{AUD[t.id]={j:retrato(t),h:(t.hi
 function diffTerreno(a,b){
   const campos=[],itens=[];
   Object.keys({...a,...b}).forEach(k=>{
-    if(['hist','relevo','id','codigo','criFonte','criLoc','pontosExcl','geoArea'].includes(k))return;
+    if(['hist','relevo','id','codigo','criFonte','criLoc','pontosExcl','geoArea','topoClass','mats'].includes(k))return;
     const va=a[k],vb=b[k];if(JSON.stringify(va)===JSON.stringify(vb))return;
     /* o pino acompanha a poligonal: a mudança de lugar dele vai junto do ajuste, sem log próprio */
     if(['lat','lng','precisao'].includes(k)&&JSON.stringify(a.poly)!==JSON.stringify(b.poly))return;
@@ -40,12 +40,19 @@ function diffTerreno(a,b){
         if(x==='viab'){if(na.viab?.id&&na.viab.id===nb.viab?.id)return;campos.push({k:'neg.viab',txt:nb.viab?`Estudo de viabilidade vinculado: ${nb.viab.nome||''}`:'Estudo de viabilidade desvinculado'});return}
         const f=v=>v==null||v===''?'não informado':x==='etapa'?SN(v):x==='sub'?subN(v):x==='status'?STATUS_N[v]||v:x==='motivo'?motivoN(nb.status,v):x==='retomar'?fd(v):x==='temp'?v+'/5':String(v);
         campos.push({k:'neg.'+x,txt:`${NEG_LAB[x]||x}: ${f(na[x])} → ${f(nb[x])}`})});return}
-    if(k==='infra'){Object.keys({...va,...vb}).forEach(x=>{const da=va?.[x]?.d,db=vb?.[x]?.d;if(da!==db)campos.push({k:'infra.'+x,txt:`Infraestrutura · ${x}: ${da||'não verificado'} → ${db||'não verificado'}`})});return}
-    if(Array.isArray(va)||Array.isArray(vb)){const [lab,desc]=ARR_LAB[k]||[k,()=>''];const A=va||[],B=vb||[];
+    if(k==='infra'){Object.keys({...va,...vb}).forEach(x=>{const ra=va?.[x]||{},rb=vb?.[x]||{},n=(INFRA.find(i=>i[0]===x)||[,x])[1];
+      if((ra.d||'nao_verificado')!==(rb.d||'nao_verificado'))campos.push({k:'infra.'+x,txt:`Visita técnica · ${n}: ${VT_N[ra.d||'nao_verificado']} → ${VT_N[rb.d||'nao_verificado']}`});
+      if((ra.obs||'')!==(rb.obs||''))campos.push({k:'infra.'+x+'.obs',txt:`Visita técnica · ${n}, observação: ${ra.obs||'vazia'} → ${rb.obs||'vazia'}`})});return}
+    if(k==='vtec'){Object.keys({...va,...vb}).forEach(x=>{const ra=va?.[x]||{},rb=vb?.[x]||{},n=(VTEC.find(i=>i[0]===x)||[,x])[1],L={conc:'concessionária',sol:'pedida em',emi:'emitida em',val:'validade',cond:'condições'};
+      if((ra.s||'nao_solicitada')!==(rb.s||'nao_solicitada'))campos.push({k:'vtec.'+x,txt:`Viabilidade técnica · ${n}: ${VTEC_N[ra.s||'nao_solicitada']} → ${VTEC_N[rb.s||'nao_solicitada']}`});
+      Object.keys(L).forEach(c=>{if((ra[c]||'')===(rb[c]||''))return;const f=v=>!v?'vazio':['sol','emi','val'].includes(c)?fd(v):v;campos.push({k:'vtec.'+x+'.'+c,txt:`Viabilidade técnica · ${n}, ${L[c]}: ${f(ra[c])} → ${f(rb[c])}`})})});return}
+    if(Array.isArray(va)||Array.isArray(vb)){const [lab,desc,g='a']=ARR_LAB[k]||[k,()=>''];const A=va||[],B=vb||[];
+      /* a parte da inscrição vem do lote (derivada): não vira log */
+      const sem=k==='insc'?['parte','id']:k==='partes'?['neg','propostas']:[];
       const chave=(x,i)=>x&&x.id!=null?'id:'+x.id:x&&x.v!=null?'v:'+x.v:'i:'+i;
       const mA=new Map(A.map((x,i)=>[chave(x,i),x])),mB=new Map(B.map((x,i)=>[chave(x,i),x]));
-      mB.forEach((x,c)=>{const d=desc(x)||'';if(!mA.has(c))itens.push(`${lab} adicionada${d?': '+d:''}`);else if(JSON.stringify(mA.get(c))!==JSON.stringify(x)){const o=mA.get(c);const ks=Object.keys({...o,...x}).filter(q=>JSON.stringify(o[q])!==JSON.stringify(x[q])).map(q=>ITEM_LAB[q]||q);itens.push(`${lab} alterada${d?' ('+d+')':''}: ${ks.join(', ')}`)}});
-      mA.forEach((x,c)=>{if(!mB.has(c)){const d=desc(x)||'';itens.push(`${lab} removida${d?': '+d:''}`)}});return}
+      mB.forEach((x,c)=>{const d=desc(x)||'';if(!mA.has(c))itens.push(`${lab} adicionad${g}${d?': '+d:''}`);else if(JSON.stringify(mA.get(c))!==JSON.stringify(x)){const o=mA.get(c);const ks=Object.keys({...o,...x}).filter(q=>!sem.includes(q)&&JSON.stringify(o[q])!==JSON.stringify(x[q])).map(q=>ITEM_LAB[q]||q);if(ks.length)itens.push(`${lab} alterad${g}${d?' ('+d+')':''}: ${ks.join(', ')}`)}});
+      mA.forEach((x,c)=>{if(!mB.has(c)){const d=desc(x)||'';itens.push(`${lab} removid${g}${d?': '+d:''}`)}});return}
     if(typeof (vb??va)==='object')return;
     if(valTxt(k,va)!==valTxt(k,vb))campos.push({k,txt:`${LAB_CAMPO[k]||k}: ${valTxt(k,va)} → ${valTxt(k,vb)}`});
   });
@@ -88,7 +95,9 @@ function audit(){
     if(!campos.length&&!itens.length){const vaz=novos.filter(e=>/atualizad[oa]s?$/.test(e.txt)&&!(e.det&&e.det.length));if(vaz.length)t.hist=t.hist.filter(e=>!vaz.includes(e));return}
     if(novos.length){const e=novos[novos.length-1];const det=campos.map(c=>c.txt).filter(x=>x!==e.txt);if(det.length)e.det=(e.det||[]).concat(det)}
     else{const secs=new Set(campos.map(c=>SEC_DE[c.k]).filter(Boolean));
-      const txt=itens.length&&!campos.length?itens[0]:secs.size===1&&!itens.length?`${SECOES[[...secs][0]].titulo} editado`:'Ficha editada';
+      /* aba Infraestrutura: visita técnica e viabilidades técnicas não são seções da ficha antiga */
+      const so=re=>campos.length&&!itens.length&&campos.every(c=>re.test(c.k));
+      const txt=so(/^(infra\.|visita$)/)?(campos.length===1?campos[0].txt:'Visita técnica editada'):so(/^vtec\./)?(campos.length===1?campos[0].txt:'Viabilidades técnicas editadas'):itens.length&&!campos.length?itens[0]:secs.size===1&&!itens.length?`${SECOES[[...secs][0]].titulo} editado`:'Ficha editada';
       const det=campos.map(c=>c.txt).concat(itens.length&&!(itens.length===1&&!campos.length)?itens:[]);
       t.hist.push({em:agora(),user:me(),txt,det:det.length?det:undefined})}
     juntarLog(t,s,campos,itens,novos.length);
@@ -272,7 +281,7 @@ function alvoLog(h){
   const secDe=k=>SEC_AREA.has(k)?'areas':SEC_DE[k];
   if(campos.length)return {b:'cadastro',s:secDe(campos[0]),campos};
   const sec=Object.entries(SECOES).find(([,v])=>x===`${v.titulo} editado`);if(sec)return {b:'cadastro',s:sec[0]};
-  const R=[[/^Terreno cadastrado/,{b:'cadastro',s:'ident'}],[/^Matr[íi]cula/,{b:'cadastro',s:'mats'}],[/^Inscri[çc][ãa]o/,{b:'cadastro',s:'insc'}],
+  const R=[[/^Terreno cadastrado/,{b:'cadastro',s:'ident'}],[/^Matr[íi]cula/,{b:'cadastro',s:'lotes'}],[/^Inscri[çc][ãa]o/,{b:'cadastro',s:'lotes'}],[/^Lote/,{b:'cadastro',s:'lotes'}],[/^Parte/,{b:'cadastro',s:'partes-cad'}],
     [/^Confronta/,{b:'cadastro',s:'confr'}],[/^Pessoa|^Propriet/,{b:'cadastro',s:'pessoas'}],[/^Poligonal|^[ÁA]rea/,{b:'cadastro',s:'areas'}],
     [/^(Oferta|Corretor)/,{b:'comercial'}],[/^Estudo de viabilidade/,{b:'geral'}],[/^(Proposta|Reuni[ãa]o|Oferta de refer)/,{b:'negociacao'}],
     [/^(Documento|Dilig)/,{b:'documentos'}],[/^Tarefa/,{b:'tarefas'}],[/^(Tipo do empreendimento|Zonas d)/,{b:'urbanismo',s:'analise'}],[/^(An[áa]lise urban|Infraestrutura|Zoneamento)/,{b:'urbanismo'}],

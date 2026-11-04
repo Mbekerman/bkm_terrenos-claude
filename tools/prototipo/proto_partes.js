@@ -214,7 +214,7 @@ function partesModal(M,fechar){const t=T(UI.id);if(!t)return '';const pa=UI.alvo
 function partesPreparar(){if(S.partesExemplo)return;S.partesExemplo=true;if(S.terrenos.some(t=>t.codigo==='TER-000133'))return;S.seqT=Math.max(S.seqT||0,133);
   const H=n=>addD(HOJE,-n),la=-23.5868,lo=-46.5772,dy=45/110574,dx=60/(111320*Math.cos(la*Math.PI/180));
   const t=Object.assign(seedVazio(),{codigo:'TER-000133',nome:'Três lotes Rua Ibitirama',prioridade:'alta',resp:'Ana Prado',origem:'corretor',dataIdent:H(55),logradouro:'Rua Ibitirama',numero:'1.200',bairro:'Vila Prudente',zona:'sudeste',municipio:'São Paulo · SP',
-    lat:la,lng:lo,precisao:'conferida',poly:[[la+dy,lo-dx],[la+dy,lo+dx],[la-dy,lo+dx],[la-dy,lo-dx]].map(p=>p.map(v=>+v.toFixed(6))),aDoc:5400,fonteArea:'documental',testada:120,topografia:'plano',posicao:'meio_quadra',formato:'regular',ocupacao:'parcialmente_ocupado'});
+    lat:la,lng:lo,precisao:'conferida',poly:[[la+dy,lo-dx],[la+dy,lo+dx],[la-dy,lo+dx],[la-dy,lo-dx]].map(p=>p.map(v=>+v.toFixed(6))),aDoc:5400,fonteArea:'documental',testada:120,posicao:'meio_quadra',formato:'regular',ocupacao:'parcialmente_ocupado'});
   const pa={id:'pa1',nome:'Família Souza',essencial:true,area:2700,ativa:true},pb={id:'pa2',nome:'Carlos Pires',essencial:true,area:1500,ativa:true},pc={id:'pa3',nome:'Oficina do Zé',essencial:false,area:1200,ativa:true};
   t.partes=[pa,pb,pc];
   t.mats=[{num:'201.001',cri:'6º CRI',area:1350,data:H(20),parte:'pa1'},{num:'201.002',cri:'6º CRI',area:1350,data:H(20),parte:'pa1'},{num:'201.003',cri:'6º CRI',area:1500,data:H(20),parte:'pa2'},{num:'201.004',cri:'6º CRI',area:1200,data:H(20),parte:'pa3'}];

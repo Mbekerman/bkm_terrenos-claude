@@ -36,11 +36,14 @@ create table app.bases_cadastrais (
   ordem        int  not null
 );
 
+-- Itens da visita técnica (aba Infraestrutura); os marcados em viabilidade_tecnica também
+-- pedem a viabilidade da concessionária (Energia, Água, Esgoto e Gás; decisão do Moisés, 3/nov/2026).
 create table app.itens_infraestrutura (
   codigo text primary key,
   nome   text not null,
   ordem  int  not null,
-  ativo  boolean not null default true
+  ativo  boolean not null default true,
+  viabilidade_tecnica boolean not null default false
 );
 
 create table app.tipos_documento (
@@ -226,16 +229,17 @@ insert into app.entorno_categorias (codigo, nome, tipos_google, raio_pe_m, ordem
   ('shopping',   'Shopping center',          array['shopping_mall'],                                       1500, 2),
   ('hospital',   'Hospital',                 array['hospital'],                                            1500, 3);
 
-insert into app.itens_infraestrutura (codigo, nome, ordem) values
-  ('energia',     'Rede de energia na porta',  1),
-  ('agua',        'Rede de água na porta',     2),
-  ('esgoto',      'Rede de esgoto na porta',   3),
-  ('gas',         'Gás canalizado na porta',   4),
-  ('asfalto',     'Asfalto na porta',          5),
-  ('drenagem',    'Drenagem pluvial',          6),
-  ('iluminacao',  'Iluminação pública',        7),
-  ('calcada',     'Calçada',                   8),
-  ('fibra',       'Telefonia / fibra óptica',  9);
+insert into app.itens_infraestrutura (codigo, nome, ordem, ativo, viabilidade_tecnica) values
+  ('energia',     'Energia',                   1, true,  true),
+  ('agua',        'Água',                      2, true,  true),
+  ('esgoto',      'Esgoto',                    3, true,  true),
+  ('drenagem',    'Drenagem',                  4, true,  false),
+  ('gas',         'Gás canalizado',            5, true,  true),
+  ('asfalto',     'Asfalto',                   6, true,  false),
+  ('iluminacao',  'Iluminação pública',        7, true,  false),
+  ('calcada',     'Calçada',                   8, true,  false),
+  -- fora da visita técnica desde 4/nov/2026 (a lista do Moisés tem 8 itens)
+  ('fibra',       'Telefonia / fibra óptica',  9, false, false);
 
 insert into app.tipos_documento (codigo, nome, categoria, validade_dias, unico_por_processo) values
   ('matricula',          'Matrícula atualizada',                 'Imóvel',    30,   true),

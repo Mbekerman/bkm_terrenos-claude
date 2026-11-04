@@ -2193,14 +2193,14 @@ input[data-fmt]:not([data-fmt="none"]) { font-variant-numeric: tabular-nums }
 .num, .big, .mv, .kpi .v, .chip { font-variant-numeric: tabular-nums }
 
 /* Campos no padrão Material 3 (campo contornado): altura 40, raio 4, contorno #747775, seta própria no select */
-:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select, textarea) {
+:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select, textarea) {
   border: 1px solid #747775 !important; border-radius: 4px !important; background-color: transparent; color: var(--m-on-surface, #1f1f1f); font-size: 14px }
-:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select) { height: 40px !important; min-height: 40px !important; padding: 0 12px }
-:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :where(input, select, textarea):focus { outline: 2px solid var(--m-primary, #0b57d0) !important; outline-offset: -2px; border-color: transparent !important }
+:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select) { height: 40px !important; min-height: 40px !important; padding: 0 12px }
+:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .modal, .dr) :where(input, select, textarea):focus { outline: 2px solid var(--m-primary, #0b57d0) !important; outline-offset: -2px; border-color: transparent !important }
 select:not([multiple]) { -webkit-appearance: none; appearance: none; padding-right: 36px !important; background-repeat: no-repeat; background-position: right 10px center; background-size: 18px 18px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23444746' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important }
 :root[data-tema="escuro"] select:not([multiple]) { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23c4c7f0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important }
-:root[data-tema="escuro"] :is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not(.auto-v):not(.vb-pop-nome), select, textarea) { border-color: rgba(153,156,161,0.5) !important; background-color: transparent !important; color: #e3e3e3 }
+:root[data-tema="escuro"] :is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not(.auto-v):not(.vb-pop-nome), select, textarea) { border-color: rgba(153,156,161,0.5) !important; background-color: transparent !important; color: #e3e3e3 }
 :root[data-tema="escuro"] { color-scheme: dark }
 input[type=date] { font-variant-numeric: tabular-nums }
 input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
@@ -4428,6 +4428,111 @@ html[data-tema="escuro"] .fi-abas .tkm-n { background: rgba(149,153,160,0.14); c
 section.sec.qd-fechado > :not(.sec-h):not(form), section.sec.qd-fechado > form > :not(.sec-h) { display: none }
 section.sec.qd-fechado > .sec-h > :not(h2), section.sec.qd-fechado > form > .sec-h > :not(h2) { display: none }
 section.sec.qd-fechado > .sec-h, section.sec.qd-fechado > form > .sec-h { border-bottom: 0 !important }
+
+/* Aba Infraestrutura (lote 3, 4/nov/2026): perfil topográfico com a cor do perfil (azul, verde, amarelo, laranja, vermelho; pedido do Moisés),
+   visita técnica e viabilidades técnicas */
+.tp-plano { --tp-f: #0b57d0; --tp-b: #d3e3fd } .tp-inclinado { --tp-f: #146c2e; --tp-b: #c4eed0 } .tp-acidentado_leve { --tp-f: #6d5700; --tp-b: #ffe485 }
+.tp-acidentado_mediano { --tp-f: #8b3a00; --tp-b: #ffdbc9 } .tp-acidentado_critico { --tp-f: #b3261e; --tp-b: #ffdad6 }
+html[data-tema="escuro"] .tp-plano { --tp-f: #d3e3fd; --tp-b: #0842a0 } html[data-tema="escuro"] .tp-inclinado { --tp-f: #c4eed0; --tp-b: #0f5223 }
+html[data-tema="escuro"] .tp-acidentado_leve { --tp-f: #ffe485; --tp-b: #524100 } html[data-tema="escuro"] .tp-acidentado_mediano { --tp-f: #ffdbc9; --tp-b: #6b2c00 }
+html[data-tema="escuro"] .tp-acidentado_critico { --tp-f: #ffdad6; --tp-b: #8c1d18 }
+.tp-chip { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 8px; background: var(--tp-b); color: var(--tp-f); font-size: 13px; font-weight: 500; white-space: nowrap }
+.tp-faixa { background: var(--tp-b); color: var(--tp-f); border-radius: 16px; padding: 16px 20px; margin-bottom: 12px }
+.tp-faixa .tp-n { font-size: 22px; font-weight: 400; line-height: 28px }
+.tp-faixa .tp-s { font-size: 13px; margin-top: 2px; opacity: .9 }
+.tp-kv { margin-bottom: 12px }
+.tp-escala { display: flex; flex-wrap: wrap; gap: 6px }
+.tp-e { display: inline-flex; align-items: center; height: 28px; padding: 0 10px; border-radius: 8px; font-size: 12px; font-weight: 500; color: var(--m-on-var, #444746); box-shadow: inset 0 0 0 1px var(--m-outline-v, #c4c7c5) }
+.tp-e.on { background: var(--tp-b); color: var(--tp-f); box-shadow: none }
+#sec-relevo .tp-e.on { box-shadow: inset 0 0 0 2px var(--tp-f) }
+.tp-regra { font-size: 12px; color: var(--m-on-var, #444746); margin: 12px 0 0 }
+.tp-medindo { display: flex; align-items: center; gap: 10px; color: var(--m-on-var, #444746) }
+.tp-gira { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--m-outline-v, #c4c7c5); border-top-color: var(--m-primary, #0b57d0); animation: tp-gira 0.9s linear infinite }
+@keyframes tp-gira { to { transform: rotate(360deg) } }
+.cfg-sub-t { font-size: 14px; font-weight: 500; margin: 16px 0 4px }
+.vt-b { padding-top: 4px }
+.vt-data { max-width: 220px; margin-bottom: 8px }
+.vt-r { display: grid; grid-template-columns: minmax(120px, 180px) 150px minmax(0, 1fr); gap: 8px 16px; align-items: center; padding: 8px 0; border-top: 1px solid var(--m-outline-v, #e3e3e3) }
+.vt-r:first-child { border-top: 0 }
+.vt-n { font-weight: 500 }
+.vt-r .chip-sel, .vtec-h .chip-sel { justify-self: start }
+.vt-obs { border: 0; border-bottom: 1px solid transparent; background: transparent; font: inherit; font-size: 13px; color: var(--m-on-var, #444746); height: 28px; padding: 0; min-width: 0; width: 100% }
+.vt-obs:hover:not(:disabled) { border-bottom-color: var(--m-outline, #747775) }
+.vt-obs:focus { outline: 0; border-bottom: 2px solid var(--m-primary, #0b57d0) }
+.vtec-r { padding: 12px 0; border-top: 1px solid var(--m-outline-v, #e3e3e3) }
+.vtec-r:first-child { border-top: 0; padding-top: 4px }
+.vtec-h { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px }
+.vtec-h .vt-n { min-width: 120px }
+.vtec-c { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 12px; margin-top: 10px }
+.vtec-c .field.full { grid-column: 1 / -1 }
+@media (max-width: 599px) {
+  .vt-r { grid-template-columns: minmax(0, 1fr) auto } .vt-obs { grid-column: 1 / -1 }
+  .vtec-c { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) }
+}
+html[data-tema="escuro"] :is(.vt-r, .vtec-r) { border-top-color: #2d2f31 }
+html[data-tema="escuro"] .vt-obs { color: #c4c7c5; background: transparent !important }
+
+/* ---------- Partes e Lotes na aba Terreno; partes no Comercial (lote 5, 4/nov/2026) ---------- */
+.pt2-qtd { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; background: #eef3fb; border-radius: 16px; padding: 10px 16px; margin-bottom: 12px }
+.pt2-qtd label { font-weight: 500 }
+.pt2-qtd .faint { font-size: 13px }
+.pt2-passo { display: inline-flex; align-items: center; border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 20px; overflow: hidden; background: #fff }
+.pt2-passo .iconbtn { border-radius: 0; width: 40px; height: 38px; font-size: 18px }
+.pt2-passo input { width: 48px; height: 38px; text-align: center; border: 0; border-inline: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 0; font-weight: 500; background: transparent; padding: 0 }
+.pt2-lista, .lt-lista { display: flex; flex-direction: column; gap: 12px }
+.pt2, .lt { border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px; padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0 }
+.pt2-h, .lt-h { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; min-height: 36px }
+.pt2-tit { font: inherit; font-size: 15px; font-weight: 500; border: 0; border-bottom: 1px dashed var(--m-outline-var, #c4c7c5); border-radius: 0; background: transparent; padding: 4px 0; min-width: 0; flex: 1 1 160px; max-width: 320px; height: auto }
+.pt2-tit:focus { outline: none; border-bottom: 2px solid #0b57d0 }
+.pt2-x { margin-left: auto }
+.pt2-g { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 14px }
+.pt2-g .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; margin: 0 }
+.pt2-obs { grid-column: 1 / -1 }
+.lbl-f { font-size: 12px; font-weight: 500; color: #444746 }
+.pt2-g .v { padding: 8px 0; min-height: 36px }
+.pt2-g textarea { min-height: 40px; resize: vertical }
+.lt-sqls { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #e3e3e3; padding-top: 10px }
+.lt-sql { border-radius: 8px; background: #f8fafd; padding: 8px 10px; min-width: 0 }
+.lt-sql-h { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; font-size: 13px }
+.lt-sql-h b { font-size: 14px }
+.lt-sql-h .lixo { margin-left: auto }
+.lt-det { margin-top: 4px }
+.lt-det summary { font-size: 13px }
+.lt-add { border-top: 0; padding-top: 0 }
+.lt-adot { font-weight: 500 }
+.qd-add { align-self: flex-start; margin-top: 10px }
+.nv-pl-h { font-size: 15px; font-weight: 500; margin: 20px 0 8px }
+.nv-lt .nv-sqls { display: flex; flex-direction: column; gap: 8px }
+.ptcom-r { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, .8fr) minmax(0, .8fr) 160px 140px 190px; gap: 8px 12px; align-items: center; padding: 10px 0; border-top: 1px solid #e3e3e3 }
+.ptcom-th { border-top: 0; padding-top: 0; font-size: 12px; font-weight: 500; color: #444746 }
+.ptcom-th > span:nth-child(n+4) { padding-left: 2px }
+.ptcom-p { min-width: 0 } .ptcom-p b { font-weight: 500 } .ptcom-p .faint { font-size: 13px }
+.ptcom-c { min-width: 0; margin: 0 } .ptcom-c.field { display: block }
+.ptcom-ml { display: none }
+.ptcom input.ptc-n { width: 100%; text-align: right } .ptcom select { width: 100% }
+.ptcom-tot { font-weight: 500 }
+.ptcom { container-type: inline-size }
+@container (max-width: 760px) {
+  .ptcom-th { display: none }
+  .ptcom-r { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) }
+  .ptcom-p { grid-column: 1 / -1 }
+  .ptcom-c:empty { display: none }
+  .ptcom-ml { display: block; margin-bottom: 2px }
+}
+@media (max-width: 720px) {
+  .pt2-g { grid-template-columns: minmax(0, 1fr) }
+  .pt2, .lt { padding: 12px }
+}
+html[data-tema="escuro"] .pt2-qtd { background: #282a2c }
+html[data-tema="escuro"] .pt2-passo { background: #282a2c; border-color: #444746 }
+html[data-tema="escuro"] .pt2-passo input { border-color: #444746; color: #e3e3e3 }
+html[data-tema="escuro"] .pt2, html[data-tema="escuro"] .lt { border-color: #444746 }
+html[data-tema="escuro"] .pt2-tit { color: #e3e3e3; border-bottom-color: #444746 }
+html[data-tema="escuro"] .pt2-tit:focus { border-bottom-color: #a8c7fa }
+html[data-tema="escuro"] .lbl-f { color: #c4c7c5 }
+html[data-tema="escuro"] .lt-sqls { border-top-color: #2d2f31 }
+html[data-tema="escuro"] .lt-sql { background: #282a2c }
+html[data-tema="escuro"] .ptcom-r { border-top-color: #2d2f31 } html[data-tema="escuro"] .ptcom-th { color: #c4c7c5 }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

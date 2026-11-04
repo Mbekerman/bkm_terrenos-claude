@@ -60,14 +60,15 @@ Arrastar no quadro de etapas chama `mover_para_etapa` (para frente, etapa por et
 
 Um dono com várias matrículas é **uma** negociação. Vários donos que negociam separado são **partes** do terreno (`terreno_partes`): cada parte é um dono, ou um grupo de donos que negocia junto (herdeiros, sócios), com as matrículas, as inscrições e as pessoas dela (`parte_id` em `matriculas`, `inscricoes_municipais` e `terreno_pessoas`; participações somam 100% em cada parte) e os corretores dela (`parte_corretores`: uma parte pode ter vários corretores e o mesmo corretor pode trazer várias partes; ligar o corretor à parte o põe entre os corretores do terreno), o pedaço da poligonal e a marca de **essencial** (sem ela o terreno não serve) ou dispensável.
 
-- **Cadastro:** a parte pode nascer junto com o terreno (fim do Novo terreno) ou a qualquer momento na ficha, só com o nome; tamanho do lote, matrículas, inscrições, vendedores e corretor são opcionais (`salvar_parte` e os `parte_id`).
+- **Todo terreno tem pelo menos uma parte** (decisão do Moisés, 4/nov/2026): nasce com "Vendedor 1" (trigger `t_parte1`), e a última parte ativa não sai. Na aba Terreno, o quadro Partes tem "Quantas partes vendem?" e um cartão por parte com título, nome da pessoa principal, telefone, e-mail, CPF ou CNPJ e observação, todos opcionais (gravados só com os dígitos, conferidos por `fluxo.validar_formato`); "Excluir parte" só com a parte sem lotes nem histórico (`app.excluir_parte`), senão vale `remover_parte`, com motivo. No Novo terreno, o passo 2 tem as mesmas partes e lotes (`salvar_parte` e `salvar_lote`).
+- **Lotes** (`terreno_lotes`, decisão do Moisés, 4/nov/2026): cada lote tem um título ("Lote 1", "Lote 2"...), pertence a uma parte, tem **uma** matrícula (no máximo um lote por matrícula) e um ou mais SQLs (`lote_inscricoes`). A matrícula e o SQL pegam a parte do lote (`_sincronizar_partes_lote`; SQL em lotes de partes diferentes fica sem parte). Um SQL que cobre duas matrículas entra nos dois lotes, e a divergência de área se mede pelo grupo de lotes que dividem SQLs (`v_lotes`: soma das matrículas × soma das áreas cadastrais, em % da matrícula). Área adotada do lote: a da matrícula, a cadastral (só com SQL não dividido) ou uma informada. A matrícula nova já vem com o cartório do terreno (pela poligonal). `app.salvar_lote`, `app.excluir_lote` (leva a matrícula e os SQLs só dele sem IPTU). A área e as zonas da parte saem dos lotes dela (`v_partes`).
 - **Antes da etapa da divisão** (`fases_modelo.etapa_partes`, só na fase de entrada; padrão Negociação) há uma negociação só, a do terreno: Triagem e Estudos são da área toda.
 - **Ao chegar nela**, com duas ou mais partes ativas, cada parte ganha a sua negociação: um processo da mesma fase com `parte_id` e `principal_id` (código `NEG-00012-1`), com oferta de referência, propostas, documentos, reuniões, tarefas, subetapa, status, aprovações e histórico próprios. Parte cadastrada depois disso já nasce com a sua.
 - **A negociação do terreno passa a andar pelas partes** (`_sincronizar_principal`): fica na etapa e na subetapa da parte mais atrasada em aberto, com cada mudança no histórico ("Pelas negociações das partes"), e não se move à mão. A de uma parte só anda da etapa da divisão em diante e enquanto a do terreno estiver ativa.
 - **Comprado do terreno** só com todas as partes ativas compradas (pendência que nem o gestor força); o checklist de documentos fica com cada parte; relato e pontos de sucesso só na compra do terreno. A compra de uma parte não abre a fase seguinte.
 - **Parte perdida ou descartada** trava a compra: ou sai do terreno (`remover_parte`, com motivo; parte essencial só com gestor ou diretor, e tornar uma parte dispensável também), ou o terreno se encerra. Parte comprada não sai.
 - **Encerrar o terreno** leva as partes em aberto: Perdido e Descartado com o mesmo motivo, Stand By com a mesma data; retomar o terreno retoma as partes.
-- **Oferta** pode cobrir uma ou mais partes (`oferta_partes`, com o preço de cada uma quando informado); a negociação da parte usa como referência a oferta mais recente que a cobre.
+- **Oferta** pode cobrir uma ou mais partes (`oferta_partes`, com o preço e a condição de pagamento de cada uma quando informados); a negociação da parte usa como referência a oferta mais recente que a cobre. Na aba Comercial, o quadro Partes lista cada parte com a área adotada (soma dos lotes), o zoneamento, o valor pedido e o valor por m² (digitar um calcula o outro) e a condição de pagamento; só a oferta, sem proposta.
 - `v_partes`: cada parte com donos, corretores, matrículas, negociação (etapa, subetapa, prazo, status), preço pedido e última proposta. A temperatura é uma só, a da negociação do terreno: `definir_temperatura` recusa a negociação de uma parte.
 
 ## Papéis, hierarquia e configuração
@@ -238,16 +239,22 @@ erDiagram
   terrenos ||--o{ consultas_area : "poligonal na base da prefeitura"
   municipios ||--o| bases_cadastrais : "GeoSampa, GeoSanja"
   municipios ||--o{ inscricoes_municipais : "cidade da inscricao"
-  inscricoes_municipais ||--o{ inscricao_valores : "valor venal e IPTU por exercicio e revisao"
+  inscricoes_municipais ||--o{ inscricao_valores : "valor venal e IPTU do exercicio atual"
   terrenos ||--o{ confrontacoes : mede
   terrenos ||--o{ terreno_pessoas : vincula
   terrenos ||--o{ terreno_partes : "donos que negociam separado"
+  terreno_partes ||--o{ terreno_lotes : "lotes da parte"
+  terreno_lotes |o--o| matriculas : "uma matricula"
+  terreno_lotes ||--o{ lote_inscricoes : "um ou mais SQLs"
+  inscricoes_municipais ||--o{ lote_inscricoes : "em um ou mais lotes"
   terreno_partes |o--o{ matriculas : "do dono"
   terreno_partes |o--o{ inscricoes_municipais : "do dono"
   terreno_partes |o--o{ terreno_pessoas : "donos da parte"
   pessoas ||--o{ terreno_pessoas : participa
   terrenos ||--o{ terreno_infraestrutura : verifica
   itens_infraestrutura ||--o{ terreno_infraestrutura : item
+  terrenos ||--o{ terreno_viabilidades_tecnicas : "viabilidade da concessionária"
+  itens_infraestrutura ||--o{ terreno_viabilidades_tecnicas : servico
   terrenos ||--o{ analises_urbanisticas : analisa
   analises_urbanisticas ||--o{ analise_zoneamentos : "uma porcao por lote e zona"
   inscricoes_municipais |o--o{ analise_zoneamentos : "lote (nulo = parte sem inscricao)"
@@ -381,11 +388,30 @@ erDiagram
   terreno_partes {
     uuid id PK
     uuid terreno_id FK
-    text nome "dono ou grupo de donos"
+    text nome "titulo: Vendedor 1, 2..."
+    text pessoa_nome "pessoa principal"
+    text telefone "so digitos"
+    text email "minusculas"
+    text documento "CPF ou CNPJ, so digitos"
     bool essencial
     jsonb poligono_geojson "pedaco da parte"
     numeric area_m2
     bool ativa "sai com motivo"
+  }
+  terreno_lotes {
+    uuid id PK
+    uuid terreno_id FK
+    uuid parte_id FK
+    text titulo "unico no terreno"
+    uuid matricula_id FK "unico"
+    text area_fonte "documental | cadastral | informada"
+    numeric area_informada_m2
+    int ordem
+  }
+  lote_inscricoes {
+    uuid lote_id PK
+    uuid inscricao_id PK
+    int ordem
   }
   terreno_pessoas {
     uuid terreno_id FK
@@ -397,9 +423,19 @@ erDiagram
   terreno_infraestrutura {
     uuid terreno_id PK
     text item PK
-    text disponibilidade "nao_verificado | sim | nao"
+    text disponibilidade "nao_verificado | sim | parcial | nao | nao_se_aplica"
     date data_verificacao
-    text fonte
+    text observacoes
+  }
+  terreno_viabilidades_tecnicas {
+    uuid terreno_id PK
+    text servico PK "energia | agua | esgoto | gas"
+    text situacao "nao_solicitada | solicitada | viavel | condicionada | nao_viavel"
+    text concessionaria
+    date solicitada_em
+    date emitida_em
+    date validade
+    text condicoes
   }
   analises_urbanisticas {
     uuid id PK
@@ -462,6 +498,12 @@ erDiagram
 **GeoSampa pelo SQL (São Paulo).** Na inscrição, "Buscar no GeoSampa" (automático ao cadastrar o SQL) consulta o servidor de camadas do Novo GeoSampa (`geoserver.geosampa.prefeitura.sp.gov.br`, WFS/WMS) pelo repasse do Caddy em `/geosampa`, porque o servidor só aceita chamadas de navegador vindas do próprio GeoSampa. Traz o lote fiscal (`lote_cidadao`: poligonal em UTM 23S SIRGAS 2000, áreas, uso, CIB, condomínio) e os atributos de cada camada que toca a poligonal (zoneamento das Leis 18.081 e 18.177, ZEIS, eixos, macroárea e fator de planejamento, operação urbana, mananciais, tombamento e áreas envoltórias, áreas contaminadas, melhoramento viário, faixa não edificável, córrego a até 50 m, risco, inundação, influência de Metrô e CPTM, vegetação significativa, zona fiscal). `app.registrar_consulta_lote` confere que o lote é o da inscrição, grava a consulta inteira (nunca alterada), completa só o que está vazio na inscrição (área cadastral) e o cadastro fiscal (CIB, zona fiscal) e, se pedido, troca as zonas desse lote (com a área de cada uma) na análise urbanística, sem mexer nos outros lotes. Poligonal e áreas do terreno continuam passando por `app.salvar_terreno`. A planta (PDF, gerada pelo próprio servidor) e o desenho (DXF R12 com lotes, calçada, quadra, edificações, curvas de nível com cota e pontos cotados, montado no navegador) entram como documentos `lote_pdf` e `lote_dxf`, com versão. Testada, valor do m² e valor venal não estão no GeoSampa novo; continuam digitados por exercício em `inscricao_valores`.
 
 **Cartório da circunscrição** (3/nov/2026). `terrenos.cartorio` guarda o cartório de registro de imóveis da área do terreno ("13º CRI") e `cartorio_origem` diz de onde veio: `prefeitura` (em São Paulo, a camada `cartorio_registro_imovel` do GeoSampa) ou `digitado`. A consulta do lote (`registrar_consulta_lote`) preenche só o vazio, e só quando a camada acha um cartório; sem lote consultado, o front consulta pelo pino e grava por `app.cartorio_da_prefeitura`, que preenche o vazio ou troca o que veio da prefeitura (o pino mudou), nunca o digitado. Mudar pelo `salvar_terreno` marca `digitado`; apagar volta a vazio, sem origem. O cartório de cada matrícula continua em `matriculas.cartorio`.
+
+**Infraestrutura** (lote 3 da ficha em abas, 4/nov/2026; decisões do Moisés de 3/nov). Três quadros na aba:
+
+- **Relevo, classificação topográfica.** O front mede as cotas dentro da poligonal (laser 2020 da prefeitura em São Paulo, grade de 1 m, ou 2 m acima de 4 ha; Google em grade de 5 m fora) e ajusta um plano por mínimos quadrados. A inclinação é a do plano; a terra mexida é a média de |cota − plano|, ou seja, corte + aterro até o plano ÷ área. `app.registrar_topografia` grava os números em `terrenos.topo_*` e o perfil sai de `app.classificar_topografia`, que pega o pior dos dois pelos limites de `app.topografia_config` (sem linha, os padrões: Plano até 3%, Inclinado até 30%, acima crítico; terra mexida acima de 0,25 leve, 0,5 mediano e 1 m³/m² crítico). Com o Google a terra mexida não é guardada (erro de 1 a 2 m): o perfil fica entre Plano, Inclinado e crítico. Poligonal nova apaga a medição (`t_norm`), e o front mede de novo. `app.salvar_topografia_config` (administrador) reclassifica o que já foi medido.
+- **Visita técnica.** `terreno_infraestrutura`, com os 8 itens ativos de `itens_infraestrutura` (telefonia desativada), cada um Sim, Parcial, Não ou Não se aplica, com observação; `terrenos.visita_tecnica_em` guarda a data da visita.
+- **Viabilidades técnicas.** `terreno_viabilidades_tecnicas`, uma por serviço marcado `viabilidade_tecnica` no catálogo (Energia, Água, Esgoto, Gás). Retorno exige a data de emissão, e a validade nunca é anterior a ela. A view `v_terreno_viabilidades_tecnicas` traz todos os serviços, com `vencida` quando o retorno é viável ou condicionado e a validade já passou.
 
 **Restrições e entorno** (lote 2 da ficha em abas, 4/nov/2026). A aba Parâmetros urbanísticos tem uma lista fixa por tema (ambiental, patrimônio, vias e redes, riscos) com a resposta para o terreno inteiro. Os dados vêm da consulta pela poligonal do terreno (`app.registrar_consulta_area` em `consultas_area`, só em cidade com base; a poligonal do dia vai junto) ou, sem ela, da soma das consultas dos lotes. A consulta, do lote ou da poligonal, traz também as camadas consultadas por raio, com a distância de cada feição até a área (`_dist_m`):
 - córrego até 30 m;
@@ -1329,7 +1371,8 @@ erDiagram
 | Zonas da análise por lote: a consulta de um lote troca só as zonas dele | `app._substituir_zonas` |
 | Catálogo de parâmetros só muda pelo administrador, com fonte e auditoria | `app.salvar_zona_parametro` |
 | Uma análise urbanística vigente por terreno; anteriores preservadas | índice único parcial + trigger |
-| Valor venal e IPTU por inscrição e exercício; correção vira nova revisão, a anterior fica preservada | `inscricao_valores` + trigger |
+| Valor venal e IPTU só do exercício mais recente (decisão do Moisés, 4/nov/2026): exercício mais antigo é recusado, um só vigente por inscrição; correção vira nova revisão, a anterior fica preservada | `inscricao_valores` + trigger + índice `inscricao_valor_vigente` |
+| Todo terreno tem uma parte; lote = uma matrícula e um ou mais SQLs, de uma parte; matrícula em um lote só; título do lote único no terreno | trigger `t_parte1`, `terreno_lotes`, `lote_inscricoes`, `app.salvar_lote` |
 | Consulta do lote na base da prefeitura (GeoSampa, GeoSanja) só pela RPC, conferindo que o lote é o da inscrição e que o terreno é da cidade da base; nunca alterada; completa só campos vazios | `app.registrar_consulta_lote` |
 | Inscrição escolhida numa cidade só entra em terreno dessa cidade | trigger `tg_inscricao_municipio` |
 | Isento não tem IPTU; venal do imóvel = terreno + construção quando os dois existem | checks em `inscricao_valores` |

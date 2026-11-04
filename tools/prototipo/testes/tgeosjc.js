@@ -49,14 +49,15 @@ const st=await ter('Lote SJC').then(t=>{const i=t.insc[0],g=i.geo[0];return {mun
   analise:(t.analises.find(a=>a.status==='vigente')||{}).fonte,docs:t.docs.map(d=>d.tipo+':v'+d.versoes+':'+d.nome),hist:t.hist.map(h=>h.txt)}});
 console.log('estado:',JSON.stringify(st));
 await p.evaluate(()=>{if(!document.getElementById('geo-0'))document.querySelector('.fi-abas [data-t=terreno]').click()});await p.waitForTimeout(300);
+await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click());document.querySelectorAll('.lt-det').forEach(d=>d.open=true)});await p.waitForTimeout(200);
 console.log('quadro:',await p.$eval('#geo-0',x=>x.innerText.replace(/\s+/g,' ')));
 await p.evaluate(()=>document.getElementById('geo-0').scrollIntoView({block:'start'}));await p.evaluate(()=>scrollBy(0,-120));await p.waitForTimeout(200);
 await p.screenshot({path:OUT+'2_quadro.png'});
 for(const k of ['pdf','dxf']){const [d]=await Promise.all([p.waitForEvent('download'),p.click(`[data-a=geo-baixar][data-k=${k}]`)]);await d.saveAs(OUT+'lote.'+k);
   console.log('baixou',k,d.suggestedFilename(),fs.statSync(OUT+'lote.'+k).size,'bytes',fs.readFileSync(OUT+'lote.'+k).slice(0,8).toString())}
 // 2. nova inscrição na ficha: sem seletor, a cidade é a do terreno (pela poligonal); outra inscrição de SJC entra
-await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));console.log('ficha: seletor?',await p.$$eval('[data-form=insc] .insc-cid',x=>x.length),'| cidade:',await p.$eval('[data-form=insc] [name=mun]:checked',x=>x.value),'|',await p.$eval('#i-sql-l',x=>x.textContent),'|',await p.$eval('#i-sql',x=>x.placeholder));
-await p.fill('#i-sql','41002400120000');await p.evaluate(()=>document.querySelector('[data-form=insc]').requestSubmit());await p.waitForTimeout(400);
+const LF='#sec-lotes form[data-form=lt-sql]';console.log('ficha: seletor?',await p.$$eval(LF+' .insc-cid',x=>x.length),'| cidade:',await p.$eval(LF+' [name=mun]:checked',x=>x.value),'|',await p.$eval(LF+' label[id$=-sql-l]',x=>x.textContent),'|',await p.$eval(LF+' [name=sql]',x=>x.placeholder));
+await p.fill(LF+' [name=sql]','41002400120000');await p.evaluate(f=>document.querySelector(f).requestSubmit(),LF);await p.waitForTimeout(400);
 console.log('inscrições:',JSON.stringify((await ter('Lote SJC')).insc.map(i=>i.mun+':'+i.sql)));
 // 3. passo 2 (área de outro lugar de SJC importada de KML): a inscrição acompanha o município digitado
 const kml=`<?xml version="1.0"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><Placemark><name>Outro lote</name><Polygon><outerBoundaryIs><LinearRing><coordinates>-45.90,-23.20 -45.8997,-23.20 -45.8997,-23.2003 -45.90,-23.2003 -45.90,-23.20</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark></Document></kml>`;

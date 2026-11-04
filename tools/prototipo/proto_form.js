@@ -247,7 +247,7 @@ function fmSnack(m,rot,fn){const el=$('#toast');el.innerHTML=`<span>${esc(m)}</s
 /* exemplo: formulário da visita técnica no primeiro terreno (só uma vez) */
 (()=>{if(S.fmExemplo)return;S.fmExemplo=true;const t=S.terrenos[0];if(!t||!t.tarefas)return;const l=tkL(t).find(x=>x.nome==='Fazendo'&&!x.oculta)||tkPrim(t,'aberta');
   const k=tkCriar(t,{titulo:'Visita técnica ao terreno',resp:t.resp||'Rafael Souza',prio:'media',lista:l.id,vis:'publico',prazo:addD(HOJE,4),desc:'Conferir divisas, ocupação e acesso.'});
-  k.itens=[{id:uid(),chave:'terreno.topografia',pergunta:'Qual a topografia do terreno?',forma:'radio',regra:'livre',cond:null},
+  k.itens=[{id:uid(),chave:'terreno.posicao_quadra',pergunta:'Qual a posição do terreno na quadra?',forma:'radio',regra:'livre',cond:null},
     {id:uid(),chave:'terreno.area_levantamento_m2',pergunta:'Área medida na visita',ajuda:'Medida com trena laser nas divisas.',regra:'justificativa',cond:null},
     {id:uid(),chave:'terreno.situacao_ocupacao',pergunta:'Como está a ocupação hoje?',forma:'chips',regra:'livre',cond:null},
     {id:uid(),tipo:'sim_nao',pergunta:'O proprietário aceita receber a equipe de novo?',forma:'chave',regra:'livre',cond:null},

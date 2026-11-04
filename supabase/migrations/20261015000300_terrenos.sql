@@ -97,7 +97,6 @@ create table app.terrenos (
   -- 'poligonal': a adotada é a área do desenho, recalculada pelo trigger t_norm a cada gravação
   fonte_area_adotada    text check (fonte_area_adotada in ('documental','cadastral','levantamento','estimativa','poligonal')),
   testada_principal_m   numeric(8,2) check (testada_principal_m > 0),
-  topografia            text not null default 'nao_informado' check (topografia in ('nao_informado','plano','aclive','declive','irregular')),
   desnivel_estimado_m   numeric(6,2),
   posicao_quadra        text not null default 'nao_informado' check (posicao_quadra in ('nao_informado','meio_quadra','esquina','duas_frentes','quadra_inteira')),
   formato               text not null default 'nao_informado' check (formato in ('nao_informado','regular','irregular')),
@@ -109,6 +108,18 @@ create table app.terrenos (
   observacoes_fisicas   text,
   -- Tipo de empreendimento pretendido: escolhe a regra da lei nos parâmetros urbanísticos (decisão do Moisés, 25/out/2026)
   tipo_empreendimento   text not null default 'nao_informado' check (tipo_empreendimento in ('nao_informado','mercado','his','hmp')),
+  -- Visita técnica (aba Infraestrutura): data da última visita; os itens ficam em terreno_infraestrutura
+  visita_tecnica_em     date,
+  -- Classificação topográfica (decisão do Moisés, 3/nov/2026): medida pelas cotas dentro da poligonal
+  -- (laser 2020 em São Paulo, Google fora), gravada só por app.registrar_topografia e apagada
+  -- quando a poligonal muda (t_norm), para o front medir de novo. Perfil por app.classificar_topografia.
+  topo_perfil           text check (topo_perfil in ('plano','inclinado','acidentado_leve','acidentado_mediano','acidentado_critico')),
+  topo_inclinacao_pct   numeric(6,2) check (topo_inclinacao_pct >= 0),   -- do plano que melhor se ajusta às cotas
+  topo_terra_m3m2       numeric(7,3) check (topo_terra_m3m2 >= 0),       -- corte + aterro até esse plano ÷ área; nulo com cotas do Google
+  topo_desnivel_m       numeric(7,2) check (topo_desnivel_m >= 0),
+  topo_fonte            text check (topo_fonte in ('laser','google')),
+  topo_calculado_em     timestamptz,
+  topo_calculado_por    uuid,
 
   criado_por            uuid default auth.uid(),
   criado_em             timestamptz not null default now(),
@@ -122,7 +133,9 @@ create table app.terrenos (
   check (area_construida_demolir_m2 is null or area_construida_existente_m2 is null
          or area_construida_demolir_m2 <= area_construida_existente_m2),
   -- o cadastro começa pela poligonal: sem ela não há terreno
-  check (poligono_geojson is not null)
+  check (poligono_geojson is not null),
+  check ((topo_perfil is null) = (topo_fonte is null) and (topo_perfil is null) = (topo_calculado_em is null)),
+  check (topo_fonte is distinct from 'laser' or topo_terra_m3m2 is not null)
 );
 create index on app.terrenos (empresa_id, situacao_cadastral);
 create index on app.terrenos using gist (poligono);
@@ -143,6 +156,12 @@ create table app.terreno_partes (
   poligono_geojson jsonb check (poligono_geojson is null or app.geojson_poligono_valido(poligono_geojson)),
   area_m2          numeric(12,2) check (area_m2 > 0),
   observacoes      text,
+  -- contato da parte (todos opcionais; decisão do Moisés, 4/nov/2026): a pessoa principal,
+  -- telefone e CPF/CNPJ só com dígitos, e-mail em minúsculas (conferidos em app.salvar_parte)
+  pessoa_nome      text,
+  telefone         text check (telefone ~ '^\d{10,11}$'),
+  email            text check (email = lower(email) and email ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$'),
+  documento        text check (documento ~ '^(\d{11}|\d{14})$'),
   ativa            boolean not null default true,
   removida_em      timestamptz,
   motivo_remocao   text,
@@ -185,6 +204,38 @@ create table app.inscricoes_municipais (
   unique nulls not distinct (empresa_id, municipio_id, inscricao_norm)
 );
 create index on app.inscricoes_municipais (terreno_id);
+
+-- Lotes do terreno (decisão do Moisés, 4/nov/2026): cada lote é uma matrícula, com um ou mais SQLs
+-- (inscrições), e pertence a uma parte. O mesmo SQL pode estar em dois lotes quando cobre duas
+-- matrículas; aí a divergência de área é conferida pelo grupo de lotes que dividem o SQL
+-- (app.v_lotes). A parte da matrícula e da inscrição vem do lote (app._sincronizar_partes_lote).
+-- Escrita só pelas RPCs app.salvar_lote e app.excluir_lote.
+create table app.terreno_lotes (
+  id                uuid primary key default gen_random_uuid(),
+  empresa_id        uuid not null references app.empresas(id),
+  terreno_id        uuid not null references app.terrenos(id) on delete cascade,
+  parte_id          uuid not null references app.terreno_partes(id),
+  titulo            text not null check (length(trim(titulo)) > 0),
+  matricula_id      uuid unique references app.matriculas(id) on delete set null,  -- uma matrícula por lote
+  -- de onde vem a área adotada do lote: a da matrícula, a soma dos SQLs (só quando nenhum é
+  -- dividido com outro lote) ou a digitada
+  area_fonte        text not null default 'documental' check (area_fonte in ('documental','cadastral','informada')),
+  area_informada_m2 numeric(12,2) check (area_informada_m2 > 0),
+  ordem             int not null default 0,
+  criado_em         timestamptz not null default now(),
+  check (area_fonte <> 'informada' or area_informada_m2 is not null)
+);
+create index on app.terreno_lotes (terreno_id);
+create unique index terreno_lotes_titulo on app.terreno_lotes (terreno_id, lower(trim(titulo)));
+
+create table app.lote_inscricoes (
+  lote_id      uuid not null references app.terreno_lotes(id) on delete cascade,
+  inscricao_id uuid not null references app.inscricoes_municipais(id) on delete cascade,
+  empresa_id   uuid not null references app.empresas(id),
+  ordem        int not null default 0,
+  primary key (lote_id, inscricao_id)
+);
+create index on app.lote_inscricoes (inscricao_id);
 
 -- Consultas do lote na base da prefeitura pela inscrição (GeoSampa em São
 -- Paulo, GeoSanja em São José dos Campos): o retrato do lote e de todas as
@@ -254,7 +305,10 @@ create table app.inscricao_valores (
   check (valor_venal_imovel is null or valor_venal_terreno is null or valor_venal_construcao is null
          or valor_venal_imovel = valor_venal_terreno + valor_venal_construcao)
 );
-create unique index inscricao_valor_vigente on app.inscricao_valores (inscricao_id, exercicio) where vigente;
+-- Só o exercício mais recente vale (decisão do Moisés, 4/nov/2026, no lugar do histórico por
+-- exercício): um vigente por inscrição; lançar o ano novo aposenta o anterior, e as linhas
+-- antigas ficam só como registro.
+create unique index inscricao_valor_vigente on app.inscricao_valores (inscricao_id) where vigente;
 
 -- Nova linha do mesmo exercício vira a próxima revisão e aposenta a anterior.
 -- Linha gravada não muda (só deixa de ser vigente).
@@ -267,8 +321,12 @@ begin
     if new.valor_venal_imovel is null and new.valor_venal_terreno is not null and new.valor_venal_construcao is not null then
       new.valor_venal_imovel := new.valor_venal_terreno + new.valor_venal_construcao;
     end if;
+    if new.exercicio < (select max(exercicio) from app.inscricao_valores where inscricao_id = new.inscricao_id) then
+      raise exception 'Só vale o exercício mais recente (%): lance o IPTU do ano atual',
+        (select max(exercicio) from app.inscricao_valores where inscricao_id = new.inscricao_id) using errcode = '23514';
+    end if;
     update app.inscricao_valores set vigente = false
-     where inscricao_id = new.inscricao_id and exercicio = new.exercicio and vigente;
+     where inscricao_id = new.inscricao_id and vigente;
     new.vigente := true;
     return new;
   end if;
@@ -397,13 +455,59 @@ create table app.terreno_infraestrutura (
   terreno_id      uuid not null references app.terrenos(id) on delete cascade,
   item            text not null references app.itens_infraestrutura(codigo),
   empresa_id      uuid not null references app.empresas(id),
-  disponibilidade text not null default 'nao_verificado' check (disponibilidade in ('nao_verificado','sim','nao')),
+  disponibilidade text not null default 'nao_verificado' check (disponibilidade in ('nao_verificado','sim','parcial','nao','nao_se_aplica')),
   data_verificacao date,
   fonte           text,
   observacoes     text,
   primary key (terreno_id, item),
   check (disponibilidade = 'nao_verificado' or data_verificacao is not null)
 );
+
+-- Viabilidades técnicas das concessionárias (aba Infraestrutura; decisão do Moisés, 3/nov/2026):
+-- uma linha por serviço com viabilidade_tecnica no catálogo (Energia, Água, Esgoto, Gás).
+-- Retorno viável, não viável ou condicionado, com a data de validade; "vencida" sai da view.
+create table app.terreno_viabilidades_tecnicas (
+  terreno_id     uuid not null references app.terrenos(id) on delete cascade,
+  servico        text not null references app.itens_infraestrutura(codigo),
+  empresa_id     uuid not null references app.empresas(id),
+  situacao       text not null default 'nao_solicitada' check (situacao in ('nao_solicitada','solicitada','viavel','condicionada','nao_viavel')),
+  concessionaria text,
+  solicitada_em  date,
+  emitida_em     date,
+  validade       date,
+  condicoes      text,
+  atualizado_em  timestamptz not null default now(),
+  primary key (terreno_id, servico),
+  -- retorno recebido tem data de emissão; validade nunca antes da emissão
+  check (situacao in ('nao_solicitada','solicitada') or emitida_em is not null),
+  check (validade is null or emitida_em is null or validade >= emitida_em)
+);
+create or replace function app.tg_viab_tecnica()
+returns trigger language plpgsql as $$
+begin
+  if not exists (select 1 from app.itens_infraestrutura where codigo = new.servico and viabilidade_tecnica) then
+    raise exception 'Serviço sem viabilidade técnica: %', new.servico using errcode = '23514';
+  end if;
+  new.condicoes := nullif(trim(new.condicoes), '');
+  new.concessionaria := nullif(trim(new.concessionaria), '');
+  new.atualizado_em := now();
+  return new;
+end $$;
+create trigger t_viab before insert or update on app.terreno_viabilidades_tecnicas for each row execute function app.tg_viab_tecnica();
+
+-- Limites da classificação topográfica, por empresa (Configurações › Topografia, só administrador,
+-- por app.salvar_topografia_config). Sem linha, valem os padrões das colunas.
+create table app.topografia_config (
+  empresa_id        uuid primary key references app.empresas(id) on delete cascade,
+  plano_ate_pct     numeric(5,2) not null default 3    check (plano_ate_pct > 0),
+  inclinado_ate_pct numeric(5,2) not null default 30   check (inclinado_ate_pct > plano_ate_pct),
+  leve_de_m3m2      numeric(6,3) not null default 0.25 check (leve_de_m3m2 > 0),
+  mediano_de_m3m2   numeric(6,3) not null default 0.5  check (mediano_de_m3m2 > leve_de_m3m2),
+  critico_de_m3m2   numeric(6,3) not null default 1.0  check (critico_de_m3m2 > mediano_de_m3m2)
+);
+alter table app.topografia_config enable row level security;
+create policy ver on app.topografia_config for select to authenticated using (empresa_id in (select app.minhas_empresas()));
+grant select on app.topografia_config to authenticated;
 
 -- Análise urbanística: uma vigente por terreno; as anteriores ficam como histórico.
 create table app.analises_urbanisticas (
@@ -619,7 +723,7 @@ do $$
 declare t text;
 begin
   foreach t in array array['terrenos','matriculas','inscricoes_municipais','inscricao_valores','confrontacoes','terreno_pessoas','terreno_corretores','parte_corretores',
-                           'terreno_infraestrutura','analises_urbanisticas','analise_zoneamentos','areas_interesse','area_interesse_terrenos',
+                           'terreno_infraestrutura','terreno_viabilidades_tecnicas','analises_urbanisticas','analise_zoneamentos','areas_interesse','area_interesse_terrenos',
                            'terreno_entorno','terreno_entorno_buscas','terreno_ponto_distancias','terreno_pontos_excluidos','consultas_lote','consultas_area'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
@@ -663,6 +767,11 @@ begin
   new.cep := nullif(regexp_replace(coalesce(new.cep, ''), '\D', '', 'g'), '');
   new.nome := trim(new.nome);
   -- adotada pela poligonal: segue o desenho (a coluna gerada só é calculada depois deste trigger)
+  -- poligonal nova: a classificação topográfica era da forma antiga e é medida de novo pelo front
+  if tg_op = 'UPDATE' and new.poligono_geojson::text is distinct from old.poligono_geojson::text then
+    new.topo_perfil := null; new.topo_inclinacao_pct := null; new.topo_terra_m3m2 := null; new.topo_desnivel_m := null;
+    new.topo_fonte := null; new.topo_calculado_em := null; new.topo_calculado_por := null;
+  end if;
   if new.fonte_area_adotada = 'poligonal' then
     new.area_adotada_m2 := round(extensions.st_area(extensions.st_makevalid(extensions.st_setsrid(
       extensions.st_geomfromgeojson(new.poligono_geojson::text), 4326))::extensions.geography)::numeric, 0);
@@ -742,11 +851,36 @@ create trigger t_aud after insert or update or delete on app.confrontacoes      
 create trigger t_aud after insert or update or delete on app.terreno_entorno_buscas for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.consultas_lote for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.consultas_area for each row execute function app.tg_auditoria();
+create trigger t_aud after insert or update or delete on app.terreno_viabilidades_tecnicas for each row execute function app.tg_auditoria();
+create trigger t_aud after insert or update or delete on app.topografia_config for each row execute function app.tg_auditoria();
 
 -- Partes: leitura para a empresa; escrita só pelas RPCs (salvar_parte, remover_parte).
 alter table app.terreno_partes enable row level security;
 create policy ver on app.terreno_partes for select to authenticated using (empresa_id in (select app.minhas_empresas()));
 grant select on app.terreno_partes to authenticated;
+
+-- Lotes: leitura para a empresa; escrita só pelas RPCs (salvar_lote, excluir_lote).
+do $$
+declare t text;
+begin
+  foreach t in array array['terreno_lotes','lote_inscricoes'] loop
+    execute format('alter table app.%I enable row level security', t);
+    execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
+    execute format('grant select on app.%I to authenticated', t);
+    execute format('create trigger t_aud after insert or update or delete on app.%I for each row execute function app.tg_auditoria()', t);
+  end loop;
+end $$;
+create trigger t_emp before insert or update on app.terreno_lotes for each row execute function app.tg_mesma_empresa();
+
+-- Todo terreno nasce com uma parte, a "Vendedor 1" (decisão do Moisés, 4/nov/2026): matrículas e
+-- inscrições sempre ficam ligadas a uma parte, pelo lote.
+create or replace function app.tg_terreno_parte_inicial()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  insert into app.terreno_partes (empresa_id, terreno_id, nome) values (new.empresa_id, new.id, 'Vendedor 1');
+  return null;
+end $$;
+create trigger t_parte1 after insert on app.terrenos for each row execute function app.tg_terreno_parte_inicial();
 create trigger t_emp before insert or update on app.terreno_partes for each row execute function app.tg_mesma_empresa();
 create trigger t_aud after insert or update or delete on app.terreno_partes for each row execute function app.tg_auditoria();
 

@@ -143,7 +143,7 @@ function jnCfgHtml(){const fs=fasesL().filter(f=>f.ativo!==false),f=fs.some(x=>x
       return `<section class="sec jn-sec"><div class="sec-h"><h2>Para sair de ${esc(s.nome)}</h2><span class="faint">subetapa</span></div><div class="sec-b">${a.map(jnItemLinha).join('')}${b.map(r=>jnTarLinha(f,r)).join('')}${a.length||b.length?'':'<p class="faint jn-vazio">Nada exigido.</p>'}${jnAdd(f,e,s.k,[['jn-nova','Pergunta'],['jn-tar','Tarefa']])}</div></section>`}).join('')}
     <section class="sec jn-sec"><div class="sec-h"><h2>Regras pelo valor da resposta</h2></div><div class="sec-b">
       ${jnRegrasV().filter(r=>r.fase===f&&r.etapa===e).sort(ord).map(r=>jnLinha('raio',esc(r.msg),`${r.sub?'Para sair de '+esc(etNomeS(f,r.sub)):'Para sair da etapa'} · quando ${esc(itCondFrase(r.cond))}`,
-        jnSel(`data-jnr="rv:${r.id}"`,r.acao,JN_ACAO,'O que acontece'),'',`<button class="btn sm text" data-a="jn-rv-ed" data-v="${r.id}">Editar</button><button class="iconbtn sm lixo" data-a="jn-rv-x" data-v="${r.id}" aria-label="Apagar regra" title="Apagar regra">${ic('lixo',18)}</button>`)).join('')||'<p class="faint jn-vazio">Nenhuma regra. Exemplo: topografia irregular pede aprovação do diretor.</p>'}
+        jnSel(`data-jnr="rv:${r.id}"`,r.acao,JN_ACAO,'O que acontece'),'',`<button class="btn sm text" data-a="jn-rv-ed" data-v="${r.id}">Editar</button><button class="iconbtn sm lixo" data-a="jn-rv-x" data-v="${r.id}" aria-label="Apagar regra" title="Apagar regra">${ic('lixo',18)}</button>`)).join('')||'<p class="faint jn-vazio">Nenhuma regra. Exemplo: relevo acidentado crítico pede aprovação do diretor.</p>'}
       ${jnAdd(f,e,'',[['jn-rv-nova','Regra']])}</div></section>`;
   return `<section class="sec"><div class="sec-h"><h2>Jornada</h2></div><div class="sec-b">
     <p class="muted" style="margin-top:0">O que cada etapa e subetapa pede para avançar: perguntas e campos (a resposta grava no próprio campo do terreno), documentos, pré-requisitos e tarefas. Cada item pode ter condição. Não avança sem: gestor e diretor passam com justificativa. Avança com justificativa: qualquer um passa justificando.</p>
@@ -308,12 +308,12 @@ jnCampos().forEach(jnRegistra);
   const ocup={modo:'todas',itens:[{campo:'terreno.situacao_ocupacao',op:'em',valores:['ocupado','parcialmente_ocupado']}]};
   const subE=k=>(etapaF(f,'estudos')?.subs||[]).some(s=>s.k===k)?k:null;
   if(!jnItens().length&&etapaF(f,'estudos'))cfg().jornada=[
-    {id:uid(),fase:f,etapa:'estudos',sub:null,campo:'terreno.topografia',pergunta:'Como é o relevo do terreno?',forma:'chips',regra:'bloqueia',cond:null,ordem:0},
+    {id:uid(),fase:f,etapa:'estudos',sub:null,campo:'terreno.posicao_quadra',pergunta:'Qual a posição do terreno na quadra?',forma:'chips',regra:'bloqueia',cond:null,ordem:0},
     {id:uid(),fase:f,etapa:'estudos',sub:null,campo:'terreno.necessidade_demolicao',pergunta:'Precisa demolir?',forma:'segmentado',regra:'justifica',cond:null,ordem:1},
     {id:uid(),fase:f,etapa:'estudos',sub:null,campo:'terreno.area_construida_demolir_m2',pergunta:'Quanto vai ser demolido?',ajuda:'Área construída a demolir, pela visita ou pela planta.',regra:'justifica',cond:demol,ordem:2},
     {id:uid(),fase:f,etapa:'estudos',sub:subE('estudo_massa'),campo:ch(rec),pergunta:'O recuo frontal atende ao estudo de massa?',forma:'segmentado',regra:'justifica',cond:null,ordem:3},
     {id:uid(),fase:f,etapa:'estudos',sub:subE('estudo_viabilidade'),campo:ch(des),regra:'justifica',cond:ocup,ordem:4}];
   if(!jnRegrasV().length&&etapaF(f,'estudos'))cfg().jornadaRegras=[
-    {id:uid(),fase:f,etapa:'estudos',sub:null,cond:{modo:'todas',itens:[{campo:'terreno.topografia',op:'em',valores:['irregular']}]},acao:'diretor',msg:'Relevo irregular: o diretor aprova a passagem',ativo:true,ordem:0},
+    {id:uid(),fase:f,etapa:'estudos',sub:null,cond:{modo:'todas',itens:[{campo:'terreno.topo_perfil',op:'em',valores:['acidentado_critico']}]},acao:'diretor',msg:'Relevo acidentado crítico: o diretor aprova a passagem',ativo:true,ordem:0},
     {id:uid(),fase:f,etapa:'estudos',sub:null,cond:{modo:'todas',itens:[{campo:'terreno.area_construida_demolir_m2',op:'maior',valores:[1000]}]},acao:'avisa',msg:'Demolição acima de 1.000 m²: confira o custo no estudo',ativo:true,ordem:1}];
   save()})();

@@ -95,7 +95,9 @@ function nvFrentesHtml(nv){const fr=nv.frentes;if(nv.buscandoLocal)return '<span
 function nvCidadeInsc(){const f=$('#f-novo');if(!f)return;const cid=cidDoNome(f.municipio.value),r=f.querySelector('[name=mun]');
   // tipo do empreendimento: só em São Paulo, onde muda o CA (decisão do Moisés, 25/out/2026)
   const tp=f.querySelector('#nv-tipo');if(tp){tp.hidden=cid!=='sp';tp.querySelectorAll('input').forEach(x=>{x.required=cid==='sp';x.disabled=cid!=='sp'})}
-  if(r&&r.value!==cid){r.value=cid;r.dispatchEvent(new Event('change',{bubbles:true}))}}
+  if(r&&r.value!==cid){r.value=cid;r.dispatchEvent(new Event('change',{bubbles:true}))}
+  const c=CIDADES_INSC[cid]||CIDADES_INSC.sp;f.querySelectorAll('.nv-sqls [data-k=sql]').forEach(el=>{el.dataset.masc=c.mascara||'';el.placeholder=c.mascara||'Como está no carnê do IPTU';const lb=el.previousElementSibling;if(lb)lb.textContent=c.rotulo});
+  f.querySelectorAll('[data-a=nv-sql-add]').forEach(b=>b.lastChild.textContent='Mais um '+c.rotulo)}
 
 /* ---------- telas ---------- */
 function nvPasso1Html(fechar){const kmz=UI.nvKmz;
@@ -139,13 +141,7 @@ function nvDadosHtml(fechar){const nv=UI.nv,l=nv.local,mun=l?.cidade?l.cidade+(l
   <div class="field"><label for="n-zona">Zona</label>${optSel('zona',OPT.zona,null).replace('id="f-zona"','id="n-zona"')}</div>
   <div class="field"><label for="n-resp">Responsável *</label><select id="n-resp" name="resp">${USERS.map(u=>`<option ${u===me()?'selected':''}>${u}</option>`).join('')}</select></div>
   <div class="field"><label for="n-ori">Origem *</label><select id="n-ori" name="origem" required>${Object.entries(OPT.origem).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
-  <details class="details field full"><summary>Inscrição municipal e matrícula</summary><div class="fields" style="margin-top:8px">
-    ${campoInsc('n',cid,'',false)}
-    <div class="field"><label for="n-mat">Matrícula</label><span style="display:flex;gap:6px"><input id="n-mat" name="mat" inputmode="numeric" placeholder="Número" style="flex:1 1 55%"><select id="n-cri" name="cri" aria-label="Cartório" style="flex:1 1 45%">${Array.from({length:18},(_,i)=>`<option>${i+1}º CRI</option>`).join('')}</select></span></div>
-    <div id="dedupe" class="field full" aria-live="polite"></div></div></details>
-  <details class="details field full" id="nv-partes"><summary>Vários donos negociando separado? Cadastrar as partes</summary><div style="margin-top:8px">
-    <div class="muted" style="margin-bottom:8px">Uma parte para cada dono ou grupo de donos que negocia junto. Só o nome é obrigatório; o resto pode ficar para a ficha.</div>
-    <div id="nv-pt-lista"></div><button type="button" class="btn text sm" data-a="nv-pt-add">${ic('add',16)}Adicionar parte</button></div></details>
+  ${nvPlHtml(cid)}
   <details class="details field full"><summary>Já recebeu uma oferta? Registrar condições pedidas</summary><div class="fields" style="margin-top:8px">
     <div class="field"><label for="n-cor">Corretor</label><select id="n-cor" name="cid"><option value="">Sem corretor / direto</option>${S.corretores.map(c=>`<option value="${c.id}">${esc(c.nome)} · ${esc(c.imob)}</option>`).join('')}</select></div>
     <div class="field"><label for="n-val">Valor pedido (R$)</label><input id="n-val" name="valor" inputmode="decimal"></div>
@@ -154,18 +150,58 @@ function nvDadosHtml(fechar){const nv=UI.nv,l=nv.local,mun=l?.cidade?l.cidade+(l
     <div class="field full"><label for="n-obs">Observação sobre a forma de pagamento</label><input id="n-obs" name="obsPag"></div>
     <div class="field full"><label for="n-ace">Aceita permuta</label><input id="n-ace" name="aceita"></div></div></details>
   </div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-novo" id="btn-novo">Cadastrar terreno</button></div>`}
-// uma linha de parte no passo 2 (acrescentada no lugar, para não perder o que já foi digitado)
-function nvParteLinha(i){const id=k=>`nvp-${k}-${i}`;
-  return `<fieldset class="nv-pt" data-i="${i}"><legend>Parte ${i+1}</legend><div class="fields">
-    <div class="field"><label for="${id('n')}">Nome ou identificador *</label><input id="${id('n')}" data-k="nome" placeholder="Família Souza, Lote 3..."></div>
-    <div class="field"><label for="${id('a')}">Tamanho do lote (m²)</label><input id="${id('a')}" data-k="area" inputmode="decimal"></div>
-    <div class="field"><span class="lbl-f">Matrículas</span>${mselHtml('mat','nvp-mat-'+i,msOptsNovo('mat'),[])}</div>
-    <div class="field"><span class="lbl-f">Inscrições</span>${mselHtml('ins','nvp-ins-'+i,msOptsNovo('ins'),[])}</div>
-    <div class="field"><span class="lbl-f">Vendedores</span>${mselHtml('pes','nvp-pes-'+i,msOptsNovo('pes'),[])}</div>
-    <div class="field"><span class="lbl-f">Corretores</span>${mselHtml('cor','nvp-cor-'+i,msOptsNovo('cor'),[])}</div>
-  </div><button type="button" class="btn sm text danger" data-a="nv-pt-del">Tirar esta parte</button></fieldset>`}
-function nvPartesLer(f){return [...f.querySelectorAll('.nv-pt')].map(fs=>{const d={};fs.querySelectorAll('[data-k]').forEach(el=>d[el.dataset.k]=el.value.trim());d.area=lerNum(d.area);const ms=k=>[...fs.querySelectorAll(`.msel[data-tipo=${k}] input:checked`)].map(x=>x.value);d.mats=ms('mat');d.insc=ms('ins');d.vend=ms('pes');d.cids=ms('cor');return d})
-  .filter(d=>d.nome||d.area||d.mats.length||d.insc.length||d.vend.length||d.cids.length)}
+/* ---------- passo 2: partes e lotes, no mesmo formato da aba Terreno (decisão do Moisés, 4/nov/2026) ----------
+   Nasce com "Vendedor 1" e "Lote 1". O primeiro lote leva os nomes mat, cri e sql, que a checagem de duplicidade lê;
+   os SQLs a mais e os outros lotes são lidos por nvPlLer. Cartório vazio = o da poligonal (vem do GeoSampa depois). */
+const NV_CRI=()=>Array.from({length:18},(_,i)=>`${i+1}º CRI`);
+function nvPlHtml(cid){return `<details class="details field full" id="nv-pl" open><summary>Partes e lotes</summary><div style="margin-top:8px">
+    <div class="pt2-qtd"><label for="nv-pt-n">Quantas partes vendem?</label><span class="pt2-passo"><button type="button" class="iconbtn sm" data-a="nv-pt-menos" aria-label="Uma parte a menos" disabled>−</button><input id="nv-pt-n" inputmode="numeric" value="1" aria-label="Quantidade de partes"><button type="button" class="iconbtn sm" data-a="nv-pt-mais" aria-label="Uma parte a mais">+</button></span><span class="faint">Os dados da parte são opcionais.</span></div>
+    <div class="pt2-lista" id="nv-pt-lista">${nvPtCard(0)}</div>
+    <h3 class="nv-pl-h">Lotes</h3><div class="hint" style="margin:-4px 0 8px">Cada lote é uma matrícula, com um ou mais SQLs.</div>
+    <div class="lt-lista" id="nv-lt-lista">${nvLtCard(0,cid)}</div>
+    <button type="button" class="btn text sm qd-add" data-a="nv-lt-add">${ic('add',16)}Adicionar lote</button>
+    <div id="dedupe" class="field full" aria-live="polite" style="margin-top:8px"></div></div></details>`}
+function nvPtCard(i){const id=k=>`nvp-${k}-${i}`,inp=(k,l,x='')=>`<label class="field"><span class="lbl-f">${l}</span><input id="${id(k)}" data-k="${k}" ${x}></label>`;
+  return `<article class="pt2 nv-pt" data-i="${i}"><div class="pt2-h"><input class="pt2-tit" data-k="nome" value="Vendedor ${i+1}" aria-label="Título da parte"><button type="button" class="btn text sm pt2-x" data-a="nv-pt-del" ${i?'':'hidden'}>${ic('lixo',16)}Excluir parte</button></div>
+    <div class="pt2-g">${inp('pessoa','Nome completo da pessoa principal')}${inp('tel','Telefone','inputmode="tel" data-mask="telefone" placeholder="(11) 98765-4321"')}${inp('email','E-mail','type="email" placeholder="nome@email.com"')}${inp('doc','CPF ou CNPJ','inputmode="numeric" data-doc="1"')}
+      <label class="field pt2-obs"><span class="lbl-f">Observação</span><textarea data-k="obs" rows="1"></textarea></label></div></article>`}
+function nvLtCard(i,cid){const pri=i===0,id=k=>`nvl-${k}-${i}`,c=CIDADES_INSC[cid]||CIDADES_INSC.sp;
+  return `<article class="lt nv-lt" data-i="${i}"><div class="lt-h"><input class="pt2-tit" data-k="titulo" value="Lote ${i+1}" aria-label="Título do lote"><button type="button" class="btn text sm pt2-x" data-a="nv-lt-del">${ic('lixo',16)}Excluir lote</button></div>
+    <div class="pt2-g"><label class="field"><span class="lbl-f">Parte</span><select data-k="parte">${nvPtOpts(0)}</select></label>
+      <label class="field"><span class="lbl-f">Matrícula</span><input ${pri?'id="n-mat" name="mat"':`id="${id('m')}"`} data-k="num" inputmode="numeric" placeholder="Número"></label>
+      <label class="field"><span class="lbl-f">Cartório</span><select ${pri?'id="n-cri" name="cri"':''} data-k="cri"><option value="">Pela localização</option>${NV_CRI().map(x=>`<option>${x}</option>`).join('')}</select></label></div>
+    <div class="nv-sqls">${pri?campoInsc('n',cid,'',false):nvSqlCampo(i,0,c)}</div>
+    <button type="button" class="btn text sm" data-a="nv-sql-add" style="align-self:flex-start">${ic('add',16)}Mais um ${c.rotulo}</button></article>`}
+function nvSqlCampo(i,k,c){return `<div class="field grow nv-sql-x"><label for="nvl-s-${i}-${k}">${c.rotulo}</label><input id="nvl-s-${i}-${k}" data-k="sql" data-masc="${c.mascara||''}" inputmode="${c.mascara?'numeric':'text'}" placeholder="${c.mascara||'Como está no carnê do IPTU'}" autocomplete="off"></div>`}
+function nvPtOpts(sel){const ns=[...document.querySelectorAll('#nv-pt-lista .nv-pt [data-k=nome]')].map(x=>x.value.trim());const L=ns.length?ns:['Vendedor 1'];
+  return L.map((n,k)=>`<option value="${k}" ${k===sel?'selected':''}>${esc(n||'Parte '+(k+1))}</option>`).join('')}
+// títulos e listas de parte nos lotes acompanham as partes
+function nvPlSync(){const P=[...document.querySelectorAll('#nv-pt-lista .nv-pt')];
+  P.forEach((x,k)=>{x.querySelector('[data-a=nv-pt-del]').hidden=P.length<2});
+  const n=$('#nv-pt-n');if(n)n.value=P.length;const m=document.querySelector('[data-a=nv-pt-menos]');if(m)m.disabled=P.length<2;
+  document.querySelectorAll('#nv-lt-lista .nv-lt [data-k=parte]').forEach(s=>{const v=Math.min(+s.value||0,P.length-1);s.innerHTML=nvPtOpts(v)})}
+function nvPtQtd(n){const L=$('#nv-pt-lista');if(!L)return;n=Math.max(1,Math.min(30,n||1));
+  while(L.children.length<n){const i=L.children.length?Math.max(...[...L.children].map(x=>+x.dataset.i))+1:0;L.insertAdjacentHTML('beforeend',nvPtCard(i));
+    const t=L.lastElementChild.querySelector('[data-k=nome]');let k=L.children.length;const usados=[...L.querySelectorAll('[data-k=nome]')].map(x=>x.value.trim().toLowerCase());while(usados.filter(u=>u==='vendedor '+k).length>(t.value.toLowerCase()==='vendedor '+k?1:0))k++;t.value='Vendedor '+k}
+  while(L.children.length>n)L.lastElementChild.remove();nvPlSync()}
+// o que foi digitado: partes e lotes (lote sem matrícula nem SQL fica de fora)
+function nvPlLer(f){const P=[...f.querySelectorAll('#nv-pt-lista .nv-pt')].map(x=>{const d={};x.querySelectorAll('[data-k]').forEach(el=>d[el.dataset.k]=el.value.trim());return d});
+  const L=[...f.querySelectorAll('#nv-lt-lista .nv-lt')].map(x=>({titulo:x.querySelector('[data-k=titulo]').value.trim(),parte:+x.querySelector('[data-k=parte]').value||0,num:x.querySelector('[data-k=num]').value.trim(),cri:x.querySelector('[data-k=cri]').value,
+    sqls:[...x.querySelectorAll('.nv-sqls input[name=sql], .nv-sqls [data-k=sql]')].map(e=>e.value.trim()).filter(Boolean)})).filter(l=>l.num||l.sqls.length);
+  return {partes:P,lotes:L}}
+function nvPlValida(d){for(const [i,p] of d.partes.entries()){if(!p.nome)throw new Error(`Dê um título à parte ${i+1}.`);for(const k of ['tel','email','doc'])p[k]=ptValida(k,p[k])}
+  if(new Set(d.partes.map(p=>p.nome.toLowerCase())).size<d.partes.length)throw new Error('Duas partes com o mesmo título.');
+  if(new Set(d.lotes.map(l=>l.titulo.toLowerCase())).size<d.lotes.length)throw new Error('Dois lotes com o mesmo título.');
+  const ms=d.lotes.filter(l=>l.num);if(ms.some((a,i)=>ms.some((b,j)=>j>i&&digits(a.num)===digits(b.num)&&criIgual(a.cri,b.cri))))throw new Error('A mesma matrícula está em dois lotes.')}
+// grava no terreno novo: as partes (a primeira é a "Vendedor 1" do terreno) e os lotes com as inscrições
+function nvPlGravar(t,d,mun){const P=partesDe(t);P.length=0;
+  const ids=d.partes.map(p=>{const pa={id:uid(),ativa:true,neg:null,propostas:[],nome:p.nome,essencial:true,area:null};['pessoa','tel','email','doc','obs'].forEach(k=>{if(p[k])pa[k]=p[k]});P.push(pa);return pa.id});
+  t.lotes=[];t.mats=[];t.insc=[];
+  d.lotes.forEach(l=>{const ins=l.sqls.map(sq=>{let i=t.insc.find(x=>digits(x.sql)===digits(sq));if(!i){i={id:uid(),mun,sql:sq,area:null,valores:[]};t.insc.push(i)}return i.id});
+    t.lotes.push(ltNovo(t,ids[l.parte]||ids[0],{titulo:l.titulo||ltTitulo(t),num:l.num,cri:l.cri,criDig:!!l.cri,ins:[...new Set(ins)]}))});
+  lotesNorm(t);
+  if(d.partes.length>1||d.partes[0].nome!=='Vendedor 1')log(t,`${d.partes.length} parte${d.partes.length>1?'s':''}: ${d.partes.map(p=>p.nome).join(', ')}`);
+  if(t.lotes.length)log(t,`${t.lotes.length} lote${t.lotes.length>1?'s':''} cadastrado${t.lotes.length>1?'s':''}: ${t.lotes.map(l=>l.titulo+(l.num?` (matrícula ${l.num})`:'')).join(', ')}`)}
 // depois de desenhar a tela do passo 2: checagem de duplicidade
 function nvPosRender(){const f=$('#f-novo');if(!f||!UI.nv)return;dedupe()}
 // passo 2 gravado: o terreno novo com a poligonal, o município e as frentes
@@ -190,13 +226,20 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="nv-"]'
   if(A==='nv-desenhar'){UI.modal=null;renderModal();nvDesenhar()}
   if(A==='nv-kmz'){UI.kmzNovo=true;$('#kmz-in').value='';$('#kmz-in').click()}
   if(A==='nv-kmz-i'){const it=UI.nvKmz[Number(a.dataset.i)];UI.nvKmz=null;nvPoligonal(it.pts,'kmz',{nome:it.nome})}
-  if(A==='nv-pt-add'){const L=$('#nv-pt-lista');if(!L)return;const i=L.children.length?Math.max(...[...L.children].map(x=>+x.dataset.i))+1:0;L.insertAdjacentHTML('beforeend',nvParteLinha(i));
-    [...L.children].forEach((x,k)=>x.querySelector('legend').textContent='Parte '+(k+1));L.lastElementChild.querySelector('input').focus()}
-  if(A==='nv-pt-del'){const L=a.closest('#nv-pt-lista');a.closest('.nv-pt').remove();[...(L?.children||[])].forEach((x,k)=>x.querySelector('legend').textContent='Parte '+(k+1))}
+  if(A==='nv-pt-mais'){nvPtQtd($('#nv-pt-lista').children.length+1);$('#nv-pt-lista').lastElementChild.querySelector('[data-k=pessoa]').focus()}
+  if(A==='nv-pt-menos')nvPtQtd($('#nv-pt-lista').children.length-1);
+  if(A==='nv-pt-del'){const c=a.closest('.nv-pt'),k=[...c.parentNode.children].indexOf(c);c.remove();
+    document.querySelectorAll('#nv-lt-lista [data-k=parte]').forEach(s=>{const v=+s.value;s.dataset.v=v===k?0:v>k?v-1:v});nvPlSync();document.querySelectorAll('#nv-lt-lista [data-k=parte]').forEach(s=>{s.value=s.dataset.v})}
+  if(A==='nv-lt-add'){const L=$('#nv-lt-lista'),f=$('#f-novo'),i=L.children.length?Math.max(...[...L.children].map(x=>+x.dataset.i))+1:0;
+    L.insertAdjacentHTML('beforeend',nvLtCard(i,cidDoNome(f?.municipio.value||'')||'sp'));const t=L.lastElementChild.querySelector('[data-k=titulo]'),us=[...L.querySelectorAll('[data-k=titulo]')].map(x=>x.value.trim().toLowerCase());let k=L.children.length;while(us.filter(u=>u==='lote '+k).length>(t.value.toLowerCase()==='lote '+k?1:0))k++;t.value='Lote '+k;
+    nvPlSync();L.lastElementChild.querySelector('[data-k=num]').focus()}
+  if(A==='nv-lt-del'){const c=a.closest('.nv-lt');if(c.querySelector('#n-mat')){c.querySelectorAll('input').forEach(x=>{if(x.type!=='radio'&&x.dataset.k!=='titulo')x.value=''});c.querySelector('[data-k=cri]').value='';c.querySelectorAll('.nv-sql-x').forEach(x=>x.remove());dedupe();toast('O primeiro lote fica: os campos foram limpos.')}else{c.remove();dedupe()}}
+  if(A==='nv-sql-add'){const c=a.closest('.nv-lt'),f=$('#f-novo'),cd=CIDADES_INSC[cidDoNome(f?.municipio.value||'')||'sp']||CIDADES_INSC.sp,box=c.querySelector('.nv-sqls');box.insertAdjacentHTML('beforeend',nvSqlCampo(c.dataset.i,box.querySelectorAll('input[name=sql],[data-k=sql]').length,cd));box.lastElementChild.querySelector('input').focus()}
   if(A==='nv-voltar'){UI.nv=null;UI.nvPool=null;UI.modal='novo';renderModal()}
   if(A==='nv-mesmo'){UI.nv.ignorados=UI.nv.sobre;UI.modal='novo';renderModal()}
   if(['nv-oferta','nv-oferta-p','nv-recad','nv-juntar'].includes(A))nvDecidir(A,a.dataset.id)});
-document.addEventListener('input',e=>{if(e.target.id==='n-mun')nvCidadeInsc()});
+document.addEventListener('input',e=>{if(e.target.id==='n-mun')nvCidadeInsc();if(e.target.closest?.('#nv-pt-lista')&&e.target.dataset.k==='nome')nvPlSync()});
+document.addEventListener('change',e=>{if(e.target.id==='nv-pt-n')nvPtQtd(parseInt(e.target.value,10))});
 document.addEventListener('change',e=>{if(e.target.name!=='frente')return;const fr=UI.nv?.frentes?.[Number(e.target.value)],f=$('#f-novo');if(!fr||!f)return;
   // o nome sugerido acompanha a frente escolhida, enquanto o usuário não escreveu outro
   const rot=x=>[x.logradouro,x.numero].filter(Boolean).join(', ');if(!f.nome.value||UI.nv.frentes.some(x=>rot(x)===f.nome.value))f.nome.value=rot(fr);

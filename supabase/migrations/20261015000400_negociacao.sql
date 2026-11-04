@@ -50,6 +50,8 @@ create table app.oferta_partes (
   parte_id     uuid not null references app.terreno_partes(id),
   empresa_id   uuid not null references app.empresas(id),
   valor_pedido numeric(14,2) check (valor_pedido > 0),
+  -- forma de pagamento pedida por esta parte (nula = a da oferta)
+  forma_pagamento text check (forma_pagamento in ('dinheiro','permuta_fisica','permuta_financeira','permuta_geral','permuta_com_torna')),
   primary key (oferta_id, parte_id)
 );
 create index on app.oferta_partes (parte_id);
