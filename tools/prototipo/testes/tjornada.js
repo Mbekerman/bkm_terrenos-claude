@@ -6,6 +6,7 @@ const F=path.join(__dirname,'..','saida','bkm-terrenos.html'),L=path.join(__dirn
 const falhas=[];const ok=(c,m)=>{console.log((c?'ok   ':'FALHA ')+m);if(!c)falhas.push(m)};
 const clica=(p,sel,txt)=>p.evaluate(([s,t])=>{const el=[...document.querySelectorAll(s)].find(x=>!t||x.textContent.includes(t));if(!el)throw new Error('não achei '+s+' '+(t||''));el.click()},[sel,txt||null]);
 const muda=(p,sel,v)=>p.evaluate(([s,v])=>{const el=document.querySelector(s);if(!el)throw new Error('não achei '+s);if(el.type==='checkbox'||el.type==='radio')el.checked=v;else el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}))},[sel,v]);
+const escolhe=async(p,v)=>{await p.click('#jne-c');await p.waitForTimeout(80);await p.click(`[data-gvv="${v}"]`);await p.waitForTimeout(120)};
 const papel=(p,v)=>p.evaluate(v=>{const a=document.createElement('button');a.dataset.a='role';a.dataset.v=v;document.body.appendChild(a);a.click();a.remove()},v);
 const X=(p,f,arg)=>p.evaluate(([f,a])=>window.BKM_TESTE.escopo(f,a),[f.toString(),arg===undefined?null:arg]);
 const ficha=(p,id)=>p.evaluate(id=>{const a=document.createElement('button');a.dataset.a='abrir';a.dataset.id=id;a.dataset.tab='geral';document.body.appendChild(a);a.click();a.remove()},id);
@@ -30,7 +31,8 @@ ok(C1.includes('Para sair de Estudo de Massa')&&C1.includes('O recuo frontal ate
 await p.screenshot({path:O+'1_config.png'});
 // nova pergunta com campo novo do terreno
 await clica(p,'[data-a=jn-nova][data-e=estudos][data-s=""]');await p.waitForTimeout(150);
-await muda(p,'#jne-c','__novo');await p.waitForTimeout(100);
+ok(await p.$eval('#jne-c-s',x=>x.disabled&&x.value==='BKM Terrenos')&&await p.$eval('#modal .gv-pop',x=>!x.hidden),'na Jornada, Grava em tem Sistema travado e a busca do campo já aberta');
+await escolhe(p,'__novo');
 await muda(p,'#jne-nt','Tem córrego no terreno');await muda(p,'#jne-ny','lista');await p.waitForTimeout(100);await muda(p,'#jne-no','Sim\nNão\nA verificar');await p.waitForTimeout(100);
 await muda(p,'#jne-p','Existe córrego ou nascente?');await muda(p,'#jne-a','Olhe a planta da prefeitura e confirme na visita.');await muda(p,'#jne-f','chips');
 await clica(p,'#modal [data-a=jn-e-regra][data-v=justifica]');await p.waitForTimeout(100);
@@ -46,8 +48,8 @@ ok(J&&J.campo.startsWith('personalizado.')&&J.regra==='justifica'&&J.forma==='ch
 await vai(p,'/configuracoes/campos');ok(await p.$eval('.cfg-corpo',x=>x.innerHTML.includes('Tem córrego no terreno')&&x.textContent.includes('Campo novo do terreno')),'o campo novo aparece em Configurações › Campos');
 await vai(p,'/configuracoes/jornada');await clica(p,'[data-a=jn-etapa][data-v=estudos]');await p.waitForTimeout(150);
 // o mesmo campo não entra duas vezes no mesmo lugar
-await clica(p,'[data-a=jn-nova][data-e=estudos][data-s=""]');await p.waitForTimeout(150);await muda(p,'#jne-c','terreno.posicao_quadra');await p.waitForTimeout(100);
-ok(await p.$eval('#jne-c',x=>x.value!=='terreno.posicao_quadra'),'o campo que já está na etapa não aparece de novo na lista');
+await clica(p,'[data-a=jn-nova][data-e=estudos][data-s=""]');await p.waitForTimeout(150);await p.waitForTimeout(100);
+ok(await p.$eval('#modal .gv-pop',x=>!x.querySelector('[data-gvv="terreno.posicao_quadra"]')),'o campo que já está na etapa não aparece de novo na lista');
 await clica(p,'#modal [data-a=close]');await p.waitForTimeout(100);
 // regra do item muda no lugar; regra pelo valor nova
 const it0=await X(p,()=>jnItens().find(x=>x.campo==='terreno.necessidade_demolicao').id);

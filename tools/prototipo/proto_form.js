@@ -64,7 +64,7 @@ function fmInfo(t,k,i){
     return {tipo:base,formato:{moeda:'moeda',percentual:'percentual',email:'email',telefone:'telefone',cpf:'cpf',cnpj:'cnpj'}[i.tipo]||null,opcoes:i.tipo==='lista'?(i.opcoes||[]).map(o=>[o,o]):null,
       titulo:i.pergunta,dest:'Só no cartão',editavel:true,valor:i.resposta??null}}
   if(i.chave){const d=itDef(i.chave);if(!d)return null;const o=d.opcoes?d.opcoes():null;
-    return {tipo:d.tipo,formato:d.formato,opcoes:o&&d.tipo!=='pessoa'?Object.entries(o):null,pessoas:d.tipo==='pessoa'?Object.keys(o||{}):null,titulo:d.titulo,dest:`${IT_ORIG[d.origem]} › ${d.titulo}`,editavel:d.editavel,valor:itVal(t,i.chave),un:d.un}}
+    return {tipo:d.tipo,formato:d.formato,opcoes:o&&d.tipo!=='pessoa'?Object.entries(o):null,pessoas:d.tipo==='pessoa'?Object.keys(o||{}):null,titulo:d.titulo,dest:`${GV_TAB[gvTabDe(d.origem)]||IT_ORIG[d.origem]} › ${d.titulo}`,editavel:d.editavel,valor:itVal(t,i.chave),un:d.un}}
   const c=itCampo(i);if(!c)return null;
   return {tipo:c.tipo==='caixa'?'sim_nao':c.tipo,formato:c.formato||null,opcoes:c.tipo==='lista'?(c.opcoes||[]).filter(o=>o.ativo!==false||o.id===k.campos?.[c.id]).map(o=>[o.id,o.nome]):null,
     titulo:c.nome,dest:`Campo personalizado › ${c.nome}`,editavel:c.ativo!==false,valor:k.campos?.[c.id]??null}}
@@ -133,20 +133,23 @@ function fmLinhaMontar(t,k,i){const f=fmInfo(t,k,i);if(!f)return '';const trava=
 /* editor de pergunta (nova ou existente) */
 function fmEditor(t,k){const E=UI.fmEd;if(!E||E.kid!==k.id)return `<button class="tkm-add" data-a="fm-nova">${ic('add',16)}Pergunta</button>`;
   const ex=E.id?k.itens.find(x=>x.id===E.id):null,usados=new Set(k.itens.filter(x=>x!==ex).map(x=>x.chave||x.campo).filter(Boolean));
-  const q=(E.q||'').toLowerCase(),ob=IT_CAT.map(c=>itDef(c.chave)).filter(d=>d.cartao&&!usados.has(d.chave)&&(!q||d.titulo.toLowerCase().includes(q))),cp=cpoAtivos().filter(c=>!usados.has(c.id)&&(!q||c.nome.toLowerCase().includes(q)));
   const dnome=E.dest==='cartao'?'Só no cartão':E.dest?.startsWith('c:')?cpoCampos().find(c=>c.id===E.dest.slice(2))?.nome:E.dest?itDef(E.dest)?.titulo:'';
-  const pop=E.busca&&!ex?`<div class="fm-pop" role="listbox" aria-label="Onde a resposta grava">${Object.keys(IT_ORIG).map(o=>{const l=ob.filter(d=>d.origem===o);return l.length?`<div class="it-popg">${IT_ORIG[o]}</div>${l.map(d=>`<button class="it-popi" role="option" data-a="fm-dest" data-v="${d.chave}">${esc(d.titulo)}<span class="faint">${IT_TIPO[d.tipo]}${d.formato?' · '+({moeda:'moeda',percentual:'percentual',cep:'CEP'}[d.formato]||FM_MASK[d.formato].toLowerCase()):''}${d.editavel?'':' · só leitura'}</span></button>`).join('')}`:''}).join('')}
-      ${cp.length?`<div class="it-popg">Campos personalizados</div>${cp.map(c=>`<button class="it-popi" role="option" data-a="fm-dest" data-v="c:${c.id}">${esc(c.nome)}<span class="faint">${CPO_TIPOS[c.tipo].toLowerCase()}${c.formato?' · '+(FM_MASK[c.formato]||c.formato).toLowerCase():''}</span></button>`).join('')}`:''}
-      <div class="it-popg">Sem gravar</div><button class="it-popi" role="option" data-a="fm-dest" data-v="cartao">Só no cartão<span class="faint">a resposta fica na tarefa</span></button></div>`:'';
+  const dtab=E.dest==='cartao'||E.dest?.startsWith('c:')?'tarefa':E.dest?gvTabDe(itDef(E.dest)?.origem):'';
+  gvReg('fm',{E:()=>UI.fmEd,valor:()=>UI.fmEd?.dest||'',
+    itens:()=>[...IT_CAT.map(c=>itDef(c.chave)).filter(d=>d.cartao&&!usados.has(d.chave)&&GV_TAB[gvTabDe(d.origem)]).map(d=>({v:d.chave,tab:gvTabDe(d.origem),titulo:d.titulo,
+        meta:`${IT_TIPO[d.tipo]}${d.formato?' · '+({moeda:'moeda',percentual:'percentual',cep:'CEP'}[d.formato]||FM_MASK[d.formato].toLowerCase()):''}${d.editavel?'':' · só leitura'}`})),
+      ...cpoAtivos().filter(c=>!usados.has(c.id)).map(c=>({v:'c:'+c.id,tab:'tarefa',titulo:c.nome,meta:`campo personalizado · ${CPO_TIPOS[c.tipo].toLowerCase()}${c.formato?' · '+(FM_MASK[c.formato]||c.formato).toLowerCase():''}`})),
+      {v:'cartao',tab:'tarefa',titulo:'Só no cartão',meta:'a resposta fica na tarefa',sempre:true}],
+    escolher:v=>{Object.assign(UI.fmEd,{dest:v,forma:null});tkRe();setTimeout(()=>document.querySelector('#fme-p')?.focus(),0)},
+    tabela:(tab,tira)=>{if(tira)Object.assign(UI.fmEd,{dest:'',forma:null});tkRe()}});
   /* tipo e formas */
   const tmp=E.dest?{id:'x',tipo:E.dest==='cartao'?E.tipo:undefined,opcoes:E.dest==='cartao'&&E.tipo==='lista'?fmOpcoes(E.opcoes):undefined,chave:E.dest&&E.dest!=='cartao'&&!E.dest.startsWith('c:')?E.dest:undefined,campo:E.dest?.startsWith('c:')?E.dest.slice(2):undefined,pergunta:E.pergunta||'?'}:null;
   const fi=tmp?fmInfo(t,k,tmp):null,formas=tmp&&fi?fmFormasDe(tmp,fi):[],fsel=formas.includes(E.forma)?E.forma:(tmp?fmForma(tmp,fi):null);
   const tem=!!(ex?.resposta!=null);
   return `<div class="fm-ed" role="group" aria-label="${ex?'Editar pergunta':'Nova pergunta'}"><div class="fm-edt">${ex?'Editar pergunta':'Nova pergunta'}</div>
+    <div class="fm-f fm-destw" role="group" aria-labelledby="fme-dl"><span class="fm-lbl" id="fme-dl">Grava em</span>${ex?`<span class="fm-fix gv-cam">${esc(GV_SIS)} › ${esc(GV_TAB[dtab]||'')} › <b>${esc(dnome||'')}</b></span>`:gvHtml('fm','fme-d')}</div>
     <div class="fm-g2"><div class="fm-f"><label for="fme-p">Pergunta${E.dest&&E.dest!=='cartao'?' <span class="faint">(vazia usa o título do campo)</span>':''}</label><input id="fme-p" data-fme="pergunta" value="${esc(E.pergunta||'')}" placeholder="${E.dest&&E.dest!=='cartao'?esc(dnome||''):'Ex.: Como está a ocupação hoje?'}"></div>
       <div class="fm-f"><label for="fme-a">Ajuda (opcional)</label><input id="fme-a" data-fme="ajuda" value="${esc(E.ajuda||'')}" placeholder="Ex.: veja se há inquilino ou invasão"></div></div>
-    <div class="fm-f fm-destw"><label for="fme-d">Grava em</label>${ex?`<span class="fm-fix">${esc(fi?.dest||dnome)}</span>`
-      :`<button id="fme-d" class="fm-destb" data-a="fm-busca" aria-expanded="${!!E.busca}">${E.dest?esc(dnome):'<span class="faint">Escolher campo</span>'}${ic('chevD',18)}</button>${E.busca?`<input class="it-busca fm-q-in" data-fmq="1" value="${esc(E.q||'')}" placeholder="Buscar campo" aria-label="Buscar campo">`:''}${pop}`}</div>
     ${E.dest==='cartao'?`<div class="fm-g2"><div class="fm-f"><label for="fme-t">Tipo de resposta</label><select id="fme-t" data-fme="tipo" ${tem?'disabled title="Já tem resposta: o tipo não muda"':''}>${Object.entries(FM_TIPOS).map(([x,n])=>`<option value="${x}" ${E.tipo===x?'selected':''}>${n}</option>`).join('')}</select></div>
       ${E.tipo==='lista'?`<div class="fm-f"><label for="fme-o">Opções (uma por linha)</label><textarea id="fme-o" data-fme="opcoes" rows="3" placeholder="Bom&#10;Ruim">${esc(E.opcoes||'')}</textarea></div>`:'<div></div>'}</div>`:''}
     ${formas.length>1?`<div class="fm-f"><span class="fm-lbl">Forma de responder</span><div class="fm-formas" role="radiogroup" aria-label="Forma de responder">${formas.map(x=>`<button class="fm-fo ${x===fsel?'on':''}" role="radio" aria-checked="${x===fsel}" data-a="fm-forma" data-v="${x}"><b>${FM_FORMA[x]}</b>${fmPrevia(x,fi)}</button>`).join('')}</div></div>`
@@ -162,7 +165,7 @@ function fmPrevia(x,f){const o=(f?.opcoes||[]).slice(0,2).map(y=>esc(String(y[1]
 /* ---------- eventos ---------- */
 document.addEventListener('input',e=>{const el=e.target;
   if(el.dataset?.fme){e.stopImmediatePropagation();UI.fmEd[el.dataset.fme]=el.value;if(el.dataset.fme==='opcoes'){const p=el.selectionStart;tkRe();const n=document.querySelector('[data-fme=opcoes]');if(n){n.focus();n.setSelectionRange(p,p)}}return}
-  if(el.dataset?.fmq){e.stopImmediatePropagation();UI.fmEd.q=el.value;const p=el.selectionStart;tkRe();const n=document.querySelector('[data-fmq]');if(n){n.focus();n.setSelectionRange(p,p)}return}},true);
+},true);
 document.addEventListener('change',e=>{const el=e.target;
   if(el.dataset?.fme){e.stopImmediatePropagation();UI.fmEd[el.dataset.fme]=el.value;if(el.dataset.fme==='tipo'){UI.fmEd.forma=null;tkRe()}return}
   if(el.dataset?.fm){e.stopImmediatePropagation();const {t,k}=tkAtual();if(!k||!vzEdita(t,k))return;const i=itNorm(k).find(x=>x.id===el.dataset.fm);if(!i)return;
@@ -177,11 +180,9 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="fm-"]'
     case 'fm-modo':UI.fmModo={...(UI.fmModo||{}),[k.id]:a.dataset.v};UI.fmEd=null;break;
     case 'fm-v':{if(!i)return;const f=fmInfo(t,k,i);let v=a.dataset.v;if(f.tipo==='sim_nao')v=v==='s';fmGravar(t,k,i,v);return}
     case 'fm-limpa':{UI.fmMenu=null;if(!i)return;fmGravar(t,k,i,null);return}
-    case 'fm-nova':UI.fmEd={kid:k.id,id:null,pergunta:'',ajuda:'',dest:'',tipo:'texto',opcoes:'',forma:null,q:'',busca:true};break;
-    case 'fm-edita':if(!i)return;UI.fmEd={kid:k.id,id:i.id,pergunta:i.pergunta||'',ajuda:i.ajuda||'',dest:i.tipo?'cartao':i.chave||('c:'+i.campo),tipo:i.tipo||'texto',opcoes:(i.opcoes||[]).join('\n'),forma:i.forma||null,q:'',busca:false};break;
+    case 'fm-nova':UI.fmEd={kid:k.id,id:null,pergunta:'',ajuda:'',dest:'',tipo:'texto',opcoes:'',forma:null};tkRe();setTimeout(()=>document.querySelector('#fme-d')?.focus(),0);return;
+    case 'fm-edita':if(!i)return;UI.fmEd={kid:k.id,id:i.id,pergunta:i.pergunta||'',ajuda:i.ajuda||'',dest:i.tipo?'cartao':i.chave||('c:'+i.campo),tipo:i.tipo||'texto',opcoes:(i.opcoes||[]).join('\n'),forma:i.forma||null};break;
     case 'fm-cancela':UI.fmEd=null;break;
-    case 'fm-busca':UI.fmEd.busca=!UI.fmEd.busca;UI.fmEd.q='';tkRe();setTimeout(()=>document.querySelector('[data-fmq]')?.focus(),0);return;
-    case 'fm-dest':Object.assign(UI.fmEd,{dest:a.dataset.v,busca:false,forma:null,q:''});tkRe();setTimeout(()=>document.querySelector(UI.fmEd.dest==='cartao'?'#fme-p':'#fme-p')?.focus(),0);return;
     case 'fm-forma':UI.fmEd.forma=a.dataset.v;break;
     case 'fm-salva':{if(!fmSalvar(t,k))return;break}
     case 'fm-sobe':{if(!i)return;const j=k.itens.indexOf(i);if(j>0){k.itens.splice(j,1);k.itens.splice(j-1,0,i);log(t,`Tarefa "${k.titulo}": ordem do formulário mudada`)}break}
