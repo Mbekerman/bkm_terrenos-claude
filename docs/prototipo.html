@@ -5470,6 +5470,7 @@ const BI={
   documento:'<path d="M24 12 L59 12 L77 30 L77 77 C77 82 74 84 69 84 L27 84 C22 84 19 82 19 77 L19 19 C19 14 21 12 24 12 Z M59 12 L59 31 L77 31" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M31 46 L65 46 M31 58 L65 58 M31 70 L51 70" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>',
   busca:'<path d="M67 40 C67 54.359 55.359 66 41 66 C26.641 66 15 54.359 15 40 C15 25.641 26.641 14 41 14 C55.359 14 67 25.641 67 40 Z" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M59 59 L83 83" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M29 29 C32 25 36 23 42 23" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>',
   checklist:'<path d="M27 17 L72 17 C75 17 78 20 78 23 L78 77 C78 80 75 83 72 83 L27 83 C24 83 21 80 21 77 L21 23 C21 20 24 17 27 17 Z" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M40 11 L58 11 C60 11 62 13 62 15 L62 20 C62 22 60 24 58 24 L40 24 C38 24 36 22 36 20 L36 15 C36 13 38 11 40 11 Z" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M29 41 L33 45 L40 36 M29 61 L33 65 L40 56" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M48 41 L66 41 M48 61 L66 61" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>',
+  funil:'<path d="M17 14 L79 14 C82 14 83 17 81 19 L57 48 L57 75 L39 82 L39 48 L15 19 C13 17 14 14 17 14 Z" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M30 30 L66 30" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>',
   contrato:'<path d="M50 83 L22 83 C18 83 15 80 15 76 L15 19 C15 15 18 12 22 12 L56 12 L70 26 L70 44 M53 12 L53 29 L70 29 M28 39 L47 39 M28 51 L42 51" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M43 83 L47 69 L73 43 L83 53 L57 79 L43 83 M67 49 L77 59" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>',
   financeiro:'<path d="M14 61 C14 53 45 53 45 61 C45 69 14 69 14 61 L14 75 C14 83 45 83 45 75 L45 61 M14 69 C14 77 45 77 45 69 M51 45 C51 37 82 37 82 45 C82 53 51 53 51 45 L51 74 C51 82 82 82 82 74 L82 45 M51 59 C51 67 82 67 82 59" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M24 37 L38 23 L52 23 M45 16 L52 23 L45 30" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>',
   construcao:'<path d="M30 83 L30 25 L43 25 L43 83 M21 83 L53 83 M15 25 L83 25 L66 12 L30 12 L15 25 M43 13 L43 25 M30 38 L43 51 L30 64 L43 77" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M73 26 L73 52 C73 61 62 61 62 54" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>',
@@ -6043,7 +6044,7 @@ function pgFicha(){
   const FN={geral:abaGeral,comercial:abaComercialFicha,terreno:abaCadastro,parametros:t=>abaUrbanismo(t,'param'),massa:abaMassa,viabilidade:abaViabilidade,infra:abaInfra,entorno:abaEntorno,jornada:abaJornada,documentos:abaDocs,historico:abaHist};
   const abas=`<div class="fi-abas" role="tablist" aria-label="Seções do terreno">${FICHA_ABAS.map(([k,l])=>{const q=abaContagem(t,k);return `<button role="tab" class="${k==='historico'?'tab-hist':''}" data-a="tab" data-t="${k}" aria-selected="${k===aba}" aria-controls="bl-${k}">${l}${q?`<span class="tkm-n">${q}</span>`:''}</button>`}).join('')}</div>`;
   const meta=[...fichaFaseTxt(t),`Cadastrado em ${fd(t.dataIdent)}`];
-  return `${linhaTopo(t)}<button class="back" data-a="nav" data-r="${UI.from}">${ic('back',20)}${UI.from==='negociacoes'?'Fases':UI.from==='inicio'?'Início':'Terrenos'}</button>
+  return `${linhaTopo(t)}<button class="back" data-a="nav" data-r="${UI.from}">${ic('back',20)}${UI.from==='negociacoes'?'Funil':UI.from==='inicio'?'Início':'Terrenos'}</button>
   <div class="dhead fi-head"><div style="min-width:0"><div class="eyebrow"><span class="num">${t.codigo}</span>${t.situacao==='arquivado'?'<span class="chip">Arquivado</span>':''}</div>
     <h1>${esc(t.nome)}</h1><div class="fi-meta">${meta.map(x=>`<span>${x}</span>`).join('<span class="fi-sep">·</span>')}${n?`<span class="fi-sep">·</span><span class="fi-temp">${n.status==='ativo'?tempPicker(t):n.temp?`${tempMini(n.temp)} ${TEMP[n.temp]}`:'<span class="faint">Temperatura não avaliada</span>'}</span>`:''}</div></div>
     <div style="display:flex;align-items:center;gap:8px">${av(t.resp)}<div><div style="font-weight:500">${esc(t.resp)}</div><div class="faint" style="font-size:12px">Responsável</div></div></div></div>
@@ -6083,7 +6084,7 @@ function pgInicio(){
 }
 
 /* ===================== shell ===================== */
-const NAV=[['inicio','Início','casa'],['terrenos','Terrenos','terrenos'],['mapa','Mapa','mapa'],['negociacoes','Fases','contrato'],['tarefas','Tarefas','checklist'],['dashboard','Dashboard','indicadores']];
+const NAV=[['inicio','Início','casa'],['terrenos','Terrenos','terrenos'],['mapa','Mapa','mapa'],['negociacoes','Funil','funil'],['tarefas','Tarefas','checklist'],['dashboard','Dashboard','indicadores']];
 /* Configurações › Funil: só para administrador (no menu lateral; no celular, pelo sino) */
 const NAV_CURTO={Configurações:'Admin',Dashboard:'Dash'}; // rótulo da barra encolhida
 const navSide=()=>ehAdmin(me())?[...NAV,['config','Configurações','config']]:NAV;
@@ -9078,7 +9079,7 @@ function tfColunas(){const z=tfNivel();
   if(!z.f)return fasesL().filter(f=>f.ativo!==false).map(f=>({k:f.k,nome:f.nome,desce:etapasF(f.k).length?f.k:null,em:(t)=>!!procDaFase(t,f.k)}));
   if(!z.e)return etapasF(z.f).map(e=>({k:e.k,nome:e.nome,desce:e.subs.length?z.f+'|'+e.k:null,em:(t)=>procDaFase(t,z.f)?.etapa===e.k}));
   return (etapaF(z.f,z.e)?.subs||[]).map(s=>({k:s.k,nome:s.nome,desce:null,em:(t)=>{const p=procDaFase(t,z.f);return p?.etapa===z.e&&p.sub===s.k}}))}
-function tfTrilha(){const z=tfNivel(),it=[{l:'Fases',v:''}];if(z.f)it.push({l:faseN(z.f),v:z.f});if(z.f&&z.e)it.push({l:etapaF(z.f,z.e)?.nome||z.e,v:z.f+'|'+z.e});
+function tfTrilha(){const z=tfNivel(),it=[{l:'Funil',v:''}];if(z.f)it.push({l:faseN(z.f),v:z.f});if(z.f&&z.e)it.push({l:etapaF(z.f,z.e)?.nome||z.e,v:z.f+'|'+z.e});
   const volta=it[it.length-2];
   return `<div class="tf-trilha">${volta?`<button class="iconbtn sm" data-a="tf-nivel" data-v="${esc(volta.v)}" aria-label="Voltar para ${esc(volta.l)}" title="Voltar para ${esc(volta.l)}">${ic('back',18).replace(P.back,'M15 6l-6 6 6 6')}</button>`:''}
     <ol class="drill-t" aria-label="Nível do funil">${it.map((x,i)=>i===it.length-1?`<li aria-current="page"><b>${esc(x.l)}</b></li>`:`<li><button class="linkbtn" data-a="tf-nivel" data-v="${esc(x.v)}">${esc(x.l)}</button></li>`).join('')}</ol>
@@ -9999,7 +10000,7 @@ function abaFases(t){const ent=faseEnt(),ro=UI.role==='Leitura';
    UI.negFase vazio = quadro das fases; com fase = etapas dela; com UI.negEtapa = subetapas.
    O título de cada coluna desce um nível; a seta e a trilha no topo voltam. */
 const procDaFase=(t,f)=>f===faseEnt()?(aberto(t.neg)?t.neg:null):procAberto(t,f);
-function negTopo(titulo,sub){const f=UI.negFase,e=UI.negEtapa,it=[{l:'Fases',v:''}];
+function negTopo(titulo,sub){const f=UI.negFase,e=UI.negEtapa,it=[{l:'Funil',v:''}];
   if(f)it.push({l:faseN(f),v:f});if(f&&e)it.push({l:etapaF(f,e)?.nome||e,v:f+'|'+e});const volta=it[it.length-2];
   return `<div class="page-h"><div class="drill-h">${volta?`<button class="iconbtn drill-v" data-a="neg-nivel" data-v="${esc(volta.v)}" title="Voltar para ${esc(volta.l)}" aria-label="Voltar para ${esc(volta.l)}">${ic('back',22)}</button>`:''}<div>
     ${volta?`<ol class="drill-t" aria-label="Nível do quadro">${it.slice(0,-1).map(x=>`<li><button class="linkbtn" data-a="neg-nivel" data-v="${esc(x.v)}">${esc(x.l)}</button></li>`).join('')}</ol>`:''}
@@ -10012,7 +10013,7 @@ function kcardFase(t,f,p){const e=etapaF(f,p.etapa),s=p.sub&&subF(f,p.sub),sb=p.
   <div class="ks">${esc(t.bairro||'')}${outras.length?' · também em '+esc(outras.map(faseN).join(', ')):''}</div>${f===faseEnt()&&typeof dividida==='function'&&dividida(t)?`<div class="kpt">${ic('layers',14)}${esc(resumoPartes(t))}</div>`:''}
   <div class="kr">${av(t.resp,'sm')}<span class="faint">${sb?'revisitar '+fd(p.retomar):diff(p.desde,HOJE)+' d na etapa'}</span></div></button>`}
 function pgFasesBoard(){const F=fasesL().filter(f=>f.ativo);
-  return `${negTopo('Fases','')}
+  return `${negTopo('Funil','')}
   <div class="board board-fases" id="board">${F.map(f=>{const L=fxLista('kanban').map(t=>[t,procDaFase(t,f.k)]).filter(([,p])=>p);
   return `<section class="col" data-fase="${f.k}" aria-label="${esc(f.nome)}"><div class="col-h">${colDesce('neg-fase',f.k,f.nome,'Ver etapas de '+f.nome)}<span class="n">${L.length}</span></div>${L.map(([t,p])=>kcardFase(t,f.k,p)).join('')||'<div class="col-empty">Nenhum</div>'}</section>`}).join('')}</div>`}
 function kcardProc(t,p){return `<button class="kcard" data-a="abrir" data-id="${t.id}" data-from="negociacoes" ${UI.role!=='Leitura'?'draggable="true"':''}><div class="kr"><span class="num faint">${esc(p.codigo)}</span><span class="num faint">${t.codigo}</span></div><div class="kt">${esc(t.nome)}</div>
@@ -12286,7 +12287,7 @@ function fxDrawer(){let el=$('#fx-dr'),sc=$('#fx-scrim');
     el=document.createElement('aside');el.id='fx-dr';el.className='fx-dr';el.setAttribute('role','dialog');el.setAttribute('aria-label','Filtros');document.body.appendChild(el)}
   document.body.classList.add('fx-on');
   const grupos=FX_GRUPOS.map(([g,l])=>{const ds=FX.filter(d=>d.g===g&&!(ctx==='kanban'&&d.funil===true)),ab=UI.fxAb.includes(g),n=ds.filter(d=>fxTem(d)&&d.k!=='arq').length;
-    return `<section class="fx-s"><button class="fx-sh" data-a="fx-grupo" data-v="${g}" aria-expanded="${ab}">${esc(l)}${n?`<span class="fx-sn">${n}</span>`:''}${ic('chev',18)}</button>${ab?`<div class="fx-sb">${g==='funil'&&ctx==='kanban'?'<div class="fx-hint">No quadro, a fase e a etapa vêm da navegação (Fases › fase › etapa).</div>':''}
+    return `<section class="fx-s"><button class="fx-sh" data-a="fx-grupo" data-v="${g}" aria-expanded="${ab}">${esc(l)}${n?`<span class="fx-sn">${n}</span>`:''}${ic('chev',18)}</button>${ab?`<div class="fx-sb">${g==='funil'&&ctx==='kanban'?'<div class="fx-hint">No quadro, a fase e a etapa vêm da navegação (Funil › fase › etapa).</div>':''}
       ${fxMarcasJuntas(ds,ctx)}</div>`:''}</section>`}).join('');
   el.innerHTML=`<div class="fx-h"><h2>Filtros</h2>${Object.keys(UI.fx).length?'<button class="linkbtn" data-a="fx-limpar">Limpar tudo</button>':''}<button class="iconbtn" data-a="fx-fechar" aria-label="Fechar filtros" title="Fechar (Esc)">${ic('close',22)}</button></div>
     <div class="fx-b">${grupos}</div><div class="fx-f" id="fx-f">${fxRodapeHtml(ctx)}</div>`;

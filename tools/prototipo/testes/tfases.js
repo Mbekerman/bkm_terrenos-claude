@@ -26,7 +26,7 @@ ok(!(await p.evaluate(()=>!!document.querySelector('.drill-v'))),'no nível das 
 await clica(p,'.col[data-fase=aprovacao] .col-ab');await p.screenshot({path:O+'1_kanban_aprovacao.png'});
 ok((await txt(p,'.col-h')).includes('Análise na Prefeitura'),'desce para as etapas da Aprovação');
 ok((await txt(p,'.kcard')).includes("M'Boi Mirim"),'terreno comprado aparece na Aprovação');
-ok((await txt(p,'.drill-t')).includes('Fases'),'trilha mostra de onde veio');
+ok((await txt(p,'.drill-t')).includes('Funil'),'trilha mostra de onde veio');
 await clica(p,'.col-ab[data-v=prefeitura]');await p.screenshot({path:O+'1b_kanban_sub.png'});
 ok((await txt(p,'.col-h')).includes('Comunique-se')&&(await txt(p,'h1')).includes('Análise na Prefeitura'),'desce para as subetapas da etapa');
 await p.dragAndDrop('.col[data-col="fe:sub:protocolado"] .kcard >> nth=0','.col[data-col="fe:sub:comunique_se"]').catch(()=>{});await p.waitForTimeout(250);
