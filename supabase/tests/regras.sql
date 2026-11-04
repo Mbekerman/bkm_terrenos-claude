@@ -609,7 +609,7 @@ select pg_temp.como(:'diretor');
 select pg_temp.ok((select situacao_mapa from app.v_mapa where id = :'tm') = 'sem_negociacao', 'pin sem negociação');
 
 \echo '# entorno do terreno (Google, distância a pé)'
-select pg_temp.ok((select count(*) from app.entorno_categorias where ativo) = 3, 'três categorias de entorno ligadas: metrô/trem, shopping e hospital');
+select pg_temp.ok((select count(*) from app.entorno_categorias where ativo) = 6, 'seis categorias de entorno ligadas: metrô/trem, shopping, hospital, escola/creche, supermercado e parque');
 select pg_temp.ok((select precisa_buscar and buscado_em is null from app.v_entorno_buscas where terreno_id = :'tm'), 'terreno localizado e nunca buscado precisa de busca');
 select pg_temp.como(:'analista');
 select app.salvar_entorno(:'tm', -23.6681, -46.6513, $j$[

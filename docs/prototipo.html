@@ -6376,7 +6376,10 @@ const CAT_POI={transporte:'Transporte',escola:'Escola',saude:'Saúde',comercio:'
 const RAIO_PE=1500;
 const ENT_CAT=[['metro_trem','Estação de metrô ou trem','estações de metrô ou trem',['subway_station','train_station','light_rail_station']],
   ['shopping','Shopping center','shopping centers',['shopping_mall']],
-  ['hospital','Hospital','hospitais',['hospital']]];
+  ['hospital','Hospital','hospitais',['hospital']],
+  ['escola','Escola ou creche','escolas ou creches',['school','preschool','primary_school','secondary_school']],
+  ['supermercado','Supermercado','supermercados',['supermarket']],
+  ['parque','Parque','parques',['park']]];
 const ENT_BUSCA={},ENT_TENT=new Set();let ENT_TODOS=false;
 const rotaPeUrl=(t,p)=>`https://www.google.com/maps/dir/?api=1&origin=${t.lat},${t.lng}&destination=${p.lat},${p.lng}${p.gid&&!String(p.gid).startsWith('ex')?'&destination_place_id='+encodeURIComponent(p.gid):''}&travelmode=walking`;
 /* Pontos de interesse numa lista só (pedido do Moisés, 3/nov/2026): os lugares do Google (por categoria, a até RAIO_PE a pé)

@@ -617,7 +617,7 @@ erDiagram
     text providencia
   }
   entorno_categorias {
-    text codigo PK "metro_trem | shopping | hospital"
+    text codigo PK "metro_trem | shopping | hospital | escola | supermercado | parque"
     text nome
     text_arr tipos_google "tipos do Places"
     int raio_pe_m "1500"
