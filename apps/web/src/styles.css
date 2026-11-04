@@ -4501,6 +4501,8 @@ html[data-tema="escuro"] .vt-obs { color: #c4c7c5; background: transparent !impo
 .lt-add { border-top: 0; padding-top: 0 }
 .lt-adot { font-weight: 500 }
 .qd-add { align-self: flex-start; margin-top: 10px }
+.nv-pl-h { font-size: 15px; font-weight: 500; margin: 20px 0 8px }
+.nv-lt .nv-sqls { display: flex; flex-direction: column; gap: 8px }
 .ptcom-r { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, .8fr) minmax(0, .8fr) 160px 140px 190px; gap: 8px 12px; align-items: center; padding: 10px 0; border-top: 1px solid #e3e3e3 }
 .ptcom-th { border-top: 0; padding-top: 0; font-size: 12px; font-weight: 500; color: #444746 }
 .ptcom-th > span:nth-child(n+4) { padding-left: 2px }

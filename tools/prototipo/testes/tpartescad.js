@@ -31,41 +31,37 @@ const enviar=async(p,id)=>{await p.evaluate(id=>{if(id==='f-novo')document.query
 
 let {p,ctx}=await abre(1440,900);
 await passo2(p);
-ok(await p.$('#nv-partes')!==null&&!(await p.$eval('#nv-partes',x=>x.open)),'passo 2 tem as partes, recolhidas');
+ok(await p.$eval('#nv-pl',x=>x.open)&&(await p.$$('#nv-pt-lista .nv-pt')).length===1&&(await p.$eval('#nv-pt-lista [data-k=nome]',x=>x.value))==='Vendedor 1','passo 2 nasce com Vendedor 1 e Lote 1');
+ok((await p.$eval('#nv-lt-lista [data-k=titulo]',x=>x.value))==='Lote 1'&&!!(await p.$('#nv-lt-lista #n-mat'))&&!!(await p.$('#nv-lt-lista #n-sql')),'lote 1 com matrícula e SQL');
 await p.fill('#n-nome','Quadra dos Andrade');
-await p.click('#nv-partes summary');await p.click('[data-a=nv-pt-add]');await p.click('[data-a=nv-pt-add]');await p.click('[data-a=nv-pt-add]');
-ok((await p.$$('#nv-pt-lista .nv-pt')).length===3,'adicionar parte acrescenta linhas');
-ok(!(await p.$(`${R(1)} [data-k=mats]`))&&(await p.$$(`${R(1)} .msel`)).length===4,'matrículas, inscrições, vendedores e corretores da parte são listas, não campos digitados');
-await p.evaluate(()=>{document.querySelector('#f-novo details.details').open=true});await p.fill('#n-mat','301.001');
-await linha(p,1,{nome:'Família Andrade',area:'1.200'});
-await escolher(p,R(1),'mat',['301.001']);
-ok((await txt(p,`${R(1)} .msel[data-tipo=mat] label.chk`))==='301.001 1º CRI','lista traz a matrícula digitada no passo 2');
-await incluir(p,R(1),'mat','301.002','9º CRI','2a_popup.png');
-ok(!(await p.$('#ms-dlg'))&&(await p.$eval(`${R(1)} .msel[data-tipo=mat] .msel-r`,x=>x.textContent))==='301.001, 301.002','incluir matrícula pelo pop-up: entra na lista já marcada');
-await incluir(p,R(1),'ins','123.456.0001-1');await incluir(p,R(1),'pes','Rui Andrade','11 99999-0000');await incluir(p,R(1),'pes','Lia Andrade');
-await escolher(p,R(1),'cor',['Marcos Lemos']);await p.locator(`${R(1)} .msel[data-tipo=cor] label.chk input`).nth(1).check();
-await p.screenshot({path:O+'2b_lista.png'});
-await linha(p,2,{nome:'Lote do Paulo'});await escolher(p,R(2),'cor',['Marcos Lemos']);
-await abreMs(p,R(2),'mat');ok((await txt(p,`${R(2)} .msel[data-tipo=mat] label.chk`)).includes('301.002'),'o incluído numa parte aparece na lista das outras');
-await p.click('#n-nome');
-await p.click('#nv-pt-lista .nv-pt:nth-child(3) [data-a=nv-pt-del]');
-ok((await p.$$('#nv-pt-lista .nv-pt')).length===2&&(await txt(p,'#nv-pt-lista legend'))==='Parte 1 | Parte 2','tirar uma linha renumera as outras');
-await p.screenshot({path:O+'1_passo2.png',fullPage:false});
-await p.evaluate(()=>document.getElementById('nv-partes').scrollIntoView());await p.screenshot({path:O+'2_passo2_partes.png'});
-// parte sem nome é recusada
-await p.click('[data-a=nv-pt-add]');await linha(p,3,{area:'300'});await enviar(p,'f-novo');
-ok((await toast(p)).includes('nome a cada parte')&&await p.$('#f-novo')!==null,'parte sem nome não deixa cadastrar');
-await p.click('#nv-pt-lista .nv-pt:nth-child(3) [data-a=nv-pt-del]');
+await p.click('[data-a=nv-pt-mais]');await p.click('[data-a=nv-pt-mais]');
+ok((await p.$$('#nv-pt-lista .nv-pt')).length===3&&(await p.$eval('#nv-pt-n',x=>x.value))==='3','"+" acrescenta partes e o número acompanha');
+const PT=i=>`#nv-pt-lista .nv-pt:nth-child(${i})`;
+await p.fill(`${PT(1)} [data-k=nome]`,'Família Andrade');await p.fill(`${PT(1)} [data-k=pessoa]`,'Rui Andrade');await p.fill(`${PT(1)} [data-k=email]`,'RUI@Andrade.com');
+await p.fill(`${PT(2)} [data-k=nome]`,'Lote do Paulo');
+ok((await p.$$eval('#nv-lt-lista [data-k=parte] option',x=>x.map(o=>o.textContent).join())).includes('Família Andrade'),'lista de parte do lote acompanha o título');
+await p.click(`${PT(3)} [data-a=nv-pt-del]`);ok((await p.$$('#nv-pt-lista .nv-pt')).length===2,'Excluir parte tira o cartão');
+await p.fill('#n-mat','301.001');await p.fill('#n-sql','123.456.0001-1');
+await p.click('#nv-lt-lista .nv-lt:nth-child(1) [data-a=nv-sql-add]');await p.fill('#nv-lt-lista .nv-lt:nth-child(1) [data-k=sql]','123.456.0002-1');
+await p.click('[data-a=nv-lt-add]');const LT=i=>`#nv-lt-lista .nv-lt:nth-child(${i})`;
+ok((await p.$eval(`${LT(2)} [data-k=titulo]`,x=>x.value))==='Lote 2','lote novo nasce Lote 2');
+await p.fill(`${LT(2)} [data-k=num]`,'301.002');await p.selectOption(`${LT(2)} [data-k=parte]`,'1');await p.fill(`${LT(2)} [data-k=sql]`,'123.456.0002-1');
+await p.click('[data-a=nv-lt-add]');await p.fill(`${LT(3)} [data-k=num]`,'301.001');
+await p.evaluate(()=>document.getElementById('nv-pl').scrollIntoView());await p.screenshot({path:O+'1_passo2.png'});
+await enviar(p,'f-novo');ok((await toast(p)).includes('mesma matrícula')&&!!(await p.$('#f-novo')),'matrícula repetida em dois lotes é recusada');
+await p.click(`${LT(3)} [data-a=nv-lt-del]`);
+await p.fill(`${PT(2)} [data-k=tel]`,'123');await enviar(p,'f-novo');ok(!!(await p.$('#f-novo')),'telefone inválido não deixa cadastrar: '+await toast(p));
+await p.fill(`${PT(2)} [data-k=tel]`,'');
 await enviar(p,'f-novo');
 let t=await ter(p,'Quadra dos Andrade');
-ok(t&&t.partes.length===2,'terreno cadastrado com as duas partes');
+ok(t&&t.partes.length===2&&t.partes[0].nome==='Família Andrade'&&t.partes[0].email==='rui@andrade.com'&&t.partes[0].pessoa==='Rui Andrade','terreno cadastrado com as duas partes e o contato');
 ok(t.codigo!=='TER-000133'&&(await p.evaluate(()=>JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-v9')).terrenos.filter(x=>x.codigo==='TER-000133').length))===1,'código novo não repete o do terreno de exemplo');
-const pa=t.partes.find(x=>x.nome==='Família Andrade'),pb=t.partes.find(x=>x.nome==='Lote do Paulo');
-ok(pa.area===1200&&pb.area==null,'tamanho do lote digitado e opcional');
-ok(t.mats.filter(m=>m.parte===pa.id).length===2&&t.insc.some(i=>i.parte===pa.id&&i.sql==='123.456.0001-1'),'matrículas e inscrição entram no cadastro ligadas à parte');
-ok(t.pessoas.filter(x=>x.parte===pa.id&&x.papel==='proprietario').length===2,'vendedores entram como proprietários da parte');
-ok(t.corretores.filter(x=>(x.partes||[]).includes(pa.id)).length===2,'parte com dois corretores');
-ok(t.corretores.some(x=>(x.partes||[]).includes(pa.id)&&x.partes.includes(pb.id))&&t.corretores.filter(x=>x.principal).length===1,'o mesmo corretor traz duas partes; um só principal no terreno');
+const pa=t.partes[0],pb=t.partes[1];
+const l1=t.lotes.find(l=>l.titulo==='Lote 1'),l2=t.lotes.find(l=>l.titulo==='Lote 2');
+ok(t.lotes.length===2&&l1.parte===pa.id&&l2.parte===pb.id&&l1.num==='301.001'&&l2.num==='301.002','dois lotes, cada um da sua parte');
+const s2=t.insc.find(i=>i.sql==='123.456.0002-1');
+ok(t.insc.length===2&&l1.ins.length===2&&l2.ins.length===1&&l1.ins.includes(s2.id)&&l2.ins.includes(s2.id),'SQL nas duas matrículas: um só cadastro, nos dois lotes');
+ok(t.mats.length===2&&t.mats.every(m=>m.lote),'matrículas derivadas dos lotes');
 ok(!t.neg,'sem oferta, nenhuma negociação aberta');
 // ficha: Partes e Lotes na aba Terreno (lote 5, 4/nov/2026): o que veio do passo 2 vira lote da parte
 await bloco(p,'cadastro');
@@ -73,8 +69,7 @@ ok(await p.$('#sec-partes-cad')!==null&&await p.$('#sec-lotes')!==null,'aba Terr
 ok((await p.$eval('#pt2-n',x=>x.value))==='2','quantidade de partes = 2');
 t=await ter(p,'Quadra dos Andrade');
 const lA=t.lotes.filter(l=>l.parte===pa.id);
-ok(lA.length===2&&lA.map(l=>l.num).sort().join()==='301.001,301.002','cada matrícula da parte virou um lote dela');
-ok(lA.some(l=>l.ins.length===1&&t.insc.find(i=>i.id===l.ins[0]).sql==='123.456.0001-1'),'o SQL da parte entra num lote dela');
+ok(lA.length===1&&lA[0].num==='301.001','a ficha mostra o lote da parte');
 await p.evaluate(()=>document.getElementById('sec-partes-cad').scrollIntoView());await p.waitForTimeout(150);await p.screenshot({path:O+'3_cadastro.png'});
 // parte nova e lote novo pela ficha
 await p.click('#sec-partes-cad [data-a=pt2-mais]');await p.waitForTimeout(200);
@@ -91,7 +86,7 @@ t=await ter(p,'Quadra dos Andrade');const pc2=t.partes.find(x=>x.id===pc.id);
 ok(pc2.pessoa==='Ana Lima'&&pc2.email==='ana@exemplo.com','contato da parte gravado (e-mail em minúsculas)');
 ok(t.lotes.find(l=>l.id===ln.id).parte===pc.id&&t.mats.find(m=>m.num==='301.900').parte===pc.id,'lote da parte nova com a matrícula');
 // matrícula repetida em outro lote (mesmo cartório) é recusada
-await p.selectOption(`#lt-${ln.id} [data-k=cri]`,'1º CRI');await p.waitForTimeout(200);
+await p.selectOption(`#lt-${ln.id} [data-k=cri]`,await p.$eval(`#lt-${lA[0].id} [data-k=cri]`,x=>x.value));await p.waitForTimeout(200);
 await p.fill(`#lt-${ln.id} [data-k=num]`,'301.001');await p.press(`#lt-${ln.id} [data-k=num]`,'Tab');await p.waitForTimeout(200);
 ok((await toast(p)).includes('já está no'),'matrícula de outro lote é recusada');
 // parte com lote não sai
@@ -103,9 +98,9 @@ t=await ter(p,'Quadra dos Andrade');ok(!t.partes.some(x=>x.id===pc.id)&&!t.mats.
 await ctx.close();
 
 for(const [w,h,tema,n] of [[1440,900,'escuro','5_escuro'],[412,915,null,'6_celular']]){({p,ctx}=await abre(w,h,tema));
-  await passo2(p);await p.fill('#n-nome','Teste '+n);await p.click('#nv-partes summary');await p.click('[data-a=nv-pt-add]');await linha(p,1,{nome:'Dono A'});await incluir(p,R(1),'mat','1');
-  await p.evaluate(()=>document.getElementById('nv-partes').scrollIntoView());await p.waitForTimeout(150);await p.screenshot({path:O+n+'_passo2.png'});
-  ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1&&[...document.querySelectorAll('.nv-pt')].every(x=>x.scrollWidth<=x.clientWidth+1)),n+': passo 2 sem rolagem lateral');
+  await passo2(p);await p.fill('#n-nome','Teste '+n);await p.click('[data-a=nv-pt-mais]');await p.fill('#n-mat','1');await p.click('[data-a=nv-lt-add]');
+  await p.evaluate(()=>document.getElementById('nv-pl').scrollIntoView());await p.waitForTimeout(150);await p.screenshot({path:O+n+'_passo2.png'});
+  ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1&&[...document.querySelectorAll('.nv-pt, .nv-lt')].every(x=>x.scrollWidth<=x.clientWidth+1)),n+': passo 2 sem rolagem lateral');
   await enviar(p,'f-novo');await bloco(p,'cadastro');await p.evaluate(()=>document.getElementById('sec-partes-cad').scrollIntoView());await p.waitForTimeout(150);await p.screenshot({path:O+n+'_cadastro.png'});
   ok(await p.evaluate(()=>[...document.querySelectorAll('.pt2, .lt')].every(x=>x.scrollWidth<=x.clientWidth+1)),n+': quadro Partes sem vazar');
   await ctx.close()}
