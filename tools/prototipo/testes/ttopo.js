@@ -3,7 +3,7 @@
 // é servida no endereço publicado (Cloud Run): o Google só aceita a chave vinda de lá, e o /geosanja
 // e o /geosampa do Caddy de produção fazem o repasse. O que ainda não está em produção
 // (download do laser em /geosampa/Download) vai direto ao Novo GeoSampa.
-// Casos: TER-000118 (São Paulo sem SQL: quadra inteira, laser 2020), Paulista 1500 pelo SQL (contorno do lote da
+// Casos: A118 (São Paulo sem SQL: quadra inteira, laser 2020), Paulista 1500 pelo SQL (contorno do lote da
 // prefeitura) um terreno em São José dos Campos (Google) e, com o argumento falha,
 // o GeoSampa fora do ar (São Paulo não pode cair no Google). Saídas em saida/t_topo/.
 //   node tools/prototipo/testes/ttopo.js   (depois de python3 tools/prototipo/build.py)
@@ -46,11 +46,11 @@ const SJC=[[-23.227157,-45.848835],[-23.226302,-45.84839],[-23.226398,-45.847316
     const docs=await p.evaluate(([k,c])=>JSON.parse(localStorage.getItem(k)).terrenos.find(x=>x.codigo===c).docs.filter(d=>d.tipo.startsWith('topo')).map(d=>d.tipo+' v'+d.versoes),[KEY,cod]);
     console.log(nome,'documentos:',docs.join(', ')||'nenhum');await p.click('[data-a=close]');await p.waitForTimeout(200)};
   const caso=process.argv[2]||'todos';
-  if(/todos|sp/.test(caso))await gerar('TER-000118',process.env.NOME||'sp_laser');
-  if(/todos|sql/.test(caso)){await mudar('TER-000112',"t.insc=[{sql:'009.027.0009-1',mun:'sp'}];t.municipio='São Paulo · SP'");await gerar('TER-000112','sp_sql')}
-  if(/todos|sjc/.test(caso)){await mudar('TER-000123',`t.municipio='São José dos Campos · SP';t.insc=[];t.poly=${JSON.stringify(SJC)};t.lat=${SJC[0][0]};t.lng=${SJC[0][1]}`);await gerar('TER-000123','sjc_google')}
+  if(/todos|sp/.test(caso))await gerar('A118',process.env.NOME||'sp_laser');
+  if(/todos|sql/.test(caso)){await mudar('A112',"t.insc=[{sql:'009.027.0009-1',mun:'sp'}];t.municipio='São Paulo · SP'");await gerar('A112','sp_sql')}
+  if(/todos|sjc/.test(caso)){await mudar('A123',`t.municipio='São José dos Campos · SP';t.insc=[];t.poly=${JSON.stringify(SJC)};t.lat=${SJC[0][0]};t.lng=${SJC[0][1]}`);await gerar('A123','sjc_google')}
   // GeoSampa fora do ar: em São Paulo não pode cair no Google; a janela mostra o erro e "Tentar de novo"
-  if(/falha/.test(caso)){FALHA=true;await abrir('TER-000118');await p.click('[data-a=topo-abrir]');await p.click('[data-a=topo-gerar]');
+  if(/falha/.test(caso)){FALHA=true;await abrir('A118');await p.click('[data-a=topo-abrir]');await p.click('[data-a=topo-gerar]');
     await p.waitForSelector('#modal .banner.warn',{timeout:120000});await p.screenshot({path:OUT+'falha_sp.png'});
     console.log('falha: tentativas no GeoSampa',falhas,'· pedidos ao Google',google,'· botão:',await p.$eval('[data-a=topo-gerar]',b=>b.textContent));
     console.log('falha: mensagem',await p.$eval('#modal .banner.warn',b=>b.innerText));await p.click('[data-a=close]');FALHA=false}

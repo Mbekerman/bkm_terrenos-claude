@@ -4,7 +4,7 @@
 const path=require('path'),fs=require('fs'),{chromium,devices}=require('playwright');
 const TMP=path.join(__dirname,'..','saida')+'/',OUT=TMP+'t_novo/',L=path.join(__dirname,'..','libs','l')+'/';fs.mkdirSync(OUT,{recursive:true});
 const html=fs.readFileSync(TMP+'bkm-terrenos.html','utf8').replace('<title>','<meta name="viewport" content="width=device-width, initial-scale=1"><title>'),KEY='bkm-terrenos-prototipo-v9';
-// lugar vazio para o terreno novo e o TER-000123 dos exemplos
+// lugar vazio para o terreno novo e o A123 dos exemplos
 const LUGAR={vazio:[-23.60000,-46.62000],cupece:[-23.668125,-46.6513]};
 const errs=[],ok=(c,m)=>{console.log((c?'ok  ':'FALHA ')+m);if(!c)errs.push(m)};
 // OpenStreetMap: a busca devolve o lugar; o inverso devolve rua conforme o lado do terreno novo
@@ -43,39 +43,38 @@ const titulo=p=>p.$eval('#modal h2',x=>x.textContent).catch(()=>'');
   await p.screenshot({path:OUT+'2_busca_mapa.png'});
   await desenhar(p,'Rua Teste 15',[-15,-25,15,25]);
   ok(await titulo(p)==='Novo terreno'&&/Passo 2/.test(await p.$eval('#modal',x=>x.textContent)),'sem sobreposição vai direto ao passo 2');
-  await p.waitForFunction(()=>document.querySelector('#nv-frentes [name=frente]'),null,{timeout:12000}).catch(()=>{});
-  const f=await p.evaluate(()=>({mun:document.querySelector('#n-mun').value,log:document.querySelector('#n-log').value,num:document.querySelector('#n-num').value,bai:document.querySelector('#n-bai').value,
-    nome:document.querySelector('#n-nome').value,frentes:[...document.querySelectorAll('#nv-frentes label')].map(x=>x.textContent.replace(/\s+/g,' ').trim()),cid:document.querySelector('#f-novo [name=mun]:checked').value}));
+  await p.waitForFunction(()=>!document.querySelector('#btn-novo')?.disabled,null,{timeout:12000}).catch(()=>{});
+  const f=await p.evaluate(()=>({campos:[...document.querySelectorAll('#f-novo input:not([type=hidden]),#f-novo select,#f-novo textarea')].map(x=>x.name),
+    nome:document.querySelector('#n-nome').value,mun:document.querySelector('#f-novo [name=municipio]').value,log:document.querySelector('#f-novo [name=logradouro]').value,banner:document.querySelector('#f-novo .banner').innerText.replace(/\s+/g,' ')}));
   console.log('passo 2:',JSON.stringify(f));
-  ok(f.mun==='São Paulo · SP'&&f.cid==='sp','município pela localização e inscrição aberta em São Paulo');
-  ok(f.frentes.length===2&&/Avenida Leste, 900/.test(f.frentes[0])&&/Rua Norte, 15/.test(f.frentes[1])&&f.log==='Avenida Leste','duas frentes; a mais comprida vem como principal');
-  await p.screenshot({path:OUT+'3_passo2_frentes.png'});
-  await p.click('#nv-frentes label:has([value="1"])');await p.waitForTimeout(150);
-  ok(await p.$eval('#n-log',x=>x.value)==='Rua Norte'&&await p.$eval('#n-nome',x=>x.value)==='Rua Norte, 15','escolher a frente troca o endereço principal e o nome sugerido');
-  const tp=await p.evaluate(()=>{const f=document.querySelector('#nv-tipo');return f&&!f.hidden&&[...f.querySelectorAll('input')].map(x=>x.value+(x.required?'*':'')).join()});
-  ok(tp==='mercado*,his*,hmp*','São Paulo: tipo do empreendimento obrigatório no passo 2 (Mercado, HIS, HMP): '+tp);
-  await p.evaluate(()=>document.querySelector('#f-novo').requestSubmit());await p.waitForTimeout(300);
-  ok(!(await est(p)).terrenos.some(x=>x.nome==='Rua Norte, 15'),'sem o tipo, o cadastro não vai');
-  await p.click('#nv-tipo label:has([value=his])');await p.screenshot({path:OUT+'3b_passo2_tipo.png'});
-  await p.evaluate(()=>document.querySelector('#f-novo').requestSubmit());await p.waitForTimeout(500);
-  const t=(await est(p)).terrenos.find(x=>x.nome==='Rua Norte, 15');
-  ok(t&&t.tipoEmp==='his','tipo HIS gravado no terreno');
-  ok(t&&t.poly.length===4&&Math.abs(area(t.poly)-1500)<60&&t.municipio==='São Paulo · SP'&&t.logradouro==='Rua Norte','terreno gravado com a poligonal ('+(t&&Math.round(area(t.poly)))+' m²), município e endereço');
-  ok(t&&t.confr.length===1&&t.confr[0].tipo==='frente'&&/Avenida Leste/.test(t.confr[0].conf)&&t.posicao==='esquina','a outra frente vira confrontação; posição esquina');
+  ok(f.campos.join()==='nome','passo 2 só com o nome de referência (decisão de 4/nov/2026): '+f.campos.join());
+  ok(f.nome==='Leste'&&f.log==='Avenida Leste','nome sem o tipo do logradouro e sem o número: '+f.nome);
+  ok(f.mun==='São Paulo · SP'&&/Avenida Leste, 900/.test(f.banner),'município e endereço pela localização, no aviso: '+f.banner);
+  await p.screenshot({path:OUT+'3_passo2.png'});
+  ok(!(await p.$('#nv-tipo,[name=tipoEmp]')),'sem tipo do empreendimento no cadastro');
+  await p.evaluate(()=>document.querySelector('#f-novo').requestSubmit());await p.waitForTimeout(900);
+  const t=(await est(p)).terrenos.find(x=>x.nome==='Leste');
+  ok(t&&/^[A-Z]\d{3}$/.test(t.codigo),'código curto de letra e 3 dígitos: '+(t&&t.codigo));
+  ok(t&&t.tipoEmp===undefined,'o terreno não guarda tipo do empreendimento');
+  ok(t&&t.poly.length===4&&Math.abs(area(t.poly)-1500)<60&&t.municipio==='São Paulo · SP'&&t.logradouro==='Avenida Leste'&&t.numero==='900','terreno gravado com a poligonal ('+(t&&Math.round(area(t.poly)))+' m²), município e endereço');
+  ok(t&&t.confr.length===1&&t.confr[0].tipo==='frente'&&/Rua Norte/.test(t.confr[0].conf)&&t.posicao==='esquina','a outra frente vira confrontação; posição esquina');
+  const g=await p.evaluate(()=>{const s=document.querySelector('#ficha-sheet'),l=document.querySelector('.mapa-lado');if(!s||!l)return null;const a=s.getBoundingClientRect(),b=l.getBoundingClientRect();return {rota:location.href,esq:Math.abs(a.left-b.left)<2,cobre:a.right>=b.right-2,nome:s.querySelector('h2').textContent}});
+  ok(g&&g.esq&&g.cobre&&g.nome==='Leste','depois de cadastrar, a ficha abre em gaveta vinda da esquerda, sobre a lista do mapa: '+JSON.stringify(g));
+  await p.screenshot({path:OUT+'3b_gaveta.png'});
   console.log('histórico:',t&&t.hist[0].txt);
   // celular: passo 1, barra do mapa
   await ctx.close()}
 
-// 2. a mesma área do TER-000123: aviso e nova oferta nele
+// 2. a mesma área do A123: aviso e nova oferta nele
 {const {p,ctx}=await pagina(false);
   await desenhar(p,'Av. Cupecê',[-22,-21,21,22]);
   ok(await titulo(p)==='Este terreno já existe no sistema','mesma área: "já existe no sistema"');
   const txt=await p.$eval('.nv-sob',x=>x.innerText.replace(/\s+/g,' '));console.log('aviso:',txt);
-  ok(/TER-000123/.test(txt)&&!/TER-000132/.test(txt),'acha o 123 e não o vizinho que só encosta na divisa');
+  ok(/A123/.test(txt)&&!/A132/.test(txt),'acha o 123 e não o vizinho que só encosta na divisa');
   ok(await p.$eval('.nv-s [data-a=nv-oferta]',x=>x.textContent)==='Nova oferta neste terreno','ação: nova oferta');
   await p.screenshot({path:OUT+'4_mesma_area.png'});
   await p.click('.nv-s [data-a=nv-oferta]');await p.waitForTimeout(500);
-  ok(await titulo(p)==='Registrar oferta'&&/TER-000123/.test(await p.$eval('main',x=>x.textContent)),'abre o terreno com o formulário de oferta');
+  ok(await titulo(p)==='Registrar oferta'&&/A123/.test(await p.$eval('main',x=>x.textContent)),'abre o terreno com o formulário de oferta');
   await ctx.close()}
 
 // 3. área nova maior, que inclui o 123 (3 lotes contra 5): recadastrar com a área nova
@@ -85,7 +84,7 @@ const titulo=p=>p.$eval('#modal h2',x=>x.textContent).catch(()=>'');
   const bt=await p.$$eval('.nv-s [data-a^=nv-]',x=>x.map(b=>b.textContent));ok(bt.join('|')==='Recadastrar com a área nova',' ação: '+bt.join(' | '));
   await p.screenshot({path:OUT+'5_parcial.png'});
   await p.click('.nv-s [data-a=nv-recad]');await p.waitForTimeout(500);
-  const t=(await est(p)).terrenos.find(x=>x.codigo==='TER-000123');
+  const t=(await est(p)).terrenos.find(x=>x.codigo==='A123');
   ok(Math.abs(area(t.poly)-46*94)<250&&t.polyAnt?.length===1&&t.hist.slice(-3).some(h=>/Recadastro com a área nova/.test(h.txt)),'poligonal trocada pela nova ('+Math.round(area(t.poly))+' m²), anterior guardada');
   ok(await titulo(p)==='Registrar oferta','segue para a oferta');
   await ctx.close()}
@@ -94,13 +93,13 @@ const titulo=p=>p.$eval('#modal h2',x=>x.textContent).catch(()=>'');
 {const {p,ctx}=await pagina(false);
   await desenhar(p,'Av. Cupecê',[-60,-21,0,0]);
   const bt=await p.$$eval('.nv-s [data-a^=nv-]',x=>x.map(b=>b.textContent));ok(bt.join('|')==='Recadastrar juntando as áreas|Recadastrar só com a área nova','cruzada: juntar ou trocar');
-  const t0=(await est(p)).terrenos.find(x=>x.codigo==='TER-000123'),a0=area(t0.poly);
+  const t0=(await est(p)).terrenos.find(x=>x.codigo==='A123'),a0=area(t0.poly);
   await p.click('.nv-s [data-a=nv-juntar]');await p.waitForTimeout(500);
-  const t=(await est(p)).terrenos.find(x=>x.codigo==='TER-000123'),au=area(t.poly),esperado=a0+60*21-22*21;
+  const t=(await est(p)).terrenos.find(x=>x.codigo==='A123'),au=area(t.poly),esperado=a0+60*21-22*21;
   ok(Math.abs(au-esperado)<0.08*esperado,`união ${Math.round(au)} m² (esperado ~${Math.round(esperado)})`);
   ok(/parte do terreno/.test(await p.$eval('#modal',x=>x.textContent)),'oferta mostra o pedaço oferecido');
   await p.fill('#o-v','1500000');await p.evaluate(()=>document.querySelector('#f-of').requestSubmit());await p.waitForTimeout(300);
-  const o=(await est(p)).terrenos.find(x=>x.codigo==='TER-000123').ofertas.at(-1);ok(o.poly&&Math.abs(area(o.poly)-1260)<120,'oferta guarda a poligonal do pedaço ('+Math.round(area(o.poly||[]))+' m²)');
+  const o=(await est(p)).terrenos.find(x=>x.codigo==='A123').ofertas.at(-1);ok(o.poly&&Math.abs(area(o.poly)-1260)<120,'oferta guarda a poligonal do pedaço ('+Math.round(area(o.poly||[]))+' m²)');
   await ctx.close()}
 
 // 5. faixa de 3 m na divisa não conta; KMZ com dois polígonos pede para escolher

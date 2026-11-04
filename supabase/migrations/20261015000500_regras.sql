@@ -97,11 +97,8 @@ where a.status = 'vigente';
 -- zonas da área (da maior para a menor), o maior CA de mercado e o potencial
 -- construtivo por tipo de empreendimento (nulo se algum pedaço não tem CA ou
 -- não admite o tipo).
--- Resumo da análise vigente; o potencial do tipo escolhido no terreno (tipo_empreendimento) vem à parte.
 create view app.v_urbanismo_vigente with (security_invoker = true) as
-select u.*, te.tipo_empreendimento,
-       case te.tipo_empreendimento when 'mercado' then u.potencial_mercado_m2 when 'his' then u.potencial_his_m2
-            when 'hmp' then u.potencial_hmp_m2 end as potencial_tipo_m2
+select u.*
 from (
 select l.terreno_id, l.empresa_id, l.analise_id, a.data_verificacao, a.fonte,
        (select string_agg(x.sigla, ' / ' order by x.area desc nulls last, x.sigla)
@@ -128,8 +125,7 @@ select l.terreno_id, l.empresa_id, l.analise_id, a.data_verificacao, a.fonte,
 from app.v_lote_zonas l
 join app.analises_urbanisticas a on a.id = l.analise_id
 group by l.terreno_id, l.empresa_id, l.analise_id, a.data_verificacao, a.fonte
-) u
-join app.terrenos te on te.id = u.terreno_id;
+) u;
 
 create view app.v_documentos with (security_invoker = true) as
 select d.*,
@@ -2223,7 +2219,7 @@ begin
     posicao_quadra = v_novo.posicao_quadra, formato = v_novo.formato, situacao_ocupacao = v_novo.situacao_ocupacao,
     uso_atual = v_novo.uso_atual, area_construida_existente_m2 = v_novo.area_construida_existente_m2,
     area_construida_demolir_m2 = v_novo.area_construida_demolir_m2, necessidade_demolicao = v_novo.necessidade_demolicao,
-    observacoes_fisicas = v_novo.observacoes_fisicas, tipo_empreendimento = v_novo.tipo_empreendimento, sobreposicoes_aceitas = v_novo.sobreposicoes_aceitas
+    observacoes_fisicas = v_novo.observacoes_fisicas, sobreposicoes_aceitas = v_novo.sobreposicoes_aceitas
   where id = t.id
   returning versao into t.versao;
   return t.versao;

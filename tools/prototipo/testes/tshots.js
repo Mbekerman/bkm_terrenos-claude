@@ -4,12 +4,12 @@ const FILTRO=process.argv[3]||'';
 const {chromium}=require('playwright');
 const L=path.join(__dirname,'..','libs','l')+'/';const F=path.join(__dirname,'..','..','..','docs','prototipo.html');const D=path.join(__dirname,'..','..','..','docs','dados')+'/';
 const TELAS=[
- ['inicio','/'],['terrenos','/terrenos'],['mapa','/mapa'],['mapa-ficha','/mapa/TER-000123/ficha'],['fases','/fases'],['fases-nn','/fases/novos_negocios'],
+ ['inicio','/'],['terrenos','/terrenos'],['mapa','/mapa'],['mapa-ficha','/mapa/A123/ficha'],['fases','/fases'],['fases-nn','/fases/novos_negocios'],
  ['tarefas','/tarefas'],['tarefas-tab','/tarefas/tabela'],['dashboard','/dashboard'],
- ['ficha','/terrenos/TER-000123'],['ficha-cadastro','/terrenos/TER-000123/cadastro'],['ficha-comercial','/terrenos/TER-000123/comercial'],
- ['ficha-negociacao','/terrenos/TER-000123/negociacao'],['ficha-fases','/terrenos/TER-000123/fases'],['ficha-tarefas','/terrenos/TER-000123/tarefas'],
- ['ficha-urbanismo','/terrenos/TER-000123/urbanismo'],['ficha-documentos','/terrenos/TER-000123/documentos'],
- ['viab','/terrenos/TER-000123/viabilidade/1'],['novo','/terrenos/novo'],
+ ['ficha','/terrenos/A123'],['ficha-cadastro','/terrenos/A123/cadastro'],['ficha-comercial','/terrenos/A123/comercial'],
+ ['ficha-negociacao','/terrenos/A123/negociacao'],['ficha-fases','/terrenos/A123/fases'],['ficha-tarefas','/terrenos/A123/tarefas'],
+ ['ficha-urbanismo','/terrenos/A123/urbanismo'],['ficha-documentos','/terrenos/A123/documentos'],
+ ['viab','/terrenos/A123/viabilidade/1'],['novo','/terrenos/novo'],
  ['cfg-fases','/configuracoes'],['cfg-etapas','/configuracoes/etapas'],['cfg-viab','/configuracoes/viabilidade'],['cfg-param','/configuracoes/parametros'],['cfg-equipe','/configuracoes/equipe'],
 ];
 (async()=>{const b=await chromium.launch();const errs=[];

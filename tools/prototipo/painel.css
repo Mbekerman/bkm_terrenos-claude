@@ -478,7 +478,7 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 @container (max-width: 600px) { .mapa-area .mp-barra { flex-wrap: wrap !important } .mapa-area .mp-busca { flex: 1 1 100%; max-width: none; order: -1; margin-right: 0 } .mapa-area .mp-barra .seg { flex: 1 1 0; min-width: 0; overflow-x: auto; scrollbar-width: none } }
 
 /* ficha do terreno em painel sobre o mapa (lupa da lista lateral) */
-.ficha-sheet { position: fixed; z-index: 30; top: 88px; right: 16px; bottom: 16px; width: min(560px, calc(100vw - 32px)); display: flex; flex-direction: column; background: var(--m-surface, #fff); border-radius: 16px; box-shadow: 0 2px 6px rgba(0,0,0,.15), 0 12px 32px rgba(0,0,0,.18); overflow: hidden }
+.ficha-sheet { position: fixed; z-index: 30; top: 88px; left: 88px; bottom: 16px; width: min(560px, calc(100vw - 32px)); display: flex; flex-direction: column; background: var(--m-surface, #fff); border-radius: 16px; box-shadow: 0 2px 6px rgba(0,0,0,.15), 0 12px 32px rgba(0,0,0,.18); overflow: hidden }
 .fs-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 12px 12px 24px; border-bottom: 1px solid var(--m-outline-variant, #c4c7c5) }
 .fs-e { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #444746; margin-bottom: 4px }
 .fs-h h2 { font-size: 22px; line-height: 28px; font-weight: 400 }
@@ -1313,8 +1313,6 @@ body.vb-aberto { overflow: hidden }
 .lz-lote{margin-top:16px}
 .lz-mk{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .lz-mk:empty{display:none}
-.lz-tl{font-size:14px;font-weight:500}
-.lz-ni{margin:0 0 12px}
 .lz-lote{border:1px solid var(--linha);border-radius:12px;padding:12px 16px}
 .lz-h{margin:0 0 4px}
 .lz-z{padding:12px 0;border-top:1px solid var(--linha)}
@@ -1738,7 +1736,6 @@ form.inline-form.if-fechado { display: none !important }
 /* Tabela dentro do quadro de Terrenos e Tarefas: um contêiner só */
 .sec .dt-wrap, .sec.lista .dt-wrap { background: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important }
 /* Mapa com a ficha aberta: a legenda recolhe para não ficar embaixo do painel */
-@media (min-width: 900px) { body:has(#ficha-sheet) .mp-legenda > :not(summary) { display: none !important } body:has(#ficha-sheet) .mp-legenda summary::after { transform: none !important } }
 /* Parâmetros urbanísticos: um bloco por zona, parâmetros em grade (sem rolar para o lado); duas colunas no celular */
 @media all {
   .tblwrap.rola:has(.zp-tbl) { overflow: visible; mask-image: none; -webkit-mask-image: none }
@@ -2103,7 +2100,6 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 /* Configurações › Fases no celular: nome do concluído na largura toda */
 @media (max-width: 899px) { .cfg-fase > .cfg-cel:has(input[data-p$=".conc"]) { grid-column: 1 / -1 } }
 /* Mapa com a ficha aberta: a barra do mapa termina antes do painel */
-@media (min-width: 900px) { body:has(#ficha-sheet) .mp-barra { right: 472px !important; flex-wrap: wrap; row-gap: 8px } body:has(#ficha-sheet) .mp-barra > .mp-busca { flex: 1 1 100% !important; min-width: 0 !important; max-width: none !important } }
 
 /* ===================== Revisão de design, rodada 13 ===================== */
 /* Reuniões: a situação fica sempre à direita da data */
@@ -2125,8 +2121,6 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 @media (max-width: 599px) { .vb-nav { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent) } }
 /* Configurações › Viabilidade: nome do item com reticências */
 .vb-cfg-r input { text-overflow: ellipsis }
-@media (min-width: 900px) { :root:not(#_) body:has(#ficha-sheet) .mp-barra { flex-wrap: wrap !important; justify-content: flex-start !important; align-content: flex-start } :root:not(#_) body:has(#ficha-sheet) .mp-barra > .mp-busca { flex: 1 1 100% !important; width: auto !important; min-width: 0 !important } }
-@media (min-width: 900px) { :root:not(#_) body:has(#ficha-sheet) .mp-cam > button, :root:not(#_) body:has(#ficha-sheet) .mp-cam > summary { font-size: 0 !important; gap: 0 !important; padding: 0 12px !important } :root:not(#_) body:has(#ficha-sheet) .mp-cam svg:last-child:not(:first-child) { display: none } }
 /* ===================== Revisão de design, rodada 14 ===================== */
 /* Configurações › Viabilidade no celular: sem o traço solto de "Sai do VGV" e com mais respiro entre os itens */
 @media (max-width: 899px) {
@@ -3835,3 +3829,15 @@ html[data-tema="escuro"] .lg-soltos, html[data-tema="escuro"] .lg-it, html[data-
 }
 .lg-toque { display: none } @media (hover: none) { .lg-mouse { display: none } .lg-toque { display: inline } }
 .lg-soltos .lg-it { padding: 2px 0 }
+
+/* ===== campo obrigatório em branco (proto_ui.js, obrMarca) ===== */
+.opt-radio { position: relative }
+.campo-erro > input, .campo-erro > select, .campo-erro > textarea, .campo-erro input:not([type=radio]):not([type=checkbox]), .campo-erro select, .campo-erro textarea { border-color: var(--critico-marca, #b3261e) !important; box-shadow: inset 0 0 0 1px var(--critico-marca, #b3261e) }
+.campo-erro .seg3, .campo-erro [role=radiogroup] { outline: 2px solid var(--critico-marca, #b3261e); outline-offset: 2px; border-radius: 20px }
+.campo-erro > label, .campo-erro > .lbl, .campo-erro > .lbl-f, .campo-erro > legend { color: var(--critico-marca, #b3261e) !important }
+.campo-msg { display: flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 12px; line-height: 16px; color: var(--critico-marca, #b3261e) }
+
+/* ficha do terreno no mapa: gaveta que vem da esquerda, sobre a lista de terrenos (pedido do Moisés, 4/nov/2026);
+   a posição e a largura acompanham a lista (fichaSheet) */
+@media (min-width: 900px) { .ficha-sheet { animation: fs-entra .22s cubic-bezier(.2,0,0,1) } }
+@keyframes fs-entra { from { transform: translateX(-24px); opacity: 0 } to { transform: none; opacity: 1 } }

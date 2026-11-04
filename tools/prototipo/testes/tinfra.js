@@ -33,8 +33,8 @@ const mudar=async(cod,fn,arg)=>{await p.evaluate(([c,f,a])=>{const k=Object.keys
 const ev=(f,a)=>p.evaluate(([f,a])=>BKM_TESTE.escopo(f,a),[f.toString(),a]);
 const txt=sel=>p.$eval(sel,x=>x.innerText.replace(/\s+/g,' '));
 // 1. laser de verdade: mede sozinho ao abrir a aba
-await mudar('TER-000123',"t.poly=a;t.lat=a[0][0];t.lng=a[0][1];t.municipio='São Paulo · SP';delete t.topoClass;t.infra={};delete t.vtec;delete t.visita",POLY);
-await p.goto('http://bkm.test/prototipo/terrenos/TER-000123/infra');await p.waitForTimeout(400);
+await mudar('A123',"t.poly=a;t.lat=a[0][0];t.lng=a[0][1];t.municipio='São Paulo · SP';delete t.topoClass;t.infra={};delete t.vtec;delete t.visita",POLY);
+await p.goto('http://bkm.test/prototipo/terrenos/A123/infra');await p.waitForTimeout(400);
 if(nome==='desktop'){const m=await txt('#sec-relevo');ok(/Medindo/.test(m),'mostra que está medindo: '+m.slice(0,80))}
 const t0=Date.now();await p.waitForSelector('#sec-relevo .tp-faixa',{timeout:180000}).catch(()=>{});
 let r=await txt('#sec-relevo');console.log(nome,'laser em',((Date.now()-t0)/1000).toFixed(1),'s:',r.slice(0,400));
@@ -77,15 +77,15 @@ if(nome==='desktop'){
   await p.goto('http://bkm.test/prototipo/configuracoes/topografia');await p.waitForTimeout(400);
   await p.screenshot({path:OUT+'desktop_4_config.png'});
   await p.fill('#tp-c-plano','12');await p.press('#tp-c-plano','Tab');await p.waitForTimeout(200);
-  const c3=await ev(()=>S.terrenos.find(t=>t.codigo==='TER-000123').topoClass);
+  const c3=await ev(()=>S.terrenos.find(t=>t.codigo==='A123').topoClass);
   ok(c3.perfil===(c3.terra>0.25?c3.perfil:'plano'),'limite novo reclassifica ('+c3.perfil+' '+c3.incl+'%)');
   await p.fill('#tp-c-inclinado','5');await p.press('#tp-c-inclinado','Tab');await p.waitForTimeout(200);
   ok((await ev(()=>tpCfg().inclinado))===30,'limite fora de ordem é recusado');
   // 6. sem GeoSampa (arquivo local): exemplo nos terrenos de exemplo, aviso nos outros
   const html2=html.replace(/<meta name="geosampa-url"[^>]*>/,''),ARQ=OUT+'local.html';fs.writeFileSync(ARQ,html2);
-  await p.goto('file://'+ARQ);await p.evaluate(()=>localStorage.clear());await p.goto('file://'+ARQ+'#/terrenos/TER-000118/infra');await p.reload();await p.waitForTimeout(800);
+  await p.goto('file://'+ARQ);await p.evaluate(()=>localStorage.clear());await p.goto('file://'+ARQ+'#/terrenos/A118/infra');await p.reload();await p.waitForTimeout(800);
   r=await txt('#sec-relevo');console.log('exemplo:',r.slice(0,200));ok(/exemplo do protótipo/.test(r),'sem GeoSampa, o exemplo');
-  await mudar('TER-000098',"t.municipio='São Paulo · SP'");await p.goto('file://'+ARQ+'#/terrenos/TER-000098/infra');await p.reload();await p.waitForTimeout(800);
+  await mudar('A098',"t.municipio='São Paulo · SP'");await p.goto('file://'+ARQ+'#/terrenos/A098/infra');await p.reload();await p.waitForTimeout(800);
   r=await txt('#sec-relevo');console.log('sem medir:',r.slice(0,200));ok(/versão publicada/.test(r)&&!/Tentar de novo/.test(r),'sem GeoSampa nem exemplo, o aviso')}
 await ctx.close()}
 console.log(erros.length?'ERROS: '+erros.join(' | '):'sem erros na página');console.log(falhas?falhas+' falha(s)':'tudo certo');await b.close();process.exit(falhas||erros.length?1:0)})().catch(e=>{console.error(e);process.exit(1)});
