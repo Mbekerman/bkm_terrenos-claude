@@ -27,7 +27,7 @@ async function desenhar(p,q,ret){await p.evaluate(()=>document.querySelector('[d
   await p.fill('#mp-end',q);await p.press('#mp-end','Enter');await p.waitForTimeout(900);
   const c=await p.$eval('#mapa',x=>{const r=x.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}}),lat=q.match(/cupec/i)?LUGAR.cupece[0]:LUGAR.vazio[0],mpp=156543.03392*Math.cos(lat*Math.PI/180)/2**18;
   const [w,s,e,n]=ret;for(const [x,y] of [[w,n],[e,n],[e,s],[w,s]]){await p.mouse.click(c.x+x/mpp,c.y-y/mpp);await p.waitForTimeout(120)}
-  await p.click('[data-a=mp-concluir]');await p.waitForTimeout(500)}
+  if(await p.$('[data-a=mp-concluir]'))await p.click('[data-a=mp-concluir]');else await p.keyboard.press('Enter');await p.waitForTimeout(500)}
 const titulo=p=>p.$eval('#modal h2',x=>x.textContent).catch(()=>'');
 
 
