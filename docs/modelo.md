@@ -669,6 +669,8 @@ erDiagram
     text pauta
     text resumo
     text encaminhamentos
+    bool na_agenda "criar no Google Agenda"
+    bool gerar_meet "online: link do Meet"
   }
   reuniao_participantes {
     uuid reuniao_id FK
@@ -676,10 +678,32 @@ erDiagram
     uuid user_id FK
     uuid pessoa_id FK
     text nome
+    text email "quem nao esta cadastrado"
+    text resposta "do Google: aceito, recusado, talvez"
+  }
+  reuniao_agenda {
+    uuid reuniao_id PK
+    text situacao "pendente, sincronizada, erro"
+    text acao "criar, atualizar, cancelar, remover"
+    text evento_id
+    text meet_link
+    text gravacao_url
+    text transcricao
+    text resumo_ia "rascunho da IA"
+    text resumo_situacao "rascunho, aceito, descartado"
   }
 ```
 
 As tarefas moram no esquema `fluxo` (ver "Quadros e tarefas", abaixo): cada terreno tem o seu quadro e a tarefa pode apontar a negociação (`processo_id`, do mesmo terreno do quadro).
+
+## Reuniões com o Google Agenda
+
+Lote 6 da ficha em abas (4/nov/2026). Migration `20261015001600_reunioes_agenda.sql`.
+
+- **O sistema é a origem.** A reunião marcada com `na_agenda` vira evento na agenda de quem marcou (`reuniao_agenda.organizador_id`), com convite a quem tem e-mail (`v_reuniao_convidados`: o do usuário, o da pessoa ou o digitado) e, online com `gerar_meet`, o link do Meet. Mudar data, duração, local, pauta, participantes, cancelar ou tirar da Agenda põe o evento na fila (`situacao = 'pendente'`, com a `acao`); marcar como realizada não mexe no evento. Reunião já realizada não vai para a Agenda.
+- **Função do servidor** (a fazer, com o token do "Conectar Agenda e Gmail"; só `service_role`): lê a fila, grava no Google e responde por `app.agenda_confirmar(reuniao, evento_id, link, meet_link, erro)`. O caminho inverso: `app.agenda_evento_mudou(reuniao, inicio, duracao, cancelado)` (mudança feita direto na Agenda, que não volta para a fila) e `app.agenda_resposta(reuniao, email, resposta)` (aceito, recusado, talvez; a tela não muda a resposta).
+- **Depois da reunião online:** `app.registrar_gravacao(reuniao, gravacao, transcricao_url, transcricao)` com o que o Meet guardou e `app.registrar_resumo_ia(reuniao, resumo, encaminhamentos)` com o rascunho da IA, que não toca no resumo da reunião e avisa quem marcou (`reuniao_resumo`). Quem edita confere em `app.decidir_resumo_ia(reuniao, aceitar, resumo, encaminhamentos)`: aceitar (com o texto ajustado ou não, só com a reunião realizada) grava em `resumo` e `encaminhamentos`; descartar só marca.
+- Gravação e transcrição do Meet pedem o Google Workspace Business Standard ou acima (a confirmar com o Moisés). Reunião presencial gravada pelo celular fica para depois.
 
 ## Mapa, dashboard e quadro de tarefas
 
@@ -1379,7 +1403,7 @@ erDiagram
 - **Válido:** `app.marcar_massa_valido(estudo, valido)`: um por terreno (índice único parcial), só entregue; o válido não volta para em elaboração nem se apaga. `app.apagar_estudo_massa` recusa o válido e o que tem viabilidade presa; os arquivos ficam em Documentos.
 - **Arquivos:** `app.anexar_arquivo_massa(estudo, 'massa_pdf' | 'massa_dwg', caminho, arquivo, tamanho)`, por `app.registrar_documento`: um documento de cada tipo por estudo (`documentos.estudo_massa_id`), cada envio uma versão; só `.pdf` e `.dwg`.
 - **Viabilidade presa ao estudo** (decisões do Moisés, 3/nov/2026): `app.vincular_massa(viabilidade, estudo, seguir_valido)` prende a um estudo entregue ou ao válido do terreno (trocou o válido, a viabilidade troca junto); sem estudo e sem seguir, solta ("Quebrar vínculo"), e as tipologias e a área construída ficam e voltam a se editar; vincular de novo refaz as tipologias pelas do estudo. `app.criar_viabilidade_da_massa(estudo, nome, seguir_valido)` é o botão do estudo de massa: estudo de viabilidade novo (com o modelo padrão, como o Novo estudo) já preso. Presa, o título, a área e a quantidade das tipologias e a área construída vêm do estudo de massa (`app._sincronizar_massa`, chamada a cada mudança do estudo e do válido) e o trigger `t_massa` recusa mudá-los na viabilidade; preços, permuta e comissão continuam dela, casados pela tipologia do estudo (`massa_tipologia_id`) e, na troca de estudo, pelo nome. Quantidade menor que a permuta mais a comissão corta a permuta e depois a comissão. Duplicar leva o vínculo.
-- Leituras minhas, a confirmar: briefing como texto livre (uma linha por item vira lista); "Área privativa total" calculada das tipologias, não digitada; só o estudo entregue vira válido ou é usado na viabilidade.
+- Confirmado pelo Moisés (4/nov/2026): "Área privativa total" é a soma das tipologias; só o estudo entregue vira válido ou é usado na viabilidade. Briefing em texto livre (uma linha por item vira lista).
 
 ## 3. Documentos
 
