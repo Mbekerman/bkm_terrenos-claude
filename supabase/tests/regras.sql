@@ -178,26 +178,31 @@ insert into app.terreno_viabilidades_tecnicas (terreno_id, servico, empresa_id, 
 select pg_temp.ok((select vencida and concessionaria = 'Sabesp' from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1' and servico = 'agua')
   and not (select vencida from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1' and servico = 'energia'), 'viabilidade com a validade passada sai como vencida');
 \echo '# classificação topográfica'
-select pg_temp.ok(app.classificar_topografia(:'emp', 2, 0.1) = 'plano' and app.classificar_topografia(:'emp', 12, 0.2) = 'inclinado'
-  and app.classificar_topografia(:'emp', 3, 0.25) = 'plano' and app.classificar_topografia(:'emp', 12, 0.3) = 'acidentado_leve'
-  and app.classificar_topografia(:'emp', 2, 0.8) = 'acidentado_mediano' and app.classificar_topografia(:'emp', 5, 1.2) = 'acidentado_critico'
-  and app.classificar_topografia(:'emp', 31, 0.1) = 'acidentado_critico', 'cinco perfis pelo pior entre a inclinação e a terra mexida (o limite entra)');
-select pg_temp.ok(app.classificar_topografia(:'emp', 12, null) = 'inclinado' and app.classificar_topografia(:'emp', 35, null) = 'acidentado_critico',
-  'sem a terra mexida (Google): plano, inclinado ou crítico pela inclinação');
-select app.registrar_topografia(:'t1', 8.4, 0.31, 4.2, 'laser') as tperf \gset
-select pg_temp.ok(:'tperf' = 'acidentado_leve' and (select topo_perfil = 'acidentado_leve' and topo_terra_m3m2 = 0.31 and topo_fonte = 'laser' and topo_calculado_por = :'diretor'
+select pg_temp.ok(app.classificar_topografia(:'emp', 3.9, 0.1) = 'plano' and app.classificar_topografia(:'emp', 5, 0.1) = 'plano'
+  and app.classificar_topografia(:'emp', 9.5, 0.4) = 'inclinado' and app.classificar_topografia(:'emp', 12, 0.3) = 'acidentado_leve'
+  and app.classificar_topografia(:'emp', 17.8, 0.8) = 'acidentado_mediano' and app.classificar_topografia(:'emp', 22, 0.4) = 'acidentado_intenso'
+  and app.classificar_topografia(:'emp', 30, 0.4) = 'acidentado_agudo' and app.classificar_topografia(:'emp', 31, 0.2) = 'acidentado_critico'
+  and app.classificar_topografia(:'emp', 24.4, 4.96) = 'acidentado_critico',
+  'sete perfis pela declividade média; terra mexida acima de 1,5 m³/m² é crítico (o limite entra)');
+select pg_temp.ok(app.classificar_topografia(:'emp', 25, null) = 'inclinado' and app.classificar_topografia(:'emp', 4, null) = 'plano'
+  and app.classificar_topografia(:'emp', 40, null) = 'acidentado_critico',
+  'sem a terra mexida (Google): plano, inclinado ou crítico pela declividade');
+select app.registrar_topografia(:'t1', 12.2, 8.4, 0.31, 4.2, 'laser') as tperf \gset
+select pg_temp.ok(:'tperf' = 'acidentado_leve' and (select topo_perfil = 'acidentado_leve' and topo_declividade_pct = 12.2 and topo_terra_m3m2 = 0.31 and topo_fonte = 'laser' and topo_calculado_por = :'diretor'
   from app.terrenos where id = :'t1'), 'medição do laser gravada com o perfil calculado no banco');
-select app.registrar_topografia(:'t1', 8.4, 0.9, 4.2, 'google') as tperf \gset
+select app.registrar_topografia(:'t1', 12.2, 8.4, 0.9, 4.2, 'google') as tperf \gset
 select pg_temp.ok(:'tperf' = 'inclinado' and (select topo_terra_m3m2 is null from app.terrenos where id = :'t1'), 'com o Google a terra mexida não é guardada');
-select pg_temp.falha(format('select app.registrar_topografia(%L, 5, null, 1, %L)', :'t1', 'laser'), 'com o laser a terra mexida é obrigatória');
-select pg_temp.falha(format('select app.salvar_topografia_config(%L, 3, 2, 0.25, 0.5, 1)', :'emp'), 'limite do inclinado acima do plano');
-select app.salvar_topografia_config(:'emp', 10, 30, 0.25, 0.5, 1);
+select pg_temp.falha(format('select app.registrar_topografia(%L, 5, 5, null, 1, %L)', :'t1', 'laser'), 'com o laser a terra mexida é obrigatória');
+select pg_temp.falha(format('select app.registrar_topografia(%L, null, 5, 0.1, 1, %L)', :'t1', 'laser'), 'a declividade média é obrigatória');
+select app.registrar_topografia(:'t1', 12.2, 8.4, 0.31, 4.2, 'laser');
+select pg_temp.falha(format('select app.salvar_topografia_config(%L, 5, 10, 13, 12, 24, 30, 1.5)', :'emp'), 'limite do mediano acima do leve');
+select app.salvar_topografia_config(:'emp', 15, 18, 20, 25, 28, 35, 1.5);
 select pg_temp.ok((select topo_perfil from app.terrenos where id = :'t1') = 'plano', 'limites novos reclassificam o que já foi medido');
-select app.salvar_topografia_config(:'emp', 3, 30, 0.25, 0.5, 1);
+select app.salvar_topografia_config(:'emp', 5, 10, 13, 19, 24, 30, 1.5);
 select pg_temp.como(:'analista');
-select pg_temp.falha(format('select app.salvar_topografia_config(%L, 3, 30, 0.25, 0.5, 1)', :'emp'), 'só o administrador muda os limites');
+select pg_temp.falha(format('select app.salvar_topografia_config(%L, 5, 10, 13, 19, 24, 30, 1.5)', :'emp'), 'só o administrador muda os limites');
 select pg_temp.como(:'leitor');
-select pg_temp.falha(format('select app.registrar_topografia(%L, 5, 0.1, 1, %L)', :'t1', 'laser'), 'leitura não grava a classificação');
+select pg_temp.falha(format('select app.registrar_topografia(%L, 5, 5, 0.1, 1, %L)', :'t1', 'laser'), 'leitura não grava a classificação');
 select pg_temp.como(:'diretor');
 select versao as tv from app.terrenos where id = :'t1' \gset
 select app.salvar_terreno(:'t1', :tv, '{"visita_tecnica_em":"2026-11-03"}') \gset

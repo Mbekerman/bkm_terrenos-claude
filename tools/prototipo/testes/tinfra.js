@@ -38,8 +38,8 @@ await p.goto('http://bkm.test/prototipo/terrenos/A123/infra');await p.waitForTim
 if(nome==='desktop'){const m=await txt('#sec-relevo');ok(/Medindo/.test(m),'mostra que está medindo: '+m.slice(0,80))}
 const t0=Date.now();await p.waitForSelector('#sec-relevo .tp-faixa',{timeout:180000}).catch(()=>{});
 let r=await txt('#sec-relevo');console.log(nome,'laser em',((Date.now()-t0)/1000).toFixed(1),'s:',r.slice(0,400));
-const c1=await ev(()=>T(UI.id).topoClass);ok(c1&&c1.fonte==='laser'&&c1.terra!=null&&c1.n>1000,'medição do laser gravada com a terra mexida ('+JSON.stringify(c1&&{perfil:c1.perfil,incl:c1.incl,terra:c1.terra,n:c1.n})+')');
-ok(c1&&c1.perfil===(await ev(c=>tpClassificar(c.incl,c.terra),c1)),'perfil pelos limites ('+(c1&&c1.perfil)+')');
+const c1=await ev(()=>T(UI.id).topoClass);ok(c1&&c1.fonte==='laser'&&c1.terra!=null&&c1.n>1000,'medição do laser gravada com a terra mexida ('+JSON.stringify(c1&&{perfil:c1.perfil,decl:c1.decl,incl:c1.incl,terra:c1.terra,n:c1.n})+')');
+ok(c1&&c1.decl>0&&c1.perfil===(await ev(c=>tpClassificar(c.decl,c.terra),c1)),'perfil pelos limites ('+(c1&&c1.perfil)+')');
 await p.screenshot({path:OUT+nome+'_1_relevo.png',fullPage:nome==='celular'});
 // Visão geral: o perfil no Resumo, com a cor
 await p.click('[data-a=tab][data-t=geral]');await p.waitForTimeout(300);ok(new RegExp('Perfil topográfico\\s*'+(await ev(c=>tpNome(c),c1)).split(' ·')[0]).test(await txt('.g-res')),'Resumo mostra o perfil');
@@ -76,11 +76,12 @@ if(nome==='desktop'){
   // 7. Configurações › Topografia: limites novos reclassificam
   await p.goto('http://bkm.test/prototipo/configuracoes/topografia');await p.waitForTimeout(400);
   await p.screenshot({path:OUT+'desktop_4_config.png'});
-  await p.fill('#tp-c-plano','12');await p.press('#tp-c-plano','Tab');await p.waitForTimeout(200);
+  ok((await p.$$eval('[data-ch=tp-cfg]',x=>x.length))===7&&(await p.$$('.tp-e.tp-acidentado_intenso')).length>0&&(await p.$$('.tp-e.tp-acidentado_agudo')).length>0,'sete limites e os perfis intenso e agudo na escala');
+  await p.fill('#tp-c-plano','8');await p.press('#tp-c-plano','Tab');await p.waitForTimeout(200);
   const c3=await ev(()=>S.terrenos.find(t=>t.codigo==='A123').topoClass);
-  ok(c3.perfil===(c3.terra>0.25?c3.perfil:'plano'),'limite novo reclassifica ('+c3.perfil+' '+c3.incl+'%)');
+  ok(c3.perfil===(await ev(c=>tpClassificar(c.decl,c.terra),c3))&&(await ev(()=>tpCfg().plano))===8,'limite novo reclassifica ('+c3.perfil+' '+c3.decl+'%)');
   await p.fill('#tp-c-inclinado','5');await p.press('#tp-c-inclinado','Tab');await p.waitForTimeout(200);
-  ok((await ev(()=>tpCfg().inclinado))===30,'limite fora de ordem é recusado');
+  ok((await ev(()=>tpCfg().inclinado))===10,'limite fora de ordem é recusado');
   // 6. sem GeoSampa (arquivo local): exemplo nos terrenos de exemplo, aviso nos outros
   const html2=html.replace(/<meta name="geosampa-url"[^>]*>/,''),ARQ=OUT+'local.html';fs.writeFileSync(ARQ,html2);
   await p.goto('file://'+ARQ);await p.evaluate(()=>localStorage.clear());await p.goto('file://'+ARQ+'#/terrenos/A118/infra');await p.reload();await p.waitForTimeout(800);
