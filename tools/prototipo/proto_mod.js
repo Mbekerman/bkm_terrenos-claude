@@ -49,12 +49,19 @@ const rotaUrl=(t,p)=>`https://www.google.com/maps/dir/?api=1&origin=${t.lat},${t
 const CAT_POI={transporte:'Transporte',escola:'Escola',saude:'Saúde',comercio:'Comércio',lazer:'Lazer',empresa:'Empresa',outro:'Outro'};
 /* entorno do terreno: lugares do Google a até RAIO_PE metros a pé, por categoria (no banco: app.entorno_categorias) */
 const RAIO_PE=1500;
-const ENT_CAT=[['metro_trem','Estação de metrô ou trem','estações de metrô ou trem',['subway_station','train_station','light_rail_station']],
-  ['shopping','Shopping center','shopping centers',['shopping_mall']],
-  ['hospital','Hospital','hospitais',['hospital']],
-  ['escola','Escola ou creche','escolas ou creches',['school','preschool','primary_school','secondary_school']],
-  ['supermercado','Supermercado','supermercados',['supermarket']],
-  ['parque','Parque','parques',['park']]];
+/* 5º item: o filtro do ruído (decisão do Moisés, 4/nov/2026; no banco, min_avaliacoes, isento_nomes, excluir_nomes e
+   um_por_local_m): escola pública, creche, praça, shopping, estação, posto de saúde e hipermercado entram com qualquer número de
+   avaliações (pelo nome, em "isento"); os demais comércios precisam de "min". Os nomes são trechos que valem no começo de uma
+   palavra do nome (sem acento). Terminal de ônibus: o Google chama de bus_station também o ponto na rua (nome = endereço),
+   que não tem avaliações; o terminal passa pelo nome. */
+const ENT_CAT=[['metro_trem','Estação de metrô ou trem','estações de metrô ou trem',['subway_station','train_station','light_rail_station'],{}],
+  ['shopping','Shopping center','shopping centers',['shopping_mall'],{min:50,isento:'shopping|plaza|mall|center|centro comercial',local:200}],
+  ['hospital','Hospital ou posto de saúde','hospitais ou postos de saúde',['hospital'],{min:50,isento:'hospital|ubs|unidade basica|posto de saude|pronto|upa|ama|santa casa|maternidade',excluir:'veterinari|animais'}],
+  ['escola','Escola ou creche','escolas ou creches',['school','preschool','primary_school','secondary_school'],{excluir:'autoescola|auto escola|condutores|vigilant|secretaria|conservatorio|musica|idioma|ingles|preparacao|psicopedagog|oficina|danca|natacao'}],
+  ['supermercado','Supermercado','supermercados',['supermarket'],{min:50,isento:'hiper|atacad|carrefour|assai|makro|tenda|roldao|extra|pao de acucar'}],
+  ['parque','Parque ou praça','parques ou praças',['park'],{min:50,isento:'praca|parque|jardim|bosque|largo|horto',excluir:'portaria|guarita|administracao|cabana|bebedouro|restaurante|delivery|corredor'}],
+  ['onibus','Terminal de ônibus','terminais de ônibus',['bus_station'],{min:50,isento:'terminal|estacao|rodoviaria'}],
+  ['faculdade','Faculdade','faculdades',['university'],{}]];
 const ENT_BUSCA={},ENT_TENT=new Set();let ENT_TODOS=false;
 const rotaPeUrl=(t,p)=>`https://www.google.com/maps/dir/?api=1&origin=${t.lat},${t.lng}&destination=${p.lat},${p.lng}${p.gid&&!String(p.gid).startsWith('ex')?'&destination_place_id='+encodeURIComponent(p.gid):''}&travelmode=walking`;
 /* Pontos de interesse numa lista só (pedido do Moisés, 3/nov/2026): os lugares do Google (por categoria, a até RAIO_PE a pé)
