@@ -674,7 +674,7 @@ function pgInicio(){
 }
 
 /* ===================== shell ===================== */
-const NAV=[['inicio','Início','casa'],['terrenos','Terrenos','terrenos'],['mapa','Mapa','mapa'],['negociacoes','Funil','funil'],['tarefas','Tarefas','checklist'],['dashboard','Dashboard','indicadores']];
+const NAV=[['inicio','Início','casa'],['tarefas','Tarefas','checklist'],['terrenos','Terrenos','terrenos'],['mapa','Mapa','mapa'],['negociacoes','Funil','funil'],['dashboard','Dashboard','indicadores']];
 /* Configurações › Funil: só para administrador (no menu lateral; no celular, pelo sino) */
 const NAV_CURTO={Configurações:'Admin',Dashboard:'Dash'}; // rótulo da barra encolhida
 const navSide=()=>ehAdmin(me())?[...NAV,['config','Configurações','config']]:NAV;
