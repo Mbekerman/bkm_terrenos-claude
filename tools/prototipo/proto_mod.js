@@ -128,15 +128,20 @@ function desenhaPins(){return GG?G_desenhaPins():L_desenhaPins()}
 function desenhaPois(){desenhaConc();return GG?G_desenhaPois():L_desenhaPois()}
 function desenhaConc(){return GG?G_desenhaConc():L_desenhaConc()}
 function mostrarConc(on){if(GG)return G_mostrarConc(on);if(MAPA&&CONC){on?CONC.addTo(MAPA):MAPA.removeLayer(CONC)}}
-/* ---------- menu do clique direito no mapa (no toque, segurar no vazio): novo terreno, ponto de interesse ou concorrência ali ---------- */
+/* ---------- menu do clique direito no mapa (no toque, segurar no vazio): novo terreno ali ---------- */
+/* dois cliques no vazio do mapa, fora do desenho, também começam o terreno novo com o primeiro ponto ali (pedido do Moisés, 4/nov/2026) */
+function mapaDuplo(lat,lng,alvo){if(UI.mpModo||UI.role==='Leitura'||TOQUE()||UI.edMini)return;
+  if(alvo?.closest?.('.leaflet-marker-icon,.leaflet-interactive,.mp-barra,.mp-ctrl,.mp-legenda,.mp-cartao,.mp-ctx,button,a,input'))return;
+  if(Date.now()-(UI.polyLongoEm||0)<500)return;ctxFechar();nvDesenhar([lat,lng])}
 function ctxAbrir(x,y,lat,lng){ctxFechar();if(UI.mpModo||UI.role==='Leitura')return;const area=$('.mapa-area');if(!area)return;UI.ctxLL={lat,lng};
   const m=document.createElement('div');m.className='mp-ctx';m.setAttribute('role','menu');
-  m.innerHTML=`<button role="menuitem" data-a="ctx-terreno">${ic('add',18)}Novo terreno aqui</button><button role="menuitem" data-a="ctx-poi">${ic('add',18)}Novo ponto de interesse</button><button role="menuitem" data-a="ctx-conc">${ic('add',18)}Nova concorrência</button>`;
+  /* só o terreno: ponto de interesse e concorrência saíram do menu (pedido do Moisés, 4/nov/2026) */
+  m.innerHTML=`<button role="menuitem" data-a="ctx-terreno">${ic('add',18)}Novo terreno aqui</button>`;
   area.appendChild(m);const W=area.clientWidth,H=area.clientHeight,w=m.offsetWidth,h=m.offsetHeight;
   m.style.left=Math.max(8,Math.min(W-w-8,x))+'px';m.style.top=Math.max(8,Math.min(H-h-8,y))+'px';m.querySelector('button')?.focus({preventScroll:true})}
 function ctxFechar(){$('.mapa-area .mp-ctx')?.remove()}
 function ctxAcao(a){const ll=UI.ctxLL;ctxFechar();if(!ll)return;
-  if(a==='ctx-terreno'){nvDesenhar([ll.lat,ll.lng]);return}if(a==='ctx-poi')UI.novoPoi=ll,UI.modal='poi';else{ccNovo(ll);return}renderModal()}
+  if(a==='ctx-terreno')nvDesenhar([ll.lat,ll.lng])}
 /* liga o menu no contêiner do mapa: clique direito (mouse) e toque longo no vazio (celular) */
 function ctxGestos(el,ponto){if(!el||el.dataset.ctx)return;el.dataset.ctx='1';const xy=e=>{const r=el.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top]};
   let tm=null,x0=0,y0=0;const limpa=()=>{clearTimeout(tm);tm=null};
@@ -344,6 +349,7 @@ function L_initMapa(){const el=$('#mapa');if(!el)return;
   const mapaAtual=MAPA;requestAnimationFrame(()=>setTimeout(()=>{if(MAPA!==mapaAtual)return;MAPA.invalidateSize();enquadrar();if(UI.mpFocoPend){const t=T(UI.mpFocoPend);UI.mpFocoPend=null;if(t&&t.lat!=null)focar(t)}},60));
   MAPA.on('moveend',()=>{UI.mpView={c:MAPA.getCenter(),z:MAPA.getZoom()};vMenuDesenha()});MAPA.on('movestart zoomstart',()=>$('.mapa-area .v-menu')?.remove());
   MAPA.on('preclick',e=>mapaClique(e.latlng.lat,e.latlng.lng));
+  MAPA.on('dblclick',e=>mapaDuplo(e.latlng.lat,e.latlng.lng,e.originalEvent?.target));
   MAPA.on('click',e=>{if(UI.mpModo||e.originalEvent?.target?.closest?.('.leaflet-interactive'))return;if(UI.mpSel)mpSelecionar(null); /* clique no vazio tira a seleção */
     if(Date.now()-(CC.abertoEm||0)>350)rdAbrirEm(e.latlng.lat,e.latlng.lng)}); /* com a camada de renda ligada, abre o setor */
   if(UI.mpFoco){UI.mpFocoPend=UI.mpFoco;UI.mpFoco=null}

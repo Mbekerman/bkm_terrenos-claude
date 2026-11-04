@@ -41,6 +41,16 @@ const Q=[[-120,-80],[120,-80],[120,80]];
   await comecar(p);await marcar(p,Q);await p.waitForTimeout(500);const v=await p.$$eval('.v-alvo',x=>x.map(el=>{const r=el.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}}));
   await p.mouse.dblclick(v[0].x,v[0].y);await p.waitForTimeout(400);const mn=await p.$eval('.v-menu',x=>x.innerText.replace(/\s+/g,' ')).catch(()=>'');
   ok(/Excluir ponto/.test(mn)&&/Desfazer/.test(mn)&&/Cancelar desenho/.test(mn),'dois cliques num ponto antigo abrem o menu: '+mn);await p.screenshot({path:OUT+'3_menu_ponto.png'});
+  // 7) fora do desenho, dois cliques no vazio do mapa começam o terreno novo com o primeiro ponto, sem mexer no mapa
+  await p.keyboard.press('Escape');await p.waitForTimeout(200);await p.keyboard.press('Escape');await p.waitForTimeout(300);
+  const vazio=await p.$eval('#mapa',x=>{const r=x.getBoundingClientRect();for(const fy of [.3,.42,.5,.58,.65])for(const fx of [.55,.45,.65,.35,.75]){const q={x:r.x+r.width*fx,y:r.y+r.height*fy},e=document.elementFromPoint(q.x,q.y);
+    if(e&&!e.closest('.leaflet-interactive,.leaflet-marker-icon,.mp-barra,.mp-legenda,.mp-modo,.leaflet-control,.mp-ctrl')&&!document.elementsFromPoint(q.x-25,q.y-25).concat(document.elementsFromPoint(q.x+25,q.y+25)).some(z=>z.matches('.leaflet-interactive,.leaflet-marker-icon')))return q}return null});
+  const pos=()=>p.evaluate(()=>document.querySelector('.leaflet-map-pane').style.transform);const t0=await pos();
+  await p.mouse.dblclick(vazio.x,vazio.y);await p.waitForTimeout(600);e=await estado(p);
+  ok(e.modo==='desenhar'&&e.n===1&&e.barra==='','dois cliques no vazio começam o desenho com 1 ponto: '+JSON.stringify(e));ok(t0===await pos(),'e o mapa não se mexe');
+  await p.screenshot({path:OUT+'4_duplo_inicia.png'});
+  await p.mouse.click(vazio.x+150,vazio.y);await p.waitForTimeout(400);await p.mouse.click(vazio.x+150,vazio.y+100);await p.waitForTimeout(400);
+  await vigiar(p);await p.mouse.dblclick(vazio.x,vazio.y+100);await p.waitForTimeout(700);e=await estado(p);ok(e.modo===null&&e.nv===4&&!!e.modal,'e dois cliques depois salvam: '+JSON.stringify(e));
   await ctx.close()}
 {const {p,ctx}=await pagina(true);await comecar(p);const e=await estado(p);ok(/Concluir/.test(e.barra),'celular mantém a barra com Concluir: '+e.barra);await ctx.close()}
 await b.close();console.log(errs.length?'ERROS '+JSON.stringify(errs):'tudo certo');process.exit(errs.length?1:0)})();
