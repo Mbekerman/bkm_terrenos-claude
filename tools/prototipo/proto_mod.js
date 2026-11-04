@@ -212,12 +212,12 @@ function pinIcon(k,sel){const [,c,g,fg]=Array.isArray(k)?k:SIT[k];return L.divIc
 const poiIcon=()=>L.divIcon({className:'poi',html:'<span class="poi-b"></span>',iconSize:[14,14],iconAnchor:[7,7],tooltipAnchor:[0,-8]});
 function mpVisiveis(){const m=UI.mp,q=m.q.trim().toLowerCase();
   return fxLista('mapa').filter(t=>{const k=mpClasse(t);return k!=null&&!m.ocultas.includes(k)}).filter(t=>!q||bateBusca(t,q))}
-/* lista lateral do mapa: só o número do pino (etapa), o nome e a área; a lupa abre a ficha.
+/* lista lateral do mapa: a bolinha com o código do terreno (na cor do nível aberto na legenda), o nome e a área; a lupa abre a ficha.
    Clicar no pino ou na poligonal seleciona o terreno aqui (não há balão no mapa). */
 function mpItem(t,cartao){const [nm,c,g,fg]=mpInfo(mpClasse(t)),sel=UI.mpSel===t.id,ad=areaAdotada(t)||(t.poly?areaPoly(t.poly):null);
   const acoes=sel&&t.lat!=null?`<div class="mp-it-a">${UI.role!=='Leitura'?`<button class="linkbtn" data-a="mp-desenhar" data-id="${t.id}">${t.poly?'Editar':'Desenhar'} poligonal</button>`:''}${GG?`<button class="linkbtn" data-a="mp-sv" data-id="${t.id}">Street View</button>`:''}</div>`:'';
   return `<div class="mp-it${sel?' sel':''}${cartao?' cartao':''}" data-a="mp-foco" data-id="${t.id}" tabindex="0" role="listitem" aria-current="${sel}">
-    <span class="pin-mini" style="background:${c};color:${fg}" title="${esc(nm)}">${g}</span>
+    <span class="pin-mini mp-cod" style="background:${c};color:${fg}" title="${esc(t.nome)} · ${esc(nm)}">${esc(t.codigo)}</span>
     <div class="mp-it-t"><div class="t1">${esc(t.nome)}</div><div class="t2">${ad?num(Math.round(ad))+'\u00a0m²':'Área não informada'} · ${esc(nm)}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div></div>
     <button class="iconbtn mp-lupa" data-a="fs-abrir" data-id="${t.id}" title="Ver ficha" aria-label="Ver ficha de ${esc(t.nome)}">${bi('busca',22)}</button>${cartao?`<button class="iconbtn mp-lupa mp-fx" data-a="mp-desel" title="Fechar" aria-label="Fechar">${ic('close',22)}</button>`:''}${acoes}</div>`}
 /* ao descer ou subir de nível, o mapa enquadra os terrenos que ficaram */
@@ -299,13 +299,14 @@ function mpLegenda(){const m=UI.mp,aberta=!!UI.mpArv;
 }
 function pgMapa(){
   const opt=(o,v)=>Object.entries(o).map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${esc(l)}</option>`).join('');
-  return `<div class="mapa-pg">
+  return `<div class="mapa-pg${mpLargura()<200?' mp-estreita':''}" style="--mp-w:${mpLargura()}px">
   <aside class="mapa-lado" aria-label="Terrenos no mapa">
     <h1 class="sr-only">Mapa</h1>
     ${fxBarra('mapa')}
     ${UI.mp.q||UI.mp.ocultas.length?'<button class="linkbtn" data-a="mp-limpar" style="align-self:flex-start">Limpar busca e legenda</button>':''}
     <div id="mp-lista">${mpLista()}</div>
   </aside>
+  <div class="mp-redim" role="separator" aria-orientation="vertical" aria-label="Largura da lista de terrenos" aria-valuemin="${MP_LMIN}" aria-valuemax="${mpLmax()}" aria-valuenow="${mpLargura()}" tabindex="0" title="Arraste para mudar a largura da lista (dois cliques voltam ao padrão)"></div>
   <section class="mapa-area" aria-label="Mapa dos terrenos">
     <div id="mapa" class="mapa"></div>
     <div class="mp-barra">
@@ -339,11 +340,11 @@ function L_setBase(k){if(!MAPA)return;UI.mpBase=k;if(BASE)MAPA.removeLayer(BASE)
 function L_desenhaPins(){if(!MAPA||!PINS)return;PINS.clearLayers();
   mpVisiveis().filter(t=>t.lat!=null).forEach(t=>{const k=mpInfo(mpClasse(t));
     if(t.poly&&!(UI.mpModo&&UI.mpAlvo===t.id)){const pg=L.polygon(t.poly,{color:k[1],weight:2,fillOpacity:.18,interactive:!UI.mpModo})
-      .on('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<700)return;clearTimeout(pg._tc);pg._tc=setTimeout(()=>{if(!UI.mpModo)mpSelecionar(t.id)},260)})
+      .on('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<700)return;clearTimeout(pg._tc);pg._tc=setTimeout(()=>{if(!UI.mpModo)mpCliquePino(t.id)},260)})
       .on('dblclick',e=>{L.DomEvent.stop(e);clearTimeout(pg._tc);editarPoligonal(t.id)});
       pg.on('add',()=>polyGestos(pg.getElement(),t.id));pg.addTo(PINS)}
     const mk=L.marker([t.lat,t.lng],{icon:pinIcon(k,UI.mpSel===t.id),title:t.nome,riseOnHover:true,keyboard:!UI.mpModo,interactive:!UI.mpModo}).bindTooltip(esc(t.nome),{direction:'top'});
-    mk.on('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<900)return;mpSelecionar(t.id)});
+    mk.on('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<900)return;mpCliquePino(t.id)});
     /* o pino fica sobre a poligonal: segurar nele (ou dois cliques) também entra em edição */
     if(t.poly&&t.poly.length>=3){mk.on('add',()=>polyGestos(mk.getElement(),t.id));mk.on('dblclick',e=>{L.DomEvent.stop(e);editarPoligonal(t.id)})}
     mk.addTo(PINS);mk._terreno=t.id})}
@@ -719,3 +720,22 @@ function miniGestos(el,zoom){let acc=0,ult=0;
 /* dois cliques no mini-mapa: abre a página Mapa centrada no ponto clicado, no mesmo zoom, com o terreno selecionado */
 function miniAbrirMapa(t,lat,lng,z){go('mapa',{mpView:{c:{lat,lng},z:Math.max(z||17,15)},mpSel:t.id,mpFoco:null})}
 
+
+/* largura da lista do mapa (pedido do Moisés, 4/nov/2026): a borda entre a lista e o mapa se arrasta (mãozinha ao passar,
+   mão fechada ao puxar); a mínima mostra só a bolinha com o código; guardada no navegador; setas do teclado também mudam,
+   dois cliques voltam ao padrão. Só no desktop (no celular a lista fica embaixo do mapa). */
+const MP_LKEY='bkm-terrenos-mapa-lista',MP_LMIN=76,mpLpad=()=>innerWidth<1300?300:360;
+const mpLmax=()=>Math.max(MP_LMIN,Math.min(720,Math.round(innerWidth*.6)));
+function mpLargura(){let v=null;try{v=+localStorage.getItem(MP_LKEY)||null}catch(e){}return Math.max(MP_LMIN,Math.min(mpLmax(),v||mpLpad()))}
+function mpLarguraPor(w,guardar){const pg=$('.mapa-pg'),h=$('.mp-redim');if(!pg)return;w=Math.round(Math.max(MP_LMIN,Math.min(mpLmax(),w)));
+  pg.style.setProperty('--mp-w',w+'px');h?.setAttribute('aria-valuenow',w);pg.classList.toggle('mp-estreita',w<200);
+  if(guardar)try{localStorage.setItem(MP_LKEY,w)}catch(e){}
+  if(!GG&&MAPA?.invalidateSize)MAPA.invalidateSize({pan:false});fsPos($('#ficha-sheet'))}
+document.addEventListener('pointerdown',e=>{const h=e.target.closest?.('.mp-redim');if(!h||e.button!==0)return;e.preventDefault();
+  const lado=$('.mapa-lado'),x0=e.clientX,w0=lado.getBoundingClientRect().width;h.setPointerCapture?.(e.pointerId);document.body.classList.add('mp-arrastando');
+  const mv=ev=>mpLarguraPor(w0+ev.clientX-x0),fim=ev=>{h.removeEventListener('pointermove',mv);h.removeEventListener('pointerup',fim);h.removeEventListener('pointercancel',fim);
+    document.body.classList.remove('mp-arrastando');mpLarguraPor(w0+ev.clientX-x0,true)};
+  h.addEventListener('pointermove',mv);h.addEventListener('pointerup',fim);h.addEventListener('pointercancel',fim)});
+document.addEventListener('dblclick',e=>{if(e.target.closest?.('.mp-redim'))mpLarguraPor(mpLpad(),true)});
+document.addEventListener('keydown',e=>{const h=e.target.closest?.('.mp-redim');if(!h)return;const w=+h.getAttribute('aria-valuenow'),d=e.shiftKey?80:20;
+  const n=e.key==='ArrowLeft'?w-d:e.key==='ArrowRight'?w+d:e.key==='Home'?MP_LMIN:e.key==='End'?mpLmax():null;if(n==null)return;e.preventDefault();mpLarguraPor(n,true)});

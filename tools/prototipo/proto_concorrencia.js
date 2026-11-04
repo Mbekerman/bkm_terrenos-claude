@@ -65,7 +65,7 @@ function ccBoxHtml(c){const r=ccResumo(c),ro=UI.role==='Leitura',ts=(c.tip||[]).
   ${c.obs?`<div class="cc-meta">${esc(c.obs)}</div>`:''}
   ${ro?'':`<div class="cc-ac">${CC.desativar?`<span class="muted">Tirar do mapa? O histórico fica.</span><button class="btn text sm" data-a="cc-desat-n">Não</button><button class="btn sm" data-a="cc-desat-s">Desativar</button>`
     :`<button class="btn primary sm" data-a="cc-precos" ${ts.length?'':'disabled'}>Atualizar preços</button><button class="btn sm" data-a="cc-editar">Editar</button><button class="btn text sm" data-a="cc-desat">Desativar</button>`}</div>`}</div>`}
-function ccBox(){const area=$('.mapa-area');let el=$('#cc-box');const c=CC.box&&UI.route==='mapa'?ccC(CC.box):null;
+function ccBox(){const area=$('.mapa-area');let el=$('#cc-box');const c=CC.box&&naMapa()?ccC(CC.box):null;
   if(!c||c.ativo===false||!area){el?.remove();if(!c)CC.box=null;return}
   if(!el||el.parentNode!==area){el?.remove();el=document.createElement('div');el.id='cc-box';area.appendChild(el)}
   el.innerHTML=ccBoxHtml(c)}
@@ -166,7 +166,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!UI.modal){if($('#c
   else if((e.key==='Enter'||e.key===' ')&&e.target.matches?.('.cc-tr[data-a]')){e.preventDefault();e.target.click()}},true);
 document.addEventListener('mousedown',e=>{const d=$('#cc-emp-dlg');if(d&&e.target===d)d.remove()});
 /* o quadro acompanha os redesenhos da página Mapa; fora dela, quadro e gaveta fecham */
-const _posRenderCc=posRender;posRender=function(){_posRenderCc.apply(this,arguments);if(UI.route!=='mapa'){CC.box=null;if(CC.dr)ccFecharDr()}ccBox()};
+const _posRenderCc=posRender;posRender=function(){_posRenderCc.apply(this,arguments);if(!naMapa()){CC.box=null;if(CC.dr)ccFecharDr()}ccBox()};
 /* um painel por vez: filtros, ficha do terreno e a gaveta da concorrência; selecionar um terreno fecha o quadro */
 const _fxDrawerCc=fxDrawer;fxDrawer=function(){if(FX_ABERTO&&CC.dr)ccFecharDr();return _fxDrawerCc.apply(this,arguments)};
 const _fichaSheetCc=fichaSheet;fichaSheet=function(){if(UI.fichaSheet){if(CC.dr)ccFecharDr();ccFechar()}return _fichaSheetCc.apply(this,arguments)};

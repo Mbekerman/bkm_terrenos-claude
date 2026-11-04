@@ -114,7 +114,7 @@ function rdBoxHtml(i){if(rdCamada()==='dens')return dsBoxHtml(i);const d=SET.d,m
   ${dist?`<div class="rd-av">Média puxada por poucas rendas altas: a mediana do responsável é ${brl(d.v6[i])}, menos de 1/${m.distorcidaRazao} da média.</div>`:''}
   <div class="rd-nota">Renda familiar estimada, não observação direta do IBGE por setor. <button class="linkbtn" data-a="rd-met">Metodologia</button></div>`
   :`<div class="cc-meta">${motivo}</div><dl class="rd-kv"><div><dt>Código do setor</dt><dd class="rd-cd">${cd}</dd></div><div><dt>Pessoas</dt><dd>${num(d.pop[i])}</dd></div></dl>`}</div>`}
-function rdBox(){const area=$('.mapa-area');let el=$('#rd-box');if(RD.sel==null||!SET.d||!area||UI.route!=='mapa'){el?.remove();return}
+function rdBox(){const area=$('.mapa-area');let el=$('#rd-box');if(RD.sel==null||!SET.d||!area||!naMapa()){el?.remove();return}
   if(!el||el.parentNode!==area){el?.remove();el=document.createElement('div');el.id='rd-box';area.appendChild(el)}el.innerHTML=rdBoxHtml(RD.sel)}
 
 /* ---------- legenda da renda sobre o mapa (recolhível; no celular começa fechada) ---------- */
@@ -132,7 +132,7 @@ function rdLegendaHtml(){if(rdCamada()==='dens')return dsLegendaHtml();const m=R
     <div class="rd-li"><span class="rd-q rd-sem"></span>Sem dado do IBGE</div>
     <div class="rd-leg-p">Mensal, valores de ${m.pnadAnoAtual} · Censo ${m.censoAno} · <button class="linkbtn" data-a="rd-met">Metodologia</button></div>
     ${SET.d?'':`<div class="rd-leg-p">${SET.erro?'Não foi possível carregar os setores.':'Carregando os setores do IBGE…'}</div>`}</div>`}
-function rdLegenda(){const area=$('.mapa-area');let el=$('#rd-leg');if(!area||UI.route!=='mapa'||!rdLigada()){el?.remove();return}
+function rdLegenda(){const area=$('.mapa-area');let el=$('#rd-leg');if(!area||!naMapa()||!rdLigada()){el?.remove();return}
   if(!el||el.parentNode!==area){el?.remove();el=document.createElement('details');el.id='rd-leg';el.className='rd-leg';el.open=UI.rdLegAberta??innerWidth>899;
     el.addEventListener('toggle',()=>{UI.rdLegAberta=el.open});area.appendChild(el)}
   el.innerHTML=rdLegendaHtml();
@@ -302,7 +302,7 @@ function setoresClick(A,a,t){
     case 'rd-ver':{const x=T(a.dataset.id);UI.mpSetor=rdCamada()||'renda';if(x&&x.lat!=null){UI.mpView={c:{lat:x.lat,lng:x.lng},z:15}}go('mapa');return true}
   }
   return false}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&RD.sel!=null&&!UI.modal&&UI.route==='mapa'){rdFechar();e.preventDefault()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&RD.sel!=null&&!UI.modal&&naMapa()){rdFechar();e.preventDefault()}});
 window.BKM_TESTE=Object.assign(window.BKM_TESTE||{},{setores:()=>!!SET.d,terreno:n=>{const t=S.terrenos.find(x=>x.nome===n);return {lat:t.lat,lng:t.lng,poly:t.poly}},abrirTerreno:n=>{const t=S.terrenos.find(x=>x.nome===n);go('terreno',{id:t.id,tab:'geral',from:'terrenos'})},
   estat:async(lat,lng,raio)=>{await Promise.all([setCarregar(),demoCarregar()]);const r=setEstat({lat,lng},raio);const dm=demoEstat({lat,lng},raio);return r&&{setores:r.setores,pes:r.pes,dom:r.dom,renda:r.renda,dens:r.dens,demo:!!dm}},
   irPara:(lat,lng,z)=>{if(typeof GG!=='undefined'&&GG){MAPA.setCenter(gLL(lat,lng));MAPA.setZoom(z)}else MAPA.setView([lat,lng],z)}});

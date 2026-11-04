@@ -479,7 +479,7 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .lug-l { display: inline-block; margin-top: 8px; color: #0b57d0; font-weight: 500; text-decoration: none }
 .lug-g { font-size: 11px; margin-top: 4px }
 .mapa-area { container-type: inline-size }
-@container (max-width: 600px) { .mapa-area .mp-barra { flex-wrap: wrap !important } .mapa-area .mp-busca { flex: 1 1 100%; max-width: none; order: -1; margin-right: 0 } .mapa-area .mp-barra .seg { flex: 1 1 0; min-width: 0; overflow-x: auto; scrollbar-width: none } }
+@container (max-width: 720px) { .mapa-area .mp-barra { flex-wrap: wrap !important } .mapa-area .mp-busca { flex: 1 1 100%; max-width: none; order: -1; margin-right: 0 } .mapa-area .mp-barra .seg { flex: 1 1 0; min-width: 0; overflow-x: auto; scrollbar-width: none } }
 
 /* ficha do terreno em painel sobre o mapa (lupa da lista lateral) */
 .ficha-sheet { position: fixed; z-index: 30; top: 88px; left: 88px; bottom: 16px; width: min(560px, calc(100vw - 32px)); display: flex; flex-direction: column; background: var(--m-surface, #fff); border-radius: 16px; box-shadow: 0 2px 6px rgba(0,0,0,.15), 0 12px 32px rgba(0,0,0,.18); overflow: hidden }
@@ -1107,7 +1107,7 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 :root[data-tema="escuro"] :is(.rd-m, .rd-f) { background: #1a1a1b; border: 1px solid rgba(149,153,160,0.2) }
 :root[data-tema="escuro"] .rd-bar { background: #2a2a2c }
 
-/* ---------- Mercado (monitor, camada de exemplo): círculo na cor da situação e janela do empreendimento ---------- */
+/* ---------- Mercado (monitor, camada de exemplo): quadrado com prédio na cor da situação (bloco do fim) e janela do empreendimento ---------- */
 .mk { background: none; border: 0; overflow: visible }
 .mk-b { display: block; width: 18px; height: 18px; box-sizing: border-box; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.4) }
 .mk.g { position: relative; width: 18px; height: 18px; transform: translateY(50%) }
@@ -4095,3 +4095,26 @@ table.mkt b { font-weight: 500 }
 }
 table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty { display: none }
 .mkt-w { overflow-x: hidden } table.mkt td, table.mkt th { padding-left: 6px; padding-right: 6px }
+/* ---------- Lista do mapa redimensionável e bolinha com o código (pedido do Moisés, 4/nov/2026) ---------- */
+@media (min-width: 900px) {
+  .mapa-pg { grid-template-columns: var(--mp-w, 360px) 16px minmax(0, 1fr); gap: 0 }
+  .mp-redim { position: relative; cursor: grab; touch-action: none; outline: none }
+  .mp-redim::after { content: ""; position: absolute; left: 6px; top: 50%; width: 4px; height: 48px; margin-top: -24px; border-radius: 2px; background: #c4c7c5; transition: background .15s, height .15s, margin .15s }
+  .mp-redim:hover::after, .mp-redim:focus-visible::after, body.mp-arrastando .mp-redim::after { background: #0b57d0; height: 72px; margin-top: -36px }
+  .mp-redim:focus-visible { box-shadow: inset 0 0 0 2px #0b57d0; border-radius: 8px }
+  body.mp-arrastando, body.mp-arrastando * { cursor: grabbing !important; user-select: none !important }
+  /* estreita: só as bolinhas com o código, uma embaixo da outra */
+  .mp-estreita .mapa-lado { padding-right: 0; overflow-x: hidden }
+  .mp-estreita .mapa-lado > :not(#mp-lista), .mp-estreita #mp-lista > :not(.mp-lst) { display: none !important }
+  .mp-estreita .mp-it { grid-template-columns: minmax(0, 1fr); justify-items: center; padding: 6px 0 }
+  .mp-estreita .mp-it > :not(.pin-mini) { display: none }
+}
+@media (max-width: 899px) { .mp-redim { display: none } }
+.mp-it .pin-mini.mp-cod { width: auto; min-width: 44px; height: 24px; padding: 0 8px; box-sizing: border-box; border-radius: 12px; font-size: 12px; font-weight: 600; letter-spacing: .02em; font-variant-numeric: tabular-nums; white-space: nowrap }
+:root[data-tema="escuro"] .mp-redim::after { background: #444746 }
+:root[data-tema="escuro"] .mp-redim:hover::after, :root[data-tema="escuro"] .mp-redim:focus-visible::after, :root[data-tema="escuro"] body.mp-arrastando .mp-redim::after { background: #a8c7fa }
+/* concorrência (monitor de mercado): quadrado com um prédio, na cor da situação, para não se confundir com os pinos dos terrenos */
+.mk-b { display: grid; place-items: center; width: 22px; height: 22px; box-sizing: border-box; border-radius: 6px; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.35), 0 1px 4px rgba(0,0,0,.35) }
+.mk-b svg { width: 13px; height: 13px; display: block }
+.mk.g { width: 22px; height: 22px }
+.lg-poi .mk-b { width: 16px; height: 16px; border-radius: 5px; border-width: 1.5px; box-shadow: 0 0 0 1px rgba(0,0,0,.2) } .lg-poi .mk-b svg { width: 10px; height: 10px }
