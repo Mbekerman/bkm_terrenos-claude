@@ -120,6 +120,8 @@ insert into app.inscricao_valores (inscricao_id, empresa_id, exercicio, valor_ve
 select pg_temp.ok((select revisao from app.v_inscricoes where id = :'ins') = 2, 'correção do exercício vira revisão 2');
 select pg_temp.ok((select count(*) from app.inscricao_valores where inscricao_id = :'ins' and exercicio = 2026 and not vigente) = 1, 'revisão 1 preservada, não vigente');
 select pg_temp.ok((select iptu_mensal_origem from app.v_inscricoes where id = :'ins') = 'informado', 'mensal informado prevalece');
+select pg_temp.ok((select count(*) from app.inscricao_valores where inscricao_id = :'ins' and vigente) = 1, 'só o exercício mais recente fica vigente');
+select pg_temp.falha(format($$insert into app.inscricao_valores (inscricao_id, empresa_id, exercicio, situacao_iptu, fonte) values (%L, %L, 2024, 'tributado', 'Carnê antigo')$$, :'ins', :'emp'), 'exercício anterior ao atual é recusado');
 select pg_temp.falha(format($$update app.inscricao_valores set iptu_valor_anual = 1 where inscricao_id = %L$$, :'ins'), 'valor lançado não é editado');
 select pg_temp.falha(format($$insert into app.inscricao_valores (inscricao_id, empresa_id, exercicio, situacao_iptu, iptu_valor_anual) values (%L, %L, 2027, 'isento', 1000)$$, :'ins', :'emp'), 'isento não tem IPTU a pagar');
 select pg_temp.falha(format($$insert into app.inscricao_valores (inscricao_id, empresa_id, exercicio, valor_venal_terreno, valor_venal_construcao, valor_venal_imovel) values (%L, %L, 2027, 1, 1, 5)$$, :'ins', :'emp'), 'venal do imóvel bate com a soma');
@@ -1154,7 +1156,8 @@ select pg_temp.como(:'diretor');
 select pg_temp.como(:'analista');
 insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro, poligono_geojson)
 values (:'emp', 'Três lotes na R. Itapura', :'analista', 'corretor', :'sp', 'Tatuapé', pg_temp.quadra(-46.8000, -23.7000, 90)) returning id as tv \gset
-select app.salvar_parte(:'tv', null, '{"nome":"Família Souza","area_m2":2700}') as pa \gset
+select pg_temp.ok((select count(*) = 1 and min(nome) = 'Vendedor 1' from app.terreno_partes where terreno_id = :'tv'), 'todo terreno nasce com uma parte, a Vendedor 1');
+select app.salvar_parte(:'tv', (select id from app.terreno_partes where terreno_id = :'tv'), '{"nome":"Família Souza","area_m2":2700}') as pa \gset
 select app.salvar_parte(:'tv', null, '{"nome":"Carlos Pires","area_m2":2700}') as pb \gset
 select pg_temp.falha(format($$select app.salvar_parte(%L, null, '{"nome":"Oficina","essencial":false}')$$, :'tv'), 'só gestor ou diretor marca parte como dispensável');
 select app.salvar_parte(:'tv', null, '{"nome":"Oficina do Zé","area_m2":2700}') as pc \gset
@@ -1251,7 +1254,7 @@ select pg_temp.ok((select count(*) from app.processos where terreno_id = :'tv' a
 select pg_temp.como(:'analista');
 insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro, poligono_geojson)
 values (:'emp', 'Dois lotes na R. Tuiuti', :'analista', 'corretor', :'sp', 'Tatuapé', pg_temp.quadra(-46.8100, -23.7000, 60)) returning id as tw \gset
-select app.salvar_parte(:'tw', null, '{"nome":"Dono 1"}') as qa \gset
+select app.salvar_parte(:'tw', (select id from app.terreno_partes where terreno_id = :'tw'), '{"nome":"Dono 1"}') as qa \gset
 select (app.registrar_oferta(:'tw', 5000000)->>'processo_id') as nw \gset
 select pg_temp.como(:'gestor');
 select app.mover_para_etapa(:'nw', 'negociacao', true, 'Estudo dispensado') \gset
@@ -3142,7 +3145,7 @@ select pg_temp.como(:'diretor');
 insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude, poligono_geojson)
   values (:'emp', 'Terreno de três donos', :'diretor', 'corretor', :'sp', -23.73, -46.73, pg_temp.quadra(-46.73, -23.73)) returning id as tpd \gset
 select app.abrir_negociacao(:'tpd') as ppd \gset
-select app.salvar_parte(:'tpd', null, '{"nome":"Dono A"}') as pa_a \gset
+select app.salvar_parte(:'tpd', (select id from app.terreno_partes where terreno_id = :'tpd'), '{"nome":"Dono A"}') as pa_a \gset
 select app.salvar_parte(:'tpd', null, '{"nome":"Dono B"}') as pa_b \gset
 select (app.mover_para_etapa(:'ppd', 'negociacao', true, 'teste'))->>'resultado' as r \gset
 select app.encerrar_processo(:'ppd', 'stand_by', null, 'pausa', current_date + 10) as r \gset
@@ -3166,7 +3169,7 @@ select app.salvar_item_jornada(:'emp', null, '{"fase":"novos_negocios","etapa":"
 insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude, poligono_geojson)
   values (:'emp', 'Terreno de dois donos', :'diretor', 'corretor', :'sp', -23.75, -46.75, pg_temp.quadra(-46.75, -23.75)) returning id as tjp \gset
 select app.abrir_negociacao(:'tjp') as pjp \gset
-select app.salvar_parte(:'tjp', null, '{"nome":"Dono A"}') as r \gset
+select app.salvar_parte(:'tjp', (select id from app.terreno_partes where terreno_id = :'tjp'), '{"nome":"Dono A"}') as r \gset
 select app.salvar_parte(:'tjp', null, '{"nome":"Dono B"}') as r \gset
 select (app.mover_para_etapa(:'pjp', 'negociacao', true, 'teste'))->>'resultado' as r \gset
 select pg_temp.como(:'analista');
@@ -3311,5 +3314,73 @@ select pg_temp.falha(format($$insert into app.terreno_corretores (terreno_id, co
   'corretor de outra empresa não entra no terreno');
 select pg_temp.falha(format($$insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel) values (%L, %L, %L, 'proprietario')$$, :'emp', :'tce', :'pfx'),
   'nem pessoa de outra empresa');
+
+-- ---------------------------------------------------------------------
+\echo '# lotes: uma matrícula e um ou mais SQLs, de uma parte (4/nov/2026)'
+select pg_temp.como(:'analista');
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro, cartorio, cartorio_origem, poligono_geojson)
+values (:'emp', 'Lotes na R. Bresser', :'analista', 'corretor', :'sp', 'Brás', '9º CRI', 'prefeitura', pg_temp.quadra(-46.8200, -23.7000, 60)) returning id as tl \gset
+select id as lp1 from app.terreno_partes where terreno_id = :'tl' \gset
+select app.salvar_parte(:'tl', :'lp1', '{"pessoa_nome":" Maria Lopes ","telefone":"(11) 98765-4321","email":"Maria@Lopes.com","documento":"529.982.247-25","observacoes":"Herdeira"}') \g /dev/null
+select pg_temp.ok((select nome = 'Vendedor 1' and pessoa_nome = 'Maria Lopes' and telefone = '11987654321' and email = 'maria@lopes.com' and documento = '52998224725'
+                     from app.terreno_partes where id = :'lp1'), 'contato da parte: só dígitos no telefone e no CPF, e-mail em minúsculas');
+select pg_temp.falha(format($$select app.salvar_parte(%L, %L, '{"documento":"123.456.789-00"}')$$, :'tl', :'lp1'), 'CPF com dígito errado é recusado');
+select pg_temp.falha(format($$select app.salvar_parte(%L, %L, '{"email":"maria@"}')$$, :'tl', :'lp1'), 'e-mail inválido é recusado');
+select app.salvar_parte(:'tl', null, '{"nome":"Vendedor 2","documento":"11.222.333/0001-81"}') as lp2 \gset
+select pg_temp.ok((select documento = '11222333000181' from app.terreno_partes where id = :'lp2'), 'CNPJ da parte');
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao, area_cadastral_m2) values (:'emp', :'tl', '059.112.0031-4', 480) returning id as li1 \gset
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao, area_cadastral_m2) values (:'emp', :'tl', '059.112.0032-2', 150) returning id as li2 \gset
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao, area_cadastral_m2) values (:'emp', :'tl', '059.112.0033-0', 400) returning id as li3 \gset
+select app.salvar_lote(:'tl', null, format('{"matricula":{"numero":"301.001","area_registrada_m2":500},"inscricoes":["%s"]}', :'li1')::jsonb) as lt1 \gset
+select pg_temp.ok((select titulo = 'Lote 1' and parte_id = :'lp1' and cartorio = '9º CRI' from app.v_lotes where id = :'lt1'),
+  'lote novo: "Lote 1", da primeira parte, com o cartório do terreno na matrícula');
+select pg_temp.ok((select parte_id = :'lp1' from app.matriculas where numero = '301.001') and (select parte_id = :'lp1' from app.inscricoes_municipais where id = :'li1'),
+  'matrícula e SQL ficam com a parte do lote');
+select app.salvar_lote(:'tl', null, format('{"parte_id":"%s","matricula":{"numero":"301.002","area_registrada_m2":300},"inscricoes":["%s","%s"]}', :'lp2', :'li2', :'li3')::jsonb) as lt2 \gset
+select app.salvar_lote(:'tl', null, format('{"parte_id":"%s","matricula":{"numero":"301.003","area_registrada_m2":200},"inscricoes":["%s"]}', :'lp2', :'li3')::jsonb) as lt3 \gset
+select pg_temp.ok((select titulo from app.terreno_lotes where id = :'lt3') = 'Lote 3', 'os lotes seguem numerados');
+select pg_temp.falha(format($$select app.salvar_lote(%L, null, '{"matricula":{"numero":"301001"}}')$$, :'tl'), 'a mesma matrícula não entra em dois lotes');
+select pg_temp.falha(format($$select app.salvar_lote(%L, %L, '{"titulo":"lote 1"}')$$, :'tl', :'lt2'), 'título de lote não se repete no terreno');
+select pg_temp.falha(format($$select app.salvar_lote(%L, null, '{"parte_id":"%s"}')$$, :'tl', :'pa'), 'a parte tem que ser do terreno');
+select pg_temp.falha(format($$insert into app.terreno_lotes (empresa_id, terreno_id, parte_id, titulo) values (%L, %L, %L, 'Direto')$$, :'emp', :'tl', :'lp1'), 'lote só entra pela RPC');
+select pg_temp.ok((select area_adotada_m2 = 500 and area_cadastral_m2 = 480 and not sql_compartilhado and divergencia_cadastral_pct = -4.0 from app.v_lotes where id = :'lt1'),
+  'lote com o SQL só dele: área adotada da matrícula e divergência com o cadastral');
+select pg_temp.ok((select sql_compartilhado and area_cadastral_m2 is null and grupo_id = (select grupo_id from app.v_lotes where id = :'lt3')
+                     and grupo_area_matriculas_m2 = 500 and grupo_area_cadastral_m2 = 550 and divergencia_cadastral_pct = 10.0 from app.v_lotes where id = :'lt2'),
+  'SQL que cobre duas matrículas: os lotes formam um grupo e a divergência é a do grupo');
+select app.salvar_lote(:'tl', :'lt2', '{"area_fonte":"cadastral"}') \g /dev/null
+select pg_temp.ok((select area_adotada_m2 is null from app.v_lotes where id = :'lt2'), 'SQL dividido não dá a área cadastral de um lote só');
+select pg_temp.falha(format($$select app.salvar_lote(%L, %L, '{"area_fonte":"informada"}')$$, :'tl', :'lt2'), 'área informada pede o número');
+select app.salvar_lote(:'tl', :'lt2', '{"area_fonte":"informada","area_informada_m2":310}') \g /dev/null
+select pg_temp.ok((select area_lotes_m2 = 510 from app.v_partes where id = :'lp2') and (select area_lotes_m2 = 500 and qtd_lotes = 1 from app.v_partes where id = :'lp1'),
+  'a parte soma a área adotada dos seus lotes');
+select app.salvar_lote(:'tl', :'lt3', format('{"parte_id":"%s"}', :'lp1')::jsonb) \g /dev/null
+select pg_temp.ok((select parte_id is null from app.inscricoes_municipais where id = :'li3') and (select parte_id = :'lp1' from app.matriculas where numero = '301.003'),
+  'SQL em lotes de partes diferentes fica sem parte; a matrícula muda com o lote');
+reset role;
+insert into app.consultas_lote (empresa_id, terreno_id, inscricao_id, base, inscricao_norm, lote, zonas)
+values (:'emp', :'tl', :'li1', 'geosampa', '05911200314', '{}', '[{"sigla":"ZM","area_m2":480}]');
+select pg_temp.como(:'analista');
+select pg_temp.ok((select zonas = '{ZM}' from app.v_lotes where id = :'lt1') and (select zonas = '{ZM}' from app.v_partes where id = :'lp1'), 'zonas do lote pela última consulta do SQL');
+select pg_temp.falha(format('select app.excluir_parte(%L)', :'lp2'), 'parte com lotes não se exclui');
+select app.salvar_parte(:'tl', null, '{"nome":"Vendedor 3"}') as lp3 \gset
+select app.excluir_parte(:'lp3');
+select pg_temp.ok(not exists (select 1 from app.terreno_partes where id = :'lp3'), 'parte cadastrada por engano, sem nada ligado, se exclui');
+select app.excluir_lote(:'lt2');
+select pg_temp.ok(not exists (select 1 from app.matriculas where numero = '301.002') and not exists (select 1 from app.inscricoes_municipais where id = :'li2')
+                  and exists (select 1 from app.inscricoes_municipais where id = :'li3'), 'excluir o lote leva a matrícula e o SQL só dele; o SQL de outro lote fica');
+select app.salvar_lote(:'tl', :'lt3', '{"matricula":null}') \g /dev/null
+select pg_temp.ok((select matricula_id is null from app.terreno_lotes where id = :'lt3') and not exists (select 1 from app.matriculas where numero = '301.003'),
+  'tirar a matrícula do lote apaga a matrícula');
+select pg_temp.ok((select area_lotes_m2 is null and qtd_lotes = 0 from app.v_partes where id = :'lp2'), 'parte sem lote, sem área');
+select app.excluir_parte(:'lp2');
+select pg_temp.falha(format('select app.excluir_parte(%L)', :'lp1'), 'a última parte não sai (e esta tem lotes)');
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro, poligono_geojson)
+values (:'emp', 'Uma parte só', :'analista', 'corretor', :'sp', 'Brás', pg_temp.quadra(-46.8300, -23.7000, 30)) returning id as tl2 \gset
+select pg_temp.falha(format('select app.excluir_parte(id) from app.terreno_partes where terreno_id = %L', :'tl2'), 'o terreno fica sempre com uma parte');
+select pg_temp.falha(format($$select app.salvar_lote(%L, null, '{"matricula":{"numero":"77"}}')$$, :'tl2'), 'sem cartório no terreno, a matrícula pede o cartório');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$select app.salvar_lote(%L, null, '{}')$$, :'tl'), 'Leitura não cadastra lote');
+select pg_temp.como(:'analista');
 
 \echo 'TODOS OS TESTES PASSARAM'

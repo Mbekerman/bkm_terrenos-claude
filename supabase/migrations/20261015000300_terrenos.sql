@@ -156,6 +156,12 @@ create table app.terreno_partes (
   poligono_geojson jsonb check (poligono_geojson is null or app.geojson_poligono_valido(poligono_geojson)),
   area_m2          numeric(12,2) check (area_m2 > 0),
   observacoes      text,
+  -- contato da parte (todos opcionais; decisão do Moisés, 4/nov/2026): a pessoa principal,
+  -- telefone e CPF/CNPJ só com dígitos, e-mail em minúsculas (conferidos em app.salvar_parte)
+  pessoa_nome      text,
+  telefone         text check (telefone ~ '^\d{10,11}$'),
+  email            text check (email = lower(email) and email ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$'),
+  documento        text check (documento ~ '^(\d{11}|\d{14})$'),
   ativa            boolean not null default true,
   removida_em      timestamptz,
   motivo_remocao   text,
@@ -198,6 +204,38 @@ create table app.inscricoes_municipais (
   unique nulls not distinct (empresa_id, municipio_id, inscricao_norm)
 );
 create index on app.inscricoes_municipais (terreno_id);
+
+-- Lotes do terreno (decisão do Moisés, 4/nov/2026): cada lote é uma matrícula, com um ou mais SQLs
+-- (inscrições), e pertence a uma parte. O mesmo SQL pode estar em dois lotes quando cobre duas
+-- matrículas; aí a divergência de área é conferida pelo grupo de lotes que dividem o SQL
+-- (app.v_lotes). A parte da matrícula e da inscrição vem do lote (app._sincronizar_partes_lote).
+-- Escrita só pelas RPCs app.salvar_lote e app.excluir_lote.
+create table app.terreno_lotes (
+  id                uuid primary key default gen_random_uuid(),
+  empresa_id        uuid not null references app.empresas(id),
+  terreno_id        uuid not null references app.terrenos(id) on delete cascade,
+  parte_id          uuid not null references app.terreno_partes(id),
+  titulo            text not null check (length(trim(titulo)) > 0),
+  matricula_id      uuid unique references app.matriculas(id) on delete set null,  -- uma matrícula por lote
+  -- de onde vem a área adotada do lote: a da matrícula, a soma dos SQLs (só quando nenhum é
+  -- dividido com outro lote) ou a digitada
+  area_fonte        text not null default 'documental' check (area_fonte in ('documental','cadastral','informada')),
+  area_informada_m2 numeric(12,2) check (area_informada_m2 > 0),
+  ordem             int not null default 0,
+  criado_em         timestamptz not null default now(),
+  check (area_fonte <> 'informada' or area_informada_m2 is not null)
+);
+create index on app.terreno_lotes (terreno_id);
+create unique index terreno_lotes_titulo on app.terreno_lotes (terreno_id, lower(trim(titulo)));
+
+create table app.lote_inscricoes (
+  lote_id      uuid not null references app.terreno_lotes(id) on delete cascade,
+  inscricao_id uuid not null references app.inscricoes_municipais(id) on delete cascade,
+  empresa_id   uuid not null references app.empresas(id),
+  ordem        int not null default 0,
+  primary key (lote_id, inscricao_id)
+);
+create index on app.lote_inscricoes (inscricao_id);
 
 -- Consultas do lote na base da prefeitura pela inscrição (GeoSampa em São
 -- Paulo, GeoSanja em São José dos Campos): o retrato do lote e de todas as
@@ -267,7 +305,10 @@ create table app.inscricao_valores (
   check (valor_venal_imovel is null or valor_venal_terreno is null or valor_venal_construcao is null
          or valor_venal_imovel = valor_venal_terreno + valor_venal_construcao)
 );
-create unique index inscricao_valor_vigente on app.inscricao_valores (inscricao_id, exercicio) where vigente;
+-- Só o exercício mais recente vale (decisão do Moisés, 4/nov/2026, no lugar do histórico por
+-- exercício): um vigente por inscrição; lançar o ano novo aposenta o anterior, e as linhas
+-- antigas ficam só como registro.
+create unique index inscricao_valor_vigente on app.inscricao_valores (inscricao_id) where vigente;
 
 -- Nova linha do mesmo exercício vira a próxima revisão e aposenta a anterior.
 -- Linha gravada não muda (só deixa de ser vigente).
@@ -280,8 +321,12 @@ begin
     if new.valor_venal_imovel is null and new.valor_venal_terreno is not null and new.valor_venal_construcao is not null then
       new.valor_venal_imovel := new.valor_venal_terreno + new.valor_venal_construcao;
     end if;
+    if new.exercicio < (select max(exercicio) from app.inscricao_valores where inscricao_id = new.inscricao_id) then
+      raise exception 'Só vale o exercício mais recente (%): lance o IPTU do ano atual',
+        (select max(exercicio) from app.inscricao_valores where inscricao_id = new.inscricao_id) using errcode = '23514';
+    end if;
     update app.inscricao_valores set vigente = false
-     where inscricao_id = new.inscricao_id and exercicio = new.exercicio and vigente;
+     where inscricao_id = new.inscricao_id and vigente;
     new.vigente := true;
     return new;
   end if;
@@ -813,6 +858,29 @@ create trigger t_aud after insert or update or delete on app.topografia_config f
 alter table app.terreno_partes enable row level security;
 create policy ver on app.terreno_partes for select to authenticated using (empresa_id in (select app.minhas_empresas()));
 grant select on app.terreno_partes to authenticated;
+
+-- Lotes: leitura para a empresa; escrita só pelas RPCs (salvar_lote, excluir_lote).
+do $$
+declare t text;
+begin
+  foreach t in array array['terreno_lotes','lote_inscricoes'] loop
+    execute format('alter table app.%I enable row level security', t);
+    execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
+    execute format('grant select on app.%I to authenticated', t);
+    execute format('create trigger t_aud after insert or update or delete on app.%I for each row execute function app.tg_auditoria()', t);
+  end loop;
+end $$;
+create trigger t_emp before insert or update on app.terreno_lotes for each row execute function app.tg_mesma_empresa();
+
+-- Todo terreno nasce com uma parte, a "Vendedor 1" (decisão do Moisés, 4/nov/2026): matrículas e
+-- inscrições sempre ficam ligadas a uma parte, pelo lote.
+create or replace function app.tg_terreno_parte_inicial()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  insert into app.terreno_partes (empresa_id, terreno_id, nome) values (new.empresa_id, new.id, 'Vendedor 1');
+  return null;
+end $$;
+create trigger t_parte1 after insert on app.terrenos for each row execute function app.tg_terreno_parte_inicial();
 create trigger t_emp before insert or update on app.terreno_partes for each row execute function app.tg_mesma_empresa();
 create trigger t_aud after insert or update or delete on app.terreno_partes for each row execute function app.tg_auditoria();
 
