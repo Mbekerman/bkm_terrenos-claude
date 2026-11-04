@@ -6635,12 +6635,18 @@ const rotaUrl=(t,p)=>`https://www.google.com/maps/dir/?api=1&origin=${t.lat},${t
 const CAT_POI={transporte:'Transporte',escola:'Escola',saude:'Saúde',comercio:'Comércio',lazer:'Lazer',empresa:'Empresa',outro:'Outro'};
 /* entorno do terreno: lugares do Google a até RAIO_PE metros a pé, por categoria (no banco: app.entorno_categorias) */
 const RAIO_PE=1500;
-const ENT_CAT=[['metro_trem','Estação de metrô ou trem','estações de metrô ou trem',['subway_station','train_station','light_rail_station']],
-  ['shopping','Shopping center','shopping centers',['shopping_mall']],
-  ['hospital','Hospital','hospitais',['hospital']],
-  ['escola','Escola ou creche','escolas ou creches',['school','preschool','primary_school','secondary_school']],
-  ['supermercado','Supermercado','supermercados',['supermarket']],
-  ['parque','Parque','parques',['park']]];
+/* 5º item: o filtro do ruído (decisão do Moisés, 4/nov/2026; no banco, min_avaliacoes, isento_nomes, excluir_nomes e
+   um_por_local_m): escola pública, creche, praça, shopping, estação, posto de saúde e hipermercado entram com qualquer número de
+   avaliações (pelo nome, em "isento"); os demais comércios precisam de "min". Os nomes são trechos que valem no começo de uma
+   palavra do nome (sem acento). Terminal de ônibus: o Google chama de bus_station também o ponto na rua (nome = endereço),
+   que não tem avaliações; o terminal passa pelo nome. */
+const ENT_CAT=[['metro_trem','Estação de metrô ou trem','estações de metrô ou trem',['subway_station','train_station','light_rail_station'],{}],
+  ['shopping','Shopping center','shopping centers',['shopping_mall'],{min:50,isento:'shopping|plaza|mall|center|centro comercial',local:200}],
+  ['hospital','Hospital ou posto de saúde','hospitais ou postos de saúde',['hospital'],{min:50,isento:'hospital|ubs|unidade basica|posto de saude|pronto|upa|ama|santa casa|maternidade',excluir:'veterinari|animais'}],
+  ['escola','Escola ou creche','escolas ou creches',['school','preschool','primary_school','secondary_school'],{excluir:'autoescola|auto escola|condutores|vigilant|secretaria|conservatorio|musica|idioma|ingles|preparacao|psicopedagog|oficina|danca|natacao|extensao|faculdade'}],
+  ['supermercado','Supermercado','supermercados',['supermarket'],{min:50,isento:'hiper|atacad|carrefour|assai|makro|tenda|roldao|extra|pao de acucar'}],
+  ['parque','Parque ou praça','parques ou praças',['park'],{min:50,isento:'praca|parque|jardim|bosque|largo|horto',excluir:'portaria|guarita|administracao|cabana|bebedouro|restaurante|delivery|corredor'}],
+  ['onibus','Terminal de ônibus','terminais de ônibus',['bus_station'],{min:50,isento:'terminal|estacao|rodoviaria'}]];
 const ENT_BUSCA={},ENT_TENT=new Set();let ENT_TODOS=false;
 const rotaPeUrl=(t,p)=>`https://www.google.com/maps/dir/?api=1&origin=${t.lat},${t.lng}&destination=${p.lat},${p.lng}${p.gid&&!String(p.gid).startsWith('ex')?'&destination_place_id='+encodeURIComponent(p.gid):''}&travelmode=walking`;
 /* Pontos de interesse numa lista só (pedido do Moisés, 3/nov/2026): os lugares do Google (por categoria, a até RAIO_PE a pé)
@@ -9697,12 +9703,18 @@ async function gMatriz(lat,lng,dest,modo){const out=dest.map(()=>null);const ll=
       (res?.rows?.[0]?.elements||[]).forEach((e,j)=>{if(e&&e.status==='OK')out[i+j]={m:e.distance.value,min:Math.max(1,Math.round(e.duration.value/60))}})}
     if(!out.some(Boolean))throw new Error('sem rotas')}
   return out}
+/* filtro do ruído por categoria (ENT_CAT, 5º item): excluir pelo nome, mínimo de avaliações (salvo nome isento) e,
+   no shopping, um lugar por local (as lojas de dentro que o Google marca como shopping ficam fora) */
+const entTem=(nome,lista)=>{if(!lista)return false;const n=' '+normNome(nome).replace(/[^a-z0-9]+/g,' ')+' ';return lista.split('|').some(x=>n.includes(' '+x))};
+function entFiltro(ps,rg){let l=ps.filter(p=>!entTem(p.nome,rg.excluir)&&(rg.min==null||p.av>=rg.min||entTem(p.nome,rg.isento)));
+  if(rg.local){const fica=[];[...l].sort((a,b)=>b.av-a.av).forEach(p=>{if(!fica.some(q=>distKm(p.lat,p.lng,q.lat,q.lng)*1000<=rg.local))fica.push(p)});l=l.filter(p=>fica.includes(p))}
+  return l}
 async function gEntornoTerreno(t){if(!GG||!gLib.places||t.lat==null||ENT_BUSCA[t.id])return;
   ENT_BUSCA[t.id]=true;const lat=t.lat,lng=t.lng;entRefresh(t);
   try{const {Place,SearchNearbyRankPreference}=gLib.places;
-    const res=await Promise.all(ENT_CAT.map(([k,,,tipos])=>Place.searchNearby({fields:['id','displayName','location'],locationRestriction:{center:gLL(lat,lng),radius:RAIO_PE},
+    const res=await Promise.all(ENT_CAT.map(([k,,,tipos,rg])=>Place.searchNearby({fields:['id','displayName','location','userRatingCount'],locationRestriction:{center:gLL(lat,lng),radius:RAIO_PE},
       includedPrimaryTypes:tipos,maxResultCount:20,rankPreference:SearchNearbyRankPreference.DISTANCE,language:'pt-BR',region:'br'})
-      .then(r=>(r.places||[]).map(p=>({gid:p.id,nome:p.displayName,cat:k,lat:p.location.lat(),lng:p.location.lng()})))));
+      .then(r=>entFiltro((r.places||[]).map(p=>({gid:p.id,nome:p.displayName,cat:k,av:p.userRatingCount||0,lat:p.location.lat(),lng:p.location.lng()})),rg||{}))));
     /* só pelo tipo principal do lugar: com includedTypes vinham autoescola e curso livre (que também têm "school"), restaurante como parque etc. (4/nov/2026) */
     /* um lugar entra uma vez (na primeira categoria); mesmo nome na mesma categoria = mesma estação/hospital, fica o mais perto */
     const ids=new Set(),nomes=new Set();let itens=[];
