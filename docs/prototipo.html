@@ -5476,6 +5476,75 @@ html[data-tema="escuro"] .etq-sobre, html[data-tema="escuro"] .etq-sobre .etq-pt
 html[data-tema="escuro"] .etq-vazio { color: #c4c7c5 }
 .nv-sqls { align-items: flex-start } .nv-sqls > .etq-sw { margin-top: 3px } .nv-sqls .btn { margin-top: -4px }
 .nv-sqls-l { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px } .nv-sqls-l .etq { height: 28px; font-size: 13px; cursor: default } .nv-sqls-l .etq-n { padding-right: 10px }
+
+/* ===================== tabela de terrenos (4/nov/2026; proto_tabela.js) ===================== */
+.ter-ac { display: flex; align-items: center; gap: 4px; flex-wrap: wrap }
+.lista-ter td { vertical-align: top }
+.lista-ter td .t2 { font-size: 12px; line-height: 16px; color: var(--m-on-var, #444746) }
+.lista-ter td > div + div { margin-top: 2px }
+.lista-ter th .dt-sort { white-space: normal; text-align: left; line-height: 16px }
+.lista-ter th.num .dt-sort { text-align: right }
+.lista-ter th.col-ter { min-width: 240px }
+.lista-ter td.col-ter { min-width: 240px; max-width: 340px }
+.lista-ter td.col-cid, .lista-ter td.col-zona { white-space: nowrap }
+.tb-c1 { display: flex; gap: 8px; align-items: flex-start }
+.tb-c1t { min-width: 0 }
+.tb-c1t .t1 { font-weight: 500; overflow-wrap: anywhere }
+.tb-olho { flex: none; width: 36px; height: 36px; margin: -4px 0 0 -8px; color: var(--m-on-var, #444746) }
+.tb-ord { display: inline-grid; place-items: center; min-width: 16px; height: 16px; margin-left: 2px; padding: 0 4px; border-radius: 8px; background: #c2e7ff; color: #001d35; font-size: 11px; font-weight: 500; line-height: 16px }
+.lista-ter tr.tb-sel > td { background: #d3e3fd !important }
+.lista-ter tr.tb-sel .tb-olho { color: #0b57d0; background: rgba(11,87,208,.12) }
+/* tela cheia: a tabela cobre a página, acima do menu e abaixo das janelas */
+.ter-pg.on { position: fixed; inset: 0; z-index: 31; overflow: auto; background: var(--m-surface, #f8fafd); padding: 16px 24px 24px }
+.ter-pg.on .page-h { margin-bottom: 16px }
+body.tb-cheia { overflow: hidden }
+body.tb-cheia .fab { display: none !important }
+/* gaveta da ficha: da direita até o fim da coluna 1 */
+.tgav { position: fixed; z-index: 33; right: 0; bottom: 0; display: flex; flex-direction: column; background: var(--m-surface, #f8fafd); border-left: 1px solid var(--m-outline-var, #c4c7c5); box-shadow: -8px 0 28px rgba(0,0,0,.14); animation: tgav-in .18s ease-out }
+@keyframes tgav-in { from { transform: translateX(40px); opacity: .4 } to { transform: none; opacity: 1 } }
+.tgav-h { flex: none; display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 0 8px 0 24px; border-bottom: 1px solid var(--m-outline-var, #c4c7c5) }
+.tgav-h .num { font-size: 12px; color: var(--m-on-var, #444746) }
+.tgav-n { flex: 1; min-width: 0; font-size: 16px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.tgav-b { flex: 1; overflow: auto; overscroll-behavior: contain; padding: 16px 24px 24px; container: pagina / inline-size }
+.tgav .back { display: none }
+.tgav .fi-abas-w { top: 0 }
+.tgav .pn { top: 56px; height: calc(var(--gav-h, 100vh) - 140px) }
+body.tgav-on { overflow: hidden }
+body.tgav-on .fab { display: none !important }
+@media (max-width: 899px) {
+  .lista-ter td.col-cid, .lista-ter td.col-zona { white-space: normal }
+  .tgav { left: 0 !important; top: 0 !important; z-index: 36; border-left: 0; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px) }
+  .tgav-h { padding-left: 16px } .tgav-b { padding: 8px 16px 24px }
+  .ter-pg.on { padding: 12px 16px }
+}
+/* tabela empilhada (não cabe): a coluna 1 em cima, o resto em linhas curtas */
+.empilha .dt.lista-ter td.col-ter { max-width: none }
+.empilha .dt.lista-ter td:not(.col-ter) > div + div { margin-top: 0 }
+.empilha .dt.lista-ter td::before { content: none !important }
+.empilha .dt.lista-ter td:not(.col-ter) { flex-wrap: wrap; column-gap: 6px }
+.empilha .dt.lista-ter td:not(.col-ter) > div + div::before { content: "· "; color: var(--m-on-var, #444746) }
+.empilha .dt.lista-ter td.col-ter { padding-right: 0 !important }
+html[data-tema="escuro"] .tgav { background: #131314; border-color: #2d2f31; box-shadow: -8px 0 28px rgba(0,0,0,.5) }
+html[data-tema="escuro"] .tgav-h { border-color: #2d2f31 }
+html[data-tema="escuro"] .ter-pg.on { background: #131314 }
+html[data-tema="escuro"] .lista-ter tr.tb-sel > td { background: #004a77 !important; color: #c2e7ff }
+html[data-tema="escuro"] .lista-ter tr.tb-sel .t2 { color: #c2e7ff }
+html[data-tema="escuro"] .lista-ter tr.tb-sel .tb-olho { color: #c2e7ff; background: rgba(194,231,255,.12) }
+html[data-tema="escuro"] .tb-ord { background: #004a77; color: #c2e7ff }
+/* filtros: uma seção por vez, com os botões das seções no cabeçalho (4/nov/2026) */
+.fx-abas { flex: none; display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px 12px 24px; border-bottom: 1px solid #e3e3e3 }
+.fx-aba { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid #c4c7c5; border-radius: 8px; background: none; color: #444746; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap }
+.fx-aba:hover { background: rgba(68,71,70,.08) }
+.fx-aba[aria-selected="true"] { background: #c2e7ff; border-color: #c2e7ff; color: #001d35 }
+.fx-aba .fx-sn { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #0b57d0; color: #fff; font-size: 11px }
+.fx-aba[aria-selected="true"] .fx-sn { background: #0b57d0; color: #fff }
+.fx-s1 { border-bottom: 0 }
+.fx-s1 .fx-sb { padding-top: 16px }
+@media (max-width: 599px) { .fx-abas { flex-wrap: nowrap; overflow-x: auto; padding-left: 16px; scrollbar-width: none } .fx-abas::-webkit-scrollbar { display: none } }
+html[data-tema="escuro"] .fx-abas { border-color: #2a2a2c }
+html[data-tema="escuro"] .fx-aba { border-color: #444746; color: #c4c7c5 }
+html[data-tema="escuro"] .fx-aba[aria-selected="true"] { background: #004a77; border-color: #004a77; color: #c2e7ff }
+html[data-tema="escuro"] .fx-aba .fx-sn { background: #a8c7fa; color: #062e6f }
 </style>
 <header class="top">
   <div class="top-in">
@@ -12282,8 +12351,8 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="lg-"]'
 P.filtro='M4 6h16M7 12h10M10 18h4';
 const FX_KEY='bkm-terrenos-filtros';
 UI.fx=UI.fx||(()=>{try{const h=location.hash.match(/[#&?]f=([^&]+)/);if(h)return JSON.parse(decodeURIComponent(h[1]))}catch(e){}try{return JSON.parse(sessionStorage.getItem(FX_KEY)||'{}')}catch(e){return {}}})();
-UI.fxAb=UI.fxAb||['funil','comercial','local'];
-let FX_ABERTO=false,FX_SO_RESULTADO=false;
+UI.fxSec=UI.fxSec||'funil';
+let FX_ABERTO=false,FX_SO_RESULTADO=false,FX_SEC_TROCOU=false;
 
 /* ---------- valores do terreno usados pelos filtros ---------- */
 const STP=['apresentada','em_analise','aceita'];
@@ -12451,11 +12520,14 @@ function fxDrawer(){let el=$('#fx-dr'),sc=$('#fx-scrim');
   if(!el){sc=document.createElement('div');sc.id='fx-scrim';sc.className='fx-scrim';sc.dataset.a='fx-fechar';document.body.appendChild(sc);
     el=document.createElement('aside');el.id='fx-dr';el.className='fx-dr';el.setAttribute('role','dialog');el.setAttribute('aria-label','Filtros');document.body.appendChild(el)}
   document.body.classList.add('fx-on');
-  const grupos=FX_GRUPOS.map(([g,l])=>{const ds=FX.filter(d=>d.g===g&&!(ctx==='kanban'&&d.funil===true)),ab=UI.fxAb.includes(g),n=ds.filter(d=>fxTem(d)&&d.k!=='arq').length;
-    return `<section class="fx-s"><button class="fx-sh" data-a="fx-grupo" data-v="${g}" aria-expanded="${ab}">${esc(l)}${n?`<span class="fx-sn">${n}</span>`:''}${ic('chev',18)}</button>${ab?`<div class="fx-sb">${g==='funil'&&ctx==='kanban'?'<div class="fx-hint">No quadro, a fase e a etapa vêm da navegação (Funil › fase › etapa).</div>':''}
-      ${fxMarcasJuntas(ds,ctx)}</div>`:''}</section>`}).join('');
+  /* uma seção por vez (pedido do Moisés, 4/nov/2026): os botões no cabeçalho trocam a seção e mostram quantos filtros cada uma tem */
+  const gs=FX_GRUPOS.map(([g,l])=>{const ds=FX.filter(d=>d.g===g&&!(ctx==='kanban'&&d.funil===true));return {g,l,ds,n:ds.filter(d=>fxTem(d)&&d.k!=='arq').length+(g==='gestao'&&UI.fx.arq&&ctx!=='kanban'?1:0)}});
+  if(!gs.some(x=>x.g===UI.fxSec))UI.fxSec=gs[0].g;const cur=gs.find(x=>x.g===UI.fxSec);
+  const abas=`<div class="fx-abas" role="tablist" aria-label="Seções dos filtros">${gs.map(x=>`<button role="tab" class="fx-aba" data-a="fx-sec" data-v="${x.g}" aria-selected="${x.g===cur.g}" aria-controls="fx-sec-b"${x.n?` title="${x.n} filtro${x.n>1?'s':''} nesta seção"`:''}>${esc(x.l)}${x.n?`<span class="fx-sn">${x.n}</span>`:''}</button>`).join('')}</div>`;
+  const corpo=`<section class="fx-s fx-s1" id="fx-sec-b" role="tabpanel"><div class="fx-sb">${cur.g==='funil'&&ctx==='kanban'?'<div class="fx-hint">No quadro, a fase e a etapa vêm da navegação (Funil › fase › etapa).</div>':''}${fxMarcasJuntas(cur.ds,ctx)}</div></section>`;
   el.innerHTML=`<div class="fx-h"><h2>Filtros</h2>${Object.keys(UI.fx).length?'<button class="linkbtn" data-a="fx-limpar">Limpar tudo</button>':''}<button class="iconbtn" data-a="fx-fechar" aria-label="Fechar filtros" title="Fechar (Esc)">${ic('close',22)}</button></div>
-    <div class="fx-b">${grupos}</div><div class="fx-f" id="fx-f">${fxRodapeHtml(ctx)}</div>`;
+    ${abas}<div class="fx-b">${corpo}</div><div class="fx-f" id="fx-f">${fxRodapeHtml(ctx)}</div>`;
+  if(FX_SEC_TROCOU){FX_SEC_TROCOU=false;el.querySelector('.fx-aba[aria-selected=true]')?.scrollIntoView({block:'nearest',inline:'nearest'});el.querySelector('.fx-b').scrollTop=0;return}
   el.querySelector('.fx-b').scrollTop=top}
 /* marcas soltas (prazo, aprovação, pendências) ficam juntas numa linha de botões */
 function fxMarcasJuntas(ds,ctx){let h='',mk=[];const sai=()=>{if(mk.length){h+=`<div class="fx-ops">${mk.join('')}</div>`;mk=[]}};
@@ -12472,9 +12544,9 @@ function fxLerNum(s){s=String(s||'').trim().toLowerCase().replace(/r\$\s*/,'');i
 /* ---------- eventos ---------- */
 function fxAcao(a){const k=a.dataset.k,v=a.dataset.v;
   switch(a.dataset.a){
-    case 'fx-abrir':FX_ABERTO=!FX_ABERTO;if(FX_ABERTO&&UI.fichaSheet){UI.fichaSheet=null;fichaSheet()}fxDrawer();const b=$('.fx-btn');b?.setAttribute('aria-expanded',FX_ABERTO);if(FX_ABERTO)setTimeout(()=>$('#fx-dr .fx-sh')?.focus(),30);return true;
+    case 'fx-abrir':FX_ABERTO=!FX_ABERTO;if(FX_ABERTO&&UI.fichaSheet){UI.fichaSheet=null;fichaSheet()}fxDrawer();const b=$('.fx-btn');b?.setAttribute('aria-expanded',FX_ABERTO);if(FX_ABERTO)setTimeout(()=>$('#fx-dr .fx-aba[aria-selected=true]')?.focus(),30);return true;
     case 'fx-fechar':FX_ABERTO=false;fxDrawer();$('.fx-btn')?.setAttribute('aria-expanded','false');return true;
-    case 'fx-grupo':UI.fxAb=UI.fxAb.includes(v)?UI.fxAb.filter(x=>x!==v):[...UI.fxAb,v];fxDrawer();return true;
+    case 'fx-sec':UI.fxSec=v;FX_SEC_TROCOU=true;fxDrawer();return true;
     case 'fx-op':{const cur=fxSel(k);UI.fx[k]=cur.includes(v)?cur.filter(x=>x!==v):[...cur,v];if(!UI.fx[k].length)fxTira(k);fxAplicar();return true}
     case 'fx-marca':UI.fx[k]=!UI.fx[k];if(!UI.fx[k])delete UI.fx[k];fxAplicar();return true;
     case 'fx-sem':UI.fx[k]={...UI.fx[k],semInfo:!UI.fx[k]?.semInfo};fxAplicar();return true;
@@ -15698,6 +15770,108 @@ jnCampos().forEach(jnRegistra);
     {id:uid(),fase:f,etapa:'estudos',sub:null,cond:{modo:'todas',itens:[{campo:'terreno.area_construida_demolir_m2',op:'maior',valores:[1000]}]},acao:'avisa',msg:'Demolição acima de 1.000 m²: confira o custo no estudo',ativo:true,ordem:1}];
   save()})();
 
+/* =====================================================================
+   Tabela de terrenos (pedido do Moisés, 4/nov/2026)
+   Colunas: 1 código, nome e endereço · 2 cidade · 3 zona da cidade · 4 área, zoneamento
+   e perfil topográfico · 5 unidades e VGV do estudo válido · 6 preço pedido e proposta
+   ativa · 7 corretor · 8 temperatura. Cada coluna ordena pelo primeiro dado dela.
+   Ordenação em várias colunas: o clique no título passa por crescente, decrescente e
+   sem ordem; a primeira coluna clicada manda e as seguintes desempatam, na ordem em que
+   foram clicadas (UI.sorts.ter = [{k, dir}, ...]). Sem nenhuma, temperatura e código.
+   Tela cheia (a tabela cobre a página; onde der, o navegador esconde as barras; Esc sai).
+   Olhinho: a ficha completa e editável numa gaveta da direita, que cobre a tabela até a
+   coluna 1; a linha do terreno aberto fica acesa e clicar noutra linha troca o terreno.
+   A gaveta é a própria página da ficha (UI.route = 'terreno' com UI.gav), por isso tudo
+   o que a ficha faz vale nela; o endereço é /terrenos/A123/gaveta.
+   ===================================================================== */
+const terCid=t=>(t.municipio||'').split(' · ')[0]||null;
+const terZona=t=>t.zona&&OPT.zona[t.zona]?(t.zona==='centro'?'Centro':'Zona '+OPT.zona[t.zona]):null;
+/* estudo válido: o vinculado à negociação */
+function terEstudo(t){const id=t.neg?.viab?.id,v=id&&VB(id);if(!v)return null;const c=vbCalc(v);return {un:c.un||null,vgv:c.vgv||null}}
+function terCorretores(t){const ids=[...new Set([...(t.corretores||[]).slice().sort((a,b)=>(b.principal?1:0)-(a.principal?1:0)).map(x=>x.cid),...(typeof partesDe==='function'?partesDe(t).flatMap(p=>p.corretores||[]):[])])];
+  return ids.map(id=>corretor(id)).filter(Boolean)}
+const terEnd=t=>[[t.logradouro,t.numero].filter(Boolean).join(', '),t.bairro].filter(Boolean).join(' · ');
+const terNada=s=>`<span class="faint">${s}</span>`;
+const COLS_TER=[
+  {k:'ter',l:'Código, nome e endereço',cls:'esq',s:t=>t.codigo,
+    v:t=>`<div class="tb-c1"><button class="iconbtn tb-olho" data-a="tb-gav" data-id="${t.id}" aria-label="Ver a ficha de ${esc(t.nome)}" title="Ver a ficha">${ic('olho',20)}</button><div class="tb-c1t"><div class="t2 num">${t.codigo}</div><div class="t1">${esc(t.nome)}</div>${terEnd(t)?`<div class="t2">${esc(terEnd(t))}</div>`:''}</div></div>`},
+  {k:'cid',l:'Cidade',s:terCid,v:t=>terCid(t)?esc(terCid(t)):terNada('—')},
+  {k:'zona',l:'Zona',s:terZona,v:t=>terZona(t)||terNada('—')},
+  {k:'area',l:'Área, zoneamento e topografia',s:t=>areaAdotada(t),
+    v:t=>{const a=areaAdotada(t),z=zonasTxt(t),tp=tpAtual(t);return `<div>${a!=null?m2(a):terNada('Sem área')}</div><div class="t2">${z?esc(z):'Zoneamento não consultado'}</div><div class="t2">${tp?esc(tpNome(tp)):'Topografia não medida'}</div>`}},
+  {k:'estudo',l:'Unidades e VGV',s:t=>terEstudo(t)?.un??null,
+    v:t=>{const e=terEstudo(t);return e?`<div>${e.un!=null?num(e.un)+' unidades':terNada('Sem unidades')}</div><div class="t2">VGV ${e.vgv!=null?mi(e.vgv):'—'}</div>`:terNada('Sem estudo válido')}},
+  {k:'preco',l:'Preço pedido e proposta ativa',cls:'num',s:fxPedido,
+    v:t=>{const p=fxPedido(t),pr=fxProposta(t);return `<div>${p!=null?mi(p):terNada('Sem preço pedido')}</div><div class="t2">${pr!=null?'Proposta '+mi(pr):'Sem proposta ativa'}</div>`}},
+  {k:'corretor',l:'Corretor',s:t=>terCorretores(t)[0]?.nome||null,
+    v:t=>{const c=terCorretores(t);return c.length?`<div>${esc(c[0].nome)}</div>${c.length>1?`<div class="t2" title="${esc(c.slice(1).map(x=>x.nome).join(', '))}">+${c.length-1} corretor${c.length>2?'es':''}</div>`:c[0].imob?`<div class="t2">${esc(c[0].imob)}</div>`:''}`:terNada('Sem corretor')}},
+  {k:'temp',l:'Temperatura',s:t=>t.neg?.temp??null,v:t=>tempMini(t.neg?.temp)}];
+const terSorts=()=>Array.isArray(UI.sorts.ter)?UI.sorts.ter:(UI.sorts.ter=[]);
+/* crescente → decrescente → sem ordem; coluna nova entra no fim da fila (desempata as anteriores) */
+function terOrdenar(k){const L=terSorts(),i=L.findIndex(x=>x.k===k);
+  if(i<0)L.push({k,dir:'asc'});else if(L[i].dir==='asc')L[i].dir='desc';else L.splice(i,1)}
+function terCmp(a,b){const L=terSorts();
+  for(const st of L){const c=COLS_TER.find(x=>x.k===st.k);if(!c)continue;const x=c.s(a),y=c.s(b);
+    if(x==null&&y==null)continue;if(x==null)return 1;if(y==null)return -1;
+    const d=typeof x==='number'&&typeof y==='number'?x-y:String(x).localeCompare(String(y),'pt-BR',{numeric:true});if(d)return st.dir==='desc'?-d:d}
+  return L.length?0:(b.neg?.temp||0)-(a.neg?.temp||0)||b.codigo.localeCompare(a.codigo)}
+function terTabela(rows){const L=terSorts(),r=rows.slice().sort(terCmp);
+  if(!r.length)return `<div class="empty">Nenhum terreno${UI.q?` para “${esc(UI.q)}”`:''}.<br><button class="btn sm" style="margin-top:12px" data-a="novo">${ic('add',16)}Novo terreno</button></div>`;
+  const th=c=>{const i=L.findIndex(x=>x.k===c.k),st=L[i];
+    return `<th class="col-${c.k} ${c.cls||''}" scope="col" aria-sort="${st?(st.dir==='desc'?'descending':'ascending'):'none'}"><button type="button" class="dt-sort" data-a="tb-sort" data-k="${c.k}" title="${st?(st.dir==='asc'?'Crescente: clique para decrescente':'Decrescente: clique para tirar a ordem'):'Ordenar em ordem crescente'}">${c.l}<span class="dt-ar" aria-hidden="true">${st?(st.dir==='desc'?'↓':'↑'):'↕'}</span>${st&&L.length>1?`<span class="tb-ord" aria-label="${i+1}ª ordem">${i+1}</span>`:''}</button></th>`};
+  return `<div class="dt-wrap"><table class="dt lista-ter"><thead><tr>${COLS_TER.map(th).join('')}</tr></thead>
+  <tbody>${r.map(t=>`<tr data-a="abrir" data-id="${t.id}" data-from="terrenos" tabindex="0"${UI.gav&&UI.id===t.id?' class="tb-sel" aria-current="true"':''}>${COLS_TER.map(c=>`<td class="col-${c.k} ${c.cls||''}">${c.v(t)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`}
+linhas=function(){return terTabela(fxLista('terrenos').filter(t=>bateBusca(t,UI.q)))};
+const terCheiaOn=()=>!!UI.tbCheia;
+pgTerrenos=function(){const n=fxLista('terrenos').length,L=terSorts(),on=terCheiaOn();
+  return `<div class="ter-pg${on?' on':''}"><div class="page-h"><div><h1>Terrenos</h1><div class="sub">${n===S.terrenos.length?S.terrenos.length+' terrenos':n+' de '+S.terrenos.length+' terrenos'}</div></div>
+    <div class="ter-ac">${L.length?`<button class="btn text sm" data-a="tb-sem-ordem" title="Volta à ordem padrão (temperatura e código)">Tirar ordenação</button>`:''}<button class="btn text sm" data-a="tb-cheia" aria-pressed="${on}" title="${on?'Sair da tela cheia (Esc)':'Abrir a tabela em tela cheia'}">${ic(on?'telaSair':'tela',18)}${on?'Sair da tela cheia':'Tela cheia'}</button></div></div>
+  ${fxBarra('terrenos')}
+  <section class="sec lista"><div id="rows">${linhas()}</div></section></div>`};
+
+/* ---------- a gaveta da ficha ---------- */
+const _pgFichaTb=pgFicha;
+pgFicha=function(){if(!UI.gav)return _pgFichaTb.apply(this,arguments);const t=T(UI.id);
+  return `${pgTerrenos()}<aside class="tgav" id="tgav" role="dialog" aria-label="Ficha de ${esc(t.nome)}"><div class="tgav-h"><span class="num">${t.codigo}</span><span class="tgav-n">${esc(t.nome)}</span>
+    <button class="btn text sm" data-a="tb-pagina" title="Abrir a ficha na página dela">Abrir página</button><button class="iconbtn" data-a="tb-gav-x" aria-label="Fechar a ficha" title="Fechar (Esc)">${ic('close',22)}</button></div>
+    <div class="tgav-b">${_pgFichaTb.apply(this,arguments)}</div></aside>`};
+/* a gaveta cobre a tabela a partir do fim da coluna 1 (no celular, a tela toda) */
+function tgavPos(){const g=$('#tgav');if(!g)return;const th=$('.lista-ter th.col-ter'),top=$('.ter-pg.on')?0:($('.top')?.getBoundingClientRect().bottom||0);
+  const l=innerWidth<900||!th?0:Math.min(Math.round(th.getBoundingClientRect().right),innerWidth-640);
+  g.style.left=Math.max(0,l)+'px';g.style.top=(innerWidth<900?0:top)+'px';g.style.setProperty('--gav-h',(innerHeight-(innerWidth<900?0:top))+'px')}
+addEventListener('resize',()=>tgavPos());
+let TG_SCROLL=null;
+{const _r=render;render=function(){const b=$('.tgav-b');TG_SCROLL=b&&UI.gav?{id:UI.id,top:b.scrollTop}:null;
+  const fichaRota=UI.route==='terreno'&&UI.gav;if(!['terrenos','terreno'].includes(UI.route)||UI.route==='terreno'&&!UI.gav)UI.tbCheia=false;
+  _r.apply(this,arguments);
+  document.body.classList.toggle('tgav-on',!!fichaRota);document.body.classList.toggle('tb-cheia',terCheiaOn());if(fichaRota)document.body.dataset.rota='terrenos';
+  if(fichaRota){tgavPos();const nb=$('.tgav-b');if(nb&&TG_SCROLL&&TG_SCROLL.id===UI.id)nb.scrollTop=TG_SCROLL.top}}}
+/* trocar de tela fecha a gaveta (menos quando quem chama já diz o que fazer com ela) */
+{const _g=go;go=function(r,x={}){if(!('gav' in x))x={...x,gav:false};return _g.call(this,r,x)}}
+function tgavAbrir(id){const t=T(id);if(!t)return;const y=scrollY;Object.assign(UI,{route:'terreno',id,gav:true,from:'terrenos',tab:UI.gav&&UI.id===id?UI.tab:'geral',edit:null,propForm:false,reuForm:false,modal:null});
+  render();scrollTo({top:y});const b=$('.tgav-b');if(b&&TG_SCROLL?.id!==id)b.scrollTop=0;
+  const tr=$(`.lista-ter tr[data-id="${id}"]`);if(tr){const r=tr.getBoundingClientRect();if(r.top<80||r.bottom>innerHeight)tr.scrollIntoView({block:'center'})}}
+function tgavFechar(){if(!UI.gav)return;const y=scrollY;Object.assign(UI,{route:'terrenos',gav:false,edit:null,modal:null});render();scrollTo({top:y})}
+/* tela cheia: como a do quadro de tarefas */
+let tbCheiaApi=false;
+function tbTelaCheia(on){if(on===undefined)on=!terCheiaOn();UI.tbCheia=on;
+  if(on){try{const p=document.documentElement.requestFullscreen?.({navigationUI:'hide'});tbCheiaApi=!!p;p?.catch?.(()=>{tbCheiaApi=false})}catch(e){tbCheiaApi=false}}
+  else if(document.fullscreenElement&&tbCheiaApi){tbCheiaApi=false;document.exitFullscreen?.().catch?.(()=>{})}
+  const y=scrollY;render();scrollTo({top:on?0:y})}
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&tbCheiaApi){tbCheiaApi=false;if(UI.tbCheia)tbTelaCheia(false)}});
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a]');if(!a)return;const A=a.dataset.a;
+  if(A==='tb-sort'){e.preventDefault();e.stopImmediatePropagation();terOrdenar(a.dataset.k);const y=scrollY;render();scrollTo({top:y});return}
+  if(A==='tb-sem-ordem'){e.stopImmediatePropagation();UI.sorts.ter=[];const y=scrollY;render();scrollTo({top:y});return}
+  if(A==='tb-cheia'){e.stopImmediatePropagation();tbTelaCheia();return}
+  if(A==='tb-gav'){e.preventDefault();e.stopImmediatePropagation();if(UI.gav&&UI.id===a.dataset.id)tgavFechar();else tgavAbrir(a.dataset.id);return}
+  if(A==='tb-gav-x'){e.stopImmediatePropagation();tgavFechar();return}
+  if(A==='tb-pagina'){e.stopImmediatePropagation();go('terreno',{id:UI.id,tab:UI.tab,from:'terrenos'});return}
+  /* com a gaveta aberta, clicar noutra linha troca o terreno da gaveta */
+  if(A==='abrir'&&UI.gav&&a.closest('.lista-ter')){e.stopImmediatePropagation();tgavAbrir(a.dataset.id);return}},true);
+document.addEventListener('keydown',e=>{if(e.key!=='Escape'||e.defaultPrevented||UI.modal||UI.vbPop||document.querySelector('.adv-mais.aberto,.pn-dd.aberto,#fx-dr'))return;
+  if(UI.gav){tgavFechar();e.preventDefault();return}
+  if(UI.tbCheia&&UI.route==='terrenos'&&!document.fullscreenElement){tbTelaCheia(false);e.preventDefault()}});
+
 /* ===================== máscaras de número ao digitar ===================== */
 /* Todo campo de número (inputmode decimal, ou data-fmt) se formata enquanto se digita:
    separador de milhar com ponto, vírgula decimal, e o R$ ou o % dentro do campo.
@@ -15899,6 +16073,7 @@ document.addEventListener('pointerup',selClique,true);document.addEventListener(
      /                                  Início
      /terrenos                          Terrenos          /terrenos/novo        Novo terreno
      /terrenos/A123               ficha             /terrenos/A123/comercial  ficha na aba
+     /terrenos/A123/gaveta        ficha na gaveta da tabela de Terrenos
      /terrenos/A123/viabilidade/2 segundo estudo de viabilidade do terreno, no popup
      /mapa  /mapa/A123 (selecionado)  /mapa/A123/ficha (com a ficha no painel)
      /fases  /fases/aprovacao  /fases/aprovacao/projeto   (os três níveis do quadro)
@@ -15918,6 +16093,7 @@ function rtCaminho(){const r=UI.route;
   if(UI.modal==='novo')return ['/terrenos/novo','novo'];
   if(r==='terrenos')return ['/terrenos','terrenos'];
   if(r==='terreno'){const c=rtCod(UI.id);if(!c)return ['/terrenos','terrenos'];const p='/terrenos/'+c;
+    if(UI.gav)return [p+'/gaveta','terrenos'];
     const vs=rtViabs(UI.id),n=UI.vbPop?vs.findIndex(v=>v.id===UI.vbPop):-1;
     if(n>=0)return [p+'/viabilidade/'+(n+1),'t:'+c+':v'+n];
     return [RT_SEC.includes(abaN(UI.tab))?p+'/'+abaN(UI.tab):p,'t:'+c]}
@@ -15945,6 +16121,7 @@ function rtAplicar(s){const [a,b,c,d]=s,limpo={vbPop:null,vbNova:false,fichaShee
     const from=history.state?.from||(UI.route==='terreno'&&UI.id===id?UI.from:'terrenos');
     /* link com seção: só ela vem aberta (a Visão geral cresce depois de carregar o mapa e o entorno e empurraria a seção para baixo) */
     /* links antigos (/negociacao, /cadastro, /urbanismo, /fases) caem na aba nova */
+    if(c==='gaveta'){go('terrenos',limpo);tgavAbrir(id);return}
     const sec=c?abaN(c):'geral';
     if(c==='viabilidade'&&d){go('terreno',{...limpo,id,tab:'viabilidade',from});const v=rtViabs(id)[(parseInt(d,10)||1)-1];if(v)vbAbrir(v.id);else toast('Estudo de viabilidade não encontrado.',true);return}
     go('terreno',{...limpo,id,tab:sec,from});if(sec!=='geral')rolarBloco(sec);return}

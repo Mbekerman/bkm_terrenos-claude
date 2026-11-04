@@ -3,6 +3,7 @@
      /                                  Início
      /terrenos                          Terrenos          /terrenos/novo        Novo terreno
      /terrenos/A123               ficha             /terrenos/A123/comercial  ficha na aba
+     /terrenos/A123/gaveta        ficha na gaveta da tabela de Terrenos
      /terrenos/A123/viabilidade/2 segundo estudo de viabilidade do terreno, no popup
      /mapa  /mapa/A123 (selecionado)  /mapa/A123/ficha (com a ficha no painel)
      /fases  /fases/aprovacao  /fases/aprovacao/projeto   (os três níveis do quadro)
@@ -22,6 +23,7 @@ function rtCaminho(){const r=UI.route;
   if(UI.modal==='novo')return ['/terrenos/novo','novo'];
   if(r==='terrenos')return ['/terrenos','terrenos'];
   if(r==='terreno'){const c=rtCod(UI.id);if(!c)return ['/terrenos','terrenos'];const p='/terrenos/'+c;
+    if(UI.gav)return [p+'/gaveta','terrenos'];
     const vs=rtViabs(UI.id),n=UI.vbPop?vs.findIndex(v=>v.id===UI.vbPop):-1;
     if(n>=0)return [p+'/viabilidade/'+(n+1),'t:'+c+':v'+n];
     return [RT_SEC.includes(abaN(UI.tab))?p+'/'+abaN(UI.tab):p,'t:'+c]}
@@ -49,6 +51,7 @@ function rtAplicar(s){const [a,b,c,d]=s,limpo={vbPop:null,vbNova:false,fichaShee
     const from=history.state?.from||(UI.route==='terreno'&&UI.id===id?UI.from:'terrenos');
     /* link com seção: só ela vem aberta (a Visão geral cresce depois de carregar o mapa e o entorno e empurraria a seção para baixo) */
     /* links antigos (/negociacao, /cadastro, /urbanismo, /fases) caem na aba nova */
+    if(c==='gaveta'){go('terrenos',limpo);tgavAbrir(id);return}
     const sec=c?abaN(c):'geral';
     if(c==='viabilidade'&&d){go('terreno',{...limpo,id,tab:'viabilidade',from});const v=rtViabs(id)[(parseInt(d,10)||1)-1];if(v)vbAbrir(v.id);else toast('Estudo de viabilidade não encontrado.',true);return}
     go('terreno',{...limpo,id,tab:sec,from});if(sec!=='geral')rolarBloco(sec);return}
