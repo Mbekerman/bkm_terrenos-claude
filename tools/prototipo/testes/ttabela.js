@@ -10,7 +10,7 @@ const abrir=async(w,h,tema)=>{const ctx=await b.newContext({viewport:{width:w,he
   await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=terrenos]').click());await p.waitForTimeout(200);return {ctx,p}};
 {const {ctx,p}=await abrir(1440,900);
   const cab=await p.$$eval('.lista-ter thead th',x=>x.map(t=>t.textContent.replace(/[↕↑↓\d]/g,'').trim()));
-  ok(cab.length===8,'8 colunas: '+cab.join(' | '));
+  ok(cab.length===9,'9 colunas: '+cab.join(' | '));
   const col=async k=>p.$$eval(`.lista-ter tbody td.col-${k}`,x=>x.map(t=>t.innerText.split('\n')[0].trim()));
   await p.click('.lista-ter th.col-cid .dt-sort');await p.waitForTimeout(100);
   let c=await col('cid');ok(c.join()===c.slice().sort((a,b)=>a.localeCompare(b,'pt-BR')).join(),'cidade crescente');
@@ -48,7 +48,7 @@ const abrir=async(w,h,tema)=>{const ctx=await b.newContext({viewport:{width:w,he
   await p.evaluate(()=>document.fullscreenElement?document.exitFullscreen():document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'})));await p.waitForTimeout(300);
   ok(!await p.$('.ter-pg.on'),'sair do modo tela cheia do navegador (ou Esc) sai da tela cheia');
   await p.click('.fx-btn');await p.waitForTimeout(200);
-  ok((await p.$$('#fx-dr .fx-aba')).length===6&&(await p.$$('#fx-dr .fx-s')).length===1,'filtros: 6 botões e uma seção');
+  ok((await p.$$('#fx-dr .fx-aba')).length===5&&(await p.$$('#fx-dr .fx-s')).length===1,'filtros: 5 botões e uma seção');
   await p.click('#fx-dr .fx-aba[data-v=comercial]');await p.waitForTimeout(150);
   await p.click('#fx-dr .fx-op[data-k=temp]');await p.waitForTimeout(200);
   await p.click('#fx-dr .fx-aba[data-v=local]');await p.waitForTimeout(150);
