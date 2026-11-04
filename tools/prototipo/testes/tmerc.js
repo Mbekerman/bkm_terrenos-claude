@@ -28,7 +28,7 @@ const alvo=MERC.emps.filter(e=>e[13]!=null).sort((a,b)=>b[12]-a[12])[0];
 await p.evaluate(id=>window.__mkAbrir(id),alvo[0]);await p.waitForTimeout(300);
 const box=await p.$eval('#mk-box',x=>x.textContent.replace(/\s+/g,' ')).catch(()=>'');
 const m2=Math.round(alvo[13]/alvo[14]).toLocaleString('pt-BR');
-ok(box.includes(alvo[1])&&box.includes(m2)&&/À venda/.test(box)&&/VSO/.test(box)&&/Programa social/.test(box)&&/Tipologia/.test(box)&&/Monitor de mercado/.test(box),tag+' janela com R$/m² '+m2+': '+box.slice(0,160));
+ok(box.includes(alvo[1])&&box.includes(m2)&&/Estoque/.test(box)&&/VSO/.test(box)&&/Programa social/.test(box)&&/Tipologia/.test(box)&&/Monitor de mercado/.test(box),tag+' janela com R$/m² '+m2+': '+box.slice(0,160));
 const vis=await p.$eval('#mk-box .cc-box',x=>{const r=x.getBoundingClientRect(),a=document.querySelector('.mapa-area').getBoundingClientRect();return r.left>=a.left-1&&r.right<=a.right+1&&r.bottom<=a.bottom+1&&r.top>=a.top-1});ok(vis,tag+' janela dentro do mapa');
 const nTip=await p.$$eval('#mk-box .mk-t tbody tr',x=>x.length);ok(nTip===alvo[17].length,tag+' card com as '+alvo[17].length+' tipologias do resumo');
 await p.screenshot({path:OUT+tag+'_1_janela.png'});

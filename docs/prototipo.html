@@ -12259,7 +12259,7 @@ function mkBoxHtml(e){const m2=mkM2(e.preco,e.area),vso=mkVso(e.vendas,e.estoque
   return `<div class="cc-box mk-box" role="dialog" aria-label="${esc(e.nome)}">
   <div class="cc-hd"><div class="cc-ti"><div class="cc-n">${esc(e.nome)}</div><div class="muted">${esc([e.inc,(MK_SIT[e.sit]||MK_SIT.nao_informado)[0],e.bairro].filter(Boolean).join(' · '))}</div></div><button type="button" class="iconbtn" data-a="mk-x" aria-label="Fechar" title="Fechar (Esc)">${ic('close',20)}</button></div>
   <div class="cc-k mk-k"><div class="cc-big">${m2!=null?ccM2(Math.round(m2)):'Sem estoque com preço'}</div><div class="faint">${m2!=null?'preço médio por m² das unidades à venda':e.estoque?'as unidades à venda estão sem preço na tabela':'nenhuma unidade à venda'}</div></div>
-  <div class="mk-grid">${kv('Lançamento',mkData(e.lanc))}${kv('Entrega',mkData(e.ent))}${kv('Unidades',num(e.unidades))}${kv('À venda',num(e.estoque),pct+'%')}
+  <div class="mk-grid">${kv('Lançamento',mkData(e.lanc))}${kv('Entrega',mkData(e.ent))}${kv('Unidades',num(e.unidades))}${kv('Estoque',num(e.estoque),pct+'%')}
     ${kv('Vendas',num(e.vendas),mkPeriodo())}${kv('VSO',mkPct(vso),dias?`em ${dias} dias`:'')}${kv('Programa social',e.prog==='sim'?'Sim':e.prog==='nao'?'Não':'Não informado')}</div>
   ${mkResumoHtml(e)}
   <div class="cc-meta faint mk-nota">Monitor de mercado (Órulo), retrato de ${mkData(MK.d.gerado)} · Tipologias agrupadas pelo resumo do empreendimento · R$/m² das unidades à venda (* pelo primeiro preço visto, sem unidade à venda) · VSO = vendas ÷ (vendas + à venda)${mkPeriodo()?', '+mkPeriodo():''}</div></div>`}
@@ -12299,8 +12299,8 @@ function mkSecaoHtml(t){if(t.lat==null)return '';
   if(!MK.d){mkCarregar();return `<section class="sec mk-sec" data-bloco-item="mercado">${cab}<div class="sec-b"><div class="muted">${MK.erro?'Dados do mercado indisponíveis nesta visualização.':'Carregando os dados do mercado…'}</div></div></section>`}
   const rs=mkRaios(t),dias=mkDias(),raio=UI.mkRaio||2;
   const corpo=!rs.some(x=>x.n)?`<div class="muted">Nenhum empreendimento do monitor a até ${MK_RAIOS.at(-1)} km.</div>`
-    :`<div class="tblwrap"><table class="mini-tbl mk-cat"><thead><tr><th>Raio</th><th>Programa social</th><th class="r">Empreend.</th><th class="r">À venda</th><th class="r">R$/m² médio</th><th class="r">VSO médio</th></tr></thead><tbody>
-      ${rs.map((x,i)=>`<tr${i%2?' class="mk-r2"':''}><td class="mk-pr">${i%2?`<span class="mk-rep">Até ${x.r} km</span>`:`Até ${x.r} km`}</td><td class="mk-pg" data-l="Programa social">${x.pg==='sim'?'Com':'Sem'}</td><td class="r" data-l="Empreend.">${num(x.n)}</td><td class="r" data-l="À venda">${num(x.est)}</td>
+    :`<div class="tblwrap"><table class="mini-tbl mk-cat"><thead><tr><th>Raio</th><th>Programa social</th><th class="r">Empreend.</th><th class="r">Estoque</th><th class="r">R$/m² médio</th><th class="r">VSO médio</th></tr></thead><tbody>
+      ${rs.map((x,i)=>`<tr${i%2?' class="mk-r2"':''}><td class="mk-pr">${i%2?`<span class="mk-rep">Até ${x.r} km</span>`:`Até ${x.r} km`}</td><td class="mk-pg" data-l="Programa social">${x.pg==='sim'?'Com':'Sem'}</td><td class="r" data-l="Empreend.">${num(x.n)}</td><td class="r" data-l="Estoque">${num(x.est)}</td>
         <td class="r" data-l="R$/m² médio">${x.m2!=null?brl(x.m2):'—'}</td><td class="r" data-l="VSO médio">${mkPct(x.vso)}</td></tr>`).join('')}</tbody></table></div>`;
   const lista=mkEmps().filter(e=>MK_NAO_ENTREGUE.includes(e.sit)).map(e=>({e,d:distKm(t.lat,t.lng,e.lat,e.lng)})).filter(x=>x.d<=raio).sort((a,b)=>a.d-b.d);
   const seg=`<div class="seg" role="group" aria-label="Raio da lista">${MK_RAIOS.map(k=>`<button type="button" data-a="mk-raio" data-v="${k}" aria-pressed="${raio===k}">${k} km</button>`).join('')}</div>`;
@@ -12309,7 +12309,7 @@ function mkSecaoHtml(t){if(t.lat==null)return '';
       <span class="mk-it-k num">${m2!=null?brl(m2)+'/m²':'—'}<span class="faint">VSO ${mkPct(mkVso(e.vendas,e.estoque))}</span></span>${ic('chev',18)}</summary>${mkResumoHtml(e)||'<div class="muted">Sem unidades no monitor.</div>'}</details>`}).join('');
   return `<section class="sec mk-sec" data-bloco-item="mercado">${cab}<div class="sec-b">${corpo}
     <div class="hint">Monitor de mercado (Órulo), retrato de ${mkData(MK.d.gerado)}. Programa social: a marca do Órulo no empreendimento. R$/m² médio: soma dos preços das unidades à venda ÷ soma das áreas.
-    VSO médio: vendas ÷ (vendas + unidades à venda), de ${mkPeriodo()}${dias?` (${dias} dias)`:''}.</div>
+    VSO médio: vendas ÷ (vendas + estoque), de ${mkPeriodo()}${dias?` (${dias} dias)`:''}.</div>
     <div class="mk-lh"><h3>Não entregues no entorno <span class="faint">${num(lista.length)}</span></h3>${seg}</div>
     ${itens?`<div class="mk-lista">${itens}</div>`:`<div class="muted">Nenhum empreendimento em lançamento ou em obras a até ${raio} km.</div>`}
     <div class="hint">Cada um abre o resumo do empreendimento: as unidades agrupadas em tipologias parecidas (dormitórios, vagas, área e preço por m²), com o R$/m² das unidades à venda e o VSO de cada uma.</div></div></section>`}
