@@ -5262,6 +5262,25 @@ html[data-tema="escuro"] .ems-lista tr.ems-sel td { background: rgba(168, 199, 2
 .ems-blist{margin:4px 0 0;padding-left:20px;line-height:1.5}
 .vb-ms-l{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}.vb-ms-l .field{flex:1;min-width:220px}
 .ems-ped2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* Reuniões com o Google Agenda (lote 6, 4/nov/2026) */
+.reu-form:has(option[value="realizada"]:checked) [data-so="agendada"],
+.reu-form:has(input[name="modalidade"][value="presencial"]:checked) [data-so="online"],
+.reu-form:has(input[name="agenda"]:not(:checked)) [data-so="online"],
+.reu-form:has(input[name="agenda"]:not(:checked)) [data-so2="agenda"]{display:none}
+.ag-chks{display:flex;flex-direction:column;gap:6px}
+.ag-chks .chk{display:flex;align-items:center;gap:10px;min-height:32px}.ag-chks .chk input{width:18px;height:18px;min-height:0;flex:none;margin:0;padding:0}
+.ag{display:flex;flex-direction:column;gap:10px;margin:10px 0}
+.ag-l{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.ag-l .chip .ic{margin-right:4px}
+.ag-conv{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--texto-2,#444746)}
+.ag-c{display:inline-flex;align-items:center;gap:6px}
+.ag-grav{font-size:14px;color:var(--texto-2,#444746)}.ag-grav a{color:var(--m-primary,#0b57d0)}
+.ag-ia{border:1px solid var(--m-outline-var,#c4c7c5);border-radius:12px;padding:12px 16px;display:flex;flex-direction:column;gap:10px;background:var(--m-surface-1,#f8fafd)}
+.ag-ia-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.ag-ia-h small{flex-basis:100% }
+.ag-ia textarea{width:100%;resize:vertical}
+.ag-ia-b{display:flex;justify-content:flex-end;gap:8px}
+html[data-tema="escuro"] .ag-ia{background:#1e1f20;border-color:#444746}
 </style>
 <header class="top">
   <div class="top-in">
@@ -5828,13 +5847,13 @@ function secReunioes(t){
   const form=UI.reuForm?`<form data-form="reuniao" class="reu-form"><div class="editgrid">
     <div class="field"><label for="ru-s">Situação</label><select id="ru-s" name="status"><option value="realizada">Realizada</option><option value="agendada">Agendada</option></select></div>
     <div class="field"><label for="ru-d">Data</label><input id="ru-d" name="data" type="date" value="${HOJE}" required></div>
-    <div class="field"><label for="ru-h">Hora</label><input id="ru-h" name="hora" type="time" value="10:00"></div>
+    <div class="field"><label for="ru-h">Hora</label><input id="ru-h" name="hora" type="time" value="10:00"></div>${reuAgendaDur()}
     <div class="field"><span class="lbl" id="ru-m-l">Modalidade</span><span class="seg3" role="radiogroup" aria-labelledby="ru-m-l">${Object.entries(OPT_REU.modalidade).map(([k,l],i)=>`<label class="opt-radio"><input type="radio" name="modalidade" value="${k}" ${i===0?'checked':''}>${l}</label>`).join('')}</span></div>
     <div class="field" data-so="presencial"><span class="lbl" id="ru-l-l">Onde</span><span class="seg3" role="radiogroup" aria-labelledby="ru-l-l">${Object.entries(OPT_REU.local).map(([k,l],i)=>`<label class="opt-radio"><input type="radio" name="local" value="${k}" ${i===0?'checked':''}>${l}</label>`).join('')}</span></div>
     <div class="field" data-so="externo"><label for="ru-e">Endereço</label><input id="ru-e" name="endereco" placeholder="Escritório do vendedor, no terreno..."></div>
     <div class="field"><label for="ru-pb">Participantes da BKM</label><input id="ru-pb" name="pbkm" value="${esc(me())}"></div>
     <div class="field"><label for="ru-pe">Participantes externos</label><input id="ru-pe" name="pext" placeholder="Vendedor, corretor, advogado"></div>
-    <div class="field full"><label for="ru-p">Pauta</label><input id="ru-p" name="pauta" data-mencao></div>
+    <div class="field full"><label for="ru-p">Pauta</label><input id="ru-p" name="pauta" data-mencao></div>${reuAgendaCampos()}
     <div class="field full" data-so="realizada"><label for="ru-r">O que foi tratado</label><textarea id="ru-r" name="resumo" data-mencao placeholder="Posições de cada lado, valores citados, objeções"></textarea></div>
     <div class="field full" data-so="realizada"><label for="ru-n">Encaminhamentos</label><textarea id="ru-n" name="enc" data-mencao placeholder="Quem faz o quê, até quando (@ avisa um colega)"></textarea></div>
     </div><div class="sec-f" style="padding:12px 0 0"><button type="button" class="btn text" data-a="reu-form">Cancelar</button><button class="btn primary">Registrar reunião</button></div></form>`:'';
@@ -5843,6 +5862,7 @@ function secReunioes(t){
   ${ms.length?`<div class="reus">${ms.map(m=>`<article class="reu ${m.status}" data-mid="${m.id}"><div class="reu-h"><div><div class="reu-t">${fd(m.data)} · ${esc(m.hora||'')}</div><div class="reu-m">${OPT_REU.modalidade[m.modalidade]}${m.modalidade==='presencial'?' · '+OPT_REU.local[m.local]+(m.endereco?' · '+esc(m.endereco):''):''}</div></div>
     <span class="reu-acts">${m.status==='agendada'?`<span class="chip blue">Agendada</span>${negAtiva(t)&&m.data<=HOJE?`<button class="btn sm" data-a="reu-feita" data-k="${m.id}">${ic('check',16)}Marcar realizada</button>`:''}`:m.status==='cancelada'?'<span class="chip">Cancelada</span>':`<span class="chip good">Realizada</span>`}</span></div>
     ${m.part.bkm||m.part.ext?`<div class="reu-p"><span><b>BKM</b> ${esc(m.part.bkm||'—')}</span><span><b>Externos</b> ${esc(m.part.ext||'—')}</span></div>`:''}
+    ${reuAgendaHtml(t,m)}
     ${m.pauta?`<div class="reu-x"><span class="k">Pauta</span>${escM(m.pauta)}</div>`:''}${m.resumo?`<div class="reu-x"><span class="k">Tratado</span>${escM(m.resumo)}</div>`:''}${m.enc?`<div class="reu-x"><span class="k">Encaminhamentos</span>${escM(m.enc)}</div>`:''}
     ${m.status==='realizada'?`<div class="reu-ata">${m.ata?`${ic('doc',18)}<span><b>Ata</b> · ${esc(m.ata.nome)} · v${m.ata.versoes}</span><button class="btn sm text" data-a="upload" data-k="ata:${m.id}">${ic('upload',16)}Nova versão</button>`:`${ic('doc',18)}<span class="muted">Sem ata</span><button class="btn sm text" data-a="upload" data-k="ata:${m.id}">${ic('upload',16)}Anexar ata</button>`}</div>`:''}
   </article>`).join('')}</div>`:'<div class="muted">Nenhuma reunião registrada.</div>'}
@@ -6121,7 +6141,7 @@ document.addEventListener('click',e=>{
     case 'tema':TEMA=a.dataset.v;try{localStorage.setItem('bkm-terrenos-tema',TEMA)}catch(e){}temaMenu=false;aplicaTema();renderTema();toast('Tema: '+TEMAS.find(x=>x[0]===TEMA)[1]+'.');break;
     case 'menu':menuMin=!menuMin;try{localStorage.setItem('bkm-terrenos-menu',menuMin?'min':'aberto')}catch(e){}render();break;
     case 'reu-form':UI.reuForm=!UI.reuForm;render();break;
-    case 'reu-feita':{const m=t.reunioes.find(x=>x.id===a.dataset.k);if(m.data>HOJE){toast('A data ainda não chegou. Ajuste a data antes de marcar como realizada.',true);break}m.status='realizada';log(t,`Reunião de ${fd(m.data)} marcada como realizada`);save();render();break}
+    case 'reu-feita':{const m=t.reunioes.find(x=>x.id===a.dataset.k);if(m.data>HOJE){toast('A data ainda não chegou. Ajuste a data antes de marcar como realizada.',true);break}m.status='realizada';log(t,`Reunião de ${fd(m.data)} marcada como realizada`);reuAgendaRealizada(t,m);save();render();break}
     case 'doc-ok':{const d=t.docs.find(x=>x.tipo===a.dataset.k);d.status='validado';log(t,`${TIPOS_DOC[d.tipo][0]} validado`);save();render();break}
     case 'upload':UI.upload=a.dataset.k;$('#file-in').value='';$('#file-in').click();break;
   }
@@ -6182,8 +6202,9 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       if(F.status==='agendada'&&F.data<HOJE){toast('Para registrar uma reunião passada, escolha Realizada.',true);return}
       const pres=F.modalidade==='presencial';
       const rid=uid();t.reunioes.push({id:rid,status:F.status,data:F.data,hora:F.hora,modalidade:F.modalidade,local:pres?F.local:null,endereco:pres&&F.local==='externo'?F.endereco:'',part:{bkm:F.pbkm,ext:F.pext},pauta:F.pauta,resumo:F.status==='realizada'?F.resumo:'',enc:F.status==='realizada'?F.enc:'',ata:null});
+      reuAgendaCriar(t,t.reunioes[t.reunioes.length-1],F);
       {const m=t.reunioes[t.reunioes.length-1];mencionar(t,'',[m.pauta,m.resumo,m.enc].join('\n'),`na reunião de ${fd(m.data)}`,{b:'negociacao',alvo:rid})}
-      log(t,`Reunião ${F.status==='realizada'?'realizada':'agendada'} em ${fd(F.data)} (${OPT_REU.modalidade[F.modalidade]}${pres?', '+OPT_REU.local[F.local].toLowerCase():''})`);UI.reuForm=false;save();render();toast('Reunião registrada.');break}
+      log(t,`Reunião ${F.status==='realizada'?'realizada':'agendada'} em ${fd(F.data)} (${OPT_REU.modalidade[F.modalidade]}${pres?', '+OPT_REU.local[F.local].toLowerCase():''})`);UI.reuForm=false;save();render();toast(t.reunioes[t.reunioes.length-1].agenda?'Reunião marcada e criada no seu Google Agenda; os convidados recebem o convite.':'Reunião registrada.');break}
     case 'prop':{const v=lerNum(F.valor);if(!v){toast('Informe o valor.',true);return}const lp=lastProp(t);
       if(lp&&['rascunho','apresentada','em_analise'].includes(lp.status))lp.status=lp.origem===F.origem?'substituida':'recusada';
       t.propostas.push({v:(lp?.v||0)+1,origem:F.origem,data:F.data,validade:F.validade||null,valor:v,forma:F.forma,cond:F.cond,status:F.status});
@@ -13659,6 +13680,86 @@ function massaPreparar(){const N=cfg().notif;if(!N.massa_solicitado)N.massa_soli
   S.massas.push(Object.assign(emsNovo(t,{arq,briefing:'Alternativa com studios no térreo.',prazo:addD(HOJE,8)}),{solic:t.resp,solicEm:addD(HOJE,-2)}))}
 const _prepararMs=prepararDados;prepararDados=function(){_prepararMs.apply(this,arguments);massaPreparar()};
 massaPreparar();
+
+/* ===== Reuniões com o Google Agenda (lote 6 da ficha em abas, 4/nov/2026) =====
+   Marcar a reunião no sistema cria o evento na agenda de quem marcou, com convite aos participantes
+   que têm e-mail e, online, o link do Meet; mudar ou cancelar no sistema muda lá. Depois da reunião
+   online, a gravação e a transcrição do Meet chegam e a IA deixa um rascunho do que foi tratado e dos
+   encaminhamentos, que quem edita confere. No protótipo o Google é simulado (no banco: reuniao_agenda,
+   app.agenda_confirmar, app.registrar_resumo_ia, app.decidir_resumo_ia). */
+const AG_RESP={sem_resposta:['Sem resposta',''],aceito:['Aceitou','good'],recusado:['Recusou','bad'],talvez:['Talvez','warn']};
+const agEmail=n=>{const u=(n||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim().split(/\s+/);return u.length>1?u[0]+'.'+u[u.length-1]+'@bkm.com.br':u[0]+'@bkm.com.br'};
+const agId=()=>Math.random().toString(36).slice(2,8);
+
+/* campos a mais no formulário da reunião (só agendada; Meet só online) */
+function reuAgendaDur(){return `
+    <div class="field" data-so="agendada"><label for="ru-du">Duração</label><select id="ru-du" name="dur">${[[30,'30 min'],[60,'1 h'],[90,'1 h 30 min'],[120,'2 h']].map(([d,l])=>`<option value="${d}" ${d===60?'selected':''}>${l}</option>`).join('')}</select></div>`}
+function reuAgendaCampos(){return `
+    <div class="field full ag-chks" data-so="agendada"><label class="chk"><input type="checkbox" name="agenda" checked><span>Criar no Google Agenda e convidar os participantes</span></label>
+      <label class="chk" data-so="online"><input type="checkbox" name="meet" checked><span>Com link do Meet <small class="faint">(grava e transcreve para o resumo)</small></span></label></div>
+    <div class="field full" data-so="agendada" data-so2="agenda"><label for="ru-em">E-mails dos externos <small class="faint">(para o convite)</small></label><input id="ru-em" name="emails" inputmode="email" placeholder="carlos@exemplo.com, juliana@imobiliaria.com"></div>`}
+
+function reuAgendaCriar(t,m,F){m.dur=+F.dur||60;if(F.status!=='agendada'||!F.agenda)return;
+  const meet=m.modalidade==='online'&&!!F.meet,emails=(F.emails||'').split(/[,;\s]+/).map(x=>x.trim().toLowerCase()).filter(Boolean);
+  const ruins=emails.filter(e=>!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e));if(ruins.length)toast(`E-mail com formato inválido ficou de fora: ${ruins.join(', ')}`,true);
+  const bkm=(m.part.bkm||'').split(',').map(x=>x.trim()).filter(Boolean).filter(n=>n!==me());
+  const id=agId();
+  m.agenda={sit:'sincronizada',org:me(),evento:id,link:`https://calendar.google.com/calendar/event?eid=${id}`,meet:meet?`https://meet.google.com/${id.slice(0,3)}-${id.slice(2,6)}-${id.slice(3,6)}`:null,
+    conv:[...bkm.map(n=>({nome:n,email:agEmail(n),resp:'sem_resposta'})),...emails.filter(e=>!ruins.includes(e)).map(e=>({nome:e,email:e,resp:'sem_resposta'}))]};
+  log(t,`Reunião de ${fd(m.data)} criada no Google Agenda${meet?' com link do Meet':''}`)}
+
+/* o que a reunião mostra da Agenda, da gravação e do resumo da IA */
+function reuAgendaHtml(t,m){const a=m.agenda;if(!a)return '';const ro=!negAtiva(t)||UI.role==='Leitura';
+  const resp=a.conv.length?`<div class="ag-conv">${a.conv.map(c=>`<span class="ag-c" title="${esc(c.email)}">${esc(c.nome)} <span class="chip ${AG_RESP[c.resp][1]}">${AG_RESP[c.resp][0]}</span></span>`).join('')}</div>`:'';
+  const topo=`<div class="ag-l">${a.removida?`<span class="chip">Fora da Agenda</span>`:`<span class="chip blue">${ic('clock',14)}${m.status==='cancelada'?'Cancelada na Agenda':'No Google Agenda'}</span>
+    <a class="btn text sm" href="${esc(a.link)}" target="_blank" rel="noopener">Abrir na Agenda</a>${a.meet&&m.status==='agendada'?`<a class="btn sm" href="${esc(a.meet)}" target="_blank" rel="noopener">${ic('link',16)}Entrar no Meet</a>`:''}`}
+    ${!ro&&m.status==='agendada'?`<button class="btn text sm danger" data-a="ag-cancelar" data-k="${m.id}">Cancelar reunião</button>`:''}</div>`;
+  let grav='';
+  if(a.grav)grav=`<div class="ag-l ag-grav">${ic('doc',18)}<span>Do Meet:</span><a href="${esc(a.grav)}" target="_blank" rel="noopener">Gravação</a><a href="${esc(a.transc)}" target="_blank" rel="noopener">Transcrição</a></div>`;
+  let ia='';
+  if(a.ia?.sit==='rascunho'){ia=ro?`<div class="ag-ia"><div class="ag-ia-h">${ic('notas',18)}<b>Resumo da IA para conferir</b></div><div class="muted">Aguardando quem edita conferir.</div></div>`
+    :`<form class="ag-ia" data-form="ag-ia" data-k="${m.id}"><div class="ag-ia-h">${ic('notas',18)}<b>Resumo da IA para conferir</b><small class="faint">pela transcrição do Meet; confira e ajuste antes de aceitar</small></div>
+      <label class="field"><span class="lbl-f">O que foi tratado</span><textarea name="resumo" rows="4" data-mencao>${esc(a.ia.resumo)}</textarea></label>
+      <label class="field"><span class="lbl-f">Encaminhamentos</span><textarea name="enc" rows="3" data-mencao>${esc(a.ia.enc||'')}</textarea></label>
+      <div class="ag-ia-b"><button type="button" class="btn text" data-a="ag-ia-desc" data-k="${m.id}">Descartar</button><button class="btn primary">Aceitar resumo</button></div></form>`}
+  return `<div class="ag">${topo}${m.status==='agendada'?resp:''}${grav}${ia}</div>`}
+
+/* depois da reunião online: o Meet guarda a gravação e a transcrição e a IA escreve o rascunho (simulado) */
+function reuAgendaRealizada(t,m){const a=m.agenda;if(!a||!a.meet||a.grav)return;
+  a.grav=`https://drive.google.com/file/d/grav-${a.evento}`;a.transc=`https://docs.google.com/document/d/transc-${a.evento}`;
+  const p=m.pauta||'a negociação';
+  a.ia={sit:'rascunho',resumo:`Pauta: ${p}.\nO vendedor manteve o pedido e aceitou estudar permuta parcial; ficou de responder à contraproposta até sexta.\nO corretor confirmou que há outro interessado, sem proposta formal.`,
+    enc:`${me()}: enviar a contraproposta revisada até amanhã.\nVendedor: responder até sexta.`};
+  notificar(a.org,'reuniao_resumo',`Resumo da reunião de ${fd(m.data)} no ${t.codigo} pronto para conferir`,t,null,{b:'comercial',alvo:m.id});
+  toast('O Meet guardou a gravação e a transcrição; o resumo da IA está para conferir.')}
+
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="ag-"]');if(!a||UI.route!=='terreno')return;const t=T(UI.id);if(!t)return;
+  const m=(t.reunioes||[]).find(x=>x.id===a.dataset.k);if(!m)return;e.stopImmediatePropagation();if(UI.role==='Leitura')return;
+  if(a.dataset.a==='ag-cancelar'){m.status='cancelada';log(t,`Reunião de ${fd(m.data)} cancelada${m.agenda?' (e na Agenda)':''}`);save();render();toast(m.agenda?'Reunião cancelada; os convidados recebem o cancelamento.':'Reunião cancelada.');return}
+  if(a.dataset.a==='ag-ia-desc'){m.agenda.ia.sit='descartado';log(t,`Resumo da IA da reunião de ${fd(m.data)} descartado`);save();render();toast('Rascunho descartado.');return}},true);
+document.addEventListener('submit',e=>{const f=e.target;if(f.dataset?.form!=='ag-ia')return;e.preventDefault();e.stopImmediatePropagation();const t=T(UI.id);if(!t)return;
+  const m=(t.reunioes||[]).find(x=>x.id===f.dataset.k);if(!m?.agenda?.ia)return;
+  if(m.status!=='realizada'){toast('Marque a reunião como realizada antes de aceitar o resumo.',true);return}
+  const F=Object.fromEntries(new FormData(f));m.resumo=(F.resumo||'').trim()||m.agenda.ia.resumo;m.enc=(F.enc||'').trim()||m.agenda.ia.enc||m.enc;m.agenda.ia.sit='aceito';m.agenda.ia.por=me();
+  mencionar(t,'',[m.resumo,m.enc].join('\n'),`na reunião de ${fd(m.data)}`,{b:'comercial',alvo:m.id});
+  log(t,`Resumo da reunião de ${fd(m.data)} aceito`);save();render();toast('Resumo aceito.')},true);
+
+/* exemplo: no terreno da primeira negociação ativa, uma reunião online feita ontem com o resumo para conferir
+   e outra marcada para daqui a 3 dias, já no Google Agenda com as respostas dos convidados */
+function agendaPreparar(){const N=cfg().notif;if(!N.reuniao_resumo)N.reuniao_resumo={ativo:true,dias:null,email:true};
+  if(S.agendaEx)return;S.agendaEx=true;const t=S.terrenos.find(x=>negAtiva(x)&&(x.reunioes||[]).length);if(!t)return;
+  const ext=(t.reunioes.find(r=>r.part?.ext)?.part.ext)||'Vendedor',bkm=t.resp||USERS[0];
+  const r1={id:uid(),status:'realizada',data:addD(HOJE,-1),hora:'15:00',dur:60,modalidade:'online',local:null,endereco:'',part:{bkm,ext},pauta:'Contraproposta e forma de pagamento',resumo:'',enc:'',ata:null};
+  const id1=agId();r1.agenda={sit:'sincronizada',org:bkm,evento:id1,link:`https://calendar.google.com/calendar/event?eid=${id1}`,meet:`https://meet.google.com/${id1.slice(0,3)}-${id1.slice(2,6)}-${id1.slice(3,6)}`,conv:[{nome:'carlos@exemplo.com',email:'carlos@exemplo.com',resp:'aceito'}]};
+  r1.agenda.grav=`https://drive.google.com/file/d/grav-${id1}`;r1.agenda.transc=`https://docs.google.com/document/d/transc-${id1}`;
+  r1.agenda.ia={sit:'rascunho',resumo:'O vendedor baixou o pedido para R$ 2,8 mi e aceita permuta de 10 unidades no lugar de parte do dinheiro.\nPediu o pagamento da entrada na assinatura do compromisso; a BKM propôs 30 dias depois da matrícula atualizada.',
+    enc:`${bkm}: mandar a minuta do compromisso até sexta.\nVendedor: trazer a certidão de ônus atualizada.`};
+  const id2=agId();const r2={id:uid(),status:'agendada',data:addD(HOJE,3),hora:'10:00',dur:60,modalidade:'online',local:null,endereco:'',part:{bkm:`${bkm}, Camila Torres`,ext},pauta:'Minuta do compromisso',resumo:'',enc:'',ata:null,
+    agenda:{sit:'sincronizada',org:bkm,evento:id2,link:`https://calendar.google.com/calendar/event?eid=${id2}`,meet:`https://meet.google.com/${id2.slice(0,3)}-${id2.slice(2,6)}-${id2.slice(3,6)}`,
+      conv:[{nome:'Camila Torres',email:agEmail('Camila Torres'),resp:'aceito'},{nome:'carlos@exemplo.com',email:'carlos@exemplo.com',resp:'talvez'},{nome:'juliana@imobiliaria.com',email:'juliana@imobiliaria.com',resp:'sem_resposta'}]}};
+  t.reunioes.push(r1,r2)}
+const _prepararAg=prepararDados;prepararDados=function(){_prepararAg.apply(this,arguments);agendaPreparar()};
+agendaPreparar();
 
 // ---------------------------------------------------------------------
 // Parâmetros urbanísticos por lote e zona (decisão do Moisés, 25/out/2026).
