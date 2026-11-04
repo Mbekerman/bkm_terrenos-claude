@@ -319,13 +319,23 @@ function mostrarLog(h){
     if('onscrollend' in window){window.addEventListener('scrollend',acende,{once:true});setTimeout(acende,900)}else setTimeout(acende,500);
   },40);
 }
+/* o render refaz o painel: guarda a rolagem dos logs (mesmo terreno, aba e filtros) e o log clicado aceso por alguns segundos */
+let pnLogSel=null,pnLogSelT=null,pnRolK=null;
+{const chave=()=>JSON.stringify([UI.id,PN.aba,PN.users,PN.per]);
+ const _rPn=render;render=function(){const b=document.querySelector('.pn-b'),st=b?b.scrollTop:0,k=chave();
+  _rPn.apply(this,arguments);
+  const nb=document.querySelector('.pn-b');if(nb&&b&&k===pnRolK)nb.scrollTop=st;pnRolK=chave();
+  if(pnLogSel&&pnLogSel.id===UI.id){const el=document.querySelector(`.pn-log[data-i="${pnLogSel.i}"]`);if(el){el.style.animationDelay=`-${Date.now()-pnLogSel.t}ms`;el.classList.add('pn-log-sel')}}};}
+function pnMarcaLog(i){clearTimeout(pnLogSelT);document.querySelectorAll('.pn-log-sel').forEach(el=>el.classList.remove('pn-log-sel'));
+  pnLogSel={id:UI.id,i,t:Date.now()};const el=document.querySelector(`.pn-log[data-i="${i}"]`);if(el){void el.offsetWidth;el.classList.add('pn-log-sel')}
+  pnLogSelT=setTimeout(()=>{pnLogSel=null;document.querySelectorAll('.pn-log-sel').forEach(el=>el.classList.remove('pn-log-sel'))},4000)}
 const _pgFicha=pgFicha;
 pgFicha=function(){const t=T(UI.id);return `<div class="ficha-wrap ${PN.aberto?'pn-on':'pn-off'}"><div class="ficha-main">${_pgFicha()}</div>${painelFicha(t)}</div>`};
 
 document.addEventListener('click',e=>{
   const a=e.target.closest('[data-a]');if(!a)return;const A=a.dataset.a;
   if(A==='end-manual'){const f=a.closest('form');f.querySelectorAll('input.auto-v').forEach(i=>{i.readOnly=false;i.classList.add('auto-ed');i.placeholder=''});a.remove();f.querySelector('[name="logradouro"]')?.focus();return}
-  if(A==='pn-log'){const t=T(UI.id),h=t&&t.hist[+a.dataset.i];if(h)mostrarLog(h)}
+  if(A==='pn-log'){const t=T(UI.id),h=t&&t.hist[+a.dataset.i];if(h){pnLogSel={id:UI.id,i:a.dataset.i,t:Date.now()};mostrarLog(h);pnMarcaLog(a.dataset.i)}}
   else if(A==='pn-abrir'){PN.aberto=true;pnSalva();render()}
   else if(A==='pn-fechar'){PN.aberto=false;pnSalva();render()}
   else if(A==='pn-u'){const v=a.dataset.v;PN.users=PN.users.includes(v)?PN.users.filter(x=>x!==v):[...PN.users,v];pnSalva();
