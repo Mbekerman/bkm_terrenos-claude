@@ -5545,6 +5545,12 @@ html[data-tema="escuro"] .fx-abas { border-color: #2a2a2c }
 html[data-tema="escuro"] .fx-aba { border-color: #444746; color: #c4c7c5 }
 html[data-tema="escuro"] .fx-aba[aria-selected="true"] { background: #004a77; border-color: #004a77; color: #c2e7ff }
 html[data-tema="escuro"] .fx-aba .fx-sn { background: #a8c7fa; color: #062e6f }
+/* título e barra de filtros na mesma linha (Pipeline e Funil, pedido do Moisés, 4/nov/2026) */
+.page-h.ph-barra { align-items: center; flex-wrap: nowrap; margin-bottom: 16px }
+.page-h.ph-barra > div:first-child { flex: none }
+.ph-l { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; flex-wrap: wrap; justify-content: flex-end }
+.ph-l .fx-barra { margin: 0; flex: 1; min-width: 0 }
+@media (max-width: 899px) { .page-h.ph-barra { flex-wrap: wrap; align-items: flex-end } .ph-l { flex-basis: 100%; justify-content: flex-start } }
 </style>
 <header class="top">
   <div class="top-in">
@@ -10172,9 +10178,9 @@ function abaFases(t){const ent=faseEnt(),ro=UI.role==='Leitura';
 const procDaFase=(t,f)=>f===faseEnt()?(aberto(t.neg)?t.neg:null):procAberto(t,f);
 function negTopo(titulo,sub){const f=UI.negFase,e=UI.negEtapa,it=[{l:'Funil',v:''}];
   if(f)it.push({l:faseN(f),v:f});if(f&&e)it.push({l:etapaF(f,e)?.nome||e,v:f+'|'+e});const volta=it[it.length-2];
-  return `<div class="page-h"><div class="drill-h">${volta?`<button class="iconbtn drill-v" data-a="neg-nivel" data-v="${esc(volta.v)}" title="Voltar para ${esc(volta.l)}" aria-label="Voltar para ${esc(volta.l)}">${ic('back',22)}</button>`:''}<div>
+  return `<div class="page-h ph-barra"><div class="drill-h">${volta?`<button class="iconbtn drill-v" data-a="neg-nivel" data-v="${esc(volta.v)}" title="Voltar para ${esc(volta.l)}" aria-label="Voltar para ${esc(volta.l)}">${ic('back',22)}</button>`:''}<div>
     ${volta?`<ol class="drill-t" aria-label="Nível do quadro">${it.slice(0,-1).map(x=>`<li><button class="linkbtn" data-a="neg-nivel" data-v="${esc(x.v)}">${esc(x.l)}</button></li>`).join('')}</ol>`:''}
-    <h1>${esc(titulo)}</h1>${sub?`<div class="sub">${sub}</div>`:''}</div></div></div>${fxBarra('kanban')}`}
+    <h1>${esc(titulo)}</h1>${sub?`<div class="sub">${sub}</div>`:''}</div></div><div class="ph-l">${fxBarra('kanban')}</div></div>`}
 /* título de coluna que desce um nível */
 const colDesce=(a,v,l,dica)=>`<button class="col-ab" data-a="${a}" data-v="${esc(v)}" title="${esc(dica)}"><span>${esc(l)}</span>${ic('chev',16)}</button>`;
 function kcardFase(t,f,p){const e=etapaF(f,p.etapa),s=p.sub&&subF(f,p.sub),sb=p.status==='stand_by',outras=fasesAbertas(t).filter(x=>x!==f);
@@ -15788,8 +15794,8 @@ const terEnd=t=>[[t.logradouro,t.numero].filter(Boolean).join(', '),t.bairro].fi
 const terNada=s=>`<span class="faint">${s}</span>`;
 /* títulos do Moisés (4/nov/2026, segunda versão) */
 const COLS_TER=[
-  {k:'ter',l:'Terreno',cls:'esq',s:t=>t.codigo,
-    v:t=>`<div class="tb-c1"><button class="iconbtn tb-olho" data-a="tb-gav" data-id="${t.id}" aria-label="Ver a ficha de ${esc(t.nome)}" title="Ver a ficha">${ic('olho',20)}</button><div class="tb-c1t"><div class="t2 num">${t.codigo}</div><div class="t1">${esc(t.nome)}</div>${terEnd(t)?`<div class="t2">${esc(terEnd(t))}</div>`:''}</div></div>`},
+  {k:'ter',l:'Terreno',cls:'esq',s:t=>t.nome,
+    v:t=>`<div class="tb-c1"><button class="iconbtn tb-olho" data-a="tb-gav" data-id="${t.id}" aria-label="Ver a ficha de ${esc(t.nome)}" title="Ver a ficha">${ic('olho',20)}</button><div class="tb-c1t"><div class="t1">${esc(t.nome)}</div><div class="t2 num">${t.codigo}</div>${terEnd(t)?`<div class="t2">${esc(terEnd(t))}</div>`:''}</div></div>`},
   {k:'cid',l:'Cidade',s:terCid,v:t=>terCid(t)?esc(terCid(t)):terNada('—')},
   {k:'zona',l:'Região',s:terZona,v:t=>terZona(t)||terNada('—')},
   {k:'area',l:'Imóvel',s:t=>areaAdotada(t),
@@ -15820,9 +15826,9 @@ function terTabela(rows){const L=terSorts(),r=rows.slice().sort(terCmp);
 linhas=function(){return terTabela(fxLista('terrenos').filter(t=>bateBusca(t,UI.q)))};
 const terCheiaOn=()=>!!UI.tbCheia;
 pgTerrenos=function(){const n=fxLista('terrenos').length,L=terSorts(),on=terCheiaOn();
-  return `<div class="ter-pg${on?' on':''}"><div class="page-h"><div><h1>Terrenos</h1><div class="sub">${n===S.terrenos.length?S.terrenos.length+' terrenos':n+' de '+S.terrenos.length+' terrenos'}</div></div>
-    <div class="ter-ac">${L.length?`<button class="btn text sm" data-a="tb-sem-ordem" title="Volta à ordem padrão (temperatura e código)">Tirar ordenação</button>`:''}<button class="btn text sm" data-a="tb-cheia" aria-pressed="${on}" title="${on?'Sair da tela cheia (Esc)':'Abrir a tabela em tela cheia'}">${ic(on?'telaSair':'tela',18)}${on?'Sair da tela cheia':'Tela cheia'}</button></div></div>
-  ${fxBarra('terrenos')}
+  /* título Pipeline e, na mesma linha, os filtros, as visões e os botões da tabela (pedido do Moisés, 4/nov/2026) */
+  return `<div class="ter-pg${on?' on':''}"><div class="page-h ph-barra"><div><h1>Pipeline</h1><div class="sub">${n===S.terrenos.length?S.terrenos.length+' terrenos':n+' de '+S.terrenos.length+' terrenos'}</div></div>
+    <div class="ph-l">${fxBarra('terrenos')}<div class="ter-ac">${L.length?`<button class="btn text sm" data-a="tb-sem-ordem" title="Volta à ordem padrão (temperatura e código)">Tirar ordenação</button>`:''}<button class="btn text sm" data-a="tb-cheia" aria-pressed="${on}" title="${on?'Sair da tela cheia (Esc)':'Abrir a tabela em tela cheia'}">${ic(on?'telaSair':'tela',18)}${on?'Sair da tela cheia':'Tela cheia'}</button></div></div></div>
   <section class="sec lista"><div id="rows">${linhas()}</div></section></div>`};
 
 /* ---------- a gaveta da ficha ---------- */
