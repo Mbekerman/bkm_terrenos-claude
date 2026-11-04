@@ -84,7 +84,7 @@ async function nvLocalizar(){const nv=UI.nv;if(!nv)return;let l=null,fr=[];
   if(UI.nv!==nv)return;nv.local=l;
   try{fr=await nvFrentes(nv.poly)}catch(e){console.warn('frentes',e)}
   if(UI.nv!==nv)return;if(!fr.length&&l?.logradouro)fr=[{logradouro:l.logradouro,numero:l.numero,m:null,lados:[]}];nv.frentes=fr;nv.buscandoLocal=false;
-  if(UI.modal==='novo'&&$('#f-novo'))renderModal()}
+  if(nvTalvezLotes())return;if(UI.modal==='novo'&&$('#f-novo'))renderModal()}
 /* ---------- telas ---------- */
 function nvPasso1Html(fechar){const kmz=UI.nvKmz;
   return `<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Passo 1 de 2 · Poligonal do terreno</div></div>${fechar}</div>
@@ -120,35 +120,34 @@ function nvDadosHtml(fechar){const nv=UI.nv,l=nv.local,mun=l?.cidade?l.cidade+(l
   const onde=[f0&&[f0.logradouro,f0.numero].filter(Boolean).join(', '),l?.bairro,mun].filter(Boolean).join(' · ');
   return `<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Passo 2 de 2 · O resto da ficha é preenchido ao longo da jornada.</div></div>${fechar}</div>
   <form data-form="novo" id="f-novo"><div class="fields">
-  <div class="field full"><div class="banner blue">${ic('check')}<div style="flex:1"><div class="bt">${NV_FONTE[nv.fonte]} · ${m2(Math.round(nv.area))}</div>
+  <div class="field full"><div class="banner blue">${ic('check')}<div style="flex:1"><div class="bt">${nv.porLotes?`Poligonal pela soma dos ${nv.sqls.length} lote${nv.sqls.length>1?'s':''} da prefeitura`:NV_FONTE[nv.fonte]} · ${m2(Math.round(nv.area))}</div>
     <div>${busca?'Buscando o endereço pela poligonal...':onde?esc(onde):'Endereço não encontrado pela localização.'}</div>
     ${nv.ignorados?`<div>Confirmado como outro terreno apesar de sobrepor ${nv.ignorados.map(x=>x.t.codigo).join(', ')}.</div>`:''}</div><button type="button" class="btn sm text" data-a="nv-voltar">Trocar</button></div></div>
+  ${nv.lgFeito||nvSP()?`<div class="field full"><div class="nv-sqls"><span class="etq-sw s"></span><div style="flex:1">${nv.sqls?.length?`<b>${nv.sqls.length} SQL${nv.sqls.length>1?'s':''} da prefeitura</b><div class="nv-sqls-l">${nv.sqls.map(x=>`<span class="etq s"><span class="etq-n num">${esc(x.sql)}</span></span>`).join('')}</div>${nv.porLotes?'<div class="faint">A desenhada fica guardada.</div>':''}`:'<b>Nenhum SQL</b><div class="faint">Marque os lotes da prefeitura que o terreno ocupa.</div>'}</div><button type="button" class="btn sm text" data-a="nv-lotes">${ic('layers',16)}${nv.sqls?.length?'Trocar SQLs':'Escolher SQLs'}</button></div></div>`:''}
   <div class="field full"><label for="n-nome">Nome de referência *</label><input id="n-nome" name="nome" required placeholder="${busca?'Buscando a rua...':'Ex.: Cupecê'}" ${v(nome)}></div>
   ${!busca&&!mun?`<div class="field full"><label for="n-mun">Município *</label><input id="n-mun" name="municipio" required placeholder="Cidade · UF"><span class="hint">Não deu para saber pela localização.</span></div>`:`<input type="hidden" name="municipio" ${v(mun)}>`}
   <input type="hidden" name="logradouro" ${v(f0?.logradouro)}><input type="hidden" name="numero" ${v(f0?.numero)}><input type="hidden" name="bairro" ${v(l?.bairro)}><input type="hidden" name="frente" value="0">
   </div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-novo" id="btn-novo" ${busca?'disabled':''}>${busca?'Buscando o endereço...':'Cadastrar terreno'}</button></div>`}
-// depois de cadastrar: em São Paulo, o mapa de lotes da prefeitura direto; depois (ou fora de SP), a ficha em gaveta no mapa
-function nvDepois(t){if(lgPode(t)){UI.posCad=t.id;lgAbrir(t);UI.lg.cad=true;return}nvGaveta(t)}
+// depois de cadastrar: a ficha em gaveta no mapa e, com SQLs, a consulta completa no GeoSampa de cada um (zonas, parâmetros, camadas, planta e desenho)
+function nvDepois(t){nvGaveta(t);const ins=t.insc.filter(i=>!(i.geo||[]).length);if(ins.length)lgConsultar(t,ins)}
 function nvGaveta(t){UI.posCad=null;go('mapa',{mpSel:t.id,mpFoco:t.id});UI.fichaSheet=t.id;fichaSheet()}
-/* ---------- partes e lotes do terreno novo ----------
-   Nasce com a parte "Vendedor 1"; os lotes entram pelo mapa de lotes da prefeitura (proto_lotesgeo.js) ou pela aba Terreno. */
-// grava no terreno novo: as partes (a primeira é a "Vendedor 1" do terreno) e os lotes com as inscrições
-function nvPlGravar(t,d,mun){const P=partesDe(t);P.length=0;
-  const ids=d.partes.map(p=>{const pa={id:uid(),ativa:true,neg:null,propostas:[],nome:p.nome,essencial:true,area:null};['pessoa','tel','email','doc','obs'].forEach(k=>{if(p[k])pa[k]=p[k]});P.push(pa);return pa.id});
-  t.lotes=[];t.mats=[];t.insc=[];
-  d.lotes.forEach(l=>{const ins=l.sqls.map(sq=>{let i=t.insc.find(x=>digits(x.sql)===digits(sq));if(!i){i={id:uid(),mun,sql:sq,area:null,valores:[]};t.insc.push(i)}return i.id});
-    t.lotes.push(ltNovo(t,ids[l.parte]||ids[0],{titulo:l.titulo||ltTitulo(t),num:l.num,cri:l.cri,criDig:!!l.cri,ins:[...new Set(ins)]}))});
-  lotesNorm(t);
-  if(d.partes.length>1||d.partes[0].nome!=='Vendedor 1')log(t,`${d.partes.length} parte${d.partes.length>1?'s':''}: ${d.partes.map(p=>p.nome).join(', ')}`);
-  if(t.lotes.length)log(t,`${t.lotes.length} lote${t.lotes.length>1?'s':''} cadastrado${t.lotes.length>1?'s':''}: ${t.lotes.map(l=>l.titulo+(l.num?` (matrícula ${l.num})`:'')).join(', ')}`)}
+/* ---------- partes do terreno novo ----------
+   Nasce com a parte "Vendedor 1"; os SQLs marcados no mapa de lotes entram sem parte, e as matrículas e as partes
+   são montadas na aba Terreno (etiquetas arrastadas para as partes, proto_lotes.js). */
+function nvPlGravar(t,d){const P=partesDe(t);P.length=0;
+  d.partes.forEach(p=>{const pa={id:uid(),ativa:true,neg:null,propostas:[],nome:p.nome,essencial:true,area:null};['pessoa','tel','email','doc','obs'].forEach(k=>{if(p[k])pa[k]=p[k]});P.push(pa)});
+  lotesNorm(t);if(d.partes.length>1||d.partes[0].nome!=='Vendedor 1')log(t,`${d.partes.length} parte${d.partes.length>1?'s':''}: ${d.partes.map(p=>p.nome).join(', ')}`)}
 // depois de desenhar a tela do passo 2: checagem de duplicidade
 function nvPosRender(){const f=$('#f-novo');if(!f||!UI.nv)return;f.nome.addEventListener('input',()=>{if(UI.nv)UI.nv.nome=f.nome.value})}
 // passo 2 gravado: o terreno novo com a poligonal, o município e as frentes
 function nvGravar(alvo,F){const nv=UI.nv;alvo.poly=nv.poly;alvo.lat=+nv.ponto[0].toFixed(7);alvo.lng=+nv.ponto[1].toFixed(7);alvo.precisao='aproximada';alvo.municipio=F.municipio.trim();
   if(nv.local?.cep)alvo.cep=nv.local.cep;if(nv.ignorados)alvo.sobreAceitas=nv.ignorados.map(x=>x.t.id);
   const fr=nv.frentes||[],pri=Number(F.frente||0);fr.forEach((x,i)=>{if(i!==pri||normRua(x.logradouro)!==normRua(F.logradouro))alvo.confr.push({tipo:'frente',m:x.m?+x.m.toFixed(2):null,conf:x.logradouro+(x.numero?', '+x.numero:''),fonte:'Localização da poligonal'})});
+  /* SQLs do mapa de lotes: entram sem parte, com o lote da prefeitura; a poligonal é a soma deles e a desenhada fica guardada */
+  (nv.sqls||[]).forEach(x=>{const i={id:uid(),mun:'sp',sql:x.sql,area:x.area??null,valores:[],parte:null,origem:'mapa_prefeitura',endPref:x.end||'',polyLote:x.poly};if(x.cib)i.cib=x.cib;alvo.insc.push(i)});
+  if(nv.porLotes){alvo.polyDesenho=nv.polyDesenho;alvo.polyLotes=true}
   if(fr.length>1&&alvo.posicao==='nao_informado')alvo.posicao=fr.length===2?'esquina':'duas_frentes';
-  alvo.hist[0].txt=`Terreno cadastrado: ${NV_FONTE[nv.fonte].toLowerCase()} (${m2(Math.round(nv.area))})`+(nv.ignorados?`, confirmado como outro terreno apesar de sobrepor ${nv.ignorados.map(x=>x.t.codigo).join(', ')}`:'')}
+  alvo.hist[0].txt=`Terreno cadastrado: ${NV_FONTE[nv.fonte].toLowerCase()} (${m2(Math.round(nv.area))})`+(nv.ignorados?`, confirmado como outro terreno apesar de sobrepor ${nv.ignorados.map(x=>x.t.codigo).join(', ')}`:'')+(nv.sqls?.length?`; ${nv.sqls.length} SQL${nv.sqls.length>1?'s':''} pelo mapa de lotes da prefeitura${nv.porLotes?', poligonal pela soma dos lotes':''}: ${nv.sqls.map(x=>x.sql).join(', ')}`:'')}
 
 /* ---------- decisões ---------- */
 function nvTrocarPoly(t,poly,como){const ant=t.poly?areaPoly(t.poly):null;(t.polyAnt=t.polyAnt||[]).push({em:agora(),user:me(),poly:t.poly});t.poly=poly;const c=centro(poly);t.lat=+c[0].toFixed(7);t.lng=+c[1].toFixed(7);t.precisao='aproximada';
@@ -166,7 +165,8 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="nv-"]'
   if(A==='nv-kmz'){UI.kmzNovo=true;$('#kmz-in').value='';$('#kmz-in').click()}
   if(A==='nv-kmz-i'){const it=UI.nvKmz[Number(a.dataset.i)];UI.nvKmz=null;nvPoligonal(it.pts,'kmz',{nome:it.nome})}
   if(A==='nv-voltar'){UI.nv=null;UI.nvPool=null;UI.modal='novo';renderModal()}
-  if(A==='nv-mesmo'){UI.nv.ignorados=UI.nv.sobre;UI.modal='novo';renderModal()}
+  if(A==='nv-mesmo'){UI.nv.ignorados=UI.nv.sobre;UI.modal='novo';if(!nvTalvezLotes())renderModal()}
+  if(A==='nv-lotes')nvLotesAbrir();
   if(['nv-oferta','nv-oferta-p','nv-recad','nv-juntar'].includes(A))nvDecidir(A,a.dataset.id)});
 // KMZ escolhido no passo 1
 function nvKmzLido(its){const ps=its.filter(x=>x.tipo==='poligono');

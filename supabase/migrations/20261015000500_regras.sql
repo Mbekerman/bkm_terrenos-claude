@@ -1568,8 +1568,8 @@ end $$;
 
 -- Tira a parte do terreno (o dono não vende, ou a área mudou). A negociação
 -- dela tem que estar encerrada; parte essencial só sai com gestor ou diretor.
--- Matrículas e inscrições continuam ligadas a ela (histórico): ajuste a
--- poligonal do terreno com salvar_terreno.
+-- As matrículas e as inscrições dela ficam sem parte (voltam para o quadro de
+-- cima da aba Terreno; a auditoria guarda o vínculo antigo).
 create or replace function app.remover_parte(p_parte uuid, p_motivo text)
 returns void
 language plpgsql security definer set search_path = ''
@@ -1591,28 +1591,27 @@ begin
     raise exception 'Esta parte já foi comprada' using errcode = '22023';
   end if;
   perform app._parte_pode_sair(tp);
+  update app.matriculas set parte_id = null where parte_id = tp.id;
+  update app.inscricoes_municipais set parte_id = null where parte_id = tp.id;
   update app.terreno_partes set ativa = false, removida_em = now(), motivo_remocao = trim(p_motivo) where id = tp.id;
   for v_principal in select distinct principal_id from app.processos where parte_id = tp.id and principal_id is not null loop
     perform app._sincronizar_principal(v_principal);
   end loop;
 end $$;
 
--- A parte sai do terreno sem deixar lote sem dono, e o terreno fica sempre com uma parte.
+-- O terreno fica sempre com uma parte.
 create or replace function app._parte_pode_sair(tp app.terreno_partes)
 returns void
 language plpgsql stable security definer set search_path = ''
 as $$
 begin
-  if exists (select 1 from app.terreno_lotes where parte_id = tp.id) then
-    raise exception 'A parte % tem lotes: passe os lotes para outra parte antes', tp.nome using errcode = '22023';
-  end if;
   if not exists (select 1 from app.terreno_partes where terreno_id = tp.terreno_id and ativa and id <> tp.id) then
     raise exception 'O terreno precisa de pelo menos uma parte' using errcode = '22023';
   end if;
 end $$;
 
--- Exclui a parte cadastrada por engano: só a que não tem nada ligado a ela (lote, matrícula,
--- inscrição, pessoa, corretor, oferta ou negociação). A que tem história sai por remover_parte.
+-- Exclui a parte cadastrada por engano: só a que não tem pessoa, corretor, oferta nem negociação.
+-- As matrículas e as inscrições dela ficam sem parte. A que tem história sai por remover_parte.
 create or replace function app.excluir_parte(p_parte uuid)
 returns void
 language plpgsql security definer set search_path = ''
@@ -1623,161 +1622,13 @@ begin
   if not found then raise exception 'Parte não encontrada' using errcode = 'P0002'; end if;
   perform app.exigir_editor(tp.empresa_id);
   perform app._parte_pode_sair(tp);
-  if exists (select 1 from app.matriculas where parte_id = tp.id) or exists (select 1 from app.inscricoes_municipais where parte_id = tp.id)
-     or exists (select 1 from app.terreno_pessoas where parte_id = tp.id) or exists (select 1 from app.parte_corretores where parte_id = tp.id)
+  if exists (select 1 from app.terreno_pessoas where parte_id = tp.id) or exists (select 1 from app.parte_corretores where parte_id = tp.id)
      or exists (select 1 from app.oferta_partes where parte_id = tp.id) or exists (select 1 from app.processos where parte_id = tp.id) then
     raise exception 'A parte % já tem histórico: tire-a do terreno com um motivo', tp.nome using errcode = '22023';
   end if;
+  update app.matriculas set parte_id = null where parte_id = tp.id;
+  update app.inscricoes_municipais set parte_id = null where parte_id = tp.id;
   delete from app.terreno_partes where id = tp.id;
-end $$;
-
--- A parte da matrícula e das inscrições vem do lote. O SQL que está em lotes de partes
--- diferentes fica sem parte (é dividido).
-create or replace function app._sincronizar_partes_lote(p_terreno uuid)
-returns void
-language plpgsql security definer set search_path = ''
-as $$
-begin
-  update app.matriculas m set parte_id = l.parte_id
-    from app.terreno_lotes l where l.matricula_id = m.id and l.terreno_id = p_terreno and m.parte_id is distinct from l.parte_id;
-  update app.inscricoes_municipais i set parte_id = x.parte_id
-    from (select li.inscricao_id, case when count(distinct l.parte_id) = 1 then (array_agg(l.parte_id))[1] end as parte_id
-            from app.lote_inscricoes li join app.terreno_lotes l on l.id = li.lote_id
-           where l.terreno_id = p_terreno group by li.inscricao_id) x
-   where i.id = x.inscricao_id and i.parte_id is distinct from x.parte_id;
-  -- SQL do mapa da prefeitura que ficou sem lote volta a ficar solto, sem parte
-  update app.inscricoes_municipais i set parte_id = null
-   where i.terreno_id = p_terreno and i.origem = 'mapa_prefeitura' and i.parte_id is not null
-     and not exists (select 1 from app.lote_inscricoes li where li.inscricao_id = i.id);
-end $$;
-
--- Cadastra ou altera um lote. p_dados: titulo, parte_id, matricula {numero, cartorio,
--- area_registrada_m2, data_certidao} (null tira a matrícula), inscricoes [ids das inscrições do
--- terreno, na ordem], area_fonte, area_informada_m2. Lote novo: título "Lote N", a primeira
--- parte e o cartório do terreno na matrícula, quando não informados.
-create or replace function app.salvar_lote(p_terreno uuid, p_lote uuid, p_dados jsonb)
-returns uuid
-language plpgsql security definer set search_path = ''
-as $$
-declare t app.terrenos; l app.terreno_lotes; v_id uuid; v_parte uuid; v_mat uuid; v_mat_velha uuid; m jsonb; v_cri text; v_num text;
-        v_tit text; v_n int; v_ins text; v_ord int := 0; v_outro uuid;
-begin
-  select * into t from app.terrenos where id = p_terreno for update;
-  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
-  perform app.exigir_editor(t.empresa_id);
-  perform app._chaves_permitidas(p_dados, array['titulo','parte_id','matricula','inscricoes','area_fonte','area_informada_m2']);
-  if p_lote is not null then
-    select * into l from app.terreno_lotes where id = p_lote and terreno_id = t.id for update;
-    if not found then raise exception 'Lote não encontrado' using errcode = 'P0002'; end if;
-  end if;
-  v_parte := coalesce(nullif(p_dados->>'parte_id', '')::uuid, l.parte_id,
-                      (select id from app.terreno_partes where terreno_id = t.id and ativa order by criado_em, id limit 1));
-  if not exists (select 1 from app.terreno_partes where id = v_parte and terreno_id = t.id and ativa) then
-    raise exception 'A parte não é deste terreno ou já saiu dele' using errcode = '23514';
-  end if;
-  -- título: o digitado, sem repetir no terreno; lote novo sem título vira o próximo "Lote N"
-  v_tit := nullif(trim(p_dados->>'titulo'), '');
-  if v_tit is null and p_lote is null then
-    v_n := (select count(*) from app.terreno_lotes where terreno_id = t.id) + 1;
-    while exists (select 1 from app.terreno_lotes where terreno_id = t.id and lower(titulo) = lower('Lote ' || v_n)) loop v_n := v_n + 1; end loop;
-    v_tit := 'Lote ' || v_n;
-  end if;
-  if v_tit is not null and exists (select 1 from app.terreno_lotes where terreno_id = t.id and lower(trim(titulo)) = lower(v_tit) and id is distinct from p_lote) then
-    raise exception 'Já existe um lote chamado % neste terreno', v_tit using errcode = '23505';
-  end if;
-  -- matrícula: uma por lote
-  v_mat := l.matricula_id;
-  if p_dados ? 'matricula' then
-    m := p_dados->'matricula';
-    v_num := nullif(trim(m->>'numero'), '');
-    if jsonb_typeof(m) is distinct from 'object' or v_num is null then
-      v_mat_velha := v_mat; v_mat := null;
-    else
-      v_cri := coalesce(nullif(trim(m->>'cartorio'), ''), (select cartorio from app.matriculas where id = v_mat), t.cartorio);
-      if v_cri is null then raise exception 'Informe o cartório da matrícula' using errcode = '22023'; end if;
-      select id into v_outro from app.matriculas
-       where empresa_id = t.empresa_id and cartorio = v_cri and numero_norm = regexp_replace(v_num, '\D', '', 'g') and id is distinct from v_mat;
-      if v_outro is not null then
-        -- de outro terreno: não cadastra o lote; o caminho é registrar uma nova oferta naquele terreno (decisão do Moisés, 4/nov/2026)
-        if (select terreno_id from app.matriculas where id = v_outro) <> t.id then
-          raise exception 'A matrícula % do % já está no terreno %: registre uma nova oferta nele', v_num, v_cri,
-            (select x.codigo from app.terrenos x join app.matriculas mm on mm.terreno_id = x.id where mm.id = v_outro)
-            using errcode = '23505', hint = 'nova_oferta';
-        end if;
-        if exists (select 1 from app.terreno_lotes where matricula_id = v_outro) then
-          raise exception 'A matrícula % do % já está em outro lote', v_num, v_cri using errcode = '23505';
-        end if;
-        -- matrícula do terreno ainda sem lote: passa a ser a deste
-        v_mat_velha := v_mat; v_mat := v_outro;
-      end if;
-      if v_mat is null then
-        insert into app.matriculas (empresa_id, terreno_id, numero, cartorio, area_registrada_m2, data_certidao)
-        values (t.empresa_id, t.id, v_num, v_cri, (m->>'area_registrada_m2')::numeric, (m->>'data_certidao')::date)
-        returning id into v_mat;
-      else
-        update app.matriculas set numero = v_num, cartorio = v_cri,
-               area_registrada_m2 = case when m ? 'area_registrada_m2' then (m->>'area_registrada_m2')::numeric else area_registrada_m2 end,
-               data_certidao      = case when m ? 'data_certidao' then (m->>'data_certidao')::date else data_certidao end
-         where id = v_mat;
-      end if;
-    end if;
-  end if;
-  if p_lote is null then
-    insert into app.terreno_lotes (empresa_id, terreno_id, parte_id, titulo, matricula_id, area_fonte, area_informada_m2, ordem)
-    values (t.empresa_id, t.id, v_parte, v_tit, v_mat, coalesce(p_dados->>'area_fonte', 'documental'), (p_dados->>'area_informada_m2')::numeric,
-            (select coalesce(max(ordem), 0) + 1 from app.terreno_lotes where terreno_id = t.id))
-    returning id into v_id;
-  else
-    v_id := l.id;
-    update app.terreno_lotes set parte_id = v_parte, titulo = coalesce(v_tit, titulo), matricula_id = v_mat,
-           area_fonte = coalesce(p_dados->>'area_fonte', area_fonte),
-           area_informada_m2 = case when p_dados ? 'area_informada_m2' then (p_dados->>'area_informada_m2')::numeric else area_informada_m2 end
-     where id = v_id;
-  end if;
-  -- a matrícula que saiu do lote era dele: sai do terreno
-  if v_mat_velha is not null and v_mat_velha is distinct from v_mat then delete from app.matriculas where id = v_mat_velha; end if;
-  -- SQLs do lote, na ordem
-  if p_dados ? 'inscricoes' then
-    if jsonb_typeof(p_dados->'inscricoes') <> 'array' then raise exception 'inscricoes deve ser uma lista' using errcode = '22023'; end if;
-    delete from app.lote_inscricoes where lote_id = v_id;
-    for v_ins in select x from jsonb_array_elements_text(p_dados->'inscricoes') x loop
-      if not exists (select 1 from app.inscricoes_municipais where id = v_ins::uuid and terreno_id = t.id) then
-        raise exception 'A inscrição não é deste terreno' using errcode = '23514';
-      end if;
-      v_ord := v_ord + 1;
-      insert into app.lote_inscricoes (lote_id, inscricao_id, empresa_id, ordem) values (v_id, v_ins::uuid, t.empresa_id, v_ord)
-      on conflict (lote_id, inscricao_id) do nothing;
-    end loop;
-  end if;
-  perform app._sincronizar_partes_lote(t.id);
-  return v_id;
-end $$;
-
--- Exclui o lote com a sua matrícula. Os SQLs que só estavam nele saem do terreno, menos os que
--- têm IPTU lançado ou estão numa análise anterior (o histórico fica) e os marcados no mapa de
--- lotes da prefeitura, que voltam a ficar soltos (sem lote) para entrar em outro lote.
-create or replace function app.excluir_lote(p_lote uuid)
-returns void
-language plpgsql security definer set search_path = ''
-as $$
-declare l app.terreno_lotes; v_ins uuid; v_sos uuid[];
-begin
-  select * into l from app.terreno_lotes where id = p_lote for update;
-  if not found then raise exception 'Lote não encontrado' using errcode = 'P0002'; end if;
-  perform app.exigir_editor(l.empresa_id);
-  select coalesce(array_agg(li.inscricao_id), '{}') into v_sos from app.lote_inscricoes li
-   where li.lote_id = l.id and not exists (select 1 from app.lote_inscricoes x where x.inscricao_id = li.inscricao_id and x.lote_id <> l.id);
-  delete from app.terreno_lotes where id = l.id;
-  if l.matricula_id is not null then delete from app.matriculas where id = l.matricula_id; end if;
-  for v_ins in select i.id from app.inscricoes_municipais i
-                where i.id = any(v_sos) and i.origem <> 'mapa_prefeitura'
-                  and not exists (select 1 from app.inscricao_valores v where v.inscricao_id = i.id) loop
-    begin
-      delete from app.inscricoes_municipais where id = v_ins;
-    exception when others then null;
-    end;
-  end loop;
-  perform app._sincronizar_partes_lote(l.terreno_id);
 end $$;
 
 -- Encerrar a negociação do terreno leva junto as partes em aberto: perdido
@@ -1806,63 +1657,20 @@ begin
   end loop;
 end $$;
 
--- Lotes do terreno com a matrícula, os SQLs, a área adotada e as zonas (da última consulta de
--- cada SQL). Lotes que dividem um SQL formam um grupo, e a divergência entre a área das
--- matrículas e a cadastral é conferida no grupo (decisão do Moisés, 4/nov/2026).
-create view app.v_lotes with (security_invoker = true) as
-with recursive arestas as (
-  select a.lote_id as l1, b.lote_id as l2 from app.lote_inscricoes a join app.lote_inscricoes b on b.inscricao_id = a.inscricao_id
-), comp(lote_id, raiz) as (
-  select l1, l2 from arestas
-  union
-  select c.lote_id, a.l2 from comp c join arestas a on a.l1 = c.raiz
-), grupos as (
-  select lote_id, min(raiz::text)::uuid as grupo_id from comp group by lote_id
-), ins as (
-  select li.lote_id, li.ordem, i.id, i.inscricao, i.area_cadastral_m2,
-         (select count(*) from app.lote_inscricoes y where y.inscricao_id = i.id) > 1 as compartilhada
-  from app.lote_inscricoes li join app.inscricoes_municipais i on i.id = li.inscricao_id
-), base as (
-  select l.*, coalesce(g.grupo_id, l.id) as grupo_id, tp.nome as parte_nome,
-         m.numero as matricula, m.cartorio, m.area_registrada_m2, m.data_certidao,
-         (select coalesce(jsonb_agg(jsonb_build_object('id', x.id, 'inscricao', x.inscricao, 'area_cadastral_m2', x.area_cadastral_m2,
-                                                       'compartilhada', x.compartilhada) order by x.ordem), '[]') from ins x where x.lote_id = l.id) as inscricoes,
-         coalesce((select bool_or(x.compartilhada) from ins x where x.lote_id = l.id), false) as sql_compartilhado,
-         (select sum(x.area_cadastral_m2) from ins x where x.lote_id = l.id) as soma_cadastral_m2,
-         (select coalesce(array_agg(distinct z->>'sigla' order by z->>'sigla'), '{}') from ins x
-            cross join lateral (select c.zonas from app.consultas_lote c where c.inscricao_id = x.id order by c.consultado_em desc limit 1) c
-            cross join jsonb_array_elements(c.zonas) z where x.lote_id = l.id and z->>'sigla' is not null) as zonas
-  from app.terreno_lotes l
-  join app.terreno_partes tp on tp.id = l.parte_id
-  left join grupos g on g.lote_id = l.id
-  left join app.matriculas m on m.id = l.matricula_id
-)
-select b.id, b.empresa_id, b.terreno_id, b.parte_id, b.parte_nome, b.titulo, b.ordem, b.matricula_id, b.matricula, b.cartorio,
-       b.area_registrada_m2, b.data_certidao, b.inscricoes, b.sql_compartilhado, b.zonas, b.area_fonte, b.area_informada_m2,
-       case when not b.sql_compartilhado then b.soma_cadastral_m2 end as area_cadastral_m2,
-       case b.area_fonte when 'documental' then b.area_registrada_m2
-                         when 'cadastral' then case when not b.sql_compartilhado then b.soma_cadastral_m2 end
-                         else b.area_informada_m2 end as area_adotada_m2,
-       b.grupo_id,
-       (select array_agg(y.titulo order by y.ordem) from base y where y.grupo_id = b.grupo_id) as grupo_lotes,
-       gr.area_matriculas_m2 as grupo_area_matriculas_m2, gr.area_cadastral_m2 as grupo_area_cadastral_m2,
-       round((gr.area_cadastral_m2 - gr.area_matriculas_m2) / nullif(gr.area_matriculas_m2, 0) * 100, 1) as divergencia_cadastral_pct
-from base b
-cross join lateral (
-  select (select sum(y.area_registrada_m2) from base y where y.grupo_id = b.grupo_id) as area_matriculas_m2,
-         (select sum(i.area_cadastral_m2) from app.inscricoes_municipais i
-           where i.id in (select li.inscricao_id from app.lote_inscricoes li join base y on y.id = li.lote_id where y.grupo_id = b.grupo_id)) as area_cadastral_m2
-) gr;
-grant select on app.v_lotes to authenticated;
-
 -- Cada parte com a sua negociação, para a ficha e o quadro.
 create view app.v_partes with (security_invoker = true) as
 select tp.id, tp.empresa_id, tp.terreno_id, tp.nome, tp.essencial, tp.area_m2, tp.poligono_geojson, tp.observacoes,
        tp.ativa, tp.removida_em, tp.motivo_remocao, tp.pessoa_nome, tp.telefone, tp.email, tp.documento,
-       (select count(*) from app.terreno_lotes l where l.parte_id = tp.id) as qtd_lotes,
-       -- área e zonas dos lotes da parte (o que o Comercial mostra ao lado do valor pedido)
-       (select sum(l.area_adotada_m2) from app.v_lotes l where l.parte_id = tp.id) as area_lotes_m2,
-       (select array_agg(distinct z order by z) from app.v_lotes l cross join unnest(l.zonas) z where l.parte_id = tp.id) as zonas,
+       -- área da parte (o que o Comercial mostra ao lado do valor pedido): a soma das matrículas, quando
+       -- todas têm área; sem matrícula, a dos SQLs, quando todos têm área cadastral (decisão do Moisés, 4/nov/2026)
+       ar.area_m2 as area_partes_m2, ar.area_fonte,
+       ar.area_matriculas_m2, ar.area_cadastral_m2,
+       -- Matrícula × Prefeitura da parte: área cadastral dos SQLs contra a das matrículas, em % da matrícula
+       round((ar.area_cadastral_m2 - ar.area_matriculas_m2) / nullif(ar.area_matriculas_m2, 0) * 100, 1) as divergencia_cadastral_pct,
+       -- zonas da última consulta de cada SQL da parte
+       (select array_agg(distinct z->>'sigla' order by z->>'sigla') from app.inscricoes_municipais i
+          cross join lateral (select c.zonas from app.consultas_lote c where c.inscricao_id = i.id order by c.consultado_em desc limit 1) c
+          cross join jsonb_array_elements(c.zonas) z where i.parte_id = tp.id and z->>'sigla' is not null) as zonas,
        (select count(*) from app.matriculas m where m.parte_id = tp.id) as qtd_matriculas,
        (select count(*) from app.inscricoes_municipais i where i.parte_id = tp.id) as qtd_inscricoes,
        (select string_agg(pe.nome_razao_social, ', ' order by pe.nome_razao_social) from app.terreno_pessoas x
@@ -1881,6 +1689,16 @@ select tp.id, tp.empresa_id, tp.terreno_id, tp.nome, tp.essencial, tp.area_m2, t
        lp.valor_total as ultima_proposta_valor, lp.origem as ultima_proposta_origem, lp.status as ultima_proposta_status,
        ap.nivel as aprovacao_aguardando
 from app.terreno_partes tp
+cross join lateral (
+  select m.area_matriculas_m2, i.area_cadastral_m2,
+         case when m.qtd > 0 then m.area_matriculas_m2 when i.qtd > 0 then i.area_cadastral_m2 end as area_m2,
+         case when m.qtd > 0 and m.area_matriculas_m2 is not null then 'matriculas'
+              when m.qtd = 0 and i.area_cadastral_m2 is not null then 'inscricoes' end as area_fonte
+  from (select count(*) as qtd, case when count(*) filter (where area_registrada_m2 is null) = 0 then sum(area_registrada_m2) end as area_matriculas_m2
+          from app.matriculas where parte_id = tp.id) m,
+       (select count(*) as qtd, case when count(*) filter (where area_cadastral_m2 is null) = 0 then sum(area_cadastral_m2) end as area_cadastral_m2
+          from app.inscricoes_municipais where parte_id = tp.id) i
+) ar
 left join lateral (
   select x.* from app.processos x where x.parte_id = tp.id
   order by (x.status in ('ativo','stand_by')) desc, x.data_inicio desc limit 1
@@ -3084,7 +2902,6 @@ grant execute on function
   app.abrir_negociacao(uuid, uuid),
   app.registrar_oferta(uuid, numeric, text, uuid, text, text, date, date, numeric, uuid, numeric, jsonb, jsonb),
   app.salvar_parte(uuid, uuid, jsonb), app.remover_parte(uuid, text), app.excluir_parte(uuid),
-  app.salvar_lote(uuid, uuid, jsonb), app.excluir_lote(uuid),
   app.definir_temperatura(uuid, int), app.definir_oferta_referencia(uuid, uuid),
   app.checar_avanco(uuid), app.checar_passagem(uuid, text, text),
   app.mover_etapa(uuid, boolean, text), app.mover_para_etapa(uuid, text, boolean, text), app.mover_subetapa(uuid, text, boolean, text),

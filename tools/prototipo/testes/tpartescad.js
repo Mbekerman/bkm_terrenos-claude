@@ -1,6 +1,7 @@
-// Partes e Lotes da aba Terreno: o Novo terreno (só poligonal e nome, 4/nov/2026) nasce com a parte "Vendedor 1" e
-// sem lotes; partes e lotes montados na ficha (as do exemplo entram pelo nvPlGravar), parte e lote novos pela ficha,
-// matrícula repetida e de outro terreno, excluir lote e parte. Claro, escuro e celular.
+// Partes, matrículas e SQLs da aba Terreno: o Novo terreno (só poligonal e nome, 4/nov/2026) nasce com a parte
+// "Vendedor 1"; partes com contato, matrículas e SQLs pelas etiquetas, a parte escolhida na janela da etiqueta (o
+// arrastar fica no tetiq.js), área e divergência por parte no Comercial, matrícula repetida e de outro terreno,
+// excluir parte devolve as etiquetas. Claro, escuro e celular.
 const path=require('path'),fs=require('fs'),{chromium}=require('playwright');
 const TMP=path.join(__dirname,'..','saida')+'/',O=TMP+'t_partescad/',L=path.join(__dirname,'..','libs','l')+'/',F=TMP+'bkm-terrenos.html';fs.mkdirSync(O,{recursive:true});
 const falhas=[],erros=[];const ok=(c,m)=>{console.log((c?'ok   ':'FALHA ')+m);if(!c)falhas.push(m)};
@@ -39,67 +40,52 @@ ok((await p.evaluate(c=>JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-
 const campo=async(sel,v)=>{await p.fill(sel,v);await p.press(sel,'Tab');await p.waitForTimeout(200)};
 let pa0=t.partes[0].id;await campo(`#pt2-${pa0} [data-k=nome]`,'Família Andrade');await campo(`#pt2-${pa0} [data-k=pessoa]`,'Rui Andrade');await campo(`#pt2-${pa0} [data-k=email]`,'RUI@Andrade.com');
 await p.click('#sec-partes-cad [data-a=pt2-mais]');await p.waitForTimeout(200);t=await ter(p,'Quadra dos Andrade');const pb0=t.partes[1].id;await campo(`#pt2-${pb0} [data-k=nome]`,'Lote do Paulo');
-const novoLote=async(parte,num,sqls)=>{await p.click('#sec-lotes [data-a=lt-novo]');await p.waitForTimeout(250);const t=await ter(p,'Quadra dos Andrade'),l=t.lotes[t.lotes.length-1];
-  await p.selectOption(`#lt-${l.id} [data-k=parte]`,parte);await p.waitForTimeout(200);await campo(`#lt-${l.id} [data-k=num]`,num);
-  for(const q of sqls){await p.fill(`#lt-${l.id} [name=sql]`,q);await p.evaluate(id=>document.querySelector(`#lt-${id} form[data-form=lt-sql]`).requestSubmit(),l.id);await p.waitForTimeout(250)}};
-await novoLote(pa0,'301.001',['123.456.0001-1','123.456.0002-1']);await novoLote(pb0,'301.002',['123.456.0002-1']);
+const incMat=async(n,a)=>{await p.fill('#em-n',n);if(a)await p.fill('#em-a',a);await p.evaluate(()=>document.querySelector('form[data-form=etq-mat]').requestSubmit());await p.waitForTimeout(200)};
+const incSql=async q=>{await p.fill('#es-sql',q);await p.evaluate(()=>document.querySelector('form[data-form=etq-sql]').requestSubmit());await p.waitForTimeout(200)};
+const naParte=async(k,pid)=>{await p.click(`[data-etq="${k}"] .etq-n`);await p.waitForTimeout(200);await p.selectOption('#modal [data-k=parte]',pid);await p.waitForTimeout(200);await p.click('#modal [data-a=close]');await p.waitForTimeout(150)};
+await incMat('301.001','500');await incMat('301.002','300');await incSql('123.456.0001-1');await incSql('123.456.0002-1');
 t=await ter(p,'Quadra dos Andrade');
 ok(t.partes.length===2&&t.partes[0].nome==='Família Andrade'&&t.partes[0].pessoa==='Rui Andrade','duas partes com o contato');
-const pa=t.partes[0],pb=t.partes[1];
-const l1=t.lotes.find(l=>l.titulo==='Lote 1'),l2=t.lotes.find(l=>l.titulo==='Lote 2');
-ok(t.lotes.length===2&&l1.parte===pa.id&&l2.parte===pb.id&&l1.num==='301.001'&&l2.num==='301.002','dois lotes, cada um da sua parte');
-const s2=t.insc.find(i=>i.sql==='123.456.0002-1');
-ok(t.insc.length===2&&l1.ins.length===2&&l2.ins.length===1&&l1.ins.includes(s2.id)&&l2.ins.includes(s2.id),'SQL nas duas matrículas: um só cadastro, nos dois lotes');
-ok(t.mats.length===2&&t.mats.every(m=>m.lote),'matrículas derivadas dos lotes');
-ok(!t.neg,'sem oferta, nenhuma negociação aberta');
-// ficha: Partes e Lotes na aba Terreno (lote 5, 4/nov/2026): o que veio do passo 2 vira lote da parte
-await bloco(p,'cadastro');
-ok(await p.$('#sec-partes-cad')!==null&&await p.$('#sec-lotes')!==null,'aba Terreno tem os quadros Partes e Lotes');
-ok((await p.$eval('#pt2-n',x=>x.value))==='2','quantidade de partes = 2');
+ok(t.mats.length===2&&t.insc.length===2&&[...t.mats,...t.insc].every(x=>!x.parte),'matrículas e SQLs incluídos, sem parte');
+const pa=t.partes[0],pb=t.partes[1],m1=t.mats[0],m2_=t.mats[1],s1=t.insc[0],s2=t.insc[1];
+await naParte('m:'+m1.id,pa.id);await naParte('s:'+s1.id,pa.id);await naParte('m:'+m2_.id,pb.id);await naParte('s:'+s2.id,pb.id);
 t=await ter(p,'Quadra dos Andrade');
-const lA=t.lotes.filter(l=>l.parte===pa.id);
-ok(lA.length===1&&lA[0].num==='301.001','a ficha mostra o lote da parte');
+ok(t.mats.find(m=>m.id===m1.id).parte===pa.id&&t.insc.find(i=>i.id===s2.id).parte===pb.id,'parte escolhida na janela da etiqueta');
+ok(!t.lotes,'sem lotes no modelo novo');ok(!t.neg,'sem oferta, nenhuma negociação aberta');
+ok(await p.$('#sec-partes-cad')!==null&&await p.$('#sec-lotes')!==null,'aba Terreno tem Partes e Matrículas e SQLs');
+ok((await p.$eval('#pt2-n',x=>x.value))==='2','quantidade de partes = 2');
+{const tx=await p.$eval(`.etq-pt[data-p="${pa.id}"]`,x=>x.innerText);ok(/500\s*m²/.test(tx),'área da parte pelas matrículas: '+tx.replace(/\s+/g,' '))}
 await p.evaluate(()=>document.getElementById('sec-partes-cad').scrollIntoView());await p.waitForTimeout(150);await p.screenshot({path:O+'3_cadastro.png'});
-// parte nova e lote novo pela ficha
+// parte nova
 await p.click('#sec-partes-cad [data-a=pt2-mais]');await p.waitForTimeout(200);
 t=await ter(p,'Quadra dos Andrade');const pc=t.partes.find(x=>x.nome==='Vendedor 3');
 ok(!!pc,'Adicionar parte cria "Vendedor 3"');
 await p.fill(`#pt2-${pc.id} [data-k=pessoa]`,'Ana Lima');await p.press(`#pt2-${pc.id} [data-k=pessoa]`,'Tab');await p.waitForTimeout(200);
 await p.fill(`#pt2-${pc.id} [data-k=email]`,'ANA@Exemplo.com');await p.press(`#pt2-${pc.id} [data-k=email]`,'Tab');await p.waitForTimeout(200);
-await p.click('#sec-lotes [data-a=lt-novo]');await p.waitForTimeout(200);
-t=await ter(p,'Quadra dos Andrade');const ln=t.lotes[t.lotes.length-1];
-ok(ln.titulo==='Lote 3','lote novo nasce com o próximo título');
-await p.selectOption(`#lt-${ln.id} [data-k=parte]`,pc.id);await p.waitForTimeout(200);
-await p.fill(`#lt-${ln.id} [data-k=num]`,'301.900');await p.press(`#lt-${ln.id} [data-k=num]`,'Tab');await p.waitForTimeout(200);
-t=await ter(p,'Quadra dos Andrade');const pc2=t.partes.find(x=>x.id===pc.id);
-ok(pc2.pessoa==='Ana Lima'&&pc2.email==='ana@exemplo.com','contato da parte gravado (e-mail em minúsculas)');
-ok(t.lotes.find(l=>l.id===ln.id).parte===pc.id&&t.mats.find(m=>m.num==='301.900').parte===pc.id,'lote da parte nova com a matrícula');
-// matrícula repetida em outro lote (mesmo cartório) é recusada
-await p.selectOption(`#lt-${ln.id} [data-k=cri]`,await p.$eval(`#lt-${lA[0].id} [data-k=cri]`,x=>x.value));await p.waitForTimeout(200);
-await p.fill(`#lt-${ln.id} [data-k=num]`,'301.001');await p.press(`#lt-${ln.id} [data-k=num]`,'Tab');await p.waitForTimeout(200);
-ok((await toast(p)).includes('já está no'),'matrícula de outro lote é recusada');
-// matrícula ou SQL de outro terreno: o lote não entra; oferece a nova oferta naquele terreno (4/nov/2026)
-await p.fill(`#lt-${ln.id} [data-k=num]`,'184.552');await p.press(`#lt-${ln.id} [data-k=num]`,'Tab');await p.waitForTimeout(250);
-ok(!!(await p.$('#modal [data-a=lt-dup-oferta]'))&&(await p.$eval('#modal h2',x=>x.textContent)).includes('já está em outro terreno')&&(await ter(p,'Quadra dos Andrade')).lotes.find(l=>l.id===ln.id).num==='301.900','matrícula de outro terreno: lote recusado, pergunta pela nova oferta');
+ok((await ter(p,'Quadra dos Andrade')).partes.find(x=>x.id===pc.id).email==='ana@exemplo.com','e-mail em minúsculas');
+// matrícula repetida e de outro terreno
+await incMat('301001');ok((await toast(p)).includes('já está no terreno'),'matrícula repetida no terreno é recusada');
+await incMat('184.552');
+ok(!!(await p.$('#modal [data-a=lt-dup-oferta]'))&&(await p.$eval('#modal h2',x=>x.textContent)).includes('já está em outro terreno')&&!(await ter(p,'Quadra dos Andrade')).mats.some(m=>m.num==='184.552'),'matrícula de outro terreno: não entra, oferece a nova oferta');
 await p.click('#modal [data-a=close]');await p.waitForTimeout(150);
-await p.fill(`#lt-${ln.id} [name=sql]`,'089.123.0045-6');await p.evaluate(id=>document.querySelector(`#lt-${id} form[data-form=lt-sql]`).requestSubmit(),ln.id);await p.waitForTimeout(250);
+await incSql('089.123.0045-6');
 const dupTxt=await p.$eval('#modal [data-a=lt-dup-oferta]',x=>x.textContent).catch(()=>'');
 ok(/Registrar nova oferta no [A-Z]\d{3}/.test(dupTxt)&&!(await ter(p,'Quadra dos Andrade')).insc.some(i=>i.sql==='089.123.0045-6'),'SQL de outro terreno: não entra, oferece a nova oferta');
 await p.click('#modal [data-a=lt-dup-oferta]');await p.waitForTimeout(300);
 ok(!!(await p.$('#modal form[data-form=oferta]'))&&(await p.evaluate(()=>location.hash+location.pathname)).includes('comercial'),'"Registrar nova oferta" abre o formulário da oferta no outro terreno');
 await p.click('#modal [data-a=close]');await p.waitForTimeout(150);
 await p.evaluate(c=>{location.hash='#/terrenos/'+c+'/terreno'},t.codigo);await p.waitForTimeout(500);
-// parte com lote não sai
-await p.click(`#pt2-${pc.id} [data-a=pt2-excluir]`);await p.waitForTimeout(200);
-ok((await toast(p)).includes('tem lotes')&&(await ter(p,'Quadra dos Andrade')).partes.some(x=>x.id===pc.id),'parte com lote não é excluída');
-await p.click(`#lt-${ln.id} [data-a=lt-excluir]`);await p.waitForTimeout(200);
-await p.click(`#pt2-${pc.id} [data-a=pt2-excluir]`);await p.waitForTimeout(200);
-t=await ter(p,'Quadra dos Andrade');ok(!t.partes.some(x=>x.id===pc.id)&&!t.mats.some(m=>m.num==='301.900'),'Excluir lote e depois Excluir parte');
+await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click())});await p.waitForTimeout(150);
+// excluir parte: as etiquetas dela voltam para o quadro de cima
+await p.click(`#pt2-${pb.id} [data-a=pt2-excluir]`);await p.waitForTimeout(200);
+t=await ter(p,'Quadra dos Andrade');ok(!t.partes.some(x=>x.id===pb.id)&&!t.mats.find(m=>m.id===m2_.id).parte&&!t.insc.find(i=>i.id===s2.id).parte,'Excluir parte devolve as etiquetas para o quadro de cima');
+// x da etiqueta exclui do terreno
+await p.click(`[data-etq="m:${m2_.id}"] .etq-x`);await p.waitForTimeout(200);ok(!(await ter(p,'Quadra dos Andrade')).mats.some(m=>m.id===m2_.id),'x exclui a matrícula do terreno');
 await ctx.close();
 
 for(const [w,h,tema,n] of [[1440,900,'escuro','5_escuro'],[412,915,null,'6_celular']]){({p,ctx}=await abre(w,h,tema));
-  await cadastrar(p,'Teste '+n);await p.click('#sec-partes-cad [data-a=pt2-mais]');await p.click('#sec-lotes [data-a=lt-novo]');await p.waitForTimeout(200);await p.evaluate(()=>document.getElementById('sec-partes-cad').scrollIntoView());await p.waitForTimeout(150);await p.screenshot({path:O+n+'_cadastro.png'});
-  ok(await p.evaluate(()=>[...document.querySelectorAll('.pt2, .lt')].every(x=>x.scrollWidth<=x.clientWidth+1)),n+': quadro Partes sem vazar');
+  await cadastrar(p,'Teste '+n);await p.click('#sec-partes-cad [data-a=pt2-mais]');await p.waitForTimeout(200);await p.evaluate(()=>document.getElementById('sec-partes-cad').scrollIntoView());await p.waitForTimeout(150);await p.screenshot({path:O+n+'_cadastro.png'});
+  ok(await p.evaluate(()=>[...document.querySelectorAll('.pt2, .etq-pt, .etq-col')].every(x=>x.scrollWidth<=x.clientWidth+1)),n+': quadro Partes sem vazar');
   await ctx.close()}
 ok(!erros.length,'sem erros de página'+(erros.length?': '+erros.join(' / '):''));
 await b.close();console.log(falhas.length?`\n${falhas.length} FALHA(S)`:'\nTUDO OK');process.exit(falhas.length?1:0)})();

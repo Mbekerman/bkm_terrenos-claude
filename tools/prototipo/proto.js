@@ -47,6 +47,7 @@ const BI={
   documento:'<path d="M24 12 L59 12 L77 30 L77 77 C77 82 74 84 69 84 L27 84 C22 84 19 82 19 77 L19 19 C19 14 21 12 24 12 Z M59 12 L59 31 L77 31" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M31 46 L65 46 M31 58 L65 58 M31 70 L51 70" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>',
   busca:'<path d="M67 40 C67 54.359 55.359 66 41 66 C26.641 66 15 54.359 15 40 C15 25.641 26.641 14 41 14 C55.359 14 67 25.641 67 40 Z" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M59 59 L83 83" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M29 29 C32 25 36 23 42 23" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>',
   checklist:'<path d="M27 17 L72 17 C75 17 78 20 78 23 L78 77 C78 80 75 83 72 83 L27 83 C24 83 21 80 21 77 L21 23 C21 20 24 17 27 17 Z" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M40 11 L58 11 C60 11 62 13 62 15 L62 20 C62 22 60 24 58 24 L40 24 C38 24 36 22 36 20 L36 15 C36 13 38 11 40 11 Z" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M29 41 L33 45 L40 36 M29 61 L33 65 L40 56" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M48 41 L66 41 M48 61 L66 61" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>',
+  funil:'<path d="M17 14 L79 14 C82 14 83 17 81 19 L57 48 L57 75 L39 82 L39 48 L15 19 C13 17 14 14 17 14 Z" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M30 30 L66 30" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>',
   contrato:'<path d="M50 83 L22 83 C18 83 15 80 15 76 L15 19 C15 15 18 12 22 12 L56 12 L70 26 L70 44 M53 12 L53 29 L70 29 M28 39 L47 39 M28 51 L42 51" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M43 83 L47 69 L73 43 L83 53 L57 79 L43 83 M67 49 L77 59" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>',
   financeiro:'<path d="M14 61 C14 53 45 53 45 61 C45 69 14 69 14 61 L14 75 C14 83 45 83 45 75 L45 61 M14 69 C14 77 45 77 45 69 M51 45 C51 37 82 37 82 45 C82 53 51 53 51 45 L51 74 C51 82 82 82 82 74 L82 45 M51 59 C51 67 82 67 82 59" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M24 37 L38 23 L52 23 M45 16 L52 23 L45 30" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>',
   construcao:'<path d="M30 83 L30 25 L43 25 L43 83 M21 83 L53 83 M15 25 L83 25 L66 12 L30 12 L15 25 M43 13 L43 25 M30 38 L43 51 L30 64 L43 77" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/> <path d="M73 26 L73 52 C73 61 62 61 62 54" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>',
@@ -591,7 +592,7 @@ const advItens=items=>items.map(x=>`<li><span class="${x.aviso?'av':x.ok?'ok':'n
 /* ===================== páginas ===================== */
 /* ficha em abas, como a janela do cartão de tarefa (decisão do Moisés, 3/nov/2026): uma aba de cada vez, botões sempre visíveis no topo.
    As chaves antigas (cadastro, negociacao, urbanismo, fases, tarefas) continuam valendo nos links e nos logs e caem na aba nova. */
-const FICHA_ABAS=[['geral','Visão geral'],['terreno','Terreno'],['comercial','Comercial'],['parametros','Parâmetros urbanísticos'],['massa','Estudos de massa'],['viabilidade','Estudos de viabilidade'],['infra','Infraestrutura'],['entorno','Entorno'],['jornada','Jornada do Terreno'],['documentos','Documentos'],['historico','Histórico']];
+const FICHA_ABAS=[['geral','Visão geral'],['terreno','Terreno'],['comercial','Comercial'],['parametros','Parâmetros'],['massa','Estudos de massa'],['viabilidade','Viabilidades'],['infra','Infraestrutura'],['entorno','Entorno'],['jornada','Jornada'],['documentos','Documentos'],['historico','Histórico']];
 const ABA_DE={cadastro:'terreno',negociacao:'comercial',urbanismo:'parametros',fases:'jornada',tarefas:'geral',viab:'viabilidade'};
 const abaN=k=>{k=ABA_DE[k]||k;return FICHA_ABAS.some(x=>x[0]===k)?k:'geral'};
 let BLA={},blId=null; /* mantido para quem ainda zera o estado ao abrir um terreno */
@@ -612,15 +613,28 @@ function abaJornada(t){return `<div class="stack">${trilhaHtml(t)}${abaFases(t)}
 function abaViabilidade(t){return `<div class="stack">${abaGeral(t,'viab')}${viabSecao(t)}</div>`}
 function abaInfra(t){return `<div class="stack">${abaGeral(t,'relevo')}${abaUrbanismo(t,'infra')}</div>`}
 function abaEntorno(t){return `<div class="stack">${abaGeral(t,'entorno')}</div>`}
-/* a aba ativa sempre visível na barra (no celular a barra rola de lado) */
-function fiAbaVisivel(){const b=document.querySelector('.fi-abas'),a=b&&b.querySelector('[aria-selected="true"]');if(!a)return;
-  const l=a.offsetLeft-b.offsetLeft,r=l+a.offsetWidth;if(l<b.scrollLeft||r>b.scrollLeft+b.clientWidth)b.scrollLeft=Math.max(0,l-(b.clientWidth-a.offsetWidth)/2)}
+/* barra das abas sem rolagem lateral (pedido do Moisés, 4/nov/2026): aparecem as abas que cabem; as demais vão para o
+   menu "Mais ações" (⋮) no fim, ao lado das setas de aba anterior e próxima. A aba ativa nunca vai para o menu. */
+const SVG_DOTS='<svg class="ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" d="M12 5.5h.01M12 12h.01M12 18.5h.01"/></svg>';
+const fiSeta=d=>`<svg class="ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="${d<0?'M15 6l-6 6 6 6':'M9 6l6 6-6 6'}"/></svg>`;
+let fiRO=null;
+function fiAbasCaber(){const w=document.querySelector('.fi-abas-w');if(!w)return;const bar=w.querySelector('.fi-abas'),mn=w.querySelector('.fi-mais'),menu=mn.querySelector('.adv-menu');
+  const bs=[...bar.querySelectorAll('button[role=tab]')];bs.forEach(b=>b.hidden=false);
+  const vis=bs.filter(b=>getComputedStyle(b).display!=='none'),act=vis.findIndex(b=>b.getAttribute('aria-selected')==='true');
+  const fora=[];mn.hidden=true;
+  if(bar.scrollWidth>bar.clientWidth+1){mn.hidden=false;
+    for(let i=vis.length-1;i>=0&&bar.scrollWidth>bar.clientWidth+1;i--){if(i===act)continue;vis[i].hidden=true;fora.unshift(vis[i])}}
+  menu.innerHTML=fora.map(b=>`<button role="menuitem" data-a="tab" data-t="${b.dataset.t}">${b.innerHTML}</button>`).join('');
+  [[-1,'.fi-ant'],[1,'.fi-prox']].forEach(([d,sel])=>{const b=w.querySelector(sel),alvo=vis[act+d];b.disabled=!alvo;if(alvo){b.dataset.t=alvo.dataset.t;b.title=(d<0?'Anterior: ':'Próxima: ')+alvo.firstChild.textContent}else b.title=d<0?'Primeira seção':'Última seção'});
+  if(window.ResizeObserver&&w.__ro!==true){fiRO?.disconnect();let lw=w.clientWidth;fiRO=new ResizeObserver(()=>{if(Math.abs(w.clientWidth-lw)<1)return;lw=w.clientWidth;fiAbasCaber()});fiRO.observe(w);w.__ro=true}}
 function pgFicha(){
   const t=T(UI.id);{const k=t&&JSON.stringify([t.lotes,t.partes,t.mats,t.insc]);lotesNorm(t);if(t&&k!==JSON.stringify([t.lotes,t.partes,t.mats,t.insc]))save()}const c=completude(t),n=t.neg,aba=abaN(UI.tab);
   const FN={geral:abaGeral,comercial:abaComercialFicha,terreno:abaCadastro,parametros:t=>abaUrbanismo(t,'param'),massa:abaMassa,viabilidade:abaViabilidade,infra:abaInfra,entorno:abaEntorno,jornada:abaJornada,documentos:abaDocs,historico:abaHist};
-  const abas=`<div class="fi-abas" role="tablist" aria-label="Seções do terreno">${FICHA_ABAS.map(([k,l])=>{const q=abaContagem(t,k);return `<button role="tab" class="${k==='historico'?'tab-hist':''}" data-a="tab" data-t="${k}" aria-selected="${k===aba}" aria-controls="bl-${k}">${l}${q?`<span class="tkm-n">${q}</span>`:''}</button>`}).join('')}</div>`;
+  const abas=`<div class="fi-abas-w"><div class="fi-abas" role="tablist" aria-label="Seções do terreno">${FICHA_ABAS.map(([k,l])=>{const q=abaContagem(t,k);return `<button role="tab" class="${k==='historico'?'tab-hist':''}" data-a="tab" data-t="${k}" aria-selected="${k===aba}" aria-controls="bl-${k}">${l}${q?`<span class="tkm-n">${q}</span>`:''}</button>`}).join('')}</div>
+    <div class="fi-fim"><div class="adv-mais fi-mais" hidden><button class="iconbtn adv-mb" data-a="adv-mais" aria-haspopup="menu" aria-expanded="false" aria-label="Mais ações" title="Mais ações">${SVG_DOTS}</button><div class="adv-menu" role="menu"></div></div>
+    <button class="iconbtn fi-ant" data-a="tab" aria-label="Seção anterior">${fiSeta(-1)}</button><button class="iconbtn fi-prox" data-a="tab" aria-label="Próxima seção">${fiSeta(1)}</button></div></div>`;
   const meta=[...fichaFaseTxt(t),`Cadastrado em ${fd(t.dataIdent)}`];
-  return `${linhaTopo(t)}<button class="back" data-a="nav" data-r="${UI.from}">${ic('back',20)}${UI.from==='negociacoes'?'Fases':UI.from==='inicio'?'Início':'Terrenos'}</button>
+  return `${linhaTopo(t)}<button class="back" data-a="nav" data-r="${UI.from}">${ic('back',20)}${UI.from==='negociacoes'?'Funil':UI.from==='inicio'?'Início':'Terrenos'}</button>
   <div class="dhead fi-head"><div style="min-width:0"><div class="eyebrow"><span class="num">${t.codigo}</span>${t.situacao==='arquivado'?'<span class="chip">Arquivado</span>':''}</div>
     <h1>${esc(t.nome)}</h1><div class="fi-meta">${meta.map(x=>`<span>${x}</span>`).join('<span class="fi-sep">·</span>')}${n?`<span class="fi-sep">·</span><span class="fi-temp">${n.status==='ativo'?tempPicker(t):n.temp?`${tempMini(n.temp)} ${TEMP[n.temp]}`:'<span class="faint">Temperatura não avaliada</span>'}</span>`:''}</div></div>
     <div style="display:flex;align-items:center;gap:8px">${av(t.resp)}<div><div style="font-weight:500">${esc(t.resp)}</div><div class="faint" style="font-size:12px">Responsável</div></div></div></div>
@@ -660,7 +674,7 @@ function pgInicio(){
 }
 
 /* ===================== shell ===================== */
-const NAV=[['inicio','Início','casa'],['terrenos','Terrenos','terrenos'],['mapa','Mapa','mapa'],['negociacoes','Fases','contrato'],['tarefas','Tarefas','checklist'],['dashboard','Dashboard','indicadores']];
+const NAV=[['inicio','Início','casa'],['terrenos','Terrenos','terrenos'],['mapa','Mapa','mapa'],['negociacoes','Funil','funil'],['tarefas','Tarefas','checklist'],['dashboard','Dashboard','indicadores']];
 /* Configurações › Funil: só para administrador (no menu lateral; no celular, pelo sino) */
 const NAV_CURTO={Configurações:'Admin',Dashboard:'Dash'}; // rótulo da barra encolhida
 const navSide=()=>ehAdmin(me())?[...NAV,['config','Configurações','config']]:NAV;
@@ -688,6 +702,8 @@ function renderModal(){
   if(M==='novo-sobre')h=nvSobreHtml(fechar);
   if(M==='lotes-poly')h=lotesPolyHtml(fechar);
   if(M==='lt-dup')h=ltDupHtml(fechar);
+  if(M==='etq')h=etqJanela(fechar);
+  if(M==='etq-conf')h=etqConfHtml(fechar);
   if(M==='lotes-geo')h=lgHtml(fechar);
   if(M==='ems-viab'||M==='ems-apagar'||M==='ems-pedido')h=emsModalHtml(M,fechar);
   if(M==='oferta'){const tt=T(UI.id),pd=UI.ofPoly;h=`<div class="dh"><h2>Registrar oferta</h2>${fechar}</div><form data-form="oferta" id="f-of"><div class="fields">
@@ -885,7 +901,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       do S.seqT++;while(S.terrenos.some(x=>x.codigo===codTer(S.seqT)));
       // cadastro curto (decisão do Moisés, 4/nov/2026): poligonal e nome; o resto entra ao longo da jornada
       const alvo={...seedVazio(),codigo:codTer(S.seqT),nome:F.nome.trim(),logradouro:(F.logradouro||'').trim(),numero:(F.numero||'').trim(),bairro:(F.bairro||'').trim(),zona:null,resp:me(),origem:null,dataIdent:HOJE};
-      alvo.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado'}];nvGravar(alvo,F);S.terrenos.push(alvo);crAplicarPadrao(alvo);nvPlGravar(alvo,{partes:[{nome:'Vendedor 1'}],lotes:[]},cidDoNome(F.municipio)||'outro');
+      alvo.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado'}];nvGravar(alvo,F);S.terrenos.push(alvo);crAplicarPadrao(alvo);nvPlGravar(alvo,{partes:[{nome:'Vendedor 1'}]});
       UI.modal=null;UI.nv=null;save();toast(`${alvo.codigo} cadastrado.`);nvDepois(alvo);break}
     case 'oferta':{const o={id:uid(),cid:F.cid||null,data:HOJE,valor:lerNum(F.valor),forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,validade:F.validade||null,status:'ativa'};if(UI.ofPoly)o.poly=UI.ofPoly;t.ofertas.push(o);
       if(o.cid&&!t.corretores.some(x=>x.cid===o.cid))t.corretores.push({cid:o.cid,principal:!t.corretores.some(x=>x.principal)});
@@ -895,10 +911,10 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
 });
 function novaNeg(ofRef,temp){const e=STAGES[0][0],s=subInicial(e);NEG_SEQ=Math.max(NEG_SEQ,...S.terrenos.map(t=>parseInt((t.neg?.codigo||'').slice(4))||0));return {codigo:'NEG-'+String(++NEG_SEQ).padStart(5,'0'),etapa:e,sub:s,status:'ativo',desde:HOJE,subDesde:HOJE,temp,ofRef,viab:null,pedido:null,trilha:[{em:agora(),user:me(),ev:'abertura',deEtapa:null,deSub:null,paraEtapa:e,paraSub:s,status:'ativo'}]}}
 function seedVazio(){return {id:uid(),situacao:'ativo',prioridade:null,descricao:'',url:'',obs:'',cep:'',complemento:'',referencia:'',lat:null,lng:null,precisao:'nao_informada',aDoc:null,aCad:null,aLev:null,aEst:null,fonteArea:null,testada:null,desnivel:null,posicao:'nao_informado',formato:'nao_informado',ocupacao:'nao_informado',uso:'',aConst:null,aDemolir:null,demolicao:'nao_avaliada',obsFis:'',eixo:null,mats:[],insc:[],confr:[],dilig:[],pessoas:[],corretores:[],infra:{},analises:[],ofertas:[],neg:null,propostas:[],reunioes:[],tarefas:[],docs:[],hist:[]}}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&GG&&(svFechar()||lugarFechar())){e.preventDefault();return}if(e.key==='Escape'&&temaMenu){temaMenu=false;renderTema();return}if(e.key==='Escape'&&perfilMenu){perfilMenu=false;renderPerfil();return}if(e.key==='Escape'&&UI.modal){UI.modal=null;renderModal()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&GG&&(svFechar()||lugarFechar())){e.preventDefault();return}if(e.key==='Escape'&&temaMenu){temaMenu=false;renderTema();return}if(e.key==='Escape'&&perfilMenu){perfilMenu=false;renderPerfil();return}if(e.key==='Escape'&&UI.modal){if(UI.modal==='lotes-geo'&&UI.lg?.nv){UI.lg=null;UI.modal='novo';renderModal();return}UI.modal=null;renderModal()}});
 /* ===================== kanban: arrastar e soltar (regras em proto_funil.js: levarAte, soltar) ===================== */
 function posRender(){try{if(MAPA){MAPA.remove()}}catch(e){}MAPA=null;PINS=POIS=DES=BASE=null;try{if(MINI)MINI.remove()}catch(e){}MINI=null;
-  if(UI.route==='mapa')initMapa();if(UI.route==='terreno'){fiAbaVisivel();if(!blocoFechado('geral'))initMini();if(typeof geoCartorio==='function')geoCartorio(T(UI.id));tpAuto(T(UI.id))}fichaSheet()}
+  if(UI.route==='mapa')initMapa();if(UI.route==='terreno'){fiAbasCaber();if(!blocoFechado('geral'))initMini();if(typeof geoCartorio==='function')geoCartorio(T(UI.id));tpAuto(T(UI.id))}fichaSheet()}
 document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const el=e.target;if(!(el instanceof HTMLElement)||el.matches('button,a,input,select,textarea'))return;if(el.matches('[data-a][tabindex]')){e.preventDefault();el.click()}});
 let arrastando=null;
 document.addEventListener('dragstart',e=>{const c=e.target.closest?.('.kcard[draggable="true"]');if(!c)return;arrastando=c.dataset.id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',arrastando);c.classList.add('arrastando');c.closest('.col')?.classList.add('origem');document.body.classList.add('dnd')});
