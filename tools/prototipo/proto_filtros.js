@@ -12,7 +12,16 @@
    ===================================================================== */
 P.filtro='M4 6h16M7 12h10M10 18h4';
 const FX_KEY='bkm-terrenos-filtros';
-UI.fx=UI.fx||(()=>{try{const h=location.hash.match(/[#&?]f=([^&]+)/);if(h)return JSON.parse(decodeURIComponent(h[1]))}catch(e){}try{return JSON.parse(sessionStorage.getItem(FX_KEY)||'{}')}catch(e){return {}}})();
+/* Pipeline (e Mapa) e Funil têm cada um o seu filtro (pedido do Moisés, 4/nov/2026): ao trocar de página, guarda o da página que sai e põe o da que entra */
+const FX_GK=FX_KEY+'-pag',fxGrupo=()=>UI.route==='negociacoes'?'kanban':'pipeline';
+const FX_PAG=(()=>{try{return JSON.parse(sessionStorage.getItem(FX_GK)||'{}')||{}}catch(e){return {}}})();
+let FX_G=null,FX_ADOTA=false;
+UI.fx=UI.fx||(()=>{try{const h=location.hash.match(/[#&?]f=([^&]+)/);if(h){FX_ADOTA=true;return JSON.parse(decodeURIComponent(h[1]))}}catch(e){}return {}})();
+const fxGuardaGrupo=()=>{if(FX_G)FX_PAG[FX_G]={f:UI.fx,v:UI.fxVisao||null,m:!!UI.fxVisaoMudou}};
+function fxTrocaGrupo(){const g=fxGrupo();if(g===FX_G){FX_ADOTA=false;return}
+  if(!FX_ADOTA){fxGuardaGrupo();const x=FX_PAG[g]||{};UI.fx=fxSoValidos(JSON.parse(JSON.stringify(x.f||{})));UI.fxVisao=x.v||null;UI.fxVisaoMudou=!!x.m}
+  FX_ADOTA=false;FX_G=g;fxGuardar()}
+{const _r=render;render=function(){fxTrocaGrupo();return _r.apply(this,arguments)}}
 UI.fxSec=UI.fxSec||'funil';
 let FX_ABERTO=false,FX_SO_RESULTADO=false,FX_SEC_TROCOU=false;
 
@@ -116,7 +125,7 @@ function fxConta(d,val,ctx){const base=S.terrenos.filter(t=>fxPassa(t,ctx,d.k));
   return base.filter(t=>[].concat(d.v(t)??[]).includes(val)).length}
 
 /* ---------- mudar o filtro ---------- */
-function fxGuardar(){try{sessionStorage.setItem(FX_KEY,JSON.stringify(UI.fx))}catch(e){}
+function fxGuardar(){if(!FX_G)FX_G=fxGrupo();fxGuardaGrupo();try{sessionStorage.setItem(FX_GK,JSON.stringify(FX_PAG))}catch(e){}
   if(typeof rtSync==='function')rtSync()}
 function fxLimparDependentes(){const fs=fxFasesSel();if(UI.fx.etapa){UI.fx.etapa=UI.fx.etapa.filter(x=>fs.includes(x.split(':')[0]));if(!UI.fx.etapa.length)delete UI.fx.etapa}
   const es=fxEtapasSel();if(UI.fx.sub){UI.fx.sub=UI.fx.sub.filter(x=>{const [f,s]=x.split(':');return es.some(([ff,e])=>ff===f&&(etapaF(f,e)?.subs||[]).some(z=>z.k===s))});if(!UI.fx.sub.length)delete UI.fx.sub}

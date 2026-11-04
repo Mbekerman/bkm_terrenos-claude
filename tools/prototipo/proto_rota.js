@@ -68,9 +68,9 @@ function rtAplicar(s){const [a,b,c,d]=s,limpo={vbPop:null,vbNova:false,fichaShee
  const _s=mpSelecionar;mpSelecionar=function(){const x=_s.apply(this,arguments);rtSync();return x};
  const _f=fichaSheet;fichaSheet=function(){const x=_f.apply(this,arguments);rtSync();return x};
  const _m=renderModal;renderModal=function(){const x=_m.apply(this,arguments);rtSync();return x}}
-/* voltar, avançar ou endereço trocado à mão: o filtro do endereço vale; sem filtro no endereço, fica o da sessão */
+/* voltar, avançar ou endereço trocado à mão: o filtro do endereço vale para a página de destino; sem filtro no endereço, fica o da sessão daquela página */
 window.addEventListener('popstate',()=>{const h=location.hash.match(/[#&?]f=([^&]+)/);
-  if(h)try{UI.fx=JSON.parse(decodeURIComponent(h[1]));sessionStorage.setItem(FX_KEY,JSON.stringify(UI.fx))}catch(e){}
+  if(h)try{fxGuardaGrupo();UI.fx=fxSoValidos(JSON.parse(decodeURIComponent(h[1])));FX_ADOTA=true}catch(e){}
   rtAplicar(rtLer())});
 /* link recebido: abre direto na tela (antes, o endereço antigo só com #f= cai no Início) */
 {const s=rtLer();if(s.length)rtAplicar(s)}
