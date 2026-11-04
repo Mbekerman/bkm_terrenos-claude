@@ -13,8 +13,8 @@
 P.filtro='M4 6h16M7 12h10M10 18h4';
 const FX_KEY='bkm-terrenos-filtros';
 UI.fx=UI.fx||(()=>{try{const h=location.hash.match(/[#&?]f=([^&]+)/);if(h)return JSON.parse(decodeURIComponent(h[1]))}catch(e){}try{return JSON.parse(sessionStorage.getItem(FX_KEY)||'{}')}catch(e){return {}}})();
-UI.fxAb=UI.fxAb||['funil','comercial','local'];
-let FX_ABERTO=false,FX_SO_RESULTADO=false;
+UI.fxSec=UI.fxSec||'funil';
+let FX_ABERTO=false,FX_SO_RESULTADO=false,FX_SEC_TROCOU=false;
 
 /* ---------- valores do terreno usados pelos filtros ---------- */
 const STP=['apresentada','em_analise','aceita'];
@@ -182,11 +182,14 @@ function fxDrawer(){let el=$('#fx-dr'),sc=$('#fx-scrim');
   if(!el){sc=document.createElement('div');sc.id='fx-scrim';sc.className='fx-scrim';sc.dataset.a='fx-fechar';document.body.appendChild(sc);
     el=document.createElement('aside');el.id='fx-dr';el.className='fx-dr';el.setAttribute('role','dialog');el.setAttribute('aria-label','Filtros');document.body.appendChild(el)}
   document.body.classList.add('fx-on');
-  const grupos=FX_GRUPOS.map(([g,l])=>{const ds=FX.filter(d=>d.g===g&&!(ctx==='kanban'&&d.funil===true)),ab=UI.fxAb.includes(g),n=ds.filter(d=>fxTem(d)&&d.k!=='arq').length;
-    return `<section class="fx-s"><button class="fx-sh" data-a="fx-grupo" data-v="${g}" aria-expanded="${ab}">${esc(l)}${n?`<span class="fx-sn">${n}</span>`:''}${ic('chev',18)}</button>${ab?`<div class="fx-sb">${g==='funil'&&ctx==='kanban'?'<div class="fx-hint">No quadro, a fase e a etapa vêm da navegação (Funil › fase › etapa).</div>':''}
-      ${fxMarcasJuntas(ds,ctx)}</div>`:''}</section>`}).join('');
+  /* uma seção por vez (pedido do Moisés, 4/nov/2026): os botões no cabeçalho trocam a seção e mostram quantos filtros cada uma tem */
+  const gs=FX_GRUPOS.map(([g,l])=>{const ds=FX.filter(d=>d.g===g&&!(ctx==='kanban'&&d.funil===true));return {g,l,ds,n:ds.filter(d=>fxTem(d)&&d.k!=='arq').length+(g==='gestao'&&UI.fx.arq&&ctx!=='kanban'?1:0)}});
+  if(!gs.some(x=>x.g===UI.fxSec))UI.fxSec=gs[0].g;const cur=gs.find(x=>x.g===UI.fxSec);
+  const abas=`<div class="fx-abas" role="tablist" aria-label="Seções dos filtros">${gs.map(x=>`<button role="tab" class="fx-aba" data-a="fx-sec" data-v="${x.g}" aria-selected="${x.g===cur.g}" aria-controls="fx-sec-b"${x.n?` title="${x.n} filtro${x.n>1?'s':''} nesta seção"`:''}>${esc(x.l)}${x.n?`<span class="fx-sn">${x.n}</span>`:''}</button>`).join('')}</div>`;
+  const corpo=`<section class="fx-s fx-s1" id="fx-sec-b" role="tabpanel"><div class="fx-sb">${cur.g==='funil'&&ctx==='kanban'?'<div class="fx-hint">No quadro, a fase e a etapa vêm da navegação (Funil › fase › etapa).</div>':''}${fxMarcasJuntas(cur.ds,ctx)}</div></section>`;
   el.innerHTML=`<div class="fx-h"><h2>Filtros</h2>${Object.keys(UI.fx).length?'<button class="linkbtn" data-a="fx-limpar">Limpar tudo</button>':''}<button class="iconbtn" data-a="fx-fechar" aria-label="Fechar filtros" title="Fechar (Esc)">${ic('close',22)}</button></div>
-    <div class="fx-b">${grupos}</div><div class="fx-f" id="fx-f">${fxRodapeHtml(ctx)}</div>`;
+    ${abas}<div class="fx-b">${corpo}</div><div class="fx-f" id="fx-f">${fxRodapeHtml(ctx)}</div>`;
+  if(FX_SEC_TROCOU){FX_SEC_TROCOU=false;el.querySelector('.fx-aba[aria-selected=true]')?.scrollIntoView({block:'nearest',inline:'nearest'});el.querySelector('.fx-b').scrollTop=0;return}
   el.querySelector('.fx-b').scrollTop=top}
 /* marcas soltas (prazo, aprovação, pendências) ficam juntas numa linha de botões */
 function fxMarcasJuntas(ds,ctx){let h='',mk=[];const sai=()=>{if(mk.length){h+=`<div class="fx-ops">${mk.join('')}</div>`;mk=[]}};
@@ -203,9 +206,9 @@ function fxLerNum(s){s=String(s||'').trim().toLowerCase().replace(/r\$\s*/,'');i
 /* ---------- eventos ---------- */
 function fxAcao(a){const k=a.dataset.k,v=a.dataset.v;
   switch(a.dataset.a){
-    case 'fx-abrir':FX_ABERTO=!FX_ABERTO;if(FX_ABERTO&&UI.fichaSheet){UI.fichaSheet=null;fichaSheet()}fxDrawer();const b=$('.fx-btn');b?.setAttribute('aria-expanded',FX_ABERTO);if(FX_ABERTO)setTimeout(()=>$('#fx-dr .fx-sh')?.focus(),30);return true;
+    case 'fx-abrir':FX_ABERTO=!FX_ABERTO;if(FX_ABERTO&&UI.fichaSheet){UI.fichaSheet=null;fichaSheet()}fxDrawer();const b=$('.fx-btn');b?.setAttribute('aria-expanded',FX_ABERTO);if(FX_ABERTO)setTimeout(()=>$('#fx-dr .fx-aba[aria-selected=true]')?.focus(),30);return true;
     case 'fx-fechar':FX_ABERTO=false;fxDrawer();$('.fx-btn')?.setAttribute('aria-expanded','false');return true;
-    case 'fx-grupo':UI.fxAb=UI.fxAb.includes(v)?UI.fxAb.filter(x=>x!==v):[...UI.fxAb,v];fxDrawer();return true;
+    case 'fx-sec':UI.fxSec=v;FX_SEC_TROCOU=true;fxDrawer();return true;
     case 'fx-op':{const cur=fxSel(k);UI.fx[k]=cur.includes(v)?cur.filter(x=>x!==v):[...cur,v];if(!UI.fx[k].length)fxTira(k);fxAplicar();return true}
     case 'fx-marca':UI.fx[k]=!UI.fx[k];if(!UI.fx[k])delete UI.fx[k];fxAplicar();return true;
     case 'fx-sem':UI.fx[k]={...UI.fx[k],semInfo:!UI.fx[k]?.semInfo};fxAplicar();return true;

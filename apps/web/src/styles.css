@@ -4802,5 +4802,74 @@ html[data-tema="escuro"] .etq-vazio { color: #c4c7c5 }
 .nv-sqls { align-items: flex-start } .nv-sqls > .etq-sw { margin-top: 3px } .nv-sqls .btn { margin-top: -4px }
 .nv-sqls-l { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px } .nv-sqls-l .etq { height: 28px; font-size: 13px; cursor: default } .nv-sqls-l .etq-n { padding-right: 10px }
 
+/* ===================== tabela de terrenos (4/nov/2026; proto_tabela.js) ===================== */
+.ter-ac { display: flex; align-items: center; gap: 4px; flex-wrap: wrap }
+.lista-ter td { vertical-align: top }
+.lista-ter td .t2 { font-size: 12px; line-height: 16px; color: var(--m-on-var, #444746) }
+.lista-ter td > div + div { margin-top: 2px }
+.lista-ter th .dt-sort { white-space: normal; text-align: left; line-height: 16px }
+.lista-ter th.num .dt-sort { text-align: right }
+.lista-ter th.col-ter { min-width: 240px }
+.lista-ter td.col-ter { min-width: 240px; max-width: 340px }
+.lista-ter td.col-cid, .lista-ter td.col-zona { white-space: nowrap }
+.tb-c1 { display: flex; gap: 8px; align-items: flex-start }
+.tb-c1t { min-width: 0 }
+.tb-c1t .t1 { font-weight: 500; overflow-wrap: anywhere }
+.tb-olho { flex: none; width: 36px; height: 36px; margin: -4px 0 0 -8px; color: var(--m-on-var, #444746) }
+.tb-ord { display: inline-grid; place-items: center; min-width: 16px; height: 16px; margin-left: 2px; padding: 0 4px; border-radius: 8px; background: #c2e7ff; color: #001d35; font-size: 11px; font-weight: 500; line-height: 16px }
+.lista-ter tr.tb-sel > td { background: #d3e3fd !important }
+.lista-ter tr.tb-sel .tb-olho { color: #0b57d0; background: rgba(11,87,208,.12) }
+/* tela cheia: a tabela cobre a página, acima do menu e abaixo das janelas */
+.ter-pg.on { position: fixed; inset: 0; z-index: 31; overflow: auto; background: var(--m-surface, #f8fafd); padding: 16px 24px 24px }
+.ter-pg.on .page-h { margin-bottom: 16px }
+body.tb-cheia { overflow: hidden }
+body.tb-cheia .fab { display: none !important }
+/* gaveta da ficha: da direita até o fim da coluna 1 */
+.tgav { position: fixed; z-index: 33; right: 0; bottom: 0; display: flex; flex-direction: column; background: var(--m-surface, #f8fafd); border-left: 1px solid var(--m-outline-var, #c4c7c5); box-shadow: -8px 0 28px rgba(0,0,0,.14); animation: tgav-in .18s ease-out }
+@keyframes tgav-in { from { transform: translateX(40px); opacity: .4 } to { transform: none; opacity: 1 } }
+.tgav-h { flex: none; display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 0 8px 0 24px; border-bottom: 1px solid var(--m-outline-var, #c4c7c5) }
+.tgav-h .num { font-size: 12px; color: var(--m-on-var, #444746) }
+.tgav-n { flex: 1; min-width: 0; font-size: 16px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.tgav-b { flex: 1; overflow: auto; overscroll-behavior: contain; padding: 16px 24px 24px; container: pagina / inline-size }
+.tgav .back { display: none }
+.tgav .fi-abas-w { top: 0 }
+.tgav .pn { top: 56px; height: calc(var(--gav-h, 100vh) - 140px) }
+body.tgav-on { overflow: hidden }
+body.tgav-on .fab { display: none !important }
+@media (max-width: 899px) {
+  .lista-ter td.col-cid, .lista-ter td.col-zona { white-space: normal }
+  .tgav { left: 0 !important; top: 0 !important; z-index: 36; border-left: 0; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px) }
+  .tgav-h { padding-left: 16px } .tgav-b { padding: 8px 16px 24px }
+  .ter-pg.on { padding: 12px 16px }
+}
+/* tabela empilhada (não cabe): a coluna 1 em cima, o resto em linhas curtas */
+.empilha .dt.lista-ter td.col-ter { max-width: none }
+.empilha .dt.lista-ter td:not(.col-ter) > div + div { margin-top: 0 }
+.empilha .dt.lista-ter td::before { content: none !important }
+.empilha .dt.lista-ter td:not(.col-ter) { flex-wrap: wrap; column-gap: 6px }
+.empilha .dt.lista-ter td:not(.col-ter) > div + div::before { content: "· "; color: var(--m-on-var, #444746) }
+.empilha .dt.lista-ter td.col-ter { padding-right: 0 !important }
+html[data-tema="escuro"] .tgav { background: #131314; border-color: #2d2f31; box-shadow: -8px 0 28px rgba(0,0,0,.5) }
+html[data-tema="escuro"] .tgav-h { border-color: #2d2f31 }
+html[data-tema="escuro"] .ter-pg.on { background: #131314 }
+html[data-tema="escuro"] .lista-ter tr.tb-sel > td { background: #004a77 !important; color: #c2e7ff }
+html[data-tema="escuro"] .lista-ter tr.tb-sel .t2 { color: #c2e7ff }
+html[data-tema="escuro"] .lista-ter tr.tb-sel .tb-olho { color: #c2e7ff; background: rgba(194,231,255,.12) }
+html[data-tema="escuro"] .tb-ord { background: #004a77; color: #c2e7ff }
+/* filtros: uma seção por vez, com os botões das seções no cabeçalho (4/nov/2026) */
+.fx-abas { flex: none; display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px 12px 24px; border-bottom: 1px solid #e3e3e3 }
+.fx-aba { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid #c4c7c5; border-radius: 8px; background: none; color: #444746; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap }
+.fx-aba:hover { background: rgba(68,71,70,.08) }
+.fx-aba[aria-selected="true"] { background: #c2e7ff; border-color: #c2e7ff; color: #001d35 }
+.fx-aba .fx-sn { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #0b57d0; color: #fff; font-size: 11px }
+.fx-aba[aria-selected="true"] .fx-sn { background: #0b57d0; color: #fff }
+.fx-s1 { border-bottom: 0 }
+.fx-s1 .fx-sb { padding-top: 16px }
+@media (max-width: 599px) { .fx-abas { flex-wrap: nowrap; overflow-x: auto; padding-left: 16px; scrollbar-width: none } .fx-abas::-webkit-scrollbar { display: none } }
+html[data-tema="escuro"] .fx-abas { border-color: #2a2a2c }
+html[data-tema="escuro"] .fx-aba { border-color: #444746; color: #c4c7c5 }
+html[data-tema="escuro"] .fx-aba[aria-selected="true"] { background: #004a77; border-color: #004a77; color: #c2e7ff }
+html[data-tema="escuro"] .fx-aba .fx-sn { background: #a8c7fa; color: #062e6f }
+
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
