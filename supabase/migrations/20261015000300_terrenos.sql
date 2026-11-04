@@ -529,6 +529,19 @@ create table app.terreno_ponto_distancias (
   primary key (terreno_id, ponto_id)
 );
 
+-- Ponto da empresa excluído da ficha de um terreno (pedido do Moisés, 4/nov/2026): sai só
+-- deste terreno e continua nos outros e no mapa. Gravada só por app.excluir_ponto_terreno
+-- e apagada só por app.restaurar_ponto_terreno.
+create table app.terreno_pontos_excluidos (
+  id            uuid primary key default gen_random_uuid(),
+  terreno_id    uuid not null references app.terrenos(id) on delete cascade,
+  ponto_id      uuid not null references app.pontos_interesse(id) on delete cascade,
+  empresa_id    uuid not null references app.empresas(id),
+  excluido_em   timestamptz not null default now(),
+  excluido_por  uuid references auth.users(id),
+  unique (terreno_id, ponto_id)
+);
+
 -- Composição de áreas: terrenos vizinhos estudados em conjunto.
 create table app.areas_interesse (
   id          uuid primary key default gen_random_uuid(),
@@ -585,7 +598,7 @@ declare t text;
 begin
   foreach t in array array['terrenos','matriculas','inscricoes_municipais','inscricao_valores','confrontacoes','terreno_pessoas','terreno_corretores','parte_corretores',
                            'terreno_infraestrutura','analises_urbanisticas','analise_zoneamentos','areas_interesse','area_interesse_terrenos',
-                           'terreno_entorno','terreno_entorno_buscas','terreno_ponto_distancias','consultas_lote'] loop
+                           'terreno_entorno','terreno_entorno_buscas','terreno_ponto_distancias','terreno_pontos_excluidos','consultas_lote'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
     execute format('create policy inserir on app.%I for insert to authenticated with check (empresa_id in (select app.empresas_edicao()))', t);
@@ -607,7 +620,8 @@ grant usage on sequence app.terreno_seq to authenticated;
 drop policy inserir on app.terreno_entorno;        drop policy alterar on app.terreno_entorno;
 drop policy inserir on app.terreno_entorno_buscas; drop policy alterar on app.terreno_entorno_buscas;
 drop policy inserir on app.terreno_ponto_distancias; drop policy alterar on app.terreno_ponto_distancias;
-revoke insert, update on app.terreno_entorno, app.terreno_entorno_buscas, app.terreno_ponto_distancias from authenticated;
+drop policy inserir on app.terreno_pontos_excluidos; drop policy alterar on app.terreno_pontos_excluidos;
+revoke insert, update on app.terreno_entorno, app.terreno_entorno_buscas, app.terreno_ponto_distancias, app.terreno_pontos_excluidos from authenticated;
 -- Consulta do lote na prefeitura: só pela RPC, e nunca alterada.
 drop policy inserir on app.consultas_lote; drop policy alterar on app.consultas_lote;
 revoke insert, update on app.consultas_lote from authenticated;
@@ -713,3 +727,4 @@ create trigger t_aud after insert or update or delete on app.terreno_partes for 
 
 -- só exclusão e restauração alteram um lugar; a busca troca as linhas sem passar por update
 create trigger t_aud after update on app.terreno_entorno for each row execute function app.tg_auditoria();
+create trigger t_aud after insert or delete on app.terreno_pontos_excluidos for each row execute function app.tg_auditoria();

@@ -30,7 +30,7 @@ const e=await p.$('#ent-card .poi-x[data-tp=e]');const en=await e.evaluate(x=>x.
 await e.click();await p.waitForTimeout(200);await p.click('#modal [data-a=poi-excl-ok]');await p.waitForTimeout(300);
 ok(!(await p.$eval('#ent-card .ent-l',x=>x.innerText)).includes(en),`da empresa "${en}" saiu da lista`);
 const st=await p.evaluate(()=>{for(let i=0;i<localStorage.length;i++){const v=localStorage.getItem(localStorage.key(i));if(v&&v.includes('"pontos"'))return JSON.parse(v)}});
-ok(!st.pontos.some(x=>x.nome===en)&&st.pontosExcl.length===1&&JSON.stringify(st).split('"excl":').length===2,'gravado: ponto fora de S.pontos (sai do mapa) e Google marcado só neste terreno');
+ok(st.pontos.some(x=>x.nome===en)&&st.terrenos.filter(t=>(t.pontosExcl||[]).length).length===1&&JSON.stringify(st).split('"excl":').length===2,'gravado: ponto da empresa continua em S.pontos (mapa e outros terrenos) e os dois excluídos só neste terreno');
 ok(JSON.stringify(st).includes('Ponto de interesse excluído: '+gn+' (Google)'),'exclusão vai para os logs');
 await p.click('[data-a=poi-excl-ver]');await p.waitForTimeout(200);
 const exc=await p.$eval('.ent-exc',x=>x.innerText);ok(exc.includes(gn)&&exc.includes(en),'lista de excluídos mostra os dois');

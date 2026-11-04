@@ -533,6 +533,20 @@ select pg_temp.ok((select distancia_pe_m = 260 and not precisa_medir from app.v_
 select pg_temp.ok((select distancia_pe_m is null and distancia_carro_m = 98000 from app.v_terreno_pontos where terreno_id = :'tm' and ponto_id = :'pcamp'), 'ponto longe com distância de carro');
 select pg_temp.falha(format('select app.salvar_distancias_pontos(%L, -23.60, -46.60, %L)', :'tm', '[]'), 'medição para outra coordenada é recusada');
 select pg_temp.falha(format($$insert into app.terreno_ponto_distancias (terreno_id, ponto_id, empresa_id, latitude, longitude) values (%L, %L, %L, 0, 0)$$, :'tm', :'pterm', :'emp'), 'distância não é gravada direto');
+-- excluir ponto da empresa da ficha: sai só deste terreno (4/nov/2026)
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format('select app.excluir_ponto_terreno(%L, %L)', :'tm', :'pterm'), 'leitura não exclui ponto do terreno');
+select pg_temp.como(:'analista');
+select app.excluir_ponto_terreno(:'tm', :'pterm');
+select pg_temp.ok(not exists (select 1 from app.v_terreno_pontos where terreno_id = :'tm' and ponto_id = :'pterm'), 'ponto excluído some da ficha deste terreno');
+select pg_temp.ok((select ativo from app.pontos_interesse where id = :'pterm'), 'ponto excluído do terreno continua ativo (outros terrenos e mapa)');
+select pg_temp.falha(format($$insert into app.terreno_pontos_excluidos (terreno_id, ponto_id, empresa_id) values (%L, %L, %L)$$, :'tm', :'pcamp', :'emp'), 'exclusão do terreno não é gravada direto');
+select app.excluir_ponto_terreno(:'tm', :'pterm');
+select pg_temp.ok((select count(*) from app.terreno_pontos_excluidos where terreno_id = :'tm') = 1, 'excluir de novo não duplica');
+select app.restaurar_ponto_terreno(:'tm', :'pterm');
+select pg_temp.ok(exists (select 1 from app.v_terreno_pontos where terreno_id = :'tm' and ponto_id = :'pterm'), 'restaurar devolve o ponto à ficha');
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'terreno_pontos_excluidos') = 2, 'exclusão e restauração vão para os logs');
 select pg_temp.como(:'analista');
 update app.pontos_interesse set ativo = false where id = :'pcamp';
 select pg_temp.ok(not exists (select 1 from app.v_terreno_pontos where ponto_id = :'pcamp'), 'ponto da empresa excluído (desligado) some de todos os terrenos');

@@ -316,8 +316,9 @@ from app.v_terrenos v
 join app.terrenos t on t.id = v.id
 where v.situacao_cadastral = 'ativo';
 
--- Todos os pontos de interesse da empresa para cada terreno localizado: linha reta
--- sempre; a pé e de carro quando medidos para a coordenada atual do terreno.
+-- Todos os pontos de interesse da empresa para cada terreno localizado, menos os
+-- excluídos daquele terreno: linha reta sempre; a pé (a ficha mostra só a pé, decisão
+-- do Moisés de 4/nov/2026) e de carro quando medidos para a coordenada atual do terreno.
 create view app.v_terreno_pontos with (security_invoker = true) as
 select t.id as terreno_id, t.empresa_id, p.id as ponto_id, p.nome, p.categoria, p.latitude, p.longitude,
        app.distancia_km(t.latitude, t.longitude, p.latitude, p.longitude) as distancia_km,
@@ -330,7 +331,8 @@ from app.terrenos t
 join app.pontos_interesse p on p.empresa_id = t.empresa_id and p.ativo
 left join app.terreno_ponto_distancias d on d.terreno_id = t.id and d.ponto_id = p.id
 cross join lateral (select d.terreno_id is not null and d.latitude = t.latitude and d.longitude = t.longitude as em_dia) x
-where t.latitude is not null;
+where t.latitude is not null
+  and not exists (select 1 from app.terreno_pontos_excluidos e where e.terreno_id = t.id and e.ponto_id = p.id);
 
 -- Entorno do terreno (Google), com o aviso de busca feita para outra coordenada.
 -- Lugares excluídos neste terreno não aparecem (a lista deles sai de terreno_entorno.excluido_em).
@@ -1862,6 +1864,37 @@ begin
   where terreno_id = p_terreno and google_place_id = p_google_place_id and excluido_em is not null;
 end $$;
 
+-- Exclui um ponto da empresa só da ficha deste terreno (continua nos outros e no mapa).
+create or replace function app.excluir_ponto_terreno(p_terreno uuid, p_ponto uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos;
+begin
+  select * into t from app.terrenos where id = p_terreno;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  if not exists (select 1 from app.pontos_interesse where id = p_ponto and empresa_id = t.empresa_id) then
+    raise exception 'Ponto não é desta empresa' using errcode = 'P0002';
+  end if;
+  insert into app.terreno_pontos_excluidos (terreno_id, ponto_id, empresa_id, excluido_por)
+  values (p_terreno, p_ponto, t.empresa_id, auth.uid())
+  on conflict (terreno_id, ponto_id) do nothing;
+end $$;
+
+-- Desfaz: o ponto volta à ficha deste terreno.
+create or replace function app.restaurar_ponto_terreno(p_terreno uuid, p_ponto uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos;
+begin
+  select * into t from app.terrenos where id = p_terreno;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  delete from app.terreno_pontos_excluidos where terreno_id = p_terreno and ponto_id = p_ponto;
+end $$;
+
 -- Grava as distâncias (a pé e de carro, pela rota) do terreno aos pontos da empresa.
 -- Recusa coordenada diferente da atual; ignora ponto de outra empresa ou inativo.
 -- p_itens: [{ponto_id, distancia_pe_m, duracao_pe_s, distancia_carro_m, duracao_carro_s}]
@@ -2688,6 +2721,7 @@ grant execute on function
   app.salvar_terreno(uuid, int, jsonb), app.desfazer_alteracao(bigint),
   app.salvar_entorno(uuid, double precision, double precision, jsonb, boolean),
   app.excluir_lugar_entorno(uuid, text), app.restaurar_lugar_entorno(uuid, text),
+  app.excluir_ponto_terreno(uuid, uuid), app.restaurar_ponto_terreno(uuid, uuid),
   app.salvar_distancias_pontos(uuid, double precision, double precision, jsonb),
   app.registrar_consulta_lote(uuid, jsonb, jsonb, numeric, jsonb, jsonb, text[], boolean), app.cartorio_da_prefeitura(uuid, text),
   app.registrar_zonas_sem_inscricao(uuid, jsonb, text), app.salvar_zona_parametro(uuid, uuid, jsonb),

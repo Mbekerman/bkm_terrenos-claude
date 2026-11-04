@@ -55,15 +55,15 @@ const ENT_CAT=[['metro_trem','Estação de metrô ou trem','estações de metrô
 const ENT_BUSCA={},ENT_TENT=new Set();let ENT_TODOS=false;
 const rotaPeUrl=(t,p)=>`https://www.google.com/maps/dir/?api=1&origin=${t.lat},${t.lng}&destination=${p.lat},${p.lng}${p.gid&&!String(p.gid).startsWith('ex')?'&destination_place_id='+encodeURIComponent(p.gid):''}&travelmode=walking`;
 /* Pontos de interesse numa lista só (pedido do Moisés, 3/nov/2026): os lugares do Google (por categoria, a até RAIO_PE a pé)
-   e os pontos cadastrados pela empresa (todos: a pé até RAIO_PE, senão de carro; sem rota medida, linha reta), juntos, pela distância.
+   e os pontos cadastrados pela empresa (todos, sempre a pé pela rota; sem rota medida, linha reta; excluído só sai deste terreno), juntos, pela distância.
    Cada linha diz a categoria; a exclusão continua com a regra de cada origem (poiX). */
 let EMP_TODOS=false;
 const kmTxt=m=>m<1000?Math.round(m/10)*10+'\u00a0m':num(m/1000,m<10000?2:1)+'\u00a0km';
-function pontosEmpresa(t){const pts=S.pontos||[];const d=t.dist&&t.dist.lat===t.lat&&t.dist.lng===t.lng?t.dist.m:{};
+function pontosEmpresa(t){const ex=new Set((t.pontosExcl||[]).map(e=>e.id)),pts=(S.pontos||[]).filter(p=>!ex.has(p.id));const d=t.dist&&t.dist.lat===t.lat&&t.dist.lng===t.lng?t.dist.m:{};
   return pts.map(p=>{const x=d[p.id]||{},reta=distKm(t.lat,t.lng,p.lat,p.lng)*1000,c={nome:p.nome,cat:CAT_POI[p.cat]||'Outro',x:poiX('e',p.id,p.nome,t)};
-    if(x.pe!=null&&x.pe<=RAIO_PE)return {...c,ord:x.pe,dist:kmTxt(x.pe),modo:`${x.pm} min a pé`,url:rotaPeUrl(t,p)};
-    if(x.cm!=null)return {...c,ord:x.cm,dist:kmTxt(x.cm),modo:`${x.cmin} min de carro`,url:rotaUrl(t,p)};
-    return {...c,ord:reta,dist:kmTxt(reta),modo:'em linha reta',url:reta<=RAIO_PE?rotaPeUrl(t,p):rotaUrl(t,p)}})}
+    /* sempre a pé (pedido do Moisés, 4/nov/2026); sem rota medida, linha reta */
+    if(x.pe!=null)return {...c,ord:x.pe,dist:kmTxt(x.pe),modo:`${x.pm} min a pé`,url:rotaPeUrl(t,p)};
+    return {...c,ord:reta,dist:kmTxt(reta),modo:'em linha reta',url:rotaPeUrl(t,p)}})}
 function entornoCard(t){if(t.lat==null)return '';
   const e=t.entorno,busc=ENT_BUSCA[t.id],mudou=e&&!(e.lat===t.lat&&e.lng===t.lng),raio=fKm(RAIO_PE/1000);
   const g=(e?.itens||[]).filter(x=>!x.excl).map(p=>({nome:p.nome,cat:ENT_CAT.find(c=>c[0]===p.cat)?.[1]||'Lugar',ord:p.pe,dist:kmTxt(p.pe),modo:p.min!=null?`${p.min} min a pé`:(e.semPe?'em linha reta':'a pé'),url:rotaPeUrl(t,p),x:poiX('g',p.gid,p.nome,t)}));
@@ -78,13 +78,13 @@ function entornoCard(t){if(t.lat==null)return '';
     ${e&&(busc||e.semPe||mudou)?`<div class="hint ent-pe">${busc?'Atualizando no Google… · ':''}${e.semPe?'Lugares do Google em linha reta (sem rota a pé) · ':''}${fd(e.em)}${mudou?' · <b>a localização mudou depois da busca</b>':''}</div>`:''}
     ${DIST_BUSCA_ON(t)?'<div class="hint">Medindo as rotas no Google…</div>':''}`;
   corpo+=poiExcluidos(t);
-  return `<section class="sec" id="ent-card"><div class="sec-h"><h2>Pontos de interesse</h2><span class="faint" style="font-size:12px">a pé até ${raio}; mais longe, de carro</span>${UI.role!=='Leitura'?`<button class="btn sm text ed" data-a="ent-add-ponto" data-id="${t.id}">${ic('add',16)}Adicionar ponto</button>`:''}</div><div class="sec-b">${corpo}</div></section>`}
+  return `<section class="sec" id="ent-card"><div class="sec-h"><h2>Pontos de interesse</h2><span class="faint" style="font-size:12px">distâncias a pé</span>${UI.role!=='Leitura'?`<button class="btn sm text ed" data-a="ent-add-ponto" data-id="${t.id}">${ic('add',16)}Adicionar ponto</button>`:''}</div><div class="sec-b">${corpo}</div></section>`}
 /* excluir ponto de interesse. Do Google: marcado no próprio terreno (no banco: terreno_entorno.excluido_em);
    some só deste terreno e continua fora se a busca for refeita (o terreno mudou de lugar). Da empresa:
    desligado (ativo = false), some de todos os terrenos e do mapa. Os dois voltam por "Restaurar". */
 const poiX=(tp,id,nome,t)=>UI.role==='Leitura'?'':`<button class="iconbtn poi-x" data-a="poi-excl" data-tp="${tp}" data-p="${esc(String(id))}" data-id="${t.id}" aria-label="Excluir ${esc(nome)}" title="Excluir">${ic('lixo',18)}</button>`;
 let EXCL_VER=false;
-function poiExcluidos(t){const g=(t.entorno?.itens||[]).filter(x=>x.excl).map(x=>({tp:'g',id:x.gid,nome:x.nome,...x.excl})),e=(S.pontosExcl||[]).map(p=>({tp:'e',...p}));
+function poiExcluidos(t){const g=(t.entorno?.itens||[]).filter(x=>x.excl).map(x=>({tp:'g',id:x.gid,nome:x.nome,...x.excl})),e=(t.pontosExcl||[]).map(x=>({tp:'e',...x,nome:(S.pontos||[]).find(p=>p.id===x.id)?.nome})).filter(x=>x.nome);
   const l=[...g,...e].sort((a,b)=>String(b.em).localeCompare(String(a.em)));if(!l.length)return '';
   return `<div class="ent-exc"><button class="linkbtn" data-a="poi-excl-ver" aria-expanded="${EXCL_VER}">${EXCL_VER?'Ocultar excluídos':`Excluídos (${l.length})`}</button>
     ${EXCL_VER?`<ul class="poil ent-l">${l.map(x=>`<li><span><span class="t1">${esc(x.nome)}</span><span class="t2">${x.tp==='g'?'Google':'Cadastrado pela empresa'} · excluído por ${esc(x.por)} em ${fd(x.em)}</span></span>${UI.role!=='Leitura'?`<button class="linkbtn ed" data-a="poi-rest" data-tp="${x.tp}" data-p="${esc(String(x.id))}" data-id="${t.id}">Restaurar</button>`:''}</li>`).join('')}</ul>`:''}</div>`}

@@ -258,6 +258,8 @@ erDiagram
   terrenos ||--o{ terreno_entorno : "lugares a pe"
   terrenos ||--o{ terreno_ponto_distancias : "rota ate os pontos da empresa"
   pontos_interesse ||--o{ terreno_ponto_distancias : mede
+  terrenos ||--o{ terreno_pontos_excluidos : "pontos da empresa tirados da ficha"
+  pontos_interesse ||--o{ terreno_pontos_excluidos : "excluido so neste terreno"
   entorno_categorias ||--o{ terreno_entorno : classifica
 
   terrenos {
@@ -632,7 +634,7 @@ As tarefas moram no esquema `fluxo` (ver "Quadros e tarefas", abaixo): cada terr
 | `v_entorno_buscas` | por terreno localizado: quando foi buscado, se a rota a pé respondeu e `precisa_buscar` (nunca buscado ou desatualizado) |
 | `v_tarefas` | cartão dos quadros dos terrenos (`fluxo.v_tarefas`: lista, atraso e andamento do checklist) com o código e o nome do terreno; o quadro ordena por lista e `posicao` |
 
-Entorno do terreno: as categorias são configuração (`entorno_categorias`: tipos do Google e raio a pé; ligar outra categoria é migration de dados). O front busca sozinho quando o terreno é localizado ou muda de lugar (`precisa_buscar`), e só então, e grava por `salvar_entorno`. `pontos_interesse` é a lista cadastrada pela própria empresa (sede, polos, pontos marcados à mão): todos aparecem na ficha de cada terreno, com a distância a pé quando está a até 1,5 km a pé e de carro quando está mais longe (`terreno_ponto_distancias`). Excluir: lugar do Google é marcado no próprio terreno por `excluir_lugar_entorno` (só aquele terreno; continua fora se a busca for refeita porque o terreno mudou de lugar) e volta por `restaurar_lugar_entorno`; ponto da empresa é desligado direto (`ativo = false`, auditado), some de todos os terrenos e do mapa e pode ser religado. A busca no Google é feita uma vez por localização: não há "buscar de novo" manual.
+Entorno do terreno: as categorias são configuração (`entorno_categorias`: tipos do Google e raio a pé; ligar outra categoria é migration de dados). O front busca sozinho quando o terreno é localizado ou muda de lugar (`precisa_buscar`), e só então, e grava por `salvar_entorno`. `pontos_interesse` é a lista cadastrada pela própria empresa (sede, polos, pontos marcados à mão): todos aparecem na ficha de cada terreno, numa lista só com os lugares do Google, sempre com a distância a pé pela rota (`terreno_ponto_distancias`; a coluna de carro fica, sem uso na ficha; decisão do Moisés, 4/nov/2026). Excluir: lugar do Google é marcado no próprio terreno por `excluir_lugar_entorno` (só aquele terreno; continua fora se a busca for refeita porque o terreno mudou de lugar) e volta por `restaurar_lugar_entorno`; ponto da empresa sai também só daquele terreno (`excluir_ponto_terreno` grava em `terreno_pontos_excluidos`, auditado; `v_terreno_pontos` não o mostra mais ali) e volta por `restaurar_ponto_terreno`; desligar o ponto para todos (`ativo = false`) continua possível no cadastro, fora da ficha. A busca no Google é feita uma vez por localização: não há "buscar de novo" manual.
 
 O dashboard agrega `v_terrenos` no front (filtro cruzado por clique). A poligonal continua em `terrenos.poligono_geojson`; importar KMZ/KML é feito no front e gravado por `salvar_terreno`.
 
