@@ -1859,6 +1859,11 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .adv-lista.adv-modal { padding: 4px 24px 8px }
 .adv-l2 { display: flex; gap: 8px; align-items: center }
 .adv-l2 > .btn.primary { flex: 1 1 auto; justify-content: center; min-width: 0 }
+/* painel estreito (1024 a 1180 px): o rótulo longo ("Concluir como Comprado") não pode ser cortado.
+   Recuo de 16 px e, com a linha abaixo de 270 px, sem o ícone e com o rótulo em duas linhas quando não cabe em uma (4/nov/2026). */
+.adv-l2 { container-type: inline-size }
+.adv-l2 > .btn.primary { padding: 0 16px !important }
+@container (max-width: 270px) { .adv-l2 > .btn.primary { padding: 4px 12px !important; height: auto; white-space: normal; line-height: 16px; text-align: center } .adv-l2 > .btn.primary > svg { display: none } .adv-l2 > .btn.primary > span { white-space: normal } }
 .adv-mais { position: relative; flex: none }
 .adv-mb { width: 40px; min-width: 40px; padding: 0; justify-content: center }
 .adv-menu { display: none; position: absolute; right: 0; top: calc(100% + 4px); z-index: 40; min-width: 220px; background: var(--m-sc-low, #f0f4f9); border-radius: 12px; padding: 6px 0; box-shadow: 0 2px 6px rgba(0,0,0,.18), 0 6px 18px rgba(0,0,0,.14) }
@@ -9696,8 +9701,9 @@ async function gEntornoTerreno(t){if(!GG||!gLib.places||t.lat==null||ENT_BUSCA[t
   ENT_BUSCA[t.id]=true;const lat=t.lat,lng=t.lng;entRefresh(t);
   try{const {Place,SearchNearbyRankPreference}=gLib.places;
     const res=await Promise.all(ENT_CAT.map(([k,,,tipos])=>Place.searchNearby({fields:['id','displayName','location'],locationRestriction:{center:gLL(lat,lng),radius:RAIO_PE},
-      includedTypes:tipos,maxResultCount:20,rankPreference:SearchNearbyRankPreference.DISTANCE,language:'pt-BR',region:'br'})
+      includedPrimaryTypes:tipos,maxResultCount:20,rankPreference:SearchNearbyRankPreference.DISTANCE,language:'pt-BR',region:'br'})
       .then(r=>(r.places||[]).map(p=>({gid:p.id,nome:p.displayName,cat:k,lat:p.location.lat(),lng:p.location.lng()})))));
+    /* só pelo tipo principal do lugar: com includedTypes vinham autoescola e curso livre (que também têm "school"), restaurante como parque etc. (4/nov/2026) */
     /* um lugar entra uma vez (na primeira categoria); mesmo nome na mesma categoria = mesma estação/hospital, fica o mais perto */
     const ids=new Set(),nomes=new Set();let itens=[];
     res.flat().forEach(p=>{const n=p.cat+'|'+normNome(p.nome);if(ids.has(p.gid)||nomes.has(n))return;ids.add(p.gid);nomes.add(n);p.reta=Math.round(distKm(lat,lng,p.lat,p.lng)*1000);itens.push(p)});
