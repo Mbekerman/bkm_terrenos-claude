@@ -14,7 +14,7 @@ function tfColunas(){const z=tfNivel();
   if(!z.f)return fasesL().filter(f=>f.ativo!==false).map(f=>({k:f.k,nome:f.nome,desce:etapasF(f.k).length?f.k:null,em:(t)=>!!procDaFase(t,f.k)}));
   if(!z.e)return etapasF(z.f).map(e=>({k:e.k,nome:e.nome,desce:e.subs.length?z.f+'|'+e.k:null,em:(t)=>procDaFase(t,z.f)?.etapa===e.k}));
   return (etapaF(z.f,z.e)?.subs||[]).map(s=>({k:s.k,nome:s.nome,desce:null,em:(t)=>{const p=procDaFase(t,z.f);return p?.etapa===z.e&&p.sub===s.k}}))}
-function tfTrilha(){const z=tfNivel(),it=[{l:'Fases',v:''}];if(z.f)it.push({l:faseN(z.f),v:z.f});if(z.f&&z.e)it.push({l:etapaF(z.f,z.e)?.nome||z.e,v:z.f+'|'+z.e});
+function tfTrilha(){const z=tfNivel(),it=[{l:'Funil',v:''}];if(z.f)it.push({l:faseN(z.f),v:z.f});if(z.f&&z.e)it.push({l:etapaF(z.f,z.e)?.nome||z.e,v:z.f+'|'+z.e});
   const volta=it[it.length-2];
   return `<div class="tf-trilha">${volta?`<button class="iconbtn sm" data-a="tf-nivel" data-v="${esc(volta.v)}" aria-label="Voltar para ${esc(volta.l)}" title="Voltar para ${esc(volta.l)}">${ic('back',18).replace(P.back,'M15 6l-6 6 6 6')}</button>`:''}
     <ol class="drill-t" aria-label="Nível do funil">${it.map((x,i)=>i===it.length-1?`<li aria-current="page"><b>${esc(x.l)}</b></li>`:`<li><button class="linkbtn" data-a="tf-nivel" data-v="${esc(x.v)}">${esc(x.l)}</button></li>`).join('')}</ol>

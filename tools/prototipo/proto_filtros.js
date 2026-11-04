@@ -183,7 +183,7 @@ function fxDrawer(){let el=$('#fx-dr'),sc=$('#fx-scrim');
     el=document.createElement('aside');el.id='fx-dr';el.className='fx-dr';el.setAttribute('role','dialog');el.setAttribute('aria-label','Filtros');document.body.appendChild(el)}
   document.body.classList.add('fx-on');
   const grupos=FX_GRUPOS.map(([g,l])=>{const ds=FX.filter(d=>d.g===g&&!(ctx==='kanban'&&d.funil===true)),ab=UI.fxAb.includes(g),n=ds.filter(d=>fxTem(d)&&d.k!=='arq').length;
-    return `<section class="fx-s"><button class="fx-sh" data-a="fx-grupo" data-v="${g}" aria-expanded="${ab}">${esc(l)}${n?`<span class="fx-sn">${n}</span>`:''}${ic('chev',18)}</button>${ab?`<div class="fx-sb">${g==='funil'&&ctx==='kanban'?'<div class="fx-hint">No quadro, a fase e a etapa vêm da navegação (Fases › fase › etapa).</div>':''}
+    return `<section class="fx-s"><button class="fx-sh" data-a="fx-grupo" data-v="${g}" aria-expanded="${ab}">${esc(l)}${n?`<span class="fx-sn">${n}</span>`:''}${ic('chev',18)}</button>${ab?`<div class="fx-sb">${g==='funil'&&ctx==='kanban'?'<div class="fx-hint">No quadro, a fase e a etapa vêm da navegação (Funil › fase › etapa).</div>':''}
       ${fxMarcasJuntas(ds,ctx)}</div>`:''}</section>`}).join('');
   el.innerHTML=`<div class="fx-h"><h2>Filtros</h2>${Object.keys(UI.fx).length?'<button class="linkbtn" data-a="fx-limpar">Limpar tudo</button>':''}<button class="iconbtn" data-a="fx-fechar" aria-label="Fechar filtros" title="Fechar (Esc)">${ic('close',22)}</button></div>
     <div class="fx-b">${grupos}</div><div class="fx-f" id="fx-f">${fxRodapeHtml(ctx)}</div>`;
