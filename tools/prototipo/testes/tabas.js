@@ -2,7 +2,7 @@
 const TMP=require('path').join(__dirname,'..','saida')+'/';require('fs').mkdirSync(TMP+'t_abas',{recursive:true});
 const {chromium,devices}=require('playwright');
 const L=require('path').join(__dirname,'..','libs','l')+'/';const F=require('path').join(__dirname,'..','..','..','docs','prototipo.html'); // tem a meta viewport (celular)
-const ABAS=['geral','comercial','terreno','parametros','massa','viabilidade','infra','entorno','jornada','documentos'];
+const ABAS=['geral','terreno','comercial','parametros','massa','viabilidade','infra','entorno','jornada','documentos'];
 let falhas=0;const ok=(c,m)=>{if(!c){falhas++;console.log('FALHOU:',m)}};
 (async()=>{const b=await chromium.launch();
 for(const [w,h,tema,cel] of [[1440,900,'claro',0],[1440,900,'escuro',0],[390,844,'claro',1]]){
@@ -27,10 +27,10 @@ for(const a of ABAS.slice(1)){await p.evaluate(a=>document.querySelector(`.fi-ab
 await p.evaluate(()=>document.querySelector('.fi-abas [data-t="terreno"]').click());await p.waitForTimeout(250);
 const qs=await p.$$eval('#bl-terreno section.sec[data-q]',x=>x.map(y=>[y.id,y.classList.contains('qd-fechado')]));
 ok(qs.length>=5&&!qs[0][1]&&qs.slice(1).every(q=>q[1]),'quadros: só o primeiro aberto '+JSON.stringify(qs));
-await p.click('#sec-mats .qd-tg');await p.waitForTimeout(100);ok(!(await p.$eval('#sec-mats',x=>x.classList.contains('qd-fechado'))),'seta abre o quadro');
-ok(await p.$eval('#sec-mats .qd-tg',x=>x.getAttribute('aria-expanded'))==='true','aria-expanded');
-await p.click('#sec-mats .qd-tg');await p.waitForTimeout(100);ok(await p.$eval('#sec-mats',x=>x.classList.contains('qd-fechado')),'seta fecha o quadro');
-ok(await p.$eval('#sec-mats .sec-b',x=>getComputedStyle(x).display)==='none','fechado esconde o corpo');
+await p.click('#sec-lotes .qd-tg');await p.waitForTimeout(100);ok(!(await p.$eval('#sec-lotes',x=>x.classList.contains('qd-fechado'))),'seta abre o quadro');
+ok(await p.$eval('#sec-lotes .qd-tg',x=>x.getAttribute('aria-expanded'))==='true','aria-expanded');
+await p.click('#sec-lotes .qd-tg');await p.waitForTimeout(100);ok(await p.$eval('#sec-lotes',x=>x.classList.contains('qd-fechado')),'seta fecha o quadro');
+ok(await p.$eval('#sec-lotes .sec-b',x=>getComputedStyle(x).display)==='none','fechado esconde o corpo');
 // cartório na localização
 const loc=await p.$eval('#sec-loc',x=>x.textContent);ok(/Cartório de registro de imóveis/.test(loc),'cartório na localização');
 if(!cel){await p.evaluate(()=>{const k=Object.keys(localStorage).find(x=>/^bkm-terrenos-prototipo-v/.test(x)),S=JSON.parse(localStorage.getItem(k)),t=S.terrenos.find(x=>x.codigo==='TER-000123');t.cri='13º CRI';t.criFonte='prefeitura';localStorage.setItem(k,JSON.stringify(S))});await p.reload();await p.waitForTimeout(400);

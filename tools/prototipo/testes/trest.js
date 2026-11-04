@@ -52,7 +52,7 @@ await p.screenshot({path:`${OUT}${nome}_restricoes.png`,fullPage:nome==='desktop
 if(nome==='desktop'){await p.evaluate(()=>{document.documentElement.dataset.tema='escuro'});await p.waitForTimeout(150);await p.screenshot({path:`${OUT}desktop_escuro.png`});await p.evaluate(()=>{document.documentElement.dataset.tema='claro'});
   // DXF do lote com as layers novas
   await p.evaluate(()=>document.querySelector('.fi-abas [data-t=terreno]').click());await p.waitForTimeout(300);
-  await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click())});await p.waitForTimeout(200);
+  await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click());document.querySelectorAll('.lt-det').forEach(d=>d.open=true)});await p.waitForTimeout(200);
   await p.click('[data-a=geo-buscar][data-i="0"]');await p.waitForFunction(k=>{const t=JSON.parse(localStorage.getItem(Object.keys(localStorage).find(x=>/^bkm-terrenos-prototipo-v/.test(x)))).terrenos.find(x=>x.codigo==='TER-000123');return t.docs.some(d=>d.tipo==='lote_dxf')},null,{timeout:20000});
   await p.waitForTimeout(400);
   const [d]=await Promise.all([p.waitForEvent('download'),p.click('[data-a=geo-baixar][data-k=dxf]')]);await d.saveAs(OUT+'lote.dxf');

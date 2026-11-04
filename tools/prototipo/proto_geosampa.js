@@ -205,12 +205,19 @@ async function geoPoligono(sql){const d=digits(sql);
   return geoAneis(lote.geometry)[0].slice(0,-1).map(p=>utmLatLng(p[0],p[1]))}
 LOTE_ADAPT.sp={url:()=>GEO_BASE,buscar:geoBuscar,quadro:geoQuadro,poligono:geoPoligono,linhas:geoLinhas};
 
-/* Cartório da circunscrição pelo pino, para o terreno de São Paulo sem lote consultado (3/nov/2026): preenche o vazio ou troca o
-   que veio do GeoSampa quando o pino muda; nunca o digitado. Uma consulta por localização. No banco: app.cartorio_da_prefeitura. */
+/* Cartório da circunscrição, para o terreno de São Paulo, já ao abrir a ficha do terreno novo (3 e 4/nov/2026): pela poligonal
+   (a circunscrição que cobre a maior parte dela) ou, sem poligonal, pelo pino. Preenche o vazio ou troca o que veio do GeoSampa
+   quando a área muda; nunca o digitado. Uma consulta por localização. No banco: app.cartorio_da_prefeitura. */
 const CRI_TENT=new Set();
 async function geoCartorio(t){if(!GEO_BASE||t.lat==null||!/^São Paulo/.test(t.municipio||'São Paulo')||t.criFonte==='digitado'||UI.role==='Leitura')return;
-  const k=t.id+'|'+t.lat+'|'+t.lng;if(CRI_TENT.has(k)||(t.cri&&t.criFonte==='prefeitura'&&t.criLoc===k))return;CRI_TENT.add(k);
-  try{const f=await geoWfs({typeNames:'geoportal:cartorio_registro_imovel',propertyName:'cd_numero_cartorio,nm_subdistrito',CQL_FILTER:`INTERSECTS(ge_poligono,SRID=4326;POINT(${t.lng} ${t.lat}))`});
-    const c=f[0]?.properties?.cd_numero_cartorio;if(!c||f.length!==1)return;const v=c+' CRI';t.criLoc=k;
+  const k=t.id+'|'+(t.poly&&t.poly.length>2?JSON.stringify(t.poly):t.lat+'|'+t.lng);if(CRI_TENT.has(k)||(t.cri&&t.criFonte==='prefeitura'&&t.criLoc===k))return;CRI_TENT.add(k);
+  try{let c=null;
+    if(t.poly&&t.poly.length>2){const anel=t.poly.map(([la,ln])=>latLngUtm(la,ln));anel.push(anel[0]);const g={type:'Polygon',coordinates:[anel]};
+      const f=await geoWfs({typeNames:'geoportal:cartorio_registro_imovel',propertyName:'cd_numero_cartorio,nm_subdistrito,ge_poligono',CQL_FILTER:`INTERSECTS(ge_poligono,${geoWkt(g)})`});
+      const cs=[...new Set(f.map(x=>x.properties?.cd_numero_cartorio).filter(Boolean))];
+      c=cs.length>1?geoAreaZonas(g,f.filter(x=>x.geometry),p=>p.cd_numero_cartorio)[0]?.sigla:cs[0]}
+    else{const f=await geoWfs({typeNames:'geoportal:cartorio_registro_imovel',propertyName:'cd_numero_cartorio,nm_subdistrito',CQL_FILTER:`INTERSECTS(ge_poligono,SRID=4326;POINT(${t.lng} ${t.lat}))`});
+      c=f.length===1?f[0].properties?.cd_numero_cartorio:null}
+    if(!c)return;const v=c+' CRI';t.criLoc=k;
     if(t.cri===v&&t.criFonte==='prefeitura')return save();const ant=t.cri;t.cri=v;t.criFonte='prefeitura';
-    log(t,`Cartório pelo GeoSampa: ${ant?ant+' → ':''}${v}`);save();if(UI.route==='terreno'&&UI.id===t.id)render()}catch(e){}}
+    log(t,`Cartório pelo GeoSampa: ${ant?ant+' → ':''}${v}`);if(typeof lotesNorm==='function')lotesNorm(t);save();if(UI.route==='terreno'&&UI.id===t.id)render()}catch(e){}}

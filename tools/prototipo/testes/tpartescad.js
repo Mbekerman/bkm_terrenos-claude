@@ -67,27 +67,39 @@ ok(t.pessoas.filter(x=>x.parte===pa.id&&x.papel==='proprietario').length===2,'ve
 ok(t.corretores.filter(x=>(x.partes||[]).includes(pa.id)).length===2,'parte com dois corretores');
 ok(t.corretores.some(x=>(x.partes||[]).includes(pa.id)&&x.partes.includes(pb.id))&&t.corretores.filter(x=>x.principal).length===1,'o mesmo corretor traz duas partes; um só principal no terreno');
 ok(!t.neg,'sem oferta, nenhuma negociação aberta');
-// ficha: quadro Partes no Cadastro
+// ficha: Partes e Lotes na aba Terreno (lote 5, 4/nov/2026): o que veio do passo 2 vira lote da parte
 await bloco(p,'cadastro');
-ok(await p.$('#sec-partes-cad')!==null,'Cadastro da ficha tem o quadro Partes');
-const q=await txt(p,'#sec-partes-cad');
-ok(q.includes('Família Andrade')&&q.includes('301.001')&&q.includes('Rui Andrade')&&q.includes('Lote do Paulo')&&q.includes('Corretores'),'quadro mostra o que cada parte tem');
+ok(await p.$('#sec-partes-cad')!==null&&await p.$('#sec-lotes')!==null,'aba Terreno tem os quadros Partes e Lotes');
+ok((await p.$eval('#pt2-n',x=>x.value))==='2','quantidade de partes = 2');
+t=await ter(p,'Quadra dos Andrade');
+const lA=t.lotes.filter(l=>l.parte===pa.id);
+ok(lA.length===2&&lA.map(l=>l.num).sort().join()==='301.001,301.002','cada matrícula da parte virou um lote dela');
+ok(lA.some(l=>l.ins.length===1&&t.insc.find(i=>i.id===l.ins[0]).sql==='123.456.0001-1'),'o SQL da parte entra num lote dela');
 await p.evaluate(()=>document.getElementById('sec-partes-cad').scrollIntoView());await p.waitForTimeout(150);await p.screenshot({path:O+'3_cadastro.png'});
-// parte nova pela ficha, antes de haver negociação, vinculando a inscrição livre, um corretor e um vendedor novo
-await p.click('#sec-partes-cad [data-a=pt-nova]');await p.waitForTimeout(200);
-ok((await p.$eval('#modal h2',x=>x.textContent))==='Nova parte'&&(await p.$$('#modal .msel')).length===4&&!(await p.$('#pt-v')),'nova parte pela ficha com listas de escolha');
-await p.fill('#pt-n','Herdeiros Lima');
-await incluir(p,'#modal','mat','301.900');await incluir(p,'#modal','pes','Ana Lima');
-ok(!!(await p.$('#modal'))&&(await p.$eval('#modal .msel[data-tipo=mat] .msel-r',x=>x.textContent))==='301.900','pop-up fecha e volta para o formulário da parte');
-await escolher(p,'#modal','ins',['123.456.0001-1']).catch(()=>{});
-await p.locator('#modal .msel[data-tipo=cor] label.chk input:not(:checked)').first().check().catch(async()=>{await abreMs(p,'#modal','cor');await p.locator('#modal .msel[data-tipo=cor] label.chk input:not(:checked)').first().check()});
-await p.screenshot({path:O+'4_modal.png'});
-await enviar(p,'f-pt');
-t=await ter(p,'Quadra dos Andrade');const pc=t.partes.find(x=>x.nome==='Herdeiros Lima');
-ok(pc&&t.mats.find(m=>m.num==='301.900').parte===pc.id&&t.pessoas.some(x=>x.nome==='Ana Lima'&&x.parte===pc.id)&&t.mats.find(m=>m.num==='301.900')&&t.corretores.some(x=>(x.partes||[]).includes(pc.id)),'parte nova com matrícula e vendedor incluídos pelo pop-up e corretor');
-// editar só o nome e o tamanho, nada mais obrigatório
-await p.click(`#sec-partes-cad [data-a=pt-editar][data-p="${pb.id}"]`);await p.waitForTimeout(200);await p.fill('#pt-a','800');await enviar(p,'f-pt');
-t=await ter(p,'Quadra dos Andrade');ok(t.partes.find(x=>x.id===pb.id).area===800,'editar a parte pelo Cadastro');
+// parte nova e lote novo pela ficha
+await p.click('#sec-partes-cad [data-a=pt2-mais]');await p.waitForTimeout(200);
+t=await ter(p,'Quadra dos Andrade');const pc=t.partes.find(x=>x.nome==='Vendedor 3');
+ok(!!pc,'Adicionar parte cria "Vendedor 3"');
+await p.fill(`#pt2-${pc.id} [data-k=pessoa]`,'Ana Lima');await p.press(`#pt2-${pc.id} [data-k=pessoa]`,'Tab');await p.waitForTimeout(200);
+await p.fill(`#pt2-${pc.id} [data-k=email]`,'ANA@Exemplo.com');await p.press(`#pt2-${pc.id} [data-k=email]`,'Tab');await p.waitForTimeout(200);
+await p.click('#sec-lotes [data-a=lt-novo]');await p.waitForTimeout(200);
+t=await ter(p,'Quadra dos Andrade');const ln=t.lotes[t.lotes.length-1];
+ok(ln.titulo==='Lote 3','lote novo nasce com o próximo título');
+await p.selectOption(`#lt-${ln.id} [data-k=parte]`,pc.id);await p.waitForTimeout(200);
+await p.fill(`#lt-${ln.id} [data-k=num]`,'301.900');await p.press(`#lt-${ln.id} [data-k=num]`,'Tab');await p.waitForTimeout(200);
+t=await ter(p,'Quadra dos Andrade');const pc2=t.partes.find(x=>x.id===pc.id);
+ok(pc2.pessoa==='Ana Lima'&&pc2.email==='ana@exemplo.com','contato da parte gravado (e-mail em minúsculas)');
+ok(t.lotes.find(l=>l.id===ln.id).parte===pc.id&&t.mats.find(m=>m.num==='301.900').parte===pc.id,'lote da parte nova com a matrícula');
+// matrícula repetida em outro lote (mesmo cartório) é recusada
+await p.selectOption(`#lt-${ln.id} [data-k=cri]`,'1º CRI');await p.waitForTimeout(200);
+await p.fill(`#lt-${ln.id} [data-k=num]`,'301.001');await p.press(`#lt-${ln.id} [data-k=num]`,'Tab');await p.waitForTimeout(200);
+ok((await toast(p)).includes('já está no'),'matrícula de outro lote é recusada');
+// parte com lote não sai
+await p.click(`#pt2-${pc.id} [data-a=pt2-excluir]`);await p.waitForTimeout(200);
+ok((await toast(p)).includes('tem lotes')&&(await ter(p,'Quadra dos Andrade')).partes.some(x=>x.id===pc.id),'parte com lote não é excluída');
+await p.click(`#lt-${ln.id} [data-a=lt-excluir]`);await p.waitForTimeout(200);
+await p.click(`#pt2-${pc.id} [data-a=pt2-excluir]`);await p.waitForTimeout(200);
+t=await ter(p,'Quadra dos Andrade');ok(!t.partes.some(x=>x.id===pc.id)&&!t.mats.some(m=>m.num==='301.900'),'Excluir lote e depois Excluir parte');
 await ctx.close();
 
 for(const [w,h,tema,n] of [[1440,900,'escuro','5_escuro'],[412,915,null,'6_celular']]){({p,ctx}=await abre(w,h,tema));
@@ -95,7 +107,7 @@ for(const [w,h,tema,n] of [[1440,900,'escuro','5_escuro'],[412,915,null,'6_celul
   await p.evaluate(()=>document.getElementById('nv-partes').scrollIntoView());await p.waitForTimeout(150);await p.screenshot({path:O+n+'_passo2.png'});
   ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1&&[...document.querySelectorAll('.nv-pt')].every(x=>x.scrollWidth<=x.clientWidth+1)),n+': passo 2 sem rolagem lateral');
   await enviar(p,'f-novo');await bloco(p,'cadastro');await p.evaluate(()=>document.getElementById('sec-partes-cad').scrollIntoView());await p.waitForTimeout(150);await p.screenshot({path:O+n+'_cadastro.png'});
-  ok(await p.evaluate(()=>[...document.querySelectorAll('.ptc')].every(x=>x.scrollWidth<=x.clientWidth+1)),n+': quadro Partes sem vazar');
+  ok(await p.evaluate(()=>[...document.querySelectorAll('.pt2, .lt')].every(x=>x.scrollWidth<=x.clientWidth+1)),n+': quadro Partes sem vazar');
   await ctx.close()}
 ok(!erros.length,'sem erros de página'+(erros.length?': '+erros.join(' / '):''));
 await b.close();console.log(falhas.length?`\n${falhas.length} FALHA(S)`:'\nTUDO OK');process.exit(falhas.length?1:0)})();

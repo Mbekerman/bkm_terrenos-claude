@@ -2868,14 +2868,14 @@ input[data-fmt]:not([data-fmt="none"]) { font-variant-numeric: tabular-nums }
 .num, .big, .mv, .kpi .v, .chip { font-variant-numeric: tabular-nums }
 
 /* Campos no padrão Material 3 (campo contornado): altura 40, raio 4, contorno #747775, seta própria no select */
-:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select, textarea) {
+:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select, textarea) {
   border: 1px solid #747775 !important; border-radius: 4px !important; background-color: transparent; color: var(--m-on-surface, #1f1f1f); font-size: 14px }
-:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select) { height: 40px !important; min-height: 40px !important; padding: 0 12px }
-:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :where(input, select, textarea):focus { outline: 2px solid var(--m-primary, #0b57d0) !important; outline-offset: -2px; border-color: transparent !important }
+:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select) { height: 40px !important; min-height: 40px !important; padding: 0 12px }
+:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .modal, .dr) :where(input, select, textarea):focus { outline: 2px solid var(--m-primary, #0b57d0) !important; outline-offset: -2px; border-color: transparent !important }
 select:not([multiple]) { -webkit-appearance: none; appearance: none; padding-right: 36px !important; background-repeat: no-repeat; background-position: right 10px center; background-size: 18px 18px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23444746' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important }
 :root[data-tema="escuro"] select:not([multiple]) { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23c4c7f0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important }
-:root[data-tema="escuro"] :is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not(.auto-v):not(.vb-pop-nome), select, textarea) { border-color: rgba(153,156,161,0.5) !important; background-color: transparent !important; color: #e3e3e3 }
+:root[data-tema="escuro"] :is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not(.auto-v):not(.vb-pop-nome), select, textarea) { border-color: rgba(153,156,161,0.5) !important; background-color: transparent !important; color: #e3e3e3 }
 :root[data-tema="escuro"] { color-scheme: dark }
 input[type=date] { font-variant-numeric: tabular-nums }
 input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
@@ -5146,6 +5146,66 @@ html[data-tema="escuro"] .tp-acidentado_critico { --tp-f: #ffdad6; --tp-b: #8c1d
 }
 html[data-tema="escuro"] :is(.vt-r, .vtec-r) { border-top-color: #2d2f31 }
 html[data-tema="escuro"] .vt-obs { color: #c4c7c5; background: transparent !important }
+
+/* ---------- Partes e Lotes na aba Terreno; partes no Comercial (lote 5, 4/nov/2026) ---------- */
+.pt2-qtd { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; background: #eef3fb; border-radius: 16px; padding: 10px 16px; margin-bottom: 12px }
+.pt2-qtd label { font-weight: 500 }
+.pt2-qtd .faint { font-size: 13px }
+.pt2-passo { display: inline-flex; align-items: center; border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 20px; overflow: hidden; background: #fff }
+.pt2-passo .iconbtn { border-radius: 0; width: 40px; height: 38px; font-size: 18px }
+.pt2-passo input { width: 48px; height: 38px; text-align: center; border: 0; border-inline: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 0; font-weight: 500; background: transparent; padding: 0 }
+.pt2-lista, .lt-lista { display: flex; flex-direction: column; gap: 12px }
+.pt2, .lt { border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px; padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0 }
+.pt2-h, .lt-h { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; min-height: 36px }
+.pt2-tit { font: inherit; font-size: 15px; font-weight: 500; border: 0; border-bottom: 1px dashed var(--m-outline-var, #c4c7c5); border-radius: 0; background: transparent; padding: 4px 0; min-width: 0; flex: 1 1 160px; max-width: 320px; height: auto }
+.pt2-tit:focus { outline: none; border-bottom: 2px solid #0b57d0 }
+.pt2-x { margin-left: auto }
+.pt2-g { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 14px }
+.pt2-g .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; margin: 0 }
+.pt2-obs { grid-column: 1 / -1 }
+.lbl-f { font-size: 12px; font-weight: 500; color: #444746 }
+.pt2-g .v { padding: 8px 0; min-height: 36px }
+.pt2-g textarea { min-height: 40px; resize: vertical }
+.lt-sqls { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #e3e3e3; padding-top: 10px }
+.lt-sql { border-radius: 8px; background: #f8fafd; padding: 8px 10px; min-width: 0 }
+.lt-sql-h { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; font-size: 13px }
+.lt-sql-h b { font-size: 14px }
+.lt-sql-h .lixo { margin-left: auto }
+.lt-det { margin-top: 4px }
+.lt-det summary { font-size: 13px }
+.lt-add { border-top: 0; padding-top: 0 }
+.lt-adot { font-weight: 500 }
+.qd-add { align-self: flex-start; margin-top: 10px }
+.ptcom-r { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, .8fr) minmax(0, .8fr) 160px 140px 190px; gap: 8px 12px; align-items: center; padding: 10px 0; border-top: 1px solid #e3e3e3 }
+.ptcom-th { border-top: 0; padding-top: 0; font-size: 12px; font-weight: 500; color: #444746 }
+.ptcom-th > span:nth-child(n+4) { padding-left: 2px }
+.ptcom-p { min-width: 0 } .ptcom-p b { font-weight: 500 } .ptcom-p .faint { font-size: 13px }
+.ptcom-c { min-width: 0; margin: 0 } .ptcom-c.field { display: block }
+.ptcom-ml { display: none }
+.ptcom input.ptc-n { width: 100%; text-align: right } .ptcom select { width: 100% }
+.ptcom-tot { font-weight: 500 }
+.ptcom { container-type: inline-size }
+@container (max-width: 760px) {
+  .ptcom-th { display: none }
+  .ptcom-r { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) }
+  .ptcom-p { grid-column: 1 / -1 }
+  .ptcom-c:empty { display: none }
+  .ptcom-ml { display: block; margin-bottom: 2px }
+}
+@media (max-width: 720px) {
+  .pt2-g { grid-template-columns: minmax(0, 1fr) }
+  .pt2, .lt { padding: 12px }
+}
+html[data-tema="escuro"] .pt2-qtd { background: #282a2c }
+html[data-tema="escuro"] .pt2-passo { background: #282a2c; border-color: #444746 }
+html[data-tema="escuro"] .pt2-passo input { border-color: #444746; color: #e3e3e3 }
+html[data-tema="escuro"] .pt2, html[data-tema="escuro"] .lt { border-color: #444746 }
+html[data-tema="escuro"] .pt2-tit { color: #e3e3e3; border-bottom-color: #444746 }
+html[data-tema="escuro"] .pt2-tit:focus { border-bottom-color: #a8c7fa }
+html[data-tema="escuro"] .lbl-f { color: #c4c7c5 }
+html[data-tema="escuro"] .lt-sqls { border-top-color: #2d2f31 }
+html[data-tema="escuro"] .lt-sql { background: #282a2c }
+html[data-tema="escuro"] .ptcom-r { border-top-color: #2d2f31 } html[data-tema="escuro"] .ptcom-th { color: #c4c7c5 }
 </style>
 <header class="top">
   <div class="top-in">
@@ -5528,8 +5588,8 @@ function completude(t){
     ['Área adotada',areaAdotada(t)!=null,'cadastro','areas'],
     ['Testada',t.testada!=null,'cadastro','areas'],
     ['Ocupação',t.ocupacao!=='nao_informado','cadastro','fis'],
-    ['Matrícula',t.mats.length>0,'cadastro','mats'],
-    ['Inscrição e IPTU',t.insc.length>0,'cadastro','insc'],
+    ['Matrícula',t.mats.length>0,'cadastro','lotes'],
+    ['Inscrição e IPTU',t.insc.length>0,'cadastro','lotes'],
     ['Proprietário',t.pessoas.some(p=>p.papel==='proprietario'),'cadastro','pessoas'],
     ['Zoneamento',!!analiseVig(t),'urbanismo',null],
     ['Visita técnica',infraNV(t)===0,'infra','visita'],
@@ -5622,35 +5682,6 @@ function secaoAreas(t){
     </div></div>
     <div class="sec-f"><button type="button" class="btn text" data-a="cancel-edit">Cancelar</button><button class="btn primary">Salvar</button></div></form></section>`;
 }
-function secaoMats(t){
-  return `<section class="sec" id="sec-mats"><div class="sec-h"><h2>Matrículas${t.mats.length?` <span class="h-n">${t.mats.length}</span>`:''}</h2></div><div class="sec-b">
-    ${t.mats.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Número</th><th>Cartório</th><th class="r">Área registrada</th><th>Data da certidão</th>${partesAtivas(t).length?'<th>Parte</th>':''}<th></th></tr></thead><tbody>${t.mats.map((m,i)=>`<tr><td class="num">${esc(m.num)}</td><td>${esc(m.cri)}</td><td class="r">${m2(m.area)}</td><td>${fd(m.data)}</td>${partesAtivas(t).length?`<td>${selParte(t,'mat-parte',i,m.parte)}</td>`:''}<td class="r"><button class="iconbtn sm lixo" data-a="del-mat" data-i="${i}" aria-label="Remover" title="Remover">${ic('lixo',18)}</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">Nenhuma matrícula. Um terreno pode somar várias.</div>'}
-    <form class="inline-form" data-form="mat"><div class="field"><label for="m-n">Número</label><input id="m-n" name="num" required placeholder="184.552"></div>
-    <div class="field"><label for="m-c">Cartório</label><select id="m-c" name="cri">${Array.from({length:18},(_,i)=>`<option ${t.cri===`${i+1}º CRI`?'selected':''}>${i+1}º CRI</option>`).join('')}</select></div>
-    <div class="field"><label for="m-a">Área (m²)</label><input id="m-a" name="area" inputmode="decimal"></div>
-    <div class="field"><label for="m-d">Certidão de</label><input id="m-d" name="data" type="date"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form></div></section>`;
-}
-function secaoInsc(t){
-  const vig=ins=>{const r={};ins.valores.filter(v=>v.vig).forEach(v=>{r[v.ex]=v});return Object.values(r).sort((a,b)=>b.ex-a.ex)};
-  const venal=v=>v.vt!=null&&v.vc!=null?v.vt+v.vc:(v.venal??v.vt??null);
-  return `<section class="sec" id="sec-insc"><div class="sec-h"><h2>Inscrições municipais, valor venal e IPTU</h2>${UI.role!=='Leitura'&&lotesInsc(t).length?`<button class="btn sm text" data-a="lotes-poly" ${LOTES_BUSCANDO?'disabled':''}>${ic('layers',16)}${LOTES_BUSCANDO?'Buscando os lotes...':'Usar a poligonal dos lotes'}</button>`:''}</div><div class="sec-b">
-    ${t.insc.length?t.insc.map((ins,i)=>{const vs=vig(ins),revs=ins.valores.filter(v=>!v.vig).length;return `<div style="margin-bottom:18px"><div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px"><b class="num">${CIDADES_INSC[insCid(ins)].rotulo} ${esc(ins.sql)}</b><span class="muted" style="font-size:13px">${esc(CIDADES_INSC[insCid(ins)].cidade)}</span><span class="muted" style="font-size:13px">Área cadastral ${m2(ins.area)}</span>${revs?`<span class="faint" style="font-size:12px">${revs} revis${revs>1?'ões anteriores preservadas':'ão anterior preservada'}</span>`:''}</div>
-      ${loteQuadro(t,ins,i)}
-      <div class="tblwrap"><table class="mini-tbl vv"><thead><tr><th>Exercício</th><th class="r">Venal terreno</th><th class="r">Venal construção</th><th class="r">Venal do imóvel</th><th>IPTU</th><th class="r">Anual</th><th class="r">Parcela</th><th class="r">Mensal</th><th>Fonte</th></tr></thead><tbody>
-      ${vs.map((v,j)=>`<tr><td class="vv-ex"><b>${v.ex}</b>${v.rev>1?`<span class="faint"> · rev. ${v.rev}</span>`:''}${j===0?' <span class="chip blue">Atual</span>':''}</td><td class="r">${brl(v.vt)}</td><td class="r">${brl(v.vc)}</td><td class="r"><b>${brl(venal(v))}</b></td>
-      <td>${v.sit==='isento'?'<span class="chip good">Isento</span>':OPT.sitIptu[v.sit]}</td><td class="r">${v.sit==='isento'?'—':brl2(v.iptu)}</td><td class="r">${v.iptu!=null&&v.parc&&v.sit!=='isento'?`${brl2(v.iptu/v.parc)} <span class="faint">× ${v.parc}</span>`:'—'}</td>
-      <td class="r">${v.sit==='isento'?'—':v.mensal!=null?`${brl2(v.mensal)} <span class="faint">(informado)</span>`:v.iptu!=null?`${brl2(v.iptu/12)} <span class="faint">(anual ÷ 12)</span>`:'—'}</td><td class="muted vv-f">${esc(v.fonte||'—')}${v.data?` · ${fd(v.data)}`:''}</td></tr>`).join('')||'<tr><td colspan="9" class="muted">Sem valores lançados.</td></tr>'}</tbody></table></div>
-      <details class="details"><summary>Lançar exercício ou corrigir valores</summary><form class="inline-form" data-form="iptu" data-i="${i}" style="border:0;padding-top:4px">
-      <div class="field" style="flex:0 1 96px"><label for="v-e${i}">Exercício</label><input id="v-e${i}" name="ex" inputmode="numeric" value="${new Date().getFullYear()}" required></div>
-      <div class="field"><label for="v-vt${i}">Venal terreno (R$)</label><input id="v-vt${i}" name="vt" inputmode="decimal"></div><div class="field"><label for="v-vc${i}">Venal construção (R$)</label><input id="v-vc${i}" name="vc" inputmode="decimal"></div>
-      <div class="field"><label for="v-s${i}">Situação do IPTU</label><select id="v-s${i}" name="sit">${Object.entries(OPT.sitIptu).map(([k,l])=>`<option value="${k}" ${k==='tributado'?'selected':''}>${l}</option>`).join('')}</select></div>
-      <div class="field"><label for="v-i${i}">IPTU anual (R$)</label><input id="v-i${i}" name="iptu" inputmode="decimal"></div><div class="field" style="flex:0 1 86px"><label for="v-p${i}">Parcelas</label><input id="v-p${i}" name="parc" inputmode="numeric" value="10"></div>
-      <div class="field"><label for="v-m${i}">IPTU mensal informado (R$)</label><input id="v-m${i}" name="mensal" inputmode="decimal" placeholder="se a fonte trouxer"></div>
-      <div class="field grow"><label for="v-f${i}">Fonte</label><input id="v-f${i}" name="fonte" placeholder="Carnê, certidão de dados cadastrais..." required></div>
-      <button class="btn sm">${ic('add',16)}Lançar</button></form></details></div>`}).join(''):'<div class="muted" style="margin-bottom:8px">Nenhuma inscrição. O valor venal e o IPTU são lançados por inscrição e por ano.</div>'}
-    <form class="inline-form" data-form="insc">${campoInsc('i',cidDoTerreno(t),'Nova inscrição',true)}<div class="field"><label for="i-a">Área cadastral (m²)</label><input id="i-a" name="area" inputmode="decimal"></div><button class="btn sm">${ic('add',16)}Adicionar inscrição</button></form>
-    </div></section>`;
-}
 function secaoConfr(t){
   const tot=t.confr.reduce((a,c)=>a+(c.m||0),0);
   return `<section class="sec" id="sec-confr"><div class="sec-h"><h2>Confrontações</h2><span class="faint" style="font-size:13px">${t.confr.length?`${t.confr.length} segmentos · perímetro ${num(tot,2)} m`:''}</span></div><div class="sec-b">
@@ -5669,7 +5700,7 @@ function secaoPessoas(t){
 /* ===================== abas da ficha ===================== */
 function abaCadastro(t){
   /* Confrontações saíram da ficha (decisão do Moisés, 3/nov/2026); o dado continua no cadastro */
-  return `<div class="stack">${secaoGenerica(t,'ident')}${secaoGenerica(t,'loc')}${secPartesCad(t)}${secaoMats(t)}${secaoInsc(t)}${secaoAreas(t)}${secaoGenerica(t,'fis')}${secaoPessoas(t)}</div>`;
+  return `<div class="stack">${secaoGenerica(t,'ident')}${secaoGenerica(t,'loc')}${secPartesTer(t)}${secLotes(t)}${secaoAreas(t)}${secaoGenerica(t,'fis')}${secaoPessoas(t)}</div>`;
 }
 function condicoes(t){
   const o=ofertaRef(t),ad=areaAdotada(t),cp=corrPrincipal(t);
@@ -5694,7 +5725,7 @@ function condicoes(t){
 }
 function abaComercial(t){
   const ref=ofertaRef(t);
-  return `<div class="stack">${blocoFechado('geral')?condicoes(t):''}
+  return `<div class="stack">${blocoFechado('geral')?condicoes(t):''}${secPartesCom(t)}
   <section class="sec"><div class="sec-h"><h2>Ofertas recebidas</h2><button class="btn sm" data-a="nova-oferta">${ic('add',16)}Registrar oferta</button></div><div class="sec-b">
   ${t.ofertas.length?`<div class="tblwrap"><table class="mini-tbl"><thead><tr><th>Data</th><th>Corretor</th><th class="r">Valor pedido</th><th>Forma</th><th>Status</th><th></th></tr></thead><tbody>
   ${t.ofertas.slice().sort((a,b)=>a.data.localeCompare(b.data)).map((o,i)=>{const c=corretor(o.cid);return `<tr><td>${fd(o.data)}${i===0&&t.ofertas.length>1?'<div><span class="chip of-1a" style="margin:4px 0 0">Primeira</span></div>':''}</td><td class="nw">${c?esc(c.nome)+`<div class="faint" style="font-size:12px">${esc(c.imob)}</div>`:'Direto'}</td><td class="r">${brl(o.valor)}</td><td>${o.forma?OPT.forma[o.forma]:'—'}</td><td><span class="chip ${o.status==='ativa'?'good':''}">${esc(o.status.charAt(0).toUpperCase()+o.status.slice(1))}</span></td>
@@ -5718,7 +5749,7 @@ function abaNegociacao(t){
     <div class="field full" id="pp-warn">${abaixoMin(t)?`<div class="banner warn">${ic('warn')}<div>${abaixoMinTxt(t)}.</div></div>`:''}</div></div>
     <div class="hint">${t.propostas.length?`Responde à v${t.propostas.length}. Se vier do outro lado, a v${t.propostas.length} vira Recusada; se vier do mesmo lado, vira Substituída.`:'Primeira proposta da negociação.'}</div></div>
     <div class="sec-f"><button type="button" class="btn text" data-a="prop-form">Cancelar</button><button class="btn primary">Registrar</button></div></form></section>`:'';
-  return `<div class="stack">${secPartes(t)}
+  return `<div class="stack">${dividida(t)?secPartes(t):''}
   <section class="sec"><div class="sec-h"><h2>Propostas</h2><span class="sec-acoes">${negAtiva(t)&&!UI.propForm?`<button class="btn primary sm" data-a="prop-form">${ic('add',16)}Nova proposta</button>`:''}</span></div><div class="sec-b">
   ${form}
   ${chain.length?`<div class="chain" style="margin-top:${UI.propForm?16:0}px">${chain.map((p,i)=>{return `<div class="pnode ${p.origem}"><span class="pd">v${p.v}</span><div class="pc">
@@ -5792,7 +5823,7 @@ const advItens=items=>items.map(x=>`<li><span class="${x.aviso?'av':x.ok?'ok':'n
 /* ===================== páginas ===================== */
 /* ficha em abas, como a janela do cartão de tarefa (decisão do Moisés, 3/nov/2026): uma aba de cada vez, botões sempre visíveis no topo.
    As chaves antigas (cadastro, negociacao, urbanismo, fases, tarefas) continuam valendo nos links e nos logs e caem na aba nova. */
-const FICHA_ABAS=[['geral','Visão geral'],['comercial','Comercial'],['terreno','Terreno'],['parametros','Parâmetros urbanísticos'],['massa','Estudos de massa'],['viabilidade','Estudos de viabilidade'],['infra','Infraestrutura'],['entorno','Entorno'],['jornada','Jornada do Terreno'],['documentos','Documentos'],['historico','Histórico']];
+const FICHA_ABAS=[['geral','Visão geral'],['terreno','Terreno'],['comercial','Comercial'],['parametros','Parâmetros urbanísticos'],['massa','Estudos de massa'],['viabilidade','Estudos de viabilidade'],['infra','Infraestrutura'],['entorno','Entorno'],['jornada','Jornada do Terreno'],['documentos','Documentos'],['historico','Histórico']];
 const ABA_DE={cadastro:'terreno',negociacao:'comercial',urbanismo:'parametros',fases:'jornada',tarefas:'geral',viab:'viabilidade'};
 const abaN=k=>{k=ABA_DE[k]||k;return FICHA_ABAS.some(x=>x[0]===k)?k:'geral'};
 let BLA={},blId=null; /* mantido para quem ainda zera o estado ao abrir um terreno */
@@ -5818,7 +5849,7 @@ function abaMassa(t){return `<section class="sec"><div class="sec-b"><div class=
 function fiAbaVisivel(){const b=document.querySelector('.fi-abas'),a=b&&b.querySelector('[aria-selected="true"]');if(!a)return;
   const l=a.offsetLeft-b.offsetLeft,r=l+a.offsetWidth;if(l<b.scrollLeft||r>b.scrollLeft+b.clientWidth)b.scrollLeft=Math.max(0,l-(b.clientWidth-a.offsetWidth)/2)}
 function pgFicha(){
-  const t=T(UI.id),c=completude(t),n=t.neg,aba=abaN(UI.tab);
+  const t=T(UI.id);{const k=t&&JSON.stringify([t.lotes,t.partes,t.mats,t.insc]);lotesNorm(t);if(t&&k!==JSON.stringify([t.lotes,t.partes,t.mats,t.insc]))save()}const c=completude(t),n=t.neg,aba=abaN(UI.tab);
   const FN={geral:abaGeral,comercial:abaComercialFicha,terreno:abaCadastro,parametros:t=>abaUrbanismo(t,'param'),massa:abaMassa,viabilidade:abaViabilidade,infra:abaInfra,entorno:abaEntorno,jornada:abaJornada,documentos:abaDocs,historico:abaHist};
   const abas=`<div class="fi-abas" role="tablist" aria-label="Seções do terreno">${FICHA_ABAS.map(([k,l])=>{const q=abaContagem(t,k);return `<button role="tab" class="${k==='historico'?'tab-hist':''}" data-a="tab" data-t="${k}" aria-selected="${k===aba}" aria-controls="bl-${k}">${l}${q?`<span class="tkm-n">${q}</span>`:''}</button>`}).join('')}</div>`;
   const meta=[...fichaFaseTxt(t),`Cadastrado em ${fd(t.dataIdent)}`];
@@ -6079,9 +6110,10 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       t.insc.push({mun:F.mun,sql:F.sql,area:lerNum(F.area),valores:[]});log(t,`Inscrição ${F.sql} (${c.cidade}) adicionada`);save();render();if(loteBuscavel(t.insc[t.insc.length-1]))loteBuscar(t,t.insc.length-1);break}
     case 'iptu':{const ins=t.insc[Number(f.dataset.i)],ex=Number(F.ex),iptu=lerNum(F.iptu),mensal=lerNum(F.mensal);
       if(F.sit==='isento'&&((iptu||0)>0||(mensal||0)>0)){toast('Imóvel isento não tem IPTU a pagar.',true);return}
-      const ant=ins.valores.filter(v=>v.ex===ex);ant.forEach(v=>v.vig=false);
+      const ult=Math.max(0,...ins.valores.map(v=>v.ex));if(ex<ult){toast(`Só vale o exercício mais recente (${ult}): lance o IPTU do ano atual.`,true);return}
+      const ant=ins.valores.filter(v=>v.ex===ex);ins.valores.forEach(v=>v.vig=false);
       ins.valores.push({ex,rev:ant.length+1,vig:true,vt:lerNum(F.vt),vc:lerNum(F.vc),sit:F.sit,iptu:F.sit==='isento'?null:iptu,parc:Number(F.parc)||null,mensal:F.sit==='isento'?null:mensal,fonte:F.fonte,data:HOJE});
-      log(t,`IPTU ${ex}${ant.length?` revisão ${ant.length+1}`:''} lançado`);save();render();toast(ant.length?`Exercício ${ex}: revisão ${ant.length+1} lançada; a anterior foi preservada.`:`Exercício ${ex} lançado.`);break}
+      log(t,`IPTU ${ex}${ant.length?` revisão ${ant.length+1}`:''} lançado`);save();render();toast(ant.length?`Exercício ${ex}: revisão ${ant.length+1} lançada.`:`Exercício ${ex} lançado.`);break}
     case 'confr':t.confr.push({tipo:F.tipo,m:lerNum(F.m),conf:F.conf});save();render();break;
     case 'dilig':t.dilig.push({id:uid(),cat:F.cat,titulo:F.titulo,sit:F.sit,resp:F.resp,prov:F.prov});log(t,`Diligência: ${F.titulo}`);save();render();toast('Diligência registrada.');break;
     case 'pessoa':if(F.papel==='proprietario'&&lerNum(F.pct)!=null&&!partesAtivas(t).length){const tot=t.pessoas.filter(p=>p.papel==='proprietario').reduce((a,p)=>a+(p.pct||0),0);if(tot+lerNum(F.pct)>100){toast(`A soma passaria de 100% (já há ${num(tot,2)}% informado).`,true);return}}
@@ -9217,11 +9249,11 @@ function valTxt(k,v){
   if(typeof v==='boolean')return v?'sim':'não';
   const s=String(v);return s.length>60?s.slice(0,57)+'…':s;
 }
-const ARR_LAB={mats:['Matrícula',x=>x.num],insc:['Inscrição imobiliária',x=>x.sql],confr:['Confrontação',x=>x.tipo],dilig:['Diligência',x=>x.titulo],pessoas:['Pessoa',x=>x.nome],
+const ARR_LAB={lotes:['Lote',x=>x.titulo,'o'],partes:['Parte',x=>x.nome],mats:['Matrícula',x=>x.num],insc:['Inscrição imobiliária',x=>x.sql],confr:['Confrontação',x=>x.tipo],dilig:['Diligência',x=>x.titulo],pessoas:['Pessoa',x=>x.nome],
   corretores:['Corretor',x=>(typeof corretor==='function'&&corretor(x.cid)?.nome)||''],ofertas:['Oferta',x=>x.valor!=null?mi(x.valor):''],propostas:['Proposta',x=>'v'+x.v+(x.valor!=null?' · '+mi(x.valor):'')],
   reunioes:['Reunião',x=>fd(x.data)+(x.hora?' '+x.hora:'')],tarefas:['Tarefa',x=>x.titulo],docs:['Documento',x=>(TIPOS_DOC[x.tipo]||[x.nome||x.tipo])[0]],analises:['Análise urbanística',x=>x.fonte||fd(x.data)]};
 const ITEM_LAB={titulo:'título',prazo:'prazo',resp:'responsável',status:'status',prio:'prioridade',desc:'descrição',valor:'valor',data:'data',hora:'hora',sit:'situação',area:'área',
-  cond:'condições',forma:'forma de pagamento',validade:'validade',emitido:'emissão',versoes:'versão',resultado:'resultado',pauta:'pauta',resumo:'resumo',nome:'nome',papel:'papel',principal:'principal'};
+  cond:'condições',forma:'forma de pagamento',pessoa:'pessoa principal',tel:'telefone',email:'e-mail',doc:'CPF/CNPJ',obs:'observação',num:'matrícula',cri:'cartório',ins:'SQLs',parte:'parte',fonte:'fonte da área adotada',areaInf:'área informada',criDig:'cartório digitado',partes:'valores por parte',partesForma:'condição por parte',validade:'validade',emitido:'emissão',versoes:'versão',resultado:'resultado',pauta:'pauta',resumo:'resumo',nome:'nome',papel:'papel',principal:'principal'};
 const NEG_LAB={etapa:'Etapa',sub:'Subetapa',status:'Status',temp:'Temperatura',retomar:'Retomar em',motivo:'Motivo',detalhe:'Relato',pontos:'Pontos de sucesso',ofRef:'Oferta de referência'};
 const NEG_SEM_LOG=['desde','subDesde','encerradoEm','relato'];
 let AUD={};
@@ -9230,7 +9262,7 @@ function audSnap(){AUD={};S.terrenos.forEach(t=>{AUD[t.id]={j:retrato(t),h:(t.hi
 function diffTerreno(a,b){
   const campos=[],itens=[];
   Object.keys({...a,...b}).forEach(k=>{
-    if(['hist','relevo','id','codigo','criFonte','criLoc','pontosExcl','geoArea','topoClass'].includes(k))return;
+    if(['hist','relevo','id','codigo','criFonte','criLoc','pontosExcl','geoArea','topoClass','mats'].includes(k))return;
     const va=a[k],vb=b[k];if(JSON.stringify(va)===JSON.stringify(vb))return;
     /* o pino acompanha a poligonal: a mudança de lugar dele vai junto do ajuste, sem log próprio */
     if(['lat','lng','precisao'].includes(k)&&JSON.stringify(a.poly)!==JSON.stringify(b.poly))return;
@@ -9246,11 +9278,13 @@ function diffTerreno(a,b){
     if(k==='vtec'){Object.keys({...va,...vb}).forEach(x=>{const ra=va?.[x]||{},rb=vb?.[x]||{},n=(VTEC.find(i=>i[0]===x)||[,x])[1],L={conc:'concessionária',sol:'pedida em',emi:'emitida em',val:'validade',cond:'condições'};
       if((ra.s||'nao_solicitada')!==(rb.s||'nao_solicitada'))campos.push({k:'vtec.'+x,txt:`Viabilidade técnica · ${n}: ${VTEC_N[ra.s||'nao_solicitada']} → ${VTEC_N[rb.s||'nao_solicitada']}`});
       Object.keys(L).forEach(c=>{if((ra[c]||'')===(rb[c]||''))return;const f=v=>!v?'vazio':['sol','emi','val'].includes(c)?fd(v):v;campos.push({k:'vtec.'+x+'.'+c,txt:`Viabilidade técnica · ${n}, ${L[c]}: ${f(ra[c])} → ${f(rb[c])}`})})});return}
-    if(Array.isArray(va)||Array.isArray(vb)){const [lab,desc]=ARR_LAB[k]||[k,()=>''];const A=va||[],B=vb||[];
+    if(Array.isArray(va)||Array.isArray(vb)){const [lab,desc,g='a']=ARR_LAB[k]||[k,()=>''];const A=va||[],B=vb||[];
+      /* a parte da inscrição vem do lote (derivada): não vira log */
+      const sem=k==='insc'?['parte','id']:k==='partes'?['neg','propostas']:[];
       const chave=(x,i)=>x&&x.id!=null?'id:'+x.id:x&&x.v!=null?'v:'+x.v:'i:'+i;
       const mA=new Map(A.map((x,i)=>[chave(x,i),x])),mB=new Map(B.map((x,i)=>[chave(x,i),x]));
-      mB.forEach((x,c)=>{const d=desc(x)||'';if(!mA.has(c))itens.push(`${lab} adicionada${d?': '+d:''}`);else if(JSON.stringify(mA.get(c))!==JSON.stringify(x)){const o=mA.get(c);const ks=Object.keys({...o,...x}).filter(q=>JSON.stringify(o[q])!==JSON.stringify(x[q])).map(q=>ITEM_LAB[q]||q);itens.push(`${lab} alterada${d?' ('+d+')':''}: ${ks.join(', ')}`)}});
-      mA.forEach((x,c)=>{if(!mB.has(c)){const d=desc(x)||'';itens.push(`${lab} removida${d?': '+d:''}`)}});return}
+      mB.forEach((x,c)=>{const d=desc(x)||'';if(!mA.has(c))itens.push(`${lab} adicionad${g}${d?': '+d:''}`);else if(JSON.stringify(mA.get(c))!==JSON.stringify(x)){const o=mA.get(c);const ks=Object.keys({...o,...x}).filter(q=>!sem.includes(q)&&JSON.stringify(o[q])!==JSON.stringify(x[q])).map(q=>ITEM_LAB[q]||q);if(ks.length)itens.push(`${lab} alterad${g}${d?' ('+d+')':''}: ${ks.join(', ')}`)}});
+      mA.forEach((x,c)=>{if(!mB.has(c)){const d=desc(x)||'';itens.push(`${lab} removid${g}${d?': '+d:''}`)}});return}
     if(typeof (vb??va)==='object')return;
     if(valTxt(k,va)!==valTxt(k,vb))campos.push({k,txt:`${LAB_CAMPO[k]||k}: ${valTxt(k,va)} → ${valTxt(k,vb)}`});
   });
@@ -9479,7 +9513,7 @@ function alvoLog(h){
   const secDe=k=>SEC_AREA.has(k)?'areas':SEC_DE[k];
   if(campos.length)return {b:'cadastro',s:secDe(campos[0]),campos};
   const sec=Object.entries(SECOES).find(([,v])=>x===`${v.titulo} editado`);if(sec)return {b:'cadastro',s:sec[0]};
-  const R=[[/^Terreno cadastrado/,{b:'cadastro',s:'ident'}],[/^Matr[íi]cula/,{b:'cadastro',s:'mats'}],[/^Inscri[çc][ãa]o/,{b:'cadastro',s:'insc'}],
+  const R=[[/^Terreno cadastrado/,{b:'cadastro',s:'ident'}],[/^Matr[íi]cula/,{b:'cadastro',s:'lotes'}],[/^Inscri[çc][ãa]o/,{b:'cadastro',s:'lotes'}],[/^Lote/,{b:'cadastro',s:'lotes'}],[/^Parte/,{b:'cadastro',s:'partes-cad'}],
     [/^Confronta/,{b:'cadastro',s:'confr'}],[/^Pessoa|^Propriet/,{b:'cadastro',s:'pessoas'}],[/^Poligonal|^[ÁA]rea/,{b:'cadastro',s:'areas'}],
     [/^(Oferta|Corretor)/,{b:'comercial'}],[/^Estudo de viabilidade/,{b:'geral'}],[/^(Proposta|Reuni[ãa]o|Oferta de refer)/,{b:'negociacao'}],
     [/^(Documento|Dilig)/,{b:'documentos'}],[/^Tarefa/,{b:'tarefas'}],[/^(Tipo do empreendimento|Zonas d)/,{b:'urbanismo',s:'analise'}],[/^(An[áa]lise urban|Infraestrutura|Zoneamento)/,{b:'urbanismo'}],
@@ -10554,6 +10588,196 @@ document.addEventListener('submit',e=>{if(e.target.id!=='ms-f')return;e.preventD
 window.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#ms-dlg')){e.preventDefault();e.stopImmediatePropagation();msFecha()}},true);
 document.addEventListener('mousedown',e=>{const d=$('#ms-dlg');if(d&&e.target===d)msFecha()});
 
+/* ---------- Partes e Lotes (lote 5 da ficha em abas; decisões do Moisés, 4/nov/2026) ----------
+   Todo terreno tem pelo menos uma parte (nasce "Vendedor 1"), com contato opcional: pessoa principal, telefone,
+   e-mail, CPF ou CNPJ e observação. Cada lote é uma matrícula com um ou mais SQLs e pertence a uma parte.
+   O mesmo SQL pode estar em dois lotes quando cobre duas matrículas: a divergência de área é conferida no grupo
+   de lotes que dividem o SQL. A matrícula mora no lote; t.mats é derivada dos lotes (lotesNorm), e a parte da
+   inscrição vem dos lotes dela. IPTU e valor venal: só o exercício mais recente.
+   No banco: app.terreno_lotes, app.lote_inscricoes, app.salvar_lote, app.excluir_lote, app.excluir_parte,
+   app.v_lotes, app.v_partes (área e zonas dos lotes), oferta_partes.forma_pagamento. */
+
+const LT_FONTE={documental:'Matrícula',cadastral:'SQLs',informada:'Informada'};
+const ltDe=(t,id)=>(t.lotes||[]).find(l=>l.id===id);
+const ltDaParte=(t,pa)=>(t.lotes||[]).filter(l=>l.parte===pa.id);
+const ltIns=(t,l)=>l.ins.map(id=>t.insc.find(i=>i.id===id)).filter(Boolean);
+const ltOutros=(t,l,ins)=>(t.lotes||[]).filter(x=>x!==l&&x.ins.includes(ins.id));
+function ltTitulo(t){let n=(t.lotes||[]).length+1;while((t.lotes||[]).some(l=>l.titulo.trim().toLowerCase()==='lote '+n))n++;return 'Lote '+n}
+const ltNovo=(t,parte,extra)=>Object.assign({id:uid(),titulo:ltTitulo(t),parte,num:'',cri:t.cri||'',criDig:false,area:null,data:null,ins:[],fonte:'documental',areaInf:null},extra||{});
+
+/* deixa o terreno no modelo novo: uma parte pelo menos, matrículas e SQLs dentro de lotes */
+function lotesNorm(t){if(!t)return;const P=partesDe(t);
+  if(!P.some(p=>p.ativa))P.push({id:uid(),ativa:true,neg:null,propostas:[],nome:'Vendedor 1',essencial:true,area:null});
+  const p1=partesAtivas(t)[0].id,ativa=id=>!!id&&parteDe(t,id)?.ativa;
+  t.insc.forEach(i=>{if(!i.id)i.id=uid()});
+  if(!t.lotes)t.lotes=[];
+  /* a parte trocada na matrícula por outra tela (Editar parte) vale para o lote */
+  t.mats.forEach(m=>{const l=m.lote&&ltDe(t,m.lote);if(l&&m.parte&&m.parte!==l.parte&&ativa(m.parte))l.parte=m.parte});
+  /* matrícula que não veio de um lote (dados antigos, Novo terreno, Incluir matrícula na parte) vira lote */
+  t.mats.filter(m=>!m.lote||!ltDe(t,m.lote)).forEach(m=>{t.lotes.push(ltNovo(t,ativa(m.parte)?m.parte:p1,{num:m.num||'',cri:m.cri||t.cri||'',criDig:!!m.cri&&m.cri!==t.cri,area:m.area??null,data:m.data||null}))});
+  /* SQL sem lote: entra no primeiro lote da parte dele que ainda não tem SQL, senão no último; sem lote, num lote novo */
+  const em=new Set(t.lotes.flatMap(l=>l.ins));
+  t.insc.filter(i=>!em.has(i.id)).forEach(i=>{const pa=ativa(i.parte)?i.parte:null,c=t.lotes.filter(l=>!pa||l.parte===pa);
+    let alvo=c.find(l=>!l.ins.length)||c[c.length-1];if(!alvo){alvo=ltNovo(t,pa||p1);t.lotes.push(alvo)}alvo.ins.push(i.id)});
+  t.lotes.forEach(l=>{l.ins=l.ins.filter(id=>t.insc.some(i=>i.id===id));if(!ativa(l.parte))l.parte=p1;if(!l.criDig&&t.cri)l.cri=t.cri});
+  t.mats=t.lotes.filter(l=>l.num).map(l=>({id:l.id,lote:l.id,num:l.num,cri:l.cri,area:l.area,data:l.data,parte:l.parte}));
+  t.insc.forEach(i=>{const ps=[...new Set(t.lotes.filter(l=>l.ins.includes(i.id)).map(l=>l.parte))];i.parte=ps.length===1?ps[0]:null})}
+
+/* grupos de lotes que dividem um SQL (app.v_lotes) */
+function ltGrupos(t){const L=t.lotes||[],pai=new Map(L.map(l=>[l.id,l.id])),raiz=x=>pai.get(x)===x?x:raiz(pai.get(x));
+  L.forEach(a=>L.forEach(b=>{if(a!==b&&a.ins.some(i=>b.ins.includes(i)))pai.set(raiz(a.id),raiz(b.id))}));
+  const g={};L.forEach(l=>(g[raiz(l.id)]=g[raiz(l.id)]||[]).push(l));return id=>g[raiz(id)]}
+function ltInfo(t,l){const ins=ltIns(t,l),comp=ins.some(i=>ltOutros(t,l,i).length),cad=ins.length&&ins.every(i=>i.area!=null)?ins.reduce((s,i)=>s+i.area,0):null;
+  const adot=l.fonte==='documental'?l.area:l.fonte==='cadastral'?(comp?null:cad):l.areaInf;
+  const grupo=ltGrupos(t)(l.id),gIns=[...new Set(grupo.flatMap(x=>x.ins))].map(id=>t.insc.find(i=>i.id===id)).filter(Boolean);
+  const gMat=grupo.every(x=>x.area!=null)?grupo.reduce((s,x)=>s+x.area,0):null,gCad=gIns.length&&gIns.every(i=>i.area!=null)?gIns.reduce((s,i)=>s+i.area,0):null;
+  const div=gMat&&gCad!=null?Math.round((gCad-gMat)/gMat*1000)/10:null;
+  return {ins,comp,cad:comp?null:cad,adot,grupo,div}}
+const ltZonas=(t,l)=>{const a=analiseVig(t);if(!a)return [];const ds=ltIns(t,l).map(i=>digits(i.sql));return [...new Set(a.zonas.filter(z=>{const k=digits(zIns(t,z)||'');return k&&ds.includes(k)}).map(z=>z.sigla))]};
+const ptArea=(t,pa)=>{const v=ltDaParte(t,pa).map(l=>ltInfo(t,l).adot).filter(v=>v!=null);return v.length?v.reduce((a,b)=>a+b,0):null};
+const ptZonas=(t,pa)=>[...new Set(ltDaParte(t,pa).flatMap(l=>ltZonas(t,l)))];
+const ptVazia=(t,pa)=>!ltDaParte(t,pa).length&&!pa.neg&&!(pa.propostas||[]).length&&!t.pessoas.some(p=>p.parte===pa.id)&&!t.corretores.some(x=>(x.partes||[]).includes(pa.id))
+  &&!t.ofertas.some(o=>o.partes&&pa.id in o.partes)&&!['pessoa','tel','email','doc','obs'].some(k=>pa[k]);
+
+/* contato: telefone e CPF/CNPJ só com dígitos, e-mail em minúsculas (fluxo.validar_formato no banco) */
+const ptDocFmt=v=>{const d=fmDig(v);return d?fmParcial(d.length>11?'cnpj':'cpf',d):''};
+function ptValida(k,v){if(k==='tel')return fmValida('telefone',v);if(k==='email')return fmValida('email',v);
+  if(k==='doc'){const d=fmDig(v);return d?fmValida(d.length>11?'cnpj':'cpf',d):null}return String(v||'').trim()||null}
+
+/* ---------- aba Terreno: Partes ---------- */
+function secPartesTer(t){const P=partesAtivas(t),ro=UI.role==='Leitura';
+  const v=(pa,k)=>esc(k==='tel'?fmParcial('telefone',pa.tel||''):k==='doc'?ptDocFmt(pa.doc):pa[k]||'');
+  const inp=(pa,k,l,x='')=>`<label class="field"><span class="lbl-f">${l}</span>${ro?`<span class="v">${v(pa,k)||'<span class="ni">Não informado</span>'}</span>`:`<input data-ch="pt2" data-k="${k}" data-p="${pa.id}" value="${v(pa,k)}" ${x}>`}</label>`;
+  return `<section class="sec" id="sec-partes-cad"><div class="sec-h"><h2>Partes <span class="h-n">${P.length}</span></h2></div><div class="sec-b">
+    ${ro?'':`<div class="pt2-qtd"><label for="pt2-n">Quantas partes vendem?</label><span class="pt2-passo"><button type="button" class="iconbtn sm" data-a="pt2-menos" aria-label="Uma parte a menos" ${P.length<2?'disabled':''}>−</button><input id="pt2-n" data-ch="pt2-n" inputmode="numeric" value="${P.length}" aria-label="Quantidade de partes"><button type="button" class="iconbtn sm" data-a="pt2-mais" aria-label="Uma parte a mais">+</button></span><span class="faint">Todo terreno nasce com uma parte. Os dados da parte são opcionais.</span></div>`}
+    <div class="pt2-lista">${P.map(pa=>{const nl=ltDaParte(t,pa).length;return `<article class="pt2" id="pt2-${pa.id}">
+      <div class="pt2-h">${ro?`<b>${esc(pa.nome)}</b>`:`<input class="pt2-tit" data-ch="pt2" data-k="nome" data-p="${pa.id}" value="${esc(pa.nome)}" aria-label="Título da parte">`}
+        <span class="chip ${nl?'good':''}">${nl?nl+(nl>1?' lotes':' lote'):'sem lote'}</span>${pa.neg?`<span class="chip">${esc(pa.neg.codigo)}</span>`:''}
+        ${!ro&&P.length>1?`<button class="btn text sm pt2-x" data-a="pt2-excluir" data-p="${pa.id}">${ic('lixo',16)}Excluir parte</button>`:''}</div>
+      <div class="pt2-g">${inp(pa,'pessoa','Nome completo da pessoa principal')}${inp(pa,'tel','Telefone','inputmode="tel" data-mask="telefone" placeholder="(11) 98765-4321"')}${inp(pa,'email','E-mail','type="email" placeholder="nome@email.com"')}${inp(pa,'doc','CPF ou CNPJ','inputmode="numeric" data-doc="1"')}
+        <label class="field pt2-obs"><span class="lbl-f">Observação</span>${ro?`<span class="v">${esc(pa.obs||'')||'<span class="ni">Não informada</span>'}</span>`:`<textarea data-ch="pt2" data-k="obs" data-p="${pa.id}" rows="1">${esc(pa.obs||'')}</textarea>`}</label></div></article>`}).join('')}</div>
+    ${ro?'':`<button class="btn text sm qd-add" data-a="pt2-mais">${ic('add',16)}Adicionar parte</button>`}</div></section>`}
+
+/* ---------- aba Terreno: Lotes (matrícula + SQLs) ---------- */
+/* detalhes do SQL abertos continuam abertos ao redesenhar a ficha */
+const LT_DET=new Set();
+document.addEventListener('toggle',e=>{const d=e.target;if(d.classList?.contains('lt-det')&&d.dataset.det){d.open?LT_DET.add(d.dataset.det):LT_DET.delete(d.dataset.det)}},true);
+function ltSqlLinha(t,l,ins,ro){const i=t.insc.indexOf(ins),c=CIDADES_INSC[insCid(ins)],out=ltOutros(t,l,ins);
+  const vs=ins.valores.filter(v=>v.vig).sort((a,b)=>b.ex-a.ex),v=vs[0],venal=v?(v.vt!=null&&v.vc!=null?v.vt+v.vc:(v.venal??v.vt??null)):null;
+  return `<div class="lt-sql" id="lt-ins-${ins.id}"><div class="lt-sql-h"><b class="num">${esc(ins.sql)}</b><span class="faint">${c.rotulo}</span>
+      <span class="muted">área cadastral ${ins.area!=null?m2(ins.area):'não informada'}</span>${out.length?`<span class="chip warn" title="O SQL cobre mais de uma matrícula">também em ${esc(out.map(x=>x.titulo).join(', '))}</span>`:''}
+      ${v?`<span class="muted">IPTU ${v.ex}: ${v.sit==='isento'?'isento':brl2(v.iptu)}${venal!=null?` · venal ${mi(venal)}`:''}</span>`:''}
+      ${ro?'':`<button class="iconbtn sm lixo" data-a="lt-sql-tira" data-l="${l.id}" data-i="${ins.id}" aria-label="Tirar o SQL ${esc(ins.sql)} do lote" title="Tirar do lote">${ic('lixo',18)}</button>`}</div>
+    <details class="details lt-det" data-det="${ins.id}" ${LT_DET.has(ins.id)||LOTE_BUSCANDO===t.id+':'+i?'open':''}><summary>Prefeitura, valor venal e IPTU</summary>${loteQuadro(t,ins,i)}
+      ${v?`<div class="tblwrap"><table class="mini-tbl vv"><thead><tr><th>Exercício</th><th class="r">Venal terreno</th><th class="r">Venal construção</th><th class="r">Venal do imóvel</th><th>IPTU</th><th class="r">Anual</th><th class="r">Parcela</th><th>Fonte</th></tr></thead><tbody>
+        <tr><td><b>${v.ex}</b>${v.rev>1?`<span class="faint"> · rev. ${v.rev}</span>`:''}</td><td class="r">${brl(v.vt)}</td><td class="r">${brl(v.vc)}</td><td class="r"><b>${brl(venal)}</b></td><td>${v.sit==='isento'?'<span class="chip good">Isento</span>':OPT.sitIptu[v.sit]}</td>
+        <td class="r">${v.sit==='isento'?'—':brl2(v.iptu)}</td><td class="r">${v.iptu!=null&&v.parc&&v.sit!=='isento'?`${brl2(v.iptu/v.parc)} <span class="faint">× ${v.parc}</span>`:'—'}</td><td class="muted vv-f">${esc(v.fonte||'—')}</td></tr></tbody></table></div>`:'<div class="muted">Sem IPTU lançado.</div>'}
+      ${ro?'':`<form class="inline-form" data-form="iptu" data-i="${i}" style="border:0;padding-top:4px">
+        <div class="field" style="flex:0 1 96px"><label for="v-e${i}">Exercício</label><input id="v-e${i}" name="ex" inputmode="numeric" value="${Math.max(new Date().getFullYear(),v?.ex||0)}" required></div>
+        <div class="field"><label for="v-vt${i}">Venal terreno (R$)</label><input id="v-vt${i}" name="vt" inputmode="decimal"></div><div class="field"><label for="v-vc${i}">Venal construção (R$)</label><input id="v-vc${i}" name="vc" inputmode="decimal"></div>
+        <div class="field"><label for="v-s${i}">Situação do IPTU</label><select id="v-s${i}" name="sit">${Object.entries(OPT.sitIptu).map(([k,x])=>`<option value="${k}" ${k==='tributado'?'selected':''}>${x}</option>`).join('')}</select></div>
+        <div class="field"><label for="v-i${i}">IPTU anual (R$)</label><input id="v-i${i}" name="iptu" inputmode="decimal"></div><div class="field" style="flex:0 1 86px"><label for="v-p${i}">Parcelas</label><input id="v-p${i}" name="parc" inputmode="numeric" value="10"></div>
+        <div class="field"><label for="v-m${i}">IPTU mensal informado (R$)</label><input id="v-m${i}" name="mensal" inputmode="decimal" placeholder="se a fonte trouxer"></div>
+        <div class="field grow"><label for="v-f${i}">Fonte</label><input id="v-f${i}" name="fonte" placeholder="Carnê, certidão de dados cadastrais..." required></div>
+        <button class="btn sm">${ic('add',16)}${v?'Atualizar IPTU':'Lançar IPTU'}</button></form><div class="hint">Só vale o exercício mais recente: lançar o ano novo substitui o anterior.</div>`}</details></div>`}
+function ltCard(t,l,ro){const P=partesAtivas(t),inf=ltInfo(t,l),cid=cidDoTerreno(t),c=CIDADES_INSC[cid]||CIDADES_INSC.sp;
+  const criOrig=l.criDig?'digitado':t.criFonte==='prefeitura'&&l.cri===t.cri?'pela poligonal, GeoSampa':'do terreno';
+  const crIs=Array.from({length:18},(_,i)=>`${i+1}º CRI`);if(l.cri&&!crIs.includes(l.cri))crIs.unshift(l.cri);
+  const lin=(lab,campo)=>`<label class="field"><span class="lbl-f">${lab}</span>${campo}</label>`;
+  const val=(k,x)=>ro?`<span class="v">${x}</span>`:'';
+  const divTxt=inf.div!=null&&Math.abs(inf.div)>=1?`<span class="chip ${Math.abs(inf.div)>5?'crit':'warn'}" title="Área cadastral dos SQLs comparada com a da matrícula${inf.grupo.length>1?' (no grupo de lotes que dividem o SQL)':''}">Matrícula × Prefeitura ${inf.div>0?'+':''}${num(inf.div,1)}%${inf.grupo.length>1?` · grupo ${esc(inf.grupo.map(x=>x.titulo).join(' + '))}`:''}</span>`:'';
+  return `<article class="lt" id="lt-${l.id}"><div class="lt-h">${ro?`<b>${esc(l.titulo)}</b>`:`<input class="pt2-tit" data-ch="lt" data-k="titulo" data-l="${l.id}" value="${esc(l.titulo)}" aria-label="Título do lote">`}
+      ${l.num?'':'<span class="chip warn">sem matrícula</span>'}${divTxt}${ro?'':`<button class="btn text sm pt2-x" data-a="lt-excluir" data-l="${l.id}">${ic('lixo',16)}Excluir lote</button>`}</div>
+    <div class="pt2-g">
+      ${lin('Parte',ro?val('',esc(parteDe(t,l.parte)?.nome||'—')):`<select data-ch="lt" data-k="parte" data-l="${l.id}">${P.map(pa=>`<option value="${pa.id}" ${pa.id===l.parte?'selected':''}>${esc(pa.nome)}${pa.pessoa?' · '+esc(pa.pessoa):''}</option>`).join('')}</select>`)}
+      ${lin('Matrícula <span class="faint">(uma por lote)</span>',ro?val('',esc(l.num||'—')):`<input data-ch="lt" data-k="num" data-l="${l.id}" inputmode="numeric" value="${esc(l.num)}" placeholder="Nº da matrícula">`)}
+      ${lin(`Cartório <span class="faint">(${criOrig})</span>`,ro?val('',esc(l.cri||'—')):`<select data-ch="lt" data-k="cri" data-l="${l.id}"><option value="">Não informado</option>${crIs.map(x=>`<option ${x===l.cri?'selected':''}>${esc(x)}</option>`).join('')}</select>`)}
+      ${lin('Área da matrícula (m²)',ro?val('',l.area!=null?m2(l.area):'—'):`<input data-ch="lt" data-k="area" data-l="${l.id}" inputmode="decimal" value="${l.area!=null?num(l.area,2):''}" placeholder="m²">`)}
+      ${lin('Certidão de',ro?val('',l.data?fd(l.data):'—'):`<input type="date" data-ch="lt" data-k="data" data-l="${l.id}" value="${esc(l.data||'')}">`)}
+      ${lin('Área adotada vem de',ro?val('',LT_FONTE[l.fonte]):`<select data-ch="lt" data-k="fonte" data-l="${l.id}">${Object.entries(LT_FONTE).map(([k,x])=>`<option value="${k}" ${k===l.fonte?'selected':''}>${x}</option>`).join('')}</select>`)}
+      ${l.fonte==='informada'?lin('Área informada (m²)',ro?val('',m2(l.areaInf)):`<input data-ch="lt" data-k="areaInf" data-l="${l.id}" inputmode="decimal" value="${l.areaInf!=null?num(l.areaInf,2):''}">`):''}
+      <div class="field"><span class="lbl-f">Área adotada</span><span class="v lt-adot">${inf.adot!=null?m2(inf.adot):`<span class="ni">${l.fonte==='cadastral'&&inf.comp?'SQL dividido com outro lote: escolha outra fonte':'Não informada'}</span>`}</span></div>
+      <div class="field"><span class="lbl-f">Zoneamento</span><span class="v">${esc(ltZonas(t,l).join(' / '))||'<span class="ni">—</span>'}</span></div></div>
+    <div class="lt-sqls"><div class="lbl-f">${c.rotulo}${inf.ins.length>1?'s':''}</div>${inf.ins.map(ins=>ltSqlLinha(t,l,ins,ro)).join('')||'<div class="muted">Nenhum ainda.</div>'}
+      ${ro?'':`<form class="inline-form lt-add" data-form="lt-sql" data-l="${l.id}">${campoInsc('ls-'+l.id,cid,null,true)}<div class="field" style="flex:0 1 150px"><label for="ls-a-${l.id}">Área cadastral (m²)</label><input id="ls-a-${l.id}" name="area" inputmode="decimal"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form>`}</div></article>`}
+function secLotes(t){const ro=UI.role==='Leitura',L=t.lotes||[];
+  return `<section class="sec" id="sec-lotes"><div class="sec-h"><h2>Lotes <span class="h-n">${L.length}</span></h2>${!ro&&lotesInsc(t).length?`<button class="btn sm text" data-a="lotes-poly" ${LOTES_BUSCANDO?'disabled':''}>${ic('layers',16)}${LOTES_BUSCANDO?'Buscando os lotes...':'Usar a poligonal dos lotes'}</button>`:''}</div><div class="sec-b">
+    <div class="hint" style="margin:0 0 12px">Cada lote é uma matrícula, com um ou mais SQLs, e pertence a uma parte. O cartório vem da localização da poligonal; trocado à mão, vale o digitado.</div>
+    <div class="lt-lista">${L.map(l=>ltCard(t,l,ro)).join('')||'<div class="muted">Nenhum lote ainda.</div>'}</div>
+    ${ro?'':`<button class="btn text sm qd-add" data-a="lt-novo">${ic('add',16)}Adicionar lote</button>`}</div></section>`}
+
+/* ---------- aba Comercial: a oferta de cada parte ---------- */
+const ptValor=(o,pa,um)=>!o?null:um?o.valor:o.partes&&pa.id in o.partes?o.partes[pa.id]:null;
+const ptForma=(o,pa,um)=>!o?null:um?o.forma:o.partesForma?.[pa.id]??o.forma;
+function secPartesCom(t){const P=partesAtivas(t),o=ofertaRef(t),um=P.length===1,ro=UI.role==='Leitura'||!o;
+  const L=(x)=>`<span class="lbl-f ptcom-ml">${x}</span>`;
+  const linhas=P.map(pa=>{const ls=ltDaParte(t,pa),a=ptArea(t,pa),v=ptValor(o,pa,um),fm=ptForma(o,pa,um);
+    return `<div class="ptcom-r"><div class="ptcom-p"><b>${esc(pa.nome)}</b>${pa.pessoa?` <span class="faint">${esc(pa.pessoa)}</span>`:''}<div class="faint">${ls.length?ls.map(l=>esc(l.titulo)+(l.num?` (mat. ${esc(l.num)})`:'')).join(' · '):'sem lote'}</div></div>
+      <div class="ptcom-c">${L('Área adotada')}<span>${a!=null?m2(a):'—'}</span></div>
+      <div class="ptcom-c">${L('Zoneamento')}<span>${esc(ptZonas(t,pa).join(' / '))||'—'}</span></div>
+      <div class="ptcom-c field">${L('Valor pedido')}${ro?`<span>${v!=null?brl(v):'—'}</span>`:`<input class="ptc-n" data-ch="ptc" data-k="valor" data-p="${pa.id}" inputmode="decimal" value="${v!=null?num(v):''}" placeholder="R$" aria-label="Valor pedido de ${esc(pa.nome)}">`}</div>
+      <div class="ptcom-c field">${L('Valor por m²')}${ro?`<span>${v!=null&&a?brl(v/a):'—'}</span>`:`<input class="ptc-n" data-ch="ptc" data-k="m2" data-p="${pa.id}" inputmode="decimal" value="${v!=null&&a?num(v/a):''}" placeholder="${a?'R$/m²':'sem área'}" ${a?'':'disabled'} aria-label="Valor por m² de ${esc(pa.nome)}">`}</div>
+      <div class="ptcom-c field">${L('Condição de pagamento')}${ro?`<span>${fm?OPT.forma[fm]:'—'}</span>`:`<select data-ch="ptc" data-k="forma" data-p="${pa.id}" aria-label="Condição de pagamento de ${esc(pa.nome)}"><option value="">Não informada</option>${Object.entries(OPT.forma).map(([k,x])=>`<option value="${k}" ${k===fm?'selected':''}>${x}</option>`).join('')}</select>`}</div></div>`}).join('');
+  const aT=P.reduce((s,pa)=>s+(ptArea(t,pa)||0),0),vs=P.map(pa=>ptValor(o,pa,um)),vT=vs.some(v=>v!=null)?vs.reduce((s,v)=>s+(v||0),0):null;
+  const aCom=P.filter(pa=>ptValor(o,pa,um)!=null).reduce((s,pa)=>s+(ptArea(t,pa)||0),0),falta=vs.filter(v=>v==null).length;
+  return `<section class="sec" id="sec-partes-com"><div class="sec-h"><h2>Partes <span class="h-n">${P.length}</span></h2>${o?`<span class="faint" style="font-size:12px">oferta de ${fd(o.data)}</span>`:''}</div><div class="sec-b">
+    ${o?'':`<div class="muted" style="margin-bottom:10px">Registre a oferta para informar o valor pedido de cada parte. <button class="btn sm" data-a="nova-oferta">${ic('add',16)}Registrar oferta</button></div>`}
+    <div class="ptcom"><div class="ptcom-r ptcom-th"><span>Parte e lotes</span><span>Área adotada</span><span>Zoneamento</span><span>Valor pedido</span><span>Valor por m²</span><span>Condição de pagamento</span></div>${linhas}
+    ${P.length>1?`<div class="ptcom-r ptcom-tot"><div class="ptcom-p"><b>Total</b></div><div class="ptcom-c">${L('Área adotada')}<span>${aT?m2(aT):'—'}</span></div><div class="ptcom-c"></div><div class="ptcom-c">${L('Valor pedido')}<span>${vT!=null?brl(vT)+(falta?` <span class="faint">(faltam ${falta})</span>`:''):'—'}</span></div><div class="ptcom-c">${L('Valor por m²')}<span>${vT!=null&&aCom?brl(vT/aCom):'—'}</span></div><div class="ptcom-c"></div></div>`:''}</div>
+    <div class="hint">Digite o total ou o valor por m²: o outro se calcula pela área adotada dos lotes da parte. Área e zoneamento vêm da aba Terreno. As propostas da BKM ficam no quadro Propostas.</div></div></section>`}
+
+/* ---------- eventos ---------- */
+function ltRender(t){lotesNorm(t);save();render()}
+document.addEventListener('input',e=>{const el=e.target;if(el.dataset?.doc){const n=ptDocFmt(el.value);if(n!==el.value)el.value=n}},true);
+document.addEventListener('change',e=>{const el=e.target.closest('[data-ch]');if(!el||UI.route!=='terreno')return;const ch=el.dataset.ch,t=T(UI.id);if(!t||!['pt2','pt2-n','lt','ptc'].includes(ch))return;
+  if(ch==='pt2-n'){ptQtd(t,parseInt(el.value,10));return}
+  if(ch==='pt2'){const pa=parteDe(t,el.dataset.p),k=el.dataset.k;if(!pa)return;let v;
+    try{v=k==='nome'?el.value.trim():ptValida(k,el.value)}catch(err){toast(err.message,true);el.focus();return}
+    if(k==='nome'){if(!v){toast('A parte precisa de um título.',true);el.value=pa.nome;return}if(partesAtivas(t).some(x=>x!==pa&&x.nome.trim().toLowerCase()===v.toLowerCase())){toast('Já existe uma parte com este título.',true);el.value=pa.nome;return}}
+    if((pa[k]||null)===v)return;pa[k]=v;ltRender(t);return}
+  if(ch==='lt'){const l=ltDe(t,el.dataset.l),k=el.dataset.k;if(!l)return;let v=el.value;
+    if(k==='titulo'){v=v.trim();if(!v||t.lotes.some(x=>x!==l&&x.titulo.trim().toLowerCase()===v.toLowerCase())){toast(v?'Já existe um lote com este título.':'O lote precisa de um título.',true);el.value=l.titulo;return}}
+    if(k==='num'){v=v.trim();const o=v&&t.lotes.find(x=>x!==l&&digits(x.num)===digits(v)&&x.cri===l.cri);if(o){toast(`A matrícula ${v} já está no ${o.titulo}.`,true);el.value=l.num;return}}
+    if(k==='area'||k==='areaInf')v=lerNum(v);
+    if(k==='cri'){l.criDig=!!v&&v!==t.cri}
+    if(k==='fonte'&&v==='informada'&&l.areaInf==null)l.areaInf=ltInfo(t,l).adot;
+    l[k]=v;ltRender(t);return}
+  if(ch==='ptc'){const o=ofertaRef(t),pa=parteDe(t,el.dataset.p),k=el.dataset.k,um=partesAtivas(t).length===1;if(!o||!pa)return;
+    if(k==='forma'){if(um)o.forma=el.value||null;else{o.partesForma=o.partesForma||{};o.partesForma[pa.id]=el.value||null;o.partes=o.partes||{};if(!(pa.id in o.partes))o.partes[pa.id]=null}save();render();return}
+    const a=ptArea(t,pa);let v=lerNum(el.value);if(k==='m2')v=v!=null&&a?Math.round(v*a):null;
+    if(um)o.valor=v;else{o.partes=o.partes||{};o.partes[pa.id]=v;const vs=partesAtivas(t).map(x=>o.partes[x.id]).filter(x=>x!=null);if(vs.length)o.valor=vs.reduce((s,x)=>s+x,0)}
+    save();render();return}});
+function ptQtd(t,n){const P=partesAtivas(t);n=Math.max(1,Math.min(30,n||1));
+  while(partesAtivas(t).length<n)ptNova(t);
+  if(n<P.length){const sai=partesAtivas(t).slice(n).reverse();for(const pa of sai){if(!ptVazia(t,pa)){toast(`${pa.nome} já tem dados ou lotes: use Excluir parte.`,true);break}t.partes.splice(t.partes.indexOf(pa),1)}}
+  if(t.neg&&typeof abrirPartes==='function')abrirPartes(t);ltRender(t)}
+function ptNova(t){let n=partesAtivas(t).length+1;while(partesAtivas(t).some(p=>p.nome.trim().toLowerCase()==='vendedor '+n))n++;
+  const pa={id:uid(),ativa:true,neg:null,propostas:[],nome:'Vendedor '+n,essencial:true,area:null};partesDe(t).push(pa);return pa}
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a]');if(!a||UI.route!=='terreno')return;const A=a.dataset.a;if(!['pt2-mais','pt2-menos','pt2-excluir','lt-novo','lt-excluir','lt-sql-tira'].includes(A))return;
+  const t=T(UI.id);if(!t||UI.role==='Leitura')return;
+  if(A==='pt2-mais'){const pa=ptNova(t);if(t.neg&&typeof abrirPartes==='function')abrirPartes(t);ltRender(t);setTimeout(()=>document.querySelector(`#pt2-${pa.id} [data-k=pessoa]`)?.focus(),30);return}
+  if(A==='pt2-menos'){ptQtd(t,partesAtivas(t).length-1);return}
+  if(A==='pt2-excluir'){const pa=parteDe(t,a.dataset.p);if(!pa)return;
+    if(partesAtivas(t).length<2){toast('O terreno precisa de pelo menos uma parte.',true);return}
+    if(ltDaParte(t,pa).length){toast(`${pa.nome} tem lotes: passe os lotes para outra parte antes.`,true);return}
+    if(pa.neg||(pa.propostas||[]).length||t.pessoas.some(p=>p.parte===pa.id)||t.ofertas.some(o=>o.partes&&pa.id in o.partes&&o.partes[pa.id]!=null)){partesClick('pt-remover',a,t);return}
+    t.partes.splice(t.partes.indexOf(pa),1);t.corretores.forEach(x=>{if(x.partes)x.partes=x.partes.filter(id=>id!==pa.id)});log(t,`Parte excluída: ${pa.nome}`);ltRender(t);toast(`${pa.nome} excluída.`);return}
+  if(A==='lt-novo'){const l=ltNovo(t,partesAtivas(t)[0].id);t.lotes.push(l);ltRender(t);setTimeout(()=>document.querySelector(`#lt-${l.id} [data-k=num]`)?.focus(),30);return}
+  if(A==='lt-excluir'){const l=ltDe(t,a.dataset.l);if(!l)return;
+    const sos=l.ins.filter(id=>!t.lotes.some(x=>x!==l&&x.ins.includes(id)));t.lotes.splice(t.lotes.indexOf(l),1);t.mats=t.mats.filter(m=>m.lote!==l.id);
+    t.insc=t.insc.filter(i=>!sos.includes(i.id)||i.valores.length);log(t,`Lote excluído: ${l.titulo}${l.num?` (matrícula ${l.num})`:''}`);ltRender(t);toast(`${l.titulo} excluído.`);return}
+  if(A==='lt-sql-tira'){const l=ltDe(t,a.dataset.l),id=a.dataset.i;if(!l)return;l.ins=l.ins.filter(x=>x!==id);
+    const ins=t.insc.find(i=>i.id===id);if(ins&&!t.lotes.some(x=>x.ins.includes(id))&&!ins.valores.length)t.insc.splice(t.insc.indexOf(ins),1);
+    else if(ins&&!t.lotes.some(x=>x.ins.includes(id)))l.ins.push(id),toast('O SQL tem IPTU lançado: fica no lote.',true);ltRender(t)}});
+document.addEventListener('submit',e=>{const f=e.target;if(f.dataset.form!=='lt-sql')return;e.preventDefault();const t=T(UI.id),l=t&&ltDe(t,f.dataset.l);if(!l)return;
+  const F=Object.fromEntries(new FormData(f)),c=CIDADES_INSC[F.mun]||CIDADES_INSC.sp;
+  if(c.mascara&&digits(F.sql).length!==digitosMasc(c.mascara)){toast(`${c.rotulo} incompleto: são ${digitosMasc(c.mascara)} dígitos.`,true);return}
+  const ja=t.insc.find(x=>insCid(x)===F.mun&&digits(x.sql)===digits(F.sql)&&(c.mascara||x.sql===F.sql));
+  if(ja){if(l.ins.includes(ja.id)){toast('Este SQL já está no lote.',true);return}const out=t.lotes.filter(x=>x.ins.includes(ja.id));l.ins.push(ja.id);
+    log(t,`${c.rotulo} ${ja.sql} também no ${l.titulo}`);ltRender(t);toast(`${c.rotulo} ${ja.sql} também está no ${out.map(x=>x.titulo).join(', ')}: a divergência de área passa a ser do grupo.`);return}
+  const ins={id:uid(),mun:F.mun,sql:F.sql,area:lerNum(F.area),valores:[]};t.insc.push(ins);l.ins.push(ins.id);
+  log(t,`${c.rotulo} ${F.sql} (${c.cidade}) adicionada ao ${l.titulo}`);ltRender(t);if(loteBuscavel(ins))loteBuscar(t,t.insc.indexOf(ins))});
+
 // ---------------------------------------------------------------------
 // Inscrição municipal por cidade. A cidade é sempre a do terreno (pela poligonal):
 // São Paulo (SQL, base GeoSampa), São José dos Campos (inscrição imobiliária,
@@ -10837,15 +11061,22 @@ async function geoPoligono(sql){const d=digits(sql);
   return geoAneis(lote.geometry)[0].slice(0,-1).map(p=>utmLatLng(p[0],p[1]))}
 LOTE_ADAPT.sp={url:()=>GEO_BASE,buscar:geoBuscar,quadro:geoQuadro,poligono:geoPoligono,linhas:geoLinhas};
 
-/* Cartório da circunscrição pelo pino, para o terreno de São Paulo sem lote consultado (3/nov/2026): preenche o vazio ou troca o
-   que veio do GeoSampa quando o pino muda; nunca o digitado. Uma consulta por localização. No banco: app.cartorio_da_prefeitura. */
+/* Cartório da circunscrição, para o terreno de São Paulo, já ao abrir a ficha do terreno novo (3 e 4/nov/2026): pela poligonal
+   (a circunscrição que cobre a maior parte dela) ou, sem poligonal, pelo pino. Preenche o vazio ou troca o que veio do GeoSampa
+   quando a área muda; nunca o digitado. Uma consulta por localização. No banco: app.cartorio_da_prefeitura. */
 const CRI_TENT=new Set();
 async function geoCartorio(t){if(!GEO_BASE||t.lat==null||!/^São Paulo/.test(t.municipio||'São Paulo')||t.criFonte==='digitado'||UI.role==='Leitura')return;
-  const k=t.id+'|'+t.lat+'|'+t.lng;if(CRI_TENT.has(k)||(t.cri&&t.criFonte==='prefeitura'&&t.criLoc===k))return;CRI_TENT.add(k);
-  try{const f=await geoWfs({typeNames:'geoportal:cartorio_registro_imovel',propertyName:'cd_numero_cartorio,nm_subdistrito',CQL_FILTER:`INTERSECTS(ge_poligono,SRID=4326;POINT(${t.lng} ${t.lat}))`});
-    const c=f[0]?.properties?.cd_numero_cartorio;if(!c||f.length!==1)return;const v=c+' CRI';t.criLoc=k;
+  const k=t.id+'|'+(t.poly&&t.poly.length>2?JSON.stringify(t.poly):t.lat+'|'+t.lng);if(CRI_TENT.has(k)||(t.cri&&t.criFonte==='prefeitura'&&t.criLoc===k))return;CRI_TENT.add(k);
+  try{let c=null;
+    if(t.poly&&t.poly.length>2){const anel=t.poly.map(([la,ln])=>latLngUtm(la,ln));anel.push(anel[0]);const g={type:'Polygon',coordinates:[anel]};
+      const f=await geoWfs({typeNames:'geoportal:cartorio_registro_imovel',propertyName:'cd_numero_cartorio,nm_subdistrito,ge_poligono',CQL_FILTER:`INTERSECTS(ge_poligono,${geoWkt(g)})`});
+      const cs=[...new Set(f.map(x=>x.properties?.cd_numero_cartorio).filter(Boolean))];
+      c=cs.length>1?geoAreaZonas(g,f.filter(x=>x.geometry),p=>p.cd_numero_cartorio)[0]?.sigla:cs[0]}
+    else{const f=await geoWfs({typeNames:'geoportal:cartorio_registro_imovel',propertyName:'cd_numero_cartorio,nm_subdistrito',CQL_FILTER:`INTERSECTS(ge_poligono,SRID=4326;POINT(${t.lng} ${t.lat}))`});
+      c=f.length===1?f[0].properties?.cd_numero_cartorio:null}
+    if(!c)return;const v=c+' CRI';t.criLoc=k;
     if(t.cri===v&&t.criFonte==='prefeitura')return save();const ant=t.cri;t.cri=v;t.criFonte='prefeitura';
-    log(t,`Cartório pelo GeoSampa: ${ant?ant+' → ':''}${v}`);save();if(UI.route==='terreno'&&UI.id===t.id)render()}catch(e){}}
+    log(t,`Cartório pelo GeoSampa: ${ant?ant+' → ':''}${v}`);if(typeof lotesNorm==='function')lotesNorm(t);save();if(UI.route==='terreno'&&UI.id===t.id)render()}catch(e){}}
 
 // ---------------------------------------------------------------------
 // GeoSanja (Prefeitura de São José dos Campos) pela inscrição imobiliária.

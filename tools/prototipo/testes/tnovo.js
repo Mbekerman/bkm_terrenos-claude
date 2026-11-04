@@ -86,7 +86,7 @@ const titulo=p=>p.$eval('#modal h2',x=>x.textContent).catch(()=>'');
   await p.screenshot({path:OUT+'5_parcial.png'});
   await p.click('.nv-s [data-a=nv-recad]');await p.waitForTimeout(500);
   const t=(await est(p)).terrenos.find(x=>x.codigo==='TER-000123');
-  ok(Math.abs(area(t.poly)-46*94)<250&&t.polyAnt?.length===1&&/Recadastro com a área nova/.test(t.hist.at(-1).txt),'poligonal trocada pela nova ('+Math.round(area(t.poly))+' m²), anterior guardada');
+  ok(Math.abs(area(t.poly)-46*94)<250&&t.polyAnt?.length===1&&t.hist.slice(-3).some(h=>/Recadastro com a área nova/.test(h.txt)),'poligonal trocada pela nova ('+Math.round(area(t.poly))+' m²), anterior guardada');
   ok(await titulo(p)==='Registrar oferta','segue para a oferta');
   await ctx.close()}
 
