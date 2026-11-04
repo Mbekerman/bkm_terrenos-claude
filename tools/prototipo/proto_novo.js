@@ -301,7 +301,10 @@ function engorda(poly,m){const pj=nvProj(centro(poly)[0]),P=poly.map(pj.xy),n=P.
   return P.map((p,i)=>{const a=nor(P[(i-1+n)%n],p),b=nor(p,P[(i+1)%n]),bx=a[0]+b[0],by=a[1]+b[1],k=(bx*bx+by*by)/2||1;
     return pj.ll([p[0]+m*bx/k,p[1]+m*by/k])})}
 function lotesUniao(polys){if(!polys.length)return null;if(polys.length===1)return polys[0];
-  let u=engorda(polys[0],.01);for(const p of polys.slice(1)){u=u&&uniaoPoly(u,engorda(p,.01))}return u&&limpaPoly(u)}
+  /* junta em qualquer ordem: o lote que ainda não encosta no que já foi juntado espera a próxima volta */
+  const resto=polys.map(p=>engorda(p,.01));let u=resto.shift(),mudou=true;
+  while(resto.length&&mudou){mudou=false;for(let i=0;i<resto.length;i++){const j=uniaoPoly(u,resto[i]);if(j){u=j;resto.splice(i,1);i--;mudou=true}}}
+  return resto.length?null:limpaPoly(u)}
 // tira os pontos que sobram da junção: colados (< 5 cm) ou em linha reta com os vizinhos
 function limpaPoly(poly){const pj=nvProj(centro(poly)[0]);let P=poly.map(pj.xy),mudou=true;
   while(mudou&&P.length>3){mudou=false;for(let i=0;i<P.length&&P.length>3;i++){const a=P[(i-1+P.length)%P.length],b=P[i],c=P[(i+1)%P.length];
@@ -313,13 +316,13 @@ function lotesSvg(a,b){const pts=[...a,...b],lat0=centro(pts)[0],k=Math.cos(lat0
     d=P=>P.map((p,i)=>(i?'L':'M')+(pad+(p[1]*k-x0)*f).toFixed(1)+' '+(pad+(-p[0]-y0)*f).toFixed(1)).join('')+'Z';
   return `<svg class="lotes-svg" viewBox="0 0 ${W} ${W}" role="img" aria-label="Poligonal desenhada e lotes da prefeitura"><path d="${d(b)}" class="lotes-novo"/><path d="${d(a)}" class="lotes-ant"/></svg>`}
 function lotesPolyHtml(fechar){const L=UI.lotes,t=T(L.tid);if(!t)return '';const ant=t.poly?areaPoly(t.poly):null;
-  const cab=`<div class="dh"><div><h2>Usar a poligonal dos lotes</h2><div class="muted" style="margin-top:4px">Substitui a poligonal desenhada pela soma dos lotes das inscrições, como estão na prefeitura.</div></div>${fechar}</div>`;
+  const cab=`<div class="dh"><div><h2>Usar a poligonal dos lotes</h2><div class="muted" style="margin-top:4px">${L.mapa?'Substitui a poligonal desenhada pela soma dos lotes marcados no mapa da prefeitura.':'Substitui a poligonal desenhada pela soma dos lotes das inscrições, como estão na prefeitura.'}</div></div>${fechar}</div>`;
   const falhas=L.falhas.length?`<div class="banner warn">${ic('warn')}<div><div class="bt">${L.falhas.length===L.total?'Nenhum lote encontrado':`${L.falhas.length} de ${L.total} inscrições ficaram de fora`}</div>${L.falhas.map(esc).join('<br>')}</div></div>`:'';
   if(!L.poly)return cab+`<div class="fields"><div class="field full">${falhas}${L.separados?`<div class="banner warn">${ic('warn')}<div><div class="bt">Os lotes não se encostam</div>A poligonal do terreno precisa ser uma área só. Confira as inscrições ou continue com a desenhada.</div></div>`:''}</div></div><div class="df"><button class="btn text" data-a="close">Fechar</button></div>`;
   const nova=areaPoly(L.poly),dif=ant?nova-ant:null,com=ant?sobre2(t.poly,L.poly):null,ro=UI.role==='Leitura';
   return cab+`<div class="fields"><div class="field full lotes-cmp">${t.poly?lotesSvg(t.poly,L.poly):''}<div class="lotes-kv">
       <div><span>Desenhada</span><b>${ant?m2(Math.round(ant)):'—'}</b></div>
-      <div><span>Lotes da prefeitura (${L.n} ${L.n>1?'inscrições':'inscrição'})</span><b>${m2(Math.round(nova))}</b></div>
+      <div><span>Lotes da prefeitura (${L.n} ${L.mapa?(L.n>1?'lotes marcados':'lote marcado'):L.n>1?'inscrições':'inscrição'})</span><b>${m2(Math.round(nova))}</b></div>
       ${dif!=null?`<div><span>Diferença</span><b>${dif>=0?'+':'−'}${m2(Math.abs(Math.round(dif)))} (${dif>=0?'+':'−'}${num(Math.abs(dif/ant*100),1)}%)</b></div>
       <div><span>Em comum com a desenhada</span><b>${num(com.pctA,0)}% dela · ${num(com.pctB,0)}% dos lotes</b></div>`:''}
       <div class="hint"><span class="lotes-leg lotes-leg-ant"></span>desenhada <span class="lotes-leg lotes-leg-novo"></span>lotes</div></div></div>
@@ -328,7 +331,7 @@ function lotesPolyHtml(fechar){const L=UI.lotes,t=T(L.tid);if(!t)return '';const
     <div class="field full hint">A poligonal desenhada fica guardada no histórico do terreno.</div></div>
   <div class="df"><button class="btn text" data-a="close">Cancelar</button>${ro?'':`<button class="btn primary" data-a="lotes-usar">${L.sobre.length?'Substituir mesmo assim':'Substituir a poligonal'}</button>`}</div>`}
 function lotesPolyUsar(){const L=UI.lotes,t=L&&T(L.tid);if(!t||!L.poly)return;
-  nvTrocarPoly(t,L.poly,`pelos lotes da prefeitura (${L.n} ${L.n>1?'inscrições':'inscrição'})`);
+  nvTrocarPoly(t,L.poly,`pelos lotes da prefeitura (${L.n} ${L.mapa?(L.n>1?'lotes marcados no mapa':'lote marcado no mapa'):L.n>1?'inscrições':'inscrição'})`);
   if(L.sobre.length)t.sobreAceitas=[...new Set([...(t.sobreAceitas||[]),...L.sobre.map(x=>x.t.id)])];
   UI.modal=null;UI.lotes=null;save();renderModal();render();toast('Poligonal substituída pelos lotes da prefeitura. A desenhada ficou guardada.')}
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a="lotes-poly"],[data-a="lotes-usar"]');if(!a)return;

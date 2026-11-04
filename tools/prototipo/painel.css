@@ -3791,3 +3791,47 @@ html[data-tema="escuro"] .ems-lista tr.ems-sel td { background: rgba(168, 199, 2
 .ag-ia textarea{width:100%;resize:vertical}
 .ag-ia-b{display:flex;justify-content:flex-end;gap:8px}
 html[data-tema="escuro"] .ag-ia{background:#1e1f20;border-color:#444746}
+
+/* ---------- Lotes da prefeitura no cadastro (proto_lotesgeo.js, 4/nov/2026): mapa no jeito do GeoSampa ---------- */
+.dialog:has(.lg-corpo) { width: min(1180px, 100%) }
+.lg-msg { display: flex; gap: 10px; align-items: center; padding: 48px 8px; color: var(--m-on-surface-variant, #444746) }
+.lg-corpo { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; min-height: 0 }
+.lg-mapa { position: relative; height: min(620px, calc(100dvh - 230px)); min-height: 320px; border: 1px solid #c4c7c5; border-radius: 12px; overflow: hidden; background: #fbf6d5; touch-action: none }
+.lg-svg { width: 100%; height: 100%; display: block; cursor: grab; user-select: none; -webkit-user-select: none }
+.lg-svg:active { cursor: grabbing }
+.lg-fundo { fill: #fbf6d5 }
+.lg-l { fill: #fdd56b; stroke: #f0612c; stroke-width: calc(var(--lg-w, .1) * 1.1px); cursor: pointer; vector-effect: none }
+.lg-l:hover { fill: #fcc94a }
+.lg-l.sel { fill: #8ab4f8; stroke: #0b57d0; stroke-width: calc(var(--lg-w, .1) * 2px) }
+.lg-l.sel:hover { fill: #74a5f6 }
+.lg-l.fixo { fill: #a8c7fa; cursor: default }
+.lg-l.x { fill: #e9e3c9; stroke: #c9a27e; cursor: not-allowed }
+.lg-ter { fill: none; stroke: #062e6f; stroke-width: calc(var(--lg-w, .1) * 3px); stroke-dasharray: calc(var(--lg-w, .1) * 9px) calc(var(--lg-w, .1) * 5px); pointer-events: none }
+.lg-rots text { font-family: Arial, sans-serif; font-weight: 700; fill: #111; text-anchor: middle; pointer-events: none; paint-order: stroke; stroke: rgba(255,255,255,.65); stroke-width: .12em }
+.lg-vias text { font-family: Arial, sans-serif; fill: #6b6b6b; text-anchor: middle; dominant-baseline: middle; letter-spacing: .04em; pointer-events: none; text-transform: uppercase }
+.lg-tip { position: absolute; z-index: 3; max-width: 260px; padding: 8px 10px; border-radius: 8px; background: #303030; color: #f2f2f2; font-size: 12px; line-height: 1.4; pointer-events: none; box-shadow: 0 2px 6px rgba(0,0,0,.25) }
+.lg-tip b { font-size: 13px; color: #fff } .lg-tip .faint { color: #c4c7c5 } .lg-tip-x { color: #ffb4ab }
+.lg-zoom { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 4px }
+.lg-zoom .iconbtn { background: #fff; color: #1f1f1f; border: 1px solid #c4c7c5; font-size: 18px; width: 36px; height: 36px }
+.lg-leg { position: absolute; left: 8px; bottom: 8px; display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,.9); color: #1f1f1f; font-size: 12px }
+.lg-leg span { display: inline-flex; align-items: center; gap: 6px }
+.lg-sw { width: 14px; height: 10px; border: 1px solid #f0612c; background: #fdd56b; border-radius: 2px }
+.lg-sw.sel { background: #8ab4f8; border-color: #0b57d0 } .lg-sw.x { background: #e9e3c9; border-color: #c9a27e } .lg-sw.ter { background: none; border: 2px dashed #062e6f }
+.lg-lado { display: flex; flex-direction: column; min-height: 0; max-height: min(620px, calc(100dvh - 230px)) }
+.lg-lista { overflow-y: auto; border-top: 1px solid var(--m-outline-variant, #c4c7c5) }
+.lg-it { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; padding: 8px 0; border-bottom: 1px solid var(--m-outline-variant, #c4c7c5) }
+.lg-it .num { font-weight: 500 } .lg-it .faint { flex: 1 1 100%; font-size: 12px } .lg-it .chip { margin-left: auto }
+.lg-soltos { border: 1px solid var(--m-outline-variant, #c4c7c5); border-radius: 12px; padding: 10px 16px 4px; margin: 0 0 12px }
+.lg-soltos-h { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap }
+.lg-soltos .lg-it { flex-wrap: nowrap } .lg-soltos .lg-it .faint { flex: 1 1 auto } .lg-soltos .lg-it:last-child { border-bottom: 0 }
+.lt-solto { flex: 1 1 260px }
+html[data-tema="escuro"] .lg-mapa { border-color: #444746 }
+html[data-tema="escuro"] .lg-soltos, html[data-tema="escuro"] .lg-it, html[data-tema="escuro"] .lg-lista { border-color: #444746 }
+@media (max-width: 760px) {
+  .lg-corpo { grid-template-columns: 1fr }
+  .lg-mapa { height: 58dvh }
+  .lg-lado { max-height: none }
+  .lg-lista { max-height: 30dvh }
+}
+.lg-toque { display: none } @media (hover: none) { .lg-mouse { display: none } .lg-toque { display: inline } }
+.lg-soltos .lg-it { padding: 2px 0 }

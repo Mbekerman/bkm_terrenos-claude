@@ -48,6 +48,8 @@ await p.waitForFunction(()=>/Planta e desenho/.test(document.querySelector('#toa
 const st=await ter().then(t=>{const i=t.insc[0];return {sqlFmt:i.sql,area:i.area,cib:i.cib,zf:i.zf,aCad:t.aCad,aConst:t.aConst,poly:t.poly&&t.poly.length,lat:t.lat,
   analise:t.analises.find(a=>a.status==='vigente'),docs:t.docs.map(d=>d.tipo+':v'+d.versoes+':'+d.nome),consultas:i.geo.length,erros:i.geo[0].erros,zonas:i.geo[0].zonas,hist:t.hist.map(h=>h.txt)}});
 console.log('estado:',JSON.stringify(st));
+// a pergunta dos lotes da prefeitura (tlotesgeo.js) abre junto: aqui, Agora não
+console.log('pergunta dos lotes?',await p.$$eval('[data-a=lg-sim]',x=>x.length));await p.evaluate(()=>document.querySelector('#modal [data-a=close]')?.click());await p.waitForTimeout(150);
 await p.evaluate(()=>{if(!document.getElementById('geo-0'))document.querySelector('.fi-abas [data-t=terreno]').click()});await p.waitForTimeout(300);
 await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click());document.querySelectorAll('.lt-det').forEach(d=>d.open=true)});await p.waitForTimeout(200);
 console.log('quadro:',await p.$eval('#geo-0',x=>x.innerText.replace(/\s+/g,' ')));

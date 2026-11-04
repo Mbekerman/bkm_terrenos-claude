@@ -3377,6 +3377,18 @@ select pg_temp.ok(not exists (select 1 from app.terreno_partes where id = :'lp3'
 select app.excluir_lote(:'lt2');
 select pg_temp.ok(not exists (select 1 from app.matriculas where numero = '301.002') and not exists (select 1 from app.inscricoes_municipais where id = :'li2')
                   and exists (select 1 from app.inscricoes_municipais where id = :'li3'), 'excluir o lote leva a matrícula e o SQL só dele; o SQL de outro lote fica');
+-- SQLs marcados no mapa de lotes da prefeitura (4/nov/2026): entram soltos, vão para um lote pela lista e,
+-- com o lote excluído, voltam a ficar soltos em vez de sair do terreno
+insert into app.inscricoes_municipais (empresa_id, terreno_id, municipio_id, inscricao, area_cadastral_m2, origem, endereco_prefeitura)
+values (:'emp', :'tl', :'sp', '059.112.0040-3', 220, 'mapa_prefeitura', 'R BRESSER, 120') returning id as lim \gset
+select pg_temp.ok((select origem = 'mapa_prefeitura' and parte_id is null from app.inscricoes_municipais where id = :'lim')
+                  and not exists (select 1 from app.lote_inscricoes where inscricao_id = :'lim'), 'SQL do mapa da prefeitura entra solto, sem lote nem parte');
+select pg_temp.falha(format($$insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao, origem) values (%L, %L, '059.112.0041-1', 'chute')$$, :'emp', :'tl'), 'origem da inscrição só digitada ou do mapa');
+select app.salvar_lote(:'tl', null, format('{"parte_id":"%s","matricula":{"numero":"301.009","area_registrada_m2":220},"inscricoes":["%s"]}', :'lp1', :'lim')::jsonb) as ltm \gset
+select pg_temp.ok((select parte_id = :'lp1' from app.inscricoes_municipais where id = :'lim'), 'o SQL solto escolhido no lote pega a parte do lote');
+select app.excluir_lote(:'ltm');
+select pg_temp.ok((select parte_id is null from app.inscricoes_municipais where id = :'lim') and not exists (select 1 from app.lote_inscricoes where inscricao_id = :'lim'),
+  'lote excluído: o SQL do mapa da prefeitura volta a ficar solto');
 select app.salvar_lote(:'tl', :'lt3', '{"matricula":null}') \g /dev/null
 select pg_temp.ok((select matricula_id is null from app.terreno_lotes where id = :'lt3') and not exists (select 1 from app.matriculas where numero = '301.003'),
   'tirar a matrícula do lote apaga a matrícula');
