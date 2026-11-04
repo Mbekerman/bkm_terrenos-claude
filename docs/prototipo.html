@@ -5223,7 +5223,7 @@ html[data-tema="escuro"] .lt-sqls { border-top-color: #2d2f31 }
 html[data-tema="escuro"] .lt-sql { background: #282a2c }
 html[data-tema="escuro"] .ptcom-r { border-top-color: #2d2f31 } html[data-tema="escuro"] .ptcom-th { color: #c4c7c5 }
 
-/* legenda em árvore: Nossos terrenos › fase › etapa › subetapa (pedido do Moisés, 4/nov/2026) */
+/* legenda em árvore: Terrenos › fase › etapa › subetapa (pedido do Moisés, 4/nov/2026) */
 .lg-a { padding-left: calc(4px + var(--p, 0) * 16px) !important }
 .lg-s { width: 14px; height: 14px; flex: none; display: grid; place-items: center; color: var(--m-on-surface-variant, #444746); transition: transform .15s }
 .lg-s.ab { transform: rotate(90deg) }
@@ -5504,12 +5504,12 @@ function seed(){
   // 6e — em obras: passou por todas as fases até Obras
   T.push(base({codigo:'TER-000090',nome:'Gleba Av. Raimundo Pereira de Magalhães',prioridade:'alta',resp:'Moisés',origem:'corretor',dataIdent:H(820),logradouro:'Av. Raimundo Pereira de Magalhães',numero:'8.100',bairro:'Pirituba',zona:'norte',aDoc:9800,fonteArea:'documental',ocupacao:'vazio',
     ofertas:[{id:'o12',cid:'c2',data:H(820),valor:12500000,forma:'permuta_com_torna',status:'ativa',obsPag:'',aceita:''}],corretores:[{cid:'c2',principal:true}],
-    neg:comprado(700,'o12'),procs:[fim('aprovacao','APR','alvaras','alvara_execucao',700),fim('incorporacao','INC','cartorio','exigencias',480),fim('caixa','CEF','contratacao','assinatura',400),
+    neg:comprado(700,'o12'),procs:[fim('aprovacao','APR','alvaras','alvara_execucao',700),fim('incorporacao','INC','cartorio','exigencias',480),fim('funding','FUN','fechamento','liberacao',440),fim('caixa','CEF','contratacao','assinatura',400),
       fim('lancamento','LAN','vendas','vendas_iniciais',330),proc('obras','OBR','execucao','estrutura',260,'ativo',{desde:H(150),subDesde:H(40)})]}));
   // 6f — entregue: obra entregue, em assistência técnica
   T.push(base({codigo:'TER-000085',nome:'Residencial Itaquera',resp:'Ana Prado',origem:'corretor',dataIdent:H(1500),logradouro:'Rua Gregório Ramalho',numero:'500',bairro:'Itaquera',zona:'leste',aDoc:7200,fonteArea:'documental',ocupacao:'vazio',
     ofertas:[{id:'o13',cid:'c3',data:H(1500),valor:9100000,forma:'dinheiro',status:'ativa',obsPag:'',aceita:''}],corretores:[{cid:'c3',principal:true}],
-    neg:comprado(1400,'o13'),procs:[fim('aprovacao','APR','alvaras','alvara_execucao',1400),fim('incorporacao','INC','cartorio','exigencias',1150),fim('caixa','CEF','contratacao','assinatura',1060),
+    neg:comprado(1400,'o13'),procs:[fim('aprovacao','APR','alvaras','alvara_execucao',1400),fim('incorporacao','INC','cartorio','exigencias',1150),fim('funding','FUN','fechamento','liberacao',1100),fim('caixa','CEF','contratacao','assinatura',1060),
       fim('lancamento','LAN','vendas','vendas_iniciais',980),fim('obras','OBR','entrega','entrega_chaves',900),proc('entregue','ENT','pos_entrega','assistencia_tecnica',90)]}));
   // 6d — stand by
   T.push(base({codigo:'TER-000121',nome:'Lote Rua Ipiranguinha',resp:'Rafael Souza',origem:'indicacao',dataIdent:H(50),logradouro:'Rua Ipiranguinha',numero:'210',bairro:'Ipiranga',zona:'sul',aCad:900,fonteArea:'cadastral',
@@ -6449,7 +6449,7 @@ function mpSelecionar(id){UI.mpSel=id;mpMarcarPinos();if(UI.fichaSheet&&id&&id!=
   if(it&&getComputedStyle(lado).overflowY==='auto'){const a=lado.getBoundingClientRect(),r=it.getBoundingClientRect();
     if(r.top<a.top||r.bottom>a.bottom)lado.scrollBy({top:r.top-a.top-a.height/2+r.height/2,behavior:'smooth'})}}
 function mpCartao(){const c=$('#mp-cartao');if(!c)return;const t=UI.mpSel&&T(UI.mpSel);c.innerHTML=t&&!UI.mpModo&&mpVisiveis().includes(t)?mpItem(t,true):''}
-/* legenda em árvore (pedido do Moisés, 4/nov/2026): "Nossos terrenos" abre as fases, a fase abre as etapas e a etapa
+/* legenda em árvore (pedido do Moisés, 4/nov/2026): "Terrenos" abre as fases, a fase abre as etapas e a etapa
    abre as subetapas, um ramo aberto por vez; o nível mais fundo aberto é o que colore os pinos (UI.mp.f, UI.mp.e).
    Fechar a legenda fecha a árvore (proto_ui.js). Item sem filhos no nível aberto liga e desliga; fora dele fica apagado
    e o clique volta para aquele nível. */
@@ -6470,7 +6470,7 @@ function mpLegenda(){const m=UI.mp,aberta=!!UI.mpArv;
       const ab2=m.e===y.k;h+=ramo(y,2,ab2,x.k,ab2?'':y.k,m.e&&!ab2);if(!ab2)continue;
       for(const z of mpNivelItens(x.k,y.k))h+=folha(z,3,true,x.k,y.k)}}
   const tot=fxLista('mapa').length;
-  return `<button type="button" class="lg-i lg-a" style="--p:0" data-a="mp-arv" aria-expanded="${aberta}">${seta(aberta)}<span class="lg-poi"><span class="pin-mini lg-nt"></span></span>Nossos terrenos<span class="n">${tot}</span></button>`+h
+  return `<button type="button" class="lg-i lg-a" style="--p:0" data-a="mp-arv" aria-expanded="${aberta}">${seta(aberta)}<span class="lg-poi"><span class="pin-mini lg-nt"></span></span>Terrenos<span class="n">${tot}</span></button>`+h
     +`<hr class="lg-sep"><button type="button" class="lg-i" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}"><span class="lg-poi"><span class="poi-b"></span></span>Pontos de interesse<span class="n">${(S.pontos||[]).length}</span></button>`
     +(CC_MANUAL?`<button type="button" class="lg-i" data-a="mp-conc" aria-pressed="${UI.mpConc!==false}"><span class="lg-poi">${ccMarcaHtml()}</span>Concorrência<span class="n">${ccAtivos().length}</span></button>`:'')
     +rdLegItem();
@@ -9634,6 +9634,10 @@ const FASES_PADRAO=()=>[
   {k:'incorporacao',nome:'Registro de Incorporação',prefixo:'INC',ativo:true,conc:'Incorporação registrada',descarta:true,etapas:etx([
     ['memorial','Memorial e Certidões',30,[['memorial_incorporacao','Memorial de Incorporação'],['certidoes','Certidões']]],
     ['cartorio','Cartório',45,[['prenotado','Prenotado'],['exigencias','Exigências do Cartório']]]])},
+  {k:'funding',nome:'Funding',prefixo:'FUN',ativo:true,conc:'Funding captado',descarta:true,etapas:etx([
+    ['estruturacao','Estruturação',30,[['modelagem','Modelagem Financeira'],['material','Material para Investidores']]],
+    ['captacao','Captação',60,[['apresentacoes','Apresentações'],['term_sheet','Term Sheet'],['diligencia_investidor','Due Diligence']]],
+    ['fechamento','Contratação',30,[['contratos','Contratos'],['liberacao','Liberação dos Recursos']]]])},
   {k:'caixa',nome:'Contratação Caixa',prefixo:'CEF',ativo:true,conc:'Contratado',descarta:true,etapas:etx([
     ['analise','Análise Caixa',60,[['engenharia','Engenharia'],['juridico','Jurídico'],['risco','Risco']]],
     ['contratacao','Contratação',30,[['demanda_minima','Demanda Mínima'],['assinatura','Assinatura']]]])},
@@ -9647,7 +9651,7 @@ const FASES_PADRAO=()=>[
   {k:'entregue',nome:'Entregue',prefixo:'ENT',ativo:true,conc:'Garantia encerrada',descarta:false,etapas:etx([
     ['pos_entrega','Pós-entrega',null,[['assistencia_tecnica','Assistência Técnica'],['garantia','Em Garantia']]]])}];
 /* cada fase abre quando a anterior é concluída */
-const DEPS_PADRAO=()=>[['aprovacao','novos_negocios'],['incorporacao','aprovacao'],['caixa','incorporacao'],['lancamento','caixa'],['obras','lancamento'],['entregue','obras']]
+const DEPS_PADRAO=()=>[['aprovacao','novos_negocios'],['incorporacao','aprovacao'],['funding','incorporacao'],['caixa','funding'],['lancamento','caixa'],['obras','lancamento'],['entregue','obras']]
   .map(([fase,reqFase],i)=>({id:'fd'+i,fase,reqFase,tipo:'conclusao',req:null}));
 
 const fasesL=()=>cfg().fases||[];
@@ -9907,7 +9911,7 @@ const destinoCfg=(tipo,k)=>tipo==='etapa'?etapaCfg(k):tipo==='subetapa'?subCfg(k
 const destinoNome=(tipo,k)=>tipo==='etapa'?SN(k):tipo==='subetapa'?subN(k):STATUS_N[k]||k;
 function syncCfg(){STAGES.splice(0,STAGES.length,...cfg().etapas.map(e=>[e.k,e.nome]))}
 /* dados carregados ou restaurados: garante configuração, equipe e avisos dos pedidos de exemplo */
-function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.cfg.fases)S.cfg.fases=FASES_PADRAO();if(!S.cfg.deps)S.cfg.deps=DEPS_PADRAO();if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];{const N0=CFG_PADRAO().notif;delete S.cfg.notif.tarefa_marcado;Object.entries(N0).forEach(([k,v])=>{const c=S.cfg.notif[k];if(!c)S.cfg.notif[k]=v;else if(c.email==null)c.email=v.email})}if(!S.prefsNotif)S.prefsNotif={};syncCfg();partesPreparar();tkPrep();
+function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.cfg.fases)S.cfg.fases=FASES_PADRAO();if(!S.cfg.deps)S.cfg.deps=DEPS_PADRAO();/* Funding depois do Registro de Incorporação (pedido do Moisés, 4/nov/2026): entra uma vez na configuração já guardada */if(!S.cfg.funding){S.cfg.funding=true;if(!S.cfg.fases.some(f=>f.k==='funding')){const fp=FASES_PADRAO().find(f=>f.k==='funding'),i=S.cfg.fases.findIndex(f=>f.k==='incorporacao');S.cfg.fases.splice(i<0?S.cfg.fases.length:i+1,0,fp);if(i>=0){S.cfg.deps.forEach(d=>{if(d.fase==='caixa'&&d.reqFase==='incorporacao'&&d.tipo==='conclusao')d.reqFase='funding'});S.cfg.deps.push({id:'fd-fun',fase:'funding',reqFase:'incorporacao',tipo:'conclusao',req:null})}}}if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];{const N0=CFG_PADRAO().notif;delete S.cfg.notif.tarefa_marcado;Object.entries(N0).forEach(([k,v])=>{const c=S.cfg.notif[k];if(!c)S.cfg.notif[k]=v;else if(c.email==null)c.email=v.email})}if(!S.prefsNotif)S.prefsNotif={};syncCfg();partesPreparar();tkPrep();
   if(!S.pedidosAvisados){S.terrenos.forEach(t=>{if(t.neg?.pedido)avisarAprovadores(t)});S.pedidosAvisados=true}}
 
 /* ---------- regras da passagem ---------- */
@@ -14945,7 +14949,7 @@ function uiRolaFim(){document.querySelectorAll('.board, .vb-nav').forEach(b=>{co
 addEventListener('resize',()=>uiRolaFim());
 const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel();uiQuadros();uiCfgAba();uiBoardPontos();uiHdIc();uiDicas();uiRolaFim()};
 /* Legenda do mapa: lembra se ficou aberta ou fechada */
-/* fechar a legenda fecha também a árvore de Nossos terrenos e volta os pinos para as fases (pedido do Moisés, 4/nov/2026) */
+/* fechar a legenda fecha também a árvore de Terrenos e volta os pinos para as fases (pedido do Moisés, 4/nov/2026) */
 document.addEventListener('toggle',e=>{if(!e.target.classList?.contains('mp-legenda'))return;UI.mpLeg=e.target.open;
   if(!e.target.open&&(UI.mpArv||UI.mp?.f||UI.mp?.e)){const mud=UI.mp.f||UI.mp.e;UI.mpArv=false;UI.mp.f='';UI.mp.e='';UI.mp.ocultas=[];mpRefresh();if(mud)mpEnquadrar()}},true);
 

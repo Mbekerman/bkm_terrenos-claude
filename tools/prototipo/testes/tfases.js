@@ -49,12 +49,12 @@ ok((await txt(p,'#rows tbody tr')).includes('Raimundo')&&!(await txt(p,'#rows tb
 ok((await txt(p,'#rows .c-etapa')).includes('Obras'),'coluna mostra a fase e a etapa');
 await clica(p,'#fx-barra [data-a=fx-limpar]');
 
-// mapa em três níveis pela legenda em árvore: Nossos terrenos › fase › etapa › subetapa
+// mapa em três níveis pela legenda em árvore: Terrenos › fase › etapa › subetapa
 await nav(p,'mapa');await p.waitForTimeout(400);
 await p.evaluate(()=>{const l=document.querySelector('.mp-legenda');if(l)l.open=true});await p.waitForTimeout(200);
-ok(!(await txt(p,'#mp-leg .lg-i')).includes('Obras'),'legenda começa com Nossos terrenos fechado');
+ok(!(await txt(p,'#mp-leg .lg-i')).includes('Obras'),'legenda começa com Terrenos fechado');
 await clica(p,'[data-a=mp-arv]');await p.waitForTimeout(300);
-ok((await txt(p,'#mp-leg .lg-i')).includes('Obras'),'Nossos terrenos abre as fases');
+ok((await txt(p,'#mp-leg .lg-i')).includes('Obras'),'Terrenos abre as fases');
 ok((await txt(p,'#mp-lista .mp-it')).includes('Entregue'),'linha do mapa mostra a fase');
 await clica(p,'[data-a=mp-abre][data-f=aprovacao]');await p.waitForTimeout(300);await p.screenshot({path:O+'4_mapa_aprovacao.png'});
 const lm=await txt(p,'#mp-lista .mp-it');ok(lm.includes("M'Boi")&&!lm.includes('Cupecê'),'clicar na Aprovação mostra só os terrenos dela');
@@ -97,15 +97,15 @@ await clica(p,'[data-a=close]');await papel(p,'Diretor');
 
 // Configurações › Fases
 await nav(p,'config');await p.screenshot({path:O+'7_config_fases.png',fullPage:true});
-ok((await txt(p,'.cfg-fase input')).length>=0&&(await p.evaluate(()=>document.querySelectorAll('.cfg-r.cfg-fase:not(.cfg-hd)').length))===7,'7 fases na configuração');
+ok((await txt(p,'.cfg-fase input')).length>=0&&(await p.evaluate(()=>document.querySelectorAll('.cfg-r.cfg-fase:not(.cfg-hd)').length))===8,'8 fases na configuração');
 await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));await p.fill('#nf-n','Regularização');await p.fill('#nf-p','neg');await clica(p,'form[data-form=cfg-fase] .btn');
 ok((await p.evaluate(()=>document.querySelector('#toast').textContent)).includes('já é de outra fase'),'prefixo repetido é recusado');
 await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));await p.fill('#nf-p','REG');await clica(p,'form[data-form=cfg-fase] .btn');
-ok((await p.evaluate(()=>document.querySelectorAll('.cfg-r.cfg-fase:not(.cfg-hd)').length))===8,'fase nova criada');
+ok((await p.evaluate(()=>document.querySelectorAll('.cfg-r.cfg-fase:not(.cfg-hd)').length))===9,'fase nova criada');
 await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));await p.selectOption('#dp-f','aprovacao');await p.selectOption('#dp-r','regularizacao|conclusao|');await clica(p,'form[data-form=cfg-dep] .btn');
 await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));await p.selectOption('#dp-f','regularizacao');await p.selectOption('#dp-r','aprovacao|conclusao|');await clica(p,'form[data-form=cfg-dep] .btn');
 ok((await p.evaluate(()=>document.querySelector('#toast').textContent)).includes('ciclo'),'dependência em ciclo é recusada');
-await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));await p.fill('#fe-regularizacao','Levantamento');await clica(p,'form[data-form=cfg-fe][data-f="7"] .btn');
+await p.evaluate(()=>document.querySelectorAll('.if-abre').forEach(b=>b.click()));await p.fill('#fe-regularizacao','Levantamento');await clica(p,'form[data-form=cfg-fe][data-f="8"] .btn');
 ok((await txt(p,'.cfg-fe input')).length>=0&&(await p.evaluate(()=>[...document.querySelectorAll('.cfg-fe input')].some(i=>i.value==='Levantamento'))),'etapa nova na fase nova');
 await p.screenshot({path:O+'8_config_nova.png',fullPage:true});
 

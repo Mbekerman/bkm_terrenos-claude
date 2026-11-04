@@ -61,7 +61,7 @@ create table app.tipos_documento (
 -- etapas, subetapas, status, dependências, pré-requisitos e checklist.
 -- ---------------------------------------------------------------------
 -- Fase: o grande momento do terreno (Novos Negócios, Aprovação de Projetos,
--- Registro de Incorporação, Contratação Caixa, Lançamento, Obras). Cada fase
+-- Registro de Incorporação, Funding, Contratação Caixa, Lançamento, Obras). Cada fase
 -- é um processo próprio do terreno, com etapas, status e histórico; a fase de
 -- entrada (uma por empresa) é a que a oferta abre e a que tem negociação
 -- (temperatura, propostas). As demais abrem quando as dependências se cumprem.
@@ -269,16 +269,18 @@ insert into app.fases_modelo (codigo, nome, ordem, prefixo, entrada) values
   ('novos_negocios', 'Novos Negócios',           1, 'NEG', true),
   ('aprovacao',      'Aprovação de Projetos',    2, 'APR', false),
   ('incorporacao',   'Registro de Incorporação', 3, 'INC', false),
-  ('caixa',          'Contratação Caixa',        4, 'CEF', false),
-  ('lancamento',     'Lançamento',               5, 'LAN', false),
-  ('obras',          'Obras',                    6, 'OBR', false),
-  ('entregue',       'Entregue',                 7, 'ENT', false);
+  ('funding',        'Funding',                  4, 'FUN', false),
+  ('caixa',          'Contratação Caixa',        5, 'CEF', false),
+  ('lancamento',     'Lançamento',               6, 'LAN', false),
+  ('obras',          'Obras',                    7, 'OBR', false),
+  ('entregue',       'Entregue',                 8, 'ENT', false);
 
 -- Cada fase abre quando a anterior é concluída.
 insert into app.fase_dependencias (fase, requisito_fase, requisito_tipo) values
   ('aprovacao',    'novos_negocios', 'conclusao'),
   ('incorporacao', 'aprovacao',      'conclusao'),
-  ('caixa',        'incorporacao',   'conclusao'),
+  ('funding',      'incorporacao',   'conclusao'),
+  ('caixa',        'funding',        'conclusao'),
   ('lancamento',   'caixa',          'conclusao'),
   ('obras',        'lancamento',     'conclusao'),
   ('entregue',     'obras',          'conclusao');
@@ -293,6 +295,9 @@ insert into app.etapas_modelo (fase, codigo, nome, ordem, sla_dias, aprova_gesto
   ('aprovacao',     'alvaras',     'Alvarás',               3, 30,  false),
   ('incorporacao',  'memorial',    'Memorial e Certidões',  1, 30,  false),
   ('incorporacao',  'cartorio',    'Cartório',              2, 45,  false),
+  ('funding',       'estruturacao','Estruturação',          1, 30,  false),
+  ('funding',       'captacao',    'Captação',              2, 60,  false),
+  ('funding',       'fechamento',  'Contratação',           3, 30,  true),
   ('caixa',         'analise',     'Análise Caixa',         1, 60,  false),
   ('caixa',         'contratacao', 'Contratação',           2, 30,  true),
   ('lancamento',    'preparacao',  'Preparação',            1, 60,  false),
@@ -326,6 +331,13 @@ insert into app.subetapas_modelo (fase, etapa, codigo, nome, ordem) values
   ('incorporacao',  'memorial',    'certidoes',              'Certidões',                   2),
   ('incorporacao',  'cartorio',    'prenotado',              'Prenotado',                   1),
   ('incorporacao',  'cartorio',    'exigencias',             'Exigências do Cartório',      2),
+  ('funding',       'estruturacao','modelagem',              'Modelagem Financeira',        1),
+  ('funding',       'estruturacao','material',               'Material para Investidores',  2),
+  ('funding',       'captacao',    'apresentacoes',          'Apresentações',               1),
+  ('funding',       'captacao',    'term_sheet',             'Term Sheet',                  2),
+  ('funding',       'captacao',    'diligencia_investidor',  'Due Diligence',               3),
+  ('funding',       'fechamento',  'contratos',              'Contratos',                   1),
+  ('funding',       'fechamento',  'liberacao',              'Liberação dos Recursos',      2),
   ('caixa',         'analise',     'engenharia',             'Engenharia',                  1),
   ('caixa',         'analise',     'juridico',               'Jurídico',                    2),
   ('caixa',         'analise',     'risco',                  'Risco',                       3),
@@ -357,12 +369,13 @@ insert into app.status_modelo (fase, status, nome, aprova_gestor, aprova_diretor
   ('novos_negocios','stand_by',   'Stand By',             false, false, 'sequencia'),
   ('aprovacao',     'concluido',  'Aprovado',             false, false, 'sequencia'),
   ('incorporacao',  'concluido',  'Incorporação registrada', false, false, 'sequencia'),
+  ('funding',       'concluido',  'Funding captado',      false, false, 'sequencia'),
   ('caixa',         'concluido',  'Contratado',           false, false, 'sequencia'),
   ('lancamento',    'concluido',  'Lançado',              false, false, 'sequencia'),
   ('obras',         'concluido',  'Obra entregue',        false, false, 'sequencia'),
   ('entregue',      'concluido',  'Garantia encerrada',   false, false, 'sequencia');
 insert into app.status_modelo (fase, status, nome)
-select f, s, n from unnest(array['aprovacao','incorporacao','caixa','lancamento','obras','entregue']) f,
+select f, s, n from unnest(array['aprovacao','incorporacao','funding','caixa','lancamento','obras','entregue']) f,
   (values ('descartado','Descartado'), ('stand_by','Stand By')) v(s, n)
 where f <> 'entregue' or s = 'stand_by';
 

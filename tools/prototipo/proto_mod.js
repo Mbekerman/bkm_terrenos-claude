@@ -257,7 +257,7 @@ function mpSelecionar(id){UI.mpSel=id;mpMarcarPinos();if(UI.fichaSheet&&id&&id!=
   if(it&&getComputedStyle(lado).overflowY==='auto'){const a=lado.getBoundingClientRect(),r=it.getBoundingClientRect();
     if(r.top<a.top||r.bottom>a.bottom)lado.scrollBy({top:r.top-a.top-a.height/2+r.height/2,behavior:'smooth'})}}
 function mpCartao(){const c=$('#mp-cartao');if(!c)return;const t=UI.mpSel&&T(UI.mpSel);c.innerHTML=t&&!UI.mpModo&&mpVisiveis().includes(t)?mpItem(t,true):''}
-/* legenda em árvore (pedido do Moisés, 4/nov/2026): "Nossos terrenos" abre as fases, a fase abre as etapas e a etapa
+/* legenda em árvore (pedido do Moisés, 4/nov/2026): "Terrenos" abre as fases, a fase abre as etapas e a etapa
    abre as subetapas, um ramo aberto por vez; o nível mais fundo aberto é o que colore os pinos (UI.mp.f, UI.mp.e).
    Fechar a legenda fecha a árvore (proto_ui.js). Item sem filhos no nível aberto liga e desliga; fora dele fica apagado
    e o clique volta para aquele nível. */
@@ -278,7 +278,7 @@ function mpLegenda(){const m=UI.mp,aberta=!!UI.mpArv;
       const ab2=m.e===y.k;h+=ramo(y,2,ab2,x.k,ab2?'':y.k,m.e&&!ab2);if(!ab2)continue;
       for(const z of mpNivelItens(x.k,y.k))h+=folha(z,3,true,x.k,y.k)}}
   const tot=fxLista('mapa').length;
-  return `<button type="button" class="lg-i lg-a" style="--p:0" data-a="mp-arv" aria-expanded="${aberta}">${seta(aberta)}<span class="lg-poi"><span class="pin-mini lg-nt"></span></span>Nossos terrenos<span class="n">${tot}</span></button>`+h
+  return `<button type="button" class="lg-i lg-a" style="--p:0" data-a="mp-arv" aria-expanded="${aberta}">${seta(aberta)}<span class="lg-poi"><span class="pin-mini lg-nt"></span></span>Terrenos<span class="n">${tot}</span></button>`+h
     +`<hr class="lg-sep"><button type="button" class="lg-i" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}"><span class="lg-poi"><span class="poi-b"></span></span>Pontos de interesse<span class="n">${(S.pontos||[]).length}</span></button>`
     +(CC_MANUAL?`<button type="button" class="lg-i" data-a="mp-conc" aria-pressed="${UI.mpConc!==false}"><span class="lg-poi">${ccMarcaHtml()}</span>Concorrência<span class="n">${ccAtivos().length}</span></button>`:'')
     +rdLegItem();

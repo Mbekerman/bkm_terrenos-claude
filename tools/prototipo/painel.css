@@ -3733,7 +3733,7 @@ html[data-tema="escuro"] .lt-sqls { border-top-color: #2d2f31 }
 html[data-tema="escuro"] .lt-sql { background: #282a2c }
 html[data-tema="escuro"] .ptcom-r { border-top-color: #2d2f31 } html[data-tema="escuro"] .ptcom-th { color: #c4c7c5 }
 
-/* legenda em árvore: Nossos terrenos › fase › etapa › subetapa (pedido do Moisés, 4/nov/2026) */
+/* legenda em árvore: Terrenos › fase › etapa › subetapa (pedido do Moisés, 4/nov/2026) */
 .lg-a { padding-left: calc(4px + var(--p, 0) * 16px) !important }
 .lg-s { width: 14px; height: 14px; flex: none; display: grid; place-items: center; color: var(--m-on-surface-variant, #444746); transition: transform .15s }
 .lg-s.ab { transform: rotate(90deg) }

@@ -11,6 +11,7 @@ Acima das etapas fica a **fase**: o grande momento do terreno. Cada fase é um p
 | Novos Negócios (entrada) | NEG | Comprado | Em Triagem, Estudos Preliminares, Negociação, Contrato |
 | Aprovação de Projetos | APR | Aprovado | Projeto, Análise na Prefeitura, Alvarás |
 | Registro de Incorporação | INC | Incorporação registrada | Memorial e Certidões, Cartório |
+| Funding | FUN | Funding captado | Estruturação, Captação, Contratação |
 | Contratação Caixa | CEF | Contratado | Análise Caixa, Contratação |
 | Lançamento | LAN | Lançado | Preparação, Vendas Iniciais |
 | Obras | OBR | Obra entregue | Início, Execução, Entrega |
