@@ -30,7 +30,14 @@ const box=await p.$eval('#mk-box',x=>x.textContent.replace(/\s+/g,' ')).catch(()
 const m2=Math.round(alvo[13]/alvo[14]).toLocaleString('pt-BR');
 ok(box.includes(alvo[1])&&box.includes(m2)&&/Estoque/.test(box)&&/VSO/.test(box)&&/Programa social/.test(box)&&/Tipologia/.test(box)&&/Monitor de mercado/.test(box),tag+' janela com R$/m² '+m2+': '+box.slice(0,160));
 const vis=await p.$eval('#mk-box .cc-box',x=>{const r=x.getBoundingClientRect(),a=document.querySelector('.mapa-area').getBoundingClientRect();return r.left>=a.left-1&&r.right<=a.right+1&&r.bottom<=a.bottom+1&&r.top>=a.top-1});ok(vis,tag+' janela dentro do mapa');
-const nTip=await p.$$eval('#mk-box .mk-t tbody tr',x=>x.length);ok(nTip===alvo[17].length,tag+' card com as '+alvo[17].length+' tipologias do resumo');
+const tipOk=alvo[17].filter(g=>g[4]>=3),foraN=alvo[17].filter(g=>g[4]<3).reduce((s,g)=>s+g[4],0);
+const nTip=await p.$$eval('#mk-box .mk-t tbody tr',x=>x.length);ok(nTip===tipOk.length,tag+' card com as '+tipOk.length+' tipologias do resumo (grupos com menos de 3 fora)');
+// grupo pequeno que não juntou com nenhum sai do resumo e vira nota de "fora do padrão" (decisão do Moisés, 4/nov/2026)
+{const e2=MERC.emps.find(e=>(e[17]||[]).some(g=>g[4]<3)&&(e[17]||[]).some(g=>g[4]>=3)),n2=e2[17].filter(g=>g[4]<3).reduce((s,g)=>s+g[4],0);
+ await p.evaluate(id=>window.__mkAbrir(id),e2[0]);await p.waitForTimeout(300);
+ const r=await p.$$eval('#mk-box .mk-t tbody tr',x=>x.length),nota=await p.$eval('#mk-box .mk-fora',x=>x.textContent).catch(()=>'');
+ ok(r===e2[17].filter(g=>g[4]>=3).length&&nota.includes(n2.toLocaleString('pt-BR')+' unidade'),tag+' '+n2+' unidades fora do padrão saem do resumo: '+nota);
+ await p.evaluate(id=>window.__mkAbrir(id),alvo[0]);await p.waitForTimeout(300)}
 await p.screenshot({path:OUT+tag+'_1_janela.png'});
 await p.keyboard.press('Escape');await p.waitForTimeout(200);ok(!(await p.$('#mk-box .cc-box')),tag+' Esc fecha a janela');
 // filtro: 2 dormitórios até R$ 300 mil, na mesma unidade

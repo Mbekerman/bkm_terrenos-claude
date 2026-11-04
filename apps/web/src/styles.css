@@ -1935,6 +1935,7 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .mk-t th:nth-child(n+2), .mk-t td:nth-child(n+2) { font-variant-numeric: tabular-nums }
 .mk-nota { font-size: 12px; line-height: 16px; margin-top: 8px }
 @media (max-width: 599px) { .mk-t { font-size: 12px } .cc-t.mk-t :is(th, td) { padding: 8px 4px } .cc-t.mk-t :is(th, td):first-child { padding-left: 16px } .cc-t.mk-t :is(th, td):last-child { padding-right: 16px } .mk-grid { margin: 12px 16px 4px } }
+.mk-fora { margin: 4px var(--q-px, 24px) 0; font-size: 12px }
 :root[data-tema="escuro"] .mk-box .mk-k { background: rgba(131,135,142,0.1); border-left-color: #6788be }
 :root[data-tema="escuro"] .mk-kv .num { color: #e3e3e3 }
 .mk-ctl { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px }
