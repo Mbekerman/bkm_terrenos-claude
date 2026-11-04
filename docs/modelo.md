@@ -1276,6 +1276,10 @@ erDiagram
   }
   viabilidades {
     numeric custo_m2 "obra incidente, R$/m2"
+    text obra_base "privativa ou construida"
+    numeric area_construida "digitada; com estudo de massa, vem dele"
+    uuid estudo_massa_id FK "estudo de massa preso"
+    bool segue_massa_valido "troca junto com o valido"
     numeric permuta_fin_pct
     numeric deducao_vgv_pct
     numeric minimo_garantido
@@ -1293,6 +1297,7 @@ erDiagram
     int quantidade_comissao "comissao do terreno; as duas ate a quantidade"
     numeric preco_unitario
     numeric preco_m2
+    uuid massa_tipologia_id FK "tipologia do estudo de massa"
   }
   viabilidade_linhas {
     uuid id PK
@@ -1320,7 +1325,7 @@ erDiagram
 - **Cálculo** (`app.calcular_viabilidade`, o mesmo do protótipo; os totais ficam no cabeçalho, refeitos por trigger):
   - VGV = Σ quantidade × preço unitário. **VGV vendido** = VGV − unidades em permuta física − unidades da comissão; é o "VGV" das bases % do VGV. Unidades líquidas = unidades − permuta − comissão (base da verba por unidade).
   - **VGV líquido** = VGV vendido − % de dedução × VGV vendido − as despesas comerciais marcadas para deduzir (só as que a lista marca como dedutíveis: ITBI e registro de unidades vendidas, Produto Caixa).
-  - **Custo de obras** em camadas: incidente (típico) = valor unitário × área privativa total; atípicos (área privativa, % do típico, % do VGV, verba); **raso** = incidente + atípicos; não incidente (+ % do raso); **obra total** = raso + não incidente; projetos e pós-obra (+ % da obra total). A seção soma tudo.
+  - **Custo de obras** em camadas: incidente (típico) = valor unitário × área privativa total, ou × área construída total quando `obra_base = 'construida'` (decisão do Moisés, 3/nov/2026); atípicos (área privativa, % do típico, % do VGV, verba); **raso** = incidente + atípicos; não incidente (+ % do raso); **obra total** = raso + não incidente; projetos e pós-obra (+ % da obra total). A seção soma tudo.
   - **Custo do terreno**: permuta física e comissão em unidades só informam (quantidade, área, %), porque já saíram do VGV vendido; permuta financeira = % × VGV líquido, nunca abaixo do mínimo garantido; + pagamento em dinheiro + comissão em dinheiro.
   - Despesas gerais, Taxas e Despesas financeiras: % do VGV, % da obra total, % do lucro líquido ou verba. O % do lucro é circular: lucro = L0 ÷ (1 + Σ%), com L0 o lucro antes desses itens; sem lucro, valem zero.
   - Despesas comerciais: % do VGV, verba total, verba por unidade (× unidades líquidas) ou verba mensal (× meses).
@@ -1328,6 +1333,53 @@ erDiagram
 - **Modelos de estudo** (`app.viabilidade_modelos`, decisão do Moisés de 26/out/2026): valores e bases de cálculo guardados para o estudo novo nascer com eles. `app.salvar_modelo_viabilidade(estudo, nome, da_empresa, modelo)` grava o estudo como modelo novo ou por cima de um existente: guarda o valor unitário da obra, a dedução do VGV, as despesas que saem do VGV líquido e as linhas (item, base, valor, meses); tipologias, permuta financeira, mínimo garantido e pagamento e comissão em dinheiro são do terreno e ficam fora. Modelo da empresa (`user_id` nulo) só o administrador grava e apaga, e um deles pode ser o padrão (`app.marcar_modelo_padrao`); o do usuário só ele vê, usa e apaga (`app.apagar_modelo_viabilidade`). Taxas e Despesas financeiras só entram no modelo gravado pela diretoria e só se aplicam de modelo da empresa ou para quem é da diretoria; senão, ficam os valores padrão da lista. `criar_viabilidade(terreno, nome, copiar_de, modelo, sem_modelo)`: sem cópia nem modelo escolhido, usa o padrão da empresa (`sem_modelo = true`: só a lista); do modelo entram só itens ativos, com base ainda aceita pelo grupo, e só o que ainda é dedutível; os itens fixos que faltarem vêm da lista.
 - Lista de itens da empresa: configuração do administrador (`app.salvar_despesa_viabilidade`, `app.apagar_despesa_viabilidade`; usado só desativa e não muda de grupo), copiada para cada empresa nova. Padrão em `tools/viabilidade/despesas.json` (o protótipo e o teste do banco leem).
 - Leituras a confirmar com o Moisés: custo de obra típico = incidente; a dedução em % também sai do lucro (é custo, não só base da permuta); % do VGV sobre o VGV vendido.
+
+## Estudos de massa
+
+Lote 4 da ficha em abas (pedido do Moisés de 3/nov/2026). Migration `20261015001500_estudos_massa.sql`; protótipo em `tools/prototipo/proto_massa.js`, aba **Estudos de massa** da ficha.
+
+```mermaid
+erDiagram
+  terrenos ||--o{ estudos_massa : "estudos"
+  estudos_massa ||--o{ estudo_massa_tipologias : tem
+  estudos_massa |o--o{ viabilidades : "presa ao estudo"
+  estudo_massa_tipologias |o--o{ viabilidade_tipologias : "casada"
+  estudos_massa |o--o{ documentos : "PDF e DWG"
+  estudos_massa {
+    int ordem "numero no terreno"
+    text nome
+    text situacao "solicitado, em_elaboracao, entregue"
+    uuid solicitante_id
+    uuid arquiteto_id "membro da empresa"
+    text briefing
+    date prazo
+    numeric lazer_4 "coberto e descoberto, na torre e fora"
+    numeric circulacao_m2
+    numeric anexos_m2
+    int vagas_cobertas_descobertas
+    numeric estacionamento_coberto_descoberto_m2
+    numeric contencao_ate_1_5_e_acima_m2
+    numeric area_construida_m2
+    numeric ca_legal "digitado"
+    numeric ca_venal "digitado"
+    numeric area_privativa_m2 "soma das tipologias"
+    numeric eficiencia_pct "privativa / construida"
+    bool valido "um por terreno, so entregue"
+    text observacoes
+  }
+  estudo_massa_tipologias {
+    text nome
+    numeric area_privativa
+    int quantidade
+  }
+```
+
+- **Pedido:** `app.solicitar_estudo_massa(terreno, arquiteto, briefing, prazo, nome)`: o arquiteto é um membro da empresa (interno; acesso externo fica para depois) e recebe o aviso `massa_solicitado`; o estudo nasce **Solicitado**, numerado no terreno ("Estudo de massa N").
+- **Lançamento:** `app.salvar_estudo_massa(estudo, dados)` grava as áreas, vagas, CAs, a área construída total, o briefing, o prazo, o arquiteto (trocado, o novo é avisado), as observações e, em `tipologias`, a lista inteira (título, área privativa, quantidade; com `id` atualiza, sem entra, a que falta sai). Área privativa total e unidades saem das tipologias; eficiência = privativa ÷ construída (coluna gerada). O primeiro dado põe **Em elaboração**; **Entregue** pede tipologias com área e quantidade e a área construída, e avisa quem pediu (`massa_entregue`). As tabelas só se leem; tudo passa pelas RPCs, com auditoria.
+- **Válido:** `app.marcar_massa_valido(estudo, valido)`: um por terreno (índice único parcial), só entregue; o válido não volta para em elaboração nem se apaga. `app.apagar_estudo_massa` recusa o válido e o que tem viabilidade presa; os arquivos ficam em Documentos.
+- **Arquivos:** `app.anexar_arquivo_massa(estudo, 'massa_pdf' | 'massa_dwg', caminho, arquivo, tamanho)`, por `app.registrar_documento`: um documento de cada tipo por estudo (`documentos.estudo_massa_id`), cada envio uma versão; só `.pdf` e `.dwg`.
+- **Viabilidade presa ao estudo** (decisões do Moisés, 3/nov/2026): `app.vincular_massa(viabilidade, estudo, seguir_valido)` prende a um estudo entregue ou ao válido do terreno (trocou o válido, a viabilidade troca junto); sem estudo e sem seguir, solta, e as tipologias ficam e voltam a se editar. `app.criar_viabilidade_da_massa(estudo, nome, seguir_valido)` é o botão do estudo de massa: estudo de viabilidade novo (com o modelo padrão, como o Novo estudo) já preso. Presa, o título, a área e a quantidade das tipologias e a área construída vêm do estudo de massa (`app._sincronizar_massa`, chamada a cada mudança do estudo e do válido) e o trigger `t_massa` recusa mudá-los na viabilidade; preços, permuta e comissão continuam dela, casados pela tipologia do estudo (`massa_tipologia_id`) e, na troca de estudo, pelo nome. Quantidade menor que a permuta mais a comissão corta a permuta e depois a comissão. Duplicar leva o vínculo.
+- Leituras minhas, a confirmar: briefing como texto livre (uma linha por item vira lista); "Área privativa total" calculada das tipologias, não digitada; só o estudo entregue vira válido ou é usado na viabilidade.
 
 ## 3. Documentos
 

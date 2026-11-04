@@ -3391,4 +3391,83 @@ select pg_temp.como(:'leitor');
 select pg_temp.falha(format($$select app.salvar_lote(%L, null, '{}')$$, :'tl'), 'Leitura não cadastra lote');
 select pg_temp.como(:'analista');
 
+-- ---------------------------------------------------------------------
+\echo '# estudos de massa (lote 4 da ficha em abas)'
+select pg_temp.como(:'analista');
+select pg_temp.falha(format('select app.solicitar_estudo_massa(%L, %L)', :'t1', :'intruso'), 'o arquiteto é alguém da equipe');
+select app.solicitar_estudo_massa(:'t1', :'diretor', E'Torre única\n2 dormitórios, sem vaga', current_date + 10) as em1 \gset
+select pg_temp.ok((select nome = 'Estudo de massa 1' and situacao = 'solicitado' and solicitante_id = :'analista' from app.estudos_massa where id = :'em1'),
+  'pedido ao arquiteto com briefing e prazo nasce Solicitado, numerado no terreno');
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'massa_solicitado' and origem_id = :'em1') = 1, 'o arquiteto é avisado do pedido');
+select app.salvar_estudo_massa(:'em1', '{"tipologias":[{"nome":"2 dormitórios","area_privativa":40,"quantidade":100},{"nome":"2 dormitórios com suíte","area_privativa":50,"quantidade":50}],
+  "lazer_coberto_torre_m2":300,"vagas_cobertas":0,"vagas_descobertas":30,"ca_legal":4,"ca_venal":3.2}');
+select pg_temp.ok((select situacao = 'em_elaboracao' and area_privativa_m2 = 6500 and unidades = 150 and eficiencia_pct is null from app.estudos_massa where id = :'em1'),
+  'o primeiro dado põe em elaboração; área privativa total = Σ área × quantidade (6.500 m², 150 unidades)');
+select pg_temp.falha(format($$select app.salvar_estudo_massa(%L, '{"situacao":"entregue"}')$$, :'em1'), 'sem a área construída total não se entrega');
+select pg_temp.falha(format($$select app.salvar_estudo_massa(%L, '{"tipologias":[{"nome":" "}]}')$$, :'em1'), 'tipologia sem título é recusada');
+select app.salvar_estudo_massa(:'em1', '{"area_construida_m2":10000,"situacao":"entregue"}');
+select pg_temp.ok((select situacao = 'entregue' and eficiencia_pct = 65 and entregue_em is not null from app.estudos_massa where id = :'em1'),
+  'entregue; eficiência = privativa ÷ construída = 65%');
+select pg_temp.como(:'analista');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'massa_entregue' and origem_id = :'em1') = 1, 'quem pediu é avisado da entrega');
+select app.solicitar_estudo_massa(:'t1', :'diretor', 'Alternativa com studio') as em2 \gset
+select pg_temp.falha(format('select app.marcar_massa_valido(%L)', :'em2'), 'só o estudo entregue pode ser o válido');
+select app.marcar_massa_valido(:'em1');
+select pg_temp.ok((select valido from app.estudos_massa where id = :'em1'), 'analista marca o estudo válido');
+select pg_temp.falha(format($$select app.salvar_estudo_massa(%L, '{"situacao":"em_elaboracao"}')$$, :'em1'), 'o válido não volta para em elaboração');
+select app.salvar_estudo_massa(:'em1', '{"observacoes":"Conferido com o zoneamento"}');
+-- o botão do estudo de massa cria a viabilidade presa a ele
+select app.criar_viabilidade_da_massa(:'em1') as vbm \gset
+select pg_temp.ok((select nome = 'Viabilidade do Estudo de massa 1' and estudo_massa_id = :'em1' and not segue_massa_valido and area_construida = 10000 and area_privativa = 6500 and unidades = 150
+                     from app.viabilidades where id = :'vbm')
+  and (select count(*) = 2 and bool_and(massa_tipologia_id is not null) from app.viabilidade_tipologias where viabilidade_id = :'vbm'),
+  'viabilidade criada pelo estudo de massa leva as tipologias (título, área, quantidade) e a área construída');
+select pg_temp.falha(format($$update app.viabilidade_tipologias set quantidade = 90 where viabilidade_id = %L and nome = '2 dormitórios'$$, :'vbm'), 'presa ao estudo de massa, a quantidade não muda na viabilidade');
+select pg_temp.falha(format($$insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, nome, quantidade) values (%L, %L, 'Extra', 1)$$, :'emp', :'vbm'), 'nem entra tipologia nova');
+update app.viabilidade_tipologias set preco_unitario = 280000, quantidade_permuta = 10 where viabilidade_id = :'vbm' and nome = '2 dormitórios';
+select pg_temp.ok((select preco_m2 = 7000 from app.viabilidade_tipologias where viabilidade_id = :'vbm' and nome = '2 dormitórios'), 'preço, permuta e comissão continuam da viabilidade');
+select pg_temp.falha(format($$select app.salvar_viabilidade(%L, '{"area_construida":9000}')$$, :'vbm'), 'presa ao estudo, a área construída vem dele');
+select app.salvar_viabilidade(:'vbm', '{"custo_m2":2000,"obra_base":"construida"}');
+select pg_temp.ok((select obra_incidente = 20000000 from app.viabilidades where id = :'vbm'), 'obra pela área construída: 2.000/m² × 10.000 m² = 20 mi');
+select app.salvar_viabilidade(:'vbm', '{"obra_base":"privativa"}');
+select pg_temp.ok((select obra_incidente = 13000000 from app.viabilidades where id = :'vbm'), 'obra pela área privativa: 2.000/m² × 6.500 m² = 13 mi');
+select app.salvar_viabilidade(:'vbm', '{"obra_base":"construida"}');
+select id as emt1 from app.estudo_massa_tipologias where estudo_id = :'em1' and nome = '2 dormitórios' \gset
+select id as emt2 from app.estudo_massa_tipologias where estudo_id = :'em1' and nome = '2 dormitórios com suíte' \gset
+select app.salvar_estudo_massa(:'em1', format('{"area_construida_m2":9500,"tipologias":[{"id":"%s","nome":"2 dormitórios","area_privativa":41,"quantidade":8},{"id":"%s","nome":"2 dormitórios com suíte","area_privativa":50,"quantidade":50}]}', :'emt1', :'emt2')::jsonb);
+select pg_temp.ok((select quantidade = 8 and area_privativa = 41 and preco_unitario = 280000 and quantidade_permuta = 8 from app.viabilidade_tipologias where viabilidade_id = :'vbm' and massa_tipologia_id = :'emt1')
+  and (select area_construida = 9500 and obra_incidente = 19000000 from app.viabilidades where id = :'vbm'),
+  'mudou o estudo de massa, a viabilidade muda junto: quantidade e área novas, mesmo preço; a permuta cabe na quantidade nova; obra pela área construída nova');
+-- seguir o válido
+select app.vincular_massa(:'vbm', null, true);
+select pg_temp.ok((select segue_massa_valido and estudo_massa_id = :'em1' from app.viabilidades where id = :'vbm'), 'a viabilidade passa a seguir o estudo válido');
+select app.salvar_estudo_massa(:'em2', '{"tipologias":[{"nome":"2 Dormitórios","area_privativa":42,"quantidade":120},{"nome":"Studio","area_privativa":26,"quantidade":40}],"area_construida_m2":11000,"situacao":"entregue"}');
+select app.marcar_massa_valido(:'em2');
+select pg_temp.ok((select not valido from app.estudos_massa where id = :'em1') and (select estudo_massa_id = :'em2' and area_construida = 11000 from app.viabilidades where id = :'vbm')
+  and (select string_agg(nome || ':' || quantidade || ':' || coalesce(preco_unitario::text, '-'), ',' order by ordem) from app.viabilidade_tipologias where viabilidade_id = :'vbm')
+      = '2 Dormitórios:120:280000.00,Studio:40:-',
+  'trocou o válido, a viabilidade troca de estudo: a tipologia de mesmo nome guarda o preço, a nova entra e a que saiu do estudo sai');
+select pg_temp.falha(format('select app.apagar_estudo_massa(%L)', :'em2'), 'o estudo válido não se apaga');
+select app.criar_viabilidade_da_massa(:'em1', 'Presa ao 1') as vbm1 \gset
+select pg_temp.falha(format('select app.apagar_estudo_massa(%L)', :'em1'), 'estudo com viabilidade presa não se apaga');
+select app.vincular_massa(:'vbm1', null, false);
+insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, nome, quantidade) values (:'emp', :'vbm1', 'Extra', 1);
+select pg_temp.ok((select count(*) = 3 and bool_and(massa_tipologia_id is null) from app.viabilidade_tipologias where viabilidade_id = :'vbm1'), 'solta, a viabilidade fica com as tipologias e volta a editá-las');
+select app.criar_viabilidade(:'t1', 'Cópia presa', :'vbm') as vbmc \gset
+select pg_temp.ok((select segue_massa_valido and estudo_massa_id = :'em2' from app.viabilidades where id = :'vbmc')
+  and (select count(*) = 2 and bool_and(massa_tipologia_id is not null) from app.viabilidade_tipologias where viabilidade_id = :'vbmc'), 'duplicar leva o vínculo com o estudo de massa');
+select app.apagar_estudo_massa(:'em1');
+select pg_temp.ok(not exists (select 1 from app.estudos_massa where id = :'em1'), 'estudo sem viabilidade presa e não válido se apaga');
+-- arquivos: PDF e DWG em Documentos, com versão
+select app.anexar_arquivo_massa(:'em2', 'massa_pdf', :'emp' || '/' || :'t1' || '/massa_pdf/a.pdf', 'Estudo.PDF') as emd1 \gset
+select app.anexar_arquivo_massa(:'em2', 'massa_pdf', :'emp' || '/' || :'t1' || '/massa_pdf/b.pdf', 'estudo-rev.pdf') as emd2 \gset
+select pg_temp.ok(:'emd1' = :'emd2' and (select count(*) from app.documento_versoes where documento_id = :'emd1') = 2
+  and (select estudo_massa_id = :'em2' and tipo_documento = 'massa_pdf' from app.documentos where id = :'emd1'), 'PDF do estudo em Documentos; o segundo envio é a versão 2');
+select pg_temp.falha(format('select app.anexar_arquivo_massa(%L, %L, %L, %L)', :'em2', 'massa_dwg', :'emp' || '/x.pdf', 'x.pdf'), 'no lugar do DWG, só arquivo .dwg');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format('select app.solicitar_estudo_massa(%L, %L)', :'t1', :'diretor'), 'Leitura não pede estudo de massa');
+select pg_temp.falha(format($$select app.salvar_estudo_massa(%L, '{"observacoes":"x"}')$$, :'em2'), 'Leitura não altera o estudo de massa');
+select pg_temp.como(:'analista');
+
 \echo 'TODOS OS TESTES PASSARAM'
