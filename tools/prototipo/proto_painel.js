@@ -245,9 +245,10 @@ function ajustaDash(){const g=document.querySelector('.dash-g'),s=g&&g.querySele
   const cabe=()=>t.scrollWidth<=w.clientWidth+1;g.classList.remove('tab-larga');s.classList.remove('enxuta');w.classList.remove('empilha');
   if(cabe())return;s.classList.add('enxuta');if(cabe())return;s.classList.remove('enxuta');g.classList.add('tab-larga');if(cabe())return;s.classList.add('enxuta');if(cabe())return;
   s.classList.remove('enxuta');g.classList.remove('tab-larga')}  // nem assim: ajustaTabelas empilha como nas outras listas
-function ajustaTabelas(){ajustaDash();document.querySelectorAll('.tblwrap,.dt-wrap').forEach(w=>{const t=w.querySelector('table');if(!t)return;
+function ajustaTabelas(raiz){if(!(raiz instanceof Element)){raiz=null;ajustaDash()}(raiz||document).querySelectorAll('.tblwrap,.dt-wrap').forEach(w=>{const t=w.querySelector('table');if(!t)return;
   const cab=[...t.querySelectorAll('thead th')].map(th=>{const c=th.cloneNode(true);c.querySelectorAll('.dt-ar').forEach(x=>x.remove());return c.textContent.trim()});
   t.querySelectorAll('tbody tr').forEach(tr=>{let i=0;[...tr.children].forEach(td=>{if(!td.hasAttribute('data-l'))td.setAttribute('data-l',cab[i]||'');i+=td.colSpan||1})});
+  if(!w.offsetParent)return;  // escondida (quadro fechado): mede quando o quadro abrir (qdPor)
   w.classList.remove('empilha');if(!w.classList.contains('rola')&&t.scrollWidth>w.clientWidth+1)w.classList.add('empilha')})}
 let tbRz;window.addEventListener('resize',()=>{cancelAnimationFrame(tbRz);tbRz=requestAnimationFrame(ajustaTabelas)});
 const _posRender=posRender;posRender=function(){_posRender.apply(this,arguments);ajustaTabelas();if(typeof gBuscasEndereco==='function')gBuscasEndereco();if(typeof gEntornoAuto==='function')gEntornoAuto();

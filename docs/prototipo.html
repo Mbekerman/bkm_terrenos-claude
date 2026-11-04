@@ -9399,9 +9399,10 @@ function ajustaDash(){const g=document.querySelector('.dash-g'),s=g&&g.querySele
   const cabe=()=>t.scrollWidth<=w.clientWidth+1;g.classList.remove('tab-larga');s.classList.remove('enxuta');w.classList.remove('empilha');
   if(cabe())return;s.classList.add('enxuta');if(cabe())return;s.classList.remove('enxuta');g.classList.add('tab-larga');if(cabe())return;s.classList.add('enxuta');if(cabe())return;
   s.classList.remove('enxuta');g.classList.remove('tab-larga')}  // nem assim: ajustaTabelas empilha como nas outras listas
-function ajustaTabelas(){ajustaDash();document.querySelectorAll('.tblwrap,.dt-wrap').forEach(w=>{const t=w.querySelector('table');if(!t)return;
+function ajustaTabelas(raiz){if(!(raiz instanceof Element)){raiz=null;ajustaDash()}(raiz||document).querySelectorAll('.tblwrap,.dt-wrap').forEach(w=>{const t=w.querySelector('table');if(!t)return;
   const cab=[...t.querySelectorAll('thead th')].map(th=>{const c=th.cloneNode(true);c.querySelectorAll('.dt-ar').forEach(x=>x.remove());return c.textContent.trim()});
   t.querySelectorAll('tbody tr').forEach(tr=>{let i=0;[...tr.children].forEach(td=>{if(!td.hasAttribute('data-l'))td.setAttribute('data-l',cab[i]||'');i+=td.colSpan||1})});
+  if(!w.offsetParent)return;  // escondida (quadro fechado): mede quando o quadro abrir (qdPor)
   w.classList.remove('empilha');if(!w.classList.contains('rola')&&t.scrollWidth>w.clientWidth+1)w.classList.add('empilha')})}
 let tbRz;window.addEventListener('resize',()=>{cancelAnimationFrame(tbRz);tbRz=requestAnimationFrame(ajustaTabelas)});
 const _posRender=posRender;posRender=function(){_posRender.apply(this,arguments);ajustaTabelas();if(typeof gBuscasEndereco==='function')gBuscasEndereco();if(typeof gEntornoAuto==='function')gEntornoAuto();
@@ -14267,7 +14268,8 @@ const QD={},QD_SETA='<svg class="bl-seta" width="24" height="24" viewBox="0 0 24
 const qdCab=s=>s.querySelector(':scope > .sec-h, :scope > form > .sec-h');
 function qdLista(){const pn=document.querySelector('.fi-aba .bl-c');if(!pn||UI.route!=='terreno')return [];const aba=abaN(UI.tab);if(aba==='geral'||aba==='historico')return [];
   const qs=[...pn.querySelectorAll('section.sec')].filter(s=>qdCab(s)&&!s.parentElement.closest('section.sec'));return qs.length<2?[]:qs}
-function qdPor(s,ab){const b=s.querySelector(':scope .qd-tg');s.classList.toggle('qd-fechado',!ab);if(b)b.setAttribute('aria-expanded',String(ab))}
+function qdPor(s,ab){const b=s.querySelector(':scope .qd-tg');s.classList.toggle('qd-fechado',!ab);if(b)b.setAttribute('aria-expanded',String(ab));
+  if(ab&&typeof ajustaTabelas==='function')ajustaTabelas(s)}  // a tabela só se mede aberta: a que não cabe vira lista
 function uiQuadros(){const qs=qdLista();if(!qs.length)return;const aba=abaN(UI.tab);
   qs.forEach(s=>{if(!s.dataset.q){const h=qdCab(s).querySelector('h2');s.dataset.q=s.id||('t:'+(h?h.textContent:'').replace(/\d+/g,'').trim())}});
   const st=QD[aba]||(QD[aba]=new Set([qs[0].dataset.q]));
