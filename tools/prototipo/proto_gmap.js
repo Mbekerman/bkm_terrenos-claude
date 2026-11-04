@@ -32,10 +32,10 @@ function gPinsSel(){gPins.forEach(m=>{if(m._terreno&&m.content){m.content.classL
 function G_desenhaPins(){if(!MAPA)return;gSet(gPins,null);gPins=[];const {AdvancedMarkerElement}=gLib.marker;
   mpVisiveis().filter(t=>t.lat!=null).forEach(t=>{const k=mpInfo(mpClasse(t));
     const mk=new AdvancedMarkerElement({map:MAPA,position:gLL(t.lat,t.lng),content:gPinEl(k,UI.mpSel===t.id),title:t.nome,gmpClickable:!UI.mpModo,zIndex:UI.mpSel===t.id?10:1});
-    mk.addEventListener('gmp-click',()=>{if(Date.now()-(UI.polyLongoEm||0)<900)return;mpSelecionar(t.id)});mk._terreno=t.id;gPins.push(mk);
+    mk.addEventListener('gmp-click',()=>{if(Date.now()-(UI.polyLongoEm||0)<900)return;mpCliquePino(t.id)});mk._terreno=t.id;gPins.push(mk);
     if(t.poly&&t.poly.length>=3&&mk.content){polyGestos(mk.content,t.id);mk.content.addEventListener('dblclick',e=>{e.stopPropagation();editarPoligonal(t.id)})}
     if(t.poly&&!(UI.mpModo&&UI.mpAlvo===t.id)){const pg=new google.maps.Polygon({map:MAPA,paths:t.poly.map(p=>gLL(p[0],p[1])),strokeColor:k[1],strokeWeight:2,fillColor:k[1],fillOpacity:.18,clickable:!UI.mpModo});
-      let tc=null;pg.addListener('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<700)return;clearTimeout(tc);tc=setTimeout(()=>{if(!UI.mpModo)mpSelecionar(t.id)},260)});
+      let tc=null;pg.addListener('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<700)return;clearTimeout(tc);tc=setTimeout(()=>{if(!UI.mpModo)mpCliquePino(t.id)},260)});
       pg.addListener('dblclick',e=>{e?.stop?.();clearTimeout(tc);editarPoligonal(t.id)});
       /* segurar o dedo sobre a poligonal entra em edição */
       let tm=null;const limpa=()=>{clearTimeout(tm);tm=null};

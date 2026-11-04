@@ -13,7 +13,7 @@
 P.filtro='M4 6h16M7 12h10M10 18h4';
 const FX_KEY='bkm-terrenos-filtros';
 /* Pipeline, Mapa e Funil têm cada um o seu filtro (pedido do Moisés, 4/nov/2026): ao trocar de página, guarda o da página que sai e põe o da que entra */
-const FX_GK=FX_KEY+'-pag',fxGrupo=()=>UI.route==='negociacoes'?'kanban':UI.route==='mapa'?'mapa':'pipeline';
+const FX_GK=FX_KEY+'-pag',fxGrupo=()=>UI.route==='negociacoes'?'kanban':naMapa()?'mapa':'pipeline';
 const FX_PAG=(()=>{try{return JSON.parse(sessionStorage.getItem(FX_GK)||'{}')||{}}catch(e){return {}}})();
 let FX_G=null,FX_ADOTA=false;
 UI.fx=UI.fx||(()=>{try{const h=location.hash.match(/[#&?]f=([^&]+)/);if(h){FX_ADOTA=true;return JSON.parse(decodeURIComponent(h[1]))}}catch(e){}return {}})();
@@ -117,7 +117,7 @@ function fxPassa(t,ctx,fora,f=UI.fx){if(t.situacao==='arquivado'&&!f.arq&&ctx!==
   const funFora=fora&&FXK[fora]?.funil;
   if(!funFora){if(!fxFunil(t,f,ctx))return false}else{const g={...f};delete g[fora];if(fora==='fase'){delete g.etapa;delete g.sub}if(!fxFunil(t,g,ctx))return false}
   return FX.every(d=>d.funil===true||d.k==='status'||d.k===fora||!fxTem(d,f)||!fxValeEm(d,ctx)||fxPassaUm(t,d,f))}
-const fxCtx=()=>UI.route==='mapa'?'mapa':UI.route==='negociacoes'?'kanban':'terrenos';
+const fxCtx=()=>naMapa()?'mapa':UI.route==='negociacoes'?'kanban':'terrenos';
 const fxLista=(ctx=fxCtx())=>S.terrenos.filter(t=>fxPassa(t,ctx));
 /* quantos ficam marcando a opção (com os outros filtros valendo) */
 function fxConta(d,val,ctx){const base=S.terrenos.filter(t=>fxPassa(t,ctx,d.k));
@@ -131,7 +131,7 @@ function fxLimparDependentes(){const fs=fxFasesSel();if(UI.fx.etapa){UI.fx.etapa
   const es=fxEtapasSel();if(UI.fx.sub){UI.fx.sub=UI.fx.sub.filter(x=>{const [f,s]=x.split(':');return es.some(([ff,e])=>ff===f&&(etapaF(f,e)?.subs||[]).some(z=>z.k===s))});if(!UI.fx.sub.length)delete UI.fx.sub}
   Object.keys(UI.fx).forEach(k=>{if(FXK[k]&&!fxTem(FXK[k]))delete UI.fx[k]})}
 function fxAplicar(soResultado){fxLimparDependentes();fxGuardar();UI.fxVisaoMudou=!!UI.fxVisao;
-  if(UI.route==='mapa'&&typeof mpRefresh==='function'){mpRefresh();const b=$('#fx-barra');if(b)b.outerHTML=fxBarra();if(!soResultado)fxDrawer();else fxRodape();return}
+  if(naMapa()&&typeof mpRefresh==='function'){mpRefresh();const b=$('#fx-barra');if(b)b.outerHTML=fxBarra();if(!soResultado)fxDrawer();else fxRodape();return}
   FX_SO_RESULTADO=!!soResultado;render();FX_SO_RESULTADO=false;if(soResultado)fxRodape()}
 const fxTira=k=>{delete UI.fx[k];if(k==='fase'){delete UI.fx.etapa;delete UI.fx.sub}if(k==='etapa')delete UI.fx.sub};
 

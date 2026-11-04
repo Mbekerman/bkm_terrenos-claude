@@ -55,7 +55,7 @@ const mfLista=()=>mkEmps().filter(e=>mfPassa(e));
 function mfBotao(){const n=mfAtivos().length;
   return `<button type="button" class="mp-renda-b mf-btn" data-a="mf-abrir" aria-expanded="${MF_ABERTO}" aria-pressed="${n>0}" title="Filtrar os empreendimentos da concorrência">${ic('filtro',18)}<span class="mf-l">Concorrência</span>${n?`<span class="mf-n">${n}</span>`:''}</button>`}
 function mfDrawer(){let el=$('#mf-dr'),sc=$('#mf-scrim');
-  if(!MF_ABERTO||UI.route!=='mapa'){el?.remove();sc?.remove();return}
+  if(!MF_ABERTO||!naMapa()){el?.remove();sc?.remove();return}
   const top=el?.querySelector('.fx-b')?.scrollTop||0;
   if(!el){sc=document.createElement('div');sc.id='mf-scrim';sc.className='fx-scrim';sc.dataset.a='mf-fechar';document.body.appendChild(sc);
     el=document.createElement('aside');el.id='mf-dr';el.className='fx-dr mf-dr';el.setAttribute('role','dialog');el.setAttribute('aria-label','Filtro da concorrência');document.body.appendChild(el)}
@@ -101,8 +101,18 @@ document.addEventListener('input',e=>{const el=e.target;if(!el.closest||!el.clos
 document.addEventListener('change',e=>{const el=e.target;if(!el.closest||!el.closest('#mf-dr')||!el.dataset.mf)return;e.stopImmediatePropagation();mfDigitado(el,false)},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&MF_ABERTO&&!UI.modal){MF_ABERTO=false;mfDrawer();e.preventDefault();e.stopImmediatePropagation()}},true);
 
-/* ---------- marca no mapa: círculo na cor da situação ---------- */
-const mkMarcaHtml=e=>`<span class="mk-b" style="background:${(MK_SIT[e?.sit]||MK_SIT.nao_informado)[1]}"></span>`;
+/* ---------- marca no mapa: quadrado com um prédio, na cor da situação (pedido do Moisés, 4/nov/2026: a bolinha se perdia
+   no meio dos pinos dos terrenos) ---------- */
+const MK_PREDIO='M4 21V5l8-3v19M12 9l8 3v9M2 21h20M7 8h2M7 12h2M7 16h2M15 14h2M15 18h2';
+const mkMarcaHtml=e=>`<span class="mk-b" style="background:${(MK_SIT[e?.sit]||MK_SIT.nao_informado)[1]}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="${MK_PREDIO}"/></svg></span>`;
+/* no Leaflet os ~2 mil empreendimentos ficam em canvas: o mesmo quadrado desenhado à mão (o clique segue o raio do círculo) */
+let MK_SQ=null;
+function mkQuadrado(){if(MK_SQ)return MK_SQ;const ico=new Path2D(MK_PREDIO);
+  L.Canvas.include({_mkSq(l){if(!this._drawing||l._empty())return;const p=l._point,c=this._ctx,r=11,o=l.options;
+    c.beginPath();if(c.roundRect)c.roundRect(p.x-r,p.y-r,2*r,2*r,6);else c.rect(p.x-r,p.y-r,2*r,2*r);
+    c.lineWidth=4;c.strokeStyle='rgba(0,0,0,.3)';c.stroke();c.fillStyle=o.fillColor;c.fill();c.lineWidth=2;c.strokeStyle='#fff';c.stroke();
+    c.save();c.translate(p.x-6.5,p.y-6.5);c.scale(13/24,13/24);c.lineWidth=2.4;c.lineCap=c.lineJoin='round';c.stroke(ico);c.restore()}});
+  return MK_SQ=L.CircleMarker.extend({_updatePath(){this._renderer._mkSq(this)}})}
 const mkTitulo=e=>`${e.nome} · ${(MK_SIT[e.sit]||MK_SIT.nao_informado)[0]}`;
 let MERC=null,gMerc=[],MK_CHAVE=null;
 /* os pinos só são refeitos quando os dados, o filtro ou o modo do mapa mudam; no Leaflet, círculos em canvas (são ~2 mil) */
@@ -114,14 +124,14 @@ function desenhaMerc(){if(!MAPA)return;if(!MK.d){mkCarregar();return}
         const m=new AdvancedMarkerElement({map:null,position:gLL(e.lat,e.lng),content:d,title:mkTitulo(e),gmpClickable:!UI.mpModo});
         m.addListener?.('click',()=>{if(!UI.mpModo)mkAbrir(e.id)});gMerc.push(m)})}
     else{MERC?.remove();MERC=L.featureGroup();MERC._mapa=MAPA;const rd=MAPA._mkCanvas||(MAPA._mkCanvas=L.canvas({padding:.5}));
-      lista.forEach(e=>L.circleMarker([e.lat,e.lng],{renderer:rd,radius:7,weight:2,color:'#fff',fillColor:(MK_SIT[e.sit]||MK_SIT.nao_informado)[1],fillOpacity:1,interactive:!UI.mpModo,bubblingMouseEvents:false})
+      const Q=mkQuadrado();lista.forEach(e=>new Q([e.lat,e.lng],{renderer:rd,radius:12,weight:2,color:'#fff',fillColor:(MK_SIT[e.sit]||MK_SIT.nao_informado)[1],fillOpacity:1,interactive:!UI.mpModo,bubblingMouseEvents:false})
         .bindTooltip(mkTitulo(e),{direction:'top',offset:[0,-6]}).on('click',ev=>{L.DomEvent.stop(ev);if(!UI.mpModo)mkAbrir(e.id)}).addTo(MERC))}}
   else{const ar=$('.mapa-area');if(ar&&!ar.dataset.merc)ar.dataset.merc=gMerc.length||MERC?.getLayers().length||0}
   mostrarMerc(UI.mpMerc!==false);
   if(!MAPA._mk){MAPA._mk=1;GG?MAPA.addListener('click',mkFecharDoMapa):MAPA.on('click',mkFecharDoMapa)}}
 function mostrarMerc(on){if(GG){gMerc.forEach(m=>{if((m.map||null)!==(on?MAPA:null))m.map=on?MAPA:null});return}if(MAPA&&MERC){on?MERC.addTo(MAPA):MERC.remove()}}
 window.__mkAbrir=id=>mkAbrir(id);  // roteiros de teste
-function mkAtualizarTela(){if(UI.route==='mapa'){desenhaMerc();const lg=$('#mp-leg');if(lg)lg.innerHTML=mpLegenda();mfDrawer()}
+function mkAtualizarTela(){if(naMapa()){desenhaMerc();const lg=$('#mp-leg');if(lg)lg.innerHTML=mpLegenda();mfDrawer()}
   const sec=$('.mk-sec'),t=UI.route==='terreno'?T(UI.id):null;if(sec&&t){const d=document.createElement('div');d.innerHTML=mkSecaoHtml(t);sec.replaceWith(d.firstElementChild)}}
 
 /* ---------- janela ao tocar no pino ---------- */
@@ -149,7 +159,7 @@ function mkBoxHtml(e){const m2=mkM2(e.preco,e.area),vso=mkVso(e.vendas,e.estoque
   ${mkResumoHtml(e)}
   <div class="mk-tab"><button type="button" class="btn text" data-a="mk-tabela" data-id="${esc(e.id)}">${ic('doc',18)}Ver tabela completa</button></div>
   <div class="cc-meta faint mk-nota">Monitor de mercado (Órulo), retrato de ${mkData(MK.d.gerado)} · Tipologias agrupadas pelo resumo do empreendimento · R$/m² das unidades à venda (* pelo primeiro preço visto, sem unidade à venda) · VSO = vendas ÷ (vendas + à venda)${mkPeriodo()?', '+mkPeriodo():''}</div></div>`}
-function mkBox(){const area=$('.mapa-area');let el=$('#mk-box');const e=MK.box&&UI.route==='mapa'?mkEmp(MK.box):null;
+function mkBox(){const area=$('.mapa-area');let el=$('#mk-box');const e=MK.box&&naMapa()?mkEmp(MK.box):null;
   if(!e||!area){el?.remove();if(!e)MK.box=null;return}
   if(!el||el.parentNode!==area){el?.remove();el=document.createElement('div');el.id='mk-box';area.appendChild(el)}
   el.innerHTML=mkBoxHtml(e)}
@@ -172,7 +182,7 @@ const _mpSelecionarMk=mpSelecionar;mpSelecionar=function(id){if(id)mkFechar();re
 const _fichaSheetMk=fichaSheet;fichaSheet=function(){if(UI.fichaSheet){mkFechar();if(MF_ABERTO){MF_ABERTO=false;mfDrawer()}}return _fichaSheetMk.apply(this,arguments)};
 /* botão do filtro do mercado na barra do mapa, depois de Camadas */
 const _rdBarraBotaoMk=rdBarraBotao;rdBarraBotao=function(){return _rdBarraBotaoMk.apply(this,arguments)+mfBotao()};
-const _posRenderMk=posRender;posRender=function(){_posRenderMk.apply(this,arguments);if(UI.route!=='mapa'){MK.box=null;MF_ABERTO=false}mkBox();mfDrawer()};
+const _posRenderMk=posRender;posRender=function(){_posRenderMk.apply(this,arguments);if(!naMapa()){MK.box=null;MF_ABERTO=false}mkBox();mfDrawer()};
 
 /* ---------- ficha do terreno, aba Entorno: R$/m² médio e VSO médio a 1, 2 e 3 km ---------- */
 const MK_NAO_ENTREGUE=['lancamento','breve_lancamento','em_obras'];

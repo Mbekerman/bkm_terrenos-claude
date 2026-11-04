@@ -1969,7 +1969,7 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .lug-l { display: inline-block; margin-top: 8px; color: #0b57d0; font-weight: 500; text-decoration: none }
 .lug-g { font-size: 11px; margin-top: 4px }
 .mapa-area { container-type: inline-size }
-@container (max-width: 600px) { .mapa-area .mp-barra { flex-wrap: wrap !important } .mapa-area .mp-busca { flex: 1 1 100%; max-width: none; order: -1; margin-right: 0 } .mapa-area .mp-barra .seg { flex: 1 1 0; min-width: 0; overflow-x: auto; scrollbar-width: none } }
+@container (max-width: 720px) { .mapa-area .mp-barra { flex-wrap: wrap !important } .mapa-area .mp-busca { flex: 1 1 100%; max-width: none; order: -1; margin-right: 0 } .mapa-area .mp-barra .seg { flex: 1 1 0; min-width: 0; overflow-x: auto; scrollbar-width: none } }
 
 /* ficha do terreno em painel sobre o mapa (lupa da lista lateral) */
 .ficha-sheet { position: fixed; z-index: 30; top: 88px; left: 88px; bottom: 16px; width: min(560px, calc(100vw - 32px)); display: flex; flex-direction: column; background: var(--m-surface, #fff); border-radius: 16px; box-shadow: 0 2px 6px rgba(0,0,0,.15), 0 12px 32px rgba(0,0,0,.18); overflow: hidden }
@@ -2597,7 +2597,7 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 :root[data-tema="escuro"] :is(.rd-m, .rd-f) { background: #1a1a1b; border: 1px solid rgba(149,153,160,0.2) }
 :root[data-tema="escuro"] .rd-bar { background: #2a2a2c }
 
-/* ---------- Mercado (monitor, camada de exemplo): círculo na cor da situação e janela do empreendimento ---------- */
+/* ---------- Mercado (monitor, camada de exemplo): quadrado com prédio na cor da situação (bloco do fim) e janela do empreendimento ---------- */
 .mk { background: none; border: 0; overflow: visible }
 .mk-b { display: block; width: 18px; height: 18px; box-sizing: border-box; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.4) }
 .mk.g { position: relative; width: 18px; height: 18px; transform: translateY(50%) }
@@ -5585,6 +5585,29 @@ table.mkt b { font-weight: 500 }
 }
 table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty { display: none }
 .mkt-w { overflow-x: hidden } table.mkt td, table.mkt th { padding-left: 6px; padding-right: 6px }
+/* ---------- Lista do mapa redimensionável e bolinha com o código (pedido do Moisés, 4/nov/2026) ---------- */
+@media (min-width: 900px) {
+  .mapa-pg { grid-template-columns: var(--mp-w, 360px) 16px minmax(0, 1fr); gap: 0 }
+  .mp-redim { position: relative; cursor: grab; touch-action: none; outline: none }
+  .mp-redim::after { content: ""; position: absolute; left: 6px; top: 50%; width: 4px; height: 48px; margin-top: -24px; border-radius: 2px; background: #c4c7c5; transition: background .15s, height .15s, margin .15s }
+  .mp-redim:hover::after, .mp-redim:focus-visible::after, body.mp-arrastando .mp-redim::after { background: #0b57d0; height: 72px; margin-top: -36px }
+  .mp-redim:focus-visible { box-shadow: inset 0 0 0 2px #0b57d0; border-radius: 8px }
+  body.mp-arrastando, body.mp-arrastando * { cursor: grabbing !important; user-select: none !important }
+  /* estreita: só as bolinhas com o código, uma embaixo da outra */
+  .mp-estreita .mapa-lado { padding-right: 0; overflow-x: hidden }
+  .mp-estreita .mapa-lado > :not(#mp-lista), .mp-estreita #mp-lista > :not(.mp-lst) { display: none !important }
+  .mp-estreita .mp-it { grid-template-columns: minmax(0, 1fr); justify-items: center; padding: 6px 0 }
+  .mp-estreita .mp-it > :not(.pin-mini) { display: none }
+}
+@media (max-width: 899px) { .mp-redim { display: none } }
+.mp-it .pin-mini.mp-cod { width: auto; min-width: 44px; height: 24px; padding: 0 8px; box-sizing: border-box; border-radius: 12px; font-size: 12px; font-weight: 600; letter-spacing: .02em; font-variant-numeric: tabular-nums; white-space: nowrap }
+:root[data-tema="escuro"] .mp-redim::after { background: #444746 }
+:root[data-tema="escuro"] .mp-redim:hover::after, :root[data-tema="escuro"] .mp-redim:focus-visible::after, :root[data-tema="escuro"] body.mp-arrastando .mp-redim::after { background: #a8c7fa }
+/* concorrência (monitor de mercado): quadrado com um prédio, na cor da situação, para não se confundir com os pinos dos terrenos */
+.mk-b { display: grid; place-items: center; width: 22px; height: 22px; box-sizing: border-box; border-radius: 6px; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.35), 0 1px 4px rgba(0,0,0,.35) }
+.mk-b svg { width: 13px; height: 13px; display: block }
+.mk.g { width: 22px; height: 22px }
+.lg-poi .mk-b { width: 16px; height: 16px; border-radius: 5px; border-width: 1.5px; box-shadow: 0 0 0 1px rgba(0,0,0,.2) } .lg-poi .mk-b svg { width: 10px; height: 10px }
 </style>
 <header class="top">
   <div class="top-in">
@@ -6297,7 +6320,7 @@ const NAV=[['inicio','Início','casa'],['terrenos','Terrenos','terrenos'],['mapa
 const NAV_CURTO={Configurações:'Admin',Dashboard:'Dash'}; // rótulo da barra encolhida
 const navSide=()=>ehAdmin(me())?[...NAV,['config','Configurações','config']]:NAV;
 function render(){
-  if(UI.route!=='mapa'&&document.body.classList.contains('mp-cheia'))mpTelaCheia(false);
+  if(!naMapa()&&document.body.classList.contains('mp-cheia'))mpTelaCheia(false);
   const cur=UI.route==='terreno'?UI.from:UI.route;
   document.body.classList.toggle('menu-min',menuMin);
   $('#side').innerHTML=`<button class="menu-tg" data-a="menu" aria-expanded="${!menuMin}" aria-label="${menuMin?'Expandir menu':'Recolher menu'}" title="${menuMin?'Expandir menu':'Recolher menu'}">${ic(menuMin?'expandir':'recolher',20)}</button><button class="compose" data-a="novo" ${menuMin?'title="Novo terreno" aria-label="Novo terreno"':''}>${ic('add',24)}<span class="rot">Novo terreno</span></button>`+navSide().map(([r,l,i])=>`<button class="nav-item" data-a="nav" data-r="${r}" ${cur===r?'aria-current="page"':''} ${menuMin?`title="${l}" aria-label="${l}"`:''}><span class="ri">${bi(i)}</span><span class="rot">${menuMin?(NAV_CURTO[l]||l):l}</span></button>`).join('')+``;
@@ -6418,7 +6441,7 @@ document.addEventListener('click',e=>{
     case 'g-geo-ok':{const g=UI.geo,x=T(g.tid);Object.assign(x,{lat:g.lat,lng:g.lng,precisao:g.exato&&!g.bairroDif?'conferida':'aproximada'});log(x,`Localização pelo endereço (Google): ${g.end}`);UI.modal=null;save();render();toast('Localização gravada.');break}
     case 'g-geo':{const x=T(a.dataset.id);a.disabled=true;gGeocodificar(x);break}
     case 'sort':ordenar(a.dataset.t,a.dataset.k);render();break;
-    case 'fs-abrir':{const x=T(a.dataset.id);UI.fichaSheet=a.dataset.id;if(x?.lat!=null)mpSelecionar(x.id);fichaSheet();break}
+    case 'fs-abrir':tgavAbrir(a.dataset.id,true);break;
     case 'fs-fechar':UI.fichaSheet=null;fichaSheet();break;
     case 'mp-foco':{const x=T(a.dataset.id);if(x.lat!=null)focar(x);else if(UI.role!=='Leitura'){UI.mpModo='marcar';UI.mpAlvo=x.id;mpRefresh()}else toast('Terreno sem localização.');break}
     case 'mp-sit':{const v=a.dataset.v,o=UI.mp.ocultas;UI.mp.ocultas=o.includes(v)?o.filter(x=>x!==v):[...o,v];mpRefresh();break}
@@ -6472,7 +6495,7 @@ document.addEventListener('input',e=>{const el=e.target;
   if(viabInput(el))return;
   if(el.id==='mp-q'){UI.mp.q=el.value;mpRefresh();return}
   if(el.id==='tk-q'){UI.tk.q=el.value;const p=el.selectionStart;render();const n=$('#tk-q');if(n){n.focus();n.setSelectionRange(p,p)}return}
-  if(el.id==='q-top'&&UI.route==='mapa'){UI.mp.q=el.value;mpRefresh();return}
+  if(el.id==='q-top'&&naMapa()){UI.mp.q=el.value;mpRefresh();return}
   if(el.id==='q-top'){UI.q=el.value;if(UI.route!=='terrenos'){go('terrenos');$('#q-top').focus()}else{const r=$('#rows');if(r)r.innerHTML=linhas()}}
   if(el.dataset.masc){const m=mascarar(el.value,el.dataset.masc);if(m!==el.value)el.value=m}
 
@@ -6532,7 +6555,7 @@ function seedVazio(){return {id:uid(),situacao:'ativo',prioridade:null,descricao
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&GG&&(svFechar()||lugarFechar())){e.preventDefault();return}if(e.key==='Escape'&&temaMenu){temaMenu=false;renderTema();return}if(e.key==='Escape'&&perfilMenu){perfilMenu=false;renderPerfil();return}if(e.key==='Escape'&&UI.modal){if(UI.modal==='lotes-geo'&&UI.lg?.nv){UI.lg=null;UI.modal='novo';renderModal();return}UI.modal=null;renderModal()}});
 /* ===================== kanban: arrastar e soltar (regras em proto_funil.js: levarAte, soltar) ===================== */
 function posRender(){try{if(MAPA){MAPA.remove()}}catch(e){}MAPA=null;PINS=POIS=DES=BASE=null;try{if(MINI)MINI.remove()}catch(e){}MINI=null;
-  if(UI.route==='mapa')initMapa();if(UI.route==='terreno'){fiAbasCaber();if(!blocoFechado('geral'))initMini();if(typeof geoCartorio==='function')geoCartorio(T(UI.id));tpAuto(T(UI.id))}fichaSheet()}
+  if(naMapa())initMapa();if(UI.route==='terreno'){fiAbasCaber();if(!blocoFechado('geral'))initMini();if(typeof geoCartorio==='function')geoCartorio(T(UI.id));tpAuto(T(UI.id))}fichaSheet()}
 document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const el=e.target;if(!(el instanceof HTMLElement)||el.matches('button,a,input,select,textarea'))return;if(el.matches('[data-a][tabindex]')){e.preventDefault();el.click()}});
 let arrastando=null;
 document.addEventListener('dragstart',e=>{const c=e.target.closest?.('.kcard[draggable="true"]');if(!c)return;arrastando=c.dataset.id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',arrastando);c.classList.add('arrastando');c.closest('.col')?.classList.add('origem');document.body.classList.add('dnd')});
@@ -6755,12 +6778,12 @@ function pinIcon(k,sel){const [,c,g,fg]=Array.isArray(k)?k:SIT[k];return L.divIc
 const poiIcon=()=>L.divIcon({className:'poi',html:'<span class="poi-b"></span>',iconSize:[14,14],iconAnchor:[7,7],tooltipAnchor:[0,-8]});
 function mpVisiveis(){const m=UI.mp,q=m.q.trim().toLowerCase();
   return fxLista('mapa').filter(t=>{const k=mpClasse(t);return k!=null&&!m.ocultas.includes(k)}).filter(t=>!q||bateBusca(t,q))}
-/* lista lateral do mapa: só o número do pino (etapa), o nome e a área; a lupa abre a ficha.
+/* lista lateral do mapa: a bolinha com o código do terreno (na cor do nível aberto na legenda), o nome e a área; a lupa abre a ficha.
    Clicar no pino ou na poligonal seleciona o terreno aqui (não há balão no mapa). */
 function mpItem(t,cartao){const [nm,c,g,fg]=mpInfo(mpClasse(t)),sel=UI.mpSel===t.id,ad=areaAdotada(t)||(t.poly?areaPoly(t.poly):null);
   const acoes=sel&&t.lat!=null?`<div class="mp-it-a">${UI.role!=='Leitura'?`<button class="linkbtn" data-a="mp-desenhar" data-id="${t.id}">${t.poly?'Editar':'Desenhar'} poligonal</button>`:''}${GG?`<button class="linkbtn" data-a="mp-sv" data-id="${t.id}">Street View</button>`:''}</div>`:'';
   return `<div class="mp-it${sel?' sel':''}${cartao?' cartao':''}" data-a="mp-foco" data-id="${t.id}" tabindex="0" role="listitem" aria-current="${sel}">
-    <span class="pin-mini" style="background:${c};color:${fg}" title="${esc(nm)}">${g}</span>
+    <span class="pin-mini mp-cod" style="background:${c};color:${fg}" title="${esc(t.nome)} · ${esc(nm)}">${esc(t.codigo)}</span>
     <div class="mp-it-t"><div class="t1">${esc(t.nome)}</div><div class="t2">${ad?num(Math.round(ad))+'\u00a0m²':'Área não informada'} · ${esc(nm)}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div></div>
     <button class="iconbtn mp-lupa" data-a="fs-abrir" data-id="${t.id}" title="Ver ficha" aria-label="Ver ficha de ${esc(t.nome)}">${bi('busca',22)}</button>${cartao?`<button class="iconbtn mp-lupa mp-fx" data-a="mp-desel" title="Fechar" aria-label="Fechar">${ic('close',22)}</button>`:''}${acoes}</div>`}
 /* ao descer ou subir de nível, o mapa enquadra os terrenos que ficaram */
@@ -6842,13 +6865,14 @@ function mpLegenda(){const m=UI.mp,aberta=!!UI.mpArv;
 }
 function pgMapa(){
   const opt=(o,v)=>Object.entries(o).map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${esc(l)}</option>`).join('');
-  return `<div class="mapa-pg">
+  return `<div class="mapa-pg${mpLargura()<200?' mp-estreita':''}" style="--mp-w:${mpLargura()}px">
   <aside class="mapa-lado" aria-label="Terrenos no mapa">
     <h1 class="sr-only">Mapa</h1>
     ${fxBarra('mapa')}
     ${UI.mp.q||UI.mp.ocultas.length?'<button class="linkbtn" data-a="mp-limpar" style="align-self:flex-start">Limpar busca e legenda</button>':''}
     <div id="mp-lista">${mpLista()}</div>
   </aside>
+  <div class="mp-redim" role="separator" aria-orientation="vertical" aria-label="Largura da lista de terrenos" aria-valuemin="${MP_LMIN}" aria-valuemax="${mpLmax()}" aria-valuenow="${mpLargura()}" tabindex="0" title="Arraste para mudar a largura da lista (dois cliques voltam ao padrão)"></div>
   <section class="mapa-area" aria-label="Mapa dos terrenos">
     <div id="mapa" class="mapa"></div>
     <div class="mp-barra">
@@ -6882,11 +6906,11 @@ function L_setBase(k){if(!MAPA)return;UI.mpBase=k;if(BASE)MAPA.removeLayer(BASE)
 function L_desenhaPins(){if(!MAPA||!PINS)return;PINS.clearLayers();
   mpVisiveis().filter(t=>t.lat!=null).forEach(t=>{const k=mpInfo(mpClasse(t));
     if(t.poly&&!(UI.mpModo&&UI.mpAlvo===t.id)){const pg=L.polygon(t.poly,{color:k[1],weight:2,fillOpacity:.18,interactive:!UI.mpModo})
-      .on('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<700)return;clearTimeout(pg._tc);pg._tc=setTimeout(()=>{if(!UI.mpModo)mpSelecionar(t.id)},260)})
+      .on('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<700)return;clearTimeout(pg._tc);pg._tc=setTimeout(()=>{if(!UI.mpModo)mpCliquePino(t.id)},260)})
       .on('dblclick',e=>{L.DomEvent.stop(e);clearTimeout(pg._tc);editarPoligonal(t.id)});
       pg.on('add',()=>polyGestos(pg.getElement(),t.id));pg.addTo(PINS)}
     const mk=L.marker([t.lat,t.lng],{icon:pinIcon(k,UI.mpSel===t.id),title:t.nome,riseOnHover:true,keyboard:!UI.mpModo,interactive:!UI.mpModo}).bindTooltip(esc(t.nome),{direction:'top'});
-    mk.on('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<900)return;mpSelecionar(t.id)});
+    mk.on('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<900)return;mpCliquePino(t.id)});
     /* o pino fica sobre a poligonal: segurar nele (ou dois cliques) também entra em edição */
     if(t.poly&&t.poly.length>=3){mk.on('add',()=>polyGestos(mk.getElement(),t.id));mk.on('dblclick',e=>{L.DomEvent.stop(e);editarPoligonal(t.id)})}
     mk.addTo(PINS);mk._terreno=t.id})}
@@ -7262,6 +7286,25 @@ function miniGestos(el,zoom){let acc=0,ult=0;
 /* dois cliques no mini-mapa: abre a página Mapa centrada no ponto clicado, no mesmo zoom, com o terreno selecionado */
 function miniAbrirMapa(t,lat,lng,z){go('mapa',{mpView:{c:{lat,lng},z:Math.max(z||17,15)},mpSel:t.id,mpFoco:null})}
 
+
+/* largura da lista do mapa (pedido do Moisés, 4/nov/2026): a borda entre a lista e o mapa se arrasta (mãozinha ao passar,
+   mão fechada ao puxar); a mínima mostra só a bolinha com o código; guardada no navegador; setas do teclado também mudam,
+   dois cliques voltam ao padrão. Só no desktop (no celular a lista fica embaixo do mapa). */
+const MP_LKEY='bkm-terrenos-mapa-lista',MP_LMIN=76,mpLpad=()=>innerWidth<1300?300:360;
+const mpLmax=()=>Math.max(MP_LMIN,Math.min(720,Math.round(innerWidth*.6)));
+function mpLargura(){let v=null;try{v=+localStorage.getItem(MP_LKEY)||null}catch(e){}return Math.max(MP_LMIN,Math.min(mpLmax(),v||mpLpad()))}
+function mpLarguraPor(w,guardar){const pg=$('.mapa-pg'),h=$('.mp-redim');if(!pg)return;w=Math.round(Math.max(MP_LMIN,Math.min(mpLmax(),w)));
+  pg.style.setProperty('--mp-w',w+'px');h?.setAttribute('aria-valuenow',w);pg.classList.toggle('mp-estreita',w<200);
+  if(guardar)try{localStorage.setItem(MP_LKEY,w)}catch(e){}
+  if(!GG&&MAPA?.invalidateSize)MAPA.invalidateSize({pan:false});fsPos($('#ficha-sheet'))}
+document.addEventListener('pointerdown',e=>{const h=e.target.closest?.('.mp-redim');if(!h||e.button!==0)return;e.preventDefault();
+  const lado=$('.mapa-lado'),x0=e.clientX,w0=lado.getBoundingClientRect().width;h.setPointerCapture?.(e.pointerId);document.body.classList.add('mp-arrastando');
+  const mv=ev=>mpLarguraPor(w0+ev.clientX-x0),fim=ev=>{h.removeEventListener('pointermove',mv);h.removeEventListener('pointerup',fim);h.removeEventListener('pointercancel',fim);
+    document.body.classList.remove('mp-arrastando');mpLarguraPor(w0+ev.clientX-x0,true)};
+  h.addEventListener('pointermove',mv);h.addEventListener('pointerup',fim);h.addEventListener('pointercancel',fim)});
+document.addEventListener('dblclick',e=>{if(e.target.closest?.('.mp-redim'))mpLarguraPor(mpLpad(),true)});
+document.addEventListener('keydown',e=>{const h=e.target.closest?.('.mp-redim');if(!h)return;const w=+h.getAttribute('aria-valuenow'),d=e.shiftKey?80:20;
+  const n=e.key==='ArrowLeft'?w-d:e.key==='ArrowRight'?w+d:e.key==='Home'?MP_LMIN:e.key==='End'?mpLmax():null;if(n==null)return;e.preventDefault();mpLarguraPor(n,true)});
 
 /* ===================== QUADROS E TAREFAS (bloco 1; decisões do Moisés, 29/out/2026) =====================
    Espelha o esquema fluxo do banco: cada terreno tem o seu quadro (t.listas), com as listas do modelo da
@@ -9461,10 +9504,10 @@ function gPinsSel(){gPins.forEach(m=>{if(m._terreno&&m.content){m.content.classL
 function G_desenhaPins(){if(!MAPA)return;gSet(gPins,null);gPins=[];const {AdvancedMarkerElement}=gLib.marker;
   mpVisiveis().filter(t=>t.lat!=null).forEach(t=>{const k=mpInfo(mpClasse(t));
     const mk=new AdvancedMarkerElement({map:MAPA,position:gLL(t.lat,t.lng),content:gPinEl(k,UI.mpSel===t.id),title:t.nome,gmpClickable:!UI.mpModo,zIndex:UI.mpSel===t.id?10:1});
-    mk.addEventListener('gmp-click',()=>{if(Date.now()-(UI.polyLongoEm||0)<900)return;mpSelecionar(t.id)});mk._terreno=t.id;gPins.push(mk);
+    mk.addEventListener('gmp-click',()=>{if(Date.now()-(UI.polyLongoEm||0)<900)return;mpCliquePino(t.id)});mk._terreno=t.id;gPins.push(mk);
     if(t.poly&&t.poly.length>=3&&mk.content){polyGestos(mk.content,t.id);mk.content.addEventListener('dblclick',e=>{e.stopPropagation();editarPoligonal(t.id)})}
     if(t.poly&&!(UI.mpModo&&UI.mpAlvo===t.id)){const pg=new google.maps.Polygon({map:MAPA,paths:t.poly.map(p=>gLL(p[0],p[1])),strokeColor:k[1],strokeWeight:2,fillColor:k[1],fillOpacity:.18,clickable:!UI.mpModo});
-      let tc=null;pg.addListener('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<700)return;clearTimeout(tc);tc=setTimeout(()=>{if(!UI.mpModo)mpSelecionar(t.id)},260)});
+      let tc=null;pg.addListener('click',()=>{if(Date.now()-(UI.polyLongoEm||0)<700)return;clearTimeout(tc);tc=setTimeout(()=>{if(!UI.mpModo)mpCliquePino(t.id)},260)});
       pg.addListener('dblclick',e=>{e?.stop?.();clearTimeout(tc);editarPoligonal(t.id)});
       /* segurar o dedo sobre a poligonal entra em edição */
       let tm=null;const limpa=()=>{clearTimeout(tm);tm=null};
@@ -11979,7 +12022,7 @@ function uniaoPoly(a,b){const pj=nvProj(centro(a)[0]),A=a.map(pj.xy),B=b.map(pj.
 /* ---------- começo: as três formas de dar a área ---------- */
 function nvDesenhar(p0){const est={mpModo:'desenhar',mpAlvo:null,nvDesenho:true,desEditando:false,desenho:p0?[p0]:[],desHist:[],vSel:null,vMenu:false};
   /* já na página Mapa (clique direito ou dois cliques): começa ali mesmo, sem redesenhar a página nem mexer no zoom e na posição (pedido do Moisés, 4/nov/2026) */
-  if(UI.route==='mapa'&&MAPA&&$('#mapa')&&!UI.edMini&&!UI.modal){Object.assign(UI,est);mpRefresh()}
+  if(naMapa()&&MAPA&&$('#mapa')&&!UI.edMini&&!UI.modal){Object.assign(UI,est);mpRefresh()}
   else go('mapa',{...est,mpView:p0?{c:{lat:p0[0],lng:p0[1]},z:18}:UI.mpView});
   if(!TOQUE())toast(p0?'Primeiro ponto marcado. Clique nos outros cantos; Enter ou dois cliques salvam, Esc cancela.':'Procure o endereço na barra do mapa e clique em cada canto do terreno. Enter ou dois cliques salvam; Esc cancela.')}
 function nvPoligonal(poly,fonte,extra={}){const p=poly.map(x=>[+(+x[0]).toFixed(7),+(+x[1]).toFixed(7)]);
@@ -12393,7 +12436,7 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="lg-"]'
 P.filtro='M4 6h16M7 12h10M10 18h4';
 const FX_KEY='bkm-terrenos-filtros';
 /* Pipeline, Mapa e Funil têm cada um o seu filtro (pedido do Moisés, 4/nov/2026): ao trocar de página, guarda o da página que sai e põe o da que entra */
-const FX_GK=FX_KEY+'-pag',fxGrupo=()=>UI.route==='negociacoes'?'kanban':UI.route==='mapa'?'mapa':'pipeline';
+const FX_GK=FX_KEY+'-pag',fxGrupo=()=>UI.route==='negociacoes'?'kanban':naMapa()?'mapa':'pipeline';
 const FX_PAG=(()=>{try{return JSON.parse(sessionStorage.getItem(FX_GK)||'{}')||{}}catch(e){return {}}})();
 let FX_G=null,FX_ADOTA=false;
 UI.fx=UI.fx||(()=>{try{const h=location.hash.match(/[#&?]f=([^&]+)/);if(h){FX_ADOTA=true;return JSON.parse(decodeURIComponent(h[1]))}}catch(e){}return {}})();
@@ -12497,7 +12540,7 @@ function fxPassa(t,ctx,fora,f=UI.fx){if(t.situacao==='arquivado'&&!f.arq&&ctx!==
   const funFora=fora&&FXK[fora]?.funil;
   if(!funFora){if(!fxFunil(t,f,ctx))return false}else{const g={...f};delete g[fora];if(fora==='fase'){delete g.etapa;delete g.sub}if(!fxFunil(t,g,ctx))return false}
   return FX.every(d=>d.funil===true||d.k==='status'||d.k===fora||!fxTem(d,f)||!fxValeEm(d,ctx)||fxPassaUm(t,d,f))}
-const fxCtx=()=>UI.route==='mapa'?'mapa':UI.route==='negociacoes'?'kanban':'terrenos';
+const fxCtx=()=>naMapa()?'mapa':UI.route==='negociacoes'?'kanban':'terrenos';
 const fxLista=(ctx=fxCtx())=>S.terrenos.filter(t=>fxPassa(t,ctx));
 /* quantos ficam marcando a opção (com os outros filtros valendo) */
 function fxConta(d,val,ctx){const base=S.terrenos.filter(t=>fxPassa(t,ctx,d.k));
@@ -12511,7 +12554,7 @@ function fxLimparDependentes(){const fs=fxFasesSel();if(UI.fx.etapa){UI.fx.etapa
   const es=fxEtapasSel();if(UI.fx.sub){UI.fx.sub=UI.fx.sub.filter(x=>{const [f,s]=x.split(':');return es.some(([ff,e])=>ff===f&&(etapaF(f,e)?.subs||[]).some(z=>z.k===s))});if(!UI.fx.sub.length)delete UI.fx.sub}
   Object.keys(UI.fx).forEach(k=>{if(FXK[k]&&!fxTem(FXK[k]))delete UI.fx[k]})}
 function fxAplicar(soResultado){fxLimparDependentes();fxGuardar();UI.fxVisaoMudou=!!UI.fxVisao;
-  if(UI.route==='mapa'&&typeof mpRefresh==='function'){mpRefresh();const b=$('#fx-barra');if(b)b.outerHTML=fxBarra();if(!soResultado)fxDrawer();else fxRodape();return}
+  if(naMapa()&&typeof mpRefresh==='function'){mpRefresh();const b=$('#fx-barra');if(b)b.outerHTML=fxBarra();if(!soResultado)fxDrawer();else fxRodape();return}
   FX_SO_RESULTADO=!!soResultado;render();FX_SO_RESULTADO=false;if(soResultado)fxRodape()}
 const fxTira=k=>{delete UI.fx[k];if(k==='fase'){delete UI.fx.etapa;delete UI.fx.sub}if(k==='etapa')delete UI.fx.sub};
 
@@ -12699,7 +12742,7 @@ function ccBoxHtml(c){const r=ccResumo(c),ro=UI.role==='Leitura',ts=(c.tip||[]).
   ${c.obs?`<div class="cc-meta">${esc(c.obs)}</div>`:''}
   ${ro?'':`<div class="cc-ac">${CC.desativar?`<span class="muted">Tirar do mapa? O histórico fica.</span><button class="btn text sm" data-a="cc-desat-n">Não</button><button class="btn sm" data-a="cc-desat-s">Desativar</button>`
     :`<button class="btn primary sm" data-a="cc-precos" ${ts.length?'':'disabled'}>Atualizar preços</button><button class="btn sm" data-a="cc-editar">Editar</button><button class="btn text sm" data-a="cc-desat">Desativar</button>`}</div>`}</div>`}
-function ccBox(){const area=$('.mapa-area');let el=$('#cc-box');const c=CC.box&&UI.route==='mapa'?ccC(CC.box):null;
+function ccBox(){const area=$('.mapa-area');let el=$('#cc-box');const c=CC.box&&naMapa()?ccC(CC.box):null;
   if(!c||c.ativo===false||!area){el?.remove();if(!c)CC.box=null;return}
   if(!el||el.parentNode!==area){el?.remove();el=document.createElement('div');el.id='cc-box';area.appendChild(el)}
   el.innerHTML=ccBoxHtml(c)}
@@ -12800,7 +12843,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!UI.modal){if($('#c
   else if((e.key==='Enter'||e.key===' ')&&e.target.matches?.('.cc-tr[data-a]')){e.preventDefault();e.target.click()}},true);
 document.addEventListener('mousedown',e=>{const d=$('#cc-emp-dlg');if(d&&e.target===d)d.remove()});
 /* o quadro acompanha os redesenhos da página Mapa; fora dela, quadro e gaveta fecham */
-const _posRenderCc=posRender;posRender=function(){_posRenderCc.apply(this,arguments);if(UI.route!=='mapa'){CC.box=null;if(CC.dr)ccFecharDr()}ccBox()};
+const _posRenderCc=posRender;posRender=function(){_posRenderCc.apply(this,arguments);if(!naMapa()){CC.box=null;if(CC.dr)ccFecharDr()}ccBox()};
 /* um painel por vez: filtros, ficha do terreno e a gaveta da concorrência; selecionar um terreno fecha o quadro */
 const _fxDrawerCc=fxDrawer;fxDrawer=function(){if(FX_ABERTO&&CC.dr)ccFecharDr();return _fxDrawerCc.apply(this,arguments)};
 const _fichaSheetCc=fichaSheet;fichaSheet=function(){if(UI.fichaSheet){if(CC.dr)ccFecharDr();ccFechar()}return _fichaSheetCc.apply(this,arguments)};
@@ -12865,7 +12908,7 @@ const mfLista=()=>mkEmps().filter(e=>mfPassa(e));
 function mfBotao(){const n=mfAtivos().length;
   return `<button type="button" class="mp-renda-b mf-btn" data-a="mf-abrir" aria-expanded="${MF_ABERTO}" aria-pressed="${n>0}" title="Filtrar os empreendimentos da concorrência">${ic('filtro',18)}<span class="mf-l">Concorrência</span>${n?`<span class="mf-n">${n}</span>`:''}</button>`}
 function mfDrawer(){let el=$('#mf-dr'),sc=$('#mf-scrim');
-  if(!MF_ABERTO||UI.route!=='mapa'){el?.remove();sc?.remove();return}
+  if(!MF_ABERTO||!naMapa()){el?.remove();sc?.remove();return}
   const top=el?.querySelector('.fx-b')?.scrollTop||0;
   if(!el){sc=document.createElement('div');sc.id='mf-scrim';sc.className='fx-scrim';sc.dataset.a='mf-fechar';document.body.appendChild(sc);
     el=document.createElement('aside');el.id='mf-dr';el.className='fx-dr mf-dr';el.setAttribute('role','dialog');el.setAttribute('aria-label','Filtro da concorrência');document.body.appendChild(el)}
@@ -12911,8 +12954,18 @@ document.addEventListener('input',e=>{const el=e.target;if(!el.closest||!el.clos
 document.addEventListener('change',e=>{const el=e.target;if(!el.closest||!el.closest('#mf-dr')||!el.dataset.mf)return;e.stopImmediatePropagation();mfDigitado(el,false)},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&MF_ABERTO&&!UI.modal){MF_ABERTO=false;mfDrawer();e.preventDefault();e.stopImmediatePropagation()}},true);
 
-/* ---------- marca no mapa: círculo na cor da situação ---------- */
-const mkMarcaHtml=e=>`<span class="mk-b" style="background:${(MK_SIT[e?.sit]||MK_SIT.nao_informado)[1]}"></span>`;
+/* ---------- marca no mapa: quadrado com um prédio, na cor da situação (pedido do Moisés, 4/nov/2026: a bolinha se perdia
+   no meio dos pinos dos terrenos) ---------- */
+const MK_PREDIO='M4 21V5l8-3v19M12 9l8 3v9M2 21h20M7 8h2M7 12h2M7 16h2M15 14h2M15 18h2';
+const mkMarcaHtml=e=>`<span class="mk-b" style="background:${(MK_SIT[e?.sit]||MK_SIT.nao_informado)[1]}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="${MK_PREDIO}"/></svg></span>`;
+/* no Leaflet os ~2 mil empreendimentos ficam em canvas: o mesmo quadrado desenhado à mão (o clique segue o raio do círculo) */
+let MK_SQ=null;
+function mkQuadrado(){if(MK_SQ)return MK_SQ;const ico=new Path2D(MK_PREDIO);
+  L.Canvas.include({_mkSq(l){if(!this._drawing||l._empty())return;const p=l._point,c=this._ctx,r=11,o=l.options;
+    c.beginPath();if(c.roundRect)c.roundRect(p.x-r,p.y-r,2*r,2*r,6);else c.rect(p.x-r,p.y-r,2*r,2*r);
+    c.lineWidth=4;c.strokeStyle='rgba(0,0,0,.3)';c.stroke();c.fillStyle=o.fillColor;c.fill();c.lineWidth=2;c.strokeStyle='#fff';c.stroke();
+    c.save();c.translate(p.x-6.5,p.y-6.5);c.scale(13/24,13/24);c.lineWidth=2.4;c.lineCap=c.lineJoin='round';c.stroke(ico);c.restore()}});
+  return MK_SQ=L.CircleMarker.extend({_updatePath(){this._renderer._mkSq(this)}})}
 const mkTitulo=e=>`${e.nome} · ${(MK_SIT[e.sit]||MK_SIT.nao_informado)[0]}`;
 let MERC=null,gMerc=[],MK_CHAVE=null;
 /* os pinos só são refeitos quando os dados, o filtro ou o modo do mapa mudam; no Leaflet, círculos em canvas (são ~2 mil) */
@@ -12924,14 +12977,14 @@ function desenhaMerc(){if(!MAPA)return;if(!MK.d){mkCarregar();return}
         const m=new AdvancedMarkerElement({map:null,position:gLL(e.lat,e.lng),content:d,title:mkTitulo(e),gmpClickable:!UI.mpModo});
         m.addListener?.('click',()=>{if(!UI.mpModo)mkAbrir(e.id)});gMerc.push(m)})}
     else{MERC?.remove();MERC=L.featureGroup();MERC._mapa=MAPA;const rd=MAPA._mkCanvas||(MAPA._mkCanvas=L.canvas({padding:.5}));
-      lista.forEach(e=>L.circleMarker([e.lat,e.lng],{renderer:rd,radius:7,weight:2,color:'#fff',fillColor:(MK_SIT[e.sit]||MK_SIT.nao_informado)[1],fillOpacity:1,interactive:!UI.mpModo,bubblingMouseEvents:false})
+      const Q=mkQuadrado();lista.forEach(e=>new Q([e.lat,e.lng],{renderer:rd,radius:12,weight:2,color:'#fff',fillColor:(MK_SIT[e.sit]||MK_SIT.nao_informado)[1],fillOpacity:1,interactive:!UI.mpModo,bubblingMouseEvents:false})
         .bindTooltip(mkTitulo(e),{direction:'top',offset:[0,-6]}).on('click',ev=>{L.DomEvent.stop(ev);if(!UI.mpModo)mkAbrir(e.id)}).addTo(MERC))}}
   else{const ar=$('.mapa-area');if(ar&&!ar.dataset.merc)ar.dataset.merc=gMerc.length||MERC?.getLayers().length||0}
   mostrarMerc(UI.mpMerc!==false);
   if(!MAPA._mk){MAPA._mk=1;GG?MAPA.addListener('click',mkFecharDoMapa):MAPA.on('click',mkFecharDoMapa)}}
 function mostrarMerc(on){if(GG){gMerc.forEach(m=>{if((m.map||null)!==(on?MAPA:null))m.map=on?MAPA:null});return}if(MAPA&&MERC){on?MERC.addTo(MAPA):MERC.remove()}}
 window.__mkAbrir=id=>mkAbrir(id);  // roteiros de teste
-function mkAtualizarTela(){if(UI.route==='mapa'){desenhaMerc();const lg=$('#mp-leg');if(lg)lg.innerHTML=mpLegenda();mfDrawer()}
+function mkAtualizarTela(){if(naMapa()){desenhaMerc();const lg=$('#mp-leg');if(lg)lg.innerHTML=mpLegenda();mfDrawer()}
   const sec=$('.mk-sec'),t=UI.route==='terreno'?T(UI.id):null;if(sec&&t){const d=document.createElement('div');d.innerHTML=mkSecaoHtml(t);sec.replaceWith(d.firstElementChild)}}
 
 /* ---------- janela ao tocar no pino ---------- */
@@ -12959,7 +13012,7 @@ function mkBoxHtml(e){const m2=mkM2(e.preco,e.area),vso=mkVso(e.vendas,e.estoque
   ${mkResumoHtml(e)}
   <div class="mk-tab"><button type="button" class="btn text" data-a="mk-tabela" data-id="${esc(e.id)}">${ic('doc',18)}Ver tabela completa</button></div>
   <div class="cc-meta faint mk-nota">Monitor de mercado (Órulo), retrato de ${mkData(MK.d.gerado)} · Tipologias agrupadas pelo resumo do empreendimento · R$/m² das unidades à venda (* pelo primeiro preço visto, sem unidade à venda) · VSO = vendas ÷ (vendas + à venda)${mkPeriodo()?', '+mkPeriodo():''}</div></div>`}
-function mkBox(){const area=$('.mapa-area');let el=$('#mk-box');const e=MK.box&&UI.route==='mapa'?mkEmp(MK.box):null;
+function mkBox(){const area=$('.mapa-area');let el=$('#mk-box');const e=MK.box&&naMapa()?mkEmp(MK.box):null;
   if(!e||!area){el?.remove();if(!e)MK.box=null;return}
   if(!el||el.parentNode!==area){el?.remove();el=document.createElement('div');el.id='mk-box';area.appendChild(el)}
   el.innerHTML=mkBoxHtml(e)}
@@ -12982,7 +13035,7 @@ const _mpSelecionarMk=mpSelecionar;mpSelecionar=function(id){if(id)mkFechar();re
 const _fichaSheetMk=fichaSheet;fichaSheet=function(){if(UI.fichaSheet){mkFechar();if(MF_ABERTO){MF_ABERTO=false;mfDrawer()}}return _fichaSheetMk.apply(this,arguments)};
 /* botão do filtro do mercado na barra do mapa, depois de Camadas */
 const _rdBarraBotaoMk=rdBarraBotao;rdBarraBotao=function(){return _rdBarraBotaoMk.apply(this,arguments)+mfBotao()};
-const _posRenderMk=posRender;posRender=function(){_posRenderMk.apply(this,arguments);if(UI.route!=='mapa'){MK.box=null;MF_ABERTO=false}mkBox();mfDrawer()};
+const _posRenderMk=posRender;posRender=function(){_posRenderMk.apply(this,arguments);if(!naMapa()){MK.box=null;MF_ABERTO=false}mkBox();mfDrawer()};
 
 /* ---------- ficha do terreno, aba Entorno: R$/m² médio e VSO médio a 1, 2 e 3 km ---------- */
 const MK_NAO_ENTREGUE=['lancamento','breve_lancamento','em_obras'];
@@ -14790,7 +14843,7 @@ function rdBoxHtml(i){if(rdCamada()==='dens')return dsBoxHtml(i);const d=SET.d,m
   ${dist?`<div class="rd-av">Média puxada por poucas rendas altas: a mediana do responsável é ${brl(d.v6[i])}, menos de 1/${m.distorcidaRazao} da média.</div>`:''}
   <div class="rd-nota">Renda familiar estimada, não observação direta do IBGE por setor. <button class="linkbtn" data-a="rd-met">Metodologia</button></div>`
   :`<div class="cc-meta">${motivo}</div><dl class="rd-kv"><div><dt>Código do setor</dt><dd class="rd-cd">${cd}</dd></div><div><dt>Pessoas</dt><dd>${num(d.pop[i])}</dd></div></dl>`}</div>`}
-function rdBox(){const area=$('.mapa-area');let el=$('#rd-box');if(RD.sel==null||!SET.d||!area||UI.route!=='mapa'){el?.remove();return}
+function rdBox(){const area=$('.mapa-area');let el=$('#rd-box');if(RD.sel==null||!SET.d||!area||!naMapa()){el?.remove();return}
   if(!el||el.parentNode!==area){el?.remove();el=document.createElement('div');el.id='rd-box';area.appendChild(el)}el.innerHTML=rdBoxHtml(RD.sel)}
 
 /* ---------- legenda da renda sobre o mapa (recolhível; no celular começa fechada) ---------- */
@@ -14808,7 +14861,7 @@ function rdLegendaHtml(){if(rdCamada()==='dens')return dsLegendaHtml();const m=R
     <div class="rd-li"><span class="rd-q rd-sem"></span>Sem dado do IBGE</div>
     <div class="rd-leg-p">Mensal, valores de ${m.pnadAnoAtual} · Censo ${m.censoAno} · <button class="linkbtn" data-a="rd-met">Metodologia</button></div>
     ${SET.d?'':`<div class="rd-leg-p">${SET.erro?'Não foi possível carregar os setores.':'Carregando os setores do IBGE…'}</div>`}</div>`}
-function rdLegenda(){const area=$('.mapa-area');let el=$('#rd-leg');if(!area||UI.route!=='mapa'||!rdLigada()){el?.remove();return}
+function rdLegenda(){const area=$('.mapa-area');let el=$('#rd-leg');if(!area||!naMapa()||!rdLigada()){el?.remove();return}
   if(!el||el.parentNode!==area){el?.remove();el=document.createElement('details');el.id='rd-leg';el.className='rd-leg';el.open=UI.rdLegAberta??innerWidth>899;
     el.addEventListener('toggle',()=>{UI.rdLegAberta=el.open});area.appendChild(el)}
   el.innerHTML=rdLegendaHtml();
@@ -14978,7 +15031,7 @@ function setoresClick(A,a,t){
     case 'rd-ver':{const x=T(a.dataset.id);UI.mpSetor=rdCamada()||'renda';if(x&&x.lat!=null){UI.mpView={c:{lat:x.lat,lng:x.lng},z:15}}go('mapa');return true}
   }
   return false}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&RD.sel!=null&&!UI.modal&&UI.route==='mapa'){rdFechar();e.preventDefault()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&RD.sel!=null&&!UI.modal&&naMapa()){rdFechar();e.preventDefault()}});
 window.BKM_TESTE=Object.assign(window.BKM_TESTE||{},{setores:()=>!!SET.d,terreno:n=>{const t=S.terrenos.find(x=>x.nome===n);return {lat:t.lat,lng:t.lng,poly:t.poly}},abrirTerreno:n=>{const t=S.terrenos.find(x=>x.nome===n);go('terreno',{id:t.id,tab:'geral',from:'terrenos'})},
   estat:async(lat,lng,raio)=>{await Promise.all([setCarregar(),demoCarregar()]);const r=setEstat({lat,lng},raio);const dm=demoEstat({lat,lng},raio);return r&&{setores:r.setores,pes:r.pes,dom:r.dom,renda:r.renda,dens:r.dens,demo:!!dm}},
   irPara:(lat,lng,z)=>{if(typeof GG!=='undefined'&&GG){MAPA.setCenter(gLL(lat,lng));MAPA.setZoom(z)}else MAPA.setView([lat,lng],z)}});
@@ -15931,11 +15984,11 @@ pgTerrenos=function(){const n=fxLista('terrenos').length,L=terSorts(),on=terChei
 /* ---------- a gaveta da ficha ---------- */
 const _pgFichaTb=pgFicha;
 pgFicha=function(){if(!UI.gav)return _pgFichaTb.apply(this,arguments);const t=T(UI.id);
-  return `${pgTerrenos()}<aside class="tgav" id="tgav" role="dialog" aria-label="Ficha de ${esc(t.nome)}"><div class="tgav-h"><span class="num">${t.codigo}</span><span class="tgav-n">${esc(t.nome)}</span>
+  return `${gavMapa()?pgMapa():pgTerrenos()}<aside class="tgav${gavMapa()?' tgav-mapa':''}" id="tgav" role="dialog" aria-label="Ficha de ${esc(t.nome)}"><div class="tgav-h"><span class="num">${t.codigo}</span><span class="tgav-n">${esc(t.nome)}</span>
     <button class="btn text sm" data-a="tb-pagina" title="Abrir a ficha na página dela">Abrir página</button><button class="iconbtn" data-a="tb-gav-x" aria-label="Fechar a ficha" title="Fechar (Esc)">${ic('close',22)}</button></div>
     <div class="tgav-b">${_pgFichaTb.apply(this,arguments)}</div></aside>`};
 /* a gaveta cobre a tabela a partir do fim da coluna 1 (no celular, a tela toda) */
-function tgavPos(){const g=$('#tgav');if(!g)return;const th=$('.lista-ter th.col-ter'),top=$('.ter-pg.on')?0:($('.top')?.getBoundingClientRect().bottom||0);
+function tgavPos(){const g=$('#tgav');if(!g)return;if(gavMapa())return tgavPosMapa(g);const th=$('.lista-ter th.col-ter'),top=$('.ter-pg.on')?0:($('.top')?.getBoundingClientRect().bottom||0);
   const l=innerWidth<900||!th?0:Math.min(Math.round(th.getBoundingClientRect().right),innerWidth-640);
   g.style.left=Math.max(0,l)+'px';g.style.top=(innerWidth<900?0:top)+'px';g.style.setProperty('--gav-h',(innerHeight-(innerWidth<900?0:top))+'px')}
 addEventListener('resize',()=>tgavPos());
@@ -15943,14 +15996,15 @@ let TG_SCROLL=null;
 {const _r=render;render=function(){const b=$('.tgav-b');TG_SCROLL=b&&UI.gav?{id:UI.id,top:b.scrollTop}:null;
   const fichaRota=UI.route==='terreno'&&UI.gav;if(!['terrenos','terreno'].includes(UI.route)||UI.route==='terreno'&&!UI.gav)UI.tbCheia=false;
   _r.apply(this,arguments);
-  document.body.classList.toggle('tgav-on',!!fichaRota);document.body.classList.toggle('tb-cheia',terCheiaOn());if(fichaRota)document.body.dataset.rota='terrenos';
+  document.body.classList.toggle('tgav-on',!!fichaRota);document.body.classList.toggle('tb-cheia',terCheiaOn());if(fichaRota)document.body.dataset.rota=gavMapa()?'mapa':'terrenos';
   if(fichaRota){tgavPos();const nb=$('.tgav-b');if(nb&&TG_SCROLL&&TG_SCROLL.id===UI.id)nb.scrollTop=TG_SCROLL.top}}}
 /* trocar de tela fecha a gaveta (menos quando quem chama já diz o que fazer com ela) */
 {const _g=go;go=function(r,x={}){if(!('gav' in x))x={...x,gav:false};return _g.call(this,r,x)}}
-function tgavAbrir(id){const t=T(id);if(!t)return;const y=scrollY;Object.assign(UI,{route:'terreno',id,gav:true,from:'terrenos',tab:UI.gav&&UI.id===id?UI.tab:'geral',edit:null,propForm:false,reuForm:false,modal:null});
+function tgavAbrir(id,mapa){const t=T(id);if(!t)return;mapa=mapa||gavMapa();if(mapa){UI.mpSel=id;UI.fichaSheet=null}const y=scrollY;Object.assign(UI,{route:'terreno',id,gav:true,from:mapa?'mapa':'terrenos',tab:UI.gav&&UI.id===id?UI.tab:'geral',edit:null,propForm:false,reuForm:false,modal:null});
   render();scrollTo({top:y});const b=$('.tgav-b');if(b&&TG_SCROLL?.id!==id)b.scrollTop=0;
+  if(mapa)return gavMapaPos(t);
   const tr=$(`.lista-ter tr[data-id="${id}"]`);if(tr){const r=tr.getBoundingClientRect();if(r.top<80||r.bottom>innerHeight)tr.scrollIntoView({block:'center'})}}
-function tgavFechar(){if(!UI.gav)return;const y=scrollY;Object.assign(UI,{route:'terrenos',gav:false,edit:null,modal:null});render();scrollTo({top:y})}
+function tgavFechar(){if(!UI.gav)return;const y=scrollY;Object.assign(UI,{route:UI.from==='mapa'?'mapa':'terrenos',gav:false,edit:null,modal:null});render();scrollTo({top:y})}
 /* tela cheia: como a do quadro de tarefas */
 let tbCheiaApi=false;
 function tbTelaCheia(on){if(on===undefined)on=!terCheiaOn();UI.tbCheia=on;
@@ -15964,12 +16018,31 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a]');if(!a
   if(A==='tb-cheia'){e.stopImmediatePropagation();tbTelaCheia();return}
   if(A==='tb-gav'){e.preventDefault();e.stopImmediatePropagation();if(UI.gav&&UI.id===a.dataset.id)tgavFechar();else tgavAbrir(a.dataset.id);return}
   if(A==='tb-gav-x'){e.stopImmediatePropagation();tgavFechar();return}
-  if(A==='tb-pagina'){e.stopImmediatePropagation();go('terreno',{id:UI.id,tab:UI.tab,from:'terrenos'});return}
+  if(A==='tb-pagina'){e.stopImmediatePropagation();go('terreno',{id:UI.id,tab:UI.tab,from:UI.from==='mapa'?'mapa':'terrenos'});return}
   /* com a gaveta aberta, clicar noutra linha troca o terreno da gaveta */
   if(A==='abrir'&&UI.gav&&a.closest('.lista-ter')){e.stopImmediatePropagation();tgavAbrir(a.dataset.id);return}},true);
 document.addEventListener('keydown',e=>{if(e.key!=='Escape'||e.defaultPrevented||UI.modal||UI.vbPop||document.querySelector('.adv-mais.aberto,.pn-dd.aberto,#fx-dr'))return;
   if(UI.gav){tgavFechar();e.preventDefault();return}
   if(UI.tbCheia&&UI.route==='terrenos'&&!document.fullscreenElement){tbTelaCheia(false);e.preventDefault()}});
+
+/* ---------- a mesma gaveta no Mapa (pedido do Moisés, 4/nov/2026) ----------
+   A lupa da lista e o clique no pino ou na poligonal (desktop) abrem a ficha completa nesta gaveta, à direita,
+   sobre o mapa, com o terreno aceso no mapa e na lista; o terreno vai para o meio do pedaço do mapa que fica livre.
+   Com a gaveta aberta, clicar noutro terreno (pino, poligonal ou linha da lista) troca o terreno da gaveta.
+   No celular o toque no pino continua mostrando o cartão; a lupa abre a gaveta em tela cheia.
+   A tela por trás é a do Mapa (UI.from = 'mapa'): naMapa() vale nas duas. Endereço: /mapa/A123/ficha. */
+function naMapa(){return UI.route==='mapa'||gavMapa()}
+function gavMapa(){return UI.route==='terreno'&&!!UI.gav&&UI.from==='mapa'}
+function tgavPosMapa(g){const top=innerWidth<900?0:($('.top')?.getBoundingClientRect().bottom||0),l=$('.mapa-lado')?.getBoundingClientRect().right||0;
+  const w=Math.min(900,Math.max(600,Math.round(innerWidth*.5))),left=innerWidth<900?0:Math.max(Math.round(l)+240,innerWidth-w);
+  g.style.left=Math.min(left,innerWidth-480)+'px';g.style.top=top+'px';g.style.setProperty('--gav-h',(innerHeight-top)+'px')}
+function gavMapaPos(t){if(!t||t.lat==null||innerWidth<900)return;let n=0;const f=()=>{if(!MAPA||!$('#mapa')||!$('#tgav')){if(++n<20)setTimeout(f,100);return}
+  const m=$('#mapa').getBoundingClientRect(),g=$('#tgav').getBoundingClientRect(),livre=Math.max(0,m.right-g.left);
+  if(GG){MAPA.panTo(gLL(t.lat,t.lng));if(livre>0)MAPA.panBy(Math.round(livre/2),0);return}
+  const p=MAPA.latLngToContainerPoint([t.lat,t.lng]),cx=(m.width-livre)/2,cy=m.height/2;
+  if(p.x>60&&p.x<m.width-livre-60&&p.y>80&&p.y<m.height-60)return;MAPA.panBy([p.x-cx,p.y-cy],{animate:false})};setTimeout(f,120)}
+function mpCliquePino(id){if(innerWidth>=900&&!UI.mpModo)tgavAbrir(id,true);else mpSelecionar(id)}
+{const _s=mpSelecionar;mpSelecionar=function(id){if(gavMapa()){if(!id)return;if(id!==UI.id&&!UI.mpModo)return tgavAbrir(id,true)}return _s.apply(this,arguments)}}
 
 /* ===================== máscaras de número ao digitar ===================== */
 /* Todo campo de número (inputmode decimal, ou data-fmt) se formata enquanto se digita:
@@ -16192,7 +16265,7 @@ function rtCaminho(){const r=UI.route;
   if(UI.modal==='novo')return ['/terrenos/novo','novo'];
   if(r==='terrenos')return ['/terrenos','terrenos'];
   if(r==='terreno'){const c=rtCod(UI.id);if(!c)return ['/terrenos','terrenos'];const p='/terrenos/'+c;
-    if(UI.gav)return [p+'/gaveta','terrenos'];
+    if(UI.gav)return UI.from==='mapa'?['/mapa/'+c+'/ficha','mapa']:[p+'/gaveta','terrenos'];
     const vs=rtViabs(UI.id),n=UI.vbPop?vs.findIndex(v=>v.id===UI.vbPop):-1;
     if(n>=0)return [p+'/viabilidade/'+(n+1),'t:'+c+':v'+n];
     return [RT_SEC.includes(abaN(UI.tab))?p+'/'+abaN(UI.tab):p,'t:'+c]}
@@ -16225,7 +16298,7 @@ function rtAplicar(s){const [a,b,c,d]=s,limpo={vbPop:null,vbNova:false,fichaShee
     if(c==='viabilidade'&&d){go('terreno',{...limpo,id,tab:'viabilidade',from});const v=rtViabs(id)[(parseInt(d,10)||1)-1];if(v)vbAbrir(v.id);else toast('Estudo de viabilidade não encontrado.',true);return}
     go('terreno',{...limpo,id,tab:sec,from});if(sec!=='geral')rolarBloco(sec);return}
   if(a==='terrenos'){go('terrenos',limpo);if(b){UI.modal='novo';renderModal()}return}
-  if(a==='mapa'){const id=rtId(b);go('mapa',{...limpo,mpSel:id,mpFoco:id});if(id&&c==='ficha'){UI.fichaSheet=id;fichaSheet()}return}
+  if(a==='mapa'){const id=rtId(b);go('mapa',{...limpo,mpSel:id,mpFoco:id});if(id&&c==='ficha')tgavAbrir(id,true);return}
   if(a==='fases'){const f=b&&fIdx(b)>=0?b:null,e=f&&c&&etapaF(f,c)?c:null;go('negociacoes',{...limpo,negFase:f,negEtapa:e});return}
   if(a==='tarefas'){if(UI.tk)UI.tk.vista=b==='tabela'?'lista':['lista','cronograma','calendario','funil'].includes(b)?b:'quadro';go('tarefas',limpo);
     // link de um cartão: /tarefas/TAR-000123 abre a janela dele

@@ -23,7 +23,7 @@ function rtCaminho(){const r=UI.route;
   if(UI.modal==='novo')return ['/terrenos/novo','novo'];
   if(r==='terrenos')return ['/terrenos','terrenos'];
   if(r==='terreno'){const c=rtCod(UI.id);if(!c)return ['/terrenos','terrenos'];const p='/terrenos/'+c;
-    if(UI.gav)return [p+'/gaveta','terrenos'];
+    if(UI.gav)return UI.from==='mapa'?['/mapa/'+c+'/ficha','mapa']:[p+'/gaveta','terrenos'];
     const vs=rtViabs(UI.id),n=UI.vbPop?vs.findIndex(v=>v.id===UI.vbPop):-1;
     if(n>=0)return [p+'/viabilidade/'+(n+1),'t:'+c+':v'+n];
     return [RT_SEC.includes(abaN(UI.tab))?p+'/'+abaN(UI.tab):p,'t:'+c]}
@@ -56,7 +56,7 @@ function rtAplicar(s){const [a,b,c,d]=s,limpo={vbPop:null,vbNova:false,fichaShee
     if(c==='viabilidade'&&d){go('terreno',{...limpo,id,tab:'viabilidade',from});const v=rtViabs(id)[(parseInt(d,10)||1)-1];if(v)vbAbrir(v.id);else toast('Estudo de viabilidade não encontrado.',true);return}
     go('terreno',{...limpo,id,tab:sec,from});if(sec!=='geral')rolarBloco(sec);return}
   if(a==='terrenos'){go('terrenos',limpo);if(b){UI.modal='novo';renderModal()}return}
-  if(a==='mapa'){const id=rtId(b);go('mapa',{...limpo,mpSel:id,mpFoco:id});if(id&&c==='ficha'){UI.fichaSheet=id;fichaSheet()}return}
+  if(a==='mapa'){const id=rtId(b);go('mapa',{...limpo,mpSel:id,mpFoco:id});if(id&&c==='ficha')tgavAbrir(id,true);return}
   if(a==='fases'){const f=b&&fIdx(b)>=0?b:null,e=f&&c&&etapaF(f,c)?c:null;go('negociacoes',{...limpo,negFase:f,negEtapa:e});return}
   if(a==='tarefas'){if(UI.tk)UI.tk.vista=b==='tabela'?'lista':['lista','cronograma','calendario','funil'].includes(b)?b:'quadro';go('tarefas',limpo);
     // link de um cartão: /tarefas/TAR-000123 abre a janela dele

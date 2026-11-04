@@ -62,11 +62,11 @@ pgTerrenos=function(){const n=fxLista('terrenos').length,L=terSorts(),on=terChei
 /* ---------- a gaveta da ficha ---------- */
 const _pgFichaTb=pgFicha;
 pgFicha=function(){if(!UI.gav)return _pgFichaTb.apply(this,arguments);const t=T(UI.id);
-  return `${pgTerrenos()}<aside class="tgav" id="tgav" role="dialog" aria-label="Ficha de ${esc(t.nome)}"><div class="tgav-h"><span class="num">${t.codigo}</span><span class="tgav-n">${esc(t.nome)}</span>
+  return `${gavMapa()?pgMapa():pgTerrenos()}<aside class="tgav${gavMapa()?' tgav-mapa':''}" id="tgav" role="dialog" aria-label="Ficha de ${esc(t.nome)}"><div class="tgav-h"><span class="num">${t.codigo}</span><span class="tgav-n">${esc(t.nome)}</span>
     <button class="btn text sm" data-a="tb-pagina" title="Abrir a ficha na página dela">Abrir página</button><button class="iconbtn" data-a="tb-gav-x" aria-label="Fechar a ficha" title="Fechar (Esc)">${ic('close',22)}</button></div>
     <div class="tgav-b">${_pgFichaTb.apply(this,arguments)}</div></aside>`};
 /* a gaveta cobre a tabela a partir do fim da coluna 1 (no celular, a tela toda) */
-function tgavPos(){const g=$('#tgav');if(!g)return;const th=$('.lista-ter th.col-ter'),top=$('.ter-pg.on')?0:($('.top')?.getBoundingClientRect().bottom||0);
+function tgavPos(){const g=$('#tgav');if(!g)return;if(gavMapa())return tgavPosMapa(g);const th=$('.lista-ter th.col-ter'),top=$('.ter-pg.on')?0:($('.top')?.getBoundingClientRect().bottom||0);
   const l=innerWidth<900||!th?0:Math.min(Math.round(th.getBoundingClientRect().right),innerWidth-640);
   g.style.left=Math.max(0,l)+'px';g.style.top=(innerWidth<900?0:top)+'px';g.style.setProperty('--gav-h',(innerHeight-(innerWidth<900?0:top))+'px')}
 addEventListener('resize',()=>tgavPos());
@@ -74,14 +74,15 @@ let TG_SCROLL=null;
 {const _r=render;render=function(){const b=$('.tgav-b');TG_SCROLL=b&&UI.gav?{id:UI.id,top:b.scrollTop}:null;
   const fichaRota=UI.route==='terreno'&&UI.gav;if(!['terrenos','terreno'].includes(UI.route)||UI.route==='terreno'&&!UI.gav)UI.tbCheia=false;
   _r.apply(this,arguments);
-  document.body.classList.toggle('tgav-on',!!fichaRota);document.body.classList.toggle('tb-cheia',terCheiaOn());if(fichaRota)document.body.dataset.rota='terrenos';
+  document.body.classList.toggle('tgav-on',!!fichaRota);document.body.classList.toggle('tb-cheia',terCheiaOn());if(fichaRota)document.body.dataset.rota=gavMapa()?'mapa':'terrenos';
   if(fichaRota){tgavPos();const nb=$('.tgav-b');if(nb&&TG_SCROLL&&TG_SCROLL.id===UI.id)nb.scrollTop=TG_SCROLL.top}}}
 /* trocar de tela fecha a gaveta (menos quando quem chama já diz o que fazer com ela) */
 {const _g=go;go=function(r,x={}){if(!('gav' in x))x={...x,gav:false};return _g.call(this,r,x)}}
-function tgavAbrir(id){const t=T(id);if(!t)return;const y=scrollY;Object.assign(UI,{route:'terreno',id,gav:true,from:'terrenos',tab:UI.gav&&UI.id===id?UI.tab:'geral',edit:null,propForm:false,reuForm:false,modal:null});
+function tgavAbrir(id,mapa){const t=T(id);if(!t)return;mapa=mapa||gavMapa();if(mapa){UI.mpSel=id;UI.fichaSheet=null}const y=scrollY;Object.assign(UI,{route:'terreno',id,gav:true,from:mapa?'mapa':'terrenos',tab:UI.gav&&UI.id===id?UI.tab:'geral',edit:null,propForm:false,reuForm:false,modal:null});
   render();scrollTo({top:y});const b=$('.tgav-b');if(b&&TG_SCROLL?.id!==id)b.scrollTop=0;
+  if(mapa)return gavMapaPos(t);
   const tr=$(`.lista-ter tr[data-id="${id}"]`);if(tr){const r=tr.getBoundingClientRect();if(r.top<80||r.bottom>innerHeight)tr.scrollIntoView({block:'center'})}}
-function tgavFechar(){if(!UI.gav)return;const y=scrollY;Object.assign(UI,{route:'terrenos',gav:false,edit:null,modal:null});render();scrollTo({top:y})}
+function tgavFechar(){if(!UI.gav)return;const y=scrollY;Object.assign(UI,{route:UI.from==='mapa'?'mapa':'terrenos',gav:false,edit:null,modal:null});render();scrollTo({top:y})}
 /* tela cheia: como a do quadro de tarefas */
 let tbCheiaApi=false;
 function tbTelaCheia(on){if(on===undefined)on=!terCheiaOn();UI.tbCheia=on;
@@ -95,9 +96,28 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a]');if(!a
   if(A==='tb-cheia'){e.stopImmediatePropagation();tbTelaCheia();return}
   if(A==='tb-gav'){e.preventDefault();e.stopImmediatePropagation();if(UI.gav&&UI.id===a.dataset.id)tgavFechar();else tgavAbrir(a.dataset.id);return}
   if(A==='tb-gav-x'){e.stopImmediatePropagation();tgavFechar();return}
-  if(A==='tb-pagina'){e.stopImmediatePropagation();go('terreno',{id:UI.id,tab:UI.tab,from:'terrenos'});return}
+  if(A==='tb-pagina'){e.stopImmediatePropagation();go('terreno',{id:UI.id,tab:UI.tab,from:UI.from==='mapa'?'mapa':'terrenos'});return}
   /* com a gaveta aberta, clicar noutra linha troca o terreno da gaveta */
   if(A==='abrir'&&UI.gav&&a.closest('.lista-ter')){e.stopImmediatePropagation();tgavAbrir(a.dataset.id);return}},true);
 document.addEventListener('keydown',e=>{if(e.key!=='Escape'||e.defaultPrevented||UI.modal||UI.vbPop||document.querySelector('.adv-mais.aberto,.pn-dd.aberto,#fx-dr'))return;
   if(UI.gav){tgavFechar();e.preventDefault();return}
   if(UI.tbCheia&&UI.route==='terrenos'&&!document.fullscreenElement){tbTelaCheia(false);e.preventDefault()}});
+
+/* ---------- a mesma gaveta no Mapa (pedido do Moisés, 4/nov/2026) ----------
+   A lupa da lista e o clique no pino ou na poligonal (desktop) abrem a ficha completa nesta gaveta, à direita,
+   sobre o mapa, com o terreno aceso no mapa e na lista; o terreno vai para o meio do pedaço do mapa que fica livre.
+   Com a gaveta aberta, clicar noutro terreno (pino, poligonal ou linha da lista) troca o terreno da gaveta.
+   No celular o toque no pino continua mostrando o cartão; a lupa abre a gaveta em tela cheia.
+   A tela por trás é a do Mapa (UI.from = 'mapa'): naMapa() vale nas duas. Endereço: /mapa/A123/ficha. */
+function naMapa(){return UI.route==='mapa'||gavMapa()}
+function gavMapa(){return UI.route==='terreno'&&!!UI.gav&&UI.from==='mapa'}
+function tgavPosMapa(g){const top=innerWidth<900?0:($('.top')?.getBoundingClientRect().bottom||0),l=$('.mapa-lado')?.getBoundingClientRect().right||0;
+  const w=Math.min(900,Math.max(600,Math.round(innerWidth*.5))),left=innerWidth<900?0:Math.max(Math.round(l)+240,innerWidth-w);
+  g.style.left=Math.min(left,innerWidth-480)+'px';g.style.top=top+'px';g.style.setProperty('--gav-h',(innerHeight-top)+'px')}
+function gavMapaPos(t){if(!t||t.lat==null||innerWidth<900)return;let n=0;const f=()=>{if(!MAPA||!$('#mapa')||!$('#tgav')){if(++n<20)setTimeout(f,100);return}
+  const m=$('#mapa').getBoundingClientRect(),g=$('#tgav').getBoundingClientRect(),livre=Math.max(0,m.right-g.left);
+  if(GG){MAPA.panTo(gLL(t.lat,t.lng));if(livre>0)MAPA.panBy(Math.round(livre/2),0);return}
+  const p=MAPA.latLngToContainerPoint([t.lat,t.lng]),cx=(m.width-livre)/2,cy=m.height/2;
+  if(p.x>60&&p.x<m.width-livre-60&&p.y>80&&p.y<m.height-60)return;MAPA.panBy([p.x-cx,p.y-cy],{animate:false})};setTimeout(f,120)}
+function mpCliquePino(id){if(innerWidth>=900&&!UI.mpModo)tgavAbrir(id,true);else mpSelecionar(id)}
+{const _s=mpSelecionar;mpSelecionar=function(id){if(gavMapa()){if(!id)return;if(id!==UI.id&&!UI.mpModo)return tgavAbrir(id,true)}return _s.apply(this,arguments)}}
