@@ -32,7 +32,12 @@ Sistema de tarefas num banco próprio (ver `docs/adr/0002-tarefas-em-banco-propr
 
 ## Convidados de fora
 
-Só eles entram com e-mail e senha, e só por convite (sem cadastro aberto). Pontos em aberto na rodada 7.
+Decisões do Moisés de 4/nov/2026 (rodada 7, Q29 a Q32):
+
+- Entram só no `bkm_tarefas`; o BKM Terrenos continua sem acesso de fora.
+- Veem só os cartões em que foram incluídos (como Restrito), nunca o quadro inteiro nem os campos do sistema no formulário. É a exceção à regra "quem não vê o objeto não vê os cartões dele".
+- Podem comentar, anexar arquivo, responder as perguntas "Só no cartão" e marcar os itens de checklist deles. Não mudam prazo, pessoas nem lista, e não concluem.
+- Entram só por convite de quem tem o cartão, aprovado por gestor ou acima, com e-mail e senha criados pelo link do convite, sem cadastro aberto. O convite pode ter prazo de validade, e o acesso vence depois de 90 dias sem uso.
 
 ## Regras que continuam
 
