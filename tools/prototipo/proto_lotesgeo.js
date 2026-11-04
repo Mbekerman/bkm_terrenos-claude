@@ -135,8 +135,26 @@ function lgIncluir(ajustar){const L=UI.lg,t=L&&T(L.tid);if(!t)return;const novos
   if(tirados.length)log(t,`SQL${tirados.length>1?'s':''} tirado${tirados.length>1?'s':''} do cadastro pelo mapa de lotes: ${tirados.join(', ')}`);
   const marc=L.lotes.filter(l=>l.sel&&(!l.trava||l.fixo));
   UI.modal=null;renderModal();lotesNorm(t);save();render();
-  if(ajustar)return lgAjustar(t,marc,novos.length);
-  toast(L.cad?(novos.length?`${novos.length} lote${novos.length>1?'s':''} cadastrado${novos.length>1?'s':''} com o SQL.`:'Terreno cadastrado sem lotes.'):novos.length?`${novos.length} SQL${novos.length>1?'s':''} no cadastro. Ponha cada um num lote pela lista do SQL, na seção Lotes.`:'Cadastro atualizado.')}
+  const consultar=marc.map(l=>t.insc.find(i=>digits(i.sql)===digits(l.sql))).filter(i=>i&&!(i.geo||[]).length);
+  if(ajustar)lgAjustar(t,marc,novos.length);
+  else toast(L.cad?(novos.length?`${novos.length} lote${novos.length>1?'s':''} cadastrado${novos.length>1?'s':''} com o SQL. Consultando o GeoSampa em cada um...`:'Terreno cadastrado sem lotes.'):novos.length?`${novos.length} SQL${novos.length>1?'s':''} no cadastro. Consultando o GeoSampa em cada um...`:'Cadastro atualizado.');
+  lgConsultar(t,consultar)}
+
+/* Tudo o que depende do GeoSampa já sai na inclusão (pedido do Moisés, 4/nov/2026): a consulta completa de cada SQL
+   marcado (lote, zonas com a área no lote e parâmetros, camadas que tocam o lote, análise, planta e desenho), um de cada
+   vez, e depois a consulta pela poligonal (Restrições e entorno). Com "Incluir e ajustar", a da poligonal espera a
+   decisão sobre a poligonal nova. */
+let LG_CONS=null;
+const lgEspera=ms=>new Promise(r=>setTimeout(r,ms));
+async function lgConsultar(t,ins){if(!GEO_BASE||LG_CONS)return;LG_CONS={tid:t.id,feitos:0,total:ins.length};render();let falhas=0;
+  try{for(const i of ins){while(LOTE_BUSCANDO)await lgEspera(200);const k=t.insc.indexOf(i);if(k<0){LG_CONS.feitos++;continue}
+      await loteBuscar(t,k);if(!(i.geo||[]).length){await lgEspera(1500);await loteBuscar(t,k)}if(!(i.geo||[]).length)falhas++;LG_CONS.feitos++;render()}
+    while(UI.modal==='lotes-poly')await lgEspera(300);
+    while(REST_BUSCANDO)await lgEspera(200);
+    if(t.poly)await restConsultar(t)}
+  finally{LG_CONS=null;render()}
+  await lgEspera(1200);
+  toast(falhas?`GeoSampa consultado; ${falhas} SQL${falhas>1?'s':''} não respondeu. Use "Buscar no GeoSampa" no SQL.`:`GeoSampa consultado nos ${ins.length} SQL${ins.length>1?'s':''} e pela poligonal: parâmetros e restrições preenchidos.`,!!falhas)}
 
 /* "Incluir e ajustar a poligonal": a soma dos lotes marcados vai para a mesma comparação de "Usar a poligonal dos lotes"
    (desenhada × lotes, diferença de área, terrenos que a área nova ocuparia); a desenhada fica guardada */
@@ -146,7 +164,8 @@ function lgAjustar(t,marc,nNovos){const polys=marc.map(l=>l.an.slice(0,-1).map(p
 
 /* seção Lotes: os SQLs soltos */
 function lgSoltosHtml(t,ro){const S0=lgSoltos(t);if(!S0.length)return '';
-  return `<div class="lg-soltos" id="lg-soltos"><div class="lg-soltos-h"><b>SQLs sem lote</b> <span class="h-n">${S0.length}</span><span class="faint">do mapa de lotes da prefeitura</span></div>
+  const cs=LG_CONS&&LG_CONS.tid===t.id?`<span class="chip blue lg-cons">Consultando o GeoSampa: ${LG_CONS.feitos} de ${LG_CONS.total}</span>`:'';
+  return `<div class="lg-soltos" id="lg-soltos"><div class="lg-soltos-h"><b>SQLs sem lote</b> <span class="h-n">${S0.length}</span><span class="faint">do mapa de lotes da prefeitura</span>${cs}</div>
     <div class="hint" style="margin:2px 0 6px">Escolha cada um na lista "SQL pré-cadastrado" do lote certo.</div>
     ${S0.map(i=>`<div class="lg-it"><span class="num">${esc(i.sql)}</span><span class="faint">${esc(i.endPref||'')}${i.area!=null?` · ${m2(i.area)}`:''}</span>${ro?'':`<button class="iconbtn sm lixo" data-a="lg-tira" data-i="${i.id}" aria-label="Tirar o SQL ${esc(i.sql)} do cadastro" title="Tirar do cadastro">${ic('lixo',18)}</button>`}</div>`).join('')}</div>`}
 
