@@ -4,14 +4,14 @@ Saídas:
   docs/prototipo.html                  versão publicada (documento completo, chave do Google injetada pelo Caddy)
   tools/prototipo/saida/bkm-terrenos.html  versão para o artifact do claude.ai e para os testes
 """
-import json, os, re, shutil
+import json, os, re, shutil, sys
 AQUI = os.path.dirname(os.path.abspath(__file__))
 RAIZ = os.path.abspath(os.path.join(AQUI, '..', '..'))
 def ler(n): return open(os.path.join(AQUI, n), encoding='utf-8').read()
 css = ler('bkm.pre-painel.css') + ler('painel.css')
 lpath = os.path.join(AQUI, 'libs', 'l', 'leaflet.css')
 lcss = open(lpath, encoding='utf-8').read() if os.path.exists(lpath) else ''
-if not lcss: print('aviso: libs/l/leaflet.css ausente (baixe do branch libs-prototipo); o CSS do Leaflet fica de fora')
+if not lcss: sys.exit('erro: libs/l/leaflet.css ausente; sem ele o mapa Leaflet quebra. Baixe do branch libs-prototipo (ver README) e rode de novo.')
 lcss = re.sub(r'url\([^)]*\)', 'none', lcss)  # ícones padrão do Leaflet não são usados (pins próprios)
 def cfg_setores(nome):
     return json.dumps(json.load(open(os.path.join(RAIZ, 'tools', 'setores', nome), encoding='utf-8')), ensure_ascii=False, separators=(',', ':'))
