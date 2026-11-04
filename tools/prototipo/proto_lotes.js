@@ -27,7 +27,9 @@ function lotesNorm(t){if(!t)return;const P=partesDe(t);
   t.mats.filter(m=>!m.lote||!ltDe(t,m.lote)).forEach(m=>{t.lotes.push(ltNovo(t,ativa(m.parte)?m.parte:p1,{num:m.num||'',cri:m.cri||t.cri||'',criDig:!!m.cri&&m.cri!==t.cri,area:m.area??null,data:m.data||null}))});
   /* SQL sem lote: entra no primeiro lote da parte dele que ainda não tem SQL, senão no último; sem lote, num lote novo */
   const em=new Set(t.lotes.flatMap(l=>l.ins));
-  t.insc.filter(i=>!em.has(i.id)).forEach(i=>{const pa=ativa(i.parte)?i.parte:null,c=t.lotes.filter(l=>!pa||l.parte===pa);
+  /* o SQL do mapa de lotes da prefeitura fica solto até alguém escolhê-lo num lote (proto_lotesgeo.js) */
+  t.insc.forEach(i=>{if(i.solto&&em.has(i.id))delete i.solto});
+  t.insc.filter(i=>!em.has(i.id)&&!i.solto).forEach(i=>{const pa=ativa(i.parte)?i.parte:null,c=t.lotes.filter(l=>!pa||l.parte===pa);
     let alvo=c.find(l=>!l.ins.length)||c[c.length-1];if(!alvo){alvo=ltNovo(t,pa||p1);t.lotes.push(alvo)}alvo.ins.push(i.id)});
   t.lotes.forEach(l=>{l.ins=l.ins.filter(id=>t.insc.some(i=>i.id===id));if(!ativa(l.parte))l.parte=p1;if(!l.criDig&&t.cri)l.cri=t.cri});
   t.mats=t.lotes.filter(l=>l.num).map(l=>({id:l.id,lote:l.id,num:l.num,cri:l.cri,area:l.area,data:l.data,parte:l.parte}));
@@ -109,10 +111,15 @@ function ltCard(t,l,ro){const P=partesAtivas(t),inf=ltInfo(t,l),cid=cidDoTerreno
       <div class="field"><span class="lbl-f">Área adotada</span><span class="v lt-adot">${inf.adot!=null?m2(inf.adot):`<span class="ni">${l.fonte==='cadastral'&&inf.comp?'SQL dividido com outro lote: escolha outra fonte':'Não informada'}</span>`}</span></div>
       <div class="field"><span class="lbl-f">Zoneamento</span><span class="v">${esc(ltZonas(t,l).join(' / '))||'<span class="ni">—</span>'}</span></div></div>
     <div class="lt-sqls"><div class="lbl-f">${c.rotulo}${inf.ins.length>1?'s':''}</div>${inf.ins.map(ins=>ltSqlLinha(t,l,ins,ro)).join('')||'<div class="muted">Nenhum ainda.</div>'}
-      ${ro?'':`<form class="inline-form lt-add" data-form="lt-sql" data-l="${l.id}">${campoInsc('ls-'+l.id,cid,null,true)}<div class="field" style="flex:0 1 150px"><label for="ls-a-${l.id}">Área cadastral (m²)</label><input id="ls-a-${l.id}" name="area" inputmode="decimal"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form>`}</div></article>`}
+      ${ro?'':`<form class="inline-form lt-add" data-form="lt-sql" data-l="${l.id}">${ltSoltoSel(t,l)}${campoInsc('ls-'+l.id,cid,lgSoltos(t).length?'Ou um novo':null,!lgSoltos(t).length)}<div class="field" style="flex:0 1 150px"><label for="ls-a-${l.id}">Área cadastral (m²)</label><input id="ls-a-${l.id}" name="area" inputmode="decimal"></div><button class="btn sm">${ic('add',16)}Adicionar</button></form>`}</div></article>`}
+/* SQLs soltos (do mapa de lotes da prefeitura) para escolher no lote; escolhido, o campo do SQL novo some */
+function ltSoltoSel(t,l){const S0=lgSoltos(t);if(!S0.length)return '';
+  return `<div class="field grow lt-solto"><label for="lsp-${l.id}">SQL pré-cadastrado</label><select id="lsp-${l.id}" name="solto" data-ch="lt-solto"><option value="">Digitar um SQL novo</option>${S0.map(i=>`<option value="${i.id}">${esc(i.sql)}${i.endPref?' · '+esc(i.endPref):''}${i.area!=null?' · '+m2(i.area):''}</option>`).join('')}</select></div>`}
+document.addEventListener('change',e=>{const s=e.target.closest('[data-ch=lt-solto]');if(!s)return;const f=s.form;f.querySelectorAll('.field').forEach(x=>{if(x!==s.closest('.field'))x.hidden=!!s.value})});
 function secLotes(t){const ro=UI.role==='Leitura',L=t.lotes||[];
-  return `<section class="sec" id="sec-lotes"><div class="sec-h"><h2>Lotes <span class="h-n">${L.length}</span></h2>${!ro&&lotesInsc(t).length?`<button class="btn sm text" data-a="lotes-poly" ${LOTES_BUSCANDO?'disabled':''}>${ic('layers',16)}${LOTES_BUSCANDO?'Buscando os lotes...':'Usar a poligonal dos lotes'}</button>`:''}</div><div class="sec-b">
+  return `<section class="sec" id="sec-lotes"><div class="sec-h"><h2>Lotes <span class="h-n">${L.length}</span></h2>${lgPode(t)?`<button class="btn sm text" data-a="lg-abrir">${ic('layers',16)}Lotes da prefeitura</button>`:''}${!ro&&lotesInsc(t).length?`<button class="btn sm text" data-a="lotes-poly" ${LOTES_BUSCANDO?'disabled':''}>${ic('layers',16)}${LOTES_BUSCANDO?'Buscando os lotes...':'Usar a poligonal dos lotes'}</button>`:''}</div><div class="sec-b">
     <div class="hint" style="margin:0 0 12px">Cada lote é uma matrícula, com um ou mais SQLs, e pertence a uma parte. O cartório vem da localização da poligonal; trocado à mão, vale o digitado.</div>
+    ${lgSoltosHtml(t,ro)}
     <div class="lt-lista">${L.map(l=>ltCard(t,l,ro)).join('')||'<div class="muted">Nenhum lote ainda.</div>'}</div>
     ${ro?'':`<button class="btn text sm qd-add" data-a="lt-novo">${ic('add',16)}Adicionar lote</button>`}</div></section>`}
 
@@ -176,12 +183,16 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a]');if(!a
   if(A==='lt-novo'){const l=ltNovo(t,partesAtivas(t)[0].id);t.lotes.push(l);ltRender(t);setTimeout(()=>document.querySelector(`#lt-${l.id} [data-k=num]`)?.focus(),30);return}
   if(A==='lt-excluir'){const l=ltDe(t,a.dataset.l);if(!l)return;
     const sos=l.ins.filter(id=>!t.lotes.some(x=>x!==l&&x.ins.includes(id)));t.lotes.splice(t.lotes.indexOf(l),1);t.mats=t.mats.filter(m=>m.lote!==l.id);
-    t.insc=t.insc.filter(i=>!sos.includes(i.id)||i.valores.length);log(t,`Lote excluído: ${l.titulo}${l.num?` (matrícula ${l.num})`:''}`);ltRender(t);toast(`${l.titulo} excluído.`);return}
+    t.insc.forEach(i=>{if(sos.includes(i.id)&&i.origem==='mapa_prefeitura')i.solto=true});
+    t.insc=t.insc.filter(i=>!sos.includes(i.id)||i.valores.length||i.solto);log(t,`Lote excluído: ${l.titulo}${l.num?` (matrícula ${l.num})`:''}`);ltRender(t);toast(`${l.titulo} excluído.`);return}
   if(A==='lt-sql-tira'){const l=ltDe(t,a.dataset.l),id=a.dataset.i;if(!l)return;l.ins=l.ins.filter(x=>x!==id);
-    const ins=t.insc.find(i=>i.id===id);if(ins&&!t.lotes.some(x=>x.ins.includes(id))&&!ins.valores.length)t.insc.splice(t.insc.indexOf(ins),1);
+    const ins=t.insc.find(i=>i.id===id);if(ins&&!t.lotes.some(x=>x.ins.includes(id))&&ins.origem==='mapa_prefeitura'){ins.solto=true;toast(`${ins.sql} voltou para os SQLs sem lote.`)}
+    else if(ins&&!t.lotes.some(x=>x.ins.includes(id))&&!ins.valores.length)t.insc.splice(t.insc.indexOf(ins),1);
     else if(ins&&!t.lotes.some(x=>x.ins.includes(id)))l.ins.push(id),toast('O SQL tem IPTU lançado: fica no lote.',true);ltRender(t)}});
 document.addEventListener('submit',e=>{const f=e.target;if(f.dataset.form!=='lt-sql')return;e.preventDefault();const t=T(UI.id),l=t&&ltDe(t,f.dataset.l);if(!l)return;
   const F=Object.fromEntries(new FormData(f)),c=CIDADES_INSC[F.mun]||CIDADES_INSC.sp;
+  if(F.solto){const i=t.insc.find(x=>x.id===F.solto);if(!i)return;l.ins.push(i.id);delete i.solto;log(t,`${c.rotulo} ${i.sql} (do mapa da prefeitura) posto no ${l.titulo}`);ltRender(t);toast(`${c.rotulo} ${i.sql} no ${l.titulo}.`);return}
+  if(!digits(F.sql)){toast(`Escolha um ${c.rotulo} da lista ou digite um novo.`,true);return}
   if(c.mascara&&digits(F.sql).length!==digitosMasc(c.mascara)){toast(`${c.rotulo} incompleto: são ${digitosMasc(c.mascara)} dígitos.`,true);return}
   const ja=t.insc.find(x=>insCid(x)===F.mun&&digits(x.sql)===digits(F.sql)&&(c.mascara||x.sql===F.sql));
   if(!ja){const ou=dupOutroTerreno(t,{sql:F.sql,mun:F.mun});if(ou){ltDupAbrir(ou,`O ${c.rotulo} ${F.sql}`);return}}

@@ -31,7 +31,7 @@ const tpNome=r=>r.perfil==='inclinado'?`Inclinado · ${num(r.decl,1)}%`:TP_N[r.p
 const TP_EM={},TP_ERRO={};
 /* exemplos do protótipo, usados só onde não dá para medir (arquivo local ou artifact: sem GeoSampa e sem Google) */
 /* [declividade média, inclinação do plano, terra mexida, fonte]: valores medidos nos terrenos da calibração */
-const TP_EXEMPLO={'TER-000118':[5.1,1.7,.14,'laser'],'TER-000112':[9.5,3.6,.39,'laser'],'TER-000123':[6.8,4.1,null,'google'],'TER-000127':[15.8,9.9,.35,'laser'],'TER-000105':[17.8,14.4,.78,'laser'],'TER-000101':[27.6,22,.42,'laser']};
+const TP_EXEMPLO={'A118':[5.1,1.7,.14,'laser'],'A112':[9.5,3.6,.39,'laser'],'A123':[6.8,4.1,null,'google'],'A127':[15.8,9.9,.35,'laser'],'A105':[17.8,14.4,.78,'laser'],'A101':[27.6,22,.42,'laser']};
 function tpPodeMedir(t){const sp=cidDoTerreno(t)==='sp';return sp?!!GEO_BASE:!!GG}
 function tpAuto(t){if(!t||!tpKey(t)||UI.role==='Leitura'||tpAtual(t))return;const k=tpKey(t);
   if(TP_EM[t.id]||TP_ERRO[t.id]?.key===k)return;

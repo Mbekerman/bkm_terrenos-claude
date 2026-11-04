@@ -1,6 +1,6 @@
-// Partes no cadastro: passo 2 do Novo terreno com as partes (só o nome obrigatório; tamanho, matrículas,
-// inscrições, vendedores e corretor opcionais), quadro Partes no Cadastro da ficha, parte nova pela ficha
-// antes de haver negociação, com inscrição, corretor e vendedor novo. Claro, escuro e celular.
+// Partes e Lotes da aba Terreno: o Novo terreno (só poligonal e nome, 4/nov/2026) nasce com a parte "Vendedor 1" e
+// sem lotes; partes e lotes montados na ficha (as do exemplo entram pelo nvPlGravar), parte e lote novos pela ficha,
+// matrícula repetida e de outro terreno, excluir lote e parte. Claro, escuro e celular.
 const path=require('path'),fs=require('fs'),{chromium}=require('playwright');
 const TMP=path.join(__dirname,'..','saida')+'/',O=TMP+'t_partescad/',L=path.join(__dirname,'..','libs','l')+'/',F=TMP+'bkm-terrenos.html';fs.mkdirSync(O,{recursive:true});
 const falhas=[],erros=[];const ok=(c,m)=>{console.log((c?'ok   ':'FALHA ')+m);if(!c)falhas.push(m)};
@@ -16,46 +16,35 @@ const toast=p=>p.evaluate(()=>document.querySelector('#toast').textContent);
 const txt=(p,s)=>p.evaluate(s=>[...document.querySelectorAll(s)].filter(x=>x.offsetParent).map(x=>x.textContent.trim().replace(/\s+/g,' ')).join(' | '),s);
 // passo 2 do Novo terreno com uma poligonal num lugar vazio (o passo 1 é coberto pelo tnovo.js)
 const KML=Buffer.from('<?xml version="1.0"?><kml xmlns="http://www.opengis.net/kml/2.2"><Placemark><name>Quadra</name><Polygon><outerBoundaryIs><LinearRing><coordinates>-46.6304,-23.6096 -46.6296,-23.6096 -46.6296,-23.6104 -46.6304,-23.6104 -46.6304,-23.6096</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark></kml>');
-const passo2=async p=>{await p.evaluate(()=>document.querySelector('[data-a=novo]').click());await p.waitForTimeout(200);
+const cadastrar=async(p,nome)=>{await p.evaluate(()=>document.querySelector('[data-a=novo]').click());await p.waitForTimeout(200);
   const [fc]=await Promise.all([p.waitForEvent('filechooser'),p.click('[data-a=nv-kmz]')]);await fc.setFiles({name:'quadra.kml',mimeType:'application/vnd.google-earth.kml+xml',buffer:KML});
-  await p.waitForSelector('#f-novo');await p.waitForTimeout(400);await p.fill('#n-mun','São Paulo · SP')};
-const linha=async(p,i,d)=>{for(const [k,v] of Object.entries(d))await p.fill(`#nv-pt-lista .nv-pt:nth-child(${i}) [data-k=${k}]`,v)};
+  await p.waitForSelector('#f-novo');await p.waitForTimeout(400);if(await p.$('#n-mun'))await p.fill('#n-mun','São Paulo · SP');await p.fill('#n-nome',nome);
+  await p.evaluate(()=>{const m=document.querySelector('#f-novo [name=municipio]');if(m&&!m.value)m.value='São Paulo · SP';document.getElementById('f-novo').requestSubmit()});await p.waitForTimeout(500);
+  await p.evaluate(()=>document.querySelector('#modal [data-a=close]')?.click());await p.waitForTimeout(200);
+  await p.evaluate(n=>{const t=JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-v9')).terrenos.find(x=>x.nome===n);location.hash='#/terrenos/'+t.codigo+'/terreno'},nome);await p.waitForTimeout(500);
+  await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click())});await p.waitForTimeout(150)};
 // lista de escolha da parte: abre, marca pelos nomes; incluir novo pelo pop-up pequeno
 const abreMs=async(p,sc,tipo)=>{const b=`${sc} .msel[data-tipo=${tipo}]`;if(!(await p.$eval(b,x=>x.classList.contains('aberto'))))await p.click(`${b} .msel-b`);await p.waitForTimeout(100);return b};
 const escolher=async(p,sc,tipo,nomes)=>{const b=await abreMs(p,sc,tipo);for(const n of nomes)await p.locator(`${b} label.chk`,{hasText:n}).locator('input').check()};
 const incluir=async(p,sc,tipo,a,bv,shot)=>{const b=await abreMs(p,sc,tipo);await p.click(`${b} [data-a=ms-novo]`);await p.waitForSelector('#ms-dlg');await p.fill('#ms-a',a);if(bv){if(await p.$eval('#ms-b',x=>x.tagName==='SELECT'))await p.selectOption('#ms-b',bv);else await p.fill('#ms-b',bv)}if(shot)await p.screenshot({path:O+shot});
   await p.evaluate(()=>document.getElementById('ms-f').requestSubmit());await p.waitForTimeout(150)};
-const R=i=>`#nv-pt-lista .nv-pt:nth-child(${i})`;
 const bloco=async(p,k)=>{await p.evaluate(k=>{const b=document.querySelector('.fi-abas [data-t='+({cadastro:'terreno',negociacao:'comercial',urbanismo:'parametros',fases:'jornada'}[k]||k)+']');if(b.getAttribute('aria-selected')!=='true')b.click()},k);await p.waitForTimeout(250)};
-const enviar=async(p,id)=>{await p.evaluate(id=>{if(id==='f-novo')document.querySelector('#f-novo [name=tipoEmp][value=mercado]')?.click();document.getElementById(id).requestSubmit()},id);await p.waitForTimeout(300)};
 
 let {p,ctx}=await abre(1440,900);
-await passo2(p);
-ok(await p.$eval('#nv-pl',x=>x.open)&&(await p.$$('#nv-pt-lista .nv-pt')).length===1&&(await p.$eval('#nv-pt-lista [data-k=nome]',x=>x.value))==='Vendedor 1','passo 2 nasce com Vendedor 1 e Lote 1');
-ok((await p.$eval('#nv-lt-lista [data-k=titulo]',x=>x.value))==='Lote 1'&&!!(await p.$('#nv-lt-lista #n-mat'))&&!!(await p.$('#nv-lt-lista #n-sql')),'lote 1 com matrícula e SQL');
-await p.fill('#n-nome','Quadra dos Andrade');
-await p.click('[data-a=nv-pt-mais]');await p.click('[data-a=nv-pt-mais]');
-ok((await p.$$('#nv-pt-lista .nv-pt')).length===3&&(await p.$eval('#nv-pt-n',x=>x.value))==='3','"+" acrescenta partes e o número acompanha');
-const PT=i=>`#nv-pt-lista .nv-pt:nth-child(${i})`;
-await p.fill(`${PT(1)} [data-k=nome]`,'Família Andrade');await p.fill(`${PT(1)} [data-k=pessoa]`,'Rui Andrade');await p.fill(`${PT(1)} [data-k=email]`,'RUI@Andrade.com');
-await p.fill(`${PT(2)} [data-k=nome]`,'Lote do Paulo');
-ok((await p.$$eval('#nv-lt-lista [data-k=parte] option',x=>x.map(o=>o.textContent).join())).includes('Família Andrade'),'lista de parte do lote acompanha o título');
-await p.click(`${PT(3)} [data-a=nv-pt-del]`);ok((await p.$$('#nv-pt-lista .nv-pt')).length===2,'Excluir parte tira o cartão');
-await p.fill('#n-mat','301.001');await p.fill('#n-sql','123.456.0001-1');
-await p.click('#nv-lt-lista .nv-lt:nth-child(1) [data-a=nv-sql-add]');await p.fill('#nv-lt-lista .nv-lt:nth-child(1) [data-k=sql]','123.456.0002-1');
-await p.click('[data-a=nv-lt-add]');const LT=i=>`#nv-lt-lista .nv-lt:nth-child(${i})`;
-ok((await p.$eval(`${LT(2)} [data-k=titulo]`,x=>x.value))==='Lote 2','lote novo nasce Lote 2');
-await p.fill(`${LT(2)} [data-k=num]`,'301.002');await p.selectOption(`${LT(2)} [data-k=parte]`,'1');await p.fill(`${LT(2)} [data-k=sql]`,'123.456.0002-1');
-await p.click('[data-a=nv-lt-add]');await p.fill(`${LT(3)} [data-k=num]`,'301.001');
-await p.evaluate(()=>document.getElementById('nv-pl').scrollIntoView());await p.screenshot({path:O+'1_passo2.png'});
-await enviar(p,'f-novo');ok((await toast(p)).includes('mesma matrícula')&&!!(await p.$('#f-novo')),'matrícula repetida em dois lotes é recusada');
-await p.click(`${LT(3)} [data-a=nv-lt-del]`);
-await p.fill(`${PT(2)} [data-k=tel]`,'123');await enviar(p,'f-novo');ok(!!(await p.$('#f-novo')),'telefone inválido não deixa cadastrar: '+await toast(p));
-await p.fill(`${PT(2)} [data-k=tel]`,'');
-await enviar(p,'f-novo');
+await cadastrar(p,'Quadra dos Andrade');
 let t=await ter(p,'Quadra dos Andrade');
-ok(t&&t.partes.length===2&&t.partes[0].nome==='Família Andrade'&&t.partes[0].email==='rui@andrade.com'&&t.partes[0].pessoa==='Rui Andrade','terreno cadastrado com as duas partes e o contato');
-ok(t.codigo!=='TER-000133'&&(await p.evaluate(()=>JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-v9')).terrenos.filter(x=>x.codigo==='TER-000133').length))===1,'código novo não repete o do terreno de exemplo');
+ok(t&&/^[A-Z]\d{3}$/.test(t.codigo)&&t.partes.length===1&&t.partes[0].nome==='Vendedor 1'&&!(t.lotes||[]).length,'cadastro curto: nasce com "Vendedor 1", sem lotes, código '+(t&&t.codigo));
+ok((await p.evaluate(c=>JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-v9')).terrenos.filter(x=>x.codigo===c).length,t.codigo))===1,'código novo não repete o de outro terreno');
+// monta pela ficha: Família Andrade (Vendedor 1 renomeado) e Lote do Paulo; Lote 1 com 2 SQLs, Lote 2 com o 2º SQL
+const campo=async(sel,v)=>{await p.fill(sel,v);await p.press(sel,'Tab');await p.waitForTimeout(200)};
+let pa0=t.partes[0].id;await campo(`#pt2-${pa0} [data-k=nome]`,'Família Andrade');await campo(`#pt2-${pa0} [data-k=pessoa]`,'Rui Andrade');await campo(`#pt2-${pa0} [data-k=email]`,'RUI@Andrade.com');
+await p.click('#sec-partes-cad [data-a=pt2-mais]');await p.waitForTimeout(200);t=await ter(p,'Quadra dos Andrade');const pb0=t.partes[1].id;await campo(`#pt2-${pb0} [data-k=nome]`,'Lote do Paulo');
+const novoLote=async(parte,num,sqls)=>{await p.click('#sec-lotes [data-a=lt-novo]');await p.waitForTimeout(250);const t=await ter(p,'Quadra dos Andrade'),l=t.lotes[t.lotes.length-1];
+  await p.selectOption(`#lt-${l.id} [data-k=parte]`,parte);await p.waitForTimeout(200);await campo(`#lt-${l.id} [data-k=num]`,num);
+  for(const q of sqls){await p.fill(`#lt-${l.id} [name=sql]`,q);await p.evaluate(id=>document.querySelector(`#lt-${id} form[data-form=lt-sql]`).requestSubmit(),l.id);await p.waitForTimeout(250)}};
+await novoLote(pa0,'301.001',['123.456.0001-1','123.456.0002-1']);await novoLote(pb0,'301.002',['123.456.0002-1']);
+t=await ter(p,'Quadra dos Andrade');
+ok(t.partes.length===2&&t.partes[0].nome==='Família Andrade'&&t.partes[0].pessoa==='Rui Andrade','duas partes com o contato');
 const pa=t.partes[0],pb=t.partes[1];
 const l1=t.lotes.find(l=>l.titulo==='Lote 1'),l2=t.lotes.find(l=>l.titulo==='Lote 2');
 ok(t.lotes.length===2&&l1.parte===pa.id&&l2.parte===pb.id&&l1.num==='301.001'&&l2.num==='301.002','dois lotes, cada um da sua parte');
@@ -95,7 +84,7 @@ ok(!!(await p.$('#modal [data-a=lt-dup-oferta]'))&&(await p.$eval('#modal h2',x=
 await p.click('#modal [data-a=close]');await p.waitForTimeout(150);
 await p.fill(`#lt-${ln.id} [name=sql]`,'089.123.0045-6');await p.evaluate(id=>document.querySelector(`#lt-${id} form[data-form=lt-sql]`).requestSubmit(),ln.id);await p.waitForTimeout(250);
 const dupTxt=await p.$eval('#modal [data-a=lt-dup-oferta]',x=>x.textContent).catch(()=>'');
-ok(/Registrar nova oferta no TER-/.test(dupTxt)&&!(await ter(p,'Quadra dos Andrade')).insc.some(i=>i.sql==='089.123.0045-6'),'SQL de outro terreno: não entra, oferece a nova oferta');
+ok(/Registrar nova oferta no [A-Z]\d{3}/.test(dupTxt)&&!(await ter(p,'Quadra dos Andrade')).insc.some(i=>i.sql==='089.123.0045-6'),'SQL de outro terreno: não entra, oferece a nova oferta');
 await p.click('#modal [data-a=lt-dup-oferta]');await p.waitForTimeout(300);
 ok(!!(await p.$('#modal form[data-form=oferta]'))&&(await p.evaluate(()=>location.hash+location.pathname)).includes('comercial'),'"Registrar nova oferta" abre o formulário da oferta no outro terreno');
 await p.click('#modal [data-a=close]');await p.waitForTimeout(150);
@@ -108,17 +97,8 @@ await p.click(`#pt2-${pc.id} [data-a=pt2-excluir]`);await p.waitForTimeout(200);
 t=await ter(p,'Quadra dos Andrade');ok(!t.partes.some(x=>x.id===pc.id)&&!t.mats.some(m=>m.num==='301.900'),'Excluir lote e depois Excluir parte');
 await ctx.close();
 
-// Novo terreno com a matrícula de outro terreno (cartório em branco): só a nova oferta
-({p,ctx}=await abre(1440,900));await passo2(p);await p.fill('#n-nome','Repetido');await p.fill('#n-mat','184.552');await p.waitForTimeout(200);
-const bt=await p.$eval('#btn-novo',x=>x.textContent);ok(/^Registrar nova oferta no TER-/.test(bt),'matrícula de outro terreno com cartório em branco: botão vira "Registrar nova oferta" ('+bt+')');
-await enviar(p,'f-novo');ok(!!(await p.$('#modal form[data-form=oferta]'))&&!(await ter(p,'Repetido')),'sem valor no passo 2: abre a oferta no terreno existente, nada é cadastrado de novo');
-await p.click('#modal [data-a=close]');await p.waitForTimeout(150);
-await ctx.close();
 for(const [w,h,tema,n] of [[1440,900,'escuro','5_escuro'],[412,915,null,'6_celular']]){({p,ctx}=await abre(w,h,tema));
-  await passo2(p);await p.fill('#n-nome','Teste '+n);await p.click('[data-a=nv-pt-mais]');await p.fill('#n-mat','1');await p.click('[data-a=nv-lt-add]');
-  await p.evaluate(()=>document.getElementById('nv-pl').scrollIntoView());await p.waitForTimeout(150);await p.screenshot({path:O+n+'_passo2.png'});
-  ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1&&[...document.querySelectorAll('.nv-pt, .nv-lt')].every(x=>x.scrollWidth<=x.clientWidth+1)),n+': passo 2 sem rolagem lateral');
-  await enviar(p,'f-novo');await bloco(p,'cadastro');await p.evaluate(()=>document.getElementById('sec-partes-cad').scrollIntoView());await p.waitForTimeout(150);await p.screenshot({path:O+n+'_cadastro.png'});
+  await cadastrar(p,'Teste '+n);await p.click('#sec-partes-cad [data-a=pt2-mais]');await p.click('#sec-lotes [data-a=lt-novo]');await p.waitForTimeout(200);await p.evaluate(()=>document.getElementById('sec-partes-cad').scrollIntoView());await p.waitForTimeout(150);await p.screenshot({path:O+n+'_cadastro.png'});
   ok(await p.evaluate(()=>[...document.querySelectorAll('.pt2, .lt')].every(x=>x.scrollWidth<=x.clientWidth+1)),n+': quadro Partes sem vazar');
   await ctx.close()}
 ok(!erros.length,'sem erros de página'+(erros.length?': '+erros.join(' / '):''));

@@ -61,7 +61,7 @@ Arrastar no quadro de etapas chama `mover_para_etapa` (para frente, etapa por et
 Um dono com várias matrículas é **uma** negociação. Vários donos que negociam separado são **partes** do terreno (`terreno_partes`): cada parte é um dono, ou um grupo de donos que negocia junto (herdeiros, sócios), com as matrículas, as inscrições e as pessoas dela (`parte_id` em `matriculas`, `inscricoes_municipais` e `terreno_pessoas`; participações somam 100% em cada parte) e os corretores dela (`parte_corretores`: uma parte pode ter vários corretores e o mesmo corretor pode trazer várias partes; ligar o corretor à parte o põe entre os corretores do terreno), o pedaço da poligonal e a marca de **essencial** (sem ela o terreno não serve) ou dispensável.
 
 - **Todo terreno tem pelo menos uma parte** (decisão do Moisés, 4/nov/2026): nasce com "Vendedor 1" (trigger `t_parte1`), e a última parte ativa não sai. Na aba Terreno, o quadro Partes tem "Quantas partes vendem?" e um cartão por parte com título, nome da pessoa principal, telefone, e-mail, CPF ou CNPJ e observação, todos opcionais (gravados só com os dígitos, conferidos por `fluxo.validar_formato`); "Excluir parte" só com a parte sem lotes nem histórico (`app.excluir_parte`), senão vale `remover_parte`, com motivo. No Novo terreno, o passo 2 tem as mesmas partes e lotes (`salvar_parte` e `salvar_lote`).
-- **Lotes** (`terreno_lotes`, decisão do Moisés, 4/nov/2026): cada lote tem um título ("Lote 1", "Lote 2"...), pertence a uma parte, tem **uma** matrícula (no máximo um lote por matrícula) e um ou mais SQLs (`lote_inscricoes`). A matrícula e o SQL pegam a parte do lote (`_sincronizar_partes_lote`; SQL em lotes de partes diferentes fica sem parte). Um SQL que cobre duas matrículas entra nos dois lotes, e a divergência de área se mede pelo grupo de lotes que dividem SQLs (`v_lotes`: soma das matrículas × soma das áreas cadastrais, em % da matrícula). Área adotada do lote: a da matrícula, a cadastral (só com SQL não dividido) ou uma informada. A matrícula nova já vem com o cartório do terreno (pela poligonal). `app.salvar_lote`, `app.excluir_lote` (leva a matrícula e os SQLs só dele sem IPTU). A área e as zonas da parte saem dos lotes dela (`v_partes`).
+- **Lotes** (`terreno_lotes`, decisão do Moisés, 4/nov/2026): cada lote tem um título ("Lote 1", "Lote 2"...), pertence a uma parte, tem **uma** matrícula (no máximo um lote por matrícula) e um ou mais SQLs (`lote_inscricoes`). A matrícula e o SQL pegam a parte do lote (`_sincronizar_partes_lote`; SQL em lotes de partes diferentes fica sem parte). Um SQL que cobre duas matrículas entra nos dois lotes, e a divergência de área se mede pelo grupo de lotes que dividem SQLs (`v_lotes`: soma das matrículas × soma das áreas cadastrais, em % da matrícula). Área adotada do lote: a da matrícula, a cadastral (só com SQL não dividido) ou uma informada. A matrícula nova já vem com o cartório do terreno (pela poligonal). `app.salvar_lote`, `app.excluir_lote` (leva a matrícula e os SQLs só dele sem IPTU; o SQL vindo do mapa da prefeitura volta a ficar solto). **SQLs soltos** (4/nov/2026): em São Paulo, ao cadastrar o terreno, o mapa de lotes do GeoSampa das quadras que a poligonal ocupa deixa marcar os lotes; os SQLs marcados entram em `inscricoes_municipais` com `origem = 'mapa_prefeitura'`, área cadastral e `endereco_prefeitura`, sem linha em `lote_inscricoes` e sem parte, e são escolhidos depois na lista do lote. A área e as zonas da parte saem dos lotes dela (`v_partes`).
 - **Antes da etapa da divisão** (`fases_modelo.etapa_partes`, só na fase de entrada; padrão Negociação) há uma negociação só, a do terreno: Triagem e Estudos são da área toda.
 - **Ao chegar nela**, com duas ou mais partes ativas, cada parte ganha a sua negociação: um processo da mesma fase com `parte_id` e `principal_id` (código `NEG-00012-1`), com oferta de referência, propostas, documentos, reuniões, tarefas, subetapa, status, aprovações e histórico próprios. Parte cadastrada depois disso já nasce com a sua.
 - **A negociação do terreno passa a andar pelas partes** (`_sincronizar_principal`): fica na etapa e na subetapa da parte mais atrasada em aberto, com cada mudança no histórico ("Pelas negociações das partes"), e não se move à mão. A de uma parte só anda da etapa da divisão em diante e enquanto a do terreno estiver ativa.
@@ -272,7 +272,7 @@ erDiagram
 
   terrenos {
     uuid id PK
-    text codigo "TER-000123"
+    text codigo "A123, de A001 a Z999"
     text nome
     text situacao_cadastral "ativo | arquivado"
     text prioridade "baixa | media | alta | estrategica"
@@ -310,7 +310,6 @@ erDiagram
     numeric area_construida_existente_m2
     numeric area_construida_demolir_m2
     text necessidade_demolicao
-    text tipo_empreendimento "nao_informado, mercado, his, hmp"
     int versao "edicao simultanea"
   }
   confrontacoes {
@@ -488,7 +487,7 @@ erDiagram
 - A consulta de um lote (`registrar_consulta_lote`, por `app._substituir_zonas`) cria uma análise nova que copia os outros lotes da vigente e troca só as zonas desse lote, levando as exceções das zonas que continuam; se as zonas do lote não mudaram, nada é gravado. Assim um lote nunca apaga o outro.
 - `app.parametros_zona(empresa, zona, tipo, macrozona, área do lote, uso)` escolhe a linha: a do tipo pedido ou, sem regra própria, a de mercado (o campo `tipo` diz qual valeu); a mais específica em macrozona e uso; sem uso, a permitida, preferindo o vertical. A condição de tamanho de lote usa a área adotada do terreno, que é o lote do empreendimento; sem área, vale a de lote grande. Em SJC, sem macrozona não há parâmetro (não informado).
 - `v_lote_zonas` dá cada lote × zona × tipo com os parâmetros e o potencial construtivo (área × CA); `v_urbanismo_vigente` resume o terreno: todas as zonas, o maior CA de mercado e o potencial por tipo (nulo se algum pedaço não tem CA ou não admite o tipo). Nunca um "CA médio". As zonas saem separadas por barra ("ZC / ZM / ZEU"), da maior área para a menor.
-- O terreno guarda o tipo de empreendimento pretendido (`terrenos.tipo_empreendimento`: mercado, HIS ou HMP; escolhido no Novo terreno em São Paulo e mudado na seção de parâmetros). `v_urbanismo_vigente.potencial_tipo_m2` é o potencial desse tipo; sem tipo informado, fica nulo (nunca vira mercado sozinho).
+- O terreno não guarda tipo de empreendimento (decisão do Moisés, 4/nov/2026): a ficha mostra o CA máximo e o potencial de Mercado, HIS e HMP lado a lado (`v_lote_zonas` por tipo; `v_urbanismo_vigente.potencial_mercado_m2`, `potencial_his_m2`, `potencial_hmp_m2`).
 - As camadas que a consulta do lote trouxe (Conpresp, tombamento, ZEIS, mananciais, operação urbana, macrozona, centralidade...) ficam na consulta (`consultas_lote`), e a seção de parâmetros mostra as da última consulta de cada lote.
 
 **Poligonal primeiro.** O cadastro começa pela poligonal, obrigatória (`check` em `terrenos`; PostGIS no schema `extensions`, coluna gerada `poligono` com índice GiST). Antes de criar, o front chama `app.terrenos_sobrepostos(empresa, poligonal)`, que usa `app.sobreposicao(a, b, folga = 5 m)`: a parte em comum conta quando passa de 1 m² e tem mais de 5 m de largura (diâmetro do maior círculo que cabe nela, `ST_MaximumInscribedCircle` na UTM do lugar) ou cobre metade de um dos dois. Assim a imprecisão do desenho na divisa não conta, mas o mesmo lote estreito desenhado de novo sempre avisa. Cada achado vem como `mesma_area` (90% ou mais dos dois lados) ou `parcial`, com área, largura e percentuais. O usuário escolhe: nova oferta no existente (com `ofertas.poligono_geojson` quando oferece só parte, conferido em `registrar_oferta` para caber no terreno com 5 m de folga), recadastrar o existente com a área nova ou a soma das duas (`salvar_terreno`), ou confirmar que é outro terreno. Nesse caso os ids vão em `sobreposicoes_aceitas`, e o trigger `t_sobre` recusa qualquer poligonal (cadastro, edição, importação) que ocupe outro terreno sem essa confirmação. Município e endereço vêm da localização da poligonal (geocodificação reversa no front, com `municipio_por_nome`); as ruas de cada lado viram as frentes, o usuário escolhe a principal (`logradouro`, `numero`) e as outras entram em `confrontacoes` com tipo `frente`.
@@ -669,6 +668,8 @@ erDiagram
     text pauta
     text resumo
     text encaminhamentos
+    bool na_agenda "criar no Google Agenda"
+    bool gerar_meet "online: link do Meet"
   }
   reuniao_participantes {
     uuid reuniao_id FK
@@ -676,10 +677,34 @@ erDiagram
     uuid user_id FK
     uuid pessoa_id FK
     text nome
+    text email "quem nao esta cadastrado"
+    text resposta "do Google: aceito, recusado, talvez"
+  }
+  reuniao_agenda {
+    uuid reuniao_id PK
+    text situacao "pendente, sincronizada, erro"
+    text acao "criar, atualizar, cancelar, remover"
+    text evento_id
+    text meet_link
+    text gravacao_url
+    text transcricao
+    text anotacoes_url "Doc das Anotações do Gemini"
+    text resumo_ia "rascunho do resumo"
+    text resumo_origem "gemini | ia"
+    text resumo_situacao "rascunho, aceito, descartado"
   }
 ```
 
 As tarefas moram no esquema `fluxo` (ver "Quadros e tarefas", abaixo): cada terreno tem o seu quadro e a tarefa pode apontar a negociação (`processo_id`, do mesmo terreno do quadro).
+
+## Reuniões com o Google Agenda
+
+Lote 6 da ficha em abas (4/nov/2026). Migration `20261015001600_reunioes_agenda.sql`.
+
+- **O sistema é a origem.** A reunião marcada com `na_agenda` vira evento na agenda de quem marcou (`reuniao_agenda.organizador_id`), com convite a quem tem e-mail (`v_reuniao_convidados`: o do usuário, o da pessoa ou o digitado) e, online com `gerar_meet`, o link do Meet. Mudar data, duração, local, pauta, participantes, cancelar ou tirar da Agenda põe o evento na fila (`situacao = 'pendente'`, com a `acao`); marcar como realizada não mexe no evento. Reunião já realizada não vai para a Agenda.
+- **Função do servidor** (a fazer, com o token do "Conectar Agenda e Gmail"; só `service_role`): lê a fila, grava no Google e responde por `app.agenda_confirmar(reuniao, evento_id, link, meet_link, erro)`. O caminho inverso: `app.agenda_evento_mudou(reuniao, inicio, duracao, cancelado)` (mudança feita direto na Agenda, que não volta para a fila) e `app.agenda_resposta(reuniao, email, resposta)` (aceito, recusado, talvez; a tela não muda a resposta).
+- **Depois da reunião online:** `app.registrar_gravacao(reuniao, gravacao, transcricao_url, transcricao, anotacoes_url)` com o que o Meet guardou (gravação, transcrição e o Doc das **Anotações do Gemini**) e `app.registrar_resumo_ia(reuniao, resumo, encaminhamentos, origem)` com o rascunho: o resumo e os próximos passos das Anotações do Gemini (origem `gemini`, padrão; decisão do Moisés, 4/nov/2026: usa o Gemini do Workspace, sem outra IA) ou, se o formato do Gemini não servir, o da IA do sistema (`ia`). O rascunho não toca no resumo da reunião e avisa quem marcou (`reuniao_resumo`). Quem edita confere em `app.decidir_resumo_ia(reuniao, aceitar, resumo, encaminhamentos)`: aceitar (com o texto ajustado ou não, só com a reunião realizada) grava em `resumo` e `encaminhamentos`; descartar só marca.
+- Gravação, transcrição e Anotações do Gemini do Meet pedem o Google Workspace Business Standard ou acima (o da BKM tem, confirmado pelo Moisés em 4/nov/2026). As anotações precisam estar ligadas na reunião; falta confirmar se a API da Agenda liga sozinha ao criar o evento (senão, lembrete no convite). A sincronização vai e volta (confirmado em 4/nov/2026). Reunião presencial não tem as anotações; gravada pelo celular fica para depois.
 
 ## Mapa, dashboard e quadro de tarefas
 
@@ -1379,7 +1404,7 @@ erDiagram
 - **Válido:** `app.marcar_massa_valido(estudo, valido)`: um por terreno (índice único parcial), só entregue; o válido não volta para em elaboração nem se apaga. `app.apagar_estudo_massa` recusa o válido e o que tem viabilidade presa; os arquivos ficam em Documentos.
 - **Arquivos:** `app.anexar_arquivo_massa(estudo, 'massa_pdf' | 'massa_dwg', caminho, arquivo, tamanho)`, por `app.registrar_documento`: um documento de cada tipo por estudo (`documentos.estudo_massa_id`), cada envio uma versão; só `.pdf` e `.dwg`.
 - **Viabilidade presa ao estudo** (decisões do Moisés, 3/nov/2026): `app.vincular_massa(viabilidade, estudo, seguir_valido)` prende a um estudo entregue ou ao válido do terreno (trocou o válido, a viabilidade troca junto); sem estudo e sem seguir, solta ("Quebrar vínculo"), e as tipologias e a área construída ficam e voltam a se editar; vincular de novo refaz as tipologias pelas do estudo. `app.criar_viabilidade_da_massa(estudo, nome, seguir_valido)` é o botão do estudo de massa: estudo de viabilidade novo (com o modelo padrão, como o Novo estudo) já preso. Presa, o título, a área e a quantidade das tipologias e a área construída vêm do estudo de massa (`app._sincronizar_massa`, chamada a cada mudança do estudo e do válido) e o trigger `t_massa` recusa mudá-los na viabilidade; preços, permuta e comissão continuam dela, casados pela tipologia do estudo (`massa_tipologia_id`) e, na troca de estudo, pelo nome. Quantidade menor que a permuta mais a comissão corta a permuta e depois a comissão. Duplicar leva o vínculo.
-- Leituras minhas, a confirmar: briefing como texto livre (uma linha por item vira lista); "Área privativa total" calculada das tipologias, não digitada; só o estudo entregue vira válido ou é usado na viabilidade.
+- Confirmado pelo Moisés (4/nov/2026): "Área privativa total" é a soma das tipologias; só o estudo entregue vira válido ou é usado na viabilidade. Briefing em texto livre (uma linha por item vira lista).
 
 ## 3. Documentos
 

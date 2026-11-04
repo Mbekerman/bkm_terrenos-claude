@@ -1293,7 +1293,7 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 @container (max-width: 600px) { .mapa-area .mp-barra { flex-wrap: wrap !important } .mapa-area .mp-busca { flex: 1 1 100%; max-width: none; order: -1; margin-right: 0 } .mapa-area .mp-barra .seg { flex: 1 1 0; min-width: 0; overflow-x: auto; scrollbar-width: none } }
 
 /* ficha do terreno em painel sobre o mapa (lupa da lista lateral) */
-.ficha-sheet { position: fixed; z-index: 30; top: 88px; right: 16px; bottom: 16px; width: min(560px, calc(100vw - 32px)); display: flex; flex-direction: column; background: var(--m-surface, #fff); border-radius: 16px; box-shadow: 0 2px 6px rgba(0,0,0,.15), 0 12px 32px rgba(0,0,0,.18); overflow: hidden }
+.ficha-sheet { position: fixed; z-index: 30; top: 88px; left: 88px; bottom: 16px; width: min(560px, calc(100vw - 32px)); display: flex; flex-direction: column; background: var(--m-surface, #fff); border-radius: 16px; box-shadow: 0 2px 6px rgba(0,0,0,.15), 0 12px 32px rgba(0,0,0,.18); overflow: hidden }
 .fs-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 12px 12px 24px; border-bottom: 1px solid var(--m-outline-variant, #c4c7c5) }
 .fs-e { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #444746; margin-bottom: 4px }
 .fs-h h2 { font-size: 22px; line-height: 28px; font-weight: 400 }
@@ -2128,8 +2128,6 @@ body.vb-aberto { overflow: hidden }
 .lz-lote{margin-top:16px}
 .lz-mk{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .lz-mk:empty{display:none}
-.lz-tl{font-size:14px;font-weight:500}
-.lz-ni{margin:0 0 12px}
 .lz-lote{border:1px solid var(--linha);border-radius:12px;padding:12px 16px}
 .lz-h{margin:0 0 4px}
 .lz-z{padding:12px 0;border-top:1px solid var(--linha)}
@@ -2553,7 +2551,6 @@ form.inline-form.if-fechado { display: none !important }
 /* Tabela dentro do quadro de Terrenos e Tarefas: um contêiner só */
 .sec .dt-wrap, .sec.lista .dt-wrap { background: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important }
 /* Mapa com a ficha aberta: a legenda recolhe para não ficar embaixo do painel */
-@media (min-width: 900px) { body:has(#ficha-sheet) .mp-legenda > :not(summary) { display: none !important } body:has(#ficha-sheet) .mp-legenda summary::after { transform: none !important } }
 /* Parâmetros urbanísticos: um bloco por zona, parâmetros em grade (sem rolar para o lado); duas colunas no celular */
 @media all {
   .tblwrap.rola:has(.zp-tbl) { overflow: visible; mask-image: none; -webkit-mask-image: none }
@@ -2918,7 +2915,6 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 /* Configurações › Fases no celular: nome do concluído na largura toda */
 @media (max-width: 899px) { .cfg-fase > .cfg-cel:has(input[data-p$=".conc"]) { grid-column: 1 / -1 } }
 /* Mapa com a ficha aberta: a barra do mapa termina antes do painel */
-@media (min-width: 900px) { body:has(#ficha-sheet) .mp-barra { right: 472px !important; flex-wrap: wrap; row-gap: 8px } body:has(#ficha-sheet) .mp-barra > .mp-busca { flex: 1 1 100% !important; min-width: 0 !important; max-width: none !important } }
 
 /* ===================== Revisão de design, rodada 13 ===================== */
 /* Reuniões: a situação fica sempre à direita da data */
@@ -2940,8 +2936,6 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 @media (max-width: 599px) { .vb-nav { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent) } }
 /* Configurações › Viabilidade: nome do item com reticências */
 .vb-cfg-r input { text-overflow: ellipsis }
-@media (min-width: 900px) { :root:not(#_) body:has(#ficha-sheet) .mp-barra { flex-wrap: wrap !important; justify-content: flex-start !important; align-content: flex-start } :root:not(#_) body:has(#ficha-sheet) .mp-barra > .mp-busca { flex: 1 1 100% !important; width: auto !important; min-width: 0 !important } }
-@media (min-width: 900px) { :root:not(#_) body:has(#ficha-sheet) .mp-cam > button, :root:not(#_) body:has(#ficha-sheet) .mp-cam > summary { font-size: 0 !important; gap: 0 !important; padding: 0 12px !important } :root:not(#_) body:has(#ficha-sheet) .mp-cam svg:last-child:not(:first-child) { display: none } }
 /* ===================== Revisão de design, rodada 14 ===================== */
 /* Configurações › Viabilidade no celular: sem o traço solto de "Sai do VGV" e com mais respiro entre os itens */
 @media (max-width: 899px) {
@@ -4587,6 +4581,94 @@ html[data-tema="escuro"] .ems-lista tr.ems-sel td { background: rgba(168, 199, 2
 .ems-blist{margin:4px 0 0;padding-left:20px;line-height:1.5}
 .vb-ms-l{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}.vb-ms-l .field{flex:1;min-width:220px}
 .ems-ped2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* Reuniões com o Google Agenda (lote 6, 4/nov/2026) */
+.reu-form:has(option[value="realizada"]:checked) [data-so="agendada"],
+.reu-form:has(input[name="modalidade"][value="presencial"]:checked) [data-so="online"],
+.reu-form:has(input[name="agenda"]:not(:checked)) [data-so="online"],
+.reu-form:has(input[name="agenda"]:not(:checked)) [data-so2="agenda"]{display:none}
+.ag-chks{display:flex;flex-direction:column;gap:6px}
+.ag-chks .chk{display:flex;align-items:center;gap:10px;min-height:32px}.ag-chks .chk input{width:18px;height:18px;min-height:0;flex:none;margin:0;padding:0}
+.ag{display:flex;flex-direction:column;gap:10px;margin:10px 0}
+.ag-l{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.ag-l .chip .ic{margin-right:4px}
+.ag-conv{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--texto-2,#444746)}
+.ag-c{display:inline-flex;align-items:center;gap:6px}
+.ag-grav{font-size:14px;color:var(--texto-2,#444746)}.ag-grav a{color:var(--m-primary,#0b57d0)}
+.ag-ia{border:1px solid var(--m-outline-var,#c4c7c5);border-radius:12px;padding:12px 16px;display:flex;flex-direction:column;gap:10px;background:var(--m-surface-1,#f8fafd)}
+.ag-ia-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.ag-ia-h small{flex-basis:100% }
+.ag-ia textarea{width:100%;resize:vertical}
+.ag-ia-b{display:flex;justify-content:flex-end;gap:8px}
+html[data-tema="escuro"] .ag-ia{background:#1e1f20;border-color:#444746}
+
+/* ---------- Lotes da prefeitura no cadastro (proto_lotesgeo.js, 4/nov/2026): mapa no jeito do GeoSampa ---------- */
+.dialog:has(.lg-corpo) { width: min(1180px, 100%) }
+.lg-msg { display: flex; gap: 10px; align-items: center; padding: 48px 8px; color: var(--m-on-surface-variant, #444746) }
+.lg-corpo { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; min-height: 0 }
+.lg-mapa { position: relative; height: min(620px, calc(100dvh - 230px)); min-height: 320px; border: 1px solid #c4c7c5; border-radius: 12px; overflow: hidden; background: #fbf6d5; touch-action: none }
+.lg-svg { width: 100%; height: 100%; display: block; cursor: grab; user-select: none; -webkit-user-select: none }
+.lg-svg:active { cursor: grabbing }
+.lg-fundo { fill: #fbf6d5 }
+.lg-l { fill: #fdd56b; stroke: #f0612c; stroke-width: calc(var(--lg-w, .1) * 1.1px); cursor: pointer; vector-effect: none }
+.lg-l:hover { fill: #fcc94a }
+.lg-l.sel { fill: #8ab4f8; stroke: #0b57d0; stroke-width: calc(var(--lg-w, .1) * 2px) }
+.lg-l.sel:hover { fill: #74a5f6 }
+.lg-l.fixo { fill: #a8c7fa; cursor: default }
+.lg-l.x { fill: #e9e3c9; stroke: #c9a27e; cursor: not-allowed }
+.lg-ter { fill: none; stroke: #062e6f; stroke-width: calc(var(--lg-w, .1) * 3px); stroke-dasharray: calc(var(--lg-w, .1) * 9px) calc(var(--lg-w, .1) * 5px); pointer-events: none }
+.lg-rots text { font-family: Arial, sans-serif; font-weight: 700; fill: #111; text-anchor: middle; pointer-events: none; paint-order: stroke; stroke: rgba(255,255,255,.65); stroke-width: .12em }
+.lg-vias text { font-family: Arial, sans-serif; fill: #6b6b6b; text-anchor: middle; dominant-baseline: middle; letter-spacing: .04em; pointer-events: none; text-transform: uppercase }
+.lg-tip { position: absolute; z-index: 3; max-width: 260px; padding: 8px 10px; border-radius: 8px; background: #303030; color: #f2f2f2; font-size: 12px; line-height: 1.4; pointer-events: none; box-shadow: 0 2px 6px rgba(0,0,0,.25) }
+.lg-tip b { font-size: 13px; color: #fff } .lg-tip .faint { color: #c4c7c5 } .lg-tip-x { color: #ffb4ab }
+.lg-zoom { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 4px }
+.lg-zoom .iconbtn { background: #fff; color: #1f1f1f; border: 1px solid #c4c7c5; font-size: 18px; width: 36px; height: 36px }
+.lg-leg { position: absolute; left: 8px; bottom: 8px; display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,.9); color: #1f1f1f; font-size: 12px }
+.lg-leg span { display: inline-flex; align-items: center; gap: 6px }
+.lg-sw { width: 14px; height: 10px; border: 1px solid #f0612c; background: #fdd56b; border-radius: 2px }
+.lg-sw.sel { background: #8ab4f8; border-color: #0b57d0 } .lg-sw.x { background: #e9e3c9; border-color: #c9a27e } .lg-sw.ter { background: none; border: 2px dashed #062e6f }
+.lg-lado { display: flex; flex-direction: column; min-height: 0; max-height: min(620px, calc(100dvh - 230px)) }
+.lg-lista { overflow-y: auto; border-top: 1px solid var(--m-outline-variant, #c4c7c5) }
+.lg-it { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; padding: 8px 0; border-bottom: 1px solid var(--m-outline-variant, #c4c7c5) }
+.lg-it .num { font-weight: 500 } .lg-it .faint { flex: 1 1 100%; font-size: 12px } .lg-it .chip { margin-left: auto }
+.lg-soltos { border: 1px solid var(--m-outline-variant, #c4c7c5); border-radius: 12px; padding: 10px 16px 4px; margin: 0 0 12px }
+.lg-soltos-h { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap }
+.lg-soltos .lg-it { flex-wrap: nowrap } .lg-soltos .lg-it .faint { flex: 1 1 auto } .lg-soltos .lg-it:last-child { border-bottom: 0 }
+.lt-solto { flex: 1 1 260px }
+html[data-tema="escuro"] .lg-mapa { border-color: #444746 }
+html[data-tema="escuro"] .lg-soltos, html[data-tema="escuro"] .lg-it, html[data-tema="escuro"] .lg-lista { border-color: #444746 }
+/* celular: só a lista para marcar, sem o mapa (pedido do Moisés, 4/nov/2026) */
+.lg-todos, .lg-cel { display: none }
+.lg-todos-h, .lg-fora > summary { font-size: 13px; font-weight: 500; color: var(--m-on-surface-variant, #444746); padding: 12px 0 4px }
+.lg-fora > summary { cursor: pointer; border-top: 1px solid var(--m-outline-variant, #c4c7c5); margin-top: 8px }
+.lg-op { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 0; border: 0; border-bottom: 1px solid var(--m-outline-variant, #c4c7c5); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer }
+.lg-op[aria-disabled="true"] { opacity: .55; cursor: not-allowed }
+.lg-op .chip { margin-left: auto; flex: none }
+.lg-op-t { flex: 1; min-width: 0 } .lg-op-t .num { font-weight: 500 } .lg-op-s { display: block; font-size: 12px }
+.lg-cx { flex: none; width: 20px; height: 20px; border: 2px solid #444746; border-radius: 3px; display: grid; place-items: center; color: #fff }
+.lg-op.on .lg-cx { background: #0b57d0; border-color: #0b57d0 }
+html[data-tema="escuro"] .lg-op, html[data-tema="escuro"] .lg-fora > summary { border-color: #444746 }
+html[data-tema="escuro"] .lg-cx { border-color: #c4c7c5 } html[data-tema="escuro"] .lg-op.on .lg-cx { background: #a8c7fa; border-color: #a8c7fa; color: #062e6f }
+@media (max-width: 760px) {
+  .lg-corpo, .lg-lado { display: block; min-height: auto }
+  .lg-mapa, .lg-lista, .lg-pc, .lg-lado > .hint { display: none !important }
+  .lg-todos { display: block }
+  .lg-cel { display: inline }
+  .lg-lado { max-height: none }
+}
+.lg-toque { display: none } @media (hover: none) { .lg-mouse { display: none } .lg-toque { display: inline } }
+.lg-soltos .lg-it { padding: 2px 0 }
+
+/* ===== campo obrigatório em branco (proto_ui.js, obrMarca) ===== */
+.opt-radio { position: relative }
+.campo-erro > input, .campo-erro > select, .campo-erro > textarea, .campo-erro input:not([type=radio]):not([type=checkbox]), .campo-erro select, .campo-erro textarea { border-color: var(--critico-marca, #b3261e) !important; box-shadow: inset 0 0 0 1px var(--critico-marca, #b3261e) }
+.campo-erro .seg3, .campo-erro [role=radiogroup] { outline: 2px solid var(--critico-marca, #b3261e); outline-offset: 2px; border-radius: 20px }
+.campo-erro > label, .campo-erro > .lbl, .campo-erro > .lbl-f, .campo-erro > legend { color: var(--critico-marca, #b3261e) !important }
+.campo-msg { display: flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 12px; line-height: 16px; color: var(--critico-marca, #b3261e) }
+
+/* ficha do terreno no mapa: gaveta que vem da esquerda, sobre a lista de terrenos (pedido do Moisés, 4/nov/2026);
+   a posição e a largura acompanham a lista (fichaSheet) */
+@media (min-width: 900px) { .ficha-sheet { animation: fs-entra .22s cubic-bezier(.2,0,0,1) } }
+@keyframes fs-entra { from { transform: translateX(-24px); opacity: 0 } to { transform: none; opacity: 1 } }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

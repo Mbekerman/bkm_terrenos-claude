@@ -29,9 +29,9 @@ await ctx.route('**/*',async r=>{const u=r.request().url();
 await ctx.addInitScript(()=>{window.__qdReal=true});
 const p=await ctx.newPage();p.on('pageerror',e=>erros.push(e.message));
 await p.goto('http://bkm.test/prototipo/');await p.evaluate(()=>localStorage.clear());await p.reload();await p.waitForTimeout(500);
-await p.evaluate(poly=>{const k=Object.keys(localStorage).find(x=>/^bkm-terrenos-prototipo-v/.test(x)),S=JSON.parse(localStorage.getItem(k)),t=S.terrenos.find(x=>x.codigo==='TER-000123');
+await p.evaluate(poly=>{const k=Object.keys(localStorage).find(x=>/^bkm-terrenos-prototipo-v/.test(x)),S=JSON.parse(localStorage.getItem(k)),t=S.terrenos.find(x=>x.codigo==='A123');
   t.poly=poly;t.lat=-23.56196;t.lng=-46.6553;t.municipio='São Paulo · SP';t.insc=[{sql:'009.027.0009-1',area:null,valores:[],mun:'sp'}];delete t.geoArea;delete t.histUso;localStorage.setItem(k,JSON.stringify(S))},POLY);
-await p.goto('http://bkm.test/prototipo/terrenos/TER-000123/parametros');await p.reload();await p.waitForTimeout(800);
+await p.goto('http://bkm.test/prototipo/terrenos/A123/parametros');await p.reload();await p.waitForTimeout(800);
 // sem consulta: o PA já vem pela poligonal
 await p.evaluate(()=>document.querySelector('#sec-rest .qd-tg')?.click());await p.waitForTimeout(200);
 let txt=await p.$eval('#sec-rest',x=>x.innerText.replace(/\s+/g,' '));
@@ -40,12 +40,12 @@ await p.click('#sec-rest [data-a=rest-consultar]');await p.waitForFunction(()=>/
 txt=await p.$eval('#sec-rest',x=>x.innerText.replace(/\s+/g,' '));console.log(nome,'restrições:',txt);
 for(const r of ['Inundação em 5 anos','Inundação em 25 anos','Inundação em 100 anos','Córrego a até 30 m','Árvores na calçada a até 30 m','Rede da Comgás','Classificação viária (CET)','Vila a até 20 m','Linha de alta tensão a até 30 m','Ferrovia a até 30 m','Área contaminada a até 30 m'])ok(txt.includes(r),'falta '+r);
 ok(!/largura|rodovia/i.test(txt),'sem largura de via nem rodovia');
-const st=await p.evaluate(()=>{const k=Object.keys(localStorage).find(x=>/^bkm-terrenos-prototipo-v/.test(x));const t=JSON.parse(localStorage.getItem(k)).terrenos.find(x=>x.codigo==='TER-000123');return {pa:t.geoArea?.camadas?.quota_ambiental,erros:t.geoArea?.erros,arv:(t.geoArea?.camadas?.arvore_v2||[]).length,gas:(t.geoArea?.camadas?.rede_comgas||[])[0],hist:t.hist.slice(-2).map(h=>h.txt)}});
+const st=await p.evaluate(()=>{const k=Object.keys(localStorage).find(x=>/^bkm-terrenos-prototipo-v/.test(x));const t=JSON.parse(localStorage.getItem(k)).terrenos.find(x=>x.codigo==='A123');return {pa:t.geoArea?.camadas?.quota_ambiental,erros:t.geoArea?.erros,arv:(t.geoArea?.camadas?.arvore_v2||[]).length,gas:(t.geoArea?.camadas?.rede_comgas||[])[0],hist:t.hist.slice(-2).map(h=>h.txt)}});
 console.log(nome,'estado:',JSON.stringify(st));ok(st.pa&&st.pa[0].pa==='PA 5','PA gravado');ok(!st.erros.length,'camadas com erro '+st.erros);ok(st.hist.some(h=>/pela poligonal/.test(h)),'log da consulta');
 // histórico de uso digitado
 await p.evaluate(()=>document.querySelector('#sec-histuso .qd-tg')?.click());await p.waitForTimeout(150);
 await p.fill('#hu-t','Posto de gasolina até 1998, segundo foto aérea de 1994.');await p.press('#hu-t','Tab');await p.waitForTimeout(200);
-ok(await p.evaluate(()=>{const k=Object.keys(localStorage).find(x=>/^bkm-terrenos-prototipo-v/.test(x));return JSON.parse(localStorage.getItem(k)).terrenos.find(x=>x.codigo==='TER-000123').histUso})==='Posto de gasolina até 1998, segundo foto aérea de 1994.','histórico gravado');
+ok(await p.evaluate(()=>{const k=Object.keys(localStorage).find(x=>/^bkm-terrenos-prototipo-v/.test(x));return JSON.parse(localStorage.getItem(k)).terrenos.find(x=>x.codigo==='A123').histUso})==='Posto de gasolina até 1998, segundo foto aérea de 1994.','histórico gravado');
 ok(await p.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=1,'rolagem lateral');
 await p.evaluate(()=>document.getElementById('sec-rest').scrollIntoView({block:'start'}));await p.evaluate(()=>scrollBy(0,-130));await p.waitForTimeout(200);
 await p.screenshot({path:`${OUT}${nome}_restricoes.png`,fullPage:nome==='desktop'});
@@ -53,7 +53,7 @@ if(nome==='desktop'){await p.evaluate(()=>{document.documentElement.dataset.tema
   // DXF do lote com as layers novas
   await p.evaluate(()=>document.querySelector('.fi-abas [data-t=terreno]').click());await p.waitForTimeout(300);
   await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click());document.querySelectorAll('.lt-det').forEach(d=>d.open=true)});await p.waitForTimeout(200);
-  await p.click('[data-a=geo-buscar][data-i="0"]');await p.waitForFunction(k=>{const t=JSON.parse(localStorage.getItem(Object.keys(localStorage).find(x=>/^bkm-terrenos-prototipo-v/.test(x)))).terrenos.find(x=>x.codigo==='TER-000123');return t.docs.some(d=>d.tipo==='lote_dxf')},null,{timeout:20000});
+  await p.click('[data-a=geo-buscar][data-i="0"]');await p.waitForFunction(k=>{const t=JSON.parse(localStorage.getItem(Object.keys(localStorage).find(x=>/^bkm-terrenos-prototipo-v/.test(x)))).terrenos.find(x=>x.codigo==='A123');return t.docs.some(d=>d.tipo==='lote_dxf')},null,{timeout:20000});
   await p.waitForTimeout(400);
   const [d]=await Promise.all([p.waitForEvent('download'),p.click('[data-a=geo-baixar][data-k=dxf]')]);await d.saveAs(OUT+'lote.dxf');
   const dxf=fs.readFileSync(OUT+'lote.dxf','utf8');const lays=[...new Set([...dxf.matchAll(/\r\n8\r\n([A-Z_0-9]+)\r\n/g)].map(m=>m[1]))];console.log('layers com desenho:',lays.join(', '));

@@ -97,11 +97,8 @@ where a.status = 'vigente';
 -- zonas da área (da maior para a menor), o maior CA de mercado e o potencial
 -- construtivo por tipo de empreendimento (nulo se algum pedaço não tem CA ou
 -- não admite o tipo).
--- Resumo da análise vigente; o potencial do tipo escolhido no terreno (tipo_empreendimento) vem à parte.
 create view app.v_urbanismo_vigente with (security_invoker = true) as
-select u.*, te.tipo_empreendimento,
-       case te.tipo_empreendimento when 'mercado' then u.potencial_mercado_m2 when 'his' then u.potencial_his_m2
-            when 'hmp' then u.potencial_hmp_m2 end as potencial_tipo_m2
+select u.*
 from (
 select l.terreno_id, l.empresa_id, l.analise_id, a.data_verificacao, a.fonte,
        (select string_agg(x.sigla, ' / ' order by x.area desc nulls last, x.sigla)
@@ -128,8 +125,7 @@ select l.terreno_id, l.empresa_id, l.analise_id, a.data_verificacao, a.fonte,
 from app.v_lote_zonas l
 join app.analises_urbanisticas a on a.id = l.analise_id
 group by l.terreno_id, l.empresa_id, l.analise_id, a.data_verificacao, a.fonte
-) u
-join app.terrenos te on te.id = u.terreno_id;
+) u;
 
 create view app.v_documentos with (security_invoker = true) as
 select d.*,
@@ -1649,6 +1645,10 @@ begin
             from app.lote_inscricoes li join app.terreno_lotes l on l.id = li.lote_id
            where l.terreno_id = p_terreno group by li.inscricao_id) x
    where i.id = x.inscricao_id and i.parte_id is distinct from x.parte_id;
+  -- SQL do mapa da prefeitura que ficou sem lote volta a ficar solto, sem parte
+  update app.inscricoes_municipais i set parte_id = null
+   where i.terreno_id = p_terreno and i.origem = 'mapa_prefeitura' and i.parte_id is not null
+     and not exists (select 1 from app.lote_inscricoes li where li.inscricao_id = i.id);
 end $$;
 
 -- Cadastra ou altera um lote. p_dados: titulo, parte_id, matricula {numero, cartorio,
@@ -1754,7 +1754,8 @@ begin
 end $$;
 
 -- Exclui o lote com a sua matrícula. Os SQLs que só estavam nele saem do terreno, menos os que
--- têm IPTU lançado ou estão numa análise anterior (o histórico fica).
+-- têm IPTU lançado ou estão numa análise anterior (o histórico fica) e os marcados no mapa de
+-- lotes da prefeitura, que voltam a ficar soltos (sem lote) para entrar em outro lote.
 create or replace function app.excluir_lote(p_lote uuid)
 returns void
 language plpgsql security definer set search_path = ''
@@ -1769,7 +1770,8 @@ begin
   delete from app.terreno_lotes where id = l.id;
   if l.matricula_id is not null then delete from app.matriculas where id = l.matricula_id; end if;
   for v_ins in select i.id from app.inscricoes_municipais i
-                where i.id = any(v_sos) and not exists (select 1 from app.inscricao_valores v where v.inscricao_id = i.id) loop
+                where i.id = any(v_sos) and i.origem <> 'mapa_prefeitura'
+                  and not exists (select 1 from app.inscricao_valores v where v.inscricao_id = i.id) loop
     begin
       delete from app.inscricoes_municipais where id = v_ins;
     exception when others then null;
@@ -2217,7 +2219,7 @@ begin
     posicao_quadra = v_novo.posicao_quadra, formato = v_novo.formato, situacao_ocupacao = v_novo.situacao_ocupacao,
     uso_atual = v_novo.uso_atual, area_construida_existente_m2 = v_novo.area_construida_existente_m2,
     area_construida_demolir_m2 = v_novo.area_construida_demolir_m2, necessidade_demolicao = v_novo.necessidade_demolicao,
-    observacoes_fisicas = v_novo.observacoes_fisicas, tipo_empreendimento = v_novo.tipo_empreendimento, sobreposicoes_aceitas = v_novo.sobreposicoes_aceitas
+    observacoes_fisicas = v_novo.observacoes_fisicas, sobreposicoes_aceitas = v_novo.sobreposicoes_aceitas
   where id = t.id
   returning versao into t.versao;
   return t.versao;

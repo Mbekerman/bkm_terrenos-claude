@@ -44,24 +44,10 @@ ok(/6\.850\/m²/.test(b3)&&/sem as unidades/.test(b3)&&/mai\/2026 a jul\/2026/.t
 await p.waitForTimeout(400);await p.mouse.click(m.x,m.y);await p.waitForTimeout(300);ok(!(await p.$('#cc-box')),tag+' clique no mapa fecha o quadro');
 if(modo==='desktop'){await p.mouse.click(m.x,m.y,{button:'right'});await p.waitForTimeout(250)}
 else{const c=await ctx.newCDPSession(p);await c.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:m.x,y:m.y}]});await p.waitForTimeout(900);await c.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await p.waitForTimeout(400)}
-await p.click('.mp-ctx [data-a=ctx-conc]');await p.waitForTimeout(500);
-ok(await p.$eval('#cc-dr h2',x=>x.textContent).catch(()=>'')==='Nova concorrência',tag+' clique direito abre a gaveta Nova concorrência');
-ok(/Rua do Teste, 50/.test(await p.$eval('#cc-end',x=>x.value)),tag+' endereço pelo ponto');
-const dr=await p.$eval('#cc-dr',x=>{const r=x.getBoundingClientRect();return {w:Math.round(r.width),sx:x.scrollWidth<=x.clientWidth+1}});ok(dr.sx&&(modo==='desktop'?dr.w===400:dr.w>=380),tag+' gaveta '+JSON.stringify(dr));
-await p.click('#cc-dr [data-a=cc-emp-novo]');await p.waitForTimeout(200);await p.fill('#cce-n','Construtora Nova');await p.click('#cc-emp-dlg button[type=submit]');await p.waitForTimeout(250);
-ok(await p.$eval('#cc-emp',x=>x.selectedOptions[0].textContent)==='Construtora Nova',tag+' empresa incluída pelo pop-up e escolhida');
-await p.fill('#cc-nome','Residencial Teste');await p.fill('#cc-unid','100');
-await p.click('#cc-dr button[type=submit]');await p.waitForTimeout(250);ok(!!(await p.$('#cc-dr')),tag+' sem a área da tipologia não salva');
-await p.fill('#cc-dr .cc-tp [data-k=area] >> nth=0','45');await p.fill('#cc-dr .cc-tp [data-k=preco] >> nth=0','300 mil');
-await p.click('#cc-dr [data-a=cc-tp-add]');await p.waitForTimeout(150);ok(await p.$$eval('#cc-dr .cc-tp',e=>e.length)===2&&await p.$eval('#cc-nome',x=>x.value)==='Residencial Teste',tag+' adicionar tipologia mantém o digitado');
-await p.fill('#cc-dr .cc-tp [data-k=area] >> nth=1','60');await p.selectOption('#cc-dr .cc-tp [data-k=faixa] >> nth=1','hmp');
-await p.screenshot({path:OUT+tag+'_3_novo.png'});
-await p.click('#cc-dr button[type=submit]');await p.waitForTimeout(500);
-const b4=await p.$eval('#cc-box',x=>x.textContent.replace(/\s+/g,' ')).catch(()=>'');
-ok(await p.$$eval('#mapa .conc',e=>e.length)===4&&/Residencial Teste/.test(b4)&&/Construtora Nova/.test(b4)&&/6\.667\/m²/.test(b4),tag+' empreendimento novo no mapa e no quadro: '+b4.slice(0,120));
-ok(/Concorrência\s*4/.test(await p.$eval('#mp-leg',x=>x.textContent.replace(/\s+/g,' '))),tag+' legenda conta 4');
-await p.screenshot({path:OUT+tag+'_4_salvo.png'});
-await p.click('#cc-box [data-a=cc-desat]');await p.click('#cc-box [data-a=cc-desat-s]');await p.waitForTimeout(300);ok(await p.$$eval('#mapa .conc',e=>e.length)===3,tag+' desativar tira do mapa');
+ok(!(await p.$('.mp-ctx [data-a=ctx-conc]'))&&!(await p.$('.mp-ctx [data-a=ctx-poi]')),tag+' menu do clique direito sem concorrência nem ponto de interesse');
+await p.keyboard.press('Escape');await p.waitForTimeout(200);if(await p.$('.mp-ctx'))await p.mouse.click(m.x-150,m.y+80);await p.waitForTimeout(200);
+await abre(await p.$$eval('#mapa .conc',e=>e.map(x=>x.title).find(t=>t!=='Residencial Jardim Prudente')));
+await p.click('#cc-box [data-a=cc-desat]');await p.click('#cc-box [data-a=cc-desat-s]');await p.waitForTimeout(300);ok(await p.$$eval('#mapa .conc',e=>e.length)===2,tag+' desativar tira do mapa');
 // Leitura: quadro sem botões
 await p.evaluate(()=>{const x=document.createElement('button');x.dataset.a='role';x.dataset.v='Leitura';document.body.appendChild(x);x.click();x.remove()});await p.waitForTimeout(500);
 await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=mapa]')?.click());await p.waitForTimeout(700);

@@ -84,7 +84,10 @@ select pg_temp.falha(format($$insert into app.terrenos (empresa_id, nome, respon
 insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, logradouro, numero, bairro, zona, poligono_geojson)
 values (:'emp', 'Terreno Av. Cupecê — esquina', :'diretor', 'corretor', :'sp', 'Av. Cupecê', '1500', 'Cidade Ademar', 'sul', pg_temp.quadra(-46.6450, -23.6650))
 returning id as t1 \gset
-select pg_temp.ok((select codigo from app.terrenos where id = :'t1') ~ '^TER-\d{6}$', 'código TER-000001 gerado');
+select pg_temp.ok((select codigo from app.terrenos where id = :'t1') ~ '^[A-Z]\d{3}$', 'código curto (letra e 3 dígitos) gerado');
+select pg_temp.ok(app.codigo_terreno(1) = 'A001' and app.codigo_terreno(999) = 'A999' and app.codigo_terreno(1000) = 'B001'
+              and app.codigo_terreno(25974) = 'Z999', 'código: A001 a A999, depois B001, até Z999');
+select pg_temp.falha('select app.codigo_terreno(25975)', 'depois do Z999 não há código');
 select pg_temp.ok((select situacao_ocupacao from app.terrenos where id = :'t1') = 'nao_informado', 'campo não preenchido fica "não informado"');
 select versao as v from app.terrenos where id = :'t1' \gset
 select pg_temp.falha(format($$update app.terrenos set zona = 'leste' where id = %L$$, :'t1'), 'terreno não é alterado direto na tabela');
@@ -275,14 +278,6 @@ select pg_temp.ok((select algum_gabarito_sem_limite and ca_maximo = 4 and menor_
   'sem limite, menor gabarito e CA máximo resumidos');
 select pg_temp.ok((select potencial_mercado_m2 = 1400*4 + 520*2 and potencial_his_m2 = 1400*6 + 520*3 and potencial_hmp_m2 = 1400*5 + 520*2.5 and potencial_basico_m2 = 1920
                      from app.v_urbanismo_vigente where terreno_id = :'t1'), 'potencial construtivo por tipo = soma de área × CA de cada zona');
-select pg_temp.ok((select tipo_empreendimento = 'nao_informado' and potencial_tipo_m2 is null from app.v_urbanismo_vigente where terreno_id = :'t1'),
-  'tipo do empreendimento não informado: sem potencial escolhido (nunca vira mercado sozinho)');
-select versao as vt from app.terrenos where id = :'t1' \gset
-select pg_temp.falha(format($$select app.salvar_terreno(%L, %s, '{"tipo_empreendimento":"r2v"}')$$, :'t1', :vt), 'tipo do empreendimento só mercado, HIS ou HMP');
-select app.salvar_terreno(:'t1', :vt, '{"tipo_empreendimento":"his"}') as vt \gset
-select pg_temp.ok((select potencial_tipo_m2 = 1400*6 + 520*3 from app.v_urbanismo_vigente where terreno_id = :'t1')
-              and exists (select 1 from app.auditoria where tabela = 'terrenos' and registro_id = :'t1' and depois->>'tipo_empreendimento' = 'his'),
-  'tipo HIS escolhido na ficha: potencial do tipo pela regra de EHIS, com log');
 select pg_temp.ok((select to_maximo from app.v_lote_zonas where id = :'az1' and tipo = 'mercado') = 0.70, 'TO pelo tamanho do lote (1.920 m²: a de lote grande)');
 select pg_temp.falha(format($$update app.analise_zoneamentos set ca_maximo = 2.5 where id = %L$$, :'az2'), 'exceção do lote exige a fonte');
 select pg_temp.falha(format($$update app.analise_zoneamentos set gabarito_m = 30, gabarito_sem_limite = true, excecao_fonte = 'X' where id = %L$$, :'az2'), 'sem limite não leva valor');
@@ -2318,8 +2313,8 @@ select pg_temp.ok(fluxo.condicao_vale(:'kp', :'permuta'), 'condição: forma de 
 select app.registrar_proposta(:'pcd', 'bkm', 4500000, 'dinheiro') \gset
 select pg_temp.ok(app.campo_cartao(:'tcd', 'calculado.forma_pagamento_vigente')->>'valor' = 'dinheiro', 'com proposta vigente, vale a forma de pagamento da proposta');
 select pg_temp.ok(not fluxo.condicao_vale(:'kp', :'permuta'), 'a proposta em dinheiro desliga a condição de permuta');
-select pg_temp.ok(fluxo.condicao_vale(:'kp', '{"modo":"todas","itens":[{"grupo":{"modo":"qualquer","itens":[{"campo":"calculado.forma_pagamento_vigente","op":"em","valores":["permuta_fisica"]},{"campo":"oferta.valor_pedido","op":"maior","valores":[4000000]}]}},{"campo":"terreno.tipo_empreendimento","op":"vazio"}]}'),
-  'grupo: (permuta ou preço pedido acima de 4 mi) e tipo de empreendimento não informado');
+select pg_temp.ok(fluxo.condicao_vale(:'kp', '{"modo":"todas","itens":[{"grupo":{"modo":"qualquer","itens":[{"campo":"calculado.forma_pagamento_vigente","op":"em","valores":["permuta_fisica"]},{"campo":"oferta.valor_pedido","op":"maior","valores":[4000000]}]}},{"campo":"terreno.situacao_ocupacao","op":"vazio"}]}'),
+  'grupo: (permuta ou preço pedido acima de 4 mi) e ocupação não informada');
 select pg_temp.ok(not fluxo.condicao_vale(:'kp', '{"modo":"qualquer","itens":[{"campo":"terreno.situacao_ocupacao","op":"fora","valores":["vazio"]}]}'),
   'campo em branco não satisfaz "não é" (não informado nunca vira valor)');
 select pg_temp.falha(format($$insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave) values (%L, %L, 'terreno.descricao')$$, :'emp', :'kp'),
@@ -3276,7 +3271,7 @@ select pg_temp.falha(format($$select app.reativar_terreno(%L)$$, :'tar'), 'terre
 select pg_temp.como(:'analista');
 insert into app.terrenos (empresa_id, codigo, criado_por, nome, responsavel_id, origem_cadastro, municipio_id, poligono_geojson)
   values (:'emp', 'TER-999999', :'gestor', 'Código escolhido', :'analista', 'corretor', :'sp', pg_temp.quadra(-46.81, -23.81)) returning id as tce \gset
-select pg_temp.ok((select codigo <> 'TER-999999' and codigo ~ '^TER-\d{6}$' and criado_por = :'analista' from app.terrenos where id = :'tce'),
+select pg_temp.ok((select codigo <> 'TER-999999' and codigo ~ '^[A-Z]\d{3}$' and criado_por = :'analista' from app.terrenos where id = :'tce'),
   'cadastro direto não escolhe o código nem quem criou');
 select pg_temp.falha(format($$insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, poligono_geojson) values (%L, 'X', %L, 'corretor', %L, %L)$$,
   :'emp', :'intruso', :'sp', pg_temp.quadra(-46.82, -23.82)), 'o responsável do terreno é da equipe da empresa');
@@ -3350,7 +3345,7 @@ do $$ begin
   perform app.salvar_lote(current_setting('t.tx')::uuid, null, jsonb_build_object('matricula', jsonb_build_object('numero', '301.001', 'cartorio', (select cartorio from app.matriculas where numero = '301.001'))));
   raise exception 'FALHOU: matrícula de outro terreno entrou';
 exception when unique_violation then
-  if sqlerrm not like '%já está no terreno TER-%registre uma nova oferta%' then raise exception 'FALHOU: mensagem %', sqlerrm; end if;
+  if sqlerrm not like '%já está no terreno %registre uma nova oferta%' then raise exception 'FALHOU: mensagem %', sqlerrm; end if;
   raise notice 'ok  matrícula de outro terreno: lote recusado, com o código do terreno e a nova oferta (%)', sqlerrm;
 end $$;
 select pg_temp.falha(format($$select app.salvar_lote(%L, %L, '{"titulo":"lote 1"}')$$, :'tl', :'lt2'), 'título de lote não se repete no terreno');
@@ -3382,6 +3377,18 @@ select pg_temp.ok(not exists (select 1 from app.terreno_partes where id = :'lp3'
 select app.excluir_lote(:'lt2');
 select pg_temp.ok(not exists (select 1 from app.matriculas where numero = '301.002') and not exists (select 1 from app.inscricoes_municipais where id = :'li2')
                   and exists (select 1 from app.inscricoes_municipais where id = :'li3'), 'excluir o lote leva a matrícula e o SQL só dele; o SQL de outro lote fica');
+-- SQLs marcados no mapa de lotes da prefeitura (4/nov/2026): entram soltos, vão para um lote pela lista e,
+-- com o lote excluído, voltam a ficar soltos em vez de sair do terreno
+insert into app.inscricoes_municipais (empresa_id, terreno_id, municipio_id, inscricao, area_cadastral_m2, origem, endereco_prefeitura)
+values (:'emp', :'tl', :'sp', '059.112.0040-3', 220, 'mapa_prefeitura', 'R BRESSER, 120') returning id as lim \gset
+select pg_temp.ok((select origem = 'mapa_prefeitura' and parte_id is null from app.inscricoes_municipais where id = :'lim')
+                  and not exists (select 1 from app.lote_inscricoes where inscricao_id = :'lim'), 'SQL do mapa da prefeitura entra solto, sem lote nem parte');
+select pg_temp.falha(format($$insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao, origem) values (%L, %L, '059.112.0041-1', 'chute')$$, :'emp', :'tl'), 'origem da inscrição só digitada ou do mapa');
+select app.salvar_lote(:'tl', null, format('{"parte_id":"%s","matricula":{"numero":"301.009","area_registrada_m2":220},"inscricoes":["%s"]}', :'lp1', :'lim')::jsonb) as ltm \gset
+select pg_temp.ok((select parte_id = :'lp1' from app.inscricoes_municipais where id = :'lim'), 'o SQL solto escolhido no lote pega a parte do lote');
+select app.excluir_lote(:'ltm');
+select pg_temp.ok((select parte_id is null from app.inscricoes_municipais where id = :'lim') and not exists (select 1 from app.lote_inscricoes where inscricao_id = :'lim'),
+  'lote excluído: o SQL do mapa da prefeitura volta a ficar solto');
 select app.salvar_lote(:'tl', :'lt3', '{"matricula":null}') \g /dev/null
 select pg_temp.ok((select matricula_id is null from app.terreno_lotes where id = :'lt3') and not exists (select 1 from app.matriculas where numero = '301.003'),
   'tirar a matrícula do lote apaga a matrícula');
@@ -3479,5 +3486,81 @@ select pg_temp.como(:'leitor');
 select pg_temp.falha(format('select app.solicitar_estudo_massa(%L, %L)', :'t1', :'diretor'), 'Leitura não pede estudo de massa');
 select pg_temp.falha(format($$select app.salvar_estudo_massa(%L, '{"observacoes":"x"}')$$, :'em2'), 'Leitura não altera o estudo de massa');
 select pg_temp.como(:'analista');
+
+-- ---------------------------------------------------------------------
+\echo '# reuniões com o Google Agenda (lote 6 da ficha em abas)'
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$insert into app.reunioes (empresa_id, terreno_id, inicio, modalidade, local, na_agenda) values (%L, %L, now() - interval '1 day', 'presencial', 'bkm', true)$$, :'emp', :'t1'), 'reunião já realizada não vai para a Agenda');
+select pg_temp.falha(format($$insert into app.reunioes (empresa_id, terreno_id, status, inicio, modalidade, local, na_agenda, gerar_meet) values (%L, %L, 'agendada', now() + interval '1 day', 'presencial', 'bkm', true, true)$$, :'emp', :'t1'), 'Meet só em reunião online');
+insert into app.reunioes (empresa_id, terreno_id, processo_id, status, inicio, duracao_min, modalidade, pauta, na_agenda, gerar_meet) values
+  (:'emp', :'t1', :'neg', 'agendada', now() + interval '2 days', 60, 'online', 'Contraproposta', true, true) returning id as ra \gset
+insert into app.reuniao_participantes (empresa_id, reuniao_id, lado, user_id) values (:'emp', :'ra', 'bkm', :'diretor');
+insert into app.reuniao_participantes (empresa_id, reuniao_id, lado, nome, email) values (:'emp', :'ra', 'vendedor', 'Sr. Carlos', 'Carlos@Exemplo.com');
+select pg_temp.falha(format($$insert into app.reuniao_participantes (empresa_id, reuniao_id, lado, nome, email) values (%L, %L, 'outro', 'X', 'sem-arroba')$$, :'emp', :'ra'), 'e-mail do convidado com formato inválido é recusado');
+select pg_temp.ok((select situacao = 'pendente' and acao = 'criar' and organizador_id = :'analista' from app.reuniao_agenda where reuniao_id = :'ra'),
+  'marcada com "Criar no Google Agenda", vai para a fila: criar o evento na agenda de quem marcou');
+select pg_temp.ok((select string_agg(email, ',' order by email) from app.v_reuniao_convidados where reuniao_id = :'ra') = 'carlos@exemplo.com,diretor@bkm.test',
+  'convidados: o e-mail do usuário da BKM e o digitado do vendedor');
+select pg_temp.falha(format($$select app.agenda_confirmar(%L, 'ev1')$$, :'ra'), 'só o servidor confirma o evento');
+select pg_temp.falha(format($$update app.reuniao_participantes set resposta = 'aceito' where reuniao_id = %L$$, :'ra'), 'a resposta ao convite vem do Google, não da tela');
+reset role;
+set role service_role;
+select app.agenda_confirmar(:'ra', 'ev1', 'https://calendar.google.com/ev1', 'https://meet.google.com/abc-defg-hij');
+reset role;
+select pg_temp.como(:'analista');
+select pg_temp.ok((select situacao = 'sincronizada' and evento_id = 'ev1' and meet_link like 'https://meet.google.com/%' from app.reuniao_agenda where reuniao_id = :'ra'),
+  'o servidor grava o evento e devolve o link do Meet');
+update app.reunioes set inicio = inicio + interval '1 hour' where id = :'ra';
+select pg_temp.ok((select situacao = 'pendente' and acao = 'atualizar' from app.reuniao_agenda where reuniao_id = :'ra'), 'mudou a hora no sistema, o evento volta para a fila para atualizar');
+reset role; set role service_role;
+select app.agenda_confirmar(:'ra', 'ev1');
+select app.agenda_evento_mudou(:'ra', now() + interval '3 days', 90);
+select app.agenda_resposta(:'ra', 'carlos@exemplo.com', 'aceito') as nresp \gset
+reset role;
+select pg_temp.como(:'analista');
+select pg_temp.ok((select duracao_min = 90 and inicio > now() + interval '2 days' from app.reunioes where id = :'ra')
+  and (select situacao = 'sincronizada' from app.reuniao_agenda where reuniao_id = :'ra') and :nresp = 1
+  and (select resposta = 'aceito' from app.reuniao_participantes where reuniao_id = :'ra' and nome = 'Sr. Carlos'),
+  'mudança feita direto na Agenda volta para a reunião sem voltar para a fila; a resposta do convidado aparece');
+insert into app.reuniao_participantes (empresa_id, reuniao_id, lado, user_id) values (:'emp', :'ra', 'bkm', :'gestor');
+select pg_temp.ok((select situacao = 'pendente' and acao = 'atualizar' from app.reuniao_agenda where reuniao_id = :'ra'), 'participante novo atualiza o convite');
+reset role; set role service_role;
+select app.agenda_confirmar(:'ra', null, p_erro => 'Token expirado');
+reset role;
+select pg_temp.como(:'analista');
+select pg_temp.ok((select situacao = 'erro' and erro = 'Token expirado' from app.reuniao_agenda where reuniao_id = :'ra'), 'falha no Google fica registrada na reunião');
+-- depois da reunião: gravação, transcrição e rascunho do resumo
+reset role; set role service_role;
+select app.agenda_confirmar(:'ra', 'ev1');
+select app.registrar_gravacao(:'ra', 'https://drive.google.com/grav', 'https://docs.google.com/transc', 'Carlos: aceito 2,8 mi com permuta de 10 unidades.',
+  'https://docs.google.com/anotacoes-gemini');
+select pg_temp.falha(format('select app.registrar_resumo_ia(%L, %L, null, %L)', :'ra', 'x', 'chatgpt'), 'origem do resumo só Gemini ou a IA do sistema');
+select app.registrar_resumo_ia(:'ra', 'Vendedor aceita 2,8 mi com permuta de 10 unidades.', '@analista manda a minuta até sexta.');
+reset role;
+select pg_temp.como(:'analista');
+select pg_temp.ok((select resumo_situacao = 'rascunho' and resumo_origem = 'gemini' and anotacoes_url like '%anotacoes-gemini' and transcricao like 'Carlos:%' from app.reuniao_agenda where reuniao_id = :'ra')
+  and (select resumo is null from app.reunioes where id = :'ra')
+  and (select count(*) = 1 from app.notificacoes where tipo = 'reuniao_resumo' and origem_id = :'ra' and destinatario_id = :'analista'),
+  'gravação, transcrição e Anotações do Gemini do Meet; o rascunho não mexe no resumo e avisa quem marcou');
+select pg_temp.falha(format('select app.decidir_resumo_ia(%L, true)', :'ra'), 'aceitar o resumo pede a reunião realizada');
+update app.reunioes set status = 'realizada', inicio = now() - interval '1 hour' where id = :'ra';
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format('select app.decidir_resumo_ia(%L, true)', :'ra'), 'Leitura não aceita o resumo');
+select pg_temp.como(:'analista');
+select app.decidir_resumo_ia(:'ra', true, 'Vendedor aceita 2,8 mi com permuta de 10 unidades (ajustado).');
+select pg_temp.ok((select resumo like '%(ajustado).' and encaminhamentos like '@analista%' from app.reunioes where id = :'ra')
+  and (select resumo_situacao = 'aceito' and resumo_decidido_por = :'analista' from app.reuniao_agenda where reuniao_id = :'ra'),
+  'aceito com ajuste: vai para o que foi tratado e os encaminhamentos');
+-- tirar da Agenda e cancelar
+insert into app.reunioes (empresa_id, terreno_id, status, inicio, modalidade, local, na_agenda) values
+  (:'emp', :'t1', 'agendada', now() + interval '5 days', 'presencial', 'bkm', true) returning id as rb \gset
+reset role; set role service_role; select app.agenda_confirmar(:'rb', 'ev2'); reset role;
+select pg_temp.como(:'analista');
+update app.reunioes set status = 'cancelada' where id = :'rb';
+select pg_temp.ok((select acao = 'cancelar' and situacao = 'pendente' from app.reuniao_agenda where reuniao_id = :'rb'), 'cancelar no sistema cancela o evento');
+update app.reunioes set na_agenda = false where id = :'rb';
+reset role; set role service_role; select app.agenda_confirmar(:'rb', null); reset role;
+select pg_temp.como(:'analista');
+select pg_temp.ok((select acao = 'remover' and evento_id is null and situacao = 'sincronizada' from app.reuniao_agenda where reuniao_id = :'rb'), 'tirar da Agenda remove o evento');
 
 \echo 'TODOS OS TESTES PASSARAM'

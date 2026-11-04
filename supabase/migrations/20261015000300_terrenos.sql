@@ -106,8 +106,6 @@ create table app.terrenos (
   area_construida_demolir_m2   numeric(12,2) check (area_construida_demolir_m2 >= 0),
   necessidade_demolicao text not null default 'nao_avaliada' check (necessidade_demolicao in ('nao_avaliada','provavel','confirmada','dispensada')),
   observacoes_fisicas   text,
-  -- Tipo de empreendimento pretendido: escolhe a regra da lei nos parâmetros urbanísticos (decisão do Moisés, 25/out/2026)
-  tipo_empreendimento   text not null default 'nao_informado' check (tipo_empreendimento in ('nao_informado','mercado','his','hmp')),
   -- Visita técnica (aba Infraestrutura): data da última visita; os itens ficam em terreno_infraestrutura
   visita_tecnica_em     date,
   -- Classificação topográfica (decisão do Moisés, 3/nov/2026): medida pelas cotas dentro da poligonal
@@ -203,6 +201,11 @@ create table app.inscricoes_municipais (
   cib               text,  -- Cadastro Imobiliário Brasileiro (vem do GeoSampa)
   zona_fiscal       text,  -- ZF-1 a ZF-4 em São Paulo (vem do GeoSampa)
   parte_id          uuid references app.terreno_partes(id),  -- de qual dono; nulo = terreno de um dono só
+  -- De onde veio (4/nov/2026): digitada, ou marcada no mapa de lotes da prefeitura ao cadastrar o
+  -- terreno (São Paulo, GeoSampa). A marcada entra solta, sem lote nem matrícula (sem linha em
+  -- lote_inscricoes), e é escolhida depois na lista do lote; tirada do lote, volta a ficar solta.
+  origem            text not null default 'digitada' check (origem in ('digitada', 'mapa_prefeitura')),
+  endereco_prefeitura text,  -- logradouro e número de porta do cadastro da prefeitura (vem do mapa)
   unique nulls not distinct (empresa_id, municipio_id, inscricao_norm)
 );
 create index on app.inscricoes_municipais (terreno_id);
