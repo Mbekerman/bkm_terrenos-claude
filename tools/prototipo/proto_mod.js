@@ -128,7 +128,9 @@ const CAMADAS_L={mapa:'Mapa',satelite:'Satélite'},CAMADAS_G={mapa:'Mapa',sateli
 let GG=false;
 function setBase(k){return GG?G_setBase(k):L_setBase(k)}
 function desenhaPins(){return GG?G_desenhaPins():L_desenhaPins()}
-function desenhaPois(){desenhaConc();return GG?G_desenhaPois():L_desenhaPois()}
+/* Pontos de interesse da empresa fora do mapa (pedido do Moisés, 4/nov/2026): continuam na ficha (aba Entorno); POI_NO_MAPA volta a camada e o item da legenda */
+const POI_NO_MAPA=false;
+function desenhaPois(){desenhaConc();if(!POI_NO_MAPA)return;return GG?G_desenhaPois():L_desenhaPois()}
 function desenhaConc(){return GG?G_desenhaConc():L_desenhaConc()}
 function mostrarConc(on){if(GG)return G_mostrarConc(on);if(MAPA&&CONC){on?CONC.addTo(MAPA):MAPA.removeLayer(CONC)}}
 /* ---------- menu do clique direito no mapa (no toque, segurar no vazio): novo terreno ali ---------- */
@@ -291,7 +293,7 @@ function mpLegenda(){const m=UI.mp,aberta=!!UI.mpArv;
       for(const z of mpNivelItens(x.k,y.k))h+=folha(z,3,true,x.k,y.k)}}
   const tot=fxLista('mapa').length;
   return `<button type="button" class="lg-i lg-a" style="--p:0" data-a="mp-arv" aria-expanded="${aberta}">${seta(aberta)}<span class="lg-poi"><span class="pin-mini lg-nt"></span></span>Terrenos<span class="n">${tot}</span></button>`+h
-    +`<hr class="lg-sep"><button type="button" class="lg-i" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}"><span class="lg-poi"><span class="poi-b"></span></span>Pontos de interesse<span class="n">${(S.pontos||[]).length}</span></button>`
+    +`<hr class="lg-sep">`+(POI_NO_MAPA?`<button type="button" class="lg-i" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}"><span class="lg-poi"><span class="poi-b"></span></span>Pontos de interesse<span class="n">${(S.pontos||[]).length}</span></button>`:'')
     +(CC_MANUAL?`<button type="button" class="lg-i" data-a="mp-conc" aria-pressed="${UI.mpConc!==false}"><span class="lg-poi">${ccMarcaHtml()}</span>Concorrência<span class="n">${ccAtivos().length}</span></button>`:'')
     +rdLegItem();
 }

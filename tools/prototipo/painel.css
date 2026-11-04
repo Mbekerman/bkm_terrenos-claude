@@ -1114,6 +1114,8 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .lg-poi .mk-b { width: 14px; height: 14px; border-width: 1.5px; box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
 .mk-box { width: min(480px, calc(100% - 20px)) }
 .mk-box .mk-k { background: #eef6ff; border-left-color: #0094fe }
+.mk-prog { margin-top: 6px; font-size: 13px; color: #444746 } .mk-prog b { font-weight: 500; color: #1f1f1f }
+:root[data-tema="escuro"] .mk-prog { color: #c4c7c5 } :root[data-tema="escuro"] .mk-prog b { color: #e3e3e3 }
 .mk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin: 12px 20px 4px }
 .mk-kv { display: flex; flex-direction: column; min-width: 0; font-size: 12px; line-height: 16px }
 .mk-kv .num { font-size: 15px; line-height: 22px; color: #1f1f1f; font-variant-numeric: tabular-nums }
@@ -4061,3 +4063,33 @@ html[data-tema="escuro"] .fx-aba .fx-sn { background: #a8c7fa; color: #062e6f }
 .ph-l { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; flex-wrap: wrap; justify-content: flex-end }
 .ph-l .fx-barra { margin: 0; flex: 1; min-width: 0 }
 @media (max-width: 899px) { .page-h.ph-barra { flex-wrap: wrap; align-items: flex-end } .ph-l { flex-basis: 100%; justify-content: flex-start } }
+
+/* Tabela completa do empreendimento (concorrência, 4/nov/2026) */
+.mk-tab { padding: 4px calc(var(--q-px, 24px) - 12px) 0 } .mk-tab .btn { gap: 8px }
+.dialog.mkt-dlg { width: min(1180px, 100%); max-height: calc(100dvh - 32px); display: flex; flex-direction: column; overflow: hidden }
+.mkt-cab { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px 24px; margin: 4px 0 16px }
+.mkt-kv { display: flex; flex-direction: column; gap: 2px; font-size: 14px; min-width: 0 } .mkt-kv .muted { font-size: 12px }
+.mkt-fs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px }
+.mkt-f { height: 32px; padding: 0 14px; border-radius: 8px; border: 1px solid #c4c7c5; background: transparent; color: #444746; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer }
+.mkt-f.on { background: #c2e7ff; border-color: #c2e7ff; color: #001d35 }
+.mkt-w { flex: 1; min-height: 0; overflow: auto; border-top: 1px solid #c4c7c5 }
+table.mkt { width: 100%; border-collapse: collapse; font-size: 13px }
+table.mkt th { position: sticky; top: 0; background: #fff; text-align: left; font-weight: 500; color: #444746; padding: 10px 8px; border-bottom: 1px solid #c4c7c5; white-space: nowrap; z-index: 1 }
+table.mkt td { padding: 8px; border-bottom: 1px solid #e3e3e3; white-space: nowrap }
+table.mkt .n { text-align: right; font-variant-numeric: tabular-nums }
+table.mkt b { font-weight: 500 }
+.mkt-s { font-size: 12px; height: 24px; padding: 0 8px; border-radius: 8px; display: inline-flex; align-items: center; background: #e9eef6; color: #444746 }
+.mkt-disponivel .mkt-s { background: #c4eed0; color: #146c2e } .mkt-reservada .mkt-s { background: #ffdf99; color: #7a5900 } .mkt-vendida .mkt-s { background: #e3e3e3; color: #444746 }
+.mkt-msg { padding: 24px 0 } .mkt-nota { font-size: 12px; margin-top: 12px }
+:root[data-tema="escuro"] .mkt-f { border-color: #444746; color: #c4c7c5 } :root[data-tema="escuro"] .mkt-f.on { background: #004a77; border-color: #004a77; color: #c2e7ff }
+:root[data-tema="escuro"] .mkt-w, :root[data-tema="escuro"] table.mkt th { border-color: #444746 } :root[data-tema="escuro"] table.mkt th { background: #1e1f20; color: #c4c7c5 } :root[data-tema="escuro"] table.mkt td { border-color: #2d2f31 }
+:root[data-tema="escuro"] .mkt-s { background: #282a2c; color: #c4c7c5 } :root[data-tema="escuro"] .mkt-disponivel .mkt-s { background: #0f5223; color: #c4eed0 } :root[data-tema="escuro"] .mkt-reservada .mkt-s { background: #5c4300; color: #ffdf99 } :root[data-tema="escuro"] .mkt-vendida .mkt-s { background: #333537; color: #c4c7c5 }
+@media (max-width: 599px) {
+  .dialog.mkt-dlg { max-height: 100dvh }
+  .mkt-cab { grid-template-columns: 1fr 1fr; gap: 10px 16px }
+  table.mkt thead { display: none } table.mkt, table.mkt tbody { display: block }
+  table.mkt tr { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; padding: 12px 16px; border-bottom: 1px solid #e3e3e3; margin: 0 -16px }
+  table.mkt td { display: flex; justify-content: space-between; gap: 8px; padding: 0; border: 0; white-space: normal; text-align: right }
+  table.mkt td::before { content: attr(data-l); color: #444746; text-align: left }
+  :root[data-tema="escuro"] table.mkt tr { border-color: #2d2f31 } :root[data-tema="escuro"] table.mkt td::before { color: #c4c7c5 }
+}
