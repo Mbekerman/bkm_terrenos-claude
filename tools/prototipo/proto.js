@@ -421,14 +421,21 @@ function camposEndereco(t,comCoord){
     <div class="end-auto">${auto.map(([k,l])=>`<div class="field auto-l ${['logradouro','municipio'].includes(k)?'largo':''}"><label for="f-${k}">${l}</label><input id="f-${k}" name="${k}" value="${esc(val(k))}" ${trava?'readonly class="auto-v" placeholder="—"':''}></div>`).join('')}</div>
     ${comCoord?['lat','lng'].map(k=>`<input type="hidden" name="${k}" value="${esc(val(k))}">`).join(''):''}
     ${trava?'<button type="button" class="linkbtn end-corrigir" data-a="end-manual">Corrigir à mão</button>':''}`}
+/* área construída do cadastro da prefeitura (GeoSampa), soma dos SQLs consultados: só referência, ao lado do campo.
+   Com um SQL só a consulta já preenche o campo vazio (loteRegistrar); com vários, ninguém soma sozinho. */
+function aConstPref(t){const vs=t.insc.map(i=>i.geo?.[0]?.lote?.qt_area_construida).map(v=>v==null||v===''?null:Number(v)),com=vs.filter(v=>v!=null&&!isNaN(v));
+  return com.length?{area:com.reduce((a,b)=>a+b,0),com:com.length,n:t.insc.length}:null}
+function aConstPrefHint(t){const r=aConstPref(t);if(!r)return '';
+  return `<div class="hint" style="margin-top:10px">Cadastro da prefeitura: ${m2(r.area)} construídos${r.n>1?` (soma de ${r.com} de ${r.n} SQLs consultados)`:''}. Só referência; costuma diferir do real.</div>`}
 function secaoGenerica(t,id){
   const s=SECOES[id],ed=UI.edit===id;
   if(!ed)return `<section class="sec" id="sec-${id}"><div class="sec-h"><h2>${s.titulo}</h2><button class="btn text sm" data-a="edit" data-s="${id}">${ic('edit',16)}Editar</button></div>
     <div class="sec-b"><div class="kvg">${s.campos.filter(c=>!['lat','lng'].includes(c[0])).map(c=>{const f=fmtCampo(t,c);return `<div class="${c[4]||''}"><div class="k">${c[1]}</div>${f==null?ni:`<div class="v">${f}</div>`}</div>`}).join('')}</div>
+    ${id==='fis'?aConstPrefHint(t):''}
     ${id==='fis'&&t.aConst!=null&&t.aDemolir!=null&&t.aDemolir<t.aConst?`<div class="hint" style="margin-top:10px">Demolição parcial: ${m2(t.aConst-t.aDemolir)} permanecem.</div>`:''}</div></section>`;
   const inp=c=>campoInp(t,c);
   return `<section class="sec" id="sec-${id}"><form data-form="sec" data-s="${id}"><div class="sec-h"><h2>${s.titulo}</h2></div>
-    <div class="sec-b">${id==='loc'?camposEndereco(t,true):''}<div class="editgrid">${(id==='loc'?s.campos.filter(c=>!END_CAMPOS.includes(c[0])):s.campos).map(inp).join('')}</div>${id==='loc'?'':''}</div>
+    <div class="sec-b">${id==='loc'?camposEndereco(t,true):''}<div class="editgrid">${(id==='loc'?s.campos.filter(c=>!END_CAMPOS.includes(c[0])):s.campos).map(inp).join('')}</div>${id==='fis'?aConstPrefHint(t):''}</div>
     <div class="sec-f"><button type="button" class="btn text" data-a="cancel-edit">Cancelar</button><button class="btn primary">Salvar</button></div></form></section>`;
 }
 function secaoAreas(t){

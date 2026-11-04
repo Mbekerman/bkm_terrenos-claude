@@ -4766,6 +4766,11 @@ html[data-tema="escuro"] .lg-cx { border-color: #c4c7c5 } html[data-tema="escuro
 .etq-pt-l { display: flex; flex-direction: column; gap: 8px; min-height: 88px }
 /* matrículas sempre antes dos SQLs, cada grupo na sua linha (pedido do Moisés, 4/nov/2026) */
 .etq-pt-g { display: flex; flex-wrap: wrap; gap: 8px }
+.etq-i { font-weight: 400; opacity: .75; margin-left: 6px; font-size: 12px }
+.iptu-r { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 12px }
+.etq-pt-iptu { border-top: 0; padding-top: 0 }
+.etq-tot { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-size: 13px; margin-top: 12px; padding: 10px 0 0; border-top: 1px solid #e3e3e3 }
+html[data-tema="escuro"] .etq-tot { border-color: #444746 }
 .etq-pt-r { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13px; border-top: 1px solid #e3e3e3; padding-top: 8px }
 /* arrastando: quem aceita fica tracejado, o que está sob a etiqueta acende; a de origem não */
 body.etq-arrastando, body.etq-arrastando * { cursor: grabbing !important; user-select: none !important }

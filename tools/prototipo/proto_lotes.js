@@ -37,6 +37,19 @@ const ptZonas=(t,pa)=>{const a=analiseVig(t);if(!a)return [];const ds=inscParte(
 const ptVazia=(t,pa)=>!matsParte(t,pa).length&&!inscParte(t,pa).length&&!pa.neg&&!(pa.propostas||[]).length&&!t.pessoas.some(p=>p.parte===pa.id)&&!t.corretores.some(x=>(x.partes||[]).includes(pa.id))
   &&!t.ofertas.some(o=>o.partes&&pa.id in o.partes)&&!['pessoa','tel','email','doc','obs'].some(k=>pa[k]);
 
+
+/* ---------- valor venal e IPTU somados (pedido do Moisés, 4/nov/2026): ficam gravados por SQL e aparecem
+   somados na parte e no terreno. SQL sem IPTU lançado não conta como zero: o total diz quantos faltam. ---------- */
+function iptuVig(ins){const v=(ins.valores||[]).filter(x=>x.vig).sort((a,b)=>b.ex-a.ex)[0];if(!v)return null;const ise=v.sit==='isento';
+  const venal=v.vt!=null&&v.vc!=null?v.vt+v.vc:(v.venal??v.vt??null);
+  const anual=ise?0:v.iptu??(v.mensal!=null&&v.parc?v.mensal*v.parc:null),mensal=ise?0:v.mensal??(v.iptu!=null&&v.parc?v.iptu/v.parc:null);
+  return {ex:v.ex,venal,anual,mensal,isento:ise}}
+function iptuSoma(lista){const vs=lista.map(iptuVig),com=vs.filter(Boolean),tot=k=>com.some(v=>v[k]!=null)?soma(com.map(v=>v[k]||0)):null;
+  return {n:lista.length,com:com.length,faltam:lista.length-com.length,venal:tot('venal'),anual:tot('anual'),mensal:tot('mensal'),ex:com.length?Math.max(...com.map(v=>v.ex)):null}}
+function iptuResumo(r,rotulo){if(!r.n)return '';if(!r.com)return `<span class="iptu-r faint">${rotulo?esc(rotulo)+': ':''}sem IPTU lançado</span>`;
+  const it=[['Venal',r.venal,brl],['IPTU anual',r.anual,brl],['IPTU mensal',r.mensal,brl2]].filter(x=>x[1]!=null).map(([l,v,f])=>`<span><span class="faint">${l}</span> ${f(v)}</span>`).join('');
+  return `<span class="iptu-r">${rotulo?`<b>${esc(rotulo)}</b>`:''}${it}${r.faltam?`<span class="chip warn" title="SQL sem IPTU lançado não entra como zero">${r.faltam} de ${r.n} SQLs sem IPTU</span>`:''}</span>`}
+
 /* contato: telefone e CPF/CNPJ só com dígitos, e-mail em minúsculas (fluxo.validar_formato no banco) */
 const ptDocFmt=v=>{const d=fmDig(v);return d?fmParcial(d.length>11?'cnpj':'cpf',d):''};
 function ptValida(k,v){if(k==='tel')return fmValida('telefone',v);if(k==='email')return fmValida('email',v);
@@ -60,8 +73,11 @@ function secPartesTer(t){const P=partesAtivas(t),ro=UI.role==='Leitura';
 const ETQ_FECHADAS=new Set();   // partes com o quadro recolhido (a seta recolhe a linha inteira)
 const etqCris=t=>{const c=Array.from({length:18},(_,i)=>`${i+1}º CRI`);if(t.cri&&!c.includes(t.cri))c.unshift(t.cri);return c};
 const etqRot=t=>(CIDADES_INSC[cidDoTerreno(t)]||CIDADES_INSC.sp).rotulo;
+/* IPTU do ano dentro da etiqueta do SQL (R$ 45,3 mil) */
+const milAbr=v=>v>=1e6?mi(v):'R$\u00a0'+(v/1e3).toLocaleString('pt-BR',{maximumFractionDigits:1})+'\u00a0mil';
+function etqIptuTxt(ins){const v=iptuVig(ins);if(!v)return '';return `<span class="etq-i" title="IPTU ${v.ex}${v.anual!=null&&!v.isento?': '+brl(v.anual)+' por ano':''}">${v.isento?'isento':v.anual!=null?milAbr(v.anual):'venal '+milAbr(v.venal)}</span>`}
 function etqHtml(t,tipo,x,ro){const k=tipo+':'+x.id,n=tipo==='m'?x.num:x.sql,nome=tipo==='m'?'matrícula':etqRot(t);
-  return `<span class="etq ${tipo}" data-etq="${k}" ${ro?'':'tabindex="0"'} aria-label="${tipo==='m'?'Matrícula':esc(nome)} ${esc(n)}"><button type="button" class="etq-n num" data-a="etq-ver" data-k="${k}" title="Ver e editar">${esc(n)}</button>${ro?'':`<button type="button" class="etq-x" data-a="etq-x" data-k="${k}" aria-label="Excluir ${tipo==='m'?'a matrícula':'o '+esc(nome)} ${esc(n)}" title="Excluir">${ic('close',14)}</button>`}</span>`}
+  return `<span class="etq ${tipo}" data-etq="${k}" ${ro?'':'tabindex="0"'} aria-label="${tipo==='m'?'Matrícula':esc(nome)} ${esc(n)}"><button type="button" class="etq-n num" data-a="etq-ver" data-k="${k}" title="Ver e editar">${esc(n)}${tipo==='s'?etqIptuTxt(x):''}</button>${ro?'':`<button type="button" class="etq-x" data-a="etq-x" data-k="${k}" aria-label="Excluir ${tipo==='m'?'a matrícula':'o '+esc(nome)} ${esc(n)}" title="Excluir">${ic('close',14)}</button>`}</span>`}
 function etqPool(t,tipo,ro){const L=tipo==='m'?t.mats.filter(m=>!m.parte):t.insc.filter(i=>!i.parte),todos=tipo==='m'?t.mats.length:t.insc.length;
   return `<div class="etq-pool" data-drop="pool" data-tipo="${tipo}">${L.map(x=>etqHtml(t,tipo,x,ro)).join('')||`<span class="etq-vazio">${todos?'Todas já estão numa parte.':tipo==='m'?'Nenhuma matrícula ainda.':'Nenhum '+esc(etqRot(t))+' ainda.'}</span>`}</div>`}
 function secLotes(t){const ro=UI.role==='Leitura',P=partesAtivas(t),cid=cidDoTerreno(t),rot=etqRot(t),sp=cid==='sp';
@@ -71,7 +87,8 @@ function secLotes(t){const ro=UI.role==='Leitura',P=partesAtivas(t),cid=cidDoTer
     return `<article class="etq-pt${fe?' fechado':''}" data-drop="parte" data-p="${pa.id}">
       <button type="button" class="etq-pt-h" data-a="etq-linha" data-p="${pa.id}" aria-expanded="${!fe}" title="${fe?'Abrir':'Recolher'} a linha">${ic('chev',18)}<b>${esc(pa.nome)}</b><span class="faint">${ms.length} mat. · ${is.length} ${esc(rot)}</span></button>
       <div class="etq-pt-b"><div class="etq-pt-l">${ms.length?`<div class="etq-pt-g m">${ms.map(m=>etqHtml(t,'m',m,ro)).join('')}</div>`:''}${is.length?`<div class="etq-pt-g s">${is.map(i=>etqHtml(t,'s',i,ro)).join('')}</div>`:(!ms.length?`<span class="etq-vazio">${ro?'Sem matrícula nem SQL.':'Arraste para cá as matrículas e os SQLs desta parte.'}</span>`:'')}</div>
-        ${ai.area!=null||dv!=null?`<div class="etq-pt-r">${ai.area!=null?`<span>${m2(ai.area)} <span class="faint">pelas ${ai.fonte}</span></span>`:''}${dv!=null&&Math.abs(dv)>=1?`<span class="chip ${Math.abs(dv)>5?'crit':'warn'}" title="Área cadastral dos SQLs da parte comparada com a das matrículas dela">Matrícula × Prefeitura ${dv>0?'+':''}${num(dv,1)}%</span>`:''}</div>`:''}</div></article>`};
+        ${ai.area!=null||dv!=null?`<div class="etq-pt-r">${ai.area!=null?`<span>${m2(ai.area)} <span class="faint">pelas ${ai.fonte}</span></span>`:''}${dv!=null&&Math.abs(dv)>=1?`<span class="chip ${Math.abs(dv)>5?'crit':'warn'}" title="Área cadastral dos SQLs da parte comparada com a das matrículas dela">Matrícula × Prefeitura ${dv>0?'+':''}${num(dv,1)}%</span>`:''}</div>`:''}
+        ${is.length?`<div class="etq-pt-r etq-pt-iptu">${iptuResumo(iptuSoma(is))}</div>`:''}</div></article>`};
   return `<section class="sec" id="sec-lotes"><div class="sec-h"><h2>Matrículas e ${esc(rot)}s</h2>${cs}</div><div class="sec-b">
     <div class="etq-top">
       <div class="etq-col"><div class="etq-ct"><span class="etq-sw m"></span><b>Matrículas</b> <span class="h-n">${t.mats.length}</span></div>
@@ -83,7 +100,8 @@ function secLotes(t){const ro=UI.role==='Leitura',P=partesAtivas(t),cid=cidDoTer
         ${ro?'':`<form class="etq-form" data-form="etq-sql">${campoInsc('es',cid,null,true)}<button class="btn sm">${ic('add',16)}Incluir</button>${lgPode(t)?`<button type="button" class="btn sm text" data-a="lg-abrir">${ic('layers',16)}Escolher no mapa</button>`:''}</form>`}
         ${etqPool(t,'s',ro)}</div></div>
     <div class="etq-ph"><b>Partes</b>${!ro&&P.length===1&&soltos?`<button class="btn sm" data-a="etq-tudo">${ic('fwd',16)}Enviar tudo para ${esc(P[0].nome)}</button>`:''}${ro?'':`<span class="faint">${TOQUE()?'Toque e segure a etiqueta para arrastá-la até a parte.':'Arraste as etiquetas para a parte certa, ou de uma parte para outra.'}</span>`}</div>
-    <div class="etq-partes">${P.map(box).join('')}</div></div></section>`}
+    <div class="etq-partes">${P.map(box).join('')}</div>
+    ${t.insc.length?`<div class="etq-tot">${iptuResumo(iptuSoma(t.insc),'Terreno')}${t.insc.some(i=>!i.parte)&&P.length?'<span class="faint">inclui SQLs sem parte</span>':''}</div>`:''}</div></section>`}
 
 /* janela da etiqueta: os dados da matrícula ou do SQL (prefeitura, valor venal e IPTU) e a parte */
 function etqIptu(t,ins,i,ro){const vs=ins.valores.filter(v=>v.vig).sort((a,b)=>b.ex-a.ex),v=vs[0],venal=v?(v.vt!=null&&v.vc!=null?v.vt+v.vc:(v.venal??v.vt??null)):null;
