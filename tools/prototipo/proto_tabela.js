@@ -22,8 +22,8 @@ const terEnd=t=>[[t.logradouro,t.numero].filter(Boolean).join(', '),t.bairro].fi
 const terNada=s=>`<span class="faint">${s}</span>`;
 /* títulos do Moisés (4/nov/2026, segunda versão) */
 const COLS_TER=[
-  {k:'ter',l:'Terreno',cls:'esq',s:t=>t.codigo,
-    v:t=>`<div class="tb-c1"><button class="iconbtn tb-olho" data-a="tb-gav" data-id="${t.id}" aria-label="Ver a ficha de ${esc(t.nome)}" title="Ver a ficha">${ic('olho',20)}</button><div class="tb-c1t"><div class="t2 num">${t.codigo}</div><div class="t1">${esc(t.nome)}</div>${terEnd(t)?`<div class="t2">${esc(terEnd(t))}</div>`:''}</div></div>`},
+  {k:'ter',l:'Terreno',cls:'esq',s:t=>t.nome,
+    v:t=>`<div class="tb-c1"><button class="iconbtn tb-olho" data-a="tb-gav" data-id="${t.id}" aria-label="Ver a ficha de ${esc(t.nome)}" title="Ver a ficha">${ic('olho',20)}</button><div class="tb-c1t"><div class="t1">${esc(t.nome)}</div><div class="t2 num">${t.codigo}</div>${terEnd(t)?`<div class="t2">${esc(terEnd(t))}</div>`:''}</div></div>`},
   {k:'cid',l:'Cidade',s:terCid,v:t=>terCid(t)?esc(terCid(t)):terNada('—')},
   {k:'zona',l:'Região',s:terZona,v:t=>terZona(t)||terNada('—')},
   {k:'area',l:'Imóvel',s:t=>areaAdotada(t),
@@ -54,9 +54,9 @@ function terTabela(rows){const L=terSorts(),r=rows.slice().sort(terCmp);
 linhas=function(){return terTabela(fxLista('terrenos').filter(t=>bateBusca(t,UI.q)))};
 const terCheiaOn=()=>!!UI.tbCheia;
 pgTerrenos=function(){const n=fxLista('terrenos').length,L=terSorts(),on=terCheiaOn();
-  return `<div class="ter-pg${on?' on':''}"><div class="page-h"><div><h1>Terrenos</h1><div class="sub">${n===S.terrenos.length?S.terrenos.length+' terrenos':n+' de '+S.terrenos.length+' terrenos'}</div></div>
-    <div class="ter-ac">${L.length?`<button class="btn text sm" data-a="tb-sem-ordem" title="Volta à ordem padrão (temperatura e código)">Tirar ordenação</button>`:''}<button class="btn text sm" data-a="tb-cheia" aria-pressed="${on}" title="${on?'Sair da tela cheia (Esc)':'Abrir a tabela em tela cheia'}">${ic(on?'telaSair':'tela',18)}${on?'Sair da tela cheia':'Tela cheia'}</button></div></div>
-  ${fxBarra('terrenos')}
+  /* título Pipeline e, na mesma linha, os filtros, as visões e os botões da tabela (pedido do Moisés, 4/nov/2026) */
+  return `<div class="ter-pg${on?' on':''}"><div class="page-h ph-barra"><div><h1>Pipeline</h1><div class="sub">${n===S.terrenos.length?S.terrenos.length+' terrenos':n+' de '+S.terrenos.length+' terrenos'}</div></div>
+    <div class="ph-l">${fxBarra('terrenos')}<div class="ter-ac">${L.length?`<button class="btn text sm" data-a="tb-sem-ordem" title="Volta à ordem padrão (temperatura e código)">Tirar ordenação</button>`:''}<button class="btn text sm" data-a="tb-cheia" aria-pressed="${on}" title="${on?'Sair da tela cheia (Esc)':'Abrir a tabela em tela cheia'}">${ic(on?'telaSair':'tela',18)}${on?'Sair da tela cheia':'Tela cheia'}</button></div></div></div>
   <section class="sec lista"><div id="rows">${linhas()}</div></section></div>`};
 
 /* ---------- a gaveta da ficha ---------- */

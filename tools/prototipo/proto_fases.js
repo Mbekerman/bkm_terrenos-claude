@@ -132,9 +132,9 @@ function abaFases(t){const ent=faseEnt(),ro=UI.role==='Leitura';
 const procDaFase=(t,f)=>f===faseEnt()?(aberto(t.neg)?t.neg:null):procAberto(t,f);
 function negTopo(titulo,sub){const f=UI.negFase,e=UI.negEtapa,it=[{l:'Funil',v:''}];
   if(f)it.push({l:faseN(f),v:f});if(f&&e)it.push({l:etapaF(f,e)?.nome||e,v:f+'|'+e});const volta=it[it.length-2];
-  return `<div class="page-h"><div class="drill-h">${volta?`<button class="iconbtn drill-v" data-a="neg-nivel" data-v="${esc(volta.v)}" title="Voltar para ${esc(volta.l)}" aria-label="Voltar para ${esc(volta.l)}">${ic('back',22)}</button>`:''}<div>
+  return `<div class="page-h ph-barra"><div class="drill-h">${volta?`<button class="iconbtn drill-v" data-a="neg-nivel" data-v="${esc(volta.v)}" title="Voltar para ${esc(volta.l)}" aria-label="Voltar para ${esc(volta.l)}">${ic('back',22)}</button>`:''}<div>
     ${volta?`<ol class="drill-t" aria-label="Nível do quadro">${it.slice(0,-1).map(x=>`<li><button class="linkbtn" data-a="neg-nivel" data-v="${esc(x.v)}">${esc(x.l)}</button></li>`).join('')}</ol>`:''}
-    <h1>${esc(titulo)}</h1>${sub?`<div class="sub">${sub}</div>`:''}</div></div></div>${fxBarra('kanban')}`}
+    <h1>${esc(titulo)}</h1>${sub?`<div class="sub">${sub}</div>`:''}</div></div><div class="ph-l">${fxBarra('kanban')}</div></div>`}
 /* título de coluna que desce um nível */
 const colDesce=(a,v,l,dica)=>`<button class="col-ab" data-a="${a}" data-v="${esc(v)}" title="${esc(dica)}"><span>${esc(l)}</span>${ic('chev',16)}</button>`;
 function kcardFase(t,f,p){const e=etapaF(f,p.etapa),s=p.sub&&subF(f,p.sub),sb=p.status==='stand_by',outras=fasesAbertas(t).filter(x=>x!==f);

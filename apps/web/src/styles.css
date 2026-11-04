@@ -4870,6 +4870,12 @@ html[data-tema="escuro"] .fx-abas { border-color: #2a2a2c }
 html[data-tema="escuro"] .fx-aba { border-color: #444746; color: #c4c7c5 }
 html[data-tema="escuro"] .fx-aba[aria-selected="true"] { background: #004a77; border-color: #004a77; color: #c2e7ff }
 html[data-tema="escuro"] .fx-aba .fx-sn { background: #a8c7fa; color: #062e6f }
+/* título e barra de filtros na mesma linha (Pipeline e Funil, pedido do Moisés, 4/nov/2026) */
+.page-h.ph-barra { align-items: center; flex-wrap: nowrap; margin-bottom: 16px }
+.page-h.ph-barra > div:first-child { flex: none }
+.ph-l { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; flex-wrap: wrap; justify-content: flex-end }
+.ph-l .fx-barra { margin: 0; flex: 1; min-width: 0 }
+@media (max-width: 899px) { .page-h.ph-barra { flex-wrap: wrap; align-items: flex-end } .ph-l { flex-basis: 100%; justify-content: flex-start } }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
