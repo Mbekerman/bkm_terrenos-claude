@@ -15,7 +15,7 @@ const clica=async(p,s)=>{await p.evaluate(s=>document.querySelector(s).click(),s
 const ficha=async(p,txt)=>{await nav(p,'terrenos');await p.evaluate(()=>{const b=document.querySelector('[data-a=fT][data-v=todos]');b&&b.click()});await p.waitForTimeout(100);await p.evaluate(t=>[...document.querySelectorAll('[data-a=abrir]')].find(x=>x.textContent.includes(t)).click(),txt);await p.waitForTimeout(400)};
 const txt=(p,s)=>p.evaluate(s=>[...document.querySelectorAll(s)].filter(x=>x.offsetParent).map(x=>x.textContent.trim().replace(/\s+/g,' ')).join(' | '),s);
 const ter=(p,nome)=>p.evaluate(n=>{const S=JSON.parse(localStorage.getItem('bkm-terrenos-prototipo-v9'));return S.terrenos.find(t=>t.nome.includes(n))},nome);
-const bloco=async(p,k)=>{await p.evaluate(k=>{const b=document.querySelector(`[data-a=bloco][data-t=${k}]`);if(b.getAttribute('aria-expanded')!=='true')b.click()},k);await p.waitForTimeout(250)};
+const bloco=async(p,k)=>{await p.evaluate(k=>{const b=document.querySelector('.fi-abas [data-t='+({cadastro:'terreno',negociacao:'comercial',urbanismo:'parametros',fases:'jornada'}[k]||k)+']');if(b.getAttribute('aria-selected')!=='true')b.click()},k);await p.waitForTimeout(250)};
 let {p,ctx}=await abre(1440,900);
 
 // kanban em três níveis: fases › etapas › subetapas, com seta para voltar
@@ -83,7 +83,7 @@ ok(await p.evaluate(()=>!!document.querySelector('#f-ff')),'abrir antes da hora 
 await p.fill('#ff-j','Projeto já em andamento com o vendedor');await clica(p,'.df .btn.primary');
 const t123=await ter(p,'Cupecê — esquina');ok(t123.procs.some(x=>x.fase==='aprovacao'&&x.trilha[0].forcado),'abriu a Aprovação antes da hora, com a justificativa');
 await p.screenshot({path:O+'6_ficha_paralelo.png'});
-ok((await txt(p,'.dchips')).includes('Aprovação de Projetos'),'chip da ficha mostra a fase mais adiante');
+ok((await txt(p,'.fi-meta')).includes('Aprovação de Projetos'),'chip da ficha mostra a fase mais adiante');
 await papel(p,'Analista');await ficha(p,'Pico Alto');await bloco(p,'fases');await clica(p,'[data-a=f-abrir][data-v=aprovacao]');
 ok(await p.evaluate(()=>!!document.querySelector('.adv-modal')),'analista vê o que falta, sem forçar');
 await clica(p,'[data-a=close]');await papel(p,'Diretor');

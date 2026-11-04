@@ -50,6 +50,7 @@ Rodar só o que a mudança toca; a varredura completa (`tvaza` e `tscroll`) ao f
 | --- | --- |
 | `tvaza.js` | nada vazando de quadros em 14 larguras, menu aberto e recolhido (lento) |
 | `tscroll.js` | nenhuma rolagem horizontal |
+| `tabas.js` | ficha em abas: todas as abas abrem sem erro e entram no endereço, Visão geral em duas metades com o Resumo pedido, abas fixas ao rolar, links antigos caem na aba nova, sem Tarefas e Confrontações (claro, escuro, celular) |
 | `tloc.js`, `tordem.js` | colunas da Visão geral e mapa primeiro em uma coluna |
 | `tinline.js` | edição no lugar na Visão geral |
 | `tpisca.js` | clicar no log abre a seção e acende o campo |

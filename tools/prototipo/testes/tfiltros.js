@@ -76,7 +76,7 @@ await p.keyboard.press('Escape');await p.waitForTimeout(150);ok(!(await conta(p,
 // partes: sem temperatura por parte
 await clica(p,'#fx-barra [data-a=fx-limpar]');await nav(p,'terrenos');
 await p.evaluate(()=>[...document.querySelectorAll('[data-a=abrir]')].find(x=>x.textContent.includes('Ibitirama')).click());await p.waitForTimeout(400);
-await p.evaluate(()=>{const b=document.querySelector('[data-a=bloco][data-t=negociacao]');if(b&&b.getAttribute('aria-expanded')!=='true')b.click()});await p.waitForTimeout(250);
+await p.evaluate(()=>{const b=document.querySelector('.fi-abas [data-t=comercial]');if(b&&b.getAttribute('aria-selected')!=='true')b.click()});await p.waitForTimeout(250);
 ok(await conta(p,'.pt-card')>=3&&!(await txt(p,'.pt-card')).includes('Temperatura'),'parte sem temperatura: é uma só, a da negociação do terreno');
 await ctx.close();
 // endereço com filtro abre já filtrado

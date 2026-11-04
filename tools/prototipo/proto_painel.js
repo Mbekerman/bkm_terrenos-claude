@@ -30,7 +30,7 @@ function audSnap(){AUD={};S.terrenos.forEach(t=>{AUD[t.id]={j:retrato(t),h:(t.hi
 function diffTerreno(a,b){
   const campos=[],itens=[];
   Object.keys({...a,...b}).forEach(k=>{
-    if(['hist','relevo','id','codigo'].includes(k))return;
+    if(['hist','relevo','id','codigo','criFonte','criLoc','pontosExcl'].includes(k))return;
     const va=a[k],vb=b[k];if(JSON.stringify(va)===JSON.stringify(vb))return;
     /* o pino acompanha a poligonal: a mudança de lugar dele vai junto do ajuste, sem log próprio */
     if(['lat','lng','precisao'].includes(k)&&JSON.stringify(a.poly)!==JSON.stringify(b.poly))return;
@@ -302,7 +302,7 @@ function mostrarLog(h){
         const sec=T&&[...(bloco||alvo).querySelectorAll('.sec')].find(e=>(e.querySelector('h2,.gt,.sec-h')?.textContent||'').includes(T[1]));if(sec)marcas=[sec]}}
     /* 3. sem item exato: a seção inteira */
     if(!marcas.length)marcas=[a.topo?alvo:(alvo.matches('.bl')?(alvo.querySelector('.bl-c .sec')||alvo):alvo)];
-    marcas[0].scrollIntoView({behavior:'smooth',block:'center'});
+    marcas.forEach(qdAbrirEl);marcas[0].scrollIntoView({behavior:'smooth',block:'center'});
     /* acende depois que a rolagem termina, para o destaque ser visto inteiro */
     document.querySelectorAll('.pisca').forEach(el=>el.classList.remove('pisca'));clearTimeout(pnPiscaT);
     let feito=false;const acende=()=>{if(feito)return;feito=true;marcas.forEach(el=>{void el.offsetWidth;el.classList.add('pisca')});pnPiscaT=setTimeout(()=>marcas.forEach(el=>el.classList.remove('pisca')),4200)};

@@ -10,12 +10,14 @@ const p=await ctx.newPage();await p.goto('file:///x/a.html');await p.evaluate(mm
 await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=terrenos]').click());await p.waitForTimeout(100);
 const ok=await p.evaluate(n=>{const a=[...document.querySelectorAll('[data-a=abrir]')].find(x=>x.textContent.includes(n));if(a){a.click();return true}return false},nome);if(!ok){await ctx.close();continue}
 await p.waitForTimeout(250);
-for(const k of ['geral','cadastro','comercial','negociacao','fases','tarefas','urbanismo','documentos','historico']){const h=await p.$(`#bl-${k} .bl-h[aria-expanded=false]`);if(h&&await h.isVisible()){await h.click();await p.waitForTimeout(60)}}
+/* ficha em abas: confere cada aba */
+for(const k of ['geral','comercial','terreno','parametros','massa','viabilidade','infra','entorno','jornada','documentos','historico']){await p.evaluate(k=>document.querySelector('.fi-abas [data-t='+k+']')?.click(),k);await p.waitForTimeout(120);
 await p.waitForTimeout(200);
-const r=await p.evaluate(()=>{const out=[];document.querySelectorAll('#main *').forEach(e=>{const c=getComputedStyle(e);if(e.scrollWidth>e.clientWidth+1&&e.offsetParent&&!e.matches('.tkb')&&(['auto','scroll'].includes(c.overflowX)||e.matches('.tblwrap,.dt-wrap'))){const sec=e.closest('.sec')?.querySelector('h2')?.textContent?.trim()||e.closest('.bl')?.id||'';out.push((e.className.toString().split(' ')[0]||e.tagName)+' @ '+sec+' ('+e.scrollWidth+'>'+e.clientWidth+')')}});
+const r=await p.evaluate(()=>{const out=[];document.querySelectorAll('#main *').forEach(e=>{const c=getComputedStyle(e);if(e.scrollWidth>e.clientWidth+1&&e.offsetParent&&!e.matches('.tkb,.fi-abas')&&(['auto','scroll'].includes(c.overflowX)||e.matches('.tblwrap,.dt-wrap'))){const sec=e.closest('.sec')?.querySelector('h2')?.textContent?.trim()||e.closest('.bl')?.id||'';out.push((e.className.toString().split(' ')[0]||e.tagName)+' @ '+sec+' ('+e.scrollWidth+'>'+e.clientWidth+')')}});
   return {itens:out,pagina:document.documentElement.scrollWidth>innerWidth}});
 r.itens.forEach(x=>{const key=x.replace(/ \(.*/,'');if(!achados.has(key))achados.set(key,[]);achados.get(key).push(w+(mm?'m':'')+' '+nome+' '+x.match(/\(.*\)/)[0])});
 if(r.pagina){const key='PÁGINA';if(!achados.has(key))achados.set(key,[]);achados.get(key).push(w+(mm?'m':'')+' '+nome)}
+}
 await ctx.close()}
 for(const [k,v] of achados)console.log(k,'→',v.length,'casos; ex:',v.slice(0,4).join(' | '));
 console.log('total tipos',achados.size);await b.close()})();

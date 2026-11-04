@@ -47,7 +47,7 @@ function logDesfazer(t,h){
 document.addEventListener('click',e=>{
   const a=e.target.closest('[data-a]');if(!a)return;const A=a.dataset.a;
   /* editar algo na ficha durante a prévia encerra a prévia antes */
-  if(!A.startsWith('log-')&&a.closest('.ficha-main.log-prev-on')&&!['bloco','nav'].includes(A)){const t=T(UI.id);if(t&&LOG_PREV[t.id]?.size){delete LOG_PREV[t.id];toast('Prévia encerrada: a ficha voltou aos dados gravados.')}return}
+  if(!A.startsWith('log-')&&a.closest('.ficha-main.log-prev-on')&&!['bloco','nav','tab'].includes(A)){const t=T(UI.id);if(t&&LOG_PREV[t.id]?.size){delete LOG_PREV[t.id];toast('Prévia encerrada: a ficha voltou aos dados gravados.')}return}
   if(!A.startsWith('log-'))return;e.stopPropagation();const t=T(UI.id);if(!t)return;const h=t.hist[+a.dataset.i];
   if(A==='log-olho'&&h){const s=LOG_PREV[t.id]=LOG_PREV[t.id]||new Set(),k=logK(h);s.has(k)?s.delete(k):s.add(k);render()}
   else if(A==='log-prev-limpar'){delete LOG_PREV[t.id];render()}

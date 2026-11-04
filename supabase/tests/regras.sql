@@ -533,6 +533,20 @@ select pg_temp.ok((select distancia_pe_m = 260 and not precisa_medir from app.v_
 select pg_temp.ok((select distancia_pe_m is null and distancia_carro_m = 98000 from app.v_terreno_pontos where terreno_id = :'tm' and ponto_id = :'pcamp'), 'ponto longe com distância de carro');
 select pg_temp.falha(format('select app.salvar_distancias_pontos(%L, -23.60, -46.60, %L)', :'tm', '[]'), 'medição para outra coordenada é recusada');
 select pg_temp.falha(format($$insert into app.terreno_ponto_distancias (terreno_id, ponto_id, empresa_id, latitude, longitude) values (%L, %L, %L, 0, 0)$$, :'tm', :'pterm', :'emp'), 'distância não é gravada direto');
+-- excluir ponto da empresa da ficha: sai só deste terreno (4/nov/2026)
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format('select app.excluir_ponto_terreno(%L, %L)', :'tm', :'pterm'), 'leitura não exclui ponto do terreno');
+select pg_temp.como(:'analista');
+select app.excluir_ponto_terreno(:'tm', :'pterm');
+select pg_temp.ok(not exists (select 1 from app.v_terreno_pontos where terreno_id = :'tm' and ponto_id = :'pterm'), 'ponto excluído some da ficha deste terreno');
+select pg_temp.ok((select ativo from app.pontos_interesse where id = :'pterm'), 'ponto excluído do terreno continua ativo (outros terrenos e mapa)');
+select pg_temp.falha(format($$insert into app.terreno_pontos_excluidos (terreno_id, ponto_id, empresa_id) values (%L, %L, %L)$$, :'tm', :'pcamp', :'emp'), 'exclusão do terreno não é gravada direto');
+select app.excluir_ponto_terreno(:'tm', :'pterm');
+select pg_temp.ok((select count(*) from app.terreno_pontos_excluidos where terreno_id = :'tm') = 1, 'excluir de novo não duplica');
+select app.restaurar_ponto_terreno(:'tm', :'pterm');
+select pg_temp.ok(exists (select 1 from app.v_terreno_pontos where terreno_id = :'tm' and ponto_id = :'pterm'), 'restaurar devolve o ponto à ficha');
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'terreno_pontos_excluidos') = 2, 'exclusão e restauração vão para os logs');
 select pg_temp.como(:'analista');
 update app.pontos_interesse set ativo = false where id = :'pcamp';
 select pg_temp.ok(not exists (select 1 from app.v_terreno_pontos where ponto_id = :'pcamp'), 'ponto da empresa excluído (desligado) some de todos os terrenos');
@@ -602,12 +616,26 @@ select pg_temp.ok((select string_agg(codigo || '=' || mascara, ' ' order by orde
 insert into app.inscricoes_municipais (empresa_id, terreno_id, municipio_id, inscricao) values (:'emp', :'tm', :msp, '009.027.0009-1') returning id as gi \gset
 \set glote '{"cd_setor_fiscal":"009","cd_quadra_fiscal":"027","cd_lote":"0009","cd_digito_sql":"1","qt_area_terreno":593,"qt_area_construida":4994,"cd_cib":"0DRHNJA-V","cd_condominio":"00"}'
 \set gpoli '{"type":"Polygon","coordinates":[[[-46.6551,-23.5619],[-46.6555,-23.5620],[-46.6553,-23.5621],[-46.6551,-23.5619]]]}'
-\set gcam '{"zona_fiscal":[{"sg_zona_fiscal":"ZF-1"}],"pde_macroarea_lei_18209":[{"sg_macroarea":"MUC"}]}'
+\set gcam '{"cartorio_registro_imovel":[{"cd_numero_cartorio":"13º"}],"zona_fiscal":[{"sg_zona_fiscal":"ZF-1"}],"pde_macroarea_lei_18209":[{"sg_macroarea":"MUC"}]}'
 select pg_temp.como(:'analista');
 select app.registrar_consulta_lote(:'gi', :'glote', :'gpoli', 593.4, :'gcam',
   '[{"sigla":"ZEU","area_m2":500},{"sigla":"ZEU","area_m2":93.4},{"sigla":"ZXX","area_m2":1}]', '{drenagem}') as gc \gset
 select pg_temp.ok((select area_cadastral_m2 = 593 and cib = '0DRHNJA-V' and zona_fiscal = 'ZF-1' from app.inscricoes_municipais where id = :'gi'),
   'consulta completa a área cadastral vazia, o CIB e a zona fiscal da inscrição');
+select pg_temp.ok((select cartorio = '13º CRI' and cartorio_origem = 'prefeitura' from app.terrenos where id = :'tm'), 'consulta preenche o cartório vazio do terreno, vindo da prefeitura');
+select versao as tmv from app.terrenos where id = :'tm' \gset
+select app.salvar_terreno(:'tm', :tmv, '{"cartorio":"4º CRI"}') \gset
+select pg_temp.ok((select cartorio = '4º CRI' and cartorio_origem = 'digitado' from app.terrenos where id = :'tm'), 'usuário troca o cartório: fica digitado');
+select app.cartorio_da_prefeitura(:'tm', '13º CRI') as crok \gset
+select pg_temp.ok(not :'crok' and (select cartorio from app.terrenos where id = :'tm') = '4º CRI', 'pino não troca o cartório digitado');
+select versao as tmv from app.terrenos where id = :'tm' \gset
+select app.salvar_terreno(:'tm', :tmv, '{"cartorio":""}') \gset
+select pg_temp.ok((select cartorio is null and cartorio_origem is null from app.terrenos where id = :'tm'), 'cartório apagado volta a vazio, sem origem');
+select app.cartorio_da_prefeitura(:'tm', '13º CRI') as crok \gset
+select pg_temp.ok(:'crok' and (select cartorio_origem from app.terrenos where id = :'tm') = 'prefeitura', 'pino preenche o cartório vazio');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format('select app.cartorio_da_prefeitura(%L, %L)', :'tm', '1º CRI'), 'leitura não grava o cartório');
+select pg_temp.como(:'analista');
 select pg_temp.ok((select base = 'geosampa' and inscricao_norm = '00902700091' and camadas_com_erro = '{drenagem}' and lote->>'qt_area_construida' = '4994'
                      from app.consultas_lote where id = :'gc'),
   'consulta guarda a base, o lote inteiro e as camadas que falharam');

@@ -54,40 +54,37 @@ const ENT_CAT=[['metro_trem','Estação de metrô ou trem','estações de metrô
   ['hospital','Hospital','hospitais',['hospital']]];
 const ENT_BUSCA={},ENT_TENT=new Set();let ENT_TODOS=false;
 const rotaPeUrl=(t,p)=>`https://www.google.com/maps/dir/?api=1&origin=${t.lat},${t.lng}&destination=${p.lat},${p.lng}${p.gid&&!String(p.gid).startsWith('ex')?'&destination_place_id='+encodeURIComponent(p.gid):''}&travelmode=walking`;
-function entornoCard(t){if(t.lat==null)return '';
-  const e=t.entorno,busc=ENT_BUSCA[t.id],mudou=e&&!(e.lat===t.lat&&e.lng===t.lng),raio=fKm(RAIO_PE/1000);
-  let corpo;
-  if(!e)corpo=busc?`<div class="muted">Buscando no Google lugares a até ${raio} a pé…</div>`
-    :`<div class="muted">${GG?'Os pontos de interesse ainda não foram buscados.':'Os pontos são buscados no Google quando o terreno é localizado pela busca de endereço ou no mapa. O Google não carrega neste link de visualização.'}</div>${GG?`<button class="btn sm ed" style="margin-top:12px" data-a="ent-buscar" data-id="${t.id}">Buscar agora</button>`:''}`;
-  else{const lim=ENT_TODOS?99:3;let sobra=0;
-    corpo=`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${ENT_CAT.map(([k,l,pl])=>{const its=e.itens.filter(x=>x.cat===k&&!x.excl).sort((a,b)=>a.pe-b.pe);
-      if(!its.length)return `<li class="ent-vazio"><span><span class="t2">Sem ${pl}</span></span></li>`;
-      sobra+=Math.max(0,its.length-lim);
-      return its.slice(0,lim).map(p=>`<li><span><span class="t1">${esc(p.nome)}</span><span class="t2">${l}${p.min!=null?` · ${p.min} min a pé`:''}<span class="so-m"> · ${p.pe<1000?Math.round(p.pe/10)*10+'\u00a0m':num(p.pe/1000,2)+'\u00a0km'}</span></span></span><span class="num poi-d">${p.pe<1000?Math.round(p.pe/10)*10+'\u00a0m':num(p.pe/1000,2)+'\u00a0km'}</span><a class="iconbtn sm poi-rota" href="${rotaPeUrl(t,p)}" target="_blank" rel="noopener" aria-label="Rota até ${esc(p.nome)}" title="Rota">${ic('rota',18)}</a>${poiX('g',p.gid,p.nome,t)}</li>`).join('')}).join('')}</ul>
-    ${sobra||ENT_TODOS?`<button class="linkbtn" data-a="ent-todos" style="margin-top:6px">${ENT_TODOS?'Mostrar menos':`Mostrar mais ${sobra}`}</button>`:''}
-    ${busc||e.semPe||mudou?`<div class="hint ent-pe">${busc?'Atualizando no Google… · ':''}${e.semPe?'Em linha reta (sem rota a pé) · ':''}${fd(e.em)}${mudou?' · <b>a localização mudou depois da busca</b>':''}</div>`:''}`}
-  corpo+=pontosEmpresa(t)+poiExcluidos(t);
-  return `<section class="sec" id="ent-card"><div class="sec-h"><h2>Pontos de interesse</h2><span class="faint" style="font-size:12px">a pé · até ${raio}</span></div><div class="sec-b">${corpo}</div></section>`}
-/* pontos cadastrados pela empresa: todos aparecem; a pé se está a até RAIO_PE a pé, senão de carro; sem rota medida, linha reta */
+/* Pontos de interesse numa lista só (pedido do Moisés, 3/nov/2026): os lugares do Google (por categoria, a até RAIO_PE a pé)
+   e os pontos cadastrados pela empresa (todos, sempre a pé pela rota; sem rota medida, linha reta; excluído só sai deste terreno), juntos, pela distância.
+   Cada linha diz a categoria; a exclusão continua com a regra de cada origem (poiX). */
 let EMP_TODOS=false;
 const kmTxt=m=>m<1000?Math.round(m/10)*10+'\u00a0m':num(m/1000,m<10000?2:1)+'\u00a0km';
-function pontosEmpresa(t){const pts=S.pontos||[];const d=t.dist&&t.dist.lat===t.lat&&t.dist.lng===t.lng?t.dist.m:{};
-  const its=pts.map(p=>{const x=d[p.id]||{},reta=distKm(t.lat,t.lng,p.lat,p.lng)*1000;
-    if(x.pe!=null&&x.pe<=RAIO_PE)return {p,ord:x.pe,dist:kmTxt(x.pe),modo:`${x.pm} min a pé`,url:rotaPeUrl(t,p)};
-    if(x.cm!=null)return {p,ord:x.cm,dist:kmTxt(x.cm),modo:`${x.cmin} min de carro`,url:rotaUrl(t,p)};
-    return {p,ord:reta,dist:kmTxt(reta),modo:'em linha reta',url:reta<=RAIO_PE?rotaPeUrl(t,p):rotaUrl(t,p)}}).sort((a,b)=>a.ord-b.ord);
-  const lim=EMP_TODOS?999:5;
-  return `<div class="ent-emp"><div class="ent-emp-h"><span>Cadastrados pela empresa</span>${UI.role!=='Leitura'?`<button class="linkbtn ed" data-a="ent-add-ponto" data-id="${t.id}">${ic('add',16)}Adicionar ponto</button>`:''}</div>
-    ${its.length?`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${its.slice(0,lim).map(x=>`<li><span><span class="t1">${esc(x.p.nome)}</span><span class="t2">${CAT_POI[x.p.cat]||'Outro'} · ${x.modo}<span class="so-m"> · ${x.dist}</span></span></span><span class="num poi-d">${x.dist}</span><a class="iconbtn sm poi-rota" href="${x.url}" target="_blank" rel="noopener" aria-label="Rota até ${esc(x.p.nome)}" title="Rota">${ic('rota',18)}</a>${poiX('e',x.p.id,x.p.nome,t)}</li>`).join('')}</ul>
-    ${its.length>5?`<button class="linkbtn" data-a="emp-todos" style="margin-top:6px">${EMP_TODOS?'Mostrar menos':`Mostrar mais ${its.length-5}`}</button>`:''}`
-    :'<div class="muted" style="font-size:14px">Nenhum ponto cadastrado pela empresa.</div>'}
-    ${DIST_BUSCA_ON(t)?'<div class="hint">Medindo as rotas no Google…</div>':''}</div>`}
+function pontosEmpresa(t){const ex=new Set((t.pontosExcl||[]).map(e=>e.id)),pts=(S.pontos||[]).filter(p=>!ex.has(p.id));const d=t.dist&&t.dist.lat===t.lat&&t.dist.lng===t.lng?t.dist.m:{};
+  return pts.map(p=>{const x=d[p.id]||{},reta=distKm(t.lat,t.lng,p.lat,p.lng)*1000,c={nome:p.nome,cat:CAT_POI[p.cat]||'Outro',x:poiX('e',p.id,p.nome,t)};
+    /* sempre a pé (pedido do Moisés, 4/nov/2026); sem rota medida, linha reta */
+    if(x.pe!=null)return {...c,ord:x.pe,dist:kmTxt(x.pe),modo:`${x.pm} min a pé`,url:rotaPeUrl(t,p)};
+    return {...c,ord:reta,dist:kmTxt(reta),modo:'em linha reta',url:rotaPeUrl(t,p)}})}
+function entornoCard(t){if(t.lat==null)return '';
+  const e=t.entorno,busc=ENT_BUSCA[t.id],mudou=e&&!(e.lat===t.lat&&e.lng===t.lng),raio=fKm(RAIO_PE/1000);
+  const g=(e?.itens||[]).filter(x=>!x.excl).map(p=>({nome:p.nome,cat:ENT_CAT.find(c=>c[0]===p.cat)?.[1]||'Lugar',ord:p.pe,dist:kmTxt(p.pe),modo:p.min!=null?`${p.min} min a pé`:(e.semPe?'em linha reta':'a pé'),url:rotaPeUrl(t,p),x:poiX('g',p.gid,p.nome,t)}));
+  const its=[...g,...pontosEmpresa(t)].sort((a,b)=>a.ord-b.ord),lim=ENT_TODOS?999:8;
+  const vaz=e?ENT_CAT.filter(([k])=>!e.itens.some(x=>x.cat===k&&!x.excl)).map(c=>c[2]):[];
+  const jun=l=>l.length>1?l.slice(0,-1).join(', ')+' e '+l[l.length-1]:l[0];
+  const aviso=!e?(busc?`Buscando no Google lugares a até ${raio} a pé…`:GG?'Os lugares do Google ainda não foram buscados.':'Os lugares do Google são buscados quando o terreno é localizado; o Google não carrega neste link de visualização.'):'';
+  let corpo=`${its.length?`<ul class="poil ent-l${UI.role!=='Leitura'?' com-x':''}">${its.slice(0,lim).map(x=>`<li><span><span class="t1">${esc(x.nome)}</span><span class="t2">${esc(x.cat)} · ${x.modo}<span class="so-m"> · ${x.dist}</span></span></span><span class="num poi-d">${x.dist}</span><a class="iconbtn sm poi-rota" href="${x.url}" target="_blank" rel="noopener" aria-label="Rota até ${esc(x.nome)}" title="Rota">${ic('rota',18)}</a>${x.x}</li>`).join('')}</ul>
+    ${its.length>8?`<button class="linkbtn" data-a="ent-todos" style="margin-top:6px">${ENT_TODOS?'Mostrar menos':`Mostrar mais ${its.length-8}`}</button>`:''}`:(aviso?'':'<div class="muted">Nenhum ponto de interesse.</div>')}
+    ${aviso?`<div class="muted"${its.length?' style="margin-top:8px"':''}>${aviso}</div>${!busc&&GG?`<button class="btn sm ed" style="margin-top:12px" data-a="ent-buscar" data-id="${t.id}">Buscar agora</button>`:''}`:''}
+    ${vaz.length?`<div class="hint ent-sem">Sem ${jun(vaz)} a até ${raio} a pé.</div>`:''}
+    ${e&&(busc||e.semPe||mudou)?`<div class="hint ent-pe">${busc?'Atualizando no Google… · ':''}${e.semPe?'Lugares do Google em linha reta (sem rota a pé) · ':''}${fd(e.em)}${mudou?' · <b>a localização mudou depois da busca</b>':''}</div>`:''}
+    ${DIST_BUSCA_ON(t)?'<div class="hint">Medindo as rotas no Google…</div>':''}`;
+  corpo+=poiExcluidos(t);
+  return `<section class="sec" id="ent-card"><div class="sec-h"><h2>Pontos de interesse</h2><span class="faint" style="font-size:12px">distâncias a pé</span>${UI.role!=='Leitura'?`<button class="btn sm text ed" data-a="ent-add-ponto" data-id="${t.id}">${ic('add',16)}Adicionar ponto</button>`:''}</div><div class="sec-b">${corpo}</div></section>`}
 /* excluir ponto de interesse. Do Google: marcado no próprio terreno (no banco: terreno_entorno.excluido_em);
    some só deste terreno e continua fora se a busca for refeita (o terreno mudou de lugar). Da empresa:
    desligado (ativo = false), some de todos os terrenos e do mapa. Os dois voltam por "Restaurar". */
 const poiX=(tp,id,nome,t)=>UI.role==='Leitura'?'':`<button class="iconbtn poi-x" data-a="poi-excl" data-tp="${tp}" data-p="${esc(String(id))}" data-id="${t.id}" aria-label="Excluir ${esc(nome)}" title="Excluir">${ic('lixo',18)}</button>`;
 let EXCL_VER=false;
-function poiExcluidos(t){const g=(t.entorno?.itens||[]).filter(x=>x.excl).map(x=>({tp:'g',id:x.gid,nome:x.nome,...x.excl})),e=(S.pontosExcl||[]).map(p=>({tp:'e',...p}));
+function poiExcluidos(t){const g=(t.entorno?.itens||[]).filter(x=>x.excl).map(x=>({tp:'g',id:x.gid,nome:x.nome,...x.excl})),e=(t.pontosExcl||[]).map(x=>({tp:'e',...x,nome:(S.pontos||[]).find(p=>p.id===x.id)?.nome})).filter(x=>x.nome);
   const l=[...g,...e].sort((a,b)=>String(b.em).localeCompare(String(a.em)));if(!l.length)return '';
   return `<div class="ent-exc"><button class="linkbtn" data-a="poi-excl-ver" aria-expanded="${EXCL_VER}">${EXCL_VER?'Ocultar excluídos':`Excluídos (${l.length})`}</button>
     ${EXCL_VER?`<ul class="poil ent-l">${l.map(x=>`<li><span><span class="t1">${esc(x.nome)}</span><span class="t2">${x.tp==='g'?'Google':'Cadastrado pela empresa'} · excluído por ${esc(x.por)} em ${fd(x.em)}</span></span>${UI.role!=='Leitura'?`<button class="linkbtn ed" data-a="poi-rest" data-tp="${x.tp}" data-p="${esc(String(x.id))}" data-id="${t.id}">Restaurar</button>`:''}</li>`).join('')}</ul>`:''}</div>`}
@@ -539,7 +536,9 @@ document.addEventListener('focusin',e=>{const el=e.target.closest?.('[data-tip]'
 document.addEventListener('focusout',()=>TIP.classList.remove('on'));
 
 /* ===================== FICHA: VISÃO GERAL ===================== */
-function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp=lastProp(t),pr=typeof proxReuniao==='function'?proxReuniao(t):null,pt=proxTarefa(t),px=proximos(t);
+/* Visão geral (decisão do Moisés, 3/nov/2026): resumo à esquerda e mapa à direita. Os outros quadros que moravam aqui saem pela parte pedida:
+   'neg' (Comercial), 'viab' (Estudos de viabilidade), 'relevo' (Infraestrutura), 'entorno' (Entorno). */
+function abaGeral(t,parte){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp=lastProp(t),pr=typeof proxReuniao==='function'?proxReuniao(t):null,pt=proxTarefa(t),px=proximos(t);
   const lin=(k,val)=>`<div class="kv"><dt>${k}</dt><dd>${val==null||val===''?'<span class="ni">Não informado</span>':val}</dd></div>`;
   /* Edição direta no resumo: grava nos mesmos campos das seções abaixo, pelo mesmo caminho (no banco, app.salvar_terreno só com as chaves enviadas) */
   const CAMPO={};Object.entries(SECOES).forEach(([sid,s])=>s.campos.forEach(c=>{CAMPO[c[0]]=[sid,c]}));
@@ -572,7 +571,7 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     ${linE('Ocupação',t.ocupacao!=='nao_informado'?OPT.ocupacao[t.ocupacao]:'','ocup',['ocupacao'])}
     ${linE('Responsável',esc(t.resp),'resp',['resp'])}
     ${linE('Origem',esc(OPT.origem[t.origem]||''),'orig',['origem'])}</dl></div></section>`;
-  const neg=n?`<section class="sec"><div class="sec-h"><h2>Negociação</h2><button class="btn text sm" data-a="tab" data-t="negociacao">Ver propostas e reuniões</button></div><div class="sec-b"><dl class="kvl">
+  const neg=n?`<section class="sec"><div class="sec-h"><h2>Negociação</h2></div><div class="sec-b"><dl class="kvl">
     ${lin('Situação',sitChip(sitMapa(t))+(n.status==='ativo'&&n.sub?` <span class="chip sub">${esc(subN(n.sub))} · ${diasSub(n)} d</span>`:'')+(n.pedido?' <span class="chip blue">Aguardando aprovação</span>':''))}
     ${['perdido','descartado'].includes(n.status)?lin('Motivo',esc(motivoN(n.status,n.motivo))+(n.detalhe?` · ${esc(n.detalhe)}`:'')):''}
     ${n.status==='ativo'?`<div class="kv"><dt>Temperatura</dt><dd>${tempPicker(t)}</dd></div>`:lin('Temperatura',n.temp?`${tempMini(n.temp)} ${TEMP[n.temp]}`:'')}
@@ -598,7 +597,23 @@ function abaGeral(t){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.viab,lp
     ${abaixoMin(t)?`<div class="banner warn" style="margin-top:12px">${ic('warn')}<div>${abaixoMinTxt(t)}.</div></div>`:''}`
     :`<div class="muted">${vs.length?'Nenhum estudo marcado como válido.':`Sem estudo.${UI.role!=='Leitura'?' <button class="linkbtn ed" data-a="vb-novo">Montar estudo</button>':''}`}</div>`}</div></section>`;
   const rel=relevoHtml(t)||topoBotao(t)?`<section class="sec"><div class="sec-h"><h2>Relevo</h2>${t.relevo?`<span class="faint" style="font-size:12px">estimado em ${fd(t.relevo.em)}</span>`:''}${topoBotao(t)}</div>${relevoHtml(t)?`<div class="sec-b">${relevoHtml(t)}</div>`:''}</section>`:'';
-  return `<div class="geral"><div class="geral-c">${info}${condicoes(t)}${neg}${poi}</div><div class="geral-c">${loc}${rel}${setoresCard(t)}${perfilCard(t)}${viab}</div></div>`}
+  if(parte==='neg')return neg;if(parte==='viab')return viab;if(parte==='relevo')return rel;if(parte==='entorno')return poi+setoresCard(t)+perfilCard(t);
+  const vx=v&&viabsDe(t.id).find(x=>x.id===v.id),vc=vx?vbCalc(vx):null;
+  const est=(t.entorno?.itens||[]).filter(x=>x.cat==='metro_trem'&&!x.excl).sort((a,b)=>a.pe-b.pe)[0];
+  const of1=t.ofertas.slice().sort((a,b)=>a.data.localeCompare(b.data))[0],cp=corrPrincipal(t);
+  const topo=[t.topografia&&t.topografia!=='nao_informado'&&OPT.topografia[t.topografia],t.relevo?`desnível ${num(t.relevo.desnivel,1)} m`:''].filter(Boolean).join(' · ');
+  const resumo=`<section class="sec g-res"><div class="sec-h"><h2>Resumo</h2></div><div class="sec-b"><dl class="kvl">
+    ${linE('Endereço',esc([t.logradouro&&(t.logradouro+(t.numero?', '+t.numero:'')),t.bairro].filter(Boolean).join(' · ')),'end',['cep','logradouro','numero','complemento','bairro','municipio'])}
+    ${linE('Município e região',esc([t.municipio||'São Paulo · SP',t.zona&&'Zona '+OPT.zona[t.zona]].filter(Boolean).join(' · ')),'reg',['zona'])}
+    ${linLink('Zoneamento',a?esc(zonasTxt(t)):'',`<button class="kv-ed kv-ir" data-a="tab" data-t="parametros" title="Ver os parâmetros urbanísticos" aria-label="Ver os parâmetros urbanísticos">${ic('fwd',16)}</button>`)}
+    ${linArea('Área adotada',ad!=null?`<span>${m2(ad)}${OPT.fonteArea[t.fonteArea]?`<span class="kv-2">${esc(OPT.fonteArea[t.fonteArea])}</span>`:''}</span>`:'','area')}
+    ${linLink('Unidades do estudo válido',vc?num(vc.un,0)+' unidades':'',`<button class="kv-ed kv-ir" data-a="tab" data-t="viabilidade" title="Ver os estudos de viabilidade" aria-label="Ver os estudos de viabilidade">${ic('fwd',16)}</button>`)}
+    ${linLink('VGV do estudo válido',v?mi(v.vgv):'',`<span class="kv-ed" aria-hidden="true"></span>`)}
+    ${linLink('Distância do metrô ou trem',est?`<span>${est.pe<1000?Math.round(est.pe/10)*10+' m':num(est.pe/1000,2)+' km'} a pé${est.min!=null?` · ${est.min} min`:''}<span class="kv-2">${esc(est.nome)}</span></span>`:(t.entorno?'Nenhuma estação a até 1,5 km a pé':''),`<button class="kv-ed kv-ir" data-a="tab" data-t="entorno" title="Ver o entorno" aria-label="Ver o entorno">${ic('fwd',16)}</button>`)}
+    ${linLink('Valor pedido na entrada',of1?.valor?`<span>${mi(of1.valor)}<span class="kv-2">oferta de ${fd(of1.data)}</span></span>`:'',`<button class="kv-ed kv-ir" data-a="tab" data-t="comercial" title="Ver as ofertas" aria-label="Ver as ofertas">${ic('fwd',16)}</button>`)}
+    ${linLink('Perfil topográfico',esc(topo),`<button class="kv-ed kv-ir" data-a="tab" data-t="infra" title="Ver a infraestrutura" aria-label="Ver a infraestrutura">${ic('fwd',16)}</button>`)}
+    ${linLink('Corretor',cp?`<span>${esc(cp.nome)}<span class="kv-2">${esc(cp.imob)}</span></span>`:'',`<button class="kv-ed kv-ir" data-a="tab" data-t="comercial" title="Ver os corretores" aria-label="Ver os corretores">${ic('fwd',16)}</button>`)}</dl></div></section>`;
+  return `<div class="geral"><div class="geral-c">${loc}</div><div class="geral-c">${resumo}</div></div>`}
 function L_initMini(){const el=$('#mini-mapa'),t=T(UI.id);if(!el||!t||t.lat==null)return;if(!window.L){el.innerHTML='<div class="mapa-erro">Mapa indisponível.</div>';return}
   MINI=L.map(el,{zoomControl:true,attributionControl:true,scrollWheelZoom:false,doubleClickZoom:false,dragging:!L.Browser.mobile});
   const mini0=MINI;miniGestos(el,d=>mini0.setZoom(mini0.getZoom()+d));

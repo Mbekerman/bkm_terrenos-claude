@@ -207,10 +207,10 @@ const idsPontos=()=>(S.pontos||[]).map(p=>p.id).sort().join(',');
 const DIST_BUSCA={};
 async function gDistEmpresa(t){if(!GG||t.lat==null||DIST_BUSCA[t.id])return;const pts=(S.pontos||[]).slice(),lat=t.lat,lng=t.lng;
   DIST_BUSCA[t.id]=true;const m={};let semRota=false;
-  try{if(pts.length){const perto=pts.filter(p=>distKm(lat,lng,p.lat,p.lng)*1000<=RAIO_PE);
-      const [pe,car]=await Promise.all([perto.length?gMatriz(lat,lng,perto,'WALK').catch(()=>null):Promise.resolve([]),gMatriz(lat,lng,pts,'DRIVE').catch(()=>null)]);
-      if(!pe&&!car)semRota=true;
-      pts.forEach(p=>m[p.id]={});(pe||[]).forEach((x,i)=>{if(x){m[perto[i].id].pe=x.m;m[perto[i].id].pm=x.min}});(car||[]).forEach((x,i)=>{if(x){m[pts[i].id].cm=x.m;m[pts[i].id].cmin=x.min}})}
+  /* todos os pontos a pé, pela rota (pedido do Moisés, 4/nov/2026) */
+  try{if(pts.length){const pe=await gMatriz(lat,lng,pts,'WALK').catch(()=>null);
+      if(!pe)semRota=true;
+      pts.forEach(p=>m[p.id]={});(pe||[]).forEach((x,i)=>{if(x){m[pts[i].id].pe=x.m;m[pts[i].id].pm=x.min}})}
     t.dist={lat,lng,ids:pts.map(p=>p.id).sort().join(','),semRota,m};save()}
   catch(e){}finally{delete DIST_BUSCA[t.id];entRefresh(t)}}
 /* busca automática: terreno localizado sem busca para a coordenada atual (cadastro novo, endereço ou ponto mudou) */

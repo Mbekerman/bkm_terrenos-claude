@@ -17,17 +17,17 @@ ok(url()==='/prototipo/'&&await rota()==='inicio','Início em /prototipo/');
 await p.click('#side [data-a=nav][data-r=terrenos]');await espera();ok(url()==='/prototipo/terrenos','Terrenos vira /terrenos ('+url()+')');
 await p.click('#main [data-a=abrir][data-id]');await espera();const cod=url().split('/')[3];
 ok(/^\/prototipo\/terrenos\/TER-\d{6}$/.test(url())&&await rota()==='terreno','abrir terreno vira /terrenos/código ('+url()+')');
-await p.click('#bl-negociacao .bl-h');await espera();ok(url()===`/prototipo/terrenos/${cod}/negociacao`,'abrir a seção Negociação entra no endereço');
-await p.click('#bl-negociacao .bl-h');await espera();ok(url()===`/prototipo/terrenos/${cod}`,'recolher a seção tira do endereço');
+await p.click('.fi-abas [data-t=comercial]');await espera();ok(url()===`/prototipo/terrenos/${cod}/comercial`,'abrir a aba Comercial entra no endereço');
+await p.click('.fi-abas [data-t=geral]');await espera();ok(url()===`/prototipo/terrenos/${cod}`,'voltar à Visão geral tira a aba do endereço');
 await p.goBack();await espera();ok(url()==='/prototipo/terrenos'&&await rota()==='terrenos','voltar do navegador volta para Terrenos');
 await p.goForward();await espera();ok(url()===`/prototipo/terrenos/${cod}`&&await rota()==='terreno','avançar reabre a ficha');
 await p.goBack();await p.goBack();await espera();ok(await rota()==='inicio','voltar de novo chega ao Início');
 // link recebido
 await p.goto(B+'/terrenos/TER-000123/negociacao');await espera();
-ok(await rota()==='terreno'&&await p.evaluate(()=>document.querySelector('#bl-negociacao .bl-h').getAttribute('aria-expanded'))==='true','link da ficha com seção abre a seção');
+ok(await rota()==='terreno'&&await p.evaluate(()=>document.querySelector('.fi-abas [data-t=comercial]').getAttribute('aria-selected'))==='true','link da ficha com seção abre a seção');
 ok(await p.evaluate(()=>document.querySelector('#side [aria-current=page]')?.dataset.r)==='terrenos','menu marca Terrenos');
-ok(await p.evaluate(()=>[...document.querySelectorAll('.bl-h[aria-expanded=true]')].map(x=>x.dataset.t).join())==='negociacao','link com seção: só ela aberta (Visão geral fechada)');
-await p.waitForTimeout(900);ok(await p.evaluate(()=>{const t=document.getElementById('bl-negociacao').getBoundingClientRect().top;return t>=0&&t<200}),'link com seção: a página rola até a seção');
+ok(await p.evaluate(()=>!!document.getElementById('bl-comercial')&&!document.getElementById('bl-geral')),'link antigo /negociacao: só a aba Comercial na tela');
+await p.waitForTimeout(900);ok(await p.evaluate(()=>{const t=document.getElementById('bl-comercial').getBoundingClientRect().top;return t>=0&&t<innerHeight}),'link com aba: a aba aparece na tela');
 await p.screenshot({path:OUT+'1_ficha_secao.png'});
 await p.goto(B+'/terrenos/ter-000123');await espera();ok(await rota()==='terreno'&&url()==='/prototipo/terrenos/TER-000123','código em minúsculas também abre');
 await p.goto(B+'/terrenos/TER-999999');await espera();ok(await rota()==='terrenos'&&url()==='/prototipo/terrenos'&&/não encontrado/.test(await p.textContent('#toast')),'código que não existe cai em Terrenos com aviso');
@@ -45,7 +45,7 @@ await p.goto(B+'/configuracoes/parametros');await espera();ok(await rota()==='co
 await p.goto(B+'/tarefas/tabela');await espera();ok(await rota()==='tarefas'&&await p.evaluate(()=>document.querySelector('[data-a=tk-vista][data-v=lista]')?.getAttribute('aria-pressed')==='true'),'link antigo das tarefas em tabela abre a Lista');
 await p.goto(B+'/terrenos/TER-000123/viabilidade/1');await p.waitForTimeout(700);const pop=await p.$('.vb-pop');
 ok(!!pop||/não encontrado/.test(await p.textContent('#toast')),'link do estudo de viabilidade abre o popup ('+(pop?'aberto':'terreno sem estudo')+')');
-if(pop){await p.screenshot({path:OUT+'4_viab.png'});await p.keyboard.press('Escape');await espera();ok(url()==='/prototipo/terrenos/TER-000123','fechar o estudo volta ao endereço da ficha')}
+if(pop){await p.screenshot({path:OUT+'4_viab.png'});await p.keyboard.press('Escape');await espera();ok(url()==='/prototipo/terrenos/TER-000123/viabilidade','fechar o estudo volta à aba Estudos de viabilidade')}
 await p.goto(B+'/terrenos/novo');await espera();ok(await p.evaluate(()=>!!document.querySelector('.modal, [role=dialog]')),'link do Novo terreno abre o cadastro');
 await p.keyboard.press('Escape');await p.evaluate(()=>document.querySelector('[data-a=close]')?.click());await espera();ok(url()==='/prototipo/terrenos','fechar o Novo terreno tira do endereço');
 // filtro continua no endereço
@@ -55,7 +55,7 @@ await p.click('#side [data-a=nav][data-r=mapa]');await espera();ok(url().startsW
 // arquivo / artifact: depois do #
 const q=await ctx.newPage();q.on('pageerror',e=>errs.push('hash: '+e.message));
 await q.goto('http://bkm.test/a.html#/terrenos/TER-000123/comercial');await q.waitForTimeout(600);
-ok(await q.evaluate(()=>document.body.dataset.rota)==='terreno'&&await q.evaluate(()=>document.querySelector('#bl-comercial .bl-h').getAttribute('aria-expanded'))==='true','fora da versão publicada: #/terrenos/código/comercial abre a seção');
+ok(await q.evaluate(()=>document.body.dataset.rota)==='terreno'&&await q.evaluate(()=>document.querySelector('.fi-abas [data-t=comercial]').getAttribute('aria-selected'))==='true','fora da versão publicada: #/terrenos/código/comercial abre a seção');
 await q.click('#side [data-a=nav][data-r=mapa]');await q.waitForTimeout(500);ok(q.url().endsWith('/a.html#/mapa'),'fora da versão publicada: Mapa vira #/mapa');
 await q.goBack();await q.waitForTimeout(500);ok(await q.evaluate(()=>document.body.dataset.rota)==='terreno','fora da versão publicada: voltar funciona');
 await q.click('#side [data-a=nav][data-r=inicio]');await q.waitForTimeout(500);ok(q.url().endsWith('/a.html'),'fora da versão publicada: Início sem #');
@@ -63,7 +63,7 @@ await ctx.close();
 // celular
 const c2=await ctxDe({...devices['Pixel 7']});const m=await c2.newPage();m.on('pageerror',e=>errs.push('celular: '+e.message));
 await m.goto(B+'/terrenos/TER-000123/documentos');await m.waitForTimeout(800);
-ok(await m.evaluate(()=>document.body.dataset.rota)==='terreno'&&await m.evaluate(()=>document.querySelector('#bl-documentos .bl-h').getAttribute('aria-expanded'))==='true','celular: link abre a ficha em Documentos');
+ok(await m.evaluate(()=>document.body.dataset.rota)==='terreno'&&await m.evaluate(()=>document.querySelector('.fi-abas [data-t=documentos]').getAttribute('aria-selected'))==='true','celular: link abre a ficha em Documentos');
 await m.screenshot({path:OUT+'5_celular_documentos.png'});
 await m.click('#bnav [data-r=mapa]');await m.waitForTimeout(600);ok(m.url().endsWith('/prototipo/mapa'),'celular: barra inferior muda o endereço');
 await m.goBack();await m.waitForTimeout(600);ok(await m.evaluate(()=>document.body.dataset.rota)==='terreno','celular: voltar volta à ficha');
