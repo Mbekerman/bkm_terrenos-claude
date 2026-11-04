@@ -1968,7 +1968,7 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 @container (max-width: 600px) { .mapa-area .mp-barra { flex-wrap: wrap !important } .mapa-area .mp-busca { flex: 1 1 100%; max-width: none; order: -1; margin-right: 0 } .mapa-area .mp-barra .seg { flex: 1 1 0; min-width: 0; overflow-x: auto; scrollbar-width: none } }
 
 /* ficha do terreno em painel sobre o mapa (lupa da lista lateral) */
-.ficha-sheet { position: fixed; z-index: 30; top: 88px; right: 16px; bottom: 16px; width: min(560px, calc(100vw - 32px)); display: flex; flex-direction: column; background: var(--m-surface, #fff); border-radius: 16px; box-shadow: 0 2px 6px rgba(0,0,0,.15), 0 12px 32px rgba(0,0,0,.18); overflow: hidden }
+.ficha-sheet { position: fixed; z-index: 30; top: 88px; left: 88px; bottom: 16px; width: min(560px, calc(100vw - 32px)); display: flex; flex-direction: column; background: var(--m-surface, #fff); border-radius: 16px; box-shadow: 0 2px 6px rgba(0,0,0,.15), 0 12px 32px rgba(0,0,0,.18); overflow: hidden }
 .fs-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 12px 12px 24px; border-bottom: 1px solid var(--m-outline-variant, #c4c7c5) }
 .fs-e { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #444746; margin-bottom: 4px }
 .fs-h h2 { font-size: 22px; line-height: 28px; font-weight: 400 }
@@ -2803,8 +2803,6 @@ body.vb-aberto { overflow: hidden }
 .lz-lote{margin-top:16px}
 .lz-mk{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .lz-mk:empty{display:none}
-.lz-tl{font-size:14px;font-weight:500}
-.lz-ni{margin:0 0 12px}
 .lz-lote{border:1px solid var(--linha);border-radius:12px;padding:12px 16px}
 .lz-h{margin:0 0 4px}
 .lz-z{padding:12px 0;border-top:1px solid var(--linha)}
@@ -3228,7 +3226,6 @@ form.inline-form.if-fechado { display: none !important }
 /* Tabela dentro do quadro de Terrenos e Tarefas: um contêiner só */
 .sec .dt-wrap, .sec.lista .dt-wrap { background: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important }
 /* Mapa com a ficha aberta: a legenda recolhe para não ficar embaixo do painel */
-@media (min-width: 900px) { body:has(#ficha-sheet) .mp-legenda > :not(summary) { display: none !important } body:has(#ficha-sheet) .mp-legenda summary::after { transform: none !important } }
 /* Parâmetros urbanísticos: um bloco por zona, parâmetros em grade (sem rolar para o lado); duas colunas no celular */
 @media all {
   .tblwrap.rola:has(.zp-tbl) { overflow: visible; mask-image: none; -webkit-mask-image: none }
@@ -3593,7 +3590,6 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 /* Configurações › Fases no celular: nome do concluído na largura toda */
 @media (max-width: 899px) { .cfg-fase > .cfg-cel:has(input[data-p$=".conc"]) { grid-column: 1 / -1 } }
 /* Mapa com a ficha aberta: a barra do mapa termina antes do painel */
-@media (min-width: 900px) { body:has(#ficha-sheet) .mp-barra { right: 472px !important; flex-wrap: wrap; row-gap: 8px } body:has(#ficha-sheet) .mp-barra > .mp-busca { flex: 1 1 100% !important; min-width: 0 !important; max-width: none !important } }
 
 /* ===================== Revisão de design, rodada 13 ===================== */
 /* Reuniões: a situação fica sempre à direita da data */
@@ -3615,8 +3611,6 @@ select.chip-sel option { background: #fff; color: #1f1f1f }
 @media (max-width: 599px) { .vb-nav { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent) } }
 /* Configurações › Viabilidade: nome do item com reticências */
 .vb-cfg-r input { text-overflow: ellipsis }
-@media (min-width: 900px) { :root:not(#_) body:has(#ficha-sheet) .mp-barra { flex-wrap: wrap !important; justify-content: flex-start !important; align-content: flex-start } :root:not(#_) body:has(#ficha-sheet) .mp-barra > .mp-busca { flex: 1 1 100% !important; width: auto !important; min-width: 0 !important } }
-@media (min-width: 900px) { :root:not(#_) body:has(#ficha-sheet) .mp-cam > button, :root:not(#_) body:has(#ficha-sheet) .mp-cam > summary { font-size: 0 !important; gap: 0 !important; padding: 0 12px !important } :root:not(#_) body:has(#ficha-sheet) .mp-cam svg:last-child:not(:first-child) { display: none } }
 /* ===================== Revisão de design, rodada 14 ===================== */
 /* Configurações › Viabilidade no celular: sem o traço solto de "Sai do VGV" e com mais respiro entre os itens */
 @media (max-width: 899px) {
@@ -5338,6 +5332,18 @@ html[data-tema="escuro"] .lg-cx { border-color: #c4c7c5 } html[data-tema="escuro
 }
 .lg-toque { display: none } @media (hover: none) { .lg-mouse { display: none } .lg-toque { display: inline } }
 .lg-soltos .lg-it { padding: 2px 0 }
+
+/* ===== campo obrigatório em branco (proto_ui.js, obrMarca) ===== */
+.opt-radio { position: relative }
+.campo-erro > input, .campo-erro > select, .campo-erro > textarea, .campo-erro input:not([type=radio]):not([type=checkbox]), .campo-erro select, .campo-erro textarea { border-color: var(--critico-marca, #b3261e) !important; box-shadow: inset 0 0 0 1px var(--critico-marca, #b3261e) }
+.campo-erro .seg3, .campo-erro [role=radiogroup] { outline: 2px solid var(--critico-marca, #b3261e); outline-offset: 2px; border-radius: 20px }
+.campo-erro > label, .campo-erro > .lbl, .campo-erro > .lbl-f, .campo-erro > legend { color: var(--critico-marca, #b3261e) !important }
+.campo-msg { display: flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 12px; line-height: 16px; color: var(--critico-marca, #b3261e) }
+
+/* ficha do terreno no mapa: gaveta que vem da esquerda, sobre a lista de terrenos (pedido do Moisés, 4/nov/2026);
+   a posição e a largura acompanham a lista (fichaSheet) */
+@media (min-width: 900px) { .ficha-sheet { animation: fs-entra .22s cubic-bezier(.2,0,0,1) } }
+@keyframes fs-entra { from { transform: translateX(-24px); opacity: 0 } to { transform: none; opacity: 1 } }
 </style>
 <header class="top">
   <div class="top-in">
@@ -5511,7 +5517,7 @@ function seed(){
   const infra=(o)=>{const r={};for(const [k,v] of Object.entries(o))r[k]={d:v,data:H(20),fonte:'Visita ao local',obs:''};return r};
   const T=[];
   // 1 — completo, em proposta
-  T.push(base({codigo:'TER-000123',nome:'Terreno Av. Cupecê — esquina',descricao:'Esquina com duas frentes, plano, ocupado por galpão a demolir.',prioridade:'alta',resp:'Ana Prado',origem:'corretor',dataIdent:H(62),
+  T.push(base({codigo:'A123',nome:'Terreno Av. Cupecê — esquina',descricao:'Esquina com duas frentes, plano, ocupado por galpão a demolir.',prioridade:'alta',resp:'Ana Prado',origem:'corretor',dataIdent:H(62),
     cep:'04366-000',logradouro:'Av. Cupecê',numero:'5.120',bairro:'Cidade Ademar',zona:'sul',eixo:'e1',referencia:'Em frente ao terminal Cidade Ademar',lat:-23.6681,lng:-46.6513,precisao:'conferida',
     aDoc:2000,aCad:1985,aLev:1920,fonteArea:'levantamento',testada:42,desnivel:0.8,posicao:'esquina',formato:'regular',ocupacao:'ocupado',uso:'Galpão de depósito',aConst:860,aDemolir:860,demolicao:'confirmada',obsFis:'Galpão com cobertura de fibrocimento: prever destinação adequada na demolição.',
     mats:[{num:'184.552',cri:'11º CRI',area:2000,data:H(40)}],
@@ -5538,7 +5544,7 @@ function seed(){
     docs:[{tipo:'matricula',status:'validado',emitido:H(22),versoes:2},{tipo:'onus',status:'validado',emitido:H(22),versoes:1},{tipo:'iptu',status:'validado',emitido:H(34),versoes:1},{tipo:'vend',status:'validado',emitido:H(19),versoes:1},{tipo:'topo',status:'validado',emitido:H(43),versoes:1},{tipo:'foto',status:'recebido',emitido:H(60),versoes:1,nome:'Fachada Av. Cupecê'}]
   }));
   // 2 — diligência travada
-  T.push(base({codigo:'TER-000118',nome:'Gleba Estrada do Lajeado',prioridade:'estrategica',resp:'Camila Torres',origem:'proprietario',dataIdent:H(48),
+  T.push(base({codigo:'A118',nome:'Gleba Estrada do Lajeado',prioridade:'estrategica',resp:'Camila Torres',origem:'proprietario',dataIdent:H(48),
     logradouro:'Estrada do Lajeado Velho',numero:'1.880',bairro:'Guaianases',zona:'leste',eixo:'e3',aDoc:5400,fonteArea:'documental',testada:64,desnivel:6,posicao:'meio_quadra',formato:'irregular',ocupacao:'vazio',demolicao:'dispensada',
     mats:[{num:'219.774',cri:'9º CRI',area:5400,data:H(13)}],insc:[{sql:'228.004.0012-1',area:5310,valores:[{ex:2026,rev:1,vig:true,vt:3950000,vc:null,sit:'tributado',iptu:31800,parc:10,mensal:null,fonte:'Portal da Prefeitura',data:H(30)}]}],
     dilig:[{id:uid(),cat:'ambiental',titulo:'Área de preservação no fundo do lote (córrego)',sit:'impeditiva',resp:'Camila Torres',prov:'Levantar APP e área remanescente antes de seguir.'},{id:uid(),cat:'ocupacional',titulo:'Confirmar ausência de ocupação irregular',sit:'em_analise',resp:'Camila Torres',prov:''}],
@@ -5552,20 +5558,20 @@ function seed(){
     docs:[{tipo:'matricula',status:'validado',emitido:H(13),versoes:1},{tipo:'onus',status:'validado',emitido:H(13),versoes:1},{tipo:'iptu',status:'recebido',emitido:H(55),versoes:1},{tipo:'vend',status:'validado',emitido:H(39),versoes:1}]
   }));
   // 3 — recém-cadastrado, ficha incompleta
-  T.push(base({codigo:'TER-000131',nome:'Lote Rua Capitão Ourinhos',resp:'Rafael Souza',origem:'corretor',dataIdent:H(3),logradouro:'Rua Capitão Ourinhos',numero:'330',bairro:'Penha',zona:'leste',
+  T.push(base({codigo:'A131',nome:'Lote Rua Capitão Ourinhos',resp:'Rafael Souza',origem:'corretor',dataIdent:H(3),logradouro:'Rua Capitão Ourinhos',numero:'330',bairro:'Penha',zona:'leste',
     ofertas:[{id:'o4',cid:'c2',data:H(3),valor:5200000,forma:'permuta_fisica',obsPag:'',aceita:'Quer 6 unidades no térreo.',status:'ativa'},{id:'o5',cid:'c1',data:H(1),valor:5600000,forma:'dinheiro',obsPag:'',aceita:'',status:'ativa'}],
     corretores:[{cid:'c2',principal:true},{cid:'c1',principal:false}],
     neg:neg('triagem','aguardando_informacoes',3,{ofRef:'o4'}),
     tarefas:[{id:uid(),titulo:'Triagem: localização e preço por m²',desc:'',resp:'Rafael Souza',prazo:H(-2),status:'pendente',prio:'media',resultado:''}]}));
   // 4 — viabilidade
-  T.push(base({codigo:'TER-000127',nome:'Terreno Rua Pico Alto',resp:'Rafael Souza',origem:'corretor',dataIdent:H(20),logradouro:'Rua Pico Alto',numero:'95',bairro:'Jaraguá',zona:'noroeste',eixo:'e4',aCad:1950,fonteArea:'cadastral',testada:33,
+  T.push(base({codigo:'A127',nome:'Terreno Rua Pico Alto',resp:'Rafael Souza',origem:'corretor',dataIdent:H(20),logradouro:'Rua Pico Alto',numero:'95',bairro:'Jaraguá',zona:'noroeste',eixo:'e4',aCad:1950,fonteArea:'cadastral',testada:33,
     insc:[{sql:'171.058.0033-9',area:1950,valores:[{ex:2026,rev:1,vig:true,vt:1650000,vc:0,sit:'tributado',iptu:14100,parc:10,mensal:null,fonte:'Carnê 2026',data:H(18)}]}],
     pessoas:[{nome:'Família Moretti (4 herdeiros)',tipo:'PF',papel:'proprietario',pct:null,tel:''}],
     ofertas:[{id:'o6',cid:'c2',data:H(20),valor:3900000,forma:'permuta_geral',obsPag:'Aberto a combinar dinheiro e unidades.',aceita:'Sim, desde que parte em dinheiro.',status:'ativa'}],corretores:[{cid:'c2',principal:true}],
     neg:neg('estudos','estudo_viabilidade',8,{temp:2,ofRef:'o6'},3),
     tarefas:[{id:uid(),titulo:'Montar o estudo de viabilidade',desc:'',resp:'Rafael Souza',prazo:H(-3),status:'em_andamento',prio:'alta',resultado:''}]}));
   // 5 — aprovação interna, acima do teto
-  T.push(base({codigo:'TER-000112',nome:'Área Barão do Jequitibá',prioridade:'alta',resp:'Moisés',origem:'corretor',dataIdent:H(121),logradouro:'Rua Barão do Jequitibá',numero:'512',bairro:'Vila Prudente',zona:'sudeste',
+  T.push(base({codigo:'A112',nome:'Área Barão do Jequitibá',prioridade:'alta',resp:'Moisés',origem:'corretor',dataIdent:H(121),logradouro:'Rua Barão do Jequitibá',numero:'512',bairro:'Vila Prudente',zona:'sudeste',
     aDoc:2950,aLev:2938,fonteArea:'levantamento',testada:38,posicao:'meio_quadra',formato:'regular',ocupacao:'parcialmente_ocupado',aConst:420,aDemolir:420,demolicao:'provavel',
     mats:[{num:'98.442',cri:'6º CRI',area:1500,data:H(14)},{num:'98.443',cri:'6º CRI',area:1450,data:H(14)}],
     pessoas:[{nome:'Têxtil Paulistana S.A.',tipo:'PJ',papel:'proprietario',pct:100,tel:''}],
@@ -5579,7 +5585,7 @@ function seed(){
     tarefas:[{id:uid(),titulo:'Levar ao comitê: rentabilidade abaixo da mínima',desc:'',resp:'Moisés',prazo:H(-3),status:'pendente',prio:'alta',resultado:''}],
     docs:['matricula','onus','iptu','vend','topo','sond','amb'].map(t=>({tipo:t,status:'validado',emitido:H(12),versoes:1}))}));
   // 5b — negociação com contraproposta do vendedor
-  T.push(base({codigo:'TER-000125',nome:'Terreno Rua Itapura',prioridade:'media',resp:'Ana Prado',origem:'corretor',dataIdent:H(70),logradouro:'Rua Itapura',numero:'1.410',bairro:'Tatuapé',zona:'leste',
+  T.push(base({codigo:'A125',nome:'Terreno Rua Itapura',prioridade:'media',resp:'Ana Prado',origem:'corretor',dataIdent:H(70),logradouro:'Rua Itapura',numero:'1.410',bairro:'Tatuapé',zona:'leste',
     aDoc:1650,fonteArea:'documental',testada:30,posicao:'meio_quadra',formato:'regular',ocupacao:'vazio',demolicao:'dispensada',
     pessoas:[{nome:'Espólio de João Ferraz',tipo:'PF',papel:'proprietario',pct:100,tel:''}],
     ofertas:[{id:'o9',cid:'c1',data:H(70),valor:7400000,forma:'dinheiro',obsPag:'',aceita:'Não aceita permuta.',status:'ativa'}],corretores:[{cid:'c1',principal:true}],
@@ -5587,16 +5593,16 @@ function seed(){
     propostas:[{v:1,origem:'bkm',data:H(30),valor:6800000,forma:'dinheiro',cond:'À vista na escritura.',status:'recusada'},{v:2,origem:'vendedor',data:H(5),validade:H(-10),valor:7300000,forma:'dinheiro',cond:'50% no compromisso, 50% em 90 dias.',status:'apresentada'}],
     tarefas:[{id:uid(),titulo:'Responder contraproposta de R$ 7,3 mi',desc:'',resp:'Ana Prado',prazo:H(-4),status:'pendente',prio:'alta',resultado:''}]}));
   // 6 — perdida
-  T.push(base({codigo:'TER-000109',nome:'Terreno Vale do Sabiá',resp:'Camila Torres',origem:'corretor',dataIdent:H(105),logradouro:'Rua Vale do Sabiá',numero:'88',bairro:'Brasilândia',zona:'norte',aDoc:2200,fonteArea:'documental',
+  T.push(base({codigo:'A109',nome:'Terreno Vale do Sabiá',resp:'Camila Torres',origem:'corretor',dataIdent:H(105),logradouro:'Rua Vale do Sabiá',numero:'88',bairro:'Brasilândia',zona:'norte',aDoc:2200,fonteArea:'documental',
     ofertas:[{id:'o8',cid:'c3',data:H(105),valor:4100000,forma:'dinheiro',status:'expirada',obsPag:'',aceita:''}],corretores:[{cid:'c3',principal:true}],
     neg:neg('estudos','analise_tecnica',95,{status:'descartado',temp:1,ofRef:'o8',motivo:'urbanistica',detalhe:'Cerca de 40% do lote em área de proteção ambiental.',encerradoEm:H(90)},92)}));
   // 6b — perdido para outra empresa
-  T.push(base({codigo:'TER-000104',nome:'Terreno Av. Sapopemba',resp:'Ana Prado',origem:'corretor',dataIdent:H(80),logradouro:'Av. Sapopemba',numero:'9.400',bairro:'São Mateus',zona:'leste',aDoc:2400,fonteArea:'documental',
+  T.push(base({codigo:'A104',nome:'Terreno Av. Sapopemba',resp:'Ana Prado',origem:'corretor',dataIdent:H(80),logradouro:'Av. Sapopemba',numero:'9.400',bairro:'São Mateus',zona:'leste',aDoc:2400,fonteArea:'documental',
     ofertas:[{id:'o10',cid:'c3',data:H(80),valor:6400000,forma:'dinheiro',status:'expirada',obsPag:'',aceita:''}],corretores:[{cid:'c3',principal:true}],
     propostas:[{v:1,origem:'bkm',data:H(35),valor:5600000,forma:'dinheiro',cond:'À vista na escritura.',status:'recusada'}],
     neg:neg('negociacao','proposta_enviada',40,{status:'perdido',temp:3,ofRef:'o10',motivo:'vendido_terceiro',detalhe:'Proprietário fechou com outra incorporadora por R$ 6,1 mi à vista.',encerradoEm:H(18)},30)}));
   // 6c — comprado
-  T.push(base({codigo:'TER-000098',nome:'Área Estrada do M\'Boi Mirim',prioridade:'alta',resp:'Moisés',origem:'corretor',dataIdent:H(160),logradouro:"Estrada do M'Boi Mirim",numero:'3.200',bairro:'Jardim Ângela',zona:'sul',aDoc:4100,fonteArea:'documental',ocupacao:'vazio',
+  T.push(base({codigo:'A098',nome:'Área Estrada do M\'Boi Mirim',prioridade:'alta',resp:'Moisés',origem:'corretor',dataIdent:H(160),logradouro:"Estrada do M'Boi Mirim",numero:'3.200',bairro:'Jardim Ângela',zona:'sul',aDoc:4100,fonteArea:'documental',ocupacao:'vazio',
     ofertas:[{id:'o11',cid:'c1',data:H(160),valor:7800000,forma:'permuta_com_torna',status:'ativa',obsPag:'',aceita:'Aceita 30% em unidades.'}],corretores:[{cid:'c1',principal:true}],
     propostas:[{v:1,origem:'bkm',data:H(70),valor:7200000,forma:'permuta_com_torna',cond:'R$ 5 mi + 7% do VGV em permuta física.',status:'aceita'}],
     docs:['matricula','onus','iptu','vend','topo','minuta'].map(t=>({tipo:t,status:'validado',emitido:H(30),versoes:1})),
@@ -5608,35 +5614,35 @@ function seed(){
   const comprado=(dias,of)=>neg('contrato','em_ajuste',dias+40,{status:'comprado',temp:5,ofRef:of,encerradoEm:H(dias),relato:'<p>Compra fechada em permuta com torna.</p>',pontos:'Proposta com permuta logo no primeiro contato.'},10);
   T[T.length-1].procs=[proc('aprovacao','APR','prefeitura','protocolado',20,'ativo',{desde:H(8),subDesde:H(8)})];
   // 6e — em obras: passou por todas as fases até Obras
-  T.push(base({codigo:'TER-000090',nome:'Gleba Av. Raimundo Pereira de Magalhães',prioridade:'alta',resp:'Moisés',origem:'corretor',dataIdent:H(820),logradouro:'Av. Raimundo Pereira de Magalhães',numero:'8.100',bairro:'Pirituba',zona:'norte',aDoc:9800,fonteArea:'documental',ocupacao:'vazio',
+  T.push(base({codigo:'A090',nome:'Gleba Av. Raimundo Pereira de Magalhães',prioridade:'alta',resp:'Moisés',origem:'corretor',dataIdent:H(820),logradouro:'Av. Raimundo Pereira de Magalhães',numero:'8.100',bairro:'Pirituba',zona:'norte',aDoc:9800,fonteArea:'documental',ocupacao:'vazio',
     ofertas:[{id:'o12',cid:'c2',data:H(820),valor:12500000,forma:'permuta_com_torna',status:'ativa',obsPag:'',aceita:''}],corretores:[{cid:'c2',principal:true}],
     neg:comprado(700,'o12'),procs:[fim('aprovacao','APR','alvaras','alvara_execucao',700),fim('incorporacao','INC','cartorio','exigencias',480),fim('caixa','CEF','contratacao','assinatura',400),
       fim('lancamento','LAN','vendas','vendas_iniciais',330),proc('obras','OBR','execucao','estrutura',260,'ativo',{desde:H(150),subDesde:H(40)})]}));
   // 6f — entregue: obra entregue, em assistência técnica
-  T.push(base({codigo:'TER-000085',nome:'Residencial Itaquera',resp:'Ana Prado',origem:'corretor',dataIdent:H(1500),logradouro:'Rua Gregório Ramalho',numero:'500',bairro:'Itaquera',zona:'leste',aDoc:7200,fonteArea:'documental',ocupacao:'vazio',
+  T.push(base({codigo:'A085',nome:'Residencial Itaquera',resp:'Ana Prado',origem:'corretor',dataIdent:H(1500),logradouro:'Rua Gregório Ramalho',numero:'500',bairro:'Itaquera',zona:'leste',aDoc:7200,fonteArea:'documental',ocupacao:'vazio',
     ofertas:[{id:'o13',cid:'c3',data:H(1500),valor:9100000,forma:'dinheiro',status:'ativa',obsPag:'',aceita:''}],corretores:[{cid:'c3',principal:true}],
     neg:comprado(1400,'o13'),procs:[fim('aprovacao','APR','alvaras','alvara_execucao',1400),fim('incorporacao','INC','cartorio','exigencias',1150),fim('caixa','CEF','contratacao','assinatura',1060),
       fim('lancamento','LAN','vendas','vendas_iniciais',980),fim('obras','OBR','entrega','entrega_chaves',900),proc('entregue','ENT','pos_entrega','assistencia_tecnica',90)]}));
   // 6d — stand by
-  T.push(base({codigo:'TER-000121',nome:'Lote Rua Ipiranguinha',resp:'Rafael Souza',origem:'indicacao',dataIdent:H(50),logradouro:'Rua Ipiranguinha',numero:'210',bairro:'Ipiranga',zona:'sul',aCad:900,fonteArea:'cadastral',
+  T.push(base({codigo:'A121',nome:'Lote Rua Ipiranguinha',resp:'Rafael Souza',origem:'indicacao',dataIdent:H(50),logradouro:'Rua Ipiranguinha',numero:'210',bairro:'Ipiranga',zona:'sul',aCad:900,fonteArea:'cadastral',
     neg:neg('estudos','estudo_massa',28,{status:'stand_by',temp:2,retomar:H(-5),detalhe:'Proprietários em inventário; retomar depois da partilha.',encerradoEm:H(25)},28)}));
   // 7 — prospecção sem oferta
-  T.push(base({codigo:'TER-000132',nome:'Lote vizinho ao TER-000123',resp:'Ana Prado',origem:'prospeccao',dataIdent:H(2),logradouro:'Rua Benedito Mendes',numero:'40',bairro:'Cidade Ademar',zona:'sul',eixo:'e1',insc:[{sql:'089.123.0052-1',area:610,valores:[]}],
+  T.push(base({codigo:'A132',nome:'Lote vizinho ao A123',resp:'Ana Prado',origem:'prospeccao',dataIdent:H(2),logradouro:'Rua Benedito Mendes',numero:'40',bairro:'Cidade Ademar',zona:'sul',eixo:'e1',insc:[{sql:'089.123.0052-1',area:610,valores:[]}],
     obs:'Abordar para compor a área com o terreno da esquina.',tarefas:[{id:uid(),titulo:'Localizar proprietário pelo SQL',desc:'',resp:'Ana Prado',prazo:H(-5),status:'pendente',prio:'media',resultado:''}]}));
   T.forEach(t=>{if(t.neg)t.neg.trilha.forEach(x=>{x.user=x.user||t.resp});(t.procs||[]).forEach(p=>p.trilha.forEach(x=>{x.user=x.user||t.resp}));t.hist=[{em:t.dataIdent,user:t.resp,txt:'Terreno cadastrado'}];if(t.neg){t.hist.push({em:t.neg.desde,user:t.resp,txt:`Negociação em ${SN(t.neg.etapa)}`})}});
-  const COORD={'TER-000123':[-23.66812,-46.65131],'TER-000118':[-23.54480,-46.40660],'TER-000131':[-23.52630,-46.54400],'TER-000127':[-23.45700,-46.74000],
-    'TER-000112':[-23.58500,-46.58100],'TER-000125':[-23.53800,-46.57000],'TER-000109':[-23.46300,-46.68700],
-    'TER-000104':[-23.61050,-46.47900],'TER-000098':[-23.71000,-46.77000],'TER-000090':[-23.48700,-46.71500],'TER-000085':[-23.54000,-46.45600],'TER-000121':[-23.59500,-46.60200]};
-  const POLY={'TER-000123':[[-23.66794,-46.65152],[-23.66792,-46.65111],[-23.66830,-46.65108],[-23.66833,-46.65150]],
-    'TER-000112':[[-23.58478,-46.58126],[-23.58476,-46.58072],[-23.58522,-46.58070],[-23.58525,-46.58124]],
-    'TER-000118':[[-23.54420,-46.40720],[-23.54410,-46.40590],[-23.54535,-46.40580],[-23.54560,-46.40700],[-23.54500,-46.40740]],
-    /* o vizinho encosta na divisa leste do TER-000123: divisa comum não é sobreposição */
-    'TER-000132':[[-23.66792,-46.65111],[-23.66790,-46.65072],[-23.66829,-46.65069],[-23.66830,-46.65108]]};
+  const COORD={'A123':[-23.66812,-46.65131],'A118':[-23.54480,-46.40660],'A131':[-23.52630,-46.54400],'A127':[-23.45700,-46.74000],
+    'A112':[-23.58500,-46.58100],'A125':[-23.53800,-46.57000],'A109':[-23.46300,-46.68700],
+    'A104':[-23.61050,-46.47900],'A098':[-23.71000,-46.77000],'A090':[-23.48700,-46.71500],'A085':[-23.54000,-46.45600],'A121':[-23.59500,-46.60200]};
+  const POLY={'A123':[[-23.66794,-46.65152],[-23.66792,-46.65111],[-23.66830,-46.65108],[-23.66833,-46.65150]],
+    'A112':[[-23.58478,-46.58126],[-23.58476,-46.58072],[-23.58522,-46.58070],[-23.58525,-46.58124]],
+    'A118':[[-23.54420,-46.40720],[-23.54410,-46.40590],[-23.54535,-46.40580],[-23.54560,-46.40700],[-23.54500,-46.40740]],
+    /* o vizinho encosta na divisa leste do A123: divisa comum não é sobreposição */
+    'A132':[[-23.66792,-46.65111],[-23.66790,-46.65072],[-23.66829,-46.65069],[-23.66830,-46.65108]]};
   /* a poligonal é obrigatória: os exemplos sem desenho próprio ganham um quadrado de ~40 m no ponto */
   const quadrado=([la,lo],m=40)=>{const dy=m/2/110574,dx=m/2/(111320*Math.cos(la*Math.PI/180));return [[la+dy,lo-dx],[la+dy,lo+dx],[la-dy,lo+dx],[la-dy,lo-dx]].map(p=>p.map(v=>+v.toFixed(6)))};
   /* pontos de interesse de exemplo (no Google, a busca roda de novo sozinha) */
-  const ENTX={'TER-000112':[['metro_trem','Estação Vila Prudente (Linhas 2 e 15)',-23.58380,-46.58130,350,5]],
-    'TER-000123':[['hospital','Hospital Municipal Cidade Ademar',-23.67330,-46.64470,1240,17]]};
+  const ENTX={'A112':[['metro_trem','Estação Vila Prudente (Linhas 2 e 15)',-23.58380,-46.58130,350,5]],
+    'A123':[['hospital','Hospital Municipal Cidade Ademar',-23.67330,-46.64470,1240,17]]};
   T.forEach(t=>{const c=COORD[t.codigo];if(c&&t.lat==null){t.lat=c[0];t.lng=c[1];t.precisao='aproximada'}if(POLY[t.codigo])t.poly=POLY[t.codigo];else if(t.lat!=null)t.poly=quadrado([t.lat,t.lng]);if(t.poly&&t.lat==null){t.lat=+(t.poly.reduce((s,p)=>s+p[0],0)/t.poly.length).toFixed(5);t.lng=+(t.poly.reduce((s,p)=>s+p[1],0)/t.poly.length).toFixed(5);t.precisao="aproximada"}if(ENTX[t.codigo]&&t.lat!=null)t.entorno={lat:t.lat,lng:t.lng,em:H(2),fonte:'exemplo',semPe:false,itens:ENTX[t.codigo].map(([cat,nome,la,lo,pe,min],i)=>({gid:'ex'+t.codigo+'-'+i,cat,nome,lat:la,lng:lo,pe,min}))};t.tarefas.forEach((k,i)=>k.pos=i*1000)});
   const pontos=[{id:'p1',nome:'Terminal Cidade Ademar',cat:'transporte',lat:-23.66720,lng:-46.65220},{id:'p2',nome:'Estação Vila Prudente (Linhas 2 e 15)',cat:'transporte',lat:-23.58380,lng:-46.58130},
     {id:'p3',nome:'Estação Tatuapé (Linha 3)',cat:'transporte',lat:-23.54040,lng:-46.57700},{id:'p4',nome:'Estação Penha (Linha 3)',cat:'transporte',lat:-23.53340,lng:-46.54280},
@@ -5644,7 +5650,7 @@ function seed(){
     {id:'p7',nome:'Shopping Aricanduva',cat:'comercio',lat:-23.56690,lng:-46.50610},{id:'p8',nome:'Hospital Municipal Cidade Ademar',cat:'saude',lat:-23.67330,lng:-46.64470}];
   /* concorrência de exemplo (empreendimentos de outras empresas; nomes fictícios): proto_concorrencia.js */
   const {E:concEmpresas,C:concorrentes}=ccSeed();
-  return {eixos,corretores,terrenos:T,pontos,concorrentes,concEmpresas,areasInteresse:[{id:'ai1',nome:'Área Cupecê A',terrenos:['TER-000123','TER-000132']}],seqT:132,cfg:CFG_PADRAO(),membros:MEMBROS_PADRAO(),notifs:[]};
+  return {eixos,corretores,terrenos:T,pontos,concorrentes,concEmpresas,areasInteresse:[{id:'ai1',nome:'Área Cupecê A',terrenos:['A123','A132']}],seqT:132,cfg:CFG_PADRAO(),membros:MEMBROS_PADRAO(),notifs:[]};
 }
 
 /* ===================== estado ===================== */
@@ -5652,6 +5658,10 @@ const KEY='bkm-terrenos-prototipo-v9';
 let S;try{const r=localStorage.getItem(KEY);S=r?JSON.parse(r):null}catch(e){S=null}
 if(!S||!S.terrenos)S=seed();
 S.terrenos.forEach(t=>(t.docs||[]).forEach(d=>{if(/^geosampa_/.test(d.tipo))d.tipo=d.tipo.replace('geosampa_','lote_')}));
+// código curto do terreno (decisão do Moisés, 4/nov/2026): letra + 3 dígitos, A001 a A999, depois B001... até Z999 (25.974)
+function codTer(n){if(n<1||n>26*999)throw new Error('Acabaram os códigos de terreno (Z999).');return String.fromCharCode(65+Math.floor((n-1)/999))+String((n-1)%999+1).padStart(3,'0')}
+S.terrenos.forEach(t=>{const m=/^TER-0*(\d+)$/.exec(t.codigo||'');if(m)t.codigo=codTer(+m[1])});
+(S.areasInteresse||[]).forEach(a=>{a.terrenos=(a.terrenos||[]).map(c=>{const m=/^TER-0*(\d+)$/.exec(c);return m?codTer(+m[1]):c})});
 const save=()=>{try{if(typeof audit==='function')audit()}catch(e){console.error(e)}try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 /* menu lateral começa encolhido (só ícone e rótulo curto); aberto só se a pessoa abriu */
 let menuMin=true;try{menuMin=localStorage.getItem('bkm-terrenos-menu')!=='aberto'}catch(e){}
@@ -6046,7 +6056,7 @@ function go(route,x={}){if(UI.edMini)Object.assign(UI,{edMini:false,mpModo:null,
 
 /* ===================== modais ===================== */
 function renderModal(){
-  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.nv=null;UI.nvPool=null;UI.nvKmz=null;UI.ofPoly=null;UI.kmzNovo=false;UI.lotes=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.crPredNovo=false;UI.crAviso=null;UI.grafico=null;UI.geo=null;UI.alvoParte=null;UI.poiExcl=null;UI.ltDup=null;UI.lg=null;return}
+  const M=UI.modal,el=$('#modal');if(!M){if(UI.posCad)setTimeout(()=>{const t=UI.posCad&&!UI.modal&&T(UI.posCad);if(t)nvGaveta(t)},0);el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.nv=null;UI.nvPool=null;UI.nvKmz=null;UI.ofPoly=null;UI.kmzNovo=false;UI.lotes=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.crPredNovo=false;UI.crAviso=null;UI.grafico=null;UI.geo=null;UI.alvoParte=null;UI.poiExcl=null;UI.ltDup=null;UI.lg=null;return}
   let h='';const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`;
   h=quadrosModal(M,fechar)||cronoModal(M,fechar)||viabModal(M,fechar)||partesModal(M,fechar)||fasesModal(M,fechar)||funilModal(M,fechar)||setoresModal(M,fechar)||topoModal(M,fechar);
   if(M==='novo')h=UI.nv?nvDadosHtml(fechar):nvPasso1Html(fechar);
@@ -6080,27 +6090,6 @@ function renderModal(){
   /* o cartão de tarefa abre sem cursor no título (como o Trello): o foco vai para a janela */
   const tkm=el.querySelector('.tkm');if(tkm){const d=el.querySelector('.dialog');d.tabIndex=-1;setTimeout(()=>{if(!d.contains(document.activeElement))d.focus({preventScroll:true})},30);return}
   const f=el.querySelector('input:not([type=hidden]),select');if(f)setTimeout(()=>f.focus(),30);
-}
-function dedupe(){
-  const f=$('#f-novo');if(!f)return;const mun=f.querySelector('[name=mun]:checked')?.value||'sp',cid=CIDADES_INSC[mun],nd=cid.mascara?digitosMasc(cid.mascara):0,log=f.logradouro.value.trim().toLowerCase(),nr=f.numero.value.trim().toLowerCase();
-  const sqls=[...f.querySelectorAll('.nv-sqls input[name=sql], .nv-sqls [data-k=sql]')].map(e=>digits(e.value)).filter(Boolean),mats=[...f.querySelectorAll('.nv-lt')].map(x=>({n:digits(x.querySelector('[data-k=num]').value),cri:x.querySelector('[data-k=cri]').value})).filter(m=>m.n);
-  const sql=sqls[0]||'',mat=mats[0]?.n||'';
-  let hit=null,msg='',cert='';const quadra=[];
-  for(const t of S.terrenos){
-    const ins=t.insc.find(i=>insCid(i)===mun&&sqls.some(q=>q.length>=6&&digits(i.sql)===q));
-    if(ins){hit=t;cert='certa';msg=`Mesma inscrição ${ins.sql} (${cid.cidade})`;break}
-    let mm=null;const m=t.mats.find(x=>{mm=mats.find(y=>y.n.length>=3&&digits(x.num)===y.n&&criIgual(x.cri,y.cri))||mats.find(y=>y.n.length>=3&&digits(x.num)===y.n);return mm});
-    if(m){hit=t;cert=criIgual(m.cri,mm.cri)?'certa':'provavel';msg=`Mesma matrícula ${m.num}${mm.cri?(m.cri===mm.cri?' no '+m.cri:' em outro cartório ('+m.cri+')'):` (${m.cri||'cartório não informado'})`}`;break}
-    if(log.length>=4&&(t.logradouro||'').toLowerCase()===log&&(!nr||!t.numero||t.numero.toLowerCase()===nr)){hit=t;cert='possivel';msg='Mesmo endereço'}
-    // nos dois cadastros os 6 primeiros dígitos são setor e quadra
-    if(nd&&sql.length===nd&&t.situacao==='ativo'){const q=t.insc.find(i=>insCid(i)===mun&&digits(i.sql).length===nd&&digits(i.sql).slice(0,6)===sql.slice(0,6)&&digits(i.sql)!==sql);if(q)quadra.push([t,q])}
-  }
-  const box=$('#dedupe'),btn=$('#btn-novo');f.dataset.dup=hit&&cert==='certa'?hit.id:'';
-  const viz=!hit&&quadra.length?`<div class="banner blue" style="margin-top:8px">${ic('layers')}<div style="flex:1"><div class="bt">${quadra.length} terreno${quadra.length>1?'s':''} na mesma quadra (setor ${mun==='sjc'?sql.slice(0,2):sql.slice(0,3)}, quadra ${mun==='sjc'?sql.slice(2,6):sql.slice(3,6)})</div>
-    <div>${quadra.map(([t,q])=>`<button type="button" class="linkbtn" data-a="abrir" data-id="${t.id}">${t.codigo} · ${esc(t.nome)}</button> <span class="faint">(${cid.rotulo} ${esc(q.sql)})</span>`).join('<br>')}</div><div class="hint" style="margin-top:4px">Não é duplicata. Pode valer estudar os lotes juntos numa área de interesse.</div></div></div>`:'';
-  if(!hit){box.innerHTML=(sqls.length||mats.length||log?'<div class="hint">Nenhum cadastro com esta inscrição, matrícula ou endereço. Será criado um terreno novo.</div>':'<div class="hint">Digite a inscrição ou a matrícula. Teste com o SQL 089.123.0045-6 (já cadastrado) ou 089.123.0099-0 (mesma quadra de dois terrenos).</div>')+viz;btn.textContent='Cadastrar terreno';return}
-  box.innerHTML=`<div class="banner ${cert==='certa'?'blue':'warn'}">${ic(cert==='certa'?'link':'warn')}<div style="flex:1"><div class="bt">${cert==='certa'?'Este imóvel já está cadastrado':'Possível duplicidade'}: ${hit.codigo} · ${esc(hit.nome)}</div><div>${esc(msg)}. ${cert==='certa'?'O lote não é cadastrado de novo: registre a nova oferta nesse terreno, e o analista decide lá se segue a tratativa ou descarta.':'Confira antes de salvar.'}</div><button type="button" class="btn sm" style="margin-top:8px" data-a="abrir" data-id="${hit.id}">Abrir ficha existente</button></div></div>`;
-  btn.textContent=cert==='certa'?`Registrar nova oferta no ${hit.codigo}`:'Cadastrar mesmo assim';
 }
 
 /* ===================== eventos ===================== */
@@ -6227,7 +6216,6 @@ document.addEventListener('input',e=>{const el=e.target;
   if(el.id==='q-top'&&UI.route==='mapa'){UI.mp.q=el.value;mpRefresh();return}
   if(el.id==='q-top'){UI.q=el.value;if(UI.route!=='terrenos'){go('terrenos');$('#q-top').focus()}else{const r=$('#rows');if(r)r.innerHTML=linhas()}}
   if(el.dataset.masc){const m=mascarar(el.value,el.dataset.masc);if(m!==el.value)el.value=m}
-  if(el.form?.dataset.form==='novo')dedupe();
 
 });
 document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Object.fromEntries(new FormData(f)),t=UI.alvo?T(UI.alvo):UI.route==='terreno'?T(UI.id):null;
@@ -6268,18 +6256,12 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       if(lp&&['rascunho','apresentada','em_analise'].includes(lp.status))lp.status=lp.origem===F.origem?'substituida':'recusada';
       t.propostas.push({v:(lp?.v||0)+1,origem:F.origem,data:F.data,validade:F.validade||null,valor:v,forma:F.forma,cond:F.cond,status:F.status});
       log(t,`Proposta v${(lp?.v||0)+1} (${F.origem==='bkm'?'BKM':'Vendedor'}): ${mi(v)}`);UI.propForm=false;save();render();toast('Proposta registrada.');break}
-    case 'novo':{const dup=f.dataset.dup;let alvo;if(!UI.nv){toast('Comece pela poligonal do terreno.',true);return}
-      if(F.sql&&F.mun!=='outro'&&cidDoNome(F.municipio)!==F.mun){toast(`A inscrição é de ${CIDADES_INSC[F.mun].cidade} e o terreno fica em ${F.municipio.split(' · ')[0]}.`,true);return}
-      let nvPl=null;if(!dup){nvPl=nvPlLer(f);try{nvPlValida(nvPl)}catch(err){toast(err.message,true);return}}
-      if(dup){alvo=T(dup)}else{do S.seqT++;while(S.terrenos.some(x=>x.codigo==='TER-'+String(S.seqT).padStart(6,'0')));alvo={...seedVazio(),codigo:'TER-'+String(S.seqT).padStart(6,'0'),nome:F.nome,logradouro:F.logradouro.trim(),numero:F.numero.trim(),bairro:F.bairro.trim(),zona:F.zona||null,resp:F.resp,origem:F.origem,dataIdent:HOJE};
-        alvo.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado'}];nvGravar(alvo,F);S.terrenos.push(alvo);crAplicarPadrao(alvo);nvPlGravar(alvo,nvPl,F.mun||cidDoNome(F.municipio)||'outro')}
-      const val=lerNum(F.valor);
-      if(dup&&!val&&!F.cid){UI.modal=null;save();nvAbrirOferta(alvo,null,`Registre a nova oferta no ${alvo.codigo}.`);break}
-      if(val||F.cid){const o={id:uid(),cid:F.cid||null,data:HOJE,valor:val,forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,status:'ativa'};alvo.ofertas.push(o);
-        if(o.cid&&!alvo.corretores.some(x=>x.cid===o.cid))alvo.corretores.push({cid:o.cid,principal:!alvo.corretores.some(x=>x.principal)});
-        if(!alvo.neg||!['ativo','stand_by'].includes(alvo.neg.status)){alvo.neg=novaNeg(o.id,Number(F.temp)||null);log(alvo,'Negociação aberta');etAbriu(alvo)}
-        else log(alvo,'Nova oferta registrada')}
-      UI.modal=null;UI.nv=null;save();go('terreno',{id:alvo.id,tab:dup?'comercial':'cadastro',from:'terrenos'});toast(dup?'Oferta registrada no terreno existente.':`${alvo.codigo} cadastrado. Complete a ficha quando puder.`);if(!dup&&alvo.insc[0]&&loteBuscavel(alvo.insc[0]))loteBuscar(alvo,0);if(!dup)lgPerguntar(alvo);break}
+    case 'novo':{if(!UI.nv){toast('Comece pela poligonal do terreno.',true);return}
+      do S.seqT++;while(S.terrenos.some(x=>x.codigo===codTer(S.seqT)));
+      // cadastro curto (decisão do Moisés, 4/nov/2026): poligonal e nome; o resto entra ao longo da jornada
+      const alvo={...seedVazio(),codigo:codTer(S.seqT),nome:F.nome.trim(),logradouro:(F.logradouro||'').trim(),numero:(F.numero||'').trim(),bairro:(F.bairro||'').trim(),zona:null,resp:me(),origem:null,dataIdent:HOJE};
+      alvo.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado'}];nvGravar(alvo,F);S.terrenos.push(alvo);crAplicarPadrao(alvo);nvPlGravar(alvo,{partes:[{nome:'Vendedor 1'}],lotes:[]},cidDoNome(F.municipio)||'outro');
+      UI.modal=null;UI.nv=null;save();toast(`${alvo.codigo} cadastrado.`);nvDepois(alvo);break}
     case 'oferta':{const o={id:uid(),cid:F.cid||null,data:HOJE,valor:lerNum(F.valor),forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,validade:F.validade||null,status:'ativa'};if(UI.ofPoly)o.poly=UI.ofPoly;t.ofertas.push(o);
       if(o.cid&&!t.corretores.some(x=>x.cid===o.cid))t.corretores.push({cid:o.cid,principal:!t.corretores.some(x=>x.principal)});
       if(!t.neg||!['ativo','stand_by'].includes(t.neg.status)){t.neg=novaNeg(o.id,null);log(t,'Negociação aberta');etAbriu(t)}else log(t,`Nova oferta: ${mi(o.valor)}${o.poly?` (parte do terreno, ${m2(Math.round(areaPoly(o.poly)))})`:''}`);
@@ -6538,7 +6520,7 @@ function fichaSheet(){let el=$('#ficha-sheet');const t=UI.fichaSheet&&UI.route==
     <button class="iconbtn" data-a="fs-fechar" aria-label="Fechar" title="Fechar (Esc)">${ic('close',22)}</button></div>
     <div class="fs-b bl-c fs-ro">${abaGeral(t)}</div>
     <div class="fs-f"><button class="btn primary" data-a="abrir" data-id="${t.id}" data-tab="geral" data-from="mapa">Abrir ficha completa</button></div>`;
-  el.querySelector('.g-loc')?.remove();el.querySelector('.fs-b').scrollTop=0;
+  el.querySelector('.g-loc')?.remove();el.querySelector('.fs-b').scrollTop=0;fsPos(el);
   if(el.dataset.id!==t.id){el.dataset.id=t.id;setTimeout(()=>mpLivre(t),60)}}
 /* com o painel da ficha aberto (desktop), o terreno vai para o meio do pedaço do mapa que fica livre */
 /* coluna Fase e etapa da tabela: fase em cima, etapa · subetapa (ou situação) embaixo, avisos numa fileira própria */
@@ -6553,10 +6535,14 @@ function colFaseEtapa(t){const a=faseAtual(t),ent=!a||a.k===faseEnt(),pe=x=>`<sp
     if(procAtrasada(p))fl.push('<span class="fe-fl fe-warn">Acima do prazo</span>')}
   const n=fasesAbertas(t).length;if(n>1)fl.push(`<span class="fe-fl" title="${esc(fasesAbertas(t).map(faseN).join(', '))}">+${n-1} fase</span>`);
   return `<span class="c-etapa c-fe"><span class="fe-f">${esc(fase)}</span><span class="fe-e">${linha}</span>${fl.length?`<span class="fe-fls">${fl.join('')}</span>`:''}</span>`}
+// no desktop a gaveta cobre a lista de terrenos, na largura dela
+function fsPos(el){const l=$('.mapa-lado');if(!el||!l||innerWidth<900){if(el)el.style.left=el.style.top=el.style.width='';return}
+  const r=l.getBoundingClientRect();el.style.left=Math.max(8,r.left)+'px';el.style.top=Math.max(8,r.top)+'px';el.style.width=Math.min(innerWidth-Math.max(8,r.left)-240,Math.max(320,r.width))+'px'}
+addEventListener('resize',()=>fsPos($('#ficha-sheet')));
 function mpLivre(t){const m=$('#mapa'),fs=$('#ficha-sheet');if(!MAPA||!m||!fs||t.lat==null||innerWidth<900)return;
-  const r=m.getBoundingClientRect(),f=fs.getBoundingClientRect(),dir=Math.min(r.right,f.left-16),x0=r.left,cx=(x0+dir)/2-r.left,cy=r.height/2;
-  if(GG){const w=r.right-dir;MAPA.panTo(gLL(t.lat,t.lng));if(w>0)MAPA.panBy(Math.round(w/2),0);return}
-  const p=MAPA.latLngToContainerPoint([t.lat,t.lng]);if(p.x>40&&p.x<dir-r.left-40&&p.y>80&&p.y<r.height-40)return;
+  const r=m.getBoundingClientRect(),f=fs.getBoundingClientRect(),dir=r.right,x0=Math.max(r.left,f.right+16),cx=(x0+dir)/2-r.left,cy=r.height/2;
+  if(GG){const w=x0-r.left;MAPA.panTo(gLL(t.lat,t.lng));if(w>0)MAPA.panBy(-Math.round(w/2),0);return}
+  const p=MAPA.latLngToContainerPoint([t.lat,t.lng]);if(p.x>x0-r.left+40&&p.x<dir-r.left-40&&p.y>80&&p.y<r.height-40)return;
   MAPA.panBy([p.x-cx,p.y-cy],{animate:false})}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&UI.fichaSheet&&!UI.modal&&!$('.mp-ctx')&&!$('.v-menu')){UI.fichaSheet=null;fichaSheet();e.preventDefault()}});
 function mpSelecionar(id){UI.mpSel=id;mpMarcarPinos();if(UI.fichaSheet&&id&&id!==UI.fichaSheet){UI.fichaSheet=id;fichaSheet()}const l=$('#mp-lista');if(l)l.innerHTML=mpLista();mpCartao();
@@ -8185,7 +8171,7 @@ const IT_CAT=(()=>{const tr=(c)=>[t=>t[c],(t,v)=>{t[c]=v}],of=c=>[t=>ofertaRef(t
   ['terreno.formato','Formato do lote','lista',null,itSemVazio(OPT.formato,'nao_informado'),'nao_informado',1,0,0,...tr('formato')],['terreno.situacao_ocupacao','Ocupação','lista',null,itSemVazio(OPT.ocupacao,'nao_informado'),'nao_informado',1,1,1,...tr('ocupacao')],
   ['terreno.uso_atual','Uso atual','texto',null,null,null,1,0,1,...tr('uso')],['terreno.area_construida_existente_m2','Área construída existente','numero','m²',null,null,1,0,1,...tr('aConst')],
   ['terreno.area_construida_demolir_m2','Área a demolir','numero','m²',null,null,1,0,1,...tr('aDemolir')],['terreno.necessidade_demolicao','Precisa demolir','lista',null,itSemVazio(OPT.demolicao,'nao_avaliada'),'nao_avaliada',1,1,1,...tr('demolicao')],
-  ['terreno.observacoes_fisicas','Observações físicas','texto',null,null,null,1,0,0,...tr('obsFis')],['terreno.tipo_empreendimento','Tipo de empreendimento','lista',null,itOpc({mercado:'Mercado',his:'HIS',hmp:'HMP'}),'nao_informado',1,1,1,...tr('tipoEmp')],
+  ['terreno.observacoes_fisicas','Observações físicas','texto',null,null,null,1,0,0,...tr('obsFis')],
   ['negociacao.etapa','Etapa','lista',null,opEt,null,0,1,0,...ng('etapa')],['negociacao.subetapa','Subetapa','lista',null,opSub,null,0,1,0,...ng('sub')],
   ['negociacao.status','Situação da negociação','lista',null,itOpc(STATUS_N),null,0,1,0,...ng('status')],['negociacao.responsavel_id','Responsável da negociação','pessoa',null,opUs,null,0,1,1,...ro(t=>t.neg?.resp||(t.neg?t.resp:null))],
   ['negociacao.temperatura','Temperatura','lista',null,itOpc({1:'1',2:'2',3:'3',4:'4',5:'5'}),null,1,1,1,t=>t.neg?.temp==null?null:String(t.neg.temp),(t,v)=>{if(!t.neg)throw new Error('O terreno não tem negociação.');t.neg.temp=v==null?null:Number(v)}],
@@ -8424,7 +8410,7 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="it-"]'
 
 /* exemplo: no primeiro terreno, campos do terreno e um campo personalizado no cartão da análise jurídica, com regras */
 (()=>{if(S.itExemplo)return;S.itExemplo=true;const t=S.terrenos[0];if(!t||!t.tarefas)return;const a=t.tarefas.find(x=>x.titulo==='Análise jurídica da matrícula');if(!a)return;itNorm(a);
-  a.itens.unshift({id:uid(),chave:'terreno.area_documental_m2',regra:'bloqueia',cond:null},{id:uid(),chave:'terreno.necessidade_demolicao',regra:'justificativa',cond:{modo:'todas',itens:[{campo:'terreno.tipo_empreendimento',op:'fora',valores:['mercado']}]}},
+  a.itens.unshift({id:uid(),chave:'terreno.area_documental_m2',regra:'bloqueia',cond:null},{id:uid(),chave:'terreno.necessidade_demolicao',regra:'justificativa',cond:{modo:'todas',itens:[{campo:'terreno.situacao_ocupacao',op:'em',valores:['ocupado','parcialmente_ocupado']}]}},
     {id:uid(),chave:'calculado.forma_pagamento_vigente',regra:'livre',cond:null})})();
 
 /* =====================================================================
@@ -10668,9 +10654,9 @@ function partesModal(M,fechar){const t=T(UI.id);if(!t)return '';const pa=UI.alvo
   return ''}
 
 /* ---------- exemplo: três lotes de donos diferentes, já na Negociação ---------- */
-function partesPreparar(){if(S.partesExemplo)return;S.partesExemplo=true;if(S.terrenos.some(t=>t.codigo==='TER-000133'))return;S.seqT=Math.max(S.seqT||0,133);
+function partesPreparar(){if(S.partesExemplo)return;S.partesExemplo=true;if(S.terrenos.some(t=>t.codigo==='A133'))return;S.seqT=Math.max(S.seqT||0,133);
   const H=n=>addD(HOJE,-n),la=-23.5868,lo=-46.5772,dy=45/110574,dx=60/(111320*Math.cos(la*Math.PI/180));
-  const t=Object.assign(seedVazio(),{codigo:'TER-000133',nome:'Três lotes Rua Ibitirama',prioridade:'alta',resp:'Ana Prado',origem:'corretor',dataIdent:H(55),logradouro:'Rua Ibitirama',numero:'1.200',bairro:'Vila Prudente',zona:'sudeste',municipio:'São Paulo · SP',
+  const t=Object.assign(seedVazio(),{codigo:'A133',nome:'Três lotes Rua Ibitirama',prioridade:'alta',resp:'Ana Prado',origem:'corretor',dataIdent:H(55),logradouro:'Rua Ibitirama',numero:'1.200',bairro:'Vila Prudente',zona:'sudeste',municipio:'São Paulo · SP',
     lat:la,lng:lo,precisao:'conferida',poly:[[la+dy,lo-dx],[la+dy,lo+dx],[la-dy,lo+dx],[la-dy,lo-dx]].map(p=>p.map(v=>+v.toFixed(6))),aDoc:5400,fonteArea:'documental',testada:120,posicao:'meio_quadra',formato:'regular',ocupacao:'parcialmente_ocupado'});
   const pa={id:'pa1',nome:'Família Souza',essencial:true,area:2700,ativa:true},pb={id:'pa2',nome:'Carlos Pires',essencial:true,area:1500,ativa:true},pc={id:'pa3',nome:'Oficina do Zé',essencial:false,area:1200,ativa:true};
   t.partes=[pa,pb,pc];
@@ -10997,7 +10983,7 @@ function campoInsc(pre,cid,rot,obrig){const c=CIDADES_INSC[cid];
 const rotInsc=(c,rot)=>rot?`${rot} (${c.rotulo})`:c.rotulo;
 document.addEventListener('change',e=>{const r=e.target.closest('[data-insc]');if(!r)return;const pre=r.dataset.insc,c=CIDADES_INSC[r.value],el=document.getElementById(pre+'-sql'),lb=document.getElementById(pre+'-sql-l');if(!el)return;
   el.dataset.masc=c.mascara||'';el.inputMode=c.mascara?'numeric':'text';el.placeholder=c.mascara||'Como está no carnê do IPTU';el.value=c.mascara?mascarar(el.value,c.mascara):el.value;
-  if(lb)lb.textContent=rotInsc(c,pre==='i'?'Nova inscrição':'');if(el.form?.dataset.form==='novo')dedupe();if(e.isTrusted)el.focus()});
+  if(lb)lb.textContent=rotInsc(c,pre==='i'?'Nova inscrição':'');if(e.isTrusted)el.focus()});
 
 // Busca na base da cidade da inscrição (só com a inscrição completa).
 const loteBuscavel=ins=>{const c=CIDADES_INSC[insCid(ins)];return !!(c.base&&LOTE_ADAPT[insCid(ins)]?.url()&&digits(ins.sql).length===digitosMasc(c.mascara))};
@@ -11605,24 +11591,7 @@ async function nvLocalizar(){const nv=UI.nv;if(!nv)return;let l=null,fr=[];
   if(UI.nv!==nv)return;nv.local=l;
   try{fr=await nvFrentes(nv.poly)}catch(e){console.warn('frentes',e)}
   if(UI.nv!==nv)return;if(!fr.length&&l?.logradouro)fr=[{logradouro:l.logradouro,numero:l.numero,m:null,lados:[]}];nv.frentes=fr;nv.buscandoLocal=false;
-  const f=$('#f-novo');if(!f)return;const set=(n,v)=>{const i=f.querySelector(`[name="${n}"]`);if(i&&v&&!i.value)i.value=v};
-  if(l?.cidade){set('municipio',l.cidade+(l.uf?' · '+l.uf:''));nvCidadeInsc()}
-  if(l)set('bairro',l.bairro);
-  const caixa=$('#nv-frentes');if(caixa)caixa.innerHTML=nvFrentesHtml(nv);if(fr[0]){set('logradouro',fr[0].logradouro);set('numero',fr[0].numero);if(!f.nome.value)f.nome.value=[fr[0].logradouro,fr[0].numero].filter(Boolean).join(', ')}
-  const h=$('#n-mun-h');if(h)h.textContent=l?.cidade?'Pela localização da poligonal. Confira se estiver perto da divisa.':'Não deu para saber pela localização. Digite a cidade e a UF.'}
-function nvFrentesHtml(nv){const fr=nv.frentes;if(nv.buscandoLocal)return '<span class="hint">Procurando as ruas em volta da poligonal...</span>';
-  if(!fr?.length)return '<span class="hint">Nenhuma rua encontrada em volta da poligonal. Digite o endereço.</span>';
-  if(fr.length===1)return `<span class="hint">Frente para ${esc(fr[0].logradouro)}${fr[0].m?` (${num(Math.round(fr[0].m))} m)`:''}, pela localização. Confira o número.</span>`;
-  return `<span class="lbl-f" id="nv-fr-l">A poligonal tem ${fr.length} frentes. Qual é o endereço principal?</span><span class="nv-fr" role="radiogroup" aria-labelledby="nv-fr-l">${fr.map((x,i)=>`<label class="opt-radio"><input type="radio" name="frente" value="${i}" ${i?'':'checked'}>${esc(x.logradouro)}${x.numero?', '+esc(x.numero):''}${x.m?` <span class="faint">· ${num(Math.round(x.m))} m</span>`:''}</label>`).join('')}</span>
-    <span class="hint">As outras entram em Confrontações como frente.</span>`}
-// a cidade da inscrição acompanha o município
-function nvCidadeInsc(){const f=$('#f-novo');if(!f)return;const cid=cidDoNome(f.municipio.value),r=f.querySelector('[name=mun]');
-  // tipo do empreendimento: só em São Paulo, onde muda o CA (decisão do Moisés, 25/out/2026)
-  const tp=f.querySelector('#nv-tipo');if(tp){tp.hidden=cid!=='sp';tp.querySelectorAll('input').forEach(x=>{x.required=cid==='sp';x.disabled=cid!=='sp'})}
-  if(r&&r.value!==cid){r.value=cid;r.dispatchEvent(new Event('change',{bubbles:true}))}
-  const c=CIDADES_INSC[cid]||CIDADES_INSC.sp;f.querySelectorAll('.nv-sqls [data-k=sql]').forEach(el=>{el.dataset.masc=c.mascara||'';el.placeholder=c.mascara||'Como está no carnê do IPTU';const lb=el.previousElementSibling;if(lb)lb.textContent=c.rotulo});
-  f.querySelectorAll('[data-a=nv-sql-add]').forEach(b=>b.lastChild.textContent='Mais um '+c.rotulo)}
-
+  if(UI.modal==='novo'&&$('#f-novo'))renderModal()}
 /* ---------- telas ---------- */
 function nvPasso1Html(fechar){const kmz=UI.nvKmz;
   return `<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Passo 1 de 2 · Poligonal do terreno</div></div>${fechar}</div>
@@ -11649,74 +11618,27 @@ function nvSobreHtml(fechar){const nv=UI.nv,s=nv.sobre,ro=UI.role==='Leitura',ig
     <div class="nv-s-a"><button class="btn sm text" data-a="abrir" data-id="${x.t.id}">Abrir ficha</button>${ro?'':nvAcoes(x).map(([a,l,c])=>`<button class="btn sm ${c}" data-a="${a}" data-id="${x.t.id}">${l}</button>`).join('')}</div></div>`).join('')}</div>
   <div class="hint" style="margin-top:var(--e3)">${igual?'<b>Nova oferta</b> registra a oferta no terreno, sem mudar o cadastro. ':''}<b>Recadastrar</b> troca a poligonal do terreno pela área nova (ou pela soma das duas) e registra a oferta nele, guardando o pedaço oferecido. A poligonal anterior fica no histórico.</div>
   <div class="df"><button class="btn text" data-a="nv-voltar">Voltar</button>${ro?'':`<button class="btn" data-a="nv-mesmo">É outro terreno, cadastrar mesmo assim</button>`}</div>`}
-function nvDadosHtml(fechar){const nv=UI.nv,l=nv.local,mun=l?.cidade?l.cidade+(l.uf?' · '+l.uf:''):'',cid=cidDoNome(mun),f0=nv.frentes?.[0];
-  const v=x=>x?`value="${esc(x)}"`:'',nome=nv.nome||(f0?[f0.logradouro,f0.numero].filter(Boolean).join(', '):'');
-  return `<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Passo 2 de 2 · Só o mínimo para entrar no radar. A ficha é completada aos poucos.</div></div>${fechar}</div>
+// nome de referência: o logradouro sem o tipo (Rua, Avenida...) e sem o número (decisão do Moisés, 4/nov/2026)
+const NV_TIPO_LOG=/^(rua|r\.|avenida|av\.?|alameda|al\.?|travessa|trav\.?|tv\.?|estrada|estr\.?|est\.|pra[çc]a|p[çc]a\.?|rodovia|rod\.?|largo|lgo\.?|viela|via|viaduto|ladeira|passagem|beco|vila|parque|pq\.?|servid[ãa]o|acesso|caminho|marginal)\s+/i;
+const nomeRef=log=>(log||'').trim().replace(NV_TIPO_LOG,'').replace(/,.*$/,'').trim();
+// passo 2: só o nome de referência. Município, endereço e frentes vêm da poligonal; o resto entra ao longo da jornada
+function nvDadosHtml(fechar){const nv=UI.nv,l=nv.local,mun=l?.cidade?l.cidade+(l.uf?' · '+l.uf:''):'',f0=nv.frentes?.[0],busca=nv.buscandoLocal;
+  const v=x=>x?`value="${esc(x)}"`:'',nome=nv.nome??(f0?nomeRef(f0.logradouro):'');
+  const onde=[f0&&[f0.logradouro,f0.numero].filter(Boolean).join(', '),l?.bairro,mun].filter(Boolean).join(' · ');
+  return `<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Passo 2 de 2 · O resto da ficha é preenchido ao longo da jornada.</div></div>${fechar}</div>
   <form data-form="novo" id="f-novo"><div class="fields">
   <div class="field full"><div class="banner blue">${ic('check')}<div style="flex:1"><div class="bt">${NV_FONTE[nv.fonte]} · ${m2(Math.round(nv.area))}</div>
-    <div>${nv.ignorados?`Cadastro novo, confirmado como outro terreno apesar de sobrepor ${nv.ignorados.map(x=>x.t.codigo).join(', ')}.`:'Nenhum terreno cadastrado ocupa esta área.'}</div></div><button type="button" class="btn sm text" data-a="nv-voltar">Trocar</button></div></div>
-  <div class="field full"><label for="n-nome">Nome de referência *</label><input id="n-nome" name="nome" required placeholder="Terreno Av. Cupecê — esquina" ${v(nome)}></div>
-  <div class="field full"><label for="n-mun">Município *</label><input id="n-mun" name="municipio" required placeholder="${nv.buscandoLocal?'Buscando pela localização...':'Cidade · UF'}" ${v(mun)}><span class="hint" id="n-mun-h">${nv.buscandoLocal?'Buscando pela localização da poligonal...':mun?'Pela localização da poligonal. Confira se estiver perto da divisa.':'Não deu para saber pela localização. Digite a cidade e a UF.'}</span></div>
-  <div class="field full" id="nv-tipo" ${cid==='sp'?'':'hidden'}><span class="lbl" id="n-tipo-l">Tipo do empreendimento *</span>${segTipoEmp('tipoEmp',null,cid==='sp').replace('aria-label="Tipo do empreendimento"','aria-labelledby="n-tipo-l"')}<span class="hint">Em São Paulo o CA, a cota-parte e a outorga mudam com o tipo (EHIS, EHMP). Dá para mudar depois na ficha, em Parâmetros urbanísticos.</span></div>
-  <div class="field full nv-frentes" id="nv-frentes" aria-live="polite">${nvFrentesHtml(nv)}</div>
-  <div class="field"><label for="n-log">Logradouro principal</label><input id="n-log" name="logradouro" placeholder="Av. Cupecê" ${v(f0?.logradouro)}></div>
-  <div class="field"><label for="n-num">Número</label><input id="n-num" name="numero" placeholder="5.120 ou s/n" ${v(f0?.numero)}></div>
-  <div class="field"><label for="n-bai">Bairro</label><input id="n-bai" name="bairro" ${v(l?.bairro)}></div>
-  <div class="field"><label for="n-zona">Zona</label>${optSel('zona',OPT.zona,null).replace('id="f-zona"','id="n-zona"')}</div>
-  <div class="field"><label for="n-resp">Responsável *</label><select id="n-resp" name="resp">${USERS.map(u=>`<option ${u===me()?'selected':''}>${u}</option>`).join('')}</select></div>
-  <div class="field"><label for="n-ori">Origem *</label><select id="n-ori" name="origem" required>${Object.entries(OPT.origem).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
-  ${nvPlHtml(cid)}
-  <details class="details field full"><summary>Já recebeu uma oferta? Registrar condições pedidas</summary><div class="fields" style="margin-top:8px">
-    <div class="field"><label for="n-cor">Corretor</label><select id="n-cor" name="cid"><option value="">Sem corretor / direto</option>${S.corretores.map(c=>`<option value="${c.id}">${esc(c.nome)} · ${esc(c.imob)}</option>`).join('')}</select></div>
-    <div class="field"><label for="n-val">Valor pedido (R$)</label><input id="n-val" name="valor" inputmode="decimal"></div>
-    <div class="field"><label for="n-for">Forma de pagamento pedida</label>${optSel('forma',OPT.forma,null).replace('id="f-forma"','id="n-for"')}</div>
-    <div class="field"><label for="n-tmp">Temperatura</label><select id="n-tmp" name="temp"><option value="">Não avaliada</option>${[1,2,3,4,5].map(n=>`<option value="${n}">${n} · ${TEMP[n]}</option>`).join('')}</select></div>
-    <div class="field full"><label for="n-obs">Observação sobre a forma de pagamento</label><input id="n-obs" name="obsPag"></div>
-    <div class="field full"><label for="n-ace">Aceita permuta</label><input id="n-ace" name="aceita"></div></div></details>
-  </div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-novo" id="btn-novo">Cadastrar terreno</button></div>`}
-/* ---------- passo 2: partes e lotes, no mesmo formato da aba Terreno (decisão do Moisés, 4/nov/2026) ----------
-   Nasce com "Vendedor 1" e "Lote 1". O primeiro lote leva os nomes mat, cri e sql, que a checagem de duplicidade lê;
-   os SQLs a mais e os outros lotes são lidos por nvPlLer. Cartório vazio = o da poligonal (vem do GeoSampa depois). */
-const NV_CRI=()=>Array.from({length:18},(_,i)=>`${i+1}º CRI`);
-function nvPlHtml(cid){return `<details class="details field full" id="nv-pl" open><summary>Partes e lotes</summary><div style="margin-top:8px">
-    <div class="pt2-qtd"><label for="nv-pt-n">Quantas partes vendem?</label><span class="pt2-passo"><button type="button" class="iconbtn sm" data-a="nv-pt-menos" aria-label="Uma parte a menos" disabled>−</button><input id="nv-pt-n" inputmode="numeric" value="1" aria-label="Quantidade de partes"><button type="button" class="iconbtn sm" data-a="nv-pt-mais" aria-label="Uma parte a mais">+</button></span><span class="faint">Os dados da parte são opcionais.</span></div>
-    <div class="pt2-lista" id="nv-pt-lista">${nvPtCard(0)}</div>
-    <h3 class="nv-pl-h">Lotes</h3><div class="hint" style="margin:-4px 0 8px">Cada lote é uma matrícula, com um ou mais SQLs.</div>
-    <div class="lt-lista" id="nv-lt-lista">${nvLtCard(0,cid)}</div>
-    <button type="button" class="btn text sm qd-add" data-a="nv-lt-add">${ic('add',16)}Adicionar lote</button>
-    <div id="dedupe" class="field full" aria-live="polite" style="margin-top:8px"></div></div></details>`}
-function nvPtCard(i){const id=k=>`nvp-${k}-${i}`,inp=(k,l,x='')=>`<label class="field"><span class="lbl-f">${l}</span><input id="${id(k)}" data-k="${k}" ${x}></label>`;
-  return `<article class="pt2 nv-pt" data-i="${i}"><div class="pt2-h"><input class="pt2-tit" data-k="nome" value="Vendedor ${i+1}" aria-label="Título da parte"><button type="button" class="btn text sm pt2-x" data-a="nv-pt-del" ${i?'':'hidden'}>${ic('lixo',16)}Excluir parte</button></div>
-    <div class="pt2-g">${inp('pessoa','Nome completo da pessoa principal')}${inp('tel','Telefone','inputmode="tel" data-mask="telefone" placeholder="(11) 98765-4321"')}${inp('email','E-mail','type="email" placeholder="nome@email.com"')}${inp('doc','CPF ou CNPJ','inputmode="numeric" data-doc="1"')}
-      <label class="field pt2-obs"><span class="lbl-f">Observação</span><textarea data-k="obs" rows="1"></textarea></label></div></article>`}
-function nvLtCard(i,cid){const pri=i===0,id=k=>`nvl-${k}-${i}`,c=CIDADES_INSC[cid]||CIDADES_INSC.sp;
-  return `<article class="lt nv-lt" data-i="${i}"><div class="lt-h"><input class="pt2-tit" data-k="titulo" value="Lote ${i+1}" aria-label="Título do lote"><button type="button" class="btn text sm pt2-x" data-a="nv-lt-del">${ic('lixo',16)}Excluir lote</button></div>
-    <div class="pt2-g"><label class="field"><span class="lbl-f">Parte</span><select data-k="parte">${nvPtOpts(0)}</select></label>
-      <label class="field"><span class="lbl-f">Matrícula</span><input ${pri?'id="n-mat" name="mat"':`id="${id('m')}"`} data-k="num" inputmode="numeric" placeholder="Número"></label>
-      <label class="field"><span class="lbl-f">Cartório</span><select ${pri?'id="n-cri" name="cri"':''} data-k="cri"><option value="">Pela localização</option>${NV_CRI().map(x=>`<option>${x}</option>`).join('')}</select></label></div>
-    <div class="nv-sqls">${pri?campoInsc('n',cid,'',false):nvSqlCampo(i,0,c)}</div>
-    <button type="button" class="btn text sm" data-a="nv-sql-add" style="align-self:flex-start">${ic('add',16)}Mais um ${c.rotulo}</button></article>`}
-function nvSqlCampo(i,k,c){return `<div class="field grow nv-sql-x"><label for="nvl-s-${i}-${k}">${c.rotulo}</label><input id="nvl-s-${i}-${k}" data-k="sql" data-masc="${c.mascara||''}" inputmode="${c.mascara?'numeric':'text'}" placeholder="${c.mascara||'Como está no carnê do IPTU'}" autocomplete="off"></div>`}
-function nvPtOpts(sel){const ns=[...document.querySelectorAll('#nv-pt-lista .nv-pt [data-k=nome]')].map(x=>x.value.trim());const L=ns.length?ns:['Vendedor 1'];
-  return L.map((n,k)=>`<option value="${k}" ${k===sel?'selected':''}>${esc(n||'Parte '+(k+1))}</option>`).join('')}
-// títulos e listas de parte nos lotes acompanham as partes
-function nvPlSync(){const P=[...document.querySelectorAll('#nv-pt-lista .nv-pt')];
-  P.forEach((x,k)=>{x.querySelector('[data-a=nv-pt-del]').hidden=P.length<2});
-  const n=$('#nv-pt-n');if(n)n.value=P.length;const m=document.querySelector('[data-a=nv-pt-menos]');if(m)m.disabled=P.length<2;
-  document.querySelectorAll('#nv-lt-lista .nv-lt [data-k=parte]').forEach(s=>{const v=Math.min(+s.value||0,P.length-1);s.innerHTML=nvPtOpts(v)})}
-function nvPtQtd(n){const L=$('#nv-pt-lista');if(!L)return;n=Math.max(1,Math.min(30,n||1));
-  while(L.children.length<n){const i=L.children.length?Math.max(...[...L.children].map(x=>+x.dataset.i))+1:0;L.insertAdjacentHTML('beforeend',nvPtCard(i));
-    const t=L.lastElementChild.querySelector('[data-k=nome]');let k=L.children.length;const usados=[...L.querySelectorAll('[data-k=nome]')].map(x=>x.value.trim().toLowerCase());while(usados.filter(u=>u==='vendedor '+k).length>(t.value.toLowerCase()==='vendedor '+k?1:0))k++;t.value='Vendedor '+k}
-  while(L.children.length>n)L.lastElementChild.remove();nvPlSync()}
-// o que foi digitado: partes e lotes (lote sem matrícula nem SQL fica de fora)
-function nvPlLer(f){const P=[...f.querySelectorAll('#nv-pt-lista .nv-pt')].map(x=>{const d={};x.querySelectorAll('[data-k]').forEach(el=>d[el.dataset.k]=el.value.trim());return d});
-  const L=[...f.querySelectorAll('#nv-lt-lista .nv-lt')].map(x=>({titulo:x.querySelector('[data-k=titulo]').value.trim(),parte:+x.querySelector('[data-k=parte]').value||0,num:x.querySelector('[data-k=num]').value.trim(),cri:x.querySelector('[data-k=cri]').value,
-    sqls:[...x.querySelectorAll('.nv-sqls input[name=sql], .nv-sqls [data-k=sql]')].map(e=>e.value.trim()).filter(Boolean)})).filter(l=>l.num||l.sqls.length);
-  return {partes:P,lotes:L}}
-function nvPlValida(d){for(const [i,p] of d.partes.entries()){if(!p.nome)throw new Error(`Dê um título à parte ${i+1}.`);for(const k of ['tel','email','doc'])p[k]=ptValida(k,p[k])}
-  if(new Set(d.partes.map(p=>p.nome.toLowerCase())).size<d.partes.length)throw new Error('Duas partes com o mesmo título.');
-  if(new Set(d.lotes.map(l=>l.titulo.toLowerCase())).size<d.lotes.length)throw new Error('Dois lotes com o mesmo título.');
-  const ms=d.lotes.filter(l=>l.num);if(ms.some((a,i)=>ms.some((b,j)=>j>i&&digits(a.num)===digits(b.num)&&criIgual(a.cri,b.cri))))throw new Error('A mesma matrícula está em dois lotes.')}
+    <div>${busca?'Buscando o endereço pela poligonal...':onde?esc(onde):'Endereço não encontrado pela localização.'}</div>
+    ${nv.ignorados?`<div>Confirmado como outro terreno apesar de sobrepor ${nv.ignorados.map(x=>x.t.codigo).join(', ')}.</div>`:''}</div><button type="button" class="btn sm text" data-a="nv-voltar">Trocar</button></div></div>
+  <div class="field full"><label for="n-nome">Nome de referência *</label><input id="n-nome" name="nome" required placeholder="${busca?'Buscando a rua...':'Ex.: Cupecê'}" ${v(nome)}></div>
+  ${!busca&&!mun?`<div class="field full"><label for="n-mun">Município *</label><input id="n-mun" name="municipio" required placeholder="Cidade · UF"><span class="hint">Não deu para saber pela localização.</span></div>`:`<input type="hidden" name="municipio" ${v(mun)}>`}
+  <input type="hidden" name="logradouro" ${v(f0?.logradouro)}><input type="hidden" name="numero" ${v(f0?.numero)}><input type="hidden" name="bairro" ${v(l?.bairro)}><input type="hidden" name="frente" value="0">
+  </div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-novo" id="btn-novo" ${busca?'disabled':''}>${busca?'Buscando o endereço...':'Cadastrar terreno'}</button></div>`}
+// depois de cadastrar: em São Paulo, o mapa de lotes da prefeitura direto; depois (ou fora de SP), a ficha em gaveta no mapa
+function nvDepois(t){if(lgPode(t)){UI.posCad=t.id;lgAbrir(t);UI.lg.cad=true;return}nvGaveta(t)}
+function nvGaveta(t){UI.posCad=null;go('mapa',{mpSel:t.id,mpFoco:t.id});UI.fichaSheet=t.id;fichaSheet()}
+/* ---------- partes e lotes do terreno novo ----------
+   Nasce com a parte "Vendedor 1"; os lotes entram pelo mapa de lotes da prefeitura (proto_lotesgeo.js) ou pela aba Terreno. */
 // grava no terreno novo: as partes (a primeira é a "Vendedor 1" do terreno) e os lotes com as inscrições
 function nvPlGravar(t,d,mun){const P=partesDe(t);P.length=0;
   const ids=d.partes.map(p=>{const pa={id:uid(),ativa:true,neg:null,propostas:[],nome:p.nome,essencial:true,area:null};['pessoa','tel','email','doc','obs'].forEach(k=>{if(p[k])pa[k]=p[k]});P.push(pa);return pa.id});
@@ -11727,9 +11649,9 @@ function nvPlGravar(t,d,mun){const P=partesDe(t);P.length=0;
   if(d.partes.length>1||d.partes[0].nome!=='Vendedor 1')log(t,`${d.partes.length} parte${d.partes.length>1?'s':''}: ${d.partes.map(p=>p.nome).join(', ')}`);
   if(t.lotes.length)log(t,`${t.lotes.length} lote${t.lotes.length>1?'s':''} cadastrado${t.lotes.length>1?'s':''}: ${t.lotes.map(l=>l.titulo+(l.num?` (matrícula ${l.num})`:'')).join(', ')}`)}
 // depois de desenhar a tela do passo 2: checagem de duplicidade
-function nvPosRender(){const f=$('#f-novo');if(!f||!UI.nv)return;dedupe()}
+function nvPosRender(){const f=$('#f-novo');if(!f||!UI.nv)return;f.nome.addEventListener('input',()=>{if(UI.nv)UI.nv.nome=f.nome.value})}
 // passo 2 gravado: o terreno novo com a poligonal, o município e as frentes
-function nvGravar(alvo,F){const nv=UI.nv;alvo.poly=nv.poly;alvo.lat=+nv.ponto[0].toFixed(7);alvo.lng=+nv.ponto[1].toFixed(7);alvo.precisao='aproximada';alvo.municipio=F.municipio.trim();if(F.tipoEmp&&cidDoNome(alvo.municipio)==='sp')alvo.tipoEmp=F.tipoEmp;
+function nvGravar(alvo,F){const nv=UI.nv;alvo.poly=nv.poly;alvo.lat=+nv.ponto[0].toFixed(7);alvo.lng=+nv.ponto[1].toFixed(7);alvo.precisao='aproximada';alvo.municipio=F.municipio.trim();
   if(nv.local?.cep)alvo.cep=nv.local.cep;if(nv.ignorados)alvo.sobreAceitas=nv.ignorados.map(x=>x.t.id);
   const fr=nv.frentes||[],pri=Number(F.frente||0);fr.forEach((x,i)=>{if(i!==pri||normRua(x.logradouro)!==normRua(F.logradouro))alvo.confr.push({tipo:'frente',m:x.m?+x.m.toFixed(2):null,conf:x.logradouro+(x.numero?', '+x.numero:''),fonte:'Localização da poligonal'})});
   if(fr.length>1&&alvo.posicao==='nao_informado')alvo.posicao=fr.length===2?'esquina':'duas_frentes';
@@ -11750,24 +11672,9 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="nv-"]'
   if(A==='nv-desenhar'){UI.modal=null;renderModal();nvDesenhar()}
   if(A==='nv-kmz'){UI.kmzNovo=true;$('#kmz-in').value='';$('#kmz-in').click()}
   if(A==='nv-kmz-i'){const it=UI.nvKmz[Number(a.dataset.i)];UI.nvKmz=null;nvPoligonal(it.pts,'kmz',{nome:it.nome})}
-  if(A==='nv-pt-mais'){nvPtQtd($('#nv-pt-lista').children.length+1);$('#nv-pt-lista').lastElementChild.querySelector('[data-k=pessoa]').focus()}
-  if(A==='nv-pt-menos')nvPtQtd($('#nv-pt-lista').children.length-1);
-  if(A==='nv-pt-del'){const c=a.closest('.nv-pt'),k=[...c.parentNode.children].indexOf(c);c.remove();
-    document.querySelectorAll('#nv-lt-lista [data-k=parte]').forEach(s=>{const v=+s.value;s.dataset.v=v===k?0:v>k?v-1:v});nvPlSync();document.querySelectorAll('#nv-lt-lista [data-k=parte]').forEach(s=>{s.value=s.dataset.v})}
-  if(A==='nv-lt-add'){const L=$('#nv-lt-lista'),f=$('#f-novo'),i=L.children.length?Math.max(...[...L.children].map(x=>+x.dataset.i))+1:0;
-    L.insertAdjacentHTML('beforeend',nvLtCard(i,cidDoNome(f?.municipio.value||'')||'sp'));const t=L.lastElementChild.querySelector('[data-k=titulo]'),us=[...L.querySelectorAll('[data-k=titulo]')].map(x=>x.value.trim().toLowerCase());let k=L.children.length;while(us.filter(u=>u==='lote '+k).length>(t.value.toLowerCase()==='lote '+k?1:0))k++;t.value='Lote '+k;
-    nvPlSync();L.lastElementChild.querySelector('[data-k=num]').focus()}
-  if(A==='nv-lt-del'){const c=a.closest('.nv-lt');if(c.querySelector('#n-mat')){c.querySelectorAll('input').forEach(x=>{if(x.type!=='radio'&&x.dataset.k!=='titulo')x.value=''});c.querySelector('[data-k=cri]').value='';c.querySelectorAll('.nv-sql-x').forEach(x=>x.remove());dedupe();toast('O primeiro lote fica: os campos foram limpos.')}else{c.remove();dedupe()}}
-  if(A==='nv-sql-add'){const c=a.closest('.nv-lt'),f=$('#f-novo'),cd=CIDADES_INSC[cidDoNome(f?.municipio.value||'')||'sp']||CIDADES_INSC.sp,box=c.querySelector('.nv-sqls');box.insertAdjacentHTML('beforeend',nvSqlCampo(c.dataset.i,box.querySelectorAll('input[name=sql],[data-k=sql]').length,cd));box.lastElementChild.querySelector('input').focus()}
   if(A==='nv-voltar'){UI.nv=null;UI.nvPool=null;UI.modal='novo';renderModal()}
   if(A==='nv-mesmo'){UI.nv.ignorados=UI.nv.sobre;UI.modal='novo';renderModal()}
   if(['nv-oferta','nv-oferta-p','nv-recad','nv-juntar'].includes(A))nvDecidir(A,a.dataset.id)});
-document.addEventListener('input',e=>{if(e.target.id==='n-mun')nvCidadeInsc();if(e.target.closest?.('#nv-pt-lista')&&e.target.dataset.k==='nome')nvPlSync()});
-document.addEventListener('change',e=>{if(e.target.id==='nv-pt-n')nvPtQtd(parseInt(e.target.value,10))});
-document.addEventListener('change',e=>{if(e.target.name!=='frente')return;const fr=UI.nv?.frentes?.[Number(e.target.value)],f=$('#f-novo');if(!fr||!f)return;
-  // o nome sugerido acompanha a frente escolhida, enquanto o usuário não escreveu outro
-  const rot=x=>[x.logradouro,x.numero].filter(Boolean).join(', ');if(!f.nome.value||UI.nv.frentes.some(x=>rot(x)===f.nome.value))f.nome.value=rot(fr);
-  f.logradouro.value=fr.logradouro;f.numero.value=fr.numero||'';dedupe()});
 // KMZ escolhido no passo 1
 function nvKmzLido(its){const ps=its.filter(x=>x.tipo==='poligono');
   if(!ps.length){toast('O arquivo não tem polígono. Desenhe a área no mapa ou importe outro arquivo.',true);return}
@@ -11944,7 +11851,7 @@ function lgHtml(fechar){const L=UI.lg,t=L&&T(L.tid);if(!t)return '';
     <div class="lg-lado"><div class="lg-tot"><b>${sel.length} lote${sel.length===1?'':'s'} marcado${sel.length===1?'':'s'}</b>${area?` <span class="muted">· ${m2(area)} de área cadastral</span>`:''}</div>
       <div class="hint" style="margin:4px 0 8px"><span class="lg-mouse">Clique no lote para marcar ou desmarcar. Pare o mouse em cima para ver o SQL. A roda aproxima e mostra os números dos lotes pequenos.</span><span class="lg-toque">Toque no lote para marcar ou desmarcar e ver o SQL. Afaste dois dedos para aproximar.</span></div>
       <div class="lg-lista">${sel.map(l=>`<div class="lg-it"><span class="num">${esc(l.sql)}</span><span class="faint">${esc(l.end||'')}${l.area?` · ${m2(l.area)}`:''}</span>${l.fixo?'<span class="chip">no lote</span>':t.insc.some(i=>digits(i.sql)===digits(l.sql))?'<span class="chip">já no cadastro</span>':''}</div>`).join('')||'<div class="muted">Nenhum lote marcado.</div>'}</div>${lgTodos(L,t)}</div></div>
-    <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn" data-a="lg-ajustar" ${sel.length?'':'disabled'} title="Inclui os SQLs e compara a poligonal desenhada com a soma dos lotes marcados">${ic('layers',18)}Incluir e ajustar a poligonal</button><button class="btn primary" data-a="lg-incluir" ${novos.length||tira.length?'':'disabled'}>${novos.length?`Incluir ${novos.length} SQL${novos.length>1?'s':''}`:tira.length?'Salvar':'Incluir SQLs'}${tira.length?` ${novos.length?'e tirar':'tirando'} ${tira.length}`:''}</button></div>`}
+    <div class="df"><button class="btn text" data-a="close">${L.cad?'Agora não':'Cancelar'}</button><button class="btn" data-a="lg-ajustar" ${sel.length?'':'disabled'} title="Inclui os SQLs e compara a poligonal desenhada com a soma dos lotes marcados">${ic('layers',18)}${L.cad?'Salvar e ajustar a poligonal':'Incluir e ajustar a poligonal'}</button><button class="btn primary" data-a="lg-incluir" ${novos.length||tira.length?'':'disabled'}>${L.cad&&novos.length?`Salvar ${novos.length} lote${novos.length>1?'s':''}`:novos.length?`Incluir ${novos.length} SQL${novos.length>1?'s':''}`:tira.length?'Salvar':'Incluir SQLs'}${tira.length?` ${novos.length?'e tirar':'tirando'} ${tira.length}`:''}</button></div>`}
 /* celular: sem o mapa, a lista dos lotes das quadras para marcar (os que tocam a poligonal primeiro) */
 function lgTodos(L,t){const it=(l,i)=>{const on=l.sel&&(!l.trava||l.fixo),bloq=!!l.trava;
     const marca=l.fixo?'<span class="chip">no lote</span>':!bloq&&t.insc.some(x=>digits(x.sql)===digits(l.sql))?'<span class="chip">já no cadastro</span>':'';
@@ -11997,15 +11904,17 @@ function lgLigar(){const svg=$('#lg-svg'),box=$('#lg-mapa'),tip=$('#lg-tip');if(
 /* grava: os marcados entram soltos; os soltos desmarcados saem (os que já estão num lote ficam) */
 function lgIncluir(ajustar){const L=UI.lg,t=L&&T(L.tid);if(!t)return;const novos=[],tirados=[];
   L.lotes.forEach(l=>{if(!l.sql||l.trava&&!l.fixo)return;const ja=t.insc.find(i=>digits(i.sql)===digits(l.sql));
-    if(l.sel&&!ja){const i={id:uid(),mun:'sp',sql:l.sql,area:l.area,valores:[],solto:true,origem:'mapa_prefeitura',endPref:l.end||''};if(l.p.cd_cib)i.cib=l.p.cd_cib;t.insc.push(i);novos.push(l.sql)}
+    if(l.sel&&!ja){const i={id:uid(),mun:'sp',sql:l.sql,area:l.area,valores:[],solto:true,origem:'mapa_prefeitura',endPref:l.end||''};if(l.p.cd_cib)i.cib=l.p.cd_cib;t.insc.push(i);novos.push(l.sql);
+      // logo depois do cadastro, cada lote marcado já vira um Lote do terreno, com o SQL e sem matrícula (pedido do Moisés, 4/nov/2026)
+      if(L.cad){delete i.solto;const pa=partesDe(t)[0];(t.lotes=t.lotes||[]).push(ltNovo(t,pa?.id||null,{ins:[i.id],fonte:'cadastral'}))}}
     if(!l.sel&&ja&&ja.solto&&!(t.lotes||[]).some(x=>x.ins.includes(ja.id))&&!ja.valores.length){t.insc.splice(t.insc.indexOf(ja),1);tirados.push(l.sql)}});
-  if(novos.length)log(t,`${novos.length} SQL${novos.length>1?'s':''} do mapa de lotes da prefeitura (GeoSampa), ainda sem lote: ${novos.join(', ')}`);
+  if(novos.length)log(t,L.cad?`${novos.length} lote${novos.length>1?'s':''} pelo mapa de lotes da prefeitura (GeoSampa), cada um com o SQL: ${novos.join(', ')}`:`${novos.length} SQL${novos.length>1?'s':''} do mapa de lotes da prefeitura (GeoSampa), ainda sem lote: ${novos.join(', ')}`);
   if(tirados.length)log(t,`SQL${tirados.length>1?'s':''} tirado${tirados.length>1?'s':''} do cadastro pelo mapa de lotes: ${tirados.join(', ')}`);
   const marc=L.lotes.filter(l=>l.sel&&(!l.trava||l.fixo));
   UI.modal=null;renderModal();lotesNorm(t);save();render();
   const consultar=marc.map(l=>t.insc.find(i=>digits(i.sql)===digits(l.sql))).filter(i=>i&&!(i.geo||[]).length);
   if(ajustar)lgAjustar(t,marc,novos.length);
-  else toast(novos.length?`${novos.length} SQL${novos.length>1?'s':''} no cadastro. Consultando o GeoSampa em cada um...`:'Cadastro atualizado.');
+  else toast(L.cad?(novos.length?`${novos.length} lote${novos.length>1?'s':''} cadastrado${novos.length>1?'s':''} com o SQL. Consultando o GeoSampa em cada um...`:'Terreno cadastrado sem lotes.'):novos.length?`${novos.length} SQL${novos.length>1?'s':''} no cadastro. Consultando o GeoSampa em cada um...`:'Cadastro atualizado.');
   lgConsultar(t,consultar)}
 
 /* Tudo o que depende do GeoSampa já sai na inclusão (pedido do Moisés, 4/nov/2026): a consulta completa de cada SQL
@@ -13207,7 +13116,7 @@ const tpAtual=t=>t.topoClass&&t.topoClass.key===tpKey(t)?t.topoClass:null;
 const tpNome=r=>r.perfil==='inclinado'?`Inclinado · ${num(r.incl,1)}%`:TP_N[r.perfil];
 const TP_EM={},TP_ERRO={};
 /* exemplos do protótipo, usados só onde não dá para medir (arquivo local ou artifact: sem GeoSampa e sem Google) */
-const TP_EXEMPLO={'TER-000118':[1.8,.12,'laser'],'TER-000112':[6.2,.18,'laser'],'TER-000123':[4.1,null,'google'],'TER-000127':[14.5,.38,'laser'],'TER-000105':[9.8,.72,'laser'],'TER-000101':[22,1.35,'laser']};
+const TP_EXEMPLO={'A118':[1.8,.12,'laser'],'A112':[6.2,.18,'laser'],'A123':[4.1,null,'google'],'A127':[14.5,.38,'laser'],'A105':[9.8,.72,'laser'],'A101':[22,1.35,'laser']};
 function tpPodeMedir(t){const sp=cidDoTerreno(t)==='sp';return sp?!!GEO_BASE:!!GG}
 function tpAuto(t){if(!t||!tpKey(t)||UI.role==='Leitura'||tpAtual(t))return;const k=tpKey(t);
   if(TP_EM[t.id]||TP_ERRO[t.id]?.key===k)return;
@@ -14122,10 +14031,9 @@ const lzCabLote=(t,ins)=>{if(!ins)return `<b>Parte sem inscrição</b> <span cla
   const i=t.insc.find(x=>digits(x.sql)===digits(ins)),c=CIDADES_INSC[i?insCid(i):cidDoTerreno(t)];
   return `<b>${esc(c.rotulo)} ${esc(ins)}</b>${i?.area!=null?` <span class="muted">· ${m2(i.area)} cadastrais</span>`:''}`};
 const gabTxt=l=>l.gabSL?'Sem limite':l.gab!=null?num(l.gab,2)+' m':'<span class="ni">—</span>';
-// Tipo do empreendimento pretendido (terrenos.tipo_empreendimento): escolhido no Novo terreno em SP e mudado aqui
-OPT.tipoEmp={nao_informado:'Não informado',...TIPOS_EMP};LAB_CAMPO.tipoEmp='Tipo do empreendimento';TIPO_CAMPO.tipoEmp=['sel','tipoEmp'];
-const tipoEmp=t=>TIPOS_EMP[t.tipoEmp]?t.tipoEmp:null;
-const segTipoEmp=(nome,v,req)=>`<span class="seg3" role="radiogroup" aria-label="Tipo do empreendimento">${Object.entries(TIPOS_EMP).map(([k,l])=>`<label class="opt-radio"><input type="radio" name="${nome}" value="${k}" ${v===k?'checked':''} ${req?'required':''}>${l}</label>`).join('')}</span>`;
+// O terreno não guarda tipo de empreendimento (decisão do Moisés, 4/nov/2026): a seção mostra o CA máximo
+// e o potencial dos três tipos lado a lado (Mercado, HIS, HMP).
+const TIPOS_K=Object.keys(TIPOS_EMP);
 // um valor do quadro: vazio = a lei não fixa (nunca zero)
 const lzV=(v,suf,d)=>v==null?'<span class="ni">—</span>':num(v,d??2)+(suf||'');
 const lzPct=v=>v==null?'<span class="ni">—</span>':num(v*100,0)+'%';
@@ -14133,32 +14041,37 @@ function lzRecuoLat(p){const a=p.recuo_lateral_m,b=p.recuo_lateral_alto_m,ate=MU
   if(a==null&&b==null)return '<span class="ni">—</span>';
   if(b==null)return num(a,2)+' m';
   return `${a==null||a===0?'Dispensado':num(a,2)+' m'} ${ate}; ${num(b,2)} m acima`}
-// parâmetros de uma zona no lote, pelo tipo escolhido
-function lzZona(t,z,i,tipo,sjc,ed){const l=lz(t,z,tipo),p=l.p,ar=areaAdotada(t),mk=[];
+// parâmetros de uma zona no lote: os comuns aos tipos (os de mercado, ou do primeiro tipo admitido)
+// e o CA máximo, o potencial e a outorga de cada tipo
+function lzZona(t,z,i,sjc,ed){const Ls=Object.fromEntries(TIPOS_K.map(k=>[k,lz(t,z,k)])),ar=areaAdotada(t),mk=[];
+  const k0=TIPOS_K.find(k=>Ls[k].p&&Ls[k].perm)||'mercado',l=Ls[k0],p=l.p;
   if(sjc)mk.push(z.macro?`<span class="chip">${esc(MACROS[z.macro])}</span>`:'<span class="chip warn">sem macrozona</span>');
-  if(p&&p.tipo!==tipo)mk.push(`<span class="chip" title="A zona não tem regra própria de ${TIPOS_EMP[tipo]}: vale a de mercado">regra de mercado</span>`);
-  if(p&&p.situacao!=='confirmado')mk.push(`<span class="chip warn" title="${esc(SIT_PAR[p.situacao])} no catálogo">${esc(SIT_PAR[p.situacao])}</span>`);
+  if(TIPOS_K.some(k=>Ls[k].p&&Ls[k].p.situacao!=='confirmado'))mk.push('<span class="chip warn" title="Há parâmetros a validar no catálogo">A validar</span>');
   if(l.exc)mk.push(`<span class="chip blue" title="${esc(z.exc.fonte||'')}">valores alterados no lote</span>`);
   const cel=(k,v,dica,ch)=>{const a=ch&&l.alt.has(ch);return `<div class="lz-c${a?' alt':''}"><dt>${k}</dt><dd>${v}</dd>${a?'<div class="lz-d">alterado no lote</div>':dica?`<div class="lz-d">${dica}</div>`:''}</div>`};
+  const caTipo=k=>{const x=Ls[k],q=x.p;const dica=[q&&q.tipo!==k?'regra de mercado':'',x.potM!=null?'potencial '+m2(x.potM):''].filter(Boolean).join(' · ');
+    return cel('CA máximo '+TIPOS_EMP[k],!q?'<span class="ni">—</span>':x.perm===false?'<span class="ni">Não admitido</span>':`<b>${lzV(x.ca,'',3)}</b>`,x.perm===false?'':dica,'ca_maximo')};
+  const og=k=>Ls[k].p?.outorga_gratuita,ogs=TIPOS_K.filter(k=>Ls[k].perm!==false&&Ls[k].p),ogTxt=v=>v===true?'<span class="chip good">Gratuita</span>':v===false?'Paga acima do básico':'<span class="ni">—</span>';
+  const outorga=new Set(ogs.map(og)).size<=1?ogTxt(og(ogs[0]||'mercado')):ogs.map(k=>`${TIPOS_EMP[k]}: ${og(k)===true?'gratuita':og(k)===false?'paga':'—'}`).join(' · ');
+  const regras=[...new Map(TIPOS_K.filter(k=>Ls[k].p?.regras).map(k=>[Ls[k].p.id,Ls[k].p])).values()];
   const corpo=!p?`<div class="muted lz-sem">${sjc&&!z.macro?'Informe a macrozona: em SJC o CA depende dela.':'Zona sem parâmetros no catálogo.'}</div>`
-    :l.perm===false?`<div class="muted lz-sem">${esc(TIPOS_EMP[tipo])} não admitido${p.regras?': '+esc(p.regras):''}</div>`
+    :!TIPOS_K.some(k=>Ls[k].perm)?`<div class="muted lz-sem">Uso residencial não admitido${p.regras?': '+esc(p.regras):''}</div>`
     :`<dl class="lz-par">
-      ${cel('CA mínimo',lzV(p.ca_minimo,'',3),'','ca_minimo')}${cel('CA básico',lzV(l.cab,'',3),'','ca_basico')}${cel('CA máximo',`<b>${lzV(l.ca,'',3)}</b>`,'','ca_maximo')}
-      ${cel('Potencial máximo',l.potM!=null?`<b>${m2(l.potM)}</b>`:'<span class="ni">—</span>',l.potB!=null?`sem outorga ${m2(l.potB)}`:'')}
+      ${TIPOS_K.map(caTipo).join('')}${cel('CA básico',lzV(l.cab,'',3),l.potB!=null?`sem outorga ${m2(l.potB)}`:'','ca_basico')}
+      ${cel('CA mínimo',lzV(p.ca_minimo,'',3),'','ca_minimo')}
       ${cel('Taxa de ocupação',lzV(l.to,'',2),p.to_corte_m2?`${num(p.to_maximo,2)} em lote até ${num(p.to_corte_m2)} m²; ${num(p.to_lote_grande,2)} acima${ar==null?' (sem área adotada, vale a de lote grande)':''}`:'','to')}
       ${cel('Gabarito',gabTxt(l),'','gab')}
       ${cel('Recuo de frente',lzV(p.recuo_frente_m,' m'),'','recuo_frente_m')}${cel('Recuos laterais e fundo',lzRecuoLat(p),'',l.alt.has('recuo_lateral_m')?'recuo_lateral_m':'recuo_lateral_alto_m')}
       ${cel('Cota-parte máxima',p.cota_parte_m2!=null?num(p.cota_parte_m2)+' m² por unidade':'<span class="ni">—</span>',p.cota_parte_m2!=null&&z.area?`até ${num(Math.floor(z.area/p.cota_parte_m2))} unidades nesta área`:'','cota_parte_m2')}
       ${p.max_unidades!=null?cel('Unidades por lote',num(p.max_unidades),'','max_unidades'):''}
       ${cel('Permeabilidade mínima',lzPct(p.permeabilidade),'','permeabilidade')}${cel('Lote mínimo',lzV(p.lote_minimo_m2,' m²',0),'','lote_minimo_m2')}${cel('Frente mínima',lzV(p.frente_minima_m,' m'),'','frente_minima_m')}
-      ${cel('Outorga onerosa',p.outorga_gratuita===true?'<span class="chip good">Gratuita</span>':p.outorga_gratuita===false?'Paga acima do básico':'<span class="ni">—</span>','','outorga_gratuita')}
-    </dl>${p.regras?`<div class="lz-regra">${esc(p.regras)}</div>`:''}`;
+      ${cel('Outorga onerosa',outorga,'','outorga_gratuita')}
+    </dl>${regras.map(r=>`<div class="lz-regra">${regras.length>1?`<b>${esc(TIPOS_EMP[r.tipo])}:</b> `:''}${esc(r.regras)}</div>`).join('')}`;
   return `<div class="lz-z" id="lz-${i}"><div class="lz-zh"><b>${esc(z.sigla)}</b><span class="muted">${m2(z.area)}</span>${mk.join(' ')}
     ${ed?`<button class="linkbtn lz-zb" data-a="edit" data-s="zexc:${i}">${l.exc?'Editar valores':'Alterar valores'}</button>`:''}</div>
-    ${corpo}${UI.edit==='zexc:'+i?lzFormExc(z,i,sjc,{p0:parZona(cidDoTerreno(t),z.sigla,tipo,z.macro,ar),ar}):''}</div>`}
-function lzTabela(t,a,ins,tipo,sjc){const ed=UI.role!=='Leitura';
-  return a.zonas.map((z,i)=>[z,i]).filter(([z])=>(digits(zIns(t,z)||'')||null)===(digits(ins||'')||null)).map(([z,i])=>lzZona(t,z,i,tipo,sjc,ed)).join('')}
-// demais dados da última consulta do lote no GeoSampa ou GeoSanja: Conpresp, tombamento, ZEIS, mananciais, macrozona...
+    ${corpo}${UI.edit==='zexc:'+i?lzFormExc(z,i,sjc,{p0:parZona(cidDoTerreno(t),z.sigla,'mercado',z.macro,ar),ar}):''}</div>`}
+function lzTabela(t,a,ins,sjc){const ed=UI.role!=='Leitura';
+  return a.zonas.map((z,i)=>[z,i]).filter(([z])=>(digits(zIns(t,z)||'')||null)===(digits(ins||'')||null)).map(([z,i])=>lzZona(t,z,i,sjc,ed)).join('')}
 function lzCamadas(t,ins){const i=ins&&t.insc.find(x=>digits(x.sql)===digits(ins)),g=i&&(i.geo||[])[0],ad=i&&LOTE_ADAPT[insCid(i)];
   if(!i)return '';
   if(!g||!ad?.linhas)return ad?`<div class="hint lz-cam">Sem consulta à prefeitura neste lote (tombamento, ZEIS, mananciais e outras restrições). <button type="button" class="linkbtn" data-a="tab" data-t="cadastro">Buscar em Inscrições</button></div>`:'';
@@ -14187,25 +14100,23 @@ function lzFormNovo(t){const cid=cidDoTerreno(t),sjc=cid==='sjc',cat=zonasDoCata
     ${sjc?`<div class="field"><label for="zm${i}">Macrozona</label><select id="zm${i}" name="macro${i}"><option value="">Não informada</option>${Object.entries(MACROS).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>`:''}</div>`).join('')}
     
     <div class="sec-f" style="padding:12px 0 0"><button type="button" class="btn text" data-a="cancel-edit">Cancelar</button><button class="btn primary">Registrar zonas</button></div></form>`}
-function secAnaliseUrb(t){const a=analiseVig(t),hist=t.analises.filter(x=>x.status==='substituida'),tEsc=tipoEmp(t),tipo=tEsc||'mercado',cid=cidDoTerreno(t),sjc=cid==='sjc';
-  const R=resumoUrb(t,tipo),ed=UI.role!=='Leitura';
+function secAnaliseUrb(t){const a=analiseVig(t),hist=t.analises.filter(x=>x.status==='substituida'),cid=cidDoTerreno(t),sjc=cid==='sjc';
+  const RT=Object.fromEntries(TIPOS_K.map(k=>[k,resumoUrb(t,k)])),R=RT.mercado,ed=UI.role!=='Leitura';
   const lotes=a?[...new Set(a.zonas.map(z=>digits(zIns(t,z)||'')||null))].sort((x,y)=>(x===null)-(y===null)).map(d=>d===null?null:(t.insc.find(i=>digits(i.sql)===d)?.sql||d)):[];
   const zonasArea=a?Object.entries(a.zonas.reduce((o,z)=>(o[z.sigla]=(o[z.sigla]||0)+(z.area||0),o),{})).sort((x,y)=>y[1]-x[1]):[];
   const somaLotes=t.insc.reduce((s,i)=>s+(i.area||0),0),ar=areaAdotada(t),sobra=ar&&somaLotes&&ar-somaLotes>1?ar-somaLotes:null;
   return `<section class="sec" id="sec-analise"><div class="sec-h"><h2>Parâmetros urbanísticos</h2>${ed&&UI.edit!=='analise'?`<button class="btn sm zn-reg" data-a="edit" data-s="analise" aria-label="Registrar zonas" title="Registrar zonas">${ic('add',16)}<span class="oc-m">Registrar zonas</span></button>`:''}</div><div class="sec-b">
-  <div class="lz-topo"><span class="lz-tl" id="lz-tipo-l">Tipo do empreendimento</span><div class="seg" role="group" aria-labelledby="lz-tipo-l">${Object.entries(TIPOS_EMP).map(([k,l])=>`<button type="button" data-a="zn-tipo" data-v="${k}" aria-pressed="${tEsc===k}" ${ed?'':'disabled'}>${l}</button>`).join('')}</div>
-    ${a?`<span class="muted" style="font-size:13px">Zonas vigentes desde ${fd(a.data)} · ${esc(a.fonte)}</span>`:''}</div>
-  ${tEsc?'':`<div class="banner warn lz-ni">${ic('warn')}<div>Sem tipo de empreendimento: valores de Mercado, só como referência.</div></div>`}
+  ${a?`<div class="lz-topo"><span class="muted" style="font-size:13px">Zonas vigentes desde ${fd(a.data)} · ${esc(a.fonte)}</span></div>`:''}
   ${a&&R?`<dl class="kvl lz-res">
     <div class="kv"><dt>Zonas da área</dt><dd>${zonasArea.map(([s,v])=>`<b>${esc(s)}</b> ${m2(v)}`).join(' · ')}</dd></div>
-    <div class="kv"><dt>Potencial construtivo (${esc(TIPOS_EMP[tipo])}${tEsc?'':', referência'})</dt><dd>${R.potM!=null?`<b>${m2(R.potM)}</b>`:`<span class="ni">${R.naoAdm.length?esc(TIPOS_EMP[tipo])+' não admitido em '+esc(R.naoAdm.join(', ')):R.semCa.length?'Falta o CA de '+esc(R.semCa.join(', ')):'Não calculado'}</span>`}</dd></div>
+    ${TIPOS_K.map(k=>{const r=RT[k];return `<div class="kv"><dt>Potencial ${esc(TIPOS_EMP[k])}</dt><dd>${r.potM!=null?`<b>${m2(r.potM)}</b>`:`<span class="ni">${r.naoAdm.length?'Não admitido em '+esc(r.naoAdm.join(', ')):r.semCa.length?'Falta o CA de '+esc(r.semCa.join(', ')):'Não calculado'}</span>`}${r.caMax>0?` <span class="muted">· maior CA ${num(r.caMax,3)}</span>`:''}</dd></div>`}).join('')}
     <div class="kv"><dt>Sem outorga (CA básico)</dt><dd>${R.potB!=null?m2(R.potB):'<span class="ni">—</span>'}</dd></div>
-    <div class="kv"><dt>Maior CA máximo</dt><dd>${R.caMax>0?num(R.caMax,3):'<span class="ni">—</span>'}</dd></div></dl>
-    ${R.validar?'<div class="hint">Há parâmetros a validar no catálogo.</div>':''}
-    ${lotes.map(ins=>`<div class="lz-lote"><div class="lz-h">${lzCabLote(t,ins)}</div>${lzTabela(t,a,ins,tipo,sjc)}${lzCamadas(t,ins)}</div>`).join('')}
+</dl>
+    ${TIPOS_K.some(k=>RT[k].validar)?'<div class="hint">Há parâmetros a validar no catálogo.</div>':''}
+    ${lotes.map(ins=>`<div class="lz-lote"><div class="lz-h">${lzCabLote(t,ins)}</div>${lzTabela(t,a,ins,sjc)}${lzCamadas(t,ins)}</div>`).join('')}
     ${a.obs?`<div class="hint">${esc(a.obs)}</div>`:''}
     ${sobra&&!lotes.includes(null)?`<div class="hint">A área adotada passa a soma das inscrições em ${m2(sobra)}. Se essa parte não tem inscrição, registre a zona dela como "Parte sem inscrição".</div>`:''}
-    <details class="details lz-fontes"><summary>Regras e fontes</summary>${[...new Map(R.L.filter(l=>l.p).map(l=>[l.p.id,l.p])).values()].map(p=>`<div class="lz-fonte"><b>${esc(p.sigla)}</b>${p.uso?' · '+esc(p.uso):''}${p.macrozona?' · '+esc(MACROS[p.macrozona]):''} · ${esc(TIPOS_EMP[p.tipo])}${p.regras?`<div class="muted">${esc(p.regras)}</div>`:''}<div class="faint">${esc(p.fonte_norma)}${p.fonte_dispositivo?', '+esc(p.fonte_dispositivo):''}${p.fonte_url?` · <a href="${esc(p.fonte_url)}" target="_blank" rel="noopener">texto da lei</a>`:''}</div></div>`).join('')}</details>`
+    <details class="details lz-fontes"><summary>Regras e fontes</summary>${[...new Map(TIPOS_K.flatMap(k=>RT[k].L).filter(l=>l.p).map(l=>[l.p.id,l.p])).values()].map(p=>`<div class="lz-fonte"><b>${esc(p.sigla)}</b>${p.uso?' · '+esc(p.uso):''}${p.macrozona?' · '+esc(MACROS[p.macrozona]):''} · ${esc(TIPOS_EMP[p.tipo])}${p.regras?`<div class="muted">${esc(p.regras)}</div>`:''}<div class="faint">${esc(p.fonte_norma)}${p.fonte_dispositivo?', '+esc(p.fonte_dispositivo):''}${p.fonte_url?` · <a href="${esc(p.fonte_url)}" target="_blank" rel="noopener">texto da lei</a>`:''}</div></div>`).join('')}</details>`
   :'<div class="muted">Nenhuma zona registrada. Buscar o lote no GeoSampa ou no GeoSanja (em Cadastro › Inscrições) registra as zonas de cada lote; ou registre à mão.</div>'}
   ${UI.edit==='analise'?lzFormNovo(t):''}
   ${hist.length?`<details class="details" style="margin-top:12px"><summary>${hist.length} análise${hist.length>1?'s':''} anterior${hist.length>1?'es':''}</summary>${hist.map(h=>`<div class="muted" style="font-size:13px;padding:4px 0">${fd(h.data)} · ${esc(h.fonte)} · ${h.zonas.map(z=>`${z.sigla} ${m2(z.area)}`).join(', ')}</div>`).join('')}</details>`:''}
@@ -14238,8 +14149,6 @@ document.addEventListener('toggle',e=>{const d=e.target;if(!d.classList?.contain
 // ---------- eventos ----------
 function zonasClick(A,a,t){
   switch(A){
-    case 'zn-tipo':{if(UI.role==='Leitura'||!t)return true;const v=a.dataset.v,antes=t.tipoEmp||'nao_informado';if(v===antes)return true;
-      t.tipoEmp=v;log(t,`Tipo do empreendimento: ${valTxt('tipoEmp',antes)} → ${valTxt('tipoEmp',v)}`);save();render();toast(`Parâmetros de ${TIPOS_EMP[v]}.`);return true}
     case 'zp-cid':UI.zpCid=a.dataset.v;render();return true;
     case 'zp-tipo':UI.zpTipo=a.dataset.v;render();return true;
     case 'zp-padrao':if(!confirm('Restaurar os parâmetros urbanísticos do modelo padrão? As mudanças feitas aqui somem.'))return true;S.zpar=null;save();render();toast('Parâmetros do modelo padrão restaurados.');return true;
@@ -15582,13 +15491,52 @@ document.addEventListener('click',e=>{const b=e.target.closest?.('.qd-tg');if(!b
   const s=b.closest('section.sec'),aba=abaN(UI.tab),st=QD[aba]||(QD[aba]=new Set()),ab=s.classList.contains('qd-fechado');
   ab?st.add(s.dataset.q):st.delete(s.dataset.q);qdPor(s,ab)},true);
 
+/* ===================== campo obrigatório em branco ===================== */
+/* No lugar do balão do navegador (que aponta para o lugar errado quando o campo está numa seção
+   recolhida ou é um botão de opção escondido, e não diz qual campo é): todos os campos em branco
+   ou inválidos do formulário ficam em vermelho com o aviso embaixo, a seção recolhida que tem o
+   primeiro se abre, a página rola até ele e um aviso diz quais campos faltam.
+   O destaque some quando o campo é preenchido. */
+function obrNome(el){const f=el.closest('.field,fieldset,label.field')||el.parentElement;
+  const by=el.closest('[aria-labelledby]')?.getAttribute('aria-labelledby'),lb=by&&document.getElementById(by.split(' ')[0]);
+  const l=lb||(el.id&&document.querySelector(`label[for="${CSS.escape(el.id)}"]`))||f?.querySelector(':scope > legend, :scope > .lbl, :scope > .lbl-f, :scope > label:not(.opt-radio)')||el.closest('label');
+  let t=(l?.textContent||el.getAttribute('aria-label')||el.placeholder||el.name||'').replace(/\s+/g,' ').replace(/\s*\*\s*$/,'').trim();
+  if(el.type==='radio'&&l===el.closest('label'))t=el.getAttribute('aria-label')||'Escolha uma opção';
+  return t}
+function obrCaixa(el){return el.closest('.field,fieldset,label.field')||el.parentElement}
+function obrMsg(el){const v=el.validity;if(v.valueMissing)return el.type==='radio'||el.tagName==='SELECT'?'Escolha uma opção.':el.type==='checkbox'?'Marque para continuar.':'Preencha este campo.';
+  return el.validationMessage||'Valor inválido.'}
+function obrLimpa(cx){cx.classList.remove('campo-erro');cx.querySelector(':scope > .campo-msg')?.remove()}
+function obrMarca(form){form.querySelectorAll('.campo-erro').forEach(obrLimpa);
+  const vistos=new Set(),erros=[];
+  form.querySelectorAll('input,select,textarea').forEach(el=>{if(el.disabled||el.validity.valid)return;
+    const chave=el.type==='radio'?'r:'+el.name:el;if(vistos.has(chave))return;vistos.add(chave);erros.push(el)});
+  erros.forEach(el=>{const cx=obrCaixa(el);cx.classList.add('campo-erro');
+    // o aviso fica logo abaixo do campo (antes da explicação, quando há)
+    if(!cx.querySelector(':scope > .campo-msg')){const h=`<span class="campo-msg" role="alert">${esc(obrMsg(el))}</span>`;
+      let a=el.type==='radio'?el.closest('[role=radiogroup],.seg3')||el:el;while(a.parentElement&&a.parentElement!==cx)a=a.parentElement;
+      a.parentElement===cx?a.insertAdjacentHTML('afterend',h):cx.insertAdjacentHTML('beforeend',h)}
+    const sai=()=>{if(el.type==='radio'?form.querySelector(`[name="${CSS.escape(el.name)}"]:checked`):el.validity.valid)obrLimpa(cx)};
+    if(!el.dataset.obrOk){el.dataset.obrOk='1';el.addEventListener('input',sai);el.addEventListener('change',sai);
+      if(el.type==='radio')form.querySelectorAll(`[name="${CSS.escape(el.name)}"]`).forEach(o=>o.addEventListener('change',sai))}});
+  return erros}
+document.addEventListener('invalid',e=>{const el=e.target,form=el.form;if(!form)return;e.preventDefault();
+  if(form._obrT)return;form._obrT=setTimeout(()=>{form._obrT=null},0);
+  const erros=obrMarca(form);if(!erros.length)return;const p=erros[0];
+  // abre a seção recolhida (details) que tem o campo, e as de fora dela
+  for(let d=p.closest('details');d;d=d.parentElement?.closest('details'))d.open=true;
+  const cx=obrCaixa(p);requestAnimationFrame(()=>{cx.scrollIntoView({block:'center',behavior:'smooth'});
+    if(p.type==='radio')(form.querySelector(`[name="${CSS.escape(p.name)}"]`)||p).focus({preventScroll:true});else p.focus({preventScroll:true})});
+  const ns=[...new Set(erros.map(obrNome).filter(Boolean))];
+  toast(ns.length===1?`Falta preencher: ${ns[0]}.`:`Falta preencher ${ns.length} campos: ${ns.slice(0,3).join(', ')}${ns.length>3?'…':''}.`,true)},true);
+
 /* ===================== endereço da página ===================== */
 /* Cada tela tem endereço próprio, que abre direto quando o link é enviado:
      /                                  Início
      /terrenos                          Terrenos          /terrenos/novo        Novo terreno
-     /terrenos/TER-000123               ficha             /terrenos/TER-000123/comercial  ficha na aba
-     /terrenos/TER-000123/viabilidade/2 segundo estudo de viabilidade do terreno, no popup
-     /mapa  /mapa/TER-000123 (selecionado)  /mapa/TER-000123/ficha (com a ficha no painel)
+     /terrenos/A123               ficha             /terrenos/A123/comercial  ficha na aba
+     /terrenos/A123/viabilidade/2 segundo estudo de viabilidade do terreno, no popup
+     /mapa  /mapa/A123 (selecionado)  /mapa/A123/ficha (com a ficha no painel)
      /fases  /fases/aprovacao  /fases/aprovacao/projeto   (os três níveis do quadro)
      /tarefas  /tarefas/lista  /tarefas/calendario  /tarefas/cronograma  /tarefas/funil  /tarefas/TAR-000123 (a janela do cartão)   /dashboard   /configuracoes/etapas ...
    Na versão publicada vai no caminho (/prototipo/terrenos/...; o Caddy devolve a página para qualquer caminho);

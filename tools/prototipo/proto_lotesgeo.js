@@ -81,7 +81,7 @@ function lgHtml(fechar){const L=UI.lg,t=L&&T(L.tid);if(!t)return '';
     <div class="lg-lado"><div class="lg-tot"><b>${sel.length} lote${sel.length===1?'':'s'} marcado${sel.length===1?'':'s'}</b>${area?` <span class="muted">· ${m2(area)} de área cadastral</span>`:''}</div>
       <div class="hint" style="margin:4px 0 8px"><span class="lg-mouse">Clique no lote para marcar ou desmarcar. Pare o mouse em cima para ver o SQL. A roda aproxima e mostra os números dos lotes pequenos.</span><span class="lg-toque">Toque no lote para marcar ou desmarcar e ver o SQL. Afaste dois dedos para aproximar.</span></div>
       <div class="lg-lista">${sel.map(l=>`<div class="lg-it"><span class="num">${esc(l.sql)}</span><span class="faint">${esc(l.end||'')}${l.area?` · ${m2(l.area)}`:''}</span>${l.fixo?'<span class="chip">no lote</span>':t.insc.some(i=>digits(i.sql)===digits(l.sql))?'<span class="chip">já no cadastro</span>':''}</div>`).join('')||'<div class="muted">Nenhum lote marcado.</div>'}</div>${lgTodos(L,t)}</div></div>
-    <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn" data-a="lg-ajustar" ${sel.length?'':'disabled'} title="Inclui os SQLs e compara a poligonal desenhada com a soma dos lotes marcados">${ic('layers',18)}Incluir e ajustar a poligonal</button><button class="btn primary" data-a="lg-incluir" ${novos.length||tira.length?'':'disabled'}>${novos.length?`Incluir ${novos.length} SQL${novos.length>1?'s':''}`:tira.length?'Salvar':'Incluir SQLs'}${tira.length?` ${novos.length?'e tirar':'tirando'} ${tira.length}`:''}</button></div>`}
+    <div class="df"><button class="btn text" data-a="close">${L.cad?'Agora não':'Cancelar'}</button><button class="btn" data-a="lg-ajustar" ${sel.length?'':'disabled'} title="Inclui os SQLs e compara a poligonal desenhada com a soma dos lotes marcados">${ic('layers',18)}${L.cad?'Salvar e ajustar a poligonal':'Incluir e ajustar a poligonal'}</button><button class="btn primary" data-a="lg-incluir" ${novos.length||tira.length?'':'disabled'}>${L.cad&&novos.length?`Salvar ${novos.length} lote${novos.length>1?'s':''}`:novos.length?`Incluir ${novos.length} SQL${novos.length>1?'s':''}`:tira.length?'Salvar':'Incluir SQLs'}${tira.length?` ${novos.length?'e tirar':'tirando'} ${tira.length}`:''}</button></div>`}
 /* celular: sem o mapa, a lista dos lotes das quadras para marcar (os que tocam a poligonal primeiro) */
 function lgTodos(L,t){const it=(l,i)=>{const on=l.sel&&(!l.trava||l.fixo),bloq=!!l.trava;
     const marca=l.fixo?'<span class="chip">no lote</span>':!bloq&&t.insc.some(x=>digits(x.sql)===digits(l.sql))?'<span class="chip">já no cadastro</span>':'';
@@ -134,15 +134,17 @@ function lgLigar(){const svg=$('#lg-svg'),box=$('#lg-mapa'),tip=$('#lg-tip');if(
 /* grava: os marcados entram soltos; os soltos desmarcados saem (os que já estão num lote ficam) */
 function lgIncluir(ajustar){const L=UI.lg,t=L&&T(L.tid);if(!t)return;const novos=[],tirados=[];
   L.lotes.forEach(l=>{if(!l.sql||l.trava&&!l.fixo)return;const ja=t.insc.find(i=>digits(i.sql)===digits(l.sql));
-    if(l.sel&&!ja){const i={id:uid(),mun:'sp',sql:l.sql,area:l.area,valores:[],solto:true,origem:'mapa_prefeitura',endPref:l.end||''};if(l.p.cd_cib)i.cib=l.p.cd_cib;t.insc.push(i);novos.push(l.sql)}
+    if(l.sel&&!ja){const i={id:uid(),mun:'sp',sql:l.sql,area:l.area,valores:[],solto:true,origem:'mapa_prefeitura',endPref:l.end||''};if(l.p.cd_cib)i.cib=l.p.cd_cib;t.insc.push(i);novos.push(l.sql);
+      // logo depois do cadastro, cada lote marcado já vira um Lote do terreno, com o SQL e sem matrícula (pedido do Moisés, 4/nov/2026)
+      if(L.cad){delete i.solto;const pa=partesDe(t)[0];(t.lotes=t.lotes||[]).push(ltNovo(t,pa?.id||null,{ins:[i.id],fonte:'cadastral'}))}}
     if(!l.sel&&ja&&ja.solto&&!(t.lotes||[]).some(x=>x.ins.includes(ja.id))&&!ja.valores.length){t.insc.splice(t.insc.indexOf(ja),1);tirados.push(l.sql)}});
-  if(novos.length)log(t,`${novos.length} SQL${novos.length>1?'s':''} do mapa de lotes da prefeitura (GeoSampa), ainda sem lote: ${novos.join(', ')}`);
+  if(novos.length)log(t,L.cad?`${novos.length} lote${novos.length>1?'s':''} pelo mapa de lotes da prefeitura (GeoSampa), cada um com o SQL: ${novos.join(', ')}`:`${novos.length} SQL${novos.length>1?'s':''} do mapa de lotes da prefeitura (GeoSampa), ainda sem lote: ${novos.join(', ')}`);
   if(tirados.length)log(t,`SQL${tirados.length>1?'s':''} tirado${tirados.length>1?'s':''} do cadastro pelo mapa de lotes: ${tirados.join(', ')}`);
   const marc=L.lotes.filter(l=>l.sel&&(!l.trava||l.fixo));
   UI.modal=null;renderModal();lotesNorm(t);save();render();
   const consultar=marc.map(l=>t.insc.find(i=>digits(i.sql)===digits(l.sql))).filter(i=>i&&!(i.geo||[]).length);
   if(ajustar)lgAjustar(t,marc,novos.length);
-  else toast(novos.length?`${novos.length} SQL${novos.length>1?'s':''} no cadastro. Consultando o GeoSampa em cada um...`:'Cadastro atualizado.');
+  else toast(L.cad?(novos.length?`${novos.length} lote${novos.length>1?'s':''} cadastrado${novos.length>1?'s':''} com o SQL. Consultando o GeoSampa em cada um...`:'Terreno cadastrado sem lotes.'):novos.length?`${novos.length} SQL${novos.length>1?'s':''} no cadastro. Consultando o GeoSampa em cada um...`:'Cadastro atualizado.');
   lgConsultar(t,consultar)}
 
 /* Tudo o que depende do GeoSampa já sai na inclusão (pedido do Moisés, 4/nov/2026): a consulta completa de cada SQL

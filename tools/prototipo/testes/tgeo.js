@@ -40,16 +40,19 @@ const importarKml=async kml=>{const [fc]=await Promise.all([p.waitForEvent('file
 await p.evaluate(()=>document.querySelector('[data-a=novo]').click());await p.waitForTimeout(200);
 console.log('passo 1: opções',JSON.stringify(await p.$$eval('.nv-op b',x=>x.map(b=>b.textContent))),'| campo de inscrição?',await p.$$eval('#modal [name=sql]',x=>x.length));
 await importarKml(kmlQuadra(-23.56196,-46.65530,22));
-await p.fill('#n-mun','São Paulo · SP');await p.evaluate(()=>document.querySelector('#f-novo details').open=true);await p.fill('#n-sql','00902700091');
-console.log('passo 2:',await p.$eval('#modal .banner',x=>x.innerText.replace(/\s+/g,' ')),'| SQL:',await p.$eval('#n-sql',x=>x.value),'|',await p.$eval('#n-sql-l',x=>x.textContent));
-await p.fill('#f-novo [name=nome]','Paulista 1500');await p.fill('#f-novo [name=logradouro]','Av. Paulista');await p.fill('#f-novo [name=numero]','1500');
-await p.evaluate(()=>{document.querySelector('#f-novo [name=tipoEmp][value=mercado]')?.click();document.querySelector('#f-novo').requestSubmit()});
+if(await p.$('#n-mun'))await p.fill('#n-mun','São Paulo · SP');await p.fill('#f-novo [name=nome]','Paulista 1500');
+await p.evaluate(()=>{const m=document.querySelector('#f-novo [name=municipio]');if(m&&!m.value)m.value='São Paulo · SP';document.querySelector('#f-novo').requestSubmit()});await p.waitForTimeout(600);
+// o mapa de lotes da prefeitura abre sozinho (tlotesgeo.js): aqui, Agora não; o SQL entra pelo lote na ficha
+await p.evaluate(()=>document.querySelector('#modal [data-a=close]')?.click());await p.waitForTimeout(300);
+await p.evaluate(c=>{location.hash='#/terrenos/'+c+'/terreno'},(await ter()).codigo);await p.waitForTimeout(500);
+await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click())});await p.waitForTimeout(150);
+await p.click('#sec-lotes [data-a=lt-novo]');await p.waitForTimeout(300);
+await p.fill('#sec-lotes form[data-form=lt-sql] [name=sql]','00902700091');console.log('SQL:',await p.$eval('#sec-lotes form[data-form=lt-sql] [name=sql]',x=>x.value));
+await p.evaluate(()=>document.querySelector('#sec-lotes form[data-form=lt-sql]').requestSubmit());
 await p.waitForFunction(()=>/Planta e desenho/.test(document.querySelector('#toast').textContent),null,{timeout:15000});
 const st=await ter().then(t=>{const i=t.insc[0];return {sqlFmt:i.sql,area:i.area,cib:i.cib,zf:i.zf,aCad:t.aCad,aConst:t.aConst,poly:t.poly&&t.poly.length,lat:t.lat,
   analise:t.analises.find(a=>a.status==='vigente'),docs:t.docs.map(d=>d.tipo+':v'+d.versoes+':'+d.nome),consultas:i.geo.length,erros:i.geo[0].erros,zonas:i.geo[0].zonas,hist:t.hist.map(h=>h.txt)}});
 console.log('estado:',JSON.stringify(st));
-// a pergunta dos lotes da prefeitura (tlotesgeo.js) abre junto: aqui, Agora não
-console.log('pergunta dos lotes?',await p.$$eval('[data-a=lg-sim]',x=>x.length));await p.evaluate(()=>document.querySelector('#modal [data-a=close]')?.click());await p.waitForTimeout(150);
 await p.evaluate(()=>{if(!document.getElementById('geo-0'))document.querySelector('.fi-abas [data-t=terreno]').click()});await p.waitForTimeout(300);
 await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click());document.querySelectorAll('.lt-det').forEach(d=>d.open=true)});await p.waitForTimeout(200);
 console.log('quadro:',await p.$eval('#geo-0',x=>x.innerText.replace(/\s+/g,' ')));

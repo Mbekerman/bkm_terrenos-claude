@@ -236,7 +236,7 @@ function fichaSheet(){let el=$('#ficha-sheet');const t=UI.fichaSheet&&UI.route==
     <button class="iconbtn" data-a="fs-fechar" aria-label="Fechar" title="Fechar (Esc)">${ic('close',22)}</button></div>
     <div class="fs-b bl-c fs-ro">${abaGeral(t)}</div>
     <div class="fs-f"><button class="btn primary" data-a="abrir" data-id="${t.id}" data-tab="geral" data-from="mapa">Abrir ficha completa</button></div>`;
-  el.querySelector('.g-loc')?.remove();el.querySelector('.fs-b').scrollTop=0;
+  el.querySelector('.g-loc')?.remove();el.querySelector('.fs-b').scrollTop=0;fsPos(el);
   if(el.dataset.id!==t.id){el.dataset.id=t.id;setTimeout(()=>mpLivre(t),60)}}
 /* com o painel da ficha aberto (desktop), o terreno vai para o meio do pedaço do mapa que fica livre */
 /* coluna Fase e etapa da tabela: fase em cima, etapa · subetapa (ou situação) embaixo, avisos numa fileira própria */
@@ -251,10 +251,14 @@ function colFaseEtapa(t){const a=faseAtual(t),ent=!a||a.k===faseEnt(),pe=x=>`<sp
     if(procAtrasada(p))fl.push('<span class="fe-fl fe-warn">Acima do prazo</span>')}
   const n=fasesAbertas(t).length;if(n>1)fl.push(`<span class="fe-fl" title="${esc(fasesAbertas(t).map(faseN).join(', '))}">+${n-1} fase</span>`);
   return `<span class="c-etapa c-fe"><span class="fe-f">${esc(fase)}</span><span class="fe-e">${linha}</span>${fl.length?`<span class="fe-fls">${fl.join('')}</span>`:''}</span>`}
+// no desktop a gaveta cobre a lista de terrenos, na largura dela
+function fsPos(el){const l=$('.mapa-lado');if(!el||!l||innerWidth<900){if(el)el.style.left=el.style.top=el.style.width='';return}
+  const r=l.getBoundingClientRect();el.style.left=Math.max(8,r.left)+'px';el.style.top=Math.max(8,r.top)+'px';el.style.width=Math.min(innerWidth-Math.max(8,r.left)-240,Math.max(320,r.width))+'px'}
+addEventListener('resize',()=>fsPos($('#ficha-sheet')));
 function mpLivre(t){const m=$('#mapa'),fs=$('#ficha-sheet');if(!MAPA||!m||!fs||t.lat==null||innerWidth<900)return;
-  const r=m.getBoundingClientRect(),f=fs.getBoundingClientRect(),dir=Math.min(r.right,f.left-16),x0=r.left,cx=(x0+dir)/2-r.left,cy=r.height/2;
-  if(GG){const w=r.right-dir;MAPA.panTo(gLL(t.lat,t.lng));if(w>0)MAPA.panBy(Math.round(w/2),0);return}
-  const p=MAPA.latLngToContainerPoint([t.lat,t.lng]);if(p.x>40&&p.x<dir-r.left-40&&p.y>80&&p.y<r.height-40)return;
+  const r=m.getBoundingClientRect(),f=fs.getBoundingClientRect(),dir=r.right,x0=Math.max(r.left,f.right+16),cx=(x0+dir)/2-r.left,cy=r.height/2;
+  if(GG){const w=x0-r.left;MAPA.panTo(gLL(t.lat,t.lng));if(w>0)MAPA.panBy(-Math.round(w/2),0);return}
+  const p=MAPA.latLngToContainerPoint([t.lat,t.lng]);if(p.x>x0-r.left+40&&p.x<dir-r.left-40&&p.y>80&&p.y<r.height-40)return;
   MAPA.panBy([p.x-cx,p.y-cy],{animate:false})}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&UI.fichaSheet&&!UI.modal&&!$('.mp-ctx')&&!$('.v-menu')){UI.fichaSheet=null;fichaSheet();e.preventDefault()}});
 function mpSelecionar(id){UI.mpSel=id;mpMarcarPinos();if(UI.fichaSheet&&id&&id!==UI.fichaSheet){UI.fichaSheet=id;fichaSheet()}const l=$('#mp-lista');if(l)l.innerHTML=mpLista();mpCartao();

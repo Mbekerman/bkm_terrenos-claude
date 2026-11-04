@@ -106,8 +106,6 @@ create table app.terrenos (
   area_construida_demolir_m2   numeric(12,2) check (area_construida_demolir_m2 >= 0),
   necessidade_demolicao text not null default 'nao_avaliada' check (necessidade_demolicao in ('nao_avaliada','provavel','confirmada','dispensada')),
   observacoes_fisicas   text,
-  -- Tipo de empreendimento pretendido: escolhe a regra da lei nos parâmetros urbanísticos (decisão do Moisés, 25/out/2026)
-  tipo_empreendimento   text not null default 'nao_informado' check (tipo_empreendimento in ('nao_informado','mercado','his','hmp')),
   -- Visita técnica (aba Infraestrutura): data da última visita; os itens ficam em terreno_infraestrutura
   visita_tecnica_em     date,
   -- Classificação topográfica (decisão do Moisés, 3/nov/2026): medida pelas cotas dentro da poligonal

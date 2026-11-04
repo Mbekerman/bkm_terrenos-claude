@@ -492,13 +492,25 @@ begin
   end loop;
 end $$;
 
+-- Código curto do terreno (decisão do Moisés, 4/nov/2026): letra + 3 dígitos pela ordem de cadastro,
+-- A001 a A999, depois B001... até Z999 (25.974 terrenos).
+create or replace function app.codigo_terreno(p_n bigint)
+returns text language plpgsql immutable set search_path = '' as $$
+begin
+  if p_n is null or p_n < 1 or p_n > 26 * 999 then
+    raise exception 'Acabaram os códigos de terreno (Z999).';
+  end if;
+  return chr(65 + ((p_n - 1) / 999)::int) || lpad((((p_n - 1) % 999) + 1)::text, 3, '0');
+end $$;
+grant execute on function app.codigo_terreno(bigint) to authenticated;
+
 -- Terreno cadastrado direto: o código e quem criou são do banco, não do usuário.
 create or replace function app.tg_terreno_controle()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin
   if tg_op = 'INSERT' then
     if auth.uid() is not null or new.codigo is null then
-      new.codigo := 'TER-' || lpad(nextval('app.terreno_seq')::text, 6, '0');
+      new.codigo := app.codigo_terreno(nextval('app.terreno_seq'));
     end if;
     if auth.uid() is not null then new.criado_por := auth.uid(); new.criado_em := now(); end if;
   elsif auth.uid() is not null then
