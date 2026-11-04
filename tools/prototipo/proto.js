@@ -94,7 +94,7 @@ const CFG_PADRAO=()=>({
   checklist:{contrato:[['matricula',1],['onus',1],['iptu',1],['vend',1],['topo',1],['sond',0],['amb',0],['minuta',1]].map(([doc,o])=>({doc,obrig:!!o}))},
   motivos:{descartado:[['tecnica','Inviabilidade Técnica'],['financeira','Inviabilidade Financeira'],['contratual','Inviabilidade Contratual'],['formato_negocio','Inviabilidade Formato de Negócio'],['garantias','Inviabilidade Garantias'],['urbanistica','Inviabilidade Urbanística'],['documental','Inviabilidade Documental'],['outros','Outros',1]].map(([k,nome,tx])=>({k,nome,texto:!!tx,ativo:true})),
     perdido:[['vendido_terceiro','Vendido para terceiro'],['desistiu_vender','Proprietário desistiu de vender'],['preco_pagamento','Vendedor não aceitou preço ou pagamento'],['formato','Vendedor não aceitou o formato (permuta etc.)'],['garantias','Vendedor não aceitou as garantias'],['sem_retorno','Sem retorno do proprietário'],['outros','Outros',1]].map(([k,nome,tx])=>({k,nome,texto:!!tx,ativo:true}))},
-  notif:{tarefa_atribuida:{ativo:true,dias:null,email:true},mencao:{ativo:true,dias:null,email:true},tarefa_prazo:{ativo:true,dias:[0],email:false},tarefa_atrasada:{ativo:true,dias:null,email:false},tarefa_acompanhada:{ativo:true,dias:null,email:false},automacao:{ativo:true,dias:null,email:false},pode_avancar:{ativo:true,dias:null,email:false},etapa_deixada:{ativo:true,dias:null,email:false},subetapa_prazo:{ativo:true,dias:null,email:false},
+  notif:{tarefa_atribuida:{ativo:true,dias:null,email:true},mencao:{ativo:true,dias:null,email:true},tarefa_prazo:{ativo:true,dias:[0],email:false},tarefa_atrasada:{ativo:true,dias:null,email:false},tarefa_acompanhada:{ativo:true,dias:null,email:false},automacao:{ativo:true,dias:null,email:false},pode_avancar:{ativo:true,dias:null,email:false},etapa_deixada:{ativo:true,dias:null,email:false},massa_solicitado:{ativo:true,dias:null,email:true},massa_entregue:{ativo:true,dias:null,email:true},subetapa_prazo:{ativo:true,dias:null,email:false},
     stand_by_retomar:{ativo:true,dias:[7,0],email:false},documento_vencendo:{ativo:true,dias:[30,7],email:false},reuniao_agendada:{ativo:true,dias:[1],email:false},aprovacao_pendente:{ativo:true,dias:null,email:true},aprovacao_decidida:{ativo:true,dias:null,email:true}}
 });
 const CFG0=CFG_PADRAO();
@@ -110,7 +110,7 @@ const SIDX=k=>STAGES.findIndex(s=>s[0]===k);const SN=k=>(STAGES.find(s=>s[0]===k
 /* itens da visita técnica (decisão do Moisés, 3/nov/2026); os quatro primeiros com viabilidade técnica também pedem a da concessionária */
 const INFRA=[['energia','Energia'],['agua','Água'],['esgoto','Esgoto'],['drenagem','Drenagem'],['gas','Gás canalizado'],['asfalto','Asfalto'],['iluminacao','Iluminação pública'],['calcada','Calçada']];
 const ZONEAMENTOS=['ZEU','ZEUa','ZEUP','ZEUPa','ZEM','ZEMP','ZC','ZCa','ZC-ZEIS','ZCOR-1','ZCOR-2','ZCOR-3','ZM','ZMa','ZMIS','ZMISa','ZEIS-1','ZEIS-2','ZEIS-3','ZEIS-4','ZEIS-5','ZDE-1','ZDE-2','ZPI-1','ZPI-2','ZER-1','ZER-2','ZERa','ZPR','ZEP','ZEPAM','ZPDS','ZOE'];
-const TIPOS_DOC={ata:['Ata de reunião','Reuniões',null],matricula:['Matrícula atualizada','Imóvel',30],onus:['Certidão de ônus reais','Imóvel',30],iptu:['Certidão negativa de IPTU','Imóvel',90],vend:['Certidões pessoais do vendedor','Vendedor',30],topo:['Levantamento planialtimétrico','Técnico',null],sond:['Sondagem SPT','Técnico',null],amb:['Avaliação ambiental preliminar','Técnico',null],minuta:['Minuta de promessa de compra e venda','Contratos',null],foto:['Foto','Mídia',null],planta:['Planta ou croqui','Técnico',null],lote_pdf:['Planta do lote da prefeitura (PDF)','Técnico',null],lote_dxf:['Desenho do lote da prefeitura (DXF)','Técnico',null],topo_pdf:['Topográfico preliminar (PDF)','Técnico',null],topo_dxf:['Topográfico preliminar (DXF + imagem)','Técnico',null]};
+const TIPOS_DOC={ata:['Ata de reunião','Reuniões',null],matricula:['Matrícula atualizada','Imóvel',30],onus:['Certidão de ônus reais','Imóvel',30],iptu:['Certidão negativa de IPTU','Imóvel',90],vend:['Certidões pessoais do vendedor','Vendedor',30],topo:['Levantamento planialtimétrico','Técnico',null],sond:['Sondagem SPT','Técnico',null],amb:['Avaliação ambiental preliminar','Técnico',null],minuta:['Minuta de promessa de compra e venda','Contratos',null],foto:['Foto','Mídia',null],planta:['Planta ou croqui','Técnico',null],lote_pdf:['Planta do lote da prefeitura (PDF)','Técnico',null],lote_dxf:['Desenho do lote da prefeitura (DXF)','Técnico',null],topo_pdf:['Topográfico preliminar (PDF)','Técnico',null],topo_dxf:['Topográfico preliminar (DXF + imagem)','Técnico',null],massa_pdf:['Estudo de massa (PDF)','Técnico',null],massa_dwg:['Estudo de massa (DWG)','Técnico',null]};
 const CHECK_DIL=[['matricula',1],['onus',1],['iptu',1],['vend',1],['topo',1],['sond',0],['amb',0],['minuta',1]];
 const USERS=['Moisés','Ana Prado','Camila Torres','Rafael Souza'];
 /* hierarquia: N analistas → 1 gestor; N gestores → 1 diretor. Administrador é permissão à parte */
@@ -598,14 +598,13 @@ function fichaFaseTxt(t){const a=faseAtual(t);if(!a)return [];const p=a.p;if(!p)
   if(p.status!=='ativo')return [esc(faseN(a.k)),`<span class="chip ${p.status==='concluido'?'good':p.status==='stand_by'?'warn':''}">${esc(ent?OPT_SIT_N(t):procStatusN(p))}</span>`];
   return [esc(faseN(a.k)),esc(et),sb?esc(sb):''].filter(Boolean)}
 const OPT_SIT_N=t=>({stand_by:'Stand By',perdido:'Perdido',descartado:'Descartado',concluido:'Comprado'})[t.neg?.status]||t.neg?.status||'';
-function abaContagem(t,k){switch(k){case 'comercial':return t.ofertas.length+t.propostas.length+(t.reunioes||[]).length;case 'viabilidade':return viabsDe(t.id).length;
+function abaContagem(t,k){switch(k){case 'comercial':return t.ofertas.length+t.propostas.length+(t.reunioes||[]).length;case 'viabilidade':return viabsDe(t.id).length;case 'massa':return massasDe(t.id).length;
   case 'jornada':return fasesAbertas(t).length;case 'documentos':return t.docs.length+t.dilig.filter(d=>d.sit!=='resolvida').length;default:return 0}}
 function abaComercialFicha(t){return `<div class="stack">${abaGeral(t,'neg')}${abaComercial(t).replace(/^<div class="stack">/,'').replace(/<\/div>\s*$/,'')}${t.neg?abaNegociacao(t).replace(/^<div class="stack">/,'').replace(/<\/div>\s*$/,''):''}</div>`}
 function abaJornada(t){return `<div class="stack">${trilhaHtml(t)}${abaFases(t)}</div>`}
 function abaViabilidade(t){return `<div class="stack">${abaGeral(t,'viab')}${viabSecao(t)}</div>`}
 function abaInfra(t){return `<div class="stack">${abaGeral(t,'relevo')}${abaUrbanismo(t,'infra')}</div>`}
 function abaEntorno(t){return `<div class="stack">${abaGeral(t,'entorno')}</div>`}
-function abaMassa(t){return `<section class="sec"><div class="sec-b"><div class="empty">Os estudos de massa entram no próximo lote: pedido ao arquiteto, ficha do estudo com tipologias e áreas, PDF e DWG, e o estudo válido.</div></div></section>`}
 /* a aba ativa sempre visível na barra (no celular a barra rola de lado) */
 function fiAbaVisivel(){const b=document.querySelector('.fi-abas'),a=b&&b.querySelector('[aria-selected="true"]');if(!a)return;
   const l=a.offsetLeft-b.offsetLeft,r=l+a.offsetWidth;if(l<b.scrollLeft||r>b.scrollLeft+b.clientWidth)b.scrollLeft=Math.max(0,l-(b.clientWidth-a.offsetWidth)/2)}
@@ -682,6 +681,7 @@ function renderModal(){
   if(M==='novo-sobre')h=nvSobreHtml(fechar);
   if(M==='lotes-poly')h=lotesPolyHtml(fechar);
   if(M==='lt-dup')h=ltDupHtml(fechar);
+  if(M==='ems-viab'||M==='ems-apagar')h=emsModalHtml(M,fechar);
   if(M==='oferta'){const tt=T(UI.id),pd=UI.ofPoly;h=`<div class="dh"><h2>Registrar oferta</h2>${fechar}</div><form data-form="oferta" id="f-of"><div class="fields">
     ${pd?`<div class="field full"><div class="banner blue">${ic('layers')}<div>Oferta de parte do terreno: ${m2(Math.round(areaPoly(pd)))}${tt?.poly?` de ${m2(Math.round(areaPoly(tt.poly)))} (${num(100*areaPoly(pd)/areaPoly(tt.poly),0)}%)`:''}. O pedaço oferecido fica guardado na oferta.</div></div></div>`:''}
     <div class="field"><label for="o-c">Corretor</label><select id="o-c" name="cid"><option value="">Sem corretor / direto</option>${S.corretores.map(c=>`<option value="${c.id}">${esc(c.nome)} · ${esc(c.imob)}</option>`).join('')}</select></div>
