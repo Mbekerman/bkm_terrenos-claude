@@ -801,8 +801,8 @@ document.addEventListener('click',e=>{
     case 'mp-foco':{const x=T(a.dataset.id);if(x.lat!=null)focar(x);else if(UI.role!=='Leitura'){UI.mpModo='marcar';UI.mpAlvo=x.id;mpRefresh()}else toast('Terreno sem localização.');break}
     case 'mp-sit':{const v=a.dataset.v,o=UI.mp.ocultas;UI.mp.ocultas=o.includes(v)?o.filter(x=>x!==v):[...o,v];mpRefresh();break}
     case 'mp-limpar':UI.mp={q:'',cor:'',zona:'',f:UI.mp.f,e:UI.mp.e,ocultas:[]};render();break;
-    case 'mp-desce':if(UI.mp.f)UI.mp.e=a.dataset.v;else UI.mp.f=a.dataset.v;UI.mp.ocultas=[];mpRefresh();mpEnquadrar();break;
-    case 'mp-nivel':UI.mp.f=a.dataset.v||'';UI.mp.e='';UI.mp.ocultas=[];mpRefresh();mpEnquadrar();break;
+    case 'mp-abre':UI.mp.f=a.dataset.f||'';UI.mp.e=a.dataset.e||'';UI.mp.ocultas=[];mpRefresh();mpEnquadrar();break;
+    case 'mp-arv':{const ab=!UI.mpArv;UI.mpArv=ab;if(!ab&&(UI.mp.f||UI.mp.e)){UI.mp.f='';UI.mp.e='';UI.mp.ocultas=[];mpRefresh();mpEnquadrar()}else mpRefresh();break}
     case 'mp-base':setBase(a.dataset.v);break;
     case 'lug-fechar':lugarFechar();break;
     case 'mp-modo':UI.mpModo=UI.mpModo===a.dataset.v?null:a.dataset.v;fecharPopup();mpRefresh();break;

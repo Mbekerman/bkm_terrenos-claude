@@ -2326,7 +2326,7 @@ input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
 :root[data-tema="escuro"] .mp-legenda summary::after { filter: invert(.85) }
 .lg-r { display: grid !important; grid-template-columns: minmax(0, 1fr) 32px }
 .lg-r .lg-d { width: 32px; height: 32px }
-.mp-leg-l > .lg-i { margin-right: 34px }
+.mp-leg-l > .lg-i { margin-right: 0 }
 .lg-i[aria-pressed="false"] { opacity: .6 !important }
 @media (max-width: 899px) { .mapa-lado .page-h { display: none } }
 /* Tarefas: barra de filtros em chips de filtro (menu e liga/desliga), numa linha */
@@ -4547,6 +4547,16 @@ html[data-tema="escuro"] .lbl-f { color: #c4c7c5 }
 html[data-tema="escuro"] .lt-sqls { border-top-color: #2d2f31 }
 html[data-tema="escuro"] .lt-sql { background: #282a2c }
 html[data-tema="escuro"] .ptcom-r { border-top-color: #2d2f31 } html[data-tema="escuro"] .ptcom-th { color: #c4c7c5 }
+
+/* legenda em árvore: Nossos terrenos › fase › etapa › subetapa (pedido do Moisés, 4/nov/2026) */
+.lg-a { padding-left: calc(4px + var(--p, 0) * 16px) !important }
+.lg-s { width: 14px; height: 14px; flex: none; display: grid; place-items: center; color: var(--m-on-surface-variant, #444746); transition: transform .15s }
+.lg-s.ab { transform: rotate(90deg) }
+.lg-fora { opacity: .5 }
+.lg-fora .pin-mini { filter: grayscale(1) }
+.lg-nt { background: #0b57d0; box-shadow: 0 0 0 1.5px #fff, 0 0 0 2.5px rgba(11,87,208,.3) }
+:root[data-tema="escuro"] .lg-s { color: #c4c7c5 }
+:root[data-tema="escuro"] .lg-nt { background: #a8c7fa }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

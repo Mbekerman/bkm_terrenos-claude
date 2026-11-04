@@ -257,10 +257,28 @@ function mpSelecionar(id){UI.mpSel=id;mpMarcarPinos();if(UI.fichaSheet&&id&&id!=
   if(it&&getComputedStyle(lado).overflowY==='auto'){const a=lado.getBoundingClientRect(),r=it.getBoundingClientRect();
     if(r.top<a.top||r.bottom>a.bottom)lado.scrollBy({top:r.top-a.top-a.height/2+r.height/2,behavior:'smooth'})}}
 function mpCartao(){const c=$('#mp-cartao');if(!c)return;const t=UI.mpSel&&T(UI.mpSel);c.innerHTML=t&&!UI.mpModo&&mpVisiveis().includes(t)?mpItem(t,true):''}
-function mpLegenda(){const base=fxLista('mapa'),m=UI.mp,cl=new Map(base.map(t=>[t.id,mpClasse(t)])),volta=m.e?faseN(m.f):'Fases';
-  const topo=m.f?`<div class="lg-h"><button type="button" class="iconbtn lg-v" data-a="mp-nivel" data-v="${m.e?esc(m.f):''}" title="Voltar para ${esc(volta)}" aria-label="Voltar para ${esc(volta)}">${ic('back',18)}</button><span><span class="faint">${m.e?esc(faseN(m.f))+' › ':'Fases › '}</span>${esc(m.e?etapaF(m.f,m.e)?.nome||m.e:faseN(m.f))}</span></div>`:'';
-  return topo+mpItens().map(x=>{const n=base.filter(t=>cl.get(t.id)===x.k).length,on=!m.ocultas.includes(x.k);
-    return `<div class="lg-r"><button type="button" class="lg-i" data-a="mp-sit" data-v="${x.k}" aria-pressed="${on}"><span class="pin-mini" style="background:${x.cor};color:${x.fg}">${x.g}</span>${esc(x.nome)}<span class="n">${n}</span></button>${x.desce?`<button type="button" class="iconbtn lg-d" data-a="mp-desce" data-v="${x.k}" title="Ver ${m.f?'subetapas':'etapas'} de ${esc(x.nome)}" aria-label="Ver ${m.f?'subetapas':'etapas'} de ${esc(x.nome)}">${ic('chev',16)}</button>`:''}</div>`}).join('')
+/* legenda em árvore (pedido do Moisés, 4/nov/2026): "Nossos terrenos" abre as fases, a fase abre as etapas e a etapa
+   abre as subetapas, um ramo aberto por vez; o nível mais fundo aberto é o que colore os pinos (UI.mp.f, UI.mp.e).
+   Fechar a legenda fecha a árvore (proto_ui.js). Item sem filhos no nível aberto liga e desliga; fora dele fica apagado
+   e o clique volta para aquele nível. */
+function mpNivelItens(f,e){const m=UI.mp,sf=m.f,se=m.e,base=fxLista('mapa');m.f=f;m.e=e;
+  try{const its=mpItens(),cl=new Map(base.map(t=>[t.id,mpClasse(t)]));return its.map(x=>({...x,n:base.filter(t=>cl.get(t.id)===x.k).length}))}finally{m.f=sf;m.e=se}}
+function mpLegenda(){const m=UI.mp,aberta=!!UI.mpArv;
+  const pin=x=>`<span class="pin-mini" style="background:${x.cor};color:${x.fg}">${x.g}</span>`;
+  const seta=ab=>`<span class="lg-s${ab?' ab':''}" aria-hidden="true">${ic('chev',14)}</span>`;
+  const ramo=(x,prof,ab,f,e,fora)=>`<button type="button" class="lg-i lg-a${fora?' lg-fora':''}" style="--p:${prof}" data-a="mp-abre" data-f="${esc(f)}" data-e="${esc(e)}" aria-expanded="${ab}">${seta(ab)}${pin(x)}${esc(x.nome)}<span class="n">${x.n}</span></button>`;
+  const folha=(x,prof,ativo,f,e)=>ativo?`<button type="button" class="lg-i lg-a" style="--p:${prof}" data-a="mp-sit" data-v="${x.k}" aria-pressed="${!m.ocultas.includes(x.k)}"><span class="lg-s"></span>${pin(x)}${esc(x.nome)}<span class="n">${x.n}</span></button>`
+    :`<button type="button" class="lg-i lg-a lg-fora" style="--p:${prof}" data-a="mp-abre" data-f="${esc(f)}" data-e="${esc(e)}"><span class="lg-s"></span>${pin(x)}${esc(x.nome)}<span class="n">${x.n}</span></button>`;
+  let h='';
+  if(aberta)for(const x of mpNivelItens('','')){
+    if(!x.desce){h+=folha(x,1,!m.f,'','');continue}
+    const ab=m.f===x.k;h+=ramo(x,1,ab,ab?'':x.k,'',m.f&&!ab);if(!ab)continue;
+    for(const y of mpNivelItens(x.k,'')){
+      if(!y.desce){h+=folha(y,2,!m.e,x.k,'');continue}
+      const ab2=m.e===y.k;h+=ramo(y,2,ab2,x.k,ab2?'':y.k,m.e&&!ab2);if(!ab2)continue;
+      for(const z of mpNivelItens(x.k,y.k))h+=folha(z,3,true,x.k,y.k)}}
+  const tot=fxLista('mapa').length;
+  return `<button type="button" class="lg-i lg-a" style="--p:0" data-a="mp-arv" aria-expanded="${aberta}">${seta(aberta)}<span class="lg-poi"><span class="pin-mini lg-nt"></span></span>Nossos terrenos<span class="n">${tot}</span></button>`+h
     +`<hr class="lg-sep"><button type="button" class="lg-i" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}"><span class="lg-poi"><span class="poi-b"></span></span>Pontos de interesse<span class="n">${(S.pontos||[]).length}</span></button>`
     +(CC_MANUAL?`<button type="button" class="lg-i" data-a="mp-conc" aria-pressed="${UI.mpConc!==false}"><span class="lg-poi">${ccMarcaHtml()}</span>Concorrência<span class="n">${ccAtivos().length}</span></button>`:'')
     +rdLegItem();

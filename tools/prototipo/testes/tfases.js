@@ -49,18 +49,25 @@ ok((await txt(p,'#rows tbody tr')).includes('Raimundo')&&!(await txt(p,'#rows tb
 ok((await txt(p,'#rows .c-etapa')).includes('Obras'),'coluna mostra a fase e a etapa');
 await clica(p,'#fx-barra [data-a=fx-limpar]');
 
-// mapa em três níveis pela legenda
+// mapa em três níveis pela legenda em árvore: Nossos terrenos › fase › etapa › subetapa
 await nav(p,'mapa');await p.waitForTimeout(400);
-ok((await txt(p,'#mp-leg .lg-i')).includes('Obras'),'legenda do mapa começa pelas fases');
+await p.evaluate(()=>{const l=document.querySelector('.mp-legenda');if(l)l.open=true});await p.waitForTimeout(200);
+ok(!(await txt(p,'#mp-leg .lg-i')).includes('Obras'),'legenda começa com Nossos terrenos fechado');
+await clica(p,'[data-a=mp-arv]');await p.waitForTimeout(300);
+ok((await txt(p,'#mp-leg .lg-i')).includes('Obras'),'Nossos terrenos abre as fases');
 ok((await txt(p,'#mp-lista .mp-it')).includes('Entregue'),'linha do mapa mostra a fase');
-await clica(p,'[data-a=mp-desce][data-v=aprovacao]');await p.waitForTimeout(300);await p.screenshot({path:O+'4_mapa_aprovacao.png'});
-const lm=await txt(p,'#mp-lista .mp-it');ok(lm.includes("M'Boi")&&!lm.includes('Cupecê'),'mapa desce para a Aprovação e mostra só os terrenos dela');
-ok((await txt(p,'#mp-leg .lg-i')).includes('Análise na Prefeitura'),'legenda com as etapas da Aprovação');
-await clica(p,'[data-a=mp-desce][data-v=prefeitura]');await p.waitForTimeout(300);
-ok((await txt(p,'#mp-leg .lg-i')).includes('Comunique-se')&&(await txt(p,'#mp-lista .mp-it')).includes("M'Boi"),'legenda com as subetapas da etapa');
+await clica(p,'[data-a=mp-abre][data-f=aprovacao]');await p.waitForTimeout(300);await p.screenshot({path:O+'4_mapa_aprovacao.png'});
+const lm=await txt(p,'#mp-lista .mp-it');ok(lm.includes("M'Boi")&&!lm.includes('Cupecê'),'clicar na Aprovação mostra só os terrenos dela');
+ok((await txt(p,'#mp-leg .lg-i')).includes('Análise na Prefeitura')&&(await txt(p,'#mp-leg .lg-i')).includes('Obras'),'etapas da Aprovação abaixo dela, com as outras fases na árvore');
+await clica(p,'[data-a=mp-abre][data-e=prefeitura]');await p.waitForTimeout(300);
+ok((await txt(p,'#mp-leg .lg-i')).includes('Comunique-se')&&(await txt(p,'#mp-lista .mp-it')).includes("M'Boi"),'etapa abre as subetapas');
 await p.screenshot({path:O+'4b_mapa_sub.png'});
-await clica(p,'.lg-v');ok((await txt(p,'#mp-leg .lg-i')).includes('Alvarás'),'seta da legenda volta para as etapas');
-await clica(p,'.lg-v');ok((await txt(p,'#mp-leg .lg-i')).includes('Lançamento')&&!(await p.evaluate(()=>!!document.querySelector('.lg-v'))),'e depois para as fases');
+await clica(p,'[data-a=mp-abre][aria-expanded=true][style*="--p:1"]');await p.waitForTimeout(300);
+ok(!(await txt(p,'#mp-leg .lg-i')).includes('Análise na Prefeitura')&&(await txt(p,'#mp-lista .mp-it')).includes('Cupecê'),'clicar de novo na fase fecha e volta para as fases');
+await clica(p,'[data-a=mp-abre][data-f=aprovacao]');await p.waitForTimeout(300);
+await p.evaluate(()=>{const l=document.querySelector('.mp-legenda');l.open=false});await p.waitForTimeout(300);
+await p.evaluate(()=>{const l=document.querySelector('.mp-legenda');l.open=true});await p.waitForTimeout(300);
+ok(!(await txt(p,'#mp-leg .lg-i')).includes('Obras')&&(await txt(p,'#mp-lista .mp-it')).includes('Cupecê'),'fechar e abrir a legenda deixa a árvore fechada e volta para as fases');
 
 // ficha: linha do tempo das fases, quadro da fase, seção Fases
 await ficha(p,"M'Boi Mirim");await bloco(p,'fases');await p.screenshot({path:O+'5_ficha_aprovacao.png',fullPage:true});
