@@ -82,6 +82,7 @@ t=await ter();ok(t.mats.find(m=>m.id===m0).parte===P2[1],'matrícula arrastada p
 await arrasta(`.etq-pool [data-etq="s:${s0}"]`,`.etq-pt[data-p="${P2[0]}"]`);t=await ter();ok(t.insc.find(i=>i.id===s0).parte===P2[0],'SQL arrastado para a parte 1');
 if(s1){await arrasta(`.etq-pool [data-etq="s:${s1}"]`,`.etq-pt[data-p="${P2[1]}"]`)}
 await arrasta(`.etq-pt [data-etq="m:${m0}"]`,`.etq-pt[data-p="${P2[0]}"]`);t=await ter();ok(t.mats.find(m=>m.id===m0).parte===P2[0],'matrícula arrastada da parte 2 para a parte 1');
+ok(await p.$eval(`.etq-pt[data-p="${P2[0]}"]`,b=>{const k=[...b.querySelectorAll('.etq[data-etq]')].map(e=>e.dataset.etq[0]);return k.join('')==='ms'&&b.querySelector('.etq-pt-g.m').getBoundingClientRect().bottom<=b.querySelector('.etq-pt-g.s').getBoundingClientRect().top}),'na parte, a matrícula vem antes do SQL (que entrou primeiro), cada grupo na sua linha');
 await arrasta(`.etq-pt [data-etq="m:${m0}"]`,'.etq-pool[data-tipo=m]');t=await ter();ok(!t.mats.find(m=>m.id===m0).parte,'arrastada de volta para o quadro de cima');
 await arrasta(`.etq-pool [data-etq="m:${m0}"]`,'.etq-pool[data-tipo=s]');t=await ter();ok(!t.mats.find(m=>m.id===m0).parte,'matrícula não entra no quadro de SQLs');
 await arrasta(`.etq-pool [data-etq="m:${m0}"]`,`.etq-pt[data-p="${P2[0]}"]`);

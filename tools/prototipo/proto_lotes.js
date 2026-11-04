@@ -70,7 +70,7 @@ function secLotes(t){const ro=UI.role==='Leitura',P=partesAtivas(t),cid=cidDoTer
   const box=pa=>{const ms=matsParte(t,pa),is=inscParte(t,pa),fe=ETQ_FECHADAS.has(pa.id),ai=ptAreaInfo(t,pa),dv=ptDiv(t,pa);
     return `<article class="etq-pt${fe?' fechado':''}" data-drop="parte" data-p="${pa.id}">
       <button type="button" class="etq-pt-h" data-a="etq-linha" data-p="${pa.id}" aria-expanded="${!fe}" title="${fe?'Abrir':'Recolher'} a linha">${ic('chev',18)}<b>${esc(pa.nome)}</b><span class="faint">${ms.length} mat. · ${is.length} ${esc(rot)}</span></button>
-      <div class="etq-pt-b"><div class="etq-pt-l">${ms.map(m=>etqHtml(t,'m',m,ro)).join('')}${is.map(i=>etqHtml(t,'s',i,ro)).join('')||(!ms.length?`<span class="etq-vazio">${ro?'Sem matrícula nem SQL.':'Arraste para cá as matrículas e os SQLs desta parte.'}</span>`:'')}</div>
+      <div class="etq-pt-b"><div class="etq-pt-l">${ms.length?`<div class="etq-pt-g m">${ms.map(m=>etqHtml(t,'m',m,ro)).join('')}</div>`:''}${is.length?`<div class="etq-pt-g s">${is.map(i=>etqHtml(t,'s',i,ro)).join('')}</div>`:(!ms.length?`<span class="etq-vazio">${ro?'Sem matrícula nem SQL.':'Arraste para cá as matrículas e os SQLs desta parte.'}</span>`:'')}</div>
         ${ai.area!=null||dv!=null?`<div class="etq-pt-r">${ai.area!=null?`<span>${m2(ai.area)} <span class="faint">pelas ${ai.fonte}</span></span>`:''}${dv!=null&&Math.abs(dv)>=1?`<span class="chip ${Math.abs(dv)>5?'crit':'warn'}" title="Área cadastral dos SQLs da parte comparada com a das matrículas dela">Matrícula × Prefeitura ${dv>0?'+':''}${num(dv,1)}%</span>`:''}</div>`:''}</div></article>`};
   return `<section class="sec" id="sec-lotes"><div class="sec-h"><h2>Matrículas e ${esc(rot)}s</h2>${cs}</div><div class="sec-b">
     <div class="etq-top">

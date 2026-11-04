@@ -100,14 +100,17 @@ function lgSvg(L){const [x0,y0,x1,y1]=L.bb,m=12,vb=L.vb||[x0-m,-y1-m,x1-x0+2*m,y
     <rect x="${x0-2000}" y="${-y1-2000}" width="${x1-x0+4000}" height="${y1-y0+4000}" class="lg-fundo"/>
     <g>${L.lotes.map((l,i)=>`<path d="${lgD(l.an)}" data-lg="${i}" class="lg-l${l.sel&&!l.trava?' sel':''}${l.trava?' x':''}"/>`).join('')}</g>
     <path d="${lgD(L.ter)}" class="lg-ter"/>
-    <g class="lg-vias">${L.vias.map(v=>`<text x="${v.x.toFixed(1)}" y="${(-v.y).toFixed(1)}" transform="rotate(${(-v.ang).toFixed(1)} ${v.x.toFixed(1)} ${(-v.y).toFixed(1)})">${esc(v.n)}</text>`).join('')}</g>
+    <g class="lg-vias">${L.vias.map(v=>`<text data-x="${v.x.toFixed(1)}" data-y="${(-v.y).toFixed(1)}" data-g="${(-v.ang).toFixed(1)}">${esc(v.n)}</text>`).join('')}</g>
     <g class="lg-rots">${L.lotes.map((l,i)=>{const f=l.via?'':l.condo?`CD ${l.p.cd_condominio}`:`F ${l.p.cd_lote}`,n=l.p.cd_numero_porta&&l.p.cd_numero_porta!=='0'&&!l.via?`N. ${l.p.cd_numero_porta}`:'';if(!f)return '';
-      return `<text data-r="${l.rot.r.toFixed(2)}" x="${l.rot.x.toFixed(2)}" y="${(-l.rot.y).toFixed(2)}"><tspan x="${l.rot.x.toFixed(2)}" dy="-0.2em">${f}</tspan>${n?`<tspan x="${l.rot.x.toFixed(2)}" dy="1.15em">${esc(n)}</tspan>`:''}</text>`}).join('')}</g></svg>`}
-/* rótulos com tamanho fixo na tela; some o que não cabe no lote na escala atual */
+      return `<text data-r="${l.rot.r.toFixed(2)}" data-x="${l.rot.x.toFixed(2)}" data-y="${(-l.rot.y).toFixed(2)}"><tspan x="0" dy="-0.2em">${f}</tspan>${n?`<tspan x="0" dy="1.15em">${esc(n)}</tspan>`:''}</text>`}).join('')}</g></svg>`}
+/* rótulos com tamanho fixo na tela; some o que não cabe no lote na escala atual. O texto fica em 10px e o grupo
+   encolhe por escala: com a fonte em fração de pixel (zoom grande, menos de 1 m por pixel) o Chrome deixava de
+   desenhar F, N e o nome das ruas. */
 function lgEscala(){const L=UI.lg,svg=$('#lg-svg');if(!L||!svg)return;const w=svg.clientWidth||600,h=svg.clientHeight||400,u=Math.max(L.vb[2]/w,L.vb[3]/h);
-  const fs=10*u;svg.querySelector('.lg-rots').style.fontSize=fs+'px';svg.querySelector('.lg-vias').style.fontSize=11*u+'px';
+  svg.querySelectorAll('.lg-vias text').forEach(x=>x.setAttribute('transform',`translate(${x.dataset.x} ${x.dataset.y}) rotate(${x.dataset.g}) scale(${u})`));
   svg.style.setProperty('--lg-w',u);
-  svg.querySelectorAll('.lg-rots text').forEach(x=>{x.style.display=+x.dataset.r/u>=10?'':'none'})}
+  svg.querySelectorAll('.lg-rots text').forEach(x=>{const ve=+x.dataset.r/u>=10;x.style.display=ve?'':'none';
+    if(ve)x.setAttribute('transform',`translate(${x.dataset.x} ${x.dataset.y}) scale(${u})`)})}
 function lgRedesenhar(){if(UI.modal==='lotes-geo')renderModal()}
 function lgVb(vb){const L=UI.lg,svg=$('#lg-svg');if(!L||!svg)return;L.vb=vb;svg.setAttribute('viewBox',vb.join(' '));lgEscala()}
 function lgZoom(f,cx,cy){const L=UI.lg;if(!L)return;const [x,y,w,h]=L.vb,nw=Math.max(20,Math.min(L.vb0[2]*3,w/f)),k=nw/w,nh=h*k;
