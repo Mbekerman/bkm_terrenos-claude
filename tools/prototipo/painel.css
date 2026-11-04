@@ -3772,3 +3772,22 @@ html[data-tema="escuro"] .ems-lista tr.ems-sel td { background: rgba(168, 199, 2
 .ems-blist{margin:4px 0 0;padding-left:20px;line-height:1.5}
 .vb-ms-l{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}.vb-ms-l .field{flex:1;min-width:220px}
 .ems-ped2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* Reuniões com o Google Agenda (lote 6, 4/nov/2026) */
+.reu-form:has(option[value="realizada"]:checked) [data-so="agendada"],
+.reu-form:has(input[name="modalidade"][value="presencial"]:checked) [data-so="online"],
+.reu-form:has(input[name="agenda"]:not(:checked)) [data-so="online"],
+.reu-form:has(input[name="agenda"]:not(:checked)) [data-so2="agenda"]{display:none}
+.ag-chks{display:flex;flex-direction:column;gap:6px}
+.ag-chks .chk{display:flex;align-items:center;gap:10px;min-height:32px}.ag-chks .chk input{width:18px;height:18px;min-height:0;flex:none;margin:0;padding:0}
+.ag{display:flex;flex-direction:column;gap:10px;margin:10px 0}
+.ag-l{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.ag-l .chip .ic{margin-right:4px}
+.ag-conv{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--texto-2,#444746)}
+.ag-c{display:inline-flex;align-items:center;gap:6px}
+.ag-grav{font-size:14px;color:var(--texto-2,#444746)}.ag-grav a{color:var(--m-primary,#0b57d0)}
+.ag-ia{border:1px solid var(--m-outline-var,#c4c7c5);border-radius:12px;padding:12px 16px;display:flex;flex-direction:column;gap:10px;background:var(--m-surface-1,#f8fafd)}
+.ag-ia-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.ag-ia-h small{flex-basis:100% }
+.ag-ia textarea{width:100%;resize:vertical}
+.ag-ia-b{display:flex;justify-content:flex-end;gap:8px}
+html[data-tema="escuro"] .ag-ia{background:#1e1f20;border-color:#444746}

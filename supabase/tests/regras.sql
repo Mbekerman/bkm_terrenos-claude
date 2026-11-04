@@ -3475,4 +3475,80 @@ select pg_temp.falha(format('select app.solicitar_estudo_massa(%L, %L)', :'t1', 
 select pg_temp.falha(format($$select app.salvar_estudo_massa(%L, '{"observacoes":"x"}')$$, :'em2'), 'Leitura não altera o estudo de massa');
 select pg_temp.como(:'analista');
 
+-- ---------------------------------------------------------------------
+\echo '# reuniões com o Google Agenda (lote 6 da ficha em abas)'
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$insert into app.reunioes (empresa_id, terreno_id, inicio, modalidade, local, na_agenda) values (%L, %L, now() - interval '1 day', 'presencial', 'bkm', true)$$, :'emp', :'t1'), 'reunião já realizada não vai para a Agenda');
+select pg_temp.falha(format($$insert into app.reunioes (empresa_id, terreno_id, status, inicio, modalidade, local, na_agenda, gerar_meet) values (%L, %L, 'agendada', now() + interval '1 day', 'presencial', 'bkm', true, true)$$, :'emp', :'t1'), 'Meet só em reunião online');
+insert into app.reunioes (empresa_id, terreno_id, processo_id, status, inicio, duracao_min, modalidade, pauta, na_agenda, gerar_meet) values
+  (:'emp', :'t1', :'neg', 'agendada', now() + interval '2 days', 60, 'online', 'Contraproposta', true, true) returning id as ra \gset
+insert into app.reuniao_participantes (empresa_id, reuniao_id, lado, user_id) values (:'emp', :'ra', 'bkm', :'diretor');
+insert into app.reuniao_participantes (empresa_id, reuniao_id, lado, nome, email) values (:'emp', :'ra', 'vendedor', 'Sr. Carlos', 'Carlos@Exemplo.com');
+select pg_temp.falha(format($$insert into app.reuniao_participantes (empresa_id, reuniao_id, lado, nome, email) values (%L, %L, 'outro', 'X', 'sem-arroba')$$, :'emp', :'ra'), 'e-mail do convidado com formato inválido é recusado');
+select pg_temp.ok((select situacao = 'pendente' and acao = 'criar' and organizador_id = :'analista' from app.reuniao_agenda where reuniao_id = :'ra'),
+  'marcada com "Criar no Google Agenda", vai para a fila: criar o evento na agenda de quem marcou');
+select pg_temp.ok((select string_agg(email, ',' order by email) from app.v_reuniao_convidados where reuniao_id = :'ra') = 'carlos@exemplo.com,diretor@bkm.test',
+  'convidados: o e-mail do usuário da BKM e o digitado do vendedor');
+select pg_temp.falha(format($$select app.agenda_confirmar(%L, 'ev1')$$, :'ra'), 'só o servidor confirma o evento');
+select pg_temp.falha(format($$update app.reuniao_participantes set resposta = 'aceito' where reuniao_id = %L$$, :'ra'), 'a resposta ao convite vem do Google, não da tela');
+reset role;
+set role service_role;
+select app.agenda_confirmar(:'ra', 'ev1', 'https://calendar.google.com/ev1', 'https://meet.google.com/abc-defg-hij');
+reset role;
+select pg_temp.como(:'analista');
+select pg_temp.ok((select situacao = 'sincronizada' and evento_id = 'ev1' and meet_link like 'https://meet.google.com/%' from app.reuniao_agenda where reuniao_id = :'ra'),
+  'o servidor grava o evento e devolve o link do Meet');
+update app.reunioes set inicio = inicio + interval '1 hour' where id = :'ra';
+select pg_temp.ok((select situacao = 'pendente' and acao = 'atualizar' from app.reuniao_agenda where reuniao_id = :'ra'), 'mudou a hora no sistema, o evento volta para a fila para atualizar');
+reset role; set role service_role;
+select app.agenda_confirmar(:'ra', 'ev1');
+select app.agenda_evento_mudou(:'ra', now() + interval '3 days', 90);
+select app.agenda_resposta(:'ra', 'carlos@exemplo.com', 'aceito') as nresp \gset
+reset role;
+select pg_temp.como(:'analista');
+select pg_temp.ok((select duracao_min = 90 and inicio > now() + interval '2 days' from app.reunioes where id = :'ra')
+  and (select situacao = 'sincronizada' from app.reuniao_agenda where reuniao_id = :'ra') and :nresp = 1
+  and (select resposta = 'aceito' from app.reuniao_participantes where reuniao_id = :'ra' and nome = 'Sr. Carlos'),
+  'mudança feita direto na Agenda volta para a reunião sem voltar para a fila; a resposta do convidado aparece');
+insert into app.reuniao_participantes (empresa_id, reuniao_id, lado, user_id) values (:'emp', :'ra', 'bkm', :'gestor');
+select pg_temp.ok((select situacao = 'pendente' and acao = 'atualizar' from app.reuniao_agenda where reuniao_id = :'ra'), 'participante novo atualiza o convite');
+reset role; set role service_role;
+select app.agenda_confirmar(:'ra', null, p_erro => 'Token expirado');
+reset role;
+select pg_temp.como(:'analista');
+select pg_temp.ok((select situacao = 'erro' and erro = 'Token expirado' from app.reuniao_agenda where reuniao_id = :'ra'), 'falha no Google fica registrada na reunião');
+-- depois da reunião: gravação, transcrição e rascunho do resumo
+reset role; set role service_role;
+select app.agenda_confirmar(:'ra', 'ev1');
+select app.registrar_gravacao(:'ra', 'https://drive.google.com/grav', 'https://docs.google.com/transc', 'Carlos: aceito 2,8 mi com permuta de 10 unidades.',
+  'https://docs.google.com/anotacoes-gemini');
+select pg_temp.falha(format('select app.registrar_resumo_ia(%L, %L, null, %L)', :'ra', 'x', 'chatgpt'), 'origem do resumo só Gemini ou a IA do sistema');
+select app.registrar_resumo_ia(:'ra', 'Vendedor aceita 2,8 mi com permuta de 10 unidades.', '@analista manda a minuta até sexta.');
+reset role;
+select pg_temp.como(:'analista');
+select pg_temp.ok((select resumo_situacao = 'rascunho' and resumo_origem = 'gemini' and anotacoes_url like '%anotacoes-gemini' and transcricao like 'Carlos:%' from app.reuniao_agenda where reuniao_id = :'ra')
+  and (select resumo is null from app.reunioes where id = :'ra')
+  and (select count(*) = 1 from app.notificacoes where tipo = 'reuniao_resumo' and origem_id = :'ra' and destinatario_id = :'analista'),
+  'gravação, transcrição e Anotações do Gemini do Meet; o rascunho não mexe no resumo e avisa quem marcou');
+select pg_temp.falha(format('select app.decidir_resumo_ia(%L, true)', :'ra'), 'aceitar o resumo pede a reunião realizada');
+update app.reunioes set status = 'realizada', inicio = now() - interval '1 hour' where id = :'ra';
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format('select app.decidir_resumo_ia(%L, true)', :'ra'), 'Leitura não aceita o resumo');
+select pg_temp.como(:'analista');
+select app.decidir_resumo_ia(:'ra', true, 'Vendedor aceita 2,8 mi com permuta de 10 unidades (ajustado).');
+select pg_temp.ok((select resumo like '%(ajustado).' and encaminhamentos like '@analista%' from app.reunioes where id = :'ra')
+  and (select resumo_situacao = 'aceito' and resumo_decidido_por = :'analista' from app.reuniao_agenda where reuniao_id = :'ra'),
+  'aceito com ajuste: vai para o que foi tratado e os encaminhamentos');
+-- tirar da Agenda e cancelar
+insert into app.reunioes (empresa_id, terreno_id, status, inicio, modalidade, local, na_agenda) values
+  (:'emp', :'t1', 'agendada', now() + interval '5 days', 'presencial', 'bkm', true) returning id as rb \gset
+reset role; set role service_role; select app.agenda_confirmar(:'rb', 'ev2'); reset role;
+select pg_temp.como(:'analista');
+update app.reunioes set status = 'cancelada' where id = :'rb';
+select pg_temp.ok((select acao = 'cancelar' and situacao = 'pendente' from app.reuniao_agenda where reuniao_id = :'rb'), 'cancelar no sistema cancela o evento');
+update app.reunioes set na_agenda = false where id = :'rb';
+reset role; set role service_role; select app.agenda_confirmar(:'rb', null); reset role;
+select pg_temp.como(:'analista');
+select pg_temp.ok((select acao = 'remover' and evento_id is null and situacao = 'sincronizada' from app.reuniao_agenda where reuniao_id = :'rb'), 'tirar da Agenda remove o evento');
+
 \echo 'TODOS OS TESTES PASSARAM'

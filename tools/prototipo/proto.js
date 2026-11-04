@@ -533,13 +533,13 @@ function secReunioes(t){
   const form=UI.reuForm?`<form data-form="reuniao" class="reu-form"><div class="editgrid">
     <div class="field"><label for="ru-s">Situação</label><select id="ru-s" name="status"><option value="realizada">Realizada</option><option value="agendada">Agendada</option></select></div>
     <div class="field"><label for="ru-d">Data</label><input id="ru-d" name="data" type="date" value="${HOJE}" required></div>
-    <div class="field"><label for="ru-h">Hora</label><input id="ru-h" name="hora" type="time" value="10:00"></div>
+    <div class="field"><label for="ru-h">Hora</label><input id="ru-h" name="hora" type="time" value="10:00"></div>${reuAgendaDur()}
     <div class="field"><span class="lbl" id="ru-m-l">Modalidade</span><span class="seg3" role="radiogroup" aria-labelledby="ru-m-l">${Object.entries(OPT_REU.modalidade).map(([k,l],i)=>`<label class="opt-radio"><input type="radio" name="modalidade" value="${k}" ${i===0?'checked':''}>${l}</label>`).join('')}</span></div>
     <div class="field" data-so="presencial"><span class="lbl" id="ru-l-l">Onde</span><span class="seg3" role="radiogroup" aria-labelledby="ru-l-l">${Object.entries(OPT_REU.local).map(([k,l],i)=>`<label class="opt-radio"><input type="radio" name="local" value="${k}" ${i===0?'checked':''}>${l}</label>`).join('')}</span></div>
     <div class="field" data-so="externo"><label for="ru-e">Endereço</label><input id="ru-e" name="endereco" placeholder="Escritório do vendedor, no terreno..."></div>
     <div class="field"><label for="ru-pb">Participantes da BKM</label><input id="ru-pb" name="pbkm" value="${esc(me())}"></div>
     <div class="field"><label for="ru-pe">Participantes externos</label><input id="ru-pe" name="pext" placeholder="Vendedor, corretor, advogado"></div>
-    <div class="field full"><label for="ru-p">Pauta</label><input id="ru-p" name="pauta" data-mencao></div>
+    <div class="field full"><label for="ru-p">Pauta</label><input id="ru-p" name="pauta" data-mencao></div>${reuAgendaCampos()}
     <div class="field full" data-so="realizada"><label for="ru-r">O que foi tratado</label><textarea id="ru-r" name="resumo" data-mencao placeholder="Posições de cada lado, valores citados, objeções"></textarea></div>
     <div class="field full" data-so="realizada"><label for="ru-n">Encaminhamentos</label><textarea id="ru-n" name="enc" data-mencao placeholder="Quem faz o quê, até quando (@ avisa um colega)"></textarea></div>
     </div><div class="sec-f" style="padding:12px 0 0"><button type="button" class="btn text" data-a="reu-form">Cancelar</button><button class="btn primary">Registrar reunião</button></div></form>`:'';
@@ -548,6 +548,7 @@ function secReunioes(t){
   ${ms.length?`<div class="reus">${ms.map(m=>`<article class="reu ${m.status}" data-mid="${m.id}"><div class="reu-h"><div><div class="reu-t">${fd(m.data)} · ${esc(m.hora||'')}</div><div class="reu-m">${OPT_REU.modalidade[m.modalidade]}${m.modalidade==='presencial'?' · '+OPT_REU.local[m.local]+(m.endereco?' · '+esc(m.endereco):''):''}</div></div>
     <span class="reu-acts">${m.status==='agendada'?`<span class="chip blue">Agendada</span>${negAtiva(t)&&m.data<=HOJE?`<button class="btn sm" data-a="reu-feita" data-k="${m.id}">${ic('check',16)}Marcar realizada</button>`:''}`:m.status==='cancelada'?'<span class="chip">Cancelada</span>':`<span class="chip good">Realizada</span>`}</span></div>
     ${m.part.bkm||m.part.ext?`<div class="reu-p"><span><b>BKM</b> ${esc(m.part.bkm||'—')}</span><span><b>Externos</b> ${esc(m.part.ext||'—')}</span></div>`:''}
+    ${reuAgendaHtml(t,m)}
     ${m.pauta?`<div class="reu-x"><span class="k">Pauta</span>${escM(m.pauta)}</div>`:''}${m.resumo?`<div class="reu-x"><span class="k">Tratado</span>${escM(m.resumo)}</div>`:''}${m.enc?`<div class="reu-x"><span class="k">Encaminhamentos</span>${escM(m.enc)}</div>`:''}
     ${m.status==='realizada'?`<div class="reu-ata">${m.ata?`${ic('doc',18)}<span><b>Ata</b> · ${esc(m.ata.nome)} · v${m.ata.versoes}</span><button class="btn sm text" data-a="upload" data-k="ata:${m.id}">${ic('upload',16)}Nova versão</button>`:`${ic('doc',18)}<span class="muted">Sem ata</span><button class="btn sm text" data-a="upload" data-k="ata:${m.id}">${ic('upload',16)}Anexar ata</button>`}</div>`:''}
   </article>`).join('')}</div>`:'<div class="muted">Nenhuma reunião registrada.</div>'}
@@ -826,7 +827,7 @@ document.addEventListener('click',e=>{
     case 'tema':TEMA=a.dataset.v;try{localStorage.setItem('bkm-terrenos-tema',TEMA)}catch(e){}temaMenu=false;aplicaTema();renderTema();toast('Tema: '+TEMAS.find(x=>x[0]===TEMA)[1]+'.');break;
     case 'menu':menuMin=!menuMin;try{localStorage.setItem('bkm-terrenos-menu',menuMin?'min':'aberto')}catch(e){}render();break;
     case 'reu-form':UI.reuForm=!UI.reuForm;render();break;
-    case 'reu-feita':{const m=t.reunioes.find(x=>x.id===a.dataset.k);if(m.data>HOJE){toast('A data ainda não chegou. Ajuste a data antes de marcar como realizada.',true);break}m.status='realizada';log(t,`Reunião de ${fd(m.data)} marcada como realizada`);save();render();break}
+    case 'reu-feita':{const m=t.reunioes.find(x=>x.id===a.dataset.k);if(m.data>HOJE){toast('A data ainda não chegou. Ajuste a data antes de marcar como realizada.',true);break}m.status='realizada';log(t,`Reunião de ${fd(m.data)} marcada como realizada`);reuAgendaRealizada(t,m);save();render();break}
     case 'doc-ok':{const d=t.docs.find(x=>x.tipo===a.dataset.k);d.status='validado';log(t,`${TIPOS_DOC[d.tipo][0]} validado`);save();render();break}
     case 'upload':UI.upload=a.dataset.k;$('#file-in').value='';$('#file-in').click();break;
   }
@@ -887,8 +888,9 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       if(F.status==='agendada'&&F.data<HOJE){toast('Para registrar uma reunião passada, escolha Realizada.',true);return}
       const pres=F.modalidade==='presencial';
       const rid=uid();t.reunioes.push({id:rid,status:F.status,data:F.data,hora:F.hora,modalidade:F.modalidade,local:pres?F.local:null,endereco:pres&&F.local==='externo'?F.endereco:'',part:{bkm:F.pbkm,ext:F.pext},pauta:F.pauta,resumo:F.status==='realizada'?F.resumo:'',enc:F.status==='realizada'?F.enc:'',ata:null});
+      reuAgendaCriar(t,t.reunioes[t.reunioes.length-1],F);
       {const m=t.reunioes[t.reunioes.length-1];mencionar(t,'',[m.pauta,m.resumo,m.enc].join('\n'),`na reunião de ${fd(m.data)}`,{b:'negociacao',alvo:rid})}
-      log(t,`Reunião ${F.status==='realizada'?'realizada':'agendada'} em ${fd(F.data)} (${OPT_REU.modalidade[F.modalidade]}${pres?', '+OPT_REU.local[F.local].toLowerCase():''})`);UI.reuForm=false;save();render();toast('Reunião registrada.');break}
+      log(t,`Reunião ${F.status==='realizada'?'realizada':'agendada'} em ${fd(F.data)} (${OPT_REU.modalidade[F.modalidade]}${pres?', '+OPT_REU.local[F.local].toLowerCase():''})`);UI.reuForm=false;save();render();toast(t.reunioes[t.reunioes.length-1].agenda?'Reunião marcada e criada no seu Google Agenda; os convidados recebem o convite.':'Reunião registrada.');break}
     case 'prop':{const v=lerNum(F.valor);if(!v){toast('Informe o valor.',true);return}const lp=lastProp(t);
       if(lp&&['rascunho','apresentada','em_analise'].includes(lp.status))lp.status=lp.origem===F.origem?'substituida':'recusada';
       t.propostas.push({v:(lp?.v||0)+1,origem:F.origem,data:F.data,validade:F.validade||null,valor:v,forma:F.forma,cond:F.cond,status:F.status});
