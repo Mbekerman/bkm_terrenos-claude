@@ -1,4 +1,4 @@
-// Filtros de terrenos: gaveta à direita (tela cheia no celular), a mesma seleção em Terrenos e Mapa (o Funil tem a sua, ver tfxpag),
+// Filtros de terrenos: gaveta à direita (tela cheia no celular), cada página (Pipeline, Mapa, Funil) com a sua seleção (ver tfxpag),
 // chips com X, Limpar, contagem por opção, campos que dependem de outro (etapa da fase, região da cidade),
 // faixa com "Incluir sem informação", visões salvas, filtro no endereço da página, Esc, ficha do mapa
 // fecha a gaveta e temperatura só no terreno (parte sem temperatura). Claro, escuro e celular.
@@ -58,10 +58,10 @@ const comFiltro=(await linhas(p)).length;
 await clica(p,'#fx-barra [data-a=fx-limpar]');ok((await linhas(p)).length===naoArq.length&&!(await conta(p,'#fx-barra .fx-chip')),'Limpar tira todos os filtros');
 await p.evaluate(()=>{const s=document.querySelector('[data-ch=fx-visao]');s.value=[...s.options].find(o=>o.textContent.includes('Negociação em SP')).value;s.dispatchEvent(new Event('change',{bubbles:true}))});await p.waitForTimeout(250);
 ok((await linhas(p)).length===comFiltro,'escolher a visão volta aos filtros dela');
-// Mapa: mesma seleção
+// Mapa: seleção própria (pedido do Moisés, 4/nov/2026)
 await nav(p,'mapa');await p.waitForTimeout(300);
 ok(!(await conta(p,'#mp-cor'))&&!(await conta(p,'#mp-zona')),'Mapa: seletores Corretor e Região saíram para o painel');
-const nMapa=await conta(p,'#mp-lista .mp-it');ok(nMapa===comFiltro,`Mapa usa os mesmos filtros (${nMapa} na lista)`);
+const nMapa=await conta(p,'#mp-lista .mp-it');ok(nMapa>comFiltro&&!(await conta(p,'#fx-barra .fx-chip')),`Mapa não herda o filtro do Pipeline (${nMapa} na lista)`);
 ok(await conta(p,'#fx-dr')===1,'a gaveta continua aberta ao trocar de página');
 await p.screenshot({path:O+'2_mapa_gaveta.png'});
 await p.evaluate(()=>document.querySelector('#mp-lista [data-a=fs-abrir]').click());await p.waitForTimeout(300);
