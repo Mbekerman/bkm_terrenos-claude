@@ -221,11 +221,15 @@ const vbObraTxt=(v,c)=>v.obraBase==='construida'?`× ${m2(c.Ab)} de área constr
 /* estudo de massa da viabilidade (lote 4, decisões do Moisés de 3/nov/2026): nenhum, seguir o válido ou um estudo entregue */
 function vbMassaSel(v,ro){const ms=massasDe(v.tid).filter(m=>m.sit==='entregue'),val=emsValido(v.tid),m=EMS(v.massa);
   if(!ms.length&&!v.massa)return '';
-  const atual=v.segue?'valido':v.massa||'';
-  return `<div class="vb-ms"><label class="field"><span class="lbl-f">Estudo de massa</span><select data-vb="ms" ${ro?'disabled':''}><option value="">Sem estudo de massa (tipologias digitadas aqui)</option>
-    <option value="valido" ${atual==='valido'?'selected':''} ${val?'':'disabled'}>Seguir o válido${val?` (${esc(val.nome)})`:': nenhum ainda'}</option>
-    ${ms.map(x=>`<option value="${x.id}" ${atual===x.id?'selected':''}>${esc(x.nome)}${x.valido?' · válido':''}</option>`).join('')}</select></label>
-    ${m?`<div class="hint">Título, área e quantidade das tipologias e a área construída vêm do ${esc(m.nome)}${v.segue?' (o válido; trocou o válido, troca aqui)':''}; aqui, preços, permuta e comissão.</div>`:''}</div>`}
+  const atual=v.segue?'valido':v.massa||'',dis=ro?'disabled':'';
+  const ops=`<option value="valido" ${atual==='valido'?'selected':''} ${val?'':'disabled'}>Seguir o válido${val?` (${esc(val.nome)})`:': nenhum ainda'}</option>
+    ${ms.map(x=>`<option value="${x.id}" ${atual===x.id?'selected':''}>${esc(x.nome)}${x.valido?' · válido':''}</option>`).join('')}`;
+  if(!m)return `<div class="vb-ms"><label class="field"><span class="lbl-f">Vincular a um estudo de massa</span><select data-vb="ms" ${dis}><option value="" selected>Sem vínculo (tipologias e áreas digitadas aqui)</option>${ops}</select></label>
+    ${ro?'':'<div class="hint">Vinculando, as tipologias e a área construída voltam a ser as do estudo de massa; preços, permuta e comissão ficam.</div>'}</div>`;
+  return `<div class="vb-ms"><div class="vb-ms-l"><label class="field"><span class="lbl-f">Vinculada ao estudo de massa</span><select data-vb="ms" aria-label="Trocar o estudo de massa vinculado" ${dis}>${ops}</select></label>
+    ${ro?'':`<button type="button" class="btn sm" data-a="vb-ms-solta">${ic('link',16)}Quebrar vínculo</button>`}</div>
+    ${UI.vbMsConf===v.id&&!ro?`<div class="banner warn vb-ms-conf"><div style="flex:1"><div class="bt">Quebrar o vínculo com o ${esc(m.nome)}?</div><div>As tipologias e a área construída ficam como estão e passam a se editar aqui. Vinculando de novo, voltam a ser as do estudo.</div></div><div class="vb-ms-cb"><button type="button" class="btn text sm" data-a="vb-ms-nao">Cancelar</button><button type="button" class="btn sm primary" data-a="vb-ms-sim">Quebrar vínculo</button></div></div>`
+      :`<div class="hint">Título, área e quantidade das tipologias e a área construída vêm do ${esc(m.nome)}${v.segue?' (o válido; trocou o válido, troca aqui)':''} e não se editam; aqui, preços, permuta e comissão.</div>`}</div>`}
 function vbPopRender(){let el=document.getElementById('vb-pop');
   if(UI.vbPop&&(!VB(UI.vbPop)||UI.route!==UI.vbPopRota))UI.vbPop=null;
   if(!UI.vbPop){if(el){el.remove();document.body.classList.remove('vb-aberto')}return}
@@ -356,8 +360,8 @@ function viabChange(el){
     else d[k]=el.value||null;
     vbSyncTodos();save();render();return true}
   const tipo=el.dataset.vb;if(!tipo)return false;const v=VB(UI.vid);if(!v)return true;const k=el.dataset.k;
-  if(tipo==='ms'){const x=el.value;if(!x){v.massa=null;v.segue=false;v.tips.forEach(p=>delete p.mt);toast('Estudo solto do estudo de massa: as tipologias ficam e voltam a se editar.')}
-    else{v.segue=x==='valido';v.massa=v.segue?emsValido(v.tid)?.id:x;emsSync(v);toast(`Tipologias e área construída do ${EMS(v.massa)?.nome}.`)}vbGravar(v);render();return true}
+  if(tipo==='ms'){const x=el.value;UI.vbMsConf=null;if(!x){v.massa=null;v.segue=false;v.tips.forEach(p=>delete p.mt);toast('Vínculo quebrado: as tipologias ficam e passam a se editar aqui.')}
+    else{const ant=v.massa;v.segue=x==='valido';v.massa=v.segue?emsValido(v.tid)?.id:x;emsSync(v);log(T(v.tid),`${v.nome}: vinculada ao ${EMS(v.massa)?.nome}`);toast(ant?`Trocado: tipologias e área construída do ${EMS(v.massa)?.nome}.`:`Vinculada: tipologias e área construída voltaram às do ${EMS(v.massa)?.nome}.`)}vbGravar(v);render();return true}
   if(tipo==='ob'){v.obraBase=el.value==='construida'?'construida':'privativa';vbGravar(v);render();return true}
   if(tipo==='ded'){v.deduz=el.checked?[...new Set([...v.deduz,el.value])]:v.deduz.filter(x=>x!==el.value);vbGravar(v);render();return true}
   if(tipo==='hd'&&k==='nome'){if(!v.nome.trim()){v.nome='Estudo';el.value=v.nome}const h=document.querySelector('.vb-h h1');if(h)h.textContent=v.nome}
@@ -391,6 +395,9 @@ function viabClick(A,a,t){
     case 'vb-apagar':UI.modal='vb-apagar';UI.vbApagar=a.dataset.v;renderModal();return true;
     case 'vb-apagar-ok':{const v=VB(UI.vbApagar),x=T(v.tid);if(x.neg?.viab?.id===v.id){toast('Estudo vinculado à negociação não se apaga.',true);return true}
       S.viabs=S.viabs.filter(y=>y.id!==v.id);log(x,`Estudo de viabilidade apagado: ${v.nome}`);UI.modal=null;UI.vbPop=null;save();render();toast('Estudo apagado.');return true}
+    case 'vb-ms-solta':UI.vbMsConf=UI.vid;render();return true;
+    case 'vb-ms-nao':UI.vbMsConf=null;render();return true;
+    case 'vb-ms-sim':{const v=VB(UI.vid);UI.vbMsConf=null;if(!v)return true;const n=EMS(v.massa)?.nome;v.massa=null;v.segue=false;v.tips.forEach(p=>delete p.mt);log(T(v.tid),`${v.nome}: vínculo com o ${n} quebrado`);vbGravar(v);render();toast('Vínculo quebrado: tipologias e área construída ficam e passam a se editar aqui.');return true}
     case 'vb-tip-add':{const v=VB(UI.vid),p={id:uid(),nome:'Tipologia '+(v.tips.length+1),area:null,qtd:null,perm:0,com:0,pu:null,pm2:null};v.tips.push(p);vbGravar(v);render();setTimeout(()=>{const i=document.querySelector(`[data-tp="${p.id}"] [data-k="nome"]`);i?.focus();i?.select()},20);return true}
     case 'vb-tip-del':{const v=VB(UI.vid);v.tips=v.tips.filter(p=>p.id!==a.dataset.v);vbGravar(v);render();return true}
     case 'vb-q-tg':{const f=UI.vbFechados||(UI.vbFechados=new Set()),k=a.dataset.v;f.has(k)?f.delete(k):f.add(k);render();return true}

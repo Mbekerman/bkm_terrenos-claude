@@ -60,14 +60,8 @@ function emsFicha(t,m,ro){const c=emsCalc(m),[st,cor]=EMS_SIT[m.sit],dis=ro?'dis
     ${ro?'':`<input type="file" id="ems-f-${k}" class="ems-file" data-ems="arq" data-k="${k}" accept=".${k}" hidden><button class="btn sm" data-a="ems-arq" data-k="${k}">${ic('upload',16)}${d?'Enviar nova versão':'Enviar '+k.toUpperCase()}</button>`}</div>`};
   const acoes=ro?'':`${m.sit!=='entregue'?`<button class="btn sm" data-a="ems-entregar" data-v="${m.id}">Marcar como entregue</button>`:''}${m.sit==='entregue'&&!m.valido?`<button class="btn sm" data-a="ems-valido" data-v="${m.id}">Marcar como válido</button>`:''}
     ${m.sit==='entregue'?`<button class="btn sm primary" data-a="ems-viab" data-v="${m.id}">${ic('add',16)}Criar estudo de viabilidade</button>`:''}${!m.valido&&!vs.length?`<button class="btn text sm danger" data-a="ems-apagar" data-v="${m.id}">Apagar</button>`:''}`;
-  return `<section class="sec" id="sec-massa"><div class="sec-h"><h2>${esc(m.nome)}</h2><span class="chip ${cor}">${st}</span>${m.valido?'<span class="chip good"><span class="d"></span>Válido</span>':''}</div><div class="sec-b ems">
+  return `<section class="sec" id="sec-massa"><div class="sec-h"><h2>${esc(m.nome)}</h2><span class="chip ${cor}">${st}</span>${m.valido?'<span class="chip good"><span class="d"></span>Válido</span>':''}<button type="button" class="btn text sm ems-vped" data-a="ems-pedido" data-v="${m.id}">${ic('doc',16)}Ver pedido</button></div><div class="sec-b ems">
     ${acoes.trim()?`<div class="ems-acoes">${acoes}</div>`:''}
-    <h3 class="ems-h3">Pedido</h3>
-    <div class="ems-g">${ro?ler('Nome do estudo',esc(m.nome)):`<label class="field"><span class="lbl-f">Nome do estudo</span><input data-ems="txt" data-k="nome" value="${esc(m.nome)}"></label>`}
-      <div class="field"><label for="ems-arq-${m.id}">Arquiteto</label><select id="ems-arq-${m.id}" data-ems="arq-p" ${dis}>${USERS.map(u=>`<option value="${esc(u)}" ${u===m.arq?'selected':''}>${esc(u)}</option>`).join('')}</select></div>
-      <label class="field"><span class="lbl-f">Prazo</span><input type="date" data-ems="txt" data-k="prazo" value="${esc(m.prazo||'')}" ${dis}></label>
-      ${ler('Pedido por',`${esc(m.solic||'—')} em ${fd(m.solicEm)}`)}
-      <label class="field ems-full"><span class="lbl-f">Briefing</span><textarea data-ems="txt" data-k="briefing" rows="3" ${dis}>${esc(m.briefing||'')}</textarea></label></div>
     <h3 class="ems-h3">Tipologias</h3>
     <div class="ems-tips"><div class="ems-tr ems-th" aria-hidden="true"><span>Tipologia</span><span>Área privativa (m²)</span><span>Quantidade</span><span>Área privativa total</span><span></span></div>
       ${m.tips.map(p=>`<div class="ems-tr" data-emtp="${p.id}"><label><span class="lbl-f ems-ml">Tipologia</span><input data-ems="tp" data-r="${p.id}" data-k="nome" value="${esc(p.nome)}" aria-label="Tipologia" ${dis}></label>
@@ -98,7 +92,6 @@ document.addEventListener('change',e=>{const el=e.target;if(!el.dataset?.ems||UI
     if(m[k]===v)return;m[k]=v;el.value=vbIn(v,['vc','vd'].includes(k)?0:['caL','caV'].includes(k)?3:2);const s0=m.sit;emsElab(m);log(t,`${m.nome}: dados do arquiteto atualizados`);emsGravar(m,s0!==m.sit);return}
   if(tipo==='txt'){let v=k==='prazo'?(el.value||null):el.value.trim();if(k==='nome'&&!v){toast('Dê um nome ao estudo.',true);el.value=m.nome;return}
     if((m[k]||'')===(v||''))return;m[k]=v;emsGravar(m,k==='nome');return}
-  if(tipo==='arq-p'){if(!el.value||el.value===m.arq)return;m.arq=el.value;notificar(m.arq,'massa_solicitado',`${m.nome} do ${t.codigo} passou para você`,t,null,{b:'massa'});log(t,`${m.nome}: arquiteto ${m.arq}`);emsGravar(m);toast(`${m.arq} é o arquiteto do estudo.`);return}
   if(tipo==='tp'){const p=m.tips.find(x=>x.id===el.dataset.r);if(!p)return;
     if(k==='nome'){const v=el.value.trim();if(!v||m.tips.some(x=>x!==p&&x.nome.trim().toLowerCase()===v.toLowerCase())){toast(v?'Já existe uma tipologia com este título.':'A tipologia precisa de um título.',true);el.value=p.nome;return}p.nome=v}
     else{let v=lerNum(el.value);if(v!=null&&v<0)v=null;if(k==='qtd')v=v==null?null:Math.round(v);if(k==='area'&&v===0)v=null;p[k]=v;el.value=vbIn(v,k==='qtd'?0:2)}
@@ -118,8 +111,9 @@ function emsCriarViab(t,m,segue){const p=vbModeloPadrao();vbCriar(t.id,'Viabilid
   v.massa=m.id;v.segue=!!segue;v.tips=[];emsSync(v);vbSync(v);log(t,`${v.nome}: tipologias e área construída do ${m.nome}${segue?' (segue o válido)':''}`);save();render()}
 
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a]');if(!a||UI.route!=='terreno')return;const A=a.dataset.a;
-  if(!['ems-form','ems-sel','ems-entregar','ems-valido','ems-viab','ems-apagar','ems-tip-add','ems-tip-del','ems-arq'].includes(A))return;const t=T(UI.id);if(!t)return;
+  if(!['ems-pedido','ems-form','ems-sel','ems-entregar','ems-valido','ems-viab','ems-apagar','ems-tip-add','ems-tip-del','ems-arq'].includes(A))return;const t=T(UI.id);if(!t)return;
   if(A==='ems-sel'){UI.emsSel=a.dataset.v;QD.massa?.add('sec-massa');render();setTimeout(()=>document.getElementById('sec-massa')?.scrollIntoView({behavior:'smooth',block:'start'}),30);return}
+  if(A==='ems-pedido'){UI.emsPed=a.dataset.v;UI.modal='ems-pedido';renderModal();return}
   if(UI.role==='Leitura')return;
   if(A==='ems-form'){UI.emsForm=!UI.emsForm;render();if(UI.emsForm)setTimeout(()=>document.getElementById('ems-arq-q')?.focus(),30);return}
   const m=EMS(a.dataset.v)||EMS(UI.emsSel)||emsValido(t.id)||massasDe(t.id).slice(-1)[0];if(!m)return;
@@ -141,13 +135,27 @@ function emsModalHtml(M,fechar){
         <label class="chk"><input type="radio" name="segue" value=""><span>Fica preso a este estudo</span></label></fieldset>
         <div class="hint" style="margin-top:8px">Título, área e quantidade das tipologias vêm do estudo de massa e não se editam na viabilidade; preços, permuta e comissão são da viabilidade.</div></div>
       <div class="df"><button type="button" class="btn text" data-a="close">Cancelar</button><button class="btn primary">Criar</button></div></form>`}
+  if(M==='ems-pedido'){const m=EMS(UI.emsPed);if(!m)return '';const ro=UI.role==='Leitura',ls=(m.briefing||'').split('\n').map(x=>x.trim()).filter(Boolean);
+    const cab=`<div class="dh"><div><h2>Pedido do estudo</h2><div class="muted">${esc(m.nome)} · pedido por ${esc(m.solic||'—')} em ${fd(m.solicEm)}</div></div>${fechar}</div>`;
+    if(ro)return cab+`<div class="db ems-ped"><div class="field"><span class="lbl-f">Arquiteto</span><span class="v">${esc(m.arq||'—')}</span></div><div class="field"><span class="lbl-f">Prazo</span><span class="v">${m.prazo?fd(m.prazo):'Sem prazo'}</span></div>
+      <div class="field"><span class="lbl-f">Briefing</span>${ls.length>1?`<ul class="ems-blist">${ls.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:`<span class="v">${esc(ls[0]||'Sem briefing')}</span>`}</div></div>
+      <div class="df"><button type="button" class="btn primary" data-a="close">Fechar</button></div>`;
+    return cab+`<form data-form="ems-pedido"><div class="db ems-ped"><label class="field"><span class="lbl-f">Nome do estudo</span><input name="nome" value="${esc(m.nome)}" required></label>
+      <div class="field"><label for="ems-ped-arq">Arquiteto</label><select id="ems-ped-arq" name="arq">${USERS.map(u=>`<option value="${esc(u)}" ${u===m.arq?'selected':''}>${esc(u)}</option>`).join('')}</select></div>
+      <label class="field"><span class="lbl-f">Prazo</span><input type="date" name="prazo" value="${esc(m.prazo||'')}"></label>
+      <label class="field"><span class="lbl-f">Briefing</span><textarea name="briefing" rows="7" placeholder="O que o estudo precisa considerar. Uma linha por item.">${esc(m.briefing||'')}</textarea></label></div>
+      <div class="df"><button type="button" class="btn text" data-a="close">Cancelar</button><button class="btn primary">Salvar</button></div></form>`}
   if(M==='ems-apagar'){const m=EMS(UI.emsApagar);if(!m)return '';
     return `<div class="dh"><div><h2>Apagar ${esc(m.nome)}?</h2></div>${fechar}</div><div class="db">Os arquivos enviados continuam em Documentos.</div>
       <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary danger" data-a="ems-apagar-ok">Apagar</button></div>`}
   return ''}
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a=ems-apagar-ok]');if(!a)return;const m=EMS(UI.emsApagar),t=m&&T(m.tid);if(!m)return;
   S.massas=S.massas.filter(x=>x!==m);log(t,`${m.nome} apagado`);if(UI.emsSel===m.id)UI.emsSel=null;UI.emsApagar=null;UI.modal=null;save();render();toast('Estudo de massa apagado.')});
-document.addEventListener('submit',e=>{const f=e.target;if(!['ems-novo','ems-viab'].includes(f.dataset?.form))return;e.preventDefault();e.stopImmediatePropagation();const t=T(UI.id);if(!t)return;const F=Object.fromEntries(new FormData(f));
+document.addEventListener('submit',e=>{const f=e.target;if(!['ems-novo','ems-viab','ems-pedido'].includes(f.dataset?.form))return;e.preventDefault();e.stopImmediatePropagation();const t=T(UI.id);if(!t)return;const F=Object.fromEntries(new FormData(f));
+  if(f.dataset.form==='ems-pedido'){const m=EMS(UI.emsPed);if(!m)return;const nome=(F.nome||'').trim();if(!nome){toast('Dê um nome ao estudo.',true);return}
+    let mud=false,ren=false;if(nome!==m.nome){m.nome=nome;mud=ren=true}const pz=F.prazo||null;if(pz!==(m.prazo||null)){m.prazo=pz;mud=true}const b=(F.briefing||'').trim();if(b!==(m.briefing||'')){m.briefing=b;mud=true;log(t,`${m.nome}: briefing alterado`)}
+    if(F.arq&&USERS.includes(F.arq)&&F.arq!==m.arq){m.arq=F.arq;mud=true;notificar(m.arq,'massa_solicitado',`${m.nome} do ${t.codigo} passou para você`,t,null,{b:'massa'});log(t,`${m.nome}: arquiteto ${m.arq}`)}
+    UI.modal=null;if(mud){emsGravar(m);toast('Pedido salvo.')}else render();return}
   if(f.dataset.form==='ems-viab'){const m=EMS(UI.emsViabDe);UI.modal=null;UI.emsViabDe=null;if(m)emsCriarViab(t,m,!!F.segue);return}
   if(!F.arq||!USERS.includes(F.arq)){toast('Marque o arquiteto.',true);return}
   const m=emsNovo(t,{arq:F.arq,briefing:(F.briefing||'').trim(),prazo:F.prazo||null});S.massas.push(m);UI.emsSel=m.id;UI.emsForm=false;QD.massa?.add('sec-massa');

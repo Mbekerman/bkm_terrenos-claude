@@ -34,6 +34,12 @@ await p.fill('#ems-brief','Torre única\nStudios no térreo');await p.click('[da
 let d=await D();const m3=d.massas.at(-1);
 ok(d.massas.length===3&&m3.nome==='Estudo de massa 3'&&m3.sit==='solicitado'&&m3.arq===arq&&/Studios/.test(m3.briefing),tag+' pedido ao arquiteto com o briefing: Estudo de massa 3, Solicitado');
 ok(/Estudo de massa 3/.test(await p.$eval('#sec-massa h2',e=>e.textContent))&&/Solicitado/.test(await p.$eval('#sec-massa .sec-h',e=>e.textContent)),tag+' abre a ficha do estudo pedido');
+ok(await p.evaluate(()=>!/Studios no térreo/.test(document.querySelector('#sec-massa').textContent+[...document.querySelectorAll('#sec-massa textarea')].map(x=>x.value).join(''))&&!document.querySelector('#sec-massa [data-k=prazo]')),tag+' a ficha do estudo não repete o pedido');
+await p.click('#sec-massa [data-a=ems-pedido]');await p.waitForTimeout(250);
+ok(await p.evaluate(()=>/Studios no térreo/.test(document.querySelector('[data-form=ems-pedido] textarea')?.value||'')),tag+' Ver pedido abre o popup com o briefing');
+if(!cel)await p.screenshot({path:OUT+tag+'_0pedido.png'});
+await p.fill('[data-form=ems-pedido] input[name=prazo]','2026-12-01');await p.click('[data-form=ems-pedido] button.primary');await p.waitForTimeout(250);
+ok((await D()).massas.at(-1).prazo==='2026-12-01'&&!(await p.$('[data-form=ems-pedido]')),tag+' o pedido se edita no popup');
 // lançamento do arquiteto
 const fill=async(sel,v)=>{const l=p.locator(sel);await l.click();await l.fill(v);await l.press('Tab');await p.waitForTimeout(80)};
 await p.click('#sec-massa [data-a=ems-tip-add]');await p.waitForTimeout(200);
@@ -82,8 +88,17 @@ ok(/16\.000\.000/.test(await p.$eval('[data-vbo=oi]',e=>e.textContent))&&/8\.000
 if(!cel)await p.screenshot({path:OUT+tag+'_4obra.png'});
 // soltar do estudo de massa
 await p.evaluate(()=>document.querySelector('.vb-nav [data-a=vb-aba][data-v=tip]').click());await p.waitForTimeout(150);
-await p.selectOption('#vb-pop [data-vb=ms]','');await p.waitForTimeout(200);
+await p.click('#vb-pop [data-a=vb-ms-solta]');await p.waitForTimeout(150);
+ok(await p.$('#vb-pop .vb-ms-conf')&&(await D()).viabs.at(-1).massa,tag+' Quebrar vínculo pede confirmação');
+if(!cel)await p.screenshot({path:OUT+tag+'_5quebrar.png'});
+await p.click('#vb-pop [data-a=vb-ms-sim]');await p.waitForTimeout(200);
 d=await D();ok(!d.viabs.at(-1).massa&&d.viabs.at(-1).tips.length===2&&!(await p.$eval('#vb-pop [data-vb=tp][data-k=nome]',e=>e.disabled)),tag+' solto, as tipologias ficam e voltam a se editar');
+{const v=(await D()).viabs.at(-1),q0=v.tips[0].qtd,tp0=v.tips[0].id;
+await fill(`#vb-pop [data-vb=tp][data-r="${tp0}"][data-k=qtd]`,'7');
+ok((await D()).viabs.at(-1).tips[0].qtd===7,tag+' sem vínculo, a quantidade se edita a partir dos dados de antes');
+await p.selectOption('#vb-pop [data-vb=ms]',m3.id);await p.waitForTimeout(200);
+const w=(await D()).viabs.at(-1);ok(w.massa===m3.id&&w.tips.find(x=>x.nome===v.tips[0].nome)?.qtd===q0&&await p.$eval('#vb-pop [data-vb=tp][data-k=qtd]',e=>e.disabled),tag+' vinculando de novo, os dados voltam aos do estudo e travam');
+await p.click('#vb-pop [data-a=vb-ms-solta]');await p.waitForTimeout(100);await p.click('#vb-pop [data-a=vb-ms-sim]');await p.waitForTimeout(200)}
 await p.evaluate(()=>document.querySelector('[data-a=vb-fechar]').click());await p.waitForTimeout(200);
 // apagar o não válido sem viabilidade
 await p.click('#sec-massa-lista [data-a=ems-sel] >> nth=1');await p.waitForTimeout(250);

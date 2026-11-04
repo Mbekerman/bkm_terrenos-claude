@@ -3454,6 +3454,11 @@ select pg_temp.falha(format('select app.apagar_estudo_massa(%L)', :'em1'), 'estu
 select app.vincular_massa(:'vbm1', null, false);
 insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, nome, quantidade) values (:'emp', :'vbm1', 'Extra', 1);
 select pg_temp.ok((select count(*) = 3 and bool_and(massa_tipologia_id is null) from app.viabilidade_tipologias where viabilidade_id = :'vbm1'), 'solta, a viabilidade fica com as tipologias e volta a editá-las');
+update app.viabilidade_tipologias set quantidade = 3 where viabilidade_id = :'vbm1' and nome = '2 dormitórios';
+select app.vincular_massa(:'vbm1', :'em1', false);
+select pg_temp.ok((select string_agg(nome || ':' || quantidade, ',' order by ordem) from app.viabilidade_tipologias where viabilidade_id = :'vbm1') = '2 dormitórios:8,2 dormitórios com suíte:50',
+  'vinculando de novo, as tipologias voltam às do estudo de massa (a editada e a incluída à mão saem)');
+select app.vincular_massa(:'vbm1', null, false);
 select app.criar_viabilidade(:'t1', 'Cópia presa', :'vbm') as vbmc \gset
 select pg_temp.ok((select segue_massa_valido and estudo_massa_id = :'em2' from app.viabilidades where id = :'vbmc')
   and (select count(*) = 2 and bool_and(massa_tipologia_id is not null) from app.viabilidade_tipologias where viabilidade_id = :'vbmc'), 'duplicar leva o vínculo com o estudo de massa');

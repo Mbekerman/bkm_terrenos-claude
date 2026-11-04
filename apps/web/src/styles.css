@@ -4580,5 +4580,13 @@ html[data-tema="escuro"] .ems-tr, html[data-tema="escuro"] .ems-arq { border-top
 html[data-tema="escuro"] .ems-th { color: #c4c7c5 } html[data-tema="escuro"] .ems-h3 { color: #e3e3e3 }
 html[data-tema="escuro"] .ems-lista tr.ems-sel td { background: rgba(168, 199, 250, .08) }
 
+/* Estudos de massa: pedido em popup (pedido do Moisés, 4/nov/2026) */
+.sec-h .ems-vped{margin-left:auto}
+.ems-ped{display:grid;gap:16px}
+.ems-ped textarea{width:100%;resize:vertical}
+.ems-blist{margin:4px 0 0;padding-left:20px;line-height:1.5}
+.vb-ms-l{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}.vb-ms-l .field{flex:1;min-width:220px}
+.vb-ms-conf{margin-top:8px;flex-wrap:wrap}.vb-ms-cb{display:flex;gap:8px;align-items:center}
+
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
