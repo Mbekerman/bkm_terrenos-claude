@@ -205,7 +205,7 @@ create table app.motivos_encerramento (
 create table app.entorno_categorias (
   codigo       text primary key,
   nome         text not null,
-  tipos_google text[] not null check (cardinality(tipos_google) > 0),
+  tipos_google text[] not null check (cardinality(tipos_google) > 0),  -- tipo principal do lugar no Places (includedPrimaryTypes)
   raio_pe_m    int  not null default 1500 check (raio_pe_m between 100 and 5000),
   ordem        int  not null unique,
   ativo        boolean not null default true

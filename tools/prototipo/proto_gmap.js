@@ -188,8 +188,9 @@ async function gEntornoTerreno(t){if(!GG||!gLib.places||t.lat==null||ENT_BUSCA[t
   ENT_BUSCA[t.id]=true;const lat=t.lat,lng=t.lng;entRefresh(t);
   try{const {Place,SearchNearbyRankPreference}=gLib.places;
     const res=await Promise.all(ENT_CAT.map(([k,,,tipos])=>Place.searchNearby({fields:['id','displayName','location'],locationRestriction:{center:gLL(lat,lng),radius:RAIO_PE},
-      includedTypes:tipos,maxResultCount:20,rankPreference:SearchNearbyRankPreference.DISTANCE,language:'pt-BR',region:'br'})
+      includedPrimaryTypes:tipos,maxResultCount:20,rankPreference:SearchNearbyRankPreference.DISTANCE,language:'pt-BR',region:'br'})
       .then(r=>(r.places||[]).map(p=>({gid:p.id,nome:p.displayName,cat:k,lat:p.location.lat(),lng:p.location.lng()})))));
+    /* só pelo tipo principal do lugar: com includedTypes vinham autoescola e curso livre (que também têm "school"), restaurante como parque etc. (4/nov/2026) */
     /* um lugar entra uma vez (na primeira categoria); mesmo nome na mesma categoria = mesma estação/hospital, fica o mais perto */
     const ids=new Set(),nomes=new Set();let itens=[];
     res.flat().forEach(p=>{const n=p.cat+'|'+normNome(p.nome);if(ids.has(p.gid)||nomes.has(n))return;ids.add(p.gid);nomes.add(n);p.reta=Math.round(distKm(lat,lng,p.lat,p.lng)*1000);itens.push(p)});

@@ -1184,6 +1184,11 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .adv-lista.adv-modal { padding: 4px 24px 8px }
 .adv-l2 { display: flex; gap: 8px; align-items: center }
 .adv-l2 > .btn.primary { flex: 1 1 auto; justify-content: center; min-width: 0 }
+/* painel estreito (1024 a 1180 px): o rótulo longo ("Concluir como Comprado") não pode ser cortado.
+   Recuo de 16 px e, com a linha abaixo de 270 px, sem o ícone e com o rótulo em duas linhas quando não cabe em uma (4/nov/2026). */
+.adv-l2 { container-type: inline-size }
+.adv-l2 > .btn.primary { padding: 0 16px !important }
+@container (max-width: 270px) { .adv-l2 > .btn.primary { padding: 4px 12px !important; height: auto; white-space: normal; line-height: 16px; text-align: center } .adv-l2 > .btn.primary > svg { display: none } .adv-l2 > .btn.primary > span { white-space: normal } }
 .adv-mais { position: relative; flex: none }
 .adv-mb { width: 40px; min-width: 40px; padding: 0; justify-content: center }
 .adv-menu { display: none; position: absolute; right: 0; top: calc(100% + 4px); z-index: 40; min-width: 220px; background: var(--m-sc-low, #f0f4f9); border-radius: 12px; padding: 6px 0; box-shadow: 0 2px 6px rgba(0,0,0,.18), 0 6px 18px rgba(0,0,0,.14) }
