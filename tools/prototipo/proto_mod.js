@@ -131,7 +131,7 @@ function mostrarConc(on){if(GG)return G_mostrarConc(on);if(MAPA&&CONC){on?CONC.a
 /* ---------- menu do clique direito no mapa (no toque, segurar no vazio): novo terreno, ponto de interesse ou concorrência ali ---------- */
 function ctxAbrir(x,y,lat,lng){ctxFechar();if(UI.mpModo||UI.role==='Leitura')return;const area=$('.mapa-area');if(!area)return;UI.ctxLL={lat,lng};
   const m=document.createElement('div');m.className='mp-ctx';m.setAttribute('role','menu');
-  m.innerHTML=`<button role="menuitem" data-a="ctx-terreno">${ic('add',18)}Novo terreno aqui</button><button role="menuitem" data-a="ctx-poi">${ic('add',18)}Novo ponto de interesse</button><button role="menuitem" data-a="ctx-conc">${ic('add',18)}Nova concorrência</button>`;
+  m.innerHTML=`<button role="menuitem" data-a="ctx-terreno">${ic('add',18)}Novo terreno aqui</button><button role="menuitem" data-a="ctx-poi">${ic('add',18)}Novo ponto de interesse</button>${CC_MANUAL?`<button role="menuitem" data-a="ctx-conc">${ic('add',18)}Nova concorrência</button>`:''}`;
   area.appendChild(m);const W=area.clientWidth,H=area.clientHeight,w=m.offsetWidth,h=m.offsetHeight;
   m.style.left=Math.max(8,Math.min(W-w-8,x))+'px';m.style.top=Math.max(8,Math.min(H-h-8,y))+'px';m.querySelector('button')?.focus({preventScroll:true})}
 function ctxFechar(){$('.mapa-area .mp-ctx')?.remove()}
@@ -262,7 +262,7 @@ function mpLegenda(){const base=fxLista('mapa'),m=UI.mp,cl=new Map(base.map(t=>[
   return topo+mpItens().map(x=>{const n=base.filter(t=>cl.get(t.id)===x.k).length,on=!m.ocultas.includes(x.k);
     return `<div class="lg-r"><button type="button" class="lg-i" data-a="mp-sit" data-v="${x.k}" aria-pressed="${on}"><span class="pin-mini" style="background:${x.cor};color:${x.fg}">${x.g}</span>${esc(x.nome)}<span class="n">${n}</span></button>${x.desce?`<button type="button" class="iconbtn lg-d" data-a="mp-desce" data-v="${x.k}" title="Ver ${m.f?'subetapas':'etapas'} de ${esc(x.nome)}" aria-label="Ver ${m.f?'subetapas':'etapas'} de ${esc(x.nome)}">${ic('chev',16)}</button>`:''}</div>`}).join('')
     +`<hr class="lg-sep"><button type="button" class="lg-i" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}"><span class="lg-poi"><span class="poi-b"></span></span>Pontos de interesse<span class="n">${(S.pontos||[]).length}</span></button>`
-    +`<button type="button" class="lg-i" data-a="mp-conc" aria-pressed="${UI.mpConc!==false}"><span class="lg-poi">${ccMarcaHtml()}</span>Concorrência<span class="n">${ccAtivos().length}</span></button>`
+    +(CC_MANUAL?`<button type="button" class="lg-i" data-a="mp-conc" aria-pressed="${UI.mpConc!==false}"><span class="lg-poi">${ccMarcaHtml()}</span>Concorrência<span class="n">${ccAtivos().length}</span></button>`:'')
     +rdLegItem();
 }
 function pgMapa(){
