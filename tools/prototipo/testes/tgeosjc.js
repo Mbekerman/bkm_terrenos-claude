@@ -44,29 +44,28 @@ await p.evaluate(()=>{const m=document.querySelector('#f-novo [name=municipio]')
 await p.evaluate(()=>document.querySelector('#modal [data-a=close]')?.click());await p.waitForTimeout(300);
 await p.evaluate(c=>{location.hash='#/terrenos/'+c+'/terreno'},(await ter('Lote SJC')).codigo);await p.waitForTimeout(500);
 await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click())});await p.waitForTimeout(150);
-await p.click('#sec-lotes [data-a=lt-novo]');await p.waitForTimeout(300);
-const LF0='#sec-lotes form[data-form=lt-sql]';console.log('SJC na ficha:',await p.$eval(LF0+' label[id$=-sql-l]',x=>x.textContent),'|',await p.$eval(LF0+' [name=sql]',x=>x.placeholder));
+const LF0='#sec-lotes form[data-form=etq-sql]';console.log('SJC na ficha:',await p.$eval(LF0+' label[id$=-sql-l]',x=>x.textContent),'|',await p.$eval(LF0+' [name=sql]',x=>x.placeholder));
 await p.fill(LF0+' [name=sql]','41002400110000');await p.screenshot({path:OUT+'1_novo_sjc.png'});
 await p.evaluate(f=>document.querySelector(f).requestSubmit(),LF0);
 await p.waitForFunction(()=>/Planta e desenho/.test(document.querySelector('#toast').textContent),null,{timeout:20000}).catch(async e=>{console.log('toast:',await toast(),'erros:',errs,'pedidos:',pedidos);throw e});
 const st=await ter('Lote SJC').then(t=>{const i=t.insc[0],g=i.geo[0];return {mun:i.mun,sql:i.sql,municipio:t.municipio,poly:t.poly&&t.poly.length,lat:t.lat,area:i.area,areaPol:g.areaPol,zonas:g.zonas,erros:g.erros,
   analise:(t.analises.find(a=>a.status==='vigente')||{}).fonte,docs:t.docs.map(d=>d.tipo+':v'+d.versoes+':'+d.nome),hist:t.hist.map(h=>h.txt)}});
 console.log('estado:',JSON.stringify(st));
-await p.evaluate(()=>{if(!document.getElementById('geo-0'))document.querySelector('.fi-abas [data-t=terreno]').click()});await p.waitForTimeout(300);
-await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click());document.querySelectorAll('.lt-det').forEach(d=>d.open=true)});await p.waitForTimeout(200);
+await p.evaluate(()=>{if(!document.getElementById('geo-0'))document.querySelector('.fi-abas [data-t=terreno]').click()});await p.waitForTimeout(300);await p.evaluate(()=>{if(!document.getElementById('geo-0')){document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click());document.querySelector('#sec-lotes .etq.s .etq-n')?.click()}});await p.waitForTimeout(250);
+await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click());document.querySelector('#sec-lotes .etq.s .etq-n')?.click()});await p.waitForTimeout(200);
 console.log('quadro:',await p.$eval('#geo-0',x=>x.innerText.replace(/\s+/g,' ')));
 await p.evaluate(()=>document.getElementById('geo-0').scrollIntoView({block:'start'}));await p.evaluate(()=>scrollBy(0,-120));await p.waitForTimeout(200);
 await p.screenshot({path:OUT+'2_quadro.png'});
 for(const k of ['pdf','dxf']){const [d]=await Promise.all([p.waitForEvent('download'),p.click(`[data-a=geo-baixar][data-k=${k}]`)]);await d.saveAs(OUT+'lote.'+k);
   console.log('baixou',k,d.suggestedFilename(),fs.statSync(OUT+'lote.'+k).size,'bytes',fs.readFileSync(OUT+'lote.'+k).slice(0,8).toString())}
 // 2. nova inscrição na ficha: sem seletor, a cidade é a do terreno (pela poligonal); outra inscrição de SJC entra
-const LF='#sec-lotes form[data-form=lt-sql]';console.log('ficha: seletor?',await p.$$eval(LF+' .insc-cid',x=>x.length),'| cidade:',await p.$eval(LF+' [name=mun]:checked',x=>x.value),'|',await p.$eval(LF+' label[id$=-sql-l]',x=>x.textContent),'|',await p.$eval(LF+' [name=sql]',x=>x.placeholder));
+const LF='#sec-lotes form[data-form=etq-sql]';console.log('ficha: seletor?',await p.$$eval(LF+' .insc-cid',x=>x.length),'| cidade:',await p.$eval(LF+' [name=mun]:checked',x=>x.value),'|',await p.$eval(LF+' label[id$=-sql-l]',x=>x.textContent),'|',await p.$eval(LF+' [name=sql]',x=>x.placeholder));
 await p.fill(LF+' [name=sql]','41002400120000');await p.evaluate(f=>document.querySelector(f).requestSubmit(),LF);await p.waitForTimeout(400);
 console.log('inscrições:',JSON.stringify((await ter('Lote SJC')).insc.map(i=>i.mun+':'+i.sql)));
 // 4. celular e escuro
 await p.setViewportSize({width:390,height:844});await p.waitForTimeout(400);
 console.log('celular (novo): rolagem horizontal?',await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth));await p.screenshot({path:OUT+'3_novo_celular.png'});
-await p.keyboard.press('Escape');await p.waitForTimeout(200);
+await p.keyboard.press('Escape');await p.waitForTimeout(200);await p.evaluate(()=>document.querySelector('#sec-lotes .etq.s .etq-n').click());await p.waitForTimeout(250);
 await p.evaluate(()=>document.getElementById('geo-0').scrollIntoView({block:'start'}));await p.evaluate(()=>scrollBy(0,-70));await p.waitForTimeout(200);
 console.log('celular (quadro): rolagem horizontal?',await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),'quadro vaza?',await p.$eval('#geo-0',x=>x.scrollWidth>x.clientWidth+1));
 await p.screenshot({path:OUT+'4_quadro_celular.png'});

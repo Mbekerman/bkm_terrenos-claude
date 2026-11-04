@@ -202,45 +202,12 @@ create table app.inscricoes_municipais (
   zona_fiscal       text,  -- ZF-1 a ZF-4 em São Paulo (vem do GeoSampa)
   parte_id          uuid references app.terreno_partes(id),  -- de qual dono; nulo = terreno de um dono só
   -- De onde veio (4/nov/2026): digitada, ou marcada no mapa de lotes da prefeitura ao cadastrar o
-  -- terreno (São Paulo, GeoSampa). A marcada entra solta, sem lote nem matrícula (sem linha em
-  -- lote_inscricoes), e é escolhida depois na lista do lote; tirada do lote, volta a ficar solta.
+  -- terreno (São Paulo, GeoSampa). Entra sem parte e é ligada à parte depois, na aba Terreno.
   origem            text not null default 'digitada' check (origem in ('digitada', 'mapa_prefeitura')),
   endereco_prefeitura text,  -- logradouro e número de porta do cadastro da prefeitura (vem do mapa)
   unique nulls not distinct (empresa_id, municipio_id, inscricao_norm)
 );
 create index on app.inscricoes_municipais (terreno_id);
-
--- Lotes do terreno (decisão do Moisés, 4/nov/2026): cada lote é uma matrícula, com um ou mais SQLs
--- (inscrições), e pertence a uma parte. O mesmo SQL pode estar em dois lotes quando cobre duas
--- matrículas; aí a divergência de área é conferida pelo grupo de lotes que dividem o SQL
--- (app.v_lotes). A parte da matrícula e da inscrição vem do lote (app._sincronizar_partes_lote).
--- Escrita só pelas RPCs app.salvar_lote e app.excluir_lote.
-create table app.terreno_lotes (
-  id                uuid primary key default gen_random_uuid(),
-  empresa_id        uuid not null references app.empresas(id),
-  terreno_id        uuid not null references app.terrenos(id) on delete cascade,
-  parte_id          uuid not null references app.terreno_partes(id),
-  titulo            text not null check (length(trim(titulo)) > 0),
-  matricula_id      uuid unique references app.matriculas(id) on delete set null,  -- uma matrícula por lote
-  -- de onde vem a área adotada do lote: a da matrícula, a soma dos SQLs (só quando nenhum é
-  -- dividido com outro lote) ou a digitada
-  area_fonte        text not null default 'documental' check (area_fonte in ('documental','cadastral','informada')),
-  area_informada_m2 numeric(12,2) check (area_informada_m2 > 0),
-  ordem             int not null default 0,
-  criado_em         timestamptz not null default now(),
-  check (area_fonte <> 'informada' or area_informada_m2 is not null)
-);
-create index on app.terreno_lotes (terreno_id);
-create unique index terreno_lotes_titulo on app.terreno_lotes (terreno_id, lower(trim(titulo)));
-
-create table app.lote_inscricoes (
-  lote_id      uuid not null references app.terreno_lotes(id) on delete cascade,
-  inscricao_id uuid not null references app.inscricoes_municipais(id) on delete cascade,
-  empresa_id   uuid not null references app.empresas(id),
-  ordem        int not null default 0,
-  primary key (lote_id, inscricao_id)
-);
-create index on app.lote_inscricoes (inscricao_id);
 
 -- Consultas do lote na base da prefeitura pela inscrição (GeoSampa em São
 -- Paulo, GeoSanja em São José dos Campos): o retrato do lote e de todas as
@@ -868,21 +835,10 @@ alter table app.terreno_partes enable row level security;
 create policy ver on app.terreno_partes for select to authenticated using (empresa_id in (select app.minhas_empresas()));
 grant select on app.terreno_partes to authenticated;
 
--- Lotes: leitura para a empresa; escrita só pelas RPCs (salvar_lote, excluir_lote).
-do $$
-declare t text;
-begin
-  foreach t in array array['terreno_lotes','lote_inscricoes'] loop
-    execute format('alter table app.%I enable row level security', t);
-    execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
-    execute format('grant select on app.%I to authenticated', t);
-    execute format('create trigger t_aud after insert or update or delete on app.%I for each row execute function app.tg_auditoria()', t);
-  end loop;
-end $$;
-create trigger t_emp before insert or update on app.terreno_lotes for each row execute function app.tg_mesma_empresa();
-
--- Todo terreno nasce com uma parte, a "Vendedor 1" (decisão do Moisés, 4/nov/2026): matrículas e
--- inscrições sempre ficam ligadas a uma parte, pelo lote.
+-- Todo terreno nasce com uma parte, a "Vendedor 1" (decisão do Moisés, 4/nov/2026). Matrículas e
+-- inscrições se ligam direto à parte (parte_id, escrita direta conferida por t_parte); sem parte,
+-- ficam no quadro de cima da aba Terreno até alguém arrastá-las para uma parte. Não há lote
+-- (matrícula com os seus SQLs; decisão do Moisés de 4/nov/2026): área e divergência são da parte (app.v_partes).
 create or replace function app.tg_terreno_parte_inicial()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin

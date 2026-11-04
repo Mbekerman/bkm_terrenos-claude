@@ -30,8 +30,8 @@ const KEY='bkm-terrenos-prototipo-v9',ter=()=>p.evaluate(k=>JSON.parse(localStor
 const abrir=async()=>{await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=terrenos]').click());await p.waitForTimeout(150);
   await p.waitForTimeout(150);
   await p.evaluate(()=>[...document.querySelectorAll('[data-a=abrir]')].find(x=>x.textContent.includes('Paulista 1500')).click());await p.waitForTimeout(300);
-  await p.evaluate(()=>{if(!document.getElementById('geo-0'))document.querySelector('.fi-abas [data-t=terreno]').click()});await p.waitForTimeout(300)};
-const mudar=async fn=>{await p.evaluate(([k,f])=>{const s=JSON.parse(localStorage.getItem(k));const t=s.terrenos.find(x=>x.nome==='Paulista 1500');(new Function('t',f))(t);localStorage.setItem(k,JSON.stringify(s))},[KEY,fn]);await p.reload();await p.waitForTimeout(500);await abrir();await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click());document.querySelectorAll('.lt-det').forEach(d=>d.open=true)});await p.waitForTimeout(200)};
+  await p.evaluate(()=>{if(!document.getElementById('geo-0'))document.querySelector('.fi-abas [data-t=terreno]').click()});await p.waitForTimeout(300);await p.evaluate(()=>{if(!document.getElementById('geo-0')){document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click());document.querySelector('#sec-lotes .etq.s .etq-n')?.click()}});await p.waitForTimeout(250)};
+const mudar=async fn=>{await p.evaluate(([k,f])=>{const s=JSON.parse(localStorage.getItem(k));const t=s.terrenos.find(x=>x.nome==='Paulista 1500');(new Function('t',f))(t);localStorage.setItem(k,JSON.stringify(s))},[KEY,fn]);await p.reload();await p.waitForTimeout(500);await abrir();await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click());document.querySelector('#sec-lotes .etq.s .etq-n')?.click()});await p.waitForTimeout(200)};
 // 1. novo terreno com SQL: busca sozinho
 const kmlQuadra=(lat,lng,m=20)=>{const dy=m/2/111320,dx=m/2/(111320*Math.cos(lat*Math.PI/180)),c=[[lng-dx,lat-dy],[lng+dx,lat-dy],[lng+dx,lat+dy],[lng-dx,lat+dy],[lng-dx,lat-dy]].map(p=>p.join(',')).join(' ');
   return `<?xml version="1.0"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><Placemark><name>Lote</name><Polygon><outerBoundaryIs><LinearRing><coordinates>${c}</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark></Document></kml>`};
@@ -42,19 +42,18 @@ console.log('passo 1: opções',JSON.stringify(await p.$$eval('.nv-op b',x=>x.ma
 await importarKml(kmlQuadra(-23.56196,-46.65530,22));
 if(await p.$('#n-mun'))await p.fill('#n-mun','São Paulo · SP');await p.fill('#f-novo [name=nome]','Paulista 1500');
 await p.evaluate(()=>{const m=document.querySelector('#f-novo [name=municipio]');if(m&&!m.value)m.value='São Paulo · SP';document.querySelector('#f-novo').requestSubmit()});await p.waitForTimeout(600);
-// o mapa de lotes da prefeitura abre sozinho (tlotesgeo.js): aqui, Agora não; o SQL entra pelo lote na ficha
+// o SQL entra pelo quadro de SQLs da aba Terreno (o mapa de lotes do Novo terreno fica no tetiq.js)
 await p.evaluate(()=>document.querySelector('#modal [data-a=close]')?.click());await p.waitForTimeout(300);
 await p.evaluate(c=>{location.hash='#/terrenos/'+c+'/terreno'},(await ter()).codigo);await p.waitForTimeout(500);
 await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click())});await p.waitForTimeout(150);
-await p.click('#sec-lotes [data-a=lt-novo]');await p.waitForTimeout(300);
-await p.fill('#sec-lotes form[data-form=lt-sql] [name=sql]','00902700091');console.log('SQL:',await p.$eval('#sec-lotes form[data-form=lt-sql] [name=sql]',x=>x.value));
-await p.evaluate(()=>document.querySelector('#sec-lotes form[data-form=lt-sql]').requestSubmit());
+await p.fill('#sec-lotes form[data-form=etq-sql] [name=sql]','00902700091');console.log('SQL:',await p.$eval('#sec-lotes form[data-form=etq-sql] [name=sql]',x=>x.value));
+await p.evaluate(()=>document.querySelector('#sec-lotes form[data-form=etq-sql]').requestSubmit());
 await p.waitForFunction(()=>/Planta e desenho/.test(document.querySelector('#toast').textContent),null,{timeout:15000});
 const st=await ter().then(t=>{const i=t.insc[0];return {sqlFmt:i.sql,area:i.area,cib:i.cib,zf:i.zf,aCad:t.aCad,aConst:t.aConst,poly:t.poly&&t.poly.length,lat:t.lat,
   analise:t.analises.find(a=>a.status==='vigente'),docs:t.docs.map(d=>d.tipo+':v'+d.versoes+':'+d.nome),consultas:i.geo.length,erros:i.geo[0].erros,zonas:i.geo[0].zonas,hist:t.hist.map(h=>h.txt)}});
 console.log('estado:',JSON.stringify(st));
-await p.evaluate(()=>{if(!document.getElementById('geo-0'))document.querySelector('.fi-abas [data-t=terreno]').click()});await p.waitForTimeout(300);
-await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click());document.querySelectorAll('.lt-det').forEach(d=>d.open=true)});await p.waitForTimeout(200);
+await p.evaluate(()=>{if(!document.getElementById('geo-0'))document.querySelector('.fi-abas [data-t=terreno]').click()});await p.waitForTimeout(300);await p.evaluate(()=>{if(!document.getElementById('geo-0')){document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click());document.querySelector('#sec-lotes .etq.s .etq-n')?.click()}});await p.waitForTimeout(250);
+await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click());document.querySelector('#sec-lotes .etq.s .etq-n')?.click()});await p.waitForTimeout(200);
 console.log('quadro:',await p.$eval('#geo-0',x=>x.innerText.replace(/\s+/g,' ')));
 await p.evaluate(()=>document.getElementById('geo-0').scrollIntoView({block:'start'}));await p.evaluate(()=>scrollBy(0,-80));await p.waitForTimeout(200);
 await p.screenshot({path:OUT+'1_quadro_claro.png'});
@@ -80,15 +79,7 @@ console.log('leitura tem botão?',await p.$$eval('[data-a=geo-buscar]',x=>x.leng
 await p.evaluate(()=>{document.querySelector('[data-a=perfil-menu]').click();document.querySelector(`[data-a=role][data-v=${'Diretor'}]`).click()});await p.waitForTimeout(200);
 await mudar("t.insc.push({sql:'111.222.3333-4',area:null,valores:[]})");
 console.log('botões:',await p.$$eval('[data-a=geo-buscar]',x=>x.map(b=>b.dataset.i+':'+b.textContent)));
-await p.click('[data-a=geo-buscar][data-i="1"]');await p.waitForFunction(()=>document.querySelector('#toast').textContent,null,{timeout:5000}).catch(()=>{});console.log('SQL inexistente:',await toast());
-// 6. usar a poligonal dos lotes: troca a desenhada pela soma dos lotes, mostrando antes a diferença; inscrição sem lote fica de fora
-console.log('lotes: botão?',await p.$$eval('#sec-lotes [data-a=lotes-poly]',x=>x.map(b=>b.textContent)));
-const antes=await ter();await p.click('#sec-lotes [data-a=lotes-poly]');await p.waitForSelector('#modal .lotes-kv',{timeout:10000});
-console.log('lotes: modal',await p.$eval('#modal',x=>x.innerText.replace(/\s+/g,' ').slice(0,600)));
-await p.screenshot({path:OUT+'4_lotes.png'});
-await p.click('[data-a=lotes-usar]');await p.waitForTimeout(300);
-const depois=await ter();const ar=pp=>{const lat0=pp.reduce((s,q)=>s+q[0],0)/pp.length*Math.PI/180,R=6371008;let a=0;pp.forEach((q,i)=>{const r=pp[(i+1)%pp.length];a+=(r[1]-q[1])*Math.PI/180*Math.cos(lat0)*R*((r[0]+q[0])/2)*Math.PI/180*R});return Math.abs(a)};
-console.log('lotes: poligonal',Math.round(ar(antes.poly)),'→',Math.round(ar(depois.poly)),'m² | guardadas',(depois.polyAnt||[]).length,'|',depois.hist.find(h=>/lotes/.test(h.txt))?.txt,'| centro',depois.poly.reduce((s,q)=>[s[0]+q[0]/depois.poly.length,s[1]+q[1]/depois.poly.length],[0,0]).map(v=>v.toFixed(6)).join(','),'|',await toast());
-await p.evaluate(()=>{document.querySelector('[data-a=perfil-menu]').click();document.querySelector(`[data-a=role][data-v=${'Leitura'}]`).click()});await p.waitForTimeout(200);
-console.log('lotes: leitura tem botão?',await p.$$eval('[data-a=lotes-poly]',x=>x.length));
+await p.evaluate(()=>{document.querySelector('[data-a=close]')?.click();[...document.querySelectorAll('#sec-lotes .etq.s .etq-n')].find(x=>x.textContent==='111.222.3333-4').click()});await p.waitForTimeout(250);await p.click('[data-a=geo-buscar][data-i="1"]');await p.waitForFunction(()=>document.querySelector('#toast').textContent,null,{timeout:5000}).catch(()=>{});console.log('SQL inexistente:',await toast());
+// 6. a poligonal é refeita sozinha pela soma dos lotes dos SQLs (aba Terreno, quadro de SQLs); inscrição sem lote fica de fora
+const depois=await ter();console.log('poligonal pelos lotes:',depois.polyLotes?'sim':'não','| guardada a desenhada:',!!depois.polyDesenho,'|',depois.hist.find(h=>/Poligonal refeita pelos lotes/.test(h.txt))?.txt);
 console.log('pedidos:',[...new Set(pedidos)].length,'arquivos distintos');console.log('ERROS',errs);await b.close()})();
