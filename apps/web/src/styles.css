@@ -4586,7 +4586,7 @@ html[data-tema="escuro"] .ems-lista tr.ems-sel td { background: rgba(168, 199, 2
 .ems-ped textarea{width:100%;resize:vertical}
 .ems-blist{margin:4px 0 0;padding-left:20px;line-height:1.5}
 .vb-ms-l{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}.vb-ms-l .field{flex:1;min-width:220px}
-.vb-ms-conf{margin-top:8px;flex-wrap:wrap}.vb-ms-cb{display:flex;gap:8px;align-items:center}
+.ems-ped2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

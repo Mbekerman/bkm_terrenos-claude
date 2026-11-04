@@ -37,6 +37,7 @@ ok(/Estudo de massa 3/.test(await p.$eval('#sec-massa h2',e=>e.textContent))&&/S
 ok(await p.evaluate(()=>!/Studios no térreo/.test(document.querySelector('#sec-massa').textContent+[...document.querySelectorAll('#sec-massa textarea')].map(x=>x.value).join(''))&&!document.querySelector('#sec-massa [data-k=prazo]')),tag+' a ficha do estudo não repete o pedido');
 await p.click('#sec-massa [data-a=ems-pedido]');await p.waitForTimeout(250);
 ok(await p.evaluate(()=>/Studios no térreo/.test(document.querySelector('[data-form=ems-pedido] textarea')?.value||'')),tag+' Ver pedido abre o popup com o briefing');
+ok(await p.$eval('[data-emso=ped-em]',e=>/^\d{2}\/\d{2}\/\d{4}$/.test(e.textContent)),tag+' o popup mostra a data do pedido');
 if(!cel)await p.screenshot({path:OUT+tag+'_0pedido.png'});
 await p.fill('[data-form=ems-pedido] input[name=prazo]','2026-12-01');await p.click('[data-form=ems-pedido] button.primary');await p.waitForTimeout(250);
 ok((await D()).massas.at(-1).prazo==='2026-12-01'&&!(await p.$('[data-form=ems-pedido]')),tag+' o pedido se edita no popup');
@@ -89,16 +90,14 @@ if(!cel)await p.screenshot({path:OUT+tag+'_4obra.png'});
 // soltar do estudo de massa
 await p.evaluate(()=>document.querySelector('.vb-nav [data-a=vb-aba][data-v=tip]').click());await p.waitForTimeout(150);
 await p.click('#vb-pop [data-a=vb-ms-solta]');await p.waitForTimeout(150);
-ok(await p.$('#vb-pop .vb-ms-conf')&&(await D()).viabs.at(-1).massa,tag+' Quebrar vínculo pede confirmação');
-if(!cel)await p.screenshot({path:OUT+tag+'_5quebrar.png'});
-await p.click('#vb-pop [data-a=vb-ms-sim]');await p.waitForTimeout(200);
 d=await D();ok(!d.viabs.at(-1).massa&&d.viabs.at(-1).tips.length===2&&!(await p.$eval('#vb-pop [data-vb=tp][data-k=nome]',e=>e.disabled)),tag+' solto, as tipologias ficam e voltam a se editar');
 {const v=(await D()).viabs.at(-1),q0=v.tips[0].qtd,tp0=v.tips[0].id;
 await fill(`#vb-pop [data-vb=tp][data-r="${tp0}"][data-k=qtd]`,'7');
 ok((await D()).viabs.at(-1).tips[0].qtd===7,tag+' sem vínculo, a quantidade se edita a partir dos dados de antes');
 await p.selectOption('#vb-pop [data-vb=ms]',m3.id);await p.waitForTimeout(200);
 const w=(await D()).viabs.at(-1);ok(w.massa===m3.id&&w.tips.find(x=>x.nome===v.tips[0].nome)?.qtd===q0&&await p.$eval('#vb-pop [data-vb=tp][data-k=qtd]',e=>e.disabled),tag+' vinculando de novo, os dados voltam aos do estudo e travam');
-await p.click('#vb-pop [data-a=vb-ms-solta]');await p.waitForTimeout(100);await p.click('#vb-pop [data-a=vb-ms-sim]');await p.waitForTimeout(200)}
+if(!cel)await p.screenshot({path:OUT+tag+'_5vinculada.png'});
+await p.click('#vb-pop [data-a=vb-ms-solta]');await p.waitForTimeout(200)}
 await p.evaluate(()=>document.querySelector('[data-a=vb-fechar]').click());await p.waitForTimeout(200);
 // apagar o não válido sem viabilidade
 await p.click('#sec-massa-lista [data-a=ems-sel] >> nth=1');await p.waitForTimeout(250);

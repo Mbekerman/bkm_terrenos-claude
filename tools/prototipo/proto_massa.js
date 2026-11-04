@@ -136,11 +136,12 @@ function emsModalHtml(M,fechar){
         <div class="hint" style="margin-top:8px">Título, área e quantidade das tipologias vêm do estudo de massa e não se editam na viabilidade; preços, permuta e comissão são da viabilidade.</div></div>
       <div class="df"><button type="button" class="btn text" data-a="close">Cancelar</button><button class="btn primary">Criar</button></div></form>`}
   if(M==='ems-pedido'){const m=EMS(UI.emsPed);if(!m)return '';const ro=UI.role==='Leitura',ls=(m.briefing||'').split('\n').map(x=>x.trim()).filter(Boolean);
-    const cab=`<div class="dh"><div><h2>Pedido do estudo</h2><div class="muted">${esc(m.nome)} · pedido por ${esc(m.solic||'—')} em ${fd(m.solicEm)}</div></div>${fechar}</div>`;
-    if(ro)return cab+`<div class="db ems-ped"><div class="field"><span class="lbl-f">Arquiteto</span><span class="v">${esc(m.arq||'—')}</span></div><div class="field"><span class="lbl-f">Prazo</span><span class="v">${m.prazo?fd(m.prazo):'Sem prazo'}</span></div>
+    const dt=m.solicEm?pd(m.solicEm).toLocaleDateString('pt-BR'):'—',quem=`<div class="ems-ped2"><div class="field"><span class="lbl-f">Data do pedido</span><span class="v" data-emso="ped-em">${dt}</span></div><div class="field"><span class="lbl-f">Pedido por</span><span class="v">${esc(m.solic||'—')}</span></div></div>`;
+    const cab=`<div class="dh"><div><h2>Pedido do estudo</h2><div class="muted">${esc(m.nome)}</div></div>${fechar}</div>`;
+    if(ro)return cab+`<div class="db ems-ped">${quem}<div class="field"><span class="lbl-f">Arquiteto</span><span class="v">${esc(m.arq||'—')}</span></div><div class="field"><span class="lbl-f">Prazo</span><span class="v">${m.prazo?fd(m.prazo):'Sem prazo'}</span></div>
       <div class="field"><span class="lbl-f">Briefing</span>${ls.length>1?`<ul class="ems-blist">${ls.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:`<span class="v">${esc(ls[0]||'Sem briefing')}</span>`}</div></div>
       <div class="df"><button type="button" class="btn primary" data-a="close">Fechar</button></div>`;
-    return cab+`<form data-form="ems-pedido"><div class="db ems-ped"><label class="field"><span class="lbl-f">Nome do estudo</span><input name="nome" value="${esc(m.nome)}" required></label>
+    return cab+`<form data-form="ems-pedido"><div class="db ems-ped">${quem}<label class="field"><span class="lbl-f">Nome do estudo</span><input name="nome" value="${esc(m.nome)}" required></label>
       <div class="field"><label for="ems-ped-arq">Arquiteto</label><select id="ems-ped-arq" name="arq">${USERS.map(u=>`<option value="${esc(u)}" ${u===m.arq?'selected':''}>${esc(u)}</option>`).join('')}</select></div>
       <label class="field"><span class="lbl-f">Prazo</span><input type="date" name="prazo" value="${esc(m.prazo||'')}"></label>
       <label class="field"><span class="lbl-f">Briefing</span><textarea name="briefing" rows="7" placeholder="O que o estudo precisa considerar. Uma linha por item.">${esc(m.briefing||'')}</textarea></label></div>

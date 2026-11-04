@@ -5261,7 +5261,7 @@ html[data-tema="escuro"] .ems-lista tr.ems-sel td { background: rgba(168, 199, 2
 .ems-ped textarea{width:100%;resize:vertical}
 .ems-blist{margin:4px 0 0;padding-left:20px;line-height:1.5}
 .vb-ms-l{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}.vb-ms-l .field{flex:1;min-width:220px}
-.vb-ms-conf{margin-top:8px;flex-wrap:wrap}.vb-ms-cb{display:flex;gap:8px;align-items:center}
+.ems-ped2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 </style>
 <header class="top">
   <div class="top-in">
@@ -13236,8 +13236,7 @@ function vbMassaSel(v,ro){const ms=massasDe(v.tid).filter(m=>m.sit==='entregue')
     ${ro?'':'<div class="hint">Vinculando, as tipologias e a área construída voltam a ser as do estudo de massa; preços, permuta e comissão ficam.</div>'}</div>`;
   return `<div class="vb-ms"><div class="vb-ms-l"><label class="field"><span class="lbl-f">Vinculada ao estudo de massa</span><select data-vb="ms" aria-label="Trocar o estudo de massa vinculado" ${dis}>${ops}</select></label>
     ${ro?'':`<button type="button" class="btn sm" data-a="vb-ms-solta">${ic('link',16)}Quebrar vínculo</button>`}</div>
-    ${UI.vbMsConf===v.id&&!ro?`<div class="banner warn vb-ms-conf"><div style="flex:1"><div class="bt">Quebrar o vínculo com o ${esc(m.nome)}?</div><div>As tipologias e a área construída ficam como estão e passam a se editar aqui. Vinculando de novo, voltam a ser as do estudo.</div></div><div class="vb-ms-cb"><button type="button" class="btn text sm" data-a="vb-ms-nao">Cancelar</button><button type="button" class="btn sm primary" data-a="vb-ms-sim">Quebrar vínculo</button></div></div>`
-      :`<div class="hint">Título, área e quantidade das tipologias e a área construída vêm do ${esc(m.nome)}${v.segue?' (o válido; trocou o válido, troca aqui)':''} e não se editam; aqui, preços, permuta e comissão.</div>`}</div>`}
+    <div class="hint">Título, área e quantidade das tipologias e a área construída vêm do ${esc(m.nome)}${v.segue?' (o válido; trocou o válido, troca aqui)':''} e não se editam; aqui, preços, permuta e comissão.</div></div>`}
 function vbPopRender(){let el=document.getElementById('vb-pop');
   if(UI.vbPop&&(!VB(UI.vbPop)||UI.route!==UI.vbPopRota))UI.vbPop=null;
   if(!UI.vbPop){if(el){el.remove();document.body.classList.remove('vb-aberto')}return}
@@ -13368,7 +13367,7 @@ function viabChange(el){
     else d[k]=el.value||null;
     vbSyncTodos();save();render();return true}
   const tipo=el.dataset.vb;if(!tipo)return false;const v=VB(UI.vid);if(!v)return true;const k=el.dataset.k;
-  if(tipo==='ms'){const x=el.value;UI.vbMsConf=null;if(!x){v.massa=null;v.segue=false;v.tips.forEach(p=>delete p.mt);toast('Vínculo quebrado: as tipologias ficam e passam a se editar aqui.')}
+  if(tipo==='ms'){const x=el.value;if(!x){v.massa=null;v.segue=false;v.tips.forEach(p=>delete p.mt);toast('Vínculo quebrado: as tipologias ficam e passam a se editar aqui.')}
     else{const ant=v.massa;v.segue=x==='valido';v.massa=v.segue?emsValido(v.tid)?.id:x;emsSync(v);log(T(v.tid),`${v.nome}: vinculada ao ${EMS(v.massa)?.nome}`);toast(ant?`Trocado: tipologias e área construída do ${EMS(v.massa)?.nome}.`:`Vinculada: tipologias e área construída voltaram às do ${EMS(v.massa)?.nome}.`)}vbGravar(v);render();return true}
   if(tipo==='ob'){v.obraBase=el.value==='construida'?'construida':'privativa';vbGravar(v);render();return true}
   if(tipo==='ded'){v.deduz=el.checked?[...new Set([...v.deduz,el.value])]:v.deduz.filter(x=>x!==el.value);vbGravar(v);render();return true}
@@ -13403,9 +13402,7 @@ function viabClick(A,a,t){
     case 'vb-apagar':UI.modal='vb-apagar';UI.vbApagar=a.dataset.v;renderModal();return true;
     case 'vb-apagar-ok':{const v=VB(UI.vbApagar),x=T(v.tid);if(x.neg?.viab?.id===v.id){toast('Estudo vinculado à negociação não se apaga.',true);return true}
       S.viabs=S.viabs.filter(y=>y.id!==v.id);log(x,`Estudo de viabilidade apagado: ${v.nome}`);UI.modal=null;UI.vbPop=null;save();render();toast('Estudo apagado.');return true}
-    case 'vb-ms-solta':UI.vbMsConf=UI.vid;render();return true;
-    case 'vb-ms-nao':UI.vbMsConf=null;render();return true;
-    case 'vb-ms-sim':{const v=VB(UI.vid);UI.vbMsConf=null;if(!v)return true;const n=EMS(v.massa)?.nome;v.massa=null;v.segue=false;v.tips.forEach(p=>delete p.mt);log(T(v.tid),`${v.nome}: vínculo com o ${n} quebrado`);vbGravar(v);render();toast('Vínculo quebrado: tipologias e área construída ficam e passam a se editar aqui.');return true}
+    case 'vb-ms-solta':{const v=VB(UI.vid);if(!v)return true;const n=EMS(v.massa)?.nome;v.massa=null;v.segue=false;v.tips.forEach(p=>delete p.mt);log(T(v.tid),`${v.nome}: vínculo com o ${n} quebrado`);vbGravar(v);render();toast('Vínculo quebrado: tipologias e área construída ficam e passam a se editar aqui.');return true}
     case 'vb-tip-add':{const v=VB(UI.vid),p={id:uid(),nome:'Tipologia '+(v.tips.length+1),area:null,qtd:null,perm:0,com:0,pu:null,pm2:null};v.tips.push(p);vbGravar(v);render();setTimeout(()=>{const i=document.querySelector(`[data-tp="${p.id}"] [data-k="nome"]`);i?.focus();i?.select()},20);return true}
     case 'vb-tip-del':{const v=VB(UI.vid);v.tips=v.tips.filter(p=>p.id!==a.dataset.v);vbGravar(v);render();return true}
     case 'vb-q-tg':{const f=UI.vbFechados||(UI.vbFechados=new Set()),k=a.dataset.v;f.has(k)?f.delete(k):f.add(k);render();return true}
@@ -13625,11 +13622,12 @@ function emsModalHtml(M,fechar){
         <div class="hint" style="margin-top:8px">Título, área e quantidade das tipologias vêm do estudo de massa e não se editam na viabilidade; preços, permuta e comissão são da viabilidade.</div></div>
       <div class="df"><button type="button" class="btn text" data-a="close">Cancelar</button><button class="btn primary">Criar</button></div></form>`}
   if(M==='ems-pedido'){const m=EMS(UI.emsPed);if(!m)return '';const ro=UI.role==='Leitura',ls=(m.briefing||'').split('\n').map(x=>x.trim()).filter(Boolean);
-    const cab=`<div class="dh"><div><h2>Pedido do estudo</h2><div class="muted">${esc(m.nome)} · pedido por ${esc(m.solic||'—')} em ${fd(m.solicEm)}</div></div>${fechar}</div>`;
-    if(ro)return cab+`<div class="db ems-ped"><div class="field"><span class="lbl-f">Arquiteto</span><span class="v">${esc(m.arq||'—')}</span></div><div class="field"><span class="lbl-f">Prazo</span><span class="v">${m.prazo?fd(m.prazo):'Sem prazo'}</span></div>
+    const dt=m.solicEm?pd(m.solicEm).toLocaleDateString('pt-BR'):'—',quem=`<div class="ems-ped2"><div class="field"><span class="lbl-f">Data do pedido</span><span class="v" data-emso="ped-em">${dt}</span></div><div class="field"><span class="lbl-f">Pedido por</span><span class="v">${esc(m.solic||'—')}</span></div></div>`;
+    const cab=`<div class="dh"><div><h2>Pedido do estudo</h2><div class="muted">${esc(m.nome)}</div></div>${fechar}</div>`;
+    if(ro)return cab+`<div class="db ems-ped">${quem}<div class="field"><span class="lbl-f">Arquiteto</span><span class="v">${esc(m.arq||'—')}</span></div><div class="field"><span class="lbl-f">Prazo</span><span class="v">${m.prazo?fd(m.prazo):'Sem prazo'}</span></div>
       <div class="field"><span class="lbl-f">Briefing</span>${ls.length>1?`<ul class="ems-blist">${ls.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:`<span class="v">${esc(ls[0]||'Sem briefing')}</span>`}</div></div>
       <div class="df"><button type="button" class="btn primary" data-a="close">Fechar</button></div>`;
-    return cab+`<form data-form="ems-pedido"><div class="db ems-ped"><label class="field"><span class="lbl-f">Nome do estudo</span><input name="nome" value="${esc(m.nome)}" required></label>
+    return cab+`<form data-form="ems-pedido"><div class="db ems-ped">${quem}<label class="field"><span class="lbl-f">Nome do estudo</span><input name="nome" value="${esc(m.nome)}" required></label>
       <div class="field"><label for="ems-ped-arq">Arquiteto</label><select id="ems-ped-arq" name="arq">${USERS.map(u=>`<option value="${esc(u)}" ${u===m.arq?'selected':''}>${esc(u)}</option>`).join('')}</select></div>
       <label class="field"><span class="lbl-f">Prazo</span><input type="date" name="prazo" value="${esc(m.prazo||'')}"></label>
       <label class="field"><span class="lbl-f">Briefing</span><textarea name="briefing" rows="7" placeholder="O que o estudo precisa considerar. Uma linha por item.">${esc(m.briefing||'')}</textarea></label></div>
