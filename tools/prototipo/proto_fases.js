@@ -30,8 +30,8 @@ const FASES_PADRAO=()=>[
     ['entrega','Entrega',60,[['habite_se','Vistoria e Habite-se'],['entrega_chaves','Entrega das Chaves']]]])},
   {k:'entregue',nome:'Entregue',prefixo:'ENT',ativo:true,conc:'Garantia encerrada',descarta:false,etapas:etx([
     ['pos_entrega','Pós-entrega',null,[['assistencia_tecnica','Assistência Técnica'],['garantia','Em Garantia']]]])}];
-/* cada fase abre quando a anterior é concluída */
-const DEPS_PADRAO=()=>[['aprovacao','novos_negocios'],['incorporacao','aprovacao'],['funding','incorporacao'],['caixa','funding'],['lancamento','caixa'],['obras','lancamento'],['entregue','obras']]
+/* cada fase abre quando a anterior é concluída; Funding sem dependência, abre à mão (decisão do Moisés, 4/nov/2026) */
+const DEPS_PADRAO=()=>[['aprovacao','novos_negocios'],['incorporacao','aprovacao'],['caixa','incorporacao'],['lancamento','caixa'],['obras','lancamento'],['entregue','obras']]
   .map(([fase,reqFase],i)=>({id:'fd'+i,fase,reqFase,tipo:'conclusao',req:null}));
 
 const fasesL=()=>cfg().fases||[];

@@ -74,7 +74,8 @@ await ficha(p,"M'Boi Mirim");await bloco(p,'fases');await p.screenshot({path:O+'
 ok((await txt(p,'.tl-topo')).includes('Registro de Incorporação'),'linha do tempo do topo com as fases');
 ok((await txt(p,'.adv-sub')).includes('Análise na Prefeitura'),'quadro de avanço da fase atual');
 ok((await txt(p,'.fs-lst')).includes('Aprovado em Aprovação de Projetos'),'seção Fases mostra a dependência da próxima');
-ok((await p.evaluate(()=>document.querySelectorAll('[data-a=f-abrir]').length))===1,'só a próxima fase tem o botão de abrir antes da hora');
+ok((await p.evaluate(()=>[...document.querySelectorAll('[data-a=f-abrir]')].filter(b=>b.textContent.includes('antes da hora')).length))===1,'só a próxima fase tem o botão de abrir antes da hora');
+ok((await p.evaluate(()=>[...document.querySelectorAll('[data-a=f-abrir]')].some(b=>b.dataset.v==='funding'&&!b.textContent.includes('antes da hora')))),'Funding, sem dependência, abre à mão sem justificativa');
 await clica(p,'[data-a=p-ir]');
 ok((await ter(p,"M'Boi")).procs[0].etapa==='alvaras','Avançar leva à próxima etapa da fase');
 await clica(p,'[data-a=p-ir]');ok(await p.evaluate(()=>!!document.querySelector('#f-pc')),'na última etapa, Avançar vira Concluir como Aprovado');

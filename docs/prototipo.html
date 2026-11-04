@@ -6202,7 +6202,7 @@ UI.dash=UI.dash||{f:{},sel:['situacao','zona','valor','mes']};
 /* ---------- situação do terreno (cor do pin, gráficos) ---------- */
 // rótulo, cor, glifo no pin, cor do glifo. Etapas ativas em rampa de azul (ordem = avanço);
 // Stand By, Comprado, Perdido e Descartado com cores próprias e glifo, para não depender só da cor.
-const SIT={sem_negociacao:['Sem negociação','#8a8d91','·','#fff'],triagem:['Em Triagem','#8fc8f7','1','#1d2e5c'],
+const SIT={sem_negociacao:['Backlog','#8a8d91','·','#fff'],triagem:['Em Triagem','#8fc8f7','1','#1d2e5c'],
   estudos:['Estudos Preliminares','#4aa3f0','2','#fff'],negociacao:['Negociação','#0b74d6','3','#fff'],
   contrato:['Contrato','#1d2e5c','4','#fff'],stand_by:['Stand By','#c98a2e','‖','#fff'],comprado:['Comprado','#6f9a3a','✓','#fff'],
   perdido:['Perdido','#9a3b30','×','#fff'],descartado:['Descartado','#6b6560','–','#fff']};
@@ -6217,7 +6217,7 @@ const COR_FASE=['#0b74d6','#863d8f','#c67355','#00838f','#c2477a','#7d8a3e','#1d
 const RAMPA=['#8fc8f7','#4aa3f0','#0b74d6','#0a4fa0','#1d2e5c'];
 const rampa=(i,n)=>{const j=n<=1?2:Math.round(i*(RAMPA.length-1)/(n-1));return [RAMPA[j],j===0?'#1d2e5c':'#fff']};
 function mpItens(){const m=UI.mp,sit=k=>({k,nome:SIT[k][0],cor:SIT[k][1],g:SIT[k][2],fg:SIT[k][3]});
-  if(!m.f)return [sit('sem_negociacao'),...fasesL().filter(f=>f.ativo).map((f,i)=>({k:f.k,nome:f.nome,cor:COR_FASE[i%COR_FASE.length],g:String(i+1),fg:'#fff',desce:etapasF(f.k).length>0})),sit('perdido'),sit('descartado')];
+  if(!m.f)return [...fasesL().filter(f=>f.ativo).map((f,i)=>({k:f.k,nome:f.nome,cor:COR_FASE[i%COR_FASE.length],g:String(i+1),fg:'#fff',desce:etapasF(f.k).length>0})),sit('sem_negociacao'),sit('perdido'),sit('descartado')];
   const L=m.e?(etapaF(m.f,m.e)?.subs||[]):etapasF(m.f);
   return [...L.map((x,i)=>{const [cor,fg]=rampa(i,L.length);return {k:x.k,nome:x.nome,cor,g:String(i+1),fg,desce:!m.e&&x.subs?.length>0}}),sit('stand_by')]}
 function mpClasse(t){const m=UI.mp;
@@ -9650,8 +9650,8 @@ const FASES_PADRAO=()=>[
     ['entrega','Entrega',60,[['habite_se','Vistoria e Habite-se'],['entrega_chaves','Entrega das Chaves']]]])},
   {k:'entregue',nome:'Entregue',prefixo:'ENT',ativo:true,conc:'Garantia encerrada',descarta:false,etapas:etx([
     ['pos_entrega','Pós-entrega',null,[['assistencia_tecnica','Assistência Técnica'],['garantia','Em Garantia']]]])}];
-/* cada fase abre quando a anterior é concluída */
-const DEPS_PADRAO=()=>[['aprovacao','novos_negocios'],['incorporacao','aprovacao'],['funding','incorporacao'],['caixa','funding'],['lancamento','caixa'],['obras','lancamento'],['entregue','obras']]
+/* cada fase abre quando a anterior é concluída; Funding sem dependência, abre à mão (decisão do Moisés, 4/nov/2026) */
+const DEPS_PADRAO=()=>[['aprovacao','novos_negocios'],['incorporacao','aprovacao'],['caixa','incorporacao'],['lancamento','caixa'],['obras','lancamento'],['entregue','obras']]
   .map(([fase,reqFase],i)=>({id:'fd'+i,fase,reqFase,tipo:'conclusao',req:null}));
 
 const fasesL=()=>cfg().fases||[];
@@ -9911,7 +9911,7 @@ const destinoCfg=(tipo,k)=>tipo==='etapa'?etapaCfg(k):tipo==='subetapa'?subCfg(k
 const destinoNome=(tipo,k)=>tipo==='etapa'?SN(k):tipo==='subetapa'?subN(k):STATUS_N[k]||k;
 function syncCfg(){STAGES.splice(0,STAGES.length,...cfg().etapas.map(e=>[e.k,e.nome]))}
 /* dados carregados ou restaurados: garante configuração, equipe e avisos dos pedidos de exemplo */
-function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.cfg.fases)S.cfg.fases=FASES_PADRAO();if(!S.cfg.deps)S.cfg.deps=DEPS_PADRAO();/* Funding depois do Registro de Incorporação (pedido do Moisés, 4/nov/2026): entra uma vez na configuração já guardada */if(!S.cfg.funding){S.cfg.funding=true;if(!S.cfg.fases.some(f=>f.k==='funding')){const fp=FASES_PADRAO().find(f=>f.k==='funding'),i=S.cfg.fases.findIndex(f=>f.k==='incorporacao');S.cfg.fases.splice(i<0?S.cfg.fases.length:i+1,0,fp);if(i>=0){S.cfg.deps.forEach(d=>{if(d.fase==='caixa'&&d.reqFase==='incorporacao'&&d.tipo==='conclusao')d.reqFase='funding'});S.cfg.deps.push({id:'fd-fun',fase:'funding',reqFase:'incorporacao',tipo:'conclusao',req:null})}}}if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];{const N0=CFG_PADRAO().notif;delete S.cfg.notif.tarefa_marcado;Object.entries(N0).forEach(([k,v])=>{const c=S.cfg.notif[k];if(!c)S.cfg.notif[k]=v;else if(c.email==null)c.email=v.email})}if(!S.prefsNotif)S.prefsNotif={};syncCfg();partesPreparar();tkPrep();
+function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.cfg.fases)S.cfg.fases=FASES_PADRAO();if(!S.cfg.deps)S.cfg.deps=DEPS_PADRAO();/* Funding depois do Registro de Incorporação (pedido do Moisés, 4/nov/2026): entra uma vez na configuração já guardada */if(!S.cfg.funding){S.cfg.funding=true;if(!S.cfg.fases.some(f=>f.k==='funding')){const fp=FASES_PADRAO().find(f=>f.k==='funding'),i=S.cfg.fases.findIndex(f=>f.k==='incorporacao');S.cfg.fases.splice(i<0?S.cfg.fases.length:i+1,0,fp)}}if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];{const N0=CFG_PADRAO().notif;delete S.cfg.notif.tarefa_marcado;Object.entries(N0).forEach(([k,v])=>{const c=S.cfg.notif[k];if(!c)S.cfg.notif[k]=v;else if(c.email==null)c.email=v.email})}if(!S.prefsNotif)S.prefsNotif={};syncCfg();partesPreparar();tkPrep();
   if(!S.pedidosAvisados){S.terrenos.forEach(t=>{if(t.neg?.pedido)avisarAprovadores(t)});S.pedidosAvisados=true}}
 
 /* ---------- regras da passagem ---------- */
@@ -12203,12 +12203,12 @@ function mfPassa(e,sem){const f=UI.mf;
   return mkUn(e).some(u=>us.every(([k,,,i])=>mfDentro(i===3?mkM2(u[2],u[1]):u[i],f[k])))}
 const mfLista=()=>mkEmps().filter(e=>mfPassa(e));
 function mfBotao(){const n=mfAtivos().length;
-  return `<button type="button" class="mp-renda-b mf-btn" data-a="mf-abrir" aria-expanded="${MF_ABERTO}" aria-pressed="${n>0}" title="Filtrar os empreendimentos do mercado">${ic('filtro',18)}<span class="mf-l">Mercado</span>${n?`<span class="mf-n">${n}</span>`:''}</button>`}
+  return `<button type="button" class="mp-renda-b mf-btn" data-a="mf-abrir" aria-expanded="${MF_ABERTO}" aria-pressed="${n>0}" title="Filtrar os empreendimentos da concorrência">${ic('filtro',18)}<span class="mf-l">Concorrência</span>${n?`<span class="mf-n">${n}</span>`:''}</button>`}
 function mfDrawer(){let el=$('#mf-dr'),sc=$('#mf-scrim');
   if(!MF_ABERTO||UI.route!=='mapa'){el?.remove();sc?.remove();return}
   const top=el?.querySelector('.fx-b')?.scrollTop||0;
   if(!el){sc=document.createElement('div');sc.id='mf-scrim';sc.className='fx-scrim';sc.dataset.a='mf-fechar';document.body.appendChild(sc);
-    el=document.createElement('aside');el.id='mf-dr';el.className='fx-dr mf-dr';el.setAttribute('role','dialog');el.setAttribute('aria-label','Filtro do mercado');document.body.appendChild(el)}
+    el=document.createElement('aside');el.id='mf-dr';el.className='fx-dr mf-dr';el.setAttribute('role','dialog');el.setAttribute('aria-label','Filtro da concorrência');document.body.appendChild(el)}
   const f=UI.mf,base=mkEmps();
   const cont=(k,teste)=>base.filter(e=>mfPassa(e,k)&&teste(e)).length;
   const datas=MF_DT.map(([k,l])=>{const w=f[k]||{},sem=cont(k,e=>!e[k]);
@@ -12219,7 +12219,7 @@ function mfDrawer(){let el=$('#mf-dr'),sc=$('#mf-scrim');
   const op=(k,v,l)=>{const on=(f[k]||[]).includes(v),n=cont(k,e=>e[k]===v);return `<button class="fx-op" data-a="mf-op" data-k="${k}" data-v="${esc(v)}" aria-pressed="${on}" ${!on&&!n?'data-zero="1"':''}>${on?ic('check',16):''}${esc(l)} <span class="q">${num(n)}</span></button>`};
   const q=(UI.mfBusca||'').toLowerCase(),incs=(MK.d?.incs||[]).filter(i=>(f.inc||[]).includes(i)||!q||i.toLowerCase().includes(q));
   const incOps=incs.slice(0,q?200:40).map(i=>op('inc',i,i)).join('');
-  el.innerHTML=`<div class="fx-h"><h2>Filtro do mercado</h2>${mfAtivos().length?'<button class="linkbtn" data-a="mf-limpar">Limpar tudo</button>':''}<button class="iconbtn" data-a="mf-fechar" aria-label="Fechar filtro" title="Fechar (Esc)">${ic('close',22)}</button></div>
+  el.innerHTML=`<div class="fx-h"><h2>Filtro da concorrência</h2>${mfAtivos().length?'<button class="linkbtn" data-a="mf-limpar">Limpar tudo</button>':''}<button class="iconbtn" data-a="mf-fechar" aria-label="Fechar filtro" title="Fechar (Esc)">${ic('close',22)}</button></div>
     <div class="fx-b"><div class="fx-sb">
       <div class="fx-hint">Dormitórios, área, preço e preço por m² olham as unidades à venda: o empreendimento aparece se pelo menos uma unidade estiver dentro de todos eles ao mesmo tempo.</div>
       ${faixas}${datas}
@@ -12242,7 +12242,7 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="mf-"]'
     case 'mf-fechar':MF_ABERTO=false;mfDrawer();$('.mapa-area .mf-btn')?.setAttribute('aria-expanded','false');break;
     case 'mf-op':{const c=UI.mf[k]||[];UI.mf[k]=c.includes(v)?c.filter(x=>x!==v):[...c,v];if(!UI.mf[k].length)delete UI.mf[k];mfAplicar();break}
     case 'mf-sem':UI.mf[k]={...UI.mf[k],semInfo:!UI.mf[k]?.semInfo};mfAplicar();break;
-    case 'mf-limpar':UI.mf={};UI.mfBusca='';mfAplicar();toast('Filtro do mercado limpo.');break;
+    case 'mf-limpar':UI.mf={};UI.mfBusca='';mfAplicar();toast('Filtro da concorrência limpo.');break;
     default:return}
   e.preventDefault();e.stopImmediatePropagation()},true);
 document.addEventListener('input',e=>{const el=e.target;if(!el.closest||!el.closest('#mf-dr'))return;e.stopImmediatePropagation();
@@ -12311,7 +12311,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!UI.modal&&MK.box){
 const _lDesenhaConcMk=L_desenhaConc;L_desenhaConc=function(){const r=_lDesenhaConcMk.apply(this,arguments);desenhaMerc();return r};
 const _gDesenhaConcMk=G_desenhaConc;G_desenhaConc=function(){const r=_gDesenhaConcMk.apply(this,arguments);desenhaMerc();return r};
 const _mpLegendaMk=mpLegenda;mpLegenda=function(){const h=_mpLegendaMk.apply(this,arguments),n=MK.d?mfLista().length:null,
-  item=`<button type="button" class="lg-i" data-a="mp-merc" aria-pressed="${UI.mpMerc!==false}"><span class="lg-poi">${mkMarcaHtml({sit:'lancamento'})}</span>Mercado<span class="n">${n==null?(MK.erro?'—':'…'):num(n)}</span></button>`;
+  item=`<button type="button" class="lg-i" data-a="mp-merc" aria-pressed="${UI.mpMerc!==false}"><span class="lg-poi">${mkMarcaHtml({sit:'lancamento'})}</span>Concorrência<span class="n">${n==null?(MK.erro?'—':'…'):num(n)}</span></button>`;
   const i=h.indexOf('data-a="mp-conc"');if(i<0)return h+item;const fim=h.indexOf('</button>',i)+9;return h.slice(0,fim)+item+h.slice(fim)};
 const _ccAbrirMk=ccAbrir;ccAbrir=function(){mkFechar();return _ccAbrirMk.apply(this,arguments)};
 const _mpSelecionarMk=mpSelecionar;mpSelecionar=function(id){if(id)mkFechar();return _mpSelecionarMk.apply(this,arguments)};
@@ -12327,8 +12327,8 @@ function mkRaios(t){const ps=mkEmps().map(e=>({e,d:distKm(t.lat,t.lng,e.lat,e.ln
     xs.forEach(({e})=>{if(e.preco!=null&&e.area>0){sp+=e.preco;sa+=e.area}v+=e.vendas;est+=e.estoque});
     return {r,pg,l,n:xs.length,est,v,m2:sa?sp/sa:null,vso:mkVso(v,est)}}))}
 function mkSecaoHtml(t){if(t.lat==null)return '';
-  const cab=`<div class="sec-h"><h2>Mercado no entorno</h2></div>`;
-  if(!MK.d){mkCarregar();return `<section class="sec mk-sec" data-bloco-item="mercado">${cab}<div class="sec-b"><div class="muted">${MK.erro?'Dados do mercado indisponíveis nesta visualização.':'Carregando os dados do mercado…'}</div></div></section>`}
+  const cab=`<div class="sec-h"><h2>Concorrência no entorno</h2></div>`;
+  if(!MK.d){mkCarregar();return `<section class="sec mk-sec" data-bloco-item="mercado">${cab}<div class="sec-b"><div class="muted">${MK.erro?'Dados da concorrência indisponíveis nesta visualização.':'Carregando os dados da concorrência…'}</div></div></section>`}
   const rs=mkRaios(t),dias=mkDias(),raio=UI.mkRaio||2;
   const corpo=!rs.some(x=>x.n)?`<div class="muted">Nenhum empreendimento do monitor a até ${MK_RAIOS.at(-1)} km.</div>`
     :`<div class="tblwrap"><table class="mini-tbl mk-cat"><thead><tr><th>Raio</th><th>Programa social</th><th class="r">Empreend.</th><th class="r">Estoque</th><th class="r">R$/m² médio</th><th class="r">VSO médio</th></tr></thead><tbody>

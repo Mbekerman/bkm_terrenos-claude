@@ -10,7 +10,7 @@ UI.dash=UI.dash||{f:{},sel:['situacao','zona','valor','mes']};
 /* ---------- situação do terreno (cor do pin, gráficos) ---------- */
 // rótulo, cor, glifo no pin, cor do glifo. Etapas ativas em rampa de azul (ordem = avanço);
 // Stand By, Comprado, Perdido e Descartado com cores próprias e glifo, para não depender só da cor.
-const SIT={sem_negociacao:['Sem negociação','#8a8d91','·','#fff'],triagem:['Em Triagem','#8fc8f7','1','#1d2e5c'],
+const SIT={sem_negociacao:['Backlog','#8a8d91','·','#fff'],triagem:['Em Triagem','#8fc8f7','1','#1d2e5c'],
   estudos:['Estudos Preliminares','#4aa3f0','2','#fff'],negociacao:['Negociação','#0b74d6','3','#fff'],
   contrato:['Contrato','#1d2e5c','4','#fff'],stand_by:['Stand By','#c98a2e','‖','#fff'],comprado:['Comprado','#6f9a3a','✓','#fff'],
   perdido:['Perdido','#9a3b30','×','#fff'],descartado:['Descartado','#6b6560','–','#fff']};
@@ -25,7 +25,7 @@ const COR_FASE=['#0b74d6','#863d8f','#c67355','#00838f','#c2477a','#7d8a3e','#1d
 const RAMPA=['#8fc8f7','#4aa3f0','#0b74d6','#0a4fa0','#1d2e5c'];
 const rampa=(i,n)=>{const j=n<=1?2:Math.round(i*(RAMPA.length-1)/(n-1));return [RAMPA[j],j===0?'#1d2e5c':'#fff']};
 function mpItens(){const m=UI.mp,sit=k=>({k,nome:SIT[k][0],cor:SIT[k][1],g:SIT[k][2],fg:SIT[k][3]});
-  if(!m.f)return [sit('sem_negociacao'),...fasesL().filter(f=>f.ativo).map((f,i)=>({k:f.k,nome:f.nome,cor:COR_FASE[i%COR_FASE.length],g:String(i+1),fg:'#fff',desce:etapasF(f.k).length>0})),sit('perdido'),sit('descartado')];
+  if(!m.f)return [...fasesL().filter(f=>f.ativo).map((f,i)=>({k:f.k,nome:f.nome,cor:COR_FASE[i%COR_FASE.length],g:String(i+1),fg:'#fff',desce:etapasF(f.k).length>0})),sit('sem_negociacao'),sit('perdido'),sit('descartado')];
   const L=m.e?(etapaF(m.f,m.e)?.subs||[]):etapasF(m.f);
   return [...L.map((x,i)=>{const [cor,fg]=rampa(i,L.length);return {k:x.k,nome:x.nome,cor,g:String(i+1),fg,desce:!m.e&&x.subs?.length>0}}),sit('stand_by')]}
 function mpClasse(t){const m=UI.mp;

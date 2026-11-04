@@ -58,9 +58,9 @@ select pg_temp.ok(app.eh_superior(:'emp', :'diretor', :'analista') and app.eh_su
 select pg_temp.falha(format($$update app.membros set superior_id = %L where user_id = %L$$, :'diretor', :'analista'), 'o superior do analista é um gestor, não o diretor');
 select pg_temp.falha(format($$update app.membros set papel = 'analista' where user_id = %L$$, :'gestor'), 'gestor com equipe não muda de papel sem trocar o superior da equipe');
 select pg_temp.falha(format($$update app.membros set administrador = false where user_id = %L$$, :'diretor'), 'a empresa não fica sem administrador');
-select pg_temp.ok((select count(*) from app.fases_modelo) = 8 and (select count(*) from app.fase_dependencias) = 7
+select pg_temp.ok((select count(*) from app.fases_modelo) = 8 and (select count(*) from app.fase_dependencias) = 6
   and (select count(*) from app.etapas_modelo where fase = 'novos_negocios') = 4 and (select count(*) from app.subetapas_modelo where fase = 'novos_negocios') = 13,
-  'empresa nova recebe a cópia do funil padrão: 8 fases encadeadas; Novos Negócios com 4 etapas e 13 subetapas');
+  'empresa nova recebe a cópia do funil padrão: 8 fases, Funding solta; Novos Negócios com 4 etapas e 13 subetapas');
 select pg_temp.ok((select count(*) from app.motivos_encerramento where status = 'descartado') = 8 and (select count(*) from app.motivos_encerramento where status = 'perdido') = 7,
   'motivos de Descartado e de Perdido copiados');
 select pg_temp.como(:'gestor');

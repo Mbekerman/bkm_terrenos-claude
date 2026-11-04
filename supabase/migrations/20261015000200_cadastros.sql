@@ -275,12 +275,12 @@ insert into app.fases_modelo (codigo, nome, ordem, prefixo, entrada) values
   ('obras',          'Obras',                    7, 'OBR', false),
   ('entregue',       'Entregue',                 8, 'ENT', false);
 
--- Cada fase abre quando a anterior é concluída.
+-- Cada fase abre quando a anterior é concluída. Funding não tem dependência
+-- nem trava outra fase (decisão do Moisés, 4/nov/2026): abre à mão, quando for.
 insert into app.fase_dependencias (fase, requisito_fase, requisito_tipo) values
   ('aprovacao',    'novos_negocios', 'conclusao'),
   ('incorporacao', 'aprovacao',      'conclusao'),
-  ('funding',      'incorporacao',   'conclusao'),
-  ('caixa',        'funding',        'conclusao'),
+  ('caixa',        'incorporacao',   'conclusao'),
   ('lancamento',   'caixa',          'conclusao'),
   ('obras',        'lancamento',     'conclusao'),
   ('entregue',     'obras',          'conclusao');

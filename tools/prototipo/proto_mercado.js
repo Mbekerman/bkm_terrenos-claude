@@ -53,12 +53,12 @@ function mfPassa(e,sem){const f=UI.mf;
   return mkUn(e).some(u=>us.every(([k,,,i])=>mfDentro(i===3?mkM2(u[2],u[1]):u[i],f[k])))}
 const mfLista=()=>mkEmps().filter(e=>mfPassa(e));
 function mfBotao(){const n=mfAtivos().length;
-  return `<button type="button" class="mp-renda-b mf-btn" data-a="mf-abrir" aria-expanded="${MF_ABERTO}" aria-pressed="${n>0}" title="Filtrar os empreendimentos do mercado">${ic('filtro',18)}<span class="mf-l">Mercado</span>${n?`<span class="mf-n">${n}</span>`:''}</button>`}
+  return `<button type="button" class="mp-renda-b mf-btn" data-a="mf-abrir" aria-expanded="${MF_ABERTO}" aria-pressed="${n>0}" title="Filtrar os empreendimentos da concorrência">${ic('filtro',18)}<span class="mf-l">Concorrência</span>${n?`<span class="mf-n">${n}</span>`:''}</button>`}
 function mfDrawer(){let el=$('#mf-dr'),sc=$('#mf-scrim');
   if(!MF_ABERTO||UI.route!=='mapa'){el?.remove();sc?.remove();return}
   const top=el?.querySelector('.fx-b')?.scrollTop||0;
   if(!el){sc=document.createElement('div');sc.id='mf-scrim';sc.className='fx-scrim';sc.dataset.a='mf-fechar';document.body.appendChild(sc);
-    el=document.createElement('aside');el.id='mf-dr';el.className='fx-dr mf-dr';el.setAttribute('role','dialog');el.setAttribute('aria-label','Filtro do mercado');document.body.appendChild(el)}
+    el=document.createElement('aside');el.id='mf-dr';el.className='fx-dr mf-dr';el.setAttribute('role','dialog');el.setAttribute('aria-label','Filtro da concorrência');document.body.appendChild(el)}
   const f=UI.mf,base=mkEmps();
   const cont=(k,teste)=>base.filter(e=>mfPassa(e,k)&&teste(e)).length;
   const datas=MF_DT.map(([k,l])=>{const w=f[k]||{},sem=cont(k,e=>!e[k]);
@@ -69,7 +69,7 @@ function mfDrawer(){let el=$('#mf-dr'),sc=$('#mf-scrim');
   const op=(k,v,l)=>{const on=(f[k]||[]).includes(v),n=cont(k,e=>e[k]===v);return `<button class="fx-op" data-a="mf-op" data-k="${k}" data-v="${esc(v)}" aria-pressed="${on}" ${!on&&!n?'data-zero="1"':''}>${on?ic('check',16):''}${esc(l)} <span class="q">${num(n)}</span></button>`};
   const q=(UI.mfBusca||'').toLowerCase(),incs=(MK.d?.incs||[]).filter(i=>(f.inc||[]).includes(i)||!q||i.toLowerCase().includes(q));
   const incOps=incs.slice(0,q?200:40).map(i=>op('inc',i,i)).join('');
-  el.innerHTML=`<div class="fx-h"><h2>Filtro do mercado</h2>${mfAtivos().length?'<button class="linkbtn" data-a="mf-limpar">Limpar tudo</button>':''}<button class="iconbtn" data-a="mf-fechar" aria-label="Fechar filtro" title="Fechar (Esc)">${ic('close',22)}</button></div>
+  el.innerHTML=`<div class="fx-h"><h2>Filtro da concorrência</h2>${mfAtivos().length?'<button class="linkbtn" data-a="mf-limpar">Limpar tudo</button>':''}<button class="iconbtn" data-a="mf-fechar" aria-label="Fechar filtro" title="Fechar (Esc)">${ic('close',22)}</button></div>
     <div class="fx-b"><div class="fx-sb">
       <div class="fx-hint">Dormitórios, área, preço e preço por m² olham as unidades à venda: o empreendimento aparece se pelo menos uma unidade estiver dentro de todos eles ao mesmo tempo.</div>
       ${faixas}${datas}
@@ -92,7 +92,7 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="mf-"]'
     case 'mf-fechar':MF_ABERTO=false;mfDrawer();$('.mapa-area .mf-btn')?.setAttribute('aria-expanded','false');break;
     case 'mf-op':{const c=UI.mf[k]||[];UI.mf[k]=c.includes(v)?c.filter(x=>x!==v):[...c,v];if(!UI.mf[k].length)delete UI.mf[k];mfAplicar();break}
     case 'mf-sem':UI.mf[k]={...UI.mf[k],semInfo:!UI.mf[k]?.semInfo};mfAplicar();break;
-    case 'mf-limpar':UI.mf={};UI.mfBusca='';mfAplicar();toast('Filtro do mercado limpo.');break;
+    case 'mf-limpar':UI.mf={};UI.mfBusca='';mfAplicar();toast('Filtro da concorrência limpo.');break;
     default:return}
   e.preventDefault();e.stopImmediatePropagation()},true);
 document.addEventListener('input',e=>{const el=e.target;if(!el.closest||!el.closest('#mf-dr'))return;e.stopImmediatePropagation();
@@ -161,7 +161,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!UI.modal&&MK.box){
 const _lDesenhaConcMk=L_desenhaConc;L_desenhaConc=function(){const r=_lDesenhaConcMk.apply(this,arguments);desenhaMerc();return r};
 const _gDesenhaConcMk=G_desenhaConc;G_desenhaConc=function(){const r=_gDesenhaConcMk.apply(this,arguments);desenhaMerc();return r};
 const _mpLegendaMk=mpLegenda;mpLegenda=function(){const h=_mpLegendaMk.apply(this,arguments),n=MK.d?mfLista().length:null,
-  item=`<button type="button" class="lg-i" data-a="mp-merc" aria-pressed="${UI.mpMerc!==false}"><span class="lg-poi">${mkMarcaHtml({sit:'lancamento'})}</span>Mercado<span class="n">${n==null?(MK.erro?'—':'…'):num(n)}</span></button>`;
+  item=`<button type="button" class="lg-i" data-a="mp-merc" aria-pressed="${UI.mpMerc!==false}"><span class="lg-poi">${mkMarcaHtml({sit:'lancamento'})}</span>Concorrência<span class="n">${n==null?(MK.erro?'—':'…'):num(n)}</span></button>`;
   const i=h.indexOf('data-a="mp-conc"');if(i<0)return h+item;const fim=h.indexOf('</button>',i)+9;return h.slice(0,fim)+item+h.slice(fim)};
 const _ccAbrirMk=ccAbrir;ccAbrir=function(){mkFechar();return _ccAbrirMk.apply(this,arguments)};
 const _mpSelecionarMk=mpSelecionar;mpSelecionar=function(id){if(id)mkFechar();return _mpSelecionarMk.apply(this,arguments)};
@@ -177,8 +177,8 @@ function mkRaios(t){const ps=mkEmps().map(e=>({e,d:distKm(t.lat,t.lng,e.lat,e.ln
     xs.forEach(({e})=>{if(e.preco!=null&&e.area>0){sp+=e.preco;sa+=e.area}v+=e.vendas;est+=e.estoque});
     return {r,pg,l,n:xs.length,est,v,m2:sa?sp/sa:null,vso:mkVso(v,est)}}))}
 function mkSecaoHtml(t){if(t.lat==null)return '';
-  const cab=`<div class="sec-h"><h2>Mercado no entorno</h2></div>`;
-  if(!MK.d){mkCarregar();return `<section class="sec mk-sec" data-bloco-item="mercado">${cab}<div class="sec-b"><div class="muted">${MK.erro?'Dados do mercado indisponíveis nesta visualização.':'Carregando os dados do mercado…'}</div></div></section>`}
+  const cab=`<div class="sec-h"><h2>Concorrência no entorno</h2></div>`;
+  if(!MK.d){mkCarregar();return `<section class="sec mk-sec" data-bloco-item="mercado">${cab}<div class="sec-b"><div class="muted">${MK.erro?'Dados da concorrência indisponíveis nesta visualização.':'Carregando os dados da concorrência…'}</div></div></section>`}
   const rs=mkRaios(t),dias=mkDias(),raio=UI.mkRaio||2;
   const corpo=!rs.some(x=>x.n)?`<div class="muted">Nenhum empreendimento do monitor a até ${MK_RAIOS.at(-1)} km.</div>`
     :`<div class="tblwrap"><table class="mini-tbl mk-cat"><thead><tr><th>Raio</th><th>Programa social</th><th class="r">Empreend.</th><th class="r">Estoque</th><th class="r">R$/m² médio</th><th class="r">VSO médio</th></tr></thead><tbody>
