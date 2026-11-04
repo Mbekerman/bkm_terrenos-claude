@@ -15,8 +15,9 @@ Regra do Moisés (4/nov/2026), só na leitura: nada do que foi coletado muda.
    - duas faixas do mesmo andar nunca caem no mesmo grupo.
 4. Casos especiais: unidade sem preço entra no grupo das unidades do mesmo andar no mesmo bloco de área (o maior, se
    houver mais de um); sem nenhuma, no maior grupo do bloco. Área nula fica fora do agrupamento. Grupo com menos de
-   min_unidades_grupo unidades junta ao vizinho de R$/m² mais próximo no mesmo bloco de área e fica marcado pequeno
-   (sem vizinho, fica sozinho e marcado pequeno).
+   min_unidades_grupo unidades só junta a um grupo que difere dele apenas na área (mesma semelhança, outro bloco de
+   área e R$/m² a até salto_preco_andar_pct), o de área mais próxima; sem nenhum, fica separado. Nos dois casos fica
+   marcado pequeno (decisão do Moisés, 4/nov/2026).
 
 A estabilidade (unidade já agrupada não muda de grupo; "Reagrupar" do administrador) pede guardar o grupo de cada
 unidade no banco; este retrato recalcula tudo a cada exportação.
@@ -78,7 +79,7 @@ def blocos_area(us, pct):
 
 def grupos_preco(bloco, cfg=CFG):
     """Divide um bloco de área pelo R$/m² do primeiro preço. Devolve [{'us': [...], 'pequeno': bool}]."""
-    s_andar, s_mesmo, minimo = cfg['salto_preco_andar_pct'], cfg['salto_preco_mesmo_andar_pct'], cfg['min_unidades_grupo']
+    s_andar, s_mesmo = cfg['salto_preco_andar_pct'], cfg['salto_preco_mesmo_andar_pct']
     com = [u for u in bloco if u['p1']]
     sem = [u for u in bloco if not u['p1']]
     for u in com:
@@ -120,28 +121,48 @@ def grupos_preco(bloco, cfg=CFG):
         mesmos = [g for g in grupos if u['andar'] is not None and (u['torre'], u['andar']) in g['andares']]
         alvo = max(mesmos or grupos, key=lambda g: len(g['us']))
         alvo['us'].append(u)
-    for g in grupos:
-        g['pequeno'] = False
-    # grupo pequeno junta ao vizinho de R$/m² mais próximo, no mesmo bloco de área
-    while True:
-        pq = [g for g in grupos if len(g['us']) < minimo]
-        if not pq or len(grupos) == 1:
-            break
-        g = min(pq, key=lambda x: len(x['us']))
-        outros = [o for o in grupos if o is not g]
-        m = _m2_medio(g)
-        alvo = min(outros, key=lambda o: abs((_m2_medio(o) or 0) - (m or 0)))
-        alvo['us'] += g['us']
-        alvo['pequeno'] = True
-        grupos.remove(g)
-    if len(grupos) == 1 and len(grupos[0]['us']) < minimo:
-        grupos[0]['pequeno'] = True
-    return [{'us': g['us'], 'pequeno': g['pequeno']} for g in grupos if g['us']]
+    return [{'us': g['us'], 'pequeno': False} for g in grupos if g['us']]
 
 
 def _m2_medio(g):
     xs = [u for u in g['us'] if u['p1']]
     return sum(u['p1'] for u in xs) / sum(u['area'] for u in xs) if xs else None
+
+
+def _area_med(g):
+    return statistics.median(u['area'] for u in g['us'])
+
+
+def juntar_pequenos(gs, cfg=CFG):
+    """Grupo com menos de min_unidades_grupo junta só a um grupo que difere dele apenas na área: outro bloco de área,
+    com R$/m² (primeiro preço) a até salto_preco_andar_pct. Entre os que servem, o de área mais próxima. Sem nenhum,
+    fica sozinho. Nos dois casos fica marcado pequeno. Todos os grupos de gs são da mesma semelhança."""
+    minimo, salto = cfg['min_unidades_grupo'], cfg['salto_preco_andar_pct']
+    feitos = set()
+    while True:
+        pq = [g for g in gs if len(g['us']) < minimo and id(g) not in feitos]
+        if not pq:
+            break
+        g = min(pq, key=lambda x: (len(x['us']), _area_med(x)))
+        m = _m2_medio(g)
+
+        def serve(o):
+            if o is g or o['bloco'] == g['bloco']:
+                return False
+            mo = _m2_medio(o)
+            if m is None or mo is None:
+                return True
+            return max(m, mo) <= min(m, mo) * (1 + salto / 100) + 1e-9
+        alvos = [o for o in gs if serve(o)]
+        g['pequeno'] = True
+        if not alvos:
+            feitos.add(id(g))
+            continue
+        alvo = min(alvos, key=lambda o: (abs(_area_med(o) - _area_med(g)), -len(o['us'])))
+        alvo['us'] += g['us']
+        alvo['pequeno'] = True
+        gs.remove(g)
+    return gs
 
 
 def agrupar(us, prog=None, cfg=CFG):
@@ -151,10 +172,12 @@ def agrupar(us, prog=None, cfg=CFG):
         sem.setdefault((u['dorm'], u['vagas'], u.get('prog', prog)), []).append(u)
     saida = []
     for (d, vg, pg), xs in sem.items():
-        for bloco in blocos_area(xs, cfg['area_mediana_pct']):
+        gs = []
+        for i, bloco in enumerate(blocos_area(xs, cfg['area_mediana_pct'])):
             for g in grupos_preco(bloco, cfg):
-                g.update(dorm=d, vagas=vg, prog=pg)
-                saida.append(g)
+                g.update(dorm=d, vagas=vg, prog=pg, bloco=i)
+                gs.append(g)
+        saida += juntar_pequenos(gs, cfg)
     saida.sort(key=lambda g: (g['dorm'] if g['dorm'] is not None else 99, g['vagas'] if g['vagas'] is not None else 99,
                               min(u['area'] for u in g['us']), _m2_medio(g) or 0))
     return saida

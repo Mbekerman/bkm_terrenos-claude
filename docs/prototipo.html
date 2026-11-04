@@ -12253,7 +12253,7 @@ function mkResumoHtml(e){const gs=mkGrupos(e);if(!gs.length)return '';
   const linhas=gs.map(g=>`<tr><td><span class="cc-tn">${mkDormN(g.dorm)}${g.pequeno?' <span class="faint" title="Grupo com menos de '+(MK.d.cfg?.min_unidades_grupo??3)+' unidades juntado ao vizinho">· pequeno</span>':''}</span><div class="faint">${mkVagaN(g.vagas)} · ${mkAreaN(g)}</div></td>
     <td class="num">${num(g.unidades)}</td><td class="num">${num(g.estoque)}</td>
     <td class="num">${g.m2!=null?brl(g.m2):g.m2p1!=null?`<span class="faint" title="Sem unidade à venda com preço: pelo primeiro preço visto">${brl(g.m2p1)}*</span>`:'—'}</td><td class="num">${mkPct(g.vso)}</td></tr>`).join('');
-  return `<div class="cc-tw"><table class="cc-t mk-t"><thead><tr><th>Tipologia</th><th class="num">Unid.</th><th class="num">À venda</th><th class="num">R$/m²</th><th class="num" title="Vendas ÷ (vendas + à venda)">VSO</th></tr></thead><tbody>${linhas}</tbody></table></div>`}
+  return `<div class="cc-tw"><table class="cc-t mk-t"><thead><tr><th>Tipologia</th><th class="num">Total</th><th class="num">Estoque</th><th class="num">R$/m²</th><th class="num" title="Vendas ÷ (vendas + estoque)">VSO</th></tr></thead><tbody>${linhas}</tbody></table></div>`}
 function mkBoxHtml(e){const m2=mkM2(e.preco,e.area),vso=mkVso(e.vendas,e.estoque),pct=e.unidades?Math.round(100*e.estoque/e.unidades):0,dias=mkDias();
   const kv=(k,v,f)=>`<div class="mk-kv"><span class="muted">${k}</span><span class="num">${v}</span>${f?`<span class="faint">${f}</span>`:''}</div>`;
   return `<div class="cc-box mk-box" role="dialog" aria-label="${esc(e.nome)}">

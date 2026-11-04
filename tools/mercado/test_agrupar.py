@@ -43,11 +43,25 @@ class Agrupar(unittest.TestCase):
         us = [un(40, a, prog='sim') for a in range(1, 4)] + [un(40, a, prog='nao') for a in range(1, 4)]
         self.assertEqual(tamanhos(agrupar(us)), [3, 3])
 
-    def test_grupo_de_2_junta_ao_vizinho_e_fica_pequeno(self):
+    def test_grupo_de_2_que_difere_no_preco_fica_separado_e_pequeno(self):
         us = [un(40, a, 10000) for a in range(1, 6)] + [un(40, a, 11000) for a in range(6, 8)]
         gs = agrupar(us)
-        self.assertEqual(len(gs), 1)
+        self.assertEqual(tamanhos(gs), [2, 5])
+        self.assertEqual([g['pequeno'] for g in gs if len(g['us']) == 2], [True])
+
+    def test_grupo_de_2_que_difere_so_na_area_junta_e_fica_pequeno(self):
+        us = [un(40, a, 10000) for a in range(1, 6)] + [un(44, a, 10100) for a in range(6, 8)]
+        gs = agrupar(us)
+        self.assertEqual(tamanhos(gs), [7])
         self.assertTrue(gs[0]['pequeno'])
+
+    def test_grupo_de_2_com_outra_area_e_outro_preco_fica_separado(self):
+        us = [un(40, a, 10000) for a in range(1, 6)] + [un(44, a, 10500) for a in range(6, 8)]
+        self.assertEqual(tamanhos(agrupar(us)), [2, 5])
+
+    def test_grupo_pequeno_nao_junta_com_outra_semelhanca(self):
+        us = [un(40, a, 10000) for a in range(1, 6)] + [un(44, a, 10000, dorm=3) for a in range(6, 8)]
+        self.assertEqual(tamanhos(agrupar(us)), [2, 5])
 
     def test_com_e_sem_vaga_nao_misturam(self):
         us = [un(40, a, vagas=0) for a in range(1, 4)] + [un(40, a, vagas=1) for a in range(1, 4)]
