@@ -706,6 +706,21 @@ select pg_temp.ok(:'gdup' is not null, 'mesmo número em outra cidade não é du
 select pg_temp.ok((select count(*) from app.buscar_duplicados(:'emp', p_inscricao => '41.0024.0099.0000') where certeza = 'mesma_quadra') = 1,
   'inscrição de SJC da mesma quadra avisa vizinho');
 select pg_temp.ok((select count(*) from app.auditoria where tabela = 'consultas_lote') = 6, 'consultas do lote vão para os logs');
+-- consulta pela poligonal do terreno (restrições e entorno da área inteira) e histórico de uso digitado
+select pg_temp.como(:'analista');
+select app.registrar_consulta_area(:'tm', '{"quota_ambiental":[{"pa":"PA 5"}],"arvore_v2":[{"cd_identificador":"1","_dist_m":12.5}],"mancha_inundacao_5":[]}', '{rede_comgas}') as gca \gset
+select pg_temp.ok((select base = 'geosampa' and camadas#>>'{quota_ambiental,0,pa}' = 'PA 5' and camadas_com_erro = '{rede_comgas}'
+                     and poligono_geojson = (select poligono_geojson from app.terrenos where id = :'tm') from app.consultas_area where id = :'gca'),
+  'consulta pela poligonal guarda a base da cidade, a poligonal do terreno, o PA e as camadas que falharam');
+select pg_temp.falha(format($$update app.consultas_area set camadas = '{}' where id = %L$$, :'gca'), 'consulta pela poligonal não é alterada');
+select pg_temp.falha(format('select app.registrar_consulta_area(%L, %L)', :'tsj', '[]'), 'camadas que não são um objeto são recusadas');
+select versao as tmv from app.terrenos where id = :'tm' \gset
+select app.salvar_terreno(:'tm', :tmv, '{"historico_uso":"  Posto de gasolina até 1998  "}') \gset
+select pg_temp.ok((select historico_uso from app.terrenos where id = :'tm') = 'Posto de gasolina até 1998', 'histórico de uso digitado, sem espaços nas pontas');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format('select app.registrar_consulta_area(%L, %L)', :'tm', '{}'), 'leitura não consulta pela poligonal');
+select pg_temp.ok((select count(*) from app.consultas_area where terreno_id = :'tm') = 1, 'leitura vê a consulta pela poligonal');
+select pg_temp.como(:'diretor');
 -- limpa o que os testes seguintes contam (como superusuário)
 reset role;
 select set_config('request.jwt.claim.sub', '', false);

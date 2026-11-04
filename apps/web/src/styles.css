@@ -1545,6 +1545,16 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .geo-l .k { color: var(--texto-suave); font-size: 13px }
 .geo-l .v { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; overflow-wrap: anywhere }
 .geo-l .v .chip { height: auto; min-height: 24px; white-space: normal; text-align: left }
+/* Restrições e entorno (aba Parâmetros urbanísticos): um grupo por tema, item à esquerda e resposta à direita */
+.rs-fonte { margin: 0 0 4px }
+.rs-g { margin-top: 12px }
+.rs-gt { font-size: 14px; font-weight: 500; padding: 6px 0; color: var(--m-on-surface, #1f1f1f) }
+.rs-l { display: grid; grid-template-columns: minmax(140px, 45%) minmax(0, 1fr); gap: 12px; align-items: baseline; padding: 8px 0; border-top: 1px solid var(--linha); font-size: 14px }
+.rs-l .k { color: var(--texto-suave); font-size: 13px }
+.rs-l .v { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; text-align: right; overflow-wrap: anywhere }
+.rs-l .v .chip { height: auto; min-height: 24px; white-space: normal; text-align: left }
+#sec-histuso textarea { min-height: 96px }
+.rs-l .rs-src { flex-basis: 100%; font-size: 12px }
 .geo-arq { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px }
 
 /* Inscrição por cidade: a escolha do município ocupa a linha toda e quebra no celular */

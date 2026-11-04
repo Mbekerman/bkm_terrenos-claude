@@ -4,7 +4,7 @@
 
 const hhmm=s=>s&&s.length>10?s.slice(11,16):'';
 const emCompleto=s=>s?(fd(s.slice(0,10))+(s.length>10?' · '+s.slice(11).replace('.',','):'')):'';
-const LAB_CAMPO={situacao:'Situação',aDoc:'Área documental',aCad:'Área cadastral',aLev:'Área de levantamento',aEst:'Área estimada',fonteArea:'Fonte da área adotada',testada:'Testada'};
+const LAB_CAMPO={situacao:'Situação',aDoc:'Área documental',aCad:'Área cadastral',aLev:'Área de levantamento',aEst:'Área estimada',fonteArea:'Fonte da área adotada',testada:'Testada',histUso:'Histórico de uso'};
 Object.values(SECOES).forEach(s=>s.campos.forEach(([k,l])=>{LAB_CAMPO[k]=l}));
 const SEC_DE={};Object.entries(SECOES).forEach(([id,s])=>s.campos.forEach(([k])=>{SEC_DE[k]=id}));
 const TIPO_CAMPO={};Object.values(SECOES).forEach(s=>s.campos.forEach(([k,,tipo,opt])=>{TIPO_CAMPO[k]=[tipo,opt]}));
@@ -30,7 +30,7 @@ function audSnap(){AUD={};S.terrenos.forEach(t=>{AUD[t.id]={j:retrato(t),h:(t.hi
 function diffTerreno(a,b){
   const campos=[],itens=[];
   Object.keys({...a,...b}).forEach(k=>{
-    if(['hist','relevo','id','codigo','criFonte','criLoc','pontosExcl'].includes(k))return;
+    if(['hist','relevo','id','codigo','criFonte','criLoc','pontosExcl','geoArea'].includes(k))return;
     const va=a[k],vb=b[k];if(JSON.stringify(va)===JSON.stringify(vb))return;
     /* o pino acompanha a poligonal: a mudança de lugar dele vai junto do ajuste, sem log próprio */
     if(['lat','lng','precisao'].includes(k)&&JSON.stringify(a.poly)!==JSON.stringify(b.poly))return;

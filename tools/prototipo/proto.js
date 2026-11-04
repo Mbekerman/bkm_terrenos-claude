@@ -551,7 +551,7 @@ function abaNegociacao(t){
 }
 /* parte: 'param' só a análise urbanística (aba Parâmetros urbanísticos); 'infra' só a infraestrutura na porta (aba Infraestrutura) */
 function abaUrbanismo(t,parte){
-  if(parte==='param')return `<div class="stack">${secAnaliseUrb(t)}</div>`;
+  if(parte==='param')return `<div class="stack">${secAnaliseUrb(t)}${secRestricoes(t)}${secHistUso(t)}</div>`;
   return `<div class="stack">${parte==='infra'?'':secAnaliseUrb(t)}
   <section class="sec" id="sec-infra"><div class="sec-h"><h2>Infraestrutura na porta</h2>${infraNV(t)?`<span class="faint" style="font-size:13px">${infraNV(t)} não verificado${infraNV(t)>1?"s":""}</span>`:""}</div><div style="padding-bottom:6px">
   ${INFRA.map(([k,l])=>{const r=t.infra[k]||{d:'nao_verificado'};return `<div class="infra"><span>${l}</span><span class="seg3" role="group" aria-label="${l}">${[['nao_verificado','Não verificado','nv'],['sim','Sim','sim'],['nao','Não','nao']].map(([v,lb,c])=>`<button type="button" class="${c}" aria-pressed="${r.d===v}" data-a="infra" data-k="${k}" data-v="${v}">${lb}</button>`).join('')}</span>
