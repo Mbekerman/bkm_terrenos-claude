@@ -2604,6 +2604,8 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .lg-poi .mk-b { width: 14px; height: 14px; border-width: 1.5px; box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
 .mk-box { width: min(480px, calc(100% - 20px)) }
 .mk-box .mk-k { background: #eef6ff; border-left-color: #0094fe }
+.mk-prog { margin-top: 6px; font-size: 13px; color: #444746 } .mk-prog b { font-weight: 500; color: #1f1f1f }
+:root[data-tema="escuro"] .mk-prog { color: #c4c7c5 } :root[data-tema="escuro"] .mk-prog b { color: #e3e3e3 }
 .mk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin: 12px 20px 4px }
 .mk-kv { display: flex; flex-direction: column; min-width: 0; font-size: 12px; line-height: 16px }
 .mk-kv .num { font-size: 15px; line-height: 22px; color: #1f1f1f; font-variant-numeric: tabular-nums }
@@ -5551,6 +5553,38 @@ html[data-tema="escuro"] .fx-aba .fx-sn { background: #a8c7fa; color: #062e6f }
 .ph-l { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; flex-wrap: wrap; justify-content: flex-end }
 .ph-l .fx-barra { margin: 0; flex: 1; min-width: 0 }
 @media (max-width: 899px) { .page-h.ph-barra { flex-wrap: wrap; align-items: flex-end } .ph-l { flex-basis: 100%; justify-content: flex-start } }
+
+/* Tabela completa do empreendimento (concorrência, 4/nov/2026) */
+.mk-tab { padding: 4px calc(var(--q-px, 24px) - 12px) 0 } .mk-tab .btn { gap: 8px }
+.dialog.mkt-dlg { width: min(1180px, 100%); max-height: calc(100dvh - 32px); display: flex; flex-direction: column; overflow: hidden }
+.mkt-cab { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px 24px; margin: 4px 0 16px }
+.mkt-kv { display: flex; flex-direction: column; gap: 2px; font-size: 14px; min-width: 0 } .mkt-kv .muted { font-size: 12px }
+.mkt-fs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px }
+.mkt-f { height: 32px; padding: 0 14px; border-radius: 8px; border: 1px solid #c4c7c5; background: transparent; color: #444746; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer }
+.mkt-f.on { background: #c2e7ff; border-color: #c2e7ff; color: #001d35 }
+.mkt-w { flex: 1; min-height: 0; overflow: auto; border-top: 1px solid #c4c7c5 }
+table.mkt { width: 100%; border-collapse: collapse; font-size: 13px }
+table.mkt th { position: sticky; top: 0; background: #fff; text-align: left; font-weight: 500; color: #444746; padding: 10px 8px; border-bottom: 1px solid #c4c7c5; white-space: nowrap; z-index: 1 }
+table.mkt td { padding: 8px; border-bottom: 1px solid #e3e3e3; white-space: nowrap }
+table.mkt .n { text-align: right; font-variant-numeric: tabular-nums }
+table.mkt b { font-weight: 500 }
+.mkt-s { font-size: 12px; height: 24px; padding: 0 8px; border-radius: 8px; display: inline-flex; align-items: center; background: #e9eef6; color: #444746 }
+.mkt-disponivel .mkt-s { background: #c4eed0; color: #146c2e } .mkt-reservada .mkt-s { background: #ffdf99; color: #7a5900 } .mkt-vendida .mkt-s { background: #e3e3e3; color: #444746 }
+.mkt-msg { padding: 24px 0 } .mkt-nota { font-size: 12px; margin-top: 12px }
+:root[data-tema="escuro"] .mkt-f { border-color: #444746; color: #c4c7c5 } :root[data-tema="escuro"] .mkt-f.on { background: #004a77; border-color: #004a77; color: #c2e7ff }
+:root[data-tema="escuro"] .mkt-w, :root[data-tema="escuro"] table.mkt th { border-color: #444746 } :root[data-tema="escuro"] table.mkt th { background: #1e1f20; color: #c4c7c5 } :root[data-tema="escuro"] table.mkt td { border-color: #2d2f31 }
+:root[data-tema="escuro"] .mkt-s { background: #282a2c; color: #c4c7c5 } :root[data-tema="escuro"] .mkt-disponivel .mkt-s { background: #0f5223; color: #c4eed0 } :root[data-tema="escuro"] .mkt-reservada .mkt-s { background: #5c4300; color: #ffdf99 } :root[data-tema="escuro"] .mkt-vendida .mkt-s { background: #333537; color: #c4c7c5 }
+.mkt-m { display: none }
+@media (max-width: 599px) {
+  .dialog.mkt-dlg { max-height: 100dvh; overflow-y: auto !important; display: block }
+  .mkt-cab { grid-template-columns: 1fr 1fr; gap: 10px 16px }
+  .mkt-w { overflow: visible } table.mkt { display: none } .mkt-m { display: block }
+  .mkt-r { padding: 12px 16px; margin: 0 -16px; border-bottom: 1px solid #e3e3e3; font-size: 14px; display: flex; flex-direction: column; gap: 2px }
+  .mkt-r1 { display: flex; align-items: center; gap: 4px } .mkt-r1 b { font-weight: 500 } .mkt-r1 .mkt-s { margin-left: auto } .mkt-r b { font-weight: 500 }
+  :root[data-tema="escuro"] .mkt-r { border-color: #2d2f31 }
+}
+table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty { display: none }
+.mkt-w { overflow-x: hidden } table.mkt td, table.mkt th { padding-left: 6px; padding-right: 6px }
 </style>
 <header class="top">
   <div class="top-in">
@@ -6637,7 +6671,9 @@ const CAMADAS_L={mapa:'Mapa',satelite:'Satélite'},CAMADAS_G={mapa:'Mapa',sateli
 let GG=false;
 function setBase(k){return GG?G_setBase(k):L_setBase(k)}
 function desenhaPins(){return GG?G_desenhaPins():L_desenhaPins()}
-function desenhaPois(){desenhaConc();return GG?G_desenhaPois():L_desenhaPois()}
+/* Pontos de interesse da empresa fora do mapa (pedido do Moisés, 4/nov/2026): continuam na ficha (aba Entorno); POI_NO_MAPA volta a camada e o item da legenda */
+const POI_NO_MAPA=false;
+function desenhaPois(){desenhaConc();if(!POI_NO_MAPA)return;return GG?G_desenhaPois():L_desenhaPois()}
 function desenhaConc(){return GG?G_desenhaConc():L_desenhaConc()}
 function mostrarConc(on){if(GG)return G_mostrarConc(on);if(MAPA&&CONC){on?CONC.addTo(MAPA):MAPA.removeLayer(CONC)}}
 /* ---------- menu do clique direito no mapa (no toque, segurar no vazio): novo terreno ali ---------- */
@@ -6800,7 +6836,7 @@ function mpLegenda(){const m=UI.mp,aberta=!!UI.mpArv;
       for(const z of mpNivelItens(x.k,y.k))h+=folha(z,3,true,x.k,y.k)}}
   const tot=fxLista('mapa').length;
   return `<button type="button" class="lg-i lg-a" style="--p:0" data-a="mp-arv" aria-expanded="${aberta}">${seta(aberta)}<span class="lg-poi"><span class="pin-mini lg-nt"></span></span>Terrenos<span class="n">${tot}</span></button>`+h
-    +`<hr class="lg-sep"><button type="button" class="lg-i" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}"><span class="lg-poi"><span class="poi-b"></span></span>Pontos de interesse<span class="n">${(S.pontos||[]).length}</span></button>`
+    +`<hr class="lg-sep">`+(POI_NO_MAPA?`<button type="button" class="lg-i" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}"><span class="lg-poi"><span class="poi-b"></span></span>Pontos de interesse<span class="n">${(S.pontos||[]).length}</span></button>`:'')
     +(CC_MANUAL?`<button type="button" class="lg-i" data-a="mp-conc" aria-pressed="${UI.mpConc!==false}"><span class="lg-poi">${ccMarcaHtml()}</span>Concorrência<span class="n">${ccAtivos().length}</span></button>`:'')
     +rdLegItem();
 }
@@ -12917,10 +12953,11 @@ function mkBoxHtml(e){const m2=mkM2(e.preco,e.area),vso=mkVso(e.vendas,e.estoque
   const kv=(k,v,f)=>`<div class="mk-kv"><span class="muted">${k}</span><span class="num">${v}</span>${f?`<span class="faint">${f}</span>`:''}</div>`;
   return `<div class="cc-box mk-box" role="dialog" aria-label="${esc(e.nome)}">
   <div class="cc-hd"><div class="cc-ti"><div class="cc-n">${esc(e.nome)}</div><div class="muted">${esc([e.inc,(MK_SIT[e.sit]||MK_SIT.nao_informado)[0],e.bairro].filter(Boolean).join(' · '))}</div></div><button type="button" class="iconbtn" data-a="mk-x" aria-label="Fechar" title="Fechar (Esc)">${ic('close',20)}</button></div>
-  <div class="cc-k mk-k"><div class="cc-big">${m2!=null?ccM2(Math.round(m2)):'Sem estoque com preço'}</div><div class="faint">${m2!=null?'preço médio por m² das unidades à venda':e.estoque?'as unidades à venda estão sem preço na tabela':'nenhuma unidade à venda'}</div></div>
+  <div class="cc-k mk-k"><div class="cc-big">${m2!=null?ccM2(Math.round(m2)):'Sem estoque com preço'}</div><div class="faint">${m2!=null?'preço médio por m² das unidades à venda':e.estoque?'as unidades à venda estão sem preço na tabela':'nenhuma unidade à venda'}</div><div class="mk-prog">Enquadramento social: <b>${e.prog==='sim'?'Sim':e.prog==='nao'?'Não':'Não informado'}</b></div></div>
   <div class="mk-grid">${kv('Lançamento',mkData(e.lanc))}${kv('Entrega',mkData(e.ent))}${kv('Unidades',num(e.unidades))}${kv('Estoque',num(e.estoque),pct+'%')}
-    ${kv('Vendas',num(e.vendas),mkPeriodo())}${kv('VSO',mkPct(vso),dias?`em ${dias} dias`:'')}${kv('Programa social',e.prog==='sim'?'Sim':e.prog==='nao'?'Não':'Não informado')}</div>
+    ${kv('Vendas',num(e.vendas),mkPeriodo())}${kv('VSO',mkPct(vso),dias?`em ${dias} dias`:'')}</div>
   ${mkResumoHtml(e)}
+  <div class="mk-tab"><button type="button" class="btn text" data-a="mk-tabela" data-id="${esc(e.id)}">${ic('doc',18)}Ver tabela completa</button></div>
   <div class="cc-meta faint mk-nota">Monitor de mercado (Órulo), retrato de ${mkData(MK.d.gerado)} · Tipologias agrupadas pelo resumo do empreendimento · R$/m² das unidades à venda (* pelo primeiro preço visto, sem unidade à venda) · VSO = vendas ÷ (vendas + à venda)${mkPeriodo()?', '+mkPeriodo():''}</div></div>`}
 function mkBox(){const area=$('.mapa-area');let el=$('#mk-box');const e=MK.box&&UI.route==='mapa'?mkEmp(MK.box):null;
   if(!e||!area){el?.remove();if(!e)MK.box=null;return}
@@ -12976,6 +13013,57 @@ document.addEventListener('click',e=>{const a=e.target.closest('.mk-sec [data-a=
   UI.mkRaio=+a.dataset.v;const sec=a.closest('.mk-sec'),t=T(UI.id);if(sec&&t){const d=document.createElement('div');d.innerHTML=mkSecaoHtml(t);sec.replaceWith(d.firstElementChild);$(`.mk-sec [data-a="mk-raio"][data-v="${a.dataset.v}"]`)?.focus()}},true);
 /* na aba Entorno da ficha, depois da renda e da população */
 const _abaEntornoMk=abaEntorno;abaEntorno=function(t){const h=_abaEntornoMk.apply(this,arguments),i=h.lastIndexOf('</div>');return h.slice(0,i)+mkSecaoHtml(t)+h.slice(i)};
+
+/* ---------- tabela completa do empreendimento (popup; decisão do Moisés, 4/nov/2026) ----------
+   "Ver tabela completa" no card abre um popup com o cabeçalho (incorporadora, CNPJ, endereço, torres, tipo, enquadramento
+   social, link do Órulo) e todas as unidades ativas, cada uma com torre, andar, número, tipo, dormitórios (suítes),
+   vagas, área, situação, preço atual, R$/m², primeiro preço visto e o período da venda medida pelo monitor.
+   Os dados vêm ao vivo do banco do monitor pela função só de leitura public.im_tabela_empreendimento, chamada com a chave
+   publicável (os dados do monitor já ficam abertos a quem tem o link, decisão do Moisés). */
+const MK_API={url:'https://mghqcsycuurjezoiiyfp.supabase.co',chave:'sb_publishable_nGsggiCrChcI-Lfo0pTAnA_bRyllIKS'};
+const MK_SIT_UN={disponivel:'À venda',reservada:'Reservada',vendida:'Vendida'};
+const MK_TP_UN={apartamento:'Apto',garden:'Garden',cobertura:'Cobertura',duplex:'Duplex',studio:'Studio',loft:'Loft',casa:'Casa',sala:'Sala',loja:'Loja'};
+const MKT={id:null,estado:null,d:null,erro:null,f:'todas'};
+function mkTabelaAbrir(id){MKT.id=id;MKT.estado='carregando';MKT.d=null;MKT.erro=null;MKT.f='todas';UI.modal='mk-tabela';renderModal();
+  const pedir=()=>fetch(MK_API.url+'/rest/v1/rpc/im_tabela_empreendimento',{method:'POST',headers:{apikey:MK_API.chave,'Content-Type':'application/json'},body:JSON.stringify({p_id:id})})
+    .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()});
+  pedir().catch(()=>pedir())  // uma nova tentativa: o primeiro pedido de um empreendimento grande pode passar do tempo do banco
+    .then(j=>{if(MKT.id!==id)return;if(!j||!j.empreendimento)throw new Error('não encontrado');MKT.d=j;MKT.estado='ok';if(UI.modal==='mk-tabela')renderModal()})
+    .catch(e=>{if(MKT.id!==id)return;MKT.estado='erro';MKT.erro=e.message;if(UI.modal==='mk-tabela')renderModal()})}
+const mkSimNao=v=>v==='sim'?'Sim':v==='nao'?'Não':'Não informado';
+function mkTabelaHtml(){const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`,e0=mkEmp(MKT.id);
+  const tit=esc(MKT.d?.empreendimento?.nome||e0?.nome||'Empreendimento');
+  if(MKT.estado!=='ok')return `<div class="dh"><div><h2>${tit}</h2></div>${fechar}</div><div class="mkt-msg ${MKT.estado==='erro'?'':'muted'}">${MKT.estado==='erro'
+    ?`Não foi possível trazer a tabela do monitor de mercado (${esc(MKT.erro||'erro')}). <button class="btn text" data-a="mk-tabela" data-id="${esc(MKT.id)}">Tentar de novo</button>`
+    :'Trazendo a tabela do monitor de mercado…'}</div>`;
+  const E=MKT.d.empreendimento,U=MKT.d.unidades||[],venda=u=>u.situacao==='disponivel'||u.situacao==='reservada';
+  const cont={todas:U.length,venda:U.filter(venda).length,vendida:U.filter(u=>u.situacao==='vendida').length};
+  const lista=MKT.f==='venda'?U.filter(venda):MKT.f==='vendida'?U.filter(u=>u.situacao==='vendida'):U;
+  const tp=t=>t?(MK_TP_UN[t]||t.charAt(0).toUpperCase()+t.slice(1)):'—',ar=a=>a==null?'—':num(a,2)+' m²';
+  const per=u=>{if(!u.vendida_de)return '';if(u.vendida_de===u.vendida_ate)return mkData(u.vendida_de);const a=mkData(u.vendida_de),b=mkData(u.vendida_ate);return `${a.slice(6)===b.slice(6)?a.slice(0,5):a} a ${b}`};
+  const kv=(k,v)=>`<div class="mkt-kv"><span class="muted">${k}</span><span>${v}</span></div>`;
+  const seg=(k,n)=>`<button type="button" class="mkt-f${MKT.f===k?' on':''}" data-a="mk-tabela-f" data-f="${k}" aria-pressed="${MKT.f===k}">${{todas:'Todas',venda:'À venda',vendida:'Vendidas'}[k]} <span class="num">${num(n)}</span></button>`;
+  return `<div class="dh"><div><h2>${tit}</h2><div class="muted" style="margin-top:4px">${esc([(MK_SIT[E.situacao]||MK_SIT.nao_informado)[0],E.bairro].filter(Boolean).join(' · '))}</div></div>${fechar}</div>
+  <div class="mkt-cab">${kv('Incorporadora',esc(E.incorporadora||'Não informada'))}${kv('CNPJ',E.cnpj?esc(E.cnpj):'Não informado')}${kv('Endereço',esc(E.endereco||'Não informado'))}
+    ${kv('Torres',E.torres==null?'—':num(E.torres))}${kv('Tipo',esc([E.tipo,E.finalidade].filter(Boolean).join(', ')||'—'))}${kv('Enquadramento social',mkSimNao(E.programa_social))}
+    ${kv('Lançamento',mkData(E.lancamento))}${kv('Entrega',mkData(E.entrega))}${kv('Unidades no Órulo',E.unidades==null?'—':num(E.unidades))}
+    ${E.link?kv('Fonte',`<a href="${esc(E.link)}" target="_blank" rel="noopener">Ver no Órulo</a>`):''}</div>
+  <div class="mkt-fs" role="group" aria-label="Situação">${seg('todas',cont.todas)}${seg('venda',cont.venda)}${seg('vendida',cont.vendida)}</div>
+  ${lista.length?`<div class="mkt-w"><table class="mkt"><thead><tr><th>Torre</th><th class="n">Andar</th><th>Unidade</th><th>Tipo</th><th class="n">Dorm.</th><th class="n">Vagas</th><th class="n">Área</th><th>Situação</th><th class="n">Preço</th><th class="n">R$/m²</th><th class="n">Primeiro preço</th><th>Vendida</th></tr></thead><tbody>
+  ${lista.map(u=>{const m2=mkM2(u.preco,u.area),m1=mkM2(u.primeiro_preco,u.area);return `<tr class="mkt-${u.situacao||'x'}">
+    <td data-l="Torre">${esc(u.torre||'—')}</td><td class="n" data-l="Andar">${u.andar==null?'—':u.andar}</td><td data-l="Unidade"><b>${esc(u.numero||'—')}</b></td><td data-l="Tipo">${esc(tp(u.tipo))}</td>
+    <td class="n" data-l="Dorm.">${u.dormitorios==null?'—':u.dormitorios}${u.suites?`<span class="faint"> (${u.suites} suíte${u.suites>1?'s':''})</span>`:''}</td><td class="n" data-l="Vagas">${u.vagas==null?'—':u.vagas}</td><td class="n" data-l="Área">${ar(u.area)}</td>
+    <td data-l="Situação"><span class="mkt-s">${MK_SIT_UN[u.situacao]||'Não informada'}</span></td><td class="n" data-l="Preço">${u.preco==null?'—':brl(u.preco)}</td><td class="n" data-l="R$/m²">${m2==null?'—':brl(m2)}</td>
+    <td class="n" data-l="Primeiro preço">${u.primeiro_preco==null?'—':`${brl(u.primeiro_preco)}<span class="faint mkt-sub">${[m1!=null?brl(m1)+'/m²':'',u.primeiro_preco_em?mkData(u.primeiro_preco_em):''].filter(Boolean).join(' · ')}</span>`}</td>
+    <td data-l="Vendida">${per(u)||'<span class="faint">—</span>'}</td></tr>`}).join('')}</tbody></table><div class="mkt-m">${lista.map(u=>{const m2=mkM2(u.preco,u.area),pv=per(u);return `<div class="mkt-r mkt-${u.situacao||'x'}"><div class="mkt-r1"><b>${esc([u.torre?'Torre '+u.torre:'',u.numero].filter(Boolean).join(' · ')||'—')}</b>${u.andar!=null?`<span class="muted"> · ${u.andar}º andar</span>`:''}<span class="mkt-s">${MK_SIT_UN[u.situacao]||'Não informada'}</span></div>
+    <div class="muted">${[tp(u.tipo),u.dormitorios!=null?u.dormitorios+' dorm.'+(u.suites?` (${u.suites} suíte${u.suites>1?'s':''})`:''):'',u.vagas!=null?u.vagas+' vaga'+(u.vagas===1?'':'s'):'',ar(u.area)].filter(x=>x&&x!=='—').join(' · ')}</div>
+    <div>${u.preco!=null?`<b>${brl(u.preco)}</b>${m2!=null?`<span class="muted"> · ${brl(m2)}/m²</span>`:''}`:'<span class="muted">Sem preço</span>'}${u.primeiro_preco!=null?`<span class="faint"> · primeiro ${brl(u.primeiro_preco)}${u.primeiro_preco_em?' em '+mkData(u.primeiro_preco_em):''}</span>`:''}</div>
+    ${pv?`<div class="faint">Vendida ${pv.includes(' a ')?'entre '+pv.replace(' a ',' e '):'em '+pv}</div>`:''}</div>`}).join('')}</div></div>`:'<div class="mkt-msg muted">Nenhuma unidade nesta situação.</div>'}
+  <div class="faint mkt-nota">Monitor de mercado (Órulo), ao vivo. Unidades ativas, residenciais. Preço e situação da última coleta; "Vendida" é o período em que o monitor viu a venda (as de antes do monitor ficam sem data). Enquadramento social é do empreendimento: o Órulo não diz quais unidades são HIS ou HMP.</div>`}
+const _renderModalMkt=renderModal;renderModal=function(){if(UI.modal!=='mk-tabela')return _renderModalMkt.apply(this,arguments);
+  const el=$('#modal'),rol=el.querySelector('.mkt-w')?.scrollTop||0;el.innerHTML=`<div class="scrim" data-a="scrim"><div class="dialog mkt-dlg" role="dialog" aria-modal="true">${mkTabelaHtml()}</div></div>`;if(rol){const w=el.querySelector('.mkt-w');if(w)w.scrollTop=rol}};
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a="mk-tabela"],[data-a="mk-tabela-f"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();
+  if(a.dataset.a==='mk-tabela')mkTabelaAbrir(a.dataset.id);else{MKT.f=a.dataset.f;renderModal();const w=$('#modal .mkt-w');if(w)w.scrollTop=0}},true);
 
 /* Olhinho e lixeira nos logs (pedido do Moisés, 24/out/2026).
    Valem nas alterações de campos da ficha (não em etapa, subetapa, status, temperatura, propostas, documentos nem itens
