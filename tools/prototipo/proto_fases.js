@@ -14,6 +14,12 @@ const FASES_PADRAO=()=>[
   {k:'incorporacao',nome:'Registro de Incorporação',prefixo:'INC',ativo:true,conc:'Incorporação registrada',descarta:true,etapas:etx([
     ['memorial','Memorial e Certidões',30,[['memorial_incorporacao','Memorial de Incorporação'],['certidoes','Certidões']]],
     ['cartorio','Cartório',45,[['prenotado','Prenotado'],['exigencias','Exigências do Cartório']]]])},
+  {k:'funding',nome:'Funding',prefixo:'FUN',ativo:true,conc:'Funding captado',descarta:true,etapas:etx([
+    ['fun_dossie','Dossiê',null,[['fun_dossie','Dossiê']]],
+    ['fun_viabilidade','Viabilidade',null,[['fun_viabilidade','Viabilidade']]],
+    ['fun_comite','Comitê',null,[['fun_comite','Comitê']]],
+    ['fun_contratacao','Contratação',null,[['fun_contratacao','Contratação']]],
+    ['fun_legalizacao','Legalização',null,[['fun_legalizacao','Legalização']]]])},
   {k:'caixa',nome:'Contratação Caixa',prefixo:'CEF',ativo:true,conc:'Contratado',descarta:true,etapas:etx([
     ['analise','Análise Caixa',60,[['engenharia','Engenharia'],['juridico','Jurídico'],['risco','Risco']]],
     ['contratacao','Contratação',30,[['demanda_minima','Demanda Mínima'],['assinatura','Assinatura']]]])},
@@ -26,7 +32,7 @@ const FASES_PADRAO=()=>[
     ['entrega','Entrega',60,[['habite_se','Vistoria e Habite-se'],['entrega_chaves','Entrega das Chaves']]]])},
   {k:'entregue',nome:'Entregue',prefixo:'ENT',ativo:true,conc:'Garantia encerrada',descarta:false,etapas:etx([
     ['pos_entrega','Pós-entrega',null,[['assistencia_tecnica','Assistência Técnica'],['garantia','Em Garantia']]]])}];
-/* cada fase abre quando a anterior é concluída */
+/* cada fase abre quando a anterior é concluída; Funding sem dependência, abre à mão (decisão do Moisés, 4/nov/2026) */
 const DEPS_PADRAO=()=>[['aprovacao','novos_negocios'],['incorporacao','aprovacao'],['caixa','incorporacao'],['lancamento','caixa'],['obras','lancamento'],['entregue','obras']]
   .map(([fase,reqFase],i)=>({id:'fd'+i,fase,reqFase,tipo:'conclusao',req:null}));
 

@@ -1123,6 +1123,20 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .mk-cat td.r, .mk-cat th.r { white-space: nowrap; font-variant-numeric: tabular-nums }
 .mk-emps { margin-top: 8px }
 .mk-sec .sec-h .faint { font-size: 12px; margin-left: auto }
+.mk-sec .hint { margin-top: 8px }
+.mk-cat tr.mk-r2 td { border-top: 0 } .mk-rep { visibility: hidden }
+@media (max-width: 599px) { .mk-rep { visibility: visible } .mf-btn .mf-l { display: none } .mf-btn { padding: 0 12px } } .mk-cat td.mk-pg { color: #444746 }
+.mk-lh { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 24px 0 8px } .mk-lh h3 { margin: 0; font-size: 16px; font-weight: 500; flex: 1 1 auto } .mk-lh h3 .faint { font-weight: 400; margin-left: 4px }
+.mk-lista { border-top: 1px solid #e3e3e3 }
+.mk-it { border-bottom: 1px solid #e3e3e3 } .mk-it > summary { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 0; cursor: pointer; list-style: none } .mk-it > summary::-webkit-details-marker { display: none }
+.mk-it > summary > svg { flex: none; transform: rotate(90deg); color: #444746 } .mk-it[open] > summary > svg { transform: rotate(-90deg) }
+.mk-it-n { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column } .mk-it-n b { font-weight: 500 } .mk-it-n .faint, .mk-it-k .faint { font-size: 12px; line-height: 16px }
+.mk-it-k { flex: none; display: flex; flex-direction: column; align-items: flex-end; font-variant-numeric: tabular-nums }
+.mk-it .cc-tw { margin: 0 0 12px }
+:root[data-tema="escuro"] :is(.mk-lista, .mk-it) { border-color: #444746 } :root[data-tema="escuro"] .mk-cat td.mk-pg { color: #c4c7c5 }
+.mf-btn { padding-right: 16px } .mf-n { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 10px; background: #0b57d0; color: #fff; font-size: 12px; font-weight: 500 }
+:root[data-tema="escuro"] .mf-n { background: #a8c7fa; color: #062e6f }
+.mf-dr .fx-sb { padding-top: 8px } .mf-dr .fx-c .fx-in[type=search] { width: 100%; box-sizing: border-box; margin-bottom: 8px }
 /* celular: cada categoria vira um cartão (produto em cima, números com rótulo embaixo) */
 @media (max-width: 599px) {
   .mk-cat, .mk-cat tbody, .mk-cat tr { display: block; width: 100% } .mk-cat thead { display: none }
@@ -1495,7 +1509,7 @@ input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
 :root[data-tema="escuro"] .mp-legenda summary::after { filter: invert(.85) }
 .lg-r { display: grid !important; grid-template-columns: minmax(0, 1fr) 32px }
 .lg-r .lg-d { width: 32px; height: 32px }
-.mp-leg-l > .lg-i { margin-right: 34px }
+.mp-leg-l > .lg-i { margin-right: 0 }
 .lg-i[aria-pressed="false"] { opacity: .6 !important }
 @media (max-width: 899px) { .mapa-lado .page-h { display: none } }
 /* Tarefas: barra de filtros em chips de filtro (menu e liga/desliga), numa linha */
@@ -3712,6 +3726,16 @@ html[data-tema="escuro"] .lbl-f { color: #c4c7c5 }
 html[data-tema="escuro"] .lt-sqls { border-top-color: #2d2f31 }
 html[data-tema="escuro"] .lt-sql { background: #282a2c }
 html[data-tema="escuro"] .ptcom-r { border-top-color: #2d2f31 } html[data-tema="escuro"] .ptcom-th { color: #c4c7c5 }
+
+/* legenda em árvore: Terrenos › fase › etapa › subetapa (pedido do Moisés, 4/nov/2026) */
+.lg-a { padding-left: calc(4px + var(--p, 0) * 16px) !important }
+.lg-s { width: 14px; height: 14px; flex: none; display: grid; place-items: center; color: var(--m-on-surface-variant, #444746); transition: transform .15s }
+.lg-s.ab { transform: rotate(90deg) }
+.lg-fora { opacity: .5 }
+.lg-fora .pin-mini { filter: grayscale(1) }
+.lg-nt { background: #0b57d0; box-shadow: 0 0 0 1.5px #fff, 0 0 0 2.5px rgba(11,87,208,.3) }
+:root[data-tema="escuro"] .lg-s { color: #c4c7c5 }
+:root[data-tema="escuro"] .lg-nt { background: #a8c7fa }
 
 /* ---------- Estudos de massa (lote 4 da ficha em abas, 4/nov/2026) ---------- */
 .ems { container-type: inline-size }
