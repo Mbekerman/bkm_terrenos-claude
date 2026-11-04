@@ -97,7 +97,6 @@ create table app.terrenos (
   -- 'poligonal': a adotada é a área do desenho, recalculada pelo trigger t_norm a cada gravação
   fonte_area_adotada    text check (fonte_area_adotada in ('documental','cadastral','levantamento','estimativa','poligonal')),
   testada_principal_m   numeric(8,2) check (testada_principal_m > 0),
-  topografia            text not null default 'nao_informado' check (topografia in ('nao_informado','plano','aclive','declive','irregular')),
   desnivel_estimado_m   numeric(6,2),
   posicao_quadra        text not null default 'nao_informado' check (posicao_quadra in ('nao_informado','meio_quadra','esquina','duas_frentes','quadra_inteira')),
   formato               text not null default 'nao_informado' check (formato in ('nao_informado','regular','irregular')),
@@ -114,7 +113,7 @@ create table app.terrenos (
   -- Classificação topográfica (decisão do Moisés, 3/nov/2026): medida pelas cotas dentro da poligonal
   -- (laser 2020 em São Paulo, Google fora), gravada só por app.registrar_topografia e apagada
   -- quando a poligonal muda (t_norm), para o front medir de novo. Perfil por app.classificar_topografia.
-  topo_perfil           text check (topo_perfil in ('plano','inclinado','acidentado_leve','acidentado_regular','acidentado_critico')),
+  topo_perfil           text check (topo_perfil in ('plano','inclinado','acidentado_leve','acidentado_mediano','acidentado_critico')),
   topo_inclinacao_pct   numeric(6,2) check (topo_inclinacao_pct >= 0),   -- do plano que melhor se ajusta às cotas
   topo_terra_m3m2       numeric(7,3) check (topo_terra_m3m2 >= 0),       -- corte + aterro até esse plano ÷ área; nulo com cotas do Google
   topo_desnivel_m       numeric(7,2) check (topo_desnivel_m >= 0),
@@ -458,8 +457,8 @@ create table app.topografia_config (
   plano_ate_pct     numeric(5,2) not null default 3    check (plano_ate_pct > 0),
   inclinado_ate_pct numeric(5,2) not null default 30   check (inclinado_ate_pct > plano_ate_pct),
   leve_de_m3m2      numeric(6,3) not null default 0.25 check (leve_de_m3m2 > 0),
-  regular_de_m3m2   numeric(6,3) not null default 0.5  check (regular_de_m3m2 > leve_de_m3m2),
-  critico_de_m3m2   numeric(6,3) not null default 1.0  check (critico_de_m3m2 > regular_de_m3m2)
+  mediano_de_m3m2   numeric(6,3) not null default 0.5  check (mediano_de_m3m2 > leve_de_m3m2),
+  critico_de_m3m2   numeric(6,3) not null default 1.0  check (critico_de_m3m2 > mediano_de_m3m2)
 );
 alter table app.topografia_config enable row level security;
 create policy ver on app.topografia_config for select to authenticated using (empresa_id in (select app.minhas_empresas()));

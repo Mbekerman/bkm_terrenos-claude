@@ -12,13 +12,14 @@
 // apaga a medição antiga (no banco, t_norm). Perfil pela regra do banco,
 // app.classificar_topografia; limites em Configurações › Topografia.
 // ---------------------------------------------------------------------
-const TP_PERFIS=[['plano','Plano'],['inclinado','Inclinado'],['acidentado_leve','Acidentado leve'],['acidentado_regular','Acidentado regular'],['acidentado_critico','Acidentado crítico']];
+// TP_PERFIS se repete como literal em proto_itens.js (o catálogo é montado antes deste arquivo carregar).
+const TP_PERFIS=[['plano','Plano'],['inclinado','Inclinado'],['acidentado_leve','Acidentado leve'],['acidentado_mediano','Acidentado mediano'],['acidentado_critico','Acidentado crítico']];
 const TP_N=Object.fromEntries(TP_PERFIS);
-const TP_CFG0={plano:3,inclinado:30,leve:.25,regular:.5,critico:1};
+const TP_CFG0={plano:3,inclinado:30,leve:.25,mediano:.5,critico:1};
 const tpCfg=()=>Object.assign({},TP_CFG0,S.topoCfg||{});
 function tpClassificar(incl,terra,c=tpCfg()){if(incl==null)return null;
   if(incl>c.inclinado||(terra!=null&&terra>c.critico))return 'acidentado_critico';
-  if(terra!=null&&terra>c.regular)return 'acidentado_regular';
+  if(terra!=null&&terra>c.mediano)return 'acidentado_mediano';
   if(terra!=null&&terra>c.leve)return 'acidentado_leve';
   return incl<=c.plano?'plano':'inclinado'}
 const tpKey=t=>t.poly&&t.poly.length>=3?t.poly.map(p=>(+p[0]).toFixed(6)+','+(+p[1]).toFixed(6)).join(';'):'';
@@ -60,10 +61,10 @@ function tpRedesenha(t){if(UI.route!=='terreno'||UI.id!==t.id)return;
   const s=document.getElementById('sec-relevo');if(s){const n=document.createElement('div');n.innerHTML=tpSecao(t);const novo=n.firstElementChild;if(novo){s.replaceWith(novo);if(typeof uiQuadros==='function')uiQuadros()}}
   const r=document.getElementById('rs-topo');if(r)r.outerHTML=tpResumo(t)}
 const tpChip=r=>`<span class="tp-chip tp-${r.perfil}">${esc(tpNome(r))}</span>`;
-/* linha do Resumo da Visão geral: o perfil medido; sem medição, o relevo digitado em Características físicas */
+/* linha do Resumo da Visão geral: o perfil medido (o relevo digitado saiu, decisão do Moisés de 4/nov/2026) */
 function tpResumo(t){const r=tpAtual(t);
   const txt=r?`${tpChip(r)}${r.desnivel!=null?`<span class="kv-2">desnível ${num(r.desnivel,1)} m</span>`:''}`
-    :TP_EM[t.id]?'<span class="faint">medindo...</span>':t.topografia&&t.topografia!=='nao_informado'?esc(OPT.topografia[t.topografia]):'';
+    :TP_EM[t.id]?'<span class="faint">medindo...</span>':'';
   return `<span id="rs-topo">${txt}</span>`}
 function tpSecao(t){const r=tpAtual(t),e=TP_ERRO[t.id],sp=cidDoTerreno(t)==='sp',ed=UI.role!=='Leitura',C=tpCfg();
   let corpo;
@@ -80,7 +81,7 @@ function tpSecao(t){const r=tpAtual(t),e=TP_ERRO[t.id],sp=cidDoTerreno(t)==='sp'
       ${r.desnivel!=null?lin('Desnível',num(r.desnivel,1)+' m',`cotas de ${num(r.min,1)} a ${num(r.max,1)} m`):''}
       ${lin('Cotas',esc(fonte),r.n?num(r.n)+' pontos dentro da poligonal':'')}</dl>
       <div class="tp-escala" role="list" aria-label="Perfis">${TP_PERFIS.map(([k,l])=>`<span role="listitem" class="tp-e tp-${k}${k===r.perfil?' on':''}">${l}</span>`).join('')}</div>
-      <p class="tp-regra">Vale o pior entre a inclinação (Plano até ${num(C.plano,0)}%, Inclinado até ${num(C.inclinado,0)}%, acima disso crítico) e a terra mexida (Leve acima de ${num(C.leve,2)}, Regular acima de ${num(C.regular,2)} e Crítico acima de ${num(C.critico,2)} m³/m²). Triagem: não substitui o levantamento planialtimétrico.${ed&&tpPodeMedir(t)?` <button class="linkbtn" data-a="tp-medir">Medir de novo</button>`:''}</p>`}
+      <p class="tp-regra">Vale o pior entre a inclinação (Plano até ${num(C.plano,0)}%, Inclinado até ${num(C.inclinado,0)}%, acima disso crítico) e a terra mexida (Leve acima de ${num(C.leve,2)}, Mediano acima de ${num(C.mediano,2)} e Crítico acima de ${num(C.critico,2)} m³/m²). Triagem: não substitui o levantamento planialtimétrico.${ed&&tpPodeMedir(t)?` <button class="linkbtn" data-a="tp-medir">Medir de novo</button>`:''}</p>`}
   return `<section class="sec" id="sec-relevo"><div class="sec-h"><h2>Relevo</h2>${topoBotao(t)}</div><div class="sec-b">${corpo}</div></section>`}
 
 /* ---------- visita técnica: 8 itens com Sim, Parcial, Não, Não se aplica e observação; começa em Não verificado ---------- */
@@ -116,7 +117,7 @@ function cfgTopoHtml(){const C=tpCfg(),f=(k,l,d)=>`<div class="field"><label for
   return `<section class="sec"><div class="sec-h"><h2>Classificação topográfica</h2></div><div class="sec-b">
   <p class="cfg-nota" style="margin-top:0">Vale o pior entre a inclinação do plano que melhor se ajusta às cotas e a terra mexida para deixar o terreno nesse plano. Mudar os limites reclassifica os terrenos já medidos.</p>
   <div class="cfg-sub-t">Inclinação do plano (%)</div><div class="editgrid vb-campos">${f('plano','Plano até',1)}${f('inclinado','Inclinado até (acima, crítico)',1)}</div>
-  <div class="cfg-sub-t">Terra mexida (m³ por m² de terreno)</div><div class="editgrid vb-campos">${f('leve','Acidentado leve acima de',2)}${f('regular','Acidentado regular acima de',2)}${f('critico','Acidentado crítico acima de',2)}</div>
+  <div class="cfg-sub-t">Terra mexida (m³ por m² de terreno)</div><div class="editgrid vb-campos">${f('leve','Acidentado leve acima de',2)}${f('mediano','Acidentado mediano acima de',2)}${f('critico','Acidentado crítico acima de',2)}</div>
   <div class="tp-escala" style="margin-top:16px">${TP_PERFIS.map(([k,l])=>`<span class="tp-e tp-${k} on">${l}</span>`).join('')}</div></div></section>`}
 
 /* ---------- eventos ---------- */
@@ -124,7 +125,7 @@ document.addEventListener('change',e=>{const el=e.target.closest('[data-ch]');if
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a="tp-medir"]');if(a)infraClick('tp-medir',a)});
 function infraChange(el){const ch=el.dataset.ch;if(!['vt-d','vt-obs','vt-data','vtec','tp-cfg'].includes(ch))return false;
   if(ch==='tp-cfg'){const v=lerNum(el.value),k=el.dataset.k,C=tpCfg(),n={...C,[k]:v};
-    const ok=v!=null&&v>0&&n.inclinado>n.plano&&n.regular>n.leve&&n.critico>n.regular;
+    const ok=v!=null&&v>0&&n.inclinado>n.plano&&n.mediano>n.leve&&n.critico>n.mediano;
     if(!ok||isNaN(v)){toast('Limites fora de ordem: cada um precisa ser maior que o anterior.',true);render();return true}
     S.topoCfg=n;S.terrenos.forEach(t=>{if(t.topoClass)t.topoClass.perfil=tpClassificar(t.topoClass.incl,t.topoClass.terra,n)});save();render();toast('Limites da classificação topográfica salvos.');return true}
   const t=T(UI.id);if(!t||UI.role==='Leitura')return true;const k=el.dataset.k;

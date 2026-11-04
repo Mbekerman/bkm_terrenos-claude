@@ -5107,9 +5107,9 @@ section.sec.qd-fechado > .sec-h, section.sec.qd-fechado > form > .sec-h { border
 /* Aba Infraestrutura (lote 3, 4/nov/2026): perfil topográfico com a cor do perfil (azul, verde, amarelo, laranja, vermelho; pedido do Moisés),
    visita técnica e viabilidades técnicas */
 .tp-plano { --tp-f: #0b57d0; --tp-b: #d3e3fd } .tp-inclinado { --tp-f: #146c2e; --tp-b: #c4eed0 } .tp-acidentado_leve { --tp-f: #6d5700; --tp-b: #ffe485 }
-.tp-acidentado_regular { --tp-f: #8b3a00; --tp-b: #ffdbc9 } .tp-acidentado_critico { --tp-f: #b3261e; --tp-b: #ffdad6 }
+.tp-acidentado_mediano { --tp-f: #8b3a00; --tp-b: #ffdbc9 } .tp-acidentado_critico { --tp-f: #b3261e; --tp-b: #ffdad6 }
 html[data-tema="escuro"] .tp-plano { --tp-f: #d3e3fd; --tp-b: #0842a0 } html[data-tema="escuro"] .tp-inclinado { --tp-f: #c4eed0; --tp-b: #0f5223 }
-html[data-tema="escuro"] .tp-acidentado_leve { --tp-f: #ffe485; --tp-b: #524100 } html[data-tema="escuro"] .tp-acidentado_regular { --tp-f: #ffdbc9; --tp-b: #6b2c00 }
+html[data-tema="escuro"] .tp-acidentado_leve { --tp-f: #ffe485; --tp-b: #524100 } html[data-tema="escuro"] .tp-acidentado_mediano { --tp-f: #ffdbc9; --tp-b: #6b2c00 }
 html[data-tema="escuro"] .tp-acidentado_critico { --tp-f: #ffdad6; --tp-b: #8c1d18 }
 .tp-chip { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 8px; background: var(--tp-b); color: var(--tp-f); font-size: 13px; font-weight: 500; white-space: nowrap }
 .tp-faixa { background: var(--tp-b); color: var(--tp-f); border-radius: 16px; padding: 16px 20px; margin-bottom: 12px }
@@ -5242,7 +5242,6 @@ const OPT={
   origem:{prospeccao:'Prospecção própria',corretor:'Corretor',indicacao:'Indicação',portal:'Portal',proprietario:'Proprietário direto',outro:'Outro'},
   precisao:{nao_informada:'Não informada',aproximada:'Aproximada',conferida:'Conferida'},
   fonteArea:{documental:'Documental (matrícula)',cadastral:'Cadastral (IPTU)',levantamento:'Levantamento topográfico',estimativa:'Estimativa',poligonal:'Poligonal (desenho no mapa)'},
-  topografia:{nao_informado:'Não informado',plano:'Plano',aclive:'Aclive',declive:'Declive',irregular:'Irregular'},
   posicao:{nao_informado:'Não informado',meio_quadra:'Meio de quadra',esquina:'Esquina',duas_frentes:'Duas frentes',quadra_inteira:'Quadra inteira'},
   formato:{nao_informado:'Não informado',regular:'Regular',irregular:'Irregular'},
   ocupacao:{nao_informado:'Não informado',vazio:'Vazio',ocupado:'Ocupado',parcialmente_ocupado:'Parcialmente ocupado'},
@@ -5308,7 +5307,7 @@ function seed(){
   const eixos=[{id:'e1',nome:'Eixo Cupecê'},{id:'e2',nome:'Eixo Interlagos'},{id:'e3',nome:'Eixo Radial Leste'},{id:'e4',nome:'Eixo Inajar de Souza'},{id:'e5',nome:'Eixo Raposo Tavares'}];
   const corretores=[{id:'c1',nome:'Marcos Lemos',creci:'123.456-F',imob:'Lemos Imóveis'},{id:'c2',nome:'Juliana Reis',creci:'98.765-F',imob:'Prime Terrenos'},{id:'c3',nome:'Paulo Nunes',creci:'45.210-F',imob:'Zona Leste Áreas'}];
   const base=(o)=>Object.assign({id:uid(),situacao:'ativo',prioridade:null,descricao:'',url:'',obs:'',cep:'',complemento:'',referencia:'',lat:null,lng:null,precisao:'nao_informada',
-    municipio:'São Paulo · SP',aDoc:null,aCad:null,aLev:null,aEst:null,fonteArea:null,testada:null,topografia:'nao_informado',desnivel:null,posicao:'nao_informado',formato:'nao_informado',ocupacao:'nao_informado',
+    municipio:'São Paulo · SP',aDoc:null,aCad:null,aLev:null,aEst:null,fonteArea:null,testada:null,desnivel:null,posicao:'nao_informado',formato:'nao_informado',ocupacao:'nao_informado',
     uso:'',aConst:null,aDemolir:null,demolicao:'nao_avaliada',obsFis:'',eixo:null,mats:[],insc:[],confr:[],dilig:[],pessoas:[],corretores:[],infra:{},analises:[],ofertas:[],neg:null,propostas:[],reunioes:[],tarefas:[],docs:[],hist:[]},o);
   /* negociação de exemplo: trilha passando pelas subetapas até a atual (dSub = dias na subetapa atual) */
   const neg=(etapa,sub,dias,extra,dSub)=>{const ix=STAGES.findIndex(s=>s[0]===etapa),tr=[];let pe=null,ps=null;
@@ -5322,7 +5321,7 @@ function seed(){
   // 1 — completo, em proposta
   T.push(base({codigo:'TER-000123',nome:'Terreno Av. Cupecê — esquina',descricao:'Esquina com duas frentes, plano, ocupado por galpão a demolir.',prioridade:'alta',resp:'Ana Prado',origem:'corretor',dataIdent:H(62),
     cep:'04366-000',logradouro:'Av. Cupecê',numero:'5.120',bairro:'Cidade Ademar',zona:'sul',eixo:'e1',referencia:'Em frente ao terminal Cidade Ademar',lat:-23.6681,lng:-46.6513,precisao:'conferida',
-    aDoc:2000,aCad:1985,aLev:1920,fonteArea:'levantamento',testada:42,topografia:'plano',desnivel:0.8,posicao:'esquina',formato:'regular',ocupacao:'ocupado',uso:'Galpão de depósito',aConst:860,aDemolir:860,demolicao:'confirmada',obsFis:'Galpão com cobertura de fibrocimento: prever destinação adequada na demolição.',
+    aDoc:2000,aCad:1985,aLev:1920,fonteArea:'levantamento',testada:42,desnivel:0.8,posicao:'esquina',formato:'regular',ocupacao:'ocupado',uso:'Galpão de depósito',aConst:860,aDemolir:860,demolicao:'confirmada',obsFis:'Galpão com cobertura de fibrocimento: prever destinação adequada na demolição.',
     mats:[{num:'184.552',cri:'11º CRI',area:2000,data:H(40)}],
     insc:[{sql:'089.123.0045-6',area:1985,valores:[{ex:2025,rev:1,vig:true,vt:3300000,vc:500000,sit:'tributado',iptu:41200,parc:10,mensal:null,fonte:'Carnê 2025',data:H(300)},{ex:2026,rev:1,vig:false,vt:3600000,vc:520000,sit:'tributado',iptu:45300,parc:10,mensal:null,fonte:'Carnê 2026',data:H(200)},{ex:2026,rev:2,vig:true,vt:3600000,vc:520000,sit:'tributado',iptu:45300,parc:10,mensal:null,fonte:'Certidão de dados cadastrais',data:H(20)}]}],
     confr:[{tipo:'frente',m:42,conf:'Av. Cupecê'},{tipo:'lateral_direita',m:48.5,conf:'Rua Benedito Mendes (esquina)'},{tipo:'fundos',m:41,conf:'Lote 12 · matrícula 184.553'},{tipo:'lateral_esquerda',m:47.2,conf:'Lote 08 · matrícula 184.540'}],
@@ -5348,7 +5347,7 @@ function seed(){
   }));
   // 2 — diligência travada
   T.push(base({codigo:'TER-000118',nome:'Gleba Estrada do Lajeado',prioridade:'estrategica',resp:'Camila Torres',origem:'proprietario',dataIdent:H(48),
-    logradouro:'Estrada do Lajeado Velho',numero:'1.880',bairro:'Guaianases',zona:'leste',eixo:'e3',aDoc:5400,fonteArea:'documental',testada:64,topografia:'declive',desnivel:6,posicao:'meio_quadra',formato:'irregular',ocupacao:'vazio',demolicao:'dispensada',
+    logradouro:'Estrada do Lajeado Velho',numero:'1.880',bairro:'Guaianases',zona:'leste',eixo:'e3',aDoc:5400,fonteArea:'documental',testada:64,desnivel:6,posicao:'meio_quadra',formato:'irregular',ocupacao:'vazio',demolicao:'dispensada',
     mats:[{num:'219.774',cri:'9º CRI',area:5400,data:H(13)}],insc:[{sql:'228.004.0012-1',area:5310,valores:[{ex:2026,rev:1,vig:true,vt:3950000,vc:null,sit:'tributado',iptu:31800,parc:10,mensal:null,fonte:'Portal da Prefeitura',data:H(30)}]}],
     dilig:[{id:uid(),cat:'ambiental',titulo:'Área de preservação no fundo do lote (córrego)',sit:'impeditiva',resp:'Camila Torres',prov:'Levantar APP e área remanescente antes de seguir.'},{id:uid(),cat:'ocupacional',titulo:'Confirmar ausência de ocupação irregular',sit:'em_analise',resp:'Camila Torres',prov:''}],
     pessoas:[{nome:'Lajeado Empreendimentos Ltda.',tipo:'PJ',papel:'proprietario',pct:100,tel:'(11) 3333-1010'}],
@@ -5367,7 +5366,7 @@ function seed(){
     neg:neg('triagem','aguardando_informacoes',3,{ofRef:'o4'}),
     tarefas:[{id:uid(),titulo:'Triagem: localização e preço por m²',desc:'',resp:'Rafael Souza',prazo:H(-2),status:'pendente',prio:'media',resultado:''}]}));
   // 4 — viabilidade
-  T.push(base({codigo:'TER-000127',nome:'Terreno Rua Pico Alto',resp:'Rafael Souza',origem:'corretor',dataIdent:H(20),logradouro:'Rua Pico Alto',numero:'95',bairro:'Jaraguá',zona:'noroeste',eixo:'e4',aCad:1950,fonteArea:'cadastral',testada:33,topografia:'aclive',
+  T.push(base({codigo:'TER-000127',nome:'Terreno Rua Pico Alto',resp:'Rafael Souza',origem:'corretor',dataIdent:H(20),logradouro:'Rua Pico Alto',numero:'95',bairro:'Jaraguá',zona:'noroeste',eixo:'e4',aCad:1950,fonteArea:'cadastral',testada:33,
     insc:[{sql:'171.058.0033-9',area:1950,valores:[{ex:2026,rev:1,vig:true,vt:1650000,vc:0,sit:'tributado',iptu:14100,parc:10,mensal:null,fonte:'Carnê 2026',data:H(18)}]}],
     pessoas:[{nome:'Família Moretti (4 herdeiros)',tipo:'PF',papel:'proprietario',pct:null,tel:''}],
     ofertas:[{id:'o6',cid:'c2',data:H(20),valor:3900000,forma:'permuta_geral',obsPag:'Aberto a combinar dinheiro e unidades.',aceita:'Sim, desde que parte em dinheiro.',status:'ativa'}],corretores:[{cid:'c2',principal:true}],
@@ -5375,7 +5374,7 @@ function seed(){
     tarefas:[{id:uid(),titulo:'Montar o estudo de viabilidade',desc:'',resp:'Rafael Souza',prazo:H(-3),status:'em_andamento',prio:'alta',resultado:''}]}));
   // 5 — aprovação interna, acima do teto
   T.push(base({codigo:'TER-000112',nome:'Área Barão do Jequitibá',prioridade:'alta',resp:'Moisés',origem:'corretor',dataIdent:H(121),logradouro:'Rua Barão do Jequitibá',numero:'512',bairro:'Vila Prudente',zona:'sudeste',
-    aDoc:2950,aLev:2938,fonteArea:'levantamento',testada:38,topografia:'plano',posicao:'meio_quadra',formato:'regular',ocupacao:'parcialmente_ocupado',aConst:420,aDemolir:420,demolicao:'provavel',
+    aDoc:2950,aLev:2938,fonteArea:'levantamento',testada:38,posicao:'meio_quadra',formato:'regular',ocupacao:'parcialmente_ocupado',aConst:420,aDemolir:420,demolicao:'provavel',
     mats:[{num:'98.442',cri:'6º CRI',area:1500,data:H(14)},{num:'98.443',cri:'6º CRI',area:1450,data:H(14)}],
     pessoas:[{nome:'Têxtil Paulistana S.A.',tipo:'PJ',papel:'proprietario',pct:100,tel:''}],
     infra:infra({energia:'sim',agua:'sim',esgoto:'sim',gas:'sim',asfalto:'sim',drenagem:'sim',iluminacao:'sim',calcada:'sim',fibra:'sim'}),
@@ -5389,7 +5388,7 @@ function seed(){
     docs:['matricula','onus','iptu','vend','topo','sond','amb'].map(t=>({tipo:t,status:'validado',emitido:H(12),versoes:1}))}));
   // 5b — negociação com contraproposta do vendedor
   T.push(base({codigo:'TER-000125',nome:'Terreno Rua Itapura',prioridade:'media',resp:'Ana Prado',origem:'corretor',dataIdent:H(70),logradouro:'Rua Itapura',numero:'1.410',bairro:'Tatuapé',zona:'leste',
-    aDoc:1650,fonteArea:'documental',testada:30,topografia:'plano',posicao:'meio_quadra',formato:'regular',ocupacao:'vazio',demolicao:'dispensada',
+    aDoc:1650,fonteArea:'documental',testada:30,posicao:'meio_quadra',formato:'regular',ocupacao:'vazio',demolicao:'dispensada',
     pessoas:[{nome:'Espólio de João Ferraz',tipo:'PF',papel:'proprietario',pct:100,tel:''}],
     ofertas:[{id:'o9',cid:'c1',data:H(70),valor:7400000,forma:'dinheiro',obsPag:'',aceita:'Não aceita permuta.',status:'ativa'}],corretores:[{cid:'c1',principal:true}],
     neg:neg('negociacao','contra_proposta',15,{temp:3,ofRef:'o9',viab:{nome:'Estudo base',vgv:52800000,margem:15.8,em:H(40)}},5),
@@ -5405,7 +5404,7 @@ function seed(){
     propostas:[{v:1,origem:'bkm',data:H(35),valor:5600000,forma:'dinheiro',cond:'À vista na escritura.',status:'recusada'}],
     neg:neg('negociacao','proposta_enviada',40,{status:'perdido',temp:3,ofRef:'o10',motivo:'vendido_terceiro',detalhe:'Proprietário fechou com outra incorporadora por R$ 6,1 mi à vista.',encerradoEm:H(18)},30)}));
   // 6c — comprado
-  T.push(base({codigo:'TER-000098',nome:'Área Estrada do M\'Boi Mirim',prioridade:'alta',resp:'Moisés',origem:'corretor',dataIdent:H(160),logradouro:"Estrada do M'Boi Mirim",numero:'3.200',bairro:'Jardim Ângela',zona:'sul',aDoc:4100,fonteArea:'documental',topografia:'plano',ocupacao:'vazio',
+  T.push(base({codigo:'TER-000098',nome:'Área Estrada do M\'Boi Mirim',prioridade:'alta',resp:'Moisés',origem:'corretor',dataIdent:H(160),logradouro:"Estrada do M'Boi Mirim",numero:'3.200',bairro:'Jardim Ângela',zona:'sul',aDoc:4100,fonteArea:'documental',ocupacao:'vazio',
     ofertas:[{id:'o11',cid:'c1',data:H(160),valor:7800000,forma:'permuta_com_torna',status:'ativa',obsPag:'',aceita:'Aceita 30% em unidades.'}],corretores:[{cid:'c1',principal:true}],
     propostas:[{v:1,origem:'bkm',data:H(70),valor:7200000,forma:'permuta_com_torna',cond:'R$ 5 mi + 7% do VGV em permuta física.',status:'aceita'}],
     docs:['matricula','onus','iptu','vend','topo','minuta'].map(t=>({tipo:t,status:'validado',emitido:H(30),versoes:1})),
@@ -5417,12 +5416,12 @@ function seed(){
   const comprado=(dias,of)=>neg('contrato','em_ajuste',dias+40,{status:'comprado',temp:5,ofRef:of,encerradoEm:H(dias),relato:'<p>Compra fechada em permuta com torna.</p>',pontos:'Proposta com permuta logo no primeiro contato.'},10);
   T[T.length-1].procs=[proc('aprovacao','APR','prefeitura','protocolado',20,'ativo',{desde:H(8),subDesde:H(8)})];
   // 6e — em obras: passou por todas as fases até Obras
-  T.push(base({codigo:'TER-000090',nome:'Gleba Av. Raimundo Pereira de Magalhães',prioridade:'alta',resp:'Moisés',origem:'corretor',dataIdent:H(820),logradouro:'Av. Raimundo Pereira de Magalhães',numero:'8.100',bairro:'Pirituba',zona:'norte',aDoc:9800,fonteArea:'documental',topografia:'plano',ocupacao:'vazio',
+  T.push(base({codigo:'TER-000090',nome:'Gleba Av. Raimundo Pereira de Magalhães',prioridade:'alta',resp:'Moisés',origem:'corretor',dataIdent:H(820),logradouro:'Av. Raimundo Pereira de Magalhães',numero:'8.100',bairro:'Pirituba',zona:'norte',aDoc:9800,fonteArea:'documental',ocupacao:'vazio',
     ofertas:[{id:'o12',cid:'c2',data:H(820),valor:12500000,forma:'permuta_com_torna',status:'ativa',obsPag:'',aceita:''}],corretores:[{cid:'c2',principal:true}],
     neg:comprado(700,'o12'),procs:[fim('aprovacao','APR','alvaras','alvara_execucao',700),fim('incorporacao','INC','cartorio','exigencias',480),fim('caixa','CEF','contratacao','assinatura',400),
       fim('lancamento','LAN','vendas','vendas_iniciais',330),proc('obras','OBR','execucao','estrutura',260,'ativo',{desde:H(150),subDesde:H(40)})]}));
   // 6f — entregue: obra entregue, em assistência técnica
-  T.push(base({codigo:'TER-000085',nome:'Residencial Itaquera',resp:'Ana Prado',origem:'corretor',dataIdent:H(1500),logradouro:'Rua Gregório Ramalho',numero:'500',bairro:'Itaquera',zona:'leste',aDoc:7200,fonteArea:'documental',topografia:'plano',ocupacao:'vazio',
+  T.push(base({codigo:'TER-000085',nome:'Residencial Itaquera',resp:'Ana Prado',origem:'corretor',dataIdent:H(1500),logradouro:'Rua Gregório Ramalho',numero:'500',bairro:'Itaquera',zona:'leste',aDoc:7200,fonteArea:'documental',ocupacao:'vazio',
     ofertas:[{id:'o13',cid:'c3',data:H(1500),valor:9100000,forma:'dinheiro',status:'ativa',obsPag:'',aceita:''}],corretores:[{cid:'c3',principal:true}],
     neg:comprado(1400,'o13'),procs:[fim('aprovacao','APR','alvaras','alvara_execucao',1400),fim('incorporacao','INC','cartorio','exigencias',1150),fim('caixa','CEF','contratacao','assinatura',1060),
       fim('lancamento','LAN','vendas','vendas_iniciais',980),fim('obras','OBR','entrega','entrega_chaves',900),proc('entregue','ENT','pos_entrega','assistencia_tecnica',90)]}));
@@ -5528,7 +5527,6 @@ function completude(t){
     ['Ponto no mapa',t.lat!=null,'cadastro','loc'],
     ['Área adotada',areaAdotada(t)!=null,'cadastro','areas'],
     ['Testada',t.testada!=null,'cadastro','areas'],
-    ['Topografia',t.topografia!=='nao_informado','cadastro','fis'],
     ['Ocupação',t.ocupacao!=='nao_informado','cadastro','fis'],
     ['Matrícula',t.mats.length>0,'cadastro','mats'],
     ['Inscrição e IPTU',t.insc.length>0,'cadastro','insc'],
@@ -5556,7 +5554,7 @@ const optSel=(name,map,val,extra='')=>`<select id="f-${name}" name="${name}" ${e
 const SECOES={
   ident:{titulo:'Identificação',campos:[['nome','Nome de referência','txt',null,'full'],['descricao','Descrição','area',null,'full'],['prioridade','Prioridade','sel','prioridade'],['resp','Responsável','user'],['origem','Origem do cadastro','sel','origem'],['dataIdent','Identificado em','date'],['url','Link da origem','url',null,'full'],['obs','Observações gerais','area',null,'full']]},
   loc:{titulo:'Endereço e localização',campos:[['cep','CEP','txt'],['logradouro','Logradouro','txt'],['numero','Número','txt'],['complemento','Complemento','txt'],['bairro','Bairro','txt'],['municipio','Município','mun'],['zona','Zona','sel','zona'],['eixo','Eixo comercial','eixo'],['cri','Cartório de registro de imóveis','cri'],['referencia','Referência','txt',null,'full'],['lat','Latitude','dec'],['lng','Longitude','dec'],['precisao','Precisão da localização','sel','precisao']]},
-  fis:{titulo:'Características físicas',campos:[['topografia','Topografia','sel','topografia'],['desnivel','Desnível estimado','m'],['posicao','Posição na quadra','sel','posicao'],['formato','Formato','sel','formato'],['ocupacao','Ocupação','sel','ocupacao'],['uso','Uso atual','txt'],['aConst','Área construída existente','m2'],['aDemolir','Área construída a demolir','m2'],['demolicao','Necessidade de demolição','sel','demolicao'],['obsFis','Observações físicas','area',null,'full']]}
+  fis:{titulo:'Características físicas',campos:[['desnivel','Desnível estimado','m'],['posicao','Posição na quadra','sel','posicao'],['formato','Formato','sel','formato'],['ocupacao','Ocupação','sel','ocupacao'],['uso','Uso atual','txt'],['aConst','Área construída existente','m2'],['aDemolir','Área construída a demolir','m2'],['demolicao','Necessidade de demolição','sel','demolicao'],['obsFis','Observações físicas','area',null,'full']]}
 };
 const NI_OPT=new Set(['nao_informado','nao_informada','nao_avaliada']);
 function fmtCampo(t,[k,,tipo,opt]){
@@ -6066,7 +6064,7 @@ document.addEventListener('input',e=>{const el=e.target;
 document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Object.fromEntries(new FormData(f)),t=UI.alvo?T(UI.alvo):UI.route==='terreno'?T(UI.id):null;
   if(viabSubmit(f.dataset.form,F)||partesSubmit(f.dataset.form,F,t,f)||fasesSubmit(f.dataset.form,F,t,f)||funilSubmit(f.dataset.form,F,t,f)||zonasSubmit(f.dataset.form,F,t,f))return;
   switch(f.dataset.form){
-    case 'sec':{const s=SECOES[f.dataset.s],criAnt=t.cri;s.campos.forEach(([k,,tipo])=>{if(tipo==='fixo'||!(k in F))return;let v=F[k].trim();if(['m2','m','dec'].includes(tipo))v=lerNum(v);else if(tipo==='sel'&&v==='')v=k==='precisao'?'nao_informada':['topografia','posicao','formato','ocupacao'].includes(k)?'nao_informado':k==='demolicao'?'nao_avaliada':null;else if(v==='')v=k==='nome'?t.nome:null;t[k]=v});if(t.cri!==criAnt)t.criFonte=t.cri?'digitado':null;
+    case 'sec':{const s=SECOES[f.dataset.s],criAnt=t.cri;s.campos.forEach(([k,,tipo])=>{if(tipo==='fixo'||!(k in F))return;let v=F[k].trim();if(['m2','m','dec'].includes(tipo))v=lerNum(v);else if(tipo==='sel'&&v==='')v=k==='precisao'?'nao_informada':['posicao','formato','ocupacao'].includes(k)?'nao_informado':k==='demolicao'?'nao_avaliada':null;else if(v==='')v=k==='nome'?t.nome:null;t[k]=v});if(t.cri!==criAnt)t.criFonte=t.cri?'digitado':null;
       if(t.aDemolir!=null&&t.aConst!=null&&t.aDemolir>t.aConst){toast('A área a demolir não pode passar da área construída.',true);return}
       if(!t.logradouro&&!t.bairro&&t.lat==null){toast('Informe ao menos logradouro, bairro ou ponto no mapa.',true);return}
       UI.edit=null;log(t,`${s.titulo} atualizado`);save();render();toast('Salvo.');break}
@@ -6123,7 +6121,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
   }
 });
 function novaNeg(ofRef,temp){const e=STAGES[0][0],s=subInicial(e);NEG_SEQ=Math.max(NEG_SEQ,...S.terrenos.map(t=>parseInt((t.neg?.codigo||'').slice(4))||0));return {codigo:'NEG-'+String(++NEG_SEQ).padStart(5,'0'),etapa:e,sub:s,status:'ativo',desde:HOJE,subDesde:HOJE,temp,ofRef,viab:null,pedido:null,trilha:[{em:agora(),user:me(),ev:'abertura',deEtapa:null,deSub:null,paraEtapa:e,paraSub:s,status:'ativo'}]}}
-function seedVazio(){return {id:uid(),situacao:'ativo',prioridade:null,descricao:'',url:'',obs:'',cep:'',complemento:'',referencia:'',lat:null,lng:null,precisao:'nao_informada',aDoc:null,aCad:null,aLev:null,aEst:null,fonteArea:null,testada:null,topografia:'nao_informado',desnivel:null,posicao:'nao_informado',formato:'nao_informado',ocupacao:'nao_informado',uso:'',aConst:null,aDemolir:null,demolicao:'nao_avaliada',obsFis:'',eixo:null,mats:[],insc:[],confr:[],dilig:[],pessoas:[],corretores:[],infra:{},analises:[],ofertas:[],neg:null,propostas:[],reunioes:[],tarefas:[],docs:[],hist:[]}}
+function seedVazio(){return {id:uid(),situacao:'ativo',prioridade:null,descricao:'',url:'',obs:'',cep:'',complemento:'',referencia:'',lat:null,lng:null,precisao:'nao_informada',aDoc:null,aCad:null,aLev:null,aEst:null,fonteArea:null,testada:null,desnivel:null,posicao:'nao_informado',formato:'nao_informado',ocupacao:'nao_informado',uso:'',aConst:null,aDemolir:null,demolicao:'nao_avaliada',obsFis:'',eixo:null,mats:[],insc:[],confr:[],dilig:[],pessoas:[],corretores:[],infra:{},analises:[],ofertas:[],neg:null,propostas:[],reunioes:[],tarefas:[],docs:[],hist:[]}}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&GG&&(svFechar()||lugarFechar())){e.preventDefault();return}if(e.key==='Escape'&&temaMenu){temaMenu=false;renderTema();return}if(e.key==='Escape'&&perfilMenu){perfilMenu=false;renderPerfil();return}if(e.key==='Escape'&&UI.modal){UI.modal=null;renderModal()}});
 /* ===================== kanban: arrastar e soltar (regras em proto_funil.js: levarAte, soltar) ===================== */
 function posRender(){try{if(MAPA){MAPA.remove()}}catch(e){}MAPA=null;PINS=POIS=DES=BASE=null;try{if(MINI)MINI.remove()}catch(e){}MINI=null;
@@ -6705,7 +6703,7 @@ function abaGeral(t,parte){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.v
     ${linArea('Área adotada',ad!=null?`<span>${m2(ad)}${OPT.fonteArea[t.fonteArea]?`<span class="kv-2">${esc(OPT.fonteArea[t.fonteArea])}</span>`:''}</span>`:'','area')}
     ${t.poly&&t.fonteArea!=='poligonal'?lin('Área da poligonal',m2(areaPolT(t))):''}
     ${linArea('Testada principal',t.testada!=null?num(t.testada,2)+' m':'','testada')}
-    ${linE('Topografia e posição',[t.topografia!=='nao_informado'&&OPT.topografia[t.topografia],t.posicao!=='nao_informado'&&OPT.posicao[t.posicao]].filter(Boolean).join(' · '),'topo',['topografia','posicao'])}
+    ${linE('Posição na quadra',t.posicao!=='nao_informado'?OPT.posicao[t.posicao]:'','topo',['posicao'])}
     ${linE('Ocupação',t.ocupacao!=='nao_informado'?OPT.ocupacao[t.ocupacao]:'','ocup',['ocupacao'])}
     ${linE('Responsável',esc(t.resp),'resp',['resp'])}
     ${linE('Origem',esc(OPT.origem[t.origem]||''),'orig',['origem'])}</dl></div></section>`;
@@ -7985,7 +7983,7 @@ const IT_CAT=(()=>{const tr=(c)=>[t=>t[c],(t,v)=>{t[c]=v}],of=c=>[t=>ofertaRef(t
   ['terreno.area_documental_m2','Área documental','numero','m²',null,null,1,1,1,...tr('aDoc')],['terreno.area_cadastral_m2','Área cadastral','numero','m²',null,null,1,1,1,...tr('aCad')],
   ['terreno.area_levantamento_m2','Área do levantamento','numero','m²',null,null,1,1,1,...tr('aLev')],['terreno.area_poligonal_m2','Área da poligonal','numero','m²',null,null,0,1,1,...ro(t=>areaPolT(t))],
   ['terreno.area_adotada_m2','Área adotada','numero','m²',null,null,0,1,1,...ro(t=>areaAdotada(t))],['terreno.fonte_area_adotada','Fonte da área adotada','lista',null,itOpc(OPT.fonteArea),null,0,0,0,...ro(t=>t.fonteArea)],
-  ['terreno.testada_principal_m','Testada principal','numero','m',null,null,1,1,1,...tr('testada')],['terreno.topografia','Topografia','lista',null,itSemVazio(OPT.topografia,'nao_informado'),'nao_informado',1,1,1,...tr('topografia')],
+  ['terreno.testada_principal_m','Testada principal','numero','m',null,null,1,1,1,...tr('testada')],['terreno.topo_perfil','Perfil topográfico','lista',null,itOpc({plano:'Plano',inclinado:'Inclinado',acidentado_leve:'Acidentado leve',acidentado_mediano:'Acidentado mediano',acidentado_critico:'Acidentado crítico'}),null,0,1,1,...ro(t=>tpAtual(t)?.perfil)],
   ['terreno.desnivel_estimado_m','Desnível estimado','numero','m',null,null,1,1,1,...tr('desnivel')],['terreno.posicao_quadra','Posição na quadra','lista',null,itSemVazio(OPT.posicao,'nao_informado'),'nao_informado',1,0,0,...tr('posicao')],
   ['terreno.formato','Formato do lote','lista',null,itSemVazio(OPT.formato,'nao_informado'),'nao_informado',1,0,0,...tr('formato')],['terreno.situacao_ocupacao','Ocupação','lista',null,itSemVazio(OPT.ocupacao,'nao_informado'),'nao_informado',1,1,1,...tr('ocupacao')],
   ['terreno.uso_atual','Uso atual','texto',null,null,null,1,0,1,...tr('uso')],['terreno.area_construida_existente_m2','Área construída existente','numero','m²',null,null,1,0,1,...tr('aConst')],
@@ -8481,7 +8479,7 @@ function fmSnack(m,rot,fn){const el=$('#toast');el.innerHTML=`<span>${esc(m)}</s
 /* exemplo: formulário da visita técnica no primeiro terreno (só uma vez) */
 (()=>{if(S.fmExemplo)return;S.fmExemplo=true;const t=S.terrenos[0];if(!t||!t.tarefas)return;const l=tkL(t).find(x=>x.nome==='Fazendo'&&!x.oculta)||tkPrim(t,'aberta');
   const k=tkCriar(t,{titulo:'Visita técnica ao terreno',resp:t.resp||'Rafael Souza',prio:'media',lista:l.id,vis:'publico',prazo:addD(HOJE,4),desc:'Conferir divisas, ocupação e acesso.'});
-  k.itens=[{id:uid(),chave:'terreno.topografia',pergunta:'Qual a topografia do terreno?',forma:'radio',regra:'livre',cond:null},
+  k.itens=[{id:uid(),chave:'terreno.posicao_quadra',pergunta:'Qual a posição do terreno na quadra?',forma:'radio',regra:'livre',cond:null},
     {id:uid(),chave:'terreno.area_levantamento_m2',pergunta:'Área medida na visita',ajuda:'Medida com trena laser nas divisas.',regra:'justificativa',cond:null},
     {id:uid(),chave:'terreno.situacao_ocupacao',pergunta:'Como está a ocupação hoje?',forma:'chips',regra:'livre',cond:null},
     {id:uid(),tipo:'sim_nao',pergunta:'O proprietário aceita receber a equipe de novo?',forma:'chave',regra:'livre',cond:null},
@@ -10473,7 +10471,7 @@ function partesModal(M,fechar){const t=T(UI.id);if(!t)return '';const pa=UI.alvo
 function partesPreparar(){if(S.partesExemplo)return;S.partesExemplo=true;if(S.terrenos.some(t=>t.codigo==='TER-000133'))return;S.seqT=Math.max(S.seqT||0,133);
   const H=n=>addD(HOJE,-n),la=-23.5868,lo=-46.5772,dy=45/110574,dx=60/(111320*Math.cos(la*Math.PI/180));
   const t=Object.assign(seedVazio(),{codigo:'TER-000133',nome:'Três lotes Rua Ibitirama',prioridade:'alta',resp:'Ana Prado',origem:'corretor',dataIdent:H(55),logradouro:'Rua Ibitirama',numero:'1.200',bairro:'Vila Prudente',zona:'sudeste',municipio:'São Paulo · SP',
-    lat:la,lng:lo,precisao:'conferida',poly:[[la+dy,lo-dx],[la+dy,lo+dx],[la-dy,lo+dx],[la-dy,lo-dx]].map(p=>p.map(v=>+v.toFixed(6))),aDoc:5400,fonteArea:'documental',testada:120,topografia:'plano',posicao:'meio_quadra',formato:'regular',ocupacao:'parcialmente_ocupado'});
+    lat:la,lng:lo,precisao:'conferida',poly:[[la+dy,lo-dx],[la+dy,lo+dx],[la-dy,lo+dx],[la-dy,lo-dx]].map(p=>p.map(v=>+v.toFixed(6))),aDoc:5400,fonteArea:'documental',testada:120,posicao:'meio_quadra',formato:'regular',ocupacao:'parcialmente_ocupado'});
   const pa={id:'pa1',nome:'Família Souza',essencial:true,area:2700,ativa:true},pb={id:'pa2',nome:'Carlos Pires',essencial:true,area:1500,ativa:true},pc={id:'pa3',nome:'Oficina do Zé',essencial:false,area:1200,ativa:true};
   t.partes=[pa,pb,pc];
   t.mats=[{num:'201.001',cri:'6º CRI',area:1350,data:H(20),parte:'pa1'},{num:'201.002',cri:'6º CRI',area:1350,data:H(20),parte:'pa1'},{num:'201.003',cri:'6º CRI',area:1500,data:H(20),parte:'pa2'},{num:'201.004',cri:'6º CRI',area:1200,data:H(20),parte:'pa3'}];
@@ -12536,13 +12534,14 @@ function topoClick(A,a,t){if(!A.startsWith('topo-'))return false;if(!t)return tr
 // apaga a medição antiga (no banco, t_norm). Perfil pela regra do banco,
 // app.classificar_topografia; limites em Configurações › Topografia.
 // ---------------------------------------------------------------------
-const TP_PERFIS=[['plano','Plano'],['inclinado','Inclinado'],['acidentado_leve','Acidentado leve'],['acidentado_regular','Acidentado regular'],['acidentado_critico','Acidentado crítico']];
+// TP_PERFIS se repete como literal em proto_itens.js (o catálogo é montado antes deste arquivo carregar).
+const TP_PERFIS=[['plano','Plano'],['inclinado','Inclinado'],['acidentado_leve','Acidentado leve'],['acidentado_mediano','Acidentado mediano'],['acidentado_critico','Acidentado crítico']];
 const TP_N=Object.fromEntries(TP_PERFIS);
-const TP_CFG0={plano:3,inclinado:30,leve:.25,regular:.5,critico:1};
+const TP_CFG0={plano:3,inclinado:30,leve:.25,mediano:.5,critico:1};
 const tpCfg=()=>Object.assign({},TP_CFG0,S.topoCfg||{});
 function tpClassificar(incl,terra,c=tpCfg()){if(incl==null)return null;
   if(incl>c.inclinado||(terra!=null&&terra>c.critico))return 'acidentado_critico';
-  if(terra!=null&&terra>c.regular)return 'acidentado_regular';
+  if(terra!=null&&terra>c.mediano)return 'acidentado_mediano';
   if(terra!=null&&terra>c.leve)return 'acidentado_leve';
   return incl<=c.plano?'plano':'inclinado'}
 const tpKey=t=>t.poly&&t.poly.length>=3?t.poly.map(p=>(+p[0]).toFixed(6)+','+(+p[1]).toFixed(6)).join(';'):'';
@@ -12584,10 +12583,10 @@ function tpRedesenha(t){if(UI.route!=='terreno'||UI.id!==t.id)return;
   const s=document.getElementById('sec-relevo');if(s){const n=document.createElement('div');n.innerHTML=tpSecao(t);const novo=n.firstElementChild;if(novo){s.replaceWith(novo);if(typeof uiQuadros==='function')uiQuadros()}}
   const r=document.getElementById('rs-topo');if(r)r.outerHTML=tpResumo(t)}
 const tpChip=r=>`<span class="tp-chip tp-${r.perfil}">${esc(tpNome(r))}</span>`;
-/* linha do Resumo da Visão geral: o perfil medido; sem medição, o relevo digitado em Características físicas */
+/* linha do Resumo da Visão geral: o perfil medido (o relevo digitado saiu, decisão do Moisés de 4/nov/2026) */
 function tpResumo(t){const r=tpAtual(t);
   const txt=r?`${tpChip(r)}${r.desnivel!=null?`<span class="kv-2">desnível ${num(r.desnivel,1)} m</span>`:''}`
-    :TP_EM[t.id]?'<span class="faint">medindo...</span>':t.topografia&&t.topografia!=='nao_informado'?esc(OPT.topografia[t.topografia]):'';
+    :TP_EM[t.id]?'<span class="faint">medindo...</span>':'';
   return `<span id="rs-topo">${txt}</span>`}
 function tpSecao(t){const r=tpAtual(t),e=TP_ERRO[t.id],sp=cidDoTerreno(t)==='sp',ed=UI.role!=='Leitura',C=tpCfg();
   let corpo;
@@ -12604,7 +12603,7 @@ function tpSecao(t){const r=tpAtual(t),e=TP_ERRO[t.id],sp=cidDoTerreno(t)==='sp'
       ${r.desnivel!=null?lin('Desnível',num(r.desnivel,1)+' m',`cotas de ${num(r.min,1)} a ${num(r.max,1)} m`):''}
       ${lin('Cotas',esc(fonte),r.n?num(r.n)+' pontos dentro da poligonal':'')}</dl>
       <div class="tp-escala" role="list" aria-label="Perfis">${TP_PERFIS.map(([k,l])=>`<span role="listitem" class="tp-e tp-${k}${k===r.perfil?' on':''}">${l}</span>`).join('')}</div>
-      <p class="tp-regra">Vale o pior entre a inclinação (Plano até ${num(C.plano,0)}%, Inclinado até ${num(C.inclinado,0)}%, acima disso crítico) e a terra mexida (Leve acima de ${num(C.leve,2)}, Regular acima de ${num(C.regular,2)} e Crítico acima de ${num(C.critico,2)} m³/m²). Triagem: não substitui o levantamento planialtimétrico.${ed&&tpPodeMedir(t)?` <button class="linkbtn" data-a="tp-medir">Medir de novo</button>`:''}</p>`}
+      <p class="tp-regra">Vale o pior entre a inclinação (Plano até ${num(C.plano,0)}%, Inclinado até ${num(C.inclinado,0)}%, acima disso crítico) e a terra mexida (Leve acima de ${num(C.leve,2)}, Mediano acima de ${num(C.mediano,2)} e Crítico acima de ${num(C.critico,2)} m³/m²). Triagem: não substitui o levantamento planialtimétrico.${ed&&tpPodeMedir(t)?` <button class="linkbtn" data-a="tp-medir">Medir de novo</button>`:''}</p>`}
   return `<section class="sec" id="sec-relevo"><div class="sec-h"><h2>Relevo</h2>${topoBotao(t)}</div><div class="sec-b">${corpo}</div></section>`}
 
 /* ---------- visita técnica: 8 itens com Sim, Parcial, Não, Não se aplica e observação; começa em Não verificado ---------- */
@@ -12640,7 +12639,7 @@ function cfgTopoHtml(){const C=tpCfg(),f=(k,l,d)=>`<div class="field"><label for
   return `<section class="sec"><div class="sec-h"><h2>Classificação topográfica</h2></div><div class="sec-b">
   <p class="cfg-nota" style="margin-top:0">Vale o pior entre a inclinação do plano que melhor se ajusta às cotas e a terra mexida para deixar o terreno nesse plano. Mudar os limites reclassifica os terrenos já medidos.</p>
   <div class="cfg-sub-t">Inclinação do plano (%)</div><div class="editgrid vb-campos">${f('plano','Plano até',1)}${f('inclinado','Inclinado até (acima, crítico)',1)}</div>
-  <div class="cfg-sub-t">Terra mexida (m³ por m² de terreno)</div><div class="editgrid vb-campos">${f('leve','Acidentado leve acima de',2)}${f('regular','Acidentado regular acima de',2)}${f('critico','Acidentado crítico acima de',2)}</div>
+  <div class="cfg-sub-t">Terra mexida (m³ por m² de terreno)</div><div class="editgrid vb-campos">${f('leve','Acidentado leve acima de',2)}${f('mediano','Acidentado mediano acima de',2)}${f('critico','Acidentado crítico acima de',2)}</div>
   <div class="tp-escala" style="margin-top:16px">${TP_PERFIS.map(([k,l])=>`<span class="tp-e tp-${k} on">${l}</span>`).join('')}</div></div></section>`}
 
 /* ---------- eventos ---------- */
@@ -12648,7 +12647,7 @@ document.addEventListener('change',e=>{const el=e.target.closest('[data-ch]');if
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a="tp-medir"]');if(a)infraClick('tp-medir',a)});
 function infraChange(el){const ch=el.dataset.ch;if(!['vt-d','vt-obs','vt-data','vtec','tp-cfg'].includes(ch))return false;
   if(ch==='tp-cfg'){const v=lerNum(el.value),k=el.dataset.k,C=tpCfg(),n={...C,[k]:v};
-    const ok=v!=null&&v>0&&n.inclinado>n.plano&&n.regular>n.leve&&n.critico>n.regular;
+    const ok=v!=null&&v>0&&n.inclinado>n.plano&&n.mediano>n.leve&&n.critico>n.mediano;
     if(!ok||isNaN(v)){toast('Limites fora de ordem: cada um precisa ser maior que o anterior.',true);render();return true}
     S.topoCfg=n;S.terrenos.forEach(t=>{if(t.topoClass)t.topoClass.perfil=tpClassificar(t.topoClass.incl,t.topoClass.terra,n)});save();render();toast('Limites da classificação topográfica salvos.');return true}
   const t=T(UI.id);if(!t||UI.role==='Leitura')return true;const k=el.dataset.k;
@@ -14359,7 +14358,7 @@ function jnCfgHtml(){const fs=fasesL().filter(f=>f.ativo!==false),f=fs.some(x=>x
       return `<section class="sec jn-sec"><div class="sec-h"><h2>Para sair de ${esc(s.nome)}</h2><span class="faint">subetapa</span></div><div class="sec-b">${a.map(jnItemLinha).join('')}${b.map(r=>jnTarLinha(f,r)).join('')}${a.length||b.length?'':'<p class="faint jn-vazio">Nada exigido.</p>'}${jnAdd(f,e,s.k,[['jn-nova','Pergunta'],['jn-tar','Tarefa']])}</div></section>`}).join('')}
     <section class="sec jn-sec"><div class="sec-h"><h2>Regras pelo valor da resposta</h2></div><div class="sec-b">
       ${jnRegrasV().filter(r=>r.fase===f&&r.etapa===e).sort(ord).map(r=>jnLinha('raio',esc(r.msg),`${r.sub?'Para sair de '+esc(etNomeS(f,r.sub)):'Para sair da etapa'} · quando ${esc(itCondFrase(r.cond))}`,
-        jnSel(`data-jnr="rv:${r.id}"`,r.acao,JN_ACAO,'O que acontece'),'',`<button class="btn sm text" data-a="jn-rv-ed" data-v="${r.id}">Editar</button><button class="iconbtn sm lixo" data-a="jn-rv-x" data-v="${r.id}" aria-label="Apagar regra" title="Apagar regra">${ic('lixo',18)}</button>`)).join('')||'<p class="faint jn-vazio">Nenhuma regra. Exemplo: topografia irregular pede aprovação do diretor.</p>'}
+        jnSel(`data-jnr="rv:${r.id}"`,r.acao,JN_ACAO,'O que acontece'),'',`<button class="btn sm text" data-a="jn-rv-ed" data-v="${r.id}">Editar</button><button class="iconbtn sm lixo" data-a="jn-rv-x" data-v="${r.id}" aria-label="Apagar regra" title="Apagar regra">${ic('lixo',18)}</button>`)).join('')||'<p class="faint jn-vazio">Nenhuma regra. Exemplo: relevo acidentado crítico pede aprovação do diretor.</p>'}
       ${jnAdd(f,e,'',[['jn-rv-nova','Regra']])}</div></section>`;
   return `<section class="sec"><div class="sec-h"><h2>Jornada</h2></div><div class="sec-b">
     <p class="muted" style="margin-top:0">O que cada etapa e subetapa pede para avançar: perguntas e campos (a resposta grava no próprio campo do terreno), documentos, pré-requisitos e tarefas. Cada item pode ter condição. Não avança sem: gestor e diretor passam com justificativa. Avança com justificativa: qualquer um passa justificando.</p>
@@ -14524,13 +14523,13 @@ jnCampos().forEach(jnRegistra);
   const ocup={modo:'todas',itens:[{campo:'terreno.situacao_ocupacao',op:'em',valores:['ocupado','parcialmente_ocupado']}]};
   const subE=k=>(etapaF(f,'estudos')?.subs||[]).some(s=>s.k===k)?k:null;
   if(!jnItens().length&&etapaF(f,'estudos'))cfg().jornada=[
-    {id:uid(),fase:f,etapa:'estudos',sub:null,campo:'terreno.topografia',pergunta:'Como é o relevo do terreno?',forma:'chips',regra:'bloqueia',cond:null,ordem:0},
+    {id:uid(),fase:f,etapa:'estudos',sub:null,campo:'terreno.posicao_quadra',pergunta:'Qual a posição do terreno na quadra?',forma:'chips',regra:'bloqueia',cond:null,ordem:0},
     {id:uid(),fase:f,etapa:'estudos',sub:null,campo:'terreno.necessidade_demolicao',pergunta:'Precisa demolir?',forma:'segmentado',regra:'justifica',cond:null,ordem:1},
     {id:uid(),fase:f,etapa:'estudos',sub:null,campo:'terreno.area_construida_demolir_m2',pergunta:'Quanto vai ser demolido?',ajuda:'Área construída a demolir, pela visita ou pela planta.',regra:'justifica',cond:demol,ordem:2},
     {id:uid(),fase:f,etapa:'estudos',sub:subE('estudo_massa'),campo:ch(rec),pergunta:'O recuo frontal atende ao estudo de massa?',forma:'segmentado',regra:'justifica',cond:null,ordem:3},
     {id:uid(),fase:f,etapa:'estudos',sub:subE('estudo_viabilidade'),campo:ch(des),regra:'justifica',cond:ocup,ordem:4}];
   if(!jnRegrasV().length&&etapaF(f,'estudos'))cfg().jornadaRegras=[
-    {id:uid(),fase:f,etapa:'estudos',sub:null,cond:{modo:'todas',itens:[{campo:'terreno.topografia',op:'em',valores:['irregular']}]},acao:'diretor',msg:'Relevo irregular: o diretor aprova a passagem',ativo:true,ordem:0},
+    {id:uid(),fase:f,etapa:'estudos',sub:null,cond:{modo:'todas',itens:[{campo:'terreno.topo_perfil',op:'em',valores:['acidentado_critico']}]},acao:'diretor',msg:'Relevo acidentado crítico: o diretor aprova a passagem',ativo:true,ordem:0},
     {id:uid(),fase:f,etapa:'estudos',sub:null,cond:{modo:'todas',itens:[{campo:'terreno.area_construida_demolir_m2',op:'maior',valores:[1000]}]},acao:'avisa',msg:'Demolição acima de 1.000 m²: confira o custo no estudo',ativo:true,ordem:1}];
   save()})();
 

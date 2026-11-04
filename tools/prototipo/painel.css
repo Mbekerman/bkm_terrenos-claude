@@ -3617,9 +3617,9 @@ section.sec.qd-fechado > .sec-h, section.sec.qd-fechado > form > .sec-h { border
 /* Aba Infraestrutura (lote 3, 4/nov/2026): perfil topográfico com a cor do perfil (azul, verde, amarelo, laranja, vermelho; pedido do Moisés),
    visita técnica e viabilidades técnicas */
 .tp-plano { --tp-f: #0b57d0; --tp-b: #d3e3fd } .tp-inclinado { --tp-f: #146c2e; --tp-b: #c4eed0 } .tp-acidentado_leve { --tp-f: #6d5700; --tp-b: #ffe485 }
-.tp-acidentado_regular { --tp-f: #8b3a00; --tp-b: #ffdbc9 } .tp-acidentado_critico { --tp-f: #b3261e; --tp-b: #ffdad6 }
+.tp-acidentado_mediano { --tp-f: #8b3a00; --tp-b: #ffdbc9 } .tp-acidentado_critico { --tp-f: #b3261e; --tp-b: #ffdad6 }
 html[data-tema="escuro"] .tp-plano { --tp-f: #d3e3fd; --tp-b: #0842a0 } html[data-tema="escuro"] .tp-inclinado { --tp-f: #c4eed0; --tp-b: #0f5223 }
-html[data-tema="escuro"] .tp-acidentado_leve { --tp-f: #ffe485; --tp-b: #524100 } html[data-tema="escuro"] .tp-acidentado_regular { --tp-f: #ffdbc9; --tp-b: #6b2c00 }
+html[data-tema="escuro"] .tp-acidentado_leve { --tp-f: #ffe485; --tp-b: #524100 } html[data-tema="escuro"] .tp-acidentado_mediano { --tp-f: #ffdbc9; --tp-b: #6b2c00 }
 html[data-tema="escuro"] .tp-acidentado_critico { --tp-f: #ffdad6; --tp-b: #8c1d18 }
 .tp-chip { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 8px; background: var(--tp-b); color: var(--tp-f); font-size: 13px; font-weight: 500; white-space: nowrap }
 .tp-faixa { background: var(--tp-b); color: var(--tp-f); border-radius: 16px; padding: 16px 20px; margin-bottom: 12px }

@@ -567,7 +567,7 @@ function abaGeral(t,parte){const n=t.neg,o=ofertaRef(t),ad=areaAdotada(t),v=n?.v
     ${linArea('Área adotada',ad!=null?`<span>${m2(ad)}${OPT.fonteArea[t.fonteArea]?`<span class="kv-2">${esc(OPT.fonteArea[t.fonteArea])}</span>`:''}</span>`:'','area')}
     ${t.poly&&t.fonteArea!=='poligonal'?lin('Área da poligonal',m2(areaPolT(t))):''}
     ${linArea('Testada principal',t.testada!=null?num(t.testada,2)+' m':'','testada')}
-    ${linE('Topografia e posição',[t.topografia!=='nao_informado'&&OPT.topografia[t.topografia],t.posicao!=='nao_informado'&&OPT.posicao[t.posicao]].filter(Boolean).join(' · '),'topo',['topografia','posicao'])}
+    ${linE('Posição na quadra',t.posicao!=='nao_informado'?OPT.posicao[t.posicao]:'','topo',['posicao'])}
     ${linE('Ocupação',t.ocupacao!=='nao_informado'?OPT.ocupacao[t.ocupacao]:'','ocup',['ocupacao'])}
     ${linE('Responsável',esc(t.resp),'resp',['resp'])}
     ${linE('Origem',esc(OPT.origem[t.origem]||''),'orig',['origem'])}</dl></div></section>`;

@@ -1968,7 +1968,7 @@ begin
     precisao_localizacao = v_novo.precisao_localizacao, area_documental_m2 = v_novo.area_documental_m2,
     area_cadastral_m2 = v_novo.area_cadastral_m2, area_levantamento_m2 = v_novo.area_levantamento_m2,
     area_adotada_m2 = v_novo.area_adotada_m2, fonte_area_adotada = v_novo.fonte_area_adotada,
-    testada_principal_m = v_novo.testada_principal_m, topografia = v_novo.topografia, desnivel_estimado_m = v_novo.desnivel_estimado_m,
+    testada_principal_m = v_novo.testada_principal_m, desnivel_estimado_m = v_novo.desnivel_estimado_m,
     posicao_quadra = v_novo.posicao_quadra, formato = v_novo.formato, situacao_ocupacao = v_novo.situacao_ocupacao,
     uso_atual = v_novo.uso_atual, area_construida_existente_m2 = v_novo.area_construida_existente_m2,
     area_construida_demolir_m2 = v_novo.area_construida_demolir_m2, necessidade_demolicao = v_novo.necessidade_demolicao,
@@ -2626,11 +2626,11 @@ language sql stable security definer set search_path = ''
 as $$
   with c as (
     select coalesce(x.plano_ate_pct, 3) as pl, coalesce(x.inclinado_ate_pct, 30) as inc,
-           coalesce(x.leve_de_m3m2, 0.25) as le, coalesce(x.regular_de_m3m2, 0.5) as re, coalesce(x.critico_de_m3m2, 1.0) as cr
+           coalesce(x.leve_de_m3m2, 0.25) as le, coalesce(x.mediano_de_m3m2, 0.5) as re, coalesce(x.critico_de_m3m2, 1.0) as cr
     from (select 1) u left join app.topografia_config x on x.empresa_id = p_empresa)
   select case when p_inclinacao is null then null
               when p_inclinacao > inc or p_terra > cr then 'acidentado_critico'
-              when p_terra > re then 'acidentado_regular'
+              when p_terra > re then 'acidentado_mediano'
               when p_terra > le then 'acidentado_leve'
               when p_inclinacao <= pl then 'plano'
               else 'inclinado' end
@@ -2660,16 +2660,16 @@ end $$;
 
 -- Limites da classificação: só o administrador; vale para as próximas medições
 -- e para reclassificar as já feitas (o perfil gravado é recalculado aqui).
-create or replace function app.salvar_topografia_config(p_empresa uuid, p_plano numeric, p_inclinado numeric, p_leve numeric, p_regular numeric, p_critico numeric)
+create or replace function app.salvar_topografia_config(p_empresa uuid, p_plano numeric, p_inclinado numeric, p_leve numeric, p_mediano numeric, p_critico numeric)
 returns void
 language plpgsql security definer set search_path = ''
 as $$
 begin
   perform app.exigir_administrador(p_empresa);
-  insert into app.topografia_config (empresa_id, plano_ate_pct, inclinado_ate_pct, leve_de_m3m2, regular_de_m3m2, critico_de_m3m2)
-  values (p_empresa, p_plano, p_inclinado, p_leve, p_regular, p_critico)
+  insert into app.topografia_config (empresa_id, plano_ate_pct, inclinado_ate_pct, leve_de_m3m2, mediano_de_m3m2, critico_de_m3m2)
+  values (p_empresa, p_plano, p_inclinado, p_leve, p_mediano, p_critico)
   on conflict (empresa_id) do update set plano_ate_pct = excluded.plano_ate_pct, inclinado_ate_pct = excluded.inclinado_ate_pct,
-    leve_de_m3m2 = excluded.leve_de_m3m2, regular_de_m3m2 = excluded.regular_de_m3m2, critico_de_m3m2 = excluded.critico_de_m3m2;
+    leve_de_m3m2 = excluded.leve_de_m3m2, mediano_de_m3m2 = excluded.mediano_de_m3m2, critico_de_m3m2 = excluded.critico_de_m3m2;
   update app.terrenos set topo_perfil = app.classificar_topografia(empresa_id, topo_inclinacao_pct, topo_terra_m3m2)
   where empresa_id = p_empresa and topo_perfil is not null;
 end $$;
