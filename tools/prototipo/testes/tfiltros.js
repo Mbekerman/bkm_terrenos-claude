@@ -1,4 +1,4 @@
-// Filtros de terrenos: gaveta à direita (tela cheia no celular), a mesma seleção em Terrenos, Mapa e Fases,
+// Filtros de terrenos: gaveta à direita (tela cheia no celular), a mesma seleção em Terrenos e Mapa (o Funil tem a sua, ver tfxpag),
 // chips com X, Limpar, contagem por opção, campos que dependem de outro (etapa da fase, região da cidade),
 // faixa com "Incluir sem informação", visões salvas, filtro no endereço da página, Esc, ficha do mapa
 // fecha a gaveta e temperatura só no terreno (parte sem temperatura). Claro, escuro e celular.
@@ -77,7 +77,7 @@ ok(kt.length>0&&kt.every(id=>S2.terrenos.find(t=>t.id===id).neg?.temp===5),'Fase
 await p.screenshot({path:O+'3_kanban_gaveta.png'});
 await p.keyboard.press('Escape');await p.waitForTimeout(150);ok(!(await conta(p,'#fx-dr')),'Esc fecha a gaveta');
 // partes: sem temperatura por parte
-await clica(p,'#fx-barra [data-a=fx-limpar]');await nav(p,'terrenos');
+await clica(p,'#fx-barra [data-a=fx-limpar]');await nav(p,'terrenos');if(await conta(p,'#fx-barra [data-a=fx-limpar]'))await clica(p,'#fx-barra [data-a=fx-limpar]');
 await p.evaluate(()=>[...document.querySelectorAll('[data-a=abrir]')].find(x=>x.textContent.includes('Ibitirama')).click());await p.waitForTimeout(400);
 await p.evaluate(()=>{const b=document.querySelector('.fi-abas [data-t=comercial]');if(b&&b.getAttribute('aria-selected')!=='true')b.click()});await p.waitForTimeout(250);
 ok(await conta(p,'.pt-card')>=3&&!(await txt(p,'.pt-card')).includes('Temperatura'),'parte sem temperatura: é uma só, a da negociação do terreno');

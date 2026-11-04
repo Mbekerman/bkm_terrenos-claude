@@ -1,0 +1,20 @@
+/* filtro do Pipeline e do Funil são independentes */
+const {chromium}=require('playwright');const path=require('path');
+const L=path.join(__dirname,'..','libs','l')+'/';const F=path.join(__dirname,'..','saida','bkm-terrenos.html');
+let falhas=0;const ok=(c,m)=>{console.log((c?'ok  ':'FALHOU ')+m);if(!c)falhas++};
+(async()=>{const b=await chromium.launch();const erros=[];const ctx=await b.newContext({viewport:{width:1440,height:900}});
+await ctx.route('**/*',r=>{const u=r.request().url();if(u.startsWith('file://'))return r.fulfill({path:F,contentType:'text/html; charset=utf-8'});if(/leaflet.js|jszip/.test(u))return r.fulfill({path:L+(u.includes('leaflet')?'leaflet.js':'jszip.min.js'),contentType:'application/javascript'});return r.abort()});
+const p=await ctx.newPage();p.on('pageerror',e=>erros.push(e.message));await p.goto('file:///x/a.html');await p.evaluate(()=>{localStorage.clear();sessionStorage.clear()});await p.reload();await p.waitForTimeout(300);
+const nav=r=>p.evaluate(r=>document.querySelector(`[data-a=nav][data-r=${r}]`).click(),r).then(()=>p.waitForTimeout(250));
+const chips=()=>p.$$eval('.fx-barra .fx-chip',x=>x.length);
+await nav('terrenos');await p.click('.fx-btn');await p.click('#fx-dr .fx-aba[data-v=comercial]');await p.click('#fx-dr .fx-op[data-k=temp]');await p.click('#fx-dr [data-a=fx-fechar]');await p.waitForTimeout(200);
+ok(await chips()===1,'Pipeline com 1 filtro');
+await nav('negociacoes');ok(await chips()===0,'Funil sem o filtro do Pipeline');
+await p.click('.fx-btn');await p.click('#fx-dr .fx-aba[data-v=local]');await p.click('#fx-dr .fx-op[data-k=cidade]');await p.click('#fx-dr [data-a=fx-fechar]');await p.waitForTimeout(200);
+const fun=await p.$$eval('.fx-barra .fx-chip',x=>x.map(e=>e.textContent));ok(fun.length===1,'Funil com o próprio filtro: '+fun.join());
+await nav('terrenos');const pip=await p.$$eval('.fx-barra .fx-chip',x=>x.map(e=>e.textContent));ok(pip.length===1&&pip[0]!==fun[0],'volta ao Pipeline com o dele: '+pip.join());
+await nav('mapa');ok(await chips()===1,'Mapa segue o Pipeline');
+await p.goBack();await p.waitForTimeout(200);await p.goBack();await p.waitForTimeout(300);ok(await p.evaluate(()=>document.body.dataset.rota)==='negociacoes'&&await chips()===1,'voltar do navegador ao Funil traz o filtro dele');
+await nav('terrenos');ok(await chips()===1,'Pipeline mantido depois do voltar');
+await p.reload();await p.waitForTimeout(300);await nav('negociacoes');ok(await chips()===1,'recarregar mantém o do Funil');
+ok(!erros.length,'sem erros: '+erros.join(' | '));await b.close();process.exit(falhas?1:0)})();
