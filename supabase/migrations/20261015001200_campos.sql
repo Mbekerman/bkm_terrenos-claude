@@ -75,7 +75,6 @@ insert into app.campos_catalogo (chave, origem, coluna, titulo, tipo, unidade, o
   ('terreno.area_construida_demolir_m2','terreno','area_construida_demolir_m2','Área a demolir','numero','m²',null,null,true,false,true,34),
   ('terreno.necessidade_demolicao','terreno','necessidade_demolicao','Precisa demolir','lista',null,'{provavel,confirmada,dispensada}','nao_avaliada',true,true,true,35),
   ('terreno.observacoes_fisicas','terreno','observacoes_fisicas','Observações físicas','texto',null,null,null,true,false,false,36),
-  ('terreno.tipo_empreendimento','terreno','tipo_empreendimento','Tipo de empreendimento','lista',null,'{mercado,his,hmp}','nao_informado',true,true,true,37),
   ('negociacao.etapa','negociacao','etapa_atual','Etapa','lista',null,null,null,false,true,false,40),
   ('negociacao.subetapa','negociacao','subetapa_atual','Subetapa','lista',null,null,null,false,true,false,41),
   ('negociacao.status','negociacao','status','Situação da negociação','lista',null,'{ativo,concluido,perdido,descartado,stand_by}',null,false,true,false,42),

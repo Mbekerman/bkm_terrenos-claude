@@ -93,8 +93,6 @@ function nvFrentesHtml(nv){const fr=nv.frentes;if(nv.buscandoLocal)return '<span
     <span class="hint">As outras entram em Confrontações como frente.</span>`}
 // a cidade da inscrição acompanha o município
 function nvCidadeInsc(){const f=$('#f-novo');if(!f)return;const cid=cidDoNome(f.municipio.value),r=f.querySelector('[name=mun]');
-  // tipo do empreendimento: só em São Paulo, onde muda o CA (decisão do Moisés, 25/out/2026)
-  const tp=f.querySelector('#nv-tipo');if(tp){tp.hidden=cid!=='sp';tp.querySelectorAll('input').forEach(x=>{x.required=cid==='sp';x.disabled=cid!=='sp'})}
   if(r&&r.value!==cid){r.value=cid;r.dispatchEvent(new Event('change',{bubbles:true}))}
   const c=CIDADES_INSC[cid]||CIDADES_INSC.sp;f.querySelectorAll('.nv-sqls [data-k=sql]').forEach(el=>{el.dataset.masc=c.mascara||'';el.placeholder=c.mascara||'Como está no carnê do IPTU';const lb=el.previousElementSibling;if(lb)lb.textContent=c.rotulo});
   f.querySelectorAll('[data-a=nv-sql-add]').forEach(b=>b.lastChild.textContent='Mais um '+c.rotulo)}
@@ -133,7 +131,6 @@ function nvDadosHtml(fechar){const nv=UI.nv,l=nv.local,mun=l?.cidade?l.cidade+(l
     <div>${nv.ignorados?`Cadastro novo, confirmado como outro terreno apesar de sobrepor ${nv.ignorados.map(x=>x.t.codigo).join(', ')}.`:'Nenhum terreno cadastrado ocupa esta área.'}</div></div><button type="button" class="btn sm text" data-a="nv-voltar">Trocar</button></div></div>
   <div class="field full"><label for="n-nome">Nome de referência *</label><input id="n-nome" name="nome" required placeholder="Terreno Av. Cupecê — esquina" ${v(nome)}></div>
   <div class="field full"><label for="n-mun">Município *</label><input id="n-mun" name="municipio" required placeholder="${nv.buscandoLocal?'Buscando pela localização...':'Cidade · UF'}" ${v(mun)}><span class="hint" id="n-mun-h">${nv.buscandoLocal?'Buscando pela localização da poligonal...':mun?'Pela localização da poligonal. Confira se estiver perto da divisa.':'Não deu para saber pela localização. Digite a cidade e a UF.'}</span></div>
-  <div class="field full" id="nv-tipo" ${cid==='sp'?'':'hidden'}><span class="lbl" id="n-tipo-l">Tipo do empreendimento *</span>${segTipoEmp('tipoEmp',null,cid==='sp').replace('aria-label="Tipo do empreendimento"','aria-labelledby="n-tipo-l"')}<span class="hint">Em São Paulo o CA, a cota-parte e a outorga mudam com o tipo (EHIS, EHMP). Dá para mudar depois na ficha, em Parâmetros urbanísticos.</span></div>
   <div class="field full nv-frentes" id="nv-frentes" aria-live="polite">${nvFrentesHtml(nv)}</div>
   <div class="field"><label for="n-log">Logradouro principal</label><input id="n-log" name="logradouro" placeholder="Av. Cupecê" ${v(f0?.logradouro)}></div>
   <div class="field"><label for="n-num">Número</label><input id="n-num" name="numero" placeholder="5.120 ou s/n" ${v(f0?.numero)}></div>
@@ -205,7 +202,7 @@ function nvPlGravar(t,d,mun){const P=partesDe(t);P.length=0;
 // depois de desenhar a tela do passo 2: checagem de duplicidade
 function nvPosRender(){const f=$('#f-novo');if(!f||!UI.nv)return;dedupe()}
 // passo 2 gravado: o terreno novo com a poligonal, o município e as frentes
-function nvGravar(alvo,F){const nv=UI.nv;alvo.poly=nv.poly;alvo.lat=+nv.ponto[0].toFixed(7);alvo.lng=+nv.ponto[1].toFixed(7);alvo.precisao='aproximada';alvo.municipio=F.municipio.trim();if(F.tipoEmp&&cidDoNome(alvo.municipio)==='sp')alvo.tipoEmp=F.tipoEmp;
+function nvGravar(alvo,F){const nv=UI.nv;alvo.poly=nv.poly;alvo.lat=+nv.ponto[0].toFixed(7);alvo.lng=+nv.ponto[1].toFixed(7);alvo.precisao='aproximada';alvo.municipio=F.municipio.trim();
   if(nv.local?.cep)alvo.cep=nv.local.cep;if(nv.ignorados)alvo.sobreAceitas=nv.ignorados.map(x=>x.t.id);
   const fr=nv.frentes||[],pri=Number(F.frente||0);fr.forEach((x,i)=>{if(i!==pri||normRua(x.logradouro)!==normRua(F.logradouro))alvo.confr.push({tipo:'frente',m:x.m?+x.m.toFixed(2):null,conf:x.logradouro+(x.numero?', '+x.numero:''),fonte:'Localização da poligonal'})});
   if(fr.length>1&&alvo.posicao==='nao_informado')alvo.posicao=fr.length===2?'esquina':'duas_frentes';

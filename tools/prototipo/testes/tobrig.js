@@ -34,17 +34,18 @@ const titulo=p=>p.$eval('#modal h2',x=>x.textContent).catch(()=>'');
 {const {p}=await pagina(false);
   await desenhar(p,'Rua Teste 15',[-15,-25,15,25]);
   await p.waitForFunction(()=>document.querySelector('#nv-frentes [name=frente]'),null,{timeout:12000}).catch(()=>{});
-  // rola até o fim, como no relato, e clica em Cadastrar sem o tipo do empreendimento
+  // apaga o nome, rola até o fim e clica em Cadastrar
+  await p.fill('#n-nome','');
   await p.evaluate(()=>{const m=document.querySelector('#modal .modal')||document.querySelector('#modal');m.querySelectorAll('*').forEach(x=>{if(x.scrollHeight>x.clientHeight+5)x.scrollTop=x.scrollHeight})});
   await p.click('#btn-novo');await p.waitForTimeout(900);
-  const r=await p.evaluate(()=>{const t=document.querySelector('#nv-tipo'),b=t.getBoundingClientRect();return {erro:t.classList.contains('campo-erro'),msg:t.querySelector('.campo-msg')?.textContent,toast:document.querySelector('#toast').textContent,visivel:b.top>=0&&b.bottom<=innerHeight}});
+  const r=await p.evaluate(()=>{const t=document.querySelector('#n-nome').closest('.field'),b=t.getBoundingClientRect();return {erro:t.classList.contains('campo-erro'),msg:t.querySelector('.campo-msg')?.textContent,toast:document.querySelector('#toast').textContent,visivel:b.top>=0&&b.bottom<=innerHeight}});
   console.log(JSON.stringify(r));
-  ok(r.erro&&/Escolha uma opção/.test(r.msg||''),'tipo do empreendimento em branco fica destacado com o aviso embaixo');
-  ok(/Tipo do empreendimento/.test(r.toast),'o aviso diz qual campo falta: '+r.toast);
+  ok(r.erro&&/Preencha este campo/.test(r.msg||''),'nome em branco fica destacado com o aviso embaixo');
+  ok(/Nome de referência/.test(r.toast),'o aviso diz qual campo falta: '+r.toast);
   ok(r.visivel,'a página rola até o campo');
-  await p.screenshot({path:OUT+'1_tipo_em_branco.png'});
-  await p.click('#nv-tipo label:has([value=his])');await p.waitForTimeout(150);
-  ok(!(await p.$('#nv-tipo.campo-erro')),'escolhendo o tipo, o destaque some');
+  await p.screenshot({path:OUT+'1_nome_em_branco.png'});
+  await p.fill('#n-nome','Avenida Leste, 900');await p.waitForTimeout(150);
+  ok(!(await p.$('#f-novo .campo-erro')),'preenchendo o nome, o destaque some');
   // campo obrigatório dentro da seção recolhida: a seção abre e o nome aparece
   await p.evaluate(()=>{const d=document.querySelector('#f-novo details:not(#nv-pl)');d.open=false;const v=document.querySelector('#n-ace');v.required=true});
   await p.click('#btn-novo');await p.waitForTimeout(900);
@@ -59,7 +60,7 @@ const titulo=p=>p.$eval('#modal h2',x=>x.textContent).catch(()=>'');
 {const {p}=await pagina(true);
   await desenhar(p,'Rua Teste 15',[-15,-25,15,25]);
   await p.waitForFunction(()=>document.querySelector('#nv-frentes [name=frente]'),null,{timeout:12000}).catch(()=>{});
-  await p.click('#btn-novo');await p.waitForTimeout(900);
-  ok(await p.$('#nv-tipo.campo-erro'),'celular: tipo destacado');await p.screenshot({path:OUT+'3_celular.png'});
+  await p.fill('#n-nome','');await p.click('#btn-novo');await p.waitForTimeout(900);
+  ok(await p.$('#f-novo .campo-erro #n-nome'),'celular: nome destacado');await p.screenshot({path:OUT+'3_celular.png'});
 }
 console.log(errs.length?'\n'+errs.length+' FALHA(S)':'\ntudo ok');await b.close();process.exit(errs.length?1:0)})();

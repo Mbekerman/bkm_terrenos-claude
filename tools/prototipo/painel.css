@@ -1313,8 +1313,6 @@ body.vb-aberto { overflow: hidden }
 .lz-lote{margin-top:16px}
 .lz-mk{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .lz-mk:empty{display:none}
-.lz-tl{font-size:14px;font-weight:500}
-.lz-ni{margin:0 0 12px}
 .lz-lote{border:1px solid var(--linha);border-radius:12px;padding:12px 16px}
 .lz-h{margin:0 0 4px}
 .lz-z{padding:12px 0;border-top:1px solid var(--linha)}

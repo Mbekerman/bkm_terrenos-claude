@@ -270,14 +270,6 @@ select pg_temp.ok((select algum_gabarito_sem_limite and ca_maximo = 4 and menor_
   'sem limite, menor gabarito e CA máximo resumidos');
 select pg_temp.ok((select potencial_mercado_m2 = 1400*4 + 520*2 and potencial_his_m2 = 1400*6 + 520*3 and potencial_hmp_m2 = 1400*5 + 520*2.5 and potencial_basico_m2 = 1920
                      from app.v_urbanismo_vigente where terreno_id = :'t1'), 'potencial construtivo por tipo = soma de área × CA de cada zona');
-select pg_temp.ok((select tipo_empreendimento = 'nao_informado' and potencial_tipo_m2 is null from app.v_urbanismo_vigente where terreno_id = :'t1'),
-  'tipo do empreendimento não informado: sem potencial escolhido (nunca vira mercado sozinho)');
-select versao as vt from app.terrenos where id = :'t1' \gset
-select pg_temp.falha(format($$select app.salvar_terreno(%L, %s, '{"tipo_empreendimento":"r2v"}')$$, :'t1', :vt), 'tipo do empreendimento só mercado, HIS ou HMP');
-select app.salvar_terreno(:'t1', :vt, '{"tipo_empreendimento":"his"}') as vt \gset
-select pg_temp.ok((select potencial_tipo_m2 = 1400*6 + 520*3 from app.v_urbanismo_vigente where terreno_id = :'t1')
-              and exists (select 1 from app.auditoria where tabela = 'terrenos' and registro_id = :'t1' and depois->>'tipo_empreendimento' = 'his'),
-  'tipo HIS escolhido na ficha: potencial do tipo pela regra de EHIS, com log');
 select pg_temp.ok((select to_maximo from app.v_lote_zonas where id = :'az1' and tipo = 'mercado') = 0.70, 'TO pelo tamanho do lote (1.920 m²: a de lote grande)');
 select pg_temp.falha(format($$update app.analise_zoneamentos set ca_maximo = 2.5 where id = %L$$, :'az2'), 'exceção do lote exige a fonte');
 select pg_temp.falha(format($$update app.analise_zoneamentos set gabarito_m = 30, gabarito_sem_limite = true, excecao_fonte = 'X' where id = %L$$, :'az2'), 'sem limite não leva valor');
@@ -2313,8 +2305,8 @@ select pg_temp.ok(fluxo.condicao_vale(:'kp', :'permuta'), 'condição: forma de 
 select app.registrar_proposta(:'pcd', 'bkm', 4500000, 'dinheiro') \gset
 select pg_temp.ok(app.campo_cartao(:'tcd', 'calculado.forma_pagamento_vigente')->>'valor' = 'dinheiro', 'com proposta vigente, vale a forma de pagamento da proposta');
 select pg_temp.ok(not fluxo.condicao_vale(:'kp', :'permuta'), 'a proposta em dinheiro desliga a condição de permuta');
-select pg_temp.ok(fluxo.condicao_vale(:'kp', '{"modo":"todas","itens":[{"grupo":{"modo":"qualquer","itens":[{"campo":"calculado.forma_pagamento_vigente","op":"em","valores":["permuta_fisica"]},{"campo":"oferta.valor_pedido","op":"maior","valores":[4000000]}]}},{"campo":"terreno.tipo_empreendimento","op":"vazio"}]}'),
-  'grupo: (permuta ou preço pedido acima de 4 mi) e tipo de empreendimento não informado');
+select pg_temp.ok(fluxo.condicao_vale(:'kp', '{"modo":"todas","itens":[{"grupo":{"modo":"qualquer","itens":[{"campo":"calculado.forma_pagamento_vigente","op":"em","valores":["permuta_fisica"]},{"campo":"oferta.valor_pedido","op":"maior","valores":[4000000]}]}},{"campo":"terreno.situacao_ocupacao","op":"vazio"}]}'),
+  'grupo: (permuta ou preço pedido acima de 4 mi) e ocupação não informada');
 select pg_temp.ok(not fluxo.condicao_vale(:'kp', '{"modo":"qualquer","itens":[{"campo":"terreno.situacao_ocupacao","op":"fora","valores":["vazio"]}]}'),
   'campo em branco não satisfaz "não é" (não informado nunca vira valor)');
 select pg_temp.falha(format($$insert into fluxo.tarefa_itens (empresa_id, tarefa_id, chave) values (%L, %L, 'terreno.descricao')$$, :'emp', :'kp'),
