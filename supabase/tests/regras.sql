@@ -3520,14 +3520,16 @@ select pg_temp.ok((select situacao = 'erro' and erro = 'Token expirado' from app
 -- depois da reunião: gravação, transcrição e rascunho do resumo
 reset role; set role service_role;
 select app.agenda_confirmar(:'ra', 'ev1');
-select app.registrar_gravacao(:'ra', 'https://drive.google.com/grav', 'https://docs.google.com/transc', 'Carlos: aceito 2,8 mi com permuta de 10 unidades.');
+select app.registrar_gravacao(:'ra', 'https://drive.google.com/grav', 'https://docs.google.com/transc', 'Carlos: aceito 2,8 mi com permuta de 10 unidades.',
+  'https://docs.google.com/anotacoes-gemini');
+select pg_temp.falha(format('select app.registrar_resumo_ia(%L, %L, null, %L)', :'ra', 'x', 'chatgpt'), 'origem do resumo só Gemini ou a IA do sistema');
 select app.registrar_resumo_ia(:'ra', 'Vendedor aceita 2,8 mi com permuta de 10 unidades.', '@analista manda a minuta até sexta.');
 reset role;
 select pg_temp.como(:'analista');
-select pg_temp.ok((select resumo_situacao = 'rascunho' and transcricao like 'Carlos:%' from app.reuniao_agenda where reuniao_id = :'ra')
+select pg_temp.ok((select resumo_situacao = 'rascunho' and resumo_origem = 'gemini' and anotacoes_url like '%anotacoes-gemini' and transcricao like 'Carlos:%' from app.reuniao_agenda where reuniao_id = :'ra')
   and (select resumo is null from app.reunioes where id = :'ra')
   and (select count(*) = 1 from app.notificacoes where tipo = 'reuniao_resumo' and origem_id = :'ra' and destinatario_id = :'analista'),
-  'gravação e transcrição do Meet; o rascunho da IA não mexe no resumo e avisa quem marcou');
+  'gravação, transcrição e Anotações do Gemini do Meet; o rascunho não mexe no resumo e avisa quem marcou');
 select pg_temp.falha(format('select app.decidir_resumo_ia(%L, true)', :'ra'), 'aceitar o resumo pede a reunião realizada');
 update app.reunioes set status = 'realizada', inicio = now() - interval '1 hour' where id = :'ra';
 select pg_temp.como(:'leitor');

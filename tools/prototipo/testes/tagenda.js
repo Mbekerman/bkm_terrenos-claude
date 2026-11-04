@@ -19,7 +19,7 @@ await p.evaluate(c=>{location.hash='#/terrenos/'+c+'/comercial'},t0.codigo);awai
 // exemplo: marcada (convidados e respostas) e feita ontem com o resumo da IA para conferir
 ok(await p.evaluate(()=>{const a=[...document.querySelectorAll('.reu.agendada .ag')].find(x=>x.querySelector('.ag-conv'));return !!a&&/Talvez/.test(a.textContent)&&/Aceitou/.test(a.textContent)&&!!a.querySelector('a[href*="meet.google.com"]')}),
   tag+' reunião marcada mostra o link do Meet e a resposta de cada convidado');
-ok(await p.evaluate(()=>!!document.querySelector('.reu.realizada form[data-form=ag-ia] textarea[name=resumo]')&&/Gravação/.test(document.querySelector('.reu.realizada .ag-grav')?.textContent||'')),
+ok(await p.evaluate(()=>!!document.querySelector('.reu.realizada form[data-form=ag-ia] textarea[name=resumo]')&&/Gravação.*Anotações do Gemini/.test(document.querySelector('.reu.realizada .ag-grav')?.textContent||'')&&/Resumo do Gemini/.test(document.querySelector('.reu.realizada .ag-ia')?.textContent||'')),
   tag+' reunião feita: gravação, transcrição e o resumo da IA para conferir');
 if(!cel){await p.evaluate(()=>document.querySelector('form[data-form=ag-ia]').scrollIntoView({block:'center'}));await p.screenshot({path:OUT+tag+'_1resumo.png'})}
 // aceitar com ajuste

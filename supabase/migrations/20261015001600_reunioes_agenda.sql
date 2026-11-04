@@ -8,9 +8,12 @@
 -- Google e devolve o resultado por app.agenda_confirmar. O caminho inverso
 -- vale (mudança feita direto na Agenda e respostas dos convidados), por
 -- app.agenda_evento_mudou e app.agenda_resposta.
--- Depois da reunião online, a função do servidor lê a gravação e a
--- transcrição do Meet (app.registrar_gravacao) e a IA escreve o rascunho do
--- que foi tratado e dos encaminhamentos (app.registrar_resumo_ia); quem
+-- Depois da reunião online, a função do servidor lê a gravação, a
+-- transcrição e as Anotações do Gemini do Meet (app.registrar_gravacao) e
+-- leva o resumo e os próximos passos das anotações como rascunho do que foi
+-- tratado e dos encaminhamentos (app.registrar_resumo_ia, origem 'gemini';
+-- decisão do Moisés, 4/nov/2026: usa o Gemini do Workspace, sem outra IA;
+-- 'ia' fica para a IA do sistema, se o formato do Gemini não servir); quem
 -- edita confere e aceita ou descarta (app.decidir_resumo_ia).
 -- O que vem do Google mora em reuniao_agenda, que o usuário só lê; as
 -- funções do servidor só rodam como service_role.
@@ -41,10 +44,12 @@ create table app.reuniao_agenda (
   gravacao_url       text,
   transcricao_url    text,
   transcricao        text,
+  anotacoes_url      text,                                    -- Doc das Anotações do Gemini no Meet
   gravacao_em        timestamptz,
   resumo_ia          text,
   encaminhamentos_ia text,
   resumo_ia_em       timestamptz,
+  resumo_origem      text check (resumo_origem in ('gemini','ia')),
   resumo_situacao    text check (resumo_situacao in ('rascunho','aceito','descartado')),
   resumo_decidido_por uuid,
   resumo_decidido_em timestamptz
@@ -202,25 +207,28 @@ begin
 end $$;
 
 create or replace function app.registrar_gravacao(p_reuniao uuid, p_gravacao_url text, p_transcricao_url text default null,
-                                                  p_transcricao text default null)
+                                                  p_transcricao text default null, p_anotacoes_url text default null)
 returns void language plpgsql security definer set search_path = '' as $$
 begin
   update app.reuniao_agenda set gravacao_url = coalesce(p_gravacao_url, gravacao_url), transcricao_url = coalesce(p_transcricao_url, transcricao_url),
-         transcricao = coalesce(p_transcricao, transcricao), gravacao_em = now()
+         transcricao = coalesce(p_transcricao, transcricao), anotacoes_url = coalesce(p_anotacoes_url, anotacoes_url), gravacao_em = now()
    where reuniao_id = p_reuniao;
   if not found then raise exception 'Reunião sem evento na Agenda' using errcode = 'P0002'; end if;
 end $$;
 
--- Rascunho da IA: não toca no resumo da reunião; quem marcou é avisado para conferir.
-create or replace function app.registrar_resumo_ia(p_reuniao uuid, p_resumo text, p_encaminhamentos text default null)
+-- Rascunho do resumo (das Anotações do Gemini ou da IA do sistema): não toca no
+-- resumo da reunião; quem marcou é avisado para conferir.
+create or replace function app.registrar_resumo_ia(p_reuniao uuid, p_resumo text, p_encaminhamentos text default null,
+                                                   p_origem text default 'gemini')
 returns void language plpgsql security definer set search_path = '' as $$
 declare a app.reuniao_agenda; r app.reunioes; v_cod text;
 begin
   if nullif(trim(p_resumo), '') is null then raise exception 'Resumo vazio' using errcode = '22023'; end if;
+  if p_origem not in ('gemini','ia') then raise exception 'Origem do resumo inválida' using errcode = '22023'; end if;
   select * into a from app.reuniao_agenda where reuniao_id = p_reuniao for update;
   if not found then raise exception 'Reunião sem evento na Agenda' using errcode = 'P0002'; end if;
   if a.resumo_situacao = 'aceito' then raise exception 'O resumo desta reunião já foi aceito' using errcode = '55000'; end if;
-  update app.reuniao_agenda set resumo_ia = p_resumo, encaminhamentos_ia = p_encaminhamentos, resumo_ia_em = now(),
+  update app.reuniao_agenda set resumo_ia = p_resumo, encaminhamentos_ia = p_encaminhamentos, resumo_ia_em = now(), resumo_origem = p_origem,
          resumo_situacao = 'rascunho', resumo_decidido_por = null, resumo_decidido_em = null where reuniao_id = p_reuniao;
   select * into r from app.reunioes where id = p_reuniao;
   select codigo into v_cod from app.terrenos where id = r.terreno_id;
@@ -256,9 +264,9 @@ end $$;
 
 revoke execute on function app._agenda_marcar(uuid), app.agenda_confirmar(uuid, text, text, text, text),
   app.agenda_evento_mudou(uuid, timestamptz, int, boolean), app.agenda_resposta(uuid, text, text),
-  app.registrar_gravacao(uuid, text, text, text), app.registrar_resumo_ia(uuid, text, text),
+  app.registrar_gravacao(uuid, text, text, text, text), app.registrar_resumo_ia(uuid, text, text, text),
   app.decidir_resumo_ia(uuid, boolean, text, text) from public;
 grant execute on function app.agenda_confirmar(uuid, text, text, text, text), app.agenda_evento_mudou(uuid, timestamptz, int, boolean),
-  app.agenda_resposta(uuid, text, text), app.registrar_gravacao(uuid, text, text, text), app.registrar_resumo_ia(uuid, text, text)
+  app.agenda_resposta(uuid, text, text), app.registrar_gravacao(uuid, text, text, text, text), app.registrar_resumo_ia(uuid, text, text, text)
   to service_role;
 grant execute on function app.decidir_resumo_ia(uuid, boolean, text, text) to authenticated;

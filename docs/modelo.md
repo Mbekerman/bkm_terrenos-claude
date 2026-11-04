@@ -689,7 +689,9 @@ erDiagram
     text meet_link
     text gravacao_url
     text transcricao
-    text resumo_ia "rascunho da IA"
+    text anotacoes_url "Doc das Anotações do Gemini"
+    text resumo_ia "rascunho do resumo"
+    text resumo_origem "gemini | ia"
     text resumo_situacao "rascunho, aceito, descartado"
   }
 ```
@@ -702,8 +704,8 @@ Lote 6 da ficha em abas (4/nov/2026). Migration `20261015001600_reunioes_agenda.
 
 - **O sistema é a origem.** A reunião marcada com `na_agenda` vira evento na agenda de quem marcou (`reuniao_agenda.organizador_id`), com convite a quem tem e-mail (`v_reuniao_convidados`: o do usuário, o da pessoa ou o digitado) e, online com `gerar_meet`, o link do Meet. Mudar data, duração, local, pauta, participantes, cancelar ou tirar da Agenda põe o evento na fila (`situacao = 'pendente'`, com a `acao`); marcar como realizada não mexe no evento. Reunião já realizada não vai para a Agenda.
 - **Função do servidor** (a fazer, com o token do "Conectar Agenda e Gmail"; só `service_role`): lê a fila, grava no Google e responde por `app.agenda_confirmar(reuniao, evento_id, link, meet_link, erro)`. O caminho inverso: `app.agenda_evento_mudou(reuniao, inicio, duracao, cancelado)` (mudança feita direto na Agenda, que não volta para a fila) e `app.agenda_resposta(reuniao, email, resposta)` (aceito, recusado, talvez; a tela não muda a resposta).
-- **Depois da reunião online:** `app.registrar_gravacao(reuniao, gravacao, transcricao_url, transcricao)` com o que o Meet guardou e `app.registrar_resumo_ia(reuniao, resumo, encaminhamentos)` com o rascunho da IA, que não toca no resumo da reunião e avisa quem marcou (`reuniao_resumo`). Quem edita confere em `app.decidir_resumo_ia(reuniao, aceitar, resumo, encaminhamentos)`: aceitar (com o texto ajustado ou não, só com a reunião realizada) grava em `resumo` e `encaminhamentos`; descartar só marca.
-- Gravação e transcrição do Meet pedem o Google Workspace Business Standard ou acima (a confirmar com o Moisés). Reunião presencial gravada pelo celular fica para depois.
+- **Depois da reunião online:** `app.registrar_gravacao(reuniao, gravacao, transcricao_url, transcricao, anotacoes_url)` com o que o Meet guardou (gravação, transcrição e o Doc das **Anotações do Gemini**) e `app.registrar_resumo_ia(reuniao, resumo, encaminhamentos, origem)` com o rascunho: o resumo e os próximos passos das Anotações do Gemini (origem `gemini`, padrão; decisão do Moisés, 4/nov/2026: usa o Gemini do Workspace, sem outra IA) ou, se o formato do Gemini não servir, o da IA do sistema (`ia`). O rascunho não toca no resumo da reunião e avisa quem marcou (`reuniao_resumo`). Quem edita confere em `app.decidir_resumo_ia(reuniao, aceitar, resumo, encaminhamentos)`: aceitar (com o texto ajustado ou não, só com a reunião realizada) grava em `resumo` e `encaminhamentos`; descartar só marca.
+- Gravação, transcrição e Anotações do Gemini do Meet pedem o Google Workspace Business Standard ou acima (o da BKM tem, confirmado pelo Moisés em 4/nov/2026). As anotações precisam estar ligadas na reunião; falta confirmar se a API da Agenda liga sozinha ao criar o evento (senão, lembrete no convite). A sincronização vai e volta (confirmado em 4/nov/2026). Reunião presencial não tem as anotações; gravada pelo celular fica para depois.
 
 ## Mapa, dashboard e quadro de tarefas
 
