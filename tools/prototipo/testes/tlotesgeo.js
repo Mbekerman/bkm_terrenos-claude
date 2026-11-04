@@ -13,15 +13,25 @@ const chave=u=>{const q=new URL(u).searchParams,tipo=(q.get('typeNames')||'').re
 // poligonal: lotes 0053, 0003, 0004 e 0050 da quadra 002.058 (fecho convexo)
 const POLY=[[-23.5423558,-46.6201857],[-23.5428772,-46.6198354],[-23.5429747,-46.6197695],[-23.5428841,-46.6191334],[-23.5427333,-46.61888],[-23.5426704,-46.6187743],[-23.5426294,-46.6187054],[-23.542259,-46.6189603],[-23.542035,-46.6191229],[-23.5418755,-46.6192482],[-23.542073,-46.6197326],[-23.5421462,-46.6198498],[-23.5422236,-46.6199738],[-23.5422479,-46.6200128],[-23.5423256,-46.6201373]];
 const kml=`<?xml version="1.0"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><Placemark><name>T</name><Polygon><outerBoundaryIs><LinearRing><coordinates>${POLY.concat([POLY[0]]).map(([la,ln])=>ln+','+la).join(' ')}</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark></Document></kml>`;
+const RF=FIX+'lg_resto.json',RESTO=fs.existsSync(RF)&&!GRAVAR?JSON.parse(fs.readFileSync(RF)):{};let GRAVOU=false;
 (async()=>{const b=await chromium.launch(),errs=[],pedidos=[];
 const ctx=await b.newContext({viewport:{width:1440,height:900},deviceScaleFactor:Number(process.env.DSF||1)});
 await ctx.route('**/*',async r=>{const u=r.request().url();
   if(u.startsWith('file://'))return r.fulfill({body:html,contentType:'text/html; charset=utf-8'});
   if(/leaflet.js|jszip/.test(u))return r.fulfill({path:L+(u.includes('leaflet')?'leaflet.js':'jszip.min.js'),contentType:'application/javascript'});
-  if(u.startsWith(BASE)){const k=chave(u);pedidos.push(k||new URL(u).searchParams.get('typeNames'));
-    if(k&&GRAVAR)fs.writeFileSync(FIX+k,execFileSync('curl',['-s','-m','60','-H','Origin: https://novogeosampa.prefeitura.sp.gov.br',u.replace(BASE,REAL)]));
-    if(!k||!fs.existsSync(FIX+k))return r.fulfill({contentType:'application/json',body:'{"type":"FeatureCollection","features":[]}'});
-    return r.fulfill({path:FIX+k,contentType:'application/json'})}
+  if(u.startsWith(BASE)){const k=chave(u),q=new URL(u).searchParams,c=q.get('CQL_FILTER')||'';pedidos.push(k||q.get('typeNames')||q.get('layers'));
+    // o lote pelo SQL (consulta completa de cada SQL incluído) sai da própria quadra gravada
+    if(k==='lg_quadras.json'&&/cd_lote=/.test(c)){const lt=(c.match(/cd_lote='(\d+)'/)||[])[1],qd=JSON.parse(fs.readFileSync(FIX+k));
+      return r.fulfill({contentType:'application/json',body:JSON.stringify({type:'FeatureCollection',features:qd.features.filter(f=>f.properties.cd_lote===lt)})})}
+    if(k){if(GRAVAR)fs.writeFileSync(FIX+k,execFileSync('curl',['-s','-m','60','-H','Origin: https://novogeosampa.prefeitura.sp.gov.br',u.replace(BASE,REAL)]));
+      if(!fs.existsSync(FIX+k))return r.fulfill({contentType:'application/json',body:'{"type":"FeatureCollection","features":[]}'});
+      return r.fulfill({path:FIX+k,contentType:'application/json'})}
+    // demais camadas (consulta do lote e da poligonal): um arquivo só, pela camada e pelo filtro; PDF não é gravado
+    if(q.get('request')==='GetMap')return r.fulfill({status:404,body:''});
+    const h=require('crypto').createHash('md5').update(u.replace(BASE,'')).digest('hex').slice(0,12),tipo=(q.get('typeNames')||'').replace('geoportal:','');
+    if(GRAVAR){let j;try{j=JSON.parse(execFileSync('curl',['-s','-m','60','-H','Origin: https://novogeosampa.prefeitura.sp.gov.br',u.replace(BASE,REAL)]))}catch(e){j={type:'FeatureCollection',features:[]}}
+      if(!/^perimetro_zona|cartorio/.test(tipo)&&Array.isArray(j.features))j.features.forEach(f=>f.geometry=null);RESTO[h]=j;GRAVOU=true;fs.writeFileSync(RF,JSON.stringify(RESTO))}
+    return r.fulfill({contentType:'application/json',body:JSON.stringify(RESTO[h]||{type:'FeatureCollection',features:[]})})}
   return r.abort()});
 const p=await ctx.newPage();p.on('pageerror',e=>errs.push(e.message));
 await p.goto('file:///x/a.html');await p.evaluate(()=>localStorage.clear());await p.reload();await p.waitForTimeout(600);
@@ -60,7 +70,12 @@ await p.click('[data-a=lg-zoom][data-z="0"]');await p.waitForTimeout(150);
 const x=await p.$('#lg-svg .lg-l.x');if(x){await x.click({force:true});await p.waitForTimeout(150);console.log('travado:',await p.$eval('#toast',x=>x.textContent))}
 // 4. incluir
 const antes=await info();await p.click('[data-a=lg-incluir]');await p.waitForTimeout(300);
-const t1=await ter();console.log('incluídos:',t1.insc.length,'de',antes.lista.length,'| soltos:',t1.insc.filter(i=>i.solto).length,'| origem:',[...new Set(t1.insc.map(i=>i.origem))].join(),'| lotes:',(t1.lotes||[]).length,'| log:',t1.hist[0].txt);
+await p.waitForFunction(()=>/consultado nos|não respondeu. Use/.test(document.querySelector('#toast').textContent),null,{timeout:600000});console.log('consulta:',await p.$eval('#toast',x=>x.textContent));
+for(const [aba,n] of [['parametros','4c_parametros'],['terreno','4d_terreno']]){await p.evaluate(a=>document.querySelector(`.fi-abas [data-t=${a}]`)?.click(),aba);await p.waitForTimeout(300);
+  await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click())});await p.waitForTimeout(200);await p.evaluate(()=>scrollTo(0,0));await shot(n)}
+console.log('parâmetros:',await p.evaluate(()=>document.querySelector('.fi-abas [data-t=parametros]')?'aba ok':'sem aba'));
+const t1=await ter();console.log('consultados:',t1.insc.filter(i=>(i.geo||[]).length).length,'| sem consulta:',t1.insc.filter(i=>!(i.geo||[]).length).map(i=>i.sql).join(),'| zonas:',JSON.stringify((t1.analises||[]).find(a=>a.status==='vigente')?.zonas?.map(z=>z.sigla+':'+z.ins)),'| poligonal consultada:',!!t1.geoArea,'| docs:',t1.docs.map(d=>d.tipo+':v'+d.versoes).join());
+console.log('incluídos:',t1.insc.length,'de',antes.lista.length,'| soltos:',t1.insc.filter(i=>i.solto).length,'| origem:',[...new Set(t1.insc.map(i=>i.origem))].join(),'| lotes:',(t1.lotes||[]).length,'| log:',t1.hist[0].txt);
 // 5. aba Terreno: SQLs sem lote e a lista no lote
 await p.evaluate(()=>{document.querySelector('.fi-abas [data-t=terreno]')?.click()});await p.waitForTimeout(300);
 await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click())});await p.waitForTimeout(150);
@@ -83,7 +98,7 @@ await p.evaluate(()=>{document.documentElement.dataset.tema='escuro'});await sho
 await p.click('[data-a=close]');await p.waitForTimeout(150);
 // 6b. incluir e ajustar a poligonal: comparação com a soma dos lotes marcados, substitui e guarda a desenhada
 await p.click('#sec-lotes [data-a=lg-abrir]');await p.waitForSelector('#lg-svg',{timeout:10000});await p.waitForTimeout(200);
-await p.click('[data-a=lg-ajustar]');await p.waitForTimeout(800);console.log('modal:',await p.$eval('#modal',x=>x.innerText.slice(0,400)),errs);await p.waitForSelector('[data-a=lotes-usar]',{timeout:5000});await p.waitForTimeout(200);
+await p.click('[data-a=lg-ajustar]');await p.waitForTimeout(800);console.log('modal:',await p.$eval('#modal',x=>x.innerText.slice(0,400)),errs);await p.screenshot({path:OUT+'dbg.png'});await p.waitForSelector('[data-a=lotes-usar]',{timeout:20000});await p.waitForTimeout(200);
 console.log('ajustar:',await p.$eval('#modal .dialog',x=>x.innerText.replace(/\s+/g,' ')));await shot('6b_ajustar');
 const a0=(await ter()).poly.length;await p.click('[data-a=lotes-usar]');await p.waitForTimeout(300);const tp=await ter();
 console.log('poligonal trocada:',a0,'→',tp.poly.length,'pontos | guardadas:',(tp.polyAnt||[]).length,'|',tp.hist[tp.hist.length-1].txt);
@@ -96,4 +111,4 @@ await p.click('[data-a=close]');await p.setViewportSize({width:1440,height:900})
 // 8. Leitura não vê o botão; terreno fora de SP não pergunta
 await p.evaluate(()=>{document.querySelector('[data-a=perfil-menu]').click();document.querySelector('[data-a=role][data-v=Leitura]').click()});await p.waitForTimeout(200);
 console.log('leitura tem o botão?',await p.$$eval('[data-a=lg-abrir]',x=>x.length),'| lixeira dos soltos?',await p.$$eval('[data-a=lg-tira]',x=>x.length));
-console.log('erros:',errs.length?errs:'nenhum');await b.close()})();
+if(GRAVOU)fs.writeFileSync(RF,JSON.stringify(RESTO));console.log('erros:',errs.length?errs:'nenhum');await b.close()})();
