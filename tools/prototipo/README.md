@@ -85,6 +85,7 @@ Rodar só o que a mudança toca; a varredura completa (`tvaza` e `tscroll`) ao f
 | `tctrl.js` | Página Mapa (Leaflet e Google simulado): sem controle de câmera, botões Minha localização (com e sem permissão) e Tela cheia (cobre a página, Esc e troca de página saem), X no cartão do terreno no celular, sem "O que tem perto", botões acima do cartão e do bonequinho, Street View com X próprio e Esc (na tela cheia, Esc fecha só o Street View) |
 | `tkpi.js` | Início e Dashboard nos temas escuro e claro: os 4 indicadores iguais na versão A, números cabendo no quadro do celular ao desktop largo, e no Início a faixa vermelha ou âmbar só nos alertas |
 | `tmasc.js` | máscaras de número ao digitar: milhar, vírgula decimal, R$ e % dentro do campo, cursor no lugar, atalhos "mil" e "mi" |
+| `tenter.js` | Enter passa para o próximo campo (pop-up da viabilidade, ficha, formulário de inclusão até gravar; no último campo grava e fecha o estudo) e clique ou toque seleciona todo o conteúdo |
 | `tshots.js` | prints de revisão visual: 24 telas × desktop e celular × claro e escuro (`node tshots.js <pasta> [filtro]`), com aviso do que passa da tela |
 | `tvshots.js` | prints das abas do estudo de viabilidade |
 | `tfases.js` | fases: kanban e mapa em três níveis (descer de fase para etapa e subetapa, seta e trilha para voltar, arrastar muda etapa e subetapa), filtro por fase na tabela, ficha (linha do tempo das fases, quadro da fase, concluir abre a seguinte, abrir antes da hora), Configurações › Fases (prefixo repetido, ciclo, etapa nova), escuro e celular |

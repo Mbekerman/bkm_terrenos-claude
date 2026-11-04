@@ -154,3 +154,42 @@ document.addEventListener('invalid',e=>{const el=e.target,form=el.form;if(!form)
     if(p.type==='radio')(form.querySelector(`[name="${CSS.escape(p.name)}"]`)||p).focus({preventScroll:true});else p.focus({preventScroll:true})});
   const ns=[...new Set(erros.map(obrNome).filter(Boolean))];
   toast(ns.length===1?`Falta preencher: ${ns[0]}.`:`Falta preencher ${ns.length} campos: ${ns.slice(0,3).join(', ')}${ns.length>3?'…':''}.`,true)},true);
+
+/* ===================== Enter passa para o próximo campo; clique seleciona o conteúdo ===================== */
+/* Enter num campo leva ao próximo campo do mesmo quadro (pop-up aberto, senão a página), como o Tab.
+   No último campo o Enter grava e sai (decisão do Moisés, 28/out/2026): ver campoSai.
+   Ficam de fora: textarea (Enter é quebra de linha), campos de busca (type=search), listas com
+   sugestão (role=combobox) e quem marca data-enter="manter" (a criação rápida de tarefa, onde Enter cria). */
+const CAMPO_TXT='input:not([type]),input[type=text],input[type=number],input[type=email],input[type=tel],input[type=url],input[type=password]';
+const CAMPO_ALVO=CAMPO_TXT+',input[type=date],input[type=time],input[type=datetime-local],input[type=month],select,textarea';
+const campoVivo=el=>!el.disabled&&!el.readOnly&&el.tabIndex>=0&&el.getClientRects().length>0&&getComputedStyle(el).visibility!=='hidden'&&!el.closest('[inert],[hidden]');
+const campoAssin=el=>el.tagName+'|'+el.id+'|'+(el.name||'')+'|'+Object.entries(el.dataset).filter(([k])=>!/Ok$/.test(k)).map(x=>x.join('=')).join(',');
+function campoProximo(el){const esc=el.closest('[role=dialog]')||document,f=el.form&&esc.contains(el.form)?el.form:null;
+  const lista=[...esc.querySelectorAll(CAMPO_ALVO)].filter(x=>x===el||campoVivo(x)),i=lista.indexOf(el);
+  let prox=lista.slice(i+1).find(x=>!f||x.form===f);
+  if(f&&!prox)return null;return prox||null}
+function campoFoca(prox){const ass=campoAssin(prox),todos=[...document.querySelectorAll(CAMPO_ALVO)].filter(x=>campoAssin(x)===ass),ord=todos.indexOf(prox);
+  const vai=x=>{x.focus();if(x.matches(CAMPO_TXT))try{x.select()}catch(e){}};vai(prox);
+  // a saída do campo (change) pode redesenhar o quadro, como no estudo de viabilidade: procura o mesmo campo no quadro novo
+  setTimeout(()=>{if(prox.isConnected&&document.activeElement===prox)return;const n=[...document.querySelectorAll(CAMPO_ALVO)].filter(x=>campoAssin(x)===ass)[ord];
+    if(n&&document.activeElement!==n&&campoVivo(n))vai(n)},30)}
+/* Último campo: num formulário o Enter envia (grava e fecha a edição); fora de formulário, grava (a saída do campo dispara o change)
+   e fecha o pop-up em que está, pelo botão de fechar dele (ex.: estudo de viabilidade) */
+function campoSai(el){const dlg=el.closest('[role=dialog]');el.blur();
+  if(!dlg)return;setTimeout(()=>{const raiz=dlg.isConnected?dlg:document.querySelector('[role=dialog][aria-modal=true]');
+    raiz?.querySelector('[data-a$="fechar"],[aria-label^="Fechar"],.dh .iconbtn')?.click()},30)}
+addEventListener('keydown',e=>{if(e.key!=='Enter'||e.defaultPrevented||e.isComposing||e.shiftKey||e.ctrlKey||e.altKey||e.metaKey)return;
+  const el=e.target;if(!(el instanceof HTMLElement)||!el.matches(CAMPO_TXT+',input[type=date],input[type=time],input[type=datetime-local],input[type=month],select'))return;
+  if(el.matches('[role=combobox],[aria-autocomplete],[list],[data-enter=manter]')||el.closest('[data-enter=manter]'))return;
+  const prox=campoProximo(el);if(!prox){if(!el.form){e.preventDefault();campoSai(el)}return}
+  e.preventDefault();campoFoca(prox)});
+/* Clicar (ou tocar) num campo de texto ou número seleciona todo o conteúdo; o segundo clique, já no campo, põe o cursor.
+   Arrastar para marcar um pedaço continua valendo. Foco dado pelo próprio sistema (ao redesenhar) não seleciona. */
+let SEL_CLIQUE=null;
+document.addEventListener('pointerdown',e=>{const el=e.target;SEL_CLIQUE=el instanceof HTMLElement&&el.matches(CAMPO_TXT)&&document.activeElement!==el&&!el.closest('[data-enter=manter]')?el:null},true);
+const selClique=e=>{const el=SEL_CLIQUE;if(!el||document.activeElement!==el)return;SEL_CLIQUE=null;
+  let s0=null,s1=null;try{s0=el.selectionStart;s1=el.selectionEnd}catch(x){}if(s0!==s1)return;const sel=()=>{try{el.select()}catch(x){}};sel();let tecla=false;el.addEventListener('keydown',()=>tecla=true,{once:true});
+  // no toque o navegador ainda põe o cursor depois do click: seleciona de novo se nada foi marcado à mão
+  setTimeout(()=>{let a=0,b=0;try{a=el.selectionStart;b=el.selectionEnd}catch(x){}if(!tecla&&document.activeElement===el&&a===b)sel()},60)};
+// no mouse o foco vem no apertar, no toque só no soltar (por isso também no click)
+document.addEventListener('pointerup',selClique,true);document.addEventListener('click',selClique,true);

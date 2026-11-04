@@ -218,7 +218,7 @@ document.addEventListener('click',e=>{if(UI.fmMenu&&!e.target.closest?.('.fm-mw'
 {const exNova=tkNovaHtml;tkNovaHtml=function(fechar){const sel=UI.tkSel||{};if(sel.mais)return exNova(fechar);
   const t=sel.tid?T(sel.tid):null,ult=(S.vzUlt||{})[me()],l=fmListaPadrao(t,sel.lista);
   return `<div class="dh"><div><h2>Nova tarefa</h2>${t?`<div class="muted" style="margin-top:4px">${t.codigo} · ${esc(t.nome)}</div>`:''}</div>${fechar}</div>
-  <form data-form="tarefa-r" id="f-tkr" class="tkr"><div class="fields">
+  <form data-form="tarefa-r" id="f-tkr" class="tkr" data-enter="manter"><div class="fields">
     <div class="field full"><label for="tr-t">Tarefa</label><input id="tr-t" name="titulo" required value="${esc(sel.rasc?.titulo||'')}" placeholder="Ex.: cobrar a contraproposta do proprietário" autocomplete="off"></div>
     ${t?'':`<div class="field full"><label for="tr-ter">Terreno</label><select id="tr-ter" name="ter" required><option value="">Escolha o terreno</option>${ativosBanco().map(x=>`<option value="${x.id}" ${(sel.rasc?.ter||UI.tk?.ter)===x.id?'selected':''}>${x.codigo} · ${esc(x.nome)}</option>`).join('')}</select></div>`}
     <div class="field full"><label for="tr-r">Responsável</label>${tkSelU('resp',sel.rasc?.resp!=null?sel.rasc.resp:me(),'Sem responsável','id="tr-r"')}</div>
