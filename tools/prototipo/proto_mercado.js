@@ -10,8 +10,8 @@
      preço e R$/m² valem para as unidades à venda, e todos na mesma unidade: basta uma unidade dentro de todos para o
      empreendimento aparecer.
    A versão anterior (25/out) era uma camada de exemplo unidade por unidade, com grupos e categorias de produto; saiu. */
-/* cores neon, fora da paleta dos pinos dos terrenos (pedido do Moisés, 4/nov/2026); prédio escuro por dentro */
-const MK_SIT={breve_lancamento:['Breve lançamento','#ffea00'],lancamento:['Lançamento','#39ff14'],em_obras:['Em obras','#ff2bd6'],pronto:['Pronto','#00f0ff'],usado:['Usado','#ffffff'],nao_informado:['Sem situação','#ff9100']};
+/* cores das etiquetas (tons claros com o prédio no tom escuro da mesma cor; pedido do Moisés, 4/nov/2026, trocando o neon), fora da paleta dos pinos */
+const MK_SIT={breve_lancamento:['Breve lançamento','#ffdf99','#7a5900'],lancamento:['Lançamento','#c4eed0','#0f5223'],em_obras:['Em obras','#ffdcc1','#8a4a00'],pronto:['Pronto','#f0dbff','#6b2c91'],usado:['Usado','#ffd8e8','#8f1d52'],nao_informado:['Sem situação','#e3e3e3','#444746']};
 const mkSitK=e=>MK_SIT[e?.sit]?e.sit:'nao_informado',mkOff=()=>UI.mkOff||(UI.mkOff=[]);
 const MK_RAIOS=[1,2,3];
 const MK={box:null,abertoEm:0,d:null,erro:null,promessa:null};
@@ -106,14 +106,16 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&MF_ABERTO&&!UI.moda
 /* ---------- marca no mapa: quadrado com um prédio, na cor da situação (pedido do Moisés, 4/nov/2026: a bolinha se perdia
    no meio dos pinos dos terrenos) ---------- */
 const MK_PREDIO='M4 21V5l8-3v19M12 9l8 3v9M2 21h20M7 8h2M7 12h2M7 16h2M15 14h2M15 18h2';
-const mkMarcaHtml=e=>`<span class="mk-b" style="background:${(MK_SIT[e?.sit]||MK_SIT.nao_informado)[1]}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="#202124" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="${MK_PREDIO}"/></svg></span>`;
+const mkCor=e=>MK_SIT[mkSitK(e)];
+/* destacado (o empreendimento aberto): fundo escuro, prédio branco e anel azul */
+const mkMarcaHtml=(e,dest)=>{const [,f,g]=mkCor(e);return `<span class="mk-b${dest?' mk-dest-b':''}" style="background:${dest?'#202124':f};border-color:${dest?'#fff':g}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="${dest?'#fff':g}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="${MK_PREDIO}"/></svg></span>`};
 /* no Leaflet os ~2 mil empreendimentos ficam em canvas: o mesmo quadrado desenhado à mão (o clique segue o raio do círculo) */
 let MK_SQ=null;
 function mkQuadrado(){if(MK_SQ)return MK_SQ;const ico=new Path2D(MK_PREDIO);
   L.Canvas.include({_mkSq(l){if(!this._drawing||l._empty())return;const p=l._point,c=this._ctx,r=11,o=l.options;
     c.beginPath();if(c.roundRect)c.roundRect(p.x-r,p.y-r,2*r,2*r,6);else c.rect(p.x-r,p.y-r,2*r,2*r);
-    c.lineWidth=5;c.strokeStyle='rgba(0,0,0,.35)';c.stroke();c.fillStyle=o.fillColor;c.fill();c.lineWidth=2;c.strokeStyle='#202124';c.stroke();
-    c.save();c.translate(p.x-6.5,p.y-6.5);c.scale(13/24,13/24);c.lineWidth=2.6;c.lineCap=c.lineJoin='round';c.strokeStyle='#202124';c.stroke(ico);c.restore()}});
+    c.lineWidth=4;c.strokeStyle='rgba(0,0,0,.25)';c.stroke();c.fillStyle=o.fillColor;c.fill();c.lineWidth=1.5;c.strokeStyle=o.color;c.stroke();
+    c.save();c.translate(p.x-6.5,p.y-6.5);c.scale(13/24,13/24);c.lineWidth=2.6;c.lineCap=c.lineJoin='round';c.strokeStyle=o.color;c.stroke(ico);c.restore()}});
   return MK_SQ=L.CircleMarker.extend({_updatePath(){this._renderer._mkSq(this)}})}
 const mkTitulo=e=>`${e.nome} · ${(MK_SIT[e.sit]||MK_SIT.nao_informado)[0]}`;
 let MERC=null,gMerc=[],MK_CHAVE=null;
@@ -126,12 +128,21 @@ function desenhaMerc(){if(!MAPA)return;if(!MK.d){mkCarregar();return}
         const m=new AdvancedMarkerElement({map:null,position:gLL(e.lat,e.lng),content:d,title:mkTitulo(e),gmpClickable:!UI.mpModo});
         m.addListener?.('click',()=>{if(!UI.mpModo)mkAbrir(e.id)});gMerc.push(m)})}
     else{MERC?.remove();MERC=L.featureGroup();MERC._mapa=MAPA;const rd=MAPA._mkCanvas||(MAPA._mkCanvas=L.canvas({padding:.5}));
-      const Q=mkQuadrado();lista.forEach(e=>new Q([e.lat,e.lng],{renderer:rd,radius:12,weight:2,color:'#fff',fillColor:(MK_SIT[e.sit]||MK_SIT.nao_informado)[1],fillOpacity:1,interactive:!UI.mpModo,bubblingMouseEvents:false})
+      const Q=mkQuadrado();lista.forEach(e=>new Q([e.lat,e.lng],{renderer:rd,radius:12,weight:2,color:mkCor(e)[2],fillColor:mkCor(e)[1],fillOpacity:1,interactive:!UI.mpModo,bubblingMouseEvents:false})
         .bindTooltip(mkTitulo(e),{direction:'top',offset:[0,-6]}).on('click',ev=>{L.DomEvent.stop(ev);if(!UI.mpModo)mkAbrir(e.id)}).addTo(MERC))}}
   else{const ar=$('.mapa-area');if(ar&&!ar.dataset.merc)ar.dataset.merc=gMerc.length||MERC?.getLayers().length||0}
   mostrarMerc(UI.mpMerc!==false);
   if(!MAPA._mk){MAPA._mk=1;GG?MAPA.addListener('click',mkFecharDoMapa):MAPA.on('click',mkFecharDoMapa)}}
-function mostrarMerc(on){if(GG){gMerc.forEach(m=>{if((m.map||null)!==(on?MAPA:null))m.map=on?MAPA:null});return}if(MAPA&&MERC){on?MERC.addTo(MAPA):MERC.remove()}}
+function mostrarMerc(on){mkDestaque();if(GG){gMerc.forEach(m=>{if((m.map||null)!==(on?MAPA:null))m.map=on?MAPA:null});return}if(MAPA&&MERC){on?MERC.addTo(MAPA):MERC.remove()}}
+/* empreendimento aberto fica destacado (pedido do Moisés, 4/nov/2026): continua aceso depois de fechar o card e só apaga ao abrir outro
+   ou sair do Mapa; vai num marcador próprio por cima dos outros (MK.dest) */
+let MK_DM=null;
+function mkDestaque(){try{if(MK_DM){GG?(MK_DM.map=null):MK_DM.remove()}}catch(x){}MK_DM=null;
+  const e=MK.dest&&mkEmp(MK.dest);if(!e||!MAPA||!naMapa()||UI.mpMerc===false||mkOff().includes(mkSitK(e)))return;
+  if(GG){const d=document.createElement('div');d.className='mk g mk-dest';d.innerHTML=mkMarcaHtml(e,true);
+    MK_DM=new gLib.marker.AdvancedMarkerElement({map:MAPA,position:gLL(e.lat,e.lng),content:d,title:mkTitulo(e),zIndex:3000,gmpClickable:!UI.mpModo});MK_DM.addListener?.('click',()=>{if(!UI.mpModo)mkAbrir(e.id)});return}
+  MK_DM=L.marker([e.lat,e.lng],{icon:L.divIcon({className:'mk mk-dest',html:mkMarcaHtml(e,true),iconSize:[30,30],iconAnchor:[15,15]}),zIndexOffset:3000,interactive:!UI.mpModo,title:mkTitulo(e)})
+    .on('click',ev=>{L.DomEvent.stop(ev);if(!UI.mpModo)mkAbrir(e.id)}).addTo(MAPA)}
 window.__mkAbrir=id=>mkAbrir(id);  // roteiros de teste
 function mkAtualizarTela(){if(naMapa()){desenhaMerc();const lg=$('#mp-leg');if(lg)lg.innerHTML=mpLegenda();mfDrawer()}
   const sec=$('.mk-sec'),t=UI.route==='terreno'?T(UI.id):null;if(sec&&t){const d=document.createElement('div');d.innerHTML=mkSecaoHtml(t);sec.replaceWith(d.firstElementChild)}}
@@ -165,7 +176,7 @@ function mkBox(){const area=$('.mapa-area');let el=$('#mk-box');const e=MK.box&&
   if(!e||!area){el?.remove();if(!e)MK.box=null;return}
   if(!el||el.parentNode!==area){el?.remove();el=document.createElement('div');el.id='mk-box';area.appendChild(el)}
   el.innerHTML=mkBoxHtml(e)}
-function mkAbrir(id){MK.box=id;MK.abertoEm=Date.now();ccFechar();if(UI.mpSel)mpSelecionar(null);if(UI.fichaSheet){UI.fichaSheet=null;fichaSheet()}mkBox()}
+function mkAbrir(id){MK.box=id;MK.dest=id;mkDestaque();MK.abertoEm=Date.now();ccFechar();if(UI.mpSel)mpSelecionar(null);if(UI.fichaSheet){UI.fichaSheet=null;fichaSheet()}mkBox()}
 function mkFechar(){if(!MK.box)return false;MK.box=null;mkBox();return true}
 const mkFecharDoMapa=()=>{if(Date.now()-MK.abertoEm>350)mkFechar()};
 
@@ -191,7 +202,7 @@ const _mpSelecionarMk=mpSelecionar;mpSelecionar=function(id){if(id)mkFechar();re
 const _fichaSheetMk=fichaSheet;fichaSheet=function(){if(UI.fichaSheet){mkFechar();if(MF_ABERTO){MF_ABERTO=false;mfDrawer()}}return _fichaSheetMk.apply(this,arguments)};
 /* botão do filtro do mercado na barra do mapa, depois de Camadas */
 const _rdBarraBotaoMk=rdBarraBotao;rdBarraBotao=function(){return _rdBarraBotaoMk.apply(this,arguments)+mfBotao()};
-const _posRenderMk=posRender;posRender=function(){_posRenderMk.apply(this,arguments);if(!naMapa()){MK.box=null;MF_ABERTO=false}mkBox();mfDrawer()};
+const _posRenderMk=posRender;posRender=function(){_posRenderMk.apply(this,arguments);if(!naMapa()){MK.box=null;MK.dest=null;MF_ABERTO=false}mkBox();mfDrawer()};
 
 /* ---------- ficha do terreno, aba Entorno: R$/m² médio e VSO médio a 1, 2 e 3 km ---------- */
 const MK_NAO_ENTREGUE=['lancamento','breve_lancamento','em_obras'];

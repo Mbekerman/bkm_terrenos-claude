@@ -4114,7 +4114,10 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 :root[data-tema="escuro"] .mp-redim::after { background: #444746 }
 :root[data-tema="escuro"] .mp-redim:hover::after, :root[data-tema="escuro"] .mp-redim:focus-visible::after, :root[data-tema="escuro"] body.mp-arrastando .mp-redim::after { background: #a8c7fa }
 /* concorrência (monitor de mercado): quadrado com um prédio, na cor da situação, para não se confundir com os pinos dos terrenos */
-.mk-b { display: grid; place-items: center; width: 22px; height: 22px; box-sizing: border-box; border-radius: 6px; border: 2px solid #202124; box-shadow: 0 0 0 1px rgba(255,255,255,.5), 0 1px 4px rgba(0,0,0,.4) }
+.mk-b { display: grid; place-items: center; width: 22px; height: 22px; box-sizing: border-box; border-radius: 6px; border: 1.5px solid; box-shadow: 0 1px 3px rgba(0,0,0,.3) }
+/* empreendimento aberto: maior, escuro, com anel branco e azul (o mesmo azul do pino selecionado) */
+.mk-dest { background: none; border: 0; overflow: visible } .mk.g.mk-dest { width: 30px; height: 30px }
+.mk-b.mk-dest-b { width: 30px; height: 30px; border-radius: 8px; border-width: 2px; box-shadow: 0 0 0 3px #0094fe, 0 2px 8px rgba(0,0,0,.45) } .mk-b.mk-dest-b svg { width: 18px; height: 18px }
 .mk-b svg { width: 13px; height: 13px; display: block }
 .mk.g { width: 22px; height: 22px }
 .lg-poi .mk-b { width: 16px; height: 16px; border-radius: 5px; border-width: 1.5px; box-shadow: none } .lg-poi .mk-b svg { width: 10px; height: 10px }
@@ -4127,3 +4130,6 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 .lg-sb:focus-visible { outline: 2px solid #0b57d0; outline-offset: -2px }
 .lg-msit[aria-pressed="false"] .mk-b { filter: grayscale(1); opacity: .5 }
 .lg-msit[disabled] { opacity: .5; cursor: default }
+/* legenda: item desligado (ele ou o ramo de cima) fica apagado; a bolinha e o número de um ramo ligam e desligam tudo dentro */
+#mp-leg .lg-i.lg-off .pin-mini { filter: grayscale(1); opacity: .45 } #mp-leg .lg-i.lg-off { color: var(--m-on-surface-variant, #444746) }
+#mp-leg .lg-tg { cursor: pointer } #mp-leg span.lg-tg:hover .pin-mini, #mp-leg .n.lg-tg:hover { outline: 2px solid #0b57d0; outline-offset: 1px; border-radius: 9px }
