@@ -17,7 +17,11 @@ const ccM2=v=>v==null?'—':brl(v)+'/m²';
    (atrapalhava a leitura do mapa); o nome fica no quadro que abre ao tocar */
 const CC_PREDIO='<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 21V5l8-3v19M12 9l8 3v9M2 21h20M7 8h2M7 12h2M7 16h2M15 14h2M15 18h2"/></svg>';
 const ccMarcaHtml=()=>`<span class="conc-b">${CC_PREDIO}</span>`;
-const ccAtivos=()=>(S.concorrentes||[]).filter(c=>c.ativo!==false);
+/* Decisão do Moisés (4/nov/2026): por ora, sem concorrência cadastrada à mão; só o mercado do Órulo (proto_mercado.js).
+   O cadastro fica no código e no banco (tabelas concorrencia_*), desligado: sem ícones, sem item na legenda e sem
+   "Nova concorrência" no menu do mapa. Para voltar, CC_MANUAL = true. */
+const CC_MANUAL=false;
+const ccAtivos=()=>CC_MANUAL?(S.concorrentes||[]).filter(c=>c.ativo!==false):[];
 const ccC=id=>(S.concorrentes||[]).find(c=>c.id===id);
 const ccEmp=id=>(S.concEmpresas||[]).find(e=>e.id===id);
 const ccEmpN=c=>ccEmp(c.emp)?.nome||'';

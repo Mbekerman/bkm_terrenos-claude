@@ -11,7 +11,9 @@
 --                     comerciais marcadas para deduzir (ITBI e registro de
 --                     unidades vendidas, Produto Caixa)
 --   Custo de obras, em camadas:
---     obra incidente (típico) = valor unitário (R$/m²) × área privativa total
+--     obra incidente (típico) = valor unitário (R$/m²) × área privativa total,
+--                     ou × área construída total (obra_base 'construida'; decisão
+--                     do Moisés, 3/nov/2026, lote 4 da ficha em abas)
 --     itens atípicos          bases: área privativa, % do típico, % do VGV, verba
 --     obra raso    = incidente + atípicos
 --     obra não incidente      + % do raso
@@ -25,7 +27,11 @@
 --     % do lucro líquido ou verba. Despesas financeiras (Alavancagem, Juros
 --     PJ, Custo financeiro, Impostos) e Taxas: decisões do Moisés de
 --     26/out/2026; o estudo nasce com o valor padrão da empresa e só a
---     diretoria ou o administrador muda (app.eh_diretoria). O % do lucro é circular: lucro = L0 ÷ (1 + Σ%), onde L0 é o
+--     diretoria ou o administrador muda (app.eh_diretoria). Custo de capital da
+--     permuta financeira e do pagamento do terreno (decisão do Moisés,
+--     28/out/2026): um grupo cada, dentro de Despesas financeiras, com uma base
+--     só, o Aporte, em %: a permuta financeira em dinheiro (com o mínimo
+--     garantido, quando ele vale) e o pagamento em dinheiro do terreno. O % do lucro é circular: lucro = L0 ÷ (1 + Σ%), onde L0 é o
 --     lucro antes desses itens; sem lucro (L0 ≤ 0), eles valem zero.
 --   Despesas comerciais: % do VGV, verba total, verba por unidade (× unidades
 --     líquidas: total − permuta − comissão; decisão do Moisés, 26/out/2026)
@@ -52,19 +58,22 @@ returns text[] language sql immutable set search_path = '' as $$
     when 'projetos'           then array['area','pct_obra_tipica','pct_vgv','verba','pct_obra_raso','pct_obra_total']
     when 'pos_obra'           then array['area','pct_obra_tipica','pct_vgv','verba','pct_obra_raso','pct_obra_total']
     when 'comercial'          then array['pct_vgv','verba','verba_unidade','verba_mensal']
+    when 'capital_permuta'    then array['pct_aporte_permuta']
+    when 'capital_pagamento'  then array['pct_aporte_pagamento']
     else array['pct_vgv','pct_obra_total','pct_lucro','verba'] end
 $$;
 create or replace function app.viab_secao(p_grupo text)
 returns text language sql immutable set search_path = '' as $$
   select case when p_grupo in ('obra_atipica','obra_nao_incidente','projetos','pos_obra') then 'obra'
+              when p_grupo in ('capital_permuta','capital_pagamento') then 'financeiro'
               when p_grupo in ('taxas','financeiro','comercial') then p_grupo else 'despesas' end
 $$;
 create or replace function app.viab_fixo(p_grupo text)
-returns boolean language sql immutable set search_path = '' as $$ select p_grupo in ('taxas','financeiro','comercial') $$;
+returns boolean language sql immutable set search_path = '' as $$ select p_grupo in ('taxas','financeiro','capital_permuta','capital_pagamento','comercial') $$;
 -- Taxas e Despesas financeiras: o estudo nasce com o valor padrão da empresa e só a
 -- diretoria ou o administrador muda (decisão do Moisés, 26/out/2026).
 create or replace function app.viab_restrito(p_grupo text)
-returns boolean language sql immutable set search_path = '' as $$ select p_grupo in ('taxas','financeiro') $$;
+returns boolean language sql immutable set search_path = '' as $$ select p_grupo in ('taxas','financeiro','capital_permuta','capital_pagamento') $$;
 
 -- ---------------------------------------------------------------------
 -- Lista de itens da empresa (configuração; empresa nula = padrão)
@@ -74,7 +83,8 @@ create table app.viabilidade_despesas (
   codigo        text not null,
   nome          text not null check (length(trim(nome)) > 0),
   grupo         text not null check (grupo in ('obra_atipica','obra_nao_incidente','projetos','pos_obra',
-                                               'terreno','incorporacao','cef','adm_financeiro','taxas','financeiro','comercial')),
+                                               'terreno','incorporacao','cef','adm_financeiro','taxas','financeiro',
+                                               'capital_permuta','capital_pagamento','comercial')),
   tipo_padrao   text check (tipo_padrao = any (app.viab_tipos(grupo))),
   valor_padrao  numeric(16,4),
   deduz_vgv     boolean not null default false check (not deduz_vgv or grupo = 'comercial'),  -- pode sair do VGV líquido
@@ -93,7 +103,7 @@ insert into app.viabilidade_despesas (codigo, nome, grupo, tipo_padrao, deduz_vg
   ('aprovacoes', 'Aprovações e licenças', 'projetos', 'verba', false, 8),
   ('outorga', 'Outorga onerosa e contrapartidas', 'projetos', 'verba', false, 9),
   ('assistencia_tecnica', 'Assistência técnica pós-obra', 'pos_obra', 'pct_obra_total', false, 10),
-  ('estoque', 'Condomínio e IPTU das unidades em estoque', 'pos_obra', 'verba', false, 11),
+  ('estoque', 'Manutenção e taxas de unidades em estoque', 'pos_obra', 'verba', false, 11),
   ('itbi_terreno', 'ITBI do terreno', 'terreno', 'verba', false, 12),
   ('registro_terreno', 'Escritura e registro do terreno', 'terreno', 'verba', false, 13),
   ('certidoes', 'Diligência e certidões', 'terreno', 'verba', false, 14),
@@ -111,15 +121,17 @@ insert into app.viabilidade_despesas (codigo, nome, grupo, tipo_padrao, deduz_vg
   ('juros_pj', 'Custo de juros PJ', 'financeiro', 'pct_obra_total', false, 26),
   ('custo_financeiro', 'Custo financeiro', 'financeiro', 'verba', false, 27),
   ('impostos', 'Impostos', 'financeiro', 'pct_vgv', false, 28),
-  ('construcao_pdv', 'Construção do PDV', 'comercial', 'verba', false, 29),
-  ('custo_fixo_comercial', 'Custo fixo comercial', 'comercial', 'verba_mensal', false, 30),
-  ('marketing', 'Marketing', 'comercial', 'pct_vgv', false, 31),
-  ('comissao', 'Comissão', 'comercial', 'pct_vgv', false, 32),
-  ('itbi_vendas', 'ITBI de unidades vendidas', 'comercial', 'pct_vgv', true, 33),
-  ('registro_vendas', 'Registro de unidades vendidas', 'comercial', 'pct_vgv', true, 34),
-  ('contratos_cef', 'Taxa de emissão de contratos CEF', 'comercial', 'verba', false, 35),
-  ('produto_caixa', 'Produto Caixa', 'comercial', 'pct_vgv', true, 36),
-  ('outros_comercial', 'Outros', 'comercial', 'verba', false, 37);
+  ('capital_permuta', 'Custo de capital permuta financeira', 'capital_permuta', 'pct_aporte_permuta', false, 29),
+  ('capital_pagamento', 'Custo de capital pagamento terreno', 'capital_pagamento', 'pct_aporte_pagamento', false, 30),
+  ('construcao_pdv', 'Construção do PDV', 'comercial', 'verba', false, 31),
+  ('custo_fixo_comercial', 'Custo fixo comercial', 'comercial', 'verba_mensal', false, 32),
+  ('marketing', 'Marketing', 'comercial', 'pct_vgv', false, 33),
+  ('comissao', 'Comissão', 'comercial', 'pct_vgv', false, 34),
+  ('itbi_vendas', 'ITBI de unidades vendidas', 'comercial', 'pct_vgv', true, 35),
+  ('registro_vendas', 'Registro de unidades vendidas', 'comercial', 'pct_vgv', true, 36),
+  ('contratos_cef', 'Taxa de emissão de contratos CEF', 'comercial', 'verba', false, 37),
+  ('produto_caixa', 'Produto Caixa', 'comercial', 'pct_vgv', true, 38),
+  ('outros_comercial', 'Outros', 'comercial', 'verba', false, 39);
 
 alter table app.viabilidade_despesas enable row level security;
 create policy ver on app.viabilidade_despesas for select to authenticated using (empresa_id in (select app.minhas_empresas()));
@@ -151,6 +163,8 @@ alter table app.viabilidades
   add column tipo               text not null default 'externa' check (tipo in ('externa','estatica')),
   -- digitados
   add column custo_m2           numeric(12,2) check (custo_m2 >= 0),             -- obra incidente: valor unitário (R$/m²)
+  add column obra_base          text not null default 'privativa' check (obra_base in ('privativa','construida')),  -- o R$/m² multiplica qual área
+  add column area_construida    numeric(14,2) check (area_construida > 0),       -- digitada; com estudo de massa, vem dele
   add column permuta_fin_pct    numeric(7,4) check (permuta_fin_pct between 0 and 100),
   add column deducao_vgv_pct    numeric(7,4) check (deducao_vgv_pct between 0 and 100),
   add column minimo_garantido   numeric(16,2) check (minimo_garantido >= 0),
@@ -207,7 +221,8 @@ create table app.viabilidade_linhas (
   viabilidade_id     uuid not null references app.viabilidades(id) on delete cascade,
   ordem              int  not null default 0,
   despesa            text not null,
-  tipo               text not null check (tipo in ('area','pct_obra_tipica','pct_obra_raso','pct_obra_total','pct_vgv','pct_lucro','verba','verba_unidade','verba_mensal')),
+  tipo               text not null check (tipo in ('area','pct_obra_tipica','pct_obra_raso','pct_obra_total','pct_vgv','pct_lucro','verba','verba_unidade','verba_mensal',
+                                         'pct_aporte_permuta','pct_aporte_pagamento')),
   valor              numeric(16,4),               -- nos tipos em %, o percentual (4 = 4%); nulo: ainda sem valor (conta zero)
   quantidade         numeric(10,2) not null default 1 check (quantidade > 0),   -- meses, só na verba mensal
   criado_em          timestamptz not null default now(),
@@ -267,10 +282,15 @@ begin
                                             and l.despesa = j->>'despesa' and l.id <> (j->>'id')::uuid) then
       raise exception 'Item fixo já está no estudo' using errcode = '23505';
     end if;
-    -- criar_viabilidade (padrão da empresa ou cópia de outro estudo) liga app.viab_criando
-    if app.viab_restrito(d.grupo) and coalesce(current_setting('app.viab_criando', true), '') <> 'on'
+    -- criar_viabilidade (padrão da empresa ou cópia de outro estudo) liga app.viab_criando.
+    -- Vale também para a linha que era restrita e mudaria de item (trocar a taxa
+    -- por outra despesa e zerar o valor).
+    if (app.viab_restrito(d.grupo)
+        or (tg_op = 'UPDATE' and exists (select 1 from app.viabilidade_despesas o where o.empresa_id = old.empresa_id
+                                           and o.codigo = old.despesa and app.viab_restrito(o.grupo))))
+       and coalesce(current_setting('app.viab_criando', true), '') <> 'on'
        and not app.eh_diretoria(new.empresa_id)
-       and (tg_op = 'INSERT' or (new.tipo, new.valor, new.quantidade) is distinct from (old.tipo, old.valor, old.quantidade)) then
+       and (tg_op = 'INSERT' or (new.despesa, new.tipo, new.valor, new.quantidade) is distinct from (old.despesa, old.tipo, old.valor, old.quantidade)) then
       raise exception 'Taxas e despesas financeiras: só a diretoria ou o administrador muda' using errcode = '42501';
     end if;
   end if;
@@ -308,9 +328,11 @@ returns numeric language sql stable set search_path = '' as $$
 $$;
 
 -- Cálculo (o mesmo do protótipo, vbCalc). Cada linha arredondada em centavos.
+-- Roda com todas as linhas (Taxas e Financeiras entram no total de quem não é
+-- da diretoria), mas só devolve o detalhe das linhas que quem pergunta vê.
 create or replace function app.calcular_viabilidade(p_id uuid)
 returns jsonb
-language plpgsql stable set search_path = ''
+language plpgsql stable security definer set search_path = ''
 as $$
 declare
   v app.viabilidades; b jsonb;
@@ -320,9 +342,12 @@ declare
   v_oi numeric; v_raso numeric; v_ot numeric; v_obras numeric;
   v_pfc numeric; v_pf numeric; v_terr numeric; v_pl numeric; v_l0 numeric; v_lb numeric;
   v_linhas jsonb; v_sec jsonb; v_lucro numeric;
-  DT constant text[] := array['terreno','incorporacao','cef','adm_financeiro','taxas','financeiro'];
+  DT constant text[] := array['terreno','incorporacao','cef','adm_financeiro','taxas','financeiro','capital_permuta','capital_pagamento'];
 begin
   select * into v from app.viabilidades where id = p_id;
+  if auth.uid() is not null and v.id is not null and v.empresa_id not in (select app.minhas_empresas()) then
+    raise exception 'Estudo não encontrado' using errcode = 'P0002';
+  end if;
   select coalesce(sum(quantidade * area_privativa), 0), coalesce(sum(quantidade), 0), coalesce(sum(quantidade_permuta), 0), coalesce(sum(quantidade_comissao), 0),
          coalesce(sum(quantidade_permuta * area_privativa), 0), coalesce(sum(quantidade_comissao * area_privativa), 0),
          coalesce(sum(quantidade * preco_unitario), 0), coalesce(sum(quantidade_permuta * preco_unitario), 0), coalesce(sum(quantidade_comissao * preco_unitario), 0)
@@ -338,7 +363,7 @@ begin
   v_dedp := round(v_vv * coalesce(v.deducao_vgv_pct, 0) / 100, 2);
   v_liq := v_vv - v_dedp - v_dedc;
   -- obra em camadas
-  v_oi := round(coalesce(v.custo_m2, 0) * v_area, 2);
+  v_oi := round(coalesce(v.custo_m2, 0) * case when v.obra_base = 'construida' then coalesce(v.area_construida, 0) else v_area end, 2);
   b := b || jsonb_build_object('pct_obra_tipica', v_oi);
   v_raso := v_oi + app._viab_soma(p_id, array['obra_atipica'], b);
   b := b || jsonb_build_object('pct_obra_raso', v_raso);
@@ -349,6 +374,8 @@ begin
   v_pfc := round(v_liq * coalesce(v.permuta_fin_pct, 0) / 100, 2);
   v_pf := greatest(v_pfc, coalesce(v.minimo_garantido, 0));
   v_terr := v_pf + coalesce(v.pagamento_dinheiro, 0) + coalesce(v.comissao_dinheiro, 0);
+  -- Aporte do custo de capital: a permuta financeira em dinheiro e o pagamento em dinheiro do terreno
+  b := b || jsonb_build_object('pct_aporte_permuta', v_pf, 'pct_aporte_pagamento', coalesce(v.pagamento_dinheiro, 0));
   -- % do lucro líquido (circular): lucro antes desses itens ÷ (1 + Σ%)
   select coalesce(sum(l.valor), 0) into v_pl
     from app.viabilidade_linhas l join app.viabilidade_despesas d on d.empresa_id = l.empresa_id and d.codigo = l.despesa
@@ -356,7 +383,8 @@ begin
   v_l0 := v_liq - v_terr - v_obras - (v_com - v_dedc) - app._viab_soma(p_id, DT, b, true);
   v_lb := case when v_l0 > 0 then round(v_l0 / (1 + v_pl / 100), 2) else 0 end;
   b := b || jsonb_build_object('pct_lucro', v_lb);
-  select coalesce(jsonb_agg(jsonb_build_object('id', y.id, 'grupo', y.grupo, 'secao', y.secao, 'base', y.base, 'valor', y.valor) order by y.ordem, y.criado_em), '[]'::jsonb),
+  select coalesce(jsonb_agg(jsonb_build_object('id', y.id, 'grupo', y.grupo, 'secao', y.secao, 'base', y.base, 'valor', y.valor) order by y.ordem, y.criado_em)
+                    filter (where auth.uid() is null or not app.viab_restrito(y.grupo) or app.eh_diretoria(v.empresa_id)), '[]'::jsonb),
          jsonb_build_object('obra', v_obras, 'terreno', v_terr,
                             'despesas', coalesce(sum(y.valor) filter (where y.secao = 'despesas'), 0),
                             'taxas', coalesce(sum(y.valor) filter (where y.secao = 'taxas'), 0),
@@ -372,7 +400,7 @@ begin
            where l.viabilidade_id = p_id) y;
   v_lucro := v_l0 - v_lucro;
   return jsonb_build_object(
-    'area_privativa', v_area, 'unidades', v_un, 'unidades_permuta', v_unp, 'unidades_comissao', v_unc,
+    'area_privativa', v_area, 'area_construida', v.area_construida, 'obra_base', v.obra_base, 'unidades', v_un, 'unidades_permuta', v_unp, 'unidades_comissao', v_unc,
     'area_permuta', v_ap, 'area_comissao', v_ac,
     'vgv', v_vgv, 'permuta', v_vp, 'comissao', v_vc, 'vgv_vendido', v_vv,
     'deducao_pct', v_dedp, 'deducao_comercial', v_dedc, 'deducoes', v_dedp + v_dedc, 'vgv_liquido', v_liq,
@@ -436,6 +464,21 @@ begin
   end loop;
 end $$;
 
+-- Taxas e Despesas financeiras: fora da diretoria, só o total (que fica em
+-- app.viabilidades); cada linha, o valor e o log dela, só a diretoria vê.
+create or replace function app.viab_linha_visivel(p_empresa uuid, p_despesa text)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select app.eh_diretoria(p_empresa)
+      or not exists (select 1 from app.viabilidade_despesas d
+                      where d.empresa_id = p_empresa and d.codigo = p_despesa and app.viab_restrito(d.grupo))
+$$;
+revoke all on function app.viab_linha_visivel(uuid, text) from public;
+grant execute on function app.viab_linha_visivel(uuid, text) to authenticated;
+drop policy ver on app.viabilidade_linhas;
+create policy ver on app.viabilidade_linhas for select to authenticated
+  using (empresa_id in (select app.minhas_empresas()) and app.viab_linha_visivel(empresa_id, despesa));
+-- (o log de cada linha segue a mesma regra: ver a política da auditoria depois dos modelos)
+
 -- ---------------------------------------------------------------------
 -- Modelos de estudo (decisão do Moisés, 26/out/2026): valores e bases de
 -- cálculo guardados para o estudo novo já nascer com eles. Modelo da
@@ -467,8 +510,35 @@ create trigger t_upd before update on app.viabilidade_modelos for each row execu
 alter table app.viabilidade_modelos enable row level security;
 create policy ver on app.viabilidade_modelos for select to authenticated
   using (empresa_id in (select app.minhas_empresas()) and (user_id is null or user_id = auth.uid()));
-grant select on app.viabilidade_modelos to authenticated;
 create trigger t_aud after insert or update or delete on app.viabilidade_modelos for each row execute function app.tg_auditoria();
+
+-- Leitura dos modelos só por esta função (revisão de 2/nov/2026): o modelo da
+-- empresa salvo pela diretoria guarda Taxas e Despesas financeiras, e fora da
+-- diretoria essas linhas saem de `dados`, como no estudo.
+create or replace function app.modelos_viabilidade(p_empresa uuid)
+returns table (id uuid, empresa_id uuid, user_id uuid, nome text, padrao boolean, dados jsonb,
+               criado_por uuid, criado_em timestamptz, atualizado_em timestamptz)
+language sql stable security definer set search_path = '' as $$
+  select m.id, m.empresa_id, m.user_id, m.nome, m.padrao,
+         jsonb_set(m.dados, '{linhas}', coalesce((select jsonb_agg(l order by n) from jsonb_array_elements(m.dados->'linhas') with ordinality x(l, n)
+                                                  where app.viab_linha_visivel(m.empresa_id, l->>'despesa')), '[]'::jsonb)),
+         m.criado_por, m.criado_em, m.atualizado_em
+  from app.viabilidade_modelos m
+  where m.empresa_id = p_empresa and p_empresa in (select app.minhas_empresas())
+    and (m.user_id is null or m.user_id = auth.uid())
+  order by m.user_id is not null, m.nome $$;
+revoke all on function app.modelos_viabilidade(uuid) from public;
+grant execute on function app.modelos_viabilidade(uuid) to authenticated;
+-- e o log do modelo, que leva os mesmos dados, só a diretoria vê
+grant execute on function app.eh_diretoria(uuid) to authenticated;
+drop policy auditoria_gestor_ve on app.auditoria;
+create policy auditoria_gestor_ve on app.auditoria for select to authenticated
+  using (app.eh_gestor(empresa_id)
+         and (fluxo.tarefa_do_log(tabela, registro_id, antes, depois) is null
+              or fluxo.papel_tarefa(fluxo.tarefa_do_log(tabela, registro_id, antes, depois)) is not null)
+         and (tabela <> 'viabilidade_linhas'
+              or (app.viab_linha_visivel(empresa_id, antes->>'despesa') and app.viab_linha_visivel(empresa_id, depois->>'despesa')))
+         and (tabela <> 'viabilidade_modelos' or app.eh_diretoria(empresa_id)));
 
 -- Grava o estudo como modelo: novo (p_modelo nulo) ou por cima de um modelo
 -- existente (o dono, ou o administrador no da empresa).
@@ -491,7 +561,7 @@ begin
   end if;
   if p_da_empresa then perform app.exigir_administrador(v.empresa_id); end if;
   select jsonb_build_object(
-           'custo_m2', v.custo_m2, 'deducao_vgv_pct', v.deducao_vgv_pct, 'deduz_vgv', to_jsonb(v.deduz_vgv),
+           'custo_m2', v.custo_m2, 'obra_base', v.obra_base, 'deducao_vgv_pct', v.deducao_vgv_pct, 'deduz_vgv', to_jsonb(v.deduz_vgv),
            'linhas', coalesce(jsonb_agg(jsonb_build_object('despesa', l.despesa, 'tipo', l.tipo, 'valor', l.valor, 'quantidade', l.quantidade)
                                         order by l.ordem, l.criado_em), '[]'::jsonb))
     into v_dados
@@ -568,19 +638,24 @@ begin
   end if;
   if m.id is not null then
     o.custo_m2 := (m.dados->>'custo_m2')::numeric;
+    o.obra_base := coalesce(m.dados->>'obra_base', 'privativa');
     o.deducao_vgv_pct := (m.dados->>'deducao_vgv_pct')::numeric;
     select coalesce(array_agg(x), '{}') into o.deduz_vgv from jsonb_array_elements_text(coalesce(m.dados->'deduz_vgv', '[]')) x
      where exists (select 1 from app.viabilidade_despesas d where d.empresa_id = t.empresa_id and d.codigo = x and d.deduz_vgv);
   end if;
-  insert into app.viabilidades (empresa_id, terreno_id, nome, tipo, custo_m2, permuta_fin_pct, deducao_vgv_pct,
-                                minimo_garantido, deduz_vgv, pagamento_dinheiro, comissao_dinheiro)
-  values (t.empresa_id, t.id, trim(p_nome), 'estatica', o.custo_m2, o.permuta_fin_pct, o.deducao_vgv_pct,
-          o.minimo_garantido, coalesce(o.deduz_vgv, '{}'), o.pagamento_dinheiro, o.comissao_dinheiro) returning id into v_id;
+  -- a cópia leva o vínculo com o estudo de massa (e as tipologias presas a ele)
+  insert into app.viabilidades (empresa_id, terreno_id, nome, tipo, custo_m2, obra_base, area_construida, permuta_fin_pct, deducao_vgv_pct,
+                                minimo_garantido, deduz_vgv, pagamento_dinheiro, comissao_dinheiro, estudo_massa_id, segue_massa_valido)
+  values (t.empresa_id, t.id, trim(p_nome), 'estatica', o.custo_m2, coalesce(o.obra_base, 'privativa'), o.area_construida, o.permuta_fin_pct, o.deducao_vgv_pct,
+          o.minimo_garantido, coalesce(o.deduz_vgv, '{}'), o.pagamento_dinheiro, o.comissao_dinheiro,
+          o.estudo_massa_id, coalesce(o.segue_massa_valido, false)) returning id into v_id;
   perform set_config('app.viab_criando', 'on', true);
   if p_copiar_de is not null then
-    insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, ordem, nome, area_privativa, quantidade, quantidade_permuta, quantidade_comissao, preco_unitario, preco_m2)
-    select empresa_id, v_id, ordem, nome, area_privativa, quantidade, quantidade_permuta, quantidade_comissao, preco_unitario, preco_m2
+    perform set_config('app.massa_sync', 'on', true);
+    insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, ordem, nome, area_privativa, quantidade, quantidade_permuta, quantidade_comissao, preco_unitario, preco_m2, massa_tipologia_id)
+    select empresa_id, v_id, ordem, nome, area_privativa, quantidade, quantidade_permuta, quantidade_comissao, preco_unitario, preco_m2, massa_tipologia_id
       from app.viabilidade_tipologias where viabilidade_id = p_copiar_de order by ordem, criado_em;
+    perform set_config('app.massa_sync', '', true);
     insert into app.viabilidade_linhas (empresa_id, viabilidade_id, ordem, despesa, tipo, valor, quantidade)
     select l.empresa_id, v_id, l.ordem, l.despesa, l.tipo, l.valor, l.quantidade
       from app.viabilidade_linhas l join app.viabilidade_despesas d on d.empresa_id = l.empresa_id and d.codigo = l.despesa and d.ativo
@@ -619,8 +694,11 @@ begin
   select * into v from app.viabilidades where id = p_id for update;
   if not found then raise exception 'Estudo não encontrado' using errcode = 'P0002'; end if;
   perform app.exigir_editor(v.empresa_id);
-  perform app._chaves_permitidas(p_dados, array['nome','custo_m2','permuta_fin_pct','deducao_vgv_pct',
+  perform app._chaves_permitidas(p_dados, array['nome','custo_m2','obra_base','area_construida','permuta_fin_pct','deducao_vgv_pct',
                                                 'minimo_garantido','deduz_vgv','pagamento_dinheiro','comissao_dinheiro']);
+  if p_dados ? 'area_construida' and v.estudo_massa_id is not null then
+    raise exception 'A área construída vem do estudo de massa' using errcode = '23514';
+  end if;
   if p_dados ? 'nome' and length(trim(coalesce(p_dados->>'nome', ''))) = 0 then raise exception 'Dê um nome ao estudo' using errcode = '22023'; end if;
   if p_dados ? 'deduz_vgv' then
     select coalesce(array_agg(distinct x), '{}') into v_ded from jsonb_array_elements_text(p_dados->'deduz_vgv') x;
@@ -632,6 +710,8 @@ begin
   update app.viabilidades set
     nome = case when p_dados ? 'nome' then trim(p_dados->>'nome') else nome end,
     custo_m2           = case when p_dados ? 'custo_m2'           then (p_dados->>'custo_m2')::numeric           else custo_m2 end,
+    obra_base          = case when p_dados ? 'obra_base'          then p_dados->>'obra_base'                     else obra_base end,
+    area_construida    = case when p_dados ? 'area_construida'    then (p_dados->>'area_construida')::numeric    else area_construida end,
     permuta_fin_pct    = case when p_dados ? 'permuta_fin_pct'    then (p_dados->>'permuta_fin_pct')::numeric    else permuta_fin_pct end,
     deducao_vgv_pct    = case when p_dados ? 'deducao_vgv_pct'    then (p_dados->>'deducao_vgv_pct')::numeric    else deducao_vgv_pct end,
     minimo_garantido   = case when p_dados ? 'minimo_garantido'   then (p_dados->>'minimo_garantido')::numeric   else minimo_garantido end,

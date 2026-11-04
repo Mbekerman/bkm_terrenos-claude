@@ -50,6 +50,8 @@ create table app.oferta_partes (
   parte_id     uuid not null references app.terreno_partes(id),
   empresa_id   uuid not null references app.empresas(id),
   valor_pedido numeric(14,2) check (valor_pedido > 0),
+  -- forma de pagamento pedida por esta parte (nula = a da oferta)
+  forma_pagamento text check (forma_pagamento in ('dinheiro','permuta_fisica','permuta_financeira','permuta_geral','permuta_com_torna')),
   primary key (oferta_id, parte_id)
 );
 create index on app.oferta_partes (parte_id);
@@ -221,39 +223,51 @@ create table app.propostas (
 );
 
 -- ---------------------------------------------------------------------
--- Tarefas: sempre do terreno; negociação opcional. "Atrasada" é calculada.
+-- Tarefas: moram no esquema fluxo (quadros e tarefas, ver 00150), no
+-- quadro do terreno. Aqui o BKM Terrenos liga a tarefa à negociação: o
+-- processo, se houver, é do mesmo terreno do quadro.
 -- ---------------------------------------------------------------------
-create table app.tarefas (
-  id             uuid primary key default gen_random_uuid(),
-  empresa_id     uuid not null references app.empresas(id),
-  terreno_id     uuid not null references app.terrenos(id) on delete cascade,
-  processo_id    uuid references app.processos(id),
-  titulo         text not null,
-  descricao      text,
-  responsavel_id uuid references auth.users(id),
-  prazo          date not null,
-  prazo_hora     time,
-  status         text not null default 'pendente' check (status in ('pendente','em_andamento','aguardando_terceiro','concluida','cancelada')),
-  prioridade     text not null default 'media' check (prioridade in ('baixa','media','alta')),
-  concluida_em   timestamptz,
-  resultado      text,
-  posicao        double precision not null default extract(epoch from clock_timestamp()),  -- ordem no quadro (coluna = status)
-  criado_por     uuid default auth.uid(),
-  criado_em      timestamptz not null default now(),
-  check ((status = 'concluida') = (concluida_em is not null))
-);
-create index on app.tarefas (terreno_id);
-create index on app.tarefas (empresa_id, status, posicao);
-create index on app.tarefas (empresa_id, prazo) where status not in ('concluida','cancelada');
+alter table fluxo.tarefas add foreign key (processo_id) references app.processos(id);
 
-create or replace function app.tg_tarefa_conclusao()
-returns trigger language plpgsql as $$
+-- Etapa do funil do cartão (lote B, 31/out/2026): a tarefa nova nasce na etapa
+-- e na subetapa atuais do terreno (o processo aberto da fase mais adiantada;
+-- subetapa desde 1/nov/2026); quem cria pode escolher outra etapa e subetapa; etapa 'nenhuma'
+-- deixa a tarefa sem etapa (nunca trava). A etapa é da fase do processo e a
+-- subetapa, da etapa.
+create or replace function app.tg_tarefa_processo()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare v_fase text;
 begin
-  if new.status = 'concluida' and new.concluida_em is null then new.concluida_em := now(); end if;
-  if new.status <> 'concluida' then new.concluida_em := null; end if;
+  if new.etapa = 'nenhuma' then
+    new.processo_id := null; new.etapa := null; new.subetapa := null;
+  elsif tg_op = 'INSERT' and new.processo_id is null and new.etapa is null and not new.modelo then
+    select p.id, p.etapa_atual, p.subetapa_atual into new.processo_id, new.etapa, new.subetapa
+    from app.processos p join fluxo.quadros q on q.objeto_tipo = 'terreno' and q.objeto_id = p.terreno_id
+    join app.fases_modelo f on f.empresa_id = p.empresa_id and f.codigo = p.fase
+    where q.id = new.quadro_id and p.parte_id is null and p.status in ('ativo','stand_by')
+    order by p.status = 'ativo' desc, f.ordem desc limit 1;
+  end if;
+  if new.processo_id is null then
+    new.etapa := null; new.subetapa := null;
+    return new;
+  end if;
+  select p.fase into v_fase from app.processos p join fluxo.quadros q on q.objeto_tipo = 'terreno' and q.objeto_id = p.terreno_id
+   where p.id = new.processo_id and q.id = new.quadro_id;
+  if v_fase is null then raise exception 'A negociação informada é de outro terreno' using errcode = '23514'; end if;
+  if new.etapa is null then
+    new.etapa := (select etapa_atual from app.processos where id = new.processo_id);
+  elsif not exists (select 1 from app.etapas_modelo e join app.processos p on p.empresa_id = e.empresa_id and p.fase = e.fase
+                    where p.id = new.processo_id and e.codigo = new.etapa) then
+    raise exception 'Etapa de outra fase' using errcode = '23514';
+  end if;
+  if new.subetapa is not null and not exists (select 1 from app.subetapas_modelo s join app.processos p on p.empresa_id = s.empresa_id and p.fase = s.fase
+                    where p.id = new.processo_id and s.codigo = new.subetapa and s.etapa = new.etapa) then
+    if tg_op = 'UPDATE' and new.etapa is distinct from old.etapa then new.subetapa := null;   -- mudou a etapa: a subetapa de antes não vale
+    else raise exception 'Subetapa de outra etapa' using errcode = '23514'; end if;
+  end if;
   return new;
 end $$;
-create trigger t_conclusao before insert or update on app.tarefas for each row execute function app.tg_tarefa_conclusao();
+create trigger t_processo before insert or update of processo_id, etapa, subetapa on fluxo.tarefas for each row execute function app.tg_tarefa_processo();
 
 create table app.atividades (
   id          uuid primary key default gen_random_uuid(),
@@ -406,28 +420,102 @@ create trigger t_aud after insert or update or delete on app.processos   for eac
 create trigger t_aud after insert or update or delete on app.aprovacoes  for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.propostas   for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.documentos  for each row execute function app.tg_auditoria();
-create trigger t_aud after insert or update or delete on app.tarefas     for each row execute function app.tg_auditoria();
 create trigger t_upd before update on app.reunioes for each row execute function app.tg_atualizado_em();
 create trigger t_aud after insert or update or delete on app.reunioes    for each row execute function app.tg_auditoria();
 
 do $$
 declare t text;
 begin
-  foreach t in array array['ofertas','oferta_partes','viabilidades','processos','negociacoes','processo_transicoes','aprovacoes','propostas','tarefas','atividades','reunioes','reuniao_participantes','diligencias','documentos','documento_versoes'] loop
+  foreach t in array array['ofertas','oferta_partes','viabilidades','processos','negociacoes','processo_transicoes','aprovacoes','propostas','atividades','reunioes','reuniao_participantes','diligencias','documentos','documento_versoes'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
     execute format('grant select on app.%I to authenticated', t);
   end loop;
   -- escrita direta só onde não há regra de etapa
-  foreach t in array array['ofertas','oferta_partes','tarefas','atividades','reunioes','reuniao_participantes','diligencias'] loop
+  foreach t in array array['ofertas','oferta_partes','atividades','reunioes','reuniao_participantes','diligencias'] loop
     execute format('create policy inserir on app.%I for insert to authenticated with check (empresa_id in (select app.empresas_edicao()))', t);
     execute format('create policy alterar on app.%I for update to authenticated using (empresa_id in (select app.empresas_edicao())) with check (empresa_id in (select app.empresas_edicao()))', t);
     execute format('grant insert, update on app.%I to authenticated', t);
     execute format('create trigger t_emp before insert or update on app.%I for each row execute function app.tg_mesma_empresa()', t);
   end loop;
 end $$;
-create policy remover on app.tarefas for delete to authenticated using (empresa_id in (select app.empresas_edicao()));
 create policy remover on app.reuniao_participantes for delete to authenticated using (empresa_id in (select app.empresas_edicao()));
 create policy remover on app.oferta_partes for delete to authenticated using (empresa_id in (select app.empresas_edicao()));
-grant delete on app.tarefas, app.reuniao_participantes, app.oferta_partes to authenticated;
+grant delete on app.reuniao_participantes, app.oferta_partes to authenticated;
 grant usage on sequence app.processo_seq to authenticated;
+
+-- Tarefas pelo funil (bloco 4; visão só de leitura da página Tarefas): cada
+-- tarefa de quadro de terreno com a fase aberta do terreno, a etapa e a
+-- subetapa em que ele está. Uma linha por fase aberta (o terreno em duas
+-- fases aparece nas duas); partes ficam de fora (vale a negociação do terreno).
+create view app.v_tarefas_funil with (security_invoker = true) as
+select k.id as tarefa_id, k.codigo, k.titulo, k.lista_nome, k.lista_tipo, k.responsavel_id, k.prazo, k.atrasada, k.concluida_em, k.arquivada_em, k.modelo,
+       q.objeto_id as terreno_id, p.id as processo_id, p.fase, p.etapa_atual as etapa, p.subetapa_atual as subetapa, p.status as processo_status
+from fluxo.v_tarefas k
+join fluxo.quadros q on q.id = k.quadro_id and q.objeto_tipo = 'terreno'
+join app.processos p on p.terreno_id = q.objeto_id and p.parte_id is null and p.status in ('ativo','stand_by');
+grant select on app.v_tarefas_funil to authenticated;
+
+-- ---------------------------------------------------------------------
+-- Vínculos dentro da empresa (revisão de 2/nov/2026): pessoa, corretor e
+-- ofertante são cadastros da mesma empresa do registro; responsável do
+-- terreno e participante da BKM numa reunião são membros dela (fora dela,
+-- os avisos se perdiam sem ninguém saber).
+-- ---------------------------------------------------------------------
+create or replace function app.tg_vinculos_empresa()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare j jsonb := to_jsonb(new); o jsonb := case when tg_op = 'UPDATE' then to_jsonb(old) end; k text;
+begin
+  foreach k in array array['pessoa_id','ofertante_id'] loop
+    if j->>k is not null and j->k is distinct from o->k
+       and not exists (select 1 from app.pessoas where id = (j->>k)::uuid and empresa_id = new.empresa_id) then
+      raise exception 'A pessoa não é desta empresa' using errcode = '42501';
+    end if;
+  end loop;
+  if j->>'corretor_id' is not null and j->'corretor_id' is distinct from o->'corretor_id'
+     and not exists (select 1 from app.corretores where id = (j->>'corretor_id')::uuid and empresa_id = new.empresa_id) then
+    raise exception 'O corretor não é desta empresa' using errcode = '42501';
+  end if;
+  foreach k in array array['responsavel_id','user_id'] loop
+    if j->>k is not null and j->k is distinct from o->k
+       and not exists (select 1 from app.membros where user_id = (j->>k)::uuid and empresa_id = new.empresa_id) then
+      raise exception 'A pessoa escolhida não é da equipe desta empresa' using errcode = '42501';
+    end if;
+  end loop;
+  return new;
+end $$;
+do $$
+declare t text;
+begin
+  foreach t in array array['terrenos','corretores','terreno_pessoas','terreno_corretores','parte_corretores','ofertas','reuniao_participantes'] loop
+    execute format('create trigger t_vinculos before insert or update on app.%I for each row execute function app.tg_vinculos_empresa()', t);
+  end loop;
+end $$;
+
+-- Código curto do terreno (decisão do Moisés, 4/nov/2026): letra + 3 dígitos pela ordem de cadastro,
+-- A001 a A999, depois B001... até Z999 (25.974 terrenos).
+create or replace function app.codigo_terreno(p_n bigint)
+returns text language plpgsql immutable set search_path = '' as $$
+begin
+  if p_n is null or p_n < 1 or p_n > 26 * 999 then
+    raise exception 'Acabaram os códigos de terreno (Z999).';
+  end if;
+  return chr(65 + ((p_n - 1) / 999)::int) || lpad((((p_n - 1) % 999) + 1)::text, 3, '0');
+end $$;
+grant execute on function app.codigo_terreno(bigint) to authenticated;
+
+-- Terreno cadastrado direto: o código e quem criou são do banco, não do usuário.
+create or replace function app.tg_terreno_controle()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if tg_op = 'INSERT' then
+    if auth.uid() is not null or new.codigo is null then
+      new.codigo := app.codigo_terreno(nextval('app.terreno_seq'));
+    end if;
+    if auth.uid() is not null then new.criado_por := auth.uid(); new.criado_em := now(); end if;
+  elsif auth.uid() is not null then
+    new.codigo := old.codigo; new.criado_por := old.criado_por; new.criado_em := old.criado_em;
+  end if;
+  return new;
+end $$;
+create trigger t_controle before insert or update on app.terrenos for each row execute function app.tg_terreno_controle();

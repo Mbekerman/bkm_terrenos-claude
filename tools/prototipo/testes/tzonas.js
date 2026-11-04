@@ -1,5 +1,5 @@
-// Parâmetros urbanísticos por lote e zona: quadro por lote com os parâmetros do catálogo, seletor de tipo
-// (mercado, HIS, HMP) e potencial construtivo, exceção do lote só com fonte, parte sem inscrição, SJC pela
+// Parâmetros urbanísticos por lote e zona: quadro por lote com os parâmetros do catálogo, CA máximo e
+// potencial construtivo dos três tipos (mercado, HIS, HMP), exceção do lote só com fonte, parte sem inscrição, SJC pela
 // macrozona, catálogo editado em Configurações e Leitura sem botões. Prints em saida/t_zonas.
 const TMP=require('path').join(__dirname,'..','saida')+'/';const OUT=TMP+'t_zonas/';require('fs').mkdirSync(OUT,{recursive:true});
 const {chromium,devices}=require('playwright');
@@ -13,9 +13,8 @@ const p=await ctx.newPage();p.on('pageerror',e=>errs.push(tag+': '+e.message));
 await p.goto('file:///x/a.html');await p.evaluate(t=>{localStorage.clear();localStorage.setItem('bkm-terrenos-tema',t)},tema);await p.reload();await p.waitForTimeout(400);
 const abrir=async nome=>{await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=terrenos]').click());await p.waitForTimeout(200);
   await p.evaluate(n=>[...document.querySelectorAll('[data-a=abrir]')].find(x=>x.textContent.includes(n)).click(),nome);await p.waitForTimeout(500);
-  await p.evaluate(()=>{const b=document.querySelector('[data-a=bloco][data-t=urbanismo]');b&&b.getAttribute('aria-expanded')!=='true'&&b.click()});await p.waitForTimeout(300)};
+  await p.evaluate(()=>{const b=document.querySelector('.fi-abas [data-t=parametros]');b&&b.getAttribute('aria-selected')!=='true'&&b.click()});await p.waitForTimeout(300)};
 const res=()=>p.evaluate(()=>document.querySelector('.lz-res')?.innerText.replace(/\s+/g,' ')||'');
-const tipo=async v=>{await p.evaluate(v=>document.querySelector(`#sec-analise [data-a=zn-tipo][data-v=${v}]`).click(),v);await p.waitForTimeout(150)};
 const toast=()=>p.evaluate(()=>document.querySelector('.toast')?.innerText||'');
 await p.evaluate(k=>{const d=JSON.parse(localStorage.getItem(k));const t=d.terrenos.find(t=>t.nome.includes('Cupecê'));
   t.insc[0].geo=[{em:'2026-10-25 10:00',user:'Moisés',lote:{},poly:null,areaPol:1920,zonas:[],erros:['drenagem'],camadas:{patrimonio_cultural_area_envoltoria_CONPRESP:[{nm_area:'Igreja do Carmo',tx_resolucao_conpresp:'Res. 05/2018'}],pde2014_v_eetr_03_map_v2:[{nm_perimetro_divisao_pde:'Eixo Cupecê'}]}}];
@@ -29,26 +28,23 @@ const lin=await zs();
 ok(lin.length===2&&/^ZEU/.test(lin[0])&&/Gabarito Sem limite/.test(lin[0])&&/^ZM/.test(lin[1])&&/Gabarito 28 m/.test(lin[1]),tag+' quadro do lote com ZEU (sem limite) e ZM (28 m)');
 ok(/Recuo de frente 5 m/.test(lin[1])&&/Recuos laterais e fundo Dispensado até 10 m de altura; 3 m acima/.test(lin[1])&&/Lote mínimo 125 m²/.test(lin[1])&&/Frente mínima 5 m/.test(lin[1])&&/CA mínimo 0,3/.test(lin[1]),tag+' ZM com recuos, lote e frente mínimos e CA mínimo: '+lin[1].slice(0,300));
 ok(/Cota-parte máxima 20 m² por unidade/.test(lin[0])&&/até 70 unidades/.test(lin[0]),tag+' ZEU com cota-parte (1.400 ÷ 20 = 70 unidades)');
-ok(!!(await p.$('#sec-analise .lz-ni')),tag+' tipo não informado: aviso e Mercado só como referência');
-const vg=await p.evaluate(()=>[...document.querySelectorAll('.kv')].find(x=>x.querySelector('dt')?.textContent==='Zoneamento')?.innerText||'');
-ok(/ZEU \/ ZM/.test(vg)&&!/CA/.test(vg),tag+' Visão geral só com as zonas, separadas por barra: '+vg.replace(/\s+/g,' '));
-ok(/ZEU 1\.400 m² · ZM 520 m²/.test(await res())&&/6\.640 m²/.test(await res()),tag+' mercado: zonas da área e potencial 1.400×4 + 520×2 = 6.640 m²');
+ok(!(await p.$('#sec-analise [data-a=zn-tipo]'))&&!(await p.$('#sec-analise .lz-ni')),tag+' sem seletor de tipo do empreendimento (decisão de 4/nov/2026)');
+ok(/CA máximo Mercado 4/.test(lin[0])&&/CA máximo HIS 6/.test(lin[0])&&/CA máximo HMP 5/.test(lin[0]),tag+' ZEU com o CA máximo dos três tipos: '+lin[0].slice(0,400));
+await p.click('.fi-abas [data-t=geral]');await p.waitForTimeout(200);const vg=await p.evaluate(()=>[...document.querySelectorAll('.kv')].find(x=>x.querySelector('dt')?.textContent==='Zoneamento')?.innerText||'');
+ok(/ZEU \/ ZM/.test(vg)&&!/CA/.test(vg),tag+' Visão geral só com as zonas, separadas por barra: '+vg.replace(/\s+/g,' '));await p.click('.fi-abas [data-t=parametros]');await p.waitForTimeout(200);
+{const rs=await res();ok(/ZEU 1\.400 m² · ZM 520 m²/.test(rs)&&/Potencial Mercado 6\.640 m²/.test(rs)&&/Potencial HIS 9\.960 m²/.test(rs)&&/Potencial HMP 8\.300 m²/.test(rs),tag+' potencial dos três tipos: Mercado 6.640, HIS 9.960, HMP 8.300 m²: '+rs)}
 await p.evaluate(()=>document.querySelector('#sec-analise').scrollIntoView({block:'start'}));await p.screenshot({path:OUT+tag+'_1mercado.png'});
-await tipo('his');ok(/9\.960 m²/.test(await res())&&!(await p.$('#sec-analise .lz-ni')),tag+' HIS: 1.400×6 + 520×3 = 9.960 m²');
-ok(await p.evaluate(k=>JSON.parse(localStorage.getItem(k)).terrenos.find(t=>t.nome.includes('Cupecê')).hist.some(h=>h.txt==='Tipo do empreendimento: não informado → HIS'),KEY),tag+' tipo gravado no terreno, com log');
-await tipo('hmp');ok(/8\.300 m²/.test(await res()),tag+' HMP: 1.400×5 + 520×2,5 = 8.300 m²');
-await p.screenshot({path:OUT+tag+'_2hmp.png'});await tipo('mercado');
 // exceção do lote
 await p.evaluate(()=>[...document.querySelectorAll('#sec-analise [data-a=edit]')].find(x=>/Alterar valores/.test(x.textContent)&&x.closest('.lz-z').innerText.startsWith('ZM')).click());await p.waitForTimeout(200);
 await p.fill('#sec-analise form[data-form=zexc] [name=ca]','2,5');await p.evaluate(()=>document.querySelector('#sec-analise form[data-form=zexc]').requestSubmit());await p.waitForTimeout(200);
 ok(/fonte/i.test(await toast()),tag+' alteração sem fonte é recusada: '+await toast());
 await p.fill('#sec-analise form[data-form=zexc] [name=fonte]','Consulta prévia 2026/123');await p.evaluate(()=>document.querySelector('#sec-analise form[data-form=zexc]').requestSubmit());await p.waitForTimeout(300);
-ok(/6\.900 m²/.test(await res())&&(await zs())[1].includes('valores alterados no lote'),tag+' valor alterado vale por cima do catálogo: 1.400×4 + 520×2,5 = 6.900 m²');
+ok(/Potencial Mercado 6\.900 m²/.test(await res())&&(await zs())[1].includes('valores alterados no lote'),tag+' valor alterado vale por cima do catálogo: 1.400×4 + 520×2,5 = 6.900 m²');
 await p.evaluate(()=>[...document.querySelectorAll('#sec-analise [data-a=edit]')].find(x=>/Editar valores/.test(x.textContent)&&x.closest('.lz-z').innerText.startsWith('ZM')).click());await p.waitForTimeout(200);
 await p.fill('#sec-analise form[data-form=zexc] [name=recuo_frente_m]','0');await p.fill('#sec-analise form[data-form=zexc] [name=permeabilidade]','20');await p.selectOption('#sec-analise form[data-form=zexc] [name=outorga_gratuita]','1');
 if(modo==='desktop')await p.screenshot({path:OUT+tag+'_2b_alterar.png'});
 await p.evaluate(()=>document.querySelector('#sec-analise form[data-form=zexc]').requestSubmit());await p.waitForTimeout(300);
-{const zm=(await zs())[1];ok(/Recuo de frente 0 m alterado no lote/.test(zm)&&/Permeabilidade mínima 20% alterado no lote/.test(zm)&&/Outorga onerosa Gratuita alterado no lote/.test(zm)&&/CA máximo 2,5 alterado no lote/.test(zm)&&/Lote mínimo 125 m²/.test(zm),tag+' recuo, permeabilidade e outorga alterados no lote; o resto segue o catálogo: '+zm+' | '+await toast())}
+{const zm=(await zs())[1];ok(/Recuo de frente 0 m alterado no lote/.test(zm)&&/Permeabilidade mínima 20% alterado no lote/.test(zm)&&/Outorga onerosa Gratuita alterado no lote/.test(zm)&&/CA máximo Mercado 2,5 alterado no lote/.test(zm)&&/Lote mínimo 125 m²/.test(zm),tag+' recuo, permeabilidade e outorga alterados no lote; o resto segue o catálogo: '+zm+' | '+await toast())}
 // parte sem inscrição
 if(modo==='desktop'){await p.evaluate(()=>document.querySelector('#sec-analise [data-a=edit][data-s=analise]').click());await p.waitForTimeout(200);
   await p.selectOption('#sec-analise form[data-form=analise] [name=lote]','');await p.fill('#sec-analise form[data-form=analise] [name=fonte]','Poligonal do terreno');
@@ -68,11 +64,10 @@ await p.fill('#sec-analise form[data-form=analise] [name=fonte]','GeoSanja');awa
 await p.fill('#sec-analise form[data-form=analise] [name=area0]','1920');await p.selectOption('#sec-analise form[data-form=analise] [name=macro0]','ME');
 await p.evaluate(()=>document.querySelector('#sec-analise form[data-form=analise]').requestSubmit());await p.waitForTimeout(300);
 const sj=await zs();
-ok(/Estruturação/.test(sj[0])&&/CA básico 1,3/.test(sj[0])&&/CA máximo 2\b/.test(sj[0])&&/3\.840 m²/.test(await res()),tag+' SJC: ZM3 na Estruturação tem CA 2 (1.920×2 = 3.840 m²): '+sj[0]);
-await tipo('his');const sjh=(await zs())[0];
-ok(/3\.840 m²/.test(await res())&&/Outorga onerosa Gratuita/.test(sjh)&&/A validar/.test(sjh),tag+' SJC: HIS com o mesmo CA, outorga gratuita e a validar: '+sjh);
+ok(/Estruturação/.test(sj[0])&&/CA básico 1,3/.test(sj[0])&&/CA máximo Mercado 2\b/.test(sj[0])&&/Potencial Mercado 3\.840 m²/.test(await res()),tag+' SJC: ZM3 na Estruturação tem CA 2 (1.920×2 = 3.840 m²): '+sj[0]);
+const sjh=sj[0];
+ok(/Potencial HIS 3\.840 m²/.test(await res())&&/HIS: gratuita/.test(sjh)&&/A validar/.test(sjh),tag+' SJC: HIS com o mesmo CA, outorga gratuita e a validar: '+sjh);
 await p.evaluate(()=>document.querySelector('#sec-analise').scrollIntoView({block:'start'}));await p.screenshot({path:OUT+tag+'_4sjc.png'});
-await tipo('mercado');
 // catálogo em Configurações muda a ficha
 await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=config]')?.click());await p.waitForTimeout(200);
 await p.evaluate(()=>document.querySelector('[data-a=cfg-aba][data-v=zonas]').click());await p.waitForTimeout(200);
@@ -84,7 +79,7 @@ await p.screenshot({path:OUT+tag+'_5config.png'});
 await p.fill(sel,'0');await p.$eval(sel,e=>e.dispatchEvent(new Event('change',{bubbles:true})));await p.waitForTimeout(200);
 ok(/maior que zero/.test(await toast()),tag+' CA zero é recusado no catálogo');
 for(const s of [zz('RV2 · Estruturação')+' input[data-k=ca_maximo]',sel]){await p.fill(s,'2,5');await p.$eval(s,e=>e.dispatchEvent(new Event('change',{bubbles:true})));await p.waitForTimeout(200)}
-await abrir('Cupecê');ok(/4\.800 m²/.test(await res()),tag+' ficha usa o catálogo editado (1.920×2,5 = 4.800 m²)');
+await abrir('Cupecê');ok(/Potencial Mercado 4\.800 m²/.test(await res()),tag+' ficha usa o catálogo editado (1.920×2,5 = 4.800 m²)');
 // Leitura
 await p.evaluate(()=>{document.querySelector('[data-a=perfil-menu]').click();document.querySelector('[data-a=role][data-v=Leitura]').click()});await p.waitForTimeout(200);
 ok(!(await p.$('#sec-analise [data-a=edit]')),tag+' Leitura não registra zonas nem exceção');

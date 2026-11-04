@@ -11,13 +11,14 @@ Acima das etapas fica a **fase**: o grande momento do terreno. Cada fase é um p
 | Novos Negócios (entrada) | NEG | Comprado | Em Triagem, Estudos Preliminares, Negociação, Contrato |
 | Aprovação de Projetos | APR | Aprovado | Projeto, Análise na Prefeitura, Alvarás |
 | Registro de Incorporação | INC | Incorporação registrada | Memorial e Certidões, Cartório |
+| Funding | FUN | Funding captado | Dossiê, Viabilidade, Comitê, Contratação, Legalização (uma subetapa cada) |
 | Contratação Caixa | CEF | Contratado | Análise Caixa, Contratação |
 | Lançamento | LAN | Lançado | Preparação, Vendas Iniciais |
 | Obras | OBR | Obra entregue | Início, Execução, Entrega |
 | Entregue | ENT | Garantia encerrada | Pós-entrega (Assistência Técnica, Em Garantia) |
 
 - **Fase de entrada** (`fases_modelo.entrada`, uma por empresa): a que a oferta abre (`abrir_negociacao`) e a única com negociação (temperatura, propostas, viabilidade). Concluir nela é a compra: pede relato e pontos de sucesso e nenhuma diligência impeditiva.
-- **Dependências** (`fase_dependencias`): a fase abre quando, no mesmo terreno, a fase requisito foi concluída ou passou pela etapa ou subetapa indicada; todas precisam valer. O padrão encadeia cada fase na conclusão da anterior. Depois de cada passagem, `_abrir_fases_liberadas` abre sozinha a fase que o terreno nunca teve e cujas dependências se cumpriram (fase encerrada não reabre sozinha). Fase sem dependência, reabertura ou abertura antes da hora: `abrir_fase(terreno, fase)`, com dependência pendente só gestor ou diretor, com justificativa (`forcado`).
+- **Dependências** (`fase_dependencias`): a fase abre quando, no mesmo terreno, a fase requisito foi concluída ou passou pela etapa ou subetapa indicada; todas precisam valer. O padrão encadeia cada fase na conclusão da anterior, menos Funding, que não depende de nenhuma nem trava outra: abre à mão (decisão do Moisés, 4/nov/2026). Depois de cada passagem, `_abrir_fases_liberadas` abre sozinha a fase que o terreno nunca teve e cujas dependências se cumpriram (fase encerrada não reabre sozinha). Fase sem dependência, reabertura ou abertura antes da hora: `abrir_fase(terreno, fase)`, com dependência pendente só gestor ou diretor, com justificativa (`forcado`).
 - **Status por fase** (`status_modelo`): Concluído e Stand By em toda fase, com o nome da fase para o Concluído; Perdido (o vendedor disse não) só em Novos Negócios; Descartado em todas menos Entregue. Status sem linha não existe na fase.
 - **Fase atual do terreno** (`v_terrenos.fase`): a aberta mais adiante pela ordem; sem nenhuma aberta, a última encerrada. `fases_abertas` lista as que correm juntas; `fases_do_terreno(terreno)` dá cada fase com o processo, o status e o que falta para abrir.
 - Código do processo com o prefixo da fase (`NEG-00012`, `APR-00013`), numeração única.
@@ -60,19 +61,22 @@ Arrastar no quadro de etapas chama `mover_para_etapa` (para frente, etapa por et
 
 Um dono com várias matrículas é **uma** negociação. Vários donos que negociam separado são **partes** do terreno (`terreno_partes`): cada parte é um dono, ou um grupo de donos que negocia junto (herdeiros, sócios), com as matrículas, as inscrições e as pessoas dela (`parte_id` em `matriculas`, `inscricoes_municipais` e `terreno_pessoas`; participações somam 100% em cada parte) e os corretores dela (`parte_corretores`: uma parte pode ter vários corretores e o mesmo corretor pode trazer várias partes; ligar o corretor à parte o põe entre os corretores do terreno), o pedaço da poligonal e a marca de **essencial** (sem ela o terreno não serve) ou dispensável.
 
-- **Cadastro:** a parte pode nascer junto com o terreno (fim do Novo terreno) ou a qualquer momento na ficha, só com o nome; tamanho do lote, matrículas, inscrições, vendedores e corretor são opcionais (`salvar_parte` e os `parte_id`).
+- **Todo terreno tem pelo menos uma parte** (decisão do Moisés, 4/nov/2026): nasce com "Vendedor 1" (trigger `t_parte1`), e a última parte ativa não sai. Na aba Terreno, o quadro Partes tem "Quantas partes vendem?" e um cartão por parte com título, nome da pessoa principal, telefone, e-mail, CPF ou CNPJ e observação, todos opcionais (gravados só com os dígitos, conferidos por `fluxo.validar_formato`); "Excluir parte" só com a parte sem lotes nem histórico (`app.excluir_parte`), senão vale `remover_parte`, com motivo. No Novo terreno, o passo 2 tem as mesmas partes e lotes (`salvar_parte` e `salvar_lote`).
+- **Lotes** (`terreno_lotes`, decisão do Moisés, 4/nov/2026): cada lote tem um título ("Lote 1", "Lote 2"...), pertence a uma parte, tem **uma** matrícula (no máximo um lote por matrícula) e um ou mais SQLs (`lote_inscricoes`). A matrícula e o SQL pegam a parte do lote (`_sincronizar_partes_lote`; SQL em lotes de partes diferentes fica sem parte). Um SQL que cobre duas matrículas entra nos dois lotes, e a divergência de área se mede pelo grupo de lotes que dividem SQLs (`v_lotes`: soma das matrículas × soma das áreas cadastrais, em % da matrícula). Área adotada do lote: a da matrícula, a cadastral (só com SQL não dividido) ou uma informada. A matrícula nova já vem com o cartório do terreno (pela poligonal). `app.salvar_lote`, `app.excluir_lote` (leva a matrícula e os SQLs só dele sem IPTU; o SQL vindo do mapa da prefeitura volta a ficar solto). **SQLs soltos** (4/nov/2026): em São Paulo, ao cadastrar o terreno, o mapa de lotes do GeoSampa das quadras que a poligonal ocupa deixa marcar os lotes; os SQLs marcados entram em `inscricoes_municipais` com `origem = 'mapa_prefeitura'`, área cadastral e `endereco_prefeitura`, sem linha em `lote_inscricoes` e sem parte, e são escolhidos depois na lista do lote. A área e as zonas da parte saem dos lotes dela (`v_partes`).
 - **Antes da etapa da divisão** (`fases_modelo.etapa_partes`, só na fase de entrada; padrão Negociação) há uma negociação só, a do terreno: Triagem e Estudos são da área toda.
 - **Ao chegar nela**, com duas ou mais partes ativas, cada parte ganha a sua negociação: um processo da mesma fase com `parte_id` e `principal_id` (código `NEG-00012-1`), com oferta de referência, propostas, documentos, reuniões, tarefas, subetapa, status, aprovações e histórico próprios. Parte cadastrada depois disso já nasce com a sua.
 - **A negociação do terreno passa a andar pelas partes** (`_sincronizar_principal`): fica na etapa e na subetapa da parte mais atrasada em aberto, com cada mudança no histórico ("Pelas negociações das partes"), e não se move à mão. A de uma parte só anda da etapa da divisão em diante e enquanto a do terreno estiver ativa.
 - **Comprado do terreno** só com todas as partes ativas compradas (pendência que nem o gestor força); o checklist de documentos fica com cada parte; relato e pontos de sucesso só na compra do terreno. A compra de uma parte não abre a fase seguinte.
 - **Parte perdida ou descartada** trava a compra: ou sai do terreno (`remover_parte`, com motivo; parte essencial só com gestor ou diretor, e tornar uma parte dispensável também), ou o terreno se encerra. Parte comprada não sai.
 - **Encerrar o terreno** leva as partes em aberto: Perdido e Descartado com o mesmo motivo, Stand By com a mesma data; retomar o terreno retoma as partes.
-- **Oferta** pode cobrir uma ou mais partes (`oferta_partes`, com o preço de cada uma quando informado); a negociação da parte usa como referência a oferta mais recente que a cobre.
+- **Oferta** pode cobrir uma ou mais partes (`oferta_partes`, com o preço e a condição de pagamento de cada uma quando informados); a negociação da parte usa como referência a oferta mais recente que a cobre. Na aba Comercial, o quadro Partes lista cada parte com a área adotada (soma dos lotes), o zoneamento, o valor pedido e o valor por m² (digitar um calcula o outro) e a condição de pagamento; só a oferta, sem proposta.
 - `v_partes`: cada parte com donos, corretores, matrículas, negociação (etapa, subetapa, prazo, status), preço pedido e última proposta. A temperatura é uma só, a da negociação do terreno: `definir_temperatura` recusa a negociação de uma parte.
 
 ## Papéis, hierarquia e configuração
 
-Papéis: `diretor`, `gestor`, `analista` (editam) e `leitura` (consulta). `membros.superior_id` liga cada analista a um gestor e cada gestor a um diretor, sempre um nível acima (trigger). `administrador` é permissão à parte, em qualquer papel: gerencia a equipe e a configuração do funil. Quem cria a empresa vira diretor e administrador.
+Papéis: `diretor`, `gestor`, `analista` (editam), `leitura` (consulta) e `basico` (entrou pelo domínio da empresa; até os perfis definitivos, consulta como `leitura`, decisão do Moisés de 28/out/2026). `membros.superior_id` liga cada analista a um gestor e cada gestor a um diretor, sempre um nível acima (trigger). `administrador` é permissão à parte, em qualquer papel: gerencia a equipe e a configuração do funil. Quem cria a empresa vira diretor e administrador.
+
+**Login e perfil do usuário** (decisão do Moisés, 28/out/2026). Só login pelo Google do Workspace; e-mail e senha ficam desligados no Supabase Auth. `empresa_dominios` liga um domínio de e-mail (bkm.com.br) a uma empresa, editado pelo administrador. O gancho "Before User Created" do Auth chama `app.hook_antes_de_criar_usuario`, que recusa e-mail de domínio não cadastrado (o `hd` do Google é só dica na tela). No primeiro login, o trigger `t_usuario_novo` em `auth.users` cria `usuarios` (nome, e-mail, foto do Google e o `arroba`, o texto antes do @ do e-mail em minúsculas e sem acento, único, com número no fim se repetir) e o membro `basico` da empresa do domínio. A cada login, nome, foto e e-mail se atualizam (`t_usuario_login`); o @ fica, e só o administrador o muda (`app.mudar_arroba`). Quem cada um vê em `usuarios`: o próprio perfil e os de quem está nas suas empresas. O primeiro administrador é promovido à mão no banco. As chaves do Google para Agenda e Gmail (refresh token) não passam pelo navegador nem ficam em tabela legível: ficam no Vault, gravadas por uma função do servidor (a fazer).
 
 A configuração do funil é **por empresa** (`empresa_id`); as linhas com `empresa_id` nulo são o modelo padrão, copiado para cada empresa nova. O administrador edita pelo app, só por RPC, e toda alteração vai para a auditoria:
 
@@ -86,7 +90,8 @@ A configuração do funil é **por empresa** (`empresa_id`); as linhas com `empr
 | Motivos de encerramento | `salvar_motivo`, `apagar_motivo` (só nunca usado) | |
 | Checklist de documentos por etapa | `salvar_checklist`, `remover_checklist` | |
 | Status da fase: nome, aprovações, incluir ou tirar (Perdido, Descartado) | `configurar_status` | tirar Concluído ou Stand By; tirar status em uso |
-| Tipos de notificação e lembretes padrão | `configurar_notificacao` | |
+| Tipos de notificação, lembretes e e-mail padrão | `configurar_notificacao` | |
+| Receber ou não por e-mail, por tipo (cada um o seu) | `salvar_preferencia_notificacao` | |
 
 ```mermaid
 erDiagram
@@ -105,7 +110,7 @@ erDiagram
 
   membros {
     uuid user_id PK
-    text papel "diretor | gestor | analista | leitura"
+    text papel "diretor | gestor | analista | leitura | basico"
     uuid superior_id FK "um nivel acima"
     bool administrador
   }
@@ -203,16 +208,21 @@ erDiagram
 
 | Tipo | Gatilho | Quem recebe |
 | --- | --- | --- |
-| `tarefa_atribuida` | na hora (trigger em `tarefas`) | responsável |
-| `tarefa_marcado` | na hora (`tarefa_marcados`) | pessoa marcada |
+| `tarefa_atribuida` | na hora (trigger em `fluxo.tarefas`, `fluxo.tarefa_pessoas` e `fluxo.checklist_itens`) | responsável, executor incluído, responsável do item do checklist |
+| `mencao` | na hora, @arroba no texto (trigger em `fluxo.tarefas`, `fluxo.comentarios`, `atividades`, `reunioes`) | pessoa mencionada |
 | `tarefa_prazo` | lembrete (padrão: no dia) | responsável |
 | `tarefa_atrasada` | rotina diária, uma vez por prazo | responsável |
+| `tarefa_acompanhada` | na hora: comentário novo e tarefa concluída (no máximo um aviso por tarefa por dia) | quem acompanha a tarefa |
 | `stand_by_retomar` | lembrete (padrão: 7 dias antes e no dia) | responsável da tratativa |
 | `subetapa_prazo` | rotina diária, uma vez por entrada na subetapa | responsável da tratativa |
 | `documento_vencendo` | lembrete (padrão: 30 e 7 dias antes) | responsável da tratativa ou do terreno |
 | `reuniao_agendada` | lembrete (padrão: 1 dia antes) | responsável da tratativa ou do terreno |
 | `aprovacao_pendente` | na hora, quando é a vez | aprovador previsto (ou todos do nível) |
 | `aprovacao_decidida` | na hora | quem pediu |
+
+**Menções com @** (decisão do Moisés, 28/out/2026): quem escreve `@arroba` (o @ de `usuarios`) na descrição, no resultado ou num comentário da tarefa, no resumo ou no resultado da atividade, ou na pauta, no resumo ou nos encaminhamentos da reunião avisa a pessoa (`app.tg_mencoes`, que lê os @ por `app.arrobas_no_texto`). Só conta o @ de quem é da empresa; o autor não avisa a si mesmo, e-mail escrito no texto não é menção, e editar o texto só avisa quem entrou agora. Cada menção fica em `mencoes` (origem e pessoa, uma vez). Só o @ avisa: não há lista de marcados na tarefa (decisão do Moisés, 29/out/2026, para não virar spam).
+
+**E-mail:** cada tipo tem o padrão da empresa (`tipos_notificacao.email_padrao`; nascem ligados os de atribuição, menção e aprovação) e cada pessoa escolhe por tipo em `preferencias_notificacao` (`app.salvar_preferencia_notificacao(empresa, tipo, email)`; nulo volta ao padrão). A notificação que vai por e-mail nasce com `email_status = 'pendente'`; uma função do servidor (a fazer) envia pela conta do sistema (bkm@) e marca `enviado` ou `falhou`. No app a notificação sempre aparece; o administrador desliga o tipo inteiro. WhatsApp fica para depois (decisão do Moisés, 28/out/2026).
 
 `lembretes`: um por item e antecedência (`dias_antes`, destinatário nulo = responsável do item). Nascem com o item pelos padrões de `tipos_notificacao.dias_antes_padrao`, e quem cadastra pode incluir ou tirar. `enviado_para` guarda a data já avisada: se a data do item mudar, o lembrete volta a valer. `app.rotina_diaria()` roda às 6h pelo pg_cron (agendada na migration quando a extensão existe).
 
@@ -227,18 +237,25 @@ erDiagram
   terrenos ||--o{ matriculas : possui
   terrenos ||--o{ inscricoes_municipais : possui
   inscricoes_municipais ||--o{ consultas_lote : "lote na base da prefeitura"
+  terrenos ||--o{ consultas_area : "poligonal na base da prefeitura"
   municipios ||--o| bases_cadastrais : "GeoSampa, GeoSanja"
   municipios ||--o{ inscricoes_municipais : "cidade da inscricao"
-  inscricoes_municipais ||--o{ inscricao_valores : "valor venal e IPTU por exercicio e revisao"
+  inscricoes_municipais ||--o{ inscricao_valores : "valor venal e IPTU do exercicio atual"
   terrenos ||--o{ confrontacoes : mede
   terrenos ||--o{ terreno_pessoas : vincula
   terrenos ||--o{ terreno_partes : "donos que negociam separado"
+  terreno_partes ||--o{ terreno_lotes : "lotes da parte"
+  terreno_lotes |o--o| matriculas : "uma matricula"
+  terreno_lotes ||--o{ lote_inscricoes : "um ou mais SQLs"
+  inscricoes_municipais ||--o{ lote_inscricoes : "em um ou mais lotes"
   terreno_partes |o--o{ matriculas : "do dono"
   terreno_partes |o--o{ inscricoes_municipais : "do dono"
   terreno_partes |o--o{ terreno_pessoas : "donos da parte"
   pessoas ||--o{ terreno_pessoas : participa
   terrenos ||--o{ terreno_infraestrutura : verifica
   itens_infraestrutura ||--o{ terreno_infraestrutura : item
+  terrenos ||--o{ terreno_viabilidades_tecnicas : "viabilidade da concessionária"
+  itens_infraestrutura ||--o{ terreno_viabilidades_tecnicas : servico
   terrenos ||--o{ analises_urbanisticas : analisa
   analises_urbanisticas ||--o{ analise_zoneamentos : "uma porcao por lote e zona"
   inscricoes_municipais |o--o{ analise_zoneamentos : "lote (nulo = parte sem inscricao)"
@@ -250,11 +267,13 @@ erDiagram
   terrenos ||--o{ terreno_entorno : "lugares a pe"
   terrenos ||--o{ terreno_ponto_distancias : "rota ate os pontos da empresa"
   pontos_interesse ||--o{ terreno_ponto_distancias : mede
+  terrenos ||--o{ terreno_pontos_excluidos : "pontos da empresa tirados da ficha"
+  pontos_interesse ||--o{ terreno_pontos_excluidos : "excluido so neste terreno"
   entorno_categorias ||--o{ terreno_entorno : classifica
 
   terrenos {
     uuid id PK
-    text codigo "TER-000123"
+    text codigo "A123, de A001 a Z999"
     text nome
     text situacao_cadastral "ativo | arquivado"
     text prioridade "baixa | media | alta | estrategica"
@@ -269,6 +288,9 @@ erDiagram
     uuid municipio_id FK
     text zona "8 opcoes"
     uuid eixo_comercial_id FK
+    text cartorio "CRI da circunscricao"
+    text cartorio_origem "prefeitura | digitado"
+    text historico_uso "pesquisado, digitado"
     float latitude
     float longitude
     jsonb poligono_geojson "obrigatoria"
@@ -289,7 +311,6 @@ erDiagram
     numeric area_construida_existente_m2
     numeric area_construida_demolir_m2
     text necessidade_demolicao
-    text tipo_empreendimento "nao_informado, mercado, his, hmp"
     int versao "edicao simultanea"
   }
   confrontacoes {
@@ -339,6 +360,15 @@ erDiagram
     jsonb zonas "porcao de cada zona"
     text_arr camadas_com_erro
   }
+  consultas_area {
+    uuid id PK
+    uuid terreno_id FK
+    text base FK
+    timestamptz consultado_em
+    jsonb poligono_geojson "a poligonal consultada"
+    jsonb camadas "com _dist_m e quota_ambiental"
+    text_arr camadas_com_erro
+  }
   inscricao_valores {
     uuid id PK
     uuid inscricao_id FK
@@ -358,11 +388,30 @@ erDiagram
   terreno_partes {
     uuid id PK
     uuid terreno_id FK
-    text nome "dono ou grupo de donos"
+    text nome "titulo: Vendedor 1, 2..."
+    text pessoa_nome "pessoa principal"
+    text telefone "so digitos"
+    text email "minusculas"
+    text documento "CPF ou CNPJ, so digitos"
     bool essencial
     jsonb poligono_geojson "pedaco da parte"
     numeric area_m2
     bool ativa "sai com motivo"
+  }
+  terreno_lotes {
+    uuid id PK
+    uuid terreno_id FK
+    uuid parte_id FK
+    text titulo "unico no terreno"
+    uuid matricula_id FK "unico"
+    text area_fonte "documental | cadastral | informada"
+    numeric area_informada_m2
+    int ordem
+  }
+  lote_inscricoes {
+    uuid lote_id PK
+    uuid inscricao_id PK
+    int ordem
   }
   terreno_pessoas {
     uuid terreno_id FK
@@ -374,9 +423,19 @@ erDiagram
   terreno_infraestrutura {
     uuid terreno_id PK
     text item PK
-    text disponibilidade "nao_verificado | sim | nao"
+    text disponibilidade "nao_verificado | sim | parcial | nao | nao_se_aplica"
     date data_verificacao
-    text fonte
+    text observacoes
+  }
+  terreno_viabilidades_tecnicas {
+    uuid terreno_id PK
+    text servico PK "energia | agua | esgoto | gas"
+    text situacao "nao_solicitada | solicitada | viavel | condicionada | nao_viavel"
+    text concessionaria
+    date solicitada_em
+    date emitida_em
+    date validade
+    text condicoes
   }
   analises_urbanisticas {
     uuid id PK
@@ -429,7 +488,7 @@ erDiagram
 - A consulta de um lote (`registrar_consulta_lote`, por `app._substituir_zonas`) cria uma análise nova que copia os outros lotes da vigente e troca só as zonas desse lote, levando as exceções das zonas que continuam; se as zonas do lote não mudaram, nada é gravado. Assim um lote nunca apaga o outro.
 - `app.parametros_zona(empresa, zona, tipo, macrozona, área do lote, uso)` escolhe a linha: a do tipo pedido ou, sem regra própria, a de mercado (o campo `tipo` diz qual valeu); a mais específica em macrozona e uso; sem uso, a permitida, preferindo o vertical. A condição de tamanho de lote usa a área adotada do terreno, que é o lote do empreendimento; sem área, vale a de lote grande. Em SJC, sem macrozona não há parâmetro (não informado).
 - `v_lote_zonas` dá cada lote × zona × tipo com os parâmetros e o potencial construtivo (área × CA); `v_urbanismo_vigente` resume o terreno: todas as zonas, o maior CA de mercado e o potencial por tipo (nulo se algum pedaço não tem CA ou não admite o tipo). Nunca um "CA médio". As zonas saem separadas por barra ("ZC / ZM / ZEU"), da maior área para a menor.
-- O terreno guarda o tipo de empreendimento pretendido (`terrenos.tipo_empreendimento`: mercado, HIS ou HMP; escolhido no Novo terreno em São Paulo e mudado na seção de parâmetros). `v_urbanismo_vigente.potencial_tipo_m2` é o potencial desse tipo; sem tipo informado, fica nulo (nunca vira mercado sozinho).
+- O terreno não guarda tipo de empreendimento (decisão do Moisés, 4/nov/2026): a ficha mostra o CA máximo e o potencial de Mercado, HIS e HMP lado a lado (`v_lote_zonas` por tipo; `v_urbanismo_vigente.potencial_mercado_m2`, `potencial_his_m2`, `potencial_hmp_m2`).
 - As camadas que a consulta do lote trouxe (Conpresp, tombamento, ZEIS, mananciais, operação urbana, macrozona, centralidade...) ficam na consulta (`consultas_lote`), e a seção de parâmetros mostra as da última consulta de cada lote.
 
 **Poligonal primeiro.** O cadastro começa pela poligonal, obrigatória (`check` em `terrenos`; PostGIS no schema `extensions`, coluna gerada `poligono` com índice GiST). Antes de criar, o front chama `app.terrenos_sobrepostos(empresa, poligonal)`, que usa `app.sobreposicao(a, b, folga = 5 m)`: a parte em comum conta quando passa de 1 m² e tem mais de 5 m de largura (diâmetro do maior círculo que cabe nela, `ST_MaximumInscribedCircle` na UTM do lugar) ou cobre metade de um dos dois. Assim a imprecisão do desenho na divisa não conta, mas o mesmo lote estreito desenhado de novo sempre avisa. Cada achado vem como `mesma_area` (90% ou mais dos dois lados) ou `parcial`, com área, largura e percentuais. O usuário escolhe: nova oferta no existente (com `ofertas.poligono_geojson` quando oferece só parte, conferido em `registrar_oferta` para caber no terreno com 5 m de folga), recadastrar o existente com a área nova ou a soma das duas (`salvar_terreno`), ou confirmar que é outro terreno. Nesse caso os ids vão em `sobreposicoes_aceitas`, e o trigger `t_sobre` recusa qualquer poligonal (cadastro, edição, importação) que ocupe outro terreno sem essa confirmação. Município e endereço vêm da localização da poligonal (geocodificação reversa no front, com `municipio_por_nome`); as ruas de cada lado viram as frentes, o usuário escolhe a principal (`logradouro`, `numero`) e as outras entram em `confrontacoes` com tipo `frente`.
@@ -437,6 +496,25 @@ erDiagram
 **Inscrição por cidade.** Cada inscrição guarda a cidade (`municipio_id`), escolhida antes de digitar: São Paulo, São José dos Campos ou outro município (nulo, inscrição digitada). A cidade com base da prefeitura está em `bases_cadastrais`, com o nome da base, como a prefeitura chama a inscrição e a máscara (`000.000.0000-0` em SP, `00.0000.0000.0000` em SJC); o front abre o campo com essa máscara e busca o lote na base. A inscrição de uma cidade tem que ser da cidade do terreno (trigger `tg_inscricao_municipio`), e a unicidade é por empresa, cidade e número. Nos dois cadastros os 6 primeiros dígitos são setor e quadra, o que dá o aviso de "mesma quadra" em `buscar_duplicados`. A consulta do lote, nas duas bases, é gravada por `app.registrar_consulta_lote` em `consultas_lote` (campo `base`), e planta e desenho são os documentos `lote_pdf` e `lote_dxf`.
 
 **GeoSampa pelo SQL (São Paulo).** Na inscrição, "Buscar no GeoSampa" (automático ao cadastrar o SQL) consulta o servidor de camadas do Novo GeoSampa (`geoserver.geosampa.prefeitura.sp.gov.br`, WFS/WMS) pelo repasse do Caddy em `/geosampa`, porque o servidor só aceita chamadas de navegador vindas do próprio GeoSampa. Traz o lote fiscal (`lote_cidadao`: poligonal em UTM 23S SIRGAS 2000, áreas, uso, CIB, condomínio) e os atributos de cada camada que toca a poligonal (zoneamento das Leis 18.081 e 18.177, ZEIS, eixos, macroárea e fator de planejamento, operação urbana, mananciais, tombamento e áreas envoltórias, áreas contaminadas, melhoramento viário, faixa não edificável, córrego a até 50 m, risco, inundação, influência de Metrô e CPTM, vegetação significativa, zona fiscal). `app.registrar_consulta_lote` confere que o lote é o da inscrição, grava a consulta inteira (nunca alterada), completa só o que está vazio na inscrição (área cadastral) e o cadastro fiscal (CIB, zona fiscal) e, se pedido, troca as zonas desse lote (com a área de cada uma) na análise urbanística, sem mexer nos outros lotes. Poligonal e áreas do terreno continuam passando por `app.salvar_terreno`. A planta (PDF, gerada pelo próprio servidor) e o desenho (DXF R12 com lotes, calçada, quadra, edificações, curvas de nível com cota e pontos cotados, montado no navegador) entram como documentos `lote_pdf` e `lote_dxf`, com versão. Testada, valor do m² e valor venal não estão no GeoSampa novo; continuam digitados por exercício em `inscricao_valores`.
+
+**Cartório da circunscrição** (3/nov/2026). `terrenos.cartorio` guarda o cartório de registro de imóveis da área do terreno ("13º CRI") e `cartorio_origem` diz de onde veio: `prefeitura` (em São Paulo, a camada `cartorio_registro_imovel` do GeoSampa) ou `digitado`. A consulta do lote (`registrar_consulta_lote`) preenche só o vazio, e só quando a camada acha um cartório; sem lote consultado, o front consulta pelo pino e grava por `app.cartorio_da_prefeitura`, que preenche o vazio ou troca o que veio da prefeitura (o pino mudou), nunca o digitado. Mudar pelo `salvar_terreno` marca `digitado`; apagar volta a vazio, sem origem. O cartório de cada matrícula continua em `matriculas.cartorio`.
+
+**Infraestrutura** (lote 3 da ficha em abas, 4/nov/2026; decisões do Moisés de 3/nov). Três quadros na aba:
+
+- **Relevo, classificação topográfica.** O front mede as cotas dentro da poligonal (laser 2020 da prefeitura em São Paulo, grade de 1 m, ou 2 m acima de 4 ha; Google em grade de 5 m fora) e ajusta um plano por mínimos quadrados. A declividade média é a média de |∇z| em cada célula da grade (diferença centrada); a inclinação é a do plano; a terra mexida é a média de |cota − plano|, ou seja, corte + aterro até o plano ÷ área. `app.registrar_topografia` grava os números em `terrenos.topo_*` (`topo_declividade_pct`, `topo_inclinacao_pct`, `topo_terra_m3m2`, `topo_desnivel_m`) e o perfil sai de `app.classificar_topografia`, em 7 níveis pela declividade média, com os limites de `app.topografia_config` (sem linha, os cortes do Moisés de 4/nov/2026: Plano até 5%, Inclinado até 10%, Acidentado leve até 13%, mediano até 19%, intenso até 24%, agudo até 30%, acima crítico); a terra mexida acima de 1,5 m³/m² também leva ao crítico. Com o Google a terra mexida não é guardada (erro de 1 a 4 m): o perfil fica entre Plano, Inclinado e crítico. Calibração: `tools/topografia/medir.py` mede um KMZ pelo laser do GeoSampa. Poligonal nova apaga a medição (`t_norm`), e o front mede de novo. `app.salvar_topografia_config` (administrador) reclassifica o que já foi medido.
+- **Visita técnica.** `terreno_infraestrutura`, com os 8 itens ativos de `itens_infraestrutura` (telefonia desativada), cada um Sim, Parcial, Não ou Não se aplica, com observação; `terrenos.visita_tecnica_em` guarda a data da visita.
+- **Viabilidades técnicas.** `terreno_viabilidades_tecnicas`, uma por serviço marcado `viabilidade_tecnica` no catálogo (Energia, Água, Esgoto, Gás). Retorno exige a data de emissão, e a validade nunca é anterior a ela. A view `v_terreno_viabilidades_tecnicas` traz todos os serviços, com `vencida` quando o retorno é viável ou condicionado e a validade já passou.
+
+**Restrições e entorno** (lote 2 da ficha em abas, 4/nov/2026). A aba Parâmetros urbanísticos tem uma lista fixa por tema (ambiental, patrimônio, vias e redes, riscos) com a resposta para o terreno inteiro. Os dados vêm da consulta pela poligonal do terreno (`app.registrar_consulta_area` em `consultas_area`, só em cidade com base; a poligonal do dia vai junto) ou, sem ela, da soma das consultas dos lotes. A consulta, do lote ou da poligonal, traz também as camadas consultadas por raio, com a distância de cada feição até a área (`_dist_m`):
+- córrego até 30 m;
+- árvores da calçada até 30 m;
+- classificação viária da CET até 30 m;
+- vila até 20 m;
+- linhas de alta tensão (aérea e subterrânea) e ferrovia até 30 m;
+- rede da Comgás até 100 m, da qual se mostra a mais perto;
+- áreas contaminadas até 30 m.
+
+Também entram as manchas de inundação de 5, 25 e 100 anos (sim ou não, porque o GeoSampa não tem cota de inundação) e as unidades de conservação. O perímetro de qualificação ambiental da Quota Ambiental (PA 1 a PA 13) não está no GeoSampa: vem do Mapa 3 da Lei 16.402/2016 (SHP da SMUL), juntado por PA em `docs/dados/quota-ambiental-3550308.json` por `tools/parametros/gerar_quota_ambiental.py`. O front acha o PA pela poligonal e o grava na consulta, na chave `quota_ambiental`. Largura de via e rodovias ficaram de fora (decisão do Moisés). `terrenos.historico_uso` guarda o histórico de uso pesquisado, editado pelo `salvar_terreno`; o automático são as áreas contaminadas da consulta. O DXF do lote leva cada tema numa layer (inundação, contaminação, vilas, unidade de conservação, vegetação, árvores, Comgás, alta tensão, ferrovia, classificação viária com o nome da via, melhoramento e faixa não edificável), e a Quota Ambiental vai no título.
 
 **GeoSanja pela inscrição imobiliária (São José dos Campos).** Não há serviço público de camadas: a ficha usa a API do próprio site (`geo.sjc.sp.gov.br/v1`) com o token de visitante (`autenticar?token=VISITANTE`, vale um ano), pelo repasse do Caddy em `/geosanja` (o site não libera CORS). A busca pela inscrição (`localizar`, ferramenta `SearchICTool`) devolve só a poligonal do lote, sem área cadastral, uso nem endereço. As camadas liberadas ao visitante são lidas por `GetFeatureInfo` com raio cobrindo o lote e conferidas no navegador contra a poligonal: zona da LC 623 com a área no lote e o link da ficha da zona, macrozona, área de desenvolvimento estratégico, centralidade com o CA máximo, região, setor e subsetor, corredores, recarga de aquífero, parques e unidades de conservação, núcleos informais, risco de escorregamento e PMRR, linha de transmissão e ferrovia. A planta é montada no navegador (ortofoto de 8 cm, curvas e zoneamento, com o lote em vermelho, num PDF de uma página) e o DXF leva lote, arruamentos, curvas do IGC (1:10.000, cota como elevação) e zonas, em UTM 23S SIRGAS 2000. Fechadas ao visitante: atributos do lote, inundação, APAs estaduais e federais, bens tombados, loteamentos e circunscrição imobiliária. É uma API interna da prefeitura, que pode mudar sem aviso.
 
@@ -463,8 +541,6 @@ erDiagram
   processos ||--o{ processo_transicoes : historico
   processos ||--o{ propostas : recebe
   propostas |o--o| propostas : "responde a"
-  terrenos ||--o{ tarefas : tem
-  processos |o--o{ tarefas : contextualiza
   terrenos ||--o{ atividades : registra
   processos |o--o{ viabilidades : usa
   terrenos ||--o{ diligencias : investiga
@@ -593,6 +669,8 @@ erDiagram
     text pauta
     text resumo
     text encaminhamentos
+    bool na_agenda "criar no Google Agenda"
+    bool gerar_meet "online: link do Meet"
   }
   reuniao_participantes {
     uuid reuniao_id FK
@@ -600,20 +678,34 @@ erDiagram
     uuid user_id FK
     uuid pessoa_id FK
     text nome
+    text email "quem nao esta cadastrado"
+    text resposta "do Google: aceito, recusado, talvez"
   }
-  tarefas {
-    uuid id PK
-    uuid terreno_id FK
-    uuid processo_id FK
-    text titulo
-    uuid responsavel_id FK
-    date prazo
-    text status "pendente | em_andamento | aguardando_terceiro | concluida | cancelada"
-    text prioridade
-    text resultado
-    float posicao "ordem no quadro de tarefas"
+  reuniao_agenda {
+    uuid reuniao_id PK
+    text situacao "pendente, sincronizada, erro"
+    text acao "criar, atualizar, cancelar, remover"
+    text evento_id
+    text meet_link
+    text gravacao_url
+    text transcricao
+    text anotacoes_url "Doc das Anotações do Gemini"
+    text resumo_ia "rascunho do resumo"
+    text resumo_origem "gemini | ia"
+    text resumo_situacao "rascunho, aceito, descartado"
   }
 ```
+
+As tarefas moram no esquema `fluxo` (ver "Quadros e tarefas", abaixo): cada terreno tem o seu quadro e a tarefa pode apontar a negociação (`processo_id`, do mesmo terreno do quadro).
+
+## Reuniões com o Google Agenda
+
+Lote 6 da ficha em abas (4/nov/2026). Migration `20261015001600_reunioes_agenda.sql`.
+
+- **O sistema é a origem.** A reunião marcada com `na_agenda` vira evento na agenda de quem marcou (`reuniao_agenda.organizador_id`), com convite a quem tem e-mail (`v_reuniao_convidados`: o do usuário, o da pessoa ou o digitado) e, online com `gerar_meet`, o link do Meet. Mudar data, duração, local, pauta, participantes, cancelar ou tirar da Agenda põe o evento na fila (`situacao = 'pendente'`, com a `acao`); marcar como realizada não mexe no evento. Reunião já realizada não vai para a Agenda.
+- **Função do servidor** (a fazer, com o token do "Conectar Agenda e Gmail"; só `service_role`): lê a fila, grava no Google e responde por `app.agenda_confirmar(reuniao, evento_id, link, meet_link, erro)`. O caminho inverso: `app.agenda_evento_mudou(reuniao, inicio, duracao, cancelado)` (mudança feita direto na Agenda, que não volta para a fila) e `app.agenda_resposta(reuniao, email, resposta)` (aceito, recusado, talvez; a tela não muda a resposta).
+- **Depois da reunião online:** `app.registrar_gravacao(reuniao, gravacao, transcricao_url, transcricao, anotacoes_url)` com o que o Meet guardou (gravação, transcrição e o Doc das **Anotações do Gemini**) e `app.registrar_resumo_ia(reuniao, resumo, encaminhamentos, origem)` com o rascunho: o resumo e os próximos passos das Anotações do Gemini (origem `gemini`, padrão; decisão do Moisés, 4/nov/2026: usa o Gemini do Workspace, sem outra IA) ou, se o formato do Gemini não servir, o da IA do sistema (`ia`). O rascunho não toca no resumo da reunião e avisa quem marcou (`reuniao_resumo`). Quem edita confere em `app.decidir_resumo_ia(reuniao, aceitar, resumo, encaminhamentos)`: aceitar (com o texto ajustado ou não, só com a reunião realizada) grava em `resumo` e `encaminhamentos`; descartar só marca.
+- Gravação, transcrição e Anotações do Gemini do Meet pedem o Google Workspace Business Standard ou acima (o da BKM tem, confirmado pelo Moisés em 4/nov/2026). As anotações precisam estar ligadas na reunião; falta confirmar se a API da Agenda liga sozinha ao criar o evento (senão, lembrete no convite). A sincronização vai e volta (confirmado em 4/nov/2026). Reunião presencial não tem as anotações; gravada pelo celular fica para depois.
 
 ## Mapa, dashboard e quadro de tarefas
 
@@ -630,11 +722,480 @@ erDiagram
 | `excluir_lugar_entorno(terreno, google_place_id)` | exclui um lugar do Google do entorno deste terreno (`excluido_em`/`excluido_por`); `salvar_entorno` mantém a exclusão quando a busca é refeita |
 | `restaurar_lugar_entorno(terreno, google_place_id)` | desfaz a exclusão; o lugar volta à ficha sem nova busca |
 | `v_entorno_buscas` | por terreno localizado: quando foi buscado, se a rota a pé respondeu e `precisa_buscar` (nunca buscado ou desatualizado) |
-| `v_tarefas` | tarefa com código e nome do terreno e o atraso calculado; o quadro ordena por `status` e `posicao` |
+| `v_tarefas` | cartão dos quadros dos terrenos (`fluxo.v_tarefas`: lista, atraso e andamento do checklist) com o código e o nome do terreno; o quadro ordena por lista e `posicao` |
 
-Entorno do terreno: as categorias são configuração (`entorno_categorias`: tipos do Google e raio a pé; ligar outra categoria é migration de dados). O front busca sozinho quando o terreno é localizado ou muda de lugar (`precisa_buscar`), e só então, e grava por `salvar_entorno`. `pontos_interesse` é a lista cadastrada pela própria empresa (sede, polos, pontos marcados à mão): todos aparecem na ficha de cada terreno, com a distância a pé quando está a até 1,5 km a pé e de carro quando está mais longe (`terreno_ponto_distancias`). Excluir: lugar do Google é marcado no próprio terreno por `excluir_lugar_entorno` (só aquele terreno; continua fora se a busca for refeita porque o terreno mudou de lugar) e volta por `restaurar_lugar_entorno`; ponto da empresa é desligado direto (`ativo = false`, auditado), some de todos os terrenos e do mapa e pode ser religado. A busca no Google é feita uma vez por localização: não há "buscar de novo" manual.
+Entorno do terreno: as categorias são configuração (`entorno_categorias`: tipos do Google e raio a pé; ligar outra categoria é migration de dados). O front busca sozinho quando o terreno é localizado ou muda de lugar (`precisa_buscar`), e só então, e grava por `salvar_entorno`. `pontos_interesse` é a lista cadastrada pela própria empresa (sede, polos, pontos marcados à mão): todos aparecem na ficha de cada terreno, numa lista só com os lugares do Google, sempre com a distância a pé pela rota (`terreno_ponto_distancias`; a coluna de carro fica, sem uso na ficha; decisão do Moisés, 4/nov/2026). Excluir: lugar do Google é marcado no próprio terreno por `excluir_lugar_entorno` (só aquele terreno; continua fora se a busca for refeita porque o terreno mudou de lugar) e volta por `restaurar_lugar_entorno`; ponto da empresa sai também só daquele terreno (`excluir_ponto_terreno` grava em `terreno_pontos_excluidos`, auditado; `v_terreno_pontos` não o mostra mais ali) e volta por `restaurar_ponto_terreno`; desligar o ponto para todos (`ativo = false`) continua possível no cadastro, fora da ficha. A busca no Google é feita uma vez por localização: não há "buscar de novo" manual.
 
 O dashboard agrega `v_terrenos` no front (filtro cruzado por clique). A poligonal continua em `terrenos.poligono_geojson`; importar KMZ/KML é feito no front e gravado por `salvar_terreno`.
+
+## Quadros e tarefas (esquema `fluxo`)
+
+Módulo de quadros e tarefas, o "Trello da BKM" (decisões do Moisés, 29/out/2026; modelo em https://claude.ai/artifact/EdJyXjystX3uEGo4sNQob4). Mora no esquema próprio `fluxo` (migration `00150`), que só conhece empresas, membros e usuários, para servir também a outros apps do mesmo Supabase: o quadro aponta para o que acompanha por `objeto_tipo` e `objeto_id`, sem chave estrangeira. O BKM Terrenos cria um quadro por terreno (trigger `t_quadro` em `terrenos`, por `fluxo.quadro_de`) e liga a tarefa ao processo (chave estrangeira e `app.tg_tarefa_processo`, em `negociacao`). No Supabase, `fluxo` entra em **Settings → API → Exposed schemas** junto com `app`.
+
+```mermaid
+erDiagram
+  quadros ||--o{ listas : tem
+  quadros ||--o{ tarefas : tem
+  listas ||--o{ tarefas : "está em"
+  tarefas ||--o{ tarefa_pessoas : "executores, aprovadores, acompanham"
+  tarefas ||--o{ tarefa_etiquetas : classifica
+  etiquetas ||--o{ tarefa_etiquetas : marca
+  tarefas ||--o{ checklists : tem
+  checklists ||--o{ checklist_itens : tem
+  tarefas ||--o{ comentarios : tem
+  comentarios ||--o{ comentario_reacoes : tem
+  tarefas ||--o{ anexos : tem
+  quadros {
+    uuid id PK
+    text objeto_tipo "terreno, empreendimento, area..."
+    uuid objeto_id "sem FK"
+  }
+  listas {
+    uuid quadro_id FK
+    text nome
+    float posicao
+    text tipo "aberta | pausa | conclui"
+    bool oculta
+  }
+  tarefas {
+    uuid id PK
+    text codigo "TAR-000123"
+    uuid quadro_id FK
+    uuid lista_id FK
+    float posicao
+    text titulo
+    text descricao
+    text resultado
+    uuid solicitante_id
+    uuid responsavel_id "o principal, um só"
+    date inicio
+    date prazo "nulo = backlog"
+    text prioridade
+    text capa
+    uuid processo_id "FK posta pelo app"
+    uuid mae_id "subtarefa: a tarefa mãe"
+    timestamptz concluida_em
+    timestamptz arquivada_em
+  }
+  checklist_itens {
+    uuid checklist_id FK
+    text texto
+    uuid responsavel_id
+    date prazo
+    timestamptz concluido_em
+    uuid virou_tarefa_id
+  }
+```
+
+- **Listas:** `listas_modelo` traz o padrão da empresa (nulo = modelo de fábrica: Backlog, Fazer, Fazendo, Aguardando retorno, Pausadas, Feito), copiado para cada quadro novo; os quadros existentes mantêm as suas, e cada terreno cria, renomeia, ordena e oculta as dele. Só o administrador muda o padrão (`fluxo.salvar_lista_modelo`, que copia o padrão para a empresa na primeira mudança e recusa ficar sem lista que conclui).
+- **Concluir:** a tarefa não tem status. Entrar numa lista do tipo `conclui` preenche `concluida_em` e `concluida_por`; sair dela reabre; marcar `concluida_em` à mão leva o cartão para a primeira lista que conclui, e limpar leva para a primeira aberta (`fluxo.tg_tarefa_lista`). A lista `pausa` é a que vai pausar o SLA (bloco 3).
+- **Nunca apagada:** sem `delete` em `tarefas`, `listas` e `etiquetas`; a tarefa arquiva (`arquivada_em`, `arquivada_por`) e restaura. Comentário: só o autor edita (`editado_em`) e apaga (`apagado_em`, o texto some da tela e fica na auditoria). Anexo sai com `removido_em`.
+- **Pessoas:** solicitante (quem criou, por padrão) e responsável principal ficam no cartão; executores, aprovadores e quem acompanha em `tarefa_pessoas`.
+- **Predecessora pendente** (30/out/2026): `fluxo.predecessoras_pendentes(tarefa)` devolve os códigos das predecessoras que ainda não deixam concluir (TI e TT: em aberto; II e IT: em aberto e com o início nulo ou no futuro, porque o início real não é guardado; arquivada não conta). Por padrão o app só avisa ("Concluir mesmo assim", registrado no histórico); com `regras.conclui_exige_predecessoras` (`fluxo.salvar_regra_predecessoras`, só administrador), vira a pendência `predecessoras` e `tg_tarefa_lista` e `pedir_aprovacao` recusam.
+- **Subtarefas** (30/out/2026): `mae_id` liga a subtarefa à mãe, no mesmo quadro e com um nível só (a mãe não é subtarefa, quem tem subtarefas não vira subtarefa, modelo só com modelo; `fluxo.tg_subtarefa`). Com a regra do checklist ligada, a mãe não conclui com subtarefa aberta e não arquivada (`pendencias_conclusao` devolve `subtarefas`; `tg_tarefa_lista` recusa).
+- **Checklist:** vários por cartão, item com responsável e prazo; `fluxo.item_para_tarefa(item)` cria o cartão no mesmo quadro, ligado ao de origem por anexo, e marca o item como feito.
+- **Escrita direta** de quem edita (diretor, gestor, analista), pela RLS por `empresa_id`; Leitura só vê. Todas as tabelas vão para `app.auditoria` (o vínculo sem id próprio registra a tarefa).
+### Cronograma (bloco 2) e modelos de tarefas
+
+Decisões do Moisés de 29/out/2026. Mesmo esquema `fluxo`, mesma migration.
+
+```mermaid
+erDiagram
+  tarefas ||--o{ vinculos : "predecessora"
+  tarefas ||--o{ vinculos : "sucessora"
+  quadros ||--o{ linhas_base : tem
+  linhas_base ||--o{ linha_base_itens : "retrato das datas"
+  modelos_quadro ||--o{ modelo_tarefas : tem
+  modelo_tarefas ||--o{ modelo_vinculos : liga
+  vinculos {
+    uuid predecessora_id FK
+    uuid sucessora_id FK
+    text tipo "TI | II | TT | IT"
+    int defasagem "dias; negativa adianta"
+  }
+  linhas_base {
+    uuid quadro_id FK
+    int numero "1, 2... das aprovadas"
+    text situacao "pendente | aprovada | recusada | substituida | cancelada"
+    text motivo
+    uuid pedida_por
+    uuid decidida_por
+  }
+  modelos_quadro {
+    uuid dono_id "nulo = da empresa"
+    text objeto_tipo
+    bool padrao "entra sozinho no quadro novo"
+  }
+  modelo_tarefas {
+    int inicio_dias "depois da data de aplicação"
+    int duracao
+    bool responsavel_objeto "o responsável do terreno"
+    jsonb pessoas
+    uuid_arr etiquetas
+    jsonb checklists
+  }
+```
+
+- **Datas como no Project ("o mais cedo possível"):** a tarefa ganha `duracao` (dias no calendário da empresa) e `inicio_min` (o início que a pessoa digitou, a restrição "não começar antes de"). `fluxo.tg_cronograma` põe a tarefa no maior entre `inicio_min` e o que os vínculos pedem (`fluxo.inicio_cedo`): TI começa no dia seguinte ao fim da predecessora, II no início dela, TT termina no fim dela e IT termina no início dela, sempre mais a defasagem; a duração se mantém. Mudar só o início move a tarefa inteira; mudar o prazo ou a `duracao` muda a duração. Mudou uma tarefa, as sucessoras se reposicionam em cascata (`fluxo.reprogramar_sucessoras`, com `fluxo.cascata = 1` para não tomar a data empurrada como digitada); tarefa concluída não se move. Vínculo em círculo é recusado. II e TT juntos com durações diferentes seguem o Project (a sucessora termina junto e começa depois); o front pergunta se estica a duração da sucessora (grava `duracao`) ou adia o início.
+- **Calendário:** dias corridos por padrão; o administrador passa a empresa para dias úteis (`fluxo.salvar_calendario`), que pulam sábado, domingo e `feriados` (nacionais de 2026 a 2030, com Carnaval e Corpus Christi; a empresa pode ter os seus). `fluxo.somar_dias` e `fluxo.duracao_dias` fazem a conta nos dois modos.
+- **Linha de base:** `fluxo.enviar_cronograma(quadro, motivo)` tira o retrato das tarefas não arquivadas com início e prazo; quem edita manda, e fica `pendente` até o gestor de quem mandou (ou alguém acima, um diretor ou o administrador) decidir (`fluxo.decidir_linha_base`, que também deixa quem pediu desistir). Quem já aprova tem a sua aprovada na hora. Depois da primeira, trocar pede motivo; a anterior vira `substituida` e fica guardada. As datas seguem livres depois da aprovação: `fluxo.v_cronograma` mostra a linha de base aprovada, o desvio de início e de prazo em dias e `atrasada_base`; quem mudou cada data está em `app.auditoria` (as empurradas pela cascata ficam com quem fez a mudança que as empurrou).
+- **Modelos de tarefas:** o modelo da empresa (`dono_id` nulo) só o administrador mexe e pode ser o padrão do tipo de quadro (`fluxo.definir_modelo_padrao`): entra sozinho no quadro novo (no terreno, pelo `t_quadro`, com o responsável do terreno onde o modelo pede). Cada pessoa cria os seus (só ela vê) e aplica à mão (`fluxo.aplicar_modelo(modelo, quadro, data)`). O modelo guarda lista, prioridade, prazos relativos (`inicio_dias`, `duracao`), responsável fixo ou o do objeto, aprovadores, executores e quem acompanha, etiquetas, checklists e as predecessoras (`modelo_vinculos`), que ao aplicar já empurram as datas. `fluxo.salvar_quadro_como_modelo` transforma os cartões abertos de um quadro em modelo, com os prazos relativos ao primeiro início.
+
+### Aprovação formal da tarefa (bloco 3)
+
+Decisões do Moisés de 29/out/2026. Mesmo esquema `fluxo`, mesma migration.
+
+```mermaid
+erDiagram
+  tarefas ||--o{ aprovacoes : "pedidos"
+  aprovacoes ||--|{ aprovacao_votos : "um por aprovador"
+  empresas ||--o| regras : "regra de conclusão"
+  tarefas {
+    text aprovacao_modo "paralelo | sequencia"
+  }
+  aprovacoes {
+    text modo
+    text situacao "pendente | aprovada | recusada | cancelada | invalidada"
+    text motivo
+    uuid pedida_por
+  }
+  aprovacao_votos {
+    uuid aprovador_id
+    int ordem
+    text decisao "aprovou | recusou"
+    uuid decidido_por "o aprovador ou um superior dele"
+    text justificativa "obrigatória ao recusar"
+  }
+  regras {
+    bool conclui_exige_checklist "padrão: sim"
+  }
+```
+
+- **Quem aprova:** os aprovadores do cartão (`tarefa_pessoas`, papel `aprovador`, com `ordem` para a sequência). Um superior de um aprovador decide no lugar dele, como no funil; o voto guarda `decidido_por`.
+- **Pedido:** `fluxo.pedir_aprovacao(tarefa, motivo)` tira o retrato dos aprovadores; o pedido aberto anterior é cancelado e o aprovador que pede tem o próprio voto dado. Em paralelo (padrão) todos aprovam, em qualquer ordem; em sequência, só o da vez decide (`fluxo.votos_da_vez`). `fluxo.decidir_aprovacao(aprovacao, aprovar, justificativa)`: recusar exige justificativa e encerra o pedido; aprovado por todos, a tarefa conclui sozinha (vai para a lista que conclui). `fluxo.cancelar_aprovacao` desiste. Pedido e votos só mudam pelas funções.
+- **Bloqueio de conclusão** (`fluxo.pendencias_conclusao`, conferido no `t_lista`): tarefa com aprovador só conclui aprovada; com `regras.conclui_exige_checklist` (padrão ligado, `fluxo.salvar_regras` pelo administrador), só com os itens do checklist concluídos (item que virou cartão não conta). Reabrir uma tarefa aprovada invalida a aprovação.
+- **Avisos:** o aprovador na vez recebe `aprovacao_pendente` (em sequência, o próximo quando o anterior aprova); quem pediu e o responsável recebem `aprovacao_decidida`, com a justificativa na recusa (origem `tarefa_aprovacoes`).
+- O modelo de tarefas guarda o modo de aprovação e a ordem dos aprovadores.
+
+### SLA com pausa aprovada (bloco 3)
+
+Decisões do Moisés de 29/out/2026. Mesma migration.
+
+```mermaid
+erDiagram
+  tarefas ||--o{ pausas : "pausas"
+  empresas ||--o| regras : "quem aprova pausa"
+  pausas {
+    text situacao "pendente | ativa | encerrada | recusada | cancelada"
+    text motivo "obrigatório"
+    uuid pedida_por
+    uuid decidida_por
+    text motivo_decisao "obrigatório ao recusar"
+    uuid lista_anterior_id
+    timestamptz inicio
+    timestamptz fim
+    int dias "dias pausada, ao retomar"
+  }
+  regras {
+    text pausa_aprova "ninguem | gestor | diretor (padrão gestor)"
+  }
+```
+
+- **O prazo é o do cartão** e pausada não atrasa (`v_tarefas.atrasada`, `app.tarefas_atrasadas` e a rotina diária deixam de fora a lista de tipo `pausa`).
+- **Pausar:** `fluxo.pausar(tarefa, motivo)`; entrar na lista Pausadas só por ela (o `t_lista` recusa o arraste direto). Quem tem o nível de `regras.pausa_aprova` (o próprio nível, ou administrador) pausa na hora; os demais deixam o pedido pendente, com o cartão na lista em que está, e o primeiro superior com o nível recebe `aprovacao_pendente` (origem `tarefa_pausas`). `fluxo.decidir_pausa(pausa, aprovar, motivo)`: aprovar move para Pausadas guardando a lista de antes; recusar exige motivo; quem pediu pode desistir. `fluxo.salvar_regra_pausa` pelo administrador.
+- **Retomar:** `fluxo.retomar(tarefa)` encerra a pausa, volta à lista de antes (se ainda aberta) e empurra o prazo pelos dias pausados (corridos, ou úteis quando a empresa conta dias úteis); as sucessoras do cronograma andam em cascata. Concluir a tarefa direto da pausa encerra a pausa sem empurrar.
+- **Tempo:** `fluxo.v_tarefa_sla` dá dias aberta, dias pausada, dias líquidos, número de pausas e se há pausa ativa ou pedida.
+### Visibilidade por cartão (bloco 3)
+
+Decisões do Moisés de 29/out/2026. Mesma migration.
+
+```mermaid
+erDiagram
+  tarefas ||--o{ tarefa_acessos : "liberações"
+  grupos ||--o{ grupo_membros : "pessoas"
+  grupos ||--o{ tarefa_acessos : "liberado"
+  objeto_tipos ||--o{ quadros : "teto do objeto"
+  tarefas {
+    text visibilidade "publico | individual | restrito"
+  }
+  tarefa_acessos {
+    uuid user_id "ou grupo_id"
+    uuid grupo_id
+    text papel "leitor | comentarista | editor | administrador"
+    bool excluido "exceção: tira a pessoa do grupo"
+  }
+  objeto_tipos {
+    text tipo "terreno"
+    regproc funcao "app.ve_terreno"
+  }
+```
+
+- **Teto do objeto:** `fluxo.ve_objeto` chama a função registrada para o tipo do quadro (no BKM, `app.ve_terreno`, hoje a empresa; os perfis de acesso a terrenos entram nela). Sem objeto ou tipo sem registro, o teto é a empresa. O administrador do sistema vê tudo.
+- **Papel no cartão** (`fluxo.papel_cartao`, nulo = não vê): quem criou é administrador do cartão. Público: o papel do sistema (diretor, gestor e analista editam; leitura e básico leem), que um acesso dado no cartão pode subir. Individual: só quem criou. Restrito: o acesso dado (o da pessoa vale sobre o dos grupos; exceção anula o do grupo), senão editor para quem está no cartão e para o diretor.
+- **RLS:** cartão e filhas (pessoas, etiquetas, checklists e itens, comentários e reações, anexos, vínculos, aprovações, pausas, linha de base) leem por `fluxo.papel_tarefa` e escrevem por `fluxo.edita_tarefa` (comentar: `fluxo.comenta_tarefa`); as funções da tarefa conferem `fluxo.exigir_edicao_tarefa`. O histórico (`app.auditoria`) esconde o que é de cartão que a pessoa não vê.
+- **Regras:** a visibilidade só muda por quem gerencia (`fluxo.gerencia_tarefa`: administrador do cartão ou do sistema, ou diretor que vê o cartão); pôr outra pessoa num individual o torna restrito (gatilhos `t_visibilidade` e `t_restringe`); item que vira cartão herda a visibilidade e os acessos; modelo de tarefas guarda a visibilidade (restrito no modelo = só os envolvidos); salvar o quadro como modelo leva só o que quem salva vê.
+- **@ no cartão:** `fluxo.papel_cartao` e `fluxo.papel_tarefa` aceitam a pessoa (padrão: quem lê), e a função do teto recebe (objeto, pessoa); `app.tg_mencoes` só avisa quem vê o cartão. A tela só oferece no @ quem vê o cartão.
+- O banco tem `publico` como padrão para quem insere direto; a tela sempre pergunta.
+
+### Campos personalizados (bloco 4)
+
+Decisões do Moisés de 30/out/2026. Mesma migration.
+
+```mermaid
+erDiagram
+  empresas ||--o{ campos : "da empresa"
+  campos ||--o{ campo_opcoes : "lista"
+  tarefas ||--o{ tarefa_campos : "valores"
+  campos ||--o{ tarefa_campos : ""
+  campos {
+    text nome
+    text tipo "texto | numero | data | lista | caixa"
+    bool na_frente
+    bool ativo
+  }
+  tarefa_campos {
+    text texto "um só preenchido, o do tipo"
+    numeric numero
+    date data
+    uuid opcao_id
+    bool caixa
+  }
+```
+
+- Campos da empresa, para todos os quadros; o administrador cria e muda (RLS `app.eh_administrador`, com auditoria). Sem linha em `tarefa_campos`, o campo está "não informado"; sim/não guarda `false` para "não".
+- `t_valor` confere o valor no tipo do campo, a opção do próprio campo e campo ativo; `t_guarda` impede mudar o tipo ou apagar campo e opção com valor (desativar). Valores seguem a visibilidade do cartão (`fluxo.papel_tarefa` / `fluxo.edita_tarefa`), e o histórico os esconde de quem não vê o cartão.
+- "Obrigatório para concluir" saiu do campo (31/out/2026): o campo entra no cartão como item (`tarefa_itens`), e a regra em branco é de cada cartão (ver "Campos do terreno no cartão, regra em branco e condições" abaixo). Gravar valor inclui o campo no cartão sozinho (`tg_campo_incluido`).
+
+### Recorrência (bloco 4)
+
+Decisões do Moisés de 30/out/2026. Mesma migration.
+
+```mermaid
+erDiagram
+  tarefas ||--o| recorrencias : "origem"
+  recorrencias ||--o{ tarefas : "ocorrências (recorrencia_id)"
+  recorrencias {
+    text frequencia "diaria | semanal | mensal | anual"
+    int intervalo "a cada N"
+    int_array dias_semana "0 = domingo"
+    int dia_mes
+    date proxima
+    date termina_em
+    int max_vezes "com a de origem"
+    int vezes
+    int prazo_dias
+    uuid lista_id
+    bool ativa
+  }
+```
+
+- O cartão de origem é o modelo e a primeira ocorrência. `fluxo.gerar_recorrencias(data)`, chamada por `app.rotina_diaria`, cria cada ocorrência na data agendada, mesmo com a anterior aberta: cópia do cartão de origem como ele está (pessoas, etiquetas, prioridade, visibilidade, acessos e checklists em aberto, com o prazo do item deslocado), início na data e prazo `prazo_dias` depois; campos personalizados não vão. Se a rotina falhar um dia, a data perdida nasce na volta.
+- `t_valida` recusa série numa ocorrência, lista de outro quadro ou que não seja aberta; calcula o dia do mês e a próxima data (`fluxo.proxima_ocorrencia`: mês sem o dia usa o último; semanal a cada N semanas com os dias marcados). Na criação, ao retomar e ao mudar a regra (a partir da última ocorrência), data de hoje ou passada pula para amanhã em diante: nada nasce atrasado. A série encerra em `termina_em`, em `max_vezes` ou com o cartão de origem arquivado.
+- RLS pelo cartão de origem (`fluxo.papel_tarefa` / `fluxo.edita_tarefa`); só a rotina executa a geração.
+
+### Apontamento de horas (bloco 4)
+
+Decisões do Moisés de 30/out/2026: sem aprovação, e por ora só no banco (o app ainda não tem a tela). Mesma migration.
+
+```mermaid
+erDiagram
+  tarefas ||--o{ apontamentos : "horas"
+  apontamentos {
+    uuid user_id "quem apontou (sempre o próprio)"
+    date data "nunca no futuro"
+    int minutos "1 a 1440"
+    text nota
+  }
+```
+
+- `tarefas.estimativa_min` guarda a estimativa; `fluxo.v_tarefa_horas` soma o apontado, por pessoa (`por_pessoa`, jsonb) e no total.
+- `t_valida` recusa data futura, mais de 24 h da mesma pessoa no mesmo dia e troca de pessoa. RLS: vê quem vê o cartão; aponta quem edita o cartão, só em nome próprio; muda e apaga o autor ou o administrador do sistema. Auditoria ligada, escondida de quem não vê o cartão.
+
+### Copiar cartão e modelo de cartão (bloco 4)
+
+- `fluxo.copiar_tarefa(tarefa, lista, título, itens)` roda com os direitos de quem copia (RLS de cada tabela): só copia o que a pessoa vê, para uma lista aberta de um quadro que ela vê e edita. `itens` escolhe o que vai: `checklists` (itens em aberto, sem prazo), `etiquetas`, `pessoas` (responsável, executores, aprovadores, quem acompanha e responsáveis dos itens), `campos` (só ativos e opções ativas), `anexos` e `automacoes` (as regras do cartão, por `fluxo._copiar_automacoes`, com quem copia como dono). Vão sempre a visibilidade, os acessos, a prioridade, a capa e a estimativa; nunca datas, comentários, horas, aprovações nem a série.
+- `tarefas.modelo`: o cartão fica no quadro como base. Não conclui (`tg_tarefa_lista`), não atrasa (`v_tarefas`, rotina diária), não tem recorrência nem vem de uma (`t_modelo`). Criar a partir do modelo é copiar.
+
+### Tarefas pelo funil (bloco 4)
+
+- `app.v_tarefas_funil` (em `…000400_negociacao.sql`, porque junta `fluxo` com `app.processos`): cada tarefa de quadro de terreno com a fase aberta do terreno (ativa ou em stand by, sem as partes), a etapa e a subetapa; uma linha por fase aberta. Base da vista Funil da página Tarefas, só leitura (formato Monday: uma tabela por fase, etapa ou subetapa, uma linha por terreno; o andamento e a próxima tarefa saem das tarefas do terreno).
+
+- **Fica para os próximos blocos:** WhatsApp e a tela de horas (botões e agendamentos vieram no 5b).
+
+### Automações (bloco 5a)
+
+Regras "quando acontecer X, se Y, faça Z" (decisão de 30/out/2026), no modelo do Butler do Trello. O esquema `fluxo` guarda a regra e o registro; o aviso sai por um gancho (`fluxo._avisar`) que o app troca pela notificação dele (`app._notificar`, tipo `automacao`, origem `automacao_execucoes`).
+
+```mermaid
+erDiagram
+  quadros ||--o{ automacoes : "regra do quadro (vazio = empresa)"
+  automacoes ||--o{ automacao_execucoes : registra
+  tarefas ||--o{ automacao_execucoes : "em que cartão"
+```
+
+- `automacoes`: nome, escopo (`quadro_id` vazio = empresa toda, só administrador, listas pelo nome; com quadro, de quem edita o terreno, listas pelo id), `gatilho` (`criada`, `entrou_lista`, `concluida`, `etiqueta`, `campo`, `checklist_completo`, `prazo_antes` com `gatilho_dias`, `prazo_venceu`) e o parâmetro dele (lista, etiqueta ou campo; vazio = qualquer), `condicoes` e `acoes` em JSON (conferidos por `tg_automacao`), `ativa`, `dono_id`. Só o dono ou o administrador muda; com execuções não se apaga.
+- **Regra do cartão** (30/out/2026): `automacoes.tarefa_id` prende a regra a um cartão (o `quadro_id` vem dele). Cria quem edita o cartão (`papel_tarefa` de Editor para cima); não usa o gatilho `criada`; o cartão não muda depois. Dispara só nele (`disparar_automacoes` e `automacoes_prazo` filtram por `tarefa_id`) e, na mesma ordem, roda depois das da empresa e das do quadro. `fluxo._copiar_automacoes(de, para, dono)` (definer) leva as regras na cópia do cartão e em cada ocorrência da recorrência, trocando as listas pelo nome quando o quadro muda e pulando a que não tem a lista lá; o dono que não edita o cartão novo fica de fora.
+- `automacao_execucoes`: regra, cartão, gatilho, `referencia` (o prazo, nos gatilhos de prazo: único por regra e cartão), quem disparou (vazio = rotina), resultado `ok` ou `erro` e o resumo do que fez.
+- Disparo: gatilhos `t_auto` no cartão, nas etiquetas, nos campos e nos itens de checklist chamam `fluxo.disparar_automacoes`; "criada" é um gatilho adiado para o fim da transação, e o cartão criado na mesma transação não dispara os outros (cópia, ocorrência e modelo nascem com tudo). Prazo: `fluxo.automacoes_prazo` na rotina diária.
+- Regras de execução: a regra roda só se o dono ainda tem o direito (administrador ou editor) e, no quadro, vê o cartão; as ações rodam com `fluxo.automacao = '1'`, e nenhum gatilho dispara nesse estado (sem cadeia); erro numa ação desfaz só a regra e fica registrado; avisos só para quem vê o cartão.
+
+### Botões e agendamentos (bloco 5b)
+
+Dois gatilhos a mais em `fluxo.automacoes` (30/out/2026), com as mesmas condições, ações, escopos (empresa, quadro, cartão), dono e registro:
+
+- `botao`: a regra vira um botão nos cartões que passam nas condições. `fluxo.botoes_cartao(tarefa)` lista os que valem para o cartão (ligados, do escopo, dono com direito e, no quadro, dono que vê o cartão); quem não edita o cartão recebe a lista vazia. `fluxo.apertar_botao(botao, tarefa)` confere de novo, roda as ações como numa regra (sem disparar outras) e devolve a execução, com quem apertou em `user_id`.
+- `agenda`: `agenda_freq` (`diaria`, `semanal`, `mensal`) e `agenda_dias` (dias da semana, 0 = domingo, ou do mês, 1 a 31, sem repetição). `fluxo.agenda_hoje(freq, dias, dia)` diz se roda no dia; o dia do mês que o mês não tem roda no último dia. `fluxo.automacoes_agenda(dia)`, na rotina diária, roda cada regra do dia em cada cartão do escopo (fora modelo e arquivado) que passa nas condições, uma vez por dia (`referencia` = o dia). Regra agendada sem condição é recusada, para não tocar todos os cartões.
+- Condição `situacao` (qualquer gatilho): `aberta`, `atrasada` (aberta, prazo antes de hoje e fora da lista de pausa) ou `concluida`; os valores marcados somam.
+
+### Campos do terreno no cartão, regra em branco e condições (ligação funil × quadros, lote A)
+
+Decisões do Moisés de 31/out/2026 (simulação "Funil e quadros"). Banco em `…000150_fluxo.sql` (itens, justificativas, pendências) e `…001200_campos.sql` (catálogo e funções do app).
+
+```mermaid
+erDiagram
+  campos_catalogo ||--o{ campos_empresa : "título e marcas da empresa"
+  tarefas ||--o{ tarefa_itens : "itens incluídos"
+  campos ||--o{ tarefa_itens : "campo personalizado"
+  checklist_itens }o--|| tarefas : ""
+  tarefas ||--o{ conclusao_justificativas : ""
+  campos_catalogo {
+    text chave "origem.coluna"
+    text titulo "padrão"
+    text tipo "texto | numero | data | lista | lista_multi | pessoa | sim_nao"
+    bool editavel "calculado = falso"
+    bool condicao
+    bool cartao
+  }
+  campos_empresa {
+    text titulo "vazio = padrão; único na empresa"
+    bool condicao
+    bool cartao
+  }
+  tarefa_itens {
+    text chave "campo do terreno (ou campo_id)"
+    text regra_branco "livre | justificativa | bloqueia"
+    jsonb condicao "vale quando"
+  }
+  conclusao_justificativas {
+    text texto
+    jsonb itens
+    bool libera_bloqueio "gestor ou diretor passou pelo que bloqueia"
+  }
+```
+
+- `app.campos_catalogo`: um campo por linha, de Terreno, Negociação, Oferta de referência, Proposta vigente e Calculado (forma de pagamento vigente = a da proposta vigente, senão a da oferta; margem e VGV do estudo válido; preço por m²; zonas; vários donos; corretores). `app.campos_empresa` guarda o que o administrador muda (Configurações › Campos, `app.salvar_campo`): o **título** (o nome que o usuário vê, editável a qualquer hora, sem repetir na empresa) e as marcas **Condição** (aparece no "Vale quando") e **No cartão** (pode entrar no cartão). `app.v_campos` junta os dois.
+- O esquema `fluxo` não conhece terreno: lê os campos pelas funções registradas em `fluxo.objeto_tipos` (`campo_objeto` = `app.campo_cartao`, `avalia_condicao` = `app.avaliar_condicao`, `valida_condicao` = `app.validar_condicao`). Em branco é nulo, vazio, lista vazia ou o "não informado" da coluna; em branco só satisfaz "não informado".
+- **No cartão:** quem edita o cartão inclui itens pelo bloco Formulário (antes "+ Campo"; ver "Formulário da tarefa e máscaras") (`tarefa_itens`): campos do terreno ou da negociação marcados "No cartão" e campos personalizados; o checklist já é item. O campo do terreno aparece com o controle do tipo e grava no próprio terreno (`app.gravar_campo`: ficha por `app.salvar_terreno` com a versão atual, oferta direto, temperatura por `app.definir_temperatura`); calculados só leem.
+- **Regra se em branco**, de cada item e local da tarefa: pode concluir (padrão), conclui com justificativa, não conclui. Vale para campos do terreno, campos personalizados e cada item de checklist (`checklist_itens.regra_branco`; vazio = regra da empresa para checklist). "Não conclui" trava o analista; gestor e diretor concluem com justificativa, como no funil (`libera_bloqueio`). A justificativa é pedida na hora (`fluxo.concluir_justificando`, que conclui ou pede a aprovação) e fica no histórico.
+- **Vale quando** (`condicao` jsonb): `{"modo": "todas" | "qualquer", "itens": [{"campo", "op", "valores"} | {"grupo": {...}}]}`, com um nível de grupo ("(A ou B) e C"). Operadores pelo tipo (é / não é, igual, maior, menor, entre, antes, depois, nos últimos N dias, sim, não, preenchido, não informado). Condição que deixa de valer tira a pendência ("não se aplica mais"); a tarefa fica.
+- **Aba Configuração** do cartão: só diretor, administrador e quem criou a tarefa (`fluxo.configura_tarefa`) veem e mudam regra e condição (o trigger `fluxo.tg_tarefa_item` recusa os demais e também tirar do cartão um item com regra); os outros veem só o selo ("necessário", "pede justificativa").
+- `fluxo.itens_em_branco(tarefa)` lista o que está em branco com regra e condição valendo; `fluxo.pendencias_conclusao` devolve `'checklist'` e `'campos'` (bloqueiam, salvo justificativa do diretor) e `'justificar'` (conclui com justificativa).
+- Itens, regras e condições vão na cópia do cartão (escolha "Campos"), na recorrência e no modelo de tarefas (`modelo_tarefas.itens`; item de checklist do modelo pode ser `{texto, regra, condicao}`).
+
+### Formulário da tarefa e máscaras (1/nov/2026)
+
+Decisões do Moisés de 1/nov/2026 (simulação "Formulário da tarefa"). Banco em `…000150_fluxo.sql` e `…001200_campos.sql`.
+
+- **Formulário:** os itens de `fluxo.tarefa_itens` viram perguntas. Cada uma tem `pergunta` (vazia usa o título do campo), `ajuda` opcional e grava num de três destinos: campo do terreno marcado No cartão (`chave`), campo personalizado (`campo_id`) ou **Só no cartão** (`tipo`, com a resposta em `resposta jsonb`; `num_nonnulls(chave, campo_id, tipo) = 1`). Tipos do "só no cartão": texto, parágrafo, número, moeda, percentual, data, sim/não, lista (`opcoes text[]`, ao menos 2), e-mail, telefone, CPF e CNPJ. Pergunta "só no cartão" exige o texto da pergunta; com resposta, o tipo não muda.
+- **Forma de responder** (`forma`; nula = a primeira da lista): `fluxo.formas(tipo, n_opcoes)` diz as permitidas. Lista: menu, radio, chips; segmentado até 4 opções; chave só com 2; mais de 6 opções, só menu. Sim/não: botões ou chave. Texto: linha ou parágrafo. Os demais têm uma só. O trigger recusa forma fora da lista.
+- A **chave** tem três estados: começa no meio (não informado), os toques alternam Sim e Não, e "Limpar resposta" (menu ⋮) volta ao meio. Vazio nunca vira "não".
+- Quem edita o cartão monta as perguntas (modo Montar: incluir, editar, subir, arrastar, tirar; tirar item com regra segue a aba Configuração); Leitura só vê. Sem seções nem saltos por ora: pergunta condicional usa o "Vale quando".
+- `fluxo.itens_em_branco` conta a pergunta só no cartão sem resposta (tipo `pergunta`). Pergunta, ajuda, forma, tipo, opções e regra vão na cópia (a resposta só quando se copiam os campos), na recorrência, no modelo de tarefas e nas tarefas da etapa.
+- **Máscaras** (`formato`): e-mail, telefone, CPF e CNPJ em texto; moeda e percentual em número; CEP no catálogo. Gravadas só com os dígitos (e-mail em minúsculas) por `fluxo.validar_formato(formato, valor)`, que confere DDD, dígitos verificadores de CPF e CNPJ e o formato do e-mail; `fluxo._formato_ok` faz a mesma conta sem erro. No campo do terreno, a máscara vem do catálogo (`app.campos_catalogo.formato`, fixa) ou, nos campos de texto sem máscara fixa, do administrador em Configurações › Campos (`app.campos_empresa.formato`, `app.salvar_campo(..., p_formato)`: nulo mantém, vazio tira; recusa se algum terreno tem valor fora da máscara); `app.gravar_campo` normaliza. No campo personalizado, `fluxo.campos.formato` (não muda com valor fora da máscara). Na pergunta só no cartão, o tipo já é a máscara.
+- **Criação rápida:** Nova tarefa abre curta (título, terreno, que vem marcado quando se cria dentro da ficha, responsável (digitado com @, com busca aproximada pelo nome e pelo @; vem quem cria), prazo com atalhos 1 dia, 1 semana e 1 mês ou a data digitada (mesmo dia do mês seguinte, ou o último dia), etapa e subetapa, descrição atrás de "Adicionar descrição" e visibilidade); "Mais opções" abre a janela completa com o que já foi digitado. A tarefa nasce na lista Fazer (ou na primeira), com prioridade média. Etapa e subetapa vêm com as atuais do terreno (`app.tg_tarefa_processo` grava `etapa` e `subetapa` do processo aberto da fase mais adiante quando a tarefa chega sem elas) e trocam no seletor, entre as fases abertas; "Nenhuma" deixa sem etapa. No cartão, a subetapa também tem seletor (menos na tarefa que nasceu de regra da etapa). A subetapa da tarefa à mão é informação: a trava continua pela regra da etapa.
+
+### Tarefas da etapa, trava e volta de etapa (ligação funil × quadros, lote B)
+
+Decisões do Moisés de 31/out/2026 (simulação "Funil e quadros"). Banco em `…001300_funil_tarefas.sql`, com os ganchos em `…000500_regras.sql` (passagem, encerrar, retomar, pendências), `…000400_negociacao.sql` (etapa do cartão), `…000150_fluxo.sql` (condição na tarefa do modelo, pausa de fora, gatilho) e `…000200_cadastros.sql` (condição no checklist e no pré-requisito).
+
+```mermaid
+erDiagram
+  etapas_modelo ||--o{ etapa_regras : "ao entrar"
+  subetapas_modelo ||--o{ etapa_regras : "ao entrar na subetapa"
+  modelos_quadro ||--o{ etapa_regras : "modelo da regra"
+  etapa_regras ||--o{ tarefas_etapa : "o que criou"
+  processos ||--o{ tarefas_etapa : ""
+  tarefas ||--o| tarefas_etapa : ""
+  etapa_regras {
+    text fase
+    text etapa
+    text subetapa "nulo = ao entrar na etapa"
+    uuid modelo_id "ou titulo (um dos dois)"
+    int prazo_dias "da tarefa só"
+    bool responsavel_objeto "responsável do terreno"
+    jsonb condicao "vale quando"
+    bool trava "padrão falso"
+    bool ativo
+  }
+  tarefas_etapa {
+    uuid regra_id
+    uuid modelo_tarefa_id "não nasce de novo"
+    jsonb condicao "a da tarefa do modelo"
+    int inicio_dias "para refazer as datas"
+    int duracao
+    text situacao "ativa | deixada | arquivada_auto"
+  }
+```
+
+- **Etapa do cartão:** `fluxo.tarefas.processo_id`, `etapa` e `subetapa`. A tarefa nova sem etapa nasce na etapa atual do terreno (o processo aberto da fase mais adiante, ativo antes do stand by; `app.tg_tarefa_processo`); `etapa = 'nenhuma'` tira. Mudar a etapa à mão limpa a subetapa de outra etapa.
+- **Regras** (`app.etapa_regras`, Configurações › Funil › Tarefas da etapa, só administrador): `app.salvar_regra_etapa` valida etapa, subetapa da etapa, modelo da empresa ou título e condição; `app.apagar_regra_etapa` apaga a que não criou tarefa e desativa a que criou.
+- **Entrar** (`app._tarefas_ao_entrar`, ao abrir o processo, ao mudar de etapa e de subetapa): primeiro devolve as `arquivada_auto` daquela etapa (mesmo código; datas refeitas por `inicio_dias` e `duracao` a partir de hoje, ou deslocadas pelos dias arquivadas) e reativa as `deixada`; depois aplica as regras cuja condição vale. Modelo por `fluxo.aplicar_modelo_mapa`, pulando as tarefas do modelo já criadas neste processo (as predecessoras se ligam às existentes) e as tarefas do modelo cuja condição não vale; tarefa só uma vez por processo. Ao entrar na etapa, dispara o gatilho `etapa` (`'fase:etapa'`) nos cartões abertos dela.
+- **Trava** (`app._trava_tarefa`): a tarefa da regra que ainda bate com a etapa e a subetapa dela trava no nível da regra (`etapa` ou `subetapa`) se a regra trava; condição da regra ou da tarefa do modelo que não vale = `nao_se_aplica` (não trava). Tarefa à mão, ou que mudou de etapa, trava no nível `etapa` quando a etapa tem regra da etapa que trava. `deixada` e `arquivada_auto` não travam. `app._tarefas_travando(processo, saida)` vira item de pendência (`tipo 'tarefa'`, código, lista, atrasada; título "restrita" para quem não vê o cartão), somado em `app._pendencias` ao sair da etapa para frente ou concluir a fase (nível etapa e a subetapa atual) e ao sair da subetapa para frente (nível subetapa). Gestor e diretor passam com justificativa, como nas outras pendências.
+- **Pode avançar** (`t_pode_avancar`): concluída a tarefa que travava, se nada mais trava naquele nível, `pode_avancar` vai para o responsável do terreno ("TER-x pode avançar. As tarefas de … estão concluídas."). Nunca move o processo.
+- **Voltar** (`app._tarefas_ao_voltar`): abertas das etapas depois do destino; sem trabalho (`app._tarefa_tem_trabalho`: comentário, anexo, item marcado, subtarefa, campo personalizado, troca de lista na auditoria) arquivam (`arquivada_auto`); com trabalho ficam `deixada` e o responsável recebe `etapa_deixada`.
+- **Encerrar e retomar** (`app._tarefas_ao_encerrar`, `app._tarefas_ao_retomar`): Stand By pausa as abertas do processo sem pedido (`fluxo._pausar_de_fora`, `pausas.origem = 'stand_by'`, que só a retomada da fase encerra, empurrando o prazo); Perdido e Descartado arquivam (fechando a pausa ativa), salvo `dados.tarefas = 'manter'`; concluir não mexe.
+- **Condição** no checklist (`checklist_modelo.condicao`, `app.condicao_checklist`) e no pré-requisito (`prerequisitos_modelo.condicao`, `app.condicao_prerequisito`): o documento ou a passagem só é exigido quando a condição vale (`app.condicao_aplica` em `v_checklist` e em `app._pendencias`).
+- `app.v_tarefas_etapa`: cartão, fase, etapa, subetapa, regra, nível da trava e situação, para a tela.
+
+### Jornada do terreno (1/nov/2026)
+
+Decisões do Moisés de 1/nov/2026 (simulação https://claude.ai/artifact/9eocQHsh2rDz8BtDak6d8D). Banco em `…001400_jornada.sql`, com os campos novos do terreno em `…001200_campos.sql` e a regra do checklist e do pré-requisito em `…000200_cadastros.sql` e `…000500_regras.sql`. A tela (Configurações › Funil › Jornada) junta num lugar o que antes eram três abas; no banco, documentos, pré-requisitos e tarefas da etapa continuam nas tabelas deles, cada um com a sua regra.
+
+```mermaid
+erDiagram
+  etapas_modelo ||--o{ jornada_itens : "sair da etapa"
+  subetapas_modelo ||--o{ jornada_itens : "sair da subetapa"
+  etapas_modelo ||--o{ jornada_regras : ""
+  campos_terreno ||--o{ terreno_valores : ""
+  terrenos ||--o{ terreno_valores : ""
+  jornada_itens {
+    text fase
+    text etapa
+    text subetapa "nulo = a etapa inteira"
+    text campo "chave do catálogo (terreno.x, personalizado.x...)"
+    text pergunta "nulo = o título do campo"
+    text ajuda
+    text forma "a do formulário do cartão"
+    text regra "bloqueia | justifica | livre"
+    jsonb regra_cond "condicional: a primeira que vale decide"
+    jsonb condicao "vale quando"
+    int ordem
+    bool ativo
+  }
+  jornada_regras {
+    text fase
+    text etapa
+    text subetapa
+    jsonb condicao "obrigatória"
+    text acao "bloqueia | gestor | diretor | avisa"
+    text mensagem
+  }
+  campos_terreno {
+    text codigo "personalizado.<codigo>"
+    text titulo "único com o catálogo"
+    text tipo "texto | numero | data | lista | sim_nao"
+    text unidade
+    text_arr opcoes
+    text formato "máscara"
+  }
+```
+
+- **Fonte única:** a pergunta grava no campo que escolhe (`campo`), o mesmo que a ficha e o cartão gravam (`app.gravar_campo`, com o controle do tipo e a auditoria). O que não existe na ficha vira **campo novo do terreno** (`app.campos_terreno`, valor em `app.terreno_valores`), que entra no catálogo como `personalizado.<codigo>` (`app.campo_def`, `app.v_campos`, `app._valor_campo`) e por isso vale nas condições, no cartão e em Configurações › Campos. `app.salvar_campo_terreno` (administrador; título único com o catálogo; tipo não muda com valor gravado; opção em uso não sai) e `app.apagar_campo_terreno` (com valor ou na jornada, desativa).
+- **Regra em branco** (as 3 opções em todo item): `jornada_itens.regra`, `checklist_modelo.regra` (`obrigatorio` virou coluna gerada `regra <> 'livre' or regra_cond is not null`), `prerequisitos_modelo.regra` (`app.regra_prerequisito`) e `etapa_regras.regra` (tarefa aberta ao sair; `trava` passou a ser "pode travar" = `regra <> 'livre'` ou com condicional, mantido por `app.salvar_regra_etapa`; só `trava` vira bloqueia ou livre), todos com bloqueia, justifica ou livre. **Comportamento condicional** (`regra_cond`, `[{condicao, regra}]`, validado por `app._regra_cond_config`): `app._regra_branco(terreno, regra, regra_cond)` devolve a regra da primeira condição que vale, ou a única; livre não entra nas pendências, justifica entra com `justifica`. Na tarefa à mão vale a regra mais forte das regras da etapa. Em `salvar_checklist` e `regra_prerequisito`, `p_regra_cond` nulo mantém e `'[]'` tira. Em `app._passagem`, se todo item que falta é `justifica`, qualquer editor passa com `p_forcar` e comentário; senão só gestor e diretor forçam, como antes. `app.checar_passagem` devolve `pode_justificar`.
+- **Onde vale** (`app._jornada_na_saida`): item da etapa ao sair dela para frente ou concluir a fase; item da subetapa ao sair dela para frente (também pulando) e ao sair da etapa; voltar não pede nada. `app._jornada_pendencias` entra em `app._pendencias` (item com condição que não vale fica de fora; o item conta como feito quando o campo tem valor). A jornada é do terreno: a negociação de uma parte não a tem.
+- **Regras pelo valor** (`app.jornada_regras`): condição que vale na saída → `bloqueia` vira pendência (gestor e diretor passam com justificativa, como nas outras), `gestor` e `diretor` entram nas aprovações exigidas (`app._jornada_pede` em `app._aprovacoes_exigidas`), `avisa` só mostra a mensagem.
+- `app.jornada_processo(processo)`: os itens com `aplica` e `valor` e as regras que valem, para o quadro de avanço. Configuração: `app.salvar_item_jornada` (lugar válido, forma do tipo do campo, condição), `app.apagar_item_jornada`, `app.salvar_regra_jornada`, `app.apagar_regra_jornada`, todas só do administrador e com auditoria.
+- Atualização em tempo real entre usuários fica para o porte do front (Supabase realtime); o banco já tem uma fonte só.
 
 ## Setores censitários e renda familiar estimada
 
@@ -741,6 +1302,10 @@ erDiagram
   }
   viabilidades {
     numeric custo_m2 "obra incidente, R$/m2"
+    text obra_base "privativa ou construida"
+    numeric area_construida "digitada; com estudo de massa, vem dele"
+    uuid estudo_massa_id FK "estudo de massa preso"
+    bool segue_massa_valido "troca junto com o valido"
     numeric permuta_fin_pct
     numeric deducao_vgv_pct
     numeric minimo_garantido
@@ -758,6 +1323,7 @@ erDiagram
     int quantidade_comissao "comissao do terreno; as duas ate a quantidade"
     numeric preco_unitario
     numeric preco_m2
+    uuid massa_tipologia_id FK "tipologia do estudo de massa"
   }
   viabilidade_linhas {
     uuid id PK
@@ -781,11 +1347,11 @@ erDiagram
 
 - O estudo é do terreno (vários por terreno; `app.viabilidades` com `tipo = 'estatica'`). A negociação vincula um (`app.vincular_estudo`, só na fase de entrada e do mesmo terreno); o estudo externo do BKM (`tipo = 'externa'`, `app.vincular_viabilidade`) continua. Criar e duplicar por `app.criar_viabilidade` (já com os itens fixos), nome e os dados digitados da obra e do terreno por `app.salvar_viabilidade`, apagar por `app.apagar_viabilidade` (vinculado ou usado em proposta não se apaga). Tipologias e linhas são escrita direta (sem regra de funil), com auditoria; o trigger recusa base que o grupo não aceita e item fixo repetido. Rentabilidade mínima da empresa em `app.viabilidade_config.margem_minima_pct` (só o administrador, por `app.salvar_margem_minima`; nulo = sem mínima): `v_terrenos.abaixo_margem_min` acende quando a margem do estudo válido fica abaixo dela (substitui o antigo preço máximo do terreno, que saiu de `app.viabilidades` em 26/out/2026).
 - **Preços ligados** (trigger `t_precos`): com a área, mudar o preço unitário refaz o m² e mudar o m² refaz o unitário; mudar a área refaz o m² quando há os dois preços e completa o que falta quando há um só.
-- **Grupos** (`app.viab_tipos`, `app.viab_secao`, `app.viab_fixo`, iguais a `grupos` em `despesas.json`): Custo de obras › Itens atípicos, Obra não incidente, Projetos, Pós-obra; Despesas gerais › Terreno, Incorporação, CEF, Administrativo e financeiro; Taxas (fixos); Despesas financeiras (fixos: Custo de alavancagem, Custo de juros PJ em % da obra total, Custo financeiro, Impostos; depois do EBITDA, decisão do Moisés de 26/out/2026). Taxas e Despesas financeiras (`app.viab_restrito`) nascem com o valor padrão da empresa e só a diretoria ou o administrador (`app.eh_diretoria`) muda ou tira a linha do estudo; `criar_viabilidade` liga `app.viab_criando` para copiar; Despesas comerciais (fixos). Itens fixos aparecem sempre no estudo, sem incluir nem tirar.
+- **Grupos** (`app.viab_tipos`, `app.viab_secao`, `app.viab_fixo`, iguais a `grupos` em `despesas.json`): Custo de obras › Custo de obra atípico, Custo de obra não incidente, Custo de projetos, Custo pós-obra (na tela, quadros com o total no título e seta de abrir e fechar; o atípico fica dentro do quadro Custo de obra incidente, junto do típico; decisão do Moisés de 28/out/2026); Despesas gerais › Terreno, Incorporação, CEF, Administrativo e financeiro; Taxas (fixos); Despesas financeiras (fixos: Custo de alavancagem, Custo de juros PJ em % da obra total, Custo financeiro, Impostos; depois do EBITDA, decisão do Moisés de 26/out/2026), mais dois grupos de um item cada na mesma seção, Custo de capital permuta financeira (`capital_permuta`) e Custo de capital pagamento terreno (`capital_pagamento`), com uma base só, o Aporte em % (`pct_aporte_permuta` = permuta financeira em dinheiro, com o mínimo garantido quando ele vale; `pct_aporte_pagamento` = pagamento em dinheiro do terreno; decisão do Moisés de 28/out/2026). Taxas e Despesas financeiras (`app.viab_restrito`) nascem com o valor padrão da empresa e só a diretoria ou o administrador (`app.eh_diretoria`) muda ou tira a linha do estudo; `criar_viabilidade` liga `app.viab_criando` para copiar; Despesas comerciais (fixos). Itens fixos aparecem sempre no estudo, sem incluir nem tirar.
 - **Cálculo** (`app.calcular_viabilidade`, o mesmo do protótipo; os totais ficam no cabeçalho, refeitos por trigger):
   - VGV = Σ quantidade × preço unitário. **VGV vendido** = VGV − unidades em permuta física − unidades da comissão; é o "VGV" das bases % do VGV. Unidades líquidas = unidades − permuta − comissão (base da verba por unidade).
   - **VGV líquido** = VGV vendido − % de dedução × VGV vendido − as despesas comerciais marcadas para deduzir (só as que a lista marca como dedutíveis: ITBI e registro de unidades vendidas, Produto Caixa).
-  - **Custo de obras** em camadas: incidente (típico) = valor unitário × área privativa total; atípicos (área privativa, % do típico, % do VGV, verba); **raso** = incidente + atípicos; não incidente (+ % do raso); **obra total** = raso + não incidente; projetos e pós-obra (+ % da obra total). A seção soma tudo.
+  - **Custo de obras** em camadas: incidente (típico) = valor unitário × área privativa total, ou × área construída total quando `obra_base = 'construida'` (decisão do Moisés, 3/nov/2026); atípicos (área privativa, % do típico, % do VGV, verba); **raso** = incidente + atípicos; não incidente (+ % do raso); **obra total** = raso + não incidente; projetos e pós-obra (+ % da obra total). A seção soma tudo.
   - **Custo do terreno**: permuta física e comissão em unidades só informam (quantidade, área, %), porque já saíram do VGV vendido; permuta financeira = % × VGV líquido, nunca abaixo do mínimo garantido; + pagamento em dinheiro + comissão em dinheiro.
   - Despesas gerais, Taxas e Despesas financeiras: % do VGV, % da obra total, % do lucro líquido ou verba. O % do lucro é circular: lucro = L0 ÷ (1 + Σ%), com L0 o lucro antes desses itens; sem lucro, valem zero.
   - Despesas comerciais: % do VGV, verba total, verba por unidade (× unidades líquidas) ou verba mensal (× meses).
@@ -793,6 +1359,53 @@ erDiagram
 - **Modelos de estudo** (`app.viabilidade_modelos`, decisão do Moisés de 26/out/2026): valores e bases de cálculo guardados para o estudo novo nascer com eles. `app.salvar_modelo_viabilidade(estudo, nome, da_empresa, modelo)` grava o estudo como modelo novo ou por cima de um existente: guarda o valor unitário da obra, a dedução do VGV, as despesas que saem do VGV líquido e as linhas (item, base, valor, meses); tipologias, permuta financeira, mínimo garantido e pagamento e comissão em dinheiro são do terreno e ficam fora. Modelo da empresa (`user_id` nulo) só o administrador grava e apaga, e um deles pode ser o padrão (`app.marcar_modelo_padrao`); o do usuário só ele vê, usa e apaga (`app.apagar_modelo_viabilidade`). Taxas e Despesas financeiras só entram no modelo gravado pela diretoria e só se aplicam de modelo da empresa ou para quem é da diretoria; senão, ficam os valores padrão da lista. `criar_viabilidade(terreno, nome, copiar_de, modelo, sem_modelo)`: sem cópia nem modelo escolhido, usa o padrão da empresa (`sem_modelo = true`: só a lista); do modelo entram só itens ativos, com base ainda aceita pelo grupo, e só o que ainda é dedutível; os itens fixos que faltarem vêm da lista.
 - Lista de itens da empresa: configuração do administrador (`app.salvar_despesa_viabilidade`, `app.apagar_despesa_viabilidade`; usado só desativa e não muda de grupo), copiada para cada empresa nova. Padrão em `tools/viabilidade/despesas.json` (o protótipo e o teste do banco leem).
 - Leituras a confirmar com o Moisés: custo de obra típico = incidente; a dedução em % também sai do lucro (é custo, não só base da permuta); % do VGV sobre o VGV vendido.
+
+## Estudos de massa
+
+Lote 4 da ficha em abas (pedido do Moisés de 3/nov/2026). Migration `20261015001500_estudos_massa.sql`; protótipo em `tools/prototipo/proto_massa.js`, aba **Estudos de massa** da ficha.
+
+```mermaid
+erDiagram
+  terrenos ||--o{ estudos_massa : "estudos"
+  estudos_massa ||--o{ estudo_massa_tipologias : tem
+  estudos_massa |o--o{ viabilidades : "presa ao estudo"
+  estudo_massa_tipologias |o--o{ viabilidade_tipologias : "casada"
+  estudos_massa |o--o{ documentos : "PDF e DWG"
+  estudos_massa {
+    int ordem "numero no terreno"
+    text nome
+    text situacao "solicitado, em_elaboracao, entregue"
+    uuid solicitante_id
+    uuid arquiteto_id "membro da empresa"
+    text briefing
+    date prazo
+    numeric lazer_4 "coberto e descoberto, na torre e fora"
+    numeric circulacao_m2
+    numeric anexos_m2
+    int vagas_cobertas_descobertas
+    numeric estacionamento_coberto_descoberto_m2
+    numeric contencao_ate_1_5_e_acima_m2
+    numeric area_construida_m2
+    numeric ca_legal "digitado"
+    numeric ca_venal "digitado"
+    numeric area_privativa_m2 "soma das tipologias"
+    numeric eficiencia_pct "privativa / construida"
+    bool valido "um por terreno, so entregue"
+    text observacoes
+  }
+  estudo_massa_tipologias {
+    text nome
+    numeric area_privativa
+    int quantidade
+  }
+```
+
+- **Pedido:** `app.solicitar_estudo_massa(terreno, arquiteto, briefing, prazo, nome)`: o arquiteto é um membro da empresa (interno; acesso externo fica para depois) e recebe o aviso `massa_solicitado`; o estudo nasce **Solicitado**, numerado no terreno ("Estudo de massa N").
+- **Lançamento:** `app.salvar_estudo_massa(estudo, dados)` grava as áreas, vagas, CAs, a área construída total, o briefing, o prazo, o arquiteto (trocado, o novo é avisado), as observações e, em `tipologias`, a lista inteira (título, área privativa, quantidade; com `id` atualiza, sem entra, a que falta sai). Área privativa total e unidades saem das tipologias; eficiência = privativa ÷ construída (coluna gerada). O primeiro dado põe **Em elaboração**; **Entregue** pede tipologias com área e quantidade e a área construída, e avisa quem pediu (`massa_entregue`). As tabelas só se leem; tudo passa pelas RPCs, com auditoria.
+- **Válido:** `app.marcar_massa_valido(estudo, valido)`: um por terreno (índice único parcial), só entregue; o válido não volta para em elaboração nem se apaga. `app.apagar_estudo_massa` recusa o válido e o que tem viabilidade presa; os arquivos ficam em Documentos.
+- **Arquivos:** `app.anexar_arquivo_massa(estudo, 'massa_pdf' | 'massa_dwg', caminho, arquivo, tamanho)`, por `app.registrar_documento`: um documento de cada tipo por estudo (`documentos.estudo_massa_id`), cada envio uma versão; só `.pdf` e `.dwg`.
+- **Viabilidade presa ao estudo** (decisões do Moisés, 3/nov/2026): `app.vincular_massa(viabilidade, estudo, seguir_valido)` prende a um estudo entregue ou ao válido do terreno (trocou o válido, a viabilidade troca junto); sem estudo e sem seguir, solta ("Quebrar vínculo"), e as tipologias e a área construída ficam e voltam a se editar; vincular de novo refaz as tipologias pelas do estudo. `app.criar_viabilidade_da_massa(estudo, nome, seguir_valido)` é o botão do estudo de massa: estudo de viabilidade novo (com o modelo padrão, como o Novo estudo) já preso. Presa, o título, a área e a quantidade das tipologias e a área construída vêm do estudo de massa (`app._sincronizar_massa`, chamada a cada mudança do estudo e do válido) e o trigger `t_massa` recusa mudá-los na viabilidade; preços, permuta e comissão continuam dela, casados pela tipologia do estudo (`massa_tipologia_id`) e, na troca de estudo, pelo nome. Quantidade menor que a permuta mais a comissão corta a permuta e depois a comissão. Duplicar leva o vínculo.
+- Confirmado pelo Moisés (4/nov/2026): "Área privativa total" é a soma das tipologias; só o estudo entregue vira válido ou é usado na viabilidade. Briefing em texto livre (uma linha por item vira lista).
 
 ## 3. Documentos
 
@@ -836,7 +1449,8 @@ erDiagram
 | Zonas da análise por lote: a consulta de um lote troca só as zonas dele | `app._substituir_zonas` |
 | Catálogo de parâmetros só muda pelo administrador, com fonte e auditoria | `app.salvar_zona_parametro` |
 | Uma análise urbanística vigente por terreno; anteriores preservadas | índice único parcial + trigger |
-| Valor venal e IPTU por inscrição e exercício; correção vira nova revisão, a anterior fica preservada | `inscricao_valores` + trigger |
+| Valor venal e IPTU só do exercício mais recente (decisão do Moisés, 4/nov/2026): exercício mais antigo é recusado, um só vigente por inscrição; correção vira nova revisão, a anterior fica preservada | `inscricao_valores` + trigger + índice `inscricao_valor_vigente` |
+| Todo terreno tem uma parte; lote = uma matrícula e um ou mais SQLs, de uma parte; matrícula em um lote só; título do lote único no terreno | trigger `t_parte1`, `terreno_lotes`, `lote_inscricoes`, `app.salvar_lote` |
 | Consulta do lote na base da prefeitura (GeoSampa, GeoSanja) só pela RPC, conferindo que o lote é o da inscrição e que o terreno é da cidade da base; nunca alterada; completa só campos vazios | `app.registrar_consulta_lote` |
 | Inscrição escolhida numa cidade só entra em terreno dessa cidade | trigger `tg_inscricao_municipio` |
 | Isento não tem IPTU; venal do imóvel = terreno + construção quando os dois existem | checks em `inscricao_valores` |
@@ -844,6 +1458,21 @@ erDiagram
 | Participações dos proprietários somam no máximo 100% (em cada parte) | trigger em `terreno_pessoas` |
 | Matrícula, inscrição, pessoa e oferta só se ligam a parte ativa do mesmo terreno | triggers `tg_parte_do_terreno`, `tg_oferta_parte` |
 | Terreno de vários donos só fica Comprado com todas as partes ativas compradas; negociação dividida não se move à mão | `_pendencias`, `_conferir_movimento`, `_sincronizar_principal` |
+| Parte ativa sem negociação conta como pendência (nunca como ok); retomar o terreno abre a negociação da parte cadastrada no Stand By (2/nov/2026) | `_pendencias`, `retomar_processo` |
+| A parte que sai da etapa responde pela Jornada do terreno (perguntas, regras pelo valor e tarefas que travam, que ficam no processo do terreno); quando as partes movem o terreno, as tarefas da etapa nascem e se arquivam como numa passagem à mão (2/nov/2026) | `_jornada_pendencias`, `_jornada_pede`, `_tarefas_travando`, `_sincronizar_principal` |
+| Tarefa que trava o avanço: tirar a etapa (Nenhuma ou outro processo), arquivar ou virar modelo só com gestor ou diretor (2/nov/2026) | trigger `t_trava` em `fluxo.tarefas` |
+| Aprovadores do cartão só mudam por quem gerencia o cartão e nunca com pedido aberto; quem criou, código, série, quem concluiu e quem arquivou não mudam pela tela (2/nov/2026) | triggers `t_aprovadores` em `fluxo.tarefa_pessoas` e `t_controle` em `fluxo.tarefas` |
+| Lembrete e aviso de cartão (também o de pedido e decisão de aprovação e de pausa) só para quem vê o cartão (2/nov/2026) | RLS de `lembretes`, `tg_lembrete_valido`, `_notificar` |
+| Fora da diretoria, as linhas de Taxas e Despesas financeiras não aparecem (nem o log delas): só o total do estudo; o cálculo conta todas. Trocar a linha de item também é mudá-la. Os modelos de estudo só se leem por `modelos_viabilidade`, sem essas linhas fora da diretoria, e o log do modelo é só da diretoria (2/nov/2026) | RLS de `viabilidade_linhas` e `auditoria`, `viab_linha_visivel`, `calcular_viabilidade`, `tg_viabilidade_filha`, `modelos_viabilidade` |
+| Regra de automação do quadro só mexe no cartão que o dono edita (2/nov/2026) | `disparar_automacoes`, `automacoes_agenda`, `botoes_cartao` |
+| Concluir ou arquivar cancela o pedido de pausa em aberto; pausa não começa em tarefa concluída (2/nov/2026) | `tg_tarefa_lista`, `_iniciar_pausa` |
+| Tipo da lista (aberta, pausa, conclui) só muda por gestor, diretor ou o administrador; lista nova de quem edita nasce aberta (2/nov/2026) | trigger `t_tipo` em `fluxo.listas` |
+| Condição, campo, pendências e votos do cartão só respondem sobre o cartão que quem pergunta vê; por dentro o banco usa as versões internas (`_condicao_vale` etc.) (2/nov/2026) | `condicao_vale`, `campo_do_objeto`, `pendencias_conclusao`, `votos_da_vez` |
+| Quem enviou a versão atual do documento não a valida; o diretor pode (2/nov/2026) | `revisar_documento` |
+| Terreno arquivado volta por gestor, diretor ou o administrador; o arquivamento fica no histórico (2/nov/2026) | `reativar_terreno` |
+| Código do terreno e quem criou são do banco; responsável do terreno e participante da BKM em reunião são da equipe; pessoa, corretor e ofertante são da mesma empresa (2/nov/2026) | triggers `t_controle` em `terrenos` e `t_vinculos` (`tg_vinculos_empresa`) |
+| Inscrição com IPTU ou valor venal, ou numa análise substituída, não se apaga; análise substituída e as zonas dela não mudam; a análise tem log (2/nov/2026) | `tg_inscricao_historico`, `tg_analise_substituida` |
+| Equipe só recebe quem tem e-mail de um domínio da empresa (ou do mesmo domínio de quem inclui); o @ só muda pelo administrador da empresa do domínio da pessoa; domínio cadastrado é o do e-mail de quem cadastra e nunca de e-mail gratuito (2/nov/2026) | `tg_membro_dominio`, `mudar_arroba`, `tg_dominio_empresa` |
 | Parte sai com motivo, só com a negociação dela encerrada e nunca depois de comprada; essencial só com gestor ou diretor | `remover_parte`, `salvar_parte` |
 | Registro não muda de terreno depois de criado | `tg_mesma_empresa` |
 | Diligência impeditiva em aberto impede a compra; checklist da etapa para sair dela; pré-requisitos para entrar | `_pendencias` |

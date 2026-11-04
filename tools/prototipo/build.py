@@ -1,7 +1,7 @@
 """Gera o protótipo a partir das fontes desta pasta.
 
 Saídas:
-  docs/prototipo.html                  versão do Railway (documento completo, chave do Google injetada pelo Caddy)
+  docs/prototipo.html                  versão publicada (documento completo, chave do Google injetada pelo Caddy)
   tools/prototipo/saida/bkm-terrenos.html  versão para o artifact do claude.ai e para os testes
 """
 import json, os, re, shutil
@@ -17,7 +17,7 @@ def cfg_setores(nome):
     return json.dumps(json.load(open(os.path.join(RAIZ, 'tools', 'setores', nome), encoding='utf-8')), ensure_ascii=False, separators=(',', ':'))
 
 body = ler('proto_body.html'); js = ler('proto.js')
-mod = ler('proto_mod.js') + '\n' + ler('proto_gmap.js') + '\n' + ler('proto_painel.js') + '\n' + ler('proto_fases.js') + '\n' + ler('proto_funil.js') + '\n' + ler('proto_partes.js') + '\n' + ler('proto_lote.js') + '\n' + ler('proto_geosampa.js') + '\n' + ler('proto_geosanja.js') + '\n' + ler('proto_novo.js') + '\n' + ler('proto_filtros.js') + '\n' + ler('proto_concorrencia.js') + '\n' + ler('proto_mercado.js') + '\n' + ler('proto_logacoes.js') + '\n' + ler('proto_topo.js').replace('__TOPO_DXF__', json.dumps(ler('topo_modelo.dxf'))) + '\n' + ler('proto_viab.js').replace('__VIAB_DESPESAS__', json.dumps(json.load(open(os.path.join(RAIZ, 'tools', 'viabilidade', 'despesas.json'), encoding='utf-8')), ensure_ascii=False, separators=(',', ':'))) + '\n' + ler('proto_zonas.js').replace('__PARAMETROS__', json.dumps(json.load(open(os.path.join(RAIZ, 'tools', 'parametros', 'parametros.json'), encoding='utf-8')), ensure_ascii=False, separators=(',', ':'))) + '\n' + ler('proto_setores.js').replace('__METODOLOGIA_RENDA__', cfg_setores('metodologia_renda.json')).replace('__METODOLOGIA_DENSIDADE__', cfg_setores('metodologia_densidade.json')).replace('__DEMOGRAFIA__', cfg_setores('demografia.json')) + '\n' + ler('proto_ui.js') + '\n' + ler('proto_rota.js')
+mod = ler('proto_mod.js') + '\n' + ler('proto_quadros.js') + '\n' + ler('proto_cronograma.js') + '\n' + ler('proto_aprovacao.js') + '\n' + ler('proto_pausa.js') + '\n' + ler('proto_visib.js') + '\n' + ler('proto_campos.js') + '\n' + ler('proto_itens.js') + '\n' + ler('proto_grava.js') + '\n' + ler('proto_form.js') + '\n' + ler('proto_pessoa.js') + '\n' + ler('proto_recorr.js') + '\n' + ler('proto_copiar.js') + '\n' + ler('proto_tkfunil.js') + '\n' + ler('proto_tkvistas.js') + '\n' + ler('proto_gmap.js') + '\n' + ler('proto_painel.js') + '\n' + ler('proto_fases.js') + '\n' + ler('proto_funil.js') + '\n' + ler('proto_mencao.js') + '\n' + ler('proto_partes.js') + '\n' + ler('proto_lotes.js') + '\n' + ler('proto_lote.js') + '\n' + ler('proto_geosampa.js') + '\n' + ler('proto_geosanja.js') + '\n' + ler('proto_restricoes.js') + '\n' + ler('proto_novo.js') + '\n' + ler('proto_lotesgeo.js') + '\n' + ler('proto_filtros.js') + '\n' + ler('proto_concorrencia.js') + '\n' + ler('proto_mercado.js') + '\n' + ler('proto_logacoes.js') + '\n' + ler('proto_topo.js').replace('__TOPO_DXF__', json.dumps(ler('topo_modelo.dxf'))) + '\n' + ler('proto_infra.js') + '\n' + ler('proto_viab.js').replace('__VIAB_DESPESAS__', json.dumps(json.load(open(os.path.join(RAIZ, 'tools', 'viabilidade', 'despesas.json'), encoding='utf-8')), ensure_ascii=False, separators=(',', ':'))) + '\n' + ler('proto_massa.js') + '\n' + ler('proto_agenda.js') + '\n' + ler('proto_zonas.js').replace('__PARAMETROS__', json.dumps(json.load(open(os.path.join(RAIZ, 'tools', 'parametros', 'parametros.json'), encoding='utf-8')), ensure_ascii=False, separators=(',', ':'))) + '\n' + ler('proto_setores.js').replace('__METODOLOGIA_RENDA__', cfg_setores('metodologia_renda.json')).replace('__METODOLOGIA_DENSIDADE__', cfg_setores('metodologia_densidade.json')).replace('__DEMOGRAFIA__', cfg_setores('demografia.json')) + '\n' + ler('proto_auto.js') + '\n' + ler('proto_etapa.js') + '\n' + ler('proto_jornada.js') + '\n' + ler('proto_ui.js') + '\n' + ler('proto_rota.js')
 assert js.rstrip().endswith('render();\n})();'), 'fim inesperado'
 i = js.rstrip().rindex('render();\n})();')
 js = js[:i] + mod + '\n' + js[i:]
@@ -30,7 +30,7 @@ if '{%' in html or '%}' in html:
     raise SystemExit('O protótipo contém "{%" ou "%}", que o Caddy lê como template; quebre a sequência (ex.: \'{\'+\'%\').')
 os.makedirs(os.path.join(AQUI, 'saida'), exist_ok=True)
 open(os.path.join(AQUI, 'saida', 'bkm-terrenos.html'), 'w', encoding='utf-8').write(html)
-# setores do IBGE (tools/setores/gerar.py): ao lado da página, como no Railway e no artifact
+# setores do IBGE (tools/setores/gerar.py): ao lado da página, como na versão publicada e no artifact
 shutil.copytree(os.path.join(RAIZ, 'docs', 'dados'), os.path.join(AQUI, 'saida', 'dados'), dirs_exist_ok=True)
 doc = ('<!doctype html>\n<html lang="pt-BR">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
        '<meta name="gmaps-key" content="{% env "GOOGLE_MAPS_KEY" %}">\n<meta name="bkm-ambiente" content="{% env "AMBIENTE" %}">\n'

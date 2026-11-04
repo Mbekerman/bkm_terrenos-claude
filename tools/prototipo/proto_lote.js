@@ -26,13 +26,13 @@ function campoInsc(pre,cid,rot,obrig){const c=CIDADES_INSC[cid];
 const rotInsc=(c,rot)=>rot?`${rot} (${c.rotulo})`:c.rotulo;
 document.addEventListener('change',e=>{const r=e.target.closest('[data-insc]');if(!r)return;const pre=r.dataset.insc,c=CIDADES_INSC[r.value],el=document.getElementById(pre+'-sql'),lb=document.getElementById(pre+'-sql-l');if(!el)return;
   el.dataset.masc=c.mascara||'';el.inputMode=c.mascara?'numeric':'text';el.placeholder=c.mascara||'Como está no carnê do IPTU';el.value=c.mascara?mascarar(el.value,c.mascara):el.value;
-  if(lb)lb.textContent=rotInsc(c,pre==='i'?'Nova inscrição':'');if(el.form?.dataset.form==='novo')dedupe();if(e.isTrusted)el.focus()});
+  if(lb)lb.textContent=rotInsc(c,pre==='i'?'Nova inscrição':'');if(e.isTrusted)el.focus()});
 
 // Busca na base da cidade da inscrição (só com a inscrição completa).
 const loteBuscavel=ins=>{const c=CIDADES_INSC[insCid(ins)];return !!(c.base&&LOTE_ADAPT[insCid(ins)]?.url()&&digits(ins.sql).length===digitosMasc(c.mascara))};
 let LOTE_BUSCANDO=null;
 async function loteBuscar(t,i){const ins=t.insc[i];if(!ins||LOTE_BUSCANDO)return;const cid=insCid(ins),c=CIDADES_INSC[cid],ad=LOTE_ADAPT[cid];if(!ad)return;
-  if(!ad.url()){toast(`A busca no ${c.base} funciona na versão publicada no Railway.`,true);return}
+  if(!ad.url()){toast(`A busca no ${c.base} funciona na versão publicada.`,true);return}
   if(digits(ins.sql).length!==digitosMasc(c.mascara)){toast(`${c.rotulo} incompleto: são ${digitosMasc(c.mascara)} dígitos.`,true);return}
   if(cidDoTerreno(t)!==cid){toast(`O terreno está em ${(t.municipio||'').split(' · ')[0]}; o ${c.base} só cobre ${c.cidade}.`,true);return}
   LOTE_BUSCANDO=t.id+':'+i;render();
@@ -43,7 +43,7 @@ function loteQuadro(t,ins,i){const ad=LOTE_ADAPT[insCid(ins)];return ad?ad.quadr
 function loteBotao(t,ins,i){const c=CIDADES_INSC[insCid(ins)],busc=LOTE_BUSCANDO===t.id+':'+i,g=(ins.geo||[])[0];
   return UI.role!=='Leitura'?`<button class="btn sm ${g?'text':''}" data-a="geo-buscar" data-i="${i}" ${busc?'disabled':''}>${ic('search',16)}${busc?'Consultando...':g?'Buscar de novo':'Buscar no '+c.base}</button>`:''}
 function loteVazio(t,ins,i,txt){const c=CIDADES_INSC[insCid(ins)],ad=LOTE_ADAPT[insCid(ins)];
-  return `<div class="geo-vazio">${loteBotao(t,ins,i)}<span class="hint">${ad.url()?txt:`A busca no ${c.base} funciona na versão publicada no Railway.`}</span></div>`}
+  return `<div class="geo-vazio">${loteBotao(t,ins,i)}<span class="hint">${ad.url()?txt:`A busca no ${c.base} funciona na versão publicada.`}</span></div>`}
 function loteCab(t,ins,i){const c=CIDADES_INSC[insCid(ins)],g=ins.geo[0],n=ins.geo.length-1;
   return `<div class="geo-h"><span>${bi('mapa',20)}<b>${c.base}</b> <span class="muted">consultado em ${fdh(g.em)} por ${esc(g.user)}${n?` · ${n} consulta${n>1?'s':''} anterior${n>1?'es':''} guardada${n>1?'s':''}`:''}</span></span>${loteBotao(t,ins,i)}</div>`}
 // Grava a consulta e completa só o que está vazio; troca as zonas DESTE lote na análise (os outros lotes ficam).
@@ -54,6 +54,7 @@ function loteRegistrar(t,ins,{lote,poly,areaPol,zonas,erros,camadas,area,aConst}
   if(t.aCad==null&&t.insc.every(x=>x.area!=null)){t.aCad=t.insc.reduce((s,x)=>s+x.area,0);feito.push('área cadastral do terreno')}
   if(t.aConst==null&&aConst!=null&&t.insc.length===1){t.aConst=Number(aConst);feito.push('área construída')}
   if(!t.poly&&t.insc.length===1&&poly){t.poly=poly;feito.push('poligonal');if(t.lat==null){const m=centro(poly);t.lat=+m[0].toFixed(7);t.lng=+m[1].toFixed(7);t.precisao='aproximada'}}
+  const cri=camadas?.cartorio_registro_imovel||[];if(!t.cri&&cri.length===1&&cri[0].cd_numero_cartorio){t.cri=cri[0].cd_numero_cartorio+' CRI';t.criFonte='prefeitura';feito.push('cartório')}
   if(zonas.length&&substituirZonas(t,ins.sql,zonas.map(z=>({sigla:z.sigla,area:z.area_m2,macro:z.macrozona||null})),`${c.base} (${c.rotulo} ${ins.sql})`))feito.push('zonas do lote')
   log(t,`${c.base} consultado pela inscrição ${ins.sql}${feito.length?': '+feito.join(', '):''}`);save();render();
   toast(erros.length?`${c.base} consultado; ${erros.length} camada${erros.length>1?'s':''} não respondeu.`:`${c.base} consultado. Gerando a planta e o desenho...`)}
