@@ -3835,3 +3835,10 @@ html[data-tema="escuro"] .lg-soltos, html[data-tema="escuro"] .lg-it, html[data-
 }
 .lg-toque { display: none } @media (hover: none) { .lg-mouse { display: none } .lg-toque { display: inline } }
 .lg-soltos .lg-it { padding: 2px 0 }
+
+/* ===== campo obrigatório em branco (proto_ui.js, obrMarca) ===== */
+.opt-radio { position: relative }
+.campo-erro > input, .campo-erro > select, .campo-erro > textarea, .campo-erro input:not([type=radio]):not([type=checkbox]), .campo-erro select, .campo-erro textarea { border-color: var(--critico-marca, #b3261e) !important; box-shadow: inset 0 0 0 1px var(--critico-marca, #b3261e) }
+.campo-erro .seg3, .campo-erro [role=radiogroup] { outline: 2px solid var(--critico-marca, #b3261e); outline-offset: 2px; border-radius: 20px }
+.campo-erro > label, .campo-erro > .lbl, .campo-erro > .lbl-f, .campo-erro > legend { color: var(--critico-marca, #b3261e) !important }
+.campo-msg { display: flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 12px; line-height: 16px; color: var(--critico-marca, #b3261e) }
