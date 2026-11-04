@@ -30,7 +30,7 @@ ok(!(await p.$$('.tf2 [draggable=true]')).length,'nada se arrasta');
 ok((await p.$eval('.tf2-h',x=>x.textContent)).includes('Próxima tarefa')&&!!(await p.$('.tf2-bar')),'colunas do Monday: próxima tarefa e andamento');
 await p.screenshot({path:O+'1_fases.png'});
 await clica(p,'.tf2-gh [data-a=tf-nivel]');await p.waitForTimeout(300);c=await cols(p);
-ok(await p.$eval('.tf-trilha',x=>x.textContent.includes('Fases')&&x.textContent.includes('Novos Negócios')),'desce para as etapas, com a trilha');
+ok(await p.$eval('.tf-trilha',x=>x.textContent.includes('Funil')&&x.textContent.includes('Novos Negócios')),'desce para as etapas, com a trilha');
 ok(c.length>=3,'uma tabela por etapa: '+c.map(x=>x.nome+'('+x.n+')').join(', '));
 await p.screenshot({path:O+'2_etapas.png'});
 const comSub=c.findIndex(x=>x.desce&&x.n>0);
@@ -38,7 +38,7 @@ if(comSub>=0){await p.evaluate(i=>document.querySelectorAll('.tf2-g')[i].querySe
   c=await cols(p);ok(c.length>=1&&await p.$$eval('.tf-trilha li',x=>x.length)===3,'desce para as subetapas: '+c.map(x=>x.nome+'('+x.n+')').join(', '));
   await p.screenshot({path:O+'3_subetapas.png'});
   await clica(p,'.tf-trilha [data-a=tf-nivel]');await p.waitForTimeout(300);ok((await p.$$eval('.tf-trilha li',x=>x.length))===2,'a seta sobe um nível')}
-await clica(p,'.tf-trilha .linkbtn','Fases');await p.waitForTimeout(300);c=await cols(p);ok(c[0].nome==='Novos Negócios'&&!(await p.$('.tf-trilha [data-a=tf-nivel].iconbtn')),'a trilha volta às fases');
+await clica(p,'.tf-trilha .linkbtn','Funil');await p.waitForTimeout(300);c=await cols(p);ok(c[0].nome==='Novos Negócios'&&!(await p.$('.tf-trilha [data-a=tf-nivel].iconbtn')),'a trilha volta às fases');
 // fechar uma tabela
 await clica(p,'.tf2-gh [data-a=tf-grupo]');await p.waitForTimeout(200);ok((await cols(p))[0].n===0,'a seta do título fecha a tabela');
 await clica(p,'.tf2-gh [data-a=tf-grupo]');await p.waitForTimeout(200);

@@ -20,17 +20,18 @@ const m=await p.$eval('#mapa',x=>{const r=x.getBoundingClientRect();for(const fy
   if(e&&!e.closest('.leaflet-interactive,.leaflet-marker-icon,.mp-barra,.mp-legenda,.mp-modo,.leaflet-control')&&!document.elementsFromPoint(q.x-25,q.y-25).concat(document.elementsFromPoint(q.x+25,q.y+25)).some(z=>z.matches('.leaflet-interactive,.leaflet-marker-icon')))return q}return {x:r.x+r.width*.55,y:r.y+r.height*.42}});
 if(modo==='desktop'){await p.mouse.click(m.x,m.y,{button:'right'});await p.waitForTimeout(300)}
 else{const c=await ctx.newCDPSession(p);await c.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:m.x,y:m.y}]});await p.waitForTimeout(400);ok(!(await p.$('.mp-ctx')),tag+' menu não abre antes do tempo');await p.waitForTimeout(500);ok(!(await p.$('.mp-ctx')),tag+' menu espera o dedo sair');await c.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await p.waitForTimeout(400)}
-const itens=await p.$$eval('.mp-ctx button',e=>e.map(x=>x.textContent.trim()));ok(itens.join('|')==='Novo terreno aqui|Novo ponto de interesse|Nova concorrência',tag+' menu: '+itens.join(' | '));
+const itens=await p.$$eval('.mp-ctx button',e=>e.map(x=>x.textContent.trim()));ok(itens.join('|')==='Novo terreno aqui',tag+' menu só com Novo terreno aqui: '+itens.join(' | '));
 await p.screenshot({path:OUT+tag+'_menu.png'});
 if(modo==='desktop'){await p.keyboard.press('Escape');await p.waitForTimeout(200);ok(!(await p.$('.mp-ctx')),tag+' Esc fecha o menu');
   await p.mouse.click(m.x,m.y,{button:'right'});await p.waitForTimeout(200);await p.mouse.click(m.x-200,m.y+100);await p.waitForTimeout(200);ok(!(await p.$('.mp-ctx')),tag+' clique fora fecha o menu');
   await p.mouse.click(m.x,m.y,{button:'right'});await p.waitForTimeout(200)}
-await p.click('.mp-ctx [data-a=ctx-conc]');await p.waitForTimeout(400);ok(await p.$eval('#cc-dr h2',x=>x.textContent).catch(()=>'')==='Nova concorrência',tag+' abre o cadastro de concorrência (gaveta)');
-await p.selectOption('#cc-emp',{index:1});await p.fill('#cc-nome','Residencial Teste');await p.fill('#cc-dr .cc-tp [data-k=area] >> nth=0','42');await p.screenshot({path:OUT+tag+'_modal.png'});await p.click('#cc-dr button[type=submit]');await p.waitForTimeout(500);
-ok(await p.$$eval('#mapa .conc',e=>e.length)===4,tag+' concorrência nova no mapa');
-await p.click('#mp-leg [data-a=mp-conc]').catch(async()=>{await p.evaluate(()=>document.querySelector('#mp-leg [data-a=mp-conc]').click())});await p.waitForTimeout(300);ok(await p.$$eval('#mapa .conc',e=>e.length)===0,tag+' legenda esconde a concorrência');
-if(modo==='desktop'){await p.mouse.click(m.x,m.y,{button:'right'});await p.waitForTimeout(200);await p.click('.mp-ctx [data-a=ctx-terreno]');await p.waitForTimeout(600);ok(/terreno novo.*1 ponto/.test(await p.$eval('#mp-modo',x=>x.textContent).catch(()=>'')),tag+' Novo terreno aqui começa a poligonal com o primeiro ponto');await p.click('#mp-modo [data-a=mp-sair]');await p.waitForTimeout(300);
-  await p.mouse.click(m.x,m.y,{button:'right'});await p.waitForTimeout(200);await p.click('.mp-ctx [data-a=ctx-poi]');await p.waitForTimeout(400);ok(await p.$eval('#modal h2',x=>x.textContent).catch(()=>'')==='Novo ponto de interesse',tag+' Novo ponto de interesse abre o cadastro');await p.keyboard.press('Escape')}
+if(modo!=='desktop'){await p.keyboard.press('Escape');await p.waitForTimeout(200)}
+if(modo==='desktop'){await p.mouse.click(m.x,m.y,{button:'right'});await p.waitForTimeout(200);await p.click('.mp-ctx [data-a=ctx-terreno]');await p.waitForTimeout(600);ok(await p.evaluate(()=>!!document.querySelector('.mapa.modo')&&document.querySelectorAll('.v-alvo').length===1&&!document.querySelector('#mp-modo').textContent.trim()),tag+' Novo terreno aqui começa a poligonal com o primeiro ponto, sem barra');await p.keyboard.press('Escape');await p.waitForTimeout(300);
+  /* sem recarregar: o mapa fica onde estava */
+  const v0=await p.evaluate(()=>document.querySelector('.leaflet-map-pane').style.transform+'|'+document.querySelector('.leaflet-tile-container')?.parentElement?.style.transform);
+  await p.mouse.click(m.x,m.y,{button:'right'});await p.waitForTimeout(200);await p.click('.mp-ctx [data-a=ctx-terreno]');await p.waitForTimeout(600);
+  const v1=await p.evaluate(()=>document.querySelector('.leaflet-map-pane').style.transform+'|'+document.querySelector('.leaflet-tile-container')?.parentElement?.style.transform);
+  ok(v0===v1,tag+' Novo terreno aqui não mexe no zoom nem na posição: '+v0+' / '+v1);await p.keyboard.press('Escape');await p.waitForTimeout(300)}
 // Leitura não tem menu
 await p.evaluate(()=>{const x=document.createElement('button');x.dataset.a='role';x.dataset.v='Leitura';document.body.appendChild(x);x.click();x.remove()});await p.waitForTimeout(500);
 if(modo==='desktop'){await p.mouse.click(m.x,m.y,{button:'right'});await p.waitForTimeout(200);ok(!(await p.$('.mp-ctx')),tag+' Leitura sem menu')}

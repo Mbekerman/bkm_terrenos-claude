@@ -7,6 +7,7 @@ const clica=(p,sel,txt)=>p.evaluate(([s,t])=>{const el=[...document.querySelecto
 const muda=(p,sel,v)=>p.evaluate(([s,v])=>{const el=document.querySelector(s);if(!el)throw new Error('não achei '+s);if(el.type==='checkbox'||el.type==='radio')el.checked=v;else el.value=v;el.dispatchEvent(new Event('change',{bubbles:true}))},[sel,v]);
 const digita=(p,sel,v)=>p.evaluate(([s,v])=>{const el=document.querySelector(s);if(!el)throw new Error('não achei '+s);el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}))},[sel,v]);
 const papel=(p,v)=>p.evaluate(v=>{const a=document.createElement('button');a.dataset.a='role';a.dataset.v=v;document.body.appendChild(a);a.click();a.remove()},v);
+const escolhe=async(p,v,id='#fme-d')=>{await p.click(id);await p.waitForTimeout(80);await p.click(`[data-gvv="${v}"]`);await p.waitForTimeout(120)};
 const toast=p=>p.evaluate(()=>document.querySelector('.toast')?.textContent||'');
 const X=(p,f,arg)=>p.evaluate(([f,a])=>window.BKM_TESTE.escopo(f,a),[f.toString(),arg===undefined?null:arg]);
 const est=p=>p.evaluate(()=>JSON.parse(localStorage.getItem(Object.keys(localStorage).find(k=>k.startsWith('bkm-terrenos-v'))||'null')));
@@ -17,10 +18,10 @@ const abre=async(w,h,tema)=>{const ctx=await b.newContext({viewport:{width:w,hei
 const cartao=(p)=>X(p,()=>{const t=S.terrenos[0];go('terreno',{id:t.id});UI.tkSel={tid:t.id,kid:S.fmExemploK};UI.tkAba='geral';UI.modal='tarefa';renderModal()});
 {const {ctx,p}=await abre(1440,2300,'claro');
 await cartao(p);await p.waitForTimeout(300);
-ok(await p.$eval('#modal .fm',x=>x.textContent.includes('Formulário')&&x.textContent.includes('Qual a topografia do terreno?')),'o cartão tem o bloco Formulário com as perguntas');
+ok(await p.$eval('#modal .fm',x=>x.textContent.includes('Formulário')&&x.textContent.includes('Qual a posição do terreno na quadra?')),'o cartão tem o bloco Formulário com as perguntas');
 const fm=async(n)=>{const st=await p.addStyleTag({content:'#modal *:not(.fm-seg):not(.fm-modo):not(.fm-prog):not(.fm-tg):not(.fm-pvg){max-height:none!important;overflow:visible!important}#modal .dialog{height:auto!important}'});await p.waitForTimeout(50);const el=await p.$('#modal .fm');await el.screenshot({path:O+n});await st.evaluate(x=>x.remove())};
 await p.evaluate(()=>document.querySelector('#modal .fm').scrollIntoView());await fm('1_responder.png');
-const K=()=>X(p,()=>{const t=S.terrenos[0],k=t.tarefas.find(x=>x.id===S.fmExemploK);return {k,t:{ocupacao:t.ocupacao,topografia:t.topografia,aLev:t.aLev,referencia:t.referencia}}});
+const K=()=>X(p,()=>{const t=S.terrenos[0],k=t.tarefas.find(x=>x.id===S.fmExemploK);return {k,t:{ocupacao:t.ocupacao,posicao:t.posicao,aLev:t.aLev,referencia:t.referencia}}});
 const item=async(perg)=>(await K()).k.itens.find(i=>i.pergunta===perg);
 // chave de três estados
 const ich=await item('O proprietário aceita receber a equipe de novo?');
@@ -45,15 +46,33 @@ const ioc=await item('Como está a ocupação hoje?');
 await clica(p,`#fma-${ioc.id} .fm-chips button`,'Vazio');await p.waitForTimeout(150);
 ok((await K()).t.ocupacao==='vazio','a pergunta em chips grava no próprio terreno (Ocupação)');
 // botões de opção
-const itp=await item('Qual a topografia do terreno?');
-await muda(p,`#fma-${itp.id} input[value=aclive]`,true);await p.waitForTimeout(150);
-ok((await K()).t.topografia==='aclive','a pergunta em botões de opção grava no terreno');
+const itp=await item('Qual a posição do terreno na quadra?');
+await muda(p,`#fma-${itp.id} input[value=esquina]`,true);await p.waitForTimeout(150);
+ok((await K()).t.posicao==='esquina','a pergunta em botões de opção grava no terreno');
 // montar
 await clica(p,'[data-a=fm-modo][data-v=montar]');await p.waitForTimeout(150);
 ok((await p.$$('#modal .fm-row')).length===6,'Montar mostra as 6 perguntas para editar e ordenar');
 await clica(p,'[data-a=fm-nova]');await p.waitForTimeout(150);
-ok(await p.$eval('#modal .fm-pop',x=>x.textContent.includes('Topografia')===false&&x.textContent.includes('Só no cartão')&&x.textContent.includes('Campos personalizados')),'a lista de campos traz os do terreno ainda fora do formulário, os personalizados e Só no cartão');
-await clica(p,'[data-a=fm-dest][data-v="terreno.necessidade_demolicao"]');await p.waitForTimeout(150);
+ok(await p.$eval('#modal .gv-pop',x=>!x.hidden&&x.textContent.includes('Topografia')===false&&x.textContent.includes('Só no cartão')&&x.textContent.includes('Tarefa')&&x.textContent.includes('Terreno')),'Nova pergunta já abre a busca do campo, em todas as tabelas (sem os que já estão no formulário)');
+// Grava em: Sistema travado, Tabela e Campo (3/nov/2026)
+ok(await p.$eval('#fme-d-s',x=>x.disabled&&x.value==='BKM Terrenos'),'Sistema vem com BKM Terrenos e não muda');
+ok(await p.$eval('#fme-d-t',x=>x.value===''&&[...x.options].map(o=>o.text).join('|')==='Todas as tabelas|Terreno|Negociação|Oferta de referência|Proposta vigente|Calculados|Tarefa'),'Tabela começa em Todas as tabelas e lista as tabelas');
+await p.keyboard.type('valor');await p.waitForTimeout(120);
+const gq=await p.$$eval('#modal .gv-pop .it-popg',x=>x.map(y=>y.textContent));
+ok(gq.length>=2,'a busca procura em todas as tabelas e agrupa o resultado por tabela: '+gq.join(', '));
+await p.fill('#fme-d','área documental');await p.waitForTimeout(120);await p.keyboard.press('Enter');await p.waitForTimeout(150);
+ok(await p.$eval('#fme-d-t',x=>x.value==='terreno')&&await p.$eval('#fme-d',x=>x.value==='Área documental'),'escolher o campo pela busca preenche a Tabela sozinha');
+await muda(p,'#fme-d-t','negociacao');await p.waitForTimeout(150);
+ok(await p.$eval('#fme-d',x=>x.value===''&&x.placeholder.includes('Negociação')),'trocar a Tabela tira o campo de outra tabela e a busca passa a ser só nela');
+ok(await p.$eval('#modal .gv-pop',x=>!x.hidden&&[...x.querySelectorAll('.it-popg')].every(g=>g.textContent==='Negociação')),'com a Tabela escolhida, a lista só traz os campos dela');
+await p.fill('#fme-d','área documental');await p.waitForTimeout(120);
+ok(await p.$eval('#modal .gv-pop',x=>x.textContent.includes('Nenhum campo')&&x.textContent.includes('Buscar em todas as tabelas')),'sem resultado na tabela, oferece buscar em todas');
+await p.click('[data-gvtodas]');await p.waitForTimeout(120);
+ok(await p.$eval('#fme-d-t',x=>x.value==='')&&await p.$eval('#modal .gv-pop',x=>x.textContent.includes('Área documental')),'Buscar em todas as tabelas volta a Tabela para Todas');
+await p.keyboard.press('Escape');await p.waitForTimeout(100);
+await p.evaluate(()=>document.querySelector('#modal .fm-ed').scrollIntoView({block:'start'}));await p.focus('#fme-d');await p.keyboard.type('pre');await p.waitForTimeout(150);await fm('0_grava_em.png');
+await p.keyboard.press('Escape');
+await escolhe(p,'terreno.necessidade_demolicao');await p.waitForTimeout(150);
 const fs1=await p.$$eval('#modal .fm-fo b',x=>x.map(y=>y.textContent));
 ok(fs1.join('|')==='Lista suspensa|Botões de opção|Chips|Segmentado','lista de 3 opções: menu, botões de opção, chips e segmentado (sem a chave)');
 await digita(p,'#fme-p','Precisa demolir alguma construção?');await clica(p,'[data-a=fm-forma][data-v=segmentado]');await p.waitForTimeout(100);
@@ -61,13 +80,13 @@ await p.evaluate(()=>document.querySelector('#modal .fm-ed').scrollIntoView({blo
 await clica(p,'[data-a=fm-salva]');await p.waitForTimeout(150);
 ok((await item('Precisa demolir alguma construção?'))?.forma==='segmentado','a pergunta nova guarda o texto e a forma escolhida');
 // só no cartão, lista de duas opções: entra a chave
-await clica(p,'[data-a=fm-nova]');await p.waitForTimeout(100);await clica(p,'[data-a=fm-dest][data-v=cartao]');await p.waitForTimeout(100);
+await clica(p,'[data-a=fm-nova]');await p.waitForTimeout(100);await escolhe(p,'cartao');await p.waitForTimeout(100);
 await digita(p,'#fme-p','Muro de divisa');await muda(p,'#fme-t','lista');await p.waitForTimeout(100);await digita(p,'#fme-o','Bom\nRuim');await p.waitForTimeout(150);
 const fs2=await p.$$eval('#modal .fm-fo b',x=>x.map(y=>y.textContent));
 ok(fs2.includes('Chave liga/desliga')&&fs2.includes('Segmentado'),'lista de duas opções aceita também a chave');
 await clica(p,'[data-a=fm-forma][data-v=chave]');await clica(p,'[data-a=fm-salva]');await p.waitForTimeout(150);
 ok((await item('Muro de divisa'))?.opcoes?.join()==='Bom,Ruim','pergunta só no cartão de lista guarda as opções');
-await clica(p,'[data-a=fm-nova]');await p.waitForTimeout(100);await clica(p,'[data-a=fm-dest][data-v=cartao]');await p.waitForTimeout(100);await muda(p,'#fme-t','cpf');await p.waitForTimeout(100);
+await clica(p,'[data-a=fm-nova]');await p.waitForTimeout(100);await escolhe(p,'cartao');await p.waitForTimeout(100);await muda(p,'#fme-t','cpf');await p.waitForTimeout(100);
 ok(await p.$eval('#modal .fm-ed',x=>x.textContent.includes('Máscara CPF: uma linha'))&&!(await p.$('#modal .fm-fo')),'máscara só no cartão tem uma forma só (uma linha formatada)');
 await clica(p,'[data-a=fm-salva]');await p.waitForTimeout(100);ok((await toast(p)).includes('Escreva a pergunta'),'pergunta só no cartão precisa do texto');
 await digita(p,'#fme-p','CPF do proprietário');await clica(p,'[data-a=fm-salva]');await p.waitForTimeout(150);
@@ -87,7 +106,7 @@ await p.evaluate(()=>document.querySelector('#modal .fm').scrollIntoView());awai
 ok(await X(p,()=>{const t=S.terrenos[0],k=t.tarefas.find(x=>x.id===S.fmExemploK);const i=k.itens.find(x=>x.pergunta==='Observações da visita');i.regra='bloqueia';return itBranco(t,k).some(b=>b.nome==='Observações da visita'&&b.tipo==='pergunta')}),'pergunta só no cartão em branco com regra entra no que falta para concluir');
 // campo personalizado com máscara
 await X(p,()=>{cpoCampos().push({id:'cpf1',nome:'CPF do vendedor',tipo:'texto',formato:'cpf',ordem:9,frente:false,ativo:true});save();render()});
-await clica(p,'[data-a=fm-modo][data-v=montar]');await p.waitForTimeout(100);await clica(p,'[data-a=fm-nova]');await p.waitForTimeout(100);await clica(p,'[data-a=fm-dest][data-v="c:cpf1"]');await clica(p,'[data-a=fm-salva]');await p.waitForTimeout(100);
+await clica(p,'[data-a=fm-modo][data-v=montar]');await p.waitForTimeout(100);await clica(p,'[data-a=fm-nova]');await p.waitForTimeout(100);await escolhe(p,'c:cpf1');await clica(p,'[data-a=fm-salva]');await p.waitForTimeout(100);
 await clica(p,'[data-a=fm-modo][data-v=responder]');await p.waitForTimeout(150);const icv=(await K()).k.itens.find(i=>i.campo==='cpf1');
 ok(await p.$eval(`#fm-${icv.id}`,x=>x.dataset.mask==='cpf'),'campo personalizado com máscara entra no formulário com a máscara do campo');
 await muda(p,`#fm-${icv.id}`,'123.456.789-00');await p.waitForTimeout(150);ok((await toast(p)).includes('CPF inválido'),'o campo personalizado recusa CPF inválido');

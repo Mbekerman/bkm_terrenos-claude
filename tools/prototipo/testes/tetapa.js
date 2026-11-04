@@ -73,10 +73,10 @@ await ficha(p,E.id,'tarefas');await p.waitForTimeout(300);await p.evaluate(([id,
 ok(await p.$eval('#modal',x=>x.textContent.includes('Etapa do funil')&&x.textContent.includes('Trava a subetapa')),'o cartão mostra a etapa do funil e o selo da trava');
 await p.screenshot({path:O+'5_cartao.png'});
 await clica(p,'#modal [data-a=close]');await papel(p,'Diretor');await p.waitForTimeout(100);
-// 7. tarefa à mão nasce na etapa atual; "Nenhuma" tira; trava por regra da etapa
+// 7. tarefa à mão nasce na etapa atual; "Nenhuma" tira; nunca trava
 let M=await X(p,id=>{const t=T(id),k=tkCriar(t,{titulo:'Visitar o terreno',resp:'Rafael Souza'});k.coments.push({id:uid(),autor:'Rafael Souza',texto:'Marquei com o caseiro.',em:HOJE+' 09:00',reacoes:{}});
   const n=tkCriar(t,{titulo:'Ligar para o corretor',resp:'Rafael Souza'});return {id:k.id,etapa:k.etapa,trava:etTrava(t,k).trava,nid:n.id}},E.id);
-ok(M.etapa==='negociacao'&&M.trava,'tarefa à mão nasce na etapa atual e trava, porque a etapa tem regra que trava');
+ok(M.etapa==='negociacao'&&!M.trava,'tarefa à mão nasce na etapa atual e não trava, mesmo com regra da etapa que trava');
 // 8. voltar de etapa: sem trabalho arquiva sozinha; com trabalho fica "Etapa deixada" e avisa o responsável
 await X(p,id=>{const t=T(id);UI.alvo=id;UI.alvoEtapa='estudos';funilSubmit('retornar',{motivo:'Vendedor pediu novo estudo'},t)},E.id);await p.waitForTimeout(150);
 let V=await X(p,([id,kid,nid,cid])=>{const t=T(id),g=x=>t.tarefas.find(k=>k.id===x);return {m:g(kid).etSit,marq:!!g(kid).arq,n:g(nid).etSit,narq:!!g(nid).arq,c:g(cid).etSit,carq:!!g(cid).arq,cod:g(cid).codigo,

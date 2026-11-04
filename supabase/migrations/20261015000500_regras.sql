@@ -16,6 +16,17 @@ cross join app.itens_infraestrutura i
 left join app.terreno_infraestrutura ti on ti.terreno_id = t.id and ti.item = i.codigo
 where i.ativo;
 
+-- Viabilidades técnicas: todo serviço do catálogo para todo terreno; o que não foi registrado é "não solicitada".
+-- Vencida: retorno viável ou condicionado com a validade já passada.
+create view app.v_terreno_viabilidades_tecnicas with (security_invoker = true) as
+select t.id as terreno_id, t.empresa_id, i.codigo as servico, i.nome, i.ordem,
+       coalesce(v.situacao, 'nao_solicitada') as situacao, v.concessionaria, v.solicitada_em, v.emitida_em, v.validade, v.condicoes,
+       coalesce(v.situacao in ('viavel','condicionada') and v.validade < current_date, false) as vencida
+from app.terrenos t
+cross join app.itens_infraestrutura i
+left join app.terreno_viabilidades_tecnicas v on v.terreno_id = t.id and v.servico = i.codigo
+where i.ativo and i.viabilidade_tecnica;
+
 -- Inscrição com a revisão vigente do exercício mais recente.
 create view app.v_inscricoes with (security_invoker = true) as
 select ins.*, v.id as valor_id, v.exercicio, v.revisao, v.valor_venal_terreno, v.valor_venal_construcao, v.valor_venal_imovel,
@@ -86,11 +97,8 @@ where a.status = 'vigente';
 -- zonas da área (da maior para a menor), o maior CA de mercado e o potencial
 -- construtivo por tipo de empreendimento (nulo se algum pedaço não tem CA ou
 -- não admite o tipo).
--- Resumo da análise vigente; o potencial do tipo escolhido no terreno (tipo_empreendimento) vem à parte.
 create view app.v_urbanismo_vigente with (security_invoker = true) as
-select u.*, te.tipo_empreendimento,
-       case te.tipo_empreendimento when 'mercado' then u.potencial_mercado_m2 when 'his' then u.potencial_his_m2
-            when 'hmp' then u.potencial_hmp_m2 end as potencial_tipo_m2
+select u.*
 from (
 select l.terreno_id, l.empresa_id, l.analise_id, a.data_verificacao, a.fonte,
        (select string_agg(x.sigla, ' / ' order by x.area desc nulls last, x.sigla)
@@ -117,8 +125,7 @@ select l.terreno_id, l.empresa_id, l.analise_id, a.data_verificacao, a.fonte,
 from app.v_lote_zonas l
 join app.analises_urbanisticas a on a.id = l.analise_id
 group by l.terreno_id, l.empresa_id, l.analise_id, a.data_verificacao, a.fonte
-) u
-join app.terrenos te on te.id = u.terreno_id;
+) u;
 
 create view app.v_documentos with (security_invoker = true) as
 select d.*,
@@ -316,8 +323,9 @@ from app.v_terrenos v
 join app.terrenos t on t.id = v.id
 where v.situacao_cadastral = 'ativo';
 
--- Todos os pontos de interesse da empresa para cada terreno localizado: linha reta
--- sempre; a pé e de carro quando medidos para a coordenada atual do terreno.
+-- Todos os pontos de interesse da empresa para cada terreno localizado, menos os
+-- excluídos daquele terreno: linha reta sempre; a pé (a ficha mostra só a pé, decisão
+-- do Moisés de 4/nov/2026) e de carro quando medidos para a coordenada atual do terreno.
 create view app.v_terreno_pontos with (security_invoker = true) as
 select t.id as terreno_id, t.empresa_id, p.id as ponto_id, p.nome, p.categoria, p.latitude, p.longitude,
        app.distancia_km(t.latitude, t.longitude, p.latitude, p.longitude) as distancia_km,
@@ -330,7 +338,8 @@ from app.terrenos t
 join app.pontos_interesse p on p.empresa_id = t.empresa_id and p.ativo
 left join app.terreno_ponto_distancias d on d.terreno_id = t.id and d.ponto_id = p.id
 cross join lateral (select d.terreno_id is not null and d.latitude = t.latitude and d.longitude = t.longitude as em_dia) x
-where t.latitude is not null;
+where t.latitude is not null
+  and not exists (select 1 from app.terreno_pontos_excluidos e where e.terreno_id = t.id and e.ponto_id = p.id);
 
 -- Entorno do terreno (Google), com o aviso de busca feita para outra coordenada.
 -- Lugares excluídos neste terreno não aparecem (a lista deles sai de terreno_entorno.excluido_em).
@@ -415,6 +424,7 @@ left join app.membros mp on mp.empresa_id = a.empresa_id and mp.user_id = a.pedi
 left join app.membros mv on mv.empresa_id = a.empresa_id and mv.user_id = a.aprovador_previsto
 left join app.membros md on md.empresa_id = a.empresa_id and md.user_id = a.decidido_por;
 
+grant select on app.v_terreno_viabilidades_tecnicas to authenticated;
 grant select on app.v_terreno_infraestrutura, app.v_inscricoes, app.v_urbanismo_vigente, app.v_lote_zonas,
                 app.v_documentos, app.v_checklist, app.v_reunioes, app.v_terrenos,
                 app.v_mapa, app.v_terreno_pontos, app.v_tarefas, app.v_terreno_entorno, app.v_entorno_buscas,
@@ -1503,7 +1513,14 @@ begin
   select * into t from app.terrenos where id = p_terreno for update;
   if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
   perform app.exigir_editor(t.empresa_id);
-  perform app._chaves_permitidas(p_dados, array['nome','essencial','poligono','area_m2','observacoes']);
+  perform app._chaves_permitidas(p_dados, array['nome','essencial','poligono','area_m2','observacoes','pessoa_nome','telefone','email','documento']);
+  -- contato da parte: confere e normaliza antes de gravar (vazio apaga)
+  if p_dados ? 'telefone' then p_dados := jsonb_set(p_dados, '{telefone}', coalesce(to_jsonb(fluxo.validar_formato('telefone', p_dados->>'telefone')), 'null')); end if;
+  if p_dados ? 'email' then p_dados := jsonb_set(p_dados, '{email}', coalesce(to_jsonb(fluxo.validar_formato('email', p_dados->>'email')), 'null')); end if;
+  if p_dados ? 'documento' then
+    p_dados := jsonb_set(p_dados, '{documento}', coalesce(to_jsonb(fluxo.validar_formato(
+      case when length(regexp_replace(coalesce(p_dados->>'documento', ''), '\D', '', 'g')) > 11 then 'cnpj' else 'cpf' end, p_dados->>'documento')), 'null'));
+  end if;
   v_poli := case when jsonb_typeof(p_dados->'poligono') = 'object' then p_dados->'poligono' end;
   if v_poli is not null then
     if not app.geojson_poligono_valido(v_poli) then raise exception 'Poligonal da parte inválida' using errcode = '22023'; end if;
@@ -1517,9 +1534,11 @@ begin
     if (p_dados->>'essencial')::boolean is false and not app.eh_gestor(t.empresa_id) then
       raise exception 'Só gestor ou diretor marca uma parte como dispensável' using errcode = '42501';
     end if;
-    insert into app.terreno_partes (empresa_id, terreno_id, nome, essencial, poligono_geojson, area_m2, observacoes)
+    insert into app.terreno_partes (empresa_id, terreno_id, nome, essencial, poligono_geojson, area_m2, observacoes,
+                                    pessoa_nome, telefone, email, documento)
     values (t.empresa_id, t.id, trim(p_dados->>'nome'), coalesce((p_dados->>'essencial')::boolean, true), v_poli,
-            (p_dados->>'area_m2')::numeric, nullif(trim(p_dados->>'observacoes'), ''))
+            (p_dados->>'area_m2')::numeric, nullif(trim(p_dados->>'observacoes'), ''),
+            nullif(trim(p_dados->>'pessoa_nome'), ''), p_dados->>'telefone', p_dados->>'email', p_dados->>'documento')
     returning id into v_id;
     -- negociação do terreno já na etapa da divisão: a parte nova ganha a sua
     select id into v_principal from app.processos
@@ -1538,15 +1557,19 @@ begin
     essencial        = coalesce((p_dados->>'essencial')::boolean, essencial),
     poligono_geojson = case when p_dados ? 'poligono' then v_poli else poligono_geojson end,
     area_m2          = case when p_dados ? 'area_m2' then (p_dados->>'area_m2')::numeric else area_m2 end,
-    observacoes      = case when p_dados ? 'observacoes' then nullif(trim(p_dados->>'observacoes'), '') else observacoes end
+    observacoes      = case when p_dados ? 'observacoes' then nullif(trim(p_dados->>'observacoes'), '') else observacoes end,
+    pessoa_nome      = case when p_dados ? 'pessoa_nome' then nullif(trim(p_dados->>'pessoa_nome'), '') else pessoa_nome end,
+    telefone         = case when p_dados ? 'telefone' then p_dados->>'telefone' else telefone end,
+    email            = case when p_dados ? 'email' then p_dados->>'email' else email end,
+    documento        = case when p_dados ? 'documento' then p_dados->>'documento' else documento end
   where id = tp.id;
   return tp.id;
 end $$;
 
 -- Tira a parte do terreno (o dono não vende, ou a área mudou). A negociação
 -- dela tem que estar encerrada; parte essencial só sai com gestor ou diretor.
--- Matrículas e inscrições continuam ligadas a ela (histórico): ajuste a
--- poligonal do terreno com salvar_terreno.
+-- As matrículas e as inscrições dela ficam sem parte (voltam para o quadro de
+-- cima da aba Terreno; a auditoria guarda o vínculo antigo).
 create or replace function app.remover_parte(p_parte uuid, p_motivo text)
 returns void
 language plpgsql security definer set search_path = ''
@@ -1567,10 +1590,45 @@ begin
   if exists (select 1 from app.processos where parte_id = tp.id and status = 'concluido') then
     raise exception 'Esta parte já foi comprada' using errcode = '22023';
   end if;
+  perform app._parte_pode_sair(tp);
+  update app.matriculas set parte_id = null where parte_id = tp.id;
+  update app.inscricoes_municipais set parte_id = null where parte_id = tp.id;
   update app.terreno_partes set ativa = false, removida_em = now(), motivo_remocao = trim(p_motivo) where id = tp.id;
   for v_principal in select distinct principal_id from app.processos where parte_id = tp.id and principal_id is not null loop
     perform app._sincronizar_principal(v_principal);
   end loop;
+end $$;
+
+-- O terreno fica sempre com uma parte.
+create or replace function app._parte_pode_sair(tp app.terreno_partes)
+returns void
+language plpgsql stable security definer set search_path = ''
+as $$
+begin
+  if not exists (select 1 from app.terreno_partes where terreno_id = tp.terreno_id and ativa and id <> tp.id) then
+    raise exception 'O terreno precisa de pelo menos uma parte' using errcode = '22023';
+  end if;
+end $$;
+
+-- Exclui a parte cadastrada por engano: só a que não tem pessoa, corretor, oferta nem negociação.
+-- As matrículas e as inscrições dela ficam sem parte. A que tem história sai por remover_parte.
+create or replace function app.excluir_parte(p_parte uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare tp app.terreno_partes;
+begin
+  select * into tp from app.terreno_partes where id = p_parte for update;
+  if not found then raise exception 'Parte não encontrada' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(tp.empresa_id);
+  perform app._parte_pode_sair(tp);
+  if exists (select 1 from app.terreno_pessoas where parte_id = tp.id) or exists (select 1 from app.parte_corretores where parte_id = tp.id)
+     or exists (select 1 from app.oferta_partes where parte_id = tp.id) or exists (select 1 from app.processos where parte_id = tp.id) then
+    raise exception 'A parte % já tem histórico: tire-a do terreno com um motivo', tp.nome using errcode = '22023';
+  end if;
+  update app.matriculas set parte_id = null where parte_id = tp.id;
+  update app.inscricoes_municipais set parte_id = null where parte_id = tp.id;
+  delete from app.terreno_partes where id = tp.id;
 end $$;
 
 -- Encerrar a negociação do terreno leva junto as partes em aberto: perdido
@@ -1602,7 +1660,17 @@ end $$;
 -- Cada parte com a sua negociação, para a ficha e o quadro.
 create view app.v_partes with (security_invoker = true) as
 select tp.id, tp.empresa_id, tp.terreno_id, tp.nome, tp.essencial, tp.area_m2, tp.poligono_geojson, tp.observacoes,
-       tp.ativa, tp.removida_em, tp.motivo_remocao,
+       tp.ativa, tp.removida_em, tp.motivo_remocao, tp.pessoa_nome, tp.telefone, tp.email, tp.documento,
+       -- área da parte (o que o Comercial mostra ao lado do valor pedido): a soma das matrículas, quando
+       -- todas têm área; sem matrícula, a dos SQLs, quando todos têm área cadastral (decisão do Moisés, 4/nov/2026)
+       ar.area_m2 as area_partes_m2, ar.area_fonte,
+       ar.area_matriculas_m2, ar.area_cadastral_m2,
+       -- Matrícula × Prefeitura da parte: área cadastral dos SQLs contra a das matrículas, em % da matrícula
+       round((ar.area_cadastral_m2 - ar.area_matriculas_m2) / nullif(ar.area_matriculas_m2, 0) * 100, 1) as divergencia_cadastral_pct,
+       -- zonas da última consulta de cada SQL da parte
+       (select array_agg(distinct z->>'sigla' order by z->>'sigla') from app.inscricoes_municipais i
+          cross join lateral (select c.zonas from app.consultas_lote c where c.inscricao_id = i.id order by c.consultado_em desc limit 1) c
+          cross join jsonb_array_elements(c.zonas) z where i.parte_id = tp.id and z->>'sigla' is not null) as zonas,
        (select count(*) from app.matriculas m where m.parte_id = tp.id) as qtd_matriculas,
        (select count(*) from app.inscricoes_municipais i where i.parte_id = tp.id) as qtd_inscricoes,
        (select string_agg(pe.nome_razao_social, ', ' order by pe.nome_razao_social) from app.terreno_pessoas x
@@ -1617,9 +1685,20 @@ select tp.id, tp.empresa_id, tp.terreno_id, tp.nome, tp.essencial, tp.area_m2, t
        -- preço pedido da parte: o informado na oferta, ou o da oferta inteira quando ela cobre só esta parte
        case when op.parte_id is not null then
          coalesce(op.valor_pedido, case when (select count(*) from app.oferta_partes y where y.oferta_id = o.id) = 1 then o.valor_pedido end) end as valor_pedido,
+       case when op.parte_id is not null then coalesce(op.forma_pagamento, o.forma_pagamento_pedida) end as forma_pagamento,
        lp.valor_total as ultima_proposta_valor, lp.origem as ultima_proposta_origem, lp.status as ultima_proposta_status,
        ap.nivel as aprovacao_aguardando
 from app.terreno_partes tp
+cross join lateral (
+  select m.area_matriculas_m2, i.area_cadastral_m2,
+         case when m.qtd > 0 then m.area_matriculas_m2 when i.qtd > 0 then i.area_cadastral_m2 end as area_m2,
+         case when m.qtd > 0 and m.area_matriculas_m2 is not null then 'matriculas'
+              when m.qtd = 0 and i.area_cadastral_m2 is not null then 'inscricoes' end as area_fonte
+  from (select count(*) as qtd, case when count(*) filter (where area_registrada_m2 is null) = 0 then sum(area_registrada_m2) end as area_matriculas_m2
+          from app.matriculas where parte_id = tp.id) m,
+       (select count(*) as qtd, case when count(*) filter (where area_cadastral_m2 is null) = 0 then sum(area_cadastral_m2) end as area_cadastral_m2
+          from app.inscricoes_municipais where parte_id = tp.id) i
+) ar
 left join lateral (
   select x.* from app.processos x where x.parte_id = tp.id
   order by (x.status in ('ativo','stand_by')) desc, x.data_inicio desc limit 1
@@ -1862,6 +1941,37 @@ begin
   where terreno_id = p_terreno and google_place_id = p_google_place_id and excluido_em is not null;
 end $$;
 
+-- Exclui um ponto da empresa só da ficha deste terreno (continua nos outros e no mapa).
+create or replace function app.excluir_ponto_terreno(p_terreno uuid, p_ponto uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos;
+begin
+  select * into t from app.terrenos where id = p_terreno;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  if not exists (select 1 from app.pontos_interesse where id = p_ponto and empresa_id = t.empresa_id) then
+    raise exception 'Ponto não é desta empresa' using errcode = 'P0002';
+  end if;
+  insert into app.terreno_pontos_excluidos (terreno_id, ponto_id, empresa_id, excluido_por)
+  values (p_terreno, p_ponto, t.empresa_id, auth.uid())
+  on conflict (terreno_id, ponto_id) do nothing;
+end $$;
+
+-- Desfaz: o ponto volta à ficha deste terreno.
+create or replace function app.restaurar_ponto_terreno(p_terreno uuid, p_ponto uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos;
+begin
+  select * into t from app.terrenos where id = p_terreno;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  delete from app.terreno_pontos_excluidos where terreno_id = p_terreno and ponto_id = p_ponto;
+end $$;
+
 -- Grava as distâncias (a pé e de carro, pela rota) do terreno aos pontos da empresa.
 -- Recusa coordenada diferente da atual; ignora ponto de outra empresa ou inativo.
 -- p_itens: [{ponto_id, distancia_pe_m, duracao_pe_s, distancia_carro_m, duracao_carro_s}]
@@ -1914,15 +2024,20 @@ begin
     observacoes = v_novo.observacoes, cep = v_novo.cep, logradouro = v_novo.logradouro, numero = v_novo.numero,
     complemento = v_novo.complemento, bairro = v_novo.bairro, municipio_id = v_novo.municipio_id, zona = v_novo.zona,
     eixo_comercial_id = v_novo.eixo_comercial_id, referencia_localizacao = v_novo.referencia_localizacao,
+    cartorio = nullif(trim(v_novo.cartorio), ''),
+    cartorio_origem = case when nullif(trim(v_novo.cartorio), '') is null then null
+                           when nullif(trim(v_novo.cartorio), '') is distinct from t.cartorio then 'digitado' else t.cartorio_origem end,
+    historico_uso = nullif(trim(v_novo.historico_uso), ''),
+    visita_tecnica_em = v_novo.visita_tecnica_em,
     latitude = v_novo.latitude, longitude = v_novo.longitude, poligono_geojson = v_novo.poligono_geojson,
     precisao_localizacao = v_novo.precisao_localizacao, area_documental_m2 = v_novo.area_documental_m2,
     area_cadastral_m2 = v_novo.area_cadastral_m2, area_levantamento_m2 = v_novo.area_levantamento_m2,
     area_adotada_m2 = v_novo.area_adotada_m2, fonte_area_adotada = v_novo.fonte_area_adotada,
-    testada_principal_m = v_novo.testada_principal_m, topografia = v_novo.topografia, desnivel_estimado_m = v_novo.desnivel_estimado_m,
+    testada_principal_m = v_novo.testada_principal_m, desnivel_estimado_m = v_novo.desnivel_estimado_m,
     posicao_quadra = v_novo.posicao_quadra, formato = v_novo.formato, situacao_ocupacao = v_novo.situacao_ocupacao,
     uso_atual = v_novo.uso_atual, area_construida_existente_m2 = v_novo.area_construida_existente_m2,
     area_construida_demolir_m2 = v_novo.area_construida_demolir_m2, necessidade_demolicao = v_novo.necessidade_demolicao,
-    observacoes_fisicas = v_novo.observacoes_fisicas, tipo_empreendimento = v_novo.tipo_empreendimento, sobreposicoes_aceitas = v_novo.sobreposicoes_aceitas
+    observacoes_fisicas = v_novo.observacoes_fisicas, sobreposicoes_aceitas = v_novo.sobreposicoes_aceitas
   where id = t.id
   returning versao into t.versao;
   return t.versao;
@@ -2526,10 +2641,128 @@ begin
          zona_fiscal = coalesce(nullif(trim(p_camadas#>>'{zona_fiscal,0,sg_zona_fiscal}'), ''), zona_fiscal)
    where id = i.id;
 
+  -- cartório da circunscrição: só quando o terreno ainda não tem e a camada achou um só
+  if t.cartorio is null and jsonb_typeof(p_camadas->'cartorio_registro_imovel') = 'array'
+     and jsonb_array_length(p_camadas->'cartorio_registro_imovel') = 1
+     and nullif(trim(p_camadas#>>'{cartorio_registro_imovel,0,cd_numero_cartorio}'), '') is not null then
+    update app.terrenos set cartorio = trim(p_camadas#>>'{cartorio_registro_imovel,0,cd_numero_cartorio}') || ' CRI', cartorio_origem = 'prefeitura'
+     where id = t.id;
+  end if;
+
   if p_criar_analise and jsonb_array_length(coalesce(p_zonas, '[]')) > 0 then
     perform app._substituir_zonas(t, i.id, p_zonas, b.nome || ' (' || b.rotulo || ' ' || i.inscricao || ')');
   end if;
   return v_id;
+end $$;
+
+-- ---------------------------------------------------------------------
+-- Consulta pela poligonal do terreno (restrições e entorno da área inteira).
+-- A base é a da cidade do terreno; grava a poligonal de hoje do terreno junto.
+-- ---------------------------------------------------------------------
+create or replace function app.registrar_consulta_area(p_terreno uuid, p_camadas jsonb, p_camadas_com_erro text[] default '{}')
+returns uuid
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos; b app.bases_cadastrais; v_id uuid;
+begin
+  select * into t from app.terrenos where id = p_terreno;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  if t.poligono_geojson is null then raise exception 'O terreno não tem poligonal para consultar' using errcode = '22023'; end if;
+  select * into b from app.bases_cadastrais where municipio_id = t.municipio_id;
+  if not found then raise exception 'A cidade do terreno não tem base da prefeitura para consultar' using errcode = '22023'; end if;
+  if jsonb_typeof(coalesce(p_camadas, '{}')) <> 'object' then raise exception 'Camadas inválidas' using errcode = '22023'; end if;
+  insert into app.consultas_area (empresa_id, terreno_id, base, poligono_geojson, camadas, camadas_com_erro)
+  values (t.empresa_id, t.id, b.codigo, t.poligono_geojson, coalesce(p_camadas, '{}'), coalesce(p_camadas_com_erro, '{}'))
+  returning id into v_id;
+  return v_id;
+end $$;
+
+-- ---------------------------------------------------------------------
+-- Classificação topográfica (decisões do Moisés, 3 e 4/nov/2026): sete níveis pela
+-- declividade média (a média da inclinação em cada ponto do terreno), com os cortes
+-- do Moisés depois de medir 8 terrenos de São Paulo. A inclinação do plano que melhor se ajusta às cotas só é
+-- mostrada; a terra mexida até esse plano (corte + aterro ÷ área, m³/m²) só pesa no
+-- crítico (um morro, não uma rampa). Sem a terra mexida (cotas do Google, que erram
+-- 1 a 4 m) a declividade só separa Plano, Inclinado ou, acima do agudo, crítico.
+-- ---------------------------------------------------------------------
+create or replace function app.classificar_topografia(p_empresa uuid, p_declividade numeric, p_terra numeric)
+returns text
+language sql stable security definer set search_path = ''
+as $$
+  with c as (
+    select coalesce(x.plano_ate_pct, 5) as pl, coalesce(x.inclinado_ate_pct, 10) as inc, coalesce(x.leve_ate_pct, 13) as le,
+           coalesce(x.mediano_ate_pct, 19) as me, coalesce(x.intenso_ate_pct, 24) as it, coalesce(x.agudo_ate_pct, 30) as ag,
+           coalesce(x.critico_terra_m3m2, 1.5) as ct
+    from (select 1) u left join app.topografia_config x on x.empresa_id = p_empresa)
+  select case when p_declividade is null then null
+              when p_declividade > ag or p_terra > ct then 'acidentado_critico'
+              when p_declividade <= pl then 'plano'
+              when p_terra is null or p_declividade <= inc then 'inclinado'
+              when p_declividade <= le then 'acidentado_leve'
+              when p_declividade <= me then 'acidentado_mediano'
+              when p_declividade <= it then 'acidentado_intenso'
+              else 'acidentado_agudo' end
+  from c $$;
+
+-- O front mede (laser em São Paulo, Google fora) e grava aqui; o perfil sai do banco.
+create or replace function app.registrar_topografia(p_terreno uuid, p_declividade numeric, p_inclinacao numeric, p_terra numeric, p_desnivel numeric, p_fonte text)
+returns text
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos; v_perfil text; v_terra numeric;
+begin
+  select * into t from app.terrenos where id = p_terreno for update;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  if p_fonte is null or p_fonte not in ('laser','google') then raise exception 'Fonte das cotas inválida' using errcode = '22023'; end if;
+  if p_declividade is null or p_declividade < 0 then raise exception 'Declividade inválida' using errcode = '22023'; end if;
+  if p_inclinacao is null or p_inclinacao < 0 then raise exception 'Inclinação inválida' using errcode = '22023'; end if;
+  -- com o Google a terra mexida não tem precisão: não é guardada
+  v_terra := case when p_fonte = 'laser' then p_terra end;
+  if p_fonte = 'laser' and (v_terra is null or v_terra < 0) then raise exception 'Com o laser, a terra mexida é obrigatória' using errcode = '22023'; end if;
+  v_perfil := app.classificar_topografia(t.empresa_id, p_declividade, v_terra);
+  update app.terrenos set topo_perfil = v_perfil, topo_declividade_pct = round(p_declividade, 2), topo_inclinacao_pct = round(p_inclinacao, 2),
+    topo_terra_m3m2 = round(v_terra, 3), topo_desnivel_m = round(p_desnivel, 2), topo_fonte = p_fonte, topo_calculado_em = now(), topo_calculado_por = auth.uid()
+  where id = t.id;
+  return v_perfil;
+end $$;
+
+-- Limites da classificação: só o administrador; vale para as próximas medições
+-- e para reclassificar as já feitas (o perfil gravado é recalculado aqui).
+create or replace function app.salvar_topografia_config(p_empresa uuid, p_plano numeric, p_inclinado numeric, p_leve numeric, p_mediano numeric, p_intenso numeric, p_agudo numeric, p_critico_terra numeric)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  perform app.exigir_administrador(p_empresa);
+  insert into app.topografia_config (empresa_id, plano_ate_pct, inclinado_ate_pct, leve_ate_pct, mediano_ate_pct, intenso_ate_pct, agudo_ate_pct, critico_terra_m3m2)
+  values (p_empresa, p_plano, p_inclinado, p_leve, p_mediano, p_intenso, p_agudo, p_critico_terra)
+  on conflict (empresa_id) do update set plano_ate_pct = excluded.plano_ate_pct, inclinado_ate_pct = excluded.inclinado_ate_pct,
+    leve_ate_pct = excluded.leve_ate_pct, mediano_ate_pct = excluded.mediano_ate_pct, intenso_ate_pct = excluded.intenso_ate_pct, agudo_ate_pct = excluded.agudo_ate_pct,
+    critico_terra_m3m2 = excluded.critico_terra_m3m2;
+  update app.terrenos set topo_perfil = app.classificar_topografia(empresa_id, topo_declividade_pct, topo_terra_m3m2)
+  where empresa_id = p_empresa and topo_perfil is not null;
+end $$;
+
+-- ---------------------------------------------------------------------
+-- Cartório da circunscrição pelo pino do terreno (sem inscrição consultada).
+-- O front consulta a prefeitura e grava aqui; só preenche o vazio ou troca o
+-- que veio da prefeitura (o pino mudou de lugar), nunca o digitado.
+-- ---------------------------------------------------------------------
+create or replace function app.cartorio_da_prefeitura(p_terreno uuid, p_cartorio text)
+returns boolean
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos;
+begin
+  select * into t from app.terrenos where id = p_terreno for update;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  if nullif(trim(p_cartorio), '') is null then raise exception 'Cartório vazio' using errcode = '22023'; end if;
+  if t.cartorio_origem = 'digitado' or t.cartorio = trim(p_cartorio) then return false; end if;
+  update app.terrenos set cartorio = trim(p_cartorio), cartorio_origem = 'prefeitura' where id = t.id;
+  return true;
 end $$;
 
 -- ---------------------------------------------------------------------
@@ -2657,8 +2890,10 @@ grant execute on function
   app.salvar_terreno(uuid, int, jsonb), app.desfazer_alteracao(bigint),
   app.salvar_entorno(uuid, double precision, double precision, jsonb, boolean),
   app.excluir_lugar_entorno(uuid, text), app.restaurar_lugar_entorno(uuid, text),
+  app.excluir_ponto_terreno(uuid, uuid), app.restaurar_ponto_terreno(uuid, uuid),
   app.salvar_distancias_pontos(uuid, double precision, double precision, jsonb),
-  app.registrar_consulta_lote(uuid, jsonb, jsonb, numeric, jsonb, jsonb, text[], boolean),
+  app.registrar_consulta_lote(uuid, jsonb, jsonb, numeric, jsonb, jsonb, text[], boolean), app.registrar_consulta_area(uuid, jsonb, text[]), app.cartorio_da_prefeitura(uuid, text),
+  app.classificar_topografia(uuid, numeric, numeric), app.registrar_topografia(uuid, numeric, numeric, numeric, numeric, text), app.salvar_topografia_config(uuid, numeric, numeric, numeric, numeric, numeric, numeric, numeric),
   app.registrar_zonas_sem_inscricao(uuid, jsonb, text), app.salvar_zona_parametro(uuid, uuid, jsonb),
   app.parametros_zona(uuid, uuid, text, text, numeric, text),
   app.criar_empresa(text, text),
@@ -2666,7 +2901,7 @@ grant execute on function
   app.terrenos_sobrepostos(uuid, jsonb, uuid),
   app.abrir_negociacao(uuid, uuid),
   app.registrar_oferta(uuid, numeric, text, uuid, text, text, date, date, numeric, uuid, numeric, jsonb, jsonb),
-  app.salvar_parte(uuid, uuid, jsonb), app.remover_parte(uuid, text),
+  app.salvar_parte(uuid, uuid, jsonb), app.remover_parte(uuid, text), app.excluir_parte(uuid),
   app.definir_temperatura(uuid, int), app.definir_oferta_referencia(uuid, uuid),
   app.checar_avanco(uuid), app.checar_passagem(uuid, text, text),
   app.mover_etapa(uuid, boolean, text), app.mover_para_etapa(uuid, text, boolean, text), app.mover_subetapa(uuid, text, boolean, text),

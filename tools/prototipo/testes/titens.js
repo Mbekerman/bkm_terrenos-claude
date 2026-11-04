@@ -6,7 +6,7 @@ const est=p=>p.evaluate(()=>JSON.parse(localStorage.getItem('bkm-terrenos-protot
 const clica=(p,sel,txt)=>p.evaluate(([s,t])=>{let el=[...document.querySelectorAll(s)].find(x=>!t||x.textContent.includes(t));if(!el&&window.__tkAcha)el=window.__tkAcha(s,t);if(!el)throw new Error('não achei '+s+' '+(t||''));el.click()},[sel,txt||null]);
 const muda=(p,sel,v)=>p.evaluate(([s,v])=>{let el=document.querySelector(s);if(!el&&window.__tkAcha)el=window.__tkAcha(s);if(!el)throw new Error('não achei '+s);if(el.tagName==='SELECT'&&![...el.options].some(o=>o.value===v)){const o=[...el.options].find(o=>o.textContent.includes(v));if(o)v=o.value}el.value=v;el.dispatchEvent(new Event('change',{bubbles:true}))},[sel,v]);
 const preenche=(p,sel,v)=>p.evaluate(([s,v])=>{let el=document.querySelector(s);if(!el&&window.__tkAcha)el=window.__tkAcha(s);if(!el)throw new Error('não achei '+s);el.value=v},[sel,v]);
-const incluir=async(p,dest)=>{if(!(await p.$('#modal [data-a=fm-nova]'))){await clica(p,'#modal [data-a=fm-modo][data-v=montar]');await p.waitForTimeout(100)}await clica(p,'#modal [data-a=fm-nova]');await p.waitForTimeout(100);await clica(p,`#modal [data-a=fm-dest][data-v="${dest}"]`);await p.waitForTimeout(100);await clica(p,'#modal [data-a=fm-salva]');await p.waitForTimeout(120);await clica(p,'#modal [data-a=fm-modo][data-v=responder]');await p.waitForTimeout(120)};
+const incluir=async(p,dest)=>{if(!(await p.$('#modal [data-a=fm-nova]'))){await clica(p,'#modal [data-a=fm-modo][data-v=montar]');await p.waitForTimeout(100)}await clica(p,'#modal [data-a=fm-nova]');await p.waitForTimeout(100);await p.click('#fme-d');await p.waitForTimeout(80);await p.click(`#modal [data-gvv="${dest}"]`);await p.waitForTimeout(100);await clica(p,'#modal [data-a=fm-salva]');await p.waitForTimeout(120);await clica(p,'#modal [data-a=fm-modo][data-v=responder]');await p.waitForTimeout(120)};
 const envia=(p,sel)=>p.evaluate(s=>{let f=document.querySelector(s);if(!f&&window.__tkAcha)f=window.__tkAcha(s);if(!f)throw new Error('não achei '+s);f.requestSubmit()},sel);
 const papel=(p,v)=>p.evaluate(v=>{const a=document.createElement('button');a.dataset.a='role';a.dataset.v=v;document.body.appendChild(a);a.click();a.remove()},v);
 const ficha=(p,id)=>p.evaluate(id=>{const a=document.createElement('button');a.dataset.a='abrir';a.dataset.id=id;a.dataset.tab='tarefas';document.body.appendChild(a);a.click();a.remove();document.querySelector('#bl-tarefas [data-a=cr-vista][data-v=quadro][aria-pressed=false]')?.click()},id);  // roteiro escrito sobre o quadro; a ficha abre na Lista
@@ -21,7 +21,7 @@ const abas=p=>p.$$eval('#modal [data-a=tkc-aba]',xs=>xs.map(x=>x.dataset.v));
 const abre=async(w,h,tema)=>{const ctx=await b.newContext({viewport:{width:w,height:h},deviceScaleFactor:1});
   await ctx.route('**/*',r=>{const u=r.request().url();if(u.startsWith('file://'))return r.fulfill({path:F,contentType:'text/html; charset=utf-8'});if(/leaflet.js|jszip/.test(u))return r.fulfill({path:L+(u.includes('leaflet')?'leaflet.js':'jszip.min.js'),contentType:'application/javascript'});return r.abort()});
   const p=await ctx.newPage();await p.addInitScript(TK_ACHA);p.on('pageerror',e=>erros.push(e.message));await p.goto('file:///x/a.html');await p.evaluate(t=>{localStorage.clear();localStorage.setItem('bkm-terrenos-tema',t)},tema);await p.reload();await p.waitForTimeout(400);return {ctx,p}};
-const abreCartao=async(p,tit)=>{await clica(p,'.tk',tit);await p.waitForTimeout(250)};
+const abreCartao=async(p,tit)=>{await p.evaluate(([f,a])=>window.BKM_TESTE.escopo(f,a),[(tt=>{for(const t of S.terrenos){const k=(t.tarefas||[]).find(x=>x.titulo.includes(tt));if(k){UI.tkSel={tid:t.id,kid:k.id};UI.tkAba='geral';UI.modal='tarefa';renderModal();return}}throw new Error('não achei a tarefa '+tt)}).toString(),tit]);await p.waitForTimeout(250)};
 const fecha=async p=>{await clica(p,'#modal [data-a=close]');await p.waitForTimeout(150)};
 const vai=async(p,h)=>{await p.evaluate(h=>history.replaceState(null,'','#'+h),h);await p.reload();await p.waitForTimeout(400)};
 const AJ='Análise jurídica da matrícula';
@@ -49,10 +49,10 @@ ok(s.terrenos[0].aDoc===2150,'editar no cartão grava no terreno');ok(s.terrenos
 await muda(p,`[data-fm="${ia.id}"]`,'');await p.waitForTimeout(150);s=await est(p);ok(s.terrenos[0].aDoc==null,'apagar deixa o campo em branco (nunca zero)');
 ok(await p.$eval(`[data-fm="${ia.id}"]`,x=>!!x.closest('.fm-ans.falta')&&x.closest('.fm-ans').textContent.includes('necessário')),'em branco com "não conclui": selo necessário');
 await clica(p,'#modal [data-a=fm-modo][data-v=montar]');await p.waitForTimeout(100);await clica(p,'#modal [data-a=fm-nova]');await p.waitForTimeout(100);
-ok(await p.$eval('.fm-pop',x=>x.textContent.includes('Terreno')&&x.textContent.includes('Campos personalizados')&&!x.textContent.includes('Uso atual')),'+ Pergunta lista os campos por origem e respeita "No cartão"');
-await preenche(p,'[data-fmq]','testada');await p.$eval('[data-fmq]',x=>x.dispatchEvent(new Event('input',{bubbles:true})));await p.waitForTimeout(150);
-{const a=await p.$$eval('.fm-pop .it-popi:not([data-v=cartao])',xs=>xs.map(x=>x.textContent));ok(a.length>=1&&a.every(x=>/testada/i.test(x))&&a.some(x=>x.includes('Testada')),'a busca acha o campo: '+a.join(' | '))}
-await clica(p,'#modal [data-a=fm-dest][data-v="terreno.testada_principal_m"]');await p.waitForTimeout(100);await clica(p,'#modal [data-a=fm-salva]');await p.waitForTimeout(150);await clica(p,'#modal [data-a=fm-modo][data-v=responder]');await p.waitForTimeout(100);s=await est(p);
+ok(await p.$eval('.gv-pop',x=>x.textContent.includes('Terreno')&&x.textContent.includes('Tarefa')&&!x.textContent.includes('Uso atual')),'+ Pergunta lista os campos por origem e respeita "No cartão"');
+await p.fill('#fme-d','testada');await p.waitForTimeout(150);
+{const a=await p.$$eval('.gv-pop .it-popi:not([data-gvv=cartao])',xs=>xs.map(x=>x.textContent));ok(a.length>=1&&a.every(x=>/testada/i.test(x))&&a.some(x=>x.includes('Testada')),'a busca acha o campo: '+a.join(' | '))}
+await p.click('#modal [data-gvv="terreno.testada_principal_m"]');await p.waitForTimeout(100);await clica(p,'#modal [data-a=fm-salva]');await p.waitForTimeout(150);await clica(p,'#modal [data-a=fm-modo][data-v=responder]');await p.waitForTimeout(100);s=await est(p);
 ok(!!it(s,AJ,'terreno.testada_principal_m'),'campo incluído no cartão');
 await p.evaluate(()=>document.querySelector('#modal .fm').scrollIntoView({block:'center'}));await p.screenshot({path:O+'2_cartao.png'});
 // 3. aba Configuração
@@ -63,18 +63,18 @@ const ib=it(s,AJ,'terreno.testada_principal_m');await muda(p,`[data-itr="${ib.id
 s=await est(p);ok(it(s,AJ,'terreno.testada_principal_m').regra==='justificativa','regra "conclui com justificativa" no item');
 // editor de condição com grupo
 await clica(p,`#modal [data-a=it-cond][data-v="i:${ib.id}"]`);await p.waitForTimeout(150);
-await clica(p,'#modal [data-a=it-c-campo][data-p="0"][data-v="terreno.tipo_empreendimento"]');await p.waitForTimeout(80);
-await clica(p,'#modal [data-a=it-c-val][data-p="0"][data-v="his"]');await clica(p,'#modal [data-a=it-c-val][data-p="0"][data-v="hmp"]');await p.waitForTimeout(80);
+await clica(p,'#modal [data-a=it-c-campo][data-p="0"][data-v="terreno.situacao_ocupacao"]');await p.waitForTimeout(80);
+await clica(p,'#modal [data-a=it-c-val][data-p="0"][data-v="vazio"]');await p.waitForTimeout(80);
 await clica(p,'#modal [data-a=it-c-grupo]');await p.waitForTimeout(80);
-await clica(p,'#modal [data-a=it-c-campo][data-p="1.0"][data-v="terreno.topografia"]');await clica(p,'#modal [data-a=it-c-val][data-p="1.0"][data-v="aclive"]');
+await clica(p,'#modal [data-a=it-c-campo][data-p="1.0"][data-v="terreno.topo_perfil"]');await clica(p,'#modal [data-a=it-c-val][data-p="1.0"][data-v="inclinado"]');
 await clica(p,'#modal [data-a=it-c-mais][data-p="1"]');await p.waitForTimeout(80);
 await clica(p,'#modal [data-a=it-c-campo][data-p="1.1"][data-v="terreno.necessidade_demolicao"]');await clica(p,'#modal [data-a=it-c-val][data-p="1.1"][data-v="confirmada"]');await p.waitForTimeout(100);
 const fr=await p.$eval('.it-frase',x=>x.textContent);
-ok(/tipo de empreendimento é HIS ou HMP e \(topografia é Aclive ou precisa demolir é Confirmada\)/.test(fr),'a frase lê a condição com o grupo: '+fr);
+ok(/ocupação é Vazio e \(perfil topográfico é Inclinado ou precisa demolir é Confirmada\)/.test(fr),'a frase lê a condição com o grupo: '+fr);
 await p.screenshot({path:O+'3_condicao.png'});
 await clica(p,'#modal [data-a=it-c-salva]');await p.waitForTimeout(150);s=await est(p);
 const cd=it(s,AJ,'terreno.testada_principal_m').cond;ok(cd&&cd.itens.length===2&&cd.itens[1].grupo.modo==='qualquer','condição salva com um grupo "qualquer uma"');
-ok((await abas(p)).includes('config')&&await p.$eval('.it-ct',x=>x.textContent.includes('HIS ou HMP')),'volta à aba Configuração com a condição');
+ok((await abas(p)).includes('config')&&await p.$eval('.it-ct',x=>x.textContent.includes('ocupação é Vazio')),'volta à aba Configuração com a condição');
 await p.screenshot({path:O+'4_aba_config.png'});
 // grupo dentro de grupo não existe no editor (um nível)
 ok(!(await p.$('.it-grp [data-a=it-c-grupo]')),'um nível de grupo só');
@@ -126,7 +126,7 @@ await preenche(p,'.it-just-f textarea','Levantamento contratado; o diretor liber
 ok(!!tar(s,0,kk.titulo).feita&&tar(s,0,kk.titulo).justs.at(-1).libera===true,'concluiu e a justificativa marca que passou pelo bloqueio');
 // 6. condição que não vale não pede nada
 await fecha(p);s=await est(p);
-ok(s.terrenos[0].tipoEmp!=='his'&&s.terrenos[0].tipoEmp!=='hmp','o terreno não é HIS nem HMP');
+ok(s.terrenos[0].ocupacao!=='vazio','o terreno não está vazio');
 await abreCartao(p,AJ);if(await p.$('#modal [data-a=fm-modo][data-v=responder]:not(.on)')){await clica(p,'#modal [data-a=fm-modo][data-v=responder]');await p.waitForTimeout(100)}const tst=it(s,AJ,'terreno.testada_principal_m');
 if(await p.$(`[data-fm="${tst.id}"]`)){await muda(p,`[data-fm="${tst.id}"]`,'');await p.waitForTimeout(100)}
 ok(await p.$eval(`[data-fm="${tst.id}"]`,x=>!x.closest('.fm-ans').textContent.includes('pede justificativa')),'com a condição sem valer, a testada em branco não pede justificativa');

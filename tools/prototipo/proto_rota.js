@@ -2,9 +2,10 @@
 /* Cada tela tem endereço próprio, que abre direto quando o link é enviado:
      /                                  Início
      /terrenos                          Terrenos          /terrenos/novo        Novo terreno
-     /terrenos/TER-000123               ficha             /terrenos/TER-000123/negociacao  ficha com a seção aberta
-     /terrenos/TER-000123/viabilidade/2 segundo estudo de viabilidade do terreno, no popup
-     /mapa  /mapa/TER-000123 (selecionado)  /mapa/TER-000123/ficha (com a ficha no painel)
+     /terrenos/A123               ficha             /terrenos/A123/comercial  ficha na aba
+     /terrenos/A123/gaveta        ficha na gaveta da tabela de Terrenos
+     /terrenos/A123/viabilidade/2 segundo estudo de viabilidade do terreno, no popup
+     /mapa  /mapa/A123 (selecionado)  /mapa/A123/ficha (com a ficha no painel)
      /fases  /fases/aprovacao  /fases/aprovacao/projeto   (os três níveis do quadro)
      /tarefas  /tarefas/lista  /tarefas/calendario  /tarefas/cronograma  /tarefas/funil  /tarefas/TAR-000123 (a janela do cartão)   /dashboard   /configuracoes/etapas ...
    Na versão publicada vai no caminho (/prototipo/terrenos/...; o Caddy devolve a página para qualquer caminho);
@@ -12,8 +13,8 @@
    Troca de tela entra no histórico (voltar e avançar do navegador); seção aberta, terreno
    selecionado no mapa e vista das tarefas só atualizam o endereço. O terreno vai pelo código. */
 const RT_BASE=location.pathname.startsWith('/prototipo')?'/prototipo':null;
-const RT_SEC=['cadastro','comercial','negociacao','fases','tarefas','urbanismo','documentos','historico'];
-const RT_CFG={fases:'fases',funil:'etapas',prereq:'pre-requisitos',status:'status',checklist:'checklist',etapaTar:'tarefas-da-etapa',jornada:'jornada',notif:'notificacoes',equipe:'equipe',viab:'viabilidade',zonas:'parametros',campos:'campos',tarefas:'tarefas'};
+const RT_SEC=['comercial','terreno','parametros','massa','viabilidade','infra','entorno','jornada','documentos','historico'];
+const RT_CFG={fases:'fases',funil:'etapas',prereq:'pre-requisitos',status:'status',checklist:'checklist',etapaTar:'tarefas-da-etapa',jornada:'jornada',notif:'notificacoes',equipe:'equipe',viab:'viabilidade',zonas:'parametros',topo:'topografia',campos:'campos',tarefas:'tarefas'};
 const rtCod=id=>T(id)?.codigo||null;
 const rtId=c=>c&&S.terrenos.find(t=>(t.codigo||'').toUpperCase()===c.toUpperCase())?.id||null;
 const rtViabs=id=>(S.viabs||[]).filter(v=>v.tid===id);
@@ -22,9 +23,10 @@ function rtCaminho(){const r=UI.route;
   if(UI.modal==='novo')return ['/terrenos/novo','novo'];
   if(r==='terrenos')return ['/terrenos','terrenos'];
   if(r==='terreno'){const c=rtCod(UI.id);if(!c)return ['/terrenos','terrenos'];const p='/terrenos/'+c;
+    if(UI.gav)return UI.from==='mapa'?['/mapa/'+c+'/ficha','mapa']:[p+'/gaveta','terrenos'];
     const vs=rtViabs(UI.id),n=UI.vbPop?vs.findIndex(v=>v.id===UI.vbPop):-1;
     if(n>=0)return [p+'/viabilidade/'+(n+1),'t:'+c+':v'+n];
-    return [RT_SEC.includes(UI.tab)?p+'/'+UI.tab:p,'t:'+c]}
+    return [RT_SEC.includes(abaN(UI.tab))?p+'/'+abaN(UI.tab):p,'t:'+c]}
   if(r==='mapa'){const f=rtCod(UI.fichaSheet),s=rtCod(UI.mpSel);return [f?'/mapa/'+f+'/ficha':s?'/mapa/'+s:'/mapa','mapa']}
   if(r==='negociacoes'){const p='/fases'+(UI.negFase?'/'+UI.negFase+(UI.negEtapa?'/'+UI.negEtapa:''):'');return [p,p]}
   if(r==='tarefas')return [UI.tk?.vista&&UI.tk.vista!=='quadro'?'/tarefas/'+UI.tk.vista:'/tarefas','tarefas'];
@@ -48,11 +50,13 @@ function rtAplicar(s){const [a,b,c,d]=s,limpo={vbPop:null,vbNova:false,fichaShee
     if(!id){go('terrenos',limpo);toast(`Terreno ${b} não encontrado.`,true);return}
     const from=history.state?.from||(UI.route==='terreno'&&UI.id===id?UI.from:'terrenos');
     /* link com seção: só ela vem aberta (a Visão geral cresce depois de carregar o mapa e o entorno e empurraria a seção para baixo) */
-    const sec=RT_SEC.includes(c)?c:'geral';if(UI.route!=='terreno'||UI.id!==id||sec!=='geral'){BLA={[sec]:true};blId=id;tkRecolhePainel(sec)}
-    if(c==='viabilidade'){go('terreno',{...limpo,id,tab:'geral',from});const v=rtViabs(id)[(parseInt(d,10)||1)-1];if(v)vbAbrir(v.id);else toast('Estudo de viabilidade não encontrado.',true);return}
+    /* links antigos (/negociacao, /cadastro, /urbanismo, /fases) caem na aba nova */
+    if(c==='gaveta'){go('terrenos',limpo);tgavAbrir(id);return}
+    const sec=c?abaN(c):'geral';
+    if(c==='viabilidade'&&d){go('terreno',{...limpo,id,tab:'viabilidade',from});const v=rtViabs(id)[(parseInt(d,10)||1)-1];if(v)vbAbrir(v.id);else toast('Estudo de viabilidade não encontrado.',true);return}
     go('terreno',{...limpo,id,tab:sec,from});if(sec!=='geral')rolarBloco(sec);return}
   if(a==='terrenos'){go('terrenos',limpo);if(b){UI.modal='novo';renderModal()}return}
-  if(a==='mapa'){const id=rtId(b);go('mapa',{...limpo,mpSel:id,mpFoco:id});if(id&&c==='ficha'){UI.fichaSheet=id;fichaSheet()}return}
+  if(a==='mapa'){const id=rtId(b);go('mapa',{...limpo,mpSel:id,mpFoco:id});if(id&&c==='ficha')tgavAbrir(id,true);return}
   if(a==='fases'){const f=b&&fIdx(b)>=0?b:null,e=f&&c&&etapaF(f,c)?c:null;go('negociacoes',{...limpo,negFase:f,negEtapa:e});return}
   if(a==='tarefas'){if(UI.tk)UI.tk.vista=b==='tabela'?'lista':['lista','cronograma','calendario','funil'].includes(b)?b:'quadro';go('tarefas',limpo);
     // link de um cartão: /tarefas/TAR-000123 abre a janela dele
@@ -64,9 +68,9 @@ function rtAplicar(s){const [a,b,c,d]=s,limpo={vbPop:null,vbNova:false,fichaShee
  const _s=mpSelecionar;mpSelecionar=function(){const x=_s.apply(this,arguments);rtSync();return x};
  const _f=fichaSheet;fichaSheet=function(){const x=_f.apply(this,arguments);rtSync();return x};
  const _m=renderModal;renderModal=function(){const x=_m.apply(this,arguments);rtSync();return x}}
-/* voltar, avançar ou endereço trocado à mão: o filtro do endereço vale; sem filtro no endereço, fica o da sessão */
+/* voltar, avançar ou endereço trocado à mão: o filtro do endereço vale para a página de destino; sem filtro no endereço, fica o da sessão daquela página */
 window.addEventListener('popstate',()=>{const h=location.hash.match(/[#&?]f=([^&]+)/);
-  if(h)try{UI.fx=JSON.parse(decodeURIComponent(h[1]));sessionStorage.setItem(FX_KEY,JSON.stringify(UI.fx))}catch(e){}
+  if(h)try{fxGuardaGrupo();UI.fx=fxSoValidos(JSON.parse(decodeURIComponent(h[1])));FX_ADOTA=true}catch(e){}
   rtAplicar(rtLer())});
 /* link recebido: abre direto na tela (antes, o endereço antigo só com #f= cai no Início) */
 {const s=rtLer();if(s.length)rtAplicar(s)}

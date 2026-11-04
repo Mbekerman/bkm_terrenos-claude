@@ -12,9 +12,18 @@
    ===================================================================== */
 P.filtro='M4 6h16M7 12h10M10 18h4';
 const FX_KEY='bkm-terrenos-filtros';
-UI.fx=UI.fx||(()=>{try{const h=location.hash.match(/[#&?]f=([^&]+)/);if(h)return JSON.parse(decodeURIComponent(h[1]))}catch(e){}try{return JSON.parse(sessionStorage.getItem(FX_KEY)||'{}')}catch(e){return {}}})();
-UI.fxAb=UI.fxAb||['funil','comercial','local'];
-let FX_ABERTO=false,FX_SO_RESULTADO=false;
+/* Pipeline, Mapa e Funil têm cada um o seu filtro (pedido do Moisés, 4/nov/2026): ao trocar de página, guarda o da página que sai e põe o da que entra */
+const FX_GK=FX_KEY+'-pag',fxGrupo=()=>UI.route==='negociacoes'?'kanban':naMapa()?'mapa':'pipeline';
+const FX_PAG=(()=>{try{return JSON.parse(sessionStorage.getItem(FX_GK)||'{}')||{}}catch(e){return {}}})();
+let FX_G=null,FX_ADOTA=false;
+UI.fx=UI.fx||(()=>{try{const h=location.hash.match(/[#&?]f=([^&]+)/);if(h){FX_ADOTA=true;return JSON.parse(decodeURIComponent(h[1]))}}catch(e){}return {}})();
+const fxGuardaGrupo=()=>{if(FX_G)FX_PAG[FX_G]={f:UI.fx,v:UI.fxVisao||null,m:!!UI.fxVisaoMudou}};
+function fxTrocaGrupo(){const g=fxGrupo();if(g===FX_G){FX_ADOTA=false;return}
+  if(!FX_ADOTA){fxGuardaGrupo();const x=FX_PAG[g]||{};UI.fx=fxSoValidos(JSON.parse(JSON.stringify(x.f||{})));UI.fxVisao=x.v||null;UI.fxVisaoMudou=!!x.m}
+  FX_ADOTA=false;FX_G=g;fxGuardar()}
+{const _r=render;render=function(){fxTrocaGrupo();return _r.apply(this,arguments)}}
+UI.fxSec=UI.fxSec||'funil';
+let FX_ABERTO=false,FX_SO_RESULTADO=false,FX_SEC_TROCOU=false;
 
 /* ---------- valores do terreno usados pelos filtros ---------- */
 const STP=['apresentada','em_analise','aceita'];
@@ -34,50 +43,46 @@ const fxProcs=t=>[...(t.neg?[{...t.neg,fase:faseEnt(),_neg:true}]:[]),...procsDe
 const fxEtapaK=(f,e)=>f+':'+e,fxSubK=(f,s)=>f+':'+s;
 const fxCorretores=t=>(t.corretores||[]).map(x=>x.cid);
 const fxZonas=t=>{const a=analiseVig(t);return a?[...new Set(a.zonas.map(z=>z.sigla))]:[]};
+const fxPctVgv=(v,t)=>{const g=t.neg?.viab?.vgv;return v!=null&&g?v/g*100:null};
 const fxDocsVenc=t=>(t.docs||[]).some(d=>docSt(d)==='vencido');
 
 /* ---------- definição dos filtros ----------
    tipo: 'lista' (várias opções; op(): [[valor, rótulo]]; v(t): valor ou lista de valores do terreno),
    'faixa' (mín. e máx.; v(t): número ou null), 'marca' (passa se p(t)), 'periodo' (de/até em datas) */
-const FX_GRUPOS=[['funil','Funil'],['comercial','Comercial'],['local','Localização'],['terreno','Terreno'],['urb','Urbanismo'],['gestao','Gestão e pendências']];
+const FX_GRUPOS=[['funil','Funil'],['comercial','Comercial'],['local','Localização'],['terreno','Terreno'],['gestao','Gestão']];
 const FX=[
   {k:'fase',g:'funil',l:'Fase',tipo:'lista',funil:true,op:()=>fasesL().filter(f=>f.ativo).map(f=>[f.k,f.nome])},
   {k:'etapa',g:'funil',l:'Etapa',tipo:'lista',funil:true,op:()=>fxFasesSel().flatMap(f=>etapasF(f).map(e=>[fxEtapaK(f,e.k),e.nome,f])),
     vis:()=>fxFasesSel().length>0,dica:'Marque uma fase para escolher as etapas.'},
   {k:'sub',g:'funil',l:'Subetapa',tipo:'lista',funil:true,op:()=>fxEtapasSel().flatMap(([f,e])=>(etapaF(f,e)?.subs||[]).map(s=>[fxSubK(f,s.k),s.nome,f])),
     vis:()=>fxEtapasSel().length>0,dica:'Marque uma etapa para escolher as subetapas.'},
-  {k:'status',g:'funil',l:'Status',tipo:'lista',funil:'status',op:()=>[['ativo','Ativo'],['stand_by','Stand By'],['concluido',fxConcNome()],['perdido','Perdido'],['descartado','Descartado'],['sem','Sem negociação']]},
-  {k:'atrasada',g:'funil',l:'Prazo da subetapa estourado',tipo:'marca',funil:'status',p:t=>fxProcs(t).some(p=>p.st==='ativo'&&(p._neg?subAtrasada(p):procAtrasada(p)))},
-  {k:'aprov',g:'funil',l:'Aguardando aprovação',tipo:'marca',funil:'status',p:t=>fxProcs(t).some(p=>p.pedido)},
-  {k:'dias',g:'funil',l:'Dias na etapa',tipo:'faixa',un:'d',funil:'status',v:t=>{const a=faseAtual(t)?.p;return a&&aberto(a)?diff(a.desde,HOJE):null}},
+  /* lista do Moisés (4/nov/2026): só estes filtros; status, prazo, aprovação, dias na etapa, rentabilidade, eixo, vários donos,
+     prioridade, parado, pendências e arquivados saíram */
   {k:'temp',g:'comercial',l:'Temperatura',tipo:'lista',op:()=>[['5','5 · '+TEMP[5]],['4','4 · '+TEMP[4]],['3','3'],['2','2'],['1','1'],['na','Não avaliada']],v:t=>t.neg?String(t.neg.temp||'na'):null},
   {k:'preco',g:'comercial',l:'Preço pedido',dica2:'da oferta de referência',tipo:'faixa',un:'R$',v:fxPedido},
   {k:'m2',g:'comercial',l:'Preço pedido por m²',tipo:'faixa',un:'R$',v:fxM2},
-  {k:'prop',g:'comercial',l:'Última proposta ativa',dica2:'apresentada, em análise ou aceita',tipo:'faixa',un:'R$',v:fxProposta},
-  {k:'vgv',g:'comercial',l:'VGV estimado',dica2:'da viabilidade',tipo:'faixa',un:'R$',v:t=>t.neg?.viab?.vgv??null},
-  {k:'acima',g:'comercial',l:'Rentabilidade abaixo da mínima',tipo:'marca',p:t=>abaixoMin(t)},
+  {k:'pvgv',g:'comercial',l:'Preço pedido em % do VGV',dica2:'VGV do estudo válido',tipo:'faixa',un:'%',v:t=>fxPctVgv(fxPedido(t),t)},
+  {k:'temProp',g:'comercial',l:'Proposta ativa',dica2:'apresentada, em análise ou aceita',tipo:'lista',op:()=>[['sim','Sim'],['nao','Não']],v:t=>fxProposta(t)!=null?'sim':'nao'},
+  {k:'prop',g:'comercial',l:'Proposta ativa: valor',tipo:'faixa',un:'R$',v:fxProposta},
+  {k:'propM2',g:'comercial',l:'Proposta ativa: valor por m²',tipo:'faixa',un:'R$',v:t=>{const v=fxProposta(t),a=areaAdotada(t);return v!=null&&a?v/a:null}},
+  {k:'propVgv',g:'comercial',l:'Proposta ativa: valor em % do VGV',tipo:'faixa',un:'%',v:t=>fxPctVgv(fxProposta(t),t)},
+  {k:'vgv',g:'comercial',l:'VGV estimado',dica2:'do estudo válido',tipo:'faixa',un:'R$',v:t=>t.neg?.viab?.vgv??null},
   {k:'corretor',g:'comercial',l:'Corretor',dica2:'do terreno ou de qualquer parte',tipo:'lista',busca:true,op:()=>S.corretores.map(c=>[c.id,c.nome]),v:fxCorretores},
-  {k:'forma',g:'comercial',l:'Forma de pagamento pedida',tipo:'lista',op:()=>Object.entries(OPT.forma),v:t=>ofertaRef(t)?.forma||null},
+  {k:'forma',g:'comercial',l:'Forma de pagamento aceita',dica2:'da oferta de referência',tipo:'lista',op:()=>Object.entries(OPT.forma),v:t=>ofertaRef(t)?.forma||null},
   {k:'origem',g:'comercial',l:'Origem do cadastro',tipo:'lista',op:()=>Object.entries(OPT.origem),v:t=>t.origem||null},
   {k:'uf',g:'local',l:'Estado',tipo:'lista',op:()=>fxDistintos(fxUF),v:fxUF},
   {k:'cidade',g:'local',l:'Cidade',tipo:'lista',op:()=>fxDistintos(fxCidade,t=>!fxSel('uf').length||fxSel('uf').includes(fxUF(t))),v:fxCidade},
-  /* a lista de regiões é a mesma para qualquer cidade e não quer dizer a mesma coisa em duas cidades: só com uma cidade marcada */
-  {k:'zona',g:'local',l:'Região da cidade',tipo:'lista',op:()=>Object.entries(OPT.zona),v:t=>t.zona||null,vis:()=>fxSel('cidade').length===1,dica:'Marque uma cidade para filtrar pela região.'},
+  {k:'zona',g:'local',l:'Região',tipo:'lista',op:()=>Object.entries(OPT.zona),v:t=>t.zona||null},
   {k:'bairro',g:'local',l:'Bairro',tipo:'lista',busca:true,op:()=>fxDistintos(t=>t.bairro,t=>!fxSel('cidade').length||fxSel('cidade').includes(fxCidade(t))),v:t=>t.bairro||null},
-  {k:'eixo',g:'local',l:'Eixo comercial',tipo:'lista',op:()=>S.eixos.map(e=>[e.id,e.nome]),v:t=>t.eixo||null},
+  {k:'zon',g:'terreno',l:'Zoneamento',dica2:'análise vigente',tipo:'lista',busca:true,op:()=>fxDistintos(fxZonas),v:fxZonas},
   {k:'area',g:'terreno',l:'Área',dica2:'área adotada',tipo:'faixa',un:'m²',v:t=>areaAdotada(t)},
-  {k:'partes',g:'terreno',l:'Vários donos',tipo:'lista',op:()=>[['com','Com partes'],['sem','Sem partes']],v:t=>typeof partesAtivas==='function'&&partesAtivas(t).length?'com':'sem'},
-  {k:'zon',g:'urb',l:'Zoneamento',dica2:'análise vigente',tipo:'lista',busca:true,op:()=>fxDistintos(fxZonas),v:fxZonas},
-  {k:'resp',g:'gestao',l:'Responsável',tipo:'lista',op:()=>[['eu','Meus terrenos'],...USERS.map(u=>[u,u])],v:t=>t.resp?[t.resp,...(t.resp===me()?['eu']:[])]:null},
-  {k:'prio',g:'gestao',l:'Prioridade',tipo:'lista',op:()=>Object.entries(OPT.prioridade),v:t=>t.prioridade||null},
+  {k:'meus',g:'gestao',l:'Meus terrenos',tipo:'marca',p:t=>t.resp===me()},
+  {k:'resp',g:'gestao',l:'Por analista',dica2:'responsável pelo terreno',tipo:'lista',op:()=>USERS.map(u=>[u,u]),v:t=>t.resp||null},
   {k:'ident',g:'gestao',l:'Cadastrado entre',tipo:'periodo',v:t=>t.dataIdent||null},
-  {k:'parado',g:'gestao',l:'Parado há mais de',tipo:'numero',un:'dias',v:fxParadoDias},
-  {k:'tarAtr',g:'gestao',l:'Tarefas atrasadas',tipo:'marca',p:t=>atrasadas(t).length>0},
-  {k:'docVenc',g:'gestao',l:'Documentos vencidos',tipo:'marca',p:fxDocsVenc},
-  {k:'dilImp',g:'gestao',l:'Diligência impeditiva',tipo:'marca',p:t=>(t.dilig||[]).some(d=>d.sit==='impeditiva')},
-  {k:'incomp',g:'gestao',l:'Ficha incompleta (menos de 50%)',tipo:'marca',p:t=>completude(t).pct<50},
-  {k:'arq',g:'gestao',l:'Incluir arquivados',tipo:'marca',sempre:true}];
+  {k:'incomp',g:'gestao',l:'Ficha incompleta: menos de',tipo:'numero',un:'%',menor:true,suf:'% preenchida',ph:'Ex.: 50',chip:v=>`Ficha com menos de ${v}% preenchida`,v:t=>completude(t).pct}];
 const FXK=Object.fromEntries(FX.map(d=>[d.k,d]));
+/* filtros que saíram (guardados na sessão, no endereço ou numa visão) não valem mais */
+const fxSoValidos=f=>{Object.keys(f||{}).forEach(k=>{if(!FXK[k])delete f[k]});return f};fxSoValidos(UI.fx);
 const fxConcNome=()=>{const fs=fxFasesSel();return fs.length===1?(faseCfg(fs[0])?.conc||'Concluído'):'Concluído (Comprado, Aprovado...)'};
 const fxSel=k=>UI.fx[k]||[];
 const fxFasesSel=()=>fxSel('fase').filter(f=>faseCfg(f));
@@ -105,14 +110,14 @@ function fxPassaUm(t,d,f){const v=f[d.k];
   if(d.tipo==='lista'){const tv=[].concat(d.v(t)??[]);return tv.some(x=>v.includes(x))}
   if(d.tipo==='faixa'){const x=d.v(t);if(x==null)return !!v.semInfo;return (v.min==null||x>=v.min)&&(v.max==null||x<=v.max)}
   if(d.tipo==='periodo'){const x=d.v(t);if(!x)return false;return (!v.min||x>=v.min)&&(!v.max||x<=v.max)}
-  if(d.tipo==='numero'){const x=d.v(t);return x!=null&&x>Number(v)}
+  if(d.tipo==='numero'){const x=d.v(t);return x!=null&&(d.menor?x<Number(v):x>Number(v))}
   return true}
 /* passa em tudo, menos (opcional) o filtro `fora` — para as contagens de cada opção */
 function fxPassa(t,ctx,fora,f=UI.fx){if(t.situacao==='arquivado'&&!f.arq&&ctx!=='kanban')return false;
   const funFora=fora&&FXK[fora]?.funil;
   if(!funFora){if(!fxFunil(t,f,ctx))return false}else{const g={...f};delete g[fora];if(fora==='fase'){delete g.etapa;delete g.sub}if(!fxFunil(t,g,ctx))return false}
   return FX.every(d=>d.funil===true||d.k==='status'||d.k===fora||!fxTem(d,f)||!fxValeEm(d,ctx)||fxPassaUm(t,d,f))}
-const fxCtx=()=>UI.route==='mapa'?'mapa':UI.route==='negociacoes'?'kanban':'terrenos';
+const fxCtx=()=>naMapa()?'mapa':UI.route==='negociacoes'?'kanban':'terrenos';
 const fxLista=(ctx=fxCtx())=>S.terrenos.filter(t=>fxPassa(t,ctx));
 /* quantos ficam marcando a opção (com os outros filtros valendo) */
 function fxConta(d,val,ctx){const base=S.terrenos.filter(t=>fxPassa(t,ctx,d.k));
@@ -120,16 +125,15 @@ function fxConta(d,val,ctx){const base=S.terrenos.filter(t=>fxPassa(t,ctx,d.k));
   return base.filter(t=>[].concat(d.v(t)??[]).includes(val)).length}
 
 /* ---------- mudar o filtro ---------- */
-function fxGuardar(){try{sessionStorage.setItem(FX_KEY,JSON.stringify(UI.fx))}catch(e){}
+function fxGuardar(){if(!FX_G)FX_G=fxGrupo();fxGuardaGrupo();try{sessionStorage.setItem(FX_GK,JSON.stringify(FX_PAG))}catch(e){}
   if(typeof rtSync==='function')rtSync()}
 function fxLimparDependentes(){const fs=fxFasesSel();if(UI.fx.etapa){UI.fx.etapa=UI.fx.etapa.filter(x=>fs.includes(x.split(':')[0]));if(!UI.fx.etapa.length)delete UI.fx.etapa}
   const es=fxEtapasSel();if(UI.fx.sub){UI.fx.sub=UI.fx.sub.filter(x=>{const [f,s]=x.split(':');return es.some(([ff,e])=>ff===f&&(etapaF(f,e)?.subs||[]).some(z=>z.k===s))});if(!UI.fx.sub.length)delete UI.fx.sub}
-  if(UI.fx.zona&&fxSel('cidade').length!==1)delete UI.fx.zona;
   Object.keys(UI.fx).forEach(k=>{if(FXK[k]&&!fxTem(FXK[k]))delete UI.fx[k]})}
 function fxAplicar(soResultado){fxLimparDependentes();fxGuardar();UI.fxVisaoMudou=!!UI.fxVisao;
-  if(UI.route==='mapa'&&typeof mpRefresh==='function'){mpRefresh();const b=$('#fx-barra');if(b)b.outerHTML=fxBarra();if(!soResultado)fxDrawer();else fxRodape();return}
+  if(naMapa()&&typeof mpRefresh==='function'){mpRefresh();const b=$('#fx-barra');if(b)b.outerHTML=fxBarra();if(!soResultado)fxDrawer();else fxRodape();return}
   FX_SO_RESULTADO=!!soResultado;render();FX_SO_RESULTADO=false;if(soResultado)fxRodape()}
-const fxTira=k=>{delete UI.fx[k];if(k==='fase'){delete UI.fx.etapa;delete UI.fx.sub}if(k==='etapa')delete UI.fx.sub;if(k==='cidade')delete UI.fx.zona};
+const fxTira=k=>{delete UI.fx[k];if(k==='fase'){delete UI.fx.etapa;delete UI.fx.sub}if(k==='etapa')delete UI.fx.sub};
 
 /* ---------- textos dos chips ---------- */
 const fxNum=(v,un)=>un==='R$'?mi(v):un==='m²'?m2(v):num(v)+(un?' '+un:'');
@@ -140,7 +144,7 @@ function fxChipTxt(d){const v=UI.fx[d.k];
     return `${['status','temp'].includes(d.k)?'':d.l+': '}${ls.length>2?ls.slice(0,2).join(', ')+' +'+(ls.length-2):ls.join(', ')}`}
   if(d.tipo==='faixa'){const a=v.min!=null?fxNum(v.min,d.un):null,b=v.max!=null?fxNum(v.max,d.un):null;return `${d.l} ${a&&b?a+' a '+b:a?'≥ '+a:'até '+b}${v.semInfo?' (com sem informação)':''}`}
   if(d.tipo==='periodo')return `Cadastrado ${v.min&&v.max?fd(v.min)+' a '+fd(v.max):v.min?'desde '+fd(v.min):'até '+fd(v.max)}`;
-  if(d.tipo==='numero')return `Parado há mais de ${v} dias`;
+  if(d.tipo==='numero')return d.chip?d.chip(v):`${d.l} ${v}`;
   return d.l}
 
 /* ---------- barra da página: botão, chips, limpar, visões ---------- */
@@ -154,8 +158,7 @@ function fxBarra(ctx=fxCtx()){const at=fxAtivos(ctx),n=at.length+(UI.fx.arq&&ctx
     ${pod?`<button class="iconbtn fx-vx" data-a="fx-visao-x" title="Excluir a visão ${esc(cur.nome)}" aria-label="Excluir a visão ${esc(cur.nome)}">${ic('close',18)}</button>`:''}</span></div>`}
 
 /* ---------- visões salvas (no banco: app.filtros_salvos) ---------- */
-function fxVisoes(){if(!S.visoes){S.visoes=[{id:'v1',nome:'Minhas em negociação',dono:null,f:{resp:['eu'],fase:[faseEnt()],status:['ativo']}},{id:'v2',nome:'Quentes (4 e 5)',dono:null,f:{temp:['4','5'],status:['ativo']}},
-  {id:'v3',nome:'Prazo estourado',dono:null,f:{atrasada:true}},{id:'v4',nome:'Paradas há 30 dias',dono:null,f:{parado:30,status:['ativo','stand_by']}},{id:'v5',nome:'Comprados',dono:null,f:{fase:[faseEnt()],status:['concluido']}}]}
+function fxVisoes(){if(!S.visoes||S.visoesV!==2){const minhas=(S.visoes||[]).filter(v=>v.dono||!/^v[1-5]$/.test(v.id));S.visoes=[{id:'v1',nome:'Meus em negociação',dono:null,f:{meus:true,fase:[faseEnt()]}},{id:'v2',nome:'Quentes (4 e 5)',dono:null,f:{temp:['4','5']}},{id:'v3',nome:'Com proposta ativa',dono:null,f:{temProp:['sim']}},...minhas];S.visoes.forEach(v=>fxSoValidos(v.f));S.visoesV=2}
   return S.visoes.filter(v=>!v.dono||v.dono===me())}
 
 /* ---------- a gaveta ---------- */
@@ -171,7 +174,7 @@ function fxCampo(d,ctx){if(!fxValeEm(d,ctx)&&d.vis&&!d.vis())return d.dica?`<div
     return `<div class="fx-c"><div class="fx-l">${esc(d.l)}${d.un?' ('+d.un+')':''}${dica}</div><div class="fx-r"><input class="fx-in" inputmode="decimal" data-fx="${d.k}" data-p="min" placeholder="Mínimo" value="${fmt(w.min)}" aria-label="${esc(d.l)} mínimo"><span>até</span><input class="fx-in" inputmode="decimal" data-fx="${d.k}" data-p="max" placeholder="Máximo" value="${fmt(w.max)}" aria-label="${esc(d.l)} máximo"></div>
       ${sem&&fxTem(d)?`<button class="fx-op fx-mk fx-sem" data-a="fx-sem" data-k="${d.k}" aria-pressed="${!!w.semInfo}">${w.semInfo?ic('check',16):''}Incluir sem informação <span class="q">${sem}</span></button>`:''}${d.un==='R$'?'<div class="fx-hint">Aceita "12 mi" ou "800 mil".</div>':''}</div>`}
   if(d.tipo==='periodo'){const w=v||{};return `<div class="fx-c"><div class="fx-l">${esc(d.l)}</div><div class="fx-r"><input class="fx-in" type="date" data-fx="${d.k}" data-p="min" value="${w.min||''}" aria-label="De"><span>e</span><input class="fx-in" type="date" data-fx="${d.k}" data-p="max" value="${w.max||''}" aria-label="Até"></div></div>`}
-  if(d.tipo==='numero')return `<div class="fx-c"><div class="fx-l">${esc(d.l)}</div><div class="fx-r1"><input class="fx-in" inputmode="numeric" data-fx="${d.k}" value="${v??''}" placeholder="Ex.: 30" aria-label="${esc(d.l)}"><span>dias sem movimentação</span></div></div>`;
+  if(d.tipo==='numero')return `<div class="fx-c"><div class="fx-l">${esc(d.l)}</div><div class="fx-r1"><input class="fx-in" inputmode="numeric" data-fx="${d.k}" value="${v??''}" placeholder="${esc(d.ph||'')}" aria-label="${esc(d.l)}"><span>${esc(d.suf||'')}</span></div></div>`;
   return ''}
 const fxContaMarca=(d,ctx)=>S.terrenos.filter(t=>fxPassa(t,ctx,d.k)&&d.p(t)).length;
 function fxOp(d,o,sel,ctx){const on=sel.includes(o[0]),n=fxConta(d,o[0],ctx);
@@ -182,11 +185,14 @@ function fxDrawer(){let el=$('#fx-dr'),sc=$('#fx-scrim');
   if(!el){sc=document.createElement('div');sc.id='fx-scrim';sc.className='fx-scrim';sc.dataset.a='fx-fechar';document.body.appendChild(sc);
     el=document.createElement('aside');el.id='fx-dr';el.className='fx-dr';el.setAttribute('role','dialog');el.setAttribute('aria-label','Filtros');document.body.appendChild(el)}
   document.body.classList.add('fx-on');
-  const grupos=FX_GRUPOS.map(([g,l])=>{const ds=FX.filter(d=>d.g===g&&!(ctx==='kanban'&&d.funil===true)),ab=UI.fxAb.includes(g),n=ds.filter(d=>fxTem(d)&&d.k!=='arq').length;
-    return `<section class="fx-s"><button class="fx-sh" data-a="fx-grupo" data-v="${g}" aria-expanded="${ab}">${esc(l)}${n?`<span class="fx-sn">${n}</span>`:''}${ic('chev',18)}</button>${ab?`<div class="fx-sb">${g==='funil'&&ctx==='kanban'?'<div class="fx-hint">No quadro, a fase e a etapa vêm da navegação (Fases › fase › etapa).</div>':''}
-      ${fxMarcasJuntas(ds,ctx)}</div>`:''}</section>`}).join('');
+  /* uma seção por vez (pedido do Moisés, 4/nov/2026): os botões no cabeçalho trocam a seção e mostram quantos filtros cada uma tem */
+  const gs=FX_GRUPOS.map(([g,l])=>{const ds=FX.filter(d=>d.g===g&&!(ctx==='kanban'&&d.funil===true));return {g,l,ds,n:ds.filter(d=>fxTem(d)&&d.k!=='arq').length+(g==='gestao'&&UI.fx.arq&&ctx!=='kanban'?1:0)}});
+  if(!gs.some(x=>x.g===UI.fxSec))UI.fxSec=gs[0].g;const cur=gs.find(x=>x.g===UI.fxSec);
+  const abas=`<div class="fx-abas" role="tablist" aria-label="Seções dos filtros">${gs.map(x=>`<button role="tab" class="fx-aba" data-a="fx-sec" data-v="${x.g}" aria-selected="${x.g===cur.g}" aria-controls="fx-sec-b"${x.n?` title="${x.n} filtro${x.n>1?'s':''} nesta seção"`:''}>${esc(x.l)}${x.n?`<span class="fx-sn">${x.n}</span>`:''}</button>`).join('')}</div>`;
+  const corpo=`<section class="fx-s fx-s1" id="fx-sec-b" role="tabpanel"><div class="fx-sb">${cur.g==='funil'&&ctx==='kanban'?'<div class="fx-hint">No quadro, a fase e a etapa vêm da navegação (Funil › fase › etapa).</div>':''}${fxMarcasJuntas(cur.ds,ctx)}</div></section>`;
   el.innerHTML=`<div class="fx-h"><h2>Filtros</h2>${Object.keys(UI.fx).length?'<button class="linkbtn" data-a="fx-limpar">Limpar tudo</button>':''}<button class="iconbtn" data-a="fx-fechar" aria-label="Fechar filtros" title="Fechar (Esc)">${ic('close',22)}</button></div>
-    <div class="fx-b">${grupos}</div><div class="fx-f" id="fx-f">${fxRodapeHtml(ctx)}</div>`;
+    ${abas}<div class="fx-b">${corpo}</div><div class="fx-f" id="fx-f">${fxRodapeHtml(ctx)}</div>`;
+  if(FX_SEC_TROCOU){FX_SEC_TROCOU=false;el.querySelector('.fx-aba[aria-selected=true]')?.scrollIntoView({block:'nearest',inline:'nearest'});el.querySelector('.fx-b').scrollTop=0;return}
   el.querySelector('.fx-b').scrollTop=top}
 /* marcas soltas (prazo, aprovação, pendências) ficam juntas numa linha de botões */
 function fxMarcasJuntas(ds,ctx){let h='',mk=[];const sai=()=>{if(mk.length){h+=`<div class="fx-ops">${mk.join('')}</div>`;mk=[]}};
@@ -203,9 +209,9 @@ function fxLerNum(s){s=String(s||'').trim().toLowerCase().replace(/r\$\s*/,'');i
 /* ---------- eventos ---------- */
 function fxAcao(a){const k=a.dataset.k,v=a.dataset.v;
   switch(a.dataset.a){
-    case 'fx-abrir':FX_ABERTO=!FX_ABERTO;if(FX_ABERTO&&UI.fichaSheet){UI.fichaSheet=null;fichaSheet()}fxDrawer();const b=$('.fx-btn');b?.setAttribute('aria-expanded',FX_ABERTO);if(FX_ABERTO)setTimeout(()=>$('#fx-dr .fx-sh')?.focus(),30);return true;
+    case 'fx-abrir':FX_ABERTO=!FX_ABERTO;if(FX_ABERTO&&UI.fichaSheet){UI.fichaSheet=null;fichaSheet()}fxDrawer();const b=$('.fx-btn');b?.setAttribute('aria-expanded',FX_ABERTO);if(FX_ABERTO)setTimeout(()=>$('#fx-dr .fx-aba[aria-selected=true]')?.focus(),30);return true;
     case 'fx-fechar':FX_ABERTO=false;fxDrawer();$('.fx-btn')?.setAttribute('aria-expanded','false');return true;
-    case 'fx-grupo':UI.fxAb=UI.fxAb.includes(v)?UI.fxAb.filter(x=>x!==v):[...UI.fxAb,v];fxDrawer();return true;
+    case 'fx-sec':UI.fxSec=v;FX_SEC_TROCOU=true;fxDrawer();return true;
     case 'fx-op':{const cur=fxSel(k);UI.fx[k]=cur.includes(v)?cur.filter(x=>x!==v):[...cur,v];if(!UI.fx[k].length)fxTira(k);fxAplicar();return true}
     case 'fx-marca':UI.fx[k]=!UI.fx[k];if(!UI.fx[k])delete UI.fx[k];fxAplicar();return true;
     case 'fx-sem':UI.fx[k]={...UI.fx[k],semInfo:!UI.fx[k]?.semInfo};fxAplicar();return true;

@@ -11,7 +11,9 @@
 --                     comerciais marcadas para deduzir (ITBI e registro de
 --                     unidades vendidas, Produto Caixa)
 --   Custo de obras, em camadas:
---     obra incidente (típico) = valor unitário (R$/m²) × área privativa total
+--     obra incidente (típico) = valor unitário (R$/m²) × área privativa total,
+--                     ou × área construída total (obra_base 'construida'; decisão
+--                     do Moisés, 3/nov/2026, lote 4 da ficha em abas)
 --     itens atípicos          bases: área privativa, % do típico, % do VGV, verba
 --     obra raso    = incidente + atípicos
 --     obra não incidente      + % do raso
@@ -161,6 +163,8 @@ alter table app.viabilidades
   add column tipo               text not null default 'externa' check (tipo in ('externa','estatica')),
   -- digitados
   add column custo_m2           numeric(12,2) check (custo_m2 >= 0),             -- obra incidente: valor unitário (R$/m²)
+  add column obra_base          text not null default 'privativa' check (obra_base in ('privativa','construida')),  -- o R$/m² multiplica qual área
+  add column area_construida    numeric(14,2) check (area_construida > 0),       -- digitada; com estudo de massa, vem dele
   add column permuta_fin_pct    numeric(7,4) check (permuta_fin_pct between 0 and 100),
   add column deducao_vgv_pct    numeric(7,4) check (deducao_vgv_pct between 0 and 100),
   add column minimo_garantido   numeric(16,2) check (minimo_garantido >= 0),
@@ -359,7 +363,7 @@ begin
   v_dedp := round(v_vv * coalesce(v.deducao_vgv_pct, 0) / 100, 2);
   v_liq := v_vv - v_dedp - v_dedc;
   -- obra em camadas
-  v_oi := round(coalesce(v.custo_m2, 0) * v_area, 2);
+  v_oi := round(coalesce(v.custo_m2, 0) * case when v.obra_base = 'construida' then coalesce(v.area_construida, 0) else v_area end, 2);
   b := b || jsonb_build_object('pct_obra_tipica', v_oi);
   v_raso := v_oi + app._viab_soma(p_id, array['obra_atipica'], b);
   b := b || jsonb_build_object('pct_obra_raso', v_raso);
@@ -396,7 +400,7 @@ begin
            where l.viabilidade_id = p_id) y;
   v_lucro := v_l0 - v_lucro;
   return jsonb_build_object(
-    'area_privativa', v_area, 'unidades', v_un, 'unidades_permuta', v_unp, 'unidades_comissao', v_unc,
+    'area_privativa', v_area, 'area_construida', v.area_construida, 'obra_base', v.obra_base, 'unidades', v_un, 'unidades_permuta', v_unp, 'unidades_comissao', v_unc,
     'area_permuta', v_ap, 'area_comissao', v_ac,
     'vgv', v_vgv, 'permuta', v_vp, 'comissao', v_vc, 'vgv_vendido', v_vv,
     'deducao_pct', v_dedp, 'deducao_comercial', v_dedc, 'deducoes', v_dedp + v_dedc, 'vgv_liquido', v_liq,
@@ -557,7 +561,7 @@ begin
   end if;
   if p_da_empresa then perform app.exigir_administrador(v.empresa_id); end if;
   select jsonb_build_object(
-           'custo_m2', v.custo_m2, 'deducao_vgv_pct', v.deducao_vgv_pct, 'deduz_vgv', to_jsonb(v.deduz_vgv),
+           'custo_m2', v.custo_m2, 'obra_base', v.obra_base, 'deducao_vgv_pct', v.deducao_vgv_pct, 'deduz_vgv', to_jsonb(v.deduz_vgv),
            'linhas', coalesce(jsonb_agg(jsonb_build_object('despesa', l.despesa, 'tipo', l.tipo, 'valor', l.valor, 'quantidade', l.quantidade)
                                         order by l.ordem, l.criado_em), '[]'::jsonb))
     into v_dados
@@ -634,19 +638,24 @@ begin
   end if;
   if m.id is not null then
     o.custo_m2 := (m.dados->>'custo_m2')::numeric;
+    o.obra_base := coalesce(m.dados->>'obra_base', 'privativa');
     o.deducao_vgv_pct := (m.dados->>'deducao_vgv_pct')::numeric;
     select coalesce(array_agg(x), '{}') into o.deduz_vgv from jsonb_array_elements_text(coalesce(m.dados->'deduz_vgv', '[]')) x
      where exists (select 1 from app.viabilidade_despesas d where d.empresa_id = t.empresa_id and d.codigo = x and d.deduz_vgv);
   end if;
-  insert into app.viabilidades (empresa_id, terreno_id, nome, tipo, custo_m2, permuta_fin_pct, deducao_vgv_pct,
-                                minimo_garantido, deduz_vgv, pagamento_dinheiro, comissao_dinheiro)
-  values (t.empresa_id, t.id, trim(p_nome), 'estatica', o.custo_m2, o.permuta_fin_pct, o.deducao_vgv_pct,
-          o.minimo_garantido, coalesce(o.deduz_vgv, '{}'), o.pagamento_dinheiro, o.comissao_dinheiro) returning id into v_id;
+  -- a cópia leva o vínculo com o estudo de massa (e as tipologias presas a ele)
+  insert into app.viabilidades (empresa_id, terreno_id, nome, tipo, custo_m2, obra_base, area_construida, permuta_fin_pct, deducao_vgv_pct,
+                                minimo_garantido, deduz_vgv, pagamento_dinheiro, comissao_dinheiro, estudo_massa_id, segue_massa_valido)
+  values (t.empresa_id, t.id, trim(p_nome), 'estatica', o.custo_m2, coalesce(o.obra_base, 'privativa'), o.area_construida, o.permuta_fin_pct, o.deducao_vgv_pct,
+          o.minimo_garantido, coalesce(o.deduz_vgv, '{}'), o.pagamento_dinheiro, o.comissao_dinheiro,
+          o.estudo_massa_id, coalesce(o.segue_massa_valido, false)) returning id into v_id;
   perform set_config('app.viab_criando', 'on', true);
   if p_copiar_de is not null then
-    insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, ordem, nome, area_privativa, quantidade, quantidade_permuta, quantidade_comissao, preco_unitario, preco_m2)
-    select empresa_id, v_id, ordem, nome, area_privativa, quantidade, quantidade_permuta, quantidade_comissao, preco_unitario, preco_m2
+    perform set_config('app.massa_sync', 'on', true);
+    insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, ordem, nome, area_privativa, quantidade, quantidade_permuta, quantidade_comissao, preco_unitario, preco_m2, massa_tipologia_id)
+    select empresa_id, v_id, ordem, nome, area_privativa, quantidade, quantidade_permuta, quantidade_comissao, preco_unitario, preco_m2, massa_tipologia_id
       from app.viabilidade_tipologias where viabilidade_id = p_copiar_de order by ordem, criado_em;
+    perform set_config('app.massa_sync', '', true);
     insert into app.viabilidade_linhas (empresa_id, viabilidade_id, ordem, despesa, tipo, valor, quantidade)
     select l.empresa_id, v_id, l.ordem, l.despesa, l.tipo, l.valor, l.quantidade
       from app.viabilidade_linhas l join app.viabilidade_despesas d on d.empresa_id = l.empresa_id and d.codigo = l.despesa and d.ativo
@@ -685,8 +694,11 @@ begin
   select * into v from app.viabilidades where id = p_id for update;
   if not found then raise exception 'Estudo não encontrado' using errcode = 'P0002'; end if;
   perform app.exigir_editor(v.empresa_id);
-  perform app._chaves_permitidas(p_dados, array['nome','custo_m2','permuta_fin_pct','deducao_vgv_pct',
+  perform app._chaves_permitidas(p_dados, array['nome','custo_m2','obra_base','area_construida','permuta_fin_pct','deducao_vgv_pct',
                                                 'minimo_garantido','deduz_vgv','pagamento_dinheiro','comissao_dinheiro']);
+  if p_dados ? 'area_construida' and v.estudo_massa_id is not null then
+    raise exception 'A área construída vem do estudo de massa' using errcode = '23514';
+  end if;
   if p_dados ? 'nome' and length(trim(coalesce(p_dados->>'nome', ''))) = 0 then raise exception 'Dê um nome ao estudo' using errcode = '22023'; end if;
   if p_dados ? 'deduz_vgv' then
     select coalesce(array_agg(distinct x), '{}') into v_ded from jsonb_array_elements_text(p_dados->'deduz_vgv') x;
@@ -698,6 +710,8 @@ begin
   update app.viabilidades set
     nome = case when p_dados ? 'nome' then trim(p_dados->>'nome') else nome end,
     custo_m2           = case when p_dados ? 'custo_m2'           then (p_dados->>'custo_m2')::numeric           else custo_m2 end,
+    obra_base          = case when p_dados ? 'obra_base'          then p_dados->>'obra_base'                     else obra_base end,
+    area_construida    = case when p_dados ? 'area_construida'    then (p_dados->>'area_construida')::numeric    else area_construida end,
     permuta_fin_pct    = case when p_dados ? 'permuta_fin_pct'    then (p_dados->>'permuta_fin_pct')::numeric    else permuta_fin_pct end,
     deducao_vgv_pct    = case when p_dados ? 'deducao_vgv_pct'    then (p_dados->>'deducao_vgv_pct')::numeric    else deducao_vgv_pct end,
     minimo_garantido   = case when p_dados ? 'minimo_garantido'   then (p_dados->>'minimo_garantido')::numeric   else minimo_garantido end,

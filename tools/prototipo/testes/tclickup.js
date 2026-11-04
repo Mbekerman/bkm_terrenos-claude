@@ -32,7 +32,7 @@ let s=await est(p);const t0=s.terrenos[0];
 await nav(p,'tarefas');await vista(p,'lista');
 ok(await p.$$eval('.tl-g',x=>x.length)>=3&&!!(await p.$('.tl-gh .tl-st.st-fazer')),'Lista agrupa por status, com o chip tonal da lista');
 await muda(p,'#tl-agr','terreno');await p.waitForTimeout(200);
-ok((await p.$$eval('.tl-gh .tl-gn',x=>x.map(y=>y.textContent))).some(x=>x.includes('TER-')),'agrupar por terreno');
+ok((await p.$$eval('.tl-gh .tl-gn',x=>x.map(y=>y.textContent))).some(x=>/^[A-Z]\d{3}/.test(x)||x.includes(' · ')),'agrupar por terreno');
 await muda(p,'#tl-agr','status');await p.waitForTimeout(200);
 const kl=s.terrenos.flatMap(t=>t.tarefas.map(k=>({t,k}))).find(({k})=>!k.feita&&!k.arq&&!k.modelo&&!(k.aprov||[]).length&&!(k.checklists||[]).some(c=>c.itens.some(i=>!i.feito))&&!s.terrenos.some(t=>t.tarefas.some(x=>x.mae===k.id&&!x.feita))&&!(k.campos&&0));
 await p.evaluate(([tid,kid])=>document.querySelector(`.tl-r[data-id="${tid}"][data-tk="${kid}"] [data-a=tl-feito]`).click(),[kl.t.id,kl.k.id]);await p.waitForTimeout(200);

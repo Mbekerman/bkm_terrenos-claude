@@ -17,7 +17,11 @@ const ccM2=v=>v==null?'—':brl(v)+'/m²';
    (atrapalhava a leitura do mapa); o nome fica no quadro que abre ao tocar */
 const CC_PREDIO='<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 21V5l8-3v19M12 9l8 3v9M2 21h20M7 8h2M7 12h2M7 16h2M15 14h2M15 18h2"/></svg>';
 const ccMarcaHtml=()=>`<span class="conc-b">${CC_PREDIO}</span>`;
-const ccAtivos=()=>(S.concorrentes||[]).filter(c=>c.ativo!==false);
+/* Decisão do Moisés (4/nov/2026): por ora, sem concorrência cadastrada à mão; só o mercado do Órulo (proto_mercado.js).
+   O cadastro fica no código e no banco (tabelas concorrencia_*), desligado: sem ícones, sem item na legenda e sem
+   "Nova concorrência" no menu do mapa. Para voltar, CC_MANUAL = true. */
+const CC_MANUAL=false;
+const ccAtivos=()=>CC_MANUAL?(S.concorrentes||[]).filter(c=>c.ativo!==false):[];
 const ccC=id=>(S.concorrentes||[]).find(c=>c.id===id);
 const ccEmp=id=>(S.concEmpresas||[]).find(e=>e.id===id);
 const ccEmpN=c=>ccEmp(c.emp)?.nome||'';
@@ -61,7 +65,7 @@ function ccBoxHtml(c){const r=ccResumo(c),ro=UI.role==='Leitura',ts=(c.tip||[]).
   ${c.obs?`<div class="cc-meta">${esc(c.obs)}</div>`:''}
   ${ro?'':`<div class="cc-ac">${CC.desativar?`<span class="muted">Tirar do mapa? O histórico fica.</span><button class="btn text sm" data-a="cc-desat-n">Não</button><button class="btn sm" data-a="cc-desat-s">Desativar</button>`
     :`<button class="btn primary sm" data-a="cc-precos" ${ts.length?'':'disabled'}>Atualizar preços</button><button class="btn sm" data-a="cc-editar">Editar</button><button class="btn text sm" data-a="cc-desat">Desativar</button>`}</div>`}</div>`}
-function ccBox(){const area=$('.mapa-area');let el=$('#cc-box');const c=CC.box&&UI.route==='mapa'?ccC(CC.box):null;
+function ccBox(){const area=$('.mapa-area');let el=$('#cc-box');const c=CC.box&&naMapa()?ccC(CC.box):null;
   if(!c||c.ativo===false||!area){el?.remove();if(!c)CC.box=null;return}
   if(!el||el.parentNode!==area){el?.remove();el=document.createElement('div');el.id='cc-box';area.appendChild(el)}
   el.innerHTML=ccBoxHtml(c)}
@@ -162,7 +166,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!UI.modal){if($('#c
   else if((e.key==='Enter'||e.key===' ')&&e.target.matches?.('.cc-tr[data-a]')){e.preventDefault();e.target.click()}},true);
 document.addEventListener('mousedown',e=>{const d=$('#cc-emp-dlg');if(d&&e.target===d)d.remove()});
 /* o quadro acompanha os redesenhos da página Mapa; fora dela, quadro e gaveta fecham */
-const _posRenderCc=posRender;posRender=function(){_posRenderCc.apply(this,arguments);if(UI.route!=='mapa'){CC.box=null;if(CC.dr)ccFecharDr()}ccBox()};
+const _posRenderCc=posRender;posRender=function(){_posRenderCc.apply(this,arguments);if(!naMapa()){CC.box=null;if(CC.dr)ccFecharDr()}ccBox()};
 /* um painel por vez: filtros, ficha do terreno e a gaveta da concorrência; selecionar um terreno fecha o quadro */
 const _fxDrawerCc=fxDrawer;fxDrawer=function(){if(FX_ABERTO&&CC.dr)ccFecharDr();return _fxDrawerCc.apply(this,arguments)};
 const _fichaSheetCc=fichaSheet;fichaSheet=function(){if(UI.fichaSheet){if(CC.dr)ccFecharDr();ccFechar()}return _fichaSheetCc.apply(this,arguments)};

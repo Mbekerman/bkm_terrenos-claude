@@ -12,7 +12,7 @@ const p=await ctx.newPage();p.on('pageerror',e=>errs.push(tag+': '+e.message));
 await p.goto('file:///x/a.html');await p.evaluate(t=>{localStorage.clear();localStorage.setItem('bkm-terrenos-tema',t)},tema);await p.reload();await p.waitForTimeout(400);
 const abrir=async()=>{await p.evaluate(()=>document.querySelector('[data-a=nav][data-r=terrenos]').click());await p.waitForTimeout(200);
 await p.evaluate(()=>[...document.querySelectorAll('[data-a=abrir]')].find(x=>x.textContent.includes('Barão')).click());await p.waitForTimeout(500);
-await p.evaluate(()=>{const b=[...document.querySelectorAll('[data-a=bloco]')].find(x=>/Cadastro/.test(x.textContent));b&&b.getAttribute('aria-expanded')!=='true'&&b.click()});await p.waitForTimeout(300)};
+await p.evaluate(()=>{const b=document.querySelector('.fi-abas [data-t=terreno]');b&&b.getAttribute('aria-selected')!=='true'&&b.click()});await p.waitForTimeout(300)};
 await abrir();
 const cards=await p.$$eval('#sec-areas .area',e=>e.map(x=>x.innerText.replace(/\s+/g,' ')));
 ok(cards.length===5&&/Poligonal/.test(cards[4])&&/m²/.test(cards[4]),tag+' cinco áreas, a quinta é a da poligonal: '+cards[4]);
@@ -30,8 +30,8 @@ await p.evaluate(k=>{const d=JSON.parse(localStorage.getItem(k));const t=d.terre
 await p.reload();await p.waitForTimeout(500);await abrir();
 const c2=await p.$$eval('#sec-areas .area',e=>e.map(x=>x.innerText.replace(/\s+/g,' ')));const pol2=nm(c2[4]);
 ok(pol2&&pol2!==pol&&nm(await kv())===pol2,tag+' ajuste na poligonal muda a adotada '+pol+' → '+pol2);
-const visao=await p.evaluate(()=>document.querySelector('.kvl')?.innerText.replace(/\s+/g,' '));
-ok(/Área adotada/.test(visao)&&/Poligonal/.test(visao),tag+' Visão geral mostra a adotada pela poligonal');
+await p.click('.fi-abas [data-t=geral]');await p.waitForTimeout(200);const visao=await p.evaluate(()=>document.querySelector('#bl-geral .kvl')?.innerText.replace(/\s+/g,' '));
+ok(/Área adotada/.test(visao)&&/Poligonal/.test(visao),tag+' Visão geral mostra a adotada pela poligonal');await p.click('.fi-abas [data-t=terreno]');await p.waitForTimeout(200);
 await p.evaluate(()=>document.querySelector('#sec-areas').scrollIntoView({block:'start'}));await p.screenshot({path:OUT+tag+'_2adotada.png'});
 await ctx.close()}
 await b.close();console.log(errs.length?'\nFALHAS: '+errs.length+'\n'+errs.join('\n'):'\ntudo ok');process.exit(errs.length?1:0)})();

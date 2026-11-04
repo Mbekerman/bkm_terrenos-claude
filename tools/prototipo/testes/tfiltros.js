@@ -1,4 +1,4 @@
-// Filtros de terrenos: gaveta à direita (tela cheia no celular), a mesma seleção em Terrenos, Mapa e Fases,
+// Filtros de terrenos: gaveta à direita (tela cheia no celular), cada página (Pipeline, Mapa, Funil) com a sua seleção (ver tfxpag),
 // chips com X, Limpar, contagem por opção, campos que dependem de outro (etapa da fase, região da cidade),
 // faixa com "Incluir sem informação", visões salvas, filtro no endereço da página, Esc, ficha do mapa
 // fecha a gaveta e temperatura só no terreno (parte sem temperatura). Claro, escuro e celular.
@@ -11,7 +11,10 @@ async function abre(w,h,tema){const ctx=await b.newContext({viewport:{width:w,he
   await ctx.route('**/*',r=>{const u=r.request().url();if(u.startsWith('file://'))return r.fulfill({path:F,contentType:'text/html; charset=utf-8'});if(/leaflet.js|jszip/.test(u))return r.fulfill({path:L+(u.includes('leaflet')?'leaflet.js':'jszip.min.js'),contentType:'application/javascript'});if(/cartocdn|openstreetmap|arcgisonline/.test(u))return r.fulfill({path:require('path').join(__dirname,'tile.png'),contentType:'image/png'});return r.abort()});
   const p=await ctx.newPage();p.on('pageerror',e=>erros.push(e.message));await p.goto('file:///x/a.html');await p.evaluate(t=>{localStorage.clear();sessionStorage.clear();if(t)localStorage.setItem('bkm-terrenos-tema',t)},tema);await p.reload();await p.waitForTimeout(300);return {p,ctx}}
 const nav=async(p,r)=>{await p.evaluate(r=>document.querySelector(`[data-a=nav][data-r=${r}]`).click(),r);await p.waitForTimeout(250)};
-const clica=async(p,s)=>{await p.evaluate(s=>{const e=document.querySelector(s);if(!e)throw new Error('sem '+s);e.click()},s);await p.waitForTimeout(200)};
+/* a gaveta mostra uma seção por vez: procura o item passando pelos botões das seções */
+const clica=async(p,s)=>{await p.evaluate(s=>{let e=document.querySelector(s);
+  if(!e&&s.startsWith('#fx-dr'))for(const g of [...document.querySelectorAll('#fx-dr .fx-aba')].map(x=>x.dataset.v)){document.querySelector(`#fx-dr .fx-aba[data-v="${g}"]`).click();e=document.querySelector(s);if(e)break}
+  if(!e)throw new Error('sem '+s);e.click()},s);await p.waitForTimeout(200)};
 const op=async(p,k,v)=>clica(p,`#fx-dr [data-a=fx-op][data-k=${k}][data-v="${v}"]`);
 const txt=(p,s)=>p.evaluate(s=>[...document.querySelectorAll(s)].filter(x=>x.offsetParent||x.closest('#fx-dr')).map(x=>x.textContent.trim().replace(/\s+/g,' ')).join(' | '),s);
 const conta=(p,s)=>p.evaluate(s=>document.querySelectorAll(s).length,s);
@@ -23,7 +26,7 @@ const S0=await estado(p);const naoArq=S0.terrenos.filter(t=>t.situacao!=='arquiv
 ok(await conta(p,'.fchip')===0&&await conta(p,'#fx-barra .fx-btn')===1,'Terrenos: os chips antigos saíram; botão Filtros na barra');
 ok((await linhas(p)).length===naoArq.length,`sem filtro, todos os terrenos não arquivados (${naoArq.length})`);
 await clica(p,'[data-a=fx-abrir]');
-ok(await conta(p,'#fx-dr')===1&&(await txt(p,'#fx-dr .fx-sh')).includes('Comercial'),'botão abre a gaveta com os grupos');
+ok(await conta(p,'#fx-dr')===1&&(await txt(p,'#fx-dr .fx-abas')).includes('Comercial'),'botão abre a gaveta com os botões das seções');
 ok(!(await txt(p,'#fx-dr .fx-sb')).includes('Testada')&&!(await txt(p,'#fx-dr')).includes('CA máximo'),'sem testada nem CA (decisão do Moisés)');
 ok((await txt(p,'#fx-dr')).includes('Marque uma fase para escolher as etapas'),'etapa só depois de escolher a fase');
 await op(p,'fase','novos_negocios');
@@ -55,10 +58,10 @@ const comFiltro=(await linhas(p)).length;
 await clica(p,'#fx-barra [data-a=fx-limpar]');ok((await linhas(p)).length===naoArq.length&&!(await conta(p,'#fx-barra .fx-chip')),'Limpar tira todos os filtros');
 await p.evaluate(()=>{const s=document.querySelector('[data-ch=fx-visao]');s.value=[...s.options].find(o=>o.textContent.includes('Negociação em SP')).value;s.dispatchEvent(new Event('change',{bubbles:true}))});await p.waitForTimeout(250);
 ok((await linhas(p)).length===comFiltro,'escolher a visão volta aos filtros dela');
-// Mapa: mesma seleção
+// Mapa: seleção própria (pedido do Moisés, 4/nov/2026)
 await nav(p,'mapa');await p.waitForTimeout(300);
 ok(!(await conta(p,'#mp-cor'))&&!(await conta(p,'#mp-zona')),'Mapa: seletores Corretor e Região saíram para o painel');
-const nMapa=await conta(p,'#mp-lista .mp-it');ok(nMapa===comFiltro,`Mapa usa os mesmos filtros (${nMapa} na lista)`);
+const nMapa=await conta(p,'#mp-lista .mp-it');ok(nMapa>comFiltro&&!(await conta(p,'#fx-barra .fx-chip')),`Mapa não herda o filtro do Pipeline (${nMapa} na lista)`);
 ok(await conta(p,'#fx-dr')===1,'a gaveta continua aberta ao trocar de página');
 await p.screenshot({path:O+'2_mapa_gaveta.png'});
 await p.evaluate(()=>document.querySelector('#mp-lista [data-a=fs-abrir]').click());await p.waitForTimeout(300);
@@ -66,7 +69,7 @@ ok(await conta(p,'#ficha-sheet')===1&&!(await conta(p,'#fx-dr')),'abrir a ficha 
 await clica(p,'[data-a=fs-fechar]');await clica(p,'[data-a=fx-abrir]');ok(await conta(p,'#fx-dr')===1&&!(await conta(p,'#ficha-sheet')),'abrir a gaveta fecha a ficha');
 // Fases: a descida é o filtro do funil
 await nav(p,'negociacoes');
-ok((await txt(p,'#fx-dr')).includes('vêm da navegação')&&!(await conta(p,'#fx-dr [data-k=fase]')),'Fases: no quadro, fase e etapa vêm da navegação');
+await clica(p,'#fx-dr .fx-aba[data-v=funil]');ok((await txt(p,'#fx-dr')).includes('vêm da navegação')&&!(await conta(p,'#fx-dr [data-k=fase]')),'Fases: no quadro, fase e etapa vêm da navegação');
 ok(!(await txt(p,'#fx-barra .fx-chip')).includes('Etapa'),'Fases: o chip da etapa não vale no quadro');
 await op(p,'temp','5');
 const kt=await p.evaluate(()=>[...document.querySelectorAll('#board .kcard')].map(k=>k.dataset.id));const S2=await estado(p);
@@ -74,9 +77,9 @@ ok(kt.length>0&&kt.every(id=>S2.terrenos.find(t=>t.id===id).neg?.temp===5),'Fase
 await p.screenshot({path:O+'3_kanban_gaveta.png'});
 await p.keyboard.press('Escape');await p.waitForTimeout(150);ok(!(await conta(p,'#fx-dr')),'Esc fecha a gaveta');
 // partes: sem temperatura por parte
-await clica(p,'#fx-barra [data-a=fx-limpar]');await nav(p,'terrenos');
+await clica(p,'#fx-barra [data-a=fx-limpar]');await nav(p,'terrenos');if(await conta(p,'#fx-barra [data-a=fx-limpar]'))await clica(p,'#fx-barra [data-a=fx-limpar]');
 await p.evaluate(()=>[...document.querySelectorAll('[data-a=abrir]')].find(x=>x.textContent.includes('Ibitirama')).click());await p.waitForTimeout(400);
-await p.evaluate(()=>{const b=document.querySelector('[data-a=bloco][data-t=negociacao]');if(b&&b.getAttribute('aria-expanded')!=='true')b.click()});await p.waitForTimeout(250);
+await p.evaluate(()=>{const b=document.querySelector('.fi-abas [data-t=comercial]');if(b&&b.getAttribute('aria-selected')!=='true')b.click()});await p.waitForTimeout(250);
 ok(await conta(p,'.pt-card')>=3&&!(await txt(p,'.pt-card')).includes('Temperatura'),'parte sem temperatura: é uma só, a da negociação do terreno');
 await ctx.close();
 // endereço com filtro abre já filtrado

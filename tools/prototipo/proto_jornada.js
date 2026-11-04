@@ -143,7 +143,7 @@ function jnCfgHtml(){const fs=fasesL().filter(f=>f.ativo!==false),f=fs.some(x=>x
       return `<section class="sec jn-sec"><div class="sec-h"><h2>Para sair de ${esc(s.nome)}</h2><span class="faint">subetapa</span></div><div class="sec-b">${a.map(jnItemLinha).join('')}${b.map(r=>jnTarLinha(f,r)).join('')}${a.length||b.length?'':'<p class="faint jn-vazio">Nada exigido.</p>'}${jnAdd(f,e,s.k,[['jn-nova','Pergunta'],['jn-tar','Tarefa']])}</div></section>`}).join('')}
     <section class="sec jn-sec"><div class="sec-h"><h2>Regras pelo valor da resposta</h2></div><div class="sec-b">
       ${jnRegrasV().filter(r=>r.fase===f&&r.etapa===e).sort(ord).map(r=>jnLinha('raio',esc(r.msg),`${r.sub?'Para sair de '+esc(etNomeS(f,r.sub)):'Para sair da etapa'} · quando ${esc(itCondFrase(r.cond))}`,
-        jnSel(`data-jnr="rv:${r.id}"`,r.acao,JN_ACAO,'O que acontece'),'',`<button class="btn sm text" data-a="jn-rv-ed" data-v="${r.id}">Editar</button><button class="iconbtn sm lixo" data-a="jn-rv-x" data-v="${r.id}" aria-label="Apagar regra" title="Apagar regra">${ic('lixo',18)}</button>`)).join('')||'<p class="faint jn-vazio">Nenhuma regra. Exemplo: topografia irregular pede aprovação do diretor.</p>'}
+        jnSel(`data-jnr="rv:${r.id}"`,r.acao,JN_ACAO,'O que acontece'),'',`<button class="btn sm text" data-a="jn-rv-ed" data-v="${r.id}">Editar</button><button class="iconbtn sm lixo" data-a="jn-rv-x" data-v="${r.id}" aria-label="Apagar regra" title="Apagar regra">${ic('lixo',18)}</button>`)).join('')||'<p class="faint jn-vazio">Nenhuma regra. Exemplo: relevo acidentado crítico pede aprovação do diretor.</p>'}
       ${jnAdd(f,e,'',[['jn-rv-nova','Regra']])}</div></section>`;
   return `<section class="sec"><div class="sec-h"><h2>Jornada</h2></div><div class="sec-b">
     <p class="muted" style="margin-top:0">O que cada etapa e subetapa pede para avançar: perguntas e campos (a resposta grava no próprio campo do terreno), documentos, pré-requisitos e tarefas. Cada item pode ter condição. Não avança sem: gestor e diretor passam com justificativa. Avança com justificativa: qualquer um passa justificando.</p>
@@ -154,13 +154,17 @@ function jnCfgHtml(){const fs=fasesL().filter(f=>f.ativo!==false),f=fs.some(x=>x
 function jnLugarSel(id,f,e,s){const E=etapaF(f,e);return `<select id="${id}" data-jne="sub"><option value="">${esc(E?.nome||'')} (a etapa toda)</option>${(E?.subs||[]).map(x=>`<option value="${x.k}" ${x.k===s?'selected':''}>${esc(x.nome)}</option>`).join('')}</select>`}
 function jnItemHtml(fechar){const E=UI.jnEd;if(!E)return '';const d=E.campo&&E.campo!=='__novo'?itDef(E.campo):null;
   const usados=jnItens().filter(i=>i.id!==E.id&&i.fase===E.fase&&i.etapa===E.etapa&&(i.sub||null)===(E.sub||null)).map(i=>i.campo);
-  const grupos=Object.entries(IT_ORIG).map(([o,n])=>{const L=IT_CAT.filter(c=>c.origem===o&&(c.chave===E.campo||!usados.includes(c.chave))&&(itDef(c.chave).editavel||c.chave===E.campo||o!=='personalizado')).map(c=>itDef(c.chave));
-    return L.length?`<optgroup label="${esc(n)}">${L.map(c=>`<option value="${c.chave}" ${c.chave===E.campo?'selected':''}>${esc(c.titulo)}${c.editavel?'':' (só leitura)'}</option>`).join('')}</optgroup>`:''}).join('');
+  gvReg('jn',{E:()=>UI.jnEd,valor:()=>UI.jnEd?.campo||'',
+    itens:()=>[...IT_CAT.filter(c=>GV_TAB[gvTabDe(c.origem)]&&(c.chave===E.campo||!usados.includes(c.chave))&&(itDef(c.chave).editavel||c.chave===E.campo||c.origem!=='personalizado')).map(c=>itDef(c.chave))
+        .map(c=>({v:c.chave,tab:gvTabDe(c.origem),titulo:c.titulo,meta:`${c.origem==='personalizado'?'campo novo · ':''}${IT_TIPO[c.tipo]||c.tipo}${c.editavel?'':' · só leitura'}`})),
+      {v:'__novo',tab:'terreno',titulo:'Criar campo novo do terreno…',meta:'entra em Configurações › Campos',sempre:true}],
+    escolher:v=>{const E=UI.jnEd;E.campo=v;E.forma=null;if(v==='__novo')E.novo=E.novo||{tipo:'texto'};renderModal();setTimeout(()=>document.querySelector(v==='__novo'?'#jne-nt':'#jne-p')?.focus(),0)},
+    tabela:(tab,tira)=>{if(tira){UI.jnEd.campo='';UI.jnEd.forma=null}renderModal()}});
   const N=E.novo||{},tipo=d?d.tipo:N.tipo||'texto',nop=d?(d.opcoes?Object.keys(d.opcoes()).length:0):(N.opcoes||'').split('\n').filter(x=>x.trim()).length,formas=fmFormas(tipo,nop);
   return `<div class="dh"><div><h2>${E.id?'Editar pergunta':'Nova pergunta'}</h2><div class="muted" style="margin-top:4px">${esc(faseN(E.fase))} › ${esc(etNomeE(E.fase,E.etapa))}</div></div>${fechar}</div>
   <div class="fields jn-form">
     <div class="field"><label for="jne-s">Vale para sair de</label>${jnLugarSel('jne-s',E.fase,E.etapa,E.sub)}</div>
-    <div class="field"><label for="jne-c">Onde grava a resposta</label><select id="jne-c" data-jne="campo"><option value="">Escolha o campo</option>${grupos}<option value="__novo" ${E.campo==='__novo'?'selected':''}>Criar campo novo do terreno…</option></select></div>
+    <div class="field full" role="group" aria-labelledby="jne-cl"><span class="lbl-f" id="jne-cl">Onde grava a resposta</span>${gvHtml('jn','jne-c')}</div>
     ${E.campo==='__novo'?`<div class="field"><label for="jne-nt">Nome do campo novo</label><input id="jne-nt" data-jne="n.titulo" value="${esc(N.titulo||'')}" placeholder="Ex.: Recuo frontal atende"></div>
       <div class="field"><label for="jne-ny">Tipo</label><select id="jne-ny" data-jne="n.tipo">${Object.entries(JN_TIPO).map(([k,n])=>`<option value="${k}" ${k===(N.tipo||'texto')?'selected':''}>${n}</option>`).join('')}</select></div>
       ${(N.tipo||'texto')==='lista'?`<div class="field full"><label for="jne-no">Opções (uma por linha)</label><textarea id="jne-no" data-jne="n.opcoes" placeholder="Sim&#10;Não&#10;A verificar">${esc(N.opcoes||'')}</textarea></div>`:''}
@@ -248,7 +252,7 @@ document.addEventListener('click',e=>{const a=e.target.closest?.('[data-a^="jn-"
   switch(A){
     case 'jn-fase':UI.jnFase=a.dataset.v;UI.jnEtapa=null;render();return;
     case 'jn-etapa':UI.jnEtapa=a.dataset.v;render();return;
-    case 'jn-nova':UI.jnEd={id:null,fase:a.dataset.f,etapa:a.dataset.e,sub:a.dataset.s||null,campo:'',regra:'bloqueia',cond:null};UI.modal='jn-item';renderModal();return;
+    case 'jn-nova':UI.jnEd={id:null,fase:a.dataset.f,etapa:a.dataset.e,sub:a.dataset.s||null,campo:'',regra:'bloqueia',cond:null};UI.modal='jn-item';renderModal();setTimeout(()=>document.querySelector('#jne-c')?.focus(),60);return;
     case 'jn-ed':{const i=jnItens().find(x=>x.id===a.dataset.v);if(!i)return;UI.jnEd=JSON.parse(JSON.stringify(i));UI.modal='jn-item';renderModal();return}
     case 'jn-x':{const i=jnItens().find(x=>x.id===a.dataset.v);if(!i)return;cfg().jornada=jnItens().filter(x=>x!==i);save();render();toast(`${jnTxt(i)} saiu da jornada. As respostas ficam no terreno.`);return}
     case 'jn-e-regra':if(a.dataset.v==='cond'){jnRcAbrir('__ed');return}UI.jnEd.regra=a.dataset.v;UI.jnEd.rc=null;renderModal();return;
@@ -308,12 +312,12 @@ jnCampos().forEach(jnRegistra);
   const ocup={modo:'todas',itens:[{campo:'terreno.situacao_ocupacao',op:'em',valores:['ocupado','parcialmente_ocupado']}]};
   const subE=k=>(etapaF(f,'estudos')?.subs||[]).some(s=>s.k===k)?k:null;
   if(!jnItens().length&&etapaF(f,'estudos'))cfg().jornada=[
-    {id:uid(),fase:f,etapa:'estudos',sub:null,campo:'terreno.topografia',pergunta:'Como é o relevo do terreno?',forma:'chips',regra:'bloqueia',cond:null,ordem:0},
+    {id:uid(),fase:f,etapa:'estudos',sub:null,campo:'terreno.posicao_quadra',pergunta:'Qual a posição do terreno na quadra?',forma:'chips',regra:'bloqueia',cond:null,ordem:0},
     {id:uid(),fase:f,etapa:'estudos',sub:null,campo:'terreno.necessidade_demolicao',pergunta:'Precisa demolir?',forma:'segmentado',regra:'justifica',cond:null,ordem:1},
     {id:uid(),fase:f,etapa:'estudos',sub:null,campo:'terreno.area_construida_demolir_m2',pergunta:'Quanto vai ser demolido?',ajuda:'Área construída a demolir, pela visita ou pela planta.',regra:'justifica',cond:demol,ordem:2},
     {id:uid(),fase:f,etapa:'estudos',sub:subE('estudo_massa'),campo:ch(rec),pergunta:'O recuo frontal atende ao estudo de massa?',forma:'segmentado',regra:'justifica',cond:null,ordem:3},
     {id:uid(),fase:f,etapa:'estudos',sub:subE('estudo_viabilidade'),campo:ch(des),regra:'justifica',cond:ocup,ordem:4}];
   if(!jnRegrasV().length&&etapaF(f,'estudos'))cfg().jornadaRegras=[
-    {id:uid(),fase:f,etapa:'estudos',sub:null,cond:{modo:'todas',itens:[{campo:'terreno.topografia',op:'em',valores:['irregular']}]},acao:'diretor',msg:'Relevo irregular: o diretor aprova a passagem',ativo:true,ordem:0},
+    {id:uid(),fase:f,etapa:'estudos',sub:null,cond:{modo:'todas',itens:[{campo:'terreno.topo_perfil',op:'em',valores:['acidentado_critico']}]},acao:'diretor',msg:'Relevo acidentado crítico: o diretor aprova a passagem',ativo:true,ordem:0},
     {id:uid(),fase:f,etapa:'estudos',sub:null,cond:{modo:'todas',itens:[{campo:'terreno.area_construida_demolir_m2',op:'maior',valores:[1000]}]},acao:'avisa',msg:'Demolição acima de 1.000 m²: confira o custo no estudo',ativo:true,ordem:1}];
   save()})();

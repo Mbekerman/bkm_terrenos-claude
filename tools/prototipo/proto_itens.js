@@ -51,12 +51,12 @@ const IT_CAT=(()=>{const tr=(c)=>[t=>t[c],(t,v)=>{t[c]=v}],of=c=>[t=>ofertaRef(t
   ['terreno.area_documental_m2','Área documental','numero','m²',null,null,1,1,1,...tr('aDoc')],['terreno.area_cadastral_m2','Área cadastral','numero','m²',null,null,1,1,1,...tr('aCad')],
   ['terreno.area_levantamento_m2','Área do levantamento','numero','m²',null,null,1,1,1,...tr('aLev')],['terreno.area_poligonal_m2','Área da poligonal','numero','m²',null,null,0,1,1,...ro(t=>areaPolT(t))],
   ['terreno.area_adotada_m2','Área adotada','numero','m²',null,null,0,1,1,...ro(t=>areaAdotada(t))],['terreno.fonte_area_adotada','Fonte da área adotada','lista',null,itOpc(OPT.fonteArea),null,0,0,0,...ro(t=>t.fonteArea)],
-  ['terreno.testada_principal_m','Testada principal','numero','m',null,null,1,1,1,...tr('testada')],['terreno.topografia','Topografia','lista',null,itSemVazio(OPT.topografia,'nao_informado'),'nao_informado',1,1,1,...tr('topografia')],
+  ['terreno.testada_principal_m','Testada principal','numero','m',null,null,1,1,1,...tr('testada')],['terreno.topo_perfil','Perfil topográfico','lista',null,itOpc({plano:'Plano',inclinado:'Inclinado',acidentado_leve:'Acidentado leve',acidentado_mediano:'Acidentado mediano',acidentado_intenso:'Acidentado intenso',acidentado_agudo:'Acidentado agudo',acidentado_critico:'Acidentado crítico'}),null,0,1,1,...ro(t=>tpAtual(t)?.perfil)],
   ['terreno.desnivel_estimado_m','Desnível estimado','numero','m',null,null,1,1,1,...tr('desnivel')],['terreno.posicao_quadra','Posição na quadra','lista',null,itSemVazio(OPT.posicao,'nao_informado'),'nao_informado',1,0,0,...tr('posicao')],
   ['terreno.formato','Formato do lote','lista',null,itSemVazio(OPT.formato,'nao_informado'),'nao_informado',1,0,0,...tr('formato')],['terreno.situacao_ocupacao','Ocupação','lista',null,itSemVazio(OPT.ocupacao,'nao_informado'),'nao_informado',1,1,1,...tr('ocupacao')],
   ['terreno.uso_atual','Uso atual','texto',null,null,null,1,0,1,...tr('uso')],['terreno.area_construida_existente_m2','Área construída existente','numero','m²',null,null,1,0,1,...tr('aConst')],
   ['terreno.area_construida_demolir_m2','Área a demolir','numero','m²',null,null,1,0,1,...tr('aDemolir')],['terreno.necessidade_demolicao','Precisa demolir','lista',null,itSemVazio(OPT.demolicao,'nao_avaliada'),'nao_avaliada',1,1,1,...tr('demolicao')],
-  ['terreno.observacoes_fisicas','Observações físicas','texto',null,null,null,1,0,0,...tr('obsFis')],['terreno.tipo_empreendimento','Tipo de empreendimento','lista',null,itOpc({mercado:'Mercado',his:'HIS',hmp:'HMP'}),'nao_informado',1,1,1,...tr('tipoEmp')],
+  ['terreno.observacoes_fisicas','Observações físicas','texto',null,null,null,1,0,0,...tr('obsFis')],
   ['negociacao.etapa','Etapa','lista',null,opEt,null,0,1,0,...ng('etapa')],['negociacao.subetapa','Subetapa','lista',null,opSub,null,0,1,0,...ng('sub')],
   ['negociacao.status','Situação da negociação','lista',null,itOpc(STATUS_N),null,0,1,0,...ng('status')],['negociacao.responsavel_id','Responsável da negociação','pessoa',null,opUs,null,0,1,1,...ro(t=>t.neg?.resp||(t.neg?t.resp:null))],
   ['negociacao.temperatura','Temperatura','lista',null,itOpc({1:'1',2:'2',3:'3',4:'4',5:'5'}),null,1,1,1,t=>t.neg?.temp==null?null:String(t.neg.temp),(t,v)=>{if(!t.neg)throw new Error('O terreno não tem negociação.');t.neg.temp=v==null?null:Number(v)}],
@@ -233,7 +233,7 @@ function itCfgCamposHtml(){const f=UI.itCfgF||'todos',q=(UI.itCfgQ||'').toLowerC
     <div class="it-cfgbar"><input class="it-busca" data-itcfgq="1" value="${esc(UI.itCfgQ||'')}" placeholder="Buscar campo" aria-label="Buscar campo">
       <span class="it-seg">${[['todos','Todos'],...Object.entries(IT_ORIG).map(([k,v])=>[k,v.replace(' de referência','').replace(' vigente','')]),['marcados','Marcados']].map(([k,v])=>`<button class="${f===k?'on':''}" data-a="it-cfgf" data-v="${k}" aria-pressed="${f===k}">${v}</button>`).join('')}</span></div>
     <div class="it-tab"><div class="it-tr it-th"><span>Nome no banco</span><span>Título (o nome que o usuário vê)</span><span>Máscara</span><span class="ce">Condição</span><span class="ce">No cartão</span></div>
-    ${L.map(d=>`<div class="it-tr"><span class="it-db"><code>${d.coluna}</code><small>${IT_ORIG[d.origem]} · ${IT_TIPO[d.tipo]}</small></span>
+    ${L.map(d=>`<div class="it-tr"><span class="it-db"><code>${d.coluna}</code><small>${IT_ORIG[d.origem]||"Campo novo do terreno"} · ${IT_TIPO[d.tipo]||d.tipo}</small></span>
       <span><input class="it-tit" value="${esc(d.titulo)}" data-itcfg="titulo" data-v="${d.chave}" aria-label="Título de ${d.coluna}" placeholder="${esc(IT_CAT.find(c=>c.chave===d.chave).titulo)}"></span>
       <span class="it-msk">${fmMascaraCfg(d)}</span>
       <label class="ce"><input type="checkbox" data-itcfg="condicao" data-v="${d.chave}" ${d.condicao?'checked':''}><em>Condição</em></label>
@@ -295,5 +295,5 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="it-"]'
 
 /* exemplo: no primeiro terreno, campos do terreno e um campo personalizado no cartão da análise jurídica, com regras */
 (()=>{if(S.itExemplo)return;S.itExemplo=true;const t=S.terrenos[0];if(!t||!t.tarefas)return;const a=t.tarefas.find(x=>x.titulo==='Análise jurídica da matrícula');if(!a)return;itNorm(a);
-  a.itens.unshift({id:uid(),chave:'terreno.area_documental_m2',regra:'bloqueia',cond:null},{id:uid(),chave:'terreno.necessidade_demolicao',regra:'justificativa',cond:{modo:'todas',itens:[{campo:'terreno.tipo_empreendimento',op:'fora',valores:['mercado']}]}},
+  a.itens.unshift({id:uid(),chave:'terreno.area_documental_m2',regra:'bloqueia',cond:null},{id:uid(),chave:'terreno.necessidade_demolicao',regra:'justificativa',cond:{modo:'todas',itens:[{campo:'terreno.situacao_ocupacao',op:'em',valores:['ocupado','parcialmente_ocupado']}]}},
     {id:uid(),chave:'calculado.forma_pagamento_vigente',regra:'livre',cond:null})})();

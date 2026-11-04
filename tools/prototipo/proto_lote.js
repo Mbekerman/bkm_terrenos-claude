@@ -26,7 +26,7 @@ function campoInsc(pre,cid,rot,obrig){const c=CIDADES_INSC[cid];
 const rotInsc=(c,rot)=>rot?`${rot} (${c.rotulo})`:c.rotulo;
 document.addEventListener('change',e=>{const r=e.target.closest('[data-insc]');if(!r)return;const pre=r.dataset.insc,c=CIDADES_INSC[r.value],el=document.getElementById(pre+'-sql'),lb=document.getElementById(pre+'-sql-l');if(!el)return;
   el.dataset.masc=c.mascara||'';el.inputMode=c.mascara?'numeric':'text';el.placeholder=c.mascara||'Como está no carnê do IPTU';el.value=c.mascara?mascarar(el.value,c.mascara):el.value;
-  if(lb)lb.textContent=rotInsc(c,pre==='i'?'Nova inscrição':'');if(el.form?.dataset.form==='novo')dedupe();if(e.isTrusted)el.focus()});
+  if(lb)lb.textContent=rotInsc(c,pre==='i'?'Nova inscrição':'');if(e.isTrusted)el.focus()});
 
 // Busca na base da cidade da inscrição (só com a inscrição completa).
 const loteBuscavel=ins=>{const c=CIDADES_INSC[insCid(ins)];return !!(c.base&&LOTE_ADAPT[insCid(ins)]?.url()&&digits(ins.sql).length===digitosMasc(c.mascara))};
@@ -54,6 +54,7 @@ function loteRegistrar(t,ins,{lote,poly,areaPol,zonas,erros,camadas,area,aConst}
   if(t.aCad==null&&t.insc.every(x=>x.area!=null)){t.aCad=t.insc.reduce((s,x)=>s+x.area,0);feito.push('área cadastral do terreno')}
   if(t.aConst==null&&aConst!=null&&t.insc.length===1){t.aConst=Number(aConst);feito.push('área construída')}
   if(!t.poly&&t.insc.length===1&&poly){t.poly=poly;feito.push('poligonal');if(t.lat==null){const m=centro(poly);t.lat=+m[0].toFixed(7);t.lng=+m[1].toFixed(7);t.precisao='aproximada'}}
+  const cri=camadas?.cartorio_registro_imovel||[];if(!t.cri&&cri.length===1&&cri[0].cd_numero_cartorio){t.cri=cri[0].cd_numero_cartorio+' CRI';t.criFonte='prefeitura';feito.push('cartório')}
   if(zonas.length&&substituirZonas(t,ins.sql,zonas.map(z=>({sigla:z.sigla,area:z.area_m2,macro:z.macrozona||null})),`${c.base} (${c.rotulo} ${ins.sql})`))feito.push('zonas do lote')
   log(t,`${c.base} consultado pela inscrição ${ins.sql}${feito.length?': '+feito.join(', '):''}`);save();render();
   toast(erros.length?`${c.base} consultado; ${erros.length} camada${erros.length>1?'s':''} não respondeu.`:`${c.base} consultado. Gerando a planta e o desenho...`)}
