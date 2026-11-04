@@ -18,10 +18,10 @@ const abre=async(w,h,tema)=>{const ctx=await b.newContext({viewport:{width:w,hei
 const cartao=(p)=>X(p,()=>{const t=S.terrenos[0];go('terreno',{id:t.id});UI.tkSel={tid:t.id,kid:S.fmExemploK};UI.tkAba='geral';UI.modal='tarefa';renderModal()});
 {const {ctx,p}=await abre(1440,2300,'claro');
 await cartao(p);await p.waitForTimeout(300);
-ok(await p.$eval('#modal .fm',x=>x.textContent.includes('Formulário')&&x.textContent.includes('Qual a topografia do terreno?')),'o cartão tem o bloco Formulário com as perguntas');
+ok(await p.$eval('#modal .fm',x=>x.textContent.includes('Formulário')&&x.textContent.includes('Qual a posição do terreno na quadra?')),'o cartão tem o bloco Formulário com as perguntas');
 const fm=async(n)=>{const st=await p.addStyleTag({content:'#modal *:not(.fm-seg):not(.fm-modo):not(.fm-prog):not(.fm-tg):not(.fm-pvg){max-height:none!important;overflow:visible!important}#modal .dialog{height:auto!important}'});await p.waitForTimeout(50);const el=await p.$('#modal .fm');await el.screenshot({path:O+n});await st.evaluate(x=>x.remove())};
 await p.evaluate(()=>document.querySelector('#modal .fm').scrollIntoView());await fm('1_responder.png');
-const K=()=>X(p,()=>{const t=S.terrenos[0],k=t.tarefas.find(x=>x.id===S.fmExemploK);return {k,t:{ocupacao:t.ocupacao,topografia:t.topografia,aLev:t.aLev,referencia:t.referencia}}});
+const K=()=>X(p,()=>{const t=S.terrenos[0],k=t.tarefas.find(x=>x.id===S.fmExemploK);return {k,t:{ocupacao:t.ocupacao,posicao:t.posicao,aLev:t.aLev,referencia:t.referencia}}});
 const item=async(perg)=>(await K()).k.itens.find(i=>i.pergunta===perg);
 // chave de três estados
 const ich=await item('O proprietário aceita receber a equipe de novo?');
@@ -46,9 +46,9 @@ const ioc=await item('Como está a ocupação hoje?');
 await clica(p,`#fma-${ioc.id} .fm-chips button`,'Vazio');await p.waitForTimeout(150);
 ok((await K()).t.ocupacao==='vazio','a pergunta em chips grava no próprio terreno (Ocupação)');
 // botões de opção
-const itp=await item('Qual a topografia do terreno?');
-await muda(p,`#fma-${itp.id} input[value=aclive]`,true);await p.waitForTimeout(150);
-ok((await K()).t.topografia==='aclive','a pergunta em botões de opção grava no terreno');
+const itp=await item('Qual a posição do terreno na quadra?');
+await muda(p,`#fma-${itp.id} input[value=esquina]`,true);await p.waitForTimeout(150);
+ok((await K()).t.posicao==='esquina','a pergunta em botões de opção grava no terreno');
 // montar
 await clica(p,'[data-a=fm-modo][data-v=montar]');await p.waitForTimeout(150);
 ok((await p.$$('#modal .fm-row')).length===6,'Montar mostra as 6 perguntas para editar e ordenar');

@@ -50,7 +50,7 @@ function vbCalc(v){let A=0,un=0,unp=0,unc=0,ap=0,ac=0,vgv=0,vp=0,vc=0;
   const ded=l=>vbGrupoLn(l)==='comercial'&&vbDesp(l.desp)?.deduz&&v.deduz.includes(l.desp);
   const com=soma(['comercial']),dedc=r2(v.linhas.filter(ded).reduce((s,l)=>s+(val(l)||0),0));
   const dedp=r2(vv*(v.dedp||0)/100),liq=r2(vv-dedp-dedc);
-  const oi=r2((v.cm2||0)*A);b.pct_obra_tipica=oi;
+  const Ab=v.obraBase==='construida'?(v.constr||0):A,oi=r2((v.cm2||0)*Ab);b.pct_obra_tipica=oi;
   const raso=r2(oi+soma(['obra_atipica']));b.pct_obra_raso=raso;
   const ot=r2(raso+soma(['obra_nao_incidente']));b.pct_obra_total=ot;
   const obras=r2(ot+soma(['projetos','pos_obra']));
@@ -64,7 +64,7 @@ function vbCalc(v){let A=0,un=0,unp=0,unc=0,ap=0,ac=0,vgv=0,vp=0,vc=0;
   const sg=gs=>r2(gs.reduce((s,g)=>s+(GR[g]||0),0));
   const SEC={obra:obras,terreno:terr,despesas:sg(VB_DG),taxas:sg(['taxas']),financeiro:sg(VB_FIN),comercial:com};
   const lucro=r2(l0-lu),desp=r2(Object.values(SEC).reduce((s,x)=>s+x,0));
-  return {A,un,unp,unc,unl,ap,ac,vgv,vp,vc,vv,dedp,dedc,liq,oi,raso,ot,obras,pfc,pf,minimo:pf>pfc,terr,desp,SEC,GR,lb,semTaxas:r2(lucro+SEC.taxas),ebitda:r2(lucro+SEC.taxas+SEC.financeiro),lucro,margem:liq>0?r2(lucro/liq*100):null,L}}
+  return {A,Ab,un,unp,unc,unl,ap,ac,vgv,vp,vc,vv,dedp,dedc,liq,oi,raso,ot,obras,pfc,pf,minimo:pf>pfc,terr,desp,SEC,GR,lb,semTaxas:r2(lucro+SEC.taxas),ebitda:r2(lucro+SEC.taxas+SEC.financeiro),lucro,margem:liq>0?r2(lucro/liq*100):null,L}}
 
 /* a negociação lê o resumo do estudo vinculado (no banco, processos.viabilidade_id e os totais do estudo) */
 function vbResumo(v){const c=vbCalc(v);return {id:v.id,nome:v.nome,vgv:c.vgv,liq:c.liq,lucro:c.lucro,margem:c.margem,em:v.em}}
@@ -85,10 +85,10 @@ const vbNovo=(tid,nome)=>vbFixos({id:uid(),tid,nome,em:HOJE,user:me(),cm2:null,p
 const vbModelos=()=>(S.viabModelos||[]).filter(m=>!m.dono||m.dono===me()).sort((a,b)=>(!!a.dono-!!b.dono)||(b.padrao-a.padrao)||a.nome.localeCompare(b.nome,'pt-BR'));
 const vbModeloPadrao=()=>(S.viabModelos||[]).find(m=>m.padrao&&!m.dono);
 function vbModeloDados(v){const dir=vbDiretoria();
-  return {cm2:v.cm2,dedp:v.dedp,deduz:[...v.deduz],linhas:v.linhas.filter(l=>{const d=vbDesp(l.desp);return d&&(!VB_RESTRITO.includes(VB_GRUPO[d.grupo]?.secao)||dir)})
+  return {cm2:v.cm2,obraBase:v.obraBase||'privativa',dedp:v.dedp,deduz:[...v.deduz],linhas:v.linhas.filter(l=>{const d=vbDesp(l.desp);return d&&(!VB_RESTRITO.includes(VB_GRUPO[d.grupo]?.secao)||dir)})
     .map(l=>({desp:l.desp,tipo:l.tipo,valor:l.valor,qtd:l.qtd??1}))}}
 function vbAplicarModelo(v,m){const x=m.dados,dir=vbDiretoria(),vistos=new Set();
-  v.cm2=x.cm2??null;v.dedp=x.dedp??null;v.deduz=(x.deduz||[]).filter(c=>vbDesp(c)?.deduz);
+  v.cm2=x.cm2??null;v.obraBase=x.obraBase||'privativa';v.dedp=x.dedp??null;v.deduz=(x.deduz||[]).filter(c=>vbDesp(c)?.deduz);
   x.linhas.forEach(l=>{const d=vbDesp(l.desp),G=VB_GRUPO[d?.grupo];if(!d?.ativo||!G.tipos.includes(l.tipo))return;
     if(VB_RESTRITO.includes(G.secao)&&m.dono&&!dir)return;if(G.fixo){if(vistos.has(d.codigo))return;vistos.add(d.codigo)}
     v.linhas.push({id:uid(),desp:d.codigo,tipo:l.tipo,valor:l.valor,qtd:l.qtd??1})});
@@ -157,10 +157,11 @@ function vbSec(k,titulo,c,corpo,acao=''){const O=vbOrdem(),i=O.indexOf(k),ant=O[
   return `<section class="sec vb-sec" id="vb-sec-${k}" aria-labelledby="vb-st-${k}"><div class="sec-h vb-sh"><h2 id="vb-st-${k}">${titulo}</h2>
     <span class="vb-sh-t" data-vbo="sh-${k}">${vbShTxt(k,c)}</span>${acao}</div>
     <div class="sec-b">${corpo()}</div><div class="vb-passo">${passo(ant,-1)}${passo(prox,1)}</div></section>`}
-function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
+function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);if(v.massa)emsSync(v);
   const t=T(v.tid),c=vbCalc(v),ro=UI.role==='Leitura',lig=t.neg?.viab?.id===v.id,dis=ro?'disabled':'';
   const acoes=ro?'':`${lig?'':negAtiva(t)?`<button class="btn sm" data-a="vb-vincular" data-v="${v.id}">Marcar como válido</button>`:''}<button class="btn sm" data-a="vb-duplicar" data-v="${v.id}">Duplicar</button><button class="btn sm" data-a="vb-modelo" data-v="${v.id}">Salvar como modelo</button>${lig?'':`<button class="btn text sm danger" data-a="vb-apagar" data-v="${v.id}">Apagar</button>`}`;
-  const inp=(id,k,val,d,rot)=>`<label class="vb-c vb-${k}"><span class="vb-l">${rot}</span><input data-vb="tp" data-r="${id}" data-k="${k}" ${k==='nome'?'':`data-fmt="${['pu','pm2'].includes(k)?'moeda':['qtd','perm','com'].includes(k)?'int':'num'}"`} value="${k==='nome'?esc(val??''):vbIn(val,d)}" ${k==='nome'?'':'inputmode="decimal"'} aria-label="${rot}" ${dis}></label>`;
+  const preso=!!v.massa,msv=preso&&EMS(v.massa);
+  const inp=(id,k,val,d,rot)=>`<label class="vb-c vb-${k}"><span class="vb-l">${rot}</span><input data-vb="tp" data-r="${id}" data-k="${k}" ${k==='nome'?'':`data-fmt="${['pu','pm2'].includes(k)?'moeda':['qtd','perm','com'].includes(k)?'int':'num'}"`} value="${k==='nome'?esc(val??''):vbIn(val,d)}" ${k==='nome'?'':'inputmode="decimal"'} aria-label="${rot}" ${preso&&['nome','area','qtd'].includes(k)?'disabled title="Vem do estudo de massa"':dis}></label>`;
   const campo=(k,rot,val,d=2,dica='')=>`<div class="field"><label for="vb-${k}">${rot}</label><input id="vb-${k}" data-vb="hd" data-k="${k}" data-fmt="${k==='pfp'||k==='dedp'?'pct':'moeda'}" value="${vbIn(val,d)}" inputmode="decimal" ${dis}>${dica?`<div class="hint">${dica}</div>`:''}</div>`;
   const hd=`<div class="vb-r vb-hd" aria-hidden="true"><span>Item</span><span>Base de cálculo</span><span>Valor</span><span class="vb-qtd">Meses</span><span class="vb-hr">Resultado</span><span class="vb-x"></span></div>`;
   /* cabeçalho padronizado (28/out/2026): todos os títulos à esquerda, menos o do resultado, à direita; a coluna Meses só onde há verba mensal
@@ -176,9 +177,9 @@ function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
     return `<div class="vb-q${sub?' sub':''}${!sub&&qFe('g-'+g)?' fechado':''}">${qh('g-'+g,G.nome,c.GR[g]||0,sub)}
       ${ls.map(l=>vbLinha(v,l,c,dis,ro)).join('')||(UI.vbNova===g&&!ro?'':'<div class="muted vb-vazio">Nenhum item.</div>')}${UI.vbNova===g&&!ro?vbNovaLinha(g):''}
       ${ro||G.fixo?'':`<div class="vb-qadd"><button class="btn sm" data-a="vb-ln-add" data-v="${g}">${ic('add',16)}${VB_ADD[g]}</button></div>`}</div>`};
-  const tips=()=>`<div class="vb-tab vb-tips"><div class="vb-r vb-hd" aria-hidden="true"><span>Tipologia</span><span>Área privativa (m²)</span><span>Quantidade</span><span>Em permuta</span><span>Comissão</span><span>Preço unitário (R$)</span><span>Preço por m² (R$)</span><span class="vb-hr">VGV</span><span></span></div>
+  const tips=()=>`${vbMassaSel(v,ro)}<div class="vb-tab vb-tips"><div class="vb-r vb-hd" aria-hidden="true"><span>Tipologia</span><span>Área privativa (m²)</span><span>Quantidade</span><span>Em permuta</span><span>Comissão</span><span>Preço unitário (R$)</span><span>Preço por m² (R$)</span><span class="vb-hr">VGV</span><span></span></div>
     ${v.tips.map(p=>`<div class="vb-r" data-tp="${p.id}">${inp(p.id,'nome',p.nome,0,'Tipologia')}${inp(p.id,'area',p.area,2,'Área privativa (m²)')}${inp(p.id,'qtd',p.qtd,0,'Quantidade')}${inp(p.id,'perm',p.perm,0,'Em permuta')}${inp(p.id,'com',p.com,0,'Comissão')}${inp(p.id,'pu',p.pu,2,'Preço unitário (R$)')}${inp(p.id,'pm2',p.pm2,2,'Preço por m² (R$)')}
-    <span class="vb-c vb-out"><span class="vb-l">VGV</span><b data-vbo="tp-${p.id}">${brl(p.pu!=null?(p.qtd||0)*p.pu:null)}</b></span>${ro?'<span></span>':`<button class="iconbtn sm vb-del" data-a="vb-tip-del" data-v="${p.id}" aria-label="Remover ${esc(p.nome)}" title="Remover tipologia">${ic('close',18)}</button>`}</div>`).join('')||'<div class="muted vb-vazio">Nenhuma tipologia.</div>'}
+    <span class="vb-c vb-out"><span class="vb-l">VGV</span><b data-vbo="tp-${p.id}">${brl(p.pu!=null?(p.qtd||0)*p.pu:null)}</b></span>${ro||preso?'<span></span>':`<button class="iconbtn sm vb-del" data-a="vb-tip-del" data-v="${p.id}" aria-label="Remover ${esc(p.nome)}" title="Remover tipologia">${ic('close',18)}</button>`}</div>`).join('')||'<div class="muted vb-vazio">Nenhuma tipologia.</div>'}
     <div class="vb-r vb-tot" id="vb-tot-tips">${vbTotTips(v,c)}</div></div>
     `;
   const dedutiveis=S.viabDesp.filter(d=>d.grupo==='comercial'&&d.deduz&&(d.ativo||v.deduz.includes(d.codigo)));
@@ -195,9 +196,11 @@ function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
   const obra=()=>`<div class="vb-tab vb-lns${lnsCls('obra')}">${hd}
     <div class="vb-q${qFe('raso')?' fechado':''}">${qh('raso','Custo de obra incidente',c.raso)}
     <div class="vb-q sub">${qh('oi','Custo de obra típico',c.oi,true)}
-    <div class="vb-r" data-ln="oi"><span class="vb-c vb-desp"><span class="vb-l">Item</span><span class="vb-nome">Custo de obra raso</span></span><span class="vb-c vb-tipo"><span class="vb-l">Base de cálculo</span><span class="vb-nome">${VB_TIPO.area}</span></span>
+    <div class="vb-r" data-ln="oi"><span class="vb-c vb-desp"><span class="vb-l">Item</span><span class="vb-nome">Custo de obra raso</span></span><label class="vb-c vb-tipo"><span class="vb-l">Base de cálculo</span><select data-vb="ob" aria-label="Área da obra incidente" ${dis}><option value="privativa" ${v.obraBase!=='construida'?'selected':''}>${VB_TIPO.area}</option><option value="construida" ${v.obraBase==='construida'?'selected':''}>R$/m² × área construída</option></select></label>
       <label class="vb-c vb-mult"><span class="vb-l">Valor unitário</span><input data-fmt="moeda" data-vb="hd" data-k="cm2" value="${vbIn(v.cm2,2)}" inputmode="decimal" aria-label="Valor unitário da obra incidente (R$ por m²)" ${dis}></label><span class="vb-c vb-qtd"></span>
-      <span class="vb-c vb-out"><span class="vb-l">Resultado</span><b data-vbo="oi">${brl(c.oi)}</b><small class="faint" data-vbo="oi-b">× ${m2(c.A)} de área privativa</small></span><span class="vb-x"></span></div></div>
+      <span class="vb-c vb-out"><span class="vb-l">Resultado</span><b data-vbo="oi">${brl(c.oi)}</b><small class="faint" data-vbo="oi-b">${vbObraTxt(v,c)}</small></span><span class="vb-x"></span></div>
+    ${v.obraBase==='construida'?`<div class="vb-r" data-ln="constr"><span class="vb-c vb-desp"><span class="vb-l">Item</span><span class="vb-nome">Área construída total</span></span><span class="vb-c vb-tipo"><span class="vb-l">Origem</span><span class="vb-nome faint">${msv?'do '+esc(msv.nome):'digitada'}</span></span>
+      <label class="vb-c vb-mult"><span class="vb-l">m²</span><input data-fmt="num" data-vb="hd" data-k="constr" value="${vbIn(v.constr,2)}" inputmode="decimal" aria-label="Área construída total (m²)" ${preso?'disabled title="Vem do estudo de massa"':dis}></label><span class="vb-c vb-qtd"></span><span class="vb-c vb-out"></span><span class="vb-x"></span></div>`:''}</div>
     ${grupo('obra_atipica',true)}</div>
     ${grupo('obra_nao_incidente')}${grupo('projetos')}${grupo('pos_obra')}</div>`;
   const lns=sec=>()=>`<div class="vb-tab vb-lns${lnsCls(sec)}">${hd}
@@ -205,7 +208,7 @@ function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
   const corpo={tip:tips,terreno,comercial:lns('comercial'),obra,despesas:lns('despesas'),taxas:lns('taxas'),financeiro:lns('financeiro'),
     res:()=>`<div id="vb-res">${vbResHtml(v,c)}</div>`};
   const titulo={tip:'Tipologias',res:'DRE',...VB_SECAO};
-  const acao={tip:ro?'':`<button class="btn text sm" data-a="vb-tip-add">${ic('add',16)}Adicionar tipologia</button>`};
+  const acao={tip:ro||preso?'':`<button class="btn text sm" data-a="vb-tip-add">${ic('add',16)}Adicionar tipologia</button>`};
   const sobre=`<span>Viabilidade · ${esc(t.codigo)} · ${esc(t.nome)}</span>${lig?'<span class="chip good"><span class="d"></span>Válido</span>':''}`,ab=vbAba();
   return `<div class="vb-pop-h"><div class="vb-pop-tt"><div class="eyebrow">${sobre}</div>
       <input id="vb-pop-t" class="vb-pop-nome" data-vb="hd" data-k="nome" value="${esc(v.nome)}" aria-label="Nome do estudo" ${dis}>
@@ -214,6 +217,18 @@ function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
   <div class="vb-pop-sc"><div class="vb-pop-meta"><div class="eyebrow">${sobre}</div>${acoes?`<div class="vb-acoes">${acoes}</div>`:''}</div>
     <div class="vb-fixo"><div class="kpis vb-kpis" id="vb-kpis">${vbKpis(c)}</div>${vbNav(c)}</div>
     ${vbSec(ab,titulo[ab],c,corpo[ab],acao[ab]||'')}</div>`}
+const vbObraTxt=(v,c)=>v.obraBase==='construida'?`× ${m2(c.Ab)} de área construída`:`× ${m2(c.A)} de área privativa`;
+/* estudo de massa da viabilidade (lote 4, decisões do Moisés de 3/nov/2026): nenhum, seguir o válido ou um estudo entregue */
+function vbMassaSel(v,ro){const ms=massasDe(v.tid).filter(m=>m.sit==='entregue'),val=emsValido(v.tid),m=EMS(v.massa);
+  if(!ms.length&&!v.massa)return '';
+  const atual=v.segue?'valido':v.massa||'',dis=ro?'disabled':'';
+  const ops=`<option value="valido" ${atual==='valido'?'selected':''} ${val?'':'disabled'}>Seguir o válido${val?` (${esc(val.nome)})`:': nenhum ainda'}</option>
+    ${ms.map(x=>`<option value="${x.id}" ${atual===x.id?'selected':''}>${esc(x.nome)}${x.valido?' · válido':''}</option>`).join('')}`;
+  if(!m)return `<div class="vb-ms"><label class="field"><span class="lbl-f">Vincular a um estudo de massa</span><select data-vb="ms" ${dis}><option value="" selected>Sem vínculo (tipologias e áreas digitadas aqui)</option>${ops}</select></label>
+    ${ro?'':'<div class="hint">Vinculando, as tipologias e a área construída voltam a ser as do estudo de massa; preços, permuta e comissão ficam.</div>'}</div>`;
+  return `<div class="vb-ms"><div class="vb-ms-l"><label class="field"><span class="lbl-f">Vinculada ao estudo de massa</span><select data-vb="ms" aria-label="Trocar o estudo de massa vinculado" ${dis}>${ops}</select></label>
+    ${ro?'':`<button type="button" class="btn sm" data-a="vb-ms-solta">${ic('link',16)}Quebrar vínculo</button>`}</div>
+    <div class="hint">Título, área e quantidade das tipologias e a área construída vêm do ${esc(m.nome)}${v.segue?' (o válido; trocou o válido, troca aqui)':''} e não se editam; aqui, preços, permuta e comissão.</div></div>`}
 function vbPopRender(){let el=document.getElementById('vb-pop');
   if(UI.vbPop&&(!VB(UI.vbPop)||UI.route!==UI.vbPopRota))UI.vbPop=null;
   if(!UI.vbPop){if(el){el.remove();document.body.classList.remove('vb-aberto')}return}
@@ -289,7 +304,7 @@ function vbResHtml(v,c){const pct=x=>c.liq>0&&x!=null?num(x/c.liq*100,1)+'%':'';
 function vbRefresh(v){const c=vbCalc(v),set=(k,h)=>{const el=document.querySelector(`[data-vbo="${k}"]`);if(el)el.innerHTML=h};
   v.tips.forEach(p=>set('tp-'+p.id,brl(p.pu!=null?(p.qtd||0)*p.pu:null)));
   v.linhas.forEach(l=>{if(!c.L[l.id])return;set('ln-'+l.id,brl(c.L[l.id].valor));set('lb-'+l.id,vbBaseTxt(l,c));set('dd-'+l.desp,brl(c.L[l.id].valor))});
-  set('oi',brl(c.oi));set('oi-b',`× ${m2(c.A)} de área privativa`);set('pfis',vbPermFis(c));set('pfin',vbPermFin(v,c));set('pcom',vbComissao(c));
+  set('oi',brl(c.oi));set('oi-b',vbObraTxt(v,c));set('pfis',vbPermFis(c));set('pfin',vbPermFin(v,c));set('pcom',vbComissao(c));
   const h=(id,x)=>{const el=document.getElementById(id);if(el)el.innerHTML=x};
   h('vb-kpis',vbKpis(c));h('vb-tot-tips',vbTotTips(v,c));
   const qt=(k,x)=>{set('qt-'+k,brl(x));set('qp-'+k,vbPctVgv(x,c))};qt('raso',c.raso);qt('oi',c.oi);Object.keys(VB_GRUPO).forEach(g=>qt('g-'+g,c.GR[g]||0));h('vb-res',vbResHtml(v,c));VB_ORDEM.forEach(k=>{set('sh-'+k,vbShTxt(k,c));set('nv-'+k,vbNavTxt(k,c))})}
@@ -319,7 +334,7 @@ document.addEventListener('keydown',e=>{const el=e.target;if(el.dataset?.vbCb==n
   if(e.key==='Escape'&&!dd.hidden){e.preventDefault();e.stopPropagation();vbDdFechar(el)}},true);
 
 /* ---------- eventos ---------- */
-const VB_HD={cm2:'cm2',pfp:'pfp',dedp:'dedp',min:'min',din:'din',comd:'comd'};
+const VB_HD={constr:'constr',cm2:'cm2',pfp:'pfp',dedp:'dedp',min:'min',din:'din',comd:'comd'};
 function viabInput(el){
   if(el.dataset.vbCb!=null){vbDdAbrir(el,true);return true}
   const tipo=el.dataset.vb;if(!tipo||tipo==='ded')return false;const v=VB(UI.vid);if(!v)return true;const k=el.dataset.k;
@@ -344,6 +359,9 @@ function viabChange(el){
     else d[k]=el.value||null;
     vbSyncTodos();save();render();return true}
   const tipo=el.dataset.vb;if(!tipo)return false;const v=VB(UI.vid);if(!v)return true;const k=el.dataset.k;
+  if(tipo==='ms'){const x=el.value;if(!x){v.massa=null;v.segue=false;v.tips.forEach(p=>delete p.mt);toast('Vínculo quebrado: as tipologias ficam e passam a se editar aqui.')}
+    else{const ant=v.massa;v.segue=x==='valido';v.massa=v.segue?emsValido(v.tid)?.id:x;emsSync(v);log(T(v.tid),`${v.nome}: vinculada ao ${EMS(v.massa)?.nome}`);toast(ant?`Trocado: tipologias e área construída do ${EMS(v.massa)?.nome}.`:`Vinculada: tipologias e área construída voltaram às do ${EMS(v.massa)?.nome}.`)}vbGravar(v);render();return true}
+  if(tipo==='ob'){v.obraBase=el.value==='construida'?'construida':'privativa';vbGravar(v);render();return true}
   if(tipo==='ded'){v.deduz=el.checked?[...new Set([...v.deduz,el.value])]:v.deduz.filter(x=>x!==el.value);vbGravar(v);render();return true}
   if(tipo==='hd'&&k==='nome'){if(!v.nome.trim()){v.nome='Estudo';el.value=v.nome}const h=document.querySelector('.vb-h h1');if(h)h.textContent=v.nome}
   else if(tipo==='hd')el.value=vbIn(v[VB_HD[k]],k==='pfp'||k==='dedp'?4:2);
@@ -376,6 +394,7 @@ function viabClick(A,a,t){
     case 'vb-apagar':UI.modal='vb-apagar';UI.vbApagar=a.dataset.v;renderModal();return true;
     case 'vb-apagar-ok':{const v=VB(UI.vbApagar),x=T(v.tid);if(x.neg?.viab?.id===v.id){toast('Estudo vinculado à negociação não se apaga.',true);return true}
       S.viabs=S.viabs.filter(y=>y.id!==v.id);log(x,`Estudo de viabilidade apagado: ${v.nome}`);UI.modal=null;UI.vbPop=null;save();render();toast('Estudo apagado.');return true}
+    case 'vb-ms-solta':{const v=VB(UI.vid);if(!v)return true;const n=EMS(v.massa)?.nome;v.massa=null;v.segue=false;v.tips.forEach(p=>delete p.mt);log(T(v.tid),`${v.nome}: vínculo com o ${n} quebrado`);vbGravar(v);render();toast('Vínculo quebrado: tipologias e área construída ficam e passam a se editar aqui.');return true}
     case 'vb-tip-add':{const v=VB(UI.vid),p={id:uid(),nome:'Tipologia '+(v.tips.length+1),area:null,qtd:null,perm:0,com:0,pu:null,pm2:null};v.tips.push(p);vbGravar(v);render();setTimeout(()=>{const i=document.querySelector(`[data-tp="${p.id}"] [data-k="nome"]`);i?.focus();i?.select()},20);return true}
     case 'vb-tip-del':{const v=VB(UI.vid);v.tips=v.tips.filter(p=>p.id!==a.dataset.v);vbGravar(v);render();return true}
     case 'vb-q-tg':{const f=UI.vbFechados||(UI.vbFechados=new Set()),k=a.dataset.v;f.has(k)?f.delete(k):f.add(k);render();return true}

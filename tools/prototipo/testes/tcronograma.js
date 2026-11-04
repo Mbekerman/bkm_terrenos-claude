@@ -112,7 +112,7 @@ await p.evaluate(()=>document.querySelector('[data-a=cr-cal]').closest('.sec').n
 await p.evaluate(()=>history.replaceState(null,'','#/terrenos'));await p.reload();await p.waitForTimeout(400);
 await p.evaluate(()=>document.querySelector('[data-a=novo]').click());await p.waitForTimeout(200);
 const [fc]=await Promise.all([p.waitForEvent('filechooser'),p.click('[data-a=nv-kmz]')]);await fc.setFiles({name:'quadra.kml',mimeType:'application/vnd.google-earth.kml+xml',buffer:KML});
-await p.waitForSelector('#f-novo');await p.waitForTimeout(400);await p.fill('#n-mun','São Paulo · SP');await p.fill('#n-nome','Terreno do modelo');
+await p.waitForSelector('#f-novo');await p.waitForTimeout(400);if(await p.$('#n-mun'))await p.fill('#n-mun','São Paulo · SP');await p.fill('#n-nome','Terreno do modelo');
 await p.evaluate(()=>{document.querySelector('#f-novo [name=tipoEmp][value=mercado]')?.click();document.getElementById('f-novo').requestSubmit()});await p.waitForTimeout(400);
 s=await est(p);const tn=s.terrenos.find(t=>t.nome==='Terreno do modelo');ok(tn&&tn.tarefas.length===6&&tn.tarefas.some(k=>(k.preds||[]).length),'terreno novo já nasce com as tarefas do modelo padrão');
 await ctx.close()}

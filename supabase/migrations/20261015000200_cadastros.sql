@@ -36,11 +36,14 @@ create table app.bases_cadastrais (
   ordem        int  not null
 );
 
+-- Itens da visita técnica (aba Infraestrutura); os marcados em viabilidade_tecnica também
+-- pedem a viabilidade da concessionária (Energia, Água, Esgoto e Gás; decisão do Moisés, 3/nov/2026).
 create table app.itens_infraestrutura (
   codigo text primary key,
   nome   text not null,
   ordem  int  not null,
-  ativo  boolean not null default true
+  ativo  boolean not null default true,
+  viabilidade_tecnica boolean not null default false
 );
 
 create table app.tipos_documento (
@@ -58,7 +61,7 @@ create table app.tipos_documento (
 -- etapas, subetapas, status, dependências, pré-requisitos e checklist.
 -- ---------------------------------------------------------------------
 -- Fase: o grande momento do terreno (Novos Negócios, Aprovação de Projetos,
--- Registro de Incorporação, Contratação Caixa, Lançamento, Obras). Cada fase
+-- Registro de Incorporação, Funding, Contratação Caixa, Lançamento, Obras). Cada fase
 -- é um processo próprio do terreno, com etapas, status e histórico; a fase de
 -- entrada (uma por empresa) é a que a oferta abre e a que tem negociação
 -- (temperatura, propostas). As demais abrem quando as dependências se cumprem.
@@ -226,16 +229,17 @@ insert into app.entorno_categorias (codigo, nome, tipos_google, raio_pe_m, ordem
   ('shopping',   'Shopping center',          array['shopping_mall'],                                       1500, 2),
   ('hospital',   'Hospital',                 array['hospital'],                                            1500, 3);
 
-insert into app.itens_infraestrutura (codigo, nome, ordem) values
-  ('energia',     'Rede de energia na porta',  1),
-  ('agua',        'Rede de água na porta',     2),
-  ('esgoto',      'Rede de esgoto na porta',   3),
-  ('gas',         'Gás canalizado na porta',   4),
-  ('asfalto',     'Asfalto na porta',          5),
-  ('drenagem',    'Drenagem pluvial',          6),
-  ('iluminacao',  'Iluminação pública',        7),
-  ('calcada',     'Calçada',                   8),
-  ('fibra',       'Telefonia / fibra óptica',  9);
+insert into app.itens_infraestrutura (codigo, nome, ordem, ativo, viabilidade_tecnica) values
+  ('energia',     'Energia',                   1, true,  true),
+  ('agua',        'Água',                      2, true,  true),
+  ('esgoto',      'Esgoto',                    3, true,  true),
+  ('drenagem',    'Drenagem',                  4, true,  false),
+  ('gas',         'Gás canalizado',            5, true,  true),
+  ('asfalto',     'Asfalto',                   6, true,  false),
+  ('iluminacao',  'Iluminação pública',        7, true,  false),
+  ('calcada',     'Calçada',                   8, true,  false),
+  -- fora da visita técnica desde 4/nov/2026 (a lista do Moisés tem 8 itens)
+  ('fibra',       'Telefonia / fibra óptica',  9, false, false);
 
 insert into app.tipos_documento (codigo, nome, categoria, validade_dias, unico_por_processo) values
   ('matricula',          'Matrícula atualizada',                 'Imóvel',    30,   true),
@@ -265,12 +269,14 @@ insert into app.fases_modelo (codigo, nome, ordem, prefixo, entrada) values
   ('novos_negocios', 'Novos Negócios',           1, 'NEG', true),
   ('aprovacao',      'Aprovação de Projetos',    2, 'APR', false),
   ('incorporacao',   'Registro de Incorporação', 3, 'INC', false),
-  ('caixa',          'Contratação Caixa',        4, 'CEF', false),
-  ('lancamento',     'Lançamento',               5, 'LAN', false),
-  ('obras',          'Obras',                    6, 'OBR', false),
-  ('entregue',       'Entregue',                 7, 'ENT', false);
+  ('funding',        'Funding',                  4, 'FUN', false),
+  ('caixa',          'Contratação Caixa',        5, 'CEF', false),
+  ('lancamento',     'Lançamento',               6, 'LAN', false),
+  ('obras',          'Obras',                    7, 'OBR', false),
+  ('entregue',       'Entregue',                 8, 'ENT', false);
 
--- Cada fase abre quando a anterior é concluída.
+-- Cada fase abre quando a anterior é concluída. Funding não tem dependência
+-- nem trava outra fase (decisão do Moisés, 4/nov/2026): abre à mão, quando for.
 insert into app.fase_dependencias (fase, requisito_fase, requisito_tipo) values
   ('aprovacao',    'novos_negocios', 'conclusao'),
   ('incorporacao', 'aprovacao',      'conclusao'),
@@ -289,6 +295,11 @@ insert into app.etapas_modelo (fase, codigo, nome, ordem, sla_dias, aprova_gesto
   ('aprovacao',     'alvaras',     'Alvarás',               3, 30,  false),
   ('incorporacao',  'memorial',    'Memorial e Certidões',  1, 30,  false),
   ('incorporacao',  'cartorio',    'Cartório',              2, 45,  false),
+  ('funding',       'fun_dossie',  'Dossiê',                1, null, false),
+  ('funding',       'fun_viabilidade', 'Viabilidade',           2, null, false),
+  ('funding',       'fun_comite',  'Comitê',                3, null, false),
+  ('funding',       'fun_contratacao', 'Contratação',           4, null, false),
+  ('funding',       'fun_legalizacao', 'Legalização',           5, null, false),
   ('caixa',         'analise',     'Análise Caixa',         1, 60,  false),
   ('caixa',         'contratacao', 'Contratação',           2, 30,  true),
   ('lancamento',    'preparacao',  'Preparação',            1, 60,  false),
@@ -322,6 +333,11 @@ insert into app.subetapas_modelo (fase, etapa, codigo, nome, ordem) values
   ('incorporacao',  'memorial',    'certidoes',              'Certidões',                   2),
   ('incorporacao',  'cartorio',    'prenotado',              'Prenotado',                   1),
   ('incorporacao',  'cartorio',    'exigencias',             'Exigências do Cartório',      2),
+  ('funding',       'fun_dossie', 'fun_dossie', 'Dossiê', 1),
+  ('funding',       'fun_viabilidade', 'fun_viabilidade', 'Viabilidade', 1),
+  ('funding',       'fun_comite', 'fun_comite', 'Comitê', 1),
+  ('funding',       'fun_contratacao', 'fun_contratacao', 'Contratação', 1),
+  ('funding',       'fun_legalizacao', 'fun_legalizacao', 'Legalização', 1),
   ('caixa',         'analise',     'engenharia',             'Engenharia',                  1),
   ('caixa',         'analise',     'juridico',               'Jurídico',                    2),
   ('caixa',         'analise',     'risco',                  'Risco',                       3),
@@ -353,12 +369,13 @@ insert into app.status_modelo (fase, status, nome, aprova_gestor, aprova_diretor
   ('novos_negocios','stand_by',   'Stand By',             false, false, 'sequencia'),
   ('aprovacao',     'concluido',  'Aprovado',             false, false, 'sequencia'),
   ('incorporacao',  'concluido',  'Incorporação registrada', false, false, 'sequencia'),
+  ('funding',       'concluido',  'Funding captado',      false, false, 'sequencia'),
   ('caixa',         'concluido',  'Contratado',           false, false, 'sequencia'),
   ('lancamento',    'concluido',  'Lançado',              false, false, 'sequencia'),
   ('obras',         'concluido',  'Obra entregue',        false, false, 'sequencia'),
   ('entregue',      'concluido',  'Garantia encerrada',   false, false, 'sequencia');
 insert into app.status_modelo (fase, status, nome)
-select f, s, n from unnest(array['aprovacao','incorporacao','caixa','lancamento','obras','entregue']) f,
+select f, s, n from unnest(array['aprovacao','incorporacao','funding','caixa','lancamento','obras','entregue']) f,
   (values ('descartado','Descartado'), ('stand_by','Stand By')) v(s, n)
 where f <> 'entregue' or s = 'stand_by';
 

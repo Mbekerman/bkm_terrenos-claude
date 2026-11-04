@@ -23,7 +23,7 @@ const destinoCfg=(tipo,k)=>tipo==='etapa'?etapaCfg(k):tipo==='subetapa'?subCfg(k
 const destinoNome=(tipo,k)=>tipo==='etapa'?SN(k):tipo==='subetapa'?subN(k):STATUS_N[k]||k;
 function syncCfg(){STAGES.splice(0,STAGES.length,...cfg().etapas.map(e=>[e.k,e.nome]))}
 /* dados carregados ou restaurados: garante configuração, equipe e avisos dos pedidos de exemplo */
-function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.cfg.fases)S.cfg.fases=FASES_PADRAO();if(!S.cfg.deps)S.cfg.deps=DEPS_PADRAO();if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];{const N0=CFG_PADRAO().notif;delete S.cfg.notif.tarefa_marcado;Object.entries(N0).forEach(([k,v])=>{const c=S.cfg.notif[k];if(!c)S.cfg.notif[k]=v;else if(c.email==null)c.email=v.email})}if(!S.prefsNotif)S.prefsNotif={};syncCfg();partesPreparar();tkPrep();
+function prepararDados(){if(!S.cfg)S.cfg=CFG_PADRAO();if(!S.cfg.fases)S.cfg.fases=FASES_PADRAO();if(!S.cfg.deps)S.cfg.deps=DEPS_PADRAO();/* Funding depois do Registro de Incorporação (pedido do Moisés, 4/nov/2026): entra uma vez na configuração já guardada */if(!S.cfg.funding){S.cfg.funding=true;if(!S.cfg.fases.some(f=>f.k==='funding')){const fp=FASES_PADRAO().find(f=>f.k==='funding'),i=S.cfg.fases.findIndex(f=>f.k==='incorporacao');S.cfg.fases.splice(i<0?S.cfg.fases.length:i+1,0,fp)}}if(!S.membros)S.membros=MEMBROS_PADRAO();if(!S.notifs)S.notifs=[];{const N0=CFG_PADRAO().notif;delete S.cfg.notif.tarefa_marcado;Object.entries(N0).forEach(([k,v])=>{const c=S.cfg.notif[k];if(!c)S.cfg.notif[k]=v;else if(c.email==null)c.email=v.email})}if(!S.prefsNotif)S.prefsNotif={};syncCfg();partesPreparar();tkPrep();
   if(!S.pedidosAvisados){S.terrenos.forEach(t=>{if(t.neg?.pedido)avisarAprovadores(t)});S.pedidosAvisados=true}}
 
 /* ---------- regras da passagem ---------- */
@@ -224,7 +224,7 @@ function tentar(t,tipo,dest,dados){const r=moverPara(t,tipo,dest,{dados});save()
   toast(r.erro,true);return r}
 
 /* ---------- Configurações › Funil (só administrador) ---------- */
-const TIPOS_NOTIF_N={pode_avancar:'Tarefas da etapa concluídas (pode avançar)',etapa_deixada:'Tarefa de etapa deixada',tarefa_atribuida:'Tarefa atribuída a você',mencao:'Mencionado com @',tarefa_prazo:'Prazo de tarefa chegando',tarefa_atrasada:'Tarefa atrasada',tarefa_acompanhada:'Tarefa que você acompanha (comentário ou conclusão)',automacao:'Aviso de automação de tarefas',subetapa_prazo:'Subetapa passou do prazo',stand_by_retomar:'Data de retomar um Stand By',documento_vencendo:'Documento vencendo',reuniao_agendada:'Reunião agendada',aprovacao_pendente:'Pedido de aprovação para você',aprovacao_decidida:'Seu pedido foi aprovado ou recusado'};
+const TIPOS_NOTIF_N={massa_solicitado:'Estudo de massa pedido a você',massa_entregue:'Estudo de massa entregue',pode_avancar:'Tarefas da etapa concluídas (pode avançar)',etapa_deixada:'Tarefa de etapa deixada',tarefa_atribuida:'Tarefa atribuída a você',mencao:'Mencionado com @',tarefa_prazo:'Prazo de tarefa chegando',tarefa_atrasada:'Tarefa atrasada',tarefa_acompanhada:'Tarefa que você acompanha (comentário ou conclusão)',automacao:'Aviso de automação de tarefas',subetapa_prazo:'Subetapa passou do prazo',stand_by_retomar:'Data de retomar um Stand By',documento_vencendo:'Documento vencendo',reuniao_agendada:'Reunião agendada',aprovacao_pendente:'Pedido de aprovação para você',aprovacao_decidida:'Seu pedido foi aprovado ou recusado'};
 const apCells=(p,c)=>`<label class="chk"><input type="checkbox" data-ch="cfg" data-p="${p}.g" ${c.g?'checked':''}>Gestor</label><label class="chk"><input type="checkbox" data-ch="cfg" data-p="${p}.d" ${c.d?'checked':''}>Diretor</label>${c.g&&c.d?`<select data-ch="cfg" data-p="${p}.modo" aria-label="Ordem das aprovações"><option value="sequencia" ${c.modo!=='paralelo'?'selected':''}>Em sequência</option><option value="paralelo" ${c.modo==='paralelo'?'selected':''}>Em paralelo</option></select>`:''}`;
 const usada=k=>S.terrenos.some(t=>t.neg&&(t.neg.sub===k||(t.neg.trilha||[]).some(x=>x.paraSub===k||x.deSub===k)));
 function pgConfig(){
@@ -232,11 +232,12 @@ function pgConfig(){
   /* Pré-requisitos, Checklist e Tarefas da etapa ficam dentro da Jornada (1/nov/2026) */
   if(['prereq','checklist','etapaTar'].includes(UI.cfgAba))UI.cfgAba='jornada';
   const C=cfg(),aba=UI.cfgAba||'fases';
-  const abas=[['fases','Fases'],['funil','Etapas de '+faseN(faseEnt())],['jornada','Jornada'],['status','Status e motivos'],['notif','Notificações'],['equipe','Equipe'],['viab','Viabilidade'],['zonas','Parâmetros urbanísticos'],['campos','Campos'],['tarefas','Tarefas']];
+  const abas=[['fases','Fases'],['funil','Etapas de '+faseN(faseEnt())],['jornada','Jornada'],['status','Status e motivos'],['notif','Notificações'],['equipe','Equipe'],['viab','Viabilidade'],['zonas','Parâmetros urbanísticos'],['topo','Topografia'],['campos','Campos'],['tarefas','Tarefas']];
   let corpo='';
   if(aba==='fases')corpo=cfgFasesHtml();
   if(aba==='viab')corpo=cfgViabHtml();
   if(aba==='zonas')corpo=cfgZonasHtml();
+  if(aba==='topo')corpo=cfgTopoHtml();
   if(aba==='tarefas')corpo=cfgTarefasHtml();
   if(aba==='campos')corpo=itCfgCamposHtml();
   if(aba==='etapaTar')corpo=etCfgHtml();

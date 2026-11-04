@@ -64,7 +64,8 @@ insert into app.campos_catalogo (chave, origem, coluna, titulo, tipo, unidade, o
   ('terreno.area_adotada_m2','terreno','area_adotada_m2','Área adotada','numero','m²',null,null,false,true,true,24),
   ('terreno.fonte_area_adotada','terreno','fonte_area_adotada','Fonte da área adotada','lista',null,'{documental,cadastral,levantamento,estimativa,poligonal}',null,false,false,false,25),
   ('terreno.testada_principal_m','terreno','testada_principal_m','Testada principal','numero','m',null,null,true,true,true,26),
-  ('terreno.topografia','terreno','topografia','Topografia','lista',null,'{plano,aclive,declive,irregular}','nao_informado',true,true,true,27),
+  -- medido pelas cotas (app.registrar_topografia); o relevo digitado saiu em 4/nov/2026 (decisão do Moisés)
+  ('terreno.topo_perfil','terreno','topo_perfil','Perfil topográfico','lista',null,'{plano,inclinado,acidentado_leve,acidentado_mediano,acidentado_intenso,acidentado_agudo,acidentado_critico}',null,false,true,true,27),
   ('terreno.desnivel_estimado_m','terreno','desnivel_estimado_m','Desnível estimado','numero','m',null,null,true,true,true,28),
   ('terreno.posicao_quadra','terreno','posicao_quadra','Posição na quadra','lista',null,'{meio_quadra,esquina,duas_frentes,quadra_inteira}','nao_informado',true,false,false,29),
   ('terreno.formato','terreno','formato','Formato do lote','lista',null,'{regular,irregular}','nao_informado',true,false,false,30),
@@ -74,7 +75,6 @@ insert into app.campos_catalogo (chave, origem, coluna, titulo, tipo, unidade, o
   ('terreno.area_construida_demolir_m2','terreno','area_construida_demolir_m2','Área a demolir','numero','m²',null,null,true,false,true,34),
   ('terreno.necessidade_demolicao','terreno','necessidade_demolicao','Precisa demolir','lista',null,'{provavel,confirmada,dispensada}','nao_avaliada',true,true,true,35),
   ('terreno.observacoes_fisicas','terreno','observacoes_fisicas','Observações físicas','texto',null,null,null,true,false,false,36),
-  ('terreno.tipo_empreendimento','terreno','tipo_empreendimento','Tipo de empreendimento','lista',null,'{mercado,his,hmp}','nao_informado',true,true,true,37),
   ('negociacao.etapa','negociacao','etapa_atual','Etapa','lista',null,null,null,false,true,false,40),
   ('negociacao.subetapa','negociacao','subetapa_atual','Subetapa','lista',null,null,null,false,true,false,41),
   ('negociacao.status','negociacao','status','Situação da negociação','lista',null,'{ativo,concluido,perdido,descartado,stand_by}',null,false,true,false,42),

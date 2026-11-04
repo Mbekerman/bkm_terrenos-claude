@@ -79,9 +79,11 @@ function uiRolaFim(){document.querySelectorAll('.board, .vb-nav').forEach(b=>{co
   if(!b.dataset.fimOk){b.dataset.fimOk='1';b.addEventListener('scroll',()=>requestAnimationFrame(marca),{passive:true});
     const at=b.querySelector('[aria-current="page"]');if(at&&b.scrollWidth>b.clientWidth){const x=at.offsetLeft-b.clientWidth/2+at.offsetWidth/2;if(x>0)b.scrollLeft=x}}marca()})}
 addEventListener('resize',()=>uiRolaFim());
-const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel();uiCfgAba();uiBoardPontos();uiHdIc();uiDicas();uiRolaFim()};
+const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();uiInline();uiCfgCel();uiQuadros();uiCfgAba();uiBoardPontos();uiHdIc();uiDicas();uiRolaFim()};
 /* Legenda do mapa: lembra se ficou aberta ou fechada */
-document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legenda'))UI.mpLeg=e.target.open},true);
+/* fechar a legenda fecha também a árvore de Terrenos e volta os pinos para as fases (pedido do Moisés, 4/nov/2026) */
+document.addEventListener('toggle',e=>{if(!e.target.classList?.contains('mp-legenda'))return;UI.mpLeg=e.target.open;
+  if(!e.target.open&&(UI.mpArv||UI.mp?.f||UI.mp?.e)){const mud=UI.mp.f||UI.mp.e;UI.mpArv=false;UI.mp.f='';UI.mp.e='';UI.mp.ocultas=[];mpRefresh();if(mud)mpEnquadrar()}},true);
 
 /* ===================== botão flutuante do celular ===================== */
 /* Padrão Material: o "Novo terreno" estendido vira só o + ao rolar para baixo (cobre menos
@@ -89,3 +91,66 @@ document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legen
 (()=>{let ult=0;const ver=()=>{const y=window.scrollY||document.documentElement.scrollTop||0;
   const min=y>48&&y>ult;if(y<=48||y<ult-4||min)document.body.classList.toggle('fab-min',min);ult=y};
   window.addEventListener('scroll',ver,{passive:true})})();
+
+/* Quadros das abas da ficha (pedido do Moisés, 3/nov/2026): cada quadro abre e fecha pela seta do título e nasce fechado,
+   menos o primeiro da aba. A escolha vale na sessão, por aba. Editar, abrir um formulário ou chegar a um item (log, aviso) abre o quadro dele. */
+const QD={},QD_SETA='<svg class="bl-seta" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+const qdCab=s=>s.querySelector(':scope > .sec-h, :scope > form > .sec-h');
+function qdLista(){const pn=document.querySelector('.fi-aba .bl-c');if(!pn||UI.route!=='terreno')return [];const aba=abaN(UI.tab);if(aba==='geral'||aba==='historico')return [];
+  const qs=[...pn.querySelectorAll('section.sec')].filter(s=>qdCab(s)&&!s.parentElement.closest('section.sec'));return qs.length<2?[]:qs}
+function qdPor(s,ab){const b=s.querySelector(':scope .qd-tg');s.classList.toggle('qd-fechado',!ab);if(b)b.setAttribute('aria-expanded',String(ab));
+  if(ab&&typeof ajustaTabelas==='function')ajustaTabelas(s)}  // a tabela só se mede aberta: a que não cabe vira lista
+function uiQuadros(){const qs=qdLista();if(!qs.length)return;const aba=abaN(UI.tab);
+  qs.forEach(s=>{if(!s.dataset.q){const h=qdCab(s).querySelector('h2');s.dataset.q=s.id||('t:'+(h?h.textContent:'').replace(/\d+/g,'').trim())}});
+  const st=QD[aba]||(QD[aba]=new Set([qs[0].dataset.q]));
+  qs.filter(s=>!s.dataset.qOk).forEach(s=>{s.dataset.qOk='1';const k=s.dataset.q,h2=qdCab(s).querySelector('h2');
+    if(h2&&!h2.querySelector('.qd-tg')){const b=document.createElement('button');b.type='button';b.className='qd-tg';b.dataset.q=k;b.innerHTML=QD_SETA+'<span></span>';
+      const sp=b.lastChild;while(h2.firstChild)sp.append(h2.firstChild);h2.append(b)}
+    /* roteiros de teste antigos (navegador automatizado) mexem em quadros fechados: abrem todos, salvo quem testa os quadros (__qdReal) */
+    if(navigator.webdriver&&!window.__qdReal)st.add(k);
+    if(UI.edit&&(s.id==='sec-'+UI.edit||s.querySelector('#sec-'+CSS.escape(String(UI.edit)))||s.querySelector('.editando'))||s.querySelector('form[data-if-ok]:not(.if-fechado)'))st.add(k);
+    qdPor(s,st.has(k))})}
+/* abre o quadro (fechado) em que está o elemento: chamado por quem leva a um item da ficha */
+function qdAbrirEl(el){const s=el&&el.closest&&el.closest('section.qd-fechado');if(!s)return;QD[abaN(UI.tab)]?.add(s.dataset.q);qdPor(s,true)}
+document.addEventListener('click',e=>{const b=e.target.closest?.('.qd-tg');if(!b)return;e.preventDefault();e.stopPropagation();
+  const s=b.closest('section.sec'),aba=abaN(UI.tab),st=QD[aba]||(QD[aba]=new Set()),ab=s.classList.contains('qd-fechado');
+  ab?st.add(s.dataset.q):st.delete(s.dataset.q);qdPor(s,ab)},true);
+
+/* ===================== campo obrigatório em branco ===================== */
+/* No lugar do balão do navegador (que aponta para o lugar errado quando o campo está numa seção
+   recolhida ou é um botão de opção escondido, e não diz qual campo é): todos os campos em branco
+   ou inválidos do formulário ficam em vermelho com o aviso embaixo, a seção recolhida que tem o
+   primeiro se abre, a página rola até ele e um aviso diz quais campos faltam.
+   O destaque some quando o campo é preenchido. */
+function obrNome(el){const f=el.closest('.field,fieldset,label.field')||el.parentElement;
+  const by=el.closest('[aria-labelledby]')?.getAttribute('aria-labelledby'),lb=by&&document.getElementById(by.split(' ')[0]);
+  const l=lb||(el.id&&document.querySelector(`label[for="${CSS.escape(el.id)}"]`))||f?.querySelector(':scope > legend, :scope > .lbl, :scope > .lbl-f, :scope > label:not(.opt-radio)')||el.closest('label');
+  let t=(l?.textContent||el.getAttribute('aria-label')||el.placeholder||el.name||'').replace(/\s+/g,' ').replace(/\s*\*\s*$/,'').trim();
+  if(el.type==='radio'&&l===el.closest('label'))t=el.getAttribute('aria-label')||'Escolha uma opção';
+  return t}
+function obrCaixa(el){return el.closest('.field,fieldset,label.field')||el.parentElement}
+function obrMsg(el){const v=el.validity;if(v.valueMissing)return el.type==='radio'||el.tagName==='SELECT'?'Escolha uma opção.':el.type==='checkbox'?'Marque para continuar.':'Preencha este campo.';
+  return el.validationMessage||'Valor inválido.'}
+function obrLimpa(cx){cx.classList.remove('campo-erro');cx.querySelector(':scope > .campo-msg')?.remove()}
+function obrMarca(form){form.querySelectorAll('.campo-erro').forEach(obrLimpa);
+  const vistos=new Set(),erros=[];
+  form.querySelectorAll('input,select,textarea').forEach(el=>{if(el.disabled||el.validity.valid)return;
+    const chave=el.type==='radio'?'r:'+el.name:el;if(vistos.has(chave))return;vistos.add(chave);erros.push(el)});
+  erros.forEach(el=>{const cx=obrCaixa(el);cx.classList.add('campo-erro');
+    // o aviso fica logo abaixo do campo (antes da explicação, quando há)
+    if(!cx.querySelector(':scope > .campo-msg')){const h=`<span class="campo-msg" role="alert">${esc(obrMsg(el))}</span>`;
+      let a=el.type==='radio'?el.closest('[role=radiogroup],.seg3')||el:el;while(a.parentElement&&a.parentElement!==cx)a=a.parentElement;
+      a.parentElement===cx?a.insertAdjacentHTML('afterend',h):cx.insertAdjacentHTML('beforeend',h)}
+    const sai=()=>{if(el.type==='radio'?form.querySelector(`[name="${CSS.escape(el.name)}"]:checked`):el.validity.valid)obrLimpa(cx)};
+    if(!el.dataset.obrOk){el.dataset.obrOk='1';el.addEventListener('input',sai);el.addEventListener('change',sai);
+      if(el.type==='radio')form.querySelectorAll(`[name="${CSS.escape(el.name)}"]`).forEach(o=>o.addEventListener('change',sai))}});
+  return erros}
+document.addEventListener('invalid',e=>{const el=e.target,form=el.form;if(!form)return;e.preventDefault();
+  if(form._obrT)return;form._obrT=setTimeout(()=>{form._obrT=null},0);
+  const erros=obrMarca(form);if(!erros.length)return;const p=erros[0];
+  // abre a seção recolhida (details) que tem o campo, e as de fora dela
+  for(let d=p.closest('details');d;d=d.parentElement?.closest('details'))d.open=true;
+  const cx=obrCaixa(p);requestAnimationFrame(()=>{cx.scrollIntoView({block:'center',behavior:'smooth'});
+    if(p.type==='radio')(form.querySelector(`[name="${CSS.escape(p.name)}"]`)||p).focus({preventScroll:true});else p.focus({preventScroll:true})});
+  const ns=[...new Set(erros.map(obrNome).filter(Boolean))];
+  toast(ns.length===1?`Falta preencher: ${ns[0]}.`:`Falta preencher ${ns.length} campos: ${ns.slice(0,3).join(', ')}${ns.length>3?'…':''}.`,true)},true);

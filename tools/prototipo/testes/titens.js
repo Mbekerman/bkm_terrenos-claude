@@ -21,7 +21,7 @@ const abas=p=>p.$$eval('#modal [data-a=tkc-aba]',xs=>xs.map(x=>x.dataset.v));
 const abre=async(w,h,tema)=>{const ctx=await b.newContext({viewport:{width:w,height:h},deviceScaleFactor:1});
   await ctx.route('**/*',r=>{const u=r.request().url();if(u.startsWith('file://'))return r.fulfill({path:F,contentType:'text/html; charset=utf-8'});if(/leaflet.js|jszip/.test(u))return r.fulfill({path:L+(u.includes('leaflet')?'leaflet.js':'jszip.min.js'),contentType:'application/javascript'});return r.abort()});
   const p=await ctx.newPage();await p.addInitScript(TK_ACHA);p.on('pageerror',e=>erros.push(e.message));await p.goto('file:///x/a.html');await p.evaluate(t=>{localStorage.clear();localStorage.setItem('bkm-terrenos-tema',t)},tema);await p.reload();await p.waitForTimeout(400);return {ctx,p}};
-const abreCartao=async(p,tit)=>{await clica(p,'.tk',tit);await p.waitForTimeout(250)};
+const abreCartao=async(p,tit)=>{await p.evaluate(([f,a])=>window.BKM_TESTE.escopo(f,a),[(tt=>{for(const t of S.terrenos){const k=(t.tarefas||[]).find(x=>x.titulo.includes(tt));if(k){UI.tkSel={tid:t.id,kid:k.id};UI.tkAba='geral';UI.modal='tarefa';renderModal();return}}throw new Error('não achei a tarefa '+tt)}).toString(),tit]);await p.waitForTimeout(250)};
 const fecha=async p=>{await clica(p,'#modal [data-a=close]');await p.waitForTimeout(150)};
 const vai=async(p,h)=>{await p.evaluate(h=>history.replaceState(null,'','#'+h),h);await p.reload();await p.waitForTimeout(400)};
 const AJ='Análise jurídica da matrícula';
@@ -63,18 +63,18 @@ const ib=it(s,AJ,'terreno.testada_principal_m');await muda(p,`[data-itr="${ib.id
 s=await est(p);ok(it(s,AJ,'terreno.testada_principal_m').regra==='justificativa','regra "conclui com justificativa" no item');
 // editor de condição com grupo
 await clica(p,`#modal [data-a=it-cond][data-v="i:${ib.id}"]`);await p.waitForTimeout(150);
-await clica(p,'#modal [data-a=it-c-campo][data-p="0"][data-v="terreno.tipo_empreendimento"]');await p.waitForTimeout(80);
-await clica(p,'#modal [data-a=it-c-val][data-p="0"][data-v="his"]');await clica(p,'#modal [data-a=it-c-val][data-p="0"][data-v="hmp"]');await p.waitForTimeout(80);
+await clica(p,'#modal [data-a=it-c-campo][data-p="0"][data-v="terreno.situacao_ocupacao"]');await p.waitForTimeout(80);
+await clica(p,'#modal [data-a=it-c-val][data-p="0"][data-v="vazio"]');await p.waitForTimeout(80);
 await clica(p,'#modal [data-a=it-c-grupo]');await p.waitForTimeout(80);
-await clica(p,'#modal [data-a=it-c-campo][data-p="1.0"][data-v="terreno.topografia"]');await clica(p,'#modal [data-a=it-c-val][data-p="1.0"][data-v="aclive"]');
+await clica(p,'#modal [data-a=it-c-campo][data-p="1.0"][data-v="terreno.topo_perfil"]');await clica(p,'#modal [data-a=it-c-val][data-p="1.0"][data-v="inclinado"]');
 await clica(p,'#modal [data-a=it-c-mais][data-p="1"]');await p.waitForTimeout(80);
 await clica(p,'#modal [data-a=it-c-campo][data-p="1.1"][data-v="terreno.necessidade_demolicao"]');await clica(p,'#modal [data-a=it-c-val][data-p="1.1"][data-v="confirmada"]');await p.waitForTimeout(100);
 const fr=await p.$eval('.it-frase',x=>x.textContent);
-ok(/tipo de empreendimento é HIS ou HMP e \(topografia é Aclive ou precisa demolir é Confirmada\)/.test(fr),'a frase lê a condição com o grupo: '+fr);
+ok(/ocupação é Vazio e \(perfil topográfico é Inclinado ou precisa demolir é Confirmada\)/.test(fr),'a frase lê a condição com o grupo: '+fr);
 await p.screenshot({path:O+'3_condicao.png'});
 await clica(p,'#modal [data-a=it-c-salva]');await p.waitForTimeout(150);s=await est(p);
 const cd=it(s,AJ,'terreno.testada_principal_m').cond;ok(cd&&cd.itens.length===2&&cd.itens[1].grupo.modo==='qualquer','condição salva com um grupo "qualquer uma"');
-ok((await abas(p)).includes('config')&&await p.$eval('.it-ct',x=>x.textContent.includes('HIS ou HMP')),'volta à aba Configuração com a condição');
+ok((await abas(p)).includes('config')&&await p.$eval('.it-ct',x=>x.textContent.includes('ocupação é Vazio')),'volta à aba Configuração com a condição');
 await p.screenshot({path:O+'4_aba_config.png'});
 // grupo dentro de grupo não existe no editor (um nível)
 ok(!(await p.$('.it-grp [data-a=it-c-grupo]')),'um nível de grupo só');
@@ -126,7 +126,7 @@ await preenche(p,'.it-just-f textarea','Levantamento contratado; o diretor liber
 ok(!!tar(s,0,kk.titulo).feita&&tar(s,0,kk.titulo).justs.at(-1).libera===true,'concluiu e a justificativa marca que passou pelo bloqueio');
 // 6. condição que não vale não pede nada
 await fecha(p);s=await est(p);
-ok(s.terrenos[0].tipoEmp!=='his'&&s.terrenos[0].tipoEmp!=='hmp','o terreno não é HIS nem HMP');
+ok(s.terrenos[0].ocupacao!=='vazio','o terreno não está vazio');
 await abreCartao(p,AJ);if(await p.$('#modal [data-a=fm-modo][data-v=responder]:not(.on)')){await clica(p,'#modal [data-a=fm-modo][data-v=responder]');await p.waitForTimeout(100)}const tst=it(s,AJ,'terreno.testada_principal_m');
 if(await p.$(`[data-fm="${tst.id}"]`)){await muda(p,`[data-fm="${tst.id}"]`,'');await p.waitForTimeout(100)}
 ok(await p.$eval(`[data-fm="${tst.id}"]`,x=>!x.closest('.fm-ans').textContent.includes('pede justificativa')),'com a condição sem valer, a testada em branco não pede justificativa');
