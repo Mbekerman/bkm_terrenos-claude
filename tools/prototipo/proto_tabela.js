@@ -1,8 +1,8 @@
 /* =====================================================================
    Tabela de terrenos (pedido do Moisés, 4/nov/2026)
-   Colunas: 1 código, nome e endereço · 2 cidade · 3 zona da cidade · 4 área, zoneamento
-   e perfil topográfico · 5 unidades e VGV do estudo válido · 6 preço pedido e proposta
-   ativa · 7 corretor · 8 temperatura. Cada coluna ordena pelo primeiro dado dela.
+   Colunas: Terreno (código, nome e endereço) · Cidade · Região · Imóvel (área, zoneamento e
+   perfil topográfico) · Projeto (VGV e unidades do estudo válido) · Negociação (pedida e
+   proposta ativa) · Corretor · Temperatura · Responsável (foto). Cada coluna ordena pelo primeiro dado dela.
    Ordenação em várias colunas: o clique no título passa por crescente, decrescente e
    sem ordem; a primeira coluna clicada manda e as seguintes desempatam, na ordem em que
    foram clicadas (UI.sorts.ter = [{k, dir}, ...]). Sem nenhuma, temperatura e código.
@@ -20,20 +20,22 @@ function terCorretores(t){const ids=[...new Set([...(t.corretores||[]).slice().s
   return ids.map(id=>corretor(id)).filter(Boolean)}
 const terEnd=t=>[[t.logradouro,t.numero].filter(Boolean).join(', '),t.bairro].filter(Boolean).join(' · ');
 const terNada=s=>`<span class="faint">${s}</span>`;
+/* títulos do Moisés (4/nov/2026, segunda versão) */
 const COLS_TER=[
-  {k:'ter',l:'Código, nome e endereço',cls:'esq',s:t=>t.codigo,
+  {k:'ter',l:'Terreno',cls:'esq',s:t=>t.codigo,
     v:t=>`<div class="tb-c1"><button class="iconbtn tb-olho" data-a="tb-gav" data-id="${t.id}" aria-label="Ver a ficha de ${esc(t.nome)}" title="Ver a ficha">${ic('olho',20)}</button><div class="tb-c1t"><div class="t2 num">${t.codigo}</div><div class="t1">${esc(t.nome)}</div>${terEnd(t)?`<div class="t2">${esc(terEnd(t))}</div>`:''}</div></div>`},
   {k:'cid',l:'Cidade',s:terCid,v:t=>terCid(t)?esc(terCid(t)):terNada('—')},
-  {k:'zona',l:'Zona',s:terZona,v:t=>terZona(t)||terNada('—')},
-  {k:'area',l:'Área, zoneamento e topografia',s:t=>areaAdotada(t),
+  {k:'zona',l:'Região',s:terZona,v:t=>terZona(t)||terNada('—')},
+  {k:'area',l:'Imóvel',s:t=>areaAdotada(t),
     v:t=>{const a=areaAdotada(t),z=zonasTxt(t),tp=tpAtual(t);return `<div>${a!=null?m2(a):terNada('Sem área')}</div><div class="t2">${z?esc(z):'Zoneamento não consultado'}</div><div class="t2">${tp?esc(tpNome(tp)):'Topografia não medida'}</div>`}},
-  {k:'estudo',l:'Unidades e VGV',s:t=>terEstudo(t)?.un??null,
-    v:t=>{const e=terEstudo(t);return e?`<div>${e.un!=null?num(e.un)+' unidades':terNada('Sem unidades')}</div><div class="t2">VGV ${e.vgv!=null?mi(e.vgv):'—'}</div>`:terNada('Sem estudo válido')}},
-  {k:'preco',l:'Preço pedido e proposta ativa',cls:'num',s:fxPedido,
-    v:t=>{const p=fxPedido(t),pr=fxProposta(t);return `<div>${p!=null?mi(p):terNada('Sem preço pedido')}</div><div class="t2">${pr!=null?'Proposta '+mi(pr):'Sem proposta ativa'}</div>`}},
+  {k:'estudo',l:'Projeto',cls:'num',s:t=>terEstudo(t)?.vgv??null,
+    v:t=>{const e=terEstudo(t);return e?`<div>${e.vgv!=null?'VGV '+mi(e.vgv):terNada('Sem VGV')}</div><div class="t2">${e.un!=null?num(e.un)+' unidades':'Sem unidades'}</div>`:terNada('Sem estudo válido')}},
+  {k:'preco',l:'Negociação',cls:'num',s:fxPedido,
+    v:t=>{const p=fxPedido(t),pr=fxProposta(t);return `<div>Pedida: ${p!=null?mi(p):terNada('—')}</div><div class="t2">Proposta: ${pr!=null?mi(pr):'—'}</div>`}},
   {k:'corretor',l:'Corretor',s:t=>terCorretores(t)[0]?.nome||null,
     v:t=>{const c=terCorretores(t);return c.length?`<div>${esc(c[0].nome)}</div>${c.length>1?`<div class="t2" title="${esc(c.slice(1).map(x=>x.nome).join(', '))}">+${c.length-1} corretor${c.length>2?'es':''}</div>`:c[0].imob?`<div class="t2">${esc(c[0].imob)}</div>`:''}`:terNada('Sem corretor')}},
-  {k:'temp',l:'Temperatura',s:t=>t.neg?.temp??null,v:t=>tempMini(t.neg?.temp)}];
+  {k:'temp',l:'Temperatura',s:t=>t.neg?.temp??null,v:t=>tempMini(t.neg?.temp)},
+  {k:'resp',l:'Responsável',s:t=>t.resp||null,v:t=>t.resp?`<span class="tb-resp" title="${esc(t.resp)}">${av(t.resp)}<span class="sr-only">${esc(t.resp)}</span></span>`:terNada('—')}];
 const terSorts=()=>Array.isArray(UI.sorts.ter)?UI.sorts.ter:(UI.sorts.ter=[]);
 /* crescente → decrescente → sem ordem; coluna nova entra no fim da fila (desempata as anteriores) */
 function terOrdenar(k){const L=terSorts(),i=L.findIndex(x=>x.k===k);
