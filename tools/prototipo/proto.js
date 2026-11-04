@@ -675,12 +675,13 @@ function go(route,x={}){if(UI.edMini)Object.assign(UI,{edMini:false,mpModo:null,
 
 /* ===================== modais ===================== */
 function renderModal(){
-  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.nv=null;UI.nvPool=null;UI.nvKmz=null;UI.ofPoly=null;UI.kmzNovo=false;UI.lotes=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.crPredNovo=false;UI.crAviso=null;UI.grafico=null;UI.geo=null;UI.alvoParte=null;UI.poiExcl=null;return}
+  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.nv=null;UI.nvPool=null;UI.nvKmz=null;UI.ofPoly=null;UI.kmzNovo=false;UI.lotes=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.crPredNovo=false;UI.crAviso=null;UI.grafico=null;UI.geo=null;UI.alvoParte=null;UI.poiExcl=null;UI.ltDup=null;return}
   let h='';const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`;
   h=quadrosModal(M,fechar)||cronoModal(M,fechar)||viabModal(M,fechar)||partesModal(M,fechar)||fasesModal(M,fechar)||funilModal(M,fechar)||setoresModal(M,fechar)||topoModal(M,fechar);
   if(M==='novo')h=UI.nv?nvDadosHtml(fechar):nvPasso1Html(fechar);
   if(M==='novo-sobre')h=nvSobreHtml(fechar);
   if(M==='lotes-poly')h=lotesPolyHtml(fechar);
+  if(M==='lt-dup')h=ltDupHtml(fechar);
   if(M==='oferta'){const tt=T(UI.id),pd=UI.ofPoly;h=`<div class="dh"><h2>Registrar oferta</h2>${fechar}</div><form data-form="oferta" id="f-of"><div class="fields">
     ${pd?`<div class="field full"><div class="banner blue">${ic('layers')}<div>Oferta de parte do terreno: ${m2(Math.round(areaPoly(pd)))}${tt?.poly?` de ${m2(Math.round(areaPoly(tt.poly)))} (${num(100*areaPoly(pd)/areaPoly(tt.poly),0)}%)`:''}. O pedaço oferecido fica guardado na oferta.</div></div></div>`:''}
     <div class="field"><label for="o-c">Corretor</label><select id="o-c" name="cid"><option value="">Sem corretor / direto</option>${S.corretores.map(c=>`<option value="${c.id}">${esc(c.nome)} · ${esc(c.imob)}</option>`).join('')}</select></div>
@@ -714,8 +715,8 @@ function dedupe(){
   for(const t of S.terrenos){
     const ins=t.insc.find(i=>insCid(i)===mun&&sqls.some(q=>q.length>=6&&digits(i.sql)===q));
     if(ins){hit=t;cert='certa';msg=`Mesma inscrição ${ins.sql} (${cid.cidade})`;break}
-    let mm=null;const m=t.mats.find(x=>{mm=mats.find(y=>y.n.length>=3&&digits(x.num)===y.n);return mm});
-    if(m){const ok=!mm.cri||m.cri===mm.cri;hit=t;cert=mm.cri&&m.cri===mm.cri?'certa':'provavel';msg=`Mesma matrícula ${m.num}${mm.cri?(m.cri===mm.cri?' no '+m.cri:' em outro cartório ('+m.cri+')'):` (${m.cri||'cartório não informado'})`}`;break}
+    let mm=null;const m=t.mats.find(x=>{mm=mats.find(y=>y.n.length>=3&&digits(x.num)===y.n&&criIgual(x.cri,y.cri))||mats.find(y=>y.n.length>=3&&digits(x.num)===y.n);return mm});
+    if(m){hit=t;cert=criIgual(m.cri,mm.cri)?'certa':'provavel';msg=`Mesma matrícula ${m.num}${mm.cri?(m.cri===mm.cri?' no '+m.cri:' em outro cartório ('+m.cri+')'):` (${m.cri||'cartório não informado'})`}`;break}
     if(log.length>=4&&(t.logradouro||'').toLowerCase()===log&&(!nr||!t.numero||t.numero.toLowerCase()===nr)){hit=t;cert='possivel';msg='Mesmo endereço'}
     // nos dois cadastros os 6 primeiros dígitos são setor e quadra
     if(nd&&sql.length===nd&&t.situacao==='ativo'){const q=t.insc.find(i=>insCid(i)===mun&&digits(i.sql).length===nd&&digits(i.sql).slice(0,6)===sql.slice(0,6)&&digits(i.sql)!==sql);if(q)quadra.push([t,q])}
@@ -724,8 +725,8 @@ function dedupe(){
   const viz=!hit&&quadra.length?`<div class="banner blue" style="margin-top:8px">${ic('layers')}<div style="flex:1"><div class="bt">${quadra.length} terreno${quadra.length>1?'s':''} na mesma quadra (setor ${mun==='sjc'?sql.slice(0,2):sql.slice(0,3)}, quadra ${mun==='sjc'?sql.slice(2,6):sql.slice(3,6)})</div>
     <div>${quadra.map(([t,q])=>`<button type="button" class="linkbtn" data-a="abrir" data-id="${t.id}">${t.codigo} · ${esc(t.nome)}</button> <span class="faint">(${cid.rotulo} ${esc(q.sql)})</span>`).join('<br>')}</div><div class="hint" style="margin-top:4px">Não é duplicata. Pode valer estudar os lotes juntos numa área de interesse.</div></div></div>`:'';
   if(!hit){box.innerHTML=(sqls.length||mats.length||log?'<div class="hint">Nenhum cadastro com esta inscrição, matrícula ou endereço. Será criado um terreno novo.</div>':'<div class="hint">Digite a inscrição ou a matrícula. Teste com o SQL 089.123.0045-6 (já cadastrado) ou 089.123.0099-0 (mesma quadra de dois terrenos).</div>')+viz;btn.textContent='Cadastrar terreno';return}
-  box.innerHTML=`<div class="banner ${cert==='certa'?'blue':'warn'}">${ic(cert==='certa'?'link':'warn')}<div style="flex:1"><div class="bt">${cert==='certa'?'Este imóvel já está cadastrado':'Possível duplicidade'}: ${hit.codigo} · ${esc(hit.nome)}</div><div>${esc(msg)}. ${cert==='certa'?'Se houver oferta, ela será registrada nesse terreno.':'Confira antes de salvar.'}</div><button type="button" class="btn sm" style="margin-top:8px" data-a="abrir" data-id="${hit.id}">Abrir ficha existente</button></div></div>`;
-  btn.textContent=cert==='certa'?'Registrar no terreno existente':'Cadastrar mesmo assim';
+  box.innerHTML=`<div class="banner ${cert==='certa'?'blue':'warn'}">${ic(cert==='certa'?'link':'warn')}<div style="flex:1"><div class="bt">${cert==='certa'?'Este imóvel já está cadastrado':'Possível duplicidade'}: ${hit.codigo} · ${esc(hit.nome)}</div><div>${esc(msg)}. ${cert==='certa'?'O lote não é cadastrado de novo: registre a nova oferta nesse terreno, e o analista decide lá se segue a tratativa ou descarta.':'Confira antes de salvar.'}</div><button type="button" class="btn sm" style="margin-top:8px" data-a="abrir" data-id="${hit.id}">Abrir ficha existente</button></div></div>`;
+  btn.textContent=cert==='certa'?`Registrar nova oferta no ${hit.codigo}`:'Cadastrar mesmo assim';
 }
 
 /* ===================== eventos ===================== */
@@ -898,6 +899,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       if(dup){alvo=T(dup)}else{do S.seqT++;while(S.terrenos.some(x=>x.codigo==='TER-'+String(S.seqT).padStart(6,'0')));alvo={...seedVazio(),codigo:'TER-'+String(S.seqT).padStart(6,'0'),nome:F.nome,logradouro:F.logradouro.trim(),numero:F.numero.trim(),bairro:F.bairro.trim(),zona:F.zona||null,resp:F.resp,origem:F.origem,dataIdent:HOJE};
         alvo.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado'}];nvGravar(alvo,F);S.terrenos.push(alvo);crAplicarPadrao(alvo);nvPlGravar(alvo,nvPl,F.mun||cidDoNome(F.municipio)||'outro')}
       const val=lerNum(F.valor);
+      if(dup&&!val&&!F.cid){UI.modal=null;save();nvAbrirOferta(alvo,null,`Registre a nova oferta no ${alvo.codigo}.`);break}
       if(val||F.cid){const o={id:uid(),cid:F.cid||null,data:HOJE,valor:val,forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,status:'ativa'};alvo.ofertas.push(o);
         if(o.cid&&!alvo.corretores.some(x=>x.cid===o.cid))alvo.corretores.push({cid:o.cid,principal:!alvo.corretores.some(x=>x.principal)});
         if(!alvo.neg||!['ativo','stand_by'].includes(alvo.neg.status)){alvo.neg=novaNeg(o.id,Number(F.temp)||null);log(alvo,'Negociação aberta');etAbriu(alvo)}

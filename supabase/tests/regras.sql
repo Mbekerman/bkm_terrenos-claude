@@ -3339,7 +3339,15 @@ select pg_temp.ok((select parte_id = :'lp1' from app.matriculas where numero = '
 select app.salvar_lote(:'tl', null, format('{"parte_id":"%s","matricula":{"numero":"301.002","area_registrada_m2":300},"inscricoes":["%s","%s"]}', :'lp2', :'li2', :'li3')::jsonb) as lt2 \gset
 select app.salvar_lote(:'tl', null, format('{"parte_id":"%s","matricula":{"numero":"301.003","area_registrada_m2":200},"inscricoes":["%s"]}', :'lp2', :'li3')::jsonb) as lt3 \gset
 select pg_temp.ok((select titulo from app.terreno_lotes where id = :'lt3') = 'Lote 3', 'os lotes seguem numerados');
+select set_config('t.tx', :'tx', false);
 select pg_temp.falha(format($$select app.salvar_lote(%L, null, '{"matricula":{"numero":"301001"}}')$$, :'tl'), 'a mesma matrícula não entra em dois lotes');
+do $$ begin
+  perform app.salvar_lote(current_setting('t.tx')::uuid, null, jsonb_build_object('matricula', jsonb_build_object('numero', '301.001', 'cartorio', (select cartorio from app.matriculas where numero = '301.001'))));
+  raise exception 'FALHOU: matrícula de outro terreno entrou';
+exception when unique_violation then
+  if sqlerrm not like '%já está no terreno TER-%registre uma nova oferta%' then raise exception 'FALHOU: mensagem %', sqlerrm; end if;
+  raise notice 'ok  matrícula de outro terreno: lote recusado, com o código do terreno e a nova oferta (%)', sqlerrm;
+end $$;
 select pg_temp.falha(format($$select app.salvar_lote(%L, %L, '{"titulo":"lote 1"}')$$, :'tl', :'lt2'), 'título de lote não se repete no terreno');
 select pg_temp.falha(format($$select app.salvar_lote(%L, null, '{"parte_id":"%s"}')$$, :'tl', :'pa'), 'a parte tem que ser do terreno');
 select pg_temp.falha(format($$insert into app.terreno_lotes (empresa_id, terreno_id, parte_id, titulo) values (%L, %L, %L, 'Direto')$$, :'emp', :'tl', :'lp1'), 'lote só entra pela RPC');

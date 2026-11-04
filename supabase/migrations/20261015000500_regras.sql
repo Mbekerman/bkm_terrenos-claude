@@ -1698,7 +1698,13 @@ begin
       select id into v_outro from app.matriculas
        where empresa_id = t.empresa_id and cartorio = v_cri and numero_norm = regexp_replace(v_num, '\D', '', 'g') and id is distinct from v_mat;
       if v_outro is not null then
-        if exists (select 1 from app.terreno_lotes where matricula_id = v_outro) or (select terreno_id from app.matriculas where id = v_outro) <> t.id then
+        -- de outro terreno: não cadastra o lote; o caminho é registrar uma nova oferta naquele terreno (decisão do Moisés, 4/nov/2026)
+        if (select terreno_id from app.matriculas where id = v_outro) <> t.id then
+          raise exception 'A matrícula % do % já está no terreno %: registre uma nova oferta nele', v_num, v_cri,
+            (select x.codigo from app.terrenos x join app.matriculas mm on mm.terreno_id = x.id where mm.id = v_outro)
+            using errcode = '23505', hint = 'nova_oferta';
+        end if;
+        if exists (select 1 from app.terreno_lotes where matricula_id = v_outro) then
           raise exception 'A matrícula % do % já está em outro lote', v_num, v_cri using errcode = '23505';
         end if;
         -- matrícula do terreno ainda sem lote: passa a ser a deste

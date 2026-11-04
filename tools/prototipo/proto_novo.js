@@ -192,7 +192,7 @@ function nvPlLer(f){const P=[...f.querySelectorAll('#nv-pt-lista .nv-pt')].map(x
 function nvPlValida(d){for(const [i,p] of d.partes.entries()){if(!p.nome)throw new Error(`Dê um título à parte ${i+1}.`);for(const k of ['tel','email','doc'])p[k]=ptValida(k,p[k])}
   if(new Set(d.partes.map(p=>p.nome.toLowerCase())).size<d.partes.length)throw new Error('Duas partes com o mesmo título.');
   if(new Set(d.lotes.map(l=>l.titulo.toLowerCase())).size<d.lotes.length)throw new Error('Dois lotes com o mesmo título.');
-  const ms=d.lotes.filter(l=>l.num).map(l=>digits(l.num)+'|'+l.cri);if(new Set(ms).size<ms.length)throw new Error('A mesma matrícula está em dois lotes.')}
+  const ms=d.lotes.filter(l=>l.num);if(ms.some((a,i)=>ms.some((b,j)=>j>i&&digits(a.num)===digits(b.num)&&criIgual(a.cri,b.cri))))throw new Error('A mesma matrícula está em dois lotes.')}
 // grava no terreno novo: as partes (a primeira é a "Vendedor 1" do terreno) e os lotes com as inscrições
 function nvPlGravar(t,d,mun){const P=partesDe(t);P.length=0;
   const ids=d.partes.map(p=>{const pa={id:uid(),ativa:true,neg:null,propostas:[],nome:p.nome,essencial:true,area:null};['pessoa','tel','email','doc','obs'].forEach(k=>{if(p[k])pa[k]=p[k]});P.push(pa);return pa.id});

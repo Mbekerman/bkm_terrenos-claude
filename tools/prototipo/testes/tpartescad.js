@@ -89,6 +89,17 @@ ok(t.lotes.find(l=>l.id===ln.id).parte===pc.id&&t.mats.find(m=>m.num==='301.900'
 await p.selectOption(`#lt-${ln.id} [data-k=cri]`,await p.$eval(`#lt-${lA[0].id} [data-k=cri]`,x=>x.value));await p.waitForTimeout(200);
 await p.fill(`#lt-${ln.id} [data-k=num]`,'301.001');await p.press(`#lt-${ln.id} [data-k=num]`,'Tab');await p.waitForTimeout(200);
 ok((await toast(p)).includes('já está no'),'matrícula de outro lote é recusada');
+// matrícula ou SQL de outro terreno: o lote não entra; oferece a nova oferta naquele terreno (4/nov/2026)
+await p.fill(`#lt-${ln.id} [data-k=num]`,'184.552');await p.press(`#lt-${ln.id} [data-k=num]`,'Tab');await p.waitForTimeout(250);
+ok(!!(await p.$('#modal [data-a=lt-dup-oferta]'))&&(await p.$eval('#modal h2',x=>x.textContent)).includes('já está em outro terreno')&&(await ter(p,'Quadra dos Andrade')).lotes.find(l=>l.id===ln.id).num==='301.900','matrícula de outro terreno: lote recusado, pergunta pela nova oferta');
+await p.click('#modal [data-a=close]');await p.waitForTimeout(150);
+await p.fill(`#lt-${ln.id} [name=sql]`,'089.123.0045-6');await p.evaluate(id=>document.querySelector(`#lt-${id} form[data-form=lt-sql]`).requestSubmit(),ln.id);await p.waitForTimeout(250);
+const dupTxt=await p.$eval('#modal [data-a=lt-dup-oferta]',x=>x.textContent).catch(()=>'');
+ok(/Registrar nova oferta no TER-/.test(dupTxt)&&!(await ter(p,'Quadra dos Andrade')).insc.some(i=>i.sql==='089.123.0045-6'),'SQL de outro terreno: não entra, oferece a nova oferta');
+await p.click('#modal [data-a=lt-dup-oferta]');await p.waitForTimeout(300);
+ok(!!(await p.$('#modal form[data-form=oferta]'))&&(await p.evaluate(()=>location.hash+location.pathname)).includes('comercial'),'"Registrar nova oferta" abre o formulário da oferta no outro terreno');
+await p.click('#modal [data-a=close]');await p.waitForTimeout(150);
+await p.evaluate(c=>{location.hash='#/terrenos/'+c+'/terreno'},t.codigo);await p.waitForTimeout(500);
 // parte com lote não sai
 await p.click(`#pt2-${pc.id} [data-a=pt2-excluir]`);await p.waitForTimeout(200);
 ok((await toast(p)).includes('tem lotes')&&(await ter(p,'Quadra dos Andrade')).partes.some(x=>x.id===pc.id),'parte com lote não é excluída');
@@ -97,6 +108,12 @@ await p.click(`#pt2-${pc.id} [data-a=pt2-excluir]`);await p.waitForTimeout(200);
 t=await ter(p,'Quadra dos Andrade');ok(!t.partes.some(x=>x.id===pc.id)&&!t.mats.some(m=>m.num==='301.900'),'Excluir lote e depois Excluir parte');
 await ctx.close();
 
+// Novo terreno com a matrícula de outro terreno (cartório em branco): só a nova oferta
+({p,ctx}=await abre(1440,900));await passo2(p);await p.fill('#n-nome','Repetido');await p.fill('#n-mat','184.552');await p.waitForTimeout(200);
+const bt=await p.$eval('#btn-novo',x=>x.textContent);ok(/^Registrar nova oferta no TER-/.test(bt),'matrícula de outro terreno com cartório em branco: botão vira "Registrar nova oferta" ('+bt+')');
+await enviar(p,'f-novo');ok(!!(await p.$('#modal form[data-form=oferta]'))&&!(await ter(p,'Repetido')),'sem valor no passo 2: abre a oferta no terreno existente, nada é cadastrado de novo');
+await p.click('#modal [data-a=close]');await p.waitForTimeout(150);
+await ctx.close();
 for(const [w,h,tema,n] of [[1440,900,'escuro','5_escuro'],[412,915,null,'6_celular']]){({p,ctx}=await abre(w,h,tema));
   await passo2(p);await p.fill('#n-nome','Teste '+n);await p.click('[data-a=nv-pt-mais]');await p.fill('#n-mat','1');await p.click('[data-a=nv-lt-add]');
   await p.evaluate(()=>document.getElementById('nv-pl').scrollIntoView());await p.waitForTimeout(150);await p.screenshot({path:O+n+'_passo2.png'});

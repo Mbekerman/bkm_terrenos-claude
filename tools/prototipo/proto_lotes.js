@@ -147,7 +147,8 @@ document.addEventListener('change',e=>{const el=e.target.closest('[data-ch]');if
     if((pa[k]||null)===v)return;pa[k]=v;ltRender(t);return}
   if(ch==='lt'){const l=ltDe(t,el.dataset.l),k=el.dataset.k;if(!l)return;let v=el.value;
     if(k==='titulo'){v=v.trim();if(!v||t.lotes.some(x=>x!==l&&x.titulo.trim().toLowerCase()===v.toLowerCase())){toast(v?'Já existe um lote com este título.':'O lote precisa de um título.',true);el.value=l.titulo;return}}
-    if(k==='num'){v=v.trim();const o=v&&t.lotes.find(x=>x!==l&&digits(x.num)===digits(v)&&x.cri===l.cri);if(o){toast(`A matrícula ${v} já está no ${o.titulo}.`,true);el.value=l.num;return}}
+    if(k==='num'){v=v.trim();const o=v&&t.lotes.find(x=>x!==l&&digits(x.num)===digits(v)&&criIgual(x.cri,l.cri));if(o){toast(`A matrícula ${v} já está no ${o.titulo}.`,true);el.value=l.num;return}
+      const ou=v&&dupOutroTerreno(t,{num:v,cri:l.cri});if(ou){el.value=l.num;ltDupAbrir(ou,`A matrícula ${v}`);return}}
     if(k==='area'||k==='areaInf')v=lerNum(v);
     if(k==='cri'){l.criDig=!!v&&v!==t.cri}
     if(k==='fonte'&&v==='informada'&&l.areaInf==null)l.areaInf=ltInfo(t,l).adot;
@@ -183,7 +184,20 @@ document.addEventListener('submit',e=>{const f=e.target;if(f.dataset.form!=='lt-
   const F=Object.fromEntries(new FormData(f)),c=CIDADES_INSC[F.mun]||CIDADES_INSC.sp;
   if(c.mascara&&digits(F.sql).length!==digitosMasc(c.mascara)){toast(`${c.rotulo} incompleto: são ${digitosMasc(c.mascara)} dígitos.`,true);return}
   const ja=t.insc.find(x=>insCid(x)===F.mun&&digits(x.sql)===digits(F.sql)&&(c.mascara||x.sql===F.sql));
+  if(!ja){const ou=dupOutroTerreno(t,{sql:F.sql,mun:F.mun});if(ou){ltDupAbrir(ou,`O ${c.rotulo} ${F.sql}`);return}}
   if(ja){if(l.ins.includes(ja.id)){toast('Este SQL já está no lote.',true);return}const out=t.lotes.filter(x=>x.ins.includes(ja.id));l.ins.push(ja.id);
     log(t,`${c.rotulo} ${ja.sql} também no ${l.titulo}`);ltRender(t);toast(`${c.rotulo} ${ja.sql} também está no ${out.map(x=>x.titulo).join(', ')}: a divergência de área passa a ser do grupo.`);return}
   const ins={id:uid(),mun:F.mun,sql:F.sql,area:lerNum(F.area),valores:[]};t.insc.push(ins);l.ins.push(ins.id);
   log(t,`${c.rotulo} ${F.sql} (${c.cidade}) adicionada ao ${l.titulo}`);ltRender(t);if(loteBuscavel(ins))loteBuscar(t,t.insc.indexOf(ins))});
+
+/* matrícula ou SQL que já está em outro terreno: o lote não entra; pergunta se quer registrar uma nova oferta
+   naquele terreno, e o analista decide lá se segue ou descarta (decisão do Moisés, 4/nov/2026).
+   Cartório em branco conta como o mesmo (é o da poligonal, ainda não conhecido). */
+const criIgual=(a,b)=>!a||!b||a===b;
+function dupOutroTerreno(t,q){return S.terrenos.find(x=>x!==t&&(q.num?x.mats.some(m=>digits(m.num)===digits(q.num)&&criIgual(m.cri,q.cri)):x.insc.some(i=>insCid(i)===q.mun&&digits(i.sql)===digits(q.sql))))}
+function ltDupAbrir(ou,oque){UI.ltDup={id:ou.id,oque};UI.modal='lt-dup';renderModal()}
+function ltDupHtml(fechar){const d=UI.ltDup,ou=d&&T(d.id);if(!ou)return '';
+  return `<div class="dh"><div><h2>${esc(d.oque)} já está em outro terreno</h2></div>${fechar}</div>
+  <div class="banner blue">${ic('link')}<div style="flex:1"><div class="bt">${ou.codigo} · ${esc(ou.nome)}</div><div>O lote não é cadastrado de novo. Se chegou uma oferta, registre-a nesse terreno: o analista decide lá se segue a tratativa ou descarta.</div></div></div>
+  <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn" data-a="abrir" data-id="${ou.id}">Abrir ${ou.codigo}</button><button class="btn primary" data-a="lt-dup-oferta">Registrar nova oferta no ${ou.codigo}</button></div>`}
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a=lt-dup-oferta]');if(!a||!UI.ltDup)return;const ou=T(UI.ltDup.id);UI.ltDup=null;if(ou)nvAbrirOferta(ou,null,`Registre a nova oferta no ${ou.codigo}.`)});

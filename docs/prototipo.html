@@ -5916,12 +5916,13 @@ function go(route,x={}){if(UI.edMini)Object.assign(UI,{edMini:false,mpModo:null,
 
 /* ===================== modais ===================== */
 function renderModal(){
-  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.nv=null;UI.nvPool=null;UI.nvKmz=null;UI.ofPoly=null;UI.kmzNovo=false;UI.lotes=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.crPredNovo=false;UI.crAviso=null;UI.grafico=null;UI.geo=null;UI.alvoParte=null;UI.poiExcl=null;return}
+  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.nv=null;UI.nvPool=null;UI.nvKmz=null;UI.ofPoly=null;UI.kmzNovo=false;UI.lotes=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.crPredNovo=false;UI.crAviso=null;UI.grafico=null;UI.geo=null;UI.alvoParte=null;UI.poiExcl=null;UI.ltDup=null;return}
   let h='';const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`;
   h=quadrosModal(M,fechar)||cronoModal(M,fechar)||viabModal(M,fechar)||partesModal(M,fechar)||fasesModal(M,fechar)||funilModal(M,fechar)||setoresModal(M,fechar)||topoModal(M,fechar);
   if(M==='novo')h=UI.nv?nvDadosHtml(fechar):nvPasso1Html(fechar);
   if(M==='novo-sobre')h=nvSobreHtml(fechar);
   if(M==='lotes-poly')h=lotesPolyHtml(fechar);
+  if(M==='lt-dup')h=ltDupHtml(fechar);
   if(M==='oferta'){const tt=T(UI.id),pd=UI.ofPoly;h=`<div class="dh"><h2>Registrar oferta</h2>${fechar}</div><form data-form="oferta" id="f-of"><div class="fields">
     ${pd?`<div class="field full"><div class="banner blue">${ic('layers')}<div>Oferta de parte do terreno: ${m2(Math.round(areaPoly(pd)))}${tt?.poly?` de ${m2(Math.round(areaPoly(tt.poly)))} (${num(100*areaPoly(pd)/areaPoly(tt.poly),0)}%)`:''}. O pedaço oferecido fica guardado na oferta.</div></div></div>`:''}
     <div class="field"><label for="o-c">Corretor</label><select id="o-c" name="cid"><option value="">Sem corretor / direto</option>${S.corretores.map(c=>`<option value="${c.id}">${esc(c.nome)} · ${esc(c.imob)}</option>`).join('')}</select></div>
@@ -5955,8 +5956,8 @@ function dedupe(){
   for(const t of S.terrenos){
     const ins=t.insc.find(i=>insCid(i)===mun&&sqls.some(q=>q.length>=6&&digits(i.sql)===q));
     if(ins){hit=t;cert='certa';msg=`Mesma inscrição ${ins.sql} (${cid.cidade})`;break}
-    let mm=null;const m=t.mats.find(x=>{mm=mats.find(y=>y.n.length>=3&&digits(x.num)===y.n);return mm});
-    if(m){const ok=!mm.cri||m.cri===mm.cri;hit=t;cert=mm.cri&&m.cri===mm.cri?'certa':'provavel';msg=`Mesma matrícula ${m.num}${mm.cri?(m.cri===mm.cri?' no '+m.cri:' em outro cartório ('+m.cri+')'):` (${m.cri||'cartório não informado'})`}`;break}
+    let mm=null;const m=t.mats.find(x=>{mm=mats.find(y=>y.n.length>=3&&digits(x.num)===y.n&&criIgual(x.cri,y.cri))||mats.find(y=>y.n.length>=3&&digits(x.num)===y.n);return mm});
+    if(m){hit=t;cert=criIgual(m.cri,mm.cri)?'certa':'provavel';msg=`Mesma matrícula ${m.num}${mm.cri?(m.cri===mm.cri?' no '+m.cri:' em outro cartório ('+m.cri+')'):` (${m.cri||'cartório não informado'})`}`;break}
     if(log.length>=4&&(t.logradouro||'').toLowerCase()===log&&(!nr||!t.numero||t.numero.toLowerCase()===nr)){hit=t;cert='possivel';msg='Mesmo endereço'}
     // nos dois cadastros os 6 primeiros dígitos são setor e quadra
     if(nd&&sql.length===nd&&t.situacao==='ativo'){const q=t.insc.find(i=>insCid(i)===mun&&digits(i.sql).length===nd&&digits(i.sql).slice(0,6)===sql.slice(0,6)&&digits(i.sql)!==sql);if(q)quadra.push([t,q])}
@@ -5965,8 +5966,8 @@ function dedupe(){
   const viz=!hit&&quadra.length?`<div class="banner blue" style="margin-top:8px">${ic('layers')}<div style="flex:1"><div class="bt">${quadra.length} terreno${quadra.length>1?'s':''} na mesma quadra (setor ${mun==='sjc'?sql.slice(0,2):sql.slice(0,3)}, quadra ${mun==='sjc'?sql.slice(2,6):sql.slice(3,6)})</div>
     <div>${quadra.map(([t,q])=>`<button type="button" class="linkbtn" data-a="abrir" data-id="${t.id}">${t.codigo} · ${esc(t.nome)}</button> <span class="faint">(${cid.rotulo} ${esc(q.sql)})</span>`).join('<br>')}</div><div class="hint" style="margin-top:4px">Não é duplicata. Pode valer estudar os lotes juntos numa área de interesse.</div></div></div>`:'';
   if(!hit){box.innerHTML=(sqls.length||mats.length||log?'<div class="hint">Nenhum cadastro com esta inscrição, matrícula ou endereço. Será criado um terreno novo.</div>':'<div class="hint">Digite a inscrição ou a matrícula. Teste com o SQL 089.123.0045-6 (já cadastrado) ou 089.123.0099-0 (mesma quadra de dois terrenos).</div>')+viz;btn.textContent='Cadastrar terreno';return}
-  box.innerHTML=`<div class="banner ${cert==='certa'?'blue':'warn'}">${ic(cert==='certa'?'link':'warn')}<div style="flex:1"><div class="bt">${cert==='certa'?'Este imóvel já está cadastrado':'Possível duplicidade'}: ${hit.codigo} · ${esc(hit.nome)}</div><div>${esc(msg)}. ${cert==='certa'?'Se houver oferta, ela será registrada nesse terreno.':'Confira antes de salvar.'}</div><button type="button" class="btn sm" style="margin-top:8px" data-a="abrir" data-id="${hit.id}">Abrir ficha existente</button></div></div>`;
-  btn.textContent=cert==='certa'?'Registrar no terreno existente':'Cadastrar mesmo assim';
+  box.innerHTML=`<div class="banner ${cert==='certa'?'blue':'warn'}">${ic(cert==='certa'?'link':'warn')}<div style="flex:1"><div class="bt">${cert==='certa'?'Este imóvel já está cadastrado':'Possível duplicidade'}: ${hit.codigo} · ${esc(hit.nome)}</div><div>${esc(msg)}. ${cert==='certa'?'O lote não é cadastrado de novo: registre a nova oferta nesse terreno, e o analista decide lá se segue a tratativa ou descarta.':'Confira antes de salvar.'}</div><button type="button" class="btn sm" style="margin-top:8px" data-a="abrir" data-id="${hit.id}">Abrir ficha existente</button></div></div>`;
+  btn.textContent=cert==='certa'?`Registrar nova oferta no ${hit.codigo}`:'Cadastrar mesmo assim';
 }
 
 /* ===================== eventos ===================== */
@@ -6139,6 +6140,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
       if(dup){alvo=T(dup)}else{do S.seqT++;while(S.terrenos.some(x=>x.codigo==='TER-'+String(S.seqT).padStart(6,'0')));alvo={...seedVazio(),codigo:'TER-'+String(S.seqT).padStart(6,'0'),nome:F.nome,logradouro:F.logradouro.trim(),numero:F.numero.trim(),bairro:F.bairro.trim(),zona:F.zona||null,resp:F.resp,origem:F.origem,dataIdent:HOJE};
         alvo.hist=[{em:agora(),user:me(),txt:'Terreno cadastrado'}];nvGravar(alvo,F);S.terrenos.push(alvo);crAplicarPadrao(alvo);nvPlGravar(alvo,nvPl,F.mun||cidDoNome(F.municipio)||'outro')}
       const val=lerNum(F.valor);
+      if(dup&&!val&&!F.cid){UI.modal=null;save();nvAbrirOferta(alvo,null,`Registre a nova oferta no ${alvo.codigo}.`);break}
       if(val||F.cid){const o={id:uid(),cid:F.cid||null,data:HOJE,valor:val,forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,status:'ativa'};alvo.ofertas.push(o);
         if(o.cid&&!alvo.corretores.some(x=>x.cid===o.cid))alvo.corretores.push({cid:o.cid,principal:!alvo.corretores.some(x=>x.principal)});
         if(!alvo.neg||!['ativo','stand_by'].includes(alvo.neg.status)){alvo.neg=novaNeg(o.id,Number(F.temp)||null);log(alvo,'Negociação aberta');etAbriu(alvo)}
@@ -10735,7 +10737,8 @@ document.addEventListener('change',e=>{const el=e.target.closest('[data-ch]');if
     if((pa[k]||null)===v)return;pa[k]=v;ltRender(t);return}
   if(ch==='lt'){const l=ltDe(t,el.dataset.l),k=el.dataset.k;if(!l)return;let v=el.value;
     if(k==='titulo'){v=v.trim();if(!v||t.lotes.some(x=>x!==l&&x.titulo.trim().toLowerCase()===v.toLowerCase())){toast(v?'Já existe um lote com este título.':'O lote precisa de um título.',true);el.value=l.titulo;return}}
-    if(k==='num'){v=v.trim();const o=v&&t.lotes.find(x=>x!==l&&digits(x.num)===digits(v)&&x.cri===l.cri);if(o){toast(`A matrícula ${v} já está no ${o.titulo}.`,true);el.value=l.num;return}}
+    if(k==='num'){v=v.trim();const o=v&&t.lotes.find(x=>x!==l&&digits(x.num)===digits(v)&&criIgual(x.cri,l.cri));if(o){toast(`A matrícula ${v} já está no ${o.titulo}.`,true);el.value=l.num;return}
+      const ou=v&&dupOutroTerreno(t,{num:v,cri:l.cri});if(ou){el.value=l.num;ltDupAbrir(ou,`A matrícula ${v}`);return}}
     if(k==='area'||k==='areaInf')v=lerNum(v);
     if(k==='cri'){l.criDig=!!v&&v!==t.cri}
     if(k==='fonte'&&v==='informada'&&l.areaInf==null)l.areaInf=ltInfo(t,l).adot;
@@ -10771,10 +10774,23 @@ document.addEventListener('submit',e=>{const f=e.target;if(f.dataset.form!=='lt-
   const F=Object.fromEntries(new FormData(f)),c=CIDADES_INSC[F.mun]||CIDADES_INSC.sp;
   if(c.mascara&&digits(F.sql).length!==digitosMasc(c.mascara)){toast(`${c.rotulo} incompleto: são ${digitosMasc(c.mascara)} dígitos.`,true);return}
   const ja=t.insc.find(x=>insCid(x)===F.mun&&digits(x.sql)===digits(F.sql)&&(c.mascara||x.sql===F.sql));
+  if(!ja){const ou=dupOutroTerreno(t,{sql:F.sql,mun:F.mun});if(ou){ltDupAbrir(ou,`O ${c.rotulo} ${F.sql}`);return}}
   if(ja){if(l.ins.includes(ja.id)){toast('Este SQL já está no lote.',true);return}const out=t.lotes.filter(x=>x.ins.includes(ja.id));l.ins.push(ja.id);
     log(t,`${c.rotulo} ${ja.sql} também no ${l.titulo}`);ltRender(t);toast(`${c.rotulo} ${ja.sql} também está no ${out.map(x=>x.titulo).join(', ')}: a divergência de área passa a ser do grupo.`);return}
   const ins={id:uid(),mun:F.mun,sql:F.sql,area:lerNum(F.area),valores:[]};t.insc.push(ins);l.ins.push(ins.id);
   log(t,`${c.rotulo} ${F.sql} (${c.cidade}) adicionada ao ${l.titulo}`);ltRender(t);if(loteBuscavel(ins))loteBuscar(t,t.insc.indexOf(ins))});
+
+/* matrícula ou SQL que já está em outro terreno: o lote não entra; pergunta se quer registrar uma nova oferta
+   naquele terreno, e o analista decide lá se segue ou descarta (decisão do Moisés, 4/nov/2026).
+   Cartório em branco conta como o mesmo (é o da poligonal, ainda não conhecido). */
+const criIgual=(a,b)=>!a||!b||a===b;
+function dupOutroTerreno(t,q){return S.terrenos.find(x=>x!==t&&(q.num?x.mats.some(m=>digits(m.num)===digits(q.num)&&criIgual(m.cri,q.cri)):x.insc.some(i=>insCid(i)===q.mun&&digits(i.sql)===digits(q.sql))))}
+function ltDupAbrir(ou,oque){UI.ltDup={id:ou.id,oque};UI.modal='lt-dup';renderModal()}
+function ltDupHtml(fechar){const d=UI.ltDup,ou=d&&T(d.id);if(!ou)return '';
+  return `<div class="dh"><div><h2>${esc(d.oque)} já está em outro terreno</h2></div>${fechar}</div>
+  <div class="banner blue">${ic('link')}<div style="flex:1"><div class="bt">${ou.codigo} · ${esc(ou.nome)}</div><div>O lote não é cadastrado de novo. Se chegou uma oferta, registre-a nesse terreno: o analista decide lá se segue a tratativa ou descarta.</div></div></div>
+  <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn" data-a="abrir" data-id="${ou.id}">Abrir ${ou.codigo}</button><button class="btn primary" data-a="lt-dup-oferta">Registrar nova oferta no ${ou.codigo}</button></div>`}
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a=lt-dup-oferta]');if(!a||!UI.ltDup)return;const ou=T(UI.ltDup.id);UI.ltDup=null;if(ou)nvAbrirOferta(ou,null,`Registre a nova oferta no ${ou.codigo}.`)});
 
 // ---------------------------------------------------------------------
 // Inscrição municipal por cidade. A cidade é sempre a do terreno (pela poligonal):
@@ -11520,7 +11536,7 @@ function nvPlLer(f){const P=[...f.querySelectorAll('#nv-pt-lista .nv-pt')].map(x
 function nvPlValida(d){for(const [i,p] of d.partes.entries()){if(!p.nome)throw new Error(`Dê um título à parte ${i+1}.`);for(const k of ['tel','email','doc'])p[k]=ptValida(k,p[k])}
   if(new Set(d.partes.map(p=>p.nome.toLowerCase())).size<d.partes.length)throw new Error('Duas partes com o mesmo título.');
   if(new Set(d.lotes.map(l=>l.titulo.toLowerCase())).size<d.lotes.length)throw new Error('Dois lotes com o mesmo título.');
-  const ms=d.lotes.filter(l=>l.num).map(l=>digits(l.num)+'|'+l.cri);if(new Set(ms).size<ms.length)throw new Error('A mesma matrícula está em dois lotes.')}
+  const ms=d.lotes.filter(l=>l.num);if(ms.some((a,i)=>ms.some((b,j)=>j>i&&digits(a.num)===digits(b.num)&&criIgual(a.cri,b.cri))))throw new Error('A mesma matrícula está em dois lotes.')}
 // grava no terreno novo: as partes (a primeira é a "Vendedor 1" do terreno) e os lotes com as inscrições
 function nvPlGravar(t,d,mun){const P=partesDe(t);P.length=0;
   const ids=d.partes.map(p=>{const pa={id:uid(),ativa:true,neg:null,propostas:[],nome:p.nome,essencial:true,area:null};['pessoa','tel','email','doc','obs'].forEach(k=>{if(p[k])pa[k]=p[k]});P.push(pa);return pa.id});
