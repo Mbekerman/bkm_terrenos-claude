@@ -5604,10 +5604,19 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 :root[data-tema="escuro"] .mp-redim::after { background: #444746 }
 :root[data-tema="escuro"] .mp-redim:hover::after, :root[data-tema="escuro"] .mp-redim:focus-visible::after, :root[data-tema="escuro"] body.mp-arrastando .mp-redim::after { background: #a8c7fa }
 /* concorrência (monitor de mercado): quadrado com um prédio, na cor da situação, para não se confundir com os pinos dos terrenos */
-.mk-b { display: grid; place-items: center; width: 22px; height: 22px; box-sizing: border-box; border-radius: 6px; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.35), 0 1px 4px rgba(0,0,0,.35) }
+.mk-b { display: grid; place-items: center; width: 22px; height: 22px; box-sizing: border-box; border-radius: 6px; border: 2px solid #202124; box-shadow: 0 0 0 1px rgba(255,255,255,.5), 0 1px 4px rgba(0,0,0,.4) }
 .mk-b svg { width: 13px; height: 13px; display: block }
 .mk.g { width: 22px; height: 22px }
-.lg-poi .mk-b { width: 16px; height: 16px; border-radius: 5px; border-width: 1.5px; box-shadow: 0 0 0 1px rgba(0,0,0,.2) } .lg-poi .mk-b svg { width: 10px; height: 10px }
+.lg-poi .mk-b { width: 16px; height: 16px; border-radius: 5px; border-width: 1.5px; box-shadow: none } .lg-poi .mk-b svg { width: 10px; height: 10px }
+
+/* item Concorrência da legenda: seta à parte que abre as situações, cada uma liga e desliga a sua */
+.lg-row { display: flex; align-items: center; min-width: 0 }
+.lg-row > .lg-i { flex: 1 1 auto; min-width: 0 }
+.lg-sb { flex: none; display: grid; place-items: center; width: 24px; height: 32px; margin-right: -4px; padding: 0; border: 0; background: none; border-radius: 8px; cursor: pointer; color: inherit }
+.lg-sb:hover { background: rgba(31,31,31,.06) } :root[data-tema="escuro"] .lg-sb:hover { background: rgba(227,227,227,.08) }
+.lg-sb:focus-visible { outline: 2px solid #0b57d0; outline-offset: -2px }
+.lg-msit[aria-pressed="false"] .mk-b { filter: grayscale(1); opacity: .5 }
+.lg-msit[disabled] { opacity: .5; cursor: default }
 </style>
 <header class="top">
   <div class="top-in">
@@ -6780,10 +6789,17 @@ function mpVisiveis(){const m=UI.mp,q=m.q.trim().toLowerCase();
   return fxLista('mapa').filter(t=>{const k=mpClasse(t);return k!=null&&!m.ocultas.includes(k)}).filter(t=>!q||bateBusca(t,q))}
 /* lista lateral do mapa: a bolinha com o código do terreno (na cor do nível aberto na legenda), o nome e a área; a lupa abre a ficha.
    Clicar no pino ou na poligonal seleciona o terreno aqui (não há balão no mapa). */
-function mpItem(t,cartao){const [nm,c,g,fg]=mpInfo(mpClasse(t)),sel=UI.mpSel===t.id,ad=areaAdotada(t)||(t.poly?areaPoly(t.poly):null);
+/* cor da bolinha da lista: sempre a da subetapa do terreno (pedido do Moisés, 4/nov/2026), a mesma que a legenda dá a ela
+   quando se desce até a etapa; etapa sem subetapas usa a cor da etapa; Stand By, Perdido, Descartado e sem negociação, as deles */
+function mpCorSub(t){const a=faseAtual(t),sit=k=>[SIT[k][1],SIT[k][3]];if(!a)return sit('sem_negociacao');
+  const p=a.p;if(!p)return sit('sem_negociacao');if(['perdido','descartado'].includes(p.status))return sit(p.status);if(p.status==='stand_by')return sit('stand_by');
+  const m=UI.mp,sf=m.f,se=m.e,e=etapaF(a.k,p.etapa);if(!e)return mpInfo(mpClasse(t)).slice(1,4).filter((x,i)=>i!==1);
+  try{const sub=e.subs?.length&&p.sub;m.f=a.k;m.e=sub?p.etapa:'';const x=mpItens().find(i=>i.k===(sub?p.sub:p.etapa));return x?[x.cor,x.fg]:['#8a8d91','#fff']}finally{m.f=sf;m.e=se}}
+const mpSubNome=t=>{const a=faseAtual(t),p=a?.p;if(!p)return 'Sem negociação';if(p.status!=='ativo')return ({stand_by:'Stand By',perdido:'Perdido',descartado:'Descartado'})[p.status]||p.status;const e=etapaF(a.k,p.etapa);return [e?.nome,p.sub&&e?.subs?.find(x=>x.k===p.sub)?.nome].filter(Boolean).join(' › ')};
+function mpItem(t,cartao){const [nm,c,g,fg]=mpInfo(mpClasse(t)),cs=mpCorSub(t),sel=UI.mpSel===t.id,ad=areaAdotada(t)||(t.poly?areaPoly(t.poly):null);
   const acoes=sel&&t.lat!=null?`<div class="mp-it-a">${UI.role!=='Leitura'?`<button class="linkbtn" data-a="mp-desenhar" data-id="${t.id}">${t.poly?'Editar':'Desenhar'} poligonal</button>`:''}${GG?`<button class="linkbtn" data-a="mp-sv" data-id="${t.id}">Street View</button>`:''}</div>`:'';
   return `<div class="mp-it${sel?' sel':''}${cartao?' cartao':''}" data-a="mp-foco" data-id="${t.id}" tabindex="0" role="listitem" aria-current="${sel}">
-    <span class="pin-mini mp-cod" style="background:${c};color:${fg}" title="${esc(t.nome)} · ${esc(nm)}">${esc(t.codigo)}</span>
+    <span class="pin-mini mp-cod" style="background:${cs[0]};color:${cs[1]}" title="${esc(t.nome)} · ${esc(mpSubNome(t))}">${esc(t.codigo)}</span>
     <div class="mp-it-t"><div class="t1">${esc(t.nome)}</div><div class="t2">${ad?num(Math.round(ad))+'\u00a0m²':'Área não informada'} · ${esc(nm)}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div></div>
     <button class="iconbtn mp-lupa" data-a="fs-abrir" data-id="${t.id}" title="Ver ficha" aria-label="Ver ficha de ${esc(t.nome)}">${bi('busca',22)}</button>${cartao?`<button class="iconbtn mp-lupa mp-fx" data-a="mp-desel" title="Fechar" aria-label="Fechar">${ic('close',22)}</button>`:''}${acoes}</div>`}
 /* ao descer ou subir de nível, o mapa enquadra os terrenos que ficaram */
@@ -12863,7 +12879,9 @@ ccPreparar();
      preço e R$/m² valem para as unidades à venda, e todos na mesma unidade: basta uma unidade dentro de todos para o
      empreendimento aparecer.
    A versão anterior (25/out) era uma camada de exemplo unidade por unidade, com grupos e categorias de produto; saiu. */
-const MK_SIT={lancamento:['Lançamento','#0094fe'],breve_lancamento:['Breve lançamento','#0094fe'],em_obras:['Em obras','#c67355'],pronto:['Pronto','#7d8a3e'],usado:['Usado','#7d8a3e'],nao_informado:['Sem situação','#8e918f']};
+/* cores neon, fora da paleta dos pinos dos terrenos (pedido do Moisés, 4/nov/2026); prédio escuro por dentro */
+const MK_SIT={breve_lancamento:['Breve lançamento','#ffea00'],lancamento:['Lançamento','#39ff14'],em_obras:['Em obras','#ff2bd6'],pronto:['Pronto','#00f0ff'],usado:['Usado','#ffffff'],nao_informado:['Sem situação','#ff9100']};
+const mkSitK=e=>MK_SIT[e?.sit]?e.sit:'nao_informado',mkOff=()=>UI.mkOff||(UI.mkOff=[]);
 const MK_RAIOS=[1,2,3];
 const MK={box:null,abertoEm:0,d:null,erro:null,promessa:null};
 const mkArq=()=>(location.pathname.startsWith('/prototipo')?'/prototipo/':'')+'dados/mercado.json';
@@ -12957,21 +12975,21 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&MF_ABERTO&&!UI.moda
 /* ---------- marca no mapa: quadrado com um prédio, na cor da situação (pedido do Moisés, 4/nov/2026: a bolinha se perdia
    no meio dos pinos dos terrenos) ---------- */
 const MK_PREDIO='M4 21V5l8-3v19M12 9l8 3v9M2 21h20M7 8h2M7 12h2M7 16h2M15 14h2M15 18h2';
-const mkMarcaHtml=e=>`<span class="mk-b" style="background:${(MK_SIT[e?.sit]||MK_SIT.nao_informado)[1]}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="${MK_PREDIO}"/></svg></span>`;
+const mkMarcaHtml=e=>`<span class="mk-b" style="background:${(MK_SIT[e?.sit]||MK_SIT.nao_informado)[1]}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="#202124" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="${MK_PREDIO}"/></svg></span>`;
 /* no Leaflet os ~2 mil empreendimentos ficam em canvas: o mesmo quadrado desenhado à mão (o clique segue o raio do círculo) */
 let MK_SQ=null;
 function mkQuadrado(){if(MK_SQ)return MK_SQ;const ico=new Path2D(MK_PREDIO);
   L.Canvas.include({_mkSq(l){if(!this._drawing||l._empty())return;const p=l._point,c=this._ctx,r=11,o=l.options;
     c.beginPath();if(c.roundRect)c.roundRect(p.x-r,p.y-r,2*r,2*r,6);else c.rect(p.x-r,p.y-r,2*r,2*r);
-    c.lineWidth=4;c.strokeStyle='rgba(0,0,0,.3)';c.stroke();c.fillStyle=o.fillColor;c.fill();c.lineWidth=2;c.strokeStyle='#fff';c.stroke();
-    c.save();c.translate(p.x-6.5,p.y-6.5);c.scale(13/24,13/24);c.lineWidth=2.4;c.lineCap=c.lineJoin='round';c.stroke(ico);c.restore()}});
+    c.lineWidth=5;c.strokeStyle='rgba(0,0,0,.35)';c.stroke();c.fillStyle=o.fillColor;c.fill();c.lineWidth=2;c.strokeStyle='#202124';c.stroke();
+    c.save();c.translate(p.x-6.5,p.y-6.5);c.scale(13/24,13/24);c.lineWidth=2.6;c.lineCap=c.lineJoin='round';c.strokeStyle='#202124';c.stroke(ico);c.restore()}});
   return MK_SQ=L.CircleMarker.extend({_updatePath(){this._renderer._mkSq(this)}})}
 const mkTitulo=e=>`${e.nome} · ${(MK_SIT[e.sit]||MK_SIT.nao_informado)[0]}`;
 let MERC=null,gMerc=[],MK_CHAVE=null;
 /* os pinos só são refeitos quando os dados, o filtro ou o modo do mapa mudam; no Leaflet, círculos em canvas (são ~2 mil) */
 function desenhaMerc(){if(!MAPA)return;if(!MK.d){mkCarregar();return}
-  const chave=JSON.stringify([UI.mf,!!UI.mpModo,GG]),igual=chave===MK_CHAVE&&(GG?gMerc._mapa===MAPA:MERC&&MERC._mapa===MAPA);
-  if(!igual){MK_CHAVE=chave;const lista=mfLista();const ar=$('.mapa-area');if(ar)ar.dataset.merc=lista.length;
+  const chave=JSON.stringify([UI.mf,!!UI.mpModo,GG,mkOff()]),igual=chave===MK_CHAVE&&(GG?gMerc._mapa===MAPA:MERC&&MERC._mapa===MAPA);
+  if(!igual){MK_CHAVE=chave;const off=mkOff(),lista=mfLista().filter(e=>!off.includes(mkSitK(e)));const ar=$('.mapa-area');if(ar)ar.dataset.merc=lista.length;
     if(GG){gSet(gMerc,null);gMerc=[];gMerc._mapa=MAPA;const {AdvancedMarkerElement}=gLib.marker;
       lista.forEach(e=>{const d=document.createElement('div');d.className='mk g';d.innerHTML=mkMarcaHtml(e);
         const m=new AdvancedMarkerElement({map:null,position:gLL(e.lat,e.lng),content:d,title:mkTitulo(e),gmpClickable:!UI.mpModo});
@@ -13021,14 +13039,21 @@ function mkFechar(){if(!MK.box)return false;MK.box=null;mkBox();return true}
 const mkFecharDoMapa=()=>{if(Date.now()-MK.abertoEm>350)mkFechar()};
 
 /* ---------- ganchos ---------- */
-document.addEventListener('click',e=>{const a=e.target.closest('[data-a="mk-x"],[data-a="mp-merc"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a="mk-x"],[data-a="mp-merc"],[data-a="mk-arv"],[data-a="mk-sit"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();
+  const leg=()=>{const lg=$('#mp-leg');if(lg)lg.innerHTML=mpLegenda()};
+  if(a.dataset.a==='mk-arv'){UI.mkArv=!UI.mkArv;leg();$('#mp-leg [data-a="mk-arv"]')?.focus();return}
+  if(a.dataset.a==='mk-sit'){const o=mkOff(),v=a.dataset.v;UI.mkOff=o.includes(v)?o.filter(x=>x!==v):[...o,v];
+    if(MK.box&&UI.mkOff.includes(mkSitK(mkEmp(MK.box))))mkFechar();desenhaMerc();leg();$(`#mp-leg [data-a="mk-sit"][data-v="${v}"]`)?.focus();return}
   if(a.dataset.a==='mk-x')mkFechar();
-  else{UI.mpMerc=UI.mpMerc===false;mostrarMerc(UI.mpMerc);a.setAttribute('aria-pressed',UI.mpMerc);if(!UI.mpMerc)mkFechar()}},true);
+  else{UI.mpMerc=UI.mpMerc===false;mostrarMerc(UI.mpMerc);if(!UI.mpMerc)mkFechar();leg()}},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!UI.modal&&MK.box){mkFechar();e.preventDefault();e.stopImmediatePropagation()}},true);
 const _lDesenhaConcMk=L_desenhaConc;L_desenhaConc=function(){const r=_lDesenhaConcMk.apply(this,arguments);desenhaMerc();return r};
 const _gDesenhaConcMk=G_desenhaConc;G_desenhaConc=function(){const r=_gDesenhaConcMk.apply(this,arguments);desenhaMerc();return r};
-const _mpLegendaMk=mpLegenda;mpLegenda=function(){const h=_mpLegendaMk.apply(this,arguments),n=MK.d?mfLista().length:null,
-  item=`<button type="button" class="lg-i" data-a="mp-merc" aria-pressed="${UI.mpMerc!==false}"><span class="lg-poi">${mkMarcaHtml({sit:'lancamento'})}</span>Concorrência<span class="n">${n==null?(MK.erro?'—':'…'):num(n)}</span></button>`;
+/* legenda: "Concorrência" liga e desliga a camada; a seta abre uma linha por situação, cada uma liga e desliga a sua (pedido do Moisés, 4/nov/2026) */
+const _mpLegendaMk=mpLegenda;mpLegenda=function(){const h=_mpLegendaMk.apply(this,arguments),todos=MK.d?mfLista():null,off=mkOff(),ab=!!UI.mkArv;
+  const cont={};(todos||[]).forEach(e=>{const k=mkSitK(e);cont[k]=(cont[k]||0)+1});const n=todos?todos.filter(e=>!off.includes(mkSitK(e))).length:null;
+  let item=`<div class="lg-row"><button type="button" class="lg-sb" data-a="mk-arv" aria-expanded="${ab}" aria-label="${ab?'Fechar':'Abrir'} as situações da concorrência" title="Por situação"><span class="lg-s${ab?' ab':''}" aria-hidden="true">${ic('chev',14)}</span></button><button type="button" class="lg-i" data-a="mp-merc" aria-pressed="${UI.mpMerc!==false}"><span class="lg-poi">${mkMarcaHtml({sit:'lancamento'})}</span>Concorrência<span class="n">${n==null?(MK.erro?'—':'…'):num(n)}</span></button></div>`;
+  if(ab&&todos)item+=Object.keys(MK_SIT).filter(k=>cont[k]).map(k=>`<button type="button" class="lg-i lg-a lg-msit" style="--p:2" data-a="mk-sit" data-v="${k}" aria-pressed="${!off.includes(k)}"${UI.mpMerc===false?' disabled':''}><span class="lg-poi">${mkMarcaHtml({sit:k})}</span>${esc(MK_SIT[k][0])}<span class="n">${num(cont[k])}</span></button>`).join('');
   const i=h.indexOf('data-a="mp-conc"');if(i<0)return h+item;const fim=h.indexOf('</button>',i)+9;return h.slice(0,fim)+item+h.slice(fim)};
 const _ccAbrirMk=ccAbrir;ccAbrir=function(){mkFechar();return _ccAbrirMk.apply(this,arguments)};
 const _mpSelecionarMk=mpSelecionar;mpSelecionar=function(id){if(id)mkFechar();return _mpSelecionarMk.apply(this,arguments)};

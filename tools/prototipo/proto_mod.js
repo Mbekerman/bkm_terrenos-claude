@@ -214,10 +214,17 @@ function mpVisiveis(){const m=UI.mp,q=m.q.trim().toLowerCase();
   return fxLista('mapa').filter(t=>{const k=mpClasse(t);return k!=null&&!m.ocultas.includes(k)}).filter(t=>!q||bateBusca(t,q))}
 /* lista lateral do mapa: a bolinha com o código do terreno (na cor do nível aberto na legenda), o nome e a área; a lupa abre a ficha.
    Clicar no pino ou na poligonal seleciona o terreno aqui (não há balão no mapa). */
-function mpItem(t,cartao){const [nm,c,g,fg]=mpInfo(mpClasse(t)),sel=UI.mpSel===t.id,ad=areaAdotada(t)||(t.poly?areaPoly(t.poly):null);
+/* cor da bolinha da lista: sempre a da subetapa do terreno (pedido do Moisés, 4/nov/2026), a mesma que a legenda dá a ela
+   quando se desce até a etapa; etapa sem subetapas usa a cor da etapa; Stand By, Perdido, Descartado e sem negociação, as deles */
+function mpCorSub(t){const a=faseAtual(t),sit=k=>[SIT[k][1],SIT[k][3]];if(!a)return sit('sem_negociacao');
+  const p=a.p;if(!p)return sit('sem_negociacao');if(['perdido','descartado'].includes(p.status))return sit(p.status);if(p.status==='stand_by')return sit('stand_by');
+  const m=UI.mp,sf=m.f,se=m.e,e=etapaF(a.k,p.etapa);if(!e)return mpInfo(mpClasse(t)).slice(1,4).filter((x,i)=>i!==1);
+  try{const sub=e.subs?.length&&p.sub;m.f=a.k;m.e=sub?p.etapa:'';const x=mpItens().find(i=>i.k===(sub?p.sub:p.etapa));return x?[x.cor,x.fg]:['#8a8d91','#fff']}finally{m.f=sf;m.e=se}}
+const mpSubNome=t=>{const a=faseAtual(t),p=a?.p;if(!p)return 'Sem negociação';if(p.status!=='ativo')return ({stand_by:'Stand By',perdido:'Perdido',descartado:'Descartado'})[p.status]||p.status;const e=etapaF(a.k,p.etapa);return [e?.nome,p.sub&&e?.subs?.find(x=>x.k===p.sub)?.nome].filter(Boolean).join(' › ')};
+function mpItem(t,cartao){const [nm,c,g,fg]=mpInfo(mpClasse(t)),cs=mpCorSub(t),sel=UI.mpSel===t.id,ad=areaAdotada(t)||(t.poly?areaPoly(t.poly):null);
   const acoes=sel&&t.lat!=null?`<div class="mp-it-a">${UI.role!=='Leitura'?`<button class="linkbtn" data-a="mp-desenhar" data-id="${t.id}">${t.poly?'Editar':'Desenhar'} poligonal</button>`:''}${GG?`<button class="linkbtn" data-a="mp-sv" data-id="${t.id}">Street View</button>`:''}</div>`:'';
   return `<div class="mp-it${sel?' sel':''}${cartao?' cartao':''}" data-a="mp-foco" data-id="${t.id}" tabindex="0" role="listitem" aria-current="${sel}">
-    <span class="pin-mini mp-cod" style="background:${c};color:${fg}" title="${esc(t.nome)} · ${esc(nm)}">${esc(t.codigo)}</span>
+    <span class="pin-mini mp-cod" style="background:${cs[0]};color:${cs[1]}" title="${esc(t.nome)} · ${esc(mpSubNome(t))}">${esc(t.codigo)}</span>
     <div class="mp-it-t"><div class="t1">${esc(t.nome)}</div><div class="t2">${ad?num(Math.round(ad))+'\u00a0m²':'Área não informada'} · ${esc(nm)}${t.lat==null?' · <span style="color:var(--terracota)">sem localização</span>':''}</div></div>
     <button class="iconbtn mp-lupa" data-a="fs-abrir" data-id="${t.id}" title="Ver ficha" aria-label="Ver ficha de ${esc(t.nome)}">${bi('busca',22)}</button>${cartao?`<button class="iconbtn mp-lupa mp-fx" data-a="mp-desel" title="Fechar" aria-label="Fechar">${ic('close',22)}</button>`:''}${acoes}</div>`}
 /* ao descer ou subir de nível, o mapa enquadra os terrenos que ficaram */
