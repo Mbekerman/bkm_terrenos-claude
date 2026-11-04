@@ -16,7 +16,7 @@ Idioma do produto, do código de domínio e dos commits: português.
 - **Desenvolvimento:** branch `develop`, serviço `terrenos-web-dev` do Cloud Run (https://terrenos-web-dev-469931692112.southamerica-east1.run.app, desde 3/nov/2026), `GOOGLE_MAPS_KEY` igual à do `terrenos-web`, variável `AMBIENTE=dev` (selo "Desenvolvimento" ao lado do logo e `[DEV]` no título; o Caddy injeta na meta `bkm-ambiente`). É onde tudo entra primeiro.
 - **Produção:** branch `main`, serviço `terrenos-web` (https://terrenos-web-469931692112.southamerica-east1.run.app), sem `AMBIENTE`.
 - **Fluxo:** branch de trabalho → PR para `develop` → conferir no ambiente de desenvolvimento → PR `develop → main` para promover. Nada de PR direto na `main`, salvo correção urgente, que depois volta para a `develop` (merge da `main` na `develop`).
-- **Banco:** ainda nenhum (decisão de 22/out/2026). Quando o porte do front começar, um projeto Supabase de desenvolvimento (plano Free serve); produção só no plano Pro, porque o Free pausa por inatividade e não tem backup. A regra de editar migrations no lugar vale enquanto não houver banco de produção; o de desenvolvimento pode ser recriado do zero.
+- **Banco:** a organização BKM do Supabase está no plano Pro. Desenvolvimento num projeto Supabase separado, só para isso, que pode ser apagado e recriado do zero (decisão do Moisés, 4/nov/2026); produção no BKM_Desenvolvimento_Imobiliario, que só recebe o esquema na véspera do primeiro uso de verdade. A regra de editar migrations no lugar vale enquanto não houver banco de produção; o de desenvolvimento pode ser recriado do zero.
 - O artifact do protótipo no claude.ai é publicado a partir da `develop`.
 
 ## Visual
@@ -89,6 +89,8 @@ npm run typecheck && npm run build
 ```
 
 Toda mudança de regra no banco vem com teste em `supabase/tests/regras.sql`.
+
+**Saída do protótipo** (sabatina de 4/nov/2026, decisões do Moisés; ver `docs/adr/0001-front-real-reescrito-em-react.md`): o front real é reescrito em React tela por tela, com o protótipo como especificação, e o protótipo congela tela por tela conforme cada uma é portada. Hoje os terrenos estão em Excel. Primeira versão em uso: login, mapa, novo terreno pela poligonal, ficha (Visão geral, Terreno, Comercial) e o funil de Novos Negócios; tarefas, viabilidade, estudos de massa, reuniões e documentos entram depois. O banco de produção começa **vazio**: os dados de exemplo do protótipo não vão para lugar nenhum, e a migração dos terrenos do Excel fica para depois.
 
 **Fase atual: estrutura em desenho, sem banco criado.** O front em `apps/web` foi escrito para a primeira versão do esquema e está desatualizado; será portado quando a estrutura assentar. Os fluxos são validados no protótipo (`docs/prototipo.html`), **gerado** a partir de `tools/prototipo/` (fontes, `build.py` e roteiros Playwright; ver o README de lá): edite as fontes e rode `python3 tools/prototipo/build.py`, nunca o HTML gerado. Testes: só o que a mudança toca; a varredura completa (`tvaza`, `tscroll`) ao fechar um lote. Para testá-lo localmente sem acesso a CDN, o workflow "Bibliotecas do protótipo" publica Leaflet e JSZip no branch `libs-prototipo`. Enquanto nenhum banco de **produção** tiver recebido as migrations, altere os arquivos de `supabase/migrations/` no lugar (sem criar migrations novas de correção); o banco de desenvolvimento, se existir, é recriado do zero. O CI valida tudo do zero a cada push. Quando o banco de produção for criado, esta regra acaba: a partir daí, toda mudança é uma migration nova.
 
