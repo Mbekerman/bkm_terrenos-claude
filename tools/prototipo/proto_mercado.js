@@ -10,7 +10,9 @@
      preço e R$/m² valem para as unidades à venda, e todos na mesma unidade: basta uma unidade dentro de todos para o
      empreendimento aparecer.
    A versão anterior (25/out) era uma camada de exemplo unidade por unidade, com grupos e categorias de produto; saiu. */
-const MK_SIT={lancamento:['Lançamento','#0094fe'],breve_lancamento:['Breve lançamento','#0094fe'],em_obras:['Em obras','#c67355'],pronto:['Pronto','#7d8a3e'],usado:['Usado','#7d8a3e'],nao_informado:['Sem situação','#8e918f']};
+/* cores neon, fora da paleta dos pinos dos terrenos (pedido do Moisés, 4/nov/2026); prédio escuro por dentro */
+const MK_SIT={breve_lancamento:['Breve lançamento','#ffea00'],lancamento:['Lançamento','#39ff14'],em_obras:['Em obras','#ff2bd6'],pronto:['Pronto','#00f0ff'],usado:['Usado','#ffffff'],nao_informado:['Sem situação','#ff9100']};
+const mkSitK=e=>MK_SIT[e?.sit]?e.sit:'nao_informado',mkOff=()=>UI.mkOff||(UI.mkOff=[]);
 const MK_RAIOS=[1,2,3];
 const MK={box:null,abertoEm:0,d:null,erro:null,promessa:null};
 const mkArq=()=>(location.pathname.startsWith('/prototipo')?'/prototipo/':'')+'dados/mercado.json';
@@ -104,21 +106,21 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&MF_ABERTO&&!UI.moda
 /* ---------- marca no mapa: quadrado com um prédio, na cor da situação (pedido do Moisés, 4/nov/2026: a bolinha se perdia
    no meio dos pinos dos terrenos) ---------- */
 const MK_PREDIO='M4 21V5l8-3v19M12 9l8 3v9M2 21h20M7 8h2M7 12h2M7 16h2M15 14h2M15 18h2';
-const mkMarcaHtml=e=>`<span class="mk-b" style="background:${(MK_SIT[e?.sit]||MK_SIT.nao_informado)[1]}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="${MK_PREDIO}"/></svg></span>`;
+const mkMarcaHtml=e=>`<span class="mk-b" style="background:${(MK_SIT[e?.sit]||MK_SIT.nao_informado)[1]}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="#202124" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="${MK_PREDIO}"/></svg></span>`;
 /* no Leaflet os ~2 mil empreendimentos ficam em canvas: o mesmo quadrado desenhado à mão (o clique segue o raio do círculo) */
 let MK_SQ=null;
 function mkQuadrado(){if(MK_SQ)return MK_SQ;const ico=new Path2D(MK_PREDIO);
   L.Canvas.include({_mkSq(l){if(!this._drawing||l._empty())return;const p=l._point,c=this._ctx,r=11,o=l.options;
     c.beginPath();if(c.roundRect)c.roundRect(p.x-r,p.y-r,2*r,2*r,6);else c.rect(p.x-r,p.y-r,2*r,2*r);
-    c.lineWidth=4;c.strokeStyle='rgba(0,0,0,.3)';c.stroke();c.fillStyle=o.fillColor;c.fill();c.lineWidth=2;c.strokeStyle='#fff';c.stroke();
-    c.save();c.translate(p.x-6.5,p.y-6.5);c.scale(13/24,13/24);c.lineWidth=2.4;c.lineCap=c.lineJoin='round';c.stroke(ico);c.restore()}});
+    c.lineWidth=5;c.strokeStyle='rgba(0,0,0,.35)';c.stroke();c.fillStyle=o.fillColor;c.fill();c.lineWidth=2;c.strokeStyle='#202124';c.stroke();
+    c.save();c.translate(p.x-6.5,p.y-6.5);c.scale(13/24,13/24);c.lineWidth=2.6;c.lineCap=c.lineJoin='round';c.strokeStyle='#202124';c.stroke(ico);c.restore()}});
   return MK_SQ=L.CircleMarker.extend({_updatePath(){this._renderer._mkSq(this)}})}
 const mkTitulo=e=>`${e.nome} · ${(MK_SIT[e.sit]||MK_SIT.nao_informado)[0]}`;
 let MERC=null,gMerc=[],MK_CHAVE=null;
 /* os pinos só são refeitos quando os dados, o filtro ou o modo do mapa mudam; no Leaflet, círculos em canvas (são ~2 mil) */
 function desenhaMerc(){if(!MAPA)return;if(!MK.d){mkCarregar();return}
-  const chave=JSON.stringify([UI.mf,!!UI.mpModo,GG]),igual=chave===MK_CHAVE&&(GG?gMerc._mapa===MAPA:MERC&&MERC._mapa===MAPA);
-  if(!igual){MK_CHAVE=chave;const lista=mfLista();const ar=$('.mapa-area');if(ar)ar.dataset.merc=lista.length;
+  const chave=JSON.stringify([UI.mf,!!UI.mpModo,GG,mkOff()]),igual=chave===MK_CHAVE&&(GG?gMerc._mapa===MAPA:MERC&&MERC._mapa===MAPA);
+  if(!igual){MK_CHAVE=chave;const off=mkOff(),lista=mfLista().filter(e=>!off.includes(mkSitK(e)));const ar=$('.mapa-area');if(ar)ar.dataset.merc=lista.length;
     if(GG){gSet(gMerc,null);gMerc=[];gMerc._mapa=MAPA;const {AdvancedMarkerElement}=gLib.marker;
       lista.forEach(e=>{const d=document.createElement('div');d.className='mk g';d.innerHTML=mkMarcaHtml(e);
         const m=new AdvancedMarkerElement({map:null,position:gLL(e.lat,e.lng),content:d,title:mkTitulo(e),gmpClickable:!UI.mpModo});
@@ -168,14 +170,21 @@ function mkFechar(){if(!MK.box)return false;MK.box=null;mkBox();return true}
 const mkFecharDoMapa=()=>{if(Date.now()-MK.abertoEm>350)mkFechar()};
 
 /* ---------- ganchos ---------- */
-document.addEventListener('click',e=>{const a=e.target.closest('[data-a="mk-x"],[data-a="mp-merc"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a="mk-x"],[data-a="mp-merc"],[data-a="mk-arv"],[data-a="mk-sit"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();
+  const leg=()=>{const lg=$('#mp-leg');if(lg)lg.innerHTML=mpLegenda()};
+  if(a.dataset.a==='mk-arv'){UI.mkArv=!UI.mkArv;leg();$('#mp-leg [data-a="mk-arv"]')?.focus();return}
+  if(a.dataset.a==='mk-sit'){const o=mkOff(),v=a.dataset.v;UI.mkOff=o.includes(v)?o.filter(x=>x!==v):[...o,v];
+    if(MK.box&&UI.mkOff.includes(mkSitK(mkEmp(MK.box))))mkFechar();desenhaMerc();leg();$(`#mp-leg [data-a="mk-sit"][data-v="${v}"]`)?.focus();return}
   if(a.dataset.a==='mk-x')mkFechar();
-  else{UI.mpMerc=UI.mpMerc===false;mostrarMerc(UI.mpMerc);a.setAttribute('aria-pressed',UI.mpMerc);if(!UI.mpMerc)mkFechar()}},true);
+  else{UI.mpMerc=UI.mpMerc===false;mostrarMerc(UI.mpMerc);if(!UI.mpMerc)mkFechar();leg()}},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!UI.modal&&MK.box){mkFechar();e.preventDefault();e.stopImmediatePropagation()}},true);
 const _lDesenhaConcMk=L_desenhaConc;L_desenhaConc=function(){const r=_lDesenhaConcMk.apply(this,arguments);desenhaMerc();return r};
 const _gDesenhaConcMk=G_desenhaConc;G_desenhaConc=function(){const r=_gDesenhaConcMk.apply(this,arguments);desenhaMerc();return r};
-const _mpLegendaMk=mpLegenda;mpLegenda=function(){const h=_mpLegendaMk.apply(this,arguments),n=MK.d?mfLista().length:null,
-  item=`<button type="button" class="lg-i" data-a="mp-merc" aria-pressed="${UI.mpMerc!==false}"><span class="lg-poi">${mkMarcaHtml({sit:'lancamento'})}</span>Concorrência<span class="n">${n==null?(MK.erro?'—':'…'):num(n)}</span></button>`;
+/* legenda: "Concorrência" liga e desliga a camada; a seta abre uma linha por situação, cada uma liga e desliga a sua (pedido do Moisés, 4/nov/2026) */
+const _mpLegendaMk=mpLegenda;mpLegenda=function(){const h=_mpLegendaMk.apply(this,arguments),todos=MK.d?mfLista():null,off=mkOff(),ab=!!UI.mkArv;
+  const cont={};(todos||[]).forEach(e=>{const k=mkSitK(e);cont[k]=(cont[k]||0)+1});const n=todos?todos.filter(e=>!off.includes(mkSitK(e))).length:null;
+  let item=`<div class="lg-row"><button type="button" class="lg-sb" data-a="mk-arv" aria-expanded="${ab}" aria-label="${ab?'Fechar':'Abrir'} as situações da concorrência" title="Por situação"><span class="lg-s${ab?' ab':''}" aria-hidden="true">${ic('chev',14)}</span></button><button type="button" class="lg-i" data-a="mp-merc" aria-pressed="${UI.mpMerc!==false}"><span class="lg-poi">${mkMarcaHtml({sit:'lancamento'})}</span>Concorrência<span class="n">${n==null?(MK.erro?'—':'…'):num(n)}</span></button></div>`;
+  if(ab&&todos)item+=Object.keys(MK_SIT).filter(k=>cont[k]).map(k=>`<button type="button" class="lg-i lg-a lg-msit" style="--p:2" data-a="mk-sit" data-v="${k}" aria-pressed="${!off.includes(k)}"${UI.mpMerc===false?' disabled':''}><span class="lg-poi">${mkMarcaHtml({sit:k})}</span>${esc(MK_SIT[k][0])}<span class="n">${num(cont[k])}</span></button>`).join('');
   const i=h.indexOf('data-a="mp-conc"');if(i<0)return h+item;const fim=h.indexOf('</button>',i)+9;return h.slice(0,fim)+item+h.slice(fim)};
 const _ccAbrirMk=ccAbrir;ccAbrir=function(){mkFechar();return _ccAbrirMk.apply(this,arguments)};
 const _mpSelecionarMk=mpSelecionar;mpSelecionar=function(id){if(id)mkFechar();return _mpSelecionarMk.apply(this,arguments)};
