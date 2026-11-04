@@ -615,8 +615,8 @@ select pg_temp.como(:'diretor');
 select pg_temp.ok((select situacao_mapa from app.v_mapa where id = :'tm') = 'sem_negociacao', 'pin sem negociação');
 
 \echo '# entorno do terreno (Google, distância a pé)'
-select pg_temp.ok((select count(*) from app.entorno_categorias where ativo) = 7, 'sete categorias de entorno ligadas: metrô/trem, shopping, hospital, escola/creche, supermercado, parque e terminal de ônibus');
-select pg_temp.ok((select count(*) from app.entorno_categorias where codigo in ('metro_trem','escola') and min_avaliacoes is null) = 2, 'estação e escola entram com qualquer número de avaliações');
+select pg_temp.ok((select count(*) from app.entorno_categorias where ativo) = 8, 'oito categorias de entorno ligadas: metrô/trem, shopping, hospital, escola/creche, supermercado, parque, terminal de ônibus e faculdade');
+select pg_temp.ok((select count(*) from app.entorno_categorias where codigo in ('metro_trem','escola','faculdade') and min_avaliacoes is null) = 3, 'estação, escola e faculdade entram com qualquer número de avaliações');
 select pg_temp.ok((select isento_nomes like '%shopping%' and um_por_local_m = 200 from app.entorno_categorias where codigo = 'shopping'), 'shopping passa pelo nome e junta as lojas de dentro');
 select pg_temp.ok((select min_avaliacoes = 50 and isento_nomes like '%ubs%' from app.entorno_categorias where codigo = 'hospital'), 'hospital: clínica precisa de 50 avaliações, posto de saúde não');
 select pg_temp.ok((select excluir_nomes like '%autoescola%' from app.entorno_categorias where codigo = 'escola'), 'escola: autoescola sai pelo nome');
