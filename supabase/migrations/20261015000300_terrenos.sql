@@ -201,6 +201,11 @@ create table app.inscricoes_municipais (
   cib               text,  -- Cadastro Imobiliário Brasileiro (vem do GeoSampa)
   zona_fiscal       text,  -- ZF-1 a ZF-4 em São Paulo (vem do GeoSampa)
   parte_id          uuid references app.terreno_partes(id),  -- de qual dono; nulo = terreno de um dono só
+  -- De onde veio (4/nov/2026): digitada, ou marcada no mapa de lotes da prefeitura ao cadastrar o
+  -- terreno (São Paulo, GeoSampa). A marcada entra solta, sem lote nem matrícula (sem linha em
+  -- lote_inscricoes), e é escolhida depois na lista do lote; tirada do lote, volta a ficar solta.
+  origem            text not null default 'digitada' check (origem in ('digitada', 'mapa_prefeitura')),
+  endereco_prefeitura text,  -- logradouro e número de porta do cadastro da prefeitura (vem do mapa)
   unique nulls not distinct (empresa_id, municipio_id, inscricao_norm)
 );
 create index on app.inscricoes_municipais (terreno_id);

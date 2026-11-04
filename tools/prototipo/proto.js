@@ -675,13 +675,14 @@ function go(route,x={}){if(UI.edMini)Object.assign(UI,{edMini:false,mpModo:null,
 
 /* ===================== modais ===================== */
 function renderModal(){
-  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.nv=null;UI.nvPool=null;UI.nvKmz=null;UI.ofPoly=null;UI.kmzNovo=false;UI.lotes=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.crPredNovo=false;UI.crAviso=null;UI.grafico=null;UI.geo=null;UI.alvoParte=null;UI.poiExcl=null;UI.ltDup=null;return}
+  const M=UI.modal,el=$('#modal');if(!M){el.innerHTML='';UI.alvo=null;UI.alvoEtapa=null;UI.alvoPend=null;UI.acao=null;UI.nv=null;UI.nvPool=null;UI.nvKmz=null;UI.ofPoly=null;UI.kmzNovo=false;UI.lotes=null;UI.novoPoi=null;UI.novoConc=null;UI.poiVolta=null;UI.kmzItens=null;UI.tkSel=null;UI.crPredNovo=false;UI.crAviso=null;UI.grafico=null;UI.geo=null;UI.alvoParte=null;UI.poiExcl=null;UI.ltDup=null;UI.lg=null;return}
   let h='';const fechar=`<button class="iconbtn" data-a="close" aria-label="Fechar">${ic('close')}</button>`;
   h=quadrosModal(M,fechar)||cronoModal(M,fechar)||viabModal(M,fechar)||partesModal(M,fechar)||fasesModal(M,fechar)||funilModal(M,fechar)||setoresModal(M,fechar)||topoModal(M,fechar);
   if(M==='novo')h=UI.nv?nvDadosHtml(fechar):nvPasso1Html(fechar);
   if(M==='novo-sobre')h=nvSobreHtml(fechar);
   if(M==='lotes-poly')h=lotesPolyHtml(fechar);
   if(M==='lt-dup')h=ltDupHtml(fechar);
+  if(M==='lotes-geo')h=lgHtml(fechar);
   if(M==='ems-viab'||M==='ems-apagar'||M==='ems-pedido')h=emsModalHtml(M,fechar);
   if(M==='oferta'){const tt=T(UI.id),pd=UI.ofPoly;h=`<div class="dh"><h2>Registrar oferta</h2>${fechar}</div><form data-form="oferta" id="f-of"><div class="fields">
     ${pd?`<div class="field full"><div class="banner blue">${ic('layers')}<div>Oferta de parte do terreno: ${m2(Math.round(areaPoly(pd)))}${tt?.poly?` de ${m2(Math.round(areaPoly(tt.poly)))} (${num(100*areaPoly(pd)/areaPoly(tt.poly),0)}%)`:''}. O pedaço oferecido fica guardado na oferta.</div></div></div>`:''}
@@ -704,6 +705,7 @@ function renderModal(){
   if(M==='grafico'){const k=UI.grafico;h=`<div class="dh g-exp"><h2>${DIMS[k].l}</h2>${fechar}</div>${grafico(k,true)}<h3 class="lbl-up" style="margin-top:var(--e6)">Dados do gráfico</h3>${tabelaGrafico(k)}`}
   el.innerHTML=`<div class="scrim" data-a="scrim"><div class="dialog" role="dialog" aria-modal="true">${h}</div></div>`;
   if(M==='novo')nvPosRender();
+  if(M==='lotes-geo'){lgLigar();return}
   /* o cartão de tarefa abre sem cursor no título (como o Trello): o foco vai para a janela */
   const tkm=el.querySelector('.tkm');if(tkm){const d=el.querySelector('.dialog');d.tabIndex=-1;setTimeout(()=>{if(!d.contains(document.activeElement))d.focus({preventScroll:true})},30);return}
   const f=el.querySelector('input:not([type=hidden]),select');if(f)setTimeout(()=>f.focus(),30);
@@ -906,7 +908,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,F=Obj
         if(o.cid&&!alvo.corretores.some(x=>x.cid===o.cid))alvo.corretores.push({cid:o.cid,principal:!alvo.corretores.some(x=>x.principal)});
         if(!alvo.neg||!['ativo','stand_by'].includes(alvo.neg.status)){alvo.neg=novaNeg(o.id,Number(F.temp)||null);log(alvo,'Negociação aberta');etAbriu(alvo)}
         else log(alvo,'Nova oferta registrada')}
-      UI.modal=null;UI.nv=null;save();go('terreno',{id:alvo.id,tab:dup?'comercial':'cadastro',from:'terrenos'});toast(dup?'Oferta registrada no terreno existente.':`${alvo.codigo} cadastrado. Complete a ficha quando puder.`);if(!dup&&alvo.insc[0]&&loteBuscavel(alvo.insc[0]))loteBuscar(alvo,0);break}
+      UI.modal=null;UI.nv=null;save();go('terreno',{id:alvo.id,tab:dup?'comercial':'cadastro',from:'terrenos'});toast(dup?'Oferta registrada no terreno existente.':`${alvo.codigo} cadastrado. Complete a ficha quando puder.`);if(!dup&&alvo.insc[0]&&loteBuscavel(alvo.insc[0]))loteBuscar(alvo,0);if(!dup)lgPerguntar(alvo);break}
     case 'oferta':{const o={id:uid(),cid:F.cid||null,data:HOJE,valor:lerNum(F.valor),forma:F.forma||null,obsPag:F.obsPag,aceita:F.aceita,validade:F.validade||null,status:'ativa'};if(UI.ofPoly)o.poly=UI.ofPoly;t.ofertas.push(o);
       if(o.cid&&!t.corretores.some(x=>x.cid===o.cid))t.corretores.push({cid:o.cid,principal:!t.corretores.some(x=>x.principal)});
       if(!t.neg||!['ativo','stand_by'].includes(t.neg.status)){t.neg=novaNeg(o.id,null);log(t,'Negociação aberta');etAbriu(t)}else log(t,`Nova oferta: ${mi(o.valor)}${o.poly?` (parte do terreno, ${m2(Math.round(areaPoly(o.poly)))})`:''}`);

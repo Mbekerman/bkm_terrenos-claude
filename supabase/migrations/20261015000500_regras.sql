@@ -1649,6 +1649,10 @@ begin
             from app.lote_inscricoes li join app.terreno_lotes l on l.id = li.lote_id
            where l.terreno_id = p_terreno group by li.inscricao_id) x
    where i.id = x.inscricao_id and i.parte_id is distinct from x.parte_id;
+  -- SQL do mapa da prefeitura que ficou sem lote volta a ficar solto, sem parte
+  update app.inscricoes_municipais i set parte_id = null
+   where i.terreno_id = p_terreno and i.origem = 'mapa_prefeitura' and i.parte_id is not null
+     and not exists (select 1 from app.lote_inscricoes li where li.inscricao_id = i.id);
 end $$;
 
 -- Cadastra ou altera um lote. p_dados: titulo, parte_id, matricula {numero, cartorio,
@@ -1754,7 +1758,8 @@ begin
 end $$;
 
 -- Exclui o lote com a sua matrícula. Os SQLs que só estavam nele saem do terreno, menos os que
--- têm IPTU lançado ou estão numa análise anterior (o histórico fica).
+-- têm IPTU lançado ou estão numa análise anterior (o histórico fica) e os marcados no mapa de
+-- lotes da prefeitura, que voltam a ficar soltos (sem lote) para entrar em outro lote.
 create or replace function app.excluir_lote(p_lote uuid)
 returns void
 language plpgsql security definer set search_path = ''
@@ -1769,7 +1774,8 @@ begin
   delete from app.terreno_lotes where id = l.id;
   if l.matricula_id is not null then delete from app.matriculas where id = l.matricula_id; end if;
   for v_ins in select i.id from app.inscricoes_municipais i
-                where i.id = any(v_sos) and not exists (select 1 from app.inscricao_valores v where v.inscricao_id = i.id) loop
+                where i.id = any(v_sos) and i.origem <> 'mapa_prefeitura'
+                  and not exists (select 1 from app.inscricao_valores v where v.inscricao_id = i.id) loop
     begin
       delete from app.inscricoes_municipais where id = v_ins;
     exception when others then null;
