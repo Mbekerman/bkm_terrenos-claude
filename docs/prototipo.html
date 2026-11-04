@@ -14972,7 +14972,7 @@ if(S.auDia!==HOJE){auRotina();save()}
    - Trava: as abertas de uma regra que trava viram pendência do avanço
      (analista vê a lista; gestor e diretor passam com justificativa).
      Regra da subetapa trava sair da subetapa; da etapa, sair da etapa.
-     Tarefa à mão trava quando a etapa dela tem regra da etapa que trava.
+     Tarefa à mão nunca trava (por padrão nada trava; decisão de 4/nov/2026).
    - Cartão: "Etapa do funil" (nasce na etapa atual; "Nenhuma" tira).
    - Stand By pausa as tarefas abertas da fase sem pedido; retomar devolve
      e empurra o prazo pelos dias parados. Perdido e Descartado perguntam:
@@ -15001,9 +15001,7 @@ const etDoProc=(t,f,pid)=>(t.tarefas||[]).filter(k=>k.fase===f&&k.etProc===pid&&
 function etTrava(t,k){if(!k||!k.etapa||!k.fase)return null;const r=etRegraDe(k);let nivel=null,sit='ativa',regra=null;
   if(r&&r.ativo!==false&&r.fase===k.fase&&r.etapa===k.etapa&&(r.sub||null)===(k.sub||null)){regra=jnRegraEf(t,jnBaseTar(r),r.rc);if(regra!=='livre')nivel=r.sub?'subetapa':'etapa';
     if(!itCondVale(t,r.cond)||!itCondVale(t,k.etCond))sit='nao_se_aplica'}
-  else{  // à mão: trava se a etapa trava, pela regra mais forte das regras da etapa
-    const rs=etRegras().filter(g=>g.ativo!==false&&g.fase===k.fase&&g.etapa===k.etapa&&!g.sub&&g.trava).map(g=>jnRegraEf(t,jnBaseTar(g),g.rc)).filter(x=>x!=='livre');
-    if(rs.length){nivel='etapa';regra=rs.includes('bloqueia')?'bloqueia':'justifica'}}
+  // à mão (ou fora da etapa da regra): nunca trava; travar é escolha na regra da Jornada (4/nov/2026)
   if(k.etSit==='deixada'||k.etSit==='arqAuto')sit=k.etSit;
   return {nivel,sit,trava:!!nivel&&sit==='ativa',regra:nivel?regra:null}}
 /* abertas que travam a saída (saida: etapa ou subetapa) do processo da fase */

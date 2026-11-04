@@ -2771,8 +2771,8 @@ select pg_temp.ok((select etapa = 'estudos' and subetapa is null and inicio = cu
 select pg_temp.ok((select responsavel_id = :'gestor' from fluxo.tarefas where id = :'kpr'), 'o responsável do terreno vira a pessoa do terreno na hora');
 select pg_temp.tarefa(:'tfn', 'Visitar o terreno', null, :'gestor') as kvi \gset
 select pg_temp.ok((select k.processo_id = :'pfn' and k.etapa = 'estudos' and k.subetapa = p.subetapa_atual from fluxo.tarefas k join app.processos p on p.id = k.processo_id where k.id = :'kvi')
-  and (select trava and trava_nivel = 'etapa' from app.v_tarefas_etapa where tarefa_id = :'kvi'),
-  'a tarefa criada à mão nasce na etapa atual e trava, porque a etapa trava');
+  and (select not trava and trava_nivel is null from app.v_tarefas_etapa where tarefa_id = :'kvi'),
+  'a tarefa criada à mão nasce na etapa atual e não trava, mesmo com regra da etapa que trava');
 insert into fluxo.tarefas (empresa_id, quadro_id, lista_id, titulo, etapa) select empresa_id, id, pg_temp.lista(:'tfn', 'Fazer'), 'Sem etapa', 'nenhuma'
   from fluxo.quadros where objeto_tipo = 'terreno' and objeto_id = :'tfn' returning id as kne \gset
 select pg_temp.ok((select processo_id is null and etapa is null from fluxo.tarefas where id = :'kne'), '"Nenhuma" deixa a tarefa sem etapa');
@@ -2789,8 +2789,9 @@ select pg_temp.falha(format($$update fluxo.tarefas set etapa = 'projeto' where i
 select pg_temp.ok(not exists (select 1 from jsonb_array_elements(app.checar_passagem(:'pfn')->'itens') i where i->>'tipo' in ('documento','prerequisito')),
   'documento e pré-requisito com condição que não vale não entram nas pendências');
 select pg_temp.ok((select not aplica from app.v_checklist where processo_id = :'pfn' and etapa = 'estudos' and tipo_documento = 'matricula'), 'o checklist diz que o documento não se aplica');
-select pg_temp.ok((select count(*) from jsonb_array_elements(app.checar_passagem(:'pfn')->'itens') i where i->>'tipo' = 'tarefa') = 4,
-  'as tarefas abertas que travam entram nas pendências do avanço');
+select pg_temp.ok((select count(*) from jsonb_array_elements(app.checar_passagem(:'pfn')->'itens') i where i->>'tipo' = 'tarefa') = 3
+  and not exists (select 1 from jsonb_array_elements(app.checar_passagem(:'pfn')->'itens') i where i->>'tarefa_id' = :'kvi'),
+  'as tarefas abertas que travam entram nas pendências do avanço; a criada à mão não');
 select pg_temp.falha(format('select app.mover_etapa(%L)', :'pfn'), 'com tarefa aberta que trava, o analista não avança');
 -- subetapa: a regra dela nasce e trava a saída da subetapa
 select app.mover_subetapa(:'pfn', 'estudo_viabilidade') \gset
