@@ -2868,14 +2868,14 @@ input[data-fmt]:not([data-fmt="none"]) { font-variant-numeric: tabular-nums }
 .num, .big, .mv, .kpi .v, .chip { font-variant-numeric: tabular-nums }
 
 /* Campos no padrão Material 3 (campo contornado): altura 40, raio 4, contorno #747775, seta própria no select */
-:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select, textarea) {
+:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .ems, .vb-ms, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select, textarea) {
   border: 1px solid #747775 !important; border-radius: 4px !important; background-color: transparent; color: var(--m-on-surface, #1f1f1f); font-size: 14px }
-:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select) { height: 40px !important; min-height: 40px !important; padding: 0 12px }
-:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .modal, .dr) :where(input, select, textarea):focus { outline: 2px solid var(--m-primary, #0b57d0) !important; outline-offset: -2px; border-color: transparent !important }
+:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .ems, .vb-ms, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select) { height: 40px !important; min-height: 40px !important; padding: 0 12px }
+:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .ems, .vb-ms, .modal, .dr) :where(input, select, textarea):focus { outline: 2px solid var(--m-primary, #0b57d0) !important; outline-offset: -2px; border-color: transparent !important }
 select:not([multiple]) { -webkit-appearance: none; appearance: none; padding-right: 36px !important; background-repeat: no-repeat; background-position: right 10px center; background-size: 18px 18px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23444746' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important }
 :root[data-tema="escuro"] select:not([multiple]) { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23c4c7f0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important }
-:root[data-tema="escuro"] :is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not(.auto-v):not(.vb-pop-nome), select, textarea) { border-color: rgba(153,156,161,0.5) !important; background-color: transparent !important; color: #e3e3e3 }
+:root[data-tema="escuro"] :is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .ems, .vb-ms, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not(.auto-v):not(.vb-pop-nome), select, textarea) { border-color: rgba(153,156,161,0.5) !important; background-color: transparent !important; color: #e3e3e3 }
 :root[data-tema="escuro"] { color-scheme: dark }
 input[type=date] { font-variant-numeric: tabular-nums }
 input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
@@ -5208,6 +5208,60 @@ html[data-tema="escuro"] .lbl-f { color: #c4c7c5 }
 html[data-tema="escuro"] .lt-sqls { border-top-color: #2d2f31 }
 html[data-tema="escuro"] .lt-sql { background: #282a2c }
 html[data-tema="escuro"] .ptcom-r { border-top-color: #2d2f31 } html[data-tema="escuro"] .ptcom-th { color: #c4c7c5 }
+
+/* ---------- Estudos de massa (lote 4 da ficha em abas, 4/nov/2026) ---------- */
+.ems { container-type: inline-size }
+.ems-acoes { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 8px }
+.ems-h3 { font-size: 14px; font-weight: 500; margin: 20px 0 10px; color: #1f1f1f }
+.ems-h3:first-of-type { margin-top: 8px }
+.ems-g { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px 16px }
+.ems-g .field { margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 4px }
+.ems-g .field .v { min-height: 40px; display: flex; align-items: center }
+.ems-g .ems-full { grid-column: 1 / -1 }
+.ems-g textarea { width: 100%; min-height: 64px }
+.ems-tips { display: flex; flex-direction: column }
+.ems-tr { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 40px; gap: 8px 12px; align-items: center; padding: 8px 0; border-top: 1px solid #e3e3e3 }
+.ems-tr label { margin: 0; min-width: 0; display: block }
+.ems-tr input { width: 100%; font-size: 16px } .ems-tr .num { text-align: right }
+.ems-th { border-top: 0; padding-top: 0; font-size: 12px; font-weight: 500; color: #444746 }
+.ems-th > span:nth-child(4) { text-align: right }
+.ems-tot { font-weight: 500 } .ems-tot b { font-weight: 500 }
+.ems-ml { display: none }
+.ems-vazio { padding: 8px 0 }
+.ems-arqs { display: flex; flex-direction: column; gap: 8px }
+.ems-arq { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 0; border-top: 1px solid #e3e3e3 }
+.ems-arq:first-child { border-top: 0 }
+.ems-arq-t { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; min-width: 0 } .ems-arq-t b { font-weight: 500 }
+.ems-vbs { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: baseline }
+.ems-vbs .lbl-f { flex-basis: 100% }
+.ems-lista tr.ems-sel td { background: rgba(11, 87, 208, .06) }
+.ems-form { margin-bottom: 12px }
+@container (max-width: 560px) {
+  .ems-th { display: none }
+  .ems-tr { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 40px }
+  .ems-tr > label:nth-child(1) { grid-column: 1 / 3; grid-row: 1 }
+  .ems-tr > button { grid-column: 3; grid-row: 1; align-self: end }
+  .ems-tr > label:nth-child(2) { grid-column: 1; grid-row: 2 }
+  .ems-tr > label:nth-child(3) { grid-column: 2; grid-row: 2 }
+  .ems-tr > .num { grid-column: 1 / -1 }
+  .ems-tr > span:empty { display: none }
+  .ems-ml { display: block; margin-bottom: 2px }
+  .ems-tr .num { text-align: left }
+  .ems-tot > b:first-child { grid-column: 1 / -1 }
+  .ems-tot > .num { grid-column: auto }
+}
+.vb-ms { margin: 0 0 16px; max-width: 560px } .vb-ms .field { margin: 0; display: flex; flex-direction: column; gap: 4px } .vb-ms select { width: 100% }
+html[data-tema="escuro"] .ems-tr, html[data-tema="escuro"] .ems-arq { border-top-color: #2d2f31 }
+html[data-tema="escuro"] .ems-th { color: #c4c7c5 } html[data-tema="escuro"] .ems-h3 { color: #e3e3e3 }
+html[data-tema="escuro"] .ems-lista tr.ems-sel td { background: rgba(168, 199, 250, .08) }
+
+/* Estudos de massa: pedido em popup (pedido do Moisés, 4/nov/2026) */
+.sec-h .ems-vped{margin-left:auto}
+.ems-ped{display:grid;gap:16px}
+.ems-ped textarea{width:100%;resize:vertical}
+.ems-blist{margin:4px 0 0;padding-left:20px;line-height:1.5}
+.vb-ms-l{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}.vb-ms-l .field{flex:1;min-width:220px}
+.ems-ped2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 </style>
 <header class="top">
   <div class="top-in">
@@ -5335,7 +5389,7 @@ const CFG_PADRAO=()=>({
   checklist:{contrato:[['matricula',1],['onus',1],['iptu',1],['vend',1],['topo',1],['sond',0],['amb',0],['minuta',1]].map(([doc,o])=>({doc,obrig:!!o}))},
   motivos:{descartado:[['tecnica','Inviabilidade Técnica'],['financeira','Inviabilidade Financeira'],['contratual','Inviabilidade Contratual'],['formato_negocio','Inviabilidade Formato de Negócio'],['garantias','Inviabilidade Garantias'],['urbanistica','Inviabilidade Urbanística'],['documental','Inviabilidade Documental'],['outros','Outros',1]].map(([k,nome,tx])=>({k,nome,texto:!!tx,ativo:true})),
     perdido:[['vendido_terceiro','Vendido para terceiro'],['desistiu_vender','Proprietário desistiu de vender'],['preco_pagamento','Vendedor não aceitou preço ou pagamento'],['formato','Vendedor não aceitou o formato (permuta etc.)'],['garantias','Vendedor não aceitou as garantias'],['sem_retorno','Sem retorno do proprietário'],['outros','Outros',1]].map(([k,nome,tx])=>({k,nome,texto:!!tx,ativo:true}))},
-  notif:{tarefa_atribuida:{ativo:true,dias:null,email:true},mencao:{ativo:true,dias:null,email:true},tarefa_prazo:{ativo:true,dias:[0],email:false},tarefa_atrasada:{ativo:true,dias:null,email:false},tarefa_acompanhada:{ativo:true,dias:null,email:false},automacao:{ativo:true,dias:null,email:false},pode_avancar:{ativo:true,dias:null,email:false},etapa_deixada:{ativo:true,dias:null,email:false},subetapa_prazo:{ativo:true,dias:null,email:false},
+  notif:{tarefa_atribuida:{ativo:true,dias:null,email:true},mencao:{ativo:true,dias:null,email:true},tarefa_prazo:{ativo:true,dias:[0],email:false},tarefa_atrasada:{ativo:true,dias:null,email:false},tarefa_acompanhada:{ativo:true,dias:null,email:false},automacao:{ativo:true,dias:null,email:false},pode_avancar:{ativo:true,dias:null,email:false},etapa_deixada:{ativo:true,dias:null,email:false},massa_solicitado:{ativo:true,dias:null,email:true},massa_entregue:{ativo:true,dias:null,email:true},subetapa_prazo:{ativo:true,dias:null,email:false},
     stand_by_retomar:{ativo:true,dias:[7,0],email:false},documento_vencendo:{ativo:true,dias:[30,7],email:false},reuniao_agendada:{ativo:true,dias:[1],email:false},aprovacao_pendente:{ativo:true,dias:null,email:true},aprovacao_decidida:{ativo:true,dias:null,email:true}}
 });
 const CFG0=CFG_PADRAO();
@@ -5351,7 +5405,7 @@ const SIDX=k=>STAGES.findIndex(s=>s[0]===k);const SN=k=>(STAGES.find(s=>s[0]===k
 /* itens da visita técnica (decisão do Moisés, 3/nov/2026); os quatro primeiros com viabilidade técnica também pedem a da concessionária */
 const INFRA=[['energia','Energia'],['agua','Água'],['esgoto','Esgoto'],['drenagem','Drenagem'],['gas','Gás canalizado'],['asfalto','Asfalto'],['iluminacao','Iluminação pública'],['calcada','Calçada']];
 const ZONEAMENTOS=['ZEU','ZEUa','ZEUP','ZEUPa','ZEM','ZEMP','ZC','ZCa','ZC-ZEIS','ZCOR-1','ZCOR-2','ZCOR-3','ZM','ZMa','ZMIS','ZMISa','ZEIS-1','ZEIS-2','ZEIS-3','ZEIS-4','ZEIS-5','ZDE-1','ZDE-2','ZPI-1','ZPI-2','ZER-1','ZER-2','ZERa','ZPR','ZEP','ZEPAM','ZPDS','ZOE'];
-const TIPOS_DOC={ata:['Ata de reunião','Reuniões',null],matricula:['Matrícula atualizada','Imóvel',30],onus:['Certidão de ônus reais','Imóvel',30],iptu:['Certidão negativa de IPTU','Imóvel',90],vend:['Certidões pessoais do vendedor','Vendedor',30],topo:['Levantamento planialtimétrico','Técnico',null],sond:['Sondagem SPT','Técnico',null],amb:['Avaliação ambiental preliminar','Técnico',null],minuta:['Minuta de promessa de compra e venda','Contratos',null],foto:['Foto','Mídia',null],planta:['Planta ou croqui','Técnico',null],lote_pdf:['Planta do lote da prefeitura (PDF)','Técnico',null],lote_dxf:['Desenho do lote da prefeitura (DXF)','Técnico',null],topo_pdf:['Topográfico preliminar (PDF)','Técnico',null],topo_dxf:['Topográfico preliminar (DXF + imagem)','Técnico',null]};
+const TIPOS_DOC={ata:['Ata de reunião','Reuniões',null],matricula:['Matrícula atualizada','Imóvel',30],onus:['Certidão de ônus reais','Imóvel',30],iptu:['Certidão negativa de IPTU','Imóvel',90],vend:['Certidões pessoais do vendedor','Vendedor',30],topo:['Levantamento planialtimétrico','Técnico',null],sond:['Sondagem SPT','Técnico',null],amb:['Avaliação ambiental preliminar','Técnico',null],minuta:['Minuta de promessa de compra e venda','Contratos',null],foto:['Foto','Mídia',null],planta:['Planta ou croqui','Técnico',null],lote_pdf:['Planta do lote da prefeitura (PDF)','Técnico',null],lote_dxf:['Desenho do lote da prefeitura (DXF)','Técnico',null],topo_pdf:['Topográfico preliminar (PDF)','Técnico',null],topo_dxf:['Topográfico preliminar (DXF + imagem)','Técnico',null],massa_pdf:['Estudo de massa (PDF)','Técnico',null],massa_dwg:['Estudo de massa (DWG)','Técnico',null]};
 const CHECK_DIL=[['matricula',1],['onus',1],['iptu',1],['vend',1],['topo',1],['sond',0],['amb',0],['minuta',1]];
 const USERS=['Moisés','Ana Prado','Camila Torres','Rafael Souza'];
 /* hierarquia: N analistas → 1 gestor; N gestores → 1 diretor. Administrador é permissão à parte */
@@ -5839,14 +5893,13 @@ function fichaFaseTxt(t){const a=faseAtual(t);if(!a)return [];const p=a.p;if(!p)
   if(p.status!=='ativo')return [esc(faseN(a.k)),`<span class="chip ${p.status==='concluido'?'good':p.status==='stand_by'?'warn':''}">${esc(ent?OPT_SIT_N(t):procStatusN(p))}</span>`];
   return [esc(faseN(a.k)),esc(et),sb?esc(sb):''].filter(Boolean)}
 const OPT_SIT_N=t=>({stand_by:'Stand By',perdido:'Perdido',descartado:'Descartado',concluido:'Comprado'})[t.neg?.status]||t.neg?.status||'';
-function abaContagem(t,k){switch(k){case 'comercial':return t.ofertas.length+t.propostas.length+(t.reunioes||[]).length;case 'viabilidade':return viabsDe(t.id).length;
+function abaContagem(t,k){switch(k){case 'comercial':return t.ofertas.length+t.propostas.length+(t.reunioes||[]).length;case 'viabilidade':return viabsDe(t.id).length;case 'massa':return massasDe(t.id).length;
   case 'jornada':return fasesAbertas(t).length;case 'documentos':return t.docs.length+t.dilig.filter(d=>d.sit!=='resolvida').length;default:return 0}}
 function abaComercialFicha(t){return `<div class="stack">${abaGeral(t,'neg')}${abaComercial(t).replace(/^<div class="stack">/,'').replace(/<\/div>\s*$/,'')}${t.neg?abaNegociacao(t).replace(/^<div class="stack">/,'').replace(/<\/div>\s*$/,''):''}</div>`}
 function abaJornada(t){return `<div class="stack">${trilhaHtml(t)}${abaFases(t)}</div>`}
 function abaViabilidade(t){return `<div class="stack">${abaGeral(t,'viab')}${viabSecao(t)}</div>`}
 function abaInfra(t){return `<div class="stack">${abaGeral(t,'relevo')}${abaUrbanismo(t,'infra')}</div>`}
 function abaEntorno(t){return `<div class="stack">${abaGeral(t,'entorno')}</div>`}
-function abaMassa(t){return `<section class="sec"><div class="sec-b"><div class="empty">Os estudos de massa entram no próximo lote: pedido ao arquiteto, ficha do estudo com tipologias e áreas, PDF e DWG, e o estudo válido.</div></div></section>`}
 /* a aba ativa sempre visível na barra (no celular a barra rola de lado) */
 function fiAbaVisivel(){const b=document.querySelector('.fi-abas'),a=b&&b.querySelector('[aria-selected="true"]');if(!a)return;
   const l=a.offsetLeft-b.offsetLeft,r=l+a.offsetWidth;if(l<b.scrollLeft||r>b.scrollLeft+b.clientWidth)b.scrollLeft=Math.max(0,l-(b.clientWidth-a.offsetWidth)/2)}
@@ -5923,6 +5976,7 @@ function renderModal(){
   if(M==='novo-sobre')h=nvSobreHtml(fechar);
   if(M==='lotes-poly')h=lotesPolyHtml(fechar);
   if(M==='lt-dup')h=ltDupHtml(fechar);
+  if(M==='ems-viab'||M==='ems-apagar'||M==='ems-pedido')h=emsModalHtml(M,fechar);
   if(M==='oferta'){const tt=T(UI.id),pd=UI.ofPoly;h=`<div class="dh"><h2>Registrar oferta</h2>${fechar}</div><form data-form="oferta" id="f-of"><div class="fields">
     ${pd?`<div class="field full"><div class="banner blue">${ic('layers')}<div>Oferta de parte do terreno: ${m2(Math.round(areaPoly(pd)))}${tt?.poly?` de ${m2(Math.round(areaPoly(tt.poly)))} (${num(100*areaPoly(pd)/areaPoly(tt.poly),0)}%)`:''}. O pedaço oferecido fica guardado na oferta.</div></div></div>`:''}
     <div class="field"><label for="o-c">Corretor</label><select id="o-c" name="cid"><option value="">Sem corretor / direto</option>${S.corretores.map(c=>`<option value="${c.id}">${esc(c.nome)} · ${esc(c.imob)}</option>`).join('')}</select></div>
@@ -10066,7 +10120,7 @@ function tentar(t,tipo,dest,dados){const r=moverPara(t,tipo,dest,{dados});save()
   toast(r.erro,true);return r}
 
 /* ---------- Configurações › Funil (só administrador) ---------- */
-const TIPOS_NOTIF_N={pode_avancar:'Tarefas da etapa concluídas (pode avançar)',etapa_deixada:'Tarefa de etapa deixada',tarefa_atribuida:'Tarefa atribuída a você',mencao:'Mencionado com @',tarefa_prazo:'Prazo de tarefa chegando',tarefa_atrasada:'Tarefa atrasada',tarefa_acompanhada:'Tarefa que você acompanha (comentário ou conclusão)',automacao:'Aviso de automação de tarefas',subetapa_prazo:'Subetapa passou do prazo',stand_by_retomar:'Data de retomar um Stand By',documento_vencendo:'Documento vencendo',reuniao_agendada:'Reunião agendada',aprovacao_pendente:'Pedido de aprovação para você',aprovacao_decidida:'Seu pedido foi aprovado ou recusado'};
+const TIPOS_NOTIF_N={massa_solicitado:'Estudo de massa pedido a você',massa_entregue:'Estudo de massa entregue',pode_avancar:'Tarefas da etapa concluídas (pode avançar)',etapa_deixada:'Tarefa de etapa deixada',tarefa_atribuida:'Tarefa atribuída a você',mencao:'Mencionado com @',tarefa_prazo:'Prazo de tarefa chegando',tarefa_atrasada:'Tarefa atrasada',tarefa_acompanhada:'Tarefa que você acompanha (comentário ou conclusão)',automacao:'Aviso de automação de tarefas',subetapa_prazo:'Subetapa passou do prazo',stand_by_retomar:'Data de retomar um Stand By',documento_vencendo:'Documento vencendo',reuniao_agendada:'Reunião agendada',aprovacao_pendente:'Pedido de aprovação para você',aprovacao_decidida:'Seu pedido foi aprovado ou recusado'};
 const apCells=(p,c)=>`<label class="chk"><input type="checkbox" data-ch="cfg" data-p="${p}.g" ${c.g?'checked':''}>Gestor</label><label class="chk"><input type="checkbox" data-ch="cfg" data-p="${p}.d" ${c.d?'checked':''}>Diretor</label>${c.g&&c.d?`<select data-ch="cfg" data-p="${p}.modo" aria-label="Ordem das aprovações"><option value="sequencia" ${c.modo!=='paralelo'?'selected':''}>Em sequência</option><option value="paralelo" ${c.modo==='paralelo'?'selected':''}>Em paralelo</option></select>`:''}`;
 const usada=k=>S.terrenos.some(t=>t.neg&&(t.neg.sub===k||(t.neg.trilha||[]).some(x=>x.paraSub===k||x.deSub===k)));
 function pgConfig(){
@@ -13004,7 +13058,7 @@ function vbCalc(v){let A=0,un=0,unp=0,unc=0,ap=0,ac=0,vgv=0,vp=0,vc=0;
   const ded=l=>vbGrupoLn(l)==='comercial'&&vbDesp(l.desp)?.deduz&&v.deduz.includes(l.desp);
   const com=soma(['comercial']),dedc=r2(v.linhas.filter(ded).reduce((s,l)=>s+(val(l)||0),0));
   const dedp=r2(vv*(v.dedp||0)/100),liq=r2(vv-dedp-dedc);
-  const oi=r2((v.cm2||0)*A);b.pct_obra_tipica=oi;
+  const Ab=v.obraBase==='construida'?(v.constr||0):A,oi=r2((v.cm2||0)*Ab);b.pct_obra_tipica=oi;
   const raso=r2(oi+soma(['obra_atipica']));b.pct_obra_raso=raso;
   const ot=r2(raso+soma(['obra_nao_incidente']));b.pct_obra_total=ot;
   const obras=r2(ot+soma(['projetos','pos_obra']));
@@ -13018,7 +13072,7 @@ function vbCalc(v){let A=0,un=0,unp=0,unc=0,ap=0,ac=0,vgv=0,vp=0,vc=0;
   const sg=gs=>r2(gs.reduce((s,g)=>s+(GR[g]||0),0));
   const SEC={obra:obras,terreno:terr,despesas:sg(VB_DG),taxas:sg(['taxas']),financeiro:sg(VB_FIN),comercial:com};
   const lucro=r2(l0-lu),desp=r2(Object.values(SEC).reduce((s,x)=>s+x,0));
-  return {A,un,unp,unc,unl,ap,ac,vgv,vp,vc,vv,dedp,dedc,liq,oi,raso,ot,obras,pfc,pf,minimo:pf>pfc,terr,desp,SEC,GR,lb,semTaxas:r2(lucro+SEC.taxas),ebitda:r2(lucro+SEC.taxas+SEC.financeiro),lucro,margem:liq>0?r2(lucro/liq*100):null,L}}
+  return {A,Ab,un,unp,unc,unl,ap,ac,vgv,vp,vc,vv,dedp,dedc,liq,oi,raso,ot,obras,pfc,pf,minimo:pf>pfc,terr,desp,SEC,GR,lb,semTaxas:r2(lucro+SEC.taxas),ebitda:r2(lucro+SEC.taxas+SEC.financeiro),lucro,margem:liq>0?r2(lucro/liq*100):null,L}}
 
 /* a negociação lê o resumo do estudo vinculado (no banco, processos.viabilidade_id e os totais do estudo) */
 function vbResumo(v){const c=vbCalc(v);return {id:v.id,nome:v.nome,vgv:c.vgv,liq:c.liq,lucro:c.lucro,margem:c.margem,em:v.em}}
@@ -13039,10 +13093,10 @@ const vbNovo=(tid,nome)=>vbFixos({id:uid(),tid,nome,em:HOJE,user:me(),cm2:null,p
 const vbModelos=()=>(S.viabModelos||[]).filter(m=>!m.dono||m.dono===me()).sort((a,b)=>(!!a.dono-!!b.dono)||(b.padrao-a.padrao)||a.nome.localeCompare(b.nome,'pt-BR'));
 const vbModeloPadrao=()=>(S.viabModelos||[]).find(m=>m.padrao&&!m.dono);
 function vbModeloDados(v){const dir=vbDiretoria();
-  return {cm2:v.cm2,dedp:v.dedp,deduz:[...v.deduz],linhas:v.linhas.filter(l=>{const d=vbDesp(l.desp);return d&&(!VB_RESTRITO.includes(VB_GRUPO[d.grupo]?.secao)||dir)})
+  return {cm2:v.cm2,obraBase:v.obraBase||'privativa',dedp:v.dedp,deduz:[...v.deduz],linhas:v.linhas.filter(l=>{const d=vbDesp(l.desp);return d&&(!VB_RESTRITO.includes(VB_GRUPO[d.grupo]?.secao)||dir)})
     .map(l=>({desp:l.desp,tipo:l.tipo,valor:l.valor,qtd:l.qtd??1}))}}
 function vbAplicarModelo(v,m){const x=m.dados,dir=vbDiretoria(),vistos=new Set();
-  v.cm2=x.cm2??null;v.dedp=x.dedp??null;v.deduz=(x.deduz||[]).filter(c=>vbDesp(c)?.deduz);
+  v.cm2=x.cm2??null;v.obraBase=x.obraBase||'privativa';v.dedp=x.dedp??null;v.deduz=(x.deduz||[]).filter(c=>vbDesp(c)?.deduz);
   x.linhas.forEach(l=>{const d=vbDesp(l.desp),G=VB_GRUPO[d?.grupo];if(!d?.ativo||!G.tipos.includes(l.tipo))return;
     if(VB_RESTRITO.includes(G.secao)&&m.dono&&!dir)return;if(G.fixo){if(vistos.has(d.codigo))return;vistos.add(d.codigo)}
     v.linhas.push({id:uid(),desp:d.codigo,tipo:l.tipo,valor:l.valor,qtd:l.qtd??1})});
@@ -13111,10 +13165,11 @@ function vbSec(k,titulo,c,corpo,acao=''){const O=vbOrdem(),i=O.indexOf(k),ant=O[
   return `<section class="sec vb-sec" id="vb-sec-${k}" aria-labelledby="vb-st-${k}"><div class="sec-h vb-sh"><h2 id="vb-st-${k}">${titulo}</h2>
     <span class="vb-sh-t" data-vbo="sh-${k}">${vbShTxt(k,c)}</span>${acao}</div>
     <div class="sec-b">${corpo()}</div><div class="vb-passo">${passo(ant,-1)}${passo(prox,1)}</div></section>`}
-function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
+function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);if(v.massa)emsSync(v);
   const t=T(v.tid),c=vbCalc(v),ro=UI.role==='Leitura',lig=t.neg?.viab?.id===v.id,dis=ro?'disabled':'';
   const acoes=ro?'':`${lig?'':negAtiva(t)?`<button class="btn sm" data-a="vb-vincular" data-v="${v.id}">Marcar como válido</button>`:''}<button class="btn sm" data-a="vb-duplicar" data-v="${v.id}">Duplicar</button><button class="btn sm" data-a="vb-modelo" data-v="${v.id}">Salvar como modelo</button>${lig?'':`<button class="btn text sm danger" data-a="vb-apagar" data-v="${v.id}">Apagar</button>`}`;
-  const inp=(id,k,val,d,rot)=>`<label class="vb-c vb-${k}"><span class="vb-l">${rot}</span><input data-vb="tp" data-r="${id}" data-k="${k}" ${k==='nome'?'':`data-fmt="${['pu','pm2'].includes(k)?'moeda':['qtd','perm','com'].includes(k)?'int':'num'}"`} value="${k==='nome'?esc(val??''):vbIn(val,d)}" ${k==='nome'?'':'inputmode="decimal"'} aria-label="${rot}" ${dis}></label>`;
+  const preso=!!v.massa,msv=preso&&EMS(v.massa);
+  const inp=(id,k,val,d,rot)=>`<label class="vb-c vb-${k}"><span class="vb-l">${rot}</span><input data-vb="tp" data-r="${id}" data-k="${k}" ${k==='nome'?'':`data-fmt="${['pu','pm2'].includes(k)?'moeda':['qtd','perm','com'].includes(k)?'int':'num'}"`} value="${k==='nome'?esc(val??''):vbIn(val,d)}" ${k==='nome'?'':'inputmode="decimal"'} aria-label="${rot}" ${preso&&['nome','area','qtd'].includes(k)?'disabled title="Vem do estudo de massa"':dis}></label>`;
   const campo=(k,rot,val,d=2,dica='')=>`<div class="field"><label for="vb-${k}">${rot}</label><input id="vb-${k}" data-vb="hd" data-k="${k}" data-fmt="${k==='pfp'||k==='dedp'?'pct':'moeda'}" value="${vbIn(val,d)}" inputmode="decimal" ${dis}>${dica?`<div class="hint">${dica}</div>`:''}</div>`;
   const hd=`<div class="vb-r vb-hd" aria-hidden="true"><span>Item</span><span>Base de cálculo</span><span>Valor</span><span class="vb-qtd">Meses</span><span class="vb-hr">Resultado</span><span class="vb-x"></span></div>`;
   /* cabeçalho padronizado (28/out/2026): todos os títulos à esquerda, menos o do resultado, à direita; a coluna Meses só onde há verba mensal
@@ -13130,9 +13185,9 @@ function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
     return `<div class="vb-q${sub?' sub':''}${!sub&&qFe('g-'+g)?' fechado':''}">${qh('g-'+g,G.nome,c.GR[g]||0,sub)}
       ${ls.map(l=>vbLinha(v,l,c,dis,ro)).join('')||(UI.vbNova===g&&!ro?'':'<div class="muted vb-vazio">Nenhum item.</div>')}${UI.vbNova===g&&!ro?vbNovaLinha(g):''}
       ${ro||G.fixo?'':`<div class="vb-qadd"><button class="btn sm" data-a="vb-ln-add" data-v="${g}">${ic('add',16)}${VB_ADD[g]}</button></div>`}</div>`};
-  const tips=()=>`<div class="vb-tab vb-tips"><div class="vb-r vb-hd" aria-hidden="true"><span>Tipologia</span><span>Área privativa (m²)</span><span>Quantidade</span><span>Em permuta</span><span>Comissão</span><span>Preço unitário (R$)</span><span>Preço por m² (R$)</span><span class="vb-hr">VGV</span><span></span></div>
+  const tips=()=>`${vbMassaSel(v,ro)}<div class="vb-tab vb-tips"><div class="vb-r vb-hd" aria-hidden="true"><span>Tipologia</span><span>Área privativa (m²)</span><span>Quantidade</span><span>Em permuta</span><span>Comissão</span><span>Preço unitário (R$)</span><span>Preço por m² (R$)</span><span class="vb-hr">VGV</span><span></span></div>
     ${v.tips.map(p=>`<div class="vb-r" data-tp="${p.id}">${inp(p.id,'nome',p.nome,0,'Tipologia')}${inp(p.id,'area',p.area,2,'Área privativa (m²)')}${inp(p.id,'qtd',p.qtd,0,'Quantidade')}${inp(p.id,'perm',p.perm,0,'Em permuta')}${inp(p.id,'com',p.com,0,'Comissão')}${inp(p.id,'pu',p.pu,2,'Preço unitário (R$)')}${inp(p.id,'pm2',p.pm2,2,'Preço por m² (R$)')}
-    <span class="vb-c vb-out"><span class="vb-l">VGV</span><b data-vbo="tp-${p.id}">${brl(p.pu!=null?(p.qtd||0)*p.pu:null)}</b></span>${ro?'<span></span>':`<button class="iconbtn sm vb-del" data-a="vb-tip-del" data-v="${p.id}" aria-label="Remover ${esc(p.nome)}" title="Remover tipologia">${ic('close',18)}</button>`}</div>`).join('')||'<div class="muted vb-vazio">Nenhuma tipologia.</div>'}
+    <span class="vb-c vb-out"><span class="vb-l">VGV</span><b data-vbo="tp-${p.id}">${brl(p.pu!=null?(p.qtd||0)*p.pu:null)}</b></span>${ro||preso?'<span></span>':`<button class="iconbtn sm vb-del" data-a="vb-tip-del" data-v="${p.id}" aria-label="Remover ${esc(p.nome)}" title="Remover tipologia">${ic('close',18)}</button>`}</div>`).join('')||'<div class="muted vb-vazio">Nenhuma tipologia.</div>'}
     <div class="vb-r vb-tot" id="vb-tot-tips">${vbTotTips(v,c)}</div></div>
     `;
   const dedutiveis=S.viabDesp.filter(d=>d.grupo==='comercial'&&d.deduz&&(d.ativo||v.deduz.includes(d.codigo)));
@@ -13149,9 +13204,11 @@ function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
   const obra=()=>`<div class="vb-tab vb-lns${lnsCls('obra')}">${hd}
     <div class="vb-q${qFe('raso')?' fechado':''}">${qh('raso','Custo de obra incidente',c.raso)}
     <div class="vb-q sub">${qh('oi','Custo de obra típico',c.oi,true)}
-    <div class="vb-r" data-ln="oi"><span class="vb-c vb-desp"><span class="vb-l">Item</span><span class="vb-nome">Custo de obra raso</span></span><span class="vb-c vb-tipo"><span class="vb-l">Base de cálculo</span><span class="vb-nome">${VB_TIPO.area}</span></span>
+    <div class="vb-r" data-ln="oi"><span class="vb-c vb-desp"><span class="vb-l">Item</span><span class="vb-nome">Custo de obra raso</span></span><label class="vb-c vb-tipo"><span class="vb-l">Base de cálculo</span><select data-vb="ob" aria-label="Área da obra incidente" ${dis}><option value="privativa" ${v.obraBase!=='construida'?'selected':''}>${VB_TIPO.area}</option><option value="construida" ${v.obraBase==='construida'?'selected':''}>R$/m² × área construída</option></select></label>
       <label class="vb-c vb-mult"><span class="vb-l">Valor unitário</span><input data-fmt="moeda" data-vb="hd" data-k="cm2" value="${vbIn(v.cm2,2)}" inputmode="decimal" aria-label="Valor unitário da obra incidente (R$ por m²)" ${dis}></label><span class="vb-c vb-qtd"></span>
-      <span class="vb-c vb-out"><span class="vb-l">Resultado</span><b data-vbo="oi">${brl(c.oi)}</b><small class="faint" data-vbo="oi-b">× ${m2(c.A)} de área privativa</small></span><span class="vb-x"></span></div></div>
+      <span class="vb-c vb-out"><span class="vb-l">Resultado</span><b data-vbo="oi">${brl(c.oi)}</b><small class="faint" data-vbo="oi-b">${vbObraTxt(v,c)}</small></span><span class="vb-x"></span></div>
+    ${v.obraBase==='construida'?`<div class="vb-r" data-ln="constr"><span class="vb-c vb-desp"><span class="vb-l">Item</span><span class="vb-nome">Área construída total</span></span><span class="vb-c vb-tipo"><span class="vb-l">Origem</span><span class="vb-nome faint">${msv?'do '+esc(msv.nome):'digitada'}</span></span>
+      <label class="vb-c vb-mult"><span class="vb-l">m²</span><input data-fmt="num" data-vb="hd" data-k="constr" value="${vbIn(v.constr,2)}" inputmode="decimal" aria-label="Área construída total (m²)" ${preso?'disabled title="Vem do estudo de massa"':dis}></label><span class="vb-c vb-qtd"></span><span class="vb-c vb-out"></span><span class="vb-x"></span></div>`:''}</div>
     ${grupo('obra_atipica',true)}</div>
     ${grupo('obra_nao_incidente')}${grupo('projetos')}${grupo('pos_obra')}</div>`;
   const lns=sec=>()=>`<div class="vb-tab vb-lns${lnsCls(sec)}">${hd}
@@ -13159,7 +13216,7 @@ function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
   const corpo={tip:tips,terreno,comercial:lns('comercial'),obra,despesas:lns('despesas'),taxas:lns('taxas'),financeiro:lns('financeiro'),
     res:()=>`<div id="vb-res">${vbResHtml(v,c)}</div>`};
   const titulo={tip:'Tipologias',res:'DRE',...VB_SECAO};
-  const acao={tip:ro?'':`<button class="btn text sm" data-a="vb-tip-add">${ic('add',16)}Adicionar tipologia</button>`};
+  const acao={tip:ro||preso?'':`<button class="btn text sm" data-a="vb-tip-add">${ic('add',16)}Adicionar tipologia</button>`};
   const sobre=`<span>Viabilidade · ${esc(t.codigo)} · ${esc(t.nome)}</span>${lig?'<span class="chip good"><span class="d"></span>Válido</span>':''}`,ab=vbAba();
   return `<div class="vb-pop-h"><div class="vb-pop-tt"><div class="eyebrow">${sobre}</div>
       <input id="vb-pop-t" class="vb-pop-nome" data-vb="hd" data-k="nome" value="${esc(v.nome)}" aria-label="Nome do estudo" ${dis}>
@@ -13168,6 +13225,18 @@ function vbPopHtml(){const v=VB(UI.vbPop);vbFixos(v);
   <div class="vb-pop-sc"><div class="vb-pop-meta"><div class="eyebrow">${sobre}</div>${acoes?`<div class="vb-acoes">${acoes}</div>`:''}</div>
     <div class="vb-fixo"><div class="kpis vb-kpis" id="vb-kpis">${vbKpis(c)}</div>${vbNav(c)}</div>
     ${vbSec(ab,titulo[ab],c,corpo[ab],acao[ab]||'')}</div>`}
+const vbObraTxt=(v,c)=>v.obraBase==='construida'?`× ${m2(c.Ab)} de área construída`:`× ${m2(c.A)} de área privativa`;
+/* estudo de massa da viabilidade (lote 4, decisões do Moisés de 3/nov/2026): nenhum, seguir o válido ou um estudo entregue */
+function vbMassaSel(v,ro){const ms=massasDe(v.tid).filter(m=>m.sit==='entregue'),val=emsValido(v.tid),m=EMS(v.massa);
+  if(!ms.length&&!v.massa)return '';
+  const atual=v.segue?'valido':v.massa||'',dis=ro?'disabled':'';
+  const ops=`<option value="valido" ${atual==='valido'?'selected':''} ${val?'':'disabled'}>Seguir o válido${val?` (${esc(val.nome)})`:': nenhum ainda'}</option>
+    ${ms.map(x=>`<option value="${x.id}" ${atual===x.id?'selected':''}>${esc(x.nome)}${x.valido?' · válido':''}</option>`).join('')}`;
+  if(!m)return `<div class="vb-ms"><label class="field"><span class="lbl-f">Vincular a um estudo de massa</span><select data-vb="ms" ${dis}><option value="" selected>Sem vínculo (tipologias e áreas digitadas aqui)</option>${ops}</select></label>
+    ${ro?'':'<div class="hint">Vinculando, as tipologias e a área construída voltam a ser as do estudo de massa; preços, permuta e comissão ficam.</div>'}</div>`;
+  return `<div class="vb-ms"><div class="vb-ms-l"><label class="field"><span class="lbl-f">Vinculada ao estudo de massa</span><select data-vb="ms" aria-label="Trocar o estudo de massa vinculado" ${dis}>${ops}</select></label>
+    ${ro?'':`<button type="button" class="btn sm" data-a="vb-ms-solta">${ic('link',16)}Quebrar vínculo</button>`}</div>
+    <div class="hint">Título, área e quantidade das tipologias e a área construída vêm do ${esc(m.nome)}${v.segue?' (o válido; trocou o válido, troca aqui)':''} e não se editam; aqui, preços, permuta e comissão.</div></div>`}
 function vbPopRender(){let el=document.getElementById('vb-pop');
   if(UI.vbPop&&(!VB(UI.vbPop)||UI.route!==UI.vbPopRota))UI.vbPop=null;
   if(!UI.vbPop){if(el){el.remove();document.body.classList.remove('vb-aberto')}return}
@@ -13243,7 +13312,7 @@ function vbResHtml(v,c){const pct=x=>c.liq>0&&x!=null?num(x/c.liq*100,1)+'%':'';
 function vbRefresh(v){const c=vbCalc(v),set=(k,h)=>{const el=document.querySelector(`[data-vbo="${k}"]`);if(el)el.innerHTML=h};
   v.tips.forEach(p=>set('tp-'+p.id,brl(p.pu!=null?(p.qtd||0)*p.pu:null)));
   v.linhas.forEach(l=>{if(!c.L[l.id])return;set('ln-'+l.id,brl(c.L[l.id].valor));set('lb-'+l.id,vbBaseTxt(l,c));set('dd-'+l.desp,brl(c.L[l.id].valor))});
-  set('oi',brl(c.oi));set('oi-b',`× ${m2(c.A)} de área privativa`);set('pfis',vbPermFis(c));set('pfin',vbPermFin(v,c));set('pcom',vbComissao(c));
+  set('oi',brl(c.oi));set('oi-b',vbObraTxt(v,c));set('pfis',vbPermFis(c));set('pfin',vbPermFin(v,c));set('pcom',vbComissao(c));
   const h=(id,x)=>{const el=document.getElementById(id);if(el)el.innerHTML=x};
   h('vb-kpis',vbKpis(c));h('vb-tot-tips',vbTotTips(v,c));
   const qt=(k,x)=>{set('qt-'+k,brl(x));set('qp-'+k,vbPctVgv(x,c))};qt('raso',c.raso);qt('oi',c.oi);Object.keys(VB_GRUPO).forEach(g=>qt('g-'+g,c.GR[g]||0));h('vb-res',vbResHtml(v,c));VB_ORDEM.forEach(k=>{set('sh-'+k,vbShTxt(k,c));set('nv-'+k,vbNavTxt(k,c))})}
@@ -13273,7 +13342,7 @@ document.addEventListener('keydown',e=>{const el=e.target;if(el.dataset?.vbCb==n
   if(e.key==='Escape'&&!dd.hidden){e.preventDefault();e.stopPropagation();vbDdFechar(el)}},true);
 
 /* ---------- eventos ---------- */
-const VB_HD={cm2:'cm2',pfp:'pfp',dedp:'dedp',min:'min',din:'din',comd:'comd'};
+const VB_HD={constr:'constr',cm2:'cm2',pfp:'pfp',dedp:'dedp',min:'min',din:'din',comd:'comd'};
 function viabInput(el){
   if(el.dataset.vbCb!=null){vbDdAbrir(el,true);return true}
   const tipo=el.dataset.vb;if(!tipo||tipo==='ded')return false;const v=VB(UI.vid);if(!v)return true;const k=el.dataset.k;
@@ -13298,6 +13367,9 @@ function viabChange(el){
     else d[k]=el.value||null;
     vbSyncTodos();save();render();return true}
   const tipo=el.dataset.vb;if(!tipo)return false;const v=VB(UI.vid);if(!v)return true;const k=el.dataset.k;
+  if(tipo==='ms'){const x=el.value;if(!x){v.massa=null;v.segue=false;v.tips.forEach(p=>delete p.mt);toast('Vínculo quebrado: as tipologias ficam e passam a se editar aqui.')}
+    else{const ant=v.massa;v.segue=x==='valido';v.massa=v.segue?emsValido(v.tid)?.id:x;emsSync(v);log(T(v.tid),`${v.nome}: vinculada ao ${EMS(v.massa)?.nome}`);toast(ant?`Trocado: tipologias e área construída do ${EMS(v.massa)?.nome}.`:`Vinculada: tipologias e área construída voltaram às do ${EMS(v.massa)?.nome}.`)}vbGravar(v);render();return true}
+  if(tipo==='ob'){v.obraBase=el.value==='construida'?'construida':'privativa';vbGravar(v);render();return true}
   if(tipo==='ded'){v.deduz=el.checked?[...new Set([...v.deduz,el.value])]:v.deduz.filter(x=>x!==el.value);vbGravar(v);render();return true}
   if(tipo==='hd'&&k==='nome'){if(!v.nome.trim()){v.nome='Estudo';el.value=v.nome}const h=document.querySelector('.vb-h h1');if(h)h.textContent=v.nome}
   else if(tipo==='hd')el.value=vbIn(v[VB_HD[k]],k==='pfp'||k==='dedp'?4:2);
@@ -13330,6 +13402,7 @@ function viabClick(A,a,t){
     case 'vb-apagar':UI.modal='vb-apagar';UI.vbApagar=a.dataset.v;renderModal();return true;
     case 'vb-apagar-ok':{const v=VB(UI.vbApagar),x=T(v.tid);if(x.neg?.viab?.id===v.id){toast('Estudo vinculado à negociação não se apaga.',true);return true}
       S.viabs=S.viabs.filter(y=>y.id!==v.id);log(x,`Estudo de viabilidade apagado: ${v.nome}`);UI.modal=null;UI.vbPop=null;save();render();toast('Estudo apagado.');return true}
+    case 'vb-ms-solta':{const v=VB(UI.vid);if(!v)return true;const n=EMS(v.massa)?.nome;v.massa=null;v.segue=false;v.tips.forEach(p=>delete p.mt);log(T(v.tid),`${v.nome}: vínculo com o ${n} quebrado`);vbGravar(v);render();toast('Vínculo quebrado: tipologias e área construída ficam e passam a se editar aqui.');return true}
     case 'vb-tip-add':{const v=VB(UI.vid),p={id:uid(),nome:'Tipologia '+(v.tips.length+1),area:null,qtd:null,perm:0,com:0,pu:null,pm2:null};v.tips.push(p);vbGravar(v);render();setTimeout(()=>{const i=document.querySelector(`[data-tp="${p.id}"] [data-k="nome"]`);i?.focus();i?.select()},20);return true}
     case 'vb-tip-del':{const v=VB(UI.vid);v.tips=v.tips.filter(p=>p.id!==a.dataset.v);vbGravar(v);render();return true}
     case 'vb-q-tg':{const f=UI.vbFechados||(UI.vbFechados=new Set()),k=a.dataset.v;f.has(k)?f.delete(k):f.add(k);render();return true}
@@ -13410,6 +13483,182 @@ function cfgViabHtml(){const L=S.viabDesp;
     </div></section>`}
 const _prepararVb=prepararDados;prepararDados=function(){_prepararVb.apply(this,arguments);viabPreparar()};
 viabPreparar();
+
+/* ===================== Estudos de massa (lote 4 da ficha em abas; pedido do Moisés de 3/nov/2026) =====================
+   Espelha app.estudos_massa, app.estudo_massa_tipologias e as RPCs de 20261015001500_estudos_massa.sql.
+   O analista pede o estudo ao arquiteto (da equipe) com briefing e prazo; o arquiteto lança as tipologias (título,
+   área privativa, quantidade), as áreas, as vagas, a área construída total e os CAs legal e venal, e envia o PDF e o DWG.
+   Área privativa total = Σ área × quantidade; eficiência venal = privativa ÷ construída. Situação: Solicitado →
+   Em elaboração (primeiro dado) → Entregue (com tipologias e área construída). O analista marca o válido (um por
+   terreno, só entregue) e escreve observações. O estudo de viabilidade pode ficar preso a um estudo de massa ou
+   seguir o válido: título, área e quantidade das tipologias e a área construída vêm daqui (proto_viab.js). */
+const EMS=id=>(S.massas||[]).find(m=>m.id===id);
+const massasDe=tid=>(S.massas||[]).filter(m=>m.tid===tid).sort((a,b)=>a.ordem-b.ordem);
+const emsValido=tid=>massasDe(tid).find(m=>m.valido);
+const EMS_SIT={solicitado:['Solicitado','warn'],em_elaboracao:['Em elaboração','blue'],entregue:['Entregue','good']};
+const EMS_AREAS=[['lct','Lazer coberto na torre'],['ldt','Lazer descoberto na torre'],['lcf','Lazer coberto fora da torre'],['ldf','Lazer descoberto fora da torre'],
+  ['circ','Área de circulação total'],['anexos','Área de anexos'],['ec','Estacionamento coberto'],['ed','Estacionamento descoberto'],
+  ['c15','Contenção com h até 1,5 m'],['cm15','Contenção com h acima de 1,5 m']];
+const EMS_VAGAS=[['vc','Vagas cobertas'],['vd','Vagas descobertas']];
+const EMS_DADOS=[...EMS_AREAS,...EMS_VAGAS,['constr'],['caL'],['caV']].map(x=>x[0]);
+function emsCalc(m){let A=0,un=0;m.tips.forEach(p=>{const q=p.qtd||0;un+=q;if(p.area!=null)A+=p.area*q});A=r2(A);
+  return {A:m.tips.some(p=>p.area!=null)?A:null,un,efic:m.constr>0&&A?r2(A/m.constr*100):null}}
+const emsNovo=(t,x)=>{const ordem=Math.max(0,...massasDe(t.id).map(m=>m.ordem))+1;
+  return {id:uid(),tid:t.id,ordem,nome:x.nome||'Estudo de massa '+ordem,sit:'solicitado',solic:me(),solicEm:HOJE,arq:x.arq,briefing:x.briefing||'',prazo:x.prazo||null,
+    tips:[],...Object.fromEntries(EMS_DADOS.map(k=>[k,null])),valido:false,obs:'',entregueEm:null,em:HOJE}};
+const emsDoc=(t,m,k)=>t.docs.find(d=>d.tipo==='massa_'+k&&d.ms===m.id);
+const emsViabs=m=>S.viabs.filter(v=>v.massa===m.id);
+
+/* traz do estudo de massa as tipologias e a área construída (app._sincronizar_massa): casa pela tipologia do estudo
+   e, na troca de estudo, pelo nome; a que saiu do estudo sai; preço, permuta e comissão ficam */
+function emsSync(v){if(!v.massa)return;const src=(v.segue&&emsValido(v.tid))||EMS(v.massa);if(!src)return;
+  const ids=new Set(src.tips.map(p=>p.id)),nm=s=>String(s||'').trim().toLowerCase();
+  v.tips.forEach(p=>{if(!ids.has(p.mt)){const x=src.tips.find(q=>nm(q.nome)===nm(p.nome)&&!v.tips.some(o=>o.mt===q.id));p.mt=x?x.id:null}});
+  v.tips=src.tips.map(q=>{const p=v.tips.find(o=>o.mt===q.id)||{id:uid(),perm:0,com:0,pu:null,pm2:null,mt:q.id};
+    const areaMudou=p.area!==q.area;p.nome=q.nome;p.qtd=q.qtd;p.area=q.area;if(areaMudou)vbNorm(p,'area');
+    p.perm=Math.min(p.perm||0,q.qtd||0);p.com=Math.min(p.com||0,(q.qtd||0)-p.perm);return p});
+  v.massa=src.id;v.constr=src.constr}
+function emsPropagar(m){S.viabs.filter(v=>v.massa===m.id||(v.segue&&v.tid===m.tid&&m.valido)).forEach(v=>{emsSync(v);vbSync(v)})}
+function emsGravar(m,refaz=true){m.em=HOJE;emsPropagar(m);save();if(refaz)render();else emsRefresh(m)}
+function emsLogTxt(m){return `${m.nome}`}
+
+/* ---------- a aba ---------- */
+function abaMassa(t){const ms=massasDe(t.id),ro=UI.role==='Leitura';
+  if(!QD.massa)QD.massa=new Set(['sec-massa-lista','sec-massa']);
+  let sel=EMS(UI.emsSel);if(!sel||sel.tid!==t.id)sel=emsValido(t.id)||ms[ms.length-1];
+  const form=UI.emsForm&&!ro?`<form class="inline-form ems-form" data-form="ems-novo" data-if-ok="1">
+      <div class="field"><label for="ems-arq">Arquiteto</label><select id="ems-arq" name="arq" required><option value="">Digite @ e o nome</option>${USERS.map(u=>`<option value="${esc(u)}">${esc(u)}</option>`).join('')}</select></div>
+      <div class="field" style="flex:0 1 170px"><label for="ems-prazo">Prazo</label><input id="ems-prazo" name="prazo" type="date"></div>
+      <div class="field full" style="flex-basis:100%"><label for="ems-brief">Briefing</label><textarea id="ems-brief" name="briefing" rows="3" placeholder="O que o estudo precisa considerar. Uma linha por item."></textarea></div>
+      <button class="btn sm primary">${ic('add',16)}Solicitar</button><button type="button" class="btn text sm" data-a="ems-form">Cancelar</button></form>`:'';
+  const lista=ms.length?`<div class="dt-wrap"><table class="dt compacta ems-lista"><thead><tr><th class="esq">Estudo</th><th class="esq">Arquiteto</th><th class="esq">Situação</th><th>Unidades</th><th>Área privativa</th><th>Área construída</th><th>Eficiência</th><th>Válido</th></tr></thead><tbody>
+    ${ms.map(m=>{const c=emsCalc(m),[st,cor]=EMS_SIT[m.sit];return `<tr class="${m===sel?'ems-sel':''}"><td class="esq"><button class="linkbtn" data-a="ems-sel" data-v="${m.id}">${esc(m.nome)}</button></td><td class="esq">${esc(m.arq||'—')}</td>
+      <td class="esq"><span class="chip ${cor}">${st}</span></td><td class="num">${c.un?num(c.un):'—'}</td><td class="num">${c.A!=null?m2(c.A):'—'}</td><td class="num">${m.constr!=null?m2(m.constr):'—'}</td><td class="num">${c.efic!=null?num(c.efic,1)+'%':'—'}</td>
+      <td><label class="vb-radio"><input type="radio" name="ems-valido-${t.id}" ${m.valido?'checked':''} ${!m.valido&&!ro&&m.sit==='entregue'?`data-a="ems-valido" data-v="${m.id}"`:'disabled'} aria-label="${esc(m.nome)} é o estudo válido" title="${m.sit==='entregue'?'':'Só o estudo entregue pode ser o válido'}"></label></td></tr>`}).join('')}</tbody></table></div>`
+    :(form?'':`<div class="banner blue">${ic('layers')}<div style="flex:1"><div class="bt">Nenhum estudo de massa</div><div>Peça o estudo ao arquiteto: ele lança as tipologias, as áreas e os índices e envia o PDF e o DWG.</div></div></div>`);
+  return `<div class="stack"><section class="sec" id="sec-massa-lista"><div class="sec-h"><h2>Estudos de massa <span class="h-n">${ms.length}</span></h2>${ro||UI.emsForm?'':`<button class="btn sm" data-a="ems-form">${ic('add',16)}Solicitar estudo</button>`}</div>
+    <div class="sec-b">${form}${lista}</div></section>${sel?emsFicha(t,sel,ro):''}</div>`}
+
+function emsFicha(t,m,ro){const c=emsCalc(m),[st,cor]=EMS_SIT[m.sit],dis=ro?'disabled':'',vs=emsViabs(m),seg=m.valido?S.viabs.filter(v=>v.segue&&v.tid===t.id):[];
+  const n=(k,rot,d=2,un='m²')=>`<label class="field"><span class="lbl-f">${rot}${un?` <span class="faint">(${un})</span>`:''}</span><input data-ems="campo" data-k="${k}" data-fmt="${d?'num':'int'}" inputmode="decimal" value="${vbIn(m[k],d)}" ${dis}></label>`;
+  const ler=(rot,x,id)=>`<div class="field"><span class="lbl-f">${rot}</span><span class="v" data-emso="${id}">${x}</span></div>`;
+  const doc=k=>{const d=emsDoc(t,m,k);return `<div class="ems-arq"><span class="ems-arq-t"><b>${k.toUpperCase()}</b>${d?`<span>${esc(d.nome)}</span><span class="faint">versão ${d.versoes} · ${fd(d.emitido)}</span>`:'<span class="faint">Ainda não enviado</span>'}</span>
+    ${ro?'':`<input type="file" id="ems-f-${k}" class="ems-file" data-ems="arq" data-k="${k}" accept=".${k}" hidden><button class="btn sm" data-a="ems-arq" data-k="${k}">${ic('upload',16)}${d?'Enviar nova versão':'Enviar '+k.toUpperCase()}</button>`}</div>`};
+  const acoes=ro?'':`${m.sit!=='entregue'?`<button class="btn sm" data-a="ems-entregar" data-v="${m.id}">Marcar como entregue</button>`:''}${m.sit==='entregue'&&!m.valido?`<button class="btn sm" data-a="ems-valido" data-v="${m.id}">Marcar como válido</button>`:''}
+    ${m.sit==='entregue'?`<button class="btn sm primary" data-a="ems-viab" data-v="${m.id}">${ic('add',16)}Criar estudo de viabilidade</button>`:''}${!m.valido&&!vs.length?`<button class="btn text sm danger" data-a="ems-apagar" data-v="${m.id}">Apagar</button>`:''}`;
+  return `<section class="sec" id="sec-massa"><div class="sec-h"><h2>${esc(m.nome)}</h2><span class="chip ${cor}">${st}</span>${m.valido?'<span class="chip good"><span class="d"></span>Válido</span>':''}<button type="button" class="btn text sm ems-vped" data-a="ems-pedido" data-v="${m.id}">${ic('doc',16)}Ver pedido</button></div><div class="sec-b ems">
+    ${acoes.trim()?`<div class="ems-acoes">${acoes}</div>`:''}
+    <h3 class="ems-h3">Tipologias</h3>
+    <div class="ems-tips"><div class="ems-tr ems-th" aria-hidden="true"><span>Tipologia</span><span>Área privativa (m²)</span><span>Quantidade</span><span>Área privativa total</span><span></span></div>
+      ${m.tips.map(p=>`<div class="ems-tr" data-emtp="${p.id}"><label><span class="lbl-f ems-ml">Tipologia</span><input data-ems="tp" data-r="${p.id}" data-k="nome" value="${esc(p.nome)}" aria-label="Tipologia" ${dis}></label>
+        <label><span class="lbl-f ems-ml">Área privativa (m²)</span><input data-ems="tp" data-r="${p.id}" data-k="area" data-fmt="num" inputmode="decimal" value="${vbIn(p.area,2)}" aria-label="Área privativa (m²)" ${dis}></label>
+        <label><span class="lbl-f ems-ml">Quantidade</span><input data-ems="tp" data-r="${p.id}" data-k="qtd" data-fmt="int" inputmode="numeric" value="${vbIn(p.qtd,0)}" aria-label="Quantidade" ${dis}></label>
+        <span class="num"><span class="lbl-f ems-ml">Área privativa total</span><span data-emso="tp-${p.id}">${p.area!=null&&p.qtd?m2(r2(p.area*p.qtd)):'—'}</span></span>
+        ${ro?'<span></span>':`<button class="iconbtn sm" data-a="ems-tip-del" data-v="${p.id}" aria-label="Remover ${esc(p.nome)}" title="Remover tipologia">${ic('close',18)}</button>`}</div>`).join('')||'<div class="muted ems-vazio">Nenhuma tipologia ainda.</div>'}
+      <div class="ems-tr ems-tot"><b>Total</b><span></span><span class="num"><span class="lbl-f ems-ml">Unidades</span><b data-emso="un">${num(c.un)}</b></span><span class="num"><span class="lbl-f ems-ml">Área privativa total</span><b data-emso="A">${c.A!=null?m2(c.A):'—'}</b></span><span></span></div></div>
+    ${ro?'':`<button class="btn text sm qd-add" data-a="ems-tip-add">${ic('add',16)}Adicionar tipologia</button>`}
+    <h3 class="ems-h3">Áreas</h3><div class="ems-g">${EMS_AREAS.map(([k,r])=>n(k,r)).join('')}</div>
+    <h3 class="ems-h3">Vagas</h3><div class="ems-g">${EMS_VAGAS.map(([k,r])=>n(k,r,0,'')).join('')}</div>
+    <h3 class="ems-h3">Índices</h3><div class="ems-g">${ler('Área privativa total',c.A!=null?m2(c.A):'—','A2')}${n('constr','Área construída total')}
+      ${ler('Eficiência venal <span class="faint">(privativa ÷ construída)</span>',c.efic!=null?num(c.efic,1)+'%':'—','efic')}${n('caL','C.A. legal',3,'')}${n('caV','C.A. venal',3,'')}</div>
+    <h3 class="ems-h3">Arquivos</h3><div class="ems-arqs">${doc('pdf')}${doc('dwg')}</div>
+    <h3 class="ems-h3">Análise</h3><div class="ems-g"><label class="field ems-full"><span class="lbl-f">Observações</span><textarea data-ems="txt" data-k="obs" rows="2" ${dis}>${esc(m.obs||'')}</textarea></label></div>
+    <div class="ems-vbs"><span class="lbl-f">Estudos de viabilidade com este estudo de massa</span>${[...new Set([...vs,...seg])].map(v=>`<button class="linkbtn" data-a="vb-abrir" data-v="${v.id}">${esc(v.nome)}</button>${v.segue?' <span class="faint">(segue o válido)</span>':''}`).join(' · ')||'<span class="faint">Nenhum.</span>'}</div>
+  </div></section>`}
+
+/* atualiza no lugar os números calculados (sem redesenhar a aba, para não perder o campo em que se está) */
+function emsRefresh(m){const c=emsCalc(m),set=(k,h)=>{const el=document.querySelector(`[data-emso="${k}"]`);if(el)el.innerHTML=h};
+  set('un',num(c.un));set('A',c.A!=null?m2(c.A):'—');set('A2',c.A!=null?m2(c.A):'—');set('efic',c.efic!=null?num(c.efic,1)+'%':'—');
+  m.tips.forEach(p=>set('tp-'+p.id,p.area!=null&&p.qtd?m2(r2(p.area*p.qtd)):'—'))}
+function emsElab(m){if(m.sit==='solicitado')m.sit='em_elaboracao'}
+
+document.addEventListener('change',e=>{const el=e.target;if(!el.dataset?.ems||UI.route!=='terreno')return;const t=T(UI.id);if(!t||UI.role==='Leitura')return;
+  const m=EMS(UI.emsSel)&&EMS(UI.emsSel).tid===t.id?EMS(UI.emsSel):(emsValido(t.id)||massasDe(t.id).slice(-1)[0]);if(!m)return;const k=el.dataset.k,tipo=el.dataset.ems;
+  if(tipo==='campo'){let v=lerNum(el.value);if(v!=null&&v<0)v=null;if(['vc','vd'].includes(k)&&v!=null)v=Math.round(v);if(k==='constr'&&v===0)v=null;
+    if(m[k]===v)return;m[k]=v;el.value=vbIn(v,['vc','vd'].includes(k)?0:['caL','caV'].includes(k)?3:2);const s0=m.sit;emsElab(m);log(t,`${m.nome}: dados do arquiteto atualizados`);emsGravar(m,s0!==m.sit);return}
+  if(tipo==='txt'){let v=k==='prazo'?(el.value||null):el.value.trim();if(k==='nome'&&!v){toast('Dê um nome ao estudo.',true);el.value=m.nome;return}
+    if((m[k]||'')===(v||''))return;m[k]=v;emsGravar(m,k==='nome');return}
+  if(tipo==='tp'){const p=m.tips.find(x=>x.id===el.dataset.r);if(!p)return;
+    if(k==='nome'){const v=el.value.trim();if(!v||m.tips.some(x=>x!==p&&x.nome.trim().toLowerCase()===v.toLowerCase())){toast(v?'Já existe uma tipologia com este título.':'A tipologia precisa de um título.',true);el.value=p.nome;return}p.nome=v}
+    else{let v=lerNum(el.value);if(v!=null&&v<0)v=null;if(k==='qtd')v=v==null?null:Math.round(v);if(k==='area'&&v===0)v=null;p[k]=v;el.value=vbIn(v,k==='qtd'?0:2)}
+    const s0=m.sit;emsElab(m);emsGravar(m,s0!==m.sit);return}
+  if(tipo==='arq'){const f=el.files?.[0];if(!f)return;if(!f.name.toLowerCase().endsWith('.'+k)){toast(`Envie um arquivo .${k}.`,true);el.value='';return}
+    let d=emsDoc(t,m,k);if(!d){d={tipo:'massa_'+k,ms:m.id,status:'recebido',emitido:HOJE,versoes:0,nome:f.name};t.docs.push(d)}d.versoes++;d.emitido=HOJE;d.nome=f.name;d.status='recebido';
+    log(t,`${m.nome}: ${k.toUpperCase()} versão ${d.versoes} enviada`);save();render();toast(`${k.toUpperCase()} enviado; está também em Documentos.`);return}});
+
+function emsEntregar(t,m){const c=emsCalc(m);
+  if(!c.un||m.tips.some(p=>p.area==null)||m.constr==null){toast('Para entregar, lance as tipologias (com área e quantidade) e a área construída total.',true);return}
+  m.sit='entregue';m.entregueEm=HOJE;notificar(m.solic,'massa_entregue',`${m.nome} entregue no ${t.codigo}`,t,null,{b:'massa'});log(t,`${m.nome} entregue`);emsGravar(m);toast('Estudo entregue.')}
+function emsMarcarValido(t,m){if(m.sit!=='entregue'){toast('Só o estudo entregue pode ser o válido.',true);return}
+  massasDe(t.id).forEach(x=>x.valido=x===m);log(t,`${m.nome} é o estudo de massa válido`);emsGravar(m);
+  const n=S.viabs.filter(v=>v.segue&&v.tid===t.id).length;toast(`${m.nome} é o válido.${n?` ${n>1?n+' estudos de viabilidade seguem':'O estudo de viabilidade que segue'} o válido foi${n>1?'ram':''} atualizado${n>1?'s':''}.`:''}`)}
+/* o botão do estudo de massa: estudo de viabilidade novo (com o modelo padrão da empresa) já preso a ele */
+function emsCriarViab(t,m,segue){const p=vbModeloPadrao();vbCriar(t.id,'Viabilidade do '+m.nome,p?p.id:null);const v=S.viabs[S.viabs.length-1];
+  v.massa=m.id;v.segue=!!segue;v.tips=[];emsSync(v);vbSync(v);log(t,`${v.nome}: tipologias e área construída do ${m.nome}${segue?' (segue o válido)':''}`);save();render()}
+
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a]');if(!a||UI.route!=='terreno')return;const A=a.dataset.a;
+  if(!['ems-pedido','ems-form','ems-sel','ems-entregar','ems-valido','ems-viab','ems-apagar','ems-tip-add','ems-tip-del','ems-arq'].includes(A))return;const t=T(UI.id);if(!t)return;
+  if(A==='ems-sel'){UI.emsSel=a.dataset.v;QD.massa?.add('sec-massa');render();setTimeout(()=>document.getElementById('sec-massa')?.scrollIntoView({behavior:'smooth',block:'start'}),30);return}
+  if(A==='ems-pedido'){UI.emsPed=a.dataset.v;UI.modal='ems-pedido';renderModal();return}
+  if(UI.role==='Leitura')return;
+  if(A==='ems-form'){UI.emsForm=!UI.emsForm;render();if(UI.emsForm)setTimeout(()=>document.getElementById('ems-arq-q')?.focus(),30);return}
+  const m=EMS(a.dataset.v)||EMS(UI.emsSel)||emsValido(t.id)||massasDe(t.id).slice(-1)[0];if(!m)return;
+  if(A==='ems-entregar')return emsEntregar(t,m);
+  if(A==='ems-valido'){e.preventDefault();return emsMarcarValido(t,m)}
+  if(A==='ems-viab'){if(m.valido){UI.emsViabDe=m.id;UI.modal='ems-viab';renderModal();return}emsCriarViab(t,m,false);return}
+  if(A==='ems-apagar'){if(m.valido||emsViabs(m).length){toast('O estudo válido ou com viabilidade presa não se apaga.',true);return}UI.emsApagar=m.id;UI.modal='ems-apagar';renderModal();return}
+  if(A==='ems-tip-add'){const p={id:uid(),nome:'Tipologia '+(m.tips.length+1),area:null,qtd:null};let i=m.tips.length+1;while(m.tips.some(x=>x.nome===p.nome))p.nome='Tipologia '+(++i);
+    m.tips.push(p);emsElab(m);emsGravar(m);setTimeout(()=>{const x=document.querySelector(`[data-emtp="${p.id}"] [data-k=nome]`);x?.focus();x?.select()},30);return}
+  if(A==='ems-tip-del'){m.tips=m.tips.filter(p=>p.id!==a.dataset.v);emsGravar(m);return}
+  if(A==='ems-arq'){document.getElementById('ems-f-'+a.dataset.k)?.click();return}});
+
+/* janelas: criar a viabilidade do estudo válido (seguir o válido ou só este) e apagar */
+function emsModalHtml(M,fechar){
+  if(M==='ems-viab'){const m=EMS(UI.emsViabDe);if(!m)return '';
+    return `<div class="dh"><div><h2>Criar estudo de viabilidade</h2><div class="muted">Com as tipologias e a área construída do ${esc(m.nome)}.</div></div>${fechar}</div>
+      <form data-form="ems-viab"><div class="db"><fieldset class="vb-chks" style="border:0;padding:0;margin:0"><legend class="lbl-f">O estudo de viabilidade</legend>
+        <label class="chk"><input type="radio" name="segue" value="1" checked><span>Segue o estudo de massa válido <small class="faint">(trocou o válido, ele troca junto)</small></span></label>
+        <label class="chk"><input type="radio" name="segue" value=""><span>Fica preso a este estudo</span></label></fieldset>
+        <div class="hint" style="margin-top:8px">Título, área e quantidade das tipologias vêm do estudo de massa e não se editam na viabilidade; preços, permuta e comissão são da viabilidade.</div></div>
+      <div class="df"><button type="button" class="btn text" data-a="close">Cancelar</button><button class="btn primary">Criar</button></div></form>`}
+  if(M==='ems-pedido'){const m=EMS(UI.emsPed);if(!m)return '';const ro=UI.role==='Leitura',ls=(m.briefing||'').split('\n').map(x=>x.trim()).filter(Boolean);
+    const dt=m.solicEm?pd(m.solicEm).toLocaleDateString('pt-BR'):'—',quem=`<div class="ems-ped2"><div class="field"><span class="lbl-f">Data do pedido</span><span class="v" data-emso="ped-em">${dt}</span></div><div class="field"><span class="lbl-f">Pedido por</span><span class="v">${esc(m.solic||'—')}</span></div></div>`;
+    const cab=`<div class="dh"><div><h2>Pedido do estudo</h2><div class="muted">${esc(m.nome)}</div></div>${fechar}</div>`;
+    if(ro)return cab+`<div class="db ems-ped">${quem}<div class="field"><span class="lbl-f">Arquiteto</span><span class="v">${esc(m.arq||'—')}</span></div><div class="field"><span class="lbl-f">Prazo</span><span class="v">${m.prazo?fd(m.prazo):'Sem prazo'}</span></div>
+      <div class="field"><span class="lbl-f">Briefing</span>${ls.length>1?`<ul class="ems-blist">${ls.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:`<span class="v">${esc(ls[0]||'Sem briefing')}</span>`}</div></div>
+      <div class="df"><button type="button" class="btn primary" data-a="close">Fechar</button></div>`;
+    return cab+`<form data-form="ems-pedido"><div class="db ems-ped">${quem}<label class="field"><span class="lbl-f">Nome do estudo</span><input name="nome" value="${esc(m.nome)}" required></label>
+      <div class="field"><label for="ems-ped-arq">Arquiteto</label><select id="ems-ped-arq" name="arq">${USERS.map(u=>`<option value="${esc(u)}" ${u===m.arq?'selected':''}>${esc(u)}</option>`).join('')}</select></div>
+      <label class="field"><span class="lbl-f">Prazo</span><input type="date" name="prazo" value="${esc(m.prazo||'')}"></label>
+      <label class="field"><span class="lbl-f">Briefing</span><textarea name="briefing" rows="7" placeholder="O que o estudo precisa considerar. Uma linha por item.">${esc(m.briefing||'')}</textarea></label></div>
+      <div class="df"><button type="button" class="btn text" data-a="close">Cancelar</button><button class="btn primary">Salvar</button></div></form>`}
+  if(M==='ems-apagar'){const m=EMS(UI.emsApagar);if(!m)return '';
+    return `<div class="dh"><div><h2>Apagar ${esc(m.nome)}?</h2></div>${fechar}</div><div class="db">Os arquivos enviados continuam em Documentos.</div>
+      <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary danger" data-a="ems-apagar-ok">Apagar</button></div>`}
+  return ''}
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a=ems-apagar-ok]');if(!a)return;const m=EMS(UI.emsApagar),t=m&&T(m.tid);if(!m)return;
+  S.massas=S.massas.filter(x=>x!==m);log(t,`${m.nome} apagado`);if(UI.emsSel===m.id)UI.emsSel=null;UI.emsApagar=null;UI.modal=null;save();render();toast('Estudo de massa apagado.')});
+document.addEventListener('submit',e=>{const f=e.target;if(!['ems-novo','ems-viab','ems-pedido'].includes(f.dataset?.form))return;e.preventDefault();e.stopImmediatePropagation();const t=T(UI.id);if(!t)return;const F=Object.fromEntries(new FormData(f));
+  if(f.dataset.form==='ems-pedido'){const m=EMS(UI.emsPed);if(!m)return;const nome=(F.nome||'').trim();if(!nome){toast('Dê um nome ao estudo.',true);return}
+    let mud=false,ren=false;if(nome!==m.nome){m.nome=nome;mud=ren=true}const pz=F.prazo||null;if(pz!==(m.prazo||null)){m.prazo=pz;mud=true}const b=(F.briefing||'').trim();if(b!==(m.briefing||'')){m.briefing=b;mud=true;log(t,`${m.nome}: briefing alterado`)}
+    if(F.arq&&USERS.includes(F.arq)&&F.arq!==m.arq){m.arq=F.arq;mud=true;notificar(m.arq,'massa_solicitado',`${m.nome} do ${t.codigo} passou para você`,t,null,{b:'massa'});log(t,`${m.nome}: arquiteto ${m.arq}`)}
+    UI.modal=null;if(mud){emsGravar(m);toast('Pedido salvo.')}else render();return}
+  if(f.dataset.form==='ems-viab'){const m=EMS(UI.emsViabDe);UI.modal=null;UI.emsViabDe=null;if(m)emsCriarViab(t,m,!!F.segue);return}
+  if(!F.arq||!USERS.includes(F.arq)){toast('Marque o arquiteto.',true);return}
+  const m=emsNovo(t,{arq:F.arq,briefing:(F.briefing||'').trim(),prazo:F.prazo||null});S.massas.push(m);UI.emsSel=m.id;UI.emsForm=false;QD.massa?.add('sec-massa');
+  notificar(m.arq,'massa_solicitado',`${me()} pediu o ${m.nome} do ${t.codigo}`,t,null,{b:'massa'});log(t,`${m.nome} solicitado a ${m.arq}`);save();render();toast(`Estudo pedido a ${m.arq}.`)},true);
+
+/* exemplo: o terreno do primeiro estudo de viabilidade ganha um estudo de massa entregue e válido, com as tipologias
+   do estudo (que passa a segui-lo), e outro pedido ao arquiteto */
+function massaPreparar(){const N=cfg().notif;if(!N.massa_solicitado)N.massa_solicitado={ativo:true,dias:null,email:true};if(!N.massa_entregue)N.massa_entregue={ativo:true,dias:null,email:true};
+  if(S.massas)return;S.massas=[];const v=S.viabs?.[0],t=v&&T(v.tid);if(!t)return;const arq=USERS.find(u=>u!==t.resp)||USERS[0];
+  const m=emsNovo(t,{arq,briefing:'Torre única, térreo com lazer.\nSó 2 dormitórios, com e sem suíte.\nAproveitar o CA máximo da ZEU.',prazo:null});
+  Object.assign(m,{sit:'entregue',solic:t.resp,solicEm:addD(HOJE,-20),entregueEm:addD(HOJE,-6),valido:true,lct:320,ldt:180,lcf:0,ldf:450,circ:1850,anexos:240,vc:0,vd:28,ec:0,ed:380,c15:120,cm15:0,caL:4,caV:3.4,obs:'Conferido com o zoneamento; sem vaga coberta.',
+    tips:v.tips.map(p=>({id:uid(),nome:p.nome,area:p.area,qtd:p.qtd}))});
+  const A=emsCalc(m).A;m.constr=Math.round(A/0.68);S.massas.push(m);v.massa=m.id;v.segue=true;emsSync(v);vbSync(v);
+  S.massas.push(Object.assign(emsNovo(t,{arq,briefing:'Alternativa com studios no térreo.',prazo:addD(HOJE,8)}),{solic:t.resp,solicEm:addD(HOJE,-2)}))}
+const _prepararMs=prepararDados;prepararDados=function(){_prepararMs.apply(this,arguments);massaPreparar()};
+massaPreparar();
 
 // ---------------------------------------------------------------------
 // Parâmetros urbanísticos por lote e zona (decisão do Moisés, 25/out/2026).

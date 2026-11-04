@@ -2193,14 +2193,14 @@ input[data-fmt]:not([data-fmt="none"]) { font-variant-numeric: tabular-nums }
 .num, .big, .mv, .kpi .v, .chip { font-variant-numeric: tabular-nums }
 
 /* Campos no padrão Material 3 (campo contornado): altura 40, raio 4, contorno #747775, seta própria no select */
-:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select, textarea) {
+:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .ems, .vb-ms, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select, textarea) {
   border: 1px solid #747775 !important; border-radius: 4px !important; background-color: transparent; color: var(--m-on-surface, #1f1f1f); font-size: 14px }
-:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select) { height: 40px !important; min-height: 40px !important; padding: 0 12px }
-:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .modal, .dr) :where(input, select, textarea):focus { outline: 2px solid var(--m-primary, #0b57d0) !important; outline-offset: -2px; border-color: transparent !important }
+:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .ems, .vb-ms, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not(.auto-v):not(.vb-pop-nome), select) { height: 40px !important; min-height: 40px !important; padding: 0 12px }
+:is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .ems, .vb-ms, .modal, .dr) :where(input, select, textarea):focus { outline: 2px solid var(--m-primary, #0b57d0) !important; outline-offset: -2px; border-color: transparent !important }
 select:not([multiple]) { -webkit-appearance: none; appearance: none; padding-right: 36px !important; background-repeat: no-repeat; background-position: right 10px center; background-size: 18px 18px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23444746' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important }
 :root[data-tema="escuro"] select:not([multiple]) { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23c4c7f0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important }
-:root[data-tema="escuro"] :is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not(.auto-v):not(.vb-pop-nome), select, textarea) { border-color: rgba(153,156,161,0.5) !important; background-color: transparent !important; color: #e3e3e3 }
+:root[data-tema="escuro"] :is(.field, .cfg-r, .vb-c, .zp-tbl, .zp-b, .inline-form, .kmz-i, .vb-escolha, .kv-campos, .tk-filtros, .adv-sub, .fsel, .lz-tbl, .ptcom, .ems, .vb-ms, .modal, .dr) :where(input:not([type=checkbox]):not([type=search]):not([type=radio]):not([type=range]):not([type=file]):not(.auto-v):not(.vb-pop-nome), select, textarea) { border-color: rgba(153,156,161,0.5) !important; background-color: transparent !important; color: #e3e3e3 }
 :root[data-tema="escuro"] { color-scheme: dark }
 input[type=date] { font-variant-numeric: tabular-nums }
 input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
@@ -4533,6 +4533,60 @@ html[data-tema="escuro"] .lbl-f { color: #c4c7c5 }
 html[data-tema="escuro"] .lt-sqls { border-top-color: #2d2f31 }
 html[data-tema="escuro"] .lt-sql { background: #282a2c }
 html[data-tema="escuro"] .ptcom-r { border-top-color: #2d2f31 } html[data-tema="escuro"] .ptcom-th { color: #c4c7c5 }
+
+/* ---------- Estudos de massa (lote 4 da ficha em abas, 4/nov/2026) ---------- */
+.ems { container-type: inline-size }
+.ems-acoes { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 8px }
+.ems-h3 { font-size: 14px; font-weight: 500; margin: 20px 0 10px; color: #1f1f1f }
+.ems-h3:first-of-type { margin-top: 8px }
+.ems-g { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px 16px }
+.ems-g .field { margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 4px }
+.ems-g .field .v { min-height: 40px; display: flex; align-items: center }
+.ems-g .ems-full { grid-column: 1 / -1 }
+.ems-g textarea { width: 100%; min-height: 64px }
+.ems-tips { display: flex; flex-direction: column }
+.ems-tr { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 40px; gap: 8px 12px; align-items: center; padding: 8px 0; border-top: 1px solid #e3e3e3 }
+.ems-tr label { margin: 0; min-width: 0; display: block }
+.ems-tr input { width: 100%; font-size: 16px } .ems-tr .num { text-align: right }
+.ems-th { border-top: 0; padding-top: 0; font-size: 12px; font-weight: 500; color: #444746 }
+.ems-th > span:nth-child(4) { text-align: right }
+.ems-tot { font-weight: 500 } .ems-tot b { font-weight: 500 }
+.ems-ml { display: none }
+.ems-vazio { padding: 8px 0 }
+.ems-arqs { display: flex; flex-direction: column; gap: 8px }
+.ems-arq { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 0; border-top: 1px solid #e3e3e3 }
+.ems-arq:first-child { border-top: 0 }
+.ems-arq-t { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; min-width: 0 } .ems-arq-t b { font-weight: 500 }
+.ems-vbs { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: baseline }
+.ems-vbs .lbl-f { flex-basis: 100% }
+.ems-lista tr.ems-sel td { background: rgba(11, 87, 208, .06) }
+.ems-form { margin-bottom: 12px }
+@container (max-width: 560px) {
+  .ems-th { display: none }
+  .ems-tr { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 40px }
+  .ems-tr > label:nth-child(1) { grid-column: 1 / 3; grid-row: 1 }
+  .ems-tr > button { grid-column: 3; grid-row: 1; align-self: end }
+  .ems-tr > label:nth-child(2) { grid-column: 1; grid-row: 2 }
+  .ems-tr > label:nth-child(3) { grid-column: 2; grid-row: 2 }
+  .ems-tr > .num { grid-column: 1 / -1 }
+  .ems-tr > span:empty { display: none }
+  .ems-ml { display: block; margin-bottom: 2px }
+  .ems-tr .num { text-align: left }
+  .ems-tot > b:first-child { grid-column: 1 / -1 }
+  .ems-tot > .num { grid-column: auto }
+}
+.vb-ms { margin: 0 0 16px; max-width: 560px } .vb-ms .field { margin: 0; display: flex; flex-direction: column; gap: 4px } .vb-ms select { width: 100% }
+html[data-tema="escuro"] .ems-tr, html[data-tema="escuro"] .ems-arq { border-top-color: #2d2f31 }
+html[data-tema="escuro"] .ems-th { color: #c4c7c5 } html[data-tema="escuro"] .ems-h3 { color: #e3e3e3 }
+html[data-tema="escuro"] .ems-lista tr.ems-sel td { background: rgba(168, 199, 250, .08) }
+
+/* Estudos de massa: pedido em popup (pedido do Moisés, 4/nov/2026) */
+.sec-h .ems-vped{margin-left:auto}
+.ems-ped{display:grid;gap:16px}
+.ems-ped textarea{width:100%;resize:vertical}
+.ems-blist{margin:4px 0 0;padding-left:20px;line-height:1.5}
+.vb-ms-l{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}.vb-ms-l .field{flex:1;min-width:220px}
+.ems-ped2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
