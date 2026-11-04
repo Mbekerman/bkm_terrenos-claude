@@ -104,9 +104,13 @@ const a0=(await ter()).poly.length;await p.click('[data-a=lotes-usar]');await p.
 console.log('poligonal trocada:',a0,'→',tp.poly.length,'pontos | guardadas:',(tp.polyAnt||[]).length,'|',tp.hist[tp.hist.length-1].txt);
 // 7. celular
 await p.setViewportSize({width:390,height:844});await p.waitForTimeout(300);
-await p.click('#sec-lotes [data-a=lg-abrir]');await p.waitForSelector('#lg-svg',{timeout:10000});await p.waitForTimeout(300);
+await p.click('#sec-lotes [data-a=lg-abrir]');await p.waitForSelector('.lg-todos',{timeout:10000});await p.waitForTimeout(300);
 console.log('celular: rolagem horizontal?',await p.evaluate(()=>document.querySelector('#modal .dialog').scrollWidth>document.querySelector('#modal .dialog').clientWidth+1));await shot('7_celular');
-await p.evaluate(()=>document.querySelector('.lg-lado').scrollIntoView());await shot('8_celular_lista');
+// no celular não aparece o mapa, só a lista dos SQLs para marcar
+console.log('celular: mapa visível?',await p.$eval('#lg-mapa',x=>x.offsetParent!==null),'| linhas na lista:',await p.$$eval('.lg-todos .lg-op',x=>x.length),'| marcadas:',await p.$$eval('.lg-todos .lg-op.on',x=>x.length),'|',await p.$eval('.lg-todos',x=>x.innerText.split('\n').slice(0,8).join(' / ')));
+await p.evaluate(()=>{const f=document.querySelector('.lg-fora');if(f)f.open=true});const livre=await p.$('.lg-todos .lg-op:not(.on):not([aria-disabled])');if(livre){await livre.click();await p.waitForTimeout(200);console.log('toque marcou:',await p.$eval('[data-a=lg-incluir]',x=>x.textContent),'| marcadas:',await p.$$eval('.lg-todos .lg-op.on',x=>x.length))}
+await p.evaluate(()=>{const f=document.querySelector('.lg-fora');if(f)f.open=true});await shot('8_celular_lista');
+await p.evaluate(()=>{document.querySelector('#modal .dialog').scrollTop=99999});await shot('8b_celular_fim');
 await p.click('[data-a=close]');await p.setViewportSize({width:1440,height:900});
 // 8. Leitura não vê o botão; terreno fora de SP não pergunta
 await p.evaluate(()=>{document.querySelector('[data-a=perfil-menu]').click();document.querySelector('[data-a=role][data-v=Leitura]').click()});await p.waitForTimeout(200);

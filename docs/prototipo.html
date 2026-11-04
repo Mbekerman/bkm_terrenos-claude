@@ -5317,11 +5317,24 @@ html[data-tema="escuro"] .ag-ia{background:#1e1f20;border-color:#444746}
 .lt-solto { flex: 1 1 260px }
 html[data-tema="escuro"] .lg-mapa { border-color: #444746 }
 html[data-tema="escuro"] .lg-soltos, html[data-tema="escuro"] .lg-it, html[data-tema="escuro"] .lg-lista { border-color: #444746 }
+/* celular: só a lista para marcar, sem o mapa (pedido do Moisés, 4/nov/2026) */
+.lg-todos, .lg-cel { display: none }
+.lg-todos-h, .lg-fora > summary { font-size: 13px; font-weight: 500; color: var(--m-on-surface-variant, #444746); padding: 12px 0 4px }
+.lg-fora > summary { cursor: pointer; border-top: 1px solid var(--m-outline-variant, #c4c7c5); margin-top: 8px }
+.lg-op { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 0; border: 0; border-bottom: 1px solid var(--m-outline-variant, #c4c7c5); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer }
+.lg-op[aria-disabled="true"] { opacity: .55; cursor: not-allowed }
+.lg-op .chip { margin-left: auto; flex: none }
+.lg-op-t { flex: 1; min-width: 0 } .lg-op-t .num { font-weight: 500 } .lg-op-s { display: block; font-size: 12px }
+.lg-cx { flex: none; width: 20px; height: 20px; border: 2px solid #444746; border-radius: 3px; display: grid; place-items: center; color: #fff }
+.lg-op.on .lg-cx { background: #0b57d0; border-color: #0b57d0 }
+html[data-tema="escuro"] .lg-op, html[data-tema="escuro"] .lg-fora > summary { border-color: #444746 }
+html[data-tema="escuro"] .lg-cx { border-color: #c4c7c5 } html[data-tema="escuro"] .lg-op.on .lg-cx { background: #a8c7fa; border-color: #a8c7fa; color: #062e6f }
 @media (max-width: 760px) {
-  .lg-corpo { grid-template-columns: 1fr }
-  .lg-mapa { height: 58dvh }
+  .lg-corpo, .lg-lado { display: block; min-height: auto }
+  .lg-mapa, .lg-lista, .lg-pc, .lg-lado > .hint { display: none !important }
+  .lg-todos { display: block }
+  .lg-cel { display: inline }
   .lg-lado { max-height: none }
-  .lg-lista { max-height: 30dvh }
 }
 .lg-toque { display: none } @media (hover: none) { .lg-mouse { display: none } .lg-toque { display: inline } }
 .lg-soltos .lg-it { padding: 2px 0 }
@@ -11915,7 +11928,7 @@ function lgVias(fs,bb){const porNome={};
 /* ---------- janela ---------- */
 function lgHtml(fechar){const L=UI.lg,t=L&&T(L.tid);if(!t)return '';
   if(L.fase==='pergunta')return `<div class="dh"><h2>Inserir os lotes da prefeitura?</h2>${fechar}</div>
-    <p style="margin:0 0 8px">O ${esc(t.codigo)} fica em São Paulo. Quer marcar no mapa de lotes do GeoSampa os lotes que ele ocupa?</p>
+    <p style="margin:0 0 8px">O ${esc(t.codigo)} fica em São Paulo. Quer marcar <span class="lg-pc">no mapa de lotes do GeoSampa</span><span class="lg-cel">na lista de lotes do GeoSampa</span> os lotes que ele ocupa?</p>
     <p class="muted" style="margin:0">Os SQLs marcados entram no cadastro ainda sem matrícula e sem lote. Depois, ao montar os Lotes na aba Terreno, você escolhe cada um na lista do SQL. Dá para fazer depois pelo botão "Lotes da prefeitura" da seção Lotes.</p>
     <div class="df"><button class="btn text" data-a="close">Agora não</button><button class="btn primary" data-a="lg-sim">${ic('layers',18)}Sim, escolher os lotes</button></div>`;
   const cab=`<div class="dh"><div><h2>Lotes da prefeitura</h2><div class="faint">${esc(t.codigo)} · ${esc(t.nome)}${L.quadras?` · quadra${L.quadras.length>1?'s':''} ${L.quadras.map(k=>k.replace('.','-')).join(', ')}`:''}</div></div>${fechar}</div>`;
@@ -11930,8 +11943,15 @@ function lgHtml(fechar){const L=UI.lg,t=L&&T(L.tid);if(!t)return '';
       <div class="lg-leg"><span><i class="lg-sw sel"></i>Marcado</span><span><i class="lg-sw"></i>Lote</span><span><i class="lg-sw x"></i>Não se marca</span><span><i class="lg-sw ter"></i>Poligonal</span></div></div>
     <div class="lg-lado"><div class="lg-tot"><b>${sel.length} lote${sel.length===1?'':'s'} marcado${sel.length===1?'':'s'}</b>${area?` <span class="muted">· ${m2(area)} de área cadastral</span>`:''}</div>
       <div class="hint" style="margin:4px 0 8px"><span class="lg-mouse">Clique no lote para marcar ou desmarcar. Pare o mouse em cima para ver o SQL. A roda aproxima e mostra os números dos lotes pequenos.</span><span class="lg-toque">Toque no lote para marcar ou desmarcar e ver o SQL. Afaste dois dedos para aproximar.</span></div>
-      <div class="lg-lista">${sel.map(l=>`<div class="lg-it"><span class="num">${esc(l.sql)}</span><span class="faint">${esc(l.end||'')}${l.area?` · ${m2(l.area)}`:''}</span>${l.fixo?'<span class="chip">no lote</span>':t.insc.some(i=>digits(i.sql)===digits(l.sql))?'<span class="chip">já no cadastro</span>':''}</div>`).join('')||'<div class="muted">Nenhum lote marcado.</div>'}</div></div></div>
+      <div class="lg-lista">${sel.map(l=>`<div class="lg-it"><span class="num">${esc(l.sql)}</span><span class="faint">${esc(l.end||'')}${l.area?` · ${m2(l.area)}`:''}</span>${l.fixo?'<span class="chip">no lote</span>':t.insc.some(i=>digits(i.sql)===digits(l.sql))?'<span class="chip">já no cadastro</span>':''}</div>`).join('')||'<div class="muted">Nenhum lote marcado.</div>'}</div>${lgTodos(L,t)}</div></div>
     <div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn" data-a="lg-ajustar" ${sel.length?'':'disabled'} title="Inclui os SQLs e compara a poligonal desenhada com a soma dos lotes marcados">${ic('layers',18)}Incluir e ajustar a poligonal</button><button class="btn primary" data-a="lg-incluir" ${novos.length||tira.length?'':'disabled'}>${novos.length?`Incluir ${novos.length} SQL${novos.length>1?'s':''}`:tira.length?'Salvar':'Incluir SQLs'}${tira.length?` ${novos.length?'e tirar':'tirando'} ${tira.length}`:''}</button></div>`}
+/* celular: sem o mapa, a lista dos lotes das quadras para marcar (os que tocam a poligonal primeiro) */
+function lgTodos(L,t){const it=(l,i)=>{const on=l.sel&&(!l.trava||l.fixo),bloq=!!l.trava;
+    const marca=l.fixo?'<span class="chip">no lote</span>':!bloq&&t.insc.some(x=>digits(x.sql)===digits(l.sql))?'<span class="chip">já no cadastro</span>':'';
+    return `<button type="button" class="lg-op${on?' on':''}" data-a="lg-marca" data-i="${i}" role="checkbox" aria-checked="${on}" ${bloq?'aria-disabled="true"':''}><span class="lg-cx">${on?ic('check',16):''}</span><span class="lg-op-t"><span class="num">${esc(l.sql)}</span><span class="faint lg-op-s">${l.trava&&!l.fixo?esc(l.trava):`${esc(l.end||'')}${l.area?` · ${m2(l.area)}`:''}${l.fr>0?` · ${Math.max(1,Math.round(l.fr*100))}% na poligonal`:''}`}</span></span>${marca}</button>`};
+  const L2=L.lotes.map((l,i)=>[l,i]).filter(([l])=>l.sql),na=L2.filter(([l])=>l.fr>0).sort((a,b)=>b[0].fr-a[0].fr),fora=L2.filter(([l])=>!(l.fr>0)).sort((a,b)=>a[0].sql.localeCompare(b[0].sql));
+  return `<div class="lg-todos"><div class="lg-todos-h">Na poligonal <span class="h-n">${na.length}</span></div>${na.map(([l,i])=>it(l,i)).join('')||'<div class="muted">Nenhum lote com SQL dentro da poligonal.</div>'}
+    ${fora.length?`<details class="lg-fora"${fora.some(([l])=>l.sel)?' open':''}><summary>Outros lotes da quadra <span class="h-n">${fora.length}</span></summary>${fora.map(([l,i])=>it(l,i)).join('')}</details>`:''}</div>`}
 const lgD=an=>'M'+an.slice(0,-1).map(p=>`${p[0].toFixed(2)},${(-p[1]).toFixed(2)}`).join('L')+'Z';
 function lgSvg(L){const [x0,y0,x1,y1]=L.bb,m=12,vb=L.vb||[x0-m,-y1-m,x1-x0+2*m,y1-y0+2*m];L.vb=vb;L.vb0=L.vb0||vb.slice();
   return `<svg class="lg-svg" id="lg-svg" viewBox="${vb.join(' ')}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Mapa de lotes das quadras">
@@ -11994,7 +12014,7 @@ function lgIncluir(ajustar){const L=UI.lg,t=L&&T(L.tid);if(!t)return;const novos
    decisão sobre a poligonal nova. */
 let LG_CONS=null;
 const lgEspera=ms=>new Promise(r=>setTimeout(r,ms));
-async function lgConsultar(t,ins){if(!GEO_BASE||LG_CONS)return;LG_CONS={tid:t.id,feitos:0,total:ins.length};render();let falhas=0;
+async function lgConsultar(t,ins){if(!GEO_BASE||LG_CONS||!ins.length)return;LG_CONS={tid:t.id,feitos:0,total:ins.length};render();let falhas=0;
   try{for(const i of ins){while(LOTE_BUSCANDO)await lgEspera(200);const k=t.insc.indexOf(i);if(k<0){LG_CONS.feitos++;continue}
       await loteBuscar(t,k);if(!(i.geo||[]).length){await lgEspera(1500);await loteBuscar(t,k)}if(!(i.geo||[]).length)falhas++;LG_CONS.feitos++;render()}
     while(UI.modal==='lotes-poly')await lgEspera(300);
@@ -12020,6 +12040,8 @@ function lgSoltosHtml(t,ro){const S0=lgSoltos(t);if(!S0.length)return '';
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="lg-"]');if(!a)return;const A=a.dataset.a;
   if(A==='lg-sim'){UI.lg.fase='carregando';UI.lg.vb=null;UI.lg.vb0=null;lgRedesenhar();lgCarregar()}
   if(A==='lg-abrir'){const t=T(UI.id);if(t)lgAbrir(t)}
+  if(A==='lg-marca'){const l=UI.lg&&UI.lg.lotes[+a.dataset.i];if(!l)return;if(l.trava){toast(l.trava,true);return}
+    const y=a.closest('.dialog')?.scrollTop;const ab=!!a.closest('details[open]');l.sel=!l.sel;renderModal();const d=$('.dialog:has(.lg-corpo)');if(d&&y!=null)d.scrollTop=y;if(ab){const f=$('.lg-fora');if(f)f.open=true}}
   if(A==='lg-incluir')lgIncluir();
   if(A==='lg-ajustar')lgIncluir(true);
   if(A==='lg-zoom'){const z=+a.dataset.z;if(z)lgZoom(z>0?1.5:1/1.5);else lgVb(UI.lg.vb0.slice())}
