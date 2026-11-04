@@ -52,6 +52,13 @@ const Q=[[-120,-80],[120,-80],[120,80]];
   await p.screenshot({path:OUT+'4_duplo_inicia.png'});
   await p.mouse.click(vazio.x+150,vazio.y);await p.waitForTimeout(400);await p.mouse.click(vazio.x+150,vazio.y+100);await p.waitForTimeout(400);
   await vigiar(p);await p.mouse.dblclick(vazio.x,vazio.y+100);await p.waitForTimeout(700);e=await estado(p);ok(e.modo===null&&e.nv===4&&!!e.modal,'e dois cliques depois salvam: '+JSON.stringify(e));
+  // 8) clique direito > Novo terreno aqui: o primeiro ponto fica onde estava o cursor no clique direito, e o mapa não se mexe
+  await p.keyboard.press('Escape');await p.waitForTimeout(300);
+  const t1=await pos();await p.mouse.click(vazio.x,vazio.y,{button:'right'});await p.waitForTimeout(250);
+  const mb=await p.$eval('.mp-ctx [data-a=ctx-terreno]',x=>{const r=x.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}});await p.mouse.move(mb.x,mb.y,{steps:5});await p.mouse.click(mb.x,mb.y);await p.waitForTimeout(600);
+  {const v=await p.$eval('.v-alvo',x=>{const r=x.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}});const d=Math.hypot(v.x-vazio.x,v.y-vazio.y);
+    ok(d<=1&&t1===await pos(),'clique direito: o primeiro ponto fica onde estava o cursor (diferença '+d.toFixed(2)+' px) e o mapa não se mexe')}
+  await p.screenshot({path:OUT+'5_clique_direito.png'});
   await ctx.close()}
 {const {p,ctx}=await pagina(true);await comecar(p);const e=await estado(p);ok(/Concluir/.test(e.barra),'celular mantém a barra com Concluir: '+e.barra);await ctx.close()}
 await b.close();console.log(errs.length?'ERROS '+JSON.stringify(errs):'tudo certo');process.exit(errs.length?1:0)})();
