@@ -12356,8 +12356,8 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="lg-"]'
    ===================================================================== */
 P.filtro='M4 6h16M7 12h10M10 18h4';
 const FX_KEY='bkm-terrenos-filtros';
-/* Pipeline (e Mapa) e Funil têm cada um o seu filtro (pedido do Moisés, 4/nov/2026): ao trocar de página, guarda o da página que sai e põe o da que entra */
-const FX_GK=FX_KEY+'-pag',fxGrupo=()=>UI.route==='negociacoes'?'kanban':'pipeline';
+/* Pipeline, Mapa e Funil têm cada um o seu filtro (pedido do Moisés, 4/nov/2026): ao trocar de página, guarda o da página que sai e põe o da que entra */
+const FX_GK=FX_KEY+'-pag',fxGrupo=()=>UI.route==='negociacoes'?'kanban':UI.route==='mapa'?'mapa':'pipeline';
 const FX_PAG=(()=>{try{return JSON.parse(sessionStorage.getItem(FX_GK)||'{}')||{}}catch(e){return {}}})();
 let FX_G=null,FX_ADOTA=false;
 UI.fx=UI.fx||(()=>{try{const h=location.hash.match(/[#&?]f=([^&]+)/);if(h){FX_ADOTA=true;return JSON.parse(decodeURIComponent(h[1]))}}catch(e){}return {}})();

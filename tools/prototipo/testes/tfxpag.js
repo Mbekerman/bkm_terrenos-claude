@@ -13,7 +13,7 @@ await nav('negociacoes');ok(await chips()===0,'Funil sem o filtro do Pipeline');
 await p.click('.fx-btn');await p.click('#fx-dr .fx-aba[data-v=local]');await p.click('#fx-dr .fx-op[data-k=cidade]');await p.click('#fx-dr [data-a=fx-fechar]');await p.waitForTimeout(200);
 const fun=await p.$$eval('.fx-barra .fx-chip',x=>x.map(e=>e.textContent));ok(fun.length===1,'Funil com o próprio filtro: '+fun.join());
 await nav('terrenos');const pip=await p.$$eval('.fx-barra .fx-chip',x=>x.map(e=>e.textContent));ok(pip.length===1&&pip[0]!==fun[0],'volta ao Pipeline com o dele: '+pip.join());
-await nav('mapa');ok(await chips()===1,'Mapa segue o Pipeline');
+await nav('mapa');ok(await chips()===0,'Mapa com filtro próprio, sem o do Pipeline');
 await p.goBack();await p.waitForTimeout(200);await p.goBack();await p.waitForTimeout(300);ok(await p.evaluate(()=>document.body.dataset.rota)==='negociacoes'&&await chips()===1,'voltar do navegador ao Funil traz o filtro dele');
 await nav('terrenos');ok(await chips()===1,'Pipeline mantido depois do voltar');
 await p.reload();await p.waitForTimeout(300);await nav('negociacoes');ok(await chips()===1,'recarregar mantém o do Funil');
