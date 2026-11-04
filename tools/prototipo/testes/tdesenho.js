@@ -48,6 +48,7 @@ const Q=[[-120,-80],[120,-80],[120,80]];
   const pos=()=>p.evaluate(()=>document.querySelector('.leaflet-map-pane').style.transform);const t0=await pos();
   await p.mouse.dblclick(vazio.x,vazio.y);await p.waitForTimeout(600);e=await estado(p);
   ok(e.modo==='desenhar'&&e.n===1&&e.barra==='','dois cliques no vazio começam o desenho com 1 ponto: '+JSON.stringify(e));ok(t0===await pos(),'e o mapa não se mexe');
+  {const v=await p.$eval('.v-alvo',x=>{const r=x.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}});const d=Math.hypot(v.x-vazio.x,v.y-vazio.y);ok(d<=1,'o primeiro ponto fica exatamente onde foram os dois cliques (diferença '+d.toFixed(2)+' px)')}
   await p.screenshot({path:OUT+'4_duplo_inicia.png'});
   await p.mouse.click(vazio.x+150,vazio.y);await p.waitForTimeout(400);await p.mouse.click(vazio.x+150,vazio.y+100);await p.waitForTimeout(400);
   await vigiar(p);await p.mouse.dblclick(vazio.x,vazio.y+100);await p.waitForTimeout(700);e=await estado(p);ok(e.modo===null&&e.nv===4&&!!e.modal,'e dois cliques depois salvam: '+JSON.stringify(e));
