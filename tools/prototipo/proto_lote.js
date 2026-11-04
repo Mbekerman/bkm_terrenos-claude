@@ -26,7 +26,7 @@ function campoInsc(pre,cid,rot,obrig){const c=CIDADES_INSC[cid];
 const rotInsc=(c,rot)=>rot?`${rot} (${c.rotulo})`:c.rotulo;
 document.addEventListener('change',e=>{const r=e.target.closest('[data-insc]');if(!r)return;const pre=r.dataset.insc,c=CIDADES_INSC[r.value],el=document.getElementById(pre+'-sql'),lb=document.getElementById(pre+'-sql-l');if(!el)return;
   el.dataset.masc=c.mascara||'';el.inputMode=c.mascara?'numeric':'text';el.placeholder=c.mascara||'Como está no carnê do IPTU';el.value=c.mascara?mascarar(el.value,c.mascara):el.value;
-  if(lb)lb.textContent=rotInsc(c,pre==='i'?'Nova inscrição':'');if(el.form?.dataset.form==='novo')dedupe();if(e.isTrusted)el.focus()});
+  if(lb)lb.textContent=rotInsc(c,pre==='i'?'Nova inscrição':'');if(e.isTrusted)el.focus()});
 
 // Busca na base da cidade da inscrição (só com a inscrição completa).
 const loteBuscavel=ins=>{const c=CIDADES_INSC[insCid(ins)];return !!(c.base&&LOTE_ADAPT[insCid(ins)]?.url()&&digits(ins.sql).length===digitosMasc(c.mascara))};

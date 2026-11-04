@@ -62,7 +62,7 @@ Arrastar no quadro de etapas chama `mover_para_etapa` (para frente, etapa por et
 Um dono com várias matrículas é **uma** negociação. Vários donos que negociam separado são **partes** do terreno (`terreno_partes`): cada parte é um dono, ou um grupo de donos que negocia junto (herdeiros, sócios), com as matrículas, as inscrições e as pessoas dela (`parte_id` em `matriculas`, `inscricoes_municipais` e `terreno_pessoas`; participações somam 100% em cada parte) e os corretores dela (`parte_corretores`: uma parte pode ter vários corretores e o mesmo corretor pode trazer várias partes; ligar o corretor à parte o põe entre os corretores do terreno), o pedaço da poligonal e a marca de **essencial** (sem ela o terreno não serve) ou dispensável.
 
 - **Todo terreno tem pelo menos uma parte** (decisão do Moisés, 4/nov/2026): nasce com "Vendedor 1" (trigger `t_parte1`), e a última parte ativa não sai. Na aba Terreno, o quadro Partes tem "Quantas partes vendem?" e um cartão por parte com título, nome da pessoa principal, telefone, e-mail, CPF ou CNPJ e observação, todos opcionais (gravados só com os dígitos, conferidos por `fluxo.validar_formato`); "Excluir parte" só com a parte sem lotes nem histórico (`app.excluir_parte`), senão vale `remover_parte`, com motivo. No Novo terreno, o passo 2 tem as mesmas partes e lotes (`salvar_parte` e `salvar_lote`).
-- **Lotes** (`terreno_lotes`, decisão do Moisés, 4/nov/2026): cada lote tem um título ("Lote 1", "Lote 2"...), pertence a uma parte, tem **uma** matrícula (no máximo um lote por matrícula) e um ou mais SQLs (`lote_inscricoes`). A matrícula e o SQL pegam a parte do lote (`_sincronizar_partes_lote`; SQL em lotes de partes diferentes fica sem parte). Um SQL que cobre duas matrículas entra nos dois lotes, e a divergência de área se mede pelo grupo de lotes que dividem SQLs (`v_lotes`: soma das matrículas × soma das áreas cadastrais, em % da matrícula). Área adotada do lote: a da matrícula, a cadastral (só com SQL não dividido) ou uma informada. A matrícula nova já vem com o cartório do terreno (pela poligonal). `app.salvar_lote`, `app.excluir_lote` (leva a matrícula e os SQLs só dele sem IPTU). A área e as zonas da parte saem dos lotes dela (`v_partes`).
+- **Lotes** (`terreno_lotes`, decisão do Moisés, 4/nov/2026): cada lote tem um título ("Lote 1", "Lote 2"...), pertence a uma parte, tem **uma** matrícula (no máximo um lote por matrícula) e um ou mais SQLs (`lote_inscricoes`). A matrícula e o SQL pegam a parte do lote (`_sincronizar_partes_lote`; SQL em lotes de partes diferentes fica sem parte). Um SQL que cobre duas matrículas entra nos dois lotes, e a divergência de área se mede pelo grupo de lotes que dividem SQLs (`v_lotes`: soma das matrículas × soma das áreas cadastrais, em % da matrícula). Área adotada do lote: a da matrícula, a cadastral (só com SQL não dividido) ou uma informada. A matrícula nova já vem com o cartório do terreno (pela poligonal). `app.salvar_lote`, `app.excluir_lote` (leva a matrícula e os SQLs só dele sem IPTU; o SQL vindo do mapa da prefeitura volta a ficar solto). **SQLs soltos** (4/nov/2026): em São Paulo, ao cadastrar o terreno, o mapa de lotes do GeoSampa das quadras que a poligonal ocupa deixa marcar os lotes; os SQLs marcados entram em `inscricoes_municipais` com `origem = 'mapa_prefeitura'`, área cadastral e `endereco_prefeitura`, sem linha em `lote_inscricoes` e sem parte, e são escolhidos depois na lista do lote. A área e as zonas da parte saem dos lotes dela (`v_partes`).
 - **Antes da etapa da divisão** (`fases_modelo.etapa_partes`, só na fase de entrada; padrão Negociação) há uma negociação só, a do terreno: Triagem e Estudos são da área toda.
 - **Ao chegar nela**, com duas ou mais partes ativas, cada parte ganha a sua negociação: um processo da mesma fase com `parte_id` e `principal_id` (código `NEG-00012-1`), com oferta de referência, propostas, documentos, reuniões, tarefas, subetapa, status, aprovações e histórico próprios. Parte cadastrada depois disso já nasce com a sua.
 - **A negociação do terreno passa a andar pelas partes** (`_sincronizar_principal`): fica na etapa e na subetapa da parte mais atrasada em aberto, com cada mudança no histórico ("Pelas negociações das partes"), e não se move à mão. A de uma parte só anda da etapa da divisão em diante e enquanto a do terreno estiver ativa.
@@ -273,7 +273,7 @@ erDiagram
 
   terrenos {
     uuid id PK
-    text codigo "TER-000123"
+    text codigo "A123, de A001 a Z999"
     text nome
     text situacao_cadastral "ativo | arquivado"
     text prioridade "baixa | media | alta | estrategica"
@@ -311,7 +311,6 @@ erDiagram
     numeric area_construida_existente_m2
     numeric area_construida_demolir_m2
     text necessidade_demolicao
-    text tipo_empreendimento "nao_informado, mercado, his, hmp"
     int versao "edicao simultanea"
   }
   confrontacoes {
@@ -489,7 +488,7 @@ erDiagram
 - A consulta de um lote (`registrar_consulta_lote`, por `app._substituir_zonas`) cria uma análise nova que copia os outros lotes da vigente e troca só as zonas desse lote, levando as exceções das zonas que continuam; se as zonas do lote não mudaram, nada é gravado. Assim um lote nunca apaga o outro.
 - `app.parametros_zona(empresa, zona, tipo, macrozona, área do lote, uso)` escolhe a linha: a do tipo pedido ou, sem regra própria, a de mercado (o campo `tipo` diz qual valeu); a mais específica em macrozona e uso; sem uso, a permitida, preferindo o vertical. A condição de tamanho de lote usa a área adotada do terreno, que é o lote do empreendimento; sem área, vale a de lote grande. Em SJC, sem macrozona não há parâmetro (não informado).
 - `v_lote_zonas` dá cada lote × zona × tipo com os parâmetros e o potencial construtivo (área × CA); `v_urbanismo_vigente` resume o terreno: todas as zonas, o maior CA de mercado e o potencial por tipo (nulo se algum pedaço não tem CA ou não admite o tipo). Nunca um "CA médio". As zonas saem separadas por barra ("ZC / ZM / ZEU"), da maior área para a menor.
-- O terreno guarda o tipo de empreendimento pretendido (`terrenos.tipo_empreendimento`: mercado, HIS ou HMP; escolhido no Novo terreno em São Paulo e mudado na seção de parâmetros). `v_urbanismo_vigente.potencial_tipo_m2` é o potencial desse tipo; sem tipo informado, fica nulo (nunca vira mercado sozinho).
+- O terreno não guarda tipo de empreendimento (decisão do Moisés, 4/nov/2026): a ficha mostra o CA máximo e o potencial de Mercado, HIS e HMP lado a lado (`v_lote_zonas` por tipo; `v_urbanismo_vigente.potencial_mercado_m2`, `potencial_his_m2`, `potencial_hmp_m2`).
 - As camadas que a consulta do lote trouxe (Conpresp, tombamento, ZEIS, mananciais, operação urbana, macrozona, centralidade...) ficam na consulta (`consultas_lote`), e a seção de parâmetros mostra as da última consulta de cada lote.
 
 **Poligonal primeiro.** O cadastro começa pela poligonal, obrigatória (`check` em `terrenos`; PostGIS no schema `extensions`, coluna gerada `poligono` com índice GiST). Antes de criar, o front chama `app.terrenos_sobrepostos(empresa, poligonal)`, que usa `app.sobreposicao(a, b, folga = 5 m)`: a parte em comum conta quando passa de 1 m² e tem mais de 5 m de largura (diâmetro do maior círculo que cabe nela, `ST_MaximumInscribedCircle` na UTM do lugar) ou cobre metade de um dos dois. Assim a imprecisão do desenho na divisa não conta, mas o mesmo lote estreito desenhado de novo sempre avisa. Cada achado vem como `mesma_area` (90% ou mais dos dois lados) ou `parcial`, com área, largura e percentuais. O usuário escolhe: nova oferta no existente (com `ofertas.poligono_geojson` quando oferece só parte, conferido em `registrar_oferta` para caber no terreno com 5 m de folga), recadastrar o existente com a área nova ou a soma das duas (`salvar_terreno`), ou confirmar que é outro terreno. Nesse caso os ids vão em `sobreposicoes_aceitas`, e o trigger `t_sobre` recusa qualquer poligonal (cadastro, edição, importação) que ocupe outro terreno sem essa confirmação. Município e endereço vêm da localização da poligonal (geocodificação reversa no front, com `municipio_por_nome`); as ruas de cada lado viram as frentes, o usuário escolhe a principal (`logradouro`, `numero`) e as outras entram em `confrontacoes` com tipo `frente`.
@@ -502,7 +501,7 @@ erDiagram
 
 **Infraestrutura** (lote 3 da ficha em abas, 4/nov/2026; decisões do Moisés de 3/nov). Três quadros na aba:
 
-- **Relevo, classificação topográfica.** O front mede as cotas dentro da poligonal (laser 2020 da prefeitura em São Paulo, grade de 1 m, ou 2 m acima de 4 ha; Google em grade de 5 m fora) e ajusta um plano por mínimos quadrados. A inclinação é a do plano; a terra mexida é a média de |cota − plano|, ou seja, corte + aterro até o plano ÷ área. `app.registrar_topografia` grava os números em `terrenos.topo_*` e o perfil sai de `app.classificar_topografia`, que pega o pior dos dois pelos limites de `app.topografia_config` (sem linha, os padrões: Plano até 3%, Inclinado até 30%, acima crítico; terra mexida acima de 0,25 leve, 0,5 mediano e 1 m³/m² crítico). Com o Google a terra mexida não é guardada (erro de 1 a 2 m): o perfil fica entre Plano, Inclinado e crítico. Poligonal nova apaga a medição (`t_norm`), e o front mede de novo. `app.salvar_topografia_config` (administrador) reclassifica o que já foi medido.
+- **Relevo, classificação topográfica.** O front mede as cotas dentro da poligonal (laser 2020 da prefeitura em São Paulo, grade de 1 m, ou 2 m acima de 4 ha; Google em grade de 5 m fora) e ajusta um plano por mínimos quadrados. A declividade média é a média de |∇z| em cada célula da grade (diferença centrada); a inclinação é a do plano; a terra mexida é a média de |cota − plano|, ou seja, corte + aterro até o plano ÷ área. `app.registrar_topografia` grava os números em `terrenos.topo_*` (`topo_declividade_pct`, `topo_inclinacao_pct`, `topo_terra_m3m2`, `topo_desnivel_m`) e o perfil sai de `app.classificar_topografia`, em 7 níveis pela declividade média, com os limites de `app.topografia_config` (sem linha, os cortes do Moisés de 4/nov/2026: Plano até 5%, Inclinado até 10%, Acidentado leve até 13%, mediano até 19%, intenso até 24%, agudo até 30%, acima crítico); a terra mexida acima de 1,5 m³/m² também leva ao crítico. Com o Google a terra mexida não é guardada (erro de 1 a 4 m): o perfil fica entre Plano, Inclinado e crítico. Calibração: `tools/topografia/medir.py` mede um KMZ pelo laser do GeoSampa. Poligonal nova apaga a medição (`t_norm`), e o front mede de novo. `app.salvar_topografia_config` (administrador) reclassifica o que já foi medido.
 - **Visita técnica.** `terreno_infraestrutura`, com os 8 itens ativos de `itens_infraestrutura` (telefonia desativada), cada um Sim, Parcial, Não ou Não se aplica, com observação; `terrenos.visita_tecnica_em` guarda a data da visita.
 - **Viabilidades técnicas.** `terreno_viabilidades_tecnicas`, uma por serviço marcado `viabilidade_tecnica` no catálogo (Energia, Água, Esgoto, Gás). Retorno exige a data de emissão, e a validade nunca é anterior a ela. A view `v_terreno_viabilidades_tecnicas` traz todos os serviços, com `vencida` quando o retorno é viável ou condicionado e a validade já passou.
 
@@ -670,6 +669,8 @@ erDiagram
     text pauta
     text resumo
     text encaminhamentos
+    bool na_agenda "criar no Google Agenda"
+    bool gerar_meet "online: link do Meet"
   }
   reuniao_participantes {
     uuid reuniao_id FK
@@ -677,10 +678,34 @@ erDiagram
     uuid user_id FK
     uuid pessoa_id FK
     text nome
+    text email "quem nao esta cadastrado"
+    text resposta "do Google: aceito, recusado, talvez"
+  }
+  reuniao_agenda {
+    uuid reuniao_id PK
+    text situacao "pendente, sincronizada, erro"
+    text acao "criar, atualizar, cancelar, remover"
+    text evento_id
+    text meet_link
+    text gravacao_url
+    text transcricao
+    text anotacoes_url "Doc das Anotações do Gemini"
+    text resumo_ia "rascunho do resumo"
+    text resumo_origem "gemini | ia"
+    text resumo_situacao "rascunho, aceito, descartado"
   }
 ```
 
 As tarefas moram no esquema `fluxo` (ver "Quadros e tarefas", abaixo): cada terreno tem o seu quadro e a tarefa pode apontar a negociação (`processo_id`, do mesmo terreno do quadro).
+
+## Reuniões com o Google Agenda
+
+Lote 6 da ficha em abas (4/nov/2026). Migration `20261015001600_reunioes_agenda.sql`.
+
+- **O sistema é a origem.** A reunião marcada com `na_agenda` vira evento na agenda de quem marcou (`reuniao_agenda.organizador_id`), com convite a quem tem e-mail (`v_reuniao_convidados`: o do usuário, o da pessoa ou o digitado) e, online com `gerar_meet`, o link do Meet. Mudar data, duração, local, pauta, participantes, cancelar ou tirar da Agenda põe o evento na fila (`situacao = 'pendente'`, com a `acao`); marcar como realizada não mexe no evento. Reunião já realizada não vai para a Agenda.
+- **Função do servidor** (a fazer, com o token do "Conectar Agenda e Gmail"; só `service_role`): lê a fila, grava no Google e responde por `app.agenda_confirmar(reuniao, evento_id, link, meet_link, erro)`. O caminho inverso: `app.agenda_evento_mudou(reuniao, inicio, duracao, cancelado)` (mudança feita direto na Agenda, que não volta para a fila) e `app.agenda_resposta(reuniao, email, resposta)` (aceito, recusado, talvez; a tela não muda a resposta).
+- **Depois da reunião online:** `app.registrar_gravacao(reuniao, gravacao, transcricao_url, transcricao, anotacoes_url)` com o que o Meet guardou (gravação, transcrição e o Doc das **Anotações do Gemini**) e `app.registrar_resumo_ia(reuniao, resumo, encaminhamentos, origem)` com o rascunho: o resumo e os próximos passos das Anotações do Gemini (origem `gemini`, padrão; decisão do Moisés, 4/nov/2026: usa o Gemini do Workspace, sem outra IA) ou, se o formato do Gemini não servir, o da IA do sistema (`ia`). O rascunho não toca no resumo da reunião e avisa quem marcou (`reuniao_resumo`). Quem edita confere em `app.decidir_resumo_ia(reuniao, aceitar, resumo, encaminhamentos)`: aceitar (com o texto ajustado ou não, só com a reunião realizada) grava em `resumo` e `encaminhamentos`; descartar só marca.
+- Gravação, transcrição e Anotações do Gemini do Meet pedem o Google Workspace Business Standard ou acima (o da BKM tem, confirmado pelo Moisés em 4/nov/2026). As anotações precisam estar ligadas na reunião; falta confirmar se a API da Agenda liga sozinha ao criar o evento (senão, lembrete no convite). A sincronização vai e volta (confirmado em 4/nov/2026). Reunião presencial não tem as anotações; gravada pelo celular fica para depois.
 
 ## Mapa, dashboard e quadro de tarefas
 
@@ -1277,6 +1302,10 @@ erDiagram
   }
   viabilidades {
     numeric custo_m2 "obra incidente, R$/m2"
+    text obra_base "privativa ou construida"
+    numeric area_construida "digitada; com estudo de massa, vem dele"
+    uuid estudo_massa_id FK "estudo de massa preso"
+    bool segue_massa_valido "troca junto com o valido"
     numeric permuta_fin_pct
     numeric deducao_vgv_pct
     numeric minimo_garantido
@@ -1294,6 +1323,7 @@ erDiagram
     int quantidade_comissao "comissao do terreno; as duas ate a quantidade"
     numeric preco_unitario
     numeric preco_m2
+    uuid massa_tipologia_id FK "tipologia do estudo de massa"
   }
   viabilidade_linhas {
     uuid id PK
@@ -1321,7 +1351,7 @@ erDiagram
 - **Cálculo** (`app.calcular_viabilidade`, o mesmo do protótipo; os totais ficam no cabeçalho, refeitos por trigger):
   - VGV = Σ quantidade × preço unitário. **VGV vendido** = VGV − unidades em permuta física − unidades da comissão; é o "VGV" das bases % do VGV. Unidades líquidas = unidades − permuta − comissão (base da verba por unidade).
   - **VGV líquido** = VGV vendido − % de dedução × VGV vendido − as despesas comerciais marcadas para deduzir (só as que a lista marca como dedutíveis: ITBI e registro de unidades vendidas, Produto Caixa).
-  - **Custo de obras** em camadas: incidente (típico) = valor unitário × área privativa total; atípicos (área privativa, % do típico, % do VGV, verba); **raso** = incidente + atípicos; não incidente (+ % do raso); **obra total** = raso + não incidente; projetos e pós-obra (+ % da obra total). A seção soma tudo.
+  - **Custo de obras** em camadas: incidente (típico) = valor unitário × área privativa total, ou × área construída total quando `obra_base = 'construida'` (decisão do Moisés, 3/nov/2026); atípicos (área privativa, % do típico, % do VGV, verba); **raso** = incidente + atípicos; não incidente (+ % do raso); **obra total** = raso + não incidente; projetos e pós-obra (+ % da obra total). A seção soma tudo.
   - **Custo do terreno**: permuta física e comissão em unidades só informam (quantidade, área, %), porque já saíram do VGV vendido; permuta financeira = % × VGV líquido, nunca abaixo do mínimo garantido; + pagamento em dinheiro + comissão em dinheiro.
   - Despesas gerais, Taxas e Despesas financeiras: % do VGV, % da obra total, % do lucro líquido ou verba. O % do lucro é circular: lucro = L0 ÷ (1 + Σ%), com L0 o lucro antes desses itens; sem lucro, valem zero.
   - Despesas comerciais: % do VGV, verba total, verba por unidade (× unidades líquidas) ou verba mensal (× meses).
@@ -1329,6 +1359,53 @@ erDiagram
 - **Modelos de estudo** (`app.viabilidade_modelos`, decisão do Moisés de 26/out/2026): valores e bases de cálculo guardados para o estudo novo nascer com eles. `app.salvar_modelo_viabilidade(estudo, nome, da_empresa, modelo)` grava o estudo como modelo novo ou por cima de um existente: guarda o valor unitário da obra, a dedução do VGV, as despesas que saem do VGV líquido e as linhas (item, base, valor, meses); tipologias, permuta financeira, mínimo garantido e pagamento e comissão em dinheiro são do terreno e ficam fora. Modelo da empresa (`user_id` nulo) só o administrador grava e apaga, e um deles pode ser o padrão (`app.marcar_modelo_padrao`); o do usuário só ele vê, usa e apaga (`app.apagar_modelo_viabilidade`). Taxas e Despesas financeiras só entram no modelo gravado pela diretoria e só se aplicam de modelo da empresa ou para quem é da diretoria; senão, ficam os valores padrão da lista. `criar_viabilidade(terreno, nome, copiar_de, modelo, sem_modelo)`: sem cópia nem modelo escolhido, usa o padrão da empresa (`sem_modelo = true`: só a lista); do modelo entram só itens ativos, com base ainda aceita pelo grupo, e só o que ainda é dedutível; os itens fixos que faltarem vêm da lista.
 - Lista de itens da empresa: configuração do administrador (`app.salvar_despesa_viabilidade`, `app.apagar_despesa_viabilidade`; usado só desativa e não muda de grupo), copiada para cada empresa nova. Padrão em `tools/viabilidade/despesas.json` (o protótipo e o teste do banco leem).
 - Leituras a confirmar com o Moisés: custo de obra típico = incidente; a dedução em % também sai do lucro (é custo, não só base da permuta); % do VGV sobre o VGV vendido.
+
+## Estudos de massa
+
+Lote 4 da ficha em abas (pedido do Moisés de 3/nov/2026). Migration `20261015001500_estudos_massa.sql`; protótipo em `tools/prototipo/proto_massa.js`, aba **Estudos de massa** da ficha.
+
+```mermaid
+erDiagram
+  terrenos ||--o{ estudos_massa : "estudos"
+  estudos_massa ||--o{ estudo_massa_tipologias : tem
+  estudos_massa |o--o{ viabilidades : "presa ao estudo"
+  estudo_massa_tipologias |o--o{ viabilidade_tipologias : "casada"
+  estudos_massa |o--o{ documentos : "PDF e DWG"
+  estudos_massa {
+    int ordem "numero no terreno"
+    text nome
+    text situacao "solicitado, em_elaboracao, entregue"
+    uuid solicitante_id
+    uuid arquiteto_id "membro da empresa"
+    text briefing
+    date prazo
+    numeric lazer_4 "coberto e descoberto, na torre e fora"
+    numeric circulacao_m2
+    numeric anexos_m2
+    int vagas_cobertas_descobertas
+    numeric estacionamento_coberto_descoberto_m2
+    numeric contencao_ate_1_5_e_acima_m2
+    numeric area_construida_m2
+    numeric ca_legal "digitado"
+    numeric ca_venal "digitado"
+    numeric area_privativa_m2 "soma das tipologias"
+    numeric eficiencia_pct "privativa / construida"
+    bool valido "um por terreno, so entregue"
+    text observacoes
+  }
+  estudo_massa_tipologias {
+    text nome
+    numeric area_privativa
+    int quantidade
+  }
+```
+
+- **Pedido:** `app.solicitar_estudo_massa(terreno, arquiteto, briefing, prazo, nome)`: o arquiteto é um membro da empresa (interno; acesso externo fica para depois) e recebe o aviso `massa_solicitado`; o estudo nasce **Solicitado**, numerado no terreno ("Estudo de massa N").
+- **Lançamento:** `app.salvar_estudo_massa(estudo, dados)` grava as áreas, vagas, CAs, a área construída total, o briefing, o prazo, o arquiteto (trocado, o novo é avisado), as observações e, em `tipologias`, a lista inteira (título, área privativa, quantidade; com `id` atualiza, sem entra, a que falta sai). Área privativa total e unidades saem das tipologias; eficiência = privativa ÷ construída (coluna gerada). O primeiro dado põe **Em elaboração**; **Entregue** pede tipologias com área e quantidade e a área construída, e avisa quem pediu (`massa_entregue`). As tabelas só se leem; tudo passa pelas RPCs, com auditoria.
+- **Válido:** `app.marcar_massa_valido(estudo, valido)`: um por terreno (índice único parcial), só entregue; o válido não volta para em elaboração nem se apaga. `app.apagar_estudo_massa` recusa o válido e o que tem viabilidade presa; os arquivos ficam em Documentos.
+- **Arquivos:** `app.anexar_arquivo_massa(estudo, 'massa_pdf' | 'massa_dwg', caminho, arquivo, tamanho)`, por `app.registrar_documento`: um documento de cada tipo por estudo (`documentos.estudo_massa_id`), cada envio uma versão; só `.pdf` e `.dwg`.
+- **Viabilidade presa ao estudo** (decisões do Moisés, 3/nov/2026): `app.vincular_massa(viabilidade, estudo, seguir_valido)` prende a um estudo entregue ou ao válido do terreno (trocou o válido, a viabilidade troca junto); sem estudo e sem seguir, solta ("Quebrar vínculo"), e as tipologias e a área construída ficam e voltam a se editar; vincular de novo refaz as tipologias pelas do estudo. `app.criar_viabilidade_da_massa(estudo, nome, seguir_valido)` é o botão do estudo de massa: estudo de viabilidade novo (com o modelo padrão, como o Novo estudo) já preso. Presa, o título, a área e a quantidade das tipologias e a área construída vêm do estudo de massa (`app._sincronizar_massa`, chamada a cada mudança do estudo e do válido) e o trigger `t_massa` recusa mudá-los na viabilidade; preços, permuta e comissão continuam dela, casados pela tipologia do estudo (`massa_tipologia_id`) e, na troca de estudo, pelo nome. Quantidade menor que a permuta mais a comissão corta a permuta e depois a comissão. Duplicar leva o vínculo.
+- Confirmado pelo Moisés (4/nov/2026): "Área privativa total" é a soma das tipologias; só o estudo entregue vira válido ou é usado na viabilidade. Briefing em texto livre (uma linha por item vira lista).
 
 ## 3. Documentos
 

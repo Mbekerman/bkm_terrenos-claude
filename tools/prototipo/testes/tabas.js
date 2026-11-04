@@ -10,7 +10,7 @@ const ctx=await b.newContext(cel?{...devices['Pixel 7']}:{viewport:{width:w,heig
 await ctx.route('**/*',r=>{const u=r.request().url();if(u.startsWith('file://'))return r.fulfill({path:F,contentType:'text/html; charset=utf-8'});if(/leaflet.js|jszip/.test(u))return r.fulfill({path:L+(u.includes('leaflet')?'leaflet.js':'jszip.min.js'),contentType:'application/javascript'});if(/cartocdn|openstreetmap|arcgisonline/.test(u))return r.fulfill({path:require('path').join(__dirname,'tile.png'),contentType:'image/png'});return r.abort()});
 await ctx.addInitScript(()=>{window.__qdReal=true});const p=await ctx.newPage();const erros=[];p.on('pageerror',e=>erros.push(e.message));
 await p.goto('file:///x/a.html');await p.evaluate(t=>{localStorage.clear();localStorage.setItem('bkm-terrenos-tema',t)},tema);
-await p.goto('file:///x/a.html#/terrenos/TER-000123');await p.reload();await p.waitForTimeout(500);
+await p.goto('file:///x/a.html#/terrenos/A123');await p.reload();await p.waitForTimeout(500);
 const n=await p.$$eval('.fi-abas button',x=>x.map(y=>y.dataset.t));ok(ABAS.every(a=>n.includes(a)),'abas: '+n.join(','));
 ok(!(await p.$('.bl-seta')),'sem setas de abrir e fechar');
 const meta=await p.$eval('.fi-meta',x=>x.textContent);ok(/Novos Negócios/.test(meta)&&/Cadastrado em/.test(meta),'topo: '+meta);
@@ -33,12 +33,12 @@ await p.click('#sec-lotes .qd-tg');await p.waitForTimeout(100);ok(await p.$eval(
 ok(await p.$eval('#sec-lotes .sec-b',x=>getComputedStyle(x).display)==='none','fechado esconde o corpo');
 // cartório na localização
 const loc=await p.$eval('#sec-loc',x=>x.textContent);ok(/Cartório de registro de imóveis/.test(loc),'cartório na localização');
-if(!cel){await p.evaluate(()=>{const k=Object.keys(localStorage).find(x=>/^bkm-terrenos-prototipo-v/.test(x)),S=JSON.parse(localStorage.getItem(k)),t=S.terrenos.find(x=>x.codigo==='TER-000123');t.cri='13º CRI';t.criFonte='prefeitura';localStorage.setItem(k,JSON.stringify(S))});await p.reload();await p.waitForTimeout(400);
+if(!cel){await p.evaluate(()=>{const k=Object.keys(localStorage).find(x=>/^bkm-terrenos-prototipo-v/.test(x)),S=JSON.parse(localStorage.getItem(k)),t=S.terrenos.find(x=>x.codigo==='A123');t.cri='13º CRI';t.criFonte='prefeitura';localStorage.setItem(k,JSON.stringify(S))});await p.reload();await p.waitForTimeout(400);
   await p.click('#sec-loc .qd-tg').catch(()=>{});await p.waitForTimeout(100);
   ok(/13º CRI · do GeoSampa/.test(await p.$eval('#sec-loc',x=>x.textContent)),'cartório do GeoSampa marcado');
   await p.evaluate(()=>document.querySelector('#sec-loc [data-a="edit"]').click());await p.waitForTimeout(150);
   await p.selectOption('#f-cri','4º CRI');await p.evaluate(()=>document.querySelector('#sec-loc form button.primary').click());await p.waitForTimeout(150);
-  const t2=await p.evaluate(()=>{const k=Object.keys(localStorage).find(x=>/^bkm-terrenos-prototipo-v/.test(x)),t=JSON.parse(localStorage.getItem(k)).terrenos.find(x=>x.codigo==='TER-000123');return [t.cri,t.criFonte]});ok(t2[0]==='4º CRI'&&t2[1]==='digitado','trocar o cartório vira digitado '+t2);
+  const t2=await p.evaluate(()=>{const k=Object.keys(localStorage).find(x=>/^bkm-terrenos-prototipo-v/.test(x)),t=JSON.parse(localStorage.getItem(k)).terrenos.find(x=>x.codigo==='A123');return [t.cri,t.criFonte]});ok(t2[0]==='4º CRI'&&t2[1]==='digitado','trocar o cartório vira digitado '+t2);
   await p.screenshot({path:`${TMP}t_abas/${w}_${tema}_terreno_quadros.png`,fullPage:true})}
 // pontos de interesse numa lista só
 await p.evaluate(()=>document.querySelector('.fi-abas [data-t="entorno"]').click());await p.waitForTimeout(250);
@@ -51,7 +51,7 @@ await p.evaluate(()=>scrollTo(0,2000));await p.waitForTimeout(200);
 const top=await p.$eval('.fi-abas',x=>x.getBoundingClientRect().top);ok(top>=56&&top<=80,'abas fixas no topo: '+top);
 const terr=await p.$eval('#bl-terreno',x=>x.textContent);ok(!/Confrontações/.test(terr),'confrontações saiu');
 // link antigo
-await p.goto('file:///x/a.html#/terrenos/TER-000123/negociacao');await p.waitForTimeout(400);
+await p.goto('file:///x/a.html#/terrenos/A123/negociacao');await p.waitForTimeout(400);
 ok(await p.$eval('.fi-abas [aria-selected="true"]',x=>x.dataset.t)==='comercial','link antigo /negociacao abre Comercial');
 const com=await p.$eval('#bl-comercial',x=>x.textContent);for(const r of ['Ofertas recebidas','Propostas','Reuniões','Corretores'])ok(com.includes(r),'comercial sem '+r);
 ok(!/Tarefas/.test(await p.$eval('.fi-abas',x=>x.textContent)),'sem aba Tarefas');

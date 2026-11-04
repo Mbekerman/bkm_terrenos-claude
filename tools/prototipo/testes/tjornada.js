@@ -87,7 +87,7 @@ ok(await X(p,()=>UI.modal)==='forcar','analista: com só itens que pedem justifi
 await p.screenshot({path:O+'4_justificar_analista.png'});
 await clica(p,'#modal [data-a=close]');await p.waitForTimeout(100);
 // regra pelo valor: relevo acidentado crítico pede o diretor
-await X(p,id=>{const t=T(id);t.topoClass={key:tpKey(t),perfil:'acidentado_critico',incl:35,terra:1.2,fonte:'laser',em:agora()};save();render()},tid);await p.waitForTimeout(150);
+await X(p,id=>{const t=T(id);t.topoClass={key:tpKey(t),perfil:'acidentado_critico',decl:40,incl:35,terra:1.2,fonte:'laser',em:agora()};save();render()},tid);await p.waitForTimeout(150);
 ok(await p.$eval('[data-a=adv-ir]',x=>x.textContent.includes('Pedir aprovação'))&&await p.$eval('#jn-bloco',x=>x.textContent.includes('Relevo acidentado crítico')),'relevo acidentado crítico: a regra pelo valor pede o diretor e o botão vira Pedir aprovação');
 // regra pelo valor que bloqueia
 await X(p,id=>{const t=T(id);t.ocupacao='ocupado';save();render()},tid);await p.waitForTimeout(100);

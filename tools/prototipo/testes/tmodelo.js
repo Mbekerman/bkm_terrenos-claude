@@ -54,7 +54,7 @@ await p.fill('#vbm-n','Meu rápido');await p.evaluate(()=>document.querySelector
 ms=(await D()).viabModelos;const m2=ms.find(m=>m.nome==='Meu rápido');
 ok(m2&&m2.dono&&!m2.padrao&&!m2.dados.linhas.some(l=>['impostos','taxa_desenvolvimento','juros_pj'].includes(l.desp)),tag+' modelo do analista sem Taxas e Despesas financeiras');
 await fechaPop();await novo();
-const opc=await p.$$eval('[data-form=vb-novo] .vb-mod-r',e=>e.map(r=>r.innerText.replace(/\s+/g,' ').trim()));
+const opc=await p.$$eval('[data-form=vb-novo] .vb-mod-r',e=>e.map(r=>r.innerText.replace(/\s+/g,' ').trim()+(r.querySelector('[data-a=vb-mod-del]')?' [Apagar]':'')));
 ok(opc.length===3&&/MCMV padrão.*Padrão da empresa/.test(opc[0])&&!/Apagar/.test(opc[0])&&/Meu rápido.*Meu modelo.*Apagar/.test(opc[1])&&/Sem modelo/.test(opc[2]),tag+' analista vê o padrão (sem Apagar), o próprio modelo (com Apagar) e Sem modelo: '+opc.join(' | '));
 await marca('[name=modelo][value=""]');await p.evaluate(()=>document.querySelector('#f-vbn').requestSubmit());await p.waitForTimeout(300);
 const vs=(await D()).viabs.at(-1);ok(vs.cm2==null&&vs.linhas.find(l=>l.desp==='impostos').valor==null,tag+' Sem modelo: só a lista');
