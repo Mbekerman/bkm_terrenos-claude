@@ -239,12 +239,12 @@ function seed(){
   // 6e — em obras: passou por todas as fases até Obras
   T.push(base({codigo:'TER-000090',nome:'Gleba Av. Raimundo Pereira de Magalhães',prioridade:'alta',resp:'Moisés',origem:'corretor',dataIdent:H(820),logradouro:'Av. Raimundo Pereira de Magalhães',numero:'8.100',bairro:'Pirituba',zona:'norte',aDoc:9800,fonteArea:'documental',ocupacao:'vazio',
     ofertas:[{id:'o12',cid:'c2',data:H(820),valor:12500000,forma:'permuta_com_torna',status:'ativa',obsPag:'',aceita:''}],corretores:[{cid:'c2',principal:true}],
-    neg:comprado(700,'o12'),procs:[fim('aprovacao','APR','alvaras','alvara_execucao',700),fim('incorporacao','INC','cartorio','exigencias',480),fim('funding','FUN','fechamento','liberacao',440),fim('caixa','CEF','contratacao','assinatura',400),
+    neg:comprado(700,'o12'),procs:[fim('aprovacao','APR','alvaras','alvara_execucao',700),fim('incorporacao','INC','cartorio','exigencias',480),fim('funding','FUN','fun_legalizacao','fun_legalizacao',440),fim('caixa','CEF','contratacao','assinatura',400),
       fim('lancamento','LAN','vendas','vendas_iniciais',330),proc('obras','OBR','execucao','estrutura',260,'ativo',{desde:H(150),subDesde:H(40)})]}));
   // 6f — entregue: obra entregue, em assistência técnica
   T.push(base({codigo:'TER-000085',nome:'Residencial Itaquera',resp:'Ana Prado',origem:'corretor',dataIdent:H(1500),logradouro:'Rua Gregório Ramalho',numero:'500',bairro:'Itaquera',zona:'leste',aDoc:7200,fonteArea:'documental',ocupacao:'vazio',
     ofertas:[{id:'o13',cid:'c3',data:H(1500),valor:9100000,forma:'dinheiro',status:'ativa',obsPag:'',aceita:''}],corretores:[{cid:'c3',principal:true}],
-    neg:comprado(1400,'o13'),procs:[fim('aprovacao','APR','alvaras','alvara_execucao',1400),fim('incorporacao','INC','cartorio','exigencias',1150),fim('funding','FUN','fechamento','liberacao',1100),fim('caixa','CEF','contratacao','assinatura',1060),
+    neg:comprado(1400,'o13'),procs:[fim('aprovacao','APR','alvaras','alvara_execucao',1400),fim('incorporacao','INC','cartorio','exigencias',1150),fim('funding','FUN','fun_legalizacao','fun_legalizacao',1100),fim('caixa','CEF','contratacao','assinatura',1060),
       fim('lancamento','LAN','vendas','vendas_iniciais',980),fim('obras','OBR','entrega','entrega_chaves',900),proc('entregue','ENT','pos_entrega','assistencia_tecnica',90)]}));
   // 6d — stand by
   T.push(base({codigo:'TER-000121',nome:'Lote Rua Ipiranguinha',resp:'Rafael Souza',origem:'indicacao',dataIdent:H(50),logradouro:'Rua Ipiranguinha',numero:'210',bairro:'Ipiranga',zona:'sul',aCad:900,fonteArea:'cadastral',

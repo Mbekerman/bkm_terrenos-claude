@@ -15,9 +15,11 @@ const FASES_PADRAO=()=>[
     ['memorial','Memorial e Certidões',30,[['memorial_incorporacao','Memorial de Incorporação'],['certidoes','Certidões']]],
     ['cartorio','Cartório',45,[['prenotado','Prenotado'],['exigencias','Exigências do Cartório']]]])},
   {k:'funding',nome:'Funding',prefixo:'FUN',ativo:true,conc:'Funding captado',descarta:true,etapas:etx([
-    ['estruturacao','Estruturação',30,[['modelagem','Modelagem Financeira'],['material','Material para Investidores']]],
-    ['captacao','Captação',60,[['apresentacoes','Apresentações'],['term_sheet','Term Sheet'],['diligencia_investidor','Due Diligence']]],
-    ['fechamento','Contratação',30,[['contratos','Contratos'],['liberacao','Liberação dos Recursos']]]])},
+    ['fun_dossie','Dossiê',null,[['fun_dossie','Dossiê']]],
+    ['fun_viabilidade','Viabilidade',null,[['fun_viabilidade','Viabilidade']]],
+    ['fun_comite','Comitê',null,[['fun_comite','Comitê']]],
+    ['fun_contratacao','Contratação',null,[['fun_contratacao','Contratação']]],
+    ['fun_legalizacao','Legalização',null,[['fun_legalizacao','Legalização']]]])},
   {k:'caixa',nome:'Contratação Caixa',prefixo:'CEF',ativo:true,conc:'Contratado',descarta:true,etapas:etx([
     ['analise','Análise Caixa',60,[['engenharia','Engenharia'],['juridico','Jurídico'],['risco','Risco']]],
     ['contratacao','Contratação',30,[['demanda_minima','Demanda Mínima'],['assinatura','Assinatura']]]])},
