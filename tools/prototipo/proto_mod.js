@@ -4,7 +4,7 @@
    e quadro de tarefas. Injetado dentro do mesmo escopo do protótipo.
    ===================================================================== */
 UI.sorts=UI.sorts||{};
-UI.mp=UI.mp||{q:'',cor:'',zona:'',f:'',e:'',ocultas:[]};
+UI.mp=UI.mp||{q:'',cor:'',zona:'',f:'',e:'',ocultas:[]};if(!UI.mp.apag)UI.mp.apag={};
 UI.dash=UI.dash||{f:{},sel:['situacao','zona','valor','mes']};
 
 /* ---------- situação do terreno (cor do pin, gráficos) ---------- */
@@ -211,7 +211,14 @@ function camada(k,el){
 function pinIcon(k,sel){const [,c,g,fg]=Array.isArray(k)?k:SIT[k];return L.divIcon({className:'pin'+(sel?' sel':''),html:`<span class="pin-b" style="background:${c}"><b class="pin-d" style="background:${fg}"></b></span>`,iconSize:[30,40],iconAnchor:[15,38],popupAnchor:[0,-34],tooltipAnchor:[0,-34]})}
 const poiIcon=()=>L.divIcon({className:'poi',html:'<span class="poi-b"></span>',iconSize:[14,14],iconAnchor:[7,7],tooltipAnchor:[0,-8]});
 function mpVisiveis(){const m=UI.mp,q=m.q.trim().toLowerCase();
-  return fxLista('mapa').filter(t=>{const k=mpClasse(t);return k!=null&&!m.ocultas.includes(k)}).filter(t=>!q||bateBusca(t,q))}
+  return fxLista('mapa').filter(t=>mpClasse(t)!=null&&!mpApagado(t)).filter(t=>!q||bateBusca(t,q))}
+/* itens apagados na legenda, por nível ('fase|etapa' → chaves), valem em qualquer nível aberto (pedido do Moisés, 4/nov/2026):
+   apagar uma fase ou etapa apaga tudo que está dentro dela, sem abrir e fechar um a um */
+const mpApag=lv=>(UI.mp.apag||(UI.mp.apag={}))[lv]||[];
+function mpApagado(t){const m=UI.mp,sf=m.f,se=m.e;
+  try{for(const [lv,l] of Object.entries(m.apag||{})){if(!l.length)continue;const [f,e]=lv.split('|');m.f=f;m.e=e;const c=mpClasse(t);if(c!=null&&l.includes(c))return true}return false}finally{m.f=sf;m.e=se}}
+function mpApagar(lv,k){const a=UI.mp.apag||(UI.mp.apag={}),l=a[lv]||[];a[lv]=l.includes(k)?l.filter(x=>x!==k):[...l,k];if(!a[lv].length)delete a[lv]}
+const mpTemApag=()=>Object.values(UI.mp.apag||{}).some(l=>l.length);
 /* lista lateral do mapa: a bolinha com o código do terreno (na cor do nível aberto na legenda), o nome e a área; a lupa abre a ficha.
    Clicar no pino ou na poligonal seleciona o terreno aqui (não há balão no mapa). */
 /* cor da bolinha da lista: sempre a da subetapa do terreno (pedido do Moisés, 4/nov/2026), a mesma que a legenda dá a ela
@@ -287,17 +294,19 @@ function mpNivelItens(f,e){const m=UI.mp,sf=m.f,se=m.e,base=fxLista('mapa');m.f=
 function mpLegenda(){const m=UI.mp,aberta=!!UI.mpArv;
   const pin=x=>`<span class="pin-mini" style="background:${x.cor};color:${x.fg}">${x.g}</span>`;
   const seta=ab=>`<span class="lg-s${ab?' ab':''}" aria-hidden="true">${ic('chev',14)}</span>`;
-  const ramo=(x,prof,ab,f,e,fora)=>`<button type="button" class="lg-i lg-a${fora?' lg-fora':''}" style="--p:${prof}" data-a="mp-abre" data-f="${esc(f)}" data-e="${esc(e)}" aria-expanded="${ab}">${seta(ab)}${pin(x)}${esc(x.nome)}<span class="n">${x.n}</span></button>`;
-  const folha=(x,prof,ativo,f,e)=>ativo?`<button type="button" class="lg-i lg-a" style="--p:${prof}" data-a="mp-sit" data-v="${x.k}" aria-pressed="${!m.ocultas.includes(x.k)}"><span class="lg-s"></span>${pin(x)}${esc(x.nome)}<span class="n">${x.n}</span></button>`
-    :`<button type="button" class="lg-i lg-a lg-fora" style="--p:${prof}" data-a="mp-abre" data-f="${esc(f)}" data-e="${esc(e)}"><span class="lg-s"></span>${pin(x)}${esc(x.nome)}<span class="n">${x.n}</span></button>`;
+  /* a bolinha e o número de qualquer item ligam e desligam tudo que está nele (data-l = nível, data-v = item); o resto do ramo abre e fecha */
+  const off=(lv,k,pai)=>pai||mpApag(lv).includes(k),tg=(lv,x)=>`data-l="${esc(lv)}" data-v="${esc(x.k)}"`;
+  const ramo=(x,prof,ab,f,e,fora,lv,pai)=>`<button type="button" class="lg-i lg-a${fora?' lg-fora':''}${off(lv,x.k,pai)?' lg-off':''}" style="--p:${prof}" data-a="mp-abre" data-f="${esc(f)}" data-e="${esc(e)}" ${tg(lv,x)} aria-expanded="${ab}">${seta(ab)}<span class="lg-tg" title="Ligar ou desligar tudo em ${esc(x.nome)}">${pin(x)}</span>${esc(x.nome)}<span class="n lg-tg" title="Ligar ou desligar tudo em ${esc(x.nome)}">${x.n}</span></button>`;
+  const folha=(x,prof,ativo,f,e,lv,pai)=>ativo?`<button type="button" class="lg-i lg-a${pai?' lg-off':''}" style="--p:${prof}" data-a="mp-sit" ${tg(lv,x)} aria-pressed="${!off(lv,x.k,pai)}"><span class="lg-s"></span>${pin(x)}${esc(x.nome)}<span class="n">${x.n}</span></button>`
+    :`<button type="button" class="lg-i lg-a lg-fora${off(lv,x.k,pai)?' lg-off':''}" style="--p:${prof}" data-a="mp-abre" data-f="${esc(f)}" data-e="${esc(e)}" ${tg(lv,x)}><span class="lg-s"></span><span class="lg-tg">${pin(x)}</span>${esc(x.nome)}<span class="n lg-tg">${x.n}</span></button>`;
   let h='';
   if(aberta)for(const x of mpNivelItens('','')){
-    if(!x.desce){h+=folha(x,1,!m.f,'','');continue}
-    const ab=m.f===x.k;h+=ramo(x,1,ab,ab?'':x.k,'',m.f&&!ab);if(!ab)continue;
+    if(!x.desce){h+=folha(x,1,!m.f,'','','|',false);continue}
+    const ab=m.f===x.k,px=off('|',x.k);h+=ramo(x,1,ab,ab?'':x.k,'',m.f&&!ab,'|',false);if(!ab)continue;
     for(const y of mpNivelItens(x.k,'')){
-      if(!y.desce){h+=folha(y,2,!m.e,x.k,'');continue}
-      const ab2=m.e===y.k;h+=ramo(y,2,ab2,x.k,ab2?'':y.k,m.e&&!ab2);if(!ab2)continue;
-      for(const z of mpNivelItens(x.k,y.k))h+=folha(z,3,true,x.k,y.k)}}
+      if(!y.desce){h+=folha(y,2,!m.e,x.k,'',x.k+'|',px);continue}
+      const ab2=m.e===y.k,py=px||off(x.k+'|',y.k);h+=ramo(y,2,ab2,x.k,ab2?'':y.k,m.e&&!ab2,x.k+'|',px);if(!ab2)continue;
+      for(const z of mpNivelItens(x.k,y.k))h+=folha(z,3,true,x.k,y.k,x.k+'|'+y.k,py)}}
   const tot=fxLista('mapa').length;
   return `<button type="button" class="lg-i lg-a" style="--p:0" data-a="mp-arv" aria-expanded="${aberta}">${seta(aberta)}<span class="lg-poi"><span class="pin-mini lg-nt"></span></span>Terrenos<span class="n">${tot}</span></button>`+h
     +`<hr class="lg-sep">`+(POI_NO_MAPA?`<button type="button" class="lg-i" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}"><span class="lg-poi"><span class="poi-b"></span></span>Pontos de interesse<span class="n">${(S.pontos||[]).length}</span></button>`:'')
@@ -310,7 +319,7 @@ function pgMapa(){
   <aside class="mapa-lado" aria-label="Terrenos no mapa">
     <h1 class="sr-only">Mapa</h1>
     ${fxBarra('mapa')}
-    ${UI.mp.q||UI.mp.ocultas.length?'<button class="linkbtn" data-a="mp-limpar" style="align-self:flex-start">Limpar busca e legenda</button>':''}
+    ${UI.mp.q||mpTemApag()?'<button class="linkbtn" data-a="mp-limpar" style="align-self:flex-start">Limpar busca e legenda</button>':''}
     <div id="mp-lista">${mpLista()}</div>
   </aside>
   <div class="mp-redim" role="separator" aria-orientation="vertical" aria-label="Largura da lista de terrenos" aria-valuemin="${MP_LMIN}" aria-valuemax="${mpLmax()}" aria-valuenow="${mpLargura()}" tabindex="0" title="Arraste para mudar a largura da lista (dois cliques voltam ao padrão)"></div>
@@ -746,3 +755,8 @@ document.addEventListener('pointerdown',e=>{const h=e.target.closest?.('.mp-redi
 document.addEventListener('dblclick',e=>{if(e.target.closest?.('.mp-redim'))mpLarguraPor(mpLpad(),true)});
 document.addEventListener('keydown',e=>{const h=e.target.closest?.('.mp-redim');if(!h)return;const w=+h.getAttribute('aria-valuenow'),d=e.shiftKey?80:20;
   const n=e.key==='ArrowLeft'?w-d:e.key==='ArrowRight'?w+d:e.key==='Home'?MP_LMIN:e.key==='End'?mpLmax():null;if(n==null)return;e.preventDefault();mpLarguraPor(n,true)});
+
+/* clique na bolinha ou no número de um item da legenda que abre (fase, etapa): liga e desliga tudo dentro dele */
+document.addEventListener('click',e=>{const t=e.target.closest?.('#mp-leg .lg-tg');if(!t)return;const b=t.closest('.lg-i[data-l]');if(!b)return;
+  e.preventDefault();e.stopImmediatePropagation();mpApagar(b.dataset.l,b.dataset.v);mpRefresh();
+  $(`#mp-leg .lg-i[data-l="${b.dataset.l}"][data-v="${b.dataset.v}"]`)?.focus()},true);
