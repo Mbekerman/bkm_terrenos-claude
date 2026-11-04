@@ -112,8 +112,10 @@ create table app.terrenos (
   visita_tecnica_em     date,
   -- Classificação topográfica (decisão do Moisés, 3/nov/2026): medida pelas cotas dentro da poligonal
   -- (laser 2020 em São Paulo, Google fora), gravada só por app.registrar_topografia e apagada
-  -- quando a poligonal muda (t_norm), para o front medir de novo. Perfil por app.classificar_topografia.
-  topo_perfil           text check (topo_perfil in ('plano','inclinado','acidentado_leve','acidentado_mediano','acidentado_critico')),
+  -- quando a poligonal muda (t_norm), para o front medir de novo. Perfil por app.classificar_topografia
+  -- (sete níveis desde 4/nov/2026, pela declividade média; cortes do Moisés depois de medir 8 terrenos de São Paulo).
+  topo_perfil           text check (topo_perfil in ('plano','inclinado','acidentado_leve','acidentado_mediano','acidentado_intenso','acidentado_agudo','acidentado_critico')),
+  topo_declividade_pct  numeric(6,2) check (topo_declividade_pct >= 0),  -- média da inclinação em cada ponto (grade de 1 m no laser)
   topo_inclinacao_pct   numeric(6,2) check (topo_inclinacao_pct >= 0),   -- do plano que melhor se ajusta às cotas
   topo_terra_m3m2       numeric(7,3) check (topo_terra_m3m2 >= 0),       -- corte + aterro até esse plano ÷ área; nulo com cotas do Google
   topo_desnivel_m       numeric(7,2) check (topo_desnivel_m >= 0),
@@ -496,14 +498,18 @@ end $$;
 create trigger t_viab before insert or update on app.terreno_viabilidades_tecnicas for each row execute function app.tg_viab_tecnica();
 
 -- Limites da classificação topográfica, por empresa (Configurações › Topografia, só administrador,
--- por app.salvar_topografia_config). Sem linha, valem os padrões das colunas.
+-- por app.salvar_topografia_config). Sem linha, valem os padrões das colunas: declividade média até
+-- 5% plano, 10% inclinado, 13% leve, 19% mediano, 24% intenso e 30% agudo; acima, ou com terra mexida
+-- acima de 1,5 m³/m², crítico (cortes do Moisés, 4/nov/2026, depois de medir 8 terrenos de São Paulo).
 create table app.topografia_config (
-  empresa_id        uuid primary key references app.empresas(id) on delete cascade,
-  plano_ate_pct     numeric(5,2) not null default 3    check (plano_ate_pct > 0),
-  inclinado_ate_pct numeric(5,2) not null default 30   check (inclinado_ate_pct > plano_ate_pct),
-  leve_de_m3m2      numeric(6,3) not null default 0.25 check (leve_de_m3m2 > 0),
-  mediano_de_m3m2   numeric(6,3) not null default 0.5  check (mediano_de_m3m2 > leve_de_m3m2),
-  critico_de_m3m2   numeric(6,3) not null default 1.0  check (critico_de_m3m2 > mediano_de_m3m2)
+  empresa_id         uuid primary key references app.empresas(id) on delete cascade,
+  plano_ate_pct      numeric(5,2) not null default 5   check (plano_ate_pct > 0),
+  inclinado_ate_pct  numeric(5,2) not null default 10  check (inclinado_ate_pct > plano_ate_pct),
+  leve_ate_pct       numeric(5,2) not null default 13  check (leve_ate_pct > inclinado_ate_pct),
+  mediano_ate_pct    numeric(5,2) not null default 19  check (mediano_ate_pct > leve_ate_pct),
+  intenso_ate_pct    numeric(5,2) not null default 24  check (intenso_ate_pct > mediano_ate_pct),
+  agudo_ate_pct      numeric(5,2) not null default 30  check (agudo_ate_pct > intenso_ate_pct),
+  critico_terra_m3m2 numeric(6,3) not null default 1.5 check (critico_terra_m3m2 > 0)
 );
 alter table app.topografia_config enable row level security;
 create policy ver on app.topografia_config for select to authenticated using (empresa_id in (select app.minhas_empresas()));
@@ -769,7 +775,7 @@ begin
   -- adotada pela poligonal: segue o desenho (a coluna gerada só é calculada depois deste trigger)
   -- poligonal nova: a classificação topográfica era da forma antiga e é medida de novo pelo front
   if tg_op = 'UPDATE' and new.poligono_geojson::text is distinct from old.poligono_geojson::text then
-    new.topo_perfil := null; new.topo_inclinacao_pct := null; new.topo_terra_m3m2 := null; new.topo_desnivel_m := null;
+    new.topo_perfil := null; new.topo_declividade_pct := null; new.topo_inclinacao_pct := null; new.topo_terra_m3m2 := null; new.topo_desnivel_m := null;
     new.topo_fonte := null; new.topo_calculado_em := null; new.topo_calculado_por := null;
   end if;
   if new.fonte_area_adotada = 'poligonal' then
