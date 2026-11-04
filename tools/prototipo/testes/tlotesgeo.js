@@ -1,6 +1,7 @@
-// Lotes da prefeitura no cadastro (São Paulo, 4/nov/2026): ao cadastrar o terreno, pergunta se quer inserir os lotes;
-// Sim abre o mapa de lotes das quadras que a poligonal ocupa (F e N. em cada lote, SQL ao parar o mouse), clique marca
-// e desmarca, os SQLs marcados entram soltos e aparecem na lista do lote. Respostas gravadas do GeoSampa real
+// Mapa de lotes da prefeitura (São Paulo, 4/nov/2026): no Novo terreno, logo depois da poligonal, abre o mapa de lotes
+// das quadras que a poligonal ocupa (F e N. em cada lote, SQL ao parar o mouse); clique marca e desmarca, arrastar e a
+// roda não marcam, condomínio e via não se marcam, e no celular é uma lista. O que acontece depois (poligonal pela soma
+// dos lotes, SQLs em etiquetas na aba Terreno) fica no tetiq.js. Respostas gravadas do GeoSampa real
 // (quadra 002.058, R. Cel. Francisco Amaro × R. Correia de Andrade) em testes/geosampa/lg_*.json; GRAVAR=1 regrava
 // pelo curl (o servidor só responde com Origin do GeoSampa). Saídas em saida/t_lotesgeo/.
 const path=require('path'),fs=require('fs'),{execFileSync}=require('child_process'),{chromium}=require('playwright');
@@ -32,6 +33,7 @@ await ctx.route('**/*',async r=>{const u=r.request().url();
     if(GRAVAR){let j;try{j=JSON.parse(execFileSync('curl',['-s','-m','60','-H','Origin: https://novogeosampa.prefeitura.sp.gov.br',u.replace(BASE,REAL)]))}catch(e){j={type:'FeatureCollection',features:[]}}
       if(!/^perimetro_zona|cartorio/.test(tipo)&&Array.isArray(j.features))j.features.forEach(f=>f.geometry=null);RESTO[h]=j;GRAVOU=true;fs.writeFileSync(RF,JSON.stringify(RESTO))}
     return r.fulfill({contentType:'application/json',body:JSON.stringify(RESTO[h]||{type:'FeatureCollection',features:[]})})}
+  if(u.includes('nominatim'))return r.fulfill({contentType:'application/json',body:JSON.stringify({address:{city:'São Paulo','ISO3166-2-lvl4':'BR-SP',road:'Rua Coronel Francisco Amaro'}})});
   return r.abort()});
 const p=await ctx.newPage();p.on('pageerror',e=>errs.push(e.message));
 await p.goto('file:///x/a.html');await p.evaluate(()=>localStorage.clear());await p.reload();await p.waitForTimeout(600);
@@ -40,12 +42,8 @@ const shot=async n=>{await p.waitForTimeout(150);await p.screenshot({path:OUT+n+
 // 1. Novo terreno pela poligonal, em São Paulo, sem SQL
 await p.evaluate(()=>document.querySelector('[data-a=novo]').click());await p.waitForTimeout(200);
 const [fc]=await Promise.all([p.waitForEvent('filechooser'),p.click('[data-a=nv-kmz]')]);await fc.setFiles({name:'t.kml',mimeType:'application/vnd.google-earth.kml+xml',buffer:Buffer.from(kml)});
-await p.waitForSelector('#f-novo',{timeout:10000});await p.waitForTimeout(300);
-if(await p.$('#n-mun'))await p.fill('#n-mun','São Paulo · SP');await p.fill('#f-novo [name=nome]','Francisco Amaro');
-console.log('campos visíveis no cadastro:',await p.$$eval('#f-novo input:not([type=hidden]),#f-novo select,#f-novo textarea',x=>x.filter(e=>e.offsetParent).map(e=>e.name)));
-await p.evaluate(()=>{const m=document.querySelector('#f-novo [name=municipio]');if(m&&!m.value)m.value='São Paulo · SP';document.querySelector('#f-novo').requestSubmit()});
-// 2. cadastrado, o mapa das quadras abre direto
-await p.waitForSelector('#lg-svg',{timeout:10000});await p.waitForTimeout(300);await shot('1_cadastrado');
+// 2. o mapa das quadras abre logo depois da poligonal, antes do passo 2
+await p.waitForSelector('#lg-svg',{timeout:30000});await p.waitForTimeout(300);await shot('1_cadastrado');
 const info=()=>p.evaluate(()=>({lotes:document.querySelectorAll('#lg-svg [data-lg]').length,marcados:document.querySelectorAll('#lg-svg .lg-l.sel').length,travados:document.querySelectorAll('#lg-svg .lg-l.x').length,
   rotulos:[...document.querySelectorAll('.lg-rots text')].filter(x=>x.style.display!=='none').length,vias:[...document.querySelectorAll('.lg-vias text')].map(x=>x.textContent),
   titulo:document.querySelector('#modal .dh .faint').textContent,botao:document.querySelector('[data-a=lg-incluir]').textContent,lista:[...document.querySelectorAll('.lg-lista .num')].map(x=>x.textContent)}));
@@ -67,53 +65,16 @@ console.log('arrastar não muda a marcação:',m0===(await info()).marcados);
 await p.click('[data-a=lg-zoom][data-z="0"]');await p.waitForTimeout(150);
 // condomínio ou via não se marca
 const x=await p.$('#lg-svg .lg-l.x');if(x){await x.click({force:true});await p.waitForTimeout(150);console.log('travado:',await p.$eval('#toast',x=>x.textContent))}
-// 4. incluir
-const antes=await info();await p.click('[data-a=lg-incluir]');await p.waitForTimeout(300);
-console.log('gaveta aberta:',!!(await p.$('#ficha-sheet')),'| lotes com SQL:',(await ter()).lotes.map(l=>l.titulo+':'+l.ins.length).join());await shot('4a_gaveta');
-await p.evaluate(c=>{location.hash='#/terrenos/'+c},(await ter()).codigo);await p.waitForTimeout(500);
-await p.waitForFunction(()=>/consultado nos|não respondeu. Use/.test(document.querySelector('#toast').textContent),null,{timeout:600000});console.log('consulta:',await p.$eval('#toast',x=>x.textContent));
-for(const [aba,n] of [['parametros','4c_parametros'],['terreno','4d_terreno']]){await p.evaluate(a=>document.querySelector(`.fi-abas [data-t=${a}]`)?.click(),aba);await p.waitForTimeout(300);
-  await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click())});await p.waitForTimeout(200);await p.evaluate(()=>scrollTo(0,0));await shot(n)}
-console.log('parâmetros:',await p.evaluate(()=>document.querySelector('.fi-abas [data-t=parametros]')?'aba ok':'sem aba'));
-const t1=await ter();console.log('consultados:',t1.insc.filter(i=>(i.geo||[]).length).length,'| sem consulta:',t1.insc.filter(i=>!(i.geo||[]).length).map(i=>i.sql).join(),'| zonas:',JSON.stringify((t1.analises||[]).find(a=>a.status==='vigente')?.zonas?.map(z=>z.sigla+':'+z.ins)),'| poligonal consultada:',!!t1.geoArea,'| docs:',t1.docs.map(d=>d.tipo+':v'+d.versoes).join());
-console.log('incluídos:',t1.insc.length,'de',antes.lista.length,'| soltos:',t1.insc.filter(i=>i.solto).length,'| origem:',[...new Set(t1.insc.map(i=>i.origem))].join(),'| lotes:',(t1.lotes||[]).length,'| log:',t1.hist[0].txt);
-await p.evaluate(()=>{document.querySelector('.fi-abas [data-t=terreno]')?.click()});await p.waitForTimeout(300);
-await p.evaluate(()=>{document.querySelectorAll('section.qd-fechado .qd-tg').forEach(x=>x.click())});await p.waitForTimeout(150);
-await p.click('#sec-lotes [data-a=lt-sql-tira]');await p.waitForTimeout(250);
-console.log('soltos na seção:',await p.$eval('#lg-soltos',x=>x.innerText.replace(/\s+/g,' ')));
-await p.click('#sec-lotes [data-a=lt-novo]');await p.waitForTimeout(300);
-const sel=await p.$('#sec-lotes [data-ch=lt-solto]');console.log('lista no lote:',await sel.evaluate(s=>[...s.options].map(o=>o.textContent)));
-await p.evaluate(()=>document.getElementById('sec-lotes').scrollIntoView({block:'start'}));await p.evaluate(()=>scrollBy(0,-80));await shot('4_soltos');
-await p.evaluate(()=>document.querySelector('#sec-lotes .lt-add').scrollIntoView({block:'center'}));await shot('4b_lista_no_lote');
-const v=await sel.evaluate(s=>s.options[1].value);await sel.selectOption(v);await p.waitForTimeout(100);
-console.log('campo do SQL novo escondido?',await p.$eval('#sec-lotes .lt-add',f=>[...f.querySelectorAll('.field')].filter(x=>x.hidden).length));
-await p.evaluate(()=>document.querySelector('#sec-lotes .lt-add').requestSubmit());await p.waitForTimeout(300);
-const t2=await ter();console.log('no lote:',t2.lotes.map(l=>l.titulo+':'+l.ins.length).join(),'| soltos:',t2.insc.filter(i=>i.solto).length,'|',await p.$eval('#toast',x=>x.textContent));
-await p.evaluate(()=>document.getElementById('sec-lotes').scrollIntoView({block:'start'}));await p.evaluate(()=>scrollBy(0,-80));await shot('5_no_lote');
-// tirar do lote: volta a ficar solto
-await p.click('#sec-lotes [data-a=lt-sql-tira]');await p.waitForTimeout(250);const t3=await ter();console.log('tirado do lote, solto de novo:',t3.insc.filter(i=>i.solto).length===t2.insc.filter(i=>i.solto).length+1,'|',await p.$eval('#toast',x=>x.textContent));
-// 6. reabrir pelo botão: os já incluídos vêm marcados; desmarcar um solto e salvar o tira
-await p.click('#sec-lotes [data-a=lg-abrir]');await p.waitForSelector('#lg-svg',{timeout:10000});await p.waitForTimeout(200);
-console.log('reaberto:',JSON.stringify((await info()).botao),(await info()).marcados,'marcados');
-await p.evaluate(()=>{document.documentElement.dataset.tema='escuro'});await shot('6_escuro');await p.evaluate(()=>{document.documentElement.dataset.tema='claro'});
-await p.click('[data-a=close]');await p.waitForTimeout(150);
-// 6b. incluir e ajustar a poligonal: comparação com a soma dos lotes marcados, substitui e guarda a desenhada
-await p.click('#sec-lotes [data-a=lg-abrir]');await p.waitForSelector('#lg-svg',{timeout:10000});await p.waitForTimeout(200);
-await p.click('[data-a=lg-ajustar]');await p.waitForTimeout(800);console.log('modal:',await p.$eval('#modal',x=>x.innerText.slice(0,400)),errs);await p.screenshot({path:OUT+'dbg.png'});await p.waitForSelector('[data-a=lotes-usar]',{timeout:20000});await p.waitForTimeout(200);
-console.log('ajustar:',await p.$eval('#modal .dialog',x=>x.innerText.replace(/\s+/g,' ')));await shot('6b_ajustar');
-const a0=(await ter()).poly.length;await p.click('[data-a=lotes-usar]');await p.waitForTimeout(300);const tp=await ter();
-console.log('poligonal trocada:',a0,'→',tp.poly.length,'pontos | guardadas:',(tp.polyAnt||[]).length,'|',tp.hist[tp.hist.length-1].txt);
 // 7. celular
 await p.setViewportSize({width:390,height:844});await p.waitForTimeout(300);
-await p.click('#sec-lotes [data-a=lg-abrir]');await p.waitForSelector('.lg-todos',{timeout:10000});await p.waitForTimeout(300);
+await p.waitForSelector('.lg-todos',{timeout:10000});await p.waitForTimeout(300);
 console.log('celular: rolagem horizontal?',await p.evaluate(()=>document.querySelector('#modal .dialog').scrollWidth>document.querySelector('#modal .dialog').clientWidth+1));await shot('7_celular');
 // no celular não aparece o mapa, só a lista dos SQLs para marcar
 console.log('celular: mapa visível?',await p.$eval('#lg-mapa',x=>x.offsetParent!==null),'| linhas na lista:',await p.$$eval('.lg-todos .lg-op',x=>x.length),'| marcadas:',await p.$$eval('.lg-todos .lg-op.on',x=>x.length),'|',await p.$eval('.lg-todos',x=>x.innerText.split('\n').slice(0,8).join(' / ')));
 await p.evaluate(()=>{const f=document.querySelector('.lg-fora');if(f)f.open=true});const livre=await p.$('.lg-todos .lg-op:not(.on):not([aria-disabled])');if(livre){await livre.click();await p.waitForTimeout(200);console.log('toque marcou:',await p.$eval('[data-a=lg-incluir]',x=>x.textContent),'| marcadas:',await p.$$eval('.lg-todos .lg-op.on',x=>x.length))}
 await p.evaluate(()=>{const f=document.querySelector('.lg-fora');if(f)f.open=true});await shot('8_celular_lista');
 await p.evaluate(()=>{document.querySelector('#modal .dialog').scrollTop=99999});await shot('8b_celular_fim');
-await p.click('[data-a=close]');await p.setViewportSize({width:1440,height:900});
-// 8. Leitura não vê o botão; terreno fora de SP não pergunta
-await p.evaluate(()=>{document.querySelector('[data-a=perfil-menu]').click();document.querySelector('[data-a=role][data-v=Leitura]').click()});await p.waitForTimeout(200);
-console.log('leitura tem o botão?',await p.$$eval('[data-a=lg-abrir]',x=>x.length),'| lixeira dos soltos?',await p.$$eval('[data-a=lg-tira]',x=>x.length));
+await p.setViewportSize({width:1440,height:900});
+// 8. Agora não volta ao passo 2, sem SQL
+await p.click('[data-a=lg-nv-volta]');await p.waitForSelector('#f-novo',{timeout:5000});console.log('Agora não: passo 2 aberto, SQLs:',await p.$eval('.nv-sqls',x=>x.innerText.replace(/\s+/g,' ')));
 if(GRAVOU)fs.writeFileSync(RF,JSON.stringify(RESTO));console.log('erros:',errs.length?errs:'nenhum');await b.close()})();

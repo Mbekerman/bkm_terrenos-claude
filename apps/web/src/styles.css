@@ -4727,5 +4727,80 @@ html[data-tema="escuro"] .lg-cx { border-color: #c4c7c5 } html[data-tema="escuro
 @media (min-width: 900px) { .ficha-sheet { animation: fs-entra .22s cubic-bezier(.2,0,0,1) } }
 @keyframes fs-entra { from { transform: translateX(-24px); opacity: 0 } to { transform: none; opacity: 1 } }
 
+/* Matrículas e SQLs em etiquetas, arrastadas para as partes (aba Terreno; decisões do Moisés, 4/nov/2026).
+   Matrícula amarela, SQL roxa; a etiqueta mostra só o número. Quadros das partes em grade com largura mínima que
+   cabe duas etiquetas com respiro; a seta recolhe a linha inteira. */
+.etq-top { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px }
+.etq-col { border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px; padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0 }
+.etq-ct { display: flex; align-items: center; gap: 8px; min-height: 28px; font-size: 15px }
+.etq-ct b { font-weight: 500 }
+.etq-sw { display: inline-block; width: 14px; height: 14px; border-radius: 4px; flex: none; vertical-align: -1px; margin-right: 6px }
+.etq-ct .etq-sw { margin-right: 0 }
+.etq-sw.m { background: #ffe9a8; border: 1px solid #d9b443 } .etq-sw.s { background: #e8dcff; border: 1px solid #a98ce0 }
+.etq-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 10px; margin: 0 }
+.etq-form .field { flex: 1 1 120px; min-width: 0; margin: 0 }
+.etq-form .field.grow { flex: 2 1 170px }
+.etq-form .btn { flex: none }
+.etq-pool { flex: 1; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 8px; min-height: 64px; padding: 10px; border-radius: 10px; background: #f8fafd; border: 1px dashed transparent; transition: background-color .12s, border-color .12s }
+.etq-vazio { color: #5f6368; font-size: 13px; align-self: center }
+.etq { display: inline-flex; align-items: center; height: 32px; border-radius: 8px; border: 1px solid; font-size: 14px; max-width: 100%; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: manipulation; cursor: grab; flex: none }
+.etq.m { background: #fff3c4; border-color: #e3c25a; color: #4d3a00 }
+.etq.s { background: #efe6ff; border-color: #b9a0ea; color: #36186e }
+.etq-n { border: 0; background: none; color: inherit; font: inherit; font-weight: 500; padding: 0 4px 0 10px; height: 100%; cursor: inherit; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; letter-spacing: .1px }
+.etq-x { border: 0; background: none; color: inherit; opacity: .65; width: 26px; height: 100%; display: inline-flex; align-items: center; justify-content: center; border-radius: 0 8px 8px 0; cursor: pointer; padding: 0 2px 0 0 }
+.etq-x:hover { opacity: 1; background: rgba(0,0,0,.06) }
+.etq:not(:has(.etq-x)) .etq-n { padding-right: 10px }
+.etq:focus-visible { outline: 2px solid #0b57d0; outline-offset: 2px }
+.etq-ph { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; min-height: 40px; margin-bottom: 10px }
+.etq-ph b { font-size: 15px; font-weight: 500 }
+.etq-ph .faint { font-size: 13px }
+.etq-partes { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; align-items: start }
+.etq-pt { border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px; min-width: 0; overflow: hidden; transition: background-color .12s, outline-color .12s }
+.etq-pt-h { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 48px; padding: 8px 14px 8px 10px; border: 0; background: #f0f4f9; color: inherit; font: inherit; text-align: left; cursor: pointer; border-bottom: 1px solid var(--m-outline-var, #c4c7c5) }
+.etq-pt-h b { font-weight: 500; font-size: 15px; flex: 1; min-width: 0; overflow-wrap: anywhere }
+.etq-pt-h .faint { font-size: 12px; white-space: nowrap }
+.etq-pt-h .ic { transform: rotate(90deg); transition: transform .15s; flex: none; color: #444746 }
+.etq-pt.fechado .etq-pt-h { border-bottom: 0 } .etq-pt.fechado .etq-pt-h .ic { transform: none }
+.etq-pt.fechado .etq-pt-b { display: none }
+.etq-pt-b { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 10px }
+.etq-pt-l { display: flex; flex-direction: column; gap: 8px; min-height: 88px }
+/* matrículas sempre antes dos SQLs, cada grupo na sua linha (pedido do Moisés, 4/nov/2026) */
+.etq-pt-g { display: flex; flex-wrap: wrap; gap: 8px }
+.etq-pt-r { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13px; border-top: 1px solid #e3e3e3; padding-top: 8px }
+/* arrastando: quem aceita fica tracejado, o que está sob a etiqueta acende; a de origem não */
+body.etq-arrastando, body.etq-arrastando * { cursor: grabbing !important; user-select: none !important }
+.etq-aceita { outline: 2px dashed rgba(11, 87, 208, .4); outline-offset: -2px }
+.etq-pool.etq-aceita { border-color: transparent }
+.etq-sobre { outline: 2px solid #0b57d0 !important; background: #d3e3fd !important }
+.etq-sobre .etq-pt-h { background: #d3e3fd }
+.etq-origem { opacity: .35 }
+.etq-fantasma { position: fixed; z-index: 1000; pointer-events: none; box-shadow: 0 6px 16px rgba(0,0,0,.22); transform: rotate(-2deg); opacity: .95 }
+.etq-geo:not(:empty) { margin: 14px 0 4px }
+.etq-h3 { font-size: 15px; font-weight: 500; margin: 16px 0 8px }
+.dh h2 .etq-sw { width: 16px; height: 16px; vertical-align: -2px }
+.nv-sqls { display: flex; align-items: center; gap: 12px; border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px; padding: 10px 12px 10px 14px }
+.nv-sqls .num { overflow-wrap: anywhere }
+@media (max-width: 760px) {
+  .etq-top { grid-template-columns: 1fr; gap: 12px }
+  .etq-col { padding: 12px }
+  .etq { height: 36px; font-size: 15px }
+  .etq-x { width: 32px }
+  .etq-partes { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) }
+}
+html[data-tema="escuro"] .etq-col, html[data-tema="escuro"] .etq-pt, html[data-tema="escuro"] .nv-sqls { border-color: #444746 }
+html[data-tema="escuro"] .etq-pool { background: #282a2c }
+html[data-tema="escuro"] .etq-pt-h { background: #282a2c; border-color: #444746 }
+html[data-tema="escuro"] .etq-pt-h .ic { color: #c4c7c5 }
+html[data-tema="escuro"] .etq-pt-r { border-color: #444746 }
+html[data-tema="escuro"] .etq.m { background: #4a3c08; border-color: #8a7020; color: #ffe8a3 }
+html[data-tema="escuro"] .etq.s { background: #3a2b5c; border-color: #7a62b5; color: #e8dcff }
+html[data-tema="escuro"] .etq-x:hover { background: rgba(255,255,255,.08) }
+html[data-tema="escuro"] .etq-sw.m { background: #8a7020; border-color: #b8962e } html[data-tema="escuro"] .etq-sw.s { background: #6b52a8; border-color: #9a82d6 }
+html[data-tema="escuro"] .etq-aceita { outline-color: rgba(168,199,250,.45) }
+html[data-tema="escuro"] .etq-sobre, html[data-tema="escuro"] .etq-sobre .etq-pt-h { background: #004a77 !important; outline-color: #a8c7fa !important }
+html[data-tema="escuro"] .etq-vazio { color: #c4c7c5 }
+.nv-sqls { align-items: flex-start } .nv-sqls > .etq-sw { margin-top: 3px } .nv-sqls .btn { margin-top: -4px }
+.nv-sqls-l { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px } .nv-sqls-l .etq { height: 28px; font-size: 13px; cursor: default } .nv-sqls-l .etq-n { padding-right: 10px }
+
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
