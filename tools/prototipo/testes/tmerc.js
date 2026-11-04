@@ -48,12 +48,12 @@ const nTip=await p.$$eval('#mk-box .mk-t tbody tr',x=>x.length);ok(nTip===tipOk.
 await p.screenshot({path:OUT+tag+'_1_janela.png'});
 // tabela completa no popup (decisão do Moisés, 4/nov/2026)
 await p.click('#mk-box [data-a=mk-tabela]');await p.waitForSelector('.mkt-dlg table.mkt',{timeout:5000}).catch(()=>{});
-{const t=await p.$eval('.mkt-dlg',x=>x.textContent.replace(/\s+/g,' ')).catch(()=>''),n=await p.$$eval('.mkt-dlg tbody tr',x=>x.length);
- ok(n===4&&/Incorporadora Teste/.test(t)&&/12\.345\.678\/0001-90/.test(t)&&/Enquadramento social\s*Sim/.test(t)&&/Ver no Órulo/.test(t)&&/24\/10\/2026 a 01\/11\/2026/.test(t)&&/7\.442/.test(t),tag+' popup com cabeçalho e as 4 unidades: '+t.slice(0,120));
+{const t=await p.$eval('.mkt-dlg',x=>x.textContent.replace(/\s+/g,' ')).catch(()=>''),n=await p.$$eval('.mkt-dlg tbody tr',x=>x.length),nm=await p.$$eval('.mkt-dlg .mkt-r',x=>x.length);
+ ok(n===4&&nm===4&&/Incorporadora Teste/.test(t)&&/12\.345\.678\/0001-90/.test(t)&&/Enquadramento social\s*Sim/.test(t)&&/Ver no Órulo/.test(t)&&/24\/10 a 01\/11\/2026/.test(t)&&/7\.442/.test(t),tag+' popup com cabeçalho e as 4 unidades: '+t.slice(0,120));
  await p.screenshot({path:OUT+tag+'_3_tabela.png'});
- await p.click('.mkt-dlg [data-f=venda]');await p.waitForTimeout(150);ok(await p.$$eval('.mkt-dlg tbody tr',x=>x.length)===3,tag+' À venda mostra 3 (disponível e reservada)');
+ await p.click('.mkt-dlg [data-f=venda]');await p.waitForTimeout(150);ok(await p.$$eval('.mkt-dlg tbody tr',x=>x.length)===3&&await p.$$eval('.mkt-dlg .mkt-r',x=>x.length)===3,tag+' À venda mostra 3 (disponível e reservada)');
  await p.click('.mkt-dlg [data-f=vendida]');await p.waitForTimeout(150);ok(await p.$$eval('.mkt-dlg tbody tr',x=>x.length)===1,tag+' Vendidas mostra 1');
- const larg=await p.$eval('.mkt-dlg',x=>x.scrollWidth<=x.clientWidth+1);ok(larg,tag+' popup sem rolagem lateral');
+ const larg=await p.$eval('.mkt-dlg',x=>x.scrollWidth<=x.clientWidth+1&&[...x.querySelectorAll('.mkt-w')].every(w=>w.querySelector('table').getBoundingClientRect().right<=w.getBoundingClientRect().right+1));ok(larg,tag+' popup sem rolagem lateral');
  await p.click('.mkt-dlg [data-a=close]');await p.waitForTimeout(150);ok(!(await p.$('.mkt-dlg')),tag+' X fecha o popup')}
 await p.keyboard.press('Escape');await p.waitForTimeout(200);ok(!(await p.$('#mk-box .cc-box')),tag+' Esc fecha a janela');
 // filtro: 2 dormitórios até R$ 300 mil, na mesma unidade

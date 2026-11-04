@@ -5574,15 +5574,17 @@ table.mkt b { font-weight: 500 }
 :root[data-tema="escuro"] .mkt-f { border-color: #444746; color: #c4c7c5 } :root[data-tema="escuro"] .mkt-f.on { background: #004a77; border-color: #004a77; color: #c2e7ff }
 :root[data-tema="escuro"] .mkt-w, :root[data-tema="escuro"] table.mkt th { border-color: #444746 } :root[data-tema="escuro"] table.mkt th { background: #1e1f20; color: #c4c7c5 } :root[data-tema="escuro"] table.mkt td { border-color: #2d2f31 }
 :root[data-tema="escuro"] .mkt-s { background: #282a2c; color: #c4c7c5 } :root[data-tema="escuro"] .mkt-disponivel .mkt-s { background: #0f5223; color: #c4eed0 } :root[data-tema="escuro"] .mkt-reservada .mkt-s { background: #5c4300; color: #ffdf99 } :root[data-tema="escuro"] .mkt-vendida .mkt-s { background: #333537; color: #c4c7c5 }
+.mkt-m { display: none }
 @media (max-width: 599px) {
-  .dialog.mkt-dlg { max-height: 100dvh }
+  .dialog.mkt-dlg { max-height: 100dvh; overflow-y: auto !important; display: block }
   .mkt-cab { grid-template-columns: 1fr 1fr; gap: 10px 16px }
-  table.mkt thead { display: none } table.mkt, table.mkt tbody { display: block }
-  table.mkt tr { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; padding: 12px 16px; border-bottom: 1px solid #e3e3e3; margin: 0 -16px }
-  table.mkt td { display: flex; justify-content: space-between; gap: 8px; padding: 0; border: 0; white-space: normal; text-align: right }
-  table.mkt td::before { content: attr(data-l); color: #444746; text-align: left }
-  :root[data-tema="escuro"] table.mkt tr { border-color: #2d2f31 } :root[data-tema="escuro"] table.mkt td::before { color: #c4c7c5 }
+  .mkt-w { overflow: visible } table.mkt { display: none } .mkt-m { display: block }
+  .mkt-r { padding: 12px 16px; margin: 0 -16px; border-bottom: 1px solid #e3e3e3; font-size: 14px; display: flex; flex-direction: column; gap: 2px }
+  .mkt-r1 { display: flex; align-items: center; gap: 4px } .mkt-r1 b { font-weight: 500 } .mkt-r1 .mkt-s { margin-left: auto } .mkt-r b { font-weight: 500 }
+  :root[data-tema="escuro"] .mkt-r { border-color: #2d2f31 }
 }
+table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty { display: none }
+.mkt-w { overflow-x: hidden } table.mkt td, table.mkt th { padding-left: 6px; padding-right: 6px }
 </style>
 <header class="top">
   <div class="top-in">
@@ -13038,7 +13040,7 @@ function mkTabelaHtml(){const fechar=`<button class="iconbtn" data-a="close" ari
   const cont={todas:U.length,venda:U.filter(venda).length,vendida:U.filter(u=>u.situacao==='vendida').length};
   const lista=MKT.f==='venda'?U.filter(venda):MKT.f==='vendida'?U.filter(u=>u.situacao==='vendida'):U;
   const tp=t=>t?(MK_TP_UN[t]||t.charAt(0).toUpperCase()+t.slice(1)):'—',ar=a=>a==null?'—':num(a,2)+' m²';
-  const per=u=>u.vendida_de?(u.vendida_de===u.vendida_ate?mkData(u.vendida_de):`${mkData(u.vendida_de)} a ${mkData(u.vendida_ate)}`):'';
+  const per=u=>{if(!u.vendida_de)return '';if(u.vendida_de===u.vendida_ate)return mkData(u.vendida_de);const a=mkData(u.vendida_de),b=mkData(u.vendida_ate);return `${a.slice(6)===b.slice(6)?a.slice(0,5):a} a ${b}`};
   const kv=(k,v)=>`<div class="mkt-kv"><span class="muted">${k}</span><span>${v}</span></div>`;
   const seg=(k,n)=>`<button type="button" class="mkt-f${MKT.f===k?' on':''}" data-a="mk-tabela-f" data-f="${k}" aria-pressed="${MKT.f===k}">${{todas:'Todas',venda:'À venda',vendida:'Vendidas'}[k]} <span class="num">${num(n)}</span></button>`;
   return `<div class="dh"><div><h2>${tit}</h2><div class="muted" style="margin-top:4px">${esc([(MK_SIT[E.situacao]||MK_SIT.nao_informado)[0],E.bairro].filter(Boolean).join(' · '))}</div></div>${fechar}</div>
@@ -13051,9 +13053,12 @@ function mkTabelaHtml(){const fechar=`<button class="iconbtn" data-a="close" ari
   ${lista.map(u=>{const m2=mkM2(u.preco,u.area),m1=mkM2(u.primeiro_preco,u.area);return `<tr class="mkt-${u.situacao||'x'}">
     <td data-l="Torre">${esc(u.torre||'—')}</td><td class="n" data-l="Andar">${u.andar==null?'—':u.andar}</td><td data-l="Unidade"><b>${esc(u.numero||'—')}</b></td><td data-l="Tipo">${esc(tp(u.tipo))}</td>
     <td class="n" data-l="Dorm.">${u.dormitorios==null?'—':u.dormitorios}${u.suites?`<span class="faint"> (${u.suites} suíte${u.suites>1?'s':''})</span>`:''}</td><td class="n" data-l="Vagas">${u.vagas==null?'—':u.vagas}</td><td class="n" data-l="Área">${ar(u.area)}</td>
-    <td data-l="Situação"><span class="chip mkt-s">${MK_SIT_UN[u.situacao]||'Não informada'}</span></td><td class="n" data-l="Preço">${u.preco==null?'—':brl(u.preco)}</td><td class="n" data-l="R$/m²">${m2==null?'—':brl(m2)}</td>
-    <td class="n" data-l="Primeiro preço">${u.primeiro_preco==null?'—':`${brl(u.primeiro_preco)}${m1!=null?`<span class="faint"> · ${brl(m1)}/m²</span>`:''}${u.primeiro_preco_em?`<span class="faint"> · ${mkData(u.primeiro_preco_em)}</span>`:''}`}</td>
-    <td data-l="Vendida">${per(u)||'<span class="faint">—</span>'}</td></tr>`}).join('')}</tbody></table></div>`:'<div class="mkt-msg muted">Nenhuma unidade nesta situação.</div>'}
+    <td data-l="Situação"><span class="mkt-s">${MK_SIT_UN[u.situacao]||'Não informada'}</span></td><td class="n" data-l="Preço">${u.preco==null?'—':brl(u.preco)}</td><td class="n" data-l="R$/m²">${m2==null?'—':brl(m2)}</td>
+    <td class="n" data-l="Primeiro preço">${u.primeiro_preco==null?'—':`${brl(u.primeiro_preco)}<span class="faint mkt-sub">${[m1!=null?brl(m1)+'/m²':'',u.primeiro_preco_em?mkData(u.primeiro_preco_em):''].filter(Boolean).join(' · ')}</span>`}</td>
+    <td data-l="Vendida">${per(u)||'<span class="faint">—</span>'}</td></tr>`}).join('')}</tbody></table><div class="mkt-m">${lista.map(u=>{const m2=mkM2(u.preco,u.area),pv=per(u);return `<div class="mkt-r mkt-${u.situacao||'x'}"><div class="mkt-r1"><b>${esc([u.torre?'Torre '+u.torre:'',u.numero].filter(Boolean).join(' · ')||'—')}</b>${u.andar!=null?`<span class="muted"> · ${u.andar}º andar</span>`:''}<span class="mkt-s">${MK_SIT_UN[u.situacao]||'Não informada'}</span></div>
+    <div class="muted">${[tp(u.tipo),u.dormitorios!=null?u.dormitorios+' dorm.'+(u.suites?` (${u.suites} suíte${u.suites>1?'s':''})`:''):'',u.vagas!=null?u.vagas+' vaga'+(u.vagas===1?'':'s'):'',ar(u.area)].filter(x=>x&&x!=='—').join(' · ')}</div>
+    <div>${u.preco!=null?`<b>${brl(u.preco)}</b>${m2!=null?`<span class="muted"> · ${brl(m2)}/m²</span>`:''}`:'<span class="muted">Sem preço</span>'}${u.primeiro_preco!=null?`<span class="faint"> · primeiro ${brl(u.primeiro_preco)}${u.primeiro_preco_em?' em '+mkData(u.primeiro_preco_em):''}</span>`:''}</div>
+    ${pv?`<div class="faint">Vendida ${pv.includes(' a ')?'entre '+pv.replace(' a ',' e '):'em '+pv}</div>`:''}</div>`}).join('')}</div></div>`:'<div class="mkt-msg muted">Nenhuma unidade nesta situação.</div>'}
   <div class="faint mkt-nota">Monitor de mercado (Órulo), ao vivo. Unidades ativas, residenciais. Preço e situação da última coleta; "Vendida" é o período em que o monitor viu a venda (as de antes do monitor ficam sem data). Enquadramento social é do empreendimento: o Órulo não diz quais unidades são HIS ou HMP.</div>`}
 const _renderModalMkt=renderModal;renderModal=function(){if(UI.modal!=='mk-tabela')return _renderModalMkt.apply(this,arguments);
   const el=$('#modal'),rol=el.querySelector('.mkt-w')?.scrollTop||0;el.innerHTML=`<div class="scrim" data-a="scrim"><div class="dialog mkt-dlg" role="dialog" aria-modal="true">${mkTabelaHtml()}</div></div>`;if(rol){const w=el.querySelector('.mkt-w');if(w)w.scrollTop=rol}};
