@@ -79,6 +79,7 @@ function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[]
   /* reserva: o Google também avisa o clique direito (se o evento do navegador não chegar ao contêiner) */
   MAPA.addListener('contextmenu',e=>{const de=e.domEvent;if(!de||!e.latLng||(UI.ctxTipo||'mouse')!=='mouse'||$('.mp-ctx'))return;const r=el.getBoundingClientRect();ctxAbrir(de.clientX-r.left,de.clientY-r.top,e.latLng.lat(),e.latLng.lng())});
   MAPA.addListener('dragstart',ctxFechar);MAPA.addListener('zoom_changed',ctxFechar);G_desenhaRascunho();
+  MAPA.addListener('dblclick',e=>{if(e.latLng&&!e.placeId)mapaDuplo(e.latLng.lat(),e.latLng.lng(),e.domEvent?.target)});
   if(!v)gEnquadrar(ativosBanco().filter(t=>t.lat!=null).map(t=>gLL(t.lat,t.lng)),15);
   MAPA.addListener('idle',()=>{const c=MAPA.getCenter();UI.mpView={c:{lat:c.lat(),lng:c.lng()},z:MAPA.getZoom()};vMenuDesenha()});
   MAPA.addListener('dragstart',()=>$('.mapa-area .v-menu')?.remove());MAPA.addListener('zoom_changed',()=>$('.mapa-area .v-menu')?.remove());

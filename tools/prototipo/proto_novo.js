@@ -51,8 +51,11 @@ function uniaoPoly(a,b){const pj=nvProj(centro(a)[0]),A=a.map(pj.xy),B=b.map(pj.
   const maior=aneis.sort((x,y)=>area(y)-area(x))[0];return maior&&maior.length>=3?maior.map(q=>pj.ll(q).map(v=>+v.toFixed(7))):null}
 
 /* ---------- começo: as três formas de dar a área ---------- */
-function nvDesenhar(p0){go('mapa',{mpModo:'desenhar',mpAlvo:null,nvDesenho:true,desEditando:false,desenho:p0?[p0]:[],desHist:[],vSel:null,vMenu:false,mpView:p0?{c:{lat:p0[0],lng:p0[1]},z:18}:UI.mpView});
-  if(!TOQUE())toast(p0?'Primeiro ponto marcado. Clique nos outros cantos do terreno.':'Procure o endereço na barra do mapa e clique em cada canto do terreno.')}
+function nvDesenhar(p0){const est={mpModo:'desenhar',mpAlvo:null,nvDesenho:true,desEditando:false,desenho:p0?[p0]:[],desHist:[],vSel:null,vMenu:false};
+  /* já na página Mapa (clique direito ou dois cliques): começa ali mesmo, sem redesenhar a página nem mexer no zoom e na posição (pedido do Moisés, 4/nov/2026) */
+  if(UI.route==='mapa'&&MAPA&&$('#mapa')&&!UI.edMini&&!UI.modal){Object.assign(UI,est);mpRefresh()}
+  else go('mapa',{...est,mpView:p0?{c:{lat:p0[0],lng:p0[1]},z:18}:UI.mpView});
+  if(!TOQUE())toast(p0?'Primeiro ponto marcado. Clique nos outros cantos; Enter ou dois cliques salvam, Esc cancela.':'Procure o endereço na barra do mapa e clique em cada canto do terreno. Enter ou dois cliques salvam; Esc cancela.')}
 function nvPoligonal(poly,fonte,extra={}){const p=poly.map(x=>[+(+x[0]).toFixed(7),+(+x[1]).toFixed(7)]);
   UI.nv={poly:p,ponto:centro(p),area:areaPoly(p),fonte,...extra,local:null,frentes:null,buscandoLocal:true};UI.nv.sobre=sobreposicoes(p);
   UI.modal=UI.nv.sobre.length?'novo-sobre':'novo';renderModal();nvLocalizar()}
