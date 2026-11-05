@@ -307,7 +307,7 @@ function SecOfertas({ f, c, registrar }: { f: Ficha; c: Com; registrar: () => vo
     const { error } = await supabase.rpc('definir_oferta_referencia', { p_processo: f.negId, p_oferta: o.id });
     if (error) toast(error.message, true); else { toast('Oferta de referência trocada.'); recarregar(); }
   }
-  const st = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  const st = (s: string | null) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '—');
   return (
     <Quadro aba="comercial" id="ofertas" titulo="Ofertas recebidas"
       acoes={edita ? <button className="btn sm" onClick={registrar}><Ic n="add" s={16} />Registrar oferta</button> : undefined}>

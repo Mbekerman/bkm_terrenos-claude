@@ -23,7 +23,9 @@ export interface Nv {
   polyDesenho?: P[];              // a desenhada, guardada quando a poligonal passa a ser a dos lotes
 }
 /** mapa de lotes da prefeitura: depois da poligonal (nv) ou pela janela Incluir por SQL (sql, com as quadras dos SQLs) */
-export interface Lotes { modo: 'nv' | 'sql'; quadras?: string[] }
+/** modo 'ficha': reaberto pelo "Escolher no mapa" da aba Terreno, com o terreno já cadastrado */
+export interface LotesFicha { codigo: string; nome: string; poly: P[]; sqls: string[]; fechar: () => void; incluir: (marcados: LoteSql[], quadras: string[]) => void }
+export interface Lotes { modo: 'nv' | 'sql' | 'ficha'; quadras?: string[]; ficha?: LotesFicha }
 interface Estado { aberto: boolean; kmz: ItemKml[] | null; nv: Nv | null; sql: LoteSql[] | null; lotes: Lotes | null; desenho: { p0?: P; n: number } | null; erro?: string }
 
 let E: Estado = { aberto: false, kmz: null, nv: null, sql: null, lotes: null, desenho: null };

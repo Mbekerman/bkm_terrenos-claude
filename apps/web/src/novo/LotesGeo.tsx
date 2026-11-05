@@ -61,7 +61,7 @@ const polyLl = (an: An): P[] => an.slice(0, -1).map((p) => utmLatLng(p[0], p[1])
 const endDe = (p: any) => (p.nm_logradouro_completo ? geoTit(p.nm_logradouro_completo) + (p.cd_numero_porta && p.cd_numero_porta !== '0' ? ', ' + p.cd_numero_porta : '') : '');
 
 /* ---------- consulta ---------- */
-async function carregar(L: Lotes, ter0: P[] | null, ja: Set<string>, empresa: string): Promise<Dados> {
+async function carregar(L: Lotes, ter0: P[] | null, ja: Set<string>, empresa: string, proprio?: string): Promise<Dados> {
   let ter: An | null = null, qs: string[];
   if (L.modo === 'sql') qs = L.quadras || []; /* pelo SQL: as quadras dos SQLs, sem poligonal ainda */
   else {
@@ -84,7 +84,7 @@ async function carregar(L: Lotes, ter0: P[] | null, ja: Set<string>, empresa: st
   const outro = new Map<string, string>();
   for (let i = 0; i < ds.length; i += 200) {
     const { data } = await supabase.from('inscricoes_municipais').select('inscricao_norm,terrenos(codigo)').eq('empresa_id', empresa).in('inscricao_norm', ds.slice(i, i + 200));
-    (Array.isArray(data) ? data : []).forEach((r: any) => { if (r.terrenos?.codigo) outro.set(r.inscricao_norm, r.terrenos.codigo); });
+    (Array.isArray(data) ? data : []).forEach((r: any) => { if (r.terrenos?.codigo && r.terrenos.codigo !== proprio) outro.set(r.inscricao_norm, r.terrenos.codigo); });
   }
   const lotes: Lote[] = ativos.map((f) => {
     const p = f.properties, an = geoAneis(f.geometry)[0], sql: string | null = p.nr_contribuinte || null, d = digitos(sql || '');
@@ -110,13 +110,13 @@ export default function LotesGeo({ L, empresa }: { L: Lotes; empresa: string }) 
   const [tent, setTent] = useState(0);
   const vb = useRef<number[] | null>(null), vb0 = useRef<number[] | null>(null);
   const svgR = useRef<SVGSVGElement>(null), boxR = useRef<HTMLDivElement>(null), tipR = useRef<HTMLDivElement>(null);
-  const voltar = () => abrirLotes(null);
+  const voltar = () => (L.ficha ? L.ficha.fechar() : abrirLotes(null));
 
   useEffect(() => {
     let vivo = true;
     setFase('carregando'); vb.current = null; vb0.current = null;
-    const ja = new Set((L.modo === 'sql' ? st.sql || [] : nv?.sqls || []).map((x) => digitos(x.sql)));
-    carregar(L, L.modo === 'nv' ? nv?.polyDesenho || nv?.poly || null : null, ja, empresa)
+    const ja = new Set(L.ficha ? L.ficha.sqls : (L.modo === 'sql' ? st.sql || [] : nv?.sqls || []).map((x) => digitos(x.sql)));
+    carregar(L, L.ficha ? L.ficha.poly : L.modo === 'nv' ? nv?.polyDesenho || nv?.poly || null : null, ja, empresa, L.ficha?.codigo)
       .then((r) => { if (vivo) { setD(r); setFase('mapa'); } })
       .catch((e) => { console.warn(e); if (vivo) { setErro(/poligonal não ocupa|Nenhum lote/.test(e?.message) ? e.message : 'O GeoSampa não respondeu. Tente de novo em instantes.'); setFase('erro'); } });
     return () => { vivo = false; };
@@ -183,6 +183,8 @@ export default function LotesGeo({ L, empresa }: { L: Lotes; empresa: string }) 
     if (!d) return;
     const marc = d.lotes.filter((l) => l.sel && !l.trava && l.sql);
     const novos: LoteSql[] = marc.map((l) => ({ sql: l.sql!, area: l.area, end: l.end || '', cib: l.p.cd_cib || null, poly: polyLl(l.an), q: l.p.cd_setor_fiscal + '.' + l.p.cd_quadra_fiscal }));
+    /* pela ficha: os marcados entram e os desmarcados saem (Partes.tsx) */
+    if (L.ficha) { L.ficha.incluir(novos, d.quadras); return; }
     /* pelo SQL: os marcados voltam para a lista (os de outras quadras ficam como estavam) */
     if (L.modo === 'sql') { listaSql((novoEstado().sql || []).filter((x) => !d.quadras.includes(x.q || '')).concat(novos)); abrirLotes(null); return; }
     const n = novoEstado().nv; if (!n) return;
@@ -195,9 +197,9 @@ export default function LotesGeo({ L, empresa }: { L: Lotes; empresa: string }) 
     if (u) toast(`Poligonal pela soma dos ${marc.length} lote${marc.length > 1 ? 's' : ''}: ${m2(areaPoly(u))}.`);
   }
 
-  const nomeCab = L.modo === 'sql' ? 'pelo SQL' : nv?.nome || '';
+  const nomeCab = L.ficha ? L.ficha.nome : L.modo === 'sql' ? 'pelo SQL' : nv?.nome || '';
   const cab = (
-    <div className="dh"><div><h2>Lotes da prefeitura</h2><div className="faint">Novo terreno{nomeCab ? ` · ${nomeCab}` : ''}{d?.quadras ? ` · quadra${d.quadras.length > 1 ? 's' : ''} ${d.quadras.map((k) => k.replace('.', '-')).join(', ')}` : ''}</div></div>
+    <div className="dh"><div><h2>Lotes da prefeitura</h2><div className="faint">{L.ficha ? L.ficha.codigo : 'Novo terreno'}{nomeCab ? ` · ${nomeCab}` : ''}{d?.quadras ? ` · quadra${d.quadras.length > 1 ? 's' : ''} ${d.quadras.map((k) => k.replace('.', '-')).join(', ')}` : ''}</div></div>
       <button className="iconbtn" aria-label="Fechar" onClick={voltar}><Ic n="close" s={22} /></button></div>
   );
   if (fase === 'carregando') return <>{cab}<div className="lg-msg"><Ic n="layers" s={20} />Buscando os lotes das quadras no GeoSampa...</div></>;
@@ -227,8 +229,8 @@ export default function LotesGeo({ L, empresa }: { L: Lotes; empresa: string }) 
       <div className="lg-lado"><div className="lg-tot"><b>{sel.length} lote{sel.length === 1 ? '' : 's'} marcado{sel.length === 1 ? '' : 's'}</b>{area ? <span className="muted"> · {m2(area)} de área cadastral</span> : null}</div>
         <div className="hint" style={{ margin: '4px 0 8px' }}><span className="lg-mouse">Clique no lote para marcar ou desmarcar. Pare o mouse em cima para ver o SQL. A roda aproxima e mostra os números dos lotes pequenos.</span></div>
         <div className="lg-lista">{sel.length ? sel.map((l) => <div key={l.sql || l.p.cd_lote} className="lg-it"><span className="num">{l.sql}</span><span className="faint">{l.end || ''}{l.area ? ` · ${m2(l.area)}` : ''}</span></div>) : <div className="muted">Nenhum lote marcado.</div>}</div></div></div>
-    <div className="df"><button className="btn text" onClick={voltar}>{L.modo === 'nv' ? 'Agora não' : 'Voltar'}</button>
-      <button className="btn primary" disabled={L.modo === 'sql' && !sel.length} onClick={incluir}>{L.modo === 'sql' ? `Usar ${sel.length} lote${sel.length === 1 ? '' : 's'}` : sel.length ? `Usar ${sel.length} lote${sel.length > 1 ? 's' : ''}` : 'Seguir sem lotes'}</button></div>
+    <div className="df"><button className="btn text" onClick={voltar}>{L.ficha ? 'Cancelar' : L.modo === 'nv' ? 'Agora não' : 'Voltar'}</button>
+      <button className="btn primary" disabled={L.modo === 'sql' && !sel.length} onClick={incluir}>{L.modo !== 'nv' ? `Usar ${sel.length} lote${sel.length === 1 ? '' : 's'}` : sel.length ? `Usar ${sel.length} lote${sel.length > 1 ? 's' : ''}` : 'Seguir sem lotes'}</button></div>
   </>;
 }
 

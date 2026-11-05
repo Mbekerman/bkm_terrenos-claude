@@ -11,6 +11,10 @@ import { digitos, GEO_BASE, loteDoSql } from '../novo/geosampa';
 import { consultarLote, consultarTerreno, useConsultaGeo } from '../novo/consulta';
 import type { Ficha, R } from './dados';
 import { lerNum, num, Quadro } from './edicao';
+import { useNavigate } from 'react-router-dom';
+import LotesGeo from '../novo/LotesGeo';
+import type { LoteSql } from '../novo/geosampa';
+import { pedirOferta } from './Comercial';
 
 // Aba Terreno, segunda metade (proto_lotes.js): Partes (um cartão por parte, com o contato opcional) e Matrículas e SQLs
 // em etiquetas (matrícula amarela, SQL roxa) arrastadas para as partes; a janela da etiqueta com os dados, a consulta da
@@ -235,6 +239,20 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
   const [mat, setMat] = useState({ num: '', cri: f.t.cartorio ?? '', area: '' });
   const [sql, setSql] = useState('');
   const [grav, setGrav] = useState(false);
+  const [lg, setLg] = useState(false);
+  const [dup, setDup] = useState<{ oque: string; codigo: string; nome: string } | null>(null);
+  const navegar = useNavigate();
+  /* matrícula ou SQL que já está em outro terreno não entra: pergunta se quer registrar uma nova oferta naquele terreno, e o
+     analista decide lá se segue ou descarta (decisão do Moisés, 4/nov/2026); cartório em branco conta como o mesmo */
+  async function outroTerreno(tipo: 'm' | 's', d: string, cri: string | null): Promise<R | null> {
+    const q = tipo === 'm'
+      ? supabase.from('matriculas').select('cartorio,terrenos(codigo,nome)').eq('empresa_id', empresa!.id).eq('numero_norm', d).neq('terreno_id', f.id)
+      : supabase.from('inscricoes_municipais').select('terrenos(codigo,nome)').eq('empresa_id', empresa!.id).eq('inscricao_norm', d).neq('terreno_id', f.id)
+        .eq('municipio_id', base?.municipio_id ?? f.t.municipio_id);
+    const { data } = await q;
+    const x = ((data ?? []) as R[]).find((r) => tipo === 's' || !r.cartorio || !cri || r.cartorio === cri);
+    return x?.terrenos ?? null;
+  }
   const P = L.partes, base = L.base, rot = base?.rotulo ?? 'Inscrição', sp = base?.codigo === 'geosampa';
   const crisSel = f.t.cartorio && !CRIS.includes(f.t.cartorio) ? [f.t.cartorio, ...CRIS] : CRIS;
   const achar = (k: string): Etq | null => {
@@ -268,6 +286,8 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     const n = mat.num.trim(), cri = mat.cri.trim() || null;
     if (!digitos(n)) { toast('Informe o número da matrícula.', true); return; }
     if (L.mats.some((m) => m.numero_norm === digitos(n) && (!m.cartorio || !cri || m.cartorio === cri))) { toast(`A matrícula ${n} já está no terreno.`, true); return; }
+    const ou = await outroTerreno('m', digitos(n), cri);
+    if (ou) { setDup({ oque: `A matrícula ${n}`, codigo: ou.codigo, nome: ou.nome }); return; }
     const { error } = await supabase.from('matriculas').insert({ empresa_id: empresa!.id, terreno_id: f.id, numero: n, cartorio: cri, area_registrada_m2: lerNum(mat.area) });
     if (error) { toast(error.message, true); return; }
     setMat({ num: '', cri: mat.cri, area: '' });
@@ -281,6 +301,8 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     if (!d) { toast(`Digite o ${rot}.`, true); return; }
     if (base && d.length !== ndig) { toast(`${rot} incompleto: são ${ndig} dígitos.`, true); return; }
     if (L.insc.some((i) => i.inscricao_norm === d)) { toast(`O ${rot} ${sql} já está no terreno.`, true); return; }
+    const ou = await outroTerreno('s', d, null);
+    if (ou) { setDup({ oque: `O ${rot} ${sql}`, codigo: ou.codigo, nome: ou.nome }); return; }
     setGrav(true);
     try {
       if (sp && GEO_BASE) await loteDoSql(d);   // confere o dígito no GeoSampa
@@ -298,6 +320,30 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
         recarregar();
       }
     } catch (e: any) { toast(e?.message ?? String(e), true); } finally { setGrav(false); }
+  }
+  /* "Escolher no mapa": os marcados entram sem parte (origem mapa_prefeitura), os desmarcados das quadras abertas saem,
+     menos os que têm IPTU lançado; depois a consulta do GeoSampa nos novos e a poligonal pela soma dos lotes */
+  async function incluirMapa(marc: LoteSql[], quadras: string[]) {
+    setLg(false);
+    const ja = new Set(L.insc.map((i) => i.inscricao_norm)), marcD = new Set(marc.map((x) => digitos(x.sql)));
+    const novos = marc.filter((x) => !ja.has(digitos(x.sql)));
+    const tirar = L.insc.filter((i) => !marcD.has(i.inscricao_norm) && quadras.includes(i.inscricao_norm.slice(0, 3) + '.' + i.inscricao_norm.slice(3, 6)) && !(i.inscricao_valores ?? []).length);
+    try {
+      let ins: R[] = [];
+      if (novos.length) {
+        const r = await supabase.from('inscricoes_municipais').insert(novos.map((q) => ({ empresa_id: empresa!.id, terreno_id: f.id, municipio_id: base?.municipio_id ?? f.t.municipio_id,
+          inscricao: q.sql, area_cadastral_m2: q.area, cib: q.cib, origem: 'mapa_prefeitura', endereco_prefeitura: q.end || null }))).select('id,inscricao');
+        if (r.error) throw r.error;
+        ins = (r.data ?? []) as R[];
+      }
+      if (tirar.length) { const r = await supabase.from('inscricoes_municipais').delete().in('id', tirar.map((i) => i.id)); if (r.error) throw r.error; }
+      if (!novos.length && !tirar.length) { toast('Nada mudou nos SQLs.'); return; }
+      toast([novos.length && `${novos.length} SQL${novos.length > 1 ? 's' : ''} incluído${novos.length > 1 ? 's' : ''}`, tirar.length && `${tirar.length} tirado${tirar.length > 1 ? 's' : ''}`].filter(Boolean).join(', ') + '.');
+      recarregar();
+      if (ins.length) { await consultarTerreno(f.id, null, ins.map((x) => ({ id: x.id, sql: x.inscricao })), toast); recarregar(); }
+      await refazerPoligonal(f, 'mapa de lotes da prefeitura', toast);
+      recarregar();
+    } catch (e: any) { toast(e?.message ?? String(e), true); }
   }
   async function tudo() {
     const pa = P[0];
@@ -411,6 +457,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
                     <input id="es-sql" required autoComplete="off" inputMode={base ? 'numeric' : 'text'} placeholder={base?.mascara ?? 'Como está no carnê do IPTU'} value={sql}
                       onChange={(e) => setSql(base ? mascarar(e.target.value, base.mascara) : e.target.value)} /></div>
                   <button className="btn sm" disabled={grav}><Ic n="add" s={16} />{grav ? 'Incluindo…' : 'Incluir'}</button>
+                  {sp && GEO_BASE && f.poly && <button type="button" className="btn sm text" onClick={() => setLg(true)}><Ic n="layers" s={16} />Escolher no mapa</button>}
                 </form>
               )}
               {pool('s')}
@@ -448,6 +495,22 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
         <Dialogo titulo={`Excluir ${nome(confE)}?`} onFechar={() => setConf(null)}
           rodape={<><button className="btn text" onClick={() => setConf(null)}>Cancelar</button><button className="btn primary" onClick={() => excluir(conf!)}>Excluir</button></>}>
           <p style={{ margin: 0 }}>Ele tem IPTU lançado, que sai junto. A poligonal é refeita sem o lote dele.</p>
+        </Dialogo>
+      )}
+      {lg && f.poly && (
+        <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && setLg(false)}>
+          <div className="dialog" role="dialog" aria-modal="true">
+            <LotesGeo empresa={empresa!.id} L={{ modo: 'ficha', ficha: { codigo: f.codigo, nome: f.nome, poly: f.poly, sqls: L.insc.map((i) => i.inscricao_norm), fechar: () => setLg(false), incluir: incluirMapa } }} />
+          </div>
+        </div>
+      )}
+      {dup && (
+        <Dialogo titulo={`${dup.oque} já está em outro terreno`} onFechar={() => setDup(null)}
+          rodape={<><button className="btn text" onClick={() => setDup(null)}>Cancelar</button>
+            <button className="btn" onClick={() => { setDup(null); navegar(`/terrenos/${dup.codigo}`); }}>Abrir {dup.codigo}</button>
+            <button className="btn primary" onClick={() => { const d = dup; setDup(null); pedirOferta(d.codigo, `Registre a nova oferta no ${d.codigo}.`); navegar(`/terrenos/${d.codigo}/comercial`); }}>Registrar nova oferta no {dup.codigo}</button></>}>
+          <div className="banner blue"><Ic n="layers" /><div style={{ flex: 1 }}><div className="bt">{dup.codigo} · {dup.nome}</div>
+            <div>O lote não é cadastrado de novo. Se chegou uma oferta, registre-a nesse terreno: o analista decide lá se segue a tratativa ou descarta.</div></div></div>
         </Dialogo>
       )}
       {etq && <JanelaEtq f={f} L={L} k={etq} fechar={() => abrirEtq(null)} tirar={(k) => { abrirEtq(null); tirar(k); }} />}
