@@ -96,7 +96,7 @@ returns boolean
 language sql stable security definer set search_path = ''
 as $$ select exists (select 1 from app.membros where user_id = auth.uid() and empresa_id = p_empresa) $$;
 
--- Gestor ou acima (diretor): força avanço, vê a auditoria.
+-- Gestor ou acima (diretor): força avanço.
 create or replace function app.eh_gestor(p_empresa uuid)
 returns boolean
 language sql stable security definer set search_path = ''
@@ -301,8 +301,9 @@ create policy membros_ver on app.membros for select to authenticated
   using (empresa_id in (select app.minhas_empresas()));
 create policy membros_admin_gerencia on app.membros for all to authenticated
   using (app.eh_administrador(empresa_id)) with check (app.eh_administrador(empresa_id));
-create policy auditoria_gestor_ve on app.auditoria for select to authenticated
-  using (app.eh_gestor(empresa_id));
+-- os logs da ficha: todos da empresa veem (decisão do Moisés, 5/nov/2026)
+create policy auditoria_ver on app.auditoria for select to authenticated
+  using (empresa_id in (select app.minhas_empresas()));
 
 grant select on app.empresas, app.auditoria to authenticated;
 grant select, insert, update, delete on app.membros to authenticated;

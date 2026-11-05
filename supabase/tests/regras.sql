@@ -799,6 +799,7 @@ select pg_temp.ok((select lista_nome = 'Fazendo' and concluida_em is null from a
 select pg_temp.como(:'leitor');
 select pg_temp.ok((select count(*) from app.v_terrenos) = 4, 'leitura vê os terrenos');
 select pg_temp.ok((select count(*) from app.v_inscricoes) = 1, 'leitura vê valor venal e IPTU');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'terrenos') >= 3, 'leitura vê os logs da ficha');
 select pg_temp.falha(format($$select pg_temp.tarefa(%L, 'x', current_date)$$, :'t2'), 'leitura não cria tarefa');
 select q.id as q2, pg_temp.lista(:'t2', 'Fazer') as l2 from fluxo.quadros q where q.objeto_tipo = 'terreno' and q.objeto_id = :'t2' \gset
 select pg_temp.falha(format($$select app.salvar_terreno(%L, 1, '{"nome":"x"}')$$, :'t2'), 'leitura não edita terreno');
@@ -810,6 +811,7 @@ select pg_temp.como(:'intruso');
 select pg_temp.ok((select count(*) from app.terrenos) = 0, 'outra pessoa não vê terrenos');
 select pg_temp.ok((select count(*) from app.v_terrenos) = 0, 'outra pessoa não vê a listagem');
 select pg_temp.ok((select count(*) from app.v_inscricoes) = 0, 'outra pessoa não vê valor venal');
+select pg_temp.ok((select count(*) from app.auditoria) = 0, 'outra pessoa não vê os logs');
 select pg_temp.ok((select count(*) from app.v_reunioes) = 0, 'outra pessoa não vê reuniões');
 select pg_temp.ok((select count(*) from app.pontos_interesse) = 0 and (select count(*) from app.v_mapa) = 0, 'outra pessoa não vê mapa nem pontos de interesse');
 select pg_temp.falha(format('select app.checar_avanco(%L)', :'neg'), 'outra pessoa não acessa RPC');

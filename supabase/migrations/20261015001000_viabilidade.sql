@@ -531,9 +531,9 @@ revoke all on function app.modelos_viabilidade(uuid) from public;
 grant execute on function app.modelos_viabilidade(uuid) to authenticated;
 -- e o log do modelo, que leva os mesmos dados, só a diretoria vê
 grant execute on function app.eh_diretoria(uuid) to authenticated;
-drop policy auditoria_gestor_ve on app.auditoria;
-create policy auditoria_gestor_ve on app.auditoria for select to authenticated
-  using (app.eh_gestor(empresa_id)
+drop policy auditoria_ver on app.auditoria;
+create policy auditoria_ver on app.auditoria for select to authenticated
+  using (empresa_id in (select app.minhas_empresas())
          and (fluxo.tarefa_do_log(tabela, registro_id, antes, depois) is null
               or fluxo.papel_tarefa(fluxo.tarefa_do_log(tabela, registro_id, antes, depois)) is not null)
          and (tabela <> 'viabilidade_linhas'
