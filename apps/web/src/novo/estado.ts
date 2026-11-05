@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { supabase } from '../lib/supabase';
+import type { LoteSql } from './geosampa';
 import { areaPoly, centroPoly, fixa, frentes, geojson, localDoPonto, type Frente, type ItemKml, type Local, type P } from './geo';
 
 // Estado do Novo terreno (proto_novo.js: UI.nv, UI.nvKmz e o pedido de desenho no mapa), num store pequeno que
@@ -10,23 +11,26 @@ export interface Sobre {
   area: number; pctNova: number; pctExist: number;
 }
 export interface Nv {
-  poly: P[]; ponto: P; area: number; fonte: 'mapa' | 'kmz'; nomeKmz?: string;
+  poly: P[]; ponto: P; area: number; fonte: 'mapa' | 'kmz' | 'sql'; nomeKmz?: string;
+  sqls?: LoteSql[];               // fonte 'sql': os lotes que entram no terreno, sem parte
   sobre: Sobre[] | null;          // null: procurando
   ignorados?: Sobre[];            // "É outro terreno, cadastrar mesmo assim"
   local: Local | null; frentes: Frente[] | null; buscando: boolean;
   nome?: string;
 }
-interface Estado { aberto: boolean; kmz: ItemKml[] | null; nv: Nv | null; desenho: { p0?: P; n: number } | null; erro?: string }
+interface Estado { aberto: boolean; kmz: ItemKml[] | null; nv: Nv | null; sql: LoteSql[] | null; desenho: { p0?: P; n: number } | null; erro?: string }
 
-let E: Estado = { aberto: false, kmz: null, nv: null, desenho: null };
+let E: Estado = { aberto: false, kmz: null, nv: null, sql: null, desenho: null };
 const ouvintes = new Set<() => void>();
 const mudar = (p: Partial<Estado>) => { E = { ...E, ...p }; ouvintes.forEach((f) => f()); };
 export const useNovo = () => useSyncExternalStore((f) => { ouvintes.add(f); return () => ouvintes.delete(f); }, () => E);
 export const novoEstado = () => E;
 
-export const abrirNovo = () => mudar({ aberto: true, nv: null, kmz: null });
-export const fecharNovo = () => mudar({ aberto: false, nv: null, kmz: null });
-export const voltarPasso1 = () => mudar({ aberto: true, nv: null, kmz: null });
+export const abrirNovo = () => mudar({ aberto: true, nv: null, kmz: null, sql: null });
+export const fecharNovo = () => mudar({ aberto: false, nv: null, kmz: null, sql: null });
+export const voltarPasso1 = () => mudar({ aberto: true, nv: null, kmz: null, sql: null });
+/** "Incluir por SQL" (São Paulo): a lista dos lotes digitados; null fora dessa tela */
+export const listaSql = (sql: LoteSql[] | null) => mudar({ sql });
 export const escolherKmz = (kmz: ItemKml[] | null) => mudar({ aberto: true, kmz, nv: null });
 /** pede à página Mapa que entre no modo de desenho (com o primeiro ponto, se veio do clique direito) */
 let nDes = 0;
@@ -35,10 +39,10 @@ export const desenhoAtendido = () => mudar({ desenho: null });
 export const atualizarNv = (p: Partial<Nv>) => { if (E.nv) mudar({ nv: { ...E.nv, ...p } }); };
 
 /** a poligonal pronta (desenhada ou do KMZ): procura sobreposição e o endereço */
-export async function poligonal(poly0: P[], fonte: 'mapa' | 'kmz', empresa: string, nomeKmz?: string) {
+export async function poligonal(poly0: P[], fonte: 'mapa' | 'kmz' | 'sql', empresa: string, nomeKmz?: string, sqls?: LoteSql[]) {
   const poly = fixa(poly0);
-  const nv: Nv = { poly, ponto: centroPoly(poly), area: areaPoly(poly) || 0, fonte, nomeKmz, sobre: null, local: null, frentes: null, buscando: true };
-  mudar({ aberto: true, kmz: null, nv });
+  const nv: Nv = { poly, ponto: centroPoly(poly), area: areaPoly(poly) || 0, fonte, nomeKmz, sqls, sobre: null, local: null, frentes: null, buscando: true };
+  mudar({ aberto: true, kmz: null, sql: null, nv });
   const atual = () => E.nv && E.nv.poly === poly;
   /* terrenos que já ocupam parte da área (app.terrenos_sobrepostos; a faixa de até 5 m na divisa não conta) */
   supabase.rpc('terrenos_sobrepostos', { p_empresa: empresa, p_poligono: geojson(poly) }).then(({ data, error }) => {

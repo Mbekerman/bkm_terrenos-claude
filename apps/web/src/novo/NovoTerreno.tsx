@@ -7,14 +7,16 @@ import { useToast } from '../components/ui';
 import { Bi, Ic } from '../components/Moldura';
 import { carregarGoogle } from '../mapa/google';
 import { classe, info, type Fase, type TerrenoMapa } from '../mapa/dados';
-import { abrirNovo, escolherKmz, fecharNovo, pedirDesenho, poligonal, atualizarNv, useNovo, voltarPasso1, novoEstado, type Sobre } from './estado';
-import { areaPoly, centroPoly, fixa, geojson, lerKmz, m2, nomeRef, normRua, uniaoPoly, type P } from './geo';
+import { abrirNovo, escolherKmz, fecharNovo, pedirDesenho, poligonal, atualizarNv, useNovo, voltarPasso1, novoEstado, listaSql, type Sobre } from './estado';
+import { GEO_BASE, digitos, loteDoSql, sqlFmt, sqlMascara, type LoteSql } from './geosampa';
+import { areaPoly, centroPoly, fixa, geojson, lerKmz, lotesUniao, m2, nomeRef, normRua, uniaoPoly, type P } from './geo';
 
 // Janela do Novo terreno, com a marcação do protótipo (tools/prototipo/proto_novo.js: nvPasso1Html, nvSobreHtml,
 // nvDadosHtml, nvGravar, nvDecidir). Passo 1: a poligonal (desenho no mapa ou KMZ/KML); se outro terreno ocupa parte
-// da área, a pergunta do que fazer; passo 2: só o nome de referência. O mapa de lotes da prefeitura entra depois.
+// da área, a pergunta do que fazer; passo 2: só o nome de referência. Em São Paulo, "Incluir por SQL" (nvSqlHtml, nvSqlIncluir,
+// nvSqlSeguir em proto_lotesgeo.js) faz a poligonal pela soma dos lotes. O mapa de lotes da prefeitura entra depois.
 
-const NV_FONTE = { mapa: 'Poligonal desenhada no mapa', kmz: 'Poligonal importada de KMZ/KML' };
+const NV_FONTE = { mapa: 'Poligonal desenhada no mapa', kmz: 'Poligonal importada de KMZ/KML', sql: 'Poligonal pela soma dos lotes dos SQLs' };
 const NV_FOLGA = 5;
 const num = (v: number, d = 0) => Number(v).toLocaleString('pt-BR', { maximumFractionDigits: d });
 
@@ -61,12 +63,15 @@ export default function NovoTerreno() {
 
   /* ---------- passo 1 ---------- */
   let corpo: React.ReactNode;
-  if (!nv) {
+  if (!nv && st.sql) {
+    corpo = <IncluirSql lista={st.sql} fechar={x} empresa={empresa.id} />;
+  } else if (!nv) {
     corpo = <>
       <div className="dh"><div><h2>Novo terreno</h2><div className="muted" style={{ marginTop: 4 }}>Passo 1 de 2 · Poligonal do terreno</div></div>{x}</div>
       <div className="nv-ops">
         <button type="button" className="nv-op" onClick={desenhar}><span className="nv-ic"><Bi n="mapa" s={24} /></span><span><b>Desenhar no mapa</b><span className="muted">Ache o endereço na barra do mapa e marque os cantos do terreno.</span></span></button>
         <button type="button" className="nv-op" onClick={() => { if (arq.current) { arq.current.value = ''; arq.current.click(); } }}><span className="nv-ic"><Ic n="upload" s={24} /></span><span><b>Importar KMZ ou KML</b><span className="muted">Arquivo do Google Earth com o polígono do terreno.</span></span></button>
+        <button type="button" className="nv-op" onClick={() => { if (!GEO_BASE) { toast('A busca no GeoSampa funciona na versão publicada.', true); return; } listaSql([]); }}><span className="nv-ic"><Ic n="layers" s={24} /></span><span><b>Incluir por SQL</b><span className="muted">São Paulo: digite os SQLs dos lotes; a poligonal é a soma deles.</span></span></button>
         {st.kmz && (
           <div className="nv-kmz"><span className="lbl-f">O arquivo tem {st.kmz.length} polígonos. Qual é o terreno?</span>
             {st.kmz.map((it, i) => <button key={i} type="button" className="btn sm" onClick={() => poligonal(it.pts, 'kmz', empresa.id, it.nome)}>{it.nome} · {m2(areaPoly(it.pts))}</button>)}
@@ -124,6 +129,12 @@ export default function NovoTerreno() {
           const r = await supabase.from('confrontacoes').insert(outras.map((x, i) => ({ empresa_id: empresa!.id, terreno_id: t.id, ordem: i + 1, tipo: 'frente', comprimento_m: x.m ? +x.m.toFixed(2) : null, confrontante: x.logradouro + (x.numero ? ', ' + x.numero : ''), fonte: 'Localização da poligonal' })));
           if (r.error) console.warn('confrontações', r.error);
         }
+        /* os SQLs incluídos entram no terreno sem parte, como no mapa de lotes da prefeitura */
+        if (nv.sqls?.length) {
+          const r = await supabase.from('inscricoes_municipais').insert(nv.sqls.map((q) => ({ empresa_id: empresa!.id, terreno_id: t.id, municipio_id: munId, inscricao: q.sql,
+            area_cadastral_m2: q.area, cib: q.cib, origem: 'mapa_prefeitura', endereco_prefeitura: q.end || null })));
+          if (r.error) toast(`${t.codigo} cadastrado, mas os SQLs não entraram: ${mensagemErro(r.error)}`, true);
+        }
         await qc.invalidateQueries({ queryKey: ['mapa'] });
         fecharNovo();
         toast(`${t.codigo} cadastrado.`);
@@ -133,12 +144,14 @@ export default function NovoTerreno() {
     corpo = <>
       <div className="dh"><div><h2>Novo terreno</h2><div className="muted" style={{ marginTop: 4 }}>Passo 2 de 2 · O resto da ficha é preenchido ao longo da jornada.</div></div>{x}</div>
       <form id="f-novo" onSubmit={gravar}><div className="fields">
-        <div className="field full"><div className="banner blue"><Ic n="check" /><div style={{ flex: 1 }}><div className="bt">{NV_FONTE[nv.fonte]} · {m2(nv.area)}</div>
+        <div className="field full"><div className="banner blue"><Ic n="check" /><div style={{ flex: 1 }}><div className="bt">{nv.fonte === 'sql' && nv.sqls?.length ? `Poligonal pela soma dos ${nv.sqls.length} lote${nv.sqls.length > 1 ? 's' : ''} da prefeitura` : NV_FONTE[nv.fonte]} · {m2(nv.area)}</div>
           <div>{nv.buscando ? 'Buscando o endereço pela poligonal...' : onde || 'Endereço não encontrado pela localização.'}</div>
           {nv.ignorados && <div>Confirmado como outro terreno apesar de sobrepor {nv.ignorados.map((s) => s.codigo).join(', ')}.</div>}</div>
           <button type="button" className="btn sm text" onClick={voltarPasso1}>Trocar</button></div></div>
         <div className="field full"><label htmlFor="n-nome">Nome de referência *</label>
           <input id="n-nome" name="nome" required placeholder={nv.buscando ? 'Buscando a rua...' : 'Ex.: Cupecê'} key={nv.buscando ? 'b' : 'p'} defaultValue={nome} onInput={(e) => atualizarNv({ nome: e.currentTarget.value })} /></div>
+        {!!nv.sqls?.length && <div className="field full"><div className="nv-sqls"><span className="etq-sw s" /><div style={{ flex: 1 }}><b>{nv.sqls.length} SQL{nv.sqls.length > 1 ? 's' : ''} da prefeitura</b>
+          <div className="nv-sqls-l">{nv.sqls.map((q) => <span key={q.sql} className="etq s"><span className="etq-n num">{q.sql}</span></span>)}</div></div></div></div>}
         {!nv.buscando && !mun && <div className="field full"><label htmlFor="n-mun">Município *</label><input id="n-mun" name="municipio" required placeholder="Cidade · UF" /><span className="hint">Não deu para saber pela localização.</span></div>}
       </div></form>
       <div className="df"><button className="btn text" onClick={fechar}>Cancelar</button>
@@ -189,5 +202,53 @@ function Sobreposicao({ sobre, area, fechar, ro, voltar, mesmo, abrir, decidir }
     ))}</div>
     <div className="hint" style={{ marginTop: 'var(--e3)' }}>{igual && <><b>Nova oferta</b> registra a oferta no terreno, sem mudar o cadastro. </>}<b>Recadastrar</b> troca a poligonal do terreno pela área nova (ou pela soma das duas) e registra a oferta nele, guardando o pedaço oferecido. A poligonal anterior fica no histórico.</div>
     <div className="df"><button className="btn text" onClick={voltar}>Voltar</button>{!ro && <button className="btn" onClick={mesmo}>É outro terreno, cadastrar mesmo assim</button>}</div>
+  </>;
+}
+
+/* ---------- passo 1 por SQL (São Paulo): a lista dos lotes, um de cada vez ---------- */
+function IncluirSql({ lista, fechar, empresa }: { lista: LoteSql[]; fechar: React.ReactNode; empresa: string }) {
+  const toast = useToast();
+  const [txt, setTxt] = useState('');
+  const [buscando, setBuscando] = useState(false);
+  const area = lista.reduce((s, q) => s + (q.area || 0), 0), n = lista.length;
+  async function incluir(ev: React.FormEvent) {
+    ev.preventDefault();
+    const d = digitos(txt);
+    if (buscando) return;
+    if (d.length !== 11) { toast('O SQL tem 11 dígitos: 000.000.0000-0.', true); return; }
+    if (lista.some((q) => digitos(q.sql) === d)) { toast('Este SQL já está na lista.', true); return; }
+    setBuscando(true);
+    try {
+      /* SQL que já está em outro terreno não entra */
+      const { data: ja } = await supabase.from('inscricoes_municipais').select('terrenos(codigo)').eq('empresa_id', empresa).eq('inscricao_norm', d).limit(1);
+      const cod = (ja?.[0] as { terrenos?: { codigo?: string } } | undefined)?.terrenos?.codigo;
+      if (cod) { toast(`O SQL ${sqlFmt(d)} já está no ${cod}.`, true); return; }
+      const lote = await loteDoSql(d);
+      listaSql([...(novoEstado().sql || []), lote]);
+      setTxt('');
+    } catch (e) {
+      const m = e instanceof Error ? e.message : '';
+      toast(/dígito|não encontrado/.test(m) ? m : 'O GeoSampa não respondeu. Tente de novo em instantes.', true);
+    } finally { setBuscando(false); }
+  }
+  function seguir() {
+    const u = lotesUniao(lista.map((q) => q.poly));
+    if (!u) { toast('Os lotes não se encostam: tire os que ficaram separados ou desenhe a poligonal no mapa.', true); return; }
+    poligonal(u, 'sql', empresa, undefined, lista);
+  }
+  return <>
+    <div className="dh"><div><h2>Novo terreno</h2><div className="muted" style={{ marginTop: 4 }}>Passo 1 de 2 · SQLs dos lotes (São Paulo)</div></div>{fechar}</div>
+    <form className="etq-form" onSubmit={incluir}>
+      <div className="field grow"><label htmlFor="nvq-sql">SQL</label>
+        <input id="nvq-sql" name="sql" inputMode="numeric" placeholder="000.000.0000-0" autoComplete="off" autoFocus value={txt} onChange={(e) => setTxt(sqlMascara(e.target.value))} /></div>
+      <button className="btn sm" disabled={buscando}><Ic n="add" s={16} />{buscando ? 'Buscando...' : 'Incluir'}</button>
+    </form>
+    <div className="hint" style={{ margin: '4px 0 8px' }}>Digite o SQL e Incluir, um de cada vez. O dígito é conferido no GeoSampa.</div>
+    <div className="etq-pool">{lista.length ? lista.map((q, i) => (
+      <span key={q.sql} className="etq s" aria-label={`SQL ${q.sql}`}><span className="etq-n num" title={[q.end, q.area ? m2(q.area) : ''].filter(Boolean).join(' · ')}>{q.sql}</span>
+        <button type="button" className="etq-x" aria-label={`Tirar o SQL ${q.sql}`} title="Tirar" onClick={() => listaSql(lista.filter((_, k) => k !== i))}><Ic n="close" s={14} /></button></span>
+    )) : <span className="etq-vazio">Nenhum SQL ainda.</span>}</div>
+    {n > 0 && <div className="hint" style={{ marginTop: 8 }}>{n} lote{n > 1 ? 's' : ''}{area ? ` · ${m2(area)} de área cadastral` : ''}. A poligonal do terreno será a soma deles.</div>}
+    <div className="df"><button className="btn text" onClick={() => listaSql(null)}>Voltar</button><button className="btn primary" disabled={!n || buscando} onClick={seguir}>Continuar</button></div>
   </>;
 }

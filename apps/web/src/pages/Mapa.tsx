@@ -129,8 +129,8 @@ export default function Mapa() {
     motor.current?.lugarFechar();
     setDes(p0 ? [p0] : []);
     marcas.current.inicio = Date.now();
-    if (!TOQUE()) toast(p0 ? 'Primeiro ponto marcado. Clique nos outros cantos; Enter ou dois cliques salvam, Esc cancela.'
-      : 'Procure o endereço na barra do mapa e clique em cada canto do terreno. Enter ou dois cliques salvam; Esc cancela.');
+    if (!TOQUE()) toast(p0 ? 'Primeiro ponto marcado. Clique nos outros cantos; Enter, dois cliques ou Concluir salvam; Esc cancela.'
+      : 'Procure o endereço na barra do mapa e clique em cada canto do terreno. Enter, dois cliques ou Concluir salvam; Esc cancela.');
   }
   function desGuardar() { hist.current.push((des || []).map((x) => [x[0], x[1]] as P)); if (hist.current.length > 60) hist.current.shift(); }
   function desDesfazer() { const h = hist.current; if (!h.length) return false; setDes(h.pop()!); setVSel(null); setVMenu(false); return true; }
@@ -557,6 +557,12 @@ export default function Mapa() {
           <button className="btn sm text" disabled={!hist.current.length} onClick={desDesfazer}>Desfazer</button>
           <button className="btn sm text" onClick={desCancelar}>Cancelar</button>
           <button className="btn sm primary" disabled={des.length < 3} onClick={desSalvar}>Concluir</button>
+        </>}{des && !TOQUE() && <>
+          {/* desktop: barra pequena no canto de baixo à direita; a legenda, os botões do canto e os da barra de cima (menos a busca)
+              somem enquanto se desenha (styles.css, opção 5 do Moises, 5/nov/2026) */}
+          <span className="mp-q mp-fina">{des.length} ponto{des.length === 1 ? '' : 's'}{areaPoly(des) ? ` · ${m2(Math.round(areaPoly(des)!))}` : ''}</span>
+          <button className="btn sm text" onClick={desCancelar}>Cancelar</button>
+          <button className="btn sm primary" disabled={des.length < 3} title={des.length < 3 ? 'Marque pelo menos 3 pontos' : 'Salvar a poligonal (Enter)'} onClick={desSalvar}>Concluir</button>
         </>}</div>
         {des && vMenu && vSel != null && des[vSel] && !movendo && motor.current && (
           <MenuPonto area={areaEl.current} px={motor.current.pontoNaTela(des[vSel][0], des[vSel][1])} i={vSel} n={des.length} area2={areaPoly(des) || 0} desfazer={hist.current.length > 0} acao={vAcao} />
@@ -636,7 +642,8 @@ function MenuPonto({ area, px, i, n, area2, desfazer, acao }: {
 }
 
 /* legenda em árvore: "Terrenos" abre as fases, a fase abre as etapas e a etapa abre as subetapas, um ramo aberto por vez;
-   o nível mais fundo aberto colore os pinos. A bolinha e o número de um item ligam e desligam tudo que está nele. */
+   o nível mais fundo aberto colore os pinos. A bolinha de um item (e a de "Terrenos": todos) liga e desliga tudo que está nele;
+   o número não (pedido do Moisés, 5/nov/2026). */
 function Legenda({ fases, todos, f, e, arv, apag, busca, alternarArv, nivel, apagar, extra }: {
   fases: Fase[]; todos: TerrenoMapa[]; f: string; e: string; arv: boolean; apag: Apag; busca: string;
   alternarArv: () => void; nivel: (f: string, e: string) => void; apagar: (lv: string, k: string) => void; extra: React.ReactNode;
@@ -652,7 +659,7 @@ function Legenda({ fases, todos, f, e, arv, apag, busca, alternarArv, nivel, apa
   type X = Item & { n: number };
   const ramo = (x: X, prof: number, ab: boolean, nf: string, ne: string, fora: boolean, lv: string, pai: boolean) => (
     <button key={lv + x.k} type="button" className={`lg-i lg-a${fora ? ' lg-fora' : ''}${off(lv, x.k, pai) ? ' lg-off' : ''}`} style={{ '--p': prof } as React.CSSProperties} aria-expanded={ab} onClick={() => nivel(nf, ne)}>
-      <Seta ab={ab} /><Tg lv={lv} x={x} className="lg-tg"><Pin x={x} /></Tg>{x.nome}<Tg lv={lv} x={x} className="n lg-tg">{x.n}</Tg>
+      <Seta ab={ab} /><Tg lv={lv} x={x} className="lg-tg"><Pin x={x} /></Tg>{x.nome}<span className="n">{x.n}</span>
     </button>
   );
   const folha = (x: X, prof: number, ativo: boolean, nf: string, ne: string, lv: string, pai: boolean) => ativo ? (
@@ -661,14 +668,14 @@ function Legenda({ fases, todos, f, e, arv, apag, busca, alternarArv, nivel, apa
     </button>
   ) : (
     <button key={lv + x.k} type="button" className={`lg-i lg-a lg-fora${off(lv, x.k, pai) ? ' lg-off' : ''}`} style={{ '--p': prof } as React.CSSProperties} onClick={() => nivel(nf, ne)}>
-      <span className="lg-s" /><Tg lv={lv} x={x} className="lg-tg"><Pin x={x} /></Tg>{x.nome}<Tg lv={lv} x={x} className="n lg-tg">{x.n}</Tg>
+      <span className="lg-s" /><Tg lv={lv} x={x} className="lg-tg"><Pin x={x} /></Tg>{x.nome}<span className="n">{x.n}</span>
     </button>
   );
-  const h: React.ReactNode[] = [];
+  const t0 = off('*', 'todos', false), h: React.ReactNode[] = [];
   if (arv) for (const x of nivelItens('', '')) {
-    if (!x.desce) { h.push(folha(x, 1, !f, '', '', '|', false)); continue; }
-    const ab = f === x.k, px = off('|', x.k, false);
-    h.push(ramo(x, 1, ab, ab ? '' : x.k, '', !!f && !ab, '|', false));
+    if (!x.desce) { h.push(folha(x, 1, !f, '', '', '|', t0)); continue; }
+    const ab = f === x.k, px = t0 || off('|', x.k, false);
+    h.push(ramo(x, 1, ab, ab ? '' : x.k, '', !!f && !ab, '|', t0));
     if (!ab) continue;
     for (const y of nivelItens(x.k, '')) {
       if (!y.desce) { h.push(folha(y, 2, !e, x.k, '', x.k + '|', px)); continue; }
@@ -680,8 +687,8 @@ function Legenda({ fases, todos, f, e, arv, apag, busca, alternarArv, nivel, apa
   }
   return (
     <>
-      <button type="button" className="lg-i lg-a" style={{ '--p': 0 } as React.CSSProperties} aria-expanded={arv} onClick={alternarArv}>
-        <Seta ab={arv} /><span className="lg-poi"><span className="pin-mini lg-nt" /></span>Terrenos<span className="n">{baseT.length}</span>
+      <button type="button" className={`lg-i lg-a${t0 ? ' lg-off' : ''}`} style={{ '--p': 0 } as React.CSSProperties} aria-expanded={arv} onClick={alternarArv}>
+        <Seta ab={arv} /><span className="lg-poi lg-tg" title="Ligar ou desligar todos os terrenos" onClick={(ev) => { ev.preventDefault(); ev.stopPropagation(); apagar('*', 'todos'); }}><span className="pin-mini lg-nt" /></span>Terrenos<span className="n">{baseT.length}</span>
       </button>
       {h}
       <hr className="lg-sep" />

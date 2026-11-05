@@ -149,3 +149,37 @@ export async function frentes(poly: P[]): Promise<Frente[]> {
 /* nome de referência: o logradouro sem o tipo (Rua, Avenida...) e sem o número (decisão do Moisés, 4/nov/2026) */
 const NV_TIPO_LOG = /^(rua|r\.|avenida|av\.?|alameda|al\.?|travessa|trav\.?|tv\.?|estrada|estr\.?|est\.|pra[çc]a|p[çc]a\.?|rodovia|rod\.?|largo|lgo\.?|viela|via|viaduto|ladeira|passagem|beco|vila|parque|pq\.?|servid[ãa]o|acesso|caminho|marginal)\s+/i;
 export const nomeRef = (log: string | null | undefined) => (log || '').trim().replace(NV_TIPO_LOG, '').replace(/,.*$/, '').trim();
+
+/* ---------- lotes da prefeitura: soma das poligonais (proto_novo.js: engorda, lotesUniao, limpaPoly) ---------- */
+/** cresce a poligonal m metros para fora (cada lote cresce 1 cm para os vizinhos se juntarem) */
+function engorda(poly: P[], m: number): P[] {
+  const pj = nvProj(centro(poly)[0]), Q = poly.map(pj.xy), n = Q.length;
+  const s = Math.sign(Q.reduce((a, p, i) => { const q = Q[(i + 1) % n]; return a + p[0] * q[1] - q[0] * p[1]; }, 0)) || 1;
+  const nor = (p: P, q: P): P => { const dx = q[0] - p[0], dy = q[1] - p[1], L = Math.hypot(dx, dy) || 1; return [(s * dy) / L, (-s * dx) / L]; };
+  return Q.map((p, i) => { const a = nor(Q[(i - 1 + n) % n], p), b = nor(p, Q[(i + 1) % n]), bx = a[0] + b[0], by = a[1] + b[1], k = (bx * bx + by * by) / 2 || 1; return pj.ll([p[0] + (m * bx) / k, p[1] + (m * by) / k]); });
+}
+/** tira os pontos que sobram da junção: colados (< 5 cm) ou em linha reta com os vizinhos */
+function limpaPoly(poly: P[]): P[] {
+  const pj = nvProj(centro(poly)[0]), Q = poly.map(pj.xy);
+  let mudou = true;
+  while (mudou && Q.length > 3) {
+    mudou = false;
+    for (let i = 0; i < Q.length && Q.length > 3; i++) {
+      const a = Q[(i - 1 + Q.length) % Q.length], b = Q[i], c = Q[(i + 1) % Q.length];
+      if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 0.05 || Math.abs((b[0] - a[0]) * (c[1] - a[1]) - (c[0] - a[0]) * (b[1] - a[1])) / 2 < 0.02) { Q.splice(i, 1); mudou = true; i--; }
+    }
+  }
+  return fixa(Q.map(pj.ll));
+}
+/** soma das poligonais dos lotes, em qualquer ordem; null quando algum não encosta nos outros */
+export function lotesUniao(polys: P[][]): P[] | null {
+  if (!polys.length) return null;
+  if (polys.length === 1) return polys[0];
+  const resto = polys.map((p) => engorda(p, 0.01));
+  let u = resto.shift()!, mudou = true;
+  while (resto.length && mudou) {
+    mudou = false;
+    for (let i = 0; i < resto.length; i++) { const j = uniaoPoly(u, resto[i]); if (j) { u = j; resto.splice(i, 1); i--; mudou = true; } }
+  }
+  return resto.length ? null : limpaPoly(u);
+}

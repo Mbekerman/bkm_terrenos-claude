@@ -4957,7 +4957,7 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 .lg-msit[disabled] { opacity: .5; cursor: default }
 /* legenda: item desligado (ele ou o ramo de cima) fica apagado; a bolinha e o número de um ramo ligam e desligam tudo dentro */
 #mp-leg .lg-i.lg-off .pin-mini { filter: grayscale(1); opacity: .45 } #mp-leg .lg-i.lg-off { color: var(--m-on-surface-variant, #444746) }
-#mp-leg .lg-tg { cursor: pointer } #mp-leg span.lg-tg:hover .pin-mini, #mp-leg .n.lg-tg:hover { outline: 2px solid #0b57d0; outline-offset: 1px; border-radius: 9px }
+#mp-leg .lg-tg { cursor: pointer } #mp-leg span.lg-tg:hover .pin-mini { outline: 2px solid #0b57d0; outline-offset: 1px; border-radius: 9px }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

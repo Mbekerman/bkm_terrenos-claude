@@ -79,8 +79,10 @@ export function info(fs: Fase[], k: string | null, f: string, e: string): [strin
 
 /** itens apagados na legenda, por nível ('fase|etapa'), valem em qualquer nível aberto */
 export function apagado(fs: Fase[], t: TerrenoMapa, apag: Apag): boolean {
+  /* '*': a bolinha de "Terrenos" apagou todos */
   return Object.entries(apag).some(([lv, l]) => {
     if (!l.length) return false;
+    if (lv === '*') return true;
     const [f, e] = lv.split('|');
     const c = classe(fs, t, f, e);
     return c != null && l.includes(c);
