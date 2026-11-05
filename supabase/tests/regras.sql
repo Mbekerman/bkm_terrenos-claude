@@ -1699,6 +1699,14 @@ select pg_temp.como('00000000-0000-0000-0000-0000000000f1');
 select pg_temp.ok(exists (select 1 from app.terrenos), 'o básico consulta os dados da empresa, como leitura');
 select pg_temp.falha(format($$update app.terrenos set nome = 'X' where id = %L$$, :'t1'), 'o básico não altera nada');
 select pg_temp.falha(format($$select app.mudar_arroba(%L, 'jj')$$, '00000000-0000-0000-0000-0000000000f1'), 'o básico não muda o próprio @');
+select app.salvar_minha_foto('https://lh3.googleusercontent.com/a/foto-da-api');
+select pg_temp.ok((select foto_url = 'https://lh3.googleusercontent.com/a/foto-da-api' from app.usuarios where user_id = '00000000-0000-0000-0000-0000000000f1'),
+  'quem entrou grava a própria foto buscada no Google');
+select pg_temp.falha($$select app.salvar_minha_foto('https://exemplo.com/foto.png')$$, 'foto que não é do Google é recusada');
+reset role;
+update auth.users set raw_user_meta_data = '{"full_name":"João S. Silva"}', last_sign_in_at = now() where id = '00000000-0000-0000-0000-0000000000f1';
+select pg_temp.ok((select foto_url = 'https://lh3.googleusercontent.com/a/foto-da-api' from app.usuarios where user_id = '00000000-0000-0000-0000-0000000000f1'),
+  'login sem foto não apaga a foto gravada');
 select pg_temp.como(:'diretor');
 select pg_temp.ok((select count(*) from app.usuarios where arroba like 'joao.silva%') = 2, 'a equipe vê nome, foto e @ de quem está na empresa');
 select pg_temp.falha(format($$select app.mudar_arroba(%L, 'joao.silva')$$, '00000000-0000-0000-0000-0000000000f2'), '@ já usado é recusado');

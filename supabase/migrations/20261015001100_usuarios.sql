@@ -216,6 +216,21 @@ begin
   return v;
 end $$;
 
+-- Foto do Google buscada pelo front na API People quando o login não a traz (contas do Workspace
+-- com a foto restrita à organização não mandam "picture" no login; caso do Moises, 5/nov/2026).
+-- Cada um grava só a própria, e só endereço de foto do Google.
+create or replace function app.salvar_minha_foto(p_url text)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if auth.uid() is null then raise exception 'Entre no sistema' using errcode = '42501'; end if;
+  if p_url is null or p_url !~ '^https://[a-z0-9-]+\.googleusercontent\.com/' or length(p_url) > 2000 then
+    raise exception 'Endereço de foto inválido' using errcode = '22023';
+  end if;
+  update app.usuarios set foto_url = p_url where user_id = auth.uid();
+end $$;
+
 -- ---------------------------------------------------------------------
 -- Menções com @ (decisão do Moisés, 28/out/2026): quem escreve @arroba
 -- numa tarefa, numa atividade ou numa reunião avisa a pessoa (no app e,
@@ -320,7 +335,7 @@ grant select, insert, update, delete on app.empresa_dominios to authenticated;
 create trigger t_aud after insert or update or delete on app.empresa_dominios for each row execute function app.tg_auditoria();
 
 revoke execute on function app.gerar_arroba(text, uuid), app.tg_usuario_novo(), app.tg_usuario_login(), app._aplicar_equipe_prevista(uuid, uuid, text),
-  app.hook_antes_de_criar_usuario(jsonb), app.mudar_arroba(uuid, text), app.tg_mencoes() from public;
-grant execute on function app.mudar_arroba(uuid, text) to authenticated;
+  app.hook_antes_de_criar_usuario(jsonb), app.mudar_arroba(uuid, text), app.salvar_minha_foto(text), app.tg_mencoes() from public;
+grant execute on function app.mudar_arroba(uuid, text), app.salvar_minha_foto(text) to authenticated;
 grant usage on schema app to supabase_auth_admin;
 grant execute on function app.hook_antes_de_criar_usuario(jsonb) to supabase_auth_admin;
