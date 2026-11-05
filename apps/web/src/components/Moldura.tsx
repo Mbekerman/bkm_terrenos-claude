@@ -1,25 +1,51 @@
 import { useEffect, useRef, useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { NOME_PAPEL, useSessao } from '../lib/sessao';
 import { supabase } from '../lib/supabase';
-import { EH_DEV } from '../lib/config';
-import { Icon, type NomeIcone } from './ui';
+import { AMBIENTE, EH_DEV } from '../lib/config';
+import { BI, IC_SINO, P } from '../lib/icones-prototipo';
 
-/** Itens do menu na primeira versão (só computador). */
-const MENU: { to: string; rotulo: string; curto: string; icone: NomeIcone }[] = [
-  { to: '/mapa', rotulo: 'Mapa', curto: 'Mapa', icone: 'mapa' },
-  { to: '/funil', rotulo: 'Funil', curto: 'Funil', icone: 'funil' },
+// Moldura copiada do protótipo, com as mesmas classes e a mesma marcação (proto_body.html,
+// proto.js › render/renderPerfil, proto_funil.js › renderSino e o selo do ambiente). Os estilos
+// são os do protótipo, em styles.css. Primeira versão: Mapa e Funil no menu, sem tema escuro.
+
+/** Itens do menu na primeira versão: [rota, rótulo, ícone]. */
+const NAV: [string, string, keyof typeof BI][] = [
+  ['mapa', 'Mapa', 'mapa'],
+  ['funil', 'Funil', 'funil'],
 ];
 const CHAVE_MENU = 'bkm-terrenos-menu';
 
-export function Logo() {
+/** Ícone de linha do protótipo (ic). */
+export function Ic({ n, s = 20 }: { n: keyof typeof P; s?: number }) {
   return (
-    <span className="m-logo">
-      <img src="/marca/bkm-logo.svg" alt="BKM" width={120} />
-      {EH_DEV && <span className="m-selo-dev">Desenvolvimento</span>}
+    <svg className="ic" viewBox="0 0 24 24" width={s} height={s} aria-hidden="true">
+      <path fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" d={P[n]} />
+    </svg>
+  );
+}
+
+/** Ícone BKM do protótipo (bi). */
+export function Bi({ n, s = 32 }: { n: keyof typeof BI; s?: number }) {
+  return <svg className="bkm-ico" viewBox="0 0 96 96" width={s} height={s} style={{ width: s, height: s }} aria-hidden="true" dangerouslySetInnerHTML={{ __html: BI[n] }} />;
+}
+
+/** Selo do ambiente ao lado do logo (fora da produção). */
+export function SeloAmbiente() {
+  if (!AMBIENTE || AMBIENTE === 'producao') return null;
+  const nome = AMBIENTE === 'dev' ? 'Desenvolvimento' : AMBIENTE;
+  return (
+    <span className="amb-selo" title={nome}>
+      <span className="amb-l">{nome}</span>
+      <span className="amb-c">{AMBIENTE === 'dev' ? 'DEV' : AMBIENTE.slice(0, 3).toUpperCase()}</span>
     </span>
   );
+}
+
+/** Logo com o selo do ambiente, para as telas fora da moldura (entrada, sem acesso). */
+export function Logo() {
+  return <span className="m-logo"><img src="/marca/bkm-logo.svg" alt="BKM" width={120} /><SeloAmbiente /></span>;
 }
 
 /** Fecha o menu flutuante no clique fora e no Esc. */
@@ -36,33 +62,28 @@ function useFora<T extends HTMLElement>(aberto: boolean, fechar: () => void) {
   return ref;
 }
 
-function Foto({ nome, url, grande }: { nome: string; url: string | null | undefined; grande?: boolean }) {
+/** Foto do Google no lugar da inicial; sem foto (ou se ela não carrega), a inicial, como no protótipo. */
+function Foto({ nome, url }: { nome: string; url: string | null | undefined }) {
   const [falhou, setFalhou] = useState(false);
-  const ini = nome.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]!.toUpperCase()).join('');
-  return url && !falhou
-    ? <img className={`m-foto${grande ? ' g' : ''}`} src={url} alt="" referrerPolicy="no-referrer" onError={() => setFalhou(true)} />
-    : <span className={`m-foto m-foto-ini${grande ? ' g' : ''}`} aria-hidden="true">{ini || '?'}</span>;
+  if (url && !falhou) return <img className="perfil-foto" src={url} alt="" referrerPolicy="no-referrer" onError={() => setFalhou(true)} />;
+  return <>{(nome.trim()[0] ?? '?').toUpperCase()}</>;
 }
 
-function MenuAvatar() {
+function Perfil() {
   const { usuario, membro, session } = useSessao();
   const [aberto, setAberto] = useState(false);
   const ref = useFora<HTMLDivElement>(aberto, () => setAberto(false));
   const nome = usuario?.nome ?? membro?.nome ?? session?.user.email ?? '';
   const papel = membro ? NOME_PAPEL[membro.papel] + (membro.administrador ? ' · Administrador' : '') : '';
   return (
-    <div className="m-flutua" ref={ref}>
-      <button className="m-avatar" aria-label={`Conta de ${nome}`} aria-expanded={aberto} onClick={() => setAberto(!aberto)}>
+    <div className="tema-wrap" id="perfil" ref={ref}>
+      <button className="perfil-btn" aria-haspopup="menu" aria-expanded={aberto} aria-label={`${nome}, ${papel}`} title={`${nome} · ${papel}`} onClick={() => setAberto(!aberto)}>
         <Foto nome={nome} url={usuario?.foto_url} />
       </button>
       {aberto && (
-        <div className="m-pop m-pop-conta" role="menu">
-          <Foto nome={nome} url={usuario?.foto_url} grande />
-          <div className="m-conta-nome">{nome}</div>
-          {usuario?.arroba && <div className="m-conta-sub">@{usuario.arroba}</div>}
-          <div className="m-conta-sub">{usuario?.email ?? session?.user.email}</div>
-          {papel && <span className="m-chip">{papel}</span>}
-          <button className="m-btn m-btn-cont" role="menuitem" onClick={() => supabase.auth.signOut()}>Sair</button>
+        <div className="tema-menu" role="menu">
+          <div className="perfil-eu"><b>{nome}</b><span>{usuario?.arroba ? `@${usuario.arroba} · ` : ''}{papel}</span></div>
+          <button role="menuitem" onClick={() => supabase.auth.signOut()}>Sair</button>
         </div>
       )}
     </div>
@@ -70,6 +91,7 @@ function MenuAvatar() {
 }
 
 interface Aviso { id: string; texto: string; criada_em: string; lida_em: string | null }
+const dataCurta = (iso: string) => new Date(iso).toLocaleDateString('pt-BR');
 
 function Sino() {
   const { session, empresa } = useSessao();
@@ -83,34 +105,36 @@ function Sino() {
     refetchInterval: 60_000,
     queryFn: async () => {
       const { data, error } = await supabase.from('notificacoes').select('id,texto,criada_em,lida_em')
-        .eq('destinatario_id', uid!).eq('empresa_id', empresa!.id).order('criada_em', { ascending: false }).limit(20);
+        .eq('destinatario_id', uid!).eq('empresa_id', empresa!.id).order('criada_em', { ascending: false }).limit(30);
       if (error) throw error;
       return (data ?? []) as Aviso[];
     },
   });
-  const avisos = q.data ?? [];
-  const novos = avisos.filter((a) => !a.lida_em).length;
-  async function lerTodos() {
+  const L = q.data ?? [];
+  const nl = L.filter((a) => !a.lida_em).length;
+  async function lerTodas() {
     await supabase.rpc('marcar_notificacao_lida', { p_id: null });
     qc.invalidateQueries({ queryKey: ['avisos'] });
   }
   return (
-    <div className="m-flutua" ref={ref}>
-      <button className="m-icone" aria-label={novos ? `Avisos, ${novos} novos` : 'Avisos'} aria-expanded={aberto} onClick={() => setAberto(!aberto)}>
-        <Icon n="sino" s={24} />
-        {novos > 0 && <span className="m-badge">{novos > 9 ? '9+' : novos}</span>}
+    <div className="sino-wrap" id="sino" ref={ref}>
+      <button className="sino-btn" aria-haspopup="true" aria-expanded={aberto} aria-label={`Notificações${nl ? `, ${nl} não lidas` : ''}`} title="Notificações" onClick={() => setAberto(!aberto)}>
+        <span dangerouslySetInnerHTML={{ __html: IC_SINO }} style={{ display: 'contents' }} />
+        {nl > 0 && <span className="sino-n">{nl > 9 ? '9+' : nl}</span>}
       </button>
       {aberto && (
-        <div className="m-pop m-pop-avisos" role="dialog" aria-label="Avisos">
-          <div className="m-pop-h"><span>Avisos</span>{novos > 0 && <button className="m-btn-txt" onClick={lerTodos}>Marcar como lidos</button>}</div>
-          {avisos.length === 0
-            ? <div className="m-vazio">Nenhum aviso.</div>
-            : avisos.map((a) => (
-              <div key={a.id} className={`m-aviso${a.lida_em ? '' : ' novo'}`}>
-                <div>{a.texto}</div>
-                <div className="m-conta-sub">{new Date(a.criada_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</div>
-              </div>
-            ))}
+        <div className="sino-menu" role="dialog" aria-label="Notificações">
+          <div className="sino-h"><span>Notificações</span>{nl > 0 && <button className="linkbtn" onClick={lerTodas}>Marcar todas como lidas</button>}</div>
+          <div className="sino-l">
+            {L.length === 0
+              ? <div className="empty" style={{ padding: '24px 16px' }}>Nada por aqui.</div>
+              : L.map((x) => (
+                <button key={x.id} className={`sino-i ${x.lida_em ? '' : 'nova'}`}>
+                  <span className="sino-d" />
+                  <span className="sino-c"><span className="sino-t">{x.texto}</span><span className="sino-s">{dataCurta(x.criada_em)}</span></span>
+                </button>
+              ))}
+          </div>
         </div>
       )}
     </div>
@@ -118,30 +142,60 @@ function Sino() {
 }
 
 export default function Moldura() {
-  const [aberto, setAberto] = useState(() => { try { return localStorage.getItem(CHAVE_MENU) === 'aberto'; } catch { return false; } });
+  const { pathname } = useLocation();
+  const navegar = useNavigate();
+  const rota = pathname.split('/')[1] || 'mapa';
+  const [menuMin, setMenuMin] = useState(() => { try { return localStorage.getItem(CHAVE_MENU) !== 'aberto'; } catch { return true; } });
   function alternar() {
-    setAberto(!aberto);
-    try { localStorage.setItem(CHAVE_MENU, aberto ? 'recolhido' : 'aberto'); } catch { /* sem storage */ }
+    const novo = !menuMin;
+    setMenuMin(novo);
+    try { localStorage.setItem(CHAVE_MENU, novo ? 'min' : 'aberto'); } catch { /* sem storage */ }
   }
   useEffect(() => { document.title = (EH_DEV ? '[DEV] ' : '') + 'BKM Terrenos'; }, []);
+  useEffect(() => { document.body.classList.toggle('menu-min', menuMin); }, [menuMin]);
+  useEffect(() => { document.body.dataset.rota = rota; }, [rota]);
+  const novo = () => navegar('/terrenos/novo');
   return (
-    <div className={`m-app${aberto ? ' menu-aberto' : ''}`}>
-      <header className="m-topo">
-        <NavLink to="/" className="m-marca" aria-label="Início"><Logo /></NavLink>
-        <div className="m-topo-dir"><Sino /><MenuAvatar /></div>
+    <>
+      <header className="top">
+        <div className="top-in">
+          <button className="brand" aria-label="Início" onClick={() => navegar('/')}>
+            <img src="/marca/bkm-logo.svg" alt="BKM" width={120} />
+            <span className="brand-sep" /><span className="brand-prod">Terrenos</span>
+          </button>
+          <SeloAmbiente />
+          <label className="search" htmlFor="q-top">
+            <Bi n="busca" s={20} />
+            <input id="q-top" type="search" placeholder="Buscar por nome, endereço, matrícula, SQL ou corretor" autoComplete="off" />
+          </label>
+          <div className="top-right">
+            <Sino />
+            <Perfil />
+          </div>
+        </div>
       </header>
-      <nav className="m-menu" aria-label="Menu">
-        <button className="m-icone m-menu-alt" onClick={alternar} aria-label={aberto ? 'Recolher o menu' : 'Abrir o menu'} aria-expanded={aberto}>
-          <Icon n="menu" s={24} />
-        </button>
-        {MENU.map((i) => (
-          <NavLink key={i.to} to={i.to} className="m-menu-item">
-            <span className="m-menu-pilula"><Icon n={i.icone} s={24} /></span>
-            <span className="m-menu-rot">{aberto ? i.rotulo : i.curto}</span>
-          </NavLink>
+      <div className="layout">
+        <aside className="side" id="side" aria-label="Navegação">
+          <button className="menu-tg" aria-expanded={!menuMin} aria-label={menuMin ? 'Expandir menu' : 'Recolher menu'} title={menuMin ? 'Expandir menu' : 'Recolher menu'} onClick={alternar}>
+            <Ic n={menuMin ? 'expandir' : 'recolher'} />
+          </button>
+          <button className="compose" onClick={novo} {...(menuMin ? { title: 'Novo terreno', 'aria-label': 'Novo terreno' } : {})}>
+            <Ic n="add" s={24} /><span className="rot">Novo terreno</span>
+          </button>
+          {NAV.map(([r, l, i]) => (
+            <button key={r} className="nav-item" onClick={() => navegar(`/${r}`)} aria-current={rota === r ? 'page' : undefined} {...(menuMin ? { title: l, 'aria-label': l } : {})}>
+              <span className="ri"><Bi n={i} /></span><span className="rot">{l}</span>
+            </button>
+          ))}
+        </aside>
+        <main className="main" id="main"><Outlet /></main>
+      </div>
+      <nav className="bnav" id="bnav" aria-label="Navegação">
+        {NAV.map(([r, l, i]) => (
+          <button key={r} onClick={() => navegar(`/${r}`)} aria-current={rota === r ? 'page' : undefined}><span className="pill"><Bi n={i} s={32} /></span>{l}</button>
         ))}
       </nav>
-      <main className="m-conteudo"><Outlet /></main>
-    </div>
+      <button className="fab" onClick={novo}><Ic n="add" s={22} /><span className="fab-t">Novo terreno</span></button>
+    </>
   );
 }

@@ -22,6 +22,7 @@ export default function App() {
         <Route index element={<Navigate to="/mapa" replace />} />
         <Route path="mapa/*" element={<EmPorte titulo="Mapa" />} />
         <Route path="funil/*" element={<EmPorte titulo="Funil" />} />
+        <Route path="terrenos/novo" element={<EmPorte titulo="Novo terreno" />} />
         <Route path="*" element={<Navigate to="/mapa" replace />} />
       </Route>
     </Routes>
