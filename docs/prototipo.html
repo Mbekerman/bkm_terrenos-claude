@@ -1810,7 +1810,9 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 }
 .mp-modo .mp-q { opacity: .75; white-space: nowrap }
 /* desenho no desktop: só o mapa, a busca e a barra Cancelar/Concluir no canto de baixo à direita (opção 5 do Moises, 5/nov/2026) */
-.mapa-area:has(.mp-modo > .mp-fina) :is(.mp-legenda, #mp-ctrl, .gm-svpc, .mp-barra > :not(.mp-busca)) { display: none !important }
+.mapa-area:has(.mp-modo > .mp-fina:not(.rg-b)) :is(.mp-legenda, #mp-ctrl, .gm-svpc, .mp-barra > :not(.mp-busca)) { display: none !important }
+/* régua: o botão dela, no canto, continua à mostra (é ele que desliga) */
+.mapa-area:has(.mp-modo > .rg-b) :is(.mp-legenda, .gm-svpc, .mp-barra > :not(.mp-busca)) { display: none !important }
 .mp-modo:has(> .mp-fina) { top: auto !important; bottom: 28px; left: auto !important; right: 12px; transform: none; flex-wrap: nowrap; max-width: none; padding: 4px 4px 4px 16px !important; gap: 4px !important; border-radius: 22px !important; font-size: 13px; line-height: 18px }
 .mp-modo:has(> .mp-fina) > .mp-fina { flex: 0 0 auto; margin-right: 8px }
 .mp-modo:has(> .mp-fina) .btn { height: 32px; min-height: 32px !important; border-radius: 16px !important }
@@ -5688,7 +5690,14 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 .rg-rot { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); white-space: nowrap; background: #fff; color: #1f1f1f; border: 1px solid #c4c7c5; border-radius: 6px; padding: 1px 6px; font-size: 12px; line-height: 18px; font-variant-numeric: tabular-nums; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,.2) }
 .rg-rot.rg-tot { background: #0b57d0; color: #fff; border-color: #0b57d0; font-weight: 500; transform: translate(-50%, calc(-100% - 10px)) }
 /* no desenho, na edição e na régua o clique passa pelos pinos do mapa (terrenos e concorrência) e marca o ponto ali */
-:is(.mapa, .mini-mapa).modo gmp-advanced-marker:not(:has(.v-alvo, .rg-ini)) { pointer-events: none !important }
+:is(.mapa, .mini-mapa).modo gmp-advanced-marker:not(:has(.v-alvo, .rg-pt)) { pointer-events: none !important }
+.rg-pt { pointer-events: auto }
+/* régua como botão do canto, acima da localização (pedido do Moisés, 5/nov/2026): ligada, fica azul */
+.mp-cb.mp-rg[aria-pressed="true"], .mp-cb.mp-rg[aria-pressed="true"]:hover { background: #0b57d0; color: #fff }
+.mapa-area.sv-on .mp-cb.mp-rg { display: none }
+/* a busca a 12 px da borda esquerda, a mesma distância dos três pontinhos à direita (pedido do Moisés, 5/nov/2026);
+   no Leaflet fica depois do + e − do zoom */
+.mapa-area:not(:has(.leaflet-container)) .mp-barra { left: 12px !important }
 </style>
 <header class="top">
   <div class="top-in">
@@ -6849,7 +6858,7 @@ function mpTipoEscolher(v){v=v==='satelite'?'satelite':'mapa';if(typeof rdCamada
 /* botões do canto do mapa: minha localização e tela cheia (o controle de câmera do Google saiu; decisão do Moisés, 23/out/2026).
    Sobem acima do cartão do terreno e do aviso de desenho quando eles ocupam o pé do mapa. */
 function mpCtrlHtml(){const on=document.body.classList.contains('mp-cheia');
-  return `${GG?`<button type="button" class="mp-cb sv-x" data-a="sv-fechar" title="Fechar o Street View (Esc)" aria-label="Fechar o Street View">${ic('close',22)}</button>`:''}<div id="mp-ctrl" class="mp-ctrl"><button type="button" class="mp-cb" data-a="mp-eu" title="Minha localização" aria-label="Centralizar na minha localização">${ic('eu',22)}</button>
+  return `${GG?`<button type="button" class="mp-cb sv-x" data-a="sv-fechar" title="Fechar o Street View (Esc)" aria-label="Fechar o Street View">${ic('close',22)}</button>`:''}<div id="mp-ctrl" class="mp-ctrl"><button type="button" class="mp-cb mp-rg" data-a="rg-abrir" aria-pressed="${UI.mpModo==='regua'}" title="Régua" aria-label="Régua">${ic('regua',22)}</button><button type="button" class="mp-cb" data-a="mp-eu" title="Minha localização" aria-label="Centralizar na minha localização">${ic('eu',22)}</button>
     <button type="button" class="mp-cb" data-a="mp-cheia" aria-pressed="${on}" title="${on?'Sair da tela cheia':'Tela cheia'}" aria-label="${on?'Sair da tela cheia':'Tela cheia'}">${ic(on?'telaSair':'tela',22)}</button></div>`}
 /* o bonequinho do Street View fica sempre no mesmo lugar do canto (64 px acima do pé do mapa, 32 de altura): reserva o lugar
    dele mesmo antes de o Google desenhá-lo ou enquanto o mapa muda de tamanho (tela cheia), senão a tela cheia cai em cima dele */
@@ -13180,7 +13189,7 @@ function mpMaisMenu(abrir){if(!abrir&&typeof MM_SOBRE!=='undefined'&&MM_SOBRE)MM
     <button type="button" role="menuitem" data-a="mf-abrir">${ic('filtro',18)}<span class="mm-l">Filtro da concorrência</span>${n(nc)}</button>
     <button type="button" role="menuitem" data-a="fx-abrir">${ic('filtro',18)}<span class="mm-l">Filtro dos terrenos</span>${n(nt)}</button>
     <button type="button" role="menuitem" data-a="rg-abrir">${ic('regua',18)}<span class="mm-l">Régua</span></button>
-    <div class="mm-t" role="presentation">Camadas</div>${cm('mp-renda','renda','Renda familiar (setores)')}${cm('mp-dens','dens','Densidade demográfica (setores)')}
+    <div class="mm-t" role="presentation">Camadas</div>${cm('mp-renda','renda','Mapa de Renda')}${cm('mp-dens','dens','Mapa Demográfico')}
     <div class="mm-t" role="presentation">Tipo de mapa</div>${tp('mapa','Mapa')}${tp('satelite','Satélite')}</div>`)}
 window.addEventListener('click',e=>{const a=e.target.closest?.('[data-a="mp-mais"],[data-a="mp-tipo"],.mp-mais-m [data-a]');if(!a)return;
   if(a.dataset.a==='mp-mais'){mpMaisMenu(!$('.mp-mais-m'));return}
@@ -13459,28 +13468,50 @@ document.addEventListener('pointerup',e=>{const p=FORA0;FORA0=null;if(!p||Math.h
   if(MK.box&&!mkFixa()&&!a.closest('#mk-box'))mkFechar()},true);
 
 /* ===================== régua ===================== */
-/* Régua no menu dos três pontinhos (pedido do Moisés, 5/nov/2026): cada clique no mapa marca um ponto e a linha mede o caminho, trecho a trecho
-   e no total; clicar no primeiro ponto (com 3 ou mais) fecha a forma e mede a área. Não segue a rua. Esc, Sair ou o mesmo item saem. */
+/* Régua (pedido do Moisés, 5/nov/2026): botão no canto, acima da minha localização (e no menu dos três pontinhos), que fica azul enquanto
+   ligada e vale até ser desligada. Cada clique no mapa marca um ponto e a linha mede o caminho, trecho a trecho e no total; clicar no
+   primeiro ponto (com 3 ou mais) fecha a forma e mede a área; o clique seguinte começa outra medida. Não segue a rua.
+   Teclas: Backspace apaga o último ponto, Del apaga o desenho (sem desenho, desliga), Esc desliga; Ctrl+Z desfaz. Clique direito num
+   ponto: Excluir ponto. */
 UI.rg=null;let rgCam=[];
 const rgDist=(a,b)=>distKm(a[0],a[1],b[0],b[1])*1000;
 const rgM=v=>v>=1000?num(v/1000,2)+' km':num(Math.round(v))+' m',rgA=v=>v>=1e6?num(v/1e6,2)+' km²':m2(Math.round(v));
 function rgTotal(){const p=UI.rg?.pts||[];let t=0;for(let i=1;i<p.length;i++)t+=rgDist(p[i-1],p[i]);if(UI.rg?.fechado&&p.length>2)t+=rgDist(p.at(-1),p[0]);return t}
+function rgBotao(){document.querySelectorAll('.mp-cb[data-a="rg-abrir"]').forEach(b=>b.setAttribute('aria-pressed',String(UI.mpModo==='regua')))}
 function rgAbrir(){if(UI.mpModo&&UI.mpModo!=='regua')return;if(UI.mpModo==='regua'){rgSair();return}
-  lugarFechar?.();mkFechar();if(UI.mpSel)mpSelecionar(null);UI.mpModo='regua';UI.rg={pts:[],fechado:false};mpRefresh();
-  toast(TOQUE()?'Toque no mapa para marcar os pontos.':'Clique no mapa para marcar os pontos. Clique no primeiro ponto para medir a área; Esc sai.')}
-function rgSair(){UI.mpModo=null;UI.rg=null;rgDesenha();mpRefresh()}
+  lugarFechar?.();mkFechar();if(UI.mpSel)mpSelecionar(null);UI.mpModo='regua';UI.rg={pts:[],fechado:false};mpRefresh();rgBotao();
+  toast(TOQUE()?'Toque no mapa para marcar os pontos.':'Clique no mapa para marcar os pontos e no primeiro ponto para medir a área. Backspace apaga o último ponto, Del apaga o desenho e Esc desliga a régua.')}
+function rgSair(){rgCtxFechar();UI.mpModo=null;UI.rg=null;rgDesenha();mpRefresh();rgBotao()}
 function rgClique(lat,lng){const R=UI.rg;if(!R)return;
+  if(Date.now()-(UI.rgCtxEm||0)<400)return;
   const a=UI.pdAnt,b=UI.pdUlt;if(!TOQUE()&&((UI.cliqueN||1)>=2||(a&&b&&b.t-a.t<400&&Math.hypot(b.x-a.x,b.y-a.y)<8)))return; /* o segundo clique de um duplo clique não marca outro ponto */
   if(R.fechado){R.pts=[];R.fechado=false}
   R.pts.push([lat,lng]);rgAtualizar()}
 function rgFechar(){const R=UI.rg;if(!R||R.pts.length<3||R.fechado)return;R.fechado=true;rgAtualizar()}
-function rgAtualizar(){rgDesenha();const m=$('#mp-modo');if(m)m.innerHTML=modoBanner()}
+function rgAtualizar(){rgDesenha();const m=$('#mp-modo');if(m)m.innerHTML=modoBanner();rgBotao()}
+/* apaga um ponto; a forma fechada com menos de 3 volta a ser linha */
+function rgExcluir(i){const R=UI.rg;if(!R||!R.pts[i])return;R.pts.splice(i,1);if(R.pts.length<3)R.fechado=false;rgAtualizar()}
+function rgCtxFechar(){UI.rgCtx=false;$('.rg-ctx')?.remove()}
+function rgCtx(i,x,y){rgCtxFechar();const area=$('.mapa-area');if(!area||!UI.rg)return;const ar=area.getBoundingClientRect();
+  const m=document.createElement('div');m.className='mp-ctx rg-ctx';m.setAttribute('role','menu');
+  m.innerHTML=`<div class="v-t">Ponto ${i+1} de ${UI.rg.pts.length}</div><button type="button" role="menuitem" class="crit" data-a="rg-excluir" data-i="${i}">Excluir ponto</button>`;
+  area.appendChild(m);m.style.left=Math.max(8,Math.min(ar.width-m.offsetWidth-8,x-ar.left))+'px';m.style.top=Math.max(8,Math.min(ar.height-m.offsetHeight-8,y-ar.top))+'px';
+  UI.rgCtx=true;m.querySelector('button').focus({preventScroll:true})}
 function rgBanner(){const R=UI.rg||{pts:[]},n=R.pts.length,t=rgTotal(),ar=R.fechado?areaPoly(R.pts):null;
-  return `<span class="mp-q mp-fina">${n<2?'Régua: clique no mapa para medir':`${R.fechado?'Perímetro':'Distância'} ${rgM(t)}${ar?` · área ${rgA(ar)}`:''}`}</span>`
+  return `<span class="mp-q mp-fina rg-b">${n<2?'Régua: clique no mapa para medir':`${R.fechado?'Perímetro':'Distância'} ${rgM(t)}${ar?` · área ${rgA(ar)}`:''}`}</span>`
     +`<button class="btn sm text" data-a="rg-desfazer" ${n?'':'disabled'}>Desfazer</button><button class="btn sm text" data-a="rg-limpar" ${n?'':'disabled'}>Limpar</button><button class="btn sm primary" data-a="mp-sair">Sair</button>`}
-document.addEventListener('click',e=>{const b=e.target.closest?.('[data-a="rg-abrir"],[data-a="rg-desfazer"],[data-a="rg-limpar"]');if(!b)return;
-  const R=UI.rg;if(b.dataset.a==='rg-abrir')rgAbrir();else if(R){if(b.dataset.a==='rg-limpar'){R.pts=[];R.fechado=false}else if(R.fechado)R.fechado=false;else R.pts.pop();rgAtualizar()}});
-window.addEventListener('keydown',e=>{if(e.key!=='Escape'||UI.mpModo!=='regua'||UI.modal||e.target.matches('input,textarea,select'))return;rgSair();e.preventDefault();e.stopImmediatePropagation()},true);
+document.addEventListener('click',e=>{const b=e.target.closest?.('[data-a="rg-abrir"],[data-a="rg-desfazer"],[data-a="rg-limpar"],[data-a="rg-excluir"]');if(!b)return;
+  const R=UI.rg;if(b.dataset.a==='rg-abrir')rgAbrir();else if(b.dataset.a==='rg-excluir'){rgCtxFechar();rgExcluir(+b.dataset.i)}
+  else if(R){if(b.dataset.a==='rg-limpar'){R.pts=[];R.fechado=false}else if(R.fechado)R.fechado=false;else R.pts.pop();rgAtualizar()}});
+/* o menu do ponto fecha no clique fora dele (o clique no mapa que o fecha não marca ponto: rgClique) */
+/* (pela marca UI.rgCtx: o fechar do menu do clique direito, ctxFechar, também tira este da página) */
+document.addEventListener('pointerdown',e=>{if(!UI.rgCtx||e.target.closest('.rg-ctx'))return;if(e.target.closest('#mapa'))UI.rgCtxEm=Date.now();rgCtxFechar()},true);
+window.addEventListener('keydown',e=>{if(UI.mpModo!=='regua'||UI.modal||e.target.matches('input,textarea,select'))return;const R=UI.rg;
+  if(e.key==='Escape'){if($('.rg-ctx'))rgCtxFechar();else rgSair()}
+  else if(e.key==='Delete'){rgCtxFechar();if(R?.pts.length){R.pts=[];R.fechado=false;rgAtualizar()}else rgSair()}
+  else if(e.key==='Backspace'){rgCtxFechar();if(R?.pts.length)rgExcluir(R.pts.length-1)}
+  else return;
+  e.preventDefault();e.stopImmediatePropagation()},true);
 document.addEventListener('keydown',e=>{if(UI.mpModo!=='regua'||!(e.ctrlKey||e.metaKey)||e.key.toLowerCase()!=='z'||e.target.matches('input,textarea,select'))return;const R=UI.rg;if(!R?.pts.length)return;if(R.fechado)R.fechado=false;else R.pts.pop();rgAtualizar();e.preventDefault()});
 /* rótulo de cada trecho no meio dele, e do total no último ponto */
 function rgRotulos(){const R=UI.rg;if(!R)return [];const p=R.pts,out=[],seg=(a,b)=>out.push({ll:[(a[0]+b[0])/2,(a[1]+b[1])/2],t:rgM(rgDist(a,b)),c:'rg-seg'});
@@ -13493,7 +13524,9 @@ function rgDesenha(){if(!MAPA)return;if(GG){rgCam.forEach(x=>x.setMap?x.setMap(n
   /* um ponto sem tamanho no lugar exato, com o desenho centrado nele (vale para o Google e o Leaflet) */
   const w=el=>{const d=document.createElement('div');d.className='rg-w';d.appendChild(el);return d};
   const ponto=(q,i)=>{const el=document.createElement('div');el.className='rg-pt'+(i===0&&p.length>2&&!R.fechado?' rg-ini':'');
-    if(i===0)el.addEventListener('click',ev=>{if(p.length>2&&!R.fechado){ev.stopPropagation();rgFechar()}});return w(el)};
+    /* o clique num ponto não marca outro em cima dele; no primeiro (com 3 ou mais) fecha a forma; o direito abre Excluir ponto */
+    el.addEventListener('click',ev=>{ev.stopPropagation();if(i===0&&p.length>2&&!R.fechado)rgFechar()});
+    el.addEventListener('contextmenu',ev=>{ev.preventDefault();ev.stopPropagation();rgCtx(i,ev.clientX,ev.clientY)});return w(el)};
   const rot=o=>{const el=document.createElement('div');el.className='rg-rot '+o.c;el.textContent=o.t;return w(el)};
   if(GG){const ll=q=>gLL(q[0],q[1]);
     rgCam.push(R.fechado?new google.maps.Polygon({map:MAPA,paths:p.map(ll),strokeColor:cor,strokeWeight:2.5,fillColor:cor,fillOpacity:.12,clickable:false}):new google.maps.Polyline({map:MAPA,path:p.map(ll),strokeColor:cor,strokeWeight:2.5,clickable:false}));
@@ -13501,7 +13534,7 @@ function rgDesenha(){if(!MAPA)return;if(GG){rgCam.forEach(x=>x.setMap?x.setMap(n
     p.forEach((q,i)=>{const m=new AdvancedMarkerElement({map:MAPA,position:ll(q),content:ponto(q,i),zIndex:4001,gmpClickable:i===0});if(i===0)m.addListener?.('click',()=>{if(p.length>2&&!R.fechado)rgFechar()});rgCam.push(m)});
     rgRotulos().forEach(o=>rgCam.push(new AdvancedMarkerElement({map:MAPA,position:ll(o.ll),content:rot(o),zIndex:4000,gmpClickable:false})))}
   else{rgCam.push((R.fechado?L.polygon(p,{color:cor,weight:2.5,fillOpacity:.12,interactive:false}):L.polyline(p,{color:cor,weight:2.5,interactive:false})).addTo(MAPA));
-    p.forEach((q,i)=>{const m=L.marker(q,{keyboard:false,interactive:i===0,icon:L.divIcon({className:'',iconSize:[0,0],html:''})}).addTo(MAPA);const el=m.getElement();el.appendChild(ponto(q,i));if(i===0)m.on('click',e=>{L.DomEvent.stop(e);rgFechar()});rgCam.push(m)});
+    p.forEach((q,i)=>{const m=L.marker(q,{keyboard:false,interactive:true,icon:L.divIcon({className:'',iconSize:[0,0],html:''})}).addTo(MAPA);const el=m.getElement();el.appendChild(ponto(q,i));m.on('click',e=>{L.DomEvent.stop(e);if(i===0)rgFechar()});rgCam.push(m)});
     rgRotulos().forEach(o=>{const m=L.marker(o.ll,{keyboard:false,interactive:false,icon:L.divIcon({className:'',iconSize:[0,0],html:''})}).addTo(MAPA);m.getElement().appendChild(rot(o));rgCam.push(m)})}}
 
 /* Olhinho e lixeira nos logs (pedido do Moisés, 24/out/2026).
@@ -15271,8 +15304,8 @@ function rdMenu(abrir){const w=$('.mapa-area .mp-cam');if(!w)return;w.querySelec
   w.insertAdjacentHTML('beforeend',`<div class="mp-cam-m" role="menu" aria-label="Camadas">${it('renda','rd-ic','Renda familiar')}${it('dens','ds-ic','Densidade demográfica')}${it(null,'cam-off','Nenhuma')}</div>`)}
 document.addEventListener('pointerdown',e=>{if($('.mp-cam-m')&&!e.target.closest('.mp-cam'))rdMenu(false)},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('.mp-cam-m')){rdMenu(false);e.preventDefault();e.stopImmediatePropagation()}},true);
-function rdLegItem(){const k=rdCamada();return `<button type="button" class="lg-i" data-a="mp-renda" aria-pressed="${k==='renda'}"><span class="lg-poi"><span class="rd-ic"></span></span>Renda familiar (setores)</button>`
-  +`<button type="button" class="lg-i" data-a="mp-dens" aria-pressed="${k==='dens'}"><span class="lg-poi"><span class="ds-ic"></span></span>Densidade demográfica (setores)</button>`}
+function rdLegItem(){const k=rdCamada();return `<button type="button" class="lg-i" data-a="mp-renda" aria-pressed="${k==='renda'}"><span class="lg-poi"><span class="rd-ic"></span></span>Mapa de Renda</button>`
+  +`<button type="button" class="lg-i" data-a="mp-dens" aria-pressed="${k==='dens'}"><span class="lg-poi"><span class="ds-ic"></span></span>Mapa Demográfico</button>`}
 function rdLigar(k){const antes=rdCamada();k=CAMADAS_SETOR[k]?k:null;if(k===antes)return;UI.mpSetor=k;rdGuardar();
   if(antes)rdCamadaDesligar();
   /* sem camada, o tipo de mapa escolhido nos três pontinhos; com renda ou densidade, Satélite (pedido do Moisés, 5/nov/2026) */

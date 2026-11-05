@@ -86,7 +86,7 @@ function mpMaisMenu(abrir){if(!abrir&&typeof MM_SOBRE!=='undefined'&&MM_SOBRE)MM
     <button type="button" role="menuitem" data-a="mf-abrir">${ic('filtro',18)}<span class="mm-l">Filtro da concorrência</span>${n(nc)}</button>
     <button type="button" role="menuitem" data-a="fx-abrir">${ic('filtro',18)}<span class="mm-l">Filtro dos terrenos</span>${n(nt)}</button>
     <button type="button" role="menuitem" data-a="rg-abrir">${ic('regua',18)}<span class="mm-l">Régua</span></button>
-    <div class="mm-t" role="presentation">Camadas</div>${cm('mp-renda','renda','Renda familiar (setores)')}${cm('mp-dens','dens','Densidade demográfica (setores)')}
+    <div class="mm-t" role="presentation">Camadas</div>${cm('mp-renda','renda','Mapa de Renda')}${cm('mp-dens','dens','Mapa Demográfico')}
     <div class="mm-t" role="presentation">Tipo de mapa</div>${tp('mapa','Mapa')}${tp('satelite','Satélite')}</div>`)}
 window.addEventListener('click',e=>{const a=e.target.closest?.('[data-a="mp-mais"],[data-a="mp-tipo"],.mp-mais-m [data-a]');if(!a)return;
   if(a.dataset.a==='mp-mais'){mpMaisMenu(!$('.mp-mais-m'));return}
@@ -365,28 +365,50 @@ document.addEventListener('pointerup',e=>{const p=FORA0;FORA0=null;if(!p||Math.h
   if(MK.box&&!mkFixa()&&!a.closest('#mk-box'))mkFechar()},true);
 
 /* ===================== régua ===================== */
-/* Régua no menu dos três pontinhos (pedido do Moisés, 5/nov/2026): cada clique no mapa marca um ponto e a linha mede o caminho, trecho a trecho
-   e no total; clicar no primeiro ponto (com 3 ou mais) fecha a forma e mede a área. Não segue a rua. Esc, Sair ou o mesmo item saem. */
+/* Régua (pedido do Moisés, 5/nov/2026): botão no canto, acima da minha localização (e no menu dos três pontinhos), que fica azul enquanto
+   ligada e vale até ser desligada. Cada clique no mapa marca um ponto e a linha mede o caminho, trecho a trecho e no total; clicar no
+   primeiro ponto (com 3 ou mais) fecha a forma e mede a área; o clique seguinte começa outra medida. Não segue a rua.
+   Teclas: Backspace apaga o último ponto, Del apaga o desenho (sem desenho, desliga), Esc desliga; Ctrl+Z desfaz. Clique direito num
+   ponto: Excluir ponto. */
 UI.rg=null;let rgCam=[];
 const rgDist=(a,b)=>distKm(a[0],a[1],b[0],b[1])*1000;
 const rgM=v=>v>=1000?num(v/1000,2)+' km':num(Math.round(v))+' m',rgA=v=>v>=1e6?num(v/1e6,2)+' km²':m2(Math.round(v));
 function rgTotal(){const p=UI.rg?.pts||[];let t=0;for(let i=1;i<p.length;i++)t+=rgDist(p[i-1],p[i]);if(UI.rg?.fechado&&p.length>2)t+=rgDist(p.at(-1),p[0]);return t}
+function rgBotao(){document.querySelectorAll('.mp-cb[data-a="rg-abrir"]').forEach(b=>b.setAttribute('aria-pressed',String(UI.mpModo==='regua')))}
 function rgAbrir(){if(UI.mpModo&&UI.mpModo!=='regua')return;if(UI.mpModo==='regua'){rgSair();return}
-  lugarFechar?.();mkFechar();if(UI.mpSel)mpSelecionar(null);UI.mpModo='regua';UI.rg={pts:[],fechado:false};mpRefresh();
-  toast(TOQUE()?'Toque no mapa para marcar os pontos.':'Clique no mapa para marcar os pontos. Clique no primeiro ponto para medir a área; Esc sai.')}
-function rgSair(){UI.mpModo=null;UI.rg=null;rgDesenha();mpRefresh()}
+  lugarFechar?.();mkFechar();if(UI.mpSel)mpSelecionar(null);UI.mpModo='regua';UI.rg={pts:[],fechado:false};mpRefresh();rgBotao();
+  toast(TOQUE()?'Toque no mapa para marcar os pontos.':'Clique no mapa para marcar os pontos e no primeiro ponto para medir a área. Backspace apaga o último ponto, Del apaga o desenho e Esc desliga a régua.')}
+function rgSair(){rgCtxFechar();UI.mpModo=null;UI.rg=null;rgDesenha();mpRefresh();rgBotao()}
 function rgClique(lat,lng){const R=UI.rg;if(!R)return;
+  if(Date.now()-(UI.rgCtxEm||0)<400)return;
   const a=UI.pdAnt,b=UI.pdUlt;if(!TOQUE()&&((UI.cliqueN||1)>=2||(a&&b&&b.t-a.t<400&&Math.hypot(b.x-a.x,b.y-a.y)<8)))return; /* o segundo clique de um duplo clique não marca outro ponto */
   if(R.fechado){R.pts=[];R.fechado=false}
   R.pts.push([lat,lng]);rgAtualizar()}
 function rgFechar(){const R=UI.rg;if(!R||R.pts.length<3||R.fechado)return;R.fechado=true;rgAtualizar()}
-function rgAtualizar(){rgDesenha();const m=$('#mp-modo');if(m)m.innerHTML=modoBanner()}
+function rgAtualizar(){rgDesenha();const m=$('#mp-modo');if(m)m.innerHTML=modoBanner();rgBotao()}
+/* apaga um ponto; a forma fechada com menos de 3 volta a ser linha */
+function rgExcluir(i){const R=UI.rg;if(!R||!R.pts[i])return;R.pts.splice(i,1);if(R.pts.length<3)R.fechado=false;rgAtualizar()}
+function rgCtxFechar(){UI.rgCtx=false;$('.rg-ctx')?.remove()}
+function rgCtx(i,x,y){rgCtxFechar();const area=$('.mapa-area');if(!area||!UI.rg)return;const ar=area.getBoundingClientRect();
+  const m=document.createElement('div');m.className='mp-ctx rg-ctx';m.setAttribute('role','menu');
+  m.innerHTML=`<div class="v-t">Ponto ${i+1} de ${UI.rg.pts.length}</div><button type="button" role="menuitem" class="crit" data-a="rg-excluir" data-i="${i}">Excluir ponto</button>`;
+  area.appendChild(m);m.style.left=Math.max(8,Math.min(ar.width-m.offsetWidth-8,x-ar.left))+'px';m.style.top=Math.max(8,Math.min(ar.height-m.offsetHeight-8,y-ar.top))+'px';
+  UI.rgCtx=true;m.querySelector('button').focus({preventScroll:true})}
 function rgBanner(){const R=UI.rg||{pts:[]},n=R.pts.length,t=rgTotal(),ar=R.fechado?areaPoly(R.pts):null;
-  return `<span class="mp-q mp-fina">${n<2?'Régua: clique no mapa para medir':`${R.fechado?'Perímetro':'Distância'} ${rgM(t)}${ar?` · área ${rgA(ar)}`:''}`}</span>`
+  return `<span class="mp-q mp-fina rg-b">${n<2?'Régua: clique no mapa para medir':`${R.fechado?'Perímetro':'Distância'} ${rgM(t)}${ar?` · área ${rgA(ar)}`:''}`}</span>`
     +`<button class="btn sm text" data-a="rg-desfazer" ${n?'':'disabled'}>Desfazer</button><button class="btn sm text" data-a="rg-limpar" ${n?'':'disabled'}>Limpar</button><button class="btn sm primary" data-a="mp-sair">Sair</button>`}
-document.addEventListener('click',e=>{const b=e.target.closest?.('[data-a="rg-abrir"],[data-a="rg-desfazer"],[data-a="rg-limpar"]');if(!b)return;
-  const R=UI.rg;if(b.dataset.a==='rg-abrir')rgAbrir();else if(R){if(b.dataset.a==='rg-limpar'){R.pts=[];R.fechado=false}else if(R.fechado)R.fechado=false;else R.pts.pop();rgAtualizar()}});
-window.addEventListener('keydown',e=>{if(e.key!=='Escape'||UI.mpModo!=='regua'||UI.modal||e.target.matches('input,textarea,select'))return;rgSair();e.preventDefault();e.stopImmediatePropagation()},true);
+document.addEventListener('click',e=>{const b=e.target.closest?.('[data-a="rg-abrir"],[data-a="rg-desfazer"],[data-a="rg-limpar"],[data-a="rg-excluir"]');if(!b)return;
+  const R=UI.rg;if(b.dataset.a==='rg-abrir')rgAbrir();else if(b.dataset.a==='rg-excluir'){rgCtxFechar();rgExcluir(+b.dataset.i)}
+  else if(R){if(b.dataset.a==='rg-limpar'){R.pts=[];R.fechado=false}else if(R.fechado)R.fechado=false;else R.pts.pop();rgAtualizar()}});
+/* o menu do ponto fecha no clique fora dele (o clique no mapa que o fecha não marca ponto: rgClique) */
+/* (pela marca UI.rgCtx: o fechar do menu do clique direito, ctxFechar, também tira este da página) */
+document.addEventListener('pointerdown',e=>{if(!UI.rgCtx||e.target.closest('.rg-ctx'))return;if(e.target.closest('#mapa'))UI.rgCtxEm=Date.now();rgCtxFechar()},true);
+window.addEventListener('keydown',e=>{if(UI.mpModo!=='regua'||UI.modal||e.target.matches('input,textarea,select'))return;const R=UI.rg;
+  if(e.key==='Escape'){if($('.rg-ctx'))rgCtxFechar();else rgSair()}
+  else if(e.key==='Delete'){rgCtxFechar();if(R?.pts.length){R.pts=[];R.fechado=false;rgAtualizar()}else rgSair()}
+  else if(e.key==='Backspace'){rgCtxFechar();if(R?.pts.length)rgExcluir(R.pts.length-1)}
+  else return;
+  e.preventDefault();e.stopImmediatePropagation()},true);
 document.addEventListener('keydown',e=>{if(UI.mpModo!=='regua'||!(e.ctrlKey||e.metaKey)||e.key.toLowerCase()!=='z'||e.target.matches('input,textarea,select'))return;const R=UI.rg;if(!R?.pts.length)return;if(R.fechado)R.fechado=false;else R.pts.pop();rgAtualizar();e.preventDefault()});
 /* rótulo de cada trecho no meio dele, e do total no último ponto */
 function rgRotulos(){const R=UI.rg;if(!R)return [];const p=R.pts,out=[],seg=(a,b)=>out.push({ll:[(a[0]+b[0])/2,(a[1]+b[1])/2],t:rgM(rgDist(a,b)),c:'rg-seg'});
@@ -399,7 +421,9 @@ function rgDesenha(){if(!MAPA)return;if(GG){rgCam.forEach(x=>x.setMap?x.setMap(n
   /* um ponto sem tamanho no lugar exato, com o desenho centrado nele (vale para o Google e o Leaflet) */
   const w=el=>{const d=document.createElement('div');d.className='rg-w';d.appendChild(el);return d};
   const ponto=(q,i)=>{const el=document.createElement('div');el.className='rg-pt'+(i===0&&p.length>2&&!R.fechado?' rg-ini':'');
-    if(i===0)el.addEventListener('click',ev=>{if(p.length>2&&!R.fechado){ev.stopPropagation();rgFechar()}});return w(el)};
+    /* o clique num ponto não marca outro em cima dele; no primeiro (com 3 ou mais) fecha a forma; o direito abre Excluir ponto */
+    el.addEventListener('click',ev=>{ev.stopPropagation();if(i===0&&p.length>2&&!R.fechado)rgFechar()});
+    el.addEventListener('contextmenu',ev=>{ev.preventDefault();ev.stopPropagation();rgCtx(i,ev.clientX,ev.clientY)});return w(el)};
   const rot=o=>{const el=document.createElement('div');el.className='rg-rot '+o.c;el.textContent=o.t;return w(el)};
   if(GG){const ll=q=>gLL(q[0],q[1]);
     rgCam.push(R.fechado?new google.maps.Polygon({map:MAPA,paths:p.map(ll),strokeColor:cor,strokeWeight:2.5,fillColor:cor,fillOpacity:.12,clickable:false}):new google.maps.Polyline({map:MAPA,path:p.map(ll),strokeColor:cor,strokeWeight:2.5,clickable:false}));
@@ -407,5 +431,5 @@ function rgDesenha(){if(!MAPA)return;if(GG){rgCam.forEach(x=>x.setMap?x.setMap(n
     p.forEach((q,i)=>{const m=new AdvancedMarkerElement({map:MAPA,position:ll(q),content:ponto(q,i),zIndex:4001,gmpClickable:i===0});if(i===0)m.addListener?.('click',()=>{if(p.length>2&&!R.fechado)rgFechar()});rgCam.push(m)});
     rgRotulos().forEach(o=>rgCam.push(new AdvancedMarkerElement({map:MAPA,position:ll(o.ll),content:rot(o),zIndex:4000,gmpClickable:false})))}
   else{rgCam.push((R.fechado?L.polygon(p,{color:cor,weight:2.5,fillOpacity:.12,interactive:false}):L.polyline(p,{color:cor,weight:2.5,interactive:false})).addTo(MAPA));
-    p.forEach((q,i)=>{const m=L.marker(q,{keyboard:false,interactive:i===0,icon:L.divIcon({className:'',iconSize:[0,0],html:''})}).addTo(MAPA);const el=m.getElement();el.appendChild(ponto(q,i));if(i===0)m.on('click',e=>{L.DomEvent.stop(e);rgFechar()});rgCam.push(m)});
+    p.forEach((q,i)=>{const m=L.marker(q,{keyboard:false,interactive:true,icon:L.divIcon({className:'',iconSize:[0,0],html:''})}).addTo(MAPA);const el=m.getElement();el.appendChild(ponto(q,i));m.on('click',e=>{L.DomEvent.stop(e);if(i===0)rgFechar()});rgCam.push(m)});
     rgRotulos().forEach(o=>{const m=L.marker(o.ll,{keyboard:false,interactive:false,icon:L.divIcon({className:'',iconSize:[0,0],html:''})}).addTo(MAPA);m.getElement().appendChild(rot(o));rgCam.push(m)})}}

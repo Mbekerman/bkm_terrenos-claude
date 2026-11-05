@@ -320,7 +320,9 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 }
 .mp-modo .mp-q { opacity: .75; white-space: nowrap }
 /* desenho no desktop: só o mapa, a busca e a barra Cancelar/Concluir no canto de baixo à direita (opção 5 do Moises, 5/nov/2026) */
-.mapa-area:has(.mp-modo > .mp-fina) :is(.mp-legenda, #mp-ctrl, .gm-svpc, .mp-barra > :not(.mp-busca)) { display: none !important }
+.mapa-area:has(.mp-modo > .mp-fina:not(.rg-b)) :is(.mp-legenda, #mp-ctrl, .gm-svpc, .mp-barra > :not(.mp-busca)) { display: none !important }
+/* régua: o botão dela, no canto, continua à mostra (é ele que desliga) */
+.mapa-area:has(.mp-modo > .rg-b) :is(.mp-legenda, .gm-svpc, .mp-barra > :not(.mp-busca)) { display: none !important }
 .mp-modo:has(> .mp-fina) { top: auto !important; bottom: 28px; left: auto !important; right: 12px; transform: none; flex-wrap: nowrap; max-width: none; padding: 4px 4px 4px 16px !important; gap: 4px !important; border-radius: 22px !important; font-size: 13px; line-height: 18px }
 .mp-modo:has(> .mp-fina) > .mp-fina { flex: 0 0 auto; margin-right: 8px }
 .mp-modo:has(> .mp-fina) .btn { height: 32px; min-height: 32px !important; border-radius: 16px !important }
@@ -4198,4 +4200,11 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 .rg-rot { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); white-space: nowrap; background: #fff; color: #1f1f1f; border: 1px solid #c4c7c5; border-radius: 6px; padding: 1px 6px; font-size: 12px; line-height: 18px; font-variant-numeric: tabular-nums; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,.2) }
 .rg-rot.rg-tot { background: #0b57d0; color: #fff; border-color: #0b57d0; font-weight: 500; transform: translate(-50%, calc(-100% - 10px)) }
 /* no desenho, na edição e na régua o clique passa pelos pinos do mapa (terrenos e concorrência) e marca o ponto ali */
-:is(.mapa, .mini-mapa).modo gmp-advanced-marker:not(:has(.v-alvo, .rg-ini)) { pointer-events: none !important }
+:is(.mapa, .mini-mapa).modo gmp-advanced-marker:not(:has(.v-alvo, .rg-pt)) { pointer-events: none !important }
+.rg-pt { pointer-events: auto }
+/* régua como botão do canto, acima da localização (pedido do Moisés, 5/nov/2026): ligada, fica azul */
+.mp-cb.mp-rg[aria-pressed="true"], .mp-cb.mp-rg[aria-pressed="true"]:hover { background: #0b57d0; color: #fff }
+.mapa-area.sv-on .mp-cb.mp-rg { display: none }
+/* a busca a 12 px da borda esquerda, a mesma distância dos três pontinhos à direita (pedido do Moisés, 5/nov/2026);
+   no Leaflet fica depois do + e − do zoom */
+.mapa-area:not(:has(.leaflet-container)) .mp-barra { left: 12px !important }

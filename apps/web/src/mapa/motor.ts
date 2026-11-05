@@ -311,7 +311,7 @@ export class Motor {
      a linha pelos pontos marcados, com a distância de cada trecho no meio dele e o total no último ponto; fechada (clique no primeiro
      ponto, com 3 ou mais), vira a forma com a área no meio */
   private rg: any[] = [];
-  regua(pts: [number, number][], fechado: boolean, fechar: () => void) {
+  regua(pts: [number, number][], fechado: boolean, fechar: () => void, menuPonto?: (i: number, x: number, y: number) => void) {
     this.rg.forEach((o) => (o.setMap ? o.setMap(null) : (o.map = null)));
     this.rg = [];
     if (!pts.length) return;
@@ -325,7 +325,9 @@ export class Motor {
     p.forEach((q, i) => {
       const el = document.createElement('div');
       el.className = 'rg-pt' + (i === 0 && ini ? ' rg-ini' : '');
-      if (i === 0 && ini) el.addEventListener('click', (ev) => { ev.stopPropagation(); fechar(); });
+      /* o clique num ponto não marca outro em cima dele; no primeiro (com 3 ou mais) fecha a forma; o direito abre Excluir ponto */
+      el.addEventListener('click', (ev) => { ev.stopPropagation(); if (i === 0 && ini) fechar(); });
+      el.addEventListener('contextmenu', (ev) => { ev.preventDefault(); ev.stopPropagation(); menuPonto?.(i, ev.clientX, ev.clientY); });
       this.rg.push(new AM({ map: M, position: q, content: w(el), zIndex: 4001, gmpClickable: i === 0 && ini }));
     });
     reguaRotulos(pts, fechado).forEach((o) => {

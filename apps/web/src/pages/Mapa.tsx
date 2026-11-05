@@ -182,11 +182,15 @@ export default function Mapa() {
      Esc ou dois cliques fora do mapa cancelam, Ctrl+Z desfaz; o menu do ponto (clique direito ou dois cliques nele) traz
      Adicionar ponto depois, Excluir ponto, Desfazer e Cancelar desenho. */
   const [des, setDes] = useState<P[] | null>(null);
-  /* régua (menu dos três pontinhos; pedido do Moisés, 5/nov/2026): cada clique marca um ponto e mede o caminho; clicar no primeiro
-     ponto (com 3 ou mais) fecha a forma e mede a área; Esc ou Sair saem (proto_mercado.js › rgAbrir, rgClique) */
+  /* régua (pedido do Moisés, 5/nov/2026; proto_mercado.js › rgAbrir, rgClique): botão no canto, acima da minha localização (e no menu
+     dos três pontinhos), azul enquanto ligada, e vale até ser desligada. Cada clique marca um ponto e mede o caminho; clicar no primeiro
+     ponto (com 3 ou mais) fecha a forma e mede a área, e o clique seguinte começa outra medida. Backspace apaga o último ponto, Del apaga
+     o desenho (sem desenho, desliga), Esc desliga; clique direito num ponto: Excluir ponto. */
   const [rg, setRg] = useState<{ pts: P[]; fechado: boolean } | null>(null);
   const rgR = useRef(rg);
   rgR.current = rg;
+  const [rgMenu, setRgMenu] = useState<{ i: number; x: number; y: number } | null>(null);
+  const rgMenuEm = useRef(0);
   const [vSel, setVSel] = useState<number | null>(null);
   const [vMenu, setVMenu] = useState(false);
   const [movendo, setMovendo] = useState(false);
@@ -241,12 +245,20 @@ export default function Mapa() {
     setMenu(null); setMkBox(null); setSetor(null); motor.current?.lugarFechar();
     if (selId) selecionar(null);
     setRg({ pts: [], fechado: false });
-    toast(TOQUE() ? 'Toque no mapa para marcar os pontos.' : 'Clique no mapa para marcar os pontos. Clique no primeiro ponto para medir a área; Esc sai.');
+    toast(TOQUE() ? 'Toque no mapa para marcar os pontos.' : 'Clique no mapa para marcar os pontos e no primeiro ponto para medir a área. Backspace apaga o último ponto, Del apaga o desenho e Esc desliga a régua.');
+  }
+  /* apaga um ponto; a forma fechada com menos de 3 volta a ser linha */
+  function rgExcluir(i: number) {
+    const r = rgR.current;
+    if (!r || !r.pts[i]) return;
+    const pts = r.pts.filter((_, k) => k !== i);
+    setRg({ pts, fechado: r.fechado && pts.length > 2 });
   }
   function rgDesfazer() { if (!rg?.pts.length) return; setRg(rg.fechado ? { ...rg, fechado: false } : { pts: rg.pts.slice(0, -1), fechado: false }); }
   ganchos.current.clique = (lat, lng) => {
     const mm = marcas.current;
     if (rg) {
+      if (Date.now() - rgMenuEm.current < 400) return; /* o clique que fechou o menu do ponto não marca outro */
       const a = mm.pdAnt, b = mm.pdUlt;
       if (!TOQUE() && (mm.cliqueN >= 2 || (a && b && b.t - a.t < 400 && Math.hypot(b.x - a.x, b.y - a.y) < 8))) return; /* o segundo clique de um duplo clique não marca outro ponto */
       setRg({ pts: [...(rg.fechado ? [] : rg.pts), [lat, lng]], fechado: false });
@@ -336,8 +348,22 @@ export default function Mapa() {
   /* desenho: modo do mapa, rascunho e o pedido vindo do passo 1 do Novo terreno */
   useEffect(() => { if (motorPronto) motor.current?.setModo(!!des || !!rg); }, [motorPronto, des, rg]);
   useEffect(() => {
-    if (motorPronto) motor.current?.regua(rg?.pts || [], !!rg?.fechado, () => { const r = rgR.current; if (r && r.pts.length > 2 && !r.fechado) setRg({ ...r, fechado: true }); });
+    if (motorPronto) motor.current?.regua(rg?.pts || [], !!rg?.fechado, () => { const r = rgR.current; if (r && r.pts.length > 2 && !r.fechado) setRg({ ...r, fechado: true }); },
+      (i, x, y) => setRgMenu({ i, x, y }));
+    if (!rg) setRgMenu(null);
   }, [motorPronto, rg]);
+  /* o menu do ponto da régua fecha no clique fora dele */
+  useEffect(() => {
+    if (!rgMenu) return;
+    const fora = (ev: PointerEvent) => {
+      const t = ev.target as HTMLElement;
+      if (t.closest?.('.rg-ctx')) return;
+      if (t.closest?.('#mapa')) rgMenuEm.current = Date.now();
+      setRgMenu(null);
+    };
+    document.addEventListener('pointerdown', fora, true);
+    return () => document.removeEventListener('pointerdown', fora, true);
+  }, [rgMenu]);
   useEffect(() => { if (motorPronto) motor.current?.rascunho(des || [], vSel, false, gp); }, [motorPronto, des, vSel, gp]);
   useEffect(() => {
     if (!nvSt.desenho || !motorPronto) return;
@@ -363,13 +389,18 @@ export default function Mapa() {
     /* Esc no desenho vem antes dos outros Esc da página: é ele que a pessoa quer desfazer */
     const esc = (ev: KeyboardEvent) => {
       if (ev.key !== 'Escape' || (ev.target as HTMLElement).matches?.('input,textarea,select') || document.querySelector('.mp-ctx')) return;
-      if (rg) setRg(null); else if (vMenu) vFechar(); else desCancelar();
+      if (rg) { if (rgMenu) setRgMenu(null); else setRg(null); } else if (vMenu) vFechar(); else desCancelar();
       ev.preventDefault(); ev.stopImmediatePropagation();
     };
     const tecla = (ev: KeyboardEvent) => {
       const el = ev.target as HTMLElement;
       if (el.matches?.('input,textarea,select')) return;
-      if (rg) { if ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey && ev.key.toLowerCase() === 'z') { rgDesfazer(); ev.preventDefault(); } return; }
+      if (rg) {
+        if ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey && ev.key.toLowerCase() === 'z') { rgDesfazer(); ev.preventDefault(); }
+        else if (ev.key === 'Delete') { setRgMenu(null); setRg(rg.pts.length ? { pts: [], fechado: false } : null); ev.preventDefault(); }
+        else if (ev.key === 'Backspace') { setRgMenu(null); if (rg.pts.length) rgExcluir(rg.pts.length - 1); ev.preventDefault(); }
+        return;
+      }
       if (ev.key === 'Enter' && !vMenu && !el.closest?.('button,a,summary')) { desSalvar(); ev.preventDefault(); }
       else if ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey && ev.key.toLowerCase() === 'z') { desDesfazer(); ev.preventDefault(); }
       else if ((ev.key === 'Delete' || ev.key === 'Backspace') && vSel != null) { vAcao('v-excluir'); ev.preventDefault(); }
@@ -688,7 +719,7 @@ export default function Mapa() {
         <div id="mp-modo" className="mp-modo" aria-live="polite">{rg && (() => {
           const n = rg.pts.length, ar = rg.fechado ? reguaArea(rg.pts) : null;
           return <>
-            <span className="mp-q mp-fina">{n < 2 ? 'Régua: clique no mapa para medir' : `${rg.fechado ? 'Perímetro' : 'Distância'} ${reguaM(reguaTotal(rg.pts, rg.fechado))}${ar ? ` · área ${reguaA(ar)}` : ''}`}</span>
+            <span className="mp-q mp-fina rg-b">{n < 2 ? 'Régua: clique no mapa para medir' : `${rg.fechado ? 'Perímetro' : 'Distância'} ${reguaM(reguaTotal(rg.pts, rg.fechado))}${ar ? ` · área ${reguaA(ar)}` : ''}`}</span>
             <button className="btn sm text" disabled={!n} onClick={rgDesfazer}>Desfazer</button>
             <button className="btn sm text" disabled={!n} onClick={() => setRg({ pts: [], fechado: false })}>Limpar</button>
             <button className="btn sm primary" onClick={() => setRg(null)}>Sair</button>
@@ -711,6 +742,7 @@ export default function Mapa() {
         <div id="mp-cartao" className="mp-cartao" aria-live="polite">{sel && visiveis.includes(sel) && linha(sel, true)}</div>
         <button type="button" className="mp-cb sv-x" title="Fechar o Street View (Esc)" aria-label="Fechar o Street View" onClick={() => motor.current?.svFechar()}><Ic n="close" s={22} /></button>
         <div id="mp-ctrl" className="mp-ctrl">
+          <button type="button" className="mp-cb mp-rg" aria-pressed={!!rg} title="Régua" aria-label="Régua" onClick={rgAbrir}><Ic n="regua" s={22} /></button>
           <button type="button" className={`mp-cb${euBusca ? ' busca' : ''}`} title="Minha localização" aria-label="Centralizar na minha localização" onClick={eu}><Ic n="eu" s={22} /></button>
           <button type="button" className="mp-cb" aria-pressed={cheia} title={cheia ? 'Sair da tela cheia' : 'Tela cheia'} aria-label={cheia ? 'Sair da tela cheia' : 'Tela cheia'} onClick={() => telaCheia(!cheia)}><Ic n={cheia ? 'telaSair' : 'tela'} s={22} /></button>
         </div>
@@ -739,6 +771,16 @@ export default function Mapa() {
         {camada && <LegendaSetor camada={camada} aberta={rdLeg} alternar={setRdLeg} carregado={setOk} erro={setErro} metodologia={setMet} />}
         {camada && setor != null && setores() && <QuadroSetor d={setores()!} i={setor} camada={camada} fechar={() => setSetor(null)} metodologia={setMet} />}
         {mkBox && mkEmp(mkBox) && <CaixaEmp e={mkEmp(mkBox)!} fechar={() => setMkBox(null)} tabela={setMkTab} pausado={!!mkTab} />}
+        {rg && rgMenu && rg.pts[rgMenu.i] && (() => {
+          const ar = areaEl.current?.getBoundingClientRect();
+          const x = rgMenu.x - (ar?.left ?? 0), y = rgMenu.y - (ar?.top ?? 0);
+          return (
+            <div className="mp-ctx rg-ctx" role="menu" style={{ left: Math.max(8, Math.min((ar?.width ?? 0) - 228, x)), top: Math.max(8, Math.min((ar?.height ?? 0) - 100, y)) }}>
+              <div className="v-t">Ponto {rgMenu.i + 1} de {rg.pts.length}</div>
+              <button type="button" role="menuitem" className="crit" autoFocus onClick={() => { const i = rgMenu.i; setRgMenu(null); rgExcluir(i); }}>Excluir ponto</button>
+            </div>
+          );
+        })()}
         {menu && (
           <div className="mp-ctx" role="menu" style={{ left: Math.max(8, Math.min((areaEl.current?.clientWidth ?? 0) - 228, menu.x)), top: Math.max(8, Math.min((areaEl.current?.clientHeight ?? 0) - 64, menu.y)) }}>
             <button role="menuitem" autoFocus onClick={() => { const m = menu; setMenu(null); desComecar([m.lat, m.lng]); }}><Ic n="add" s={18} />Novo terreno aqui</button>

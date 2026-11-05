@@ -44,8 +44,8 @@ export function BotaoCamadas({ camada, aberto, abrir, escolher }: { camada: Cama
 export function ItensLegenda({ camada, alternar }: { camada: Camada | null; alternar: (c: Camada) => void }) {
   return (
     <>
-      <button type="button" className="lg-i" aria-pressed={camada === 'renda'} onClick={() => alternar('renda')}><span className="lg-poi"><span className="rd-ic" /></span>Renda familiar (setores)</button>
-      <button type="button" className="lg-i" aria-pressed={camada === 'dens'} onClick={() => alternar('dens')}><span className="lg-poi"><span className="ds-ic" /></span>Densidade demográfica (setores)</button>
+      <button type="button" className="lg-i" aria-pressed={camada === 'renda'} onClick={() => alternar('renda')}><span className="lg-poi"><span className="rd-ic" /></span>Mapa de Renda</button>
+      <button type="button" className="lg-i" aria-pressed={camada === 'dens'} onClick={() => alternar('dens')}><span className="lg-poi"><span className="ds-ic" /></span>Mapa Demográfico</button>
     </>
   );
 }
