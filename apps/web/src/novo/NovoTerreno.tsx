@@ -9,6 +9,7 @@ import { carregarGoogle } from '../mapa/google';
 import { classe, info, type Fase, type TerrenoMapa } from '../mapa/dados';
 import { abrirNovo, escolherKmz, fecharNovo, pedirDesenho, poligonal, atualizarNv, useNovo, voltarPasso1, novoEstado, listaSql, abrirLotes, type Sobre } from './estado';
 import LotesGeo from './LotesGeo';
+import { consultarTerreno } from './consulta';
 import { GEO_BASE, digitos, loteDoSql, sqlFmt, sqlMascara, type LoteSql } from './geosampa';
 import { areaPoly, centroPoly, fixa, geojson, lerKmz, lotesUniao, m2, nomeBase, nomeUnico, normRua, uniaoPoly, type P } from './geo';
 
@@ -156,8 +157,10 @@ export default function NovoTerreno() {
         /* os SQLs incluídos entram no terreno sem parte, como no mapa de lotes da prefeitura */
         if (nv.sqls?.length) {
           const r = await supabase.from('inscricoes_municipais').insert(nv.sqls.map((q) => ({ empresa_id: empresa!.id, terreno_id: t.id, municipio_id: munId, inscricao: q.sql,
-            area_cadastral_m2: q.area, cib: q.cib, origem: 'mapa_prefeitura', endereco_prefeitura: q.end || null })));
+            area_cadastral_m2: q.area, cib: q.cib, origem: 'mapa_prefeitura', endereco_prefeitura: q.end || null }))).select('id,inscricao');
           if (r.error) toast(`${t.codigo} cadastrado, mas os SQLs não entraram: ${mensagemErro(r.error)}`, true);
+          /* a consulta completa do GeoSampa em cada SQL e depois pela poligonal, em segundo plano (o andamento aparece na lista do mapa) */
+          else consultarTerreno(t.id, nv.poly, (r.data || []).map((x) => ({ id: x.id as string, sql: x.inscricao as string })), (m, e) => toast(m, e));
         }
         await qc.invalidateQueries({ queryKey: ['mapa'] });
         fecharNovo();

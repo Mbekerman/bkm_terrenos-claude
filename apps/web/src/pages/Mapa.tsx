@@ -7,6 +7,7 @@ import { Bi, Ic, type ContextoMoldura } from '../components/Moldura';
 import { carregarGoogle, googleRecusado } from '../mapa/google';
 import { Motor, vista, reguaA, reguaArea, reguaM, reguaTotal, type Base, type GestosPonto, type Pino } from '../mapa/motor';
 import { desenhoAtendido, poligonal, useNovo } from '../novo/estado';
+import { useConsultaGeo } from '../novo/consulta';
 import { areaPoly, m2, type P } from '../novo/geo';
 import { LegendaSetor, Metodologia, QuadroSetor } from '../mapa/CamadasSetor';
 import { carregarSetores, setorEm, setores, type Camada } from '../mapa/setores';
@@ -194,6 +195,7 @@ export default function Mapa() {
   const desR = useRef(des);
   desR.current = des;
   const nvSt = useNovo();
+  const geoCons = useConsultaGeo();
   function desComecar(p0?: P) {
     hist.current = []; setVSel(null); setVMenu(false); setMenu(null); setMkBox(null); setSetor(null); setRg(null);
     if (selId) selecionar(null);
@@ -628,7 +630,8 @@ export default function Mapa() {
       <div key={t.id} className={`mp-it${s ? ' sel' : ''}${cartao ? ' cartao' : ''}`} data-id={t.id} tabIndex={0} role="listitem" aria-current={s}
         onClick={() => foco(t)} onKeyDown={(ev) => { if (ev.key === 'Enter' && ev.target === ev.currentTarget) foco(t); }}>
         <span className="pin-mini mp-cod" style={{ background: cs[0], color: cs[1] }} title={`${t.nome} · ${subNome(fases, t)}`}>{t.codigo}</span>
-        <div className="mp-it-t"><div className="t1">{t.nome}</div><div className="t2">{ad ? `${num(ad)} m²` : 'Área não informada'} · {nm}{t.lat == null && <> · <span style={{ color: 'var(--terracota)' }}>sem localização</span></>}</div></div>
+        <div className="mp-it-t"><div className="t1">{t.nome}</div><div className="t2">{ad ? `${num(ad)} m²` : 'Área não informada'} · {nm}{t.lat == null && <> · <span style={{ color: 'var(--terracota)' }}>sem localização</span></>}</div>
+          {geoCons?.terreno === t.id && <span className="chip blue lg-cons">Consultando o GeoSampa: {geoCons.feitos} de {geoCons.total}</span>}</div>
         <button className="iconbtn mp-lupa" title="Ver ficha" aria-label={`Ver ficha de ${t.nome}`} onClick={(ev) => { ev.stopPropagation(); navegar(`/terrenos/${t.codigo}`); }}><Bi n="busca" s={22} /></button>
         {cartao && <button className="iconbtn mp-lupa mp-fx" title="Fechar" aria-label="Fechar" onClick={(ev) => { ev.stopPropagation(); selecionar(null); }}><Ic n="close" s={22} /></button>}
         {s && t.lat != null && motorPronto && (
