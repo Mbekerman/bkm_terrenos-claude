@@ -12279,7 +12279,7 @@ let MP_BUSCA_FT=null,MP_BUSCA_SOBRE=false;
 function mpBuscaAbrir(ab){const f=$('.mapa-area .mp-busca');UI.mpBusca=!!ab;clearTimeout(MP_BUSCA_FT);if(!f)return;
   f.classList.toggle('fechada',!ab);const i=f.querySelector('#mp-end'),l=f.querySelector('.mp-busca-i');l.setAttribute('aria-expanded',!!ab);l.tabIndex=ab?-1:0;
   if(ab){i.removeAttribute('tabindex');i.focus()}else{i.value='';i.tabIndex=-1;i.blur();const r=$('#mp-res');if(r)r.hidden=true;MP_BUSCA_SOBRE=false}}
-function mpBuscaAgendar(){clearTimeout(MP_BUSCA_FT);const f=$('.mapa-area .mp-busca'),i=$('#mp-end');
+function mpBuscaAgendar(){clearTimeout(MP_BUSCA_FT);if(TOQUE())return;const f=$('.mapa-area .mp-busca'),i=$('#mp-end');
   if(!f||f.classList.contains('fechada')||!i||i.value.trim()||document.activeElement===i||MP_BUSCA_SOBRE)return;
   MP_BUSCA_FT=setTimeout(()=>{const i=$('#mp-end');if(i&&!i.value.trim()&&document.activeElement!==i&&!MP_BUSCA_SOBRE)mpBuscaAbrir(false)},3000)}
 document.addEventListener('click',e=>{const a=e.target.closest?.('[data-a="mp-busca-abrir"],[data-a="mp-busca-fechar"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();
@@ -16390,7 +16390,7 @@ const LG_FKEY='bkm-terrenos-legenda-fixa';let LG_T=null,LG_SOBRE=false;
 function lgFixa(){try{return localStorage.getItem(LG_FKEY)==='1'}catch(e){return false}}
 function lgFixarBtn(){const f=lgFixa();return `<button type="button" class="lg-fixar" data-a="lg-fixar" aria-pressed="${f}" title="${f?'Soltar a legenda (volta a fechar sozinha)':'Fixar a legenda aberta'}" aria-label="${f?'Soltar a legenda':'Fixar a legenda aberta'}">${ic('olho',18)}</button>`}
 /* fechada, abre sozinha com o mouse parado em cima dela por 2 s (pedido do Moisés, 5/nov/2026) */
-function lgAgendar(){clearTimeout(LG_T);LG_T=null;const d=$('.mp-legenda');
+function lgAgendar(){clearTimeout(LG_T);LG_T=null;if(TOQUE())return;const d=$('.mp-legenda');
   if(d&&!d.open&&LG_SOBRE){LG_T=setTimeout(()=>{LG_T=null;const d=$('.mp-legenda');if(d&&!d.open&&LG_SOBRE)d.open=true},2000);return}
   if(!d||!d.open||lgFixa()||LG_SOBRE||d.querySelector(':focus-visible'))return;
   LG_T=setTimeout(()=>{LG_T=null;const d=$('.mp-legenda');if(d&&d.open&&!lgFixa()&&!LG_SOBRE&&!d.querySelector(':focus-visible'))d.open=false},3000)}

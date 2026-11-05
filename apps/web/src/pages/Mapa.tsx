@@ -58,6 +58,7 @@ export default function Mapa() {
   lgFixaR.current = lgFixa;
   const lgAgendar = useCallback(() => {
     clearTimeout(lgT.current);
+    if (TOQUE()) return; // no celular, só pelo toque
     /* fechada, abre sozinha com o mouse parado em cima dela por 2 s (pedido do Moisés, 5/nov/2026) */
     const d0 = legEl.current;
     if (d0 && !d0.open && lgSobre.current) { lgT.current = setTimeout(() => { const d = legEl.current; if (d && !d.open && lgSobre.current) d.open = true; }, 2000); return; }
@@ -87,6 +88,7 @@ export default function Mapa() {
   }, []);
   const busAgendar = useCallback(() => {
     clearTimeout(busT.current);
+    if (TOQUE()) return;
     const pode = () => { const i = busInput.current; return !!i && !i.closest('.fechada') && !i.value.trim() && document.activeElement !== i && !busSobre.current; };
     if (!pode()) return;
     busT.current = setTimeout(() => { if (pode()) abrirBusca(false); }, 3000);

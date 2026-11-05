@@ -91,7 +91,7 @@ const LG_FKEY='bkm-terrenos-legenda-fixa';let LG_T=null,LG_SOBRE=false;
 function lgFixa(){try{return localStorage.getItem(LG_FKEY)==='1'}catch(e){return false}}
 function lgFixarBtn(){const f=lgFixa();return `<button type="button" class="lg-fixar" data-a="lg-fixar" aria-pressed="${f}" title="${f?'Soltar a legenda (volta a fechar sozinha)':'Fixar a legenda aberta'}" aria-label="${f?'Soltar a legenda':'Fixar a legenda aberta'}">${ic('olho',18)}</button>`}
 /* fechada, abre sozinha com o mouse parado em cima dela por 2 s (pedido do Moisés, 5/nov/2026) */
-function lgAgendar(){clearTimeout(LG_T);LG_T=null;const d=$('.mp-legenda');
+function lgAgendar(){clearTimeout(LG_T);LG_T=null;if(TOQUE())return;const d=$('.mp-legenda');
   if(d&&!d.open&&LG_SOBRE){LG_T=setTimeout(()=>{LG_T=null;const d=$('.mp-legenda');if(d&&!d.open&&LG_SOBRE)d.open=true},2000);return}
   if(!d||!d.open||lgFixa()||LG_SOBRE||d.querySelector(':focus-visible'))return;
   LG_T=setTimeout(()=>{LG_T=null;const d=$('.mp-legenda');if(d&&d.open&&!lgFixa()&&!LG_SOBRE&&!d.querySelector(':focus-visible'))d.open=false},3000)}

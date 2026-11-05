@@ -192,7 +192,7 @@ let MP_BUSCA_FT=null,MP_BUSCA_SOBRE=false;
 function mpBuscaAbrir(ab){const f=$('.mapa-area .mp-busca');UI.mpBusca=!!ab;clearTimeout(MP_BUSCA_FT);if(!f)return;
   f.classList.toggle('fechada',!ab);const i=f.querySelector('#mp-end'),l=f.querySelector('.mp-busca-i');l.setAttribute('aria-expanded',!!ab);l.tabIndex=ab?-1:0;
   if(ab){i.removeAttribute('tabindex');i.focus()}else{i.value='';i.tabIndex=-1;i.blur();const r=$('#mp-res');if(r)r.hidden=true;MP_BUSCA_SOBRE=false}}
-function mpBuscaAgendar(){clearTimeout(MP_BUSCA_FT);const f=$('.mapa-area .mp-busca'),i=$('#mp-end');
+function mpBuscaAgendar(){clearTimeout(MP_BUSCA_FT);if(TOQUE())return;const f=$('.mapa-area .mp-busca'),i=$('#mp-end');
   if(!f||f.classList.contains('fechada')||!i||i.value.trim()||document.activeElement===i||MP_BUSCA_SOBRE)return;
   MP_BUSCA_FT=setTimeout(()=>{const i=$('#mp-end');if(i&&!i.value.trim()&&document.activeElement!==i&&!MP_BUSCA_SOBRE)mpBuscaAbrir(false)},3000)}
 document.addEventListener('click',e=>{const a=e.target.closest?.('[data-a="mp-busca-abrir"],[data-a="mp-busca-fechar"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();
