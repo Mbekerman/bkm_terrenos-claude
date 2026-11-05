@@ -20,7 +20,7 @@ export function utmLatLng(E: number, N: number, l0 = -45): P {
   const lng = (D - ((1 + 2 * T1 + C1) * D ** 3) / 6 + ((5 - 2 * C1 + 28 * T1 - 3 * C1 * C1 + 8 * ep2 + 24 * T1 * T1) * D ** 5) / 120) / c;
   return [(lat * 180) / Math.PI, l0 + (lng * 180) / Math.PI];
 }
-export const geoAneis = (g: any): number[][][] => !g ? [] : g.type === 'Polygon' ? g.coordinates : g.type === 'MultiPolygon' ? g.coordinates.flat() : [];
+export const geoAneis = (g: any): number[][][] => !g ? [] : g.type === 'Polygon' ? g.coordinates : g.type === 'MultiPolygon' ? g.coordinates.flat() : g.type === 'LineString' ? [g.coordinates] : g.type === 'MultiLineString' ? g.coordinates : [];
 export const geoTit = (s: string) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim().replace(/(^|\s)(\S)/g, (_m, a, b) => a + b.toUpperCase()).replace(/\b(De|Da|Do|Das|Dos|E)\b/g, (x) => x.toLowerCase());
 
 export async function geoWfs(params: Record<string, string>): Promise<any[]> {
@@ -42,7 +42,7 @@ export function sqlMascara(s: string) {
   return [d.slice(0, 3), d.slice(3, 6), d.slice(6, 10)].filter(Boolean).join('.') + (d.length > 10 ? '-' + d[10] : '');
 }
 
-export interface LoteSql { sql: string; area: number | null; end: string; cib: string | null; poly: P[] }
+export interface LoteSql { sql: string; area: number | null; end: string; cib: string | null; poly: P[]; q?: string }
 /** o lote do SQL no GeoSampa; erro com a mensagem para o usuário quando não acha ou o dígito não confere */
 export async function loteDoSql(d: string): Promise<LoteSql> {
   const fs = await geoWfs({ typeNames: 'geoportal:lote_cidadao', CQL_FILTER: `cd_setor_fiscal='${d.slice(0, 3)}' AND cd_quadra_fiscal='${d.slice(3, 6)}' AND cd_lote='${d.slice(6, 10)}'` });
@@ -52,6 +52,27 @@ export async function loteDoSql(d: string): Promise<LoteSql> {
   return {
     sql: p.nr_contribuinte || sqlFmt(d), area: p.qt_area_terreno ?? null, cib: p.cd_cib || null,
     end: p.nm_logradouro_completo ? geoTit(p.nm_logradouro_completo) + (p.cd_numero_porta && p.cd_numero_porta !== '0' ? ', ' + p.cd_numero_porta : '') : '',
-    poly: an.slice(0, -1).map((q) => utmLatLng(q[0], q[1]).map((v) => +v.toFixed(7)) as P),
+    poly: an.slice(0, -1).map((q) => utmLatLng(q[0], q[1]).map((v) => +v.toFixed(7)) as P), q: p.cd_setor_fiscal + '.' + p.cd_quadra_fiscal,
   };
 }
+
+/* ---------- geometria em UTM (proto_geosanja.js: latLngUtm; proto_geosampa.js: geoAreaAnel, geoNoAnel, geoWkt; proto_topo.js: topoNomeVia) ---------- */
+/** [lat, lng] -> UTM SIRGAS 2000 fuso 23S (EPSG:31983) */
+export function latLngUtm(lat: number, lng: number, l0 = -45): [number, number] {
+  const a = 6378137, f = 1 / 298.257222101, k0 = 0.9996, e2 = f * (2 - f), ep2 = e2 / (1 - e2), p = (lat * Math.PI) / 180, l = ((lng - l0) * Math.PI) / 180, s = Math.sin(p), c = Math.cos(p);
+  const N = a / Math.sqrt(1 - e2 * s * s), T = Math.tan(p) ** 2, C = ep2 * c * c, A = c * l;
+  const M = a * ((1 - e2 / 4 - (3 * e2 * e2) / 64 - (5 * e2 ** 3) / 256) * p - ((3 * e2) / 8 + (3 * e2 * e2) / 32 + (45 * e2 ** 3) / 1024) * Math.sin(2 * p) + ((15 * e2 * e2) / 256 + (45 * e2 ** 3) / 1024) * Math.sin(4 * p) - ((35 * e2 ** 3) / 3072) * Math.sin(6 * p));
+  return [5e5 + k0 * N * (A + ((1 - T + C) * A ** 3) / 6 + ((5 - 18 * T + T * T + 72 * C - 58 * ep2) * A ** 5) / 120),
+    1e7 + k0 * (M + N * Math.tan(p) * ((A * A) / 2 + ((5 - T + 9 * C + 4 * C * C) * A ** 4) / 24 + ((61 - 58 * T + T * T + 600 * C - 330 * ep2) * A ** 6) / 720))];
+}
+export const geoAreaAnel = (r: number[][]) => Math.abs(r.reduce((s, p, i) => { const q = r[(i + 1) % r.length]; return s + p[0] * q[1] - q[0] * p[1]; }, 0)) / 2;
+export function geoNoAnel(pt: number[], r: number[][]) {
+  let c = false;
+  for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
+    const [xi, yi] = r[i], [xj, yj] = r[j];
+    if ((yi > pt[1]) !== (yj > pt[1]) && pt[0] < ((xj - xi) * (pt[1] - yi)) / (yj - yi) + xi) c = !c;
+  }
+  return c;
+}
+export const geoWkt = (g: any) => 'POLYGON(' + geoAneis(g).map((r) => '(' + r.map((p) => p[0] + ' ' + p[1]).join(',') + ')').join(',') + ')';
+export const nomeVia = (p: any) => p ? [p.cd_tipo_logradouro, p.cd_titulo_logradouro, p.tx_preposicao_logradouro, p.nm_logradouro].filter(Boolean).join(' ').trim() : '';
