@@ -17,6 +17,18 @@ export interface Ganchos {
   streetView(on: boolean): void;
   aviso(msg: string, erro?: boolean): void;
   pronto(): void;
+  /** clique no mapa no modo de desenho */
+  clique(lat: number, lng: number): void;
+  /** o mapa começou (true) ou parou (false) de se mexer: o menu do ponto some e volta no lugar */
+  movendo(on: boolean): void;
+}
+/** gestos nos pontos do rascunho (proto_mod.js › vGestos, vArrastado) */
+export interface GestosPonto {
+  toque(): void;
+  menu(i: number): void;
+  duplo(i: number): void;
+  arrastando(): void;
+  arrastado(i: number, lat: number, lng: number): void;
 }
 export type Base = 'mapa' | 'satelite';
 const TIPO: Record<Base, string> = { mapa: 'roadmap', satelite: 'hybrid' };
@@ -47,6 +59,8 @@ export class Motor {
   private achado: any = null;
   private proj: any = null;
   private lug = false;
+  /** desenhando ou editando a poligonal: pinos, poligonais, concorrência e lugares do Google não respondem ao clique */
+  private modo = false;
   constructor(private el: HTMLElement, base: Base, private g: Ganchos) {
     const { google } = window;
     this.mapa = new google.maps.Map(el, {
@@ -67,17 +81,20 @@ export class Motor {
       if (ll) g.menu(x, y, ll.lat(), ll.lng());
     });
     M.addListener('dragstart', g.fecharMenu); M.addListener('zoom_changed', g.fecharMenu);
+    M.addListener('dragstart', () => g.movendo(true)); M.addListener('zoom_changed', () => g.movendo(true));
     M.addListener('dblclick', (e: any) => { if (e.latLng && !e.placeId) g.duplo(e.latLng.lat(), e.latLng.lng(), e.domEvent?.target ?? null); });
-    M.addListener('idle', () => { const c = M.getCenter(); vista = { c: { lat: c.lat(), lng: c.lng() }, z: M.getZoom() }; });
+    M.addListener('idle', () => { const c = M.getCenter(); vista = { c: { lat: c.lat(), lng: c.lng() }, z: M.getZoom() }; g.movendo(false); });
     /* Street View: fecha no nosso X ou no Esc; o fechar do Google fica escondido para não haver dois */
     const sv = M.getStreetView();
     sv.setOptions({ enableCloseButton: false, fullscreenControl: false });
     sv.addListener('visible_changed', () => g.streetView(sv.getVisible()));
     google.maps.event.addListenerOnce(M, 'tilesloaded', () => setTimeout(g.pronto, 300));
     M.addListener('click', (e: any) => {
-      if (e.placeId) { e.stop(); this.lugarAbrir(e.placeId, e.latLng); return; }
-      if (this.lugarFechar()) return;
-      if (e.latLng) g.vazio(e.latLng.lat(), e.latLng.lng());
+      if (e.placeId) { e.stop(); if (!this.modo) { this.lugarAbrir(e.placeId, e.latLng); return; } }
+      if (this.lugarFechar() && !this.modo) return;
+      if (!e.latLng) return;
+      if (this.modo) g.clique(e.latLng.lat(), e.latLng.lng());
+      else g.vazio(e.latLng.lat(), e.latLng.lng());
     });
   }
   temVista() { return !!vista; }
@@ -92,12 +109,12 @@ export class Motor {
       const d = document.createElement('div');
       d.className = 'pin g' + (sel === t.id ? ' sel' : '');
       d.innerHTML = `<span class="pin-b" style="background:${t.cor}"><b class="pin-d" style="background:${t.fg}"></b></span>`;
-      const mk = new AdvancedMarkerElement({ map: this.mapa, position: gLL(t.lat, t.lng), content: d, title: t.nome, gmpClickable: true, zIndex: sel === t.id ? 10 : 1 });
+      const mk = new AdvancedMarkerElement({ map: this.mapa, position: gLL(t.lat, t.lng), content: d, title: t.nome, gmpClickable: !this.modo, zIndex: sel === t.id ? 10 : 1 });
       mk.addEventListener('gmp-click', () => this.g.pino(t.id));
       mk._terreno = t.id;
       this.pinos.push(mk);
       if (t.poly) {
-        const pg = new google.maps.Polygon({ map: this.mapa, paths: t.poly.map((p) => gLL(p[0], p[1])), strokeColor: t.cor, strokeWeight: 2, fillColor: t.cor, fillOpacity: 0.18, clickable: true });
+        const pg = new google.maps.Polygon({ map: this.mapa, paths: t.poly.map((p) => gLL(p[0], p[1])), strokeColor: t.cor, strokeWeight: 2, fillColor: t.cor, fillOpacity: 0.18, clickable: !this.modo });
         let tc: ReturnType<typeof setTimeout> | undefined;
         pg.addListener('click', () => { clearTimeout(tc); tc = setTimeout(() => this.g.pino(t.id), 260); });
         pg.addListener('dblclick', (e: any) => { e?.stop?.(); clearTimeout(tc); });
@@ -215,13 +232,15 @@ export class Motor {
   /* concorrência: um quadrado por empreendimento (são ~2 mil); o aberto vai num marcador próprio por cima (mkDestaque) */
   private merc: any[] = [];
   private mercDest: any = null;
+  private mercUlt: [Emp[], (id: string) => void] | null = null;
   mercado(lista: Emp[], abrir: (id: string) => void) {
+    this.mercUlt = [lista, abrir];
     this.merc.forEach((m) => (m.map = null));
     const { AdvancedMarkerElement } = gLib.marker;
     this.merc = lista.map((e) => {
       const d = document.createElement('div');
       d.className = 'mk g'; d.innerHTML = mkMarcaHtml(e.sit);
-      const m = new AdvancedMarkerElement({ map: this.mapa, position: gLL(e.lat, e.lng), content: d, title: mkTitulo(e), gmpClickable: true });
+      const m = new AdvancedMarkerElement({ map: this.mapa, position: gLL(e.lat, e.lng), content: d, title: mkTitulo(e), gmpClickable: !this.modo });
       m.addEventListener('gmp-click', () => abrir(e.id));
       return m;
     });
@@ -235,5 +254,65 @@ export class Motor {
     this.mercDest = new gLib.marker.AdvancedMarkerElement({ map: this.mapa, position: gLL(e.lat, e.lng), content: d, title: mkTitulo(e), zIndex: 3000, gmpClickable: true });
     this.mercDest.addEventListener('gmp-click', () => abrir(e.id));
   }
-  destruir() { this.merc.forEach((m) => (m.map = null)); if (this.mercDest) this.mercDest.map = null; this.pinos.forEach((o) => (o.setMap ? o.setMap(null) : (o.map = null))); this.el.innerHTML = ''; }
+  /* ---------- desenho da poligonal (proto_gmap.js › G_desenhaRascunho, gPontoNaTela; proto_mod.js › vGestos) ---------- */
+  setModo(on: boolean) {
+    if (this.modo === on) return;
+    this.modo = on;
+    this.el.classList.toggle('modo', on);
+    if (on) this.lugarFechar();
+    this.pinos.forEach((o) => (o.setOptions ? o.setOptions({ clickable: !on }) : (o.gmpClickable = !on)));
+    /* a concorrência são ~2 mil marcadores: refazer com gmpClickable novo é bem mais rápido que trocar um a um (desenhaMerc) */
+    if (this.mercUlt) this.mercado(...this.mercUlt);
+    if (this.mercDest) this.mercDest.gmpClickable = !on;
+  }
+  private rasc: any[] = [];
+  rascunho(pts: [number, number][], sel: number | null, editar: boolean, gp: GestosPonto) {
+    this.rasc.forEach((o) => (o.setMap ? o.setMap(null) : (o.map = null)));
+    this.rasc = [];
+    if (!pts.length) return;
+    const { google } = window, M = this.mapa, p = pts.map((q) => gLL(q[0], q[1]));
+    const traco = { icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, strokeColor: '#0094fe', scale: 2 }, offset: '0', repeat: '10px' }], strokeOpacity: 0, clickable: false };
+    const poli = p.length >= 3
+      ? new google.maps.Polygon({ map: M, paths: p, strokeColor: '#0094fe', strokeWeight: editar ? 2.5 : 2, fillColor: '#0094fe', fillOpacity: editar ? 0.2 : 0.12, clickable: false })
+      : new google.maps.Polyline({ map: M, path: p, ...traco });
+    this.rasc.push(poli);
+    const ll = (pos: any) => [typeof pos.lat === 'function' ? pos.lat() : pos.lat, typeof pos.lng === 'function' ? pos.lng() : pos.lng] as [number, number];
+    p.forEach((q, i) => {
+      const el = document.createElement('div');
+      el.className = 'v-alvo'; el.innerHTML = `<span class="v-dot${sel === i ? ' sel' : ''}"></span>`;
+      const mk = new gLib.marker.AdvancedMarkerElement({ map: M, position: q, content: el, gmpDraggable: true, zIndex: sel === i ? 1000 : 10 });
+      vGestos(el, i, gp);
+      mk.addListener('drag', () => { const pp = p.slice(), [a, b] = ll(mk.position); pp[i] = gLL(a, b); poli.setPath ? poli.setPath(pp) : poli.setPaths(pp); });
+      mk.addListener('dragstart', () => gp.arrastando());
+      mk.addListener('dragend', () => { const [a, b] = ll(mk.position); gp.arrastado(i, a, b); });
+      this.rasc.push(mk);
+    });
+  }
+  /** posição de um ponto na tela do mapa (para abrir o menu do ponto ao lado dele) */
+  pontoNaTela(lat: number, lng: number) {
+    const p = this.proj.getProjection()?.fromLatLngToContainerPixel(new window.google.maps.LatLng(lat, lng));
+    return p ? { x: p.x as number, y: p.y as number } : null;
+  }
+  destruir() {
+    this.rasc.forEach((o) => (o.setMap ? o.setMap(null) : (o.map = null))); this.merc.forEach((m) => (m.map = null)); if (this.mercDest) this.mercDest.map = null; this.pinos.forEach((o) => (o.setMap ? o.setMap(null) : (o.map = null))); this.el.innerHTML = ''; }
+}
+
+/* gestos num ponto: arrastar move; clique direito ou dois cliques (mouse) abrem o menu; segurar (toque) também.
+   O clique direito só vale com mouse: no Android o toque longo também dispara contextmenu, com o dedo ainda na tela. */
+const TOQUE = () => matchMedia('(pointer: coarse)').matches;
+function vGestos(el: HTMLElement, i: number, gp: GestosPonto) {
+  el.classList.add('v-ponto');
+  let tm: ReturnType<typeof setTimeout> | null = null, x0 = 0, y0 = 0, tipo = '';
+  const limpa = () => { if (tm) clearTimeout(tm); tm = null; };
+  el.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); if (((e as PointerEvent).pointerType || tipo) === 'mouse') { gp.toque(); gp.menu(i); } });
+  el.addEventListener('pointerdown', (e) => {
+    gp.toque(); x0 = e.clientX; y0 = e.clientY; tipo = e.pointerType;
+    if (e.button === 2) return;
+    if (e.pointerType === 'touch' || e.pointerType === 'pen' || TOQUE()) { limpa(); tm = setTimeout(() => { tm = null; gp.menu(i); }, 500); }
+  });
+  el.addEventListener('pointermove', (e) => { if (tm && Math.hypot(e.clientX - x0, e.clientY - y0) > 8) limpa(); });
+  el.addEventListener('pointerup', () => { gp.toque(); limpa(); });
+  ['pointercancel', 'pointerleave'].forEach((t) => el.addEventListener(t, limpa));
+  el.addEventListener('click', (e) => { e.stopPropagation(); gp.toque(); });
+  el.addEventListener('dblclick', (e) => { e.stopPropagation(); e.preventDefault(); gp.toque(); gp.duplo(i); });
 }

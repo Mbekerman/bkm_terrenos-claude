@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useSessao } from '../lib/sessao';
 import { useToast } from '../components/ui';
 import { Bi, Ic, type ContextoMoldura } from '../components/Moldura';
 import { carregarGoogle, googleRecusado } from '../mapa/google';
-import { Motor, vista, type Base, type Pino } from '../mapa/motor';
+import { Motor, vista, type Base, type GestosPonto, type Pino } from '../mapa/motor';
+import { desenhoAtendido, poligonal, useNovo } from '../novo/estado';
+import { areaPoly, m2, type P } from '../novo/geo';
 import { BotaoCamadas, ItensLegenda, LegendaSetor, Metodologia, QuadroSetor } from '../mapa/CamadasSetor';
 import { carregarSetores, setorEm, setores, type Camada } from '../mapa/setores';
 import { BotaoConc, CaixaEmp, FiltroConc, ItensConc, TabelaEmp } from '../mapa/Concorrencia';
@@ -14,10 +16,12 @@ import { apagado, areaDe, bate, carregar, classe, corSub, info, itens, subNome, 
 
 // Página Mapa, com a mesma marcação e as mesmas classes do protótipo (tools/prototipo/proto_mod.js › pgMapa,
 // mpLista, mpItem, mpLegenda, mpCtrlHtml, ctxAbrir, mpLargura; proto_novo.js › mpBuscaHtml). Os estilos são os do
-// protótipo, em styles.css. Ainda fora: filtros e visões, a gaveta da ficha, desenho e edição da poligonal,
+// protótipo, em styles.css. O desenho da poligonal do terreno novo segue proto_mod.js › mapaClique, vGestos, vAcao,
+// vMenuDesenha e os atalhos do desenho. Ainda fora: filtros e visões, a gaveta da ficha, a edição da poligonal,
 // e a camada de Concorrência só lê o retrato do monitor (sem a cadastrada à mão, desligada no protótipo).
 
 const num = (n: number) => Math.round(n).toLocaleString('pt-BR');
+const TOQUE = () => matchMedia('(pointer: coarse)').matches;
 const MP_LKEY = 'bkm-terrenos-mapa-lista', MP_LMIN = 76;
 const mpLpad = () => (innerWidth < 1300 ? 300 : 360);
 const mpLmax = () => Math.max(MP_LMIN, Math.min(720, Math.round(innerWidth * 0.6)));
@@ -103,7 +107,92 @@ export default function Mapa() {
   }, [todos, navegar]);
 
   /* motor do Google: cria uma vez por visita à página */
-  const ganchos = useRef({ mk: (_: string) => {}, pino: (_: string) => {}, vazio: (_a: number, _b: number) => {}, duplo: (_a: number, _b: number, _c: EventTarget | null) => {} });
+  const ganchos = useRef({ mk: (_: string) => {}, pino: (_: string) => {}, vazio: (_a: number, _b: number) => {}, duplo: (_a: number, _b: number, _c: EventTarget | null) => {},
+    clique: (_a: number, _b: number) => {}, gp: null as GestosPonto | null });
+
+  /* ---------- desenho da poligonal do terreno novo ----------
+     Desktop sem barra (decisão do Moisés, 4/nov/2026): só um aviso passageiro ao começar; Enter ou dois cliques no mapa salvam,
+     Esc ou dois cliques fora do mapa cancelam, Ctrl+Z desfaz; o menu do ponto (clique direito ou dois cliques nele) traz
+     Adicionar ponto depois, Excluir ponto, Desfazer e Cancelar desenho. */
+  const [des, setDes] = useState<P[] | null>(null);
+  const [vSel, setVSel] = useState<number | null>(null);
+  const [vMenu, setVMenu] = useState(false);
+  const [movendo, setMovendo] = useState(false);
+  const hist = useRef<P[][]>([]);
+  const marcas = useRef({ toque: 0, ponto: 0, inicio: 0, cliqueN: 1, pdAnt: null as { t: number; x: number; y: number } | null, pdUlt: null as { t: number; x: number; y: number } | null });
+  const desR = useRef(des);
+  desR.current = des;
+  const nvSt = useNovo();
+  function desComecar(p0?: P) {
+    hist.current = []; setVSel(null); setVMenu(false); setMenu(null); setMkBox(null); setSetor(null);
+    if (selId) selecionar(null);
+    motor.current?.lugarFechar();
+    setDes(p0 ? [p0] : []);
+    marcas.current.inicio = Date.now();
+    if (!TOQUE()) toast(p0 ? 'Primeiro ponto marcado. Clique nos outros cantos; Enter ou dois cliques salvam, Esc cancela.'
+      : 'Procure o endereço na barra do mapa e clique em cada canto do terreno. Enter ou dois cliques salvam; Esc cancela.');
+  }
+  function desGuardar() { hist.current.push((des || []).map((x) => [x[0], x[1]] as P)); if (hist.current.length > 60) hist.current.shift(); }
+  function desDesfazer() { const h = hist.current; if (!h.length) return false; setDes(h.pop()!); setVSel(null); setVMenu(false); return true; }
+  function desSair() { setDes(null); hist.current = []; setVSel(null); setVMenu(false); }
+  function desCancelar() { desSair(); toast('Desenho cancelado.'); }
+  function desSalvar() {
+    const p = des || [];
+    if (p.length < 3) { toast('Marque pelo menos 3 pontos.', true); return; }
+    desSair();
+    /* a poligonal desenhada é o passo 1 do cadastro: a janela do Novo terreno abre com ela */
+    if (empresa) poligonal(p, 'mapa', empresa.id);
+  }
+  function vSelecionar(i: number) { setVSel(i); setVMenu(true); marcas.current.toque = Date.now(); }
+  function vFechar() { setVMenu(false); setVSel(null); }
+  function vAcao(a: 'v-depois' | 'v-excluir' | 'v-desfazer' | 'v-cancelar') {
+    marcas.current.toque = Date.now();
+    const i = vSel, p = (des || []).map((x) => [x[0], x[1]] as P);
+    if (a === 'v-desfazer') { if (!desDesfazer()) vFechar(); return; }
+    if (a === 'v-cancelar') { desCancelar(); return; }
+    if (i == null) return;
+    if (a === 'v-excluir') { desGuardar(); p.splice(i, 1); setDes(p); vFechar(); toast(`Ponto ${i + 1} excluído.`); return; }
+    if (p.length < 2 || (i === p.length - 1 && p.length < 3)) { vFechar(); return; }
+    desGuardar();
+    const b = p[(i + 1) % p.length];
+    p.splice(i + 1, 0, [(p[i][0] + b[0]) / 2, (p[i][1] + b[1]) / 2]);
+    setDes(p); setVMenu(false); setVSel(i + 1);
+    toast(`Ponto ${i + 2} adicionado. Arraste-o para o lugar.`);
+    setTimeout(() => setVSel((v) => (v === i + 1 && !vMenuR.current ? null : v)), 2500);
+  }
+  const vMenuR = useRef(vMenu);
+  vMenuR.current = vMenu;
+  ganchos.current.clique = (lat, lng) => {
+    if (!des) return;
+    const mm = marcas.current, agora = Date.now();
+    if (agora - mm.toque < 300) return; /* o toque foi num ponto, não no mapa */
+    const a = mm.pdAnt, b = mm.pdUlt, repetido = a && b && b.t - a.t < 400 && Math.hypot(b.x - a.x, b.y - a.y) < 8;
+    if (!TOQUE() && (mm.cliqueN >= 2 || repetido)) return; /* segundo clique de um duplo clique: não marca ponto, o duplo clique salva */
+    if (vMenu) { vFechar(); return; }
+    desGuardar();
+    const p = des.map((x) => [x[0], x[1]] as P), q: P = [lat, lng];
+    if (p.length < 3) p.push(q);
+    else { /* entra no lado da poligonal que menos aumenta o contorno (no desenho em sequência, equivale a seguir em frente) */
+      const d = (u: P, v: P) => Math.hypot(u[0] - v[0], (u[1] - v[1]) * Math.cos((u[0] * Math.PI) / 180));
+      let melhor = p.length, custo = Infinity;
+      p.forEach((u, k) => { const v = p[(k + 1) % p.length], c = d(u, q) + d(q, v) - d(u, v); if (c < custo) { custo = c; melhor = k + 1; } });
+      p.splice(melhor, 0, q);
+    }
+    mm.ponto = agora;
+    setDes(p);
+  };
+  ganchos.current.gp = {
+    toque: () => { marcas.current.toque = Date.now(); },
+    menu: (i) => vSelecionar(i),
+    /* no desenho, o primeiro clique do duplo clique acabou de criar este ponto: o duplo clique salva, não abre o menu */
+    duplo: (i) => { if (!TOQUE() && Date.now() - marcas.current.ponto < 700) desSalvar(); else vSelecionar(i); },
+    arrastando: () => setVMenu(false),
+    arrastado: (i, lat, lng) => { desGuardar(); const p = (des || []).map((x) => [x[0], x[1]] as P); p[i] = [lat, lng]; setDes(p); vFechar(); marcas.current.toque = Date.now(); },
+  };
+  const gp = useRef<GestosPonto>({
+    toque: () => ganchos.current.gp!.toque(), menu: (i) => ganchos.current.gp!.menu(i), duplo: (i) => ganchos.current.gp!.duplo(i),
+    arrastando: () => ganchos.current.gp!.arrastando(), arrastado: (i, a, b) => ganchos.current.gp!.arrastado(i, a, b),
+  }).current;
   ganchos.current.pino = (id) => { setMenu(null); setMkBox(null); selecionar(id); };
   ganchos.current.vazio = (lat, lng) => {
     setMenu(null);
@@ -113,11 +202,11 @@ export default function Mapa() {
     if (camada && setores()) { const i = setorEm(lat, lng); setSetor(i); if (i != null) setMkBox(null); }
   };
   ganchos.current.duplo = (lat, lng, alvo) => {
-    if (!edita) return;
+    if (!edita || des || TOQUE()) return;
     const el = alvo as HTMLElement | null;
     if (el?.closest?.('.mp-barra,.mp-ctrl,.mp-legenda,.mp-cartao,.mp-ctx,button,a,input')) return;
     setMenu(null);
-    navegar('/terrenos/novo', { state: { ponto: [lat, lng] } });
+    desComecar([lat, lng]);
   };
   useEffect(() => {
     let vivo = true;
@@ -131,7 +220,9 @@ export default function Mapa() {
         pino: (id) => ganchos.current.pino(id),
         vazio: (a, b) => ganchos.current.vazio(a, b),
         duplo: (a, b, c) => ganchos.current.duplo(a, b, c),
-        menu: (x, y, lat, lng) => { if (edita) setMenu({ x, y, lat, lng }); },
+        menu: (x, y, lat, lng) => { if (edita && !desR.current) setMenu({ x, y, lat, lng }); },
+        clique: (a, b) => ganchos.current.clique(a, b),
+        movendo: (on) => setMovendo(on),
         fecharMenu: () => setMenu(null),
         streetView: (on) => setSv(on),
         aviso: (m, erro) => toast(m, erro),
@@ -151,6 +242,53 @@ export default function Mapa() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [motorPronto, visiveis, pinoDe]);
   useEffect(() => { motor.current?.marcar(selId); }, [selId]);
+  /* desenho: modo do mapa, rascunho e o pedido vindo do passo 1 do Novo terreno */
+  useEffect(() => { if (motorPronto) motor.current?.setModo(!!des); }, [motorPronto, des]);
+  useEffect(() => { if (motorPronto) motor.current?.rascunho(des || [], vSel, false, gp); }, [motorPronto, des, vSel, gp]);
+  useEffect(() => {
+    if (!nvSt.desenho || !motorPronto) return;
+    desenhoAtendido();
+    desComecar(nvSt.desenho.p0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nvSt.desenho, motorPronto]);
+  useEffect(() => {
+    if (!des) return;
+    const mm = marcas.current;
+    const clique = (ev: MouseEvent) => { mm.cliqueN = ev.detail || 1; };
+    const pd = (ev: PointerEvent) => { if (ev.pointerType !== 'mouse') return; mm.pdAnt = mm.pdUlt; mm.pdUlt = { t: Date.now(), x: ev.clientX, y: ev.clientY }; };
+    /* dois cliques em qualquer lugar do mapa salvam; dois cliques fora do mapa cancelam (os dois cliques num ponto abrem o menu dele) */
+    const duplo = (ev: MouseEvent) => {
+      if (TOQUE() || Date.now() - mm.inicio < 500) return; /* este duplo clique é o que acabou de começar o desenho */
+      const ar = areaEl.current, t = ev.target as Node;
+      const alvo = (document.contains(t) ? t : document.elementFromPoint(ev.clientX, ev.clientY)) as HTMLElement | null;
+      if (!ar || !alvo?.closest) return;
+      if (alvo.closest('.v-menu,.v-ponto,#mp-modo,.toast,#toast,.scrim,.dialog,input,textarea,select')) return;
+      if (ar.contains(alvo)) { if (alvo.closest('.mp-barra,.mp-ctrl,.mp-legenda,.mp-cartao,button,a,summary')) return; ev.preventDefault(); desSalvar(); }
+      else desCancelar();
+    };
+    /* Esc no desenho vem antes dos outros Esc da página: é ele que a pessoa quer desfazer */
+    const esc = (ev: KeyboardEvent) => {
+      if (ev.key !== 'Escape' || (ev.target as HTMLElement).matches?.('input,textarea,select') || document.querySelector('.mp-ctx')) return;
+      if (vMenu) vFechar(); else desCancelar();
+      ev.preventDefault(); ev.stopImmediatePropagation();
+    };
+    const tecla = (ev: KeyboardEvent) => {
+      const el = ev.target as HTMLElement;
+      if (el.matches?.('input,textarea,select')) return;
+      if (ev.key === 'Enter' && !vMenu && !el.closest?.('button,a,summary')) { desSalvar(); ev.preventDefault(); }
+      else if ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey && ev.key.toLowerCase() === 'z') { desDesfazer(); ev.preventDefault(); }
+      else if ((ev.key === 'Delete' || ev.key === 'Backspace') && vSel != null) { vAcao('v-excluir'); ev.preventDefault(); }
+    };
+    document.addEventListener('click', clique, true);
+    document.addEventListener('pointerdown', pd, true);
+    document.addEventListener('dblclick', duplo);
+    window.addEventListener('keydown', esc, true);
+    document.addEventListener('keydown', tecla);
+    return () => {
+      document.removeEventListener('click', clique, true); document.removeEventListener('pointerdown', pd, true); document.removeEventListener('dblclick', duplo);
+      window.removeEventListener('keydown', esc, true); document.removeEventListener('keydown', tecla);
+    };
+  });
   useEffect(() => { motor.current?.setBase(base); }, [base]);
 
   /* camadas por setor censitário: uma de cada vez; ao ligar, o mapa passa para a visão Mapa e volta ao desligar */
@@ -202,6 +340,21 @@ export default function Mapa() {
     enquadrarPend.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [motorPronto, q.data]);
+
+  /* terreno recém-cadastrado (/mapa/A123 com focar): seleciona e enquadra quando ele chega na lista */
+  const loc = useLocation();
+  const focarPend = useRef<string | null>(null);
+  useEffect(() => { if ((loc.state as { focar?: boolean } | null)?.focar && codigoUrl) focarPend.current = codigoUrl.toUpperCase(); }, [loc.key]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const m = motor.current, c = focarPend.current;
+    if (!m || !motorPronto || !c) return;
+    const t = todos.find((x) => x.codigo === c);
+    if (!t) return;
+    focarPend.current = null;
+    setSelId(t.id);
+    const p = pinoDe(t);
+    if (p) m.focar(p);
+  });
 
   /* ao descer ou subir de nível, enquadra os terrenos que ficaram */
   const enquadrarNivel = useRef(false);
@@ -399,7 +552,15 @@ export default function Mapa() {
           <BotaoCamadas camada={camada} aberto={camMenu} abrir={setCamMenu} escolher={ligarCamada} />
           <BotaoConc f={mf} aberto={mfAberto} alternar={() => { const ab = !mfAberto; setMfAberto(ab); if (ab) setMkBox(null); }} />
         </div>
-        <div id="mp-modo" className="mp-modo" aria-live="polite" />
+        <div id="mp-modo" className="mp-modo" aria-live="polite">{des && TOQUE() && <>
+          <span>Desenhando a poligonal do <b>terreno novo</b>: toque no mapa para marcar os vértices.{des.length > 0 && ' Arraste um ponto para ajustá-lo; toque e segure nele para mais opções.'} <span className="mp-q">{des.length} ponto{des.length === 1 ? '' : 's'}{areaPoly(des) ? ` · ${m2(areaPoly(des))}` : ''}</span></span>
+          <button className="btn sm text" disabled={!hist.current.length} onClick={desDesfazer}>Desfazer</button>
+          <button className="btn sm text" onClick={desCancelar}>Cancelar</button>
+          <button className="btn sm primary" disabled={des.length < 3} onClick={desSalvar}>Concluir</button>
+        </>}</div>
+        {des && vMenu && vSel != null && des[vSel] && !movendo && motor.current && (
+          <MenuPonto area={areaEl.current} px={motor.current.pontoNaTela(des[vSel][0], des[vSel][1])} i={vSel} n={des.length} area2={areaPoly(des) || 0} desfazer={hist.current.length > 0} acao={vAcao} />
+        )}
         <div id="mp-cartao" className="mp-cartao" aria-live="polite">{sel && visiveis.includes(sel) && linha(sel, true)}</div>
         <button type="button" className="mp-cb sv-x" title="Fechar o Street View (Esc)" aria-label="Fechar o Street View" onClick={() => motor.current?.svFechar()}><Ic n="close" s={22} /></button>
         <div id="mp-ctrl" className="mp-ctrl">
@@ -428,13 +589,48 @@ export default function Mapa() {
         {mkBox && mkEmp(mkBox) && <CaixaEmp e={mkEmp(mkBox)!} fechar={() => setMkBox(null)} tabela={setMkTab} />}
         {menu && (
           <div className="mp-ctx" role="menu" style={{ left: Math.max(8, Math.min((areaEl.current?.clientWidth ?? 0) - 228, menu.x)), top: Math.max(8, Math.min((areaEl.current?.clientHeight ?? 0) - 64, menu.y)) }}>
-            <button role="menuitem" autoFocus onClick={() => { const m = menu; setMenu(null); navegar('/terrenos/novo', { state: { ponto: [m.lat, m.lng] } }); }}><Ic n="add" s={18} />Novo terreno aqui</button>
+            <button role="menuitem" autoFocus onClick={() => { const m = menu; setMenu(null); desComecar([m.lat, m.lng]); }}><Ic n="add" s={18} />Novo terreno aqui</button>
           </div>
         )}
       </section>
       {met && <Metodologia camada={met} fechar={() => setMet(null)} />}
       {mfAberto && mkOk && <FiltroConc f={mf} mudar={setMf} fechar={() => setMfAberto(false)} aviso={(m) => toast(m)} />}
       {mkTab && <TabelaEmp id={mkTab} fechar={() => setMkTab(null)} />}
+    </div>
+  );
+}
+
+/* menu do ponto do rascunho, ao lado dele (proto_mod.js › vMenuDesenha) */
+function MenuPonto({ area, px, i, n, area2, desfazer, acao }: {
+  area: HTMLElement | null; px: { x: number; y: number } | null; i: number; n: number; area2: number; desfazer: boolean;
+  acao: (a: 'v-depois' | 'v-excluir' | 'v-desfazer' | 'v-cancelar') => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const m = ref.current;
+    if (!m || !area || !px) return;
+    const W = area.clientWidth, H = area.clientHeight, w = m.offsetWidth, h = m.offsetHeight, ar = area.getBoundingClientRect();
+    /* parte visível da área do mapa (a barra superior da página pode cobrir o topo) */
+    const topo = Math.max(8, (document.querySelector('.top')?.getBoundingClientRect().bottom || 0) - ar.top + 8), base = Math.min(H, innerHeight - ar.top) - 8;
+    const x = px.x - w / 2;
+    let y = px.y - h - 24;
+    if (y < topo) y = px.y + 24;
+    m.style.left = Math.max(8, Math.min(W - w - 8, x)) + 'px';
+    m.style.top = Math.max(topo, Math.min(base - h, y)) + 'px';
+    m.querySelector('button')?.focus({ preventScroll: true });
+  });
+  if (!px) return null;
+  const tq = TOQUE();
+  return (
+    <div className="v-menu" role="menu" ref={ref}>
+      <div className="v-t">Ponto {i + 1} de {n}{area2 ? ` · ${m2(area2)}` : ''}</div>
+      <button role="menuitem" onClick={() => acao('v-depois')}>Adicionar ponto depois</button>
+      <button role="menuitem" className="crit" onClick={() => acao('v-excluir')}>Excluir ponto</button>
+      {!tq && <>
+        <hr />
+        <button role="menuitem" disabled={!desfazer} onClick={() => acao('v-desfazer')}>Desfazer<kbd>{/Mac/.test(navigator.platform) ? '⌘Z' : 'Ctrl+Z'}</kbd></button>
+        <button role="menuitem" onClick={() => acao('v-cancelar')}>Cancelar desenho<kbd>Esc</kbd></button>
+      </>}
     </div>
   );
 }
