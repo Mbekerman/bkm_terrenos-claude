@@ -284,6 +284,10 @@ export class Motor {
     if (this.mercUlt) this.mercado(...this.mercUlt);
     if (this.mercDest) this.mercDest.gmpClickable = !on;
   }
+  /* régua ligada: o cursor do mapa vira a seta em vez da mãozinha (pedido do Moisés, 5/nov/2026); null volta ao do Google */
+  cursorSeta(on: boolean) {
+    this.mapa.setOptions({ draggableCursor: on ? 'default' : null });
+  }
   private rasc: any[] = [];
   rascunho(pts: [number, number][], sel: number | null, editar: boolean, gp: GestosPonto) {
     this.rasc.forEach((o) => (o.setMap ? o.setMap(null) : (o.map = null)));

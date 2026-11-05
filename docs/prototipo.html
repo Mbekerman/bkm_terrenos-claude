@@ -5698,6 +5698,8 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 /* a busca a 12 px da borda esquerda, a mesma distância dos três pontinhos à direita (pedido do Moisés, 5/nov/2026);
    no Leaflet fica depois do + e − do zoom */
 .mapa-area:not(:has(.leaflet-container)) .mp-barra { left: 12px !important }
+/* régua ligada: seta em vez da mãozinha no Leaflet (no Google, draggableCursor) */
+.mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }
 </style>
 <header class="top">
   <div class="top-in">
@@ -13471,7 +13473,7 @@ document.addEventListener('pointerup',e=>{const p=FORA0;FORA0=null;if(!p||Math.h
 /* Régua (pedido do Moisés, 5/nov/2026): botão no canto, acima da minha localização (e no menu dos três pontinhos), que fica azul enquanto
    ligada e vale até ser desligada. Cada clique no mapa marca um ponto e a linha mede o caminho, trecho a trecho e no total; clicar no
    primeiro ponto (com 3 ou mais) fecha a forma e mede a área; o clique seguinte começa outra medida. Não segue a rua.
-   Teclas: Backspace apaga o último ponto, Del apaga o desenho (sem desenho, desliga), Esc desliga; Ctrl+Z desfaz. Clique direito num
+   Teclas: Backspace apaga o último ponto, Del ou Esc apagam o desenho (sem desenho, desligam); Ctrl+Z desfaz. Clique direito num
    ponto: Excluir ponto. */
 UI.rg=null;let rgCam=[];
 const rgDist=(a,b)=>distKm(a[0],a[1],b[0],b[1])*1000;
@@ -13480,7 +13482,7 @@ function rgTotal(){const p=UI.rg?.pts||[];let t=0;for(let i=1;i<p.length;i++)t+=
 function rgBotao(){document.querySelectorAll('.mp-cb[data-a="rg-abrir"]').forEach(b=>b.setAttribute('aria-pressed',String(UI.mpModo==='regua')))}
 function rgAbrir(){if(UI.mpModo&&UI.mpModo!=='regua')return;if(UI.mpModo==='regua'){rgSair();return}
   lugarFechar?.();mkFechar();if(UI.mpSel)mpSelecionar(null);UI.mpModo='regua';UI.rg={pts:[],fechado:false};mpRefresh();rgBotao();
-  toast(TOQUE()?'Toque no mapa para marcar os pontos.':'Clique no mapa para marcar os pontos e no primeiro ponto para medir a área. Backspace apaga o último ponto, Del apaga o desenho e Esc desliga a régua.')}
+  toast(TOQUE()?'Toque no mapa para marcar os pontos.':'Clique no mapa para marcar os pontos e no primeiro ponto para medir a área. Backspace apaga o último ponto; Del ou Esc apagam o desenho e, sem desenho, desligam a régua.')}
 function rgSair(){rgCtxFechar();UI.mpModo=null;UI.rg=null;rgDesenha();mpRefresh();rgBotao()}
 function rgClique(lat,lng){const R=UI.rg;if(!R)return;
   if(Date.now()-(UI.rgCtxEm||0)<400)return;
@@ -13507,8 +13509,9 @@ document.addEventListener('click',e=>{const b=e.target.closest?.('[data-a="rg-ab
 /* (pela marca UI.rgCtx: o fechar do menu do clique direito, ctxFechar, também tira este da página) */
 document.addEventListener('pointerdown',e=>{if(!UI.rgCtx||e.target.closest('.rg-ctx'))return;if(e.target.closest('#mapa'))UI.rgCtxEm=Date.now();rgCtxFechar()},true);
 window.addEventListener('keydown',e=>{if(UI.mpModo!=='regua'||UI.modal||e.target.matches('input,textarea,select'))return;const R=UI.rg;
-  if(e.key==='Escape'){if($('.rg-ctx'))rgCtxFechar();else rgSair()}
-  else if(e.key==='Delete'){rgCtxFechar();if(R?.pts.length){R.pts=[];R.fechado=false;rgAtualizar()}else rgSair()}
+  if(e.key==='Escape'&&$('.rg-ctx'))rgCtxFechar();
+  /* Esc faz o mesmo que o Del (pedido do Moisés, 5/nov/2026): com desenho, apaga; sem desenho, desliga a régua */
+  else if(e.key==='Delete'||e.key==='Escape'){rgCtxFechar();if(R?.pts.length){R.pts=[];R.fechado=false;rgAtualizar()}else rgSair()}
   else if(e.key==='Backspace'){rgCtxFechar();if(R?.pts.length)rgExcluir(R.pts.length-1)}
   else return;
   e.preventDefault();e.stopImmediatePropagation()},true);
@@ -13519,7 +13522,9 @@ function rgRotulos(){const R=UI.rg;if(!R)return [];const p=R.pts,out=[],seg=(a,b
   if(p.length>1&&!R.fechado&&p.length>2)out.push({ll:p.at(-1),t:rgM(rgTotal()),c:'rg-tot'});
   if(R.fechado){const ar=areaPoly(p);if(ar){const c=centroPoly?centroPoly(p):p[0];out.push({ll:c,t:rgA(ar),c:'rg-tot'})}}
   return out}
-function rgDesenha(){if(!MAPA)return;if(GG){rgCam.forEach(x=>x.setMap?x.setMap(null):(x.map=null));rgCam=[]}else{rgCam.forEach(x=>MAPA.removeLayer(x));rgCam=[]}
+/* com a régua ligada o cursor do mapa é a seta, não a mãozinha (pedido do Moisés, 5/nov/2026): no Google pelo draggableCursor, no Leaflet pela classe */
+function rgCursor(){const on=UI.mpModo==='regua';$('#mapa')?.classList.toggle('regua',on);if(GG&&MAPA?.setOptions)MAPA.setOptions({draggableCursor:on?'default':null})}
+function rgDesenha(){if(!MAPA)return;rgCursor();if(GG){rgCam.forEach(x=>x.setMap?x.setMap(null):(x.map=null));rgCam=[]}else{rgCam.forEach(x=>MAPA.removeLayer(x));rgCam=[]}
   const R=UI.rg;if(!R||UI.mpModo!=='regua'||!R.pts.length)return;const p=R.pts,cor='#0b57d0';
   /* um ponto sem tamanho no lugar exato, com o desenho centrado nele (vale para o Google e o Leaflet) */
   const w=el=>{const d=document.createElement('div');d.className='rg-w';d.appendChild(el);return d};
