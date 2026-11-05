@@ -674,7 +674,7 @@ export default function Mapa() {
         <div className="mp-aviso">Fundo do mapa indisponível nesta visualização.</div>
         {camada && <LegendaSetor camada={camada} aberta={rdLeg} alternar={setRdLeg} carregado={setOk} erro={setErro} metodologia={setMet} />}
         {camada && setor != null && setores() && <QuadroSetor d={setores()!} i={setor} camada={camada} fechar={() => setSetor(null)} metodologia={setMet} />}
-        {mkBox && mkEmp(mkBox) && <CaixaEmp e={mkEmp(mkBox)!} fechar={() => setMkBox(null)} tabela={setMkTab} />}
+        {mkBox && mkEmp(mkBox) && <CaixaEmp e={mkEmp(mkBox)!} fechar={() => setMkBox(null)} tabela={setMkTab} pausado={!!mkTab} />}
         {menu && (
           <div className="mp-ctx" role="menu" style={{ left: Math.max(8, Math.min((areaEl.current?.clientWidth ?? 0) - 228, menu.x)), top: Math.max(8, Math.min((areaEl.current?.clientHeight ?? 0) - 64, menu.y)) }}>
             <button role="menuitem" autoFocus onClick={() => { const m = menu; setMenu(null); desComecar([m.lat, m.lng]); }}><Ic n="add" s={18} />Novo terreno aqui</button>

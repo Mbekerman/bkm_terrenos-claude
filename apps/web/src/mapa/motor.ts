@@ -191,10 +191,21 @@ export class Motor {
     d.innerHTML = h;
     d.querySelector('.lug-x')?.addEventListener('click', (e) => { e.stopPropagation(); this.lugarFechar(); });
     this.info.setContent(d);
+    setTimeout(() => this.lugarSaida(d), 0);
   }
-  lugarFechar() { if (this.lug) { this.info.close(); this.lug = false; return true; } return false; }
+  /* o quadro fecha sozinho 1 s depois que o mouse sai dele (só depois de ter entrado; no toque, não; pedido do Moisés, 5/nov/2026) */
+  private lugT: ReturnType<typeof setTimeout> | undefined;
+  private lugarSaida(d: HTMLElement) {
+    if (TOQUE()) return;
+    const c = d.closest('.gm-style-iw-c') as (HTMLElement & { lugH?: boolean; dentro?: boolean }) | null;
+    if (!c || c.lugH) return;
+    c.lugH = true;
+    c.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'mouse') return; clearTimeout(this.lugT); c.dentro = true; });
+    c.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'mouse' || !c.dentro) return; clearTimeout(this.lugT); this.lugT = setTimeout(() => this.lugarFechar(), 1000); });
+  }
+  lugarFechar() { clearTimeout(this.lugT); if (this.lug) { this.info.close(); this.lug = false; return true; } return false; }
   private async lugarAbrir(id: string, ll: any) {
-    this.lug = true;
+    clearTimeout(this.lugT); this.lug = true;
     this.conteudo(`<div class="lug muted"><button type="button" class="lug-x" aria-label="Fechar">${icX}</button>Carregando avaliações…</div>`);
     this.info.setPosition(ll); this.info.open({ map: this.mapa });
     try {

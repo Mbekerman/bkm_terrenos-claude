@@ -172,12 +172,32 @@ function Resumo({ e }: { e: Emp }) {
 }
 
 /** card do empreendimento tocado */
-export function CaixaEmp({ e, fechar, tabela }: { e: Emp; fechar: () => void; tabela: (id: string) => void }) {
+/* o card fecha sozinho 2 s depois que o mouse sai dele (só depois de ter entrado; nunca no toque nem com a tabela completa aberta);
+   o olhinho ao lado do X o fixa aberto, guardado no navegador (pedido do Moisés, 5/nov/2026) */
+const MK_FKEY = 'bkm-terrenos-concorrencia-fixa';
+const lerFixa = () => { try { return localStorage.getItem(MK_FKEY) === '1'; } catch { return false; } };
+export function CaixaEmp({ e, fechar, tabela, pausado }: { e: Emp; fechar: () => void; tabela: (id: string) => void; pausado?: boolean }) {
+  const [fixa, setFixa] = useState(lerFixa);
+  const caixa = useRef<HTMLDivElement>(null), dentro = useRef(false), t = useRef<ReturnType<typeof setTimeout>>();
+  const vivo = useRef({ fixa, pausado, fechar }); vivo.current = { fixa, pausado, fechar };
+  useEffect(() => { dentro.current = false; clearTimeout(t.current); }, [e.id]);
+  useEffect(() => () => clearTimeout(t.current), []);
+  const sair = (ev: React.PointerEvent) => {
+    if (ev.pointerType !== 'mouse' || !dentro.current || fixa || matchMedia('(pointer: coarse)').matches) return;
+    clearTimeout(t.current);
+    t.current = setTimeout(() => {
+      const el = caixa.current, v = vivo.current;
+      if (!el || v.fixa || v.pausado || el.matches(':hover') || el.querySelector(':focus-visible')) return;
+      v.fechar();
+    }, 2000);
+  };
+  const fixar = () => { const f = !fixa; setFixa(f); try { localStorage.setItem(MK_FKEY, f ? '1' : '0'); } catch { /* sem navegador */ } clearTimeout(t.current); };
   const m2 = mkM2(e.preco, e.area), vso = mkVso(e.vendas, e.estoque), pct = e.unidades ? Math.round((100 * e.estoque) / e.unidades) : 0, dias = mkDias();
   const kv = (k: string, v: string, f?: string) => <div className="mk-kv"><span className="muted">{k}</span><span className="num">{v}</span>{f && <span className="faint">{f}</span>}</div>;
   return (
-    <div id="mk-box"><div className="cc-box mk-box" role="dialog" aria-label={e.nome}>
+    <div id="mk-box" ref={caixa} onPointerEnter={(ev) => { if (ev.pointerType === 'mouse') { clearTimeout(t.current); dentro.current = true; } }} onPointerLeave={sair}><div className="cc-box mk-box" role="dialog" aria-label={e.nome}>
       <div className="cc-hd"><div className="cc-ti"><div className="cc-n">{e.nome}</div><div className="muted">{[e.inc, mkSitNome(e.sit), e.bairro].filter(Boolean).join(' · ')}</div></div>
+        <button type="button" className="iconbtn mk-fixar" aria-pressed={fixa} title={fixa ? 'Soltar (volta a fechar sozinho)' : 'Fixar aberto'} aria-label={fixa ? 'Soltar o card' : 'Fixar o card aberto'} onClick={fixar}><Ic n="olho" s={18} /></button>
         <button type="button" className="iconbtn" aria-label="Fechar" title="Fechar (Esc)" onClick={fechar}><Ic n="close" s={20} /></button></div>
       <div className="cc-k mk-k"><div className="cc-big">{m2 != null ? brl(Math.round(m2)) + '/m²' : 'Sem estoque com preço'}</div>
         <div className="faint">{m2 != null ? 'preço médio por m² das unidades à venda' : e.estoque ? 'as unidades à venda estão sem preço na tabela' : 'nenhuma unidade à venda'}</div>
