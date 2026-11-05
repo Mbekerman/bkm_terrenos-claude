@@ -8,12 +8,14 @@ import { carregarGoogle, googleRecusado } from '../mapa/google';
 import { Motor, vista, type Base, type Pino } from '../mapa/motor';
 import { BotaoCamadas, ItensLegenda, LegendaSetor, Metodologia, QuadroSetor } from '../mapa/CamadasSetor';
 import { carregarSetores, setorEm, setores, type Camada } from '../mapa/setores';
+import { BotaoConc, CaixaEmp, FiltroConc, ItensConc, TabelaEmp } from '../mapa/Concorrencia';
+import { carregarMercado, mercado, mfPassa, mkSitK, type Filtro } from '../mapa/mercado';
 import { apagado, areaDe, bate, carregar, classe, corSub, info, itens, subNome, type Apag, type Fase, type Item, type TerrenoMapa } from '../mapa/dados';
 
 // Página Mapa, com a mesma marcação e as mesmas classes do protótipo (tools/prototipo/proto_mod.js › pgMapa,
 // mpLista, mpItem, mpLegenda, mpCtrlHtml, ctxAbrir, mpLargura; proto_novo.js › mpBuscaHtml). Os estilos são os do
 // protótipo, em styles.css. Ainda fora: filtros e visões, a gaveta da ficha, desenho e edição da poligonal,
-// camadas por setor censitário e Concorrência.
+// e a camada de Concorrência só lê o retrato do monitor (sem a cadastrada à mão, desligada no protótipo).
 
 const num = (n: number) => Math.round(n).toLocaleString('pt-BR');
 const MP_LKEY = 'bkm-terrenos-mapa-lista', MP_LMIN = 76;
@@ -26,8 +28,9 @@ function larguraGuardada() {
   return limitarL(v || mpLpad());
 }
 /* o que a pessoa escolheu fica na sessão, como no protótipo (UI.mp, UI.mpBase, UI.mpLeg) */
-const memo: { f: string; e: string; arv: boolean; apag: Apag; base: Base; leg: boolean | null; camada: Camada | null; baseAntes: Base | null; rdLeg: boolean | null } =
-  { f: '', e: '', arv: false, apag: {}, base: 'satelite', leg: null, camada: null, baseAntes: null, rdLeg: null };
+const memo: { f: string; e: string; arv: boolean; apag: Apag; base: Base; leg: boolean | null; camada: Camada | null; baseAntes: Base | null; rdLeg: boolean | null;
+  mf: Filtro; merc: boolean; mkOff: string[]; mkArv: boolean } =
+  { f: '', e: '', arv: false, apag: {}, base: 'satelite', leg: null, camada: null, baseAntes: null, rdLeg: null, mf: {}, merc: true, mkOff: [], mkArv: false };
 
 export default function Mapa() {
   const { empresa, edita } = useSessao();
@@ -63,7 +66,18 @@ export default function Mapa() {
   const [setOk, setSetOk] = useState(!!setores());
   const [setErro, setSetErro] = useState(false);
   const [met, setMet] = useState<Camada | null>(null);
-  Object.assign(memo, { f, e, arv, apag, base, leg, camada, rdLeg });
+  const [mf, setMf] = useState<Filtro>(memo.mf);
+  const [merc, setMerc] = useState(memo.merc);
+  const [mkOff, setMkOff] = useState<string[]>(memo.mkOff);
+  const [mkArv, setMkArv] = useState(memo.mkArv);
+  const [mkOk, setMkOk] = useState(!!mercado());
+  const [mkErro, setMkErro] = useState(false);
+  const [mfAberto, setMfAberto] = useState(false);
+  const [mkBox, setMkBox] = useState<string | null>(null);
+  const [mkDest, setMkDest] = useState<string | null>(null);
+  const [mkTab, setMkTab] = useState<string | null>(null);
+  const mkAbertoEm = useRef(0);
+  Object.assign(memo, { f, e, arv, apag, base, leg, camada, rdLeg, mf, merc, mkOff, mkArv });
 
   const mapaEl = useRef<HTMLDivElement>(null);
   const areaEl = useRef<HTMLElement>(null);
@@ -83,18 +97,20 @@ export default function Mapa() {
   /* seleção no endereço: /mapa/A123 */
   const selecionar = useCallback((id: string | null) => {
     setSelId(id);
+    if (id) setMkBox(null);
     const t = id ? todos.find((x) => x.id === id) : null;
     navegar(t ? `/mapa/${t.codigo}` : '/mapa', { replace: true });
   }, [todos, navegar]);
 
   /* motor do Google: cria uma vez por visita à página */
-  const ganchos = useRef({ pino: (_: string) => {}, vazio: (_a: number, _b: number) => {}, duplo: (_a: number, _b: number, _c: EventTarget | null) => {} });
-  ganchos.current.pino = (id) => { setMenu(null); selecionar(id); };
+  const ganchos = useRef({ mk: (_: string) => {}, pino: (_: string) => {}, vazio: (_a: number, _b: number) => {}, duplo: (_a: number, _b: number, _c: EventTarget | null) => {} });
+  ganchos.current.pino = (id) => { setMenu(null); setMkBox(null); selecionar(id); };
   ganchos.current.vazio = (lat, lng) => {
     setMenu(null);
     if (selId) selecionar(null);
+    if (mkBox && Date.now() - mkAbertoEm.current > 350) setMkBox(null);
     /* com a camada por setor ligada, o clique abre o quadro do setor */
-    if (camada && setores()) setSetor(setorEm(lat, lng));
+    if (camada && setores()) { const i = setorEm(lat, lng); setSetor(i); if (i != null) setMkBox(null); }
   };
   ganchos.current.duplo = (lat, lng, alvo) => {
     if (!edita) return;
@@ -145,6 +161,30 @@ export default function Mapa() {
   }, [camada]);
   useEffect(() => { if (motorPronto) motor.current?.camada(camada && setOk ? camada : null); }, [motorPronto, camada, setOk]);
   useEffect(() => { if (motorPronto) motor.current?.contornoSetor(camada ? setor : null); }, [motorPronto, camada, setor]);
+  /* concorrência: os empreendimentos do monitor que passam no filtro, sem as situações desligadas na legenda */
+  useEffect(() => {
+    carregarMercado().then(() => setMkOk(true)).catch(() => setMkErro(true));
+  }, []);
+  const mkLista = useMemo(() => (mkOk ? mercado()!.emps.filter((x) => mfPassa(mf, x)) : null), [mkOk, mf]);
+  const mkEmp = (id: string | null) => (id ? mercado()?.emps.find((x) => x.id === id) ?? null : null);
+  useEffect(() => {
+    if (!motorPronto || !mkLista) return;
+    motor.current?.mercado(merc ? mkLista.filter((x) => !mkOff.includes(mkSitK(x))) : [], (id) => ganchos.current.mk(id));
+  }, [motorPronto, mkLista, merc, mkOff]);
+  useEffect(() => {
+    if (!motorPronto) return;
+    const d = mkEmp(mkDest);
+    motor.current?.destaque(d && merc && !mkOff.includes(mkSitK(d)) ? d : null, (id) => ganchos.current.mk(id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [motorPronto, mkDest, merc, mkOff, mkOk]);
+  /* card aberto que sai do filtro ou da legenda fecha */
+  useEffect(() => {
+    const b = mkEmp(mkBox);
+    if (mkBox && (!merc || !b || !mfPassa(mf, b) || mkOff.includes(mkSitK(b)))) setMkBox(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mf, merc, mkOff]);
+  ganchos.current.mk = (id) => { mkAbertoEm.current = Date.now(); setMenu(null); setSetor(null); setMkBox(id); setMkDest(id); if (selId) selecionar(null); };
+
   function ligarCamada(k: Camada | null) {
     if (k === camada) return;
     if (k && !camada && base === 'satelite') { memo.baseAntes = 'satelite'; setBase('mapa'); }
@@ -221,6 +261,7 @@ export default function Mapa() {
       if (ev.key !== 'Escape' || ev.defaultPrevented) return;
       if (menu) { setMenu(null); ev.preventDefault(); return; }
       if (setor != null) { setSetor(null); ev.preventDefault(); return; }
+      if (mkBox) { setMkBox(null); ev.preventDefault(); return; }
       if (motor.current?.svFechar()) { ev.preventDefault(); return; }
       if (motor.current?.lugarFechar()) { ev.preventDefault(); return; }
       if (document.body.classList.contains('mp-cheia') && !document.fullscreenElement) { telaCheia(false); ev.preventDefault(); }
@@ -229,7 +270,7 @@ export default function Mapa() {
     document.addEventListener('keydown', k);
     document.addEventListener('pointerdown', fora, true);
     return () => { document.removeEventListener('keydown', k); document.removeEventListener('pointerdown', fora, true); };
-  }, [menu, telaCheia, setor]);
+  }, [menu, telaCheia, setor, mkBox]);
 
   /* minha localização */
   function eu() {
@@ -356,6 +397,7 @@ export default function Mapa() {
             ))}
           </div>
           <BotaoCamadas camada={camada} aberto={camMenu} abrir={setCamMenu} escolher={ligarCamada} />
+          <BotaoConc f={mf} aberto={mfAberto} alternar={() => { const ab = !mfAberto; setMfAberto(ab); if (ab) setMkBox(null); }} />
         </div>
         <div id="mp-modo" className="mp-modo" aria-live="polite" />
         <div id="mp-cartao" className="mp-cartao" aria-live="polite">{sel && visiveis.includes(sel) && linha(sel, true)}</div>
@@ -373,12 +415,17 @@ export default function Mapa() {
           <div id="mp-leg" className="mp-leg-l">
             <Legenda fases={fases} todos={todos} f={f} e={e} arv={arv} apag={apag} busca={busca}
               alternarArv={() => { const ab = !arv; setArv(ab); if (!ab && (f || e)) nivel('', ''); }} nivel={nivel} apagar={apagar}
-              extra={<ItensLegenda camada={camada} alternar={(k) => ligarCamada(camada === k ? null : k)} />} />
+              extra={<>
+                <ItensLegenda camada={camada} alternar={(k) => ligarCamada(camada === k ? null : k)} />
+                <ItensConc lista={mkLista} erro={mkErro} ligada={merc} off={mkOff} arv={mkArv} alternarArv={() => setMkArv(!mkArv)}
+                  alternar={() => setMerc(!merc)} alternarSit={(k) => setMkOff(mkOff.includes(k) ? mkOff.filter((x) => x !== k) : [...mkOff, k])} />
+              </>} />
           </div>
         </details>
         <div className="mp-aviso">Fundo do mapa indisponível nesta visualização.</div>
         {camada && <LegendaSetor camada={camada} aberta={rdLeg} alternar={setRdLeg} carregado={setOk} erro={setErro} metodologia={setMet} />}
         {camada && setor != null && setores() && <QuadroSetor d={setores()!} i={setor} camada={camada} fechar={() => setSetor(null)} metodologia={setMet} />}
+        {mkBox && mkEmp(mkBox) && <CaixaEmp e={mkEmp(mkBox)!} fechar={() => setMkBox(null)} tabela={setMkTab} />}
         {menu && (
           <div className="mp-ctx" role="menu" style={{ left: Math.max(8, Math.min((areaEl.current?.clientWidth ?? 0) - 228, menu.x)), top: Math.max(8, Math.min((areaEl.current?.clientHeight ?? 0) - 64, menu.y)) }}>
             <button role="menuitem" autoFocus onClick={() => { const m = menu; setMenu(null); navegar('/terrenos/novo', { state: { ponto: [m.lat, m.lng] } }); }}><Ic n="add" s={18} />Novo terreno aqui</button>
@@ -386,6 +433,8 @@ export default function Mapa() {
         )}
       </section>
       {met && <Metodologia camada={met} fechar={() => setMet(null)} />}
+      {mfAberto && mkOk && <FiltroConc f={mf} mudar={setMf} fechar={() => setMfAberto(false)} aviso={(m) => toast(m)} />}
+      {mkTab && <TabelaEmp id={mkTab} fechar={() => setMkTab(null)} />}
     </div>
   );
 }

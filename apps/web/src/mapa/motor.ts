@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { gLib } from './google';
 import { aneis, desenhaLadrilho, type Camada } from './setores';
+import { mkMarcaHtml, mkTitulo, type Emp } from './mercado';
 
 // Motor do mapa do Google, portado de tools/prototipo/proto_gmap.js (G_initMapa, G_desenhaPins, gPinsSel, gEnquadrar,
 // G_eu, G_focar, svFechar, lugarAbrir, gStreetView) e proto_novo.js (mpBuscar, achadoPin). Imperativo, como lá:
@@ -211,5 +212,28 @@ export class Motor {
     if (i == null) return;
     this.setorSel = new window.google.maps.Polygon({ map: this.mapa, paths: aneis(i).map((r) => r.map((p) => gLL(p[0], p[1]))), strokeColor: '#1f1f1f', strokeWeight: 2.5, fillOpacity: 0, clickable: false, zIndex: 5 });
   }
-  destruir() { this.pinos.forEach((o) => (o.setMap ? o.setMap(null) : (o.map = null))); this.el.innerHTML = ''; }
+  /* concorrência: um quadrado por empreendimento (são ~2 mil); o aberto vai num marcador próprio por cima (mkDestaque) */
+  private merc: any[] = [];
+  private mercDest: any = null;
+  mercado(lista: Emp[], abrir: (id: string) => void) {
+    this.merc.forEach((m) => (m.map = null));
+    const { AdvancedMarkerElement } = gLib.marker;
+    this.merc = lista.map((e) => {
+      const d = document.createElement('div');
+      d.className = 'mk g'; d.innerHTML = mkMarcaHtml(e.sit);
+      const m = new AdvancedMarkerElement({ map: this.mapa, position: gLL(e.lat, e.lng), content: d, title: mkTitulo(e), gmpClickable: true });
+      m.addEventListener('gmp-click', () => abrir(e.id));
+      return m;
+    });
+  }
+  destaque(e: Emp | null, abrir: (id: string) => void) {
+    if (this.mercDest) this.mercDest.map = null;
+    this.mercDest = null;
+    if (!e) return;
+    const d = document.createElement('div');
+    d.className = 'mk g mk-dest'; d.innerHTML = mkMarcaHtml(e.sit, true);
+    this.mercDest = new gLib.marker.AdvancedMarkerElement({ map: this.mapa, position: gLL(e.lat, e.lng), content: d, title: mkTitulo(e), zIndex: 3000, gmpClickable: true });
+    this.mercDest.addEventListener('gmp-click', () => abrir(e.id));
+  }
+  destruir() { this.merc.forEach((m) => (m.map = null)); if (this.mercDest) this.mercDest.map = null; this.pinos.forEach((o) => (o.setMap ? o.setMap(null) : (o.map = null))); this.el.innerHTML = ''; }
 }
