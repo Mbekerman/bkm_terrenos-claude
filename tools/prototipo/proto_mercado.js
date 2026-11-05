@@ -77,7 +77,7 @@ function mfBotao(){const n=mfAtivos().length;
    (pedido do Moisés, 5/nov/2026, no lugar do botão Concorrência) */
 function mpMaisBotao(){const n=mfAtivos().length;
   return `<div class="mp-maisw"><button type="button" class="mp-renda-b mp-mais" data-a="mp-mais" aria-haspopup="menu" aria-expanded="false" aria-pressed="${n>0}" title="Filtros e tipo de mapa" aria-label="Filtros e tipo de mapa">${ic('mais',22)}${n?`<span class="mf-n">${n}</span>`:''}</button></div>`}
-function mpMaisMenu(abrir){const w=$('.mapa-area .mp-maisw');if(!w)return;w.querySelector('.mp-cam-m')?.remove();w.querySelector('[data-a="mp-mais"]').setAttribute('aria-expanded',!!abrir);if(!abrir)return;
+function mpMaisMenu(abrir){if(!abrir&&typeof MM_SOBRE!=='undefined'&&MM_SOBRE)MM_NAO=true;const w=$('.mapa-area .mp-maisw');if(!w)return;w.querySelector('.mp-cam-m')?.remove();w.querySelector('[data-a="mp-mais"]').setAttribute('aria-expanded',!!abrir);if(!abrir)return;
   const nc=mfAtivos().length,nt=typeof fxAtivos==='function'?fxAtivos('mapa').length:0,b=mpBaseAtual(),
     n=k=>k?`<span class="mf-n">${k}</span>`:'',tp=(v,l)=>`<button type="button" role="menuitemradio" aria-checked="${b===v}" data-a="mp-tipo" data-v="${v}"><span class="mm-ck">${ic('check',18)}</span>${l}</button>`;
   w.insertAdjacentHTML('beforeend',`<div class="mp-cam-m mp-mais-m" role="menu" aria-label="Filtros e tipo de mapa">
@@ -89,6 +89,15 @@ window.addEventListener('click',e=>{const a=e.target.closest?.('[data-a="mp-mais
   if(a.dataset.a==='mp-tipo')mpTipoEscolher(a.dataset.v);
   setTimeout(()=>mpMaisMenu(false),0)},true); /* captura na janela: os filtros param a propagação no document */
 document.addEventListener('pointerdown',e=>{if($('.mp-mais-m')&&!e.target.closest('.mp-maisw'))mpMaisMenu(false)},true);
+/* o menu abre com o mouse parado sobre os três pontinhos por 0,75 s e fecha 1 s depois que o mouse sai (sem o foco do teclado dentro);
+   fechado com o mouse em cima, só volta a abrir sozinho depois que o mouse sai (pedido do Moisés, 5/nov/2026) */
+let MM_T=null,MM_SOBRE=false,MM_NAO=false;
+function mmAgendar(){clearTimeout(MM_T);MM_T=null;if(TOQUE())return;const w=$('.mapa-area .mp-maisw');if(!w)return;const ab=!!$('.mp-mais-m');
+  if(!ab&&MM_SOBRE&&!MM_NAO){MM_T=setTimeout(()=>{if(MM_SOBRE&&!MM_NAO&&!$('.mp-mais-m'))mpMaisMenu(true)},750);return}
+  if(ab&&!MM_SOBRE)MM_T=setTimeout(()=>{const w=$('.mapa-area .mp-maisw');if($('.mp-mais-m')&&!MM_SOBRE&&!w?.querySelector(':focus-visible'))mpMaisMenu(false)},1000)}
+document.addEventListener('pointerover',e=>{if(e.pointerType!=='mouse')return;const s=!!e.target.closest?.('.mapa-area .mp-maisw');if(s===MM_SOBRE)return;MM_SOBRE=s;if(!s)MM_NAO=false;mmAgendar()},true);
+document.addEventListener('pointerout',e=>{if(e.pointerType==='mouse'&&!e.relatedTarget&&MM_SOBRE){MM_SOBRE=false;MM_NAO=false;mmAgendar()}},true);
+document.addEventListener('focusout',e=>{if(e.target.closest?.('.mp-maisw'))setTimeout(mmAgendar,0)},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('.mp-mais-m')){mpMaisMenu(false);e.preventDefault();e.stopImmediatePropagation()}},true);
 function mfDrawer(){let el=$('#mf-dr'),sc=$('#mf-scrim');
   if(!MF_ABERTO||!naMapa()){el?.remove();sc?.remove();return}
@@ -167,7 +176,8 @@ function desenhaMerc(){if(!MAPA)return;if(!MK.d){mkCarregar();return}
         .bindTooltip(mkTitulo(e),{direction:'top',offset:[0,-6]}).on('click',ev=>{L.DomEvent.stop(ev);if(!UI.mpModo)mkAbrir(e.id)}).addTo(MERC))}}
   else{const ar=$('.mapa-area');if(ar&&!ar.dataset.merc)ar.dataset.merc=gMerc.length||MERC?.getLayers().length||0}
   mostrarMerc(UI.mpMerc!==false);
-  if(!MAPA._mk){MAPA._mk=1;GG?MAPA.addListener('click',mkFecharDoMapa):MAPA.on('click',mkFecharDoMapa)}}
+  if(!MAPA._mk){MAPA._mk=1;GG?MAPA.addListener('click',mkFecharDoMapa):MAPA.on('click',mkFecharDoMapa);
+    if(GG){MAPA.addListener('dragstart',mkFecharMov);MAPA.addListener('zoom_changed',mkFecharMov)}else MAPA.on('dragstart zoomstart',mkFecharMov)}}
 function mostrarMerc(on){mkDestaque();if(GG){gMerc.forEach(m=>{if((m.map||null)!==(on?MAPA:null))m.map=on?MAPA:null});return}if(MAPA&&MERC){on?MERC.addTo(MAPA):MERC.remove()}}
 /* empreendimento aberto fica destacado (pedido do Moisés, 4/nov/2026): continua aceso depois de fechar o card e só apaga ao abrir outro
    ou sair do Mapa; vai num marcador próprio por cima dos outros (MK.dest) */
@@ -211,7 +221,7 @@ function mkBox(){const area=$('.mapa-area');let el=$('#mk-box');const e=MK.box&&
   if(!e||!area){el?.remove();if(!e)MK.box=null;return}
   if(!el||el.parentNode!==area){el?.remove();el=document.createElement('div');el.id='mk-box';area.appendChild(el)}
   el.innerHTML=mkBoxHtml(e);mkSaida(el)}
-/* o card fecha sozinho 1,5 s depois que o mouse sai dele (só depois de ter entrado; nunca no toque nem com a tabela completa aberta);
+/* o card fecha sozinho 1 s depois que o mouse sai dele (só depois de ter entrado) e quando o mapa se move (pedido do Moisés, 5/nov/2026; nunca no toque nem com a tabela completa aberta);
    o olhinho ao lado do X o fixa aberto, guardado no navegador (pedido do Moisés, 5/nov/2026) */
 const MK_FKEY='bkm-terrenos-concorrencia-fixa';let MK_T=null;
 const mkFixa=()=>{try{return localStorage.getItem(MK_FKEY)==='1'}catch(e){return false}};
@@ -219,12 +229,13 @@ function mkFixarBtn(){const f=mkFixa();return `<button type="button" class="icon
 function mkSaida(el){if(el.__mkH)return;el.__mkH=true;
   el.addEventListener('pointerenter',e=>{if(e.pointerType!=='mouse')return;clearTimeout(MK_T);MK.dentro=true});
   el.addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse'||!MK.dentro||mkFixa()||TOQUE())return;clearTimeout(MK_T);
-    MK_T=setTimeout(()=>{if(UI.modal||el.matches(':hover')||el.querySelector(':focus-visible')||mkFixa())return;mkFechar()},1500)})}
+    MK_T=setTimeout(()=>{if(UI.modal||el.matches(':hover')||el.querySelector(':focus-visible')||mkFixa())return;mkFechar()},1000)})}
 window.addEventListener('click',e=>{const b=e.target.closest?.('[data-a="mk-fixar"]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();
   const f=!mkFixa();try{localStorage.setItem(MK_FKEY,f?'1':'0')}catch(x){}clearTimeout(MK_T);b.outerHTML=mkFixarBtn();$('#mk-box [data-a="mk-fixar"]')?.focus()},true);
 function mkAbrir(id){clearTimeout(MK_T);MK.dentro=false;MK.box=id;MK.dest=id;mkDestaque();MK.abertoEm=Date.now();ccFechar();if(UI.mpSel)mpSelecionar(null);if(UI.fichaSheet){UI.fichaSheet=null;fichaSheet()}mkBox()}
 function mkFechar(){clearTimeout(MK_T);if(!MK.box)return false;MK.box=null;mkBox();return true}
 const mkFecharDoMapa=()=>{if(Date.now()-MK.abertoEm>350)mkFechar()};
+const mkFecharMov=()=>{if(MK.box&&!mkFixa()&&Date.now()-MK.abertoEm>350)mkFechar()};
 
 /* ---------- ganchos ---------- */
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a="mk-x"],[data-a="mp-merc"],[data-a="mk-arv"],[data-a="mk-sit"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();

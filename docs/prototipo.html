@@ -5605,11 +5605,11 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 /* ---------- Lista do mapa redimensionável e bolinha com o código (pedido do Moisés, 4/nov/2026) ---------- */
 @media (min-width: 900px) {
   .mapa-pg { grid-template-columns: var(--mp-w, 360px) 16px minmax(0, 1fr); gap: 0 }
-  .mp-redim { position: relative; cursor: grab; touch-action: none; outline: none }
+  .mp-redim { position: relative; cursor: col-resize; touch-action: none; outline: none }
   .mp-redim::after { content: ""; position: absolute; left: 6px; top: 50%; width: 4px; height: 48px; margin-top: -24px; border-radius: 2px; background: #c4c7c5; transition: background .15s, height .15s, margin .15s }
   .mp-redim:hover::after, .mp-redim:focus-visible::after, body.mp-arrastando .mp-redim::after { background: #0b57d0; height: 72px; margin-top: -36px }
   .mp-redim:focus-visible { box-shadow: inset 0 0 0 2px #0b57d0; border-radius: 8px }
-  body.mp-arrastando, body.mp-arrastando * { cursor: grabbing !important; user-select: none !important }
+  body.mp-arrastando, body.mp-arrastando * { cursor: col-resize !important; user-select: none !important }
   /* estreita: só as bolinhas com o código, uma embaixo da outra */
   .mp-estreita .mapa-lado { padding-right: 0; overflow-x: hidden }
   .mp-estreita .mapa-lado > :not(#mp-lista), .mp-estreita #mp-lista > :not(.mp-lst) { display: none !important }
@@ -9719,13 +9719,13 @@ function lugarHtml(p){const revs=(p.reviews||[]).slice(0,3),nota=p.rating!=null?
   ${p.googleMapsURI?`<a class="lug-l" href="${esc(p.googleMapsURI)}" target="_blank" rel="noopener">Ver todas no Google Maps</a>`:''}<div class="lug-g muted">Avaliações do Google</div></div>`}
 /* conteúdo como nó, com o X ligado direto (o InfoWindow pode não deixar o clique subir até o documento) */
 function lugarConteudo(h){const d=document.createElement('div');d.innerHTML=h;d.querySelector('.lug-x')?.addEventListener('click',e=>{e.stopPropagation();lugarFechar()});gInfo.setContent(d);setTimeout(()=>lugarSaida(d),0)}
-/* o quadro fecha sozinho 1 s depois que o mouse sai dele (só depois de ter entrado; no toque, não; pedido do Moisés, 5/nov/2026) */
-let LUG_T=null;
+/* o quadro fecha sozinho 1 s depois que o mouse sai dele e, se o mouse não entrar nele, 1 s depois de aberto (no toque, não; pedido do Moisés, 5/nov/2026) */
+let LUG_T=null,LUG_DENTRO=false;
 function lugarSaida(d){if(TOQUE())return;const c=d.closest('.gm-style-iw-c');if(!c||c.__lugH)return;c.__lugH=true;
-  c.addEventListener('pointerenter',e=>{if(e.pointerType!=='mouse')return;clearTimeout(LUG_T);c.__dentro=true});
-  c.addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse'||!c.__dentro)return;clearTimeout(LUG_T);LUG_T=setTimeout(lugarFechar,1000)})}
+  c.addEventListener('pointerenter',e=>{if(e.pointerType!=='mouse')return;clearTimeout(LUG_T);LUG_DENTRO=true});
+  c.addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse')return;LUG_DENTRO=false;clearTimeout(LUG_T);LUG_T=setTimeout(lugarFechar,1000)})}
 function lugarFechar(){clearTimeout(LUG_T);if(gInfo&&gInfo.__lug){gInfo.close();gInfo.__lug=false;return true}return false}
-async function lugarAbrir(id,ll){if(!gInfo||!MAPA)return;clearTimeout(LUG_T);gInfo.__lug=true;lugarConteudo(`<div class="lug muted"><button type="button" class="lug-x" data-a="lug-fechar" aria-label="Fechar">${ic('close',18)}</button>Carregando avaliações…</div>`);gInfo.setPosition(ll);gInfo.open({map:MAPA});
+async function lugarAbrir(id,ll){if(!gInfo||!MAPA)return;clearTimeout(LUG_T);LUG_DENTRO=false;if(!TOQUE())LUG_T=setTimeout(()=>{if(!LUG_DENTRO)lugarFechar()},1000);gInfo.__lug=true;lugarConteudo(`<div class="lug muted"><button type="button" class="lug-x" data-a="lug-fechar" aria-label="Fechar">${ic('close',18)}</button>Carregando avaliações…</div>`);gInfo.setPosition(ll);gInfo.open({map:MAPA});
   try{let p=LUGARES[id];if(!p){const pl=new gLib.places.Place({id});await pl.fetchFields({fields:['displayName','formattedAddress','rating','userRatingCount','reviews','googleMapsURI']});
       p=LUGARES[id]={displayName:pl.displayName,formattedAddress:pl.formattedAddress,rating:pl.rating,userRatingCount:pl.userRatingCount,googleMapsURI:pl.googleMapsURI,
         reviews:(pl.reviews||[]).map(r=>({rating:r.rating,text:r.text,relativePublishTimeDescription:r.relativePublishTimeDescription,authorAttribution:r.authorAttribution&&{displayName:r.authorAttribution.displayName,uri:r.authorAttribution.uri}}))}}
@@ -12313,9 +12313,9 @@ async function mpBuscar(q){q=(q||'').trim();if(q.length<3)return [];
 function mpBuscaHtml(){const ab=!!UI.mpBusca;if(ab)setTimeout(mpBuscaAgendar,0);
   return `<form class="mp-busca${ab?'':' fechada'}" data-form="mp-busca" role="search"><button type="button" class="mp-busca-i" data-a="mp-busca-abrir" tabindex="${ab?-1:0}" title="Buscar endereço" aria-label="Buscar endereço" aria-expanded="${ab}">${ic('search',20)}</button><input id="mp-end" name="q" type="search" placeholder="Buscar endereço" aria-label="Buscar endereço no mapa" autocomplete="off"${ab?'':' tabindex="-1"'}><button type="button" class="mp-busca-x" data-a="mp-busca-fechar" title="Fechar a busca" aria-label="Fechar a busca">${ic('back',20)}</button><div id="mp-res" class="mp-res" role="listbox" hidden></div></form>`}
 let MP_BUSCA_FT=null,MP_BUSCA_SOBRE=false;
-function mpBuscaAbrir(ab){const f=$('.mapa-area .mp-busca');UI.mpBusca=!!ab;clearTimeout(MP_BUSCA_FT);if(!f)return;
+function mpBuscaAbrir(ab,semFoco){const f=$('.mapa-area .mp-busca');UI.mpBusca=!!ab;clearTimeout(MP_BUSCA_FT);if(!f)return;
   f.classList.toggle('fechada',!ab);const i=f.querySelector('#mp-end'),l=f.querySelector('.mp-busca-i');l.setAttribute('aria-expanded',!!ab);l.tabIndex=ab?-1:0;
-  if(ab){i.removeAttribute('tabindex');i.focus()}else{i.value='';i.tabIndex=-1;i.blur();const r=$('#mp-res');if(r)r.hidden=true;MP_BUSCA_SOBRE=false}}
+  if(ab){i.removeAttribute('tabindex');if(!semFoco)i.focus()}else{i.value='';i.tabIndex=-1;i.blur();const r=$('#mp-res');if(r)r.hidden=true;MP_BUSCA_SOBRE=false}}
 function mpBuscaAgendar(){clearTimeout(MP_BUSCA_FT);if(TOQUE())return;const f=$('.mapa-area .mp-busca'),i=$('#mp-end');
   if(!f||f.classList.contains('fechada')||!i||i.value.trim()||document.activeElement===i||MP_BUSCA_SOBRE)return;
   MP_BUSCA_FT=setTimeout(()=>{const i=$('#mp-end');if(i&&!i.value.trim()&&document.activeElement!==i&&!MP_BUSCA_SOBRE)mpBuscaAbrir(false)},3000)}
@@ -12323,7 +12323,9 @@ document.addEventListener('click',e=>{const a=e.target.closest?.('[data-a="mp-bu
   if(a.dataset.a==='mp-busca-abrir'){if(!UI.mpBusca)mpBuscaAbrir(true);else $('#mp-end')?.focus()}else mpBuscaAbrir(false)},true);
 document.addEventListener('focusout',e=>{if(e.target.id==='mp-end')setTimeout(mpBuscaAgendar,0)},true);
 document.addEventListener('focusin',e=>{if(e.target.id==='mp-end')clearTimeout(MP_BUSCA_FT)},true);
-document.addEventListener('pointerover',e=>{if(e.pointerType==='mouse'&&e.target.closest?.('.mapa-area .mp-busca')&&!MP_BUSCA_SOBRE){MP_BUSCA_SOBRE=true;clearTimeout(MP_BUSCA_FT)}},true);
+/* fechada, abre sozinha com o mouse parado na lupa por 0,75 s, sem pegar o foco (pedido do Moisés, 5/nov/2026) */
+document.addEventListener('pointerover',e=>{if(e.pointerType==='mouse'&&e.target.closest?.('.mapa-area .mp-busca')&&!MP_BUSCA_SOBRE){MP_BUSCA_SOBRE=true;clearTimeout(MP_BUSCA_FT);
+  if(!UI.mpBusca&&!TOQUE())MP_BUSCA_FT=setTimeout(()=>{if(MP_BUSCA_SOBRE&&!UI.mpBusca)mpBuscaAbrir(true,true)},750)}},true);
 document.addEventListener('pointerout',e=>{if(!MP_BUSCA_SOBRE||!e.target.closest?.('.mp-busca')||e.relatedTarget?.closest?.('.mp-busca'))return;MP_BUSCA_SOBRE=false;mpBuscaAgendar()},true);
 function mpResMostrar(rs,msg){const box=$('#mp-res');if(!box)return;box.hidden=false;UI.mpRes=rs;
   box.innerHTML=rs.length?rs.map((x,i)=>`<button type="button" role="option" data-a="mp-res" data-i="${i}">${bi('mapa',18)}<span>${esc(x.nome)}</span></button>`).join(''):`<div class="hint">${msg||'Nada encontrado.'}</div>`}
@@ -13158,7 +13160,7 @@ function mfBotao(){const n=mfAtivos().length;
    (pedido do Moisés, 5/nov/2026, no lugar do botão Concorrência) */
 function mpMaisBotao(){const n=mfAtivos().length;
   return `<div class="mp-maisw"><button type="button" class="mp-renda-b mp-mais" data-a="mp-mais" aria-haspopup="menu" aria-expanded="false" aria-pressed="${n>0}" title="Filtros e tipo de mapa" aria-label="Filtros e tipo de mapa">${ic('mais',22)}${n?`<span class="mf-n">${n}</span>`:''}</button></div>`}
-function mpMaisMenu(abrir){const w=$('.mapa-area .mp-maisw');if(!w)return;w.querySelector('.mp-cam-m')?.remove();w.querySelector('[data-a="mp-mais"]').setAttribute('aria-expanded',!!abrir);if(!abrir)return;
+function mpMaisMenu(abrir){if(!abrir&&typeof MM_SOBRE!=='undefined'&&MM_SOBRE)MM_NAO=true;const w=$('.mapa-area .mp-maisw');if(!w)return;w.querySelector('.mp-cam-m')?.remove();w.querySelector('[data-a="mp-mais"]').setAttribute('aria-expanded',!!abrir);if(!abrir)return;
   const nc=mfAtivos().length,nt=typeof fxAtivos==='function'?fxAtivos('mapa').length:0,b=mpBaseAtual(),
     n=k=>k?`<span class="mf-n">${k}</span>`:'',tp=(v,l)=>`<button type="button" role="menuitemradio" aria-checked="${b===v}" data-a="mp-tipo" data-v="${v}"><span class="mm-ck">${ic('check',18)}</span>${l}</button>`;
   w.insertAdjacentHTML('beforeend',`<div class="mp-cam-m mp-mais-m" role="menu" aria-label="Filtros e tipo de mapa">
@@ -13170,6 +13172,15 @@ window.addEventListener('click',e=>{const a=e.target.closest?.('[data-a="mp-mais
   if(a.dataset.a==='mp-tipo')mpTipoEscolher(a.dataset.v);
   setTimeout(()=>mpMaisMenu(false),0)},true); /* captura na janela: os filtros param a propagação no document */
 document.addEventListener('pointerdown',e=>{if($('.mp-mais-m')&&!e.target.closest('.mp-maisw'))mpMaisMenu(false)},true);
+/* o menu abre com o mouse parado sobre os três pontinhos por 0,75 s e fecha 1 s depois que o mouse sai (sem o foco do teclado dentro);
+   fechado com o mouse em cima, só volta a abrir sozinho depois que o mouse sai (pedido do Moisés, 5/nov/2026) */
+let MM_T=null,MM_SOBRE=false,MM_NAO=false;
+function mmAgendar(){clearTimeout(MM_T);MM_T=null;if(TOQUE())return;const w=$('.mapa-area .mp-maisw');if(!w)return;const ab=!!$('.mp-mais-m');
+  if(!ab&&MM_SOBRE&&!MM_NAO){MM_T=setTimeout(()=>{if(MM_SOBRE&&!MM_NAO&&!$('.mp-mais-m'))mpMaisMenu(true)},750);return}
+  if(ab&&!MM_SOBRE)MM_T=setTimeout(()=>{const w=$('.mapa-area .mp-maisw');if($('.mp-mais-m')&&!MM_SOBRE&&!w?.querySelector(':focus-visible'))mpMaisMenu(false)},1000)}
+document.addEventListener('pointerover',e=>{if(e.pointerType!=='mouse')return;const s=!!e.target.closest?.('.mapa-area .mp-maisw');if(s===MM_SOBRE)return;MM_SOBRE=s;if(!s)MM_NAO=false;mmAgendar()},true);
+document.addEventListener('pointerout',e=>{if(e.pointerType==='mouse'&&!e.relatedTarget&&MM_SOBRE){MM_SOBRE=false;MM_NAO=false;mmAgendar()}},true);
+document.addEventListener('focusout',e=>{if(e.target.closest?.('.mp-maisw'))setTimeout(mmAgendar,0)},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('.mp-mais-m')){mpMaisMenu(false);e.preventDefault();e.stopImmediatePropagation()}},true);
 function mfDrawer(){let el=$('#mf-dr'),sc=$('#mf-scrim');
   if(!MF_ABERTO||!naMapa()){el?.remove();sc?.remove();return}
@@ -13248,7 +13259,8 @@ function desenhaMerc(){if(!MAPA)return;if(!MK.d){mkCarregar();return}
         .bindTooltip(mkTitulo(e),{direction:'top',offset:[0,-6]}).on('click',ev=>{L.DomEvent.stop(ev);if(!UI.mpModo)mkAbrir(e.id)}).addTo(MERC))}}
   else{const ar=$('.mapa-area');if(ar&&!ar.dataset.merc)ar.dataset.merc=gMerc.length||MERC?.getLayers().length||0}
   mostrarMerc(UI.mpMerc!==false);
-  if(!MAPA._mk){MAPA._mk=1;GG?MAPA.addListener('click',mkFecharDoMapa):MAPA.on('click',mkFecharDoMapa)}}
+  if(!MAPA._mk){MAPA._mk=1;GG?MAPA.addListener('click',mkFecharDoMapa):MAPA.on('click',mkFecharDoMapa);
+    if(GG){MAPA.addListener('dragstart',mkFecharMov);MAPA.addListener('zoom_changed',mkFecharMov)}else MAPA.on('dragstart zoomstart',mkFecharMov)}}
 function mostrarMerc(on){mkDestaque();if(GG){gMerc.forEach(m=>{if((m.map||null)!==(on?MAPA:null))m.map=on?MAPA:null});return}if(MAPA&&MERC){on?MERC.addTo(MAPA):MERC.remove()}}
 /* empreendimento aberto fica destacado (pedido do Moisés, 4/nov/2026): continua aceso depois de fechar o card e só apaga ao abrir outro
    ou sair do Mapa; vai num marcador próprio por cima dos outros (MK.dest) */
@@ -13292,7 +13304,7 @@ function mkBox(){const area=$('.mapa-area');let el=$('#mk-box');const e=MK.box&&
   if(!e||!area){el?.remove();if(!e)MK.box=null;return}
   if(!el||el.parentNode!==area){el?.remove();el=document.createElement('div');el.id='mk-box';area.appendChild(el)}
   el.innerHTML=mkBoxHtml(e);mkSaida(el)}
-/* o card fecha sozinho 1,5 s depois que o mouse sai dele (só depois de ter entrado; nunca no toque nem com a tabela completa aberta);
+/* o card fecha sozinho 1 s depois que o mouse sai dele (só depois de ter entrado) e quando o mapa se move (pedido do Moisés, 5/nov/2026; nunca no toque nem com a tabela completa aberta);
    o olhinho ao lado do X o fixa aberto, guardado no navegador (pedido do Moisés, 5/nov/2026) */
 const MK_FKEY='bkm-terrenos-concorrencia-fixa';let MK_T=null;
 const mkFixa=()=>{try{return localStorage.getItem(MK_FKEY)==='1'}catch(e){return false}};
@@ -13300,12 +13312,13 @@ function mkFixarBtn(){const f=mkFixa();return `<button type="button" class="icon
 function mkSaida(el){if(el.__mkH)return;el.__mkH=true;
   el.addEventListener('pointerenter',e=>{if(e.pointerType!=='mouse')return;clearTimeout(MK_T);MK.dentro=true});
   el.addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse'||!MK.dentro||mkFixa()||TOQUE())return;clearTimeout(MK_T);
-    MK_T=setTimeout(()=>{if(UI.modal||el.matches(':hover')||el.querySelector(':focus-visible')||mkFixa())return;mkFechar()},1500)})}
+    MK_T=setTimeout(()=>{if(UI.modal||el.matches(':hover')||el.querySelector(':focus-visible')||mkFixa())return;mkFechar()},1000)})}
 window.addEventListener('click',e=>{const b=e.target.closest?.('[data-a="mk-fixar"]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();
   const f=!mkFixa();try{localStorage.setItem(MK_FKEY,f?'1':'0')}catch(x){}clearTimeout(MK_T);b.outerHTML=mkFixarBtn();$('#mk-box [data-a="mk-fixar"]')?.focus()},true);
 function mkAbrir(id){clearTimeout(MK_T);MK.dentro=false;MK.box=id;MK.dest=id;mkDestaque();MK.abertoEm=Date.now();ccFechar();if(UI.mpSel)mpSelecionar(null);if(UI.fichaSheet){UI.fichaSheet=null;fichaSheet()}mkBox()}
 function mkFechar(){clearTimeout(MK_T);if(!MK.box)return false;MK.box=null;mkBox();return true}
 const mkFecharDoMapa=()=>{if(Date.now()-MK.abertoEm>350)mkFechar()};
+const mkFecharMov=()=>{if(MK.box&&!mkFixa()&&Date.now()-MK.abertoEm>350)mkFechar()};
 
 /* ---------- ganchos ---------- */
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a="mk-x"],[data-a="mp-merc"],[data-a="mk-arv"],[data-a="mk-sit"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();
@@ -16437,7 +16450,7 @@ const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();u
 document.addEventListener('toggle',e=>{if(!e.target.classList?.contains('mp-legenda'))return;UI.mpLeg=e.target.open;
   if(!e.target.open&&(UI.mpArv||UI.mp?.f||UI.mp?.e)){const mud=UI.mp.f||UI.mp.e;UI.mpArv=false;UI.mp.f='';UI.mp.e='';UI.mp.ocultas=[];mpRefresh();if(mud)mpEnquadrar()}},true);
 
-/* a legenda aberta fecha sozinha depois de 1,25 s sem o mouse em cima nem o foco do teclado dentro; o olhinho ao lado do título a fixa
+/* a legenda aberta fecha sozinha depois de 1 s sem o mouse em cima nem o foco do teclado dentro; o olhinho ao lado do título a fixa
    (guardado no navegador, bkm-terrenos-legenda-fixa; pedido do Moisés, 5/nov/2026) */
 const LG_FKEY='bkm-terrenos-legenda-fixa';
 /* a legenda começa fechada e lembra se ficou aberta ou fechada (bkm-terrenos-legenda; pedido do Moisés, 5/nov/2026) */
@@ -16449,7 +16462,7 @@ function lgFixarBtn(){const f=lgFixa();return `<button type="button" class="lg-f
 function lgAgendar(){clearTimeout(LG_T);LG_T=null;if(TOQUE())return;const d=$('.mp-legenda');
   if(d&&!d.open&&LG_SOBRE){LG_T=setTimeout(()=>{LG_T=null;const d=$('.mp-legenda');if(d&&!d.open&&LG_SOBRE)d.open=true},750);return}
   if(!d||!d.open||lgFixa()||LG_SOBRE||d.querySelector(':focus-visible'))return;
-  LG_T=setTimeout(()=>{LG_T=null;const d=$('.mp-legenda');if(d&&d.open&&!lgFixa()&&!LG_SOBRE&&!d.querySelector(':focus-visible'))d.open=false},1250)}
+  LG_T=setTimeout(()=>{LG_T=null;const d=$('.mp-legenda');if(d&&d.open&&!lgFixa()&&!LG_SOBRE&&!d.querySelector(':focus-visible'))d.open=false},1000)}
 document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legenda')){try{localStorage.setItem(LG_AKEY,e.target.open?'1':'')}catch(x){}if(!e.target.matches(':hover'))LG_SOBRE=false;lgAgendar()}},true);
 document.addEventListener('pointerover',e=>{if(e.pointerType!=='mouse')return;const d=e.target.closest?.('.mp-legenda');if(d&&!LG_SOBRE){LG_SOBRE=true;lgAgendar()}},true);
 document.addEventListener('pointerout',e=>{if(!LG_SOBRE||!e.target.closest?.('.mp-legenda'))return;if(e.relatedTarget?.closest?.('.mp-legenda'))return;LG_SOBRE=false;lgAgendar()},true);

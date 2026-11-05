@@ -4115,11 +4115,11 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 /* ---------- Lista do mapa redimensionável e bolinha com o código (pedido do Moisés, 4/nov/2026) ---------- */
 @media (min-width: 900px) {
   .mapa-pg { grid-template-columns: var(--mp-w, 360px) 16px minmax(0, 1fr); gap: 0 }
-  .mp-redim { position: relative; cursor: grab; touch-action: none; outline: none }
+  .mp-redim { position: relative; cursor: col-resize; touch-action: none; outline: none }
   .mp-redim::after { content: ""; position: absolute; left: 6px; top: 50%; width: 4px; height: 48px; margin-top: -24px; border-radius: 2px; background: #c4c7c5; transition: background .15s, height .15s, margin .15s }
   .mp-redim:hover::after, .mp-redim:focus-visible::after, body.mp-arrastando .mp-redim::after { background: #0b57d0; height: 72px; margin-top: -36px }
   .mp-redim:focus-visible { box-shadow: inset 0 0 0 2px #0b57d0; border-radius: 8px }
-  body.mp-arrastando, body.mp-arrastando * { cursor: grabbing !important; user-select: none !important }
+  body.mp-arrastando, body.mp-arrastando * { cursor: col-resize !important; user-select: none !important }
   /* estreita: só as bolinhas com o código, uma embaixo da outra */
   .mp-estreita .mapa-lado { padding-right: 0; overflow-x: hidden }
   .mp-estreita .mapa-lado > :not(#mp-lista), .mp-estreita #mp-lista > :not(.mp-lst) { display: none !important }

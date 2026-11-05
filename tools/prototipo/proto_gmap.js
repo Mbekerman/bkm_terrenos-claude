@@ -115,13 +115,13 @@ function lugarHtml(p){const revs=(p.reviews||[]).slice(0,3),nota=p.rating!=null?
   ${p.googleMapsURI?`<a class="lug-l" href="${esc(p.googleMapsURI)}" target="_blank" rel="noopener">Ver todas no Google Maps</a>`:''}<div class="lug-g muted">Avaliações do Google</div></div>`}
 /* conteúdo como nó, com o X ligado direto (o InfoWindow pode não deixar o clique subir até o documento) */
 function lugarConteudo(h){const d=document.createElement('div');d.innerHTML=h;d.querySelector('.lug-x')?.addEventListener('click',e=>{e.stopPropagation();lugarFechar()});gInfo.setContent(d);setTimeout(()=>lugarSaida(d),0)}
-/* o quadro fecha sozinho 1 s depois que o mouse sai dele (só depois de ter entrado; no toque, não; pedido do Moisés, 5/nov/2026) */
-let LUG_T=null;
+/* o quadro fecha sozinho 1 s depois que o mouse sai dele e, se o mouse não entrar nele, 1 s depois de aberto (no toque, não; pedido do Moisés, 5/nov/2026) */
+let LUG_T=null,LUG_DENTRO=false;
 function lugarSaida(d){if(TOQUE())return;const c=d.closest('.gm-style-iw-c');if(!c||c.__lugH)return;c.__lugH=true;
-  c.addEventListener('pointerenter',e=>{if(e.pointerType!=='mouse')return;clearTimeout(LUG_T);c.__dentro=true});
-  c.addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse'||!c.__dentro)return;clearTimeout(LUG_T);LUG_T=setTimeout(lugarFechar,1000)})}
+  c.addEventListener('pointerenter',e=>{if(e.pointerType!=='mouse')return;clearTimeout(LUG_T);LUG_DENTRO=true});
+  c.addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse')return;LUG_DENTRO=false;clearTimeout(LUG_T);LUG_T=setTimeout(lugarFechar,1000)})}
 function lugarFechar(){clearTimeout(LUG_T);if(gInfo&&gInfo.__lug){gInfo.close();gInfo.__lug=false;return true}return false}
-async function lugarAbrir(id,ll){if(!gInfo||!MAPA)return;clearTimeout(LUG_T);gInfo.__lug=true;lugarConteudo(`<div class="lug muted"><button type="button" class="lug-x" data-a="lug-fechar" aria-label="Fechar">${ic('close',18)}</button>Carregando avaliações…</div>`);gInfo.setPosition(ll);gInfo.open({map:MAPA});
+async function lugarAbrir(id,ll){if(!gInfo||!MAPA)return;clearTimeout(LUG_T);LUG_DENTRO=false;if(!TOQUE())LUG_T=setTimeout(()=>{if(!LUG_DENTRO)lugarFechar()},1000);gInfo.__lug=true;lugarConteudo(`<div class="lug muted"><button type="button" class="lug-x" data-a="lug-fechar" aria-label="Fechar">${ic('close',18)}</button>Carregando avaliações…</div>`);gInfo.setPosition(ll);gInfo.open({map:MAPA});
   try{let p=LUGARES[id];if(!p){const pl=new gLib.places.Place({id});await pl.fetchFields({fields:['displayName','formattedAddress','rating','userRatingCount','reviews','googleMapsURI']});
       p=LUGARES[id]={displayName:pl.displayName,formattedAddress:pl.formattedAddress,rating:pl.rating,userRatingCount:pl.userRatingCount,googleMapsURI:pl.googleMapsURI,
         reviews:(pl.reviews||[]).map(r=>({rating:r.rating,text:r.text,relativePublishTimeDescription:r.relativePublishTimeDescription,authorAttribution:r.authorAttribution&&{displayName:r.authorAttribution.displayName,uri:r.authorAttribution.uri}}))}}

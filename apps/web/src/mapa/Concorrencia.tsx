@@ -19,23 +19,38 @@ export function BotaoMais({ f, base, abrirConc, escolherBase }: { f: Filtro; bas
   const [aberto, setAberto] = useState(false);
   const w = useRef<HTMLDivElement>(null);
   const n = mfAtivos(f).length;
+  /* abre com o mouse parado sobre os três pontinhos por 0,75 s e fecha 1 s depois que o mouse sai (sem o foco do teclado dentro);
+     fechado com o mouse em cima, só volta a abrir sozinho depois que o mouse sai (pedido do Moisés, 5/nov/2026) */
+  const sobre = useRef(false), nao = useRef(false), t = useRef<ReturnType<typeof setTimeout>>();
+  const abertoR = useRef(aberto); abertoR.current = aberto;
+  const mudar = (v: boolean) => { if (!v && sobre.current) nao.current = true; setAberto(v); };
+  const agendar = () => {
+    clearTimeout(t.current);
+    if (matchMedia('(pointer: coarse)').matches) return;
+    if (!abertoR.current && sobre.current && !nao.current) { t.current = setTimeout(() => { if (sobre.current && !nao.current) setAberto(true); }, 750); return; }
+    if (abertoR.current && !sobre.current) t.current = setTimeout(() => { if (!sobre.current && !w.current?.querySelector(':focus-visible')) setAberto(false); }, 1000);
+  };
+  useEffect(() => () => clearTimeout(t.current), []);
   useEffect(() => {
     if (!aberto) return;
-    const fora = (ev: PointerEvent) => { if (!w.current?.contains(ev.target as Node)) setAberto(false); };
-    const esc = (ev: KeyboardEvent) => { if (ev.key === 'Escape') { setAberto(false); ev.preventDefault(); ev.stopImmediatePropagation(); } };
+    const fora = (ev: PointerEvent) => { if (!w.current?.contains(ev.target as Node)) mudar(false); };
+    const esc = (ev: KeyboardEvent) => { if (ev.key === 'Escape') { mudar(false); ev.preventDefault(); ev.stopImmediatePropagation(); } };
     document.addEventListener('pointerdown', fora, true); document.addEventListener('keydown', esc, true);
     return () => { document.removeEventListener('pointerdown', fora, true); document.removeEventListener('keydown', esc, true); };
   }, [aberto]);
   const tipo = (v: 'mapa' | 'satelite', l: string) => (
-    <button type="button" role="menuitemradio" aria-checked={base === v} onClick={() => { setAberto(false); escolherBase(v); }}><span className="mm-ck"><Ic n="check" s={18} /></span>{l}</button>
+    <button type="button" role="menuitemradio" aria-checked={base === v} onClick={() => { mudar(false); escolherBase(v); }}><span className="mm-ck"><Ic n="check" s={18} /></span>{l}</button>
   );
   return (
-    <div className="mp-maisw" ref={w}>
-      <button type="button" className="mp-renda-b mp-mais" aria-haspopup="menu" aria-expanded={aberto} aria-pressed={n > 0} title="Filtros e tipo de mapa" aria-label="Filtros e tipo de mapa" onClick={() => setAberto(!aberto)}>
+    <div className="mp-maisw" ref={w}
+      onPointerEnter={(ev) => { if (ev.pointerType !== 'mouse') return; sobre.current = true; agendar(); }}
+      onPointerLeave={(ev) => { if (ev.pointerType !== 'mouse') return; sobre.current = false; nao.current = false; agendar(); }}
+      onBlur={() => setTimeout(agendar, 0)}>
+      <button type="button" className="mp-renda-b mp-mais" aria-haspopup="menu" aria-expanded={aberto} aria-pressed={n > 0} title="Filtros e tipo de mapa" aria-label="Filtros e tipo de mapa" onClick={() => mudar(!aberto)}>
         <Ic n="mais" s={22} />{n > 0 && <span className="mf-n">{n}</span>}
       </button>
       {aberto && <div className="mp-cam-m mp-mais-m" role="menu" aria-label="Filtros e tipo de mapa">
-        <button type="button" role="menuitem" onClick={() => { setAberto(false); abrirConc(); }}><Ic n="filtro" s={18} /><span className="mm-l">Filtro da concorrência</span>{n > 0 && <span className="mf-n">{n}</span>}</button>
+        <button type="button" role="menuitem" onClick={() => { mudar(false); abrirConc(); }}><Ic n="filtro" s={18} /><span className="mm-l">Filtro da concorrência</span>{n > 0 && <span className="mf-n">{n}</span>}</button>
         <div className="mm-t" role="presentation">Tipo de mapa</div>
         {tipo('mapa', 'Mapa')}{tipo('satelite', 'Satélite')}
       </div>}
@@ -172,10 +187,11 @@ function Resumo({ e }: { e: Emp }) {
 }
 
 /** card do empreendimento tocado */
-/* o card fecha sozinho 1,5 s depois que o mouse sai dele (só depois de ter entrado; nunca no toque nem com a tabela completa aberta);
+/* o card fecha sozinho 1 s depois que o mouse sai dele (só depois de ter entrado) e quando o mapa se move (Mapa.tsx; pedido do Moisés, 5/nov/2026; nunca no toque nem com a tabela completa aberta);
    o olhinho ao lado do X o fixa aberto, guardado no navegador (pedido do Moisés, 5/nov/2026) */
 const MK_FKEY = 'bkm-terrenos-concorrencia-fixa';
 const lerFixa = () => { try { return localStorage.getItem(MK_FKEY) === '1'; } catch { return false; } };
+export const mkFixa = lerFixa;
 export function CaixaEmp({ e, fechar, tabela, pausado }: { e: Emp; fechar: () => void; tabela: (id: string) => void; pausado?: boolean }) {
   const [fixa, setFixa] = useState(lerFixa);
   const caixa = useRef<HTMLDivElement>(null), dentro = useRef(false), t = useRef<ReturnType<typeof setTimeout>>();
@@ -189,7 +205,7 @@ export function CaixaEmp({ e, fechar, tabela, pausado }: { e: Emp; fechar: () =>
       const el = caixa.current, v = vivo.current;
       if (!el || v.fixa || v.pausado || el.matches(':hover') || el.querySelector(':focus-visible')) return;
       v.fechar();
-    }, 1500);
+    }, 1000);
   };
   const fixar = () => { const f = !fixa; setFixa(f); try { localStorage.setItem(MK_FKEY, f ? '1' : '0'); } catch { /* sem navegador */ } clearTimeout(t.current); };
   const m2 = mkM2(e.preco, e.area), vso = mkVso(e.vendas, e.estoque), pct = e.unidades ? Math.round((100 * e.estoque) / e.unidades) : 0, dias = mkDias();

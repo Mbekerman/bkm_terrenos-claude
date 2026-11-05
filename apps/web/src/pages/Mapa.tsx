@@ -10,7 +10,7 @@ import { desenhoAtendido, poligonal, useNovo } from '../novo/estado';
 import { areaPoly, m2, type P } from '../novo/geo';
 import { ItensLegenda, LegendaSetor, Metodologia, QuadroSetor } from '../mapa/CamadasSetor';
 import { carregarSetores, setorEm, setores, type Camada } from '../mapa/setores';
-import { BotaoMais, CaixaEmp, FiltroConc, ItensConc, TabelaEmp } from '../mapa/Concorrencia';
+import { mkFixa, BotaoMais, CaixaEmp, FiltroConc, ItensConc, TabelaEmp } from '../mapa/Concorrencia';
 import { carregarMercado, mercado, mfPassa, mkVisivel, type Filtro } from '../mapa/mercado';
 import { apagado, areaDe, bate, carregar, classe, corSub, info, itens, subNome, type Apag, type Fase, type Item, type TerrenoMapa } from '../mapa/dados';
 
@@ -82,7 +82,7 @@ export default function Mapa() {
   /* a legenda começa fechada e lembra se ficou aberta ou fechada (bkm-terrenos-legenda; pedido do Moisés, 5/nov/2026) */
   const [leg, setLeg] = useState(() => { if (memo.leg != null) return memo.leg; try { return localStorage.getItem(LG_AKEY) === '1'; } catch { return false; } });
   useEffect(() => { try { localStorage.setItem(LG_AKEY, leg ? '1' : ''); } catch { /* sem armazenamento */ } }, [leg]);
-  /* a legenda aberta fecha sozinha depois de 1,25 s sem o mouse em cima nem o foco do teclado dentro; o olhinho ao lado do título
+  /* a legenda aberta fecha sozinha depois de 1 s sem o mouse em cima nem o foco do teclado dentro; o olhinho ao lado do título
      a fixa (guardado no navegador, bkm-terrenos-legenda-fixa; pedido do Moisés, 5/nov/2026) */
   const [lgFixa, setLgFixa] = useState(() => { try { return localStorage.getItem(LG_FKEY) === '1'; } catch { return false; } });
   const legEl = useRef<HTMLDetailsElement>(null), lgSobre = useRef(false), lgT = useRef<ReturnType<typeof setTimeout>>(), lgFixaR = useRef(lgFixa);
@@ -95,7 +95,7 @@ export default function Mapa() {
     if (d0 && !d0.open && lgSobre.current) { lgT.current = setTimeout(() => { const d = legEl.current; if (d && !d.open && lgSobre.current) d.open = true; }, 750); return; }
     const pode = () => { const d = legEl.current; return !!d && d.open && !lgFixaR.current && !lgSobre.current && !d.querySelector(':focus-visible'); };
     if (!pode()) return;
-    lgT.current = setTimeout(() => { if (pode()) legEl.current!.open = false; }, 1250);
+    lgT.current = setTimeout(() => { if (pode()) legEl.current!.open = false; }, 1000);
   }, []);
   function fixarLeg(v: boolean) { setLgFixa(v); lgFixaR.current = v; try { localStorage.setItem(LG_FKEY, v ? '1' : ''); } catch { /* sem armazenamento */ } lgAgendar(); }
   useEffect(() => { lgAgendar(); return () => clearTimeout(lgT.current); }, [lgAgendar]);
@@ -112,9 +112,9 @@ export default function Mapa() {
      em cima por 3 s, fecha sozinha (pedido do Moisés, 5/nov/2026) */
   const [busAberta, setBusAberta] = useState(false);
   const busInput = useRef<HTMLInputElement>(null), busSobre = useRef(false), busT = useRef<ReturnType<typeof setTimeout>>();
-  const abrirBusca = useCallback((ab: boolean) => {
+  const abrirBusca = useCallback((ab: boolean, semFoco?: boolean) => {
     clearTimeout(busT.current); setBusAberta(ab);
-    if (ab) setTimeout(() => busInput.current?.focus(), 0);
+    if (ab && !semFoco) setTimeout(() => busInput.current?.focus(), 0);
     else { setBusEnd(''); setRes(null); busSobre.current = false; busInput.current?.blur(); }
   }, []);
   const busAgendar = useCallback(() => {
@@ -174,7 +174,7 @@ export default function Mapa() {
 
   /* motor do Google: cria uma vez por visita à página */
   const ganchos = useRef({ mk: (_: string) => {}, pino: (_: string) => {}, vazio: (_a: number, _b: number) => {}, duplo: (_a: number, _b: number, _c: EventTarget | null) => {},
-    clique: (_a: number, _b: number) => {}, gp: null as GestosPonto | null });
+    clique: (_a: number, _b: number) => {}, mover: () => {}, gp: null as GestosPonto | null });
 
   /* ---------- desenho da poligonal do terreno novo ----------
      Desktop sem barra (decisão do Moisés, 4/nov/2026): só um aviso passageiro ao começar; Enter ou dois cliques no mapa salvam,
@@ -259,6 +259,8 @@ export default function Mapa() {
     toque: () => ganchos.current.gp!.toque(), menu: (i) => ganchos.current.gp!.menu(i), duplo: (i) => ganchos.current.gp!.duplo(i),
     arrastando: () => ganchos.current.gp!.arrastando(), arrastado: (i, a, b) => ganchos.current.gp!.arrastado(i, a, b),
   }).current;
+  /* o card da concorrência fecha quando o mapa se move, menos fixado no olhinho (pedido do Moisés, 5/nov/2026) */
+  ganchos.current.mover = () => { if (mkBox && !mkFixa() && Date.now() - mkAbertoEm.current > 350) setMkBox(null); };
   ganchos.current.pino = (id) => { setMenu(null); setMkBox(null); selecionar(id); };
   ganchos.current.vazio = (lat, lng) => {
     setMenu(null);
@@ -288,7 +290,7 @@ export default function Mapa() {
         duplo: (a, b, c) => ganchos.current.duplo(a, b, c),
         menu: (x, y, lat, lng) => { if (edita && !desR.current) setMenu({ x, y, lat, lng }); },
         clique: (a, b) => ganchos.current.clique(a, b),
-        movendo: (on) => setMovendo(on),
+        movendo: (on) => { setMovendo(on); if (on) ganchos.current.mover?.(); },
         fecharMenu: () => setMenu(null),
         streetView: (on) => setSv(on),
         aviso: (m, erro) => toast(m, erro),
@@ -608,7 +610,11 @@ export default function Mapa() {
         <div id="mapa" className="mapa" ref={mapaEl}>{semMapa && <div className="mapa-erro">{semMapa}</div>}</div>
         <div className="mp-barra">
           <form className={`mp-busca${busAberta ? '' : ' fechada'}`} role="search" onSubmit={(ev) => { ev.preventDefault(); clearTimeout(buscaT.current); rodarBusca(busEnd, true); }}
-            onPointerEnter={(ev) => { if (ev.pointerType !== 'mouse') return; busSobre.current = true; clearTimeout(busT.current); }}
+            onPointerEnter={(ev) => {
+              if (ev.pointerType !== 'mouse') return; busSobre.current = true; clearTimeout(busT.current);
+              /* fechada, abre sozinha com o mouse parado na lupa por 0,75 s, sem pegar o foco (pedido do Moisés, 5/nov/2026) */
+              if (!busAberta && !TOQUE()) busT.current = setTimeout(() => { if (busSobre.current) abrirBusca(true, true); }, 750);
+            }}
             onPointerLeave={() => { busSobre.current = false; busAgendar(); }}>
             <button type="button" className="mp-busca-i" tabIndex={busAberta ? -1 : 0} title="Buscar endereço" aria-label="Buscar endereço" aria-expanded={busAberta}
               onClick={() => { if (!busAberta) abrirBusca(true); else busInput.current?.focus(); }}><Ic n="search" s={20} /></button>

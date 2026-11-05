@@ -193,19 +193,21 @@ export class Motor {
     this.info.setContent(d);
     setTimeout(() => this.lugarSaida(d), 0);
   }
-  /* o quadro fecha sozinho 1 s depois que o mouse sai dele (só depois de ter entrado; no toque, não; pedido do Moisés, 5/nov/2026) */
+  /* o quadro fecha sozinho 1 s depois que o mouse sai dele e, se o mouse não entrar nele, 1 s depois de aberto (no toque, não; pedido do Moisés, 5/nov/2026) */
   private lugT: ReturnType<typeof setTimeout> | undefined;
+  private lugDentro = false;
   private lugarSaida(d: HTMLElement) {
     if (TOQUE()) return;
-    const c = d.closest('.gm-style-iw-c') as (HTMLElement & { lugH?: boolean; dentro?: boolean }) | null;
+    const c = d.closest('.gm-style-iw-c') as (HTMLElement & { lugH?: boolean }) | null;
     if (!c || c.lugH) return;
     c.lugH = true;
-    c.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'mouse') return; clearTimeout(this.lugT); c.dentro = true; });
-    c.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'mouse' || !c.dentro) return; clearTimeout(this.lugT); this.lugT = setTimeout(() => this.lugarFechar(), 1000); });
+    c.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'mouse') return; clearTimeout(this.lugT); this.lugDentro = true; });
+    c.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'mouse') return; this.lugDentro = false; clearTimeout(this.lugT); this.lugT = setTimeout(() => this.lugarFechar(), 1000); });
   }
   lugarFechar() { clearTimeout(this.lugT); if (this.lug) { this.info.close(); this.lug = false; return true; } return false; }
   private async lugarAbrir(id: string, ll: any) {
-    clearTimeout(this.lugT); this.lug = true;
+    clearTimeout(this.lugT); this.lugDentro = false; this.lug = true;
+    if (!TOQUE()) this.lugT = setTimeout(() => { if (!this.lugDentro) this.lugarFechar(); }, 1000);
     this.conteudo(`<div class="lug muted"><button type="button" class="lug-x" aria-label="Fechar">${icX}</button>Carregando avaliações…</div>`);
     this.info.setPosition(ll); this.info.open({ map: this.mapa });
     try {
