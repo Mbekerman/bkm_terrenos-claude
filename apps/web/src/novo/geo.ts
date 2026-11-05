@@ -149,6 +149,20 @@ export async function frentes(poly: P[]): Promise<Frente[]> {
 /* nome de referência: o logradouro sem o tipo (Rua, Avenida...) e sem o número (decisão do Moisés, 4/nov/2026) */
 const NV_TIPO_LOG = /^(rua|r\.|avenida|av\.?|alameda|al\.?|travessa|trav\.?|tv\.?|estrada|estr\.?|est\.|pra[çc]a|p[çc]a\.?|rodovia|rod\.?|largo|lgo\.?|viela|via|viaduto|ladeira|passagem|beco|vila|parque|pq\.?|servid[ãa]o|acesso|caminho|marginal)\s+/i;
 export const nomeRef = (log: string | null | undefined) => (log || '').trim().replace(NV_TIPO_LOG, '').replace(/,.*$/, '').trim();
+/** nome padrão: "Bairro - Rua" (rua sem o tipo e sem número; pedido do Moisés, 5/nov/2026) */
+export const nomeBase = (bairro: string | null | undefined, log: string | null | undefined) => [(bairro || '').trim(), nomeRef(log)].filter(Boolean).join(' - ');
+const nomeNorm = (s: string | null | undefined) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+/** repetido na base ganha 2, 3... (o primeiro fica sem número) */
+export function nomeUnico(base: string, nomes: string[]) {
+  const b = nomeNorm(base); if (!b) return base;
+  let n = 0;
+  for (const x of nomes) {
+    const y = nomeNorm(x);
+    if (y === b) n = Math.max(n, 1);
+    else if (y.startsWith(b + ' ') && /^\d+$/.test(y.slice(b.length + 1))) n = Math.max(n, +y.slice(b.length + 1));
+  }
+  return n ? base + ' ' + (n + 1) : base;
+}
 
 /* ---------- lotes da prefeitura: soma das poligonais (proto_novo.js: engorda, lotesUniao, limpaPoly) ---------- */
 /** cresce a poligonal m metros para fora (cada lote cresce 1 cm para os vizinhos se juntarem) */

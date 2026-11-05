@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase, mensagemErro } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
 import { useToast } from '../components/ui';
@@ -9,7 +9,7 @@ import { carregarGoogle } from '../mapa/google';
 import { classe, info, type Fase, type TerrenoMapa } from '../mapa/dados';
 import { abrirNovo, escolherKmz, fecharNovo, pedirDesenho, poligonal, atualizarNv, useNovo, voltarPasso1, novoEstado, listaSql, type Sobre } from './estado';
 import { GEO_BASE, digitos, loteDoSql, sqlFmt, sqlMascara, type LoteSql } from './geosampa';
-import { areaPoly, centroPoly, fixa, geojson, lerKmz, lotesUniao, m2, nomeRef, normRua, uniaoPoly, type P } from './geo';
+import { areaPoly, centroPoly, fixa, geojson, lerKmz, lotesUniao, m2, nomeBase, nomeUnico, normRua, uniaoPoly, type P } from './geo';
 
 // Janela do Novo terreno, com a marcação do protótipo (tools/prototipo/proto_novo.js: nvPasso1Html, nvSobreHtml,
 // nvDadosHtml, nvGravar, nvDecidir). Passo 1: a poligonal (desenho no mapa ou KMZ/KML); se outro terreno ocupa parte
@@ -42,6 +42,16 @@ export default function NovoTerreno() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [st.aberto, loc.pathname]);
 
+  /* nomes já usados na base, para o nome padrão ganhar 2, 3... quando se repete */
+  const bases = [...new Set((st.nv?.frentes || []).map((f) => nomeBase(st.nv?.local?.bairro, f.logradouro)).filter(Boolean))];
+  const nomesQ = useQuery({
+    queryKey: ['nomes-terreno', empresa?.id, bases], enabled: !!empresa && bases.length > 0, staleTime: 0,
+    queryFn: async () => {
+      const rs = await Promise.all(bases.map((b) => supabase.from('terrenos').select('nome').eq('empresa_id', empresa!.id).ilike('nome', b.replace(/[\\%_]/g, (c) => '\\' + c) + '%')));
+      const e = rs.find((r) => r.error)?.error; if (e) throw e;
+      return rs.flatMap((r) => (r.data || []).map((x) => x.nome as string));
+    },
+  });
   if (!st.aberto || !empresa) return null;
   const nv = st.nv;
   const x = <button className="iconbtn" aria-label="Fechar" onClick={fechar}><Ic n="close" /></button>;
@@ -100,9 +110,15 @@ export default function NovoTerreno() {
       }} />;
   } else {
     /* ---------- passo 2: só o nome de referência ---------- */
-    const l = nv.local, mun = l?.cidade ? l.cidade + (l.uf ? ' · ' + l.uf : '') : '', f0 = nv.frentes?.[0], busca = nv.buscando || nv.sobre == null;
-    const nome = nv.nome ?? (f0 ? nomeRef(f0.logradouro) : nv.nomeKmz && nv.fonte === 'kmz' ? '' : '');
+    const l = nv.local, mun = l?.cidade ? l.cidade + (l.uf ? ' · ' + l.uf : '') : '', fr = nv.frentes || [], pri = Math.min(nv.pri || 0, Math.max(fr.length - 1, 0)), f0 = fr[pri], busca = nv.buscando || nv.sobre == null || nomesQ.isFetching;
+    const padrao = (f?: { logradouro: string }) => f ? nomeUnico(nomeBase(l?.bairro, f.logradouro), nomesQ.data || []) : '';
+    const nome = nv.nome ?? padrao(f0);
     const onde = [f0 && [f0.logradouro, f0.numero].filter(Boolean).join(', '), l?.bairro, mun].filter(Boolean).join(' · ');
+    /* acesso principal: o nome sugerido acompanha a frente escolhida, enquanto a pessoa não escreveu outro */
+    const escolherFrente = (i: number) => {
+      const n = nv.nome?.trim();
+      atualizarNv({ pri: i, nome: !n || fr.some((x) => padrao(x) === n) ? undefined : nv.nome });
+    };
     async function gravar(ev: React.FormEvent<HTMLFormElement>) {
       ev.preventDefault();
       if (!nv || gravando) return;
@@ -115,7 +131,6 @@ export default function NovoTerreno() {
         const { data: munId, error: e1 } = await supabase.rpc('municipio_por_nome', { p_nome: cidade, p_uf: uf });
         if (e1) throw e1;
         if (!munId) { toast(`Município não encontrado: ${cidade || '(vazio)'}${uf ? ' · ' + uf : ''}. Digite como "São Paulo · SP".`, true); setGravando(false); return; }
-        const fr = nv.frentes || [];
         const { data: t, error } = await supabase.from('terrenos').insert({
           empresa_id: empresa!.id, nome: nomeF, responsavel_id: session!.user.id, municipio_id: munId,
           logradouro: f0?.logradouro || null, numero: f0?.numero || null, bairro: l?.bairro || null, cep: l?.cep || null,
@@ -124,7 +139,7 @@ export default function NovoTerreno() {
         }).select('id,codigo').single();
         if (error) throw error;
         /* as outras ruas em volta viram confrontações de frente */
-        const outras = fr.filter((x, i) => i !== 0 || normRua(x.logradouro) !== normRua(f0?.logradouro || ''));
+        const outras = fr.filter((x, i) => i !== pri || normRua(x.logradouro) !== normRua(f0?.logradouro || ''));
         if (outras.length) {
           const r = await supabase.from('confrontacoes').insert(outras.map((x, i) => ({ empresa_id: empresa!.id, terreno_id: t.id, ordem: i + 1, tipo: 'frente', comprimento_m: x.m ? +x.m.toFixed(2) : null, confrontante: x.logradouro + (x.numero ? ', ' + x.numero : ''), fonte: 'Localização da poligonal' })));
           if (r.error) console.warn('confrontações', r.error);
@@ -144,12 +159,16 @@ export default function NovoTerreno() {
     corpo = <>
       <div className="dh"><div><h2>Novo terreno</h2><div className="muted" style={{ marginTop: 4 }}>Passo 2 de 2 · O resto da ficha é preenchido ao longo da jornada.</div></div>{x}</div>
       <form id="f-novo" onSubmit={gravar}><div className="fields">
-        <div className="field full"><div className="banner blue"><Ic n="check" /><div style={{ flex: 1 }}><div className="bt">{nv.fonte === 'sql' && nv.sqls?.length ? `Poligonal pela soma dos ${nv.sqls.length} lote${nv.sqls.length > 1 ? 's' : ''} da prefeitura` : NV_FONTE[nv.fonte]} · {m2(nv.area)}</div>
+        <div className="field full"><div className="banner blue"><Ic n="check" /><div style={{ flex: 1 }}><div className="bt">{nv.fonte === 'sql' && nv.sqls?.length ? (nv.sqls.length > 1 ? `Poligonal pela soma dos ${nv.sqls.length} lotes da prefeitura` : 'Poligonal pelo lote da prefeitura') : NV_FONTE[nv.fonte]} · {m2(nv.area)}</div>
           <div>{nv.buscando ? 'Buscando o endereço pela poligonal...' : onde || 'Endereço não encontrado pela localização.'}</div>
           {nv.ignorados && <div>Confirmado como outro terreno apesar de sobrepor {nv.ignorados.map((s) => s.codigo).join(', ')}.</div>}</div>
           <button type="button" className="btn sm text" onClick={voltarPasso1}>Trocar</button></div></div>
+        {!busca && fr.length > 1 && <div className="field full nv-frentes"><span className="lbl-f" id="nv-fr-l">A poligonal tem {fr.length} frentes. Qual é o acesso principal?</span>
+          <span className="nv-fr" role="radiogroup" aria-labelledby="nv-fr-l">{fr.map((f, i) => <label key={i} className="opt-radio"><input type="radio" name="nv-pri" value={i} checked={i === pri} onChange={() => escolherFrente(i)} />
+            {f.logradouro}{f.numero ? ', ' + f.numero : ''}{f.m ? <span className="faint">&nbsp;· {num(Math.round(f.m))} m</span> : null}</label>)}</span>
+          <span className="hint">O nome de referência sai dele; as outras entram em Confrontações como frente.</span></div>}
         <div className="field full"><label htmlFor="n-nome">Nome de referência *</label>
-          <input id="n-nome" name="nome" required placeholder={nv.buscando ? 'Buscando a rua...' : 'Ex.: Cupecê'} key={nv.buscando ? 'b' : 'p'} defaultValue={nome} onInput={(e) => atualizarNv({ nome: e.currentTarget.value })} /></div>
+          <input id="n-nome" name="nome" required placeholder={nv.buscando ? 'Buscando a rua...' : 'Ex.: Saúde - Cupecê'} key={(busca ? 'b' : 'p') + pri} defaultValue={nome} onInput={(e) => atualizarNv({ nome: e.currentTarget.value })} /></div>
         {!!nv.sqls?.length && <div className="field full"><div className="nv-sqls"><span className="etq-sw s" /><div style={{ flex: 1 }}><b>{nv.sqls.length} SQL{nv.sqls.length > 1 ? 's' : ''} da prefeitura</b>
           <div className="nv-sqls-l">{nv.sqls.map((q) => <span key={q.sql} className="etq s"><span className="etq-n num">{q.sql}</span></span>)}</div></div></div></div>}
         {!nv.buscando && !mun && <div className="field full"><label htmlFor="n-mun">Município *</label><input id="n-mun" name="municipio" required placeholder="Cidade · UF" /><span className="hint">Não deu para saber pela localização.</span></div>}

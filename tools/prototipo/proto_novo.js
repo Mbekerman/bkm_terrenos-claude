@@ -115,19 +115,26 @@ function nvSobreHtml(fechar){const nv=UI.nv,s=nv.sobre,ro=UI.role==='Leitura',ig
 // nome de referência: o logradouro sem o tipo (Rua, Avenida...) e sem o número (decisão do Moisés, 4/nov/2026)
 const NV_TIPO_LOG=/^(rua|r\.|avenida|av\.?|alameda|al\.?|travessa|trav\.?|tv\.?|estrada|estr\.?|est\.|pra[çc]a|p[çc]a\.?|rodovia|rod\.?|largo|lgo\.?|viela|via|viaduto|ladeira|passagem|beco|vila|parque|pq\.?|servid[ãa]o|acesso|caminho|marginal)\s+/i;
 const nomeRef=log=>(log||'').trim().replace(NV_TIPO_LOG,'').replace(/,.*$/,'').trim();
+// nome padrão: "Bairro - Rua" (rua sem o tipo e sem número); repetido na base ganha 2, 3... (o primeiro fica sem número; pedido do Moisés, 5/nov/2026)
+const nomeNorm=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+function nomeUnico(base,nomes){const b=nomeNorm(base);if(!b)return base;let n=0;
+  nomes.forEach(x=>{const y=nomeNorm(x);if(y===b)n=Math.max(n,1);else if(y.startsWith(b+' ')&&/^\d+$/.test(y.slice(b.length+1)))n=Math.max(n,+y.slice(b.length+1))});
+  return n?base+' '+(n+1):base}
+const nomePadrao=(bairro,log)=>{const base=[(bairro||'').trim(),nomeRef(log)].filter(Boolean).join(' - ');return nomeUnico(base,S.terrenos.map(t=>t.nome))};
 // passo 2: só o nome de referência. Município, endereço e frentes vêm da poligonal; o resto entra ao longo da jornada
-function nvDadosHtml(fechar){const nv=UI.nv,l=nv.local,mun=l?.cidade?l.cidade+(l.uf?' · '+l.uf:''):'',f0=nv.frentes?.[0],busca=nv.buscandoLocal;
-  const v=x=>x?`value="${esc(x)}"`:'',nome=nv.nome??(f0?nomeRef(f0.logradouro):'');
+function nvDadosHtml(fechar){const nv=UI.nv,l=nv.local,mun=l?.cidade?l.cidade+(l.uf?' · '+l.uf:''):'',fr=nv.frentes||[],pri=Math.min(nv.pri||0,Math.max(fr.length-1,0)),f0=fr[pri],busca=nv.buscandoLocal;
+  const v=x=>x?`value="${esc(x)}"`:'',nome=nv.nome??(f0?nomePadrao(l?.bairro,f0.logradouro):'');
   const onde=[f0&&[f0.logradouro,f0.numero].filter(Boolean).join(', '),l?.bairro,mun].filter(Boolean).join(' · ');
   return `<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Passo 2 de 2 · O resto da ficha é preenchido ao longo da jornada.</div></div>${fechar}</div>
   <form data-form="novo" id="f-novo"><div class="fields">
-  <div class="field full"><div class="banner blue">${ic('check')}<div style="flex:1"><div class="bt">${nv.porLotes?`Poligonal pela soma dos ${nv.sqls.length} lote${nv.sqls.length>1?'s':''} da prefeitura`:NV_FONTE[nv.fonte]} · ${m2(Math.round(nv.area))}</div>
+  <div class="field full"><div class="banner blue">${ic('check')}<div style="flex:1"><div class="bt">${nv.porLotes?(nv.sqls.length>1?`Poligonal pela soma dos ${nv.sqls.length} lotes da prefeitura`:'Poligonal pelo lote da prefeitura'):NV_FONTE[nv.fonte]} · ${m2(Math.round(nv.area))}</div>
     <div>${busca?'Buscando o endereço pela poligonal...':onde?esc(onde):'Endereço não encontrado pela localização.'}</div>
     ${nv.ignorados?`<div>Confirmado como outro terreno apesar de sobrepor ${nv.ignorados.map(x=>x.t.codigo).join(', ')}.</div>`:''}</div><button type="button" class="btn sm text" data-a="nv-voltar">Trocar</button></div></div>
   ${nv.lgFeito||nvSP()?`<div class="field full"><div class="nv-sqls"><span class="etq-sw s"></span><div style="flex:1">${nv.sqls?.length?`<b>${nv.sqls.length} SQL${nv.sqls.length>1?'s':''} da prefeitura</b><div class="nv-sqls-l">${nv.sqls.map(x=>`<span class="etq s"><span class="etq-n num">${esc(x.sql)}</span></span>`).join('')}</div>${nv.porLotes&&nv.polyDesenho?'<div class="faint">A desenhada fica guardada.</div>':''}`:'<b>Nenhum SQL</b><div class="faint">Marque os lotes da prefeitura que o terreno ocupa.</div>'}</div><button type="button" class="btn sm text" data-a="nv-lotes">${ic('layers',16)}${nv.sqls?.length?'Trocar SQLs':'Escolher SQLs'}</button></div></div>`:''}
-  <div class="field full"><label for="n-nome">Nome de referência *</label><input id="n-nome" name="nome" required placeholder="${busca?'Buscando a rua...':'Ex.: Cupecê'}" ${v(nome)}></div>
+  ${!busca&&fr.length>1?`<div class="field full nv-frentes"><span class="lbl-f" id="nv-fr-l">A poligonal tem ${fr.length} frentes. Qual é o acesso principal?</span><span class="nv-fr" role="radiogroup" aria-labelledby="nv-fr-l">${fr.map((x,i)=>`<label class="opt-radio"><input type="radio" name="nv-pri" value="${i}" ${i===pri?'checked':''}>${esc(x.logradouro)}${x.numero?', '+esc(x.numero):''}${x.m?`<span class="faint">&nbsp;· ${num(Math.round(x.m))} m</span>`:''}</label>`).join('')}</span><span class="hint">O nome de referência sai dele; as outras entram em Confrontações como frente.</span></div>`:''}
+  <div class="field full"><label for="n-nome">Nome de referência *</label><input id="n-nome" name="nome" required placeholder="${busca?'Buscando a rua...':'Ex.: Saúde - Cupecê'}" ${v(nome)}></div>
   ${!busca&&!mun?`<div class="field full"><label for="n-mun">Município *</label><input id="n-mun" name="municipio" required placeholder="Cidade · UF"><span class="hint">Não deu para saber pela localização.</span></div>`:`<input type="hidden" name="municipio" ${v(mun)}>`}
-  <input type="hidden" name="logradouro" ${v(f0?.logradouro)}><input type="hidden" name="numero" ${v(f0?.numero)}><input type="hidden" name="bairro" ${v(l?.bairro)}><input type="hidden" name="frente" value="0">
+  <input type="hidden" name="logradouro" ${v(f0?.logradouro)}><input type="hidden" name="numero" ${v(f0?.numero)}><input type="hidden" name="bairro" ${v(l?.bairro)}><input type="hidden" name="frente" value="${pri}">
   </div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-novo" id="btn-novo" ${busca?'disabled':''}>${busca?'Buscando o endereço...':'Cadastrar terreno'}</button></div>`}
 // depois de cadastrar: a ficha em gaveta no mapa e, com SQLs, a consulta completa no GeoSampa de cada um (zonas, parâmetros, camadas, planta e desenho)
 function nvDepois(t){nvGaveta(t);const ins=t.insc.filter(i=>!(i.geo||[]).length);if(ins.length)lgConsultar(t,ins)}
@@ -139,6 +146,10 @@ function nvPlGravar(t,d){const P=partesDe(t);P.length=0;
   d.partes.forEach(p=>{const pa={id:uid(),ativa:true,neg:null,propostas:[],nome:p.nome,essencial:true,area:null};['pessoa','tel','email','doc','obs'].forEach(k=>{if(p[k])pa[k]=p[k]});P.push(pa)});
   lotesNorm(t);if(d.partes.length>1||d.partes[0].nome!=='Vendedor 1')log(t,`${d.partes.length} parte${d.partes.length>1?'s':''}: ${d.partes.map(p=>p.nome).join(', ')}`)}
 // depois de desenhar a tela do passo 2: checagem de duplicidade
+// acesso principal: o nome sugerido acompanha a frente escolhida, enquanto a pessoa não escreveu outro
+document.addEventListener('change',e=>{if(e.target.name!=='nv-pri'||!UI.nv)return;const nv=UI.nv,fr=nv.frentes||[];
+  if(!nv.nome?.trim()||fr.some(x=>nomePadrao(nv.local?.bairro,x.logradouro)===nv.nome.trim()))nv.nome=null;
+  nv.pri=Number(e.target.value);renderModal();$('#f-novo [name=nv-pri]:checked')?.focus()});
 function nvPosRender(){const f=$('#f-novo');if(!f||!UI.nv)return;f.nome.addEventListener('input',()=>{if(UI.nv)UI.nv.nome=f.nome.value})}
 // passo 2 gravado: o terreno novo com a poligonal, o município e as frentes
 function nvGravar(alvo,F){const nv=UI.nv;alvo.poly=nv.poly;alvo.lat=+nv.ponto[0].toFixed(7);alvo.lng=+nv.ponto[1].toFixed(7);alvo.precisao='aproximada';alvo.municipio=F.municipio.trim();
