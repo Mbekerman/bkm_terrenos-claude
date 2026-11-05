@@ -8,13 +8,14 @@ import { carregarFicha, completude, type Falta, FONTE_AREA, TEMP, TP_N, ZONA, ty
 import MiniMapa from './MiniMapa';
 import Temperatura from './Temperatura';
 import AbaComercial from './Comercial';
+import Painel, { Avancos, usePN } from './Painel';
 import AbaTerreno, { dadosArea, dadosEndereco, fonteSel, numInp, useEdicao, valoresArea } from './Terreno';
 import { CamposEndereco, END_CAMPOS, focar, OPT, pedirCampo } from './edicao';
 
 // Ficha do terreno, porte de tools/prototipo/proto.js › pgFicha (topo, abas, fiAbasCaber), proto_fases.js › linhaTopo,
 // proto_funil.js › linhaEtapas e proto_mod.js › abaGeral (Visão geral: Localização e Resumo). Mesma marcação e classes do
 // protótipo (estilos em styles.css). Primeira entrega do porte da ficha: topo, abas e Visão geral; Terreno e Comercial
-// vêm nas próximas, e o quadro de avanço com o painel de Logs depois delas. As abas fora da primeira versão ficam
+// vieram depois, e o quadro de avanço com o painel de Logs (Painel.tsx, Avanco.tsx) na quarta entrega. As abas fora da primeira versão ficam
 // com o aviso.
 
 export const ABAS: [string, string][] = [['geral', 'Visão geral'], ['terreno', 'Terreno'], ['comercial', 'Comercial'], ['parametros', 'Parâmetros'],
@@ -296,6 +297,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa }: {
   abrirMapa: (lat: number, lng: number, z: number) => void;
 }) {
   const { edita } = useSessao();
+  const [pn] = usePN();
   const c = completude(f);
   const meta: ReactNode[] = [...faseTxt(f), `Cadastrado em ${fd(f.dataIdent ?? f.criadoEm)}`];
   const corpo = aba === 'geral' ? <VisaoGeral f={f} irAba={irAba} abrirMapa={abrirMapa} />
@@ -303,7 +305,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa }: {
     : aba === 'comercial' ? <AbaComercial key={f.id} f={f} cor={corPino(f)[0]} />
     : <section className="sec"><div className="empty">{PROXIMAS.has(aba) ? 'Esta aba está sendo portada do protótipo e entra nas próximas entregas.' : 'Esta aba entra depois da primeira versão.'}</div></section>;
   return (
-    <div className="ficha-wrap"><div className="ficha-main">
+    <div className={`ficha-wrap ${pn.aberto ? 'pn-on' : 'pn-off'}`}><div className="ficha-main">
       <LinhaTopo f={f} />
       {voltar && <button className="back" onClick={voltar.ir}><Ic n="back" s={20} />{voltar.rotulo}</button>}
       <div className="dhead fi-head">
@@ -326,9 +328,10 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa }: {
             <span className="progress"><span className="bar"><span style={{ width: `${c.pct}%` }} /></span><Faltam c={c} irAba={irAba} /></span>
           </div>
         )}
+        <div className="adv-main"><Avancos f={f} irAba={irAba} /></div>
       </div>
       <Abas f={f} aba={aba} irAba={irAba} />
       <section className="bl fi-aba" id={`bl-${aba}`} role="tabpanel"><div className="bl-c">{corpo}</div></section>
-    </div></div>
+    </div><Painel f={f} irAba={irAba} /></div>
   );
 }

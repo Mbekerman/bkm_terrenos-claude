@@ -22,7 +22,11 @@ export const P = {
   "olho": "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",
   "check": "M5 12.5 10 17 19 7",
   "upload": "M12 16V4M7 9l5-5 5 5M5 20h14",
-  "doc": "M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4"
+  "doc": "M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4",
+  "clock": "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3.5 2.5",
+  "pause": "M9 5v14M15 5v14",
+  "block": "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8",
+  "money": "M4 7h16v10H4zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM7 10v4M17 10v4"
 } as const;
 export const BI = {
   "localizacao": "<path d=\"M48 83 C42 75 21 53 21 36 C21 21 33 11 48 11 C63 11 75 21 75 36 C75 53 54 75 48 83 Z\" fill=\"none\" style=\"stroke:var(--marinho)\" stroke-width=\"3.03\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/> <path d=\"M58 36 C58 41.523 53.523 46 48 46 C42.477 46 38 41.523 38 36 C38 30.477 42.477 26 48 26 C53.523 26 58 30.477 58 36 Z\" fill=\"none\" style=\"stroke:var(--azul-bkm)\" stroke-width=\"3.03\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>",
