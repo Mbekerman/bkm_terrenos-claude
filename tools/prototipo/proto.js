@@ -22,7 +22,7 @@ const $=s=>document.querySelector(s);
 const uid=()=>Math.random().toString(36).slice(2,9);
 const P={
   search:'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4',download:'M12 4v11M7 10l5 5 5-5M5 20h14',
-  home:'M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z',layers:'M12 4 3 9l9 5 9-5zM3 14l9 5 9-5',
+  home:'M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z',layers:'M12 4 3 9l9 5 9-5zM3 14l9 5 9-5',regua:'M3.5 16 16 3.5l4.5 4.5L8 20.5zM7.5 12l2 2M10.5 9l2 2M13.5 6l2 2',
   notas:'M4 6h16M4 12h16M4 18h10',board:'M4 5h4v14H4zM10 5h4v9h-4zM16 5h4v12h-4z',doc:'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4',
   add:'M12 5v14M5 12h14',back:'M19 12H5M11 6l-6 6 6 6',check:'M5 12.5 10 17 19 7',
   warn:'M12 4 2.5 20h19zM12 10v4.5M12 17.2v.1',clock:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3.5 2.5',
@@ -811,7 +811,7 @@ document.addEventListener('click',e=>{
     case 'mp-base':setBase(a.dataset.v);break;
     case 'lug-fechar':lugarFechar();break;
     case 'mp-modo':UI.mpModo=UI.mpModo===a.dataset.v?null:a.dataset.v;fecharPopup();mpRefresh();break;
-    case 'mp-sair':if(UI.mpModo==='desenhar'&&!TOQUE()){desCancelar();break}UI.mpModo=null;UI.nvDesenho=false;UI.poiVolta=null;UI.desenho=null;UI.desHist=null;UI.vSel=null;UI.vMenu=false;UI.vMover=false;mpRefresh();break;
+    case 'mp-sair':if(UI.mpModo==='regua'){rgSair();break}if(UI.mpModo==='desenhar'&&!TOQUE()){desCancelar();break}UI.mpModo=null;UI.nvDesenho=false;UI.poiVolta=null;UI.desenho=null;UI.desHist=null;UI.vSel=null;UI.vMenu=false;UI.vMover=false;mpRefresh();break;
     case 'mp-desfazer':{const h=UI.desHist||[];if(h.length){UI.desenho=h.pop();UI.vSel=null;UI.vMenu=false;UI.vMover=false}mpRefresh();break}
     case 'mp-concluir':concluirDesenho();break;
     case 'mp-poi':UI.mpPoi=UI.mpPoi===false;mostrarPois(UI.mpPoi);a.setAttribute('aria-pressed',UI.mpPoi);a.classList.toggle('on',UI.mpPoi);break;

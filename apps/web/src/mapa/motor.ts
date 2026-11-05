@@ -307,6 +307,32 @@ export class Motor {
       this.rasc.push(mk);
     });
   }
+  /* ---------- régua (proto_mercado.js › rgDesenha; pedido do Moisés, 5/nov/2026) ----------
+     a linha pelos pontos marcados, com a distância de cada trecho no meio dele e o total no último ponto; fechada (clique no primeiro
+     ponto, com 3 ou mais), vira a forma com a área no meio */
+  private rg: any[] = [];
+  regua(pts: [number, number][], fechado: boolean, fechar: () => void) {
+    this.rg.forEach((o) => (o.setMap ? o.setMap(null) : (o.map = null)));
+    this.rg = [];
+    if (!pts.length) return;
+    const { google } = window, M = this.mapa, p = pts.map((q) => gLL(q[0], q[1])), cor = '#0b57d0', AM = gLib.marker.AdvancedMarkerElement;
+    this.rg.push(fechado
+      ? new google.maps.Polygon({ map: M, paths: p, strokeColor: cor, strokeWeight: 2.5, fillColor: cor, fillOpacity: 0.12, clickable: false })
+      : new google.maps.Polyline({ map: M, path: p, strokeColor: cor, strokeWeight: 2.5, clickable: false }));
+    /* um ponto sem tamanho no lugar exato, com o desenho centrado nele */
+    const w = (el: HTMLElement) => { const d = document.createElement('div'); d.className = 'rg-w'; d.appendChild(el); return d; };
+    const ini = pts.length > 2 && !fechado;
+    p.forEach((q, i) => {
+      const el = document.createElement('div');
+      el.className = 'rg-pt' + (i === 0 && ini ? ' rg-ini' : '');
+      if (i === 0 && ini) el.addEventListener('click', (ev) => { ev.stopPropagation(); fechar(); });
+      this.rg.push(new AM({ map: M, position: q, content: w(el), zIndex: 4001, gmpClickable: i === 0 && ini }));
+    });
+    reguaRotulos(pts, fechado).forEach((o) => {
+      const el = document.createElement('div'); el.className = 'rg-rot ' + o.c; el.textContent = o.t;
+      this.rg.push(new AM({ map: M, position: gLL(o.ll[0], o.ll[1]), content: w(el), zIndex: 4000, gmpClickable: false }));
+    });
+  }
   /** posição de um ponto na tela do mapa (para abrir o menu do ponto ao lado dele) */
   pontoNaTela(lat: number, lng: number) {
     const p = this.proj.getProjection()?.fromLatLngToContainerPixel(new window.google.maps.LatLng(lat, lng));
@@ -334,4 +360,40 @@ function vGestos(el: HTMLElement, i: number, gp: GestosPonto) {
   ['pointercancel', 'pointerleave'].forEach((t) => el.addEventListener(t, limpa));
   el.addEventListener('click', (e) => { e.stopPropagation(); gp.toque(); });
   el.addEventListener('dblclick', (e) => { e.stopPropagation(); e.preventDefault(); gp.toque(); gp.duplo(i); });
+}
+
+/* ---------- medidas da régua ---------- */
+export const distM = (a: [number, number], b: [number, number]) => {
+  const R = 6371008.8, r = Math.PI / 180, dLa = (b[0] - a[0]) * r, dLo = (b[1] - a[1]) * r;
+  const h = Math.sin(dLa / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dLo / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+};
+export const reguaM = (v: number) => (v >= 1000 ? (v / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + ' km' : Math.round(v).toLocaleString('pt-BR') + ' m');
+export const reguaA = (v: number) => (v >= 1e6 ? (v / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + ' km²' : Math.round(v).toLocaleString('pt-BR') + ' m²');
+export function reguaTotal(p: [number, number][], fechado: boolean) {
+  let t = 0;
+  for (let i = 1; i < p.length; i++) t += distM(p[i - 1], p[i]);
+  if (fechado && p.length > 2) t += distM(p[p.length - 1], p[0]);
+  return t;
+}
+/** área da forma fechada pela régua (mesma conta da poligonal) */
+export function reguaArea(p: [number, number][]) {
+  if (p.length < 3) return null;
+  const lat0 = (p.reduce((s, q) => s + q[0], 0) / p.length) * Math.PI / 180, R = 6371008.8;
+  const xy = p.map((q) => [(q[1] * Math.PI / 180) * R * Math.cos(lat0), (q[0] * Math.PI / 180) * R]);
+  let a = 0;
+  for (let i = 0; i < xy.length; i++) { const u = xy[i], v = xy[(i + 1) % xy.length]; a += u[0] * v[1] - v[0] * u[1]; }
+  return Math.abs(a) / 2;
+}
+function reguaRotulos(p: [number, number][], fechado: boolean) {
+  const out: { ll: [number, number]; t: string; c: string }[] = [];
+  const seg = (a: [number, number], b: [number, number]) => out.push({ ll: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], t: reguaM(distM(a, b)), c: 'rg-seg' });
+  for (let i = 1; i < p.length; i++) seg(p[i - 1], p[i]);
+  if (fechado && p.length > 2) seg(p[p.length - 1], p[0]);
+  if (!fechado && p.length > 2) out.push({ ll: p[p.length - 1], t: reguaM(reguaTotal(p, false)), c: 'rg-tot' });
+  if (fechado) {
+    const ar = reguaArea(p);
+    if (ar) out.push({ ll: [p.reduce((s, q) => s + q[0], 0) / p.length, p.reduce((s, q) => s + q[1], 0) / p.length], t: reguaA(ar), c: 'rg-tot' });
+  }
+  return out;
 }
