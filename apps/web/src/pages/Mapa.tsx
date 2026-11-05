@@ -38,14 +38,34 @@ const memo: { f: string; e: string; arv: boolean; apag: Apag; leg: boolean | nul
 /* o que a legenda apaga (terrenos por fase, etapa e subetapa; concorrência ligada, faixas e situações) fica guardado no navegador
    e vale em outra sessão (bkm-terrenos-mapa-legenda; pedido do Moisés, 5/nov/2026) */
 const MP_LGKEY = 'bkm-terrenos-mapa-legenda', MP_CKEY = 'bkm-terrenos-mapa-camada';
-/* renda ou densidade ligada também fica guardada (bkm-terrenos-mapa-camada; pedido do Moisés, 5/nov/2026) */
+/* a camada de renda ou densidade e o filtro da concorrência também ficam guardados, mas se apagam quando a pessoa fica fora da
+   página Mapa por mais de MP_EXPIRA_MIN minutos (pedido do Moisés, 5/nov/2026); bkm-terrenos-mapa-visto é a última vez no mapa */
+const MP_EXPIRA_MIN = 30, MP_VISTO_KEY = 'bkm-terrenos-mapa-visto', MP_MFKEY = 'bkm-terrenos-mapa-filtro-conc';
+function mpExpirou() { try { const v = Number(localStorage.getItem(MP_VISTO_KEY) || 0); return !!v && Date.now() - v > MP_EXPIRA_MIN * 60000; } catch { return false; } }
+function mpExpirar() {
+  if (!mpExpirou()) return;
+  try { [MP_CKEY, MP_MFKEY, MP_VISTO_KEY].forEach((k) => localStorage.removeItem(k)); } catch { /* sem armazenamento */ }
+  memo.camada = null; memo.mf = {};
+}
+function mpVisto() { try { localStorage.setItem(MP_VISTO_KEY, String(Date.now())); } catch { /* sem armazenamento */ } }
+mpExpirar();
 try { const k = localStorage.getItem(MP_CKEY); if (k === 'renda' || k === 'dens') memo.camada = k; } catch { /* sem armazenamento */ }
+try { const m = JSON.parse(localStorage.getItem(MP_MFKEY) || 'null'); if (m && typeof m === 'object') memo.mf = m; } catch { /* sem armazenamento */ }
 try {
   const g = JSON.parse(localStorage.getItem(MP_LGKEY) || 'null');
   if (g) { if (g.apag && typeof g.apag === 'object') memo.apag = g.apag; if (Array.isArray(g.mkOff)) memo.mkOff = g.mkOff; if (g.merc === false) memo.merc = false; }
 } catch { /* sem armazenamento */ }
 
 export default function Mapa() {
+  /* ao entrar no mapa: apaga camada e filtro da concorrência se a pessoa ficou fora mais que o prazo, e marca a visita */
+  const entrou = useRef(false);
+  if (!entrou.current) { entrou.current = true; mpExpirar(); mpVisto(); }
+  useEffect(() => {
+    const t = setInterval(() => { if (document.visibilityState === 'visible') mpVisto(); }, 15000);
+    const sai = () => mpVisto();
+    window.addEventListener('pagehide', sai);
+    return () => { clearInterval(t); window.removeEventListener('pagehide', sai); mpVisto(); };
+  }, []);
   const { empresa, edita } = useSessao();
   const toast = useToast();
   const navegar = useNavigate();
@@ -125,6 +145,7 @@ export default function Mapa() {
   const [mkTab, setMkTab] = useState<string | null>(null);
   const mkAbertoEm = useRef(0);
   Object.assign(memo, { f, e, arv, apag, leg, camada, rdLeg, mf, merc, mkOff, mkArv });
+  useEffect(() => { try { localStorage.setItem(MP_MFKEY, JSON.stringify(mf)); } catch { /* sem armazenamento */ } }, [mf]);
   useEffect(() => { try { localStorage.setItem(MP_CKEY, camada ?? ''); } catch { /* sem armazenamento */ } }, [camada]);
   useEffect(() => { try { localStorage.setItem(MP_LGKEY, JSON.stringify({ apag, mkOff, merc })); } catch { /* sem armazenamento */ } }, [apag, mkOff, merc]);
 

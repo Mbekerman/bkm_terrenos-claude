@@ -11,6 +11,16 @@ const MP_LGKEY='bkm-terrenos-mapa-legenda';
 (()=>{let g=null;try{g=JSON.parse(localStorage.getItem(MP_LGKEY)||'null')}catch(e){}if(!g)return;
   if(g.apag&&typeof g.apag==='object')UI.mp.apag=g.apag;if(Array.isArray(g.mkOff))UI.mkOff=g.mkOff;if(g.merc===false)UI.mpMerc=false})();
 function mpLegGuardar(){try{localStorage.setItem(MP_LGKEY,JSON.stringify({apag:UI.mp.apag||{},mkOff:UI.mkOff||[],merc:UI.mpMerc!==false}))}catch(e){}}
+/* a camada de renda ou densidade e o filtro da concorrência ficam guardados no navegador, mas se apagam quando a pessoa fica
+   fora da página Mapa por mais de MP_EXPIRA_MIN minutos (pedido do Moisés, 5/nov/2026); bkm-terrenos-mapa-visto é a última vez no mapa */
+const MP_EXPIRA_MIN=30,MP_VISTO_KEY='bkm-terrenos-mapa-visto',MP_MFKEY='bkm-terrenos-mapa-filtro-conc';
+function mpExpirar(){try{const v=Number(localStorage.getItem(MP_VISTO_KEY)||0);if(!v||Date.now()-v<=MP_EXPIRA_MIN*60000)return;
+  localStorage.removeItem('bkm-terrenos-mapa-camada');localStorage.removeItem(MP_MFKEY);localStorage.removeItem(MP_VISTO_KEY);UI.mpSetor=null;UI.mf={}}catch(e){}}
+function mpVisto(){try{localStorage.setItem(MP_VISTO_KEY,String(Date.now()))}catch(e){}}
+mpExpirar();
+setInterval(()=>{if(typeof naMapa==='function'&&naMapa()&&document.visibilityState==='visible')mpVisto()},15000);
+addEventListener('pagehide',()=>{if(typeof naMapa==='function'&&naMapa())mpVisto()});
+document.addEventListener('visibilitychange',()=>{if(typeof naMapa==='function'&&naMapa()){if(document.visibilityState==='hidden')mpVisto();else{const v=Number(localStorage.getItem(MP_VISTO_KEY)||0);if(v&&Date.now()-v>MP_EXPIRA_MIN*60000)render()}}});
 UI.dash=UI.dash||{f:{},sel:['situacao','zona','valor','mes']};
 
 /* ---------- situação do terreno (cor do pin, gráficos) ---------- */
@@ -340,7 +350,7 @@ function mpLegenda(){mpLegGuardar();const m=UI.mp,aberta=!!UI.mpArv;
     +(CC_MANUAL?`<button type="button" class="lg-i" data-a="mp-conc" aria-pressed="${UI.mpConc!==false}"><span class="lg-poi">${ccMarcaHtml()}</span>Concorrência<span class="n">${ccAtivos().length}</span></button>`:'')
     +rdLegItem();
 }
-function pgMapa(){
+function pgMapa(){mpExpirar();mpVisto();
   const opt=(o,v)=>Object.entries(o).map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${esc(l)}</option>`).join('');
   return `<div class="mapa-pg${mpLargura()<200?' mp-estreita':''}" style="--mp-w:${mpLargura()}px">
   <aside class="mapa-lado" aria-label="Terrenos no mapa">
