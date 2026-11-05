@@ -16,6 +16,8 @@ const NAV: [string, string, keyof typeof BI][] = [
   ['funil', 'Funil', 'funil'],
 ];
 const CHAVE_MENU = 'bkm-terrenos-menu';
+/** O que a moldura passa às telas: o texto da busca da barra superior. */
+export interface ContextoMoldura { busca: string }
 
 /** Ícone de linha do protótipo (ic). */
 export function Ic({ n, s = 20 }: { n: keyof typeof P; s?: number }) {
@@ -155,6 +157,7 @@ export default function Moldura() {
   useEffect(() => { document.body.classList.toggle('menu-min', menuMin); }, [menuMin]);
   useEffect(() => { document.body.dataset.rota = rota; }, [rota]);
   const novo = () => navegar('/terrenos/novo');
+  const [busca, setBusca] = useState('');
   return (
     <>
       <header className="top">
@@ -166,7 +169,7 @@ export default function Moldura() {
           <SeloAmbiente />
           <label className="search" htmlFor="q-top">
             <Bi n="busca" s={20} />
-            <input id="q-top" type="search" placeholder="Buscar por nome, endereço, matrícula, SQL ou corretor" autoComplete="off" />
+            <input id="q-top" type="search" placeholder="Buscar por nome, endereço, matrícula, SQL ou corretor" autoComplete="off" value={busca} onChange={(e) => setBusca(e.target.value)} />
           </label>
           <div className="top-right">
             <Sino />
@@ -188,7 +191,7 @@ export default function Moldura() {
             </button>
           ))}
         </aside>
-        <main className="main" id="main"><Outlet /></main>
+        <main className="main" id="main"><Outlet context={{ busca } satisfies ContextoMoldura} /></main>
       </div>
       <nav className="bnav" id="bnav" aria-label="Navegação">
         {NAV.map(([r, l, i]) => (

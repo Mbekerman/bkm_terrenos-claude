@@ -17,3 +17,6 @@ export const AMBIENTE = meta('bkm-ambiente') ?? (import.meta.env.VITE_AMBIENTE a
 export const EH_DEV = AMBIENTE === 'dev';
 /** Domínio do Google Workspace que entra no sistema. */
 export const DOMINIO = 'bkm.com.br';
+/** Chave do Google Maps (meta gmaps-key, que o Caddy preenche com GOOGLE_MAPS_KEY; no npm run dev, VITE_GMAPS_KEY). */
+const gk = meta('gmaps-key') ?? (import.meta.env.VITE_GMAPS_KEY as string | undefined) ?? '';
+export const GMAPS_KEY = /^AIza[\w-]{20,}$/.test(gk) ? gk : '';
