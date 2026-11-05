@@ -8,6 +8,7 @@ import SemAcesso from './pages/SemAcesso';
 import Setup from './pages/Setup';
 import EmPorte from './pages/EmPorte';
 import Mapa from './pages/Mapa';
+import FichaPagina from './pages/FichaPagina';
 
 // Porte tela a tela (docs/adr/0001): login, mapa, novo terreno, ficha e funil. Os endereços
 // seguem os do protótipo; o login aparece no próprio endereço do link e, entrando, a tela abre.
@@ -24,7 +25,7 @@ export default function App() {
         <Route path="mapa/*" element={<Mapa />} />
         <Route path="funil/*" element={<EmPorte titulo="Funil" />} />
         <Route path="terrenos/novo" element={<Mapa />} />
-        <Route path="terrenos/:codigo/*" element={<EmPorte titulo="Ficha do terreno" />} />
+        <Route path="terrenos/:codigo/*" element={<FichaPagina />} />
         <Route path="*" element={<Navigate to="/mapa" replace />} />
       </Route>
     </Routes>

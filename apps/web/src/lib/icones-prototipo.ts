@@ -1,5 +1,7 @@
 // Ícones copiados do protótipo (tools/prototipo/proto.js: P, BI; proto_funil.js: IC_SINO). Não editar à mão.
 export const P = {
+  "fwd": "M5 12h14M13 6l6 6-6 6",
+  "edit": "M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4",
   "recolher": "M13 6l-6 6 6 6M19 6l-6 6 6 6",
   "expandir": "M11 6l6 6-6 6M5 6l6 6-6 6",
   "add": "M12 5v14M5 12h14",
@@ -22,6 +24,7 @@ export const P = {
   "doc": "M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4"
 } as const;
 export const BI = {
+  "localizacao": "<path d=\"M48 83 C42 75 21 53 21 36 C21 21 33 11 48 11 C63 11 75 21 75 36 C75 53 54 75 48 83 Z\" fill=\"none\" style=\"stroke:var(--marinho)\" stroke-width=\"3.03\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/> <path d=\"M58 36 C58 41.523 53.523 46 48 46 C42.477 46 38 41.523 38 36 C38 30.477 42.477 26 48 26 C53.523 26 58 30.477 58 36 Z\" fill=\"none\" style=\"stroke:var(--azul-bkm)\" stroke-width=\"3.03\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>",
   "mapa": "<path d=\"M12 24 L34 16 L62 24 L84 16 L84 72 L62 80 L34 72 L12 80 L12 24\" fill=\"none\" style=\"stroke:var(--marinho)\" stroke-width=\"3.03\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M34 16 L34 72\" fill=\"none\" style=\"stroke:var(--marinho)\" stroke-width=\"3.03\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M62 24 L62 80\" fill=\"none\" style=\"stroke:var(--marinho)\" stroke-width=\"3.03\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M48 54 C45.2 49.68 40 44 40 38 A8 8 0 0 1 56 38 C56 44 50.8 49.68 48 54 Z\" fill=\"none\" style=\"stroke:var(--azul-bkm)\" stroke-width=\"3.03\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M45 38 A3 3 0 1 0 51 38 A3 3 0 1 0 45 38 Z\" fill=\"none\" style=\"stroke:var(--azul-bkm)\" stroke-width=\"3.03\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>",
   "funil": "<path d=\"M17 14 L79 14 C82 14 83 17 81 19 L57 48 L57 75 L39 82 L39 48 L15 19 C13 17 14 14 17 14 Z\" fill=\"none\" style=\"stroke:var(--marinho)\" stroke-width=\"3.03\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/> <path d=\"M30 30 L66 30\" fill=\"none\" style=\"stroke:var(--azul-bkm)\" stroke-width=\"3.03\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>",
   "busca": "<path d=\"M67 40 C67 54.359 55.359 66 41 66 C26.641 66 15 54.359 15 40 C15 25.641 26.641 14 41 14 C55.359 14 67 25.641 67 40 Z\" fill=\"none\" style=\"stroke:var(--marinho)\" stroke-width=\"3.03\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/> <path d=\"M59 59 L83 83\" fill=\"none\" style=\"stroke:var(--marinho)\" stroke-width=\"3.03\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/> <path d=\"M29 29 C32 25 36 23 42 23\" fill=\"none\" style=\"stroke:var(--azul-bkm)\" stroke-width=\"3.03\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"

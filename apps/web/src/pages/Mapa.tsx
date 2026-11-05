@@ -5,6 +5,7 @@ import { useSessao } from '../lib/sessao';
 import { useToast } from '../components/ui';
 import { Bi, Ic, type ContextoMoldura } from '../components/Moldura';
 import { carregarGoogle, googleRecusado } from '../mapa/google';
+import GavetaFicha from '../ficha/Gaveta';
 import { Motor, vista, reguaA, reguaArea, reguaM, reguaTotal, type Base, type GestosPonto, type Pino } from '../mapa/motor';
 import { desenhoAtendido, poligonal, useNovo } from '../novo/estado';
 import { useConsultaGeo } from '../novo/consulta';
@@ -70,8 +71,11 @@ export default function Mapa() {
   const { empresa, edita } = useSessao();
   const toast = useToast();
   const navegar = useNavigate();
+  const loc = useLocation();
   const { busca } = useOutletContext<ContextoMoldura>();
-  const codigoUrl = (useParams()['*'] || '').split('/')[0] || null;
+  const segs = (useParams()['*'] || '').split('/'), codigoUrl = segs[0] || null;
+  /* /mapa/A123/ficha: a ficha completa na gaveta da direita, sobre o mapa (proto_tabela.js › tgavAbrir, tgavPosMapa) */
+  const gav = !!codigoUrl && segs[1] === 'ficha';
   const q = useQuery({ queryKey: ['mapa', empresa?.id], enabled: !!empresa, queryFn: () => carregar(empresa!.id) });
   const fases: Fase[] = q.data?.fases ?? [];
   const todos: TerrenoMapa[] = q.data?.terrenos ?? [];
@@ -165,13 +169,20 @@ export default function Mapa() {
     return { id: t.id, nome: t.nome, lat: t.lat, lng: t.lng, poly: t.poly, cor: k[1], fg: k[3] };
   }, [fases, f, e]);
 
-  /* seleção no endereço: /mapa/A123 */
+  /* seleção no endereço: /mapa/A123; com a gaveta aberta, outro terreno troca a gaveta e o clique no vazio não fecha */
+  const abrirGav = useCallback((id: string) => {
+    const t = todos.find((x) => x.id === id);
+    if (!t) return;
+    setSelId(id); setMkBox(null);
+    navegar(`/mapa/${t.codigo}/ficha`, { replace: gav });
+  }, [todos, navegar, gav]);
   const selecionar = useCallback((id: string | null) => {
+    if (gav) { if (id) abrirGav(id); return; }
     setSelId(id);
     if (id) setMkBox(null);
     const t = id ? todos.find((x) => x.id === id) : null;
     navegar(t ? `/mapa/${t.codigo}` : '/mapa', { replace: true });
-  }, [todos, navegar]);
+  }, [todos, navegar, gav, abrirGav]);
 
   /* motor do Google: cria uma vez por visita à página */
   const ganchos = useRef({ mk: (_: string) => {}, pino: (_: string) => {}, vazio: (_a: number, _b: number) => {}, duplo: (_a: number, _b: number, _c: EventTarget | null) => {},
@@ -296,7 +307,8 @@ export default function Mapa() {
   }).current;
   /* o card da concorrência fecha quando o mapa se move, menos fixado no olhinho (pedido do Moisés, 5/nov/2026) */
   ganchos.current.mover = () => { if (mkBox && !mkFixa() && Date.now() - mkAbertoEm.current > 350) setMkBox(null); };
-  ganchos.current.pino = (id) => { setMenu(null); setMkBox(null); selecionar(id); };
+  /* no desktop, o clique no pino ou na poligonal abre a ficha na gaveta; no celular, seleciona (o cartão) */
+  ganchos.current.pino = (id) => { setMenu(null); setMkBox(null); if (innerWidth >= 900 && !des && !rg) abrirGav(id); else selecionar(id); };
   ganchos.current.vazio = (lat, lng) => {
     setMenu(null);
     if (selId) selecionar(null);
@@ -489,19 +501,38 @@ export default function Mapa() {
     setCamada(k);
   }
 
+  /* a gaveta segue o endereço: o terreno dela fica selecionado e vai para o meio do pedaço livre do mapa */
+  useEffect(() => {
+    if (!gav || !q.data) return;
+    const t = todos.find((x) => x.codigo === codigoUrl!.toUpperCase());
+    if (!t) return;
+    setSelId(t.id);
+    const m = motor.current;
+    if (!m || !motorPronto || t.lat == null || innerWidth < 900) return;
+    const id = setTimeout(() => {
+      const mp = mapaEl.current?.getBoundingClientRect(), g = document.getElementById('tgav')?.getBoundingClientRect();
+      if (!mp || !g) return;
+      m.mapa.panTo({ lat: t.lat, lng: t.lng });
+      const livre = Math.max(0, mp.right - g.left);
+      if (livre > 0) m.mapa.panBy(Math.round(livre / 2), 0);
+    }, 120);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gav, codigoUrl, q.data, motorPronto]);
+
   /* primeira entrada: enquadra todos; com /mapa/A123, foca o terreno */
   useEffect(() => {
     const m = motor.current;
     if (!m || !motorPronto || !q.data) return;
     const alvo = codigoUrl ? todos.find((t) => t.codigo === codigoUrl.toUpperCase()) : null;
-    if (alvo) { setSelId(alvo.id); const p = pinoDe(alvo); if (p) m.focar(p); }
+    const centro = (loc.state as { centro?: { lat: number; lng: number; z: number } } | null)?.centro;
+    if (alvo) { setSelId(alvo.id); const p = pinoDe(alvo); if (centro) { m.mapa.setCenter({ lat: centro.lat, lng: centro.lng }); m.mapa.setZoom(Math.max(centro.z, 15)); } else if (p) m.focar(p); }
     else if (enquadrarPend.current) m.enquadrar(todos.filter((t) => t.lat != null).map((t) => ({ lat: t.lat!, lng: t.lng! })), 15);
     enquadrarPend.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [motorPronto, q.data]);
 
   /* terreno recém-cadastrado (/mapa/A123 com focar): seleciona e enquadra quando ele chega na lista */
-  const loc = useLocation();
   const focarPend = useRef<string | null>(null);
   useEffect(() => { if ((loc.state as { focar?: boolean } | null)?.focar && codigoUrl) focarPend.current = codigoUrl.toUpperCase(); }, [loc.key]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -665,7 +696,7 @@ export default function Mapa() {
         <span className="pin-mini mp-cod" style={{ background: cs[0], color: cs[1] }} title={`${t.nome} · ${subNome(fases, t)}`}>{t.codigo}</span>
         <div className="mp-it-t"><div className="t1">{t.nome}</div><div className="t2">{ad ? `${num(ad)} m²` : 'Área não informada'} · {nm}{t.lat == null && <> · <span style={{ color: 'var(--terracota)' }}>sem localização</span></>}</div>
           {geoCons?.terreno === t.id && <span className="chip blue lg-cons">Consultando o GeoSampa: {geoCons.feitos} de {geoCons.total}</span>}</div>
-        <button className="iconbtn mp-lupa" title="Ver ficha" aria-label={`Ver ficha de ${t.nome}`} onClick={(ev) => { ev.stopPropagation(); navegar(`/terrenos/${t.codigo}`); }}><Bi n="busca" s={22} /></button>
+        <button className="iconbtn mp-lupa" title="Ver ficha" aria-label={`Ver ficha de ${t.nome}`} onClick={(ev) => { ev.stopPropagation(); abrirGav(t.id); }}><Bi n="busca" s={22} /></button>
         {cartao && <button className="iconbtn mp-lupa mp-fx" title="Fechar" aria-label="Fechar" onClick={(ev) => { ev.stopPropagation(); selecionar(null); }}><Ic n="close" s={22} /></button>}
         {s && t.lat != null && motorPronto && (
           <div className="mp-it-a"><button className="linkbtn" onClick={(ev) => { ev.stopPropagation(); const p = pinoDe(t); if (p) motor.current?.streetView(p); }}>Street View</button></div>
@@ -792,6 +823,9 @@ export default function Mapa() {
       {met && <Metodologia camada={met} fechar={() => setMet(null)} />}
       {mfAberto && mkOk && <FiltroConc f={mf} mudar={setMf} fechar={() => setMfAberto(false)} aviso={(m) => toast(m)} />}
       {mkTab && <TabelaEmp id={mkTab} fechar={() => setMkTab(null)} />}
+      {gav && <GavetaFicha codigo={codigoUrl!.toUpperCase()} lado={ladoEl.current} fechar={() => navegar(`/mapa/${codigoUrl!.toUpperCase()}`)}
+        abrirPagina={(aba) => navegar(`/terrenos/${codigoUrl!.toUpperCase()}${aba === 'geral' ? '' : '/' + aba}`, { state: { de: 'mapa' } })}
+        abrirMapa={(lat, lng, z) => { const m = motor.current?.mapa; if (m) { m.setCenter({ lat, lng }); m.setZoom(Math.max(z, 15)); } navegar(`/mapa/${codigoUrl!.toUpperCase()}`); }} />}
     </div>
   );
 }
