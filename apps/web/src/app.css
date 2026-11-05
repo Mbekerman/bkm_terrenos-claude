@@ -21,3 +21,59 @@
 .m-auth-erro{width:100%;box-sizing:border-box;padding:12px 16px;border-radius:12px;background:var(--critico-fundo);color:var(--critico-marca);font-size:14px;line-height:20px;margin-bottom:16px}
 .m-auth-acoes{display:flex;gap:8px;align-self:flex-end}
 .m-google{align-self:flex-end;color:var(--m-on-surface)}
+
+/* ===== Ficha: edição no lugar, áreas, o que falta (pedidos do Moisés, 5/nov/2026) ===== */
+/* abas fixas da gaveta encostam no topo (o recuo de cima da gaveta deixava ver o texto passando por trás) */
+.tgav .fi-abas-w { top: -16px }
+@media (max-width: 899px) { .tgav .fi-abas-w { top: -8px } }
+/* editando, a mesma grade da leitura: o valor vira campo só com a linha embaixo, na mesma altura */
+.kvg-ed .inl-c { min-width: 0 }
+.kvg-ed .inl-c .k { display: block; cursor: default }
+.kvg-ed .inl-c :is(input, select, textarea), .area input.inl {
+  display: block; width: 100%; height: 24px; min-height: 0; margin: 0; padding: 0; border: 0; border-bottom: 1px solid var(--m-outline, #747775);
+  border-radius: 0; background: transparent; box-shadow: none; font: inherit; font-size: 16px; line-height: 23px; color: var(--m-on-surface, #1f1f1f); outline: 0 }
+.kvg-ed .inl-c select { appearance: none; padding-right: 20px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23444746' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 4px center; cursor: pointer }
+.kvg-ed .inl-c textarea { height: auto; min-height: 24px; resize: none; field-sizing: content; overflow: hidden }
+.kvg-ed .inl-c :is(input, select, textarea):hover, .area input.inl:hover { border-bottom-color: #1f1f1f }
+.kvg-ed .inl-c :is(input, select, textarea):focus, .area input.inl:focus { border-bottom: 2px solid var(--m-primary, #0b57d0); padding-bottom: 0 }
+.kvg-ed .inl-c input[readonly] { border-bottom-style: dotted; color: var(--m-on-var, #444746) }
+.kvg-ed .inl-c :is(input, textarea)::placeholder, .area input.inl::placeholder { color: #8e918f; font-style: italic; font-size: 14px }
+/* Cancelar e Salvar (e a busca de endereço) no título do quadro, no lugar do Editar */
+.qd-acoes { display: flex; align-items: center; gap: 4px; margin-left: auto; min-width: 0 }
+.sec-h .qd-acoes .btn.primary { background: var(--m-primary, #0b57d0) !important; color: #fff !important; padding: 0 16px !important; height: 32px; min-height: 32px; border-radius: 16px }
+.sec-h .qd-acoes .btn.text { height: 32px; min-height: 32px }
+.gbusca-h { width: min(320px, 40vw); margin-right: 8px }
+.gbusca-h gmp-place-autocomplete { width: 100%; color-scheme: light }
+.sec.qd-ed { box-shadow: 0 0 0 2px var(--m-primary, #0b57d0) }
+/* áreas: clicar numa preenchida a escolhe; a adotada fica em destaque */
+.area { border: 1px solid transparent; transition: background .15s, box-shadow .15s }
+.area.pode { cursor: pointer }
+.area.pode:hover { background: rgba(11,87,208,.06) }
+.area.pode:focus-visible { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: 2px }
+.area.sel { background: #d3e3fd !important; box-shadow: inset 0 0 0 2px var(--m-primary, #0b57d0) !important }
+.area.sel .av { font-weight: 400 }
+.area .as { display: flex !important; align-items: center; gap: 4px; min-height: 18px; color: var(--m-primary, #0b57d0) }
+.area input.inl { font-size: 20px; height: 26px; font-weight: 300; cursor: text }
+:root[data-tema="escuro"] .area.sel { background: #004a77 !important; box-shadow: inset 0 0 0 2px #a8c7fa !important }
+:root[data-tema="escuro"] .area .as { color: #a8c7fa }
+/* "Ficha N% completa" com a bolinha do que falta e o menu */
+.fi-comp { position: relative; display: inline-flex }
+.fi-comp-b { position: relative; display: inline-flex; align-items: center; min-height: 32px; padding: 0 8px; margin: -4px 0 -4px -8px; border: 0; border-radius: 8px; background: none; font: inherit; color: inherit; cursor: pointer }
+.fi-comp-b:hover:not(:disabled) { background: rgba(68,71,70,.08) }
+.fi-comp-b:disabled { cursor: default }
+.fi-comp-n { position: absolute; top: -8px; right: -10px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #b3261e; color: #fff; font-size: 11px; font-weight: 500; line-height: 18px; text-align: center }
+.fi-comp-m { display: block; left: 0; right: auto; top: calc(100% + 6px) }
+.fi-comp-t { padding: 6px 16px 4px; font-size: 12px; font-weight: 500; color: var(--m-on-var, #444746) }
+/* campo que o menu do que falta abriu acende um instante */
+.acende { animation: acende 1.6s ease-out }
+@keyframes acende { 0%, 40% { background: rgba(11,87,208,.14) } 100% { background: transparent } }
+.sec-h .qd-acoes .btn.primary:hover { background: #0842a0 !important }
+.sec-h .qd-acoes .btn.primary:disabled { opacity: .6 }
+/* título do quadro aberto fica preso logo abaixo das abas enquanto o quadro passa pela tela e solta quando ele
+   acaba (pedido do Moisés, 5/nov/2026): página 72 (barra) + 49 (abas); gaveta 49 − 16 do recuo */
+.fi-aba .sec:not(.qd-fechado) > .sec-h, .fi-aba .sec:not(.qd-fechado) > form > .sec-h {
+  position: sticky; top: calc(121px + env(safe-area-inset-top, 0px)); z-index: 12; background: var(--m-surface-c, #fff); border-radius: 12px 12px 0 0 }
+@media (max-width: 899px) { .fi-aba .sec:not(.qd-fechado) > .sec-h, .fi-aba .sec:not(.qd-fechado) > form > .sec-h { top: calc(113px + env(safe-area-inset-top, 0px)) } }
+.tgav .fi-aba .sec:not(.qd-fechado) > .sec-h, .tgav .fi-aba .sec:not(.qd-fechado) > form > .sec-h { top: 33px }
+@media (max-width: 899px) { .tgav .fi-aba .sec:not(.qd-fechado) > .sec-h, .tgav .fi-aba .sec:not(.qd-fechado) > form > .sec-h { top: 41px } }
+:root[data-tema="escuro"] .fi-aba .sec > .sec-h, :root[data-tema="escuro"] .fi-aba .sec > form > .sec-h { background: #1e1f20 }
