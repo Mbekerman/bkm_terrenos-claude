@@ -2341,6 +2341,9 @@ input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
 .mp-legenda summary::after { content: "" !important; width: 18px; height: 18px; margin-left: auto; transition: transform .15s;
   background: no-repeat center/18px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23444746' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") }
 .mp-legenda[open] summary::after { transform: rotate(180deg) }
+/* o título fica no topo enquanto a lista rola por baixo (pedido do Moisés, 5/nov/2026) */
+.mp-legenda[open] summary { position: sticky; top: 0; z-index: 2; background-color: #f8fafd !important }
+:root[data-tema="escuro"] .mp-legenda[open] summary { background-color: #1e1f20 !important }
 :root[data-tema="escuro"] .mp-legenda summary { color: #e3e3e3 !important }
 :root[data-tema="escuro"] .mp-legenda summary::after { filter: invert(.85) }
 .lg-r { display: grid !important; grid-template-columns: minmax(0, 1fr) 32px }
@@ -4964,6 +4967,39 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 /* legenda: item desligado (ele ou o ramo de cima) fica apagado; a bolinha e o número de um ramo ligam e desligam tudo dentro */
 #mp-leg .lg-i.lg-off .pin-mini { filter: grayscale(1); opacity: .45 } #mp-leg .lg-i.lg-off { color: var(--m-on-surface-variant, #444746) }
 #mp-leg .lg-tg { cursor: pointer } #mp-leg span.lg-tg:hover .pin-mini { outline: 2px solid #0b57d0; outline-offset: 1px; border-radius: 9px }
+
+/* três pontinhos da barra do mapa: filtros da concorrência e dos terrenos e o tipo de mapa (pedido do Moisés, 5/nov/2026) */
+.mp-maisw { position: relative; flex: none; pointer-events: auto }
+.mp-mais { width: 40px; padding: 0 !important; justify-content: center; position: relative }
+.mp-mais .mf-n { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; font-size: 11px; padding: 0 5px }
+.mp-mais-m { min-width: 248px }
+.mp-mais-m .mm-l { flex: 1 }
+.mp-mais-m .mm-t { padding: 10px 16px 4px; margin-top: 6px; border-top: 1px solid #e3e3e3; font-size: 12px; font-weight: 500; color: #444746 }
+.mp-mais-m .mm-ck { display: inline-flex; width: 18px } .mp-mais-m [aria-checked="false"] .mm-ck { visibility: hidden }
+.mp-mais-m button .ic { color: #444746 } .mp-mais-m button[aria-checked="true"] .ic { color: inherit }
+:root[data-tema="escuro"] .mp-mais-m .mm-t { border-color: #444746; color: #c4c7c5 }
+:root[data-tema="escuro"] .mp-mais-m button .ic { color: #c4c7c5 }
+
+/* olhinho ao lado do título da legenda: fixa a legenda aberta (sem ele, fecha sozinha em 3 s; pedido do Moisés, 5/nov/2026) */
+.mp-legenda .lg-fixar { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 14px; background: none; color: #747775; cursor: pointer }
+.mp-legenda .lg-fixar:hover { background: rgba(31,31,31,.08) }
+.mp-legenda .lg-fixar[aria-pressed="true"] { background: #c2e7ff; color: #001d35 }
+:root[data-tema="escuro"] .mp-legenda .lg-fixar { color: #c4c7c5 }
+:root[data-tema="escuro"] .mp-legenda .lg-fixar[aria-pressed="true"] { background: #004a77; color: #c2e7ff }
+
+/* busca do mapa recolhida no botão redondo da lupa; aberta, a seta à direita fecha (pedido do Moisés, 5/nov/2026) */
+.mapa-area .mp-busca { transition: max-width .2s ease }
+.mp-busca .mp-busca-i { display: grid; place-items: center; padding: 0; border: 0; background: none; border-radius: 20px; cursor: default; pointer-events: none; z-index: 1 }
+.mp-busca-x { flex: none; display: grid; place-items: center; width: 36px; height: 36px; margin-right: 2px; padding: 0; border: 0; border-radius: 18px; background: none; color: var(--m-on-var, #444746); cursor: pointer }
+.mp-busca-x:hover { background: rgba(31,31,31,.08) }
+.mp-busca input { padding-right: 4px !important }
+.mapa-area .mp-busca.fechada { flex: none !important; width: 40px; max-width: 40px !important; margin-right: auto; order: 0 !important }
+.mapa-area .mp-busca.fechada input, .mapa-area .mp-busca.fechada .mp-busca-x, .mapa-area .mp-busca.fechada .mp-res { display: none !important }
+.mapa-area .mp-busca.fechada .mp-busca-i { position: static; width: 40px; height: 40px; pointer-events: auto; cursor: pointer }
+.mapa-area .mp-busca.fechada .mp-busca-i:hover { background: rgba(31,31,31,.06) }
+:root[data-tema="escuro"] .mp-busca-x { color: #c4c7c5 } :root[data-tema="escuro"] .mp-busca-x:hover { background: rgba(149,153,160,0.12) }
+.mapa-area .mp-busca input:focus-visible { outline: none } .mapa-area .mp-busca:has(input:focus-visible) { outline: 2px solid #0b57d0; outline-offset: 0 }
+:root[data-tema="escuro"] .mapa-area .mp-busca:has(input:focus-visible) { outline-color: #a8c7fa }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

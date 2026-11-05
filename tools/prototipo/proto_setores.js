@@ -155,9 +155,9 @@ function rdLegItem(){const k=rdCamada();return `<button type="button" class="lg-
   +`<button type="button" class="lg-i" data-a="mp-dens" aria-pressed="${k==='dens'}"><span class="lg-poi"><span class="ds-ic"></span></span>Densidade demográfica (setores)</button>`}
 function rdLigar(k){const antes=rdCamada();k=CAMADAS_SETOR[k]?k:null;if(k===antes)return;UI.mpSetor=k;
   if(antes)rdCamadaDesligar();
-  /* sem camada o mapa é sempre a visão Mapa; com renda ou densidade, Satélite (pedido do Moisés, 5/nov/2026) */
-  if(k){if(!antes)setBase('satelite');rdCamadaLigar();if(RD.sel!=null&&SET.d){rdSelDesenha(RD.sel);rdBox()}}
-  else{RD.sel=null;rdBox();setBase('mapa')}
+  /* sem camada, o tipo de mapa escolhido nos três pontinhos; com renda ou densidade, Satélite (pedido do Moisés, 5/nov/2026) */
+  if(k){if(!antes){UI.mpBaseCam=null;setBase(mpBaseAtual())}rdCamadaLigar();if(RD.sel!=null&&SET.d){rdSelDesenha(RD.sel);rdBox()}}
+  else{RD.sel=null;rdBox();UI.mpBaseCam=null;setBase(mpBaseAtual())}
   rdLegenda();const b=$('.mapa-area .mp-cam');if(b)b.outerHTML=rdCamBotao();
   document.querySelectorAll('[data-a="mp-renda"]').forEach(b=>b.setAttribute('aria-pressed',k==='renda'));document.querySelectorAll('[data-a="mp-dens"]').forEach(b=>b.setAttribute('aria-pressed',k==='dens'))}
 /* chamado depois de criar o mapa (initMapa): a camada, a legenda e o quadro voltam como estavam */

@@ -5,6 +5,12 @@
    ===================================================================== */
 UI.sorts=UI.sorts||{};
 UI.mp=UI.mp||{q:'',cor:'',zona:'',f:'',e:'',ocultas:[]};if(!UI.mp.apag)UI.mp.apag={};
+/* o que a legenda apaga (terrenos por fase, etapa e subetapa; concorrência ligada, faixas e situações) fica guardado no navegador
+   e vale em outra sessão (bkm-terrenos-mapa-legenda; pedido do Moisés, 5/nov/2026); a gravação é a cada desenho da legenda */
+const MP_LGKEY='bkm-terrenos-mapa-legenda';
+(()=>{let g=null;try{g=JSON.parse(localStorage.getItem(MP_LGKEY)||'null')}catch(e){}if(!g)return;
+  if(g.apag&&typeof g.apag==='object')UI.mp.apag=g.apag;if(Array.isArray(g.mkOff))UI.mkOff=g.mkOff;if(g.merc===false)UI.mpMerc=false})();
+function mpLegGuardar(){try{localStorage.setItem(MP_LGKEY,JSON.stringify({apag:UI.mp.apag||{},mkOff:UI.mkOff||[],merc:UI.mpMerc!==false}))}catch(e){}}
 UI.dash=UI.dash||{f:{},sel:['situacao','zona','valor','mes']};
 
 /* ---------- situação do terreno (cor do pin, gráficos) ---------- */
@@ -176,13 +182,21 @@ function temaMapa(){if(!MAPA||!$('#mapa'))return;if(GG){if(MAPA.__escuro!==temaE
 const MP_VKEY='bkm-terrenos-mapa-vista';
 function mpVistaGuardada(){try{const v=JSON.parse(localStorage.getItem(MP_VKEY)||'null');return v&&isFinite(v.c?.lat)&&isFinite(v.c?.lng)&&isFinite(v.z)?v:null}catch(e){return null}}
 function mpVistaGuardar(v){try{localStorage.setItem(MP_VKEY,JSON.stringify({c:{lat:+(+v.c.lat).toFixed(6),lng:+(+v.c.lng).toFixed(6)},z:v.z}))}catch(e){}}
-function mpBaseAtual(){return typeof rdCamada==='function'&&rdCamada()?'satelite':'mapa'}
+/* tipo de mapa: o escolhido nos três pontinhos, guardado no navegador (bkm-terrenos-mapa-tipo; padrão Mapa); com renda ou
+   densidade ligada, Satélite, a menos que a pessoa troque enquanto a camada está ligada (vale só até desligar) */
+const MP_TKEY='bkm-terrenos-mapa-tipo';
+function mpTipo(){try{return localStorage.getItem(MP_TKEY)==='satelite'?'satelite':'mapa'}catch(e){return 'mapa'}}
+function mpBaseAtual(){return typeof rdCamada==='function'&&rdCamada()?(UI.mpBaseCam||'satelite'):mpTipo()}
+function mpTipoEscolher(v){v=v==='satelite'?'satelite':'mapa';if(typeof rdCamada==='function'&&rdCamada())UI.mpBaseCam=v;else try{localStorage.setItem(MP_TKEY,v)}catch(e){}setBase(mpBaseAtual())}
 /* botões do canto do mapa: minha localização e tela cheia (o controle de câmera do Google saiu; decisão do Moisés, 23/out/2026).
    Sobem acima do cartão do terreno e do aviso de desenho quando eles ocupam o pé do mapa. */
 function mpCtrlHtml(){const on=document.body.classList.contains('mp-cheia');
   return `${GG?`<button type="button" class="mp-cb sv-x" data-a="sv-fechar" title="Fechar o Street View (Esc)" aria-label="Fechar o Street View">${ic('close',22)}</button>`:''}<div id="mp-ctrl" class="mp-ctrl"><button type="button" class="mp-cb" data-a="mp-eu" title="Minha localização" aria-label="Centralizar na minha localização">${ic('eu',22)}</button>
     <button type="button" class="mp-cb" data-a="mp-cheia" aria-pressed="${on}" title="${on?'Sair da tela cheia':'Tela cheia'}" aria-label="${on?'Sair da tela cheia':'Tela cheia'}">${ic(on?'telaSair':'tela',22)}</button></div>`}
+/* o bonequinho do Street View fica sempre no mesmo lugar do canto (64 px acima do pé do mapa, 32 de altura): reserva o lugar
+   dele mesmo antes de o Google desenhá-lo ou enquanto o mapa muda de tamanho (tela cheia), senão a tela cheia cai em cima dele */
 function mpCtrlPos(){const a=$('.mapa-area'),c=$('#mp-ctrl');if(!a||!c)return;const ar=a.getBoundingClientRect();let topo=ar.bottom;
+  if(GG&&!a.classList.contains('sv-on'))topo=ar.bottom-64;
   ['#mp-cartao','#mp-modo','.mapa-area .gm-svpc'].forEach(s=>{const e=$(s);if(!e||!e.offsetHeight)return;const r=e.getBoundingClientRect();if(r.bottom>ar.bottom-80&&r.right>ar.right-80)topo=Math.min(topo,r.top)});
   c.style.bottom=topo<ar.bottom?Math.round(ar.bottom-topo+12)+'px':''}
 function mpCtrlObs(){const a=$('.mapa-area');if(!a||a.__ro||!window.ResizeObserver)return mpCtrlPos();a.__ro=new ResizeObserver(mpCtrlPos);[a,$('#mp-cartao'),$('#mp-modo')].forEach(e=>e&&a.__ro.observe(e));mpCtrlPos()}
@@ -304,7 +318,7 @@ function mpCartao(){const c=$('#mp-cartao');if(!c)return;const t=UI.mpSel&&T(UI.
    e o clique volta para aquele nível. */
 function mpNivelItens(f,e){const m=UI.mp,sf=m.f,se=m.e,base=fxLista('mapa');m.f=f;m.e=e;
   try{const its=mpItens(),cl=new Map(base.map(t=>[t.id,mpClasse(t)]));return its.map(x=>({...x,n:base.filter(t=>cl.get(t.id)===x.k).length}))}finally{m.f=sf;m.e=se}}
-function mpLegenda(){const m=UI.mp,aberta=!!UI.mpArv;
+function mpLegenda(){mpLegGuardar();const m=UI.mp,aberta=!!UI.mpArv;
   const pin=x=>`<span class="pin-mini" style="background:${x.cor};color:${x.fg}">${x.g}</span>`;
   const seta=ab=>`<span class="lg-s${ab?' ab':''}" aria-hidden="true">${ic('chev',14)}</span>`;
   /* a bolinha de qualquer item (e a de "Terrenos", data-l="*": todos) liga e desligam tudo que está nele (data-l = nível, data-v = item); o resto do ramo abre e fecha */
@@ -345,7 +359,7 @@ function pgMapa(){
     <div id="mp-modo" class="mp-modo" aria-live="polite">${modoBanner()}</div>
     <div id="mp-cartao" class="mp-cartao" aria-live="polite"></div>
     ${mpCtrlHtml()}
-    <details class="mp-legenda" ${(UI.mpLeg??innerWidth>899)?'open':''}><summary>Legenda</summary><div id="mp-leg" class="mp-leg-l">${mpLegenda()}</div></details>
+    <details class="mp-legenda" ${(UI.mpLeg??lgAbertaGuardada())?'open':''}><summary><span class="lg-tit">Legenda</span>${lgFixarBtn()}</summary><div id="mp-leg" class="mp-leg-l">${mpLegenda()}</div></details>
     <div class="mp-aviso">Fundo do mapa indisponível nesta visualização.</div>
   </section></div>`;
 }
