@@ -446,8 +446,10 @@ begin
   perform app.exigir_membro(p_empresa);
   return query
     select t.id, t.codigo, t.nome,
-           'Mesma matrícula ' || m.numero || case when m.cartorio = p_cartorio then ' no ' || m.cartorio else ' em outro cartório (' || m.cartorio || ')' end,
-           case when m.cartorio = p_cartorio then 'certa' else 'provavel' end
+           'Mesma matrícula ' || m.numero || case when m.cartorio = p_cartorio then ' no ' || m.cartorio
+                                                   when m.cartorio is null or nullif(trim(p_cartorio), '') is null then ' (cartório não informado)'
+                                                   else ' em outro cartório (' || m.cartorio || ')' end,
+           case when m.cartorio = p_cartorio or m.cartorio is null or nullif(trim(p_cartorio), '') is null then 'certa' else 'provavel' end
     from app.matriculas m join app.terrenos t on t.id = m.terreno_id
     where length(v_mat) >= 3 and m.empresa_id = p_empresa and m.numero_norm = v_mat
   union all
@@ -2030,6 +2032,7 @@ begin
     historico_uso = nullif(trim(v_novo.historico_uso), ''),
     visita_tecnica_em = v_novo.visita_tecnica_em,
     latitude = v_novo.latitude, longitude = v_novo.longitude, poligono_geojson = v_novo.poligono_geojson,
+    poligono_desenhado_geojson = v_novo.poligono_desenhado_geojson,
     precisao_localizacao = v_novo.precisao_localizacao, area_documental_m2 = v_novo.area_documental_m2,
     area_cadastral_m2 = v_novo.area_cadastral_m2, area_levantamento_m2 = v_novo.area_levantamento_m2,
     area_adotada_m2 = v_novo.area_adotada_m2, fonte_area_adotada = v_novo.fonte_area_adotada,
@@ -2896,7 +2899,6 @@ grant execute on function
   app.classificar_topografia(uuid, numeric, numeric), app.registrar_topografia(uuid, numeric, numeric, numeric, numeric, text), app.salvar_topografia_config(uuid, numeric, numeric, numeric, numeric, numeric, numeric, numeric),
   app.registrar_zonas_sem_inscricao(uuid, jsonb, text), app.salvar_zona_parametro(uuid, uuid, jsonb),
   app.parametros_zona(uuid, uuid, text, text, numeric, text),
-  app.criar_empresa(text, text),
   app.buscar_duplicados(uuid, text, text, text, text, text),
   app.terrenos_sobrepostos(uuid, jsonb, uuid),
   app.abrir_negociacao(uuid, uuid),

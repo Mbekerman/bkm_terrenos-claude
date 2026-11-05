@@ -52,7 +52,9 @@ create table app.terrenos (
   situacao_cadastral    text not null default 'ativo' check (situacao_cadastral in ('ativo','arquivado')),
   prioridade            text check (prioridade in ('baixa','media','alta','estrategica')),
   responsavel_id        uuid not null references auth.users(id),
-  origem_cadastro       text not null check (origem_cadastro in ('prospeccao','corretor','indicacao','portal','proprietario','outro')),
+  -- o cadastro curto (só o nome) não pergunta a origem: nasce "não informado" e se completa na ficha
+  origem_cadastro       text not null default 'nao_informado'
+                          check (origem_cadastro in ('nao_informado','prospeccao','corretor','indicacao','portal','proprietario','outro')),
   url_origem            text,
   data_identificacao    date not null default current_date,
   observacoes           text,
@@ -79,6 +81,9 @@ create table app.terrenos (
   latitude              double precision check (latitude between -90 and 90),
   longitude             double precision check (longitude between -180 and 180),
   poligono_geojson      jsonb check (poligono_geojson is null or app.geojson_poligono_valido(poligono_geojson)),
+  -- a poligonal desenhada, guardada quando a do terreno passa a ser a soma dos lotes da prefeitura
+  -- (para poder voltar a ela); nula quando a do terreno é a desenhada
+  poligono_desenhado_geojson jsonb check (poligono_desenhado_geojson is null or app.geojson_poligono_valido(poligono_desenhado_geojson)),
   -- a mesma poligonal como geometria (corrigida se o desenho se cruza), para achar sobreposição
   poligono              extensions.geometry(Geometry, 4326) generated always as
                           (extensions.st_makevalid(extensions.st_setsrid(extensions.st_geomfromgeojson(poligono_geojson::text), 4326))) stored,
@@ -179,13 +184,33 @@ create table app.matriculas (
   terreno_id         uuid not null references app.terrenos(id) on delete cascade,
   numero             text not null,
   numero_norm        text generated always as (regexp_replace(numero, '\D', '', 'g')) stored,
-  cartorio           text not null,
+  cartorio           text check (cartorio is null or length(trim(cartorio)) > 0),  -- nulo = não informado
   area_registrada_m2 numeric(12,2),
   data_certidao      date,
   parte_id           uuid references app.terreno_partes(id),  -- de qual dono; nulo = terreno de um dono só
   unique (empresa_id, cartorio, numero_norm)  -- mesma matrícula no mesmo cartório = mesmo terreno
 );
 create index on app.matriculas (terreno_id);
+create index on app.matriculas (empresa_id, numero_norm);
+
+-- Cartório em branco conta como o mesmo (decisão do Moisés, 4/nov/2026): a matrícula sem cartório
+-- não entra se o número já está noutro terreno em qualquer cartório, e a com cartório não entra se o
+-- número já está noutro terreno sem cartório. O índice único cuida de dois cartórios iguais.
+create or replace function app.tg_matricula_repetida()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare v text;
+begin
+  select t.codigo into v from app.matriculas m join app.terrenos t on t.id = m.terreno_id
+  where m.empresa_id = new.empresa_id and m.numero_norm = regexp_replace(new.numero, '\D', '', 'g') and m.id <> new.id
+    and (new.cartorio is null or m.cartorio is null)
+  limit 1;
+  if v is not null then
+    raise exception 'A matrícula % já está no terreno %', new.numero, v using errcode = '23505';
+  end if;
+  return new;
+end $$;
+create trigger t_repetida before insert or update of numero, cartorio, empresa_id on app.matriculas
+  for each row execute function app.tg_matricula_repetida();
 
 create table app.inscricoes_municipais (
   id                uuid primary key default gen_random_uuid(),
