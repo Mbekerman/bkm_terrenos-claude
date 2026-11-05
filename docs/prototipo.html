@@ -5654,6 +5654,27 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 .mp-mais-m button .ic { color: #444746 } .mp-mais-m button[aria-checked="true"] .ic { color: inherit }
 :root[data-tema="escuro"] .mp-mais-m .mm-t { border-color: #444746; color: #c4c7c5 }
 :root[data-tema="escuro"] .mp-mais-m button .ic { color: #c4c7c5 }
+
+/* olhinho ao lado do título da legenda: fixa a legenda aberta (sem ele, fecha sozinha em 3 s; pedido do Moisés, 5/nov/2026) */
+.mp-legenda .lg-fixar { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 14px; background: none; color: #747775; cursor: pointer }
+.mp-legenda .lg-fixar:hover { background: rgba(31,31,31,.08) }
+.mp-legenda .lg-fixar[aria-pressed="true"] { background: #c2e7ff; color: #001d35 }
+:root[data-tema="escuro"] .mp-legenda .lg-fixar { color: #c4c7c5 }
+:root[data-tema="escuro"] .mp-legenda .lg-fixar[aria-pressed="true"] { background: #004a77; color: #c2e7ff }
+
+/* busca do mapa recolhida no botão redondo da lupa; aberta, a seta à direita fecha (pedido do Moisés, 5/nov/2026) */
+.mapa-area .mp-busca { transition: max-width .2s ease }
+.mp-busca .mp-busca-i { display: grid; place-items: center; padding: 0; border: 0; background: none; border-radius: 20px; cursor: default; pointer-events: none; z-index: 1 }
+.mp-busca-x { flex: none; display: grid; place-items: center; width: 36px; height: 36px; margin-right: 2px; padding: 0; border: 0; border-radius: 18px; background: none; color: var(--m-on-var, #444746); cursor: pointer }
+.mp-busca-x:hover { background: rgba(31,31,31,.08) }
+.mp-busca input { padding-right: 4px !important }
+.mapa-area .mp-busca.fechada { flex: none !important; width: 40px; max-width: 40px !important; margin-right: auto; order: 0 !important }
+.mapa-area .mp-busca.fechada input, .mapa-area .mp-busca.fechada .mp-busca-x, .mapa-area .mp-busca.fechada .mp-res { display: none !important }
+.mapa-area .mp-busca.fechada .mp-busca-i { position: static; width: 40px; height: 40px; pointer-events: auto; cursor: pointer }
+.mapa-area .mp-busca.fechada .mp-busca-i:hover { background: rgba(31,31,31,.06) }
+:root[data-tema="escuro"] .mp-busca-x { color: #c4c7c5 } :root[data-tema="escuro"] .mp-busca-x:hover { background: rgba(149,153,160,0.12) }
+.mapa-area .mp-busca input:focus-visible { outline: none } .mapa-area .mp-busca:has(input:focus-visible) { outline: 2px solid #0b57d0; outline-offset: 0 }
+:root[data-tema="escuro"] .mapa-area .mp-busca:has(input:focus-visible) { outline-color: #a8c7fa }
 </style>
 <header class="top">
   <div class="top-in">
@@ -6966,7 +6987,7 @@ function pgMapa(){
     <div id="mp-modo" class="mp-modo" aria-live="polite">${modoBanner()}</div>
     <div id="mp-cartao" class="mp-cartao" aria-live="polite"></div>
     ${mpCtrlHtml()}
-    <details class="mp-legenda" ${(UI.mpLeg??innerWidth>899)?'open':''}><summary>Legenda</summary><div id="mp-leg" class="mp-leg-l">${mpLegenda()}</div></details>
+    <details class="mp-legenda" ${(UI.mpLeg??innerWidth>899)?'open':''}><summary><span class="lg-tit">Legenda</span>${lgFixarBtn()}</summary><div id="mp-leg" class="mp-leg-l">${mpLegenda()}</div></details>
     <div class="mp-aviso">Fundo do mapa indisponível nesta visualização.</div>
   </section></div>`;
 }
@@ -12250,7 +12271,23 @@ async function mpBuscar(q){q=(q||'').trim();if(q.length<3)return [];
     return (places||[]).map(p=>({nome:p.formattedAddress||p.displayName,lat:p.location.lat(),lng:p.location.lng()}))}
   const r=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=br&limit=5&accept-language=pt-BR&q=${encodeURIComponent(q)}`);if(!r.ok)throw new Error('OpenStreetMap respondeu '+r.status);
   return (await r.json()).map(x=>({nome:x.display_name.replace(/, Brasil$/,''),lat:+x.lat,lng:+x.lon}))}
-function mpBuscaHtml(){return `<form class="mp-busca" data-form="mp-busca" role="search"><span class="mp-busca-i">${ic('search',20)}</span><input id="mp-end" name="q" type="search" placeholder="Buscar endereço" aria-label="Buscar endereço no mapa" autocomplete="off"><div id="mp-res" class="mp-res" role="listbox" hidden></div></form>`}
+/* busca de endereço recolhida: só o botão redondo com a lupa; a lupa abre a barra, a seta à direita fecha, e vazia, sem o foco
+   e sem o mouse em cima por 3 s, fecha sozinha (pedido do Moisés, 5/nov/2026; aberta ou não vale na sessão, UI.mpBusca) */
+function mpBuscaHtml(){const ab=!!UI.mpBusca;if(ab)setTimeout(mpBuscaAgendar,0);
+  return `<form class="mp-busca${ab?'':' fechada'}" data-form="mp-busca" role="search"><button type="button" class="mp-busca-i" data-a="mp-busca-abrir" tabindex="${ab?-1:0}" title="Buscar endereço" aria-label="Buscar endereço" aria-expanded="${ab}">${ic('search',20)}</button><input id="mp-end" name="q" type="search" placeholder="Buscar endereço" aria-label="Buscar endereço no mapa" autocomplete="off"${ab?'':' tabindex="-1"'}><button type="button" class="mp-busca-x" data-a="mp-busca-fechar" title="Fechar a busca" aria-label="Fechar a busca">${ic('back',20)}</button><div id="mp-res" class="mp-res" role="listbox" hidden></div></form>`}
+let MP_BUSCA_FT=null,MP_BUSCA_SOBRE=false;
+function mpBuscaAbrir(ab){const f=$('.mapa-area .mp-busca');UI.mpBusca=!!ab;clearTimeout(MP_BUSCA_FT);if(!f)return;
+  f.classList.toggle('fechada',!ab);const i=f.querySelector('#mp-end'),l=f.querySelector('.mp-busca-i');l.setAttribute('aria-expanded',!!ab);l.tabIndex=ab?-1:0;
+  if(ab){i.removeAttribute('tabindex');i.focus()}else{i.value='';i.tabIndex=-1;i.blur();const r=$('#mp-res');if(r)r.hidden=true;MP_BUSCA_SOBRE=false}}
+function mpBuscaAgendar(){clearTimeout(MP_BUSCA_FT);const f=$('.mapa-area .mp-busca'),i=$('#mp-end');
+  if(!f||f.classList.contains('fechada')||!i||i.value.trim()||document.activeElement===i||MP_BUSCA_SOBRE)return;
+  MP_BUSCA_FT=setTimeout(()=>{const i=$('#mp-end');if(i&&!i.value.trim()&&document.activeElement!==i&&!MP_BUSCA_SOBRE)mpBuscaAbrir(false)},3000)}
+document.addEventListener('click',e=>{const a=e.target.closest?.('[data-a="mp-busca-abrir"],[data-a="mp-busca-fechar"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();
+  if(a.dataset.a==='mp-busca-abrir'){if(!UI.mpBusca)mpBuscaAbrir(true);else $('#mp-end')?.focus()}else mpBuscaAbrir(false)},true);
+document.addEventListener('focusout',e=>{if(e.target.id==='mp-end')setTimeout(mpBuscaAgendar,0)},true);
+document.addEventListener('focusin',e=>{if(e.target.id==='mp-end')clearTimeout(MP_BUSCA_FT)},true);
+document.addEventListener('pointerover',e=>{if(e.pointerType==='mouse'&&e.target.closest?.('.mapa-area .mp-busca')&&!MP_BUSCA_SOBRE){MP_BUSCA_SOBRE=true;clearTimeout(MP_BUSCA_FT)}},true);
+document.addEventListener('pointerout',e=>{if(!MP_BUSCA_SOBRE||!e.target.closest?.('.mp-busca')||e.relatedTarget?.closest?.('.mp-busca'))return;MP_BUSCA_SOBRE=false;mpBuscaAgendar()},true);
 function mpResMostrar(rs,msg){const box=$('#mp-res');if(!box)return;box.hidden=false;UI.mpRes=rs;
   box.innerHTML=rs.length?rs.map((x,i)=>`<button type="button" role="option" data-a="mp-res" data-i="${i}">${bi('mapa',18)}<span>${esc(x.nome)}</span></button>`).join(''):`<div class="hint">${msg||'Nada encontrado.'}</div>`}
 async function mpBuscaRodar(q,ir){try{const rs=await mpBuscar(q);if(($('#mp-end')?.value||'').trim()!==q.trim())return;if(ir&&rs[0])return mpIrPara(rs[0]);mpResMostrar(rs)}catch(e){console.warn(e);mpResMostrar([],'Busca indisponível agora.')}}
@@ -16346,6 +16383,24 @@ const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();u
 /* fechar a legenda fecha também a árvore de Terrenos e volta os pinos para as fases (pedido do Moisés, 4/nov/2026) */
 document.addEventListener('toggle',e=>{if(!e.target.classList?.contains('mp-legenda'))return;UI.mpLeg=e.target.open;
   if(!e.target.open&&(UI.mpArv||UI.mp?.f||UI.mp?.e)){const mud=UI.mp.f||UI.mp.e;UI.mpArv=false;UI.mp.f='';UI.mp.e='';UI.mp.ocultas=[];mpRefresh();if(mud)mpEnquadrar()}},true);
+
+/* a legenda aberta fecha sozinha depois de 3 s sem o mouse em cima nem o foco do teclado dentro; o olhinho ao lado do título a fixa
+   (guardado no navegador, bkm-terrenos-legenda-fixa; pedido do Moisés, 5/nov/2026) */
+const LG_FKEY='bkm-terrenos-legenda-fixa';let LG_T=null,LG_SOBRE=false;
+function lgFixa(){try{return localStorage.getItem(LG_FKEY)==='1'}catch(e){return false}}
+function lgFixarBtn(){const f=lgFixa();return `<button type="button" class="lg-fixar" data-a="lg-fixar" aria-pressed="${f}" title="${f?'Soltar a legenda (volta a fechar sozinha)':'Fixar a legenda aberta'}" aria-label="${f?'Soltar a legenda':'Fixar a legenda aberta'}">${ic('olho',18)}</button>`}
+/* fechada, abre sozinha com o mouse parado em cima dela por 2 s (pedido do Moisés, 5/nov/2026) */
+function lgAgendar(){clearTimeout(LG_T);LG_T=null;const d=$('.mp-legenda');
+  if(d&&!d.open&&LG_SOBRE){LG_T=setTimeout(()=>{LG_T=null;const d=$('.mp-legenda');if(d&&!d.open&&LG_SOBRE)d.open=true},2000);return}
+  if(!d||!d.open||lgFixa()||LG_SOBRE||d.querySelector(':focus-visible'))return;
+  LG_T=setTimeout(()=>{LG_T=null;const d=$('.mp-legenda');if(d&&d.open&&!lgFixa()&&!LG_SOBRE&&!d.querySelector(':focus-visible'))d.open=false},3000)}
+document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legenda')){if(!e.target.matches(':hover'))LG_SOBRE=false;lgAgendar()}},true);
+document.addEventListener('pointerover',e=>{if(e.pointerType!=='mouse')return;const d=e.target.closest?.('.mp-legenda');if(d&&!LG_SOBRE){LG_SOBRE=true;lgAgendar()}},true);
+document.addEventListener('pointerout',e=>{if(!LG_SOBRE||!e.target.closest?.('.mp-legenda'))return;if(e.relatedTarget?.closest?.('.mp-legenda'))return;LG_SOBRE=false;lgAgendar()},true);
+document.addEventListener('focusout',e=>{if(e.target.closest?.('.mp-legenda'))setTimeout(lgAgendar,0)},true);
+document.addEventListener('focusin',e=>{if(e.target.closest?.('.mp-legenda'))lgAgendar()},true);
+document.addEventListener('click',e=>{const b=e.target.closest?.('[data-a="lg-fixar"]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();
+  const f=!lgFixa();try{localStorage.setItem(LG_FKEY,f?'1':'')}catch(x){}b.outerHTML=lgFixarBtn();lgAgendar()},true);
 
 /* ===================== botão flutuante do celular ===================== */
 /* Padrão Material: o "Novo terreno" estendido vira só o + ao rolar para baixo (cobre menos

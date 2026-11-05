@@ -22,7 +22,7 @@ import { apagado, areaDe, bate, carregar, classe, corSub, info, itens, subNome, 
 
 const num = (n: number) => Math.round(n).toLocaleString('pt-BR');
 const TOQUE = () => matchMedia('(pointer: coarse)').matches;
-const MP_LKEY = 'bkm-terrenos-mapa-lista', MP_TKEY = 'bkm-terrenos-mapa-tipo', MP_LMIN = 76;
+const MP_LKEY = 'bkm-terrenos-mapa-lista', LG_FKEY = 'bkm-terrenos-legenda-fixa', MP_TKEY = 'bkm-terrenos-mapa-tipo', MP_LMIN = 76;
 const mpLpad = () => (innerWidth < 1300 ? 300 : 360);
 const mpLmax = () => Math.max(MP_LMIN, Math.min(720, Math.round(innerWidth * 0.6)));
 const limitarL = (w: number) => Math.round(Math.max(MP_LMIN, Math.min(mpLmax(), w)));
@@ -51,6 +51,22 @@ export default function Mapa() {
   const [arv, setArv] = useState(memo.arv);
   const [apag, setApag] = useState<Apag>(memo.apag);
   const [leg, setLeg] = useState(memo.leg ?? innerWidth > 899);
+  /* a legenda aberta fecha sozinha depois de 3 s sem o mouse em cima nem o foco do teclado dentro; o olhinho ao lado do título
+     a fixa (guardado no navegador, bkm-terrenos-legenda-fixa; pedido do Moisés, 5/nov/2026) */
+  const [lgFixa, setLgFixa] = useState(() => { try { return localStorage.getItem(LG_FKEY) === '1'; } catch { return false; } });
+  const legEl = useRef<HTMLDetailsElement>(null), lgSobre = useRef(false), lgT = useRef<ReturnType<typeof setTimeout>>(), lgFixaR = useRef(lgFixa);
+  lgFixaR.current = lgFixa;
+  const lgAgendar = useCallback(() => {
+    clearTimeout(lgT.current);
+    /* fechada, abre sozinha com o mouse parado em cima dela por 2 s (pedido do Moisés, 5/nov/2026) */
+    const d0 = legEl.current;
+    if (d0 && !d0.open && lgSobre.current) { lgT.current = setTimeout(() => { const d = legEl.current; if (d && !d.open && lgSobre.current) d.open = true; }, 2000); return; }
+    const pode = () => { const d = legEl.current; return !!d && d.open && !lgFixaR.current && !lgSobre.current && !d.querySelector(':focus-visible'); };
+    if (!pode()) return;
+    lgT.current = setTimeout(() => { if (pode()) legEl.current!.open = false; }, 3000);
+  }, []);
+  function fixarLeg(v: boolean) { setLgFixa(v); lgFixaR.current = v; try { localStorage.setItem(LG_FKEY, v ? '1' : ''); } catch { /* sem armazenamento */ } lgAgendar(); }
+  useEffect(() => { lgAgendar(); return () => clearTimeout(lgT.current); }, [lgAgendar]);
   const [selId, setSelId] = useState<string | null>(null);
   const [largura, setLargura] = useState(larguraGuardada);
   const [menu, setMenu] = useState<{ x: number; y: number; lat: number; lng: number } | null>(null);
@@ -60,6 +76,22 @@ export default function Mapa() {
   const [motorPronto, setMotorPronto] = useState(false);
   const [busEnd, setBusEnd] = useState('');
   const [res, setRes] = useState<{ nome: string; lat: number; lng: number }[] | null>(null);
+  /* busca recolhida: só o botão redondo com a lupa; a lupa abre, a seta à direita fecha, e vazia, sem o foco e sem o mouse
+     em cima por 3 s, fecha sozinha (pedido do Moisés, 5/nov/2026) */
+  const [busAberta, setBusAberta] = useState(false);
+  const busInput = useRef<HTMLInputElement>(null), busSobre = useRef(false), busT = useRef<ReturnType<typeof setTimeout>>();
+  const abrirBusca = useCallback((ab: boolean) => {
+    clearTimeout(busT.current); setBusAberta(ab);
+    if (ab) setTimeout(() => busInput.current?.focus(), 0);
+    else { setBusEnd(''); setRes(null); busSobre.current = false; busInput.current?.blur(); }
+  }, []);
+  const busAgendar = useCallback(() => {
+    clearTimeout(busT.current);
+    const pode = () => { const i = busInput.current; return !!i && !i.closest('.fechada') && !i.value.trim() && document.activeElement !== i && !busSobre.current; };
+    if (!pode()) return;
+    busT.current = setTimeout(() => { if (pode()) abrirBusca(false); }, 3000);
+  }, [abrirBusca]);
+  useEffect(() => () => clearTimeout(busT.current), []);
   const [resMsg, setResMsg] = useState('');
   const [euBusca, setEuBusca] = useState(false);
   const [camada, setCamada] = useState<Camada | null>(memo.camada);
@@ -539,14 +571,19 @@ export default function Mapa() {
       <section className={`mapa-area${sv ? ' sv-on' : ''}`} aria-label="Mapa dos terrenos" ref={areaEl}>
         <div id="mapa" className="mapa" ref={mapaEl}>{semMapa && <div className="mapa-erro">{semMapa}</div>}</div>
         <div className="mp-barra">
-          <form className="mp-busca" role="search" onSubmit={(ev) => { ev.preventDefault(); clearTimeout(buscaT.current); rodarBusca(busEnd, true); }}>
-            <span className="mp-busca-i"><Ic n="search" s={20} /></span>
-            <input id="mp-end" name="q" type="search" placeholder="Buscar endereço" aria-label="Buscar endereço no mapa" autoComplete="off" value={busEnd}
+          <form className={`mp-busca${busAberta ? '' : ' fechada'}`} role="search" onSubmit={(ev) => { ev.preventDefault(); clearTimeout(buscaT.current); rodarBusca(busEnd, true); }}
+            onPointerEnter={(ev) => { if (ev.pointerType !== 'mouse') return; busSobre.current = true; clearTimeout(busT.current); }}
+            onPointerLeave={() => { busSobre.current = false; busAgendar(); }}>
+            <button type="button" className="mp-busca-i" tabIndex={busAberta ? -1 : 0} title="Buscar endereço" aria-label="Buscar endereço" aria-expanded={busAberta}
+              onClick={() => { if (!busAberta) abrirBusca(true); else busInput.current?.focus(); }}><Ic n="search" s={20} /></button>
+            <input id="mp-end" ref={busInput} name="q" type="search" placeholder="Buscar endereço" aria-label="Buscar endereço no mapa" autoComplete="off" value={busEnd}
+              tabIndex={busAberta ? undefined : -1} onFocus={() => clearTimeout(busT.current)} onBlur={() => setTimeout(busAgendar, 0)}
               onChange={(ev) => {
                 const v = ev.target.value; setBusEnd(v); buscaAtual.current = v; clearTimeout(buscaT.current);
                 if (v.trim().length < 3) { setRes(null); return; }
                 buscaT.current = setTimeout(() => rodarBusca(v, false), 250);
               }} />
+            <button type="button" className="mp-busca-x" title="Fechar a busca" aria-label="Fechar a busca" onClick={() => abrirBusca(false)}><Ic n="back" s={20} /></button>
             <div id="mp-res" className="mp-res" role="listbox" hidden={res == null}>
               {res && (res.length ? res.map((x, i) => (
                 <button key={i} type="button" role="option" aria-selected={false} onClick={() => irPara(x)}><Bi n="mapa" s={18} /><span>{x.nome}</span></button>
@@ -576,12 +613,18 @@ export default function Mapa() {
           <button type="button" className={`mp-cb${euBusca ? ' busca' : ''}`} title="Minha localização" aria-label="Centralizar na minha localização" onClick={eu}><Ic n="eu" s={22} /></button>
           <button type="button" className="mp-cb" aria-pressed={cheia} title={cheia ? 'Sair da tela cheia' : 'Tela cheia'} aria-label={cheia ? 'Sair da tela cheia' : 'Tela cheia'} onClick={() => telaCheia(!cheia)}><Ic n={cheia ? 'telaSair' : 'tela'} s={22} /></button>
         </div>
-        <details className="mp-legenda" open={leg} onToggle={(ev) => {
-          const o = (ev.target as HTMLDetailsElement).open;
+        <details className="mp-legenda" ref={legEl} open={leg} onToggle={(ev) => {
+          const d = ev.target as HTMLDetailsElement, o = d.open;
           setLeg(o);
           if (!o && (arv || f || e)) { setArv(false); nivel('', ''); }
-        }}>
-          <summary>Legenda</summary>
+          if (!d.matches(':hover')) lgSobre.current = false;
+          lgAgendar();
+        }} onPointerEnter={(ev) => { if (ev.pointerType !== 'mouse') return; lgSobre.current = true; lgAgendar(); }} onPointerLeave={() => { lgSobre.current = false; lgAgendar(); }}
+          onFocus={() => lgAgendar()} onBlur={() => setTimeout(lgAgendar, 0)}>
+          <summary><span className="lg-tit">Legenda</span>
+            <button type="button" className="lg-fixar" aria-pressed={lgFixa} title={lgFixa ? 'Soltar a legenda (volta a fechar sozinha)' : 'Fixar a legenda aberta'} aria-label={lgFixa ? 'Soltar a legenda' : 'Fixar a legenda aberta'}
+              onClick={(ev) => { ev.preventDefault(); ev.stopPropagation(); fixarLeg(!lgFixa); }}><Ic n="olho" s={18} /></button>
+          </summary>
           <div id="mp-leg" className="mp-leg-l">
             <Legenda fases={fases} todos={todos} f={f} e={e} arv={arv} apag={apag} busca={busca}
               alternarArv={() => { const ab = !arv; setArv(ab); if (!ab && (f || e)) nivel('', ''); }} nivel={nivel} apagar={apagar}
