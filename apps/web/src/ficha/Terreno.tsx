@@ -7,13 +7,14 @@ import { useToast } from '../components/ui';
 import { Ic } from '../components/Moldura';
 import { reais as brl, m2 } from '../lib/format';
 import type { Ficha, R } from './dados';
+import PartesLotes from './Partes';
 import {
   CampoInp, CamposEndereco, END_CAMPOS, fmtCampo, lerNum, municipioId, num, OPT, Quadro, SECOES, useListas, useSalvar, valoresDe,
   dadosDe, type EndGoogle,
 } from './edicao';
 
 // Aba Terreno da ficha (proto.js › abaCadastro): Identificação, Endereço e localização, Áreas e dimensões, Características
-// físicas e Proprietários e contatos. Partes e Matrículas e SQLs (etiquetas) entram na entrega seguinte.
+// físicas e Proprietários e contatos; Partes e Matrículas e SQLs (etiquetas) em Partes.tsx.
 
 /** estado de edição de uma seção (ou de uma linha do Resumo): uma de cada vez */
 export function useEdicao(f: Ficha) {
@@ -249,6 +250,7 @@ export default function AbaTerreno({ f }: { f: Ficha }) {
     <div className="stack">
       <SecGenerica f={f} id="ident" e={e} primeiro />
       <SecGenerica f={f} id="loc" e={e} />
+      <PartesLotes f={f} />
       <SecAreas f={f} e={e} />
       <SecGenerica f={f} id="fis" e={e} />
       <SecPessoas f={f} />
