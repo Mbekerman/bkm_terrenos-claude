@@ -87,7 +87,10 @@ document.addEventListener('toggle',e=>{if(!e.target.classList?.contains('mp-lege
 
 /* a legenda aberta fecha sozinha depois de 3 s sem o mouse em cima nem o foco do teclado dentro; o olhinho ao lado do título a fixa
    (guardado no navegador, bkm-terrenos-legenda-fixa; pedido do Moisés, 5/nov/2026) */
-const LG_FKEY='bkm-terrenos-legenda-fixa';let LG_T=null,LG_SOBRE=false;
+const LG_FKEY='bkm-terrenos-legenda-fixa';
+/* a legenda começa fechada e lembra se ficou aberta ou fechada (bkm-terrenos-legenda; pedido do Moisés, 5/nov/2026) */
+const LG_AKEY='bkm-terrenos-legenda';
+function lgAbertaGuardada(){try{return localStorage.getItem(LG_AKEY)==='1'}catch(e){return false}}let LG_T=null,LG_SOBRE=false;
 function lgFixa(){try{return localStorage.getItem(LG_FKEY)==='1'}catch(e){return false}}
 function lgFixarBtn(){const f=lgFixa();return `<button type="button" class="lg-fixar" data-a="lg-fixar" aria-pressed="${f}" title="${f?'Soltar a legenda (volta a fechar sozinha)':'Fixar a legenda aberta'}" aria-label="${f?'Soltar a legenda':'Fixar a legenda aberta'}">${ic('olho',18)}</button>`}
 /* fechada, abre sozinha com o mouse parado em cima dela por 2 s (pedido do Moisés, 5/nov/2026) */
@@ -95,7 +98,7 @@ function lgAgendar(){clearTimeout(LG_T);LG_T=null;if(TOQUE())return;const d=$('.
   if(d&&!d.open&&LG_SOBRE){LG_T=setTimeout(()=>{LG_T=null;const d=$('.mp-legenda');if(d&&!d.open&&LG_SOBRE)d.open=true},2000);return}
   if(!d||!d.open||lgFixa()||LG_SOBRE||d.querySelector(':focus-visible'))return;
   LG_T=setTimeout(()=>{LG_T=null;const d=$('.mp-legenda');if(d&&d.open&&!lgFixa()&&!LG_SOBRE&&!d.querySelector(':focus-visible'))d.open=false},3000)}
-document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legenda')){if(!e.target.matches(':hover'))LG_SOBRE=false;lgAgendar()}},true);
+document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legenda')){try{localStorage.setItem(LG_AKEY,e.target.open?'1':'')}catch(x){}if(!e.target.matches(':hover'))LG_SOBRE=false;lgAgendar()}},true);
 document.addEventListener('pointerover',e=>{if(e.pointerType!=='mouse')return;const d=e.target.closest?.('.mp-legenda');if(d&&!LG_SOBRE){LG_SOBRE=true;lgAgendar()}},true);
 document.addEventListener('pointerout',e=>{if(!LG_SOBRE||!e.target.closest?.('.mp-legenda'))return;if(e.relatedTarget?.closest?.('.mp-legenda'))return;LG_SOBRE=false;lgAgendar()},true);
 document.addEventListener('focusout',e=>{if(e.target.closest?.('.mp-legenda'))setTimeout(lgAgendar,0)},true);

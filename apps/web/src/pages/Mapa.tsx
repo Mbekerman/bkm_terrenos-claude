@@ -22,7 +22,7 @@ import { apagado, areaDe, bate, carregar, classe, corSub, info, itens, subNome, 
 
 const num = (n: number) => Math.round(n).toLocaleString('pt-BR');
 const TOQUE = () => matchMedia('(pointer: coarse)').matches;
-const MP_LKEY = 'bkm-terrenos-mapa-lista', LG_FKEY = 'bkm-terrenos-legenda-fixa', MP_TKEY = 'bkm-terrenos-mapa-tipo', MP_LMIN = 76;
+const MP_LKEY = 'bkm-terrenos-mapa-lista', LG_FKEY = 'bkm-terrenos-legenda-fixa', LG_AKEY = 'bkm-terrenos-legenda', MP_TKEY = 'bkm-terrenos-mapa-tipo', MP_LMIN = 76;
 const mpLpad = () => (innerWidth < 1300 ? 300 : 360);
 const mpLmax = () => Math.max(MP_LMIN, Math.min(720, Math.round(innerWidth * 0.6)));
 const limitarL = (w: number) => Math.round(Math.max(MP_LMIN, Math.min(mpLmax(), w)));
@@ -35,6 +35,13 @@ function larguraGuardada() {
 const memo: { f: string; e: string; arv: boolean; apag: Apag; leg: boolean | null; camada: Camada | null; rdLeg: boolean | null;
   mf: Filtro; merc: boolean; mkOff: string[]; mkArv: boolean } =
   { f: '', e: '', arv: false, apag: {}, leg: null, camada: null, rdLeg: null, mf: {}, merc: true, mkOff: [], mkArv: false };
+/* o que a legenda apaga (terrenos por fase, etapa e subetapa; concorrência ligada, faixas e situações) fica guardado no navegador
+   e vale em outra sessão (bkm-terrenos-mapa-legenda; pedido do Moisés, 5/nov/2026) */
+const MP_LGKEY = 'bkm-terrenos-mapa-legenda';
+try {
+  const g = JSON.parse(localStorage.getItem(MP_LGKEY) || 'null');
+  if (g) { if (g.apag && typeof g.apag === 'object') memo.apag = g.apag; if (Array.isArray(g.mkOff)) memo.mkOff = g.mkOff; if (g.merc === false) memo.merc = false; }
+} catch { /* sem armazenamento */ }
 
 export default function Mapa() {
   const { empresa, edita } = useSessao();
@@ -50,7 +57,9 @@ export default function Mapa() {
   const [e, setE] = useState(memo.e);
   const [arv, setArv] = useState(memo.arv);
   const [apag, setApag] = useState<Apag>(memo.apag);
-  const [leg, setLeg] = useState(memo.leg ?? innerWidth > 899);
+  /* a legenda começa fechada e lembra se ficou aberta ou fechada (bkm-terrenos-legenda; pedido do Moisés, 5/nov/2026) */
+  const [leg, setLeg] = useState(() => { if (memo.leg != null) return memo.leg; try { return localStorage.getItem(LG_AKEY) === '1'; } catch { return false; } });
+  useEffect(() => { try { localStorage.setItem(LG_AKEY, leg ? '1' : ''); } catch { /* sem armazenamento */ } }, [leg]);
   /* a legenda aberta fecha sozinha depois de 3 s sem o mouse em cima nem o foco do teclado dentro; o olhinho ao lado do título
      a fixa (guardado no navegador, bkm-terrenos-legenda-fixa; pedido do Moisés, 5/nov/2026) */
   const [lgFixa, setLgFixa] = useState(() => { try { return localStorage.getItem(LG_FKEY) === '1'; } catch { return false; } });
@@ -114,6 +123,7 @@ export default function Mapa() {
   const [mkTab, setMkTab] = useState<string | null>(null);
   const mkAbertoEm = useRef(0);
   Object.assign(memo, { f, e, arv, apag, leg, camada, rdLeg, mf, merc, mkOff, mkArv });
+  useEffect(() => { try { localStorage.setItem(MP_LGKEY, JSON.stringify({ apag, mkOff, merc })); } catch { /* sem armazenamento */ } }, [apag, mkOff, merc]);
 
   const mapaEl = useRef<HTMLDivElement>(null);
   const areaEl = useRef<HTMLElement>(null);
