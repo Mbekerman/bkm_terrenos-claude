@@ -8,6 +8,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- o Caddy troca pelos valores das variáveis do serviço; no npm run dev valem as VITE_* -->
+    <meta name="supabase-url" content='{% env "SUPABASE_URL" %}' />
+    <meta name="supabase-key" content='{% env "SUPABASE_KEY" %}' />
+    <meta name="bkm-ambiente" content='{% env "AMBIENTE" %}' />
     <title>BKM Terrenos</title>
   </head>
   <body>

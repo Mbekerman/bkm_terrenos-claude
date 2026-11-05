@@ -1,11 +1,8 @@
 # Front em React servido por Caddy. Cloud Run: o Cloud Build usa este Dockerfile.
-# As variáveis VITE_* entram no bundle no momento do build; defina-as em
-# argumentos de build do gatilho do Cloud Build antes do deploy.
+# O endereço e a chave publicável do Supabase não entram no build: o Caddy os põe na
+# página a partir das variáveis SUPABASE_URL e SUPABASE_KEY do serviço (e AMBIENTE).
 FROM node:22-alpine AS build
 WORKDIR /app
-ARG VITE_SUPABASE_URL
-ARG VITE_SUPABASE_ANON_KEY
-ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 COPY apps/web/package*.json ./
 RUN npm install --no-audit --no-fund
 COPY apps/web/ ./
