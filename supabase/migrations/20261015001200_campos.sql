@@ -43,7 +43,7 @@ insert into app.campos_catalogo (chave, origem, coluna, titulo, tipo, unidade, o
   ('terreno.situacao_cadastral','terreno','situacao_cadastral','Situação do cadastro','lista',null,'{ativo,arquivado}',null,false,true,false,3),
   ('terreno.prioridade','terreno','prioridade','Prioridade','lista',null,'{baixa,media,alta,estrategica}',null,true,true,true,4),
   ('terreno.responsavel_id','terreno','responsavel_id','Responsável do terreno','pessoa',null,null,null,true,true,true,5),
-  ('terreno.origem_cadastro','terreno','origem_cadastro','Origem do terreno','lista',null,'{prospeccao,corretor,indicacao,portal,proprietario,outro}',null,true,true,false,6),
+  ('terreno.origem_cadastro','terreno','origem_cadastro','Origem do terreno','lista',null,'{nao_informado,prospeccao,corretor,indicacao,portal,proprietario,outro}',null,true,true,false,6),
   ('terreno.url_origem','terreno','url_origem','Link do anúncio','texto',null,null,null,true,false,true,7),
   ('terreno.data_identificacao','terreno','data_identificacao','Identificado em','data',null,null,null,true,false,false,8),
   ('terreno.observacoes','terreno','observacoes','Observações','texto',null,null,null,true,false,false,9),

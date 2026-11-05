@@ -8,7 +8,7 @@ Idioma do produto, do código de domínio e dos commits: português.
 
 - Front: React 18 + TypeScript + Vite (`apps/web`), TanStack Query, react-router, supabase-js. Sem biblioteca de UI; estilos em `apps/web/src/styles.css` (Design System BKM, ver "Visual").
 - Banco: Supabase (Postgres + Auth + Storage). Tudo no schema `app`, menos quadros e tarefas, no schema `fluxo` (ver "Quadros e tarefas" em `docs/modelo.md`); os dois precisam estar em **Settings → API → Exposed schemas**.
-- Deploy: Google Cloud Run, projeto `bkm-terrenos` do Google Cloud (o mesmo do login), região `southamerica-east1`, serviços `terrenos-web` (produção) e `terrenos-web-dev` (desenvolvimento), via `Dockerfile` (build Vite + Caddy), com o mesmo código (ver "Ambientes" abaixo). Push no branch do ambiente dispara o build pelo Cloud Build (app do Cloud Build no GitHub, só neste repositório); o build não espera o CI. Acesso público, porta 8080, 0 a 2 instâncias. Até 3/nov/2026 ficava no Railway, que bloqueou a conta; os endereços `*.up.railway.app` não existem mais. O protótipo é servido em `/prototipo` (a raiz redireciona para lá enquanto o banco não existe) e o app React no resto. Chave única do Google (decisão do dono, a rever; a do Cloud Run é uma chave nova no `bkm-terrenos`): variável `GOOGLE_MAPS_KEY` do serviço, injetada pelo Caddy na meta `gmaps-key` da página; nunca vai para o repositório. Como o Maps JS exige a chave no navegador, a proteção é a restrição por domínio e por API no Cloud Console.
+- Deploy: Google Cloud Run, projeto `bkm-terrenos` do Google Cloud (o mesmo do login), região `southamerica-east1`, serviços `terrenos-web` (produção) e `terrenos-web-dev` (desenvolvimento), via `Dockerfile` (build Vite + Caddy), com o mesmo código (ver "Ambientes" abaixo). Push no branch do ambiente dispara o build pelo Cloud Build (app do Cloud Build no GitHub, só neste repositório); o build não espera o CI. Acesso público, porta 8080, 0 a 2 instâncias. Até 3/nov/2026 ficava no Railway, que bloqueou a conta; os endereços `*.up.railway.app` não existem mais. O protótipo é servido em `/prototipo` e o app React no resto; a raiz redireciona para o protótipo enquanto o serviço não tem a variável `SUPABASE_URL` e, com ela, abre o sistema real. O endereço e a chave publicável do Supabase não entram no build: vêm das variáveis `SUPABASE_URL` e `SUPABASE_KEY` do serviço, que o Caddy põe nas metas `supabase-url` e `supabase-key` da página (`apps/web/src/lib/config.ts`; no `npm run dev`, as `VITE_*` do `.env.local`). Chave única do Google (decisão do dono, a rever; a do Cloud Run é uma chave nova no `bkm-terrenos`): variável `GOOGLE_MAPS_KEY` do serviço, injetada pelo Caddy na meta `gmaps-key` da página; nunca vai para o repositório. Como o Maps JS exige a chave no navegador, a proteção é a restrição por domínio e por API no Cloud Console.
 - CI: GitHub Actions (`.github/workflows/ci.yml`): typecheck, build e testes de SQL.
 
 ## Ambientes
@@ -82,7 +82,7 @@ Modelo de dados com diagramas: [docs/modelo.md](docs/modelo.md). Mantenha-o em d
 ## Comandos
 
 ```bash
-bash supabase/tests/run.sh          # migrations + 1212 testes de regra num Postgres 16 temporário
+bash supabase/tests/run.sh          # migrations + 1227 testes de regra num Postgres 16 temporário
 cd apps/web && npm install
 npm run dev                          # precisa de apps/web/.env.local (ver .env.example)
 npm run typecheck && npm run build

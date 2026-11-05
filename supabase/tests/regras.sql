@@ -47,7 +47,10 @@ set client_min_messages = notice;
 -- ---------------------------------------------------------------------
 \echo '# empresa e equipe'
 select pg_temp.como(:'diretor');
-select app.criar_empresa('BKM Teste', 'Moisés') as emp \gset
+select pg_temp.falha($$select app.criar_empresa('Minha', 'Eu', auth.uid())$$, 'o usuário logado não cria empresa');
+reset role;
+select app.criar_empresa('BKM Teste', 'Moisés', :'diretor') as emp \gset
+select pg_temp.como(:'diretor');
 select pg_temp.ok((select papel = 'diretor' and administrador from app.membros where user_id = :'diretor'), 'quem cria a empresa vira diretor e administrador');
 insert into app.membros (empresa_id, user_id, papel, nome, superior_id) values (:'emp', :'gestor', 'gestor', 'Paula', :'diretor');
 insert into app.membros (empresa_id, user_id, papel, nome, superior_id) values (:'emp', :'analista', 'analista', 'Rafael', :'gestor');
@@ -1058,7 +1061,9 @@ select pg_temp.ok((select count(*) from app.auditoria where tabela in ('fases_mo
 select pg_temp.ok((select count(*) from app.auditoria where tabela in ('etapas_modelo','subetapas_modelo','motivos_encerramento','checklist_modelo','status_modelo','prerequisitos_modelo')) >= 10,
   'toda alteração de configuração vai para a auditoria');
 select pg_temp.como(:'intruso');
-select app.criar_empresa('Outra', 'Fulano') as emp2 \gset
+reset role;
+select app.criar_empresa('Outra', 'Fulano', :'intruso') as emp2 \gset
+select pg_temp.como(:'intruso');
 select pg_temp.ok((select nome from app.etapas_modelo where codigo = 'estudos') = 'Estudos Preliminares', 'cada empresa tem a sua configuração');
 select pg_temp.como(:'diretor');
 
@@ -1698,6 +1703,34 @@ select pg_temp.como(:'diretor');
 select pg_temp.ok((select count(*) from app.usuarios where arroba like 'joao.silva%') = 2, 'a equipe vê nome, foto e @ de quem está na empresa');
 select pg_temp.falha(format($$select app.mudar_arroba(%L, 'joao.silva')$$, '00000000-0000-0000-0000-0000000000f2'), '@ já usado é recusado');
 select pg_temp.ok(app.mudar_arroba('00000000-0000-0000-0000-0000000000f2', '@Joao.Outro') = 'joao.outro', 'o administrador muda o @');
+
+\echo '# equipe prevista: papel combinado antes do primeiro login'
+insert into app.equipe_prevista (empresa_id, email, papel, administrador, superior_email, nome) values
+  (:'emp', 'ana.prevista@bkm.test', 'analista', false, 'gestora.prevista@bkm.test', 'Ana Prevista'),
+  (:'emp', 'gestora.prevista@bkm.test', 'gestor', false, 'diretor@bkm.test', null),
+  (:'emp', 'errado.prevista@bkm.test', 'analista', false, 'diretor@bkm.test', null),
+  (:'emp', 'dir.prevista@bkm.test', 'diretor', true, null, null);
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$insert into app.equipe_prevista (empresa_id, email, papel) values (%L, 'eu@bkm.test', 'diretor')$$, :'emp'),
+  'só o administrador combina a equipe prevista');
+select pg_temp.ok((select count(*) from app.equipe_prevista) = 0, 'e só ele a vê');
+reset role;
+insert into auth.users values ('00000000-0000-0000-0000-0000000000e1', 'Ana.Prevista@bkm.test', '{"full_name":"Ana P."}', now());
+select pg_temp.ok((select papel = 'analista' and superior_id is null and nome = 'Ana Prevista' from app.membros where user_id = '00000000-0000-0000-0000-0000000000e1'),
+  'no primeiro login entra com o papel combinado; o superior que ainda não entrou fica para depois');
+insert into auth.users values ('00000000-0000-0000-0000-0000000000e2', 'gestora.prevista@bkm.test', '{"full_name":"Gestora"}', now());
+select pg_temp.ok((select papel = 'gestor' and superior_id = :'diretor' from app.membros where user_id = '00000000-0000-0000-0000-0000000000e2'),
+  'o superior que já está na empresa entra junto');
+select pg_temp.ok((select superior_id from app.membros where user_id = '00000000-0000-0000-0000-0000000000e1') = '00000000-0000-0000-0000-0000000000e2',
+  'quando o superior entra, quem responde a ele ganha o superior');
+insert into auth.users values ('00000000-0000-0000-0000-0000000000e3', 'errado.prevista@bkm.test', '{}', now());
+select pg_temp.ok((select papel from app.membros where user_id = '00000000-0000-0000-0000-0000000000e3') = 'basico',
+  'equipe prevista errada (analista abaixo de diretor) não impede o login: entra como básico');
+insert into auth.users values ('00000000-0000-0000-0000-0000000000e4', 'dir.prevista@bkm.test', '{}', now());
+select pg_temp.ok((select papel = 'diretor' and administrador from app.membros where user_id = '00000000-0000-0000-0000-0000000000e4'),
+  'a marca de administrador vem da equipe prevista');
+select pg_temp.ok((select count(*) from app.equipe_prevista where aplicada_em is not null) = 3, 'a equipe prevista guarda quando foi aplicada');
+select pg_temp.como(:'diretor');
 
 \echo '# menções com @ e e-mail das notificações'
 select pg_temp.ok(app.arrobas_no_texto('Fala @Gestor e @joao.silva. Copiar x@bkm.test e @@ ninguém') = array['gestor','joao.silva'],
@@ -3310,7 +3343,9 @@ update fluxo.listas set tipo = 'aberta', oculta = true where id = :'lnp';
 
 -- outra empresa: equipe, @, domínio e cadastros
 select pg_temp.como(:'intruso');
-select app.criar_empresa('Outra SA', 'Intruso') as emp_x \gset
+reset role;
+select app.criar_empresa('Outra SA', 'Intruso', :'intruso') as emp_x \gset
+select pg_temp.como(:'intruso');
 select pg_temp.falha(format($$insert into app.membros (empresa_id, user_id, papel, nome) values (%L, %L, 'analista', 'Pego')$$, :'emp_x', :'analista'),
   'o administrador de outra empresa não põe alguém da BKM na equipe dele');
 select pg_temp.falha(format($$select app.mudar_arroba(%L, 'pego')$$, :'analista'), 'nem muda o @ dele');
@@ -3545,5 +3580,24 @@ update app.reunioes set na_agenda = false where id = :'rb';
 reset role; set role service_role; select app.agenda_confirmar(:'rb', null); reset role;
 select pg_temp.como(:'analista');
 select pg_temp.ok((select acao = 'remover' and evento_id is null and situacao = 'sincronizada' from app.reuniao_agenda where reuniao_id = :'rb'), 'tirar da Agenda remove o evento');
+
+-- ---------------------------------------------------------------------
+\echo '# conferência protótipo × banco (4/nov/2026)'
+select pg_temp.como(:'analista');
+insert into app.terrenos (empresa_id, nome, responsavel_id, municipio_id, poligono_geojson)
+  values (:'emp', 'Só o nome', :'analista', :'sp', pg_temp.quadra(-47.31, -23.31)) returning id as tcurto \gset
+select pg_temp.ok((select origem_cadastro from app.terrenos where id = :'tcurto') = 'nao_informado',
+  'o cadastro curto (só o nome) nasce com a origem "não informado"');
+insert into app.matriculas (empresa_id, terreno_id, numero) values (:'emp', :'tcurto', '700.100');
+select pg_temp.ok((select cartorio is null from app.matriculas where numero = '700.100'), 'matrícula entra sem cartório (não informado)');
+select pg_temp.falha(format($$insert into app.matriculas (empresa_id, terreno_id, numero, cartorio) values (%L, %L, '700100', '9º RI')$$, :'emp', :'t1'),
+  'cartório em branco conta como o mesmo: o número não entra noutro terreno com cartório');
+select pg_temp.falha(format($$insert into app.matriculas (empresa_id, terreno_id, numero) values (%L, %L, '184.552')$$, :'emp', :'tcurto'),
+  'nem o número de outro terreno entra sem cartório');
+select pg_temp.ok((select certeza from app.buscar_duplicados(:'emp', '700100', '9º RI') limit 1) = 'certa', 'a busca de duplicados trata o cartório em branco como o mesmo');
+select app.salvar_terreno(:'tcurto', (select versao from app.terrenos where id = :'tcurto'),
+  jsonb_build_object('poligono_desenhado_geojson', pg_temp.quadra(-47.31, -23.31, 25))) as vcurto \gset
+select pg_temp.ok((select poligono_desenhado_geojson is not null from app.terrenos where id = :'tcurto'),
+  'a poligonal desenhada fica guardada quando a do terreno vira a soma dos lotes');
 
 \echo 'TODOS OS TESTES PASSARAM'

@@ -92,6 +92,42 @@ begin
   return v;
 end $$;
 
+-- Equipe prevista (4/nov/2026): sem a tela de equipe na primeira versão, o papel de cada um é
+-- combinado antes, pelo e-mail. No primeiro login a pessoa entra com o papel, a marca de
+-- administrador e o superior combinados, em vez de `basico`. O superior que ainda não entrou fica
+-- para depois: quando ele entrar, quem responde a ele ganha o superior.
+create table app.equipe_prevista (
+  empresa_id     uuid not null references app.empresas(id) on delete cascade,
+  email          text not null check (email = lower(email) and email ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$'),
+  papel          text not null check (papel in ('diretor','gestor','analista','leitura','basico')),
+  administrador  boolean not null default false,
+  superior_email text check (superior_email = lower(superior_email)),
+  nome           text,
+  aplicada_em    timestamptz,
+  primary key (empresa_id, email),
+  check (superior_email is distinct from email)
+);
+
+create or replace function app._aplicar_equipe_prevista(p_user uuid, p_empresa uuid, p_email text)
+returns void language plpgsql security definer set search_path = '' as $$
+declare e app.equipe_prevista; v_sup uuid;
+begin
+  select * into e from app.equipe_prevista where empresa_id = p_empresa and email = lower(p_email);
+  if found then
+    select u.user_id into v_sup from app.usuarios u join app.membros m on m.user_id = u.user_id and m.empresa_id = p_empresa
+    where u.email = e.superior_email;
+    update app.membros set papel = e.papel, administrador = e.administrador, nome = coalesce(nullif(trim(e.nome), ''), nome),
+      superior_id = v_sup
+    where empresa_id = p_empresa and user_id = p_user;
+    update app.equipe_prevista set aplicada_em = now() where empresa_id = p_empresa and email = e.email;
+  end if;
+  -- quem já entrou e responde a esta pessoa ganha o superior agora
+  update app.membros m set superior_id = p_user
+  from app.equipe_prevista q join app.usuarios u on u.email = q.email
+  where q.empresa_id = p_empresa and q.superior_email = lower(p_email)
+    and m.empresa_id = p_empresa and m.user_id = u.user_id and m.superior_id is null and m.papel = q.papel;
+end $$;
+
 -- Novo usuário no Auth: cria o perfil e, pelo domínio do e-mail, o membro básico.
 create or replace function app.tg_usuario_novo()
 returns trigger
@@ -110,6 +146,12 @@ begin
   if v_empresa is not null then
     insert into app.membros (empresa_id, user_id, papel, nome) values (v_empresa, new.id, 'basico', v_nome)
     on conflict do nothing;
+    -- equipe prevista com erro (superior de nível errado, p.ex.) nunca impede o login: fica básico
+    begin
+      perform app._aplicar_equipe_prevista(new.id, v_empresa, new.email);
+    exception when others then
+      raise warning 'Equipe prevista de % não aplicada: %', new.email, sqlerrm;
+    end;
   end if;
   return new;
 end $$;
@@ -265,6 +307,11 @@ create policy dominios_ver on app.empresa_dominios for select to authenticated
 create policy dominios_admin on app.empresa_dominios for all to authenticated
   using (app.eh_administrador(empresa_id)) with check (app.eh_administrador(empresa_id));
 -- Cada um vê o próprio perfil e o de quem está nas suas empresas (nomes, fotos e @ nas telas).
+alter table app.equipe_prevista enable row level security;
+create policy equipe_prevista_admin on app.equipe_prevista for all to authenticated
+  using (app.eh_administrador(empresa_id)) with check (app.eh_administrador(empresa_id));
+grant select, insert, update, delete on app.equipe_prevista to authenticated;
+create trigger t_aud after insert or update or delete on app.equipe_prevista for each row execute function app.tg_auditoria();
 create policy usuarios_ver on app.usuarios for select to authenticated
   using (user_id = auth.uid() or user_id in (select user_id from app.membros where empresa_id in (select app.minhas_empresas())));
 
@@ -272,7 +319,7 @@ grant select on app.usuarios to authenticated;
 grant select, insert, update, delete on app.empresa_dominios to authenticated;
 create trigger t_aud after insert or update or delete on app.empresa_dominios for each row execute function app.tg_auditoria();
 
-revoke execute on function app.gerar_arroba(text, uuid), app.tg_usuario_novo(), app.tg_usuario_login(),
+revoke execute on function app.gerar_arroba(text, uuid), app.tg_usuario_novo(), app.tg_usuario_login(), app._aplicar_equipe_prevista(uuid, uuid, text),
   app.hook_antes_de_criar_usuario(jsonb), app.mudar_arroba(uuid, text), app.tg_mencoes() from public;
 grant execute on function app.mudar_arroba(uuid, text) to authenticated;
 grant usage on schema app to supabase_auth_admin;
