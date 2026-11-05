@@ -54,6 +54,26 @@ export function SessaoProvider({ children }: { children: ReactNode }) {
     setDados({ usuario: u.data as Usuario | null, membro: m.data as unknown as (Membro & { empresas: Empresa }) | null });
   }
 
+  // Foto do Google: conta do Workspace com a foto restrita à organização não a manda no login.
+  // Logo depois do login (só aí a sessão traz o token do Google), pede a foto à API People em nome
+  // da própria pessoa, que sempre enxerga a própria foto, e grava se mudou.
+  async function buscarFoto(token: string, atual: string | null | undefined) {
+    try {
+      const r = await fetch('https://people.googleapis.com/v1/people/me?personFields=photos', { headers: { Authorization: `Bearer ${token}` } });
+      if (!r.ok) { console.warn('Foto do Google indisponível', r.status); return; }
+      const j = (await r.json()) as { photos?: { url?: string; default?: boolean; metadata?: { primary?: boolean } }[] };
+      const foto = (j.photos ?? []).filter((f) => f.url && !f.default).sort((a, b) => Number(!!b.metadata?.primary) - Number(!!a.metadata?.primary))[0];
+      if (!foto?.url || foto.url === atual) return;
+      const { error } = await supabase.rpc('salvar_minha_foto', { p_url: foto.url });
+      if (error) { console.warn(error.message); return; }
+      setDados((d) => (d?.usuario ? { ...d, usuario: { ...d.usuario, foto_url: foto.url! } } : d));
+    } catch (e) { console.warn('Foto do Google indisponível', e); }
+  }
+  const token = session?.provider_token;
+  const fotoAtual = dados?.usuario?.foto_url;
+  const temUsuario = !!dados?.usuario;
+  useEffect(() => { if (token && temUsuario) buscarFoto(token, fotoAtual); }, [token, temUsuario]);
+
   useEffect(() => {
     if (session?.user) carregar(session.user.id);
     else setDados(null);
