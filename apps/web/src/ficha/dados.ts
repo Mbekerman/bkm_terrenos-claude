@@ -143,22 +143,25 @@ export async function carregarFicha(empresa: string, codigo: string): Promise<Fi
 }
 
 /** completude: campos que importam para decidir a compra (proto.js › completude); [rótulo, aba] dos que faltam */
-export function completude(f: Ficha): { pct: number; faltam: [string, string][] } {
-  const c: [string, boolean, string][] = [
-    ['Endereço completo', !!(f.logradouro && f.numero && f.bairro), 'terreno'],
-    ['Zona', !!f.zona, 'terreno'],
-    ['Ponto no mapa', f.lat != null, 'terreno'],
-    ['Área adotada', f.area != null, 'terreno'],
-    ['Testada', f.testada != null, 'terreno'],
-    ['Ocupação', !!f.ocupacao && f.ocupacao !== 'nao_informado', 'terreno'],
-    ['Matrícula', f.qMat > 0, 'terreno'],
-    ['Inscrição e IPTU', f.qInsc > 0, 'terreno'],
-    ['Proprietário', f.temProprietario, 'terreno'],
-    ['Zoneamento', !!f.zonas, 'parametros'],
-    ['Visita técnica', f.infraNV === 0, 'infra'],
-    ['Valor pedido', !!f.valorPedido, 'comercial'],
-    ['Temperatura', !!f.temp, 'comercial'],
+/** [rótulo, aba, seção, campo]: a seção e o campo levam direto ao campo em edição (pedido do Moisés, 5/nov/2026) */
+export type Falta = [string, string, string?, string?];
+export function completude(f: Ficha): { pct: number; faltam: Falta[] } {
+  const end = !f.logradouro ? 'logradouro' : !f.numero ? 'numero' : 'bairro';
+  const c: [boolean, ...Falta][] = [
+    [!!(f.logradouro && f.numero && f.bairro), 'Endereço completo', 'terreno', 'loc', end],
+    [!!f.zona, 'Zona', 'terreno', 'loc', 'zona'],
+    [f.lat != null, 'Ponto no mapa', 'terreno', 'loc', 'busca-end'],
+    [f.area != null, 'Área adotada', 'terreno', 'areas', 'area'],
+    [f.testada != null, 'Testada', 'terreno', 'areas', 'testada_principal_m'],
+    [!!f.ocupacao && f.ocupacao !== 'nao_informado', 'Ocupação', 'terreno', 'fis', 'situacao_ocupacao'],
+    [f.qMat > 0, 'Matrícula', 'terreno', 'lotes', 'em-n'],
+    [f.qInsc > 0, 'Inscrição e IPTU', 'terreno', 'lotes', 'es-sql'],
+    [f.temProprietario, 'Proprietário', 'terreno', 'pessoas', 'p-n'],
+    [!!f.zonas, 'Zoneamento', 'parametros'],
+    [f.infraNV === 0, 'Visita técnica', 'infra'],
+    [!!f.valorPedido, 'Valor pedido', 'comercial'],
+    [!!f.temp, 'Temperatura', 'geral', 'temp'],
   ];
-  const ok = c.filter((x) => x[1]).length;
-  return { pct: Math.round((ok / c.length) * 100), faltam: c.filter((x) => !x[1]).map((x) => [x[0], x[2]]) };
+  const ok = c.filter((x) => x[0]).length;
+  return { pct: Math.round((ok / c.length) * 100), faltam: c.filter((x) => !x[0]).map((x) => x.slice(1) as Falta) };
 }
