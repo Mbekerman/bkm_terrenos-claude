@@ -8,6 +8,8 @@ import { Bi, Ic } from '../components/Moldura';
 import { corSub, type Fase as FaseMapa, type TerrenoMapa } from '../mapa/dados';
 import { carregarFicha, completude, FONTE_AREA, TEMP, TP_N, ZONA, type Ficha as F, type ProcF } from './dados';
 import MiniMapa from './MiniMapa';
+import AbaTerreno, { dadosArea, dadosEndereco, fonteSel, numInp, useEdicao, valoresArea } from './Terreno';
+import { CamposEndereco, END_CAMPOS, OPT } from './edicao';
 
 // Ficha do terreno, porte de tools/prototipo/proto.js › pgFicha (topo, abas, fiAbasCaber), proto_fases.js › linhaTopo,
 // proto_funil.js › linhaEtapas e proto_mod.js › abaGeral (Visão geral: Localização e Resumo). Mesma marcação e classes do
@@ -20,7 +22,7 @@ export const ABAS: [string, string][] = [['geral', 'Visão geral'], ['terreno', 
 /** links antigos caem na aba nova (CLAUDE.md, ficha em abas) */
 const ANTIGA: Record<string, string> = { cadastro: 'terreno', negociacao: 'comercial', urbanismo: 'parametros', fases: 'jornada', viabilidades: 'viabilidade' };
 export const abaN = (k: string | undefined | null) => { const a = ANTIGA[k ?? ''] ?? k ?? 'geral'; return ABAS.some((x) => x[0] === a) ? a : 'geral'; };
-const PROXIMAS = new Set(['terreno', 'comercial']);
+const PROXIMAS = new Set(['comercial']);
 
 const num = (v: number | null | undefined, d = 0) => (v == null ? '—' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: d }));
 const aberto = (p?: ProcF | null) => !!p && (p.status === 'ativo' || p.status === 'stand_by');
@@ -210,7 +212,16 @@ function corPino(f: F): [string, string] {
 }
 
 function VisaoGeral({ f, irAba, abrirMapa }: { f: F; irAba: (k: string) => void; abrirMapa: (lat: number, lng: number, z: number) => void }) {
+  const { edita } = useSessao();
+  const ed = useEdicao(f);
   const ni = <span className="ni">Não informado</span>;
+  const lapis = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" /></svg>;
+  const pe = <div className="kv-f"><button type="button" className="btn text sm" onClick={ed.fechar}>Cancelar</button><button className="btn primary sm" disabled={ed.gravando}>Salvar</button></div>;
+  /* edição direta no Resumo: grava nos mesmos campos da aba Terreno, pelo mesmo caminho (proto_mod.js › linE, linArea) */
+  const linE = (rot: string, val: ReactNode, id: string, abrir: () => void, corpo: () => ReactNode, montar: () => Promise<Record<string, unknown> | string> | Record<string, unknown> | string) => {
+    if (ed.edit === id) return <div className="kv editando" id={`sec-g-${id}`}><dt>{rot}</dt><dd><form className="kv-form" onSubmit={(ev) => ed.salvar(ev, montar)}>{corpo()}{pe}</form></dd></div>;
+    return lin(rot, val, edita ? <button className="kv-ed" aria-label={`Editar ${rot.toLowerCase()}`} title="Editar" onClick={abrir}>{lapis}</button> : undefined);
+  };
   const ir = (k: string, titulo: string) => (
     <button className="kv-ed kv-ir" title={titulo} aria-label={titulo} onClick={() => irAba(k)}><Ic n="fwd" s={16} /></button>
   );
@@ -240,10 +251,19 @@ function VisaoGeral({ f, irAba, abrirMapa }: { f: F; irAba: (k: string) => void;
       </div>
       <div className="geral-c">
         <section className="sec g-res"><div className="sec-h"><h2>Resumo</h2></div><div className="sec-b"><dl className="kvl">
-          {lin('Endereço', end)}
-          {lin('Município e região', mun)}
+          {linE('Endereço', end, 'end', () => ed.abrir('end', END_CAMPOS),
+            () => <CamposEndereco f={f} vals={ed.vals} mudar={ed.mudar} mun={ed.mun} setMun={ed.setMun} />,
+            () => dadosEndereco(f, ed, END_CAMPOS))}
+          {linE('Município e região', mun, 'reg', () => ed.abrir('reg', ['zona']),
+            () => <div className="kv-campos"><div className="field"><label htmlFor="g-zona">Zona</label><select id="g-zona" value={ed.vals.zona ?? ''} onChange={(ev) => ed.mudar('zona', ev.target.value)}>
+              <option value="">Não informado</option>{Object.entries(OPT.zona).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div></div>,
+            () => ({ zona: ed.vals.zona || null }))}
           {lin('Zoneamento', f.zonas, ir('parametros', 'Ver os parâmetros urbanísticos'))}
-          {lin('Área adotada', f.area != null ? dois(m2(f.area), f.fonteArea ? FONTE_AREA[f.fonteArea] : null) : '')}
+          {linE('Área adotada', f.area != null ? dois(m2(f.area), f.fonteArea ? FONTE_AREA[f.fonteArea] : null) : '', 'area', () => ed.abrir('area', [], valoresArea(f.t)),
+            () => <div className="kv-campos"><div className="field"><label htmlFor="g-fonteArea">Área adotada</label>{fonteSel(ed, 'g-fonteArea', 'Nenhuma')}</div>
+              {numInp(ed, 'area_documental_m2', 'Documental (m²)', 'm²', 'g')}{numInp(ed, 'area_cadastral_m2', 'Cadastral (m²)', 'm²', 'g')}
+              {numInp(ed, 'area_levantamento_m2', 'Levantamento (m²)', 'm²', 'g')}{numInp(ed, 'estimativa', 'Estimativa (m²)', 'm²', 'g')}</div>,
+            () => dadosArea(f, ed.vals))}
           {lin('Unidades do estudo válido', f.unidades != null ? `${num(f.unidades)} unidades` : '', ir('viabilidade', 'Ver os estudos de viabilidade'))}
           {lin('VGV do estudo válido', f.vgv != null ? milhoes(f.vgv) : '')}
           {lin('Distância do metrô ou trem', est, ir('entorno', 'Ver o entorno'))}
@@ -270,6 +290,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa }: {
   const c = completude(f);
   const meta: ReactNode[] = [...faseTxt(f), `Cadastrado em ${fd(f.dataIdent ?? f.criadoEm)}`];
   const corpo = aba === 'geral' ? <VisaoGeral f={f} irAba={irAba} abrirMapa={abrirMapa} />
+    : aba === 'terreno' ? <AbaTerreno key={f.id} f={f} />
     : <section className="sec"><div className="empty">{PROXIMAS.has(aba) ? 'Esta aba está sendo portada do protótipo e entra nas próximas entregas.' : 'Esta aba entra depois da primeira versão.'}</div></section>;
   return (
     <div className="ficha-wrap"><div className="ficha-main">

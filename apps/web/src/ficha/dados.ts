@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 // Dados da ficha do terreno (porte de pgFicha, abaGeral e completude do protótipo: tools/prototipo/proto.js e proto_mod.js).
 // Tudo vem do banco pela RLS da empresa; aqui só se junta o que o topo, as abas e a Visão geral mostram.
 
-type R = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+export type R = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 export interface EtapaF { k: string; nome: string; subs: { k: string; nome: string }[] }
 export interface FaseF { k: string; nome: string; entrada: boolean; ativo: boolean }
@@ -12,6 +12,8 @@ export interface Transicao { processo: string; deEtapa: string | null; paraEtapa
 
 export interface Ficha {
   id: string; codigo: string; nome: string; versao: number;
+  /** a linha de app.terrenos, para as seções editáveis (nomes das colunas do banco) */
+  t: R;
   logradouro: string | null; numero: string | null; bairro: string | null; municipio: string | null; uf: string | null; zona: string | null;
   lat: number | null; lng: number | null; poly: [number, number][] | null;
   area: number | null; fonteArea: string | null; testada: number | null; ocupacao: string | null;
@@ -67,7 +69,7 @@ export async function carregarFicha(empresa: string, codigo: string): Promise<Fi
   const x = v.data as R, id = x.id as string, neg = x.negociacao_id as string | null;
   const cnt = { count: 'exact' as const, head: true };
   const [t, u, of1, cor, est, bus, pn, fs, es, ss, ps, mat, ins, pes, inf, itI, prop, reu, viab, mas, docs] = await Promise.all([
-    supabase.from('terrenos').select('latitude,longitude,poligono_geojson,testada_principal_m,situacao_ocupacao,topo_perfil,topo_declividade_pct,topo_desnivel_m,criado_em').eq('id', id).single(),
+    supabase.from('terrenos').select('*').eq('id', id).single(),
     x.responsavel_id ? supabase.from('usuarios').select('nome,email,foto_url').eq('user_id', x.responsavel_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
     supabase.from('ofertas').select('valor_pedido,data_oferta', { count: 'exact' }).eq('terreno_id', id).order('data_oferta').order('criado_em').limit(1),
     supabase.from('terreno_corretores').select('corretores(imobiliaria,pessoas(nome_razao_social))').eq('terreno_id', id).eq('principal', true).limit(1),
@@ -117,7 +119,7 @@ export async function carregarFicha(empresa: string, codigo: string): Promise<Fi
   const e1 = (est.data as R[])[0];
   const ru = u.data as R | null;
   return {
-    id, codigo: x.codigo, nome: x.nome ?? x.codigo, versao: x.versao,
+    id, codigo: x.codigo, nome: x.nome ?? x.codigo, versao: tr.versao ?? x.versao, t: tr,
     logradouro: x.logradouro, numero: x.numero, bairro: x.bairro, municipio: x.municipio, uf: x.uf, zona: x.zona,
     lat: tr.latitude, lng: tr.longitude, poly: anel(tr.poligono_geojson),
     area: x.area_adotada_m2, fonteArea: x.fonte_area_adotada, testada: tr.testada_principal_m, ocupacao: tr.situacao_ocupacao,
