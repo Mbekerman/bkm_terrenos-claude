@@ -60,7 +60,7 @@ export function BotaoMais({ f, base, abrirConc, escolherBase, camada, alternarCa
         <button type="button" role="menuitem" onClick={() => { mudar(false); abrirConc(); }}><Ic n="filtro" s={18} /><span className="mm-l">Filtro da concorrência</span>{n > 0 && <span className="mf-n">{n}</span>}</button>
         <button type="button" role="menuitem" onClick={() => { mudar(false); regua(); }}><Ic n="regua" s={18} /><span className="mm-l">Régua</span></button>
         <div className="mm-t" role="presentation">Camadas</div>
-        {cam('renda', 'Renda familiar (setores)')}{cam('dens', 'Densidade demográfica (setores)')}
+        {cam('renda', 'Mapa de Renda')}{cam('dens', 'Mapa Demográfico')}
         <div className="mm-t" role="presentation">Tipo de mapa</div>
         {tipo('mapa', 'Mapa')}{tipo('satelite', 'Satélite')}
       </div>}

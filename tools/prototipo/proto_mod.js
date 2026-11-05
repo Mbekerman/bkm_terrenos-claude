@@ -201,7 +201,7 @@ function mpTipoEscolher(v){v=v==='satelite'?'satelite':'mapa';if(typeof rdCamada
 /* botões do canto do mapa: minha localização e tela cheia (o controle de câmera do Google saiu; decisão do Moisés, 23/out/2026).
    Sobem acima do cartão do terreno e do aviso de desenho quando eles ocupam o pé do mapa. */
 function mpCtrlHtml(){const on=document.body.classList.contains('mp-cheia');
-  return `${GG?`<button type="button" class="mp-cb sv-x" data-a="sv-fechar" title="Fechar o Street View (Esc)" aria-label="Fechar o Street View">${ic('close',22)}</button>`:''}<div id="mp-ctrl" class="mp-ctrl"><button type="button" class="mp-cb" data-a="mp-eu" title="Minha localização" aria-label="Centralizar na minha localização">${ic('eu',22)}</button>
+  return `${GG?`<button type="button" class="mp-cb sv-x" data-a="sv-fechar" title="Fechar o Street View (Esc)" aria-label="Fechar o Street View">${ic('close',22)}</button>`:''}<div id="mp-ctrl" class="mp-ctrl"><button type="button" class="mp-cb mp-rg" data-a="rg-abrir" aria-pressed="${UI.mpModo==='regua'}" title="Régua" aria-label="Régua">${ic('regua',22)}</button><button type="button" class="mp-cb" data-a="mp-eu" title="Minha localização" aria-label="Centralizar na minha localização">${ic('eu',22)}</button>
     <button type="button" class="mp-cb" data-a="mp-cheia" aria-pressed="${on}" title="${on?'Sair da tela cheia':'Tela cheia'}" aria-label="${on?'Sair da tela cheia':'Tela cheia'}">${ic(on?'telaSair':'tela',22)}</button></div>`}
 /* o bonequinho do Street View fica sempre no mesmo lugar do canto (64 px acima do pé do mapa, 32 de altura): reserva o lugar
    dele mesmo antes de o Google desenhá-lo ou enquanto o mapa muda de tamanho (tela cheia), senão a tela cheia cai em cima dele */

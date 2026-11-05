@@ -156,8 +156,8 @@ function rdMenu(abrir){const w=$('.mapa-area .mp-cam');if(!w)return;w.querySelec
   w.insertAdjacentHTML('beforeend',`<div class="mp-cam-m" role="menu" aria-label="Camadas">${it('renda','rd-ic','Renda familiar')}${it('dens','ds-ic','Densidade demográfica')}${it(null,'cam-off','Nenhuma')}</div>`)}
 document.addEventListener('pointerdown',e=>{if($('.mp-cam-m')&&!e.target.closest('.mp-cam'))rdMenu(false)},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('.mp-cam-m')){rdMenu(false);e.preventDefault();e.stopImmediatePropagation()}},true);
-function rdLegItem(){const k=rdCamada();return `<button type="button" class="lg-i" data-a="mp-renda" aria-pressed="${k==='renda'}"><span class="lg-poi"><span class="rd-ic"></span></span>Renda familiar (setores)</button>`
-  +`<button type="button" class="lg-i" data-a="mp-dens" aria-pressed="${k==='dens'}"><span class="lg-poi"><span class="ds-ic"></span></span>Densidade demográfica (setores)</button>`}
+function rdLegItem(){const k=rdCamada();return `<button type="button" class="lg-i" data-a="mp-renda" aria-pressed="${k==='renda'}"><span class="lg-poi"><span class="rd-ic"></span></span>Mapa de Renda</button>`
+  +`<button type="button" class="lg-i" data-a="mp-dens" aria-pressed="${k==='dens'}"><span class="lg-poi"><span class="ds-ic"></span></span>Mapa Demográfico</button>`}
 function rdLigar(k){const antes=rdCamada();k=CAMADAS_SETOR[k]?k:null;if(k===antes)return;UI.mpSetor=k;rdGuardar();
   if(antes)rdCamadaDesligar();
   /* sem camada, o tipo de mapa escolhido nos três pontinhos; com renda ou densidade, Satélite (pedido do Moisés, 5/nov/2026) */
