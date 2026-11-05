@@ -349,8 +349,10 @@ function modoBanner(){const m=UI.mpModo;if(!m)return '';
   if(m==='poi')return `<span>Clique no mapa para marcar o ponto de interesse.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
   if(m==='marcar')return `<span>Clique no mapa para localizar <b>${esc(t?.nome)}</b>.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
   if(m==='desenhar'||m==='editar'){const n=(UI.desenho||[]).length,a=areaPoly(UI.desenho),tq=TOQUE(),seg=tq?'toque e segure':'clique com o botão direito';
-    if(!tq)return ''; /* desktop: sem janelinha, no desenho e na edição (decisão do Moisés, 4/nov/2026): Enter ou dois cliques no mapa salvam,
-       Esc ou dois cliques fora do mapa cancelam; Desfazer e Cancelar ficam no menu do ponto (clique direito), Ctrl+Z e Esc */
+    /* desktop, no desenho: uma barra fina na base do mapa com Cancelar e Concluir, alternativa ao Enter e aos dois cliques
+       (pedido do Moisés, 5/nov/2026). Na edição continua sem barra (decisão de 4/nov/2026): clique fora salva, Esc cancela;
+       Desfazer e Cancelar ficam no menu do ponto (clique direito), Ctrl+Z e Esc */
+    if(!tq)return m==='desenhar'?`<span class="mp-q mp-fina">${n} ponto${n===1?'':'s'}${a?` · ${m2(Math.round(a))}`:''}</span><button class="btn sm text" data-a="mp-sair">Cancelar</button><button class="btn sm primary" data-a="mp-concluir" ${n>=3?'':'disabled'} title="${n>=3?'Salvar a poligonal (Enter)':'Marque pelo menos 3 pontos'}">Concluir</button>`:'';
     /* celular: só Cancelar e Concluir, sem texto (decisão do Moisés, 24/out/2026); Desfazer fica no menu do ponto */
     if(m==='editar'&&tq)return `<button class="btn sm text" data-a="mp-sair">Cancelar</button><button class="btn sm primary" data-a="mp-concluir">Concluir</button>`;
     const dica=m==='editar'?`arraste os pontos; ${seg} num ponto para excluí-lo ou adicionar outro depois dele. ${tq?'Toque':'Clique'} fora da poligonal para concluir.`
@@ -459,7 +461,7 @@ function pontoNaTela(lat,lng){const M=edMapa();if(!M)return null;if(GG)return ty
 function desDesfazer(){const h=UI.desHist||[];if(!h.length)return false;UI.desenho=h.pop();UI.vSel=null;UI.vMenu=false;UI.vMover=false;mpRefresh();return true}
 function desCancelar(){const des=UI.mpModo==='desenhar';Object.assign(UI,{mpModo:null,nvDesenho:false,desenho:null,desHist:null,vSel:null,vMenu:false,vMover:false});mpRefresh();toast(des?'Desenho cancelado.':'Edição cancelada, poligonal sem mudanças.')}
 /* desenho no desktop sem barra: só um aviso passageiro ao começar */
-function desAvisoInicio(){if(!TOQUE())toast('Clique no mapa para marcar os pontos. Enter ou dois cliques salvam; Esc cancela.')}
+function desAvisoInicio(){if(!TOQUE())toast('Clique no mapa para marcar os pontos. Enter, dois cliques ou Concluir salvam; Esc cancela.')}
 function desSalvar(){if((UI.desenho||[]).length<3){toast('Marque pelo menos 3 pontos.',true);return}concluirDesenho()}
 function vAcao(a){const i=UI.vSel,p=UI.desenho||[];
   if(a==='v-desfazer'){if(!desDesfazer())vFecharMenu();return}
