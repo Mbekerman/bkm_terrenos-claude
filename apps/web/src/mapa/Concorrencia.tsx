@@ -172,7 +172,7 @@ function Resumo({ e }: { e: Emp }) {
 }
 
 /** card do empreendimento tocado */
-/* o card fecha sozinho 2 s depois que o mouse sai dele (só depois de ter entrado; nunca no toque nem com a tabela completa aberta);
+/* o card fecha sozinho 1,5 s depois que o mouse sai dele (só depois de ter entrado; nunca no toque nem com a tabela completa aberta);
    o olhinho ao lado do X o fixa aberto, guardado no navegador (pedido do Moisés, 5/nov/2026) */
 const MK_FKEY = 'bkm-terrenos-concorrencia-fixa';
 const lerFixa = () => { try { return localStorage.getItem(MK_FKEY) === '1'; } catch { return false; } };
@@ -189,7 +189,7 @@ export function CaixaEmp({ e, fechar, tabela, pausado }: { e: Emp; fechar: () =>
       const el = caixa.current, v = vivo.current;
       if (!el || v.fixa || v.pausado || el.matches(':hover') || el.querySelector(':focus-visible')) return;
       v.fechar();
-    }, 2000);
+    }, 1500);
   };
   const fixar = () => { const f = !fixa; setFixa(f); try { localStorage.setItem(MK_FKEY, f ? '1' : '0'); } catch { /* sem navegador */ } clearTimeout(t.current); };
   const m2 = mkM2(e.preco, e.area), vso = mkVso(e.vendas, e.estoque), pct = e.unidades ? Math.round((100 * e.estoque) / e.unidades) : 0, dias = mkDias();
