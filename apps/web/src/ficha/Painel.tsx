@@ -16,11 +16,11 @@ import { useComercial } from './Comercial';
 // No banco, os logs vêm de app.auditoria (o texto se monta aqui, pelas colunas) e de processo_transicoes.
 
 const CH = 'bkm-terrenos-painel';
-export interface PN { aberto: boolean; aba: 'logs' | 'acoes'; users: string[]; per: { k: string; ini?: string; fim?: string } }
+export interface PN { aberto: boolean; aba: 'acoes' | 'tarefas' | 'logs'; users: string[]; per: { k: string; ini?: string; fim?: string } }
 function lerPN(): PN {
   let x: Partial<PN> = {};
   try { x = JSON.parse(localStorage.getItem(CH) || 'null') ?? {}; } catch { /* sem navegador */ }
-  return { aberto: x.aberto !== false, aba: x.aba === 'acoes' ? 'acoes' : 'logs', users: Array.isArray(x.users) ? x.users : [], per: x.per && typeof x.per === 'object' ? x.per : { k: '30d' } };
+  return { aberto: x.aberto !== false, aba: x.aba === 'logs' || x.aba === 'tarefas' ? x.aba : 'acoes', users: Array.isArray(x.users) ? x.users : [], per: x.per && typeof x.per === 'object' ? x.per : { k: '30d' } };
 }
 let PN_ATUAL = lerPN();
 const ouvintes = new Set<() => void>();
@@ -450,8 +450,57 @@ function useAcoes(f: F, irAba: (k: string) => void): Acao[] {
   return L;
 }
 
+// Tarefas abertas do terreno (o quadro do terreno no esquema fluxo), da mais urgente
+// à sem prazo, como no protótipo. O cartão abre quando as tarefas forem portadas.
+export interface Tar { id: string; codigo: string; titulo: string; prazo: string | null; prioridade: string; lista: string; resp: string | null }
+function useTarefas(f: F) {
+  const { empresa } = useSessao();
+  return useQuery({
+    queryKey: ['ficha-tarefas', f.id],
+    enabled: !!empresa,
+    queryFn: async (): Promise<Tar[]> => {
+      const fl = supabase.schema('fluxo');
+      const q = await fl.from('quadros').select('id').eq('objeto_tipo', 'terreno').eq('objeto_id', f.id);
+      if (q.error) throw q.error;
+      const qids = (q.data ?? []).map((x: { id: string }) => x.id);
+      if (!qids.length) return [];
+      const t = await fl.from('tarefas').select('id,codigo,titulo,prazo,prioridade,lista_id,responsavel_id')
+        .in('quadro_id', qids).is('concluida_em', null).is('arquivada_em', null).eq('modelo', false);
+      if (t.error) throw t.error;
+      const ts = (t.data ?? []) as { id: string; codigo: string; titulo: string; prazo: string | null; prioridade: string; lista_id: string; responsavel_id: string | null }[];
+      const lids = [...new Set(ts.map((x) => x.lista_id))], uids = [...new Set(ts.map((x) => x.responsavel_id).filter(Boolean))] as string[];
+      const [ls, us] = await Promise.all([
+        lids.length ? fl.from('listas').select('id,nome').in('id', lids) : Promise.resolve({ data: [], error: null }),
+        uids.length ? supabase.from('usuarios').select('user_id,nome,email').in('user_id', uids) : Promise.resolve({ data: [], error: null }),
+      ]);
+      const ln = new Map(((ls.data ?? []) as { id: string; nome: string }[]).map((x) => [x.id, x.nome]));
+      const un = new Map(((us.data ?? []) as { user_id: string; nome: string | null; email: string | null }[]).map((x) => [x.user_id, x.nome || x.email || null]));
+      return ts.map((x) => ({ id: x.id, codigo: x.codigo, titulo: x.titulo, prazo: x.prazo, prioridade: x.prioridade, lista: ln.get(x.lista_id) ?? '', resp: x.responsavel_id ? un.get(x.responsavel_id) ?? null : null }))
+        .sort((a, b) => String(a.prazo ?? '9').localeCompare(String(b.prazo ?? '9')));
+    },
+  });
+}
+
+function Tarefas({ q }: { q: ReturnType<typeof useTarefas> }) {
+  const K = q.data ?? [], hoje = hojeISO();
+  return (
+    <div className="pn-grupo"><div className="pn-gt">Tarefas em aberto <span className="n">{K.length}</span></div>
+      {q.isLoading ? <div className="empty">Carregando…</div> : q.error ? <div className="empty">Não foi possível ler as tarefas.</div> : K.length ? K.map((k) => {
+        const late = !!k.prazo && k.prazo < hoje;
+        return (
+          <div key={k.id} className="pn-tar">
+            <div className="pn-tc"><span className="pn-tt">{k.titulo}{k.prioridade === 'alta' && <> <span className="chip warn" style={{ height: 20 }}>Alta</span></>}</span>
+              <span className={`pn-tm ${late ? 'late' : ''}`}>{k.resp || 'Sem responsável'} · {k.prazo ? (late ? 'atrasada desde ' : 'prazo ') + fd(k.prazo) : 'sem prazo'}{k.lista ? ' · ' + k.lista : ''}</span></div>
+          </div>
+        );
+      }) : <div className="empty">Nenhuma tarefa aberta.</div>}
+    </div>
+  );
+}
+
 const PN_IC = {
   logs: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></svg>,
+  tarefas: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M8 12.2l2.7 2.6L16 9.5" /></svg>,
   acoes: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11" /><path d="M3.5 6l1.2 1.2L6.8 5M3.5 12l1.2 1.2 2.1-2.2M3.5 18l1.2 1.2 2.1-2.2" /></svg>,
   fechar: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M13 6l6 6-6 6M5 6l6 6-6 6" /></svg>,
   abrir: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 6l-6 6 6 6M19 6l-6 6 6 6" /></svg>,
@@ -466,28 +515,30 @@ export default function Painel({ f, irAba }: { f: F; irAba: (k: string) => void 
   const [pn, set] = usePN();
   const { logs } = useLogs(f);
   const acoes = useAcoes(f, irAba);
-  const nL = logs.length, nA = acoes.length;
+  const tq = useTarefas(f);
+  const nL = logs.length, nA = acoes.length, nT = tq.data?.length ?? 0;
   const b = useRef<HTMLDivElement>(null);
   if (!pn.aberto) return (
-    <aside className="pn pn-min" aria-label="Logs e ações">
+    <aside className="pn pn-min" aria-label="Ações, tarefas e logs">
       <button className="pn-rb" title="Expandir painel" aria-label="Expandir painel" onClick={() => set({ aberto: true })}>{PN_IC.abrir}</button>
-      <button className="pn-rb" title="Logs" aria-label={`Logs, ${nL} registros`} onClick={() => set({ aba: 'logs', aberto: true })}>{PN_IC.logs}<span className="pn-badge">{nL}</span></button>
       <button className="pn-rb" title="Ações" aria-label={`Ações, ${nA} pendências`} onClick={() => set({ aba: 'acoes', aberto: true })}>{PN_IC.acoes}<span className="pn-badge">{nA}</span></button>
+      <button className="pn-rb" title="Tarefas" aria-label={`Tarefas, ${nT} em aberto`} onClick={() => set({ aba: 'tarefas', aberto: true })}>{PN_IC.tarefas}<span className="pn-badge">{nT}</span></button>
+      <button className="pn-rb" title="Logs" aria-label={`Logs, ${nL} registros`} onClick={() => set({ aba: 'logs', aberto: true })}>{PN_IC.logs}<span className="pn-badge">{nL}</span></button>
     </aside>
   );
   return (
-    <aside className="pn" aria-label="Logs e ações">
+    <aside className="pn" aria-label="Ações, tarefas e logs">
       {procsAvanco(f).length > 0 && <div className="pn-adv"><Avancos f={f} irAba={irAba} /></div>}
       <div className="pn-h">
         <div className="seg" role="tablist" aria-label="Painel">
-          {([['logs', 'Logs', nL], ['acoes', 'Ações', nA]] as const).map(([k, l, q]) => (
+          {([['acoes', 'Ações', nA], ['tarefas', 'Tarefas', nT], ['logs', 'Logs', nL]] as const).map(([k, l, q]) => (
             <button key={k} role="tab" aria-pressed={pn.aba === k} aria-selected={pn.aba === k} onClick={() => set({ aba: k })}>{l} <span className="pn-q">{q}</span></button>
           ))}
         </div>
         <button className="iconbtn" title="Recolher painel" aria-label="Recolher painel" onClick={() => set({ aberto: false })}>{PN_IC.fechar}</button>
       </div>
       <div className="pn-b" ref={b}>
-        {pn.aba === 'logs' ? <Logs f={f} pn={pn} set={set} irAba={irAba} /> : (
+        {pn.aba === 'logs' ? <Logs f={f} pn={pn} set={set} irAba={irAba} /> : pn.aba === 'tarefas' ? <Tarefas q={tq} /> : (
           <div className="pn-grupo"><div className="pn-gt">Próximas ações <span className="n">{acoes.length}</span></div>
             {acoes.length ? acoes.map((x, i) => (
               <div key={i} className={`pn-acao ${x.sev}`}><span className="pn-ai"><Ic n={x.i} s={16} /></span>
