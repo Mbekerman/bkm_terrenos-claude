@@ -17,6 +17,7 @@ export interface Nv {
   ignorados?: Sobre[];            // "É outro terreno, cadastrar mesmo assim"
   local: Local | null; frentes: Frente[] | null; buscando: boolean;
   nome?: string;
+  pri?: number;                   // a frente escolhida como acesso principal (índice em frentes)
 }
 interface Estado { aberto: boolean; kmz: ItemKml[] | null; nv: Nv | null; sql: LoteSql[] | null; desenho: { p0?: P; n: number } | null; erro?: string }
 

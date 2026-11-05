@@ -5000,6 +5000,11 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 :root[data-tema="escuro"] .mp-busca-x { color: #c4c7c5 } :root[data-tema="escuro"] .mp-busca-x:hover { background: rgba(149,153,160,0.12) }
 .mapa-area .mp-busca input:focus-visible { outline: none } .mapa-area .mp-busca:has(input:focus-visible) { outline: 2px solid #0b57d0; outline-offset: 0 }
 :root[data-tema="escuro"] .mapa-area .mp-busca:has(input:focus-visible) { outline-color: #a8c7fa }
+/* olhinho do card da concorrência: fixa o card aberto (pedido do Moisés, 5/nov/2026) */
+.mk-box .mk-fixar { color: #747775 }
+.mk-box .mk-fixar[aria-pressed="true"] { background: #c2e7ff; color: #001d35 }
+:root[data-tema="escuro"] .mk-box .mk-fixar { color: #c4c7c5 }
+:root[data-tema="escuro"] .mk-box .mk-fixar[aria-pressed="true"] { background: #004a77; color: #c2e7ff }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

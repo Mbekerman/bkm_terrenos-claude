@@ -5675,6 +5675,11 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 :root[data-tema="escuro"] .mp-busca-x { color: #c4c7c5 } :root[data-tema="escuro"] .mp-busca-x:hover { background: rgba(149,153,160,0.12) }
 .mapa-area .mp-busca input:focus-visible { outline: none } .mapa-area .mp-busca:has(input:focus-visible) { outline: 2px solid #0b57d0; outline-offset: 0 }
 :root[data-tema="escuro"] .mapa-area .mp-busca:has(input:focus-visible) { outline-color: #a8c7fa }
+/* olhinho do card da concorrência: fixa o card aberto (pedido do Moisés, 5/nov/2026) */
+.mk-box .mk-fixar { color: #747775 }
+.mk-box .mk-fixar[aria-pressed="true"] { background: #c2e7ff; color: #001d35 }
+:root[data-tema="escuro"] .mk-box .mk-fixar { color: #c4c7c5 }
+:root[data-tema="escuro"] .mk-box .mk-fixar[aria-pressed="true"] { background: #004a77; color: #c2e7ff }
 </style>
 <header class="top">
   <div class="top-in">
@@ -9713,9 +9718,14 @@ function lugarHtml(p){const revs=(p.reviews||[]).slice(0,3),nota=p.rating!=null?
   ${revs.length?`<ul class="lug-revs">${revs.map(r=>{const a=r.authorAttribution||{},txt=String(r.text||'');return `<li><div class="lug-ra">${a.uri?`<a href="${esc(a.uri)}" target="_blank" rel="noopener">${esc(a.displayName||'Usuário do Google')}</a>`:esc(a.displayName||'Usuário do Google')} <span class="lug-est" aria-label="nota ${r.rating}">${estrelas(r.rating||0)}</span> <span class="muted">${esc(r.relativePublishTimeDescription||'')}</span></div>${txt?`<div class="lug-rt">${esc(txt.length>220?txt.slice(0,220).trim()+'…':txt)}</div>`:''}</li>`}).join('')}</ul>`:''}
   ${p.googleMapsURI?`<a class="lug-l" href="${esc(p.googleMapsURI)}" target="_blank" rel="noopener">Ver todas no Google Maps</a>`:''}<div class="lug-g muted">Avaliações do Google</div></div>`}
 /* conteúdo como nó, com o X ligado direto (o InfoWindow pode não deixar o clique subir até o documento) */
-function lugarConteudo(h){const d=document.createElement('div');d.innerHTML=h;d.querySelector('.lug-x')?.addEventListener('click',e=>{e.stopPropagation();lugarFechar()});gInfo.setContent(d)}
-function lugarFechar(){if(gInfo&&gInfo.__lug){gInfo.close();gInfo.__lug=false;return true}return false}
-async function lugarAbrir(id,ll){if(!gInfo||!MAPA)return;gInfo.__lug=true;lugarConteudo(`<div class="lug muted"><button type="button" class="lug-x" data-a="lug-fechar" aria-label="Fechar">${ic('close',18)}</button>Carregando avaliações…</div>`);gInfo.setPosition(ll);gInfo.open({map:MAPA});
+function lugarConteudo(h){const d=document.createElement('div');d.innerHTML=h;d.querySelector('.lug-x')?.addEventListener('click',e=>{e.stopPropagation();lugarFechar()});gInfo.setContent(d);setTimeout(()=>lugarSaida(d),0)}
+/* o quadro fecha sozinho 1 s depois que o mouse sai dele (só depois de ter entrado; no toque, não; pedido do Moisés, 5/nov/2026) */
+let LUG_T=null;
+function lugarSaida(d){if(TOQUE())return;const c=d.closest('.gm-style-iw-c');if(!c||c.__lugH)return;c.__lugH=true;
+  c.addEventListener('pointerenter',e=>{if(e.pointerType!=='mouse')return;clearTimeout(LUG_T);c.__dentro=true});
+  c.addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse'||!c.__dentro)return;clearTimeout(LUG_T);LUG_T=setTimeout(lugarFechar,1000)})}
+function lugarFechar(){clearTimeout(LUG_T);if(gInfo&&gInfo.__lug){gInfo.close();gInfo.__lug=false;return true}return false}
+async function lugarAbrir(id,ll){if(!gInfo||!MAPA)return;clearTimeout(LUG_T);gInfo.__lug=true;lugarConteudo(`<div class="lug muted"><button type="button" class="lug-x" data-a="lug-fechar" aria-label="Fechar">${ic('close',18)}</button>Carregando avaliações…</div>`);gInfo.setPosition(ll);gInfo.open({map:MAPA});
   try{let p=LUGARES[id];if(!p){const pl=new gLib.places.Place({id});await pl.fetchFields({fields:['displayName','formattedAddress','rating','userRatingCount','reviews','googleMapsURI']});
       p=LUGARES[id]={displayName:pl.displayName,formattedAddress:pl.formattedAddress,rating:pl.rating,userRatingCount:pl.userRatingCount,googleMapsURI:pl.googleMapsURI,
         reviews:(pl.reviews||[]).map(r=>({rating:r.rating,text:r.text,relativePublishTimeDescription:r.relativePublishTimeDescription,authorAttribution:r.authorAttribution&&{displayName:r.authorAttribution.displayName,uri:r.authorAttribution.uri}}))}}
@@ -12218,19 +12228,26 @@ function nvSobreHtml(fechar){const nv=UI.nv,s=nv.sobre,ro=UI.role==='Leitura',ig
 // nome de referência: o logradouro sem o tipo (Rua, Avenida...) e sem o número (decisão do Moisés, 4/nov/2026)
 const NV_TIPO_LOG=/^(rua|r\.|avenida|av\.?|alameda|al\.?|travessa|trav\.?|tv\.?|estrada|estr\.?|est\.|pra[çc]a|p[çc]a\.?|rodovia|rod\.?|largo|lgo\.?|viela|via|viaduto|ladeira|passagem|beco|vila|parque|pq\.?|servid[ãa]o|acesso|caminho|marginal)\s+/i;
 const nomeRef=log=>(log||'').trim().replace(NV_TIPO_LOG,'').replace(/,.*$/,'').trim();
+// nome padrão: "Bairro - Rua" (rua sem o tipo e sem número); repetido na base ganha 2, 3... (o primeiro fica sem número; pedido do Moisés, 5/nov/2026)
+const nomeNorm=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+function nomeUnico(base,nomes){const b=nomeNorm(base);if(!b)return base;let n=0;
+  nomes.forEach(x=>{const y=nomeNorm(x);if(y===b)n=Math.max(n,1);else if(y.startsWith(b+' ')&&/^\d+$/.test(y.slice(b.length+1)))n=Math.max(n,+y.slice(b.length+1))});
+  return n?base+' '+(n+1):base}
+const nomePadrao=(bairro,log)=>{const base=[(bairro||'').trim(),nomeRef(log)].filter(Boolean).join(' - ');return nomeUnico(base,S.terrenos.map(t=>t.nome))};
 // passo 2: só o nome de referência. Município, endereço e frentes vêm da poligonal; o resto entra ao longo da jornada
-function nvDadosHtml(fechar){const nv=UI.nv,l=nv.local,mun=l?.cidade?l.cidade+(l.uf?' · '+l.uf:''):'',f0=nv.frentes?.[0],busca=nv.buscandoLocal;
-  const v=x=>x?`value="${esc(x)}"`:'',nome=nv.nome??(f0?nomeRef(f0.logradouro):'');
+function nvDadosHtml(fechar){const nv=UI.nv,l=nv.local,mun=l?.cidade?l.cidade+(l.uf?' · '+l.uf:''):'',fr=nv.frentes||[],pri=Math.min(nv.pri||0,Math.max(fr.length-1,0)),f0=fr[pri],busca=nv.buscandoLocal;
+  const v=x=>x?`value="${esc(x)}"`:'',nome=nv.nome??(f0?nomePadrao(l?.bairro,f0.logradouro):'');
   const onde=[f0&&[f0.logradouro,f0.numero].filter(Boolean).join(', '),l?.bairro,mun].filter(Boolean).join(' · ');
   return `<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Passo 2 de 2 · O resto da ficha é preenchido ao longo da jornada.</div></div>${fechar}</div>
   <form data-form="novo" id="f-novo"><div class="fields">
-  <div class="field full"><div class="banner blue">${ic('check')}<div style="flex:1"><div class="bt">${nv.porLotes?`Poligonal pela soma dos ${nv.sqls.length} lote${nv.sqls.length>1?'s':''} da prefeitura`:NV_FONTE[nv.fonte]} · ${m2(Math.round(nv.area))}</div>
+  <div class="field full"><div class="banner blue">${ic('check')}<div style="flex:1"><div class="bt">${nv.porLotes?(nv.sqls.length>1?`Poligonal pela soma dos ${nv.sqls.length} lotes da prefeitura`:'Poligonal pelo lote da prefeitura'):NV_FONTE[nv.fonte]} · ${m2(Math.round(nv.area))}</div>
     <div>${busca?'Buscando o endereço pela poligonal...':onde?esc(onde):'Endereço não encontrado pela localização.'}</div>
     ${nv.ignorados?`<div>Confirmado como outro terreno apesar de sobrepor ${nv.ignorados.map(x=>x.t.codigo).join(', ')}.</div>`:''}</div><button type="button" class="btn sm text" data-a="nv-voltar">Trocar</button></div></div>
   ${nv.lgFeito||nvSP()?`<div class="field full"><div class="nv-sqls"><span class="etq-sw s"></span><div style="flex:1">${nv.sqls?.length?`<b>${nv.sqls.length} SQL${nv.sqls.length>1?'s':''} da prefeitura</b><div class="nv-sqls-l">${nv.sqls.map(x=>`<span class="etq s"><span class="etq-n num">${esc(x.sql)}</span></span>`).join('')}</div>${nv.porLotes&&nv.polyDesenho?'<div class="faint">A desenhada fica guardada.</div>':''}`:'<b>Nenhum SQL</b><div class="faint">Marque os lotes da prefeitura que o terreno ocupa.</div>'}</div><button type="button" class="btn sm text" data-a="nv-lotes">${ic('layers',16)}${nv.sqls?.length?'Trocar SQLs':'Escolher SQLs'}</button></div></div>`:''}
-  <div class="field full"><label for="n-nome">Nome de referência *</label><input id="n-nome" name="nome" required placeholder="${busca?'Buscando a rua...':'Ex.: Cupecê'}" ${v(nome)}></div>
+  ${!busca&&fr.length>1?`<div class="field full nv-frentes"><span class="lbl-f" id="nv-fr-l">A poligonal tem ${fr.length} frentes. Qual é o acesso principal?</span><span class="nv-fr" role="radiogroup" aria-labelledby="nv-fr-l">${fr.map((x,i)=>`<label class="opt-radio"><input type="radio" name="nv-pri" value="${i}" ${i===pri?'checked':''}>${esc(x.logradouro)}${x.numero?', '+esc(x.numero):''}${x.m?`<span class="faint">&nbsp;· ${num(Math.round(x.m))} m</span>`:''}</label>`).join('')}</span><span class="hint">O nome de referência sai dele; as outras entram em Confrontações como frente.</span></div>`:''}
+  <div class="field full"><label for="n-nome">Nome de referência *</label><input id="n-nome" name="nome" required placeholder="${busca?'Buscando a rua...':'Ex.: Saúde - Cupecê'}" ${v(nome)}></div>
   ${!busca&&!mun?`<div class="field full"><label for="n-mun">Município *</label><input id="n-mun" name="municipio" required placeholder="Cidade · UF"><span class="hint">Não deu para saber pela localização.</span></div>`:`<input type="hidden" name="municipio" ${v(mun)}>`}
-  <input type="hidden" name="logradouro" ${v(f0?.logradouro)}><input type="hidden" name="numero" ${v(f0?.numero)}><input type="hidden" name="bairro" ${v(l?.bairro)}><input type="hidden" name="frente" value="0">
+  <input type="hidden" name="logradouro" ${v(f0?.logradouro)}><input type="hidden" name="numero" ${v(f0?.numero)}><input type="hidden" name="bairro" ${v(l?.bairro)}><input type="hidden" name="frente" value="${pri}">
   </div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-novo" id="btn-novo" ${busca?'disabled':''}>${busca?'Buscando o endereço...':'Cadastrar terreno'}</button></div>`}
 // depois de cadastrar: a ficha em gaveta no mapa e, com SQLs, a consulta completa no GeoSampa de cada um (zonas, parâmetros, camadas, planta e desenho)
 function nvDepois(t){nvGaveta(t);const ins=t.insc.filter(i=>!(i.geo||[]).length);if(ins.length)lgConsultar(t,ins)}
@@ -12242,6 +12259,10 @@ function nvPlGravar(t,d){const P=partesDe(t);P.length=0;
   d.partes.forEach(p=>{const pa={id:uid(),ativa:true,neg:null,propostas:[],nome:p.nome,essencial:true,area:null};['pessoa','tel','email','doc','obs'].forEach(k=>{if(p[k])pa[k]=p[k]});P.push(pa)});
   lotesNorm(t);if(d.partes.length>1||d.partes[0].nome!=='Vendedor 1')log(t,`${d.partes.length} parte${d.partes.length>1?'s':''}: ${d.partes.map(p=>p.nome).join(', ')}`)}
 // depois de desenhar a tela do passo 2: checagem de duplicidade
+// acesso principal: o nome sugerido acompanha a frente escolhida, enquanto a pessoa não escreveu outro
+document.addEventListener('change',e=>{if(e.target.name!=='nv-pri'||!UI.nv)return;const nv=UI.nv,fr=nv.frentes||[];
+  if(!nv.nome?.trim()||fr.some(x=>nomePadrao(nv.local?.bairro,x.logradouro)===nv.nome.trim()))nv.nome=null;
+  nv.pri=Number(e.target.value);renderModal();$('#f-novo [name=nv-pri]:checked')?.focus()});
 function nvPosRender(){const f=$('#f-novo');if(!f||!UI.nv)return;f.nome.addEventListener('input',()=>{if(UI.nv)UI.nv.nome=f.nome.value})}
 // passo 2 gravado: o terreno novo com a poligonal, o município e as frentes
 function nvGravar(alvo,F){const nv=UI.nv;alvo.poly=nv.poly;alvo.lat=+nv.ponto[0].toFixed(7);alvo.lng=+nv.ponto[1].toFixed(7);alvo.precisao='aproximada';alvo.municipio=F.municipio.trim();
@@ -13260,7 +13281,7 @@ function mkResumoHtml(e){const min=MK.d.cfg?.min_unidades_grupo??3,todos=mkGrupo
 function mkBoxHtml(e){const m2=mkM2(e.preco,e.area),vso=mkVso(e.vendas,e.estoque),pct=e.unidades?Math.round(100*e.estoque/e.unidades):0,dias=mkDias();
   const kv=(k,v,f)=>`<div class="mk-kv"><span class="muted">${k}</span><span class="num">${v}</span>${f?`<span class="faint">${f}</span>`:''}</div>`;
   return `<div class="cc-box mk-box" role="dialog" aria-label="${esc(e.nome)}">
-  <div class="cc-hd"><div class="cc-ti"><div class="cc-n">${esc(e.nome)}</div><div class="muted">${esc([e.inc,(MK_SIT[e.sit]||MK_SIT.nao_informado)[0],e.bairro].filter(Boolean).join(' · '))}</div></div><button type="button" class="iconbtn" data-a="mk-x" aria-label="Fechar" title="Fechar (Esc)">${ic('close',20)}</button></div>
+  <div class="cc-hd"><div class="cc-ti"><div class="cc-n">${esc(e.nome)}</div><div class="muted">${esc([e.inc,(MK_SIT[e.sit]||MK_SIT.nao_informado)[0],e.bairro].filter(Boolean).join(' · '))}</div></div>${mkFixarBtn()}<button type="button" class="iconbtn" data-a="mk-x" aria-label="Fechar" title="Fechar (Esc)">${ic('close',20)}</button></div>
   <div class="cc-k mk-k"><div class="cc-big">${m2!=null?ccM2(Math.round(m2)):'Sem estoque com preço'}</div><div class="faint">${m2!=null?'preço médio por m² das unidades à venda':e.estoque?'as unidades à venda estão sem preço na tabela':'nenhuma unidade à venda'}</div><div class="mk-prog">Enquadramento social: <b>${e.prog==='sim'?'Sim':e.prog==='nao'?'Não':'Não informado'}</b></div></div>
   <div class="mk-grid">${kv('Lançamento',mkData(e.lanc))}${kv('Entrega',mkData(e.ent))}${kv('Unidades',num(e.unidades))}${kv('Estoque',num(e.estoque),pct+'%')}
     ${kv('Vendas',num(e.vendas),mkPeriodo())}${kv('VSO',mkPct(vso),dias?`em ${dias} dias`:'')}</div>
@@ -13270,9 +13291,20 @@ function mkBoxHtml(e){const m2=mkM2(e.preco,e.area),vso=mkVso(e.vendas,e.estoque
 function mkBox(){const area=$('.mapa-area');let el=$('#mk-box');const e=MK.box&&naMapa()?mkEmp(MK.box):null;
   if(!e||!area){el?.remove();if(!e)MK.box=null;return}
   if(!el||el.parentNode!==area){el?.remove();el=document.createElement('div');el.id='mk-box';area.appendChild(el)}
-  el.innerHTML=mkBoxHtml(e)}
-function mkAbrir(id){MK.box=id;MK.dest=id;mkDestaque();MK.abertoEm=Date.now();ccFechar();if(UI.mpSel)mpSelecionar(null);if(UI.fichaSheet){UI.fichaSheet=null;fichaSheet()}mkBox()}
-function mkFechar(){if(!MK.box)return false;MK.box=null;mkBox();return true}
+  el.innerHTML=mkBoxHtml(e);mkSaida(el)}
+/* o card fecha sozinho 2 s depois que o mouse sai dele (só depois de ter entrado; nunca no toque nem com a tabela completa aberta);
+   o olhinho ao lado do X o fixa aberto, guardado no navegador (pedido do Moisés, 5/nov/2026) */
+const MK_FKEY='bkm-terrenos-concorrencia-fixa';let MK_T=null;
+const mkFixa=()=>{try{return localStorage.getItem(MK_FKEY)==='1'}catch(e){return false}};
+function mkFixarBtn(){const f=mkFixa();return `<button type="button" class="iconbtn mk-fixar" data-a="mk-fixar" aria-pressed="${f}" title="${f?'Soltar (volta a fechar sozinho)':'Fixar aberto'}" aria-label="${f?'Soltar o card':'Fixar o card aberto'}">${ic('olho',18)}</button>`}
+function mkSaida(el){if(el.__mkH)return;el.__mkH=true;
+  el.addEventListener('pointerenter',e=>{if(e.pointerType!=='mouse')return;clearTimeout(MK_T);MK.dentro=true});
+  el.addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse'||!MK.dentro||mkFixa()||TOQUE())return;clearTimeout(MK_T);
+    MK_T=setTimeout(()=>{if(UI.modal||el.matches(':hover')||el.querySelector(':focus-visible')||mkFixa())return;mkFechar()},2000)})}
+window.addEventListener('click',e=>{const b=e.target.closest?.('[data-a="mk-fixar"]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();
+  const f=!mkFixa();try{localStorage.setItem(MK_FKEY,f?'1':'0')}catch(x){}clearTimeout(MK_T);b.outerHTML=mkFixarBtn();$('#mk-box [data-a="mk-fixar"]')?.focus()},true);
+function mkAbrir(id){clearTimeout(MK_T);MK.dentro=false;MK.box=id;MK.dest=id;mkDestaque();MK.abertoEm=Date.now();ccFechar();if(UI.mpSel)mpSelecionar(null);if(UI.fichaSheet){UI.fichaSheet=null;fichaSheet()}mkBox()}
+function mkFechar(){clearTimeout(MK_T);if(!MK.box)return false;MK.box=null;mkBox();return true}
 const mkFecharDoMapa=()=>{if(Date.now()-MK.abertoEm>350)mkFechar()};
 
 /* ---------- ganchos ---------- */
@@ -16405,7 +16437,7 @@ const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();u
 document.addEventListener('toggle',e=>{if(!e.target.classList?.contains('mp-legenda'))return;UI.mpLeg=e.target.open;
   if(!e.target.open&&(UI.mpArv||UI.mp?.f||UI.mp?.e)){const mud=UI.mp.f||UI.mp.e;UI.mpArv=false;UI.mp.f='';UI.mp.e='';UI.mp.ocultas=[];mpRefresh();if(mud)mpEnquadrar()}},true);
 
-/* a legenda aberta fecha sozinha depois de 3 s sem o mouse em cima nem o foco do teclado dentro; o olhinho ao lado do título a fixa
+/* a legenda aberta fecha sozinha depois de 2 s sem o mouse em cima nem o foco do teclado dentro; o olhinho ao lado do título a fixa
    (guardado no navegador, bkm-terrenos-legenda-fixa; pedido do Moisés, 5/nov/2026) */
 const LG_FKEY='bkm-terrenos-legenda-fixa';
 /* a legenda começa fechada e lembra se ficou aberta ou fechada (bkm-terrenos-legenda; pedido do Moisés, 5/nov/2026) */
@@ -16413,11 +16445,11 @@ const LG_AKEY='bkm-terrenos-legenda';
 function lgAbertaGuardada(){try{return localStorage.getItem(LG_AKEY)==='1'}catch(e){return false}}let LG_T=null,LG_SOBRE=false;
 function lgFixa(){try{return localStorage.getItem(LG_FKEY)==='1'}catch(e){return false}}
 function lgFixarBtn(){const f=lgFixa();return `<button type="button" class="lg-fixar" data-a="lg-fixar" aria-pressed="${f}" title="${f?'Soltar a legenda (volta a fechar sozinha)':'Fixar a legenda aberta'}" aria-label="${f?'Soltar a legenda':'Fixar a legenda aberta'}">${ic('olho',18)}</button>`}
-/* fechada, abre sozinha com o mouse parado em cima dela por 2 s (pedido do Moisés, 5/nov/2026) */
+/* fechada, abre sozinha com o mouse parado em cima dela por 1 s (pedido do Moisés, 5/nov/2026) */
 function lgAgendar(){clearTimeout(LG_T);LG_T=null;if(TOQUE())return;const d=$('.mp-legenda');
-  if(d&&!d.open&&LG_SOBRE){LG_T=setTimeout(()=>{LG_T=null;const d=$('.mp-legenda');if(d&&!d.open&&LG_SOBRE)d.open=true},2000);return}
+  if(d&&!d.open&&LG_SOBRE){LG_T=setTimeout(()=>{LG_T=null;const d=$('.mp-legenda');if(d&&!d.open&&LG_SOBRE)d.open=true},1000);return}
   if(!d||!d.open||lgFixa()||LG_SOBRE||d.querySelector(':focus-visible'))return;
-  LG_T=setTimeout(()=>{LG_T=null;const d=$('.mp-legenda');if(d&&d.open&&!lgFixa()&&!LG_SOBRE&&!d.querySelector(':focus-visible'))d.open=false},3000)}
+  LG_T=setTimeout(()=>{LG_T=null;const d=$('.mp-legenda');if(d&&d.open&&!lgFixa()&&!LG_SOBRE&&!d.querySelector(':focus-visible'))d.open=false},2000)}
 document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legenda')){try{localStorage.setItem(LG_AKEY,e.target.open?'1':'')}catch(x){}if(!e.target.matches(':hover'))LG_SOBRE=false;lgAgendar()}},true);
 document.addEventListener('pointerover',e=>{if(e.pointerType!=='mouse')return;const d=e.target.closest?.('.mp-legenda');if(d&&!LG_SOBRE){LG_SOBRE=true;lgAgendar()}},true);
 document.addEventListener('pointerout',e=>{if(!LG_SOBRE||!e.target.closest?.('.mp-legenda'))return;if(e.relatedTarget?.closest?.('.mp-legenda'))return;LG_SOBRE=false;lgAgendar()},true);

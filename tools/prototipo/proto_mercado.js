@@ -200,7 +200,7 @@ function mkResumoHtml(e){const min=MK.d.cfg?.min_unidades_grupo??3,todos=mkGrupo
 function mkBoxHtml(e){const m2=mkM2(e.preco,e.area),vso=mkVso(e.vendas,e.estoque),pct=e.unidades?Math.round(100*e.estoque/e.unidades):0,dias=mkDias();
   const kv=(k,v,f)=>`<div class="mk-kv"><span class="muted">${k}</span><span class="num">${v}</span>${f?`<span class="faint">${f}</span>`:''}</div>`;
   return `<div class="cc-box mk-box" role="dialog" aria-label="${esc(e.nome)}">
-  <div class="cc-hd"><div class="cc-ti"><div class="cc-n">${esc(e.nome)}</div><div class="muted">${esc([e.inc,(MK_SIT[e.sit]||MK_SIT.nao_informado)[0],e.bairro].filter(Boolean).join(' · '))}</div></div><button type="button" class="iconbtn" data-a="mk-x" aria-label="Fechar" title="Fechar (Esc)">${ic('close',20)}</button></div>
+  <div class="cc-hd"><div class="cc-ti"><div class="cc-n">${esc(e.nome)}</div><div class="muted">${esc([e.inc,(MK_SIT[e.sit]||MK_SIT.nao_informado)[0],e.bairro].filter(Boolean).join(' · '))}</div></div>${mkFixarBtn()}<button type="button" class="iconbtn" data-a="mk-x" aria-label="Fechar" title="Fechar (Esc)">${ic('close',20)}</button></div>
   <div class="cc-k mk-k"><div class="cc-big">${m2!=null?ccM2(Math.round(m2)):'Sem estoque com preço'}</div><div class="faint">${m2!=null?'preço médio por m² das unidades à venda':e.estoque?'as unidades à venda estão sem preço na tabela':'nenhuma unidade à venda'}</div><div class="mk-prog">Enquadramento social: <b>${e.prog==='sim'?'Sim':e.prog==='nao'?'Não':'Não informado'}</b></div></div>
   <div class="mk-grid">${kv('Lançamento',mkData(e.lanc))}${kv('Entrega',mkData(e.ent))}${kv('Unidades',num(e.unidades))}${kv('Estoque',num(e.estoque),pct+'%')}
     ${kv('Vendas',num(e.vendas),mkPeriodo())}${kv('VSO',mkPct(vso),dias?`em ${dias} dias`:'')}</div>
@@ -210,9 +210,20 @@ function mkBoxHtml(e){const m2=mkM2(e.preco,e.area),vso=mkVso(e.vendas,e.estoque
 function mkBox(){const area=$('.mapa-area');let el=$('#mk-box');const e=MK.box&&naMapa()?mkEmp(MK.box):null;
   if(!e||!area){el?.remove();if(!e)MK.box=null;return}
   if(!el||el.parentNode!==area){el?.remove();el=document.createElement('div');el.id='mk-box';area.appendChild(el)}
-  el.innerHTML=mkBoxHtml(e)}
-function mkAbrir(id){MK.box=id;MK.dest=id;mkDestaque();MK.abertoEm=Date.now();ccFechar();if(UI.mpSel)mpSelecionar(null);if(UI.fichaSheet){UI.fichaSheet=null;fichaSheet()}mkBox()}
-function mkFechar(){if(!MK.box)return false;MK.box=null;mkBox();return true}
+  el.innerHTML=mkBoxHtml(e);mkSaida(el)}
+/* o card fecha sozinho 2 s depois que o mouse sai dele (só depois de ter entrado; nunca no toque nem com a tabela completa aberta);
+   o olhinho ao lado do X o fixa aberto, guardado no navegador (pedido do Moisés, 5/nov/2026) */
+const MK_FKEY='bkm-terrenos-concorrencia-fixa';let MK_T=null;
+const mkFixa=()=>{try{return localStorage.getItem(MK_FKEY)==='1'}catch(e){return false}};
+function mkFixarBtn(){const f=mkFixa();return `<button type="button" class="iconbtn mk-fixar" data-a="mk-fixar" aria-pressed="${f}" title="${f?'Soltar (volta a fechar sozinho)':'Fixar aberto'}" aria-label="${f?'Soltar o card':'Fixar o card aberto'}">${ic('olho',18)}</button>`}
+function mkSaida(el){if(el.__mkH)return;el.__mkH=true;
+  el.addEventListener('pointerenter',e=>{if(e.pointerType!=='mouse')return;clearTimeout(MK_T);MK.dentro=true});
+  el.addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse'||!MK.dentro||mkFixa()||TOQUE())return;clearTimeout(MK_T);
+    MK_T=setTimeout(()=>{if(UI.modal||el.matches(':hover')||el.querySelector(':focus-visible')||mkFixa())return;mkFechar()},2000)})}
+window.addEventListener('click',e=>{const b=e.target.closest?.('[data-a="mk-fixar"]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();
+  const f=!mkFixa();try{localStorage.setItem(MK_FKEY,f?'1':'0')}catch(x){}clearTimeout(MK_T);b.outerHTML=mkFixarBtn();$('#mk-box [data-a="mk-fixar"]')?.focus()},true);
+function mkAbrir(id){clearTimeout(MK_T);MK.dentro=false;MK.box=id;MK.dest=id;mkDestaque();MK.abertoEm=Date.now();ccFechar();if(UI.mpSel)mpSelecionar(null);if(UI.fichaSheet){UI.fichaSheet=null;fichaSheet()}mkBox()}
+function mkFechar(){clearTimeout(MK_T);if(!MK.box)return false;MK.box=null;mkBox();return true}
 const mkFecharDoMapa=()=>{if(Date.now()-MK.abertoEm>350)mkFechar()};
 
 /* ---------- ganchos ---------- */
