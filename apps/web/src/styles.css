@@ -5023,6 +5023,8 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 /* a busca a 12 px da borda esquerda, a mesma distância dos três pontinhos à direita (pedido do Moisés, 5/nov/2026);
    no Leaflet fica depois do + e − do zoom */
 .mapa-area:not(:has(.leaflet-container)) .mp-barra { left: 12px !important }
+/* régua ligada: seta em vez da mãozinha no Leaflet (no Google, draggableCursor) */
+.mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }
 
-/* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
-:root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
+/* régua ligada: seta em vez da mãozinha no Leaflet (no Google, draggableCursor) */
+.mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }

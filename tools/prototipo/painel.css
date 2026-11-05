@@ -4208,3 +4208,5 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 /* a busca a 12 px da borda esquerda, a mesma distância dos três pontinhos à direita (pedido do Moisés, 5/nov/2026);
    no Leaflet fica depois do + e − do zoom */
 .mapa-area:not(:has(.leaflet-container)) .mp-barra { left: 12px !important }
+/* régua ligada: seta em vez da mãozinha no Leaflet (no Google, draggableCursor) */
+.mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }

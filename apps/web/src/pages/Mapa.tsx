@@ -184,8 +184,8 @@ export default function Mapa() {
   const [des, setDes] = useState<P[] | null>(null);
   /* régua (pedido do Moisés, 5/nov/2026; proto_mercado.js › rgAbrir, rgClique): botão no canto, acima da minha localização (e no menu
      dos três pontinhos), azul enquanto ligada, e vale até ser desligada. Cada clique marca um ponto e mede o caminho; clicar no primeiro
-     ponto (com 3 ou mais) fecha a forma e mede a área, e o clique seguinte começa outra medida. Backspace apaga o último ponto, Del apaga
-     o desenho (sem desenho, desliga), Esc desliga; clique direito num ponto: Excluir ponto. */
+     ponto (com 3 ou mais) fecha a forma e mede a área, e o clique seguinte começa outra medida. Backspace apaga o último ponto, Del ou Esc
+     apagam o desenho (sem desenho, desligam); com ela ligada o cursor do mapa é a seta; clique direito num ponto: Excluir ponto. */
   const [rg, setRg] = useState<{ pts: P[]; fechado: boolean } | null>(null);
   const rgR = useRef(rg);
   rgR.current = rg;
@@ -245,7 +245,7 @@ export default function Mapa() {
     setMenu(null); setMkBox(null); setSetor(null); motor.current?.lugarFechar();
     if (selId) selecionar(null);
     setRg({ pts: [], fechado: false });
-    toast(TOQUE() ? 'Toque no mapa para marcar os pontos.' : 'Clique no mapa para marcar os pontos e no primeiro ponto para medir a área. Backspace apaga o último ponto, Del apaga o desenho e Esc desliga a régua.');
+    toast(TOQUE() ? 'Toque no mapa para marcar os pontos.' : 'Clique no mapa para marcar os pontos e no primeiro ponto para medir a área. Backspace apaga o último ponto; Del ou Esc apagam o desenho e, sem desenho, desligam a régua.');
   }
   /* apaga um ponto; a forma fechada com menos de 3 volta a ser linha */
   function rgExcluir(i: number) {
@@ -347,6 +347,7 @@ export default function Mapa() {
   useEffect(() => { motor.current?.marcar(selId); }, [selId]);
   /* desenho: modo do mapa, rascunho e o pedido vindo do passo 1 do Novo terreno */
   useEffect(() => { if (motorPronto) motor.current?.setModo(!!des || !!rg); }, [motorPronto, des, rg]);
+  useEffect(() => { if (motorPronto) motor.current?.cursorSeta(!!rg); }, [motorPronto, !!rg]);
   useEffect(() => {
     if (motorPronto) motor.current?.regua(rg?.pts || [], !!rg?.fechado, () => { const r = rgR.current; if (r && r.pts.length > 2 && !r.fechado) setRg({ ...r, fechado: true }); },
       (i, x, y) => setRgMenu({ i, x, y }));
@@ -389,7 +390,8 @@ export default function Mapa() {
     /* Esc no desenho vem antes dos outros Esc da página: é ele que a pessoa quer desfazer */
     const esc = (ev: KeyboardEvent) => {
       if (ev.key !== 'Escape' || (ev.target as HTMLElement).matches?.('input,textarea,select') || document.querySelector('.mp-ctx')) return;
-      if (rg) { if (rgMenu) setRgMenu(null); else setRg(null); } else if (vMenu) vFechar(); else desCancelar();
+      /* na régua, Esc faz o mesmo que o Del (pedido do Moisés, 5/nov/2026): com desenho, apaga; sem desenho, desliga */
+      if (rg) { if (rgMenu) setRgMenu(null); else setRg(rg.pts.length ? { pts: [], fechado: false } : null); } else if (vMenu) vFechar(); else desCancelar();
       ev.preventDefault(); ev.stopImmediatePropagation();
     };
     const tecla = (ev: KeyboardEvent) => {
