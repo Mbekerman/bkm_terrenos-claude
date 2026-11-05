@@ -37,7 +37,9 @@ const memo: { f: string; e: string; arv: boolean; apag: Apag; leg: boolean | nul
   { f: '', e: '', arv: false, apag: {}, leg: null, camada: null, rdLeg: null, mf: {}, merc: true, mkOff: [], mkArv: false };
 /* o que a legenda apaga (terrenos por fase, etapa e subetapa; concorrência ligada, faixas e situações) fica guardado no navegador
    e vale em outra sessão (bkm-terrenos-mapa-legenda; pedido do Moisés, 5/nov/2026) */
-const MP_LGKEY = 'bkm-terrenos-mapa-legenda';
+const MP_LGKEY = 'bkm-terrenos-mapa-legenda', MP_CKEY = 'bkm-terrenos-mapa-camada';
+/* renda ou densidade ligada também fica guardada (bkm-terrenos-mapa-camada; pedido do Moisés, 5/nov/2026) */
+try { const k = localStorage.getItem(MP_CKEY); if (k === 'renda' || k === 'dens') memo.camada = k; } catch { /* sem armazenamento */ }
 try {
   const g = JSON.parse(localStorage.getItem(MP_LGKEY) || 'null');
   if (g) { if (g.apag && typeof g.apag === 'object') memo.apag = g.apag; if (Array.isArray(g.mkOff)) memo.mkOff = g.mkOff; if (g.merc === false) memo.merc = false; }
@@ -123,6 +125,7 @@ export default function Mapa() {
   const [mkTab, setMkTab] = useState<string | null>(null);
   const mkAbertoEm = useRef(0);
   Object.assign(memo, { f, e, arv, apag, leg, camada, rdLeg, mf, merc, mkOff, mkArv });
+  useEffect(() => { try { localStorage.setItem(MP_CKEY, camada ?? ''); } catch { /* sem armazenamento */ } }, [camada]);
   useEffect(() => { try { localStorage.setItem(MP_LGKEY, JSON.stringify({ apag, mkOff, merc })); } catch { /* sem armazenamento */ } }, [apag, mkOff, merc]);
 
   const mapaEl = useRef<HTMLDivElement>(null);

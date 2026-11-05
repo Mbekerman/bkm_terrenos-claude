@@ -69,6 +69,11 @@ function setDesenhaLadrilho(cv,x,y,z,camada){const T=256,dpr=Math.min(2,window.d
     if(cor){ctx.fillStyle=rdHex2rgba(cor,op);ctx.fill('evenodd');if(borda){ctx.lineWidth=.6;ctx.strokeStyle='rgba(255,255,255,.55)';ctx.stroke()}}
     else if(z>=13){ctx.setLineDash([3,3]);ctx.lineWidth=.8;ctx.strokeStyle=sem;ctx.stroke();ctx.setLineDash([])}}}
 let RD_L=null,RD_G=null,RD_SEL=null;
+/* renda ou densidade ligada fica guardada no navegador: quem sai do mapa e volta, mesmo noutra sessão, encontra como deixou
+   (bkm-terrenos-mapa-camada; pedido do Moisés, 5/nov/2026) */
+const RD_KEY='bkm-terrenos-mapa-camada';
+if(UI.mpSetor===undefined)try{const k=localStorage.getItem(RD_KEY);if(k)UI.mpSetor=k}catch(e){}
+function rdGuardar(){try{localStorage.setItem(RD_KEY,CAMADAS_SETOR[UI.mpSetor]?UI.mpSetor:'')}catch(e){}}
 function rdLigada(){return !!CAMADAS_SETOR[UI.mpSetor]}
 function rdCamada(){return rdLigada()?UI.mpSetor:null}
 function rdCamadaLigar(){if(!MAPA||!rdLigada())return;
@@ -153,7 +158,7 @@ document.addEventListener('pointerdown',e=>{if($('.mp-cam-m')&&!e.target.closest
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('.mp-cam-m')){rdMenu(false);e.preventDefault();e.stopImmediatePropagation()}},true);
 function rdLegItem(){const k=rdCamada();return `<button type="button" class="lg-i" data-a="mp-renda" aria-pressed="${k==='renda'}"><span class="lg-poi"><span class="rd-ic"></span></span>Renda familiar (setores)</button>`
   +`<button type="button" class="lg-i" data-a="mp-dens" aria-pressed="${k==='dens'}"><span class="lg-poi"><span class="ds-ic"></span></span>Densidade demográfica (setores)</button>`}
-function rdLigar(k){const antes=rdCamada();k=CAMADAS_SETOR[k]?k:null;if(k===antes)return;UI.mpSetor=k;
+function rdLigar(k){const antes=rdCamada();k=CAMADAS_SETOR[k]?k:null;if(k===antes)return;UI.mpSetor=k;rdGuardar();
   if(antes)rdCamadaDesligar();
   /* sem camada, o tipo de mapa escolhido nos três pontinhos; com renda ou densidade, Satélite (pedido do Moisés, 5/nov/2026) */
   if(k){if(!antes){UI.mpBaseCam=null;setBase(mpBaseAtual())}rdCamadaLigar();if(RD.sel!=null&&SET.d){rdSelDesenha(RD.sel);rdBox()}}
@@ -303,7 +308,7 @@ function setoresClick(A,a,t){
     case 'rd-x':rdFechar();return true;
     case 'rd-met':UI.modal='rd-met';renderModal();return true;
     case 'rd-raio':{const v=a.dataset.v;UI.rdRaio=v==='poly'?'poly':Number(v);document.querySelectorAll('[data-a="rd-raio"]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));if(t)rdCardAtualiza(t.id);return true}
-    case 'rd-ver':{const x=T(a.dataset.id);UI.mpSetor=rdCamada()||'renda';if(x&&x.lat!=null){UI.mpView={c:{lat:x.lat,lng:x.lng},z:15}}go('mapa');return true}
+    case 'rd-ver':{const x=T(a.dataset.id);UI.mpSetor=rdCamada()||'renda';rdGuardar();if(x&&x.lat!=null){UI.mpView={c:{lat:x.lat,lng:x.lng},z:15}}go('mapa');return true}
   }
   return false}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&RD.sel!=null&&!UI.modal&&naMapa()){rdFechar();e.preventDefault()}});
