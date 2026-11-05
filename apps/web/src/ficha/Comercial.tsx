@@ -199,7 +199,6 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
           sel('cid', c.corretores.filter((x) => x.ativo !== false || x.id === v.cid).map((x) => [x.id, `${x.nome}${x.imobiliaria ? ' · ' + x.imobiliaria : ''}`]), 'Sem corretor'))}
         {kv('Aceita permuta', o.aceita_permuta || ni(), inp('aceita', { placeholder: 'Como o vendedor encara a permuta e em que condições' }))}
         {kv('Pagamento', o.observacao_pagamento || ni(), inp('obs', { placeholder: 'Observação sobre a forma de pagamento' }))}
-        {kv('Validade da oferta', o.validade ? fd(o.validade) : ni('Não informada'), inp('validade', { type: 'date' }))}
       </dl></> : <div className="muted">Nenhuma oferta registrada.</div>}</div>
   );
   useEffect(() => {
