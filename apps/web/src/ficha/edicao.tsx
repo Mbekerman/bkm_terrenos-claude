@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
@@ -127,7 +127,7 @@ const CRIS = Array.from({ length: 18 }, (_, i) => `${i + 1}º CRI`);
 const emSP = (f: Ficha) => !f.municipio || /^São Paulo$/i.test(f.municipio);
 
 /** campo de edição de uma seção (campoInp) */
-export function CampoInp({ f, c, vals, mudar, listas }: { f: Ficha; c: Campo; vals: Record<string, string>; mudar: (k: string, v: string) => void; listas?: { membros: R[]; eixos: R[] } }) {
+export function CampoInp({ f, c, vals, mudar, listas, inl }: { f: Ficha; c: Campo; vals: Record<string, string>; mudar: (k: string, v: string) => void; listas?: { membros: R[]; eixos: R[] }; inl?: boolean }) {
   const [k, l, tipo, opt, full] = c, id = `f-${k}`, v = vals[k] ?? '';
   const on = (ev: { target: { value: string } }) => mudar(k, ev.target.value);
   let h: ReactNode;
@@ -142,14 +142,33 @@ export function CampoInp({ f, c, vals, mudar, listas }: { f: Ficha; c: Campo; va
   else if (tipo === 'mun') h = <input id={id} value={[f.municipio, f.uf].filter(Boolean).join(' · ')} readOnly title="Preenchido pela busca de endereço" />;
   else if (['m2', 'm', 'dec'].includes(tipo)) h = <input id={id} inputMode="decimal" value={v} onChange={on} placeholder={tipo === 'm2' ? 'm²' : tipo === 'm' ? 'metros' : ''} />;
   else h = <input id={id} type={tipo === 'url' ? 'url' : undefined} value={v} onChange={on} required={k === 'nome'} />;
+  /* inl: no mesmo lugar e na mesma altura da leitura, só com a linha embaixo (pedido do Moisés, 5/nov/2026) */
+  if (inl) return <div className={`inl-c ${full || ''}`}><label className="k" htmlFor={id}>{l}</label>{h}</div>;
   return <div className={`field ${full || ''}`}><label htmlFor={id}>{l}</label>{h}</div>;
+}
+
+/** pedido de "ir ao campo" (itens que faltam na ficha): a aba que o tem abre a edição e põe o foco nele */
+export interface PedidoCampo { sec: string; campo?: string }
+let pendente: PedidoCampo | null = null;
+export function pedirCampo(p: PedidoCampo) { pendente = p; window.dispatchEvent(new Event('ficha-campo')); }
+export function tomarPedido(): PedidoCampo | null { const p = pendente; pendente = null; return p; }
+/** abre o quadro da seção (sem mexer na escolha das outras) */
+export function abrirQuadro(aba: string, id: string) { (QD[aba] || (QD[aba] = new Set())).add(id); }
+/** foco no campo depois que ele aparece, rolando até ele */
+export function focar(id: string, tent = 12) {
+  const el = document.getElementById(id) as HTMLElement | null;
+  if (!el) { if (tent > 0) setTimeout(() => focar(id, tent - 1), 60); return; }
+  el.scrollIntoView({ block: 'center' });
+  el.focus({ preventScroll: true });
+  el.closest('.inl-c, .field, .area')?.classList.add('acende');
+  setTimeout(() => el.closest('.acende')?.classList.remove('acende'), 1600);
 }
 
 export interface EndGoogle { cidade?: string; uf?: string }
 
 /** endereço: busca do Google (Places) e, abaixo, Complemento e Zona; o que a busca preenche fica em linhas simples,
     com "Corrigir à mão" (proto.js › camposEndereco) */
-export function CamposEndereco({ f, vals, mudar, mun, setMun }: { f: Ficha; vals: Record<string, string>; mudar: (k: string, v: string) => void; mun: EndGoogle | null; setMun: (m: EndGoogle) => void }) {
+export function CamposEndereco({ f, vals, mudar, mun, setMun, soBusca }: { f: Ficha; vals: Record<string, string>; mudar: (k: string, v: string) => void; mun: EndGoogle | null; setMun: (m: EndGoogle) => void; soBusca?: boolean }) {
   const slot = useRef<HTMLDivElement>(null);
   const [gg, setGg] = useState<boolean | null>(null);
   const [manual, setManual] = useState(false);
@@ -169,7 +188,8 @@ export function CamposEndereco({ f, vals, mudar, mun, setMun }: { f: Ficha; vals
       try {
         const { PlaceAutocompleteElement } = gLib.places;
         const pac = new PlaceAutocompleteElement({ includedRegionCodes: ['br'], locationBias: { center: { lat: -23.55, lng: -46.63 }, radius: 50000 } });
-        pac.placeholder = 'Pesquisar'; pac.setAttribute('aria-label', 'Pesquisar endereço no Google'); pac.requestedLanguage = 'pt-BR';
+        pac.id = 'f-busca-end';
+        pac.placeholder = soBusca ? 'Pesquisar endereço' : 'Pesquisar'; pac.setAttribute('aria-label', 'Pesquisar endereço no Google'); pac.requestedLanguage = 'pt-BR';
         pac.noInputIcon = true; pac.noClearButton = true; pac.setAttribute('no-input-icon', ''); pac.setAttribute('no-clear-button', '');
         s.appendChild(pac);
         const aplicar = async (place: any) => {
@@ -191,6 +211,8 @@ export function CamposEndereco({ f, vals, mudar, mun, setMun }: { f: Ficha; vals
     });
     return () => { vivo = false; };
   }, []);
+  /* só a busca, no título do quadro: os campos ficam na grade, editáveis no lugar */
+  if (soBusca) return gg === false ? null : <div className="gbusca-h" title={de ? `Preenchido a partir de: ${de}` : undefined}><div className="gauto" ref={slot} /></div>;
   const trava = !!gg && !manual;
   const munTxt = mun?.cidade ? [mun.cidade, mun.uf].filter(Boolean).join(' · ') : [f.municipio, f.uf].filter(Boolean).join(' · ');
   const auto: [string, string][] = [['cep', 'CEP'], ['logradouro', 'Logradouro'], ['numero', 'Número'], ['bairro', 'Bairro']];
@@ -232,6 +254,19 @@ export function Quadro({ aba, id, primeiro, titulo, acoes, aberto: forca, childr
 }) {
   const st = QD[aba] || (QD[aba] = new Set());
   const [, re] = useState(0);
+  /* ao entrar e sair da edição, o quadro fica onde estava na tela (o resto da página é que se ajusta) */
+  const sec = useRef<HTMLElement>(null), antes = useRef<{ ed: boolean; top: number | null }>({ ed: !!forca, top: null });
+  if (antes.current.ed !== !!forca) { antes.current = { ed: !!forca, top: sec.current?.getBoundingClientRect().top ?? null }; }
+  useLayoutEffect(() => {
+    const t0 = antes.current.top, el = sec.current;
+    if (t0 == null || !el) return;
+    antes.current.top = null;
+    const d = el.getBoundingClientRect().top - t0;
+    if (Math.abs(d) < 1) return;
+    let p: HTMLElement | null = el.parentElement;
+    while (p && !(p.scrollHeight > p.clientHeight && /auto|scroll/.test(getComputedStyle(p).overflowY))) p = p.parentElement;
+    if (p) p.scrollTop += d; else window.scrollBy(0, d);
+  });
   if (primeiro && !st.has('§' + id)) { st.add('§' + id); st.add(id); }
   const ab = !!forca || st.has(id);
   const alternar = () => { if (ab) st.delete(id); else st.add(id); re((x) => x + 1); };
@@ -241,7 +276,7 @@ export function Quadro({ aba, id, primeiro, titulo, acoes, aberto: forca, childr
       <span>{titulo}</span></button></h2>{acoes}</div>
   );
   return (
-    <section className={`sec${ab ? '' : ' qd-fechado'}`} id={`sec-${id}`}>
+    <section ref={sec} className={`sec${ab ? '' : ' qd-fechado'}${forca ? ' qd-ed' : ''}`} id={`sec-${id}`}>
       {form ? form(<>{cab}{children}</>) : <>{cab}{children}</>}
     </section>
   );

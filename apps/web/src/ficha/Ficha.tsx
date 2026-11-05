@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSessao } from '../lib/sessao';
 import { supabase } from '../lib/supabase';
@@ -6,10 +6,10 @@ import { data as fd, milhoes, m2 } from '../lib/format';
 import { useToast } from '../components/ui';
 import { Bi, Ic } from '../components/Moldura';
 import { corSub, type Fase as FaseMapa, type TerrenoMapa } from '../mapa/dados';
-import { carregarFicha, completude, FONTE_AREA, TEMP, TP_N, ZONA, type Ficha as F, type ProcF } from './dados';
+import { carregarFicha, completude, type Falta, FONTE_AREA, TEMP, TP_N, ZONA, type Ficha as F, type ProcF } from './dados';
 import MiniMapa from './MiniMapa';
 import AbaTerreno, { dadosArea, dadosEndereco, fonteSel, numInp, useEdicao, valoresArea } from './Terreno';
-import { CamposEndereco, END_CAMPOS, lerNum, OPT } from './edicao';
+import { CamposEndereco, END_CAMPOS, focar, OPT, pedirCampo } from './edicao';
 
 // Ficha do terreno, porte de tools/prototipo/proto.js › pgFicha (topo, abas, fiAbasCaber), proto_fases.js › linhaTopo,
 // proto_funil.js › linhaEtapas e proto_mod.js › abaGeral (Visão geral: Localização e Resumo). Mesma marcação e classes do
@@ -116,7 +116,7 @@ function Temperatura({ f, pode }: { f: F; pode: boolean }) {
     <div className="temp" title="Temperatura da negociação">
       <span className="bars" role="radiogroup" aria-label="Temperatura da negociação">
         {[1, 2, 3, 4, 5].map((n) => (
-          <button key={n} type="button" role="radio" aria-checked={v === n} aria-label={`${n} · ${TEMP[n]}`} className={`${n <= v ? 'on' : ''} t${v}`}
+          <button key={n} id={n === 1 ? 'temp-1' : undefined} type="button" role="radio" aria-checked={v === n} aria-label={`${n} · ${TEMP[n]}`} className={`${n <= v ? 'on' : ''} t${v}`}
             disabled={!pode} onClick={() => definir(n === v ? 0 : n)} />
         ))}
       </span>
@@ -211,10 +211,9 @@ function corPino(f: F): [string, string] {
   return corSub(fs, t);
 }
 
-function VisaoGeral({ f, abrirMapa }: { f: F; abrirMapa: (lat: number, lng: number, z: number) => void }) {
-  const { edita, empresa } = useSessao();
+function VisaoGeral({ f, irAba, abrirMapa }: { f: F; irAba: (k: string) => void; abrirMapa: (lat: number, lng: number, z: number) => void }) {
+  const { edita } = useSessao();
   const ed = useEdicao(f);
-  const qc = useQueryClient(), toast = useToast();
   const ni = <span className="ni">Não informado</span>;
   const lapis = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" /></svg>;
   const pe = <div className="kv-f"><button type="button" className="btn text sm" onClick={ed.fechar}>Cancelar</button><button className="btn primary sm" disabled={ed.gravando}>Salvar</button></div>;
@@ -223,70 +222,9 @@ function VisaoGeral({ f, abrirMapa }: { f: F; abrirMapa: (lat: number, lng: numb
     if (ed.edit === id) return <div className="kv editando" id={`sec-g-${id}`}><dt>{rot}</dt><dd><form className="kv-form" onSubmit={(ev) => ed.salvar(ev, montar)}>{corpo()}{pe}</form></dd></div>;
     return lin(rot, val, edita ? <button className="kv-ed" aria-label={`Editar ${rot.toLowerCase()}`} title="Editar" onClick={abrir}>{lapis}</button> : undefined);
   };
-  /* valor pedido e corretor não moram em terrenos: gravam direto na oferta de entrada e no corretor principal */
-  const [gravD, setGravD] = useState(false);
-  const salvarDireto = async (ev: FormEvent, fazer: () => Promise<string | null>) => {
-    ev.preventDefault();
-    if (gravD) return;
-    setGravD(true);
-    try {
-      const erro = await fazer();
-      if (erro) { toast(erro); return; }
-      await qc.invalidateQueries({ queryKey: ['ficha'] });
-      qc.invalidateQueries({ queryKey: ['mapa'] });
-      toast('Salvo.');
-      ed.fechar();
-    } catch (e: any) { toast(e?.message ?? String(e)); } finally { setGravD(false); }
-  };
-  const corretores = useQuery({
-    queryKey: ['corretores', empresa?.id], enabled: !!empresa && ed.edit === 'cor',
-    queryFn: async () => {
-      const r = await supabase.from('corretores').select('id,imobiliaria,ativo,pessoas(nome_razao_social)').eq('empresa_id', empresa!.id);
-      if (r.error) throw r.error;
-      return (r.data as any[]).filter((c) => c.ativo !== false || c.id === f.corretor?.id)
-        .map((c) => ({ id: c.id as string, nome: (c.pessoas?.nome_razao_social ?? '') as string, imob: c.imobiliaria as string | null }))
-        .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-    },
-  });
-  const gravarValor = async () => {
-    const v = lerNum(ed.vals.valor), d = ed.vals.data || null;
-    if (ed.vals.valor?.trim() && v == null) return 'Valor inválido.';
-    if (v != null && v <= 0) return 'O valor pedido precisa ser maior que zero.';
-    const o = f.ofertaEntrada;
-    if (o) {
-      const r = await supabase.from('ofertas').update({ valor_pedido: v, ...(d ? { data_oferta: d } : {}) }).eq('id', o.id);
-      return r.error?.message ?? null;
-    }
-    if (v == null) return null;
-    const r = await supabase.from('ofertas').insert({ empresa_id: empresa!.id, terreno_id: f.id, valor_pedido: v, ...(d ? { data_oferta: d } : {}) });
-    return r.error?.message ?? null;
-  };
-  const gravarCorretor = async () => {
-    let cid = ed.vals.cid || null;
-    if (cid === 'novo') {
-      const nome = (ed.vals.nome ?? '').trim();
-      if (!nome) return 'Escreva o nome do corretor.';
-      const p = await supabase.from('pessoas').insert({ empresa_id: empresa!.id, tipo_pessoa: 'PF', nome_razao_social: nome, telefone: ed.vals.tel?.trim() || null }).select('id').single();
-      if (p.error) return p.error.message;
-      const c = await supabase.from('corretores').insert({ empresa_id: empresa!.id, pessoa_id: p.data.id, imobiliaria: ed.vals.imob?.trim() || null }).select('id').single();
-      if (c.error) return c.error.message;
-      cid = c.data.id;
-      qc.invalidateQueries({ queryKey: ['corretores'] });
-    }
-    if (cid === (f.corretor?.id ?? null)) return null;
-    if (f.corretor) {
-      const r = await supabase.from('terreno_corretores').update({ principal: false }).eq('terreno_id', f.id).eq('corretor_id', f.corretor.id);
-      if (r.error) return r.error.message;
-    }
-    if (!cid) return null;
-    const r = await supabase.from('terreno_corretores').upsert({ terreno_id: f.id, corretor_id: cid, empresa_id: empresa!.id, principal: true }, { onConflict: 'terreno_id,corretor_id' });
-    return r.error?.message ?? null;
-  };
-  const linD = (rot: string, val: ReactNode, id: string, abrir: () => void, corpo: () => ReactNode, fazer: () => Promise<string | null>) => {
-    if (ed.edit === id) return <div className="kv editando" id={`sec-g-${id}`}><dt>{rot}</dt><dd><form className="kv-form" onSubmit={(ev) => salvarDireto(ev, fazer)}>{corpo()}
-      <div className="kv-f"><button type="button" className="btn text sm" onClick={ed.fechar}>Cancelar</button><button className="btn primary sm" disabled={gravD}>Salvar</button></div></form></dd></div>;
-    return lin(rot, val, edita ? <button className="kv-ed" aria-label={`Editar ${rot.toLowerCase()}`} title="Editar" onClick={abrir}>{lapis}</button> : undefined);
-  };
+  const ir = (k: string, titulo: string) => (
+    <button className="kv-ed kv-ir" title={titulo} aria-label={titulo} onClick={() => irAba(k)}><Ic n="fwd" s={16} /></button>
+  );
   const lin = (rot: string, val: ReactNode, acao: ReactNode = <span className="kv-ed" aria-hidden="true" />) => (
     <div className="kv"><dt>{rot}</dt><dd>{val == null || val === '' ? ni : val}</dd>{acao}</div>
   );
@@ -320,36 +258,18 @@ function VisaoGeral({ f, abrirMapa }: { f: F; abrirMapa: (lat: number, lng: numb
             () => <div className="kv-campos"><div className="field"><label htmlFor="g-zona">Zona</label><select id="g-zona" value={ed.vals.zona ?? ''} onChange={(ev) => ed.mudar('zona', ev.target.value)}>
               <option value="">Não informado</option>{Object.entries(OPT.zona).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div></div>,
             () => ({ zona: ed.vals.zona || null }))}
-          {lin('Zoneamento', f.zonas)}
+          {lin('Zoneamento', f.zonas, ir('parametros', 'Ver os parâmetros urbanísticos'))}
           {linE('Área adotada', f.area != null ? dois(m2(f.area), f.fonteArea ? FONTE_AREA[f.fonteArea] : null) : '', 'area', () => ed.abrir('area', [], valoresArea(f.t)),
             () => <div className="kv-campos"><div className="field"><label htmlFor="g-fonteArea">Área adotada</label>{fonteSel(ed, 'g-fonteArea', 'Nenhuma')}</div>
               {numInp(ed, 'area_documental_m2', 'Documental (m²)', 'm²', 'g')}{numInp(ed, 'area_cadastral_m2', 'Cadastral (m²)', 'm²', 'g')}
               {numInp(ed, 'area_levantamento_m2', 'Levantamento (m²)', 'm²', 'g')}{numInp(ed, 'estimativa', 'Estimativa (m²)', 'm²', 'g')}</div>,
             () => dadosArea(f, ed.vals))}
-          {lin('Unidades do estudo válido', f.unidades != null ? `${num(f.unidades)} unidades` : '')}
+          {lin('Unidades do estudo válido', f.unidades != null ? `${num(f.unidades)} unidades` : '', ir('viabilidade', 'Ver os estudos de viabilidade'))}
           {lin('VGV do estudo válido', f.vgv != null ? milhoes(f.vgv) : '')}
-          {lin('Distância do metrô ou trem', est)}
-          {linD('Valor pedido na entrada', f.ofertaEntrada?.valor ? dois(milhoes(f.ofertaEntrada.valor), `oferta de ${fd(f.ofertaEntrada.data)}`) : '', 'valor',
-            () => ed.abrir('valor', [], { valor: f.ofertaEntrada?.valor != null ? num(f.ofertaEntrada.valor, 2) : '', data: f.ofertaEntrada?.data ?? '' }),
-            () => <div className="kv-campos">
-              <div className="field"><label htmlFor="g-valor">Valor pedido (R$)</label><input id="g-valor" inputMode="decimal" placeholder="R$ ou 12 mi" value={ed.vals.valor ?? ''} onChange={(ev) => ed.mudar('valor', ev.target.value)} /></div>
-              <div className="field"><label htmlFor="g-data">Data da oferta</label><input id="g-data" type="date" value={ed.vals.data ?? ''} onChange={(ev) => ed.mudar('data', ev.target.value)} /></div></div>,
-            gravarValor)}
-          {lin('Perfil topográfico', tp)}
-          {linD('Corretor', f.corretor ? dois(f.corretor.nome, f.corretor.imob) : '', 'cor',
-            () => ed.abrir('cor', [], { cid: f.corretor?.id ?? '' }),
-            () => <div className="kv-campos">
-              <div className="field"><label htmlFor="g-cid">Corretor</label><select id="g-cid" value={ed.vals.cid ?? ''} onChange={(ev) => ed.mudar('cid', ev.target.value)}>
-                <option value="">Sem corretor</option>
-                {f.corretor && !corretores.data && <option value={f.corretor.id}>{f.corretor.nome}</option>}
-                {(corretores.data ?? []).map((c) => <option key={c.id} value={c.id}>{c.nome}{c.imob ? ` · ${c.imob}` : ''}</option>)}
-                <option value="novo">+ Novo corretor</option></select></div>
-              {ed.vals.cid === 'novo' && <>
-                <div className="field"><label htmlFor="g-cnome">Nome</label><input id="g-cnome" value={ed.vals.nome ?? ''} onChange={(ev) => ed.mudar('nome', ev.target.value)} /></div>
-                <div className="field"><label htmlFor="g-cimob">Imobiliária</label><input id="g-cimob" value={ed.vals.imob ?? ''} onChange={(ev) => ed.mudar('imob', ev.target.value)} /></div>
-                <div className="field"><label htmlFor="g-ctel">Telefone</label><input id="g-ctel" inputMode="tel" value={ed.vals.tel ?? ''} onChange={(ev) => ed.mudar('tel', ev.target.value)} /></div></>}
-            </div>,
-            gravarCorretor)}
+          {lin('Distância do metrô ou trem', est, ir('entorno', 'Ver o entorno'))}
+          {lin('Valor pedido na entrada', f.ofertaEntrada?.valor ? dois(milhoes(f.ofertaEntrada.valor), `oferta de ${fd(f.ofertaEntrada.data)}`) : '', ir('comercial', 'Ver as ofertas'))}
+          {lin('Perfil topográfico', tp, ir('infra', 'Ver a infraestrutura'))}
+          {lin('Corretor', f.corretor ? dois(f.corretor.nome, f.corretor.imob) : '', ir('comercial', 'Ver os corretores'))}
         </dl></div></section>
       </div>
     </div>
@@ -361,6 +281,40 @@ export function useFicha(codigo: string) {
   return useQuery({ queryKey: ['ficha', empresa?.id, codigo], enabled: !!empresa, queryFn: () => carregarFicha(empresa!.id, codigo) });
 }
 
+/** "Ficha N% completa" com a bolinha vermelha do que falta; o menu leva direto ao campo, já em edição (pedido do Moisés, 5/nov/2026) */
+function Faltam({ c, irAba }: { c: ReturnType<typeof completude>; irAba: (k: string) => void }) {
+  const [ab, setAb] = useState(false);
+  const raiz = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!ab) return;
+    const fora = (ev: PointerEvent) => { if (!raiz.current?.contains(ev.target as Node)) setAb(false); };
+    const esc = (ev: KeyboardEvent) => { if (ev.key === 'Escape') setAb(false); };
+    document.addEventListener('pointerdown', fora); document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('pointerdown', fora); document.removeEventListener('keydown', esc); };
+  }, [ab]);
+  const n = c.faltam.length;
+  const ir = ([, aba, sec, campo]: Falta) => {
+    setAb(false);
+    if (sec === 'temp') { focar('temp-1'); return; }
+    irAba(aba);
+    if (sec) pedirCampo({ sec, campo });
+  };
+  return (
+    <span className="fi-comp" ref={raiz}>
+      <button type="button" className="fi-comp-b" aria-haspopup="menu" aria-expanded={ab} disabled={!n} onClick={() => setAb((x) => !x)}
+        aria-label={n ? `Ficha ${c.pct}% completa; faltam ${n} itens` : undefined}>
+        <b>Ficha {c.pct}% completa</b>{n > 0 && <span className="fi-comp-n" aria-hidden="true">{n}</span>}
+      </button>
+      {ab && (
+        <div className="adv-menu fi-comp-m" role="menu">
+          <div className="fi-comp-t">Falta preencher</div>
+          {c.faltam.map((x) => <button key={x[0]} type="button" role="menuitem" onClick={() => ir(x)}>{x[0]}</button>)}
+        </div>
+      )}
+    </span>
+  );
+}
+
 /** a ficha (página ou gaveta): o voltar só na página */
 export default function Ficha({ f, aba, irAba, voltar, abrirMapa }: {
   f: F; aba: string; irAba: (k: string) => void; voltar?: { rotulo: string; ir: () => void };
@@ -369,7 +323,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa }: {
   const { edita } = useSessao();
   const c = completude(f);
   const meta: ReactNode[] = [...faseTxt(f), `Cadastrado em ${fd(f.dataIdent ?? f.criadoEm)}`];
-  const corpo = aba === 'geral' ? <VisaoGeral f={f} abrirMapa={abrirMapa} />
+  const corpo = aba === 'geral' ? <VisaoGeral f={f} irAba={irAba} abrirMapa={abrirMapa} />
     : aba === 'terreno' ? <AbaTerreno key={f.id} f={f} />
     : <section className="sec"><div className="empty">{PROXIMAS.has(aba) ? 'Esta aba está sendo portada do protótipo e entra nas próximas entregas.' : 'Esta aba entra depois da primeira versão.'}</div></section>;
   return (
@@ -393,14 +347,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa }: {
       <div className="stack">
         {c.pct < 100 && (
           <div className="complete">
-            <span className="progress"><span className="bar"><span style={{ width: `${c.pct}%` }} /></span><b>Ficha {c.pct}% completa</b></span>
-            {c.faltam.length > 0 && <>
-              <span className="muted" style={{ fontSize: 13 }}>Falta:</span>
-              <span className="missing">
-                {c.faltam.slice(0, 6).map(([r, k]) => <button key={r} onClick={() => irAba(k)}>{r}</button>)}
-                {c.faltam.length > 6 && <span className="faint" style={{ fontSize: 12, alignSelf: 'center' }}>+{c.faltam.length - 6}</span>}
-              </span>
-            </>}
+            <span className="progress"><span className="bar"><span style={{ width: `${c.pct}%` }} /></span><Faltam c={c} irAba={irAba} /></span>
           </div>
         )}
       </div>
