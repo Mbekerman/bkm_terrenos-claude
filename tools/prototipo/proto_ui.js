@@ -85,7 +85,7 @@ const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();u
 document.addEventListener('toggle',e=>{if(!e.target.classList?.contains('mp-legenda'))return;UI.mpLeg=e.target.open;
   if(!e.target.open&&(UI.mpArv||UI.mp?.f||UI.mp?.e)){const mud=UI.mp.f||UI.mp.e;UI.mpArv=false;UI.mp.f='';UI.mp.e='';UI.mp.ocultas=[];mpRefresh();if(mud)mpEnquadrar()}},true);
 
-/* a legenda aberta fecha sozinha depois de 1,25 s sem o mouse em cima nem o foco do teclado dentro; o olhinho ao lado do título a fixa
+/* a legenda aberta fecha sozinha depois de 1 s sem o mouse em cima nem o foco do teclado dentro; o olhinho ao lado do título a fixa
    (guardado no navegador, bkm-terrenos-legenda-fixa; pedido do Moisés, 5/nov/2026) */
 const LG_FKEY='bkm-terrenos-legenda-fixa';
 /* a legenda começa fechada e lembra se ficou aberta ou fechada (bkm-terrenos-legenda; pedido do Moisés, 5/nov/2026) */
@@ -97,7 +97,7 @@ function lgFixarBtn(){const f=lgFixa();return `<button type="button" class="lg-f
 function lgAgendar(){clearTimeout(LG_T);LG_T=null;if(TOQUE())return;const d=$('.mp-legenda');
   if(d&&!d.open&&LG_SOBRE){LG_T=setTimeout(()=>{LG_T=null;const d=$('.mp-legenda');if(d&&!d.open&&LG_SOBRE)d.open=true},750);return}
   if(!d||!d.open||lgFixa()||LG_SOBRE||d.querySelector(':focus-visible'))return;
-  LG_T=setTimeout(()=>{LG_T=null;const d=$('.mp-legenda');if(d&&d.open&&!lgFixa()&&!LG_SOBRE&&!d.querySelector(':focus-visible'))d.open=false},1250)}
+  LG_T=setTimeout(()=>{LG_T=null;const d=$('.mp-legenda');if(d&&d.open&&!lgFixa()&&!LG_SOBRE&&!d.querySelector(':focus-visible'))d.open=false},1000)}
 document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legenda')){try{localStorage.setItem(LG_AKEY,e.target.open?'1':'')}catch(x){}if(!e.target.matches(':hover'))LG_SOBRE=false;lgAgendar()}},true);
 document.addEventListener('pointerover',e=>{if(e.pointerType!=='mouse')return;const d=e.target.closest?.('.mp-legenda');if(d&&!LG_SOBRE){LG_SOBRE=true;lgAgendar()}},true);
 document.addEventListener('pointerout',e=>{if(!LG_SOBRE||!e.target.closest?.('.mp-legenda'))return;if(e.relatedTarget?.closest?.('.mp-legenda'))return;LG_SOBRE=false;lgAgendar()},true);

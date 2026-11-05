@@ -200,9 +200,9 @@ async function mpBuscar(q){q=(q||'').trim();if(q.length<3)return [];
 function mpBuscaHtml(){const ab=!!UI.mpBusca;if(ab)setTimeout(mpBuscaAgendar,0);
   return `<form class="mp-busca${ab?'':' fechada'}" data-form="mp-busca" role="search"><button type="button" class="mp-busca-i" data-a="mp-busca-abrir" tabindex="${ab?-1:0}" title="Buscar endereço" aria-label="Buscar endereço" aria-expanded="${ab}">${ic('search',20)}</button><input id="mp-end" name="q" type="search" placeholder="Buscar endereço" aria-label="Buscar endereço no mapa" autocomplete="off"${ab?'':' tabindex="-1"'}><button type="button" class="mp-busca-x" data-a="mp-busca-fechar" title="Fechar a busca" aria-label="Fechar a busca">${ic('back',20)}</button><div id="mp-res" class="mp-res" role="listbox" hidden></div></form>`}
 let MP_BUSCA_FT=null,MP_BUSCA_SOBRE=false;
-function mpBuscaAbrir(ab){const f=$('.mapa-area .mp-busca');UI.mpBusca=!!ab;clearTimeout(MP_BUSCA_FT);if(!f)return;
+function mpBuscaAbrir(ab,semFoco){const f=$('.mapa-area .mp-busca');UI.mpBusca=!!ab;clearTimeout(MP_BUSCA_FT);if(!f)return;
   f.classList.toggle('fechada',!ab);const i=f.querySelector('#mp-end'),l=f.querySelector('.mp-busca-i');l.setAttribute('aria-expanded',!!ab);l.tabIndex=ab?-1:0;
-  if(ab){i.removeAttribute('tabindex');i.focus()}else{i.value='';i.tabIndex=-1;i.blur();const r=$('#mp-res');if(r)r.hidden=true;MP_BUSCA_SOBRE=false}}
+  if(ab){i.removeAttribute('tabindex');if(!semFoco)i.focus()}else{i.value='';i.tabIndex=-1;i.blur();const r=$('#mp-res');if(r)r.hidden=true;MP_BUSCA_SOBRE=false}}
 function mpBuscaAgendar(){clearTimeout(MP_BUSCA_FT);if(TOQUE())return;const f=$('.mapa-area .mp-busca'),i=$('#mp-end');
   if(!f||f.classList.contains('fechada')||!i||i.value.trim()||document.activeElement===i||MP_BUSCA_SOBRE)return;
   MP_BUSCA_FT=setTimeout(()=>{const i=$('#mp-end');if(i&&!i.value.trim()&&document.activeElement!==i&&!MP_BUSCA_SOBRE)mpBuscaAbrir(false)},3000)}
@@ -210,7 +210,9 @@ document.addEventListener('click',e=>{const a=e.target.closest?.('[data-a="mp-bu
   if(a.dataset.a==='mp-busca-abrir'){if(!UI.mpBusca)mpBuscaAbrir(true);else $('#mp-end')?.focus()}else mpBuscaAbrir(false)},true);
 document.addEventListener('focusout',e=>{if(e.target.id==='mp-end')setTimeout(mpBuscaAgendar,0)},true);
 document.addEventListener('focusin',e=>{if(e.target.id==='mp-end')clearTimeout(MP_BUSCA_FT)},true);
-document.addEventListener('pointerover',e=>{if(e.pointerType==='mouse'&&e.target.closest?.('.mapa-area .mp-busca')&&!MP_BUSCA_SOBRE){MP_BUSCA_SOBRE=true;clearTimeout(MP_BUSCA_FT)}},true);
+/* fechada, abre sozinha com o mouse parado na lupa por 0,75 s, sem pegar o foco (pedido do Moisés, 5/nov/2026) */
+document.addEventListener('pointerover',e=>{if(e.pointerType==='mouse'&&e.target.closest?.('.mapa-area .mp-busca')&&!MP_BUSCA_SOBRE){MP_BUSCA_SOBRE=true;clearTimeout(MP_BUSCA_FT);
+  if(!UI.mpBusca&&!TOQUE())MP_BUSCA_FT=setTimeout(()=>{if(MP_BUSCA_SOBRE&&!UI.mpBusca)mpBuscaAbrir(true,true)},750)}},true);
 document.addEventListener('pointerout',e=>{if(!MP_BUSCA_SOBRE||!e.target.closest?.('.mp-busca')||e.relatedTarget?.closest?.('.mp-busca'))return;MP_BUSCA_SOBRE=false;mpBuscaAgendar()},true);
 function mpResMostrar(rs,msg){const box=$('#mp-res');if(!box)return;box.hidden=false;UI.mpRes=rs;
   box.innerHTML=rs.length?rs.map((x,i)=>`<button type="button" role="option" data-a="mp-res" data-i="${i}">${bi('mapa',18)}<span>${esc(x.nome)}</span></button>`).join(''):`<div class="hint">${msg||'Nada encontrado.'}</div>`}
