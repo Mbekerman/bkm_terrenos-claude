@@ -89,3 +89,7 @@
 :is(.kvl-ed dd, .cond2) .inl-x::placeholder { color: #8e918f; font-style: italic; font-size: 14px }
 .kvl-ed dd { flex: 1; min-width: 0 }
 .prop-form { padding-bottom: 16px; border-bottom: 1px solid var(--m-outline-var, var(--linha)) }
+
+/* painel lateral da ficha (Logs e quadro de avanço): a container query do protótipo vale para a rota "terreno";
+   no React a página da ficha é /terrenos/A123 (data-rota="terrenos") */
+body[data-rota="terrenos"] .main { container: pagina / inline-size }

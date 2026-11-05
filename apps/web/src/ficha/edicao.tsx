@@ -254,6 +254,8 @@ export function Quadro({ aba, id, primeiro, titulo, acoes, aberto: forca, childr
 }) {
   const st = QD[aba] || (QD[aba] = new Set());
   const [, re] = useState(0);
+  /* o painel de Logs abre o quadro de fora (abrirQuadro + evento 'ficha-quadro') */
+  useEffect(() => { const f = () => re((x) => x + 1); window.addEventListener('ficha-quadro', f); return () => window.removeEventListener('ficha-quadro', f); }, []);
   /* ao entrar e sair da edição, o quadro fica onde estava na tela (o resto da página é que se ajusta) */
   const sec = useRef<HTMLElement>(null), antes = useRef<{ ed: boolean; top: number | null }>({ ed: !!forca, top: null });
   if (antes.current.ed !== !!forca) { antes.current = { ed: !!forca, top: sec.current?.getBoundingClientRect().top ?? null }; }
