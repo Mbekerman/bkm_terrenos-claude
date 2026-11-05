@@ -12,6 +12,7 @@ export const P = {
   "telaSair": "M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5",
   "search": "M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4",
   "layers": "M12 4 3 9l9 5 9-5zM3 14l9 5 9-5",
+  "regua": "M3.5 16 16 3.5l4.5 4.5L8 20.5zM7.5 12l2 2M10.5 9l2 2M13.5 6l2 2",
   "filtro": "M4 6h16M7 12h10M10 18h4",
   "back": "M19 12H5M11 6l-6 6 6 6",
   "mais": "M12 5.5h.01M12 12h.01M12 18.5h.01",

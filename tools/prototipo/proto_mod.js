@@ -333,7 +333,7 @@ function mpLegenda(){mpLegGuardar();const m=UI.mp,aberta=!!UI.mpArv;
   const seta=ab=>`<span class="lg-s${ab?' ab':''}" aria-hidden="true">${ic('chev',14)}</span>`;
   /* a bolinha de qualquer item (e a de "Terrenos", data-l="*": todos) liga e desligam tudo que está nele (data-l = nível, data-v = item); o resto do ramo abre e fecha */
   const off=(lv,k,pai)=>pai||mpApag(lv).includes(k),tg=(lv,x)=>`data-l="${esc(lv)}" data-v="${esc(x.k)}"`;
-  const ramo=(x,prof,ab,f,e,fora,lv,pai)=>`<button type="button" class="lg-i lg-a${fora?' lg-fora':''}${off(lv,x.k,pai)?' lg-off':''}" style="--p:${prof}" data-a="mp-abre" data-f="${esc(f)}" data-e="${esc(e)}" ${tg(lv,x)} aria-expanded="${ab}">${seta(ab)}<span class="lg-tg" title="Ligar ou desligar tudo em ${esc(x.nome)}">${pin(x)}</span>${esc(x.nome)}<span class="n">${x.n}</span></button>`;
+  const ramo=(x,prof,ab,f,e,fora,lv,pai)=>`<button type="button" class="lg-i lg-a${fora?' lg-fora':''}${off(lv,x.k,pai)?' lg-off':''}" style="--p:${prof}" data-a="mp-abre" data-f="${esc(f)}" data-e="${esc(e)}" ${tg(lv,x)} aria-expanded="${ab}">${seta(ab)}<span class="lg-tg">${pin(x)}</span>${esc(x.nome)}<span class="n">${x.n}</span></button>`;
   const folha=(x,prof,ativo,f,e,lv,pai)=>ativo?`<button type="button" class="lg-i lg-a${pai?' lg-off':''}" style="--p:${prof}" data-a="mp-sit" ${tg(lv,x)} aria-pressed="${!off(lv,x.k,pai)}"><span class="lg-s"></span>${pin(x)}${esc(x.nome)}<span class="n">${x.n}</span></button>`
     :`<button type="button" class="lg-i lg-a lg-fora${off(lv,x.k,pai)?' lg-off':''}" style="--p:${prof}" data-a="mp-abre" data-f="${esc(f)}" data-e="${esc(e)}" ${tg(lv,x)}><span class="lg-s"></span><span class="lg-tg">${pin(x)}</span>${esc(x.nome)}<span class="n">${x.n}</span></button>`;
   const t0=off('*','todos');let h='';
@@ -345,10 +345,10 @@ function mpLegenda(){mpLegGuardar();const m=UI.mp,aberta=!!UI.mpArv;
       const ab2=m.e===y.k,py=px||off(x.k+'|',y.k);h+=ramo(y,2,ab2,x.k,ab2?'':y.k,m.e&&!ab2,x.k+'|',px);if(!ab2)continue;
       for(const z of mpNivelItens(x.k,y.k))h+=folha(z,3,true,x.k,y.k,x.k+'|'+y.k,py)}}
   const tot=fxLista('mapa').length;
-  return `<button type="button" class="lg-i lg-a${t0?' lg-off':''}" style="--p:0" data-a="mp-arv" data-l="*" data-v="todos" aria-expanded="${aberta}">${seta(aberta)}<span class="lg-poi lg-tg" title="Ligar ou desligar todos os terrenos"><span class="pin-mini lg-nt"></span></span>Terrenos<span class="n">${tot}</span></button>`+h
+  return `<button type="button" class="lg-i lg-a${t0?' lg-off':''}" style="--p:0" data-a="mp-arv" data-l="*" data-v="todos" aria-expanded="${aberta}">${seta(aberta)}<span class="lg-poi lg-tg"><span class="pin-mini lg-nt"></span></span>Terrenos<span class="n">${tot}</span></button>`+h
     +`<hr class="lg-sep">`+(POI_NO_MAPA?`<button type="button" class="lg-i" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}"><span class="lg-poi"><span class="poi-b"></span></span>Pontos de interesse<span class="n">${(S.pontos||[]).length}</span></button>`:'')
     +(CC_MANUAL?`<button type="button" class="lg-i" data-a="mp-conc" aria-pressed="${UI.mpConc!==false}"><span class="lg-poi">${ccMarcaHtml()}</span>Concorrência<span class="n">${ccAtivos().length}</span></button>`:'')
-    +rdLegItem();
+    ;
 }
 function pgMapa(){mpExpirar();mpVisto();
   const opt=(o,v)=>Object.entries(o).map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${esc(l)}</option>`).join('');
@@ -375,6 +375,7 @@ function pgMapa(){mpExpirar();mpVisto();
 }
 function modoBanner(){const m=UI.mpModo;if(!m)return '';
   const t=UI.mpAlvo?T(UI.mpAlvo):null;
+  if(m==='regua')return rgBanner();
   if(m==='poi')return `<span>Clique no mapa para marcar o ponto de interesse.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
   if(m==='marcar')return `<span>Clique no mapa para localizar <b>${esc(t?.nome)}</b>.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
   if(m==='desenhar'||m==='editar'){const n=(UI.desenho||[]).length,a=areaPoly(UI.desenho),tq=TOQUE(),seg=tq?'toque e segure':'clique com o botão direito';
@@ -417,7 +418,7 @@ function L_desenhaRascunho(){const D=UI.edMini?MINI_DES:DES;if(!D)return;D.clear
     mk.on('dragend',e=>{const ll=e.target.getLatLng();vArrastado(i,ll.lat,ll.lng)});
     mk.addTo(D)})}
 function mpRefresh(){if(UI.edMini){miniEdRefresh();return}desenhaPois();const l=$('#mp-lista');if(l)l.innerHTML=mpLista();const g=$('#mp-leg');if(g)g.innerHTML=mpLegenda();const m=$('#mp-modo');if(m)m.innerHTML=modoBanner();
-  if(MAPA){$('#mapa')?.classList.toggle('modo',!!UI.mpModo);desenhaPins();desenhaRascunho();vMenuDesenha()}mpCartao()}
+  if(MAPA){$('#mapa')?.classList.toggle('modo',!!UI.mpModo);desenhaPins();desenhaRascunho();vMenuDesenha();rgDesenha()}mpCartao()}
 function L_initMapa(){const el=$('#mapa');if(!el)return;
   if(!window.L){el.innerHTML='<div class="mapa-erro">Não foi possível carregar a biblioteca de mapas. Verifique a conexão e recarregue a página.</div>';return}
   MAPA=L.map(el,{zoomControl:true,doubleClickZoom:false});
@@ -440,6 +441,7 @@ function L_initMapa(){const el=$('#mapa');if(!el)return;
 function L_focar(t){if(!MAPA)return;UI.mpSel=t.id;if(t.poly)MAPA.fitBounds(t.poly,{maxZoom:18,padding:[40,40]});else MAPA.setView([t.lat,t.lng],Math.max(MAPA.getZoom(),16));
   mpSelecionar(t.id)}
 function mapaClique(lat,lng){const m=UI.mpModo;if(!m)return;
+  if(m==='regua'){rgClique(lat,lng);return}
   if(m==='poi'){UI.mpModo=null;UI.novoPoi={lat,lng};UI.modal='poi';mpRefresh();renderModal();return}
   if(m==='marcar'){const t=T(UI.mpAlvo);UI.mpModo=null;Object.assign(t,{lat,lng,precisao:'aproximada'});log(t,'Localização marcada no mapa');save();mpRefresh();toast(`${t.nome}: localização marcada.`);return}
   if(m==='editar'){if(Date.now()-(UI.vToqueEm||0)<300||Date.now()-(UI.polyLongoEm||0)<700)return;

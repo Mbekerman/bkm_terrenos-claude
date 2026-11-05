@@ -13,9 +13,13 @@ import {
 
 const Marca = ({ sit, fx }: { sit?: string; fx?: string }) => <span style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: fx ? mkFxMarcaHtml(fx) : mkMarcaHtml({ sit }) }} />;
 
-/** três pontinhos da barra do mapa: filtro da concorrência e tipo de mapa (pedido do Moisés, 5/nov/2026, no lugar do botão
- *  Concorrência; o filtro dos terrenos entra aqui quando a página Mapa do React tiver o painel de filtros) */
-export function BotaoMais({ f, base, abrirConc, escolherBase }: { f: Filtro; base: 'mapa' | 'satelite'; abrirConc: () => void; escolherBase: (b: 'mapa' | 'satelite') => void }) {
+/** três pontinhos da barra do mapa: filtro da concorrência, régua, camadas por setor e tipo de mapa (pedidos do Moisés, 5/nov/2026: no lugar
+ *  do botão Concorrência; renda e densidade saíram da legenda e vieram para cá; a régua também). O filtro dos terrenos entra aqui quando a
+ *  página Mapa do React tiver o painel de filtros */
+export function BotaoMais({ f, base, abrirConc, escolherBase, camada, alternarCamada, regua }: {
+  f: Filtro; base: 'mapa' | 'satelite'; abrirConc: () => void; escolherBase: (b: 'mapa' | 'satelite') => void;
+  camada: 'renda' | 'dens' | null; alternarCamada: (c: 'renda' | 'dens') => void; regua: () => void;
+}) {
   const [aberto, setAberto] = useState(false);
   const w = useRef<HTMLDivElement>(null);
   const n = mfAtivos(f).length;
@@ -41,16 +45,22 @@ export function BotaoMais({ f, base, abrirConc, escolherBase }: { f: Filtro; bas
   const tipo = (v: 'mapa' | 'satelite', l: string) => (
     <button type="button" role="menuitemradio" aria-checked={base === v} onClick={() => { mudar(false); escolherBase(v); }}><span className="mm-ck"><Ic n="check" s={18} /></span>{l}</button>
   );
+  const cam = (v: 'renda' | 'dens', l: string) => (
+    <button type="button" role="menuitemcheckbox" aria-checked={camada === v} onClick={() => { mudar(false); alternarCamada(v); }}><span className="mm-ck"><Ic n="check" s={18} /></span>{l}</button>
+  );
   return (
     <div className="mp-maisw" ref={w}
       onPointerEnter={(ev) => { if (ev.pointerType !== 'mouse') return; sobre.current = true; agendar(); }}
       onPointerLeave={(ev) => { if (ev.pointerType !== 'mouse') return; sobre.current = false; nao.current = false; agendar(); }}
       onBlur={() => setTimeout(agendar, 0)}>
-      <button type="button" className="mp-renda-b mp-mais" aria-haspopup="menu" aria-expanded={aberto} aria-pressed={n > 0} title="Filtros e tipo de mapa" aria-label="Filtros e tipo de mapa" onClick={() => mudar(!aberto)}>
+      <button type="button" className="mp-renda-b mp-mais" aria-haspopup="menu" aria-expanded={aberto} aria-pressed={n > 0} aria-label="Filtros, camadas e tipo de mapa" onClick={() => mudar(!aberto)}>
         <Ic n="mais" s={22} />{n > 0 && <span className="mf-n">{n}</span>}
       </button>
-      {aberto && <div className="mp-cam-m mp-mais-m" role="menu" aria-label="Filtros e tipo de mapa">
+      {aberto && <div className="mp-cam-m mp-mais-m" role="menu" aria-label="Filtros, camadas e tipo de mapa">
         <button type="button" role="menuitem" onClick={() => { mudar(false); abrirConc(); }}><Ic n="filtro" s={18} /><span className="mm-l">Filtro da concorrência</span>{n > 0 && <span className="mf-n">{n}</span>}</button>
+        <button type="button" role="menuitem" onClick={() => { mudar(false); regua(); }}><Ic n="regua" s={18} /><span className="mm-l">Régua</span></button>
+        <div className="mm-t" role="presentation">Camadas</div>
+        {cam('renda', 'Renda familiar (setores)')}{cam('dens', 'Densidade demográfica (setores)')}
         <div className="mm-t" role="presentation">Tipo de mapa</div>
         {tipo('mapa', 'Mapa')}{tipo('satelite', 'Satélite')}
       </div>}
@@ -140,7 +150,7 @@ export function ItensConc({ lista, erro, ligada, off, arv, alternar, alternarArv
   return (
     <>
       <div className="lg-row">
-        <button type="button" className="lg-sb" aria-expanded={arv} aria-label={`${arv ? 'Fechar' : 'Abrir'} as faixas de preço e as situações da concorrência`} title="Por preço e situação" onClick={alternarArv}>
+        <button type="button" className="lg-sb" aria-expanded={arv} aria-label={`${arv ? 'Fechar' : 'Abrir'} as faixas de preço e as situações da concorrência`} onClick={alternarArv}>
           <span className={`lg-s${arv ? ' ab' : ''}`} aria-hidden="true"><Ic n="chev" s={14} /></span>
         </button>
         <button type="button" className="lg-i" aria-pressed={ligada} onClick={alternar}><span className="lg-poi"><Marca sit="pronto" /></span>Concorrência<span className="n">{n == null ? (erro ? '—' : '…') : num(n)}</span></button>

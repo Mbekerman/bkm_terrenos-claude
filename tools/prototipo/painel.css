@@ -4190,3 +4190,12 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 .mk-box .mk-fixar[aria-pressed="true"] { background: #c2e7ff; color: #001d35 }
 :root[data-tema="escuro"] .mk-box .mk-fixar { color: #c4c7c5 }
 :root[data-tema="escuro"] .mk-box .mk-fixar[aria-pressed="true"] { background: #004a77; color: #c2e7ff }
+
+/* Régua do mapa (menu dos três pontinhos; pedido do Moisés, 5/nov/2026) */
+.rg-w { position: relative; width: 0; height: 0 }
+.rg-pt { position: absolute; left: 0; top: 0; width: 10px; height: 10px; border-radius: 50%; background: #fff; border: 2px solid #0b57d0; transform: translate(-50%, -50%); box-sizing: border-box }
+.rg-pt.rg-ini { width: 16px; height: 16px; cursor: pointer; background: #0b57d0; box-shadow: 0 0 0 3px rgba(11,87,208,.25) }
+.rg-rot { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); white-space: nowrap; background: #fff; color: #1f1f1f; border: 1px solid #c4c7c5; border-radius: 6px; padding: 1px 6px; font-size: 12px; line-height: 18px; font-variant-numeric: tabular-nums; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,.2) }
+.rg-rot.rg-tot { background: #0b57d0; color: #fff; border-color: #0b57d0; font-weight: 500; transform: translate(-50%, calc(-100% - 10px)) }
+/* no desenho, na edição e na régua o clique passa pelos pinos do mapa (terrenos e concorrência) e marca o ponto ali */
+:is(.mapa, .mini-mapa).modo gmp-advanced-marker:not(:has(.v-alvo, .rg-ini)) { pointer-events: none !important }
