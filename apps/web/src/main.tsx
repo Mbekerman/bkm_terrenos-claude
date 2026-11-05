@@ -6,6 +6,7 @@ import { SessaoProvider } from './lib/sessao';
 import { ToastProvider } from './components/ui';
 import App from './App';
 import './styles.css';
+import './app.css';
 
 const qc = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: true } },

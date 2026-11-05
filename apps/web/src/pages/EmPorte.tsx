@@ -1,11 +1,9 @@
-/** Tela da primeira versão que ainda não foi portada do protótipo. */
+/** Tela da primeira versão que ainda não foi portada do protótipo (classes do protótipo). */
 export default function EmPorte({ titulo }: { titulo: string }) {
   return (
-    <section className="m-pagina">
-      <h1 className="m-titulo">{titulo}</h1>
-      <div className="m-card m-vazio">
-        Esta tela ainda está sendo portada do protótipo. Ordem: login, mapa, novo terreno, ficha e funil.
-      </div>
-    </section>
+    <div className="forma">
+      <div className="page-h"><div><h1>{titulo}</h1></div></div>
+      <section className="card"><div className="empty">Esta tela ainda está sendo portada do protótipo.</div></section>
+    </div>
   );
 }

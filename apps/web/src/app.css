@@ -1,0 +1,23 @@
+/* ==== Front React: estilos que o protótipo não tem ====
+   A moldura (barra de cima, menu lateral, sino, perfil) usa as classes do protótipo, em styles.css.
+   Aqui só a tela de entrada, que o protótipo não tem. Este arquivo não é gerado; o styles.css é
+   (tools/prototipo/build.py). */
+.m-logo{display:inline-flex;align-items:center;gap:12px;position:relative}
+.m-logo img{width:120px;height:auto;display:block}
+.m-logo .amb-selo{position:static}
+/* foto do Google dentro do botão do perfil (no protótipo, a inicial) */
+.perfil-btn{overflow:hidden;padding:0}
+.perfil-foto{width:100%;height:100%;object-fit:cover;display:block}
+.m-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 24px;border-radius:20px;font:inherit;font-size:14px;font-weight:500;cursor:pointer;border:0}
+.m-btn-cont{background:none;border:1px solid var(--m-outline);color:var(--m-primary)}
+.m-btn-cont:hover{background:rgba(11,87,208,.08)}
+.m-btn:disabled{opacity:.6;cursor:default}
+.m-btn-txt{border:0;background:none;color:var(--m-primary);font:inherit;font-size:14px;font-weight:500;padding:0 8px;height:40px;border-radius:20px;cursor:pointer}
+.m-btn-txt:hover{background:rgba(11,87,208,.08)}
+.m-auth{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--m-sc-low);font-family:var(--font-aptos);color:var(--m-on-surface);padding:16px;box-sizing:border-box}
+.m-auth-card{width:100%;max-width:448px;background:var(--m-card);border-radius:28px;padding:40px;box-sizing:border-box;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.m-auth-card h1{font-size:32px;line-height:40px;font-weight:400;margin:24px 0 0}
+.m-auth-txt{font-size:14px;line-height:20px;color:var(--m-on-var);margin:0 0 24px}
+.m-auth-erro{width:100%;box-sizing:border-box;padding:12px 16px;border-radius:12px;background:var(--critico-fundo);color:var(--critico-marca);font-size:14px;line-height:20px;margin-bottom:16px}
+.m-auth-acoes{display:flex;gap:8px;align-self:flex-end}
+.m-google{align-self:flex-end;color:var(--m-on-surface)}
