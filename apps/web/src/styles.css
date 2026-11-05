@@ -1134,6 +1134,11 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
   .mapa-area:has(.mp-modo:not(:empty)) .leaflet-control-scale { display: none }
 }
 .mp-modo .mp-q { opacity: .75; white-space: nowrap }
+/* desenho no desktop: só o mapa, a busca e a barra Cancelar/Concluir no canto de baixo à direita (opção 5 do Moises, 5/nov/2026) */
+.mapa-area:has(.mp-modo > .mp-fina) :is(.mp-legenda, #mp-ctrl, .gm-svpc, .mp-barra > :not(.mp-busca)) { display: none !important }
+.mp-modo:has(> .mp-fina) { top: auto !important; bottom: 28px; left: auto !important; right: 12px; transform: none; flex-wrap: nowrap; max-width: none; padding: 4px 4px 4px 16px !important; gap: 4px !important; border-radius: 22px !important; font-size: 13px; line-height: 18px }
+.mp-modo:has(> .mp-fina) > .mp-fina { flex: 0 0 auto; margin-right: 8px }
+.mp-modo:has(> .mp-fina) .btn { height: 32px; min-height: 32px !important; border-radius: 16px !important }
 /* edição da poligonal no celular: só os dois botões, sem a faixa escura (decisão do Moisés, 24/out/2026) */
 .mp-modo:not(:has(> span)):not(:empty) { background: transparent !important; box-shadow: none !important; padding: 0 !important; gap: 8px !important; justify-content: flex-end; pointer-events: none }
 .mp-modo:not(:has(> span)) .btn { pointer-events: auto; height: 40px; min-height: 40px !important; padding: 0 20px !important; border-radius: 20px !important; box-shadow: 0 1px 3px rgba(0,0,0,.3), 0 4px 8px rgba(0,0,0,.15) !important }
@@ -1626,14 +1631,18 @@ html[data-tema="escuro"] body.dnd .col[data-col]:not(.origem), html[data-tema="e
 html[data-tema="escuro"] .col.sobre, html[data-tema="escuro"] .tk-col.sobre { background: rgba(128,132,139,0.18) !important; outline-color: rgba(149,153,160,0.9) !important }
 
 /* Mapa: botões do canto (minha localização, tela cheia), X do cartão do terreno e tela cheia (23/out/2026) */
-.mp-ctrl { position: absolute; right: 10px; bottom: 40px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; transition: bottom .15s }
-.mp-cb { width: 40px; height: 40px; border-radius: 20px; border: 0; display: grid; place-items: center; cursor: pointer; background: #fff; color: #444746; box-shadow: 0 1px 3px rgba(0,0,0,.25), 0 2px 8px rgba(0,0,0,.15) }
-.mp-cb:hover { color: #0b57d0; background: #f0f4f9 }
+.mp-ctrl { position: absolute; right: 10px; bottom: 40px; z-index: 1000; display: flex; flex-direction: column; gap: 6px; transition: bottom .15s }
+/* no jeito dos botões do Google Maps atual: pequenos, escuros e discretos (pedido do Moisés, 5/nov/2026) */
+.mp-cb { width: 32px; height: 32px; border-radius: 8px; border: 0; display: grid; place-items: center; cursor: pointer; background: rgba(32,33,36,.9); color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3) }
+.mp-cb svg { width: 18px; height: 18px }
+.mp-cb:hover { color: #fff; background: #3c4043 }
+.mapa-area .gm-svpc { width: 32px !important; height: 32px !important; margin-left: 8px !important; border-radius: 8px !important; background-color: rgba(32,33,36,.9) !important; box-shadow: 0 1px 4px rgba(0,0,0,.3) !important }
+.mapa-area .gm-svpc img { max-width: 20px; max-height: 20px }
 .mp-cb:focus-visible { outline: 2px solid #0b57d0; outline-offset: 2px }
 .mp-cb.busca svg { animation: mp-pulso 1s ease-in-out infinite }
 @keyframes mp-pulso { 50% { opacity: .35 } }
-:root[data-tema="escuro"] .mp-cb { background: #1a1a1b; color: #c1d9ff; box-shadow: 0 0 0 1px rgba(149,153,160,0.35), 0 6px 16px rgba(0,0,0,.5) }
-:root[data-tema="escuro"] .mp-cb:hover { background: #29292b }
+:root[data-tema="escuro"] .mp-cb { background: rgba(32,33,36,.9); color: #fff; box-shadow: 0 0 0 1px rgba(149,153,160,0.35), 0 1px 4px rgba(0,0,0,.5) }
+:root[data-tema="escuro"] .mp-cb:hover { background: #3c4043 }
 .mapa-area.sv-on .mp-cb[data-a="mp-eu"] { display: none }
 .eu-dot { width: 16px; height: 16px; border-radius: 50%; background: #1a73e8; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.2), 0 1px 4px rgba(0,0,0,.35); transform: translateY(50%) }
 .mp-it.cartao { grid-template-columns: auto minmax(0, 1fr) auto auto; column-gap: 4px; padding-right: 4px }
@@ -4949,10 +4958,12 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 .lg-sb:hover { background: rgba(31,31,31,.06) } :root[data-tema="escuro"] .lg-sb:hover { background: rgba(227,227,227,.08) }
 .lg-sb:focus-visible { outline: 2px solid #0b57d0; outline-offset: -2px }
 .lg-msit[aria-pressed="false"] .mk-b { filter: grayscale(1); opacity: .5 }
+.lg-sub { padding: 8px 8px 2px 36px; font-size: 12px; line-height: 16px; color: var(--m-on-surface-variant, #444746) }
+:root[data-tema="escuro"] .lg-sub { color: #c4c7c5 }
 .lg-msit[disabled] { opacity: .5; cursor: default }
 /* legenda: item desligado (ele ou o ramo de cima) fica apagado; a bolinha e o número de um ramo ligam e desligam tudo dentro */
 #mp-leg .lg-i.lg-off .pin-mini { filter: grayscale(1); opacity: .45 } #mp-leg .lg-i.lg-off { color: var(--m-on-surface-variant, #444746) }
-#mp-leg .lg-tg { cursor: pointer } #mp-leg span.lg-tg:hover .pin-mini, #mp-leg .n.lg-tg:hover { outline: 2px solid #0b57d0; outline-offset: 1px; border-radius: 9px }
+#mp-leg .lg-tg { cursor: pointer } #mp-leg span.lg-tg:hover .pin-mini { outline: 2px solid #0b57d0; outline-offset: 1px; border-radius: 9px }
 
 /* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
 :root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }

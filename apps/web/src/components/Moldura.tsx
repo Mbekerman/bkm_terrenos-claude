@@ -5,6 +5,8 @@ import { NOME_PAPEL, useSessao } from '../lib/sessao';
 import { supabase } from '../lib/supabase';
 import { AMBIENTE, EH_DEV } from '../lib/config';
 import { BI, IC_SINO, P } from '../lib/icones-prototipo';
+import NovoTerreno from '../novo/NovoTerreno';
+import { abrirNovo } from '../novo/estado';
 
 // Moldura copiada do protótipo, com as mesmas classes e a mesma marcação (proto_body.html,
 // proto.js › render/renderPerfil, proto_funil.js › renderSino e o selo do ambiente). Os estilos
@@ -156,7 +158,7 @@ export default function Moldura() {
   useEffect(() => { document.title = (EH_DEV ? '[DEV] ' : '') + 'BKM Terrenos'; }, []);
   useEffect(() => { document.body.classList.toggle('menu-min', menuMin); }, [menuMin]);
   useEffect(() => { document.body.dataset.rota = rota; }, [rota]);
-  const novo = () => navegar('/terrenos/novo');
+  const novo = () => abrirNovo();
   const [busca, setBusca] = useState('');
   return (
     <>
@@ -199,6 +201,7 @@ export default function Moldura() {
         ))}
       </nav>
       <button className="fab" onClick={novo}><Ic n="add" s={22} /><span className="fab-t">Novo terreno</span></button>
+      <NovoTerreno />
     </>
   );
 }

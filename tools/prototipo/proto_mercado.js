@@ -13,6 +13,23 @@
 /* cores das etiquetas (tons claros com o prédio no tom escuro da mesma cor; pedido do Moisés, 4/nov/2026, trocando o neon), fora da paleta dos pinos */
 const MK_SIT={breve_lancamento:['Breve lançamento','#ffdf99','#7a5900'],lancamento:['Lançamento','#c4eed0','#0f5223'],em_obras:['Em obras','#ffdcc1','#8a4a00'],pronto:['Pronto','#f0dbff','#6b2c91'],usado:['Usado','#ffd8e8','#8f1d52'],nao_informado:['Sem situação','#e3e3e3','#444746']};
 const mkSitK=e=>MK_SIT[e?.sit]?e.sit:'nao_informado',mkOff=()=>UI.mkOff||(UI.mkOff=[]);
+/* faixas do R$/m² médio das unidades à venda (soma dos preços ÷ soma das áreas), cada uma com a sua cor; a situação vai no
+   desenho dentro do quadrado (pedido do Moisés, 5/nov/2026). O limite de baixo entra na faixa. */
+const MK_FX=[[7000,'Abaixo de 7 mil','#5e4fa2'],[8000,'7 a 8 mil','#3288bd'],[9000,'8 a 9 mil','#66c2a5'],[10000,'9 a 10 mil','#abdda4'],[11000,'10 a 11 mil','#e6f598'],
+  [13000,'11 a 13 mil','#fee08b'],[15000,'13 a 15 mil','#fdae61'],[18000,'15 a 18 mil','#f46d43'],[25000,'18 a 25 mil','#d53e4f'],[Infinity,'Acima de 25 mil','#9e0142']];
+const MK_FX_SEM=['Sem preço','#bdc1c6'];
+const mkFxK=e=>{const v=e?.preco!=null&&e.area>0?e.preco/e.area:null;if(v==null)return 'fx';return 'f'+MK_FX.findIndex(f=>v<f[0])};
+const mkFxInfo=k=>k==='fx'?MK_FX_SEM:MK_FX[+k.slice(1)].slice(1);
+/* o desenho de cada situação: lançamento estrela, em obras guindaste, pronto prédio (breve lançamento e usado, se vierem,
+   seguem o lançamento e o pronto) */
+const MK_GLIFO={lancamento:'M12 3.5l2.5 5.3 5.8.7-4.3 4 1.1 5.7L12 16.4l-5.1 2.8 1.1-5.7-4.3-4 5.8-.7z',
+  em_obras:'M7 21V3M4 21h7M7 4h13M7 4l4 4M17 4v5M15 9h4v3h-4zM7 9h3M7 14h3',
+  pronto:'M4 21V5l8-3v19M12 9l8 3v9M2 21h20M7 8h2M7 12h2M7 16h2M15 14h2M15 18h2'};
+MK_GLIFO.breve_lancamento=MK_GLIFO.lancamento;MK_GLIFO.usado=MK_GLIFO.pronto;MK_GLIFO.nao_informado='M8 8a4 4 0 1 1 5 3.9c-.6.2-1 .7-1 1.3V15M12 19h.01';
+const mkGlifo=e=>MK_GLIFO[mkSitK(e)];
+/* cor do desenho: escura sobre as cores claras, branca sobre as escuras */
+const mkTinta=c=>{const n=parseInt(c.slice(1),16),l=(.299*(n>>16)+.587*(n>>8&255)+.114*(n&255))/255;return l>.6?'#1f1f1f':'#fff'};
+const mkVisivel=(e,off=mkOff())=>!off.includes(mkSitK(e))&&!off.includes(mkFxK(e));
 const MK_RAIOS=[1,2,3];
 const MK={box:null,abertoEm:0,d:null,erro:null,promessa:null};
 const mkArq=()=>(location.pathname.startsWith('/prototipo')?'/prototipo/':'')+'dados/mercado.json';
@@ -105,30 +122,31 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&MF_ABERTO&&!UI.moda
 
 /* ---------- marca no mapa: quadrado com um prédio, na cor da situação (pedido do Moisés, 4/nov/2026: a bolinha se perdia
    no meio dos pinos dos terrenos) ---------- */
-const MK_PREDIO='M4 21V5l8-3v19M12 9l8 3v9M2 21h20M7 8h2M7 12h2M7 16h2M15 14h2M15 18h2';
-const mkCor=e=>MK_SIT[mkSitK(e)];
+/* cor = faixa do R$/m²; o desenho = situação; com e.sit só (legenda da situação) fica cinza neutro */
+const mkCor=e=>{const f=e?.preco===undefined?'#e8eaed':mkFxInfo(mkFxK(e))[1];return [null,f,mkTinta(f)]};
 /* destacado (o empreendimento aberto): fundo escuro, prédio branco e anel azul */
-const mkMarcaHtml=(e,dest)=>{const [,f,g]=mkCor(e);return `<span class="mk-b${dest?' mk-dest-b':''}" style="background:${dest?'#202124':f};border-color:${dest?'#fff':g}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="${dest?'#fff':g}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="${MK_PREDIO}"/></svg></span>`};
+const mkMarcaHtml=(e,dest)=>{const [,f,g]=mkCor(e),d=mkGlifo(e);return `<span class="mk-b${dest?' mk-dest-b':''}" style="background:${dest?'#202124':f};border-color:${dest?'#fff':'rgba(0,0,0,.45)'}">${d?`<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="${dest?'#fff':g}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="${d}"/></svg>`:''}</span>`};
+const mkFxMarca=k=>`<span class="mk-b" style="background:${mkFxInfo(k)[1]};border-color:rgba(0,0,0,.45)"></span>`;
 /* no Leaflet os ~2 mil empreendimentos ficam em canvas: o mesmo quadrado desenhado à mão (o clique segue o raio do círculo) */
 let MK_SQ=null;
-function mkQuadrado(){if(MK_SQ)return MK_SQ;const ico=new Path2D(MK_PREDIO);
+function mkQuadrado(){if(MK_SQ)return MK_SQ;const icos={};
   L.Canvas.include({_mkSq(l){if(!this._drawing||l._empty())return;const p=l._point,c=this._ctx,r=11,o=l.options;
     c.beginPath();if(c.roundRect)c.roundRect(p.x-r,p.y-r,2*r,2*r,6);else c.rect(p.x-r,p.y-r,2*r,2*r);
-    c.lineWidth=4;c.strokeStyle='rgba(0,0,0,.25)';c.stroke();c.fillStyle=o.fillColor;c.fill();c.lineWidth=1.5;c.strokeStyle=o.color;c.stroke();
-    c.save();c.translate(p.x-6.5,p.y-6.5);c.scale(13/24,13/24);c.lineWidth=2.6;c.lineCap=c.lineJoin='round';c.strokeStyle=o.color;c.stroke(ico);c.restore()}});
+    c.lineWidth=4;c.strokeStyle='rgba(0,0,0,.25)';c.stroke();c.fillStyle=o.fillColor;c.fill();c.lineWidth=1.5;c.strokeStyle='rgba(0,0,0,.45)';c.stroke();
+    c.save();c.translate(p.x-6.5,p.y-6.5);c.scale(13/24,13/24);c.lineWidth=2.6;c.lineCap=c.lineJoin='round';c.strokeStyle=o.color;c.stroke(icos[o.glifo]||(icos[o.glifo]=new Path2D(o.glifo)));c.restore()}});
   return MK_SQ=L.CircleMarker.extend({_updatePath(){this._renderer._mkSq(this)}})}
-const mkTitulo=e=>`${e.nome} · ${(MK_SIT[e.sit]||MK_SIT.nao_informado)[0]}`;
+const mkTitulo=e=>`${e.nome} · ${(MK_SIT[e.sit]||MK_SIT.nao_informado)[0]} · ${mkFxK(e)==='fx'?'sem preço':'R$/m² '+mkFxInfo(mkFxK(e))[0].toLowerCase()}`;
 let MERC=null,gMerc=[],MK_CHAVE=null;
 /* os pinos só são refeitos quando os dados, o filtro ou o modo do mapa mudam; no Leaflet, círculos em canvas (são ~2 mil) */
 function desenhaMerc(){if(!MAPA)return;if(!MK.d){mkCarregar();return}
   const chave=JSON.stringify([UI.mf,!!UI.mpModo,GG,mkOff()]),igual=chave===MK_CHAVE&&(GG?gMerc._mapa===MAPA:MERC&&MERC._mapa===MAPA);
-  if(!igual){MK_CHAVE=chave;const off=mkOff(),lista=mfLista().filter(e=>!off.includes(mkSitK(e)));const ar=$('.mapa-area');if(ar)ar.dataset.merc=lista.length;
+  if(!igual){MK_CHAVE=chave;const off=mkOff(),lista=mfLista().filter(e=>mkVisivel(e,off));const ar=$('.mapa-area');if(ar)ar.dataset.merc=lista.length;
     if(GG){gSet(gMerc,null);gMerc=[];gMerc._mapa=MAPA;const {AdvancedMarkerElement}=gLib.marker;
       lista.forEach(e=>{const d=document.createElement('div');d.className='mk g';d.innerHTML=mkMarcaHtml(e);
         const m=new AdvancedMarkerElement({map:null,position:gLL(e.lat,e.lng),content:d,title:mkTitulo(e),gmpClickable:!UI.mpModo});
         m.addListener?.('click',()=>{if(!UI.mpModo)mkAbrir(e.id)});gMerc.push(m)})}
     else{MERC?.remove();MERC=L.featureGroup();MERC._mapa=MAPA;const rd=MAPA._mkCanvas||(MAPA._mkCanvas=L.canvas({padding:.5}));
-      const Q=mkQuadrado();lista.forEach(e=>new Q([e.lat,e.lng],{renderer:rd,radius:12,weight:2,color:mkCor(e)[2],fillColor:mkCor(e)[1],fillOpacity:1,interactive:!UI.mpModo,bubblingMouseEvents:false})
+      const Q=mkQuadrado();lista.forEach(e=>new Q([e.lat,e.lng],{renderer:rd,radius:12,weight:2,color:mkCor(e)[2],fillColor:mkCor(e)[1],glifo:mkGlifo(e),fillOpacity:1,interactive:!UI.mpModo,bubblingMouseEvents:false})
         .bindTooltip(mkTitulo(e),{direction:'top',offset:[0,-6]}).on('click',ev=>{L.DomEvent.stop(ev);if(!UI.mpModo)mkAbrir(e.id)}).addTo(MERC))}}
   else{const ar=$('.mapa-area');if(ar&&!ar.dataset.merc)ar.dataset.merc=gMerc.length||MERC?.getLayers().length||0}
   mostrarMerc(UI.mpMerc!==false);
@@ -138,7 +156,7 @@ function mostrarMerc(on){mkDestaque();if(GG){gMerc.forEach(m=>{if((m.map||null)!
    ou sair do Mapa; vai num marcador próprio por cima dos outros (MK.dest) */
 let MK_DM=null;
 function mkDestaque(){try{if(MK_DM){GG?(MK_DM.map=null):MK_DM.remove()}}catch(x){}MK_DM=null;
-  const e=MK.dest&&mkEmp(MK.dest);if(!e||!MAPA||!naMapa()||UI.mpMerc===false||mkOff().includes(mkSitK(e)))return;
+  const e=MK.dest&&mkEmp(MK.dest);if(!e||!MAPA||!naMapa()||UI.mpMerc===false||!mkVisivel(e))return;
   if(GG){const d=document.createElement('div');d.className='mk g mk-dest';d.innerHTML=mkMarcaHtml(e,true);
     MK_DM=new gLib.marker.AdvancedMarkerElement({map:MAPA,position:gLL(e.lat,e.lng),content:d,title:mkTitulo(e),zIndex:3000,gmpClickable:!UI.mpModo});MK_DM.addListener?.('click',()=>{if(!UI.mpModo)mkAbrir(e.id)});return}
   MK_DM=L.marker([e.lat,e.lng],{icon:L.divIcon({className:'mk mk-dest',html:mkMarcaHtml(e,true),iconSize:[30,30],iconAnchor:[15,15]}),zIndexOffset:3000,interactive:!UI.mpModo,title:mkTitulo(e)})
@@ -185,17 +203,20 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a="mk-x"],
   const leg=()=>{const lg=$('#mp-leg');if(lg)lg.innerHTML=mpLegenda()};
   if(a.dataset.a==='mk-arv'){UI.mkArv=!UI.mkArv;leg();$('#mp-leg [data-a="mk-arv"]')?.focus();return}
   if(a.dataset.a==='mk-sit'){const o=mkOff(),v=a.dataset.v;UI.mkOff=o.includes(v)?o.filter(x=>x!==v):[...o,v];
-    if(MK.box&&UI.mkOff.includes(mkSitK(mkEmp(MK.box))))mkFechar();desenhaMerc();leg();$(`#mp-leg [data-a="mk-sit"][data-v="${v}"]`)?.focus();return}
+    if(MK.box&&!mkVisivel(mkEmp(MK.box)))mkFechar();desenhaMerc();leg();$(`#mp-leg [data-a="mk-sit"][data-v="${v}"]`)?.focus();return}
   if(a.dataset.a==='mk-x')mkFechar();
   else{UI.mpMerc=UI.mpMerc===false;mostrarMerc(UI.mpMerc);if(!UI.mpMerc)mkFechar();leg()}},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!UI.modal&&MK.box){mkFechar();e.preventDefault();e.stopImmediatePropagation()}},true);
 const _lDesenhaConcMk=L_desenhaConc;L_desenhaConc=function(){const r=_lDesenhaConcMk.apply(this,arguments);desenhaMerc();return r};
 const _gDesenhaConcMk=G_desenhaConc;G_desenhaConc=function(){const r=_gDesenhaConcMk.apply(this,arguments);desenhaMerc();return r};
-/* legenda: "Concorrência" liga e desliga a camada; a seta abre uma linha por situação, cada uma liga e desliga a sua (pedido do Moisés, 4/nov/2026) */
+/* legenda: "Concorrência" liga e desliga a camada; a seta abre as faixas do R$/m² e as situações, cada linha liga e desliga a sua (pedidos do Moisés, 4 e 5/nov/2026) */
 const _mpLegendaMk=mpLegenda;mpLegenda=function(){const h=_mpLegendaMk.apply(this,arguments),todos=MK.d?mfLista():null,off=mkOff(),ab=!!UI.mkArv;
-  const cont={};(todos||[]).forEach(e=>{const k=mkSitK(e);cont[k]=(cont[k]||0)+1});const n=todos?todos.filter(e=>!off.includes(mkSitK(e))).length:null;
-  let item=`<div class="lg-row"><button type="button" class="lg-sb" data-a="mk-arv" aria-expanded="${ab}" aria-label="${ab?'Fechar':'Abrir'} as situações da concorrência" title="Por situação"><span class="lg-s${ab?' ab':''}" aria-hidden="true">${ic('chev',14)}</span></button><button type="button" class="lg-i" data-a="mp-merc" aria-pressed="${UI.mpMerc!==false}"><span class="lg-poi">${mkMarcaHtml({sit:'lancamento'})}</span>Concorrência<span class="n">${n==null?(MK.erro?'—':'…'):num(n)}</span></button></div>`;
-  if(ab&&todos)item+=Object.keys(MK_SIT).filter(k=>cont[k]).map(k=>`<button type="button" class="lg-i lg-a lg-msit" style="--p:2" data-a="mk-sit" data-v="${k}" aria-pressed="${!off.includes(k)}"${UI.mpMerc===false?' disabled':''}><span class="lg-poi">${mkMarcaHtml({sit:k})}</span>${esc(MK_SIT[k][0])}<span class="n">${num(cont[k])}</span></button>`).join('');
+  const cont={};(todos||[]).forEach(e=>{const k=mkSitK(e),f=mkFxK(e);cont[k]=(cont[k]||0)+1;cont[f]=(cont[f]||0)+1});const n=todos?todos.filter(e=>mkVisivel(e,off)).length:null;
+  let item=`<div class="lg-row"><button type="button" class="lg-sb" data-a="mk-arv" aria-expanded="${ab}" aria-label="${ab?'Fechar':'Abrir'} as situações da concorrência" title="Por situação"><span class="lg-s${ab?' ab':''}" aria-hidden="true">${ic('chev',14)}</span></button><button type="button" class="lg-i" data-a="mp-merc" aria-pressed="${UI.mpMerc!==false}"><span class="lg-poi">${mkMarcaHtml({sit:'pronto'})}</span>Concorrência<span class="n">${n==null?(MK.erro?'—':'…'):num(n)}</span></button></div>`;
+  /* primeiro as faixas do R$/m² médio, depois a situação; cada linha liga e desliga a sua (pedido do Moisés, 5/nov/2026) */
+  const linha=(k,marca,nome)=>`<button type="button" class="lg-i lg-a lg-msit" style="--p:2" data-a="mk-sit" data-v="${k}" aria-pressed="${!off.includes(k)}"${UI.mpMerc===false?' disabled':''}><span class="lg-poi">${marca}</span>${esc(nome)}<span class="n">${num(cont[k])}</span></button>`;
+  if(ab&&todos)item+=`<div class="lg-sub">R$/m² médio à venda</div>`+[...MK_FX.map((f,i)=>'f'+i),'fx'].filter(k=>cont[k]).map(k=>linha(k,mkFxMarca(k),mkFxInfo(k)[0])).join('')
+    +`<div class="lg-sub">Situação</div>`+Object.keys(MK_SIT).filter(k=>cont[k]).map(k=>linha(k,mkMarcaHtml({sit:k}),MK_SIT[k][0])).join('');
   const i=h.indexOf('data-a="mp-conc"');if(i<0)return h+item;const fim=h.indexOf('</button>',i)+9;return h.slice(0,fim)+item+h.slice(fim)};
 const _ccAbrirMk=ccAbrir;ccAbrir=function(){mkFechar();return _ccAbrirMk.apply(this,arguments)};
 const _mpSelecionarMk=mpSelecionar;mpSelecionar=function(id){if(id)mkFechar();return _mpSelecionarMk.apply(this,arguments)};

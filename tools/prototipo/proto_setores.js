@@ -141,7 +141,10 @@ function rdLegenda(){const area=$('.mapa-area');let el=$('#rd-leg');if(!area||!n
 /* barra do mapa: um botão Camadas que abre a lista das camadas por setor (uma ligada de cada vez);
    ligado, o botão mostra o nome curto da camada */
 const RD_IC={renda:'rd-ic',dens:'ds-ic'};
-function rdBarraBotao(){const k=rdCamada();
+/* rdCamBotao é só o botão Camadas; rdBarraBotao ganha os botões de outras camadas (o da concorrência, em proto_mercado.js) */
+/* o botão Camadas saiu da barra: renda e densidade ligam pela legenda (pedido do Moisés, 5/nov/2026) */
+function rdBarraBotao(){return ''}
+function rdCamBotao(){const k=rdCamada();
   return `<div class="mp-cam"><button type="button" class="mp-renda-b" data-a="mp-camadas" aria-haspopup="menu" aria-expanded="false" aria-pressed="${!!k}" title="Camadas por setor censitário (IBGE)">${k?`<span class="${RD_IC[k]}"></span>`:ic('layers',18)}${k?CAMADAS_SETOR[k].curto:'Camadas'}<span class="cam-seta">${ic('chev',16)}</span></button></div>`}
 function rdMenu(abrir){const w=$('.mapa-area .mp-cam');if(!w)return;w.querySelector('.mp-cam-m')?.remove();const b=w.querySelector('[data-a="mp-camadas"]');b.setAttribute('aria-expanded',!!abrir);if(!abrir)return;
   const k=rdCamada(),it=(v,ico,l)=>`<button type="button" role="menuitemradio" aria-checked="${k===v}" data-a="mp-camada" data-v="${v||''}"><span class="${ico}"></span>${l}</button>`;
@@ -152,9 +155,10 @@ function rdLegItem(){const k=rdCamada();return `<button type="button" class="lg-
   +`<button type="button" class="lg-i" data-a="mp-dens" aria-pressed="${k==='dens'}"><span class="lg-poi"><span class="ds-ic"></span></span>Densidade demográfica (setores)</button>`}
 function rdLigar(k){const antes=rdCamada();k=CAMADAS_SETOR[k]?k:null;if(k===antes)return;UI.mpSetor=k;
   if(antes)rdCamadaDesligar();
-  if(k){if(!antes&&(UI.mpBase||'satelite')==='satelite'){UI.rdBaseAntes='satelite';setBase('mapa')}rdCamadaLigar();if(RD.sel!=null&&SET.d){rdSelDesenha(RD.sel);rdBox()}}
-  else{RD.sel=null;rdBox();if(UI.rdBaseAntes&&UI.mpBase==='mapa')setBase(UI.rdBaseAntes);UI.rdBaseAntes=null}
-  rdLegenda();const b=$('.mapa-area .mp-cam');if(b)b.outerHTML=rdBarraBotao();
+  /* sem camada o mapa é sempre a visão Mapa; com renda ou densidade, Satélite (pedido do Moisés, 5/nov/2026) */
+  if(k){if(!antes)setBase('satelite');rdCamadaLigar();if(RD.sel!=null&&SET.d){rdSelDesenha(RD.sel);rdBox()}}
+  else{RD.sel=null;rdBox();setBase('mapa')}
+  rdLegenda();const b=$('.mapa-area .mp-cam');if(b)b.outerHTML=rdCamBotao();
   document.querySelectorAll('[data-a="mp-renda"]').forEach(b=>b.setAttribute('aria-pressed',k==='renda'));document.querySelectorAll('[data-a="mp-dens"]').forEach(b=>b.setAttribute('aria-pressed',k==='dens'))}
 /* chamado depois de criar o mapa (initMapa): a camada, a legenda e o quadro voltam como estavam */
 function rdPosMapa(){if(typeof achadoPin==='function')achadoPin();RD_L=null;RD_G=null;RD_SEL=null;if(!rdLigada()){rdLegenda();return}rdCamadaLigar();rdLegenda();if(RD.sel!=null&&SET.d){rdSelDesenha(RD.sel);rdBox()}}

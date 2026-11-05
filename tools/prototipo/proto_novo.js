@@ -13,7 +13,7 @@
 // No banco: app.terrenos_sobrepostos, t_sobre (sobreposicoes_aceitas),
 // ofertas.poligono_geojson e confrontacoes.
 // ---------------------------------------------------------------------
-const NV_FONTE={mapa:'Poligonal desenhada no mapa',kmz:'Poligonal importada de KMZ/KML'};
+const NV_FONTE={mapa:'Poligonal desenhada no mapa',kmz:'Poligonal importada de KMZ/KML',sql:'Poligonal pela soma dos lotes dos SQLs'};
 const NV_FOLGA=5;  // metros de imprecisão aceitos na divisa
 const caixaPoly=p=>[Math.min(...p.map(x=>x[0])),Math.min(...p.map(x=>x[1])),Math.max(...p.map(x=>x[0])),Math.max(...p.map(x=>x[1]))];
 // graus -> metros locais (x para leste, y para norte) e de volta
@@ -91,6 +91,7 @@ function nvPasso1Html(fechar){const kmz=UI.nvKmz;
   <div class="nv-ops">
     <button type="button" class="nv-op" data-a="nv-desenhar"><span class="nv-ic">${bi('mapa',24)}</span><span><b>Desenhar no mapa</b><span class="muted">Ache o endereço na barra do mapa e marque os cantos do terreno.</span></span></button>
     <button type="button" class="nv-op" data-a="nv-kmz"><span class="nv-ic">${ic('upload',24)}</span><span><b>Importar KMZ ou KML</b><span class="muted">Arquivo do Google Earth com o polígono do terreno.</span></span></button>
+    <button type="button" class="nv-op" data-a="nv-sql"><span class="nv-ic">${ic('layers',24)}</span><span><b>Incluir por SQL</b><span class="muted">São Paulo: digite os SQLs dos lotes ou marque os lotes no mapa da quadra.</span></span></button>
     ${kmz?`<div class="nv-kmz"><span class="lbl-f">O arquivo tem ${kmz.length} polígonos. Qual é o terreno?</span>${kmz.map((it,i)=>`<button type="button" class="btn sm" data-a="nv-kmz-i" data-i="${i}">${esc(it.nome)} · ${m2(Math.round(areaPoly(it.pts)))}</button>`).join('')}</div>`:''}
   </div>
   `}
@@ -123,7 +124,7 @@ function nvDadosHtml(fechar){const nv=UI.nv,l=nv.local,mun=l?.cidade?l.cidade+(l
   <div class="field full"><div class="banner blue">${ic('check')}<div style="flex:1"><div class="bt">${nv.porLotes?`Poligonal pela soma dos ${nv.sqls.length} lote${nv.sqls.length>1?'s':''} da prefeitura`:NV_FONTE[nv.fonte]} · ${m2(Math.round(nv.area))}</div>
     <div>${busca?'Buscando o endereço pela poligonal...':onde?esc(onde):'Endereço não encontrado pela localização.'}</div>
     ${nv.ignorados?`<div>Confirmado como outro terreno apesar de sobrepor ${nv.ignorados.map(x=>x.t.codigo).join(', ')}.</div>`:''}</div><button type="button" class="btn sm text" data-a="nv-voltar">Trocar</button></div></div>
-  ${nv.lgFeito||nvSP()?`<div class="field full"><div class="nv-sqls"><span class="etq-sw s"></span><div style="flex:1">${nv.sqls?.length?`<b>${nv.sqls.length} SQL${nv.sqls.length>1?'s':''} da prefeitura</b><div class="nv-sqls-l">${nv.sqls.map(x=>`<span class="etq s"><span class="etq-n num">${esc(x.sql)}</span></span>`).join('')}</div>${nv.porLotes?'<div class="faint">A desenhada fica guardada.</div>':''}`:'<b>Nenhum SQL</b><div class="faint">Marque os lotes da prefeitura que o terreno ocupa.</div>'}</div><button type="button" class="btn sm text" data-a="nv-lotes">${ic('layers',16)}${nv.sqls?.length?'Trocar SQLs':'Escolher SQLs'}</button></div></div>`:''}
+  ${nv.lgFeito||nvSP()?`<div class="field full"><div class="nv-sqls"><span class="etq-sw s"></span><div style="flex:1">${nv.sqls?.length?`<b>${nv.sqls.length} SQL${nv.sqls.length>1?'s':''} da prefeitura</b><div class="nv-sqls-l">${nv.sqls.map(x=>`<span class="etq s"><span class="etq-n num">${esc(x.sql)}</span></span>`).join('')}</div>${nv.porLotes&&nv.polyDesenho?'<div class="faint">A desenhada fica guardada.</div>':''}`:'<b>Nenhum SQL</b><div class="faint">Marque os lotes da prefeitura que o terreno ocupa.</div>'}</div><button type="button" class="btn sm text" data-a="nv-lotes">${ic('layers',16)}${nv.sqls?.length?'Trocar SQLs':'Escolher SQLs'}</button></div></div>`:''}
   <div class="field full"><label for="n-nome">Nome de referência *</label><input id="n-nome" name="nome" required placeholder="${busca?'Buscando a rua...':'Ex.: Cupecê'}" ${v(nome)}></div>
   ${!busca&&!mun?`<div class="field full"><label for="n-mun">Município *</label><input id="n-mun" name="municipio" required placeholder="Cidade · UF"><span class="hint">Não deu para saber pela localização.</span></div>`:`<input type="hidden" name="municipio" ${v(mun)}>`}
   <input type="hidden" name="logradouro" ${v(f0?.logradouro)}><input type="hidden" name="numero" ${v(f0?.numero)}><input type="hidden" name="bairro" ${v(l?.bairro)}><input type="hidden" name="frente" value="0">
@@ -147,7 +148,7 @@ function nvGravar(alvo,F){const nv=UI.nv;alvo.poly=nv.poly;alvo.lat=+nv.ponto[0]
   (nv.sqls||[]).forEach(x=>{const i={id:uid(),mun:'sp',sql:x.sql,area:x.area??null,valores:[],parte:null,origem:'mapa_prefeitura',endPref:x.end||'',polyLote:x.poly};if(x.cib)i.cib=x.cib;alvo.insc.push(i)});
   if(nv.porLotes){alvo.polyDesenho=nv.polyDesenho;alvo.polyLotes=true}
   if(fr.length>1&&alvo.posicao==='nao_informado')alvo.posicao=fr.length===2?'esquina':'duas_frentes';
-  alvo.hist[0].txt=`Terreno cadastrado: ${NV_FONTE[nv.fonte].toLowerCase()} (${m2(Math.round(nv.area))})`+(nv.ignorados?`, confirmado como outro terreno apesar de sobrepor ${nv.ignorados.map(x=>x.t.codigo).join(', ')}`:'')+(nv.sqls?.length?`; ${nv.sqls.length} SQL${nv.sqls.length>1?'s':''} pelo mapa de lotes da prefeitura${nv.porLotes?', poligonal pela soma dos lotes':''}: ${nv.sqls.map(x=>x.sql).join(', ')}`:'')}
+  alvo.hist[0].txt=`Terreno cadastrado: ${NV_FONTE[nv.fonte].toLowerCase()} (${m2(Math.round(nv.area))})`+(nv.ignorados?`, confirmado como outro terreno apesar de sobrepor ${nv.ignorados.map(x=>x.t.codigo).join(', ')}`:'')+(nv.sqls?.length?`; ${nv.sqls.length} SQL${nv.sqls.length>1?'s':''} ${nv.fonte==='sql'?'incluídos pelo SQL':'pelo mapa de lotes da prefeitura'}${nv.porLotes?', poligonal pela soma dos lotes':''}: ${nv.sqls.map(x=>x.sql).join(', ')}`:'')}
 
 /* ---------- decisões ---------- */
 function nvTrocarPoly(t,poly,como){const ant=t.poly?areaPoly(t.poly):null;(t.polyAnt=t.polyAnt||[]).push({em:agora(),user:me(),poly:t.poly});t.poly=poly;const c=centro(poly);t.lat=+c[0].toFixed(7);t.lng=+c[1].toFixed(7);t.precisao='aproximada';
@@ -162,6 +163,7 @@ function nvDecidir(A,id){const t=T(id),nv=UI.nv;if(!t||!nv)return;
   nvAbrirOferta(t,A==='nv-juntar'?nv.poly:null,'Terreno recadastrado. Registre a oferta e revise o cadastro.')}
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="nv-"]');if(!a)return;const A=a.dataset.a;
   if(A==='nv-desenhar'){UI.modal=null;renderModal();nvDesenhar()}
+  if(A==='nv-sql')nvSqlAbrir();
   if(A==='nv-kmz'){UI.kmzNovo=true;$('#kmz-in').value='';$('#kmz-in').click()}
   if(A==='nv-kmz-i'){const it=UI.nvKmz[Number(a.dataset.i)];UI.nvKmz=null;nvPoligonal(it.pts,'kmz',{nome:it.nome})}
   if(A==='nv-voltar'){UI.nv=null;UI.nvPool=null;UI.modal='novo';renderModal()}

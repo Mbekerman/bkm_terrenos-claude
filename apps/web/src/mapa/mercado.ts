@@ -7,7 +7,25 @@ export const MK_SIT: Record<string, [string, string, string]> = {
   breve_lancamento: ['Breve lançamento', '#ffdf99', '#7a5900'], lancamento: ['Lançamento', '#c4eed0', '#0f5223'], em_obras: ['Em obras', '#ffdcc1', '#8a4a00'],
   pronto: ['Pronto', '#f0dbff', '#6b2c91'], usado: ['Usado', '#ffd8e8', '#8f1d52'], nao_informado: ['Sem situação', '#e3e3e3', '#444746'],
 };
-export const MK_PREDIO = 'M4 21V5l8-3v19M12 9l8 3v9M2 21h20M7 8h2M7 12h2M7 16h2M15 14h2M15 18h2';
+/* faixas do R$/m² médio das unidades à venda (soma dos preços ÷ soma das áreas), cada uma com a sua cor; a situação vai no
+   desenho dentro do quadrado (pedido do Moisés, 5/nov/2026; proto_mercado.js › MK_FX, MK_GLIFO). O limite de baixo entra na faixa. */
+export const MK_FX: [number, string, string][] = [[7000, 'Abaixo de 7 mil', '#5e4fa2'], [8000, '7 a 8 mil', '#3288bd'], [9000, '8 a 9 mil', '#66c2a5'], [10000, '9 a 10 mil', '#abdda4'],
+  [11000, '10 a 11 mil', '#e6f598'], [13000, '11 a 13 mil', '#fee08b'], [15000, '13 a 15 mil', '#fdae61'], [18000, '15 a 18 mil', '#f46d43'], [25000, '18 a 25 mil', '#d53e4f'], [Infinity, 'Acima de 25 mil', '#9e0142']];
+export const MK_FX_CHAVES = [...MK_FX.map((_, i) => 'f' + i), 'fx'];
+export const mkFxK = (e: { preco?: number | null; area?: number | null }) => { const v = e.preco != null && (e.area || 0) > 0 ? e.preco / e.area! : null; return v == null ? 'fx' : 'f' + MK_FX.findIndex((f) => v < f[0]); };
+export const mkFxInfo = (k: string): [string, string] => (k === 'fx' ? ['Sem preço', '#bdc1c6'] : [MK_FX[+k.slice(1)][1], MK_FX[+k.slice(1)][2]]);
+/* o desenho de cada situação: lançamento estrela, em obras guindaste, pronto prédio */
+const MK_GLIFO: Record<string, string> = {
+  lancamento: 'M12 3.5l2.5 5.3 5.8.7-4.3 4 1.1 5.7L12 16.4l-5.1 2.8 1.1-5.7-4.3-4 5.8-.7z',
+  em_obras: 'M7 21V3M4 21h7M7 4h13M7 4l4 4M17 4v5M15 9h4v3h-4zM7 9h3M7 14h3',
+  pronto: 'M4 21V5l8-3v19M12 9l8 3v9M2 21h20M7 8h2M7 12h2M7 16h2M15 14h2M15 18h2',
+  nao_informado: 'M8 8a4 4 0 1 1 5 3.9c-.6.2-1 .7-1 1.3V15M12 19h.01',
+};
+MK_GLIFO.breve_lancamento = MK_GLIFO.lancamento; MK_GLIFO.usado = MK_GLIFO.pronto;
+/* cor do desenho: escura sobre as cores claras, branca sobre as escuras */
+const mkTinta = (c: string) => { const n = parseInt(c.slice(1), 16), l = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; return l > 0.6 ? '#1f1f1f' : '#fff'; };
+/** some do mapa quando a faixa ou a situação estão desligadas na legenda */
+export const mkVisivel = (e: Emp, off: string[]) => !off.includes(mkSitK(e)) && !off.includes(mkFxK(e));
 
 export interface Emp {
   id: string; nome: string; inc: string; bairro: string; mun: string; lat: number; lng: number; sit: string;
@@ -18,7 +36,7 @@ export interface Mercado { emps: Emp[]; janela: { de: string; ate: string } | nu
 
 export const mkSitK = (e: { sit?: string } | null | undefined) => (e?.sit && MK_SIT[e.sit] ? e.sit : 'nao_informado');
 export const mkSitNome = (s: string | null | undefined) => (MK_SIT[s || ''] || MK_SIT.nao_informado)[0];
-export const mkTitulo = (e: Emp) => `${e.nome} · ${mkSitNome(e.sit)}`;
+export const mkTitulo = (e: Emp) => { const k = mkFxK(e); return `${e.nome} · ${mkSitNome(e.sit)} · ${k === 'fx' ? 'sem preço' : 'R$/m² ' + mkFxInfo(k)[0].toLowerCase()}`; };
 
 let MK: Mercado | null = null;
 let promessa: Promise<Mercado> | null = null;
@@ -100,8 +118,10 @@ export const mkDormN = (d: number | null) => (d == null ? 'Dorms não informados
 export const mkVagaN = (v: number | null) => (v == null ? 'vaga não informada' : v === 0 ? 'sem vaga' : v + (v > 1 ? ' vagas' : ' vaga'));
 export const mkAreaN = (g: any) => (g.area_min === g.area_max ? num(g.area_min, 2) : num(g.area_min, 2) + ' a ' + num(g.area_max, 2)) + ' m²';
 
-/* quadrado com um prédio na cor da situação; destacado: fundo escuro, prédio branco e anel azul */
-export const mkMarcaHtml = (sit: string, dest?: boolean) => {
-  const [, f, g] = MK_SIT[mkSitK({ sit })];
-  return `<span class="mk-b${dest ? ' mk-dest-b' : ''}" style="background:${dest ? '#202124' : f};border-color:${dest ? '#fff' : g}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="${dest ? '#fff' : g}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="${MK_PREDIO}"/></svg></span>`;
+/* quadrado na cor da faixa do R$/m² com o desenho da situação; só com a situação (legenda), cinza neutro; destacado: fundo
+   escuro, desenho branco e anel azul */
+export const mkMarcaHtml = (e: { sit?: string; preco?: number | null; area?: number | null }, dest?: boolean) => {
+  const f = e.preco === undefined ? '#e8eaed' : mkFxInfo(mkFxK(e))[1], g = mkTinta(f), d = MK_GLIFO[mkSitK(e)];
+  return `<span class="mk-b${dest ? ' mk-dest-b' : ''}" style="background:${dest ? '#202124' : f};border-color:${dest ? '#fff' : 'rgba(0,0,0,.45)'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="${dest ? '#fff' : g}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="${d}"/></svg></span>`;
 };
+export const mkFxMarcaHtml = (k: string) => `<span class="mk-b" style="background:${mkFxInfo(k)[1]};border-color:rgba(0,0,0,.45)"></span>`;

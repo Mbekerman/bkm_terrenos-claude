@@ -12,7 +12,7 @@
 const LG_MIN=0.2;   // fração do lote dentro da poligonal para vir marcado
 const lgPode=t=>!!(t&&GEO_BASE&&t.poly&&t.poly.length>2&&cidDoTerreno(t)==='sp'&&UI.role!=='Leitura');
 /* o terreno do mapa: o de verdade, ou, no Novo terreno, o que está sendo desenhado (UI.nv) */
-const lgT=L=>!L?null:L.nv?(UI.nv?{id:'__nv',codigo:'Novo terreno',nome:UI.nv.nome||'',poly:UI.nv.polyDesenho||UI.nv.poly,insc:(UI.nv.sqls||[]).map(x=>({sql:x.sql,mun:'sp',valores:[]}))}:null):T(L.tid);
+const lgT=L=>!L?null:L.nvSql?{id:'__nv',codigo:'Novo terreno',nome:'pelo SQL',poly:null,insc:(UI.nvSql?.lista||[]).map(x=>({sql:x.sql,mun:'sp',valores:[]}))}:L.nv?(UI.nv?{id:'__nv',codigo:'Novo terreno',nome:UI.nv.nome||'',poly:UI.nv.polyDesenho||UI.nv.poly,insc:(UI.nv.sqls||[]).map(x=>({sql:x.sql,mun:'sp',valores:[]}))}:null):T(L.tid);
 /* no Novo terreno: abre o mapa de lotes logo depois da poligonal, se ela está em São Paulo */
 const nvSP=()=>{const l=UI.nv?.local;return !!(GEO_BASE&&UI.role!=='Leitura'&&l?.cidade&&cidDoNome(l.cidade)==='sp')};
 function nvLotesAbrir(){if(!UI.nv)return;UI.nv.lgFeito=true;UI.lg={nv:true,fase:'carregando',cad:true};UI.modal='lotes-geo';renderModal();lgCarregar()}
@@ -36,25 +36,27 @@ function lgFracao(an,ter){const [x0,y0,x1,y1]=lgBB(an);let n=0,d=0;
 
 /* ---------- consulta ---------- */
 async function lgCarregar(){const L=UI.lg,t=lgT(L);if(!t)return;
-  try{const ter=t.poly.map(([la,ln])=>latLngUtm(la,ln));ter.push(ter[0]);const g={type:'Polygon',coordinates:[ter]};
+  try{let ter=null,qs;
+   if(L.quadrasIni)qs=L.quadrasIni; /* Novo terreno pelo SQL: as quadras dos SQLs, sem poligonal ainda */
+   else{ter=t.poly.map(([la,ln])=>latLngUtm(la,ln));ter.push(ter[0]);const g={type:'Polygon',coordinates:[ter]};
     // 1. lotes que a poligonal toca: dão as quadras (a ponta que só encosta numa quadra vizinha não a traz)
     const toca=await geoWfs({typeNames:'geoportal:lote_cidadao',count:'500',propertyName:'cd_setor_fiscal,cd_quadra_fiscal,ge_poligono',CQL_FILTER:`INTERSECTS(ge_poligono,${geoWkt(g)})`});
     const pesoQ={};toca.forEach(f=>{const an=f.geometry&&geoAneis(f.geometry)[0];if(!an)return;const k=f.properties.cd_setor_fiscal+'.'+f.properties.cd_quadra_fiscal;
       pesoQ[k]=Math.max(pesoQ[k]||0,lgFracao(an,ter)*geoAreaAnel(an))});
-    let qs=Object.entries(pesoQ).filter(([,v])=>v>=10).sort((a,b)=>b[1]-a[1]).map(([k])=>k);
+    qs=Object.entries(pesoQ).filter(([,v])=>v>=10).sort((a,b)=>b[1]-a[1]).map(([k])=>k);
     if(!qs.length)qs=Object.keys(pesoQ);
     if(!qs.length){Object.assign(L,{fase:'erro',erro:'A poligonal não ocupa nenhum lote do cadastro da prefeitura.'});return lgRedesenhar()}
-    qs=qs.slice(0,8);
+    qs=qs.slice(0,8)}
     // 2. todos os lotes dessas quadras e os nomes das ruas em volta
     const fs=await geoWfs({typeNames:'geoportal:lote_cidadao',count:'3000',CQL_FILTER:qs.map(k=>{const [s,q]=k.split('.');return `(cd_setor_fiscal='${s}' AND cd_quadra_fiscal='${q}')`}).join(' OR ')});
     const outro=sql=>S.terrenos.find(x=>x.id!==t.id&&x.insc.some(i=>insCid(i)==='sp'&&digits(i.sql)===digits(sql)));
     const lotes=fs.filter(f=>f.geometry&&f.properties.tx_situ_lote!=='INATIVO').map(f=>{const p=f.properties,an=geoAneis(f.geometry)[0],sql=p.nr_contribuinte||null;
       const condo=p.cd_condominio&&p.cd_condominio!=='00',via=p.tx_tipo_lote&&p.tx_tipo_lote!=='FISCAL',ou=sql&&outro(sql),ja=sql&&t.insc.find(i=>digits(i.sql)===digits(sql));
       const trava=via?'Via de acesso: não tem SQL':condo?`Condomínio ${p.cd_condominio}: os SQLs das unidades não vêm no GeoSampa`:!sql?'Sem SQL no cadastro':ou?`Já está no ${ou.codigo}`:null;
-      const fr=lgFracao(an,ter);
+      const fr=ter?lgFracao(an,ter):0;
       return {an,sql,p,condo,via,trava,fr,rot:lgRotulo(an),sel:!!ja||(!trava&&fr>=LG_MIN),ja:!!ja,iptu:!!ja?.valores?.length,area:p.qt_area_terreno??null,
         end:p.nm_logradouro_completo?geoTit(p.nm_logradouro_completo)+(p.cd_numero_porta&&p.cd_numero_porta!=='0'?', '+p.cd_numero_porta:''):''}});
-    const bb=lgBB(lotes.flatMap(l=>l.an).concat(ter));
+    const bb=lgBB(lotes.flatMap(l=>l.an).concat(ter||[]));
     let vias=[];try{vias=await geoWfs({typeNames:'geoportal:v_logradouro_segmento',count:'400',bbox:[bb[0]-25,bb[1]-25,bb[2]+25,bb[3]+25].join(',')+',urn:ogc:def:crs:EPSG::31983'})}catch(e){}
     Object.assign(L,{fase:'mapa',ter,lotes,quadras:qs,bb,vias:lgVias(vias,bb)});
   }catch(e){console.warn(e);Object.assign(L,{fase:'erro',erro:'O GeoSampa não respondeu. Tente de novo em instantes.'})}
@@ -68,29 +70,31 @@ function lgVias(fs,bb){const porNome={};
   return Object.values(porNome)}
 
 /* ---------- janela ---------- */
-function lgHtml(fechar){const L=UI.lg,t=lgT(L);if(!t)return '';if(L.nv)fechar=`<button class="iconbtn" data-a="lg-nv-volta" aria-label="Fechar">${ic('close',22)}</button>`;
+function lgHtml(fechar){const L=UI.lg,t=lgT(L);if(!t)return '';const volta=L.nvSql?'lg-sql-volta':'lg-nv-volta';if(L.nv||L.nvSql)fechar=`<button class="iconbtn" data-a="${volta}" aria-label="Fechar">${ic('close',22)}</button>`;
   if(L.fase==='pergunta')return `<div class="dh"><h2>Inserir os lotes da prefeitura?</h2>${fechar}</div>
     <p style="margin:0 0 8px">O ${esc(t.codigo)} fica em São Paulo. Quer marcar <span class="lg-pc">no mapa de lotes do GeoSampa</span><span class="lg-cel">na lista de lotes do GeoSampa</span> os lotes que ele ocupa?</p>
     <p class="muted" style="margin:0">Os SQLs marcados entram no cadastro sem parte, e a poligonal passa a ser a soma dos lotes. Dá para fazer depois pelo botão "Escolher no mapa" do quadro de SQLs.</p>
     <div class="df"><button class="btn text" data-a="close">Agora não</button><button class="btn primary" data-a="lg-sim">${ic('layers',18)}Sim, escolher os lotes</button></div>`;
   const cab=`<div class="dh"><div><h2>Lotes da prefeitura</h2><div class="faint">${esc(t.codigo)} · ${esc(t.nome)}${L.quadras?` · quadra${L.quadras.length>1?'s':''} ${L.quadras.map(k=>k.replace('.','-')).join(', ')}`:''}</div></div>${fechar}</div>`;
   if(L.fase==='carregando')return cab+`<div class="lg-msg">${ic('layers',20)}Buscando os lotes das quadras no GeoSampa...</div>`;
-  if(L.fase==='erro')return cab+`<div class="banner warn">${ic('warn')}<div>${esc(L.erro)}</div></div><div class="df"><button class="btn text" data-a="${L.nv?'lg-nv-volta':'close'}">${L.nv?'Seguir sem lotes':'Fechar'}</button><button class="btn" data-a="lg-sim">Tentar de novo</button></div>`;
+  if(L.fase==='erro')return cab+`<div class="banner warn">${ic('warn')}<div>${esc(L.erro)}</div></div><div class="df"><button class="btn text" data-a="${L.nv||L.nvSql?volta:'close'}">${L.nv?'Seguir sem lotes':L.nvSql?'Voltar':'Fechar'}</button><button class="btn" data-a="lg-sim">Tentar de novo</button></div>`;
   const sel=L.lotes.filter(l=>l.sel&&!l.trava),novos=sel.filter(l=>!t.insc.some(i=>digits(i.sql)===digits(l.sql)));
   const tira=L.lotes.filter(l=>l.ja&&!l.sel&&!l.iptu);
   const area=sel.reduce((s,l)=>s+(l.area||0),0);
   return cab+`<div class="lg-corpo"><div class="lg-mapa" id="lg-mapa">${lgSvg(L)}
       <div class="lg-tip" id="lg-tip" hidden></div>
       <div class="lg-zoom"><button class="iconbtn sm" data-a="lg-zoom" data-z="1" aria-label="Aproximar">+</button><button class="iconbtn sm" data-a="lg-zoom" data-z="-1" aria-label="Afastar">−</button><button class="iconbtn sm" data-a="lg-zoom" data-z="0" aria-label="Enquadrar" title="Enquadrar">${ic('layers',16)}</button></div>
-      <div class="lg-leg"><span><i class="lg-sw sel"></i>Marcado</span><span><i class="lg-sw"></i>Lote</span><span><i class="lg-sw x"></i>Não se marca</span><span><i class="lg-sw ter"></i>Poligonal</span></div></div>
+      <div class="lg-leg"><span><i class="lg-sw sel"></i>Marcado</span><span><i class="lg-sw"></i>Lote</span><span><i class="lg-sw x"></i>Não se marca</span>${L.ter?'<span><i class="lg-sw ter"></i>Poligonal</span>':''}</div></div>
     <div class="lg-lado"><div class="lg-tot"><b>${sel.length} lote${sel.length===1?'':'s'} marcado${sel.length===1?'':'s'}</b>${area?` <span class="muted">· ${m2(area)} de área cadastral</span>`:''}</div>
       <div class="hint" style="margin:4px 0 8px"><span class="lg-mouse">Clique no lote para marcar ou desmarcar. Pare o mouse em cima para ver o SQL. A roda aproxima e mostra os números dos lotes pequenos.</span><span class="lg-toque">Toque no lote para marcar ou desmarcar e ver o SQL. Afaste dois dedos para aproximar.</span></div>
-      <div class="lg-lista">${sel.map(l=>`<div class="lg-it"><span class="num">${esc(l.sql)}</span><span class="faint">${esc(l.end||'')}${l.area?` · ${m2(l.area)}`:''}</span>${!L.nv&&l.ja?'<span class="chip">já no cadastro</span>':''}</div>`).join('')||'<div class="muted">Nenhum lote marcado.</div>'}</div>${lgTodos(L,t)}</div></div>
-    <div class="df"><button class="btn text" data-a="${L.nv?'lg-nv-volta':'close'}">${L.nv?'Agora não':'Cancelar'}</button><button class="btn primary" data-a="lg-incluir" ${L.nv||novos.length||tira.length?'':'disabled'}>${L.nv?(sel.length?`Usar ${sel.length} lote${sel.length>1?'s':''}`:'Seguir sem lotes'):[novos.length&&`Incluir ${novos.length} SQL${novos.length>1?'s':''}`,tira.length&&`tirar ${tira.length}`].filter(Boolean).join(' e ').replace(/^t/,'T')||'Nada mudou'}</button></div>`}
+      <div class="lg-lista">${sel.map(l=>`<div class="lg-it"><span class="num">${esc(l.sql)}</span><span class="faint">${esc(l.end||'')}${l.area?` · ${m2(l.area)}`:''}</span>${!L.nv&&!L.nvSql&&l.ja?'<span class="chip">já no cadastro</span>':''}</div>`).join('')||'<div class="muted">Nenhum lote marcado.</div>'}</div>${lgTodos(L,t)}</div></div>
+    <div class="df"><button class="btn text" data-a="${L.nv||L.nvSql?volta:'close'}">${L.nv?'Agora não':L.nvSql?'Voltar':'Cancelar'}</button><button class="btn primary" data-a="lg-incluir" ${L.nvSql?(sel.length?'':'disabled'):L.nv||novos.length||tira.length?'':'disabled'}>${L.nvSql?`Usar ${sel.length} lote${sel.length===1?'':'s'}`:L.nv?(sel.length?`Usar ${sel.length} lote${sel.length>1?'s':''}`:'Seguir sem lotes'):[novos.length&&`Incluir ${novos.length} SQL${novos.length>1?'s':''}`,tira.length&&`tirar ${tira.length}`].filter(Boolean).join(' e ').replace(/^t/,'T')||'Nada mudou'}</button></div>`}
 /* celular: sem o mapa, a lista dos lotes das quadras para marcar (os que tocam a poligonal primeiro) */
 function lgTodos(L,t){const it=(l,i)=>{const on=l.sel&&!l.trava,bloq=!!l.trava;
-    const marca=!L.nv&&l.ja?'<span class="chip">já no cadastro</span>':'';
+    const marca=!L.nv&&!L.nvSql&&l.ja?'<span class="chip">já no cadastro</span>':'';
     return `<button type="button" class="lg-op${on?' on':''}" data-a="lg-marca" data-i="${i}" role="checkbox" aria-checked="${on}" ${bloq?'aria-disabled="true"':''}><span class="lg-cx">${on?ic('check',16):''}</span><span class="lg-op-t"><span class="num">${esc(l.sql)}</span><span class="faint lg-op-s">${l.trava?esc(l.trava):`${esc(l.end||'')}${l.area?` · ${m2(l.area)}`:''}${l.fr>0?` · ${Math.max(1,Math.round(l.fr*100))}% na poligonal`:''}`}</span></span>${marca}</button>`};
+  if(!L.ter){const tds=L.lotes.map((l,i)=>[l,i]).filter(([l])=>l.sql).sort((a,b)=>a[0].sql.localeCompare(b[0].sql));
+    return `<div class="lg-todos"><div class="lg-todos-h">Lotes da quadra <span class="h-n">${tds.length}</span></div>${tds.map(([l,i])=>it(l,i)).join('')}</div>`}
   const L2=L.lotes.map((l,i)=>[l,i]).filter(([l])=>l.sql),na=L2.filter(([l])=>l.fr>0).sort((a,b)=>b[0].fr-a[0].fr),fora=L2.filter(([l])=>!(l.fr>0)).sort((a,b)=>a[0].sql.localeCompare(b[0].sql));
   return `<div class="lg-todos"><div class="lg-todos-h">Na poligonal <span class="h-n">${na.length}</span></div>${na.map(([l,i])=>it(l,i)).join('')||'<div class="muted">Nenhum lote com SQL dentro da poligonal.</div>'}
     ${fora.length?`<details class="lg-fora"${fora.some(([l])=>l.sel)?' open':''}><summary>Outros lotes da quadra <span class="h-n">${fora.length}</span></summary>${fora.map(([l,i])=>it(l,i)).join('')}</details>`:''}</div>`}
@@ -99,7 +103,7 @@ function lgSvg(L){const [x0,y0,x1,y1]=L.bb,m=12,vb=L.vb||[x0-m,-y1-m,x1-x0+2*m,y
   return `<svg class="lg-svg" id="lg-svg" viewBox="${vb.join(' ')}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Mapa de lotes das quadras">
     <rect x="${x0-2000}" y="${-y1-2000}" width="${x1-x0+4000}" height="${y1-y0+4000}" class="lg-fundo"/>
     <g>${L.lotes.map((l,i)=>`<path d="${lgD(l.an)}" data-lg="${i}" class="lg-l${l.sel&&!l.trava?' sel':''}${l.trava?' x':''}"/>`).join('')}</g>
-    <path d="${lgD(L.ter)}" class="lg-ter"/>
+    ${L.ter?`<path d="${lgD(L.ter)}" class="lg-ter"/>`:''}
     <g class="lg-vias">${L.vias.map(v=>`<text data-x="${v.x.toFixed(1)}" data-y="${(-v.y).toFixed(1)}" data-g="${(-v.ang).toFixed(1)}">${esc(v.n)}</text>`).join('')}</g>
     <g class="lg-rots">${L.lotes.map((l,i)=>{const f=l.via?'':l.condo?`CD ${l.p.cd_condominio}`:`F ${l.p.cd_lote}`,n=l.p.cd_numero_porta&&l.p.cd_numero_porta!=='0'&&!l.via?`N. ${l.p.cd_numero_porta}`:'';if(!f)return '';
       return `<text data-r="${l.rot.r.toFixed(2)}" data-x="${l.rot.x.toFixed(2)}" data-y="${(-l.rot.y).toFixed(2)}"><tspan x="0" dy="-0.2em">${f}</tspan>${n?`<tspan x="0" dy="1.15em">${esc(n)}</tspan>`:''}</text>`}).join('')}</g></svg>`}
@@ -119,7 +123,7 @@ function lgZoom(f,cx,cy){const L=UI.lg;if(!L)return;const [x,y,w,h]=L.vb,nw=Math
 function lgPt(svg,ev){const r=svg.getBoundingClientRect(),[x,y,w,h]=UI.lg.vb,u=Math.max(w/r.width,h/r.height),ox=(r.width*u-w)/2,oy=(r.height*u-h)/2;
   return [x-ox+(ev.clientX-r.left)*u,y-oy+(ev.clientY-r.top)*u,u]}
 function lgDica(l){return `<b class="num">${l.sql?'SQL '+esc(l.sql):l.via?'Via de acesso':l.condo?'Condomínio '+esc(l.p.cd_condominio):'Sem SQL'}</b>${l.end?`<div>${esc(l.end)}</div>`:''}${l.area?`<div>${m2(l.area)} de terreno</div>`:''}
-  ${l.trava?`<div class="lg-tip-x">${esc(l.trava)}</div>`:`<div class="faint">${Math.round(l.fr*100)}% dentro da poligonal · ${l.sel?'marcado':'clique para marcar'}</div>`}`}
+  ${l.trava?`<div class="lg-tip-x">${esc(l.trava)}</div>`:`<div class="faint">${UI.lg.ter?`${Math.round(l.fr*100)}% dentro da poligonal · `:''}${l.sel?'marcado':'clique para marcar'}</div>`}`}
 function lgLigar(){const svg=$('#lg-svg'),box=$('#lg-mapa'),tip=$('#lg-tip');if(!svg)return;lgEscala();
   let arr=null,moveu=false;const toques=new Map();let pinca=null;
   svg.addEventListener('wheel',e=>{e.preventDefault();const [x,y]=lgPt(svg,e);lgZoom(e.deltaY<0?1.25:0.8,x,y)},{passive:false});
@@ -143,6 +147,10 @@ const lgPolyLl=l=>l.an.slice(0,-1).map(p=>utmLatLng(p[0],p[1]).map(v=>+v.toFixed
 /* grava. No Novo terreno: a poligonal vira a soma dos lotes marcados e os SQLs vão junto para o passo 2.
    Na ficha: os marcados entram sem parte, os desmarcados saem (menos os com IPTU lançado) e a poligonal é refeita. */
 function lgIncluir(){const L=UI.lg,t=lgT(L);if(!t)return;
+  /* Novo terreno pelo SQL: os marcados voltam para a lista de SQLs (os de outras quadras ficam como estavam) */
+  if(L.nvSql){const marc=L.lotes.filter(l=>l.sel&&!l.trava&&l.sql),Q=UI.nvSql;if(!Q)return;
+    Q.lista=Q.lista.filter(x=>!L.quadras.includes(x.q)).concat(marc.map(l=>({sql:l.sql,area:l.area,end:l.end||'',cib:l.p.cd_cib||null,poly:lgPolyLl(l),q:l.p.cd_setor_fiscal+'.'+l.p.cd_quadra_fiscal})));
+    Q.digitado='';UI.lg=null;UI.modal='novo-sql';renderModal();return}
   if(L.nv){const nv=UI.nv,marc=L.lotes.filter(l=>l.sel&&!l.trava&&l.sql);
     nv.sqls=marc.map(l=>({sql:l.sql,area:l.area,end:l.end||'',cib:l.p.cd_cib||null,poly:lgPolyLl(l)}));
     const des=nv.polyDesenho||nv.poly,u=marc.length?lotesUniao(nv.sqls.map(x=>x.poly)):null;
@@ -187,5 +195,51 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="lg-"]'
     const y=a.closest('.dialog')?.scrollTop;const ab=!!a.closest('details[open]');l.sel=!l.sel;renderModal();const d=$('.dialog:has(.lg-corpo)');if(d&&y!=null)d.scrollTop=y;if(ab){const f=$('.lg-fora');if(f)f.open=true}}
   if(A==='lg-incluir')lgIncluir();
   if(A==='lg-nv-volta'){UI.lg=null;UI.modal='novo';renderModal()}
+  if(A==='lg-sql-volta'){UI.lg=null;UI.modal='novo-sql';renderModal()}
   if(A==='lg-zoom'){const z=+a.dataset.z;if(z)lgZoom(z>0?1.5:1/1.5);else lgVb(UI.lg.vb0.slice())}
 });
+/* ---------- Novo terreno pelo SQL (São Paulo; pedido do Moisés, 5/nov/2026) ----------
+   Terceira forma de dar a área no passo 1, além do desenho e do KMZ: digitar os SQLs dos lotes (Incluir, como no quadro de
+   SQLs da aba Terreno) ou abrir o mapa de lotes da quadra do SQL digitado e marcar os lotes. Cada SQL é conferido no GeoSampa
+   (existe, o dígito confere, não está em outro terreno). Continuar faz a poligonal pela soma dos lotes e segue o caminho de
+   sempre: sobreposição com outros terrenos, endereço pela localização e passo 2; os SQLs entram no terreno sem parte e, cadastrado,
+   roda a consulta completa do GeoSampa em cada um e pela poligonal (nvDepois › lgConsultar). Só na versão publicada. */
+const sqlFmt=d=>`${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,10)}-${d[10]}`;
+function nvSqlAbrir(){if(!GEO_BASE){toast('A busca no GeoSampa funciona na versão publicada.',true);return}UI.nvSql=UI.nvSql||{lista:[],digitado:''};UI.modal='novo-sql';renderModal()}
+function nvSqlHtml(fechar){const Q=UI.nvSql,n=Q.lista.length,area=Q.lista.reduce((s,x)=>s+(x.area||0),0);
+  return `<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Passo 1 de 2 · SQLs dos lotes (São Paulo)</div></div>${fechar}</div>
+  <form class="etq-form" data-form="nvq">${campoInsc('nvq','sp',null,false)}<button class="btn sm" ${Q.buscando?'disabled':''}>${ic('add',16)}${Q.buscando?'Buscando...':'Incluir'}</button><button type="button" class="btn sm text" data-a="nvq-mapa" ${Q.buscando?'disabled':''}>${ic('layers',16)}Escolher no mapa</button></form>
+  <div class="hint" style="margin:4px 0 8px">Digite o SQL e Incluir, um de cada vez, ou abra o mapa da quadra do SQL digitado e marque os lotes.</div>
+  <div class="etq-pool">${Q.lista.map((x,i)=>`<span class="etq s" aria-label="SQL ${esc(x.sql)}"><span class="etq-n num" title="${esc([x.end,x.area?m2(x.area):''].filter(Boolean).join(' · '))}">${esc(x.sql)}</span><button type="button" class="etq-x" data-a="nvq-tirar" data-i="${i}" aria-label="Tirar o SQL ${esc(x.sql)}" title="Tirar">${ic('close',14)}</button></span>`).join('')||'<span class="etq-vazio">Nenhum SQL ainda.</span>'}</div>
+  ${n?`<div class="hint" style="margin-top:8px">${n} lote${n>1?'s':''}${area?` · ${m2(area)} de área cadastral`:''}. A poligonal do terreno será a soma deles.</div>`:''}
+  <div class="df"><button class="btn text" data-a="nvq-voltar">Voltar</button><button class="btn primary" data-a="nvq-seguir" ${n&&!Q.buscando?'':'disabled'}>Continuar</button></div>`}
+const nvSqlOutro=d=>S.terrenos.find(t=>t.insc.some(i=>insCid(i)==='sp'&&digits(i.sql)===d));
+async function nvSqlIncluir(txt){const Q=UI.nvSql,d=digits(txt);if(!Q||Q.buscando)return;Q.digitado=txt;
+  if(d.length!==11){toast('O SQL tem 11 dígitos: 000.000.0000-0.',true);return renderModal()}
+  if(Q.lista.some(x=>digits(x.sql)===d)){toast('Este SQL já está na lista.',true);return renderModal()}
+  const ou=nvSqlOutro(d);if(ou){toast(`O SQL ${sqlFmt(d)} já está no ${ou.codigo}.`,true);return renderModal()}
+  Q.buscando=true;renderModal();
+  try{const fs=await geoWfs({typeNames:'geoportal:lote_cidadao',CQL_FILTER:`cd_setor_fiscal='${d.slice(0,3)}' AND cd_quadra_fiscal='${d.slice(3,6)}' AND cd_lote='${d.slice(6,10)}'`});
+    const f=fs.find(f=>String(f.properties.cd_digito_sql)===d[10]&&f.properties.tx_situ_lote!=='INATIVO'&&f.geometry);
+    if(!f)toast(fs.length?`O dígito do SQL não confere (no GeoSampa é ${fs[0].properties.cd_digito_sql}).`:'SQL não encontrado no GeoSampa.',true);
+    else{const p=f.properties,an=geoAneis(f.geometry)[0];
+      Q.lista.push({sql:p.nr_contribuinte||sqlFmt(d),area:p.qt_area_terreno??null,end:p.nm_logradouro_completo?geoTit(p.nm_logradouro_completo)+(p.cd_numero_porta&&p.cd_numero_porta!=='0'?', '+p.cd_numero_porta:''):'',
+        cib:p.cd_cib||null,poly:an.slice(0,-1).map(q=>utmLatLng(q[0],q[1]).map(v=>+v.toFixed(7))),q:p.cd_setor_fiscal+'.'+p.cd_quadra_fiscal});Q.digitado=''}}
+  catch(e){console.warn(e);toast('O GeoSampa não respondeu. Tente de novo em instantes.',true)}
+  finally{Q.buscando=false;if(UI.modal==='novo-sql')renderModal()}}
+/* o mapa das quadras: a do SQL digitado e as dos SQLs já na lista */
+function nvSqlMapa(){const Q=UI.nvSql,d=digits($('#nvq-sql')?.value||'');if(!Q)return;Q.digitado=$('#nvq-sql')?.value||'';
+  const qs=[...new Set([d.length>=6?d.slice(0,3)+'.'+d.slice(3,6):null,...Q.lista.map(x=>x.q)].filter(Boolean))].slice(0,8);
+  if(!qs.length){toast('Digite um SQL para abrir o mapa da quadra dele.',true);return}
+  UI.lg={nvSql:true,quadrasIni:qs,fase:'carregando'};UI.modal='lotes-geo';renderModal();lgCarregar()}
+function nvSqlSeguir(){const Q=UI.nvSql;if(!Q||!Q.lista.length)return;
+  const u=lotesUniao(Q.lista.map(x=>x.poly));
+  if(!u){toast('Os lotes não se encostam: tire os que ficaram separados ou desenhe a poligonal no mapa.',true);return}
+  const sqls=Q.lista.map(({q,...x})=>x);UI.nvSql=null;
+  nvPoligonal(u,'sql',{sqls,porLotes:true,lgFeito:true})}
+document.addEventListener('submit',e=>{if(e.target.dataset?.form!=='nvq')return;e.preventDefault();e.stopImmediatePropagation();nvSqlIncluir(e.target.sql.value)},true);
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="nvq-"]');if(!a)return;const A=a.dataset.a,Q=UI.nvSql;if(!Q)return;
+  if(A==='nvq-tirar'){Q.digitado=$('#nvq-sql')?.value||'';Q.lista.splice(+a.dataset.i,1);renderModal()}
+  if(A==='nvq-mapa')nvSqlMapa();
+  if(A==='nvq-seguir')nvSqlSeguir();
+  if(A==='nvq-voltar'){UI.nvSql=null;UI.modal='novo';renderModal()}});

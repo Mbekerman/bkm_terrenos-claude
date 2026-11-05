@@ -70,8 +70,8 @@ function gPontoNaTela(lat,lng){const M=edMapa();if(!M)return null;if(!gProj||gPr
 function gEnquadrar(pts,maxZoom){if(!MAPA||!pts.length)return;if(pts.length===1){MAPA.setCenter(pts[0]);MAPA.setZoom(maxZoom||17);return}
   const b=new google.maps.LatLngBounds();pts.forEach(p=>b.extend(p));MAPA.fitBounds(b,48);if(maxZoom)google.maps.event.addListenerOnce(MAPA,'idle',()=>{if(MAPA.getZoom()>maxZoom)MAPA.setZoom(maxZoom)})}
 function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[];gPois=[];gConc=[];gDes=[];gRota=[];gEntorno=[];gSet(gEu,null);gEu=[];
-  const v=UI.mpView;
-  MAPA=new google.maps.Map(el,{mapId:'DEMO_MAP_ID',colorScheme:temaEscuro()?'DARK':'LIGHT',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[UI.mpBase||'satelite'],
+  const v=UI.mpView||mpVistaGuardada();
+  MAPA=new google.maps.Map(el,{mapId:'DEMO_MAP_ID',colorScheme:temaEscuro()?'DARK':'LIGHT',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[mpBaseAtual()],
     mapTypeControl:false,streetViewControl:true,streetViewControlOptions:{position:google.maps.ControlPosition.RIGHT_BOTTOM},cameraControl:false,fullscreenControl:false,clickableIcons:true,gestureHandling:'greedy',scaleControl:true,tilt:0,disableDoubleClickZoom:true});
   MAPA.__escuro=temaEscuro();gInfo=new google.maps.InfoWindow({maxWidth:320,headerDisabled:true});
   el.classList.toggle('modo',!!UI.mpModo);G_desenhaPins();G_desenhaPois();G_desenhaConc();desenhaEu(false);
@@ -81,7 +81,7 @@ function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[]
   MAPA.addListener('dragstart',ctxFechar);MAPA.addListener('zoom_changed',ctxFechar);G_desenhaRascunho();
   MAPA.addListener('dblclick',e=>{if(e.latLng&&!e.placeId)mapaDuplo(e.latLng.lat(),e.latLng.lng(),e.domEvent?.target)});
   if(!v)gEnquadrar(ativosBanco().filter(t=>t.lat!=null).map(t=>gLL(t.lat,t.lng)),15);
-  MAPA.addListener('idle',()=>{const c=MAPA.getCenter();UI.mpView={c:{lat:c.lat(),lng:c.lng()},z:MAPA.getZoom()};vMenuDesenha()});
+  MAPA.addListener('idle',()=>{const c=MAPA.getCenter();UI.mpView={c:{lat:c.lat(),lng:c.lng()},z:MAPA.getZoom()};mpVistaGuardar(UI.mpView);vMenuDesenha()});
   MAPA.addListener('dragstart',()=>$('.mapa-area .v-menu')?.remove());MAPA.addListener('zoom_changed',()=>$('.mapa-area .v-menu')?.remove());
   /* Street View: fecha no nosso X (canto de cima, à direita) ou no Esc; o fechar do Google fica escondido para não haver dois */
   const sv=MAPA.getStreetView();sv.setOptions({enableCloseButton:false,fullscreenControl:false});
