@@ -13,13 +13,33 @@ import {
 
 const Marca = ({ sit, fx }: { sit?: string; fx?: string }) => <span style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: fx ? mkFxMarcaHtml(fx) : mkMarcaHtml({ sit }) }} />;
 
-/** botão da barra do mapa, depois de Camadas */
-export function BotaoConc({ f, aberto, alternar }: { f: Filtro; aberto: boolean; alternar: () => void }) {
+/** três pontinhos da barra do mapa: filtro da concorrência e tipo de mapa (pedido do Moisés, 5/nov/2026, no lugar do botão
+ *  Concorrência; o filtro dos terrenos entra aqui quando a página Mapa do React tiver o painel de filtros) */
+export function BotaoMais({ f, base, abrirConc, escolherBase }: { f: Filtro; base: 'mapa' | 'satelite'; abrirConc: () => void; escolherBase: (b: 'mapa' | 'satelite') => void }) {
+  const [aberto, setAberto] = useState(false);
+  const w = useRef<HTMLDivElement>(null);
   const n = mfAtivos(f).length;
+  useEffect(() => {
+    if (!aberto) return;
+    const fora = (ev: PointerEvent) => { if (!w.current?.contains(ev.target as Node)) setAberto(false); };
+    const esc = (ev: KeyboardEvent) => { if (ev.key === 'Escape') { setAberto(false); ev.preventDefault(); ev.stopImmediatePropagation(); } };
+    document.addEventListener('pointerdown', fora, true); document.addEventListener('keydown', esc, true);
+    return () => { document.removeEventListener('pointerdown', fora, true); document.removeEventListener('keydown', esc, true); };
+  }, [aberto]);
+  const tipo = (v: 'mapa' | 'satelite', l: string) => (
+    <button type="button" role="menuitemradio" aria-checked={base === v} onClick={() => { setAberto(false); escolherBase(v); }}><span className="mm-ck"><Ic n="check" s={18} /></span>{l}</button>
+  );
   return (
-    <button type="button" className="mp-renda-b mf-btn" aria-expanded={aberto} aria-pressed={n > 0} title="Filtrar os empreendimentos da concorrência" onClick={alternar}>
-      <Ic n="filtro" s={18} /><span className="mf-l">Concorrência</span>{n > 0 && <span className="mf-n">{n}</span>}
-    </button>
+    <div className="mp-maisw" ref={w}>
+      <button type="button" className="mp-renda-b mp-mais" aria-haspopup="menu" aria-expanded={aberto} aria-pressed={n > 0} title="Filtros e tipo de mapa" aria-label="Filtros e tipo de mapa" onClick={() => setAberto(!aberto)}>
+        <Ic n="mais" s={22} />{n > 0 && <span className="mf-n">{n}</span>}
+      </button>
+      {aberto && <div className="mp-cam-m mp-mais-m" role="menu" aria-label="Filtros e tipo de mapa">
+        <button type="button" role="menuitem" onClick={() => { setAberto(false); abrirConc(); }}><Ic n="filtro" s={18} /><span className="mm-l">Filtro da concorrência</span>{n > 0 && <span className="mf-n">{n}</span>}</button>
+        <div className="mm-t" role="presentation">Tipo de mapa</div>
+        {tipo('mapa', 'Mapa')}{tipo('satelite', 'Satélite')}
+      </div>}
+    </div>
   );
 }
 

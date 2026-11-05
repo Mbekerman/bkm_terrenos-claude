@@ -10,7 +10,7 @@ import { desenhoAtendido, poligonal, useNovo } from '../novo/estado';
 import { areaPoly, m2, type P } from '../novo/geo';
 import { ItensLegenda, LegendaSetor, Metodologia, QuadroSetor } from '../mapa/CamadasSetor';
 import { carregarSetores, setorEm, setores, type Camada } from '../mapa/setores';
-import { BotaoConc, CaixaEmp, FiltroConc, ItensConc, TabelaEmp } from '../mapa/Concorrencia';
+import { BotaoMais, CaixaEmp, FiltroConc, ItensConc, TabelaEmp } from '../mapa/Concorrencia';
 import { carregarMercado, mercado, mfPassa, mkVisivel, type Filtro } from '../mapa/mercado';
 import { apagado, areaDe, bate, carregar, classe, corSub, info, itens, subNome, type Apag, type Fase, type Item, type TerrenoMapa } from '../mapa/dados';
 
@@ -22,7 +22,7 @@ import { apagado, areaDe, bate, carregar, classe, corSub, info, itens, subNome, 
 
 const num = (n: number) => Math.round(n).toLocaleString('pt-BR');
 const TOQUE = () => matchMedia('(pointer: coarse)').matches;
-const MP_LKEY = 'bkm-terrenos-mapa-lista', MP_LMIN = 76;
+const MP_LKEY = 'bkm-terrenos-mapa-lista', MP_TKEY = 'bkm-terrenos-mapa-tipo', MP_LMIN = 76;
 const mpLpad = () => (innerWidth < 1300 ? 300 : 360);
 const mpLmax = () => Math.max(MP_LMIN, Math.min(720, Math.round(innerWidth * 0.6)));
 const limitarL = (w: number) => Math.round(Math.max(MP_LMIN, Math.min(mpLmax(), w)));
@@ -214,7 +214,7 @@ export default function Mapa() {
       if (!vivo || !mapaEl.current) return;
       if (!ok || googleRecusado()) { setSemMapa(googleRecusado() ? 'O Google recusou a chave do mapa (domínio ou API não liberados).' : 'Não foi possível carregar o mapa do Google. Verifique a conexão e recarregue a página.'); return; }
       enquadrarPend.current = !vista;
-      motor.current = new Motor(mapaEl.current, memo.camada ? 'satelite' : 'mapa', {
+      motor.current = new Motor(mapaEl.current, base, {
         pino: (id) => ganchos.current.pino(id),
         vazio: (a, b) => ganchos.current.vazio(a, b),
         duplo: (a, b, c) => ganchos.current.duplo(a, b, c),
@@ -287,8 +287,16 @@ export default function Mapa() {
       window.removeEventListener('keydown', esc, true); document.removeEventListener('keydown', tecla);
     };
   });
-  /* sem botão Mapa/Satélite: a visão Mapa sempre, Satélite só com renda ou densidade ligada (pedido do Moisés, 5/nov/2026) */
-  const base: Base = camada ? 'satelite' : 'mapa';
+  /* tipo de mapa nos três pontinhos, guardado no navegador (bkm-terrenos-mapa-tipo; padrão Mapa); com renda ou densidade ligada,
+     Satélite, a menos que a pessoa troque enquanto a camada está ligada (vale só até desligar; pedido do Moisés, 5/nov/2026) */
+  const [tipo, setTipo] = useState<Base>(() => { try { return localStorage.getItem(MP_TKEY) === 'satelite' ? 'satelite' : 'mapa'; } catch { return 'mapa'; } });
+  const [baseCam, setBaseCam] = useState<Base | null>(null);
+  useEffect(() => { setBaseCam(null); }, [camada]);
+  const base: Base = camada ? (baseCam ?? 'satelite') : tipo;
+  function escolherBase(v: Base) {
+    if (camada) { setBaseCam(v); return; }
+    setTipo(v); try { localStorage.setItem(MP_TKEY, v); } catch { /* sem armazenamento */ }
+  }
   useEffect(() => { motor.current?.setBase(base); }, [base]);
 
   /* camadas por setor censitário: uma de cada vez; ao ligar, o mapa passa para a visão Mapa e volta ao desligar */
@@ -372,7 +380,9 @@ export default function Mapa() {
     const a = areaEl.current, c = a?.querySelector<HTMLElement>('#mp-ctrl');
     if (!a || !c) return;
     const ar = a.getBoundingClientRect();
-    let topo = ar.bottom;
+    /* o bonequinho do Street View fica sempre 64 px acima do pé do mapa: reserva o lugar dele mesmo antes de o Google desenhá-lo
+       ou enquanto o mapa muda de tamanho (tela cheia), senão a tela cheia cai em cima dele */
+    let topo = motor.current && !a.classList.contains('sv-on') ? ar.bottom - 64 : ar.bottom;
     ['#mp-cartao', '#mp-modo', '.gm-svpc'].forEach((s) => {
       const el = a.querySelector<HTMLElement>(s);
       if (!el || !el.offsetHeight) return;
@@ -543,7 +553,7 @@ export default function Mapa() {
               )) : <div className="hint">{resMsg || 'Nada encontrado.'}</div>)}
             </div>
           </form>
-          <BotaoConc f={mf} aberto={mfAberto} alternar={() => { const ab = !mfAberto; setMfAberto(ab); if (ab) setMkBox(null); }} />
+          <BotaoMais f={mf} base={base} abrirConc={() => { setMfAberto(true); setMkBox(null); }} escolherBase={escolherBase} />
         </div>
         <div id="mp-modo" className="mp-modo" aria-live="polite">{des && TOQUE() && <>
           <span>Desenhando a poligonal do <b>terreno novo</b>: toque no mapa para marcar os vértices.{des.length > 0 && ' Arraste um ponto para ajustá-lo; toque e segure nele para mais opções.'} <span className="mp-q">{des.length} ponto{des.length === 1 ? '' : 's'}{areaPoly(des) ? ` · ${m2(areaPoly(des))}` : ''}</span></span>
