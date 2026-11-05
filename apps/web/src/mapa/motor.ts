@@ -239,7 +239,7 @@ export class Motor {
     const { AdvancedMarkerElement } = gLib.marker;
     this.merc = lista.map((e) => {
       const d = document.createElement('div');
-      d.className = 'mk g'; d.innerHTML = mkMarcaHtml(e.sit);
+      d.className = 'mk g'; d.innerHTML = mkMarcaHtml(e);
       const m = new AdvancedMarkerElement({ map: this.mapa, position: gLL(e.lat, e.lng), content: d, title: mkTitulo(e), gmpClickable: !this.modo });
       m.addEventListener('gmp-click', () => abrir(e.id));
       return m;
@@ -250,7 +250,7 @@ export class Motor {
     this.mercDest = null;
     if (!e) return;
     const d = document.createElement('div');
-    d.className = 'mk g mk-dest'; d.innerHTML = mkMarcaHtml(e.sit, true);
+    d.className = 'mk g mk-dest'; d.innerHTML = mkMarcaHtml(e, true);
     this.mercDest = new gLib.marker.AdvancedMarkerElement({ map: this.mapa, position: gLL(e.lat, e.lng), content: d, title: mkTitulo(e), zIndex: 3000, gmpClickable: true });
     this.mercDest.addEventListener('gmp-click', () => abrir(e.id));
   }

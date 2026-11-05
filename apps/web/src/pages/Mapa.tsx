@@ -8,10 +8,10 @@ import { carregarGoogle, googleRecusado } from '../mapa/google';
 import { Motor, vista, type Base, type GestosPonto, type Pino } from '../mapa/motor';
 import { desenhoAtendido, poligonal, useNovo } from '../novo/estado';
 import { areaPoly, m2, type P } from '../novo/geo';
-import { BotaoCamadas, ItensLegenda, LegendaSetor, Metodologia, QuadroSetor } from '../mapa/CamadasSetor';
+import { ItensLegenda, LegendaSetor, Metodologia, QuadroSetor } from '../mapa/CamadasSetor';
 import { carregarSetores, setorEm, setores, type Camada } from '../mapa/setores';
 import { BotaoConc, CaixaEmp, FiltroConc, ItensConc, TabelaEmp } from '../mapa/Concorrencia';
-import { carregarMercado, mercado, mfPassa, mkSitK, type Filtro } from '../mapa/mercado';
+import { carregarMercado, mercado, mfPassa, mkVisivel, type Filtro } from '../mapa/mercado';
 import { apagado, areaDe, bate, carregar, classe, corSub, info, itens, subNome, type Apag, type Fase, type Item, type TerrenoMapa } from '../mapa/dados';
 
 // Página Mapa, com a mesma marcação e as mesmas classes do protótipo (tools/prototipo/proto_mod.js › pgMapa,
@@ -32,9 +32,9 @@ function larguraGuardada() {
   return limitarL(v || mpLpad());
 }
 /* o que a pessoa escolheu fica na sessão, como no protótipo (UI.mp, UI.mpBase, UI.mpLeg) */
-const memo: { f: string; e: string; arv: boolean; apag: Apag; base: Base; leg: boolean | null; camada: Camada | null; baseAntes: Base | null; rdLeg: boolean | null;
+const memo: { f: string; e: string; arv: boolean; apag: Apag; leg: boolean | null; camada: Camada | null; rdLeg: boolean | null;
   mf: Filtro; merc: boolean; mkOff: string[]; mkArv: boolean } =
-  { f: '', e: '', arv: false, apag: {}, base: 'satelite', leg: null, camada: null, baseAntes: null, rdLeg: null, mf: {}, merc: true, mkOff: [], mkArv: false };
+  { f: '', e: '', arv: false, apag: {}, leg: null, camada: null, rdLeg: null, mf: {}, merc: true, mkOff: [], mkArv: false };
 
 export default function Mapa() {
   const { empresa, edita } = useSessao();
@@ -50,7 +50,6 @@ export default function Mapa() {
   const [e, setE] = useState(memo.e);
   const [arv, setArv] = useState(memo.arv);
   const [apag, setApag] = useState<Apag>(memo.apag);
-  const [base, setBase] = useState<Base>(memo.base);
   const [leg, setLeg] = useState(memo.leg ?? innerWidth > 899);
   const [selId, setSelId] = useState<string | null>(null);
   const [largura, setLargura] = useState(larguraGuardada);
@@ -64,7 +63,6 @@ export default function Mapa() {
   const [resMsg, setResMsg] = useState('');
   const [euBusca, setEuBusca] = useState(false);
   const [camada, setCamada] = useState<Camada | null>(memo.camada);
-  const [camMenu, setCamMenu] = useState(false);
   const [rdLeg, setRdLeg] = useState(memo.rdLeg ?? innerWidth > 899);
   const [setor, setSetor] = useState<number | null>(null);
   const [setOk, setSetOk] = useState(!!setores());
@@ -81,7 +79,7 @@ export default function Mapa() {
   const [mkDest, setMkDest] = useState<string | null>(null);
   const [mkTab, setMkTab] = useState<string | null>(null);
   const mkAbertoEm = useRef(0);
-  Object.assign(memo, { f, e, arv, apag, base, leg, camada, rdLeg, mf, merc, mkOff, mkArv });
+  Object.assign(memo, { f, e, arv, apag, leg, camada, rdLeg, mf, merc, mkOff, mkArv });
 
   const mapaEl = useRef<HTMLDivElement>(null);
   const areaEl = useRef<HTMLElement>(null);
@@ -216,7 +214,7 @@ export default function Mapa() {
       if (!vivo || !mapaEl.current) return;
       if (!ok || googleRecusado()) { setSemMapa(googleRecusado() ? 'O Google recusou a chave do mapa (domínio ou API não liberados).' : 'Não foi possível carregar o mapa do Google. Verifique a conexão e recarregue a página.'); return; }
       enquadrarPend.current = !vista;
-      motor.current = new Motor(mapaEl.current, memo.base, {
+      motor.current = new Motor(mapaEl.current, memo.camada ? 'satelite' : 'mapa', {
         pino: (id) => ganchos.current.pino(id),
         vazio: (a, b) => ganchos.current.vazio(a, b),
         duplo: (a, b, c) => ganchos.current.duplo(a, b, c),
@@ -289,6 +287,8 @@ export default function Mapa() {
       window.removeEventListener('keydown', esc, true); document.removeEventListener('keydown', tecla);
     };
   });
+  /* sem botão Mapa/Satélite: a visão Mapa sempre, Satélite só com renda ou densidade ligada (pedido do Moisés, 5/nov/2026) */
+  const base: Base = camada ? 'satelite' : 'mapa';
   useEffect(() => { motor.current?.setBase(base); }, [base]);
 
   /* camadas por setor censitário: uma de cada vez; ao ligar, o mapa passa para a visão Mapa e volta ao desligar */
@@ -307,26 +307,25 @@ export default function Mapa() {
   const mkEmp = (id: string | null) => (id ? mercado()?.emps.find((x) => x.id === id) ?? null : null);
   useEffect(() => {
     if (!motorPronto || !mkLista) return;
-    motor.current?.mercado(merc ? mkLista.filter((x) => !mkOff.includes(mkSitK(x))) : [], (id) => ganchos.current.mk(id));
+    motor.current?.mercado(merc ? mkLista.filter((x) => mkVisivel(x, mkOff)) : [], (id) => ganchos.current.mk(id));
   }, [motorPronto, mkLista, merc, mkOff]);
   useEffect(() => {
     if (!motorPronto) return;
     const d = mkEmp(mkDest);
-    motor.current?.destaque(d && merc && !mkOff.includes(mkSitK(d)) ? d : null, (id) => ganchos.current.mk(id));
+    motor.current?.destaque(d && merc && mkVisivel(d, mkOff) ? d : null, (id) => ganchos.current.mk(id));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [motorPronto, mkDest, merc, mkOff, mkOk]);
   /* card aberto que sai do filtro ou da legenda fecha */
   useEffect(() => {
     const b = mkEmp(mkBox);
-    if (mkBox && (!merc || !b || !mfPassa(mf, b) || mkOff.includes(mkSitK(b)))) setMkBox(null);
+    if (mkBox && (!merc || !b || !mfPassa(mf, b) || !mkVisivel(b, mkOff))) setMkBox(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mf, merc, mkOff]);
   ganchos.current.mk = (id) => { mkAbertoEm.current = Date.now(); setMenu(null); setSetor(null); setMkBox(id); setMkDest(id); if (selId) selecionar(null); };
 
   function ligarCamada(k: Camada | null) {
     if (k === camada) return;
-    if (k && !camada && base === 'satelite') { memo.baseAntes = 'satelite'; setBase('mapa'); }
-    if (!k) { setSetor(null); if (memo.baseAntes && base === 'mapa') setBase(memo.baseAntes); memo.baseAntes = null; }
+    if (!k) setSetor(null);
     setCamada(k);
   }
 
@@ -544,12 +543,6 @@ export default function Mapa() {
               )) : <div className="hint">{resMsg || 'Nada encontrado.'}</div>)}
             </div>
           </form>
-          <div className="seg" role="group" aria-label="Fundo do mapa">
-            {([['mapa', 'Mapa'], ['satelite', 'Satélite']] as [Base, string][]).map(([k, l]) => (
-              <button key={k} type="button" aria-pressed={base === k} onClick={() => setBase(k)}>{l}</button>
-            ))}
-          </div>
-          <BotaoCamadas camada={camada} aberto={camMenu} abrir={setCamMenu} escolher={ligarCamada} />
           <BotaoConc f={mf} aberto={mfAberto} alternar={() => { const ab = !mfAberto; setMfAberto(ab); if (ab) setMkBox(null); }} />
         </div>
         <div id="mp-modo" className="mp-modo" aria-live="polite">{des && TOQUE() && <>

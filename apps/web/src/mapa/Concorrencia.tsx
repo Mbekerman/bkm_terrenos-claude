@@ -4,14 +4,14 @@ import { createPortal } from 'react-dom';
 import { Ic } from '../components/Moldura';
 import { supabase } from '../lib/supabase';
 import {
-  MF_DT, MF_UN, MK_SIT, brl, lerNum, mercado, mfAtivos, mfPassa, mkAreaN, mkData, mkDias, mkDormN, mkGrupos, mkM2, mkMarcaHtml, mkPct, mkPeriodo,
+  MF_DT, MF_UN, MK_SIT, brl, lerNum, mercado, mfAtivos, mfPassa, mkAreaN, mkData, mkDias, mkDormN, mkGrupos, mkM2, mkMarcaHtml, mkFxMarcaHtml, mkFxInfo, mkFxK, MK_FX_CHAVES, mkVisivel, mkPct, mkPeriodo,
   mkSitK, mkSitNome, mkVagaN, mkVso, num, type Emp, type Filtro,
 } from './mercado';
 
 // Marcação da Concorrência, igual à do protótipo (tools/prototipo/proto_mercado.js: mfBotao, mfDrawer, mfRodape,
 // o item da legenda, mkBoxHtml, mkResumoHtml e mkTabelaHtml).
 
-const Marca = ({ sit, dest }: { sit: string; dest?: boolean }) => <span style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: mkMarcaHtml(sit, dest) }} />;
+const Marca = ({ sit, fx }: { sit?: string; fx?: string }) => <span style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: fx ? mkFxMarcaHtml(fx) : mkMarcaHtml({ sit }) }} />;
 
 /** botão da barra do mapa, depois de Camadas */
 export function BotaoConc({ f, aberto, alternar }: { f: Filtro; aberto: boolean; alternar: () => void }) {
@@ -95,26 +95,35 @@ export function FiltroConc({ f, mudar, fechar, aviso }: { f: Filtro; mudar: (f: 
   </>, document.body);
 }
 
-/** "Concorrência" na legenda: liga e desliga a camada; a seta abre uma linha por situação */
+/** "Concorrência" na legenda: liga e desliga a camada; a seta abre as faixas do R$/m² e, embaixo, as situações; cada linha liga e desliga a sua */
 export function ItensConc({ lista, erro, ligada, off, arv, alternar, alternarArv, alternarSit }: {
   lista: Emp[] | null; erro: boolean; ligada: boolean; off: string[]; arv: boolean; alternar: () => void; alternarArv: () => void; alternarSit: (k: string) => void;
 }) {
   const cont: Record<string, number> = {};
-  (lista || []).forEach((e) => { const k = mkSitK(e); cont[k] = (cont[k] || 0) + 1; });
-  const n = lista ? lista.filter((e) => !off.includes(mkSitK(e))).length : null;
+  (lista || []).forEach((e) => { const k = mkSitK(e), f = mkFxK(e); cont[k] = (cont[k] || 0) + 1; cont[f] = (cont[f] || 0) + 1; });
+  const n = lista ? lista.filter((e) => mkVisivel(e, off)).length : null;
   return (
     <>
       <div className="lg-row">
-        <button type="button" className="lg-sb" aria-expanded={arv} aria-label={`${arv ? 'Fechar' : 'Abrir'} as situações da concorrência`} title="Por situação" onClick={alternarArv}>
+        <button type="button" className="lg-sb" aria-expanded={arv} aria-label={`${arv ? 'Fechar' : 'Abrir'} as faixas de preço e as situações da concorrência`} title="Por preço e situação" onClick={alternarArv}>
           <span className={`lg-s${arv ? ' ab' : ''}`} aria-hidden="true"><Ic n="chev" s={14} /></span>
         </button>
-        <button type="button" className="lg-i" aria-pressed={ligada} onClick={alternar}><span className="lg-poi"><Marca sit="lancamento" /></span>Concorrência<span className="n">{n == null ? (erro ? '—' : '…') : num(n)}</span></button>
+        <button type="button" className="lg-i" aria-pressed={ligada} onClick={alternar}><span className="lg-poi"><Marca sit="pronto" /></span>Concorrência<span className="n">{n == null ? (erro ? '—' : '…') : num(n)}</span></button>
       </div>
-      {arv && lista && Object.keys(MK_SIT).filter((k) => cont[k]).map((k) => (
-        <button key={k} type="button" className="lg-i lg-a lg-msit" style={{ '--p': 2 } as React.CSSProperties} aria-pressed={!off.includes(k)} disabled={!ligada} onClick={() => alternarSit(k)}>
-          <span className="lg-poi"><Marca sit={k} /></span>{MK_SIT[k][0]}<span className="n">{num(cont[k])}</span>
-        </button>
-      ))}
+      {arv && lista && <>
+        <div className="lg-sub">R$/m² médio à venda</div>
+        {MK_FX_CHAVES.filter((k) => cont[k]).map((k) => (
+          <button key={k} type="button" className="lg-i lg-a lg-msit" style={{ '--p': 2 } as React.CSSProperties} aria-pressed={!off.includes(k)} disabled={!ligada} onClick={() => alternarSit(k)}>
+            <span className="lg-poi"><Marca fx={k} /></span>{mkFxInfo(k)[0]}<span className="n">{num(cont[k])}</span>
+          </button>
+        ))}
+        <div className="lg-sub">Situação</div>
+        {Object.keys(MK_SIT).filter((k) => cont[k]).map((k) => (
+          <button key={k} type="button" className="lg-i lg-a lg-msit" style={{ '--p': 2 } as React.CSSProperties} aria-pressed={!off.includes(k)} disabled={!ligada} onClick={() => alternarSit(k)}>
+            <span className="lg-poi"><Marca sit={k} /></span>{MK_SIT[k][0]}<span className="n">{num(cont[k])}</span>
+          </button>
+        ))}
+      </>}
     </>
   );
 }
