@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 // Dados da ficha do terreno (porte de pgFicha, abaGeral e completude do protótipo: tools/prototipo/proto.js e proto_mod.js).
 // Tudo vem do banco pela RLS da empresa; aqui só se junta o que o topo, as abas e a Visão geral mostram.
 
-type R = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+export type R = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 export interface EtapaF { k: string; nome: string; subs: { k: string; nome: string }[] }
 export interface FaseF { k: string; nome: string; entrada: boolean; ativo: boolean }
@@ -12,6 +12,8 @@ export interface Transicao { processo: string; deEtapa: string | null; paraEtapa
 
 export interface Ficha {
   id: string; codigo: string; nome: string; versao: number;
+  /** a linha de app.terrenos, para as seções editáveis (nomes das colunas do banco) */
+  t: R;
   logradouro: string | null; numero: string | null; bairro: string | null; municipio: string | null; uf: string | null; zona: string | null;
   lat: number | null; lng: number | null; poly: [number, number][] | null;
   area: number | null; fonteArea: string | null; testada: number | null; ocupacao: string | null;
@@ -22,8 +24,8 @@ export interface Ficha {
   negId: string | null; negStatus: string | null; temp: number | null;
   zonas: string | null; vgv: number | null; unidades: number | null;
   valorPedido: number | null;
-  ofertaEntrada: { valor: number | null; data: string } | null;
-  corretor: { nome: string; imob: string | null } | null;
+  ofertaEntrada: { id: string; valor: number | null; data: string } | null;
+  corretor: { id: string; nome: string; imob: string | null } | null;
   estacao: { nome: string; pe: number | null; seg: number | null } | null; entornoBuscado: boolean;
   topo: { perfil: string; decl: number | null; desnivel: number | null } | null;
   /* linha do tempo do topo */
@@ -67,10 +69,10 @@ export async function carregarFicha(empresa: string, codigo: string): Promise<Fi
   const x = v.data as R, id = x.id as string, neg = x.negociacao_id as string | null;
   const cnt = { count: 'exact' as const, head: true };
   const [t, u, of1, cor, est, bus, pn, fs, es, ss, ps, mat, ins, pes, inf, itI, prop, reu, viab, mas, docs] = await Promise.all([
-    supabase.from('terrenos').select('latitude,longitude,poligono_geojson,testada_principal_m,situacao_ocupacao,topo_perfil,topo_declividade_pct,topo_desnivel_m,criado_em').eq('id', id).single(),
+    supabase.from('terrenos').select('*').eq('id', id).single(),
     x.responsavel_id ? supabase.from('usuarios').select('nome,email,foto_url').eq('user_id', x.responsavel_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
-    supabase.from('ofertas').select('valor_pedido,data_oferta', { count: 'exact' }).eq('terreno_id', id).order('data_oferta').order('criado_em').limit(1),
-    supabase.from('terreno_corretores').select('corretores(imobiliaria,pessoas(nome_razao_social))').eq('terreno_id', id).eq('principal', true).limit(1),
+    supabase.from('ofertas').select('id,valor_pedido,data_oferta', { count: 'exact' }).eq('terreno_id', id).order('data_oferta').order('criado_em').limit(1),
+    supabase.from('terreno_corretores').select('corretor_id,corretores(imobiliaria,pessoas(nome_razao_social))').eq('terreno_id', id).eq('principal', true).limit(1),
     supabase.from('v_terreno_entorno').select('nome,distancia_pe_m,duracao_pe_s').eq('terreno_id', id).eq('categoria', 'metro_trem').order('distancia_pe_m', { nullsFirst: false }).limit(1),
     supabase.from('terreno_entorno_buscas').select('terreno_id', cnt).eq('terreno_id', id),
     neg ? supabase.from('processos').select('viabilidade_id').eq('id', neg).maybeSingle() : Promise.resolve({ data: null, error: null }),
@@ -113,11 +115,11 @@ export async function carregarFicha(empresa: string, codigo: string): Promise<Fi
   const ent = fases.find((f) => f.entrada)?.k;
   const visita = new Set((itI.data as R[]).filter((i) => !i.viabilidade_tecnica).map((i) => i.codigo));
   const o1 = (of1.data as R[])[0];
-  const c = ((cor.data as R[])[0]?.corretores ?? null) as R | null;
+  const c0 = (cor.data as R[])[0], c = (c0?.corretores ?? null) as R | null;
   const e1 = (est.data as R[])[0];
   const ru = u.data as R | null;
   return {
-    id, codigo: x.codigo, nome: x.nome ?? x.codigo, versao: x.versao,
+    id, codigo: x.codigo, nome: x.nome ?? x.codigo, versao: tr.versao ?? x.versao, t: tr,
     logradouro: x.logradouro, numero: x.numero, bairro: x.bairro, municipio: x.municipio, uf: x.uf, zona: x.zona,
     lat: tr.latitude, lng: tr.longitude, poly: anel(tr.poligono_geojson),
     area: x.area_adotada_m2, fonteArea: x.fonte_area_adotada, testada: tr.testada_principal_m, ocupacao: tr.situacao_ocupacao,
@@ -127,8 +129,8 @@ export async function carregarFicha(empresa: string, codigo: string): Promise<Fi
     negId: neg, negStatus: x.negociacao_status, temp: x.temperatura,
     zonas: x.zonas_siglas ? (Array.isArray(x.zonas_siglas) ? x.zonas_siglas.join(' / ') : String(x.zonas_siglas)) : null,
     vgv: x.vgv, unidades, valorPedido: x.valor_pedido,
-    ofertaEntrada: o1 ? { valor: o1.valor_pedido, data: o1.data_oferta } : null,
-    corretor: c?.pessoas ? { nome: (c.pessoas as R).nome_razao_social, imob: c.imobiliaria } : null,
+    ofertaEntrada: o1 ? { id: o1.id, valor: o1.valor_pedido, data: o1.data_oferta } : null,
+    corretor: c?.pessoas ? { id: c0.corretor_id, nome: (c.pessoas as R).nome_razao_social, imob: c.imobiliaria } : null,
     estacao: e1 ? { nome: e1.nome, pe: e1.distancia_pe_m, seg: e1.duracao_pe_s } : null, entornoBuscado: conta(bus) > 0,
     topo: tr.topo_perfil ? { perfil: tr.topo_perfil, decl: tr.topo_declividade_pct, desnivel: tr.topo_desnivel_m } : null,
     fases, etapasEnt: ent ? etapasPorFase[ent] : [], etapasPorFase, procs,
