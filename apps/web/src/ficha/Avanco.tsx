@@ -323,7 +323,7 @@ export function Avanco({ f, proc, irAba }: { f: F; proc: ProcF; irAba: (k: strin
     );
     if (modal.k === 'perdido') return (
       <Dialogo titulo="Marcar como Perdido" sub="O vendedor não quis seguir com a BKM." onFechar={fechar} rodape={rod('f-p', 'Marcar como Perdido')}>
-        <form id="f-p" onSubmit={(ev) => { ev.preventDefault(); encerrar('perdido', { p_motivo: val(ev, 'motivo'), p_detalhe: val(ev, 'detalhe'), p_tarefas: 'manter' }, 'Marcado como Perdido.'); }}>
+        <form id="f-p" onSubmit={(ev) => { ev.preventDefault(); encerrar('perdido', { p_motivo: val(ev, 'motivo'), p_detalhe: val(ev, 'detalhe'), p_tarefas: 'arquivar' }, 'Marcado como Perdido.'); }}>
           <div className="fields"><div className="field full"><label htmlFor="mo-m">Motivo</label>{motivosSel('perdido')}</div>
             <div className="field full"><label htmlFor="pd-d">Relato</label><textarea id="pd-d" name="detalhe" required placeholder="O que aconteceu, com quem e quando" /></div></div>
           {apInfo(modal.ap, modal.modo)}
@@ -332,7 +332,7 @@ export function Avanco({ f, proc, irAba }: { f: F; proc: ProcF; irAba: (k: strin
     );
     if (modal.k === 'descartado') return (
       <Dialogo titulo="Descartar" sub="A BKM decidiu não seguir." onFechar={fechar} rodape={rod('f-ds', 'Descartar')}>
-        <form id="f-ds" onSubmit={(ev) => { ev.preventDefault(); encerrar('descartado', { p_motivo: val(ev, 'motivo'), p_detalhe: val(ev, 'detalhe') || null, p_tarefas: 'manter' }, 'Descartado.'); }}>
+        <form id="f-ds" onSubmit={(ev) => { ev.preventDefault(); encerrar('descartado', { p_motivo: val(ev, 'motivo'), p_detalhe: val(ev, 'detalhe') || null, p_tarefas: 'arquivar' }, 'Descartado.'); }}>
           <div className="fields"><div className="field full"><label htmlFor="mo-m">Motivo</label>{motivosSel('descartado')}</div>
             <div className="field full"><label htmlFor="ds-d">Detalhe</label><textarea id="ds-d" name="detalhe" placeholder="Obrigatório quando o motivo é Outros" /></div></div>
           {apInfo(modal.ap, modal.modo)}
