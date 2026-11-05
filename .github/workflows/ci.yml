@@ -18,7 +18,7 @@ jobs:
       - run: npm run build
         env:
           VITE_SUPABASE_URL: https://exemplo.supabase.co
-          VITE_SUPABASE_ANON_KEY: chave-de-ci
+          VITE_SUPABASE_KEY: chave-de-ci
 
   banco:
     name: Banco (migrations + regras)
