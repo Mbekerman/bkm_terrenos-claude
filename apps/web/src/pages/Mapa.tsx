@@ -6,6 +6,8 @@ import { useToast } from '../components/ui';
 import { Bi, Ic, type ContextoMoldura } from '../components/Moldura';
 import { carregarGoogle, googleRecusado } from '../mapa/google';
 import { Motor, vista, type Base, type Pino } from '../mapa/motor';
+import { BotaoCamadas, ItensLegenda, LegendaSetor, Metodologia, QuadroSetor } from '../mapa/CamadasSetor';
+import { carregarSetores, setorEm, setores, type Camada } from '../mapa/setores';
 import { apagado, areaDe, bate, carregar, classe, corSub, info, itens, subNome, type Apag, type Fase, type Item, type TerrenoMapa } from '../mapa/dados';
 
 // Página Mapa, com a mesma marcação e as mesmas classes do protótipo (tools/prototipo/proto_mod.js › pgMapa,
@@ -24,7 +26,8 @@ function larguraGuardada() {
   return limitarL(v || mpLpad());
 }
 /* o que a pessoa escolheu fica na sessão, como no protótipo (UI.mp, UI.mpBase, UI.mpLeg) */
-const memo: { f: string; e: string; arv: boolean; apag: Apag; base: Base; leg: boolean | null } = { f: '', e: '', arv: false, apag: {}, base: 'satelite', leg: null };
+const memo: { f: string; e: string; arv: boolean; apag: Apag; base: Base; leg: boolean | null; camada: Camada | null; baseAntes: Base | null; rdLeg: boolean | null } =
+  { f: '', e: '', arv: false, apag: {}, base: 'satelite', leg: null, camada: null, baseAntes: null, rdLeg: null };
 
 export default function Mapa() {
   const { empresa, edita } = useSessao();
@@ -53,7 +56,14 @@ export default function Mapa() {
   const [res, setRes] = useState<{ nome: string; lat: number; lng: number }[] | null>(null);
   const [resMsg, setResMsg] = useState('');
   const [euBusca, setEuBusca] = useState(false);
-  Object.assign(memo, { f, e, arv, apag, base, leg });
+  const [camada, setCamada] = useState<Camada | null>(memo.camada);
+  const [camMenu, setCamMenu] = useState(false);
+  const [rdLeg, setRdLeg] = useState(memo.rdLeg ?? innerWidth > 899);
+  const [setor, setSetor] = useState<number | null>(null);
+  const [setOk, setSetOk] = useState(!!setores());
+  const [setErro, setSetErro] = useState(false);
+  const [met, setMet] = useState<Camada | null>(null);
+  Object.assign(memo, { f, e, arv, apag, base, leg, camada, rdLeg });
 
   const mapaEl = useRef<HTMLDivElement>(null);
   const areaEl = useRef<HTMLElement>(null);
@@ -78,9 +88,14 @@ export default function Mapa() {
   }, [todos, navegar]);
 
   /* motor do Google: cria uma vez por visita à página */
-  const ganchos = useRef({ pino: (_: string) => {}, vazio: () => {}, duplo: (_a: number, _b: number, _c: EventTarget | null) => {} });
+  const ganchos = useRef({ pino: (_: string) => {}, vazio: (_a: number, _b: number) => {}, duplo: (_a: number, _b: number, _c: EventTarget | null) => {} });
   ganchos.current.pino = (id) => { setMenu(null); selecionar(id); };
-  ganchos.current.vazio = () => { setMenu(null); if (selId) selecionar(null); };
+  ganchos.current.vazio = (lat, lng) => {
+    setMenu(null);
+    if (selId) selecionar(null);
+    /* com a camada por setor ligada, o clique abre o quadro do setor */
+    if (camada && setores()) setSetor(setorEm(lat, lng));
+  };
   ganchos.current.duplo = (lat, lng, alvo) => {
     if (!edita) return;
     const el = alvo as HTMLElement | null;
@@ -98,7 +113,7 @@ export default function Mapa() {
       enquadrarPend.current = !vista;
       motor.current = new Motor(mapaEl.current, memo.base, {
         pino: (id) => ganchos.current.pino(id),
-        vazio: () => ganchos.current.vazio(),
+        vazio: (a, b) => ganchos.current.vazio(a, b),
         duplo: (a, b, c) => ganchos.current.duplo(a, b, c),
         menu: (x, y, lat, lng) => { if (edita) setMenu({ x, y, lat, lng }); },
         fecharMenu: () => setMenu(null),
@@ -121,6 +136,21 @@ export default function Mapa() {
   }, [motorPronto, visiveis, pinoDe]);
   useEffect(() => { motor.current?.marcar(selId); }, [selId]);
   useEffect(() => { motor.current?.setBase(base); }, [base]);
+
+  /* camadas por setor censitário: uma de cada vez; ao ligar, o mapa passa para a visão Mapa e volta ao desligar */
+  useEffect(() => {
+    if (!camada) return;
+    carregarSetores().then(() => setSetOk(true)).catch(() => { setSetErro(true); toast('Não foi possível carregar os setores do IBGE.', true); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [camada]);
+  useEffect(() => { if (motorPronto) motor.current?.camada(camada && setOk ? camada : null); }, [motorPronto, camada, setOk]);
+  useEffect(() => { if (motorPronto) motor.current?.contornoSetor(camada ? setor : null); }, [motorPronto, camada, setor]);
+  function ligarCamada(k: Camada | null) {
+    if (k === camada) return;
+    if (k && !camada && base === 'satelite') { memo.baseAntes = 'satelite'; setBase('mapa'); }
+    if (!k) { setSetor(null); if (memo.baseAntes && base === 'mapa') setBase(memo.baseAntes); memo.baseAntes = null; }
+    setCamada(k);
+  }
 
   /* primeira entrada: enquadra todos; com /mapa/A123, foca o terreno */
   useEffect(() => {
@@ -190,6 +220,7 @@ export default function Mapa() {
     const k = (ev: KeyboardEvent) => {
       if (ev.key !== 'Escape' || ev.defaultPrevented) return;
       if (menu) { setMenu(null); ev.preventDefault(); return; }
+      if (setor != null) { setSetor(null); ev.preventDefault(); return; }
       if (motor.current?.svFechar()) { ev.preventDefault(); return; }
       if (motor.current?.lugarFechar()) { ev.preventDefault(); return; }
       if (document.body.classList.contains('mp-cheia') && !document.fullscreenElement) { telaCheia(false); ev.preventDefault(); }
@@ -198,7 +229,7 @@ export default function Mapa() {
     document.addEventListener('keydown', k);
     document.addEventListener('pointerdown', fora, true);
     return () => { document.removeEventListener('keydown', k); document.removeEventListener('pointerdown', fora, true); };
-  }, [menu, telaCheia]);
+  }, [menu, telaCheia, setor]);
 
   /* minha localização */
   function eu() {
@@ -226,7 +257,7 @@ export default function Mapa() {
   }
   function irPara(x: { nome: string; lat: number; lng: number }) {
     setRes(null); setBusEnd(x.nome); buscaAtual.current = x.nome;
-    motor.current?.irPara(x, 18);
+    motor.current?.irPara(x, camada ? 17 : 18);
   }
 
   /* largura da lista: a borda entre a lista e o mapa se arrasta; dois cliques voltam ao padrão */
@@ -324,6 +355,7 @@ export default function Mapa() {
               <button key={k} type="button" aria-pressed={base === k} onClick={() => setBase(k)}>{l}</button>
             ))}
           </div>
+          <BotaoCamadas camada={camada} aberto={camMenu} abrir={setCamMenu} escolher={ligarCamada} />
         </div>
         <div id="mp-modo" className="mp-modo" aria-live="polite" />
         <div id="mp-cartao" className="mp-cartao" aria-live="polite">{sel && visiveis.includes(sel) && linha(sel, true)}</div>
@@ -340,25 +372,29 @@ export default function Mapa() {
           <summary>Legenda</summary>
           <div id="mp-leg" className="mp-leg-l">
             <Legenda fases={fases} todos={todos} f={f} e={e} arv={arv} apag={apag} busca={busca}
-              alternarArv={() => { const ab = !arv; setArv(ab); if (!ab && (f || e)) nivel('', ''); }} nivel={nivel} apagar={apagar} />
+              alternarArv={() => { const ab = !arv; setArv(ab); if (!ab && (f || e)) nivel('', ''); }} nivel={nivel} apagar={apagar}
+              extra={<ItensLegenda camada={camada} alternar={(k) => ligarCamada(camada === k ? null : k)} />} />
           </div>
         </details>
         <div className="mp-aviso">Fundo do mapa indisponível nesta visualização.</div>
+        {camada && <LegendaSetor camada={camada} aberta={rdLeg} alternar={setRdLeg} carregado={setOk} erro={setErro} metodologia={setMet} />}
+        {camada && setor != null && setores() && <QuadroSetor d={setores()!} i={setor} camada={camada} fechar={() => setSetor(null)} metodologia={setMet} />}
         {menu && (
           <div className="mp-ctx" role="menu" style={{ left: Math.max(8, Math.min((areaEl.current?.clientWidth ?? 0) - 228, menu.x)), top: Math.max(8, Math.min((areaEl.current?.clientHeight ?? 0) - 64, menu.y)) }}>
             <button role="menuitem" autoFocus onClick={() => { const m = menu; setMenu(null); navegar('/terrenos/novo', { state: { ponto: [m.lat, m.lng] } }); }}><Ic n="add" s={18} />Novo terreno aqui</button>
           </div>
         )}
       </section>
+      {met && <Metodologia camada={met} fechar={() => setMet(null)} />}
     </div>
   );
 }
 
 /* legenda em árvore: "Terrenos" abre as fases, a fase abre as etapas e a etapa abre as subetapas, um ramo aberto por vez;
    o nível mais fundo aberto colore os pinos. A bolinha e o número de um item ligam e desligam tudo que está nele. */
-function Legenda({ fases, todos, f, e, arv, apag, busca, alternarArv, nivel, apagar }: {
+function Legenda({ fases, todos, f, e, arv, apag, busca, alternarArv, nivel, apagar, extra }: {
   fases: Fase[]; todos: TerrenoMapa[]; f: string; e: string; arv: boolean; apag: Apag; busca: string;
-  alternarArv: () => void; nivel: (f: string, e: string) => void; apagar: (lv: string, k: string) => void;
+  alternarArv: () => void; nivel: (f: string, e: string) => void; apagar: (lv: string, k: string) => void; extra: React.ReactNode;
 }) {
   const baseT = todos.filter((t) => bate(t, busca));
   const nivelItens = (nf: string, ne: string) => itens(fases, nf, ne).map((x) => ({ ...x, n: baseT.filter((t) => classe(fases, t, nf, ne) === x.k).length }));
@@ -404,6 +440,7 @@ function Legenda({ fases, todos, f, e, arv, apag, busca, alternarArv, nivel, apa
       </button>
       {h}
       <hr className="lg-sep" />
+      {extra}
     </>
   );
 }

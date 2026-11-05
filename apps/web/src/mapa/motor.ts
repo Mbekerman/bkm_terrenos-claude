@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { gLib } from './google';
+import { aneis, desenhaLadrilho, type Camada } from './setores';
 
 // Motor do mapa do Google, portado de tools/prototipo/proto_gmap.js (G_initMapa, G_desenhaPins, gPinsSel, gEnquadrar,
 // G_eu, G_focar, svFechar, lugarAbrir, gStreetView) e proto_novo.js (mpBuscar, achadoPin). Imperativo, como lá:
@@ -8,7 +9,7 @@ import { gLib } from './google';
 export interface Pino { id: string; nome: string; lat: number; lng: number; poly: [number, number][] | null; cor: string; fg: string }
 export interface Ganchos {
   pino(id: string): void;
-  vazio(): void;
+  vazio(lat: number, lng: number): void;
   menu(x: number, y: number, lat: number, lng: number): void;
   duplo(lat: number, lng: number, alvo: EventTarget | null): void;
   fecharMenu(): void;
@@ -75,7 +76,7 @@ export class Motor {
     M.addListener('click', (e: any) => {
       if (e.placeId) { e.stop(); this.lugarAbrir(e.placeId, e.latLng); return; }
       if (this.lugarFechar()) return;
-      g.vazio();
+      if (e.latLng) g.vazio(e.latLng.lat(), e.latLng.lng());
     });
   }
   temVista() { return !!vista; }
@@ -187,6 +188,28 @@ export class Motor {
       console.warn('Place Details', e);
       this.conteudo(`<div class="lug muted"><button type="button" class="lug-x" aria-label="Fechar">${icX}</button>Não foi possível carregar as avaliações deste lugar.</div>`);
     }
+  }
+  /* camada por setor censitário em ladrilhos desenhados no navegador */
+  private ladrilhos: any = null;
+  private setorSel: any = null;
+  camada(c: Camada | null) {
+    const ov = this.mapa.overlayMapTypes;
+    if (this.ladrilhos) { const i = ov.getArray().indexOf(this.ladrilhos); if (i >= 0) ov.removeAt(i); this.ladrilhos = null; }
+    if (!c) return;
+    const { google } = window;
+    this.ladrilhos = {
+      tileSize: new google.maps.Size(256, 256), maxZoom: 22, name: 'setores',
+      getTile(co: any, z: number, doc: Document) { const cv = doc.createElement('canvas'), n = 2 ** z; desenhaLadrilho(cv, ((co.x % n) + n) % n, co.y, z, c); return cv; },
+      releaseTile() {},
+    };
+    ov.insertAt(0, this.ladrilhos);
+  }
+  /** o setor tocado fica contornado */
+  contornoSetor(i: number | null) {
+    this.setorSel?.setMap(null);
+    this.setorSel = null;
+    if (i == null) return;
+    this.setorSel = new window.google.maps.Polygon({ map: this.mapa, paths: aneis(i).map((r) => r.map((p) => gLL(p[0], p[1]))), strokeColor: '#1f1f1f', strokeWeight: 2.5, fillOpacity: 0, clickable: false, zIndex: 5 });
   }
   destruir() { this.pinos.forEach((o) => (o.setMap ? o.setMap(null) : (o.map = null))); this.el.innerHTML = ''; }
 }
