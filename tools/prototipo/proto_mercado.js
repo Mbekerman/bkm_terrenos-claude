@@ -54,7 +54,7 @@ const mkPeriodo=()=>{const j=MK.d?.janela;return j&&j.de?`${mkData(j.de)} a ${mk
 const mkDias=()=>{const j=MK.d?.janela;return j&&j.de?Math.round((new Date(j.ate)-new Date(j.de))/864e5):null};
 
 /* ---------- filtro do mapa (na sessão; não mexe no filtro de terrenos) ---------- */
-UI.mf=UI.mf||{};
+if(!UI.mf)try{UI.mf=JSON.parse(localStorage.getItem(MP_MFKEY)||'null')||{}}catch(e){UI.mf={}}
 const MF_UN=[['dorm','Dormitórios','',0],['area','Área privativa','m²',1],['preco','Preço','R$',2],['m2','Preço por m²','R$/m²',3]];
 const MF_DT=[['lanc','Data de lançamento'],['ent','Data de entrega']];
 let MF_ABERTO=false;
@@ -116,7 +116,7 @@ function mfDrawer(){let el=$('#mf-dr'),sc=$('#mf-scrim');
   el.querySelector('.fx-b').scrollTop=top}
 function mfRodape(){const n=mfAtivos().length,t=mfLista().length;
   return `<span class="fx-tot">${n?n+' filtro'+(n>1?'s':''):'Sem filtros'}</span><button class="btn primary sm" data-a="mf-fechar">Ver ${num(t)} empreendimento${t===1?'':'s'}</button>`}
-function mfAplicar(soResultado){desenhaMerc();if(MK.box&&!mfPassa(mkEmp(MK.box)||{}))mkFechar();
+function mfAplicar(soResultado){try{localStorage.setItem(MP_MFKEY,JSON.stringify(UI.mf||{}))}catch(e){}desenhaMerc();if(MK.box&&!mfPassa(mkEmp(MK.box)||{}))mkFechar();
   const lg=$('#mp-leg');if(lg)lg.innerHTML=mpLegenda();const b=$('.mapa-area .mp-maisw');if(b)b.outerHTML=mpMaisBotao();
   if(soResultado){const r=$('#mf-f');if(r)r.innerHTML=mfRodape()}else mfDrawer()}
 function mfDigitado(el,soResultado){const k=el.dataset.mf,p=el.dataset.p,w={...(UI.mf[k]||{})};
