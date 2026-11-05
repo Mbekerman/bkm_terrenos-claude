@@ -1,13 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useSessao } from '../lib/sessao';
-import { supabase } from '../lib/supabase';
 import { data as fd, milhoes, m2 } from '../lib/format';
-import { useToast } from '../components/ui';
 import { Bi, Ic } from '../components/Moldura';
 import { corSub, type Fase as FaseMapa, type TerrenoMapa } from '../mapa/dados';
 import { carregarFicha, completude, type Falta, FONTE_AREA, TEMP, TP_N, ZONA, type Ficha as F, type ProcF } from './dados';
 import MiniMapa from './MiniMapa';
+import Temperatura from './Temperatura';
+import AbaComercial from './Comercial';
 import AbaTerreno, { dadosArea, dadosEndereco, fonteSel, numInp, useEdicao, valoresArea } from './Terreno';
 import { CamposEndereco, END_CAMPOS, focar, OPT, pedirCampo } from './edicao';
 
@@ -22,7 +22,7 @@ export const ABAS: [string, string][] = [['geral', 'Visão geral'], ['terreno', 
 /** links antigos caem na aba nova (CLAUDE.md, ficha em abas) */
 const ANTIGA: Record<string, string> = { cadastro: 'terreno', negociacao: 'comercial', urbanismo: 'parametros', fases: 'jornada', viabilidades: 'viabilidade' };
 export const abaN = (k: string | undefined | null) => { const a = ANTIGA[k ?? ''] ?? k ?? 'geral'; return ABAS.some((x) => x[0] === a) ? a : 'geral'; };
-const PROXIMAS = new Set(['comercial']);
+const PROXIMAS = new Set<string>();
 
 const num = (v: number | null | undefined, d = 0) => (v == null ? '—' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: d }));
 const aberto = (p?: ProcF | null) => !!p && (p.status === 'ativo' || p.status === 'stand_by');
@@ -98,31 +98,6 @@ function faseTxt(f: F): ReactNode[] {
   }
   const e = f.etapasPorFase[a.k]?.find((x) => x.k === p.etapa), s = p.sub ? e?.subs.find((x) => x.k === p.sub)?.nome : '';
   return [nome, e?.nome ?? p.etapa, s].filter(Boolean) as string[];
-}
-
-function Temperatura({ f, pode }: { f: F; pode: boolean }) {
-  const qc = useQueryClient(), toast = useToast();
-  const [v, setV] = useState(f.temp ?? 0);
-  useEffect(() => setV(f.temp ?? 0), [f.temp]);
-  async function definir(n: number) {
-    const antes = v;
-    setV(n);
-    const { error } = await supabase.rpc('definir_temperatura', { p_processo: f.negId, p_temperatura: n || null });
-    if (error) { setV(antes); toast(error.message); return; }
-    qc.invalidateQueries({ queryKey: ['ficha'] });
-    qc.invalidateQueries({ queryKey: ['mapa'] });
-  }
-  return (
-    <div className="temp" title="Temperatura da negociação">
-      <span className="bars" role="radiogroup" aria-label="Temperatura da negociação">
-        {[1, 2, 3, 4, 5].map((n) => (
-          <button key={n} id={n === 1 ? 'temp-1' : undefined} type="button" role="radio" aria-checked={v === n} aria-label={`${n} · ${TEMP[n]}`} className={`${n <= v ? 'on' : ''} t${v}`}
-            disabled={!pode} onClick={() => definir(n === v ? 0 : n)} />
-        ))}
-      </span>
-      <span className="tl" style={{ color: v ? `var(--t${v})` : 'var(--texto-suave)' }}>{v ? `${v} · ${TEMP[v]}` : 'Não avaliada'}</span>
-    </div>
-  );
 }
 
 function Resp({ r }: { r: F['resp'] }) {
@@ -325,6 +300,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa }: {
   const meta: ReactNode[] = [...faseTxt(f), `Cadastrado em ${fd(f.dataIdent ?? f.criadoEm)}`];
   const corpo = aba === 'geral' ? <VisaoGeral f={f} irAba={irAba} abrirMapa={abrirMapa} />
     : aba === 'terreno' ? <AbaTerreno key={f.id} f={f} />
+    : aba === 'comercial' ? <AbaComercial key={f.id} f={f} cor={corPino(f)[0]} />
     : <section className="sec"><div className="empty">{PROXIMAS.has(aba) ? 'Esta aba está sendo portada do protótipo e entra nas próximas entregas.' : 'Esta aba entra depois da primeira versão.'}</div></section>;
   return (
     <div className="ficha-wrap"><div className="ficha-main">

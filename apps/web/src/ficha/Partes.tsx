@@ -47,7 +47,7 @@ export function useLotes(f: Ficha) {
 }
 
 /** área da parte: a soma das matrículas (todas com área); sem matrícula, a dos SQLs (todos com área cadastral) */
-function ptArea(L: Lotes, pid: string): { area: number | null; fonte: string | null } {
+export function ptArea(L: Lotes, pid: string): { area: number | null; fonte: string | null } {
   const ms = L.mats.filter((m) => m.parte_id === pid), is = L.insc.filter((i) => i.parte_id === pid);
   if (ms.length && ms.every((m) => m.area_registrada_m2 != null)) return { area: soma(ms.map((m) => +m.area_registrada_m2)), fonte: 'matrículas' };
   if (!ms.length && is.length && is.every((i) => i.area_cadastral_m2 != null)) return { area: soma(is.map((i) => +i.area_cadastral_m2)), fonte: 'SQLs' };
