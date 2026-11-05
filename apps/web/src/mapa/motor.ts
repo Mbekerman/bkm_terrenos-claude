@@ -36,8 +36,14 @@ const gLL = (lat: number, lng: number) => ({ lat, lng });
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const icX = '<svg class="ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6 6 18"/></svg>';
 
-/** vista do mapa guardada na sessão (volta ao mesmo lugar ao sair e voltar à página) */
-export let vista: { c: { lat: number; lng: number }; z: number } | null = null;
+/** vista do mapa (centro e zoom) guardada no navegador: a página Mapa abre onde a pessoa deixou, mesmo depois de fechar
+    (pedido do Moisés, 5/nov/2026; proto_mod.js › mpVistaGuardada, chave bkm-terrenos-mapa-vista) */
+type Vista = { c: { lat: number; lng: number }; z: number };
+const MP_VKEY = 'bkm-terrenos-mapa-vista';
+export let vista: Vista | null = (() => {
+  try { const v = JSON.parse(localStorage.getItem(MP_VKEY) || 'null'); return v && isFinite(v.c?.lat) && isFinite(v.c?.lng) && isFinite(v.z) ? v : null; } catch { return null; }
+})();
+function guardarVista(v: Vista) { vista = v; try { localStorage.setItem(MP_VKEY, JSON.stringify({ c: { lat: +v.c.lat.toFixed(6), lng: +v.c.lng.toFixed(6) }, z: v.z })); } catch { /* sem storage */ } }
 
 const LUGARES: Record<string, any> = {};
 const estrelas = (n: number) => { const r = Math.max(0, Math.min(5, Math.round(n))); return '★'.repeat(r) + '☆'.repeat(5 - r); };
@@ -83,7 +89,7 @@ export class Motor {
     M.addListener('dragstart', g.fecharMenu); M.addListener('zoom_changed', g.fecharMenu);
     M.addListener('dragstart', () => g.movendo(true)); M.addListener('zoom_changed', () => g.movendo(true));
     M.addListener('dblclick', (e: any) => { if (e.latLng && !e.placeId) g.duplo(e.latLng.lat(), e.latLng.lng(), e.domEvent?.target ?? null); });
-    M.addListener('idle', () => { const c = M.getCenter(); vista = { c: { lat: c.lat(), lng: c.lng() }, z: M.getZoom() }; g.movendo(false); });
+    M.addListener('idle', () => { const c = M.getCenter(); guardarVista({ c: { lat: c.lat(), lng: c.lng() }, z: M.getZoom() }); g.movendo(false); });
     /* Street View: fecha no nosso X ou no Esc; o fechar do Google fica escondido para não haver dois */
     const sv = M.getStreetView();
     sv.setOptions({ enableCloseButton: false, fullscreenControl: false });
