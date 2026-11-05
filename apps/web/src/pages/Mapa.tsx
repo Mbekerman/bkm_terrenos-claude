@@ -82,7 +82,7 @@ export default function Mapa() {
   /* a legenda começa fechada e lembra se ficou aberta ou fechada (bkm-terrenos-legenda; pedido do Moisés, 5/nov/2026) */
   const [leg, setLeg] = useState(() => { if (memo.leg != null) return memo.leg; try { return localStorage.getItem(LG_AKEY) === '1'; } catch { return false; } });
   useEffect(() => { try { localStorage.setItem(LG_AKEY, leg ? '1' : ''); } catch { /* sem armazenamento */ } }, [leg]);
-  /* a legenda aberta fecha sozinha depois de 3 s sem o mouse em cima nem o foco do teclado dentro; o olhinho ao lado do título
+  /* a legenda aberta fecha sozinha depois de 2 s sem o mouse em cima nem o foco do teclado dentro; o olhinho ao lado do título
      a fixa (guardado no navegador, bkm-terrenos-legenda-fixa; pedido do Moisés, 5/nov/2026) */
   const [lgFixa, setLgFixa] = useState(() => { try { return localStorage.getItem(LG_FKEY) === '1'; } catch { return false; } });
   const legEl = useRef<HTMLDetailsElement>(null), lgSobre = useRef(false), lgT = useRef<ReturnType<typeof setTimeout>>(), lgFixaR = useRef(lgFixa);
@@ -90,12 +90,12 @@ export default function Mapa() {
   const lgAgendar = useCallback(() => {
     clearTimeout(lgT.current);
     if (TOQUE()) return; // no celular, só pelo toque
-    /* fechada, abre sozinha com o mouse parado em cima dela por 2 s (pedido do Moisés, 5/nov/2026) */
+    /* fechada, abre sozinha com o mouse parado em cima dela por 1 s (pedido do Moisés, 5/nov/2026) */
     const d0 = legEl.current;
-    if (d0 && !d0.open && lgSobre.current) { lgT.current = setTimeout(() => { const d = legEl.current; if (d && !d.open && lgSobre.current) d.open = true; }, 2000); return; }
+    if (d0 && !d0.open && lgSobre.current) { lgT.current = setTimeout(() => { const d = legEl.current; if (d && !d.open && lgSobre.current) d.open = true; }, 1000); return; }
     const pode = () => { const d = legEl.current; return !!d && d.open && !lgFixaR.current && !lgSobre.current && !d.querySelector(':focus-visible'); };
     if (!pode()) return;
-    lgT.current = setTimeout(() => { if (pode()) legEl.current!.open = false; }, 3000);
+    lgT.current = setTimeout(() => { if (pode()) legEl.current!.open = false; }, 2000);
   }, []);
   function fixarLeg(v: boolean) { setLgFixa(v); lgFixaR.current = v; try { localStorage.setItem(LG_FKEY, v ? '1' : ''); } catch { /* sem armazenamento */ } lgAgendar(); }
   useEffect(() => { lgAgendar(); return () => clearTimeout(lgT.current); }, [lgAgendar]);
