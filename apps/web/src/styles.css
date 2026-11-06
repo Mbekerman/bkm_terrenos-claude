@@ -4856,13 +4856,6 @@ body.tb-cheia .fab { display: none !important }
 .tgav .fi-abas-w { top: 0 }
 .tgav .pn { top: 56px; height: calc(var(--gav-h, 100vh) - 140px) }
 body.tgav-on { overflow: hidden }
-/* borda esquerda da gaveta arrastável, como a da lista do mapa (pedido do Moisés, 5/nov/2026) */
-.tgav-redim { position: absolute; left: -7px; top: 0; bottom: 0; width: 14px; z-index: 3; cursor: col-resize; touch-action: none; outline: none }
-.tgav-redim::after { content: ""; position: absolute; left: 5px; top: 50%; width: 4px; height: 48px; margin-top: -24px; border-radius: 2px; background: #c4c7c5; transition: background .15s, height .15s, margin .15s }
-.tgav-redim:hover::after, .tgav-redim:focus-visible::after, body.mp-arrastando .tgav-redim::after { background: #0b57d0; height: 72px; margin-top: -36px }
-@media (max-width: 899px) { .tgav-redim { display: none } }
-:root[data-tema="escuro"] .tgav-redim::after { background: #444746 }
-:root[data-tema="escuro"] .tgav-redim:hover::after, :root[data-tema="escuro"] body.mp-arrastando .tgav-redim::after { background: #a8c7fa }
 body.tgav-on .fab { display: none !important }
 @media (max-width: 899px) {
   .lista-ter td.col-cid, .lista-ter td.col-zona { white-space: normal }
@@ -5032,6 +5025,12 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 .mapa-area:not(:has(.leaflet-container)) .mp-barra { left: 12px !important }
 /* régua ligada: seta em vez da mãozinha no Leaflet (no Google, draggableCursor) */
 .mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }
+
+/* ⋮ das abas da ficha: índice fixo com todas as abas, a atual marcada (pedido do Moisés, 6/nov/2026) */
+.fi-mais .adv-menu button.atual { background: var(--m-sec-cont, #c2e7ff); color: var(--m-on-sec-cont, #001d35); font-weight: 500 }
+.fi-mais .adv-menu button.atual::after { content: '✓'; margin-left: auto; font-weight: 500 }
+html[data-tema="escuro"] .fi-mais .adv-menu button.atual { background: #004a77; color: #c2e7ff }
+.fi-abas { touch-action: pan-y }
 
 /* régua ligada: seta em vez da mãozinha no Leaflet (no Google, draggableCursor) */
 .mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }

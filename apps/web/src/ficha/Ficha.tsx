@@ -119,26 +119,47 @@ function Resp({ r }: { r: F['resp'] }) {
 const SVG_DOTS = <svg className="ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" d="M12 5.5h.01M12 12h.01M12 18.5h.01" /></svg>;
 const seta = (d: number) => <svg className="ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d={d < 0 ? 'M15 6l-6 6 6 6' : 'M9 6l6 6-6 6'} /></svg>;
 
-/** barra das abas sem rolagem lateral: aparecem as que cabem e as demais vão para o ⋮ no fim; a ativa nunca vai para o menu */
+/** barra das abas sem rolagem lateral: mostra uma janela de abas seguidas, na ordem, que acompanha a ativa (com a vizinha
+    de cada lado quando cabe); Shift + roda (ou Ctrl + Shift + roda, ou o deslize de lado do trackpad) desliza a janela sem
+    trocar de aba; o ⋮ lista sempre todas as abas, na mesma ordem, com a atual marcada (pedido do Moisés, 6/nov/2026) */
 function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void }) {
   const barra = useRef<HTMLDivElement>(null), w = useRef<HTMLDivElement>(null);
-  const [fora, setFora] = useState<string[]>([]);
+  const [ini, setIni] = useState(0); // primeira aba da janela
+  const ultAba = useRef<string | null>(null), larg = useRef<number[]>([]), maxIni = useRef(0);
   const [menu, setMenu] = useState(false);
   const q: Record<string, number> = { comercial: f.qComercial, viabilidade: f.qViab, massa: f.qMassa, documentos: f.qDocs };
-  const caber = () => {
+  /** quantas abas seguidas cabem a partir de s */
+  const cabem = (s: number, W: number) => { let t = 0, k = 0; for (let i = s; i < larg.current.length; i++) { t += larg.current[i] + (k ? 2 : 0); if (t > W + 1) break; k++; } return Math.max(1, k); };
+  const caber = (forca?: number) => {
     const b = barra.current;
     if (!b) return;
     const bs = [...b.querySelectorAll<HTMLButtonElement>('button[role=tab]')];
     bs.forEach((x) => { x.hidden = false; });
-    const out: string[] = [];
-    for (let i = bs.length - 1; i >= 0 && b.scrollWidth > b.clientWidth + 1; i--) {
-      if (bs[i].dataset.t === aba) continue;
-      bs[i].hidden = true;
-      out.unshift(bs[i].dataset.t!);
+    const mn = w.current?.querySelector<HTMLElement>('.fi-mais');
+    if (mn) mn.hidden = false; // mede com o ⋮ no lugar
+    const vis = bs.filter((x) => getComputedStyle(x).display !== 'none'); // Histórico some com o painel
+    larg.current = vis.map((x) => x.offsetWidth);
+    const W = b.clientWidth, L = vis.length;
+    let mi = 0; while (mi < L && mi + cabem(mi, W) < L) mi++;
+    maxIni.current = mi;
+    const a = vis.findIndex((x) => x.dataset.t === aba);
+    let s = forca ?? ini;
+    if (forca == null && ultAba.current !== aba && a >= 0) {
+      // trocou de aba: se ela ficou fora da janela ou na borda, a janela anda para mostrar a vizinha de cada lado
+      const k0 = cabem(s, W), fora = a < s || a >= s + k0;
+      const naBorda = (a === s && a > 0) || (a === s + k0 - 1 && a < L - 1);
+      if (fora || (naBorda && k0 >= 3)) { s = Math.max(0, a - 1); if (a >= s + cabem(s, W)) s = a; }
     }
-    setFora((o) => (o.join() === out.join() ? o : out));
+    s = Math.max(0, Math.min(s, mi));
+    ultAba.current = aba;
+    const k = cabem(s, W);
+    vis.forEach((x, i) => { x.hidden = i < s || i >= s + k; });
+    if (mn) mn.hidden = k >= L;
+    if (s !== ini) setIni(s);
   };
-  useLayoutEffect(caber);
+  const cab = useRef(caber), iniR = useRef(ini);
+  cab.current = caber; iniR.current = ini;
+  useLayoutEffect(() => caber());
   useEffect(() => {
     const el = w.current;
     if (!el || !window.ResizeObserver) return;
@@ -147,6 +168,42 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
     ro.observe(el);
     return () => ro.disconnect();
   });
+  /* Shift + roda (o Ctrl + Shift do Excel também) ou o deslize de lado: uma aba por "estalo"; no celular, o dedo */
+  useEffect(() => {
+    const b = barra.current;
+    if (!b) return;
+    let acc = 0;
+    const roda = (ev: WheelEvent) => {
+      const d = ev.shiftKey ? (ev.deltaY || ev.deltaX) : Math.abs(ev.deltaX) > Math.abs(ev.deltaY) ? ev.deltaX : 0;
+      if (!d) return;
+      ev.preventDefault();
+      acc += ev.deltaMode === 1 ? d * 40 : d;
+      if (Math.abs(acc) < 40) return;
+      const passo = acc > 0 ? 1 : -1; acc = 0;
+      const s = Math.max(0, Math.min(maxIni.current, iniR.current + passo));
+      if (s !== iniR.current) cab.current(s);
+    };
+    /* no celular, arrastar a barra com o dedo: cada 48 px uma aba; o toque que arrastou não abre aba */
+    let x0: number | null = null, y0 = 0, s0 = 0, arrastou = false;
+    const ini0 = (ev: TouchEvent) => { x0 = ev.touches[0].clientX; y0 = ev.touches[0].clientY; s0 = iniR.current; arrastou = false; };
+    const move = (ev: TouchEvent) => {
+      if (x0 == null) return;
+      const dx = ev.touches[0].clientX - x0, dy = ev.touches[0].clientY - y0;
+      if (!arrastou && (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy))) return;
+      arrastou = true;
+      if (ev.cancelable) ev.preventDefault();
+      const s = Math.max(0, Math.min(maxIni.current, s0 - Math.trunc(dx / 48)));
+      if (s !== iniR.current) cab.current(s);
+    };
+    const fim = () => { x0 = null; };
+    const clique = (ev: MouseEvent) => { if (arrastou) { ev.preventDefault(); ev.stopPropagation(); arrastou = false; } };
+    b.addEventListener('wheel', roda, { passive: false });
+    b.addEventListener('touchstart', ini0, { passive: true });
+    b.addEventListener('touchmove', move, { passive: false });
+    b.addEventListener('touchend', fim);
+    b.addEventListener('click', clique, true);
+    return () => { b.removeEventListener('wheel', roda); b.removeEventListener('touchstart', ini0); b.removeEventListener('touchmove', move); b.removeEventListener('touchend', fim); b.removeEventListener('click', clique, true); };
+  }, []);
   useEffect(() => {
     if (!menu) return;
     const fecha = (ev: PointerEvent) => { if (!(ev.target as HTMLElement).closest?.('.fi-mais')) setMenu(false); };
@@ -155,21 +212,20 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
     document.addEventListener('keydown', esc, true);
     return () => { document.removeEventListener('pointerdown', fecha, true); document.removeEventListener('keydown', esc, true); };
   }, [menu]);
-  const vis = ABAS.filter(([k]) => !fora.includes(k) || k === aba).map(([k]) => k);
   const ia = ABAS.findIndex(([k]) => k === aba), ant = ABAS[ia - 1], prox = ABAS[ia + 1];
   const rot = (k: string, l: string) => <>{l}{q[k] ? <span className="tkm-n">{q[k]}</span> : null}</>;
   return (
     <div className="fi-abas-w" ref={w}>
       <div className="fi-abas" role="tablist" aria-label="Seções do terreno" ref={barra}>
         {ABAS.map(([k, l]) => (
-          <button key={k} role="tab" data-t={k} aria-selected={k === aba} aria-controls={`bl-${k}`} hidden={!vis.includes(k)} onClick={() => irAba(k)}>{rot(k, l)}</button>
+          <button key={k} role="tab" data-t={k} aria-selected={k === aba} aria-controls={`bl-${k}`} onClick={() => irAba(k)}>{rot(k, l)}</button>
         ))}
       </div>
       <div className="fi-fim">
-        <div className={`adv-mais fi-mais${menu ? ' aberto' : ''}`} hidden={!fora.length}>
+        <div className={`adv-mais fi-mais${menu ? ' aberto' : ''}`}>
           <button className="iconbtn adv-mb" aria-haspopup="menu" aria-expanded={menu} aria-label="Mais ações" title="Mais ações" onClick={() => setMenu(!menu)}>{SVG_DOTS}</button>
           <div className="adv-menu" role="menu">
-            {ABAS.filter(([k]) => fora.includes(k) && k !== aba).map(([k, l]) => <button key={k} role="menuitem" onClick={() => { setMenu(false); irAba(k); }}>{rot(k, l)}</button>)}
+            {ABAS.map(([k, l]) => <button key={k} role="menuitemradio" aria-checked={k === aba} className={k === aba ? 'atual' : undefined} onClick={() => { setMenu(false); if (k !== aba) irAba(k); }}>{rot(k, l)}</button>)}
           </div>
         </div>
         <button className="iconbtn fi-ant" aria-label="Seção anterior" disabled={!ant} title={ant ? `Anterior: ${ant[1]}` : 'Primeira seção'} onClick={() => ant && irAba(ant[0])}>{seta(-1)}</button>

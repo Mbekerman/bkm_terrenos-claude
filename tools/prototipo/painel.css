@@ -4210,3 +4210,9 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 .mapa-area:not(:has(.leaflet-container)) .mp-barra { left: 12px !important }
 /* régua ligada: seta em vez da mãozinha no Leaflet (no Google, draggableCursor) */
 .mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }
+
+/* ⋮ das abas da ficha: índice fixo com todas as abas, a atual marcada (pedido do Moisés, 6/nov/2026) */
+.fi-mais .adv-menu button.atual { background: var(--m-sec-cont, #c2e7ff); color: var(--m-on-sec-cont, #001d35); font-weight: 500 }
+.fi-mais .adv-menu button.atual::after { content: '✓'; margin-left: auto; font-weight: 500 }
+html[data-tema="escuro"] .fi-mais .adv-menu button.atual { background: #004a77; color: #c2e7ff }
+.fi-abas { touch-action: pan-y }
