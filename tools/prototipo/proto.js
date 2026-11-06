@@ -613,19 +613,35 @@ function abaJornada(t){return `<div class="stack">${trilhaHtml(t)}${abaFases(t)}
 function abaViabilidade(t){return `<div class="stack">${abaGeral(t,'viab')}${viabSecao(t)}</div>`}
 function abaInfra(t){return `<div class="stack">${abaGeral(t,'relevo')}${abaUrbanismo(t,'infra')}</div>`}
 function abaEntorno(t){return `<div class="stack">${abaGeral(t,'entorno')}</div>`}
-/* barra das abas sem rolagem lateral (pedido do Moisés, 4/nov/2026): aparecem as abas que cabem; as demais vão para o
-   menu "Mais ações" (⋮) no fim, ao lado das setas de aba anterior e próxima. A aba ativa nunca vai para o menu. */
+/* barra das abas sem rolagem lateral (pedido do Moisés, 4/nov/2026; janela e índice fixo em 6/nov/2026): a barra mostra uma
+   janela de abas seguidas, na ordem, que acompanha a ativa (com a vizinha de cada lado quando cabe); Shift + roda (ou
+   Ctrl + Shift + roda, ou o deslize de lado do trackpad) e, no celular, o dedo deslizam a janela sem trocar de aba; o
+   menu ⋮ no fim lista sempre todas as abas, na mesma ordem, com a atual marcada; as setas andam uma aba. */
 const SVG_DOTS='<svg class="ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" d="M12 5.5h.01M12 12h.01M12 18.5h.01"/></svg>';
 const fiSeta=d=>`<svg class="ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="${d<0?'M15 6l-6 6 6 6':'M9 6l6 6-6 6'}"/></svg>`;
-let fiRO=null;
-function fiAbasCaber(){const w=document.querySelector('.fi-abas-w');if(!w)return;const bar=w.querySelector('.fi-abas'),mn=w.querySelector('.fi-mais'),menu=mn.querySelector('.adv-menu');
-  const bs=[...bar.querySelectorAll('button[role=tab]')];bs.forEach(b=>b.hidden=false);
-  const vis=bs.filter(b=>getComputedStyle(b).display!=='none'),act=vis.findIndex(b=>b.getAttribute('aria-selected')==='true');
-  const fora=[];mn.hidden=true;
-  if(bar.scrollWidth>bar.clientWidth+1){mn.hidden=false;
-    for(let i=vis.length-1;i>=0&&bar.scrollWidth>bar.clientWidth+1;i--){if(i===act)continue;vis[i].hidden=true;fora.unshift(vis[i])}}
-  menu.innerHTML=fora.map(b=>`<button role="menuitem" data-a="tab" data-t="${b.dataset.t}">${b.innerHTML}</button>`).join('');
+let fiRO=null;const FI={ini:0,aba:null,max:0};
+function fiAbasCaber(forca){const w=document.querySelector('.fi-abas-w');if(!w)return;const bar=w.querySelector('.fi-abas'),mn=w.querySelector('.fi-mais'),menu=mn.querySelector('.adv-menu');
+  const bs=[...bar.querySelectorAll('button[role=tab]')];bs.forEach(b=>b.hidden=false);mn.hidden=false; // mede com o ⋮ no lugar
+  const vis=bs.filter(b=>getComputedStyle(b).display!=='none'),act=vis.findIndex(b=>b.getAttribute('aria-selected')==='true'),aba=vis[act]?.dataset.t;
+  const lg=vis.map(b=>b.offsetWidth),W=bar.clientWidth,L=vis.length;
+  const cabem=s=>{let t=0,k=0;for(let i=s;i<L;i++){t+=lg[i]+(k?2:0);if(t>W+1)break;k++}return Math.max(1,k)};
+  let mi=0;while(mi<L&&mi+cabem(mi)<L)mi++;FI.max=mi;
+  let s=forca??FI.ini;
+  if(forca==null&&FI.aba!==aba&&act>=0){const k0=cabem(s),fora=act<s||act>=s+k0,borda=(act===s&&act>0)||(act===s+k0-1&&act<L-1);
+    if(fora||(borda&&k0>=3)){s=Math.max(0,act-1);if(act>=s+cabem(s))s=act}}
+  s=Math.max(0,Math.min(s,mi));FI.ini=s;FI.aba=aba;const k=cabem(s);
+  vis.forEach((b,i)=>b.hidden=i<s||i>=s+k);mn.hidden=k>=L;
+  menu.innerHTML=vis.map(b=>`<button role="menuitemradio" aria-checked="${b.dataset.t===aba}" class="${b.dataset.t===aba?'atual':''}" data-a="tab" data-t="${b.dataset.t}">${b.innerHTML}</button>`).join('');
   [[-1,'.fi-ant'],[1,'.fi-prox']].forEach(([d,sel])=>{const b=w.querySelector(sel),alvo=vis[act+d];b.disabled=!alvo;if(alvo){b.dataset.t=alvo.dataset.t;b.title=(d<0?'Anterior: ':'Próxima: ')+alvo.firstChild.textContent}else b.title=d<0?'Primeira seção':'Última seção'});
+  if(!bar.__ev){bar.__ev=true;let acc=0,x0=null,y0=0,s0=0,arr=false;
+    const anda=s=>{s=Math.max(0,Math.min(FI.max,s));if(s!==FI.ini)fiAbasCaber(s)};
+    bar.addEventListener('wheel',e=>{const d=e.shiftKey?(e.deltaY||e.deltaX):Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:0;if(!d)return;e.preventDefault();
+      acc+=e.deltaMode===1?d*40:d;if(Math.abs(acc)<40)return;const p=acc>0?1:-1;acc=0;anda(FI.ini+p)},{passive:false});
+    bar.addEventListener('touchstart',e=>{x0=e.touches[0].clientX;y0=e.touches[0].clientY;s0=FI.ini;arr=false},{passive:true});
+    bar.addEventListener('touchmove',e=>{if(x0==null)return;const dx=e.touches[0].clientX-x0,dy=e.touches[0].clientY-y0;
+      if(!arr&&(Math.abs(dx)<10||Math.abs(dx)<Math.abs(dy)))return;arr=true;if(e.cancelable)e.preventDefault();anda(s0-Math.trunc(dx/48))},{passive:false});
+    bar.addEventListener('touchend',()=>{x0=null});
+    bar.addEventListener('click',e=>{if(arr){e.preventDefault();e.stopPropagation();arr=false}},true)}
   if(window.ResizeObserver&&w.__ro!==true){fiRO?.disconnect();let lw=w.clientWidth;fiRO=new ResizeObserver(()=>{if(Math.abs(w.clientWidth-lw)<1)return;lw=w.clientWidth;fiAbasCaber()});fiRO.observe(w);w.__ro=true}}
 function pgFicha(){
   const t=T(UI.id);{const k=t&&JSON.stringify([t.lotes,t.partes,t.mats,t.insc]);lotesNorm(t);if(t&&k!==JSON.stringify([t.lotes,t.partes,t.mats,t.insc]))save()}const c=completude(t),n=t.neg,aba=abaN(UI.tab);

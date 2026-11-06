@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
 import { Dialogo, useToast } from '../components/ui';
+import { Adorno } from '../lib/mascara';
 import { Ic } from '../components/Moldura';
 import { data as fd, hojeISO, milhoes, m2, somarDias } from '../lib/format';
 import type { Ficha, R } from './dados';
@@ -99,7 +100,7 @@ export function JanelaOferta({ f, corretores, fechar }: { f: Ficha; corretores: 
       <form id="f-of" onSubmit={enviar}><div className="fields">
         <div className="field"><label htmlFor="o-c">Corretor</label><select id="o-c" value={v.cid} onChange={m('cid')}><option value="">Sem corretor / direto</option>
           {corretores.filter((c) => c.ativo !== false).map((c) => <option key={c.id} value={c.id}>{c.nome}{c.imobiliaria ? ' · ' + c.imobiliaria : ''}</option>)}</select></div>
-        <div className="field"><label htmlFor="o-v">Valor pedido (R$)</label><input id="o-v" inputMode="decimal" required value={v.valor} onChange={m('valor')} /></div>
+        <div className="field"><label htmlFor="o-v">Valor pedido</label><Adorno t="moeda"><input id="o-v" inputMode="decimal" data-fmt="moeda" required value={v.valor} onChange={m('valor')} /></Adorno></div>
         <div className="field"><label htmlFor="o-f">Forma de pagamento pedida</label><select id="o-f" value={v.forma} onChange={m('forma')}><option value="">Não informada</option>
           {Object.entries(FORMA).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div>
         <div className="field"><label htmlFor="o-val">Validade</label><input id="o-val" type="date" value={v.validade} onChange={m('validade')} /></div>
@@ -190,7 +191,7 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
   const corpo = (
     <div className="sec-b">{o ? <>
       <div className="cond2">
-        <div><div className="lbl">Valor pedido</div><div className="big">{ed ? inp('valor', { inputMode: 'decimal', placeholder: 'R$', 'aria-label': 'Valor pedido (R$)' }) : o.valor_pedido ? milhoes(o.valor_pedido) : ni()}</div></div>
+        <div><div className="lbl">Valor pedido</div><div className="big">{ed ? <Adorno t="moeda">{inp('valor', { inputMode: 'decimal', 'data-fmt': 'moeda', 'aria-label': 'Valor pedido (R$)' })}</Adorno> : o.valor_pedido ? milhoes(o.valor_pedido) : ni()}</div></div>
         <div><div className="lbl">Por m²</div><div className="big">{(ed ? valorEd : o.valor_pedido) && area ? brl((ed ? valorEd! : o.valor_pedido) / area) : ni('—')}</div></div>
       </div>
       <dl className={`kvl${ed ? ' kvl-ed' : ''}`}>
@@ -235,13 +236,13 @@ function LinhaParte({ f, o, pa, um, area, zonas, nomeDet, mudar }: {
       <div className="ptcom-c">{L('Área adotada')}<span>{area != null ? m2(area) : '—'}</span></div>
       <div className="ptcom-c">{L('Zoneamento')}<span>{zonas || '—'}</span></div>
       <div className="ptcom-c field">{L('Valor pedido')}{ro ? <span>{valor != null ? brl(valor) : '—'}</span>
-        : <input className="ptc-n" inputMode="decimal" value={vv} placeholder="R$" aria-label={`Valor pedido de ${pa.nome}`}
+        : <Adorno t="moeda"><input className="ptc-n" inputMode="decimal" data-fmt="moeda" value={vv} aria-label={`Valor pedido de ${pa.nome}`}
           onChange={(e) => { setVv(e.target.value); const n = lerNum(e.target.value); setVm(n != null && area ? numTxt(Math.round(n / area)) : ''); }}
-          onBlur={() => gravarValor(lerNum(vv))} />}</div>
+          onBlur={() => gravarValor(lerNum(vv))} /></Adorno>}</div>
       <div className="ptcom-c field">{L('Valor por m²')}{ro ? <span>{valor != null && area ? brl(valor / area) : '—'}</span>
-        : <input className="ptc-n" inputMode="decimal" value={vm} placeholder={area ? 'R$/m²' : 'sem área'} disabled={!area} aria-label={`Valor por m² de ${pa.nome}`}
+        : <Adorno t="moeda"><input className="ptc-n" inputMode="decimal" data-fmt="moeda" value={vm} placeholder={area ? 'por m²' : 'sem área'} disabled={!area} aria-label={`Valor por m² de ${pa.nome}`}
           onChange={(e) => { setVm(e.target.value); const n = lerNum(e.target.value); setVv(n != null && area ? numTxt(Math.round(n * area)) : ''); }}
-          onBlur={() => { const n = lerNum(vm); gravarValor(n != null && area ? Math.round(n * area) : null); }} />}</div>
+          onBlur={() => { const n = lerNum(vm); gravarValor(n != null && area ? Math.round(n * area) : null); }} /></Adorno>}</div>
       <div className="ptcom-c field">{L('Condição de pagamento')}{ro ? <span>{forma ? FORMA[forma] : '—'}</span>
         : <select value={forma ?? ''} aria-label={`Condição de pagamento de ${pa.nome}`} onChange={(e) => mudar(pa, valor, e.target.value || null)}>
           <option value="">Não informada</option>{Object.entries(FORMA).map(([k, x]) => <option key={k} value={k}>{x}</option>)}</select>}</div>
@@ -399,7 +400,7 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
             <h3 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 500 }}>Nova proposta · v{n + 1}</h3>
             <div className="editgrid">
               <div className="field"><label htmlFor="pp-o">Origem</label><select id="pp-o" value={v.origem} onChange={m('origem')}><option value="bkm">BKM</option><option value="vendedor">Vendedor</option></select></div>
-              <div className="field"><label htmlFor="pp-v">Valor total (R$)</label><input id="pp-v" inputMode="decimal" required value={v.valor} onChange={m('valor')} /></div>
+              <div className="field"><label htmlFor="pp-v">Valor total</label><Adorno t="moeda"><input id="pp-v" inputMode="decimal" data-fmt="moeda" required value={v.valor} onChange={m('valor')} /></Adorno></div>
               <div className="field"><label htmlFor="pp-f">Forma de pagamento</label><select id="pp-f" value={v.forma} onChange={m('forma')}>{Object.entries(FORMA).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div>
               <div className="field"><label htmlFor="pp-s">Status</label><select id="pp-s" value={v.status} onChange={m('status')}><option value="apresentada">Apresentada</option><option value="em_analise">Em análise</option><option value="rascunho">Rascunho</option></select></div>
               <div className="field"><label htmlFor="pp-d">Apresentada em</label><input id="pp-d" type="date" value={v.data} onChange={m('data')} /></div>

@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
 import { Dialogo, useToast } from '../components/ui';
+import { Adorno } from '../lib/mascara';
 import { Ic } from '../components/Moldura';
 import { data as fd, m2 } from '../lib/format';
 import { centroPoly, fixa, geojson, lotesUniao, type P } from '../novo/geo';
@@ -114,8 +115,8 @@ export async function refazerPoligonal(f: Ficha, como: string, aviso: (m: string
 
 /* ---------- Partes ---------- */
 const CAMPOS_PT: [string, string, string, Record<string, string>][] = [
-  ['pessoa_nome', 'Nome completo da pessoa principal', '', {}], ['telefone', 'Telefone', '(11) 98765-4321', { inputMode: 'tel' }],
-  ['email', 'E-mail', 'nome@email.com', { type: 'email' }], ['documento', 'CPF ou CNPJ', '', { inputMode: 'numeric' }],
+  ['pessoa_nome', 'Nome completo da pessoa principal', '', {}], ['telefone', 'Telefone', '(11) 98765-4321', { inputMode: 'tel', 'data-fmt': 'tel' }],
+  ['email', 'E-mail', 'nome@email.com', { type: 'email' }], ['documento', 'CPF ou CNPJ', '000.000.000-00', { inputMode: 'numeric', 'data-fmt': 'doc' }],
 ];
 function CartaoParte({ f, L, pa, n }: { f: Ficha; L: Lotes; pa: R; n: number }) {
   const { edita } = useSessao();
@@ -591,7 +592,9 @@ function JanelaEtq({ f, L, k, fechar, tirar }: { f: Ficha; L: Lotes; k: string; 
     recarregar();
   }
   const ip = (k2: string, l: string, extra: Record<string, unknown> = {}) => (
-    <div className="field" key={k2} style={extra.style as any}><label htmlFor={`v-${k2}`}>{l}</label><input id={`v-${k2}`} inputMode="decimal" value={iptu[k2] ?? ''} onChange={(e) => setIptu({ ...iptu, [k2]: e.target.value })} {...(extra.attrs as any)} /></div>
+    <div className="field" key={k2} style={extra.style as any}><label htmlFor={`v-${k2}`}>{l.replace(' (R$)', '')}</label>{(() => {
+      const r = / \(R\$\)/.test(l), i = <input id={`v-${k2}`} inputMode="decimal" data-fmt={r ? 'moeda' : (extra.attrs as any)?.inputMode === 'numeric' ? 'none' : undefined} value={iptu[k2] ?? ''} onChange={(e) => setIptu({ ...iptu, [k2]: e.target.value })} {...(extra.attrs as any)} />;
+      return r ? <Adorno t="moeda">{i}</Adorno> : i; })()}</div>
   );
   return (
     <Dialogo titulo={`${rot} ${x.inscricao}`} sub={x.endereco_prefeitura ?? undefined} onFechar={fechar} rodape={rodape}>
