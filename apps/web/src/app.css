@@ -262,3 +262,10 @@ body[data-rota="terrenos"] .main { container: pagina / inline-size }
 .etq-col.fechado > :not(.etq-ct) { display: none }
 .etq-col.fechado .etq-ct-b .ic { transform: none }
 html[data-tema="escuro"] .etq-ct-b .ic { color: #c4c7c5 }
+
+/* selo do ambiente com o PR e a hora do build embaixo (pedido do Moises, 6/nov/2026) */
+.amb-pilha { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 1px; align-self: center; flex: none }
+.amb-pilha .amb-selo { align-self: flex-start }
+.amb-pr { font-size: 11px; line-height: 14px; color: #5f6368; white-space: nowrap; padding-left: 2px }
+:root[data-tema="escuro"] .amb-pr { color: #c4c7c5 }
+@media (max-width: 599px) { .amb-pr { display: none } }
