@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useRascunho, mudou } from '../components/Rascunho';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
@@ -79,6 +80,8 @@ export function JanelaOferta({ f, corretores, fechar }: { f: Ficha; corretores: 
   const toast = useToast(), recarregar = useRecarregar();
   const [v, setV] = useState<Record<string, string>>({ cid: '', valor: '', forma: '', validade: '', obs: '', aceita: '' });
   const [grav, setGrav] = useState(false);
+  const fref = useRef<HTMLFormElement>(null);
+  const { aviso, pedir } = useRascunho(fref, Object.values(v).some((x) => x.trim() !== ''), 'a oferta', fechar);
   const m = (k: string) => (ev: { target: { value: string } }) => setV((o) => ({ ...o, [k]: ev.target.value }));
   async function enviar(ev: FormEvent) {
     ev.preventDefault();
@@ -96,8 +99,8 @@ export function JanelaOferta({ f, corretores, fechar }: { f: Ficha; corretores: 
     fechar();
   }
   return (
-    <Dialogo titulo="Registrar oferta" onFechar={fechar} rodape={<><button className="btn text" onClick={fechar}>Cancelar</button><button className="btn primary" type="submit" form="f-of" disabled={grav}>Registrar</button></>}>
-      <form id="f-of" onSubmit={enviar}><div className="fields">
+    <Dialogo titulo="Registrar oferta" onFechar={() => pedir(fechar)} rodape={<><button className="btn text" onClick={fechar}>Cancelar</button><button className="btn primary" type="submit" form="f-of" disabled={grav}>Registrar</button></>}>
+      <form id="f-of" ref={fref} onSubmit={enviar}><div className="fields">
         <div className="field"><label htmlFor="o-c">Corretor</label><select id="o-c" value={v.cid} onChange={m('cid')}><option value="">Sem corretor / direto</option>
           {corretores.filter((c) => c.ativo !== false).map((c) => <option key={c.id} value={c.id}>{c.nome}{c.imobiliaria ? ' · ' + c.imobiliaria : ''}</option>)}</select></div>
         <div className="field"><label htmlFor="o-v">Valor pedido</label><Adorno t="moeda"><input id="o-v" inputMode="decimal" data-fmt="moeda" required value={v.valor} onChange={m('valor')} /></Adorno></div>
@@ -107,6 +110,7 @@ export function JanelaOferta({ f, corretores, fechar }: { f: Ficha; corretores: 
         <div className="field full"><label htmlFor="o-o">Observação sobre a forma de pagamento</label><input id="o-o" value={v.obs} onChange={m('obs')} /></div>
         <div className="field full"><label htmlFor="o-a">Aceita permuta</label><input id="o-a" value={v.aceita} onChange={m('aceita')} /></div>
       </div></form>
+      {aviso}
     </Dialogo>
   );
 }
@@ -352,7 +356,10 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
   const hoje = hojeISO();
   const [v, setV] = useState<Record<string, string>>({});
   const [grav, setGrav] = useState(false);
-  const abrir = () => { setV({ origem: 'bkm', valor: '', forma: 'dinheiro', status: 'apresentada', data: hoje, validade: somarDias(hoje, 15), cond: '' }); abrirQuadro('comercial', 'propostas'); setForm(true); };
+  const [ini, setIni] = useState<Record<string, string>>({});
+  const abrir = () => { const o = { origem: 'bkm', valor: '', forma: 'dinheiro', status: 'apresentada', data: hoje, validade: somarDias(hoje, 15), cond: '' }; setV(o); setIni(o); abrirQuadro('comercial', 'propostas'); setForm(true); };
+  const fref = useRef<HTMLFormElement>(null);
+  const { aviso } = useRascunho(fref, form && mudou(v, ini), 'a proposta', () => setForm(false));
   const m = (k: string) => (ev: { target: { value: string } }) => setV((x) => ({ ...x, [k]: ev.target.value }));
   const n = c.props.length;
   async function enviar(ev: FormEvent) {
@@ -380,7 +387,7 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
       acoes={<span className="sec-acoes">{ativa && edita && !form && <button className="btn primary sm" onClick={abrir}><Ic n="add" s={16} />Nova proposta</button>}</span>}>
       <div className="sec-b">
         {form && (
-          <form onSubmit={enviar} className="prop-form">
+          <form ref={fref} onSubmit={enviar} className="prop-form">
             <h3 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 500 }}>Nova proposta · v{n + 1}</h3>
             <div className="editgrid">
               <div className="field"><label htmlFor="pp-o">Origem</label><select id="pp-o" value={v.origem} onChange={m('origem')}><option value="bkm">BKM</option><option value="vendedor">Vendedor</option></select></div>
@@ -395,6 +402,7 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
             <div className="sec-f" style={{ padding: '12px 0 0' }}><button type="button" className="btn text" onClick={() => setForm(false)}>Cancelar</button><button className="btn primary" disabled={grav}>Registrar</button></div>
           </form>
         )}
+        {aviso}
         {chain.length ? (
           <div className="chain" style={{ marginTop: form ? 16 : 0 }}>{chain.map((p, i) => (
             <div key={p.id} className={`pnode ${p.origem}`}><span className="pd">v{p.versao}</span><div className="pc">
@@ -426,8 +434,12 @@ function SecReunioes({ f, c }: { f: Ficha; c: Com }) {
   const [form, setForm] = useState(false);
   const [v, setV] = useState<Record<string, string>>({});
   const [grav, setGrav] = useState(false);
+  const [ini, setIni] = useState<Record<string, string>>({});
+  const fref = useRef<HTMLFormElement>(null);
+  const { aviso } = useRascunho(fref, form && mudou(v, ini), 'a reunião', () => setForm(false));
   const abrir = () => {
-    setV({ status: 'realizada', data: hojeISO(), hora: '10:00', modalidade: 'presencial', local: 'bkm', endereco: '', pbkm: membro?.nome ?? '', pext: '', pauta: '', resumo: '', enc: '' });
+    const o = { status: 'realizada', data: hojeISO(), hora: '10:00', modalidade: 'presencial', local: 'bkm', endereco: '', pbkm: membro?.nome ?? '', pext: '', pauta: '', resumo: '', enc: '' };
+    setV(o); setIni(o);
     abrirQuadro('comercial', 'reunioes');
     setForm(true);
   };
@@ -473,7 +485,7 @@ function SecReunioes({ f, c }: { f: Ficha; c: Com }) {
       acoes={<span className="sec-acoes">{ativa && edita && !form && <button className="btn primary sm" onClick={abrir}><Ic n="add" s={16} />Registrar reunião</button>}</span>}>
       <div className="sec-b">
         {form && (
-          <form className="reu-form" onSubmit={enviar}><div className="editgrid">
+          <form ref={fref} className="reu-form" onSubmit={enviar}><div className="editgrid">
             <div className="field"><label htmlFor="ru-s">Situação</label><select id="ru-s" value={v.status} onChange={m('status')}><option value="realizada">Realizada</option><option value="agendada">Agendada</option></select></div>
             <div className="field"><label htmlFor="ru-d">Data</label><input id="ru-d" type="date" required value={v.data} onChange={m('data')} /></div>
             <div className="field"><label htmlFor="ru-h">Hora</label><input id="ru-h" type="time" value={v.hora} onChange={m('hora')} /></div>
@@ -489,6 +501,7 @@ function SecReunioes({ f, c }: { f: Ficha; c: Com }) {
             </>}
           </div><div className="sec-f" style={{ padding: '12px 0 0' }}><button type="button" className="btn text" onClick={() => setForm(false)}>Cancelar</button><button className="btn primary" disabled={grav}>Registrar reunião</button></div></form>
         )}
+        {aviso}
         {ms.length ? (
           <div className="reus">{ms.map((r) => {
             const bk = part(r, true), ex = part(r, false);

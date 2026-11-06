@@ -122,142 +122,100 @@ function Resp({ r }: { r: F['resp'] }) {
 const SVG_DOTS = <svg className="ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" d="M12 5.5h.01M12 12h.01M12 18.5h.01" /></svg>;
 const seta = (d: number) => <svg className="ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d={d < 0 ? 'M15 6l-6 6 6 6' : 'M9 6l6 6-6 6'} /></svg>;
 
-/** barra das abas sem rolagem lateral: mostra uma janela de abas seguidas, na ordem, que acompanha a ativa (com a vizinha
-    de cada lado quando cabe); Shift + roda (ou Ctrl + Shift + roda, ou o deslize de lado do trackpad) desliza a janela sem
-    trocar de aba; o ⋮ lista sempre todas as abas, na mesma ordem, com a atual marcada (pedido do Moisés, 6/nov/2026) */
+/** barra das abas contínua, como uma roleta (pedido do Moisés, 6/nov/2026): todas as abas numa faixa que rola de lado, com as
+    das pontas cortadas pela borda; o dedo, o mouse arrastado (mãozinha), Shift + roda (ou Ctrl + Shift + roda) e o deslize de
+    lado do trackpad a movem pixel a pixel, e solta com força ela segue rodando e freia aos poucos (inércia). Arrastar não troca
+    de aba; trocar de aba traz a ativa para a vista, com a vizinha de cada lado quando cabe. O ⋮ lista sempre todas as abas. */
 function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void }) {
-  const barra = useRef<HTMLDivElement>(null), w = useRef<HTMLDivElement>(null);
-  const [ini, setIni] = useState(0); // primeira aba da janela
-  const ultAba = useRef<string | null>(null), larg = useRef<number[]>([]), maxIni = useRef(0);
+  const barra = useRef<HTMLDivElement>(null);
   const [menu, setMenu] = useState(false);
+  const [sobra, setSobra] = useState(false); // há abas fora da vista
+  const anim = useRef(0);
   const q: Record<string, number> = { comercial: f.qComercial, viabilidade: f.qViab, massa: f.qMassa, documentos: f.qDocs };
-  /** quantas abas seguidas cabem a partir de s */
-  const cabem = (s: number, W: number) => { let t = 0, k = 0; for (let i = s; i < larg.current.length; i++) { t += larg.current[i] + (k ? 2 : 0); if (t > W + 1) break; k++; } return Math.max(1, k); };
-  const livre = useRef(false); // arrastando: a barra rola solta e a janela espera
-  const caber = (forca?: number) => {
-    const b = barra.current;
-    if (!b || livre.current) return;
-    const bs = [...b.querySelectorAll<HTMLButtonElement>('button[role=tab]')];
-    bs.forEach((x) => { x.hidden = false; });
-    const mn = w.current?.querySelector<HTMLElement>('.fi-mais');
-    if (mn) mn.hidden = false; // mede com o ⋮ no lugar
-    const vis = bs.filter((x) => getComputedStyle(x).display !== 'none'); // Histórico some com o painel
-    larg.current = vis.map((x) => x.offsetWidth);
-    const W = b.clientWidth, L = vis.length;
-    let mi = 0; while (mi < L && mi + cabem(mi, W) < L) mi++;
-    maxIni.current = mi;
-    b.classList.toggle('desliza', mi > 0);
-    const a = vis.findIndex((x) => x.dataset.t === aba);
-    let s = forca ?? ini;
-    if (forca == null && ultAba.current !== aba && a >= 0) {
-      // trocou de aba: se ela ficou fora da janela ou na borda, a janela anda para mostrar a vizinha de cada lado
-      const k0 = cabem(s, W), fora = a < s || a >= s + k0;
-      const naBorda = (a === s && a > 0) || (a === s + k0 - 1 && a < L - 1);
-      if (fora || (naBorda && k0 >= 3)) { s = Math.max(0, a - 1); if (a >= s + cabem(s, W)) s = a; }
-    }
-    s = Math.max(0, Math.min(s, mi));
-    ultAba.current = aba;
-    const k = cabem(s, W);
-    vis.forEach((x, i) => { x.hidden = i < s || i >= s + k; });
-    if (mn) mn.hidden = k >= L;
-    if (s !== ini) setIni(s);
-  };
-  const cab = useRef(caber), iniR = useRef(ini);
-  cab.current = caber; iniR.current = ini;
-  useLayoutEffect(() => caber());
-  useEffect(() => {
-    const el = w.current;
-    if (!el || !window.ResizeObserver) return;
-    let lw = el.clientWidth;
-    const ro = new ResizeObserver(() => { if (Math.abs(el.clientWidth - lw) < 1) return; lw = el.clientWidth; caber(); });
-    ro.observe(el);
-    return () => ro.disconnect();
-  });
-  /* deslizar a barra (pedido do Moisés, 6/nov/2026): o dedo, o mouse arrastado (mãozinha) e Shift + roda (o Ctrl + Shift do Excel
-     também) ou o deslize de lado do trackpad movem a barra pixel a pixel; ao soltar (ou parar a roda), ela encaixa na aba mais
-     perto da borda esquerda e volta à janela de abas inteiras. Arrastar não troca de aba. */
+  /* a aba ativa entra na vista (com as vizinhas) ao trocar de aba */
+  useLayoutEffect(() => {
+    const b = barra.current, a = b?.querySelector<HTMLElement>(`button[data-t="${aba}"]`);
+    if (!b || !a) return;
+    const ant = a.previousElementSibling as HTMLElement | null, prox = a.nextElementSibling as HTMLElement | null;
+    const L = b.clientWidth, x0 = a.offsetLeft - (b.firstElementChild as HTMLElement).offsetLeft, aw = a.offsetWidth;
+    let e = ant ? x0 - ant.offsetWidth * 0.6 : 0, d = prox ? x0 + aw + prox.offsetWidth * 0.6 : b.scrollWidth;
+    if (d - e > L) { e = x0 - (L - aw) / 2; d = e + L; } // não cabem as vizinhas: a ativa no meio
+    let alvo = b.scrollLeft;
+    if (e < alvo) alvo = e; else if (d > alvo + L) alvo = d - L;
+    if (alvo !== b.scrollLeft) { cancelAnimationFrame(anim.current); b.scrollTo({ left: alvo, behavior: 'smooth' }); }
+  }, [aba]);
   useEffect(() => {
     const b = barra.current;
     if (!b) return;
-    let pos: number[] = [], lim = 0, anim = 0, tRoda = 0;
-    /* solta a barra: todas as abas visíveis, rolando a partir do começo da janela atual */
-    const soltar = () => {
-      if (livre.current) return true;
-      if (maxIni.current <= 0) return false;
-      cancelAnimationFrame(anim);
-      const bs = [...b.querySelectorAll<HTMLButtonElement>('button[role=tab]')];
-      bs.forEach((x) => { x.hidden = false; });
-      const vis = bs.filter((x) => getComputedStyle(x).display !== 'none');
-      const x0 = vis[0]?.offsetLeft ?? 0;
-      pos = vis.map((x) => x.offsetLeft - x0);
-      lim = pos[maxIni.current] ?? 0;
-      b.scrollLeft = pos[iniR.current] ?? 0;
-      livre.current = true;
-      return true;
-    };
-    const rolar = (x: number) => { b.scrollLeft = Math.max(0, Math.min(lim, x)); };
-    /* encaixa na aba mais perto e volta à janela */
-    const encaixar = (v = 0) => {
-      if (!livre.current) return;
-      const x = b.scrollLeft + v * 150; // com impulso, encaixa mais adiante no sentido do gesto
-      let s = 0; pos.forEach((p, i) => { if (Math.abs(p - x) < Math.abs(pos[s] - x)) s = i; });
-      s = Math.min(s, maxIni.current);
-      const de = b.scrollLeft, para = pos[s], t0 = performance.now(), dur = Math.min(180, 40 + Math.abs(para - de));
+    const medir = () => setSobra(b.scrollWidth > b.clientWidth + 1);
+    medir();
+    const ro = window.ResizeObserver ? new ResizeObserver(medir) : null;
+    ro?.observe(b);
+    /* inércia: a velocidade (px/ms) cai a cada quadro até parar; bater na ponta para */
+    const rodar = (v: number) => {
+      cancelAnimationFrame(anim.current);
+      let t0 = performance.now();
       const passo = (t: number) => {
-        const k = Math.min(1, (t - t0) / dur), e = 1 - (1 - k) ** 3;
-        b.scrollLeft = de + (para - de) * e;
-        if (k < 1) { anim = requestAnimationFrame(passo); return; }
-        livre.current = false; b.scrollLeft = 0; cab.current(s);
+        const dt = Math.min(32, t - t0); t0 = t;
+        const antes = b.scrollLeft;
+        b.scrollLeft = antes + v * dt;
+        v *= Math.pow(0.9965, dt); // atrito: perde ~30% da velocidade a cada 100 ms
+        if (Math.abs(v) > 0.02 && b.scrollLeft !== antes) anim.current = requestAnimationFrame(passo);
       };
-      anim = requestAnimationFrame(passo);
+      anim.current = requestAnimationFrame(passo);
     };
+    /* Shift + roda do mouse: cada dente empurra a roleta, que segue com inércia (o trackpad já tem a dele) */
     const roda = (ev: WheelEvent) => {
-      const d = ev.shiftKey ? (ev.deltaY || ev.deltaX) : Math.abs(ev.deltaX) > Math.abs(ev.deltaY) ? ev.deltaX : 0;
-      if (!d || !soltar()) return;
-      ev.preventDefault();
-      rolar(b.scrollLeft + (ev.deltaMode === 1 ? d * 40 : d));
-      clearTimeout(tRoda); tRoda = window.setTimeout(() => encaixar(), 160);
+      if (b.scrollWidth <= b.clientWidth + 1) return;
+      if (ev.shiftKey) {
+        const d = (ev.deltaY || ev.deltaX) * (ev.deltaMode === 1 ? 40 : 1);
+        if (!d) return;
+        ev.preventDefault();
+        rodar(Math.max(-6, Math.min(6, d / 60)));
+      }
     };
-    /* dedo e mouse: só vira arraste depois de 6 px de lado; o clique que arrastou não abre aba */
-    let px: number | null = null, py = 0, sx = 0, arrastou = false, id = -1, ult: [number, number][] = [];
+    /* mouse arrastado (no toque, a rolagem do navegador já desliza com inércia) */
+    let px: number | null = null, sx = 0, arrastou = false, id = -1, ult: [number, number][] = [];
     const baixo = (ev: PointerEvent) => {
-      if (ev.pointerType === 'mouse' && ev.button !== 0) return;
-      px = ev.clientX; py = ev.clientY; arrastou = false; id = ev.pointerId;
+      if (ev.pointerType !== 'mouse' || ev.button !== 0) return;
+      cancelAnimationFrame(anim.current);
+      px = ev.clientX; sx = b.scrollLeft; arrastou = false; id = ev.pointerId; ult = [[performance.now(), b.scrollLeft]];
     };
     const move = (ev: PointerEvent) => {
       if (px == null || ev.pointerId !== id) return;
-      const dx = ev.clientX - px, dy = ev.clientY - py;
+      const dx = ev.clientX - px;
       if (!arrastou) {
-        if (Math.abs(dx) < 6 || Math.abs(dx) < Math.abs(dy)) { if (Math.abs(dy) > 10) px = null; return; }
-        if (!soltar()) { px = null; return; }
-        arrastou = true; sx = b.scrollLeft + dx; ult = [];
+        if (Math.abs(dx) < 6 || b.scrollWidth <= b.clientWidth + 1) return;
+        arrastou = true;
         try { b.setPointerCapture(id); } catch { /* sem captura */ }
         b.classList.add('arrastando');
       }
       ev.preventDefault();
-      rolar(sx - dx);
-      ult.push([performance.now(), b.scrollLeft]); if (ult.length > 5) ult.shift();
+      b.scrollLeft = sx - dx;
+      ult.push([performance.now(), b.scrollLeft]); if (ult.length > 6) ult.shift();
     };
     const cima = (ev: PointerEvent) => {
-      if (ev.pointerId !== id) return;
+      if (ev.pointerId !== id || px == null) return;
       px = null;
-      if (arrastou) {
-        b.classList.remove('arrastando');
-        const [a0, z] = [ult[0], ult[ult.length - 1]], dt = a0 && z ? z[0] - a0[0] : 0;
-        encaixar(dt > 0 && performance.now() - z[0] < 80 ? (z[1] - a0[1]) / dt : 0);
-      }
+      if (!arrastou) return;
+      b.classList.remove('arrastando');
+      const z = ult[ult.length - 1], a0 = ult.find((u) => z[0] - u[0] < 100) ?? ult[0], dt = z[0] - a0[0];
+      if (dt > 0 && performance.now() - z[0] < 60) rodar(Math.max(-8, Math.min(8, (z[1] - a0[1]) / dt)));
     };
     const clique = (ev: MouseEvent) => { if (arrastou) { ev.preventDefault(); ev.stopPropagation(); arrastou = false; } };
+    const parar = () => cancelAnimationFrame(anim.current); // o dedo na barra segura a roleta
     b.addEventListener('wheel', roda, { passive: false });
     b.addEventListener('pointerdown', baixo);
     b.addEventListener('pointermove', move);
     b.addEventListener('pointerup', cima);
     b.addEventListener('pointercancel', cima);
+    b.addEventListener('touchstart', parar, { passive: true });
     b.addEventListener('click', clique, true);
     return () => {
-      cancelAnimationFrame(anim); clearTimeout(tRoda);
+      ro?.disconnect(); cancelAnimationFrame(anim.current);
       b.removeEventListener('wheel', roda); b.removeEventListener('pointerdown', baixo); b.removeEventListener('pointermove', move);
-      b.removeEventListener('pointerup', cima); b.removeEventListener('pointercancel', cima); b.removeEventListener('click', clique, true);
+      b.removeEventListener('pointerup', cima); b.removeEventListener('pointercancel', cima); b.removeEventListener('touchstart', parar);
+      b.removeEventListener('click', clique, true);
     };
   }, []);
   useEffect(() => {
@@ -271,14 +229,14 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
   const ia = ABAS.findIndex(([k]) => k === aba), ant = ABAS[ia - 1], prox = ABAS[ia + 1];
   const rot = (k: string, l: string) => <>{l}{q[k] ? <span className="tkm-n">{q[k]}</span> : null}</>;
   return (
-    <div className="fi-abas-w" ref={w}>
-      <div className="fi-abas" role="tablist" aria-label="Seções do terreno" ref={barra}>
+    <div className="fi-abas-w">
+      <div className={`fi-abas roleta${sobra ? ' desliza' : ''}`} role="tablist" aria-label="Seções do terreno" ref={barra}>
         {ABAS.map(([k, l]) => (
           <button key={k} role="tab" data-t={k} aria-selected={k === aba} aria-controls={`bl-${k}`} onClick={() => irAba(k)}>{rot(k, l)}</button>
         ))}
       </div>
       <div className="fi-fim">
-        <div className={`adv-mais fi-mais${menu ? ' aberto' : ''}`}>
+        <div className={`adv-mais fi-mais${menu ? ' aberto' : ''}`} hidden={!sobra}>
           <button className="iconbtn adv-mb" aria-haspopup="menu" aria-expanded={menu} aria-label="Mais ações" title="Mais ações" onClick={() => setMenu(!menu)}>{SVG_DOTS}</button>
           <div className="adv-menu" role="menu">
             {ABAS.map(([k, l]) => <button key={k} role="menuitemradio" aria-checked={k === aba} className={k === aba ? 'atual' : undefined} onClick={() => { setMenu(false); if (k !== aba) irAba(k); }}>{rot(k, l)}</button>)}

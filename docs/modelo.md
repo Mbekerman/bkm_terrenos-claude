@@ -436,7 +436,7 @@ erDiagram
     numeric to_maximo "excecao"
     numeric gabarito_m "excecao"
     bool gabarito_sem_limite "excecao"
-    text excecao_fonte "obrigatoria com excecao"
+    text excecao_fonte "opcional"
   }
   zona_parametros {
     uuid id PK

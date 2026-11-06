@@ -139,3 +139,6 @@ body[data-rota="terrenos"] .main { container: pagina / inline-size }
 :is(.area, .inl-c) .adorno.adorno:is(.m, .m2) > input.inl, :is(.area, .inl-c) .adorno.adorno:is(.m, .m2) > input { width: auto; field-sizing: content; min-width: 3ch; max-width: 100%; padding-right: 0 !important }
 :is(.area, .inl-c) .adorno:is(.m, .m2) > .adorno-t { position: static; transform: none; margin-left: 4px; color: inherit }
 .kv-vivo select.inl-x { field-sizing: content; padding-right: 22px !important; background-position: right 2px center !important; background-size: 16px 16px !important }
+/* barra das abas contínua, como roleta (pedido do Moisés, 6/nov/2026): rola de lado com as abas das pontas cortadas */
+.fi-abas.roleta { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y }
+.fi-abas.roleta::-webkit-scrollbar { display: none }

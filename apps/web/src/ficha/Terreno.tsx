@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useRascunho } from '../components/Rascunho';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
@@ -182,7 +183,10 @@ function SecPessoas({ f }: { f: Ficha }) {
       return { pessoas: ps, partes: (pt.data ?? []) as R[] };
     },
   });
-  const [nv, setNv] = useState({ nome: '', tipo: 'PF', papel: 'proprietario', pct: '', tel: '' });
+  const NV0 = { nome: '', tipo: 'PF', papel: 'proprietario', pct: '', tel: '' };
+  const [nv, setNv] = useState(NV0);
+  const pref = useRef<HTMLFormElement>(null);
+  const { aviso: avisoP } = useRascunho(pref, !!(nv.nome.trim() || nv.pct.trim() || nv.tel.trim()), 'o proprietário', () => setNv(NV0));
   const [grav, setGrav] = useState(false);
   const recarregar = () => { qc.invalidateQueries({ queryKey: ['ficha-pessoas', f.id] }); qc.invalidateQueries({ queryKey: ['ficha'] }); };
   async function incluir(ev: FormEvent) {
@@ -229,13 +233,14 @@ function SecPessoas({ f }: { f: Ficha }) {
           </tbody></table></div>
         ) : <div className="muted">Ninguém vinculado.</div>}
         {edita && (
-          <form className="inline-form" onSubmit={incluir}>
+          <form className="inline-form" ref={pref} onSubmit={incluir}>
             <div className="field grow"><label htmlFor="p-n">Nome ou razão social</label><input id="p-n" required value={nv.nome} onChange={(ev) => setNv({ ...nv, nome: ev.target.value })} /></div>
             <div className="field" style={{ flex: '0 1 120px' }}><label htmlFor="p-t">Tipo</label><select id="p-t" value={nv.tipo} onChange={(ev) => setNv({ ...nv, tipo: ev.target.value })}><option value="PF">PF</option><option value="PJ">PJ</option></select></div>
             <div className="field"><label htmlFor="p-p">Vínculo</label><select id="p-p" value={nv.papel} onChange={(ev) => setNv({ ...nv, papel: ev.target.value })}>{Object.entries(OPT.papel).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div>
             <div className="field" style={{ flex: '0 1 120px' }}><label htmlFor="p-pc">Participação</label><Adorno t="pct"><input id="p-pc" inputMode="decimal" data-fmt="pct" disabled={nv.papel !== 'proprietario'} value={nv.pct} onChange={(ev) => setNv({ ...nv, pct: ev.target.value })} /></Adorno></div>
             <div className="field"><label htmlFor="p-tel">Telefone</label><input id="p-tel" inputMode="tel" data-fmt="tel" placeholder="(11) 98765-4321" value={nv.tel} onChange={(ev) => setNv({ ...nv, tel: ev.target.value })} /></div>
             <button className="btn sm" disabled={grav}><Ic n="add" s={16} />Adicionar</button>
+            {avisoP}
           </form>
         )}
       </div>
