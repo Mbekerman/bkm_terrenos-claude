@@ -19,11 +19,11 @@ export default function FichaPagina() {
   if (q.isLoading) return <Carregando />;
   if (q.error) return <Erro erro={q.error} />;
   if (!q.data) return null;
-  const de = (loc.state as { de?: string } | null)?.de;
+  const st = loc.state as { de?: string; volta?: string } | null, de = st?.de;
   return (
     <Ficha f={q.data} aba={aba}
       irAba={(k) => navegar(`/terrenos/${codigo}${k === 'geral' ? '' : '/' + k}`, { state: loc.state })}
-      voltar={{ rotulo: de === 'funil' ? 'Funil' : 'Mapa', ir: () => navegar(de === 'funil' ? '/funil' : `/mapa/${codigo}`) }}
+      voltar={{ rotulo: de === 'funil' ? 'Funil' : 'Mapa', ir: () => navegar(de === 'funil' ? st?.volta ?? '/funil' : `/mapa/${codigo}`) }}
       abrirMapa={(lat, lng, z) => navegar(`/mapa/${codigo}`, { state: { centro: { lat, lng, z } } })} />
   );
 }

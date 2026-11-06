@@ -142,3 +142,5 @@ body[data-rota="terrenos"] .main { container: pagina / inline-size }
 /* barra das abas contínua, como roleta (pedido do Moisés, 6/nov/2026): rola de lado com as abas das pontas cortadas */
 .fi-abas.roleta { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y }
 .fi-abas.roleta::-webkit-scrollbar { display: none }
+/* seletor de raio da renda e do perfil some com o quadro fechado (pedido do Moisés, 6/nov/2026; no celular, o display:flex !important do seletor passava por cima) */
+:root:not(#_) .sec.qd-fechado > .rd-raios { display: none !important }
