@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSessao } from '../lib/sessao';
 import { data as fd, milhoes, m2 } from '../lib/format';
 import { Bi, Ic } from '../components/Moldura';
@@ -338,6 +338,17 @@ function VisaoGeral({ f, irAba, abrirMapa }: { f: F; irAba: (k: string) => void;
 export function useFicha(codigo: string) {
   const { empresa } = useSessao();
   return useQuery({ queryKey: ['ficha', empresa?.id, codigo], enabled: !!empresa, queryFn: () => carregarFicha(empresa!.id, codigo) });
+}
+
+/** carrega a ficha antes do clique (mouse parado na linha da lista, no pino ou na poligonal), para a gaveta abrir na hora
+    (pedido do Moisés, 6/nov/2026); a mesma chave do useFicha, e o que chegou há menos de 30 s não se pede de novo */
+export function usePreCarregarFicha() {
+  const { empresa } = useSessao();
+  const qc = useQueryClient();
+  return (codigo: string | undefined) => {
+    if (!empresa || !codigo) return;
+    void qc.prefetchQuery({ queryKey: ['ficha', empresa.id, codigo], queryFn: () => carregarFicha(empresa.id, codigo), staleTime: 30_000 });
+  };
 }
 
 /** "Ficha N% completa" com a bolinha vermelha do que falta; o menu leva direto ao campo, já em edição, com o conteúdo

@@ -9,6 +9,7 @@ import { useToast } from '../components/ui';
 import { Bi, Ic, type ContextoMoldura } from '../components/Moldura';
 import { carregarGoogle, googleRecusado } from '../mapa/google';
 import GavetaFicha from '../ficha/Gaveta';
+import { usePreCarregarFicha } from '../ficha/Ficha';
 import { MenuPonto } from '../mapa/MenuPonto';
 import { Motor, vista, reguaA, reguaArea, reguaM, reguaTotal, type Base, type GestosPonto, type Pino } from '../mapa/motor';
 import { desenhoAtendido, poligonal, useNovo } from '../novo/estado';
@@ -201,7 +202,7 @@ export default function Mapa() {
 
   /* motor do Google: cria uma vez por visita à página */
   const ganchos = useRef({ mk: (_: string) => {}, pino: (_: string) => {}, vazio: (_a: number, _b: number) => {}, duplo: (_a: number, _b: number, _c: EventTarget | null) => {},
-    clique: (_a: number, _b: number) => {}, mover: () => {}, editar: (_: string) => {}, gp: null as GestosPonto | null });
+    clique: (_a: number, _b: number) => {}, mover: () => {}, editar: (_: string) => {}, passar: (_: string) => {}, gp: null as GestosPonto | null });
 
   /* ---------- desenho da poligonal do terreno novo ----------
      Desktop sem barra (decisão do Moisés, 4/nov/2026): só um aviso passageiro ao começar; Enter ou dois cliques no mapa salvam,
@@ -414,6 +415,13 @@ export default function Mapa() {
     /* com a camada por setor ligada, o clique abre o quadro do setor */
     if (camada && setores()) { const i = setorEm(lat, lng); setSetor(i); if (i != null) setMkBox(null); }
   };
+  /* mouse sobre o pino, a poligonal ou a linha: a ficha já começa a carregar, para a gaveta abrir na hora (6/nov/2026) */
+  const preFicha = usePreCarregarFicha(), preT = useRef<ReturnType<typeof setTimeout>>();
+  const passar = (id: string | null) => {
+    clearTimeout(preT.current);
+    if (id && !des && !rg) preT.current = setTimeout(() => preFicha(todos.find((x) => x.id === id)?.codigo), 90);
+  };
+  ganchos.current.passar = (id) => { if (innerWidth >= 900) passar(id); };
   ganchos.current.editar = (id) => { if (!TOQUE() && !rgR.current && !desR.current) edComecar(id); };
   ganchos.current.duplo = (lat, lng, alvo) => {
     if (!edita || des || rg || TOQUE()) return;
@@ -437,6 +445,7 @@ export default function Mapa() {
         menu: (x, y, lat, lng) => { if (edita && !desR.current && !rgR.current) setMenu({ x, y, lat, lng }); },
         clique: (a, b) => ganchos.current.clique(a, b),
         editar: (id) => ganchos.current.editar(id),
+        passar: (id) => ganchos.current.passar(id),
         movendo: (on) => { setMovendo(on); if (on) ganchos.current.mover?.(); },
         fecharMenu: () => setMenu(null),
         streetView: (on) => setSv(on),
@@ -827,7 +836,7 @@ export default function Mapa() {
     const [nm] = info(fases, classe(fases, t, f, e), f, e), cs = corSub(fases, t), s = selId === t.id, ad = areaDe(t);
     return (
       <div key={t.id} className={`mp-it${s ? ' sel' : ''}${cartao ? ' cartao' : ''}`} data-id={t.id} tabIndex={0} role="listitem" aria-current={s}
-        onClick={() => foco(t)} onKeyDown={(ev) => { if (ev.key === 'Enter' && ev.target === ev.currentTarget) foco(t); }}>
+        onClick={() => foco(t)} onPointerEnter={() => passar(t.id)} onPointerLeave={() => passar(null)} onKeyDown={(ev) => { if (ev.key === 'Enter' && ev.target === ev.currentTarget) foco(t); }}>
         <span className="pin-mini mp-cod" style={{ background: cs[0], color: cs[1] }} title={`${t.nome} · ${subNome(fases, t)}`}>{t.codigo}</span>
         <div className="mp-it-t"><div className="t1">{t.nome}</div><div className="t2">{ad ? `${num(ad)} m²` : 'Área não informada'} · {nm}{t.lat == null && <> · <span style={{ color: 'var(--terracota)' }}>sem localização</span></>}</div>
           {geoCons?.terreno === t.id && <span className="chip blue lg-cons">Consultando o GeoSampa: {geoCons.feitos} de {geoCons.total}</span>}</div>
