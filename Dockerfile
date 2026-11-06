@@ -6,7 +6,7 @@ FROM node:22-alpine AS build
 WORKDIR /repo/apps/web
 COPY apps/web/package*.json ./
 RUN npm install --no-audit --no-fund
-COPY tools/setores/metodologia_renda.json tools/setores/metodologia_densidade.json /repo/tools/setores/
+COPY tools/setores/metodologia_renda.json tools/setores/metodologia_densidade.json tools/setores/demografia.json /repo/tools/setores/
 COPY apps/web/ ./
 RUN npm run build
 
