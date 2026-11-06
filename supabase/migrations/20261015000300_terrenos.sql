@@ -415,14 +415,15 @@ create trigger t_parte before insert or update of parte_id, terreno_id on app.te
 -- mais de uma parte pode ser dona do mesmo lote. Cada linha é uma etiqueta numa parte; a mesma matrícula
 -- pode estar em várias partes (duplicada), uma vez em cada. Sem nenhuma linha, a etiqueta está sem parte.
 -- O percentual da parte no lote é opcional (nulo = não informado): sem ele, o lote se divide em partes
--- iguais entre as etiquetas sem percentual, no que sobra dos percentuais informados (app.v_etiquetas).
+-- iguais entre as etiquetas sem percentual, no que sobra dos percentuais informados (app.v_etiquetas). Zero vale: a etiqueta
+-- duplicada de um lote que já está 100% nas outras partes nasce com 0% e um alerta (pedido do Moises, 6/nov/2026).
 create table app.matricula_partes (
   id           uuid primary key default gen_random_uuid(),
   empresa_id   uuid not null references app.empresas(id),
   terreno_id   uuid not null references app.terrenos(id) on delete cascade,
   matricula_id uuid not null references app.matriculas(id) on delete cascade,
   parte_id     uuid not null references app.terreno_partes(id) on delete cascade,
-  percentual   numeric(5,2) check (percentual > 0 and percentual <= 100),
+  percentual   numeric(5,2) check (percentual >= 0 and percentual <= 100),
   unique (matricula_id, parte_id)
 );
 create index on app.matricula_partes (parte_id);
@@ -433,7 +434,7 @@ create table app.inscricao_partes (
   terreno_id   uuid not null references app.terrenos(id) on delete cascade,
   inscricao_id uuid not null references app.inscricoes_municipais(id) on delete cascade,
   parte_id     uuid not null references app.terreno_partes(id) on delete cascade,
-  percentual   numeric(5,2) check (percentual > 0 and percentual <= 100),
+  percentual   numeric(5,2) check (percentual >= 0 and percentual <= 100),
   unique (inscricao_id, parte_id)
 );
 create index on app.inscricao_partes (parte_id);

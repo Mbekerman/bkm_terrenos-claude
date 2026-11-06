@@ -3426,6 +3426,11 @@ select pg_temp.ok((select area_matriculas_m2 = 350 from app.v_partes where id = 
 select pg_temp.falha(format('update app.matricula_partes set percentual = 40 where id = %L', :'lc2'), 'os percentuais do mesmo lote não passam de 100%');
 update app.matricula_partes set percentual = 30 where id = :'lc2';
 select pg_temp.ok((select count(*) = 0 from app.v_etiquetas where lote_id = :'lm1' and fracao_estimada), 'com os percentuais informados, nada é estimado');
+update app.matricula_partes set percentual = 0 where id = :'lc2';
+update app.matricula_partes set percentual = 100 where id = :'lc1';
+select pg_temp.ok((select area_matriculas_m2 = 500 from app.v_partes where id = :'lp1') and (select area_matriculas_m2 = 500 from app.v_partes where id = :'lp2'),
+  'etiqueta com 0%: a parte fica sem nada do lote');
+update app.matricula_partes set percentual = 70 where id = :'lc1';
 delete from app.matricula_partes where id = :'lc2';
 update app.matricula_partes set percentual = null where id = :'lc1';
 select pg_temp.ok((select area_matriculas_m2 = 500 from app.v_partes where id = :'lp1'), 'de volta a uma parte só, o lote inteiro');
