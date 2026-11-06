@@ -11,7 +11,7 @@ import { data as fd, hojeISO, milhoes, m2, somarDias } from '../lib/format';
 import type { Ficha, R } from './dados';
 import Temperatura from './Temperatura';
 import { lerNum, Quadro, abrirQuadro, abrirQuadroJa, focar, usePedido, Vivo } from './edicao';
-import { ptArea, useLotes } from './Partes';
+import { daParte, ptArea, useLotes } from './Partes';
 
 // Aba Comercial da ficha (proto.js › abaComercialFicha = abaGeral(t,'neg') + abaComercial + abaNegociacao; proto_lotes.js ›
 // secPartesCom; proto_mod.js › secReunioes). Negociação, Condições pedidas, Partes (o pedido de cada parte, oferta_partes),
@@ -251,9 +251,9 @@ function SecPartesCom({ f, c, registrar }: { f: Ficha; c: Com; registrar: () => 
   const P = L.partes, o = c.ref, um = P.length === 1, rot = L.base?.rotulo ?? 'Inscrição';
   // com uma parte só, ela é o terreno inteiro: vale a área adotada do terreno (sem ela, a das matrículas ou dos SQLs)
   const areaDe = (pid: string) => (um && f.area != null ? +f.area : ptArea(L, pid).area);
-  const zonasDe = (pid: string) => [...new Set(L.insc.filter((i) => i.parte_id === pid).flatMap((i) => ((L.consultas[i.id]?.zonas ?? []) as R[]).map((z) => z.sigla)).filter(Boolean))].join(' / ');
+  const zonasDe = (pid: string) => [...new Set(daParte(L, 's', pid).map((e) => e.x).flatMap((i) => ((L.consultas[i.id]?.zonas ?? []) as R[]).map((z) => z.sigla)).filter(Boolean))].join(' / ');
   const det = (pid: string) => {
-    const ms = L.mats.filter((m) => m.parte_id === pid), is = L.insc.filter((i) => i.parte_id === pid);
+    const ms = daParte(L, 'm', pid).map((e) => e.x), is = daParte(L, 's', pid).map((e) => e.x);
     return ms.length || is.length ? [ms.length && 'Mat. ' + ms.map((m) => m.numero).join(', '), is.length && rot + ' ' + is.map((i) => i.inscricao).join(', ')].filter(Boolean).join(' · ') : 'sem matrícula nem SQL';
   };
   async function mudar(pa: R, valor: number | null, forma: string | null) {

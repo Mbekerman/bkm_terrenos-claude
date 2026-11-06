@@ -181,3 +181,49 @@ body[data-rota="terrenos"] .main { container: pagina / inline-size }
 .fi-aba .sec-h > h2 { flex: 0 1 auto; min-width: min(100%, max-content) }
 .fi-aba .sec-h > h2 > .qd-tg { min-width: min(100%, max-content) }
 .sec-h .qd-acoes:has(.gbusca-h) { flex: 1 1 240px; justify-content: flex-end }
+
+/* máscara à vista enquanto se digita (lib/mascara.ts, pedido do Moisés de 6/nov/2026) */
+.masc-sombra { position: fixed; z-index: 3000; pointer-events: none; color: #8e918f; white-space: pre; overflow: hidden }
+.masc-sombra[hidden] { display: none }
+:root[data-tema="escuro"] .masc-sombra { color: #747775 }
+
+/* Larguras mínimas (pedido do Moisés, 6/nov/2026): na gaveta estreita os campos não encolhem até cortar o valor;
+   quando não cabem lado a lado, descem para a linha de baixo. As grades da ficha passam a depender da largura do
+   próprio quadro, não da tela. */
+.pt2-g { grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)) }
+.etq-top { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)) }
+.etq-form .field { flex: 1 1 150px; min-width: min(100%, 150px) }
+.etq-form .field.grow { flex: 2 1 190px; min-width: min(100%, 190px) }
+.fi-aba .areas { grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)) }
+.fi-aba .cond { grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)) }
+.fi-aba .fields, .dialog .fields { grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)) }
+.dialog.mini .fields { grid-template-columns: 1fr }
+.inline-form .field { min-width: min(100%, 140px) }
+.inline-form .field.grow { min-width: min(100%, 200px) }
+.vtec-c { grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr)) }
+
+/* Etiqueta em mais de uma parte (pedido do Moisés, 6/nov/2026): mini pizza com a fração da parte no lote; tracejada
+   quando estimada (sem percentual informado); o número fica na dica */
+.etq-n { display: inline-flex; align-items: center; gap: 6px }
+.etq-pz { --p: 50; --cor: currentColor; flex: none; width: 13px; height: 13px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--cor);
+  background: conic-gradient(var(--cor) calc(var(--p) * 1%), transparent 0) }
+.etq-pz.est { opacity: .55; box-shadow: none; outline: 1.5px dashed var(--cor); outline-offset: -1.5px }
+.etq-pz.lg { width: 20px; height: 20px }
+.etq-menu { position: fixed; z-index: 2500; min-width: 220px; max-width: 280px; max-height: 70vh; overflow: auto; background: #fff; border-radius: 8px; padding: 6px 0;
+  box-shadow: 0 2px 6px 2px rgba(0,0,0,.15), 0 1px 2px rgba(0,0,0,.3) }
+.etq-menu-t { padding: 6px 16px 8px; font-size: 13px; font-weight: 500; color: #1f1f1f; border-bottom: 1px solid #e3e3e3; margin-bottom: 4px }
+.etq-menu-h { padding: 8px 16px 4px; font-size: 12px; font-weight: 500; color: #444746 }
+.etq-menu-v { padding: 8px 16px; font-size: 13px; color: #444746 }
+.etq-menu button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 36px; padding: 0 16px; border: 0; background: none; font: inherit; font-size: 14px; color: #1f1f1f; text-align: left; cursor: pointer }
+.etq-menu button:hover, .etq-menu button:focus-visible { background: #f0f4f9; outline: none }
+.etq-menu hr { border: 0; border-top: 1px solid #e3e3e3; margin: 4px 0 }
+.etq-pcts { display: flex; flex-direction: column; gap: 6px; margin-top: 16px }
+.etq-pcts .etq-h3 { margin-top: 0 }
+.etq-pct { display: grid; grid-template-columns: 20px minmax(0, 1fr) minmax(110px, 140px); align-items: center; gap: 12px; padding: 4px 8px; border-radius: 8px; color: #0b57d0 }
+.etq-pct.atual { background: #f0f4f9 }
+.etq-pct-n { color: #1f1f1f; font-size: 14px; overflow-wrap: anywhere }
+.etq-pct input { text-align: right }
+.etq-dup { margin-top: 6px; max-width: 320px }
+.etq-pcts .hint { margin-top: 2px }
+:root[data-tema="escuro"] .etq-menu { background: #282a2c } :root[data-tema="escuro"] .etq-menu button, :root[data-tema="escuro"] .etq-menu-t { color: #e3e3e3 }
+:root[data-tema="escuro"] .etq-menu button:hover { background: #333537 } :root[data-tema="escuro"] .etq-pct.atual { background: #282a2c } :root[data-tema="escuro"] .etq-pct-n { color: #e3e3e3 }

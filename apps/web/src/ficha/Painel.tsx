@@ -44,7 +44,7 @@ const completo = (s: string) => { const d = new Date(s); return `${fd(dLoc(s))} 
 
 /* ---------- texto dos logs ---------- */
 export interface Log { id: string; em: string; user: string | null; txt: string; det?: string[]; aba?: string; q?: string; topo?: string }
-type Ctx = { f: F; nomes: Map<string, string>; partes: Map<string, string>; procs: Map<string, R>; sp: boolean };
+type Ctx = { f: F; nomes: Map<string, string>; partes: Map<string, string>; procs: Map<string, R>; sp: boolean; lotes: Map<string, string> };
 
 const curto = (v: unknown) => { const s = String(v); return s.length > 60 ? s.slice(0, 57) + '…' : s; };
 const NI = new Set(['nao_informado', 'nao_informada', 'nao_avaliada']);
@@ -127,6 +127,16 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
       const ks = mudou(x, d).filter((k) => k !== 'municipio_id');
       if (!ins && !del && !ks.length) return null;
       return { txt: ins ? `${r} adicionad${g}: ${o.inscricao}` : del ? `${r} removid${g}: ${o.inscricao}` : `${r} alterad${g} (${o.inscricao}): ${lista(ks)}`, aba: 'terreno', q: 'lotes' };
+    }
+    case 'matricula_partes':
+    case 'inscricao_partes': {
+      const l = c.lotes.get(o.matricula_id ?? o.inscricao_id) ?? (a.tabela === 'matricula_partes' ? 'Matrícula' : c.sp ? 'SQL' : 'Inscrição'), n = (id: string) => c.partes.get(id) ?? 'parte';
+      const pc = (v: unknown) => (v == null ? 'sem percentual' : `${Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`);
+      if (ins) return { txt: `${l} na parte ${n(o.parte_id)}`, aba: 'terreno', q: 'lotes' };
+      if (del) return { txt: `${l} saiu da parte ${n(o.parte_id)}`, aba: 'terreno', q: 'lotes' };
+      if (x?.parte_id !== d?.parte_id) return { txt: `${l}: da parte ${n(x?.parte_id)} para ${n(d?.parte_id)}`, aba: 'terreno', q: 'lotes' };
+      if (x?.percentual !== d?.percentual) return { txt: `${l} na parte ${n(o.parte_id)}: ${pc(x?.percentual)} → ${pc(d?.percentual)}`, aba: 'terreno', q: 'lotes' };
+      return null;
     }
     case 'terreno_partes': {
       if (!ins && !del && d?.ativa === false && x?.ativa !== false) return { txt: `Parte excluída: ${o.nome}`, det: d?.motivo_remocao ? [d.motivo_remocao] : undefined, aba: 'terreno', q: 'partes-cad' };
@@ -222,7 +232,9 @@ export function useLogs(f: F) {
     if (!q.data) return [];
     const { aud, trans, procs, partes, users } = q.data;
     const nomes = new Map(users.map((u) => [u.user_id as string, (u.nome || u.email) as string]));
-    const ctx: Ctx = { f, nomes, partes: new Map(partes.map((p) => [p.id, p.nome])), procs: new Map(procs.map((p) => [p.id, p])), sp: !f.municipio || /^São Paulo$/i.test(f.municipio) };
+    const ctx: Ctx = { f, nomes, partes: new Map(partes.map((p) => [p.id, p.nome])), procs: new Map(procs.map((p) => [p.id, p])), sp: !f.municipio || /^São Paulo$/i.test(f.municipio), lotes: new Map() };
+    /* o número de cada matrícula e SQL, tirado dos próprios logs, para os logs das etiquetas nas partes */
+    for (const a of aud) if (a.tabela === 'matriculas' || a.tabela === 'inscricoes_municipais') { const o = a.depois ?? a.antes ?? {}; ctx.lotes.set(a.registro_id, a.tabela === 'matriculas' ? `Matrícula ${o.numero}` : `${ctx.sp ? 'SQL' : 'Inscrição'} ${o.inscricao}`); }
     const faseN = (k: string) => f.fases.find((x) => x.k === k);
     const etN = (fs: string, k: string | null) => (k ? f.etapasPorFase[fs]?.find((e) => e.k === k)?.nome ?? k : '');
     const subN = (fs: string, e: string | null, k: string | null) => (k ? f.etapasPorFase[fs]?.find((x) => x.k === e)?.subs.find((s) => s.k === k)?.nome ?? k : '');

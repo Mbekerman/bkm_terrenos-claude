@@ -78,6 +78,7 @@ function aoDigitar(e: Event) {
   setter.call(el, novo);
   try { el.setSelectionRange(p, p); } catch { /* campos sem cursor */ }
 }
+function aoDigitarSombra(e: Event) { const el = e.target as HTMLInputElement; if (el?.tagName === 'INPUT') mostrarSombra(el); }
 /* percentual e metros: ao sair do campo, completa as duas casas ("66" → "66,00"; pedidos do Moisés, 5 e 6/nov/2026) */
 function aoSair(e: Event) {
   const el = e.target as HTMLInputElement;
@@ -88,6 +89,42 @@ function aoSair(e: Event) {
   setter.call(el, novo);
   el.dispatchEvent(new Event('input', { bubbles: true }));
 }
+
+/* Máscara à vista enquanto se digita (pedido do Moisés, 6/nov/2026): o que falta do formato aparece em cinza logo depois
+   do texto, sem entrar no valor: ",00" no percentual e em metros (que se completam ao sair) e o resto do desenho em
+   telefone, CPF ou CNPJ e CEP ("(11) 9876_-____"). Campo alinhado à direita fica sem a sombra. */
+let sombra: HTMLSpanElement | null = null;
+let regua: CanvasRenderingContext2D | null = null;
+function falta(el: HTMLInputElement, t: string): string {
+  const v = el.value;
+  if (!/\d/.test(v) || /[a-z]/i.test(v)) return '';
+  if (DUAS.has(t)) { const i = v.indexOf(','); return i < 0 ? ',00' : '0'.repeat(Math.max(0, 2 - (v.length - i - 1))); }
+  if (t in MASC) {
+    const d = v.replace(/\D/g, '').length, m = MASC[t as keyof typeof MASC](t === 'doc' ? Math.min(d, 11) : d);
+    let n = 0, i = 0;
+    for (; i < m.length && n < d; i++) if (m[i] === '0') n++;
+    if (n < d) return '';
+    return m.slice(i).replace(/0/g, '_');
+  }
+  return '';
+}
+function mostrarSombra(el: HTMLInputElement) {
+  const t = tipoFmt(el), r = t && t !== 'none' && document.activeElement === el ? falta(el, t) : '';
+  const cs = r ? getComputedStyle(el) : null;
+  if (!r || !cs || /right|end|center/.test(cs.textAlign) || el.scrollWidth > el.clientWidth + 1) { if (sombra) sombra.hidden = true; return; }
+  if (!sombra) { sombra = document.createElement('span'); sombra.className = 'masc-sombra'; sombra.setAttribute('aria-hidden', 'true'); document.body.appendChild(sombra); }
+  regua ??= document.createElement('canvas').getContext('2d');
+  if (!regua) return;
+  regua.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  const b = el.getBoundingClientRect(), x = b.left + el.clientLeft + parseFloat(cs.paddingLeft) + regua.measureText(el.value).width - el.scrollLeft;
+  const sobra = b.right - el.clientLeft - parseFloat(cs.paddingRight) - x;
+  if (sobra < 8) { sombra.hidden = true; return; }
+  sombra.style.font = regua.font;
+  Object.assign(sombra.style, { left: x + 'px', top: b.top + 'px', height: b.height + 'px', lineHeight: b.height + 'px', maxWidth: sobra + 'px' });
+  sombra.textContent = r;
+  sombra.hidden = false;
+}
+const esconderSombra = () => { if (sombra) sombra.hidden = true; };
 
 /* No celular, o campo que ganha o foco não pode ficar atrás do teclado (pedido do Moisés,
    5/nov/2026): quando o teclado abre, a área visível (visualViewport) encolhe, e com
@@ -114,7 +151,12 @@ export function instalarMascaras() {
   if (instalado) return;
   instalado = true;
   document.addEventListener('input', aoDigitar, true);
+  document.addEventListener('input', aoDigitarSombra);
   document.addEventListener('focusout', aoSair, true);
+  document.addEventListener('focusout', esconderSombra);
+  document.addEventListener('focusin', (e) => { const el = e.target as HTMLInputElement; if (el?.tagName === 'INPUT') setTimeout(() => mostrarSombra(el), 0); else esconderSombra(); });
+  addEventListener('scroll', esconderSombra, true);
+  addEventListener('resize', esconderSombra);
   const tocou = () => matchMedia('(pointer: coarse)').matches;
   document.addEventListener('focusin', (e) => {
     if (!tocou() || !ehCampo(e.target as Element)) return;
