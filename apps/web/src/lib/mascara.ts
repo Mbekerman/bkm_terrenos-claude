@@ -129,9 +129,11 @@ export function instalarMascaras() {
   });
 }
 
-/** R$ ou % dentro do campo, como o .adorno do protótipo */
-export function Adorno({ t, children }: { t: 'moeda' | 'pct'; children: ReactNode }) {
-  return createElement('span', { className: `adorno ${t}` }, children, createElement('span', { className: 'adorno-t', 'aria-hidden': true }, t === 'moeda' ? 'R$' : '%'));
+/** a unidade dentro do campo, como o .adorno do protótipo: R$ antes do número; %, m e m² depois (pedido do Moisés, 6/nov/2026) */
+export type Unidade = 'moeda' | 'pct' | 'm' | 'm2';
+const UN: Record<Unidade, string> = { moeda: 'R$', pct: '%', m: 'm', m2: 'm²' };
+export function Adorno({ t, children }: { t: Unidade; children: ReactNode }) {
+  return createElement('span', { className: `adorno ${t}` }, children, createElement('span', { className: 'adorno-t', 'aria-hidden': true }, UN[t]));
 }
 
 /** metros com duas casas (leitura e valor inicial do campo): 12,5 → "12,50" */

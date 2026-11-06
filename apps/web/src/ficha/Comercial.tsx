@@ -9,7 +9,7 @@ import { Ic } from '../components/Moldura';
 import { data as fd, hojeISO, milhoes, m2, somarDias } from '../lib/format';
 import type { Ficha, R } from './dados';
 import Temperatura from './Temperatura';
-import { lerNum, Quadro, abrirQuadro } from './edicao';
+import { lerNum, Quadro, abrirQuadro, Vivo } from './edicao';
 import { ptArea, useLotes } from './Partes';
 
 // Aba Comercial da ficha (proto.js › abaComercialFicha = abaGeral(t,'neg') + abaComercial + abaNegociacao; proto_lotes.js ›
@@ -138,79 +138,63 @@ function SecNegociacao({ f, c, cor }: { f: Ficha; c: Com; cor: string }) {
   );
 }
 
-/* ---------- Condições pedidas (a oferta de referência; editar muda essa oferta) ---------- */
+/* ---------- Condições pedidas (a oferta de referência; editar muda essa oferta) ----------
+   Editadas no lugar, sem Editar nem Salvar: cada campo grava ao sair dele ou ao escolher (pedido do Moisés, 6/nov/2026) */
 function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registrar: () => void; primeiro: boolean }) {
   const { edita } = useSessao();
   const toast = useToast(), recarregar = useRecarregar();
   const o = c.ref;
-  const [ed, setEd] = useState(false);
-  const [v, setV] = useState<Record<string, string>>({});
-  const [grav, setGrav] = useState(false);
   const cp = c.corretores.find((x) => x.id === c.tcor.find((t) => t.principal)?.corretor_id);
-  const abrir = () => {
-    if (!o) return;
-    setV({ valor: numTxt(o.valor_pedido), forma: o.forma_pagamento_pedida ?? '', cid: o.corretor_id ?? '', validade: o.validade ?? '', obs: o.observacao_pagamento ?? '', aceita: o.aceita_permuta ?? '' });
-    abrirQuadro('comercial', 'cond');
-    setEd(true);
-  };
-  const m = (k: string) => (ev: { target: { value: string } }) => setV((x) => ({ ...x, [k]: ev.target.value }));
-  async function salvar(ev: FormEvent) {
-    ev.preventDefault();
-    if (!o || grav) return;
-    const valor = lerNum(v.valor);
-    if (valor != null && valor <= 0) { toast('O valor pedido precisa ser maior que zero.', true); return; }
-    setGrav(true);
-    const cid = v.cid || null;
-    const { error } = await supabase.from('ofertas').update({
-      valor_pedido: valor, forma_pagamento_pedida: v.forma || null, corretor_id: cid, validade: v.validade || null,
-      observacao_pagamento: v.obs.trim() || null, aceita_permuta: v.aceita.trim() || null,
-    }).eq('id', o.id);
+  const [valorEd, setValorEd] = useState<number | null>(o?.valor_pedido ?? null);
+  useEffect(() => setValorEd(o?.valor_pedido ?? null), [o?.valor_pedido]);
+  const ed = edita && !!o;
+  async function gravar(d: R) {
+    if (!o) return false;
+    const { error } = await supabase.from('ofertas').update(d).eq('id', o.id);
+    if (error) { toast(error.message, true); return false; }
     /* corretor novo na oferta passa a constar no terreno (o primeiro vira principal), como no registro da oferta */
-    if (!error && cid && !c.tcor.some((t) => t.corretor_id === cid)) {
-      const r = await supabase.from('terreno_corretores').upsert({ terreno_id: f.id, corretor_id: cid, empresa_id: f.t.empresa_id, principal: !c.tcor.some((t) => t.principal) }, { ignoreDuplicates: true });
+    if (d.corretor_id && !c.tcor.some((t) => t.corretor_id === d.corretor_id)) {
+      const r = await supabase.from('terreno_corretores').upsert({ terreno_id: f.id, corretor_id: d.corretor_id, empresa_id: f.t.empresa_id, principal: !c.tcor.some((t) => t.principal) }, { ignoreDuplicates: true });
       if (r.error) toast(r.error.message, true);
     }
-    setGrav(false);
-    if (error) { toast(error.message, true); return; }
-    setEd(false);
     recarregar();
     toast('Salvo.');
+    return true;
   }
+  const gravarValor = (v: string) => {
+    const n = lerNum(v);
+    if (n != null && n <= 0) { toast('O valor pedido precisa ser maior que zero.', true); return false; }
+    return gravar({ valor_pedido: n });
+  };
+  const inp = (k: string, col: string, ini: string, extra: R = {}) => (
+    <Vivo ini={ini} gravar={(v) => gravar({ [col]: v.trim() || null })}>{(p) => <input className="inl-x" id={`c-${k}`} placeholder="Não informado" {...extra} {...p} />}</Vivo>
+  );
+  const sel = (k: string, col: string, ini: string, opts: [string, string][], vazio: string) => (
+    <Vivo ini={ini} imediato gravar={(v) => gravar({ [col]: v || null })}>{(p) =>
+      <select className="inl-x" id={`c-${k}`} {...p}><option value="">{vazio}</option>{opts.map(([a, b]) => <option key={a} value={a}>{b}</option>)}</select>}</Vivo>
+  );
   const area = f.area;
-  const acoes = ed
-    ? <div className="qd-acoes"><span className="faint" style={{ fontSize: 12, marginRight: 8 }}>editando a oferta de {fd(o?.data_oferta)}</span>
-      <button type="button" className="btn text sm" onClick={() => setEd(false)}>Cancelar</button><button className="btn primary sm" disabled={grav}>Salvar</button></div>
-    : <div className="sec-acoes">{o ? (edita && <button className="btn text sm" onClick={abrir}><Ic n="edit" s={16} />Editar</button>)
-      : edita && <button className="btn sm" onClick={registrar}><Ic n="add" s={16} />Registrar oferta</button>}</div>;
-  const inp = (k: string, extra: R = {}) => <input className="inl-x" id={`c-${k}`} value={v[k] ?? ''} onChange={m(k)} {...extra} />;
-  const sel = (k: string, opts: [string, string][], vazio: string) => (
-    <select className="inl-x" id={`c-${k}`} value={v[k] ?? ''} onChange={m(k)}><option value="">{vazio}</option>{opts.map(([a, b]) => <option key={a} value={a}>{b}</option>)}</select>
-  );
-  const valorEd = lerNum(v.valor);
-  const kv = (k: string, val: ReactNode, campo: ReactNode) => <div className="kv"><dt>{k}</dt><dd>{ed ? campo : val}</dd></div>;
-  const corpo = (
-    <div className="sec-b">{o ? <>
-      <div className="cond2">
-        <div><div className="lbl">Valor pedido</div><div className="big">{ed ? <Adorno t="moeda">{inp('valor', { inputMode: 'decimal', 'data-fmt': 'moeda', 'aria-label': 'Valor pedido (R$)' })}</Adorno> : o.valor_pedido ? milhoes(o.valor_pedido) : ni()}</div></div>
-        <div><div className="lbl">Por m²</div><div className="big">{(ed ? valorEd : o.valor_pedido) && area ? brl((ed ? valorEd! : o.valor_pedido) / area) : ni('—')}</div></div>
-      </div>
-      <dl className={`kvl${ed ? ' kvl-ed' : ''}`}>
-        {kv('Forma de pagamento', o.forma_pagamento_pedida ? FORMA[o.forma_pagamento_pedida] : ni('Não informada'), sel('forma', Object.entries(FORMA), 'Não informada'))}
-        {kv('Corretor', cp ? <span>{cp.nome}<span className="kv-2">{cp.imobiliaria}</span></span> : ni('—'),
-          sel('cid', c.corretores.filter((x) => x.ativo !== false || x.id === v.cid).map((x) => [x.id, `${x.nome}${x.imobiliaria ? ' · ' + x.imobiliaria : ''}`]), 'Sem corretor'))}
-        {kv('Aceita permuta', o.aceita_permuta || ni(), inp('aceita', { placeholder: 'Como o vendedor encara a permuta e em que condições' }))}
-        {kv('Pagamento', o.observacao_pagamento || ni(), inp('obs', { placeholder: 'Observação sobre a forma de pagamento' }))}
-      </dl></> : <div className="muted">Nenhuma oferta registrada.</div>}</div>
-  );
-  useEffect(() => {
-    if (!ed) return;
-    const esc = (ev: KeyboardEvent) => { if (ev.key === 'Escape') setEd(false); };
-    document.addEventListener('keydown', esc);
-    return () => document.removeEventListener('keydown', esc);
-  }, [ed]);
+  const acoes = !o && edita ? <div className="sec-acoes"><button className="btn sm" onClick={registrar}><Ic n="add" s={16} />Registrar oferta</button></div> : undefined;
+  const kv = (k: string, val: ReactNode, campo: () => ReactNode) => <div className="kv"><dt>{k}</dt><dd>{ed ? campo() : val}</dd></div>;
   return (
-    <Quadro aba="comercial" id="cond" primeiro={primeiro} titulo="Condições pedidas" acoes={acoes} aberto={ed}
-      form={ed ? (x) => <form onSubmit={salvar}>{x}</form> : undefined}>{corpo}</Quadro>
+    <Quadro aba="comercial" id="cond" primeiro={primeiro} titulo="Condições pedidas" acoes={acoes}>
+      <div className="sec-b">{o ? <>
+        <div className={`cond2${ed ? ' vivo' : ''}`}>
+          <div><div className="lbl">Valor pedido</div><div className="big">{ed
+            ? <Adorno t="moeda"><Vivo ini={numTxt(o.valor_pedido)} gravar={gravarValor} aoMudar={(v) => setValorEd(lerNum(v))}>{(p) =>
+              <input className="inl-x" id="c-valor" inputMode="decimal" data-fmt="moeda" aria-label="Valor pedido" placeholder="Não informado" {...p} />}</Vivo></Adorno>
+            : o.valor_pedido ? milhoes(o.valor_pedido) : ni()}</div></div>
+          <div><div className="lbl">Por m²</div><div className="big">{(ed ? valorEd : o.valor_pedido) && area ? brl((ed ? valorEd! : o.valor_pedido) / area) : ni('—')}</div></div>
+        </div>
+        <dl className={`kvl${ed ? ' kvl-ed vivo' : ''}`}>
+          {kv('Forma de pagamento', o.forma_pagamento_pedida ? FORMA[o.forma_pagamento_pedida] : ni('Não informada'), () => sel('forma', 'forma_pagamento_pedida', o.forma_pagamento_pedida ?? '', Object.entries(FORMA), 'Não informada'))}
+          {kv('Corretor', cp ? <span>{cp.nome}<span className="kv-2">{cp.imobiliaria}</span></span> : ni('—'),
+            () => sel('cid', 'corretor_id', o.corretor_id ?? '', c.corretores.filter((x) => x.ativo !== false || x.id === o.corretor_id).map((x) => [x.id, `${x.nome}${x.imobiliaria ? ' · ' + x.imobiliaria : ''}`]), 'Sem corretor'))}
+          {kv('Aceita permuta', o.aceita_permuta || ni(), () => inp('aceita', 'aceita_permuta', o.aceita_permuta ?? '', { placeholder: 'Como o vendedor encara a permuta e em que condições' }))}
+          {kv('Pagamento', o.observacao_pagamento || ni(), () => inp('obs', 'observacao_pagamento', o.observacao_pagamento ?? '', { placeholder: 'Observação sobre a forma de pagamento' }))}
+        </dl>
+        {ed && <div className="hint" style={{ marginTop: 8 }}>Valores da oferta de {fd(o.data_oferta)}.</div>}</> : <div className="muted">Nenhuma oferta registrada.</div>}</div>
+    </Quadro>
   );
 }
 

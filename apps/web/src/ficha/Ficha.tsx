@@ -11,8 +11,9 @@ import AbaComercial from './Comercial';
 import Painel, { Avancos, usePN } from './Painel';
 import AbaParametros from './Parametros';
 import AbaEntorno, { EntornoAuto } from './Entorno';
-import AbaTerreno, { dadosArea, dadosEndereco, fonteSel, numInp, useEdicao, valoresArea } from './Terreno';
-import { CamposEndereco, END_CAMPOS, focar, OPT, pedirCampo } from './edicao';
+import AbaTerreno, { dadosArea, fonteSel, useGravarEndereco, valoresArea } from './Terreno';
+import { CamposEndereco, focar, OPT, pedirCampo, useSalvar, Vivo } from './edicao';
+import { useToast } from '../components/ui';
 
 // Ficha do terreno, porte de tools/prototipo/proto.js › pgFicha (topo, abas, fiAbasCaber), proto_fases.js › linhaTopo,
 // proto_funil.js › linhaEtapas e proto_mod.js › abaGeral (Visão geral: Localização e Resumo). Mesma marcação e classes do
@@ -298,17 +299,28 @@ function corPino(f: F): [string, string] {
   return corSub(fs, t);
 }
 
+/** endereço do Resumo editado no lugar: o clique no endereço abre a busca do Google ali mesmo e escolher o resultado
+    já grava; Esc ou o clique fora voltam (pedido do Moisés, 6/nov/2026) */
+function EndVivo({ f, end }: { f: F; end: string }) {
+  const [ab, setAb] = useState(false);
+  const raiz = useRef<HTMLSpanElement>(null);
+  const gravar = useGravarEndereco(f);
+  useEffect(() => {
+    if (!ab) return;
+    const fora = (ev: PointerEvent) => { if (!raiz.current?.contains(ev.target as Node)) setAb(false); };
+    const esc = (ev: KeyboardEvent) => { if (ev.key === 'Escape') setAb(false); };
+    document.addEventListener('pointerdown', fora); document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('pointerdown', fora); document.removeEventListener('keydown', esc); };
+  }, [ab]);
+  if (!ab) return <button type="button" className="kv-vivo-b" title="Trocar o endereço" onClick={() => setAb(true)}>{end || <span className="ni">Pesquisar endereço</span>}</button>;
+  return <span ref={raiz} className="kv-vivo-busca"><CamposEndereco f={f} vals={{}} mudar={() => undefined} mun={null} setMun={() => undefined} soBusca foco
+    aoEscolher={async (o, m) => { setAb(false); await gravar(o, m); }} /></span>;
+}
+
 function VisaoGeral({ f, irAba, abrirMapa }: { f: F; irAba: (k: string) => void; abrirMapa: (lat: number, lng: number, z: number) => void }) {
   const { edita } = useSessao();
-  const ed = useEdicao(f);
+  const salvarT = useSalvar(f), toast = useToast();
   const ni = <span className="ni">Não informado</span>;
-  const lapis = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" /></svg>;
-  const pe = <div className="kv-f"><button type="button" className="btn text sm" onClick={ed.fechar}>Cancelar</button><button className="btn primary sm" disabled={ed.gravando}>Salvar</button></div>;
-  /* edição direta no Resumo: grava nos mesmos campos da aba Terreno, pelo mesmo caminho (proto_mod.js › linE, linArea) */
-  const linE = (rot: string, val: ReactNode, id: string, abrir: () => void, corpo: () => ReactNode, montar: () => Promise<Record<string, unknown> | string> | Record<string, unknown> | string) => {
-    if (ed.edit === id) return <div className="kv editando" id={`sec-g-${id}`}><dt>{rot}</dt><dd><form className="kv-form" onSubmit={(ev) => ed.salvar(ev, montar)}>{corpo()}{pe}</form></dd></div>;
-    return lin(rot, val, edita ? <button className="kv-ed" aria-label={`Editar ${rot.toLowerCase()}`} title="Editar" onClick={abrir}>{lapis}</button> : undefined);
-  };
   const ir = (k: string, titulo: string) => (
     <button className="kv-ed kv-ir" title={titulo} aria-label={titulo} onClick={() => irAba(k)}><Ic n="fwd" s={16} /></button>
   );
@@ -338,19 +350,18 @@ function VisaoGeral({ f, irAba, abrirMapa }: { f: F; irAba: (k: string) => void;
       </div>
       <div className="geral-c">
         <section className="sec g-res"><div className="sec-h"><h2>Resumo</h2></div><div className="sec-b"><dl className="kvl">
-          {linE('Endereço', end, 'end', () => ed.abrir('end', END_CAMPOS),
-            () => <CamposEndereco f={f} vals={ed.vals} mudar={ed.mudar} mun={ed.mun} setMun={ed.setMun} />,
-            () => dadosEndereco(f, ed, END_CAMPOS))}
-          {linE('Município e região', mun, 'reg', () => ed.abrir('reg', ['zona']),
-            () => <div className="kv-campos"><div className="field"><label htmlFor="g-zona">Zona</label><select id="g-zona" value={ed.vals.zona ?? ''} onChange={(ev) => ed.mudar('zona', ev.target.value)}>
-              <option value="">Não informado</option>{Object.entries(OPT.zona).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div></div>,
-            () => ({ zona: ed.vals.zona || null }))}
+          {edita ? lin('Endereço', <EndVivo f={f} end={end} />) : lin('Endereço', end)}
+          {edita ? lin('Município e região', <span className="kv-vivo">{[f.municipio, f.uf].filter(Boolean).join(' · ')}{f.municipio ? ' · ' : ''}
+            <Vivo ini={f.t.zona ?? ''} imediato gravar={(v) => salvarT({ zona: v || null })}>{(p) =>
+              <select className="inl-x" aria-label="Zona" {...p}><option value="">Zona não informada</option>{Object.entries(OPT.zona).map(([k, l]) => <option key={k} value={k}>Zona {l}</option>)}</select>}</Vivo></span>)
+            : lin('Município e região', mun)}
           {lin('Zoneamento', f.zonas, ir('parametros', 'Ver os parâmetros urbanísticos'))}
-          {linE('Área adotada', f.area != null ? dois(m2(f.area), f.fonteArea ? FONTE_AREA[f.fonteArea] : null) : '', 'area', () => ed.abrir('area', [], valoresArea(f.t)),
-            () => <div className="kv-campos"><div className="field"><label htmlFor="g-fonteArea">Área adotada</label>{fonteSel(ed, 'g-fonteArea', 'Nenhuma')}</div>
-              {numInp(ed, 'area_documental_m2', 'Documental (m²)', 'm²', 'g')}{numInp(ed, 'area_cadastral_m2', 'Cadastral (m²)', 'm²', 'g')}
-              {numInp(ed, 'area_levantamento_m2', 'Levantamento (m²)', 'm²', 'g')}{numInp(ed, 'estimativa', 'Estimativa (m²)', 'm²', 'g')}</div>,
-            () => dadosArea(f, ed.vals))}
+          {edita ? lin('Área adotada', <span className="kv-vivo">{f.area != null ? m2(f.area) + ' · ' : ''}
+            <Vivo ini={f.t.fonte_area_adotada ?? ''} imediato gravar={(v) => { const d = dadosArea(f, { ...valoresArea(f.t), fonte_area_adotada: v }); if (typeof d === 'string') { toast(d); return false; } return salvarT(d); }}>{(p) =>
+              fonteSel('g-fonteArea', { ...p, className: 'inl-x', 'aria-label': 'Fonte da área adotada' } as any,
+                Object.entries(FONTE_AREA).filter(([k]) => k === f.t.fonte_area_adotada || (k === 'poligonal' ? f.t.area_poligonal_m2 != null : k !== 'estimativa' && f.t[`area_${k}_m2`] != null)), 'Sem área adotada')}</Vivo>
+            </span>, ir('terreno', 'Ver as áreas'))
+            : lin('Área adotada', f.area != null ? dois(m2(f.area), f.fonteArea ? FONTE_AREA[f.fonteArea] : null) : '', ir('terreno', 'Ver as áreas'))}
           {lin('Unidades do estudo válido', f.unidades != null ? `${num(f.unidades)} unidades` : '', ir('viabilidade', 'Ver os estudos de viabilidade'))}
           {lin('VGV do estudo válido', f.vgv != null ? milhoes(f.vgv) : '')}
           {lin('Distância do metrô ou trem', est, ir('entorno', 'Ver o entorno'))}

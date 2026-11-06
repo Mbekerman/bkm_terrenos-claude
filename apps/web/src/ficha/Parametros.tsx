@@ -1,16 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
 import { useToast } from '../components/ui';
 import { Ic } from '../components/Moldura';
 import { m2 } from '../lib/format';
-import { metros } from '../lib/mascara';
+import { Adorno, metros } from '../lib/mascara';
 import { CAMADA, geoLinhas, geoVals, type LinhaToca } from '../lib/camadas';
 import { consultarArea } from '../novo/consulta';
 import type { Ficha, R } from './dados';
-import { lerNum, num, numStr, Quadro } from './edicao';
+import { lerNum, num, numStr, proximoCampo, Quadro, useSalvar } from './edicao';
 
 // Aba Parâmetros da ficha (proto.js › abaUrbanismo(t,'param')): Parâmetros urbanísticos por lote e zona (proto_zonas.js ›
 // secAnaliseUrb; no banco v_lote_zonas e v_urbanismo_vigente), Restrições e entorno e Histórico de uso (proto_restricoes.js).
@@ -202,14 +202,15 @@ function Zona({ f, d, z, sjc }: { f: Ficha; d: D; z: R; sjc: boolean }) {
   return (
     <div className="lz-z" id={`lz-${z.id}`}>
       <div className="lz-zh"><b>{z.sigla}</b><span className="muted">{m2(z.area_abrangida_m2)}</span>{mk}
-        {edita && !ed ? <button className="linkbtn lz-zb" onClick={() => setEd(true)}>{alt.size ? 'Editar valores' : 'Alterar valores'}</button> : null}</div>
+        {edita ? <button className="linkbtn lz-zb" aria-expanded={ed} onClick={() => setEd(!ed)}>{ed ? 'Fechar' : 'Alterar valores'}</button> : null}</div>
       {corpo}
       {ed ? <FormExc f={f} raw={raw} p={p} sjc={sjc} z={z} fechar={() => setEd(false)} /> : null}
     </div>
   );
 }
 
-/** Alterar valores do lote: vazio segue o catálogo; o que mudar precisa da fonte (decisão do Moisés, 25/out/2026) */
+/** Alterar valores do lote: vazio segue o catálogo; o que mudar precisa da fonte (decisão do Moisés, 25/out/2026).
+    Editado no lugar, sem Salvar: grava ao sair de cada campo ou ao escolher; sem a fonte, a mudança espera por ela */
 function FormExc({ f, raw, p, sjc, z, fechar }: { f: Ficha; raw: R; p: R | null | undefined; sjc: boolean; z: R; fechar: () => void }) {
   const qc = useQueryClient(), toast = useToast();
   const [v, setV] = useState<Record<string, string>>(() => ({
@@ -218,48 +219,64 @@ function FormExc({ f, raw, p, sjc, z, fechar }: { f: Ficha; raw: R; p: R | null 
     gabSt: raw.gabarito_sem_limite ? 'sem' : raw.gabarito_m != null ? 'limitado' : '', gab: metros(raw.gabarito_m),
     outorga: raw.outorga_gratuita == null ? '' : raw.outorga_gratuita ? '1' : '0', fonte: raw.excecao_fonte ?? '', macro: z.macrozona ?? '',
   }));
-  const [grav, setGrav] = useState(false);
-  const m = (k: string) => (e: { target: { value: string } }) => setV((o) => ({ ...o, [k]: e.target.value }));
+  const vR = useRef(v);
+  vR.current = v;
+  const ult = useRef<string | null>(null), fila = useRef<Promise<unknown>>(Promise.resolve());
   const base = (k: string) => (p ? ({ ca_maximo: p.ca_maximo, to_maximo: p.to_corte_m2 && f.area != null && f.area >= p.to_corte_m2 ? p.to_lote_grande : p.to_maximo } as R)[k] ?? p[k] : null);
   const ph = (x: any) => (x == null ? 'A lei não fixa' : 'Catálogo: ' + num(x, 3));
-  const salvar = async (ev: FormEvent) => {
-    ev.preventDefault();
-    if (grav) return;
+  const montar = (v: Record<string, string>): R | string => {
     const e: R = Object.fromEntries(EXC_CAMPOS.map(([k]) => [k, lerNum(v[k])]));
     const pm = lerNum(v.permeabilidade); e.permeabilidade = pm == null ? null : Math.round(pm * 10) / 1000;
     e.gabarito_m = v.gabSt === 'limitado' ? lerNum(v.gab) : null; e.gabarito_sem_limite = v.gabSt === 'sem' ? true : v.gabSt === 'limitado' ? false : null;
     e.outorga_gratuita = v.outorga === '' ? null : v.outorga === '1';
-    if (v.gabSt === 'limitado' && !(e.gabarito_m > 0)) { toast('Informe o gabarito limitado.'); return; }
-    if (e.to_maximo != null && !(e.to_maximo > 0 && e.to_maximo <= 1)) { toast('Taxa de ocupação vai de 0 a 1.'); return; }
-    if (e.permeabilidade != null && !(e.permeabilidade > 0 && e.permeabilidade <= 1)) { toast('Permeabilidade vai de 0 a 100%.'); return; }
-    if (['ca_minimo', 'ca_basico', 'ca_maximo', 'cota_parte_m2', 'max_unidades', 'lote_minimo_m2', 'frente_minima_m'].some((k) => e[k] != null && !(e[k] > 0))) { toast('CA, cota-parte, unidades, lote e frente: número maior que zero, ou vazio para seguir o catálogo.'); return; }
-    if (['recuo_frente_m', 'recuo_lateral_m', 'recuo_lateral_alto_m'].some((k) => e[k] != null && e[k] < 0)) { toast('Recuo não pode ser negativo.'); return; }
+    if (v.gabSt === 'limitado' && !(e.gabarito_m > 0)) return 'Informe a altura do gabarito limitado.';
+    if (e.to_maximo != null && !(e.to_maximo > 0 && e.to_maximo <= 1)) return 'Taxa de ocupação vai de 0 a 1.';
+    if (e.permeabilidade != null && !(e.permeabilidade > 0 && e.permeabilidade <= 1)) return 'Permeabilidade vai de 0 a 100%.';
+    if (['ca_minimo', 'ca_basico', 'ca_maximo', 'cota_parte_m2', 'max_unidades', 'lote_minimo_m2', 'frente_minima_m'].some((k) => e[k] != null && !(e[k] > 0))) return 'CA, cota-parte, unidades, lote e frente: número maior que zero, ou vazio para seguir o catálogo.';
+    if (['recuo_frente_m', 'recuo_lateral_m', 'recuo_lateral_alto_m'].some((k) => e[k] != null && e[k] < 0)) return 'Recuo não pode ser negativo.';
     const tem = EXC_K.some((k) => e[k] != null);
-    if (tem && !v.fonte.trim()) { toast('Alteração só com a fonte.'); return; }
+    if (tem && !v.fonte.trim()) return '';
     e.excecao_fonte = tem ? v.fonte.trim() : null;
     if (sjc) e.macrozona = v.macro || null;
-    setGrav(true);
-    try {
-      const r = await supabase.from('analise_zoneamentos').update(e).eq('id', z.id);
-      if (r.error) throw r.error;
-      await qc.invalidateQueries({ queryKey: ['parametros', f.id] });
-      toast('Salvo.'); fechar();
-    } catch (er: any) { toast(er?.message ?? String(er)); } finally { setGrav(false); }
+    return e;
   };
+  if (ult.current == null) { const e0 = montar(v); ult.current = typeof e0 === 'string' ? '' : JSON.stringify(e0); }
+  /** grava o que mudou desde a última gravação; uma de cada vez */
+  const gravar = (foco?: HTMLElement) => {
+    fila.current = fila.current.then(async () => {
+      const e = montar(vR.current);
+      if (e === '') { toast('Alteração só com a fonte: informe a fonte da alteração.'); if (foco?.id !== `ze-f${z.id}`) setTimeout(() => document.getElementById(`ze-f${z.id}`)?.focus(), 0); return; }
+      if (typeof e === 'string') { toast(e); return; }
+      const js = JSON.stringify(e);
+      if (js === ult.current) return;
+      const r = await supabase.from('analise_zoneamentos').update(e).eq('id', z.id);
+      if (r.error) { toast(r.error.message); return; }
+      ult.current = js;
+      await qc.invalidateQueries({ queryKey: ['parametros', f.id] });
+      toast('Salvo.');
+    });
+  };
+  const m = (k: string, ja?: boolean) => (e: { target: { value: string } }) => { const nv = { ...vR.current, [k]: e.target.value }; vR.current = nv; setV(nv); if (ja) gravar(); };
+  const x = { 'data-vivo': '', onBlur: (e: { currentTarget: HTMLElement }) => gravar(e.currentTarget),
+    onKeyDown: (e: React.KeyboardEvent<HTMLElement>) => { if (e.key === 'Enter') { e.preventDefault(); proximoCampo(e.currentTarget); } else if (e.key === 'Escape') { e.stopPropagation(); fechar(); } } };
+  const un = (k: string) => (/_m2$/.test(k) ? 'm2' : /_m$/.test(k) ? 'm' : null) as 'm' | 'm2' | null;
+  const sem = (l: string) => l.replace(/ \((m|m²)\)$/, '');
   return (
-    <form className="lz-exc" onSubmit={salvar}><div className="editgrid">
-      {sjc ? <div className="field"><label htmlFor={`ze-m${z.id}`}>Macrozona</label><select id={`ze-m${z.id}`} value={v.macro} onChange={m('macro')}><option value="">Não informada</option>{Object.entries(MACROS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div> : null}
-      {EXC_CAMPOS.map(([k, l]) => <div className="field" key={k}><label htmlFor={`ze-${k}${z.id}`}>{l}</label>
-        <input id={`ze-${k}${z.id}`} inputMode="decimal" data-fmt={k === 'max_unidades' ? 'int' : /_m$/.test(k) ? 'm' : 'num'} value={v[k]} onChange={m(k)} placeholder={ph(base(k))} /></div>)}
-      <div className="field"><label htmlFor={`ze-pm${z.id}`}>Permeabilidade mínima (%)</label><input id={`ze-pm${z.id}`} inputMode="decimal" data-fmt="pct" value={v.permeabilidade} onChange={m('permeabilidade')}
-        placeholder={p?.permeabilidade != null ? 'Catálogo: ' + num(p.permeabilidade * 100, 0) + '%' : 'A lei não fixa'} /></div>
-      <div className="field"><label htmlFor={`ze-g${z.id}`}>Gabarito</label><select id={`ze-g${z.id}`} value={v.gabSt} onChange={m('gabSt')}><option value="">Segue o catálogo</option><option value="limitado">Limitado</option><option value="sem">Sem limite</option></select></div>
-      <div className="field"><label htmlFor={`ze-gv${z.id}`}>Gabarito (m)</label><input id={`ze-gv${z.id}`} inputMode="decimal" data-fmt="m" value={v.gab} onChange={m('gab')} disabled={v.gabSt !== 'limitado'} /></div>
-      <div className="field"><label htmlFor={`ze-o${z.id}`}>Outorga onerosa</label><select id={`ze-o${z.id}`} value={v.outorga} onChange={m('outorga')}><option value="">Segue o catálogo</option><option value="1">Gratuita</option><option value="0">Paga acima do básico</option></select></div>
-      <div className="field full"><label htmlFor={`ze-f${z.id}`}>Fonte da alteração</label><input id={`ze-f${z.id}`} value={v.fonte} onChange={m('fonte')} placeholder="Consulta prévia, operação urbana, certidão, projeto aprovado..." /></div>
+    <div className="lz-exc"><div className="editgrid">
+      {sjc ? <div className="field"><label htmlFor={`ze-m${z.id}`}>Macrozona</label><select id={`ze-m${z.id}`} value={v.macro} onChange={m('macro', true)} {...x}><option value="">Não informada</option>{Object.entries(MACROS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div> : null}
+      {EXC_CAMPOS.map(([k, l]) => {
+        const i = <input id={`ze-${k}${z.id}`} inputMode="decimal" data-fmt={k === 'max_unidades' ? 'int' : /_m$/.test(k) ? 'm' : 'num'} value={v[k]} onChange={m(k)} placeholder={ph(base(k))} {...x} />, u = un(k);
+        return <div className="field" key={k}><label htmlFor={`ze-${k}${z.id}`}>{sem(l)}</label>{u ? <Adorno t={u}>{i}</Adorno> : i}</div>;
+      })}
+      <div className="field"><label htmlFor={`ze-pm${z.id}`}>Permeabilidade mínima</label><Adorno t="pct"><input id={`ze-pm${z.id}`} inputMode="decimal" data-fmt="pct" value={v.permeabilidade} onChange={m('permeabilidade')}
+        placeholder={p?.permeabilidade != null ? 'Catálogo: ' + num(p.permeabilidade * 100, 0) + '%' : 'A lei não fixa'} {...x} /></Adorno></div>
+      <div className="field"><label htmlFor={`ze-g${z.id}`}>Gabarito</label><select id={`ze-g${z.id}`} value={v.gabSt} onChange={m('gabSt', true)} {...x}><option value="">Segue o catálogo</option><option value="limitado">Limitado</option><option value="sem">Sem limite</option></select></div>
+      <div className="field"><label htmlFor={`ze-gv${z.id}`}>Altura do gabarito</label><Adorno t="m"><input id={`ze-gv${z.id}`} inputMode="decimal" data-fmt="m" value={v.gab} onChange={m('gab')} disabled={v.gabSt !== 'limitado'} {...x} /></Adorno></div>
+      <div className="field"><label htmlFor={`ze-o${z.id}`}>Outorga onerosa</label><select id={`ze-o${z.id}`} value={v.outorga} onChange={m('outorga', true)} {...x}><option value="">Segue o catálogo</option><option value="1">Gratuita</option><option value="0">Paga acima do básico</option></select></div>
+      <div className="field full"><label htmlFor={`ze-f${z.id}`}>Fonte da alteração</label><input id={`ze-f${z.id}`} value={v.fonte} onChange={m('fonte')} placeholder="Consulta prévia, operação urbana, certidão, projeto aprovado..." {...x} /></div>
     </div>
-      <div className="sec-f" style={{ padding: '12px 0 0' }}><button type="button" className="btn text" onClick={fechar}>Cancelar</button><button className="btn primary" disabled={grav}>Salvar</button></div>
-    </form>
+      <div className="hint" style={{ marginTop: 8 }}>Cada valor grava ao sair do campo. Vazio segue o catálogo.</div>
+    </div>
   );
 }
 
@@ -297,7 +314,7 @@ function FormZonas({ f, d, sjc, fechar }: { f: Ficha; d: D; sjc: boolean; fechar
         <div className="editgrid" key={i} style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed var(--linha)' }}>
           <div className="field"><label htmlFor={`z${i}`}>Zona {i + 1}{i ? ' (opcional)' : ''}</label><select id={`z${i}`} required={!i} value={z.sigla} onChange={(e) => mz(i, 'sigla', e.target.value)}>
             <option value="">—</option>{d.zonas.map((x) => <option key={x.id}>{x.sigla}</option>)}</select></div>
-          <div className="field"><label htmlFor={`za${i}`}>Área da zona no lote (m²)</label><input id={`za${i}`} inputMode="decimal" value={z.area} onChange={(e) => mz(i, 'area', e.target.value)} /></div>
+          <div className="field"><label htmlFor={`za${i}`}>Área da zona no lote</label><Adorno t="m2"><input id={`za${i}`} inputMode="decimal" value={z.area} onChange={(e) => mz(i, 'area', e.target.value)} /></Adorno></div>
           {sjc ? <div className="field"><label htmlFor={`zm${i}`}>Macrozona</label><select id={`zm${i}`} value={z.macro} onChange={(e) => mz(i, 'macro', e.target.value)}><option value="">Não informada</option>{Object.entries(MACROS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div> : null}
         </div>
       ))}
@@ -424,18 +441,15 @@ function SecRestricoes({ f, d }: { f: Ficha; d: D }) {
 /* ---------- Histórico de uso ---------- */
 function SecHistUso({ f, d }: { f: Ficha; d: D }) {
   const { edita } = useSessao();
-  const qc = useQueryClient(), toast = useToast();
   const sp = d.base?.codigo === 'geosampa', r = sp ? restDados(d) : null;
   const [txt, setTxt] = useState<string>(f.t.historico_uso ?? '');
   const ks = ['area_contaminada_reabilitada_svma', 'GEOSAMPA_area_contaminada_sigac', 'area_contaminada_reabilitada_svma@30', 'GEOSAMPA_area_contaminada_sigac@30'];
   const ac = r ? [...new Set(ks.flatMap((k) => (r.camadas[k] || []).map((x) => { try { return CAMADA[k][2](x) + (x._dist_m > 0 ? ` (a ${num(x._dist_m)} m)` : /@/.test(k) ? '' : ' (no terreno)'); } catch { return null; } })).filter(Boolean) as string[])] : [];
+  const salvarT = useSalvar(f);
   const gravar = async () => {
     const v = txt.trim();
     if (v === (f.t.historico_uso ?? '')) return;
-    const x = await supabase.rpc('salvar_terreno', { p_terreno: f.id, p_versao: f.versao, p_dados: { historico_uso: v || null } });
-    if (x.error) { toast(x.error.message); if (x.error.code === '40001') qc.invalidateQueries({ queryKey: ['ficha'] }); return; }
-    await qc.invalidateQueries({ queryKey: ['ficha'] });
-    toast('Salvo.');
+    await salvarT({ historico_uso: v || null });
   };
   return (
     <Quadro aba="parametros" id="histuso" titulo="Histórico de uso">

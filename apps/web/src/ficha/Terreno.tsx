@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
@@ -10,84 +10,50 @@ import { Adorno, formatar, metros } from '../lib/mascara';
 import type { Ficha, R } from './dados';
 import PartesLotes from './Partes';
 import {
-  CampoInp, CamposEndereco, fmtCampo, lerNum, municipioId, num, OPT, Quadro, SECOES, useListas, useSalvar, valoresDe,
-  dadosDe, type EndGoogle, abrirQuadro, focar, tomarPedido,
+  CampoVivo, CamposEndereco, fmtCampo, lerNum, municipioId, num, OPT, Quadro, SECOES, useListas, useSalvar, useVivo, valoresDe,
+  dadosDe, type EndGoogle, type VivoProps, abrirQuadro, focar, tomarPedido,
 } from './edicao';
 
 // Aba Terreno da ficha (proto.js › abaCadastro): Identificação, Endereço e localização, Áreas e dimensões, Características
 // físicas e Proprietários e contatos; Partes e Matrículas e SQLs (etiquetas) em Partes.tsx.
 
-/** estado de edição de uma seção (ou de uma linha do Resumo): uma de cada vez */
-export function useEdicao(f: Ficha) {
-  const [edit, setEdit] = useState<string | null>(null);
-  const [vals, setVals] = useState<Record<string, string>>({});
-  const [mun, setMun] = useState<EndGoogle | null>(null);
-  const [gravando, setGravando] = useState(false);
-  const salvarT = useSalvar(f);
-  const toast = useToast();
-  const abrir = (id: string, ks: string[], extra: Record<string, string> = {}) => { setVals({ ...valoresDe(f.t, ks), ...extra }); setMun(null); setEdit(id); };
-  const mudar = (k: string, v: string) => setVals((o) => ({ ...o, [k]: v }));
-  const fechar = () => setEdit(null);
-  /** grava os dados montados por `montar`; se `montar` devolve string, é o aviso de erro */
-  const salvar = async (ev: FormEvent, montar: () => Promise<R | string> | R | string) => {
-    ev.preventDefault();
-    if (gravando) return;
-    setGravando(true);
-    try {
-      const d = await montar();
-      if (typeof d === 'string') { toast(d); return; }
-      if (await salvarT(d)) setEdit(null);
-    } catch (e: any) { toast(e?.message ?? String(e)); } finally { setGravando(false); }
-  };
-  return { edit, vals, mun, setMun, abrir, mudar, fechar, salvar, gravando };
-}
-export type Edicao = ReturnType<typeof useEdicao>;
-
 const ni = <span className="v ni">Não informado</span>;
-/** Cancelar e Salvar no título do quadro, no lugar do Editar */
-const peH = (e: Edicao) => <><button type="button" className="btn text sm" onClick={e.fechar}>Cancelar</button><button className="btn primary sm" disabled={e.gravando}>Salvar</button></>;
-const editar = (on: () => void) => <button className="btn text sm" onClick={on}><Ic n="edit" s={16} />Editar</button>;
 
-/** dados do endereço: o que o formulário mostra mais o município trocado pela busca; com poligonal, o pino é o centro dela
-    e a busca não o move */
-export async function dadosEndereco(f: Ficha, e: Edicao, ks: string[]): Promise<R> {
-  const campos = SECOES.loc.campos.filter((c) => ks.includes(c[0]));
-  const d = dadosDe(e.vals, campos);
+/** dados do endereço achado pela busca do Google: os campos que ela trouxe e o município trocado; com poligonal, o pino
+    é o centro dela e a busca não o move */
+export async function dadosEndereco(f: Ficha, o: Record<string, string>, mun: EndGoogle | null): Promise<R> {
+  const d = dadosDe(o, SECOES.loc.campos.filter((c) => c[0] in o));
   if (f.poly) { delete d.latitude; delete d.longitude; }
-  const m = await municipioId(e.mun, f);
+  const m = await municipioId(mun, f);
   if (m != null) d.municipio_id = m;
   return d;
 }
+/** grava o endereço que a busca achou (edição no lugar: escolher o resultado já grava) */
+export function useGravarEndereco(f: Ficha) {
+  const salvarT = useSalvar(f), toast = useToast();
+  return async (o: Record<string, string>, mun: EndGoogle | null) => {
+    try { return await salvarT(await dadosEndereco(f, o, mun)); } catch (e: any) { toast(e?.message ?? String(e)); return false; }
+  };
+}
 
-function SecGenerica({ f, id, e, primeiro }: { f: Ficha; id: 'ident' | 'loc' | 'fis'; e: Edicao; primeiro?: boolean }) {
+/* lendo ou editando, a mesma grade no mesmo lugar: quem edita já vê o valor como campo, sem Editar nem Salvar, e cada
+   campo grava ao sair dele (pedidos do Moisés, 5 e 6/nov/2026) */
+function SecGenerica({ f, id, primeiro }: { f: Ficha; id: 'ident' | 'loc' | 'fis'; primeiro?: boolean }) {
   const { edita } = useSessao();
   const listas = useListas().data;
-  const s = SECOES[id], ed = e.edit === id, t = f.t;
-  const ks = s.campos.map((c) => c[0]);
-  /* lendo ou editando, a mesma grade no mesmo lugar: editando, o valor vira campo só com a linha embaixo e
-     Cancelar e Salvar sobem para o título; o quadro não muda de tamanho (pedido do Moisés, 5/nov/2026) */
+  const salvarT = useSalvar(f), gravarEnd = useGravarEndereco(f);
+  const s = SECOES[id], t = f.t;
   const vis = s.campos.filter((c) => !['latitude', 'longitude'].includes(c[0]));
-  const corpo = (
-    <div className="sec-b"><div className={`kvg${ed ? ' kvg-ed' : ''}`}>{vis.map((c) => {
-      if (ed) return <CampoInp key={c[0]} f={f} c={c} vals={e.vals} mudar={e.mudar} listas={listas} inl />;
-      const v = fmtCampo(f, c, listas);
-      return <div key={c[0]} className={c[4] || ''}><div className="k">{c[1]}</div>{v == null ? ni : <div className="v">{v}</div>}</div>;
-    })}</div>
-      {id === 'fis' && t.area_construida_existente_m2 != null && t.area_construida_demolir_m2 != null && +t.area_construida_demolir_m2 < +t.area_construida_existente_m2
-        && <div className="hint" style={{ marginTop: 10 }}>Demolição parcial: {m2(t.area_construida_existente_m2 - t.area_construida_demolir_m2)} permanecem.</div>}</div>
-  );
-  const montar = async () => {
-    if (id === 'loc') return dadosEndereco(f, e, ks);
-    const d = dadosDe(e.vals, s.campos);
-    if (id === 'ident' && !d.nome) return 'O nome de referência é obrigatório.';
-    return d;
-  };
   return (
-    <Quadro aba="terreno" id={id} primeiro={primeiro} titulo={s.titulo} aberto={ed}
-      acoes={ed ? <div className="qd-acoes">{id === 'loc' && <CamposEndereco f={f} vals={e.vals} mudar={e.mudar} mun={e.mun} setMun={e.setMun} soBusca />}{peH(e)}</div>
-        : edita ? editar(() => e.abrir(id, ks)) : undefined}
-      form={ed ? (c) => <form onSubmit={(ev) => e.salvar(ev, montar)} onKeyDown={(ev) => { if (ev.key === 'Escape') e.fechar(); }}>{c}</form> : undefined}>
-      {corpo}
+    <Quadro aba="terreno" id={id} primeiro={primeiro} titulo={s.titulo}
+      acoes={edita && id === 'loc' ? <div className="qd-acoes"><CamposEndereco f={f} vals={{}} mudar={() => undefined} mun={null} setMun={() => undefined} soBusca aoEscolher={gravarEnd} /></div> : undefined}>
+      <div className="sec-b"><div className={`kvg${edita ? ' kvg-ed vivo' : ''}`}>{vis.map((c) => {
+        if (edita) return <CampoVivo key={c[0]} f={f} c={c} listas={listas} salvar={salvarT} />;
+        const v = fmtCampo(f, c, listas);
+        return <div key={c[0]} className={c[4] || ''}><div className="k">{c[1]}</div>{v == null ? ni : <div className="v">{v}</div>}</div>;
+      })}</div>
+        {id === 'fis' && t.area_construida_existente_m2 != null && t.area_construida_demolir_m2 != null && +t.area_construida_demolir_m2 < +t.area_construida_existente_m2
+          && <div className="hint" style={{ marginTop: 10 }}>Demolição parcial: {m2(t.area_construida_existente_m2 - t.area_construida_demolir_m2)} permanecem.</div>}</div>
     </Quadro>
   );
 }
@@ -96,7 +62,7 @@ const AREAS: [string, string, string, string][] = [['area_documental_m2', 'Docum
   ['area_levantamento_m2', 'Levantamento', 'levantamento', 'topografia'], ['estimativa', 'Estimativa', 'estimativa', 'sem documento']];
 /** a estimativa não tem coluna própria: é a área adotada quando a fonte é a estimativa */
 const estimativa = (t: R) => (t.fonte_area_adotada === 'estimativa' ? t.area_adotada_m2 : null);
-export const valoresArea = (t: R) => ({ ...valoresDe(t, ['area_documental_m2', 'area_cadastral_m2', 'area_levantamento_m2', 'testada_principal_m', 'fonte_area_adotada']),
+export const valoresArea = (t: R): Record<string, string> => ({ ...valoresDe(t, ['area_documental_m2', 'area_cadastral_m2', 'area_levantamento_m2', 'testada_principal_m', 'fonte_area_adotada']),
   estimativa: estimativa(t) == null ? '' : String(estimativa(t)).replace('.', ',') });
 /** áreas do formulário → dados; a área adotada é a da fonte escolhida (a da poligonal o banco calcula) */
 export function dadosArea(f: Ficha, v: Record<string, string>): R | string {
@@ -117,18 +83,39 @@ export function dadosArea(f: Ficha, v: Record<string, string>): R | string {
   }
   return d;
 }
-export const numInp = (e: Edicao, k: string, l: string, ph = 'm²', pre = 'f') => (
-  <div className="field" key={k}><label htmlFor={`${pre}-${k}`}>{l}</label><input id={`${pre}-${k}`} inputMode="decimal" placeholder={ph} value={e.vals[k] ?? ''} onChange={(ev) => e.mudar(k, ev.target.value)} /></div>
-);
-export const fonteSel = (e: Edicao, id: string, vazio: string) => (
-  <select id={id} value={e.vals.fonte_area_adotada ?? ''} onChange={(ev) => e.mudar('fonte_area_adotada', ev.target.value)}>
-    <option value="">{vazio}</option>{Object.entries(OPT.fonteArea).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
-  </select>
+export const fonteSel = (id: string, p: VivoProps, opts: [string, string][], vazio: string) => (
+  <select id={id} {...p}><option value="">{vazio}</option>{opts.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
 );
 
-function SecAreas({ f, e }: { f: Ficha; e: Edicao }) {
+/** a área de uma fonte editada no lugar, dentro do cartão dela */
+function AreaVivo({ f, k, l }: { f: Ficha; k: string; l: string }) {
+  const salvarT = useSalvar(f), toast = useToast(), t = f.t;
+  const ini = valoresArea(t)[k];
+  const { props } = useVivo(ini, (v) => {
+    const vals = { ...valoresArea(t), [k]: v };
+    /* a estimativa não tem coluna: digitar é adotá-la; apagar a adotada deixa o terreno sem área adotada */
+    if (k === 'estimativa') vals.fonte_area_adotada = v.trim() ? 'estimativa' : t.fonte_area_adotada === 'estimativa' ? '' : vals.fonte_area_adotada;
+    else if (!v.trim() && t.fonte_area_adotada === k.replace(/^area_|_m2$/g, '')) vals.fonte_area_adotada = '';
+    const d = dadosArea(f, vals);
+    if (typeof d === 'string') { toast(d); return false; }
+    return salvarT(d);
+  });
+  return <Adorno t="m2"><input className="av inl" id={`f-${k}`} inputMode="decimal" placeholder="—" aria-label={`Área ${l.toLowerCase()}`} {...props} /></Adorno>;
+}
+function TestadaVivo({ f }: { f: Ficha }) {
+  const salvarT = useSalvar(f), toast = useToast();
+  const { props } = useVivo(metros(f.t.testada_principal_m), (v) => {
+    const n = lerNum(v);
+    if (n != null && !(n > 0)) { toast('A testada precisa ser maior que zero.'); return false; }
+    return salvarT({ testada_principal_m: n });
+  });
+  return <div className="inl-c"><label className="k" htmlFor="f-testada_principal_m">Testada principal</label>
+    <Adorno t="m"><input id="f-testada_principal_m" inputMode="decimal" data-fmt="m" placeholder="Não informada" {...props} /></Adorno></div>;
+}
+
+function SecAreas({ f }: { f: Ficha }) {
   const { edita } = useSessao();
-  const t = f.t, ed = e.edit === 'areas', ad = t.area_adotada_m2 as number | null, apol = t.area_poligonal_m2 as number | null;
+  const t = f.t, ad = t.area_adotada_m2 as number | null, apol = t.area_poligonal_m2 as number | null;
   const cards: [number | null, string, string, string][] = [...AREAS.map(([k, l, fo, s]) => [k === 'estimativa' ? estimativa(t) : t[k], l, fo, s] as [number | null, string, string, string]),
     [apol, 'Poligonal', 'poligonal', 'desenho']];
   const pre = cards.map((c) => c[0]).filter((v): v is number => v != null).map(Number);
@@ -137,52 +124,44 @@ function SecAreas({ f, e }: { f: Ficha; e: Edicao }) {
     const mx = Math.max(...pre), mn = Math.min(...pre);
     if ((mx - mn) / mx > 0.01) div = <div className="diverg"><Ic n="warn" s={16} />Diferença de {m2(mx - mn)} ({num(((mx - mn) / mx) * 100, 1)}%) entre as fontes. Confira qual entra na viabilidade.</div>;
   }
-  /* clicar numa área preenchida a escolhe como adotada: lendo, grava na hora; editando, vale ao salvar (pedido do Moisés, 5/nov/2026) */
+  /* clicar numa área preenchida a escolhe como adotada e grava na hora (pedido do Moisés, 5/nov/2026) */
   const salvarT = useSalvar(f);
   const [grav, setGrav] = useState(false);
-  const valor = (k: string, fo: string, v: number | null) => (ed ? (fo === 'poligonal' ? apol : lerNum(e.vals[k])) : v);
-  const fonte = ed ? e.vals.fonte_area_adotada || null : t.fonte_area_adotada;
+  const fonte = t.fonte_area_adotada;
   const escolher = async (fo: string) => {
-    if (ed) { e.mudar('fonte_area_adotada', fo); return; }
     if (grav || fo === t.fonte_area_adotada) return;
     const d = dadosArea(f, { ...valoresArea(t), fonte_area_adotada: fo });
     if (typeof d === 'string') return;
     setGrav(true);
     try { await salvarT({ fonte_area_adotada: d.fonte_area_adotada, area_adotada_m2: d.area_adotada_m2 }); } finally { setGrav(false); }
   };
-  const corpo = (
-    <div className="sec-b">
-      <div className="areas">{cards.map(([v, l, fo, s], i) => {
-        const k = i < AREAS.length ? AREAS[i][0] : '', val = valor(k, fo, v), pode = edita && val != null, sel = fonte === fo;
-        return (
-          <div key={fo} className={`area${sel ? ' sel' : ''}${pode ? ' pode' : ''}`} id={`area-${fo}`}
-            role={pode ? 'radio' : undefined} aria-checked={pode ? sel : undefined} tabIndex={pode ? 0 : undefined}
-            title={pode && !sel ? 'Usar como área adotada' : fo === 'poligonal' ? 'Calculada pelo desenho; muda quando a poligonal é ajustada' : undefined}
-            onClick={(ev) => { if (pode && !(ev.target as HTMLElement).closest('input')) escolher(fo); }}
-            onKeyDown={(ev) => { if (pode && (ev.key === 'Enter' || ev.key === ' ') && !(ev.target as HTMLElement).closest('input')) { ev.preventDefault(); escolher(fo); } }}>
-            <div className="al">{l} <span className="faint">· {s}</span></div>
-            {ed && fo !== 'poligonal'
-              ? <input className="av inl" id={`f-${k}`} inputMode="decimal" placeholder="m²" aria-label={`Área ${l.toLowerCase()} (m²)`} value={e.vals[k] ?? ''} onChange={(ev) => e.mudar(k, ev.target.value)} />
-              : <div className="av">{val == null ? <span className="faint" style={{ fontSize: 14, fontStyle: 'italic' }}>{fo === 'poligonal' ? 'Sem poligonal' : 'Não informada'}</span> : m2(val)}</div>}
-            <div className="as">{sel ? <><Ic n="check" s={14} />Área adotada</> : '\u00a0'}</div>
-          </div>
-        );
-      })}</div>
-      {div}
-      <div className={`kvg${ed ? ' kvg-ed' : ''}`} style={{ marginTop: 14 }}>
-        <div><div className="k">Área adotada</div>{fonte ? <div className="v">{OPT.fonteArea[fonte]?.split(' (')[0]}</div> : <span className="v ni">{edita ? 'Clique na área que vale' : 'Não informada'}</span>}</div>
-        {ed
-          ? <div className="inl-c"><label className="k" htmlFor="f-testada_principal_m">Testada principal</label><input id="f-testada_principal_m" inputMode="decimal" data-fmt="m" placeholder="metros" value={e.vals.testada_principal_m ?? ''} onChange={(ev) => e.mudar('testada_principal_m', ev.target.value)} /></div>
-          : <div><div className="k">Testada principal</div>{t.testada_principal_m == null ? ni : <div className="v">{metros(t.testada_principal_m)} m</div>}</div>}
-        <div><div className="k">Valor pedido por m²</div>{ad && f.valorPedido ? <div className="v">{brl(f.valorPedido / ad)}</div> : ni}</div>
-      </div>
-    </div>
-  );
   return (
-    <Quadro aba="terreno" id="areas" titulo="Áreas e dimensões" aberto={ed}
-      acoes={ed ? <div className="qd-acoes">{peH(e)}</div> : edita ? editar(() => e.abrir('areas', [], valoresArea(t))) : undefined}
-      form={ed ? (c) => <form onSubmit={(ev) => e.salvar(ev, () => dadosArea(f, e.vals))} onKeyDown={(ev) => { if (ev.key === 'Escape') e.fechar(); }}>{c}</form> : undefined}>
-      {corpo}
+    <Quadro aba="terreno" id="areas" titulo="Áreas e dimensões">
+      <div className="sec-b">
+        <div className="areas">{cards.map(([v, l, fo, s], i) => {
+          const k = i < AREAS.length ? AREAS[i][0] : '', pode = edita && v != null, sel = fonte === fo;
+          return (
+            <div key={fo} className={`area${sel ? ' sel' : ''}${pode ? ' pode' : ''}`} id={`area-${fo}`}
+              role={pode ? 'radio' : undefined} aria-checked={pode ? sel : undefined} tabIndex={pode ? 0 : undefined}
+              title={pode && !sel ? 'Usar como área adotada' : fo === 'poligonal' ? 'Calculada pelo desenho; muda quando a poligonal é ajustada' : undefined}
+              onClick={(ev) => { if (pode && !(ev.target as HTMLElement).closest('input')) escolher(fo); }}
+              onKeyDown={(ev) => { if (pode && (ev.key === 'Enter' || ev.key === ' ') && !(ev.target as HTMLElement).closest('input')) { ev.preventDefault(); escolher(fo); } }}>
+              <div className="al">{l} <span className="faint">· {s}</span></div>
+              {edita && fo !== 'poligonal'
+                ? <AreaVivo f={f} k={k} l={l} />
+                : <div className="av">{v == null ? <span className="faint" style={{ fontSize: 14, fontStyle: 'italic' }}>{fo === 'poligonal' ? 'Sem poligonal' : 'Não informada'}</span> : m2(v)}</div>}
+              <div className="as">{sel ? <><Ic n="check" s={14} />Área adotada</> : '\u00a0'}</div>
+            </div>
+          );
+        })}</div>
+        {div}
+        <div className={`kvg${edita ? ' kvg-ed vivo' : ''}`} style={{ marginTop: 14 }}>
+          <div><div className="k">Área adotada</div>{fonte ? <div className="v">{OPT.fonteArea[fonte]?.split(' (')[0]}</div> : <span className="v ni">{edita ? 'Clique na área que vale' : 'Não informada'}</span>}</div>
+          {edita ? <TestadaVivo f={f} />
+            : <div><div className="k">Testada principal</div>{t.testada_principal_m == null ? ni : <div className="v">{metros(t.testada_principal_m)} m</div>}</div>}
+          <div><div className="k">Valor pedido por m²</div>{ad && f.valorPedido ? <div className="v">{brl(f.valorPedido / ad)}</div> : ni}</div>
+        </div>
+      </div>
     </Quadro>
   );
 }
@@ -265,20 +244,14 @@ function SecPessoas({ f }: { f: Ficha }) {
 }
 
 export default function AbaTerreno({ f }: { f: Ficha }) {
-  const e = useEdicao(f);
   const [, re] = useState(0);
-  /* "ir ao campo" vindo do que falta na ficha: abre o quadro (e a edição, nas seções que editam pelo Editar) e põe o foco */
-  const eR = useRef(e);
-  eR.current = e;
+  /* "ir ao campo" vindo do que falta na ficha: abre o quadro e põe o foco no campo (já editável no lugar) */
   useEffect(() => {
     const atender = () => {
       const p = tomarPedido();
       if (!p) return;
-      const ed = eR.current;
       abrirQuadro('terreno', p.sec);
-      if (p.sec === 'ident' || p.sec === 'loc' || p.sec === 'fis') ed.abrir(p.sec, SECOES[p.sec].campos.map((c) => c[0]));
-      else if (p.sec === 'areas') ed.abrir('areas', [], valoresArea(f.t));
-      else re((x) => x + 1);
+      re((x) => x + 1);
       let alvo = p.campo === 'busca-end' ? 'f-busca-end' : /^(em-n|es-sql|p-n)$/.test(p.campo ?? '') ? p.campo! : `f-${p.campo}`;
       if (p.campo === 'area') {
         /* área adotada: a primeira área preenchida (um clique a escolhe); sem nenhuma, o campo da documental */
@@ -293,11 +266,11 @@ export default function AbaTerreno({ f }: { f: Ficha }) {
   }, [f]);
   return (
     <div className="stack">
-      <SecGenerica f={f} id="ident" e={e} primeiro />
-      <SecGenerica f={f} id="loc" e={e} />
+      <SecGenerica f={f} id="ident" primeiro />
+      <SecGenerica f={f} id="loc" />
       <PartesLotes f={f} />
-      <SecAreas f={f} e={e} />
-      <SecGenerica f={f} id="fis" e={e} />
+      <SecAreas f={f} />
+      <SecGenerica f={f} id="fis" />
       <SecPessoas f={f} />
     </div>
   );

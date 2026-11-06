@@ -55,7 +55,6 @@ create table app.terrenos (
   -- o cadastro curto (só o nome) não pergunta a origem: nasce "não informado" e se completa na ficha
   origem_cadastro       text not null default 'nao_informado'
                           check (origem_cadastro in ('nao_informado','prospeccao','corretor','indicacao','portal','proprietario','outro')),
-  url_origem            text,
   data_identificacao    date not null default current_date,
   observacoes           text,
   arquivado_em          timestamptz,

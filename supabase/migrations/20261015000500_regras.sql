@@ -2022,7 +2022,7 @@ begin
   v_novo := jsonb_populate_record(t, p_dados);
   update app.terrenos set
     nome = v_novo.nome, descricao = v_novo.descricao, prioridade = v_novo.prioridade, responsavel_id = v_novo.responsavel_id,
-    origem_cadastro = v_novo.origem_cadastro, url_origem = v_novo.url_origem, data_identificacao = v_novo.data_identificacao,
+    origem_cadastro = v_novo.origem_cadastro, data_identificacao = v_novo.data_identificacao,
     observacoes = v_novo.observacoes, cep = v_novo.cep, logradouro = v_novo.logradouro, numero = v_novo.numero,
     complemento = v_novo.complemento, bairro = v_novo.bairro, municipio_id = v_novo.municipio_id, zona = v_novo.zona,
     eixo_comercial_id = v_novo.eixo_comercial_id, referencia_localizacao = v_novo.referencia_localizacao,

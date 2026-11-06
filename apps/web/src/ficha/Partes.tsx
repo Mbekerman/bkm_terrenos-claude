@@ -444,7 +444,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
                   <div className="field"><label htmlFor="em-c">Cartório</label>{sp
                     ? <select id="em-c" value={mat.cri} onChange={(e) => setMat({ ...mat, cri: e.target.value })}><option value="">Não informado</option>{crisSel.map((x) => <option key={x}>{x}</option>)}</select>
                     : <input id="em-c" value={mat.cri} onChange={(e) => setMat({ ...mat, cri: e.target.value })} />}</div>
-                  <div className="field"><label htmlFor="em-a">Área registrada</label><input id="em-a" inputMode="decimal" placeholder="m²" value={mat.area} onChange={(e) => setMat({ ...mat, area: e.target.value })} /></div>
+                  <div className="field"><label htmlFor="em-a">Área registrada</label><Adorno t="m2"><input id="em-a" inputMode="decimal" value={mat.area} onChange={(e) => setMat({ ...mat, area: e.target.value })} /></Adorno></div>
                   <button className="btn sm"><Ic n="add" s={16} />Incluir</button>
                 </form>
               )}
@@ -563,7 +563,7 @@ function JanelaEtq({ f, L, k, fechar, tirar }: { f: Ficha; L: Lotes; k: string; 
           {lin(<>Cartório {origem && <span className="faint">({origem})</span>}</>, !edita ? val(x.cartorio || '—') : L.base?.codigo === 'geosampa'
             ? <select value={x.cartorio ?? ''} onChange={(e) => gravar('cartorio', e.target.value || null)}><option value="">Não informado</option>{cris.map((c) => <option key={c}>{c}</option>)}</select>
             : txt('cartorio'))}
-          {lin('Área registrada (m²)', edita ? txt('area_registrada_m2', { inputMode: 'decimal' }, lerNum) : val(x.area_registrada_m2 != null ? m2(x.area_registrada_m2) : '—'))}
+          {lin('Área registrada', edita ? <Adorno t="m2">{txt('area_registrada_m2', { inputMode: 'decimal' }, lerNum)}</Adorno> : val(x.area_registrada_m2 != null ? m2(x.area_registrada_m2) : '—'))}
           {lin('Certidão de', edita ? <input type="date" value={v.data_certidao ?? ''} onChange={(e) => { setV({ ...v, data_certidao: e.target.value }); gravar('data_certidao', e.target.value || null); }} /> : val(x.data_certidao ? fd(x.data_certidao) : '—'))}
           {parte}
         </div>
@@ -599,7 +599,7 @@ function JanelaEtq({ f, L, k, fechar, tirar }: { f: Ficha; L: Lotes; k: string; 
   return (
     <Dialogo titulo={`${rot} ${x.inscricao}`} sub={x.endereco_prefeitura ?? undefined} onFechar={fechar} rodape={rodape}>
       <div className="pt2-g">
-        {lin('Área cadastral (m²)', edita ? txt('area_cadastral_m2', { inputMode: 'decimal' }, lerNum) : val(x.area_cadastral_m2 != null ? m2(x.area_cadastral_m2) : '—'))}
+        {lin('Área cadastral', edita ? <Adorno t="m2">{txt('area_cadastral_m2', { inputMode: 'decimal' }, lerNum)}</Adorno> : val(x.area_cadastral_m2 != null ? m2(x.area_cadastral_m2) : '—'))}
         {parte}
       </div>
       {sp && (
