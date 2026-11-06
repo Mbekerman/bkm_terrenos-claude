@@ -13,8 +13,9 @@ import { MenuPonto } from '../mapa/MenuPonto';
 import { Motor, vista, reguaA, reguaArea, reguaM, reguaTotal, type Base, type GestosPonto, type Pino } from '../mapa/motor';
 import { desenhoAtendido, poligonal, useNovo } from '../novo/estado';
 import { useConsultaGeo } from '../novo/consulta';
-import { areaPoly, centroPoly, dentroPoly, fixa, geojson, lotesUniao, m2, type P } from '../novo/geo';
+import { areaPoly, centroPoly, dentroPoly, fixa, geojson, m2, type P } from '../novo/geo';
 import LotesGeo from '../novo/LotesGeo';
+import { trocarSqls } from '../novo/trocarSqls';
 import type { LoteSql } from '../novo/geosampa';
 import { LegendaSetor, Metodologia, QuadroSetor } from '../mapa/CamadasSetor';
 import { carregarSetores, setorEm, setores, type Camada } from '../mapa/setores';
@@ -222,20 +223,32 @@ export default function Mapa() {
   /* "Selecionar lotes" na edição (pedido do Moisés, 6/nov/2026; só em São Paulo): o mapa de lotes da prefeitura das quadras da
      poligonal; os lotes marcados viram a poligonal em edição (a soma deles), que Concluir salva. Os SQLs não entram no terreno. */
   const [lgEd, setLgEd] = useState(false);
+  const [lgSqls, setLgSqls] = useState<string[]>([]);
   useEffect(() => {
     if (!lgEd) return;
     const k = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setLgEd(false); } };
     document.addEventListener('keydown', k, true);
     return () => document.removeEventListener('keydown', k, true);
   }, [lgEd]);
-  function lotesEscolhidos(marc: LoteSql[]) {
+  /* "Selecionar lotes": como no cadastro, os lotes marcados passam a ser o terreno (SQLs e poligonal; novo/trocarSqls.ts) */
+  async function lgAbrir() {
+    const e0 = edR.current;
+    if (!e0) return;
+    const { data } = await supabase.from('inscricoes_municipais').select('inscricao_norm').eq('terreno_id', e0.id);
+    setLgSqls(((data ?? []) as { inscricao_norm: string }[]).map((x) => x.inscricao_norm));
+    setLgEd(true);
+  }
+  async function lotesEscolhidos(marc: LoteSql[]) {
     setLgEd(false);
     marcas.current.inicio = Date.now();
-    if (!marc.length) { toast('Nenhum lote marcado: a poligonal continua como estava.'); return; }
-    const u = lotesUniao(marc.map((x) => x.poly));
-    if (!u) { toast('Os lotes marcados não se encostam: a poligonal continua como estava.', true); return; }
-    desGuardar(); setDes(fixa(u)); setVSel(null); setVMenu(false);
-    toast(`Poligonal ajustada a ${marc.length} lote${marc.length > 1 ? 's' : ''} (${m2(Math.round(areaPoly(u) || 0))}). Concluir salva.`);
+    const e0 = edR.current;
+    if (!e0 || !empresa) return;
+    if (!marc.length) { toast('Nenhum lote marcado: o terreno continua como estava.'); return; }
+    desSair();
+    const r = await trocarSqls(e0.id, empresa.id, marc, toast);
+    const att = () => { qc.invalidateQueries({ queryKey: ['mapa'] }); qc.invalidateQueries({ queryKey: ['ficha'] }); qc.invalidateQueries({ queryKey: ['ficha-lotes'] }); };
+    att();
+    if (r) empilhar({ rotulo: 'lotes do terreno', fazer: async () => { const ok = await r.desfazer(); att(); return ok; }, refazer: async () => { const ok = await r.refazer(); att(); return ok; } });
   }
   const edR = useRef(ed);
   edR.current = ed;
@@ -849,7 +862,7 @@ export default function Mapa() {
           </>;
         })()}{des && ed && TOQUE() && <>
           {/* edição no celular: só Cancelar e Concluir, sem texto nem faixa (decisão do Moisés, 24/out/2026); no desktop, nada */}
-          {sp(ed.id) && <button className="btn sm" style={{ pointerEvents: 'auto' }} onClick={() => setLgEd(true)}>Selecionar lotes</button>}
+          {sp(ed.id) && <button className="btn sm" style={{ pointerEvents: 'auto' }} onClick={lgAbrir}>Selecionar lotes</button>}
           <button className="btn sm" style={{ pointerEvents: 'auto' }} onClick={desCancelar}>Cancelar</button>
           <button className="btn sm primary" style={{ pointerEvents: 'auto' }} onClick={desSalvar}>Concluir</button>
         </>}{des && !ed && TOQUE() && <>
@@ -861,7 +874,7 @@ export default function Mapa() {
           {/* desktop: barra pequena no canto de baixo à direita; a legenda, os botões do canto e os da barra de cima (menos a busca)
               somem enquanto se desenha (styles.css, opção 5 do Moises, 5/nov/2026) */}
           <span className="mp-q mp-fina">{des.length} ponto{des.length === 1 ? '' : 's'}{areaPoly(des) ? ` · ${m2(Math.round(areaPoly(des)!))}` : ''}</span>
-          {ed && sp(ed.id) && <button className="btn sm text" onClick={() => setLgEd(true)}>Selecionar lotes</button>}
+          {ed && sp(ed.id) && <button className="btn sm text" onClick={lgAbrir}>Selecionar lotes</button>}
           <button className="btn sm text" onClick={desCancelar}>Cancelar</button>
           <button className="btn sm primary" disabled={des.length < 3} title={des.length < 3 ? 'Marque pelo menos 3 pontos' : 'Salvar a poligonal (Enter)'} onClick={desSalvar}>Concluir</button>
         </>}</div>
@@ -871,7 +884,7 @@ export default function Mapa() {
         {lgEd && ed && des && empresa && createPortal(
           <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && setLgEd(false)}>
             <div className="dialog" role="dialog" aria-modal="true">
-              <LotesGeo empresa={empresa.id} L={{ modo: 'ficha', ficha: { codigo: todos.find((x) => x.id === ed.id)?.codigo ?? '', nome: todos.find((x) => x.id === ed.id)?.nome ?? '', poly: des, sqls: [],
+              <LotesGeo empresa={empresa.id} L={{ modo: 'ficha', ficha: { codigo: todos.find((x) => x.id === ed.id)?.codigo ?? '', nome: todos.find((x) => x.id === ed.id)?.nome ?? '', poly: des, sqls: lgSqls,
                 fechar: () => { marcas.current.inicio = Date.now(); setLgEd(false); }, incluir: lotesEscolhidos } }} />
             </div>
           </div>, document.body
