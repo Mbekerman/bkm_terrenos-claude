@@ -6,6 +6,7 @@ import { useSessao } from '../lib/sessao';
 import { useToast } from '../components/ui';
 import { Ic } from '../components/Moldura';
 import { m2 } from '../lib/format';
+import { metros } from '../lib/mascara';
 import { CAMADA, geoLinhas, geoVals, type LinhaToca } from '../lib/camadas';
 import { consultarArea } from '../novo/consulta';
 import type { Ficha, R } from './dados';
@@ -25,7 +26,7 @@ const EXC_CAMPOS: [string, string][] = [['ca_minimo', 'CA mínimo'], ['ca_basico
   ['cota_parte_m2', 'Cota-parte máxima (m²)'], ['max_unidades', 'Unidades por lote'], ['lote_minimo_m2', 'Lote mínimo (m²)'], ['frente_minima_m', 'Frente mínima (m)']];
 
 const ni = <span className="ni">—</span>;
-const V = (v: any, suf = '', d = 2): ReactNode => (v == null ? ni : num(v, d) + suf);
+const V = (v: any, suf = '', d = 2): ReactNode => (v == null ? ni : (suf === ' m' ? metros(v) : num(v, d)) + suf);
 const P = (v: any): ReactNode => (v == null ? ni : num(v * 100, 0) + '%');
 const fdh = (s: string | null | undefined) => {
   if (!s) return '—';
@@ -174,9 +175,9 @@ function Zona({ f, d, z, sjc }: { f: Ficha; d: D; z: R; sjc: boolean }) {
   /* a mesma regra em texto nos três tipos aparece uma vez só */
   const regras = Object.entries(TIPOS.reduce((o: Record<string, string[]>, [k]) => { const t = Ls[k]?.regras; if (t) (o[t] ||= []).push(TIPO_N[k]); return o; }, {}));
   const ate = sjc ? 'até o 2º pavimento' : 'até 10 m de altura';
-  const recLat = l.recuo_lateral_m == null && l.recuo_lateral_alto_m == null ? ni : l.recuo_lateral_alto_m == null ? num(l.recuo_lateral_m, 2) + ' m'
-    : `${l.recuo_lateral_m == null || Number(l.recuo_lateral_m) === 0 ? 'Dispensado' : num(l.recuo_lateral_m, 2) + ' m'} ${ate}; ${num(l.recuo_lateral_alto_m, 2)} m acima`;
-  const gab = l.gabarito_sem_limite ? 'Sem limite' : l.gabarito_m != null ? num(l.gabarito_m, 2) + ' m' : ni;
+  const recLat = l.recuo_lateral_m == null && l.recuo_lateral_alto_m == null ? ni : l.recuo_lateral_alto_m == null ? metros(l.recuo_lateral_m) + ' m'
+    : `${l.recuo_lateral_m == null || Number(l.recuo_lateral_m) === 0 ? 'Dispensado' : metros(l.recuo_lateral_m) + ' m'} ${ate}; ${metros(l.recuo_lateral_alto_m)} m acima`;
+  const gab = l.gabarito_sem_limite ? 'Sem limite' : l.gabarito_m != null ? metros(l.gabarito_m) + ' m' : ni;
   const area = Number(z.area_abrangida_m2) || 0;
   const corpo = !p ? <div className="muted lz-sem">{sjc && !z.macrozona ? 'Informe a macrozona: em SJC o CA depende dela.' : 'Zona sem parâmetros no catálogo.'}</div>
     : !TIPOS.some(([k]) => Ls[k]?.permitido) ? <div className="muted lz-sem">Uso residencial não admitido{p.regras ? ': ' + p.regras : ''}</div>
@@ -212,9 +213,9 @@ function Zona({ f, d, z, sjc }: { f: Ficha; d: D; z: R; sjc: boolean }) {
 function FormExc({ f, raw, p, sjc, z, fechar }: { f: Ficha; raw: R; p: R | null | undefined; sjc: boolean; z: R; fechar: () => void }) {
   const qc = useQueryClient(), toast = useToast();
   const [v, setV] = useState<Record<string, string>>(() => ({
-    ...Object.fromEntries(EXC_CAMPOS.map(([k]) => [k, numStr(raw[k])])),
+    ...Object.fromEntries(EXC_CAMPOS.map(([k]) => [k, /_m$/.test(k) ? metros(raw[k]) : numStr(raw[k])])),
     permeabilidade: raw.permeabilidade != null ? numStr(Math.round(raw.permeabilidade * 1000) / 10, 1) : '',
-    gabSt: raw.gabarito_sem_limite ? 'sem' : raw.gabarito_m != null ? 'limitado' : '', gab: numStr(raw.gabarito_m),
+    gabSt: raw.gabarito_sem_limite ? 'sem' : raw.gabarito_m != null ? 'limitado' : '', gab: metros(raw.gabarito_m),
     outorga: raw.outorga_gratuita == null ? '' : raw.outorga_gratuita ? '1' : '0', fonte: raw.excecao_fonte ?? '', macro: z.macrozona ?? '',
   }));
   const [grav, setGrav] = useState(false);
@@ -249,11 +250,11 @@ function FormExc({ f, raw, p, sjc, z, fechar }: { f: Ficha; raw: R; p: R | null 
     <form className="lz-exc" onSubmit={salvar}><div className="editgrid">
       {sjc ? <div className="field"><label htmlFor={`ze-m${z.id}`}>Macrozona</label><select id={`ze-m${z.id}`} value={v.macro} onChange={m('macro')}><option value="">Não informada</option>{Object.entries(MACROS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div> : null}
       {EXC_CAMPOS.map(([k, l]) => <div className="field" key={k}><label htmlFor={`ze-${k}${z.id}`}>{l}</label>
-        <input id={`ze-${k}${z.id}`} inputMode="decimal" data-fmt={k === 'max_unidades' ? 'int' : 'num'} value={v[k]} onChange={m(k)} placeholder={ph(base(k))} /></div>)}
+        <input id={`ze-${k}${z.id}`} inputMode="decimal" data-fmt={k === 'max_unidades' ? 'int' : /_m$/.test(k) ? 'm' : 'num'} value={v[k]} onChange={m(k)} placeholder={ph(base(k))} /></div>)}
       <div className="field"><label htmlFor={`ze-pm${z.id}`}>Permeabilidade mínima (%)</label><input id={`ze-pm${z.id}`} inputMode="decimal" data-fmt="pct" value={v.permeabilidade} onChange={m('permeabilidade')}
         placeholder={p?.permeabilidade != null ? 'Catálogo: ' + num(p.permeabilidade * 100, 0) + '%' : 'A lei não fixa'} /></div>
       <div className="field"><label htmlFor={`ze-g${z.id}`}>Gabarito</label><select id={`ze-g${z.id}`} value={v.gabSt} onChange={m('gabSt')}><option value="">Segue o catálogo</option><option value="limitado">Limitado</option><option value="sem">Sem limite</option></select></div>
-      <div className="field"><label htmlFor={`ze-gv${z.id}`}>Gabarito (m)</label><input id={`ze-gv${z.id}`} inputMode="decimal" data-fmt="num" value={v.gab} onChange={m('gab')} disabled={v.gabSt !== 'limitado'} /></div>
+      <div className="field"><label htmlFor={`ze-gv${z.id}`}>Gabarito (m)</label><input id={`ze-gv${z.id}`} inputMode="decimal" data-fmt="m" value={v.gab} onChange={m('gab')} disabled={v.gabSt !== 'limitado'} /></div>
       <div className="field"><label htmlFor={`ze-o${z.id}`}>Outorga onerosa</label><select id={`ze-o${z.id}`} value={v.outorga} onChange={m('outorga')}><option value="">Segue o catálogo</option><option value="1">Gratuita</option><option value="0">Paga acima do básico</option></select></div>
       <div className="field full"><label htmlFor={`ze-f${z.id}`}>Fonte da alteração</label><input id={`ze-f${z.id}`} value={v.fonte} onChange={m('fonte')} placeholder="Consulta prévia, operação urbana, certidão, projeto aprovado..." /></div>
     </div>

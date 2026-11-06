@@ -6,6 +6,7 @@ import { useSessao } from '../lib/sessao';
 import { useToast } from '../components/ui';
 import { carregarGoogle, gLib } from '../mapa/google';
 import { data as fd, m2 } from '../lib/format';
+import { metros } from '../lib/mascara';
 import type { Ficha, R } from './dados';
 
 // Edição da ficha (porte de proto.js › SECOES, fmtCampo, campoInp, camposEndereco e proto_gmap.js › gBuscasEndereco).
@@ -82,7 +83,7 @@ export function fmtCampo(f: Ficha, [k, , tipo, opt]: Campo, listas?: { membros: 
     case 'sel': return OPT[opt!][v] ?? v;
     case 'date': return fd(v);
     case 'm2': return m2(v);
-    case 'm': return num(v, 2) + ' m';
+    case 'm': return metros(v) + ' m';
     case 'dec': return num(v, 6);
     case 'url': return <a href={v} target="_blank" rel="noopener">{String(v).replace(/^https?:\/\//, '').slice(0, 48)}</a>;
     case 'user': return listas?.membros.find((x) => x.user_id === v)?.nome ?? (f.resp?.nome || '—');
@@ -95,7 +96,7 @@ export function fmtCampo(f: Ficha, [k, , tipo, opt]: Campo, listas?: { membros: 
 /** valores iniciais do formulário (texto) das colunas pedidas */
 export function valoresDe(t: R, ks: string[]): Record<string, string> {
   const o: Record<string, string> = {};
-  for (const k of ks) o[k] = ['latitude', 'longitude'].includes(k) ? decStr(t[k]) : ['desnivel_estimado_m', 'testada_principal_m'].includes(k) || /_m2$/.test(k) ? numStr(t[k]) : t[k] == null ? '' : String(t[k]);
+  for (const k of ks) o[k] = ['latitude', 'longitude'].includes(k) ? decStr(t[k]) : ['desnivel_estimado_m', 'testada_principal_m'].includes(k) ? metros(t[k]) : /_m2$/.test(k) ? numStr(t[k]) : t[k] == null ? '' : String(t[k]);
   return o;
 }
 
@@ -142,7 +143,7 @@ export function CampoInp({ f, c, vals, mudar, listas, inl }: { f: Ficha; c: Camp
     ? <select id={id} value={v} onChange={on}><option value="">Não informado</option>{(v && !CRIS.includes(v) ? [v, ...CRIS] : CRIS).map((x) => <option key={x}>{x}</option>)}</select>
     : <input id={id} value={v} onChange={on} placeholder="1º CRI" />;
   else if (tipo === 'mun') h = <input id={id} value={[f.municipio, f.uf].filter(Boolean).join(' · ')} readOnly title="Preenchido pela busca de endereço" />;
-  else if (['m2', 'm', 'dec'].includes(tipo)) h = <input id={id} inputMode="decimal" data-fmt={tipo === 'dec' ? 'none' : undefined} value={v} onChange={on} placeholder={tipo === 'm2' ? 'm²' : tipo === 'm' ? 'metros' : ''} />;
+  else if (['m2', 'm', 'dec'].includes(tipo)) h = <input id={id} inputMode="decimal" data-fmt={tipo === 'dec' ? 'none' : tipo === 'm' ? 'm' : undefined} value={v} onChange={on} placeholder={tipo === 'm2' ? 'm²' : tipo === 'm' ? 'metros' : ''} />;
   else h = <input id={id} type={tipo === 'url' ? 'url' : undefined} value={v} onChange={on} required={k === 'nome'} />;
   /* inl: no mesmo lugar e na mesma altura da leitura, só com a linha embaixo (pedido do Moisés, 5/nov/2026) */
   if (inl) return <div className={`inl-c ${full || ''}`}><label className="k" htmlFor={id}>{l}</label>{h}</div>;

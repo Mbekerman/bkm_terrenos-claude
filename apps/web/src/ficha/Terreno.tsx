@@ -6,7 +6,7 @@ import { useSessao } from '../lib/sessao';
 import { useToast } from '../components/ui';
 import { Ic } from '../components/Moldura';
 import { reais as brl, m2 } from '../lib/format';
-import { Adorno, formatar } from '../lib/mascara';
+import { Adorno, formatar, metros } from '../lib/mascara';
 import type { Ficha, R } from './dados';
 import PartesLotes from './Partes';
 import {
@@ -172,8 +172,8 @@ function SecAreas({ f, e }: { f: Ficha; e: Edicao }) {
       <div className={`kvg${ed ? ' kvg-ed' : ''}`} style={{ marginTop: 14 }}>
         <div><div className="k">Área adotada</div>{fonte ? <div className="v">{OPT.fonteArea[fonte]?.split(' (')[0]}</div> : <span className="v ni">{edita ? 'Clique na área que vale' : 'Não informada'}</span>}</div>
         {ed
-          ? <div className="inl-c"><label className="k" htmlFor="f-testada_principal_m">Testada principal</label><input id="f-testada_principal_m" inputMode="decimal" placeholder="metros" value={e.vals.testada_principal_m ?? ''} onChange={(ev) => e.mudar('testada_principal_m', ev.target.value)} /></div>
-          : <div><div className="k">Testada principal</div>{t.testada_principal_m == null ? ni : <div className="v">{num(t.testada_principal_m, 2)} m</div>}</div>}
+          ? <div className="inl-c"><label className="k" htmlFor="f-testada_principal_m">Testada principal</label><input id="f-testada_principal_m" inputMode="decimal" data-fmt="m" placeholder="metros" value={e.vals.testada_principal_m ?? ''} onChange={(ev) => e.mudar('testada_principal_m', ev.target.value)} /></div>
+          : <div><div className="k">Testada principal</div>{t.testada_principal_m == null ? ni : <div className="v">{metros(t.testada_principal_m)} m</div>}</div>}
         <div><div className="k">Valor pedido por m²</div>{ad && f.valorPedido ? <div className="v">{brl(f.valorPedido / ad)}</div> : ni}</div>
       </div>
     </div>
