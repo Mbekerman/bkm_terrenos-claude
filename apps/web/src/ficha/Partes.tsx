@@ -713,7 +713,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
         </Dialogo>
       )}
       {lg && f.poly && (
-        <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && setLg(false)}>
+        <div className="scrim" data-rasc-livre onMouseDown={(e) => e.target === e.currentTarget && setLg(false)}>
           <div className="dialog" role="dialog" aria-modal="true">
             <LotesGeo empresa={empresa!.id} L={{ modo: 'ficha', ficha: { codigo: f.codigo, nome: f.nome, poly: f.poly, sqls: L.insc.map((i) => i.inscricao_norm), fechar: () => setLg(false), incluir: incluirMapa } }} />
           </div>

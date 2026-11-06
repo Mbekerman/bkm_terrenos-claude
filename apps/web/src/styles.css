@@ -5035,3 +5035,4 @@ html[data-tema="escuro"] .fi-mais .adv-menu button.atual { background: #004a77; 
 
 /* régua ligada: seta em vez da mãozinha no Leaflet (no Google, draggableCursor) */
 .mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }
+.scrim.rasc-av { z-index: 70 }
