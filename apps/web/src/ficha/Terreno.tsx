@@ -6,13 +6,14 @@ import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
 import { useToast } from '../components/ui';
 import { Ic } from '../components/Moldura';
+import { LapisMapa } from '../novo/TrocarEndereco';
 import { reais as brl, m2 } from '../lib/format';
 import { Adorno, formatar, metros } from '../lib/mascara';
 import type { Ficha, R } from './dados';
 import PartesLotes from './Partes';
 import {
-  CampoVivo, CamposEndereco, fmtCampo, lerNum, municipioId, num, OPT, Quadro, SECOES, useListas, useSalvar, useVivo, valoresDe,
-  dadosDe, type EndGoogle, type VivoProps, abrirQuadro, focar, tomarPedido,
+  CampoVivo, fmtCampo, lerNum, num, OPT, Quadro, SECOES, useListas, useSalvar, useVivo, valoresDe,
+  type VivoProps, abrirQuadro, focar, tomarPedido,
 } from './edicao';
 
 // Aba Terreno da ficha (proto.js › abaCadastro): Identificação, Endereço e localização, Áreas e dimensões, Características
@@ -20,38 +21,26 @@ import {
 
 const ni = <span className="v ni">Não informado</span>;
 
-/** dados do endereço achado pela busca do Google: os campos que ela trouxe e o município trocado; com poligonal, o pino
-    é o centro dela e a busca não o move */
-export async function dadosEndereco(f: Ficha, o: Record<string, string>, mun: EndGoogle | null): Promise<R> {
-  const d = dadosDe(o, SECOES.loc.campos.filter((c) => c[0] in o));
-  if (f.poly) { delete d.latitude; delete d.longitude; }
-  const m = await municipioId(mun, f);
-  if (m != null) d.municipio_id = m;
-  return d;
-}
-/** grava o endereço que a busca achou (edição no lugar: escolher o resultado já grava) */
-export function useGravarEndereco(f: Ficha) {
-  const salvarT = useSalvar(f), toast = useToast();
-  return async (o: Record<string, string>, mun: EndGoogle | null) => {
-    try { return await salvarT(await dadosEndereco(f, o, mun)); } catch (e: any) { toast(e?.message ?? String(e)); return false; }
-  };
-}
+/** campos do endereço que só mudam pelo mapa (Editar no mapa: poligonal e pino) */
+const END_MAPA = ['cep', 'logradouro', 'numero', 'bairro', 'municipio_id'];
 
 /* lendo ou editando, a mesma grade no mesmo lugar: quem edita já vê o valor como campo, sem Editar nem Salvar, e cada
    campo grava ao sair dele (pedidos do Moisés, 5 e 6/nov/2026) */
 function SecGenerica({ f, id, primeiro }: { f: Ficha; id: 'ident' | 'loc' | 'fis'; primeiro?: boolean }) {
   const { edita } = useSessao();
   const listas = useListas().data;
-  const salvarT = useSalvar(f), gravarEnd = useGravarEndereco(f);
+  const salvarT = useSalvar(f);
   const s = SECOES[id], t = f.t;
   const vis = s.campos.filter((c) => !['latitude', 'longitude'].includes(c[0]));
   return (
     <Quadro aba="terreno" id={id} primeiro={primeiro} titulo={s.titulo}
-      acoes={edita && id === 'loc' ? <div className="qd-acoes"><CamposEndereco f={f} vals={{}} mudar={() => undefined} mun={null} setMun={() => undefined} soBusca aoEscolher={gravarEnd} /></div> : undefined}>
+      acoes={edita && id === 'loc' ? <div className="qd-acoes"><LapisMapa codigo={f.codigo} id="f-end-mapa" className="btn sm text" rotulo="Editar no mapa" /></div> : undefined}>
       <div className="sec-b"><div className={`kvg${edita ? ' kvg-ed vivo' : ''}`}>{vis.map((c) => {
-        if (edita) return <CampoVivo key={c[0]} f={f} c={c} listas={listas} salvar={salvarT} />;
+        /* o endereço não se edita na ficha: muda pelo mapa, com a poligonal e o pino (pedido do Moises, 6/nov/2026) */
+        const so = id === 'loc' && END_MAPA.includes(c[0]);
+        if (edita && !so) return <CampoVivo key={c[0]} f={f} c={c} listas={listas} salvar={salvarT} />;
         const v = fmtCampo(f, c, listas);
-        return <div key={c[0]} className={c[4] || ''}><div className="k">{c[1]}</div>{v == null ? ni : <div className="v">{v}</div>}</div>;
+        return <div key={c[0]} className={`${c[4] || ''}${so && edita ? ' kv-so' : ''}`}><div className="k">{c[1]}</div>{v == null ? ni : <div className="v">{v}</div>}</div>;
       })}</div>
         {id === 'fis' && t.area_construida_existente_m2 != null && t.area_construida_demolir_m2 != null && +t.area_construida_demolir_m2 < +t.area_construida_existente_m2
           && <div className="hint" style={{ marginTop: 10 }}>Demolição parcial: {m2(t.area_construida_existente_m2 - t.area_construida_demolir_m2)} permanecem.</div>}</div>
@@ -259,7 +248,7 @@ export default function AbaTerreno({ f }: { f: Ficha }) {
       if (!p) return;
       abrirQuadro('terreno', p.sec);
       re((x) => x + 1);
-      let alvo = p.campo === 'busca-end' ? 'f-busca-end' : /^(em-n|es-sql|p-n)$/.test(p.campo ?? '') ? p.campo! : `f-${p.campo}`;
+      let alvo = p.campo === 'end-mapa' ? 'f-end-mapa' : /^(em-n|es-sql|p-n)$/.test(p.campo ?? '') ? p.campo! : `f-${p.campo}`;
       if (p.campo === 'area') {
         /* área adotada: a primeira área preenchida (um clique a escolhe); sem nenhuma, o campo da documental */
         const fo = ['documental', 'cadastral', 'levantamento', 'poligonal'].find((x) => (x === 'poligonal' ? f.t.area_poligonal_m2 : f.t[`area_${x}_m2`]) != null);

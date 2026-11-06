@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { carregarGoogle, gLib } from '../mapa/google';
 import { TOQUE, vGestos, type GestosPonto } from '../mapa/motor';
 import { MenuPonto } from '../mapa/MenuPonto';
-import { areaPoly, dentroPoly, fixa, m2, type P } from '../novo/geo';
+import { areaPoly, dentroPoly, fixa, m2, pinoNovo, type P } from '../novo/geo';
 import { useToast } from '../components/ui';
 
 // Mini-mapa da Localização na Visão geral (proto_gmap.js › G_initMini, proto_mod.js › miniGestos, miniAbrirMapa): satélite com
@@ -14,8 +14,8 @@ import { useToast } from '../components/ui';
 export default function MiniMapa({ lat, lng, poly, cor, fg, abrirMapa, salvar }: {
   lat: number; lng: number; poly: [number, number][] | null; cor: string; fg: string;
   abrirMapa: (lat: number, lng: number, z: number) => void;
-  /** grava a poligonal editada; sem ela (Leitura), não edita */
-  salvar?: (p: P[]) => Promise<boolean>;
+  /** grava a poligonal editada e o pino (arrastável enquanto a poligonal está em edição); sem ela (Leitura), não edita */
+  salvar?: (p: P[], pino: P) => Promise<boolean>;
 }) {
   const toast = useToast();
   const [des, setDes] = useState<P[] | null>(null);
@@ -26,23 +26,27 @@ export default function MiniMapa({ lat, lng, poly, cor, fg, abrirMapa, salvar }:
   desR.current = des;
   const marca = useRef({ toque: 0, inicio: 0 });
   const pgR = useRef<any>(null), proj = useRef<any>(null), rasc = useRef<any[]>([]), wrap = useRef<HTMLDivElement>(null);
+  const pinMk = useRef<any>(null), pinMovido = useRef<P | null>(null);
   const salvarR = useRef(salvar);
   salvarR.current = salvar;
   const edComecar = () => {
     if (!salvarR.current || !poly || poly.length < 3 || desR.current || TOQUE()) return;
     hist.current = []; setVSel(null); setVMenu(false);
     setDes(poly.map((q) => [q[0], q[1]] as P));
+    pinMovido.current = null;
     marca.current.inicio = Date.now();
-    toast('Editando a poligonal. Clique direito num ponto para mais opções; clique fora para salvar.');
+    toast('Editando a poligonal: arraste os pontos e o pino. Clique direito num ponto para mais opções; clique fora para salvar.');
   };
-  const sair = () => { setDes(null); hist.current = []; fut.current = []; setVSel(null); setVMenu(false); };
+  const sair = () => { if (pinMk.current) pinMk.current.position = { lat, lng }; setDes(null); hist.current = []; fut.current = []; setVSel(null); setVMenu(false); };
   const cancelar = () => { sair(); toast('Edição cancelada, poligonal sem mudanças.'); };
   const concluir = async () => {
     const p = desR.current;
     if (!p) return;
     sair();
-    if (JSON.stringify(fixa(p)) === JSON.stringify(fixa(poly || []))) { toast('Edição encerrada, sem mudanças.'); return; }
-    if (await salvarR.current!(p)) toast(`Poligonal salva: ${m2(Math.round(areaPoly(p) || 0))}.`);
+    const mov = pinMovido.current, igual = JSON.stringify(fixa(p)) === JSON.stringify(fixa(poly || []));
+    pinMovido.current = null;
+    if (igual && !mov) { toast('Edição encerrada, sem mudanças.'); return; }
+    if (await salvarR.current!(p, pinoNovo(p, mov ?? [lat, lng], !!mov))) toast(igual ? 'Pino salvo no lugar novo.' : `Poligonal salva: ${m2(Math.round(areaPoly(p) || 0))}.`);
   };
   const fut = useRef<P[][]>([]);
   const copia = () => (desR.current || []).map((x) => [x[0], x[1]] as P);
@@ -128,7 +132,9 @@ export default function MiniMapa({ lat, lng, poly, cor, fg, abrirMapa, salvar }:
       const pin = document.createElement('div');
       pin.className = 'pin g';
       pin.innerHTML = `<span class="pin-b" style="background:${cor}"><b class="pin-d" style="background:${fg}"></b></span>`;
-      new gLib.marker.AdvancedMarkerElement({ map: M, position: gLL(lat, lng), content: pin });
+      const mk = new gLib.marker.AdvancedMarkerElement({ map: M, position: gLL(lat, lng), content: pin, zIndex: 2000 });
+      pinMk.current = mk;
+      mk.addListener('dragend', () => { const q = mk.position; pinMovido.current = [typeof q.lat === 'function' ? q.lat() : q.lat, typeof q.lng === 'function' ? q.lng() : q.lng]; marca.current.toque = Date.now(); });
       if (poly) {
         const pg = new google.maps.Polygon({ map: M, paths: poly.map((p) => gLL(p[0], p[1])), strokeColor: '#0094fe', strokeWeight: 2, fillColor: '#0094fe', fillOpacity: 0.2, clickable: true });
         pgR.current = pg;
@@ -151,6 +157,7 @@ export default function MiniMapa({ lat, lng, poly, cor, fg, abrirMapa, salvar }:
     rasc.current.forEach((o) => (o.setMap ? o.setMap(null) : (o.map = null)));
     rasc.current = [];
     pgR.current?.setMap(des ? null : M);
+    if (pinMk.current) { pinMk.current.gmpDraggable = !!des; pinMk.current.content?.classList.toggle('pin-ed', !!des); }
     if (!M || !des) return;
     const { google } = window, gLL = (a: number, b: number) => ({ lat: a, lng: b }), p = des.map((q) => gLL(q[0], q[1]));
     const poli = new google.maps.Polygon({ map: M, paths: p, strokeColor: '#0094fe', strokeWeight: 2.5, fillColor: '#0094fe', fillOpacity: 0.2, clickable: false });

@@ -7,6 +7,7 @@ import { data as dataCurta } from '../lib/format';
 import { AMBIENTE, EH_DEV } from '../lib/config';
 import { BI, IC_SINO, P } from '../lib/icones-prototipo';
 import NovoTerreno from '../novo/NovoTerreno';
+import TrocarEndereco from '../novo/TrocarEndereco';
 import { abrirNovo } from '../novo/estado';
 
 // Moldura copiada do protótipo, com as mesmas classes e a mesma marcação (proto_body.html,
@@ -224,6 +225,7 @@ export default function Moldura() {
       </nav>
       <button className="fab" onClick={novo}><Ic n="add" s={22} /><span className="fab-t">Novo terreno</span></button>
       <NovoTerreno />
+      <TrocarEndereco />
     </>
   );
 }

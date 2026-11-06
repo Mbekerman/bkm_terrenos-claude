@@ -5,7 +5,7 @@
    zonas, os incluídos saem e a poligonal volta a de antes. */
 import { supabase } from '../lib/supabase';
 import { consultarTerreno } from './consulta';
-import { centroPoly, fixa, geojson, lotesUniao, type P } from './geo';
+import { fixa, geojson, lotesUniao, pinoNovo, type P } from './geo';
 import { digitos, type LoteSql } from './geosampa';
 
 type R = Record<string, any>;
@@ -37,7 +37,8 @@ async function salvarT(id: string, d: R) {
 }
 
 /** troca os SQLs do terreno pelos marcados e a poligonal pela soma dos lotes; devolve o que o Ctrl+Z precisa, ou null se nada foi feito */
-export async function trocarSqls(id: string, empresa: string, marc: LoteSql[], aviso: Aviso):
+/** pino: onde está o pino agora; fica no lugar se a pessoa o moveu ou se continua dentro da poligonal nova, senão vai ao centro dela */
+export async function trocarSqls(id: string, empresa: string, marc: LoteSql[], aviso: Aviso, pino?: { pos: P | null; movido: boolean }):
   Promise<{ desfazer: () => Promise<boolean>; refazer: () => Promise<boolean> } | null> {
   const u = lotesUniao(marc.map((x) => x.poly));
   if (!u) { aviso('Os lotes marcados não se encostam: o terreno continua como estava.', true); return null; }
@@ -63,7 +64,7 @@ export async function trocarSqls(id: string, empresa: string, marc: LoteSql[], a
       ins = (r.data ?? []) as R[];
       incluidos = ins.map((x) => x.id);
     }
-    const c = centroPoly(u);
+    const c = pinoNovo(u, pino?.pos ?? (antes.terreno.latitude != null ? [antes.terreno.latitude, antes.terreno.longitude] : null), !!pino?.movido);
     await salvarT(id, { poligono_geojson: geojson(fixa(u)), poligono_desenhado_geojson: antes.terreno.poligono_desenhado_geojson ?? antes.terreno.poligono_geojson ?? null,
       latitude: +c[0].toFixed(7), longitude: +c[1].toFixed(7), precisao_localizacao: 'aproximada' });
     if (consultar && ins.length) consultarTerreno(id, null, ins.map((x) => ({ id: x.id, sql: x.inscricao })), aviso);

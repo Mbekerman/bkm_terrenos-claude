@@ -197,3 +197,10 @@ export function lotesUniao(polys: P[][]): P[] | null {
   }
   return resto.length ? null : limpaPoly(u);
 }
+
+/** o pino depois de mudar a poligonal (pedido do Moisés, 6/nov/2026): o que a pessoa arrastou fica onde ela pôs; senão, o de
+    antes fica se ainda cai dentro da poligonal nova; senão, vai para o centro dela */
+export function pinoNovo(poly: P[], antes: P | null, movido: boolean): P {
+  if (antes && (movido || dentroPoly(antes[0], antes[1], poly))) return antes;
+  return centroPoly(poly);
+}

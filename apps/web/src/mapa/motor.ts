@@ -313,6 +313,21 @@ export class Motor {
       this.rasc.push(mk);
     });
   }
+  /** o pino do terreno em edição, arrastável enquanto a poligonal está em edição (pedido do Moisés, 6/nov/2026); null tira */
+  private pinEd: any = null;
+  pinoEd(pos: [number, number] | null, cor: string, fg: string, arrastado: (lat: number, lng: number) => void) {
+    if (this.pinEd) { this.pinEd.map = null; this.pinEd = null; }
+    if (!pos) return;
+    const d = document.createElement('div');
+    d.className = 'pin g sel pin-ed';
+    d.title = 'Arraste para mudar o pino de lugar';
+    d.innerHTML = `<span class="pin-b" style="background:${cor}"><b class="pin-d" style="background:${fg}"></b></span>`;
+    const mk = new gLib.marker.AdvancedMarkerElement({ map: this.mapa, position: gLL(pos[0], pos[1]), content: d, gmpDraggable: true, zIndex: 2000 });
+    d.addEventListener('click', (e) => e.stopPropagation());
+    const fim = () => { const q = mk.position; if (q) arrastado(typeof q.lat === 'function' ? q.lat() : q.lat, typeof q.lng === 'function' ? q.lng() : q.lng); };
+    mk.addListener('dragend', fim);
+    this.pinEd = mk;
+  }
   /* ---------- régua (proto_mercado.js › rgDesenha; pedido do Moisés, 5/nov/2026) ----------
      a linha pelos pontos marcados, com a distância de cada trecho no meio dele e o total no último ponto; fechada (clique no primeiro
      ponto, com 3 ou mais), vira a forma com a área no meio */
@@ -347,6 +362,7 @@ export class Motor {
     return p ? { x: p.x as number, y: p.y as number } : null;
   }
   destruir() {
+    if (this.pinEd) this.pinEd.map = null;
     this.rasc.forEach((o) => (o.setMap ? o.setMap(null) : (o.map = null))); this.merc.forEach((m) => (m.map = null)); if (this.mercDest) this.mercDest.map = null; this.pinos.forEach((o) => (o.setMap ? o.setMap(null) : (o.map = null))); this.el.innerHTML = ''; }
 }
 

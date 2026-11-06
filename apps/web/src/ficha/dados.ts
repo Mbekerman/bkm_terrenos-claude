@@ -146,11 +146,10 @@ export async function carregarFicha(empresa: string, codigo: string): Promise<Fi
 /** [rótulo, aba, seção, campo]: a seção e o campo levam direto ao campo em edição (pedido do Moisés, 5/nov/2026) */
 export type Falta = [string, string, string?, string?];
 export function completude(f: Ficha): { pct: number; faltam: Falta[] } {
-  const end = !f.logradouro ? 'logradouro' : !f.numero ? 'numero' : 'bairro';
   const c: [boolean, ...Falta][] = [
-    [!!(f.logradouro && f.numero && f.bairro), 'Endereço completo', 'terreno', 'loc', end],
+    [!!(f.logradouro && f.numero && f.bairro), 'Endereço completo', 'terreno', 'loc', 'end-mapa'],
     [!!f.zona, 'Zona', 'terreno', 'loc', 'zona'],
-    [f.lat != null, 'Ponto no mapa', 'terreno', 'loc', 'busca-end'],
+    [f.lat != null, 'Ponto no mapa', 'terreno', 'loc', 'end-mapa'],
     [f.area != null, 'Área adotada', 'terreno', 'areas', 'area'],
     [f.testada != null, 'Testada', 'terreno', 'areas', 'testada_principal_m'],
     [f.qMat > 0, 'Matrícula', 'terreno', 'lotes', 'em-n'],
