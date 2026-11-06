@@ -137,3 +137,105 @@ export function desenhaLadrilho(cv: HTMLCanvasElement, x: number, y: number, z: 
     else if (z >= 13) { ctx.setLineDash([3, 3]); ctx.lineWidth = 0.8; ctx.strokeStyle = sem; ctx.stroke(); ctx.setLineDash([]); }
   }
 }
+
+/* ---------- ficha: renda e população do entorno (proto_setores.js › setEstat) ----------
+   Estatística de uma área por amostragem (~30 mil pontos): cada setor entra pela fração da área dele que cai
+   dentro (moradores espalhados por igual no setor). No banco: app.estatisticas_area, exata. */
+export type Raio = number | 'poly';
+export const RD_RAIOS: [Raio, string][] = [[500, '500 m'], [1000, '1 km'], [2000, '2 km'], [3000, '3 km'], ['poly', 'Poligonal']];
+export interface Estat { area: number; setores: number; pes: number; dom: number; dens: number; renda: number | null; cob: number | null; porF: number[]; dist: number; foraPct: number; frs: Map<number, number> }
+const dentroPoly = (lat: number, lng: number, p: [number, number][]) => {
+  let d = false;
+  for (let i = 0, j = p.length - 1; i < p.length; j = i++) { const [yi, xi] = p[i], [yj, xj] = p[j]; if ((yi > lat) !== (yj > lat) && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) d = !d; }
+  return d;
+};
+/** área em m² de uma poligonal [lat, lng] (projeção local) */
+export function areaPoly(p: [number, number][]) {
+  const lat0 = (p.reduce((s, x) => s + x[0], 0) / p.length) * Math.PI / 180, mx = 111320 * Math.cos(lat0), my = 110574;
+  let a = 0;
+  for (let i = 0, j = p.length - 1; i < p.length; j = i++) a += p[j][1] * mx * p[i][0] * my - p[i][1] * mx * p[j][0] * my;
+  return Math.abs(a / 2);
+}
+const CACHE = new Map<string, Estat>();
+export function estatArea(lat: number, lng: number, poly: [number, number][] | null, raio: Raio): Estat | null {
+  if (!SET) return null;
+  const pl = raio === 'poly' ? poly : null;
+  if (raio === 'poly' && !(pl && pl.length >= 3)) return null;
+  const ch = [raio, lat, lng, pl ? JSON.stringify(pl) : ''].join('|');
+  const c0 = CACHE.get(ch); if (c0) return c0;
+  const lat0 = lat * Math.PI / 180, mx = 111320 * Math.cos(lat0), my = 110574, d = SET;
+  let x0: number, x1: number, y0: number, y1: number, den: (x: number, y: number) => boolean;
+  if (pl) { const xs = pl.map((p) => p[1]), ys = pl.map((p) => p[0]); x0 = Math.min(...xs); x1 = Math.max(...xs); y0 = Math.min(...ys); y1 = Math.max(...ys); den = (x, y) => dentroPoly(y, x, pl); }
+  else { const r = raio as number, dx = r / mx, dy = r / my; x0 = lng - dx; x1 = lng + dx; y0 = lat - dy; y1 = lat + dy; den = (x, y) => ((x - lng) * mx) ** 2 + ((y - lat) * my) ** 2 <= r * r; }
+  const area = pl ? areaPoly(pl) : Math.PI * (raio as number) ** 2, passo = Math.sqrt(area / 30000), sx = passo / mx, sy = passo / my, cont = new Map<number, number>();
+  let fora = 0;
+  for (let y = y0 + sy / 2; y < y1; y += sy) for (let x = x0 + sx / 2; x < x1; x += sx) {
+    if (!den(x, y)) continue;
+    let achou: number | null = null;
+    for (const i of candidatos(x, y, x, y)) if (dentro(i, x, y)) { achou = i; break; }
+    if (achou == null) fora++; else cont.set(achou, (cont.get(achou) || 0) + 1);
+  }
+  let pes = 0, dom = 0, resp = 0, respR = 0, soma = 0, dist = 0;
+  const porF = new Array(RENDA_MET.faixas.length).fill(0), frs = new Map<number, number>();
+  const v1 = (d as any).v1 as (number | null)[];
+  for (const [i, c] of cont) {
+    const fr = Math.min(1, (c * passo * passo) / Math.max(d.area[i], 1)); frs.set(i, fr);
+    pes += d.pop[i] * fr; dom += d.dom[i] * fr; const w = (v1?.[i] || 0) * fr; resp += w;
+    if (d.rAt[i] != null) { respR += w; soma += d.rAt[i]! * w; porF[d.faixa[i]!] += w; if (d.v6[i] != null && d.v4[i]! > RENDA_MET.distorcidaRazao * d.v6[i]!) dist++; }
+  }
+  const n = [...cont.values()].reduce((a, b) => a + b, 0);
+  const r: Estat = { area, setores: cont.size, pes, dom, dens: pes / (area / 1e6), renda: respR ? soma / respR : null, cob: resp ? (respR / resp) * 100 : null,
+    porF: porF.map((w) => (respR ? (w / respR) * 100 : 0)), dist, foraPct: fora + n ? (fora / (fora + n)) * 100 : 0, frs };
+  CACHE.set(ch, r);
+  return r;
+}
+/** há setores perto do ponto? (só São Paulo e São José dos Campos por ora) */
+export const temSetores = (lat: number, lng: number) => !!SET && (setorEm(lat, lng) != null || candidatos(lng - 0.01, lat - 0.01, lng + 0.01, lat + 0.01).size > 0);
+export const MUNICIPIOS_SETORES = Object.values(SET_MUN);
+
+/* ---------- perfil da população (proto_setores.js › demoCarregar, demoEstat) ---------- */
+export interface Demo { n: number; cd: string[]; vars: string[]; v: (number | null)[][]; col: Record<string, number> }
+let DEMO: Demo | null = null, promDemo: Promise<Demo> | null = null;
+export function carregarDemo(): Promise<Demo> {
+  if (DEMO) return Promise.resolve(DEMO);
+  if (promDemo) return promDemo;
+  promDemo = Promise.all(Object.keys(SET_MUN).map((m) => fetch(`/prototipo/dados/demografia-${m}-2022.json`).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })))
+    .then((js: any[]) => {
+      if (js.some((j) => j.vars.join() !== js[0].vars.join())) throw new Error('variáveis diferentes entre os municípios');
+      const j: any = { ...js[0], n: 0, cd: [], v: [] };
+      for (const x of js) { x.cd.forEach((c: string) => j.cd.push(x.municipio + c)); x.v.forEach((l: any) => j.v.push(l)); j.n += x.n; }
+      j.col = Object.fromEntries(j.vars.map((v: string, k: number) => [v, k]));
+      return (DEMO = j as Demo);
+    })
+    .catch((e) => { console.warn('demografia', e); promDemo = null; throw e; });
+  return promDemo;
+}
+export interface Perfil { pes: number; h: number; m: number; idade: { t: number; h: number; m: number }[]; morD: number; domD: number; tam: number[]; dppo: number; esp: number[]; vag: number; oca: number; idadeND: number; tamND: number; espND: number }
+const PERF = new WeakMap<Estat, Perfil | null>();
+export function perfilArea(r: Estat, c: any): Perfil | null {
+  if (!SET || !DEMO) return null;
+  if (PERF.has(r)) return PERF.get(r)!;
+  const d = SET, D = DEMO;
+  if (D.n !== d.n || D.cd[0] !== d.cd[0] || D.cd[d.n - 1] !== d.cd[d.n - 1]) { PERF.set(r, null); return null; }
+  const soma = (i: number, vs: string[]) => { const l = D.v[i]; let s = 0; for (const v of vs) { const x = l[D.col[v]]; if (x == null) return null; s += x; } return s; };
+  const M = c.moradores;
+  const o: Perfil = { pes: 0, h: 0, m: 0, idade: c.idade.map(() => ({ t: 0, h: 0, m: 0 })), morD: 0, domD: 0, tam: new Array(c.tamanho.length + 1).fill(0), dppo: 0, esp: c.especie.map(() => 0), vag: 0, oca: 0, idadeND: 0, tamND: 0, espND: 0 };
+  for (const [i, fr] of r.frs) {
+    o.pes += d.pop[i] * fr;
+    const h = soma(i, [c.sexo.homens]), m = soma(i, [c.sexo.mulheres]); if (h != null && m != null) { o.h += h * fr; o.m += m * fr; }
+    c.idade.forEach((g: any, k: number) => { const a = soma(i, g.total), b = soma(i, g.homens), e = soma(i, g.mulheres); if (a != null) o.idade[k].t += a * fr; if (b != null) o.idade[k].h += b * fr; if (e != null) o.idade[k].m += e * fr; });
+    const mor = soma(i, [M.moradoresDppo, M.moradoresDpio]), dd = soma(i, [M.dppo, M.dpio]); if (mor != null && dd != null) { o.morD += mor * fr; o.domD += dd * fr; }
+    const dppo = soma(i, [M.dppo]);
+    if (dppo != null) {
+      o.dppo += dppo * fr; const ts = c.tamanho.map((x: any) => soma(i, [x.var]));
+      if (ts.every((x: any) => x != null)) { ts.forEach((x: number, k: number) => (o.tam[k] += x * fr)); o.tam[c.tamanho.length] += Math.max(0, dppo - ts.reduce((a: number, b: number) => a + b, 0)) * fr; }
+      else ts.forEach((x: number | null, k: number) => { if (x != null) o.tam[k] += x * fr; });
+    }
+    c.especie.forEach((e: any, k: number) => { const x = soma(i, [e.var]); if (x != null) o.esp[k] += x * fr; });
+    const vg = soma(i, [c.vagos]), oc = soma(i, [c.usoOcasional]); if (vg != null) o.vag += vg * fr; if (oc != null) o.oca += oc * fr;
+  }
+  o.idadeND = Math.max(0, o.pes - o.idade.reduce((a, g) => a + g.t, 0));
+  o.tamND = Math.max(0, o.dppo - o.tam.reduce((a, b) => a + b, 0)); o.espND = Math.max(0, o.dppo - o.esp.reduce((a, b) => a + b, 0));
+  PERF.set(r, o);
+  return o;
+}

@@ -277,7 +277,6 @@ erDiagram
     text prioridade "baixa | media | alta | estrategica"
     uuid responsavel_id FK
     text origem_cadastro
-    text url_origem
     date data_identificacao
     text cep
     text logradouro

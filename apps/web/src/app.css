@@ -93,3 +93,49 @@
 /* painel lateral da ficha (Logs e quadro de avanço): a container query do protótipo vale para a rota "terreno";
    no React a página da ficha é /terrenos/A123 (data-rota="terrenos") */
 body[data-rota="terrenos"] .main { container: pagina / inline-size }
+
+/* aba Entorno: seletor de raio da renda e do perfil (no protótipo, #rd-card .rd-raios) */
+:is(#sec-rd, #sec-pf) .rd-raios { margin: 0 var(--q-px, 24px) 4px; align-self: flex-start; width: fit-content; max-width: calc(100% - 2 * var(--q-px, 24px)); overflow-x: auto }
+:is(#sec-rd, #sec-pf) .rd-raios button { white-space: nowrap; padding: 6px 12px; font-size: 13px }
+:is(#sec-rd, #sec-pf) .rd-raios button[disabled] { opacity: .45 }
+.qd-fechado .rd-raios { display: none }
+
+/* barra de abas da ficha: com abas escondidas, a mãozinha avisa que ela se arrasta (pedido do Moisés, 6/nov/2026) */
+.fi-abas.desliza, .fi-abas.desliza button { cursor: grab }
+.fi-abas.arrastando, .fi-abas.arrastando button { cursor: grabbing; user-select: none }
+.fi-abas.arrastando button:hover { background: none }
+
+/* unidade dentro do campo também em metros e m² (pedido do Moisés, 6/nov/2026); nos campos editados no lugar, sem recuo */
+.adorno.m > input { padding-right: 30px !important }
+.adorno.m2 > input { padding-right: 38px !important }
+.adorno.m > .adorno-t, .adorno.m2 > .adorno-t { right: 12px }
+:is(.inl-c, .area, .kvl-ed dd, .cond2) .adorno.moeda > input { padding-left: 28px !important }
+:is(.inl-c, .area, .kvl-ed dd, .cond2) .adorno.moeda > .adorno-t { left: 0 }
+:is(.inl-c, .area, .kvl-ed dd, .cond2) .adorno:is(.m, .m2, .pct) > .adorno-t { right: 0 }
+:is(.inl-c, .area, .kvl-ed dd, .cond2) .adorno.m > input { padding-right: 18px !important }
+:is(.inl-c, .area, .kvl-ed dd, .cond2) .adorno.m2 > input { padding-right: 26px !important }
+.cond2 .adorno-t { font-size: 18px }
+.area .adorno-t { font-size: 16px }
+
+/* edição no lugar, sem Editar nem Salvar (pedido do Moisés, 6/nov/2026): o campo parece texto; a linha aparece ao
+   passar o mouse e no foco; a lista mantém a seta */
+.vivo .inl-c :is(input, select, textarea):not(:hover):not(:focus), .area input.inl:not(:hover):not(:focus),
+.vivo .inl-x:not(:hover):not(:focus) { border-bottom-color: transparent }
+.vivo .inl-c :is(input, textarea), .vivo input.inl-x { cursor: text }
+.vivo .inl-c :is(input, textarea):hover, .vivo input.inl-x:hover { border-bottom-color: #747775 }
+.kvg-ed.vivo .inl-c input[readonly] { border-bottom-color: transparent; cursor: default }
+/* Resumo da Visão geral: zona e fonte da área como lista no próprio texto; endereço que vira a busca do Google */
+.kv-vivo { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0 4px; min-width: 0 }
+.kv-vivo .inl-x { width: auto; max-width: 100%; height: 22px; margin: 0; padding: 0 18px 0 0; border: 0; border-bottom: 1px solid transparent; border-radius: 0;
+  background: transparent; box-shadow: none; font: inherit; color: inherit; outline: 0; appearance: none; cursor: pointer }
+.kv-vivo .inl-x:hover { border-bottom-color: #747775; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23444746' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 2px center }
+.kv-vivo .inl-x:focus { border-bottom: 2px solid var(--m-primary, #0b57d0) }
+.kv-vivo-b { display: inline; margin: 0; padding: 0; border: 0; border-bottom: 1px solid transparent; background: none; font: inherit; color: inherit; text-align: left; cursor: text }
+.kv-vivo-b:hover { border-bottom-color: #747775 }
+.kv-vivo-busca { display: block; width: 100% }
+.kv-vivo-busca .gbusca-h { width: 100%; margin: 0 }
+/* número e unidade juntos, como texto ("15,00 m", "1.890 m²"): o campo tem a largura do que tem dentro */
+:is(.area, .inl-c) .adorno:is(.m, .m2) { display: inline-flex; align-items: baseline; width: auto; max-width: 100% }
+:is(.area, .inl-c) .adorno.adorno:is(.m, .m2) > input.inl, :is(.area, .inl-c) .adorno.adorno:is(.m, .m2) > input { width: auto; field-sizing: content; min-width: 3ch; max-width: 100%; padding-right: 0 !important }
+:is(.area, .inl-c) .adorno:is(.m, .m2) > .adorno-t { position: static; transform: none; margin-left: 4px; color: inherit }
+.kv-vivo select.inl-x { field-sizing: content; padding-right: 22px !important; background-position: right 2px center !important; background-size: 16px 16px !important }

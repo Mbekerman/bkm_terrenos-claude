@@ -4,14 +4,17 @@
    <Adorno> (a máscara não mexe na estrutura da página, que é do React).
      data-fmt="moeda"  até 2 casas          data-fmt="pct"   até 2 casas; ao sair, completa as 2
      data-fmt="num"    até 3 casas          data-fmt="int"   inteiro
+     data-fmt="m"      metros, até 2 casas; ao sair, completa as 2 (pedido do Moisés, 6/nov/2026)
      data-fmt="tel"    (11) 98765-4321      data-fmt="doc"   CPF ou CNPJ, pelo número de dígitos
      data-fmt="cep"    00000-000            data-fmt="none"  não mexe (coordenadas, filtros com "12 mi")
-   Sem data-fmt, o tipo sai do rótulo: "R$" vira moeda, "%" vira pct, o resto num.
+   Sem data-fmt, o tipo sai do rótulo: "R$" vira moeda, "%" vira pct, "(m)" ou "metros" vira m, o resto num.
    O valor é trocado pelo setter nativo do campo, para o React ver a mudança e
    chamar o onChange com o texto já formatado; lerNum lê os dois jeitos. */
 import { type ReactNode, createElement } from 'react';
 
-const DEC: Record<string, number> = { moeda: 2, pct: 2, num: 3, int: 0 };
+const DEC: Record<string, number> = { moeda: 2, pct: 2, m: 2, num: 3, int: 0 };
+/** tipos que, ao sair do campo, completam as duas casas */
+const DUAS = new Set(['pct', 'm']);
 const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
 
 function rotulo(el: HTMLInputElement): string {
@@ -22,7 +25,7 @@ export function tipoFmt(el: HTMLInputElement): string | null {
   if (el.dataset.fmt) return el.dataset.fmt;
   if (el.inputMode !== 'decimal' || el.classList.contains('fx-in')) return null;
   const t = rotulo(el);
-  return /R\$/.test(t) ? 'moeda' : /%/.test(t) ? 'pct' : 'num';
+  return /R\$/.test(t) ? 'moeda' : /%/.test(t) ? 'pct' : /\(m\)|\bmetros\b/.test(t) ? 'm' : 'num';
 }
 
 /** número no padrão brasileiro, mantendo o cursor no lugar (conta só dígitos e vírgula) */
@@ -75,10 +78,10 @@ function aoDigitar(e: Event) {
   setter.call(el, novo);
   try { el.setSelectionRange(p, p); } catch { /* campos sem cursor */ }
 }
-/* percentual: ao sair do campo, completa as duas casas ("66" → "66,00"; pedido do Moisés, 5/nov/2026) */
+/* percentual e metros: ao sair do campo, completa as duas casas ("66" → "66,00"; pedidos do Moisés, 5 e 6/nov/2026) */
 function aoSair(e: Event) {
   const el = e.target as HTMLInputElement;
-  if (el?.tagName !== 'INPUT' || tipoFmt(el) !== 'pct' || !/\d/.test(el.value) || /[a-z]/i.test(el.value)) return;
+  if (el?.tagName !== 'INPUT' || !DUAS.has(tipoFmt(el) ?? '') || !/\d/.test(el.value) || /[a-z]/i.test(el.value)) return;
   const [i, f = ''] = el.value.split(',');
   const novo = `${i || '0'},${(f + '00').slice(0, 2)}`;
   if (novo === el.value) return;
@@ -126,7 +129,12 @@ export function instalarMascaras() {
   });
 }
 
-/** R$ ou % dentro do campo, como o .adorno do protótipo */
-export function Adorno({ t, children }: { t: 'moeda' | 'pct'; children: ReactNode }) {
-  return createElement('span', { className: `adorno ${t}` }, children, createElement('span', { className: 'adorno-t', 'aria-hidden': true }, t === 'moeda' ? 'R$' : '%'));
+/** a unidade dentro do campo, como o .adorno do protótipo: R$ antes do número; %, m e m² depois (pedido do Moisés, 6/nov/2026) */
+export type Unidade = 'moeda' | 'pct' | 'm' | 'm2';
+const UN: Record<Unidade, string> = { moeda: 'R$', pct: '%', m: 'm', m2: 'm²' };
+export function Adorno({ t, children }: { t: Unidade; children: ReactNode }) {
+  return createElement('span', { className: `adorno ${t}` }, children, createElement('span', { className: 'adorno-t', 'aria-hidden': true }, UN[t]));
 }
+
+/** metros com duas casas (leitura e valor inicial do campo): 12,5 → "12,50" */
+export const metros = (v: unknown) => (v == null || v === '' ? '' : Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));

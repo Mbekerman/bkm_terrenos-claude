@@ -727,6 +727,13 @@ select pg_temp.ok((select tem_area_sem_inscricao and qtd_lotes = 2 from app.v_ur
               and (select area_abrangida_m2 from app.v_lote_zonas where terreno_id = :'tm' and inscricao_id is null and tipo = 'mercado') = 45.5,
   'parte do terreno sem inscrição entra com a zona da poligonal');
 select pg_temp.falha(format($$select app.registrar_zonas_sem_inscricao(%L, '[{"sigla":"ZM","area_m2":0}]')$$, :'tm'), 'zona com área zerada é recusada');
+-- zonas de um lote registradas à mão (aba Parâmetros, "Registrar zonas")
+select app.registrar_zonas_lote(:'tm', :'gi2', '[{"sigla":"ZM","area_m2":320}]', 'Certidão de uso do solo') \gset
+select pg_temp.ok((select string_agg(sigla || ':' || area_abrangida_m2::int, ' ' order by sigla) from app.v_lote_zonas where inscricao_id = :'gi2' and tipo = 'mercado') = 'ZM:320'
+              and (select fonte from app.analises_urbanisticas where terreno_id = :'tm' and status = 'vigente') = 'Certidão de uso do solo'
+              and (select count(*) from app.v_lote_zonas where inscricao_id = :'gi' and tipo = 'mercado') = 1, 'zonas do lote à mão trocam só as daquele lote, com a fonte');
+select pg_temp.falha(format($$select app.registrar_zonas_lote(%L, %L, '[{"sigla":"ZM","area_m2":10}]', ' ')$$, :'tm', :'gi2'), 'zonas à mão sem fonte são recusadas');
+select pg_temp.falha(format($$select app.registrar_zonas_lote(%L, %L, '[{"sigla":"ZM","area_m2":10}]', 'x')$$, :'tm', :'ins'), 'lote de outro terreno é recusado nas zonas à mão');
 select pg_temp.falha(format($$insert into app.analise_zoneamentos (empresa_id, analise_id, inscricao_id, zoneamento_id) values (%L, %L, %L, %L)$$,
   :'emp', (select id from app.analises_urbanisticas where terreno_id = :'tm' and status = 'vigente'), :'ins', :'zm'), 'lote de outro terreno é recusado');
 select pg_temp.falha(format('select app.registrar_consulta_lote(%L, %L, null, null, %L, %L)', :'gi',

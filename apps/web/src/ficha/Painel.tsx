@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { metros } from '../lib/mascara';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
@@ -45,7 +46,6 @@ const completo = (s: string) => { const d = new Date(s); return `${fd(dLoc(s))} 
 export interface Log { id: string; em: string; user: string | null; txt: string; det?: string[]; aba?: string; q?: string; topo?: string }
 type Ctx = { f: F; nomes: Map<string, string>; partes: Map<string, string>; procs: Map<string, R>; sp: boolean };
 
-const num = (v: unknown, d = 2) => (v == null || v === '' ? '' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: d }));
 const curto = (v: unknown) => { const s = String(v); return s.length > 60 ? s.slice(0, 57) + '…' : s; };
 const NI = new Set(['nao_informado', 'nao_informada', 'nao_avaliada']);
 /* campos da ficha: [rótulo, tipo, opções, quadro] */
@@ -63,7 +63,7 @@ function valTxt(k: string, v: unknown, c: Ctx): string {
   if (tipo === 'sel' && opt && OPT[opt]) return NI.has(String(v)) ? 'não informado' : OPT[opt][String(v)] ?? String(v);
   if (tipo === 'user') return c.nomes.get(String(v)) ?? 'outra pessoa';
   if (tipo === 'm2') return m2(Number(v));
-  if (tipo === 'm') return num(v) + ' m';
+  if (tipo === 'm') return metros(v) + ' m';
   if (tipo === 'date') return fd(String(v));
   if (tipo === 'eixo') return 'alterado';
   if (typeof v === 'boolean') return v ? 'sim' : 'não';

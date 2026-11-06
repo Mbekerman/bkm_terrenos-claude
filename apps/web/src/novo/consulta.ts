@@ -135,6 +135,7 @@ export async function consultarArea(terrenoId: string, poly: P[]) {
   if (pa) props.quota_ambiental = [{ pa }];
   const { error } = await supabase.rpc('registrar_consulta_area', { p_terreno: terrenoId, p_camadas: props, p_camadas_com_erro: erros });
   if (error) throw error;
+  return erros.length;
 }
 
 /* ---------- andamento ("Consultando o GeoSampa: N de M"), lido pela lista do mapa ---------- */

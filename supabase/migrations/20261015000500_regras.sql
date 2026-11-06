@@ -2022,7 +2022,7 @@ begin
   v_novo := jsonb_populate_record(t, p_dados);
   update app.terrenos set
     nome = v_novo.nome, descricao = v_novo.descricao, prioridade = v_novo.prioridade, responsavel_id = v_novo.responsavel_id,
-    origem_cadastro = v_novo.origem_cadastro, url_origem = v_novo.url_origem, data_identificacao = v_novo.data_identificacao,
+    origem_cadastro = v_novo.origem_cadastro, data_identificacao = v_novo.data_identificacao,
     observacoes = v_novo.observacoes, cep = v_novo.cep, logradouro = v_novo.logradouro, numero = v_novo.numero,
     complemento = v_novo.complemento, bairro = v_novo.bairro, municipio_id = v_novo.municipio_id, zona = v_novo.zona,
     eixo_comercial_id = v_novo.eixo_comercial_id, referencia_localizacao = v_novo.referencia_localizacao,
@@ -2834,6 +2834,28 @@ begin
   return app._substituir_zonas(t, null, p_zonas, coalesce(nullif(trim(p_fonte), ''), 'Poligonal do terreno (parte sem inscrição)'));
 end $$;
 
+-- Zonas de um lote registradas à mão (certidão de uso do solo, consulta prévia...),
+-- pela ficha, aba Parâmetros, "Registrar zonas": mesma troca de app._substituir_zonas,
+-- com a fonte obrigatória; p_inscricao nulo = parte do terreno sem inscrição.
+create or replace function app.registrar_zonas_lote(p_terreno uuid, p_inscricao uuid, p_zonas jsonb, p_fonte text)
+returns uuid
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos;
+begin
+  select * into t from app.terrenos where id = p_terreno;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  if nullif(trim(p_fonte), '') is null then raise exception 'Informe a fonte das zonas' using errcode = '22023'; end if;
+  if p_inscricao is not null and not exists (select 1 from app.inscricoes_municipais where id = p_inscricao and terreno_id = t.id) then
+    raise exception 'O lote é de outro terreno' using errcode = '23514';
+  end if;
+  if jsonb_typeof(coalesce(p_zonas, '[]')) <> 'array' or jsonb_array_length(coalesce(p_zonas, '[]')) = 0 then
+    raise exception 'Informe ao menos uma zona' using errcode = '22023';
+  end if;
+  return app._substituir_zonas(t, p_inscricao, p_zonas, trim(p_fonte));
+end $$;
+
 -- Parâmetro urbanístico do catálogo da empresa: cria (p_id nulo; precisa de
 -- zona, tipo e fonte) ou altera. Desativar = ativo false; a linha nunca é
 -- apagada (a auditoria guarda cada mudança).
@@ -2897,7 +2919,7 @@ grant execute on function
   app.salvar_distancias_pontos(uuid, double precision, double precision, jsonb),
   app.registrar_consulta_lote(uuid, jsonb, jsonb, numeric, jsonb, jsonb, text[], boolean), app.registrar_consulta_area(uuid, jsonb, text[]), app.cartorio_da_prefeitura(uuid, text),
   app.classificar_topografia(uuid, numeric, numeric), app.registrar_topografia(uuid, numeric, numeric, numeric, numeric, text), app.salvar_topografia_config(uuid, numeric, numeric, numeric, numeric, numeric, numeric, numeric),
-  app.registrar_zonas_sem_inscricao(uuid, jsonb, text), app.salvar_zona_parametro(uuid, uuid, jsonb),
+  app.registrar_zonas_sem_inscricao(uuid, jsonb, text), app.registrar_zonas_lote(uuid, uuid, jsonb, text), app.salvar_zona_parametro(uuid, uuid, jsonb),
   app.parametros_zona(uuid, uuid, text, text, numeric, text),
   app.buscar_duplicados(uuid, text, text, text, text, text),
   app.terrenos_sobrepostos(uuid, jsonb, uuid),

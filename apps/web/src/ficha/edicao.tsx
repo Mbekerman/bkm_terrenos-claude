@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
 import { useToast } from '../components/ui';
 import { carregarGoogle, gLib } from '../mapa/google';
 import { data as fd, m2 } from '../lib/format';
+import { Adorno, metros } from '../lib/mascara';
 import type { Ficha, R } from './dados';
 
 // Edição da ficha (porte de proto.js › SECOES, fmtCampo, campoInp, camposEndereco e proto_gmap.js › gBuscasEndereco).
@@ -32,7 +33,7 @@ export type Campo = [string, string, string, string | null, string?];
 export const SECOES: Record<string, { titulo: string; campos: Campo[] }> = {
   ident: { titulo: 'Identificação', campos: [['nome', 'Nome de referência', 'txt', null, 'full'], ['descricao', 'Descrição', 'area', null, 'full'], ['prioridade', 'Prioridade', 'sel', 'prioridade'],
     ['responsavel_id', 'Responsável', 'user', null], ['origem_cadastro', 'Origem do cadastro', 'sel', 'origem'], ['data_identificacao', 'Identificado em', 'date', null],
-    ['url_origem', 'Link da origem', 'url', null, 'full'], ['observacoes', 'Observações gerais', 'area', null, 'full']] },
+    ['observacoes', 'Observações gerais', 'area', null, 'full']] },
   loc: { titulo: 'Endereço e localização', campos: [['cep', 'CEP', 'txt', null], ['logradouro', 'Logradouro', 'txt', null], ['numero', 'Número', 'txt', null], ['complemento', 'Complemento', 'txt', null],
     ['bairro', 'Bairro', 'txt', null], ['municipio_id', 'Município', 'mun', null], ['zona', 'Zona', 'sel', 'zona'], ['eixo_comercial_id', 'Eixo comercial', 'eixo', null],
     ['cartorio', 'Cartório de registro de imóveis', 'cri', null], ['referencia_localizacao', 'Referência', 'txt', null, 'full'], ['latitude', 'Latitude', 'dec', null],
@@ -82,7 +83,7 @@ export function fmtCampo(f: Ficha, [k, , tipo, opt]: Campo, listas?: { membros: 
     case 'sel': return OPT[opt!][v] ?? v;
     case 'date': return fd(v);
     case 'm2': return m2(v);
-    case 'm': return num(v, 2) + ' m';
+    case 'm': return metros(v) + ' m';
     case 'dec': return num(v, 6);
     case 'url': return <a href={v} target="_blank" rel="noopener">{String(v).replace(/^https?:\/\//, '').slice(0, 48)}</a>;
     case 'user': return listas?.membros.find((x) => x.user_id === v)?.nome ?? (f.resp?.nome || '—');
@@ -95,7 +96,7 @@ export function fmtCampo(f: Ficha, [k, , tipo, opt]: Campo, listas?: { membros: 
 /** valores iniciais do formulário (texto) das colunas pedidas */
 export function valoresDe(t: R, ks: string[]): Record<string, string> {
   const o: Record<string, string> = {};
-  for (const k of ks) o[k] = ['latitude', 'longitude'].includes(k) ? decStr(t[k]) : ['desnivel_estimado_m', 'testada_principal_m'].includes(k) || /_m2$/.test(k) ? numStr(t[k]) : t[k] == null ? '' : String(t[k]);
+  for (const k of ks) o[k] = ['latitude', 'longitude'].includes(k) ? decStr(t[k]) : ['desnivel_estimado_m', 'testada_principal_m'].includes(k) ? metros(t[k]) : /_m2$/.test(k) ? numStr(t[k]) : t[k] == null ? '' : String(t[k]);
   return o;
 }
 
@@ -112,41 +113,117 @@ export function dadosDe(vals: Record<string, string>, campos: Campo[]): R {
   return d;
 }
 
+/* gravações da ficha em fila, uma de cada vez, cada uma com a versão que a anterior devolveu: na edição no lugar,
+   sair de um campo e já sair do próximo grava os dois sem a segunda esbarrar na versão antiga */
+const VER = new Map<string, number>();
+let FILA: Promise<unknown> = Promise.resolve();
 /** grava na ficha; devolve true se gravou */
 export function useSalvar(f: Ficha) {
   const qc = useQueryClient(), toast = useToast();
-  return async (dados: R): Promise<boolean> => {
-    const { error } = await supabase.rpc('salvar_terreno', { p_terreno: f.id, p_versao: f.versao, p_dados: dados });
-    if (error) { toast(error.message); if (error.code === '40001') qc.invalidateQueries({ queryKey: ['ficha'] }); return false; }
-    await qc.invalidateQueries({ queryKey: ['ficha'] });
-    qc.invalidateQueries({ queryKey: ['mapa'] });
-    toast('Salvo.');
-    return true;
+  const fR = useRef(f);
+  fR.current = f;
+  return (dados: R): Promise<boolean> => {
+    const p = FILA.then(async () => {
+      const g = fR.current, ver = Math.max(g.versao, VER.get(g.id) ?? 0);
+      const { data, error } = await supabase.rpc('salvar_terreno', { p_terreno: g.id, p_versao: ver, p_dados: dados });
+      if (error) { toast(error.message); if (error.code === '40001') { VER.delete(g.id); qc.invalidateQueries({ queryKey: ['ficha'] }); } return false; }
+      if (typeof data === 'number') VER.set(g.id, data);
+      qc.invalidateQueries({ queryKey: ['ficha'] });
+      qc.invalidateQueries({ queryKey: ['mapa'] });
+      toast('Salvo.');
+      return true;
+    });
+    FILA = p.catch(() => false);
+    return p;
   };
+}
+
+/* ---------- edição no lugar (pedido do Moisés, 6/nov/2026: sem Editar nem Salvar nas seções) ----------
+   O valor já é o campo: grava ao sair dele (texto, número, data) ou ao escolher (lista); Esc volta o valor de antes;
+   Enter passa para o próximo campo do quadro (no último, só sai), como no protótipo. Quem só lê vê o texto. */
+export interface VivoProps {
+  value: string; 'data-vivo': string;
+  onChange: (e: { target: { value: string } }) => void; onFocus: () => void; onBlur: () => void; onKeyDown: (e: KeyboardEvent<HTMLElement>) => void;
+}
+/** próximo campo editado no lugar do mesmo quadro (ou janela) */
+export function proximoCampo(el: HTMLElement) {
+  const box = el.closest('.sec, .dialog, .lz-exc, form') ?? document.body;
+  const cs = [...box.querySelectorAll<HTMLElement>('[data-vivo]')].filter((x) => !(x as HTMLInputElement).disabled && x.offsetParent);
+  const i = cs.indexOf(el);
+  if (i >= 0 && i < cs.length - 1) cs[i + 1].focus(); else el.blur();
+}
+export function useVivo(ini: string, gravar: (v: string) => Promise<boolean | void> | boolean | void, opt: { imediato?: boolean; aoMudar?: (v: string) => void } = {}) {
+  const [v, setV] = useState(ini);
+  const cur = useRef(ini), base = useRef(ini), foco = useRef(false), esc = useRef(false);
+  /* o valor gravado mudou (a ficha recarregou, ou outra pessoa mudou): acompanha, menos com o campo em uso */
+  useEffect(() => { base.current = ini; if (!foco.current) { cur.current = ini; setV(ini); } }, [ini]);
+  const set = (x: string) => { cur.current = x; setV(x); opt.aoMudar?.(x); };
+  const fim = async () => {
+    const x = cur.current;
+    if (x === base.current) return;
+    const antes = base.current;
+    base.current = x;
+    let ok: boolean | void = false;
+    try { ok = await gravar(x); } catch { ok = false; }
+    if (ok === false) { base.current = antes; if (!foco.current) set(antes); }
+  };
+  const props: VivoProps = {
+    value: v, 'data-vivo': '',
+    /* no Esc, a máscara ainda mexe no campo ao sair (completa as casas): até sair, nada vale */
+    onChange: (e) => { if (esc.current) return; set(e.target.value); if (opt.imediato) fim(); },
+    onFocus: () => { foco.current = true; esc.current = false; },
+    onBlur: () => { foco.current = false; if (esc.current) { esc.current = false; set(base.current); return; } fim(); },
+    onKeyDown: (e) => {
+      if (e.key === 'Escape') { e.stopPropagation(); esc.current = true; (e.currentTarget as HTMLElement).blur(); }
+      else if (e.key === 'Enter' && e.currentTarget.tagName !== 'TEXTAREA') { e.preventDefault(); proximoCampo(e.currentTarget as HTMLElement); }
+    },
+  };
+  return { v, set, props };
+}
+/** campo editado no lugar em forma de render prop: <Vivo ini gravar>{(p) => <input {...p} />}</Vivo> */
+export function Vivo({ ini, gravar, imediato, aoMudar, children }: { ini: string; gravar: (v: string) => Promise<boolean | void> | boolean | void; imediato?: boolean; aoMudar?: (v: string) => void; children: (p: VivoProps) => ReactNode }) {
+  const { props } = useVivo(ini, gravar, { imediato, aoMudar });
+  return <>{children(props)}</>;
 }
 
 const CRIS = Array.from({ length: 18 }, (_, i) => `${i + 1}º CRI`);
 const emSP = (f: Ficha) => !f.municipio || /^São Paulo$/i.test(f.municipio);
 
-/** campo de edição de uma seção (campoInp) */
-export function CampoInp({ f, c, vals, mudar, listas, inl }: { f: Ficha; c: Campo; vals: Record<string, string>; mudar: (k: string, v: string) => void; listas?: { membros: R[]; eixos: R[] }; inl?: boolean }) {
-  const [k, l, tipo, opt, full] = c, id = `f-${k}`, v = vals[k] ?? '';
-  const on = (ev: { target: { value: string } }) => mudar(k, ev.target.value);
+/** campo de edição de uma seção (campoInp); com `p`, o campo é editado no lugar (useVivo) */
+export function CampoInp({ f, c, vals, mudar, listas, inl, p }: { f: Ficha; c: Campo; vals: Record<string, string>; mudar: (k: string, v: string) => void; listas?: { membros: R[]; eixos: R[] }; inl?: boolean; p?: VivoProps }) {
+  const [k, l, tipo, opt, full] = c, id = `f-${k}`, v = p ? p.value : vals[k] ?? '';
+  const on = (ev: { target: { value: string } }) => (p ? p.onChange(ev) : mudar(k, ev.target.value));
+  const x = p ? { onFocus: p.onFocus, onBlur: p.onBlur, onKeyDown: p.onKeyDown, 'data-vivo': '' } : {};
+  const ph = p ? 'Não informado' : '';
   let h: ReactNode;
-  if (tipo === 'sel') h = <select id={id} value={NI_OPT.has(v) ? '' : v} onChange={on}><option value="">Não informado</option>{Object.entries(OPT[opt!]).filter(([x]) => !NI_OPT.has(x)).map(([x, y]) => <option key={x} value={x}>{y}</option>)}</select>;
-  else if (tipo === 'user') h = <select id={id} value={v} onChange={on}><option value="">Sem responsável</option>{(listas?.membros ?? []).map((m) => <option key={m.user_id} value={m.user_id}>{m.nome}</option>)}</select>;
-  else if (tipo === 'eixo') h = <select id={id} value={v} onChange={on}><option value="">Nenhum</option>{(listas?.eixos ?? []).filter((e) => e.ativo !== false && (!e.municipio_id || e.municipio_id === f.t.municipio_id)).map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}</select>;
-  else if (tipo === 'area') h = <textarea id={id} value={v} onChange={on} />;
-  else if (tipo === 'date') h = <input id={id} type="date" value={v} onChange={on} />;
+  if (tipo === 'sel') h = <select id={id} value={NI_OPT.has(v) ? '' : v} onChange={on} {...x}><option value="">Não informado</option>{Object.entries(OPT[opt!]).filter(([y]) => !NI_OPT.has(y)).map(([y, z]) => <option key={y} value={y}>{z}</option>)}</select>;
+  else if (tipo === 'user') h = <select id={id} value={v} onChange={on} {...x}><option value="">Sem responsável</option>{(listas?.membros ?? []).map((m) => <option key={m.user_id} value={m.user_id}>{m.nome}</option>)}</select>;
+  else if (tipo === 'eixo') h = <select id={id} value={v} onChange={on} {...x}><option value="">Nenhum</option>{(listas?.eixos ?? []).filter((e) => e.ativo !== false && (!e.municipio_id || e.municipio_id === f.t.municipio_id)).map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}</select>;
+  else if (tipo === 'area') h = <textarea id={id} value={v} onChange={on} placeholder={ph} {...x} />;
+  else if (tipo === 'date') h = <input id={id} type="date" value={v} onChange={on} {...x} />;
   else if (tipo === 'cri') h = emSP(f)
-    ? <select id={id} value={v} onChange={on}><option value="">Não informado</option>{(v && !CRIS.includes(v) ? [v, ...CRIS] : CRIS).map((x) => <option key={x}>{x}</option>)}</select>
-    : <input id={id} value={v} onChange={on} placeholder="1º CRI" />;
+    ? <select id={id} value={v} onChange={on} {...x}><option value="">Não informado</option>{(v && !CRIS.includes(v) ? [v, ...CRIS] : CRIS).map((y) => <option key={y}>{y}</option>)}</select>
+    : <input id={id} value={v} onChange={on} placeholder={p ? ph : '1º CRI'} {...x} />;
   else if (tipo === 'mun') h = <input id={id} value={[f.municipio, f.uf].filter(Boolean).join(' · ')} readOnly title="Preenchido pela busca de endereço" />;
-  else if (['m2', 'm', 'dec'].includes(tipo)) h = <input id={id} inputMode="decimal" data-fmt={tipo === 'dec' ? 'none' : undefined} value={v} onChange={on} placeholder={tipo === 'm2' ? 'm²' : tipo === 'm' ? 'metros' : ''} />;
-  else h = <input id={id} type={tipo === 'url' ? 'url' : undefined} value={v} onChange={on} required={k === 'nome'} />;
+  else if (tipo === 'm2' || tipo === 'm') h = <Adorno t={tipo}><input id={id} inputMode="decimal" data-fmt={tipo === 'm' ? 'm' : undefined} value={v} onChange={on} placeholder={ph} {...x} /></Adorno>;
+  else if (tipo === 'dec') h = <input id={id} inputMode="decimal" data-fmt="none" value={v} onChange={on} placeholder={ph} {...x} />;
+  else h = <input id={id} type={tipo === 'url' ? 'url' : undefined} value={v} onChange={on} required={k === 'nome'} placeholder={ph} {...x} />;
   /* inl: no mesmo lugar e na mesma altura da leitura, só com a linha embaixo (pedido do Moisés, 5/nov/2026) */
   if (inl) return <div className={`inl-c ${full || ''}`}><label className="k" htmlFor={id}>{l}</label>{h}</div>;
   return <div className={`field ${full || ''}`}><label htmlFor={id}>{l}</label>{h}</div>;
+}
+const SELECAO = (f: Ficha, tipo: string) => ['sel', 'user', 'eixo'].includes(tipo) || (tipo === 'cri' && emSP(f));
+/** campo de uma seção da ficha editado no lugar: grava só a própria coluna */
+export function CampoVivo({ f, c, listas, salvar }: { f: Ficha; c: Campo; listas?: { membros: R[]; eixos: R[] }; salvar: (d: R) => Promise<boolean> }) {
+  const toast = useToast();
+  const [k] = c;
+  const ini = valoresDe(f.t, [k])[k];
+  const { props } = useVivo(ini, (v) => {
+    const d = dadosDe({ [k]: v }, [c]);
+    if (k === 'nome' && !d.nome) { toast('O nome de referência é obrigatório.'); return false; }
+    return salvar(d);
+  }, { imediato: SELECAO(f, c[2]) });
+  return <CampoInp f={f} c={c} vals={{}} mudar={() => undefined} listas={listas} inl p={props} />;
 }
 
 /** pedido de "ir ao campo" (itens que faltam na ficha): a aba que o tem abre a edição e põe o foco nele */
@@ -170,7 +247,9 @@ export interface EndGoogle { cidade?: string; uf?: string }
 
 /** endereço: busca do Google (Places) e, abaixo, Complemento e Zona; o que a busca preenche fica em linhas simples,
     com "Corrigir à mão" (proto.js › camposEndereco) */
-export function CamposEndereco({ f, vals, mudar, mun, setMun, soBusca }: { f: Ficha; vals: Record<string, string>; mudar: (k: string, v: string) => void; mun: EndGoogle | null; setMun: (m: EndGoogle) => void; soBusca?: boolean }) {
+export function CamposEndereco({ f, vals, mudar, mun, setMun, soBusca, aoEscolher, foco }: { f: Ficha; vals: Record<string, string>; mudar: (k: string, v: string) => void; mun: EndGoogle | null; setMun: (m: EndGoogle) => void; soBusca?: boolean;
+  /** edição no lugar: o que a busca achou, de uma vez, para gravar */
+  aoEscolher?: (o: Record<string, string>, m: EndGoogle | null) => void; foco?: boolean }) {
   const slot = useRef<HTMLDivElement>(null);
   const [gg, setGg] = useState<boolean | null>(null);
   const [manual, setManual] = useState(false);
@@ -179,6 +258,8 @@ export function CamposEndereco({ f, vals, mudar, mun, setMun, soBusca }: { f: Fi
   mudarR.current = mudar;
   const setMunR = useRef(setMun);
   setMunR.current = setMun;
+  const escR = useRef(aoEscolher);
+  escR.current = aoEscolher;
   useEffect(() => {
     let vivo = true;
     carregarGoogle().then((ok) => {
@@ -194,16 +275,19 @@ export function CamposEndereco({ f, vals, mudar, mun, setMun, soBusca }: { f: Fi
         pac.placeholder = soBusca ? 'Pesquisar endereço' : 'Pesquisar'; pac.setAttribute('aria-label', 'Pesquisar endereço no Google'); pac.requestedLanguage = 'pt-BR';
         pac.noInputIcon = true; pac.noClearButton = true; pac.setAttribute('no-input-icon', ''); pac.setAttribute('no-clear-button', '');
         s.appendChild(pac);
+        if (foco) setTimeout(() => (pac as HTMLElement).focus(), 50);
         const aplicar = async (place: any) => {
           await place.fetchFields({ fields: ['addressComponents', 'location', 'formattedAddress'] });
           const comp = (tipo: string, curto?: boolean) => { const c = place.addressComponents?.find((x: any) => x.types.includes(tipo)); return c ? (curto ? c.shortText : c.longText) : ''; };
-          const m = mudarR.current;
+          const o: Record<string, string> = {};
+          const m = (k: string, v: string) => { o[k] = v; mudarR.current(k, v); };
           const set = (k: string, v: string) => { if (v) m(k, v); };
           set('cep', comp('postal_code')); set('logradouro', comp('route')); m('numero', comp('street_number')); if (comp('subpremise')) m('complemento', comp('subpremise'));
           set('bairro', comp('sublocality_level_1') || comp('sublocality') || comp('neighborhood'));
           const cidade = comp('administrative_area_level_2') || comp('locality'), uf = comp('administrative_area_level_1', true);
           if (cidade) setMunR.current({ cidade, uf });
           if (place.location) { m('latitude', decStr(+place.location.lat().toFixed(6))); m('longitude', decStr(+place.location.lng().toFixed(6))); }
+          escR.current?.(o, cidade ? { cidade, uf } : null);
           setDe(place.formattedAddress || '');
           if (!comp('street_number')) setManual(true);
         };
