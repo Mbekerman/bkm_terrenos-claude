@@ -93,6 +93,10 @@ create table app.terrenos (
   -- 3. Áreas e características físicas
   area_documental_m2    numeric(12,2) check (area_documental_m2 > 0),
   area_cadastral_m2     numeric(12,2) check (area_cadastral_m2 > 0),
+  -- de onde vem a cadastral (pedido do Moisés, 6/nov/2026): 'sqls' = a soma das áreas cadastrais dos SQLs
+  -- (app._area_sqls), refeita a cada SQL incluído, excluído ou consultado; 'digitada' = alguém escreveu outro valor,
+  -- que os SQLs não sobrescrevem; apagar o valor volta para a soma
+  area_cadastral_origem text not null default 'sqls' check (area_cadastral_origem in ('sqls','digitada')),
   area_levantamento_m2  numeric(12,2) check (area_levantamento_m2 > 0),
   -- área do desenho, em m² inteiros: não é digitada e acompanha cada ajuste na poligonal (pedido do Moisés, 24/out/2026)
   area_poligonal_m2     numeric(12,2) generated always as
@@ -822,6 +826,11 @@ begin
   if tg_op = 'UPDATE' and new.poligono_geojson::text is distinct from old.poligono_geojson::text then
     new.topo_perfil := null; new.topo_declividade_pct := null; new.topo_inclinacao_pct := null; new.topo_terra_m3m2 := null; new.topo_desnivel_m := null;
     new.topo_fonte := null; new.topo_calculado_em := null; new.topo_calculado_por := null;
+  end if;
+  -- adotada pela cadastral: segue a cadastral (a soma dos SQLs muda sozinha); sem cadastral, fica sem adotada
+  if new.fonte_area_adotada = 'cadastral' then
+    if new.area_cadastral_m2 is null then new.area_adotada_m2 := null; new.fonte_area_adotada := null;
+    else new.area_adotada_m2 := new.area_cadastral_m2; end if;
   end if;
   if new.fonte_area_adotada = 'poligonal' then
     new.area_adotada_m2 := round(extensions.st_area(extensions.st_makevalid(extensions.st_setsrid(

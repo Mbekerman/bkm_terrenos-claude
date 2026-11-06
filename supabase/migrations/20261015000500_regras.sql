@@ -2026,6 +2026,35 @@ begin
   return n;
 end $$;
 
+-- Área cadastral do terreno pela soma dos SQLs (pedido do Moisés, 6/nov/2026): a soma das áreas
+-- cadastrais de todas as inscrições do terreno, só quando todas têm área (sem isso, nula).
+create or replace function app._area_sqls(p_terreno uuid)
+returns numeric language sql stable security definer set search_path = '' as $$
+  select case when count(*) > 0 and count(*) filter (where area_cadastral_m2 is null) = 0
+              then nullif(round(sum(area_cadastral_m2), 2), 0) end
+  from app.inscricoes_municipais where terreno_id = p_terreno $$;
+
+-- Refaz a cadastral do terreno pela soma, se ninguém digitou outra; só grava quando muda.
+create or replace function app._sincronizar_area_cadastral(p_terreno uuid)
+returns void language plpgsql security definer set search_path = '' as $$
+declare v numeric := app._area_sqls(p_terreno);
+begin
+  update app.terrenos set area_cadastral_m2 = v
+   where id = p_terreno and area_cadastral_origem = 'sqls' and area_cadastral_m2 is distinct from v;
+end $$;
+
+create or replace function app.tg_inscricao_area()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if tg_op in ('UPDATE','DELETE') then perform app._sincronizar_area_cadastral(old.terreno_id); end if;
+  if tg_op in ('INSERT','UPDATE') and (tg_op = 'INSERT' or new.terreno_id is distinct from old.terreno_id) then
+    perform app._sincronizar_area_cadastral(new.terreno_id);
+  end if;
+  return null;
+end $$;
+create trigger t_area_terreno after insert or delete or update of area_cadastral_m2, terreno_id on app.inscricoes_municipais
+  for each row execute function app.tg_inscricao_area();
+
 create or replace function app.salvar_terreno(p_terreno uuid, p_versao int, p_dados jsonb)
 returns int
 language plpgsql security definer set search_path = ''
@@ -2057,7 +2086,12 @@ begin
     latitude = v_novo.latitude, longitude = v_novo.longitude, poligono_geojson = v_novo.poligono_geojson,
     poligono_desenhado_geojson = v_novo.poligono_desenhado_geojson,
     precisao_localizacao = v_novo.precisao_localizacao, area_documental_m2 = v_novo.area_documental_m2,
-    area_cadastral_m2 = v_novo.area_cadastral_m2, area_levantamento_m2 = v_novo.area_levantamento_m2,
+    -- cadastral apagada volta à soma dos SQLs; outro valor escrito passa a valer no lugar dela
+    area_cadastral_m2 = coalesce(v_novo.area_cadastral_m2, app._area_sqls(t.id)),
+    area_cadastral_origem = case when v_novo.area_cadastral_m2 is null then 'sqls'
+                                 when v_novo.area_cadastral_m2 is distinct from t.area_cadastral_m2 then 'digitada'
+                                 else t.area_cadastral_origem end,
+    area_levantamento_m2 = v_novo.area_levantamento_m2,
     area_adotada_m2 = v_novo.area_adotada_m2, fonte_area_adotada = v_novo.fonte_area_adotada,
     testada_principal_m = v_novo.testada_principal_m, desnivel_estimado_m = v_novo.desnivel_estimado_m,
     posicao_quadra = v_novo.posicao_quadra, formato = v_novo.formato, situacao_ocupacao = v_novo.situacao_ocupacao,

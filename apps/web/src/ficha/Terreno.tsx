@@ -149,7 +149,7 @@ function SecAreas({ f }: { f: Ficha }) {
               title={pode && !sel ? 'Usar como área adotada' : fo === 'poligonal' ? 'Calculada pelo desenho; muda quando a poligonal é ajustada' : undefined}
               onClick={(ev) => { if (pode && !(ev.target as HTMLElement).closest('input')) escolher(fo); }}
               onKeyDown={(ev) => { if (pode && (ev.key === 'Enter' || ev.key === ' ') && !(ev.target as HTMLElement).closest('input')) { ev.preventDefault(); escolher(fo); } }}>
-              <div className="al">{l} <span className="faint">· {s}</span></div>
+              <div className="al">{l} <span className="faint">· {fo === 'cadastral' && v != null ? (t.area_cadastral_origem === 'digitada' ? 'digitada' : 'soma dos SQLs') : s}</span></div>
               {edita && fo !== 'poligonal'
                 ? <AreaVivo f={f} k={k} l={l} />
                 : <div className="av">{v == null ? <span className="faint" style={{ fontSize: 14, fontStyle: 'italic' }}>{fo === 'poligonal' ? 'Sem poligonal' : 'Não informada'}</span> : m2(v)}</div>}
