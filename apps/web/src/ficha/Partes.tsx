@@ -47,7 +47,7 @@ export function useLotes(f: Ficha) {
         supabase.from('consultas_lote').select('inscricao_id,consultado_em,base,lote,zonas,poligono_geojson,area_poligono_m2,camadas_com_erro').eq('terreno_id', f.id).order('consultado_em', { ascending: false }),
         f.t.municipio_id ? supabase.from('bases_cadastrais').select('codigo,municipio_id,nome,rotulo,mascara').eq('municipio_id', f.t.municipio_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
         supabase.from('matricula_partes').select('id,matricula_id,parte_id,percentual').eq('terreno_id', f.id),
-        supabase.from('inscricao_partes').select('id,inscricao_id,parte_id,percentual').eq('terreno_id', f.id),
+        supabase.from('inscricao_partes').select('id,inscricao_id,parte_id,percentual,matricula_parte_id').eq('terreno_id', f.id),
       ]);
       for (const r of [pt, m, i, c, b, cm, ci]) if (r.error) throw r.error;
       const consultas: Record<string, R> = {};
@@ -81,19 +81,27 @@ const areaDe = (L: Lotes, tipo: Tp, es: { x: R; c: R }[]) => {
   const k = tipo === 'm' ? 'area_registrada_m2' : 'area_cadastral_m2';
   return es.every((e) => e.x[k] != null) ? Math.round(soma(es.map((e) => +e.x[k] * fracao(L, tipo, e.c).f)) * 100) / 100 : null;
 };
-/** área da parte: a soma das matrículas (todas com área); sem matrícula, a dos SQLs (todos com área cadastral); o lote de
-   mais de uma parte entra pela fração da parte nele */
+/** área dos SQLs da parte (pedido do Moises, 6/nov/2026): área cadastral do SQL × fração da parte no SQL × fração da parte
+    na matrícula em que ele está (como app.v_partes); null se algum SQL não tem área */
+function areaSqls(L: Lotes, es: { x: R; c: R }[]) {
+  if (!es.every((e) => e.x.area_cadastral_m2 != null)) return null;
+  return Math.round(soma(es.map((e) => {
+    const cm = e.c.matricula_parte_id ? L.cm.find((y) => y.id === e.c.matricula_parte_id) : null;
+    return +e.x.area_cadastral_m2 * fracao(L, 's', e.c).f * (cm ? fracao(L, 'm', cm).f : 1);
+  })) * 100) / 100;
+}
+/** área da parte: a dos SQLs dela (com as frações); sem SQL, a das matrículas (todas com área) */
 export function ptArea(L: Lotes, pid: string): { area: number | null; fonte: string | null } {
   const ms = daParte(L, 'm', pid), is = daParte(L, 's', pid);
+  if (is.length) { const a = areaSqls(L, is); return a != null ? { area: a, fonte: 'SQLs' } : { area: null, fonte: null }; }
   if (ms.length) { const a = areaDe(L, 'm', ms); return a != null ? { area: a, fonte: 'matrículas' } : { area: null, fonte: null }; }
-  if (is.length) { const a = areaDe(L, 's', is); return a != null ? { area: a, fonte: 'SQLs' } : { area: null, fonte: null }; }
   return { area: null, fonte: null };
 }
-/** Matrícula × Prefeitura da parte: área cadastral dos SQLs contra a das matrículas, em % da matrícula */
+/** Matrícula × Prefeitura da parte: área dos SQLs contra a das matrículas, em % da matrícula */
 function ptDiv(L: Lotes, pid: string) {
   const ms = daParte(L, 'm', pid), is = daParte(L, 's', pid);
   if (!ms.length || !is.length) return null;
-  const a = areaDe(L, 'm', ms), b = areaDe(L, 's', is);
+  const a = areaDe(L, 'm', ms), b = areaSqls(L, is);
   return a && b != null ? Math.round(((b - a) / a) * 1000) / 10 : null;
 }
 
@@ -160,25 +168,131 @@ export async function refazerPoligonal(f: Ficha, como: string, aviso: (m: string
 }
 
 /* ---------- Partes ---------- */
-const CAMPOS_PT: [string, string, string, Record<string, string>][] = [
-  ['pessoa_nome', 'Nome completo da pessoa principal', '', {}], ['telefone', 'Telefone', '(11) 98765-4321', { inputMode: 'tel', 'data-fmt': 'tel' }],
-  ['email', 'E-mail', 'nome@email.com', { type: 'email' }], ['documento', 'CPF ou CNPJ', '000.000.000-00', { inputMode: 'numeric', 'data-fmt': 'doc' }],
-];
-function CartaoParte({ f, L, pa, n }: { f: Ficha; L: Lotes; pa: R; n: number }) {
+/* relação da pessoa com a parte (pedido do Moises, 6/nov/2026) */
+export const RELACAO: Record<string, string> = { proprietario: 'Proprietário', conjuge: 'Cônjuge', representante: 'Representante', procurador: 'Procurador', parente: 'Parente', contato: 'Contato', outro: 'Outros' };
+/** as pessoas das partes do terreno (terreno_pessoas com a pessoa) */
+export function usePessoasPartes(f: Ficha) {
+  return useQuery({
+    queryKey: ['ficha-pessoas', f.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('terreno_pessoas').select('id,papel,percentual_participacao,parte_id,pessoa_id,pessoas(id,nome_razao_social,tipo_pessoa,telefone,email,cpf_cnpj)').eq('terreno_id', f.id);
+      if (error) throw error;
+      return ((data ?? []) as R[]).sort((a, b) => (a.papel === 'proprietario' ? 0 : 1) - (b.papel === 'proprietario' ? 0 : 1)
+        || String(a.pessoas?.nome_razao_social ?? '').localeCompare(b.pessoas?.nome_razao_social ?? '', 'pt-BR'));
+    },
+  });
+}
+const pctTxt = (v: unknown) => (v == null ? '' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + '%');
+
+/** janela das pessoas da parte: formulário de inclusão (e edição) e a tabela de todas embaixo */
+function JanelaPessoas({ f, pa, ps, fechar }: { f: Ficha; pa: R; ps: R[]; fechar: () => void }) {
+  const { edita, empresa } = useSessao();
+  const toast = useToast(), qc = useQueryClient();
+  const NV0 = { id: '', nome: '', tel: '', email: '', doc: '', pct: '', papel: 'proprietario' };
+  const [nv, setNv] = useState(NV0);
+  const [grav, setGrav] = useState(false);
+  const fref = useRef<HTMLFormElement>(null);
+  const { aviso } = useRascunho(fref, !nv.id && !!(nv.nome.trim() || nv.tel.trim() || nv.email.trim() || nv.doc.trim() || nv.pct.trim()), 'a pessoa', () => setNv(NV0));
+  const recarregar = () => { qc.invalidateQueries({ queryKey: ['ficha-pessoas', f.id] }); qc.invalidateQueries({ queryKey: ['ficha'] }); };
+  const editar = (p: R) => setNv({ id: p.id, nome: p.pessoas?.nome_razao_social ?? '', tel: p.pessoas?.telefone ? fmtTel(p.pessoas.telefone) : '', email: p.pessoas?.email ?? '',
+    doc: p.pessoas?.cpf_cnpj ? fmtDoc(p.pessoas.cpf_cnpj) : '', pct: p.percentual_participacao != null ? num(+p.percentual_participacao, 2) : '', papel: p.papel });
+  async function gravar(ev: FormEvent) {
+    ev.preventDefault();
+    if (grav) return;
+    const nome = nv.nome.trim(), doc = digitos(nv.doc), tel = digitos(nv.tel), email = nv.email.trim().toLowerCase();
+    if (!nome) { toast('Informe o nome.', true); return; }
+    if (doc && doc.length !== 11 && doc.length !== 14) { toast('O CPF tem 11 dígitos (o CNPJ, 14).', true); return; }
+    if (tel && (tel.length < 10 || tel.length > 11)) { toast('Telefone com DDD: 10 ou 11 dígitos.', true); return; }
+    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast('E-mail inválido.', true); return; }
+    const pct = nv.papel === 'proprietario' && nv.pct.trim() ? lerNum(nv.pct) : null;
+    if (pct != null && !(pct > 0 && pct <= 100)) { toast('A participação vai de 0 a 100%.', true); return; }
+    const dp = { nome_razao_social: nome, tipo_pessoa: doc.length === 14 ? 'PJ' : 'PF', telefone: tel || null, email: email || null, cpf_cnpj: doc || null };
+    setGrav(true);
+    try {
+      const ant = nv.id ? ps.find((x) => x.id === nv.id) : null;
+      if (ant) {
+        const r1 = await supabase.from('pessoas').update(dp).eq('id', ant.pessoa_id);
+        if (r1.error) throw r1.error;
+        const r2 = await supabase.from('terreno_pessoas').update({ papel: nv.papel, percentual_participacao: pct }).eq('id', ant.id);
+        if (r2.error) throw r2.error;
+        toast(`${nome} alterado.`);
+      } else {
+        /* com o CPF já cadastrado na empresa, a pessoa é a mesma */
+        let pid: string | null = null;
+        if (doc) { const r = await supabase.from('pessoas').select('id').eq('empresa_id', empresa!.id).eq('cpf_cnpj', doc).maybeSingle(); if (r.error) throw r.error; pid = r.data?.id ?? null; }
+        if (!pid) { const r = await supabase.from('pessoas').insert({ empresa_id: empresa!.id, ...dp }).select('id').single(); if (r.error) throw r.error; pid = r.data.id; }
+        const r2 = await supabase.from('terreno_pessoas').insert({ empresa_id: empresa!.id, terreno_id: f.id, pessoa_id: pid, papel: nv.papel, percentual_participacao: pct, parte_id: pa.id });
+        if (r2.error) throw r2.error.code === '23505' ? new Error(`${nome} já está no terreno com essa relação.`) : r2.error;
+      }
+      setNv(NV0);
+      recarregar();
+      setTimeout(() => document.getElementById('pp-n')?.focus(), 30);
+    } catch (e: any) { toast(e?.message ?? String(e), true); } finally { setGrav(false); }
+  }
+  async function tirar(p: R) {
+    const { error } = await supabase.from('terreno_pessoas').delete().eq('id', p.id);
+    if (error) { toast(error.message, true); return; }
+    if (nv.id === p.id) setNv(NV0);
+    toast(`${p.pessoas?.nome_razao_social ?? 'Pessoa'} tirado da parte.`);
+    recarregar();
+  }
+  const prop = nv.papel === 'proprietario';
+  const somaPct = soma(ps.filter((p) => p.papel === 'proprietario' && p.percentual_participacao != null).map((p) => +p.percentual_participacao));
+  return (
+    <Dialogo titulo={`Pessoas · ${pa.nome}`} onFechar={fechar} rodape={<button className="btn primary" onClick={fechar}>Concluir</button>}>
+      <div className="pp-dlg">
+        {edita && (
+          <form className="pp-form" ref={fref} onSubmit={gravar}>
+            <div className="field pp-nome"><label htmlFor="pp-n">Nome</label><input id="pp-n" required autoComplete="off" value={nv.nome} onChange={(e) => setNv({ ...nv, nome: e.target.value })} /></div>
+            <div className="field"><label htmlFor="pp-r">Relação</label><select id="pp-r" value={nv.papel} onChange={(e) => setNv({ ...nv, papel: e.target.value, pct: e.target.value === 'proprietario' ? nv.pct : '' })}>
+              {Object.entries(RELACAO).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div>
+            <div className="field"><label htmlFor="pp-p">% de participação</label><Adorno t="pct"><input id="pp-p" inputMode="decimal" data-fmt="pct" disabled={!prop} value={nv.pct} onChange={(e) => setNv({ ...nv, pct: e.target.value })} /></Adorno></div>
+            <div className="field"><label htmlFor="pp-t">Telefone</label><input id="pp-t" inputMode="tel" data-fmt="tel" placeholder="(11) 98765-4321" value={nv.tel} onChange={(e) => setNv({ ...nv, tel: e.target.value })} /></div>
+            <div className="field"><label htmlFor="pp-e">E-mail</label><input id="pp-e" type="email" placeholder="nome@email.com" value={nv.email} onChange={(e) => setNv({ ...nv, email: e.target.value })} /></div>
+            <div className="field"><label htmlFor="pp-c">CPF</label><input id="pp-c" inputMode="numeric" data-fmt="doc" placeholder="000.000.000-00" value={nv.doc} onChange={(e) => setNv({ ...nv, doc: e.target.value })} /></div>
+            <div className="pp-bt">
+              {nv.id && <button type="button" className="btn text sm" onClick={() => setNv(NV0)}>Cancelar</button>}
+              <button className="btn sm" disabled={grav}><Ic n={nv.id ? 'check' : 'add'} s={16} />{nv.id ? 'Salvar' : 'Incluir'}</button>
+            </div>
+            {aviso}
+          </form>
+        )}
+        {ps.length ? (
+          <div className="tblwrap"><table className="mini-tbl lst2 pp-tbl"><thead><tr><th>Nome</th><th>Relação</th><th className="r">%</th><th>Telefone</th><th>E-mail</th><th>CPF</th>{edita && <th />}</tr></thead><tbody>
+            {ps.map((p) => (
+              <tr key={p.id} className={nv.id === p.id ? 'sel' : ''}>
+                <td className="l1">{p.pessoas?.nome_razao_social}</td>
+                <td>{RELACAO[p.papel] ?? p.papel}</td>
+                <td className={`r${p.percentual_participacao != null ? '' : ' l0'}`}>{pctTxt(p.percentual_participacao) || '—'}</td>
+                <td className={p.pessoas?.telefone ? '' : 'l0'}>{p.pessoas?.telefone ? fmtTel(p.pessoas.telefone) : '—'}</td>
+                <td className={p.pessoas?.email ? '' : 'l0'}>{p.pessoas?.email || '—'}</td>
+                <td className={p.pessoas?.cpf_cnpj ? '' : 'l0'}>{p.pessoas?.cpf_cnpj ? fmtDoc(p.pessoas.cpf_cnpj) : '—'}</td>
+                {edita && <td className="r"><span className="pp-acoes">
+                  <button type="button" className="iconbtn sm" aria-label="Editar" title="Editar" onClick={() => editar(p)}><Ic n="edit" s={18} /></button>
+                  <button type="button" className="iconbtn sm lixo" aria-label="Tirar da parte" title="Tirar da parte" onClick={() => tirar(p)}><Ic n="lixo" s={18} /></button></span></td>}
+              </tr>
+            ))}
+          </tbody></table></div>
+        ) : <div className="muted">Ninguém cadastrado nesta parte.</div>}
+        {somaPct > 0 && <div className="hint">Participações informadas: {pctTxt(somaPct)}{somaPct < 100 ? `, faltam ${pctTxt(100 - somaPct)}` : ''}.</div>}
+      </div>
+    </Dialogo>
+  );
+}
+
+function CartaoParte({ f, L, pa, n, ps }: { f: Ficha; L: Lotes; pa: R; n: number; ps: R[] }) {
   const { edita } = useSessao();
   const toast = useToast(), recarregar = useRecarregar(f);
-  const fmt = (k: string) => (k === 'telefone' ? fmtTel(pa[k]) : k === 'documento' ? fmtDoc(pa[k]) : pa[k] ?? '');
-  const [v, setV] = useState<Record<string, string>>({});
-  useEffect(() => setV({ nome: pa.nome, observacoes: pa.observacoes ?? '', ...Object.fromEntries(CAMPOS_PT.map(([k]) => [k, fmt(k)])) }), [pa]); // eslint-disable-line react-hooks/exhaustive-deps
-  async function gravar(k: string) {
-    const novo = (v[k] ?? '').trim(), ant = k === 'nome' || k === 'observacoes' ? pa[k] ?? '' : fmt(k);
-    if (novo === ant) return;
-    if (k === 'nome') {
-      if (!novo) { toast('A parte precisa de um título.', true); setV({ ...v, nome: pa.nome }); return; }
-      if (L.partes.some((x) => x.id !== pa.id && x.nome.trim().toLowerCase() === novo.toLowerCase())) { toast('Já existe uma parte com este título.', true); setV({ ...v, nome: pa.nome }); return; }
-    }
-    const { error } = await supabase.rpc('salvar_parte', { p_terreno: f.id, p_parte: pa.id, p_dados: { [k]: novo || null } });
-    if (error) { toast(error.message, true); setV({ ...v, [k]: ant }); return; }
+  const [nome, setNome] = useState(pa.nome);
+  const [jan, setJan] = useState(false);
+  useEffect(() => setNome(pa.nome), [pa.nome]);
+  async function gravarNome() {
+    const novo = nome.trim();
+    if (novo === pa.nome) return;
+    if (!novo) { toast('A parte precisa de um título.', true); setNome(pa.nome); return; }
+    if (L.partes.some((x) => x.id !== pa.id && x.nome.trim().toLowerCase() === novo.toLowerCase())) { toast('Já existe uma parte com este título.', true); setNome(pa.nome); return; }
+    const { error } = await supabase.rpc('salvar_parte', { p_terreno: f.id, p_parte: pa.id, p_dados: { nome: novo } });
+    if (error) { toast(error.message, true); setNome(pa.nome); return; }
     recarregar();
   }
   async function excluir() {
@@ -186,27 +300,26 @@ function CartaoParte({ f, L, pa, n }: { f: Ficha; L: Lotes; pa: R; n: number }) 
     if (error) { toast(error.message, true); return; }
     const k = daParte(L, 'm', pa.id).length + daParte(L, 's', pa.id).length;
     toast(`${pa.nome} excluída.${k ? ` ${k} etiqueta${k > 1 ? 's saíram' : ' saiu'} dela.` : ''}`);
-    recarregar();
+    recarregar('ficha');
   }
   const nm = daParte(L, 'm', pa.id).length, ni = daParte(L, 's', pa.id).length;
-  const inp = (k: string, l: string, ph: string, x: Record<string, string>) => (
-    <label className="field" key={k}><span className="lbl-f">{l}</span>
-      {edita ? <input value={v[k] ?? ''} placeholder={ph} {...x} onChange={(e) => setV({ ...v, [k]: e.target.value })} onBlur={() => gravar(k)} />
-        : <span className="v">{fmt(k) || <span className="ni">Não informado</span>}</span>}</label>
-  );
+  /* só os proprietários, com o nome e o percentual; o resto (contatos, telefone, e-mail, CPF) fica na janela (pedido do Moises, 6/nov/2026) */
+  const donos = ps.filter((p) => p.papel === 'proprietario'), outros = ps.length - donos.length;
   return (
     <article className="pt2" id={`pt2-${pa.id}`}>
       <div className="pt2-h">
-        {edita ? <input className="pt2-tit" value={v.nome ?? ''} aria-label="Título da parte" onChange={(e) => setV({ ...v, nome: e.target.value })} onBlur={() => gravar('nome')} /> : <b>{pa.nome}</b>}
-        <span className={`chip ${nm || ni ? 'good' : ''}`}>{nm || ni ? [nm && nm + (nm > 1 ? ' matrículas' : ' matrícula'), ni && ni + (ni > 1 ? ' SQLs' : ' SQL')].filter(Boolean).join(' · ') : 'sem matrícula nem SQL'}</span>
+        {edita ? <input className="pt2-tit" value={nome} aria-label="Título da parte" onChange={(e) => setNome(e.target.value)} onBlur={gravarNome} /> : <b>{pa.nome}</b>}
+        <span className={`chip ${nm || ni ? 'good' : ''}`}>{nm || ni ? [nm && nm + (nm > 1 ? ' matrículas' : ' matrícula'), ni && ni + (ni > 1 ? ' SQLs' : ' SQL')].filter(Boolean).join(' · ') : 'sem matrícula'}</span>
         {edita && n > 1 && <button className="btn text sm pt2-x" onClick={excluir}><Ic n="lixo" s={16} />Excluir parte</button>}
       </div>
-      <div className="pt2-g">
-        {CAMPOS_PT.map(([k, l, ph, x]) => inp(k, l, ph, x))}
-        <label className="field pt2-obs"><span className="lbl-f">Observação</span>
-          {edita ? <textarea rows={1} value={v.observacoes ?? ''} onChange={(e) => setV({ ...v, observacoes: e.target.value })} onBlur={() => gravar('observacoes')} />
-            : <span className="v">{pa.observacoes || <span className="ni">Não informada</span>}</span>}</label>
+      <div className="pt2-pp">
+        <div className="pt2-pp-h"><span className="lbl-f">Proprietários</span>
+          <button type="button" className="btn text sm" id={`pp-ed-${pa.id}`} onClick={() => setJan(true)}><Ic n={edita ? 'edit' : 'olho'} s={16} />{edita ? 'Editar' : 'Ver'}</button></div>
+        {donos.length ? <ul className="pt2-donos">{donos.map((p) => <li key={p.id}><span>{p.pessoas?.nome_razao_social}</span><span className="faint">{pctTxt(p.percentual_participacao) || '% não informado'}</span></li>)}</ul>
+          : <span className="ni">Nenhum proprietário informado</span>}
+        {outros > 0 && <span className="faint pt2-outros">+ {outros} {outros > 1 ? 'outras pessoas' : 'outra pessoa'} (cônjuge, contato…)</span>}
       </div>
+      {jan && <JanelaPessoas f={f} pa={pa} ps={ps} fechar={() => setJan(false)} />}
     </article>
   );
 }
@@ -215,6 +328,7 @@ function SecPartes({ f, L }: { f: Ficha; L: Lotes }) {
   const { edita } = useSessao();
   const toast = useToast(), recarregar = useRecarregar(f);
   const P = L.partes;
+  const ps = usePessoasPartes(f).data ?? [];
   const [qtd, setQtd] = useState(String(P.length));
   useEffect(() => setQtd(String(P.length)), [P.length]);
   async function nova() {
@@ -229,8 +343,8 @@ function SecPartes({ f, L }: { f: Ficha; L: Lotes }) {
     for (let i = P.length; i < n; i++) if (!(await nova())) break;
     if (n < P.length) {
       for (const pa of P.slice(n).reverse()) {
-        const tem = L.cm.some((c) => c.parte_id === pa.id) || L.ci.some((c) => c.parte_id === pa.id) || ['pessoa_nome', 'telefone', 'email', 'documento', 'observacoes'].some((k) => pa[k]);
-        if (tem) { toast(`${pa.nome} já tem dados, matrículas ou SQLs: use Excluir parte.`, true); break; }
+        const tem = L.cm.some((c) => c.parte_id === pa.id) || L.ci.some((c) => c.parte_id === pa.id) || ps.some((p) => p.parte_id === pa.id);
+        if (tem) { toast(`${pa.nome} já tem pessoas, matrículas ou SQLs: use Excluir parte.`, true); break; }
         const { error } = await supabase.rpc('excluir_parte', { p_parte: pa.id });
         if (error) { toast(error.message, true); break; }
       }
@@ -248,10 +362,10 @@ function SecPartes({ f, L }: { f: Ficha; L: Lotes }) {
                 onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
               <button type="button" className="iconbtn sm" aria-label="Uma parte a mais" onClick={() => ajustar(P.length + 1)}>+</button>
             </span>
-            <span className="faint">Todo terreno nasce com uma parte. Os dados da parte são opcionais.</span>
+            <span className="faint">Todo terreno nasce com uma parte.</span>
           </div>
         )}
-        <div className="pt2-lista">{P.map((pa) => <CartaoParte key={pa.id} f={f} L={L} pa={pa} n={P.length} />)}</div>
+        <div className="pt2-lista">{P.map((pa) => <CartaoParte key={pa.id} f={f} L={L} pa={pa} n={P.length} ps={ps.filter((p) => p.parte_id === pa.id || (P.length === 1 && !p.parte_id))} />)}</div>
         {edita && <button className="btn text sm qd-add" onClick={async () => { await nova(); recarregar(); }}><Ic n="add" s={16} />Adicionar parte</button>}
       </div>
     </Quadro>
@@ -352,30 +466,61 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
   const mudarC = async (tipo: Tp, id: string, v: R) => { local(tipo, (cs) => cs.map((c) => (c.id === id ? { ...c, ...v } : c))); return okR(await supabase.from(TAB_C[tipo]).update(v).eq('id', id)); };
   const nova = (e: Etq, pid: string | null): R => ({ id: crypto.randomUUID(), empresa_id: empresa!.id, terreno_id: f.id, [FK[e.tipo]]: e.x.id, parte_id: pid });
   const jaEm = (e: Etq, pid: string) => copias(LR.current, e.tipo, e.x.id).some((c) => c.parte_id === pid);
-  /** leva a etiqueta para a parte (null = de volta para sem parte) */
-  async function parte(k: string, pid: string | null) {
+  /* o SQL entra na parte sempre dentro de uma matrícula dela (pedido do Moises, 6/nov/2026): com uma matrícula só, vai para ela;
+     com mais de uma, precisa ser solto sobre a matrícula; sem matrícula, não entra */
+  function matDaParte(pid: string): string | null {
+    const ms = LR.current.cm.filter((c) => c.parte_id === pid);
+    if (!ms.length) { toast(`É necessário atribuir uma matrícula à parte ${nomeP(pid)} antes de lançar lotes nela.`, true); return null; }
+    if (ms.length > 1) { toast(`A parte ${nomeP(pid)} tem mais de uma matrícula: solte o ${rot} sobre a matrícula dele.`, true); return null; }
+    return ms[0].id;
+  }
+  const nomeM = (mp: string | null | undefined) => { const c = mp ? LR.current.cm.find((y) => y.id === mp) : null; const m = c && LR.current.mats.find((x) => x.id === c.matricula_id); return m ? `matrícula ${m.numero}` : 'matrícula'; };
+  /** a matrícula leva os SQLs dela (o banco faz o mesmo; aqui a tela muda na hora) */
+  const levarSqls = (cid: string, pid: string | null) => local('s', (cs) => cs.map((y) => (y.matricula_parte_id === cid ? { ...y, parte_id: pid } : y)));
+  const mudarM = async (id: string, v: R) => { if ('parte_id' in v) levarSqls(id, v.parte_id); return mudarC('m', id, v); };
+  /** leva a etiqueta para a parte (null = de volta para sem parte); o SQL, para dentro da matrícula mp (sem mp, a única da parte) */
+  async function parte(k: string, pid: string | null, mp?: string | null) {
     const e = achar(k);
     if (!e) return;
+    if (e.tipo === 's') {
+      if (pid && !mp) { mp = matDaParte(pid); if (!mp) return; }
+      if (!pid) mp = null;
+    }
+    const dest: R = e.tipo === 's' ? { parte_id: pid, matricula_parte_id: mp ?? null } : { parte_id: pid };
+    const onde = e.tipo === 's' && mp ? `${nomeM(mp)} da parte ${nomeP(pid)}` : `parte ${nomeP(pid)}`;
     if (!e.c) {   // sem parte → parte
       if (!pid) return;
-      const row = nova(e, pid);
+      if (e.tipo === 's' && copias(LR.current, 's', e.x.id).some((y) => y.matricula_parte_id === mp)) { toast(`${nome(e)} já está na ${onde}.`, true); return; }
+      const row = { ...nova(e, pid), ...dest };
       if (!(await inserir(e.tipo, [row]))) return;
-      empilhar({ rotulo: `${nome(e)} na parte ${nomeP(pid)}`, fazer: () => apagarC(e.tipo, [row.id]), refazer: () => inserir(e.tipo, [row]) });
+      empilhar({ rotulo: `${nome(e)} na ${onde}`, fazer: () => apagarC(e.tipo, [row.id]), refazer: () => inserir(e.tipo, [row]) });
       return;
     }
     const c = e.c;
-    if (c.parte_id === pid) return;
+    if (c.parte_id === pid && (e.tipo === 'm' || (c.matricula_parte_id ?? null) === (mp ?? null))) return;
     /* com o lote em outras partes, sair da parte deixa a cópia solta, com o percentual dela, para distribuir depois */
     if (!pid && copias(LR.current, e.tipo, e.x.id).length < 2) {   // parte → sem parte: o lote volta a ficar solto
-      const row = { id: c.id, empresa_id: empresa!.id, terreno_id: f.id, [FK[e.tipo]]: e.x.id, parte_id: c.parte_id, percentual: c.percentual ?? null };
+      const row: R = { id: c.id, empresa_id: empresa!.id, terreno_id: f.id, [FK[e.tipo]]: e.x.id, parte_id: c.parte_id, percentual: c.percentual ?? null };
+      if (e.tipo === 's') row.matricula_parte_id = c.matricula_parte_id ?? null;
+      /* a matrícula que sai deixa os SQLs dela soltos; o Ctrl+Z os põe de volta nela */
+      const dentro = e.tipo === 'm' ? LR.current.ci.filter((y) => y.matricula_parte_id === c.id).map((y) => y.id as string) : [];
+      if (dentro.length) local('s', (cs) => cs.map((y) => (dentro.includes(y.id) ? { ...y, parte_id: null, matricula_parte_id: null } : y)));
       if (!(await apagarC(e.tipo, [c.id]))) return;
-      empilhar({ rotulo: `${nome(e)} fora da parte ${nomeP(c.parte_id)}`, fazer: () => inserir(e.tipo, [row]), refazer: () => apagarC(e.tipo, [c.id]) });
+      const repor = async () => {
+        if (!(await inserir(e.tipo, [row]))) return false;
+        for (const id of dentro) if (!(await mudarC('s', id, { matricula_parte_id: c.id, parte_id: c.parte_id }))) return false;
+        return true;
+      };
+      empilhar({ rotulo: `${nome(e)} fora da parte ${nomeP(c.parte_id)}`, fazer: repor, refazer: () => apagarC(e.tipo, [c.id]) });
+      if (dentro.length) toast(`${nome(e)} saiu da parte; ${dentro.length > 1 ? `os ${dentro.length} ${rot}s dela ficaram soltos` : `o ${rot} dela ficou solto`}.`);
       return;
     }
-    if (pid && jaEm(e, pid)) { toast(`${nome(e)} já está na parte ${nomeP(pid)}.`, true); return; }
-    const antes = c.parte_id;
-    if (!(await mudarC(e.tipo, c.id, { parte_id: pid }))) return;
-    empilhar({ rotulo: pid ? `${nome(e)} de parte` : `${nome(e)} solta`, fazer: () => mudarC(e.tipo, c.id, { parte_id: antes }), refazer: () => mudarC(e.tipo, c.id, { parte_id: pid }) });
+    if (pid && e.tipo === 'm' && jaEm(e, pid)) { toast(`${nome(e)} já está na parte ${nomeP(pid)}.`, true); return; }
+    if (pid && e.tipo === 's' && copias(LR.current, 's', e.x.id).some((y) => y.id !== c.id && y.matricula_parte_id === mp)) { toast(`${nome(e)} já está na ${onde}.`, true); return; }
+    const antes: R = e.tipo === 's' ? { parte_id: c.parte_id, matricula_parte_id: c.matricula_parte_id ?? null } : { parte_id: c.parte_id };
+    const mv = (v: R) => (e.tipo === 'm' ? mudarM(c.id, v) : mudarC('s', c.id, v));
+    if (!(await mv(dest))) return;
+    empilhar({ rotulo: pid ? `${nome(e)} na ${onde}` : `${nome(e)} solta`, fazer: () => mv(antes), refazer: () => mv(dest) });
   }
   /** duplica a etiqueta noutra parte: o lote passa a ser de mais de uma parte (pedido do Moisés, 6/nov/2026). A cópia nasce
       com o que falta para 100%; se o lote já está todo nas outras partes, nasce com 0% e o alerta. As etiquetas sem percentual
@@ -398,6 +543,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     const resto = Math.round((100 - soma(ef.map((y) => y.p))) * 100) / 100;
     const fixar = ef.filter((y) => y.c.percentual == null);
     const row: R = { ...nova(e, pid), percentual: resto >= 0.5 ? resto : 0 };
+    if (e.tipo === 's') row.matricula_parte_id = e.c?.matricula_parte_id ?? null;   // o SQL duplicado fica na mesma matrícula
     const pFix = async (vals: (y: { c: R; p: number }) => number | null) => {
       for (const y of fixar) { local(e.tipo, (cs) => cs.map((c) => (c.id === y.c.id ? { ...c, percentual: vals(y) } : c))); const r = await supabase.from(TAB_C[e.tipo]).update({ percentual: vals(y) }).eq('id', y.c.id); if (r.error) { toast(r.error.message, true); recarregar('lotes'); return false; } }
       return true;
@@ -519,14 +665,20 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     const pa = P[0];
     if (!pa) return;
     const rm = L.mats.filter((m) => !copias(L, 'm', m.id).length).map((x) => nova({ tipo: 'm', x }, pa.id));
-    const rs = L.insc.filter((i) => !copias(L, 's', i.id).length).map((x) => nova({ tipo: 's', x }, pa.id));
-    if (!(rm.length + rs.length)) return;
+    /* os SQLs entram dentro da matrícula: só vão juntos se a parte ficar com uma matrícula só */
+    const mats = [...L.cm.filter((c) => c.parte_id === pa.id).map((c) => c.id as string), ...rm.map((r) => r.id as string)];
+    const soltosS = L.insc.filter((i) => !copias(L, 's', i.id).length);
+    const rs: R[] = mats.length === 1 ? soltosS.map((x) => ({ ...nova({ tipo: 's', x }, pa.id), matricula_parte_id: mats[0] })) : [];
+    if (!(rm.length + rs.length)) {
+      if (soltosS.length) toast(mats.length ? `A parte ${pa.nome} tem mais de uma matrícula: arraste cada ${rot} para a matrícula dele.` : `É necessário atribuir uma matrícula à parte ${pa.nome} antes de lançar lotes nela.`, true);
+      return;
+    }
     const por = async (sim: boolean) => {
-      const r = await Promise.all([rm.length ? (sim ? inserir('m', rm) : apagarC('m', rm.map((x) => x.id))) : true, rs.length ? (sim ? inserir('s', rs) : apagarC('s', rs.map((x) => x.id))) : true]);
-      return r.every(Boolean);
+      if (sim) return (!rm.length || (await inserir('m', rm))) && (!rs.length || (await inserir('s', rs)));
+      return (!rs.length || (await apagarC('s', rs.map((x) => x.id)))) && (!rm.length || (await apagarC('m', rm.map((x) => x.id))));
     };
     if (!(await por(true))) return;
-    toast(`Tudo na parte ${pa.nome}.`);
+    toast(soltosS.length && !rs.length ? `Matrículas na parte ${pa.nome}. A parte ficou com mais de uma matrícula: arraste cada ${rot} para a matrícula dele.` : `Tudo na parte ${pa.nome}.`);
     empilhar({ rotulo: `etiquetas na parte ${pa.nome}`, fazer: () => por(false), refazer: () => por(true) });
   }
   function linha(pid: string) {
@@ -538,7 +690,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
   }
 
   /* arrastar e soltar (mouse e toque: no toque, segurar a etiqueta antes de arrastar) */
-  const parteR = useRef(parte);
+  const parteR = useRef<(k: string, pid: string | null, mp?: string | null) => Promise<void>>(parte);
   parteR.current = parte;
   useEffect(() => {
     if (!edita) return;
@@ -551,8 +703,12 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
       a.el.classList.add('etq-origem'); document.body.classList.add('etq-arrastando');
       const [tipo, lote] = a.k.split(':'), orig = a.el.closest('[data-drop]');
       /* a parte que já tem o lote não acende */
-      const tem = new Set(copias(LR.current, tipo as Tp, lote).map((c) => c.parte_id));
-      raiz()?.querySelectorAll<HTMLElement>('[data-drop]').forEach((d) => { if (d !== orig && ((d.dataset.drop === 'parte' && !tem.has(d.dataset.p!)) || d.dataset.tipo === tipo)) d.classList.add('etq-aceita'); });
+      const cs = copias(LR.current, tipo as Tp, lote), tem = new Set(cs.map((c) => c.parte_id)), temM = new Set(cs.map((c) => c.matricula_parte_id));
+      /* o SQL vai para dentro de uma matrícula (a parte inteira também aceita: com uma matrícula só, ele entra nela); a matrícula, para a parte */
+      const aceita = (d: HTMLElement) => d.dataset.tipo === tipo || (tipo === 's'
+        ? (d.dataset.drop === 'mat' && !temM.has(d.dataset.mp!)) || d.dataset.drop === 'parte'
+        : d.dataset.drop === 'parte' && !tem.has(d.dataset.p!));
+      raiz()?.querySelectorAll<HTMLElement>('[data-drop]').forEach((d) => { if (d !== orig && aceita(d)) d.classList.add('etq-aceita'); });
       mover(a.x, a.y);
     };
     const mover = (x: number, y: number) => {
@@ -569,7 +725,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
       a.g?.remove(); a.el.classList.remove('etq-origem'); document.body.classList.remove('etq-arrastando');
       const d = soltar ? (document.elementFromPoint(x, y) as HTMLElement | null)?.closest?.<HTMLElement>('.etq-aceita') : null;
       document.querySelectorAll('.etq-aceita,.etq-sobre').forEach((z) => z.classList.remove('etq-aceita', 'etq-sobre'));
-      if (d) parteR.current(a.k, d.dataset.drop === 'parte' ? d.dataset.p! : null);
+      if (d) parteR.current(a.k, d.dataset.drop === 'pool' ? null : d.dataset.p!, d.dataset.drop === 'mat' ? d.dataset.mp! : undefined);
     };
     const down = (e: PointerEvent) => {
       const el = (e.target as HTMLElement).closest?.<HTMLElement>('.etq[data-etq]');
@@ -617,7 +773,11 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     return () => { document.removeEventListener('pointerdown', fora, true); document.removeEventListener('keydown', tecla, true); removeEventListener('scroll', fechar, true); removeEventListener('resize', fechar); };
   }, [menu]);
   const menuE = menu ? achar(menu.k) : null;
-  const faltam = menuE ? P.filter((pa) => !copias(L, menuE.tipo, menuE.x.id).some((c) => c.parte_id === pa.id)) : [];
+  /* destinos do menu: a matrícula vai para a parte; o SQL, para cada matrícula de cada parte */
+  const destinos: { pid: string; mp?: string; nome: string }[] = !menuE ? []
+    : menuE.tipo === 'm' ? P.filter((pa) => !copias(L, 'm', menuE.x.id).some((c) => c.parte_id === pa.id)).map((pa) => ({ pid: pa.id, nome: pa.nome }))
+    : P.flatMap((pa) => L.cm.filter((c) => c.parte_id === pa.id && !copias(L, 's', menuE.x.id).some((y) => y.matricula_parte_id === c.id))
+      .map((c) => ({ pid: pa.id, mp: c.id as string, nome: `${pa.nome} › Matrícula ${L.mats.find((m) => m.id === c.matricula_id)?.numero ?? ''}` })));
   const fazM = (fn: () => void) => { setMenu(null); fn(); };
   const toque = matchMedia('(pointer: coarse)').matches;
   /* com Matrículas e SQLs um sobre o outro, cada quadro recolhe pela seta do título, para chegar perto das partes
@@ -690,9 +850,27 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
                   <Ic n="chev" s={18} /><b>{pa.nome}</b><span className="faint">{ms.length} mat. · {is.length} {rot}</span></button>
                 <div className="etq-pt-b">
                   <div className="etq-pt-l">
-                    {ms.length > 0 && <div className="etq-pt-g m">{ms.map(({ x, c }) => <Etiqueta key={c.id} e={{ tipo: 'm', x, c }} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} pct={abrirPct} />)}</div>}
-                    {is.length > 0 ? <div className="etq-pt-g s">{is.map(({ x, c }) => <Etiqueta key={c.id} e={{ tipo: 's', x, c }} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} pct={abrirPct} />)}</div>
-                      : !ms.length && <span className="etq-vazio">{edita ? 'Arraste para cá as matrículas e os SQLs desta parte.' : 'Sem matrícula nem SQL.'}</span>}
+                    {/* cada matrícula da parte é um subquadro, e os SQLs dela entram dentro (pedido do Moises, 6/nov/2026) */}
+                    {ms.map(({ x, c }) => {
+                      const dentro = is.filter((y) => y.c.matricula_parte_id === c.id);
+                      return (
+                        <div key={c.id} className="etq-mq" data-drop="mat" data-p={pa.id} data-mp={c.id}>
+                          <div className="etq-mq-h"><Etiqueta e={{ tipo: 'm', x, c }} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} pct={abrirPct} /></div>
+                          <div className="etq-mq-b">{dentro.length ? dentro.map(({ x: y, c: cy }) => <Etiqueta key={cy.id} e={{ tipo: 's', x: y, c: cy }} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} pct={abrirPct} />)
+                            : <span className="etq-vazio">{edita ? `Solte aqui os ${rot}s desta matrícula.` : `Sem ${rot}.`}</span>}</div>
+                        </div>
+                      );
+                    })}
+                    {(() => {   // SQL de antes da regra, sem matrícula: fica à parte até ser levado para uma
+                      const sem = is.filter((y) => !y.c.matricula_parte_id || !ms.some((m) => m.c.id === y.c.matricula_parte_id));
+                      return sem.length > 0 && (
+                        <div className="etq-mq sem">
+                          <div className="etq-mq-h"><span className="faint">{rot}s sem matrícula: arraste cada um para a matrícula dele</span></div>
+                          <div className="etq-mq-b">{sem.map(({ x: y, c: cy }) => <Etiqueta key={cy.id} e={{ tipo: 's', x: y, c: cy }} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} pct={abrirPct} />)}</div>
+                        </div>
+                      );
+                    })()}
+                    {!ms.length && !is.length && <span className="etq-vazio">{edita ? `Arraste para cá as matrículas desta parte; os ${rot}s entram dentro de cada matrícula.` : 'Sem matrícula.'}</span>}
                   </div>
                   {(ai.area != null || dv != null) && (
                     <div className="etq-pt-r">
@@ -732,10 +910,11 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
         <div className="etq-menu" role="menu" style={{ left: menu.x, top: menu.y }}>
           <div className="etq-menu-t">{nome(menuE)}</div>
           <button type="button" role="menuitem" onClick={() => fazM(() => duplicar(menu.k))}><Ic n="add" s={16} />Duplicar</button>
-          {faltam.length > 0 && <>
+          {destinos.length > 0 && <>
             <div className="etq-menu-h">{menuE.c?.parte_id ? 'Mover para' : 'Pôr em'}</div>
-            {faltam.map((pa) => <button key={'m' + pa.id} type="button" role="menuitem" onClick={() => fazM(() => parte(menu.k, pa.id))}><Ic n="fwd" s={16} />{pa.nome}</button>)}
+            {destinos.map((d) => <button key={'m' + d.pid + (d.mp ?? '')} type="button" role="menuitem" onClick={() => fazM(() => parte(menu.k, d.pid, d.mp))}><Ic n="fwd" s={16} />{d.nome}</button>)}
           </>}
+          {menuE.tipo === 's' && !destinos.length && !L.cm.some((c) => c.parte_id) && <div className="etq-menu-v">Leve uma matrícula para a parte antes de lançar {rot}s nela.</div>}
           <hr />
           <button type="button" role="menuitem" onClick={() => fazM(() => ver(menu.k))}><Ic n="edit" s={16} />Editar</button>
           {menuE.c?.parte_id && <button type="button" role="menuitem" onClick={() => fazM(() => parte(menu.k, null))}><Ic n="close" s={16} />Tirar da parte {nomeP(menuE.c.parte_id)}</button>}
@@ -748,7 +927,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
 }
 
 /* ---------- janela da etiqueta ---------- */
-type OpsEtq = { parte: (k: string, pid: string | null) => Promise<void>; duplicar: (k: string) => Promise<void>; percentual: (tipo: Tp, c: R, v: number | null) => Promise<boolean>; tirar: (k: string) => void; apagar: (k: string) => void };
+type OpsEtq = { parte: (k: string, pid: string | null, mp?: string | null) => Promise<void>; duplicar: (k: string) => Promise<void>; percentual: (tipo: Tp, c: R, v: number | null) => Promise<boolean>; tirar: (k: string) => void; apagar: (k: string) => void };
 function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fechar: () => void; ops: OpsEtq }) {
   const { edita, empresa } = useSessao();
   const toast = useToast(), recarregar = useRecarregar(f);
@@ -796,11 +975,20 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
     }} />;
   const nomeP = (pid: string | null) => (pid ? L.partes.find((pa) => pa.id === pid)?.nome ?? 'Parte' : 'Solta');
   const temP = new Set(cs.map((y) => y.parte_id));
+  /* o SQL escolhe a matrícula da parte (entra sempre dentro de uma); a matrícula escolhe a parte */
+  const temM = new Set(cs.map((y) => y.matricula_parte_id));
+  const nMat = (mc: R) => `${nomeP(mc.parte_id)} › Matrícula ${L.mats.find((m) => m.id === mc.matricula_id)?.numero ?? ''}`;
+  const matsP = L.cm.filter((mc) => mc.parte_id);
   const parte = lin(cs.length > 1 ? 'Esta etiqueta está na parte' : 'Parte', edita
-    ? <select value={c?.parte_id ?? ''} onChange={(e) => ops.parte(kc, e.target.value || null)}>
-        <option value="">{c && cs.length > 1 ? 'Tirar desta parte' : 'Sem parte'}</option>
-        {L.partes.map((pa) => <option key={pa.id} value={pa.id} disabled={temP.has(pa.id) && pa.id !== c?.parte_id}>{pa.nome}</option>)}</select>
-    : val(c ? nomeP(c.parte_id) : 'Sem parte'));
+    ? tipo === 's'
+      ? <select value={c?.matricula_parte_id ?? ''} onChange={(e) => { const mc = matsP.find((y) => y.id === e.target.value); ops.parte(kc, mc?.parte_id ?? null, mc?.id ?? null); }}>
+          <option value="">{c && cs.length > 1 ? 'Tirar desta parte' : 'Sem parte'}</option>
+          {c?.parte_id && !c.matricula_parte_id && <option value="" disabled>{nomeP(c.parte_id)} (sem matrícula)</option>}
+          {matsP.map((mc) => <option key={mc.id} value={mc.id} disabled={temM.has(mc.id) && mc.id !== c?.matricula_parte_id}>{nMat(mc)}</option>)}</select>
+      : <select value={c?.parte_id ?? ''} onChange={(e) => ops.parte(kc, e.target.value || null)}>
+          <option value="">{c && cs.length > 1 ? 'Tirar desta parte' : 'Sem parte'}</option>
+          {L.partes.map((pa) => <option key={pa.id} value={pa.id} disabled={temP.has(pa.id) && pa.id !== c?.parte_id}>{pa.nome}</option>)}</select>
+    : val(c ? (tipo === 's' && c.matricula_parte_id ? nMat(L.cm.find((y) => y.id === c.matricula_parte_id) ?? { parte_id: c.parte_id }) : nomeP(c.parte_id)) : 'Sem parte'));
   async function salvarPct(y: R) {
     const t = (pct[y.id] ?? '').trim(), v = t ? lerNum(t) : null;
     if (t && (v == null || v < 0 || v > 100)) { toast('O percentual vai de 0 a 100%.', true); setPct({ ...pct, [y.id]: y.percentual != null ? num(+y.percentual, 2) : '' }); return; }

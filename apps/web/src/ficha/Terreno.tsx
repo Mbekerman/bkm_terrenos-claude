@@ -1,14 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { useRascunho } from '../components/Rascunho';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
 import { Dialogo, useToast } from '../components/ui';
 import { Ic } from '../components/Moldura';
 import { LapisMapa } from '../novo/TrocarEndereco';
 import { reais as brl, m2 } from '../lib/format';
-import { Adorno, formatar, metros } from '../lib/mascara';
+import { Adorno, metros } from '../lib/mascara';
 import type { Ficha, R } from './dados';
 import PartesLotes from './Partes';
 import {
@@ -186,93 +184,12 @@ function SecAreas({ f }: { f: Ficha }) {
   );
 }
 
-function SecPessoas({ f }: { f: Ficha }) {
-  const { edita, empresa } = useSessao();
-  const qc = useQueryClient(), toast = useToast();
-  const q = useQuery({
-    queryKey: ['ficha-pessoas', f.id],
-    queryFn: async () => {
-      const [p, pt] = await Promise.all([
-        supabase.from('terreno_pessoas').select('id,papel,percentual_participacao,parte_id,pessoas(nome_razao_social,tipo_pessoa,telefone)').eq('terreno_id', f.id),
-        supabase.from('terreno_partes').select('id,nome').eq('terreno_id', f.id).eq('ativa', true).order('criado_em'),
-      ]);
-      if (p.error) throw p.error;
-      if (pt.error) throw pt.error;
-      const ps = ((p.data ?? []) as R[]).sort((a, b) => String(a.pessoas?.nome_razao_social ?? '').localeCompare(b.pessoas?.nome_razao_social ?? '', 'pt-BR'));
-      return { pessoas: ps, partes: (pt.data ?? []) as R[] };
-    },
-  });
-  const NV0 = { nome: '', tipo: 'PF', papel: 'proprietario', pct: '', tel: '' };
-  const [nv, setNv] = useState(NV0);
-  const pref = useRef<HTMLFormElement>(null);
-  const { aviso: avisoP } = useRascunho(pref, !!(nv.nome.trim() || nv.pct.trim() || nv.tel.trim()), 'o proprietário', () => setNv(NV0));
-  const [grav, setGrav] = useState(false);
-  const recarregar = () => { qc.invalidateQueries({ queryKey: ['ficha-pessoas', f.id] }); qc.invalidateQueries({ queryKey: ['ficha'] }); };
-  async function incluir(ev: FormEvent) {
-    ev.preventDefault();
-    if (!nv.nome.trim() || grav) return;
-    const pct = nv.papel === 'proprietario' ? lerNum(nv.pct) : null;
-    if (pct != null && !(pct > 0 && pct <= 100)) { toast('A participação vai de 0 a 100%.'); return; }
-    setGrav(true);
-    try {
-      const p = await supabase.from('pessoas').insert({ empresa_id: empresa!.id, tipo_pessoa: nv.tipo, nome_razao_social: nv.nome.trim(), telefone: nv.tel.replace(/\D/g, '') || null }).select('id').single();
-      if (p.error) throw p.error;
-      const v = await supabase.from('terreno_pessoas').insert({ empresa_id: empresa!.id, terreno_id: f.id, pessoa_id: p.data.id, papel: nv.papel, percentual_participacao: pct });
-      if (v.error) throw v.error;
-      setNv({ nome: '', tipo: 'PF', papel: 'proprietario', pct: '', tel: '' });
-      recarregar();
-    } catch (e: any) { toast(e?.message ?? String(e)); } finally { setGrav(false); }
-  }
-  async function tirar(id: string) {
-    const { error } = await supabase.from('terreno_pessoas').delete().eq('id', id);
-    if (error) toast(error.message); else recarregar();
-  }
-  async function parte(id: string, pid: string) {
-    const { error } = await supabase.from('terreno_pessoas').update({ parte_id: pid || null }).eq('id', id);
-    if (error) toast(error.message); else recarregar();
-  }
-  const ps = q.data?.pessoas ?? [], partes = q.data?.partes ?? [];
-  const comParte = partes.length > 0;
-  return (
-    <Quadro aba="terreno" id="pessoas" titulo="Proprietários e contatos">
-      <div className="sec-b">
-        {q.isLoading ? <div className="muted">Carregando…</div> : ps.length ? (
-          <div className="tblwrap"><table className="mini-tbl lst2"><thead><tr><th>Nome</th><th>Vínculo</th><th className="r">Participação</th><th>Telefone</th>{comParte && <th>Parte</th>}<th /></tr></thead><tbody>
-            {ps.map((p) => (
-              <tr key={p.id}>
-                <td className="l1">{p.pessoas?.nome_razao_social} <span className="faint" style={{ fontSize: 12 }}>{p.pessoas?.tipo_pessoa}</span></td>
-                <td>{OPT.papel[p.papel] ?? p.papel}</td>
-                <td className={`r${p.percentual_participacao != null ? '' : ' l0'}`}>{p.percentual_participacao != null ? Number(p.percentual_participacao).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%' : '—'}</td>
-                <td className={`l2${p.pessoas?.telefone ? '' : ' l0'}`}>{p.pessoas?.telefone ? formatar(p.pessoas.telefone, 0, 'tel')[0] : '—'}</td>
-                {comParte && <td>{edita ? <select aria-label="Parte" value={p.parte_id ?? ''} onChange={(ev) => parte(p.id, ev.target.value)}>
-                  <option value="">—</option>{partes.map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}</select> : partes.find((x) => x.id === p.parte_id)?.nome ?? '—'}</td>}
-                <td className="r">{edita && <button className="iconbtn sm lixo" aria-label="Remover" title="Remover" onClick={() => tirar(p.id)}><Ic n="lixo" s={18} /></button>}</td>
-              </tr>
-            ))}
-          </tbody></table></div>
-        ) : <div className="muted">Ninguém vinculado.</div>}
-        {edita && (
-          <form className="inline-form" ref={pref} onSubmit={incluir}>
-            <div className="field grow"><label htmlFor="p-n">Nome ou razão social</label><input id="p-n" required value={nv.nome} onChange={(ev) => setNv({ ...nv, nome: ev.target.value })} /></div>
-            <div className="field" style={{ flex: '0 1 120px' }}><label htmlFor="p-t">Tipo</label><select id="p-t" value={nv.tipo} onChange={(ev) => setNv({ ...nv, tipo: ev.target.value })}><option value="PF">PF</option><option value="PJ">PJ</option></select></div>
-            <div className="field"><label htmlFor="p-p">Vínculo</label><select id="p-p" value={nv.papel} onChange={(ev) => setNv({ ...nv, papel: ev.target.value })}>{Object.entries(OPT.papel).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div>
-            <div className="field" style={{ flex: '0 1 120px' }}><label htmlFor="p-pc">Participação</label><Adorno t="pct"><input id="p-pc" inputMode="decimal" data-fmt="pct" disabled={nv.papel !== 'proprietario'} value={nv.pct} onChange={(ev) => setNv({ ...nv, pct: ev.target.value })} /></Adorno></div>
-            <div className="field"><label htmlFor="p-tel">Telefone</label><input id="p-tel" inputMode="tel" data-fmt="tel" placeholder="(11) 98765-4321" value={nv.tel} onChange={(ev) => setNv({ ...nv, tel: ev.target.value })} /></div>
-            <button className="btn sm" disabled={grav}><Ic n="add" s={16} />Adicionar</button>
-            {avisoP}
-          </form>
-        )}
-      </div>
-    </Quadro>
-  );
-}
-
 export default function AbaTerreno({ f }: { f: Ficha }) {
   const [, re] = useState(0);
   /* "ir ao campo" vindo do que falta na ficha: abre o quadro e põe o foco no campo (já editável no lugar) */
   useEffect(() => {
     const atender = () => {
-      const p = tomarPedido(['loc', 'areas', 'fis', 'lotes', 'pessoas', 'ident']);
+      const p = tomarPedido(['loc', 'areas', 'fis', 'lotes', 'partes-cad', 'ident']);
       if (!p) return;
       abrirQuadro('terreno', p.sec);
       re((x) => x + 1);
@@ -282,6 +199,8 @@ export default function AbaTerreno({ f }: { f: Ficha }) {
         const fo = ['documental', 'cadastral', 'levantamento', 'poligonal'].find((x) => (x === 'poligonal' ? f.t.area_poligonal_m2 : f.t[`area_${x}_m2`]) != null);
         alvo = fo ? `area-${fo}` : 'f-area_documental_m2';
       }
+      /* proprietário: abre a janela das pessoas da primeira parte */
+      if (p.campo === 'pp-ed') { const ir = (t: number) => { const b = document.querySelector<HTMLButtonElement>('[id^="pp-ed-"]'); if (b) b.click(); else if (t) setTimeout(() => ir(t - 1), 60); }; ir(12); return; }
       if (p.campo) focar(alvo);
     };
     atender();
@@ -294,7 +213,6 @@ export default function AbaTerreno({ f }: { f: Ficha }) {
       <SecGenerica f={f} id="loc" />
       <PartesLotes f={f} />
       <SecAreas f={f} />
-      <SecPessoas f={f} />
     </div>
   );
 }

@@ -197,7 +197,7 @@ export function completude(f: Ficha): { pct: number; faltam: Falta[] } {
     [f.testada != null, 'Testada', 'terreno', 'areas', 'testada_principal_m'],
     [f.qMat > 0, 'Matrícula', 'terreno', 'lotes', 'em-n'],
     [f.qInsc > 0, 'Inscrição e IPTU', 'terreno', 'lotes', 'es-sql'],
-    [f.temProprietario, 'Proprietário', 'terreno', 'pessoas', 'p-n'],
+    [f.temProprietario, 'Proprietário', 'terreno', 'partes-cad', 'pp-ed'],
     [!!f.zonas, 'Zoneamento', 'parametros', 'analise', 'an-l'],
     [f.infraNV === 0, 'Visita técnica', 'infra'],
     [!!f.valorPedido, 'Valor pedido', 'comercial', 'cond', 'valor'],
