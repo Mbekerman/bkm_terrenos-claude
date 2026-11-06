@@ -227,22 +227,38 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
     return () => { document.removeEventListener('pointerdown', fecha, true); document.removeEventListener('keydown', esc, true); };
   }, [menu]);
   const ia = ABAS.findIndex(([k]) => k === aba), ant = ABAS[ia - 1], prox = ABAS[ia + 1];
-  // o número de cada aba é quantos itens da completude faltam nela (pedido do Moisés, 6/nov/2026)
-  const q: Record<string, number> = {};
-  for (const x of completude(f).faltam) q[x[1]] = (q[x[1]] ?? 0) + 1;
-  const rot = (k: string, l: string) => <>{l}{q[k] ? <span className="tkm-n" title={`Faltam ${q[k]} ${q[k] > 1 ? 'itens' : 'item'} para completar a ficha`}>{q[k]}</span> : null}</>;
+  /* sem número nas abas: rolado o topo para fora da vista, o que falta aparece num botão de alerta na barra das abas,
+     sempre visível (pedido do Moisés, 6/nov/2026) */
+  const c = completude(f);
+  const [topoFora, setTopoFora] = useState(false);
+  useEffect(() => {
+    const ver = () => {
+      const w = barra.current?.parentElement, ref = w?.closest('.ficha-main')?.querySelector('.fi-comp:not(.fi-alerta)');
+      if (!w) return;
+      /* a linha onde a barra das abas fica presa: o topo de quem rola (a página ou a gaveta) mais o "top" dela */
+      let sc: HTMLElement | null = w.parentElement;
+      while (sc && !(sc.scrollHeight > sc.clientHeight && /auto|scroll/.test(getComputedStyle(sc).overflowY))) sc = sc.parentElement;
+      const linha = (sc ? sc.getBoundingClientRect().top : 0) + (parseFloat(getComputedStyle(w).top) || 0) + w.offsetHeight;
+      setTopoFora(!ref || ref.getBoundingClientRect().bottom <= linha);
+    };
+    ver();
+    document.addEventListener('scroll', ver, { capture: true, passive: true });
+    window.addEventListener('resize', ver);
+    return () => { document.removeEventListener('scroll', ver, { capture: true }); window.removeEventListener('resize', ver); };
+  }, [c.faltam.length]);
   return (
     <div className="fi-abas-w">
       <div className={`fi-abas roleta${sobra ? ' desliza' : ''}`} role="tablist" aria-label="Seções do terreno" ref={barra}>
         {ABAS.map(([k, l]) => (
-          <button key={k} role="tab" data-t={k} aria-selected={k === aba} aria-controls={`bl-${k}`} onClick={() => irAba(k)}>{rot(k, l)}</button>
+          <button key={k} role="tab" data-t={k} aria-selected={k === aba} aria-controls={`bl-${k}`} onClick={() => irAba(k)}>{l}</button>
         ))}
       </div>
       <div className="fi-fim">
+        {topoFora && c.faltam.length > 0 && <Faltam c={c} irAba={irAba} alerta />}
         <div className={`adv-mais fi-mais${menu ? ' aberto' : ''}`} hidden={!sobra}>
           <button className="iconbtn adv-mb" aria-haspopup="menu" aria-expanded={menu} aria-label="Mais ações" title="Mais ações" onClick={() => setMenu(!menu)}>{SVG_DOTS}</button>
           <div className="adv-menu" role="menu">
-            {ABAS.map(([k, l]) => <button key={k} role="menuitemradio" aria-checked={k === aba} className={k === aba ? 'atual' : undefined} onClick={() => { setMenu(false); if (k !== aba) irAba(k); }}>{rot(k, l)}</button>)}
+            {ABAS.map(([k, l]) => <button key={k} role="menuitemradio" aria-checked={k === aba} className={k === aba ? 'atual' : undefined} onClick={() => { setMenu(false); if (k !== aba) irAba(k); }}>{l}</button>)}
           </div>
         </div>
         <button className="iconbtn fi-ant" aria-label="Seção anterior" disabled={!ant} title={ant ? `Anterior: ${ant[1]}` : 'Primeira seção'} onClick={() => ant && irAba(ant[0])}>{seta(-1)}</button>
@@ -341,8 +357,10 @@ export function useFicha(codigo: string) {
   return useQuery({ queryKey: ['ficha', empresa?.id, codigo], enabled: !!empresa, queryFn: () => carregarFicha(empresa!.id, codigo) });
 }
 
-/** "Ficha N% completa" com a bolinha vermelha do que falta; o menu leva direto ao campo, já em edição (pedido do Moisés, 5/nov/2026) */
-function Faltam({ c, irAba }: { c: ReturnType<typeof completude>; irAba: (k: string) => void }) {
+/** "Ficha N% completa" com a bolinha vermelha do que falta; o menu leva direto ao campo, já em edição, com o conteúdo
+    selecionado e uma iluminada rápida (pedidos do Moisés, 5 e 6/nov/2026). Em "alerta", o mesmo menu num botão de alerta
+    na barra das abas, para quando o topo saiu da vista */
+function Faltam({ c, irAba, alerta }: { c: ReturnType<typeof completude>; irAba: (k: string) => void; alerta?: boolean }) {
   const [ab, setAb] = useState(false);
   const raiz = useRef<HTMLSpanElement>(null);
   useEffect(() => {
@@ -359,12 +377,14 @@ function Faltam({ c, irAba }: { c: ReturnType<typeof completude>; irAba: (k: str
     irAba(aba);
     if (sec) pedirCampo({ sec, campo });
   };
+  const rot = n ? `Ficha ${c.pct}% completa; faltam ${n} ${n > 1 ? 'itens' : 'item'}` : undefined;
   return (
-    <span className="fi-comp" ref={raiz}>
-      <button type="button" className="fi-comp-b" aria-haspopup="menu" aria-expanded={ab} disabled={!n} onClick={() => setAb((x) => !x)}
-        aria-label={n ? `Ficha ${c.pct}% completa; faltam ${n} itens` : undefined}>
-        <b>Ficha {c.pct}% completa</b>{n > 0 && <span className="fi-comp-n" aria-hidden="true">{n}</span>}
-      </button>
+    <span className={`fi-comp${alerta ? ' fi-alerta' : ''}`} ref={raiz}>
+      {alerta
+        ? <button type="button" className="iconbtn fi-alerta-b" aria-haspopup="menu" aria-expanded={ab} onClick={() => setAb((x) => !x)} aria-label={rot} title={rot}>
+            <Ic n="warn" s={20} /><span className="fi-comp-n" aria-hidden="true">{n}</span></button>
+        : <button type="button" className="fi-comp-b" aria-haspopup="menu" aria-expanded={ab} disabled={!n} onClick={() => setAb((x) => !x)} aria-label={rot}>
+            <b>Ficha {c.pct}% completa</b>{n > 0 && <span className="fi-comp-n" aria-hidden="true">{n}</span>}</button>}
       {ab && (
         <div className="adv-menu fi-comp-m" role="menu">
           <div className="fi-comp-t">Falta preencher</div>

@@ -66,7 +66,10 @@
 .fi-comp-t { padding: 6px 16px 4px; font-size: 12px; font-weight: 500; color: var(--m-on-var, #444746) }
 /* campo que o menu do que falta abriu acende um instante */
 .acende { animation: acende 1.6s ease-out }
-@keyframes acende { 0%, 40% { background: rgba(11,87,208,.14) } 100% { background: transparent } }
+@keyframes acende {
+  0%, 45% { background-color: rgba(11,87,208,.14); box-shadow: 0 0 0 4px rgba(11,87,208,.14), 0 0 0 6px rgba(11,87,208,.6) }
+  100% { background-color: transparent; box-shadow: 0 0 0 4px transparent, 0 0 0 6px transparent }
+}
 .sec-h .qd-acoes .btn.primary:hover { background: #0842a0 !important }
 .sec-h .qd-acoes .btn.primary:disabled { opacity: .6 }
 /* título do quadro aberto fica preso logo abaixo das abas enquanto o quadro passa pela tela e solta quando ele
@@ -149,3 +152,8 @@ body[data-rota="terrenos"] .main { container: pagina / inline-size }
 .mk-fil > .seg { flex: none; width: auto !important; max-width: none !important }
 .mk-fil .mk-sits button { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap }
 .mk-fil.curto .mk-sits button { padding-left: 12px !important; padding-right: 12px !important }
+/* botão de alerta do que falta, na barra das abas, quando o topo da ficha saiu da vista (pedido do Moisés, 6/nov/2026) */
+.fi-alerta { align-items: center }
+.fi-alerta-b { position: relative; color: #b3261e !important }
+.fi-alerta .fi-comp-n { top: 2px; right: 0 }
+.fi-alerta .fi-comp-m { left: auto; right: 0 }

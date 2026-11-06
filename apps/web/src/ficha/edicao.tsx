@@ -251,17 +251,44 @@ export function CampoVivo({ f, c, listas, salvar }: { f: Ficha; c: Campo; listas
 export interface PedidoCampo { sec: string; campo?: string }
 let pendente: PedidoCampo | null = null;
 export function pedirCampo(p: PedidoCampo) { pendente = p; window.dispatchEvent(new Event('ficha-campo')); }
-export function tomarPedido(): PedidoCampo | null { const p = pendente; pendente = null; return p; }
+/** pega o pedido (só se for de uma das seções dadas, quando dadas: a aba que ainda está na tela não toma o da outra) */
+export function tomarPedido(secs?: string[]): PedidoCampo | null {
+  if (!pendente || (secs && !secs.includes(pendente.sec))) return null;
+  const p = pendente; pendente = null; return p;
+}
+/** atende o pedido de "ir ao campo" das seções dadas, ao montar (a aba acabou de abrir) e a cada pedido novo */
+export function usePedido(secs: string[], fn: (p: PedidoCampo) => void) {
+  const r = useRef(fn);
+  r.current = fn;
+  const chave = secs.join();
+  useEffect(() => {
+    const at = () => { const p = tomarPedido(chave.split(',')); if (p) r.current(p); };
+    at();
+    window.addEventListener('ficha-campo', at);
+    return () => window.removeEventListener('ficha-campo', at);
+  }, [chave]);
+}
+/** abre o quadro da aba e avisa os quadros na tela */
+export function abrirQuadroJa(aba: string, id: string) { abrirQuadro(aba, id); window.dispatchEvent(new Event('ficha-quadro')); }
 /** abre o quadro da seção (sem mexer na escolha das outras) */
 export function abrirQuadro(aba: string, id: string) { (QD[aba] || (QD[aba] = new Set())).add(id); }
 /** foco no campo depois que ele aparece, rolando até ele */
 export function focar(id: string, tent = 12) {
   const el = document.getElementById(id) as HTMLElement | null;
-  if (!el) { if (tent > 0) setTimeout(() => focar(id, tent - 1), 60); return; }
+  /* espera o campo existir e aparecer (o quadro fechado ainda está abrindo) */
+  if (!el || !el.getClientRects().length) { if (tent > 0) setTimeout(() => focar(id, tent - 1), 60); return; }
   el.scrollIntoView({ block: 'center' });
   el.focus({ preventScroll: true });
-  el.closest('.inl-c, .field, .area')?.classList.add('acende');
-  setTimeout(() => el.closest('.acende')?.classList.remove('acende'), 1600);
+  /* o conteúdo já vem selecionado, para digitar por cima (pedido do Moisés, 6/nov/2026) */
+  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) { try { el.select(); } catch { /* tipo sem seleção */ } }
+  acender((el.closest('.inl-c, .field, .area, .temp') as HTMLElement | null) ?? el);
+}
+/** uma iluminada rápida no item, para evidenciá-lo */
+export function acender(el: HTMLElement) {
+  el.classList.remove('acende');
+  void el.offsetWidth; // recomeça a animação se o item já estava aceso
+  el.classList.add('acende');
+  setTimeout(() => el.classList.remove('acende'), 1700);
 }
 
 export interface EndGoogle { cidade?: string; uf?: string }

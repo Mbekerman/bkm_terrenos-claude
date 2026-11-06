@@ -11,7 +11,7 @@ import { Adorno, metros } from '../lib/mascara';
 import { CAMADA, geoLinhas, geoVals, type LinhaToca } from '../lib/camadas';
 import { consultarArea } from '../novo/consulta';
 import type { Ficha, R } from './dados';
-import { lerNum, num, numStr, proximoCampo, Quadro, useSalvar } from './edicao';
+import { focar, lerNum, num, numStr, proximoCampo, Quadro, usePedido, useSalvar } from './edicao';
 
 // Aba Parâmetros da ficha (proto.js › abaUrbanismo(t,'param')): Parâmetros urbanísticos por lote e zona (proto_zonas.js ›
 // secAnaliseUrb; no banco v_lote_zonas e v_urbanismo_vigente), Restrições e entorno e Histórico de uso (proto_restricoes.js).
@@ -91,6 +91,8 @@ export default function AbaParametros({ f }: { f: Ficha }) {
 function SecAnalise({ f, d }: { f: Ficha; d: D }) {
   const { edita } = useSessao();
   const [reg, setReg] = useState(false);
+  /* "Zoneamento" do que falta na ficha: abre Registrar zonas, com o foco no lote */
+  usePedido(['analise'], () => { if (edita) { setReg(true); focar('an-l'); } });
   const sjc = d.base?.codigo === 'geosanja';
   const R = d.res;
   const merc = d.lz.filter((r) => r.tipo === 'mercado');
