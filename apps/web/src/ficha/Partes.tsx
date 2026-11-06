@@ -244,7 +244,8 @@ function SecPartes({ f, L }: { f: Ficha; L: Lotes }) {
 }
 
 /* ---------- Matrículas e SQLs ---------- */
-const FECHADAS = new Set<string>();   // partes com o quadro recolhido (a seta recolhe a linha inteira)
+const FECHADAS = new Set<string>();
+const RECOLHIDOS = new Set<Tp>();   // quadros de Matrículas e de SQLs recolhidos (só quando um fica sobre o outro), na sessão   // partes com o quadro recolhido (a seta recolhe a linha inteira)
 /* a etiqueta: o lote (x) e, dentro de uma parte, a cópia dela (c); o mesmo lote pode ter cópia em mais de uma parte */
 type Etq = { tipo: Tp; x: R; c?: R };
 const chave = (e: Etq) => `${e.tipo}:${e.x.id}${e.c ? ':' + e.c.id : ''}`;
@@ -323,9 +324,17 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
 
   /* operações nas etiquetas das partes (matricula_partes, inscricao_partes), todas com Ctrl+Z */
   const okR = (r: { error: any }) => { if (r.error) { toast(r.error.message, true); return false; } recarregar(); return true; };
-  const inserir = async (tipo: Tp, rows: R[]) => okR(await supabase.from(TAB_C[tipo]).insert(rows));
-  const apagarC = async (tipo: Tp, ids: string[]) => okR(await supabase.from(TAB_C[tipo]).delete().in('id', ids));
-  const mudarC = async (tipo: Tp, id: string, v: R) => okR(await supabase.from(TAB_C[tipo]).update(v).eq('id', id));
+  /* a tela muda na hora (cache da consulta) e a recarga confirma depois; sem isso a pizza esperava a ficha inteira recarregar */
+  const qc = useQueryClient();
+  const local = (tipo: Tp, fn: (cs: R[]) => R[]) => qc.setQueryData<Lotes>(['ficha-lotes', f.id], (l) => {
+    if (!l) return l;
+    const k = tipo === 'm' ? 'cm' : 'ci', n = { ...l, [k]: fn(l[k]) };
+    LR.current = n;
+    return n;
+  });
+  const inserir = async (tipo: Tp, rows: R[]) => { local(tipo, (cs) => [...cs, ...rows]); return okR(await supabase.from(TAB_C[tipo]).insert(rows)); };
+  const apagarC = async (tipo: Tp, ids: string[]) => { local(tipo, (cs) => cs.filter((c) => !ids.includes(c.id))); return okR(await supabase.from(TAB_C[tipo]).delete().in('id', ids)); };
+  const mudarC = async (tipo: Tp, id: string, v: R) => { local(tipo, (cs) => cs.map((c) => (c.id === id ? { ...c, ...v } : c))); return okR(await supabase.from(TAB_C[tipo]).update(v).eq('id', id)); };
   const nova = (e: Etq, pid: string | null): R => ({ id: crypto.randomUUID(), empresa_id: empresa!.id, terreno_id: f.id, [FK[e.tipo]]: e.x.id, parte_id: pid });
   const jaEm = (e: Etq, pid: string) => copias(LR.current, e.tipo, e.x.id).some((c) => c.parte_id === pid);
   /** leva a etiqueta para a parte (null = de volta para sem parte) */
@@ -374,7 +383,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     const fixar = ef.filter((y) => y.c.percentual == null);
     const row: R = { ...nova(e, pid), percentual: resto >= 0.5 ? resto : 0 };
     const pFix = async (vals: (y: { c: R; p: number }) => number | null) => {
-      for (const y of fixar) { const r = await supabase.from(TAB_C[e.tipo]).update({ percentual: vals(y) }).eq('id', y.c.id); if (r.error) { toast(r.error.message, true); return false; } }
+      for (const y of fixar) { local(e.tipo, (cs) => cs.map((c) => (c.id === y.c.id ? { ...c, percentual: vals(y) } : c))); const r = await supabase.from(TAB_C[e.tipo]).update({ percentual: vals(y) }).eq('id', y.c.id); if (r.error) { toast(r.error.message, true); recarregar(); return false; } }
       return true;
     };
     if (!(await pFix((y) => y.p))) return;
@@ -595,15 +604,36 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
   const faltam = menuE ? P.filter((pa) => !copias(L, menuE.tipo, menuE.x.id).some((c) => c.parte_id === pa.id)) : [];
   const fazM = (fn: () => void) => { setMenu(null); fn(); };
   const toque = matchMedia('(pointer: coarse)').matches;
+  /* com Matrículas e SQLs um sobre o outro, cada quadro recolhe pela seta do título, para chegar perto das partes
+     (pedido do Moises, 6/nov/2026); lado a lado, ficam sempre abertos */
+  const topo = useRef<HTMLDivElement>(null);
+  const [empilhado, setEmpilhado] = useState(false);
+  const [, setRec] = useState(0);
+  useEffect(() => {
+    const el = topo.current; if (!el) return;
+    const medir = () => { const cs = el.querySelectorAll<HTMLElement>(':scope > .etq-col'); setEmpilhado(cs.length > 1 && cs[1].offsetTop > cs[0].offsetTop + 4); };
+    medir();
+    const ro = new ResizeObserver(medir); ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const recolhido = (t: Tp) => empilhado && RECOLHIDOS.has(t);
+  const cab = (t: Tp, titulo: ReactNode, n: number) => {
+    const fe = recolhido(t);
+    const conteudo = <><span className={`etq-sw ${t}`} /><b>{titulo}</b> <span className="h-n">{n}</span></>;
+    return empilhado
+      ? <button type="button" className="etq-ct etq-ct-b" aria-expanded={!fe} title={fe ? 'Abrir' : 'Recolher'}
+          onClick={() => { if (fe) RECOLHIDOS.delete(t); else RECOLHIDOS.add(t); setRec((x) => x + 1); }}><Ic n="chev" s={18} />{conteudo}</button>
+      : <div className="etq-ct">{conteudo}</div>;
+  };
   const andamento = cons && cons.terreno === f.id ? <span className="chip blue lg-cons">Consultando o GeoSampa: {cons.feitos} de {cons.total}</span> : null;
   const confE = conf ? achar(conf) : null;
   return (
     <div ref={sec} style={{ display: 'contents' }}>
       <Quadro aba="terreno" id="lotes" titulo={`Matrículas e ${rot}s`} acoes={andamento ?? undefined}>
         <div className="sec-b">
-          <div className="etq-top">
-            <div className="etq-col">
-              <div className="etq-ct"><span className="etq-sw m" /><b>Matrículas</b> <span className="h-n">{L.mats.length}</span></div>
+          <div className="etq-top" ref={topo}>
+            <div className={`etq-col${recolhido('m') ? ' fechado' : ''}`}>
+              {cab('m', 'Matrículas', L.mats.length)}
               {edita && (
                 <form className="etq-form" ref={mref} onSubmit={incluirMat}>
                   <div className="field"><label htmlFor="em-n">Nº da matrícula</label><input id="em-n" inputMode="numeric" required autoComplete="off" value={mat.num} onChange={(e) => setMat({ ...mat, num: e.target.value })} /></div>
@@ -617,8 +647,8 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
               )}
               {pool('m')}
             </div>
-            <div className="etq-col">
-              <div className="etq-ct"><span className="etq-sw s" /><b>{rot}s</b> <span className="h-n">{L.insc.length}</span></div>
+            <div className={`etq-col${recolhido('s') ? ' fechado' : ''}`}>
+              {cab('s', `${rot}s`, L.insc.length)}
               {edita && (
                 <form className="etq-form" ref={sref} onSubmit={incluirSql}>
                   <div className="field grow"><label htmlFor="es-sql">{rot}</label>
@@ -906,17 +936,24 @@ function PctPop({ e, L, r, nomeP, fechar, salvar }: { e: Etq & { c: R }; L: Lote
   const [txt, setTxt] = useState(e.c.percentual != null ? num(+e.c.percentual, +e.c.percentual % 1 ? 2 : 0) : '');
   const raiz = useRef<HTMLDivElement>(null);
   const gravado = useRef<number | null>(e.c.percentual != null ? +e.c.percentual : null);
+  /* o último valor escolhido (barra ou campo): fechar a barra grava o que ficou, mesmo se a barra foi solta fora dela */
+  const pend = useRef<number | null | undefined>(undefined);
+  const sair = () => { if (pend.current !== undefined) gravar(pend.current); fechar(); };
+  const sairR = useRef(sair); sairR.current = sair;
   useEffect(() => {
-    const fora = (ev: PointerEvent) => { if (!raiz.current?.contains(ev.target as Node) && !(ev.target as HTMLElement).closest?.('.etq-pzb')) fechar(); };
-    const esc = (ev: KeyboardEvent) => { if (ev.key === 'Escape') { ev.stopPropagation(); fechar(); } };
+    const fora = (ev: PointerEvent) => { if (!raiz.current?.contains(ev.target as Node) && !(ev.target as HTMLElement).closest?.('.etq-pzb')) sairR.current(); };
+    const esc = (ev: KeyboardEvent) => { if (ev.key === 'Escape') { ev.stopPropagation(); sairR.current(); } };
     document.addEventListener('pointerdown', fora, true); document.addEventListener('keydown', esc, true);
     return () => { document.removeEventListener('pointerdown', fora, true); document.removeEventListener('keydown', esc, true); };
   }, [fechar]);
   useEffect(() => { raiz.current?.querySelector<HTMLInputElement>('input[type=range]')?.focus(); }, []);
   async function gravar(n: number | null) {
     if (n != null) n = Math.min(Math.max(0, Math.round(n * 100) / 100), max);
+    pend.current = undefined;
     if (n === gravado.current) return;
-    if (await salvar(n)) gravado.current = n;
+    const antes = gravado.current;
+    gravado.current = n;
+    if (!(await salvar(n))) gravado.current = antes;
   }
   const lerTxt = () => { const t = txt.trim(); if (!t) return null; const n = lerNum(t); return n == null ? gravado.current : n; };
   const top = Math.min(Math.max(8, r.top - 90), innerHeight - 250), left = Math.min(r.left - 8, innerWidth - 120);
@@ -926,11 +963,11 @@ function PctPop({ e, L, r, nomeP, fechar, salvar }: { e: Etq & { c: R }; L: Lote
       <div className="pct-pop-b">
         <input type="range" min={0} max={100} step={1} value={v} aria-label="Percentual" aria-valuetext={`${v}%`}
           style={{ '--p': v, '--max': max } as any}
-          onChange={(ev) => { const n = Math.min(+ev.target.value, max); setV(n); setTxt(num(n, 0)); }}
-          onPointerUp={() => gravar(v)} onKeyUp={(ev) => { if (ev.key.startsWith('Arrow') || ev.key === 'PageUp' || ev.key === 'PageDown' || ev.key === 'Home' || ev.key === 'End') gravar(v); }} />
+          onChange={(ev) => { const n = Math.min(+ev.target.value, max); setV(n); setTxt(num(n, 0)); pend.current = n; }}
+          onPointerDown={(ev) => { try { ev.currentTarget.setPointerCapture(ev.pointerId); } catch { /* sem captura */ } }} onPointerUp={() => { if (pend.current !== undefined) gravar(pend.current); }} onKeyUp={(ev) => { if (ev.key.startsWith('Arrow') || ev.key === 'PageUp' || ev.key === 'PageDown' || ev.key === 'Home' || ev.key === 'End') gravar(v); }} />
       </div>
       <Adorno t="pct"><input className="pct-pop-i" inputMode="decimal" value={txt} placeholder={num(atual, atual % 1 ? 1 : 0)} aria-label="Percentual digitado"
-        onChange={(ev) => { setTxt(ev.target.value); const n = lerNum(ev.target.value); if (n != null) setV(Math.min(Math.max(0, n), max)); }}
+        onChange={(ev) => { setTxt(ev.target.value); const n = lerNum(ev.target.value); if (n != null) setV(Math.min(Math.max(0, n), max)); pend.current = ev.target.value.trim() ? n ?? undefined : null; }}
         onBlur={() => gravar(lerTxt())} onKeyDown={(ev) => { if (ev.key === 'Enter') { ev.preventDefault(); gravar(lerTxt()).then(fechar); } }} /></Adorno>
       {max < 100 && <div className="pct-pop-h">até {num(max, max % 1 ? 2 : 0)}%</div>}
     </div>
