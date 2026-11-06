@@ -13,7 +13,7 @@ import { m2 } from '../lib/format';
 import DEMO_CFG from '../../../../tools/setores/demografia.json';
 import { carregarDemo, carregarSetores, estatArea, MUNICIPIOS_SETORES, perfilArea, RD_RAIOS, RENDA_MET, setores, temSetores, type Raio } from '../mapa/setores';
 import { carregarMercado, mercado, mkM2, mkPct, mkVso, MK_SIT, MK_GLIFO, brl, num as nmk, type Emp } from '../mapa/mercado';
-import { Resumo } from '../mapa/Concorrencia';
+import { Resumo, TabelaEmp } from '../mapa/Concorrencia';
 import { Metodologia } from '../mapa/CamadasSetor';
 import { buscarEntorno, distM, medirPontos, rotaPe } from './entorno';
 import type { Ficha, R } from './dados';
@@ -366,7 +366,6 @@ function SecConcorrencia({ f }: { f: Ficha }) {
       </div>
       {lista.length ? <div className="mk-lista">{lista.map(({ e, d }) => <ItemEmp key={e.id} e={e} d={d} />)}</div>
         : <div className="muted">{fl.sit.length ? `Nenhum empreendimento com essa situação a até ${raio} km.` : 'Ligue ao menos uma situação.'}</div>}
-      <div className="hint">Cada um abre o resumo do empreendimento: as unidades agrupadas em tipologias parecidas (dormitórios, vagas, área e preço por m²), com o R$/m² das unidades à venda e o VSO de cada uma.</div>
     </>;
   }
   return (
@@ -376,13 +375,15 @@ function SecConcorrencia({ f }: { f: Ficha }) {
   );
 }
 function ItemEmp({ e, d }: { e: Emp; d: number }) {
-  const [ab, setAb] = useState(false);
+  const [ab, setAb] = useState(false), [tab, setTab] = useState(false);
   const v = mkM2(e.preco, e.area);
   return (
     <details className="mk-it" onToggle={(ev) => setAb((ev.currentTarget as HTMLDetailsElement).open)}>
       <summary><span className="mk-it-n"><b>{e.nome}</b><span className="faint">{[e.inc, (MK_SIT[e.sit] || MK_SIT.nao_informado)[0], num(d, 1) + ' km', e.prog === 'sim' ? 'programa social' : ''].filter(Boolean).join(' · ')}</span></span>
         <span className="mk-it-k num">{v != null ? brl(v) + '/m²' : '—'}<span className="faint">VSO {mkPct(mkVso(e.vendas, e.estoque))}</span></span><Ic n="chev" s={18} /></summary>
       {ab && (e.unidades ? <Resumo e={e} /> : <div className="muted">Sem unidades no monitor.</div>)}
+      {ab && <div className="mk-tab"><button type="button" className="btn text" onClick={() => setTab(true)}><Ic n="doc" s={18} />Ver tabela completa</button></div>}
+      {tab && <TabelaEmp id={e.id} fechar={() => setTab(false)} />}
     </details>
   );
 }
