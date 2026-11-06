@@ -437,7 +437,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa }: {
         <div className="adv-main"><Avancos f={f} irAba={irAba} /></div>
       </div>
       <Abas f={f} aba={aba} irAba={irAba} />
-      <section className="bl fi-aba" id={`bl-${aba}`} role="tabpanel"><div className="bl-c">{corpo}</div></section>
+      <section key={aba} className="bl fi-aba" id={`bl-${aba}`} role="tabpanel"><div className="bl-c">{corpo}</div></section>
       {aba !== 'entorno' && f.lat != null && <EntornoAuto f={f} />}
     </div><Painel f={f} irAba={irAba} /></div>
   );

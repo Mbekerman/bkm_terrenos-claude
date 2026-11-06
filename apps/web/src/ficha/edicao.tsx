@@ -272,12 +272,50 @@ export function usePedido(secs: string[], fn: (p: PedidoCampo) => void) {
 export function abrirQuadroJa(aba: string, id: string) { abrirQuadro(aba, id); window.dispatchEvent(new Event('ficha-quadro')); }
 /** abre o quadro da seção (sem mexer na escolha das outras) */
 export function abrirQuadro(aba: string, id: string) { (QD[aba] || (QD[aba] = new Set())).add(id); }
+/** rola até o campo ficar na "altura dos olhos": o primeiro item visível logo abaixo do que fica preso no alto
+    (barra das abas e título do quadro); no fim da aba, sem folga para rolar, a aba ganha um respiro embaixo, que sai
+    quando a pessoa rola de volta para cima (pedido do Moisés, 6/nov/2026) */
+function rolarAteOlhos(el: HTMLElement) {
+  const alvo = (el.closest('.inl-c, .field, .area, .temp') as HTMLElement | null) ?? el;
+  let sc: HTMLElement | null = el.parentElement;
+  while (sc && sc !== document.body && !/auto|scroll/.test(getComputedStyle(sc).overflowY)) sc = sc.parentElement;
+  const pag = !sc || sc === document.body;
+  const rol = pag ? (document.scrollingElement as HTMLElement) : sc!;
+  const aba = el.closest('.fi-aba') as HTMLElement | null;
+  if (aba?.dataset.folga) { aba.style.paddingBottom = ''; delete aba.dataset.folga; }
+  /* a linha de baixo do que fica preso: o topo de quem rola + o "top" da barra das abas + a altura dela + o título do quadro */
+  let linha = pag ? 0 : rol.getBoundingClientRect().top;
+  const w = el.closest('.ficha-main')?.querySelector('.fi-abas-w') as HTMLElement | null;
+  if (w) linha += (parseFloat(getComputedStyle(w).top) || 0) + w.offsetHeight;
+  const sec = el.closest('.sec');
+  const h = sec?.querySelector(':scope > .sec-h, :scope > form > .sec-h') as HTMLElement | null;
+  if (h && getComputedStyle(h).position === 'sticky') linha += h.offsetHeight;
+  const folga = window.innerWidth < 900 ? 16 : 24;
+  let quer = rol.scrollTop + alvo.getBoundingClientRect().top - (linha + folga);
+  if (quer < 0) quer = 0;
+  const max = rol.scrollHeight - rol.clientHeight;
+  if (aba && quer > max + 1) {
+    const pad = Math.ceil(quer - max);
+    aba.style.paddingBottom = `${pad}px`;
+    aba.dataset.folga = String(pad);
+    const alvoRol: HTMLElement | Window = pag ? window : rol;
+    const tirar = () => {
+      if (aba.dataset.folga !== String(pad)) { alvoRol.removeEventListener('scroll', tirar); return; }
+      /* só tira quando a pessoa já subiu mais que o respiro: a página não pula */
+      if (rol.scrollTop + rol.clientHeight < rol.scrollHeight - pad - 1) {
+        aba.style.paddingBottom = ''; delete aba.dataset.folga; alvoRol.removeEventListener('scroll', tirar);
+      }
+    };
+    setTimeout(() => alvoRol.addEventListener('scroll', tirar, { passive: true }), 100);
+  }
+  rol.scrollTop = quer;
+}
 /** foco no campo depois que ele aparece, rolando até ele */
 export function focar(id: string, tent = 12) {
   const el = document.getElementById(id) as HTMLElement | null;
   /* espera o campo existir e aparecer (o quadro fechado ainda está abrindo) */
   if (!el || !el.getClientRects().length) { if (tent > 0) setTimeout(() => focar(id, tent - 1), 60); return; }
-  el.scrollIntoView({ block: 'center' });
+  rolarAteOlhos(el);
   el.focus({ preventScroll: true });
   /* o conteúdo já vem selecionado, para digitar por cima (pedido do Moisés, 6/nov/2026) */
   if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) { try { el.select(); } catch { /* tipo sem seleção */ } }
