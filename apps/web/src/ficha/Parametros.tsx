@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { useRascunho, mudou } from '../components/Rascunho';
+import { useRascunho, mudou, comRasc, useGuardarRasc, apagarRasc, LimparRasc } from '../components/Rascunho';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
@@ -284,12 +284,16 @@ function FormExc({ f, raw, p, sjc, z, fechar }: { f: Ficha; raw: R; p: R | null 
 /** Registrar zonas à mão: o lote (ou a parte sem inscrição), a fonte e até 3 zonas com a área */
 function FormZonas({ f, d, sjc, fechar }: { f: Ficha; d: D; sjc: boolean; fechar: () => void }) {
   const qc = useQueryClient(), toast = useToast();
-  const [lote, setLote] = useState(d.ins[0]?.id ?? '');
-  const [fonte, setFonte] = useState('');
-  const [zs, setZs] = useState([0, 1, 2].map(() => ({ sigla: '', area: '', macro: '' })));
+  const kZ = `${f.id}:zonas`, ZS0 = () => [0, 1, 2].map(() => ({ sigla: '', area: '', macro: '' }));
+  const g0 = comRasc<{ lote?: string; fonte?: string; zs?: { sigla: string; area: string; macro: string }[] }>(kZ, {});
+  const [lote, setLote] = useState(g0.lote != null && (g0.lote === '' || d.ins.some((i) => i.id === g0.lote)) ? g0.lote : d.ins[0]?.id ?? '');
+  const [fonte, setFonte] = useState(g0.fonte ?? '');
+  const [zs, setZs] = useState(g0.zs?.length === 3 ? g0.zs : ZS0());
   const [grav, setGrav] = useState(false);
   const fref = useRef<HTMLFormElement | null>(null);
-  const { aviso } = useRascunho(fref, !!fonte.trim() || zs.some((z) => mudou(z, { sigla: '', area: '', macro: '' })), 'as zonas', fechar);
+  const sujoZ = !!fonte.trim() || zs.some((z) => mudou(z, { sigla: '', area: '', macro: '' }));
+  useGuardarRasc(kZ, { lote, fonte, zs }, sujoZ);
+  const { aviso } = useRascunho(fref, sujoZ, 'as zonas', fechar);
   const mz = (i: number, k: string, v: string) => setZs((o) => o.map((z, j) => (j === i ? { ...z, [k]: v } : z)));
   const salvar = async (ev: FormEvent) => {
     ev.preventDefault();
@@ -303,6 +307,7 @@ function FormZonas({ f, d, sjc, fechar }: { f: Ficha; d: D; sjc: boolean; fechar
       const r = await supabase.rpc('registrar_zonas_lote', { p_terreno: f.id, p_inscricao: lote || null, p_zonas: zonas, p_fonte: fonte.trim() });
       if (r.error) throw r.error;
       await qc.invalidateQueries({ queryKey: ['parametros', f.id] });
+      apagarRasc(kZ);
       toast(r.data ? 'Zonas registradas. A análise anterior foi preservada.' : 'As zonas deste lote já eram essas.'); fechar();
     } catch (er: any) { toast(er?.message ?? String(er)); } finally { setGrav(false); }
   };
@@ -321,7 +326,7 @@ function FormZonas({ f, d, sjc, fechar }: { f: Ficha; d: D; sjc: boolean; fechar
           {sjc ? <div className="field"><label htmlFor={`zm${i}`}>Macrozona</label><select id={`zm${i}`} value={z.macro} onChange={(e) => mz(i, 'macro', e.target.value)}><option value="">Não informada</option>{Object.entries(MACROS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div> : null}
         </div>
       ))}
-      <div className="sec-f" style={{ padding: '12px 0 0' }}><button type="button" className="btn text" onClick={fechar}>Cancelar</button><button className="btn primary" disabled={grav}>Registrar zonas</button></div>
+      <div className="sec-f" style={{ padding: '12px 0 0' }}><LimparRasc chave={kZ} mostrar={sujoZ} limpar={() => { setFonte(''); setZs(ZS0()); }} /><button type="button" className="btn text" onClick={fechar}>Cancelar</button><button className="btn primary" disabled={grav}>Registrar zonas</button></div>
       {aviso}
     </form>
   );

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { useRascunho, mudou } from '../components/Rascunho';
+import { useRascunho, mudou, comRasc, useGuardarRasc, apagarRasc, LimparRasc } from '../components/Rascunho';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
@@ -78,10 +78,13 @@ export function pedirOferta(codigo: string, msg?: string) { ofertaPedida = { cod
 
 export function JanelaOferta({ f, corretores, fechar }: { f: Ficha; corretores: R[]; fechar: () => void }) {
   const toast = useToast(), recarregar = useRecarregar();
-  const [v, setV] = useState<Record<string, string>>({ cid: '', valor: '', forma: '', validade: '', obs: '', aceita: '' });
+  const OF0 = { cid: '', valor: '', forma: '', validade: '', obs: '', aceita: '' }, kOf = `${f.id}:oferta`;
+  const [v, setV] = useState<Record<string, string>>(() => comRasc(kOf, OF0));
   const [grav, setGrav] = useState(false);
   const fref = useRef<HTMLFormElement>(null);
-  const { aviso, pedir } = useRascunho(fref, Object.values(v).some((x) => x.trim() !== ''), 'a oferta', fechar);
+  const temOf = Object.values(v).some((x) => x.trim() !== '');
+  useGuardarRasc(kOf, v, temOf);
+  const { aviso, pedir } = useRascunho(fref, temOf, 'a oferta', fechar);
   const m = (k: string) => (ev: { target: { value: string } }) => setV((o) => ({ ...o, [k]: ev.target.value }));
   async function enviar(ev: FormEvent) {
     ev.preventDefault();
@@ -96,10 +99,11 @@ export function JanelaOferta({ f, corretores, fechar }: { f: Ficha; corretores: 
     if (error) { toast(error.message, true); return; }
     recarregar();
     toast((data as R)?.negociacao_nova ? 'Oferta registrada. A negociação foi aberta.' : 'Oferta registrada.');
+    apagarRasc(kOf);
     fechar();
   }
   return (
-    <Dialogo titulo="Registrar oferta" onFechar={() => pedir(fechar)} rodape={<><button className="btn text" onClick={fechar}>Cancelar</button><button className="btn primary" type="submit" form="f-of" disabled={grav}>Registrar</button></>}>
+    <Dialogo titulo="Registrar oferta" onFechar={() => pedir(fechar)} rodape={<><LimparRasc chave={kOf} mostrar={temOf} limpar={() => setV(OF0)} /><button className="btn text" onClick={fechar}>Cancelar</button><button className="btn primary" type="submit" form="f-of" disabled={grav}>Registrar</button></>}>
       <form id="f-of" ref={fref} onSubmit={enviar}><div className="fields">
         <div className="field"><label htmlFor="o-c">Corretor</label><select id="o-c" value={v.cid} onChange={m('cid')}><option value="">Sem corretor / direto</option>
           {corretores.filter((c) => c.ativo !== false).map((c) => <option key={c.id} value={c.id}>{c.nome}{c.imobiliaria ? ' · ' + c.imobiliaria : ''}</option>)}</select></div>
@@ -362,9 +366,12 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
   const [v, setV] = useState<Record<string, string>>({});
   const [grav, setGrav] = useState(false);
   const [ini, setIni] = useState<Record<string, string>>({});
-  const abrir = () => { const o = { origem: 'bkm', valor: '', forma: 'dinheiro', status: 'apresentada', data: hoje, validade: somarDias(hoje, 15), cond: '' }; setV(o); setIni(o); abrirQuadro('comercial', 'propostas'); setForm(true); };
+  const kPr = `${f.id}:proposta`;
+  const abrir = () => { const o = { origem: 'bkm', valor: '', forma: 'dinheiro', status: 'apresentada', data: hoje, validade: somarDias(hoje, 15), cond: '' }; setV(comRasc(kPr, o)); setIni(o); abrirQuadro('comercial', 'propostas'); setForm(true); };
   const fref = useRef<HTMLFormElement>(null);
-  const { aviso } = useRascunho(fref, form && mudou(v, ini), 'a proposta', () => setForm(false));
+  const sujoPr = form && mudou(v, ini);
+  useGuardarRasc(kPr, v, sujoPr);
+  const { aviso } = useRascunho(fref, sujoPr, 'a proposta', () => setForm(false));
   const m = (k: string) => (ev: { target: { value: string } }) => setV((x) => ({ ...x, [k]: ev.target.value }));
   const n = c.props.length;
   async function enviar(ev: FormEvent) {
@@ -378,6 +385,7 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
     });
     setGrav(false);
     if (error) { toast(error.message, true); return; }
+    apagarRasc(kPr);
     setForm(false);
     recarregar();
     toast(`Proposta v${n + 1} registrada.`);
@@ -404,7 +412,7 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
               <div className="field full"><label htmlFor="pp-c">Condições de pagamento</label><textarea id="pp-c" value={v.cond} onChange={m('cond')} placeholder="Entrada, parcelas, permuta, torna, condição suspensiva" /></div>
             </div>
             <div className="hint">{n ? `Responde à v${n}. Se vier do outro lado, a v${n} vira Recusada; se vier do mesmo lado, vira Substituída.` : 'Primeira proposta da negociação.'}</div>
-            <div className="sec-f" style={{ padding: '12px 0 0' }}><button type="button" className="btn text" onClick={() => setForm(false)}>Cancelar</button><button className="btn primary" disabled={grav}>Registrar</button></div>
+            <div className="sec-f" style={{ padding: '12px 0 0' }}><LimparRasc chave={kPr} mostrar={sujoPr} limpar={() => setV(ini)} /><button type="button" className="btn text" onClick={() => setForm(false)}>Cancelar</button><button className="btn primary" disabled={grav}>Registrar</button></div>
           </form>
         )}
         {aviso}
@@ -441,10 +449,12 @@ function SecReunioes({ f, c }: { f: Ficha; c: Com }) {
   const [grav, setGrav] = useState(false);
   const [ini, setIni] = useState<Record<string, string>>({});
   const fref = useRef<HTMLFormElement>(null);
-  const { aviso } = useRascunho(fref, form && mudou(v, ini), 'a reunião', () => setForm(false));
+  const kRe = `${f.id}:reuniao`, sujoRe = form && mudou(v, ini);
+  useGuardarRasc(kRe, v, sujoRe);
+  const { aviso } = useRascunho(fref, sujoRe, 'a reunião', () => setForm(false));
   const abrir = () => {
     const o = { status: 'realizada', data: hojeISO(), hora: '10:00', modalidade: 'presencial', local: 'bkm', endereco: '', pbkm: membro?.nome ?? '', pext: '', pauta: '', resumo: '', enc: '' };
-    setV(o); setIni(o);
+    setV(comRasc(kRe, o)); setIni(o);
     abrirQuadro('comercial', 'reunioes');
     setForm(true);
   };
@@ -470,6 +480,7 @@ function SecReunioes({ f, c }: { f: Ficha; c: Com }) {
     }
     setGrav(false);
     if (error) { toast(error.message, true); return; }
+    apagarRasc(kRe);
     setForm(false);
     recarregar();
     toast('Reunião registrada.');
@@ -504,7 +515,7 @@ function SecReunioes({ f, c }: { f: Ficha; c: Com }) {
               <div className="field full"><label htmlFor="ru-r">O que foi tratado</label><textarea id="ru-r" value={v.resumo} onChange={m('resumo')} placeholder="Posições de cada lado, valores citados, objeções" /></div>
               <div className="field full"><label htmlFor="ru-n">Encaminhamentos</label><textarea id="ru-n" value={v.enc} onChange={m('enc')} placeholder="Quem faz o quê, até quando" /></div>
             </>}
-          </div><div className="sec-f" style={{ padding: '12px 0 0' }}><button type="button" className="btn text" onClick={() => setForm(false)}>Cancelar</button><button className="btn primary" disabled={grav}>Registrar reunião</button></div></form>
+          </div><div className="sec-f" style={{ padding: '12px 0 0' }}><LimparRasc chave={kRe} mostrar={sujoRe} limpar={() => setV(ini)} /><button type="button" className="btn text" onClick={() => setForm(false)}>Cancelar</button><button className="btn primary" disabled={grav}>Registrar reunião</button></div></form>
         )}
         {aviso}
         {ms.length ? (

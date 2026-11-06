@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
 import { Dialogo, useToast } from '../components/ui';
-import { useRascunho } from '../components/Rascunho';
+import { useRascunho, comRasc, useGuardarRasc, apagarRasc, LimparRasc } from '../components/Rascunho';
 import { empilhar } from '../components/Desfazer';
 import { Adorno } from '../lib/mascara';
 import { Ic } from '../components/Moldura';
@@ -189,10 +189,13 @@ function JanelaPessoas({ f, pa, ps, fechar }: { f: Ficha; pa: R; ps: R[]; fechar
   const { edita, empresa } = useSessao();
   const toast = useToast(), qc = useQueryClient();
   const NV0 = { id: '', nome: '', tel: '', email: '', doc: '', pct: '', papel: 'proprietario' };
-  const [nv, setNv] = useState(NV0);
+  const kP = `${f.id}:pessoa:${pa.id}`;
+  const [nv, setNv] = useState(() => comRasc(kP, NV0));
   const [grav, setGrav] = useState(false);
   const fref = useRef<HTMLFormElement>(null);
-  const { aviso } = useRascunho(fref, !nv.id && !!(nv.nome.trim() || nv.tel.trim() || nv.email.trim() || nv.doc.trim() || nv.pct.trim()), 'a pessoa', () => setNv(NV0));
+  const temP = !!(nv.nome.trim() || nv.tel.trim() || nv.email.trim() || nv.doc.trim() || nv.pct.trim());
+  useGuardarRasc(kP, nv, temP);
+  const { aviso } = useRascunho(fref, !nv.id && temP, 'a pessoa', () => setNv(NV0));
   const recarregar = () => { qc.invalidateQueries({ queryKey: ['ficha-pessoas', f.id] }); qc.invalidateQueries({ queryKey: ['ficha'] }); };
   const editar = (p: R) => setNv({ id: p.id, nome: p.pessoas?.nome_razao_social ?? '', tel: p.pessoas?.telefone ? fmtTel(p.pessoas.telefone) : '', email: p.pessoas?.email ?? '',
     doc: p.pessoas?.cpf_cnpj ? fmtDoc(p.pessoas.cpf_cnpj) : '', pct: p.percentual_participacao != null ? num(+p.percentual_participacao, 2) : '', papel: p.papel });
@@ -224,6 +227,7 @@ function JanelaPessoas({ f, pa, ps, fechar }: { f: Ficha; pa: R; ps: R[]; fechar
         const r2 = await supabase.from('terreno_pessoas').insert({ empresa_id: empresa!.id, terreno_id: f.id, pessoa_id: pid, papel: nv.papel, percentual_participacao: pct, parte_id: pa.id });
         if (r2.error) throw r2.error.code === '23505' ? new Error(`${nome} já está no terreno com essa relação.`) : r2.error;
       }
+      apagarRasc(kP);
       setNv(NV0);
       recarregar();
       setTimeout(() => document.getElementById('pp-n')?.focus(), 30);
@@ -251,7 +255,8 @@ function JanelaPessoas({ f, pa, ps, fechar }: { f: Ficha; pa: R; ps: R[]; fechar
             <div className="field"><label htmlFor="pp-e">E-mail</label><input id="pp-e" type="email" placeholder="nome@email.com" value={nv.email} onChange={(e) => setNv({ ...nv, email: e.target.value })} /></div>
             <div className="field"><label htmlFor="pp-c">CPF</label><input id="pp-c" inputMode="numeric" data-fmt="doc" placeholder="000.000.000-00" value={nv.doc} onChange={(e) => setNv({ ...nv, doc: e.target.value })} /></div>
             <div className="pp-bt">
-              {nv.id && <button type="button" className="btn text sm" onClick={() => setNv(NV0)}>Cancelar</button>}
+              {nv.id ? <button type="button" className="btn text sm" onClick={() => { apagarRasc(kP); setNv(NV0); }}>Cancelar</button>
+                : <LimparRasc chave={kP} mostrar={temP} limpar={() => setNv(NV0)} />}
               <button className="btn sm" disabled={grav}><Ic n={nv.id ? 'check' : 'add'} s={16} />{nv.id ? 'Salvar' : 'Incluir'}</button>
             </div>
             {aviso}
@@ -417,8 +422,11 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
   const soltou = useRef(0);
   const [, re] = useState(0);
   const [conf, setConf] = useState<string | null>(null);
-  const [mat, setMat] = useState({ num: '', cri: f.t.cartorio ?? '', area: '' });
-  const [sql, setSql] = useState('');
+  const kM = `${f.id}:matricula`, kS = `${f.id}:sql`;
+  const [mat, setMat] = useState(() => comRasc(kM, { num: '', cri: f.t.cartorio ?? '', area: '' }));
+  const [sql, setSql] = useState(() => comRasc(kS, ''));
+  useGuardarRasc(kM, mat, !!(mat.num.trim() || mat.area.trim()));
+  useGuardarRasc(kS, sql, !!sql.trim());
   const [grav, setGrav] = useState(false);
   const mref = useRef<HTMLFormElement>(null), sref = useRef<HTMLFormElement>(null);
   const { aviso: avisoM } = useRascunho(mref, !!(mat.num.trim() || mat.area.trim()), 'a matrícula', () => setMat({ num: '', cri: f.t.cartorio ?? '', area: '' }));
@@ -606,6 +614,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     if (ou) { setDup({ oque: `A matrícula ${n}`, codigo: ou.codigo, nome: ou.nome }); return; }
     const { error } = await supabase.from('matriculas').insert({ empresa_id: empresa!.id, terreno_id: f.id, numero: n, cartorio: cri, area_registrada_m2: lerNum(mat.area) });
     if (error) { toast(error.message, true); return; }
+    apagarRasc(kM);
     setMat({ num: '', cri: mat.cri, area: '' });
     recarregar();
     setTimeout(() => document.getElementById('em-n')?.focus(), 30);
@@ -626,6 +635,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
         .insert({ empresa_id: empresa!.id, terreno_id: f.id, municipio_id: base?.municipio_id ?? f.t.municipio_id ?? null, inscricao: base ? mascarar(d, base.mascara) : sql.trim() })
         .select('id,inscricao').single();
       if (error) throw error;
+      apagarRasc(kS);
       setSql('');
       recarregar();
       setTimeout(() => document.getElementById('es-sql')?.focus(), 30);
@@ -818,6 +828,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
                     : <input id="em-c" value={mat.cri} onChange={(e) => setMat({ ...mat, cri: e.target.value })} />}</div>
                   <div className="field"><label htmlFor="em-a">Área registrada</label><Adorno t="m2"><input id="em-a" inputMode="decimal" value={mat.area} onChange={(e) => setMat({ ...mat, area: e.target.value })} /></Adorno></div>
                   <button className="btn sm"><Ic n="add" s={16} />Incluir</button>
+                  <LimparRasc chave={kM} mostrar={!!(mat.num.trim() || mat.area.trim())} limpar={() => setMat({ num: '', cri: f.t.cartorio ?? '', area: '' })} />
                   {avisoM}
                 </form>
               )}
@@ -832,6 +843,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
                       onChange={(e) => setSql(base ? mascarar(e.target.value, base.mascara) : e.target.value)} /></div>
                   <button className="btn sm" disabled={grav}><Ic n="add" s={16} />{grav ? 'Incluindo…' : 'Incluir'}</button>
                   {sp && GEO_BASE && f.poly && <button type="button" className="btn sm text" onClick={() => setLg(true)}><Ic n="layers" s={16} />Escolher no mapa</button>}
+                  <LimparRasc chave={kS} mostrar={!!sql.trim()} limpar={() => setSql('')} />
                   {avisoS}
                 </form>
               )}
@@ -943,9 +955,12 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
   const [v, setV] = useState<Record<string, string>>({});
   const [busc, setBusc] = useState(false);
   const IPTU0 = { ex: String(new Date().getFullYear()), sit: 'tributado', parc: '10' };
-  const [iptu, setIptu] = useState<Record<string, string>>(IPTU0);
+  const kI = `${f.id}:iptu:${id}`;
+  const [iptu, setIptu] = useState<Record<string, string>>(() => comRasc(kI, IPTU0));
   const iref = useRef<HTMLFormElement>(null);
-  const { aviso, pedir } = useRascunho(iref, ['vt', 'vc', 'iptu', 'mensal', 'fonte'].some((c) => (iptu[c] ?? '').trim() !== ''), 'o IPTU', () => setIptu(IPTU0));
+  const temI = ['vt', 'vc', 'iptu', 'mensal', 'fonte'].some((c) => (iptu[c] ?? '').trim() !== '');
+  useGuardarRasc(kI, iptu, temI);
+  const { aviso, pedir } = useRascunho(iref, temI, 'o IPTU', () => setIptu(IPTU0));
   useEffect(() => {
     if (!x) return;
     setV(tipo === 'm' ? { numero: x.numero, cartorio: x.cartorio ?? '', area_registrada_m2: x.area_registrada_m2 != null ? num(x.area_registrada_m2, 2) : '', data_certidao: x.data_certidao ?? '' }
@@ -1055,6 +1070,7 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
       iptu_mensal_informado: iptu.sit === 'isento' ? null : lerNum(iptu.mensal), fonte: iptu.fonte?.trim() || null,
     });
     if (error) { toast(error.message, true); return; }
+    apagarRasc(kI);
     setIptu({ ex: String(ex), sit: 'tributado', parc: '10' });
     recarregar();
   }
@@ -1101,6 +1117,7 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
             {ip('mensal', 'IPTU mensal informado (R$)', { attrs: { placeholder: 'se a fonte trouxer' } })}
             <div className="field grow"><label htmlFor="v-fonte">Fonte</label><input id="v-fonte" required placeholder="Carnê, certidão de dados cadastrais..." value={iptu.fonte ?? ''} onChange={(e) => setIptu({ ...iptu, fonte: e.target.value })} /></div>
             <button className="btn sm"><Ic n="add" s={16} />{vv ? 'Atualizar IPTU' : 'Lançar IPTU'}</button>
+            <LimparRasc chave={kI} mostrar={temI} limpar={() => setIptu(IPTU0)} />
           </form>
           <div className="hint">Só vale o exercício mais recente: lançar o ano novo substitui o anterior.</div>
         </details>
