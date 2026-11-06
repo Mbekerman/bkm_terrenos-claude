@@ -16,7 +16,8 @@ const Marca = ({ sit, fx }: { sit?: string; fx?: string }) => <span style={{ dis
 /** três pontinhos da barra do mapa: filtro da concorrência, régua, camadas por setor e tipo de mapa (pedidos do Moisés, 5/nov/2026: no lugar
  *  do botão Concorrência; renda e densidade saíram da legenda e vieram para cá; a régua também). O filtro dos terrenos entra aqui quando a
  *  página Mapa do React tiver o painel de filtros */
-export function BotaoMais({ f, base, abrirConc, escolherBase, camada, alternarCamada, regua }: {
+export function BotaoMais({ f, base, abrirConc, escolherBase, camada, alternarCamada, regua, terrenos, nt = 0 }: {
+  terrenos?: () => void; nt?: number;
   f: Filtro; base: 'mapa' | 'satelite'; abrirConc: () => void; escolherBase: (b: 'mapa' | 'satelite') => void;
   camada: 'renda' | 'dens' | null; alternarCamada: (c: 'renda' | 'dens') => void; regua: () => void;
 }) {
@@ -53,11 +54,12 @@ export function BotaoMais({ f, base, abrirConc, escolherBase, camada, alternarCa
       onPointerEnter={(ev) => { if (ev.pointerType !== 'mouse') return; sobre.current = true; agendar(); }}
       onPointerLeave={(ev) => { if (ev.pointerType !== 'mouse') return; sobre.current = false; nao.current = false; agendar(); }}
       onBlur={() => setTimeout(agendar, 0)}>
-      <button type="button" className="mp-renda-b mp-mais" aria-haspopup="menu" aria-expanded={aberto} aria-pressed={n > 0} aria-label="Filtros, camadas e tipo de mapa" onClick={() => mudar(!aberto)}>
-        <Ic n="mais" s={22} />{n > 0 && <span className="mf-n">{n}</span>}
+      <button type="button" className="mp-renda-b mp-mais" aria-haspopup="menu" aria-expanded={aberto} aria-pressed={n + nt > 0} aria-label="Filtros, camadas e tipo de mapa" onClick={() => mudar(!aberto)}>
+        <Ic n="mais" s={22} />{n + nt > 0 && <span className="mf-n">{n + nt}</span>}
       </button>
       {aberto && <div className="mp-cam-m mp-mais-m" role="menu" aria-label="Filtros, camadas e tipo de mapa">
         <button type="button" role="menuitem" onClick={() => { mudar(false); abrirConc(); }}><Ic n="filtro" s={18} /><span className="mm-l">Filtro da concorrência</span>{n > 0 && <span className="mf-n">{n}</span>}</button>
+        {terrenos && <button type="button" role="menuitem" onClick={() => { mudar(false); terrenos(); }}><Ic n="filtro" s={18} /><span className="mm-l">Filtro dos terrenos</span>{nt > 0 && <span className="mf-n">{nt}</span>}</button>}
         <button type="button" role="menuitem" onClick={() => { mudar(false); regua(); }}><Ic n="regua" s={18} /><span className="mm-l">Régua</span></button>
         <div className="mm-t" role="presentation">Camadas</div>
         {cam('renda', 'Mapa de Renda')}{cam('dens', 'Mapa Demográfico')}

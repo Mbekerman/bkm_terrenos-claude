@@ -16,6 +16,7 @@ import { useConsultaGeo } from '../novo/consulta';
 import { areaPoly, centroPoly, dentroPoly, fixa, geojson, m2, type P } from '../novo/geo';
 import LotesGeo from '../novo/LotesGeo';
 import { trocarSqls } from '../novo/trocarSqls';
+import { BarraFx, GavetaFx, useFiltros } from '../filtros/Filtros';
 import type { LoteSql } from '../novo/geosampa';
 import { LegendaSetor, Metodologia, QuadroSetor } from '../mapa/CamadasSetor';
 import { carregarSetores, setorEm, setores, type Camada } from '../mapa/setores';
@@ -85,7 +86,10 @@ export default function Mapa() {
   const gav = !!codigoUrl && segs[1] === 'ficha';
   const q = useQuery({ queryKey: ['mapa', empresa?.id], enabled: !!empresa, queryFn: () => carregar(empresa!.id) });
   const fases: Fase[] = q.data?.fases ?? [];
-  const todos: TerrenoMapa[] = q.data?.terrenos ?? [];
+  const fx = useFiltros('mapa');
+  const todosB: TerrenoMapa[] = q.data?.terrenos ?? [];
+  /* o filtro dos terrenos vale antes de tudo: lista, pinos e contagens da legenda (proto_mod.js › fxLista('mapa')) */
+  const todos = useMemo(() => todosB.filter((t) => fx.ok(t.id)), [todosB, fx.ok]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [f, setF] = useState(memo.f);
   const [e, setE] = useState(memo.e);
@@ -152,6 +156,9 @@ export default function Mapa() {
   const [mkOk, setMkOk] = useState(!!mercado());
   const [mkErro, setMkErro] = useState(false);
   const [mfAberto, setMfAberto] = useState(false);
+  /* a gaveta dos filtros, a do filtro da concorrência e a da ficha não abrem juntas */
+  useEffect(() => { if (!fx.aberto) return; setMfAberto(false); if (gav && codigoUrl) navegar(`/mapa/${codigoUrl.toUpperCase()}`); }, [fx.aberto]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (gav || mfAberto) fx.setAberto(false); }, [gav, mfAberto]); // eslint-disable-line react-hooks/exhaustive-deps
   const [mkBox, setMkBox] = useState<string | null>(null);
   const [mkDest, setMkDest] = useState<string | null>(null);
   const [mkTab, setMkTab] = useState<string | null>(null);
@@ -812,6 +819,7 @@ export default function Mapa() {
     <div className={`mapa-pg${largura < 200 ? ' mp-estreita' : ''}`} style={{ '--mp-w': `${largura}px` } as React.CSSProperties}>
       <aside className="mapa-lado" aria-label="Terrenos no mapa" ref={ladoEl}>
         <h1 className="sr-only">Mapa</h1>
+        <BarraFx fx={fx} />
         {temApag && <button className="linkbtn" style={{ alignSelf: 'flex-start' }} onClick={() => setApag({})}>Limpar busca e legenda</button>}
         <div id="mp-lista">
           {q.isLoading ? <div className="empty">Carregando terrenos…</div> : q.error ? <div className="empty">Não foi possível carregar os terrenos.</div> : <>
@@ -850,7 +858,8 @@ export default function Mapa() {
             </div>
           </form>
           <BotaoMais f={mf} base={base} abrirConc={() => { setMfAberto(true); setMkBox(null); }} escolherBase={escolherBase}
-            camada={camada} alternarCamada={(k) => ligarCamada(camada === k ? null : k)} regua={rgAbrir} />
+            camada={camada} alternarCamada={(k) => ligarCamada(camada === k ? null : k)} regua={rgAbrir}
+            terrenos={() => fx.setAberto(true)} nt={fx.n} />
         </div>
         <div id="mp-modo" className="mp-modo" aria-live="polite">{rg && (() => {
           const n = rg.pts.length, ar = rg.fechado ? reguaArea(rg.pts) : null;
@@ -940,6 +949,7 @@ export default function Mapa() {
       {met && <Metodologia camada={met} fechar={() => setMet(null)} />}
       {mfAberto && mkOk && <FiltroConc f={mf} mudar={setMf} fechar={() => setMfAberto(false)} aviso={(m) => toast(m)} />}
       {mkTab && <TabelaEmp id={mkTab} fechar={() => setMkTab(null)} />}
+      <GavetaFx fx={fx} />
       {gav && <GavetaFicha codigo={codigoUrl!.toUpperCase()} lado={ladoEl.current} fechar={() => navegar(`/mapa/${codigoUrl!.toUpperCase()}`)}
         abrirPagina={(aba) => navegar(`/terrenos/${codigoUrl!.toUpperCase()}${aba === 'geral' ? '' : '/' + aba}`, { state: { de: 'mapa' } })}
         abrirMapa={(lat, lng, z) => { const m = motor.current?.mapa; if (m) { m.setCenter({ lat, lng }); m.setZoom(Math.max(z, 15)); } navegar(`/mapa/${codigoUrl!.toUpperCase()}`); }} />}

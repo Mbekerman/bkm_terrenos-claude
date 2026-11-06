@@ -8,13 +8,14 @@ import { Carregando, Dialogo, Erro, useToast } from '../components/ui';
 import { Ic } from '../components/Moldura';
 import { Itens, type Item, type Passagem } from '../ficha/Avanco';
 import { TEMP } from '../ficha/dados';
+import { BarraFx, GavetaFx, useFiltros } from '../filtros/Filtros';
 
 // Funil, porte de tools/prototipo/proto_fases.js › pgFasesBoard, pgFaseBoard, negTopo, kcardFase, kcardProc e
 // proto_funil.js › pgNeg, kcardNeg, soltar, tentar (decisões do Moisés, 23/out e 4/nov/2026). Três níveis no endereço:
 // /funil (uma coluna por fase ativa, um card por fase aberta do terreno, sem arrastar), /funil/<fase> (etapas e Stand By;
 // arrastar muda a etapa) e /funil/<fase>/<etapa> (subetapas; arrastar muda a subetapa). Tudo pelas regras do banco
 // (checar_passagem, mover_etapa, mover_para_etapa, mover_subetapa, encerrar_processo, retomar_processo).
-// Filtros (Filtros e Visão) entram com o painel de filtros.
+// Filtros e Visão: o painel de filtros (filtros/Filtros.tsx), com a seleção própria do Funil.
 
 type R = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 interface Sub { k: string; nome: string; prazo: number | null }
@@ -103,11 +104,13 @@ export default function Funil() {
   const arr = useRef<{ id: string; col: string } | null>(null);
   const [sobre, setSobre] = useState<string | null>(null);
   const [orig, setOrig] = useState<string | null>(null);
+  const fx = useFiltros('kanban');
   useEffect(() => { document.title = 'Funil'; }, []);
   if (q.isLoading) return <Carregando />;
   if (q.error) return <Erro erro={q.error} />;
   if (!q.data) return null;
-  const D = q.data;
+  /* o filtro dos terrenos vale no quadro (menos fase, etapa e subetapa, que vêm da navegação; proto_filtros.js › fxLista('kanban')) */
+  const D = { ...q.data, procs: q.data.procs.filter((p) => fx.ok(p.t)) };
   const fase = D.fases.find((x) => x.k === fK) ?? null;
   const etapa = fase?.etapas.find((x) => x.k === eK) ?? null;
   const recarregar = () => { for (const k of ['funil', 'ficha', 'ficha-adv', 'mapa']) qc.invalidateQueries({ queryKey: [k] }); };
@@ -245,7 +248,7 @@ export default function Funil() {
         {volta && <ol className="drill-t" aria-label="Nível do quadro">{trilha.slice(0, -1).map((x, i) => <li key={i}><button className="linkbtn" onClick={() => ir(x.f, x.e)}>{x.l}</button></li>)}</ol>}
         <h1>{trilha[trilha.length - 1].l}</h1>
       </div>
-    </div></div>
+    </div><div className="ph-l"><BarraFx fx={fx} /></div></div>
   );
   const colDesce = (l: string, dica: string, fn: () => void) => <button className="col-ab" title={dica} onClick={fn}><span>{l}</span><Ic n="chev" s={16} /></button>;
   const col = (k: string, titulo: ReactNode, n: number, corpo: ReactNode[], o: { cls?: string; s?: string; aria: string; vazio: string; drop?: boolean }) => (
@@ -288,6 +291,7 @@ export default function Funil() {
       {topo}
       {board}
       {modal && dlg()}
+      <GavetaFx fx={fx} />
     </div>
   );
 
