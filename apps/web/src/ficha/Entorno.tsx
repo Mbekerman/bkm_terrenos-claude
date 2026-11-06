@@ -2,7 +2,7 @@
 // Aba Entorno da ficha, portada do protótipo: Pontos de interesse (proto_mod.js › entornoCard, poiExcluidos),
 // Renda e população do entorno e Perfil da população (proto_setores.js › setoresCard, perfilCard, com o mesmo
 // seletor de raio) e Concorrência no entorno (proto_mercado.js › mkSecaoHtml).
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
@@ -12,7 +12,7 @@ import { Ic } from '../components/Moldura';
 import { m2 } from '../lib/format';
 import DEMO_CFG from '../../../../tools/setores/demografia.json';
 import { carregarDemo, carregarSetores, estatArea, MUNICIPIOS_SETORES, perfilArea, RD_RAIOS, RENDA_MET, setores, temSetores, type Raio } from '../mapa/setores';
-import { carregarMercado, mercado, mkData, mkDias, mkM2, mkPct, mkPeriodo, mkVso, MK_SIT, brl, num as nmk, type Emp } from '../mapa/mercado';
+import { carregarMercado, mercado, mkM2, mkPct, mkVso, MK_SIT, MK_GLIFO, brl, num as nmk, type Emp } from '../mapa/mercado';
 import { Resumo } from '../mapa/Concorrencia';
 import { Metodologia } from '../mapa/CamadasSetor';
 import { buscarEntorno, distM, medirPontos, rotaPe } from './entorno';
@@ -86,13 +86,14 @@ export function EntornoAuto({ f }: { f: Ficha }) {
 }
 
 export default function AbaEntorno({ f }: { f: Ficha }) {
-  const [raio, setRaio] = useState<Raio>(1000);
+  /* um raio para cada quadro (pedido do Moisés, 6/nov/2026: antes era o mesmo nos dois) */
+  const [raioR, setRaioR] = useState<Raio>(1000), [raioP, setRaioP] = useState<Raio>(1000);
   if (f.lat == null || f.lng == null) return <section className="sec"><div className="empty">Localize o terreno (aba Terreno, Endereço e localização) para ver o entorno.</div></section>;
   return (
     <div className="stack">
       <SecPontos f={f} />
-      <SecRenda f={f} raio={raio} setRaio={setRaio} />
-      <SecPerfil f={f} raio={raio} setRaio={setRaio} />
+      <SecRenda f={f} raio={raioR} setRaio={setRaioR} />
+      <SecPerfil f={f} raio={raioP} setRaio={setRaioP} />
       <SecConcorrencia f={f} />
     </div>
   );
@@ -304,10 +305,34 @@ function SecPerfil({ f, raio, setRaio }: { f: Ficha; raio: Raio; setRaio: (r: Ra
 
 /* ---------- Concorrência no entorno ---------- */
 const MK_RAIOS = [1, 2, 3];
-const MK_NAO_ENTREGUE = ['lancamento', 'breve_lancamento', 'em_obras'];
+/* situações da lista, ligadas e desligadas juntas; com o desenho do mapa (pedido do Moisés, 6/nov/2026) */
+const MK_GRUPOS: [string, string, string[]][] = [['lancamento', 'Lançamento', ['lancamento', 'breve_lancamento']], ['em_obras', 'Em obras', ['em_obras']], ['pronto', 'Entregue', ['pronto', 'usado']]];
+const MK_LKEY = 'bkm-terrenos-entorno-concorrencia';
+function lerFiltroMk(): { raio: number; sit: string[] } {
+  try { const o = JSON.parse(localStorage.getItem(MK_LKEY) || 'null'); if (o && MK_RAIOS.includes(o.raio) && Array.isArray(o.sit)) return o; } catch { /* sem armazenamento */ }
+  return { raio: 1, sit: MK_GRUPOS.map((g) => g[0]) };
+}
 function SecConcorrencia({ f }: { f: Ficha }) {
   const [st, setSt] = useState<'ok' | 'carregando' | 'erro'>(() => (mercado() ? 'ok' : 'carregando'));
-  const [raio, setRaio] = useState(2);
+  const [fl, setFl] = useState(lerFiltroMk);
+  const raio = fl.raio;
+  const mudar = (o: Partial<typeof fl>) => setFl((x) => { const n = { ...x, ...o }; try { localStorage.setItem(MK_LKEY, JSON.stringify(n)); } catch { /* sem armazenamento */ } return n; });
+  /* sem caber os botões com texto numa linha, ficam só os ícones (com a dica) */
+  const linha = useRef<HTMLDivElement>(null), largo = useRef(0);
+  const [curto, setCurto] = useState(false);
+  useLayoutEffect(() => {
+    const el = linha.current;
+    if (!el) return;
+    const medir = () => {
+      if (!curto) largo.current = el.scrollWidth;
+      const c = el.clientWidth < largo.current;
+      if (c !== curto) setCurto(c);
+    };
+    medir();
+    const ro = window.ResizeObserver ? new ResizeObserver(medir) : null;
+    ro?.observe(el);
+    return () => ro?.disconnect();
+  });
   useEffect(() => { let v = true; carregarMercado().then(() => v && setSt('ok')).catch(() => v && setSt('erro')); return () => { v = false; }; }, []);
   let corpo: ReactNode;
   if (st !== 'ok') corpo = <div className="muted">{st === 'erro' ? 'Dados da concorrência indisponíveis agora.' : 'Carregando os dados da concorrência…'}</div>;
@@ -319,8 +344,8 @@ function SecConcorrencia({ f }: { f: Ficha }) {
       xs.forEach(({ e }) => { if (e.preco != null && (e.area || 0) > 0) { sp += e.preco; sa += e.area!; } v += e.vendas; est += e.estoque; });
       return { r, pg, n: xs.length, est, m2: sa ? sp / sa : null, vso: mkVso(v, est) };
     }));
-    const dias = mkDias();
-    const lista = ps.filter((x) => MK_NAO_ENTREGUE.includes(x.e.sit) && x.d <= raio).sort((a, b) => a.d - b.d);
+    const sits = MK_GRUPOS.filter((g) => fl.sit.includes(g[0])).flatMap((g) => g[2]);
+    const lista = ps.filter((x) => sits.includes(x.e.sit) && x.d <= raio).sort((a, b) => a.d - b.d);
     corpo = <>
       {!rs.some((x) => x.n) ? <div className="muted">Nenhum empreendimento do monitor a até {MK_RAIOS[MK_RAIOS.length - 1]} km.</div>
         : <div className="tblwrap"><table className="mini-tbl mk-cat"><thead><tr><th>Raio</th><th>Programa social</th><th className="r">Empreend.</th><th className="r">Estoque</th><th className="r">R$/m² médio</th><th className="r">VSO médio</th></tr></thead>
@@ -328,12 +353,19 @@ function SecConcorrencia({ f }: { f: Ficha }) {
             <tr key={i} className={i % 2 ? 'mk-r2' : undefined}><td className="mk-pr">{i % 2 ? <span className="mk-rep">Até {x.r} km</span> : `Até ${x.r} km`}</td><td className="mk-pg" data-l="Programa social">{x.pg === 'sim' ? 'Com' : 'Sem'}</td>
               <td className="r" data-l="Empreend.">{nmk(x.n)}</td><td className="r" data-l="Estoque">{nmk(x.est)}</td><td className="r" data-l="R$/m² médio">{x.m2 != null ? brl(x.m2) : '—'}</td><td className="r" data-l="VSO médio">{mkPct(x.vso)}</td></tr>
           ))}</tbody></table></div>}
-      <div className="hint">Monitor de mercado (Órulo), retrato de {mkData(MK.gerado?.slice(0, 10))}. Programa social: a marca do Órulo no empreendimento. R$/m² médio: soma dos preços das unidades à venda ÷ soma das áreas.
-        VSO médio: vendas ÷ (vendas + estoque), de {mkPeriodo()}{dias ? ` (${dias} dias)` : ''}.</div>
-      <div className="mk-lh"><h3>Não entregues no entorno <span className="faint">{nmk(lista.length)}</span></h3>
-        <div className="seg" role="group" aria-label="Raio da lista">{MK_RAIOS.map((k) => <button key={k} type="button" aria-pressed={raio === k} onClick={() => setRaio(k)}>{k} km</button>)}</div></div>
+      <div className="mk-lh"><h3>Empreendimentos no entorno <span className="faint">{nmk(lista.length)}</span></h3></div>
+      <div className={`mk-fil${curto ? ' curto' : ''}`} ref={linha}>
+        <div className="seg" role="group" aria-label="Raio da lista">{MK_RAIOS.map((k) => <button key={k} type="button" aria-pressed={raio === k} onClick={() => mudar({ raio: k })}>{k} km</button>)}</div>
+        <div className="seg mk-sits" role="group" aria-label="Situação">{MK_GRUPOS.map(([k, l]) => {
+          const on = fl.sit.includes(k);
+          return <button key={k} type="button" aria-pressed={on} title={curto ? l : undefined} aria-label={curto ? l : undefined}
+            onClick={() => mudar({ sit: on ? fl.sit.filter((x) => x !== k) : [...fl.sit, k] })}>
+            <svg className="ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" d={MK_GLIFO[k]} /></svg>
+            {!curto && <span>{l}</span>}</button>;
+        })}</div>
+      </div>
       {lista.length ? <div className="mk-lista">{lista.map(({ e, d }) => <ItemEmp key={e.id} e={e} d={d} />)}</div>
-        : <div className="muted">Nenhum empreendimento em lançamento ou em obras a até {raio} km.</div>}
+        : <div className="muted">{fl.sit.length ? `Nenhum empreendimento com essa situação a até ${raio} km.` : 'Ligue ao menos uma situação.'}</div>}
       <div className="hint">Cada um abre o resumo do empreendimento: as unidades agrupadas em tipologias parecidas (dormitórios, vagas, área e preço por m²), com o R$/m² das unidades à venda e o VSO de cada uma.</div>
     </>;
   }

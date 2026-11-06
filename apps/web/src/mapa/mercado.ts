@@ -15,7 +15,7 @@ export const MK_FX_CHAVES = [...MK_FX.map((_, i) => 'f' + i), 'fx'];
 export const mkFxK = (e: { preco?: number | null; area?: number | null }) => { const v = e.preco != null && (e.area || 0) > 0 ? e.preco / e.area! : null; return v == null ? 'fx' : 'f' + MK_FX.findIndex((f) => v < f[0]); };
 export const mkFxInfo = (k: string): [string, string] => (k === 'fx' ? ['Sem preço', '#bdc1c6'] : [MK_FX[+k.slice(1)][1], MK_FX[+k.slice(1)][2]]);
 /* o desenho de cada situação: lançamento estrela, em obras guindaste, pronto prédio */
-const MK_GLIFO: Record<string, string> = {
+export const MK_GLIFO: Record<string, string> = {
   lancamento: 'M12 3.5l2.5 5.3 5.8.7-4.3 4 1.1 5.7L12 16.4l-5.1 2.8 1.1-5.7-4.3-4 5.8-.7z',
   em_obras: 'M7 21V3M4 21h7M7 4h13M7 4l4 4M17 4v5M15 9h4v3h-4zM7 9h3M7 14h3',
   pronto: 'M4 21V5l8-3v19M12 9l8 3v9M2 21h20M7 8h2M7 12h2M7 16h2M15 14h2M15 18h2',
