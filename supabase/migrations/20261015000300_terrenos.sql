@@ -373,7 +373,8 @@ create table app.terreno_pessoas (
   empresa_id              uuid not null references app.empresas(id),
   terreno_id              uuid not null references app.terrenos(id) on delete cascade,
   pessoa_id               uuid not null references app.pessoas(id),
-  papel                   text not null default 'proprietario' check (papel in ('proprietario','representante','procurador','contato')),
+  -- relação da pessoa com a parte (pedido do Moises, 6/nov/2026): proprietário, cônjuge, representante, procurador, parente, contato ou outro
+  papel                   text not null default 'proprietario' check (papel in ('proprietario','conjuge','representante','procurador','parente','contato','outro')),
   percentual_participacao numeric(5,2) check (percentual_participacao > 0 and percentual_participacao <= 100),  -- na parte, quando há partes
   parte_id                uuid references app.terreno_partes(id),  -- dono (ou representante) de qual parte
   observacoes             text,
@@ -436,16 +437,20 @@ create table app.inscricao_partes (
   terreno_id   uuid not null references app.terrenos(id) on delete cascade,
   inscricao_id uuid not null references app.inscricoes_municipais(id) on delete cascade,
   parte_id     uuid references app.terreno_partes(id) on delete cascade,   -- nulo: cópia solta, ainda sem parte
-  percentual   numeric(5,2) check (percentual >= 0 and percentual <= 100)
+  percentual   numeric(5,2) check (percentual >= 0 and percentual <= 100),
+  -- a matrícula da parte em que o SQL está (pedido do Moises, 6/nov/2026): na parte, o SQL fica sempre dentro de uma
+  -- matrícula dela (o subquadro da matrícula); a parte do SQL é a da matrícula e anda com ela
+  matricula_parte_id uuid references app.matricula_partes(id) on delete set null
 );
 create index on app.inscricao_partes (parte_id);
+create index on app.inscricao_partes (matricula_parte_id);
 create index on app.inscricao_partes (terreno_id);
 
 -- A etiqueta é do terreno da matrícula ou do SQL, numa parte ativa dele, e os percentuais do mesmo lote
 -- não passam de 100%.
 create or replace function app.tg_etiqueta_parte()
 returns trigger language plpgsql security definer set search_path = '' as $$
-declare v_lote uuid; v_terreno uuid; v_soma numeric;
+declare v_lote uuid; v_terreno uuid; v_soma numeric; v_mparte uuid;
 begin
   if tg_table_name = 'matricula_partes' then
     v_lote := new.matricula_id;
@@ -455,6 +460,16 @@ begin
     v_lote := new.inscricao_id;
     select terreno_id into v_terreno from app.inscricoes_municipais where id = v_lote;
     select sum(percentual) into v_soma from app.inscricao_partes where inscricao_id = v_lote and id <> new.id;
+    -- o SQL dentro de uma matrícula fica na parte dela; o SQL que entra numa parte (ou muda de parte) precisa de uma
+    -- matrícula dela (pedido do Moises, 6/nov/2026); o SQL solto não fica preso a matrícula
+    if new.matricula_parte_id is not null then
+      select parte_id into v_mparte from app.matricula_partes where id = new.matricula_parte_id and terreno_id = v_terreno;
+      if not found then raise exception 'A matrícula não é deste terreno' using errcode = '23514'; end if;
+      new.parte_id := v_mparte;
+    elsif new.parte_id is not null and (tg_op = 'INSERT' or new.parte_id is distinct from old.parte_id) then
+      raise exception 'Atribua uma matrícula à parte antes de lançar lotes nela: o SQL entra sempre dentro de uma matrícula'
+        using errcode = '23514';
+    end if;
   end if;
   new.terreno_id := v_terreno;
   if new.parte_id is not null and not exists (select 1 from app.terreno_partes where id = new.parte_id and terreno_id = v_terreno and ativa) then
@@ -468,6 +483,22 @@ begin
 end $$;
 create trigger t_parte before insert or update on app.matricula_partes for each row execute function app.tg_etiqueta_parte();
 create trigger t_parte before insert or update on app.inscricao_partes for each row execute function app.tg_etiqueta_parte();
+
+-- Os SQLs andam com a matrícula: ela mudou de parte (ou ficou solta), eles vão junto; ela saiu, eles ficam soltos.
+create or replace function app.tg_matricula_leva_sqls()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if tg_op = 'DELETE' then
+    update app.inscricao_partes set matricula_parte_id = null, parte_id = null where matricula_parte_id = old.id;
+    return old;
+  end if;
+  if new.parte_id is distinct from old.parte_id then
+    update app.inscricao_partes set parte_id = new.parte_id where matricula_parte_id = new.id;
+  end if;
+  return new;
+end $$;
+create trigger t_leva after update of parte_id on app.matricula_partes for each row execute function app.tg_matricula_leva_sqls();
+create trigger t_leva_del before delete on app.matricula_partes for each row execute function app.tg_matricula_leva_sqls();
 
 create table app.terreno_corretores (
   terreno_id  uuid not null references app.terrenos(id) on delete cascade,

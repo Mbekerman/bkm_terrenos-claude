@@ -23,7 +23,7 @@ async function fotografar(id: string, ids: string[]): Promise<Antes> {
     ids.length ? supabase.from('inscricao_valores').select('*').in('inscricao_id', ids).order('criado_em') : Promise.resolve({ data: [] as R[] }),
     ids.length ? supabase.from('analise_zoneamentos').select('*').in('inscricao_id', ids) : Promise.resolve({ data: [] as R[] }),
     ids.length ? supabase.from('consultas_lote').select('id,inscricao_id').in('inscricao_id', ids) : Promise.resolve({ data: [] as R[] }),
-    ids.length ? supabase.from('inscricao_partes').select('id,empresa_id,terreno_id,inscricao_id,parte_id,percentual').in('inscricao_id', ids) : Promise.resolve({ data: [] as R[] }),
+    ids.length ? supabase.from('inscricao_partes').select('id,empresa_id,terreno_id,inscricao_id,parte_id,matricula_parte_id,percentual').in('inscricao_id', ids) : Promise.resolve({ data: [] as R[] }),
   ]);
   if (error || !t) throw error ?? new Error('Terreno não encontrado');
   return { terreno: t, insc: (ins.data ?? []) as R[], valores: (val.data ?? []) as R[], zonas: (zon.data ?? []) as R[], partes: (pts.data ?? []) as R[], consultas: (con.data ?? []) as any };

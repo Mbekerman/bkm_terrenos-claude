@@ -146,7 +146,7 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
     }
     case 'terreno_pessoas': {
       const p = OPT.papel[o.papel] ?? 'Pessoa';
-      return { txt: ins ? `${p} adicionado` : del ? `${p} removido` : `${p} alterado: ${lista(mudou(x, d))}`, aba: 'terreno', q: 'pessoas' };
+      return { txt: ins ? `${p} adicionado` : del ? `${p} removido` : `${p} alterado: ${lista(mudou(x, d))}`, aba: 'terreno', q: 'partes-cad' };
     }
     case 'confrontacoes':
       return { txt: ins ? `Confrontação adicionada: ${o.tipo ?? ''}` : del ? `Confrontação removida: ${o.tipo ?? ''}` : 'Confrontação alterada', aba: 'terreno' };

@@ -269,3 +269,32 @@ html[data-tema="escuro"] .etq-ct-b .ic { color: #c4c7c5 }
 .amb-pr { font-size: 11px; line-height: 14px; color: #5f6368; white-space: nowrap; padding-left: 2px }
 :root[data-tema="escuro"] .amb-pr { color: #c4c7c5 }
 @media (max-width: 599px) { .amb-pr { display: none } }
+/* matrícula como subquadro dentro da parte, com os SQLs dela dentro (pedido do Moises, 6/nov/2026) */
+.etq-mq { border: 1px solid #e3c25a; border-radius: 10px; background: #fffaf0; display: flex; flex-direction: column; min-width: 0; transition: background-color .12s }
+.etq-mq-h { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: #fff8dc; border-bottom: 1px solid #e3c25a; border-radius: 10px 10px 0 0; min-height: 44px }
+.etq-mq-h .faint { font-size: 12px }
+.etq-mq-b { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 8px; padding: 8px; min-height: 48px }
+.etq-mq.sem { border-style: dashed; border-color: #c4c7c5; background: none } .etq-mq.sem .etq-mq-h { background: #f0f4f9; border-color: #c4c7c5 }
+html[data-tema="escuro"] .etq-mq { border-color: #8a7020; background: #2a2412 }
+html[data-tema="escuro"] .etq-mq-h { background: #4a3c08; border-color: #8a7020 }
+html[data-tema="escuro"] .etq-mq.sem { border-color: #444746 } html[data-tema="escuro"] .etq-mq.sem .etq-mq-h { background: #282a2c; border-color: #444746 }
+/* proprietários da parte: lista curta no cartão e a janela com as pessoas (pedido do Moises, 6/nov/2026) */
+.pt2-pp { display: flex; flex-direction: column; gap: 4px }
+.pt2-pp-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px }
+.pt2-pp-h .btn.text { margin-right: -12px }
+.pt2-donos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column }
+.pt2-donos li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid #e3e3e3; font-size: 14px }
+.pt2-donos li:first-child { border-top: 0 }
+.pt2-donos li span:first-child { overflow-wrap: anywhere }
+.pt2-donos .faint { white-space: nowrap; font-variant-numeric: tabular-nums }
+.pt2-outros { font-size: 12px }
+.dialog:has(.pp-dlg) { width: min(920px, 100%) }
+.pp-dlg { display: flex; flex-direction: column; gap: 16px }
+.pp-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px 12px; align-items: end; margin: 0 }
+.pp-form .field { margin: 0; min-width: 0 }
+.pp-form .pp-nome { grid-column: span 2 }
+.pp-bt { display: flex; gap: 8px; justify-content: flex-end; grid-column: -2 / -1 }
+.pp-tbl td { vertical-align: middle } .pp-tbl tr.sel td { background: #f0f4f9 }
+.pp-acoes { display: inline-flex; gap: 2px; white-space: nowrap }
+html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema="escuro"] .pp-tbl tr.sel td { background: #282a2c }
+@media (max-width: 600px) { .pp-form .pp-nome { grid-column: auto } .pp-bt { grid-column: auto } }
