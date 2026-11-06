@@ -114,7 +114,7 @@ export default function TrocarEndereco() {
 
   let corpo: React.ReactNode;
   if (c.passo === 'lotes') {
-    return <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && fechar()}><div className="dialog" role="dialog" aria-modal="true">
+    return <div className="scrim" data-rasc-livre onMouseDown={(e) => e.target === e.currentTarget && fechar()}><div className="dialog" role="dialog" aria-modal="true">
       <LotesGeo empresa={empresa.id} L={{ modo: 'ficha', ficha: { codigo: t.codigo, nome: nomeV, poly: c.poly, sqls: c.sqls || [], fechar, incluir: lotes } }} />
     </div></div>;
   } else if (c.passo === 'pergunta') {

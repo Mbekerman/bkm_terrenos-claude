@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { createPortal } from 'react-dom';
 
 /* Formulário de registro esquecido (pedido do Moisés, 6/nov/2026): com algo digitado e ainda não registrado, quando a
    pessoa parte para outra ação (clica num botão, aba, link ou seta de quadro fora do formulário, vai para outro campo,
@@ -15,13 +16,14 @@ export function useRascunho(ref: RefObject<HTMLElement>, sujo: boolean, nome: st
   useEffect(() => {
     if (!sujo) return;
     livre.current = false;
-    /* dentro: o formulário, a janela em que ele está (o Registrar do rodapé fica fora do <form>) e o próprio aviso */
+    /* dentro: o formulário, a janela em que ele está (o Registrar do rodapé fica fora do <form>), o próprio aviso e as janelas
+       que o formulário abre por cima (data-rasc-livre, como o mapa de lotes do "Escolher no mapa") */
     const dentro = (n: EventTarget | null) => {
       if (!(n instanceof Node)) return true;
       const el = ref.current;
       if (!el) return true;
       const e = n instanceof Element ? n : n.parentElement;
-      return el.contains(n) || !!el.closest('.dialog')?.contains(n) || !!e?.closest('.rasc-av, .pac-container, gmp-place-autocomplete');
+      return el.contains(n) || !!el.closest('.dialog')?.contains(n) || !!e?.closest('.rasc-av, .pac-container, gmp-place-autocomplete, [data-rasc-livre]');
     };
     /* o aperto do mouse (ou do dedo) segura a ação antes de o foco sair do formulário; o clique que vem depois é engolido */
     let engolir = false;
@@ -76,7 +78,8 @@ export function useRascunho(ref: RefObject<HTMLElement>, sujo: boolean, nome: st
   };
   /** fechar a janela (X, Esc, clique fora) passa por aqui */
   const pedir = (fazer: () => void) => { if (sujo) setPend({ fazer }); else fazer(); };
-  const aviso: ReactNode = pend ? (
+  /* no corpo da página, para nunca ficar escondido atrás de outra janela (6/nov/2026: o aviso ficava atrás do mapa de lotes e a tela parecia travada) */
+  const aviso: ReactNode = pend ? createPortal(
     <div className="scrim rasc-av" onMouseDown={(e) => { if (e.target === e.currentTarget) voltar(); }}
       onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Escape') voltar(); }}>
       <div className="dialog rasc-d" role="alertdialog" aria-modal="true" aria-label={`Você não registrou ${nome}`}>
@@ -87,7 +90,7 @@ export function useRascunho(ref: RefObject<HTMLElement>, sujo: boolean, nome: st
           <button type="button" className="btn primary" autoFocus onClick={voltar}>Continuar preenchendo</button>
         </div>
       </div>
-    </div>
+    </div>, document.body
   ) : null;
   return { aviso, pedir };
 }
