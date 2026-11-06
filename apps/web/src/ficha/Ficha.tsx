@@ -6,6 +6,7 @@ import { Bi, Ic } from '../components/Moldura';
 import { corSub, type Fase as FaseMapa, type TerrenoMapa } from '../mapa/dados';
 import { carregarFicha, completude, type Falta, FONTE_AREA, TEMP, TP_N, ZONA, type Ficha as F, type ProcF } from './dados';
 import MiniMapa from './MiniMapa';
+import { centroPoly, fixa, geojson } from '../novo/geo';
 import Temperatura from './Temperatura';
 import AbaComercial from './Comercial';
 import Painel, { Avancos, usePN } from './Painel';
@@ -304,7 +305,8 @@ function VisaoGeral({ f, irAba, abrirMapa }: { f: F; irAba: (k: string) => void;
       <div className="geral-c">
         <section className="sec g-loc"><div className="sec-h"><h2><Bi n="localizacao" s={32} />Localização</h2></div><div className="sec-b">
           {f.lat != null && f.lng != null
-            ? <MiniMapa key={f.id} lat={f.lat} lng={f.lng} poly={f.poly} cor={cor} fg={fg} abrirMapa={abrirMapa} />
+            ? <MiniMapa key={f.id} lat={f.lat} lng={f.lng} poly={f.poly} cor={cor} fg={fg} abrirMapa={abrirMapa}
+              salvar={edita ? (p) => { const c = centroPoly(p); return salvarT({ poligono_geojson: geojson(fixa(p)), latitude: +c[0].toFixed(7), longitude: +c[1].toFixed(7) }); } : undefined} />
             : <div className="empty" style={{ padding: 'var(--e6) 0' }}>Sem localização.</div>}
         </div></section>
       </div>

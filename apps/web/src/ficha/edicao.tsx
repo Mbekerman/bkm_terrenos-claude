@@ -133,7 +133,8 @@ export function useSalvar(f: Ficha) {
       toast('Salvo.');
       if (antes && ks.some((k) => JSON.stringify((antes as R)[k] ?? null) !== JSON.stringify(dados[k] ?? null))) {
         const volta = Object.fromEntries(ks.map((k) => [k, (antes as R)[k] ?? null]));
-        empilhar({ rotulo: rotuloCampos(ks), fazer: () => { const q = FILA.then(() => gravarTerreno(g.id, g.versao, volta, qc, toast)); FILA = q.catch(() => false); return q; } });
+        const fila = (d: R) => { const q = FILA.then(() => gravarTerreno(g.id, g.versao, d, qc, toast)); FILA = q.catch(() => false); return q; };
+        empilhar({ rotulo: rotuloCampos(ks), fazer: () => fila(volta), refazer: () => fila(dados) });
       }
       return true;
     });
