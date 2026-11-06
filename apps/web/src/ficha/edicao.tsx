@@ -53,6 +53,8 @@ export function lerNum(s: string | null | undefined): number | null {
   return isFinite(n) ? n * mult : null;
 }
 const decStr = (v: unknown) => (v == null || v === '' ? '' : String(v).replace('.', ','));
+/** número para o campo: milhar com ponto e vírgula decimal, como a máscara deixa ao digitar */
+export const numStr = (v: unknown, d = 3) => (v == null || v === '' || !isFinite(Number(v)) ? '' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: d }));
 
 /** listas para os seletores: equipe da empresa e eixos comerciais */
 export function useListas() {
@@ -93,7 +95,7 @@ export function fmtCampo(f: Ficha, [k, , tipo, opt]: Campo, listas?: { membros: 
 /** valores iniciais do formulário (texto) das colunas pedidas */
 export function valoresDe(t: R, ks: string[]): Record<string, string> {
   const o: Record<string, string> = {};
-  for (const k of ks) o[k] = ['latitude', 'longitude', 'desnivel_estimado_m', 'testada_principal_m'].includes(k) || /_m2$/.test(k) ? decStr(t[k]) : t[k] == null ? '' : String(t[k]);
+  for (const k of ks) o[k] = ['latitude', 'longitude'].includes(k) ? decStr(t[k]) : ['desnivel_estimado_m', 'testada_principal_m'].includes(k) || /_m2$/.test(k) ? numStr(t[k]) : t[k] == null ? '' : String(t[k]);
   return o;
 }
 
@@ -140,7 +142,7 @@ export function CampoInp({ f, c, vals, mudar, listas, inl }: { f: Ficha; c: Camp
     ? <select id={id} value={v} onChange={on}><option value="">Não informado</option>{(v && !CRIS.includes(v) ? [v, ...CRIS] : CRIS).map((x) => <option key={x}>{x}</option>)}</select>
     : <input id={id} value={v} onChange={on} placeholder="1º CRI" />;
   else if (tipo === 'mun') h = <input id={id} value={[f.municipio, f.uf].filter(Boolean).join(' · ')} readOnly title="Preenchido pela busca de endereço" />;
-  else if (['m2', 'm', 'dec'].includes(tipo)) h = <input id={id} inputMode="decimal" value={v} onChange={on} placeholder={tipo === 'm2' ? 'm²' : tipo === 'm' ? 'metros' : ''} />;
+  else if (['m2', 'm', 'dec'].includes(tipo)) h = <input id={id} inputMode="decimal" data-fmt={tipo === 'dec' ? 'none' : undefined} value={v} onChange={on} placeholder={tipo === 'm2' ? 'm²' : tipo === 'm' ? 'metros' : ''} />;
   else h = <input id={id} type={tipo === 'url' ? 'url' : undefined} value={v} onChange={on} required={k === 'nome'} />;
   /* inl: no mesmo lugar e na mesma altura da leitura, só com a linha embaixo (pedido do Moisés, 5/nov/2026) */
   if (inl) return <div className={`inl-c ${full || ''}`}><label className="k" htmlFor={id}>{l}</label>{h}</div>;

@@ -6,6 +6,7 @@ import { useSessao } from '../lib/sessao';
 import { useToast } from '../components/ui';
 import { Ic } from '../components/Moldura';
 import { reais as brl, m2 } from '../lib/format';
+import { Adorno, formatar } from '../lib/mascara';
 import type { Ficha, R } from './dados';
 import PartesLotes from './Partes';
 import {
@@ -212,7 +213,7 @@ function SecPessoas({ f }: { f: Ficha }) {
     if (pct != null && !(pct > 0 && pct <= 100)) { toast('A participação vai de 0 a 100%.'); return; }
     setGrav(true);
     try {
-      const p = await supabase.from('pessoas').insert({ empresa_id: empresa!.id, tipo_pessoa: nv.tipo, nome_razao_social: nv.nome.trim(), telefone: nv.tel.trim() || null }).select('id').single();
+      const p = await supabase.from('pessoas').insert({ empresa_id: empresa!.id, tipo_pessoa: nv.tipo, nome_razao_social: nv.nome.trim(), telefone: nv.tel.replace(/\D/g, '') || null }).select('id').single();
       if (p.error) throw p.error;
       const v = await supabase.from('terreno_pessoas').insert({ empresa_id: empresa!.id, terreno_id: f.id, pessoa_id: p.data.id, papel: nv.papel, percentual_participacao: pct });
       if (v.error) throw v.error;
@@ -239,8 +240,8 @@ function SecPessoas({ f }: { f: Ficha }) {
               <tr key={p.id}>
                 <td className="l1">{p.pessoas?.nome_razao_social} <span className="faint" style={{ fontSize: 12 }}>{p.pessoas?.tipo_pessoa}</span></td>
                 <td>{OPT.papel[p.papel] ?? p.papel}</td>
-                <td className={`r${p.percentual_participacao != null ? '' : ' l0'}`}>{p.percentual_participacao != null ? num(p.percentual_participacao, 2) + '%' : '—'}</td>
-                <td className={`l2${p.pessoas?.telefone ? '' : ' l0'}`}>{p.pessoas?.telefone || '—'}</td>
+                <td className={`r${p.percentual_participacao != null ? '' : ' l0'}`}>{p.percentual_participacao != null ? Number(p.percentual_participacao).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%' : '—'}</td>
+                <td className={`l2${p.pessoas?.telefone ? '' : ' l0'}`}>{p.pessoas?.telefone ? formatar(p.pessoas.telefone, 0, 'tel')[0] : '—'}</td>
                 {comParte && <td>{edita ? <select aria-label="Parte" value={p.parte_id ?? ''} onChange={(ev) => parte(p.id, ev.target.value)}>
                   <option value="">—</option>{partes.map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}</select> : partes.find((x) => x.id === p.parte_id)?.nome ?? '—'}</td>}
                 <td className="r">{edita && <button className="iconbtn sm lixo" aria-label="Remover" title="Remover" onClick={() => tirar(p.id)}><Ic n="lixo" s={18} /></button>}</td>
@@ -253,8 +254,8 @@ function SecPessoas({ f }: { f: Ficha }) {
             <div className="field grow"><label htmlFor="p-n">Nome ou razão social</label><input id="p-n" required value={nv.nome} onChange={(ev) => setNv({ ...nv, nome: ev.target.value })} /></div>
             <div className="field" style={{ flex: '0 1 120px' }}><label htmlFor="p-t">Tipo</label><select id="p-t" value={nv.tipo} onChange={(ev) => setNv({ ...nv, tipo: ev.target.value })}><option value="PF">PF</option><option value="PJ">PJ</option></select></div>
             <div className="field"><label htmlFor="p-p">Vínculo</label><select id="p-p" value={nv.papel} onChange={(ev) => setNv({ ...nv, papel: ev.target.value })}>{Object.entries(OPT.papel).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div>
-            <div className="field" style={{ flex: '0 1 110px' }}><label htmlFor="p-pc">% (prop.)</label><input id="p-pc" inputMode="decimal" disabled={nv.papel !== 'proprietario'} value={nv.pct} onChange={(ev) => setNv({ ...nv, pct: ev.target.value })} /></div>
-            <div className="field"><label htmlFor="p-tel">Telefone</label><input id="p-tel" value={nv.tel} onChange={(ev) => setNv({ ...nv, tel: ev.target.value })} /></div>
+            <div className="field" style={{ flex: '0 1 120px' }}><label htmlFor="p-pc">Participação</label><Adorno t="pct"><input id="p-pc" inputMode="decimal" data-fmt="pct" disabled={nv.papel !== 'proprietario'} value={nv.pct} onChange={(ev) => setNv({ ...nv, pct: ev.target.value })} /></Adorno></div>
+            <div className="field"><label htmlFor="p-tel">Telefone</label><input id="p-tel" inputMode="tel" data-fmt="tel" placeholder="(11) 98765-4321" value={nv.tel} onChange={(ev) => setNv({ ...nv, tel: ev.target.value })} /></div>
             <button className="btn sm" disabled={grav}><Ic n="add" s={16} />Adicionar</button>
           </form>
         )}
