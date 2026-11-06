@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { NOME_PAPEL, useSessao } from '../lib/sessao';
 import { supabase } from '../lib/supabase';
+import { data as dataCurta } from '../lib/format';
 import { AMBIENTE, EH_DEV } from '../lib/config';
 import { BI, IC_SINO, P } from '../lib/icones-prototipo';
 import NovoTerreno from '../novo/NovoTerreno';
@@ -94,12 +95,16 @@ function Perfil() {
   );
 }
 
-interface Aviso { id: string; texto: string; criada_em: string; lida_em: string | null }
-const dataCurta = (iso: string) => new Date(iso).toLocaleDateString('pt-BR');
+/* Sino (proto_funil.js › renderSino): os avisos de quem está usando, ao vivo (Supabase Realtime) e a cada minuto; o clique marca
+   como lido e abre a ficha do terreno na aba do item (reunião e proposta na Comercial, o resto na Visão geral). E-mail fica para
+   depois; "Configurar notificações" entra com Configurações. */
+interface Aviso { id: string; texto: string; criada_em: string; lida_em: string | null; autor_id: string | null; origem_tabela: string;
+  email_status: string | null; terrenos: { codigo: string; nome: string | null } | null }
+const ABA_ORIGEM: Record<string, string> = { reunioes: 'comercial', propostas: 'comercial', ofertas: 'comercial', reuniao_agenda: 'comercial' };
 
 function Sino() {
   const { session, empresa } = useSessao();
-  const qc = useQueryClient();
+  const qc = useQueryClient(), navegar = useNavigate();
   const [aberto, setAberto] = useState(false);
   const ref = useFora<HTMLDivElement>(aberto, () => setAberto(false));
   const uid = session?.user.id;
@@ -108,17 +113,33 @@ function Sino() {
     enabled: !!uid && !!empresa,
     refetchInterval: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.from('notificacoes').select('id,texto,criada_em,lida_em')
+      const { data, error } = await supabase.from('notificacoes').select('id,texto,criada_em,lida_em,autor_id,origem_tabela,email_status,terrenos(codigo,nome)')
         .eq('destinatario_id', uid!).eq('empresa_id', empresa!.id).order('criada_em', { ascending: false }).limit(30);
       if (error) throw error;
-      return (data ?? []) as Aviso[];
+      const L = (Array.isArray(data) ? data : []) as unknown as Aviso[];
+      const ids = [...new Set(L.map((x) => x.autor_id).filter(Boolean))] as string[];
+      const us = ids.length ? await supabase.from('usuarios').select('user_id,nome,email').in('user_id', ids) : { data: [] };
+      const nomes = Object.fromEntries(((Array.isArray(us.data) ? us.data : []) as { user_id: string; nome: string | null; email: string }[]).map((u) => [u.user_id, u.nome || u.email]));
+      return L.map((x) => ({ ...x, autor: x.autor_id ? nomes[x.autor_id] ?? null : null }));
     },
   });
+  /* ao vivo: aviso novo para quem está usando recarrega o sino */
+  useEffect(() => {
+    if (!uid) return;
+    const ch = supabase.channel('sino-' + uid).on('postgres_changes', { event: '*', schema: 'app', table: 'notificacoes', filter: `destinatario_id=eq.${uid}` },
+      () => qc.invalidateQueries({ queryKey: ['avisos'] })).subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [uid, qc]);
   const L = q.data ?? [];
   const nl = L.filter((a) => !a.lida_em).length;
   async function lerTodas() {
     await supabase.rpc('marcar_notificacao_lida', { p_id: null });
     qc.invalidateQueries({ queryKey: ['avisos'] });
+  }
+  async function abrir(x: Aviso) {
+    setAberto(false);
+    if (!x.lida_em) { await supabase.rpc('marcar_notificacao_lida', { p_id: x.id }); qc.invalidateQueries({ queryKey: ['avisos'] }); }
+    if (x.terrenos?.codigo) navegar(`/terrenos/${x.terrenos.codigo}/${ABA_ORIGEM[x.origem_tabela] ?? 'geral'}`);
   }
   return (
     <div className="sino-wrap" id="sino" ref={ref}>
@@ -133,9 +154,10 @@ function Sino() {
             {L.length === 0
               ? <div className="empty" style={{ padding: '24px 16px' }}>Nada por aqui.</div>
               : L.map((x) => (
-                <button key={x.id} className={`sino-i ${x.lida_em ? '' : 'nova'}`}>
+                <button key={x.id} className={`sino-i ${x.lida_em ? '' : 'nova'}`} onClick={() => abrir(x)}>
                   <span className="sino-d" />
-                  <span className="sino-c"><span className="sino-t">{x.texto}</span><span className="sino-s">{dataCurta(x.criada_em)}</span></span>
+                  <span className="sino-c"><span className="sino-t">{x.texto}</span>
+                    <span className="sino-s">{x.terrenos ? `${x.terrenos.codigo} · ${x.terrenos.nome ?? ''} · ` : ''}{dataCurta(x.criada_em.slice(0, 10))}{x.autor ? ' · ' + x.autor : ''}</span></span>
                 </button>
               ))}
           </div>
