@@ -3430,8 +3430,21 @@ update app.matricula_partes set percentual = 0 where id = :'lc2';
 update app.matricula_partes set percentual = 100 where id = :'lc1';
 select pg_temp.ok((select area_matriculas_m2 = 500 from app.v_partes where id = :'lp1') and (select area_matriculas_m2 = 500 from app.v_partes where id = :'lp2'),
   'etiqueta com 0%: a parte fica sem nada do lote');
-update app.matricula_partes set percentual = 70 where id = :'lc1';
+-- cópia solta (sem parte), para distribuir depois
+update app.matricula_partes set percentual = 60 where id = :'lc1';
+insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id, percentual) values (:'emp', :'tl', :'lm1', null, 40) returning id as lcs \gset
+select pg_temp.ok((select fracao = 0.4 from app.v_etiquetas where id = :'lcs'), 'cópia solta guarda a fração dela no lote');
+select pg_temp.ok((select area_matriculas_m2 = 300 from app.v_partes where id = :'lp1'), 'a parte fica só com a fração dela; a solta não entra em parte nenhuma');
 delete from app.matricula_partes where id = :'lc2';
+update app.matricula_partes set parte_id = :'lp2' where id = :'lcs';
+select pg_temp.ok((select area_matriculas_m2 = 700 from app.v_partes where id = :'lp2'), 'a solta levada para uma parte entra nela');
+insert into app.matricula_partes (id, empresa_id, terreno_id, matricula_id, parte_id, percentual) values (:'lc2', :'emp', :'tl', :'lm1', null, 0);
+update app.matricula_partes set parte_id = null where id = :'lcs';
+delete from app.matricula_partes where id = :'lc2';
+update app.matricula_partes set parte_id = :'lp2', percentual = 0 where id = :'lcs';
+update app.matricula_partes set percentual = 100 where id = :'lc1';
+update app.matricula_partes set percentual = 70 where id = :'lc1';
+delete from app.matricula_partes where id in (:'lc2', :'lcs');
 update app.matricula_partes set percentual = null where id = :'lc1';
 select pg_temp.ok((select area_matriculas_m2 = 500 from app.v_partes where id = :'lp1'), 'de volta a uma parte só, o lote inteiro');
 -- parte só com SQLs: a área vem do cadastro da prefeitura

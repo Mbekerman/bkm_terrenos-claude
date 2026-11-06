@@ -255,7 +255,7 @@ function Etiqueta({ e, L, rot, edita, ver, tirar, menu, pct }: { e: Etq; L: Lote
      o clique abre a barra do percentual (pedido do Moises, 6/nov/2026) */
   const cs = e.c ? copias(L, e.tipo, e.x.id) : [], fr = e.c ? fracao(L, e.tipo, e.c) : null;
   const pz = e.c && fr ? Math.round(fr.f * 1000) / 10 : null;
-  const dica = pz != null ? `${L.partes.find((pa) => pa.id === e.c!.parte_id)?.nome ?? 'Parte'}: ${num(pz, pz % 1 ? 1 : 0)}% deste lote${fr!.est ? ' (estimado: sem percentual informado)' : ''}${cs.length > 1 ? ` · em ${cs.length} partes` : ''}` : 'Ver e editar';
+  const dica = pz != null ? `${L.partes.find((pa) => pa.id === e.c!.parte_id)?.nome ?? 'Solta'}: ${num(pz, pz % 1 ? 1 : 0)}% deste lote${fr!.est ? ' (estimado: sem percentual informado)' : ''}${cs.length > 1 ? ` · em ${cs.length} cópias` : ''}` : 'Ver e editar';
   const shared = cs.length > 1;
   return (
     <span className={`etq ${e.tipo}`} data-etq={k} tabIndex={edita ? 0 : undefined} aria-label={`${e.tipo === 'm' ? 'Matrícula' : rot} ${n}${pz != null ? ', ' + dica : ''}`}
@@ -312,7 +312,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     const x = lotesDe(L2, tipo).find((l) => l.id === id);
     return x ? { tipo, x, c: cid ? copiasDe(L2, tipo).find((c) => c.id === cid) : undefined } : null;
   };
-  const nomeP = (pid: string) => LR.current.partes.find((pa) => pa.id === pid)?.nome ?? 'a parte';
+  const nomeP = (pid: string | null) => (pid ? LR.current.partes.find((pa) => pa.id === pid)?.nome ?? 'a parte' : 'solta');
   const [menu, setMenu] = useState<{ k: string; x: number; y: number } | null>(null);
   const nome = (e: Etq) => (e.tipo === 'm' ? `Matrícula ${e.x.numero}` : `${rot} ${e.x.inscricao}`);
   const ver = (k: string) => { if (Date.now() - soltou.current > 400) abrirEtq(k); };
@@ -322,7 +322,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
   const inserir = async (tipo: Tp, rows: R[]) => okR(await supabase.from(TAB_C[tipo]).insert(rows));
   const apagarC = async (tipo: Tp, ids: string[]) => okR(await supabase.from(TAB_C[tipo]).delete().in('id', ids));
   const mudarC = async (tipo: Tp, id: string, v: R) => okR(await supabase.from(TAB_C[tipo]).update(v).eq('id', id));
-  const nova = (e: Etq, pid: string): R => ({ id: crypto.randomUUID(), empresa_id: empresa!.id, terreno_id: f.id, [FK[e.tipo]]: e.x.id, parte_id: pid });
+  const nova = (e: Etq, pid: string | null): R => ({ id: crypto.randomUUID(), empresa_id: empresa!.id, terreno_id: f.id, [FK[e.tipo]]: e.x.id, parte_id: pid });
   const jaEm = (e: Etq, pid: string) => copias(LR.current, e.tipo, e.x.id).some((c) => c.parte_id === pid);
   /** leva a etiqueta para a parte (null = de volta para sem parte) */
   async function parte(k: string, pid: string | null) {
@@ -337,25 +337,34 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     }
     const c = e.c;
     if (c.parte_id === pid) return;
-    if (!pid) {   // parte → sem parte (ou só sai desta parte, se o lote está em outras)
+    /* com o lote em outras partes, sair da parte deixa a cópia solta, com o percentual dela, para distribuir depois */
+    if (!pid && copias(LR.current, e.tipo, e.x.id).length < 2) {   // parte → sem parte: o lote volta a ficar solto
       const row = { id: c.id, empresa_id: empresa!.id, terreno_id: f.id, [FK[e.tipo]]: e.x.id, parte_id: c.parte_id, percentual: c.percentual ?? null };
       if (!(await apagarC(e.tipo, [c.id]))) return;
       empilhar({ rotulo: `${nome(e)} fora da parte ${nomeP(c.parte_id)}`, fazer: () => inserir(e.tipo, [row]), refazer: () => apagarC(e.tipo, [c.id]) });
       return;
     }
-    if (jaEm(e, pid)) { toast(`${nome(e)} já está na parte ${nomeP(pid)}.`, true); return; }
+    if (pid && jaEm(e, pid)) { toast(`${nome(e)} já está na parte ${nomeP(pid)}.`, true); return; }
     const antes = c.parte_id;
     if (!(await mudarC(e.tipo, c.id, { parte_id: pid }))) return;
-    empilhar({ rotulo: `${nome(e)} de parte`, fazer: () => mudarC(e.tipo, c.id, { parte_id: antes }), refazer: () => mudarC(e.tipo, c.id, { parte_id: pid }) });
+    empilhar({ rotulo: pid ? `${nome(e)} de parte` : `${nome(e)} solta`, fazer: () => mudarC(e.tipo, c.id, { parte_id: antes }), refazer: () => mudarC(e.tipo, c.id, { parte_id: pid }) });
   }
   /** duplica a etiqueta noutra parte: o lote passa a ser de mais de uma parte (pedido do Moisés, 6/nov/2026). A cópia nasce
       com o que falta para 100%; se o lote já está todo nas outras partes, nasce com 0% e o alerta. As etiquetas sem percentual
       ficam com o que tinham (estimado) por escrito, para a cópia não dividir com elas (pedido do Moises, 6/nov/2026) */
-  async function duplicar(k: string, pid: string) {
+  async function duplicar(k: string, pid: string | null) {
     const e = achar(k);
     if (!e) return;
-    if (jaEm(e, pid)) { toast(`${nome(e)} já está na parte ${nomeP(pid)}.`, true); return; }
+    if (pid && jaEm(e, pid)) { toast(`${nome(e)} já está na parte ${nomeP(pid)}.`, true); return; }
     const L2 = LR.current, cs = copias(L2, e.tipo, e.x.id);
+    /* lote solto (sem nenhuma cópia): vira duas cópias soltas, a de agora com 100% e a nova com 0%, para distribuir depois */
+    if (!cs.length) {
+      const rows: R[] = [{ ...nova(e, null), percentual: 100 }, { ...nova(e, pid), percentual: 0 }];
+      if (!(await inserir(e.tipo, rows))) return;
+      toast(`${nome(e)} duplicada: a nova cópia nasce com 0%. Clique na pizza para dar o percentual de cada uma.`);
+      empilhar({ rotulo: `${nome(e)} duplicada`, fazer: () => apagarC(e.tipo, rows.map((r) => r.id)), refazer: () => inserir(e.tipo, rows) });
+      return;
+    }
     const ef = cs.map((c) => ({ c, p: Math.round(fracao(L2, e.tipo, c).f * 10000) / 100 }));
     const resto = Math.round((100 - soma(ef.map((y) => y.p))) * 100) / 100;
     const fixar = ef.filter((y) => y.c.percentual == null);
@@ -366,9 +375,10 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     };
     if (!(await pFix((y) => y.p))) return;
     if (!(await inserir(e.tipo, [row]))) { await pFix(() => null); recarregar(); return; }
-    toast(row.percentual ? `${nome(e)} também na parte ${nomeP(pid)}, com ${num(row.percentual, row.percentual % 1 ? 2 : 0)}%.`
-      : `${nome(e)} também na parte ${nomeP(pid)}, com 0%: o lote já está todo nas outras partes. Clique na pizza para dar o percentual.`);
-    empilhar({ rotulo: `${nome(e)} duplicada na parte ${nomeP(pid)}`,
+    const onde = pid ? `também na parte ${nomeP(pid)}` : 'duplicada, solta';
+    toast(row.percentual ? `${nome(e)} ${onde}, com ${num(row.percentual, row.percentual % 1 ? 2 : 0)}%.`
+      : `${nome(e)} ${onde}, com 0%: o lote já está todo nas outras cópias. Clique na pizza para dar o percentual.`);
+    empilhar({ rotulo: pid ? `${nome(e)} duplicada na parte ${nomeP(pid)}` : `${nome(e)} duplicada`,
       fazer: async () => (await apagarC(e.tipo, [row.id])) && (await pFix(() => null)) && (recarregar(), true),
       refazer: async () => (await pFix((y) => y.p)) && inserir(e.tipo, [row]) });
   }
@@ -392,7 +402,18 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
   }
   /** o X da etiqueta: se o lote está em mais de uma parte, só sai desta; senão o lote sai do terreno */
   const apagar = (k: string) => { const e = achar(k); if (e?.tipo === 's' && (e.x.inscricao_valores ?? []).length) setConf(k); else excluir(k); };
-  const tirar = (k: string) => { const e = achar(k); if (e?.c && copias(LR.current, e.tipo, e.x.id).length > 1) parte(k, null); else apagar(k); };
+  /** o X: cópia numa parte, com o lote em outras, fica solta; cópia solta, com outras, sai; a última cópia ou o lote solto saem do terreno */
+  async function soltaFora(k: string) {
+    const e = achar(k);
+    if (!e?.c) return;
+    const c = e.c, row = { id: c.id, empresa_id: empresa!.id, terreno_id: f.id, [FK[e.tipo]]: e.x.id, parte_id: null, percentual: c.percentual ?? null };
+    if (!(await apagarC(e.tipo, [c.id]))) return;
+    empilhar({ rotulo: `cópia solta de ${nome(e)}`, fazer: () => inserir(e.tipo, [row]), refazer: () => apagarC(e.tipo, [c.id]) });
+  }
+  const tirar = (k: string) => {
+    const e = achar(k), n = e?.c ? copias(LR.current, e.tipo, e.x.id).length : 0;
+    if (e?.c && n > 1) { if (e.c.parte_id) parte(k, null); else soltaFora(k); } else apagar(k);
+  };
 
   async function incluirMat(ev: FormEvent) {
     ev.preventDefault();
@@ -538,10 +559,11 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
   }, [edita]);
 
   const pool = (tipo: 'm' | 's') => {
-    const lista = lotesDe(L, tipo), soltas = lista.filter((x) => !copias(L, tipo, x.id).length);
+    /* sem parte: o lote sem nenhuma cópia e as cópias soltas (duplicadas para distribuir depois) */
+    const lista = lotesDe(L, tipo), es: Etq[] = lista.flatMap((x) => { const cs = copias(L, tipo, x.id); return cs.length ? cs.filter((c) => !c.parte_id).map((c) => ({ tipo, x, c })) : [{ tipo, x }]; });
     return (
       <div className="etq-pool" data-drop="pool" data-tipo={tipo}>
-        {soltas.length ? soltas.map((x) => <Etiqueta key={x.id} e={{ tipo, x }} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} pct={abrirPct} />)
+        {es.length ? es.map((e) => <Etiqueta key={chave(e)} e={e} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} pct={abrirPct} />)
           : <span className="etq-vazio">{lista.length ? 'Todas já estão numa parte.' : tipo === 'm' ? 'Nenhuma matrícula ainda.' : `Nenhum ${rot} ainda.`}</span>}
       </div>
     );
@@ -652,17 +674,16 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
       {menu && menuE && (
         <div className="etq-menu" role="menu" style={{ left: menu.x, top: menu.y }}>
           <div className="etq-menu-t">{nome(menuE)}</div>
-          {faltam.length ? <>
-            <div className="etq-menu-h">{menuE.c ? 'Duplicar em' : 'Pôr em'}</div>
-            {faltam.map((pa) => <button key={pa.id} type="button" role="menuitem" onClick={() => fazM(() => (menuE.c ? duplicar(menu.k, pa.id) : parte(menu.k, pa.id)))}><Ic n={menuE.c ? 'add' : 'fwd'} s={16} />{pa.nome}</button>)}
-            {menuE.c && <>
-              <div className="etq-menu-h">Mover para</div>
-              {faltam.map((pa) => <button key={'m' + pa.id} type="button" role="menuitem" onClick={() => fazM(() => parte(menu.k, pa.id))}><Ic n="fwd" s={16} />{pa.nome}</button>)}
-            </>}
-          </> : <div className="etq-menu-v">Já está em todas as partes.</div>}
+          <div className="etq-menu-h">Duplicar</div>
+          {menuE.c && faltam.map((pa) => <button key={pa.id} type="button" role="menuitem" onClick={() => fazM(() => duplicar(menu.k, pa.id))}><Ic n="add" s={16} />Em {pa.nome}</button>)}
+          <button type="button" role="menuitem" onClick={() => fazM(() => duplicar(menu.k, null))}><Ic n="add" s={16} />Solta, para distribuir depois</button>
+          {faltam.length > 0 && <>
+            <div className="etq-menu-h">{menuE.c?.parte_id ? 'Mover para' : 'Pôr em'}</div>
+            {faltam.map((pa) => <button key={'m' + pa.id} type="button" role="menuitem" onClick={() => fazM(() => parte(menu.k, pa.id))}><Ic n="fwd" s={16} />{pa.nome}</button>)}
+          </>}
           <hr />
           <button type="button" role="menuitem" onClick={() => fazM(() => ver(menu.k))}><Ic n="edit" s={16} />Editar</button>
-          {menuE.c && <button type="button" role="menuitem" onClick={() => fazM(() => parte(menu.k, null))}><Ic n="close" s={16} />Tirar da parte {nomeP(menuE.c.parte_id)}</button>}
+          {menuE.c?.parte_id && <button type="button" role="menuitem" onClick={() => fazM(() => parte(menu.k, null))}><Ic n="close" s={16} />Tirar da parte {nomeP(menuE.c.parte_id)}</button>}
         </div>
       )}
       {pop && (() => { const e = achar(pop.k); return e?.c ? <PctPop key={pop.k} e={e as Etq & { c: R }} L={L} r={pop.r} nomeP={nomeP} fechar={() => setPop(null)} salvar={(v) => percentual(e.tipo, e.c!, v)} /> : null; })()}
@@ -718,7 +739,7 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
       if (c === 'numero' && !digitos(v[c] ?? '')) { toast('Informe o número da matrícula.', true); setV({ ...v, numero: x.numero }); return; }
       gravar(c, conv(v[c] ?? ''));
     }} />;
-  const nomeP = (pid: string) => L.partes.find((pa) => pa.id === pid)?.nome ?? 'Parte';
+  const nomeP = (pid: string | null) => (pid ? L.partes.find((pa) => pa.id === pid)?.nome ?? 'Parte' : 'Solta');
   const temP = new Set(cs.map((y) => y.parte_id));
   const faltam = L.partes.filter((pa) => !temP.has(pa.id));
   const parte = lin(cs.length > 1 ? 'Esta etiqueta está na parte' : 'Parte', edita

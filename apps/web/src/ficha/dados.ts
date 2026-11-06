@@ -147,7 +147,7 @@ export async function carregarFicha(empresa: string, codigo: string): Promise<Fi
 export type Falta = [string, string, string?, string?];
 export function completude(f: Ficha): { pct: number; faltam: Falta[] } {
   const c: [boolean, ...Falta][] = [
-    [!!(f.logradouro && f.numero && f.bairro), 'Endereço completo', 'terreno', 'loc', 'end-mapa'],
+    [!!(f.logradouro && f.numero && f.bairro), 'Endereço completo', 'terreno', 'loc', f.logradouro && f.bairro ? 'numero' : 'end-mapa'],
     [!!f.zona, 'Zona', 'terreno', 'loc', 'zona'],
     [f.lat != null, 'Ponto no mapa', 'terreno', 'loc', 'end-mapa'],
     [f.area != null, 'Área adotada', 'terreno', 'areas', 'area'],

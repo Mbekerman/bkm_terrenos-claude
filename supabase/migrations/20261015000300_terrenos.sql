@@ -417,12 +417,14 @@ create trigger t_parte before insert or update of parte_id, terreno_id on app.te
 -- O percentual da parte no lote é opcional (nulo = não informado): sem ele, o lote se divide em partes
 -- iguais entre as etiquetas sem percentual, no que sobra dos percentuais informados (app.v_etiquetas). Zero vale: a etiqueta
 -- duplicada de um lote que já está 100% nas outras partes nasce com 0% e um alerta (pedido do Moises, 6/nov/2026).
+-- A cópia pode ficar solta (parte_id nulo), para ser distribuída depois: o lote duplicado antes de ir para as partes
+-- (pedido do Moises, 6/nov/2026).
 create table app.matricula_partes (
   id           uuid primary key default gen_random_uuid(),
   empresa_id   uuid not null references app.empresas(id),
   terreno_id   uuid not null references app.terrenos(id) on delete cascade,
   matricula_id uuid not null references app.matriculas(id) on delete cascade,
-  parte_id     uuid not null references app.terreno_partes(id) on delete cascade,
+  parte_id     uuid references app.terreno_partes(id) on delete cascade,   -- nulo: cópia solta, ainda sem parte
   percentual   numeric(5,2) check (percentual >= 0 and percentual <= 100),
   unique (matricula_id, parte_id)
 );
@@ -433,7 +435,7 @@ create table app.inscricao_partes (
   empresa_id   uuid not null references app.empresas(id),
   terreno_id   uuid not null references app.terrenos(id) on delete cascade,
   inscricao_id uuid not null references app.inscricoes_municipais(id) on delete cascade,
-  parte_id     uuid not null references app.terreno_partes(id) on delete cascade,
+  parte_id     uuid references app.terreno_partes(id) on delete cascade,   -- nulo: cópia solta, ainda sem parte
   percentual   numeric(5,2) check (percentual >= 0 and percentual <= 100),
   unique (inscricao_id, parte_id)
 );
@@ -456,7 +458,7 @@ begin
     select sum(percentual) into v_soma from app.inscricao_partes where inscricao_id = v_lote and id <> new.id;
   end if;
   new.terreno_id := v_terreno;
-  if not exists (select 1 from app.terreno_partes where id = new.parte_id and terreno_id = v_terreno and ativa) then
+  if new.parte_id is not null and not exists (select 1 from app.terreno_partes where id = new.parte_id and terreno_id = v_terreno and ativa) then
     raise exception 'A parte não é deste terreno ou já saiu dele' using errcode = '23514';
   end if;
   if coalesce(v_soma, 0) + coalesce(new.percentual, 0) > 100 then
