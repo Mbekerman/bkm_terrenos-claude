@@ -123,6 +123,35 @@ export function instalarMascaras() {
     setTimeout(() => document.activeElement === el && campoVisivel(el), 300);
     setTimeout(() => document.activeElement === el && campoVisivel(el), 700);
   }, true);
+  /* clicar (ou tocar) num campo de texto ou número seleciona todo o conteúdo; o segundo clique, já no campo, põe o cursor;
+     arrastar para marcar um pedaço continua valendo; foco dado pelo sistema não seleciona (proto_ui.js, decisão do Moisés de 28/out/2026) */
+  const TXT = 'input:not([type]),input[type=text],input[type=number],input[type=email],input[type=tel],input[type=url],input[type=password],input[type=search]';
+  let alvo: HTMLInputElement | null = null;
+  document.addEventListener('pointerdown', (e) => {
+    const el = e.target;
+    alvo = el instanceof HTMLInputElement && el.matches(TXT) && document.activeElement !== el && !el.closest('[data-enter=manter]') ? el : null;
+  }, true);
+  const selecionar = () => {
+    const el = alvo;
+    if (!el || document.activeElement !== el) return;
+    alvo = null;
+    let a: number | null = null, b: number | null = null;
+    try { a = el.selectionStart; b = el.selectionEnd; } catch { /* sem cursor */ }
+    if (a !== b) return;
+    const sel = () => { try { el.select(); } catch { /* sem seleção */ } };
+    sel();
+    let tecla = false;
+    el.addEventListener('keydown', () => { tecla = true; }, { once: true });
+    // no toque o navegador ainda põe o cursor depois do click: seleciona de novo se nada foi marcado à mão
+    setTimeout(() => {
+      let x = 0, y = 0;
+      try { x = el.selectionStart ?? 0; y = el.selectionEnd ?? 0; } catch { /* sem cursor */ }
+      if (!tecla && document.activeElement === el && x === y) sel();
+    }, 60);
+  };
+  // no mouse o foco vem no apertar, no toque só no soltar (por isso também no click)
+  document.addEventListener('pointerup', selecionar, true);
+  document.addEventListener('click', selecionar, true);
   window.visualViewport?.addEventListener('resize', () => {
     const el = document.activeElement;
     if (tocou() && ehCampo(el)) campoVisivel(el);

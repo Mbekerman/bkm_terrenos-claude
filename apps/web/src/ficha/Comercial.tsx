@@ -245,7 +245,8 @@ function SecPartesCom({ f, c, registrar }: { f: Ficha; c: Com; registrar: () => 
   const qc = useQueryClient();
   if (!L) return null;
   const P = L.partes, o = c.ref, um = P.length === 1, rot = L.base?.rotulo ?? 'Inscrição';
-  const areaDe = (pid: string) => ptArea(L, pid).area;
+  // com uma parte só, ela é o terreno inteiro: vale a área adotada do terreno (sem ela, a das matrículas ou dos SQLs)
+  const areaDe = (pid: string) => (um && f.area != null ? +f.area : ptArea(L, pid).area);
   const zonasDe = (pid: string) => [...new Set(L.insc.filter((i) => i.parte_id === pid).flatMap((i) => ((L.consultas[i.id]?.zonas ?? []) as R[]).map((z) => z.sigla)).filter(Boolean))].join(' / ');
   const det = (pid: string) => {
     const ms = L.mats.filter((m) => m.parte_id === pid), is = L.insc.filter((i) => i.parte_id === pid);
