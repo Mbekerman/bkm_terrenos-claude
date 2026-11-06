@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -12,7 +13,9 @@ import { MenuPonto } from '../mapa/MenuPonto';
 import { Motor, vista, reguaA, reguaArea, reguaM, reguaTotal, type Base, type GestosPonto, type Pino } from '../mapa/motor';
 import { desenhoAtendido, poligonal, useNovo } from '../novo/estado';
 import { useConsultaGeo } from '../novo/consulta';
-import { areaPoly, centroPoly, dentroPoly, fixa, geojson, m2, type P } from '../novo/geo';
+import { areaPoly, centroPoly, dentroPoly, fixa, geojson, lotesUniao, m2, type P } from '../novo/geo';
+import LotesGeo from '../novo/LotesGeo';
+import type { LoteSql } from '../novo/geosampa';
 import { LegendaSetor, Metodologia, QuadroSetor } from '../mapa/CamadasSetor';
 import { carregarSetores, setorEm, setores, type Camada } from '../mapa/setores';
 import { mkFixa, BotaoMais, CaixaEmp, FiltroConc, ItensConc, TabelaEmp } from '../mapa/Concorrencia';
@@ -216,6 +219,24 @@ export default function Mapa() {
      sobre a poligonal entram; arrastar move o ponto; clique direito ou dois cliques num ponto abrem o menu dele (com Desfazer e
      Cancelar edição); clique no mapa fora da poligonal, dois cliques no mapa ou Enter salvam; clique fora do mapa ou Esc cancelam */
   const [ed, setEd] = useState<{ id: string; orig: P[] } | null>(null);
+  /* "Selecionar lotes" na edição (pedido do Moisés, 6/nov/2026; só em São Paulo): o mapa de lotes da prefeitura das quadras da
+     poligonal; os lotes marcados viram a poligonal em edição (a soma deles), que Concluir salva. Os SQLs não entram no terreno. */
+  const [lgEd, setLgEd] = useState(false);
+  useEffect(() => {
+    if (!lgEd) return;
+    const k = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setLgEd(false); } };
+    document.addEventListener('keydown', k, true);
+    return () => document.removeEventListener('keydown', k, true);
+  }, [lgEd]);
+  function lotesEscolhidos(marc: LoteSql[]) {
+    setLgEd(false);
+    marcas.current.inicio = Date.now();
+    if (!marc.length) { toast('Nenhum lote marcado: a poligonal continua como estava.'); return; }
+    const u = lotesUniao(marc.map((x) => x.poly));
+    if (!u) { toast('Os lotes marcados não se encostam: a poligonal continua como estava.', true); return; }
+    desGuardar(); setDes(fixa(u)); setVSel(null); setVMenu(false);
+    toast(`Poligonal ajustada a ${marc.length} lote${marc.length > 1 ? 's' : ''} (${m2(Math.round(areaPoly(u) || 0))}). Concluir salva.`);
+  }
   const edR = useRef(ed);
   edR.current = ed;
   const qc = useQueryClient();
@@ -230,10 +251,14 @@ export default function Mapa() {
     if (!TOQUE()) toast(p0 ? 'Primeiro ponto marcado. Clique nos outros cantos; Enter, dois cliques ou Concluir salvam; Esc cancela.'
       : 'Procure o endereço na barra do mapa e clique em cada canto do terreno. Enter, dois cliques ou Concluir salvam; Esc cancela.');
   }
-  function desGuardar() { hist.current.push((des || []).map((x) => [x[0], x[1]] as P)); if (hist.current.length > 60) hist.current.shift(); }
-  function desDesfazer() { const h = hist.current; if (!h.length) return false; setDes(h.pop()!); setVSel(null); setVMenu(false); return true; }
-  function desSair() { setDes(null); setEd(null); hist.current = []; setVSel(null); setVMenu(false); }
+  const fut = useRef<P[][]>([]); /* o que o Ctrl+Z desfez no desenho, para o Ctrl+Y refazer */
+  const copia = () => (desR.current || []).map((x) => [x[0], x[1]] as P);
+  function desGuardar() { hist.current.push(copia()); if (hist.current.length > 60) hist.current.shift(); fut.current = []; }
+  function desDesfazer() { const h = hist.current; if (!h.length) return false; fut.current.push(copia()); setDes(h.pop()!); setVSel(null); setVMenu(false); return true; }
+  function desRefazer() { const f = fut.current; if (!f.length) return false; hist.current.push(copia()); setDes(f.pop()!); setVSel(null); setVMenu(false); return true; }
+  function desSair() { setDes(null); setEd(null); hist.current = []; fut.current = []; setVSel(null); setVMenu(false); }
   function desCancelar() { const e0 = edR.current; desSair(); toast(e0 ? 'Edição cancelada, poligonal sem mudanças.' : 'Desenho cancelado.'); }
+  const sp = (id: string) => /^s[ãa]o paulo$/i.test(todos.find((x) => x.id === id)?.municipio?.trim() ?? '');
   function edComecar(id: string) {
     if (!edita || desR.current || rgR.current) return;
     const t = todos.find((x) => x.id === id), p = t?.poly;
@@ -244,7 +269,7 @@ export default function Mapa() {
     setDes(p.map((q) => [q[0], q[1]] as P));
     marcas.current.inicio = Date.now();
     motor.current?.enquadrar(p.map((q) => ({ lat: q[0], lng: q[1] })), 19);
-    if (!TOQUE()) toast('Editando a poligonal. Clique direito num ponto para mais opções; clique fora para salvar.');
+    if (!TOQUE()) toast('Editando a poligonal: arraste os pontos; clique direito num ponto para mais opções. Enter, dois cliques, clique fora dela ou Concluir salvam; Esc cancela.');
   }
   /* grava a poligonal: o pino vai para o centro dela (pedido do Moisés, 24/out/2026); a área da poligonal é calculada no banco */
   async function gravarPoly(id: string, p: P[]) {
@@ -265,7 +290,7 @@ export default function Mapa() {
     if (fx(p) === fx(e0.orig)) { toast('Edição encerrada, sem mudanças.'); return; }
     if (!(await gravarPoly(e0.id, p))) return;
     toast(`Poligonal salva: ${m2(Math.round(areaPoly(p) || 0))}.`);
-    empilhar({ rotulo: 'ajuste na poligonal', fazer: () => gravarPoly(e0.id, e0.orig) });
+    empilhar({ rotulo: 'ajuste na poligonal', fazer: () => gravarPoly(e0.id, e0.orig), refazer: () => gravarPoly(e0.id, p) });
   }
   function desSalvar() {
     const p = desR.current || [];
@@ -440,7 +465,7 @@ export default function Mapa() {
     if (!ed) return;
     const fora = (ev: MouseEvent) => {
       const ar = areaEl.current, t = ev.target as HTMLElement;
-      if (Date.now() - marcas.current.inicio < 500 || !ar || !document.contains(t) || ar.contains(t) || t.closest?.('.v-menu,#mp-modo,.toast,#toast')) return;
+      if (Date.now() - marcas.current.inicio < 500 || !ar || !document.contains(t) || ar.contains(t) || t.closest?.('.v-menu,#mp-modo,.toast,#toast,.scrim,.dialog')) return;
       desCancelar();
     };
     document.addEventListener('click', fora, true);
@@ -464,14 +489,14 @@ export default function Mapa() {
     };
     /* Esc no desenho vem antes dos outros Esc da página: é ele que a pessoa quer desfazer */
     const esc = (ev: KeyboardEvent) => {
-      if (ev.key !== 'Escape' || (ev.target as HTMLElement).matches?.('input,textarea,select') || document.querySelector('.mp-ctx')) return;
+      if (ev.key !== 'Escape' || (ev.target as HTMLElement).matches?.('input,textarea,select') || document.querySelector('.mp-ctx,.scrim')) return;
       /* na régua, Esc faz o mesmo que o Del (pedido do Moisés, 5/nov/2026): com desenho, apaga; sem desenho, desliga */
       if (rg) { if (rgMenu) setRgMenu(null); else setRg(rg.pts.length ? { pts: [], fechado: false } : null); } else if (vMenu) vFechar(); else desCancelar();
       ev.preventDefault(); ev.stopImmediatePropagation();
     };
     const tecla = (ev: KeyboardEvent) => {
       const el = ev.target as HTMLElement;
-      if (el.matches?.('input,textarea,select')) return;
+      if (el.matches?.('input,textarea,select') || document.querySelector('.scrim')) return;
       if (rg) {
         if ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey && ev.key.toLowerCase() === 'z') { rgDesfazer(); ev.preventDefault(); }
         else if (ev.key === 'Delete') { setRgMenu(null); setRg(rg.pts.length ? { pts: [], fechado: false } : null); ev.preventDefault(); }
@@ -479,6 +504,7 @@ export default function Mapa() {
         return;
       }
       if (ev.key === 'Enter' && !vMenu && !el.closest?.('button,a,summary')) { desSalvar(); ev.preventDefault(); }
+      else if ((ev.ctrlKey || ev.metaKey) && (ev.key.toLowerCase() === 'y' || (ev.shiftKey && ev.key.toLowerCase() === 'z'))) { desRefazer(); ev.preventDefault(); }
       else if ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey && ev.key.toLowerCase() === 'z') { desDesfazer(); ev.preventDefault(); }
       else if ((ev.key === 'Delete' || ev.key === 'Backspace') && vSel != null) { vAcao('v-excluir'); ev.preventDefault(); }
     };
@@ -823,6 +849,7 @@ export default function Mapa() {
           </>;
         })()}{des && ed && TOQUE() && <>
           {/* edição no celular: só Cancelar e Concluir, sem texto nem faixa (decisão do Moisés, 24/out/2026); no desktop, nada */}
+          {sp(ed.id) && <button className="btn sm" style={{ pointerEvents: 'auto' }} onClick={() => setLgEd(true)}>Selecionar lotes</button>}
           <button className="btn sm" style={{ pointerEvents: 'auto' }} onClick={desCancelar}>Cancelar</button>
           <button className="btn sm primary" style={{ pointerEvents: 'auto' }} onClick={desSalvar}>Concluir</button>
         </>}{des && !ed && TOQUE() && <>
@@ -830,15 +857,24 @@ export default function Mapa() {
           <button className="btn sm text" disabled={!hist.current.length} onClick={desDesfazer}>Desfazer</button>
           <button className="btn sm text" onClick={desCancelar}>Cancelar</button>
           <button className="btn sm primary" disabled={des.length < 3} onClick={desSalvar}>Concluir</button>
-        </>}{des && !ed && !TOQUE() && <>
+        </>}{des && !TOQUE() && <>
           {/* desktop: barra pequena no canto de baixo à direita; a legenda, os botões do canto e os da barra de cima (menos a busca)
               somem enquanto se desenha (styles.css, opção 5 do Moises, 5/nov/2026) */}
           <span className="mp-q mp-fina">{des.length} ponto{des.length === 1 ? '' : 's'}{areaPoly(des) ? ` · ${m2(Math.round(areaPoly(des)!))}` : ''}</span>
+          {ed && sp(ed.id) && <button className="btn sm text" onClick={() => setLgEd(true)}>Selecionar lotes</button>}
           <button className="btn sm text" onClick={desCancelar}>Cancelar</button>
           <button className="btn sm primary" disabled={des.length < 3} title={des.length < 3 ? 'Marque pelo menos 3 pontos' : 'Salvar a poligonal (Enter)'} onClick={desSalvar}>Concluir</button>
         </>}</div>
         {des && vMenu && vSel != null && des[vSel] && !movendo && motor.current && (
           <MenuPonto area={areaEl.current} px={motor.current.pontoNaTela(des[vSel][0], des[vSel][1])} i={vSel} n={des.length} area2={areaPoly(des) || 0} desfazer={hist.current.length > 0} acao={vAcao} editando={!!ed} />
+        )}
+        {lgEd && ed && des && empresa && createPortal(
+          <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && setLgEd(false)}>
+            <div className="dialog" role="dialog" aria-modal="true">
+              <LotesGeo empresa={empresa.id} L={{ modo: 'ficha', ficha: { codigo: todos.find((x) => x.id === ed.id)?.codigo ?? '', nome: todos.find((x) => x.id === ed.id)?.nome ?? '', poly: des, sqls: [],
+                fechar: () => { marcas.current.inicio = Date.now(); setLgEd(false); }, incluir: lotesEscolhidos } }} />
+            </div>
+          </div>, document.body
         )}
         <div id="mp-cartao" className="mp-cartao" aria-live="polite">{sel && visiveis.includes(sel) && linha(sel, true)}</div>
         <button type="button" className="mp-cb sv-x" title="Fechar o Street View (Esc)" aria-label="Fechar o Street View" onClick={() => motor.current?.svFechar()}><Ic n="close" s={22} /></button>

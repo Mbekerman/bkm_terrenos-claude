@@ -35,7 +35,7 @@ export default function MiniMapa({ lat, lng, poly, cor, fg, abrirMapa, salvar }:
     marca.current.inicio = Date.now();
     toast('Editando a poligonal. Clique direito num ponto para mais opções; clique fora para salvar.');
   };
-  const sair = () => { setDes(null); hist.current = []; setVSel(null); setVMenu(false); };
+  const sair = () => { setDes(null); hist.current = []; fut.current = []; setVSel(null); setVMenu(false); };
   const cancelar = () => { sair(); toast('Edição cancelada, poligonal sem mudanças.'); };
   const concluir = async () => {
     const p = desR.current;
@@ -44,8 +44,11 @@ export default function MiniMapa({ lat, lng, poly, cor, fg, abrirMapa, salvar }:
     if (JSON.stringify(fixa(p)) === JSON.stringify(fixa(poly || []))) { toast('Edição encerrada, sem mudanças.'); return; }
     if (await salvarR.current!(p)) toast(`Poligonal salva: ${m2(Math.round(areaPoly(p) || 0))}.`);
   };
-  const guardar = () => { hist.current.push((desR.current || []).map((x) => [x[0], x[1]] as P)); if (hist.current.length > 60) hist.current.shift(); };
-  const desfazer = () => { const h = hist.current; if (!h.length) return false; setDes(h.pop()!); setVSel(null); setVMenu(false); return true; };
+  const fut = useRef<P[][]>([]);
+  const copia = () => (desR.current || []).map((x) => [x[0], x[1]] as P);
+  const guardar = () => { hist.current.push(copia()); if (hist.current.length > 60) hist.current.shift(); fut.current = []; };
+  const desfazer = () => { const h = hist.current; if (!h.length) return false; fut.current.push(copia()); setDes(h.pop()!); setVSel(null); setVMenu(false); return true; };
+  const refazer = () => { const f = fut.current; if (!f.length) return false; hist.current.push(copia()); setDes(f.pop()!); setVSel(null); setVMenu(false); return true; };
   const fechaMenu = () => { setVMenu(false); setVSel(null); };
   function vAcao(a: 'v-depois' | 'v-excluir' | 'v-desfazer' | 'v-cancelar') {
     marca.current.toque = Date.now();
@@ -183,6 +186,7 @@ export default function MiniMapa({ lat, lng, poly, cor, fg, abrirMapa, salvar }:
       const t = ev.target as HTMLElement;
       if (t.matches?.('input,textarea,select')) return;
       if (ev.key === 'Enter' && !vMenu && !t.closest?.('button,a,summary')) { concluir(); ev.preventDefault(); }
+      else if ((ev.ctrlKey || ev.metaKey) && (ev.key.toLowerCase() === 'y' || (ev.shiftKey && ev.key.toLowerCase() === 'z'))) { refazer(); ev.preventDefault(); }
       else if ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey && ev.key.toLowerCase() === 'z') { desfazer(); ev.preventDefault(); }
       else if ((ev.key === 'Delete' || ev.key === 'Backspace') && vSel != null) { vAcao('v-excluir'); ev.preventDefault(); }
     };

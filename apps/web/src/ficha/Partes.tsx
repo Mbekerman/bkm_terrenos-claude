@@ -276,11 +276,12 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     const { error } = await supabase.from(tab).update({ parte_id: pid }).eq('id', e.x.id);
     if (error) { toast(error.message, true); return; }
     recarregar();
-    empilhar({ rotulo: `${nome(e)} de volta`, fazer: async () => {
-      const r = await supabase.from(tab).update({ parte_id: antes }).eq('id', e.x.id);
+    const por = async (v: string | null) => {
+      const r = await supabase.from(tab).update({ parte_id: v }).eq('id', e.x.id);
       if (r.error) { toast(r.error.message, true); return false; }
       recarregar(); return true;
-    } });
+    };
+    empilhar({ rotulo: `${nome(e)} de parte`, fazer: () => por(antes), refazer: () => por(pid) });
   }
   async function excluir(k: string) {
     const e = achar(k);
@@ -367,12 +368,13 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     if (err) toast(err.message, true);
     else {
       toast(`Tudo na parte ${pa.nome}.`);
-      empilhar({ rotulo: `etiquetas fora de ${pa.nome}`, fazer: async () => {
-        const v = await Promise.all([ms.length ? supabase.from('matriculas').update({ parte_id: null }).in('id', ms) : null, is.length ? supabase.from('inscricoes_municipais').update({ parte_id: null }).in('id', is) : null]);
-        const e2 = v.find((x) => x?.error)?.error;
+      const por = async (v: string | null) => {
+        const r2 = await Promise.all([ms.length ? supabase.from('matriculas').update({ parte_id: v }).in('id', ms) : null, is.length ? supabase.from('inscricoes_municipais').update({ parte_id: v }).in('id', is) : null]);
+        const e2 = r2.find((x) => x?.error)?.error;
         if (e2) { toast(e2.message, true); return false; }
         recarregar(); return true;
-      } });
+      };
+      empilhar({ rotulo: `etiquetas na parte ${pa.nome}`, fazer: () => por(null), refazer: () => por(pa.id) });
     }
     recarregar();
   }
@@ -567,11 +569,12 @@ function JanelaEtq({ f, L, k, fechar, tirar }: { f: Ficha; L: Lotes; k: string; 
     const { error } = await supabase.from(tabela).update({ [c]: valor }).eq('id', id);
     if (error) { toast(error.message, true); return; }
     recarregar();
-    empilhar({ rotulo: tipo === 'm' ? `matrícula ${x!.numero}` : `${rot} ${x!.inscricao}`, fazer: async () => {
-      const r = await supabase.from(tabela).update({ [c]: antes }).eq('id', id);
+    const por = async (v: unknown) => {
+      const r = await supabase.from(tabela).update({ [c]: v }).eq('id', id);
       if (r.error) { toast(r.error.message, true); return false; }
       recarregar(); return true;
-    } });
+    };
+    empilhar({ rotulo: tipo === 'm' ? `matrícula ${x!.numero}` : `${rot} ${x!.inscricao}`, fazer: () => por(antes), refazer: () => por(valor) });
   }
   const lin = (lab: ReactNode, campo: ReactNode) => <label className="field"><span className="lbl-f">{lab}</span>{campo}</label>;
   const val = (s: ReactNode) => <span className="v">{s}</span>;
