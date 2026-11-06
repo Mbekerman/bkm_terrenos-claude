@@ -253,3 +253,12 @@ body[data-rota="terrenos"] .main { container: pagina / inline-size }
 .pct-pop .adorno, .pct-pop-i { width: 84px }
 .pct-pop-i { height: 32px; text-align: right; font-size: 14px }
 .pct-pop-h { font-size: 11px; color: #5f6368 }
+
+/* Matrículas e SQLs um sobre o outro: cada quadro recolhe pela seta do título (pedido do Moises, 6/nov/2026) */
+.etq-ct-b { width: calc(100% + 16px); margin: -4px -8px; padding: 4px 8px; border: 0; border-radius: 8px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer }
+.etq-ct-b:hover { background: rgba(68, 71, 70, .08) }
+.etq-ct-b .ic { transform: rotate(90deg); transition: transform .15s; flex: none; color: #444746 }
+.etq-col.fechado { padding-bottom: 12px }
+.etq-col.fechado > :not(.etq-ct) { display: none }
+.etq-col.fechado .etq-ct-b .ic { transform: none }
+html[data-tema="escuro"] .etq-ct-b .ic { color: #c4c7c5 }

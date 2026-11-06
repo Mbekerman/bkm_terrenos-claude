@@ -4,7 +4,7 @@ import { useRascunho } from '../components/Rascunho';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
-import { useToast } from '../components/ui';
+import { Dialogo, useToast } from '../components/ui';
 import { Ic } from '../components/Moldura';
 import { LapisMapa } from '../novo/TrocarEndereco';
 import { reais as brl, m2 } from '../lib/format';
@@ -22,7 +22,12 @@ import {
 const ni = <span className="v ni">Não informado</span>;
 
 /** campos do endereço que só mudam pelo mapa (Editar no mapa: poligonal e pino) */
-const END_MAPA = ['cep', 'logradouro', 'numero', 'bairro', 'municipio_id'];
+const END_MAPA = ['cep', 'logradouro', 'bairro', 'municipio_id'];
+/** número de porta de cada SQL do terreno, pelo endereço da prefeitura ("R BRESSER, 120" → "120") */
+async function numerosDosLotes(terreno: string): Promise<{ sql: string; n: string }[]> {
+  const { data } = await supabase.from('inscricoes_municipais').select('inscricao,endereco_prefeitura').eq('terreno_id', terreno);
+  return ((data ?? []) as R[]).map((x) => ({ sql: x.inscricao as string, n: (/,\s*(\d+[A-Za-z]?)\b/.exec(x.endereco_prefeitura ?? '')?.[1] ?? '').replace(/^0+(?=\d)/, '') })).filter((x) => x.n);
+}
 
 /* lendo ou editando, a mesma grade no mesmo lugar: quem edita já vê o valor como campo, sem Editar nem Salvar, e cada
    campo grava ao sair dele (pedidos do Moisés, 5 e 6/nov/2026) */
@@ -31,6 +36,21 @@ function SecGenerica({ f, id, primeiro }: { f: Ficha; id: 'ident' | 'loc' | 'fis
   const listas = useListas().data;
   const salvarT = useSalvar(f);
   const s = SECOES[id], t = f.t;
+  /* o número é só informativo (não mexe no pino nem na poligonal); diferente dos números de porta dos SQLs, pergunta antes
+     (pedido do Moises, 6/nov/2026) */
+  const [conf, setConf] = useState<{ n: string; lotes: { sql: string; n: string }[]; ok: (b: boolean) => void } | null>(null);
+  const salvarNum = async (d: R) => {
+    const n = String(d.numero ?? '').trim().replace(/^0+(?=\d)/, '');
+    if (n) {
+      const lotes = await numerosDosLotes(f.id);
+      if (lotes.length && !lotes.some((l) => l.n.toLowerCase() === n.toLowerCase())) {
+        const ok = await new Promise<boolean>((res) => setConf({ n, lotes, ok: res }));
+        setConf(null);
+        if (!ok) return false;
+      }
+    }
+    return salvarT(d);
+  };
   const vis = s.campos.filter((c) => !['latitude', 'longitude'].includes(c[0]));
   return (
     <Quadro aba="terreno" id={id} primeiro={primeiro} titulo={s.titulo}
@@ -38,12 +58,20 @@ function SecGenerica({ f, id, primeiro }: { f: Ficha; id: 'ident' | 'loc' | 'fis
       <div className="sec-b"><div className={`kvg${edita ? ' kvg-ed vivo' : ''}`}>{vis.map((c) => {
         /* o endereço não se edita na ficha: muda pelo mapa, com a poligonal e o pino (pedido do Moises, 6/nov/2026) */
         const so = id === 'loc' && END_MAPA.includes(c[0]);
-        if (edita && !so) return <CampoVivo key={c[0]} f={f} c={c} listas={listas} salvar={salvarT} />;
+        if (edita && !so) return <CampoVivo key={c[0]} f={f} c={c} listas={listas} salvar={c[0] === 'numero' ? salvarNum : salvarT} />;
         const v = fmtCampo(f, c, listas);
         return <div key={c[0]} className={`${c[4] || ''}${so && edita ? ' kv-so' : ''}`}><div className="k">{c[1]}</div>{v == null ? ni : <div className="v">{v}</div>}</div>;
       })}</div>
         {id === 'fis' && t.area_construida_existente_m2 != null && t.area_construida_demolir_m2 != null && +t.area_construida_demolir_m2 < +t.area_construida_existente_m2
           && <div className="hint" style={{ marginTop: 10 }}>Demolição parcial: {m2(t.area_construida_existente_m2 - t.area_construida_demolir_m2)} permanecem.</div>}</div>
+      {conf && (
+        <Dialogo titulo="Número diferente do cadastro da prefeitura" onFechar={() => conf.ok(false)}
+          rodape={<><button className="btn text" onClick={() => conf.ok(false)}>Cancelar</button><button className="btn primary" onClick={() => conf.ok(true)}>Alterar mesmo assim</button></>}>
+          <p style={{ marginTop: 0 }}>O número informado ({conf.n}) diverge dos números cadastrados no município para os lotes selecionados:</p>
+          <ul style={{ margin: '0 0 12px', paddingLeft: 20 }}>{conf.lotes.map((l) => <li key={l.sql}><span className="num">{l.sql}</span>: nº {l.n}</li>)}</ul>
+          <p style={{ marginBottom: 0 }}>Tem certeza que quer alterar? O número é só informativo: o pino e a poligonal não mudam.</p>
+        </Dialogo>
+      )}
     </Quadro>
   );
 }
