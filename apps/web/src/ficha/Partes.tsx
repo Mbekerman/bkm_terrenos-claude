@@ -97,9 +97,24 @@ function ptDiv(L: Lotes, pid: string) {
   return a && b != null ? Math.round(((b - a) / a) * 1000) / 10 : null;
 }
 
+/* recarga depois de cada ação, só do que a ação muda, e juntando as ações seguidas numa recarga só (6/nov/2026: cada
+   etiqueta mexida recarregava a ficha, as partes, os lotes e o mapa inteiro, umas 16 consultas por clique):
+   'lotes' = etiquetas e percentuais; 'ficha' = + ficha e proprietários (SQL, matrícula, parte); 'tudo' = + mapa (poligonal) */
+type Esc = 'lotes' | 'ficha' | 'tudo';
+const NIVEL: Record<Esc, number> = { lotes: 0, ficha: 1, tudo: 2 };
+const PEND = new Map<string, { n: number; t: ReturnType<typeof setTimeout> }>();
 function useRecarregar(f: Ficha) {
   const qc = useQueryClient();
-  return () => { qc.invalidateQueries({ queryKey: ['ficha-lotes', f.id] }); qc.invalidateQueries({ queryKey: ['ficha-pessoas', f.id] }); qc.invalidateQueries({ queryKey: ['ficha'] }); qc.invalidateQueries({ queryKey: ['mapa'] }); };
+  return (esc: Esc = 'ficha') => {
+    const p = PEND.get(f.id), n = Math.max(NIVEL[esc], p?.n ?? 0);
+    if (p) clearTimeout(p.t);
+    PEND.set(f.id, { n, t: setTimeout(() => {
+      PEND.delete(f.id);
+      qc.invalidateQueries({ queryKey: ['ficha-lotes', f.id] });
+      if (n >= 1) { qc.invalidateQueries({ queryKey: ['ficha-pessoas', f.id] }); qc.invalidateQueries({ queryKey: ['ficha'] }); }
+      if (n >= 2) qc.invalidateQueries({ queryKey: ['mapa'] });
+    }, 150) });
+  };
 }
 
 /** refaz a poligonal pela soma dos lotes dos SQLs (São Paulo); sem SQL com lote, volta a desenhada */
@@ -323,7 +338,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
   const ver = (k: string) => { if (Date.now() - soltou.current > 400) abrirEtq(k); };
 
   /* operações nas etiquetas das partes (matricula_partes, inscricao_partes), todas com Ctrl+Z */
-  const okR = (r: { error: any }) => { if (r.error) { toast(r.error.message, true); return false; } recarregar(); return true; };
+  const okR = (r: { error: any }) => { if (r.error) { toast(r.error.message, true); return false; } recarregar('lotes'); return true; };
   /* a tela muda na hora (cache da consulta) e a recarga confirma depois; sem isso a pizza esperava a ficha inteira recarregar */
   const qc = useQueryClient();
   const local = (tipo: Tp, fn: (cs: R[]) => R[]) => qc.setQueryData<Lotes>(['ficha-lotes', f.id], (l) => {
@@ -384,16 +399,16 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     const fixar = ef.filter((y) => y.c.percentual == null);
     const row: R = { ...nova(e, pid), percentual: resto >= 0.5 ? resto : 0 };
     const pFix = async (vals: (y: { c: R; p: number }) => number | null) => {
-      for (const y of fixar) { local(e.tipo, (cs) => cs.map((c) => (c.id === y.c.id ? { ...c, percentual: vals(y) } : c))); const r = await supabase.from(TAB_C[e.tipo]).update({ percentual: vals(y) }).eq('id', y.c.id); if (r.error) { toast(r.error.message, true); recarregar(); return false; } }
+      for (const y of fixar) { local(e.tipo, (cs) => cs.map((c) => (c.id === y.c.id ? { ...c, percentual: vals(y) } : c))); const r = await supabase.from(TAB_C[e.tipo]).update({ percentual: vals(y) }).eq('id', y.c.id); if (r.error) { toast(r.error.message, true); recarregar('lotes'); return false; } }
       return true;
     };
     if (!(await pFix((y) => y.p))) return;
-    if (!(await inserir(e.tipo, [row]))) { await pFix(() => null); recarregar(); return; }
+    if (!(await inserir(e.tipo, [row]))) { await pFix(() => null); recarregar('lotes'); return; }
     const onde = 'duplicada';
     toast(row.percentual ? `${nome(e)} ${onde}, com ${num(row.percentual, row.percentual % 1 ? 2 : 0)}%.`
       : `${nome(e)} ${onde}, com 0%: o lote já está todo nas outras cópias. Clique na pizza para dar o percentual.`);
     empilhar({ rotulo: `${nome(e)} duplicada`,
-      fazer: async () => (await apagarC(e.tipo, [row.id])) && (await pFix(() => null)) && (recarregar(), true),
+      fazer: async () => (await apagarC(e.tipo, [row.id])) && (await pFix(() => null)) && (recarregar('lotes'), true),
       refazer: async () => (await pFix((y) => y.p)) && inserir(e.tipo, [row]) });
   }
   /** percentual da parte no lote (vazio = não informado) */
@@ -419,7 +434,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     if (error) { toast(error.message, true); return; }
     toast(`${nome(e)} excluída.`);
     recarregar();
-    if (e.tipo === 's' && sp) { await refazerPoligonal(f, `${e.x.inscricao} excluído`, toast); recarregar(); }
+    if (e.tipo === 's' && sp) { await refazerPoligonal(f, `${e.x.inscricao} excluído`, toast); recarregar('tudo'); }
   }
   /** o X da etiqueta: se o lote está em mais de uma parte, só sai desta; senão o lote sai do terreno */
   const apagar = (k: string) => { const e = achar(k); if (e?.tipo === 's' && (e.x.inscricao_valores ?? []).length) setConf(k); else excluir(k); };
@@ -472,7 +487,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
         await consultarTerreno(f.id, null, [{ id: data.id, sql: data.inscricao }], toast);
         recarregar();
         await refazerPoligonal(f, `${data.inscricao} incluído`, toast);
-        recarregar();
+        recarregar('tudo');
       }
     } catch (e: any) { toast(e?.message ?? String(e), true); } finally { setGrav(false); }
   }
@@ -497,7 +512,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
       recarregar();
       if (ins.length) { await consultarTerreno(f.id, null, ins.map((x) => ({ id: x.id, sql: x.inscricao })), toast); recarregar(); }
       await refazerPoligonal(f, 'mapa de lotes da prefeitura', toast);
-      recarregar();
+      recarregar('tudo');
     } catch (e: any) { toast(e?.message ?? String(e), true); }
   }
   async function tudo() {

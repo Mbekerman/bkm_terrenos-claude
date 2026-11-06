@@ -27,7 +27,10 @@ export async function geoWfs(params: Record<string, string>): Promise<any[]> {
   if (!GEO_BASE) throw new Error('A busca no GeoSampa funciona na versão publicada.');
   const u = new URL(GEO_BASE + 'ows');
   Object.entries({ service: 'WFS', version: '2.0.0', request: 'GetFeature', outputFormat: 'application/json', srsName: 'EPSG:31983', ...params }).forEach(([k, v]) => u.searchParams.set(k, v));
-  const r = await fetch(u);
+  /* sem resposta em 30 s, desiste com aviso, em vez de deixar o botão esperando para sempre */
+  let r: Response;
+  try { r = await fetch(u, { signal: AbortSignal.timeout(30_000) }); }
+  catch (e: any) { throw new Error(e?.name === 'TimeoutError' ? 'O GeoSampa não respondeu em 30 segundos. Tente de novo.' : 'Não foi possível falar com o GeoSampa. Tente de novo.'); }
   if (!r.ok) throw new Error('GeoSampa respondeu ' + r.status);
   const j = await r.json();
   if (!j || !Array.isArray(j.features)) throw new Error('Resposta inesperada do GeoSampa');
