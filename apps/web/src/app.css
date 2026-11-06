@@ -65,11 +65,14 @@
 .fi-comp-m { display: block; left: 0; right: auto; top: calc(100% + 6px) }
 .fi-comp-t { padding: 6px 16px 4px; font-size: 12px; font-weight: 500; color: var(--m-on-var, #444746) }
 /* campo que o menu do que falta abriu acende um instante */
-.acende { animation: acende 1.6s ease-out }
+.acende { animation: acende 1.4s cubic-bezier(.2, 0, 0, 1) }
+.acende:not(.area) { border-radius: 8px }
 @keyframes acende {
-  0%, 45% { background-color: rgba(11,87,208,.14); box-shadow: 0 0 0 4px rgba(11,87,208,.14), 0 0 0 6px rgba(11,87,208,.6) }
-  100% { background-color: transparent; box-shadow: 0 0 0 4px transparent, 0 0 0 6px transparent }
+  0% { background-color: rgba(194,231,255,0); box-shadow: 0 0 0 0 rgba(194,231,255,0) }
+  18%, 55% { background-color: rgba(194,231,255,.75); box-shadow: 0 0 0 8px rgba(194,231,255,.75) }
+  100% { background-color: rgba(194,231,255,0); box-shadow: 0 0 0 12px rgba(194,231,255,0) }
 }
+
 .sec-h .qd-acoes .btn.primary:hover { background: #0842a0 !important }
 .sec-h .qd-acoes .btn.primary:disabled { opacity: .6 }
 /* título do quadro aberto fica preso logo abaixo das abas enquanto o quadro passa pela tela e solta quando ele
