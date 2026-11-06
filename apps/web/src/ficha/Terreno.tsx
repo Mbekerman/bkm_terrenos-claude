@@ -253,7 +253,7 @@ export default function AbaTerreno({ f }: { f: Ficha }) {
   /* "ir ao campo" vindo do que falta na ficha: abre o quadro e põe o foco no campo (já editável no lugar) */
   useEffect(() => {
     const atender = () => {
-      const p = tomarPedido();
+      const p = tomarPedido(['loc', 'areas', 'fis', 'lotes', 'pessoas', 'ident']);
       if (!p) return;
       abrirQuadro('terreno', p.sec);
       re((x) => x + 1);

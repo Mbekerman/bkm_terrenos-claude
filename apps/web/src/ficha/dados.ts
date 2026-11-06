@@ -157,9 +157,9 @@ export function completude(f: Ficha): { pct: number; faltam: Falta[] } {
     [f.qMat > 0, 'Matrícula', 'terreno', 'lotes', 'em-n'],
     [f.qInsc > 0, 'Inscrição e IPTU', 'terreno', 'lotes', 'es-sql'],
     [f.temProprietario, 'Proprietário', 'terreno', 'pessoas', 'p-n'],
-    [!!f.zonas, 'Zoneamento', 'parametros'],
+    [!!f.zonas, 'Zoneamento', 'parametros', 'analise', 'an-l'],
     [f.infraNV === 0, 'Visita técnica', 'infra'],
-    [!!f.valorPedido, 'Valor pedido', 'comercial'],
+    [!!f.valorPedido, 'Valor pedido', 'comercial', 'cond', 'valor'],
     [!!f.temp, 'Temperatura', 'geral', 'temp'],
   ];
   const ok = c.filter((x) => x[0]).length;

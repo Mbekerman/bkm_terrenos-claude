@@ -10,7 +10,7 @@ import { Ic } from '../components/Moldura';
 import { data as fd, hojeISO, milhoes, m2, somarDias } from '../lib/format';
 import type { Ficha, R } from './dados';
 import Temperatura from './Temperatura';
-import { lerNum, Quadro, abrirQuadro, Vivo } from './edicao';
+import { lerNum, Quadro, abrirQuadro, abrirQuadroJa, focar, usePedido, Vivo } from './edicao';
 import { ptArea, useLotes } from './Partes';
 
 // Aba Comercial da ficha (proto.js › abaComercialFicha = abaGeral(t,'neg') + abaComercial + abaNegociacao; proto_lotes.js ›
@@ -152,6 +152,10 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
   const [valorEd, setValorEd] = useState<number | null>(o?.valor_pedido ?? null);
   useEffect(() => setValorEd(o?.valor_pedido ?? null), [o?.valor_pedido]);
   const ed = edita && !!o;
+  /* "Valor pedido" do que falta na ficha: o campo da oferta de referência; sem oferta, a janela de registrar oferta */
+  usePedido(['cond'], () => {
+    if (ed) { abrirQuadroJa('comercial', 'cond'); focar('c-valor'); } else if (edita) { registrar(); focar('o-v'); }
+  });
   async function gravar(d: R) {
     if (!o) return false;
     const { error } = await supabase.from('ofertas').update(d).eq('id', o.id);
