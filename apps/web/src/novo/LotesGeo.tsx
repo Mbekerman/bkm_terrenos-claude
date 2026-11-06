@@ -83,7 +83,8 @@ async function carregar(L: Lotes, ter0: P[] | null, ja: Set<string>, empresa: st
   const ds = [...new Set(ativos.map((f) => digitos(f.properties.nr_contribuinte || '')).filter((d) => d.length === 11))];
   const outro = new Map<string, string>();
   for (let i = 0; i < ds.length; i += 200) {
-    const { data } = await supabase.from('inscricoes_municipais').select('inscricao_norm,terrenos(codigo)').eq('empresa_id', empresa).in('inscricao_norm', ds.slice(i, i + 200));
+    const { data, error } = await supabase.from('inscricoes_municipais').select('inscricao_norm,terrenos(codigo)').eq('empresa_id', empresa).in('inscricao_norm', ds.slice(i, i + 200)).abortSignal(AbortSignal.timeout(20_000));
+    if (error) throw new Error('BANCO');
     (Array.isArray(data) ? data : []).forEach((r: any) => { if (r.terrenos?.codigo && r.terrenos.codigo !== proprio) outro.set(r.inscricao_norm, r.terrenos.codigo); });
   }
   const lotes: Lote[] = ativos.map((f) => {
@@ -118,7 +119,7 @@ export default function LotesGeo({ L, empresa }: { L: Lotes; empresa: string }) 
     const ja = new Set(L.ficha ? L.ficha.sqls : (L.modo === 'sql' ? st.sql || [] : nv?.sqls || []).map((x) => digitos(x.sql)));
     carregar(L, L.ficha ? L.ficha.poly : L.modo === 'nv' ? nv?.polyDesenho || nv?.poly || null : null, ja, empresa, L.ficha?.codigo)
       .then((r) => { if (vivo) { setD(r); setFase('mapa'); } })
-      .catch((e) => { console.warn(e); if (vivo) { setErro(/poligonal não ocupa|Nenhum lote/.test(e?.message) ? e.message : 'O GeoSampa não respondeu. Tente de novo em instantes.'); setFase('erro'); } });
+      .catch((e) => { console.warn(e); if (vivo) { setErro(/poligonal não ocupa|Nenhum lote/.test(e?.message) ? e.message : e?.message === 'BANCO' ? 'O banco do sistema está demorando para responder. Tente de novo em instantes.' : 'O GeoSampa não respondeu. Tente de novo em instantes.'); setFase('erro'); } });
     return () => { vivo = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tent]);
