@@ -1187,9 +1187,11 @@ select pg_temp.falha(format($$select app.salvar_parte(%L, null, '{"nome":"Oficin
 select app.salvar_parte(:'tv', null, '{"nome":"Oficina do Zé","area_m2":2700}') as pc \gset
 select pg_temp.falha(format($$select app.salvar_parte(%L, null, '{"nome":"Fora","poligono":%s}')$$, :'tv', pg_temp.quadra(-46.7000, -23.7000, 30)), 'pedaço da parte fica dentro do terreno');
 select pg_temp.falha(format($$insert into app.terreno_partes (empresa_id, terreno_id, nome) values (%L, %L, 'Direto')$$, :'emp', :'tv'), 'parte só entra pela RPC');
-insert into app.matriculas (empresa_id, terreno_id, numero, cartorio, parte_id) values (:'emp', :'tv', '201.001', '9º RI', :'pa'), (:'emp', :'tv', '201.002', '9º RI', :'pa');
-insert into app.matriculas (empresa_id, terreno_id, numero, cartorio, parte_id) values (:'emp', :'tv', '201.003', '9º RI', :'pb');
-select pg_temp.falha(format($$insert into app.matriculas (empresa_id, terreno_id, numero, cartorio, parte_id) values (%L, %L, '1', '1º RI', %L)$$, :'emp', :'t1', :'pa'), 'matrícula só entra em parte do próprio terreno');
+insert into app.matriculas (empresa_id, terreno_id, numero, cartorio) values (:'emp', :'tv', '201.001', '9º RI'), (:'emp', :'tv', '201.002', '9º RI'), (:'emp', :'tv', '201.003', '9º RI');
+insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id)
+  select :'emp', :'tv', id, case when numero = '201.003' then :'pb'::uuid else :'pa'::uuid end from app.matriculas where terreno_id = :'tv';
+insert into app.matriculas (empresa_id, terreno_id, numero, cartorio) values (:'emp', :'t1', '1', '1º RI') returning id as m_t1 \gset
+select pg_temp.falha(format($$insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id) values (%L, %L, %L, %L)$$, :'emp', :'t1', :'m_t1', :'pa'), 'matrícula só entra em parte do próprio terreno');
 insert into app.pessoas (empresa_id, tipo_pessoa, nome_razao_social) values (:'emp', 'PF', 'Ana Souza') returning id as pas \gset
 insert into app.pessoas (empresa_id, tipo_pessoa, nome_razao_social) values (:'emp', 'PF', 'Beto Souza') returning id as pbs \gset
 insert into app.pessoas (empresa_id, tipo_pessoa, nome_razao_social) values (:'emp', 'PF', 'Carlos Pires') returning id as pcp \gset
@@ -3397,13 +3399,13 @@ insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao, area_c
 insert into app.matriculas (empresa_id, terreno_id, numero, cartorio, area_registrada_m2) values (:'emp', :'tl', '301.001', '9º CRI', 500) returning id as lm1 \gset
 insert into app.matriculas (empresa_id, terreno_id, numero, cartorio, area_registrada_m2) values (:'emp', :'tl', '301.002', '9º CRI', 300) returning id as lm2 \gset
 insert into app.matriculas (empresa_id, terreno_id, numero, cartorio, area_registrada_m2) values (:'emp', :'tl', '301.003', '9º CRI', 200) returning id as lm3 \gset
-select pg_temp.ok((select count(*) = 0 from app.matriculas where terreno_id = :'tl' and parte_id is not null)
-                  and (select count(*) = 0 from app.inscricoes_municipais where terreno_id = :'tl' and parte_id is not null), 'matrícula e SQL entram sem parte');
--- arrastar a etiqueta para a parte = gravar parte_id direto
-update app.matriculas set parte_id = :'lp1' where id = :'lm1';
-update app.inscricoes_municipais set parte_id = :'lp1' where id = :'li1';
-update app.matriculas set parte_id = :'lp2' where id in (:'lm2', :'lm3');
-update app.inscricoes_municipais set parte_id = :'lp2' where id in (:'li2', :'li3');
+select pg_temp.ok((select count(*) = 0 from app.matricula_partes where terreno_id = :'tl')
+                  and (select count(*) = 0 from app.inscricao_partes where terreno_id = :'tl'), 'matrícula e SQL entram sem parte');
+-- arrastar a etiqueta para a parte = uma linha da etiqueta na parte
+insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id) values (:'emp', :'tl', :'lm1', :'lp1') returning id as lc1 \gset
+insert into app.inscricao_partes (empresa_id, terreno_id, inscricao_id, parte_id) values (:'emp', :'tl', :'li1', :'lp1');
+insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id) values (:'emp', :'tl', :'lm2', :'lp2'), (:'emp', :'tl', :'lm3', :'lp2');
+insert into app.inscricao_partes (empresa_id, terreno_id, inscricao_id, parte_id) values (:'emp', :'tl', :'li2', :'lp2'), (:'emp', :'tl', :'li3', :'lp2');
 select pg_temp.ok((select area_partes_m2 = 500 and area_fonte = 'matriculas' and area_cadastral_m2 = 480 and divergencia_cadastral_pct = -4.0 from app.v_partes where id = :'lp1'),
   'área da parte pelas matrículas e divergência com o cadastral dos SQLs dela');
 select pg_temp.ok((select area_partes_m2 = 500 and area_matriculas_m2 = 500 and area_cadastral_m2 = 550 and divergencia_cadastral_pct = 10.0 from app.v_partes where id = :'lp2'),
@@ -3411,11 +3413,27 @@ select pg_temp.ok((select area_partes_m2 = 500 and area_matriculas_m2 = 500 and 
 update app.matriculas set area_registrada_m2 = null where id = :'lm3';
 select pg_temp.ok((select area_partes_m2 is null and area_fonte is null and divergencia_cadastral_pct is null from app.v_partes where id = :'lp2'), 'matrícula sem área: a parte fica sem área (não soma pela metade)');
 update app.matriculas set area_registrada_m2 = 200 where id = :'lm3';
-select pg_temp.falha(format($$update app.matriculas set parte_id = %L where id = %L$$, :'pa', :'lm1'), 'a parte tem que ser do terreno');
+select pg_temp.falha(format($$update app.matricula_partes set parte_id = %L where id = %L$$, :'pa', :'lc1'), 'a parte tem que ser do terreno');
+-- o mesmo lote em duas partes (etiqueta duplicada; pedido do Moisés, 6/nov/2026)
+insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id) values (:'emp', :'tl', :'lm1', :'lp2') returning id as lc2 \gset
+select pg_temp.falha(format($$insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id) values (%L, %L, %L, %L)$$, :'emp', :'tl', :'lm1', :'lp2'), 'a mesma etiqueta não entra duas vezes na mesma parte');
+select pg_temp.ok((select area_matriculas_m2 = 250 from app.v_partes where id = :'lp1') and (select area_matriculas_m2 = 750 from app.v_partes where id = :'lp2'),
+  'lote de duas partes sem percentual: metade para cada');
+select pg_temp.ok((select bool_and(fracao_estimada) from app.v_etiquetas where lote_id = :'lm1'), 'sem percentual, a fração do lote compartilhado é estimada');
+update app.matricula_partes set percentual = 70 where id = :'lc1';
+select pg_temp.ok((select area_matriculas_m2 = 350 from app.v_partes where id = :'lp1') and (select area_matriculas_m2 = 650 from app.v_partes where id = :'lp2'),
+  'com 70% numa parte, a outra fica com o que sobra');
+select pg_temp.falha(format('update app.matricula_partes set percentual = 40 where id = %L', :'lc2'), 'os percentuais do mesmo lote não passam de 100%');
+update app.matricula_partes set percentual = 30 where id = :'lc2';
+select pg_temp.ok((select count(*) = 0 from app.v_etiquetas where lote_id = :'lm1' and fracao_estimada), 'com os percentuais informados, nada é estimado');
+delete from app.matricula_partes where id = :'lc2';
+update app.matricula_partes set percentual = null where id = :'lc1';
+select pg_temp.ok((select area_matriculas_m2 = 500 from app.v_partes where id = :'lp1'), 'de volta a uma parte só, o lote inteiro');
 -- parte só com SQLs: a área vem do cadastro da prefeitura
 select app.salvar_parte(:'tl', null, '{"nome":"Vendedor 3"}') as lp3 \gset
-insert into app.inscricoes_municipais (empresa_id, terreno_id, municipio_id, inscricao, area_cadastral_m2, origem, endereco_prefeitura, parte_id)
-values (:'emp', :'tl', :'sp', '059.112.0040-3', 220, 'mapa_prefeitura', 'R BRESSER, 120', :'lp3') returning id as lim \gset
+insert into app.inscricoes_municipais (empresa_id, terreno_id, municipio_id, inscricao, area_cadastral_m2, origem, endereco_prefeitura)
+values (:'emp', :'tl', :'sp', '059.112.0040-3', 220, 'mapa_prefeitura', 'R BRESSER, 120') returning id as lim \gset
+insert into app.inscricao_partes (empresa_id, terreno_id, inscricao_id, parte_id) values (:'emp', :'tl', :'lim', :'lp3');
 select pg_temp.ok((select area_partes_m2 = 220 and area_fonte = 'inscricoes' and divergencia_cadastral_pct is null from app.v_partes where id = :'lp3'), 'parte sem matrícula: área pela soma dos SQLs');
 select pg_temp.falha(format($$insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao, origem) values (%L, %L, '059.112.0041-1', 'chute')$$, :'emp', :'tl'), 'origem da inscrição só digitada ou do mapa');
 reset role;
@@ -3425,17 +3443,19 @@ select pg_temp.como(:'analista');
 select pg_temp.ok((select zonas = '{ZM}' from app.v_partes where id = :'lp1'), 'zonas da parte pela última consulta dos SQLs dela');
 -- excluir a parte: as etiquetas dela ficam sem parte (voltam para o quadro de cima)
 select app.excluir_parte(:'lp3');
-select pg_temp.ok(not exists (select 1 from app.terreno_partes where id = :'lp3') and (select parte_id is null from app.inscricoes_municipais where id = :'lim'),
+select pg_temp.ok(not exists (select 1 from app.terreno_partes where id = :'lp3') and exists (select 1 from app.inscricoes_municipais where id = :'lim')
+                  and not exists (select 1 from app.inscricao_partes where inscricao_id = :'lim'),
   'parte excluída: o SQL dela fica no terreno, sem parte');
 select app.excluir_parte(:'lp2');
-select pg_temp.ok((select count(*) = 0 from app.matriculas where terreno_id = :'tl' and parte_id = :'lp2'), 'matrículas da parte excluída ficam sem parte');
+select pg_temp.ok((select count(*) = 0 from app.matricula_partes where parte_id = :'lp2') and (select count(*) = 3 from app.matriculas where terreno_id = :'tl'),
+  'matrículas da parte excluída ficam no terreno, sem parte');
 select pg_temp.falha(format('select app.excluir_parte(%L)', :'lp1'), 'a última parte não sai');
 insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro, poligono_geojson)
 values (:'emp', 'Uma parte só', :'analista', 'corretor', :'sp', 'Brás', pg_temp.quadra(-46.8300, -23.7000, 30)) returning id as tl2 \gset
 select pg_temp.falha(format('select app.excluir_parte(id) from app.terreno_partes where terreno_id = %L', :'tl2'), 'o terreno fica sempre com uma parte');
 select pg_temp.como(:'leitor');
-update app.matriculas set parte_id = null where id = :'lm1';
-select pg_temp.ok((select parte_id = :'lp1' from app.matriculas where id = :'lm1'), 'Leitura não muda a parte da matrícula');
+delete from app.matricula_partes where id = :'lc1';
+select pg_temp.ok(exists (select 1 from app.matricula_partes where id = :'lc1'), 'Leitura não tira a matrícula da parte');
 select pg_temp.como(:'analista');
 
 -- ---------------------------------------------------------------------

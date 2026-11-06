@@ -153,7 +153,6 @@ export function completude(f: Ficha): { pct: number; faltam: Falta[] } {
     [f.lat != null, 'Ponto no mapa', 'terreno', 'loc', 'busca-end'],
     [f.area != null, 'Área adotada', 'terreno', 'areas', 'area'],
     [f.testada != null, 'Testada', 'terreno', 'areas', 'testada_principal_m'],
-    [!!f.ocupacao && f.ocupacao !== 'nao_informado', 'Ocupação', 'terreno', 'fis', 'situacao_ocupacao'],
     [f.qMat > 0, 'Matrícula', 'terreno', 'lotes', 'em-n'],
     [f.qInsc > 0, 'Inscrição e IPTU', 'terreno', 'lotes', 'es-sql'],
     [f.temProprietario, 'Proprietário', 'terreno', 'pessoas', 'p-n'],

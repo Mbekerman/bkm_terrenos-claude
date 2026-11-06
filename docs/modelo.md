@@ -59,10 +59,10 @@ Arrastar no quadro de etapas chama `mover_para_etapa` (para frente, etapa por et
 
 ## Terreno com vários donos (partes)
 
-Um dono com várias matrículas é **uma** negociação. Vários donos que negociam separado são **partes** do terreno (`terreno_partes`): cada parte é um dono, ou um grupo de donos que negocia junto (herdeiros, sócios), com as matrículas, as inscrições e as pessoas dela (`parte_id` em `matriculas`, `inscricoes_municipais` e `terreno_pessoas`; participações somam 100% em cada parte) e os corretores dela (`parte_corretores`: uma parte pode ter vários corretores e o mesmo corretor pode trazer várias partes; ligar o corretor à parte o põe entre os corretores do terreno), o pedaço da poligonal e a marca de **essencial** (sem ela o terreno não serve) ou dispensável.
+Um dono com várias matrículas é **uma** negociação. Vários donos que negociam separado são **partes** do terreno (`terreno_partes`): cada parte é um dono, ou um grupo de donos que negocia junto (herdeiros, sócios), com as matrículas, as inscrições e as pessoas dela (`matricula_partes` e `inscricao_partes` para as matrículas e os SQLs, `parte_id` em `terreno_pessoas`; participações somam 100% em cada parte) e os corretores dela (`parte_corretores`: uma parte pode ter vários corretores e o mesmo corretor pode trazer várias partes; ligar o corretor à parte o põe entre os corretores do terreno), o pedaço da poligonal e a marca de **essencial** (sem ela o terreno não serve) ou dispensável.
 
 - **Todo terreno tem pelo menos uma parte** (decisão do Moisés, 4/nov/2026): nasce com "Vendedor 1" (trigger `t_parte1`), e a última parte ativa não sai. Na aba Terreno, o quadro Partes tem "Quantas partes vendem?" e um cartão por parte com título, nome da pessoa principal, telefone, e-mail, CPF ou CNPJ e observação, todos opcionais (gravados só com os dígitos, conferidos por `fluxo.validar_formato`); "Excluir parte" só com a parte sem histórico (`app.excluir_parte`), senão vale `remover_parte`, com motivo. No Novo terreno, os SQLs se escolhem junto com a poligonal (passo 1, mapa da prefeitura em São Paulo).
-- **Matrículas e SQLs ligados direto à parte** (decisão do Moisés, 4/nov/2026, substituindo os lotes do mesmo dia): não há mais lote. A matrícula (`matriculas.parte_id`) e o SQL (`inscricoes_municipais.parte_id`) apontam para a parte, conferidos pelo trigger `t_parte` (a parte tem que ser do terreno); sem parte, ficam livres no terreno. Na aba Terreno, a seção Matrículas e SQLs tem dois formulários (matrícula com número, cartório já preenchido pelo terreno e área registrada; SQL digitado ou escolhido no mapa da prefeitura) que criam etiquetas (amarelas as matrículas, roxas os SQLs), e as etiquetas são arrastadas para o quadro de cada parte. Cada SQL incluído ou excluído refaz a poligonal pela soma dos lotes da prefeitura (a desenhada fica guardada em `terrenos.poligono_desenhado_geojson`, para voltar a ela). A matrícula pode ficar sem cartório (não informado), e aí conta como o mesmo cartório na repetição: o número não entra noutro terreno, com ou sem cartório (`t_repetida`; com os dois cartórios preenchidos, o índice único). Área da parte: a soma das matrículas quando todas têm área, senão a soma das áreas cadastrais dos SQLs; divergência Matrícula × Prefeitura por parte, em % da matrícula; zonas pelos SQLs consultados (`v_partes`). Excluir a parte devolve as matrículas e os SQLs ao terreno, sem parte. Os SQLs marcados no mapa da prefeitura entram com `origem = 'mapa_prefeitura'`, área cadastral e `endereco_prefeitura`.
+- **Matrículas e SQLs ligados direto à parte** (decisão do Moisés, 4/nov/2026, substituindo os lotes do mesmo dia): não há mais lote. A matrícula e o SQL são únicos no terreno, mas o mesmo lote pode ser de mais de uma parte (pedido do Moisés, 6/nov/2026): cada etiqueta numa parte é uma linha de `matricula_partes` ou `inscricao_partes` (uma vez por parte, com o **percentual** da parte no lote opcional), conferida pelo trigger `t_parte` (a parte tem que ser ativa e do terreno do lote, e os percentuais do lote não passam de 100%); sem nenhuma linha, o lote fica livre no terreno. A fração de cada parte (`v_etiquetas`) é o percentual informado ou, sem ele, o que sobra dos informados dividido igual entre as etiquetas sem percentual (estimada); uma etiqueta só é o lote inteiro. Na aba Terreno, a seção Matrículas e SQLs tem dois formulários (matrícula com número, cartório já preenchido pelo terreno e área registrada; SQL digitado ou escolhido no mapa da prefeitura) que criam etiquetas (amarelas as matrículas, roxas os SQLs), e as etiquetas são arrastadas para o quadro de cada parte. Cada SQL incluído ou excluído refaz a poligonal pela soma dos lotes da prefeitura (a desenhada fica guardada em `terrenos.poligono_desenhado_geojson`, para voltar a ela). A matrícula pode ficar sem cartório (não informado), e aí conta como o mesmo cartório na repetição: o número não entra noutro terreno, com ou sem cartório (`t_repetida`; com os dois cartórios preenchidos, o índice único). Área da parte: a soma das matrículas quando todas têm área, senão a soma das áreas cadastrais dos SQLs, cada lote pela fração da parte nele; divergência Matrícula × Prefeitura por parte, em % da matrícula; zonas pelos SQLs consultados (`v_partes`). Excluir a parte apaga as etiquetas dela; a matrícula e o SQL ficam no terreno. Os SQLs marcados no mapa da prefeitura entram com `origem = 'mapa_prefeitura'`, área cadastral e `endereco_prefeitura`.
 - **Antes da etapa da divisão** (`fases_modelo.etapa_partes`, só na fase de entrada; padrão Negociação) há uma negociação só, a do terreno: Triagem e Estudos são da área toda.
 - **Ao chegar nela**, com duas ou mais partes ativas, cada parte ganha a sua negociação: um processo da mesma fase com `parte_id` e `principal_id` (código `NEG-00012-1`), com oferta de referência, propostas, documentos, reuniões, tarefas, subetapa, status, aprovações e histórico próprios. Parte cadastrada depois disso já nasce com a sua.
 - **A negociação do terreno passa a andar pelas partes** (`_sincronizar_principal`): fica na etapa e na subetapa da parte mais atrasada em aberto, com cada mudança no histórico ("Pelas negociações das partes"), e não se move à mão. A de uma parte só anda da etapa da divisão em diante e enquanto a do terreno estiver ativa.
@@ -241,6 +241,8 @@ erDiagram
   municipios ||--o| bases_cadastrais : "GeoSampa, GeoSanja"
   municipios ||--o{ inscricoes_municipais : "cidade da inscricao"
   inscricoes_municipais ||--o{ inscricao_valores : "valor venal e IPTU do exercicio atual"
+  matriculas ||--o{ matricula_partes : "etiqueta em cada parte"
+  inscricoes_municipais ||--o{ inscricao_partes : "etiqueta em cada parte"
   terrenos ||--o{ confrontacoes : mede
   terrenos ||--o{ terreno_pessoas : vincula
   terrenos ||--o{ terreno_partes : "donos que negociam separado"
@@ -325,12 +327,22 @@ erDiagram
     text cartorio
     numeric area_registrada_m2
     date data_certidao
-    uuid parte_id FK "de qual dono"
+  }
+  matricula_partes {
+    uuid id PK
+    uuid matricula_id FK
+    uuid parte_id FK "uma vez por parte"
+    numeric percentual "opcional; nulo = divide o que sobra"
+  }
+  inscricao_partes {
+    uuid id PK
+    uuid inscricao_id FK
+    uuid parte_id FK "uma vez por parte"
+    numeric percentual "opcional; nulo = divide o que sobra"
   }
   inscricoes_municipais {
     uuid id PK
     uuid terreno_id FK
-    uuid parte_id FK "de qual dono"
     uuid municipio_id FK "nulo = outro municipio"
     text inscricao "SQL ou inscricao imobiliaria"
     numeric area_cadastral_m2

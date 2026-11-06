@@ -97,6 +97,8 @@ function AreaVivo({ f, k, l }: { f: Ficha; k: string; l: string }) {
     /* a estimativa não tem coluna: digitar é adotá-la; apagar a adotada deixa o terreno sem área adotada */
     if (k === 'estimativa') vals.fonte_area_adotada = v.trim() ? 'estimativa' : t.fonte_area_adotada === 'estimativa' ? '' : vals.fonte_area_adotada;
     else if (!v.trim() && t.fonte_area_adotada === k.replace(/^area_|_m2$/g, '')) vals.fonte_area_adotada = '';
+    /* área do levantamento topográfico digitada vira a adotada; a pessoa pode trocar depois (pedido do Moisés, 6/nov/2026) */
+    else if (k === 'area_levantamento_m2' && v.trim()) vals.fonte_area_adotada = 'levantamento';
     const d = dadosArea(f, vals);
     if (typeof d === 'string') { toast(d); return false; }
     return salvarT(d);
@@ -275,7 +277,6 @@ export default function AbaTerreno({ f }: { f: Ficha }) {
       <SecGenerica f={f} id="loc" />
       <PartesLotes f={f} />
       <SecAreas f={f} />
-      <SecGenerica f={f} id="fis" />
       <SecPessoas f={f} />
     </div>
   );

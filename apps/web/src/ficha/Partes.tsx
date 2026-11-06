@@ -33,39 +33,68 @@ const mascarar = (s: string, m: string) => { const d = digitos(s); let o = '', i
 const fmtTel = (v: string | null) => { const d = digitos(v ?? ''); return d.length === 11 ? `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}` : d.length === 10 ? `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}` : v ?? ''; };
 const fmtDoc = (v: string | null) => { const d = digitos(v ?? ''); return d.length === 11 ? d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') : d.length === 14 ? d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5') : v ?? ''; };
 
-export interface Lotes { partes: R[]; mats: R[]; insc: R[]; base: R | null; consultas: Record<string, R> }
+/* cm e ci: as etiquetas nas partes (matricula_partes, inscricao_partes); o mesmo lote pode estar em mais de uma parte,
+   com o percentual dela no lote opcional (pedido do Moisés, 6/nov/2026); lote sem etiqueta está sem parte */
+export interface Lotes { partes: R[]; mats: R[]; insc: R[]; cm: R[]; ci: R[]; base: R | null; consultas: Record<string, R> }
 export function useLotes(f: Ficha) {
   return useQuery({
     queryKey: ['ficha-lotes', f.id],
     queryFn: async (): Promise<Lotes> => {
-      const [pt, m, i, c, b] = await Promise.all([
+      const [pt, m, i, c, b, cm, ci] = await Promise.all([
         supabase.from('terreno_partes').select('id,nome,pessoa_nome,telefone,email,documento,observacoes,ativa,criado_em').eq('terreno_id', f.id).eq('ativa', true).order('criado_em'),
-        supabase.from('matriculas').select('id,numero,numero_norm,cartorio,area_registrada_m2,data_certidao,parte_id').eq('terreno_id', f.id).order('numero_norm'),
-        supabase.from('inscricoes_municipais').select('id,inscricao,inscricao_norm,municipio_id,area_cadastral_m2,cib,zona_fiscal,parte_id,origem,endereco_prefeitura,inscricao_valores(id,exercicio,revisao,vigente,valor_venal_terreno,valor_venal_construcao,valor_venal_imovel,situacao_iptu,iptu_valor_anual,iptu_parcelas,iptu_mensal_informado,fonte)').eq('terreno_id', f.id).order('inscricao_norm'),
+        supabase.from('matriculas').select('id,numero,numero_norm,cartorio,area_registrada_m2,data_certidao').eq('terreno_id', f.id).order('numero_norm'),
+        supabase.from('inscricoes_municipais').select('id,inscricao,inscricao_norm,municipio_id,area_cadastral_m2,cib,zona_fiscal,origem,endereco_prefeitura,inscricao_valores(id,exercicio,revisao,vigente,valor_venal_terreno,valor_venal_construcao,valor_venal_imovel,situacao_iptu,iptu_valor_anual,iptu_parcelas,iptu_mensal_informado,fonte)').eq('terreno_id', f.id).order('inscricao_norm'),
         supabase.from('consultas_lote').select('inscricao_id,consultado_em,base,lote,zonas,poligono_geojson,area_poligono_m2,camadas_com_erro').eq('terreno_id', f.id).order('consultado_em', { ascending: false }),
         f.t.municipio_id ? supabase.from('bases_cadastrais').select('codigo,municipio_id,nome,rotulo,mascara').eq('municipio_id', f.t.municipio_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
+        supabase.from('matricula_partes').select('id,matricula_id,parte_id,percentual').eq('terreno_id', f.id),
+        supabase.from('inscricao_partes').select('id,inscricao_id,parte_id,percentual').eq('terreno_id', f.id),
       ]);
-      for (const r of [pt, m, i, c, b]) if (r.error) throw r.error;
+      for (const r of [pt, m, i, c, b, cm, ci]) if (r.error) throw r.error;
       const consultas: Record<string, R> = {};
       for (const x of (c.data ?? []) as R[]) if (x.inscricao_id && !consultas[x.inscricao_id]) consultas[x.inscricao_id] = x;
-      return { partes: (pt.data ?? []) as R[], mats: (m.data ?? []) as R[], insc: (i.data ?? []) as R[], base: (b.data as R) ?? null, consultas };
+      return { partes: (pt.data ?? []) as R[], mats: (m.data ?? []) as R[], insc: (i.data ?? []) as R[], cm: (cm.data ?? []) as R[], ci: (ci.data ?? []) as R[], base: (b.data as R) ?? null, consultas };
     },
   });
 }
 
-/** área da parte: a soma das matrículas (todas com área); sem matrícula, a dos SQLs (todos com área cadastral) */
+type Tp = 'm' | 's';
+const FK = { m: 'matricula_id', s: 'inscricao_id' } as const;
+const TAB_C = { m: 'matricula_partes', s: 'inscricao_partes' } as const;
+const lotesDe = (L: Lotes, tipo: Tp) => (tipo === 'm' ? L.mats : L.insc);
+const copiasDe = (L: Lotes, tipo: Tp) => (tipo === 'm' ? L.cm : L.ci);
+/** etiquetas do lote nas partes */
+export const copias = (L: Lotes, tipo: Tp, lote: string) => copiasDe(L, tipo).filter((c) => c[FK[tipo]] === lote);
+/** fração da etiqueta no lote: o percentual informado; sem ele, o que sobra dos informados dividido igual entre as sem
+   percentual (estimada); uma etiqueta só é o lote inteiro (como app.v_etiquetas) */
+export function fracao(L: Lotes, tipo: Tp, c: R): { f: number; est: boolean } {
+  if (c.percentual != null) return { f: +c.percentual / 100, est: false };
+  const cs = copias(L, tipo, c[FK[tipo]]), inf = soma(cs.filter((x) => x.percentual != null).map((x) => +x.percentual)), sem = cs.filter((x) => x.percentual == null).length;
+  return { f: Math.max(0, 1 - inf / 100) / (sem || 1), est: cs.length > 1 };
+}
+/** lotes de um tipo na parte, cada um com a etiqueta dela */
+export function daParte(L: Lotes, tipo: Tp, pid: string): { x: R; c: R }[] {
+  const ls = lotesDe(L, tipo);
+  return copiasDe(L, tipo).filter((c) => c.parte_id === pid).map((c) => ({ x: ls.find((l) => l.id === c[FK[tipo]])!, c })).filter((e) => e.x)
+    .sort((a, b) => String(a.x.numero_norm ?? a.x.inscricao_norm).localeCompare(String(b.x.numero_norm ?? b.x.inscricao_norm)));
+}
+const areaDe = (L: Lotes, tipo: Tp, es: { x: R; c: R }[]) => {
+  const k = tipo === 'm' ? 'area_registrada_m2' : 'area_cadastral_m2';
+  return es.every((e) => e.x[k] != null) ? Math.round(soma(es.map((e) => +e.x[k] * fracao(L, tipo, e.c).f)) * 100) / 100 : null;
+};
+/** área da parte: a soma das matrículas (todas com área); sem matrícula, a dos SQLs (todos com área cadastral); o lote de
+   mais de uma parte entra pela fração da parte nele */
 export function ptArea(L: Lotes, pid: string): { area: number | null; fonte: string | null } {
-  const ms = L.mats.filter((m) => m.parte_id === pid), is = L.insc.filter((i) => i.parte_id === pid);
-  if (ms.length && ms.every((m) => m.area_registrada_m2 != null)) return { area: soma(ms.map((m) => +m.area_registrada_m2)), fonte: 'matrículas' };
-  if (!ms.length && is.length && is.every((i) => i.area_cadastral_m2 != null)) return { area: soma(is.map((i) => +i.area_cadastral_m2)), fonte: 'SQLs' };
+  const ms = daParte(L, 'm', pid), is = daParte(L, 's', pid);
+  if (ms.length) { const a = areaDe(L, 'm', ms); return a != null ? { area: a, fonte: 'matrículas' } : { area: null, fonte: null }; }
+  if (is.length) { const a = areaDe(L, 's', is); return a != null ? { area: a, fonte: 'SQLs' } : { area: null, fonte: null }; }
   return { area: null, fonte: null };
 }
 /** Matrícula × Prefeitura da parte: área cadastral dos SQLs contra a das matrículas, em % da matrícula */
 function ptDiv(L: Lotes, pid: string) {
-  const ms = L.mats.filter((m) => m.parte_id === pid), is = L.insc.filter((i) => i.parte_id === pid);
-  if (!ms.length || !is.length || ms.some((m) => m.area_registrada_m2 == null) || is.some((i) => i.area_cadastral_m2 == null)) return null;
-  const a = soma(ms.map((m) => +m.area_registrada_m2)), b = soma(is.map((i) => +i.area_cadastral_m2));
-  return a ? Math.round(((b - a) / a) * 1000) / 10 : null;
+  const ms = daParte(L, 'm', pid), is = daParte(L, 's', pid);
+  if (!ms.length || !is.length) return null;
+  const a = areaDe(L, 'm', ms), b = areaDe(L, 's', is);
+  return a && b != null ? Math.round(((b - a) / a) * 1000) / 10 : null;
 }
 
 function useRecarregar(f: Ficha) {
@@ -140,11 +169,11 @@ function CartaoParte({ f, L, pa, n }: { f: Ficha; L: Lotes; pa: R; n: number }) 
   async function excluir() {
     const { error } = await supabase.rpc('excluir_parte', { p_parte: pa.id });
     if (error) { toast(error.message, true); return; }
-    const k = L.mats.filter((m) => m.parte_id === pa.id).length + L.insc.filter((i) => i.parte_id === pa.id).length;
-    toast(`${pa.nome} excluída.${k ? ` ${k} etiqueta${k > 1 ? 's voltaram' : ' voltou'} para o quadro de cima.` : ''}`);
+    const k = daParte(L, 'm', pa.id).length + daParte(L, 's', pa.id).length;
+    toast(`${pa.nome} excluída.${k ? ` ${k} etiqueta${k > 1 ? 's saíram' : ' saiu'} dela.` : ''}`);
     recarregar();
   }
-  const nm = L.mats.filter((m) => m.parte_id === pa.id).length, ni = L.insc.filter((i) => i.parte_id === pa.id).length;
+  const nm = daParte(L, 'm', pa.id).length, ni = daParte(L, 's', pa.id).length;
   const inp = (k: string, l: string, ph: string, x: Record<string, string>) => (
     <label className="field" key={k}><span className="lbl-f">{l}</span>
       {edita ? <input value={v[k] ?? ''} placeholder={ph} {...x} onChange={(e) => setV({ ...v, [k]: e.target.value })} onBlur={() => gravar(k)} />
@@ -185,7 +214,7 @@ function SecPartes({ f, L }: { f: Ficha; L: Lotes }) {
     for (let i = P.length; i < n; i++) if (!(await nova())) break;
     if (n < P.length) {
       for (const pa of P.slice(n).reverse()) {
-        const tem = L.mats.some((m) => m.parte_id === pa.id) || L.insc.some((i) => i.parte_id === pa.id) || ['pessoa_nome', 'telefone', 'email', 'documento', 'observacoes'].some((k) => pa[k]);
+        const tem = L.cm.some((c) => c.parte_id === pa.id) || L.ci.some((c) => c.parte_id === pa.id) || ['pessoa_nome', 'telefone', 'email', 'documento', 'observacoes'].some((k) => pa[k]);
         if (tem) { toast(`${pa.nome} já tem dados, matrículas ou SQLs: use Excluir parte.`, true); break; }
         const { error } = await supabase.rpc('excluir_parte', { p_parte: pa.id });
         if (error) { toast(error.message, true); break; }
@@ -216,16 +245,24 @@ function SecPartes({ f, L }: { f: Ficha; L: Lotes }) {
 
 /* ---------- Matrículas e SQLs ---------- */
 const FECHADAS = new Set<string>();   // partes com o quadro recolhido (a seta recolhe a linha inteira)
-type Etq = { tipo: 'm' | 's'; x: R };
-const chave = (e: Etq) => `${e.tipo}:${e.x.id}`;
+/* a etiqueta: o lote (x) e, dentro de uma parte, a cópia dela (c); o mesmo lote pode ter cópia em mais de uma parte */
+type Etq = { tipo: Tp; x: R; c?: R };
+const chave = (e: Etq) => `${e.tipo}:${e.x.id}${e.c ? ':' + e.c.id : ''}`;
 
-function Etiqueta({ e, rot, edita, ver, tirar }: { e: Etq; rot: string; edita: boolean; ver: (k: string) => void; tirar: (k: string) => void }) {
+function Etiqueta({ e, L, rot, edita, ver, tirar, menu }: { e: Etq; L: Lotes; rot: string; edita: boolean; ver: (k: string) => void; tirar: (k: string) => void; menu: (k: string, x: number, y: number) => void }) {
   const n = e.tipo === 'm' ? e.x.numero : e.x.inscricao, k = chave(e);
+  /* mini pizza com a fração da parte no lote quando o lote está em mais de uma parte ou tem percentual; o número vai na dica */
+  const cs = e.c ? copias(L, e.tipo, e.x.id) : [], fr = e.c ? fracao(L, e.tipo, e.c) : null;
+  const pz = e.c && fr && (cs.length > 1 || e.c.percentual != null) ? Math.round(fr.f * 1000) / 10 : null;
+  const dica = pz != null ? `${L.partes.find((pa) => pa.id === e.c!.parte_id)?.nome ?? 'Parte'}: ${num(pz, pz % 1 ? 1 : 0)}% deste lote${fr!.est ? ' (estimado: sem percentual informado)' : ''}${cs.length > 1 ? ` · em ${cs.length} partes` : ''}` : 'Ver e editar';
+  const shared = cs.length > 1;
   return (
-    <span className={`etq ${e.tipo}`} data-etq={k} tabIndex={edita ? 0 : undefined} aria-label={`${e.tipo === 'm' ? 'Matrícula' : rot} ${n}`}
-      onKeyDown={(ev) => { if (ev.key === 'Enter' && ev.target === ev.currentTarget) { ev.preventDefault(); ver(k); } }}>
-      <button type="button" className="etq-n num" title="Ver e editar" onClick={() => ver(k)}>{n}</button>
-      {edita && <button type="button" className="etq-x" aria-label={`Excluir ${e.tipo === 'm' ? 'a matrícula' : 'o ' + rot} ${n}`} title="Excluir" onClick={() => tirar(k)}><Ic n="close" s={14} /></button>}
+    <span className={`etq ${e.tipo}`} data-etq={k} tabIndex={edita ? 0 : undefined} aria-label={`${e.tipo === 'm' ? 'Matrícula' : rot} ${n}${pz != null ? ', ' + dica : ''}`}
+      onContextMenu={(ev) => { if (!edita) return; ev.preventDefault(); menu(k, ev.clientX, ev.clientY); }}
+      onKeyDown={(ev) => { if (ev.key === 'Enter' && ev.target === ev.currentTarget) { ev.preventDefault(); ver(k); } if (edita && (ev.key === 'ContextMenu' || (ev.shiftKey && ev.key === 'F10'))) { ev.preventDefault(); const r = ev.currentTarget.getBoundingClientRect(); menu(k, r.left, r.bottom); } }}>
+      <button type="button" className="etq-n num" title={dica} onClick={() => ver(k)}>
+        {pz != null && <span className={`etq-pz${fr!.est ? ' est' : ''}`} style={{ '--p': pz } as any} aria-hidden="true" />}{n}</button>
+      {edita && <button type="button" className="etq-x" aria-label={`${shared ? 'Tirar desta parte' : 'Excluir'} ${e.tipo === 'm' ? 'a matrícula' : 'o ' + rot} ${n}`} title={shared ? 'Tirar desta parte' : 'Excluir'} onClick={() => tirar(k)}><Ic n="close" s={14} /></button>}
     </span>
   );
 }
@@ -261,27 +298,66 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
   }
   const P = L.partes, base = L.base, rot = base?.rotulo ?? 'Inscrição', sp = base?.codigo === 'geosampa';
   const crisSel = f.t.cartorio && !CRIS.includes(f.t.cartorio) ? [f.t.cartorio, ...CRIS] : CRIS;
+  const LR = useRef(L);
+  LR.current = L;
   const achar = (k: string): Etq | null => {
-    const [tipo, id] = k.split(':');
-    const x = tipo === 'm' ? L.mats.find((m) => m.id === id) : L.insc.find((i) => i.id === id);
-    return x ? { tipo: tipo as 'm' | 's', x } : null;
+    const L2 = LR.current, [tipo, id, cid] = k.split(':') as [Tp, string, string | undefined];
+    const x = lotesDe(L2, tipo).find((l) => l.id === id);
+    return x ? { tipo, x, c: cid ? copiasDe(L2, tipo).find((c) => c.id === cid) : undefined } : null;
   };
+  const nomeP = (pid: string) => LR.current.partes.find((pa) => pa.id === pid)?.nome ?? 'a parte';
+  const [menu, setMenu] = useState<{ k: string; x: number; y: number } | null>(null);
   const nome = (e: Etq) => (e.tipo === 'm' ? `Matrícula ${e.x.numero}` : `${rot} ${e.x.inscricao}`);
   const ver = (k: string) => { if (Date.now() - soltou.current > 400) abrirEtq(k); };
 
+  /* operações nas etiquetas das partes (matricula_partes, inscricao_partes), todas com Ctrl+Z */
+  const okR = (r: { error: any }) => { if (r.error) { toast(r.error.message, true); return false; } recarregar(); return true; };
+  const inserir = async (tipo: Tp, rows: R[]) => okR(await supabase.from(TAB_C[tipo]).insert(rows));
+  const apagarC = async (tipo: Tp, ids: string[]) => okR(await supabase.from(TAB_C[tipo]).delete().in('id', ids));
+  const mudarC = async (tipo: Tp, id: string, v: R) => okR(await supabase.from(TAB_C[tipo]).update(v).eq('id', id));
+  const nova = (e: Etq, pid: string): R => ({ id: crypto.randomUUID(), empresa_id: empresa!.id, terreno_id: f.id, [FK[e.tipo]]: e.x.id, parte_id: pid });
+  const jaEm = (e: Etq, pid: string) => copias(LR.current, e.tipo, e.x.id).some((c) => c.parte_id === pid);
+  /** leva a etiqueta para a parte (null = de volta para sem parte) */
   async function parte(k: string, pid: string | null) {
     const e = achar(k);
-    if (!e || (e.x.parte_id ?? null) === pid) return;
-    const tab = e.tipo === 'm' ? 'matriculas' : 'inscricoes_municipais', antes = e.x.parte_id ?? null;
-    const { error } = await supabase.from(tab).update({ parte_id: pid }).eq('id', e.x.id);
-    if (error) { toast(error.message, true); return; }
-    recarregar();
-    const por = async (v: string | null) => {
-      const r = await supabase.from(tab).update({ parte_id: v }).eq('id', e.x.id);
-      if (r.error) { toast(r.error.message, true); return false; }
-      recarregar(); return true;
-    };
-    empilhar({ rotulo: `${nome(e)} de parte`, fazer: () => por(antes), refazer: () => por(pid) });
+    if (!e) return;
+    if (!e.c) {   // sem parte → parte
+      if (!pid) return;
+      const row = nova(e, pid);
+      if (!(await inserir(e.tipo, [row]))) return;
+      empilhar({ rotulo: `${nome(e)} na parte ${nomeP(pid)}`, fazer: () => apagarC(e.tipo, [row.id]), refazer: () => inserir(e.tipo, [row]) });
+      return;
+    }
+    const c = e.c;
+    if (c.parte_id === pid) return;
+    if (!pid) {   // parte → sem parte (ou só sai desta parte, se o lote está em outras)
+      const row = { id: c.id, empresa_id: empresa!.id, terreno_id: f.id, [FK[e.tipo]]: e.x.id, parte_id: c.parte_id, percentual: c.percentual ?? null };
+      if (!(await apagarC(e.tipo, [c.id]))) return;
+      empilhar({ rotulo: `${nome(e)} fora da parte ${nomeP(c.parte_id)}`, fazer: () => inserir(e.tipo, [row]), refazer: () => apagarC(e.tipo, [c.id]) });
+      return;
+    }
+    if (jaEm(e, pid)) { toast(`${nome(e)} já está na parte ${nomeP(pid)}.`, true); return; }
+    const antes = c.parte_id;
+    if (!(await mudarC(e.tipo, c.id, { parte_id: pid }))) return;
+    empilhar({ rotulo: `${nome(e)} de parte`, fazer: () => mudarC(e.tipo, c.id, { parte_id: antes }), refazer: () => mudarC(e.tipo, c.id, { parte_id: pid }) });
+  }
+  /** duplica a etiqueta noutra parte: o lote passa a ser de mais de uma parte (pedido do Moisés, 6/nov/2026) */
+  async function duplicar(k: string, pid: string) {
+    const e = achar(k);
+    if (!e) return;
+    if (jaEm(e, pid)) { toast(`${nome(e)} já está na parte ${nomeP(pid)}.`, true); return; }
+    const row = nova(e, pid);
+    if (!(await inserir(e.tipo, [row]))) return;
+    toast(`${nome(e)} também na parte ${nomeP(pid)}. Clique na etiqueta para dar o percentual de cada parte.`);
+    empilhar({ rotulo: `${nome(e)} duplicada na parte ${nomeP(pid)}`, fazer: () => apagarC(e.tipo, [row.id]), refazer: () => inserir(e.tipo, [row]) });
+  }
+  /** percentual da parte no lote (vazio = não informado) */
+  async function percentual(tipo: Tp, c: R, v: number | null) {
+    const antes = c.percentual ?? null;
+    if ((antes == null ? null : +antes) === v) return true;
+    if (!(await mudarC(tipo, c.id, { percentual: v }))) return false;
+    empilhar({ rotulo: `percentual da parte ${nomeP(c.parte_id)}`, fazer: () => mudarC(tipo, c.id, { percentual: antes }), refazer: () => mudarC(tipo, c.id, { percentual: v }) });
+    return true;
   }
   async function excluir(k: string) {
     const e = achar(k);
@@ -293,7 +369,9 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     recarregar();
     if (e.tipo === 's' && sp) { await refazerPoligonal(f, `${e.x.inscricao} excluído`, toast); recarregar(); }
   }
-  const tirar = (k: string) => { const e = achar(k); if (e?.tipo === 's' && (e.x.inscricao_valores ?? []).length) setConf(k); else excluir(k); };
+  /** o X da etiqueta: se o lote está em mais de uma parte, só sai desta; senão o lote sai do terreno */
+  const apagar = (k: string) => { const e = achar(k); if (e?.tipo === 's' && (e.x.inscricao_valores ?? []).length) setConf(k); else excluir(k); };
+  const tirar = (k: string) => { const e = achar(k); if (e?.c && copias(LR.current, e.tipo, e.x.id).length > 1) parte(k, null); else apagar(k); };
 
   async function incluirMat(ev: FormEvent) {
     ev.preventDefault();
@@ -361,22 +439,17 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
   }
   async function tudo() {
     const pa = P[0];
-    const ms = L.mats.filter((m) => !m.parte_id).map((m) => m.id), is = L.insc.filter((i) => !i.parte_id).map((i) => i.id);
-    if (!pa || !(ms.length + is.length)) return;
-    const r = await Promise.all([ms.length ? supabase.from('matriculas').update({ parte_id: pa.id }).in('id', ms) : null, is.length ? supabase.from('inscricoes_municipais').update({ parte_id: pa.id }).in('id', is) : null]);
-    const err = r.find((x) => x?.error)?.error;
-    if (err) toast(err.message, true);
-    else {
-      toast(`Tudo na parte ${pa.nome}.`);
-      const por = async (v: string | null) => {
-        const r2 = await Promise.all([ms.length ? supabase.from('matriculas').update({ parte_id: v }).in('id', ms) : null, is.length ? supabase.from('inscricoes_municipais').update({ parte_id: v }).in('id', is) : null]);
-        const e2 = r2.find((x) => x?.error)?.error;
-        if (e2) { toast(e2.message, true); return false; }
-        recarregar(); return true;
-      };
-      empilhar({ rotulo: `etiquetas na parte ${pa.nome}`, fazer: () => por(null), refazer: () => por(pa.id) });
-    }
-    recarregar();
+    if (!pa) return;
+    const rm = L.mats.filter((m) => !copias(L, 'm', m.id).length).map((x) => nova({ tipo: 'm', x }, pa.id));
+    const rs = L.insc.filter((i) => !copias(L, 's', i.id).length).map((x) => nova({ tipo: 's', x }, pa.id));
+    if (!(rm.length + rs.length)) return;
+    const por = async (sim: boolean) => {
+      const r = await Promise.all([rm.length ? (sim ? inserir('m', rm) : apagarC('m', rm.map((x) => x.id))) : true, rs.length ? (sim ? inserir('s', rs) : apagarC('s', rs.map((x) => x.id))) : true]);
+      return r.every(Boolean);
+    };
+    if (!(await por(true))) return;
+    toast(`Tudo na parte ${pa.nome}.`);
+    empilhar({ rotulo: `etiquetas na parte ${pa.nome}`, fazer: () => por(false), refazer: () => por(true) });
   }
   function linha(pid: string) {
     const el = sec.current?.querySelector<HTMLElement>(`.etq-pt[data-p="${pid}"]`);
@@ -398,8 +471,10 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
       const r = a.el.getBoundingClientRect(); a.dx = a.x - r.left; a.dy = a.y - r.top;
       const g = a.el.cloneNode(true); g.classList.add('etq-fantasma'); g.style.width = r.width + 'px'; document.body.appendChild(g); a.g = g;
       a.el.classList.add('etq-origem'); document.body.classList.add('etq-arrastando');
-      const tipo = a.k[0], orig = a.el.closest('[data-drop]');
-      raiz()?.querySelectorAll<HTMLElement>('[data-drop]').forEach((d) => { if (d !== orig && (d.dataset.drop === 'parte' || d.dataset.tipo === tipo)) d.classList.add('etq-aceita'); });
+      const [tipo, lote] = a.k.split(':'), orig = a.el.closest('[data-drop]');
+      /* a parte que já tem o lote não acende */
+      const tem = new Set(copias(LR.current, tipo as Tp, lote).map((c) => c.parte_id));
+      raiz()?.querySelectorAll<HTMLElement>('[data-drop]').forEach((d) => { if (d !== orig && ((d.dataset.drop === 'parte' && !tem.has(d.dataset.p!)) || d.dataset.tipo === tipo)) d.classList.add('etq-aceita'); });
       mover(a.x, a.y);
     };
     const mover = (x: number, y: number) => {
@@ -442,15 +517,27 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
   }, [edita]);
 
   const pool = (tipo: 'm' | 's') => {
-    const lista = tipo === 'm' ? L.mats : L.insc, soltas = lista.filter((x) => !x.parte_id);
+    const lista = lotesDe(L, tipo), soltas = lista.filter((x) => !copias(L, tipo, x.id).length);
     return (
       <div className="etq-pool" data-drop="pool" data-tipo={tipo}>
-        {soltas.length ? soltas.map((x) => <Etiqueta key={x.id} e={{ tipo, x }} rot={rot} edita={edita} ver={ver} tirar={tirar} />)
+        {soltas.length ? soltas.map((x) => <Etiqueta key={x.id} e={{ tipo, x }} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} />)
           : <span className="etq-vazio">{lista.length ? 'Todas já estão numa parte.' : tipo === 'm' ? 'Nenhuma matrícula ainda.' : `Nenhum ${rot} ainda.`}</span>}
       </div>
     );
   };
-  const soltos = L.mats.filter((m) => !m.parte_id).length + L.insc.filter((i) => !i.parte_id).length;
+  const soltos = L.mats.filter((m) => !copias(L, 'm', m.id).length).length + L.insc.filter((i) => !copias(L, 's', i.id).length).length;
+  function abrirMenu(k: string, x: number, y: number) { setMenu({ k, x: Math.min(x, innerWidth - 240), y: Math.min(y, innerHeight - 260) }); }
+  useEffect(() => {
+    if (!menu) return;
+    const fora = (ev: PointerEvent) => { if (!(ev.target as HTMLElement).closest?.('.etq-menu')) setMenu(null); };
+    const tecla = (ev: KeyboardEvent) => { if (ev.key === 'Escape') { ev.stopPropagation(); setMenu(null); } };
+    const fechar = () => setMenu(null);
+    document.addEventListener('pointerdown', fora, true); document.addEventListener('keydown', tecla, true); addEventListener('scroll', fechar, true); addEventListener('resize', fechar);
+    return () => { document.removeEventListener('pointerdown', fora, true); document.removeEventListener('keydown', tecla, true); removeEventListener('scroll', fechar, true); removeEventListener('resize', fechar); };
+  }, [menu]);
+  const menuE = menu ? achar(menu.k) : null;
+  const faltam = menuE ? P.filter((pa) => !copias(L, menuE.tipo, menuE.x.id).some((c) => c.parte_id === pa.id)) : [];
+  const fazM = (fn: () => void) => { setMenu(null); fn(); };
   const toque = matchMedia('(pointer: coarse)').matches;
   const andamento = cons && cons.terreno === f.id ? <span className="chip blue lg-cons">Consultando o GeoSampa: {cons.feitos} de {cons.total}</span> : null;
   const confE = conf ? achar(conf) : null;
@@ -494,15 +581,15 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
             {edita && <span className="faint">{toque ? 'Toque e segure a etiqueta para arrastá-la até a parte.' : 'Arraste as etiquetas para a parte certa, ou de uma parte para outra.'}</span>}
           </div>
           <div className="etq-partes">{P.map((pa) => {
-            const ms = L.mats.filter((m) => m.parte_id === pa.id), is = L.insc.filter((i) => i.parte_id === pa.id), fe = FECHADAS.has(pa.id), ai = ptArea(L, pa.id), dv = ptDiv(L, pa.id);
+            const ms = daParte(L, 'm', pa.id), is = daParte(L, 's', pa.id), fe = FECHADAS.has(pa.id), ai = ptArea(L, pa.id), dv = ptDiv(L, pa.id);
             return (
               <article key={pa.id} className={`etq-pt${fe ? ' fechado' : ''}`} data-drop="parte" data-p={pa.id}>
                 <button type="button" className="etq-pt-h" aria-expanded={!fe} title={`${fe ? 'Abrir' : 'Recolher'} a linha`} onClick={() => linha(pa.id)}>
                   <Ic n="chev" s={18} /><b>{pa.nome}</b><span className="faint">{ms.length} mat. · {is.length} {rot}</span></button>
                 <div className="etq-pt-b">
                   <div className="etq-pt-l">
-                    {ms.length > 0 && <div className="etq-pt-g m">{ms.map((x) => <Etiqueta key={x.id} e={{ tipo: 'm', x }} rot={rot} edita={edita} ver={ver} tirar={tirar} />)}</div>}
-                    {is.length > 0 ? <div className="etq-pt-g s">{is.map((x) => <Etiqueta key={x.id} e={{ tipo: 's', x }} rot={rot} edita={edita} ver={ver} tirar={tirar} />)}</div>
+                    {ms.length > 0 && <div className="etq-pt-g m">{ms.map(({ x, c }) => <Etiqueta key={c.id} e={{ tipo: 'm', x, c }} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} />)}</div>}
+                    {is.length > 0 ? <div className="etq-pt-g s">{is.map(({ x, c }) => <Etiqueta key={c.id} e={{ tipo: 's', x, c }} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} />)}</div>
                       : !ms.length && <span className="etq-vazio">{edita ? 'Arraste para cá as matrículas e os SQLs desta parte.' : 'Sem matrícula nem SQL.'}</span>}
                   </div>
                   {(ai.area != null || dv != null) && (
@@ -539,17 +626,41 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
             <div>O lote não é cadastrado de novo. Se chegou uma oferta, registre-a nesse terreno: o analista decide lá se segue a tratativa ou descarta.</div></div></div>
         </Dialogo>
       )}
-      {etq && <JanelaEtq f={f} L={L} k={etq} fechar={() => abrirEtq(null)} tirar={(k) => { abrirEtq(null); tirar(k); }} />}
+      {menu && menuE && (
+        <div className="etq-menu" role="menu" style={{ left: menu.x, top: menu.y }}>
+          <div className="etq-menu-t">{nome(menuE)}</div>
+          {faltam.length ? <>
+            <div className="etq-menu-h">{menuE.c ? 'Duplicar em' : 'Pôr em'}</div>
+            {faltam.map((pa) => <button key={pa.id} type="button" role="menuitem" onClick={() => fazM(() => (menuE.c ? duplicar(menu.k, pa.id) : parte(menu.k, pa.id)))}><Ic n={menuE.c ? 'add' : 'fwd'} s={16} />{pa.nome}</button>)}
+            {menuE.c && <>
+              <div className="etq-menu-h">Mover para</div>
+              {faltam.map((pa) => <button key={'m' + pa.id} type="button" role="menuitem" onClick={() => fazM(() => parte(menu.k, pa.id))}><Ic n="fwd" s={16} />{pa.nome}</button>)}
+            </>}
+          </> : <div className="etq-menu-v">Já está em todas as partes.</div>}
+          <hr />
+          <button type="button" role="menuitem" onClick={() => fazM(() => ver(menu.k))}><Ic n="edit" s={16} />{menuE.c ? 'Percentual e dados' : 'Ver e editar'}</button>
+          {menuE.c && <button type="button" role="menuitem" onClick={() => fazM(() => parte(menu.k, null))}><Ic n="close" s={16} />Tirar da parte {nomeP(menuE.c.parte_id)}</button>}
+        </div>
+      )}
+      {etq && <JanelaEtq f={f} L={L} k={etq} fechar={() => abrirEtq(null)} ops={{ parte, duplicar, percentual, tirar: (k) => { abrirEtq(null); parte(k, null); }, apagar: (k) => { abrirEtq(null); apagar(k); } }} />}
     </div>
   );
 }
 
 /* ---------- janela da etiqueta ---------- */
-function JanelaEtq({ f, L, k, fechar, tirar }: { f: Ficha; L: Lotes; k: string; fechar: () => void; tirar: (k: string) => void }) {
+type OpsEtq = { parte: (k: string, pid: string | null) => Promise<void>; duplicar: (k: string, pid: string) => Promise<void>; percentual: (tipo: Tp, c: R, v: number | null) => Promise<boolean>; tirar: (k: string) => void; apagar: (k: string) => void };
+function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fechar: () => void; ops: OpsEtq }) {
   const { edita, empresa } = useSessao();
   const toast = useToast(), recarregar = useRecarregar(f);
-  const [tipo, id] = k.split(':');
-  const x = tipo === 'm' ? L.mats.find((m) => m.id === id) : L.insc.find((i) => i.id === id);
+  const [tipo, id, cid] = k.split(':') as [Tp, string, string | undefined];
+  const x = lotesDe(L, tipo).find((l) => l.id === id);
+  const cs = x ? copias(L, tipo, x.id) : [];
+  /* a etiqueta aberta: a da parte clicada; aberta de fora de uma parte, a única que houver */
+  const c = (cid && cs.find((y) => y.id === cid)) || (cs.length === 1 ? cs[0] : undefined);
+  const kc = x ? `${tipo}:${x.id}${c ? ':' + c.id : ''}` : k;
+  const [pct, setPct] = useState<Record<string, string>>({});
+  const pctSig = cs.map((y) => `${y.id}=${y.percentual ?? ''}`).join(',');
+  useEffect(() => { setPct(Object.fromEntries(cs.map((y) => [y.id, y.percentual != null ? num(+y.percentual, +y.percentual % 1 ? 2 : 0) : '']))); }, [pctSig]);   // eslint-disable-line react-hooks/exhaustive-deps
   const [v, setV] = useState<Record<string, string>>({});
   const [busc, setBusc] = useState(false);
   const IPTU0 = { ex: String(new Date().getFullYear()), sit: 'tributado', parc: '10' };
@@ -583,11 +694,46 @@ function JanelaEtq({ f, L, k, fechar, tirar }: { f: Ficha; L: Lotes; k: string; 
       if (c === 'numero' && !digitos(v[c] ?? '')) { toast('Informe o número da matrícula.', true); setV({ ...v, numero: x.numero }); return; }
       gravar(c, conv(v[c] ?? ''));
     }} />;
-  const parte = lin('Parte', edita
-    ? <select value={x.parte_id ?? ''} onChange={(e) => gravar('parte_id', e.target.value || null)}><option value="">Sem parte</option>{L.partes.map((pa) => <option key={pa.id} value={pa.id}>{pa.nome}</option>)}</select>
-    : val(L.partes.find((pa) => pa.id === x.parte_id)?.nome ?? 'Sem parte'));
+  const nomeP = (pid: string) => L.partes.find((pa) => pa.id === pid)?.nome ?? 'Parte';
+  const temP = new Set(cs.map((y) => y.parte_id));
+  const faltam = L.partes.filter((pa) => !temP.has(pa.id));
+  const parte = lin(cs.length > 1 ? 'Esta etiqueta está na parte' : 'Parte', edita
+    ? <select value={c?.parte_id ?? ''} onChange={(e) => ops.parte(kc, e.target.value || null)}>
+        <option value="">{c && cs.length > 1 ? 'Tirar desta parte' : 'Sem parte'}</option>
+        {L.partes.map((pa) => <option key={pa.id} value={pa.id} disabled={temP.has(pa.id) && pa.id !== c?.parte_id}>{pa.nome}</option>)}</select>
+    : val(c ? nomeP(c.parte_id) : 'Sem parte'));
+  async function salvarPct(y: R) {
+    const t = (pct[y.id] ?? '').trim(), v = t ? lerNum(t) : null;
+    if (t && (v == null || v <= 0 || v > 100)) { toast('O percentual vai de 0 a 100%.', true); setPct({ ...pct, [y.id]: y.percentual != null ? num(+y.percentual, 2) : '' }); return; }
+    if (!(await ops.percentual(tipo, y, v))) setPct({ ...pct, [y.id]: y.percentual != null ? num(+y.percentual, 2) : '' });
+  }
+  /* o percentual de cada parte no lote, opcional: sem ele, o que sobra divide igual entre as partes sem percentual */
+  const partesLote = cs.length > 0 && (
+    <div className="etq-pcts">
+      <h3 className="etq-h3">Partes deste lote</h3>
+      {cs.map((y) => {
+        const fr = fracao(L, tipo, y), p = Math.round(fr.f * 1000) / 10;
+        return (
+          <div key={y.id} className={`etq-pct${y.id === c?.id ? ' atual' : ''}`}>
+            <span className={`etq-pz lg${y.percentual == null && cs.length > 1 ? ' est' : ''}`} style={{ '--p': p } as any} aria-hidden="true" />
+            <span className="etq-pct-n">{nomeP(y.parte_id)}</span>
+            {edita
+              ? <Adorno t="pct"><input aria-label={`Percentual da parte ${nomeP(y.parte_id)} no lote`} inputMode="decimal" placeholder={`${num(p, p % 1 ? 1 : 0)}${cs.length > 1 ? ' estimado' : ''}`}
+                  value={pct[y.id] ?? ''} onChange={(e) => setPct({ ...pct, [y.id]: e.target.value })} onBlur={() => salvarPct(y)} /></Adorno>
+              : <span className="v">{num(p, p % 1 ? 1 : 0)}%{y.percentual == null && cs.length > 1 ? ' (estimado)' : ''}</span>}
+          </div>
+        );
+      })}
+      {edita && faltam.length > 0 && (
+        <label className="field etq-dup"><span className="lbl-f">Duplicar em outra parte</span>
+          <select value="" onChange={(e) => e.target.value && ops.duplicar(kc, e.target.value)}><option value="">Escolher a parte…</option>{faltam.map((pa) => <option key={pa.id} value={pa.id}>{pa.nome}</option>)}</select></label>
+      )}
+      <div className="hint">O percentual é opcional. Sem ele, o que falta para 100% se divide igual entre as partes sem percentual.</div>
+    </div>
+  );
   const rodape = <><button className="btn text" onClick={() => pedir(fechar)}>Fechar</button>
-    {edita && <button className="btn" onClick={() => tirar(k)}><Ic n="lixo" s={16} />Excluir</button>}</>;
+    {edita && c && cs.length > 1 && <button className="btn" onClick={() => ops.tirar(kc)}><Ic n="close" s={16} />Tirar da parte {nomeP(c.parte_id)}</button>}
+    {edita && <button className="btn" onClick={() => ops.apagar(kc)}><Ic n="lixo" s={16} />{cs.length > 1 ? 'Excluir do terreno' : 'Excluir'}</button>}</>;
   if (tipo === 'm') {
     const cris = x.cartorio && !CRIS.includes(x.cartorio) ? [x.cartorio, ...CRIS] : CRIS;
     const origem = x.cartorio && x.cartorio === f.t.cartorio ? (f.t.cartorio_origem === 'prefeitura' ? 'pela poligonal, GeoSampa' : 'do terreno') : x.cartorio ? 'digitado' : '';
@@ -602,10 +748,11 @@ function JanelaEtq({ f, L, k, fechar, tirar }: { f: Ficha; L: Lotes; k: string; 
           {lin('Certidão de', edita ? <input type="date" value={v.data_certidao ?? ''} onChange={(e) => { setV({ ...v, data_certidao: e.target.value }); gravar('data_certidao', e.target.value || null); }} /> : val(x.data_certidao ? fd(x.data_certidao) : '—'))}
           {parte}
         </div>
+        {partesLote}
       </Dialogo>
     );
   }
-  const c = L.consultas[x.id], sp = L.base?.codigo === 'geosampa';
+  const cg = L.consultas[x.id], sp = L.base?.codigo === 'geosampa';
   const vs = ((x.inscricao_valores ?? []) as R[]).filter((y) => y.vigente).sort((a, b) => b.exercicio - a.exercicio), vv = vs[0];
   const venal = vv ? (vv.valor_venal_imovel ?? (vv.valor_venal_terreno != null && vv.valor_venal_construcao != null ? +vv.valor_venal_terreno + +vv.valor_venal_construcao : vv.valor_venal_terreno)) : null;
   async function buscar() {
@@ -637,10 +784,11 @@ function JanelaEtq({ f, L, k, fechar, tirar }: { f: Ficha; L: Lotes; k: string; 
         {lin('Área cadastral', edita ? <Adorno t="m2">{txt('area_cadastral_m2', { inputMode: 'decimal' }, lerNum)}</Adorno> : val(x.area_cadastral_m2 != null ? m2(x.area_cadastral_m2) : '—'))}
         {parte}
       </div>
+      {partesLote}
       {sp && (
         <div className="etq-geo">
-          {c ? (
-            <div className="geo-h"><span><b>GeoSampa</b> <span className="muted">consultado em {fd(c.consultado_em)}{(c.zonas ?? []).length ? ` · ${(c.zonas as R[]).map((z) => z.sigla).join(' / ')}` : ''}{x.cib ? ` · CIB ${x.cib}` : ''}{x.zona_fiscal ? ` · ${x.zona_fiscal}` : ''}</span></span>
+          {cg ? (
+            <div className="geo-h"><span><b>GeoSampa</b> <span className="muted">consultado em {fd(cg.consultado_em)}{(cg.zonas ?? []).length ? ` · ${(cg.zonas as R[]).map((z) => z.sigla).join(' / ')}` : ''}{x.cib ? ` · CIB ${x.cib}` : ''}{x.zona_fiscal ? ` · ${x.zona_fiscal}` : ''}</span></span>
               {edita && GEO_BASE && <button className="btn sm text" disabled={busc} onClick={buscar}><Ic n="search" s={16} />{busc ? 'Consultando...' : 'Buscar de novo'}</button>}</div>
           ) : (
             <div className="geo-vazio">{edita && GEO_BASE && <button className="btn sm" disabled={busc} onClick={buscar}><Ic n="search" s={16} />{busc ? 'Consultando...' : 'Buscar no GeoSampa'}</button>}

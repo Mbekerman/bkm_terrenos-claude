@@ -6,8 +6,8 @@ import Ficha, { useFicha } from './Ficha';
 // Gaveta da ficha na página Mapa (/mapa/A123/ficha; proto_tabela.js › pgFicha com UI.gav, tgavPosMapa): à direita, sobre o
 // mapa, do fim da lista mais 240 px até a borda (entre 600 e 900 px); X ou Esc fecham; "Abrir página" leva à ficha própria.
 // A aba fica só na gaveta, como no protótipo. A largura se arrasta pela borda esquerda, como a da lista do mapa (pedido do
-// Moisés, 5/nov/2026): guardada no navegador, nunca cobre a lista nem fica abaixo de 480 px; dois cliques voltam ao padrão.
-const GAV_KEY = 'bkm-terrenos-ficha-gaveta', GAV_MIN = 480;
+// Moisés, 5/nov/2026): guardada no navegador, nunca cobre a lista nem fica abaixo de 640 px; dois cliques voltam ao padrão.
+const GAV_KEY = 'bkm-terrenos-ficha-gaveta', GAV_MIN = 640;
 const lerW = () => { try { return Number(localStorage.getItem(GAV_KEY)) || null; } catch { return null; } };
 export default function GavetaFicha({ codigo, lado, fechar, abrirPagina, abrirMapa }: {
   codigo: string; lado: HTMLElement | null; fechar: () => void; abrirPagina: (aba: string) => void;

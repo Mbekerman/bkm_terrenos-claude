@@ -1,7 +1,7 @@
 /* "Selecionar lotes" na edição da poligonal (pedido do Moises, 6/nov/2026): como no cadastro, os lotes marcados passam a
    ser o terreno. Os SQLs que já estavam e continuam marcados ficam como estão (parte, IPTU, zonas); os que ficaram de fora
    saem do terreno (e, com isso, das partes); os novos entram sem parte, com a consulta do GeoSampa. A poligonal vira a
-   soma dos lotes. O Ctrl+Z volta o terreno como estava: os SQLs tirados voltam com o mesmo id, a parte, o IPTU e as
+   soma dos lotes. O Ctrl+Z volta o terreno como estava: os SQLs tirados voltam com o mesmo id, as partes (inscricao_partes) com o percentual, o IPTU e as
    zonas, os incluídos saem e a poligonal volta a de antes. */
 import { supabase } from '../lib/supabase';
 import { consultarTerreno } from './consulta';
@@ -14,18 +14,19 @@ type Aviso = (m: string, erro?: boolean) => void;
 const GERADAS_INSC = ['inscricao_norm'];
 const sem = (r: R, ks: string[]) => Object.fromEntries(Object.entries(r).filter(([k]) => !ks.includes(k)));
 
-interface Antes { terreno: R; insc: R[]; valores: R[]; zonas: R[]; consultas: { id: string; inscricao_id: string }[] }
+interface Antes { terreno: R; insc: R[]; valores: R[]; zonas: R[]; partes: R[]; consultas: { id: string; inscricao_id: string }[] }
 
 async function fotografar(id: string, ids: string[]): Promise<Antes> {
-  const [{ data: t, error }, ins, val, zon, con] = await Promise.all([
+  const [{ data: t, error }, ins, val, zon, con, pts] = await Promise.all([
     supabase.from('terrenos').select('poligono_geojson,poligono_desenhado_geojson,latitude,longitude,precisao_localizacao').eq('id', id).single(),
     ids.length ? supabase.from('inscricoes_municipais').select('*').in('id', ids) : Promise.resolve({ data: [] as R[] }),
     ids.length ? supabase.from('inscricao_valores').select('*').in('inscricao_id', ids).order('criado_em') : Promise.resolve({ data: [] as R[] }),
     ids.length ? supabase.from('analise_zoneamentos').select('*').in('inscricao_id', ids) : Promise.resolve({ data: [] as R[] }),
     ids.length ? supabase.from('consultas_lote').select('id,inscricao_id').in('inscricao_id', ids) : Promise.resolve({ data: [] as R[] }),
+    ids.length ? supabase.from('inscricao_partes').select('id,empresa_id,terreno_id,inscricao_id,parte_id,percentual').in('inscricao_id', ids) : Promise.resolve({ data: [] as R[] }),
   ]);
   if (error || !t) throw error ?? new Error('Terreno não encontrado');
-  return { terreno: t, insc: (ins.data ?? []) as R[], valores: (val.data ?? []) as R[], zonas: (zon.data ?? []) as R[], consultas: (con.data ?? []) as any };
+  return { terreno: t, insc: (ins.data ?? []) as R[], valores: (val.data ?? []) as R[], zonas: (zon.data ?? []) as R[], partes: (pts.data ?? []) as R[], consultas: (con.data ?? []) as any };
 }
 
 async function salvarT(id: string, d: R) {
@@ -78,6 +79,7 @@ export async function trocarSqls(id: string, empresa: string, marc: LoteSql[], a
       if (antes.insc.length) {
         const r = await supabase.from('inscricoes_municipais').insert(antes.insc.map((x) => sem(x, GERADAS_INSC))); if (r.error) throw r.error;
         for (const v of antes.valores) { const r2 = await supabase.from('inscricao_valores').insert(v); if (r2.error) throw r2.error; }
+        if (antes.partes.length) { const r4 = await supabase.from('inscricao_partes').insert(antes.partes); if (r4.error) throw r4.error; }
         if (antes.zonas.length) { const r3 = await supabase.from('analise_zoneamentos').insert(antes.zonas); if (r3.error) throw r3.error; }
         for (const c of antes.consultas) await supabase.from('consultas_lote').update({ inscricao_id: c.inscricao_id }).eq('id', c.id);
       }

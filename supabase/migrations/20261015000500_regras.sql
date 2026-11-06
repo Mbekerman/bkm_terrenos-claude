@@ -1593,8 +1593,8 @@ begin
     raise exception 'Esta parte já foi comprada' using errcode = '22023';
   end if;
   perform app._parte_pode_sair(tp);
-  update app.matriculas set parte_id = null where parte_id = tp.id;
-  update app.inscricoes_municipais set parte_id = null where parte_id = tp.id;
+  delete from app.matricula_partes where parte_id = tp.id;
+  delete from app.inscricao_partes where parte_id = tp.id;
   update app.terreno_partes set ativa = false, removida_em = now(), motivo_remocao = trim(p_motivo) where id = tp.id;
   for v_principal in select distinct principal_id from app.processos where parte_id = tp.id and principal_id is not null loop
     perform app._sincronizar_principal(v_principal);
@@ -1613,7 +1613,7 @@ begin
 end $$;
 
 -- Exclui a parte cadastrada por engano: só a que não tem pessoa, corretor, oferta nem negociação.
--- As matrículas e as inscrições dela ficam sem parte. A que tem história sai por remover_parte.
+-- As etiquetas dela saem (a matrícula e o SQL ficam no terreno). A que tem história sai por remover_parte.
 create or replace function app.excluir_parte(p_parte uuid)
 returns void
 language plpgsql security definer set search_path = ''
@@ -1628,8 +1628,8 @@ begin
      or exists (select 1 from app.oferta_partes where parte_id = tp.id) or exists (select 1 from app.processos where parte_id = tp.id) then
     raise exception 'A parte % já tem histórico: tire-a do terreno com um motivo', tp.nome using errcode = '22023';
   end if;
-  update app.matriculas set parte_id = null where parte_id = tp.id;
-  update app.inscricoes_municipais set parte_id = null where parte_id = tp.id;
+  delete from app.matricula_partes where parte_id = tp.id;
+  delete from app.inscricao_partes where parte_id = tp.id;
   delete from app.terreno_partes where id = tp.id;
 end $$;
 
@@ -1659,12 +1659,34 @@ begin
   end loop;
 end $$;
 
+-- Etiquetas das partes com a fração de cada uma no lote (pedido do Moisés, 6/nov/2026): o percentual
+-- informado; sem ele, o que sobra dos informados dividido igual entre as etiquetas sem percentual
+-- (estimada). Uma etiqueta só, sem percentual, é o lote inteiro.
+create view app.v_etiquetas with (security_invoker = true) as
+select x.*, coalesce(x.percentual / 100, greatest(0, 1 - coalesce(x.soma_informada, 0) / 100) / nullif(x.sem_percentual, 0)) as fracao,
+       x.percentual is null and x.copias > 1 as fracao_estimada
+from (
+  select 'matricula'::text as tipo, c.id, c.empresa_id, c.terreno_id, c.parte_id, c.matricula_id as lote_id, c.percentual,
+         m.area_registrada_m2 as area_lote_m2,
+         sum(c.percentual) over w as soma_informada, count(*) filter (where c.percentual is null) over w as sem_percentual, count(*) over w as copias
+  from app.matricula_partes c join app.matriculas m on m.id = c.matricula_id
+  window w as (partition by c.matricula_id)
+  union all
+  select 'inscricao', c.id, c.empresa_id, c.terreno_id, c.parte_id, c.inscricao_id, c.percentual,
+         i.area_cadastral_m2,
+         sum(c.percentual) over w, count(*) filter (where c.percentual is null) over w, count(*) over w
+  from app.inscricao_partes c join app.inscricoes_municipais i on i.id = c.inscricao_id
+  window w as (partition by c.inscricao_id)
+) x;
+grant select on app.v_etiquetas to authenticated;
+
 -- Cada parte com a sua negociação, para a ficha e o quadro.
 create view app.v_partes with (security_invoker = true) as
 select tp.id, tp.empresa_id, tp.terreno_id, tp.nome, tp.essencial, tp.area_m2, tp.poligono_geojson, tp.observacoes,
        tp.ativa, tp.removida_em, tp.motivo_remocao, tp.pessoa_nome, tp.telefone, tp.email, tp.documento,
        -- área da parte (o que o Comercial mostra ao lado do valor pedido): a soma das matrículas, quando
-       -- todas têm área; sem matrícula, a dos SQLs, quando todos têm área cadastral (decisão do Moisés, 4/nov/2026)
+       -- todas têm área; sem matrícula, a dos SQLs, quando todos têm área cadastral (decisão do Moisés, 4/nov/2026);
+       -- lote de mais de uma parte entra pela fração da parte nele (v_etiquetas; pedido do Moisés, 6/nov/2026)
        ar.area_m2 as area_partes_m2, ar.area_fonte,
        ar.area_matriculas_m2, ar.area_cadastral_m2,
        -- Matrícula × Prefeitura da parte: área cadastral dos SQLs contra a das matrículas, em % da matrícula
@@ -1672,9 +1694,10 @@ select tp.id, tp.empresa_id, tp.terreno_id, tp.nome, tp.essencial, tp.area_m2, t
        -- zonas da última consulta de cada SQL da parte
        (select array_agg(distinct z->>'sigla' order by z->>'sigla') from app.inscricoes_municipais i
           cross join lateral (select c.zonas from app.consultas_lote c where c.inscricao_id = i.id order by c.consultado_em desc limit 1) c
-          cross join jsonb_array_elements(c.zonas) z where i.parte_id = tp.id and z->>'sigla' is not null) as zonas,
-       (select count(*) from app.matriculas m where m.parte_id = tp.id) as qtd_matriculas,
-       (select count(*) from app.inscricoes_municipais i where i.parte_id = tp.id) as qtd_inscricoes,
+          cross join jsonb_array_elements(c.zonas) z
+          where i.id in (select inscricao_id from app.inscricao_partes where parte_id = tp.id) and z->>'sigla' is not null) as zonas,
+       (select count(*) from app.matricula_partes m where m.parte_id = tp.id) as qtd_matriculas,
+       (select count(*) from app.inscricao_partes i where i.parte_id = tp.id) as qtd_inscricoes,
        (select string_agg(pe.nome_razao_social, ', ' order by pe.nome_razao_social) from app.terreno_pessoas x
          join app.pessoas pe on pe.id = x.pessoa_id where x.parte_id = tp.id and x.papel = 'proprietario') as proprietarios,
        (select string_agg(pe.nome_razao_social, ', ' order by pe.nome_razao_social) from app.parte_corretores x
@@ -1696,10 +1719,10 @@ cross join lateral (
          case when m.qtd > 0 then m.area_matriculas_m2 when i.qtd > 0 then i.area_cadastral_m2 end as area_m2,
          case when m.qtd > 0 and m.area_matriculas_m2 is not null then 'matriculas'
               when m.qtd = 0 and i.area_cadastral_m2 is not null then 'inscricoes' end as area_fonte
-  from (select count(*) as qtd, case when count(*) filter (where area_registrada_m2 is null) = 0 then sum(area_registrada_m2) end as area_matriculas_m2
-          from app.matriculas where parte_id = tp.id) m,
-       (select count(*) as qtd, case when count(*) filter (where area_cadastral_m2 is null) = 0 then sum(area_cadastral_m2) end as area_cadastral_m2
-          from app.inscricoes_municipais where parte_id = tp.id) i
+  from (select count(*) as qtd, case when count(*) filter (where area_lote_m2 is null) = 0 then round(sum(area_lote_m2 * fracao), 2) end as area_matriculas_m2
+          from app.v_etiquetas where tipo = 'matricula' and parte_id = tp.id) m,
+       (select count(*) as qtd, case when count(*) filter (where area_lote_m2 is null) = 0 then round(sum(area_lote_m2 * fracao), 2) end as area_cadastral_m2
+          from app.v_etiquetas where tipo = 'inscricao' and parte_id = tp.id) i
 ) ar
 left join lateral (
   select x.* from app.processos x where x.parte_id = tp.id
