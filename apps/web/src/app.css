@@ -165,3 +165,19 @@ body[data-rota="terrenos"] .main { container: pagina / inline-size }
 .fi-alerta-b { position: relative; color: #b3261e !important }
 .fi-alerta .fi-comp-n { top: 2px; right: 0 }
 .fi-alerta .fi-comp-m { left: auto; right: 0 }
+
+/* borda esquerda da gaveta da ficha no Mapa: arrasta a largura, com a mesma pega da borda da lista (pedido do Moisés, 5/nov/2026) */
+.tgav-redim { position: absolute; left: -7px; top: 0; bottom: 0; width: 14px; z-index: 40; cursor: col-resize; touch-action: none; outline: none }
+.tgav-redim::after { content: ""; position: absolute; left: 5px; top: 50%; width: 4px; height: 48px; margin-top: -24px; border-radius: 2px; background: #c4c7c5; transition: background .15s, height .15s, margin .15s }
+.tgav-redim:hover::after, .tgav-redim:focus-visible::after, body.mp-arrastando .tgav-redim::after { background: #0b57d0; height: 72px; margin-top: -36px }
+@media (max-width: 899px) { .tgav-redim { display: none } }
+:root[data-tema="escuro"] .tgav-redim::after { background: #444746 }
+:root[data-tema="escuro"] .tgav-redim:hover::after, :root[data-tema="escuro"] body.mp-arrastando .tgav-redim::after { background: #a8c7fa }
+/* a gaveta encosta na barra de cima: o fio no alto separa o título dela da barra, que tem o mesmo fundo (pedido do Moisés, 6/nov/2026) */
+@media (min-width: 900px) { .tgav-mapa { border-top: 1px solid var(--m-outline-var, #c4c7c5) } }
+:root[data-tema="escuro"] .tgav-mapa { border-top-color: #2d2f31 }
+/* título do quadro nunca espreme letra por letra: sem espaço, as ações (a busca de endereço) descem para a linha de baixo
+   (pedido do Moisés, 6/nov/2026) */
+.fi-aba .sec-h > h2 { flex: 0 1 auto; min-width: min(100%, max-content) }
+.fi-aba .sec-h > h2 > .qd-tg { min-width: min(100%, max-content) }
+.sec-h .qd-acoes:has(.gbusca-h) { flex: 1 1 240px; justify-content: flex-end }
