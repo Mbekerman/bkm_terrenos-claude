@@ -65,13 +65,18 @@
 .fi-comp-m { display: block; left: 0; right: auto; top: calc(100% + 6px) }
 .fi-comp-t { padding: 6px 16px 4px; font-size: 12px; font-weight: 500; color: var(--m-on-var, #444746) }
 /* campo que o menu do que falta abriu acende um instante */
-.acende { animation: acende 1.4s cubic-bezier(.2, 0, 0, 1) }
+/* verde-limão de marca-texto, fora da paleta para destacar: espera 0,3 s, pisca uma vez, fica 0,7 s e apaga em 1,2 s
+   (pedido do Moisés, 6/nov/2026) */
+.acende { animation: acende 2.7s linear }
 .acende:not(.area) { border-radius: 8px }
 @keyframes acende {
-  0% { background-color: rgba(194,231,255,0); box-shadow: 0 0 0 0 rgba(194,231,255,0) }
-  18%, 55% { background-color: rgba(194,231,255,.75); box-shadow: 0 0 0 8px rgba(194,231,255,.75) }
-  100% { background-color: rgba(194,231,255,0); box-shadow: 0 0 0 12px rgba(194,231,255,0) }
+  0%, 11.1% { background-color: rgba(228,247,122,0); box-shadow: 0 0 0 6px rgba(228,247,122,0), 0 0 0 8px rgba(138,164,0,0) }
+  14.8%, 20.4% { background-color: #e4f77a; box-shadow: 0 0 0 6px #e4f77a, 0 0 0 8px #8aa400 }
+  25.9% { background-color: rgba(228,247,122,0); box-shadow: 0 0 0 6px rgba(228,247,122,0), 0 0 0 8px rgba(138,164,0,0) }
+  29.6%, 55.6% { background-color: #e4f77a; box-shadow: 0 0 0 6px #e4f77a, 0 0 0 8px #8aa400 }
+  100% { background-color: rgba(228,247,122,0); box-shadow: 0 0 0 6px rgba(228,247,122,0), 0 0 0 8px rgba(138,164,0,0) }
 }
+
 
 .sec-h .qd-acoes .btn.primary:hover { background: #0842a0 !important }
 .sec-h .qd-acoes .btn.primary:disabled { opacity: .6 }

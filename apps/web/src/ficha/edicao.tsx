@@ -288,7 +288,7 @@ export function acender(el: HTMLElement) {
   el.classList.remove('acende');
   void el.offsetWidth; // recomeça a animação se o item já estava aceso
   el.classList.add('acende');
-  setTimeout(() => el.classList.remove('acende'), 1700);
+  setTimeout(() => el.classList.remove('acende'), 2800);
 }
 
 export interface EndGoogle { cidade?: string; uf?: string }
