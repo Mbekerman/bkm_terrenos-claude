@@ -4,7 +4,7 @@ import { useToast } from './ui';
 /* Ctrl+Z desfaz (pedido do Moisés, 6/nov/2026): fora de um campo, Ctrl+Z (⌘Z no Mac) desfaz a última alteração da pessoa
    nesta sessão, uma por vez, com o aviso "Desfeito: …". Dentro de um campo vale o desfazer do próprio navegador.
    Entra na pilha o que se desfaz sem efeito colateral: os campos da ficha (app.salvar_terreno, com a área adotada) e as
-   etiquetas (parte de matrícula e SQL e os dados da janela da etiqueta). Funil, registros e exclusões ficam de fora:
+   etiquetas (parte de matrícula e SQL e os dados da janela da etiqueta) e o ajuste na poligonal pelo mapa. Funil, registros e exclusões ficam de fora:
    têm regra, aprovação e aviso próprios. */
 export interface Desfeito { rotulo: string; fazer: () => Promise<boolean> }
 const PILHA: Desfeito[] = [];
@@ -35,8 +35,9 @@ export function Desfazer() {
         if (ok) toast(`Desfeito: ${d.rotulo}.`);
       } catch (x: any) { toast(x?.message ?? String(x), true); } finally { ocupado = false; desfazendo = false; }
     };
-    document.addEventListener('keydown', tecla);
-    return () => document.removeEventListener('keydown', tecla);
+    /* na janela, depois dos outros: o desenho e a edição da poligonal desfazem o próprio ponto antes (e marcam o evento) */
+    window.addEventListener('keydown', tecla);
+    return () => window.removeEventListener('keydown', tecla);
   }, [toast]);
   return null;
 }

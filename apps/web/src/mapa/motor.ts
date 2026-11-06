@@ -21,6 +21,8 @@ export interface Ganchos {
   clique(lat: number, lng: number): void;
   /** o mapa começou (true) ou parou (false) de se mexer: o menu do ponto some e volta no lugar */
   movendo(on: boolean): void;
+  /** dois cliques sobre a poligonal: editar (proto_mod.js › editarPoligonal) */
+  editar?(id: string): void;
 }
 /** gestos nos pontos do rascunho (proto_mod.js › vGestos, vArrastado) */
 export interface GestosPonto {
@@ -123,7 +125,7 @@ export class Motor {
         const pg = new google.maps.Polygon({ map: this.mapa, paths: t.poly.map((p) => gLL(p[0], p[1])), strokeColor: t.cor, strokeWeight: 2, fillColor: t.cor, fillOpacity: 0.18, clickable: !this.modo });
         let tc: ReturnType<typeof setTimeout> | undefined;
         pg.addListener('click', () => { clearTimeout(tc); tc = setTimeout(() => this.g.pino(t.id), 260); });
-        pg.addListener('dblclick', (e: any) => { e?.stop?.(); clearTimeout(tc); });
+        pg.addListener('dblclick', (e: any) => { e?.stop?.(); clearTimeout(tc); this.g.editar?.(t.id); });
         this.pinos.push(pg);
       }
     }
@@ -350,8 +352,8 @@ export class Motor {
 
 /* gestos num ponto: arrastar move; clique direito ou dois cliques (mouse) abrem o menu; segurar (toque) também.
    O clique direito só vale com mouse: no Android o toque longo também dispara contextmenu, com o dedo ainda na tela. */
-const TOQUE = () => matchMedia('(pointer: coarse)').matches;
-function vGestos(el: HTMLElement, i: number, gp: GestosPonto) {
+export const TOQUE = () => matchMedia('(pointer: coarse)').matches;
+export function vGestos(el: HTMLElement, i: number, gp: GestosPonto) {
   el.classList.add('v-ponto');
   let tm: ReturnType<typeof setTimeout> | null = null, x0 = 0, y0 = 0, tipo = '';
   const limpa = () => { if (tm) clearTimeout(tm); tm = null; };
