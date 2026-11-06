@@ -132,9 +132,10 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
   const q: Record<string, number> = { comercial: f.qComercial, viabilidade: f.qViab, massa: f.qMassa, documentos: f.qDocs };
   /** quantas abas seguidas cabem a partir de s */
   const cabem = (s: number, W: number) => { let t = 0, k = 0; for (let i = s; i < larg.current.length; i++) { t += larg.current[i] + (k ? 2 : 0); if (t > W + 1) break; k++; } return Math.max(1, k); };
+  const livre = useRef(false); // arrastando: a barra rola solta e a janela espera
   const caber = (forca?: number) => {
     const b = barra.current;
-    if (!b) return;
+    if (!b || livre.current) return;
     const bs = [...b.querySelectorAll<HTMLButtonElement>('button[role=tab]')];
     bs.forEach((x) => { x.hidden = false; });
     const mn = w.current?.querySelector<HTMLElement>('.fi-mais');
@@ -144,6 +145,7 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
     const W = b.clientWidth, L = vis.length;
     let mi = 0; while (mi < L && mi + cabem(mi, W) < L) mi++;
     maxIni.current = mi;
+    b.classList.toggle('desliza', mi > 0);
     const a = vis.findIndex((x) => x.dataset.t === aba);
     let s = forca ?? ini;
     if (forca == null && ultAba.current !== aba && a >= 0) {
@@ -170,41 +172,92 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
     ro.observe(el);
     return () => ro.disconnect();
   });
-  /* Shift + roda (o Ctrl + Shift do Excel também) ou o deslize de lado: uma aba por "estalo"; no celular, o dedo */
+  /* deslizar a barra (pedido do Moisés, 6/nov/2026): o dedo, o mouse arrastado (mãozinha) e Shift + roda (o Ctrl + Shift do Excel
+     também) ou o deslize de lado do trackpad movem a barra pixel a pixel; ao soltar (ou parar a roda), ela encaixa na aba mais
+     perto da borda esquerda e volta à janela de abas inteiras. Arrastar não troca de aba. */
   useEffect(() => {
     const b = barra.current;
     if (!b) return;
-    let acc = 0;
+    let pos: number[] = [], lim = 0, anim = 0, tRoda = 0;
+    /* solta a barra: todas as abas visíveis, rolando a partir do começo da janela atual */
+    const soltar = () => {
+      if (livre.current) return true;
+      if (maxIni.current <= 0) return false;
+      cancelAnimationFrame(anim);
+      const bs = [...b.querySelectorAll<HTMLButtonElement>('button[role=tab]')];
+      bs.forEach((x) => { x.hidden = false; });
+      const vis = bs.filter((x) => getComputedStyle(x).display !== 'none');
+      const x0 = vis[0]?.offsetLeft ?? 0;
+      pos = vis.map((x) => x.offsetLeft - x0);
+      lim = pos[maxIni.current] ?? 0;
+      b.scrollLeft = pos[iniR.current] ?? 0;
+      livre.current = true;
+      return true;
+    };
+    const rolar = (x: number) => { b.scrollLeft = Math.max(0, Math.min(lim, x)); };
+    /* encaixa na aba mais perto e volta à janela */
+    const encaixar = (v = 0) => {
+      if (!livre.current) return;
+      const x = b.scrollLeft + v * 150; // com impulso, encaixa mais adiante no sentido do gesto
+      let s = 0; pos.forEach((p, i) => { if (Math.abs(p - x) < Math.abs(pos[s] - x)) s = i; });
+      s = Math.min(s, maxIni.current);
+      const de = b.scrollLeft, para = pos[s], t0 = performance.now(), dur = Math.min(180, 40 + Math.abs(para - de));
+      const passo = (t: number) => {
+        const k = Math.min(1, (t - t0) / dur), e = 1 - (1 - k) ** 3;
+        b.scrollLeft = de + (para - de) * e;
+        if (k < 1) { anim = requestAnimationFrame(passo); return; }
+        livre.current = false; b.scrollLeft = 0; cab.current(s);
+      };
+      anim = requestAnimationFrame(passo);
+    };
     const roda = (ev: WheelEvent) => {
       const d = ev.shiftKey ? (ev.deltaY || ev.deltaX) : Math.abs(ev.deltaX) > Math.abs(ev.deltaY) ? ev.deltaX : 0;
-      if (!d) return;
+      if (!d || !soltar()) return;
       ev.preventDefault();
-      acc += ev.deltaMode === 1 ? d * 40 : d;
-      if (Math.abs(acc) < 40) return;
-      const passo = acc > 0 ? 1 : -1; acc = 0;
-      const s = Math.max(0, Math.min(maxIni.current, iniR.current + passo));
-      if (s !== iniR.current) cab.current(s);
+      rolar(b.scrollLeft + (ev.deltaMode === 1 ? d * 40 : d));
+      clearTimeout(tRoda); tRoda = window.setTimeout(() => encaixar(), 160);
     };
-    /* no celular, arrastar a barra com o dedo: cada 48 px uma aba; o toque que arrastou não abre aba */
-    let x0: number | null = null, y0 = 0, s0 = 0, arrastou = false;
-    const ini0 = (ev: TouchEvent) => { x0 = ev.touches[0].clientX; y0 = ev.touches[0].clientY; s0 = iniR.current; arrastou = false; };
-    const move = (ev: TouchEvent) => {
-      if (x0 == null) return;
-      const dx = ev.touches[0].clientX - x0, dy = ev.touches[0].clientY - y0;
-      if (!arrastou && (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy))) return;
-      arrastou = true;
-      if (ev.cancelable) ev.preventDefault();
-      const s = Math.max(0, Math.min(maxIni.current, s0 - Math.trunc(dx / 48)));
-      if (s !== iniR.current) cab.current(s);
+    /* dedo e mouse: só vira arraste depois de 6 px de lado; o clique que arrastou não abre aba */
+    let px: number | null = null, py = 0, sx = 0, arrastou = false, id = -1, ult: [number, number][] = [];
+    const baixo = (ev: PointerEvent) => {
+      if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+      px = ev.clientX; py = ev.clientY; arrastou = false; id = ev.pointerId;
     };
-    const fim = () => { x0 = null; };
+    const move = (ev: PointerEvent) => {
+      if (px == null || ev.pointerId !== id) return;
+      const dx = ev.clientX - px, dy = ev.clientY - py;
+      if (!arrastou) {
+        if (Math.abs(dx) < 6 || Math.abs(dx) < Math.abs(dy)) { if (Math.abs(dy) > 10) px = null; return; }
+        if (!soltar()) { px = null; return; }
+        arrastou = true; sx = b.scrollLeft + dx; ult = [];
+        try { b.setPointerCapture(id); } catch { /* sem captura */ }
+        b.classList.add('arrastando');
+      }
+      ev.preventDefault();
+      rolar(sx - dx);
+      ult.push([performance.now(), b.scrollLeft]); if (ult.length > 5) ult.shift();
+    };
+    const cima = (ev: PointerEvent) => {
+      if (ev.pointerId !== id) return;
+      px = null;
+      if (arrastou) {
+        b.classList.remove('arrastando');
+        const [a0, z] = [ult[0], ult[ult.length - 1]], dt = a0 && z ? z[0] - a0[0] : 0;
+        encaixar(dt > 0 && performance.now() - z[0] < 80 ? (z[1] - a0[1]) / dt : 0);
+      }
+    };
     const clique = (ev: MouseEvent) => { if (arrastou) { ev.preventDefault(); ev.stopPropagation(); arrastou = false; } };
     b.addEventListener('wheel', roda, { passive: false });
-    b.addEventListener('touchstart', ini0, { passive: true });
-    b.addEventListener('touchmove', move, { passive: false });
-    b.addEventListener('touchend', fim);
+    b.addEventListener('pointerdown', baixo);
+    b.addEventListener('pointermove', move);
+    b.addEventListener('pointerup', cima);
+    b.addEventListener('pointercancel', cima);
     b.addEventListener('click', clique, true);
-    return () => { b.removeEventListener('wheel', roda); b.removeEventListener('touchstart', ini0); b.removeEventListener('touchmove', move); b.removeEventListener('touchend', fim); b.removeEventListener('click', clique, true); };
+    return () => {
+      cancelAnimationFrame(anim); clearTimeout(tRoda);
+      b.removeEventListener('wheel', roda); b.removeEventListener('pointerdown', baixo); b.removeEventListener('pointermove', move);
+      b.removeEventListener('pointerup', cima); b.removeEventListener('pointercancel', cima); b.removeEventListener('click', clique, true);
+    };
   }, []);
   useEffect(() => {
     if (!menu) return;

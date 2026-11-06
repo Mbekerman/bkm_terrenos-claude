@@ -99,3 +99,8 @@ body[data-rota="terrenos"] .main { container: pagina / inline-size }
 :is(#sec-rd, #sec-pf) .rd-raios button { white-space: nowrap; padding: 6px 12px; font-size: 13px }
 :is(#sec-rd, #sec-pf) .rd-raios button[disabled] { opacity: .45 }
 .qd-fechado .rd-raios { display: none }
+
+/* barra de abas da ficha: com abas escondidas, a mãozinha avisa que ela se arrasta (pedido do Moisés, 6/nov/2026) */
+.fi-abas.desliza, .fi-abas.desliza button { cursor: grab }
+.fi-abas.arrastando, .fi-abas.arrastando button { cursor: grabbing; user-select: none }
+.fi-abas.arrastando button:hover { background: none }
