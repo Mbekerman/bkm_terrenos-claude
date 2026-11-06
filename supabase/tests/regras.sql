@@ -288,13 +288,13 @@ select pg_temp.ok((select algum_gabarito_sem_limite and ca_maximo = 4 and menor_
 select pg_temp.ok((select potencial_mercado_m2 = 1400*4 + 520*2 and potencial_his_m2 = 1400*6 + 520*3 and potencial_hmp_m2 = 1400*5 + 520*2.5 and potencial_basico_m2 = 1920
                      from app.v_urbanismo_vigente where terreno_id = :'t1'), 'potencial construtivo por tipo = soma de área × CA de cada zona');
 select pg_temp.ok((select to_maximo from app.v_lote_zonas where id = :'az1' and tipo = 'mercado') = 0.70, 'TO pelo tamanho do lote (1.920 m²: a de lote grande)');
-select pg_temp.falha(format($$update app.analise_zoneamentos set ca_maximo = 2.5 where id = %L$$, :'az2'), 'exceção do lote exige a fonte');
+-- alteração no lote sem a fonte vale (fonte opcional desde 6/nov/2026)
+update app.analise_zoneamentos set ca_maximo = 2.5 where id = :'az2';
 select pg_temp.falha(format($$update app.analise_zoneamentos set gabarito_m = 30, gabarito_sem_limite = true, excecao_fonte = 'X' where id = %L$$, :'az2'), 'sem limite não leva valor');
 select pg_temp.falha(format($$update app.analise_zoneamentos set ca_maximo = 0, excecao_fonte = 'X' where id = %L$$, :'az2'), 'CA nunca é zero');
 update app.analise_zoneamentos set ca_maximo = 2.5, excecao_fonte = 'Consulta prévia 2026/123' where id = :'az2';
 select pg_temp.ok((select ca_maximo = 2.5 and tem_excecao from app.v_lote_zonas where id = :'az2' and tipo = 'his')
               and (select potencial_mercado_m2 from app.v_urbanismo_vigente where terreno_id = :'t1') = 1400*4 + 520*2.5, 'exceção do lote vale por cima do catálogo');
-select pg_temp.falha(format($$update app.analise_zoneamentos set recuo_frente_m = 0, excecao_fonte = null where id = %L$$, :'az1'), 'recuo alterado no lote também exige a fonte');
 update app.analise_zoneamentos set recuo_frente_m = 0, cota_parte_m2 = 25, ca_basico = 1.5, outorga_gratuita = true, excecao_fonte = 'Projeto aprovado 2026/77' where id = :'az1';
 select pg_temp.ok((select recuo_frente_m = 0 and cota_parte_m2 = 25 and outorga_gratuita and tem_excecao and potencial_basico_m2 = 1400*1.5 and lote_minimo_m2 = 1000
                      from app.v_lote_zonas where id = :'az1' and tipo = 'mercado'), 'qualquer parâmetro preenchido sozinho pode ser alterado no lote (recuo, cota-parte, CA básico, outorga); o resto segue o catálogo');

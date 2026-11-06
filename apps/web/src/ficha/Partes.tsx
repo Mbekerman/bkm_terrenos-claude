@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
 import { Dialogo, useToast } from '../components/ui';
+import { useRascunho } from '../components/Rascunho';
 import { Adorno } from '../lib/mascara';
 import { Ic } from '../components/Moldura';
 import { data as fd, m2 } from '../lib/format';
@@ -240,6 +241,9 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
   const [mat, setMat] = useState({ num: '', cri: f.t.cartorio ?? '', area: '' });
   const [sql, setSql] = useState('');
   const [grav, setGrav] = useState(false);
+  const mref = useRef<HTMLFormElement>(null), sref = useRef<HTMLFormElement>(null);
+  const { aviso: avisoM } = useRascunho(mref, !!(mat.num.trim() || mat.area.trim()), 'a matrícula', () => setMat({ num: '', cri: f.t.cartorio ?? '', area: '' }));
+  const { aviso: avisoS } = useRascunho(sref, !!sql.trim(), `o ${L.base?.rotulo ?? 'SQL'}`, () => setSql(''));
   const [lg, setLg] = useState(false);
   const [dup, setDup] = useState<{ oque: string; codigo: string; nome: string } | null>(null);
   const navegar = useNavigate();
@@ -439,13 +443,14 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
             <div className="etq-col">
               <div className="etq-ct"><span className="etq-sw m" /><b>Matrículas</b> <span className="h-n">{L.mats.length}</span></div>
               {edita && (
-                <form className="etq-form" onSubmit={incluirMat}>
+                <form className="etq-form" ref={mref} onSubmit={incluirMat}>
                   <div className="field"><label htmlFor="em-n">Nº da matrícula</label><input id="em-n" inputMode="numeric" required autoComplete="off" value={mat.num} onChange={(e) => setMat({ ...mat, num: e.target.value })} /></div>
                   <div className="field"><label htmlFor="em-c">Cartório</label>{sp
                     ? <select id="em-c" value={mat.cri} onChange={(e) => setMat({ ...mat, cri: e.target.value })}><option value="">Não informado</option>{crisSel.map((x) => <option key={x}>{x}</option>)}</select>
                     : <input id="em-c" value={mat.cri} onChange={(e) => setMat({ ...mat, cri: e.target.value })} />}</div>
                   <div className="field"><label htmlFor="em-a">Área registrada</label><Adorno t="m2"><input id="em-a" inputMode="decimal" value={mat.area} onChange={(e) => setMat({ ...mat, area: e.target.value })} /></Adorno></div>
                   <button className="btn sm"><Ic n="add" s={16} />Incluir</button>
+                  {avisoM}
                 </form>
               )}
               {pool('m')}
@@ -453,12 +458,13 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
             <div className="etq-col">
               <div className="etq-ct"><span className="etq-sw s" /><b>{rot}s</b> <span className="h-n">{L.insc.length}</span></div>
               {edita && (
-                <form className="etq-form" onSubmit={incluirSql}>
+                <form className="etq-form" ref={sref} onSubmit={incluirSql}>
                   <div className="field grow"><label htmlFor="es-sql">{rot}</label>
                     <input id="es-sql" required autoComplete="off" inputMode={base ? 'numeric' : 'text'} placeholder={base?.mascara ?? 'Como está no carnê do IPTU'} value={sql}
                       onChange={(e) => setSql(base ? mascarar(e.target.value, base.mascara) : e.target.value)} /></div>
                   <button className="btn sm" disabled={grav}><Ic n="add" s={16} />{grav ? 'Incluindo…' : 'Incluir'}</button>
                   {sp && GEO_BASE && f.poly && <button type="button" className="btn sm text" onClick={() => setLg(true)}><Ic n="layers" s={16} />Escolher no mapa</button>}
+                  {avisoS}
                 </form>
               )}
               {pool('s')}
@@ -527,7 +533,10 @@ function JanelaEtq({ f, L, k, fechar, tirar }: { f: Ficha; L: Lotes; k: string; 
   const x = tipo === 'm' ? L.mats.find((m) => m.id === id) : L.insc.find((i) => i.id === id);
   const [v, setV] = useState<Record<string, string>>({});
   const [busc, setBusc] = useState(false);
-  const [iptu, setIptu] = useState<Record<string, string>>({ ex: String(new Date().getFullYear()), sit: 'tributado', parc: '10' });
+  const IPTU0 = { ex: String(new Date().getFullYear()), sit: 'tributado', parc: '10' };
+  const [iptu, setIptu] = useState<Record<string, string>>(IPTU0);
+  const iref = useRef<HTMLFormElement>(null);
+  const { aviso, pedir } = useRascunho(iref, ['vt', 'vc', 'iptu', 'mensal', 'fonte'].some((c) => (iptu[c] ?? '').trim() !== ''), 'o IPTU', () => setIptu(IPTU0));
   useEffect(() => {
     if (!x) return;
     setV(tipo === 'm' ? { numero: x.numero, cartorio: x.cartorio ?? '', area_registrada_m2: x.area_registrada_m2 != null ? num(x.area_registrada_m2, 2) : '', data_certidao: x.data_certidao ?? '' }
@@ -551,7 +560,7 @@ function JanelaEtq({ f, L, k, fechar, tirar }: { f: Ficha; L: Lotes; k: string; 
   const parte = lin('Parte', edita
     ? <select value={x.parte_id ?? ''} onChange={(e) => gravar('parte_id', e.target.value || null)}><option value="">Sem parte</option>{L.partes.map((pa) => <option key={pa.id} value={pa.id}>{pa.nome}</option>)}</select>
     : val(L.partes.find((pa) => pa.id === x.parte_id)?.nome ?? 'Sem parte'));
-  const rodape = <><button className="btn text" onClick={fechar}>Fechar</button>
+  const rodape = <><button className="btn text" onClick={() => pedir(fechar)}>Fechar</button>
     {edita && <button className="btn" onClick={() => tirar(k)}><Ic n="lixo" s={16} />Excluir</button>}</>;
   if (tipo === 'm') {
     const cris = x.cartorio && !CRIS.includes(x.cartorio) ? [x.cartorio, ...CRIS] : CRIS;
@@ -597,7 +606,7 @@ function JanelaEtq({ f, L, k, fechar, tirar }: { f: Ficha; L: Lotes; k: string; 
       return r ? <Adorno t="moeda">{i}</Adorno> : i; })()}</div>
   );
   return (
-    <Dialogo titulo={`${rot} ${x.inscricao}`} sub={x.endereco_prefeitura ?? undefined} onFechar={fechar} rodape={rodape}>
+    <Dialogo titulo={`${rot} ${x.inscricao}`} sub={x.endereco_prefeitura ?? undefined} onFechar={() => pedir(fechar)} rodape={rodape}>
       <div className="pt2-g">
         {lin('Área cadastral', edita ? <Adorno t="m2">{txt('area_cadastral_m2', { inputMode: 'decimal' }, lerNum)}</Adorno> : val(x.area_cadastral_m2 != null ? m2(x.area_cadastral_m2) : '—'))}
         {parte}
@@ -625,7 +634,7 @@ function JanelaEtq({ f, L, k, fechar, tirar }: { f: Ficha; L: Lotes; k: string; 
       ) : <div className="muted">Sem IPTU lançado.</div>}
       {edita && (
         <details className="details"><summary>{vv ? 'Atualizar IPTU' : 'Lançar IPTU'}</summary>
-          <form className="inline-form" style={{ border: 0, paddingTop: 4 }} onSubmit={lancar}>
+          <form className="inline-form" ref={iref} style={{ border: 0, paddingTop: 4 }} onSubmit={lancar}>
             {ip('ex', 'Exercício', { style: { flex: '0 1 96px' }, attrs: { inputMode: 'numeric', required: true } })}
             {ip('vt', 'Venal terreno (R$)')}{ip('vc', 'Venal construção (R$)')}
             <div className="field"><label htmlFor="v-sit">Situação do IPTU</label><select id="v-sit" value={iptu.sit} onChange={(e) => setIptu({ ...iptu, sit: e.target.value })}>{Object.entries(SIT_IPTU).map(([a, b]) => <option key={a} value={a}>{b}</option>)}</select></div>
@@ -637,6 +646,7 @@ function JanelaEtq({ f, L, k, fechar, tirar }: { f: Ficha; L: Lotes; k: string; 
           <div className="hint">Só vale o exercício mais recente: lançar o ano novo substitui o anterior.</div>
         </details>
       )}
+      {aviso}
     </Dialogo>
   );
 }

@@ -556,9 +556,8 @@ create table app.analise_zoneamentos (
   excecao_fonte              text,
   restricoes_observacoes     text,
   unique nulls not distinct (analise_id, inscricao_id, zoneamento_id),
-  check (not coalesce(gabarito_sem_limite and gabarito_m is not null, false)),
-  check (num_nonnulls(ca_minimo, ca_basico, ca_maximo, to_maximo, gabarito_m, gabarito_sem_limite, recuo_frente_m, recuo_lateral_m, recuo_lateral_alto_m, cota_parte_m2, max_unidades, permeabilidade, lote_minimo_m2, frente_minima_m, outorga_gratuita) = 0
-         or nullif(trim(excecao_fonte), '') is not null)
+  -- a fonte da alteração no lote é opcional (decisão do Moisés, 6/nov/2026; antes, obrigatória)
+  check (not coalesce(gabarito_sem_limite and gabarito_m is not null, false))
 );
 
 -- O lote da linha tem que ser do terreno da análise.

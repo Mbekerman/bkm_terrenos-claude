@@ -15168,7 +15168,6 @@ function zonasSubmit(form,F,t,f){
     if(['ca_minimo','ca_basico','ca','cota_parte_m2','max_unidades','lote_minimo_m2','frente_minima_m'].some(k=>exc[k]!=null&&!(exc[k]>0))){toast('CA, cota-parte, unidades, lote e frente: número maior que zero, ou vazio para seguir o catálogo.',true);return true}
     if(['recuo_frente_m','recuo_lateral_m','recuo_lateral_alto_m'].some(k=>exc[k]!=null&&exc[k]<0)){toast('Recuo não pode ser negativo.',true);return true}
     Object.keys(exc).forEach(k=>{if(exc[k]==null)delete exc[k]});
-    if(temExc(exc)&&!exc.fonte){toast('Alteração só com a fonte.',true);return true}
     z.exc=temExc(exc)?exc:null;if('macro' in F)z.macro=F.macro||null;z.ins=zIns(t,z);UI.edit=null;
     log(t,`Zoneamento: ${z.exc?'valores alterados no lote':'lote segue o catálogo'} em ${z.sigla}`);save();render();toast('Salvo.');return true}
   return false}

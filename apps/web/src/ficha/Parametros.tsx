@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useRascunho, mudou } from '../components/Rascunho';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
@@ -209,8 +210,8 @@ function Zona({ f, d, z, sjc }: { f: Ficha; d: D; z: R; sjc: boolean }) {
   );
 }
 
-/** Alterar valores do lote: vazio segue o catálogo; o que mudar precisa da fonte (decisão do Moisés, 25/out/2026).
-    Editado no lugar, sem Salvar: grava ao sair de cada campo ou ao escolher; sem a fonte, a mudança espera por ela */
+/** Alterar valores do lote: vazio segue o catálogo; a fonte da alteração é opcional (decisão do Moisés, 6/nov/2026).
+    Editado no lugar, sem Salvar: grava ao sair de cada campo ou ao escolher */
 function FormExc({ f, raw, p, sjc, z, fechar }: { f: Ficha; raw: R; p: R | null | undefined; sjc: boolean; z: R; fechar: () => void }) {
   const qc = useQueryClient(), toast = useToast();
   const [v, setV] = useState<Record<string, string>>(() => ({
@@ -234,18 +235,16 @@ function FormExc({ f, raw, p, sjc, z, fechar }: { f: Ficha; raw: R; p: R | null 
     if (e.permeabilidade != null && !(e.permeabilidade > 0 && e.permeabilidade <= 1)) return 'Permeabilidade vai de 0 a 100%.';
     if (['ca_minimo', 'ca_basico', 'ca_maximo', 'cota_parte_m2', 'max_unidades', 'lote_minimo_m2', 'frente_minima_m'].some((k) => e[k] != null && !(e[k] > 0))) return 'CA, cota-parte, unidades, lote e frente: número maior que zero, ou vazio para seguir o catálogo.';
     if (['recuo_frente_m', 'recuo_lateral_m', 'recuo_lateral_alto_m'].some((k) => e[k] != null && e[k] < 0)) return 'Recuo não pode ser negativo.';
-    const tem = EXC_K.some((k) => e[k] != null);
-    if (tem && !v.fonte.trim()) return '';
-    e.excecao_fonte = tem ? v.fonte.trim() : null;
+    /* a fonte é opcional (decisão do Moisés, 6/nov/2026) */
+    e.excecao_fonte = EXC_K.some((k) => e[k] != null) ? v.fonte.trim() || null : null;
     if (sjc) e.macrozona = v.macro || null;
     return e;
   };
   if (ult.current == null) { const e0 = montar(v); ult.current = typeof e0 === 'string' ? '' : JSON.stringify(e0); }
   /** grava o que mudou desde a última gravação; uma de cada vez */
-  const gravar = (foco?: HTMLElement) => {
+  const gravar = () => {
     fila.current = fila.current.then(async () => {
       const e = montar(vR.current);
-      if (e === '') { toast('Alteração só com a fonte: informe a fonte da alteração.'); if (foco?.id !== `ze-f${z.id}`) setTimeout(() => document.getElementById(`ze-f${z.id}`)?.focus(), 0); return; }
       if (typeof e === 'string') { toast(e); return; }
       const js = JSON.stringify(e);
       if (js === ult.current) return;
@@ -257,7 +256,7 @@ function FormExc({ f, raw, p, sjc, z, fechar }: { f: Ficha; raw: R; p: R | null 
     });
   };
   const m = (k: string, ja?: boolean) => (e: { target: { value: string } }) => { const nv = { ...vR.current, [k]: e.target.value }; vR.current = nv; setV(nv); if (ja) gravar(); };
-  const x = { 'data-vivo': '', onBlur: (e: { currentTarget: HTMLElement }) => gravar(e.currentTarget),
+  const x = { 'data-vivo': '', onBlur: () => gravar(),
     onKeyDown: (e: React.KeyboardEvent<HTMLElement>) => { if (e.key === 'Enter') { e.preventDefault(); proximoCampo(e.currentTarget); } else if (e.key === 'Escape') { e.stopPropagation(); fechar(); } } };
   const un = (k: string) => (/_m2$/.test(k) ? 'm2' : /_m$/.test(k) ? 'm' : null) as 'm' | 'm2' | null;
   const sem = (l: string) => l.replace(/ \((m|m²)\)$/, '');
@@ -273,7 +272,7 @@ function FormExc({ f, raw, p, sjc, z, fechar }: { f: Ficha; raw: R; p: R | null 
       <div className="field"><label htmlFor={`ze-g${z.id}`}>Gabarito</label><select id={`ze-g${z.id}`} value={v.gabSt} onChange={m('gabSt', true)} {...x}><option value="">Segue o catálogo</option><option value="limitado">Limitado</option><option value="sem">Sem limite</option></select></div>
       <div className="field"><label htmlFor={`ze-gv${z.id}`}>Altura do gabarito</label><Adorno t="m"><input id={`ze-gv${z.id}`} inputMode="decimal" data-fmt="m" value={v.gab} onChange={m('gab')} disabled={v.gabSt !== 'limitado'} {...x} /></Adorno></div>
       <div className="field"><label htmlFor={`ze-o${z.id}`}>Outorga onerosa</label><select id={`ze-o${z.id}`} value={v.outorga} onChange={m('outorga', true)} {...x}><option value="">Segue o catálogo</option><option value="1">Gratuita</option><option value="0">Paga acima do básico</option></select></div>
-      <div className="field full"><label htmlFor={`ze-f${z.id}`}>Fonte da alteração</label><input id={`ze-f${z.id}`} value={v.fonte} onChange={m('fonte')} placeholder="Consulta prévia, operação urbana, certidão, projeto aprovado..." {...x} /></div>
+      <div className="field full"><label htmlFor={`ze-f${z.id}`}>Fonte da alteração (opcional)</label><input id={`ze-f${z.id}`} value={v.fonte} onChange={m('fonte')} placeholder="Consulta prévia, operação urbana, certidão, projeto aprovado..." {...x} /></div>
     </div>
       <div className="hint" style={{ marginTop: 8 }}>Cada valor grava ao sair do campo. Vazio segue o catálogo.</div>
     </div>
@@ -287,6 +286,8 @@ function FormZonas({ f, d, sjc, fechar }: { f: Ficha; d: D; sjc: boolean; fechar
   const [fonte, setFonte] = useState('');
   const [zs, setZs] = useState([0, 1, 2].map(() => ({ sigla: '', area: '', macro: '' })));
   const [grav, setGrav] = useState(false);
+  const fref = useRef<HTMLFormElement | null>(null);
+  const { aviso } = useRascunho(fref, !!fonte.trim() || zs.some((z) => mudou(z, { sigla: '', area: '', macro: '' })), 'as zonas', fechar);
   const mz = (i: number, k: string, v: string) => setZs((o) => o.map((z, j) => (j === i ? { ...z, [k]: v } : z)));
   const salvar = async (ev: FormEvent) => {
     ev.preventDefault();
@@ -304,7 +305,7 @@ function FormZonas({ f, d, sjc, fechar }: { f: Ficha; d: D; sjc: boolean; fechar
     } catch (er: any) { toast(er?.message ?? String(er)); } finally { setGrav(false); }
   };
   return (
-    <form style={{ marginTop: 12 }} onSubmit={salvar} ref={(el) => { if (el && !el.dataset.visto) { el.dataset.visto = '1'; setTimeout(() => el.scrollIntoView({ block: 'center', behavior: 'smooth' }), 60); } }}>
+    <form style={{ marginTop: 12 }} onSubmit={salvar} ref={(el) => { fref.current = el; if (el && !el.dataset.visto) { el.dataset.visto = '1'; setTimeout(() => el.scrollIntoView({ block: 'center', behavior: 'smooth' }), 60); } }}>
       <div className="editgrid">
         <div className="field"><label htmlFor="an-l">Lote</label><select id="an-l" value={lote} onChange={(e) => setLote(e.target.value)}>
           {d.ins.map((i) => <option key={i.id} value={i.id}>{d.base?.rotulo ?? 'Inscrição'} {i.inscricao}</option>)}<option value="">Parte sem inscrição (pela poligonal)</option></select></div>
@@ -319,6 +320,7 @@ function FormZonas({ f, d, sjc, fechar }: { f: Ficha; d: D; sjc: boolean; fechar
         </div>
       ))}
       <div className="sec-f" style={{ padding: '12px 0 0' }}><button type="button" className="btn text" onClick={fechar}>Cancelar</button><button className="btn primary" disabled={grav}>Registrar zonas</button></div>
+      {aviso}
     </form>
   );
 }

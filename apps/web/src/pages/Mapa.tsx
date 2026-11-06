@@ -451,9 +451,9 @@ export default function Mapa() {
     document.addEventListener('pointerdown', baixo, true); document.addEventListener('pointerup', cima, true);
     return () => { document.removeEventListener('pointerdown', baixo, true); document.removeEventListener('pointerup', cima, true); };
   }, []);
-  /* tipo de mapa nos três pontinhos, guardado no navegador (bkm-terrenos-mapa-tipo; padrão Mapa); com renda ou densidade ligada,
+  /* tipo de mapa nos três pontinhos, guardado no navegador (bkm-terrenos-mapa-tipo; sem nada guardado, Satélite, pedido do Moisés de 6/nov/2026); com renda ou densidade ligada,
      Satélite, a menos que a pessoa troque enquanto a camada está ligada (vale só até desligar; pedido do Moisés, 5/nov/2026) */
-  const [tipo, setTipo] = useState<Base>(() => { try { return localStorage.getItem(MP_TKEY) === 'satelite' ? 'satelite' : 'mapa'; } catch { return 'mapa'; } });
+  const [tipo, setTipo] = useState<Base>(() => { try { return localStorage.getItem(MP_TKEY) === 'mapa' ? 'mapa' : 'satelite'; } catch { return 'satelite'; } });
   const [baseCam, setBaseCam] = useState<Base | null>(null);
   useEffect(() => { setBaseCam(null); }, [camada]);
   const base: Base = camada ? (baseCam ?? 'satelite') : tipo;
