@@ -3416,7 +3416,9 @@ update app.matriculas set area_registrada_m2 = 200 where id = :'lm3';
 select pg_temp.falha(format($$update app.matricula_partes set parte_id = %L where id = %L$$, :'pa', :'lc1'), 'a parte tem que ser do terreno');
 -- o mesmo lote em duas partes (etiqueta duplicada; pedido do Moisés, 6/nov/2026)
 insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id) values (:'emp', :'tl', :'lm1', :'lp2') returning id as lc2 \gset
-select pg_temp.falha(format($$insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id) values (%L, %L, %L, %L)$$, :'emp', :'tl', :'lm1', :'lp2'), 'a mesma etiqueta não entra duas vezes na mesma parte');
+insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id, percentual) values (:'emp', :'tl', :'lm1', :'lp2', 0) returning id as lc3 \gset
+select pg_temp.ok((select count(*) = 2 from app.matricula_partes where matricula_id = :'lm1' and parte_id = :'lp2'), 'a cópia duplicada nasce na mesma parte da original');
+delete from app.matricula_partes where id = :'lc3';
 select pg_temp.ok((select area_matriculas_m2 = 250 from app.v_partes where id = :'lp1') and (select area_matriculas_m2 = 750 from app.v_partes where id = :'lp2'),
   'lote de duas partes sem percentual: metade para cada');
 select pg_temp.ok((select bool_and(fracao_estimada) from app.v_etiquetas where lote_id = :'lm1'), 'sem percentual, a fração do lote compartilhado é estimada');
