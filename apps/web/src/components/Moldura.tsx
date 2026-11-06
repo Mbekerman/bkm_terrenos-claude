@@ -42,9 +42,13 @@ export function SeloAmbiente() {
   if (!AMBIENTE || AMBIENTE === 'producao') return null;
   const nome = AMBIENTE === 'dev' ? 'Desenvolvimento' : AMBIENTE;
   return (
-    <span className="amb-selo" title={nome}>
-      <span className="amb-l">{nome}</span>
-      <span className="amb-c">{AMBIENTE === 'dev' ? 'DEV' : AMBIENTE.slice(0, 3).toUpperCase()}</span>
+    <span className="amb-pilha">
+      <span className="amb-selo" title={nome}>
+        <span className="amb-l">{nome}</span>
+        <span className="amb-c">{AMBIENTE === 'dev' ? 'DEV' : AMBIENTE.slice(0, 3).toUpperCase()}</span>
+      </span>
+      {/* qual versão está no ar: o último PR e a hora do build (pedido do Moises, 6/nov/2026) */}
+      <span className="amb-pr" title={`Versão do PR #${__VERSAO__.pr}, publicada em ${__VERSAO__.build}`}>PR #{__VERSAO__.pr} · {__VERSAO__.build}</span>
     </span>
   );
 }
