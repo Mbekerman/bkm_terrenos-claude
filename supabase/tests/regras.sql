@@ -3681,4 +3681,12 @@ delete from app.inscricoes_municipais where id = :'sq1';
 select pg_temp.ok((select area_cadastral_m2 is null and area_adotada_m2 is null and fonte_area_adotada is null from app.terrenos where id = :'tsq'),
   'sem SQL, sem cadastral; a adotada que era a cadastral fica em branco');
 
+-- ---------------------------------------------------------------------
+\echo '# ficha numa chamada só (6/nov/2026)'
+select pg_temp.como(:'analista');
+select pg_temp.ok((select (d->'v'->>'id') = :'tsq' and (d->'t'->>'nome') = 'Soma dos SQLs' and jsonb_typeof(d->'fases') = 'array'
+    and (d->>'q_insc')::int = 0 and jsonb_typeof(d->'procs') = 'array'
+  from (select app.ficha_dados(:'emp', (select codigo from app.terrenos where id = :'tsq')) d) x), 'a ficha vem inteira numa chamada');
+select pg_temp.ok(app.ficha_dados(:'emp', 'Z999') is null, 'código que não existe devolve nulo');
+
 \echo 'TODOS OS TESTES PASSARAM'

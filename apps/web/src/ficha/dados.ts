@@ -59,8 +59,75 @@ function anel(g: unknown): [number, number][] | null {
 
 const conta = (r: { count: number | null }) => r.count ?? 0;
 
+/** o que a ficha junta, venha da função do banco ou dos pedidos separados */
+interface Partes {
+  x: R; tr: R; ru: R | null; o1: R | undefined; qOfertas: number; cor: { id: string; imob: string | null; nome: string | null } | null; e1: R | undefined;
+  buscado: boolean; unidades: number | null; fs: R[]; es: R[]; ss: R[]; ps: R[]; trs: R[];
+  qMat: number; qInsc: number; qProp: number; infraNV: number; qPropostas: number; qReu: number; qViab: number; qMassa: number; qDocs: number;
+}
+
+function montar(p: Partes): Ficha {
+  const { x, tr } = p, id = x.id as string;
+  const procs: ProcF[] = p.ps.map((r) => ({ id: r.id, fase: r.fase, etapa: r.etapa_atual, sub: r.subetapa_atual, status: r.status, desde: r.etapa_desde, encerrado: r.data_encerramento }));
+  const fases: FaseF[] = p.fs.map((f) => ({ k: f.codigo, nome: f.nome, entrada: !!f.entrada, ativo: f.ativo !== false }));
+  const etapasPorFase: Record<string, EtapaF[]> = {};
+  for (const f of fases) etapasPorFase[f.k] = p.es.filter((e) => e.fase === f.k).map((e) => ({
+    k: e.codigo, nome: e.nome,
+    subs: p.ss.filter((s) => s.fase === f.k && s.etapa === e.codigo && s.ativo !== false).map((s) => ({ k: s.codigo, nome: s.nome })),
+  }));
+  const ent = fases.find((f) => f.entrada)?.k;
+  const { o1, e1, ru } = p;
+  return {
+    id, codigo: x.codigo, nome: x.nome ?? x.codigo, versao: tr.versao ?? x.versao, t: tr,
+    logradouro: x.logradouro, numero: x.numero, bairro: x.bairro, municipio: x.municipio, uf: x.uf, zona: x.zona,
+    lat: tr.latitude, lng: tr.longitude, poly: anel(tr.poligono_geojson),
+    area: x.area_adotada_m2, fonteArea: x.fonte_area_adotada, testada: tr.testada_principal_m, ocupacao: tr.situacao_ocupacao,
+    dataIdent: x.data_identificacao, criadoEm: tr.criado_em,
+    resp: ru ? { nome: ru.nome || ru.email, foto: ru.foto_url } : null,
+    fase: x.fase, faseNome: x.fase_nome, etapaNome: x.etapa_nome, subNome: x.subetapa_nome, status: x.processo_status,
+    negId: x.negociacao_id ?? null, negStatus: x.negociacao_status, temp: x.temperatura,
+    zonas: x.zonas_siglas ? (Array.isArray(x.zonas_siglas) ? x.zonas_siglas.join(' / ') : String(x.zonas_siglas)) : null,
+    vgv: x.vgv, unidades: p.unidades, valorPedido: x.valor_pedido,
+    ofertaEntrada: o1 ? { id: o1.id, valor: o1.valor_pedido, data: o1.data_oferta } : null,
+    corretor: p.cor?.nome ? { id: p.cor.id, nome: p.cor.nome, imob: p.cor.imob } : null,
+    estacao: e1 ? { nome: e1.nome, pe: e1.distancia_pe_m, seg: e1.duracao_pe_s } : null, entornoBuscado: p.buscado,
+    topo: tr.topo_perfil ? { perfil: tr.topo_perfil, decl: tr.topo_declividade_pct, desnivel: tr.topo_desnivel_m } : null,
+    fases, etapasEnt: ent ? etapasPorFase[ent] : [], etapasPorFase, procs,
+    trans: p.trs.map((r) => ({ processo: r.processo_id, deEtapa: r.de_etapa, paraEtapa: r.para_etapa, em: r.em })),
+    qMat: p.qMat, qInsc: p.qInsc, temProprietario: p.qProp > 0, infraNV: p.infraNV,
+    qComercial: p.qOfertas + p.qPropostas + p.qReu, qViab: p.qViab, qMassa: p.qMassa,
+    qDocs: p.qDocs + (x.diligencias_abertas ?? 0),
+  };
+}
+
+/* a função do banco que devolve a ficha inteira num pedido (app.ficha_dados, 6/nov/2026); enquanto ela não estiver no
+   banco, a ficha volta aos pedidos separados, sem tentar de novo nesta sessão */
+let semFuncao = false;
+const n = (v: unknown) => Number(v ?? 0);
+
 /** carrega a ficha pelo código (A123); null = código que não existe na empresa */
 export async function carregarFicha(empresa: string, codigo: string): Promise<Ficha | null> {
+  if (!semFuncao) {
+    const { data, error } = await supabase.rpc('ficha_dados', { p_empresa: empresa, p_codigo: codigo });
+    if (!error) {
+      if (!data) return null;
+      const d = data as R;
+      return montar({
+        x: d.v, tr: d.t, ru: d.u ?? null, o1: d.of1 ?? undefined, qOfertas: n(d.q_ofertas),
+        cor: d.cor ? { id: d.cor.corretor_id, imob: d.cor.imobiliaria ?? null, nome: d.cor.nome ?? null } : null,
+        e1: d.est ?? undefined, buscado: !!d.buscado, unidades: d.unidades ?? null,
+        fs: d.fases ?? [], es: d.etapas ?? [], ss: d.subetapas ?? [], ps: d.procs ?? [], trs: d.trans ?? [],
+        qMat: n(d.q_mat), qInsc: n(d.q_insc), qProp: n(d.q_prop), infraNV: n(d.infra_nv), qPropostas: n(d.q_propostas),
+        qReu: n(d.q_reunioes), qViab: n(d.q_viab), qMassa: n(d.q_massa), qDocs: n(d.q_docs),
+      });
+    }
+    if (error.code !== 'PGRST202' && error.code !== '42883') throw error;
+    semFuncao = true;
+  }
+  return carregarSeparado(empresa, codigo);
+}
+
+async function carregarSeparado(empresa: string, codigo: string): Promise<Ficha | null> {
   const v = await supabase.from('v_terrenos')
     .select('id,codigo,nome,versao,logradouro,numero,bairro,zona,municipio,uf,area_adotada_m2,fonte_area_adotada,data_identificacao,responsavel_id,fase,fase_nome,etapa_nome,subetapa_nome,processo_status,negociacao_id,negociacao_status,temperatura,zonas_siglas,zoneamentos,vgv,valor_pedido,diligencias_abertas')
     .eq('empresa_id', empresa).eq('codigo', codigo).maybeSingle();
@@ -92,7 +159,6 @@ export async function carregarFicha(empresa: string, codigo: string): Promise<Fi
     supabase.from('documentos').select('id', cnt).eq('terreno_id', id),
   ]);
   for (const r of [t, u, of1, cor, est, bus, pn, fs, es, ss, ps, mat, ins, pes, inf, itI, prop, reu, viab, mas, docs]) if (r.error) throw r.error;
-  const tr = t.data as R;
   /* unidades do estudo válido: a viabilidade presa à negociação */
   let unidades: number | null = null;
   const vid = (pn.data as R | null)?.viabilidade_id;
@@ -101,45 +167,22 @@ export async function carregarFicha(empresa: string, codigo: string): Promise<Fi
     if (vb.error) throw vb.error;
     unidades = (vb.data as R | null)?.unidades ?? null;
   }
-  const procs: ProcF[] = (ps.data as R[]).map((p) => ({ id: p.id, fase: p.fase, etapa: p.etapa_atual, sub: p.subetapa_atual, status: p.status, desde: p.etapa_desde, encerrado: p.data_encerramento }));
-  const trs = procs.length
-    ? await supabase.from('processo_transicoes').select('processo_id,de_etapa,para_etapa,em').in('processo_id', procs.map((p) => p.id)).order('em')
+  const pids = (ps.data as R[]).map((p) => p.id);
+  const trs = pids.length
+    ? await supabase.from('processo_transicoes').select('processo_id,de_etapa,para_etapa,em').in('processo_id', pids).order('em')
     : { data: [], error: null };
   if (trs.error) throw trs.error;
-  const fases: FaseF[] = (fs.data as R[]).map((f) => ({ k: f.codigo, nome: f.nome, entrada: !!f.entrada, ativo: f.ativo !== false }));
-  const etapasPorFase: Record<string, EtapaF[]> = {};
-  for (const f of fases) etapasPorFase[f.k] = (es.data as R[]).filter((e) => e.fase === f.k).map((e) => ({
-    k: e.codigo, nome: e.nome,
-    subs: (ss.data as R[]).filter((s) => s.fase === f.k && s.etapa === e.codigo && s.ativo !== false).map((s) => ({ k: s.codigo, nome: s.nome })),
-  }));
-  const ent = fases.find((f) => f.entrada)?.k;
   const visita = new Set((itI.data as R[]).filter((i) => !i.viabilidade_tecnica).map((i) => i.codigo));
-  const o1 = (of1.data as R[])[0];
   const c0 = (cor.data as R[])[0], c = (c0?.corretores ?? null) as R | null;
-  const e1 = (est.data as R[])[0];
-  const ru = u.data as R | null;
-  return {
-    id, codigo: x.codigo, nome: x.nome ?? x.codigo, versao: tr.versao ?? x.versao, t: tr,
-    logradouro: x.logradouro, numero: x.numero, bairro: x.bairro, municipio: x.municipio, uf: x.uf, zona: x.zona,
-    lat: tr.latitude, lng: tr.longitude, poly: anel(tr.poligono_geojson),
-    area: x.area_adotada_m2, fonteArea: x.fonte_area_adotada, testada: tr.testada_principal_m, ocupacao: tr.situacao_ocupacao,
-    dataIdent: x.data_identificacao, criadoEm: tr.criado_em,
-    resp: ru ? { nome: ru.nome || ru.email, foto: ru.foto_url } : null,
-    fase: x.fase, faseNome: x.fase_nome, etapaNome: x.etapa_nome, subNome: x.subetapa_nome, status: x.processo_status,
-    negId: neg, negStatus: x.negociacao_status, temp: x.temperatura,
-    zonas: x.zonas_siglas ? (Array.isArray(x.zonas_siglas) ? x.zonas_siglas.join(' / ') : String(x.zonas_siglas)) : null,
-    vgv: x.vgv, unidades, valorPedido: x.valor_pedido,
-    ofertaEntrada: o1 ? { id: o1.id, valor: o1.valor_pedido, data: o1.data_oferta } : null,
-    corretor: c?.pessoas ? { id: c0.corretor_id, nome: (c.pessoas as R).nome_razao_social, imob: c.imobiliaria } : null,
-    estacao: e1 ? { nome: e1.nome, pe: e1.distancia_pe_m, seg: e1.duracao_pe_s } : null, entornoBuscado: conta(bus) > 0,
-    topo: tr.topo_perfil ? { perfil: tr.topo_perfil, decl: tr.topo_declividade_pct, desnivel: tr.topo_desnivel_m } : null,
-    fases, etapasEnt: ent ? etapasPorFase[ent] : [], etapasPorFase, procs,
-    trans: (trs.data as R[]).map((r) => ({ processo: r.processo_id, deEtapa: r.de_etapa, paraEtapa: r.para_etapa, em: r.em })),
-    qMat: conta(mat), qInsc: conta(ins), temProprietario: conta(pes) > 0,
+  return montar({
+    x, tr: t.data as R, ru: u.data as R | null, o1: (of1.data as R[])[0], qOfertas: of1.count ?? 0,
+    cor: c?.pessoas ? { id: c0.corretor_id, imob: c.imobiliaria, nome: (c.pessoas as R).nome_razao_social } : null,
+    e1: (est.data as R[])[0], buscado: conta(bus) > 0, unidades,
+    fs: fs.data as R[], es: es.data as R[], ss: ss.data as R[], ps: ps.data as R[], trs: trs.data as R[],
+    qMat: conta(mat), qInsc: conta(ins), qProp: conta(pes),
     infraNV: (inf.data as R[]).filter((i) => visita.has(i.item) && i.disponibilidade === 'nao_verificado').length,
-    qComercial: (of1.count ?? 0) + conta(prop as { count: number | null }) + conta(reu), qViab: conta(viab), qMassa: conta(mas),
-    qDocs: conta(docs) + (x.diligencias_abertas ?? 0),
-  };
+    qPropostas: conta(prop as { count: number | null }), qReu: conta(reu), qViab: conta(viab), qMassa: conta(mas), qDocs: conta(docs),
+  });
 }
 
 /** completude: campos que importam para decidir a compra (proto.js › completude); [rótulo, aba] dos que faltam */

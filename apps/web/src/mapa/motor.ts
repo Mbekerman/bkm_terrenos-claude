@@ -23,6 +23,8 @@ export interface Ganchos {
   movendo(on: boolean): void;
   /** dois cliques sobre a poligonal: editar (proto_mod.js › editarPoligonal) */
   editar?(id: string): void;
+  /** o mouse parou sobre o pino ou a poligonal: a ficha já começa a carregar (pedido do Moisés, 6/nov/2026) */
+  passar?(id: string): void;
 }
 /** gestos nos pontos do rascunho (proto_mod.js › vGestos, vArrastado) */
 export interface GestosPonto {
@@ -119,12 +121,14 @@ export class Motor {
       d.innerHTML = `<span class="pin-b" style="background:${t.cor}"><b class="pin-d" style="background:${t.fg}"></b></span>`;
       const mk = new AdvancedMarkerElement({ map: this.mapa, position: gLL(t.lat, t.lng), content: d, title: t.nome, gmpClickable: !this.modo, zIndex: sel === t.id ? 10 : 1 });
       mk.addEventListener('gmp-click', () => this.g.pino(t.id));
+      d.addEventListener('pointerenter', () => this.g.passar?.(t.id));
       mk._terreno = t.id;
       this.pinos.push(mk);
       if (t.poly) {
         const pg = new google.maps.Polygon({ map: this.mapa, paths: t.poly.map((p) => gLL(p[0], p[1])), strokeColor: t.cor, strokeWeight: 2, fillColor: t.cor, fillOpacity: 0.18, clickable: !this.modo });
         let tc: ReturnType<typeof setTimeout> | undefined;
-        pg.addListener('click', () => { clearTimeout(tc); tc = setTimeout(() => this.g.pino(t.id), 260); });
+        pg.addListener('mouseover', () => this.g.passar?.(t.id));
+        pg.addListener('click', () => { clearTimeout(tc); this.g.passar?.(t.id); tc = setTimeout(() => this.g.pino(t.id), 260); });
         pg.addListener('dblclick', (e: any) => { e?.stop?.(); clearTimeout(tc); this.g.editar?.(t.id); });
         this.pinos.push(pg);
       }
