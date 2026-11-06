@@ -315,11 +315,14 @@ function CartaoParte({ f, L, pa, n, ps }: { f: Ficha; L: Lotes; pa: R; n: number
       <div className="pt2-h">
         {edita ? <input className="pt2-tit" value={nome} aria-label="Título da parte" onChange={(e) => setNome(e.target.value)} onBlur={gravarNome} /> : <b>{pa.nome}</b>}
         <span className={`chip ${nm || ni ? 'good' : ''}`}>{nm || ni ? [nm && nm + (nm > 1 ? ' matrículas' : ' matrícula'), ni && ni + (ni > 1 ? ' SQLs' : ' SQL')].filter(Boolean).join(' · ') : 'sem matrícula'}</span>
-        {edita && n > 1 && <button className="btn text sm pt2-x" onClick={excluir}><Ic n="lixo" s={16} />Excluir parte</button>}
+        {/* só os ícones, sempre na linha do título (pedido do Moises, 6/nov/2026) */}
+        <span className="pt2-acoes">
+          <button type="button" className="iconbtn" id={`pp-ed-${pa.id}`} title={edita ? 'Editar pessoas da parte' : 'Ver pessoas da parte'} aria-label={edita ? 'Editar pessoas da parte' : 'Ver pessoas da parte'} onClick={() => setJan(true)}><Ic n={edita ? 'edit' : 'olho'} s={18} /></button>
+          {edita && n > 1 && <button type="button" className="iconbtn" title="Excluir parte" aria-label="Excluir parte" onClick={excluir}><Ic n="lixo" s={18} /></button>}
+        </span>
       </div>
       <div className="pt2-pp">
-        <div className="pt2-pp-h"><span className="lbl-f">Proprietários</span>
-          <button type="button" className="btn text sm" id={`pp-ed-${pa.id}`} onClick={() => setJan(true)}><Ic n={edita ? 'edit' : 'olho'} s={16} />{edita ? 'Editar' : 'Ver'}</button></div>
+        <div className="pt2-pp-h"><span className="lbl-f">Proprietários</span></div>
         {donos.length ? <ul className="pt2-donos">{donos.map((p) => <li key={p.id}><span>{p.pessoas?.nome_razao_social}</span><span className="faint">{pctTxt(p.percentual_participacao) || '% não informado'}</span></li>)}</ul>
           : <span className="ni">Nenhum proprietário informado</span>}
         {outros > 0 && <span className="faint pt2-outros">+ {outros} {outros > 1 ? 'outras pessoas' : 'outra pessoa'} (cônjuge, contato…)</span>}
