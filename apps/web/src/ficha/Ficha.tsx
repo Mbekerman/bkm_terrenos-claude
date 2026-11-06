@@ -10,6 +10,7 @@ import Temperatura from './Temperatura';
 import AbaComercial from './Comercial';
 import Painel, { Avancos, usePN } from './Painel';
 import AbaParametros from './Parametros';
+import AbaEntorno, { EntornoAuto } from './Entorno';
 import AbaTerreno, { dadosArea, dadosEndereco, fonteSel, numInp, useEdicao, valoresArea } from './Terreno';
 import { CamposEndereco, END_CAMPOS, focar, OPT, pedirCampo } from './edicao';
 
@@ -361,6 +362,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa }: {
     : aba === 'terreno' ? <AbaTerreno key={f.id} f={f} />
     : aba === 'comercial' ? <AbaComercial key={f.id} f={f} cor={corPino(f)[0]} />
     : aba === 'parametros' ? <AbaParametros key={f.id} f={f} />
+    : aba === 'entorno' ? <AbaEntorno key={f.id} f={f} />
     : <section className="sec"><div className="empty">{PROXIMAS.has(aba) ? 'Esta aba está sendo portada do protótipo e entra nas próximas entregas.' : 'Esta aba entra depois da primeira versão.'}</div></section>;
   return (
     <div className={`ficha-wrap ${pn.aberto ? 'pn-on' : 'pn-off'}`}><div className="ficha-main">
@@ -390,6 +392,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa }: {
       </div>
       <Abas f={f} aba={aba} irAba={irAba} />
       <section className="bl fi-aba" id={`bl-${aba}`} role="tabpanel"><div className="bl-c">{corpo}</div></section>
+      {aba !== 'entorno' && f.lat != null && <EntornoAuto f={f} />}
     </div><Painel f={f} irAba={irAba} /></div>
   );
 }

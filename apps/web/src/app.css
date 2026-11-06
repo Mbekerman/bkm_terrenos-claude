@@ -93,3 +93,9 @@
 /* painel lateral da ficha (Logs e quadro de avanço): a container query do protótipo vale para a rota "terreno";
    no React a página da ficha é /terrenos/A123 (data-rota="terrenos") */
 body[data-rota="terrenos"] .main { container: pagina / inline-size }
+
+/* aba Entorno: seletor de raio da renda e do perfil (no protótipo, #rd-card .rd-raios) */
+:is(#sec-rd, #sec-pf) .rd-raios { margin: 0 var(--q-px, 24px) 4px; align-self: flex-start; width: fit-content; max-width: calc(100% - 2 * var(--q-px, 24px)); overflow-x: auto }
+:is(#sec-rd, #sec-pf) .rd-raios button { white-space: nowrap; padding: 6px 12px; font-size: 13px }
+:is(#sec-rd, #sec-pf) .rd-raios button[disabled] { opacity: .45 }
+.qd-fechado .rd-raios { display: none }

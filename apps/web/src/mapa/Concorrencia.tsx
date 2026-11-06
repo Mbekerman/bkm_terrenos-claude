@@ -174,7 +174,7 @@ export function ItensConc({ lista, erro, ligada, off, arv, alternar, alternarArv
 }
 
 /* tipologias agrupadas; grupo com menos de min_unidades_grupo é ponto fora do padrão e sai do resumo */
-function Resumo({ e }: { e: Emp }) {
+export function Resumo({ e }: { e: Emp }) {
   const cfg = mercado()!.cfg, min = cfg?.min_unidades_grupo ?? 3, todos = mkGrupos(e), gs = todos.filter((g) => g.unidades >= min), fora = todos.filter((g) => g.unidades < min).reduce((s, g) => s + g.unidades, 0);
   const nota = fora > 0 && <div className="faint mk-fora">{num(fora)} {fora > 1 ? 'unidades fora do padrão' : 'unidade fora do padrão'} (sem tipologia com {min} ou mais parecidas) não {fora > 1 ? 'entram' : 'entra'} no resumo.</div>;
   if (!gs.length) return <>{nota}</>;
