@@ -7,6 +7,7 @@ import { useToast } from '../components/ui';
 import { carregarGoogle, gLib } from '../mapa/google';
 import { data as fd, m2 } from '../lib/format';
 import { Adorno, metros } from '../lib/mascara';
+import { empilhar } from '../components/Desfazer';
 import type { Ficha, R } from './dados';
 
 // Edição da ficha (porte de proto.js › SECOES, fmtCampo, campoInp, camposEndereco e proto_gmap.js › gBuscasEndereco).
@@ -124,18 +125,37 @@ export function useSalvar(f: Ficha) {
   fR.current = f;
   return (dados: R): Promise<boolean> => {
     const p = FILA.then(async () => {
-      const g = fR.current, ver = Math.max(g.versao, VER.get(g.id) ?? 0);
-      const { data, error } = await supabase.rpc('salvar_terreno', { p_terreno: g.id, p_versao: ver, p_dados: dados });
-      if (error) { toast(error.message); if (error.code === '40001') { VER.delete(g.id); qc.invalidateQueries({ queryKey: ['ficha'] }); } return false; }
-      if (typeof data === 'number') VER.set(g.id, data);
-      qc.invalidateQueries({ queryKey: ['ficha'] });
-      qc.invalidateQueries({ queryKey: ['mapa'] });
+      const g = fR.current;
+      // o valor de antes, para o Ctrl+Z (components/Desfazer.tsx)
+      const ks = Object.keys(dados);
+      const { data: antes } = await supabase.from('terrenos').select(ks.join(',')).eq('id', g.id).maybeSingle();
+      if (!(await gravarTerreno(g.id, g.versao, dados, qc, toast))) return false;
       toast('Salvo.');
+      if (antes && ks.some((k) => JSON.stringify((antes as R)[k] ?? null) !== JSON.stringify(dados[k] ?? null))) {
+        const volta = Object.fromEntries(ks.map((k) => [k, (antes as R)[k] ?? null]));
+        empilhar({ rotulo: rotuloCampos(ks), fazer: () => { const q = FILA.then(() => gravarTerreno(g.id, g.versao, volta, qc, toast)); FILA = q.catch(() => false); return q; } });
+      }
       return true;
     });
     FILA = p.catch(() => false);
     return p;
   };
+}
+async function gravarTerreno(id: string, versao: number, dados: R, qc: ReturnType<typeof useQueryClient>, toast: (m: string, e?: boolean) => void) {
+  const ver = Math.max(versao, VER.get(id) ?? 0);
+  const { data, error } = await supabase.rpc('salvar_terreno', { p_terreno: id, p_versao: ver, p_dados: dados });
+  if (error) { toast(error.message); if (error.code === '40001') { VER.delete(id); qc.invalidateQueries({ queryKey: ['ficha'] }); } return false; }
+  if (typeof data === 'number') VER.set(id, data);
+  qc.invalidateQueries({ queryKey: ['ficha'] });
+  qc.invalidateQueries({ queryKey: ['mapa'] });
+  return true;
+}
+const ROT_EXTRA: Record<string, string> = { area_adotada_m2: 'área adotada', fonte_area_adotada: 'área adotada', area_documental_m2: 'área documental', area_cadastral_m2: 'área cadastral',
+  area_levantamento_m2: 'área de levantamento', testada_principal_m: 'testada', historico_uso: 'histórico de uso', visita_tecnica_em: 'data da visita', poligono_geojson: 'poligonal' };
+function rotuloCampos(ks: string[]) {
+  const nomes = ks.map((k) => ROT_EXTRA[k] ?? Object.values(SECOES).flatMap((s) => s.campos).find((c) => c[0] === k)?.[1]?.toLowerCase()).filter(Boolean) as string[];
+  const u = [...new Set(nomes)];
+  return END_CAMPOS.some((k) => ks.includes(k)) && ks.length > 2 ? 'endereço' : u.length ? u.join(', ') : 'alteração na ficha';
 }
 
 /* ---------- edição no lugar (pedido do Moisés, 6/nov/2026: sem Editar nem Salvar nas seções) ----------

@@ -131,7 +131,6 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
   const [menu, setMenu] = useState(false);
   const [sobra, setSobra] = useState(false); // há abas fora da vista
   const anim = useRef(0);
-  const q: Record<string, number> = { comercial: f.qComercial, viabilidade: f.qViab, massa: f.qMassa, documentos: f.qDocs };
   /* a aba ativa entra na vista (com as vizinhas) ao trocar de aba */
   useLayoutEffect(() => {
     const b = barra.current, a = b?.querySelector<HTMLElement>(`button[data-t="${aba}"]`);
@@ -227,7 +226,10 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
     return () => { document.removeEventListener('pointerdown', fecha, true); document.removeEventListener('keydown', esc, true); };
   }, [menu]);
   const ia = ABAS.findIndex(([k]) => k === aba), ant = ABAS[ia - 1], prox = ABAS[ia + 1];
-  const rot = (k: string, l: string) => <>{l}{q[k] ? <span className="tkm-n">{q[k]}</span> : null}</>;
+  // o número de cada aba é quantos itens da completude faltam nela (pedido do Moisés, 6/nov/2026)
+  const q: Record<string, number> = {};
+  for (const x of completude(f).faltam) q[x[1]] = (q[x[1]] ?? 0) + 1;
+  const rot = (k: string, l: string) => <>{l}{q[k] ? <span className="tkm-n" title={`Faltam ${q[k]} ${q[k] > 1 ? 'itens' : 'item'} para completar a ficha`}>{q[k]}</span> : null}</>;
   return (
     <div className="fi-abas-w">
       <div className={`fi-abas roleta${sobra ? ' desliza' : ''}`} role="tablist" aria-label="Seções do terreno" ref={barra}>
