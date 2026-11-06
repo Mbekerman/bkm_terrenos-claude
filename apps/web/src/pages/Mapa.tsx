@@ -13,9 +13,10 @@ import { MenuPonto } from '../mapa/MenuPonto';
 import { Motor, vista, reguaA, reguaArea, reguaM, reguaTotal, type Base, type GestosPonto, type Pino } from '../mapa/motor';
 import { desenhoAtendido, poligonal, useNovo } from '../novo/estado';
 import { useConsultaGeo } from '../novo/consulta';
-import { areaPoly, centroPoly, dentroPoly, fixa, geojson, m2, type P } from '../novo/geo';
+import { areaPoly, centroPoly, dentroPoly, fixa, geojson, m2, pinoNovo, type P } from '../novo/geo';
 import LotesGeo from '../novo/LotesGeo';
 import { trocarSqls } from '../novo/trocarSqls';
+import { verificarEndereco } from '../novo/TrocarEndereco';
 import { BarraFx, GavetaFx, useFiltros } from '../filtros/Filtros';
 import type { LoteSql } from '../novo/geosampa';
 import { LegendaSetor, Metodologia, QuadroSetor } from '../mapa/CamadasSetor';
@@ -226,7 +227,8 @@ export default function Mapa() {
   /* edição da poligonal de um terreno (proto_mod.js › editarPoligonal, concluirDesenho): os pontos vão para o rascunho; dois cliques
      sobre a poligonal entram; arrastar move o ponto; clique direito ou dois cliques num ponto abrem o menu dele (com Desfazer e
      Cancelar edição); clique no mapa fora da poligonal, dois cliques no mapa ou Enter salvam; clique fora do mapa ou Esc cancelam */
-  const [ed, setEd] = useState<{ id: string; orig: P[] } | null>(null);
+  /* edição da poligonal: o pino também se arrasta (pin0 é o de antes, pin o arrastado; pedido do Moises, 6/nov/2026) */
+  const [ed, setEd] = useState<{ id: string; orig: P[]; pin0: P | null; pin: P | null } | null>(null);
   /* "Selecionar lotes" na edição (pedido do Moisés, 6/nov/2026; só em São Paulo): o mapa de lotes da prefeitura das quadras da
      poligonal; os lotes marcados viram a poligonal em edição (a soma deles), que Concluir salva. Os SQLs não entram no terreno. */
   const [lgEd, setLgEd] = useState(false);
@@ -252,10 +254,10 @@ export default function Mapa() {
     if (!e0 || !empresa) return;
     if (!marc.length) { toast('Nenhum lote marcado: o terreno continua como estava.'); return; }
     desSair();
-    const r = await trocarSqls(e0.id, empresa.id, marc, toast);
+    const r = await trocarSqls(e0.id, empresa.id, marc, toast, { pos: e0.pin ?? e0.pin0, movido: !!e0.pin });
     const att = () => { qc.invalidateQueries({ queryKey: ['mapa'] }); qc.invalidateQueries({ queryKey: ['ficha'] }); qc.invalidateQueries({ queryKey: ['ficha-lotes'] }); };
     att();
-    if (r) empilhar({ rotulo: 'lotes do terreno', fazer: async () => { const ok = await r.desfazer(); att(); return ok; }, refazer: async () => { const ok = await r.refazer(); att(); return ok; } });
+    if (r) { empilhar({ rotulo: 'lotes do terreno', fazer: async () => { const ok = await r.desfazer(); att(); return ok; }, refazer: async () => { const ok = await r.refazer(); att(); return ok; } }); verificarEndereco(e0.id); }
   }
   const edR = useRef(ed);
   edR.current = ed;
@@ -285,17 +287,17 @@ export default function Mapa() {
     if (!p || p.length < 3) return;
     hist.current = []; setVSel(null); setVMenu(false); setMenu(null); setMkBox(null); setSetor(null);
     motor.current?.lugarFechar();
-    setEd({ id, orig: p.map((q) => [q[0], q[1]] as P) });
+    setEd({ id, orig: p.map((q) => [q[0], q[1]] as P), pin0: t!.lat != null && t!.lng != null ? [t!.lat, t!.lng] : null, pin: null });
     setDes(p.map((q) => [q[0], q[1]] as P));
     marcas.current.inicio = Date.now();
     motor.current?.enquadrar(p.map((q) => ({ lat: q[0], lng: q[1] })), 19);
     if (!TOQUE()) toast('Editando a poligonal: arraste os pontos; clique direito num ponto para mais opções. Enter, dois cliques, clique fora dela ou Concluir salvam; Esc cancela.');
   }
   /* grava a poligonal: o pino vai para o centro dela (pedido do Moisés, 24/out/2026); a área da poligonal é calculada no banco */
-  async function gravarPoly(id: string, p: P[]) {
+  async function gravarPoly(id: string, p: P[], pin?: P | null) {
     const { data: t, error: e1 } = await supabase.from('terrenos').select('versao,precisao_localizacao').eq('id', id).single();
     if (e1 || !t) { toast(e1?.message ?? 'Terreno não encontrado.', true); return false; }
-    const c = centroPoly(p), d: Record<string, unknown> = { poligono_geojson: geojson(fixa(p)), latitude: +c[0].toFixed(7), longitude: +c[1].toFixed(7) };
+    const c = pin ?? centroPoly(p), d: Record<string, unknown> = { poligono_geojson: geojson(fixa(p)), latitude: +c[0].toFixed(7), longitude: +c[1].toFixed(7) };
     if (!t.precisao_localizacao || t.precisao_localizacao === 'nao_informada') d.precisao_localizacao = 'aproximada';
     const { error } = await supabase.rpc('salvar_terreno', { p_terreno: id, p_versao: t.versao, p_dados: d });
     if (error) { toast(error.message, true); return false; }
@@ -307,10 +309,13 @@ export default function Mapa() {
     const e0 = edR.current!;
     desSair();
     const fx = (q: P[]) => JSON.stringify(fixa(q));
-    if (fx(p) === fx(e0.orig)) { toast('Edição encerrada, sem mudanças.'); return; }
-    if (!(await gravarPoly(e0.id, p))) return;
-    toast(`Poligonal salva: ${m2(Math.round(areaPoly(p) || 0))}.`);
-    empilhar({ rotulo: 'ajuste na poligonal', fazer: () => gravarPoly(e0.id, e0.orig), refazer: () => gravarPoly(e0.id, p) });
+    if (fx(p) === fx(e0.orig) && !e0.pin) { toast('Edição encerrada, sem mudanças.'); return; }
+    const pin = pinoNovo(p, e0.pin ?? e0.pin0, !!e0.pin);
+    if (!(await gravarPoly(e0.id, p, pin))) return;
+    toast(fx(p) === fx(e0.orig) ? 'Pino salvo no lugar novo.' : `Poligonal salva: ${m2(Math.round(areaPoly(p) || 0))}.`);
+    empilhar({ rotulo: 'ajuste na poligonal', fazer: () => gravarPoly(e0.id, e0.orig, e0.pin0), refazer: () => gravarPoly(e0.id, p, pin) });
+    /* a rua mudou? pergunta se troca o endereço (novo/TrocarEndereco.tsx) */
+    verificarEndereco(e0.id);
   }
   function desSalvar() {
     const p = desR.current || [];
@@ -449,7 +454,7 @@ export default function Mapa() {
     const m = motor.current;
     if (!m || !motorPronto) return;
     /* a poligonal em edição sai do desenho: no lugar dela fica o rascunho com os pontos */
-    m.desenhar(visiveis.map(pinoDe).filter((x): x is Pino => !!x).map((x) => (x.id === ed?.id ? { ...x, poly: null } : x)), selId);
+    m.desenhar(visiveis.map(pinoDe).filter((x): x is Pino => !!x && x.id !== ed?.id), selId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [motorPronto, visiveis, pinoDe, ed?.id]);
   useEffect(() => { motor.current?.marcar(selId); }, [selId]);
@@ -474,6 +479,27 @@ export default function Mapa() {
     return () => document.removeEventListener('pointerdown', fora, true);
   }, [rgMenu]);
   useEffect(() => { if (motorPronto) motor.current?.rascunho(des || [], vSel, !!ed, gp); }, [motorPronto, des, vSel, gp, !!ed]);
+  /* o pino do terreno em edição se arrasta; sem arrastar, mostra onde ele fica ao salvar (o de antes, se cair dentro, senão o centro) */
+  useEffect(() => {
+    const m = motor.current;
+    if (!m || !motorPronto) return;
+    const t = ed ? todos.find((x) => x.id === ed.id) : null, k = t ? pinoDe(t) : null;
+    m.pinoEd(ed && des && des.length > 2 ? pinoNovo(des, ed.pin ?? ed.pin0, !!ed.pin) : null, k?.cor ?? '#0b57d0', k?.fg ?? '#fff',
+      (a, b) => { setEd((e) => (e ? { ...e, pin: [a, b] } : e)); marcas.current.toque = Date.now(); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [motorPronto, ed, des]);
+  /* "Editar no mapa" (lápis do endereço na ficha): /mapa/A123 com editar entra na edição da poligonal */
+  const editarPend = useRef<string | null>(null);
+  useEffect(() => { if ((loc.state as { editar?: boolean } | null)?.editar && codigoUrl) editarPend.current = codigoUrl.toUpperCase(); }, [loc.key]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const c = editarPend.current;
+    if (!c || !motorPronto || gav || desR.current || rgR.current) return;
+    const t = todos.find((x) => x.codigo === c);
+    if (!t) return;
+    editarPend.current = null;
+    if (!t.poly || t.poly.length < 3) { toast('O terreno não tem poligonal para editar.', true); return; }
+    edComecar(t.id);
+  });
   useEffect(() => {
     if (!nvSt.desenho || !motorPronto) return;
     desenhoAtendido();

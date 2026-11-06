@@ -227,3 +227,29 @@ body[data-rota="terrenos"] .main { container: pagina / inline-size }
 .etq-pcts .hint { margin-top: 2px }
 :root[data-tema="escuro"] .etq-menu { background: #282a2c } :root[data-tema="escuro"] .etq-menu button, :root[data-tema="escuro"] .etq-menu-t { color: #e3e3e3 }
 :root[data-tema="escuro"] .etq-menu button:hover { background: #333537 } :root[data-tema="escuro"] .etq-pct.atual { background: #282a2c } :root[data-tema="escuro"] .etq-pct-n { color: #e3e3e3 }
+/* Pizza sempre na etiqueta da parte, que abre a barra do percentual; lápis ao lado do x (pedido do Moises, 6/nov/2026) */
+.etq-pzb { position: relative; border: 0; background: none; color: inherit; padding: 0 0 0 9px; height: 100%; display: inline-flex; align-items: center; cursor: pointer; flex: none }
+.etq-pzb:hover .etq-pz { transform: scale(1.15) }
+.etq-pzb + .etq-n { padding-left: 6px }
+.etq-pzb.zero .etq-pz { --cor: #b3261e; box-shadow: inset 0 0 0 1.5px #b3261e; background: #ffdad6 }
+.etq-pzb::after { content: attr(data-dica); position: absolute; left: 0; bottom: calc(100% + 6px); background: #1f1f1f; color: #fff; font-size: 12px; font-weight: 400; line-height: 16px;
+  padding: 4px 8px; border-radius: 4px; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .08s; z-index: 30 }
+.etq-pzb:hover::after { opacity: 1; transition-delay: .15s }
+.etq { overflow: visible }
+.etq-alerta { display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; background: #b3261e; color: #fff; font-size: 10px; font-weight: 700; flex: none }
+.etq-ed { border: 0; background: none; color: inherit; opacity: .65; width: 24px; height: 100%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0 }
+.etq-ed:hover { opacity: 1; background: rgba(0,0,0,.06) }
+.pct-pop { position: fixed; z-index: 2600; width: 104px; background: #fff; border-radius: 12px; padding: 10px 10px 8px; box-shadow: 0 2px 6px rgba(0,0,0,.15), 0 6px 20px rgba(0,0,0,.12);
+  display: flex; flex-direction: column; align-items: center; gap: 8px }
+.pct-pop-t { font-size: 12px; color: #444746; text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.pct-pop-b { height: 140px; display: flex; justify-content: center }
+.pct-pop input[type=range] { writing-mode: vertical-lr; direction: rtl; width: 10px; height: 140px; margin: 0 9px; cursor: pointer; appearance: none; -webkit-appearance: none; border-radius: 5px;
+  background: linear-gradient(to top, #0b57d0 calc(var(--p) * 1%), #dde3ea calc(var(--p) * 1%), #dde3ea calc(var(--max) * 1%), #f1d5d2 calc(var(--max) * 1%)) }
+.pct-pop input[type=range]::-webkit-slider-runnable-track { background: transparent }
+.pct-pop input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #0b57d0; border: 3px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35) }
+.pct-pop input[type=range]::-moz-range-track { background: transparent }
+.pct-pop input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #0b57d0; border: 3px solid #fff }
+.pct-pop input[type=range]:focus-visible { outline: 2px solid #0b57d0; outline-offset: 4px }
+.pct-pop .adorno, .pct-pop-i { width: 84px }
+.pct-pop-i { height: 32px; text-align: right; font-size: 14px }
+.pct-pop-h { font-size: 11px; color: #5f6368 }

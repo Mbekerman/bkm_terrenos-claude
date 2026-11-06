@@ -3426,6 +3426,11 @@ select pg_temp.ok((select area_matriculas_m2 = 350 from app.v_partes where id = 
 select pg_temp.falha(format('update app.matricula_partes set percentual = 40 where id = %L', :'lc2'), 'os percentuais do mesmo lote não passam de 100%');
 update app.matricula_partes set percentual = 30 where id = :'lc2';
 select pg_temp.ok((select count(*) = 0 from app.v_etiquetas where lote_id = :'lm1' and fracao_estimada), 'com os percentuais informados, nada é estimado');
+update app.matricula_partes set percentual = 0 where id = :'lc2';
+update app.matricula_partes set percentual = 100 where id = :'lc1';
+select pg_temp.ok((select area_matriculas_m2 = 500 from app.v_partes where id = :'lp1') and (select area_matriculas_m2 = 500 from app.v_partes where id = :'lp2'),
+  'etiqueta com 0%: a parte fica sem nada do lote');
+update app.matricula_partes set percentual = 70 where id = :'lc1';
 delete from app.matricula_partes where id = :'lc2';
 update app.matricula_partes set percentual = null where id = :'lc1';
 select pg_temp.ok((select area_matriculas_m2 = 500 from app.v_partes where id = :'lp1'), 'de volta a uma parte só, o lote inteiro');
@@ -3636,5 +3641,29 @@ select app.salvar_terreno(:'tcurto', (select versao from app.terrenos where id =
   jsonb_build_object('poligono_desenhado_geojson', pg_temp.quadra(-47.31, -23.31, 25))) as vcurto \gset
 select pg_temp.ok((select poligono_desenhado_geojson is not null from app.terrenos where id = :'tcurto'),
   'a poligonal desenhada fica guardada quando a do terreno vira a soma dos lotes');
+
+-- ---------------------------------------------------------------------
+\echo '# área cadastral do terreno pela soma dos SQLs (6/nov/2026)'
+select pg_temp.como(:'analista');
+insert into app.terrenos (empresa_id, nome, responsavel_id, municipio_id, poligono_geojson)
+  values (:'emp', 'Soma dos SQLs', :'analista', :'sp', pg_temp.quadra(-47.33, -23.33)) returning id as tsq \gset
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao, area_cadastral_m2) values (:'emp', :'tsq', '501.001.0001-1', 400) returning id as sq1 \gset
+select pg_temp.ok((select area_cadastral_m2 = 400 and area_cadastral_origem = 'sqls' from app.terrenos where id = :'tsq'), 'o primeiro SQL com área vira a cadastral do terreno');
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao) values (:'emp', :'tsq', '501.001.0002-1') returning id as sq2 \gset
+select pg_temp.ok((select area_cadastral_m2 is null from app.terrenos where id = :'tsq'), 'SQL sem área deixa a soma em branco (não soma pela metade)');
+update app.inscricoes_municipais set area_cadastral_m2 = 250.5 where id = :'sq2';
+select pg_temp.ok((select area_cadastral_m2 = 650.5 from app.terrenos where id = :'tsq'), 'com todos os SQLs com área, a cadastral é a soma');
+select app.salvar_terreno(:'tsq', (select versao from app.terrenos where id = :'tsq'), '{"fonte_area_adotada":"cadastral"}') \gset
+delete from app.inscricoes_municipais where id = :'sq2';
+select pg_temp.ok((select area_cadastral_m2 = 400 and area_adotada_m2 = 400 from app.terrenos where id = :'tsq'), 'excluir SQL refaz a soma, e a adotada pela cadastral acompanha');
+select app.salvar_terreno(:'tsq', (select versao from app.terrenos where id = :'tsq'), '{"area_cadastral_m2":420}') \gset
+select pg_temp.ok((select area_cadastral_m2 = 420 and area_cadastral_origem = 'digitada' and area_adotada_m2 = 420 from app.terrenos where id = :'tsq'), 'valor digitado passa a valer');
+update app.inscricoes_municipais set area_cadastral_m2 = 410 where id = :'sq1';
+select pg_temp.ok((select area_cadastral_m2 = 420 from app.terrenos where id = :'tsq'), 'o SQL não sobrescreve a cadastral digitada');
+select app.salvar_terreno(:'tsq', (select versao from app.terrenos where id = :'tsq'), '{"area_cadastral_m2":null}') \gset
+select pg_temp.ok((select area_cadastral_m2 = 410 and area_cadastral_origem = 'sqls' from app.terrenos where id = :'tsq'), 'apagar a cadastral volta para a soma dos SQLs');
+delete from app.inscricoes_municipais where id = :'sq1';
+select pg_temp.ok((select area_cadastral_m2 is null and area_adotada_m2 is null and fonte_area_adotada is null from app.terrenos where id = :'tsq'),
+  'sem SQL, sem cadastral; a adotada que era a cadastral fica em branco');
 
 \echo 'TODOS OS TESTES PASSARAM'

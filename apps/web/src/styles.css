@@ -656,6 +656,7 @@ body.dash-fixo .dash { position: fixed; inset: 0; z-index: 30; overflow: auto; p
 
 /* ---- Google Maps ---- */
 .pin.g { position: relative; width: 30px; height: 40px }
+.pin.pin-ed { cursor: grab } .pin.pin-ed:active { cursor: grabbing }
 .poi.g { position: relative; width: 14px; height: 14px; transform: translateY(50%) }
 .poi.g .poi-b { position: absolute; inset: 0 }
 .ent.g { width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 2px solid #863d8f; color: #863d8f; font-size: 11px; font-weight: 700; display: grid; place-items: center; transform: translateY(50%); box-shadow: 0 1px 3px rgba(0,0,0,.3) }
@@ -5015,7 +5016,7 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 .rg-rot { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); white-space: nowrap; background: #fff; color: #1f1f1f; border: 1px solid #c4c7c5; border-radius: 6px; padding: 1px 6px; font-size: 12px; line-height: 18px; font-variant-numeric: tabular-nums; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,.2) }
 .rg-rot.rg-tot { background: #0b57d0; color: #fff; border-color: #0b57d0; font-weight: 500; transform: translate(-50%, calc(-100% - 10px)) }
 /* no desenho, na edição e na régua o clique passa pelos pinos do mapa (terrenos e concorrência) e marca o ponto ali */
-:is(.mapa, .mini-mapa).modo gmp-advanced-marker:not(:has(.v-alvo, .rg-pt)) { pointer-events: none !important }
+:is(.mapa, .mini-mapa).modo gmp-advanced-marker:not(:has(.v-alvo, .rg-pt, .pin-ed)) { pointer-events: none !important }
 .rg-pt { pointer-events: auto }
 /* régua como botão do canto, acima da localização (pedido do Moisés, 5/nov/2026): ligada, fica azul */
 .mp-cb.mp-rg[aria-pressed="true"], .mp-cb.mp-rg[aria-pressed="true"]:hover { background: #0b57d0; color: #fff }

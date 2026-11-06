@@ -93,6 +93,10 @@ create table app.terrenos (
   -- 3. Áreas e características físicas
   area_documental_m2    numeric(12,2) check (area_documental_m2 > 0),
   area_cadastral_m2     numeric(12,2) check (area_cadastral_m2 > 0),
+  -- de onde vem a cadastral (pedido do Moisés, 6/nov/2026): 'sqls' = a soma das áreas cadastrais dos SQLs
+  -- (app._area_sqls), refeita a cada SQL incluído, excluído ou consultado; 'digitada' = alguém escreveu outro valor,
+  -- que os SQLs não sobrescrevem; apagar o valor volta para a soma
+  area_cadastral_origem text not null default 'sqls' check (area_cadastral_origem in ('sqls','digitada')),
   area_levantamento_m2  numeric(12,2) check (area_levantamento_m2 > 0),
   -- área do desenho, em m² inteiros: não é digitada e acompanha cada ajuste na poligonal (pedido do Moisés, 24/out/2026)
   area_poligonal_m2     numeric(12,2) generated always as
@@ -411,14 +415,15 @@ create trigger t_parte before insert or update of parte_id, terreno_id on app.te
 -- mais de uma parte pode ser dona do mesmo lote. Cada linha é uma etiqueta numa parte; a mesma matrícula
 -- pode estar em várias partes (duplicada), uma vez em cada. Sem nenhuma linha, a etiqueta está sem parte.
 -- O percentual da parte no lote é opcional (nulo = não informado): sem ele, o lote se divide em partes
--- iguais entre as etiquetas sem percentual, no que sobra dos percentuais informados (app.v_etiquetas).
+-- iguais entre as etiquetas sem percentual, no que sobra dos percentuais informados (app.v_etiquetas). Zero vale: a etiqueta
+-- duplicada de um lote que já está 100% nas outras partes nasce com 0% e um alerta (pedido do Moises, 6/nov/2026).
 create table app.matricula_partes (
   id           uuid primary key default gen_random_uuid(),
   empresa_id   uuid not null references app.empresas(id),
   terreno_id   uuid not null references app.terrenos(id) on delete cascade,
   matricula_id uuid not null references app.matriculas(id) on delete cascade,
   parte_id     uuid not null references app.terreno_partes(id) on delete cascade,
-  percentual   numeric(5,2) check (percentual > 0 and percentual <= 100),
+  percentual   numeric(5,2) check (percentual >= 0 and percentual <= 100),
   unique (matricula_id, parte_id)
 );
 create index on app.matricula_partes (parte_id);
@@ -429,7 +434,7 @@ create table app.inscricao_partes (
   terreno_id   uuid not null references app.terrenos(id) on delete cascade,
   inscricao_id uuid not null references app.inscricoes_municipais(id) on delete cascade,
   parte_id     uuid not null references app.terreno_partes(id) on delete cascade,
-  percentual   numeric(5,2) check (percentual > 0 and percentual <= 100),
+  percentual   numeric(5,2) check (percentual >= 0 and percentual <= 100),
   unique (inscricao_id, parte_id)
 );
 create index on app.inscricao_partes (parte_id);
@@ -822,6 +827,11 @@ begin
   if tg_op = 'UPDATE' and new.poligono_geojson::text is distinct from old.poligono_geojson::text then
     new.topo_perfil := null; new.topo_declividade_pct := null; new.topo_inclinacao_pct := null; new.topo_terra_m3m2 := null; new.topo_desnivel_m := null;
     new.topo_fonte := null; new.topo_calculado_em := null; new.topo_calculado_por := null;
+  end if;
+  -- adotada pela cadastral: segue a cadastral (a soma dos SQLs muda sozinha); sem cadastral, fica sem adotada
+  if new.fonte_area_adotada = 'cadastral' then
+    if new.area_cadastral_m2 is null then new.area_adotada_m2 := null; new.fonte_area_adotada := null;
+    else new.area_adotada_m2 := new.area_cadastral_m2; end if;
   end if;
   if new.fonte_area_adotada = 'poligonal' then
     new.area_adotada_m2 := round(extensions.st_area(extensions.st_makevalid(extensions.st_setsrid(

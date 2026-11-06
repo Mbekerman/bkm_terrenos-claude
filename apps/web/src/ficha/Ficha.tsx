@@ -6,14 +6,15 @@ import { Bi, Ic } from '../components/Moldura';
 import { corSub, type Fase as FaseMapa, type TerrenoMapa } from '../mapa/dados';
 import { carregarFicha, completude, type Falta, FONTE_AREA, TEMP, TP_N, ZONA, type Ficha as F, type ProcF } from './dados';
 import MiniMapa from './MiniMapa';
-import { centroPoly, fixa, geojson } from '../novo/geo';
+import { fixa, geojson } from '../novo/geo';
+import { LapisMapa, verificarEndereco } from '../novo/TrocarEndereco';
 import Temperatura from './Temperatura';
 import AbaComercial from './Comercial';
 import Painel, { Avancos, usePN } from './Painel';
 import AbaParametros from './Parametros';
 import AbaEntorno, { EntornoAuto } from './Entorno';
-import AbaTerreno, { dadosArea, fonteSel, useGravarEndereco, valoresArea } from './Terreno';
-import { CamposEndereco, focar, OPT, pedirCampo, useSalvar, Vivo } from './edicao';
+import AbaTerreno, { dadosArea, fonteSel, valoresArea } from './Terreno';
+import { focar, OPT, pedirCampo, useSalvar, Vivo } from './edicao';
 import { useToast } from '../components/ui';
 
 // Ficha do terreno, porte de tools/prototipo/proto.js › pgFicha (topo, abas, fiAbasCaber), proto_fases.js › linhaTopo,
@@ -276,24 +277,6 @@ function corPino(f: F): [string, string] {
   return corSub(fs, t);
 }
 
-/** endereço do Resumo editado no lugar: o clique no endereço abre a busca do Google ali mesmo e escolher o resultado
-    já grava; Esc ou o clique fora voltam (pedido do Moisés, 6/nov/2026) */
-function EndVivo({ f, end }: { f: F; end: string }) {
-  const [ab, setAb] = useState(false);
-  const raiz = useRef<HTMLSpanElement>(null);
-  const gravar = useGravarEndereco(f);
-  useEffect(() => {
-    if (!ab) return;
-    const fora = (ev: PointerEvent) => { if (!raiz.current?.contains(ev.target as Node)) setAb(false); };
-    const esc = (ev: KeyboardEvent) => { if (ev.key === 'Escape') setAb(false); };
-    document.addEventListener('pointerdown', fora); document.addEventListener('keydown', esc);
-    return () => { document.removeEventListener('pointerdown', fora); document.removeEventListener('keydown', esc); };
-  }, [ab]);
-  if (!ab) return <button type="button" className="kv-vivo-b" title="Trocar o endereço" onClick={() => setAb(true)}>{end || <span className="ni">Pesquisar endereço</span>}</button>;
-  return <span ref={raiz} className="kv-vivo-busca"><CamposEndereco f={f} vals={{}} mudar={() => undefined} mun={null} setMun={() => undefined} soBusca foco
-    aoEscolher={async (o, m) => { setAb(false); await gravar(o, m); }} /></span>;
-}
-
 function VisaoGeral({ f, irAba, abrirMapa }: { f: F; irAba: (k: string) => void; abrirMapa: (lat: number, lng: number, z: number) => void }) {
   const { edita } = useSessao();
   const salvarT = useSalvar(f), toast = useToast();
@@ -322,13 +305,13 @@ function VisaoGeral({ f, irAba, abrirMapa }: { f: F; irAba: (k: string) => void;
         <section className="sec g-loc"><div className="sec-h"><h2><Bi n="localizacao" s={32} />Localização</h2></div><div className="sec-b">
           {f.lat != null && f.lng != null
             ? <MiniMapa key={f.id} lat={f.lat} lng={f.lng} poly={f.poly} cor={cor} fg={fg} abrirMapa={abrirMapa}
-              salvar={edita ? (p) => { const c = centroPoly(p); return salvarT({ poligono_geojson: geojson(fixa(p)), latitude: +c[0].toFixed(7), longitude: +c[1].toFixed(7) }); } : undefined} />
+              salvar={edita ? async (p, c) => { const ok = await salvarT({ poligono_geojson: geojson(fixa(p)), latitude: +c[0].toFixed(7), longitude: +c[1].toFixed(7) }); if (ok) verificarEndereco(f.id); return ok; } : undefined} />
             : <div className="empty" style={{ padding: 'var(--e6) 0' }}>Sem localização.</div>}
         </div></section>
       </div>
       <div className="geral-c">
         <section className="sec g-res"><div className="sec-h"><h2>Resumo</h2></div><div className="sec-b"><dl className="kvl">
-          {edita ? lin('Endereço', <EndVivo f={f} end={end} />) : lin('Endereço', end)}
+          {edita ? lin('Endereço', end, <LapisMapa codigo={f.codigo} />) : lin('Endereço', end)}
           {edita ? lin('Município e região', <span className="kv-vivo">{[f.municipio, f.uf].filter(Boolean).join(' · ')}{f.municipio ? ' · ' : ''}
             <Vivo ini={f.t.zona ?? ''} imediato gravar={(v) => salvarT({ zona: v || null })}>{(p) =>
               <select className="inl-x" aria-label="Zona" {...p}><option value="">Zona não informada</option>{Object.entries(OPT.zona).map(([k, l]) => <option key={k} value={k}>Zona {l}</option>)}</select>}</Vivo></span>)

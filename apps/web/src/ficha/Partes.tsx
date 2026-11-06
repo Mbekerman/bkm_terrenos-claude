@@ -249,19 +249,26 @@ const FECHADAS = new Set<string>();   // partes com o quadro recolhido (a seta r
 type Etq = { tipo: Tp; x: R; c?: R };
 const chave = (e: Etq) => `${e.tipo}:${e.x.id}${e.c ? ':' + e.c.id : ''}`;
 
-function Etiqueta({ e, L, rot, edita, ver, tirar, menu }: { e: Etq; L: Lotes; rot: string; edita: boolean; ver: (k: string) => void; tirar: (k: string) => void; menu: (k: string, x: number, y: number) => void }) {
+function Etiqueta({ e, L, rot, edita, ver, tirar, menu, pct }: { e: Etq; L: Lotes; rot: string; edita: boolean; ver: (k: string) => void; tirar: (k: string) => void; menu: (k: string, x: number, y: number) => void; pct: (k: string, r: DOMRect) => void }) {
   const n = e.tipo === 'm' ? e.x.numero : e.x.inscricao, k = chave(e);
-  /* mini pizza com a fração da parte no lote quando o lote está em mais de uma parte ou tem percentual; o número vai na dica */
+  /* mini pizza com a fração da parte no lote, sempre que a etiqueta está numa parte (cheia em 100%; com 0%, o alerta);
+     o clique abre a barra do percentual (pedido do Moises, 6/nov/2026) */
   const cs = e.c ? copias(L, e.tipo, e.x.id) : [], fr = e.c ? fracao(L, e.tipo, e.c) : null;
-  const pz = e.c && fr && (cs.length > 1 || e.c.percentual != null) ? Math.round(fr.f * 1000) / 10 : null;
+  const pz = e.c && fr ? Math.round(fr.f * 1000) / 10 : null;
   const dica = pz != null ? `${L.partes.find((pa) => pa.id === e.c!.parte_id)?.nome ?? 'Parte'}: ${num(pz, pz % 1 ? 1 : 0)}% deste lote${fr!.est ? ' (estimado: sem percentual informado)' : ''}${cs.length > 1 ? ` · em ${cs.length} partes` : ''}` : 'Ver e editar';
   const shared = cs.length > 1;
   return (
     <span className={`etq ${e.tipo}`} data-etq={k} tabIndex={edita ? 0 : undefined} aria-label={`${e.tipo === 'm' ? 'Matrícula' : rot} ${n}${pz != null ? ', ' + dica : ''}`}
       onContextMenu={(ev) => { if (!edita) return; ev.preventDefault(); menu(k, ev.clientX, ev.clientY); }}
       onKeyDown={(ev) => { if (ev.key === 'Enter' && ev.target === ev.currentTarget) { ev.preventDefault(); ver(k); } if (edita && (ev.key === 'ContextMenu' || (ev.shiftKey && ev.key === 'F10'))) { ev.preventDefault(); const r = ev.currentTarget.getBoundingClientRect(); menu(k, r.left, r.bottom); } }}>
-      <button type="button" className="etq-n num" title={dica} onClick={() => ver(k)}>
-        {pz != null && <span className={`etq-pz${fr!.est ? ' est' : ''}`} style={{ '--p': pz } as any} aria-hidden="true" />}{n}</button>
+      {pz != null && (edita
+        ? <button type="button" className={`etq-pzb${pz === 0 ? ' zero' : ''}`} data-dica={`${num(pz, pz % 1 ? 1 : 0)}%${fr!.est ? ' estimado' : ''} · Clique para editar`}
+            aria-label={`${num(pz, pz % 1 ? 1 : 0)}% deste lote na parte. Clique para editar`} onClick={(ev) => pct(k, ev.currentTarget.getBoundingClientRect())}>
+            <span className={`etq-pz${fr!.est ? ' est' : ''}`} style={{ '--p': pz } as any} aria-hidden="true" /></button>
+        : <span className={`etq-pz${fr!.est ? ' est' : ''}`} style={{ '--p': pz, marginLeft: 8 } as any} title={dica} aria-hidden="true" />)}
+      <button type="button" className="etq-n num" title={pz === 0 ? 'Esta parte está com 0% deste lote: clique na pizza para dar o percentual' : dica} onClick={() => ver(k)}>
+        {pz === 0 && <span className="etq-alerta" aria-hidden="true">!</span>}{n}</button>
+      {edita && <button type="button" className="etq-ed" aria-label={`Editar ${e.tipo === 'm' ? 'a matrícula' : 'o ' + rot} ${n}`} title="Editar" onClick={() => ver(k)}><Ic n="edit" s={14} /></button>}
       {edita && <button type="button" className="etq-x" aria-label={`${shared ? 'Tirar desta parte' : 'Excluir'} ${e.tipo === 'm' ? 'a matrícula' : 'o ' + rot} ${n}`} title={shared ? 'Tirar desta parte' : 'Excluir'} onClick={() => tirar(k)}><Ic n="close" s={14} /></button>}
     </span>
   );
@@ -341,15 +348,29 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     if (!(await mudarC(e.tipo, c.id, { parte_id: pid }))) return;
     empilhar({ rotulo: `${nome(e)} de parte`, fazer: () => mudarC(e.tipo, c.id, { parte_id: antes }), refazer: () => mudarC(e.tipo, c.id, { parte_id: pid }) });
   }
-  /** duplica a etiqueta noutra parte: o lote passa a ser de mais de uma parte (pedido do Moisés, 6/nov/2026) */
+  /** duplica a etiqueta noutra parte: o lote passa a ser de mais de uma parte (pedido do Moisés, 6/nov/2026). A cópia nasce
+      com o que falta para 100%; se o lote já está todo nas outras partes, nasce com 0% e o alerta. As etiquetas sem percentual
+      ficam com o que tinham (estimado) por escrito, para a cópia não dividir com elas (pedido do Moises, 6/nov/2026) */
   async function duplicar(k: string, pid: string) {
     const e = achar(k);
     if (!e) return;
     if (jaEm(e, pid)) { toast(`${nome(e)} já está na parte ${nomeP(pid)}.`, true); return; }
-    const row = nova(e, pid);
-    if (!(await inserir(e.tipo, [row]))) return;
-    toast(`${nome(e)} também na parte ${nomeP(pid)}. Clique na etiqueta para dar o percentual de cada parte.`);
-    empilhar({ rotulo: `${nome(e)} duplicada na parte ${nomeP(pid)}`, fazer: () => apagarC(e.tipo, [row.id]), refazer: () => inserir(e.tipo, [row]) });
+    const L2 = LR.current, cs = copias(L2, e.tipo, e.x.id);
+    const ef = cs.map((c) => ({ c, p: Math.round(fracao(L2, e.tipo, c).f * 10000) / 100 }));
+    const resto = Math.round((100 - soma(ef.map((y) => y.p))) * 100) / 100;
+    const fixar = ef.filter((y) => y.c.percentual == null);
+    const row: R = { ...nova(e, pid), percentual: resto >= 0.5 ? resto : 0 };
+    const pFix = async (vals: (y: { c: R; p: number }) => number | null) => {
+      for (const y of fixar) { const r = await supabase.from(TAB_C[e.tipo]).update({ percentual: vals(y) }).eq('id', y.c.id); if (r.error) { toast(r.error.message, true); return false; } }
+      return true;
+    };
+    if (!(await pFix((y) => y.p))) return;
+    if (!(await inserir(e.tipo, [row]))) { await pFix(() => null); recarregar(); return; }
+    toast(row.percentual ? `${nome(e)} também na parte ${nomeP(pid)}, com ${num(row.percentual, row.percentual % 1 ? 2 : 0)}%.`
+      : `${nome(e)} também na parte ${nomeP(pid)}, com 0%: o lote já está todo nas outras partes. Clique na pizza para dar o percentual.`);
+    empilhar({ rotulo: `${nome(e)} duplicada na parte ${nomeP(pid)}`,
+      fazer: async () => (await apagarC(e.tipo, [row.id])) && (await pFix(() => null)) && (recarregar(), true),
+      refazer: async () => (await pFix((y) => y.p)) && inserir(e.tipo, [row]) });
   }
   /** percentual da parte no lote (vazio = não informado) */
   async function percentual(tipo: Tp, c: R, v: number | null) {
@@ -495,7 +516,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     };
     const down = (e: PointerEvent) => {
       const el = (e.target as HTMLElement).closest?.<HTMLElement>('.etq[data-etq]');
-      if (!el || !raiz()?.contains(el) || e.button > 0 || (e.target as HTMLElement).closest('.etq-x')) return;
+      if (!el || !raiz()?.contains(el) || e.button > 0 || (e.target as HTMLElement).closest('.etq-x,.etq-ed,.etq-pzb')) return;
       A = { el, k: el.dataset.etq, x: e.clientX, y: e.clientY, pid: e.pointerId, toque: e.pointerType !== 'mouse', ativo: false };
       if (A.toque) { const a = A; a.timer = setTimeout(() => { if (A === a) comecar(); }, 300); }
     };
@@ -520,12 +541,14 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     const lista = lotesDe(L, tipo), soltas = lista.filter((x) => !copias(L, tipo, x.id).length);
     return (
       <div className="etq-pool" data-drop="pool" data-tipo={tipo}>
-        {soltas.length ? soltas.map((x) => <Etiqueta key={x.id} e={{ tipo, x }} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} />)
+        {soltas.length ? soltas.map((x) => <Etiqueta key={x.id} e={{ tipo, x }} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} pct={abrirPct} />)
           : <span className="etq-vazio">{lista.length ? 'Todas já estão numa parte.' : tipo === 'm' ? 'Nenhuma matrícula ainda.' : `Nenhum ${rot} ainda.`}</span>}
       </div>
     );
   };
   const soltos = L.mats.filter((m) => !copias(L, 'm', m.id).length).length + L.insc.filter((i) => !copias(L, 's', i.id).length).length;
+  const [pop, setPop] = useState<{ k: string; r: DOMRect } | null>(null);
+  const abrirPct = (k: string, r: DOMRect) => { setMenu(null); setPop((p) => (p?.k === k ? null : { k, r })); };
   function abrirMenu(k: string, x: number, y: number) { setMenu({ k, x: Math.min(x, innerWidth - 240), y: Math.min(y, innerHeight - 260) }); }
   useEffect(() => {
     if (!menu) return;
@@ -588,8 +611,8 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
                   <Ic n="chev" s={18} /><b>{pa.nome}</b><span className="faint">{ms.length} mat. · {is.length} {rot}</span></button>
                 <div className="etq-pt-b">
                   <div className="etq-pt-l">
-                    {ms.length > 0 && <div className="etq-pt-g m">{ms.map(({ x, c }) => <Etiqueta key={c.id} e={{ tipo: 'm', x, c }} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} />)}</div>}
-                    {is.length > 0 ? <div className="etq-pt-g s">{is.map(({ x, c }) => <Etiqueta key={c.id} e={{ tipo: 's', x, c }} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} />)}</div>
+                    {ms.length > 0 && <div className="etq-pt-g m">{ms.map(({ x, c }) => <Etiqueta key={c.id} e={{ tipo: 'm', x, c }} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} pct={abrirPct} />)}</div>}
+                    {is.length > 0 ? <div className="etq-pt-g s">{is.map(({ x, c }) => <Etiqueta key={c.id} e={{ tipo: 's', x, c }} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} pct={abrirPct} />)}</div>
                       : !ms.length && <span className="etq-vazio">{edita ? 'Arraste para cá as matrículas e os SQLs desta parte.' : 'Sem matrícula nem SQL.'}</span>}
                   </div>
                   {(ai.area != null || dv != null) && (
@@ -638,10 +661,11 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
             </>}
           </> : <div className="etq-menu-v">Já está em todas as partes.</div>}
           <hr />
-          <button type="button" role="menuitem" onClick={() => fazM(() => ver(menu.k))}><Ic n="edit" s={16} />{menuE.c ? 'Percentual e dados' : 'Ver e editar'}</button>
+          <button type="button" role="menuitem" onClick={() => fazM(() => ver(menu.k))}><Ic n="edit" s={16} />Editar</button>
           {menuE.c && <button type="button" role="menuitem" onClick={() => fazM(() => parte(menu.k, null))}><Ic n="close" s={16} />Tirar da parte {nomeP(menuE.c.parte_id)}</button>}
         </div>
       )}
+      {pop && (() => { const e = achar(pop.k); return e?.c ? <PctPop key={pop.k} e={e as Etq & { c: R }} L={L} r={pop.r} nomeP={nomeP} fechar={() => setPop(null)} salvar={(v) => percentual(e.tipo, e.c!, v)} /> : null; })()}
       {etq && <JanelaEtq f={f} L={L} k={etq} fechar={() => abrirEtq(null)} ops={{ parte, duplicar, percentual, tirar: (k) => { abrirEtq(null); parte(k, null); }, apagar: (k) => { abrirEtq(null); apagar(k); } }} />}
     </div>
   );
@@ -704,7 +728,7 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
     : val(c ? nomeP(c.parte_id) : 'Sem parte'));
   async function salvarPct(y: R) {
     const t = (pct[y.id] ?? '').trim(), v = t ? lerNum(t) : null;
-    if (t && (v == null || v <= 0 || v > 100)) { toast('O percentual vai de 0 a 100%.', true); setPct({ ...pct, [y.id]: y.percentual != null ? num(+y.percentual, 2) : '' }); return; }
+    if (t && (v == null || v < 0 || v > 100)) { toast('O percentual vai de 0 a 100%.', true); setPct({ ...pct, [y.id]: y.percentual != null ? num(+y.percentual, 2) : '' }); return; }
     if (!(await ops.percentual(tipo, y, v))) setPct({ ...pct, [y.id]: y.percentual != null ? num(+y.percentual, 2) : '' });
   }
   /* o percentual de cada parte no lote, opcional: sem ele, o que sobra divide igual entre as partes sem percentual */
@@ -731,7 +755,7 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
       <div className="hint">O percentual é opcional. Sem ele, o que falta para 100% se divide igual entre as partes sem percentual.</div>
     </div>
   );
-  const rodape = <><button className="btn text" onClick={() => pedir(fechar)}>Fechar</button>
+  const rodape = <><button className="btn text" onClick={() => pedir(fechar)}>Concluir</button>
     {edita && c && cs.length > 1 && <button className="btn" onClick={() => ops.tirar(kc)}><Ic n="close" s={16} />Tirar da parte {nomeP(c.parte_id)}</button>}
     {edita && <button className="btn" onClick={() => ops.apagar(kc)}><Ic n="lixo" s={16} />{cs.length > 1 ? 'Excluir do terreno' : 'Excluir'}</button>}</>;
   if (tipo === 'm') {
@@ -834,5 +858,47 @@ export default function PartesLotes({ f }: { f: Ficha }) {
       <SecPartes f={f} L={q.data} />
       <SecLotes f={f} L={q.data} />
     </>
+  );
+}
+
+/* ---------- barra do percentual da etiqueta (pedido do Moises, 6/nov/2026) ----------
+   o clique na pizza abre uma barra vertical que se arrasta (0 a 100%, até o que as outras partes deixam) e um campo pequeno;
+   grava ao soltar a barra, no Enter ou ao sair do campo; vazio = não informado (estimado); Esc ou o clique fora fecham */
+function PctPop({ e, L, r, nomeP, fechar, salvar }: { e: Etq & { c: R }; L: Lotes; r: DOMRect; nomeP: (pid: string) => string; fechar: () => void; salvar: (v: number | null) => Promise<boolean> }) {
+  const outras = soma(copias(L, e.tipo, e.x.id).filter((y) => y.id !== e.c.id && y.percentual != null).map((y) => +y.percentual));
+  const max = Math.max(0, Math.round((100 - outras) * 100) / 100);
+  const atual = Math.round(fracao(L, e.tipo, e.c).f * 1000) / 10;
+  const [v, setV] = useState(atual);
+  const [txt, setTxt] = useState(e.c.percentual != null ? num(+e.c.percentual, +e.c.percentual % 1 ? 2 : 0) : '');
+  const raiz = useRef<HTMLDivElement>(null);
+  const gravado = useRef<number | null>(e.c.percentual != null ? +e.c.percentual : null);
+  useEffect(() => {
+    const fora = (ev: PointerEvent) => { if (!raiz.current?.contains(ev.target as Node) && !(ev.target as HTMLElement).closest?.('.etq-pzb')) fechar(); };
+    const esc = (ev: KeyboardEvent) => { if (ev.key === 'Escape') { ev.stopPropagation(); fechar(); } };
+    document.addEventListener('pointerdown', fora, true); document.addEventListener('keydown', esc, true);
+    return () => { document.removeEventListener('pointerdown', fora, true); document.removeEventListener('keydown', esc, true); };
+  }, [fechar]);
+  useEffect(() => { raiz.current?.querySelector<HTMLInputElement>('input[type=range]')?.focus(); }, []);
+  async function gravar(n: number | null) {
+    if (n != null) n = Math.min(Math.max(0, Math.round(n * 100) / 100), max);
+    if (n === gravado.current) return;
+    if (await salvar(n)) gravado.current = n;
+  }
+  const lerTxt = () => { const t = txt.trim(); if (!t) return null; const n = lerNum(t); return n == null ? gravado.current : n; };
+  const top = Math.min(Math.max(8, r.top - 90), innerHeight - 250), left = Math.min(r.left - 8, innerWidth - 120);
+  return (
+    <div ref={raiz} className="pct-pop" role="dialog" aria-label={`Percentual da parte ${nomeP(e.c.parte_id)} no lote`} style={{ top, left }}>
+      <div className="pct-pop-t">{nomeP(e.c.parte_id)}</div>
+      <div className="pct-pop-b">
+        <input type="range" min={0} max={100} step={1} value={v} aria-label="Percentual" aria-valuetext={`${v}%`}
+          style={{ '--p': v, '--max': max } as any}
+          onChange={(ev) => { const n = Math.min(+ev.target.value, max); setV(n); setTxt(num(n, 0)); }}
+          onPointerUp={() => gravar(v)} onKeyUp={(ev) => { if (ev.key.startsWith('Arrow') || ev.key === 'PageUp' || ev.key === 'PageDown' || ev.key === 'Home' || ev.key === 'End') gravar(v); }} />
+      </div>
+      <Adorno t="pct"><input className="pct-pop-i" inputMode="decimal" value={txt} placeholder={num(atual, atual % 1 ? 1 : 0)} aria-label="Percentual digitado"
+        onChange={(ev) => { setTxt(ev.target.value); const n = lerNum(ev.target.value); if (n != null) setV(Math.min(Math.max(0, n), max)); }}
+        onBlur={() => gravar(lerTxt())} onKeyDown={(ev) => { if (ev.key === 'Enter') { ev.preventDefault(); gravar(lerTxt()).then(fechar); } }} /></Adorno>
+      {max < 100 && <div className="pct-pop-h">até {num(max, max % 1 ? 2 : 0)}%</div>}
+    </div>
   );
 }
