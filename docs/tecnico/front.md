@@ -137,6 +137,7 @@ apps/web/
 | `consulta.ts` | Consulta completa do GeoSampa em cada SQL e pela poligonal; grava por `app.registrar_consulta_lote` e `app.registrar_consulta_area`; andamento "N de M". |
 | `geo.ts` | Geometria (área, centro, ponto dentro, união de lotes), leitura de KMZ/KML (JSZip carregado sob demanda), localização reversa pelo Geocoder, frentes e nome de referência. |
 | `TrocarEndereco.tsx` | Depois de editar a poligonal, se a rua não encosta mais, pergunta se troca o endereço. |
+| `frentesCalc.ts` / `frentes.ts` | Frentes do terreno pela poligonal (São Paulo): a conta pura (`medirFrentes`: metro a metro da divisa, rua = fora de lote do GeoSampa, nome pelo eixo do logradouro paralelo ou cruzado pelo raio para fora; esquina = duas ruas a até 15 m uma da outra ao longo da divisa) e a consulta + gravação (`atualizarFrentes`: `posicao_quadra`, `testada_principal_m` quando vazia ou medida antes, confrontações de frente com fonte "Medida pela poligonal (GeoSampa)"; não mede duas vezes a mesma poligonal na sessão; avisa a ficha pelo evento `frentes-medidas`). |
 | `trocarSqls.ts` | "Selecionar lotes" na edição: troca os SQLs do terreno pelos marcados, com fotografia do antes para o Ctrl+Z. |
 
 ### `src/filtros/`

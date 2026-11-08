@@ -166,6 +166,7 @@ Qualquer outro caminho ou método recebe 404. Isso evita que o repasse vire um p
 - `novo/geosampa.ts`: `GEO_BASE` (`location.origin + '/geosampa/geoserver/geoportal/'`, ou a meta `geosampa-url` se existir; `null` em `localhost` e `127.0.0.1`), `geoWfs` (WFS 2.0.0, GeoJSON, `srsName EPSG:31983`, **prazo de 30 s**), conversão UTM SIRGAS 2000 fuso 23S ↔ lat/lng, `loteDoSql`.
 - `novo/consulta.ts`: a lista `GEO_CAMADAS` (camada, geometria, raio em metros, atributos guardados), `consultarLote` → RPC `app.registrar_consulta_lote` (também completa área, CIB, zona fiscal, cartório e a análise urbanística), `consultarArea` → `app.registrar_consulta_area`, `consultarTerreno` (todos os SQLs, uma nova tentativa, depois a poligonal; andamento "N de M").
 - `novo/LotesGeo.tsx`: mapa de lotes das quadras (desenho em SVG; vêm marcados os lotes com 20% ou mais dentro; a quadra só entra com 10 m² ou mais de lote dentro; conferência no banco de quem já está em outro terreno com prazo de 20 s).
+- `novo/frentes.ts`: frentes do terreno pela poligonal (`lote_cidadao` num raio de 20 m e `v_logradouro_segmento` num raio de 60 m em volta da poligonal).
 - `lib/camadas.ts`: como cada camada aparece (tema, texto, gravidade).
 - Protótipo: `proto_geosampa.js`, `proto_lotesgeo.js`, `proto_restricoes.js` (e a planta em PDF e o DXF do lote, que o React ainda não gera).
 

@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 8/nov/2026
 
+- **Posição na quadra e frentes** (Terreno › Áreas e dimensões, São Paulo): medidas sozinhas pela poligonal e pelos lotes e ruas da prefeitura; uma linha por rua com os metros de frente; a testada principal vazia passa a vir da medição. (#PR)
 - Manual do usuário (esta pasta) e três roteiros de vídeo de onboarding. Sem mudança na tela. (#244)
 
 ## 6/nov/2026
