@@ -8,7 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 8/nov/2026
 
-- Manual do usuário (esta pasta) e três roteiros de vídeo de onboarding. Sem mudança na tela. (PR deste manual)
+- Manual do usuário (esta pasta) e três roteiros de vídeo de onboarding. Sem mudança na tela. (#244)
 
 ## 6/nov/2026
 

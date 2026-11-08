@@ -1,6 +1,6 @@
 # Manual do usuário do BKM Terrenos
 
-Situação: **8/nov/2026**, versão de desenvolvimento até o PR #242.
+Situação: **8/nov/2026**, versão de desenvolvimento até o PR #242 (manual no PR #244).
 
 Este manual explica, tela por tela, o que o BKM Terrenos faz, para que serve cada parte, como fazer cada coisa e o que ainda não dá para fazer. Foi escrito para duas leituras:
 
