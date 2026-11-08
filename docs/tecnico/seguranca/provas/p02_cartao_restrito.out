@@ -1,0 +1,30 @@
+       pergunta        | linhas 
+-----------------------+--------
+ analista vê o cartão? |      0
+(1 row)
+
+                   achado                    | origem_tabela | e_o_cartao | mencionado |  autor  
+---------------------------------------------+---------------+------------+------------+---------
+ app.mencoes entrega o id do cartão restrito | tarefas       | t          | gestor     | diretor
+(1 row)
+
+         pergunta         | resposta 
+--------------------------+----------
+ tem a etiqueta Jurídico? | t
+(1 row)
+
+          pergunta           | resposta 
+-----------------------------+----------
+ Valor do laudo = 1.500.000? | t
+(1 row)
+
+          pergunta           | resposta 
+-----------------------------+----------
+ Valor do laudo = 1.400.000? | f
+(1 row)
+
+                 pergunta                  | resposta | papel_do_gestor_no_cartao 
+-------------------------------------------+----------+---------------------------
+ intruso de outra empresa: tem a etiqueta? | t        | editor
+(1 row)
+

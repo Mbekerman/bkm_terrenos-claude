@@ -1,0 +1,20 @@
+ agenda_confirmar 
+------------------
+ 
+(1 row)
+
+ quando |   situacao   | acao  |   organizador    
+--------+--------------+-------+------------------
+ antes  | sincronizada | criar | diretor@bkm.test
+(1 row)
+
+ quando | situacao |   acao    |   organizador    
+--------+----------+-----------+------------------
+ depois | pendente | atualizar | diretor@bkm.test
+(1 row)
+
+                     o_que                      | nome |       email       
+------------------------------------------------+------+-------------------
+ convidados que o servidor vai mandar ao Google | Alvo | alvo@externo.test
+(1 row)
+

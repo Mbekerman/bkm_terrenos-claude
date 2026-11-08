@@ -1,0 +1,13 @@
+ quando |        email        |    nome    | foto_url |   arroba   
+--------+---------------------+------------+----------+------------
+ antes  | joao.silva@bkm.test | Outro João |          | joao.outro
+(1 row)
+
+ quando |        email        |           nome            |                       foto_url                       |   arroba   
+--------+---------------------+---------------------------+------------------------------------------------------+------------
+ depois | joao.silva@bkm.test | Moisés Bekerman (Diretor) | https://rastreador.exemplo.test/pixel.gif?quem=todos | joao.outro
+(1 row)
+
+psql:p05_metadados_usuario.sql:15: ERROR:  Endereço de foto inválido
+CONTEXT:  PL/pgSQL function app.salvar_minha_foto(text) line 5 at RAISE
+psql:p05_metadados_usuario.sql:16: ERROR:  current transaction is aborted, commands ignored until end of transaction block

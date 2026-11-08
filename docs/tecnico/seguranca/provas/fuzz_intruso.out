@@ -1,0 +1,206 @@
+              set_config              
+--------------------------------------
+ 00000000-0000-0000-0000-00000000000c
+(1 row)
+
+RET INV app._viab_soma: 0
+RET INV app._viab_valor: <null>
+ERR SD app.abrir_fase: [42501] Seu acesso é somente leitura
+ERR SD app.abrir_negociacao: [42501] Seu acesso é somente leitura
+ERR SD app.adicionar_dependencia: [42501] Só o administrador muda a configuração
+ERR SD app.adicionar_prerequisito: [42501] Só o administrador muda a configuração
+ERR SD app.anexar_arquivo_massa: [22023] O estudo de massa leva o PDF e o DWG
+ERR SD app.apagar_campo_terreno: [42501] Só o administrador muda a configuração
+ERR SD app.apagar_despesa_viabilidade: [42501] Só o administrador muda a configuração
+ERR SD app.apagar_estudo_massa: [42501] Seu acesso é somente leitura
+ERR SD app.apagar_etapa: [42501] Só o administrador muda a configuração
+ERR SD app.apagar_fase: [42501] Só o administrador muda a configuração
+ERR SD app.apagar_item_jornada: [42501] Só o administrador muda a configuração
+ERR SD app.apagar_modelo_viabilidade: [P0002] Modelo não encontrado
+ERR SD app.apagar_motivo: [42501] Só o administrador muda a configuração
+ERR SD app.apagar_regra_etapa: [42501] Só o administrador muda a configuração
+ERR SD app.apagar_regra_jornada: [42501] Só o administrador muda a configuração
+ERR SD app.apagar_subetapa: [42501] Só o administrador muda a configuração
+ERR SD app.apagar_viabilidade: [42501] Seu acesso é somente leitura
+ERR SD app.arquivar_terreno: [42501] Seu acesso é somente leitura
+RET INV app.arrobas_no_texto: {}
+ERR SD app.atualizar_status_proposta: [42501] Seu acesso é somente leitura
+ERR INV app.buscar_duplicados: [42501] Sem acesso a esta empresa
+ERR SD app.calcular_viabilidade: [P0002] Estudo não encontrado
+RET SD app.campo_cartao: <null>
+RET SD app.campo_def: 1 linhas
+ERR SD app.cancelar_aprovacao: [P0002] Não há pedido em aberto
+ERR SD app.cartorio_da_prefeitura: [42501] Seu acesso é somente leitura
+ERR SD app.checar_avanco: [42501] Sem acesso a esta empresa
+ERR SD app.checar_passagem: [42501] Sem acesso a esta empresa
+RET SD app.classificar_topografia: plano
+RET INV app.codigo_terreno: A001
+RET INV app.concorrencia_resumo: 0 linhas
+RET INV app.concorrencia_tipologias_em: 0 linhas
+RET SD app.condicao_aplica: <null>
+ERR SD app.condicao_checklist: [42501] Só o administrador muda a configuração
+ERR SD app.condicao_prerequisito: [42501] Só o administrador muda a configuração
+ERR SD app.configurar_notificacao: [42501] Só o administrador muda a configuração
+ERR SD app.configurar_status: [42501] Só o administrador muda a configuração
+ERR SD app.criar_viabilidade: [42501] Seu acesso é somente leitura
+ERR SD app.criar_viabilidade_da_massa: [42501] Seu acesso é somente leitura
+ERR SD app.decidir_aprovacao: [P0002] Pedido não encontrado
+ERR SD app.decidir_resumo_ia: [42501] Seu acesso é somente leitura
+ERR SD app.definir_oferta_referencia: [42501] Seu acesso é somente leitura
+ERR SD app.definir_temperatura: [42501] Seu acesso é somente leitura
+RET INV app.densidade_faixa: 1
+ERR SD app.desfazer_alteracao: [42501] Seu acesso é somente leitura
+RET INV app.distancia_km: 0.00
+RET SD app.eh_administrador: false
+RET SD app.eh_diretoria: false
+RET SD app.eh_gestor: false
+RET SD app.eh_membro: false
+RET SD app.eh_superior: false
+RET SD app.empresas_edicao: 2 linhas
+ERR SD app.encerrar_processo: [42501] Seu acesso é somente leitura
+RET INV app.estatisticas_area: {"pessoas": null, "setores": 0, "area_km2": null, "domicilios": null, "distribuicao": [{"cor": "#fff198", "pct": null, "faixa": 1, "rotulo": "Até R$ 2.000", "do
+RET INV app.estatisticas_raio: {"pessoas": null, "setores": 0, "area_km2": 0.000, "domicilios": null, "distribuicao": [{"cor": "#fff198", "pct": null, "faixa": 1, "rotulo": "Até R$ 2.000", "d
+RET INV app.estatisticas_terreno: <null>
+ERR SD app.excluir_lugar_entorno: [42501] Seu acesso é somente leitura
+ERR SD app.excluir_parte: [42501] Seu acesso é somente leitura
+ERR SD app.excluir_ponto_terreno: [42501] Seu acesso é somente leitura
+ERR SD app.exigir_administrador: [42501] Só o administrador muda a configuração
+ERR SD app.exigir_editor: [42501] Seu acesso é somente leitura
+ERR SD app.exigir_membro: [42501] Sem acesso a esta empresa
+ERR SD app.fases_do_terreno: [42501] Sem acesso a esta empresa
+RET INV app.ficha_dados: <null>
+RET INV app.geojson_poligono_valido: <null>
+ERR SD app.gravar_campo: [P0002] Terreno não encontrado
+RET SD app.jornada_processo: <null>
+ERR SD app.marcar_massa_valido: [42501] Seu acesso é somente leitura
+ERR SD app.marcar_modelo_padrao: [42501] Só o administrador muda a configuração
+RET SD app.marcar_notificacao_lida: 0
+RET SD app.minhas_empresas: 2 linhas
+RET SD app.modelos_viabilidade: 0 linhas
+ERR SD app.mover_etapa: [42501] Seu acesso é somente leitura
+ERR SD app.mover_para_etapa: [42501] Seu acesso é somente leitura
+ERR SD app.mover_subetapa: [22023] Subetapa inválida
+ERR SD app.mudar_arroba: [42501] Só o administrador muda o @ de alguém da equipe
+RET INV app.municipio_por_nome: <null>
+RET INV app.nivel_papel: 0
+RET INV app.normaliza_nome: x
+RET SD app.papel: <null>
+RET INV app.parametros_zona: 0 linhas
+RET INV app.perfil_area: {"idade": null, "vagos": null, "homens": null, "especie": null, "pessoas": null, "setores": 0, "tamanho": null, "mulheres": null, "domicilios": null, "uso_ocasi
+RET INV app.perfil_terreno: <null>
+ERR SD app.reativar_terreno: [P0002] Terreno não encontrado
+ERR SD app.registrar_consulta_area: [42501] Seu acesso é somente leitura
+ERR SD app.registrar_consulta_lote: [42501] Seu acesso é somente leitura
+ERR SD app.registrar_documento: [42501] Seu acesso é somente leitura
+ERR SD app.registrar_oferta: [42501] Seu acesso é somente leitura
+ERR SD app.registrar_proposta: [42501] Seu acesso é somente leitura
+ERR SD app.registrar_topografia: [42501] Seu acesso é somente leitura
+ERR SD app.registrar_zonas_lote: [42501] Seu acesso é somente leitura
+ERR SD app.registrar_zonas_sem_inscricao: [42501] Seu acesso é somente leitura
+ERR SD app.regra_prerequisito: [42501] Só o administrador muda a configuração
+ERR SD app.remover_checklist: [42501] Só o administrador muda a configuração
+ERR SD app.remover_dependencia: [42501] Só o administrador muda a configuração
+ERR SD app.remover_parte: [42501] Seu acesso é somente leitura
+ERR SD app.remover_prerequisito: [42501] Só o administrador muda a configuração
+RET INV app.renda_faixa: 1
+ERR SD app.restaurar_lugar_entorno: [42501] Seu acesso é somente leitura
+ERR SD app.restaurar_ponto_terreno: [42501] Seu acesso é somente leitura
+ERR SD app.retomar_processo: [42501] Seu acesso é somente leitura
+ERR SD app.revisar_documento: [42501] Seu acesso é somente leitura
+ERR SD app.salvar_campo: [42501] Só o administrador muda a configuração
+ERR SD app.salvar_campo_terreno: [42501] Só o administrador muda a configuração
+ERR SD app.salvar_checklist: [42501] Só o administrador muda a configuração
+ERR SD app.salvar_despesa_viabilidade: [42501] Só o administrador muda a configuração
+ERR SD app.salvar_distancias_pontos: [42501] Seu acesso é somente leitura
+ERR SD app.salvar_entorno: [42501] Seu acesso é somente leitura
+ERR SD app.salvar_estudo_massa: [42501] Seu acesso é somente leitura
+ERR SD app.salvar_etapa: [42501] Só o administrador muda a configuração
+ERR SD app.salvar_fase: [42501] Só o administrador muda a configuração
+ERR SD app.salvar_item_jornada: [42501] Só o administrador muda a configuração
+ERR SD app.salvar_margem_minima: [42501] Só o administrador muda a configuração
+ERR SD app.salvar_minha_foto: [22023] Endereço de foto inválido
+ERR SD app.salvar_modelo_viabilidade: [P0002] Estudo não encontrado
+ERR SD app.salvar_motivo: [42501] Só o administrador muda a configuração
+ERR SD app.salvar_parte: [42501] Seu acesso é somente leitura
+ERR SD app.salvar_preferencia_notificacao: [42501] Sem acesso a esta empresa
+ERR SD app.salvar_regra_etapa: [42501] Só o administrador muda a configuração
+ERR SD app.salvar_regra_jornada: [42501] Só o administrador muda a configuração
+ERR SD app.salvar_subetapa: [42501] Só o administrador muda a configuração
+ERR SD app.salvar_terreno: [42501] Seu acesso é somente leitura
+ERR SD app.salvar_topografia_config: [42501] Só o administrador muda a configuração
+ERR SD app.salvar_viabilidade: [42501] Seu acesso é somente leitura
+ERR SD app.salvar_zona_parametro: [42501] Só o administrador muda a configuração
+RET INV app.setor_soma: <null>
+RET INV app.setores_no_retangulo: 0 linhas
+RET INV app.sobreposicao: 1 linhas
+ERR SD app.solicitar_estudo_massa: [42501] Seu acesso é somente leitura
+RET SD app.tarefas_abertas_fase: 0
+ERR INV app.terrenos_sobrepostos: [42501] Sem acesso a esta empresa
+RET SD app.trava_tarefa: <null>
+ERR SD app.validar_condicao: [22023] Condição inválida: diga se valem todas ou qualquer uma e ponha ao menos uma condição
+RET SD app.ve_terreno: true
+RET INV app.viab_fixo: false
+RET SD app.viab_linha_visivel: true
+RET INV app.viab_restrito: false
+RET INV app.viab_secao: despesas
+RET INV app.viab_tipos: {pct_vgv,pct_obra_total,pct_lucro,verba}
+ERR SD app.vincular_estudo: [42501] Seu acesso é somente leitura
+ERR SD app.vincular_massa: [P0002] Estudo não encontrado
+ERR SD app.vincular_viabilidade: [42501] Seu acesso é somente leitura
+RET SD fluxo._condicoes_ok: true
+ERR SD fluxo._copiar_automacoes: [42501] Sem acesso ao cartão de origem
+RET SD fluxo._dono_vale: false
+RET SD fluxo._lista_auto: <null>
+RET INV fluxo.agenda_hoje: false
+ERR SD fluxo.apertar_botao: [42501] Só quem edita o cartão aperta o botão
+ERR SD fluxo.aplicar_modelo: [P0002] Modelo não encontrado
+RET SD fluxo.aprova_linha_base: false
+RET SD fluxo.aprova_pausa: false
+RET SD fluxo.botoes_cartao: 0 linhas
+ERR SD fluxo.campo_do_objeto: [P0002] Tarefa não encontrada
+ERR SD fluxo.cancelar_aprovacao: [42501] Sem permissão para editar esta tarefa
+RET INV fluxo.comenta_tarefa: false
+ERR SD fluxo.concluir_justificando: [42501] Sem permissão para editar esta tarefa
+ERR SD fluxo.condicao_vale: [P0002] Tarefa não encontrada
+RET SD fluxo.configura_tarefa: true
+ERR INV fluxo.copiar_tarefa: [P0002] Tarefa não encontrada
+ERR SD fluxo.decidir_aprovacao: [P0002] Pedido não encontrado
+ERR SD fluxo.decidir_linha_base: [23514] Este pedido já foi decidido
+ERR SD fluxo.decidir_pausa: [P0002] Pedido não encontrado
+ERR SD fluxo.definir_modelo_padrao: [42501] Só o administrador muda a configuração
+RET SD fluxo.dia_util: false
+RET SD fluxo.duracao_dias: 1
+RET SD fluxo.edita_modelo: false
+RET INV fluxo.edita_tarefa: false
+ERR SD fluxo.enviar_cronograma: [42501] Seu acesso é somente leitura
+ERR SD fluxo.exigir_edicao_tarefa: [42501] Sem permissão para editar esta tarefa
+RET INV fluxo.formas: {campo}
+RET SD fluxo.gerencia_tarefa: false
+RET SD fluxo.inicio_cedo: <null>
+ERR SD fluxo.item_para_tarefa: [42501] Sem permissão para editar esta tarefa
+RET SD fluxo.itens_em_branco: 0 linhas
+RET INV fluxo.nivel_cartao: 0
+RET SD fluxo.nivel_pausa: 2
+RET SD fluxo.papel_cartao: <null>
+RET SD fluxo.papel_tarefa: administrador
+ERR SD fluxo.pausar: [42501] Sem permissão para editar esta tarefa
+ERR SD fluxo.pedir_aprovacao: [42501] Sem permissão para editar esta tarefa
+ERR SD fluxo.pendencias_conclusao: [P0002] Tarefa não encontrada
+RET INV fluxo.predecessoras_pendentes: {}
+RET INV fluxo.proxima_ocorrencia: <null>
+ERR SD fluxo.quadro_de: [42501] Sem acesso a esta empresa
+ERR SD fluxo.retomar: [42501] Sem permissão para editar esta tarefa
+ERR SD fluxo.salvar_calendario: [42501] Só o administrador muda a configuração
+ERR SD fluxo.salvar_lista_modelo: [42501] Só o administrador muda a configuração
+ERR SD fluxo.salvar_quadro_como_modelo: [42501] Seu acesso é somente leitura
+ERR SD fluxo.salvar_regra_pausa: [42501] Só o administrador muda a configuração
+ERR SD fluxo.salvar_regra_predecessoras: [42501] Só o administrador muda a configuração
+ERR SD fluxo.salvar_regras: [42501] Só o administrador muda a configuração
+RET SD fluxo.somar_dias: 2026-11-09
+RET SD fluxo.tarefa_do_checklist: c5da55b8-9d4b-4ca8-a593-9f23adedc6cd
+RET SD fluxo.tarefa_do_comentario: 80ec093a-10ea-46c7-9b5f-e7098109608c
+RET SD fluxo.tarefa_do_log: <null>
+RET SD fluxo.usa_dias_uteis: false
+RET INV fluxo.validar_formato: x
+RET SD fluxo.ve_objeto: true
+ERR SD fluxo.votos_da_vez: [P0002] Pedido não encontrado

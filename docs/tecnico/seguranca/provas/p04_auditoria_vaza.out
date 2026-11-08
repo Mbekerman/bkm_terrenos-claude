@@ -1,0 +1,19 @@
+           k            | papel  
+------------------------+--------
+ papel de quem consulta | basico
+(1 row)
+
+            k            | equipe_prevista | automacoes_do_cartao | lembretes_do_cartao | modelo_pessoal 
+-------------------------+-----------------+----------------------+---------------------+----------------
+ RLS da tabela de origem |               0 |                    0 |                   0 |              0
+(1 row)
+
+       k       |     tabela      |                  conteudo                   |  papel  | adm  |              tarefa_id               
+---------------+-----------------+---------------------------------------------+---------+------+--------------------------------------
+ o log entrega | lembretes       | c6a1d450-2cb6-41fd-b155-8261b8ac1d15        |         |      | 
+ o log entrega | automacoes      | Avisar o advogado do litígio com o vendedor |         |      | c6a1d450-2cb6-41fd-b155-8261b8ac1d15
+ o log entrega | lembretes       | c6a1d450-2cb6-41fd-b155-8261b8ac1d15        |         |      | 
+ o log entrega | modelos_quadro  | Meu modelo pessoal: demissões               |         |      | 
+ o log entrega | equipe_prevista | Contratação sigilosa                        | diretor | true | 
+(5 rows)
+
