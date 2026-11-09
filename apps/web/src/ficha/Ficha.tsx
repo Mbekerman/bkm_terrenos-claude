@@ -353,6 +353,14 @@ function VisaoGeral({ f, irAba, abrirMapa }: { f: F; irAba: (k: string) => void;
 
 export function useFicha(codigo: string) {
   const { empresa } = useSessao();
+  const qc = useQueryClient();
+  /* a consulta do GeoSampa depois do cadastro grava no terreno (cartório, áreas, zonas) com a ficha já aberta: a cada
+     lote gravado a ficha se refaz, para mostrar o que chegou e ficar na versão atual do terreno (9/nov/2026) */
+  useEffect(() => {
+    const h = () => { void qc.invalidateQueries({ queryKey: ['ficha'] }); };
+    window.addEventListener('terreno-gravado', h);
+    return () => window.removeEventListener('terreno-gravado', h);
+  }, [qc]);
   return useQuery({ queryKey: ['ficha', empresa?.id, codigo], enabled: !!empresa, queryFn: () => carregarFicha(empresa!.id, codigo) });
 }
 

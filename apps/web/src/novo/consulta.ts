@@ -175,6 +175,9 @@ const mudar = (a: Andamento | null) => { A = a; ouvintes.forEach((f) => f()); };
 export const useConsultaGeo = () => useSyncExternalStore((f) => { ouvintes.add(f); return () => ouvintes.delete(f); }, () => A);
 const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/** avisa a ficha aberta que o terreno mudou no banco (ela se refaz; ficha/Ficha.tsx, useFicha) */
+const gravado = (id: string) => window.dispatchEvent(new CustomEvent('terreno-gravado', { detail: id }));
+
 /** depois do cadastro: cada SQL (com uma nova tentativa) e depois a poligonal; avisa no fim */
 export async function consultarTerreno(terrenoId: string, poly: P[] | null, ins: { id: string; sql: string }[], aviso: (m: string, erro?: boolean) => void) {
   if (!GEO_BASE || A || !ins.length) return;
@@ -188,9 +191,10 @@ export async function consultarTerreno(terrenoId: string, poly: P[] | null, ins:
         try { ok = await consultarLote(i.id, i.sql); } catch (e) { console.warn('GeoSampa', i.sql, e); }
       }
       if (!ok) falhas++;
+      else gravado(terrenoId);
       mudar({ terreno: terrenoId, feitos: A!.feitos + 1, total: ins.length });
     }
-    if (poly && poly.length >= 3) { try { await consultarArea(terrenoId, poly); } catch (e) { areaOk = false; console.warn('GeoSampa área', e); } }
+    if (poly && poly.length >= 3) { try { await consultarArea(terrenoId, poly); gravado(terrenoId); } catch (e) { areaOk = false; console.warn('GeoSampa área', e); } }
   } finally { mudar(null); }
   const n = ins.length;
   if (falhas) aviso(`GeoSampa consultado; ${falhas} SQL${falhas > 1 ? 's' : ''} não respondeu. Use "Buscar no GeoSampa" no SQL.`, true);
